@@ -32,5 +32,6 @@ File naming: `NNNN-short-slug.md`. Status: `Proposed` → `Accepted (<gate>)` �
 | [0010](0010-dong-bo-du-lieu-app-backup-va-repo-data.md) | App data sync: backup file + `Project-2C-data` repo | Accepted (G1) | Q2b |
 | [0011](0011-bao-cao-excel-va-ngon-ngu.md) | Excel export; Vietnamese UI via i18n | Accepted (G1) | Q12, Q13 |
 | [0012](0012-plugins-superpowers-va-mattpocock-skills.md) | Plugins: Superpowers + mattpocock/skills (vendored subset); Agent tool denied | Accepted (G4) | §4.3 |
+| [0013](0013-huong-ui-dark-mode.md) | UI direction: dark tokens, champagne accent, unified period filter, sortable dates | Accepted (G3) | §4.6, C6 |
 
-Not yet recorded (pending their gate): UI direction (G3), detailed data model (G2), chart library (Phase 1).
+Not yet recorded (pending their gate): detailed data model (G2), chart library (Phase 1, ADR-0014).

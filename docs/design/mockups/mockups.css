@@ -180,6 +180,7 @@ a {
 }
 
 .topbar h1 {
+  white-space: nowrap;
   font-size: var(--fs-xl);
   margin: 0;
   font-weight: 650;
@@ -251,6 +252,7 @@ a {
 
 .btn {
   all: unset;
+  white-space: nowrap;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -584,4 +586,89 @@ th.r {
   color: var(--text-3);
   text-align: center;
   padding: 10px;
+}
+
+/* ---------- G3 round 2: headings, period filter, sortable columns ---------- */
+
+:root {
+  /* Sub-headings inside cards (AI blocks, grouped sections) — Owner G3: not default white */
+  --heading: var(--accent);
+}
+
+.subhead {
+  color: var(--heading);
+  font-size: var(--fs-sm);
+  font-weight: 650;
+  margin: 14px 0 6px;
+}
+
+/* Period filter: every date field can be filtered by day / week / month / year / custom range */
+.period {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.period .range {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.period .step {
+  color: var(--text-3);
+  padding: 0 2px;
+}
+
+/* Sortable table headers */
+th.sort {
+  cursor: pointer;
+  user-select: none;
+}
+
+th.sort::after {
+  content: ' ↕';
+  color: var(--border-strong);
+}
+
+th.sort.asc::after {
+  content: ' ↑';
+  color: var(--accent);
+}
+
+th.sort.desc::after {
+  content: ' ↓';
+  color: var(--accent);
+}
+
+th.sort.asc,
+th.sort.desc {
+  color: var(--text-2);
+}
+
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.select {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.select b {
+  color: var(--text);
+  font-weight: 600;
 }

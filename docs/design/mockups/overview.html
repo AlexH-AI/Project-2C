@@ -60,6 +60,84 @@
       .trend .bar {
         height: 10px;
       }
+      .team-card {
+        display: flex;
+        flex-direction: column;
+      }
+      .team-foot {
+        margin-top: auto;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+      }
+      .team-foot b {
+        display: block;
+        font-size: var(--fs-lg);
+        color: var(--text);
+      }
+      .bottom-grid td {
+        white-space: nowrap;
+      }
+      .bottom-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 16px;
+      }
+      .inline-bar {
+        display: grid;
+        grid-template-columns: 1fr 56px;
+        align-items: center;
+        gap: 8px;
+        text-align: right;
+      }
+      .inline-bar .bar {
+        height: 8px;
+      }
+      tr.total td {
+        font-weight: 650;
+        border-top: 1px solid var(--border-strong);
+      }
+      .week {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 8px;
+      }
+      .week .d {
+        position: relative;
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 8px 8px 22px;
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        overflow: hidden;
+      }
+      .week .d b {
+        display: block;
+        font-size: var(--fs-xl);
+        color: var(--text);
+      }
+      .week .d i {
+        position: absolute;
+        left: 8px;
+        bottom: 8px;
+        height: 6px;
+        border-radius: 3px;
+        background: var(--n3);
+        opacity: 0.8;
+      }
+      .week .d.on {
+        border-color: var(--accent);
+      }
+      .more-link {
+        font-size: var(--fs-sm);
+        color: var(--accent);
+        padding: 10px 10px 0;
+      }
     </style>
   </head>
   <body>
@@ -82,17 +160,25 @@
         <header class="topbar">
           <div>
             <h1>Tổng quan hôm nay</h1>
-            <div class="sub num">Thứ Hai, 28/09/2026 · MTD 01/09 – 28/09</div>
+            <div class="sub num">Thứ Hai, 28/09/2026</div>
           </div>
           <div class="spacer"></div>
-          <div class="segmented" role="group" aria-label="Góc nhìn">
-            <button class="on">Toàn bộ</button><button>Team</button><button>RE</button>
-          </div>
           <div class="search">Tìm KH, RE, lịch hẹn… <span class="spacer"></span><span class="kbd">Ctrl K</span></div>
           <button class="btn btn-primary">+ Lịch hẹn</button>
         </header>
 
         <div class="content">
+          <div class="filter-bar">
+            <span class="section-title" style="margin: 0 4px 0 0">Kỳ thống kê</span>
+            <div class="period">
+              <div class="segmented"><button>Ngày</button><button>Tuần</button><button class="on">Tháng</button><button>Năm</button><button>Tùy chọn</button></div>
+              <span class="step">‹</span><span class="range">01/09 – 28/09/2026 · MTD</span><span class="step">›</span>
+            </div>
+            <span class="spacer"></span>
+            <span class="section-title" style="margin: 0 4px 0 0">Góc nhìn</span>
+            <div class="segmented"><button class="on">Toàn bộ</button><button>Team</button><button>RE</button></div>
+            <span class="select">Team: <b>Tất cả</b> ▾</span>
+          </div>
           <section class="kpis" aria-label="Chỉ số">
             <div class="kpi">
               <div class="label">Lịch hẹn hôm nay</div>
@@ -197,6 +283,7 @@
                   </tr>
                 </tbody>
               </table>
+              <div class="team-foot num"><div><b>15</b>RF</div><div><b>10</b>HĐ nộp</div><div><b>5,6 tỷ</b>Doanh số</div><div><b>44,1%</b>Tỉ lệ chốt</div></div>
             </div>
 
             <div class="card team-card">
@@ -239,6 +326,7 @@
                   </tr>
                 </tbody>
               </table>
+              <div class="team-foot num"><div><b>13</b>RF</div><div><b>8</b>HĐ nộp</div><div><b>4,8 tỷ</b>Doanh số</div><div><b>41,5%</b>Tỉ lệ chốt</div></div>
             </div>
 
             <div class="card team-card">
@@ -276,32 +364,50 @@
                   </tr>
                 </tbody>
               </table>
+              <div class="team-foot num"><div><b>10</b>RF</div><div><b>6</b>HĐ nộp</div><div><b>3,8 tỷ</b>Doanh số</div><div><b>38,9%</b>Tỉ lệ chốt</div></div>
             </div>
           </section>
 
-          <section class="grid-2">
+          <section class="bottom-grid">
             <div class="card">
               <div class="card-head">
-                <h2>Doanh số MTD theo team</h2>
-                <span class="meta">tỷ đồng · Σ issued FYP</span>
+                <h2>So sánh team</h2>
+                <span class="meta num">01/09 – 28/09/2026</span>
+                <span class="actions"><span class="select">Chỉ số: <b>Doanh số</b> ▾</span></span>
               </div>
-              <div class="trend"><span>Team Sao Mai</span><div class="bar"><span style="width: 92%; background: var(--accent)"></span></div><span class="r num">5,6 tỷ</span></div>
-              <div class="trend"><span>Team Bình Minh</span><div class="bar"><span style="width: 78%; background: var(--accent)"></span></div><span class="r num">4,8 tỷ</span></div>
-              <div class="trend"><span>Team Hừng Đông</span><div class="bar"><span style="width: 62%; background: var(--accent)"></span></div><span class="r num">3,8 tỷ</span></div>
-              <div class="legend" style="margin-top: 10px">
-                <span><i style="background: var(--accent)"></i>Doanh số</span>
-                <span class="muted">Chart thật: chọn ECharts/Recharts ở #8</span>
+              <table>
+                <thead>
+                  <tr><th class="sort">Team</th><th class="sort r">Đã gặp</th><th class="sort r">RF</th><th class="sort r">HĐ nộp</th><th class="sort r">Case size</th><th class="sort desc" style="width: 34%">Doanh số</th><th class="sort r">Tỉ lệ chốt</th></tr>
+                </thead>
+                <tbody class="num">
+                  <tr><td>Sao Mai</td><td class="r">118</td><td class="r">15</td><td class="r">10</td><td class="r">7,4 tỷ</td><td><div class="inline-bar"><div class="bar"><span style="width: 100%; background: var(--accent)"></span></div>5,6 tỷ</div></td><td class="r">44,1%</td></tr>
+                  <tr><td>Bình Minh</td><td class="r">104</td><td class="r">13</td><td class="r">8</td><td class="r">6,2 tỷ</td><td><div class="inline-bar"><div class="bar"><span style="width: 86%; background: var(--accent)"></span></div>4,8 tỷ</div></td><td class="r">41,5%</td></tr>
+                  <tr><td>Hừng Đông</td><td class="r">91</td><td class="r">10</td><td class="r">6</td><td class="r">5,0 tỷ</td><td><div class="inline-bar"><div class="bar"><span style="width: 68%; background: var(--accent)"></span></div>3,8 tỷ</div></td><td class="r">38,9%</td></tr>
+                  <tr class="total"><td>Tổng</td><td class="r">313</td><td class="r">38</td><td class="r">24</td><td class="r">18,6 tỷ</td><td><div class="inline-bar"><span></span>14,2 tỷ</div></td><td class="r">41,7%</td></tr>
+                </tbody>
+              </table>
+
+              <div class="subhead">Lịch hẹn 7 ngày tới</div>
+              <div class="week num">
+                <div class="d on"><span>T2 28/09</span><b>17</b><i style="width: calc((100% - 16px) * 1)"></i></div>
+                <div class="d"><span>T3 29/09</span><b>14</b><i style="width: calc((100% - 16px) * 0.82)"></i></div>
+                <div class="d"><span>T4 30/09</span><b>15</b><i style="width: calc((100% - 16px) * 0.88)"></i></div>
+                <div class="d"><span>T5 01/10</span><b>12</b><i style="width: calc((100% - 16px) * 0.7)"></i></div>
+                <div class="d"><span>T6 02/10</span><b>16</b><i style="width: calc((100% - 16px) * 0.94)"></i></div>
+                <div class="d"><span>T7 03/10</span><b>5</b><i style="width: calc((100% - 16px) * 0.3)"></i></div>
+                <div class="d"><span>CN 04/10</span><b>1</b><i style="width: calc((100% - 16px) * 0.06)"></i></div>
               </div>
             </div>
 
             <div class="card">
               <div class="card-head">
-                <h2>Top RE · MTD</h2>
-                <span class="actions"><span class="segmented"><button class="on">Doanh số</button><button>Chuyển RF</button><button>HĐ nộp</button></span></span>
+                <h2>Top RE</h2>
+                <span class="meta num">01/09 – 28/09/2026</span>
+                <span class="actions"><span class="select">Team: <b>Tất cả</b> ▾</span></span>
               </div>
               <table class="rank">
                 <thead>
-                  <tr><th>RE</th><th>Team</th><th class="r">Đã gặp</th><th class="r">RF</th><th class="r">HĐ nộp</th><th class="r">Doanh số</th></tr>
+                  <tr><th class="sort">RE</th><th class="sort">Team</th><th class="sort r">Đã gặp</th><th class="sort r">RF</th><th class="sort r">HĐ nộp</th><th class="sort r desc">Doanh số</th></tr>
                 </thead>
                 <tbody class="num">
                   <tr><td>Đỗ Khánh Linh</td><td class="dim">Sao Mai</td><td class="r">21</td><td class="r">6</td><td class="r">4</td><td class="r">2,1 tỷ</td></tr>
@@ -309,8 +415,12 @@
                   <tr><td>Văn Thùy</td><td class="dim">Hừng Đông</td><td class="r">16</td><td class="r">4</td><td class="r">3</td><td class="r">1,4 tỷ</td></tr>
                   <tr><td>Hoàng Nam</td><td class="dim">Sao Mai</td><td class="r">19</td><td class="r">4</td><td class="r">2</td><td class="r">1,2 tỷ</td></tr>
                   <tr><td>Tạ Hải Yến</td><td class="dim">Bình Minh</td><td class="r">15</td><td class="r">3</td><td class="r">2</td><td class="r">950 tr</td></tr>
+                  <tr><td>Kiều Minh</td><td class="dim">Bình Minh</td><td class="r">14</td><td class="r">3</td><td class="r">2</td><td class="r">880 tr</td></tr>
+                  <tr><td>Âu Gia Bảo</td><td class="dim">Hừng Đông</td><td class="r">17</td><td class="r">3</td><td class="r">1</td><td class="r">720 tr</td></tr>
+                  <tr><td>Mai Phương</td><td class="dim">Sao Mai</td><td class="r">13</td><td class="r">2</td><td class="r">1</td><td class="r">650 tr</td></tr>
                 </tbody>
               </table>
+              <div class="more-link">Xem cả 30 RE →</div>
             </div>
           </section>
 

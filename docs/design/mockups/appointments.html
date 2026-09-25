@@ -13,9 +13,14 @@
     <style>
       .layout {
         display: grid;
-        grid-template-columns: 200px minmax(0, 1fr) 380px;
+        grid-template-columns: 210px minmax(0, 1fr) 360px;
         gap: 16px;
         align-items: start;
+      }
+      .left {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
       }
       .tree {
         padding: 10px 8px;
@@ -43,31 +48,151 @@
       .tree .re .n {
         color: var(--text-3);
       }
-      .days {
-        display: flex;
-        gap: 6px;
+      .sum {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
       }
-      .day {
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        padding: 6px 10px;
-        text-align: center;
-        min-width: 56px;
+      .sum div {
         font-size: var(--fs-xs);
         color: var(--text-3);
-        background: var(--bg-1);
       }
-      .day b {
+      .sum b {
         display: block;
-        font-size: var(--fs-lg);
+        font-size: var(--fs-xl);
         color: var(--text);
       }
-      .day.on {
-        border-color: var(--accent);
-        background: var(--accent-soft);
+      .moves {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
       }
-      .day.on b {
+      .moves > div {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 6px 8px;
+        align-items: center;
+        font-size: var(--fs-xs);
+      }
+      .moves b {
+        grid-row: 1 / 3;
+        grid-column: 2;
+        font-size: var(--fs-2xl);
+      }
+      .trig {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 3px 8px;
+        font-size: var(--fs-sm);
+        color: var(--text-2);
+        margin-bottom: 8px;
+      }
+      .trig .bar {
+        grid-column: 1 / -1;
+        height: 4px;
+      }
+      .full {
+        grid-column: 1 / -1;
+      }
+      .center {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .cal {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 6px;
+      }
+      .cal .h {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0 6px;
+      }
+      .cell {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        min-height: 62px;
+        padding: 6px 8px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto 1fr;
+        font-variant-numeric: tabular-nums;
+      }
+      .cell .dn {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+      }
+      .cell b {
+        font-size: var(--fs-lg);
+        text-align: right;
+      }
+      .cell .dots {
+        grid-column: 1 / -1;
+        align-self: end;
+        display: flex;
+        gap: 3px;
+      }
+      .cell .dots i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .dots .met {
+        background: var(--ok);
+      }
+      .dots .plan {
+        border: 1.5px solid var(--info);
+      }
+      .dots .miss {
+        background: var(--warn);
+      }
+      .cell.out {
+        opacity: 0.35;
+      }
+      .cell.wk {
+        background: var(--bg-1);
+      }
+      .cell.today {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 1px var(--accent);
+      }
+      .cell.today .dn {
         color: var(--accent);
+        font-weight: 700;
+      }
+      .legend {
+        display: flex;
+        gap: 14px;
+        font-size: var(--fs-xs);
+        color: var(--text-2);
+        margin-top: 10px;
+      }
+      .legend i {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 5px;
+      }
+      .list td .name {
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .list td .id {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+      }
+      .list td:nth-child(1),
+      .list td:nth-child(2) {
+        white-space: nowrap;
       }
       .detail {
         position: sticky;
@@ -78,7 +203,7 @@
       }
       dl.facts {
         display: grid;
-        grid-template-columns: 128px 1fr;
+        grid-template-columns: 96px 1fr;
         gap: 6px 12px;
         margin: 0;
         font-size: var(--fs-sm);
@@ -88,10 +213,6 @@
       }
       dl.facts dd {
         margin: 0;
-      }
-      .ai-block h4 {
-        margin: 12px 0 6px;
-        font-size: var(--fs-sm);
       }
       .ai-block ul {
         margin: 0;
@@ -134,134 +255,159 @@
             <div class="sub">Team Sao Mai → Đỗ Khánh Linh</div>
           </div>
           <div class="spacer"></div>
-          <div class="days num">
-            <div class="day">T6<b>25</b></div>
-            <div class="day">T7<b>26</b></div>
-            <div class="day">CN<b>27</b></div>
-            <div class="day on">T2<b>28</b></div>
-            <div class="day">T3<b>29</b></div>
-            <div class="day">T4<b>30</b></div>
-            <div class="day">T5<b>01</b></div>
-          </div>
-          <div class="segmented"><button class="on">Ngày</button><button>Tuần</button></div>
+          <div class="search">Tìm KH, RE, lịch hẹn… <span class="spacer"></span><span class="kbd">Ctrl K</span></div>
           <button class="btn btn-primary">+ Lịch hẹn</button>
         </header>
 
         <div class="content">
+          <div class="filter-bar">
+            <div class="period">
+              <div class="segmented"><button>Ngày</button><button>Tuần</button><button class="on">Tháng</button><button>Năm</button><button>Tùy chọn</button></div>
+              <span class="step">‹</span><span class="range">Tháng 09/2026</span><span class="step">›</span>
+              <button class="btn" style="padding: 5px 10px">Hôm nay</button>
+            </div>
+            <span class="spacer"></span>
+            <span class="select">Trạng thái: <b>Tất cả</b> ▾</span>
+            <span class="select">Nhóm KH: <b>Tất cả</b> ▾</span>
+            <span class="select">Phối hợp: <b>Bất kỳ</b> ▾</span>
+            <span class="select">Kết quả: <b>Tất cả</b> ▾</span>
+          </div>
+
           <div class="layout">
-            <nav class="card tree" aria-label="Team và RE">
-              <div class="team"><span>Team Sao Mai</span><span class="muted num">17</span></div>
-              <a class="re"><span>Tất cả RE</span><span class="n num">6</span></a>
-              <a class="re on"><span>Đỗ Khánh Linh</span><span class="num">2</span></a>
-              <a class="re"><span>Hoàng Nam</span><span class="n num">2</span></a>
-              <a class="re"><span>Lý Quang Vinh</span><span class="n num">1</span></a>
-              <a class="re"><span>Mai Phương</span><span class="n num">1</span></a>
-              <a class="re"><span>Châu Bảo Ngọc</span><span class="n num">0</span></a>
-              <a class="re"><span>… 5 RE khác</span><span class="n num">0</span></a>
-              <div class="team" style="margin-top: 8px"><span>Team Bình Minh</span><span class="muted num">6</span></div>
-              <div class="team"><span>Team Hừng Đông</span><span class="muted num">5</span></div>
-            </nav>
-
-            <section class="card" aria-label="Danh sách lịch hẹn">
-              <div class="card-head">
-                <h2>Thứ Hai, 28/09</h2>
-                <span class="meta num">2 lịch</span>
-                <span class="actions"><span class="segmented"><button class="on">Tất cả</button><button>Dự kiến</button><button>Đã gặp</button></span></span>
-              </div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Giờ</th>
-                    <th>Khách hàng</th>
-                    <th>Trigger</th>
-                    <th>Phối hợp</th>
-                    <th class="r">Trạng thái</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="num">08:30</td>
-                    <td>
-                      <div class="who">
-                        <span class="avatar">PL</span>
-                        <div>
-                          <div class="name">Phạm Gia Long <span class="badge st-n2">N2</span></div>
-                          <div class="id">K-7F3Q · Nam · 1979</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="dim">Đáo hạn tiền gửi 3 tỷ</td>
-                    <td><span class="chip">—</span></td>
-                    <td class="r"><span class="badge c-ok plain">Đã gặp</span></td>
-                  </tr>
-                  <tr class="selected">
-                    <td class="num">14:00</td>
-                    <td>
-                      <div class="who">
-                        <span class="avatar">TA</span>
-                        <div>
-                          <div class="name">Trịnh Minh Anh <span class="badge st-n1">N1</span></div>
-                          <div class="id">K-9A1C · Nữ · 12/03/1984</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="dim">Hỏi lại về kế hoạch du học của con</td>
-                    <td><span class="chip">TL</span><span class="chip">IS</span></td>
-                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <h3 class="section-title" style="margin-top: 22px">Ghi nhận kết quả · 08:30 Phạm Gia Long</h3>
-              <div class="stack">
-                <dl class="facts">
-                  <dt>Trạng thái</dt>
-                  <dd><span class="badge c-ok plain">Đã gặp</span></dd>
-                  <dt>Nhóm sau gặp</dt>
-                  <dd><span class="badge st-n3">N3</span> → <span class="badge st-n2">N2</span> <span class="c-accent">· tính 1 RF</span></dd>
-                  <dt>Case size dự kiến</dt>
-                  <dd class="num">500 tr</dd>
-                  <dt>Việc tiếp theo</dt>
-                  <dd>Gửi bảng tóm tắt dòng tiền, hẹn lại 05/10</dd>
-                </dl>
-                <div class="callout">
-                  KH quan tâm việc dự phòng học phí cho 2 con khi khoản tiền gửi đáo hạn tháng 11. Vợ muốn tham gia buổi sau.
+            <div class="left">
+              <nav class="card tree" aria-label="Team và RE">
+                <div class="team"><span>Team Sao Mai</span><span class="muted num">312</span></div>
+                <a class="re"><span>Tất cả RE</span><span class="n num">312</span></a>
+                <a class="re on"><span>Đỗ Khánh Linh</span><span class="num">34</span></a>
+                <a class="re"><span>Hoàng Nam</span><span class="n num">33</span></a>
+                <a class="re"><span>Lý Quang Vinh</span><span class="n num">30</span></a>
+                <a class="re"><span>Mai Phương</span><span class="n num">29</span></a>
+                <a class="re"><span>Châu Bảo Ngọc</span><span class="n num">31</span></a>
+                <a class="re"><span>… 5 RE khác</span><span class="n num">154</span></a>
+                <div class="team" style="margin-top: 8px"><span>Team Bình Minh</span><span class="muted num">286</span></div>
+                <div class="team"><span>Team Hừng Đông</span><span class="muted num">251</span></div>
+              </nav>
+              <div class="card">
+                <div class="subhead" style="margin-top: 0">Tháng 09 · Đỗ Khánh Linh</div>
+                <div class="sum num">
+                  <div><b>34</b>Lịch hẹn</div>
+                  <div><b class="c-ok">28</b>Đã gặp</div>
+                  <div><b class="c-warn">2</b>Hoãn</div>
+                  <div><b class="c-info">4</b>Còn lại</div>
+                  <div><b class="c-accent">6</b>Chuyển RF</div>
+                  <div><b>4</b>HĐ nộp</div>
                 </div>
               </div>
-            </section>
+              <div class="card">
+                <div class="subhead" style="margin-top: 0">Trigger trong tháng</div>
+                  <div class="trig"><span>Giới thiệu từ KH</span><b>9</b><div class="bar"><span style="width: 90%; background: var(--n3)"></span></div></div>
+                  <div class="trig"><span>Đáo hạn tài sản</span><b>6</b><div class="bar"><span style="width: 60%; background: var(--n3)"></span></div></div>
+                  <div class="trig"><span>Hội thảo / sự kiện</span><b>5</b><div class="bar"><span style="width: 50%; background: var(--n3)"></span></div></div>
+                  <div class="trig"><span>Sinh nhật, dịp đặc biệt</span><b>4</b><div class="bar"><span style="width: 40%; background: var(--n3)"></span></div></div>
+                  <div class="trig"><span>Khác</span><b>10</b><div class="bar"><span style="width: 100%; background: var(--n3)"></span></div></div>
+              </div>
+            </div>
+
+            <div class="center">
+              <section class="card" aria-label="Lịch tháng">
+                <div class="card-head">
+                  <h2>Tháng 09/2026</h2>
+                  <span class="meta num">34 lịch · 28 đã gặp</span>
+                </div>
+                <div class="cal">
+                  <div class="h">T2</div><div class="h">T3</div><div class="h">T4</div><div class="h">T5</div><div class="h">T6</div><div class="h">T7</div><div class="h">CN</div>
+                  <div class="cell out"><span class="dn">31</span></div>
+                  <div class="cell"><span class="dn">01</span><b>2</b><span class="dots"><i class="met"></i><i class="met"></i></span></div>
+                  <div class="cell"><span class="dn">02</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                  <div class="cell"><span class="dn">03</span><b>2</b><span class="dots"><i class="met"></i><i class="met"></i></span></div>
+                  <div class="cell"><span class="dn">04</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                  <div class="cell wk"><span class="dn">05</span></div>
+                  <div class="cell wk"><span class="dn">06</span></div>
+                  <div class="cell"><span class="dn">07</span><b>2</b><span class="dots"><i class="met"></i><i class="met"></i></span></div>
+                  <div class="cell"><span class="dn">08</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                  <div class="cell"><span class="dn">09</span><b>2</b><span class="dots"><i class="met"></i><i class="miss"></i></span></div>
+                  <div class="cell"><span class="dn">10</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                  <div class="cell"><span class="dn">11</span><b>2</b><span class="dots"><i class="met"></i><i class="met"></i></span></div>
+                  <div class="cell wk"><span class="dn">12</span></div>
+                  <div class="cell wk"><span class="dn">13</span></div>
+                  <div class="cell"><span class="dn">14</span><b>2</b><span class="dots"><i class="met"></i><i class="met"></i></span></div>
+                  <div class="cell"><span class="dn">15</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                  <div class="cell"><span class="dn">16</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                  <div class="cell"><span class="dn">17</span><b>2</b><span class="dots"><i class="met"></i><i class="met"></i></span></div>
+                  <div class="cell"><span class="dn">18</span><b>1</b><span class="dots"><i class="miss"></i></span></div>
+                  <div class="cell wk"><span class="dn">19</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                  <div class="cell wk"><span class="dn">20</span></div>
+                  <div class="cell"><span class="dn">21</span><b>2</b><span class="dots"><i class="met"></i><i class="met"></i></span></div>
+                  <div class="cell"><span class="dn">22</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                  <div class="cell"><span class="dn">23</span><b>2</b><span class="dots"><i class="met"></i><i class="met"></i></span></div>
+                  <div class="cell"><span class="dn">24</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                  <div class="cell"><span class="dn">25</span><b>1</b><span class="dots"><i class="met"></i></span></div>
+                  <div class="cell wk"><span class="dn">26</span></div>
+                  <div class="cell wk"><span class="dn">27</span></div>
+                  <div class="cell today"><span class="dn">28</span><b>2</b><span class="dots"><i class="met"></i><i class="plan"></i></span></div>
+                  <div class="cell"><span class="dn">29</span><b>1</b><span class="dots"><i class="plan"></i></span></div>
+                  <div class="cell"><span class="dn">30</span><b>2</b><span class="dots"><i class="plan"></i><i class="plan"></i></span></div>
+                  <div class="cell out"><span class="dn">01</span></div>
+                  <div class="cell out"><span class="dn">02</span></div>
+                  <div class="cell out wk"><span class="dn">03</span></div>
+                  <div class="cell out wk"><span class="dn">04</span></div>
+                </div>
+                <div class="legend">
+                  <span><i style="background: var(--ok)"></i>Đã gặp</span>
+                  <span><i style="border: 1.5px solid var(--info)"></i>Dự kiến</span>
+                  <span><i style="background: var(--warn)"></i>Hoãn</span>
+                </div>
+              </section>
+
+              <section class="card" aria-label="Chuyển nhóm">
+                <div class="card-head">
+                  <h2>Chuyển nhóm sau cuộc gặp</h2>
+                  <span class="meta num">Tháng 09/2026 · 28 cuộc đã gặp</span>
+                </div>
+                <div class="moves num">
+                  <div><span><span class="badge st-n4">N4</span> → <span class="badge st-n3">N3</span></span><b>3</b><span class="c-accent">tính RF</span></div>
+                  <div><span><span class="badge st-n3">N3</span> → <span class="badge st-n2">N2</span></span><b>2</b><span class="c-accent">tính RF</span></div>
+                  <div><span><span class="badge st-n2">N2</span> → <span class="badge st-n1">N1</span></span><b>1</b><span class="c-accent">tính RF</span></div>
+                  <div><span><span class="badge st-n2">N2</span> → <span class="badge st-n3">N3</span></span><b>1</b><span class="muted">hạ nhóm · không tính RF</span></div>
+                  <div><span>Giữ nguyên nhóm</span><b>20</b><span class="muted">&nbsp;</span></div>
+                  <div><span><span class="badge st-hold">Tạm hoãn</span></span><b>1</b><span class="muted">đóng</span></div>
+                </div>
+              </section>
+            </div>
 
             <aside class="detail" aria-label="Chi tiết lịch hẹn">
               <div class="card">
                 <div class="card-head">
-                  <h3>14:00 · Trịnh Minh Anh</h3>
-                  <span class="actions"><a class="btn" href="customer.html">Hồ sơ KH →</a></span>
+                  <h3>28/09 14:00 · Trịnh Minh Anh</h3>
                 </div>
                 <dl class="facts">
                   <dt>RE</dt>
-                  <dd>Đỗ Khánh Linh · Team Sao Mai</dd>
+                  <dd>Đỗ Khánh Linh · Sao Mai</dd>
                   <dt>Phối hợp</dt>
                   <dd>TL Nguyễn Thu Hà, IS Phó Đức Huy</dd>
                   <dt>Trigger</dt>
                   <dd>Hỏi lại về kế hoạch du học của con</dd>
-                  <dt>Địa điểm</dt>
-                  <dd>Văn phòng KH, Quận 1</dd>
                   <dt>Lần gặp</dt>
                   <dd class="num">Lần 4 · lần trước 14/09</dd>
                 </dl>
+                <div class="row" style="margin-top: 12px">
+                  <button class="btn btn-primary">Ghi kết quả</button>
+                  <a class="btn" href="customer.html">Hồ sơ KH →</a>
+                </div>
               </div>
 
               <div class="card">
                 <div class="card-head">
                   <h3>KYC hiện hành</h3>
-                  <span class="meta num">Cập nhật KYC 14/09/2026</span>
+                  <span class="meta num">14/09/2026 · 6/8 chiều</span>
                 </div>
                 <dl class="facts">
                   <dt>Tuổi</dt>
                   <dd class="num">42 (12/03/1984)</dd>
                   <dt>Gia đình</dt>
-                  <dd>Đã kết hôn, 2 con (14 và 10 tuổi)</dd>
+                  <dd>Đã kết hôn, 2 con (14, 10 tuổi)</dd>
                   <dt>Nghề nghiệp</dt>
-                  <dd>Chủ doanh nghiệp phân phối thiết bị y tế</dd>
+                  <dd>Chủ DN phân phối thiết bị y tế</dd>
                   <dt>Tài sản</dt>
                   <dd class="num">AUM ước ~25 tỷ, 2 BĐS</dd>
                   <dt>Mục tiêu</dt>
@@ -277,32 +423,110 @@
                   <span class="badge c-ok">CURRENT</span>
                   <span class="actions meta num">v3 · 14/09</span>
                 </div>
-                <div class="row" style="flex-wrap: wrap; gap: 6px">
-                  <span class="badge c-info plain">PAIN_POINT_ANALYSIS</span>
-                  <span class="chip">OpenCode Go · model-x · reasoning: medium</span>
-                </div>
-                <h4>Next Best Actions</h4>
+                <span class="badge c-info plain">PAIN_POINT_ANALYSIS</span>
+                <div class="subhead">Next Best Actions</div>
                 <ul>
                   <li>
                     Làm rõ mốc và ngân sách du học của con lớn trước khi bàn phương án.
-                    <div class="ev">Bằng chứng: <a href="#">F-12 mục tiêu</a>, <a href="#">F-07 gia đình</a> · 2 dữ kiện, mới nhất 14/09</div>
+                    <div class="ev">Bằng chứng: <a href="#">F-12</a>, <a href="#">F-07</a> · 2 dữ kiện, mới nhất 14/09</div>
                   </li>
                   <li>
                     Hỏi về các hợp đồng bảo vệ đang có để tránh trùng lặp.
                     <div class="ev">Chiều còn thiếu: bảo vệ hiện có</div>
                   </li>
                 </ul>
-                <h4>Discovery Strategy</h4>
+                <div class="subhead">Discovery Strategy</div>
                 <ul>
                   <li>
                     Cân nhắc mời chồng KH tham gia buổi kế tiếp, vì KH cho biết hai vợ chồng cùng quyết định chi tiêu giáo dục.
-                    <div class="ev">Bằng chứng: <a href="#">F-09 gia đình</a> · 1 dữ kiện, 14/09</div>
+                    <div class="ev">Bằng chứng: <a href="#">F-09</a> · 1 dữ kiện, 14/09</div>
                   </li>
                 </ul>
               </div>
             </aside>
+            <div class="full">
+            <section class="card list" aria-label="Danh sách lịch hẹn">
+              <div class="card-head">
+                <h2>Danh sách lịch hẹn</h2>
+                <span class="meta num">34 lịch · sắp xếp: Ngày ↓</span>
+                <span class="actions"><span class="select">Cột ▾</span><span class="select">Xuất Excel</span></span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th class="sort desc">Ngày</th>
+                    <th class="sort">Giờ</th>
+                    <th class="sort">Khách hàng</th>
+                    <th>Trigger</th>
+                    <th class="sort">Phối hợp</th>
+                    <th class="sort">Trạng thái</th>
+                    <th class="sort">Kết quả</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="selected">
+                    <td class="num">28/09</td><td class="num">14:00</td>
+                    <td><div class="name">Trịnh Minh Anh <span class="badge st-n1">N1</span></div><div class="id num">K-9A1C</div></td>
+                    <td class="dim">Hỏi lại về kế hoạch du học của con</td>
+                    <td class="dim">TL, IS</td>
+                    <td><span class="badge c-info plain">Dự kiến</span></td>
+                    <td class="dim"></td>
+                  </tr>
+                  <tr>
+                    <td class="num">28/09</td><td class="num">08:30</td>
+                    <td><div class="name">Phạm Gia Long <span class="badge st-n2">N2</span></div><div class="id num">K-7F3Q</div></td>
+                    <td class="dim">Đáo hạn tiền gửi 3 tỷ</td>
+                    <td class="dim">—</td>
+                    <td><span class="badge c-ok plain">Đã gặp</span></td>
+                    <td class="dim">N3 → N2 · <span class="c-accent">RF</span></td>
+                  </tr>
+                  <tr>
+                    <td class="num">25/09</td><td class="num">09:00</td>
+                    <td><div class="name">Đinh Công Hậu <span class="badge st-n3">N3</span></div><div class="id num">K-0H4A</div></td>
+                    <td class="dim">Giới thiệu từ KH Phạm Gia Long</td>
+                    <td class="dim">—</td>
+                    <td><span class="badge c-ok plain">Đã gặp</span></td>
+                    <td class="dim">Giữ N3</td>
+                  </tr>
+                  <tr>
+                    <td class="num">24/09</td><td class="num">15:00</td>
+                    <td><div class="name">Hà Tuệ Mẫn <span class="badge st-n1">N1</span></div><div class="id num">K-2Q7J</div></td>
+                    <td class="dim">Ký hồ sơ yêu cầu bảo hiểm</td>
+                    <td class="dim">IS</td>
+                    <td><span class="badge c-ok plain">Đã gặp</span></td>
+                    <td class="dim">HĐ nộp · 1,8 tỷ</td>
+                  </tr>
+                  <tr>
+                    <td class="num">23/09</td><td class="num">10:30</td>
+                    <td><div class="name">Tống Gia Huy <span class="badge st-n4">N4</span></div><div class="id num">K-6R3M</div></td>
+                    <td class="dim">Hội thảo khách hàng doanh nhân</td>
+                    <td class="dim">—</td>
+                    <td><span class="badge c-ok plain">Đã gặp</span></td>
+                    <td class="dim">N4 → N3 · <span class="c-accent">RF</span></td>
+                  </tr>
+                  <tr>
+                    <td class="num">23/09</td><td class="num">16:00</td>
+                    <td><div class="name">Lưu Bích Ngọc <span class="badge st-n3">N3</span></div><div class="id num">K-1U8Z</div></td>
+                    <td class="dim">Sinh nhật KH</td>
+                    <td class="dim">BD</td>
+                    <td><span class="badge c-ok plain">Đã gặp</span></td>
+                    <td class="dim">Giữ N3</td>
+                  </tr>
+                  <tr>
+                    <td class="num">18/09</td><td class="num">14:00</td>
+                    <td><div class="name">Quan Đình Phúc <span class="badge st-n2">N2</span></div><div class="id num">K-4X2V</div></td>
+                    <td class="dim">Kế hoạch nghỉ hưu</td>
+                    <td class="dim">BDM</td>
+                    <td><span class="badge c-warn plain">Hoãn</span></td>
+                    <td class="dim">Dời sang 02/10</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="more" style="font-size: var(--fs-xs); color: var(--text-3); padding: 10px 10px 0">+ 27 lịch hẹn khác trong tháng</div>
+            </section>
+            </div>
           </div>
-          <div class="mock-note">Mockup G3 · panel phải = chi tiết lịch + KYC + kết quả AI; AI chỉ gợi ý, không có nút hành động tự động</div>
+          <div class="mock-note">Mockup G3 · Ngày / Tuần / Tháng / Năm / Tùy chọn cho mọi trường thời gian · bấm tiêu đề cột để sắp xếp · AI chỉ gợi ý</div>
         </div>
       </div>
     </div>

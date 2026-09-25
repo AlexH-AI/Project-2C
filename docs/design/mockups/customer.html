@@ -131,6 +131,7 @@
       }
       .ai h4 {
         margin: 14px 0 6px;
+        color: var(--heading);
         font-size: var(--fs-sm);
         display: flex;
         justify-content: space-between;
@@ -178,6 +179,21 @@
         letter-spacing: 0.05em;
         margin-bottom: 3px;
       }
+      .col-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .policy-empty {
+        border: 1px dashed var(--border-strong);
+        border-radius: var(--radius-sm);
+        padding: 12px;
+        font-size: var(--fs-sm);
+        color: var(--text-2);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
       .versions td {
         padding: 6px 8px;
       }
@@ -219,6 +235,7 @@
 
         <div class="content">
           <div class="profile">
+            <div class="col-stack">
             <section class="card" aria-label="Dữ kiện KYC">
               <div class="card-head">
                 <h2>Dữ kiện KYC</h2>
@@ -260,6 +277,20 @@
               </div>
             </section>
 
+            <section class="card" aria-label="Hợp đồng">
+              <div class="card-head">
+                <h2>Hợp đồng</h2>
+                <span class="meta num">0 HĐ · case size dự kiến 800 tr</span>
+              </div>
+              <div class="policy-empty">
+                <span>Chưa có HĐ. Khi KH đóng phí, ghi HĐ <b>submitted</b> (FYP, ngày nộp) → sau đó <b>issued</b> (ngày phát hành).</span>
+                <span class="spacer"></span>
+                <button class="btn">+ Hợp đồng</button>
+              </div>
+            </section>
+            </div>
+
+            <div class="col-stack">
             <section class="card" aria-label="Dòng thời gian">
               <div class="card-head">
                 <h2>Dòng thời gian</h2>
@@ -303,6 +334,24 @@
                 </div>
               </div>
             </section>
+
+            <section class="card" aria-label="Lịch hẹn của KH">
+              <div class="card-head">
+                <h2>Lịch hẹn</h2>
+                <span class="meta num">4 lịch · 3 đã gặp</span>
+                <span class="actions"><span class="select">Năm <b>2026</b> ▾</span></span>
+              </div>
+              <table>
+                <thead><tr><th class="sort desc">Ngày</th><th class="sort">Phối hợp</th><th class="sort">Kết quả</th></tr></thead>
+                <tbody class="num">
+                  <tr><td>28/09 14:00</td><td>TL, IS</td><td><span class="badge c-info plain">Dự kiến</span></td></tr>
+                  <tr><td>14/09 10:00</td><td>—</td><td>N2 → N1 · <span class="c-accent">RF</span></td></tr>
+                  <tr><td>12/07 15:30</td><td>—</td><td>N3 → N2 · <span class="c-accent">RF</span></td></tr>
+                  <tr><td>01/06 09:00</td><td>BD</td><td>N4 → N3 · <span class="c-accent">RF</span></td></tr>
+                </tbody>
+              </table>
+            </section>
+            </div>
 
             <section class="card ai" aria-label="KYC Intelligence">
               <div class="card-head">
