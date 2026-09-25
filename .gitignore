@@ -1,0 +1,31 @@
+# Secrets / local environment
+.env
+.env.*
+!.env.example
+*.secret
+*.secrets
+
+# Local scratch and logs
+*.log
+*.tmp
+*.temp
+.local/
+scratch/
+
+# Common build/test output
+bin/
+obj/
+TestResults/
+coverage/
+dist/
+build/
+
+# IDE / OS-local state
+.vs/
+*.user
+*.suo
+.DS_Store
+Thumbs.db
+
+# Local analysis/indexing output
+graphify-out/
