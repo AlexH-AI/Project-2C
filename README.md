@@ -18,9 +18,26 @@ Project-2C có cùng yêu cầu sản phẩm với [`AlexH-AI/Project-2`](https:
 git clone https://github.com/AlexH-AI/Project-2C.git C:\workspace\Project-2C
 ```
 
+```powershell
+pwsh -File tools/bootstrap.ps1
+```
+
+Bootstrap cài/kiểm tra Git, Node 24, pnpm (corepack), Rust (theo `rust-toolchain.toml`), MSVC Build Tools, gh, WebView2 rồi chạy `pnpm install`. Chạy lại bao nhiêu lần cũng được; `-CheckOnly` chỉ kiểm tra.
+
+## Lệnh thường dùng
+
+| Lệnh | Việc |
+|---|---|
+| `pnpm dev:web` | Chạy UI trong trình duyệt (http://localhost:1420) |
+| `pnpm dev` | Chạy app Tauri |
+| `pnpm verify` | Format, lint, ranh giới module, typecheck, unit test + coverage |
+| `pnpm build:exe` | Build `apps/desktop/src-tauri/target/release/project2c.exe` |
+
 ## Tài liệu
 
 - `docs/PROJECT-PLAN.md` — kế hoạch triển khai của 2C
 - `docs/COMPARISON.md` — giao thức so sánh và quy tắc cách ly với Project-2
 - `docs/PROJECT-STATE.md` — trạng thái hiện tại và bước tiếp theo
 - `docs/decisions/` — ADR
+- `docs/state/HANDOFF.md` — bàn giao giữa các phiên / giữa 2 máy
+- `CLAUDE.md` — quy tắc cho Claude Code

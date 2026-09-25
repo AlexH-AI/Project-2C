@@ -1,7 +1,7 @@
 name: Task
 description: Một task nhỏ (≤ ~400 dòng diff) do Claude Code thực hiện
-title: "T-xxx: "
-labels: ["type:task"]
+title: 'T-xxx: '
+labels: ['type:task']
 body:
   - type: textarea
     id: goal

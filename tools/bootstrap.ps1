@@ -96,13 +96,17 @@ Write-Status 'node' $nodeOk $(if (Test-Command 'node') { "$(node --version) (wan
 # pnpm via corepack (version pinned by "packageManager" in package.json)
 if (-not (Test-Command 'pnpm') -and -not $CheckOnly -and (Test-Command 'corepack')) {
     $env:COREPACK_ENABLE_DOWNLOAD_PROMPT = '0'
-    try {
-        corepack enable pnpm
-    } catch {
-        # Node in Program Files is not writable without admin: install shims into the user npm dir.
+    corepack enable pnpm 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        # Node in Program Files is not writable without admin: put the shims in a user dir on PATH.
         $shimDir = Join-Path $env:APPDATA 'npm'
         New-Item -ItemType Directory -Force $shimDir | Out-Null
         corepack enable pnpm --install-directory $shimDir
+        if ($LASTEXITCODE -ne 0) { throw 'corepack enable pnpm failed' }
+        $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+        if (($userPath -split ';') -notcontains $shimDir) {
+            [Environment]::SetEnvironmentVariable('Path', "$userPath;$shimDir", 'User')
+        }
     }
     Update-SessionPath
 }
