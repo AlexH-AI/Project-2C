@@ -21,8 +21,9 @@ Kế hoạch yêu cầu Owner duyệt mockup dark mode các màn hình chính tr
 3. **Nhóm N4–N1:** chỉ hiển thị nhãn; **không** hiển thị định nghĩa trên UI (Owner: định nghĩa ngầm hiểu).
 4. **Thời gian:** mọi màn có dữ liệu theo thời gian dùng chung **bộ chọn kỳ Ngày · Tuần · Tháng · Năm · Tùy chọn** + ‹ ›; mọi cột ngày/giờ trong bảng **sắp xếp được** (tiêu đề cột bấm được). Lịch hẹn có chế độ Ngày / Tuần / **Tháng**.
 5. **Bố cục:** mật độ vừa; nhóm khối thông tin để không để trống vô ích (thẻ cao đều, khối phụ lấp cột ngắn).
-6. **Màn hình chính:** Tổng quan hôm nay · Lịch hẹn · Khách hàng (kanban N4→N1 + cột Đã đóng gồm Tạm hoãn / Mất cơ hội) · Hồ sơ KH (dữ kiện KYC 8 chiều, dòng thời gian, KYC Intelligence ở cột phải).
-7. **AI trên UI:** chỉ gợi ý, mọi giả thuyết trỏ về dữ kiện, "mức bằng chứng" deterministic, không nút hành động do AI kích hoạt (ADR-0009).
+6. **Điều hướng:** sidebar trái có icon cho mọi mục (Tổng quan hôm nay, Lịch hẹn, Khách hàng, Báo cáo, Team & nhân sự, Cài đặt) — icon nét 18px, cùng màu chữ, mục đang chọn màu nhấn.
+7. **Màn hình chính:** Tổng quan hôm nay · Lịch hẹn · Khách hàng (kanban N4→N1 + cột Đã đóng gồm Tạm hoãn / Mất cơ hội) · Hồ sơ KH (dữ kiện KYC 8 chiều, dòng thời gian, KYC Intelligence ở cột phải).
+8. **AI trên UI:** chỉ gợi ý, mọi giả thuyết trỏ về dữ kiện, "mức bằng chứng" deterministic, không nút hành động do AI kích hoạt (ADR-0009).
 
 ## Phương án đã cân nhắc
 
