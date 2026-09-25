@@ -374,6 +374,6 @@ Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue ≤ ~400 dòng diff.
 ## 8. Bước tiếp theo ngay
 
 1. ✅ Repo `AlexH-AI/Project-2C` tạo 2026-09-26, clone về `C:\workspace\Project-2C`. Máy còn lại: `git clone https://github.com/AlexH-AI/Project-2C.git C:\workspace\Project-2C`.
-2. Tách các quyết định thành ADR trong `docs/decisions/`.
-3. **G4** — cài Superpowers + mattpocock/skills (cấp project).
+2. ✅ Tách các quyết định thành ADR trong `docs/decisions/` (ADR-0001…0012, 2026-09-26).
+3. ✅ **G4** — cài Superpowers + mattpocock/skills (cấp project), Owner duyệt 2026-09-26 — xem ADR-0012.
 4. Bắt đầu Phase 1 trên nhánh `phase-1/foundation`.
