@@ -34,9 +34,12 @@ Claude Code only: Opus 5.5, effort medium, no subagents. Claude works autonomous
 - 2026-09-26: Decisions recorded as ADR-0001…0012 in `docs/decisions/`.
 - 2026-09-26: G4 approved — Superpowers 6.4.2 (project-scope plugin) + mattpocock/skills subset vendored in `.claude/skills/`; Agent tool denied in `.claude/settings.json` (ADR-0012).
 
+- 2026-09-26: #3 — GitHub Free has no branch protection for private repos; OWNER chose local enforcement (pre-push hook) + Claude merges `risk:low` PRs when CI is green.
+- 2026-09-26: G3 approved — UI direction recorded as ADR-0013 (PR #13), score 8/10.
+- 2026-09-26: PR #10 merged (#1, #2, #3 closed).
+
 ## Next decision
 
-- OWNER: run the exe on the Office Laptop when there (#9).
-- 2026-09-26: #3 — GitHub Free has no branch protection for private repos; OWNER chose local enforcement (pre-push hook) + Claude merges `risk:low` PRs when CI is green.
-- Then G3 — approve UI mockups (#6).
+- OWNER (Office Laptop): pick setup option A/B/C in `docs/state/HANDOFF.md`; run the exe (#9); decide who merges #13 (`risk:med`).
+- Then: clean-session review and merge #11 → #12 → #13; start #7 (`packages/ui` + app shell).
 - Project-2 should adopt the upstream skill renames (`to-prd` → `to-spec`, `to-issues` → `to-tickets`).
