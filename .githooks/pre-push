@@ -1,0 +1,13 @@
+#!/bin/sh
+# Block direct pushes to main: changes reach main only through a PR with green CI.
+# GitHub Free cannot protect branches on private repos, so this is enforced locally (issue #3).
+# Installed by tools/bootstrap.ps1 via `git config core.hooksPath .githooks`.
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo "pre-push: direct push to main is blocked. Open a PR instead (see CLAUDE.md)." >&2
+    exit 1
+  fi
+done
+
+exit 0

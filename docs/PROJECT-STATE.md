@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 0 — requirements carried over from Project-2; repository bootstrap.
+Phase 1 — foundation (milestone #1, branch `phase-1/foundation`). Started 2026-09-26.
 
 ## Canonical repository
 
@@ -36,4 +36,7 @@ Claude Code only: Opus 5.5, effort medium, no subagents. Claude works autonomous
 
 ## Next decision
 
-Start Phase 1 (foundation) on branch `phase-1/foundation`. Before first `to-spec` / `to-tickets`, run `/setup-matt-pocock-skills`. Project-2 should adopt the upstream skill renames (`to-prd` → `to-spec`, `to-issues` → `to-tickets`).
+- OWNER: run the exe on the Office Laptop when there (#9).
+- 2026-09-26: #3 — GitHub Free has no branch protection for private repos; OWNER chose local enforcement (pre-push hook) + Claude merges `risk:low` PRs when CI is green.
+- Then G3 — approve UI mockups (#6).
+- Project-2 should adopt the upstream skill renames (`to-prd` → `to-spec`, `to-issues` → `to-tickets`).

@@ -5,12 +5,19 @@
 *.secret
 *.secrets
 
+# Claude Code local-only settings
+.claude/settings.local.json
+
 # Local scratch and logs
 *.log
 *.tmp
 *.temp
 .local/
 scratch/
+.scratch/
+
+# Dependencies
+node_modules/
 
 # Common build/test output
 bin/
@@ -19,11 +26,26 @@ TestResults/
 coverage/
 dist/
 build/
+*.tsbuildinfo
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/
+test-results/
+playwright-report/
+blob-report/
+
+# Local app data (portable data dir, dev DB)
+Project2C-data/
+*.sqlite
+*.sqlite-journal
+*.db
 
 # IDE / OS-local state
 .vs/
 *.user
 *.suo
+.vscode/*
+!.vscode/extensions.json
+.idea/
 .DS_Store
 Thumbs.db
 
