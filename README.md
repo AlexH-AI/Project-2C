@@ -31,6 +31,7 @@ Bootstrap cài/kiểm tra Git, Node 24, pnpm (corepack), Rust (theo `rust-toolch
 | `pnpm dev:web` | Chạy UI trong trình duyệt (http://localhost:1420) |
 | `pnpm dev` | Chạy app Tauri |
 | `pnpm verify` | Format, lint, ranh giới module, typecheck, unit test + coverage |
+| `pnpm e2e` | E2E Playwright trên bản build web (Microsoft Edge) |
 | `pnpm build:exe` | Build `apps/desktop/src-tauri/target/release/project2c.exe` |
 
 ## Tài liệu

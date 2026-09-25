@@ -15,13 +15,15 @@
     "lint:deps": "depcruise apps packages",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm -r typecheck && tsc -p e2e",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "e2e": "playwright test",
     "verify": "pnpm format:check && pnpm lint && pnpm lint:deps && pnpm typecheck && pnpm test:coverage"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@playwright/test": "1.63.0",
     "@types/node": "26.6.2",
     "@vitest/coverage-v8": "5.0.1",
     "dependency-cruiser": "18.4.0",
