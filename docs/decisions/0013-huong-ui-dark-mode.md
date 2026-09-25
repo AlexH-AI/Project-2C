@@ -1,7 +1,7 @@
 # ADR-0013: Hướng UI — dark mode, màu nhấn vàng champagne, bộ lọc thời gian thống nhất
 
-- **Trạng thái:** Accepted (G3, Owner 28/09/2026 — duyệt với điều chỉnh, điểm vòng 1: 8/10)
-- **Ngày:** 2026-09-28
+- **Trạng thái:** Accepted (G3, Owner 26/09/2026 — duyệt với điều chỉnh, điểm vòng 1: 8/10)
+- **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §4.6; C6; mockup `docs/design/mockups/` (issue #6)
 - **Commit / PR:** PR #13
 
