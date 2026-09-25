@@ -1,0 +1,61 @@
+name: Task
+description: Một task nhỏ (≤ ~400 dòng diff) do Claude Code thực hiện
+title: "T-xxx: "
+labels: ["type:task"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Mục tiêu
+      description: Kết quả người dùng thấy được / hành vi mới.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Bối cảnh
+      description: ADR, phần kế hoạch, Issue liên quan.
+  - type: textarea
+    id: files
+    attributes:
+      label: File / thư mục được phép sửa
+    validations:
+      required: true
+  - type: textarea
+    id: contract
+    attributes:
+      label: Interface / hợp đồng
+      description: Chữ ký hàm, kiểu dữ liệu, schema, route…
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Test chấp nhận
+      description: Mỗi dòng một điều kiện kiểm được.
+      value: |
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Định nghĩa hoàn thành
+      value: |
+        - [ ] `pnpm verify` xanh
+        - [ ] CI xanh
+        - [ ] Review phiên sạch: PASS
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Rủi ro
+      description: risk:low được auto-merge khi CI xanh + review PASS.
+      options:
+        - risk:low
+        - risk:med
+        - risk:high
+    validations:
+      required: true
+  - type: input
+    id: blocked
+    attributes:
+      label: Bị chặn bởi
+      placeholder: "#12, #13 hoặc 'Không'"
