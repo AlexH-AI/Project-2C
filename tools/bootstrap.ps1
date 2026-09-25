@@ -30,6 +30,11 @@ function Update-SessionPath {
     $env:Path = "$machine;$user;$cargo"
 }
 
+# $ErrorActionPreference does not catch native command failures: check the exit code every time.
+function Assert-ExitCode([string]$What) {
+    if ($LASTEXITCODE -ne 0) { throw "$What failed with exit code $LASTEXITCODE" }
+}
+
 function Test-Command([string]$Name) {
     [bool](Get-Command $Name -ErrorAction SilentlyContinue)
 }
@@ -84,8 +89,10 @@ if (-not (Test-Command 'git')) { Install-WingetPackage 'Git.Git' }
 Write-Status 'git' (Test-Command 'git') $(if (Test-Command 'git') { (git --version) } else { '' })
 if (-not $CheckOnly -and (Test-Command 'git')) {
     git config --global core.longpaths true
+    Assert-ExitCode 'git config core.longpaths'
     # Repo hooks: block direct pushes to main (GitHub Free has no branch protection).
     git -C $RepoRoot config core.hooksPath .githooks
+    Assert-ExitCode 'git config core.hooksPath'
 }
 if (Test-Command 'git') {
     $hooksPath = git -C $RepoRoot config --get core.hooksPath
@@ -108,7 +115,7 @@ if (-not (Test-Command 'pnpm') -and -not $CheckOnly -and (Test-Command 'corepack
         $shimDir = Join-Path $env:APPDATA 'npm'
         New-Item -ItemType Directory -Force $shimDir | Out-Null
         corepack enable pnpm --install-directory $shimDir
-        if ($LASTEXITCODE -ne 0) { throw 'corepack enable pnpm failed' }
+        Assert-ExitCode 'corepack enable pnpm'
         $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
         if (($userPath -split ';') -notcontains $shimDir) {
             [Environment]::SetEnvironmentVariable('Path', "$userPath;$shimDir", 'User')
@@ -123,7 +130,12 @@ Update-SessionPath
 if (-not (Test-Command 'rustup')) { Install-WingetPackage 'Rustlang.Rustup' }
 if (-not $CheckOnly -and (Test-Command 'rustup')) {
     Push-Location $RepoRoot
-    try { rustup show active-toolchain *> $null; rustup toolchain install } finally { Pop-Location }
+    try {
+        # Probe only: installs the pinned toolchain if missing, so its exit code is not checked.
+        rustup show active-toolchain *> $null
+        rustup toolchain install
+        Assert-ExitCode 'rustup toolchain install'
+    } finally { Pop-Location }
 }
 Write-Status 'rust' (Test-Command 'cargo') $(if (Test-Command 'rustc') { (rustc --version) } else { '' })
 
@@ -152,7 +164,10 @@ Write-Status 'webview2' ([bool]$wv2) $(if ($wv2) { $wv2 } else { 'install Micros
 # JS dependencies
 if (-not $CheckOnly -and (Test-Command 'pnpm') -and (Test-Path (Join-Path $RepoRoot 'package.json'))) {
     Push-Location $RepoRoot
-    try { pnpm install --frozen-lockfile } finally { Pop-Location }
+    try {
+        pnpm install --frozen-lockfile
+        Assert-ExitCode 'pnpm install'
+    } finally { Pop-Location }
 }
 
 Write-Host ''

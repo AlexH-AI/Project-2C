@@ -68,4 +68,5 @@ tools/             bootstrap, session scripts, seed
 - Commit: Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `test:`, `refactor:`), tiếng Anh.
 - Tài liệu dự án: tiếng Việt. Code, tên biến, comment: tiếng Anh.
 - File theo LF (`.gitattributes`), trừ `.ps1/.cmd` dùng CRLF.
+- Script PowerShell: `$ErrorActionPreference = 'Stop'` **không** bắt lỗi lệnh native (`git`, `pnpm`, `rustup`, `winget`…). Sau mỗi lệnh native có tác dụng phụ phải kiểm `$LASTEXITCODE` (hoặc bọc qua hàm helper throw khi ≠ 0) trước khi báo thành công.
 - Cuối mỗi phase ghi `docs/metrics/phase-<N>.md` theo `docs/COMPARISON.md`.

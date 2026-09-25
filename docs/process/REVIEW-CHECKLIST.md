@@ -40,3 +40,4 @@ Ghi kết quả thành comment trên PR: `REVIEW: PASS` hoặc `REVIEW: CHANGES`
 - [ ] Không bí mật, key, dữ liệu thật trong diff.
 - [ ] Không code chết, `console.log` gỡ lỗi, TODO không có Issue.
 - [ ] Commit message theo Conventional Commits.
+- [ ] Script (`.ps1`, shell): mọi lệnh native có tác dụng phụ đều kiểm exit code; không in "thành công" khi một bước trước đó có thể đã lỗi.
