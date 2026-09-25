@@ -15,15 +15,18 @@
 
 ## Bước kế tiếp chính xác
 
-1. CI xanh → review ở phiên sạch theo `docs/process/REVIEW-CHECKLIST.md` → merge PR (Owner merge vì chưa có branch protection).
+1. CI xanh trên PR #10 (Auto-fix đang bật) → review ở phiên sạch theo `docs/process/REVIEW-CHECKLIST.md` → `gh pr merge 10 --squash`.
 2. T-004 (#4): chạy `/setup-matt-pocock-skills` (tracker GitHub, ADR ở `docs/decisions/`).
 3. T-005 (#5): Playwright e2e smoke ở chế độ web + bước CI.
 4. T-006 (#6): mockup HTML 4 màn hình → G3.
 
 ## Chờ Owner
 
-- T-003 (#3): đồng ý bật branch protection cho `main`.
-- T-009 (#9): chạy thử exe trên Office Laptop (`git clone` + `pwsh -File tools/bootstrap.ps1`).
+- T-009 (#9): khi Owner ở Office Laptop — `git clone`, `pwsh -File tools/bootstrap.ps1`, chạy exe. Không chặn các task khác.
+
+## Đã quyết trong phiên
+
+- #3: GitHub Free không có branch protection/auto-merge cho repo private → Owner chọn chặn ở local: `.githooks/pre-push` chặn push lên `main`; Claude tự merge PR `risk:low` khi CI xanh + review PASS.
 
 ## Lệnh chạy tiếp
 
