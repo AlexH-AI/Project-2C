@@ -84,6 +84,12 @@ if (-not (Test-Command 'git')) { Install-WingetPackage 'Git.Git' }
 Write-Status 'git' (Test-Command 'git') $(if (Test-Command 'git') { (git --version) } else { '' })
 if (-not $CheckOnly -and (Test-Command 'git')) {
     git config --global core.longpaths true
+    # Repo hooks: block direct pushes to main (GitHub Free has no branch protection).
+    git -C $RepoRoot config core.hooksPath .githooks
+}
+if (Test-Command 'git') {
+    $hooksPath = git -C $RepoRoot config --get core.hooksPath
+    Write-Status 'git hooks' ($hooksPath -eq '.githooks') $(if ($hooksPath) { $hooksPath } else { 'core.hooksPath not set' })
 }
 
 # Node.js (major version from .nvmrc)
