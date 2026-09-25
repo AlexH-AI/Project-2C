@@ -1,0 +1,36 @@
+{
+  "name": "project-2c",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.6.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @p2c/desktop tauri dev",
+    "dev:web": "pnpm --filter @p2c/desktop dev:web",
+    "build:web": "pnpm --filter @p2c/desktop build:web",
+    "build:exe": "pnpm --filter @p2c/desktop build:exe",
+    "lint": "eslint .",
+    "lint:deps": "depcruise apps packages",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "verify": "pnpm format:check && pnpm lint && pnpm lint:deps && pnpm typecheck && pnpm test:coverage"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.2",
+    "@vitest/coverage-v8": "5.0.1",
+    "dependency-cruiser": "18.4.0",
+    "eslint": "10.11.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.12.0",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.1",
+    "vitest": "5.0.1"
+  }
+}

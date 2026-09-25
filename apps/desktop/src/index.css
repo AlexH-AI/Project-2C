@@ -1,0 +1,13 @@
+@import 'tailwindcss';
+
+/* Placeholder surface until the design tokens are approved at G3. */
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background-color: #0f141b;
+  color: #e6ebf2;
+  font-family: system-ui, sans-serif;
+}
