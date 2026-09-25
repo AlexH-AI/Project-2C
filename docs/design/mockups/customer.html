@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hồ sơ KH — Project-2C mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="mockups.css" />
+    <style>
+      .profile {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 1.1fr);
+        gap: 16px;
+        align-items: start;
+      }
+      .hero {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .hero .avatar {
+        width: 44px;
+        height: 44px;
+        font-size: 15px;
+      }
+      .hero h1 {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .dim-row {
+        display: grid;
+        grid-template-columns: 18px 1fr;
+        gap: 4px 8px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: var(--fs-sm);
+      }
+      .dim-row:last-child {
+        border-bottom: none;
+      }
+      .dim-row .mark {
+        font-weight: 700;
+        text-align: center;
+      }
+      .dim-row .title {
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+      }
+      .dim-row .fact {
+        grid-column: 2;
+        color: var(--text-2);
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .fid {
+        color: var(--text-3);
+        font-size: var(--fs-xs);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .pending {
+        grid-column: 2;
+        border: 1px dashed var(--border-strong);
+        border-radius: var(--radius-sm);
+        padding: 6px 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-2);
+      }
+      .pending .btn {
+        padding: 3px 9px;
+        font-size: var(--fs-xs);
+      }
+      .timeline {
+        position: relative;
+        padding-left: 24px;
+      }
+      .timeline::before {
+        content: '';
+        position: absolute;
+        left: 5px;
+        top: 4px;
+        bottom: 4px;
+        width: 2px;
+        background: var(--border);
+      }
+      .ev-item {
+        position: relative;
+        padding: 0 0 14px;
+        font-size: var(--fs-sm);
+      }
+      .ev-item::before {
+        content: '';
+        position: absolute;
+        left: -24px;
+        top: 5px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--bg-0);
+        border: 2px solid var(--text-3);
+      }
+      .ev-item.kyc::before {
+        border-color: var(--accent);
+      }
+      .ev-item.stage::before {
+        border-color: var(--n1);
+      }
+      .ev-item.meet::before {
+        border-color: var(--info);
+      }
+      .ev-item .when {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        font-variant-numeric: tabular-nums;
+      }
+      .ev-item .what {
+        font-weight: 600;
+        margin: 1px 0 3px;
+      }
+      .ev-item .note {
+        color: var(--text-2);
+      }
+      .ai h4 {
+        margin: 14px 0 6px;
+        font-size: var(--fs-sm);
+        display: flex;
+        justify-content: space-between;
+      }
+      .hyp {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 8px 10px;
+        font-size: var(--fs-sm);
+        margin-bottom: 6px;
+      }
+      .hyp .ev {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        margin-top: 4px;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .ev a {
+        color: var(--info);
+      }
+      .strength {
+        white-space: nowrap;
+      }
+      .themes {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+        font-size: var(--fs-sm);
+      }
+      .themes > div {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 8px;
+      }
+      .themes b {
+        display: block;
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 3px;
+      }
+      .versions td {
+        padding: 6px 8px;
+      }
+      .versions td:first-child {
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">2C</span> Project-2C</div>
+        <nav class="nav">
+          <a href="overview.html">Tổng quan hôm nay</a>
+          <a href="appointments.html">Lịch hẹn</a>
+          <a href="customers.html" class="active">Khách hàng</a>
+          <a href="#">Báo cáo</a>
+          <div class="nav-label">Quản lý</div>
+          <a href="#">Team &amp; nhân sự</a>
+          <a href="#">Cài đặt</a>
+        </nav>
+        <div class="sidebar-foot">Dữ liệu giả lập · Đồng bộ lần cuối 07:42</div>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <div class="hero">
+            <span class="avatar">TA</span>
+            <div>
+              <h1>Trịnh Minh Anh <span class="badge st-n1">N1</span></h1>
+              <div class="sub num">K-9A1C · Nữ · 12/03/1984 (42 tuổi) · RE Đỗ Khánh Linh · Team Sao Mai · Chưa có HĐ</div>
+            </div>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn">Chuyển nhóm ▾</button>
+          <button class="btn">+ Lịch hẹn</button>
+          <button class="btn btn-primary">+ Ghi chú KYC</button>
+        </header>
+
+        <div class="content">
+          <div class="profile">
+            <section class="card" aria-label="Dữ kiện KYC">
+              <div class="card-head">
+                <h2>Dữ kiện KYC</h2>
+                <span class="meta num">6/8 chiều · v3</span>
+                <span class="actions"><button class="btn" style="padding: 4px 10px">AI trích xuất</button></span>
+              </div>
+
+              <div class="dim-row">
+                <span class="mark c-ok">✓</span><span class="title">Danh tính / tuổi</span>
+                <span class="fact"><span>Sinh 12/03/1984 (đủ ngày)</span><span class="fid">F-01 · N-0601</span></span>
+              </div>
+              <div class="dim-row">
+                <span class="mark c-ok">✓</span><span class="title">Gia đình</span>
+                <span class="fact"><span>Đã kết hôn; 2 con, 14 và 10 tuổi</span><span class="fid">F-07 · N-0712</span></span>
+                <span class="fact"><span>Hai vợ chồng cùng quyết định chi tiêu giáo dục</span><span class="fid">F-09 · N-0914</span></span>
+              </div>
+              <div class="dim-row">
+                <span class="mark c-ok">✓</span><span class="title">Nghề nghiệp / nguồn thu</span>
+                <span class="fact"><span>Chủ DN phân phối thiết bị y tế</span><span class="fid">F-03 · N-0601</span></span>
+              </div>
+              <div class="dim-row">
+                <span class="mark c-ok">✓</span><span class="title">Tài sản / AUM</span>
+                <span class="fact"><span class="num">AUM ước ~25 tỷ; 2 BĐS tại TP.HCM</span><span class="fid">F-05 · N-0712</span></span>
+              </div>
+              <div class="dim-row">
+                <span class="mark c-ok">✓</span><span class="title">Mục tiêu &amp; mốc thời gian</span>
+                <span class="fact"><span class="num">Con lớn du học năm 2029</span><span class="fid">F-12 · N-0914</span></span>
+              </div>
+              <div class="dim-row">
+                <span class="mark c-warn">!</span><span class="title">Mối quan tâm <span class="badge c-warn plain">Mâu thuẫn phụ</span></span>
+                <span class="fact"><span>"Ưu tiên thanh khoản" <span class="muted">vs</span> "chấp nhận khóa vốn 10 năm"</span><span class="fid">F-10 / F-13</span></span>
+              </div>
+              <div class="dim-row">
+                <span class="mark muted">○</span><span class="title">Khẩu vị rủi ro <span class="muted" style="font-weight: 400">thiếu</span></span>
+                <span class="pending"><span>AI đề xuất: "không muốn đầu tư chứng khoán" (N-0914)</span><span class="spacer"></span><button class="btn">Xác nhận</button><button class="btn">Bỏ</button></span>
+              </div>
+              <div class="dim-row">
+                <span class="mark muted">○</span><span class="title">Bảo vệ hiện có <span class="muted" style="font-weight: 400">thiếu</span></span>
+              </div>
+            </section>
+
+            <section class="card" aria-label="Dòng thời gian">
+              <div class="card-head">
+                <h2>Dòng thời gian</h2>
+                <span class="actions"><span class="segmented"><button class="on">Tất cả</button><button>KYC</button><button>Lịch hẹn</button></span></span>
+              </div>
+              <div class="timeline">
+                <div class="ev-item meet">
+                  <div class="when">28/09/2026 14:00 · dự kiến</div>
+                  <div class="what">Lịch hẹn lần 4 · + TL, IS</div>
+                  <div class="note">Trigger: hỏi lại về kế hoạch du học của con</div>
+                </div>
+                <div class="ev-item kyc">
+                  <div class="when">14/09/2026</div>
+                  <div class="what">Cập nhật KYC 14/09/2026 <span class="badge c-accent plain">material</span></div>
+                  <div class="note">N-0914: "Con lớn dự định du học 2029, hai vợ chồng cùng quyết… không muốn đầu tư chứng khoán…"</div>
+                  <div class="fid">+ F-09, F-12, F-13 · kyc v3</div>
+                </div>
+                <div class="ev-item stage">
+                  <div class="when">14/09/2026 · sau cuộc gặp lần 3</div>
+                  <div class="what"><span class="badge st-n2">N2</span> → <span class="badge st-n1">N1</span> <span class="c-accent" style="font-weight: 400">· tính 1 RF</span></div>
+                </div>
+                <div class="ev-item meet">
+                  <div class="when">14/09/2026 10:00 · đã gặp</div>
+                  <div class="what">Lịch hẹn lần 3</div>
+                  <div class="note">Case size dự kiến 800 tr · việc tiếp theo: gặp cùng TL, IS</div>
+                </div>
+                <div class="ev-item kyc">
+                  <div class="when">12/07/2026</div>
+                  <div class="what">Cập nhật KYC 12/07/2026 <span class="badge c-accent plain">material</span></div>
+                  <div class="note">N-0712: gia đình, tài sản</div>
+                  <div class="fid">+ F-05, F-07, F-10 · kyc v2</div>
+                </div>
+                <div class="ev-item stage">
+                  <div class="when">12/07/2026</div>
+                  <div class="what"><span class="badge st-n3">N3</span> → <span class="badge st-n2">N2</span> <span class="c-accent" style="font-weight: 400">· tính 1 RF</span></div>
+                </div>
+                <div class="ev-item kyc">
+                  <div class="when">01/06/2026</div>
+                  <div class="what">KYC lần đầu · <span class="badge st-n4">N4</span> → <span class="badge st-n3">N3</span></div>
+                  <div class="fid">+ F-01, F-03 · kyc v1</div>
+                </div>
+              </div>
+            </section>
+
+            <section class="card ai" aria-label="KYC Intelligence">
+              <div class="card-head">
+                <h2>KYC Intelligence</h2>
+                <span class="badge c-ok">CURRENT</span>
+                <span class="actions"><button class="btn" style="padding: 4px 10px">Phân tích lại</button></span>
+              </div>
+              <div class="row" style="flex-wrap: wrap; gap: 6px">
+                <span class="badge c-info plain">PAIN_POINT_ANALYSIS</span>
+                <span class="chip num">kyc v3 · prompt p1.2 · 14/09 11:02</span>
+              </div>
+              <div class="callout warn" style="margin-top: 10px">Mâu thuẫn phụ ở "Mối quan tâm" (F-10 / F-13) — phân tích vẫn chạy, cần RE làm rõ.</div>
+
+              <h4>Behavioral Hypotheses <span class="muted" style="font-weight: 400">giả thuyết, cần kiểm chứng</span></h4>
+              <div class="hyp">
+                KH có thể ưu tiên sự chắc chắn cho mục tiêu giáo dục hơn là tăng trưởng tài sản.
+                <div class="ev"><span>Bằng chứng: <a href="#">F-12</a>, <a href="#">F-13</a></span><span class="strength">Mức bằng chứng: trung bình · 2 dữ kiện</span></div>
+              </div>
+              <div class="hyp">
+                Quyết định về giáo dục có thể cần sự đồng thuận của chồng KH.
+                <div class="ev"><span>Bằng chứng: <a href="#">F-09</a></span><span class="strength">Mức bằng chứng: thấp · 1 dữ kiện</span></div>
+              </div>
+
+              <h4>Needs · Pain points · Opportunity Themes</h4>
+              <div class="themes">
+                <div><b>Needs</b>Dòng tiền học phí 2029–2033 cho con lớn</div>
+                <div><b>Pain points</b>Chưa rõ nguồn nào dùng cho học phí khi tiền gửi đáo hạn</div>
+                <div><b>Themes</b>Kế hoạch giáo dục; thanh khoản gia đình</div>
+              </div>
+
+              <h4>Discovery Strategy</h4>
+              <ul style="margin: 0; padding-left: 18px; font-size: var(--fs-sm); color: var(--text-2)">
+                <li>Hỏi thứ tự ưu tiên giữa thanh khoản và khóa vốn dài hạn (làm rõ F-10 / F-13).</li>
+                <li>Hỏi các hợp đồng bảo vệ gia đình đang có.</li>
+              </ul>
+
+              <h4>Lịch sử phân tích</h4>
+              <table class="versions">
+                <tbody class="num">
+                  <tr><td>v3 · 14/09</td><td>kyc v3</td><td class="r"><span class="badge c-ok plain">CURRENT</span></td></tr>
+                  <tr><td>v2 · 12/07</td><td>kyc v2</td><td class="r"><span class="badge plain" style="color: var(--text-3)">STALE</span></td></tr>
+                  <tr><td>v2a · 12/07</td><td class="dim">validator: có "xác suất"</td><td class="r"><span class="badge c-danger plain">REJECTED</span></td></tr>
+                  <tr><td>v1 · 01/06</td><td class="dim">Cần chăm sóc, KYC thêm thông tin khách hàng</td><td class="r"><span class="badge c-warn plain">KYC_INSUFFICIENT</span></td></tr>
+                </tbody>
+              </table>
+            </section>
+          </div>
+          <div class="mock-note">Mockup G3 · AI chỉ ghi vào lịch sử phân tích; mức bằng chứng tính deterministic từ số lượng/độ mới dữ kiện, không phải xác suất</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

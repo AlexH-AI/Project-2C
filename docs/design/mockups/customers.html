@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Khách hàng — Project-2C mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="mockups.css" />
+    <style>
+      .filters {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .select {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 6px 10px;
+        font-size: var(--fs-sm);
+        color: var(--text-2);
+      }
+      .board {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr)) 220px;
+        gap: 14px;
+        align-items: start;
+      }
+      .col {
+        background: var(--bg-1);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .col-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 2px 4px 6px;
+        border-bottom: 2px solid currentColor;
+      }
+      .col-head h2 {
+        margin: 0;
+        font-size: var(--fs-md);
+        color: var(--text);
+      }
+      .col-head .def {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+      }
+      .col-head .count {
+        margin-left: auto;
+        font-size: var(--fs-sm);
+        color: var(--text-2);
+      }
+      .cust {
+        color: var(--text);
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: var(--fs-sm);
+      }
+      .cust:hover {
+        border-color: var(--border-strong);
+      }
+      .cust .top {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+      }
+      .cust .top b {
+        font-size: var(--fs-md);
+      }
+      .cust .top .age {
+        margin-left: auto;
+        color: var(--text-3);
+        font-size: var(--fs-xs);
+      }
+      .cust .line {
+        display: flex;
+        justify-content: space-between;
+        color: var(--text-3);
+        font-size: var(--fs-xs);
+      }
+      .kyc-meter {
+        display: flex;
+        gap: 2px;
+      }
+      .kyc-meter i {
+        flex: 1;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--bg-3);
+      }
+      .kyc-meter i.on {
+        background: var(--text-2);
+      }
+      .closed .section-title {
+        text-transform: none;
+      }
+      .closed .col-head {
+        border-bottom-color: var(--border-strong);
+      }
+      .mini {
+        display: flex;
+        justify-content: space-between;
+        font-size: var(--fs-sm);
+        padding: 6px 4px;
+        border-bottom: 1px solid var(--border);
+      }
+      .more {
+        text-align: center;
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        padding: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">2C</span> Project-2C</div>
+        <nav class="nav">
+          <a href="overview.html">Tổng quan hôm nay</a>
+          <a href="appointments.html">Lịch hẹn</a>
+          <a href="customers.html" class="active">Khách hàng</a>
+          <a href="#">Báo cáo</a>
+          <div class="nav-label">Quản lý</div>
+          <a href="#">Team &amp; nhân sự</a>
+          <a href="#">Cài đặt</a>
+        </nav>
+        <div class="sidebar-foot">Dữ liệu giả lập · Đồng bộ lần cuối 07:42</div>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <div>
+            <h1>Khách hàng</h1>
+            <div class="sub num">Team Sao Mai · 142 KH đang mở · 9 tạm hoãn · 23 mất cơ hội</div>
+          </div>
+          <div class="spacer"></div>
+          <div class="segmented"><button class="on">Kanban</button><button>Bảng</button></div>
+          <button class="btn btn-primary">+ Khách hàng</button>
+        </header>
+
+        <div class="content">
+          <div class="filters">
+            <div class="segmented"><button>Toàn bộ</button><button class="on">Team Sao Mai</button><button>RE</button></div>
+            <span class="select">RE: Tất cả ▾</span>
+            <span class="select">KYC: Tất cả ▾</span>
+            <span class="select">Có lịch trong 7 ngày ▾</span>
+            <span class="select">☐ Đã có HĐ</span>
+            <span class="spacer"></span>
+            <span class="muted" style="font-size: var(--fs-xs)">Kéo thẻ sang cột khác = chuyển nhóm (ghi sự kiện, hỏi lý do khi hạ nhóm)</span>
+          </div>
+
+          <div class="board">
+            <section class="col st-n4" aria-label="N4">
+              <div class="col-head"><span class="badge st-n4">N4</span><span class="count num">61</span></div>
+              <article class="cust">
+                <div class="top"><b>Ngô Bảo Hân</b><span class="age num">Nữ · 1991</span></div>
+                <div class="line"><span>RE Lý Quang Vinh</span><span class="num">K-4T6R</span></div>
+                <div class="kyc-meter" title="KYC 2/8 chiều"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="line"><span class="c-warn">Cần chăm sóc KYC</span><span class="num">Hẹn 28/09 15:30</span></div>
+              </article>
+              <article class="cust">
+                <div class="top"><b>Kha Minh Triết</b><span class="age num">Nam · 1986</span></div>
+                <div class="line"><span>RE Mai Phương</span><span class="num">K-3Y9B</span></div>
+                <div class="kyc-meter"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="line"><span>Chưa có lịch</span><span class="num">Liên hệ 11/09</span></div>
+              </article>
+              <article class="cust">
+                <div class="top"><b>Ông Thị Lan</b><span class="age num">Nữ · 1970</span></div>
+                <div class="line"><span>RE Hoàng Nam</span><span class="num">K-5P1W</span></div>
+                <div class="kyc-meter"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="line"><span class="c-warn">Cần chăm sóc KYC</span><span class="num">Hẹn 02/10</span></div>
+              </article>
+              <div class="more num">+ 58 KH</div>
+            </section>
+
+            <section class="col st-n3" aria-label="N3">
+              <div class="col-head"><span class="badge st-n3">N3</span><span class="count num">44</span></div>
+              <article class="cust">
+                <div class="top"><b>Vũ Thanh Tâm</b><span class="age num">Nam · 1975</span></div>
+                <div class="line"><span>RE Hoàng Nam</span><span class="num">K-2M8D</span></div>
+                <div class="kyc-meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div>
+                <div class="line"><span class="c-info">AI: khai thác</span><span class="num">Gặp 28/09</span></div>
+              </article>
+              <article class="cust">
+                <div class="top"><b>Lâm Thị Hường</b><span class="age num">Nữ · 1968</span></div>
+                <div class="line"><span>RE Hoàng Nam</span><span class="num">K-1B5N</span></div>
+                <div class="kyc-meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></div>
+                <div class="line"><span class="c-danger">Mâu thuẫn KYC</span><span class="num">Hoãn 28/09</span></div>
+              </article>
+              <article class="cust">
+                <div class="top"><b>Đinh Công Hậu</b><span class="age num">Nam · 1982</span></div>
+                <div class="line"><span>RE Đỗ Khánh Linh</span><span class="num">K-0H4A</span></div>
+                <div class="kyc-meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div>
+                <div class="line"><span class="c-ok">AI: phân tích</span><span class="num">Hẹn 01/10</span></div>
+              </article>
+              <div class="more num">+ 41 KH</div>
+            </section>
+
+            <section class="col st-n2" aria-label="N2">
+              <div class="col-head"><span class="badge st-n2">N2</span><span class="count num">25</span></div>
+              <article class="cust">
+                <div class="top"><b>Phạm Gia Long</b><span class="age num">Nam · 1979</span></div>
+                <div class="line"><span>RE Đỗ Khánh Linh</span><span class="num">K-7F3Q</span></div>
+                <div class="kyc-meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div>
+                <div class="line"><span>Dự kiến <b class="num" style="color: var(--text)">500 tr</b></span><span class="num">Hẹn 05/10</span></div>
+              </article>
+              <article class="cust">
+                <div class="top"><b>Đặng Quốc Khánh</b><span class="badge pol-issued plain">Đã có 1 HĐ</span></div>
+                <div class="line"><span>RE Mai Phương</span><span class="num">K-8W2E</span></div>
+                <div class="kyc-meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+                <div class="line"><span>Dự kiến <b class="num" style="color: var(--text)">1,2 tỷ</b></span><span class="num">Hẹn 28/09 16:30</span></div>
+              </article>
+              <div class="more num">+ 23 KH</div>
+            </section>
+
+            <section class="col st-n1" aria-label="N1">
+              <div class="col-head"><span class="badge st-n1">N1</span><span class="count num">12</span></div>
+              <article class="cust">
+                <div class="top"><b>Trịnh Minh Anh</b><span class="age num">Nữ · 1984</span></div>
+                <div class="line"><span>RE Đỗ Khánh Linh</span><span class="num">K-9A1C</span></div>
+                <div class="kyc-meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div>
+                <div class="line"><span>Dự kiến <b class="num" style="color: var(--text)">800 tr</b></span><span class="num">Hẹn 28/09 14:00</span></div>
+              </article>
+              <article class="cust">
+                <div class="top"><b>Hà Tuệ Mẫn</b><span class="badge pol-submitted plain">1 HĐ đã nộp</span></div>
+                <div class="line"><span>RE Lý Quang Vinh</span><span class="num">K-2Q7J</span></div>
+                <div class="kyc-meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+                <div class="line"><span>Dự kiến <b class="num" style="color: var(--text)">2,5 tỷ</b></span><span class="num">Hẹn 30/09</span></div>
+              </article>
+              <div class="more num">+ 10 KH</div>
+            </section>
+
+            <section class="col closed" aria-label="Đã đóng">
+              <div class="col-head"><h2>Đã đóng</h2><span class="count num">32</span></div>
+              <div class="section-title" style="margin: 4px 0 0"><span class="badge st-hold">Tạm hoãn</span> <span class="num">9</span></div>
+              <div class="mini"><span>Yên Khánh Ly</span><span class="muted num">từ 02/09</span></div>
+              <div class="mini"><span>Tiêu Văn Hòa</span><span class="muted num">từ 18/08</span></div>
+              <div class="section-title" style="margin: 10px 0 0"><span class="badge st-lost">Mất cơ hội</span> <span class="num">23</span></div>
+              <div class="mini"><span>Giang Thị Mơ</span><span class="muted num">từ 21/09</span></div>
+              <div class="mini"><span>Mẫn Đức Tài</span><span class="muted num">từ 09/09</span></div>
+              <div class="more">Mở lại được bất cứ lúc nào</div>
+            </section>
+          </div>
+
+          <div class="mock-note">Mockup G3 · vạch KYC = số chiều đã có dữ kiện xác nhận (8 chiều) · nhãn AI = trạng thái cổng deterministic</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

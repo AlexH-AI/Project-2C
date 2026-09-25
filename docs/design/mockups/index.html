@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mockup G3 — Project-2C</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="mockups.css" />
+    <style>
+      .page {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 32px 24px 48px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      h1 {
+        margin: 0;
+        font-size: var(--fs-2xl);
+      }
+      .lead {
+        color: var(--text-2);
+        margin: 4px 0 0;
+      }
+      .screens {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .screens a {
+        display: block;
+        padding: 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--bg-1);
+      }
+      .screens a:hover {
+        border-color: var(--accent);
+      }
+      .screens b {
+        display: block;
+        margin-bottom: 4px;
+      }
+      .screens span {
+        color: var(--text-3);
+        font-size: var(--fs-sm);
+      }
+      .sw {
+        display: inline-block;
+        width: 26px;
+        height: 18px;
+        border-radius: 4px;
+        border: 1px solid var(--border-strong);
+        vertical-align: middle;
+      }
+      code {
+        font-size: var(--fs-sm);
+        color: var(--text-2);
+      }
+      ol.q li {
+        margin-bottom: 8px;
+        color: var(--text-2);
+      }
+      ol.q b {
+        color: var(--text);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header>
+        <h1>Project-2C · Mockup UI dark mode (G3)</h1>
+        <p class="lead">
+          Đề xuất hướng giao diện để Owner duyệt trước khi dựng <code>packages/ui</code>. Thiết kế riêng của 2C. Dữ liệu 100% giả lập. Xem tốt nhất ở 1440×900.
+        </p>
+      </header>
+
+      <nav class="screens" aria-label="Màn hình">
+        <a href="overview.html"><b>1 · Tổng quan hôm nay</b><span>KPI ngày &amp; MTD, lịch hẹn theo team, top RE</span></a>
+        <a href="appointments.html"><b>2 · Lịch hẹn</b><span>Team → RE → ngày, ghi kết quả, chi tiết + KYC + AI</span></a>
+        <a href="customers.html"><b>3 · Khách hàng</b><span>Kanban N4→N1 + cột đã đóng, chuyển sang bảng</span></a>
+        <a href="customer.html"><b>4 · Hồ sơ KH</b><span>Dữ kiện KYC 8 chiều, dòng thời gian, KYC Intelligence</span></a>
+      </nav>
+
+      <section class="card">
+        <div class="card-head"><h2>Nguyên tắc</h2></div>
+        <ul style="margin: 0; padding-left: 18px; color: var(--text-2)">
+          <li>Nền phân lớp xám-xanh rất tối (không đen tuyệt đối), <b style="color: var(--text)">một màu nhấn duy nhất</b>: vàng champagne — nút chính, mục đang chọn, focus.</li>
+          <li>Màu chỉ mang nghĩa: nhóm N4–N1, trạng thái đóng, trạng thái HĐ, trạng thái cổng AI. Badge luôn có chữ, không chỉ dựa vào màu.</li>
+          <li>Font Be Vietnam Pro; mọi con số <code>tabular-nums</code>; tiền dạng "1,2 tỷ" / "500 tr"; ngày <code>dd/mm/yyyy</code>.</li>
+          <li>Mật độ cao kiểu bảng làm việc: hàng 32–40 px, bộ lọc cố định, Ctrl+K.</li>
+          <li>AI chỉ gợi ý: mọi giả thuyết trỏ tới dữ kiện (F-xx); "mức bằng chứng" tính từ số lượng/độ mới dữ kiện, không có % hay xác suất; không có nút hành động do AI kích hoạt.</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>Tokens màu</h2><span class="meta">tỉ lệ tương phản WCAG trên nền --bg-1 / --bg-3 (AA chữ thường ≥ 4,5)</span></div>
+        <table>
+          <thead>
+            <tr><th></th><th>Token</th><th>Giá trị</th><th>Dùng cho</th><th class="r">trên bg-1</th><th class="r">trên bg-3</th></tr>
+          </thead>
+          <tbody class="num">
+            <tr><td><span class="sw" style="background: var(--bg-0)"></span></td><td>--bg-0</td><td>#0B1017</td><td>Nền app</td><td class="r muted">—</td><td class="r muted">—</td></tr>
+            <tr><td><span class="sw" style="background: var(--bg-1)"></span></td><td>--bg-1</td><td>#111822</td><td>Panel, sidebar</td><td class="r muted">—</td><td class="r muted">—</td></tr>
+            <tr><td><span class="sw" style="background: var(--bg-2)"></span></td><td>--bg-2</td><td>#18212D</td><td>Thẻ, khối nổi</td><td class="r muted">—</td><td class="r muted">—</td></tr>
+            <tr><td><span class="sw" style="background: var(--bg-3)"></span></td><td>--bg-3</td><td>#212C3A</td><td>Input, hover</td><td class="r muted">—</td><td class="r muted">—</td></tr>
+            <tr><td><span class="sw" style="background: var(--text)"></span></td><td>--text</td><td>#E8EDF4</td><td>Chữ chính</td><td class="r">15,16</td><td class="r">12,01</td></tr>
+            <tr><td><span class="sw" style="background: var(--text-2)"></span></td><td>--text-2</td><td>#AEB9C8</td><td>Chữ phụ</td><td class="r">8,98</td><td class="r">7,12</td></tr>
+            <tr><td><span class="sw" style="background: var(--text-3)"></span></td><td>--text-3</td><td>#8C99AC</td><td>Nhãn, meta</td><td class="r">6,17</td><td class="r">4,89</td></tr>
+            <tr><td><span class="sw" style="background: var(--accent)"></span></td><td>--accent</td><td>#D9B26A</td><td>Màu nhấn duy nhất (chữ nền tối trên nút: 9,56)</td><td class="r">8,94</td><td class="r">7,08</td></tr>
+            <tr><td><span class="sw" style="background: var(--n4)"></span></td><td>--n4</td><td>#94A3B8</td><td>Nhóm N4</td><td class="r">6,96</td><td class="r">5,51</td></tr>
+            <tr><td><span class="sw" style="background: var(--n3)"></span></td><td>--n3</td><td>#6FA8FF</td><td>Nhóm N3 · info</td><td class="r">7,41</td><td class="r">5,87</td></tr>
+            <tr><td><span class="sw" style="background: var(--n2)"></span></td><td>--n2</td><td>#B49AFB</td><td>Nhóm N2</td><td class="r">7,61</td><td class="r">6,03</td></tr>
+            <tr><td><span class="sw" style="background: var(--n1)"></span></td><td>--n1</td><td>#3FD69A</td><td>Nhóm N1 · issued · ok</td><td class="r">9,59</td><td class="r">7,60</td></tr>
+            <tr><td><span class="sw" style="background: var(--on-hold)"></span></td><td>--on-hold</td><td>#E3A94F</td><td>Tạm hoãn</td><td class="r">8,54</td><td class="r">6,77</td></tr>
+            <tr><td><span class="sw" style="background: var(--lost)"></span></td><td>--lost</td><td>#F07E7E</td><td>Mất cơ hội · danger</td><td class="r">6,79</td><td class="r">5,38</td></tr>
+            <tr><td><span class="sw" style="background: var(--submitted)"></span></td><td>--submitted</td><td>#6FC8E8</td><td>HĐ đã nộp</td><td class="r">9,43</td><td class="r">7,47</td></tr>
+            <tr><td><span class="sw" style="background: var(--warn)"></span></td><td>--warn</td><td>#F0A04B</td><td>Cảnh báo, cần chăm sóc KYC</td><td class="r">8,35</td><td class="r">6,62</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>Cần Owner quyết ở G3</h2></div>
+        <ol class="q">
+          <li><b>Màu nhấn vàng champagne</b> (hợp phân khúc HNW/UHNW) — giữ, hay đổi sang xanh dương / xanh ngọc?</li>
+          <li><b>Mật độ thông tin</b> của Tổng quan và bảng — vừa, quá dày hay quá thưa?</li>
+          <li><b>Định nghĩa từng nhóm N4–N1</b>: mockup chưa ghi mô tả dưới tên nhóm vì định nghĩa là của Owner — anh cung cấp để hiển thị dưới tiêu đề cột kanban?</li>
+          <li><b>Cột "Đã đóng"</b> gộp Tạm hoãn + Mất cơ hội cạnh kanban — ổn, hay tách ra tab riêng?</li>
+          <li><b>Panel AI</b> đặt cột phải trong Hồ sơ KH và Lịch hẹn — đủ nổi bật chưa?</li>
+          <li>Chấm điểm 1–10 (theo <code>docs/COMPARISON.md</code>): thẩm mỹ dark mode · độ rõ số liệu · tốc độ thao tác nhập liệu (dự đoán).</li>
+        </ol>
+      </section>
+
+      <p class="mock-note">
+        Chart trong mockup là thanh CSS tạm; thư viện chart chốt ở #8. Font tải từ Google Fonts — app thật sẽ nhúng font cục bộ (chạy offline).
+      </p>
+    </main>
+  </body>
+</html>

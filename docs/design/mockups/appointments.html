@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lịch hẹn — Project-2C mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="mockups.css" />
+    <style>
+      .layout {
+        display: grid;
+        grid-template-columns: 200px minmax(0, 1fr) 380px;
+        gap: 16px;
+        align-items: start;
+      }
+      .tree {
+        padding: 10px 8px;
+      }
+      .tree .team {
+        font-weight: 600;
+        padding: 6px 8px;
+        display: flex;
+        justify-content: space-between;
+        font-size: var(--fs-sm);
+      }
+      .tree .re {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 8px 5px 20px;
+        border-radius: var(--radius-sm);
+        color: var(--text-2);
+        font-size: var(--fs-sm);
+      }
+      .tree .re.on {
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .tree .re .n {
+        color: var(--text-3);
+      }
+      .days {
+        display: flex;
+        gap: 6px;
+      }
+      .day {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 6px 10px;
+        text-align: center;
+        min-width: 56px;
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        background: var(--bg-1);
+      }
+      .day b {
+        display: block;
+        font-size: var(--fs-lg);
+        color: var(--text);
+      }
+      .day.on {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .day.on b {
+        color: var(--accent);
+      }
+      .detail {
+        position: sticky;
+        top: 80px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      dl.facts {
+        display: grid;
+        grid-template-columns: 128px 1fr;
+        gap: 6px 12px;
+        margin: 0;
+        font-size: var(--fs-sm);
+      }
+      dl.facts dt {
+        color: var(--text-3);
+      }
+      dl.facts dd {
+        margin: 0;
+      }
+      .ai-block h4 {
+        margin: 12px 0 6px;
+        font-size: var(--fs-sm);
+      }
+      .ai-block ul {
+        margin: 0;
+        padding-left: 18px;
+        font-size: var(--fs-sm);
+        color: var(--text-2);
+      }
+      .ai-block li {
+        margin-bottom: 6px;
+      }
+      .ev {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+      }
+      .ev a {
+        color: var(--info);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">2C</span> Project-2C</div>
+        <nav class="nav">
+          <a href="overview.html">Tổng quan hôm nay</a>
+          <a href="appointments.html" class="active">Lịch hẹn</a>
+          <a href="customers.html">Khách hàng</a>
+          <a href="#">Báo cáo</a>
+          <div class="nav-label">Quản lý</div>
+          <a href="#">Team &amp; nhân sự</a>
+          <a href="#">Cài đặt</a>
+        </nav>
+        <div class="sidebar-foot">Dữ liệu giả lập · Đồng bộ lần cuối 07:42</div>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <div>
+            <h1>Lịch hẹn</h1>
+            <div class="sub">Team Sao Mai → Đỗ Khánh Linh</div>
+          </div>
+          <div class="spacer"></div>
+          <div class="days num">
+            <div class="day">T6<b>25</b></div>
+            <div class="day">T7<b>26</b></div>
+            <div class="day">CN<b>27</b></div>
+            <div class="day on">T2<b>28</b></div>
+            <div class="day">T3<b>29</b></div>
+            <div class="day">T4<b>30</b></div>
+            <div class="day">T5<b>01</b></div>
+          </div>
+          <div class="segmented"><button class="on">Ngày</button><button>Tuần</button></div>
+          <button class="btn btn-primary">+ Lịch hẹn</button>
+        </header>
+
+        <div class="content">
+          <div class="layout">
+            <nav class="card tree" aria-label="Team và RE">
+              <div class="team"><span>Team Sao Mai</span><span class="muted num">17</span></div>
+              <a class="re"><span>Tất cả RE</span><span class="n num">6</span></a>
+              <a class="re on"><span>Đỗ Khánh Linh</span><span class="num">2</span></a>
+              <a class="re"><span>Hoàng Nam</span><span class="n num">2</span></a>
+              <a class="re"><span>Lý Quang Vinh</span><span class="n num">1</span></a>
+              <a class="re"><span>Mai Phương</span><span class="n num">1</span></a>
+              <a class="re"><span>Châu Bảo Ngọc</span><span class="n num">0</span></a>
+              <a class="re"><span>… 5 RE khác</span><span class="n num">0</span></a>
+              <div class="team" style="margin-top: 8px"><span>Team Bình Minh</span><span class="muted num">6</span></div>
+              <div class="team"><span>Team Hừng Đông</span><span class="muted num">5</span></div>
+            </nav>
+
+            <section class="card" aria-label="Danh sách lịch hẹn">
+              <div class="card-head">
+                <h2>Thứ Hai, 28/09</h2>
+                <span class="meta num">2 lịch</span>
+                <span class="actions"><span class="segmented"><button class="on">Tất cả</button><button>Dự kiến</button><button>Đã gặp</button></span></span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Giờ</th>
+                    <th>Khách hàng</th>
+                    <th>Trigger</th>
+                    <th>Phối hợp</th>
+                    <th class="r">Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="num">08:30</td>
+                    <td>
+                      <div class="who">
+                        <span class="avatar">PL</span>
+                        <div>
+                          <div class="name">Phạm Gia Long <span class="badge st-n2">N2</span></div>
+                          <div class="id">K-7F3Q · Nam · 1979</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="dim">Đáo hạn tiền gửi 3 tỷ</td>
+                    <td><span class="chip">—</span></td>
+                    <td class="r"><span class="badge c-ok plain">Đã gặp</span></td>
+                  </tr>
+                  <tr class="selected">
+                    <td class="num">14:00</td>
+                    <td>
+                      <div class="who">
+                        <span class="avatar">TA</span>
+                        <div>
+                          <div class="name">Trịnh Minh Anh <span class="badge st-n1">N1</span></div>
+                          <div class="id">K-9A1C · Nữ · 12/03/1984</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="dim">Hỏi lại về kế hoạch du học của con</td>
+                    <td><span class="chip">TL</span><span class="chip">IS</span></td>
+                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <h3 class="section-title" style="margin-top: 22px">Ghi nhận kết quả · 08:30 Phạm Gia Long</h3>
+              <div class="stack">
+                <dl class="facts">
+                  <dt>Trạng thái</dt>
+                  <dd><span class="badge c-ok plain">Đã gặp</span></dd>
+                  <dt>Nhóm sau gặp</dt>
+                  <dd><span class="badge st-n3">N3</span> → <span class="badge st-n2">N2</span> <span class="c-accent">· tính 1 RF</span></dd>
+                  <dt>Case size dự kiến</dt>
+                  <dd class="num">500 tr</dd>
+                  <dt>Việc tiếp theo</dt>
+                  <dd>Gửi bảng tóm tắt dòng tiền, hẹn lại 05/10</dd>
+                </dl>
+                <div class="callout">
+                  KH quan tâm việc dự phòng học phí cho 2 con khi khoản tiền gửi đáo hạn tháng 11. Vợ muốn tham gia buổi sau.
+                </div>
+              </div>
+            </section>
+
+            <aside class="detail" aria-label="Chi tiết lịch hẹn">
+              <div class="card">
+                <div class="card-head">
+                  <h3>14:00 · Trịnh Minh Anh</h3>
+                  <span class="actions"><a class="btn" href="customer.html">Hồ sơ KH →</a></span>
+                </div>
+                <dl class="facts">
+                  <dt>RE</dt>
+                  <dd>Đỗ Khánh Linh · Team Sao Mai</dd>
+                  <dt>Phối hợp</dt>
+                  <dd>TL Nguyễn Thu Hà, IS Phó Đức Huy</dd>
+                  <dt>Trigger</dt>
+                  <dd>Hỏi lại về kế hoạch du học của con</dd>
+                  <dt>Địa điểm</dt>
+                  <dd>Văn phòng KH, Quận 1</dd>
+                  <dt>Lần gặp</dt>
+                  <dd class="num">Lần 4 · lần trước 14/09</dd>
+                </dl>
+              </div>
+
+              <div class="card">
+                <div class="card-head">
+                  <h3>KYC hiện hành</h3>
+                  <span class="meta num">Cập nhật KYC 14/09/2026</span>
+                </div>
+                <dl class="facts">
+                  <dt>Tuổi</dt>
+                  <dd class="num">42 (12/03/1984)</dd>
+                  <dt>Gia đình</dt>
+                  <dd>Đã kết hôn, 2 con (14 và 10 tuổi)</dd>
+                  <dt>Nghề nghiệp</dt>
+                  <dd>Chủ doanh nghiệp phân phối thiết bị y tế</dd>
+                  <dt>Tài sản</dt>
+                  <dd class="num">AUM ước ~25 tỷ, 2 BĐS</dd>
+                  <dt>Mục tiêu</dt>
+                  <dd>Con lớn du học 2029</dd>
+                  <dt>Chưa có</dt>
+                  <dd><span class="chip">Khẩu vị rủi ro</span><span class="chip">Bảo vệ hiện có</span></dd>
+                </dl>
+              </div>
+
+              <div class="card ai-block">
+                <div class="card-head">
+                  <h3>KYC Intelligence</h3>
+                  <span class="badge c-ok">CURRENT</span>
+                  <span class="actions meta num">v3 · 14/09</span>
+                </div>
+                <div class="row" style="flex-wrap: wrap; gap: 6px">
+                  <span class="badge c-info plain">PAIN_POINT_ANALYSIS</span>
+                  <span class="chip">OpenCode Go · model-x · reasoning: medium</span>
+                </div>
+                <h4>Next Best Actions</h4>
+                <ul>
+                  <li>
+                    Làm rõ mốc và ngân sách du học của con lớn trước khi bàn phương án.
+                    <div class="ev">Bằng chứng: <a href="#">F-12 mục tiêu</a>, <a href="#">F-07 gia đình</a> · 2 dữ kiện, mới nhất 14/09</div>
+                  </li>
+                  <li>
+                    Hỏi về các hợp đồng bảo vệ đang có để tránh trùng lặp.
+                    <div class="ev">Chiều còn thiếu: bảo vệ hiện có</div>
+                  </li>
+                </ul>
+                <h4>Discovery Strategy</h4>
+                <ul>
+                  <li>
+                    Cân nhắc mời chồng KH tham gia buổi kế tiếp, vì KH cho biết hai vợ chồng cùng quyết định chi tiêu giáo dục.
+                    <div class="ev">Bằng chứng: <a href="#">F-09 gia đình</a> · 1 dữ kiện, 14/09</div>
+                  </li>
+                </ul>
+              </div>
+            </aside>
+          </div>
+          <div class="mock-note">Mockup G3 · panel phải = chi tiết lịch + KYC + kết quả AI; AI chỉ gợi ý, không có nút hành động tự động</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
