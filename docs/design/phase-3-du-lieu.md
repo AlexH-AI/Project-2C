@@ -1,6 +1,6 @@
 # Phase 3 — Mô hình dữ liệu và lưu trữ (spec G2)
 
-- **Trạng thái:** Accepted — Owner duyệt 26/09/2026 (**G2** mô hình dữ liệu; **G1** ADR-0016 + phụ lục ADR-0006 + P1; **G4** dependency) · PR #58
+- **Trạng thái:** Accepted — Owner duyệt 26/09/2026 (**G2** mô hình dữ liệu; **G1** ADR-0016 + phụ lục ADR-0006 + P1; **G4** dependency) · PR #58 · bổ sung D9 `outcome_reviewer_id` (Owner, G3 vòng 1 của #59, 27/09/2026)
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §4.4, §5 (Phase 3), §7.1; ADR-0004…0008, ADR-0010, ADR-0016; mockup G3 `docs/design/mockups/`
 - **Cách soạn:** brainstorming với Owner trong phiên 26/09/2026 (quyết định ở §1); Claude soạn, Owner duyệt trên PR.
@@ -21,6 +21,7 @@ Phase 3 cho phép **nhập liệu hoàn chỉnh** trong app: Team/nhân sự, KH
 | D6 | Kết quả cuộc gặp Đã gặp | Bắt buộc `stage_after` + `next_step`; `expected_case_size` **được để trống** (= chưa ước lượng) |
 | D7 | Sửa/xóa cuộc hẹn đã sinh transition | Chỉ khi transition đó còn là **transition mới nhất** của KH; nếu không → chặn, hướng dẫn sửa nhóm tay |
 | D8 | Nhân sự seed | Mỗi team 1 TL + 10 RE; **1 IS, 1 BD, 1 BDM** dùng chung cho cả 3 team |
+| D9 | Lý do hạ nhóm / đóng (Owner, G3 vòng 1, 27/09/2026) | **Không hỏi lý do.** Hạ nhóm / đóng là quyết định khi review kết quả cuộc gặp gần nhất → ghi **người đánh giá kết quả** (`appointments.outcome_reviewer_id`, không bắt buộc, vd. TL / IS) |
 
 **Đề xuất ngoài mô hình dữ liệu (Owner duyệt G1, 26/09/2026):**
 
@@ -104,6 +105,7 @@ Không lưu: ngày tạo KH (= ngày của transition đầu tiên), nhãn "Đã
 | `next_step` | text | bắt buộc khi `MET` (D6) |
 | `expected_case_size` | integer | VND, không bắt buộc (D6) |
 | `note` | text | kết quả cuộc gặp dạng văn bản |
+| `outcome_reviewer_id` | text | FK `people`, không bắt buộc; `CHECK (status = 'MET' OR outcome_reviewer_id IS NULL)`. Người quyết định nhóm sau cuộc gặp (D9), vai trò bất kỳ. Không có chỉ số; không thuộc 3 ô bị khóa theo D7 |
 | `rescheduled_from_id` | text | FK `appointments`, cuộc hẹn bị dời (D3) |
 | `created_at` / `updated_at` / `deleted_at` | text | |
 
@@ -174,7 +176,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
 | `updateCustomerProfile` | Đổi tên / RE / ngày sinh / giới tính; đổi ngày sinh hoặc giới tính → ghi chú `SYSTEM` + `confirmFact` |
 | `changeStageManually` | `assertValidTransition`; transition `appointment_id` null — không bao giờ tính RF |
 | `scheduleAppointment` | Trạng thái `SCHEDULED`, không có `stage_after` |
-| `recordMeetingOutcome` | Đặt trạng thái + kết quả. `MET`: bắt buộc `stage_after`, `next_step` (D6); `stage_after` ≠ nhóm hiện tại → transition gắn `appointment_id` (#44). Sửa lại kết quả → theo D7 |
+| `recordMeetingOutcome` | Đặt trạng thái + kết quả. `MET`: bắt buộc `stage_after`, `next_step` (D6); `stage_after` ≠ nhóm hiện tại → transition gắn `appointment_id` (#44); `outcome_reviewer_id` tùy chọn, phải là nhân sự chưa xóa (D9). Sửa lại kết quả → theo D7 |
 | `rescheduleAppointment` | Cuộc hẹn cũ → `RESCHEDULED`; tạo cuộc hẹn mới `SCHEDULED` trỏ `rescheduled_from_id` (D3) |
 | `addKycNote` | Chỉ thêm |
 | `confirmKycFact`, `markKycConflict`, `resolveKycConflict` | Dùng `confirmFact` / `markConflict` / `resolveConflict` của `domain`; từ chối `birthYear` / `gender` từ nguồn RE (D2); sau đó `nextKycVersion` → ghi `kyc_versions` nếu hash đổi; cờ material tay theo ADR-0008 §7 |
@@ -240,7 +242,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
 | 7 | Khách hàng: danh sách / kanban từ DB, tạo / sửa, sửa nhóm tay | — | 2, 4, 5 |
 | 8 | Hồ sơ KH — KYC: ghi chú, xác nhận / mâu thuẫn / giải quyết, phiên bản, dòng thời gian | — | 7 |
 | 9 | Lịch hẹn: tạo, dời lịch, bảng trong ngày từ DB | — | 7 |
-| 10 | Ghi kết quả cuộc gặp → transition gắn `appointmentId` | — | 9 |
+| 10 | Ghi kết quả cuộc gặp → transition gắn `appointmentId`; **migration mới** thêm `outcome_reviewer_id` (D9 — bảng `appointments` đã có từ migration 0001, không sửa migration cũ) | — | 9 |
 | 11 | Hợp đồng: nộp, phát hành, sửa FYP phát hành | — | 7 |
 | 12 | Xuất / nhập backup `.p2cbackup` | — | 4 |
 | 13 | Đóng phase: `docs/metrics/phase-3.md`, review đóng | G7 | tất cả |
