@@ -1,9 +1,11 @@
 /**
  * Customers and their stage transitions (spec §3.3–3.4, §4). `customers.stage` always equals the
  * `to` of the customer's latest live transition — "latest" by recording order (`seq`), never by date.
+ * Birth date and gender are the source of the KYC birth year and gender (D2).
  */
 import {
   assertValidTransition,
+  fromLocalDate,
   type CalendarDate,
   type Customer,
   type CustomerStage,
@@ -21,6 +23,7 @@ import {
 import type { Database } from './database';
 import { DbError } from './errors';
 import { encodeBase32, ulid } from './ids';
+import { recordProfileFacts } from './kyc';
 import { customers, GENDERS, stageTransitions } from './schema';
 
 type CustomerRow = typeof customers.$inferSelect;
@@ -106,6 +109,7 @@ export function createCustomer(db: Database, input: NewCustomer): CustomerRecord
       })
       .run();
     appendTransition(db, id, input.stage, input.date, null);
+    recordProfileFacts(db, id, { birthDate: null, gender: null }, profile, input.date);
     return toCustomer(liveCustomer(db, id));
   });
 }
@@ -116,7 +120,8 @@ export function updateCustomerProfile(
   changes: Partial<CustomerProfile>,
 ): CustomerRecord {
   return db.transaction(() => {
-    const current = toCustomer(liveCustomer(db, id));
+    const row = liveCustomer(db, id);
+    const current = toCustomer(row);
     const profile = validateProfile(db, {
       name: changes.name ?? current.name,
       reId: changes.reId ?? current.reId,
@@ -124,6 +129,7 @@ export function updateCustomerProfile(
       gender: changes.gender === undefined ? current.gender : changes.gender,
     });
     updateCustomerRow(db, id, profile);
+    recordProfileFacts(db, id, row, profile, fromLocalDate(db.now()));
     return toCustomer(liveCustomer(db, id));
   });
 }

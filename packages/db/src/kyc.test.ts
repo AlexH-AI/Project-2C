@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createCustomer, softDeleteCustomer } from './customers';
+import { createCustomer, softDeleteCustomer, updateCustomerProfile } from './customers';
 import * as db from './index';
 import {
   addKycNote,
@@ -7,6 +7,7 @@ import {
   getKycProfile,
   listKycVersions,
   markKycConflict,
+  markKycVersionMaterial,
   resolveKycConflict,
 } from './kyc';
 import { codeOf, d, setup } from './test-support';
@@ -80,6 +81,7 @@ describe('KYC notes', () => {
       'getKycProfile',
       'listKycVersions',
       'markKycConflict',
+      'markKycVersionMaterial',
       'resolveKycConflict',
     ]);
     const run = (sql: string) => () => database.sqlite.run(sql);
@@ -236,6 +238,29 @@ describe('KYC facts', () => {
 });
 
 describe('birth year and gender come from the customer profile (D2)', () => {
+  it('records a SYSTEM note and facts when the customer is created with them', async () => {
+    const { db: database, customer } = await withCustomer({
+      birthDate: { year: 1972 },
+      gender: 'MALE',
+    });
+
+    const profile = getKycProfile(database, customer.id);
+    expect(profile.notes[0]).toEqual({
+      id: expect.any(String),
+      text: 'Hồ sơ KH: năm sinh 1972; giới tính Nam',
+      createdDate: d(1, 9, 2026),
+      source: 'SYSTEM',
+    });
+    expect(current(profile.facts)).toEqual([
+      ['birthYear', 1972, 'active'],
+      ['gender', 'Nam', 'active'],
+    ]);
+    expect(profile.facts.every((f) => f.noteId === profile.notes[0]!.id)).toBe(true);
+    expect(listKycVersions(database, customer.id)).toEqual([
+      expect.objectContaining({ date: d(1, 9, 2026), material: true }),
+    ]);
+  });
+
   it('refuses birthYear and gender confirmed by the RE', async () => {
     const { db: database, customer, note } = await withCustomer();
     const input = { noteId: note.id, date: d(3, 9, 2026) };
@@ -250,6 +275,84 @@ describe('birth year and gender come from the customer profile (D2)', () => {
         confirmKycFact(database, customer.id, { ...input, field: 'gender', value: 'Nữ' }),
       ),
     ).toBe('KYC_FIELD_FROM_PROFILE');
+  });
+
+  it('records a new SYSTEM fact when the birth date changes, as a material version', async () => {
+    const { db: database, customer } = await withCustomer({ birthDate: { year: 1972 } });
+
+    updateCustomerProfile(database, customer.id, { birthDate: d(12, 3, 1974) });
+
+    const profile = getKycProfile(database, customer.id);
+    expect(profile.notes.map((n) => [n.source, n.text])).toEqual([
+      ['SYSTEM', 'Hồ sơ KH: năm sinh 1972'],
+      ['RE', 'Gặp lần đầu'],
+      ['SYSTEM', 'Hồ sơ KH: ngày sinh 12/03/1974'],
+    ]);
+    expect(profile.facts.map((f) => [f.field, f.value, f.status])).toEqual([
+      ['birthYear', 1972, 'superseded'],
+      ['birthYear', 1974, 'active'],
+    ]);
+    expect(listKycVersions(database, customer.id).map((v) => v.material)).toEqual([true, true]);
+  });
+
+  it('records a gender change as a version that is not material, and nothing for a name change', async () => {
+    const { db: database, customer } = await withCustomer({ gender: 'MALE' });
+
+    updateCustomerProfile(database, customer.id, { name: 'Lan Anh' });
+    updateCustomerProfile(database, customer.id, { gender: 'FEMALE' });
+
+    expect(current(getKycProfile(database, customer.id).facts)).toEqual([
+      ['gender', 'Nữ', 'active'],
+    ]);
+    expect(getKycProfile(database, customer.id).notes).toHaveLength(3);
+    expect(listKycVersions(database, customer.id).map((v) => v.material)).toEqual([true, false]);
+  });
+
+  it('refuses to clear a birth date or gender that the KYC profile already holds', async () => {
+    const { db: database, customer } = await withCustomer({
+      birthDate: { year: 1972 },
+      gender: 'MALE',
+    });
+
+    expect(codeOf(() => updateCustomerProfile(database, customer.id, { birthDate: null }))).toBe(
+      'KYC_PROFILE_FIELD_REQUIRED',
+    );
+    expect(codeOf(() => updateCustomerProfile(database, customer.id, { gender: null }))).toBe(
+      'KYC_PROFILE_FIELD_REQUIRED',
+    );
+  });
+
+  it('lets the RE flag a conflicting birth year, settled only by the profile value', async () => {
+    const { db: database, customer, note } = await withCustomer({ birthDate: { year: 1972 } });
+    const system = getKycProfile(database, customer.id).facts[0]!;
+    const input = { field: 'birthYear', noteId: note.id, date: d(3, 9, 2026) } as const;
+
+    const flagged = markKycConflict(database, customer.id, { ...input, value: 1974 });
+
+    expect(current(getKycProfile(database, customer.id).facts)).toEqual([
+      ['birthYear', 1972, 'conflict'],
+      ['birthYear', 1974, 'conflict'],
+    ]);
+    const resolve = (factId: string) => () =>
+      resolveKycConflict(database, customer.id, { factId, date: d(4, 9, 2026) });
+    expect(codeOf(resolve(flagged.fact.id))).toBe('KYC_FIELD_FROM_PROFILE');
+
+    resolveKycConflict(database, customer.id, { factId: system.id, date: d(4, 9, 2026) });
+    expect(current(getKycProfile(database, customer.id).facts)).toEqual([
+      ['birthYear', 1972, 'active'],
+    ]);
+  });
+
+  it('settles a birth year conflict when the profile birth date is corrected', async () => {
+    const { db: database, customer, note } = await withCustomer({ birthDate: { year: 1972 } });
+    const input = { field: 'birthYear', noteId: note.id, date: d(3, 9, 2026) } as const;
+    markKycConflict(database, customer.id, { ...input, value: 1974 });
+
+    updateCustomerProfile(database, customer.id, { birthDate: { year: 1974 } });
+
+    expect(current(getKycProfile(database, customer.id).facts)).toEqual([
+      ['birthYear', 1974, 'active'],
+    ]);
   });
 });
 
@@ -297,5 +400,26 @@ describe('KYC versions', () => {
     });
 
     expect([minor, manual, core].map((c) => c.version?.material)).toEqual([false, true, true]);
+  });
+
+  it('lets the RE switch material on for a version, never off', async () => {
+    const { db: database, customer, note } = await withCustomer();
+    const input = { noteId: note.id, date: d(3, 9, 2026) };
+    confirmKycFact(database, customer.id, { ...input, field: 'occupation', value: 'Bác sĩ' });
+    const { version } = confirmKycFact(database, customer.id, {
+      ...input,
+      field: 'residence',
+      value: 'Huế',
+    });
+
+    const switched = markKycVersionMaterial(database, version!.id);
+    const again = markKycVersionMaterial(database, version!.id);
+
+    expect([switched.material, again.material]).toEqual([true, true]);
+    expect(listKycVersions(database, customer.id).map((v) => v.material)).toEqual([true, true]);
+    expect(Object.keys(db).filter((name) => /Material/.test(name))).toEqual([
+      'markKycVersionMaterial',
+    ]);
+    expect(codeOf(() => markKycVersionMaterial(database, 'missing'))).toBe('KYC_VERSION_NOT_FOUND');
   });
 });

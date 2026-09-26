@@ -2,9 +2,11 @@
  * KYC notes, facts and versions (spec §3.8–3.10, ADR-0008). The commands run the `domain`
  * operations on the stored profile and save the difference: new facts, changed statuses, and a new
  * version when the hash changes. "Latest" is by recording order (`seq`), never by date (review #36).
- * Birth year and gender come only from the customer profile (D2): the RE cannot confirm them.
+ * Birth year and gender come only from the customer profile, through `SYSTEM` notes (D2); the RE
+ * may flag a disagreeing value as a conflict, but only the profile value can settle it (Owner, #62).
  */
 import {
+  addNote,
   confirmFact,
   formatDate,
   KYC_FIELDS,
@@ -25,7 +27,7 @@ import { fromIsoDate, liveCustomer, toIsoDate } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { ulid } from './ids';
-import { KYC_NOTE_SOURCES, kycFacts, kycNotes, kycVersions } from './schema';
+import { GENDERS, KYC_NOTE_SOURCES, kycFacts, kycNotes, kycVersions } from './schema';
 
 export type KycSource = (typeof KYC_NOTE_SOURCES)[number];
 
@@ -62,6 +64,10 @@ const NUMBER_FIELDS: ReadonlySet<KycField> = new Set(['birthYear', 'childrenCoun
 const BOOLEAN_FIELDS: ReadonlySet<KycField> = new Set(['hasProtection']);
 /** Set from the customer profile only (D2). */
 const PROFILE_FIELDS: ReadonlySet<KycField> = new Set(['birthYear', 'gender']);
+const GENDER_LABELS = { MALE: 'Nam', FEMALE: 'Nữ' } as const satisfies Record<
+  (typeof GENDERS)[number],
+  string
+>;
 
 // ---- reads ----------------------------------------------------------------
 
@@ -123,7 +129,7 @@ export function markKycConflict(
   });
 }
 
-/** Keeps the chosen fact of a conflict; the other facts in it are superseded. */
+/** Keeps the chosen fact of a conflict; for birth year and gender it must be the profile's. */
 export function resolveKycConflict(
   db: Database,
   customerId: string,
@@ -135,10 +141,76 @@ export function resolveKycConflict(
     const chosen = before.facts.find((fact) => fact.id === command.factId);
     if (!chosen) throw new DbError('KYC_FACT_NOT_FOUND');
     if (chosen.status !== 'conflict') throw new DbError('KYC_NOT_IN_CONFLICT');
+    const source = before.notes.find((note) => note.id === chosen.noteId)?.source;
+    if (PROFILE_FIELDS.has(chosen.field) && source !== 'SYSTEM') {
+      throw new DbError('KYC_FIELD_FROM_PROFILE');
+    }
     const after = resolveConflict(before, chosen.id);
     const version = save(db, customerId, before, after, command.date, command.material ?? false);
     return { fact: after.facts.find((fact) => fact.id === chosen.id)!, version };
   });
+}
+
+/** The RE switches a version to material; there is no way to switch it off (ADR-0008 7). */
+export function markKycVersionMaterial(db: Database, versionId: string): KycVersionRecord {
+  return db.transaction(() => {
+    const row = db.orm.select().from(kycVersions).where(eq(kycVersions.id, versionId)).get();
+    if (!row) throw new DbError('KYC_VERSION_NOT_FOUND');
+    liveCustomer(db, row.customerId);
+    db.orm.update(kycVersions).set({ material: true }).where(eq(kycVersions.id, versionId)).run();
+    return toVersion({ ...row, material: true });
+  });
+}
+
+/** Birth date (`YYYY` or `YYYY-MM-DD`) and gender as stored on the customer. */
+export interface ProfileFields {
+  readonly birthDate: string | null;
+  readonly gender: (typeof GENDERS)[number] | null;
+}
+
+/**
+ * D2, in the caller's transaction: when the birth date or gender changed, records one `SYSTEM` note
+ * and confirms the birth year / gender from it. Once set, neither can be cleared.
+ */
+export function recordProfileFacts(
+  db: Database,
+  customerId: string,
+  previous: ProfileFields,
+  next: ProfileFields,
+  date: CalendarDate,
+): void {
+  const changes: [KycField, KycValue, string][] = [];
+  if (next.birthDate !== previous.birthDate) {
+    if (next.birthDate === null) throw new DbError('KYC_PROFILE_FIELD_REQUIRED');
+    const year = Number(next.birthDate.slice(0, 4));
+    const text =
+      next.birthDate.length === 4
+        ? `năm sinh ${year}`
+        : `ngày sinh ${formatDate(fromIsoDate(next.birthDate))}`;
+    changes.push(['birthYear', year, text]);
+  }
+  if (next.gender !== previous.gender) {
+    if (next.gender === null) throw new DbError('KYC_PROFILE_FIELD_REQUIRED');
+    const label = GENDER_LABELS[next.gender];
+    changes.push(['gender', label, `giới tính ${label}`]);
+  }
+  if (changes.length === 0) return;
+
+  const before = loadProfile(db, customerId);
+  const text = `Hồ sơ KH: ${changes.map(([, , part]) => part).join('; ')}`;
+  const note = insertNote(db, customerId, text, date, 'SYSTEM');
+  const after = changes.reduce(
+    (profile, [field, value]) =>
+      confirmFact(profile, {
+        id: ulid(db.now()),
+        field,
+        value,
+        noteId: note.id,
+        confirmedDate: date,
+      }),
+    addNote(before, note),
+  );
+  save(db, customerId, before, after, date, false);
 }
 
 // ---- helpers --------------------------------------------------------------
