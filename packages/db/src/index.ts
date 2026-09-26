@@ -17,3 +17,4 @@ export {
   updatePerson,
 } from './team';
 export type { PersonInput } from './team';
+export { APPOINTMENT_TRIGGERS, GENDERS } from './schema';

@@ -3,7 +3,17 @@ import { describe, expect, it, vi } from 'vitest';
 import journal from '../migrations/meta/_journal.json';
 import { openDatabase } from './database';
 import { MIGRATIONS } from './migrations';
-import { people, schemaMigrations, settings, teams } from './schema';
+import {
+  appointmentCoordinators,
+  appointments,
+  customers,
+  people,
+  policies,
+  schemaMigrations,
+  settings,
+  stageTransitions,
+  teams,
+} from './schema';
 
 function tableNames(db: Awaited<ReturnType<typeof openDatabase>>): string[] {
   const rows = db.sqlite.exec(
@@ -17,20 +27,53 @@ function columnNames(db: Awaited<ReturnType<typeof openDatabase>>, table: string
   return (rows[0]?.values ?? []).map(([name]) => String(name));
 }
 
+function foreignKeys(db: Awaited<ReturnType<typeof openDatabase>>, table: string): string[] {
+  const rows = db.sqlite.exec(
+    `SELECT "from", "table", "to" FROM pragma_foreign_key_list('${table}')`,
+  );
+  return (rows[0]?.values ?? []).map(([from, to, column]) => `${from}->${to}.${column}`).sort();
+}
+
 describe('openDatabase', () => {
   it('migrates an empty database to the latest schema version', async () => {
     const db = await openDatabase();
 
-    expect(db.schemaVersion()).toBe(1);
-    expect(tableNames(db)).toEqual(['people', 'schema_migrations', 'settings', 'teams']);
+    expect(db.schemaVersion()).toBe(2);
+    expect(tableNames(db)).toEqual([
+      'appointment_coordinators',
+      'appointments',
+      'customers',
+      'people',
+      'policies',
+      'schema_migrations',
+      'settings',
+      'stage_transitions',
+      'teams',
+    ]);
   });
 
   it('creates every table exactly as the Drizzle schema declares it', async () => {
     const db = await openDatabase();
 
-    for (const table of [teams, people, settings, schemaMigrations]) {
+    const tables = [
+      teams,
+      people,
+      customers,
+      stageTransitions,
+      appointments,
+      appointmentCoordinators,
+      policies,
+      settings,
+      schemaMigrations,
+    ];
+    for (const table of tables) {
       const config = getTableConfig(table);
       expect(columnNames(db, config.name)).toEqual(config.columns.map((c) => c.name));
+      const declared = config.foreignKeys.map((fk) => {
+        const ref = fk.reference();
+        return `${ref.columns[0]!.name}->${getTableConfig(ref.foreignTable).name}.${ref.foreignColumns[0]!.name}`;
+      });
+      expect(foreignKeys(db, config.name)).toEqual(declared.sort());
     }
   });
 
@@ -40,9 +83,9 @@ describe('openDatabase', () => {
 
     const second = await openDatabase({ bytes });
 
-    expect(second.schemaVersion()).toBe(1);
+    expect(second.schemaVersion()).toBe(2);
     const applied = second.sqlite.exec('SELECT count(*) FROM schema_migrations');
-    expect(applied[0]?.values[0]?.[0]).toBe(1);
+    expect(applied[0]?.values[0]?.[0]).toBe(2);
   });
 
   it('persists once after migrating, and not at all when already up to date', async () => {
