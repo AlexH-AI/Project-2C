@@ -3,8 +3,8 @@
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
 - **Cập nhật:** 2026-09-26 · máy `DESKTOP-KDURKJP`
-- **Nhánh:** `main` @ `9f39f04` (#18, #19, #20 đã merge); không còn PR mở
-- **Phase:** 1 — Nền móng (milestone #1)
+- **Nhánh:** `main` @ `2cbd0c9` (#22 đã merge); PR mở: #23 (T-007.5 Chart, chờ review phiên mới)
+- **Phase:** 1 — Nền móng (milestone #1, **để mở** chờ test ở văn phòng) · dev tiếp Phase 2 trên Home PC
 
 ## Trạng thái
 
@@ -15,20 +15,27 @@
 | #7.1 tokens + font `packages/ui` | ✅ merge #16 |
 | #7.2 app shell (sidebar icon, topbar, router hash, góc nhìn ở topbar) | ✅ merge #18 (`--merge`), review PASS |
 | #7.3 `domain/period` + `PeriodPicker` (ô Tùy chọn dạng chữ `dd/mm/yyyy`, kỳ là state của Tổng quan) | ✅ merge #19 (`--merge`) + #20 (`--squash`), review PASS |
-| #7.4 `DataTable` (TanStack, sort) | **chưa bắt đầu** |
-| #7.5 `Chart` (ECharts, ADR-0014) | **chưa bắt đầu** (không còn bị chặn) |
-| #17 favicon/app icon màu ADR-0013 | chưa bắt đầu, `risk:low` |
-| #9 exe chạy trên cả 2 máy + `docs/metrics/phase-1.md` | **tạm hoãn** — Owner không tới văn phòng đến hết 28/09/2026; không chặn #7.4/#7.5 |
+| #7.4 `DataTable` (TanStack, sort) | ✅ merge #22 (`--squash`), review PASS |
+| #7.5 `Chart` (ECharts, ADR-0014) | PR #23 mở, CI + e2e local xanh (chunk chart 174 KB gzip) — **chờ review ở phiên mới** |
+| #17 favicon/app icon màu ADR-0013 | **hoãn** — làm/kiểm khi Owner ở văn phòng (xem "Chờ test ở văn phòng") |
+| #9 exe chạy trên cả 2 máy + `docs/metrics/phase-1.md` | **hoãn** — làm khi Owner ở văn phòng |
 
-Issue #7 vẫn mở (còn 7.4, 7.5). Ghi chú review không chặn: `period.ts` dùng `Date.UTC` nên năm 0–99 bị hiểu thành 19xx — chặn năm < 1900 khi làm nhập liệu thật.
+Merge xong #23 thì đóng #7. Ghi chú review không chặn: `period.ts` dùng `Date.UTC` nên năm 0–99 bị hiểu thành 19xx — chặn năm < 1900 khi làm nhập liệu thật; `DataTable` chưa có test cho `sortable: false` và bảng rỗng; cột Giờ chưa `tabular-nums`.
+
+## Chờ test ở văn phòng (Owner quyết 26/09/2026)
+
+Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 để mở cho tới khi làm xong các mục dưới trên Office Laptop:
+
+- [ ] #9: exe (artifact CI mới nhất của `main`) chạy trên Office Laptop; kiểm các màn đã merge ở PR #18, #20, #22, #23 (sidebar, PeriodPicker, DataTable sort, Chart hiện đúng màu); ghi `docs/metrics/phase-1.md`.
+- [ ] #17: favicon/app icon màu ADR-0013 — có thể code trước trên Home PC, nhưng ảnh chụp icon trong exe/taskbar để kiểm ở văn phòng.
+- [ ] Sau đó: đóng milestone Phase 1 (G7).
 
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. #7.4: nhánh `task/T-007.4-datatable` từ `main`. `packages/ui/src/components/DataTable.tsx` dùng `@tanstack/react-table` (đã duyệt); bấm tiêu đề cột: không sort → ↑ → ↓, chỉ một cột sort; cột ngày `dd/mm/yyyy` sort theo thời gian (dùng `parseDate` của `@p2c/domain`, không so chuỗi); tiêu đề có `aria-sort`; mặc định ngày ↓. Test chấp nhận ở #7 mục 7.4 → e2e `e2e/data-table.spec.ts` với bảng mẫu gắn vào một màn rỗng.
-3. #7.5: nhánh `task/T-007.5-chart` từ `main`: `echarts@6.1.0` qua `echarts/core`, chỉ đăng ký module dùng; theme lấy từ tokens; dispose khi rời màn (e2e chuyển màn 10 lần không lỗi console); bundle chart ≤ 250 KB gzip.
-4. Mỗi phần 1 PR ≤ ~400 dòng; review ở phiên mới theo `docs/process/REVIEW-CHECKLIST.md`.
-5. Dọn worktree cũ đã merge (sạch, remote đã xoá): `git worktree remove .scratch/wt-t008` rồi `git branch -D task/T-008-chart-adr`.
+2. Review PR #23 ở phiên mới theo `docs/process/REVIEW-CHECKLIST.md`; PASS + CI xanh → merge `--squash`, đóng #7.
+3. Phase 2 — Lõi domain (`docs/PROJECT-PLAN.md` §5): tạo milestone "Phase 2 — Lõi domain" và cắt issue bằng `to-tickets` (state machine, stats engine + golden tests, parse ngày/tiền, mô hình KYC, cổng KYC). Golden examples cần Owner duyệt (**G2**).
+4. Dọn worktree cũ đã merge (sạch, remote đã xoá): `git worktree remove .scratch/wt-t008` rồi `git branch -D task/T-008-chart-adr`.
 
 ## Dựng môi trường trên Office Laptop
 
@@ -60,8 +67,9 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- #9 (chạy exe trên cả 2 máy) tạm hoãn: Owner không tới văn phòng 2 ngày (27–28/09/2026). Không nhắc lại trước khi Owner báo đã ở văn phòng.
-- Quyết người merge #7.4 / #7.5 nếu `risk:med` (lần trước Owner cho Claude merge sau review PASS + CI xanh).
+- #9 và #17: hoãn tới khi Owner ở văn phòng (xem "Chờ test ở văn phòng"). Không nhắc lại trước khi Owner báo đã ở văn phòng.
+- #23 (`risk:med`): #22 Owner cho Claude merge sau review PASS + CI xanh; với #23 hỏi lại nếu Owner chưa dặn.
+- G2: golden examples cho stats engine Phase 2.
 
 ## Ghi chú môi trường
 
