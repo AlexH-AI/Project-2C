@@ -1,6 +1,6 @@
 # ADR-0008: KYC có cấu trúc và cổng chất lượng deterministic
 
-- **Trạng thái:** Accepted (G1); danh mục, ngưỡng cổng, hồ sơ mẫu: **chờ Owner duyệt (G2, #30)**
+- **Trạng thái:** Accepted (G1); danh mục, ngưỡng cổng, hồ sơ mẫu: Accepted (G2, 26/09/2026)
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §2.2 (W2), §4.5 (Q8, Q9)
 - **Commit / PR:** `20e9c5e` · G2: #30

@@ -79,9 +79,9 @@ Bộ dữ kiện đầy đủ dùng lại ở nhiều hồ sơ ("đủ 8"): năm
 
 Đủ 4 trạng thái: `CONFLICT_RESOLUTION` (K11, K14) · `KYC_INSUFFICIENT` (K01–K03) · `PROFILE_DISCOVERY` (K04–K06, K09, K15) · `PAIN_POINT_ANALYSIS` (K07, K08, K10, K12, K13).
 
-## 5. Owner duyệt
+## 5. Owner duyệt (G2, 26/09/2026)
 
-- [ ] Danh mục: hạng mục, trường, trường chính, trường cốt lõi (mục 1)
-- [ ] Ngưỡng cổng (mục 2), gồm ca K09
-- [ ] Câu hỏi gợi ý (mục 3)
-- [ ] Hồ sơ mẫu K01–K15 và kết quả mong đợi (mục 4)
+- [x] Danh mục: hạng mục, trường, trường chính, trường cốt lõi (mục 1)
+- [x] Ngưỡng cổng (mục 2), gồm ca K09
+- [x] Câu hỏi gợi ý (mục 3)
+- [x] Hồ sơ mẫu K01–K15 và kết quả mong đợi (mục 4)
