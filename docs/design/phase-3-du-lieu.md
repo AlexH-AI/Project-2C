@@ -19,7 +19,7 @@ Phase 3 cho phép **nhập liệu hoàn chỉnh** trong app: Team/nhân sự, KH
 | D4 | Xóa dữ liệu nhập nhầm | **Xóa mềm** (`deleted_at`), khôi phục được. Ghi chú KYC không bao giờ xóa (ADR-0008) |
 | D5 | Nhập file backup | **Thay toàn bộ** dữ liệu (hỏi xác nhận, tự backup trước). Gộp thông minh để Phase 6 |
 | D6 | Kết quả cuộc gặp Đã gặp | Bắt buộc `stage_after` + `next_step`; `expected_case_size` **được để trống** (= chưa ước lượng) |
-| D7 | Sửa/xóa cuộc hẹn đã sinh transition | Chỉ khi transition đó còn là **transition mới nhất** của KH; nếu không → chặn, hướng dẫn sửa nhóm tay |
+| D7 | Sửa/xóa cuộc hẹn đã sinh transition | Chỉ khi transition đó còn là **transition mới nhất** của KH; nếu không → chặn, hướng dẫn sửa nhóm tay. Khi bị chặn chỉ **khóa 3 ô**: trạng thái, ngày cuộc hẹn, `stage_after`; các ô khác (việc tiếp theo, case size, ghi chú, trigger, người phối hợp, người đánh giá kết quả) vẫn sửa được; xóa vẫn bị chặn (Owner, G3 vòng 1, 27/09/2026 — mockup 6f) |
 | D8 | Nhân sự seed | Mỗi team 1 TL + 10 RE; **1 IS, 1 BD, 1 BDM** dùng chung cho cả 3 team |
 | D9 | Lý do hạ nhóm / đóng (Owner, G3 vòng 1, 27/09/2026) | **Không hỏi lý do.** Hạ nhóm / đóng là quyết định khi review kết quả cuộc gặp gần nhất → ghi **người đánh giá kết quả** (`appointments.outcome_reviewer_id`, không bắt buộc, vd. TL / IS) |
 

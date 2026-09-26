@@ -140,7 +140,7 @@
 
         <!-- 6c: outcome MET, valid -->
         <section class="specimen">
-          <p class="cap">6c · Ghi kết quả — Đã gặp, lên nhóm (tính RF)</p>
+          <p class="cap">6c · Ghi kết quả — Đã gặp, lên nhóm N2 → N1 (không tính RF)</p>
           <div class="dialog">
             <div class="dialog-head">
               <div><h2>Kết quả cuộc gặp</h2><div class="sub">Trịnh Minh Anh · Thứ Hai 14/09/2026 10:00 · lần 3 · hiện <span class="badge st-n2">N2</span></div></div>
@@ -163,7 +163,7 @@
                   <span class="choice"><span class="badge st-hold">Tạm hoãn</span></span>
                   <span class="choice"><span class="badge st-lost">Mất cơ hội</span></span>
                 </div>
-                <div class="read"><span class="badge st-n2">N2</span> → <span class="badge st-n1">N1</span> ngày 14/09/2026 · <b class="c-accent">tính 1 RF</b> cho Đỗ Khánh Linh</div>
+                <div class="read"><span class="badge st-n2">N2</span> → <span class="badge st-n1">N1</span> ngày 14/09/2026 · <span class="muted">không tính RF — RF chỉ khi N4 / N3 lên N2 / N1</span></div>
               </div>
               <div class="field">
                 <label>Người đánh giá kết quả <span class="opt">không bắt buộc · người quyết định nhóm sau cuộc gặp</span></label>
@@ -211,7 +211,7 @@
           <p class="cap">6d · Ghi kết quả — thiếu mục bắt buộc (D6)</p>
           <div class="dialog">
             <div class="dialog-head">
-              <div><h2>Kết quả cuộc gặp</h2><div class="sub">Phạm Gia Long · 25/09/2026 15:30 · hiện <span class="badge st-n3">N3</span></div></div>
+              <div><h2>Kết quả cuộc gặp</h2><div class="sub">Phạm Gia Long · 25/09/2026 15:30 · hiện <span class="badge st-n2">N2</span></div></div>
               <span class="x">×</span>
             </div>
             <div class="dialog-body">
@@ -224,8 +224,8 @@
                 <span class="label">Nhóm sau cuộc gặp <span class="req">*</span></span>
                 <div class="choices">
                   <span class="choice"><span class="badge st-n4">N4</span></span>
-                  <span class="choice"><span class="badge st-n3">N3</span> giữ nguyên</span>
-                  <span class="choice"><span class="badge st-n2">N2</span></span>
+                  <span class="choice"><span class="badge st-n3">N3</span></span>
+                  <span class="choice"><span class="badge st-n2">N2</span> giữ nguyên</span>
                   <span class="choice"><span class="badge st-n1">N1</span></span>
                   <span class="choice"><span class="badge st-hold">Tạm hoãn</span></span>
                   <span class="choice"><span class="badge st-lost">Mất cơ hội</span></span>
@@ -240,7 +240,7 @@
               <div class="field">
                 <label>Case size dự kiến <span class="opt">dấu . là ngăn nghìn</span></label>
                 <div class="input">1.234 tr</div>
-                <div class="read"><b>1.234.000.000 ₫</b> (1,2 tỷ)</div>
+                <div class="read"><b>1.234.000.000 ₫</b> (1,23 tỷ)</div>
                 <span class="help">Muốn 1,234 triệu thì gõ "1,234 tr" → 1.234.000 ₫.</span>
               </div>
               <div class="field">
@@ -387,7 +387,7 @@
               <p style="margin: 0; color: var(--text-2)">Cuộc gặp này đã chuyển nhóm KH. Khi xóa:</p>
               <dl class="kv">
                 <dt>Nhóm KH</dt><dd><span class="badge st-n1">N1</span> → về <span class="badge st-n2">N2</span> (hủy chuyển nhóm 14/09)</dd>
-                <dt>RF</dt><dd>Đỗ Khánh Linh · tháng 09/2026: 7 → <b>6</b></dd>
+                <dt>RF</dt><dd>không đổi (N2 → N1 không tính RF)</dd>
                 <dt>Ghi chú KYC</dt><dd>giữ nguyên</dd>
               </dl>
               <div class="alert info">Xóa mềm, khôi phục được (D4).</div>
@@ -425,7 +425,7 @@
                 <div class="field">
                   <label>Ngày <span class="req">*</span> <span class="opt">từ hôm nay trở đi</span></label>
                   <div class="input focus">20/6</div>
-                  <div class="read err">20/06/2026 đã qua. Lịch mới phải từ hôm nay (26/09/2026) trở đi.</div>
+                  <div class="read err">20/06/2026 đã qua. Lịch mới phải từ hôm nay (26/09/2026) trở đi. Ý anh là <b>20/06/2027</b>? <button class="btn">Dùng 20/06/2027</button></div>
                 </div>
                 <div class="field">
                   <label>Giờ</label>
@@ -501,7 +501,7 @@
         </section>
       </div>
 
-      <p class="mock-note">Mockup G3 Phase 3 · dữ liệu giả lập · nhóm sau cuộc gặp khác nhóm hiện tại → transition gắn với cuộc hẹn (RF theo ADR-0007)</p>
+      <p class="mock-note">Mockup G3 Phase 3 · dữ liệu giả lập · nhóm sau cuộc gặp khác nhóm hiện tại → transition gắn với cuộc hẹn; chỉ N4 / N3 → N2 / N1 tính RF (ADR-0007)</p>
     </main>
   </body>
 </html>
