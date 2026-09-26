@@ -2,6 +2,8 @@
 
 Status: **ACCEPTED (G1)** — kế thừa quyết định Q1–Q16 của Project-2 + quyết định riêng C1–C8 (§7.2) · Soạn: Claude Opus 5.5 · Ngày: 2026-09-26
 
+> **Cập nhật 2026-09-26 (sau Phase 2):** định nghĩa chỉ số và vòng đời đã chốt lại ở G2 — **ADR-0007 là nguồn đúng** (§2.3 đã đồng bộ). Khi kế hoạch và ADR khác nhau, ADR thắng. Tiến độ: §5; trạng thái hiện tại: `docs/PROJECT-STATE.md`.
+
 Nguồn: `AlexH-AI/Project-2` → `docs/PROJECT-PLAN.md` tại commit `884dba6` (Owner đã duyệt G1), chuyển thể cho cách làm chỉ bằng Claude Code.
 
 **Project-2C là nhánh đối chứng**: cùng yêu cầu sản phẩm với Project-2, khác duy nhất ở cách thực hiện — **toàn bộ do Claude Code (Opus 5.5, effort medium, không subagent)** làm. Quy tắc so sánh và cách ly: `docs/COMPARISON.md`.
@@ -16,7 +18,7 @@ Các mục §1, §2, §4.4–§4.6, §7 giữ nguyên nội dung sản phẩm c�
 |---|---|
 | Mô hình làm việc | **Opus 5.5 (effort medium) làm toàn bộ**: kiến trúc, code, test, review. **Không subagent**, không agent ngoài Claude. Tự động trong mọi task, chỉ dừng ở cổng Owner duyệt (G1–G8). Hạn mức dùng do Owner tự cân đối. |
 | Liên tục 2 máy | **GitHub là nguồn sự thật duy nhất**: code + spec + `docs/state/HANDOFF.md` + GitHub Issues/PR. Mỗi phiên kết thúc bằng push; mỗi phiên bắt đầu bằng pull + đọc handoff. Không phụ thuộc bất kỳ trạng thái local nào (DB dev sinh lại từ seed, key API nhập riêng từng máy). |
-| Plugins/skills | **Superpowers** (chỉ các skill chạy trong phiên chính: TDD, verify, debugging, writing/executing plans) + **mattpocock/skills** (`grill-me` → `to-prd` → `to-issues`). Không dùng skill/framework dựa trên subagent (GSD Core, OMC, `subagent-driven-development`). |
+| Plugins/skills | **Superpowers** (chỉ các skill chạy trong phiên chính: TDD, verify, debugging, writing/executing plans) + **mattpocock/skills** (`grill-me` → `to-spec` → `to-tickets`). Không dùng skill/framework dựa trên subagent (GSD Core, OMC, `subagent-driven-development`). |
 | Tech stack | **Tauri 2 + React + TypeScript + Vite + Tailwind + shadcn/ui + SQLite (Drizzle)**, monorepo pnpm. Build ra 1 file `.exe` portable (~10–20 MB) trên GitHub Actions. Lõi nghiệp vụ là TypeScript thuần, test được không cần Tauri. |
 | AI copilot | Cổng KYC **deterministic** chạy trên *dữ kiện KYC đã có cấu trúc*; output AI ép theo JSON schema + validator chặn nội dung cấm; mỗi kết quả gắn `kyc_version`, kết quả trễ tự thành `STALE`. v1: Mock + OpenCode Go (giống Project-2). |
 | UI/UX | Dark mode chuyên nghiệp theo design tokens; font **Be Vietnam Pro** (thiết kế cho tiếng Việt), số liệu `tabular-nums`; Owner duyệt mockup trước khi code màn hình. |
@@ -69,26 +71,25 @@ Các mục §1, §2, §4.4–§4.6, §7 giữ nguyên nội dung sản phẩm c�
 
 **Thuật ngữ (Owner xác nhận 2026-09-26):** HĐ **submitted (đã nộp)** = RE chốt thành công giải pháp, KH **đã đóng phí**; HĐ chuyển sang trạng thái `submitted`. Sau đó HĐ được **issued (phát hành)**. Một KH có thể có nhiều HĐ cùng lúc.
 
+Bảng dưới là bản tóm tắt; định nghĩa đầy đủ, vai trò tính chỉ số và golden examples ở **ADR-0007** + `docs/golden/chi-so.md` (Owner duyệt G2, 26/09/2026). Code: `packages/domain/src/stats.ts`.
+
 | Chỉ số | Định nghĩa | Trạng thái |
 |---|---|---|
-| HĐ đã nộp | Số HĐ có `submitted_date` trong kỳ | Đề xuất |
-| HĐ phát hành | Số HĐ có `issued_date` trong kỳ | Đề xuất |
+| HĐ đã nộp | Số HĐ có `submitted_date` trong kỳ | ✅ Chốt (G2) |
+| HĐ phát hành | Số HĐ có `issued_date` trong kỳ | ✅ Chốt (G2) |
 | **Case size** | **Σ FYP của các HĐ đã nộp** (`submitted_date` trong kỳ) — là tổng, không phải trung bình | ✅ Chốt |
-| **Doanh số** | **Σ issued FYP**, ghi nhận theo **`issued_date`** (nộp tháng 1, phát hành tháng 2 → doanh số tháng 2) | ✅ Chốt |
-| **Tỉ lệ chốt** | **Số HĐ đã nộp** ÷ **số KH khác nhau từng ở N2 hoặc N1, lũy kế từ đầu đến cuối kỳ** (mỗi KH đếm 1 lần dù đi N2→N1). Tử số đếm HĐ → **có thể > 100%**. | ✅ Chốt (còn Q3c) |
-| **Cuộc gặp chuyển RF** (RF = *Refer*) | Số cuộc hẹn *đã gặp* mà sau cuộc gặp đó KH được **nâng lên nhóm cao hơn và nhóm mới là N3, N2 hoặc N1** (kể cả nhảy cóc N4→N2) | ✅ Chốt |
-| Tuần | Thứ Hai → Chủ Nhật | Đề xuất |
-| MTD | Từ ngày 1 của tháng đến ngày đang xem | Đề xuất |
+| **Doanh số** | **Σ issued FYP**, ghi nhận theo **`issued_date`** (nộp tháng 1, phát hành tháng 2 → doanh số tháng 2). FYP phát hành mặc định = FYP nộp, sửa tay được | ✅ Chốt |
+| **Tỉ lệ chốt** | **Số HĐ có `issued_date` trong kỳ ÷ số cuộc gặp chuyển RF trong kỳ**. Không lũy kế; như nhau cho RE và team; có thể > 100%; 0 RF → "—" | ✅ Chốt (G2 — thay Q3/Q3c) |
+| **Cuộc gặp chuyển RF** (RF = *Refer*) | Cuộc hẹn **Đã gặp** mà "nhóm sau cuộc gặp" đưa KH từ **N4/N3** lên **N2/N1** (kể cả N4→N2, N4→N1). N4→N3, N2→N1, hạ nhóm, mở lại về N3, sửa nhóm tay ngoài cuộc hẹn đều **không** tính. Mỗi cuộc gặp tối đa 1 RF, tính vào ngày gặp | ✅ Chốt (G2 — thay Q4) |
+| Tuần | Thứ Hai → Chủ Nhật | ✅ Chốt (G2) |
+| MTD | Từ ngày 1 của tháng đến ngày đang xem | ✅ Chốt (G2) |
 
-**Q3c ✅:** **cả tử số và mẫu số đều lũy kế từ đầu đến cuối kỳ đang xem.**
-Công thức: `Tỉ lệ chốt(kỳ) = Σ HĐ submitted có submitted_date ≤ cuối kỳ ÷ |KH khác nhau từng ở N2 hoặc N1 tại thời điểm ≤ cuối kỳ|`.
-
-**Vòng đời (Q7 ✅):**
+**Vòng đời (Q7 ✅, bổ sung ở G2 — ADR-0007):**
 
 - **HĐ:** chỉ 2 trạng thái `submitted → issued`. Không theo dõi từ chối/hủy/pending trong v1.
-- **Nhóm KH:** được nâng, được **hạ** (vd. N2 → N3), và có 2 trạng thái đóng: **Tạm hoãn** và **Mất cơ hội** (mở lại được). KH đã từng ở N2/N1 vẫn nằm trong mẫu số tỉ lệ chốt dù sau đó bị hạ hoặc đóng.
+- **Nhóm KH:** được nâng, được **hạ** (vd. N2 → N3), và có 2 trạng thái đóng: **Tạm hoãn** và **Mất cơ hội** — mở lại được, luôn về **N3**. KH mới chỉ tạo ở nhóm mở N4–N1.
 - **Sau khi HĐ submitted:** KH **giữ nguyên nhóm** + nhãn **"Đã có HĐ"** (hiện số HĐ) để tiếp tục khai thác nhu cầu khác.
-- Hạ nhóm **không** tính là "chuyển RF"; nâng lại sau khi hạ (vd. N3 → N2 lần hai) **có** tính RF.
+- Hạ nhóm **không** tính là "chuyển RF"; nâng lại sau khi hạ (vd. N3 → N2 lần hai, trong một cuộc gặp) **có** tính RF.
 
 ---
 
@@ -174,7 +175,7 @@ Ngoài các cổng trên, Owner **trao quyền tự động** cho Claude (C4): t
 
 **Nghi thức phiên làm việc (tự động hóa bằng script + lệnh Claude):**
 
-- `/resume` (hoặc `tools/session-start.ps1`): `git fetch` + pull, liệt kê PR mở và Issue `status:in-progress`, in `HANDOFF.md`, kiểm tra toolchain.
+- `/session-start` (hoặc `tools/session-start.ps1`; không đặt tên `/resume` vì trùng lệnh có sẵn của Claude Code): `git fetch` + pull, liệt kê PR mở và Issue `status:in-progress`, in `HANDOFF.md`, kiểm tra toolchain.
 - `/handoff` (hoặc `tools/session-end.ps1`): commit WIP lên nhánh, push, cập nhật `HANDOFF.md` (đang làm gì, bước kế tiếp chính xác, việc chờ Owner, lệnh cần chạy tiếp).
 - Hook `SessionStart` của Claude Code tự hiện `HANDOFF.md` khi mở phiên.
 - Quy tắc: **trước khi rời máy, không để phiên Claude nào đang chạy dở** — hoặc chờ xong task, hoặc chạy `/handoff` để commit WIP và ghi bước tiếp theo.
@@ -183,7 +184,7 @@ Ngoài các cổng trên, Owner **trao quyền tự động** cho Claude (C4): t
 
 - `tools/bootstrap.ps1` (idempotent, dùng `winget`): Git, Node LTS, pnpm (qua `packageManager` + corepack), Rust (`rust-toolchain.toml`), VS Build Tools, `gh`, WebView2 check.
 - `.gitattributes` (`* text=auto eol=lf`), `git config core.longpaths true`, `.nvmrc`, lockfile commit.
-- Branch protection cho `main`: bắt buộc PR + CI xanh.
+- Bảo vệ `main`: GitHub Free không có branch protection cho repo private (#3) → hook `.githooks/pre-push` chặn push thẳng `main` (bootstrap đặt `core.hooksPath`); chỉ merge qua PR khi CI xanh.
 
 **Tùy chọn:** vì 2C chỉ dùng Claude Code, có thể chạy phiên trên cloud (claude.ai/code, gắn repo GitHub) để tiếp tục từ bất kỳ máy nào mà không cần toolchain local cho phần code/test (vẫn cần máy Windows để chạy thử exe).
 
@@ -194,7 +195,7 @@ Giữ **cùng bộ plugin với Project-2** (để so sánh công bằng), nhưn
 | Công cụ | Quyết định cho 2C |
 |---|---|
 | **Superpowers** | ✅ Cài. Dùng: brainstorming, writing-plans, executing-plans, test-driven-development, systematic-debugging, verification-before-completion. **Không dùng**: subagent-driven-development, dispatching-parallel-agents. |
-| **mattpocock/skills** | ✅ Cài (chọn lọc): `grill-me`, `to-prd`, `to-issues`, `tdd`. |
+| **mattpocock/skills** | ✅ Cài (chọn lọc): `grill-me`/`grilling`, `to-spec`, `to-tickets`, `tdd` (upstream đổi tên từ `to-prd`, `to-issues`). |
 | **frontend-design** (Anthropic) + **Playwright** | ✅ |
 | GSD Core, oh-my-claudecode | ❌ Dựa trên subagent/đa agent — trái C3. |
 | BMAD, ECC | ❌ Như Project-2. |
@@ -229,7 +230,7 @@ tools/               bootstrap, session scripts, seed generator
 - **Portable**: dữ liệu ở `.\Project2C-data\` cạnh exe; tự backup khi khởi động; xuất/nhập backup JSON.
 - **Xuất báo cáo (Q12 ✅)**: `.xlsx` (ExcelJS) có định dạng, mỗi sheet 1 bảng (tổng hợp / theo team / theo RE). PDF không làm ở v1.
 - **Ngôn ngữ (Q13 ✅)**: giao diện tiếng Việt, giữ thuật ngữ ngành tiếng Anh (FYP, KYC, N1–N4, submitted/issued); mọi chuỗi đi qua lớp i18n để sau này thêm ngôn ngữ.
-- **Chart**: ECharts hoặc Recharts (quyết định ở Phase 1 theo mockup).
+- **Chart**: ✅ ECharts 6 (ADR-0014, G4 — chốt ở Phase 1 theo mockup).
 
 **Mô hình dữ liệu cốt lõi:**
 
@@ -284,15 +285,17 @@ Ghi chú KYC ─► Dữ kiện có cấu trúc (RE xác nhận) ─► kyc_vers
 
 ## 5. Lộ trình
 
-| Phase | Nội dung | Kết quả / Cổng |
-|---|---|---|
-| **0. Chốt yêu cầu** | Kế thừa Q1–Q16; `to-prd` → PRD; ADR: stack, kiến trúc, mô hình một agent, giao thức 2 máy | PRD + ADR · **G1, G2** |
-| **1. Nền móng** | `CLAUDE.md`, `.gitattributes`, bootstrap/session scripts, `/resume` `/handoff`, CI + build exe, branch protection, Issue/PR template, checklist review; skeleton Tauri + chế độ web; app shell dark; mockup | Exe chạy được trên **cả 2 máy** · **G3** |
-| **2. Lõi domain** | State machine, stats engine + golden tests, parse ngày/tiền, mô hình KYC (notes/facts/versions), cổng KYC | Domain coverage ≥ 95% |
-| **3. Nghiệp vụ & màn hình** | Team/RE, Khách hàng, KYC timeline, Lịch hẹn, Kết quả cuộc gặp, Hợp đồng; seed 3 × 10 RE × ~12 tháng dữ liệu; xuất/nhập backup | Nhập liệu hoàn chỉnh |
-| **4. Dashboard & báo cáo** | Tổng quan hôm nay, MTD, drill-down team/RE, báo cáo tuần/tháng/năm, xuất Excel | · **G7** (milestone) |
-| **5. AI copilot** | Adapter OpenCode Go + Mock, prompt + schema, validators, versioning/STALE, Settings, bộ eval | · **G5, G6** |
-| **6. Hoàn thiện & phát hành** | Hiệu năng, rà soát UX, đồng bộ `Project-2C-data`, hướng dẫn sử dụng tiếng Việt, GitHub Release v1.0 | · **G7** |
+| Phase | Nội dung | Kết quả / Cổng | Tiến độ (26/09/2026) |
+|---|---|---|---|
+| **0. Chốt yêu cầu** | Kế thừa Q1–Q16; ADR: stack, kiến trúc, mô hình một agent, giao thức 2 máy | ADR · **G1, G2** | ✅ ADR-0001…0014 |
+| **1. Nền móng** | `CLAUDE.md`, `.gitattributes`, bootstrap/session scripts, `/session-start` `/handoff`, CI + build exe, pre-push hook bảo vệ `main`, Issue/PR template, checklist review; skeleton Tauri + chế độ web; app shell dark; mockup | Exe chạy được trên **cả 2 máy** · **G3** | 🟡 16/18 issue; còn #9 (exe trên Office Laptop + `phase-1.md`), #17 (icon) — chờ Owner ở văn phòng |
+| **2. Lõi domain** | State machine, stats engine + golden tests, parse ngày/tiền, mô hình KYC (notes/facts/versions), cổng KYC | Domain coverage ≥ 95% | 🟡 9/11 issue, coverage 100%; còn #25 (ngày), #26 (tiền) |
+| **3. Nghiệp vụ & màn hình** | `packages/db`; Team/RE, Khách hàng, KYC timeline, Lịch hẹn, Kết quả cuộc gặp, Hợp đồng; seed 3 × 10 RE × ~12 tháng dữ liệu; xuất/nhập backup | Nhập liệu hoàn chỉnh | ⬜ chưa tách issue |
+| **4. Dashboard & báo cáo** | Tổng quan hôm nay, MTD, drill-down team/RE, báo cáo tuần/tháng/năm, xuất Excel | · **G7** (milestone) | ⬜ |
+| **5. AI copilot** | Adapter OpenCode Go + Mock, prompt + schema, validators, versioning/STALE, Settings, bộ eval | · **G5, G6** | ⬜ |
+| **6. Hoàn thiện & phát hành** | Hiệu năng, rà soát UX, đồng bộ `Project-2C-data`, hướng dẫn sử dụng tiếng Việt, GitHub Release v1.0 | · **G7** | ⬜ |
+
+Ước lượng tổng: **~30%** khối lượng tới v1.0 (trọng số phase 0–6: 5 / 15 / 15 / 25 / 15 / 15 / 10%).
 
 Mọi phase do **Opus 5.5 (effort medium)** thực hiện. Cuối mỗi phase ghi `docs/metrics/phase-<N>.md` theo `docs/COMPARISON.md`.
 
@@ -321,8 +324,8 @@ Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue ≤ ~400 dòng diff.
 1. **Q1** — ✅ *Đã trả lời 2026-09-26:* chỉ Owner dùng, trên Home PC hoặc Office Laptop. → App 1 người dùng, SQLite local, không server.
 2. **Q2** — ✅ *Suy ra từ Q1:* không đăng nhập/phân quyền. "Vai trò" chỉ là **góc nhìn** (toàn bộ / theo team / theo RE), không phải tài khoản. Owner nhập liệu thay cho mọi RE.
    - **Q2b** — ✅ *Đã trả lời 2026-09-26:* có. Phương án **B + D** (xuất/nhập file backup + đồng bộ snapshot qua repo GitHub private **`Project-2C-data`**). Xem §7.1.
-3. **Q3** — ✅ Tử số đếm **HĐ** (có thể > 100%); tử số và mẫu số đều **lũy kế từ đầu** (Q3c).
-4. **Q4** — ✅ RF = Refer; tính khi nâng nhóm và nhóm mới ≥ N3 (kể cả nhảy cóc).
+3. **Q3** — ~~Tử số đếm HĐ nộp; tử số và mẫu số lũy kế từ đầu (Q3c).~~ **Thay ở G2:** tỉ lệ chốt = HĐ phát hành ÷ RF trong cùng kỳ (ADR-0007).
+4. **Q4** — RF = Refer. ~~Tính khi nâng nhóm và nhóm mới ≥ N3.~~ **Thay ở G2:** chỉ tính cuộc gặp đưa KH từ N4/N3 lên N2/N1 (ADR-0007).
 5. **Q5** — ✅ Doanh số theo **ngày phát hành**.
 6. **Q6** — ✅ Case size = **tổng** FYP HĐ đã nộp.
 7. **Q7** — ✅ HĐ: `submitted → issued`. Nhóm KH được hạ; có Tạm hoãn / Mất cơ hội; sau submitted giữ nhóm + nhãn "Đã có HĐ" (xem §2.3).
@@ -373,7 +376,8 @@ Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue ≤ ~400 dòng diff.
 
 ## 8. Bước tiếp theo ngay
 
-1. ✅ Repo `AlexH-AI/Project-2C` tạo 2026-09-26, clone về `C:\workspace\Project-2C`. Máy còn lại: `git clone https://github.com/AlexH-AI/Project-2C.git C:\workspace\Project-2C`.
-2. ✅ Tách các quyết định thành ADR trong `docs/decisions/` (ADR-0001…0012, 2026-09-26).
-3. ✅ **G4** — cài Superpowers + mattpocock/skills (cấp project), Owner duyệt 2026-09-26 — xem ADR-0012.
-4. Bắt đầu Phase 1 trên nhánh `phase-1/foundation`.
+Bước chi tiết từng phiên: `docs/state/HANDOFF.md`. Thứ tự lớn (cập nhật 26/09/2026):
+
+1. Phase 2: #25 nhập ngày dd/mm, #26 tiền VND (`risk:low`) → Owner quyết đóng milestone Phase 2.
+2. Lập kế hoạch Phase 3 (`to-spec` → `to-tickets`): `packages/db` (Drizzle schema, migrations, repositories, adapter sql.js / Tauri SQLite) → seed 3 × 10 RE → các màn nhập liệu → xuất/nhập backup. Mô hình dữ liệu DB qua **G2**; màn chưa có mockup qua **G3**.
+3. Khi Owner ở văn phòng: #9, #17 → đóng milestone Phase 1 (**G7**).

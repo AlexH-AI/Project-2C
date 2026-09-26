@@ -3,7 +3,7 @@
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
 - **Cập nhật:** 2026-09-26 · máy `DESKTOP-KDURKJP`
-- **Nhánh:** `main` @ `6362e3d` (#47 đã merge); không còn PR task mở; handoff này đi qua nhánh `wip/…` + PR docs
+- **Nhánh:** `main` @ `c03dbbe` (#47, #48, #49 đã merge); PR docs đồng bộ kế hoạch/trạng thái đang mở (`docs/plan-state-sync`)
 - **Phase:** 2 — Lõi domain (milestone "Phase 2 — Lõi domain") · Phase 1 milestone **để mở** chờ test ở văn phòng
 
 ## Trạng thái
@@ -28,7 +28,7 @@ Ghi chú review #36 (còn lại, cho tầng nhập liệu): "mới nhất" theo 
 
 Ghi chú #33: `suggestedQuestions` trả cho mọi hạng mục thiếu ở cả 4 trạng thái (UI quyết định hiện); trường mâu thuẫn xếp theo thứ tự `KYC_FIELDS`.
 
-Ghi chú khác: `docs/PROJECT-PLAN.md` §2.3 còn định nghĩa RF / tỉ lệ chốt cũ (ADR-0007 là nguồn đúng) — sửa ở task sau. Còn từ Phase 1: `period.ts` năm 0–99 → 19xx (chặn năm < 1900 khi làm #25); `DataTable` chưa test `sortable: false` và bảng rỗng; cột Giờ chưa `tabular-nums`.
+Ghi chú khác (còn từ Phase 1): `period.ts` năm 0–99 → 19xx (chặn năm < 1900 khi làm #25); `DataTable` chưa test `sortable: false` và bảng rỗng; cột Giờ chưa `tabular-nums`.
 
 ## Chờ test ở văn phòng (Owner quyết 26/09/2026)
 
@@ -42,7 +42,7 @@ Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 đ�
 
 1. `/session-start` (pull `main`).
 2. Nếu PR handoff (`wip/…`, docs) còn mở và CI xanh → `gh pr merge <n> --squash --delete-branch`.
-3. ~~Review + merge PR #47~~ — xong (26/09/2026). Owner điền các ô "_Owner điền_" trong `docs/metrics/phase-2.md` (có thể làm sau); cột PR của #33 trong bảng đó còn ghi "_PR này_" → sửa thành #47 khi cập nhật metrics.
+3. ~~Review + merge PR #47~~, ~~metrics Owner (#49)~~, ~~đồng bộ PROJECT-PLAN §2.3 / PROJECT-STATE~~ — xong 26/09/2026. Còn một ô Owner xác nhận trong `docs/metrics/phase-2.md`: quyết định spec phát sinh có tính là can thiệp ngoài cổng không.
 4. **#25 nhập ngày dd/mm** (phiên mới): nhánh `task/T-025-quick-date` từ `main`; mở rộng `packages/domain/src/period.ts` (`parseDate`, `CalendarDate`) — không tạo bộ parse thứ hai; chặn năm < 1900. Test chấp nhận trong issue (mốc 60 ngày, 29/02, năm sau chỉ là gợi ý). `risk:low`: CI xanh + review PASS → Claude tự `gh pr merge --squash`.
 5. **#26 tiền VND** (phiên mới): file mới trong `packages/domain/src/` (vd. `money.ts`) + test; số nguyên đồng; diễn giải `500tr`, `1,2 tỷ`, `750k`…; hiển thị đầy đủ `500.000.000 ₫` và gọn `1,2 tỷ` / `500 tr`. `risk:low`, như #25.
 6. Sau #25, #26, #33: cập nhật bảng task + ngày kết thúc trong `docs/metrics/phase-2.md`, rồi Owner quyết đóng milestone Phase 2.

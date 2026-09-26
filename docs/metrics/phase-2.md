@@ -40,4 +40,4 @@ Theo bảng chỉ số của `docs/COMPARISON.md`. Phase 2 chỉ có code `packa
 
 - Golden fixtures (`golden/metrics.fixture.ts`, `golden/kyc.fixture.ts`) không bị sửa để "cho xanh" trong suốt phase.
 - #31 merge bằng `--merge` khi chưa có review phiên sạch (Owner duyệt).
-- Việc để lại: `docs/PROJECT-PLAN.md` §2.3 còn định nghĩa RF / tỉ lệ chốt cũ (ADR-0007 là nguồn đúng).
+- `docs/PROJECT-PLAN.md` §2.3 đã đồng bộ với ADR-0007 (26/09/2026).
