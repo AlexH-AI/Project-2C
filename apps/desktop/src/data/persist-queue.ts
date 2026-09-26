@@ -31,7 +31,9 @@ export function createPersistQueue(write: (bytes: Uint8Array) => Promise<void>):
       const bytes = waiting;
       waiting = undefined;
       try {
-        await write(bytes);
+        // A write that throws instead of rejecting must still yield here: finishing drain()
+        // synchronously would leave `running` pointing at a settled promise, stalling the queue.
+        await new Promise<void>((resolve) => resolve(write(bytes)));
         setFailed(false);
       } catch {
         setFailed(true);

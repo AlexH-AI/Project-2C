@@ -14,7 +14,8 @@ const BACKUP_PREFIX: &str = "project2c-";
 const KEEP_BACKUPS: usize = 10;
 
 /// Reads the database at startup; `None` when there is no file yet. An existing file is first
-/// copied into `backups\` under `stamp`, keeping the newest ten copies.
+/// copied into `backups\` under `stamp`, keeping the newest ten copies. An empty file is an
+/// error, never a first start: the app would otherwise write a new database over it.
 pub fn open(dir: &Path, stamp: &str) -> io::Result<Option<Vec<u8>>> {
     fs::create_dir_all(dir)?;
     // A crash between writing and renaming leaves this behind; the database file itself is whole.
@@ -24,8 +25,14 @@ pub fn open(dir: &Path, stamp: &str) -> io::Result<Option<Vec<u8>>> {
         Err(error) if error.kind() == ErrorKind::NotFound => return Ok(None),
         Err(error) => return Err(error),
     };
+    if bytes.is_empty() {
+        return Err(io::Error::new(
+            ErrorKind::InvalidData,
+            format!("{DB_FILE} is empty"),
+        ));
+    }
     let backups = dir.join(BACKUP_DIR);
-    write_atomic(&backups, &format!("{BACKUP_PREFIX}{stamp}.db"), &bytes)?;
+    write_atomic(&backups, &backup_name(&backups, stamp), &bytes)?;
     prune_backups(&backups)?;
     Ok(Some(bytes))
 }
@@ -103,16 +110,53 @@ fn remove_if_exists(path: &Path) -> io::Result<()> {
     }
 }
 
-/// Deletes all but the newest `KEEP_BACKUPS` backups; stamped names sort by time.
+/// `project2c-<stamp>.db`, or `project2c-<stamp>-<n>.db` when that second already has a backup.
+fn backup_name(backups: &Path, stamp: &str) -> String {
+    let mut name = format!("{BACKUP_PREFIX}{stamp}.db");
+    let mut n = 1;
+    while backups.join(&name).exists() {
+        name = format!("{BACKUP_PREFIX}{stamp}-{n}.db");
+        n += 1;
+    }
+    name
+}
+
+/// The sort key of a name `backup_name` makes; `None` for any other name.
+fn backup_key(name: &str) -> Option<(&str, u64)> {
+    let rest = name.strip_prefix(BACKUP_PREFIX)?.strip_suffix(".db")?;
+    let stamp = rest.get(..15)?;
+    let (date, time) = stamp.split_once('-')?;
+    if date.len() != 8 || !all_digits(date) || !all_digits(time) {
+        return None;
+    }
+    let n = match &rest[15..] {
+        "" => 0,
+        suffix => {
+            let digits = suffix
+                .strip_prefix('-')
+                .filter(|d| all_digits(d) && !d.starts_with('0'))?;
+            digits.parse().ok()?
+        }
+    };
+    Some((stamp, n))
+}
+
+fn all_digits(s: &str) -> bool {
+    !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit())
+}
+
+/// Deletes all but the newest `KEEP_BACKUPS` backups. Only files named like our backups count;
+/// anything else in the folder is left alone.
 fn prune_backups(backups: &Path) -> io::Result<()> {
     let mut names = Vec::new();
     for entry in fs::read_dir(backups)? {
-        let name = entry?.file_name().to_string_lossy().into_owned();
-        if name.starts_with(BACKUP_PREFIX) && name.ends_with(".db") {
+        let entry = entry?;
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if entry.file_type()?.is_file() && backup_key(&name).is_some() {
             names.push(name);
         }
     }
-    names.sort();
+    names.sort_by(|a, b| backup_key(a).cmp(&backup_key(b)));
     let excess = names.len().saturating_sub(KEEP_BACKUPS);
     for name in &names[..excess] {
         fs::remove_file(backups.join(name))?;
@@ -199,6 +243,74 @@ mod tests {
         assert_eq!(kept[0], "notes.txt");
         assert_eq!(kept[1], "project2c-20260912-080000.db");
         assert_eq!(kept[10], "project2c-20260921-080000.db");
+    }
+
+    #[test]
+    fn open_prunes_only_backups_it_named() {
+        let dir = temp_dir();
+        save(&dir, b"data").unwrap();
+        let backups = dir.join(BACKUP_DIR);
+        fs::create_dir_all(backups.join("project2c-20260101-000000.db")).unwrap();
+        let foreign = [
+            "project2c-000-important.db",
+            "project2c-notes.db",
+            "project2c-20260101-00000x.db",
+            "project2c-20260101-000000-x.db",
+            "project2c-20260101-000000-0.db",
+        ];
+        for name in foreign {
+            fs::write(backups.join(name), b"keep").unwrap();
+        }
+        for day in 10..22 {
+            open(&dir, &format!("202609{day}-080000")).unwrap();
+        }
+        let kept = names(&backups);
+        assert_eq!(kept.len(), 16);
+        for name in foreign {
+            assert_eq!(fs::read(backups.join(name)).unwrap(), b"keep", "{name}");
+        }
+        assert!(backups.join("project2c-20260101-000000.db").is_dir());
+        assert!(backups.join("project2c-20260912-080000.db").exists());
+        assert!(!backups.join("project2c-20260911-080000.db").exists());
+    }
+
+    #[test]
+    fn open_twice_in_the_same_second_keeps_both_backups() {
+        let dir = temp_dir();
+        let backups = dir.join(BACKUP_DIR);
+        save(&dir, b"a").unwrap();
+        open(&dir, "20260927-080000").unwrap();
+        for version in [b"b", b"c"] {
+            save(&dir, version).unwrap();
+            open(&dir, "20260927-080000").unwrap();
+        }
+        assert_eq!(
+            fs::read(backups.join("project2c-20260927-080000.db")).unwrap(),
+            b"a"
+        );
+        assert_eq!(
+            fs::read(backups.join("project2c-20260927-080000-1.db")).unwrap(),
+            b"b"
+        );
+        assert_eq!(
+            fs::read(backups.join("project2c-20260927-080000-2.db")).unwrap(),
+            b"c"
+        );
+        // Eight later backups push out one: the unsuffixed copy is the oldest of the second.
+        for day in 10..18 {
+            open(&dir, &format!("202610{day}-080000")).unwrap();
+        }
+        assert!(!backups.join("project2c-20260927-080000.db").exists());
+        assert!(backups.join("project2c-20260927-080000-1.db").exists());
+    }
+
+    #[test]
+    fn open_refuses_an_empty_database_file() {
+        let dir = temp_dir();
+        save(&dir, b"").unwrap();
+        let error = open(&dir, "20260927-080000").unwrap_err();
+        assert_eq!(error.kind(), ErrorKind::InvalidData);
+        assert!(!dir.join(BACKUP_DIR).exists());
     }
 
     #[test]

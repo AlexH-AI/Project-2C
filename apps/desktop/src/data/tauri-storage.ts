@@ -18,6 +18,7 @@ export function tauriStorage(
       const reply = (await invoke('db_open', {
         utcOffsetMinutes: -timezoneOffset(),
       })) as ArrayBuffer;
+      // Rust answers empty only when the file does not exist; an existing empty file fails.
       return reply.byteLength === 0 ? undefined : new Uint8Array(reply);
     },
     async save(bytes) {

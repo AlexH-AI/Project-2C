@@ -82,6 +82,25 @@ describe('createPersistQueue', () => {
     expect(disk.onDisk).toBe('v2');
   });
 
+  it('keeps saving after a write throws before returning a promise', async () => {
+    const written: string[] = [];
+    let calls = 0;
+    const queue = createPersistQueue((data) => {
+      if (++calls === 1) throw new Error('sync failure');
+      written.push(new TextDecoder().decode(data));
+      return Promise.resolve();
+    });
+
+    queue.persist(bytes('v1'));
+    await queue.idle();
+    expect(queue.failed()).toBe(true);
+
+    queue.persist(bytes('v2'));
+    await queue.idle();
+    expect(written).toEqual(['v2']);
+    expect(queue.failed()).toBe(false);
+  });
+
   it('stops notifying a listener after it unsubscribes', async () => {
     const disk = fakeDisk();
     const queue = createPersistQueue(disk.write);
