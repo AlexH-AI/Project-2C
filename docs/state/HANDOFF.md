@@ -3,8 +3,8 @@
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
 - **Cập nhật:** 2026-09-26 · máy `DESKTOP-KDURKJP`
-- **Nhánh:** `main` (sau khi merge #55 — review đóng Phase 2); không có PR mở
-- **Phase:** 2 — Lõi domain **đã đóng** (G7, 26/09/2026) → Phase 3 lập kế hoạch · Phase 1 milestone **để mở** chờ test ở văn phòng
+- **Nhánh:** `main` (sau khi merge #56, #58); không có PR mở
+- **Phase:** 3 — Nghiệp vụ & màn hình (milestone mở 26/09/2026; G2/G1/G4 đã duyệt) · Phase 2 đã đóng · Phase 1 milestone **để mở** chờ test ở văn phòng
 
 ## Trạng thái
 
@@ -22,6 +22,9 @@
 | #33 cổng KYC (`kyc-gate.ts`: `evaluateKycGate` → `KycGateResult`) + `CONTEXT.md` + `docs/metrics/phase-2.md` | ✅ merge #47 (`--squash`), review PASS (phiên sạch), Owner cho merge; 199 test, coverage 100%, K01–K15 pass lần đầu |
 | #25 nhập ngày dd/mm, #26 tiền VND (`risk:low`) | ✅ merge #51, #52 (`--squash`), review PASS |
 | Review đóng Phase 2 (26/09/2026) | ✅ verify xanh (279 test, coverage 100%), không lỗi; ghi chú ca biên trong `docs/metrics/phase-2.md` |
+| #56 CI build exe mọi PR (ADR-0015 phụ lục) | ✅ merge (`--squash`), review PASS |
+| #57 G2 mô hình dữ liệu Phase 3 + ADR-0016 (sql.js ở mọi nơi) + P1 ngưỡng task | ✅ merge #58; Owner duyệt G2/G1/G4 + P1 |
+| Issue Phase 3 #59–#72 (T-040…T-053) | ✅ tạo, có blocking edges |
 
 Ghi chú review #44 (không chặn): `isRfAppointment` dựa vào `StageTransition.appointmentId`, không dựa vào `appointment.stageAfter` → tầng db/UI phải luôn tạo transition gắn `appointmentId` khi ghi "nhóm sau cuộc gặp". (Đã đổi tên test `stats-rf.test.ts:106`.)
 
@@ -42,16 +45,12 @@ Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 đ�
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. Nếu PR #55 (`chore/phase-2-close-review`) còn mở và CI xanh → `gh pr merge 55 --squash --delete-branch`.
-3. ~~G7 đóng milestone Phase 2~~ — Owner duyệt, đã đóng 26/09/2026.
-4. **Bắt đầu Phase 3 (phiên mới):**
-   - Đọc `docs/PROJECT-PLAN.md` (phần Phase 3) + ADR-0005/0006/0007/0008; lập kế hoạch và tách issue cho milestone Phase 3 (tạo milestone nếu chưa có).
-   - Việc đầu tiên: mô hình dữ liệu `packages/db` (Drizzle schema, migrations, repositories) → **dừng ở G2** cho Owner duyệt trước khi code.
-   - Màn hình chưa có trong mockup G3 → dừng ở G3.
-   - **Mở lại build exe cho mọi PR** (CLAUDE.md, ADR-0015): sửa `.github/workflows` + dòng tương ứng trong `CLAUDE.md` ở PR đầu Phase 3.
-   - Ghi chú để lại cho tầng db/UI: transition "nhóm sau cuộc gặp" phải gắn `appointmentId` (#44); KYC "mới nhất" theo thứ tự thao tác, chuẩn hóa kiểu giá trị theo trường (#36); 2 ca biên nhập ngày/tiền trong `docs/metrics/phase-2.md`.
-5. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
-
+2. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Frontier (không bị chặn):
+   - **#60 T-041** nền `packages/db` (sql.js + Drizzle + migration + Team/nhân sự) — G4 dependency đã duyệt; làm TDD.
+   - **#59 T-040** mockup màn nhập liệu → **dừng ở G3** chờ Owner.
+3. Sau đó theo blocking edges: #61 → #62 → #64 (seed); #63 lưu file exe (sau #60); UI #65–#70 cần #59 (G3) + #63 + #64; #71 backup; #72 đóng phase (G7).
+4. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
+5. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2). #61/#62 chạy golden G01–G22, K01–K15 qua DB.
 ## Dựng môi trường trên Office Laptop
 
 ### Phương án A — đầy đủ (build được exe ở local)
