@@ -1,6 +1,6 @@
 /**
- * Minimal confirmed KYC fact, as far as the gate needs it (ADR-0008). T-029 owns the full KYC model
- * (notes, operations, versions) and extends this type.
+ * Confirmed KYC fact (ADR-0008). Notes, the operations that create and change facts, and versions
+ * live in `kyc.ts`.
  */
 import type { KycCategory, KycField } from './kyc-catalog';
 import type { CalendarDate } from './period';

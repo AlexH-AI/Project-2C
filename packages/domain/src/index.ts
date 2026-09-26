@@ -24,6 +24,16 @@ export {
 } from './kyc-catalog';
 export type { KycCategory, KycCategorySpec, KycField, KycGateState } from './kyc-catalog';
 export { KYC_FACT_STATUSES } from './kyc-fact';
+export {
+  EMPTY_KYC_PROFILE,
+  addNote,
+  confirmFact,
+  kycHash,
+  markConflict,
+  nextKycVersion,
+  resolveConflict,
+} from './kyc';
+export type { KycFactInput, KycNote, KycProfile, KycVersion } from './kyc';
 export type { KycFact, KycFactStatus, KycValue } from './kyc-fact';
 export { APPOINTMENT_STATUSES, CLOSED_STAGES, PERSON_ROLES } from './model';
 export type {
