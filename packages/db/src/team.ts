@@ -138,6 +138,10 @@ export function updatePerson(db: Database, id: string, changes: Partial<PersonIn
       role: changes.role ?? current.role,
       teamId: changes.teamId === undefined ? current.teamId : changes.teamId,
     });
+    // Records keep pointing to their RE, who therefore has to stay an RE (spec §3.3).
+    if (current.role === 'RE' && valid.role !== 'RE' && ownsLiveRecords(db, id)) {
+      throw new DbError('PERSON_IN_USE');
+    }
     updatePersonRow(db, id, valid);
     return toPerson(livePerson(db, id));
   });
@@ -205,21 +209,26 @@ function assertTeamNameFree(db: Database, name: string, exceptId: string | null)
   if (clash) throw new DbError('TEAM_NAME_TAKEN');
 }
 
-/** Whether a live customer, appointment or policy still points to the person (spec §4). */
-function isPersonInUse(db: Database, id: string): boolean {
+/** Whether a live customer, appointment or policy has the person as its RE (spec §3.3–3.7). */
+function ownsLiveRecords(db: Database, id: string): boolean {
   const live = (table: typeof customers | typeof appointments | typeof policies) =>
     db.orm
       .select({ id: table.id })
       .from(table)
       .where(and(eq(table.reId, id), isNull(table.deletedAt)))
       .get();
+  return [live(customers), live(appointments), live(policies)].some(Boolean);
+}
+
+/** Whether a live record still points to the person, as RE or coordinator (spec §4). */
+function isPersonInUse(db: Database, id: string): boolean {
   const coordinating = db.orm
     .select({ id: appointments.id })
     .from(appointmentCoordinators)
     .innerJoin(appointments, eq(appointments.id, appointmentCoordinators.appointmentId))
     .where(and(eq(appointmentCoordinators.personId, id), isNull(appointments.deletedAt)))
     .get();
-  return [live(customers), live(appointments), live(policies), coordinating].some(Boolean);
+  return ownsLiveRecords(db, id) || coordinating !== undefined;
 }
 
 function validatePerson(db: Database, input: PersonInput): PersonInput {
