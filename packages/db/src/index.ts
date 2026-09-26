@@ -43,4 +43,15 @@ export type {
   MeetingOutcome,
   NewAppointment,
 } from './appointments';
+export {
+  getPolicy,
+  issuePolicy,
+  listPolicies,
+  restorePolicy,
+  softDeletePolicy,
+  submitPolicy,
+  updatePolicy,
+} from './policies';
+export type { NewPolicy, PolicyChanges } from './policies';
+export { loadMetricsData } from './metrics';
 export { APPOINTMENT_TRIGGERS, GENDERS } from './schema';
