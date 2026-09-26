@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Team &amp; nhân sự — Project-2C mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="mockups.css" />
+    <link rel="stylesheet" href="forms.css" />
+    <style>
+      .team-layout {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+      }
+      .team-list a {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 10px;
+        border-radius: var(--radius-sm);
+        color: var(--text-2);
+        font-size: var(--fs-sm);
+      }
+      .team-list a.on {
+        background: var(--accent-soft);
+        color: var(--text);
+        font-weight: 600;
+      }
+      .team-list a .n {
+        margin-left: auto;
+        color: var(--text-3);
+        font-variant-numeric: tabular-nums;
+      }
+      .role {
+        font-size: var(--fs-xs);
+        font-weight: 700;
+        color: var(--text-3);
+        letter-spacing: 0.04em;
+      }
+      .row-actions {
+        color: var(--text-3);
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none" aria-hidden="true">
+      <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" /><rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="16" width="7" height="5" rx="1.5" /></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M8 14h2M14 14h2M8 17.5h2" /></symbol>
+      <symbol id="i-customers" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.5a6.5 6.5 0 0 1 3 5.5" /></symbol>
+      <symbol id="i-reports" viewBox="0 0 24 24"><path d="M3 3v18h18" /><path d="M7.5 16.5v-4M12 16.5V8M16.5 16.5v-6.5" /></symbol>
+      <symbol id="i-team" viewBox="0 0 24 24"><rect x="9" y="2.5" width="6" height="5" rx="1" /><rect x="2.5" y="16.5" width="6" height="5" rx="1" /><rect x="15.5" y="16.5" width="6" height="5" rx="1" /><path d="M12 7.5v4M5.5 16.5v-2a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v2" /></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" /><circle cx="15" cy="6" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="18" r="2" /></symbol>
+    </svg>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">2C</span> Project-2C</div>
+        <nav class="nav">
+          <a href="overview.html"><svg class="ico" aria-hidden="true"><use href="#i-overview" /></svg>Tổng quan hôm nay</a>
+          <a href="appointments.html"><svg class="ico" aria-hidden="true"><use href="#i-calendar" /></svg>Lịch hẹn</a>
+          <a href="customers.html"><svg class="ico" aria-hidden="true"><use href="#i-customers" /></svg>Khách hàng</a>
+          <a href="#"><svg class="ico" aria-hidden="true"><use href="#i-reports" /></svg>Báo cáo</a>
+          <div class="nav-label">Quản lý</div>
+          <a href="team.html" class="active"><svg class="ico" aria-hidden="true"><use href="#i-team" /></svg>Team &amp; nhân sự</a>
+          <a href="settings-data.html"><svg class="ico" aria-hidden="true"><use href="#i-settings" /></svg>Cài đặt</a>
+        </nav>
+        <div class="sidebar-foot"><span class="save-state"><span class="dot"></span>Đã lưu 07:42</span></div>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <h1>Team &amp; nhân sự</h1>
+          <span class="sub num">3 team · 33 RE / TL · 3 hỗ trợ dùng chung</span>
+          <div class="spacer"></div>
+          <button class="btn">+ Team</button>
+          <button class="btn btn-primary">+ Nhân sự</button>
+        </header>
+
+        <div class="content">
+          <div class="team-layout">
+            <div class="stack">
+              <section class="card team-list" aria-label="Team">
+                <div class="card-head"><h2>Team</h2></div>
+                <a href="#" class="on">Sao Mai <span class="n">1 TL · 10 RE</span></a>
+                <a href="#">Bình Minh <span class="n">1 TL · 10 RE</span></a>
+                <a href="#">Hừng Đông <span class="n">1 TL · 10 RE</span></a>
+              </section>
+              <section class="card" aria-label="Hỗ trợ dùng chung">
+                <div class="card-head"><h2>Hỗ trợ dùng chung</h2><span class="meta">không thuộc team</span></div>
+                <div class="stack" style="gap: 8px; font-size: var(--fs-sm)">
+                  <div class="who"><span class="avatar">PH</span><span class="name">Phó Đức Huy</span><span class="role">IS</span></div>
+                  <div class="who"><span class="avatar">VT</span><span class="name">Vũ Thanh Tâm</span><span class="role">BD</span></div>
+                  <div class="who"><span class="avatar">NQ</span><span class="name">Ngô Quang Vinh</span><span class="role">BDM</span></div>
+                </div>
+                <p class="help" style="margin: 10px 0 0">IS / BD / BDM chỉ là người phối hợp lịch hẹn, không có chỉ số.</p>
+              </section>
+            </div>
+
+            <section class="card" aria-label="Thành viên team Sao Mai">
+              <div class="card-head">
+                <h2>Sao Mai</h2>
+                <span class="meta num">11 người · 412 KH</span>
+                <span class="actions"><button class="btn" style="padding: 4px 10px">Đổi tên team</button></span>
+              </div>
+              <table>
+                <thead>
+                  <tr><th class="sort asc">Họ tên</th><th class="sort">Vai trò</th><th class="sort r">KH đang mở</th><th class="sort r">Lịch hẹn 30 ngày</th><th class="sort r">HĐ năm 2026</th><th></th></tr>
+                </thead>
+                <tbody class="num">
+                  <tr><td><div class="who"><span class="avatar">NH</span><span class="name">Nguyễn Thu Hà</span></div></td><td><span class="role">TL</span></td><td class="r muted">—</td><td class="r">14</td><td class="r muted">—</td><td class="row-actions">Sửa</td></tr>
+                  <tr class="selected"><td><div class="who"><span class="avatar">ĐL</span><span class="name">Đỗ Khánh Linh</span></div></td><td><span class="role">RE</span></td><td class="r">38</td><td class="r">19</td><td class="r">9</td><td class="row-actions">Sửa</td></tr>
+                  <tr><td><div class="who"><span class="avatar">BT</span><span class="name">Bùi Anh Tuấn</span></div></td><td><span class="role">RE</span></td><td class="r">41</td><td class="r">16</td><td class="r">7</td><td class="row-actions">Sửa</td></tr>
+                  <tr><td><div class="who"><span class="avatar">HM</span><span class="name">Hoàng Nhật Minh</span></div></td><td><span class="role">RE</span></td><td class="r">36</td><td class="r">21</td><td class="r">11</td><td class="row-actions">Sửa</td></tr>
+                  <tr><td><div class="who"><span class="avatar">LP</span><span class="name">Lâm Bảo Phương</span></div></td><td><span class="role">RE</span></td><td class="r">44</td><td class="r">12</td><td class="r">5</td><td class="row-actions">Sửa</td></tr>
+                  <tr><td colspan="6" class="muted" style="text-align: center">… 6 RE khác</td></tr>
+                </tbody>
+              </table>
+            </section>
+          </div>
+
+          <div class="specimens">
+            <section class="specimen">
+              <p class="cap">9a · Thêm nhân sự — RE / TL bắt buộc có team</p>
+              <div class="dialog">
+                <div class="dialog-head"><div><h2>Nhân sự mới</h2></div><span class="x">×</span></div>
+                <div class="dialog-body">
+                  <div class="field">
+                    <label>Họ tên <span class="req">*</span></label>
+                    <div class="input">Trần Hải Yến</div>
+                  </div>
+                  <div class="field">
+                    <span class="label">Vai trò <span class="req">*</span></span>
+                    <div class="choices"><span class="choice on">RE</span><span class="choice">TL</span><span class="choice">IS</span><span class="choice">BD</span><span class="choice">BDM</span></div>
+                  </div>
+                  <div class="field">
+                    <label>Team <span class="req">*</span> <span class="opt">bắt buộc với RE / TL; IS, BD, BDM để trống</span></label>
+                    <div class="input error placeholder">Chọn team<span class="caret">▾</span></div>
+                    <span class="field-err">RE phải thuộc một team.</span>
+                  </div>
+                  <span class="help">Đổi team của RE: chỉ số cũ đi theo team hiện tại (v1 không lưu lịch sử chuyển team).</span>
+                </div>
+                <div class="dialog-foot"><span class="spacer"></span><button class="btn">Hủy</button><button class="btn btn-primary">Thêm</button></div>
+              </div>
+            </section>
+
+            <section class="specimen">
+              <p class="cap">9b · Xóa nhân sự còn dữ liệu — bị chặn</p>
+              <div class="dialog">
+                <div class="dialog-head"><div><h2>Xóa Đỗ Khánh Linh?</h2><div class="sub">RE · Sao Mai</div></div><span class="x">×</span></div>
+                <div class="dialog-body">
+                  <div class="alert">
+                    <b>Chưa xóa được — RE còn dữ liệu</b>
+                    <ul class="num">
+                      <li>38 KH đang phụ trách</li>
+                      <li>212 lịch hẹn, 9 HĐ ghi cho RE này</li>
+                      <li>5 lịch hẹn là người phối hợp</li>
+                    </ul>
+                  </div>
+                  <span class="help">Chuyển KH sang RE khác trước (Sửa hồ sơ KH). Lịch hẹn và HĐ cũ giữ theo RE đã ghi nên RE vẫn còn trong dữ liệu — cân nhắc giữ lại thay vì xóa.</span>
+                </div>
+                <div class="dialog-foot"><span class="spacer"></span><button class="btn">Đóng</button><button class="btn btn-danger" disabled>Xóa</button></div>
+              </div>
+            </section>
+
+            <section class="specimen">
+              <p class="cap">9c · Tạo / đổi tên team — trùng tên</p>
+              <div class="dialog">
+                <div class="dialog-head"><div><h2>Team mới</h2></div><span class="x">×</span></div>
+                <div class="dialog-body">
+                  <div class="field">
+                    <label>Tên team <span class="req">*</span></label>
+                    <div class="input error">Sao Mai</div>
+                    <span class="field-err">Đã có team "Sao Mai".</span>
+                  </div>
+                </div>
+                <div class="dialog-foot"><span class="spacer"></span><button class="btn">Hủy</button><button class="btn btn-primary">Tạo team</button></div>
+              </div>
+            </section>
+          </div>
+          <div class="mock-note">Mockup G3 Phase 3 · dữ liệu giả lập theo seed D8 (3 team × 1 TL + 10 RE; IS, BD, BDM dùng chung)</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

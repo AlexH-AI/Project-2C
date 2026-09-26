@@ -141,6 +141,70 @@ describe('schema constraints', () => {
     insertTeam('b', null);
     expect(() => insertTeam('c', null)).toThrow(/UNIQUE/);
   });
+
+  async function withCustomer() {
+    const db = await openDatabase();
+    db.sqlite.run(
+      "INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'T', 'x', 'x')",
+    );
+    db.sqlite.run(insertPerson('RE', 't'));
+    db.sqlite.run(
+      "INSERT INTO customers (id, code, name, re_id, stage, created_at, updated_at) VALUES ('c', 'K-0001', 'B', 'p', 'N4', 'x', 'x')",
+    );
+    return db;
+  }
+
+  it('rejects unknown stages in stage transitions', async () => {
+    const db = await withCustomer();
+    const insert = (seq: number, from: string | null, to: string) =>
+      db.sqlite.run(
+        "INSERT INTO stage_transitions (id, customer_id, seq, from_stage, to_stage, date, created_at) VALUES (?, 'c', ?, ?, ?, '2026-01-01', 'x')",
+        [`s${seq}`, seq, from, to],
+      );
+
+    insert(1, null, 'N4');
+    insert(2, 'N4', 'N3');
+    expect(() => insert(3, 'N9', 'N2')).toThrow(/CHECK/);
+    expect(() => insert(4, 'N3', 'N9')).toThrow(/CHECK/);
+  });
+
+  it('requires the meeting outcome only on met appointments', async () => {
+    const db = await withCustomer();
+    const insert = (
+      id: string,
+      status: string,
+      stageAfter: string | null,
+      nextStep: string | null,
+    ) =>
+      db.sqlite.run(
+        "INSERT INTO appointments (id, customer_id, re_id, date, status, trigger_type, stage_after, next_step, note, created_at, updated_at) VALUES (?, 'c', 'p', '2026-01-01', ?, 'OTHER', ?, ?, '', 'x', 'x')",
+        [id, status, stageAfter, nextStep],
+      );
+
+    insert('a1', 'SCHEDULED', null, null);
+    insert('a2', 'MET', 'N3', 'Gửi bảng minh họa');
+    expect(() => insert('a3', 'MET', null, 'x')).toThrow(/CHECK/);
+    expect(() => insert('a4', 'MET', 'N3', null)).toThrow(/CHECK/);
+    expect(() => insert('a5', 'NO_SHOW', 'N3', null)).toThrow(/CHECK/);
+    expect(() => insert('a6', 'DONE', null, null)).toThrow(/CHECK/);
+  });
+
+  it('keeps policy amounts positive and issue data paired and not before submission', async () => {
+    const db = await withCustomer();
+    const insert = (id: string, fyp: number, issuedDate: string | null, issuedFyp: number | null) =>
+      db.sqlite.run(
+        "INSERT INTO policies (id, customer_id, re_id, submitted_date, submitted_fyp, issued_date, issued_fyp, created_at, updated_at) VALUES (?, 'c', 'p', '2026-03-10', ?, ?, ?, 'x', 'x')",
+        [id, fyp, issuedDate, issuedFyp],
+      );
+
+    insert('h1', 1, null, null);
+    insert('h2', 1, '2026-03-10', 1);
+    expect(() => insert('h3', 0, null, null)).toThrow(/CHECK/);
+    expect(() => insert('h4', 1, '2026-03-10', null)).toThrow(/CHECK/);
+    expect(() => insert('h5', 1, null, 1)).toThrow(/CHECK/);
+    expect(() => insert('h6', 1, '2026-03-09', 1)).toThrow(/CHECK/);
+    expect(() => insert('h7', 1, '2026-03-10', 0)).toThrow(/CHECK/);
+  });
 });
 
 describe('transaction', () => {
