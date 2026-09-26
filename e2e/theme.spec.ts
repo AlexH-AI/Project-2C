@@ -32,8 +32,12 @@ test('Be Vietnam Pro is loaded from the app itself, including Vietnamese glyphs'
     await Promise.all(
       weights.map((w) => document.fonts.load(`${w} 16px "Be Vietnam Pro"`, 'Việt Đ')),
     );
+    // Only the vietnamese subset covers U+1EA0–1EF9 ("ệ"); the latin face alone must not pass.
     const faces = [...document.fonts].filter(
-      (face) => face.family.replaceAll('"', '') === 'Be Vietnam Pro' && face.status === 'loaded',
+      (face) =>
+        face.family.replaceAll('"', '') === 'Be Vietnam Pro' &&
+        face.status === 'loaded' &&
+        /U\+1EA0-1EF9/i.test(face.unicodeRange),
     );
     return weights.filter((w) => faces.some((face) => face.weight === w));
   });
