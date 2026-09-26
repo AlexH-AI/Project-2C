@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tổng quan hôm nay — Project-2C mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="mockups.css" />
+    <style>
+      .team-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+      .team-card .card-head .tl {
+        color: var(--text-3);
+        font-size: var(--fs-sm);
+      }
+      .appt td:first-child {
+        width: 48px;
+        color: var(--text-2);
+        padding-right: 0;
+      }
+      .appt .name .badge {
+        margin-left: 4px;
+        vertical-align: 1px;
+      }
+      .appt td.r {
+        width: 1%;
+      }
+      .rank td {
+        padding: 6px 10px;
+      }
+      .legend {
+        display: flex;
+        gap: 14px;
+        font-size: var(--fs-xs);
+        color: var(--text-2);
+      }
+      .legend i {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        margin-right: 5px;
+        vertical-align: -1px;
+      }
+      .trend {
+        display: grid;
+        grid-template-columns: 120px 1fr 80px;
+        align-items: center;
+        gap: 10px;
+        font-size: var(--fs-sm);
+        padding: 5px 0;
+      }
+      .trend .bar {
+        height: 10px;
+      }
+      .team-card {
+        display: flex;
+        flex-direction: column;
+      }
+      .team-foot {
+        margin-top: auto;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+      }
+      .team-foot b {
+        display: block;
+        font-size: var(--fs-lg);
+        color: var(--text);
+      }
+      .bottom-grid td {
+        white-space: nowrap;
+      }
+      .bottom-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 16px;
+      }
+      .inline-bar {
+        display: grid;
+        grid-template-columns: 1fr 56px;
+        align-items: center;
+        gap: 8px;
+        text-align: right;
+      }
+      .inline-bar .bar {
+        height: 8px;
+      }
+      tr.total td {
+        font-weight: 650;
+        border-top: 1px solid var(--border-strong);
+      }
+      .week {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 8px;
+      }
+      .week .d {
+        position: relative;
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 8px 8px 22px;
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        overflow: hidden;
+      }
+      .week .d b {
+        display: block;
+        font-size: var(--fs-xl);
+        color: var(--text);
+      }
+      .week .d i {
+        position: absolute;
+        left: 8px;
+        bottom: 8px;
+        height: 6px;
+        border-radius: 3px;
+        background: var(--n3);
+        opacity: 0.8;
+      }
+      .week .d.on {
+        border-color: var(--accent);
+      }
+      .more-link {
+        font-size: var(--fs-sm);
+        color: var(--accent);
+        padding: 10px 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none" aria-hidden="true">
+      <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" /><rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="16" width="7" height="5" rx="1.5" /></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M8 14h2M14 14h2M8 17.5h2" /></symbol>
+      <symbol id="i-customers" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.5a6.5 6.5 0 0 1 3 5.5" /></symbol>
+      <symbol id="i-reports" viewBox="0 0 24 24"><path d="M3 3v18h18" /><path d="M7.5 16.5v-4M12 16.5V8M16.5 16.5v-6.5" /></symbol>
+      <symbol id="i-team" viewBox="0 0 24 24"><rect x="9" y="2.5" width="6" height="5" rx="1" /><rect x="2.5" y="16.5" width="6" height="5" rx="1" /><rect x="15.5" y="16.5" width="6" height="5" rx="1" /><path d="M12 7.5v4M5.5 16.5v-2a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v2" /></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" /><circle cx="15" cy="6" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="18" r="2" /></symbol>
+    </svg>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">2C</span> Project-2C</div>
+        <nav class="nav">
+          <a href="overview.html" class="active"><svg class="ico" aria-hidden="true"><use href="#i-overview" /></svg>Tổng quan hôm nay</a>
+          <a href="appointments.html"><svg class="ico" aria-hidden="true"><use href="#i-calendar" /></svg>Lịch hẹn</a>
+          <a href="customers.html"><svg class="ico" aria-hidden="true"><use href="#i-customers" /></svg>Khách hàng</a>
+          <a href="#"><svg class="ico" aria-hidden="true"><use href="#i-reports" /></svg>Báo cáo</a>
+          <div class="nav-label">Quản lý</div>
+          <a href="#"><svg class="ico" aria-hidden="true"><use href="#i-team" /></svg>Team &amp; nhân sự</a>
+          <a href="#"><svg class="ico" aria-hidden="true"><use href="#i-settings" /></svg>Cài đặt</a>
+        </nav>
+        <div class="sidebar-foot">Dữ liệu giả lập · Đồng bộ lần cuối 07:42</div>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <div>
+            <h1>Tổng quan hôm nay</h1>
+            <div class="sub num">Thứ Hai, 28/09/2026</div>
+          </div>
+          <div class="spacer"></div>
+          <div class="search">Tìm KH, RE, lịch hẹn… <span class="spacer"></span><span class="kbd">Ctrl K</span></div>
+          <button class="btn btn-primary">+ Lịch hẹn</button>
+        </header>
+
+        <div class="content">
+          <div class="filter-bar">
+            <span class="section-title" style="margin: 0 4px 0 0">Kỳ thống kê</span>
+            <div class="period">
+              <div class="segmented"><button>Ngày</button><button>Tuần</button><button class="on">Tháng</button><button>Năm</button><button>Tùy chọn</button></div>
+              <span class="step">‹</span><span class="range">01/09 – 28/09/2026 · MTD</span><span class="step">›</span>
+            </div>
+            <span class="spacer"></span>
+            <span class="section-title" style="margin: 0 4px 0 0">Góc nhìn</span>
+            <div class="segmented"><button class="on">Toàn bộ</button><button>Team</button><button>RE</button></div>
+            <span class="select">Team: <b>Tất cả</b> ▾</span>
+          </div>
+          <section class="kpis" aria-label="Chỉ số">
+            <div class="kpi">
+              <div class="label">Lịch hẹn hôm nay</div>
+              <div class="value">6 <small>/ 17</small></div>
+              <div class="foot">đã gặp / dự kiến · 1 hoãn</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Chuyển RF · MTD</div>
+              <div class="value">38</div>
+              <div class="foot"><span class="up">▲ 5</span> so với cùng kỳ tháng 8</div>
+            </div>
+            <div class="kpi">
+              <div class="label">HĐ nộp · MTD</div>
+              <div class="value">24</div>
+              <div class="foot">3 hôm nay</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Case size · MTD</div>
+              <div class="value">18,6 <small>tỷ</small></div>
+              <div class="foot">Σ FYP HĐ đã nộp</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Doanh số · MTD</div>
+              <div class="value">14,2 <small>tỷ</small></div>
+              <div class="foot">Σ FYP theo ngày phát hành</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Tỉ lệ chốt · lũy kế</div>
+              <div class="value">41,7<small>%</small></div>
+              <div class="foot">212 HĐ ÷ 508 KH từng ở N2/N1</div>
+            </div>
+          </section>
+
+          <section class="team-grid" aria-label="Lịch hẹn hôm nay theo team">
+            <div class="card team-card">
+              <div class="card-head">
+                <h2>Team Sao Mai</h2>
+                <span class="tl">TL Nguyễn Thu Hà</span>
+                <span class="actions meta num">2/6 đã gặp</span>
+              </div>
+              <table class="appt">
+                <tbody>
+                  <tr>
+                    <td class="num">08:30</td>
+                    <td>
+                      <div class="who">
+                        <span class="avatar">PL</span>
+                        <div><div class="name">Phạm Gia Long <span class="badge st-n2">N2</span></div><div class="id">RE Đỗ Khánh Linh · K-7F3Q</div></div>
+                      </div>
+                    </td>
+                    <td class="r"><span class="badge c-ok plain">Đã gặp</span></td>
+                  </tr>
+                  <tr>
+                    <td class="num">10:00</td>
+                    <td>
+                      <div class="who">
+                        <span class="avatar">VT</span>
+                        <div><div class="name">Vũ Thanh Tâm <span class="badge st-n3">N3</span></div><div class="id">RE Hoàng Nam · K-2M8D</div></div>
+                      </div>
+                    </td>
+                    <td class="r"><span class="badge c-ok plain">Đã gặp</span></td>
+                  </tr>
+                  <tr class="selected">
+                    <td class="num">14:00</td>
+                    <td>
+                      <div class="who">
+                        <span class="avatar">TA</span>
+                        <div><div class="name">Trịnh Minh Anh <span class="badge st-n1">N1</span></div><div class="id">RE Đỗ Khánh Linh · K-9A1C · + TL, IS</div></div>
+                      </div>
+                    </td>
+                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
+                  </tr>
+                  <tr>
+                    <td class="num">15:30</td>
+                    <td>
+                      <div class="who">
+                        <span class="avatar">NH</span>
+                        <div><div class="name">Ngô Bảo Hân <span class="badge st-n4">N4</span></div><div class="id">RE Lý Quang Vinh · K-4T6R</div></div>
+                      </div>
+                    </td>
+                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
+                  </tr>
+                  <tr>
+                    <td class="num">16:30</td>
+                    <td>
+                      <div class="who">
+                        <span class="avatar">ĐK</span>
+                        <div><div class="name">Đặng Quốc Khánh <span class="badge st-n2">N2</span></div><div class="id">RE Mai Phương · K-8W2E · + BDM</div></div>
+                      </div>
+                    </td>
+                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
+                  </tr>
+                  <tr>
+                    <td class="num">17:00</td>
+                    <td>
+                      <div class="who">
+                        <span class="avatar">LH</span>
+                        <div><div class="name">Lâm Thị Hường <span class="badge st-n3">N3</span></div><div class="id">RE Hoàng Nam · K-1B5N</div></div>
+                      </div>
+                    </td>
+                    <td class="r"><span class="badge c-warn plain">Hoãn</span></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="team-foot num"><div><b>15</b>RF</div><div><b>10</b>HĐ nộp</div><div><b>5,6 tỷ</b>Doanh số</div><div><b>44,1%</b>Tỉ lệ chốt</div></div>
+            </div>
+
+            <div class="card team-card">
+              <div class="card-head">
+                <h2>Team Bình Minh</h2>
+                <span class="tl">TL Trần Quốc Bảo</span>
+                <span class="actions meta num">3/6 đã gặp</span>
+              </div>
+              <table class="appt">
+                <tbody>
+                  <tr>
+                    <td class="num">08:00</td>
+                    <td><div class="who"><span class="avatar">CĐ</span><div><div class="name">Cao Văn Đức <span class="badge st-n3">N3</span></div><div class="id">RE Tạ Hải Yến · K-3H7P</div></div></div></td>
+                    <td class="r"><span class="badge c-ok plain">Đã gặp</span></td>
+                  </tr>
+                  <tr>
+                    <td class="num">09:30</td>
+                    <td><div class="who"><span class="avatar">BT</span><div><div class="name">Bùi Ngọc Trâm <span class="badge st-n1">N1</span></div><div class="id">RE Phan Tuấn · K-6C9X · + BD</div></div></div></td>
+                    <td class="r"><span class="badge c-ok plain">Đã gặp</span></td>
+                  </tr>
+                  <tr>
+                    <td class="num">11:00</td>
+                    <td><div class="who"><span class="avatar">HP</span><div><div class="name">Hồ Thành Phát <span class="badge st-n4">N4</span></div><div class="id">RE Tạ Hải Yến · K-5J2L</div></div></div></td>
+                    <td class="r"><span class="badge c-ok plain">Đã gặp</span></td>
+                  </tr>
+                  <tr>
+                    <td class="num">14:30</td>
+                    <td><div class="who"><span class="avatar">DQ</span><div><div class="name">Dương Mỹ Quyên <span class="badge st-n2">N2</span></div><div class="id">RE Kiều Minh · K-0R4S</div></div></div></td>
+                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
+                  </tr>
+                  <tr>
+                    <td class="num">16:00</td>
+                    <td><div class="who"><span class="avatar">TS</span><div><div class="name">Tôn Thất Sơn <span class="badge st-n2">N2</span></div><div class="id">RE Phan Tuấn · K-7V1K · + TL</div></div></div></td>
+                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
+                  </tr>
+                  <tr>
+                    <td class="num">18:30</td>
+                    <td><div class="who"><span class="avatar">LV</span><div><div class="name">La Hoài Vy <span class="badge st-n3">N3</span></div><div class="id">RE Kiều Minh · K-2Z8M</div></div></div></td>
+                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="team-foot num"><div><b>13</b>RF</div><div><b>8</b>HĐ nộp</div><div><b>4,8 tỷ</b>Doanh số</div><div><b>41,5%</b>Tỉ lệ chốt</div></div>
+            </div>
+
+            <div class="card team-card">
+              <div class="card-head">
+                <h2>Team Hừng Đông</h2>
+                <span class="tl">TL Lê Minh Châu</span>
+                <span class="actions meta num">1/5 đã gặp</span>
+              </div>
+              <table class="appt">
+                <tbody>
+                  <tr>
+                    <td class="num">09:00</td>
+                    <td><div class="who"><span class="avatar">KT</span><div><div class="name">Khúc Duy Thịnh <span class="badge st-n3">N3</span></div><div class="id">RE Âu Gia Bảo · K-9D3F</div></div></div></td>
+                    <td class="r"><span class="badge c-ok plain">Đã gặp</span></td>
+                  </tr>
+                  <tr>
+                    <td class="num">13:30</td>
+                    <td><div class="who"><span class="avatar">QN</span><div><div class="name">Quách Thảo Nhi <span class="badge st-n1">N1</span></div><div class="id">RE Văn Thùy · K-1G6H · + IS</div></div></div></td>
+                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
+                  </tr>
+                  <tr>
+                    <td class="num">15:00</td>
+                    <td><div class="who"><span class="avatar">MĐ</span><div><div class="name">Mạc Tiến Đạt <span class="badge st-n4">N4</span></div><div class="id">RE Âu Gia Bảo · K-4N7Y</div></div></div></td>
+                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
+                  </tr>
+                  <tr>
+                    <td class="num">16:00</td>
+                    <td><div class="who"><span class="avatar">YL</span><div><div class="name">Yên Khánh Ly <span class="badge st-hold">Tạm hoãn</span></div><div class="id">RE Nghiêm Tú · K-8P0T</div></div></div></td>
+                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
+                  </tr>
+                  <tr>
+                    <td class="num">19:00</td>
+                    <td><div class="who"><span class="avatar">SH</span><div><div class="name">Sầm Minh Hiếu <span class="badge st-n2">N2</span></div><div class="id">RE Văn Thùy · K-6E2U</div></div></div></td>
+                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="team-foot num"><div><b>10</b>RF</div><div><b>6</b>HĐ nộp</div><div><b>3,8 tỷ</b>Doanh số</div><div><b>38,9%</b>Tỉ lệ chốt</div></div>
+            </div>
+          </section>
+
+          <section class="bottom-grid">
+            <div class="card">
+              <div class="card-head">
+                <h2>So sánh team</h2>
+                <span class="meta num">01/09 – 28/09/2026</span>
+                <span class="actions"><span class="select">Chỉ số: <b>Doanh số</b> ▾</span></span>
+              </div>
+              <table>
+                <thead>
+                  <tr><th class="sort">Team</th><th class="sort r">Đã gặp</th><th class="sort r">RF</th><th class="sort r">HĐ nộp</th><th class="sort r">Case size</th><th class="sort desc" style="width: 34%">Doanh số</th><th class="sort r">Tỉ lệ chốt</th></tr>
+                </thead>
+                <tbody class="num">
+                  <tr><td>Sao Mai</td><td class="r">118</td><td class="r">15</td><td class="r">10</td><td class="r">7,4 tỷ</td><td><div class="inline-bar"><div class="bar"><span style="width: 100%; background: var(--accent)"></span></div>5,6 tỷ</div></td><td class="r">44,1%</td></tr>
+                  <tr><td>Bình Minh</td><td class="r">104</td><td class="r">13</td><td class="r">8</td><td class="r">6,2 tỷ</td><td><div class="inline-bar"><div class="bar"><span style="width: 86%; background: var(--accent)"></span></div>4,8 tỷ</div></td><td class="r">41,5%</td></tr>
+                  <tr><td>Hừng Đông</td><td class="r">91</td><td class="r">10</td><td class="r">6</td><td class="r">5,0 tỷ</td><td><div class="inline-bar"><div class="bar"><span style="width: 68%; background: var(--accent)"></span></div>3,8 tỷ</div></td><td class="r">38,9%</td></tr>
+                  <tr class="total"><td>Tổng</td><td class="r">313</td><td class="r">38</td><td class="r">24</td><td class="r">18,6 tỷ</td><td><div class="inline-bar"><span></span>14,2 tỷ</div></td><td class="r">41,7%</td></tr>
+                </tbody>
+              </table>
+
+              <div class="subhead">Lịch hẹn 7 ngày tới</div>
+              <div class="week num">
+                <div class="d on"><span>T2 28/09</span><b>17</b><i style="width: calc((100% - 16px) * 1)"></i></div>
+                <div class="d"><span>T3 29/09</span><b>14</b><i style="width: calc((100% - 16px) * 0.82)"></i></div>
+                <div class="d"><span>T4 30/09</span><b>15</b><i style="width: calc((100% - 16px) * 0.88)"></i></div>
+                <div class="d"><span>T5 01/10</span><b>12</b><i style="width: calc((100% - 16px) * 0.7)"></i></div>
+                <div class="d"><span>T6 02/10</span><b>16</b><i style="width: calc((100% - 16px) * 0.94)"></i></div>
+                <div class="d"><span>T7 03/10</span><b>5</b><i style="width: calc((100% - 16px) * 0.3)"></i></div>
+                <div class="d"><span>CN 04/10</span><b>1</b><i style="width: calc((100% - 16px) * 0.06)"></i></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <h2>Top RE</h2>
+                <span class="meta num">01/09 – 28/09/2026</span>
+                <span class="actions"><span class="select">Team: <b>Tất cả</b> ▾</span></span>
+              </div>
+              <table class="rank">
+                <thead>
+                  <tr><th class="sort">RE</th><th class="sort">Team</th><th class="sort r">Đã gặp</th><th class="sort r">RF</th><th class="sort r">HĐ nộp</th><th class="sort r desc">Doanh số</th></tr>
+                </thead>
+                <tbody class="num">
+                  <tr><td>Đỗ Khánh Linh</td><td class="dim">Sao Mai</td><td class="r">21</td><td class="r">6</td><td class="r">4</td><td class="r">2,1 tỷ</td></tr>
+                  <tr><td>Phan Tuấn</td><td class="dim">Bình Minh</td><td class="r">18</td><td class="r">5</td><td class="r">3</td><td class="r">1,7 tỷ</td></tr>
+                  <tr><td>Văn Thùy</td><td class="dim">Hừng Đông</td><td class="r">16</td><td class="r">4</td><td class="r">3</td><td class="r">1,4 tỷ</td></tr>
+                  <tr><td>Hoàng Nam</td><td class="dim">Sao Mai</td><td class="r">19</td><td class="r">4</td><td class="r">2</td><td class="r">1,2 tỷ</td></tr>
+                  <tr><td>Tạ Hải Yến</td><td class="dim">Bình Minh</td><td class="r">15</td><td class="r">3</td><td class="r">2</td><td class="r">950 tr</td></tr>
+                  <tr><td>Kiều Minh</td><td class="dim">Bình Minh</td><td class="r">14</td><td class="r">3</td><td class="r">2</td><td class="r">880 tr</td></tr>
+                  <tr><td>Âu Gia Bảo</td><td class="dim">Hừng Đông</td><td class="r">17</td><td class="r">3</td><td class="r">1</td><td class="r">720 tr</td></tr>
+                  <tr><td>Mai Phương</td><td class="dim">Sao Mai</td><td class="r">13</td><td class="r">2</td><td class="r">1</td><td class="r">650 tr</td></tr>
+                </tbody>
+              </table>
+              <div class="more-link">Xem cả 30 RE →</div>
+            </div>
+          </section>
+
+          <div class="mock-note">Mockup G3 · dữ liệu giả lập · bấm một dòng lịch hẹn → màn hình Lịch hẹn</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -37,6 +37,16 @@ Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh
 - Không dùng: `subagent-driven-development`, `dispatching-parallel-agents`, `requesting-code-review`, `using-git-worktrees`. Khi skill gợi ý subagent → làm inline.
 - Project skills (`.claude/skills/`): `grill-me`/`grilling`, `to-spec`, `to-tickets`, `tdd`, `setup-matt-pocock-skills`.
 
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues của `AlexH-AI/Project-2C`, theo mẫu Task, nhãn `type:task` + `risk:*`, milestone theo phase. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` ở gốc (tạo khi cần) + ADR ở `docs/decisions/`. See `docs/agents/domain.md`.
+
 ## Kiến trúc (ADR-0005, ADR-0006)
 
 ```
@@ -60,6 +70,7 @@ tools/             bootstrap, session scripts, seed
 | `pnpm install` | Cài dependency (pnpm qua corepack, phiên bản ghim trong `package.json`) |
 | `pnpm verify` | lint + typecheck + unit + ranh giới module — **bắt buộc xanh trước commit** |
 | `pnpm test` | Unit test (Vitest) |
+| `pnpm e2e` | E2E Playwright trên bản build web, dùng Microsoft Edge có sẵn |
 | `pnpm dev:web` | UI trên Vite, không cần Tauri |
 | `pnpm dev` | App Tauri |
 | `pnpm build:exe` | Build exe portable |
