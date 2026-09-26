@@ -50,7 +50,10 @@ export function submitPolicy(db: Database, input: NewPolicy): Policy {
   });
 }
 
-/** Issues (or re-issues) the policy; the issued FYP defaults to the submitted FYP. */
+/**
+ * Issues (or re-issues) the policy. Without an issued FYP it keeps the current one, or takes the
+ * submitted FYP on the first issue (G2 D).
+ */
 export function issuePolicy(
   db: Database,
   id: string,
@@ -59,7 +62,7 @@ export function issuePolicy(
   const current = toPolicy(livePolicy(db, id));
   return updatePolicy(db, id, {
     issuedDate: issue.issuedDate,
-    issuedFyp: issue.issuedFyp ?? current.submittedFyp,
+    issuedFyp: issue.issuedFyp ?? current.issuedFyp ?? current.submittedFyp,
   });
 }
 

@@ -68,9 +68,9 @@ function loadFixture(db: Database): Map<string, string> {
       expectedCaseSize: a.expectedCaseSize,
     });
 
+  const linked = new Set(STAGE_TRANSITIONS.map((t) => t.appointmentId));
   for (const customer of CUSTOMERS) {
     const own = APPOINTMENTS.filter((a) => a.customerId === customer.id);
-    const linked = new Set(STAGE_TRANSITIONS.map((t) => t.appointmentId));
     // Replay the customer's history in date order; transitions first on the same day.
     const events = [
       ...STAGE_TRANSITIONS.filter((t) => t.customerId === customer.id).map((t) => ({

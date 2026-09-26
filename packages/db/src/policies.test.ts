@@ -53,6 +53,11 @@ describe('policies', () => {
       issuedFyp: 280 * MILLION,
     });
     expect(getPolicy(db, policy.id)?.issuedFyp).toBe(280 * MILLION);
+    // Re-issuing with a new date keeps the hand-edited FYP.
+    expect(issuePolicy(db, policy.id, { issuedDate: d(5, 2) })).toMatchObject({
+      issuedDate: d(5, 2),
+      issuedFyp: 280 * MILLION,
+    });
     expect(listPolicies(db)).toHaveLength(1);
   });
 
