@@ -19,6 +19,7 @@ Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh
 
 - **Bắt đầu phiên:** `/session-start` — pull, đọc `docs/state/HANDOFF.md`, xem PR/Issue đang mở. (Không đặt tên `/resume` vì trùng lệnh có sẵn của Claude Code.) Hook `SessionStart` cũng tự nạp `HANDOFF.md`.
 - **Kết thúc phiên / trước khi rời máy:** `/handoff` — commit WIP, push, cập nhật `HANDOFF.md` (đang làm gì, bước kế tiếp chính xác, việc chờ Owner).
+- **Giữa các task trên cùng máy:** không cần `/handoff` — PR đã merge / Issue đã đóng trên GitHub là trạng thái thật. Cập nhật `HANDOFF.md` khi rời máy / hết ngày, hoặc khi có điều GitHub chưa ghi mà phiên sau phải biết (quyết định Owner, ghi chú review, việc chờ Owner, đổi thứ tự làm). Có thể sửa `HANDOFF.md` ngay trong PR của task khi không có phiên song song. Handoff chỉ có tác dụng khi đã vào `main`.
 - GitHub là nguồn sự thật. Không để gì quan trọng chỉ nằm trên một máy. DB dev sinh lại bằng seed; API key nhập riêng từng máy.
 
 ## Quy trình một task (ADR-0001)

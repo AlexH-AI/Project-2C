@@ -2,8 +2,8 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-09-26 · máy `DESKTOP-KDURKJP`
-- **Nhánh:** `main` (sau khi merge #56, #58); không có PR mở
+- **Cập nhật:** 2026-09-27 · máy `DESKTOP-KDURKJP`
+- **Nhánh:** `claude/bold-hopper-3744b8` (= `main` `b04f520` + handoff này); PR mở: #78 (T-042c), #79 (T-042d) — của phiên khác
 - **Phase:** 3 — Nghiệp vụ & màn hình (milestone mở 26/09/2026; G2/G1/G4 đã duyệt) · Phase 2 đã đóng · Phase 1 milestone **để mở** chờ test ở văn phòng
 
 ## Trạng thái
@@ -25,6 +25,11 @@
 | #56 CI build exe mọi PR (ADR-0015 phụ lục) | ✅ merge (`--squash`), review PASS |
 | #57 G2 mô hình dữ liệu Phase 3 + ADR-0016 (sql.js ở mọi nơi) + P1 ngưỡng task | ✅ merge #58; Owner duyệt G2/G1/G4 + P1 |
 | Issue Phase 3 #59–#72 (T-040…T-053) | ✅ tạo, có blocking edges |
+| #60 T-041 nền `packages/db`; T-042a schema, T-042b KH + transition | ✅ merge #74, #76, #77 |
+| T-042c lịch hẹn + kết quả, T-042d HĐ + golden G01–G22 qua DB | PR #78, #79 đang mở (phiên khác) |
+| #59 T-040 mockup màn nhập liệu (G3, Owner duyệt 2 vòng) | ✅ merge #75; review sau merge phiên sạch: CHANGES → sửa ở #81 (Owner duyệt, merge `b04f520`) |
+| D9 `appointments.outcome_reviewer_id` (G2 bổ sung) | ✅ merge #80; review sau merge: PASS kèm ghi chú; D7 "khóa 3 ô" ghi vào spec ở #81 |
+| Body issue #68, #69 cập nhật theo mockup G3 + D9 (Owner đồng ý 27/09) | ✅ #69 thêm `packages/db/**`, test D9, migration có dữ liệu, "Hẹn lần tiếp theo" 1 transaction; #68 thêm trigger bắt buộc, gợi ý năm sau, "Tạo lịch hẹn tiếp theo" (từ hôm nay trở đi), "Các lần hẹn trước" |
 
 Ghi chú review #44 (không chặn): `isRfAppointment` dựa vào `StageTransition.appointmentId`, không dựa vào `appointment.stageAfter` → tầng db/UI phải luôn tạo transition gắn `appointmentId` khi ghi "nhóm sau cuộc gặp". (Đã đổi tên test `stats-rf.test.ts:106`.)
 
@@ -46,8 +51,9 @@ Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 đ�
 
 1. `/session-start` (pull `main`).
 2. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Frontier (không bị chặn):
-   - **#60 T-041** nền `packages/db` (sql.js + Drizzle + migration + Team/nhân sự) — G4 dependency đã duyệt; làm TDD.
-   - **#59 T-040** mockup màn nhập liệu → **dừng ở G3** chờ Owner.
+   - PR #78 (T-042c), #79 (T-042d): review phiên sạch → merge theo quy trình (phiên khác đang giữ).
+   - Sau đó #62 (KYC, golden K01–K15 qua DB) → #63 lưu file exe → #64 seed; UI #65–#70 (G3 đã xong).
+   - **#69 T-050**: migration mới thêm `outcome_reviewer_id` — CHECK cấp bảng trên SQLite có thể khiến drizzle-kit dựng lại bảng `appointments`; kiểm SQL sinh ra + test migrate DB có dữ liệu (review #80).
 3. Sau đó theo blocking edges: #61 → #62 → #64 (seed); #63 lưu file exe (sau #60); UI #65–#70 cần #59 (G3) + #63 + #64; #71 backup; #72 đóng phase (G7).
 4. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
 5. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2). #61/#62 chạy golden G01–G22, K01–K15 qua DB.

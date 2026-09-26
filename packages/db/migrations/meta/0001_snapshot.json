@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "b9c580ca-bb27-4805-a82c-e3da0c76a070",
+  "id": "325d83ad-5912-43d8-82b6-bb1533102600",
   "prevId": "70e50400-9d66-497f-860b-d6b03767ae98",
   "tables": {
     "appointment_coordinators": {
@@ -666,6 +666,10 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {
+        "stage_transitions_from": {
+          "name": "stage_transitions_from",
+          "value": "\"stage_transitions\".\"from_stage\" IN ('N4', 'N3', 'N2', 'N1', 'ON_HOLD', 'LOST')"
+        },
         "stage_transitions_to": {
           "name": "stage_transitions_to",
           "value": "\"stage_transitions\".\"to_stage\" IN ('N4', 'N3', 'N2', 'N1', 'ON_HOLD', 'LOST')"

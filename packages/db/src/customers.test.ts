@@ -9,7 +9,7 @@ import {
   softDeleteCustomer,
   updateCustomerProfile,
 } from './customers';
-import { softDeletePerson } from './team';
+import { softDeletePerson, updatePerson } from './team';
 import { codeOf, d, setup } from './test-support';
 
 describe('customers', () => {
@@ -175,5 +175,16 @@ describe('customers', () => {
     softDeletePerson(db, re.id);
 
     expect(codeOf(() => restoreCustomer(db, customer.id))).toBe('PERSON_NOT_FOUND');
+  });
+
+  it('keeps an RE who owns a live customer from leaving the RE role', async () => {
+    const { db, re } = await setup();
+    const customer = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 1) });
+
+    expect(codeOf(() => updatePerson(db, re.id, { role: 'TL' }))).toBe('PERSON_IN_USE');
+    expect(updatePerson(db, re.id, { name: 'An Nguyễn', role: 'RE' }).name).toBe('An Nguyễn');
+
+    softDeleteCustomer(db, customer.id);
+    expect(updatePerson(db, re.id, { role: 'TL' }).role).toBe('TL');
   });
 });

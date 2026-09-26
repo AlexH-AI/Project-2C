@@ -166,6 +166,7 @@ export const stageTransitions = sqliteTable(
   },
   (t) => [
     uniqueIndex('stage_transitions_customer_seq').on(t.customerId, t.seq),
+    check('stage_transitions_from', sql`${t.fromStage} IN (${list(CUSTOMER_STAGES)})`),
     check('stage_transitions_to', sql`${t.toStage} IN (${list(CUSTOMER_STAGES)})`),
   ],
 );

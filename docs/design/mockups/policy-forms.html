@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Form hợp đồng — Project-2C mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="mockups.css" />
+    <link rel="stylesheet" href="forms.css" />
+  </head>
+  <body>
+    <main class="board">
+      <header class="board-head">
+        <a class="back" href="index.html">← Mockup G3</a>
+        <h1>8 · Hợp đồng — nộp, phát hành, sửa FYP phát hành</h1>
+        <p>
+          Mở từ khối "Hợp đồng" (Hồ sơ KH). HĐ đi hai bước: <span class="badge pol-submitted">Đã nộp</span> →
+          <span class="badge pol-issued">Đã phát hành</span>. Hôm nay giả lập <b class="num">26/09/2026</b>.
+        </p>
+      </header>
+
+      <div class="specimens">
+        <!-- 8a: submit -->
+        <section class="specimen">
+          <p class="cap">8a · Nộp HĐ</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Hợp đồng mới · đã nộp</h2><div class="sub">Trịnh Minh Anh · K-9A1C · <span class="badge st-n1">N1</span></div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="field">
+                <label>RE <span class="req">*</span> <span class="opt">HĐ tính cho RE này</span></label>
+                <div class="input">Đỗ Khánh Linh <span class="muted">· Sao Mai</span><span class="caret">▾</span></div>
+              </div>
+              <div class="fields-2">
+                <div class="field">
+                  <label>Ngày nộp <span class="req">*</span></label>
+                  <div class="input focus">25/9</div>
+                  <div class="read"><b>Thứ Sáu 25/09/2026</b></div>
+                </div>
+                <div class="field">
+                  <label>FYP nộp <span class="req">*</span></label>
+                  <div class="input">250tr</div>
+                  <div class="read"><b>250.000.000 ₫</b> (250 tr)</div>
+                </div>
+              </div>
+              <span class="help">Case size dự kiến ở cuộc gặp gần nhất: 800 tr (chỉ để tham khảo, không tự điền).</span>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Lưu HĐ</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8b: issue -->
+        <section class="specimen">
+          <p class="cap">8b · Ghi phát hành</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Phát hành HĐ</h2><div class="sub">Phạm Gia Long · nộp 20/08/2026 · FYP nộp 400 tr</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="fields-2">
+                <div class="field">
+                  <label>Ngày phát hành <span class="req">*</span></label>
+                  <div class="input focus">18/9</div>
+                  <div class="read"><b>Thứ Sáu 18/09/2026</b> · 29 ngày sau khi nộp</div>
+                </div>
+                <div class="field">
+                  <label>FYP phát hành <span class="req">*</span> <span class="opt">mặc định = FYP nộp</span></label>
+                  <div class="input">400tr</div>
+                  <div class="read"><b>400.000.000 ₫</b> (400 tr)</div>
+                </div>
+              </div>
+              <div class="alert info">HĐ nộp tháng 08 vẫn tính <b style="display: inline">nộp</b> vào tháng 08; <b style="display: inline">phát hành</b> tính vào tháng 09.</div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Phát hành</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8c: errors -->
+        <section class="specimen">
+          <p class="cap">8c · Lỗi nhập HĐ</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Phát hành HĐ</h2><div class="sub">Phạm Gia Long · nộp 20/08/2026 · FYP nộp 400 tr</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="alert"><b>Chưa lưu được — 2 ô cần sửa</b></div>
+              <div class="fields-2">
+                <div class="field">
+                  <label>Ngày phát hành <span class="req">*</span></label>
+                  <div class="input error">15/8</div>
+                  <div class="read err">15/08/2026 trước ngày nộp 20/08/2026.</div>
+                </div>
+                <div class="field">
+                  <label>FYP phát hành <span class="req">*</span></label>
+                  <div class="input error">0</div>
+                  <div class="read err">FYP phải lớn hơn 0.</div>
+                </div>
+              </div>
+              <div class="fields-2">
+                <div class="field">
+                  <label>FYP <span class="opt">ví dụ khác</span></label>
+                  <div class="input error">-50tr</div>
+                  <div class="read err">Số tiền không được âm.</div>
+                </div>
+                <div class="field">
+                  <label>FYP <span class="opt">ví dụ khác</span></label>
+                  <div class="input error">năm trăm</div>
+                  <div class="read err">Gõ số, vd. 500tr, 1,2 tỷ, 750k.</div>
+                </div>
+              </div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Phát hành</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8d: edit issued FYP -->
+        <section class="specimen">
+          <p class="cap">8d · Sửa HĐ đã phát hành — FYP phát hành khác FYP nộp</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Sửa HĐ · Phạm Gia Long</h2><div class="sub"><span class="badge pol-issued">Đã phát hành</span> 18/09/2026</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="fields-2">
+                <div class="field">
+                  <label>Ngày nộp</label>
+                  <div class="input">20/08/2026</div>
+                </div>
+                <div class="field">
+                  <label>FYP nộp</label>
+                  <div class="input">400tr</div>
+                  <div class="read"><b>400.000.000 ₫</b></div>
+                </div>
+              </div>
+              <div class="fields-2">
+                <div class="field">
+                  <label>Ngày phát hành</label>
+                  <div class="input">18/09/2026</div>
+                </div>
+                <div class="field">
+                  <label>FYP phát hành <span class="opt">sửa tay</span></label>
+                  <div class="input focus">385,5tr</div>
+                  <div class="read"><b>385.500.000 ₫</b> (385,5 tr) · <span class="c-warn">khác FYP nộp −14,5 tr</span></div>
+                </div>
+              </div>
+              <dl class="kv">
+                <dt>Ảnh hưởng chỉ số</dt><dd>FYP phát hành tháng 09/2026 của RE Đỗ Khánh Linh giảm <b>14,5 tr</b></dd>
+              </dl>
+            </div>
+            <div class="dialog-foot">
+              <button class="btn">Xóa HĐ…</button>
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Lưu</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <p class="mock-note">Mockup G3 Phase 3 · tiền hiện đủ số đồng khi nhập, dạng gọn (tr / tỷ) ở bảng và thẻ</p>
+    </main>
+  </body>
+</html>
