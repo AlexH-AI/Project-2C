@@ -74,7 +74,6 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 ## Chờ Owner
 
 - #9 và #17: hoãn tới khi Owner ở văn phòng (xem "Chờ test ở văn phòng"). Không nhắc lại trước khi Owner báo đã ở văn phòng.
-- Máy `DESKTOP-KDURKJP` còn 7 nhánh local Phase 1 (`task/T-004` … `task/T-007.3a`), đều ứng với PR đã merge (tip = head PR). Claude bị chặn quyền xóa → Owner tự chạy `git branch -D task/T-004-setup-skills task/T-005-e2e-smoke task/T-006-mockups task/T-007-1-tokens-fonts task/T-007.2-app-shell task/T-007.3-period task/T-007.3a-period-domain`.
 - `risk:med` (#33, #38): hỏi Owner trước khi merge, trừ khi Owner đã dặn trong phiên.
 - GitHub Free: không bật được auto-merge cho repo private — Owner báo CI xanh (hoặc phiên sau kiểm) rồi Claude merge.
 
