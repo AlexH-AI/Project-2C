@@ -3,7 +3,7 @@
 Theo bảng chỉ số của `docs/COMPARISON.md`. Phase 2 chỉ có code `packages/domain` (không UI, không exe mới), nên nhóm UI/UX và kích thước exe không áp dụng.
 
 - **Milestone:** "Phase 2 — Lõi domain"
-- **Bắt đầu:** 2026-09-26 · **Kết thúc:** _khi #25, #26, #33 merge_
+- **Bắt đầu:** 2026-09-26 · **Kết thúc:** 2026-09-26 (task cuối #26 merge; đóng milestone chờ Owner)
 - **Máy:** Home PC (`DESKTOP-KDURKJP`)
 
 ## Task
@@ -18,21 +18,21 @@ Theo bảng chỉ số của `docs/COMPARISON.md`. Phase 2 chỉ có code `packa
 | #32 | Chuyển RF + tỉ lệ chốt; đủ G01–G22 | #44 | med | ✅ |
 | #38 | Cờ material phiên bản KYC | #46 | med | ✅ (Owner chốt thêm cách hash mâu thuẫn) |
 | #33 | Cổng KYC 4 trạng thái | #47 | med | ✅ 15/15 hồ sơ mẫu K01–K15 |
-| #25 | Nhập ngày nhanh dd/mm | _chưa_ | low | |
-| #26 | Tiền VND | _chưa_ | low | |
+| #25 | Nhập ngày nhanh dd/mm | #51 | low | ✅ |
+| #26 | Tiền VND | #52 | low | ✅ |
 
 ## Chỉ số
 
 | Nhóm | Chỉ số | Giá trị |
 |---|---|---|
 | Chất lượng | % test chấp nhận pass lần đầu | 100% ở các task đã merge (golden G01–G22, K01–K15 không phải sửa) |
-| Chất lượng | Lỗi Owner phát hiện khi duyệt | 1 ca spec ở G2 (K09), không phải lỗi code |
+| Chất lượng | Lỗi Owner phát hiện khi duyệt | 2 ca spec ở G2 (K09; công thức tỉ lệ chốt), không phải lỗi code |
 | Chất lượng | Lỗi sau merge | 0 đã biết |
-| Chất lượng | Coverage `packages/domain` | 100% statements / branches / functions / lines (tại #33) |
+| Chất lượng | Coverage `packages/domain` | 100% statements / branches / functions / lines (tại #52) |
 | UI/UX | Điểm Owner | Không áp dụng (không có UI) |
 | Tiến độ | Số phiên làm việc | Khoảng 20 phiên (Owner ước lượng) |
 | Chi phí | Mức dùng hạn mức Claude | 100% usage limit (Owner ghi) |
-| Công sức Owner | Can thiệp ngoài cổng G1–G8 | Quyết định spec phát sinh: KH mới vào nhóm mở (ADR-0007), luật cờ material (ADR-0008 §7), cách hash mâu thuẫn (#38) — _Owner xác nhận có tính là ngoài cổng không_ |
+| Công sức Owner | Can thiệp ngoài cổng G1–G8 | **2** — Owner tự phát hiện: công thức tỉ lệ chốt (sửa lúc duyệt G2, ADR-0007), cách ghi nhận năm sinh. 3 quyết định spec khác — KH mới vào nhóm mở (ADR-0007), luật cờ material (ADR-0008 §7), cách hash mâu thuẫn (#38) — do Claude dừng hỏi → tính trong cổng G1/G8 (Owner xác nhận 26/09/2026) |
 | Kỹ thuật | Kích thước exe, thời gian khởi động | Không đo (không đổi app) |
 | Kỹ thuật | Vi phạm ranh giới module | 0 (`pnpm lint:deps`) |
 
