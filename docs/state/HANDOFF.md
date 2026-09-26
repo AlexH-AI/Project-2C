@@ -3,7 +3,7 @@
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
 - **Cập nhật:** 2026-09-26 · máy `DESKTOP-KDURKJP`
-- **Nhánh:** `main` @ `2bce0d2` (#36, #39 đã merge); handoff này đi qua nhánh `wip/…` + PR docs
+- **Nhánh:** `main` @ `b9dd147` (#41–#44 đã merge); handoff này đi qua nhánh `wip/…` + PR docs
 - **Phase:** 2 — Lõi domain (milestone "Phase 2 — Lõi domain") · Phase 1 milestone **để mở** chờ test ở văn phòng
 
 ## Trạng thái
@@ -16,7 +16,12 @@
 | #30 G2 danh mục KYC, ngưỡng cổng, 15 hồ sơ mẫu (`kyc-catalog.ts`, `docs/golden/kyc.md`) | ✅ merge #35 (`--squash`), Owner duyệt G2 (K09 → `PROFILE_DISCOVERY`) |
 | #29 mô hình KYC: notes, facts, versions (`packages/domain/src/kyc.ts`) | ✅ merge #36 (`--squash`), review PASS, Owner cho merge |
 | Cờ `material` phiên bản KYC → ADR-0008 §7 (Owner chốt, hướng kết hợp) | ✅ docs merge #39; code ở #38 (`risk:med`, chưa làm) |
-| #25 nhập ngày dd/mm, #26 tiền VND (`risk:low`) · #27 state machine nhóm KH · #31, #32 stats engine · #33 cổng KYC · #38 cờ material (`risk:med`) | chưa làm |
+| #27 state machine nhóm KH (`customer-lifecycle.ts`: `isRfTransition`, `stageOn`) + ADR-0007 KH mới vào nhóm mở | ✅ merge #41, #42 |
+| #31 chỉ số HĐ theo kỳ/scope (`stats.ts`: `policyMetrics`, `inScope`) | ✅ merge #43 (`--merge`, Owner duyệt; chưa có review phiên sạch) |
+| #32 RF + tỉ lệ chốt (`stats.ts`: `isRfAppointment`, `rfCount`, `closeRate`, `periodMetrics`); đủ G01–G22 | ✅ merge #44 (`--squash`), review PASS, Owner duyệt |
+| #25 nhập ngày dd/mm, #26 tiền VND (`risk:low`) · #33 cổng KYC · #38 cờ material (`risk:med`) | chưa làm |
+
+Ghi chú review #44 (không chặn): `isRfAppointment` dựa vào `StageTransition.appointmentId`, không dựa vào `appointment.stageAfter` → tầng db/UI phải luôn tạo transition gắn `appointmentId` khi ghi "nhóm sau cuộc gặp". Tên test `stats-rf.test.ts:106` nên đổi thành "does not count an appointment that was not met".
 
 Ghi chú review #36 (không chặn, xử lý khi làm #38): nhánh `false` của `current.includes` trong `markConflict` (`kyc.ts:91`) chưa có test; "mới nhất" theo thứ tự thao tác, không theo `confirmedDate`; lớp nhập liệu cần chuẩn hóa kiểu giá trị theo trường.
 
@@ -34,8 +39,8 @@ Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 đ�
 
 1. `/session-start` (pull `main`).
 2. Nếu PR handoff (`wip/…`, docs) còn mở và CI xanh → `gh pr merge <n> --squash --delete-branch`.
-3. **#27 state machine nhóm KH** (đang bắt đầu trong phiên 26/09 sau handoff): nhánh `task/T-027-…` từ `main`, đọc `gh issue view 27` + ADR-0007, TDD trong `packages/domain/src/**`, `pnpm verify`, PR `risk:med` → review phiên mới → chờ Owner merge. Nếu nhánh `task/T-027-…` đã có trên remote thì checkout và làm tiếp.
-4. Sau đó (mỗi task một phiên mới): #31, #32 stats engine (test theo `GOLDEN_CASES` trong `packages/domain/src/golden/metrics.fixture.ts`) → #38 cờ material (`isMaterialChange`, `nextKycVersion(..., manualMaterial)`) → #33 cổng KYC (test theo `KYC_GOLDEN_PROFILES` trong `golden/kyc.fixture.ts`). Có thể xen #25, #26 (`risk:low`, Claude tự merge khi CI xanh + review PASS).
+3. **#38 cờ material** (phiên mới): nhánh `task/T-038-kyc-material` từ `main`, đọc `gh issue view 38` + ADR-0008 §7, TDD trong `packages/domain/src/kyc.ts` (`isMaterialChange`, `nextKycVersion(..., manualMaterial)`); kèm test nhánh `false` của `markConflict` (ghi chú review #36). `pnpm verify`, PR `risk:med` → review phiên mới → chờ Owner merge.
+4. Sau đó (mỗi task một phiên mới): #33 cổng KYC (test theo `KYC_GOLDEN_PROFILES` trong `golden/kyc.fixture.ts`). Có thể xen #25, #26 (`risk:low`, Claude tự merge khi CI xanh + review PASS).
 5. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
 
 ## Dựng môi trường trên Office Laptop
@@ -69,7 +74,8 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 ## Chờ Owner
 
 - #9 và #17: hoãn tới khi Owner ở văn phòng (xem "Chờ test ở văn phòng"). Không nhắc lại trước khi Owner báo đã ở văn phòng.
-- `risk:med` (#27, #31–#33, #38): hỏi Owner trước khi merge, trừ khi Owner đã dặn trong phiên.
+- Máy `DESKTOP-KDURKJP` còn 7 nhánh local Phase 1 (`task/T-004` … `task/T-007.3a`), đều ứng với PR đã merge (tip = head PR). Claude bị chặn quyền xóa → Owner tự chạy `git branch -D task/T-004-setup-skills task/T-005-e2e-smoke task/T-006-mockups task/T-007-1-tokens-fonts task/T-007.2-app-shell task/T-007.3-period task/T-007.3a-period-domain`.
+- `risk:med` (#33, #38): hỏi Owner trước khi merge, trừ khi Owner đã dặn trong phiên.
 - GitHub Free: không bật được auto-merge cho repo private — Owner báo CI xanh (hoặc phiên sau kiểm) rồi Claude merge.
 
 ## Ghi chú môi trường
