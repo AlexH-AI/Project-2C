@@ -8,7 +8,7 @@ Ghi kết quả thành comment trên PR: `REVIEW: PASS` hoặc `REVIEW: CHANGES`
 
 - [ ] Mọi test chấp nhận trong Issue đều có test tương ứng và pass.
 - [ ] Không làm ngoài phạm vi; chỉ sửa các file được phép trong Issue.
-- [ ] Diff ≤ ~400 dòng (không tính lockfile, snapshot, fixture sinh tự động).
+- [ ] Code sản phẩm ≤ ~400 dòng, tổng diff kể cả test ≤ ~800 dòng (không tính lockfile, migration SQL, snapshot, fixture / dữ liệu seed tĩnh sinh tự động — PR phải liệt kê).
 
 ## 2. Kiểm thử
 

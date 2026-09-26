@@ -35,5 +35,6 @@ File naming: `NNNN-short-slug.md`. Status: `Proposed` → `Accepted (<gate>)` �
 | [0013](0013-huong-ui-dark-mode.md) | UI direction: dark tokens, champagne accent, unified period filter, sortable dates | Accepted (G3) | §4.6, C6 |
 | [0014](0014-thu-vien-chart.md) | Chart library: ECharts 6 via echarts/core, own React wrapper | Accepted (G4) | §4.4 |
 | [0015](0015-ci-build-exe-theo-nhu-cau.md) | CI: exe built on `main` or `build-exe`-labelled PRs; docs-only PRs skip CI; reopen per-PR exe build at Phase 3 | Accepted (G1/G4) | §4.4 |
+| [0016](0016-luu-tru-sqljs-ghi-file-qua-rust.md) | Storage: sql.js everywhere; exe persists the DB file via a thin Rust command (amends 0006) | Accepted (G1/G4) | §4.4, Phase 3 |
 
-Not yet recorded (pending their gate): detailed data model (G2).
+Phase 3 data model: `docs/design/phase-3-du-lieu.md` — Accepted (G2, 26/09/2026). ADR-0001 and ADR-0006 carry accepted addenda (task size P1; storage).
