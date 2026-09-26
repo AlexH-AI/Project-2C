@@ -12,11 +12,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@p2c/db": "workspace:*",
     "@p2c/domain": "workspace:*",
     "@p2c/ui": "workspace:*",
     "@tauri-apps/api": "2.11.1",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "sql.js": "1.14.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",

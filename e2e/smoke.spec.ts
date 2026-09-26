@@ -24,3 +24,14 @@ test('page loads without console errors', async ({ page }) => {
 
   expect(errors).toEqual([]);
 });
+
+test('web mode opens the in-memory database: sql.js wasm loads, no storage alert', async ({
+  page,
+}) => {
+  const wasm = page.waitForResponse((response) => response.url().endsWith('.wasm'));
+  await page.goto('/');
+
+  expect((await wasm).ok()).toBe(true);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan hôm nay');
+  await expect(page.getByRole('alert')).toHaveCount(0);
+});

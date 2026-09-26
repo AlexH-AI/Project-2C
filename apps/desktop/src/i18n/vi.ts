@@ -34,6 +34,9 @@ export const vi = {
   'appointments.time': 'Giờ',
   'appointments.customer': 'Khách hàng',
   'chart.teamAppointments': 'Lịch hẹn theo team',
+  'storage.openFailed': 'Không mở được file dữ liệu',
+  'storage.saveFailed':
+    'Chưa lưu được dữ liệu vào file. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
 } as const;
 
 export type MessageKey = keyof typeof vi;
