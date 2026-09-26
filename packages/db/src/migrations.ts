@@ -4,6 +4,8 @@
  */
 import m0000 from '../migrations/0000_init.sql?raw';
 import m0001 from '../migrations/0001_customers_policies.sql?raw';
+import m0002 from '../migrations/0002_kyc.sql?raw';
+import m0003 from '../migrations/0003_kyc_append_only.sql?raw';
 
 export interface Migration {
   /** Migration number; the database `schemaVersion` is the highest applied id. */
@@ -15,4 +17,6 @@ export interface Migration {
 export const MIGRATIONS: readonly Migration[] = [
   { id: 1, tag: '0000_init', sql: m0000 },
   { id: 2, tag: '0001_customers_policies', sql: m0001 },
+  { id: 3, tag: '0002_kyc', sql: m0002 },
+  { id: 4, tag: '0003_kyc_append_only', sql: m0003 },
 ];

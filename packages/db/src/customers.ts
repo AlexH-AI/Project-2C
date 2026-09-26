@@ -10,7 +10,14 @@ import {
   type StageTransition,
 } from '@p2c/domain';
 import { and, asc, desc, eq, isNull } from 'drizzle-orm';
-import { fromIsoDate, requireName, requireRe, stampDeleted, toIsoDate } from './common';
+import {
+  fromIsoDate,
+  liveCustomer,
+  requireName,
+  requireRe,
+  stampDeleted,
+  toIsoDate,
+} from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { encodeBase32, ulid } from './ids';
@@ -151,11 +158,7 @@ export function restoreCustomer(db: Database, id: string): void {
 
 // ---- transitions, shared with the appointment commands --------------------
 
-export function liveCustomer(db: Database, id: string): CustomerRow {
-  const row = findCustomer(db, id);
-  if (!row || row.deletedAt) throw new DbError('CUSTOMER_NOT_FOUND');
-  return row;
-}
+export { liveCustomer };
 
 /** Records `current stage → to` and moves the customer, in the caller's transaction. */
 export function appendTransition(

@@ -23,6 +23,7 @@ export const DB_ERROR_CODES = [
   'POLICY_NOT_FOUND',
   'ISSUED_BEFORE_SUBMITTED',
   'ISSUE_INCOMPLETE',
+  'KYC_NOTE_EMPTY',
 ] as const;
 
 export type DbErrorCode = (typeof DB_ERROR_CODES)[number];

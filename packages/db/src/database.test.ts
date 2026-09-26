@@ -7,6 +7,9 @@ import {
   appointmentCoordinators,
   appointments,
   customers,
+  kycFacts,
+  kycNotes,
+  kycVersions,
   people,
   policies,
   schemaMigrations,
@@ -38,11 +41,14 @@ describe('openDatabase', () => {
   it('migrates an empty database to the latest schema version', async () => {
     const db = await openDatabase();
 
-    expect(db.schemaVersion()).toBe(2);
+    expect(db.schemaVersion()).toBe(4);
     expect(tableNames(db)).toEqual([
       'appointment_coordinators',
       'appointments',
       'customers',
+      'kyc_facts',
+      'kyc_notes',
+      'kyc_versions',
       'people',
       'policies',
       'schema_migrations',
@@ -63,6 +69,9 @@ describe('openDatabase', () => {
       appointments,
       appointmentCoordinators,
       policies,
+      kycNotes,
+      kycFacts,
+      kycVersions,
       settings,
       schemaMigrations,
     ];
@@ -83,9 +92,9 @@ describe('openDatabase', () => {
 
     const second = await openDatabase({ bytes });
 
-    expect(second.schemaVersion()).toBe(2);
+    expect(second.schemaVersion()).toBe(4);
     const applied = second.sqlite.exec('SELECT count(*) FROM schema_migrations');
-    expect(applied[0]?.values[0]?.[0]).toBe(2);
+    expect(applied[0]?.values[0]?.[0]).toBe(4);
   });
 
   it('persists once after migrating, and not at all when already up to date', async () => {
@@ -204,6 +213,36 @@ describe('schema constraints', () => {
     expect(() => insert('h5', 1, null, 1)).toThrow(/CHECK/);
     expect(() => insert('h6', 1, '2026-03-09', 1)).toThrow(/CHECK/);
     expect(() => insert('h7', 1, '2026-03-10', 0)).toThrow(/CHECK/);
+  });
+
+  it('checks KYC sources, trường, fact statuses and the material flag', async () => {
+    const db = await withCustomer();
+    const note = (id: string, seq: number, source: string) =>
+      db.sqlite.run(
+        "INSERT INTO kyc_notes (id, customer_id, seq, text, created_date, source, created_at) VALUES (?, 'c', ?, 'x', '2026-01-01', ?, 'x')",
+        [id, seq, source],
+      );
+    const fact = (id: string, seq: number, field: string, status: string) =>
+      db.sqlite.run(
+        "INSERT INTO kyc_facts (id, customer_id, seq, field, value_json, note_id, confirmed_date, status, created_at, updated_at) VALUES (?, 'c', ?, ?, '1', 'n1', '2026-01-01', ?, 'x', 'x')",
+        [id, seq, field, status],
+      );
+    const version = (id: string, seq: number, material: number) =>
+      db.sqlite.run(
+        "INSERT INTO kyc_versions (id, customer_id, seq, hash, date, material, created_at) VALUES (?, 'c', ?, 'h', '2026-01-01', ?, 'x')",
+        [id, seq, material],
+      );
+
+    note('n1', 1, 'RE');
+    note('n2', 2, 'SYSTEM');
+    expect(() => note('n3', 3, 'AI')).toThrow(/CHECK/);
+    expect(() => note('n4', 2, 'RE')).toThrow(/UNIQUE/);
+    fact('f1', 1, 'childrenCount', 'active');
+    expect(() => fact('f2', 2, 'shoeSize', 'active')).toThrow(/CHECK/);
+    expect(() => fact('f3', 3, 'childrenCount', 'deleted')).toThrow(/CHECK/);
+    expect(() => fact('f4', 1, 'occupation', 'active')).toThrow(/UNIQUE/);
+    version('v1', 1, 1);
+    expect(() => version('v2', 2, 2)).toThrow(/CHECK/);
   });
 });
 
