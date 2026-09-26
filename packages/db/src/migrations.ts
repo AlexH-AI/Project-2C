@@ -3,6 +3,7 @@
  * `migrations/`; a test checks this list against drizzle-kit's journal.
  */
 import m0000 from '../migrations/0000_init.sql?raw';
+import m0001 from '../migrations/0001_customers_policies.sql?raw';
 
 export interface Migration {
   /** Migration number; the database `schemaVersion` is the highest applied id. */
@@ -11,4 +12,7 @@ export interface Migration {
   readonly sql: string;
 }
 
-export const MIGRATIONS: readonly Migration[] = [{ id: 1, tag: '0000_init', sql: m0000 }];
+export const MIGRATIONS: readonly Migration[] = [
+  { id: 1, tag: '0000_init', sql: m0000 },
+  { id: 2, tag: '0001_customers_policies', sql: m0001 },
+];
