@@ -238,7 +238,7 @@ tools/               bootstrap, session scripts, seed generator
 
 **Kiểm thử:** Vitest cho `domain` (mục tiêu ≥ 95% coverage, golden examples của Owner là test); Playwright e2e + ảnh chụp giao diện; AI test bằng Mock provider + fixture ghi sẵn; **bộ eval AI** ~20 hồ sơ KYC giả lập (trạng thái cổng mong đợi + kiểm tra guardrail) chạy thủ công với provider thật, không chạy trong CI.
 
-**CI (GitHub Actions, windows-latest):** lint → typecheck → unit → e2e (web mode) → build Tauri → upload artifact exe. Từ Phase 2 (ADR-0015): build exe chỉ chạy trên `main` hoặc PR có nhãn `build-exe`; PR chỉ sửa docs không chạy CI; mở lại build exe cho mọi PR khi bắt đầu Phase 3.
+**CI (GitHub Actions, windows-latest):** lint → typecheck → unit → e2e (web mode) → build Tauri → upload artifact exe. Phase 2 (ADR-0015): build exe chỉ chạy trên `main` hoặc PR có nhãn `build-exe`; PR chỉ sửa docs không chạy CI. Từ Phase 3: build exe lại chạy ở mọi PR code.
 
 ### 4.5 Thiết kế AI copilot
 

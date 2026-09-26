@@ -1,6 +1,6 @@
 # ADR-0015: CI — build exe theo nhu cầu, PR docs không chạy CI
 
-- **Trạng thái:** Accepted (G1/G4, Owner duyệt 26/09/2026)
+- **Trạng thái:** Accepted (G1/G4, Owner duyệt 26/09/2026) · §1 thay bằng phụ lục Phase 3 (26/09/2026); §2–§3 còn hiệu lực
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §4.4 (CI); ADR-0001 (quy trình task, merge khi CI xanh)
 - **Commit / PR:** PR sửa `.github/workflows/ci.yml` (nhánh `ci/exe-build-on-main`)
@@ -33,3 +33,12 @@ Từ Phase 1, mọi PR chạy nối tiếp: Verify (lint, typecheck, unit, ranh 
 - PR code ở Phase 2: ≈ 2,5 phút chờ CI; PR docs: 0.
 - Build exe hỏng do PR không gắn nhãn chỉ lộ ra sau khi merge lên `main` → sửa bằng PR tiếp theo. Rủi ro thấp khi không đụng `apps/desktop`.
 - Thêm/bớt nhãn trên PR (sự kiện `labeled`) sẽ chạy lại CI của PR đó.
+
+## Phụ lục Phase 3 (26/09/2026)
+
+Thực hiện mục "Khi bắt đầu Phase 3" ở trên (PR nhánh `ci/phase-3-exe-every-pr`):
+
+- Bỏ điều kiện `if` của job `build-exe` → build exe chạy ở **mọi PR code** và mọi push lên `main`.
+- Bỏ sự kiện `labeled` khỏi trigger `pull_request` (không còn cần nhãn để bật build; tránh chạy lại CI khi gắn nhãn khác).
+- Nhãn `build-exe` giữ lại trên GitHub nhưng không còn tác dụng.
+- §2, §3 (PR docs-only bỏ qua CI, merge không cần CI) **giữ nguyên**.
