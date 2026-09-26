@@ -14,3 +14,17 @@ export {
   switchKind,
 } from './period';
 export type { CalendarDate, Period, PeriodKind } from './period';
+export { APPOINTMENT_STATUSES, CLOSED_STAGES, PERSON_ROLES } from './model';
+export type {
+  Appointment,
+  AppointmentStatus,
+  ClosedStage,
+  Customer,
+  CustomerStage,
+  Person,
+  PersonRole,
+  Policy,
+  Scope,
+  StageTransition,
+  Team,
+} from './model';
