@@ -18,7 +18,7 @@
 | #7.4 `DataTable` (TanStack, sort) | **chưa bắt đầu** |
 | #7.5 `Chart` (ECharts, ADR-0014) | **chưa bắt đầu** (không còn bị chặn) |
 | #17 favicon/app icon màu ADR-0013 | chưa bắt đầu, `risk:low` |
-| #9 exe chạy trên cả 2 máy + `docs/metrics/phase-1.md` | chờ Owner |
+| #9 exe chạy trên cả 2 máy + `docs/metrics/phase-1.md` | **tạm hoãn** — Owner không tới văn phòng đến hết 28/09/2026; không chặn #7.4/#7.5 |
 
 Issue #7 vẫn mở (còn 7.4, 7.5). Ghi chú review không chặn: `period.ts` dùng `Date.UTC` nên năm 0–99 bị hiểu thành 19xx — chặn năm < 1900 khi làm nhập liệu thật.
 
@@ -60,7 +60,7 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- Chạy thử exe từ artifact CI mới nhất trên `main` ở cả 2 máy (#9).
+- #9 (chạy exe trên cả 2 máy) tạm hoãn: Owner không tới văn phòng 2 ngày (27–28/09/2026). Không nhắc lại trước khi Owner báo đã ở văn phòng.
 - Quyết người merge #7.4 / #7.5 nếu `risk:med` (lần trước Owner cho Claude merge sau review PASS + CI xanh).
 
 ## Ghi chú môi trường
