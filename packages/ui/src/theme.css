@@ -6,6 +6,9 @@
 @import './fonts.css';
 @import './tokens.css';
 
+/* Apps only scan their own folder; also generate the classes used by the shared components. */
+@source './components';
+
 @theme inline {
   --color-*: initial;
   --color-surface-0: var(--bg-0);
