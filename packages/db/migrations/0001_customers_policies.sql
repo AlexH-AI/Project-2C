@@ -79,6 +79,7 @@ CREATE TABLE `stage_transitions` (
 	`deleted_at` text,
 	FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`appointment_id`) REFERENCES `appointments`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "stage_transitions_from" CHECK("stage_transitions"."from_stage" IN ('N4', 'N3', 'N2', 'N1', 'ON_HOLD', 'LOST')),
 	CONSTRAINT "stage_transitions_to" CHECK("stage_transitions"."to_stage" IN ('N4', 'N3', 'N2', 'N1', 'ON_HOLD', 'LOST'))
 );
 --> statement-breakpoint
