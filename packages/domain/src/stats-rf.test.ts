@@ -103,7 +103,7 @@ describe('rfCount', () => {
     ).toBe(0);
   });
 
-  it('counts an appointment that was not met for nothing, even with a stage change', () => {
+  it('does not count an appointment that was not met, even with a stage change', () => {
     for (const status of ['SCHEDULED', 'RESCHEDULED', 'CANCELLED', 'NO_SHOW'] as const) {
       const appointments = [appointment('ap', 5, status, 'N2')];
       const transitions = [move('N3', 'N2', 5, 'ap')];

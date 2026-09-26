@@ -3,7 +3,7 @@
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
 - **Cập nhật:** 2026-09-26 · máy `DESKTOP-KDURKJP`
-- **Nhánh:** `main` @ `c03dbbe` (#47, #48, #49 đã merge); PR docs đồng bộ kế hoạch/trạng thái đang mở (`docs/plan-state-sync`)
+- **Nhánh:** `main` @ `8fd3e7e` (#51–#54 đã merge); PR review đóng Phase 2 (`chore/phase-2-close-review`)
 - **Phase:** 2 — Lõi domain (milestone "Phase 2 — Lõi domain") · Phase 1 milestone **để mở** chờ test ở văn phòng
 
 ## Trạng thái
@@ -17,18 +17,19 @@
 | #29 mô hình KYC: notes, facts, versions (`packages/domain/src/kyc.ts`) | ✅ merge #36 (`--squash`), review PASS, Owner cho merge |
 | Cờ `material` phiên bản KYC → ADR-0008 §7 (Owner chốt, hướng kết hợp) | ✅ docs merge #39; code #38 merge #46 (`kycHash` băm kèm trạng thái — Owner chốt) |
 | #27 state machine nhóm KH (`customer-lifecycle.ts`: `isRfTransition`, `stageOn`) + ADR-0007 KH mới vào nhóm mở | ✅ merge #41, #42 |
-| #31 chỉ số HĐ theo kỳ/scope (`stats.ts`: `policyMetrics`, `inScope`) | ✅ merge #43 (`--merge`, Owner duyệt; chưa có review phiên sạch) |
+| #31 chỉ số HĐ theo kỳ/scope (`stats.ts`: `policyMetrics`, `inScope`) | ✅ merge #43 (`--merge`, Owner duyệt; review phiên sạch PASS ghi trên PR) |
 | #32 RF + tỉ lệ chốt (`stats.ts`: `isRfAppointment`, `rfCount`, `closeRate`, `periodMetrics`); đủ G01–G22 | ✅ merge #44 (`--squash`), review PASS, Owner duyệt |
 | #33 cổng KYC (`kyc-gate.ts`: `evaluateKycGate` → `KycGateResult`) + `CONTEXT.md` + `docs/metrics/phase-2.md` | ✅ merge #47 (`--squash`), review PASS (phiên sạch), Owner cho merge; 199 test, coverage 100%, K01–K15 pass lần đầu |
-| #25 nhập ngày dd/mm, #26 tiền VND (`risk:low`) | chưa làm |
+| #25 nhập ngày dd/mm, #26 tiền VND (`risk:low`) | ✅ merge #51, #52 (`--squash`), review PASS |
+| Review đóng Phase 2 (26/09/2026) | ✅ verify xanh (279 test, coverage 100%), không lỗi; ghi chú ca biên trong `docs/metrics/phase-2.md` |
 
-Ghi chú review #44 (không chặn): `isRfAppointment` dựa vào `StageTransition.appointmentId`, không dựa vào `appointment.stageAfter` → tầng db/UI phải luôn tạo transition gắn `appointmentId` khi ghi "nhóm sau cuộc gặp". Tên test `stats-rf.test.ts:106` nên đổi thành "does not count an appointment that was not met".
+Ghi chú review #44 (không chặn): `isRfAppointment` dựa vào `StageTransition.appointmentId`, không dựa vào `appointment.stageAfter` → tầng db/UI phải luôn tạo transition gắn `appointmentId` khi ghi "nhóm sau cuộc gặp". (Đã đổi tên test `stats-rf.test.ts:106`.)
 
 Ghi chú review #36 (còn lại, cho tầng nhập liệu): "mới nhất" theo thứ tự thao tác, không theo `confirmedDate`; lớp nhập liệu cần chuẩn hóa kiểu giá trị theo trường. (Test nhánh `false` của `markConflict` đã thêm ở #46.)
 
 Ghi chú #33: `suggestedQuestions` trả cho mọi hạng mục thiếu ở cả 4 trạng thái (UI quyết định hiện); trường mâu thuẫn xếp theo thứ tự `KYC_FIELDS`.
 
-Ghi chú khác (còn từ Phase 1): `period.ts` năm 0–99 → 19xx (chặn năm < 1900 khi làm #25); `DataTable` chưa test `sortable: false` và bảng rỗng; cột Giờ chưa `tabular-nums`.
+Ghi chú khác (còn từ Phase 1): `DataTable` chưa test `sortable: false` và bảng rỗng; cột Giờ chưa `tabular-nums`.
 
 ## Chờ test ở văn phòng (Owner quyết 26/09/2026)
 
@@ -41,12 +42,10 @@ Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 đ�
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. Nếu PR handoff (`wip/…`, docs) còn mở và CI xanh → `gh pr merge <n> --squash --delete-branch`.
-3. ~~Review + merge PR #47~~, ~~metrics Owner (#49)~~, ~~đồng bộ PROJECT-PLAN §2.3 / PROJECT-STATE~~ — xong 26/09/2026. Còn một ô Owner xác nhận trong `docs/metrics/phase-2.md`: quyết định spec phát sinh có tính là can thiệp ngoài cổng không.
-4. **#25 nhập ngày dd/mm** (phiên mới): nhánh `task/T-025-quick-date` từ `main`; mở rộng `packages/domain/src/period.ts` (`parseDate`, `CalendarDate`) — không tạo bộ parse thứ hai; chặn năm < 1900. Test chấp nhận trong issue (mốc 60 ngày, 29/02, năm sau chỉ là gợi ý). `risk:low`: CI xanh + review PASS → Claude tự `gh pr merge --squash`.
-5. **#26 tiền VND** (phiên mới): file mới trong `packages/domain/src/` (vd. `money.ts`) + test; số nguyên đồng; diễn giải `500tr`, `1,2 tỷ`, `750k`…; hiển thị đầy đủ `500.000.000 ₫` và gọn `1,2 tỷ` / `500 tr`. `risk:low`, như #25.
-6. Sau #25, #26, #33: cập nhật bảng task + ngày kết thúc trong `docs/metrics/phase-2.md`, rồi Owner quyết đóng milestone Phase 2.
-7. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
+2. Nếu PR `chore/phase-2-close-review` còn mở và CI xanh → `gh pr merge <n> --squash --delete-branch`.
+3. **G7 — Owner quyết đóng milestone "Phase 2 — Lõi domain"** (10/10 issue đã đóng). Khi Owner đồng ý: `gh api -X PATCH repos/AlexH-AI/Project-2C/milestones/<số> -f state=closed`.
+4. Sau đó: lập kế hoạch Phase 3 — mô hình dữ liệu `packages/db` (G2), màn hình chưa có mockup G3. **Đầu Phase 3: mở lại build exe cho mọi PR** (CLAUDE.md, ADR-0015).
+5. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
 
 ## Dựng môi trường trên Office Laptop
 
@@ -79,7 +78,7 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 ## Chờ Owner
 
 - #9 và #17: hoãn tới khi Owner ở văn phòng (xem "Chờ test ở văn phòng"). Không nhắc lại trước khi Owner báo đã ở văn phòng.
-- `docs/metrics/phase-2.md`: số phiên, mức dùng Claude, và các quyết định spec phát sinh (ADR-0007 KH mới, ADR-0008 §7, hash #38) có tính là can thiệp ngoài cổng không.
+- G7: đóng milestone Phase 2.
 - GitHub Free: không bật được auto-merge cho repo private — Owner báo CI xanh (hoặc phiên sau kiểm) rồi Claude merge.
 
 ## Ghi chú môi trường
