@@ -8,6 +8,7 @@ import {
   fromLocalDate,
   isInPeriod,
   parseDate,
+  parseQuickDate,
   periodOf,
   shift,
   switchKind,
@@ -153,6 +154,110 @@ describe('parseDate', () => {
     expect(parseDate('2027-01-04')).toBeNull();
     expect(parseDate('04/01/27')).toBeNull();
     expect(parseDate('30/02/2027')).toBeNull();
+  });
+});
+
+describe('calendarDate before 1900', () => {
+  it('rejects years before 1900 instead of reading 0–99 as 19xx', () => {
+    expect(() => calendarDate(99, 1, 1)).toThrow(RangeError);
+    expect(() => calendarDate(1899, 12, 31)).toThrow(RangeError);
+    expect(formatDate(calendarDate(1900, 1, 1))).toBe('01/01/1900');
+  });
+
+  it('makes parseDate return null for those years', () => {
+    expect(parseDate('01/01/0099')).toBeNull();
+    expect(parseDate('01/01/1899')).toBeNull();
+  });
+});
+
+describe('parseQuickDate', () => {
+  it('fills in the current year for dd/mm, with no suggestion when the date is ahead', () => {
+    expect(parseQuickDate('05/10', d(26, 9, 2026))).toEqual({
+      ok: true,
+      date: d(5, 10, 2026),
+      yearInferred: true,
+      nextYearSuggestion: null,
+    });
+  });
+
+  it('suggests next year, without applying it, when the date passed more than 60 days ago', () => {
+    expect(parseQuickDate('05/01', d(20, 12, 2026))).toEqual({
+      ok: true,
+      date: d(5, 1, 2026),
+      yearInferred: true,
+      nextYearSuggestion: d(5, 1, 2027),
+    });
+  });
+
+  it('does not suggest at exactly 60 days, and does at 61', () => {
+    // 01/01/2026 + 60 days = 02/03/2026
+    expect(parseQuickDate('01/01', d(2, 3, 2026))).toMatchObject({ nextYearSuggestion: null });
+    expect(parseQuickDate('01/01', d(3, 3, 2026))).toMatchObject({
+      nextYearSuggestion: d(1, 1, 2027),
+    });
+  });
+
+  it('never suggests when the year was typed', () => {
+    expect(parseQuickDate('05/01/2026', d(20, 12, 2026))).toEqual({
+      ok: true,
+      date: d(5, 1, 2026),
+      yearInferred: false,
+      nextYearSuggestion: null,
+    });
+  });
+
+  it('rejects 29/02 in a non-leap year and accepts it in a leap year', () => {
+    expect(parseQuickDate('29/02', d(26, 9, 2026))).toEqual({ ok: false, error: 'invalid-date' });
+    expect(parseQuickDate('29/02/2027', d(26, 9, 2026))).toEqual({
+      ok: false,
+      error: 'invalid-date',
+    });
+    expect(parseQuickDate('29/02', d(1, 3, 2028))).toMatchObject({
+      ok: true,
+      date: d(29, 2, 2028),
+    });
+    expect(parseQuickDate('29/02/2028', d(26, 9, 2026))).toMatchObject({
+      ok: true,
+      date: d(29, 2, 2028),
+    });
+  });
+
+  it('gives no suggestion when the date does not exist next year', () => {
+    // 29/02/2028 passed 295 days before 20/12/2028, but 29/02/2029 does not exist
+    expect(parseQuickDate('29/02', d(20, 12, 2028))).toMatchObject({
+      ok: true,
+      date: d(29, 2, 2028),
+      nextYearSuggestion: null,
+    });
+  });
+
+  it('accepts short and padded forms, with surrounding spaces', () => {
+    const today = d(26, 9, 2026);
+    expect(parseQuickDate('5/1', today)).toMatchObject({ ok: true, date: d(5, 1, 2026) });
+    expect(parseQuickDate(' 05/01 ', today)).toMatchObject({ ok: true, date: d(5, 1, 2026) });
+    expect(parseQuickDate('05/01/2027', today)).toMatchObject({ ok: true, date: d(5, 1, 2027) });
+  });
+
+  it('reports empty text and text that is not dd/mm[/yyyy]', () => {
+    const today = d(26, 9, 2026);
+    expect(parseQuickDate('', today)).toEqual({ ok: false, error: 'empty' });
+    expect(parseQuickDate('   ', today)).toEqual({ ok: false, error: 'empty' });
+    for (const text of ['abc', 'mai', '05-01', '05/01/27', '2027-01-05', '5', '05/01/2027/1']) {
+      expect(parseQuickDate(text, today)).toEqual({ ok: false, error: 'format' });
+    }
+  });
+
+  it('reports days and months that do not exist', () => {
+    const today = d(26, 9, 2026);
+    for (const text of ['32/01', '00/05', '05/13', '05/00', '31/04']) {
+      expect(parseQuickDate(text, today)).toEqual({ ok: false, error: 'invalid-date' });
+    }
+  });
+
+  it('reports years before 1900 instead of reading them as 19xx', () => {
+    const today = d(26, 9, 2026);
+    expect(parseQuickDate('01/01/0099', today)).toEqual({ ok: false, error: 'year-out-of-range' });
+    expect(parseQuickDate('01/01/1899', today)).toEqual({ ok: false, error: 'year-out-of-range' });
   });
 });
 

@@ -1,6 +1,8 @@
 export { PIPELINE_STAGES, compareStages, isPipelineStage } from './pipeline-stage';
 export type { PipelineStage } from './pipeline-stage';
 export {
+  MIN_YEAR,
+  NEXT_YEAR_SUGGESTION_DAYS,
   PERIOD_KINDS,
   calendarDate,
   compareDates,
@@ -10,11 +12,12 @@ export {
   fromLocalDate,
   isInPeriod,
   parseDate,
+  parseQuickDate,
   periodOf,
   shift,
   switchKind,
 } from './period';
-export type { CalendarDate, Period, PeriodKind } from './period';
+export type { CalendarDate, Period, PeriodKind, QuickDateError, QuickDateResult } from './period';
 export {
   KYC_CATEGORIES,
   KYC_CATEGORY_SPECS,
