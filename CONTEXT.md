@@ -31,4 +31,15 @@ Từ điển thuật ngữ dùng thống nhất trong issue, tài liệu và cod
 - **Doanh số** — Σ FYP phát hành của HĐ phát hành trong kỳ.
 - **Tỉ lệ chốt** — HĐ phát hành trong kỳ ÷ chuyển RF trong kỳ; không lũy kế; 0 RF hiện "—".
 - **Kỳ** (`Period`) — ngày / tuần (Thứ Hai → Chủ Nhật) / tháng / năm / tùy chọn. **MTD** = ngày 1 của tháng → ngày đang xem.
-- **Golden examples** — ví dụ có kết quả viết tay, Owner duyệt, là test bắt buộc: `docs/golden/chi-so.md`.
+- **Golden examples** — ví dụ có kết quả viết tay, Owner duyệt, là test bắt buộc: `docs/golden/chi-so.md` (chỉ số), `docs/golden/kyc.md` (cổng KYC).
+
+## KYC
+
+- **Ghi chú KYC** (`KycNote`) — văn bản RE ghi, chỉ thêm, không sửa/xóa (ADR-0008).
+- **Dữ kiện KYC** (`KycFact`) — một giá trị có cấu trúc, **RE đã xác nhận**, trỏ về ghi chú nguồn. Trạng thái: còn hiệu lực (`active`) / đã bị thay thế (`superseded`) / mâu thuẫn (`conflict`).
+- **Hạng mục KYC** (`KycCategory`) — 8 hạng mục lớn: Danh tính/tuổi, Gia đình, Nghề nghiệp/nguồn thu, Tài sản/AUM, Mục tiêu & mốc thời gian, Khẩu vị rủi ro, Bảo vệ hiện có, Mối quan tâm. (Trước gọi là "chiều" — không dùng nữa.)
+- **Trường** (`KycField`) — mục nhỏ trong hạng mục (vd. năm sinh, số con).
+- **Trường chính** (`keyFields`) — trường bắt buộc có để hạng mục được tính **"đã có"**. Câu trả lời "không / chưa có" vẫn tính; trường đang mâu thuẫn vẫn tính.
+- **Trường cốt lõi** (`core`) — năm sinh, tình trạng hôn nhân, số con, tổng tài sản/AUM, mục tiêu chính. Mâu thuẫn ở trường cốt lõi chặn AI; ở trường khác chỉ cảnh báo.
+- **Mâu thuẫn** — hai dữ kiện đã xác nhận cùng trường, khác giá trị, đều chưa bị thay thế.
+- **Cổng KYC** (`KycGateState`) — `CONFLICT_RESOLUTION` > `KYC_INSUFFICIENT` > `PROFILE_DISCOVERY` > `PAIN_POINT_ANALYSIS`; ngưỡng ở ADR-0008 và `docs/golden/kyc.md`.

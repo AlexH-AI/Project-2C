@@ -14,6 +14,17 @@ export {
   switchKind,
 } from './period';
 export type { CalendarDate, Period, PeriodKind } from './period';
+export {
+  KYC_CATEGORIES,
+  KYC_CATEGORY_SPECS,
+  KYC_FIELDS,
+  KYC_GATE_STATES,
+  KYC_GATE_THRESHOLDS,
+  KYC_INSUFFICIENT_MESSAGE,
+} from './kyc-catalog';
+export type { KycCategory, KycCategorySpec, KycField, KycGateState } from './kyc-catalog';
+export { KYC_FACT_STATUSES } from './kyc-fact';
+export type { KycFact, KycFactStatus, KycValue } from './kyc-fact';
 export { APPOINTMENT_STATUSES, CLOSED_STAGES, PERSON_ROLES } from './model';
 export type {
   Appointment,
