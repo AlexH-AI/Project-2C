@@ -53,7 +53,21 @@ export {
   updatePolicy,
 } from './policies';
 export type { NewPolicy, PolicyChanges } from './policies';
-export { addKycNote, getKycProfile, listKycVersions } from './kyc';
-export type { KycNoteRecord, KycProfileRecord, KycSource, KycVersionRecord } from './kyc';
+export {
+  addKycNote,
+  confirmKycFact,
+  getKycProfile,
+  listKycVersions,
+  markKycConflict,
+  resolveKycConflict,
+} from './kyc';
+export type {
+  KycChange,
+  KycFactCommand,
+  KycNoteRecord,
+  KycProfileRecord,
+  KycSource,
+  KycVersionRecord,
+} from './kyc';
 export { loadMetricsData } from './metrics';
 export { APPOINTMENT_TRIGGERS, GENDERS, KYC_NOTE_SOURCES } from './schema';

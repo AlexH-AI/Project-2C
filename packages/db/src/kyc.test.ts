@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { createCustomer, softDeleteCustomer } from './customers';
-import type { Database } from './database';
 import * as db from './index';
-import { addKycNote, getKycProfile, listKycVersions } from './kyc';
+import {
+  addKycNote,
+  confirmKycFact,
+  getKycProfile,
+  listKycVersions,
+  markKycConflict,
+  resolveKycConflict,
+} from './kyc';
 import { codeOf, d, setup } from './test-support';
 
 async function withCustomer(profile: { birthDate?: { year: number }; gender?: 'MALE' } = {}) {
@@ -19,19 +25,8 @@ async function withCustomer(profile: { birthDate?: { year: number }; gender?: 'M
   return { ...ctx, customer, note };
 }
 
-/** Facts and versions are written by the commands of T-043b; here they are inserted directly. */
-function insertFact(
-  database: Database,
-  customerId: string,
-  noteId: string,
-  seq: number,
-  value: string,
-) {
-  database.sqlite.run(
-    "INSERT INTO kyc_facts (id, customer_id, seq, field, value_json, note_id, confirmed_date, status, created_at, updated_at) VALUES (?, ?, ?, 'childrenCount', ?, ?, ?, 'active', 'x', 'x')",
-    [`f${seq}`, customerId, seq, value, noteId, `2026-09-${10 - seq}`],
-  );
-}
+const current = (facts: readonly { field: string; value: unknown; status: string }[]) =>
+  facts.filter((f) => f.status !== 'superseded').map((f) => [f.field, f.value, f.status]);
 
 describe('KYC notes', () => {
   it('appends notes from the RE in recording order', async () => {
@@ -68,13 +63,25 @@ describe('KYC notes', () => {
 
   it('can never be edited or deleted, not even with raw SQL', async () => {
     const { db: database, customer, note } = await withCustomer();
-    insertFact(database, customer.id, note.id, 1, '2');
+    confirmKycFact(database, customer.id, {
+      field: 'occupation',
+      value: 'Bác sĩ',
+      noteId: note.id,
+      date: d(3, 9, 2026),
+    });
 
     expect(
       Object.keys(db)
         .filter((name) => /Kyc/.test(name))
         .sort(),
-    ).toEqual(['addKycNote', 'getKycProfile', 'listKycVersions']);
+    ).toEqual([
+      'addKycNote',
+      'confirmKycFact',
+      'getKycProfile',
+      'listKycVersions',
+      'markKycConflict',
+      'resolveKycConflict',
+    ]);
     const run = (sql: string) => () => database.sqlite.run(sql);
     expect(run("UPDATE kyc_notes SET text = 'sửa'")).toThrow(/append-only/);
     expect(run('DELETE FROM kyc_notes')).toThrow(/append-only/);
@@ -85,45 +92,210 @@ describe('KYC notes', () => {
   });
 });
 
-describe('KYC reads', () => {
-  it('reads facts and versions in recording order, not by date', async () => {
+describe('KYC facts', () => {
+  it('confirms a fact from a note and supersedes the previous value of its trường', async () => {
     const { db: database, customer, note } = await withCustomer();
-    insertFact(database, customer.id, note.id, 1, '2');
-    insertFact(database, customer.id, note.id, 2, '3');
-    database.sqlite.run(
-      "INSERT INTO kyc_versions (id, customer_id, seq, hash, date, material, created_at) VALUES ('v1', ?, 1, 'h1', '2026-09-03', 1, 'x'), ('v0', ?, 2, 'h2', '2026-09-01', 0, 'x')",
-      [customer.id, customer.id],
+    const input = { field: 'maritalStatus', noteId: note.id, date: d(3, 9, 2026) } as const;
+
+    const first = confirmKycFact(database, customer.id, { ...input, value: 'Độc thân' });
+    const second = confirmKycFact(database, customer.id, { ...input, value: 'Đã kết hôn' });
+
+    expect(first.fact).toEqual({
+      id: expect.stringMatching(/^[0-9A-Z]{26}$/),
+      category: 'FAMILY',
+      field: 'maritalStatus',
+      value: 'Độc thân',
+      noteId: note.id,
+      confirmedDate: d(3, 9, 2026),
+      status: 'active',
+    });
+    expect(getKycProfile(database, customer.id).facts).toEqual([
+      { ...first.fact, status: 'superseded' },
+      second.fact,
+    ]);
+  });
+
+  it('takes the latest fact by recording order, not by confirmed date', async () => {
+    const { db: database, customer, note } = await withCustomer();
+    const input = { field: 'occupation', noteId: note.id } as const;
+
+    confirmKycFact(database, customer.id, { ...input, value: 'Bác sĩ', date: d(20, 9, 2026) });
+    confirmKycFact(database, customer.id, { ...input, value: 'Giám đốc', date: d(5, 9, 2026) });
+
+    expect(current(getKycProfile(database, customer.id).facts)).toEqual([
+      ['occupation', 'Giám đốc', 'active'],
+    ]);
+  });
+
+  it('normalises the value to the type of its trường before comparing', async () => {
+    const { db: database, customer, note } = await withCustomer();
+    const input = { noteId: note.id, date: d(3, 9, 2026) };
+
+    confirmKycFact(database, customer.id, { ...input, field: 'childrenCount', value: ' 2 ' });
+    confirmKycFact(database, customer.id, { ...input, field: 'hasProtection', value: true });
+    confirmKycFact(database, customer.id, { ...input, field: 'hasProtection', value: 'false' });
+    confirmKycFact(database, customer.id, { ...input, field: 'residence', value: '  Hà Nội ' });
+    confirmKycFact(database, customer.id, { ...input, field: 'annualIncome', value: 12 });
+
+    expect(current(getKycProfile(database, customer.id).facts)).toEqual([
+      ['childrenCount', 2, 'active'],
+      ['hasProtection', false, 'active'],
+      ['residence', 'Hà Nội', 'active'],
+      ['annualIncome', '12', 'active'],
+    ]);
+    const same = { ...input, field: 'childrenCount', value: 2 } as const;
+    expect(codeOf(() => markKycConflict(database, customer.id, same))).toBe('KYC_NO_CONFLICT');
+  });
+
+  it('refuses a value of the wrong type, an unknown trường and a note of another customer', async () => {
+    const { db: database, customer, re, note } = await withCustomer();
+    const other = createCustomer(database, {
+      name: 'Mai',
+      reId: re.id,
+      stage: 'N4',
+      date: d(1, 9),
+    });
+    const otherNote = addKycNote(database, other.id, { text: 'x', date: d(1, 9) });
+    const confirm = (field: string, value: string | number | boolean, noteId = note.id) =>
+      codeOf(() =>
+        confirmKycFact(database, customer.id, {
+          field: field as 'occupation',
+          value,
+          noteId,
+          date: d(3, 9, 2026),
+        }),
+      );
+
+    expect(confirm('childrenCount', 'hai')).toBe('INVALID_KYC_VALUE');
+    expect(confirm('childrenCount', 1.5)).toBe('INVALID_KYC_VALUE');
+    expect(confirm('childrenCount', -1)).toBe('INVALID_KYC_VALUE');
+    expect(confirm('hasProtection', 'có lẽ')).toBe('INVALID_KYC_VALUE');
+    expect(confirm('hasProtection', 1)).toBe('INVALID_KYC_VALUE');
+    expect(confirm('occupation', '   ')).toBe('INVALID_KYC_VALUE');
+    expect(confirm('occupation', true)).toBe('INVALID_KYC_VALUE');
+    expect(confirm('shoeSize', '42')).toBe('INVALID_KYC_FIELD');
+    expect(confirm('toString', '42')).toBe('INVALID_KYC_FIELD');
+    expect(confirm('occupation', 'Bác sĩ', otherNote.id)).toBe('KYC_NOTE_NOT_FOUND');
+    expect(getKycProfile(database, customer.id).facts).toEqual([]);
+  });
+
+  it('marks a disagreeing value as a conflict and resolves it by choosing one fact', async () => {
+    const { db: database, customer, note } = await withCustomer();
+    const input = { field: 'riskProfile', noteId: note.id, date: d(3, 9, 2026) } as const;
+    const first = confirmKycFact(database, customer.id, { ...input, value: 'Thận trọng' });
+
+    const second = markKycConflict(database, customer.id, { ...input, value: 'Cân bằng' });
+
+    expect(second.fact.status).toBe('conflict');
+    expect(current(getKycProfile(database, customer.id).facts)).toEqual([
+      ['riskProfile', 'Thận trọng', 'conflict'],
+      ['riskProfile', 'Cân bằng', 'conflict'],
+    ]);
+
+    const resolved = resolveKycConflict(database, customer.id, {
+      factId: first.fact.id,
+      date: d(4, 9, 2026),
+    });
+
+    expect(resolved.fact).toEqual({ ...first.fact, status: 'active' });
+    expect(current(getKycProfile(database, customer.id).facts)).toEqual([
+      ['riskProfile', 'Thận trọng', 'active'],
+    ]);
+  });
+
+  it('refuses a conflict with nothing to disagree with, and resolving a fact not in conflict', async () => {
+    const { db: database, customer, note } = await withCustomer();
+    const input = { field: 'riskProfile', noteId: note.id, date: d(3, 9, 2026) } as const;
+
+    expect(codeOf(() => markKycConflict(database, customer.id, { ...input, value: 'A' }))).toBe(
+      'KYC_NO_CONFLICT',
+    );
+    const { fact } = confirmKycFact(database, customer.id, { ...input, value: 'A' });
+    const resolve = (factId: string) => () =>
+      resolveKycConflict(database, customer.id, { factId, date: d(4, 9, 2026) });
+    expect(codeOf(resolve(fact.id))).toBe('KYC_NOT_IN_CONFLICT');
+    expect(codeOf(resolve('missing'))).toBe('KYC_FACT_NOT_FOUND');
+  });
+
+  it('writes nothing when a command fails', async () => {
+    const { db: database, customer, note, persist } = await withCustomer();
+    persist.mockClear();
+
+    codeOf(() =>
+      confirmKycFact(database, customer.id, {
+        field: 'childrenCount',
+        value: 'hai',
+        noteId: note.id,
+        date: d(3, 9, 2026),
+      }),
     );
 
-    expect(getKycProfile(database, customer.id).facts).toEqual([
-      {
-        id: 'f1',
-        category: 'FAMILY',
-        field: 'childrenCount',
-        value: 2,
-        noteId: note.id,
-        confirmedDate: d(9, 9, 2026),
-        status: 'active',
-      },
-      expect.objectContaining({ id: 'f2', value: 3, confirmedDate: d(8, 9, 2026) }),
-    ]);
+    expect(persist).not.toHaveBeenCalled();
+    expect(listKycVersions(database, customer.id)).toEqual([]);
+  });
+});
+
+describe('birth year and gender come from the customer profile (D2)', () => {
+  it('refuses birthYear and gender confirmed by the RE', async () => {
+    const { db: database, customer, note } = await withCustomer();
+    const input = { noteId: note.id, date: d(3, 9, 2026) };
+
+    expect(
+      codeOf(() =>
+        confirmKycFact(database, customer.id, { ...input, field: 'birthYear', value: 1972 }),
+      ),
+    ).toBe('KYC_FIELD_FROM_PROFILE');
+    expect(
+      codeOf(() =>
+        confirmKycFact(database, customer.id, { ...input, field: 'gender', value: 'Nữ' }),
+      ),
+    ).toBe('KYC_FIELD_FROM_PROFILE');
+  });
+});
+
+describe('KYC versions', () => {
+  it('records a version only when the facts in effect change', async () => {
+    const { db: database, customer, note } = await withCustomer();
+    const input = { field: 'occupation', noteId: note.id, date: d(3, 9, 2026) } as const;
+
+    confirmKycFact(database, customer.id, { ...input, value: 'Bác sĩ' });
+    const again = confirmKycFact(database, customer.id, { ...input, value: 'Bác sĩ' });
+
+    expect(again.version).toBeNull();
     expect(listKycVersions(database, customer.id)).toEqual([
       {
-        id: 'v1',
-        hash: 'h1',
+        id: expect.stringMatching(/^[0-9A-Z]{26}$/),
+        hash: expect.any(String),
         summary: 'Cập nhật KYC 03/09/2026',
         date: d(3, 9, 2026),
         material: true,
       },
-      {
-        id: 'v0',
-        hash: 'h2',
-        summary: 'Cập nhật KYC 01/09/2026',
-        date: d(1, 9, 2026),
-        material: false,
-      },
     ]);
-    softDeleteCustomer(database, customer.id);
-    expect(codeOf(() => listKycVersions(database, customer.id))).toBe('CUSTOMER_NOT_FOUND');
+  });
+
+  it('applies the material rule: core changes always, others only when switched on', async () => {
+    const { db: database, customer, note } = await withCustomer();
+    const input = { noteId: note.id, date: d(3, 9, 2026) };
+
+    confirmKycFact(database, customer.id, { ...input, field: 'occupation', value: 'Bác sĩ' });
+    const minor = confirmKycFact(database, customer.id, {
+      ...input,
+      field: 'residence',
+      value: 'Huế',
+    });
+    const manual = confirmKycFact(database, customer.id, {
+      ...input,
+      field: 'riskProfile',
+      value: 'Cân bằng',
+      material: true,
+    });
+    const core = confirmKycFact(database, customer.id, {
+      ...input,
+      field: 'childrenCount',
+      value: 1,
+      material: false,
+    });
+
+    expect([minor, manual, core].map((c) => c.version?.material)).toEqual([false, true, true]);
   });
 });
