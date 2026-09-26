@@ -124,7 +124,12 @@ export function createPerson(db: Database, input: PersonInput): Person {
 export function updatePerson(db: Database, id: string, changes: Partial<PersonInput>): Person {
   return db.transaction(() => {
     const current = toPerson(livePerson(db, id));
-    const valid = validatePerson(db, { ...current, ...changes });
+    // `undefined` keeps the current value; `teamId: null` clears the team.
+    const valid = validatePerson(db, {
+      name: changes.name ?? current.name,
+      role: changes.role ?? current.role,
+      teamId: changes.teamId === undefined ? current.teamId : changes.teamId,
+    });
     updatePersonRow(db, id, valid);
     return toPerson(livePerson(db, id));
   });

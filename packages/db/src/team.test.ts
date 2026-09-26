@@ -175,6 +175,16 @@ describe('people', () => {
     expect(codeOf(() => updatePerson(db, 'nope', { name: 'X' }))).toBe('PERSON_NOT_FOUND');
   });
 
+  it('keeps fields that are passed as undefined', async () => {
+    const { db } = await setup();
+    const team = createTeam(db, { name: 'Sao Mai' });
+    const person = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+
+    expect(
+      updatePerson(db, person.id, { name: undefined, role: undefined, teamId: undefined }),
+    ).toEqual(person);
+  });
+
   it('hides a soft-deleted person and restores them only into a live team', async () => {
     const { db } = await setup();
     const team = createTeam(db, { name: 'Sao Mai' });
