@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Form KYC — Project-2C mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="mockups.css" />
+    <link rel="stylesheet" href="forms.css" />
+    <style>
+      .fact-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr) auto;
+        gap: 8px;
+        align-items: center;
+        padding: 8px 10px;
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: var(--fs-sm);
+      }
+      .fact-row .fld b {
+        display: block;
+      }
+      .fact-row .fld span {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+      }
+      .menu {
+        background: var(--bg-2);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-sm);
+        padding: 4px;
+        font-size: var(--fs-sm);
+      }
+      .menu .grp {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 6px 8px 2px;
+      }
+      .menu .it {
+        display: flex;
+        gap: 8px;
+        padding: 5px 8px;
+        border-radius: 5px;
+      }
+      .menu .it.hl {
+        background: var(--bg-3);
+      }
+      .menu .it.lock {
+        color: var(--text-3);
+      }
+      .menu .it .r {
+        margin-left: auto;
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+      }
+      .radio {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 9px 10px;
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-sm);
+        background: var(--bg-2);
+        font-size: var(--fs-sm);
+      }
+      .radio.on {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .radio .dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid var(--border-strong);
+        flex: none;
+        margin-top: 2px;
+      }
+      .radio.on .dot {
+        border-color: var(--accent);
+        background: radial-gradient(var(--accent) 45%, transparent 50%);
+      }
+      .radio b {
+        display: block;
+      }
+      .radio .dim {
+        font-size: var(--fs-xs);
+      }
+      .switch {
+        width: 32px;
+        height: 18px;
+        border-radius: 9px;
+        background: var(--bg-3);
+        border: 1px solid var(--border-strong);
+        position: relative;
+        flex: none;
+      }
+      .switch::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--text-3);
+      }
+      .switch.on {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+      .switch.on::after {
+        left: 16px;
+        background: var(--on-accent);
+      }
+      .switch.fixed {
+        opacity: 0.6;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="board">
+      <header class="board-head">
+        <a class="back" href="index.html">← Mockup G3</a>
+        <h1>7 · KYC — ghi chú, xác nhận, mâu thuẫn, giải quyết</h1>
+        <p>
+          Mở từ "+ Ghi chú KYC" (Hồ sơ KH). Mọi dữ kiện gắn với một ghi chú; ghi chú không sửa, không xóa (ADR-0008).
+          Năm sinh / giới tính chỉ sửa ở hồ sơ KH (D2). Hôm nay giả lập <b class="num">26/09/2026</b>.
+        </p>
+      </header>
+
+      <div class="specimens">
+        <!-- 7a: new note + facts -->
+        <section class="specimen">
+          <p class="cap">7a · Ghi chú KYC mới + xác nhận dữ kiện</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Ghi chú KYC · Trịnh Minh Anh</h2><div class="sub">K-9A1C · KYC hiện tại v2 (12/07/2026)</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="field">
+                <label>Ghi chú <span class="req">*</span> <span class="opt">không sửa được sau khi lưu</span></label>
+                <div class="input area">Con lớn dự định du học 2029, hai vợ chồng cùng quyết chi tiêu giáo dục. Không muốn đầu tư chứng khoán.</div>
+              </div>
+              <div class="field">
+                <label>Ngày ghi nhận</label>
+                <div class="input">14/9</div>
+                <div class="read"><b>Thứ Hai 14/09/2026</b></div>
+              </div>
+              <div class="divider"></div>
+              <div class="field">
+                <span class="label">Dữ kiện xác nhận từ ghi chú này <span class="opt">không bắt buộc</span></span>
+                <div class="fact-row">
+                  <span class="fld"><b>Mục tiêu chính</b><span>Mục tiêu · cốt lõi</span></span>
+                  <span>Quỹ du học con lớn</span>
+                  <span class="badge c-info plain">mới</span>
+                </div>
+                <div class="fact-row">
+                  <span class="fld"><b>Mốc thời gian mục tiêu</b><span>Mục tiêu</span></span>
+                  <span class="num">2029</span>
+                  <span class="badge c-info plain">mới</span>
+                </div>
+                <div class="fact-row">
+                  <span class="fld"><b>Khẩu vị rủi ro</b><span>Khẩu vị rủi ro</span></span>
+                  <span>Không muốn đầu tư chứng khoán</span>
+                  <span class="badge c-info plain">mới</span>
+                </div>
+                <button class="btn" style="align-self: flex-start">+ Dữ kiện</button>
+              </div>
+              <div class="alert ok">
+                <b>Sau khi lưu: KYC v3 · <span class="badge c-accent plain">material</span></b>
+                <span class="dim">Tự động material vì đổi trường cốt lõi (Mục tiêu chính) — ADR-0008 §7.</span>
+              </div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Lưu ghi chú</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7b: field picker with locked fields -->
+        <section class="specimen">
+          <p class="cap">7b · Chọn trường — Năm sinh / Giới tính bị khóa (D2)</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>+ Dữ kiện</h2><div class="sub">Từ ghi chú đang soạn</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="field">
+                <label>Trường <span class="req">*</span></label>
+                <div class="input focus">năm<span class="caret">▾</span></div>
+                <div class="menu">
+                  <div class="grp">Danh tính</div>
+                  <div class="it lock">🔒 Năm sinh <span class="r">sửa ở hồ sơ KH</span></div>
+                  <div class="it lock">🔒 Giới tính <span class="r">sửa ở hồ sơ KH</span></div>
+                  <div class="grp">Nghề nghiệp / nguồn thu</div>
+                  <div class="it hl">Thu nhập năm</div>
+                  <div class="grp">Mục tiêu</div>
+                  <div class="it">Mốc thời gian mục tiêu <span class="r">vd. 2029</span></div>
+                </div>
+              </div>
+              <div class="alert warn">
+                <b>Năm sinh và giới tính lấy từ hồ sơ KH</b>
+                Sửa ở <a class="c-accent" href="customer-forms.html">Sửa hồ sơ KH</a>; app tự ghi ghi chú KYC nguồn "Hệ thống" để hai nơi không lệch nhau.
+              </div>
+              <div class="field">
+                <label>Giá trị — Thu nhập năm <span class="opt">số tiền</span></label>
+                <div class="input">6 tỷ</div>
+                <div class="read"><b>6.000.000.000 ₫</b> (6 tỷ)</div>
+              </div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Thêm</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7c: value differs: update or conflict -->
+        <section class="specimen">
+          <p class="cap">7c · Trường đã có giá trị khác — cập nhật hay mâu thuẫn</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>+ Dữ kiện · Tổng tài sản</h2><div class="sub">Tài sản · cốt lõi</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="field">
+                <label>Giá trị mới <span class="req">*</span></label>
+                <div class="input">40 tỷ</div>
+                <div class="read"><b>40.000.000.000 ₫</b> (40 tỷ)</div>
+              </div>
+              <div class="read warn">Đang có: <b>25 tỷ</b> · F-05 · ghi chú N-0712 (12/07/2026)</div>
+              <div class="radio on">
+                <span class="dot"></span>
+                <span><b>Cập nhật</b><span class="dim">KH cho số mới; 25 tỷ thành giá trị cũ (không còn hiệu lực).</span></span>
+              </div>
+              <div class="radio">
+                <span class="dot"></span>
+                <span><b>Đánh dấu mâu thuẫn</b><span class="dim">Chưa rõ số nào đúng; giữ cả hai tới khi giải quyết.</span></span>
+              </div>
+              <div class="alert">
+                <b>Nếu chọn mâu thuẫn ở trường cốt lõi</b>
+                <span class="dim">Cổng KYC → <span class="badge c-danger plain">CONFLICT_RESOLUTION</span>: AI chỉ gợi ý câu hỏi làm rõ, chưa phân tích.</span>
+              </div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Thêm</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7d: resolve conflict -->
+        <section class="specimen">
+          <p class="cap">7d · Giải quyết mâu thuẫn</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Giải quyết · Mối quan tâm chính</h2><div class="sub">Trịnh Minh Anh · <span class="badge c-warn plain">Mâu thuẫn phụ</span></div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <p style="margin: 0; color: var(--text-2)">Chọn giá trị đúng; giá trị còn lại thành cũ. Ghi chú gốc giữ nguyên.</p>
+              <div class="radio">
+                <span class="dot"></span>
+                <span><b>"Ưu tiên thanh khoản"</b><span class="dim num">F-10 · N-0712 · 12/07/2026</span></span>
+              </div>
+              <div class="radio on">
+                <span class="dot"></span>
+                <span><b>"Chấp nhận khóa vốn 10 năm cho quỹ giáo dục"</b><span class="dim num">F-13 · N-0914 · 14/09/2026</span></span>
+              </div>
+              <div class="alert info">
+                Không giá trị nào đúng? Thêm <a class="c-accent" href="#">ghi chú KYC mới</a> với giá trị đúng — xác nhận giá trị mới cũng giải quyết mâu thuẫn.
+              </div>
+              <div class="row" style="font-size: var(--fs-sm)">
+                <span class="switch"></span>
+                <span>Đánh dấu phiên bản <b>material</b> <span class="muted">(trường phụ — mặc định không)</span></span>
+              </div>
+              <div class="read">Sau khi lưu: KYC <b>v4</b> · cổng KYC <span class="badge c-ok plain">PAIN_POINT_ANALYSIS</span></div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Giải quyết</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7e: material flag states + errors -->
+        <section class="specimen">
+          <p class="cap">7e · Cờ material &amp; lỗi khi lưu</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Phiên bản KYC khi lưu</h2><div class="sub">Ba trường hợp của công tắc material (ADR-0008 §7)</div></div>
+            </div>
+            <div class="dialog-body">
+              <div class="row" style="font-size: var(--fs-sm)">
+                <span class="switch on fixed"></span>
+                <span><b>material</b> — tự động vì đổi trường cốt lõi; <span class="muted">không tắt được</span></span>
+              </div>
+              <div class="row" style="font-size: var(--fs-sm)">
+                <span class="switch"></span>
+                <span><b>material</b> — chỉ đổi trường phụ; RE bật tay nếu thấy quan trọng</span>
+              </div>
+              <div class="row" style="font-size: var(--fs-sm)">
+                <span class="muted">—</span>
+                <span class="dim">Không tạo phiên bản: dữ kiện hiệu lực không đổi (chỉ thêm ghi chú)</span>
+              </div>
+              <div class="divider"></div>
+              <div class="alert">
+                <b>Không đánh dấu mâu thuẫn được</b>
+                <span class="dim">"Tổng tài sản" chưa có giá trị, hoặc giá trị mới trùng giá trị đang có. Hãy dùng "Cập nhật".</span>
+              </div>
+              <div class="alert">
+                <b>Ghi chú trống</b>
+                <span class="dim">Mỗi dữ kiện phải gắn với một ghi chú có nội dung.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <p class="mock-note">Mockup G3 Phase 3 · tên trường tiếng Việt là đề xuất cho i18n (khóa kỹ thuật giữ theo KYC_FIELDS)</p>
+    </main>
+  </body>
+</html>

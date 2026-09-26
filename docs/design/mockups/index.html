@@ -88,6 +88,29 @@
       </nav>
 
       <section class="card">
+        <div class="card-head"><h2>Phase 3 · Màn nhập liệu (G3, #59)</h2><span class="meta">chờ Owner duyệt</span></div>
+        <nav class="screens" aria-label="Màn nhập liệu Phase 3">
+          <a href="customer-forms.html"><b>5 · Khách hàng</b><span>Tạo / sửa KH, ngày sinh năm hoặc đủ ngày, chuyển nhóm tay, xóa mềm</span></a>
+          <a href="appointment-forms.html"><b>6 · Lịch hẹn</b><span>Tạo lịch, ghi kết quả (D6), dời lịch (D3), sửa / xóa theo D7</span></a>
+          <a href="kyc-forms.html"><b>7 · KYC</b><span>Ghi chú + dữ kiện, khóa năm sinh / giới tính (D2), mâu thuẫn, material</span></a>
+          <a href="policy-forms.html"><b>8 · Hợp đồng</b><span>Nộp, phát hành, sửa FYP phát hành, lỗi ngày / tiền</span></a>
+          <a href="team.html"><b>9 · Team &amp; nhân sự</b><span>3 team, hỗ trợ dùng chung, thêm / xóa nhân sự</span></a>
+          <a href="settings-data.html"><b>10 · Cài đặt → Dữ liệu</b><span>File dữ liệu, xuất / nhập backup (D5), nạp lại seed, lỗi lưu file</span></a>
+        </nav>
+        <p class="lead" style="font-size: var(--fs-sm)">
+          Hộp thoại vẽ dạng bảng mẫu: mỗi ô là một trạng thái (hợp lệ / lỗi / bị chặn). Mọi ô ngày và tiền có dòng <b style="color: var(--accent)">→</b> hiện giá trị app đã hiểu trước khi lưu (W8; ca biên <code>29/02</code>, <code>1.234 tr</code> ở <code>docs/metrics/phase-2.md</code>).
+        </p>
+        <div class="subhead">Cần Owner chốt khi duyệt</div>
+        <ol class="q">
+          <li><b>Lý do hạ nhóm / đóng:</b> mockup Phase 1 ghi "hỏi lý do khi hạ nhóm / đóng" nhưng schema G2 không có cột lý do. Mockup này <b>không</b> hỏi lý do. Cần lý do thì thêm cột <code>note</code> vào <code>stage_transitions</code> (sửa G2).</li>
+          <li><b>D7 — phạm vi khóa (6f):</b> đề xuất chỉ khóa trạng thái, ngày, nhóm sau cuộc gặp; việc tiếp theo, case size, ghi chú, trigger, người phối hợp vẫn sửa được.</li>
+          <li><b>Trigger bắt buộc</b> khi tạo lịch hẹn (mô tả thì không) — đề xuất bắt buộc, mặc định "Khác".</li>
+          <li><b>Mở DB hỏng khi khởi động (10d)</b> và <b>gõ "NẠP LẠI" để xác nhận (10c)</b> — hai đề xuất ngoài spec §5.</li>
+          <li><b>Tên tiếng Việt các trường KYC</b> (7a, 7b) — đề xuất, sẽ nằm trong i18n.</li>
+        </ol>
+      </section>
+
+      <section class="card">
         <div class="card-head"><h2>Nguyên tắc</h2></div>
         <ul style="margin: 0; padding-left: 18px; color: var(--text-2)">
           <li>Nền phân lớp xám-xanh rất tối (không đen tuyệt đối), <b style="color: var(--text)">một màu nhấn duy nhất</b>: vàng champagne — nút chính, mục đang chọn, focus.</li>
