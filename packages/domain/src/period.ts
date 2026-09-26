@@ -38,10 +38,14 @@ function lastDayOfMonth(year: number, month: number): number {
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
-/** Throws a RangeError for a date that does not exist (31/04, 29/02/2026…). */
+/** `Date.UTC` reads years 0–99 as 19xx, so earlier years are refused rather than misread. */
+export const MIN_YEAR = 1900;
+
+/** Throws a RangeError for a date that does not exist (31/04, 29/02/2026…) or is before 1900. */
 export function calendarDate(year: number, month: number, day: number): CalendarDate {
   const valid =
     [year, month, day].every(Number.isInteger) &&
+    year >= MIN_YEAR &&
     month >= 1 &&
     month <= 12 &&
     day >= 1 &&
@@ -77,8 +81,53 @@ export function isInPeriod(date: CalendarDate, period: Period): boolean {
 export function parseDate(text: string): CalendarDate | null {
   const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text.trim());
   if (!match) return null;
+  return tryCalendarDate(Number(match[3]), Number(match[2]), Number(match[1]));
+}
+
+export type QuickDateError = 'empty' | 'format' | 'invalid-date' | 'year-out-of-range';
+
+export type QuickDateResult =
+  | {
+      readonly ok: true;
+      readonly date: CalendarDate;
+      /** True when the text had no year and today's year was used. */
+      readonly yearInferred: boolean;
+      /** The same day next year, offered (never applied) when an inferred date is long past. */
+      readonly nextYearSuggestion: CalendarDate | null;
+    }
+  | { readonly ok: false; readonly error: QuickDateError };
+
+/** An inferred date more than this many days before today gets a next-year suggestion (W8). */
+export const NEXT_YEAR_SUGGESTION_DAYS = 60;
+
+/**
+ * Reads a quick date `dd/mm` or `dd/mm/yyyy` (leading zeros optional). Without a year, today's year
+ * is used; if that date passed more than 60 days ago, the same day next year is suggested, since
+ * at year end the RE often means early next year. The caller shows the result and lets the RE
+ * choose — nothing is guessed silently.
+ */
+export function parseQuickDate(text: string, today: CalendarDate): QuickDateResult {
+  const trimmed = text.trim();
+  if (trimmed === '') return { ok: false, error: 'empty' };
+  const match = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/.exec(trimmed);
+  if (!match) return { ok: false, error: 'format' };
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const yearInferred = match[3] === undefined;
+  const year = yearInferred ? today.year : Number(match[3]);
+  if (year < MIN_YEAR) return { ok: false, error: 'year-out-of-range' };
+
+  const date = tryCalendarDate(year, month, day);
+  if (!date) return { ok: false, error: 'invalid-date' };
+  const longPast = toDayNumber(today) - toDayNumber(date) > NEXT_YEAR_SUGGESTION_DAYS;
+  const nextYearSuggestion =
+    yearInferred && longPast ? tryCalendarDate(year + 1, month, day) : null;
+  return { ok: true, date, yearInferred, nextYearSuggestion };
+}
+
+function tryCalendarDate(year: number, month: number, day: number): CalendarDate | null {
   try {
-    return calendarDate(Number(match[3]), Number(match[2]), Number(match[1]));
+    return calendarDate(year, month, day);
   } catch {
     return null;
   }
