@@ -70,6 +70,7 @@ tools/             bootstrap, session scripts, seed
 | `pnpm install` | Cài dependency (pnpm qua corepack, phiên bản ghim trong `package.json`) |
 | `pnpm verify` | lint + typecheck + unit + ranh giới module — **bắt buộc xanh trước commit** |
 | `pnpm test` | Unit test (Vitest) |
+| `pnpm e2e` | E2E Playwright trên bản build web, dùng Microsoft Edge có sẵn |
 | `pnpm dev:web` | UI trên Vite, không cần Tauri |
 | `pnpm dev` | App Tauri |
 | `pnpm build:exe` | Build exe portable |
