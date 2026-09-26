@@ -4,10 +4,18 @@
  */
 import type { Person, PersonRole, Team } from '@p2c/domain';
 import { and, asc, eq, isNotNull, isNull, ne } from 'drizzle-orm';
+import { requireName, stampDeleted } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { ulid } from './ids';
-import { people, teams } from './schema';
+import {
+  appointmentCoordinators,
+  appointments,
+  customers,
+  people,
+  policies,
+  teams,
+} from './schema';
 
 type TeamRow = typeof teams.$inferSelect;
 type PersonRow = typeof people.$inferSelect;
@@ -130,6 +138,10 @@ export function updatePerson(db: Database, id: string, changes: Partial<PersonIn
       role: changes.role ?? current.role,
       teamId: changes.teamId === undefined ? current.teamId : changes.teamId,
     });
+    // Records keep pointing to their RE, who therefore has to stay an RE (spec §3.3).
+    if (current.role === 'RE' && valid.role !== 'RE' && ownsLiveRecords(db, id)) {
+      throw new DbError('PERSON_IN_USE');
+    }
     updatePersonRow(db, id, valid);
     return toPerson(livePerson(db, id));
   });
@@ -138,6 +150,7 @@ export function updatePerson(db: Database, id: string, changes: Partial<PersonIn
 export function softDeletePerson(db: Database, id: string): void {
   db.transaction(() => {
     livePerson(db, id);
+    if (isPersonInUse(db, id)) throw new DbError('PERSON_IN_USE');
     updatePersonRow(db, id, stampDeleted(db));
   });
 }
@@ -181,12 +194,6 @@ function livePerson(db: Database, id: string): PersonRow {
   return row;
 }
 
-function requireName(name: string): string {
-  const trimmed = name.trim();
-  if (trimmed === '') throw new DbError('NAME_REQUIRED');
-  return trimmed;
-}
-
 function assertTeamNameFree(db: Database, name: string, exceptId: string | null): void {
   const clash = db.orm
     .select({ id: teams.id })
@@ -202,6 +209,28 @@ function assertTeamNameFree(db: Database, name: string, exceptId: string | null)
   if (clash) throw new DbError('TEAM_NAME_TAKEN');
 }
 
+/** Whether a live customer, appointment or policy has the person as its RE (spec §3.3–3.7). */
+function ownsLiveRecords(db: Database, id: string): boolean {
+  const live = (table: typeof customers | typeof appointments | typeof policies) =>
+    db.orm
+      .select({ id: table.id })
+      .from(table)
+      .where(and(eq(table.reId, id), isNull(table.deletedAt)))
+      .get();
+  return [live(customers), live(appointments), live(policies)].some(Boolean);
+}
+
+/** Whether a live record still points to the person, as RE or coordinator (spec §4). */
+function isPersonInUse(db: Database, id: string): boolean {
+  const coordinating = db.orm
+    .select({ id: appointments.id })
+    .from(appointmentCoordinators)
+    .innerJoin(appointments, eq(appointments.id, appointmentCoordinators.appointmentId))
+    .where(and(eq(appointmentCoordinators.personId, id), isNull(appointments.deletedAt)))
+    .get();
+  return ownsLiveRecords(db, id) || coordinating !== undefined;
+}
+
 function validatePerson(db: Database, input: PersonInput): PersonInput {
   const name = requireName(input.name);
   if (input.teamId === null) {
@@ -210,12 +239,6 @@ function validatePerson(db: Database, input: PersonInput): PersonInput {
     liveTeam(db, input.teamId);
   }
   return { name, role: input.role, teamId: input.teamId };
-}
-
-/** One instant for both columns, so a deleted row is never updated after its deletion. */
-function stampDeleted(db: Database): { deletedAt: string; updatedAt: string } {
-  const at = db.now().toISOString();
-  return { deletedAt: at, updatedAt: at };
 }
 
 function updateTeamRow(db: Database, id: string, changes: Partial<TeamRow>): void {
