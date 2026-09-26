@@ -1,9 +1,9 @@
 # ADR-0014: Thư viện chart — ECharts
 
-- **Trạng thái:** **Proposed — chờ G4** (thêm dependency)
+- **Trạng thái:** Accepted (G4, Owner duyệt 26/09/2026)
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §4.4 ("ECharts hoặc Recharts, quyết định ở Phase 1 theo mockup"); ADR-0013 (tokens màu); issue #8
-- **Commit / PR:** — (cập nhật khi merge)
+- **Commit / PR:** PR #15
 
 ## Bối cảnh
 
@@ -26,7 +26,7 @@ Hai bản thử nghiệm giống hệt nhau: React 19.3 + Vite 8, cùng 4 biểu
 | Giấy phép | Apache-2.0 | MIT |
 | Bản mới nhất | 19/05/2026 | 21/09/2026 |
 
-## Quyết định (đề xuất)
+## Quyết định
 
 **Dùng ECharts 6** (`echarts`, không dùng `echarts-for-react`):
 
@@ -49,5 +49,5 @@ Hai bản thử nghiệm giống hệt nhau: React 19.3 + Vite 8, cùng 4 biểu
 
 ## Hệ quả
 
-- Thêm dependency `echarts@6.1.0` vào `packages/ui` (cần G4).
+- Thêm dependency `echarts@6.1.0` vào `packages/ui` trong #7 (đã duyệt G4).
 - Mục lục `docs/decisions/README.md` bổ sung dòng ADR-0014 sau khi PR #13 (ADR-0013) merge, để tránh xung đột với PR đang review.
