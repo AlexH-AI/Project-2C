@@ -29,6 +29,7 @@ Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh
 4. PR → CI Windows xanh → **review ở phiên mới, context sạch** theo `docs/process/REVIEW-CHECKLIST.md`.
 5. `risk:low` + CI xanh + review đạt → Claude tự merge bằng `gh pr merge --squash` (dùng `--merge` khi có PR khác xếp chồng lên nhánh này, để giữ lịch sử commit). Ngược lại chờ Owner. Sửa tối đa 2 vòng, sau đó G8.
    - GitHub Free không có branch protection / auto-merge cho repo private (issue #3). Thay vào đó: hook `.githooks/pre-push` chặn push thẳng lên `main` (bootstrap đặt `core.hooksPath`). **Không bao giờ** dùng `--no-verify` hay merge khi CI chưa xanh.
+   - CI theo nhu cầu (ADR-0015): PR chỉ sửa docs (`docs/**`, `*.md`) không chạy CI và merge được không cần CI. Build exe chỉ chạy trên `main` hoặc PR có nhãn `build-exe` — **bắt buộc gắn nhãn** khi PR đụng `apps/desktop/**` (UI/Tauri), `packages/ui/**`, lockfile/`package.json`, Rust/Cargo. **Khi bắt đầu Phase 3: mở lại build exe cho mọi PR.**
 6. Mỗi task một phiên mới (hoặc `/clear`).
 
 ## Skills được phép (ADR-0012)

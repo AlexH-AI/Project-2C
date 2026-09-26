@@ -238,7 +238,7 @@ tools/               bootstrap, session scripts, seed generator
 
 **Kiểm thử:** Vitest cho `domain` (mục tiêu ≥ 95% coverage, golden examples của Owner là test); Playwright e2e + ảnh chụp giao diện; AI test bằng Mock provider + fixture ghi sẵn; **bộ eval AI** ~20 hồ sơ KYC giả lập (trạng thái cổng mong đợi + kiểm tra guardrail) chạy thủ công với provider thật, không chạy trong CI.
 
-**CI (GitHub Actions, windows-latest):** lint → typecheck → unit → e2e (web mode) → build Tauri → upload artifact exe.
+**CI (GitHub Actions, windows-latest):** lint → typecheck → unit → e2e (web mode) → build Tauri → upload artifact exe. Từ Phase 2 (ADR-0015): build exe chỉ chạy trên `main` hoặc PR có nhãn `build-exe`; PR chỉ sửa docs không chạy CI; mở lại build exe cho mọi PR khi bắt đầu Phase 3.
 
 ### 4.5 Thiết kế AI copilot
 
@@ -290,7 +290,7 @@ Ghi chú KYC ─► Dữ kiện có cấu trúc (RE xác nhận) ─► kyc_vers
 | **0. Chốt yêu cầu** | Kế thừa Q1–Q16; ADR: stack, kiến trúc, mô hình một agent, giao thức 2 máy | ADR · **G1, G2** | ✅ ADR-0001…0014 |
 | **1. Nền móng** | `CLAUDE.md`, `.gitattributes`, bootstrap/session scripts, `/session-start` `/handoff`, CI + build exe, pre-push hook bảo vệ `main`, Issue/PR template, checklist review; skeleton Tauri + chế độ web; app shell dark; mockup | Exe chạy được trên **cả 2 máy** · **G3** | 🟡 16/18 issue; còn #9 (exe trên Office Laptop + `phase-1.md`), #17 (icon) — chờ Owner ở văn phòng |
 | **2. Lõi domain** | State machine, stats engine + golden tests, parse ngày/tiền, mô hình KYC (notes/facts/versions), cổng KYC | Domain coverage ≥ 95% | 🟡 9/11 issue, coverage 100%; còn #25 (ngày), #26 (tiền) |
-| **3. Nghiệp vụ & màn hình** | `packages/db`; Team/RE, Khách hàng, KYC timeline, Lịch hẹn, Kết quả cuộc gặp, Hợp đồng; seed 3 × 10 RE × ~12 tháng dữ liệu; xuất/nhập backup | Nhập liệu hoàn chỉnh | ⬜ chưa tách issue |
+| **3. Nghiệp vụ & màn hình** | `packages/db`; Team/RE, Khách hàng, KYC timeline, Lịch hẹn, Kết quả cuộc gặp, Hợp đồng; seed 3 × 10 RE × ~12 tháng dữ liệu; xuất/nhập backup; **việc đầu tiên: mở lại build exe cho mọi PR (ADR-0015)** | Nhập liệu hoàn chỉnh | ⬜ chưa tách issue |
 | **4. Dashboard & báo cáo** | Tổng quan hôm nay, MTD, drill-down team/RE, báo cáo tuần/tháng/năm, xuất Excel | · **G7** (milestone) | ⬜ |
 | **5. AI copilot** | Adapter OpenCode Go + Mock, prompt + schema, validators, versioning/STALE, Settings, bộ eval | · **G5, G6** | ⬜ |
 | **6. Hoàn thiện & phát hành** | Hiệu năng, rà soát UX, đồng bộ `Project-2C-data`, hướng dẫn sử dụng tiếng Việt, GitHub Release v1.0 | · **G7** | ⬜ |
