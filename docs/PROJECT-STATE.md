@@ -42,5 +42,5 @@ Claude Code only: Opus 5.5, effort medium, no subagents. Claude works autonomous
 ## Next decision
 
 - Phase 1 code merged (#7 closed); milestone stays open until #9 (exe on both machines) and #17 (icons) are checked at the office.
-- Phase 2 — core domain in progress: G2 approved for metrics (#28 → PR #34) and KYC catalog/gate (#30 → PR #35). PR #36 (#29 KYC model): clean-session review PASS, awaits Owner merge (risk:med). Next: #27, #31, #32, #33, #38 (after #36); #25, #26.
+- Phase 2 — core domain in progress: G2 approved for metrics (#28 → PR #34) and KYC catalog/gate (#30 → PR #35). #29 KYC model merged (PR #36); ADR-0008 §7 material rule merged (PR #39). Next: #27 (in progress), #31, #32, #38, #33; #25, #26.
 - Project-2 should adopt the upstream skill renames (`to-prd` → `to-spec`, `to-issues` → `to-tickets`).
