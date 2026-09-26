@@ -1,5 +1,5 @@
 /** Helpers shared by the commands: names, soft-delete stamps, stored dates and money. */
-import { calendarDate, type CalendarDate } from '@p2c/domain';
+import { calendarDate, type CalendarDate, type Vnd } from '@p2c/domain';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Database } from './database';
 import { DbError } from './errors';
@@ -9,6 +9,12 @@ export function requireName(name: string): string {
   const trimmed = name.trim();
   if (trimmed === '') throw new DbError('NAME_REQUIRED');
   return trimmed;
+}
+
+/** Trimmed text, or null when empty. */
+export function optionalText(text: string | null | undefined): string | null {
+  const trimmed = text?.trim() ?? '';
+  return trimmed === '' ? null : trimmed;
 }
 
 /** One instant for both columns, so a deleted row is never updated after its deletion. */
@@ -33,6 +39,12 @@ export function toIsoDate(date: CalendarDate): string {
 export function fromIsoDate(text: string): CalendarDate {
   const [year, month, day] = text.split('-').map(Number);
   return calendarDate(year!, month!, day!);
+}
+
+/** A whole, positive number of đồng. */
+export function requireAmount(amount: Vnd): Vnd {
+  if (!Number.isSafeInteger(amount) || amount <= 0) throw new DbError('INVALID_AMOUNT');
+  return amount;
 }
 
 /** The id of a live person with the RE role — the only role that owns records (G2 G). */

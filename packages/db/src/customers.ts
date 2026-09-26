@@ -194,6 +194,31 @@ export function appendTransition(
   return toTransition(row);
 }
 
+/**
+ * Withdraws the live transition caused by the appointment, if any (D7): allowed only while it is
+ * the customer's latest, and the customer goes back to its `from` stage.
+ */
+export function withdrawAppointmentTransition(db: Database, appointmentId: string): void {
+  const caused = db.orm
+    .select()
+    .from(stageTransitions)
+    .where(
+      and(eq(stageTransitions.appointmentId, appointmentId), isNull(stageTransitions.deletedAt)),
+    )
+    .get();
+  if (!caused) return;
+  if (latestTransition(db, caused.customerId)?.id !== caused.id) {
+    throw new DbError('TRANSITION_NOT_LATEST');
+  }
+  db.orm
+    .update(stageTransitions)
+    .set({ deletedAt: db.now().toISOString() })
+    .where(eq(stageTransitions.id, caused.id))
+    .run();
+  // An appointment's transition is never a customer's first, so `from` is set.
+  updateCustomerRow(db, caused.customerId, { stage: caused.fromStage! });
+}
+
 // ---- helpers --------------------------------------------------------------
 
 function latestTransition(db: Database, customerId: string): TransitionRow | undefined {

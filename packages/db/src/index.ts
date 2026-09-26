@@ -28,4 +28,19 @@ export {
   updateCustomerProfile,
 } from './customers';
 export type { BirthDate, CustomerProfile, CustomerRecord, Gender, NewCustomer } from './customers';
+export {
+  getAppointment,
+  listAppointments,
+  recordMeetingOutcome,
+  rescheduleAppointment,
+  restoreAppointment,
+  scheduleAppointment,
+  softDeleteAppointment,
+} from './appointments';
+export type {
+  AppointmentRecord,
+  AppointmentTrigger,
+  MeetingOutcome,
+  NewAppointment,
+} from './appointments';
 export { APPOINTMENT_TRIGGERS, GENDERS } from './schema';
