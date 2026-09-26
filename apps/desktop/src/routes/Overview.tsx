@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { PIPELINE_STAGES, fromLocalDate, periodOf } from '@p2c/domain';
 import { PeriodPicker, type PeriodPickerLabels } from '@p2c/ui';
 import { t } from '../i18n';
+import { TeamAppointmentsChart } from './TeamAppointmentsChart';
 
 const PERIOD_LABELS: PeriodPickerLabels = {
   title: t('period.title'),
@@ -44,6 +45,7 @@ export function Overview() {
           ))}
         </ol>
       </section>
+      <TeamAppointmentsChart />
     </>
   );
 }
