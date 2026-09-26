@@ -31,12 +31,12 @@ Xét theo thứ tự, gặp điều kiện đầu tiên thì dừng:
 |---|---|---|---|
 | 1 | `CONFLICT_RESOLUTION` | Có trường **cốt lõi** đang mâu thuẫn (hai dữ kiện đã xác nhận cùng trường, khác giá trị, đều chưa bị thay thế) | Không gọi AI; liệt kê trường mâu thuẫn để RE xử lý |
 | 2 | `KYC_INSUFFICIENT` | Thiếu một trong 3 hạng mục tối thiểu: Danh tính/tuổi, Gia đình, Nghề nghiệp/nguồn thu | Không gọi AI; hiện **"Cần chăm sóc, KYC thêm thông tin khách hàng"** + hạng mục thiếu + câu hỏi gợi ý |
-| 3 | `PROFILE_DISCOVERY` | Đủ 3 hạng mục tối thiểu nhưng < 6/8 hạng mục, **hoặc** chưa có Mục tiêu, **hoặc** (đề xuất, xem dưới) chưa có cả Tài sản lẫn Bảo vệ hiện có | AI chế độ khai thác |
+| 3 | `PROFILE_DISCOVERY` | Đủ 3 hạng mục tối thiểu nhưng < 6/8 hạng mục, **hoặc** chưa có Mục tiêu, **hoặc** chưa có cả Tài sản lẫn Bảo vệ hiện có | AI chế độ khai thác |
 | 4 | `PAIN_POINT_ANALYSIS` | ≥ 6/8 hạng mục, có Mục tiêu, có Tài sản **hoặc** Bảo vệ hiện có | AI phân tích đầy đủ |
 
 Mâu thuẫn ở trường không cốt lõi không đổi trạng thái; chỉ thêm cảnh báo.
 
-> **Cần anh chốt — ca chưa có trong quyết định G2:** hồ sơ ≥ 6/8, có Mục tiêu, nhưng **không** có Tài sản **và không** có Bảo vệ hiện có (xem K09). Quyết định 4 không bắt ca này, quyết định 5 cũng không. Em đề xuất xếp vào **`PROFILE_DISCOVERY`** (AI khai thác tiếp tài sản/bảo vệ trước khi phân tích).
+> **Ca bổ sung (Owner chốt 26/09/2026):** hồ sơ ≥ 6/8, có Mục tiêu, nhưng **không** có Tài sản **và không** có Bảo vệ hiện có (K09) → **`PROFILE_DISCOVERY`**: AI khai thác tiếp tài sản/bảo vệ trước khi phân tích.
 
 ## 3. Câu hỏi gợi ý
 
@@ -69,7 +69,7 @@ Bộ dữ kiện đầy đủ dùng lại ở nhiều hồ sơ ("đủ 8"): năm
 | K06 | Đủ 8 trừ Mục tiêu: chỉ có mốc "5 năm", **không** có mục tiêu chính | 7/8 | `PROFILE_DISCOVERY` | Mục tiêu | — | — | Chưa có mục tiêu → khai thác dù 7/8 |
 | K07 | Danh tính, Gia đình, Nghề nghiệp, Tài sản, Mục tiêu, Quan tâm | 6/8 | `PAIN_POINT_ANALYSIS` | Rủi ro, Bảo vệ | — | — | Vừa chạm ngưỡng 6/8, có tài sản |
 | K08 | Danh tính, Gia đình, Nghề nghiệp, Mục tiêu, Rủi ro; bảo vệ = **"chưa có"** | 6/8 | `PAIN_POINT_ANALYSIS` | Tài sản, Quan tâm | — | — | "Chưa có bảo hiểm" vẫn tính là đã có hạng mục Bảo vệ |
-| K09 | Danh tính, Gia đình, Nghề nghiệp, Mục tiêu, Rủi ro, Quan tâm | 6/8 | `PROFILE_DISCOVERY` *(đề xuất)* | Tài sản, Bảo vệ | — | — | **Ca cần anh chốt** (mục 2) |
+| K09 | Danh tính, Gia đình, Nghề nghiệp, Mục tiêu, Rủi ro, Quan tâm | 6/8 | `PROFILE_DISCOVERY` | Tài sản, Bảo vệ | — | — | Có mục tiêu, đủ 6/8 nhưng chưa có tài sản lẫn bảo vệ → khai thác (Owner chốt) |
 | K10 | Đủ 8 | 8/8 | `PAIN_POINT_ANALYSIS` | — | — | — | Hồ sơ đầy đủ |
 | K11 | Năm sinh **MT** 1972 / 1974; nghề nghiệp | 2/8 | `CONFLICT_RESOLUTION` | Gia đình, Tài sản, Mục tiêu, Rủi ro, Bảo vệ, Quan tâm | Năm sinh | — | Mâu thuẫn cốt lõi + thiếu dữ liệu → mâu thuẫn thắng |
 | K12 | Đủ 8; khẩu vị rủi ro **MT** "thận trọng" / "cân bằng" | 8/8 | `PAIN_POINT_ANALYSIS` | — | — | Khẩu vị rủi ro | Mâu thuẫn phụ → vẫn phân tích, có cảnh báo |

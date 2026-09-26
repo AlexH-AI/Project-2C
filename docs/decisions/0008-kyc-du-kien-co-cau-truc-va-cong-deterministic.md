@@ -26,7 +26,7 @@ Cổng KYC phải deterministic, nhưng KYC nhập tự do — không thể xác
    - **Trường cốt lõi:** năm sinh; tình trạng hôn nhân; số con; tổng tài sản/AUM; mục tiêu chính.
    - **Mâu thuẫn:** hai dữ kiện đã xác nhận cùng trường, khác giá trị, đều chưa bị thay thế.
    - `KYC_INSUFFICIENT`: thiếu một trong 3 hạng mục tối thiểu — danh tính/tuổi, gia đình, nghề nghiệp/nguồn thu.
-   - `PROFILE_DISCOVERY`: đủ 3 hạng mục tối thiểu nhưng < 6/8 hạng mục, **hoặc** chưa có mục tiêu, **hoặc** chưa có cả tài sản lẫn bảo vệ hiện có (ca cuối: đề xuất, chờ Owner chốt).
+   - `PROFILE_DISCOVERY`: đủ 3 hạng mục tối thiểu nhưng < 6/8 hạng mục, **hoặc** chưa có mục tiêu, **hoặc** chưa có cả tài sản lẫn bảo vệ hiện có (ca cuối: Owner chốt 26/09/2026).
    - `PAIN_POINT_ANALYSIS`: ≥ 6/8 hạng mục, có mục tiêu, có tài sản **hoặc** bảo vệ hiện có.
    - Câu hỏi gợi ý: 2–3 câu mỗi hạng mục, giọng tư vấn cho KH Ultra High Net Worth.
 

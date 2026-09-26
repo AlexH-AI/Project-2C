@@ -190,7 +190,7 @@ export const KYC_GOLDEN_PROFILES: readonly KycGoldenProfile[] = [
     [...IDENTITY, ...FAMILY, ...OCCUPATION, ...GOALS, ...RISK, ['hasProtection', false]],
     gate('PAIN_POINT_ANALYSIS', ['ASSETS', 'CONCERNS']),
   ),
-  // 6/8 with goal but neither assets nor protection. Not covered by G2 3–5; proposed: discovery.
+  // 6/8 with goal but neither assets nor protection. Discovery (Owner, 26/09/2026).
   profile(
     'K09',
     [...IDENTITY, ...FAMILY, ...OCCUPATION, ...GOALS, ...RISK, ...CONCERNS],
