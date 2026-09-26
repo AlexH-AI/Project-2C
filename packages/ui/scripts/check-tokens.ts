@@ -28,4 +28,4 @@ if (count > 0) {
   );
   process.exit(1);
 }
-console.log(`Design tokens: no raw colours or arbitrary values in ${dirs.join(', ')}.`);
+console.log(`Design tokens: no styling that bypasses the tokens in ${dirs.join(', ')}.`);

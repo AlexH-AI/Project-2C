@@ -1,11 +1,18 @@
 /**
- * Finds styling that bypasses the ADR-0013 tokens: raw colours, Tailwind arbitrary values and
- * Tailwind's default palette (removed by theme.css, so such classes would silently do nothing).
+ * Finds styling that bypasses the ADR-0013 tokens: raw colours, raw lengths, inline styles,
+ * Tailwind arbitrary values and Tailwind's default palette (removed by theme.css, so such classes
+ * would silently do nothing).
  */
 export interface TokenViolation {
   line: number;
   match: string;
-  rule: 'hex-colour' | 'colour-function' | 'arbitrary-value' | 'default-palette';
+  rule:
+    | 'hex-colour'
+    | 'colour-function'
+    | 'raw-length'
+    | 'inline-style'
+    | 'arbitrary-value'
+    | 'default-palette';
 }
 
 const PALETTE =
@@ -14,6 +21,8 @@ const PALETTE =
 const RULES: ReadonlyArray<[TokenViolation['rule'], RegExp]> = [
   ['hex-colour', /#[0-9a-f]{3,8}\b/gi],
   ['colour-function', /\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/gi],
+  ['raw-length', /(?<![\w.[-])\d*\.?\d+(?:px|rem|em|vh|vw)\b/g],
+  ['inline-style', /\bstyle=\{/g],
   ['arbitrary-value', /\b[a-z][\w-]*-\[[^\]\s]+\]/g],
   ['default-palette', new RegExp(`\\b[a-z]+-(?:(?:${PALETTE})-\\d{2,3}|white|black)\\b`, 'g')],
 ];

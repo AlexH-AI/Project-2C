@@ -33,6 +33,24 @@ describe('findTokenViolations', () => {
     ]);
   });
 
+  it('flags raw lengths in stylesheets and scripts', () => {
+    expect(findTokenViolations('.x { padding: 13px; margin: 0.5rem 1.25em; }')).toEqual([
+      { line: 1, match: '13px', rule: 'raw-length' },
+      { line: 1, match: '0.5rem', rule: 'raw-length' },
+      { line: 1, match: '1.25em', rule: 'raw-length' },
+    ]);
+  });
+
+  it('flags inline styles, which bypass the token utilities', () => {
+    expect(findTokenViolations('<div style={{ width: 37 }}>')).toEqual([
+      { line: 1, match: 'style={', rule: 'inline-style' },
+    ]);
+  });
+
+  it('does not treat Tailwind spacing utilities as raw lengths', () => {
+    expect(findTokenViolations('<p className="px-3 py-1 gap-6 text-2xl">')).toEqual([]);
+  });
+
   it('does not treat JSX fragments or i18n keys as violations', () => {
     expect(findTokenViolations(`<>{t('app.title')}</>`)).toEqual([]);
   });
