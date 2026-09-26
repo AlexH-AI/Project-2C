@@ -1,0 +1,22 @@
+{
+  "name": "@p2c/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate && prettier --write migrations"
+  },
+  "dependencies": {
+    "@p2c/domain": "workspace:*",
+    "drizzle-orm": "0.45.3",
+    "sql.js": "1.14.2"
+  },
+  "devDependencies": {
+    "@types/sql.js": "1.4.11",
+    "drizzle-kit": "0.31.11"
+  }
+}

@@ -1,3 +1,7 @@
 packages:
   - apps/*
   - packages/*
+
+# esbuild (via drizzle-kit) ships its binary as an optional platform package; its postinstall is not needed.
+allowBuilds:
+  esbuild: false
