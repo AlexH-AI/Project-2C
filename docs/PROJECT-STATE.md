@@ -40,6 +40,6 @@ Claude Code only: Opus 5.5, effort medium, no subagents. Claude works autonomous
 
 ## Next decision
 
-- OWNER (Office Laptop): pick setup option A/B/C in `docs/state/HANDOFF.md`; run the exe (#9); decide who merges #13 (`risk:med`).
-- Then: clean-session review and merge #11 → #12 → #13; start #7 (`packages/ui` + app shell).
+- OWNER: run the exe from the latest `main` CI artifact on both machines (#9).
+- Next: #7.4 `DataTable` and #7.5 `Chart` (ECharts); #17 icons. #7.1–7.3 merged (#16, #18–#20).
 - Project-2 should adopt the upstream skill renames (`to-prd` → `to-spec`, `to-issues` → `to-tickets`).
