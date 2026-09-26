@@ -1,0 +1,28 @@
+import { describe, expect, it, vi } from 'vitest';
+import { tauriStorage } from './tauri-storage';
+
+describe('tauriStorage', () => {
+  it('loads the file bytes with the local UTC offset for backup names', async () => {
+    const invoke = vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3]).buffer);
+    const storage = tauriStorage(invoke, () => -420);
+
+    expect(await storage.load()).toEqual(new Uint8Array([1, 2, 3]));
+    // getTimezoneOffset is minutes behind UTC; Vietnam (UTC+7) reports -420.
+    expect(invoke).toHaveBeenCalledWith('db_open', { utcOffsetMinutes: 420 });
+  });
+
+  it('treats an empty reply as no file yet', async () => {
+    const invoke = vi.fn().mockResolvedValue(new ArrayBuffer(0));
+
+    expect(await tauriStorage(invoke, () => 0).load()).toBeUndefined();
+  });
+
+  it('saves by sending the raw bytes', async () => {
+    const invoke = vi.fn().mockResolvedValue(null);
+    const bytes = new Uint8Array([4, 5]);
+
+    await tauriStorage(invoke, () => 0).save(bytes);
+
+    expect(invoke).toHaveBeenCalledWith('db_save', bytes);
+  });
+});

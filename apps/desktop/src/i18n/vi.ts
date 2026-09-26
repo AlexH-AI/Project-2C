@@ -34,6 +34,12 @@ export const vi = {
   'appointments.time': 'Giờ',
   'appointments.customer': 'Khách hàng',
   'chart.teamAppointments': 'Lịch hẹn theo team',
+  'storage.openFailed': 'Không mở được file dữ liệu',
+  'storage.openFailedHelp':
+    'App chưa ghi gì vào file. Các bản sao lưu tự động nằm trong thư mục Project2C-data\\backups: chép bản mới nhất thành Project2C-data\\project2c.db để khôi phục; nếu vẫn lỗi, thử bản cũ hơn.',
+  'storage.technicalDetail': 'Chi tiết kỹ thuật:',
+  'storage.saveFailed':
+    'Chưa lưu được dữ liệu vào file. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
 } as const;
 
 export type MessageKey = keyof typeof vi;

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Segmented } from '@p2c/ui';
 import { t } from '../i18n';
 import { Screen } from '../routes/Screen';
+import { SaveWarning } from './SaveWarning';
 import { sectionOf } from './routes';
 import { Sidebar } from './Sidebar';
 import { useRoute } from './useRoute';
@@ -24,6 +25,7 @@ export function AppShell() {
     <div className="flex min-h-screen">
       <Sidebar current={sectionOf(route)} />
       <div className="flex min-w-0 flex-1 flex-col">
+        <SaveWarning />
         <header className="sticky top-0 z-10 flex items-center gap-3.5 border-b border-border bg-surface-0 px-6 py-3.5">
           <h1 className="m-0 text-xl font-semibold whitespace-nowrap">
             {t(`screen.${route.screen}`)}

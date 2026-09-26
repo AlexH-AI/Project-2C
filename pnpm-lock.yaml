@@ -205,6 +205,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@p2c/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@p2c/domain':
         specifier: workspace:*
         version: link:../../packages/domain
@@ -220,6 +223,9 @@ importers:
       react-dom:
         specifier: 19.3.0
         version: 19.3.0(react@19.3.0)
+      sql.js:
+        specifier: 1.14.2
+        version: 1.14.2
     devDependencies:
       '@tailwindcss/vite':
         specifier: 4.3.3
