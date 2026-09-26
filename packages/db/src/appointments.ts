@@ -152,6 +152,8 @@ export function restoreAppointment(db: Database, id: string): void {
     if (!row) throw new DbError('APPOINTMENT_NOT_FOUND');
     if (!row.deletedAt) return;
     liveCustomer(db, row.customerId);
+    // The people were free to leave while the appointment was deleted.
+    requirePeople(db, row.reId, toAppointment(db, row).coordinatorIds);
     updateAppointmentRow(db, id, { deletedAt: null });
     applyOutcome(db, row);
   });
@@ -172,17 +174,9 @@ function insertScheduled(
   rescheduledFromId: string | null,
 ): AppointmentRecord {
   liveCustomer(db, input.customerId);
-  const reId = requireRe(db, input.reId);
+  const reId = input.reId;
   const coordinatorIds = [...new Set(input.coordinatorIds ?? [])];
-  for (const personId of coordinatorIds) {
-    if (personId === reId) throw new DbError('INVALID_COORDINATOR');
-    const person = db.orm
-      .select({ id: people.id })
-      .from(people)
-      .where(and(eq(people.id, personId), isNull(people.deletedAt)))
-      .get();
-    if (!person) throw new DbError('PERSON_NOT_FOUND');
-  }
+  requirePeople(db, reId, coordinatorIds);
   const at = db.now().toISOString();
   const row: AppointmentRow = {
     id: ulid(db.now()),
@@ -207,6 +201,20 @@ function insertScheduled(
     db.orm.insert(appointmentCoordinators).values({ appointmentId: row.id, personId }).run();
   }
   return toAppointment(db, row);
+}
+
+/** A live RE and live coordinators other than the RE — checked again on restore (spec §4). */
+function requirePeople(db: Database, reId: string, coordinatorIds: readonly string[]): void {
+  requireRe(db, reId);
+  for (const personId of coordinatorIds) {
+    if (personId === reId) throw new DbError('INVALID_COORDINATOR');
+    const person = db.orm
+      .select({ id: people.id })
+      .from(people)
+      .where(and(eq(people.id, personId), isNull(people.deletedAt)))
+      .get();
+    if (!person) throw new DbError('PERSON_NOT_FOUND');
+  }
 }
 
 function requireTime(time: string | null): string | null {

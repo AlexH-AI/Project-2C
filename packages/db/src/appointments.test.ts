@@ -15,6 +15,7 @@ import {
   listStageTransitions,
   softDeleteCustomer,
 } from './customers';
+import { softDeletePerson, updatePerson } from './team';
 import { codeOf, d, setup } from './test-support';
 
 async function withCustomer() {
@@ -238,6 +239,28 @@ describe('deleting appointments', () => {
     restoreAppointment(db, id); // already live: nothing changes
     expect(stage()).toBe('N3');
     expect(codeOf(() => restoreAppointment(db, 'x'))).toBe('APPOINTMENT_NOT_FOUND');
+  });
+
+  it('restores no appointment whose RE or coordinator left while it was deleted', async () => {
+    const { db, re, otherRe, tl, customer } = await withCustomer();
+    const book = (reId: string, coordinatorIds: string[]) =>
+      scheduleAppointment(db, {
+        customerId: customer.id,
+        reId,
+        date: d(10, 1),
+        triggerType: 'OTHER',
+        coordinatorIds,
+      }).id;
+    const coordinated = book(re.id, [tl.id]);
+    const owned = book(otherRe.id, []);
+    softDeleteAppointment(db, coordinated);
+    softDeleteAppointment(db, owned);
+    softDeletePerson(db, tl.id);
+    updatePerson(db, otherRe.id, { role: 'TL' });
+
+    expect(codeOf(() => restoreAppointment(db, coordinated))).toBe('PERSON_NOT_FOUND');
+    expect(codeOf(() => restoreAppointment(db, owned))).toBe('RE_REQUIRED');
+    expect(listAppointments(db)).toEqual([]);
   });
 
   it('hides the appointments of a deleted customer and restores none of them', async () => {
