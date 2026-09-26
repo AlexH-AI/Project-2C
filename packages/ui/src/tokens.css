@@ -48,8 +48,9 @@
   --fs-lg: 16px;
   --fs-xl: 20px;
   --fs-2xl: 26px;
-  --radius-sm: 6px;
-  --radius: 10px;
-  --radius-lg: 14px;
+  /* Named --corner-* (mockup: --radius-*) so theme.css can map them onto Tailwind's --radius-* without a self-reference */
+  --corner-sm: 6px;
+  --corner-md: 10px;
+  --corner-lg: 14px;
   --sidebar-w: 232px;
 }

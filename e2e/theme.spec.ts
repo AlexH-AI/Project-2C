@@ -61,3 +61,10 @@ test('figures use tabular numerals', async ({ page }) => {
   const stage = page.getByRole('region', { name: 'Nhóm cơ hội' }).getByRole('listitem').first();
   await expect(stage).toHaveCSS('font-variant-numeric', 'tabular-nums');
 });
+
+test('token-backed corner radius is applied', async ({ page }) => {
+  await page.goto('/');
+
+  const stage = page.getByRole('region', { name: 'Nhóm cơ hội' }).getByRole('listitem').first();
+  await expect(stage).toHaveCSS('border-radius', '10px');
+});

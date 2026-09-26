@@ -46,9 +46,9 @@
   --text-2xl: var(--fs-2xl);
 
   --radius-*: initial;
-  --radius-sm: var(--radius-sm);
-  --radius-md: var(--radius);
-  --radius-lg: var(--radius-lg);
+  --radius-sm: var(--corner-sm);
+  --radius-md: var(--corner-md);
+  --radius-lg: var(--corner-lg);
 }
 
 @layer base {
