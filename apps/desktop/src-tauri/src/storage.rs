@@ -12,10 +12,12 @@ const BACKUP_DIR: &str = "backups";
 const EXPORT_DIR: &str = "exports";
 const BACKUP_PREFIX: &str = "project2c-";
 const KEEP_BACKUPS: usize = 10;
+const SQLITE_HEADER: &[u8] = b"SQLite format 3\0";
 
 /// Reads the database at startup; `None` when there is no file yet. An existing file is first
-/// copied into `backups\` under `stamp`, keeping the newest ten copies. An empty file is an
-/// error, never a first start: the app would otherwise write a new database over it.
+/// copied into `backups\` under `stamp` (unless an identical copy is already there), keeping the
+/// newest ten copies. A file that is empty or not SQLite is an error, never a first start, and is
+/// not backed up: the app would otherwise write a new database over it.
 pub fn open(dir: &Path, stamp: &str) -> io::Result<Option<Vec<u8>>> {
     fs::create_dir_all(dir)?;
     // A crash between writing and renaming leaves this behind; the database file itself is whole.
@@ -25,15 +27,19 @@ pub fn open(dir: &Path, stamp: &str) -> io::Result<Option<Vec<u8>>> {
         Err(error) if error.kind() == ErrorKind::NotFound => return Ok(None),
         Err(error) => return Err(error),
     };
-    if bytes.is_empty() {
+    if !bytes.starts_with(SQLITE_HEADER) {
         return Err(io::Error::new(
             ErrorKind::InvalidData,
-            format!("{DB_FILE} is empty"),
+            format!("{DB_FILE} is not a SQLite database"),
         ));
     }
     let backups = dir.join(BACKUP_DIR);
-    write_atomic(&backups, &backup_name(&backups, stamp), &bytes)?;
-    prune_backups(&backups)?;
+    // A file the app keeps refusing (damaged inside) must not push the good backups out.
+    if !has_copy(&backups, &bytes) {
+        let name = backup_name(&backups, stamp);
+        write_atomic(&backups, &name, &bytes)?;
+        prune_backups(&backups, &name);
+    }
     Ok(Some(bytes))
 }
 
@@ -145,23 +151,43 @@ fn all_digits(s: &str) -> bool {
     !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit())
 }
 
-/// Deletes all but the newest `KEEP_BACKUPS` backups. Only files named like our backups count;
-/// anything else in the folder is left alone.
-fn prune_backups(backups: &Path) -> io::Result<()> {
-    let mut names = Vec::new();
-    for entry in fs::read_dir(backups)? {
-        let entry = entry?;
-        let name = entry.file_name().to_string_lossy().into_owned();
-        if entry.file_type()?.is_file() && backup_key(&name).is_some() {
-            names.push(name);
+/// Our backups, oldest first. Only files named like our backups count; anything else in the
+/// folder is left alone, and an unreadable folder counts as empty.
+fn backup_names(backups: &Path) -> Vec<String> {
+    let mut names: Vec<String> = fs::read_dir(backups)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_file()))
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .filter(|name| backup_key(name).is_some())
+        .collect();
+    names.sort_by(|a, b| backup_key(a).cmp(&backup_key(b)));
+    names
+}
+
+fn has_copy(backups: &Path, bytes: &[u8]) -> bool {
+    backup_names(backups).iter().any(|name| {
+        let path = backups.join(name);
+        fs::metadata(&path).is_ok_and(|meta| meta.len() == bytes.len() as u64)
+            && fs::read(&path).is_ok_and(|copy| copy == bytes)
+    })
+}
+
+/// Deletes the oldest backups until `KEEP_BACKUPS` remain, never `keep` (the copy just written,
+/// even when a clock set back makes it look oldest). Best effort, so it never blocks startup: a
+/// backup another program holds open stays, and a later start tries again.
+fn prune_backups(backups: &Path, keep: &str) {
+    let names = backup_names(backups);
+    let mut excess = names.len().saturating_sub(KEEP_BACKUPS);
+    for name in names.iter().filter(|name| *name != keep) {
+        if excess == 0 {
+            break;
+        }
+        if fs::remove_file(backups.join(name)).is_ok() {
+            excess -= 1;
         }
     }
-    names.sort_by(|a, b| backup_key(a).cmp(&backup_key(b)));
-    let excess = names.len().saturating_sub(KEEP_BACKUPS);
-    for name in &names[..excess] {
-        fs::remove_file(backups.join(name))?;
-    }
-    Ok(())
 }
 
 fn is_export_name(name: &str) -> bool {
@@ -195,6 +221,19 @@ mod tests {
         names
     }
 
+    /// A database file whose content is `tag` after the SQLite header.
+    fn db(tag: &str) -> Vec<u8> {
+        [b"SQLite format 3\0".as_slice(), tag.as_bytes()].concat()
+    }
+
+    /// Ten starts on ten different files: backups `project2c-202609<10..19>-080000.db`.
+    fn ten_backups(dir: &Path) {
+        for day in 10..20 {
+            save(dir, &db(&format!("day {day}"))).unwrap();
+            open(dir, &format!("202609{day}-080000")).unwrap();
+        }
+    }
+
     #[test]
     fn open_without_a_file_creates_the_folder_and_returns_none() {
         let dir = temp_dir();
@@ -206,36 +245,33 @@ mod tests {
     #[test]
     fn save_then_open_returns_the_saved_bytes_and_leaves_no_tmp_file() {
         let dir = temp_dir();
-        save(&dir, b"first").unwrap();
-        save(&dir, b"second").unwrap();
+        save(&dir, &db("first")).unwrap();
+        save(&dir, &db("second")).unwrap();
         assert_eq!(names(&dir), vec![DB_FILE]);
-        assert_eq!(
-            open(&dir, "20260927-080000").unwrap(),
-            Some(b"second".to_vec())
-        );
+        assert_eq!(open(&dir, "20260927-080000").unwrap(), Some(db("second")));
     }
 
     #[test]
     fn open_backs_up_the_existing_file() {
         let dir = temp_dir();
-        save(&dir, b"data").unwrap();
+        save(&dir, &db("data")).unwrap();
         open(&dir, "20260927-080000").unwrap();
         let backups = dir.join(BACKUP_DIR);
         assert_eq!(names(&backups), vec!["project2c-20260927-080000.db"]);
         assert_eq!(
             fs::read(backups.join("project2c-20260927-080000.db")).unwrap(),
-            b"data"
+            db("data")
         );
     }
 
     #[test]
     fn open_keeps_only_the_ten_newest_backups() {
         let dir = temp_dir();
-        save(&dir, b"data").unwrap();
         let backups = dir.join(BACKUP_DIR);
         fs::create_dir_all(&backups).unwrap();
         fs::write(backups.join("notes.txt"), b"not a backup").unwrap();
         for day in 10..22 {
+            save(&dir, &db(&format!("day {day}"))).unwrap();
             open(&dir, &format!("202609{day}-080000")).unwrap();
         }
         let kept = names(&backups);
@@ -248,7 +284,6 @@ mod tests {
     #[test]
     fn open_prunes_only_backups_it_named() {
         let dir = temp_dir();
-        save(&dir, b"data").unwrap();
         let backups = dir.join(BACKUP_DIR);
         fs::create_dir_all(backups.join("project2c-20260101-000000.db")).unwrap();
         let foreign = [
@@ -262,6 +297,7 @@ mod tests {
             fs::write(backups.join(name), b"keep").unwrap();
         }
         for day in 10..22 {
+            save(&dir, &db(&format!("day {day}"))).unwrap();
             open(&dir, &format!("202609{day}-080000")).unwrap();
         }
         let kept = names(&backups);
@@ -278,26 +314,25 @@ mod tests {
     fn open_twice_in_the_same_second_keeps_both_backups() {
         let dir = temp_dir();
         let backups = dir.join(BACKUP_DIR);
-        save(&dir, b"a").unwrap();
-        open(&dir, "20260927-080000").unwrap();
-        for version in [b"b", b"c"] {
-            save(&dir, version).unwrap();
+        for version in ["a", "b", "c"] {
+            save(&dir, &db(version)).unwrap();
             open(&dir, "20260927-080000").unwrap();
         }
         assert_eq!(
             fs::read(backups.join("project2c-20260927-080000.db")).unwrap(),
-            b"a"
+            db("a")
         );
         assert_eq!(
             fs::read(backups.join("project2c-20260927-080000-1.db")).unwrap(),
-            b"b"
+            db("b")
         );
         assert_eq!(
             fs::read(backups.join("project2c-20260927-080000-2.db")).unwrap(),
-            b"c"
+            db("c")
         );
         // Eight later backups push out one: the unsuffixed copy is the oldest of the second.
         for day in 10..18 {
+            save(&dir, &db(&format!("day {day}"))).unwrap();
             open(&dir, &format!("202610{day}-080000")).unwrap();
         }
         assert!(!backups.join("project2c-20260927-080000.db").exists());
@@ -314,14 +349,77 @@ mod tests {
     }
 
     #[test]
+    fn open_refuses_a_file_that_is_not_sqlite_without_touching_the_backups() {
+        let dir = temp_dir();
+        ten_backups(&dir);
+        let before = names(&dir.join(BACKUP_DIR));
+        save(&dir, b"not a database").unwrap();
+        let error = open(&dir, "20260927-080000").unwrap_err();
+        assert_eq!(error.kind(), ErrorKind::InvalidData);
+        assert_eq!(names(&dir.join(BACKUP_DIR)), before);
+    }
+
+    #[test]
+    fn restarts_on_an_unchanged_file_keep_the_older_backups() {
+        // A damaged file that still has the SQLite header: the app refuses it on every start,
+        // and each start must not push out another good backup.
+        let dir = temp_dir();
+        ten_backups(&dir);
+        save(&dir, &db("damaged")).unwrap();
+        for minute in 10..20 {
+            open(&dir, &format!("20260927-08{minute}00")).unwrap();
+        }
+        let backups = dir.join(BACKUP_DIR);
+        let kept = names(&backups);
+        assert_eq!(kept.len(), 10);
+        let damaged = kept
+            .iter()
+            .filter(|name| fs::read(backups.join(name)).unwrap() == db("damaged"))
+            .count();
+        assert_eq!(damaged, 1);
+    }
+
+    #[test]
+    fn a_backup_made_with_the_clock_set_back_is_kept() {
+        let dir = temp_dir();
+        ten_backups(&dir);
+        save(&dir, &db("latest")).unwrap();
+        open(&dir, "20250101-080000").unwrap();
+        let backups = dir.join(BACKUP_DIR);
+        assert_eq!(names(&backups).len(), 10);
+        assert_eq!(
+            fs::read(backups.join("project2c-20250101-080000.db")).unwrap(),
+            db("latest")
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_locked_old_backup_does_not_block_startup() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let dir = temp_dir();
+        ten_backups(&dir);
+        let backups = dir.join(BACKUP_DIR);
+        let oldest = backups.join("project2c-20260910-080000.db");
+        // Another program (a SQLite browser, an antivirus scan) holds the file open.
+        let _lock = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(0)
+            .open(&oldest)
+            .unwrap();
+        save(&dir, &db("latest")).unwrap();
+        assert_eq!(open(&dir, "20260927-080000").unwrap(), Some(db("latest")));
+        assert_eq!(names(&backups).len(), 10);
+        assert!(oldest.exists());
+        assert!(!backups.join("project2c-20260911-080000.db").exists());
+    }
+
+    #[test]
     fn open_removes_a_tmp_file_left_by_a_crash() {
         let dir = temp_dir();
-        save(&dir, b"data").unwrap();
+        save(&dir, &db("data")).unwrap();
         fs::write(dir.join("project2c.db.tmp"), b"half").unwrap();
-        assert_eq!(
-            open(&dir, "20260927-080000").unwrap(),
-            Some(b"data".to_vec())
-        );
+        assert_eq!(open(&dir, "20260927-080000").unwrap(), Some(db("data")));
         assert!(!dir.join("project2c.db.tmp").exists());
     }
 

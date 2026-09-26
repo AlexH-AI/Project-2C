@@ -25,7 +25,7 @@ fn raw_body<'a>(request: &'a Request<'_>) -> Result<&'a [u8], String> {
 }
 
 /// Startup: backs up and returns the database file; an empty body means there is no file yet
-/// (an existing empty file is an error, see `storage::open`).
+/// (an existing file that is empty or not SQLite is an error, see `storage::open`).
 /// `utc_offset_minutes` comes from the webview so backup names use local time.
 #[tauri::command]
 fn db_open(utc_offset_minutes: i64) -> Result<Response, String> {
