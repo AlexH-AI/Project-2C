@@ -59,6 +59,7 @@ export {
   getKycProfile,
   listKycVersions,
   markKycConflict,
+  markKycVersionMaterial,
   resolveKycConflict,
 } from './kyc';
 export type {

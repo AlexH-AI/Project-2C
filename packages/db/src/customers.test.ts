@@ -88,29 +88,23 @@ describe('customers', () => {
     expect(new Set([mai.code, lan.code]).size).toBe(2);
   });
 
-  it('updates the profile, keeping what is not given and clearing what is null', async () => {
+  // Clearing a birth date or gender once set is refused (D2, see kyc.test.ts).
+  it('updates the profile, keeping what is not given', async () => {
     const { db, re, otherRe, tl } = await setup();
-    const customer = createCustomer(db, {
-      name: 'Lan',
-      reId: re.id,
-      stage: 'N3',
-      date: d(1, 1),
-      birthDate: { year: 1985 },
-      gender: 'FEMALE',
-    });
+    const customer = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 1) });
 
     const updated = updateCustomerProfile(db, customer.id, {
       name: 'Lan Anh',
       reId: otherRe.id,
-      birthDate: null,
+      birthDate: { year: 1985 },
     });
 
     expect(updated).toEqual({
       ...customer,
       name: 'Lan Anh',
       reId: otherRe.id,
-      birthDate: null,
-      gender: 'FEMALE',
+      birthDate: { year: 1985 },
+      gender: null,
     });
     expect(updateCustomerProfile(db, customer.id, {})).toEqual(updated);
     expect(updateCustomerProfile(db, customer.id, { gender: null }).gender).toBeNull();
