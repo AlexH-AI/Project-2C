@@ -31,12 +31,12 @@ export interface KycFactInput {
 }
 
 export interface KycVersion {
-  /** Hash of the active facts; equal hashes mean the facts did not change. */
+  /** Hash of the facts in effect; equal hashes mean the facts did not change. */
   readonly hash: string;
   /** `Cập nhật KYC dd/mm/yyyy`. */
   readonly summary: string;
   readonly date: CalendarDate;
-  /** Whether the change matters for the analysis, as flagged when recording it. */
+  /** Whether the change matters for the analysis (ADR-0008 7: rule, or switched on by the RE). */
   readonly material: boolean;
 }
 
@@ -121,23 +121,46 @@ function cyrb53(text: string): string {
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(14, '0');
 }
 
-/** Hash of the active facts' trường and values, independent of their order. */
+/** Sorted (trường, value, status) entries of the facts still in effect: active or in conflict. */
+const currentEntries = (profile: KycProfile, keep: (field: KycField) => boolean) =>
+  profile.facts
+    .filter((fact) => fact.status !== 'superseded' && keep(fact.field))
+    .map((fact) => JSON.stringify([fact.field, fact.value, fact.status]))
+    .sort()
+    .join('\n');
+
+/**
+ * Hash of the facts still in effect (active or in conflict) with their status, independent of
+ * their order: a value joining a conflict changes it too.
+ */
 export function kycHash(profile: KycProfile): string {
-  const entries = profile.facts
-    .filter((fact) => fact.status === 'active')
-    .map((fact) => JSON.stringify([fact.field, fact.value]))
-    .sort();
-  return cyrb53(entries.join('\n'));
+  return cyrb53(currentEntries(profile, () => true));
 }
 
-/** The version to record after a change, or null when the active facts are the same as before. */
+/**
+ * ADR-0008 7: the first version is always material; later ones are when the facts in effect on
+ * any cốt lõi trường changed — added, changed, removed, or entering or leaving a conflict.
+ */
+export function isMaterialChange(before: KycProfile | null, after: KycProfile): boolean {
+  if (before === null) return true;
+  const isCore = (field: KycField) => KYC_FIELDS[field].core;
+  return currentEntries(before, isCore) !== currentEntries(after, isCore);
+}
+
+/**
+ * The version to record after a change, or null when the facts in effect are the same as at
+ * `previous`. `before` is the profile at `previous` (null for the first version). The RE may switch
+ * `material` on for a non-core change, but cannot switch it off when the rule sets it.
+ */
 export function nextKycVersion(
   previous: KycVersion | null,
-  profile: KycProfile,
+  before: KycProfile | null,
+  after: KycProfile,
   date: CalendarDate,
-  material: boolean,
+  manualMaterial: boolean,
 ): KycVersion | null {
-  const hash = kycHash(profile);
+  const hash = kycHash(after);
   if (previous?.hash === hash) return null;
+  const material = isMaterialChange(before, after) || manualMaterial;
   return { hash, summary: `Cập nhật KYC ${formatDate(date)}`, date, material };
 }
