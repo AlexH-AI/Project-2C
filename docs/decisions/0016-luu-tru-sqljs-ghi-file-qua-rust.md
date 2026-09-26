@@ -1,9 +1,9 @@
 # ADR-0016: Lưu trữ — sql.js ở mọi nơi, ghi file qua lệnh Rust mỏng
 
-- **Trạng thái:** Đề xuất — chờ Owner duyệt (G1 vì sửa ADR-0006; G4 cho dependency)
+- **Trạng thái:** Accepted (G1/G4, Owner duyệt 26/09/2026)
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §4.4; ADR-0004, ADR-0005, ADR-0006, ADR-0010; spec `docs/design/phase-3-du-lieu.md`
-- **Commit / PR:** PR nhánh `docs/phase-3-data-model`
+- **Commit / PR:** PR #58 (issue #57)
 
 ## Bối cảnh
 

@@ -1,6 +1,6 @@
 # Phase 3 — Mô hình dữ liệu và lưu trữ (spec G2)
 
-- **Trạng thái:** Đề xuất — chờ Owner duyệt (**G2** mô hình dữ liệu; **G1** ADR-0016 + phụ lục ADR-0006 + ngưỡng diff; **G4** dependency)
+- **Trạng thái:** Accepted — Owner duyệt 26/09/2026 (**G2** mô hình dữ liệu; **G1** ADR-0016 + phụ lục ADR-0006 + P1; **G4** dependency) · PR #58
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §4.4, §5 (Phase 3), §7.1; ADR-0004…0008, ADR-0010, ADR-0016; mockup G3 `docs/design/mockups/`
 - **Cách soạn:** brainstorming với Owner trong phiên 26/09/2026 (quyết định ở §1); Claude soạn, Owner duyệt trên PR.
@@ -22,7 +22,7 @@ Phase 3 cho phép **nhập liệu hoàn chỉnh** trong app: Team/nhân sự, KH
 | D7 | Sửa/xóa cuộc hẹn đã sinh transition | Chỉ khi transition đó còn là **transition mới nhất** của KH; nếu không → chặn, hướng dẫn sửa nhóm tay |
 | D8 | Nhân sự seed | Mỗi team 1 TL + 10 RE; **1 IS, 1 BD, 1 BDM** dùng chung cho cả 3 team |
 
-**Đề xuất chờ Owner (không thuộc mô hình dữ liệu):**
+**Đề xuất ngoài mô hình dữ liệu (Owner duyệt G1, 26/09/2026):**
 
 | # | Đề xuất | Cổng |
 |---|---|---|

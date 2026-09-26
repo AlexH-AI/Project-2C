@@ -42,6 +42,6 @@ Lõi thuần TS test nhanh và giữ được nếu đổi vỏ (ADR-0005); ch�
 - Hai adapter DB phải giữ hành vi giống nhau (test hợp đồng chung).
 - Mô hình dữ liệu chi tiết chốt ở **G2** (xem ADR-0007).
 
-## Phụ lục — lưu trữ (Đề xuất, chờ G1 · 26/09/2026)
+## Phụ lục — lưu trữ (Accepted G1, Owner duyệt 26/09/2026 · PR #58)
 
 Theo ADR-0016: dòng "adapter TauriSqlite (app thật) & sql.js (trình duyệt, dev/e2e)" đổi thành **sql.js ở mọi nơi (exe, web, test); exe lưu file DB qua lệnh Rust mỏng** trong `apps/desktop/src-tauri`. Lý do: plugin SQL của Tauri không bảo đảm transaction (connection pool). Hệ quả "hai adapter DB giữ hành vi giống nhau" thành: một engine, chỉ khác cổng lưu file (`persist(bytes)`), do `apps/desktop` cung cấp. Mô hình dữ liệu chi tiết: `docs/design/phase-3-du-lieu.md` (G2).
