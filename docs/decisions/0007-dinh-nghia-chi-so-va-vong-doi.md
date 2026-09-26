@@ -20,6 +20,7 @@ Chỉ số mơ hồ → hai người đọc ra hai con số khác nhau. Pipeline
   - **N3** — KH quan tâm, lắng nghe; khơi gợi nhu cầu thành công.
   - **N2** — KH được IS trình bày giải pháp cụ thể, hoặc được gửi giải pháp cụ thể.
   - **N1** — KH chấp nhận giải pháp, chưa chốt HĐ chỉ vì một số yếu tố: cân nhắc tài chính, thời gian, lý do khác.
+- **Tạo KH mới chỉ ở nhóm mở** N4/N3/N2/N1, không tạo thẳng ở `ON_HOLD`/`LOST` (Owner chốt 26/09/2026). Hai trạng thái đóng nghĩa là đã từng theo đuổi rồi dừng; KH "sinh ra đã đóng" làm lệch chỉ số mất cơ hội và tỉ lệ chốt. Nhập dữ liệu cũ (KH đã mất từ trước) chưa xử lý — quyết riêng khi làm tính năng nhập dữ liệu (vd. đánh dấu là dữ liệu nhập, không tính vào chỉ số kỳ). Code: `assertValidTransition` (#27).
 - Sau khi có HĐ: KH giữ nhóm + nhãn "Đã có HĐ" (số HĐ).
 - Mọi lần chuyển nhóm lưu thành sự kiện `stage_transitions`.
 

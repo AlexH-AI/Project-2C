@@ -12,7 +12,7 @@ Từ điển thuật ngữ dùng thống nhất trong issue, tài liệu và cod
 ## Khách hàng và vòng đời
 
 - **KH** (`Customer`) — khách hàng, do một RE phụ trách.
-- **Nhóm** (`CustomerStage`) — N4 → N3 → N2 → N1 (N1 gần chốt nhất), cộng hai trạng thái đóng **Tạm hoãn** (`ON_HOLD`) và **Mất cơ hội** (`LOST`). Được nâng, hạ, đóng; mở lại luôn về N3.
+- **Nhóm** (`CustomerStage`) — N4 → N3 → N2 → N1 (N1 gần chốt nhất), cộng hai trạng thái đóng **Tạm hoãn** (`ON_HOLD`) và **Mất cơ hội** (`LOST`). Được nâng, hạ, đóng; mở lại luôn về N3. KH mới chỉ được tạo ở nhóm mở, không tạo thẳng ở trạng thái đóng (ADR-0007).
   - **N4** — KH mới, thiếu thông tin KYC; hoặc đã có KYC và mục tiêu là khơi gợi nhu cầu.
   - **N3** — KH quan tâm, lắng nghe; khơi gợi nhu cầu thành công.
   - **N2** — KH được IS trình bày giải pháp cụ thể, hoặc được gửi giải pháp cụ thể.
