@@ -4,7 +4,7 @@
 
 - **Cập nhật:** 2026-09-26 · máy `DESKTOP-KDURKJP`
 - **Nhánh:** `main` @ `8fd3e7e` (#51–#54 đã merge); PR review đóng Phase 2 (`chore/phase-2-close-review`)
-- **Phase:** 2 — Lõi domain (milestone "Phase 2 — Lõi domain") · Phase 1 milestone **để mở** chờ test ở văn phòng
+- **Phase:** 2 — Lõi domain **đã đóng** (G7, 26/09/2026) → Phase 3 lập kế hoạch · Phase 1 milestone **để mở** chờ test ở văn phòng
 
 ## Trạng thái
 
@@ -43,7 +43,7 @@ Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 đ�
 
 1. `/session-start` (pull `main`).
 2. Nếu PR `chore/phase-2-close-review` còn mở và CI xanh → `gh pr merge <n> --squash --delete-branch`.
-3. **G7 — Owner quyết đóng milestone "Phase 2 — Lõi domain"** (10/10 issue đã đóng). Khi Owner đồng ý: `gh api -X PATCH repos/AlexH-AI/Project-2C/milestones/<số> -f state=closed`.
+3. ~~G7 đóng milestone Phase 2~~ — Owner duyệt, đã đóng 26/09/2026.
 4. Sau đó: lập kế hoạch Phase 3 — mô hình dữ liệu `packages/db` (G2), màn hình chưa có mockup G3. **Đầu Phase 3: mở lại build exe cho mọi PR** (CLAUDE.md, ADR-0015).
 5. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
 
@@ -78,7 +78,6 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 ## Chờ Owner
 
 - #9 và #17: hoãn tới khi Owner ở văn phòng (xem "Chờ test ở văn phòng"). Không nhắc lại trước khi Owner báo đã ở văn phòng.
-- G7: đóng milestone Phase 2.
 - GitHub Free: không bật được auto-merge cho repo private — Owner báo CI xanh (hoặc phiên sau kiểm) rồi Claude merge.
 
 ## Ghi chú môi trường

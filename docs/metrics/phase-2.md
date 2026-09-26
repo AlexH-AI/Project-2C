@@ -3,7 +3,7 @@
 Theo bảng chỉ số của `docs/COMPARISON.md`. Phase 2 chỉ có code `packages/domain` (không UI, không exe mới), nên nhóm UI/UX và kích thước exe không áp dụng.
 
 - **Milestone:** "Phase 2 — Lõi domain"
-- **Bắt đầu:** 2026-09-26 · **Kết thúc:** 2026-09-26 (task cuối #26 merge; đóng milestone chờ Owner)
+- **Bắt đầu:** 2026-09-26 · **Kết thúc:** 2026-09-26 (task cuối #26 merge; Owner duyệt G7, đóng milestone cùng ngày)
 - **Máy:** Home PC (`DESKTOP-KDURKJP`)
 
 ## Task
