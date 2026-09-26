@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened]
     # Docs-only PRs skip CI entirely (ADR-0015).
     paths-ignore:
       - 'docs/**'
@@ -45,8 +45,7 @@ jobs:
   build-exe:
     name: Build portable exe
     needs: verify
-    # On PRs only with the `build-exe` label; always on main (ADR-0015).
-    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'build-exe')
+    # Every PR and main from Phase 3 on (ADR-0015, Phase 3 addendum).
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
