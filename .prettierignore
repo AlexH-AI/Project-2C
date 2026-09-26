@@ -1,5 +1,6 @@
 # Docs are hand-formatted (Vietnamese tables); vendored skills are kept verbatim.
 *.md
+docs/design/
 .claude/
 pnpm-lock.yaml
 **/src-tauri/target/
