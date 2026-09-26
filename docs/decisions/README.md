@@ -26,7 +26,7 @@ File naming: `NNNN-short-slug.md`. Status: `Proposed` → `Accepted (<gate>)` �
 | [0004](0004-ung-dung-mot-nguoi-dung-khong-server.md) | Single-user local app, no server; roles are views | Accepted (G1) | Q1, Q2, Q16 |
 | [0005](0005-tech-stack-tauri-2.md) | Tauri 2 + React/TS + SQLite (Drizzle), pnpm | Accepted (G1) | Q15 |
 | [0006](0006-kien-truc-monorepo-va-ranh-gioi-module.md) | Monorepo layout and module boundaries | Accepted (G1) | §4.4 |
-| [0007](0007-dinh-nghia-chi-so-va-vong-doi.md) | Metric definitions and customer/policy lifecycle | Accepted (G1); golden examples → G2 | Q3–Q7 |
+| [0007](0007-dinh-nghia-chi-so-va-vong-doi.md) | Metric definitions and customer/policy lifecycle | Accepted (G1); golden examples + data model Accepted (G2) | Q3–Q7 |
 | [0008](0008-kyc-du-kien-co-cau-truc-va-cong-deterministic.md) | Structured KYC facts + deterministic gate | Accepted (G1); thresholds → Phase 2 | Q8, Q9 |
 | [0009](0009-ai-copilot-provider-va-guardrail.md) | AI copilot: OpenCode Go + Mock, schema + validator | Accepted (G1); prompts → G5, keys → G6 | Q10, Q11, C2 |
 | [0010](0010-dong-bo-du-lieu-app-backup-va-repo-data.md) | App data sync: backup file + `Project-2C-data` repo | Accepted (G1) | Q2b |

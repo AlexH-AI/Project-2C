@@ -1,9 +1,9 @@
 # ADR-0007: Định nghĩa chỉ số và vòng đời khách hàng / hợp đồng
 
-- **Trạng thái:** Accepted (G1) cho định nghĩa; **golden examples + mô hình dữ liệu chờ G2**
+- **Trạng thái:** Accepted (G1) cho định nghĩa; golden examples + mô hình dữ liệu: Accepted (G2, 26/09/2026) — định nghĩa RF và tỉ lệ chốt đổi ở G2
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §2.2 (W3, W4, W5, W8), §2.3, §4.4, §7 (Q3–Q7)
-- **Commit / PR:** `20e9c5e` · PR: —
+- **Commit / PR:** `20e9c5e` · G2: #28
 
 ## Bối cảnh
 
@@ -14,7 +14,7 @@ Chỉ số mơ hồ → hai người đọc ra hai con số khác nhau. Pipeline
 **Vòng đời (Q7):**
 
 - HĐ là thực thể riêng, chỉ `submitted → issued`. `submitted` = RE chốt thành công, KH **đã đóng phí**. Một KH có nhiều HĐ.
-- Nhóm KH N4 → N3 → N2 → N1: được nâng, được **hạ**; thêm trạng thái đóng `ON_HOLD` (Tạm hoãn) / `LOST` (Mất cơ hội), mở lại được.
+- Nhóm KH N4 → N3 → N2 → N1: được nâng, được **hạ**; thêm trạng thái đóng `ON_HOLD` (Tạm hoãn) / `LOST` (Mất cơ hội), mở lại được — mở lại luôn về **N3** (G2).
 - Sau khi có HĐ: KH giữ nhóm + nhãn "Đã có HĐ" (số HĐ).
 - Mọi lần chuyển nhóm lưu thành sự kiện `stage_transitions`.
 
@@ -22,14 +22,21 @@ Chỉ số mơ hồ → hai người đọc ra hai con số khác nhau. Pipeline
 
 | Chỉ số | Định nghĩa | Trạng thái |
 |---|---|---|
-| HĐ đã nộp | Số HĐ có `submitted_date` trong kỳ | Đề xuất (G2) |
-| HĐ phát hành | Số HĐ có `issued_date` trong kỳ | Đề xuất (G2) |
+| HĐ đã nộp | Số HĐ có `submitted_date` trong kỳ | Chốt (G2) |
+| HĐ phát hành | Số HĐ có `issued_date` trong kỳ | Chốt (G2) |
 | Case size | **Σ FYP** HĐ đã nộp trong kỳ (tổng, không trung bình) — Q6 | Chốt |
-| Doanh số | **Σ issued FYP** theo `issued_date` — Q5 | Chốt |
-| Tỉ lệ chốt | Σ HĐ submitted có `submitted_date` ≤ cuối kỳ ÷ số KH khác nhau từng ở N2/N1 tại thời điểm ≤ cuối kỳ — lũy kế cả tử và mẫu, có thể > 100% (Q3, Q3c) | Chốt |
-| Cuộc gặp chuyển RF (Refer) | Cuộc hẹn *đã gặp* mà sau đó KH được **nâng** lên nhóm mới ∈ {N3, N2, N1}, kể cả nhảy cóc; hạ nhóm không tính, nâng lại sau khi hạ có tính (Q4) | Chốt |
-| Tuần | Thứ Hai → Chủ Nhật | Đề xuất (G2) |
-| MTD | Ngày 1 của tháng → ngày đang xem | Đề xuất (G2) |
+| Doanh số | **Σ issued FYP** theo `issued_date` — Q5. FYP phát hành mặc định = FYP nộp, Owner sửa tay được theo thực tế (G2 D) | Chốt |
+| Tỉ lệ chốt | **Số HĐ có `issued_date` trong kỳ ÷ số cuộc gặp chuyển RF trong kỳ** — tỉ lệ chuyển hóa RF → HĐ phát hành. Kỳ = ngày/tuần/tháng/năm/tùy chọn, **không lũy kế**; như nhau cho RE và team; có thể > 100%; 0 RF → hiện "—" (G2 F, H — thay Q3/Q3c) | Chốt (G2) |
+| Cuộc gặp chuyển RF (Refer) | Cuộc hẹn **Đã gặp** mà "nhóm sau cuộc gặp" của chính cuộc hẹn đó đưa KH từ **N4/N3** lên **N2/N1** (kể cả N4→N2, N4→N1). N4→N3 và N2→N1 không tính; hạ nhóm không tính; nâng lại sau khi hạ có tính; mở lại từ Tạm hoãn/Mất cơ hội về N3 không tính. Mỗi cuộc gặp tối đa 1 RF, tính vào ngày gặp; nâng nhóm sửa tay ngoài cuộc hẹn không tính (G2 B, C — thay Q4) | Chốt (G2) |
+| Tuần | Thứ Hai → Chủ Nhật | Chốt (G2) |
+| MTD | Ngày 1 của tháng → ngày đang xem | Chốt (G2) |
+
+**Góc nhìn và vai trò (G2 E, G):**
+
+- HĐ, KH và cuộc hẹn tính cho **RE phụ trách ghi trên đó**; team = team **hiện tại** của RE (v1 không theo dõi lịch sử chuyển team).
+- Chỉ **RE** có chỉ số. TL/IS/BD/BDM là người phối hợp trong cuộc hẹn; team đã có chỉ số tổng nên không tính riêng cho TL.
+
+**Trạng thái cuộc hẹn (G2 B):** Đã lên lịch / Đã gặp / Dời lịch / KH hủy / Không gặp được. Chỉ **Đã gặp** được xét chuyển RF.
 
 **Nhập liệu:**
 
@@ -38,7 +45,9 @@ Chỉ số mơ hồ → hai người đọc ra hai con số khác nhau. Pipeline
 
 ## Phương án đã cân nhắc
 
-- Case size = trung bình — loại (Q6). Doanh số theo ngày nộp — loại (Q5). Tỉ lệ chốt theo KH / chỉ trong kỳ — loại (Q3, Q3c).
+- Case size = trung bình — loại (Q6). Doanh số theo ngày nộp — loại (Q5).
+- Tỉ lệ chốt = HĐ nộp lũy kế ÷ KH từng ở N2/N1 lũy kế (Q3, Q3c) — **thay ở G2** bằng HĐ phát hành ÷ RF trong cùng kỳ: đo trực tiếp hiệu quả chuyển RF thành HĐ, đọc được theo từng tuần/tháng.
+- RF tính cả N4→N3 (Q4 cũ) — **thay ở G2**: chỉ lên N2/N1 mới là cơ hội thật.
 - Theo dõi từ chối/hủy/pending HĐ — hoãn, ngoài v1.
 
 ## Lý do
@@ -47,5 +56,6 @@ Chỉ số mơ hồ → hai người đọc ra hai con số khác nhau. Pipeline
 
 ## Hệ quả
 
-- Owner cung cấp/duyệt golden examples ở **G2**; chúng là test bắt buộc của `domain`.
-- Thực thể cốt lõi: `teams`, `people`, `customers`, `kyc_notes`, `kyc_facts`, `kyc_versions`, `stage_transitions`, `appointments`, `policies`, `ai_analyses`, `settings` — chi tiết chốt ở G2.
+- Golden examples: `packages/domain/src/golden/metrics.fixture.ts`, bảng đối chiếu `docs/golden/chi-so.md` (Owner duyệt G2). Là test bắt buộc của stats engine; không sửa để "cho xanh".
+- Mô hình dữ liệu cho chỉ số: `packages/domain/src/model.ts` (`Team`, `Person`, `Customer`, `StageTransition`, `Appointment`, `Policy`, `Scope`).
+- Thực thể cốt lõi: `teams`, `people`, `customers`, `kyc_notes`, `kyc_facts`, `kyc_versions`, `stage_transitions`, `appointments`, `policies`, `ai_analyses`, `settings` — các thực thể dùng cho chỉ số chốt ở G2 (xem trên); KYC chốt ở ADR-0008 / #30.
