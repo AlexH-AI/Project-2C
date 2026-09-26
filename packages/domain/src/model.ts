@@ -1,8 +1,8 @@
 /**
  * Entities the metrics are computed from (ADR-0007, approved at G2). Only the fields the stats
  * engine and the customer lifecycle need; KYC entities live elsewhere (ADR-0008).
- * FYP amounts are integer đồng until the shared money type lands (T-026).
  */
+import type { Vnd } from './money';
 import type { CalendarDate } from './period';
 import type { PipelineStage } from './pipeline-stage';
 
@@ -81,7 +81,7 @@ export interface Appointment {
    * is recorded as a transition pointing back to this appointment.
    */
   readonly stageAfter: CustomerStage | null;
-  readonly expectedCaseSize: number | null;
+  readonly expectedCaseSize: Vnd | null;
   readonly nextStep: string | null;
   readonly note: string;
 }
@@ -93,11 +93,11 @@ export interface Policy {
   readonly reId: string;
   /** Day the customer paid and the policy was submitted. */
   readonly submittedDate: CalendarDate;
-  readonly submittedFyp: number;
+  readonly submittedFyp: Vnd;
   /** Null until the policy is issued. */
   readonly issuedDate: CalendarDate | null;
   /** Defaults to `submittedFyp` when issued; the Owner may overwrite it by hand (G2 D). */
-  readonly issuedFyp: number | null;
+  readonly issuedFyp: Vnd | null;
 }
 
 /** Góc nhìn: everyone, one team, or one RE. */

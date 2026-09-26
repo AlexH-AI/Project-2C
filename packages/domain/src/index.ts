@@ -52,6 +52,8 @@ export {
   rfCount,
 } from './stats';
 export type { CloseRate, MetricsData, PeriodMetrics, PolicyMetrics } from './stats';
+export { formatVnd, formatVndCompact, parseVnd } from './money';
+export type { Vnd, VndParseError, VndParseResult } from './money';
 export { APPOINTMENT_STATUSES, CLOSED_STAGES, PERSON_ROLES } from './model';
 export type {
   Appointment,
