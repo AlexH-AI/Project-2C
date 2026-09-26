@@ -50,4 +50,3 @@ Hai bản thử nghiệm giống hệt nhau: React 19.3 + Vite 8, cùng 4 biểu
 ## Hệ quả
 
 - Thêm dependency `echarts@6.1.0` vào `packages/ui` trong #7 (đã duyệt G4).
-- Mục lục `docs/decisions/README.md` bổ sung dòng ADR-0014 sau khi PR #13 (ADR-0013) merge, để tránh xung đột với PR đang review.
