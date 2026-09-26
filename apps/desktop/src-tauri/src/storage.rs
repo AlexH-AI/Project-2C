@@ -14,7 +14,8 @@ const BACKUP_PREFIX: &str = "project2c-";
 const KEEP_BACKUPS: usize = 10;
 const SQLITE_HEADER: &[u8] = b"SQLite format 3\0";
 
-/// Reads the database at startup; `None` when there is no file yet. An existing file is first
+/// Reads the database at startup; `None` on a first start (no file and no backups). A missing
+/// file with backups left is an error, so the app never starts over them. An existing file is first
 /// copied into `backups\` under `stamp` (unless an identical copy is already there), keeping the
 /// newest ten copies. A file that is empty or not SQLite is an error, never a first start, and is
 /// not backed up: the app would otherwise write a new database over it.
@@ -22,8 +23,16 @@ pub fn open(dir: &Path, stamp: &str) -> io::Result<Option<Vec<u8>>> {
     fs::create_dir_all(dir)?;
     // A crash between writing and renaming leaves this behind; the database file itself is whole.
     remove_if_exists(&dir.join(tmp_name(DB_FILE)))?;
+    let backups = dir.join(BACKUP_DIR);
     let bytes = match fs::read(dir.join(DB_FILE)) {
         Ok(bytes) => bytes,
+        // Backups but no file: the file was lost, and a new database would push them out.
+        Err(error) if error.kind() == ErrorKind::NotFound && !backup_names(&backups).is_empty() => {
+            return Err(io::Error::new(
+                ErrorKind::NotFound,
+                format!("{DB_FILE} is missing but {BACKUP_DIR} has copies"),
+            ));
+        }
         Err(error) if error.kind() == ErrorKind::NotFound => return Ok(None),
         Err(error) => return Err(error),
     };
@@ -33,7 +42,6 @@ pub fn open(dir: &Path, stamp: &str) -> io::Result<Option<Vec<u8>>> {
             format!("{DB_FILE} is not a SQLite database"),
         ));
     }
-    let backups = dir.join(BACKUP_DIR);
     // A file the app keeps refusing (damaged inside) must not push the good backups out.
     if !has_copy(&backups, &bytes) {
         let name = backup_name(&backups, stamp);
@@ -377,6 +385,28 @@ mod tests {
             .filter(|name| fs::read(backups.join(name)).unwrap() == db("damaged"))
             .count();
         assert_eq!(damaged, 1);
+    }
+
+    #[test]
+    fn a_missing_file_with_backups_left_is_an_error_not_a_first_start() {
+        // Quarantined or deleted by mistake: a new database would push the backups out.
+        let dir = temp_dir();
+        ten_backups(&dir);
+        let before = names(&dir.join(BACKUP_DIR));
+        fs::remove_file(dir.join(DB_FILE)).unwrap();
+        let error = open(&dir, "20260927-080000").unwrap_err();
+        assert_eq!(error.kind(), ErrorKind::NotFound);
+        assert_eq!(names(&dir.join(BACKUP_DIR)), before);
+        assert!(!dir.join(DB_FILE).exists());
+    }
+
+    #[test]
+    fn a_missing_file_with_only_foreign_files_in_backups_is_a_first_start() {
+        let dir = temp_dir();
+        let backups = dir.join(BACKUP_DIR);
+        fs::create_dir_all(&backups).unwrap();
+        fs::write(backups.join("notes.txt"), b"not a backup").unwrap();
+        assert_eq!(open(&dir, "20260927-080000").unwrap(), None);
     }
 
     #[test]

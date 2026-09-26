@@ -1,5 +1,7 @@
 // Keep the Rust layer thin: business logic lives in packages/domain (ADR-0005, ADR-0006).
-// The only commands are file I/O for the sql.js database (ADR-0016).
+// The only commands are file I/O for the sql.js database (ADR-0016). They run on the async
+// threadpool (`async`): a plain command runs on the main thread and would freeze the window
+// while a whole file is written and flushed after every transaction.
 
 mod storage;
 
@@ -24,10 +26,10 @@ fn raw_body<'a>(request: &'a Request<'_>) -> Result<&'a [u8], String> {
     }
 }
 
-/// Startup: backs up and returns the database file; an empty body means there is no file yet
-/// (an existing file that is empty or not SQLite is an error, see `storage::open`).
+/// Startup: backs up and returns the database file; an empty body means a first start (a file
+/// that is missing with backups left, empty or not SQLite is an error, see `storage::open`).
 /// `utc_offset_minutes` comes from the webview so backup names use local time.
-#[tauri::command]
+#[tauri::command(async)]
 fn db_open(utc_offset_minutes: i64) -> Result<Response, String> {
     let secs = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -39,13 +41,13 @@ fn db_open(utc_offset_minutes: i64) -> Result<Response, String> {
 }
 
 /// Replaces the database file with the request body (atomic).
-#[tauri::command]
+#[tauri::command(async)]
 fn db_save(request: Request<'_>) -> Result<(), String> {
     storage::save(&data_dir()?, raw_body(&request)?).map_err(|e| e.to_string())
 }
 
 /// Writes the request body into `exports\` (used by T-052); returns the file path.
-#[tauri::command]
+#[tauri::command(async)]
 fn export_write(request: Request<'_>) -> Result<String, String> {
     let name = request
         .headers()
