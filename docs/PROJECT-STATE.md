@@ -37,9 +37,10 @@ Claude Code only: Opus 5.5, effort medium, no subagents. Claude works autonomous
 - 2026-09-26: #3 — GitHub Free has no branch protection for private repos; OWNER chose local enforcement (pre-push hook) + Claude merges `risk:low` PRs when CI is green.
 - 2026-09-26: G3 approved — UI direction recorded as ADR-0013 (PR #13), score 8/10.
 - 2026-09-26: PR #10 merged (#1, #2, #3 closed).
+- 2026-09-26: KYC version `material` flag (ADR-0008 §7) — first version always material; later versions material when the current facts (active or conflict) of any core field change; the RE may switch it on manually for non-core changes but cannot switch it off. Implemented in #38 (blocked by #29 / PR #36).
 
 ## Next decision
 
 - Phase 1 code merged (#7 closed); milestone stays open until #9 (exe on both machines) and #17 (icons) are checked at the office.
-- Phase 2 — core domain in progress: G2 approved for metrics (#28 → PR #34) and KYC catalog/gate (#30 → PR #35). PR #36 (#29 KYC model) awaits clean-session review. Next: #27, #31, #32, #33; #25, #26.
+- Phase 2 — core domain in progress: G2 approved for metrics (#28 → PR #34) and KYC catalog/gate (#30 → PR #35). PR #36 (#29 KYC model): clean-session review PASS, awaits Owner merge (risk:med). Next: #27, #31, #32, #33, #38 (after #36); #25, #26.
 - Project-2 should adopt the upstream skill renames (`to-prd` → `to-spec`, `to-issues` → `to-tickets`).
