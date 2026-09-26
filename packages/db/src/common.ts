@@ -3,7 +3,7 @@ import { calendarDate, type CalendarDate, type Vnd } from '@p2c/domain';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Database } from './database';
 import { DbError } from './errors';
-import { people } from './schema';
+import { customers, people } from './schema';
 
 export function requireName(name: string): string {
   const trimmed = name.trim();
@@ -57,4 +57,11 @@ export function requireRe(db: Database, id: string): string {
   if (!row) throw new DbError('PERSON_NOT_FOUND');
   if (row.role !== 'RE') throw new DbError('RE_REQUIRED');
   return id;
+}
+
+/** The customer row, when it exists and is not deleted. */
+export function liveCustomer(db: Database, id: string): typeof customers.$inferSelect {
+  const row = db.orm.select().from(customers).where(eq(customers.id, id)).get();
+  if (!row || row.deletedAt) throw new DbError('CUSTOMER_NOT_FOUND');
+  return row;
 }

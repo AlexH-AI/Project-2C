@@ -2,7 +2,15 @@
  * Drizzle schema (spec `docs/design/phase-3-du-lieu.md` §2–3). Migrations are generated from this
  * file with `pnpm db:generate`; never edit a generated migration by hand.
  */
-import { APPOINTMENT_STATUSES, CLOSED_STAGES, PERSON_ROLES, PIPELINE_STAGES } from '@p2c/domain';
+import {
+  APPOINTMENT_STATUSES,
+  CLOSED_STAGES,
+  KYC_FACT_STATUSES,
+  KYC_FIELDS,
+  PERSON_ROLES,
+  PIPELINE_STAGES,
+  type KycField,
+} from '@p2c/domain';
 import { sql } from 'drizzle-orm';
 import {
   check,
@@ -194,5 +202,77 @@ export const policies = sqliteTable(
       'policies_issued',
       sql`${t.issuedDate} IS NULL OR (${t.issuedFyp} > 0 AND ${t.issuedDate} >= ${t.submittedDate})`,
     ),
+  ],
+);
+
+// ---- KYC notes, facts and versions (spec §3.8–3.10, ADR-0008) ----
+
+/** `SYSTEM` notes carry the birth year and gender written from the customer profile (D2). */
+export const KYC_NOTE_SOURCES = ['RE', 'SYSTEM'] as const;
+const KYC_FIELD_KEYS = Object.keys(KYC_FIELDS) as [KycField, ...KycField[]];
+
+/** Append-only: no `updated_at` / `deleted_at`, and a trigger refuses any update or delete. */
+export const kycNotes = sqliteTable(
+  'kyc_notes',
+  {
+    id: text('id').primaryKey(),
+    customerId: text('customer_id')
+      .notNull()
+      .references(() => customers.id),
+    seq: integer('seq').notNull(),
+    text: text('text').notNull(),
+    createdDate: text('created_date').notNull(),
+    source: text('source', { enum: KYC_NOTE_SOURCES }).notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [
+    uniqueIndex('kyc_notes_customer_seq').on(t.customerId, t.seq),
+    check('kyc_notes_source', sql`${t.source} IN (${list(KYC_NOTE_SOURCES)})`),
+  ],
+);
+
+/** Never deleted; `status` (and `updated_at`) is the only column that changes. */
+export const kycFacts = sqliteTable(
+  'kyc_facts',
+  {
+    id: text('id').primaryKey(),
+    customerId: text('customer_id')
+      .notNull()
+      .references(() => customers.id),
+    seq: integer('seq').notNull(),
+    field: text('field', { enum: KYC_FIELD_KEYS }).notNull(),
+    /** JSON of the `KycValue`, already normalised to the type of its trường. */
+    valueJson: text('value_json').notNull(),
+    noteId: text('note_id')
+      .notNull()
+      .references(() => kycNotes.id),
+    confirmedDate: text('confirmed_date').notNull(),
+    status: text('status', { enum: KYC_FACT_STATUSES }).notNull(),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (t) => [
+    uniqueIndex('kyc_facts_customer_seq').on(t.customerId, t.seq),
+    check('kyc_facts_field', sql`${t.field} IN (${list(KYC_FIELD_KEYS)})`),
+    check('kyc_facts_status', sql`${t.status} IN (${list(KYC_FACT_STATUSES)})`),
+  ],
+);
+
+export const kycVersions = sqliteTable(
+  'kyc_versions',
+  {
+    id: text('id').primaryKey(),
+    customerId: text('customer_id')
+      .notNull()
+      .references(() => customers.id),
+    seq: integer('seq').notNull(),
+    hash: text('hash').notNull(),
+    date: text('date').notNull(),
+    material: integer('material', { mode: 'boolean' }).notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [
+    uniqueIndex('kyc_versions_customer_seq').on(t.customerId, t.seq),
+    check('kyc_versions_material', sql`${t.material} IN (0, 1)`),
   ],
 );
