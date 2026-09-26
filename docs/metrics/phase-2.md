@@ -3,7 +3,7 @@
 Theo bảng chỉ số của `docs/COMPARISON.md`. Phase 2 chỉ có code `packages/domain` (không UI, không exe mới), nên nhóm UI/UX và kích thước exe không áp dụng.
 
 - **Milestone:** "Phase 2 — Lõi domain"
-- **Bắt đầu:** 2026-09-26 · **Kết thúc:** 2026-09-26 (task cuối #26 merge; đóng milestone chờ Owner)
+- **Bắt đầu:** 2026-09-26 · **Kết thúc:** 2026-09-26 (task cuối #26 merge; Owner duyệt G7, đóng milestone cùng ngày)
 - **Máy:** Home PC (`DESKTOP-KDURKJP`)
 
 ## Task
@@ -39,5 +39,7 @@ Theo bảng chỉ số của `docs/COMPARISON.md`. Phase 2 chỉ có code `packa
 ## Ghi chú
 
 - Golden fixtures (`golden/metrics.fixture.ts`, `golden/kyc.fixture.ts`) không bị sửa để "cho xanh" trong suốt phase.
-- #31 merge bằng `--merge` khi chưa có review phiên sạch (Owner duyệt).
+- #31 merge bằng `--merge` (Owner duyệt); review phiên sạch PASS có ghi trên PR #43.
 - `docs/PROJECT-PLAN.md` §2.3 đã đồng bộ với ADR-0007 (26/09/2026).
+- Review đóng phase (26/09/2026, phiên riêng): `pnpm verify` xanh — 279 test, coverage 100%, 0 vi phạm ranh giới; đọc lại toàn bộ `packages/domain/src` và dò thêm ca biên tiền/ngày/kỳ/nhóm KH. Không có lỗi; chỉ đổi tên một test (ghi chú review #44).
+- Ca biên để lại cho Phase 3 (đúng spec hiện tại): gõ `29/02` không năm khi năm nay không nhuận → lỗi, dù năm sau nhuận (vd. 31/12/2027 → 29/02/2028); `1.234 tr` đọc là 1.234 triệu (`.` ngăn nghìn) còn `12.34 tr` là 12,34 triệu — UI phải luôn hiện giá trị đã diễn giải.
