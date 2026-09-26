@@ -62,6 +62,11 @@ export function formatDate(date: CalendarDate): string {
   return `${pad(date.day)}/${pad(date.month)}/${date.year}`;
 }
 
+/** Negative when `a` is earlier, positive when later, 0 on the same day — for `Array.sort`. */
+export function compareDates(a: CalendarDate, b: CalendarDate): number {
+  return toDayNumber(a) - toDayNumber(b);
+}
+
 /** Reads `dd/mm/yyyy` (leading zeros optional); null when it is not a real date. */
 export function parseDate(text: string): CalendarDate | null {
   const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text.trim());

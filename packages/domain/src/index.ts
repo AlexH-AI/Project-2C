@@ -3,6 +3,7 @@ export type { PipelineStage } from './pipeline-stage';
 export {
   PERIOD_KINDS,
   calendarDate,
+  compareDates,
   customPeriod,
   formatDate,
   formatPeriodLabel,
