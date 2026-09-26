@@ -37,8 +37,15 @@ export {
 export type { KycFactInput, KycNote, KycProfile, KycVersion } from './kyc';
 export type { KycFact, KycFactStatus, KycValue } from './kyc-fact';
 export { assertValidTransition, isRfTransition, policyBadge, stageOn } from './customer-lifecycle';
-export { inScope, policyMetrics } from './stats';
-export type { PolicyMetrics } from './stats';
+export {
+  closeRate,
+  inScope,
+  isRfAppointment,
+  periodMetrics,
+  policyMetrics,
+  rfCount,
+} from './stats';
+export type { CloseRate, MetricsData, PeriodMetrics, PolicyMetrics } from './stats';
 export { APPOINTMENT_STATUSES, CLOSED_STAGES, PERSON_ROLES } from './model';
 export type {
   Appointment,

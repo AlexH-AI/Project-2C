@@ -3,7 +3,8 @@
  * one period and one scope from the raw records; nothing is accumulated across periods.
  * FYP amounts are integer đồng (see `model.ts`), so sums stay exact.
  */
-import type { Person, Policy, Scope } from './model';
+import { isRfTransition } from './customer-lifecycle';
+import type { Appointment, Person, Policy, Scope, StageTransition } from './model';
 import { isInPeriod } from './period';
 import type { Period } from './period';
 
@@ -51,4 +52,67 @@ export function policyMetrics(
     issuedCount: issued.length,
     revenue: sum(issued.map((policy) => policy.issuedFyp ?? policy.submittedFyp)),
   };
+}
+
+/**
+ * Whether the appointment is a cuộc gặp chuyển RF: it was met and its own "stage after" moved the
+ * customer from N4/N3 up to N2/N1 (G2 B). Manual stage changes point to no appointment, so they
+ * never count; an appointment counts at most once.
+ */
+export function isRfAppointment(
+  appointment: Appointment,
+  transitions: readonly StageTransition[],
+): boolean {
+  return (
+    appointment.status === 'MET' &&
+    transitions.some((t) => t.appointmentId === appointment.id && isRfTransition(t.from, t.to))
+  );
+}
+
+/** Cuộc gặp chuyển RF with the meeting day in the period, for the RE on the appointment (G2 C). */
+export function rfCount(
+  data: {
+    readonly people: readonly Person[];
+    readonly appointments: readonly Appointment[];
+    readonly transitions: readonly StageTransition[];
+  },
+  period: Period,
+  scope: Scope,
+): number {
+  return data.appointments.filter(
+    (appointment) =>
+      isInPeriod(appointment.date, period) &&
+      inScope(data.people, appointment.reId, scope) &&
+      isRfAppointment(appointment, data.transitions),
+  ).length;
+}
+
+/** An exact fraction; it may exceed 1 (more policies issued than RF in the period). */
+export interface CloseRate {
+  readonly numerator: number;
+  readonly denominator: number;
+}
+
+/** Tỉ lệ chốt = issued ÷ RF in the same period (G2 F); null — shown "—" — when there is no RF. */
+export function closeRate(issuedCount: number, rfCount: number): CloseRate | null {
+  return rfCount === 0 ? null : { numerator: issuedCount, denominator: rfCount };
+}
+
+export interface PeriodMetrics extends PolicyMetrics {
+  readonly rfCount: number;
+  readonly closeRate: CloseRate | null;
+}
+
+export interface MetricsData {
+  readonly people: readonly Person[];
+  readonly policies: readonly Policy[];
+  readonly appointments: readonly Appointment[];
+  readonly transitions: readonly StageTransition[];
+}
+
+/** Every metric of one period and one scope. Nothing is carried over from earlier periods. */
+export function periodMetrics(data: MetricsData, period: Period, scope: Scope): PeriodMetrics {
+  const policies = policyMetrics(data, period, scope);
+  const rf = rfCount(data, period, scope);
+  return { ...policies, rfCount: rf, closeRate: closeRate(policies.issuedCount, rf) };
 }
