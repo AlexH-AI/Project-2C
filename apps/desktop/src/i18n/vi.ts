@@ -29,6 +29,10 @@ export const vi = {
   'period.to': 'Đến ngày',
   'period.dateFormat': 'dd/mm/yyyy',
   'pipeline.title': 'Nhóm cơ hội',
+  'appointments.sample': 'Lịch hẹn mẫu',
+  'appointments.date': 'Ngày',
+  'appointments.time': 'Giờ',
+  'appointments.customer': 'Khách hàng',
 } as const;
 
 export type MessageKey = keyof typeof vi;

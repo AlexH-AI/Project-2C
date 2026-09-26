@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   calendarDate,
+  compareDates,
   customPeriod,
   formatDate,
   formatPeriodLabel,
@@ -147,5 +148,22 @@ describe('parseDate', () => {
 describe('fromLocalDate', () => {
   it('reads the local calendar day of a JS date', () => {
     expect(fromLocalDate(new Date(2026, 8, 28, 23, 59))).toEqual(d(28, 9, 2026));
+  });
+});
+
+describe('compareDates', () => {
+  it('orders by time, not by text', () => {
+    expect(compareDates(d(30, 9, 2026), d(1, 10, 2026))).toBeLessThan(0);
+    expect(compareDates(d(1, 1, 2027), d(31, 12, 2026))).toBeGreaterThan(0);
+    expect(compareDates(d(28, 9, 2026), d(28, 9, 2026))).toBe(0);
+  });
+
+  it('sorts dd/mm/yyyy values chronologically', () => {
+    const dates = [d(1, 10, 2026), d(30, 9, 2026), d(2, 9, 2025)];
+    expect(dates.sort(compareDates).map(formatDate)).toEqual([
+      '02/09/2025',
+      '30/09/2026',
+      '01/10/2026',
+    ]);
   });
 });
