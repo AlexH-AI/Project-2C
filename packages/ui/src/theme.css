@@ -1,0 +1,62 @@
+/*
+ * Entry stylesheet for apps: import after 'tailwindcss'.
+ * Maps the ADR-0013 tokens onto Tailwind's theme and removes Tailwind's default palette and type
+ * scale, so only token-backed utilities exist (bg-surface-1, text-fg-2, text-accent, text-sm…).
+ */
+@import './fonts.css';
+@import './tokens.css';
+
+@theme inline {
+  --color-*: initial;
+  --color-surface-0: var(--bg-0);
+  --color-surface-1: var(--bg-1);
+  --color-surface-2: var(--bg-2);
+  --color-surface-3: var(--bg-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--text);
+  --color-fg-2: var(--text-2);
+  --color-fg-3: var(--text-3);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-heading: var(--heading);
+  --color-n4: var(--n4);
+  --color-n3: var(--n3);
+  --color-n2: var(--n2);
+  --color-n1: var(--n1);
+  --color-on-hold: var(--on-hold);
+  --color-lost: var(--lost);
+  --color-submitted: var(--submitted);
+  --color-issued: var(--issued);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  --font-*: initial;
+  --font-sans: var(--font);
+
+  --text-*: initial;
+  --text-xs: var(--fs-xs);
+  --text-sm: var(--fs-sm);
+  --text-md: var(--fs-md);
+  --text-lg: var(--fs-lg);
+  --text-xl: var(--fs-xl);
+  --text-2xl: var(--fs-2xl);
+
+  --radius-*: initial;
+  --radius-sm: var(--corner-sm);
+  --radius-md: var(--corner-md);
+  --radius-lg: var(--corner-lg);
+}
+
+@layer base {
+  body {
+    margin: 0;
+    background-color: var(--bg-0);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: var(--fs-md);
+  }
+}

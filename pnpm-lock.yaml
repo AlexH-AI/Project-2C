@@ -208,6 +208,9 @@ importers:
       '@p2c/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@p2c/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@tauri-apps/api':
         specifier: 2.11.1
         version: 2.11.1
@@ -244,6 +247,8 @@ importers:
         version: 8.3.1(@types/node@26.6.2)(jiti@2.7.0)
 
   packages/domain: {}
+
+  packages/ui: {}
 
 packages:
 

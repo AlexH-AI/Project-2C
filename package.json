@@ -13,13 +13,14 @@
     "build:exe": "pnpm --filter @p2c/desktop build:exe",
     "lint": "eslint .",
     "lint:deps": "depcruise apps packages",
+    "lint:tokens": "node packages/ui/scripts/check-tokens.ts apps/desktop/src",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r typecheck && tsc -p e2e",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
-    "verify": "pnpm format:check && pnpm lint && pnpm lint:deps && pnpm typecheck && pnpm test:coverage"
+    "verify": "pnpm format:check && pnpm lint && pnpm lint:deps && pnpm lint:tokens && pnpm typecheck && pnpm test:coverage"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
