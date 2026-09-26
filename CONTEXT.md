@@ -13,9 +13,15 @@ Từ điển thuật ngữ dùng thống nhất trong issue, tài liệu và cod
 
 - **KH** (`Customer`) — khách hàng, do một RE phụ trách.
 - **Nhóm** (`CustomerStage`) — N4 → N3 → N2 → N1 (N1 gần chốt nhất), cộng hai trạng thái đóng **Tạm hoãn** (`ON_HOLD`) và **Mất cơ hội** (`LOST`). Được nâng, hạ, đóng; mở lại luôn về N3.
+  - **N4** — KH mới, thiếu thông tin KYC; hoặc đã có KYC và mục tiêu là khơi gợi nhu cầu.
+  - **N3** — KH quan tâm, lắng nghe; khơi gợi nhu cầu thành công.
+  - **N2** — KH được IS trình bày giải pháp cụ thể, hoặc được gửi giải pháp cụ thể.
+  - **N1** — KH chấp nhận giải pháp, chưa chốt HĐ chỉ vì một số yếu tố: cân nhắc tài chính, thời gian, lý do khác.
+  - Sau khi HĐ đã nộp, KH vẫn giữ nhóm và có thêm nhãn **"Đã có HĐ"**.
 - **Chuyển nhóm** (`StageTransition`) — mỗi lần đổi nhóm là một sự kiện, có ngày và (nếu có) cuộc hẹn gây ra.
-- **Cuộc hẹn** (`Appointment`) — trạng thái: Đã lên lịch (`SCHEDULED`) / Đã gặp (`MET`) / Dời lịch (`RESCHEDULED`) / KH hủy (`CANCELLED`) / Không gặp được (`NO_SHOW`). Kết quả có trường **nhóm sau cuộc gặp** (`stageAfter`).
-- **Chuyển RF** (Refer) — cuộc hẹn Đã gặp mà nhóm sau cuộc gặp đưa KH từ N4/N3 lên N2/N1. Tính vào ngày gặp, tối đa 1 lần mỗi cuộc gặp (ADR-0007).
+- **Cuộc hẹn** (`Appointment`) — trạng thái: Đã lên lịch (`SCHEDULED`) / Đã gặp (`MET`) / Dời lịch (`RESCHEDULED`) / KH hủy (`CANCELLED`) / Không gặp được (`NO_SHOW`). Kết quả có trường **nhóm sau cuộc gặp** (`stageAfter`), chỉ cuộc hẹn Đã gặp mới được ghi.
+- **Sửa tay** — đổi nhóm ngoài cuộc gặp (vd. KH được gửi giải pháp, chuyển hóa qua điện thoại); không bao giờ tính RF.
+- **Chuyển RF** (Refer) — cuộc hẹn Đã gặp mà nhóm sau cuộc gặp đưa KH từ N4/N3 lên N2/N1. Tính vào ngày gặp, tối đa 1 lần mỗi cuộc gặp, cho RE ghi trên cuộc hẹn (ADR-0007). RF chỉ đo hiệu quả cuộc gặp.
 
 ## Hợp đồng và chỉ số
 

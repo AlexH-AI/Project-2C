@@ -76,8 +76,9 @@ export interface Appointment {
   readonly date: CalendarDate;
   readonly status: AppointmentStatus;
   /**
-   * Structured outcome (W3): the customer's stage after the meeting. When it differs from the
-   * stage before, the change is recorded as a transition pointing back to this appointment.
+   * Structured outcome (W3): the customer's stage after the meeting. Only a `MET` appointment has
+   * one; every other status keeps it null (G2). When it differs from the stage before, the change
+   * is recorded as a transition pointing back to this appointment.
    */
   readonly stageAfter: CustomerStage | null;
   readonly expectedCaseSize: number | null;

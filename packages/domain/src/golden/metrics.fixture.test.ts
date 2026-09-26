@@ -56,6 +56,12 @@ describe('golden metrics fixture', () => {
     }
   });
 
+  it('gives a stage after only to appointments that were met', () => {
+    for (const appointment of APPOINTMENTS) {
+      if (appointment.status !== 'MET') expect(appointment.stageAfter, appointment.id).toBeNull();
+    }
+  });
+
   it('records a transition for an appointment exactly when its stage after changes the stage', () => {
     for (const appointment of APPOINTMENTS) {
       const caused = STAGE_TRANSITIONS.filter((t) => t.appointmentId === appointment.id);

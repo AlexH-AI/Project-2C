@@ -15,6 +15,11 @@ Chỉ số mơ hồ → hai người đọc ra hai con số khác nhau. Pipeline
 
 - HĐ là thực thể riêng, chỉ `submitted → issued`. `submitted` = RE chốt thành công, KH **đã đóng phí**. Một KH có nhiều HĐ.
 - Nhóm KH N4 → N3 → N2 → N1: được nâng, được **hạ**; thêm trạng thái đóng `ON_HOLD` (Tạm hoãn) / `LOST` (Mất cơ hội), mở lại được — mở lại luôn về **N3** (G2).
+- Định nghĩa nhóm (G2):
+  - **N4** — KH mới, thiếu thông tin KYC; hoặc đã có KYC và mục tiêu là khơi gợi nhu cầu.
+  - **N3** — KH quan tâm, lắng nghe; khơi gợi nhu cầu thành công.
+  - **N2** — KH được IS trình bày giải pháp cụ thể, hoặc được gửi giải pháp cụ thể.
+  - **N1** — KH chấp nhận giải pháp, chưa chốt HĐ chỉ vì một số yếu tố: cân nhắc tài chính, thời gian, lý do khác.
 - Sau khi có HĐ: KH giữ nhóm + nhãn "Đã có HĐ" (số HĐ).
 - Mọi lần chuyển nhóm lưu thành sự kiện `stage_transitions`.
 
@@ -33,10 +38,13 @@ Chỉ số mơ hồ → hai người đọc ra hai con số khác nhau. Pipeline
 
 **Góc nhìn và vai trò (G2 E, G):**
 
-- HĐ, KH và cuộc hẹn tính cho **RE phụ trách ghi trên đó**; team = team **hiện tại** của RE (v1 không theo dõi lịch sử chuyển team).
+- HĐ và KH tính cho **RE phụ trách ghi trên HĐ/KH**; chuyển RF tính cho **RE ghi trên cuộc hẹn** (`appointment.reId`); team = team **hiện tại** của RE (v1 không theo dõi lịch sử chuyển team).
 - Chỉ **RE** có chỉ số. TL/IS/BD/BDM là người phối hợp trong cuộc hẹn; team đã có chỉ số tổng nên không tính riêng cho TL.
 
 **Trạng thái cuộc hẹn (G2 B):** Đã lên lịch / Đã gặp / Dời lịch / KH hủy / Không gặp được. Chỉ **Đã gặp** được xét chuyển RF.
+
+- **Chỉ cuộc hẹn Đã gặp mới được ghi "nhóm sau cuộc gặp"**; các trạng thái khác để trống (G2). Cuộc hẹn chưa diễn ra thì chưa trình bày giải pháp (điều kiện lên N2), KH vẫn ở nhóm cũ.
+- KH đổi nhóm ngoài cuộc gặp — được **gửi** giải pháp, chuyển hóa qua điện thoại… — thì sửa nhóm bằng tay; sửa tay **không** tính RF. RF chỉ đo hiệu quả cuộc gặp.
 
 **Nhập liệu:**
 
