@@ -3,7 +3,7 @@
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
 - **Cập nhật:** 2026-09-26 · máy `DESKTOP-KDURKJP`
-- **Nhánh:** `main` @ `b9dd147` (#41–#44 đã merge); handoff này đi qua nhánh `wip/…` + PR docs
+- **Nhánh:** `main` @ `86c75f1` (#46 đã merge); PR mở: #47 (`task/T-033-kyc-gate`, Auto-fix bật); handoff này đi qua nhánh `wip/…` + PR docs
 - **Phase:** 2 — Lõi domain (milestone "Phase 2 — Lõi domain") · Phase 1 milestone **để mở** chờ test ở văn phòng
 
 ## Trạng thái
@@ -15,15 +15,18 @@
 | #28 G2 golden examples chỉ số + mô hình dữ liệu (`model.ts`, `docs/golden/chi-so.md`) | ✅ merge #34 (`--squash`), review PASS, Owner duyệt G2 |
 | #30 G2 danh mục KYC, ngưỡng cổng, 15 hồ sơ mẫu (`kyc-catalog.ts`, `docs/golden/kyc.md`) | ✅ merge #35 (`--squash`), Owner duyệt G2 (K09 → `PROFILE_DISCOVERY`) |
 | #29 mô hình KYC: notes, facts, versions (`packages/domain/src/kyc.ts`) | ✅ merge #36 (`--squash`), review PASS, Owner cho merge |
-| Cờ `material` phiên bản KYC → ADR-0008 §7 (Owner chốt, hướng kết hợp) | ✅ docs merge #39; code ở #38 (`risk:med`, chưa làm) |
+| Cờ `material` phiên bản KYC → ADR-0008 §7 (Owner chốt, hướng kết hợp) | ✅ docs merge #39; code #38 merge #46 (`kycHash` băm kèm trạng thái — Owner chốt) |
 | #27 state machine nhóm KH (`customer-lifecycle.ts`: `isRfTransition`, `stageOn`) + ADR-0007 KH mới vào nhóm mở | ✅ merge #41, #42 |
 | #31 chỉ số HĐ theo kỳ/scope (`stats.ts`: `policyMetrics`, `inScope`) | ✅ merge #43 (`--merge`, Owner duyệt; chưa có review phiên sạch) |
 | #32 RF + tỉ lệ chốt (`stats.ts`: `isRfAppointment`, `rfCount`, `closeRate`, `periodMetrics`); đủ G01–G22 | ✅ merge #44 (`--squash`), review PASS, Owner duyệt |
-| #25 nhập ngày dd/mm, #26 tiền VND (`risk:low`) · #33 cổng KYC · #38 cờ material (`risk:med`) | chưa làm |
+| #33 cổng KYC (`kyc-gate.ts`: `evaluateKycGate` → `KycGateResult`) + `CONTEXT.md` + `docs/metrics/phase-2.md` | 🟡 PR #47 (`risk:med`): `pnpm verify` xanh (199 test, coverage 100%), K01–K15 pass lần đầu; chờ CI → review phiên sạch → Owner merge |
+| #25 nhập ngày dd/mm, #26 tiền VND (`risk:low`) | chưa làm |
 
 Ghi chú review #44 (không chặn): `isRfAppointment` dựa vào `StageTransition.appointmentId`, không dựa vào `appointment.stageAfter` → tầng db/UI phải luôn tạo transition gắn `appointmentId` khi ghi "nhóm sau cuộc gặp". Tên test `stats-rf.test.ts:106` nên đổi thành "does not count an appointment that was not met".
 
-Ghi chú review #36 (không chặn, xử lý khi làm #38): nhánh `false` của `current.includes` trong `markConflict` (`kyc.ts:91`) chưa có test; "mới nhất" theo thứ tự thao tác, không theo `confirmedDate`; lớp nhập liệu cần chuẩn hóa kiểu giá trị theo trường.
+Ghi chú review #36 (còn lại, cho tầng nhập liệu): "mới nhất" theo thứ tự thao tác, không theo `confirmedDate`; lớp nhập liệu cần chuẩn hóa kiểu giá trị theo trường. (Test nhánh `false` của `markConflict` đã thêm ở #46.)
+
+Ghi chú #33: `suggestedQuestions` trả cho mọi hạng mục thiếu ở cả 4 trạng thái (UI quyết định hiện); trường mâu thuẫn xếp theo thứ tự `KYC_FIELDS`.
 
 Ghi chú khác: `docs/PROJECT-PLAN.md` §2.3 còn định nghĩa RF / tỉ lệ chốt cũ (ADR-0007 là nguồn đúng) — sửa ở task sau. Còn từ Phase 1: `period.ts` năm 0–99 → 19xx (chặn năm < 1900 khi làm #25); `DataTable` chưa test `sortable: false` và bảng rỗng; cột Giờ chưa `tabular-nums`.
 
@@ -39,9 +42,11 @@ Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 đ�
 
 1. `/session-start` (pull `main`).
 2. Nếu PR handoff (`wip/…`, docs) còn mở và CI xanh → `gh pr merge <n> --squash --delete-branch`.
-3. **#38 cờ material** (phiên mới): nhánh `task/T-038-kyc-material` từ `main`, đọc `gh issue view 38` + ADR-0008 §7, TDD trong `packages/domain/src/kyc.ts` (`isMaterialChange`, `nextKycVersion(..., manualMaterial)`); kèm test nhánh `false` của `markConflict` (ghi chú review #36). `pnpm verify`, PR `risk:med` → review phiên mới → chờ Owner merge.
-4. Sau đó (mỗi task một phiên mới): #33 cổng KYC (test theo `KYC_GOLDEN_PROFILES` trong `golden/kyc.fixture.ts`). Có thể xen #25, #26 (`risk:low`, Claude tự merge khi CI xanh + review PASS).
-5. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
+3. **Review PR #47** (phiên mới, context sạch): `gh pr checks 47` phải xanh; review theo `docs/process/REVIEW-CHECKLIST.md` (đối chiếu `docs/golden/kyc.md`, ADR-0008 §4–6, issue #33). Nếu PASS → báo Owner, **chờ Owner merge** (`risk:med`, `gh pr merge 47 --squash --delete-branch`). Owner điền các ô "_Owner điền_" trong `docs/metrics/phase-2.md` (có thể làm sau).
+4. **#25 nhập ngày dd/mm** (phiên mới): nhánh `task/T-025-quick-date` từ `main`; mở rộng `packages/domain/src/period.ts` (`parseDate`, `CalendarDate`) — không tạo bộ parse thứ hai; chặn năm < 1900. Test chấp nhận trong issue (mốc 60 ngày, 29/02, năm sau chỉ là gợi ý). `risk:low`: CI xanh + review PASS → Claude tự `gh pr merge --squash`.
+5. **#26 tiền VND** (phiên mới): file mới trong `packages/domain/src/` (vd. `money.ts`) + test; số nguyên đồng; diễn giải `500tr`, `1,2 tỷ`, `750k`…; hiển thị đầy đủ `500.000.000 ₫` và gọn `1,2 tỷ` / `500 tr`. `risk:low`, như #25.
+6. Sau #25, #26, #33: cập nhật bảng task + ngày kết thúc trong `docs/metrics/phase-2.md`, rồi Owner quyết đóng milestone Phase 2.
+7. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
 
 ## Dựng môi trường trên Office Laptop
 
@@ -74,7 +79,8 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 ## Chờ Owner
 
 - #9 và #17: hoãn tới khi Owner ở văn phòng (xem "Chờ test ở văn phòng"). Không nhắc lại trước khi Owner báo đã ở văn phòng.
-- `risk:med` (#33, #38): hỏi Owner trước khi merge, trừ khi Owner đã dặn trong phiên.
+- `risk:med` #33 (PR #47): hỏi Owner trước khi merge, trừ khi Owner đã dặn trong phiên.
+- `docs/metrics/phase-2.md`: số phiên, mức dùng Claude, và các quyết định spec phát sinh (ADR-0007 KH mới, ADR-0008 §7, hash #38) có tính là can thiệp ngoài cổng không.
 - GitHub Free: không bật được auto-merge cho repo private — Owner báo CI xanh (hoặc phiên sau kiểm) rồi Claude merge.
 
 ## Ghi chú môi trường
