@@ -35,6 +35,7 @@ export {
 } from './kyc';
 export type { KycFactInput, KycNote, KycProfile, KycVersion } from './kyc';
 export type { KycFact, KycFactStatus, KycValue } from './kyc-fact';
+export { assertValidTransition, isRfTransition, policyBadge, stageOn } from './customer-lifecycle';
 export { APPOINTMENT_STATUSES, CLOSED_STAGES, PERSON_ROLES } from './model';
 export type {
   Appointment,
