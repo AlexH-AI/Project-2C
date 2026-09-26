@@ -1,0 +1,55 @@
+/* Design tokens from ADR-0013 (approved at G3). Every colour pair used for text meets WCAG AA. */
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces: layered blue-grey, never pure black */
+  --bg-0: #0b1017; /* app background */
+  --bg-1: #111822; /* panels, sidebar */
+  --bg-2: #18212d; /* cards, raised */
+  --bg-3: #212c3a; /* inputs, hover */
+  --border: #263241;
+  --border-strong: #34425a;
+
+  /* Text */
+  --text: #e8edf4;
+  --text-2: #aeb9c8;
+  --text-3: #8c99ac;
+
+  /* Single accent: champagne gold (primary actions, focus, selection) */
+  --accent: #d9b26a;
+  --accent-soft: rgba(217, 178, 106, 0.14);
+  --on-accent: #0b1017;
+  --heading: var(--accent); /* headings inside cards */
+
+  /* Opportunity stages */
+  --n4: #94a3b8;
+  --n3: #6fa8ff;
+  --n2: #b49afb;
+  --n1: #3fd69a;
+  --on-hold: #e3a94f;
+  --lost: #f07e7e;
+
+  /* Policy status */
+  --submitted: #6fc8e8;
+  --issued: #3fd69a;
+
+  /* Semantic */
+  --ok: #3fd69a;
+  --warn: #f0a04b;
+  --danger: #f07e7e;
+  --info: #6fa8ff;
+
+  /* Type & shape */
+  --font: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
+  --fs-xs: 11px;
+  --fs-sm: 12.5px;
+  --fs-md: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 20px;
+  --fs-2xl: 26px;
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --sidebar-w: 232px;
+}

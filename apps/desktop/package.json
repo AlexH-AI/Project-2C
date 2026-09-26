@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@p2c/domain": "workspace:*",
+    "@p2c/ui": "workspace:*",
     "@tauri-apps/api": "2.11.1",
     "react": "19.3.0",
     "react-dom": "19.3.0"
