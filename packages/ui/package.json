@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@p2c/domain": "workspace:*",
-    "@tanstack/react-table": "9.2.4"
+    "@tanstack/react-table": "9.2.4",
+    "echarts": "6.1.0"
   },
   "peerDependencies": {
     "react": "19.3.0"

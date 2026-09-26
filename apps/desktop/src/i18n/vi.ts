@@ -33,6 +33,7 @@ export const vi = {
   'appointments.date': 'Ngày',
   'appointments.time': 'Giờ',
   'appointments.customer': 'Khách hàng',
+  'chart.teamAppointments': 'Lịch hẹn theo team',
 } as const;
 
 export type MessageKey = keyof typeof vi;
