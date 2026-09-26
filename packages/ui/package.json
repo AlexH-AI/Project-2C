@@ -4,9 +4,17 @@
   "private": true,
   "type": "module",
   "exports": {
+    ".": "./src/index.ts",
     "./theme.css": "./src/theme.css"
   },
   "scripts": {
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.scripts.json"
+  },
+  "peerDependencies": {
+    "react": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "react": "19.3.0"
   }
 }

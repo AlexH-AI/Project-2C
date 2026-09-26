@@ -2,7 +2,20 @@
 export const vi = {
   'app.title': 'Project-2C',
   'app.subtitle': 'Quản lý hoạt động tư vấn bảo hiểm nhân thọ',
-  'app.placeholder': 'Khung ứng dụng — giao diện sẽ dựng sau khi duyệt mockup (G3).',
+  'nav.label': 'Điều hướng chính',
+  'nav.group.manage': 'Quản lý',
+  'screen.overview': 'Tổng quan hôm nay',
+  'screen.appointments': 'Lịch hẹn',
+  'screen.customers': 'Khách hàng',
+  'screen.customer': 'Hồ sơ khách hàng',
+  'screen.reports': 'Báo cáo',
+  'screen.team': 'Team & nhân sự',
+  'screen.settings': 'Cài đặt',
+  'screen.placeholder': 'Màn hình đang dựng — nội dung sẽ có khi có dữ liệu.',
+  'scope.label': 'Góc nhìn',
+  'scope.all': 'Toàn bộ',
+  'scope.team': 'Team',
+  'scope.re': 'RE',
   'pipeline.title': 'Nhóm cơ hội',
 } as const;
 

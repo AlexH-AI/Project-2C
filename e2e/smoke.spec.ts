@@ -1,9 +1,12 @@
 import { expect, test } from '@playwright/test';
 
-test('app shell shows the title and the pipeline stages in order', async ({ page }) => {
+test('app shell shows the brand, the overview and the pipeline stages in order', async ({
+  page,
+}) => {
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { level: 1, name: 'Project-2C' })).toBeVisible();
+  await expect(page.getByRole('complementary')).toContainText('Project-2C');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan hôm nay');
 
   const stages = page.getByRole('region', { name: 'Nhóm cơ hội' }).getByRole('listitem');
   await expect(stages).toHaveText(['N4', 'N3', 'N2', 'N1']);
