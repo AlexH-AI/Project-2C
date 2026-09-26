@@ -67,6 +67,12 @@ export function compareDates(a: CalendarDate, b: CalendarDate): number {
   return toDayNumber(a) - toDayNumber(b);
 }
 
+/** Whether `date` falls in the period; the first and the last day count in full. */
+export function isInPeriod(date: CalendarDate, period: Period): boolean {
+  const day = toDayNumber(date);
+  return toDayNumber(period.start) <= day && day <= toDayNumber(period.end);
+}
+
 /** Reads `dd/mm/yyyy` (leading zeros optional); null when it is not a real date. */
 export function parseDate(text: string): CalendarDate | null {
   const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text.trim());
