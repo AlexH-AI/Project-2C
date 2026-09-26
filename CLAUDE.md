@@ -37,6 +37,16 @@ Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh
 - Không dùng: `subagent-driven-development`, `dispatching-parallel-agents`, `requesting-code-review`, `using-git-worktrees`. Khi skill gợi ý subagent → làm inline.
 - Project skills (`.claude/skills/`): `grill-me`/`grilling`, `to-spec`, `to-tickets`, `tdd`, `setup-matt-pocock-skills`.
 
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues của `AlexH-AI/Project-2C`, theo mẫu Task, nhãn `type:task` + `risk:*`, milestone theo phase. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` ở gốc (tạo khi cần) + ADR ở `docs/decisions/`. See `docs/agents/domain.md`.
+
 ## Kiến trúc (ADR-0005, ADR-0006)
 
 ```
