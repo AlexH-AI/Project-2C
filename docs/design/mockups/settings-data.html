@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cài đặt dữ liệu — Project-2C mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="mockups.css" />
+    <link rel="stylesheet" href="forms.css" />
+    <style>
+      .settings-layout {
+        display: grid;
+        grid-template-columns: 200px minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+      }
+      .subnav a {
+        display: block;
+        padding: 8px 10px;
+        border-radius: var(--radius-sm);
+        color: var(--text-2);
+        font-size: var(--fs-sm);
+      }
+      .subnav a.on {
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .path {
+        font-family: Consolas, 'Cascadia Mono', monospace;
+        font-size: var(--fs-sm);
+        color: var(--text-2);
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 2px 7px;
+      }
+      .action-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: var(--fs-sm);
+      }
+      .action-row:last-child {
+        border-bottom: none;
+      }
+      .action-row .what {
+        flex: 1;
+      }
+      .action-row .what b {
+        display: block;
+        font-size: var(--fs-md);
+      }
+      .action-row .what span {
+        color: var(--text-2);
+      }
+      .danger-zone {
+        border-color: rgba(240, 126, 126, 0.35);
+      }
+    </style>
+  </head>
+  <body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none" aria-hidden="true">
+      <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" /><rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="16" width="7" height="5" rx="1.5" /></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M8 14h2M14 14h2M8 17.5h2" /></symbol>
+      <symbol id="i-customers" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.5a6.5 6.5 0 0 1 3 5.5" /></symbol>
+      <symbol id="i-reports" viewBox="0 0 24 24"><path d="M3 3v18h18" /><path d="M7.5 16.5v-4M12 16.5V8M16.5 16.5v-6.5" /></symbol>
+      <symbol id="i-team" viewBox="0 0 24 24"><rect x="9" y="2.5" width="6" height="5" rx="1" /><rect x="2.5" y="16.5" width="6" height="5" rx="1" /><rect x="15.5" y="16.5" width="6" height="5" rx="1" /><path d="M12 7.5v4M5.5 16.5v-2a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v2" /></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" /><circle cx="15" cy="6" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="18" r="2" /></symbol>
+    </svg>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">2C</span> Project-2C</div>
+        <nav class="nav">
+          <a href="overview.html"><svg class="ico" aria-hidden="true"><use href="#i-overview" /></svg>Tổng quan hôm nay</a>
+          <a href="appointments.html"><svg class="ico" aria-hidden="true"><use href="#i-calendar" /></svg>Lịch hẹn</a>
+          <a href="customers.html"><svg class="ico" aria-hidden="true"><use href="#i-customers" /></svg>Khách hàng</a>
+          <a href="#"><svg class="ico" aria-hidden="true"><use href="#i-reports" /></svg>Báo cáo</a>
+          <div class="nav-label">Quản lý</div>
+          <a href="team.html"><svg class="ico" aria-hidden="true"><use href="#i-team" /></svg>Team &amp; nhân sự</a>
+          <a href="settings-data.html" class="active"><svg class="ico" aria-hidden="true"><use href="#i-settings" /></svg>Cài đặt</a>
+        </nav>
+        <div class="sidebar-foot"><span class="save-state bad"><span class="dot"></span>Chưa lưu được vào file</span></div>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <h1>Cài đặt</h1>
+          <div class="spacer"></div>
+          <div class="toast">
+            <span class="c-danger" style="font-weight: 700">!</span>
+            <div class="t-body">
+              <b>Chưa lưu được vào file dữ liệu</b>
+              <span>Thay đổi vẫn còn trong app và sẽ thử lưu lại ở lần ghi sau. Đừng đóng app cho tới khi báo đã lưu. Kiểm tra: ổ đĩa đầy, thư mục chỉ đọc, hoặc file đang mở ở chương trình khác.</span>
+            </div>
+            <button class="btn" style="padding: 3px 9px">Thử lại</button>
+          </div>
+        </header>
+
+        <div class="content">
+          <div class="settings-layout">
+            <nav class="card subnav" aria-label="Mục cài đặt">
+              <a href="#">Chung</a>
+              <a href="#" class="on">Dữ liệu</a>
+              <a href="#">AI</a>
+            </nav>
+
+            <div class="stack" style="gap: 16px">
+              <section class="card" aria-label="File dữ liệu">
+                <div class="card-head"><h2>File dữ liệu</h2><span class="meta num">schema v1</span></div>
+                <dl class="kv">
+                  <dt>Vị trí</dt><dd><span class="path">Project2C-data\project2c.db</span> <span class="muted">(cạnh file exe)</span></dd>
+                  <dt>Lưu lần cuối</dt><dd>26/09/2026 07:42:13 · 4,8 MB</dd>
+                  <dt>Nội dung</dt><dd>3 team · 36 nhân sự · 1.204 KH · 6.118 lịch hẹn · 1.012 HĐ · 3.470 ghi chú KYC</dd>
+                  <dt>Backup tự động</dt><dd>Mỗi lần mở app · giữ 10 bản mới nhất ở <span class="path">Project2C-data\backups\</span> · mới nhất 26/09/2026 07:40</dd>
+                </dl>
+              </section>
+
+              <section class="card" aria-label="Sao lưu">
+                <div class="card-head"><h2>Xuất / nhập backup</h2><span class="meta">file .p2cbackup</span></div>
+                <div class="action-row">
+                  <div class="what"><b>Xuất backup</b><span>Ghi toàn bộ dữ liệu (kể cả bản ghi đã xóa mềm) vào <span class="path">Project2C-data\exports\</span></span></div>
+                  <button class="btn">Xuất backup</button>
+                </div>
+                <div class="action-row">
+                  <div class="what"><b>Nhập backup</b><span>Thay <b style="display: inline">toàn bộ</b> dữ liệu hiện tại bằng dữ liệu trong file. App tự backup dữ liệu hiện tại trước.</span></div>
+                  <button class="btn">Chọn file…</button>
+                </div>
+                <div class="toast ok" style="max-width: none; box-shadow: none; margin-top: 6px">
+                  <span class="c-ok" style="font-weight: 700">✓</span>
+                  <div class="t-body"><b>Đã xuất backup</b><span class="num">Project2C-data\exports\project2c-20260926-0745.p2cbackup · 3,1 MB</span></div>
+                  <button class="btn" style="padding: 3px 9px">Mở thư mục</button>
+                </div>
+              </section>
+
+              <section class="card danger-zone" aria-label="Dữ liệu giả lập">
+                <div class="card-head"><h2>Dữ liệu giả lập</h2></div>
+                <div class="action-row">
+                  <div class="what"><b>Nạp lại dữ liệu giả lập</b><span>Xóa dữ liệu hiện tại, tạo lại 3 team × 10 RE, ~12 tháng tính tới hôm nay. App tự backup trước.</span></div>
+                  <button class="btn btn-danger">Nạp lại…</button>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <div class="specimens">
+            <section class="specimen">
+              <p class="cap">10a · Xác nhận nhập backup (D5)</p>
+              <div class="dialog">
+                <div class="dialog-head"><div><h2>Thay toàn bộ dữ liệu?</h2><div class="sub">project2c-20260920-1800.p2cbackup</div></div><span class="x">×</span></div>
+                <div class="dialog-body">
+                  <dl class="kv">
+                    <dt>Xuất lúc</dt><dd>20/09/2026 18:00</dd>
+                    <dt>Phiên bản</dt><dd>schema v1 (bằng app)</dd>
+                    <dt>Trong file</dt><dd>3 team · 36 nhân sự · 1.188 KH · 6.004 lịch hẹn · 998 HĐ</dd>
+                    <dt>Hiện tại</dt><dd>3 team · 36 nhân sự · 1.204 KH · 6.118 lịch hẹn · 1.012 HĐ</dd>
+                  </dl>
+                  <div class="alert warn">
+                    <b>Mọi thay đổi sau 20/09/2026 18:00 sẽ mất khỏi app</b>
+                    Dữ liệu hiện tại được backup trước vào <span class="path">backups\project2c-20260926-074501.db</span>. Nhập không gộp dữ liệu (gộp để Phase 6).
+                  </div>
+                </div>
+                <div class="dialog-foot"><span class="spacer"></span><button class="btn">Hủy</button><button class="btn btn-danger">Backup rồi thay dữ liệu</button></div>
+              </div>
+            </section>
+
+            <section class="specimen">
+              <p class="cap">10b · Nhập backup — file không dùng được</p>
+              <div class="dialog">
+                <div class="dialog-head"><div><h2>Không nhập được file</h2></div><span class="x">×</span></div>
+                <div class="dialog-body">
+                  <div class="alert">
+                    <b>File tạo từ bản app mới hơn (schema v3, app này v1)</b>
+                    <span class="dim">Cập nhật app rồi nhập lại. Dữ liệu hiện tại không bị đổi.</span>
+                  </div>
+                  <div class="alert">
+                    <b>File hỏng hoặc không phải backup Project-2C</b>
+                    <span class="dim">Chỉ nhận file <span class="path">.p2cbackup</span> do Project-2C xuất (không nhận <span class="path">.p2backup</span> của Project-2). Dữ liệu hiện tại không bị đổi.</span>
+                  </div>
+                  <div class="alert info">
+                    <b>File từ bản app cũ hơn (schema v1, app này v2)</b>
+                    <span class="dim">Dùng được — app tự nâng cấp dữ liệu sau khi nhập. Tiếp tục sang bước xác nhận (10a).</span>
+                  </div>
+                </div>
+                <div class="dialog-foot"><span class="spacer"></span><button class="btn">Đóng</button></div>
+              </div>
+            </section>
+
+            <section class="specimen">
+              <p class="cap">10c · Xác nhận nạp lại dữ liệu giả lập</p>
+              <div class="dialog">
+                <div class="dialog-head"><div><h2>Nạp lại dữ liệu giả lập?</h2></div><span class="x">×</span></div>
+                <div class="dialog-body">
+                  <p style="margin: 0; color: var(--text-2)">Toàn bộ dữ liệu hiện tại (1.204 KH, 6.118 lịch hẹn, 1.012 HĐ) được thay bằng dữ liệu giả lập mới, neo ở ngày <b class="num" style="color: var(--text)">26/09/2026</b>.</p>
+                  <div class="alert info">Backup trước vào <span class="path">backups\project2c-20260926-074630.db</span>; khôi phục bằng "Nhập backup".</div>
+                  <div class="field">
+                    <label>Gõ <b style="color: var(--text)">NẠP LẠI</b> để xác nhận</label>
+                    <div class="input focus">NẠP LẠI</div>
+                  </div>
+                </div>
+                <div class="dialog-foot"><span class="spacer"></span><button class="btn">Hủy</button><button class="btn btn-danger">Backup rồi nạp lại</button></div>
+              </div>
+            </section>
+
+            <section class="specimen">
+              <p class="cap">10d · Lưu file — các trạng thái (ADR-0016)</p>
+              <div class="dialog">
+                <div class="dialog-head"><div><h2>Trạng thái lưu</h2><div class="sub">góc dưới sidebar, mọi màn</div></div></div>
+                <div class="dialog-body" style="font-size: var(--fs-sm)">
+                  <span class="save-state"><span class="dot"></span>Đã lưu 07:42</span>
+                  <span class="save-state"><span class="dot" style="background: var(--text-3)"></span><span class="dim">Đang lưu…</span></span>
+                  <span class="save-state bad"><span class="dot"></span>Chưa lưu được vào file</span>
+                  <span class="save-state"><span class="dot" style="background: var(--info)"></span><span class="dim">Bản web — dữ liệu chỉ trong trình duyệt, mất khi tải lại trang</span></span>
+                  <div class="divider"></div>
+                  <div class="alert">
+                    <b>Không mở được file dữ liệu khi khởi động</b>
+                    <span class="dim">File <span class="path">project2c.db</span> hỏng hoặc không đọc được. App không ghi đè file này.</span>
+                    <div class="row" style="margin-top: 8px"><button class="btn">Mở từ backup tự động mới nhất</button><button class="btn">Mở thư mục</button></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+          <div class="mock-note">Mockup G3 Phase 3 · lỗi lưu hiện bằng thông báo ở góc trên phải + chấm đỏ ở sidebar cho tới khi lưu được</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

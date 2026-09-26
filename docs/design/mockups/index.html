@@ -88,6 +88,39 @@
       </nav>
 
       <section class="card">
+        <div class="card-head"><h2>Phase 3 · Màn nhập liệu (G3, #59)</h2><span class="meta">vòng 2 · chờ Owner duyệt</span></div>
+        <nav class="screens" aria-label="Màn nhập liệu Phase 3">
+          <a href="customer-forms.html"><b>5 · Khách hàng</b><span>Tạo / sửa KH, ngày sinh năm hoặc đủ ngày, chuyển nhóm tay, xóa mềm</span></a>
+          <a href="appointment-forms.html"><b>6 · Lịch hẹn</b><span>Tạo lịch, ghi kết quả (D6), dời lịch (D3), sửa / xóa theo D7</span></a>
+          <a href="kyc-forms.html"><b>7 · KYC</b><span>Ghi chú + dữ kiện, khóa năm sinh / giới tính (D2), mâu thuẫn, material</span></a>
+          <a href="policy-forms.html"><b>8 · Hợp đồng</b><span>Nộp, phát hành, sửa FYP phát hành, lỗi ngày / tiền</span></a>
+          <a href="team.html"><b>9 · Team &amp; nhân sự</b><span>3 team, hỗ trợ dùng chung, thêm / xóa nhân sự</span></a>
+          <a href="settings-data.html"><b>10 · Cài đặt → Dữ liệu</b><span>File dữ liệu, xuất / nhập backup (D5), nạp lại seed, lỗi lưu file</span></a>
+        </nav>
+        <p class="lead" style="font-size: var(--fs-sm)">
+          Hộp thoại vẽ dạng bảng mẫu: mỗi ô là một trạng thái (hợp lệ / lỗi / bị chặn). Mọi ô ngày và tiền có dòng <b style="color: var(--accent)">→</b> hiện giá trị app đã hiểu trước khi lưu (W8; ca biên <code>29/02</code>, <code>1.234 tr</code> ở <code>docs/metrics/phase-2.md</code>).
+        </p>
+        <div class="subhead">Owner đã chốt (G3 vòng 1, 27/09/2026)</div>
+        <ol class="q">
+          <li><b>Lý do hạ nhóm / đóng: không hỏi.</b> Hạ nhóm / đóng là quyết định khi review kết quả cuộc gặp gần nhất. Thêm ô tùy chọn <b>"Người đánh giá kết quả"</b> (vd. TL, IS) trong hộp thoại Ghi kết quả (6c). <span class="c-warn">Cần bổ sung spec G2 §3.5: cột <code>appointments.outcome_reviewer_id</code> (FK <code>people</code>, không bắt buộc) — PR docs riêng.</span></li>
+          <li><b>D7 — đồng ý.</b> Chỉ khóa 3 ô: trạng thái cuộc hẹn (Dự kiến / Đã gặp / Dời lịch / Hủy / Không đến), ngày cuộc hẹn, nhóm sau cuộc gặp (N4–N1 / Tạm hoãn / Mất cơ hội). Việc tiếp theo, case size, ghi chú, trigger, người phối hợp vẫn sửa được (6f).</li>
+          <li><b>Trigger bắt buộc</b>; mặc định hiện <b>"—"</b> (chưa chọn) để RE biết cần chọn, không mặc định "Khác" (6a, 6b).</li>
+          <li><b>Mở DB hỏng khi khởi động (10d)</b> và <b>gõ "NẠP LẠI" để xác nhận (10c)</b> — đồng ý.</li>
+          <li><b>Tên tiếng Việt các trường KYC</b> (7a, 7b) — đồng ý, đưa vào i18n.</li>
+        </ol>
+        <div class="subhead">Bổ sung theo phản hồi G3 vòng 1</div>
+        <ul style="margin: 0; padding-left: 18px; color: var(--text-2)">
+          <li><b style="color: var(--text)">Tạo lịch hẹn tiếp theo</b> từ mọi lịch đã qua, mọi trạng thái: nút ở bảng chi tiết lịch hẹn, bảng Lịch hẹn ở Hồ sơ KH ("Hẹn tiếp"), dòng thời gian. Mở form 6a điền sẵn KH, RE, người phối hợp, trigger — sửa được (6h).</li>
+          <li><b style="color: var(--text)">Hẹn lần tiếp theo</b> trong hộp thoại Ghi kết quả với Đã gặp / Hủy / Không đến: khối tùy chọn ngày + giờ + dòng →; "Lưu kết quả + tạo lịch" một lần bấm (6c, 6i).</li>
+          <li>Ngày lịch mới (hai lối trên) phải <b style="color: var(--text)">từ hôm nay trở đi</b>; gõ ngày đã qua → báo lỗi, không tự đổi (6d, 6h).</li>
+          <li><b style="color: var(--text)">Không</b> lưu liên kết lịch mới ↔ lịch cũ: schema giữ nguyên, không dùng <code>rescheduled_from_id</code> (chỉ dành cho Dời lịch, D3).</li>
+          <li><b style="color: var(--text)">Các lần hẹn trước</b> trong form tạo lịch (6a): mới nhất ở trên, mỗi lần một dòng "ngày · trạng thái · (N3 → N2) · Ghi chú: …", đủ mọi trạng thái, 5 lần gần nhất + "Xem tất cả (n)", ghi chú dài cắt 1 dòng, ngày kèm năm nếu khác năm nay.</li>
+          <li>Hồ sơ KH → bảng Lịch hẹn: thêm cột Ghi chú (rút gọn); cột Kết quả hiện đủ Dời lịch / Hủy / Không đến; nút "Hẹn tiếp".</li>
+          <li>Lý do dời lịch vẫn ghi vào ghi chú cuộc hẹn cũ (6e) để hiện trong lịch sử.</li>
+        </ul>
+      </section>
+
+      <section class="card">
         <div class="card-head"><h2>Nguyên tắc</h2></div>
         <ul style="margin: 0; padding-left: 18px; color: var(--text-2)">
           <li>Nền phân lớp xám-xanh rất tối (không đen tuyệt đối), <b style="color: var(--text)">một màu nhấn duy nhất</b>: vàng champagne — nút chính, mục đang chọn, focus.</li>

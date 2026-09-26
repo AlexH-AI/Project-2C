@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Form khách hàng — Project-2C mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="mockups.css" />
+    <link rel="stylesheet" href="forms.css" />
+  </head>
+  <body>
+    <main class="board">
+      <header class="board-head">
+        <a class="back" href="index.html">← Mockup G3</a>
+        <h1>5 · Khách hàng — tạo, sửa, chuyển nhóm tay</h1>
+        <p>
+          Mở từ nút "+ Khách hàng" (màn Khách hàng) và "Sửa hồ sơ" / "Chuyển nhóm ▾" (Hồ sơ KH). Hôm nay giả lập:
+          <b class="num">Thứ Bảy 26/09/2026</b>. Mọi ô ngày / tiền hiện ngay giá trị app đã hiểu (dòng →).
+        </p>
+      </header>
+
+      <div class="specimens">
+        <!-- 5a: create, valid -->
+        <section class="specimen">
+          <p class="cap">5a · Tạo KH — nhập hợp lệ</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Khách hàng mới</h2><div class="sub">Mã KH (vd. K-9A1C) sinh khi lưu</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="field">
+                <label>Họ tên <span class="req">*</span></label>
+                <div class="input focus">Trịnh Minh Anh</div>
+              </div>
+              <div class="field">
+                <label>RE phụ trách <span class="req">*</span></label>
+                <div class="input">Đỗ Khánh Linh <span class="muted">· Sao Mai</span><span class="caret">▾</span></div>
+              </div>
+              <div class="fields-2">
+                <div class="field">
+                  <label>Ngày sinh <span class="opt">năm hoặc đủ ngày</span></label>
+                  <div class="input">1984</div>
+                  <div class="read">Chỉ năm sinh <b>1984</b> · <b>42</b> tuổi trong năm 2026</div>
+                </div>
+                <div class="field">
+                  <span class="label">Giới tính <span class="opt">không bắt buộc</span></span>
+                  <div class="choices"><span class="choice">Nam</span><span class="choice on">Nữ</span><span class="choice">Chưa rõ</span></div>
+                </div>
+              </div>
+              <div class="field">
+                <span class="label">Nhóm ban đầu <span class="req">*</span></span>
+                <div class="choices">
+                  <span class="choice"><span class="badge st-n4">N4</span></span>
+                  <span class="choice on"><span class="badge st-n3">N3</span></span>
+                  <span class="choice"><span class="badge st-n2">N2</span></span>
+                  <span class="choice"><span class="badge st-n1">N1</span></span>
+                </div>
+                <span class="help">KH mới chỉ vào nhóm mở N4–N1 (ADR-0007). Tạm hoãn / Mất cơ hội chọn sau bằng "Chuyển nhóm".</span>
+              </div>
+              <div class="field">
+                <label>Ngày ghi nhận KH <span class="opt">mặc định hôm nay</span></label>
+                <div class="input">24/9</div>
+                <div class="read"><b>Thứ Năm 24/09/2026</b></div>
+              </div>
+            </div>
+            <div class="dialog-foot">
+              <span class="hint">Ngày sinh, giới tính được ghi thêm thành ghi chú KYC nguồn "Hệ thống".</span>
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Lưu KH</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5b: create, errors -->
+        <section class="specimen">
+          <p class="cap">5b · Tạo KH — lỗi nhập</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Khách hàng mới</h2><div class="sub">Mã KH sinh khi lưu</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="alert"><b>Chưa lưu được — 3 ô cần sửa</b><span class="dim">Không có gì được ghi vào dữ liệu.</span></div>
+              <div class="field">
+                <label>Họ tên <span class="req">*</span></label>
+                <div class="input error placeholder">Nhập họ tên KH</div>
+                <span class="field-err">Họ tên không được để trống.</span>
+              </div>
+              <div class="field">
+                <label>RE phụ trách <span class="req">*</span></label>
+                <div class="input error placeholder">Chọn RE<span class="caret">▾</span></div>
+                <span class="field-err">Chọn RE phụ trách.</span>
+              </div>
+              <div class="fields-2">
+                <div class="field">
+                  <label>Ngày sinh <span class="opt">năm hoặc đủ ngày</span></label>
+                  <div class="input error">31/02/1984</div>
+                  <div class="read err">Ngày 31/02 không tồn tại.</div>
+                </div>
+                <div class="field">
+                  <label>Ngày sinh <span class="opt">ví dụ khác</span></label>
+                  <div class="input error">12/3/84</div>
+                  <div class="read err">Gõ năm (1984) hoặc dd/mm/yyyy (12/03/1984).</div>
+                </div>
+              </div>
+              <div class="field">
+                <span class="label">Nhóm ban đầu <span class="req">*</span></span>
+                <div class="choices">
+                  <span class="choice on"><span class="badge st-n4">N4</span></span>
+                  <span class="choice"><span class="badge st-n3">N3</span></span>
+                  <span class="choice"><span class="badge st-n2">N2</span></span>
+                  <span class="choice"><span class="badge st-n1">N1</span></span>
+                </div>
+                <span class="help">KH chưa rõ danh tính (N4) được để trống ngày sinh / giới tính — cổng KYC sẽ báo thiếu.</span>
+              </div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Lưu KH</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5c: edit profile -->
+        <section class="specimen">
+          <p class="cap">5c · Sửa hồ sơ KH — đổi ngày sinh (D2)</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Sửa hồ sơ · Trịnh Minh Anh</h2><div class="sub">K-9A1C · nhóm <span class="badge st-n1">N1</span> (đổi nhóm ở "Chuyển nhóm")</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="field">
+                <label>Họ tên <span class="req">*</span></label>
+                <div class="input">Trịnh Minh Anh</div>
+              </div>
+              <div class="field">
+                <label>RE phụ trách <span class="req">*</span></label>
+                <div class="input">Đỗ Khánh Linh <span class="muted">· Sao Mai</span><span class="caret">▾</span></div>
+                <span class="help">Đổi RE: lịch hẹn và HĐ cũ vẫn tính cho RE đã ghi trên từng bản ghi.</span>
+              </div>
+              <div class="fields-2">
+                <div class="field">
+                  <label>Ngày sinh <span class="opt">trước: 1984</span></label>
+                  <div class="input focus">12/3/1984</div>
+                  <div class="read"><b>12/03/1984</b> · <b>42</b> tuổi</div>
+                </div>
+                <div class="field">
+                  <span class="label">Giới tính</span>
+                  <div class="choices"><span class="choice">Nam</span><span class="choice on">Nữ</span><span class="choice">Chưa rõ</span></div>
+                </div>
+              </div>
+              <div class="alert info">
+                <b>Khi lưu, app tự ghi vào KYC</b>
+                Ghi chú KYC nguồn <span class="chip">Hệ thống</span> "Cập nhật ngày sinh: 12/03/1984" và xác nhận dữ kiện
+                <span class="chip">birthYear = 1984</span> (năm không đổi → không tạo phiên bản KYC mới).
+              </div>
+            </div>
+            <div class="dialog-foot">
+              <button class="btn">Xóa KH…</button>
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Lưu</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5d: manual stage change, open -->
+        <section class="specimen">
+          <p class="cap">5d · Chuyển nhóm tay — KH đang mở</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Chuyển nhóm · Phạm Gia Long</h2><div class="sub">K-3F7Q · hiện tại <span class="badge st-n2">N2</span> từ 12/08/2026</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="field">
+                <span class="label">Nhóm mới <span class="req">*</span></span>
+                <div class="choices">
+                  <span class="choice"><span class="badge st-n4">N4</span></span>
+                  <span class="choice on"><span class="badge st-n3">N3</span></span>
+                  <span class="choice off"><span class="badge st-n2">N2</span> hiện tại</span>
+                  <span class="choice"><span class="badge st-n1">N1</span></span>
+                  <span class="choice"><span class="badge st-hold">Tạm hoãn</span></span>
+                  <span class="choice"><span class="badge st-lost">Mất cơ hội</span></span>
+                </div>
+              </div>
+              <div class="field">
+                <label>Ngày chuyển <span class="req">*</span></label>
+                <div class="input">hôm nay</div>
+                <div class="read"><b>Thứ Bảy 26/09/2026</b></div>
+              </div>
+              <div class="alert warn">
+                <b>Chuyển tay không bao giờ tính RF</b>
+                Nếu KH đổi nhóm sau một cuộc gặp, hãy dùng <b style="display: inline">Ghi kết quả cuộc gặp</b> để RF được tính đúng.
+              </div>
+              <div class="read">Sau khi lưu: <span class="badge st-n2">N2</span> → <span class="badge st-n3">N3</span> · hạ nhóm</div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Chuyển nhóm</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5e: manual stage change, closed -->
+        <section class="specimen">
+          <p class="cap">5e · Chuyển nhóm tay — KH đã đóng (chỉ mở lại về N3)</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Chuyển nhóm · Lê Hoài Nam</h2><div class="sub">K-M2D8 · hiện tại <span class="badge st-hold">Tạm hoãn</span> từ 03/06/2026</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="field">
+                <span class="label">Nhóm mới <span class="req">*</span></span>
+                <div class="choices">
+                  <span class="choice off"><span class="badge st-n4">N4</span></span>
+                  <span class="choice on"><span class="badge st-n3">N3</span> mở lại</span>
+                  <span class="choice off"><span class="badge st-n2">N2</span></span>
+                  <span class="choice off"><span class="badge st-n1">N1</span></span>
+                  <span class="choice off"><span class="badge st-hold">Tạm hoãn</span> hiện tại</span>
+                  <span class="choice"><span class="badge st-lost">Mất cơ hội</span></span>
+                </div>
+                <span class="help">KH đã đóng chỉ mở lại về N3, hoặc chuyển sang Mất cơ hội (ADR-0007). Mở lại không tính RF.</span>
+              </div>
+              <div class="field">
+                <label>Ngày chuyển <span class="req">*</span></label>
+                <div class="input">25/9</div>
+                <div class="read"><b>Thứ Sáu 25/09/2026</b></div>
+              </div>
+              <div class="alert">
+                <b>Nếu chọn nhóm không hợp lệ</b> (vd. dữ liệu cũ, bấm tắt)
+                <span class="dim">"KH đang Tạm hoãn chỉ mở lại về N3." — không lưu gì.</span>
+                <div class="code">mã lỗi STAGE_REOPEN_N3_ONLY</div>
+              </div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Chuyển nhóm</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5f: soft delete -->
+        <section class="specimen">
+          <p class="cap">5f · Xóa KH (xóa mềm, D4)</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Xóa Trịnh Minh Anh?</h2><div class="sub">K-9A1C</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <p style="margin: 0; color: var(--text-2)">KH và mọi bản ghi của KH sẽ bị ẩn khỏi danh sách và mọi chỉ số:</p>
+              <dl class="kv">
+                <dt>Lịch hẹn</dt><dd>4 (3 đã gặp · 3 lần tính RF)</dd>
+                <dt>Hợp đồng</dt><dd>0</dd>
+                <dt>Ghi chú KYC</dt><dd>5 — giữ nguyên, không bao giờ xóa</dd>
+              </dl>
+              <div class="alert info">Dữ liệu vẫn còn và khôi phục được. Màn "Thùng rác" để khôi phục sẽ làm sau Phase 3.</div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-danger">Xóa KH</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <p class="mock-note">Mockup G3 Phase 3 · dữ liệu giả lập · dòng "→" = giá trị app đã diễn giải, luôn hiện trước khi lưu</p>
+    </main>
+  </body>
+</html>

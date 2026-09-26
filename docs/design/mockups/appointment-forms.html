@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Form lịch hẹn — Project-2C mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="mockups.css" />
+    <link rel="stylesheet" href="forms.css" />
+  </head>
+  <body>
+    <main class="board">
+      <header class="board-head">
+        <a class="back" href="index.html">← Mockup G3</a>
+        <h1>6 · Lịch hẹn — tạo, ghi kết quả, dời lịch, hẹn tiếp</h1>
+        <p>
+          Mở từ "+ Lịch hẹn" (Lịch hẹn, Hồ sơ KH) và "Ghi kết quả" (bảng chi tiết lịch hẹn). Hôm nay giả lập:
+          <b class="num">Thứ Bảy 26/09/2026</b>. Trạng thái: Dự kiến · Đã gặp · Dời lịch · Hủy · Không đến.
+        </p>
+      </header>
+
+      <div class="specimens">
+        <!-- 6a: schedule -->
+        <section class="specimen">
+          <p class="cap">6a · Tạo lịch hẹn — nhập hợp lệ</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Lịch hẹn mới</h2><div class="sub">Trạng thái: Dự kiến</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="field">
+                <label>Khách hàng <span class="req">*</span></label>
+                <div class="input">Trịnh Minh Anh <span class="muted num">K-9A1C</span> <span class="badge st-n1">N1</span><span class="caret">⌕</span></div>
+                <span class="help">Lần gặp thứ 4 · lần trước 14/09/2026</span>
+              </div>
+              <div class="history" aria-label="Các lần hẹn trước">
+                <div class="h-head"><span>Các lần hẹn trước</span><a class="c-accent" href="customer.html">Xem tất cả (6) →</a></div>
+                <div class="h-row"><span class="d">14/09</span> · <span class="c-ok">Đã gặp</span> · <span class="badge st-n2">N2</span> → <span class="badge st-n1">N1</span> · <span class="n">Ghi chú: Con lớn dự định du học 2029; hai vợ chồng cùng quyết chi tiêu giáo dục</span></div>
+                <div class="h-row"><span class="d">25/08</span> · <span class="c-warn">Dời lịch</span> · <span class="n">Ghi chú: KH có việc bận đột xuất</span></div>
+                <div class="h-row"><span class="d">12/07</span> · <span class="c-ok">Đã gặp</span> · <span class="badge st-n3">N3</span> → <span class="badge st-n2">N2</span> · <span class="n">Ghi chú: Gia đình 2 con; AUM ước ~25 tỷ, ưu tiên thanh khoản</span></div>
+                <div class="h-row"><span class="d">20/06</span> · <span class="c-danger">Không đến</span> · <span class="n">Ghi chú: Gọi lại không nghe máy</span></div>
+                <div class="h-row"><span class="d">01/06</span> · <span class="c-ok">Đã gặp</span> · <span class="badge st-n4">N4</span> → <span class="badge st-n3">N3</span> · <span class="n">Ghi chú: Gặp lần đầu qua giới thiệu của anh Phạm Gia Long</span></div>
+              </div>
+              <div class="field">
+                <label>RE <span class="req">*</span> <span class="opt">mặc định RE phụ trách KH · RF tính cho RE này</span></label>
+                <div class="input">Đỗ Khánh Linh <span class="muted">· Sao Mai</span><span class="caret">▾</span></div>
+              </div>
+              <div class="fields-2">
+                <div class="field">
+                  <label>Ngày <span class="req">*</span> <span class="opt">dd/mm</span></label>
+                  <div class="input focus">28/9</div>
+                  <div class="read"><b>Thứ Hai 28/09/2026</b> · 2 ngày nữa</div>
+                </div>
+                <div class="field">
+                  <label>Giờ <span class="opt">không bắt buộc</span></label>
+                  <div class="input">14:00</div>
+                </div>
+              </div>
+              <div class="field">
+                <span class="label">Trigger <span class="req">*</span> <span class="opt">mặc định "—" = chưa chọn</span></span>
+                <div class="fields-2">
+                  <div class="input">Khác<span class="caret">▾</span></div>
+                  <div class="input">Hỏi lại về kế hoạch du học của con</div>
+                </div>
+                <span class="help">Loại: Giới thiệu từ KH · Đáo hạn tài sản · Hội thảo / sự kiện · Sinh nhật, dịp đặc biệt · Khác. Mô tả không bắt buộc.</span>
+              </div>
+              <div class="field">
+                <label>Người phối hợp <span class="opt">không tính chỉ số</span></label>
+                <div class="input">
+                  <span class="token"><span class="role">TL</span> Nguyễn Thu Hà ×</span>
+                  <span class="token"><span class="role">IS</span> Phó Đức Huy ×</span>
+                  <span class="muted">+ thêm</span>
+                </div>
+              </div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Tạo lịch hẹn</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6b: date interpretation edge cases -->
+        <section class="specimen">
+          <p class="cap">6b · Tạo lịch hẹn — ca biên ngày / giờ</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Lịch hẹn mới</h2><div class="sub">Lê Hoài Nam · K-M2D8</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="field">
+                <label>Ngày <span class="req">*</span> <span class="opt">gõ không năm, ngày đã qua lâu</span></label>
+                <div class="input">5/1</div>
+                <div class="read warn">
+                  <b>05/01/2026</b> — đã qua 264 ngày. Ý anh là <b>05/01/2027</b>?
+                  <button class="btn">Dùng 05/01/2027</button>
+                </div>
+                <span class="help">App không tự đổi năm; RE chọn. Giữ nguyên = ghi lịch hẹn quá khứ (nhập bù).</span>
+              </div>
+              <div class="field">
+                <label>Ngày <span class="req">*</span> <span class="opt">29/02 khi năm nay không nhuận</span></label>
+                <div class="input error">29/02</div>
+                <div class="read err">Năm 2026 không có ngày 29/02. Gõ kèm năm, vd. 29/02/2028.</div>
+              </div>
+              <div class="field">
+                <label>Ngày <span class="req">*</span> <span class="opt">sai định dạng</span></label>
+                <div class="input error">28-9</div>
+                <div class="read err">Gõ dd/mm hoặc dd/mm/yyyy, vd. 28/9.</div>
+              </div>
+              <div class="field">
+                <label>Giờ <span class="opt">không bắt buộc</span></label>
+                <div class="input error">25:00</div>
+                <div class="read err">Giờ từ 00:00 đến 23:59.</div>
+              </div>
+              <div class="field">
+                <label>Trigger <span class="req">*</span></label>
+                <div class="input error">—<span class="caret">▾</span></div>
+                <span class="field-err">Chọn loại trigger ("—" là chưa chọn).</span>
+              </div>
+              <div class="field">
+                <label>Người phối hợp</label>
+                <div class="input placeholder">Gõ tên…</div>
+                <span class="help">Danh sách không có RE của lịch hẹn (RE không phối hợp cho chính mình).</span>
+              </div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary" disabled>Tạo lịch hẹn</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6c: outcome MET, valid -->
+        <section class="specimen">
+          <p class="cap">6c · Ghi kết quả — Đã gặp, lên nhóm (tính RF)</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Kết quả cuộc gặp</h2><div class="sub">Trịnh Minh Anh · Thứ Hai 14/09/2026 10:00 · lần 3 · hiện <span class="badge st-n2">N2</span></div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="field">
+                <span class="label">Trạng thái <span class="req">*</span></span>
+                <div class="choices">
+                  <span class="choice on">Đã gặp</span><span class="choice">Dời lịch</span><span class="choice">Hủy</span><span class="choice">Không đến</span>
+                </div>
+              </div>
+              <div class="field">
+                <span class="label">Nhóm sau cuộc gặp <span class="req">*</span></span>
+                <div class="choices">
+                  <span class="choice"><span class="badge st-n4">N4</span></span>
+                  <span class="choice"><span class="badge st-n3">N3</span></span>
+                  <span class="choice"><span class="badge st-n2">N2</span> giữ nguyên</span>
+                  <span class="choice on"><span class="badge st-n1">N1</span></span>
+                  <span class="choice"><span class="badge st-hold">Tạm hoãn</span></span>
+                  <span class="choice"><span class="badge st-lost">Mất cơ hội</span></span>
+                </div>
+                <div class="read"><span class="badge st-n2">N2</span> → <span class="badge st-n1">N1</span> ngày 14/09/2026 · <b class="c-accent">tính 1 RF</b> cho Đỗ Khánh Linh</div>
+              </div>
+              <div class="field">
+                <label>Người đánh giá kết quả <span class="opt">không bắt buộc · người quyết định nhóm sau cuộc gặp</span></label>
+                <div class="input"><span class="token"><span class="role">TL</span> Nguyễn Thu Hà</span><span class="caret">▾</span></div>
+              </div>
+              <div class="field">
+                <label>Việc tiếp theo <span class="req">*</span></label>
+                <div class="input">Gặp cùng TL, IS — trình bày kế hoạch giáo dục</div>
+              </div>
+              <div class="field">
+                <label>Case size dự kiến <span class="opt">để trống = chưa ước lượng</span></label>
+                <div class="input">800tr</div>
+                <div class="read"><b>800.000.000 ₫</b> (800 tr)</div>
+              </div>
+              <div class="field">
+                <label>Ghi chú cuộc gặp</label>
+                <div class="input area">Con lớn dự định du học 2029; hai vợ chồng cùng quyết. Không muốn đầu tư chứng khoán.</div>
+                <span class="help">Ghi chú cuộc gặp không phải ghi chú KYC. <a class="c-accent" href="kyc-forms.html">+ Ghi chú KYC từ cuộc gặp này</a></span>
+              </div>
+              <div class="next-block">
+                <div class="nb-head"><span class="check on"></span><b>Hẹn lần tiếp theo</b><span class="opt">tùy chọn · cùng KH, RE, người phối hợp, trigger — sửa ở lịch mới</span></div>
+                <div class="fields-2">
+                  <div class="field">
+                    <label>Ngày <span class="req">*</span></label>
+                    <div class="input">28/9</div>
+                    <div class="read"><b>Thứ Hai 28/09/2026</b></div>
+                  </div>
+                  <div class="field">
+                    <label>Giờ</label>
+                    <div class="input">14:00</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Lưu kết quả + tạo lịch</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6d: outcome MET, D6 errors -->
+        <section class="specimen">
+          <p class="cap">6d · Ghi kết quả — thiếu mục bắt buộc (D6)</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Kết quả cuộc gặp</h2><div class="sub">Phạm Gia Long · 25/09/2026 15:30 · hiện <span class="badge st-n3">N3</span></div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="alert"><b>Đã gặp thì cần nhóm sau cuộc gặp và việc tiếp theo</b><span class="dim">Case size được để trống.</span></div>
+              <div class="field">
+                <span class="label">Trạng thái <span class="req">*</span></span>
+                <div class="choices"><span class="choice on">Đã gặp</span><span class="choice">Dời lịch</span><span class="choice">Hủy</span><span class="choice">Không đến</span></div>
+              </div>
+              <div class="field">
+                <span class="label">Nhóm sau cuộc gặp <span class="req">*</span></span>
+                <div class="choices">
+                  <span class="choice"><span class="badge st-n4">N4</span></span>
+                  <span class="choice"><span class="badge st-n3">N3</span> giữ nguyên</span>
+                  <span class="choice"><span class="badge st-n2">N2</span></span>
+                  <span class="choice"><span class="badge st-n1">N1</span></span>
+                  <span class="choice"><span class="badge st-hold">Tạm hoãn</span></span>
+                  <span class="choice"><span class="badge st-lost">Mất cơ hội</span></span>
+                </div>
+                <span class="field-err">Chọn nhóm sau cuộc gặp (chọn "giữ nguyên" nếu không đổi).</span>
+              </div>
+              <div class="field">
+                <label>Việc tiếp theo <span class="req">*</span></label>
+                <div class="input error placeholder">vd. Gửi bảng minh họa, hẹn lại tuần sau</div>
+                <span class="field-err">Nhập việc tiếp theo.</span>
+              </div>
+              <div class="field">
+                <label>Case size dự kiến <span class="opt">dấu . là ngăn nghìn</span></label>
+                <div class="input">1.234 tr</div>
+                <div class="read"><b>1.234.000.000 ₫</b> (1,2 tỷ)</div>
+                <span class="help">Muốn 1,234 triệu thì gõ "1,234 tr" → 1.234.000 ₫.</span>
+              </div>
+              <div class="field">
+                <label>Case size dự kiến <span class="opt">ví dụ lỗi</span></label>
+                <div class="input error">12,5 đồng</div>
+                <div class="read err">Số tiền phải là số đồng nguyên.</div>
+              </div>
+              <div class="next-block">
+                <div class="nb-head"><span class="check on"></span><b>Hẹn lần tiếp theo</b><span class="opt">ngày đã qua</span></div>
+                <div class="field">
+                  <label>Ngày <span class="req">*</span></label>
+                  <div class="input error">20/9</div>
+                  <div class="read err">20/09/2026 đã qua. Lịch mới phải từ hôm nay (26/09/2026) trở đi.</div>
+                </div>
+              </div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Lưu kết quả</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6e: reschedule (D3) -->
+        <section class="specimen">
+          <p class="cap">6e · Dời lịch (D3) — tạo cuộc hẹn mới</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Kết quả cuộc gặp</h2><div class="sub">Trịnh Minh Anh · Thứ Hai 28/09/2026 14:00 · Dự kiến</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="field">
+                <span class="label">Trạng thái <span class="req">*</span></span>
+                <div class="choices"><span class="choice">Đã gặp</span><span class="choice on">Dời lịch</span><span class="choice">Hủy</span><span class="choice">Không đến</span></div>
+              </div>
+              <div class="fields-2">
+                <div class="field">
+                  <label>Ngày mới <span class="req">*</span></label>
+                  <div class="input focus">2/10</div>
+                  <div class="read"><b>Thứ Sáu 02/10/2026</b></div>
+                </div>
+                <div class="field">
+                  <label>Giờ mới <span class="opt">mặc định giờ cũ</span></label>
+                  <div class="input">10:00</div>
+                </div>
+              </div>
+              <div class="field">
+                <label>Lý do dời <span class="opt">ghi vào ghi chú cuộc hẹn cũ</span></label>
+                <div class="input">KH đi công tác Đà Nẵng</div>
+              </div>
+              <div class="alert info">
+                <b>Khi lưu</b>
+                <ul>
+                  <li>28/09 14:00 → <span class="badge c-warn plain">Dời lịch</span> (giữ lại trong lịch sử, không tính gặp)</li>
+                  <li>Tạo lịch hẹn mới <b style="display: inline" class="num">02/10/2026 10:00</b> · Dự kiến · cùng RE, trigger, người phối hợp</li>
+                </ul>
+              </div>
+              <div class="read">Trong "Các lần hẹn trước": <span class="num">28/09 · <span class="c-warn">Dời lịch</span> · Ghi chú: KH đi công tác Đà Nẵng</span></div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Dời lịch</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6f: D7 blocked -->
+        <section class="specimen">
+          <p class="cap">6f · Sửa kết quả cũ — bị chặn (D7)</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Sửa kết quả cuộc gặp</h2><div class="sub">Trịnh Minh Anh · 12/07/2026 15:30 · Đã gặp · <span class="badge st-n3">N3</span> → <span class="badge st-n2">N2</span></div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="alert warn">
+                <b>Khóa 3 ô: trạng thái, ngày cuộc hẹn, nhóm sau cuộc gặp</b>
+                Nhóm của KH đã đổi tiếp sau cuộc gặp này (14/09/2026: <span class="badge st-n2">N2</span> → <span class="badge st-n1">N1</span>).
+                Muốn chỉnh nhóm hiện tại, dùng <a class="c-accent" href="customer-forms.html">Chuyển nhóm tay</a>.
+                Các ô còn lại vẫn sửa được.
+              </div>
+              <div class="fields-3">
+                <div class="field">
+                  <span class="label">Trạng thái</span>
+                  <div class="input locked">Đã gặp 🔒</div>
+                </div>
+                <div class="field">
+                  <span class="label">Ngày cuộc hẹn</span>
+                  <div class="input locked">12/07/2026 🔒</div>
+                </div>
+                <div class="field">
+                  <span class="label">Nhóm sau cuộc gặp</span>
+                  <div class="input locked"><span class="badge st-n2">N2</span> 🔒</div>
+                </div>
+              </div>
+              <div class="fields-2">
+                <div class="field">
+                  <label>Việc tiếp theo <span class="req">*</span></label>
+                  <div class="input">Gửi minh họa quỹ giáo dục</div>
+                </div>
+                <div class="field">
+                  <label>Case size dự kiến</label>
+                  <div class="input">600tr</div>
+                  <div class="read"><b>600.000.000 ₫</b> (600 tr)</div>
+                </div>
+              </div>
+              <div class="field">
+                <label>Ghi chú cuộc gặp</label>
+                <div class="input">Gia đình 2 con; AUM ước ~25 tỷ, ưu tiên thanh khoản</div>
+              </div>
+              <div class="fields-2">
+                <div class="field">
+                  <label>Trigger <span class="req">*</span></label>
+                  <div class="input">Giới thiệu từ KH<span class="caret">▾</span></div>
+                </div>
+                <div class="field">
+                  <label>Người phối hợp</label>
+                  <div class="input"><span class="muted">+ thêm</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="dialog-foot">
+              <button class="btn" disabled>Xóa lịch hẹn</button>
+              <span class="hint">Xóa cũng bị chặn (D7)</span>
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Lưu</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6g: D7 allowed delete -->
+        <section class="specimen">
+          <p class="cap">6g · Xóa cuộc hẹn có transition mới nhất (D7 cho phép)</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Xóa lịch hẹn 14/09/2026 10:00?</h2><div class="sub">Trịnh Minh Anh · Đã gặp</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <p style="margin: 0; color: var(--text-2)">Cuộc gặp này đã chuyển nhóm KH. Khi xóa:</p>
+              <dl class="kv">
+                <dt>Nhóm KH</dt><dd><span class="badge st-n1">N1</span> → về <span class="badge st-n2">N2</span> (hủy chuyển nhóm 14/09)</dd>
+                <dt>RF</dt><dd>Đỗ Khánh Linh · tháng 09/2026: 7 → <b>6</b></dd>
+                <dt>Ghi chú KYC</dt><dd>giữ nguyên</dd>
+              </dl>
+              <div class="alert info">Xóa mềm, khôi phục được (D4).</div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-danger">Xóa lịch hẹn</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6h: next appointment from a past one -->
+        <section class="specimen">
+          <p class="cap">6h · Tạo lịch hẹn tiếp theo — từ một lịch đã qua</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Lịch hẹn tiếp theo</h2><div class="sub">Từ lịch 20/06/2026 10:00 · <span class="c-danger">Không đến</span> · điền sẵn, sửa được</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="alert info">
+                Nút <b style="display: inline">"Tạo lịch hẹn tiếp theo"</b> có trên mọi lịch hẹn đã qua, mọi trạng thái: bảng chi tiết lịch hẹn,
+                bảng Lịch hẹn ở Hồ sơ KH, dòng thời gian. Lịch mới <b style="display: inline">không</b> lưu liên kết với lịch cũ.
+              </div>
+              <div class="field">
+                <label>Khách hàng <span class="req">*</span></label>
+                <div class="input">Trịnh Minh Anh <span class="muted num">K-9A1C</span> <span class="badge st-n1">N1</span></div>
+              </div>
+              <div class="field">
+                <label>RE <span class="req">*</span></label>
+                <div class="input">Đỗ Khánh Linh <span class="muted">· Sao Mai</span><span class="caret">▾</span></div>
+              </div>
+              <div class="fields-2">
+                <div class="field">
+                  <label>Ngày <span class="req">*</span> <span class="opt">từ hôm nay trở đi</span></label>
+                  <div class="input focus">20/6</div>
+                  <div class="read err">20/06/2026 đã qua. Lịch mới phải từ hôm nay (26/09/2026) trở đi.</div>
+                </div>
+                <div class="field">
+                  <label>Giờ</label>
+                  <div class="input">10:00</div>
+                </div>
+              </div>
+              <div class="field">
+                <span class="label">Trigger <span class="req">*</span></span>
+                <div class="fields-2">
+                  <div class="input">Khác<span class="caret">▾</span></div>
+                  <div class="input">Hỏi lại nhu cầu sau lần không đến</div>
+                </div>
+              </div>
+              <div class="field">
+                <label>Người phối hợp</label>
+                <div class="input"><span class="token"><span class="role">BD</span> Vũ Thanh Tâm ×</span><span class="muted">+ thêm</span></div>
+              </div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary" disabled>Tạo lịch hẹn</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6i: outcome NO_SHOW + next appointment -->
+        <section class="specimen">
+          <p class="cap">6i · Ghi kết quả — Không đến + hẹn lần tiếp theo</p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Kết quả cuộc gặp</h2><div class="sub">Nguyễn Hải Đăng · Thứ Sáu 25/09/2026 09:00 · hiện <span class="badge st-n3">N3</span></div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="field">
+                <span class="label">Trạng thái <span class="req">*</span></span>
+                <div class="choices"><span class="choice">Đã gặp</span><span class="choice">Dời lịch</span><span class="choice">Hủy</span><span class="choice on">Không đến</span></div>
+                <span class="help">Không đến / Hủy: không có nhóm sau cuộc gặp, việc tiếp theo, case size.</span>
+              </div>
+              <div class="field">
+                <label>Ghi chú</label>
+                <div class="input">Gọi lại không nghe máy; nhắn Zalo đã xem</div>
+              </div>
+              <div class="next-block">
+                <div class="nb-head"><span class="check on"></span><b>Hẹn lần tiếp theo</b><span class="opt">tùy chọn · cùng KH, RE, người phối hợp, trigger</span></div>
+                <div class="fields-2">
+                  <div class="field">
+                    <label>Ngày <span class="req">*</span></label>
+                    <div class="input focus">1/10</div>
+                    <div class="read"><b>Thứ Năm 01/10/2026</b> · 5 ngày nữa</div>
+                  </div>
+                  <div class="field">
+                    <label>Giờ</label>
+                    <div class="input">09:00</div>
+                  </div>
+                </div>
+              </div>
+              <div class="alert info">
+                <b>Khi lưu (một lần bấm)</b>
+                <ul>
+                  <li>25/09 09:00 → <span class="badge c-danger plain">Không đến</span></li>
+                  <li>Tạo lịch hẹn mới <b style="display: inline" class="num">01/10/2026 09:00</b> · Dự kiến</li>
+                </ul>
+              </div>
+            </div>
+            <div class="dialog-foot">
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Lưu kết quả + tạo lịch</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <p class="mock-note">Mockup G3 Phase 3 · dữ liệu giả lập · nhóm sau cuộc gặp khác nhóm hiện tại → transition gắn với cuộc hẹn (RF theo ADR-0007)</p>
+    </main>
+  </body>
+</html>
