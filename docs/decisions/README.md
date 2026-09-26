@@ -33,5 +33,6 @@ File naming: `NNNN-short-slug.md`. Status: `Proposed` → `Accepted (<gate>)` �
 | [0011](0011-bao-cao-excel-va-ngon-ngu.md) | Excel export; Vietnamese UI via i18n | Accepted (G1) | Q12, Q13 |
 | [0012](0012-plugins-superpowers-va-mattpocock-skills.md) | Plugins: Superpowers + mattpocock/skills (vendored subset); Agent tool denied | Accepted (G4) | §4.3 |
 | [0013](0013-huong-ui-dark-mode.md) | UI direction: dark tokens, champagne accent, unified period filter, sortable dates | Accepted (G3) | §4.6, C6 |
+| [0014](0014-thu-vien-chart.md) | Chart library: ECharts 6 via echarts/core, own React wrapper | Accepted (G4) | §4.4 |
 
-Not yet recorded (pending their gate): detailed data model (G2), chart library (Phase 1, ADR-0014).
+Not yet recorded (pending their gate): detailed data model (G2).
