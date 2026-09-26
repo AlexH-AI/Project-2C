@@ -3,7 +3,7 @@
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
 - **Cập nhật:** 2026-09-27 · máy `DESKTOP-KDURKJP`
-- **Nhánh:** `docs/handoff-t043` (= `main` `4f9bfd4` + handoff này); không còn PR code mở
+- **Nhánh:** `docs/handoff-t044` (= `main` `d0140f3` + handoff này); không còn PR code mở
 - **Phase:** 3 — Nghiệp vụ & màn hình (milestone mở 26/09/2026; G2/G1/G4 đã duyệt) · Phase 2 đã đóng · Phase 1 milestone **để mở** chờ test ở văn phòng
 
 ## Trạng thái
@@ -28,9 +28,12 @@
 | #60 T-041 nền `packages/db`; T-042a schema, T-042b KH + transition | ✅ merge #74, #76, #77 |
 | T-042c lịch hẹn + kết quả, T-042d HĐ + golden G01–G22 qua DB | ✅ merge #78, #79; #61 đã đóng |
 | #62 T-043 KYC qua DB (3 PR xếp chồng: T-043a bảng + ghi chú, T-043b lệnh dữ kiện + phiên bản, T-043c hồ sơ KH D2 + golden K01–K15) | ✅ merge #85, #84 (`--merge`), #83 (`--squash`); review phiên sạch PASS cả 3, Owner cho merge 27/09; #62 đã đóng |
+| #63 T-044 lưu file DB cạnh exe (`Project2C-data\`) + backup khởi động (giữ 10), lệnh Tauri async, hàng đợi lưu tuần tự | ✅ merge #87 (`--squash`, 27/09); 3 vòng review (CHANGES → PASS kèm ghi chú → PASS), vòng sửa thêm N1/N3 + M1 Owner duyệt (G8); tách nối tiếp #88 CI Rust, #89 chặn 2 exe, #90 dọn backup theo mtime, #91 không mất dữ liệu khi đóng app lúc lưu lỗi |
 | #59 T-040 mockup màn nhập liệu (G3, Owner duyệt 2 vòng) | ✅ merge #75; review sau merge phiên sạch: CHANGES → sửa ở #81 (Owner duyệt, merge `b04f520`) |
 | D9 `appointments.outcome_reviewer_id` (G2 bổ sung) | ✅ merge #80; review sau merge: PASS kèm ghi chú; D7 "khóa 3 ô" ghi vào spec ở #81 |
 | Body issue #68, #69 cập nhật theo mockup G3 + D9 (Owner đồng ý 27/09) | ✅ #69 thêm `packages/db/**`, test D9, migration có dữ liệu, "Hẹn lần tiếp theo" 1 transaction; #68 thêm trigger bắt buộc, gợi ý năm sau, "Tạo lịch hẹn tiếp theo" (từ hôm nay trở đi), "Các lần hẹn trước" |
+
+Ghi chú review #87 (không chặn): nếu `backups\` không đọc được thì app coi như lần đầu (không có backup); comment `tauri-storage.ts:21` còn nói "empty only when the file does not exist" (đúng hơn: không có file và không có backup); **cho T-052**: `export_write` giờ async, 2 lần xuất trùng tên cùng lúc ghi chung `name.tmp` (cộng NIT "export trùng phút"); NIT còn lại: `.tmp` trong `backups\`/`exports\`, listener ném lỗi, dọn thư mục tạm của test.
 
 Ghi chú review #62 (#83–#85, không chặn): `markKycConflict` đổi mọi lỗi của `markConflict` thành `KYC_NO_CONFLICT`; chuỗi "Cập nhật KYC dd/mm/yyyy" có ở cả `db/kyc.ts` và `domain/kyc.ts`; ghi chú `SYSTEM` ("Hồ sơ KH: …", "Nam"/"Nữ") là dữ liệu DB, UI không dịch lại; đổi ngày sinh cùng năm vẫn tạo ghi chú + dữ kiện thay thế, không tạo phiên bản.
 
@@ -54,10 +57,11 @@ Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 đ�
 
 1. `/session-start` (pull `main`).
 2. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Frontier (không bị chặn):
-   - #63 T-044 lưu file DB trong exe → #64 T-045 seed; UI #65–#70 (G3 đã xong).
+   - #64 T-045 seed (#63 đã xong); UI #65–#70 (G3 đã xong) sau #64.
+   - Nối tiếp T-044: #88 CI Rust, #89 chặn 2 exe, #90 dọn backup theo mtime, #91 đóng app khi lưu lỗi — Owner xếp thứ tự.
    - #64 seed: tạo KH qua `createCustomer` để có ghi chú / dữ kiện `SYSTEM` năm sinh, giới tính (D2, review #83).
    - **#69 T-050**: migration mới thêm `outcome_reviewer_id` — CHECK cấp bảng trên SQLite có thể khiến drizzle-kit dựng lại bảng `appointments`; kiểm SQL sinh ra + test migrate DB có dữ liệu (review #80).
-3. Sau đó theo blocking edges: #64 (seed, #61/#62 đã xong); #63 lưu file exe (sau #60); UI #65–#70 cần #59 (G3) + #63 + #64; #71 backup; #72 đóng phase (G7).
+3. Sau đó theo blocking edges: #64 (seed, #61/#62/#63 đã xong); UI #65–#70 cần #59 (G3) + #63 + #64; #71 backup; #72 đóng phase (G7).
 4. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
 5. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2). #61/#62 chạy golden G01–G22, K01–K15 qua DB.
 ## Dựng môi trường trên Office Laptop
