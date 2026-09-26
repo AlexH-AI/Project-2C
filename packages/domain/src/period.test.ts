@@ -6,6 +6,7 @@ import {
   formatDate,
   formatPeriodLabel,
   fromLocalDate,
+  isInPeriod,
   parseDate,
   periodOf,
   shift,
@@ -51,6 +52,16 @@ describe('periodOf', () => {
 
   it('year covers the whole year', () => {
     expect(range(periodOf('year', d(28, 9, 2026)))).toBe('01/01/2026 – 31/12/2026');
+  });
+});
+
+describe('isInPeriod', () => {
+  it('includes the first and the last day, and nothing outside', () => {
+    const week = periodOf('week', d(28, 12, 2026));
+    expect(isInPeriod(d(28, 12, 2026), week)).toBe(true);
+    expect(isInPeriod(d(3, 1, 2027), week)).toBe(true);
+    expect(isInPeriod(d(27, 12, 2026), week)).toBe(false);
+    expect(isInPeriod(d(4, 1, 2027), week)).toBe(false);
   });
 });
 
