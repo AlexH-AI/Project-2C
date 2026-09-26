@@ -16,6 +16,18 @@ export const vi = {
   'scope.all': 'Toàn bộ',
   'scope.team': 'Team',
   'scope.re': 'RE',
+  'period.title': 'Kỳ thống kê',
+  'period.kinds': 'Loại kỳ',
+  'period.day': 'Ngày',
+  'period.week': 'Tuần',
+  'period.month': 'Tháng',
+  'period.year': 'Năm',
+  'period.custom': 'Tùy chọn',
+  'period.previous': 'Kỳ trước',
+  'period.next': 'Kỳ sau',
+  'period.from': 'Từ ngày',
+  'period.to': 'Đến ngày',
+  'period.dateFormat': 'dd/mm/yyyy',
   'pipeline.title': 'Nhóm cơ hội',
 } as const;
 
