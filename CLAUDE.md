@@ -23,7 +23,7 @@ Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh
 
 ## Quy trình một task (ADR-0001)
 
-1. Mỗi task = 1 GitHub Issue (spec + test chấp nhận + file được phép sửa + nhãn `risk:low|med|high`), ≤ ~400 dòng diff.
+1. Mỗi task = 1 GitHub Issue (spec + test chấp nhận + file được phép sửa + nhãn `risk:low|med|high`), ≤ ~400 dòng code sản phẩm và ≤ ~800 dòng tổng diff kể cả test (không tính file sinh tự động — ADR-0001 phụ lục).
 2. Nhánh `task/T-xxx-slug` từ `main` (hoặc từ nhánh phase đang mở).
 3. TDD: test đỏ → code → test xanh. Chạy `pnpm verify` trước khi commit.
 4. PR → CI Windows xanh → **review ở phiên mới, context sạch** theo `docs/process/REVIEW-CHECKLIST.md`.

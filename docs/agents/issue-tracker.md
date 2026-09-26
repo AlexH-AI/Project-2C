@@ -8,7 +8,7 @@ Issues and specs for this repo live as GitHub issues in `AlexH-AI/Project-2C`. U
 - Title: `T-xxx: <Vietnamese title>` — take the next free number from `gh issue list --state all --search "T- in:title"`.
 - Labels: always `type:task` plus exactly one of `risk:low` / `risk:med` / `risk:high`. Add `gate` when the issue waits on an Owner gate (G1–G8), `status:in-progress` while being worked on, and `ready-for-agent` when fully specified.
 - Milestone: the current phase, e.g. `Phase 1 — Nền móng`.
-- Size: ≤ ~400 lines of diff per issue; split otherwise.
+- Size: ≤ ~400 lines of product code and ≤ ~800 lines of total diff including tests per issue (generated files excluded — ADR-0001 addendum); split otherwise.
 - Write issue bodies in Vietnamese; code identifiers stay in English.
 
 ## Conventions
