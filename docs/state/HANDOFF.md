@@ -3,7 +3,7 @@
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
 - **Cập nhật:** 2026-09-26 · máy `DESKTOP-KDURKJP`
-- **Nhánh:** `main` @ `8fd3e7e` (#51–#54 đã merge); PR review đóng Phase 2 (`chore/phase-2-close-review`)
+- **Nhánh:** `main` (sau khi merge #55 — review đóng Phase 2); không có PR mở
 - **Phase:** 2 — Lõi domain **đã đóng** (G7, 26/09/2026) → Phase 3 lập kế hoạch · Phase 1 milestone **để mở** chờ test ở văn phòng
 
 ## Trạng thái
@@ -42,9 +42,14 @@ Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 đ�
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. Nếu PR `chore/phase-2-close-review` còn mở và CI xanh → `gh pr merge <n> --squash --delete-branch`.
+2. Nếu PR #55 (`chore/phase-2-close-review`) còn mở và CI xanh → `gh pr merge 55 --squash --delete-branch`.
 3. ~~G7 đóng milestone Phase 2~~ — Owner duyệt, đã đóng 26/09/2026.
-4. Sau đó: lập kế hoạch Phase 3 — mô hình dữ liệu `packages/db` (G2), màn hình chưa có mockup G3. **Đầu Phase 3: mở lại build exe cho mọi PR** (CLAUDE.md, ADR-0015).
+4. **Bắt đầu Phase 3 (phiên mới):**
+   - Đọc `docs/PROJECT-PLAN.md` (phần Phase 3) + ADR-0005/0006/0007/0008; lập kế hoạch và tách issue cho milestone Phase 3 (tạo milestone nếu chưa có).
+   - Việc đầu tiên: mô hình dữ liệu `packages/db` (Drizzle schema, migrations, repositories) → **dừng ở G2** cho Owner duyệt trước khi code.
+   - Màn hình chưa có trong mockup G3 → dừng ở G3.
+   - **Mở lại build exe cho mọi PR** (CLAUDE.md, ADR-0015): sửa `.github/workflows` + dòng tương ứng trong `CLAUDE.md` ở PR đầu Phase 3.
+   - Ghi chú để lại cho tầng db/UI: transition "nhóm sau cuộc gặp" phải gắn `appointmentId` (#44); KYC "mới nhất" theo thứ tự thao tác, chuẩn hóa kiểu giá trị theo trường (#36); 2 ca biên nhập ngày/tiền trong `docs/metrics/phase-2.md`.
 5. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
 
 ## Dựng môi trường trên Office Laptop
