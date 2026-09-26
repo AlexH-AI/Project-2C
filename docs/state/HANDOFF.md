@@ -3,21 +3,24 @@
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
 - **Cập nhật:** 2026-09-26 · máy `DESKTOP-KDURKJP`
-- **Nhánh:** `task/T-029-kyc-model` (PR #36 mở); `main` @ `5e82d85` (#35 đã merge)
-- **Phase:** 2 — Lõi domain (milestone "Phase 2 — Lõi domain") · Phase 1 milestone **để mở** chờ test ở văn phòng
+- **Nhánh:** `main` @ `2cbd0c9` (#22 đã merge); PR mở: #23 (T-007.5 Chart, chờ review phiên mới)
+- **Phase:** 1 — Nền móng (milestone #1, **để mở** chờ test ở văn phòng) · dev tiếp Phase 2 trên Home PC
 
 ## Trạng thái
 
 | Việc | Trạng thái |
 |---|---|
-| Phase 1: #1–#8, #7.1–#7.5 | ✅ merge (#10–#23); #7 đã đóng |
-| #17 favicon/app icon, #9 exe 2 máy + `docs/metrics/phase-1.md` | **hoãn** — làm khi Owner ở văn phòng |
-| #28 G2 golden examples chỉ số + mô hình dữ liệu (`model.ts`, `docs/golden/chi-so.md`) | ✅ merge #34 (`--squash`), review PASS, Owner duyệt G2 |
-| #30 G2 danh mục KYC, ngưỡng cổng, 15 hồ sơ mẫu (`kyc-catalog.ts`, `docs/golden/kyc.md`) | ✅ merge #35 (`--squash`), Owner duyệt G2 (K09 → `PROFILE_DISCOVERY`) |
-| #29 mô hình KYC: notes, facts, versions (`packages/domain/src/kyc.ts`) | PR #36 mở, `pnpm verify` xanh, Auto-fix bật — **chờ review ở phiên mới** |
-| #25 nhập ngày dd/mm, #26 tiền VND (`risk:low`) · #27 state machine nhóm KH · #31, #32 stats engine · #33 cổng KYC (`risk:med`) | chưa làm |
+| #1–#6 quy tắc, skeleton, hook, skills, e2e, mockup (G3) | ✅ merge (#10–#13) |
+| #8 thư viện chart → ADR-0014 (ECharts) | ✅ merge #15 |
+| #7.1 tokens + font `packages/ui` | ✅ merge #16 |
+| #7.2 app shell (sidebar icon, topbar, router hash, góc nhìn ở topbar) | ✅ merge #18 (`--merge`), review PASS |
+| #7.3 `domain/period` + `PeriodPicker` (ô Tùy chọn dạng chữ `dd/mm/yyyy`, kỳ là state của Tổng quan) | ✅ merge #19 (`--merge`) + #20 (`--squash`), review PASS |
+| #7.4 `DataTable` (TanStack, sort) | ✅ merge #22 (`--squash`), review PASS |
+| #7.5 `Chart` (ECharts, ADR-0014) | PR #23 mở, CI + e2e local xanh (chunk chart 174 KB gzip) — **chờ review ở phiên mới** |
+| #17 favicon/app icon màu ADR-0013 | **hoãn** — làm/kiểm khi Owner ở văn phòng (xem "Chờ test ở văn phòng") |
+| #9 exe chạy trên cả 2 máy + `docs/metrics/phase-1.md` | **hoãn** — làm khi Owner ở văn phòng |
 
-Ghi chú không chặn: `docs/PROJECT-PLAN.md` §2.3 còn định nghĩa RF / tỉ lệ chốt cũ (ADR-0007 là nguồn đúng) — sửa ở task sau. Còn từ Phase 1: `period.ts` năm 0–99 → 19xx (chặn năm < 1900 khi làm #25); `DataTable` chưa test `sortable: false` và bảng rỗng; cột Giờ chưa `tabular-nums`.
+Merge xong #23 thì đóng #7. Ghi chú review không chặn: `period.ts` dùng `Date.UTC` nên năm 0–99 bị hiểu thành 19xx — chặn năm < 1900 khi làm nhập liệu thật; `DataTable` chưa có test cho `sortable: false` và bảng rỗng; cột Giờ chưa `tabular-nums`.
 
 ## Chờ test ở văn phòng (Owner quyết 26/09/2026)
 
@@ -30,9 +33,9 @@ Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 đ�
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. **Review PR #36 (#29) ở phiên mới** theo `docs/process/REVIEW-CHECKLIST.md`: đầu vào chỉ issue #29 + diff. Soi kỹ chuyển trạng thái dữ kiện trong `confirmFact` / `markConflict` / `resolveConflict` (`packages/domain/src/kyc.ts`). Ghi `REVIEW: PASS` hoặc `REVIEW: CHANGES` thành comment trên PR. `risk:med` → **chờ Owner cho merge**; được phép thì `gh pr merge 36 --squash --delete-branch`.
-3. Task tiếp theo (mỗi task một phiên mới): #27 state machine nhóm KH → #31, #32 stats engine (test theo `GOLDEN_CASES` trong `packages/domain/src/golden/metrics.fixture.ts`) → #33 cổng KYC (test theo `KYC_GOLDEN_PROFILES` trong `golden/kyc.fixture.ts`). Có thể xen #25, #26 (`risk:low`, Claude tự merge khi CI xanh + review PASS).
-4. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
+2. Review PR #23 ở phiên mới theo `docs/process/REVIEW-CHECKLIST.md`; PASS + CI xanh → merge `--squash`, đóng #7.
+3. Phase 2 — Lõi domain (`docs/PROJECT-PLAN.md` §5): tạo milestone "Phase 2 — Lõi domain" và cắt issue bằng `to-tickets` (state machine, stats engine + golden tests, parse ngày/tiền, mô hình KYC, cổng KYC). Golden examples cần Owner duyệt (**G2**).
+4. Dọn worktree cũ đã merge (sạch, remote đã xoá): `git worktree remove .scratch/wt-t008` rồi `git branch -D task/T-008-chart-adr`.
 
 ## Dựng môi trường trên Office Laptop
 
@@ -65,9 +68,8 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 ## Chờ Owner
 
 - #9 và #17: hoãn tới khi Owner ở văn phòng (xem "Chờ test ở văn phòng"). Không nhắc lại trước khi Owner báo đã ở văn phòng.
-- PR #36 (#29, `risk:med`): Owner review ở phiên mới, rồi quyết merge.
-- Cờ `material` của phiên bản KYC: hiện RE tự đánh dấu (ADR-0008 chưa định nghĩa); Owner quyết có tự động hóa không (vd. đổi trường cốt lõi → material).
-- `risk:med` khác (#27, #31–#33): hỏi Owner trước khi merge, trừ khi Owner đã dặn trong phiên.
+- #23 (`risk:med`): #22 Owner cho Claude merge sau review PASS + CI xanh; với #23 hỏi lại nếu Owner chưa dặn.
+- G2: golden examples cho stats engine Phase 2.
 
 ## Ghi chú môi trường
 
