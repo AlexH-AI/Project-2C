@@ -3,7 +3,7 @@
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
 - **Cập nhật:** 2026-09-26 · máy `DESKTOP-KDURKJP`
-- **Nhánh:** `task/T-029-kyc-model` (PR #36 mở); `main` @ `5e82d85` (#35 đã merge)
+- **Nhánh:** `main` @ `2bce0d2` (#36, #39 đã merge); handoff này đi qua nhánh `wip/…` + PR docs
 - **Phase:** 2 — Lõi domain (milestone "Phase 2 — Lõi domain") · Phase 1 milestone **để mở** chờ test ở văn phòng
 
 ## Trạng thái
@@ -14,10 +14,13 @@
 | #17 favicon/app icon, #9 exe 2 máy + `docs/metrics/phase-1.md` | **hoãn** — làm khi Owner ở văn phòng |
 | #28 G2 golden examples chỉ số + mô hình dữ liệu (`model.ts`, `docs/golden/chi-so.md`) | ✅ merge #34 (`--squash`), review PASS, Owner duyệt G2 |
 | #30 G2 danh mục KYC, ngưỡng cổng, 15 hồ sơ mẫu (`kyc-catalog.ts`, `docs/golden/kyc.md`) | ✅ merge #35 (`--squash`), Owner duyệt G2 (K09 → `PROFILE_DISCOVERY`) |
-| #29 mô hình KYC: notes, facts, versions (`packages/domain/src/kyc.ts`) | PR #36 mở, `pnpm verify` xanh, Auto-fix bật — **chờ review ở phiên mới** |
-| #25 nhập ngày dd/mm, #26 tiền VND (`risk:low`) · #27 state machine nhóm KH · #31, #32 stats engine · #33 cổng KYC (`risk:med`) | chưa làm |
+| #29 mô hình KYC: notes, facts, versions (`packages/domain/src/kyc.ts`) | ✅ merge #36 (`--squash`), review PASS, Owner cho merge |
+| Cờ `material` phiên bản KYC → ADR-0008 §7 (Owner chốt, hướng kết hợp) | ✅ docs merge #39; code ở #38 (`risk:med`, chưa làm) |
+| #25 nhập ngày dd/mm, #26 tiền VND (`risk:low`) · #27 state machine nhóm KH · #31, #32 stats engine · #33 cổng KYC · #38 cờ material (`risk:med`) | chưa làm |
 
-Ghi chú không chặn: `docs/PROJECT-PLAN.md` §2.3 còn định nghĩa RF / tỉ lệ chốt cũ (ADR-0007 là nguồn đúng) — sửa ở task sau. Còn từ Phase 1: `period.ts` năm 0–99 → 19xx (chặn năm < 1900 khi làm #25); `DataTable` chưa test `sortable: false` và bảng rỗng; cột Giờ chưa `tabular-nums`.
+Ghi chú review #36 (không chặn, xử lý khi làm #38): nhánh `false` của `current.includes` trong `markConflict` (`kyc.ts:91`) chưa có test; "mới nhất" theo thứ tự thao tác, không theo `confirmedDate`; lớp nhập liệu cần chuẩn hóa kiểu giá trị theo trường.
+
+Ghi chú khác: `docs/PROJECT-PLAN.md` §2.3 còn định nghĩa RF / tỉ lệ chốt cũ (ADR-0007 là nguồn đúng) — sửa ở task sau. Còn từ Phase 1: `period.ts` năm 0–99 → 19xx (chặn năm < 1900 khi làm #25); `DataTable` chưa test `sortable: false` và bảng rỗng; cột Giờ chưa `tabular-nums`.
 
 ## Chờ test ở văn phòng (Owner quyết 26/09/2026)
 
@@ -30,9 +33,10 @@ Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 đ�
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. **Review PR #36 (#29) ở phiên mới** theo `docs/process/REVIEW-CHECKLIST.md`: đầu vào chỉ issue #29 + diff. Soi kỹ chuyển trạng thái dữ kiện trong `confirmFact` / `markConflict` / `resolveConflict` (`packages/domain/src/kyc.ts`). Ghi `REVIEW: PASS` hoặc `REVIEW: CHANGES` thành comment trên PR. `risk:med` → **chờ Owner cho merge**; được phép thì `gh pr merge 36 --squash --delete-branch`.
-3. Task tiếp theo (mỗi task một phiên mới): #27 state machine nhóm KH → #31, #32 stats engine (test theo `GOLDEN_CASES` trong `packages/domain/src/golden/metrics.fixture.ts`) → #33 cổng KYC (test theo `KYC_GOLDEN_PROFILES` trong `golden/kyc.fixture.ts`). Có thể xen #25, #26 (`risk:low`, Claude tự merge khi CI xanh + review PASS).
-4. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
+2. Nếu PR handoff (`wip/…`, docs) còn mở và CI xanh → `gh pr merge <n> --squash --delete-branch`.
+3. **#27 state machine nhóm KH** (đang bắt đầu trong phiên 26/09 sau handoff): nhánh `task/T-027-…` từ `main`, đọc `gh issue view 27` + ADR-0007, TDD trong `packages/domain/src/**`, `pnpm verify`, PR `risk:med` → review phiên mới → chờ Owner merge. Nếu nhánh `task/T-027-…` đã có trên remote thì checkout và làm tiếp.
+4. Sau đó (mỗi task một phiên mới): #31, #32 stats engine (test theo `GOLDEN_CASES` trong `packages/domain/src/golden/metrics.fixture.ts`) → #38 cờ material (`isMaterialChange`, `nextKycVersion(..., manualMaterial)`) → #33 cổng KYC (test theo `KYC_GOLDEN_PROFILES` trong `golden/kyc.fixture.ts`). Có thể xen #25, #26 (`risk:low`, Claude tự merge khi CI xanh + review PASS).
+5. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
 
 ## Dựng môi trường trên Office Laptop
 
@@ -65,9 +69,8 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 ## Chờ Owner
 
 - #9 và #17: hoãn tới khi Owner ở văn phòng (xem "Chờ test ở văn phòng"). Không nhắc lại trước khi Owner báo đã ở văn phòng.
-- PR #36 (#29, `risk:med`): Owner review ở phiên mới, rồi quyết merge.
-- Cờ `material` của phiên bản KYC: hiện RE tự đánh dấu (ADR-0008 chưa định nghĩa); Owner quyết có tự động hóa không (vd. đổi trường cốt lõi → material).
-- `risk:med` khác (#27, #31–#33): hỏi Owner trước khi merge, trừ khi Owner đã dặn trong phiên.
+- `risk:med` (#27, #31–#33, #38): hỏi Owner trước khi merge, trừ khi Owner đã dặn trong phiên.
+- GitHub Free: không bật được auto-merge cho repo private — Owner báo CI xanh (hoặc phiên sau kiểm) rồi Claude merge.
 
 ## Ghi chú môi trường
 
