@@ -29,6 +29,7 @@ export {
   EMPTY_KYC_PROFILE,
   addNote,
   confirmFact,
+  isMaterialChange,
   kycHash,
   markConflict,
   nextKycVersion,

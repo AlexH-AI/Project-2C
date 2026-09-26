@@ -4,6 +4,7 @@ import {
   EMPTY_KYC_PROFILE,
   addNote,
   confirmFact,
+  isMaterialChange,
   kycHash,
   markConflict,
   nextKycVersion,
@@ -150,6 +151,21 @@ describe('KYC conflicts', () => {
     expect(profile.facts.map((fact) => fact.status)).toEqual(['conflict', 'conflict', 'conflict']);
   });
 
+  it('leaves superseded facts and other trường alone when marking a conflict', () => {
+    const fact = { noteId: 'n1', confirmedDate: DAY } as const;
+    let profile = withNotes('n1');
+    profile = confirmFact(profile, { ...fact, id: 'f1', field: 'birthYear', value: 1970 });
+    profile = confirmFact(profile, { ...fact, id: 'f2', field: 'gender', value: 'Nam' });
+    profile = confirmFact(profile, { ...fact, id: 'f3', field: 'birthYear', value: 1972 });
+    profile = markConflict(profile, { ...fact, id: 'f4', field: 'birthYear', value: 1974 });
+    expect(profile.facts.map((f) => [f.id, f.status])).toEqual([
+      ['f1', 'superseded'],
+      ['f2', 'active'],
+      ['f3', 'conflict'],
+      ['f4', 'conflict'],
+    ]);
+  });
+
   it('refuses a conflict with nothing to disagree with, or with an equal value', () => {
     const fact = { id: 'f9', noteId: 'n1', confirmedDate: DAY } as const;
     expect(() => markConflict(withNotes('n1'), { ...fact, field: 'gender', value: 'Nữ' })).toThrow(
@@ -230,9 +246,27 @@ describe('KYC versions', () => {
     expect(kycHash(profileOf([['f1', 'birthYear', '1972']]))).not.toBe(base);
   });
 
+  it('changes the hash when a value joins a conflict, though no fact is active', () => {
+    const conflict = markConflict(profileOf([['f1', 'birthYear', 1972]]), {
+      id: 'f2',
+      field: 'birthYear',
+      value: 1974,
+      noteId: 'n1',
+      confirmedDate: DAY,
+    });
+    const wider = markConflict(conflict, {
+      id: 'f3',
+      field: 'birthYear',
+      value: 1973,
+      noteId: 'n1',
+      confirmedDate: LATER,
+    });
+    expect(kycHash(wider)).not.toBe(kycHash(conflict));
+  });
+
   it('creates the first version with the dated summary', () => {
     const profile = profileOf([['f1', 'birthYear', 1972]]);
-    expect(nextKycVersion(null, profile, DAY, true)).toEqual({
+    expect(nextKycVersion(null, null, profile, DAY, false)).toEqual({
       hash: kycHash(profile),
       summary: 'Cập nhật KYC 01/12/2025',
       date: DAY,
@@ -242,8 +276,8 @@ describe('KYC versions', () => {
 
   it('creates no new version when the facts did not change', () => {
     const profile = profileOf([['f1', 'birthYear', 1972]]);
-    const first = nextKycVersion(null, profile, DAY, false);
-    expect(nextKycVersion(first, addNote(profile, note('n2')), LATER, false)).toBeNull();
+    const first = nextKycVersion(null, null, profile, DAY, false);
+    expect(nextKycVersion(first, profile, addNote(profile, note('n2')), LATER, true)).toBeNull();
     const changed = confirmFact(profile, {
       id: 'f2',
       field: 'birthYear',
@@ -251,6 +285,89 @@ describe('KYC versions', () => {
       noteId: 'n1',
       confirmedDate: LATER,
     });
-    expect(nextKycVersion(first, changed, LATER, false)?.summary).toBe('Cập nhật KYC 05/01/2026');
+    expect(nextKycVersion(first, profile, changed, LATER, false)?.summary).toBe(
+      'Cập nhật KYC 05/01/2026',
+    );
+  });
+});
+
+describe('KYC material flag', () => {
+  type Field = 'birthYear' | 'childrenCount' | 'gender' | 'riskProfile';
+  const input = (id: string, field: Field, value: string | number) =>
+    ({ id, field, value, noteId: 'n1', confirmedDate: DAY }) as const;
+  const confirmAll = (profile: KycProfile, facts: [string, Field, string | number][]) =>
+    facts.reduce((acc, [id, field, value]) => confirmFact(acc, input(id, field, value)), profile);
+
+  const base = confirmAll(withNotes('n1'), [
+    ['f1', 'birthYear', 1972],
+    ['f2', 'gender', 'Nam'],
+  ]);
+  const baseVersion = nextKycVersion(null, null, base, DAY, false);
+  const next = (after: KycProfile, manualMaterial = false) =>
+    nextKycVersion(baseVersion, base, after, LATER, manualMaterial);
+
+  it('always flags the first version, even with only non-core trường', () => {
+    const genderOnly = confirmAll(withNotes('n1'), [['f1', 'gender', 'Nữ']]);
+    expect(isMaterialChange(null, genderOnly)).toBe(true);
+    expect(nextKycVersion(null, null, genderOnly, DAY, false)?.material).toBe(true);
+  });
+
+  it('flags a changed core value', () => {
+    const after = confirmAll(base, [['f3', 'birthYear', 1974]]);
+    expect(next(after)?.material).toBe(true);
+  });
+
+  it('flags an added core trường', () => {
+    const after = confirmAll(base, [['f3', 'childrenCount', 2]]);
+    expect(next(after)?.material).toBe(true);
+  });
+
+  it('flags a removed core trường', () => {
+    const genderOnly = confirmAll(withNotes('n1'), [['f2', 'gender', 'Nam']]);
+    expect(isMaterialChange(base, genderOnly)).toBe(true);
+  });
+
+  it('does not flag a change on non-core trường only', () => {
+    const after = confirmAll(base, [['f3', 'gender', 'Nữ']]);
+    expect(next(after)?.material).toBe(false);
+  });
+
+  it('lets the RE switch the flag on for a non-core change', () => {
+    const after = confirmAll(base, [['f3', 'gender', 'Nữ']]);
+    expect(next(after, true)?.material).toBe(true);
+  });
+
+  it('keeps the flag on when the rule sets it, whatever the RE chose', () => {
+    const after = confirmAll(base, [['f3', 'birthYear', 1974]]);
+    expect(next(after, false)?.material).toBe(true);
+  });
+
+  it('flags a core trường entering, widening and leaving a conflict', () => {
+    const entered = markConflict(base, input('f3', 'birthYear', 1974));
+    const widened = markConflict(entered, input('f4', 'birthYear', 1973));
+    const resolved = resolveConflict(widened, 'f4');
+    expect(nextKycVersion(baseVersion, base, entered, LATER, false)?.material).toBe(true);
+    const enteredVersion = nextKycVersion(baseVersion, base, entered, LATER, false);
+    const widenedVersion = nextKycVersion(enteredVersion, entered, widened, LATER, false);
+    expect(widenedVersion?.material).toBe(true);
+    expect(nextKycVersion(widenedVersion, widened, resolved, LATER, false)?.material).toBe(true);
+  });
+
+  it('does not flag a conflict on non-core trường only', () => {
+    const withRisk = confirmAll(base, [['f3', 'riskProfile', 'Thận trọng']]);
+    const conflict = markConflict(withRisk, input('f4', 'riskProfile', 'Cân bằng'));
+    expect(isMaterialChange(withRisk, conflict)).toBe(false);
+  });
+
+  it('does not flag, nor version, a core value confirmed again unchanged', () => {
+    const after = confirmAll(base, [['f3', 'birthYear', 1972]]);
+    expect(isMaterialChange(base, after)).toBe(false);
+    expect(next(after, true)).toBeNull();
+  });
+
+  it('compares core facts regardless of their order', () => {
+    const a = markConflict(base, input('f3', 'birthYear', 1974));
+    const b = { ...a, facts: [...a.facts].reverse() };
+    expect(isMaterialChange(a, b)).toBe(false);
   });
 });
