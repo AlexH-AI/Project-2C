@@ -40,6 +40,6 @@ Claude Code only: Opus 5.5, effort medium, no subagents. Claude works autonomous
 
 ## Next decision
 
-- #9 (exe on both machines) deferred: Owner away from the office 27–28/09/2026.
-- Next: #7.4 `DataTable` and #7.5 `Chart` (ECharts); #17 icons. #7.1–7.3 merged (#16, #18–#20).
+- Phase 1 code merged (#7 closed); milestone stays open until #9 (exe on both machines) and #17 (icons) are checked at the office.
+- Phase 2 — core domain in progress: G2 approved for metrics (#28 → PR #34) and KYC catalog/gate (#30 → PR #35). PR #36 (#29 KYC model) awaits clean-session review. Next: #27, #31, #32, #33; #25, #26.
 - Project-2 should adopt the upstream skill renames (`to-prd` → `to-spec`, `to-issues` → `to-tickets`).
