@@ -17,4 +17,15 @@ export {
   updatePerson,
 } from './team';
 export type { PersonInput } from './team';
+export {
+  changeStageManually,
+  createCustomer,
+  getCustomer,
+  listCustomers,
+  listStageTransitions,
+  restoreCustomer,
+  softDeleteCustomer,
+  updateCustomerProfile,
+} from './customers';
+export type { BirthDate, CustomerProfile, CustomerRecord, Gender, NewCustomer } from './customers';
 export { APPOINTMENT_TRIGGERS, GENDERS } from './schema';
