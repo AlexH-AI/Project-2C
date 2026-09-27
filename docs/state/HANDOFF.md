@@ -2,10 +2,10 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-09-27 · máy `DESKTOP-KDURKJP`
-- **Nhánh:** `docs/handoff-2026-09-27-t062` (= `main` `673d79e` + file này); không còn PR code mở
-- **Checkout chính** `C:\workspace\Project-2C` đang ở nhánh `task/T-054-ci-rust` (#88), có thay đổi chưa commit (`ci.yml`, `CLAUDE.md`, ADR-0015, `package.json`) của một phiên khác — không đụng vào; phiên đó phải rebase lên `673d79e` (T-062 cũng sửa `ci.yml` + ADR-0015)
+- **Cập nhật:** 2026-09-28 · máy `DESKTOP-KDURKJP`
+- **Nhánh:** `docs/owner-decisions-2026-09-28` (= `main` `133f6b5` + docs); không còn PR code mở. #88 T-054 (PR #118) và #119 T-063 (PR #122) đã merge
 - **Repo đã chuyển public** (27/09, Owner tự làm) vì Actions private chạm ~1.800/2.000 phút; Actions giờ miễn phí
+- **Ruleset `protect-main`** (28/09, Owner duyệt): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
 - **Phase:** 3 — Nghiệp vụ & màn hình (milestone mở 26/09/2026; G2/G1/G4 đã duyệt) · Phase 2 đã đóng · Phase 1 milestone **để mở** chờ test ở văn phòng
 
 ## Trạng thái
@@ -50,12 +50,12 @@ Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 đ�
 
 ## Bước kế tiếp chính xác
 
-1. `/session-start` (pull `main`). Checkout chính đang ở `task/T-054-ci-rust` (#88, phiên khác đang làm — xem đầu file); worktree review `C:\workspace\Project-2C-review` đã có.
+1. `/session-start` (pull `main`). Worktree review `C:\workspace\Project-2C-review` đã có.
 2. **R4 (#108):** #109 (PR #115) và #110 (PR #116) đã merge → comment trỏ 2 PR trên #108 rồi đóng #108.
    - **Còn nợ test chấp nhận 3 của #110 (T-062):** ở lần kế tiếp có 2 push code lên `main` sát nhau (vd. merge PR xếp chồng bằng `--merge`), chạy `gh run list --branch main --limit 5` → cả hai run `completed`/`success`, không `cancelled`, và mỗi SHA có artifact `Project-2C-<sha>`. Ghi kết quả thành comment trên PR #116. Nếu có run bị hủy → mở lại #110.
 3. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Frontier (không bị chặn):
    - UI #65–#70 (G3, #63, #64 đã xong; R1, R2 xong → màn ghi DB làm được; #100 xong → hết chặn #66, #69). Bắt đầu #65 T-046 Team & nhân sự.
-   - Nối tiếp T-044: #88 CI Rust, #89 chặn 2 exe, #90 dọn backup theo mtime, #91 đóng app khi lưu lỗi — Owner xếp thứ tự.
+   - Nối tiếp T-044 (#88 đã xong, PR #118), Owner xếp thứ tự 28/09: **#91** T-057 đóng app khi lưu lỗi → **#89** T-055 chặn 2 exe → **#90** T-056 dọn backup theo mtime. Cả 3 đều `risk:med`. PR nào đụng `apps/desktop/src-tauri/**` thì phải có nhãn `build-exe` ngay lúc tạo.
    - **#69 T-050**: migration mới thêm `outcome_reviewer_id` — CHECK cấp bảng trên SQLite có thể khiến drizzle-kit dựng lại bảng `appointments`; kiểm SQL sinh ra + test migrate DB có dữ liệu (review #80).
 4. Sau đó theo blocking edges: #71 backup; #72 đóng phase (G7).
 5. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
@@ -99,14 +99,11 @@ Chỉ cần **Git + Node 24 + pnpm** (không cần Rust/Build Tools):
 
 ### Phương án C — không cài được gì
 
-Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C`: code, test, PR chạy trên cloud; CI build exe; laptop chỉ cần trình duyệt. Không chạy được `.ps1`/hook local — quy tắc "không push thẳng `main`" do Claude tuân thủ (CLAUDE.md).
+Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C`: code, test, PR chạy trên cloud; CI build exe; laptop chỉ cần trình duyệt. Không chạy được `.ps1`/hook local — việc chặn push thẳng lên `main` do ruleset `protect-main` trên GitHub đảm nhận.
 
 ## Chờ Owner
 
-- Thứ tự nối tiếp T-044: #88 CI Rust, #89 chặn 2 exe, #90 dọn backup theo mtime, #91 đóng app khi lưu lỗi.
-
 - #9 và #17: hoãn tới khi Owner ở văn phòng (xem "Chờ test ở văn phòng"). Không nhắc lại trước khi Owner báo đã ở văn phòng.
-- Repo đã public (27/09): GitHub Free giờ cho bật branch protection / auto-merge (lý do của #3 không còn). Chưa đổi gì — hook `pre-push` + Claude merge khi CI xanh vẫn là quy trình; Owner quyết có bật hay không.
 
 ## Ghi chú môi trường
 
