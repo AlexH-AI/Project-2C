@@ -12,6 +12,21 @@ description: Review a Project-2C pull request by number, choosing the review tie
 - Review phải chạy ở phiên **context sạch**. Nếu chính phiên này đã viết code cho PR → báo Owner, đề nghị `/clear` hoặc mở phiên mới. Nếu Owner vẫn cho làm, ghi "không phải phiên sạch" trong comment.
 - Không đọc comment review cũ trước khi tự kết luận xong. Với vòng review lại, chỉ đọc comment trước **sau khi** đã có kết luận, để đối chiếu các mục đã báo.
 
+### Nơi review: worktree `review-main` (ADR-0017 phụ lục)
+
+- Mọi review chạy trong worktree cố định `C:\workspace\Project-2C\.claude\worktrees\review-main`. Nếu phiên đang ở chỗ khác → chuyển thư mục phiên về đó trước.
+- Worktree này **chỉ để review**: luôn detached HEAD, không tạo nhánh, không commit, không sửa file. Code chỉ làm ở checkout chính `C:\workspace\Project-2C` hoặc worktree của task. Phiên review không bao giờ đổi nhánh của checkout chính (phiên khác có thể đang dùng).
+- Đưa worktree về đúng code cần review (sau bước 1 khi đã có `headRefOid`):
+
+  ```bash
+  git fetch origin
+  git checkout --detach <headRefOid>      # review PR
+  git checkout --detach origin/main       # review theo vùng (R1–R4) hoặc review sau merge
+  pnpm install --frozen-lockfile          # chỉ khi lockfile đổi
+  ```
+
+- Chưa có worktree (máy mới) → tạo một lần từ checkout chính: `git worktree add --detach .claude/worktrees/review-main origin/main`, rồi `pnpm install --frozen-lockfile` trong đó.
+
 ## 1. Thu thập và chốt điểm so sánh
 
 ```bash
