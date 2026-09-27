@@ -31,7 +31,7 @@ Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh
    - Review chạy trong worktree cố định `C:\workspace\Project-2C-review`, ngoài checkout chính (detached HEAD ở đúng SHA đang review, chỉ đọc, không commit). Code chỉ làm ở checkout chính hoặc worktree của task. Chi tiết: skill `review-pr` §0.
 5. `risk:low` + CI xanh + review đạt → Claude tự merge bằng `gh pr merge --squash` (dùng `--merge` khi có PR khác xếp chồng lên nhánh này, để giữ lịch sử commit). Ngược lại chờ Owner. Sửa tối đa 2 vòng, sau đó G8.
    - GitHub Free không có branch protection / auto-merge cho repo private (issue #3). Thay vào đó: hook `.githooks/pre-push` chặn push thẳng lên `main` (bootstrap đặt `core.hooksPath`). **Không bao giờ** dùng `--no-verify` hay merge khi CI chưa xanh.
-   - CI (ADR-0015): PR chỉ sửa docs (`docs/**`, `*.md`) không chạy CI và merge được không cần CI. Từ Phase 3, mọi PR code chạy đủ Verify + e2e + build exe (không cần nhãn `build-exe`).
+   - CI (ADR-0015): PR chỉ sửa docs (`docs/**`, `*.md`) không chạy CI và merge được không cần CI. PR code chạy Verify + e2e; build exe chỉ khi PR có nhãn `build-exe` — bắt buộc gắn lúc tạo PR khi đụng `src-tauri`, Cargo, `rust-toolchain.toml`, `package.json`, `pnpm-lock.yaml`, cấu hình build. Push lên `main` chỉ build exe; push docs-only lên `main` không chạy CI (phụ lục "Tiết kiệm phút Actions").
 6. Mỗi task một phiên mới (hoặc `/clear`).
 
 ## Skills được phép (ADR-0012)

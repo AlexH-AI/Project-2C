@@ -1,6 +1,6 @@
 # ADR-0015: CI — build exe theo nhu cầu, PR docs không chạy CI
 
-- **Trạng thái:** Accepted (G1/G4, Owner duyệt 26/09/2026) · §1 thay bằng phụ lục Phase 3 (26/09/2026); §2–§3 còn hiệu lực
+- **Trạng thái:** Accepted (G1/G4, Owner duyệt 26/09/2026) · §1 thay bằng phụ lục Phase 3 (26/09/2026), rồi bằng phụ lục "Tiết kiệm phút Actions" (27/09/2026); §2–§3 còn hiệu lực
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §4.4 (CI); ADR-0001 (quy trình task, merge khi CI xanh)
 - **Commit / PR:** PR sửa `.github/workflows/ci.yml` (nhánh `ci/exe-build-on-main`)
@@ -42,3 +42,18 @@ Thực hiện mục "Khi bắt đầu Phase 3" ở trên (PR nhánh `ci/phase-3-
 - Bỏ sự kiện `labeled` khỏi trigger `pull_request` (không còn cần nhãn để bật build; tránh chạy lại CI khi gắn nhãn khác).
 - Nhãn `build-exe` giữ lại trên GitHub nhưng không còn tác dụng.
 - §2, §3 (PR docs-only bỏ qua CI, merge không cần CI) **giữ nguyên**.
+
+## Phụ lục: Tiết kiệm phút Actions (27/09/2026, G1, Owner duyệt)
+
+Bối cảnh: repo private trên GitHub Free có 2.000 phút Actions/tháng; ngày 27/09 đã dùng hơn 1.800 phút. Mỗi lần CI chạy ≈ 12 phút trên runner Windows (Verify + e2e ≈ 7,5 phút, build exe ≈ 4 phút), mà mỗi task chạy 2 lần (PR + push lên `main` sau merge), cộng commit docs lên `main` (handoff) cũng chạy đủ. Owner chọn đồng thời: chuyển repo sang public (Owner tự làm; Actions miễn phí cho repo public) và giảm số phút như dưới đây. Thay phụ lục Phase 3:
+
+- **Push lên `main` chỉ sửa docs** (`docs/**`, `**/*.md`) không chạy CI, như PR docs-only (§2).
+- **Push lên `main`** bỏ Verify (PR đã Verify xanh trước khi merge), chỉ build exe → vẫn có artifact `Project-2C-<sha>` để thử ở văn phòng.
+- **PR code** chạy Verify + e2e. Build exe chỉ khi PR có nhãn **`build-exe`** (hoặc chạy tay `workflow_dispatch`).
+- **Bắt buộc gắn `build-exe`** khi PR đụng `apps/desktop/src-tauri/**`, Cargo, `rust-toolchain.toml`, `package.json`, `pnpm-lock.yaml` hoặc cấu hình build (`vite.config.*`, `tauri.conf.json`). Gắn nhãn ngay khi tạo PR (`gh pr create --label build-exe`): trigger không nghe sự kiện `labeled`, nên gắn sau thì phải push thêm hoặc `gh pr close` + `gh pr reopen` để CI chạy lại.
+
+Hệ quả:
+
+- ≈ 23 phút tính phí mỗi task thay vì ≈ 48 (Windows tính gấp đôi); commit docs lên `main`: 0.
+- Nếu PR merge khi `main` đã đi tiếp, tổ hợp sau merge không được Verify lại trên CI; lỗi lộ ra ở PR kế tiếp hoặc khi chạy `pnpm verify` local. Rủi ro thấp vì mỗi task một nhánh mới từ `main`.
+- Lỗi build exe ở PR không gắn nhãn chỉ lộ ra ở build trên `main` → sửa bằng PR tiếp theo.

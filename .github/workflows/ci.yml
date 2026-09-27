@@ -9,6 +9,10 @@ on:
       - '**/*.md'
   push:
     branches: [main]
+    # Docs-only pushes to main skip CI too (ADR-0015, Actions minutes addendum).
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
   workflow_dispatch:
 
 concurrency:
@@ -21,6 +25,8 @@ permissions:
 jobs:
   verify:
     name: Verify (lint, typecheck, unit, boundaries)
+    # main only receives PRs that already passed Verify, so a push to main skips it.
+    if: github.event_name != 'push'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -45,7 +51,12 @@ jobs:
   build-exe:
     name: Build portable exe
     needs: verify
-    # Every PR and main from Phase 3 on (ADR-0015, Phase 3 addendum).
+    # main pushes, manual runs, and PRs labelled build-exe (ADR-0015, Actions minutes addendum).
+    # Runs when verify passed or was skipped (push to main).
+    if: >-
+      !failure() && !cancelled() &&
+      (github.event_name != 'pull_request' ||
+       contains(github.event.pull_request.labels.*.name, 'build-exe'))
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
