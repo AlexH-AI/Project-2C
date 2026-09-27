@@ -1,3 +1,4 @@
+import { stageOn } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
   getAppointment,
@@ -190,6 +191,50 @@ describe('recordMeetingOutcome', () => {
   });
 });
 
+// D10 (#99): an outcome recorded late may not move the customer back before a later stage change.
+describe('recording an outcome late', () => {
+  async function changedAfterMeeting() {
+    const ctx = await withCustomer();
+    const { id } = ctx.schedule(5);
+    changeStageManually(ctx.db, ctx.customer.id, { to: 'N4', date: d(20, 1) });
+    return { ...ctx, id };
+  }
+
+  it('refuses a stage after dated before a later stage change, recording nothing', async () => {
+    const { db, customer, id, stage } = await changedAfterMeeting();
+
+    expect(codeOf(() => recordMeetingOutcome(db, id, { ...MET_N2, stageAfter: 'N1' }))).toBe(
+      'TRANSITION_BEFORE_LATEST',
+    );
+    expect(getAppointment(db, id)?.status).toBe('SCHEDULED');
+    expect(stage()).toBe('N4');
+    expect(listStageTransitions(db, customer.id)).toHaveLength(2);
+  });
+
+  it('records an outcome that makes no transition: the current stage, cancelled or no-show', async () => {
+    const { db, customer, id, stage } = await changedAfterMeeting();
+
+    expect(recordMeetingOutcome(db, id, { ...MET_N2, stageAfter: 'N4' }).status).toBe('MET');
+    expect(recordMeetingOutcome(db, id, { status: 'CANCELLED' }).status).toBe('CANCELLED');
+    expect(recordMeetingOutcome(db, id, { status: 'NO_SHOW' }).status).toBe('NO_SHOW');
+    expect(stage()).toBe('N4');
+    expect(listStageTransitions(db, customer.id)).toHaveLength(2);
+  });
+
+  it('records a late outcome on the meeting day when nothing later happened', async () => {
+    const { db, customer, schedule, stage } = await withCustomer();
+    const { id } = schedule(5);
+    changeStageManually(db, customer.id, { to: 'N4', date: d(3, 1) });
+
+    recordMeetingOutcome(db, id, { ...MET_N2, stageAfter: 'N1' });
+
+    const transitions = listStageTransitions(db, customer.id);
+    expect(transitions.at(-1)).toMatchObject({ from: 'N4', to: 'N1', date: d(5, 1) });
+    expect(stageOn(transitions.slice(0, -1), customer.id, d(5, 1))).toBe('N4');
+    expect(stageOn(transitions, customer.id, d(31, 1))).toBe(stage());
+  });
+});
+
 describe('rescheduleAppointment', () => {
   it('creates a new appointment pointing back to the old one, which becomes rescheduled', async () => {
     const { db, tl, customer, re } = await withCustomer();
@@ -239,6 +284,18 @@ describe('deleting appointments', () => {
     restoreAppointment(db, id); // already live: nothing changes
     expect(stage()).toBe('N3');
     expect(codeOf(() => restoreAppointment(db, 'x'))).toBe('APPOINTMENT_NOT_FOUND');
+  });
+
+  it('restores no met appointment whose transition would now come before a later one', async () => {
+    const { db, customer, schedule, stage } = await withCustomer();
+    const { id } = schedule();
+    recordMeetingOutcome(db, id, MET_N2);
+    softDeleteAppointment(db, id);
+    changeStageManually(db, customer.id, { to: 'N4', date: d(15, 1) });
+
+    expect(codeOf(() => restoreAppointment(db, id))).toBe('TRANSITION_BEFORE_LATEST');
+    expect(getAppointment(db, id)).toBeUndefined();
+    expect(stage()).toBe('N4');
   });
 
   it('restores no appointment whose RE or coordinator left while it was deleted', async () => {

@@ -1,10 +1,12 @@
 /**
  * Customers and their stage transitions (spec §3.3–3.4, §4). `customers.stage` always equals the
- * `to` of the customer's latest live transition — "latest" by recording order (`seq`), never by date.
+ * `to` of the customer's latest live transition — "latest" by recording order (`seq`), whose dates
+ * never go back (D10).
  * Birth date and gender are the source of the KYC birth year and gender (D2).
  */
 import {
   assertValidTransition,
+  compareDates,
   fromLocalDate,
   type CalendarDate,
   type Customer,
@@ -170,7 +172,11 @@ export { liveCustomer };
 
 const insertTransition = rowInsert(stageTransitions);
 
-/** Records `current stage → to` and moves the customer, in the caller's transaction. */
+/**
+ * Records `current stage → to` and moves the customer, in the caller's transaction. The date may
+ * not be before the latest transition's (D10), so dates follow `seq` and `stageOn` agrees with
+ * `customers.stage`; the first transition carries the creation day, so nothing goes before it.
+ */
 export function appendTransition(
   db: Database,
   customerId: string,
@@ -179,6 +185,10 @@ export function appendTransition(
   appointmentId: string | null,
 ): StageTransition {
   const latest = latestTransition(db, customerId);
+  const isoDate = toIsoDate(date);
+  if (latest && compareDates(date, fromIsoDate(latest.date)) < 0) {
+    throw new DbError('TRANSITION_BEFORE_LATEST');
+  }
   const from = latest ? latest.toStage : null;
   try {
     assertValidTransition(from, to);
@@ -197,7 +207,7 @@ export function appendTransition(
     seq: (lastSeq?.seq ?? 0) + 1,
     fromStage: from,
     toStage: to,
-    date: toIsoDate(date),
+    date: isoDate,
     appointmentId,
     createdAt: db.now().toISOString(),
     deletedAt: null,
