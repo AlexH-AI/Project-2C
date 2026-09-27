@@ -15,9 +15,12 @@ on:
       - '**/*.md'
   workflow_dispatch:
 
+# A new push to a PR cancels that PR's older run. Runs on main never cancel each
+# other, so every merged commit keeps its exe artifact: each gets its own group
+# (per SHA), because GitHub also drops an older *pending* run in a shared group.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
