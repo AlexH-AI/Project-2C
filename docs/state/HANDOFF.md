@@ -3,7 +3,8 @@
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
 - **Cập nhật:** 2026-09-27 · máy `DESKTOP-KDURKJP`
-- **Nhánh:** `docs/handoff-2026-09-27-r4` (= `main` `3e508d2` + file này); không còn PR mở
+- **Nhánh:** `docs/handoff-2026-09-27-t062` (= `main` `673d79e` + file này); không còn PR code mở
+- **Checkout chính** `C:\workspace\Project-2C` đang ở nhánh `task/T-054-ci-rust` (#88), có thay đổi chưa commit (`ci.yml`, `CLAUDE.md`, ADR-0015, `package.json`) của một phiên khác — không đụng vào; phiên đó phải rebase lên `673d79e` (T-062 cũng sửa `ci.yml` + ADR-0015)
 - **Repo đã chuyển public** (27/09, Owner tự làm) vì Actions private chạm ~1.800/2.000 phút; Actions giờ miễn phí
 - **Phase:** 3 — Nghiệp vụ & màn hình (milestone mở 26/09/2026; G2/G1/G4 đã duyệt) · Phase 2 đã đóng · Phase 1 milestone **để mở** chờ test ở văn phòng
 
@@ -19,7 +20,9 @@
 | #105 T-059 nhãn kỳ PeriodPicker qua i18n (R3) | ✅ merge PR #107 (`--squash`, `facbcd7`): `formatPeriodLabel` → `formatPeriodValue` (chỉ ngày: `09/2026`, `2026`); chữ "Tháng {value}"/"Năm {value}" ở `vi.ts` (`period.monthLabel`/`yearLabel`), ghép bằng `periodLabel` (`PeriodPicker.label.ts`) |
 | #106 T-060 `parseVnd`: `.` và `,` cùng luật (R3) | ✅ merge PR #112 (`--squash`, `0b0f12e`): dấu + đúng 3 chữ số = ngăn nghìn (`500,000` = 500.000 đồng), 1–2 hoặc ≥ 4 chữ số = thập phân; không test cũ nào phải sửa; domain coverage 100% |
 | CI tiết kiệm phút Actions (ADR-0015 phụ lục, G1 Owner duyệt) | ✅ merge PR #111 (`--squash`, `3aff2c8`): push docs-only lên `main` không chạy CI; push lên `main` bỏ Verify, chỉ build exe; PR chỉ build exe khi có nhãn `build-exe`. CLAUDE.md đồng bộ ở PR #113 |
-| Review toàn bộ R4 UI, `packages/ui`, script/CI/hook (#108) | **CHANGES, còn mở** — 3 mục chặn tách thành #109, #110 (xem "Bước kế tiếp"); ghi chú không chặn trong body #108 |
+| Review toàn bộ R4 UI, `packages/ui`, script/CI/hook (#108) | **còn mở** — 3 mục chặn đã sửa ở #109/PR #115 và #110/PR #116; còn comment trỏ PR trên #108 rồi đóng; ghi chú không chặn trong body #108 |
+| #109 T-061 `bootstrap.ps1` chạy trên PowerShell 5.1, ghim Node 24; `session-start.ps1` báo lỗi fetch/pull | ✅ merge PR #115 (`--squash`, `44c6cec`) |
+| #110 T-062 run CI của `main` không hủy nhau | ✅ merge PR #116 (`--squash`, `673d79e`, 27/09), review PASS kèm ghi chú: PR hủy run cũ khi push mới; push lên `main` có nhóm `concurrency` riêng theo SHA, không hủy. **Test chấp nhận 3 chưa kiểm** (xem "Bước kế tiếp" 2) |
 
 Kết quả review R1–R4 nằm đầy đủ trong body Issue #99, #101, #103, #108 (GitHub là nguồn sự thật) — đọc lại trước khi làm T-046/T-047/T-050/T-052. Tóm tắt không chặn: R1 — D7 sửa từng phần (#69), `PERSON_IN_USE` đếm cả KH xóa mềm (câu báo ở T-046), DB mới hơn app mở im lặng (R2/T-052), năm > 9999; R3 — thiếu hàm MTD trong `domain` (trước Phase 4), `calendarDate` thiếu `MAX_YEAR`, `shift` vượt `MIN_YEAR`, API `nextKycVersion`, ngày nhanh đầu năm (gợi ý năm trước?), hiệu năng `rfCount` O(A×T); R4 — `session-end.ps1` `git add -A` gom file phiên khác, viền ô nhập / mũi tên sắp xếp dưới 3:1 (token G3, Owner cân nhắc khi dựng #65–#70), `Overview` lấy "hôm nay" từ đồng hồ máy thay vì `useAppData().today()`, ô ngày tùy chọn báo đỏ sớm khi Tab, "NẠP LẠI" so `===` không `normalize('NFC')` (sửa trước màn có ô gõ xác nhận/tìm tên), hook `review-pr-hint` nhận "issue #N" thành PR, e2e local dùng lại server cũ ở cổng 4173, `trackConsoleErrors` lặp ở 3 spec.
 
@@ -47,10 +50,9 @@ Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 đ�
 
 ## Bước kế tiếp chính xác
 
-1. `/session-start` (pull `main`). Checkout chính đang ở `main`; worktree review `C:\workspace\Project-2C-review` đã có.
-2. **R4 (#108) — 3 mục chặn, 2 task `risk:med`** (mỗi task một phiên mới; xong cả hai thì comment trỏ PR trên #108 rồi đóng #108):
-   - **#109 T-061:** `tools/bootstrap.ps1` chết trên Windows PowerShell 5.1 (`gh auth status *> $null` khi chưa đăng nhập, `corepack enable 2>$null` lỗi EPERM → nhánh dự phòng không chạy), ghim Node 24 thay cho `OpenJS.NodeJS.LTS`; `tools/session-start.ps1` kiểm exit code `git fetch`/`git pull` và báo rõ (detached HEAD: bỏ `pull`, in SHA đang đứng + `origin/main`). **Chặn việc dựng Office Laptop (#9)** → làm trước.
-   - **#110 T-062:** `concurrency` `cancel-in-progress: true` hủy run build exe của `main` khi merge liền nhau → `main` mất artifact. PR #111 đã bỏ phần "push docs hủy run của merge trước" (push docs-only lên `main` không chạy CI), còn lại: `cancel-in-progress: ${{ github.event_name == 'pull_request' }}`.
+1. `/session-start` (pull `main`). Checkout chính đang ở `task/T-054-ci-rust` (#88, phiên khác đang làm — xem đầu file); worktree review `C:\workspace\Project-2C-review` đã có.
+2. **R4 (#108):** #109 (PR #115) và #110 (PR #116) đã merge → comment trỏ 2 PR trên #108 rồi đóng #108.
+   - **Còn nợ test chấp nhận 3 của #110 (T-062):** ở lần kế tiếp có 2 push code lên `main` sát nhau (vd. merge PR xếp chồng bằng `--merge`), chạy `gh run list --branch main --limit 5` → cả hai run `completed`/`success`, không `cancelled`, và mỗi SHA có artifact `Project-2C-<sha>`. Ghi kết quả thành comment trên PR #116. Nếu có run bị hủy → mở lại #110.
 3. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Frontier (không bị chặn):
    - UI #65–#70 (G3, #63, #64 đã xong; R1, R2 xong → màn ghi DB làm được; #100 xong → hết chặn #66, #69). Bắt đầu #65 T-046 Team & nhân sự.
    - Nối tiếp T-044: #88 CI Rust, #89 chặn 2 exe, #90 dọn backup theo mtime, #91 đóng app khi lưu lỗi — Owner xếp thứ tự.
