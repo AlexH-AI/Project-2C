@@ -22,8 +22,8 @@ import {
   type KycValue,
   type KycVersion,
 } from '@p2c/domain';
-import { asc, desc, eq, max } from 'drizzle-orm';
-import { fromIsoDate, liveCustomer, toIsoDate } from './common';
+import { asc, desc, eq, max, sql } from 'drizzle-orm';
+import { fromIsoDate, liveCustomer, prepared, rowInsert, toIsoDate } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { ulid } from './ids';
@@ -276,25 +276,22 @@ function save(
 ): KycVersionRecord | null {
   const at = db.now().toISOString();
   const statusBefore = new Map(before.facts.map((fact) => [fact.id, fact.status]));
-  let seq = nextSeq(db, kycFacts, customerId);
+  let seq = nextSeq(db, lastFactSeq, customerId);
   for (const fact of after.facts) {
     const status = statusBefore.get(fact.id);
     if (status === undefined) {
-      db.orm
-        .insert(kycFacts)
-        .values({
-          id: fact.id,
-          customerId,
-          seq: seq++,
-          field: fact.field,
-          valueJson: JSON.stringify(fact.value),
-          noteId: fact.noteId,
-          confirmedDate: toIsoDate(fact.confirmedDate),
-          status: fact.status,
-          createdAt: at,
-          updatedAt: at,
-        })
-        .run();
+      prepared(db, insertFact).run({
+        id: fact.id,
+        customerId,
+        seq: seq++,
+        field: fact.field,
+        valueJson: JSON.stringify(fact.value),
+        noteId: fact.noteId,
+        confirmedDate: toIsoDate(fact.confirmedDate),
+        status: fact.status,
+        createdAt: at,
+        updatedAt: at,
+      });
     } else if (status !== fact.status) {
       db.orm
         .update(kycFacts)
@@ -304,25 +301,20 @@ function save(
     }
   }
 
-  const latest = db.orm
-    .select()
-    .from(kycVersions)
-    .where(eq(kycVersions.customerId, customerId))
-    .orderBy(desc(kycVersions.seq))
-    .get();
+  const latest = prepared(db, latestVersion).get({ customerId });
   const previous = latest ? toVersion(latest) : null;
   const version = nextKycVersion(previous, previous && before, after, date, manualMaterial);
   if (!version) return null;
   const row = {
     id: ulid(db.now(), db.random),
     customerId,
-    seq: nextSeq(db, kycVersions, customerId),
+    seq: (latest?.seq ?? 0) + 1,
     hash: version.hash,
     date: toIsoDate(version.date),
     material: version.material,
     createdAt: at,
   };
-  db.orm.insert(kycVersions).values(row).run();
+  prepared(db, insertVersion).run(row);
   return toVersion(row);
 }
 
@@ -336,43 +328,59 @@ function insertNote(
   const row = {
     id: ulid(db.now(), db.random),
     customerId,
-    seq: nextSeq(db, kycNotes, customerId),
+    seq: nextSeq(db, lastNoteSeq, customerId),
     text,
     createdDate: toIsoDate(date),
     source,
     createdAt: db.now().toISOString(),
   };
-  db.orm.insert(kycNotes).values(row).run();
+  prepared(db, insertNoteRow).run(row);
   return toNote(row);
 }
 
-function nextSeq(
-  db: Database,
-  table: typeof kycNotes | typeof kycFacts | typeof kycVersions,
-  customerId: string,
-): number {
-  const row = db.orm
+const insertNoteRow = rowInsert(kycNotes);
+const insertFact = rowInsert(kycFacts);
+const insertVersion = rowInsert(kycVersions);
+const byCustomer = sql.placeholder('customerId');
+const latestVersion = (db: Database) =>
+  db.orm
+    .select()
+    .from(kycVersions)
+    .where(eq(kycVersions.customerId, byCustomer))
+    .orderBy(desc(kycVersions.seq))
+    .limit(1)
+    .prepare();
+const lastSeq = (table: typeof kycNotes | typeof kycFacts) => (db: Database) =>
+  db.orm
     .select({ seq: max(table.seq) })
     .from(table)
-    .where(eq(table.customerId, customerId))
-    .get();
-  return (row?.seq ?? 0) + 1;
+    .where(eq(table.customerId, byCustomer))
+    .prepare();
+const lastNoteSeq = lastSeq(kycNotes);
+const lastFactSeq = lastSeq(kycFacts);
+const notesOf = (db: Database) =>
+  db.orm
+    .select()
+    .from(kycNotes)
+    .where(eq(kycNotes.customerId, byCustomer))
+    .orderBy(asc(kycNotes.seq))
+    .prepare();
+const factsOf = (db: Database) =>
+  db.orm
+    .select()
+    .from(kycFacts)
+    .where(eq(kycFacts.customerId, byCustomer))
+    .orderBy(asc(kycFacts.seq))
+    .prepare();
+
+function nextSeq(db: Database, last: typeof lastNoteSeq, customerId: string): number {
+  return (prepared(db, last).get({ customerId })?.seq ?? 0) + 1;
 }
 
 function loadProfile(db: Database, customerId: string): KycProfileRecord {
-  const notes = db.orm
-    .select()
-    .from(kycNotes)
-    .where(eq(kycNotes.customerId, customerId))
-    .orderBy(asc(kycNotes.seq))
-    .all()
-    .map(toNote);
-  const facts = db.orm
-    .select()
-    .from(kycFacts)
-    .where(eq(kycFacts.customerId, customerId))
-    .orderBy(asc(kycFacts.seq))
-    .all()
+  const notes = prepared(db, notesOf).all({ customerId }).map(toNote);
+  const facts = prepared(db, factsOf)
+    .all({ customerId })
     .map((row): KycFact => ({
       id: row.id,
       category: KYC_FIELDS[row.field].category,

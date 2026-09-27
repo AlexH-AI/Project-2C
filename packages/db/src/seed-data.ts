@@ -1,5 +1,5 @@
 /** Static lists and weights the simulated data picks from (spec §7). Data only, no logic. */
-import type { CustomerStage } from '@p2c/domain';
+import type { CustomerStage, KycCategory, KycField, KycValue } from '@p2c/domain';
 import type { AppointmentTrigger } from './appointments';
 
 /** Values with relative weights. */
@@ -158,3 +158,149 @@ export const MEETING_NOTES = [
 
 /** Expected case sizes and FYP, in millions of đồng. */
 export const CASE_SIZES_MILLION = [10, 15, 20, 25, 30, 40, 50, 60, 80, 100] as const;
+
+/**
+ * What an RE learns about a hạng mục in one KYC note: each trường with the chance it is asked.
+ * Trường chính always are (chance 1). Birth year and gender come from the customer profile (D2).
+ */
+export const KYC_TOPICS: readonly {
+  readonly category: KycCategory;
+  readonly fields: readonly (readonly [KycField, number])[];
+}[] = [
+  {
+    category: 'FAMILY',
+    fields: [
+      ['maritalStatus', 1],
+      ['childrenCount', 1],
+      ['dependents', 0.4],
+    ],
+  },
+  {
+    category: 'OCCUPATION_INCOME',
+    fields: [
+      ['occupation', 1],
+      ['annualIncome', 0.6],
+      ['incomeSources', 0.3],
+    ],
+  },
+  {
+    category: 'GOALS',
+    fields: [
+      ['primaryGoal', 1],
+      ['goalHorizon', 0.5],
+      ['otherGoals', 0.2],
+    ],
+  },
+  {
+    category: 'EXISTING_PROTECTION',
+    fields: [
+      ['hasProtection', 1],
+      ['protectionDetails', 0.5],
+    ],
+  },
+  {
+    category: 'ASSETS',
+    fields: [
+      ['totalAssets', 1],
+      ['assetAllocation', 0.5],
+      ['liabilities', 0.3],
+    ],
+  },
+  {
+    category: 'CONCERNS',
+    fields: [
+      ['mainConcern', 1],
+      ['otherConcerns', 0.3],
+    ],
+  },
+  {
+    category: 'RISK_APPETITE',
+    fields: [
+      ['riskProfile', 1],
+      ['investmentExperience', 0.5],
+    ],
+  },
+  { category: 'IDENTITY', fields: [['residence', 1]] },
+];
+
+/** Label and possible values of each trường the RE confirms, as written in a KYC note. */
+export const KYC_VALUES: Readonly<
+  Partial<Record<KycField, { readonly label: string; readonly values: readonly KycValue[] }>>
+> = {
+  residence: {
+    label: 'Nơi ở',
+    values: [
+      'Quận 1, TP.HCM',
+      'Quận 7, TP.HCM',
+      'Thủ Đức, TP.HCM',
+      'Hoàn Kiếm, Hà Nội',
+      'Cầu Giấy, Hà Nội',
+      'Hải Châu, Đà Nẵng',
+    ],
+  },
+  maritalStatus: { label: 'Hôn nhân', values: ['Độc thân', 'Đã kết hôn', 'Ly hôn'] },
+  childrenCount: { label: 'Số con', values: [0, 1, 2, 3] },
+  dependents: { label: 'Người phụ thuộc', values: ['Bố mẹ hai bên', 'Mẹ ruột', 'Không có'] },
+  occupation: {
+    label: 'Nghề nghiệp',
+    values: [
+      'Chủ doanh nghiệp',
+      'Giám đốc điều hành',
+      'Bác sĩ',
+      'Luật sư',
+      'Nhà đầu tư',
+      'Kiến trúc sư',
+    ],
+  },
+  annualIncome: { label: 'Thu nhập năm', values: ['1–2 tỷ', '2–5 tỷ', '5–10 tỷ', 'Trên 10 tỷ'] },
+  incomeSources: {
+    label: 'Nguồn thu',
+    values: ['Cổ tức doanh nghiệp', 'Cho thuê bất động sản', 'Lương và thưởng'],
+  },
+  totalAssets: {
+    label: 'Tổng tài sản',
+    values: ['10–30 tỷ', '30–100 tỷ', '100–300 tỷ', 'Trên 300 tỷ'],
+  },
+  assetAllocation: {
+    label: 'Phân bổ tài sản',
+    values: ['Chủ yếu bất động sản', 'Doanh nghiệp và chứng khoán', 'Tiền gửi và vàng'],
+  },
+  liabilities: { label: 'Khoản vay', values: ['Không có', 'Vay mua nhà', 'Vay kinh doanh'] },
+  primaryGoal: {
+    label: 'Mục tiêu chính',
+    values: [
+      'Quỹ học vấn cho con',
+      'Chuẩn bị nghỉ hưu',
+      'Chuyển giao tài sản',
+      'Bảo vệ thu nhập gia đình',
+    ],
+  },
+  goalHorizon: { label: 'Thời hạn', values: ['5 năm', '10 năm', '15–20 năm'] },
+  otherGoals: {
+    label: 'Mục tiêu khác',
+    values: ['Du học cho con', 'Mua nhà nghỉ dưỡng', 'Làm từ thiện'],
+  },
+  riskProfile: { label: 'Khẩu vị rủi ro', values: ['Thận trọng', 'Cân bằng', 'Chấp nhận rủi ro'] },
+  investmentExperience: {
+    label: 'Kinh nghiệm đầu tư',
+    values: ['Dưới 3 năm', '3–10 năm', 'Trên 10 năm'],
+  },
+  hasProtection: { label: 'Đã có bảo vệ', values: [true, false] },
+  protectionDetails: {
+    label: 'Bảo vệ hiện có',
+    values: ['Bảo hiểm sức khỏe công ty', 'Hợp đồng nhân thọ 1 tỷ', 'Quỹ dự phòng 6 tháng'],
+  },
+  mainConcern: {
+    label: 'Trăn trở chính',
+    values: [
+      'Rủi ro sức khỏe',
+      'Kế thừa doanh nghiệp',
+      'Lạm phát bào mòn tài sản',
+      'Học phí của con',
+    ],
+  },
+  otherConcerns: {
+    label: 'Trăn trở khác',
+    values: ['Thuế thu nhập', 'Chăm sóc bố mẹ', 'Biến động thị trường'],
+  },
+};
