@@ -1,7 +1,8 @@
 /**
  * VND money (PROJECT-PLAN §4.4). An amount is a whole number of đồng — never a float — so sums
  * and comparisons are exact up to `Number.MAX_SAFE_INTEGER` (≈ 9 triệu tỷ). Vietnamese
- * conventions: `.` groups thousands, `,` marks decimals.
+ * conventions for output: `.` groups thousands, `,` marks decimals. Input accepts either mark
+ * for either role, told apart by the digits that follow (`parseVnd`).
  */
 export type Vnd = number;
 
@@ -29,14 +30,11 @@ const UNIT_EXPONENTS: Readonly<Record<string, number>> = {
 const AMOUNT_PATTERN =
   /^([\d.,]+)\s*(tỷ|tỉ|ty|ti|triệu|trieu|tr|nghìn|nghin|ngàn|ngan|k)?\s*(?:₫|đồng|dong|đ|vnd)?$/;
 
-/** `1.234.567`: 1–3 digits, then groups of exactly 3. */
-const GROUPED_PATTERN = /^\d{1,3}(?:\.\d{3})+$/;
-
 /**
- * Reads an amount the way an RE types it: `500tr`, `1,2 tỷ`, `750k`, `500.000.000`, `500000000 ₫`.
- * A `.` followed by groups of 3 digits groups thousands (`1.500 tỷ` = 1 500 tỷ); a single `,` or
- * other single `.` is a decimal mark (`1,2 tỷ`, `1.2 tỷ`). Anything below 1 đồng is an error,
- * never rounded away.
+ * Reads an amount the way an RE types it: `500tr`, `1,2 tỷ`, `750k`, `500.000.000`, `500,000`,
+ * `500000000 ₫`. `.` and `,` follow the same rule (see `splitNumber`), so `500,000` is 500 000
+ * đồng and `1,500 tỷ` is 1 500 tỷ; `1,5 tỷ` is 1,5 tỷ. Anything below 1 đồng is an error, never
+ * rounded away.
  */
 export function parseVnd(text: string): VndParseResult {
   const trimmed = text.normalize('NFC').trim().toLowerCase();
@@ -63,21 +61,33 @@ export function parseVnd(text: string): VndParseResult {
   return { ok: true, amount };
 }
 
-/** Integer and fraction digits of `1.234,5`, `1,2`, `1.2` or `1.500`; null when malformed. */
+/**
+ * Integer and fraction digits of the number before the unit; null when malformed. `.` and `,` are
+ * alike: a mark followed by exactly 3 digits groups thousands (`1.234.567`, `1,234,567`), with a
+ * first group of 1–3 digits that is not `0`. A mark followed by 1–2 or 4+ digits, or a lone mark
+ * after `0` (`0,500`), is the decimal mark; it comes last, once, and differs from the grouping
+ * mark (`1.234,5`, `1,234.5`).
+ */
 function splitNumber(text: string): { integer: string; fraction: string } | null {
-  const commas = text.split(',');
-  if (commas.length > 2) return null;
-  const [whole, fraction = ''] = commas as [string, string?];
-  if (commas.length === 2 && !/^\d+$/.test(fraction)) return null;
+  const groups = text.split(/[.,]/);
+  if (groups.includes('')) return null;
+  const marks = text.replace(/\d/g, '');
+  const head = groups[0] as string;
+  const tail = groups.at(-1) as string;
+  if (marks === '') return { integer: head, fraction: '' };
 
-  if (/^\d+$/.test(whole)) return { integer: whole, fraction };
-  if (GROUPED_PATTERN.test(whole)) return { integer: whole.replaceAll('.', ''), fraction };
-  // A single `.` that is not a thousands group is a decimal mark (`1.2 tỷ`).
-  const decimal = /^(\d+)\.(\d+)$/.exec(whole);
-  if (decimal && commas.length === 1) {
-    return { integer: decimal[1] as string, fraction: decimal[2] as string };
-  }
-  return null;
+  const hasDecimal = tail.length !== 3 || (marks.length === 1 && head === '0');
+  const fraction = hasDecimal ? tail : '';
+  const integerGroups = hasDecimal ? groups.slice(0, -1) : groups;
+  const separators = hasDecimal ? marks.slice(0, -1) : marks;
+  if (separators === '') return { integer: head, fraction };
+
+  const separator = separators[0] as string;
+  if ([...separators].some((mark) => mark !== separator)) return null;
+  if (hasDecimal && marks.at(-1) === separator) return null;
+  if (!/^[1-9]\d{0,2}$/.test(head)) return null;
+  if (integerGroups.slice(1).some((group) => group.length !== 3)) return null;
+  return { integer: integerGroups.join(''), fraction };
 }
 
 function assertVnd(amount: Vnd): void {
