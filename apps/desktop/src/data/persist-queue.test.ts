@@ -101,6 +101,53 @@ describe('createPersistQueue', () => {
     expect(queue.failed()).toBe(false);
   });
 
+  it('flush() writes the latest snapshot again after a failed write', async () => {
+    const disk = fakeDisk();
+    const queue = createPersistQueue(disk.write);
+
+    queue.persist(bytes('v1'));
+    disk.next().fail();
+    await queue.idle();
+    expect(queue.unsaved()).toBe(true);
+
+    const flushed = queue.flush();
+    await tick();
+    disk.next().finish();
+    await flushed;
+
+    expect(disk.started).toEqual(['v1', 'v1']);
+    expect(disk.onDisk).toBe('v1');
+    expect(queue.failed()).toBe(false);
+    expect(queue.unsaved()).toBe(false);
+  });
+
+  it('flush() resolves at once when nothing is unsaved', async () => {
+    const disk = fakeDisk();
+    const queue = createPersistQueue(disk.write);
+
+    await queue.flush();
+
+    expect(queue.unsaved()).toBe(false);
+    expect(disk.started).toEqual([]);
+  });
+
+  it('flush() waits for a waiting snapshot, and rejects when that write fails', async () => {
+    const disk = fakeDisk();
+    const queue = createPersistQueue(disk.write);
+
+    queue.persist(bytes('v1'));
+    queue.persist(bytes('v2'));
+    expect(queue.unsaved()).toBe(true);
+    const flushed = queue.flush();
+    disk.next().finish();
+    await tick();
+    disk.next().fail();
+
+    await expect(flushed).rejects.toThrow('SAVE_FAILED');
+    expect(disk.started).toEqual(['v1', 'v2']);
+    expect(queue.unsaved()).toBe(true);
+  });
+
   it('stops notifying a listener after it unsubscribes', async () => {
     const disk = fakeDisk();
     const queue = createPersistQueue(disk.write);

@@ -66,6 +66,11 @@ export const vi = {
     'Chưa nạp lại: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Dữ liệu hiện tại không bị đổi.',
   'storage.saveFailed':
     'Chưa lưu được dữ liệu vào file. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
+  'close.unsavedTitle': 'Chưa lưu được thay đổi',
+  'close.unsavedBody':
+    'Các thay đổi gần nhất chưa ghi được vào file (file có thể đang bị chương trình khác mở). Đóng chương trình đó rồi chọn Thử lại, hoặc đóng app và bỏ các thay đổi chưa lưu.',
+  'close.retry': 'Thử lại',
+  'close.discard': 'Đóng và bỏ thay đổi chưa lưu',
 } as const;
 
 export type MessageKey = keyof typeof vi;

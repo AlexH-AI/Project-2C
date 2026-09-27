@@ -1,4 +1,5 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { parseDate } from '@p2c/domain';
@@ -27,6 +28,6 @@ openAppData({
   locateFile: () => wasmUrl,
   today: pinnedDay ? () => pinnedDay : undefined,
 }).then(
-  (data) => render(<App data={data} />),
+  (data) => render(<App data={data} appWindow={isTauri() ? getCurrentWindow() : undefined} />),
   (error: unknown) => render(<StartupError error={error} />),
 );
