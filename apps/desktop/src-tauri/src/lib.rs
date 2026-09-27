@@ -31,13 +31,25 @@ fn raw_body<'a>(request: &'a Request<'_>) -> Result<&'a [u8], String> {
 /// `utc_offset_minutes` comes from the webview so backup names use local time.
 #[tauri::command(async)]
 fn db_open(utc_offset_minutes: i64) -> Result<Response, String> {
+    let stamp = local_stamp(utc_offset_minutes)?;
+    let bytes = storage::open(&data_dir()?, &stamp).map_err(|e| e.to_string())?;
+    Ok(Response::new(bytes.unwrap_or_default()))
+}
+
+/// Backs the saved file up before the simulated data is reloaded; returns the backup file name.
+#[tauri::command(async)]
+fn db_backup(utc_offset_minutes: i64) -> Result<String, String> {
+    let stamp = local_stamp(utc_offset_minutes)?;
+    storage::backup(&data_dir()?, &stamp).map_err(|e| e.to_string())
+}
+
+/// `YYYYMMDD-HHMMSS` in local time for backup names.
+fn local_stamp(utc_offset_minutes: i64) -> Result<String, String> {
     let secs = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_err(|e| e.to_string())?
         .as_secs() as i64;
-    let stamp = storage::stamp(secs + utc_offset_minutes * 60);
-    let bytes = storage::open(&data_dir()?, &stamp).map_err(|e| e.to_string())?;
-    Ok(Response::new(bytes.unwrap_or_default()))
+    Ok(storage::stamp(secs + utc_offset_minutes * 60))
 }
 
 /// Replaces the database file with the request body (atomic).
@@ -61,7 +73,12 @@ fn export_write(request: Request<'_>) -> Result<String, String> {
 
 pub fn run() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![db_open, db_save, export_write])
+        .invoke_handler(tauri::generate_handler![
+            db_open,
+            db_save,
+            db_backup,
+            export_write
+        ])
         .run(tauri::generate_context!())
         .expect("error while running Project-2C");
 }

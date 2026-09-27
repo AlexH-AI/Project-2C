@@ -13,16 +13,18 @@ export function tauriStorage(
   invoke: Invoke,
   timezoneOffset: () => number = () => new Date().getTimezoneOffset(),
 ): StoragePort {
+  const local = () => ({ utcOffsetMinutes: -timezoneOffset() });
   return {
     async load() {
-      const reply = (await invoke('db_open', {
-        utcOffsetMinutes: -timezoneOffset(),
-      })) as ArrayBuffer;
+      const reply = (await invoke('db_open', local())) as ArrayBuffer;
       // Rust answers empty only when the file does not exist; an existing empty file fails.
       return reply.byteLength === 0 ? undefined : new Uint8Array(reply);
     },
     async save(bytes) {
       await invoke('db_save', bytes);
+    },
+    async backup() {
+      return (await invoke('db_backup', local())) as string;
     },
   };
 }
