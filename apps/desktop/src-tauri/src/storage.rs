@@ -42,13 +42,28 @@ pub fn open(dir: &Path, stamp: &str) -> io::Result<Option<Vec<u8>>> {
             format!("{DB_FILE} is not a SQLite database"),
         ));
     }
-    // A file the app keeps refusing (damaged inside) must not push the good backups out.
-    if !has_copy(&backups, &bytes) {
-        let name = backup_name(&backups, stamp);
-        write_atomic(&backups, &name, &bytes)?;
-        prune_backups(&backups, &name);
-    }
+    copy_to_backups(&backups, &bytes, stamp)?;
     Ok(Some(bytes))
+}
+
+/// Copies the saved database file into `backups\` on demand (before reloading the simulated
+/// data) and returns the backup's file name — an identical copy already there is reused.
+pub fn backup(dir: &Path, stamp: &str) -> io::Result<String> {
+    let bytes = fs::read(dir.join(DB_FILE))?;
+    copy_to_backups(&dir.join(BACKUP_DIR), &bytes, stamp)
+}
+
+/// Writes `bytes` as backup `stamp`, keeping the newest ten; returns the name of the copy. A file
+/// the app keeps refusing (damaged inside) must not push the good backups out, so an identical
+/// copy is never written twice.
+fn copy_to_backups(backups: &Path, bytes: &[u8], stamp: &str) -> io::Result<String> {
+    if let Some(name) = find_copy(backups, bytes) {
+        return Ok(name);
+    }
+    let name = backup_name(backups, stamp);
+    write_atomic(backups, &name, bytes)?;
+    prune_backups(backups, &name);
+    Ok(name)
 }
 
 /// Replaces the database file atomically.
@@ -174,8 +189,8 @@ fn backup_names(backups: &Path) -> Vec<String> {
     names
 }
 
-fn has_copy(backups: &Path, bytes: &[u8]) -> bool {
-    backup_names(backups).iter().any(|name| {
+fn find_copy(backups: &Path, bytes: &[u8]) -> Option<String> {
+    backup_names(backups).into_iter().find(|name| {
         let path = backups.join(name);
         fs::metadata(&path).is_ok_and(|meta| meta.len() == bytes.len() as u64)
             && fs::read(&path).is_ok_and(|copy| copy == bytes)
@@ -269,6 +284,54 @@ mod tests {
         assert_eq!(
             fs::read(backups.join("project2c-20260927-080000.db")).unwrap(),
             db("data")
+        );
+    }
+
+    #[test]
+    fn backup_copies_the_saved_file_and_returns_its_name() {
+        let dir = temp_dir();
+        save(&dir, &db("before reload")).unwrap();
+        let name = backup(&dir, "20260927-101500").unwrap();
+        assert_eq!(name, "project2c-20260927-101500.db");
+        assert_eq!(
+            fs::read(dir.join(BACKUP_DIR).join(&name)).unwrap(),
+            db("before reload")
+        );
+    }
+
+    #[test]
+    fn backup_of_an_already_copied_file_returns_the_existing_copy() {
+        let dir = temp_dir();
+        save(&dir, &db("data")).unwrap();
+        open(&dir, "20260927-080000").unwrap();
+        assert_eq!(
+            backup(&dir, "20260927-101500").unwrap(),
+            "project2c-20260927-080000.db"
+        );
+        assert_eq!(
+            names(&dir.join(BACKUP_DIR)),
+            vec!["project2c-20260927-080000.db"]
+        );
+    }
+
+    #[test]
+    fn backup_keeps_only_the_ten_newest_backups() {
+        let dir = temp_dir();
+        ten_backups(&dir);
+        save(&dir, &db("before reload")).unwrap();
+        backup(&dir, "20260927-101500").unwrap();
+        let kept = names(&dir.join(BACKUP_DIR));
+        assert_eq!(kept.len(), 10);
+        assert_eq!(kept[9], "project2c-20260927-101500.db");
+    }
+
+    #[test]
+    fn backup_without_a_file_is_an_error() {
+        let dir = temp_dir();
+        fs::create_dir_all(&dir).unwrap();
+        assert_eq!(
+            backup(&dir, "20260927-101500").unwrap_err().kind(),
+            ErrorKind::NotFound
         );
     }
 

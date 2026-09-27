@@ -25,4 +25,11 @@ describe('tauriStorage', () => {
 
     expect(invoke).toHaveBeenCalledWith('db_save', bytes);
   });
+
+  it('backs the saved file up under a local-time name and returns that name', async () => {
+    const invoke = vi.fn().mockResolvedValue('project2c-20260927-101500.db');
+
+    expect(await tauriStorage(invoke, () => -420).backup()).toBe('project2c-20260927-101500.db');
+    expect(invoke).toHaveBeenCalledWith('db_backup', { utcOffsetMinutes: 420 });
+  });
 });

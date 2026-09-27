@@ -38,6 +38,30 @@ export const vi = {
   'storage.openFailedHelp':
     'App chưa ghi gì vào file. Các bản sao lưu tự động nằm trong thư mục Project2C-data\\backups: chép bản mới nhất thành Project2C-data\\project2c.db để khôi phục; nếu vẫn lỗi, thử bản cũ hơn.',
   'storage.technicalDetail': 'Chi tiết kỹ thuật:',
+  'startup.loading': 'Đang mở dữ liệu…',
+  'settings.demo.title': 'Dữ liệu giả lập',
+  'settings.demo.reload': 'Nạp lại dữ liệu giả lập',
+  'settings.demo.reloadHelp':
+    'Xóa dữ liệu hiện tại, tạo lại 3 team × 10 RE, ~12 tháng tính tới hôm nay.',
+  'settings.demo.reloadHelpBackup': 'App tự backup trước.',
+  'settings.demo.reloadOpen': 'Nạp lại…',
+  'settings.demo.confirmTitle': 'Nạp lại dữ liệu giả lập?',
+  'settings.demo.confirmBody':
+    'Toàn bộ dữ liệu hiện tại được thay bằng dữ liệu giả lập mới, neo ở ngày {date}.',
+  'settings.demo.confirmBackup':
+    'App backup file dữ liệu trước vào Project2C-data\\backups\\; khôi phục bằng cách chép bản backup thành Project2C-data\\project2c.db khi app đã đóng.',
+  'settings.demo.confirmWeb': 'Bản web không lưu file: dữ liệu chỉ nằm trong trình duyệt.',
+  'settings.demo.confirmWordLabel': 'Gõ {word} để xác nhận',
+  'settings.demo.confirmWord': 'NẠP LẠI',
+  'settings.demo.cancel': 'Hủy',
+  'settings.demo.confirm': 'Nạp lại',
+  'settings.demo.confirmWithBackup': 'Backup rồi nạp lại',
+  'settings.demo.running': 'Đang nạp lại…',
+  'settings.demo.done': 'Đã nạp lại dữ liệu giả lập, neo ở ngày {date}.',
+  'settings.demo.doneBackup': 'Backup: Project2C-data\\backups\\{file}',
+  'settings.demo.failed': 'Chưa nạp lại được dữ liệu giả lập. Dữ liệu hiện tại không bị đổi.',
+  'settings.demo.failedUnsaved':
+    'Chưa nạp lại: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Dữ liệu hiện tại không bị đổi.',
   'storage.saveFailed':
     'Chưa lưu được dữ liệu vào file. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
 } as const;
