@@ -8,6 +8,7 @@ import {
   isPipelineStage,
   KYC_FIELDS,
   kycHash,
+  stageOn,
   type KycField,
 } from '@p2c/domain';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -19,6 +20,7 @@ import { listPolicies } from './policies';
 import { seedDemoData } from './seed';
 
 const SLOW = 60_000;
+const ANCHOR = calendarDate(2026, 9, 15);
 const NUMBER_FIELDS: readonly KycField[] = ['birthYear', 'childrenCount'];
 const BOOLEAN_FIELDS: readonly KycField[] = ['hasProtection'];
 const GENDER_LABELS = { MALE: 'Nam', FEMALE: 'Nữ' } as const;
@@ -30,7 +32,7 @@ let profiles: Map<string, KycProfileRecord>;
 
 beforeAll(async () => {
   db = await openDatabase();
-  seedDemoData(db, { anchorDate: calendarDate(2026, 9, 15), seed: 11 });
+  seedDemoData(db, { anchorDate: ANCHOR, seed: 11 });
   customers = listCustomers(db);
   appointments = listAppointments(db);
   profiles = new Map(customers.map((c) => [c.id, getKycProfile(db, c.id)]));
@@ -51,6 +53,18 @@ describe('T-042 rules on the simulated data', () => {
       expect(isPipelineStage(own[0]!.to)).toBe(true);
       expect(own.slice(1).every((t) => t.from !== null)).toBe(true);
       expect(own.at(-1)!.to).toBe(customer.stage);
+    }
+  });
+
+  it('dates each customer’s transitions in recording order, so stageOn agrees with the stage (D10)', () => {
+    const transitions = listStageTransitions(db);
+    for (const own of groupBy(transitions, (t) => t.customerId).values()) {
+      for (let i = 1; i < own.length; i++) {
+        expect(compareDates(own[i]!.date, own[i - 1]!.date)).toBeGreaterThanOrEqual(0);
+      }
+    }
+    for (const customer of customers) {
+      expect(stageOn(transitions, customer.id, ANCHOR)).toBe(customer.stage);
     }
   });
 

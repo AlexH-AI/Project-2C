@@ -1,3 +1,4 @@
+import { stageOn } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
   changeStageManually,
@@ -121,8 +122,7 @@ describe('customers', () => {
     const customer = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 1) });
 
     const hold = changeStageManually(db, customer.id, { to: 'ON_HOLD', date: d(5, 1) });
-    // Recorded later with an earlier date: order of recording decides "latest", not the date.
-    changeStageManually(db, customer.id, { to: 'N3', date: d(3, 1) });
+    changeStageManually(db, customer.id, { to: 'N3', date: d(5, 1) });
 
     expect(hold).toMatchObject({ from: 'N3', to: 'ON_HOLD', appointmentId: null });
     expect(getCustomer(db, customer.id)?.stage).toBe('N3');
@@ -138,6 +138,43 @@ describe('customers', () => {
     expect(codeOf(() => changeStageManually(db, customer.id, { to: 'N1', date: d(8, 1) }))).toBe(
       'INVALID_TRANSITION',
     );
+  });
+
+  // D10: a transition dated before the customer's latest would make `stageOn` disagree with
+  // `customers.stage`, so it is refused; the same day is fine and counts in recording order.
+  it('refuses a stage change dated before the latest transition, even before creation', async () => {
+    const { db, re, persist } = await setup();
+    const customer = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(10, 1) });
+    changeStageManually(db, customer.id, { to: 'N4', date: d(20, 1) });
+    persist.mockClear();
+
+    expect(codeOf(() => changeStageManually(db, customer.id, { to: 'N2', date: d(19, 1) }))).toBe(
+      'TRANSITION_BEFORE_LATEST',
+    );
+    // Checked before the transition rule: an earlier date is reported even for a disallowed move.
+    expect(codeOf(() => changeStageManually(db, customer.id, { to: 'N4', date: d(19, 1) }))).toBe(
+      'TRANSITION_BEFORE_LATEST',
+    );
+    expect(getCustomer(db, customer.id)?.stage).toBe('N4');
+    expect(listStageTransitions(db, customer.id)).toHaveLength(2);
+    expect(persist).not.toHaveBeenCalled();
+
+    const fresh = createCustomer(db, { name: 'Mai', reId: re.id, stage: 'N3', date: d(10, 1) });
+    expect(codeOf(() => changeStageManually(db, fresh.id, { to: 'N2', date: d(1, 1) }))).toBe(
+      'TRANSITION_BEFORE_LATEST',
+    );
+  });
+
+  it('allows a stage change on the day of the latest transition, in recording order', async () => {
+    const { db, re } = await setup();
+    const customer = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(10, 1) });
+
+    changeStageManually(db, customer.id, { to: 'N2', date: d(10, 1) });
+    changeStageManually(db, customer.id, { to: 'N1', date: d(10, 1) });
+
+    const stage = getCustomer(db, customer.id)?.stage;
+    expect(stage).toBe('N1');
+    expect(stageOn(listStageTransitions(db), customer.id, d(10, 1))).toBe(stage);
   });
 
   it('hides a soft-deleted customer and its transitions until restored', async () => {

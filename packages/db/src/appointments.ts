@@ -1,7 +1,8 @@
 /**
  * Appointments and meeting outcomes (spec §3.5–3.6, §4; D3, D6, D7). A met appointment whose stage
  * after differs from the customer's stage moves the customer through a transition that points back
- * to it — the only transitions that can count as an RF (#44).
+ * to it — the only transitions that can count as an RF (#44). That transition carries the meeting
+ * day, so an outcome recorded or restored after a later stage change is refused (D10).
  */
 import type { Appointment, CalendarDate, CustomerStage, Vnd } from '@p2c/domain';
 import { and, asc, eq, isNull } from 'drizzle-orm';

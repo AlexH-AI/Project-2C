@@ -1,6 +1,6 @@
 # Phase 3 — Mô hình dữ liệu và lưu trữ (spec G2)
 
-- **Trạng thái:** Accepted — Owner duyệt 26/09/2026 (**G2** mô hình dữ liệu; **G1** ADR-0016 + phụ lục ADR-0006 + P1; **G4** dependency) · PR #58 · bổ sung D9 `outcome_reviewer_id` (Owner, G3 vòng 1 của #59, 27/09/2026)
+- **Trạng thái:** Accepted — Owner duyệt 26/09/2026 (**G2** mô hình dữ liệu; **G1** ADR-0016 + phụ lục ADR-0006 + P1; **G4** dependency) · PR #58 · bổ sung D9 `outcome_reviewer_id` (Owner, G3 vòng 1 của #59, 27/09/2026) · bổ sung D10 ngày transition không lùi (Owner, G8, #99/#100, 27/09/2026)
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §4.4, §5 (Phase 3), §7.1; ADR-0004…0008, ADR-0010, ADR-0016; mockup G3 `docs/design/mockups/`
 - **Cách soạn:** brainstorming với Owner trong phiên 26/09/2026 (quyết định ở §1); Claude soạn, Owner duyệt trên PR.
@@ -22,6 +22,7 @@ Phase 3 cho phép **nhập liệu hoàn chỉnh** trong app: Team/nhân sự, KH
 | D7 | Sửa/xóa cuộc hẹn đã sinh transition | Chỉ khi transition đó còn là **transition mới nhất** của KH; nếu không → chặn, hướng dẫn sửa nhóm tay. Khi bị chặn chỉ **khóa 3 ô**: trạng thái, ngày cuộc hẹn, `stage_after`; các ô khác (việc tiếp theo, case size, ghi chú, trigger, người phối hợp, người đánh giá kết quả) vẫn sửa được; xóa vẫn bị chặn (Owner, G3 vòng 1, 27/09/2026 — mockup 6f) |
 | D8 | Nhân sự seed | Mỗi team 1 TL + 10 RE; **1 IS, 1 BD, 1 BDM** dùng chung cho cả 3 team |
 | D9 | Lý do hạ nhóm / đóng (Owner, G3 vòng 1, 27/09/2026) | **Không hỏi lý do.** Hạ nhóm / đóng là quyết định khi review kết quả cuộc gặp gần nhất → ghi **người đánh giá kết quả** (`appointments.outcome_reviewer_id`, không bắt buộc, vd. TL / IS) |
+| D10 | Ngày của transition (Owner, G8, 27/09/2026 — review R1 #99) | **Không lùi ngày.** Transition có ngày sớm hơn transition mới nhất còn hiệu lực của KH bị từ chối (`TRANSITION_BEFORE_LATEST`); transition đầu mang ngày tạo KH nên cũng chặn ngày trước ngày tạo. Cùng ngày thì được, thứ tự trong ngày theo `seq`. Nhờ vậy ngày luôn cùng chiều `seq`, `customers.stage` = `stageOn()` và `from` của transition gắn cuộc hẹn là nhóm vào ngày gặp (RF đúng) |
 
 **Đề xuất ngoài mô hình dữ liệu (Owner duyệt G1, 26/09/2026):**
 
@@ -174,14 +175,14 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
 | `createTeam`, `renameTeam`, `createPerson`, `updatePerson` | RE/TL phải có team |
 | `createCustomer` | Chỉ ở nhóm mở N4–N1 (`assertValidTransition`, ADR-0007); ghi transition đầu (`from` null); nếu có ngày sinh/giới tính → ghi chú `SYSTEM` + dữ kiện (D2) |
 | `updateCustomerProfile` | Đổi tên / RE / ngày sinh / giới tính; đổi ngày sinh hoặc giới tính → ghi chú `SYSTEM` + `confirmFact` |
-| `changeStageManually` | `assertValidTransition`; transition `appointment_id` null — không bao giờ tính RF |
+| `changeStageManually` | `assertValidTransition`; transition `appointment_id` null — không bao giờ tính RF; ngày không được trước transition mới nhất (D10) |
 | `scheduleAppointment` | Trạng thái `SCHEDULED`, không có `stage_after` |
-| `recordMeetingOutcome` | Đặt trạng thái + kết quả. `MET`: bắt buộc `stage_after`, `next_step` (D6); `stage_after` ≠ nhóm hiện tại → transition gắn `appointment_id` (#44); `outcome_reviewer_id` tùy chọn, phải là nhân sự chưa xóa (D9). Sửa lại kết quả → theo D7 |
+| `recordMeetingOutcome` | Đặt trạng thái + kết quả. `MET`: bắt buộc `stage_after`, `next_step` (D6); `stage_after` ≠ nhóm hiện tại → transition gắn `appointment_id` (#44); `outcome_reviewer_id` tùy chọn, phải là nhân sự chưa xóa (D9). Sửa lại kết quả → theo D7. Transition mang ngày cuộc hẹn → ghi kết quả muộn bị từ chối (D10) nếu KH đã có transition ngày muộn hơn; `MET` với `stage_after` = nhóm hiện tại, `CANCELLED`, `NO_SHOW` không sinh transition nên vẫn ghi được |
 | `rescheduleAppointment` | Cuộc hẹn cũ → `RESCHEDULED`; tạo cuộc hẹn mới `SCHEDULED` trỏ `rescheduled_from_id` (D3) |
 | `addKycNote` | Chỉ thêm |
 | `confirmKycFact`, `markKycConflict`, `resolveKycConflict` | Dùng `confirmFact` / `markConflict` / `resolveConflict` của `domain`; từ chối `birthYear` / `gender` từ nguồn RE (D2); sau đó `nextKycVersion` → ghi `kyc_versions` nếu hash đổi; cờ material tay theo ADR-0008 §7 |
 | `submitPolicy`, `issuePolicy`, `updatePolicy` | Ràng buộc §3.7; FYP qua `Vnd` |
-| `softDelete…`, `restore…` | D4; không xóa được team / nhân sự còn được tham chiếu bởi bản ghi chưa xóa; xóa cuộc hẹn có transition theo D7 (transition bị hủy, `customers.stage` về `from_stage`) |
+| `softDelete…`, `restore…` | D4; không xóa được team / nhân sự còn được tham chiếu bởi bản ghi chưa xóa; xóa cuộc hẹn có transition theo D7 (transition bị hủy, `customers.stage` về `from_stage`); khôi phục cuộc hẹn `MET` mà transition của nó giờ lùi ngày → từ chối (D10), cuộc hẹn vẫn bị xóa |
 
 **Đọc dữ liệu** qua repository trả về đúng kiểu của `domain` (`Team`, `Person`, `Customer`, `StageTransition`, `Appointment`, `Policy`, `KycProfile`, `KycVersion`). Chỉ số (Phase 4) tính bằng `stats.ts` trên dữ liệu đã nạp — quy mô demo đủ nhỏ để tính trong bộ nhớ.
 
@@ -223,7 +224,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
 - **Golden qua DB**: nạp nguyên fixture golden G01–G22 (`metrics.fixture.ts`) và K01–K15 (`kyc.fixture.ts`) vào DB bằng lệnh nghiệp vụ, đọc lại, chạy `stats.ts` / `evaluateKycGate` → phải khớp golden. Fixture **không sửa**.
 - **Migration**: DB rỗng → phiên bản mới nhất; schema khớp Drizzle.
 - **Backup**: seed → xuất → nhập → xuất lại giống hệt từng byte; file phiên bản mới hơn / hỏng / cũ hơn cần migrate.
-- **Bất biến**: `customers.stage` = transition mới nhất chưa xóa; transition từ cuộc gặp luôn có `appointment_id`; bản ghi xóa mềm không vào chỉ số.
+- **Bất biến**: `customers.stage` = transition mới nhất chưa xóa; ngày transition không giảm theo `seq` (D10), nên `stageOn(ngày neo)` = `customers.stage`; transition từ cuộc gặp luôn có `appointment_id`; bản ghi xóa mềm không vào chỉ số.
 - **e2e** (Playwright, web): luồng nhập chính trên seed với ngày neo cố định.
 - **Lớp Rust**: kiểm tay trên exe ở PR đụng tới nó (CI build exe mọi PR — ADR-0015).
 
