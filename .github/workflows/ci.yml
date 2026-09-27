@@ -73,6 +73,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/desktop/src-tauri
+          # New key so the cache is saved again with the debug build of clippy/tests;
+          # an exact hit on the old release-only cache would never be re-saved.
+          key: rust-checks
       # Rust checks run before the exe build; `pnpm verify` has none because
       # office machines may lack Rust (local equivalent: `pnpm verify:rust`).
       - name: Rust format
