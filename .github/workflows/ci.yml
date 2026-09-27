@@ -35,7 +35,11 @@ permissions:
 
 jobs:
   verify:
-    name: Verify (lint, typecheck, unit, boundaries)
+    # A skipped run for another label gets other check names: PR checks show only
+    # the latest check per name, so it would hide the real run's result.
+    name: >-
+      ${{ github.event.action == 'labeled' && github.event.label.name != 'build-exe' &&
+      'Label ignored (verify)' || 'Verify (lint, typecheck, unit, boundaries)' }}
     # main only receives PRs that already passed Verify, so a push to main skips it.
     # Labels other than build-exe do not re-run CI.
     if: >-
@@ -63,7 +67,9 @@ jobs:
           if-no-files-found: ignore
 
   build-exe:
-    name: Build portable exe
+    name: >-
+      ${{ github.event.action == 'labeled' && github.event.label.name != 'build-exe' &&
+      'Label ignored (build-exe)' || 'Build portable exe' }}
     needs: verify
     # main pushes, manual runs, and PRs labelled build-exe (ADR-0015, Actions minutes addendum).
     # Runs when verify passed or was skipped (push to main).
