@@ -33,8 +33,8 @@ Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh
    - GitHub Free không có branch protection / auto-merge cho repo private (issue #3). Thay vào đó: hook `.githooks/pre-push` chặn push thẳng lên `main` (bootstrap đặt `core.hooksPath`). **Không bao giờ** dùng `--no-verify` hay merge PR code khi CI chưa xanh.
    - CI (`.github/workflows/ci.yml`, ADR-0015 + phụ lục "Tiết kiệm phút Actions"):
      - Thay đổi chỉ gồm `docs/**` và `**/*.md` (mọi file `.md`): không chạy CI, cả ở PR lẫn push lên `main`. PR docs-only merge được không cần CI.
-     - PR code (mở, push thêm, mở lại, gắn `build-exe`): Verify (`pnpm verify`) + e2e. Build exe chỉ khi PR có nhãn `build-exe`.
-     - Nhãn `build-exe` **bắt buộc** khi PR đụng `apps/desktop/src-tauri/**`, Cargo, `rust-toolchain.toml`, `package.json`, `pnpm-lock.yaml` hoặc cấu hình build (`vite.config.*`, `tauri.conf.json`). Gắn lúc tạo (`gh pr create --label build-exe`) hay gắn sau đều được: gắn `build-exe` chạy lại CI của PR kèm build exe (sự kiện `labeled`, T-063); gắn nhãn khác không chạy lại CI.
+     - PR code (mở, push thêm, mở lại): Verify (`pnpm verify`) + e2e. Build exe chỉ khi PR có nhãn `build-exe`.
+     - Nhãn `build-exe` **bắt buộc** khi PR đụng `apps/desktop/src-tauri/**`, Cargo, `rust-toolchain.toml`, `package.json`, `pnpm-lock.yaml` hoặc cấu hình build (`vite.config.*`, `tauri.conf.json`). Gắn lúc tạo (`gh pr create --label build-exe`): job Verify đọc nhãn hiện tại của PR qua API ở cuối job (T-063). Gắn sau khi Verify đã qua bước đó thì CI không chạy lại (không nghe sự kiện `labeled`): push thêm hoặc `gh pr close` + `gh pr reopen`.
      - Push lên `main` (sau merge): bỏ Verify, chỉ build exe → artifact `Project-2C-<sha>`.
      - Chạy tay (`workflow_dispatch`): Verify + build exe.
      - Push mới lên cùng nhánh hủy run cũ đang chạy (`concurrency`).

@@ -2,9 +2,7 @@ name: CI
 
 on:
   pull_request:
-    # `labeled`: `gh pr create --label build-exe` opens the PR first and adds the
-    # label a moment later, so the `opened` payload has no labels (T-063, #119).
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened]
     # Docs-only PRs skip CI entirely (ADR-0015).
     paths-ignore:
       - 'docs/**'
@@ -20,32 +18,22 @@ on:
 # A new push to a PR cancels that PR's older run. Runs on main never cancel each
 # other, so every merged commit keeps its exe artifact: each gets its own group
 # (per SHA), because GitHub also drops an older *pending* run in a shared group.
-# Adding build-exe restarts the PR's run with the label; adding any other label
-# gets a group of its own (per run, all jobs skipped) so it cancels nothing.
 concurrency:
-  group: >-
-    ci-${{ github.event_name != 'pull_request' && github.sha ||
-    (github.event.action == 'labeled' && github.event.label.name != 'build-exe') &&
-    format('ignored-label-{0}', github.run_id) ||
-    github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   verify:
-    # A skipped run for another label gets other check names: PR checks show only
-    # the latest check per name, so it would hide the real run's result.
-    name: >-
-      ${{ github.event.action == 'labeled' && github.event.label.name != 'build-exe' &&
-      'Label ignored (verify)' || 'Verify (lint, typecheck, unit, boundaries)' }}
+    name: Verify (lint, typecheck, unit, boundaries)
     # main only receives PRs that already passed Verify, so a push to main skips it.
-    # Labels other than build-exe do not re-run CI.
-    if: >-
-      github.event_name != 'push' &&
-      (github.event.action != 'labeled' || github.event.label.name == 'build-exe')
+    if: github.event_name != 'push'
     runs-on: windows-latest
+    outputs:
+      build-exe: ${{ steps.labels.outputs.build-exe }}
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -57,6 +45,21 @@ jobs:
       - run: pnpm verify
       - name: E2E (web build, Microsoft Edge)
         run: pnpm e2e
+      # Current labels, not the event payload: `gh pr create --label build-exe` opens
+      # the PR before adding the label, so the `opened` payload has none (T-063, #119).
+      # No `labeled` trigger: a run per label would add skipped checks that hide this
+      # run's result in the PR check list.
+      - name: Read PR labels
+        id: labels
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $labels = gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels" --jq '.[].name'
+          if ($LASTEXITCODE -ne 0) { throw "gh api failed ($LASTEXITCODE)" }
+          $buildExe = (@($labels) -contains 'build-exe').ToString().ToLower()
+          "build-exe=$buildExe" >> $env:GITHUB_OUTPUT
+          "PR labels: $($labels -join ', ') -> build-exe=$buildExe"
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
@@ -67,18 +70,14 @@ jobs:
           if-no-files-found: ignore
 
   build-exe:
-    name: >-
-      ${{ github.event.action == 'labeled' && github.event.label.name != 'build-exe' &&
-      'Label ignored (build-exe)' || 'Build portable exe' }}
+    name: Build portable exe
     needs: verify
     # main pushes, manual runs, and PRs labelled build-exe (ADR-0015, Actions minutes addendum).
     # Runs when verify passed or was skipped (push to main).
-    # Checks the label event again: verify skipped for another label must not start this job.
     if: >-
       !failure() && !cancelled() &&
       (github.event_name != 'pull_request' ||
-       contains(github.event.pull_request.labels.*.name, 'build-exe')) &&
-      (github.event.action != 'labeled' || github.event.label.name == 'build-exe')
+       needs.verify.outputs.build-exe == 'true')
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
