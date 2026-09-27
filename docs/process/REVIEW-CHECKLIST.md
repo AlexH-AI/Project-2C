@@ -4,6 +4,8 @@ Review chạy trong **phiên Claude mới, context sạch**. Đầu vào duy nh�
 
 Ghi kết quả thành comment trên PR: `REVIEW: PASS` hoặc `REVIEW: CHANGES` + danh sách mục, mỗi mục trỏ `file:line`.
 
+Quy trình đầy đủ nằm ở skill `review-pr` (ADR-0017): xác định mức theo nhãn `risk:*`, rồi chạy 3 trục Spec / Standards / Correctness. Checklist này là **trục Standards** ở mọi mức. Owner chỉ cần gõ "review PR #N".
+
 ## 1. Đúng spec
 
 - [ ] Mọi test chấp nhận trong Issue đều có test tương ứng và pass.

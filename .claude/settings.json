@@ -26,6 +26,17 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/review-pr-hint.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }
