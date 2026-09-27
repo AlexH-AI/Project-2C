@@ -11,8 +11,10 @@
     Only report what is installed or missing; change nothing.
 
 .EXAMPLE
-    pwsh -File tools/bootstrap.ps1
+    powershell -ExecutionPolicy Bypass -File tools/bootstrap.ps1
     pwsh -File tools/bootstrap.ps1 -CheckOnly
+
+    Runs on both Windows PowerShell 5.1 and PowerShell 7.
 #>
 [CmdletBinding()]
 param(
@@ -35,6 +37,14 @@ function Assert-ExitCode([string]$What) {
     if ($LASTEXITCODE -ne 0) { throw "$What failed with exit code $LASTEXITCODE" }
 }
 
+# Windows PowerShell 5.1 turns native stderr into a terminating NativeCommandError under 'Stop' when
+# stderr is redirected. Run native commands with 'Continue' and judge them by $LASTEXITCODE only;
+# callers with side effects follow up with Assert-ExitCode.
+function Invoke-Native([scriptblock]$Command, [switch]$Quiet) {
+    $ErrorActionPreference = 'Continue'
+    if ($Quiet) { & $Command *> $null } else { & $Command }
+}
+
 function Test-Command([string]$Name) {
     [bool](Get-Command $Name -ErrorAction SilentlyContinue)
 }
@@ -50,12 +60,29 @@ function Install-WingetPackage([string]$Id, [string[]]$ExtraArgs = @()) {
     Write-Host "  -> winget install $Id"
     $wingetArgs = @('install', '--id', $Id, '--exact', '--source', 'winget',
         '--accept-package-agreements', '--accept-source-agreements', '--silent') + $ExtraArgs
-    & winget @wingetArgs
+    Invoke-Native { & winget @wingetArgs }
     if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne -1978335189) {
         # -1978335189 = APPINSTALLER_CLI_ERROR_UPDATE_NOT_APPLICABLE (already installed)
         throw "winget install $Id failed with exit code $LASTEXITCODE"
     }
     Update-SessionPath
+}
+
+# winget has OpenJS.NodeJS.<major> only for older lines; the current ones live under the LTS and
+# "current" ids. Pin the newest <major>.x found there instead of whatever LTS is today.
+function Resolve-NodePackage([string]$Major) {
+    $pinned = "OpenJS.NodeJS.$Major"
+    Invoke-Native { winget show --id $pinned --exact --source winget --accept-source-agreements } -Quiet
+    if ($LASTEXITCODE -eq 0) { return @{ Id = $pinned; Args = @() } }
+    foreach ($id in 'OpenJS.NodeJS.LTS', 'OpenJS.NodeJS') {
+        $lines = Invoke-Native { winget show --id $id --exact --source winget --versions --accept-source-agreements 2>$null }
+        $versions = @($lines | ForEach-Object { "$_".Trim() } | Where-Object { $_ -match "^$Major\.\d+\.\d+$" })
+        if ($versions.Count -gt 0) {
+            $latest = $versions | Sort-Object { [version]$_ } -Descending | Select-Object -First 1
+            return @{ Id = $id; Args = @('--version', $latest) }
+        }
+    }
+    throw "No winget package found for Node.js $Major.x"
 }
 
 function Get-VsBuildToolsPath {
@@ -102,19 +129,22 @@ if (Test-Command 'git') {
 # Node.js (major version from .nvmrc)
 $nodeMajor = (Get-Content (Join-Path $RepoRoot '.nvmrc') -Raw).Trim()
 $nodeOk = (Test-Command 'node') -and ((node --version) -match "^v$nodeMajor\.")
-if (-not $nodeOk) { Install-WingetPackage 'OpenJS.NodeJS.LTS' }
+if (-not $nodeOk -and -not $CheckOnly) {
+    $nodePackage = Resolve-NodePackage $nodeMajor
+    Install-WingetPackage $nodePackage.Id $nodePackage.Args
+}
 $nodeOk = (Test-Command 'node') -and ((node --version) -match "^v$nodeMajor\.")
 Write-Status 'node' $nodeOk $(if (Test-Command 'node') { "$(node --version) (want v$nodeMajor.x)" } else { "want v$nodeMajor.x" })
 
 # pnpm via corepack (version pinned by "packageManager" in package.json)
 if (-not (Test-Command 'pnpm') -and -not $CheckOnly -and (Test-Command 'corepack')) {
     $env:COREPACK_ENABLE_DOWNLOAD_PROMPT = '0'
-    corepack enable pnpm 2>$null
+    Invoke-Native { corepack enable pnpm } -Quiet
     if ($LASTEXITCODE -ne 0) {
         # Node in Program Files is not writable without admin: put the shims in a user dir on PATH.
         $shimDir = Join-Path $env:APPDATA 'npm'
         New-Item -ItemType Directory -Force $shimDir | Out-Null
-        corepack enable pnpm --install-directory $shimDir
+        Invoke-Native { corepack enable pnpm --install-directory $shimDir }
         Assert-ExitCode 'corepack enable pnpm'
         $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
         if (($userPath -split ';') -notcontains $shimDir) {
@@ -132,8 +162,8 @@ if (-not $CheckOnly -and (Test-Command 'rustup')) {
     Push-Location $RepoRoot
     try {
         # Probe only: installs the pinned toolchain if missing, so its exit code is not checked.
-        rustup show active-toolchain *> $null
-        rustup toolchain install
+        Invoke-Native { rustup show active-toolchain } -Quiet
+        Invoke-Native { rustup toolchain install }
         Assert-ExitCode 'rustup toolchain install'
     } finally { Pop-Location }
 }
@@ -153,8 +183,9 @@ if (-not (Test-Command 'gh')) { Install-WingetPackage 'GitHub.cli' }
 $ghOk = Test-Command 'gh'
 Write-Status 'gh' $ghOk $(if ($ghOk) { (gh --version | Select-Object -First 1) } else { '' })
 if ($ghOk) {
-    gh auth status *> $null
-    Write-Status 'gh auth' ($LASTEXITCODE -eq 0) $(if ($LASTEXITCODE -eq 0) { 'logged in' } else { 'run: gh auth login' })
+    Invoke-Native { gh auth status } -Quiet
+    $ghAuthOk = $LASTEXITCODE -eq 0
+    Write-Status 'gh auth' $ghAuthOk $(if ($ghAuthOk) { 'logged in' } else { 'run: gh auth login' })
 }
 
 # WebView2 runtime (ships with Windows 11)
@@ -165,7 +196,7 @@ Write-Status 'webview2' ([bool]$wv2) $(if ($wv2) { $wv2 } else { 'install Micros
 if (-not $CheckOnly -and (Test-Command 'pnpm') -and (Test-Path (Join-Path $RepoRoot 'package.json'))) {
     Push-Location $RepoRoot
     try {
-        pnpm install --frozen-lockfile
+        Invoke-Native { pnpm install --frozen-lockfile }
         Assert-ExitCode 'pnpm install'
     } finally { Pop-Location }
 }
