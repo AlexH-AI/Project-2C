@@ -38,7 +38,7 @@ export function submitPolicy(db: Database, input: NewPolicy): Policy {
     liveCustomer(db, input.customerId);
     const at = db.now().toISOString();
     const row: PolicyRow = {
-      id: ulid(db.now()),
+      id: ulid(db.now(), db.random),
       customerId: input.customerId,
       ...validate(db, { ...input, issuedDate: null, issuedFyp: null }),
       createdAt: at,

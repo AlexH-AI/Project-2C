@@ -1,5 +1,5 @@
 export { openDatabase } from './database';
-export type { Database, OpenDatabaseOptions } from './database';
+export type { Database, OpenDatabaseOptions, Sources } from './database';
 export { DB_ERROR_CODES, DbError } from './errors';
 export type { DbErrorCode } from './errors';
 export {
@@ -71,4 +71,6 @@ export type {
   KycVersionRecord,
 } from './kyc';
 export { loadMetricsData } from './metrics';
+export { seedDemoData } from './seed';
+export type { SeedOptions } from './seed';
 export { APPOINTMENT_TRIGGERS, GENDERS, KYC_NOTE_SOURCES } from './schema';

@@ -202,7 +202,7 @@ export function recordProfileFacts(
   const after = changes.reduce(
     (profile, [field, value]) =>
       confirmFact(profile, {
-        id: ulid(db.now()),
+        id: ulid(db.now(), db.random),
         field,
         value,
         noteId: note.id,
@@ -229,7 +229,7 @@ function factCommand(
       throw new DbError('KYC_NOTE_NOT_FOUND');
     }
     const input: KycFactInput = {
-      id: ulid(db.now()),
+      id: ulid(db.now(), db.random),
       field,
       value: normalizeValue(field, command.value),
       noteId: command.noteId,
@@ -314,7 +314,7 @@ function save(
   const version = nextKycVersion(previous, previous && before, after, date, manualMaterial);
   if (!version) return null;
   const row = {
-    id: ulid(db.now()),
+    id: ulid(db.now(), db.random),
     customerId,
     seq: nextSeq(db, kycVersions, customerId),
     hash: version.hash,
@@ -334,7 +334,7 @@ function insertNote(
   source: KycSource,
 ): KycNoteRecord {
   const row = {
-    id: ulid(db.now()),
+    id: ulid(db.now(), db.random),
     customerId,
     seq: nextSeq(db, kycNotes, customerId),
     text,

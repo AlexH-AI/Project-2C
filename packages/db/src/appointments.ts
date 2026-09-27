@@ -109,16 +109,20 @@ export function recordMeetingOutcome(
       throw new DbError('STAGE_AFTER_NOT_ALLOWED');
     }
     const size = outcome.expectedCaseSize ?? null;
-    withdrawAppointmentTransition(db, id);
-    updateAppointmentRow(db, id, {
-      status: outcome.status,
-      stageAfter,
-      nextStep,
-      expectedCaseSize: size === null ? null : requireAmount(size),
-      note: outcome.note?.trim() ?? row.note,
-    });
-    applyOutcome(db, liveAppointment(db, id));
-    return toAppointment(db, liveAppointment(db, id));
+    // Only a met appointment can have moved the customer.
+    if (row.status === 'MET') withdrawAppointmentTransition(db, id);
+    const updated: AppointmentRow = {
+      ...row,
+      ...updateAppointmentRow(db, id, {
+        status: outcome.status,
+        stageAfter,
+        nextStep,
+        expectedCaseSize: size === null ? null : requireAmount(size),
+        note: outcome.note?.trim() ?? row.note,
+      }),
+    };
+    applyOutcome(db, updated);
+    return toAppointment(db, updated);
   });
 }
 
@@ -179,7 +183,7 @@ function insertScheduled(
   requirePeople(db, reId, coordinatorIds);
   const at = db.now().toISOString();
   const row: AppointmentRow = {
-    id: ulid(db.now()),
+    id: ulid(db.now(), db.random),
     customerId: input.customerId,
     reId,
     date: toIsoDate(input.date),
@@ -200,7 +204,8 @@ function insertScheduled(
   for (const personId of coordinatorIds) {
     db.orm.insert(appointmentCoordinators).values({ appointmentId: row.id, personId }).run();
   }
-  return toAppointment(db, row);
+  // Same order as `coordinatorsOf`: SQLite compares text byte by byte, as does the default sort.
+  return toAppointment(db, row, coordinatorIds.sort());
 }
 
 /** A live RE and live coordinators other than the RE — checked again on restore (spec §4). */
@@ -242,26 +247,37 @@ function liveAppointment(db: Database, id: string): AppointmentRow {
   return row;
 }
 
-function updateAppointmentRow(db: Database, id: string, changes: Partial<AppointmentRow>): void {
-  db.orm
-    .update(appointments)
-    .set({ updatedAt: db.now().toISOString(), ...changes })
-    .where(eq(appointments.id, id))
-    .run();
+/** Writes the changes and returns them with the new `updatedAt`. */
+function updateAppointmentRow(
+  db: Database,
+  id: string,
+  changes: Partial<AppointmentRow>,
+): Partial<AppointmentRow> {
+  const stamped = { updatedAt: db.now().toISOString(), ...changes };
+  db.orm.update(appointments).set(stamped).where(eq(appointments.id, id)).run();
+  return stamped;
 }
 
-function toAppointment(db: Database, row: AppointmentRow): AppointmentRecord {
-  const coordinators = db.orm
+function coordinatorsOf(db: Database, appointmentId: string): string[] {
+  return db.orm
     .select({ personId: appointmentCoordinators.personId })
     .from(appointmentCoordinators)
-    .where(eq(appointmentCoordinators.appointmentId, row.id))
+    .where(eq(appointmentCoordinators.appointmentId, appointmentId))
     .orderBy(asc(appointmentCoordinators.personId))
-    .all();
+    .all()
+    .map((c) => c.personId);
+}
+
+function toAppointment(
+  db: Database,
+  row: AppointmentRow,
+  coordinatorIds: readonly string[] = coordinatorsOf(db, row.id),
+): AppointmentRecord {
   return {
     id: row.id,
     customerId: row.customerId,
     reId: row.reId,
-    coordinatorIds: coordinators.map((c) => c.personId),
+    coordinatorIds,
     date: fromIsoDate(row.date),
     time: row.time,
     status: row.status,

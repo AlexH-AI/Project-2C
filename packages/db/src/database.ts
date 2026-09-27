@@ -3,7 +3,8 @@
  * the file bytes to the `persist` port after every successful transaction.
  */
 import { drizzle, type SQLJsDatabase } from 'drizzle-orm/sql-js';
-import initSqlJs, { type Database as SqlJsDatabase } from 'sql.js';
+import initSqlJs, { type Database as SqlJsDatabase, type Statement } from 'sql.js';
+import { cryptoFill, type RandomFill } from './ids';
 import { MIGRATIONS, type Migration } from './migrations';
 import * as schema from './schema';
 
@@ -16,27 +17,47 @@ export interface OpenDatabaseOptions {
   readonly locateFile?: (file: string) => string;
   /** Clock for timestamps and ids; tests pin it. */
   readonly now?: () => Date;
+  /** Random bytes for ids and customer codes; defaults to `crypto`. */
+  readonly random?: RandomFill;
+}
+
+/** Where timestamps, ids and customer codes come from. */
+export interface Sources {
+  readonly now: () => Date;
+  readonly random: RandomFill;
 }
 
 export interface Database {
   readonly orm: SQLJsDatabase<typeof schema>;
   /** Raw sql.js handle — for tests and the migration runner only. */
   readonly sqlite: SqlJsDatabase;
-  readonly now: () => Date;
+  now(): Date;
+  random: RandomFill;
   schemaVersion(): number;
-  /** Runs `fn` atomically; persists only when it returns without throwing. */
+  /**
+   * Runs `fn` atomically; persists only when it returns without throwing. A nested call runs in a
+   * savepoint of the outer transaction, which alone persists.
+   */
   transaction<T>(fn: () => T): T;
+  /** Runs `fn` with other sources, e.g. the seeded ones of the simulated data. */
+  withSources<T>(sources: Sources, fn: () => T): T;
   export(): Uint8Array;
 }
 
 export async function openDatabase(options: OpenDatabaseOptions = {}): Promise<Database> {
   const SQL = await initSqlJs(options.locateFile ? { locateFile: options.locateFile } : {});
   const sqlite = new SQL.Database(options.bytes);
-  const now = options.now ?? (() => new Date());
+  let sources: Sources = {
+    now: options.now ?? (() => new Date()),
+    random: options.random ?? cryptoFill,
+  };
   const persist = options.persist;
+  let depth = 0;
   enableForeignKeys(sqlite);
+  const statements = cacheStatements(sqlite);
 
   const exportBytes = (): Uint8Array => {
+    statements.clear();
     const bytes = sqlite.export();
     // sql.js reopens the database on export, which resets connection pragmas.
     enableForeignKeys(sqlite);
@@ -46,26 +67,70 @@ export async function openDatabase(options: OpenDatabaseOptions = {}): Promise<D
   const db: Database = {
     orm: drizzle(sqlite, { schema }),
     sqlite,
-    now,
+    now: () => sources.now(),
+    random: (bytes) => sources.random(bytes),
     schemaVersion: () => schemaVersion(sqlite),
     transaction<T>(fn: () => T): T {
-      sqlite.run('BEGIN');
+      const nested = depth > 0;
+      sqlite.run(nested ? 'SAVEPOINT nested' : 'BEGIN');
+      depth++;
       let result: T;
       try {
         result = fn();
-        sqlite.run('COMMIT');
       } catch (error) {
-        sqlite.run('ROLLBACK');
+        sqlite.exec(nested ? 'ROLLBACK TO nested; RELEASE nested' : 'ROLLBACK');
         throw error;
+      } finally {
+        depth--;
       }
-      persist?.(exportBytes());
+      sqlite.run(nested ? 'RELEASE nested' : 'COMMIT');
+      if (!nested) persist?.(exportBytes());
       return result;
+    },
+    withSources<T>(next: Sources, fn: () => T): T {
+      const previous = sources;
+      sources = next;
+      try {
+        return fn();
+      } finally {
+        sources = previous;
+      }
     },
     export: exportBytes,
   };
 
   migrate(db, MIGRATIONS);
   return db;
+}
+
+/**
+ * Drizzle prepares and frees a statement for every query; keeping one per SQL text, reset instead
+ * of freed, makes the simulated data (~100k queries) several times faster. Export reopens the
+ * database, so the cached statements must really be freed before it.
+ */
+function cacheStatements(sqlite: SqlJsDatabase): { clear(): void } {
+  const cache = new Map<string, { statement: Statement; free: () => boolean }>();
+  const prepare = sqlite.prepare.bind(sqlite);
+  sqlite.prepare = (sql, params) => {
+    let entry = cache.get(sql);
+    if (!entry) {
+      const statement = prepare(sql);
+      entry = { statement, free: statement.free.bind(statement) };
+      statement.free = () => {
+        statement.reset();
+        return true;
+      };
+      cache.set(sql, entry);
+    }
+    if (params !== undefined) entry.statement.bind(params);
+    return entry.statement;
+  };
+  return {
+    clear() {
+      for (const { free } of cache.values()) free();
+      cache.clear();
+    },
+  };
 }
 
 function enableForeignKeys(sqlite: SqlJsDatabase): void {

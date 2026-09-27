@@ -1,0 +1,152 @@
+import { APPOINTMENT_STATUSES, calendarDate } from '@p2c/domain';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { listAppointments } from './appointments';
+import { toIsoDate } from './common';
+import { listCustomers, listStageTransitions } from './customers';
+import { openDatabase, type Database } from './database';
+import { listPolicies } from './policies';
+import { APPOINTMENT_TRIGGERS } from './schema';
+import { seedDemoData } from './seed';
+import { createTeam, listPeople, listTeams } from './team';
+import { codeOf } from './test-support';
+
+const ANCHOR = calendarDate(2026, 9, 15);
+const SLOW = 60_000;
+
+/** SHA-256 of every business row, in insertion order — equal hashes mean the same data. */
+async function contentHash(db: Database): Promise<string> {
+  const lines: string[] = [];
+  const tables = db.sqlite.exec(
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT IN ('schema_migrations', 'sqlite_sequence') ORDER BY name",
+  );
+  for (const [name] of tables[0]!.values) {
+    lines.push(`#${String(name)}`);
+    for (const result of db.sqlite.exec(`SELECT * FROM "${String(name)}" ORDER BY rowid`)) {
+      for (const row of result.values) lines.push(JSON.stringify(row));
+    }
+  }
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(lines.join('\n')));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function seeded(seed: number, anchorDate = ANCHOR) {
+  const persist = vi.fn();
+  const db = await openDatabase({ persist });
+  persist.mockClear();
+  seedDemoData(db, { anchorDate, seed });
+  return { db, persist };
+}
+
+describe('seedDemoData', () => {
+  it(
+    'writes the same data for the same anchor day and seed, and other data for another seed',
+    async () => {
+      const first = await seeded(1);
+      const second = await seeded(1);
+      const other = await seeded(2);
+      expect(await contentHash(second.db)).toBe(await contentHash(first.db));
+      expect(await contentHash(other.db)).not.toBe(await contentHash(first.db));
+    },
+    SLOW,
+  );
+
+  describe('on one seeded database', () => {
+    let db: Database;
+    beforeAll(async () => {
+      ({ db } = await seeded(7));
+    }, SLOW);
+
+    const near = (actual: number, expected: number) => {
+      expect(actual).toBeGreaterThanOrEqual(expected * 0.8);
+      expect(actual).toBeLessThanOrEqual(expected * 1.2);
+    };
+
+    it('has 3 teams of 1 TL and 10 RE, and one shared IS, BD and BDM', () => {
+      const people = listPeople(db);
+      const count = (role: string) => people.filter((p) => p.role === role).length;
+      expect(
+        listTeams(db)
+          .map((t) => t.name)
+          .sort(),
+      ).toEqual(['Bình Minh', 'Hừng Đông', 'Sao Mai']);
+      for (const team of listTeams(db)) {
+        const members = people.filter((p) => p.teamId === team.id);
+        expect(members.filter((p) => p.role === 'TL')).toHaveLength(1);
+        expect(members.filter((p) => p.role === 'RE')).toHaveLength(10);
+      }
+      expect([count('RE'), count('TL'), count('IS'), count('BD'), count('BDM')]).toEqual([
+        30, 3, 1, 1, 1,
+      ]);
+      for (const role of ['IS', 'BD', 'BDM']) {
+        expect(people.find((p) => p.role === role)?.teamId).toBeNull();
+      }
+    });
+
+    it('has about 1,200 customers, 6,000 appointments and 1,000 policies', () => {
+      near(listCustomers(db).length, 1200);
+      near(listAppointments(db).length, 6000);
+      near(listPolicies(db).length, 1000);
+    });
+
+    it('covers every appointment status and trigger, reschedules and coordinators', () => {
+      const appointments = listAppointments(db);
+      const statuses = new Set(appointments.map((a) => a.status));
+      const triggers = new Set(appointments.map((a) => a.triggerType));
+      expect([...statuses].sort()).toEqual([...APPOINTMENT_STATUSES].sort());
+      expect([...triggers].sort()).toEqual([...APPOINTMENT_TRIGGERS].sort());
+      expect(appointments.some((a) => a.rescheduledFromId !== null)).toBe(true);
+      expect(appointments.some((a) => a.coordinatorIds.length > 0)).toBe(true);
+    });
+
+    it('keeps appointments within 12 months before and 2-4 weeks after the anchor day', () => {
+      const days = listAppointments(db)
+        .map((a) => toIsoDate(a.date))
+        .sort();
+      expect(days[0]! >= '2025-09-15').toBe(true);
+      expect(days.at(-1)! > '2026-09-29').toBe(true);
+      expect(days.at(-1)! <= '2026-10-13').toBe(true);
+      const future = listAppointments(db).filter((a) => toIsoDate(a.date) >= '2026-09-15');
+      expect(future.length).toBeGreaterThan(0);
+      expect(future.every((a) => a.status === 'SCHEDULED')).toBe(true);
+    });
+
+    it('moves customers down, closes them and reopens them to N3', () => {
+      const transitions = listStageTransitions(db);
+      const rank = (stage: string | null) => ['N4', 'N3', 'N2', 'N1'].indexOf(stage ?? '');
+      const moved = transitions.filter((t) => t.from !== null);
+      expect(moved.some((t) => rank(t.to) >= 0 && rank(t.to) < rank(t.from))).toBe(true);
+      expect(moved.some((t) => t.to === 'ON_HOLD')).toBe(true);
+      expect(moved.some((t) => t.to === 'LOST')).toBe(true);
+      expect(moved.some((t) => (t.from === 'ON_HOLD' || t.from === 'LOST') && t.to === 'N3')).toBe(
+        true,
+      );
+      expect(moved.some((t) => t.appointmentId === null)).toBe(true);
+      const stages = new Set(listCustomers(db).map((c) => c.stage));
+      expect([...stages].sort()).toEqual(['LOST', 'N1', 'N2', 'N3', 'N4', 'ON_HOLD']);
+    });
+
+    it('issues policies the month after submission, some with an issued FYP set by hand', () => {
+      const issued = listPolicies(db).filter((p) => p.issuedDate !== null);
+      expect(issued.some((p) => p.issuedDate!.month !== p.submittedDate.month)).toBe(true);
+      expect(issued.some((p) => p.issuedFyp !== p.submittedFyp)).toBe(true);
+      expect(listPolicies(db).some((p) => p.issuedDate === null)).toBe(true);
+    });
+  });
+
+  it('refuses a database that already has data', async () => {
+    const db = await openDatabase();
+    createTeam(db, { name: 'Sao Mai' });
+    expect(codeOf(() => seedDemoData(db, { anchorDate: ANCHOR, seed: 1 }))).toBe(
+      'SEED_DATABASE_NOT_EMPTY',
+    );
+  });
+
+  it(
+    'saves the file once, after the whole seed',
+    async () => {
+      const { persist } = await seeded(1);
+      expect(persist).toHaveBeenCalledTimes(1);
+    },
+    SLOW,
+  );
+});

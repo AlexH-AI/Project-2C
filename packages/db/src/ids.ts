@@ -4,7 +4,7 @@ export const CROCKFORD_BASE32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
 export type RandomFill = (bytes: Uint8Array<ArrayBuffer>) => Uint8Array;
 
-const cryptoFill: RandomFill = (bytes) => crypto.getRandomValues(bytes);
+export const cryptoFill: RandomFill = (bytes) => crypto.getRandomValues(bytes);
 
 export function ulid(at: Date, random: RandomFill = cryptoFill): string {
   let time = at.getTime();

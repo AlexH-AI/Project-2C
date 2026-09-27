@@ -95,7 +95,7 @@ export function createCustomer(db: Database, input: NewCustomer): CustomerRecord
   return db.transaction(() => {
     const profile = validateProfile(db, input);
     const at = db.now().toISOString();
-    const id = ulid(db.now());
+    const id = ulid(db.now(), db.random);
     db.orm
       .insert(customers)
       .values({
@@ -188,7 +188,7 @@ export function appendTransition(
     .orderBy(desc(stageTransitions.seq))
     .get();
   const row: TransitionRow = {
-    id: ulid(db.now()),
+    id: ulid(db.now(), db.random),
     customerId,
     seq: (lastSeq?.seq ?? 0) + 1,
     fromStage: from,
@@ -260,7 +260,7 @@ function birthDateText(birthDate: BirthDate): string {
 
 function freeCode(db: Database): string {
   for (;;) {
-    const code = `K-${encodeBase32(crypto.getRandomValues(new Uint8Array(3)))}`;
+    const code = `K-${encodeBase32(db.random(new Uint8Array(3)))}`;
     const taken = db.orm
       .select({ id: customers.id })
       .from(customers)

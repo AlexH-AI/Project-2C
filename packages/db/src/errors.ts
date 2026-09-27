@@ -33,6 +33,7 @@ export const DB_ERROR_CODES = [
   'KYC_PROFILE_FIELD_REQUIRED',
   'KYC_NO_CONFLICT',
   'KYC_NOT_IN_CONFLICT',
+  'SEED_DATABASE_NOT_EMPTY',
 ] as const;
 
 export type DbErrorCode = (typeof DB_ERROR_CODES)[number];

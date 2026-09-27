@@ -62,7 +62,7 @@ export function createTeam(db: Database, input: { readonly name: string }): Team
     assertTeamNameFree(db, name, null);
     const at = db.now();
     const row: TeamRow = {
-      id: ulid(at),
+      id: ulid(at, db.random),
       name,
       createdAt: at.toISOString(),
       updatedAt: at.toISOString(),
@@ -118,7 +118,7 @@ export function createPerson(db: Database, input: PersonInput): Person {
     const valid = validatePerson(db, input);
     const at = db.now();
     const row: PersonRow = {
-      id: ulid(at),
+      id: ulid(at, db.random),
       ...valid,
       createdAt: at.toISOString(),
       updatedAt: at.toISOString(),
