@@ -52,6 +52,7 @@ Bối cảnh: repo private trên GitHub Free có 2.000 phút Actions/tháng; ng�
 - **PR code** chạy Verify + e2e. Build exe chỉ khi PR có nhãn **`build-exe`** (hoặc chạy tay `workflow_dispatch`).
 - **Bắt buộc gắn `build-exe`** khi PR đụng `apps/desktop/src-tauri/**`, Cargo, `rust-toolchain.toml`, `package.json`, `pnpm-lock.yaml` hoặc cấu hình build (`vite.config.*`, `tauri.conf.json`). Gắn nhãn ngay khi tạo PR (`gh pr create --label build-exe`): trigger không nghe sự kiện `labeled`, nên gắn sau thì phải push thêm hoặc `gh pr close` + `gh pr reopen` để CI chạy lại.
 - **Run của `main` không hủy nhau** (T-062, #110): `cancel-in-progress` chỉ bật cho `pull_request`; push lên `main` có nhóm `concurrency` riêng theo SHA (GitHub bỏ cả run đang *chờ* trong cùng nhóm), nên mỗi commit merge đều có artifact `Project-2C-<sha>`. PR vẫn hủy run cũ khi có push mới.
+- **Kiểm tra Rust** (T-054, #88): job `build-exe` chạy `cargo fmt --check`, `cargo clippy --lib --tests --locked -- -D warnings`, `cargo test --lib --locked` trong `apps/desktop/src-tauri` trước `pnpm build:exe`. Vì PR đụng `src-tauri`/Cargo bắt buộc có nhãn `build-exe`, mọi thay đổi Rust đều qua 3 bước này; push lên `main` cũng chạy. `pnpm verify` không có bước Rust (Phương án B trên Office Laptop không có Rust); local chạy `pnpm verify:rust`.
 
 Hệ quả:
 

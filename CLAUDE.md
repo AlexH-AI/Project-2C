@@ -83,6 +83,7 @@ tools/             bootstrap, session scripts, seed
 | `pnpm e2e` | E2E Playwright trên bản build web, dùng Microsoft Edge có sẵn |
 | `pnpm dev:web` | UI trên Vite, không cần Tauri |
 | `pnpm dev` | App Tauri |
+| `pnpm verify:rust` | `cargo fmt --check` + clippy (`-D warnings`) + `cargo test` của `src-tauri` — chạy khi sửa Rust (cần Rust; CI chạy trong job build exe) |
 | `pnpm build:exe` | Build exe portable |
 | `tools/bootstrap.ps1` | Cài/kiểm tra toolchain trên máy mới (idempotent) |
 
