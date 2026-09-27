@@ -60,7 +60,8 @@ Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 đ�
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. **Review toàn bộ R1–R4** (Owner duyệt 27/09, ADR-0017 phụ lục §3): mỗi đợt một phiên sạch trong worktree `.claude\worktrees\review-main` (`git checkout --detach origin/main`), Spec + Standards + `code-review high` cho cả vùng, kết quả ghi vào một Issue review, bug tách task riêng. Bắt đầu **R1 `packages/db/**`**, rồi R2 (`apps/desktop/src/data/**` + `src-tauri/**`). R1, R2 xong trước T-046 (màn đầu tiên ghi DB); R3 (`packages/domain`), R4 (UI, `packages/ui`, script/CI/hook) chạy song song với UI.
+   - **Việc một lần trên Home PC sau khi merge PR #98:** từ checkout chính, gỡ worktree lồng cũ `git worktree remove .claude/worktrees/review-main`, rồi tạo worktree mới `git worktree add --detach ../Project-2C-review origin/main` và chạy `pnpm install --frozen-lockfile` bên trong `C:\workspace\Project-2C-review`.
+2. **Review toàn bộ R1–R4** (Owner duyệt 27/09, ADR-0017 phụ lục §3): mỗi đợt một phiên sạch trong worktree `C:\workspace\Project-2C-review` (`git checkout --detach origin/main`), Spec + Standards + `code-review high` cho cả vùng, kết quả ghi vào một Issue review, bug tách task riêng. Bắt đầu **R1 `packages/db/**`**, rồi R2 (`apps/desktop/src/data/**` + `src-tauri/**`). R1, R2 xong trước T-046 (màn đầu tiên ghi DB); R3 (`packages/domain`), R4 (UI, `packages/ui`, script/CI/hook) chạy song song với UI.
 3. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Frontier (không bị chặn):
    - UI #65–#70 (G3, #63, #64 đã xong); màn ghi DB đầu tiên chờ R1, R2.
    - Nối tiếp T-044: #88 CI Rust, #89 chặn 2 exe, #90 dọn backup theo mtime, #91 đóng app khi lưu lỗi — Owner xếp thứ tự.
@@ -83,7 +84,7 @@ powershell -ExecutionPolicy Bypass -File tools\bootstrap.ps1
 - Cài Node 24, pnpm, Rust 1.98.1, MSVC Build Tools (≈ 10–20 phút, có hộp UAC), gh, rồi `pnpm install`.
 - Mở **terminal mới**, chạy `gh auth login`, rồi `powershell -File tools\bootstrap.ps1 -CheckOnly` → phải ra `Toolchain ready.`
 - Mở Claude Code tại `C:\workspace\Project-2C`: đồng ý tin cậy thư mục và cài plugin `superpowers@superpowers-marketplace` khi được hỏi.
-- Worktree review (ADR-0017 phụ lục), tạo một lần: `git worktree add --detach .claude/worktrees/review-main origin/main`, rồi `pnpm install --frozen-lockfile` trong thư mục đó. Phiên review mở tại `C:\workspace\Project-2C\.claude\worktrees\review-main`.
+- Worktree review (ADR-0017 phụ lục), tạo một lần từ checkout chính: `git worktree add --detach ../Project-2C-review origin/main`, rồi `pnpm install --frozen-lockfile` **bên trong** `C:\workspace\Project-2C-review`. Phiên review mở tại `C:\workspace\Project-2C-review`.
 
 ### Phương án B — máy công ty không có quyền admin / chặn winget
 

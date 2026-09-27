@@ -12,11 +12,11 @@ description: Review a Project-2C pull request by number, choosing the review tie
 - Review phải chạy ở phiên **context sạch**. Nếu chính phiên này đã viết code cho PR → báo Owner, đề nghị `/clear` hoặc mở phiên mới. Nếu Owner vẫn cho làm, ghi "không phải phiên sạch" trong comment.
 - Không đọc comment review cũ trước khi tự kết luận xong. Với vòng review lại, chỉ đọc comment trước **sau khi** đã có kết luận, để đối chiếu các mục đã báo.
 
-### Nơi review: worktree `review-main` (ADR-0017 phụ lục)
+### Nơi review: worktree `Project-2C-review` (ADR-0017 phụ lục)
 
-- Mọi review chạy trong worktree cố định `C:\workspace\Project-2C\.claude\worktrees\review-main`. Nếu phiên đang ở chỗ khác → chuyển thư mục phiên về đó trước.
+- Mọi review chạy trong worktree cố định `C:\workspace\Project-2C-review`, đặt **ngoài** checkout chính để `eslint .`, Prettier và `git status` của checkout chính không quét bản sao repo. Nếu phiên đang ở chỗ khác → chuyển thư mục phiên về đó trước. Phiên ở đây có memory Claude riêng (theo đường dẫn); vậy là đúng ý context sạch.
 - Worktree này **chỉ để review**: luôn detached HEAD, không tạo nhánh, không commit, không sửa file. Code chỉ làm ở checkout chính `C:\workspace\Project-2C` hoặc worktree của task. Phiên review không bao giờ đổi nhánh của checkout chính (phiên khác có thể đang dùng).
-- Đưa worktree về đúng code cần review (sau bước 1 khi đã có `headRefOid`):
+- Đưa worktree về đúng code cần review (sau bước 1 khi đã có `headRefOid`). Mọi lệnh dưới chạy **bên trong** `C:\workspace\Project-2C-review`; `pnpm install` chạy nhầm ở checkout chính sẽ cài cho checkout chính:
 
   ```bash
   git fetch origin
@@ -25,7 +25,13 @@ description: Review a Project-2C pull request by number, choosing the review tie
   pnpm install --frozen-lockfile          # chỉ khi lockfile đổi
   ```
 
-- Chưa có worktree (máy mới) → tạo một lần từ checkout chính: `git worktree add --detach .claude/worktrees/review-main origin/main`, rồi `pnpm install --frozen-lockfile` trong đó.
+- Chưa có worktree (máy mới) → tạo một lần, chạy từ checkout chính: `git worktree add --detach ../Project-2C-review origin/main`, rồi `cd ../Project-2C-review` và `pnpm install --frozen-lockfile` bên trong đó.
+- Vòng sửa sau review:
+  1. Phiên review chỉ đọc và đăng comment.
+  2. Phiên code sửa ở checkout chính hoặc worktree của task, rồi push.
+  3. Phiên review sạch mới: `git fetch origin` + `git checkout --detach <headRefOid mới>`.
+
+  Worktree review không bao giờ giữ nhánh, nên không xung đột khi phiên code checkout nhánh PR.
 
 ## 1. Thu thập và chốt điểm so sánh
 
