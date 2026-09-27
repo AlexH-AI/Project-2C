@@ -54,13 +54,22 @@ const seedDemo = (db: Database, anchorDate: CalendarDate) =>
 export async function openAppData(options: OpenAppDataOptions = {}): Promise<AppData> {
   const { storage, locateFile, today = () => fromLocalDate(new Date()), seed = seedDemo } = options;
   const saves = createPersistQueue((bytes) => storage?.save(bytes) ?? Promise.resolve());
-  const open = (bytes: Uint8Array) =>
-    openDatabase({
+  // Bumped by every open: a database replaced by `reloadDemoData` must never save again, or a
+  // late write to it would overwrite the file with the old data.
+  let generation = 0;
+  const open = (bytes: Uint8Array) => {
+    const mine = ++generation;
+    return openDatabase({
       bytes,
       // Web mode skips exporting the file after every transaction: nothing would keep it.
-      persist: storage ? saves.persist : undefined,
+      persist: storage
+        ? (snapshot) => {
+            if (mine === generation) saves.persist(snapshot);
+          }
+        : undefined,
       locateFile,
     });
+  };
 
   // Seeded apart and saved as one file: the saved file never holds a half-built database.
   const demoData = async (): Promise<Uint8Array> => {

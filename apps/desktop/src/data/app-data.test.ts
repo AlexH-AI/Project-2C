@@ -112,6 +112,21 @@ describe('reloadDemoData', () => {
     expect(teamNames(await openDatabase({ bytes: saves.at(-1) }))).toContain('Hừng Đông');
   });
 
+  it('never saves the replaced database again: a late write to it cannot overwrite the file', async () => {
+    const { storage, saves } = memoryStorage();
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+    const before = app.db();
+
+    await app.reloadDemoData();
+    await app.saves.idle();
+    const count = saves.length;
+    createTeam(before, { name: 'Stale' });
+    await app.saves.idle();
+
+    expect(saves).toHaveLength(count);
+    expect(teamNames(await openDatabase({ bytes: saves.at(-1) }))).toEqual(['Seed 27/09/2026']);
+  });
+
   it('in web mode swaps the data without a backup', async () => {
     const app = await openAppData({ today: () => TODAY, seed: fakeSeed });
     createTeam(app.db(), { name: 'Sao Mai' });
