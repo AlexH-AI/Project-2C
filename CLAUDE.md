@@ -26,7 +26,7 @@ Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh
 
 1. Mỗi task = 1 GitHub Issue (spec + test chấp nhận + file được phép sửa + nhãn `risk:low|med|high`), ≤ ~400 dòng code sản phẩm và ≤ ~800 dòng tổng diff kể cả test (không tính file sinh tự động — ADR-0001 phụ lục).
 2. Nhánh `task/T-xxx-slug` từ `main` (hoặc từ nhánh phase đang mở).
-3. TDD: test đỏ → code → test xanh. Chạy `pnpm verify` trước khi commit.
+3. TDD: test đỏ → code → test xanh. Chạy `pnpm verify` trước khi commit. Test chấp nhận trong Issue là seam đã thống nhất với Owner — không cần hỏi lại seam (skill `tdd`); chỉ hỏi khi cần seam ngoài Issue.
 4. PR → CI Windows xanh → **review ở phiên mới, context sạch** theo `docs/process/REVIEW-CHECKLIST.md`.
 5. `risk:low` + CI xanh + review đạt → Claude tự merge bằng `gh pr merge --squash` (dùng `--merge` khi có PR khác xếp chồng lên nhánh này, để giữ lịch sử commit). Ngược lại chờ Owner. Sửa tối đa 2 vòng, sau đó G8.
    - GitHub Free không có branch protection / auto-merge cho repo private (issue #3). Thay vào đó: hook `.githooks/pre-push` chặn push thẳng lên `main` (bootstrap đặt `core.hooksPath`). **Không bao giờ** dùng `--no-verify` hay merge khi CI chưa xanh.

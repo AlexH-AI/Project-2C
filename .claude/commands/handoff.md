@@ -5,7 +5,7 @@ argument-hint: "[mô tả ngắn việc đang làm]"
 
 1. Cập nhật `docs/state/HANDOFF.md` theo đúng khung đang có:
    - **Cập nhật:** ngày hôm nay; **Máy:** `$env:COMPUTERNAME`; **Nhánh:** nhánh hiện tại; **Phase**.
-   - **Đang làm:** task/Issue, trạng thái (xong gì, dở gì).
+   - **Đang làm:** task/Issue, trạng thái (xong gì, dở gì). Bảng trạng thái chỉ giữ việc còn mở/hoãn và việc merge trong phiên này; việc đã đóng trên GitHub thì xóa (GitHub là nguồn sự thật). Giữ các ghi chú review chưa xử lý.
    - **Bước kế tiếp chính xác:** đủ cụ thể để một phiên mới trên máy khác làm tiếp mà không cần hỏi (file, hàm, test đang đỏ, lệnh).
    - **Chờ Owner:** cổng G1–G8 hoặc quyết định đang chờ.
    - **Lệnh chạy tiếp.**

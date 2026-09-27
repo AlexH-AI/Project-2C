@@ -34,6 +34,8 @@ Put `Bị chặn bởi: #<n>, #<n>` in the issue's "Bị chặn bởi" field (or
 
 Create a GitHub issue following the project conventions above.
 
+The Task template's "files allowed to change" field is required and overrides the skills' "avoid file paths" rule: list paths or globs there (e.g. `packages/db/**`); keep them out of the rest of the body.
+
 ## When a skill says "fetch the relevant ticket"
 
 Run `gh issue view <number> --comments`.
