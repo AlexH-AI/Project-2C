@@ -11,4 +11,6 @@ Vendored from [`mattpocock/skills`](https://github.com/mattpocock/skills) at com
 | `tdd` | `skills/engineering/tdd` | |
 | `setup-matt-pocock-skills` | `skills/engineering/setup-matt-pocock-skills` | One-time config required by `to-spec` / `to-tickets` |
 
+Not vendored: `review-pr` is 2C's own skill (ADR-0017). The `code-review` skill referenced by the vendored `tdd` skill is not installed; in 2C read it as `review-pr`.
+
 To update: re-copy from a newer upstream commit, update the SHA above, and note it in ADR-0012.
