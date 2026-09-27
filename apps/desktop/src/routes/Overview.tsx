@@ -19,6 +19,8 @@ const PERIOD_LABELS: PeriodPickerLabels = {
   from: t('period.from'),
   to: t('period.to'),
   dateFormat: t('period.dateFormat'),
+  monthLabel: t('period.monthLabel'),
+  yearLabel: t('period.yearLabel'),
 };
 
 export function Overview() {

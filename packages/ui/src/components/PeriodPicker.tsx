@@ -3,7 +3,6 @@ import {
   PERIOD_KINDS,
   customPeriod,
   formatDate,
-  formatPeriodLabel,
   parseDate,
   shift,
   switchKind,
@@ -11,9 +10,10 @@ import {
   type Period,
   type PeriodKind,
 } from '@p2c/domain';
+import { periodLabel, type PeriodLabelTemplates } from './PeriodPicker.label';
 import { Segmented } from './Segmented';
 
-export interface PeriodPickerLabels {
+export interface PeriodPickerLabels extends PeriodLabelTemplates {
   title: string;
   kinds: Record<PeriodKind, string> & { group: string };
   previous: string;
@@ -119,7 +119,7 @@ export function PeriodPicker({ value, onChange, today, labels }: PeriodPickerPro
         aria-live="polite"
         className="rounded-sm border border-border bg-surface-2 px-2.5 py-1 text-sm whitespace-nowrap text-fg tabular-nums"
       >
-        {formatPeriodLabel(value)}
+        {periodLabel(value, labels)}
       </output>
       <button
         type="button"

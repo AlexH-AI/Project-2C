@@ -4,7 +4,7 @@ import {
   compareDates,
   customPeriod,
   formatDate,
-  formatPeriodLabel,
+  formatPeriodValue,
   fromLocalDate,
   isInPeriod,
   parseDate,
@@ -103,20 +103,20 @@ describe('customPeriod', () => {
   });
 });
 
-describe('formatPeriodLabel', () => {
-  it('labels each kind', () => {
-    expect(formatPeriodLabel(periodOf('day', d(28, 9, 2026)))).toBe('28/09/2026');
-    expect(formatPeriodLabel(periodOf('week', d(28, 9, 2026)))).toBe('28/09 – 04/10/2026');
-    expect(formatPeriodLabel(periodOf('month', d(28, 9, 2026)))).toBe('Tháng 09/2026');
-    expect(formatPeriodLabel(periodOf('year', d(28, 9, 2026)))).toBe('Năm 2026');
+describe('formatPeriodValue', () => {
+  it('formats each kind without words, leaving them to the UI', () => {
+    expect(formatPeriodValue(periodOf('day', d(28, 9, 2026)))).toBe('28/09/2026');
+    expect(formatPeriodValue(periodOf('week', d(28, 9, 2026)))).toBe('28/09 – 04/10/2026');
+    expect(formatPeriodValue(periodOf('month', d(28, 9, 2026)))).toBe('09/2026');
+    expect(formatPeriodValue(periodOf('year', d(28, 9, 2026)))).toBe('2026');
   });
 
   it('writes both years when a range crosses the new year', () => {
-    expect(formatPeriodLabel(periodOf('week', d(31, 12, 2026)))).toBe('28/12/2026 – 03/01/2027');
+    expect(formatPeriodValue(periodOf('week', d(31, 12, 2026)))).toBe('28/12/2026 – 03/01/2027');
   });
 
-  it('labels a custom range like a week', () => {
-    expect(formatPeriodLabel(customPeriod(d(1, 9, 2026), d(10, 9, 2026)))).toBe(
+  it('formats a custom range like a week', () => {
+    expect(formatPeriodValue(customPeriod(d(1, 9, 2026), d(10, 9, 2026)))).toBe(
       '01/09 – 10/09/2026',
     );
   });
