@@ -73,6 +73,17 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/desktop/src-tauri
+      # Rust checks run before the exe build; `pnpm verify` has none because
+      # office machines may lack Rust (local equivalent: `pnpm verify:rust`).
+      - name: Rust format
+        working-directory: apps/desktop/src-tauri
+        run: cargo fmt --check
+      - name: Rust clippy
+        working-directory: apps/desktop/src-tauri
+        run: cargo clippy --lib --tests --locked -- -D warnings
+      - name: Rust unit tests
+        working-directory: apps/desktop/src-tauri
+        run: cargo test --lib --locked
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:exe
       - uses: actions/upload-artifact@v7
