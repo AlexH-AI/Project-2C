@@ -6,6 +6,7 @@
  */
 import {
   assertValidTransition,
+  compareDates,
   fromLocalDate,
   type CalendarDate,
   type Customer,
@@ -185,8 +186,9 @@ export function appendTransition(
 ): StageTransition {
   const latest = latestTransition(db, customerId);
   const isoDate = toIsoDate(date);
-  // ISO dates compare as text.
-  if (latest && isoDate < latest.date) throw new DbError('TRANSITION_BEFORE_LATEST');
+  if (latest && compareDates(date, fromIsoDate(latest.date)) < 0) {
+    throw new DbError('TRANSITION_BEFORE_LATEST');
+  }
   const from = latest ? latest.toStage : null;
   try {
     assertValidTransition(from, to);
