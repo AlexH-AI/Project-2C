@@ -17,6 +17,7 @@ import {
   stageTransitions,
   teams,
 } from './schema';
+import { createTeam, listTeams } from './team';
 
 function tableNames(db: Awaited<ReturnType<typeof openDatabase>>): string[] {
   const rows = db.sqlite.exec(
@@ -277,5 +278,57 @@ describe('transaction', () => {
 
     expect(persist).not.toHaveBeenCalled();
     expect(db.sqlite.exec('SELECT key FROM settings')).toEqual([]);
+  });
+
+  it('undoes only a failed nested transaction and persists once, after the outer one', async () => {
+    const persist = vi.fn();
+    const db = await openDatabase({ persist });
+    persist.mockClear();
+    const insert = (key: string) =>
+      db.sqlite.run('INSERT INTO settings (key, value_json, updated_at) VALUES (?, ?, ?)', [
+        key,
+        '1',
+        'x',
+      ]);
+
+    db.transaction(() => {
+      insert('outer');
+      db.transaction(() => insert('kept'));
+      expect(() =>
+        db.transaction(() => {
+          insert('undone');
+          throw new Error('boom');
+        }),
+      ).toThrow('boom');
+    });
+
+    expect(persist).toHaveBeenCalledTimes(1);
+    expect(db.sqlite.exec('SELECT key FROM settings ORDER BY key')[0]?.values).toEqual([
+      ['kept'],
+      ['outer'],
+    ]);
+  });
+});
+
+describe('sources', () => {
+  it('takes ids from the given sources inside withSources, and the own ones again after', async () => {
+    const db = await openDatabase({ now: () => new Date(0), random: (bytes) => bytes.fill(0) });
+    const zeros = createTeam(db, { name: 'A' });
+    const ones = db.withSources(
+      { now: () => new Date(0), random: (bytes) => bytes.fill(255) },
+      () => createTeam(db, { name: 'B' }),
+    );
+    const zerosAgain = () => createTeam(db, { name: 'C' });
+
+    expect(zeros.id).toBe('0'.repeat(26));
+    expect(ones.id).toBe('0'.repeat(10) + 'Z'.repeat(16));
+    expect(() => zerosAgain()).toThrow(/UNIQUE/);
+  });
+
+  it('keeps queries working across an export, when statements are reused', async () => {
+    const db = await openDatabase({ persist: () => undefined });
+    createTeam(db, { name: 'A' });
+    createTeam(db, { name: 'B' });
+    expect(listTeams(db).map((t) => t.name)).toEqual(['A', 'B']);
   });
 });
