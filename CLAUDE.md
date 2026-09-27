@@ -30,8 +30,14 @@ Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh
 4. PR → CI Windows xanh → **review ở phiên mới, context sạch** bằng skill `review-pr` (ADR-0017): Owner gõ "review PR #N" → skill đọc nhãn `risk:*`, chọn mức (low: Spec + checklist · med: + `code-review medium` · high: + `code-review high`). Không gọi `code-review` trực tiếp; không dùng `--comment`/`--fix`/`ultra`.
    - Review chạy trong worktree cố định `C:\workspace\Project-2C-review`, ngoài checkout chính (detached HEAD ở đúng SHA đang review, chỉ đọc, không commit). Code chỉ làm ở checkout chính hoặc worktree của task. Chi tiết: skill `review-pr` §0.
 5. `risk:low` + CI xanh + review đạt → Claude tự merge bằng `gh pr merge --squash` (dùng `--merge` khi có PR khác xếp chồng lên nhánh này, để giữ lịch sử commit). Ngược lại chờ Owner. Sửa tối đa 2 vòng, sau đó G8.
-   - GitHub Free không có branch protection / auto-merge cho repo private (issue #3). Thay vào đó: hook `.githooks/pre-push` chặn push thẳng lên `main` (bootstrap đặt `core.hooksPath`). **Không bao giờ** dùng `--no-verify` hay merge khi CI chưa xanh.
-   - CI (ADR-0015): PR chỉ sửa docs (`docs/**`, `*.md`) không chạy CI và merge được không cần CI. PR code chạy Verify + e2e; build exe chỉ khi PR có nhãn `build-exe` — bắt buộc gắn lúc tạo PR khi đụng `src-tauri`, Cargo, `rust-toolchain.toml`, `package.json`, `pnpm-lock.yaml`, cấu hình build. Push lên `main` chỉ build exe; push docs-only lên `main` không chạy CI (phụ lục "Tiết kiệm phút Actions").
+   - GitHub Free không có branch protection / auto-merge cho repo private (issue #3). Thay vào đó: hook `.githooks/pre-push` chặn push thẳng lên `main` (bootstrap đặt `core.hooksPath`). **Không bao giờ** dùng `--no-verify` hay merge PR code khi CI chưa xanh.
+   - CI (`.github/workflows/ci.yml`, ADR-0015 + phụ lục "Tiết kiệm phút Actions"):
+     - Thay đổi chỉ gồm `docs/**` và `**/*.md` (mọi file `.md`): không chạy CI, cả ở PR lẫn push lên `main`. PR docs-only merge được không cần CI.
+     - PR code (mở, push thêm, mở lại): Verify (`pnpm verify`) + e2e. Build exe chỉ khi PR có nhãn `build-exe`.
+     - Nhãn `build-exe` **bắt buộc** khi PR đụng `apps/desktop/src-tauri/**`, Cargo, `rust-toolchain.toml`, `package.json`, `pnpm-lock.yaml` hoặc cấu hình build (`vite.config.*`, `tauri.conf.json`). Gắn ngay lúc tạo (`gh pr create --label build-exe`): CI không chạy lại khi gắn nhãn sau, phải push thêm hoặc `gh pr close` + `gh pr reopen`.
+     - Push lên `main` (sau merge): bỏ Verify, chỉ build exe → artifact `Project-2C-<sha>`.
+     - Chạy tay (`workflow_dispatch`): Verify + build exe.
+     - Push mới lên cùng nhánh hủy run cũ đang chạy (`concurrency`).
 6. Mỗi task một phiên mới (hoặc `/clear`).
 
 ## Skills được phép (ADR-0012)
