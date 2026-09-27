@@ -8,7 +8,7 @@ export {
   compareDates,
   customPeriod,
   formatDate,
-  formatPeriodLabel,
+  formatPeriodValue,
   fromLocalDate,
   isInPeriod,
   parseDate,

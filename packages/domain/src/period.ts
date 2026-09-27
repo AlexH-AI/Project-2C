@@ -200,18 +200,18 @@ export function switchKind(period: Period, kind: PeriodKind, today: CalendarDate
 }
 
 /**
- * Label for the period picker: `28/09/2026`, `28/09 – 04/10/2026`, `Tháng 09/2026`, `Năm 2026`.
- * Vietnamese words are part of the agreed format (ADR-0011), so they live here with it.
+ * Dates of a period as the picker shows them (ADR-0013): `28/09/2026`, `28/09 – 04/10/2026`,
+ * `09/2026`, `2026`. Words around them come from the UI's i18n.
  */
-export function formatPeriodLabel(period: Period): string {
+export function formatPeriodValue(period: Period): string {
   const { kind, start, end } = period;
   switch (kind) {
     case 'day':
       return formatDate(start);
     case 'month':
-      return `Tháng ${pad(start.month)}/${start.year}`;
+      return `${pad(start.month)}/${start.year}`;
     case 'year':
-      return `Năm ${start.year}`;
+      return `${start.year}`;
     case 'week':
     case 'custom':
       return start.year === end.year

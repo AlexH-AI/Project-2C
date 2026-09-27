@@ -28,6 +28,8 @@ export const vi = {
   'period.from': 'Từ ngày',
   'period.to': 'Đến ngày',
   'period.dateFormat': 'dd/mm/yyyy',
+  'period.monthLabel': 'Tháng {value}',
+  'period.yearLabel': 'Năm {value}',
   'pipeline.title': 'Nhóm cơ hội',
   'appointments.sample': 'Lịch hẹn mẫu',
   'appointments.date': 'Ngày',
