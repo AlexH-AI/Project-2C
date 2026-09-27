@@ -51,3 +51,18 @@
 - Chưa kiểm chứng việc `code-review` chạy ở mức `high` khi `Agent` bị chặn. Skill đã có đường lùi inline; lần review `risk:high` đầu tiên phải ghi kết quả thực tế vào PR comment.
 - Hook cần Node (đã có trong toolchain). Hook in ra rỗng khi câu không khớp, nên không ảnh hưởng các yêu cầu khác.
 - Tham chiếu `code-review` trong skill `tdd` (vendored) được hiểu là skill `review-pr` (ghi ở `.claude/skills/README.md`).
+
+## Phụ lục — worktree review và review toàn bộ (Owner duyệt 27/09/2026, G1)
+
+1. **Kiểm chứng mức high (PR #96):** `code-review high` chạy được khi `Agent` bị chặn. Skill tự chạy 8 góc rà lần lượt trong phiên chính, không gọi subagent. Kết quả ghi trong comment review của #96.
+2. **Nơi review:** mọi review chạy trong worktree cố định `C:\workspace\Project-2C-review` (ngoài checkout chính), detached HEAD ở đúng SHA đang review (head PR, hoặc `origin/main` khi review theo vùng). Worktree này chỉ đọc: không nhánh, không commit. Code làm ở checkout chính hoặc worktree của task. Lý do: phiên review không đổi nhánh của checkout mà phiên code đang dùng, và test/`code-review` đọc đúng SHA được review. Đặt ngoài repo vì `eslint .`, Prettier và `git status` của checkout chính không quét bản sao repo, nên `pnpm verify` ở checkout chính vẫn xanh (worktree lồng trong `.claude/worktrees/` làm `eslint .` đỏ — review PR #98). Mỗi máy tạo worktree một lần, từ checkout chính: `git worktree add --detach ../Project-2C-review origin/main`. Vòng sửa: phiên review chỉ đọc và comment; phiên code sửa ở checkout chính hoặc worktree task rồi push; phiên review sạch mới `git fetch origin` + `git checkout --detach <headRefOid mới>`. Worktree review không giữ nhánh nên không xung đột khi phiên code checkout nhánh PR. Phiên ở `Project-2C-review` có memory Claude riêng theo đường dẫn — chấp nhận được, hợp với yêu cầu context sạch.
+3. **Review toàn bộ phần đã làm (R1–R4):** các PR merge trước ADR này chưa có bước săn lỗi correctness. Review lại theo vùng code trên `origin/main`, không theo từng PR. Mỗi đợt một phiên sạch, chạy đủ Spec + Standards + `code-review high` cho cả vùng:
+
+   | Đợt | Vùng | Đối chiếu |
+   |---|---|---|
+   | R1 | `packages/db/**` (schema, migration, repository, seed) | `docs/design/phase-3-du-lieu.md`, ADR-0016, golden qua DB |
+   | R2 | `apps/desktop/src/data/**`, `apps/desktop/src-tauri/**` | spec §5, ADR-0016, #88–#91 |
+   | R3 | `packages/domain/**` | ADR-0007, ADR-0008, `docs/golden/**` |
+   | R4 | UI còn lại của `apps/desktop`, `packages/ui`, `tools/*.ps1`, CI, hook | checklist, ADR-0013, ADR-0015 |
+
+   Kết quả mỗi đợt ghi vào một Issue review. Bug xác nhận được tách thành task `risk:*` riêng và sửa theo quy trình thường; phiên review không sửa code. R1 và R2 xong trước màn đầu tiên ghi DB (T-046); R3 và R4 chạy song song với các màn UI được.
