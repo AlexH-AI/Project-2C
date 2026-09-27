@@ -51,6 +51,7 @@ Bối cảnh: repo private trên GitHub Free có 2.000 phút Actions/tháng; ng�
 - **Push lên `main`** bỏ Verify (PR đã Verify xanh trước khi merge), chỉ build exe → vẫn có artifact `Project-2C-<sha>` để thử ở văn phòng.
 - **PR code** chạy Verify + e2e. Build exe chỉ khi PR có nhãn **`build-exe`** (hoặc chạy tay `workflow_dispatch`).
 - **Bắt buộc gắn `build-exe`** khi PR đụng `apps/desktop/src-tauri/**`, Cargo, `rust-toolchain.toml`, `package.json`, `pnpm-lock.yaml` hoặc cấu hình build (`vite.config.*`, `tauri.conf.json`). Gắn nhãn ngay khi tạo PR (`gh pr create --label build-exe`): trigger không nghe sự kiện `labeled`, nên gắn sau thì phải push thêm hoặc `gh pr close` + `gh pr reopen` để CI chạy lại.
+- **Run của `main` không hủy nhau** (T-062, #110): `cancel-in-progress` chỉ bật cho `pull_request`; push lên `main` có nhóm `concurrency` riêng theo SHA (GitHub bỏ cả run đang *chờ* trong cùng nhóm), nên mỗi commit merge đều có artifact `Project-2C-<sha>`. PR vẫn hủy run cũ khi có push mới.
 
 Hệ quả:
 
