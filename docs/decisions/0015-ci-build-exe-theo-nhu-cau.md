@@ -60,3 +60,4 @@ Hệ quả:
 - ≈ 23 phút tính phí mỗi task thay vì ≈ 48 (Windows tính gấp đôi); commit docs lên `main`: 0.
 - Nếu PR merge khi `main` đã đi tiếp, tổ hợp sau merge không được Verify lại trên CI; lỗi lộ ra ở PR kế tiếp hoặc khi chạy `pnpm verify` local. Rủi ro thấp vì mỗi task một nhánh mới từ `main`.
 - Lỗi build exe ở PR không gắn nhãn chỉ lộ ra ở build trên `main` → sửa bằng PR tiếp theo.
+
