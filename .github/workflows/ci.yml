@@ -2,7 +2,9 @@ name: CI
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    # `labeled`: `gh pr create --label build-exe` opens the PR first and adds the
+    # label a moment later, so the `opened` payload has no labels (T-063, #119).
+    types: [opened, synchronize, reopened, labeled]
     # Docs-only PRs skip CI entirely (ADR-0015).
     paths-ignore:
       - 'docs/**'
@@ -18,8 +20,14 @@ on:
 # A new push to a PR cancels that PR's older run. Runs on main never cancel each
 # other, so every merged commit keeps its exe artifact: each gets its own group
 # (per SHA), because GitHub also drops an older *pending* run in a shared group.
+# Adding build-exe restarts the PR's run with the label; adding any other label
+# gets a group of its own (per run, all jobs skipped) so it cancels nothing.
 concurrency:
-  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  group: >-
+    ci-${{ github.event_name != 'pull_request' && github.sha ||
+    (github.event.action == 'labeled' && github.event.label.name != 'build-exe') &&
+    format('ignored-label-{0}', github.run_id) ||
+    github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -29,7 +37,10 @@ jobs:
   verify:
     name: Verify (lint, typecheck, unit, boundaries)
     # main only receives PRs that already passed Verify, so a push to main skips it.
-    if: github.event_name != 'push'
+    # Labels other than build-exe do not re-run CI.
+    if: >-
+      github.event_name != 'push' &&
+      (github.event.action != 'labeled' || github.event.label.name == 'build-exe')
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -56,10 +67,12 @@ jobs:
     needs: verify
     # main pushes, manual runs, and PRs labelled build-exe (ADR-0015, Actions minutes addendum).
     # Runs when verify passed or was skipped (push to main).
+    # Checks the label event again: verify skipped for another label must not start this job.
     if: >-
       !failure() && !cancelled() &&
       (github.event_name != 'pull_request' ||
-       contains(github.event.pull_request.labels.*.name, 'build-exe'))
+       contains(github.event.pull_request.labels.*.name, 'build-exe')) &&
+      (github.event.action != 'labeled' || github.event.label.name == 'build-exe')
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
