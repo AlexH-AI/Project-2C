@@ -15,8 +15,10 @@ import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import {
   fromIsoDate,
   liveCustomer,
+  prepared,
   requireName,
   requireRe,
+  rowInsert,
   stampDeleted,
   toIsoDate,
 } from './common';
@@ -166,6 +168,8 @@ export function restoreCustomer(db: Database, id: string): void {
 
 export { liveCustomer };
 
+const insertTransition = rowInsert(stageTransitions);
+
 /** Records `current stage → to` and moves the customer, in the caller's transaction. */
 export function appendTransition(
   db: Database,
@@ -198,7 +202,7 @@ export function appendTransition(
     createdAt: db.now().toISOString(),
     deletedAt: null,
   };
-  db.orm.insert(stageTransitions).values(row).run();
+  prepared(db, insertTransition).run(row);
   updateCustomerRow(db, customerId, { stage: to });
   return toTransition(row);
 }

@@ -7,17 +7,27 @@
 import {
   calendarDate,
   isPipelineStage,
+  KYC_FIELDS,
   PIPELINE_STAGES,
   type CalendarDate,
   type CustomerStage,
+  type KycField,
+  type KycValue,
   type Person,
   type Vnd,
 } from '@p2c/domain';
 import { recordMeetingOutcome, rescheduleAppointment, scheduleAppointment } from './appointments';
-import { changeStageManually, createCustomer, type BirthDate, type Gender } from './customers';
+import {
+  changeStageManually,
+  createCustomer,
+  updateCustomerProfile,
+  type BirthDate,
+  type Gender,
+} from './customers';
 import type { Database } from './database';
 import { DbError } from './errors';
 import type { RandomFill } from './ids';
+import { addKycNote, confirmKycFact, markKycConflict, resolveKycConflict } from './kyc';
 import { issuePolicy, submitPolicy } from './policies';
 import {
   APPOINTMENT_TIMES,
@@ -25,6 +35,8 @@ import {
   CASE_SIZES_MILLION,
   FAMILY_NAMES,
   GIVEN_NAMES,
+  KYC_TOPICS,
+  KYC_VALUES,
   MEETING_NOTES,
   MIDDLE_NAMES,
   MOVES,
@@ -54,6 +66,15 @@ const STARTING_CUSTOMERS = 10;
 const MILLION = 1_000_000;
 /** Chance that a meeting leaving the customer in N1 ends with a submitted policy. */
 const POLICY_CHANCE = 0.8;
+/** KYC notes written by the RE per customer: one at the first contact, more after meetings. */
+const MAX_KYC_NOTES = 5;
+const KYC_NOTE_CHANCE = 0.4;
+/** Chance per met meeting that a customer who gave no birth date gives it. */
+const BIRTH_DATE_CHANCE = 0.3;
+/** Of the notes after a meeting, the share where the customer contradicts a known value. */
+const KYC_CONFLICT_CHANCE = 0.2;
+/** Chance per met meeting that the RE settles an open conflict. */
+const KYC_SETTLE_CHANCE = 0.25;
 
 interface SimCustomer {
   readonly id: string;
@@ -61,6 +82,16 @@ interface SimCustomer {
   stage: CustomerStage;
   /** Has an appointment still to come. */
   busy: boolean;
+  readonly kyc: SimKyc;
+}
+
+interface SimKyc {
+  notes: number;
+  hasBirthDate: boolean;
+  /** Topics not asked yet, roughly in the order an RE gets to them. */
+  readonly topics: (typeof KYC_TOPICS)[number][];
+  /** Facts in effect on each trường the RE confirmed: one, or several in conflict. */
+  readonly current: Map<KycField, { readonly id: string; readonly value: KycValue }[]>;
 }
 
 interface Slot {
@@ -80,8 +111,9 @@ export function seedDemoData(db: Database, options: SeedOptions): void {
   let today = anchor - HISTORY_DAYS;
   let tick = 0;
   const sources = {
-    // Timestamps stop at the anchor day: what lies after it is only scheduled.
-    now: () => new Date(Math.min(today, anchor) * DAY_MS + tick++),
+    // Timestamps stop at the anchor day: what lies after it is only scheduled. Noon UTC keeps the
+    // local day of a profile change (D2) on the simulated day in any time zone of UTC±11.
+    now: () => new Date((Math.min(today, anchor) + 0.5) * DAY_MS + tick++),
     random: rng.fill,
   };
   db.withSources(sources, () =>
@@ -106,6 +138,7 @@ function simulation(db: Database, rng: Rng, anchor: number): (day: number) => vo
   const add = <T>(map: Map<number, T[]>, day: number, item: T) =>
     map.set(day, [...(map.get(day) ?? []), item]);
 
+  const kyc = kycSimulation(db, rng);
   const names = new Set<string>();
   const staffName = (): string => {
     const name = personName(rng);
@@ -132,14 +165,28 @@ function simulation(db: Database, rng: Rng, anchor: number): (day: number) => vo
   }
 
   const arrive = (re: Person, day: number) => {
+    const given = profile(rng);
     const record = createCustomer(db, {
       name: personName(rng),
       reId: re.id,
       stage: rng.weighted(STARTING_STAGES),
       date: toDate(day),
-      ...profile(rng),
+      ...given,
     });
-    customers.get(re.id)!.push({ id: record.id, reId: re.id, stage: record.stage, busy: false });
+    const customer: SimCustomer = {
+      id: record.id,
+      reId: re.id,
+      stage: record.stage,
+      busy: false,
+      kyc: {
+        notes: 0,
+        hasBirthDate: given.birthDate !== null,
+        topics: [...KYC_TOPICS],
+        current: new Map(),
+      },
+    };
+    customers.get(re.id)!.push(customer);
+    kyc.learn(customer, day, 2);
   };
 
   const book = (re: Person, day: number): Booked | undefined => {
@@ -201,6 +248,7 @@ function simulation(db: Database, rng: Rng, anchor: number): (day: number) => vo
       note: rng.pick(MEETING_NOTES),
     });
     customer.stage = stageAfter;
+    kyc.afterMeeting(customer, day);
     if (stageAfter === 'N1' && rng.chance(POLICY_CHANCE)) submit(customer, day);
   };
 
@@ -239,6 +287,92 @@ function simulation(db: Database, rng: Rng, anchor: number): (day: number) => vo
       for (const re of res) if (rng.chance(0.01)) manualChange(re, day);
     }
   };
+}
+
+/** KYC grows with the meetings (spec §7): notes, facts, conflicts and their settling. */
+function kycSimulation(db: Database, rng: Rng) {
+  const line = (field: KycField, value: KycValue) =>
+    `${KYC_VALUES[field]!.label}: ${typeof value === 'boolean' ? (value ? 'có' : 'chưa có') : value}`;
+  const addNote = (customer: SimCustomer, day: number, lines: string[]) => {
+    customer.kyc.notes++;
+    return addKycNote(db, customer.id, { text: lines.join('; '), date: toDate(day) }).id;
+  };
+
+  /** A few topics: every trường chính, the other trường by chance. */
+  const learn = (customer: SimCustomer, day: number, count = rng.int(1, 2)) => {
+    const { topics, current } = customer.kyc;
+    const asked = Array.from(
+      { length: Math.min(count, topics.length) },
+      () => topics.splice(rng.chance(0.7) ? 0 : rng.int(0, topics.length - 1), 1)[0]!,
+    );
+    const facts = asked
+      .flatMap(({ fields }) =>
+        fields
+          .filter(([, chance]) => rng.chance(chance))
+          .map(([field]) => [field, rng.pick(KYC_VALUES[field]!.values)] as const),
+      )
+      // "Bảo vệ hiện có" only follows a yes to "Đã có bảo vệ".
+      .filter(
+        ([field], _, all) =>
+          field !== 'protectionDetails' || all.some(([f, v]) => f === 'hasProtection' && v),
+      );
+    const noteId = addNote(
+      customer,
+      day,
+      facts.map(([field, value]) => line(field, value)),
+    );
+    for (const [field, value] of facts) {
+      const material = rng.chance(0.05);
+      const { fact } = confirmKycFact(db, customer.id, {
+        field,
+        value,
+        noteId,
+        date: toDate(day),
+        material,
+      });
+      current.set(field, [{ id: fact.id, value }]);
+    }
+  };
+
+  /** The customer gives another value for a known trường, a cốt lõi one half the time. */
+  const contradict = (customer: SimCustomer, day: number) => {
+    const { current } = customer.kyc;
+    const settled = [...current.keys()].filter((field) => current.get(field)!.length === 1);
+    const core = settled.filter((field) => KYC_FIELDS[field].core);
+    const pool = core.length > 0 && rng.chance(0.5) ? core : settled;
+    if (pool.length === 0) return;
+    const field = rng.pick(pool);
+    const facts = current.get(field)!;
+    const value = rng.pick(
+      KYC_VALUES[field]!.values.filter((v) => !facts.some((fact) => fact.value === v)),
+    );
+    const noteId = addNote(customer, day, [`KH cho biết lại ${line(field, value)}`]);
+    const { fact } = markKycConflict(db, customer.id, { field, value, noteId, date: toDate(day) });
+    facts.push({ id: fact.id, value });
+  };
+
+  const afterMeeting = (customer: SimCustomer, day: number) => {
+    const { current } = customer.kyc;
+    if (!customer.kyc.hasBirthDate && rng.chance(BIRTH_DATE_CHANCE)) {
+      // Through the profile: a SYSTEM note and the birth year fact (D2).
+      updateCustomerProfile(db, customer.id, { birthDate: { year: rng.int(1960, 2000) } });
+      customer.kyc.hasBirthDate = true;
+    }
+    for (const [field, facts] of current) {
+      if (facts.length < 2 || !rng.chance(KYC_SETTLE_CHANCE)) continue;
+      const kept = rng.pick(facts);
+      resolveKycConflict(db, customer.id, { factId: kept.id, date: toDate(day) });
+      current.set(field, [kept]);
+    }
+    if (customer.kyc.notes >= MAX_KYC_NOTES || !rng.chance(KYC_NOTE_CHANCE)) return;
+    if (customer.kyc.topics.length === 0 || rng.chance(KYC_CONFLICT_CHANCE)) {
+      contradict(customer, day);
+    } else {
+      learn(customer, day);
+    }
+  };
+
+  return { learn, afterMeeting };
 }
 
 function nextStage(rng: Rng, stage: CustomerStage): CustomerStage {

@@ -1,9 +1,10 @@
-import { APPOINTMENT_STATUSES, calendarDate } from '@p2c/domain';
+import { APPOINTMENT_STATUSES, calendarDate, evaluateKycGate, KYC_GATE_STATES } from '@p2c/domain';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { listAppointments } from './appointments';
 import { toIsoDate } from './common';
 import { listCustomers, listStageTransitions } from './customers';
 import { openDatabase, type Database } from './database';
+import { getKycProfile } from './kyc';
 import { listPolicies } from './policies';
 import { APPOINTMENT_TRIGGERS } from './schema';
 import { seedDemoData } from './seed';
@@ -130,6 +131,24 @@ describe('seedDemoData', () => {
       expect(issued.some((p) => p.issuedDate!.month !== p.submittedDate.month)).toBe(true);
       expect(issued.some((p) => p.issuedFyp !== p.submittedFyp)).toBe(true);
       expect(listPolicies(db).some((p) => p.issuedDate === null)).toBe(true);
+    });
+
+    it('gives each customer 1-5 KYC notes and covers every gate state and both kinds of conflict', () => {
+      const profiles = listCustomers(db).map((c) => getKycProfile(db, c.id));
+      for (const { notes } of profiles) {
+        const fromRe = notes.filter((n) => n.source === 'RE').length;
+        expect(fromRe).toBeGreaterThanOrEqual(1);
+        expect(fromRe).toBeLessThanOrEqual(5);
+      }
+      const gates = profiles.map(({ facts }) => evaluateKycGate(facts));
+      for (const state of KYC_GATE_STATES) {
+        // Each state is common enough to find on screen: at least 5% of the customers.
+        expect(gates.filter((g) => g.state === state).length).toBeGreaterThan(profiles.length / 20);
+      }
+      expect(
+        gates.some((g) => g.warningFields.length > 0 && g.state !== 'CONFLICT_RESOLUTION'),
+      ).toBe(true);
+      expect(profiles.some(({ facts }) => facts.some((f) => f.status === 'superseded'))).toBe(true);
     });
   });
 
