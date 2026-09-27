@@ -54,8 +54,12 @@ Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 đ�
 2. **R4 (#108):** #109 (PR #115) và #110 (PR #116) đã merge → comment trỏ 2 PR trên #108 rồi đóng #108.
    - **Còn nợ test chấp nhận 3 của #110 (T-062):** ở lần kế tiếp có 2 push code lên `main` sát nhau (vd. merge PR xếp chồng bằng `--merge`), chạy `gh run list --branch main --limit 5` → cả hai run `completed`/`success`, không `cancelled`, và mỗi SHA có artifact `Project-2C-<sha>`. Ghi kết quả thành comment trên PR #116. Nếu có run bị hủy → mở lại #110.
 3. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Frontier (không bị chặn):
-   - UI #65–#70 (G3, #63, #64 đã xong; R1, R2 xong → màn ghi DB làm được; #100 xong → hết chặn #66, #69). Bắt đầu #65 T-046 Team & nhân sự.
-   - Nối tiếp T-044 (#88 đã xong, PR #118), Owner xếp thứ tự 28/09: **#91** T-057 đóng app khi lưu lỗi → **#89** T-055 chặn 2 exe → **#90** T-056 dọn backup theo mtime. Cả 3 đều `risk:med`. PR nào đụng `apps/desktop/src-tauri/**` thì phải có nhãn `build-exe` ngay lúc tạo.
+   - **Thứ tự Owner chốt 28/09: #91 → #65 → #89 → #90**, rồi tới #66–#70.
+     - **#91** T-057 (đóng app khi lưu lỗi hoặc còn bản chờ ghi) làm trước #65: `PersistQueue` có trạng thái chờ và `flush()` thì #65, màn đầu tiên ghi DB, viết luôn trên nền đó, khỏi phải rebase. Hai task cùng sửa `apps/desktop/src`, nên không làm song song.
+     - **#65** T-046 Team & nhân sự: các Issue chặn (#59, #63, #64) đã đóng. Nếu vượt ngưỡng ~400 dòng code sản phẩm thì đề xuất tách Team / Nhân sự trước khi code. Mang theo các ghi chú review cho T-046 (R1 `PERSON_IN_USE`, R4 viền 3:1 / ô ngày / NFC, #96).
+     - **#89** T-055 chặn 2 exe → **#90** T-056 dọn backup theo mtime: chỉ sửa `src-tauri`, không đụng #65, và chỉ gây hại khi đã dùng dữ liệu thật.
+     - Cả 4 task đều `risk:med`. PR nào đụng `apps/desktop/src-tauri/**` thì phải gắn nhãn `build-exe` ngay lúc tạo.
+   - UI #66–#70 (G3 đã duyệt; #100 xong nên hết chặn #66, #69).
    - **#69 T-050**: migration mới thêm `outcome_reviewer_id` — CHECK cấp bảng trên SQLite có thể khiến drizzle-kit dựng lại bảng `appointments`; kiểm SQL sinh ra + test migrate DB có dữ liệu (review #80).
 4. Sau đó theo blocking edges: #71 backup; #72 đóng phase (G7).
 5. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
