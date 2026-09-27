@@ -57,6 +57,47 @@ describe('parseVnd', () => {
   it('accepts trailing zeros past the đồng, which are not a fraction', () => {
     expect(amountOf(parseVnd('1,2340k'))).toBe(1_234);
   });
+
+  describe('treats `.` and `,` alike: 3 digits after the mark group thousands', () => {
+    it.each(['500,000', '500.000', '500000', '0,5tr', '0.5 triệu', '500k'])(
+      '%s → 500 000 đồng',
+      (text) => {
+        expect(amountOf(parseVnd(text))).toBe(500_000);
+      },
+    );
+
+    it.each([
+      ['1,000', 1_000],
+      ['1,234,567', 1_234_567],
+      ['500,000,000', 500_000_000],
+      ['1,500 tỷ', 1_500_000_000_000],
+      ['1.500 tỷ', 1_500_000_000_000],
+      ['1,5 tỷ', 1_500_000_000],
+      ['1.5 tỷ', 1_500_000_000],
+      ['1,50 tỷ', 1_500_000_000],
+      ['0,500 tỷ', 500_000_000],
+      ['1.234,5 tr', 1_234_500_000],
+      ['1,234.5 tr', 1_234_500_000],
+    ])('%s → %d đồng', (text, amount) => {
+      expect(amountOf(parseVnd(text))).toBe(amount);
+    });
+
+    it.each([
+      '1,2,3 tỷ',
+      '1.2.3',
+      '1.20.000',
+      '1,234,5',
+      '1.234.5',
+      '1,234.567.8',
+      '1.234,567',
+      '0,500,000',
+      ',5',
+      '5,',
+      '5.',
+    ])('%j → error format', (text) => {
+      expect(parseVnd(text)).toEqual({ ok: false, error: 'format' });
+    });
+  });
 });
 
 describe('formatVnd', () => {
