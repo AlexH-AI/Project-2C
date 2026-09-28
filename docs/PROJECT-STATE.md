@@ -49,5 +49,6 @@ Claude Code only: Opus 5.5, effort medium, no subagents. Claude works autonomous
 - 2026-09-28: Repo is public, so OWNER enabled GitHub ruleset `protect-main` on `main`: PR required, no force-push, no deletion. No required status checks (docs-only PRs run no CI) and no auto-merge. The pre-push hook stays. Supersedes the 2026-09-26 #3 note.
 - 2026-09-28: OWNER set the order #91 (close app on save error) → #65 T-046 (Team & staff) → #89 (block second exe) → #90 (prune backups by mtime). #91 goes first so the first DB-writing screen is built on `PersistQueue` with pending state and `flush()`. #88 was done in PR #118.
 - 2026-09-28: #91 T-057 merged (PR #125, `86b4e2c`): `PersistQueue.flush()` + exe close guard; Owner's manual exe check passed. Next: #65 T-046.
+- 2026-09-28: Office checks done: #9 exe runs on Office Laptop, `docs/metrics/phase-1.md` written (PR #127); #17 icons in ADR-0013 colors merged (PR #128, `fbd23d7`). Phase 1 milestone has 0 open issues — waiting for OWNER to close it (G7). Next: #65 T-046.
 - Project-2 should adopt the upstream skill renames (`to-prd` → `to-spec`, `to-issues` → `to-tickets`).
 - ADR-0003 still mentions `/resume` and branch protection; the actual practice is `/session-start` and the pre-push hook (#3). Left as-is (accepted ADR text); `CLAUDE.md` and the plan are current.
