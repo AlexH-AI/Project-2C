@@ -83,6 +83,7 @@ describe('KYC notes', () => {
       'listKycVersions',
       'markKycConflict',
       'markKycVersionMaterial',
+      'normalizeKycValue',
       'recordKycNote',
       'resolveKycConflict',
     ]);

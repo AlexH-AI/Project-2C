@@ -1,7 +1,13 @@
 import type { KycNoteRecord, KycVersionRecord } from '@p2c/db';
-import type { CalendarDate, KycFact, StageTransition } from '@p2c/domain';
+import {
+  kycHash,
+  type CalendarDate,
+  type KycFact,
+  type KycProfile,
+  type StageTransition,
+} from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { factText, kycOverview, kycTimeline } from './kyc-view';
+import { factText, kycOverview, kycTimeline, previewKycNote } from './kyc-view';
 
 const day = (month: number, dayOfMonth: number): CalendarDate => ({
   year: 2026,
@@ -111,5 +117,53 @@ describe('kycTimeline', () => {
     ]);
     expect(events[0]).toMatchObject({ kind: 'version', number: 2, date: day(9, 5) });
     expect(events[4]).toMatchObject({ kind: 'version', number: 1 });
+  });
+});
+
+describe('previewKycNote', () => {
+  const profile: KycProfile = {
+    notes: [{ id: 'n1', text: 'năm sinh', createdDate: day(9, 1) }],
+    facts: [fact('birthYear', 1984), fact('residence', 'Huế')],
+  };
+  const versions = [{ hash: kycHash(profile), summary: '', date: day(9, 1), material: true }];
+  const preview = (facts: Parameters<typeof previewKycNote>[2], manual = false) =>
+    previewKycNote(profile, versions, facts, day(9, 15), manual);
+
+  it('records no version for a note alone or for facts that change nothing', () => {
+    expect(preview([])).toEqual({ kind: 'none' });
+    expect(preview([{ field: 'residence', value: 'Huế' }])).toEqual({ kind: 'none' });
+  });
+
+  it('numbers the next version; a cốt lõi trường makes it material on its own', () => {
+    expect(preview([{ field: 'childrenCount', value: '2' }])).toEqual({
+      kind: 'version',
+      number: 2,
+      material: true,
+      auto: true,
+    });
+    expect(preview([{ field: 'residence', value: 'Hà Nội' }])).toEqual({
+      kind: 'version',
+      number: 2,
+      material: false,
+      auto: false,
+    });
+    expect(preview([{ field: 'residence', value: 'Hà Nội' }], true)).toMatchObject({
+      material: true,
+      auto: false,
+    });
+  });
+
+  it('refuses a conflict with no value to disagree with, or with the same value', () => {
+    expect(preview([{ field: 'occupation', value: 'Bác sĩ', conflict: true }])).toEqual({
+      kind: 'refused',
+      field: 'occupation',
+    });
+    expect(preview([{ field: 'residence', value: ' Huế ', conflict: true }])).toEqual({
+      kind: 'refused',
+      field: 'residence',
+    });
+    expect(preview([{ field: 'residence', value: 'Hà Nội', conflict: true }])).toMatchObject({
+      kind: 'version',
+    });
   });
 });

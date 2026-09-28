@@ -60,7 +60,7 @@ function toFact(profile: KycProfile, input: KycFactInput, status: KycFact['statu
 }
 
 /** Facts on the trường that are not superseded: one active fact, or several in conflict. */
-const currentOn = (profile: KycProfile, field: KycField) =>
+export const currentFacts = (profile: KycProfile, field: KycField) =>
   profile.facts.filter((fact) => fact.field === field && fact.status !== 'superseded');
 
 /**
@@ -82,7 +82,7 @@ export function confirmFact(profile: KycProfile, input: KycFactInput): KycProfil
  * `conflict` until `resolveConflict` (or a new `confirmFact`) settles it (G2 6).
  */
 export function markConflict(profile: KycProfile, input: KycFactInput): KycProfile {
-  const current = currentOn(profile, input.field);
+  const current = currentFacts(profile, input.field);
   if (current.length === 0 || current.some((fact) => fact.value === input.value)) {
     throw new Error(`KYC fact ${input.id} does not disagree with the current ${input.field}`);
   }

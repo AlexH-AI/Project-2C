@@ -271,7 +271,7 @@ function toInput(
   return {
     id: ulid(db.now(), db.random),
     field,
-    value: normalizeValue(field, fact.value),
+    value: normalizeKycValue(field, fact.value),
     noteId,
     confirmedDate: date,
   };
@@ -295,8 +295,11 @@ function requireField(field: string): KycField {
   return field as KycField;
 }
 
-/** Review #36: values are compared only after taking the type of their trường. */
-function normalizeValue(field: KycField, value: KycValue): KycValue {
+/**
+ * Review #36: values are compared only after taking the type of their trường; `"2"` for a number
+ * trường is `2`. Throws `INVALID_KYC_VALUE` for a value the trường cannot hold.
+ */
+export function normalizeKycValue(field: KycField, value: KycValue): KycValue {
   const text = typeof value === 'string' ? value.trim() : null;
   if (NUMBER_FIELDS.has(field)) {
     const number = text !== null && /^\d+$/.test(text) ? Number(text) : value;

@@ -60,6 +60,7 @@ export {
   listKycVersions,
   markKycConflict,
   markKycVersionMaterial,
+  normalizeKycValue,
   recordKycNote,
   resolveKycConflict,
 } from './kyc';
