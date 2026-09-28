@@ -142,6 +142,19 @@ export const vi = {
     'Dữ kiện đang nhập chưa được thêm: bấm "Thêm dữ kiện", hoặc chọn lại "Chọn trường" để bỏ.',
   'kycNote.error.refused':
     'Không đánh dấu mâu thuẫn được: "{field}" chưa có giá trị, hoặc giá trị mới trùng giá trị đang có. Hãy dùng "Cập nhật".',
+  'kycResolve.open': 'Giải quyết',
+  'kycResolve.openLabel': 'Giải quyết · {field}',
+  'kycResolve.title': 'Giải quyết · {field}',
+  'kycResolve.body': 'Chọn giá trị đúng; giá trị còn lại thành cũ. Ghi chú gốc giữ nguyên.',
+  'kycResolve.values': 'Giá trị đúng',
+  'kycResolve.pick': 'Chọn giá trị đúng.',
+  'kycResolve.source': 'ghi chú {date}',
+  'kycResolve.systemSource': 'hồ sơ KH {date}',
+  'kycResolve.profileOnly': 'Năm sinh / giới tính chỉ giữ được giá trị của hồ sơ KH.',
+  'kycResolve.hint':
+    'Không giá trị nào đúng? Thêm ghi chú KYC mới với giá trị đúng — xác nhận giá trị mới cũng giải quyết mâu thuẫn.',
+  'kycResolve.after': 'Sau khi lưu: KYC v{number} · cổng KYC {gate}',
+  'kycResolve.save': 'Giải quyết',
   'customers.add': '+ Khách hàng',
   'customerForm.newTitle': 'Khách hàng mới',
   'customerForm.newSub': 'Mã KH (vd. K-9A1C) sinh khi lưu',
@@ -316,6 +329,8 @@ export const vi = {
   'error.KYC_NO_CONFLICT':
     'Không đánh dấu mâu thuẫn được: trường chưa có giá trị, hoặc giá trị mới trùng giá trị đang có.',
   'error.KYC_FIELD_FROM_PROFILE': 'Năm sinh và giới tính chỉ sửa ở hồ sơ KH.',
+  'error.KYC_NOT_IN_CONFLICT': 'Mâu thuẫn này đã được giải quyết.',
+  'error.KYC_FACT_NOT_FOUND': 'Dữ kiện không còn trong dữ liệu.',
   'error.unknown': 'Chưa lưu được thay đổi. Dữ liệu không bị đổi.',
 } as const;
 

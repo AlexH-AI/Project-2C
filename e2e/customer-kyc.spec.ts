@@ -61,7 +61,9 @@ test('a new customer: birth year and gender from the profile, gate KYC_INSUFFICI
   await expect(timeline.nth(1)).toContainText('Hồ sơ KH: giới tính Nam');
 });
 
-test('a KYC note confirms facts; a cốt lõi conflict blocks the gate', async ({ page }) => {
+test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it is resolved', async ({
+  page,
+}) => {
   await createCustomer(page);
   const kyc = page.getByRole('region', { name: 'Dữ kiện KYC' });
   const timeline = page.getByRole('region', { name: 'Dòng thời gian' }).getByRole('listitem');
@@ -123,4 +125,21 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate', async (
 
   await expect(kyc).toContainText('Cổng KYC CONFLICT_RESOLUTION');
   await expect(kyc).toContainText('Trường mâu thuẫn: Số con');
+
+  // Mockup 7d: keep one value; the other becomes history.
+  await kyc.getByRole('button', { name: 'Giải quyết · Số con' }).click();
+  dialog = page.getByRole('dialog', { name: 'Giải quyết · Số con' });
+  await dialog.getByRole('button', { name: 'Giải quyết', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toHaveText('Chọn giá trị đúng.');
+  await dialog.getByRole('radio', { name: /^"3"/ }).check();
+  await expect(dialog.getByText('Sau khi lưu: KYC v4 · cổng KYC PROFILE_DISCOVERY')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Giải quyết', exact: true }).click();
+  await expect(dialog).toBeHidden();
+
+  await expect(kyc).toContainText('Cổng KYC PROFILE_DISCOVERY');
+  await expect(kyc).not.toContainText('Trường mâu thuẫn');
+  await expect(kyc).toContainText('Số con: 3');
+  await expect(kyc).not.toContainText('Số con: 2');
+  await expect(kyc.getByRole('button')).toHaveCount(0);
+  await expect(timeline.first()).toContainText('kyc v4');
 });
