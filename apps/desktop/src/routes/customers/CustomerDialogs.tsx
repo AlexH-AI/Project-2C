@@ -13,7 +13,6 @@ import {
   CLOSED_STAGES,
   PIPELINE_STAGES,
   formatDate,
-  parseQuickDate,
   type CalendarDate,
   type CustomerStage,
   type PipelineStage,
@@ -22,7 +21,13 @@ import { Button, Choices, Dialog, SelectField, StageBadge, TextField } from '@p2
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
-import { ageOn, allowedStages, birthLabel, parseBirthDate } from './customers-view';
+import {
+  ageOn,
+  allowedStages,
+  birthLabel,
+  parseBirthDate,
+  parseRecordDate,
+} from './customers-view';
 
 type Field = 'name' | 're' | 'birth' | 'date' | 'stage' | 'form';
 type Errors = Partial<Record<Field, string>>;
@@ -44,10 +49,13 @@ function Actions({ onClose, save }: { onClose: () => void; save: string }) {
   );
 }
 
-/** A quick date field defaulting to today, showing the day it understood (mockup `.read`). */
+/**
+ * A quick date field defaulting to today, showing the day it understood (mockup `.read`); a day
+ * after today is refused.
+ */
 function useDateField(today: CalendarDate) {
   const [text, setText] = useState(formatDate(today));
-  const parsed = parseQuickDate(text, today);
+  const parsed = parseRecordDate(text, today);
   return {
     text,
     setText,

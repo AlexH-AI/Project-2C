@@ -1,7 +1,14 @@
 import type { CustomerRecord } from '@p2c/db';
 import type { CalendarDate, Person, Policy, StageTransition } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { ageOn, allowedStages, birthLabel, customerBoard, parseBirthDate } from './customers-view';
+import {
+  ageOn,
+  allowedStages,
+  birthLabel,
+  customerBoard,
+  parseBirthDate,
+  parseRecordDate,
+} from './customers-view';
 
 const day = (month: number, dayOfMonth: number): CalendarDate => ({
   year: 2026,
@@ -141,5 +148,25 @@ describe('allowedStages', () => {
   it('reopens a closed customer only to N3, or moves it to the other closed stage', () => {
     expect(allowedStages('ON_HOLD')).toEqual(['N3', 'LOST']);
     expect(allowedStages('LOST')).toEqual(['N3', 'ON_HOLD']);
+  });
+});
+
+describe('parseRecordDate', () => {
+  const today = day(9, 26);
+
+  it('reads a quick date up to today', () => {
+    expect(parseRecordDate('26/9', today)).toEqual({ ok: true, date: today });
+    expect(parseRecordDate('01/01/2025', today)).toEqual({
+      ok: true,
+      date: { year: 2025, month: 1, day: 1 },
+    });
+  });
+
+  it('refuses a day after today, typed in full or read into the current year', () => {
+    // In early January, "28/12" means this year's 28/12: a record there would block every
+    // stage change dated before it.
+    expect(parseRecordDate('27/9', today)).toEqual({ ok: false, error: 'future' });
+    expect(parseRecordDate('28/12/2026', today)).toEqual({ ok: false, error: 'future' });
+    expect(parseRecordDate('31/02', today)).toEqual({ ok: false, error: 'invalid-date' });
   });
 });

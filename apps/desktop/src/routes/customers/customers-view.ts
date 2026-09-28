@@ -84,6 +84,22 @@ function byStage<S extends CustomerRecord['stage']>(
   return columns;
 }
 
+export type RecordDateResult =
+  | { readonly ok: true; readonly date: CalendarDate }
+  | { readonly ok: false; readonly error: QuickDateError | 'future' };
+
+/**
+ * Reads a quick date for something that already happened: today or earlier. A later day would
+ * become the latest transition and block every stage change dated before it.
+ */
+export function parseRecordDate(text: string, today: CalendarDate): RecordDateResult {
+  const parsed = parseQuickDate(text, today);
+  if (!parsed.ok) return parsed;
+  return compareDates(parsed.date, today) > 0
+    ? { ok: false, error: 'future' }
+    : { ok: true, date: parsed.date };
+}
+
 export type BirthDateResult =
   | { readonly ok: true; readonly birth: BirthDate | null }
   | { readonly ok: false; readonly error: QuickDateError | 'future' };

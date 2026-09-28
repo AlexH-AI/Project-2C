@@ -93,6 +93,7 @@ export const vi = {
   'date.error.format': 'Gõ dd/mm hoặc dd/mm/yyyy.',
   'date.error.invalid-date': 'Ngày này không tồn tại.',
   'date.error.year-out-of-range': 'Năm phải từ 1900 trở đi.',
+  'date.error.future': 'Ngày này sau hôm nay. Ngày của năm trước: gõ đủ dd/mm/yyyy.',
   'birth.error.empty': 'Nhập ngày sinh.',
   'birth.error.format': 'Gõ năm (1984) hoặc dd/mm/yyyy (12/03/1984).',
   'birth.error.invalid-date': 'Ngày này không tồn tại.',
