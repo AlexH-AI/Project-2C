@@ -1,6 +1,6 @@
 # Project-2C
 
-Bản đối chứng của Project-2, **làm hoàn toàn bằng Claude Code** (Opus 5.5, effort medium, không subagent).
+Bản đối chứng của Project-2, **làm hoàn toàn bằng Claude Code** (không subagent; model và effort do Owner chọn từng phiên).
 
 Project-2C có cùng yêu cầu sản phẩm với [`AlexH-AI/Project-2`](https://github.com/AlexH-AI/Project-2) và chỉ khác ở cách thực hiện. Khi cả hai xong, hai sản phẩm cuối sẽ được so sánh với nhau.
 

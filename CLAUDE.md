@@ -6,7 +6,7 @@ Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh
 
 ## Mô hình thực hiện (ADR-0001)
 
-- Chỉ Claude Code, **Opus 5.5, effort medium**. **Không subagent / Agent tool** (bị chặn trong `.claude/settings.json`). Mọi việc làm trong phiên chính.
+- Chỉ Claude Code; **model và effort do Owner chọn từng phiên** (ADR-0001 phụ lục M1) — không ghim trong repo. **Không subagent / Agent tool** (bị chặn trong `.claude/settings.json`). Mọi việc làm trong phiên chính.
 - Tự động trong mọi task; **dừng và hỏi Owner** ở các cổng:
   - **G1** kế hoạch/ADR · **G2** golden examples + mô hình dữ liệu · **G3** mockup UI
   - **G4** dependency lớn / công cụ / dịch vụ mới / bất cứ thứ gì tốn tiền

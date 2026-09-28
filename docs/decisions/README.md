@@ -20,7 +20,7 @@ File naming: `NNNN-short-slug.md`. Status: `Proposed` → `Accepted (<gate>)` �
 
 | ADR | Decision | Status | Source |
 |---|---|---|---|
-| [0001](0001-mo-hinh-thuc-hien-chi-claude-code.md) | Claude Code only, Opus 5.5 medium, no subagents; gates G1–G8; auto-merge `risk:low` | Accepted (G1) | C1, C3, C4, C8, Q14 |
+| [0001](0001-mo-hinh-thuc-hien-chi-claude-code.md) | Claude Code only, no subagents (model/effort: Owner picks per session, M1); gates G1–G8; auto-merge `risk:low` | Accepted (G1) | C1, C3, C4, C8, Q14 |
 | [0002](0002-doi-chung-va-cach-ly-voi-project-2.md) | 2C is the control build; isolation from Project-2 | Accepted (G1) | C5, C6, C7 |
 | [0003](0003-lien-tuc-cong-viec-giua-2-may.md) | GitHub as single source of truth across 2 machines | Accepted (G1) | §4.2 |
 | [0004](0004-ung-dung-mot-nguoi-dung-khong-server.md) | Single-user local app, no server; roles are views | Accepted (G1) | Q1, Q2, Q16 |
