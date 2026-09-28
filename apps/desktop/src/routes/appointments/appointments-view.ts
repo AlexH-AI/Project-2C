@@ -1,8 +1,10 @@
 import type { AppointmentRecord, CustomerRecord } from '@p2c/db';
 import {
+  addDays,
   compareDates,
   inScope,
   isRfTransition,
+  periodOf,
   type CalendarDate,
   type CustomerStage,
   type Person,
@@ -41,6 +43,15 @@ export interface AppointmentRow {
   readonly team: Team | undefined;
   readonly coordinators: readonly Person[];
   readonly outcome: Outcome;
+}
+
+export interface DayCell {
+  readonly date: CalendarDate;
+  readonly inMonth: boolean;
+  readonly met: number;
+  readonly planned: number;
+  /** Rescheduled, cancelled or no show. */
+  readonly missed: number;
 }
 
 export interface DayGroup {
@@ -96,6 +107,31 @@ export function appointmentRows(
         outcome: outcome(a),
       };
     });
+}
+
+/** The weeks, Monday to Sunday, covering the month of `date`, with each day's appointments. */
+export function monthGrid(date: CalendarDate, rows: readonly AppointmentRow[]): DayCell[][] {
+  const month = periodOf('month', date);
+  let day = periodOf('week', month.start).start;
+  const last = periodOf('week', month.end).end;
+  const weeks: DayCell[][] = [];
+  while (compareDates(day, last) <= 0) {
+    const week: DayCell[] = [];
+    for (let i = 0; i < 7; i++, day = addDays(day, 1)) {
+      const on = rows.filter((row) => compareDates(row.appointment.date, day) === 0);
+      const count = (match: (status: string) => boolean) =>
+        on.filter((row) => match(row.appointment.status)).length;
+      week.push({
+        date: day,
+        inMonth: day.month === date.month,
+        met: count((s) => s === 'MET'),
+        planned: count((s) => s === 'SCHEDULED'),
+        missed: count((s) => s !== 'MET' && s !== 'SCHEDULED'),
+      });
+    }
+    weeks.push(week);
+  }
+  return weeks;
 }
 
 /** The appointments on `date` by team, then RE (both by name), each RE's by time. */

@@ -1,7 +1,7 @@
 import type { AppointmentRecord, CustomerRecord } from '@p2c/db';
 import type { CalendarDate, Person, StageTransition, Team } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { appointmentRows, dayBoard, type AppointmentData } from './appointments-view';
+import { appointmentRows, dayBoard, monthGrid, type AppointmentData } from './appointments-view';
 
 const day = (month: number, dayOfMonth: number): CalendarDate => ({
   year: 2026,
@@ -128,6 +128,37 @@ describe('appointmentRows', () => {
       null,
       null,
     ]);
+  });
+});
+
+describe('monthGrid', () => {
+  it('shows whole weeks Monday to Sunday around the month, with counts by status', () => {
+    const rows = appointmentRows(
+      data([
+        appointment('a', 're1', day(9, 28), { status: 'MET' }),
+        appointment('b', 're1', day(9, 28)),
+        appointment('c', 're1', day(9, 28), { status: 'CANCELLED' }),
+        appointment('d', 're1', day(10, 1)),
+      ]),
+      { kind: 'all' },
+      'any',
+    );
+    const weeks = monthGrid(day(9, 15), rows);
+    // September 2026 starts on a Tuesday and ends on a Wednesday.
+    expect(weeks).toHaveLength(5);
+    expect(weeks[0]?.[0]).toMatchObject({
+      date: { year: 2026, month: 8, day: 31 },
+      inMonth: false,
+    });
+    expect(weeks[4]?.[6]).toMatchObject({ date: day(10, 4), inMonth: false });
+    expect(weeks[4]?.[0]).toMatchObject({
+      date: day(9, 28),
+      inMonth: true,
+      met: 1,
+      planned: 1,
+      missed: 1,
+    });
+    expect(weeks[4]?.[3]).toMatchObject({ date: day(10, 1), planned: 1 });
   });
 });
 
