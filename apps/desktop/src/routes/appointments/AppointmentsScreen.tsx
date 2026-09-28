@@ -10,6 +10,7 @@ import {
 import {
   compareDates,
   formatDate,
+  formatPeriodValue,
   isInPeriod,
   periodOf,
   type CalendarDate,
@@ -25,6 +26,8 @@ import {
   appointmentRows,
   dayBoard,
   monthGrid,
+  outcomeText,
+  personLabel,
   type AppointmentRow,
   type CoordinatorFilter,
   type DayCell,
@@ -41,23 +44,6 @@ const readAppointments = (db: Database) => ({
   teams: listTeams(db),
   transitions: listStageTransitions(db),
 });
-
-const dayMonth = (date: CalendarDate) => formatDate(date).slice(0, 5);
-
-function outcomeText({ outcome }: AppointmentRow): string {
-  if (!outcome) return '';
-  switch (outcome.kind) {
-    case 'move':
-      return t(outcome.rf ? 'appointments.moveRf' : 'appointments.move', {
-        from: outcome.from ?? '—',
-        to: t(`stage.${outcome.to}`),
-      });
-    case 'keep':
-      return t('appointments.keep', { stage: t(`stage.${outcome.stage}`) });
-    case 'rescheduled':
-      return t('appointments.rescheduledTo', { date: dayMonth(outcome.to) });
-  }
-}
 
 const triggerText = ({ appointment: a }: AppointmentRow) =>
   a.triggerNote ?? t(`trigger.${a.triggerType}`);
@@ -90,7 +76,7 @@ export function AppointmentsScreen() {
     { value: 'none', label: t('appointments.coordinatorNone') },
     ...data.people
       .filter((person) => person.role !== 'RE')
-      .map((person) => ({ value: person.id, label: `${person.role} ${person.name}` })),
+      .map((person) => ({ value: person.id, label: personLabel(person) })),
   ];
 
   const columns = useMemo<ReadonlyArray<DataTableColumn<AppointmentRow>>>(
@@ -137,7 +123,12 @@ export function AppointmentsScreen() {
         kind: 'text',
         value: (r) => t(`appointmentStatus.${r.appointment.status}`),
       },
-      { id: 'outcome', header: t('appointments.outcome'), kind: 'text', value: outcomeText },
+      {
+        id: 'outcome',
+        header: t('appointments.outcome'),
+        kind: 'text',
+        value: (r) => outcomeText(r.outcome),
+      },
     ],
     [],
   );
@@ -202,7 +193,7 @@ function MonthCalendar({
   onPick: (date: CalendarDate) => void;
 }) {
   const weeks = useMemo(() => monthGrid(day, rows), [day, rows]);
-  const month = formatDate(day).slice(3);
+  const month = formatPeriodValue(periodOf('month', day));
   return (
     <section aria-labelledby="appointments-calendar" className={CARD}>
       <h2 id="appointments-calendar" className="m-0 mb-2 text-sm font-medium text-heading">
@@ -353,16 +344,13 @@ function Detail({ row }: { row: AppointmentRow | undefined }) {
   const a = row.appointment;
   const facts: [string, string][] = [
     [t('appointments.re'), [row.re?.name, row.team?.name].filter(Boolean).join(' · ')],
-    [
-      t('appointments.coordinators'),
-      row.coordinators.map((p) => `${p.role} ${p.name}`).join(', ') || '—',
-    ],
+    [t('appointments.coordinators'), row.coordinators.map(personLabel).join(', ') || '—'],
     [
       t('appointments.trigger'),
       [t(`trigger.${a.triggerType}`), a.triggerNote].filter(Boolean).join(' · '),
     ],
     [t('appointments.status'), t(`appointmentStatus.${a.status}`)],
-    [t('appointments.outcome'), outcomeText(row) || '—'],
+    [t('appointments.outcome'), outcomeText(row.outcome) || '—'],
     [t('appointments.note'), a.note || '—'],
   ];
   return (

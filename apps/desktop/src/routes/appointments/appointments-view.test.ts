@@ -1,7 +1,14 @@
 import type { AppointmentRecord, CustomerRecord } from '@p2c/db';
 import type { CalendarDate, Person, StageTransition, Team } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { appointmentRows, dayBoard, monthGrid, type AppointmentData } from './appointments-view';
+import {
+  appointmentRows,
+  dayBoard,
+  monthGrid,
+  outcomeText,
+  personLabel,
+  type AppointmentData,
+} from './appointments-view';
 
 const day = (month: number, dayOfMonth: number): CalendarDate => ({
   year: 2026,
@@ -186,5 +193,26 @@ describe('dayBoard', () => {
         ],
       ],
     ]);
+  });
+});
+
+describe('outcomeText', () => {
+  it('names both stages, including one outside the pipeline', () => {
+    expect(outcomeText({ kind: 'move', from: 'ON_HOLD', to: 'N3', rf: false })).toBe(
+      'Tạm hoãn → N3',
+    );
+    expect(outcomeText({ kind: 'move', from: 'N3', to: 'N2', rf: true })).toBe('N3 → N2 · RF');
+  });
+
+  it('shows a dash for an unknown starting stage, and the other kinds', () => {
+    expect(outcomeText({ kind: 'move', from: null, to: 'N4', rf: false })).toBe('— → N4');
+    expect(outcomeText({ kind: 'rescheduled', to: day(10, 2) })).toBe('Dời sang 02/10');
+    expect(outcomeText(null)).toBe('');
+  });
+});
+
+describe('personLabel', () => {
+  it('is the role then the name', () => {
+    expect(personLabel(people[3]!)).toBe('TL Nguyễn Thu Hà');
   });
 });

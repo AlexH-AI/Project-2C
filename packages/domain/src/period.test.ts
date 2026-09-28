@@ -5,6 +5,7 @@ import {
   compareDates,
   customPeriod,
   formatDate,
+  formatDayMonth,
   formatPeriodValue,
   fromLocalDate,
   isInPeriod,
@@ -32,6 +33,10 @@ describe('calendarDate', () => {
 
   it('accepts 29/02 in a leap year', () => {
     expect(formatDate(d(29, 2, 2028))).toBe('29/02/2028');
+  });
+
+  it('formats the day and month alone as dd/mm', () => {
+    expect(formatDayMonth(d(2, 10, 2026))).toBe('02/10');
   });
 });
 
