@@ -16,6 +16,8 @@ const BACKUP_DIR: &str = "backups";
 const EXPORT_DIR: &str = "exports";
 const BACKUP_PREFIX: &str = "project2c-";
 const KEEP_BACKUPS: usize = 10;
+/// Digits of the write order in a backup name, zero-padded so the folder lists in order.
+const SEQ_WIDTH: usize = 8;
 const SQLITE_HEADER: &[u8] = b"SQLite format 3\0";
 
 /// Keeps the data folder to one process: holds `project2c.lock` open without sharing until the
@@ -66,8 +68,8 @@ impl DataLock {
 /// Reads the database at startup; `None` on a first start (no file and no backups). The data
 /// folder is locked first, so a second process touches nothing (see [`DataLock`]). A missing
 /// file with backups left is an error, so the app never starts over them. An existing file is first
-/// copied into `backups\` under `stamp` (unless an identical copy is already there), keeping the
-/// newest ten copies. A file that is empty or not SQLite is an error, never a first start, and is
+/// copied into `backups\` (unless an identical copy is already there), keeping the ten last
+/// written copies. A file that is empty or not SQLite is an error, never a first start, and is
 /// not backed up: the app would otherwise write a new database over it.
 pub fn open(dir: &Path, stamp: &str, lock: &DataLock) -> io::Result<Option<Vec<u8>>> {
     fs::create_dir_all(dir)?;
@@ -104,14 +106,14 @@ pub fn backup(dir: &Path, stamp: &str) -> io::Result<String> {
     copy_to_backups(&dir.join(BACKUP_DIR), &bytes, stamp)
 }
 
-/// Writes `bytes` as backup `stamp`, keeping the newest ten; returns the name of the copy. A file
-/// the app keeps refusing (damaged inside) must not push the good backups out, so an identical
-/// copy is never written twice.
+/// Writes `bytes` as the next backup, keeping the ten last written; returns the name of the copy.
+/// A file the app keeps refusing (damaged inside) must not push the good backups out, so an
+/// identical copy is never written twice.
 fn copy_to_backups(backups: &Path, bytes: &[u8], stamp: &str) -> io::Result<String> {
     if let Some(name) = find_copy(backups, bytes) {
         return Ok(name);
     }
-    let name = backup_name(backups, stamp);
+    let name = backup_name(next_seq(backups), stamp);
     write_atomic(backups, &name, bytes)?;
     prune_backups(backups, &name);
     Ok(name)
@@ -190,23 +192,32 @@ fn remove_if_exists(path: &Path) -> io::Result<()> {
     }
 }
 
-/// `project2c-<stamp>.db`, or `project2c-<stamp>-<n>.db` when that second already has a backup.
-fn backup_name(backups: &Path, stamp: &str) -> String {
-    let mut name = format!("{BACKUP_PREFIX}{stamp}.db");
-    let mut n = 1;
-    while backups.join(&name).exists() {
-        name = format!("{BACKUP_PREFIX}{stamp}-{n}.db");
-        n += 1;
-    }
-    name
+/// `project2c-s<seq>-<stamp>.db`: `seq` is the write order and never comes from the clock; the
+/// stamp is only for people reading the folder.
+fn backup_name(seq: u64, stamp: &str) -> String {
+    format!("{BACKUP_PREFIX}s{seq:0SEQ_WIDTH$}-{stamp}.db")
 }
 
-/// The sort key of a name `backup_name` makes; `None` for any other name.
-fn backup_key(name: &str) -> Option<(&str, u64)> {
+/// Where a backup sits in write order. Names from before write order existed
+/// (`project2c-<stamp>[-<n>].db`) are older than every numbered one and sort by `(stamp, n)`.
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum BackupKey<'a> {
+    Stamped(&'a str, u64),
+    Numbered(u64),
+}
+
+/// The sort key of a backup name; `None` for any other name.
+fn backup_key(name: &str) -> Option<BackupKey<'_>> {
     let rest = name.strip_prefix(BACKUP_PREFIX)?.strip_suffix(".db")?;
+    if let Some(numbered) = rest.strip_prefix('s') {
+        let (seq, stamp) = numbered.split_once('-')?;
+        if !all_digits(seq) || !is_stamp(stamp) {
+            return None;
+        }
+        return seq.parse().ok().map(BackupKey::Numbered);
+    }
     let stamp = rest.get(..15)?;
-    let (date, time) = stamp.split_once('-')?;
-    if date.len() != 8 || !all_digits(date) || !all_digits(time) {
+    if !is_stamp(stamp) {
         return None;
     }
     let n = match &rest[15..] {
@@ -218,15 +229,39 @@ fn backup_key(name: &str) -> Option<(&str, u64)> {
             digits.parse().ok()?
         }
     };
-    Some((stamp, n))
+    Some(BackupKey::Stamped(stamp, n))
+}
+
+/// `YYYYMMDD-HHMMSS` as [`stamp`] makes it.
+fn is_stamp(s: &str) -> bool {
+    s.split_once('-').is_some_and(|(date, time)| {
+        date.len() == 8 && time.len() == 6 && all_digits(date) && all_digits(time)
+    })
+}
+
+/// The next write order: one past the highest numbered name in the folder (any entry, so a
+/// folder squatting on a name is never overwritten); 1 when there is none.
+fn next_seq(backups: &Path) -> u64 {
+    fs::read_dir(backups)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(
+            |entry| match backup_key(&entry.file_name().to_string_lossy()) {
+                Some(BackupKey::Numbered(seq)) => Some(seq),
+                _ => None,
+            },
+        )
+        .max()
+        .map_or(1, |seq| seq.saturating_add(1))
 }
 
 fn all_digits(s: &str) -> bool {
     !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit())
 }
 
-/// Our backups, oldest first. Only files named like our backups count; anything else in the
-/// folder is left alone, and an unreadable folder counts as empty.
+/// Our backups, oldest written first. Only files named like our backups count; anything else in
+/// the folder is left alone, and an unreadable folder counts as empty.
 fn backup_names(backups: &Path) -> Vec<String> {
     let mut names: Vec<String> = fs::read_dir(backups)
         .into_iter()
@@ -248,9 +283,9 @@ fn find_copy(backups: &Path, bytes: &[u8]) -> Option<String> {
     })
 }
 
-/// Deletes the oldest backups until `KEEP_BACKUPS` remain, never `keep` (the copy just written,
-/// even when a clock set back makes it look oldest). Best effort, so it never blocks startup: a
-/// backup another program holds open stays, and a later start tries again.
+/// Deletes the oldest written backups until `KEEP_BACKUPS` remain, never `keep` (the copy just
+/// written). Best effort, so it never blocks startup: a backup another program holds open stays,
+/// and a later start tries again.
 fn prune_backups(backups: &Path, keep: &str) {
     let names = backup_names(backups);
     let mut excess = names.len().saturating_sub(KEEP_BACKUPS);
@@ -305,7 +340,7 @@ mod tests {
         [b"SQLite format 3\0".as_slice(), tag.as_bytes()].concat()
     }
 
-    /// Ten starts on ten different files: backups `project2c-202609<10..19>-080000.db`.
+    /// Ten starts on ten different files: backups `project2c-s<1..10>-202609<10..19>-080000.db`.
     fn ten_backups(dir: &Path) {
         for day in 10..20 {
             save(dir, &db(&format!("day {day}"))).unwrap();
@@ -336,9 +371,12 @@ mod tests {
         save(&dir, &db("data")).unwrap();
         open(&dir, "20260927-080000").unwrap();
         let backups = dir.join(BACKUP_DIR);
-        assert_eq!(names(&backups), vec!["project2c-20260927-080000.db"]);
         assert_eq!(
-            fs::read(backups.join("project2c-20260927-080000.db")).unwrap(),
+            names(&backups),
+            vec!["project2c-s00000001-20260927-080000.db"]
+        );
+        assert_eq!(
+            fs::read(backups.join("project2c-s00000001-20260927-080000.db")).unwrap(),
             db("data")
         );
     }
@@ -348,7 +386,7 @@ mod tests {
         let dir = temp_dir();
         save(&dir, &db("before reload")).unwrap();
         let name = backup(&dir, "20260927-101500").unwrap();
-        assert_eq!(name, "project2c-20260927-101500.db");
+        assert_eq!(name, "project2c-s00000001-20260927-101500.db");
         assert_eq!(
             fs::read(dir.join(BACKUP_DIR).join(&name)).unwrap(),
             db("before reload")
@@ -362,11 +400,11 @@ mod tests {
         open(&dir, "20260927-080000").unwrap();
         assert_eq!(
             backup(&dir, "20260927-101500").unwrap(),
-            "project2c-20260927-080000.db"
+            "project2c-s00000001-20260927-080000.db"
         );
         assert_eq!(
             names(&dir.join(BACKUP_DIR)),
-            vec!["project2c-20260927-080000.db"]
+            vec!["project2c-s00000001-20260927-080000.db"]
         );
     }
 
@@ -378,7 +416,7 @@ mod tests {
         backup(&dir, "20260927-101500").unwrap();
         let kept = names(&dir.join(BACKUP_DIR));
         assert_eq!(kept.len(), 10);
-        assert_eq!(kept[9], "project2c-20260927-101500.db");
+        assert_eq!(kept[9], "project2c-s00000011-20260927-101500.db");
     }
 
     #[test]
@@ -404,8 +442,8 @@ mod tests {
         let kept = names(&backups);
         assert_eq!(kept.len(), 11);
         assert_eq!(kept[0], "notes.txt");
-        assert_eq!(kept[1], "project2c-20260912-080000.db");
-        assert_eq!(kept[10], "project2c-20260921-080000.db");
+        assert_eq!(kept[1], "project2c-s00000003-20260912-080000.db");
+        assert_eq!(kept[10], "project2c-s00000012-20260921-080000.db");
     }
 
     #[test]
@@ -419,6 +457,10 @@ mod tests {
             "project2c-20260101-00000x.db",
             "project2c-20260101-000000-x.db",
             "project2c-20260101-000000-0.db",
+            "project2c-s-20260101-000000.db",
+            "project2c-s1x-20260101-000000.db",
+            "project2c-s00000099-20260101.db",
+            "project2c-s00000099-20260101-000000-1.db",
         ];
         for name in foreign {
             fs::write(backups.join(name), b"keep").unwrap();
@@ -428,13 +470,17 @@ mod tests {
             open(&dir, &format!("202609{day}-080000")).unwrap();
         }
         let kept = names(&backups);
-        assert_eq!(kept.len(), 16);
+        assert_eq!(kept.len(), 20);
         for name in foreign {
             assert_eq!(fs::read(backups.join(name)).unwrap(), b"keep", "{name}");
         }
         assert!(backups.join("project2c-20260101-000000.db").is_dir());
-        assert!(backups.join("project2c-20260912-080000.db").exists());
-        assert!(!backups.join("project2c-20260911-080000.db").exists());
+        assert!(backups
+            .join("project2c-s00000003-20260912-080000.db")
+            .exists());
+        assert!(!backups
+            .join("project2c-s00000002-20260911-080000.db")
+            .exists());
     }
 
     #[test]
@@ -446,24 +492,28 @@ mod tests {
             open(&dir, "20260927-080000").unwrap();
         }
         assert_eq!(
-            fs::read(backups.join("project2c-20260927-080000.db")).unwrap(),
+            fs::read(backups.join("project2c-s00000001-20260927-080000.db")).unwrap(),
             db("a")
         );
         assert_eq!(
-            fs::read(backups.join("project2c-20260927-080000-1.db")).unwrap(),
+            fs::read(backups.join("project2c-s00000002-20260927-080000.db")).unwrap(),
             db("b")
         );
         assert_eq!(
-            fs::read(backups.join("project2c-20260927-080000-2.db")).unwrap(),
+            fs::read(backups.join("project2c-s00000003-20260927-080000.db")).unwrap(),
             db("c")
         );
-        // Eight later backups push out one: the unsuffixed copy is the oldest of the second.
+        // Eight later backups push out one: the first written in that second.
         for day in 10..18 {
             save(&dir, &db(&format!("day {day}"))).unwrap();
             open(&dir, &format!("202610{day}-080000")).unwrap();
         }
-        assert!(!backups.join("project2c-20260927-080000.db").exists());
-        assert!(backups.join("project2c-20260927-080000-1.db").exists());
+        assert!(!backups
+            .join("project2c-s00000001-20260927-080000.db")
+            .exists());
+        assert!(backups
+            .join("project2c-s00000002-20260927-080000.db")
+            .exists());
     }
 
     #[test]
@@ -537,8 +587,110 @@ mod tests {
         let backups = dir.join(BACKUP_DIR);
         assert_eq!(names(&backups).len(), 10);
         assert_eq!(
-            fs::read(backups.join("project2c-20250101-080000.db")).unwrap(),
+            fs::read(backups.join("project2c-s00000011-20250101-080000.db")).unwrap(),
             db("latest")
+        );
+    }
+
+    #[test]
+    fn starts_with_the_clock_in_2000_keep_the_latest_sessions_over_old_named_backups() {
+        let dir = temp_dir();
+        let backups = dir.join(BACKUP_DIR);
+        fs::create_dir_all(&backups).unwrap();
+        // Backups from before write order existed, written newest first so that file times
+        // disagree with their names: the result must not depend on file times.
+        let mut old: Vec<String> = (10..19)
+            .map(|day| format!("project2c-202609{day}-080000.db"))
+            .collect();
+        old.push("project2c-20260918-080000-1.db".into());
+        for name in old.iter().rev() {
+            fs::write(backups.join(name), db(name)).unwrap();
+        }
+        let stamps: Vec<String> = (0..5)
+            .map(|i| format!("200001{:02}-000000", 5 - i))
+            .collect();
+        for (i, stamp) in stamps.iter().enumerate() {
+            save(&dir, &db(&format!("session {i}"))).unwrap();
+            open(&dir, stamp).unwrap();
+        }
+        let sessions: Vec<String> = (1..)
+            .zip(&stamps)
+            .map(|(seq, stamp)| backup_name(seq, stamp))
+            .collect();
+        let expected = [&old[5..], &sessions[..]].concat();
+        assert_eq!(backup_names(&backups), expected);
+        for (i, name) in sessions.iter().enumerate() {
+            let copy = fs::read(backups.join(name)).unwrap();
+            assert_eq!(copy, db(&format!("session {i}")));
+        }
+    }
+
+    #[test]
+    fn a_clock_going_back_and_forth_keeps_the_ten_last_written_backups() {
+        let dir = temp_dir();
+        let stamps = [
+            "20260927-080000",
+            "20000101-000000",
+            "20260101-120000",
+            "19991231-235959",
+            "20260927-080000",
+            "20301231-000000",
+            "20000101-000000",
+            "20100505-050505",
+            "20260926-080000",
+            "20000102-000000",
+            "20260928-080000",
+            "19990101-000000",
+            "20260927-075959",
+            "20000101-000000",
+            "20150615-101010",
+        ];
+        for (i, stamp) in stamps.iter().enumerate() {
+            save(&dir, &db(&format!("start {i}"))).unwrap();
+            open(&dir, stamp).unwrap();
+        }
+        let expected: Vec<String> = (1..)
+            .zip(stamps)
+            .skip(stamps.len() - KEEP_BACKUPS)
+            .map(|(seq, stamp)| backup_name(seq, stamp))
+            .collect();
+        assert_eq!(backup_names(&dir.join(BACKUP_DIR)), expected);
+        // Zero-padded write order also lists the folder in order.
+        assert_eq!(names(&dir.join(BACKUP_DIR)), expected);
+    }
+
+    #[test]
+    fn next_seq_is_one_past_the_highest_numbered_backup() {
+        let dir = temp_dir();
+        assert_eq!(next_seq(&dir), 1);
+        fs::create_dir_all(&dir).unwrap();
+        assert_eq!(next_seq(&dir), 1);
+        fs::write(dir.join("project2c-20260927-080000.db"), b"old").unwrap();
+        fs::write(dir.join("project2c-20260927-080000-1.db"), b"old").unwrap();
+        fs::write(dir.join("project2c-s00000077-2026.db"), b"foreign").unwrap();
+        assert_eq!(next_seq(&dir), 1);
+        // Lower numbers already pruned: counting goes on from the highest left.
+        fs::write(dir.join(backup_name(5, "20260927-080000")), b"x").unwrap();
+        fs::write(dir.join(backup_name(9, "20000101-000000")), b"x").unwrap();
+        assert_eq!(next_seq(&dir), 10);
+        // A folder squatting on a numbered name is never written over.
+        fs::create_dir_all(dir.join(backup_name(12, "20000101-000000"))).unwrap();
+        assert_eq!(next_seq(&dir), 13);
+    }
+
+    #[test]
+    fn old_named_backups_sort_before_numbered_ones() {
+        assert!(
+            backup_key("project2c-20301231-235959-9.db")
+                < backup_key("project2c-s00000001-19700101-000000.db")
+        );
+        assert!(
+            backup_key("project2c-20260927-080000.db")
+                < backup_key("project2c-20260927-080000-1.db")
+        );
+        assert!(
+            backup_key("project2c-s00000002-20000101-000000.db")
+                < backup_key("project2c-s00000010-19990101-000000.db")
         );
     }
 
@@ -549,7 +701,7 @@ mod tests {
         let dir = temp_dir();
         ten_backups(&dir);
         let backups = dir.join(BACKUP_DIR);
-        let oldest = backups.join("project2c-20260910-080000.db");
+        let oldest = backups.join("project2c-s00000001-20260910-080000.db");
         // Another program (a SQLite browser, an antivirus scan) holds the file open.
         let _lock = fs::OpenOptions::new()
             .read(true)
@@ -560,7 +712,9 @@ mod tests {
         assert_eq!(open(&dir, "20260927-080000").unwrap(), Some(db("latest")));
         assert_eq!(names(&backups).len(), 10);
         assert!(oldest.exists());
-        assert!(!backups.join("project2c-20260911-080000.db").exists());
+        assert!(!backups
+            .join("project2c-s00000002-20260911-080000.db")
+            .exists());
     }
 
     #[cfg(windows)]
