@@ -2,8 +2,8 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-09-29 · máy `DESKTOP-KDURKJP` · sau khi merge T-049 phần A1 (PR #155) và A2 (PR #156)
-- **Nhánh:** `docs/handoff-2026-09-29-t049a2` (= `main` `9e6601e` + file này); không còn PR code nào mở. Nhánh `task/T-049a*` đã xóa cả local lẫn remote. Checkout chính `C:\workspace\Project-2C` sạch. Worktree review `C:\workspace\Project-2C-review` detached ở `9e6601e`
+- **Cập nhật:** 2026-09-29 · máy `DESKTOP-KDURKJP` · sau khi merge T-049 phần A1 (PR #155), A2 (PR #156), A3 (PR #158)
+- **Nhánh:** `docs/handoff-2026-09-29-t049a3` (= `main` `74be6c9` + file này); không còn PR code nào mở. Nhánh `task/T-049a*` đã xóa cả local lẫn remote. Checkout chính `C:\workspace\Project-2C` sạch. Worktree review `C:\workspace\Project-2C-review` detached ở `74be6c9`
 - **Máy kế tiếp:** Home PC hoặc Office Laptop — cả hai đã có môi trường + worktree review
 - **Repo đã chuyển public** (27/09, Owner tự làm) vì Actions private chạm ~1.800/2.000 phút; Actions giờ miễn phí
 - **Ruleset `protect-main`** (28/09, Owner duyệt): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
@@ -13,10 +13,10 @@
 
 | Việc | Trạng thái |
 |---|---|
-| #68 T-049 Lịch hẹn | **Đang làm**, Issue mở. Owner tách 3 phần ([quyết định](https://github.com/AlexH-AI/Project-2C/issues/68#issuecomment-5874946941)); phần A tách tiếp A1/A2. ✅ **A1** PR #155 (merge `888566e`): màn `routes/appointments/AppointmentsScreen.tsx` đọc DB — kỳ, lọc góc nhìn / người phối hợp, bảng "Trong ngày" team → RE, danh sách, bảng chi tiết; `appointments-view.ts` (`appointmentRows`, `dayBoard`, `outcomeText`, `personLabel`); `formatDayMonth` trong `domain`; `coordinatorsByAppointment` (một câu SQL) trong `db/appointments.ts`. ✅ **A2** PR #156 (squash `9e6601e`): lịch tháng (`monthGrid`, `CALENDAR_GROUP`), ô ngoài tháng không bấm được (Owner chọn 29/09). ⏳ **B** hộp Tạo lịch 6a/6b + "Các lần hẹn trước" + "Tạo lịch hẹn tiếp theo" 6h. ⏳ **C** Dời lịch 6e (+ tham số `note` ở `rescheduleAppointment`, Owner duyệt mở rộng file) + bảng Lịch hẹn trong Hồ sơ KH + nút "Hẹn tiếp" ở hồ sơ / dòng thời gian. CI `main` của `9e6601e` đang chạy lúc handoff → khi xanh, artifact `Project-2C-9e6601e…` là exe mới nhất |
+| #68 T-049 Lịch hẹn | **Đang làm**, Issue mở. Owner tách 3 phần ([quyết định](https://github.com/AlexH-AI/Project-2C/issues/68#issuecomment-5874946941)); phần A tách tiếp A1/A2/A3. ✅ **A1** PR #155 (merge `888566e`): màn `routes/appointments/AppointmentsScreen.tsx` đọc DB — kỳ, lọc góc nhìn / người phối hợp, bảng "Trong ngày" team → RE, danh sách, bảng chi tiết; `appointments-view.ts` (`appointmentRows`, `dayBoard`, `outcomeText`, `personLabel`); `formatDayMonth` trong `domain`; `coordinatorsByAppointment` (một câu SQL) trong `db/appointments.ts`. ✅ **A2** PR #156 (squash `9e6601e`): lịch tháng (`monthGrid`, `CALENDAR_GROUP`), ô ngoài tháng không bấm được (Owner chọn 29/09). ✅ **A3** PR #158 (squash `74be6c9`, xử lý ghi chú review #156): `pickDay` — kỳ Ngày/Tuần bấm ngày ngoài kỳ thì kỳ chuyển theo; kỳ Tùy chọn thì ô ngoài khoảng không bấm được (Owner chọn 29/09). ⏳ **B** hộp Tạo lịch 6a/6b + "Các lần hẹn trước" + "Tạo lịch hẹn tiếp theo" 6h. ⏳ **C** Dời lịch 6e (+ tham số `note` ở `rescheduleAppointment`, Owner duyệt mở rộng file) + bảng Lịch hẹn trong Hồ sơ KH + nút "Hẹn tiếp" ở hồ sơ / dòng thời gian. CI `main` của `9e6601e` success; CI của `74be6c9` đang chạy lúc handoff → khi xanh, artifact `Project-2C-74be6c9…` là exe mới nhất |
 | #142 T-065 form KH theo sát mockup 5a–5c | Mở, `risk:med`; Owner quyết "có làm, không gấp". Gom 4 chỗ lệch mockup từ review #140 |
 
-Ghi chú review #156 (không chặn): kỳ **Ngày/Tuần** — bấm ngày khác trên lịch thì "Trong ngày" đổi theo nhưng tóm tắt + danh sách vẫn theo kỳ (kỳ Tháng luôn khớp); có thể xử lý sau (VD kỳ Ngày thì bấm ô cũng đổi kỳ). NIT: số ngày trong ô dùng `String(day).padStart(2, '0')` (`AppointmentsScreen.tsx:~270`) thay vì hàm `domain`. Chưa có cây Team → RE ở cột trái như mockup (góc nhìn dùng bộ chọn chung; "Trong ngày" đảm nhận team → RE); tóm tắt tháng / trigger / chuyển nhóm của mockup là chỉ số Phase 4.
+Ghi chú review #156/#158 (không chặn; mục kỳ Ngày/Tuần đã xử lý ở #158). NIT: ô không bấm được (ngoài tháng / ngoài khoảng tùy chọn) là `aria-hidden` nên trình đọc màn hình không đọc số lịch của ngày đó (danh sách vẫn đọc được); số ngày trong ô dùng `String(day).padStart(2, '0')` (`AppointmentsScreen.tsx:~270`) thay vì hàm `domain`. Chưa có cây Team → RE ở cột trái như mockup (góc nhìn dùng bộ chọn chung; "Trong ngày" đảm nhận team → RE); tóm tắt tháng / trigger / chuyển nhóm của mockup là chỉ số Phase 4.
 
 Ghi chú review #155 (không chặn): hai file ngoài danh sách được phép của #68 đã được Owner ghi nhận (`domain/period.ts` `formatDayMonth`, `db/appointments.ts` `coordinatorsByAppointment`). NIT: `inScope` góc nhìn team vẫn quét `data.people` cho từng lịch (`appointments-view.ts:~104`). **Hiệu năng:** e2e `chart.spec.ts:35` (mở màn Lịch hẹn 10 lần) từng vượt 30 s trước khi bỏ N+1; sau sửa ~15 s trên CI — phần B/C thêm gì vào màn này thì kiểm lại thời gian test đó trong log CI.
 
@@ -50,7 +50,7 @@ Ghi chú khác (còn từ Phase 1): `DataTable` chưa test `sortable: false` và
 
 ## Bước kế tiếp chính xác
 
-1. `/session-start` (pull `main`). Kiểm run CI của `9e6601e`: `gh run list --branch main --limit 1` → `success` thì exe mới nhất là artifact `Project-2C-9e6601e…` (gồm màn Lịch hẹn A1 + A2); nếu lỗi → xem log, báo Owner.
+1. `/session-start` (pull `main`). Kiểm run CI của `74be6c9`: `gh run list --branch main --limit 1` → `success` thì exe mới nhất là artifact `Project-2C-74be6c9…` (gồm màn Lịch hẹn A1 + A2 + A3); nếu lỗi → xem log, báo Owner.
 2. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Issue còn mở của milestone (6): #68 (đang làm), #69, #70, #142, #71, #72.
    - **Việc kế tiếp: #68 phần B** — nhánh `task/T-049b-create-appointment` từ `main`, PR `Refs #68`, nhãn `risk:med`. Phạm vi: hộp **Tạo lịch hẹn** (mockup `docs/design/mockups/appointment-forms.html` 6a, 6b; 6h cho "Tạo lịch hẹn tiếp theo") mở từ màn `AppointmentsScreen.tsx`; nhập ngày `dd/mm` + giờ, hiện ngày đầy đủ đã diễn giải; trigger bắt buộc, mặc định "—"; ngày đã qua > 60 ngày → gợi ý năm sau (ca biên nhập ngày: `docs/metrics/phase-2.md`); "Các lần hẹn trước" (mới nhất trên, 5 lần + "Xem tất cả (n)", ngày kèm năm nếu khác năm nay); "Tạo lịch hẹn tiếp theo" từ bảng chi tiết lịch hẹn: điền sẵn KH/RE/người phối hợp/trigger, ngày phải từ hôm nay, **không** dùng `rescheduled_from_id`. Test chấp nhận: các ô tương ứng trong body #68. Trước khi code: đọc repository tạo lịch trong `packages/db/src/appointments.ts` và các hàm diễn giải ngày trong `packages/domain`. Quá ngưỡng (xem 4) thì tách B1/B2 như A.
    - Sau B: **#68 phần C** (dời lịch 6e + `note` ở `rescheduleAppointment` + bảng Lịch hẹn ở Hồ sơ KH + nút "Hẹn tiếp") → đóng #68 → **#69** T-050 Ghi kết quả cuộc gặp → **#70** T-051 Hợp đồng (G3 đã duyệt).
@@ -105,7 +105,6 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 ## Chờ Owner
 
 - Xác nhận việc kế tiếp: mặc định #68 phần B → phần C → #69 → #70, #142 chen khi rảnh (xem "Bước kế tiếp" 2).
-- (Tùy chọn) Ghi chú review #156: kỳ Ngày/Tuần có nên đổi kỳ khi bấm ngày trên lịch không — hiện chưa làm.
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
 ## Ghi chú môi trường
