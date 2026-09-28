@@ -28,7 +28,10 @@ export function ScopePicker({
         label={t('scope.label')}
         options={KINDS}
         value={scope.kind}
-        onChange={(kind) => onChange({ kind })}
+        // Segmented reports a click on the kind already selected: keep the team or RE picked.
+        onChange={(kind) => {
+          if (kind !== scope.kind) onChange({ kind });
+        }}
       />
       {scope.kind === 'team' && (
         <SelectField
