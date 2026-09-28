@@ -1,7 +1,8 @@
 import type { Person, Scope, Team } from '@p2c/domain';
 import { Segmented, SelectField } from '@p2c/ui';
+import type { Dispatch, SetStateAction } from 'react';
 import { t } from '../i18n';
-import { reOptions, type ScopeChoice } from './scope';
+import { chooseKind, reOptions, type ScopeChoice } from './scope';
 
 const KINDS = [
   { value: 'all', label: t('scope.all') },
@@ -20,7 +21,8 @@ export function ScopePicker({
   scope: Scope;
   teams: readonly Team[];
   people: readonly Person[];
-  onChange: (choice: ScopeChoice) => void;
+  /** The state setter of the choice: a click on a kind needs the choice it replaces. */
+  onChange: Dispatch<SetStateAction<ScopeChoice>>;
 }) {
   return (
     <div className="flex items-center gap-2">
@@ -28,10 +30,7 @@ export function ScopePicker({
         label={t('scope.label')}
         options={KINDS}
         value={scope.kind}
-        // Segmented reports a click on the kind already selected: keep the team or RE picked.
-        onChange={(kind) => {
-          if (kind !== scope.kind) onChange({ kind });
-        }}
+        onChange={(kind) => onChange((choice) => chooseKind(choice, kind))}
       />
       {scope.kind === 'team' && (
         <SelectField

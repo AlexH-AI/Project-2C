@@ -27,6 +27,14 @@ export function resolveScope(
   return { kind: 'all' };
 }
 
+/**
+ * A click on a kind of scope. The kind already chosen keeps its team or RE; compare with the
+ * choice, not the resolved scope, which shows everyone while there is no team or RE to pick.
+ */
+export function chooseKind(choice: ScopeChoice, kind: Scope['kind']): ScopeChoice {
+  return kind === choice.kind ? choice : { kind };
+}
+
 /** The RE a scope or a customer can be given, as "Name · Team", in the order of `people`. */
 export function reOptions(
   people: readonly Person[],
