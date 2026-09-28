@@ -7,11 +7,12 @@ import {
   type Database,
 } from '@p2c/db';
 import { CLOSED_STAGES, PIPELINE_STAGES, formatDate, type ClosedStage } from '@p2c/domain';
-import { DataTable, Segmented, StageBadge, type DataTableColumn } from '@p2c/ui';
+import { Button, DataTable, Segmented, StageBadge, type DataTableColumn } from '@p2c/ui';
 import { useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { useScope } from '../../shell/ScopeContext';
+import { CustomerFormDialog } from './CustomerDialogs';
 import { birthLabel, customerBoard, type CustomerCard } from './customers-view';
 
 type View = 'kanban' | 'table';
@@ -103,6 +104,7 @@ export function CustomersScreen() {
     [board],
   );
   const [view, setView] = useState<View>('kanban');
+  const [creating, setCreating] = useState(false);
 
   return (
     <>
@@ -112,7 +114,11 @@ export function CustomersScreen() {
         </span>
         <div className="flex-1" />
         <Segmented label={t('customers.view')} options={VIEWS} value={view} onChange={setView} />
+        <Button variant="primary" onClick={() => setCreating(true)}>
+          {t('customers.add')}
+        </Button>
       </div>
+      {creating && <CustomerFormDialog onClose={() => setCreating(false)} />}
       {view === 'table' ? (
         <DataTable
           label={t('screen.customers')}

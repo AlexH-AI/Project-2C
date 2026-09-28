@@ -1,7 +1,7 @@
 import type { Person, Scope, Team } from '@p2c/domain';
 import { Segmented, SelectField } from '@p2c/ui';
 import { t } from '../i18n';
-import type { ScopeChoice } from './scope';
+import { reOptions, type ScopeChoice } from './scope';
 
 const KINDS = [
   { value: 'all', label: t('scope.all') },
@@ -22,14 +22,6 @@ export function ScopePicker({
   people: readonly Person[];
   onChange: (choice: ScopeChoice) => void;
 }) {
-  const teamName = (id: string | null) => teams.find((team) => team.id === id)?.name;
-  const res = people
-    .filter((person) => person.role === 'RE')
-    .map((re) => ({
-      value: re.id,
-      label: [re.name, teamName(re.teamId)].filter(Boolean).join(' · '),
-    }));
-
   return (
     <div className="flex items-center gap-2">
       <Segmented
@@ -52,7 +44,7 @@ export function ScopePicker({
           label={t('scope.pickRe')}
           labelHidden
           value={scope.reId}
-          options={res}
+          options={reOptions(people, teams)}
           onChange={(id) => onChange({ kind: 're', id })}
         />
       )}

@@ -6,6 +6,8 @@ interface TextFieldProps {
   onChange: (value: string) => void;
   /** Shown under the field and read as its description. */
   error?: string;
+  /** What the app understood from the text (mockup `.read`), shown under the field when valid. */
+  hint?: string;
   /** Marks the label with *; the command, not the browser, rejects an empty value. */
   required?: boolean;
   disabled?: boolean;
@@ -18,6 +20,7 @@ export function TextField({
   value,
   onChange,
   error,
+  hint,
   required,
   disabled,
   autoFocus,
@@ -48,10 +51,12 @@ export function TextField({
           error ? 'border-danger' : 'border-border-strong'
         }`}
       />
-      {error && (
+      {error ? (
         <span id={errorId} className="text-xs text-danger">
           {error}
         </span>
+      ) : (
+        hint && <span className="text-xs text-fg-2 tabular-nums">{hint}</span>
       )}
     </div>
   );

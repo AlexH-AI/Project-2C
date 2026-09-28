@@ -1,7 +1,7 @@
 import type { CustomerRecord } from '@p2c/db';
 import type { CalendarDate, Person, Policy, StageTransition } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { ageOn, birthLabel, customerBoard } from './customers-view';
+import { ageOn, birthLabel, customerBoard, parseBirthDate } from './customers-view';
 
 const day = (month: number, dayOfMonth: number): CalendarDate => ({
   year: 2026,
@@ -108,5 +108,27 @@ describe('ageOn', () => {
 
   it('counts the age reached this year from a year alone', () => {
     expect(ageOn({ year: 1984 }, day(1, 1))).toBe(42);
+  });
+});
+
+describe('parseBirthDate', () => {
+  const today = day(9, 26);
+
+  it('reads a year alone or a full date, and nothing as no birth date', () => {
+    expect(parseBirthDate('1984', today)).toEqual({ ok: true, birth: { year: 1984 } });
+    expect(parseBirthDate(' 12/3/1984 ', today)).toEqual({
+      ok: true,
+      birth: { year: 1984, month: 3, day: 12 },
+    });
+    expect(parseBirthDate('  ', today)).toEqual({ ok: true, birth: null });
+  });
+
+  it('refuses a day that does not exist, a short year or a birth after today', () => {
+    expect(parseBirthDate('31/02/1984', today)).toEqual({ ok: false, error: 'invalid-date' });
+    expect(parseBirthDate('12/3/84', today)).toEqual({ ok: false, error: 'format' });
+    expect(parseBirthDate('12/3', today)).toEqual({ ok: false, error: 'format' });
+    expect(parseBirthDate('1899', today)).toEqual({ ok: false, error: 'year-out-of-range' });
+    expect(parseBirthDate('2027', today)).toEqual({ ok: false, error: 'future' });
+    expect(parseBirthDate('27/09/2026', today)).toEqual({ ok: false, error: 'future' });
   });
 });

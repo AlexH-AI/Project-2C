@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import {
   getCustomer,
   listPeople,
@@ -8,10 +8,11 @@ import {
   type Database,
 } from '@p2c/db';
 import { formatDate } from '@p2c/domain';
-import { StageBadge } from '@p2c/ui';
+import { Button, StageBadge } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
+import { CustomerFormDialog } from './CustomerDialogs';
 import { ageOn, birthLabel } from './customers-view';
 
 function readProfile(db: Database, id: string) {
@@ -23,7 +24,7 @@ function readProfile(db: Database, id: string) {
     re,
     team: listTeams(db).find((team) => team.id === re?.teamId),
     policies: listPolicies(db).filter((policy) => policy.customerId === id).length,
-    since: listStageTransitions(db, id).at(-1)?.date,
+    transitions: listStageTransitions(db, id),
   };
 }
 
@@ -40,6 +41,7 @@ const BACK = (
 export function CustomerProfile({ id }: { id: string }) {
   const today = useAppData().today();
   const profile = useQuery(useCallback((db: Database) => readProfile(db, id), [id]));
+  const [editing, setEditing] = useState(false);
 
   if (!profile) {
     return (
@@ -50,7 +52,9 @@ export function CustomerProfile({ id }: { id: string }) {
     );
   }
 
-  const { customer, re, team, policies, since } = profile;
+  const { customer, re, team, policies, transitions } = profile;
+  // Every customer has its first transition (spec §3.4).
+  const since = transitions.at(-1)!.date;
   const birth = customer.birthDate;
   const facts = [
     customer.code,
@@ -70,14 +74,15 @@ export function CustomerProfile({ id }: { id: string }) {
             {customer.name}
           </h2>
           <StageBadge stage={customer.stage} label={t(`stage.${customer.stage}`)} />
-          {since && (
-            <span className="text-xs text-fg-3 tabular-nums">
-              {t('customer.since', { date: formatDate(since) })}
-            </span>
-          )}
+          <span className="text-xs text-fg-3 tabular-nums">
+            {t('customer.since', { date: formatDate(since) })}
+          </span>
+          <div className="flex-1" />
+          <Button onClick={() => setEditing(true)}>{t('customer.edit')}</Button>
         </div>
         <p className="m-0 text-sm text-fg-2 tabular-nums">{facts.join(' · ')}</p>
       </section>
+      {editing && <CustomerFormDialog customer={customer} onClose={() => setEditing(false)} />}
     </>
   );
 }

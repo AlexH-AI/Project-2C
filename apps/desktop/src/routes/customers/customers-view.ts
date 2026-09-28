@@ -5,8 +5,10 @@ import {
   compareDates,
   formatDate,
   inScope,
+  parseQuickDate,
   type CalendarDate,
   type ClosedStage,
+  type QuickDateError,
   type Person,
   type PipelineStage,
   type Policy,
@@ -78,6 +80,26 @@ function byStage<S extends CustomerRecord['stage']>(
   const columns = {} as Record<S, CustomerCard[]>;
   for (const stage of stages) columns[stage] = cards.filter((c) => c.customer.stage === stage);
   return columns;
+}
+
+export type BirthDateResult =
+  | { readonly ok: true; readonly birth: BirthDate | null }
+  | { readonly ok: false; readonly error: QuickDateError | 'future' };
+
+/**
+ * Reads a birth date typed as a year (`1984`) or a full `dd/mm/yyyy`; empty means none (a N4
+ * customer may be unknown). A year must be written in full: `12/3/84` or `12/3` is a format error.
+ */
+export function parseBirthDate(text: string, today: CalendarDate): BirthDateResult {
+  const trimmed = text.trim();
+  if (trimmed === '') return { ok: true, birth: null };
+  const year = /^\d{4}$/.test(trimmed) ? Number(trimmed) : null;
+  const parsed = parseQuickDate(year === null ? trimmed : `1/1/${year}`, today);
+  if (!parsed.ok) return parsed;
+  if (parsed.yearInferred) return { ok: false, error: 'format' };
+  const birth = year === null ? parsed.date : { year };
+  const tooLate = year === null ? compareDates(parsed.date, today) > 0 : year > today.year;
+  return tooLate ? { ok: false, error: 'future' } : { ok: true, birth };
 }
 
 /** "1984" when only the year is known, else "12/03/1984". */
