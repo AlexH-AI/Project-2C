@@ -34,7 +34,7 @@ interface DataTableProps<Row extends RowData> {
   label: string;
   columns: ReadonlyArray<DataTableColumn<Row>>;
   /** Keep the array stable between renders (state or memo), or sorting is recomputed. */
-  rows: Row[];
+  rows: readonly Row[];
   getRowId?: (row: Row, index: number) => string;
   initialSort?: DataTableSort;
 }
@@ -78,7 +78,8 @@ export function DataTable<Row extends RowData>({
   const table = useTable({
     features,
     columns: columnDefs,
-    data: rows,
+    // TanStack types `data` as mutable but only reads it.
+    data: rows as Row[],
     getRowId,
     initialState: { sorting: initialSort ? [initialSort] : [] },
     enableMultiSort: false,
