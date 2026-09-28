@@ -8,6 +8,7 @@ import {
   listKycVersions,
   markKycConflict,
   markKycVersionMaterial,
+  recordKycNote,
   resolveKycConflict,
 } from './kyc';
 import { codeOf, d, setup } from './test-support';
@@ -82,6 +83,7 @@ describe('KYC notes', () => {
       'listKycVersions',
       'markKycConflict',
       'markKycVersionMaterial',
+      'recordKycNote',
       'resolveKycConflict',
     ]);
     const run = (sql: string) => () => database.sqlite.run(sql);
@@ -421,5 +423,97 @@ describe('KYC versions', () => {
       'markKycVersionMaterial',
     ]);
     expect(codeOf(() => markKycVersionMaterial(database, 'missing'))).toBe('KYC_VERSION_NOT_FOUND');
+  });
+});
+
+describe('a note with its facts, recorded at once (mockup 7a)', () => {
+  it('saves the note and every fact as one version', async () => {
+    const { db: database, customer, persist } = await withCustomer();
+    confirmKycFact(database, customer.id, {
+      field: 'riskProfile',
+      value: 'Thận trọng',
+      noteId: getKycProfile(database, customer.id).notes[0]!.id,
+      date: d(3, 9, 2026),
+    });
+    persist.mockClear();
+
+    const { note, version } = recordKycNote(database, customer.id, {
+      text: ' Du học 2029 ',
+      date: d(14, 9, 2026),
+      facts: [
+        { field: 'goalHorizon', value: '2029' },
+        { field: 'childrenCount', value: ' 2 ' },
+        { field: 'riskProfile', value: 'Cân bằng', conflict: true },
+      ],
+    });
+
+    expect(note).toMatchObject({ text: 'Du học 2029', createdDate: d(14, 9, 2026), source: 'RE' });
+    const profile = getKycProfile(database, customer.id);
+    expect(current(profile.facts)).toEqual([
+      ['riskProfile', 'Thận trọng', 'conflict'],
+      ['goalHorizon', '2029', 'active'],
+      ['childrenCount', 2, 'active'],
+      ['riskProfile', 'Cân bằng', 'conflict'],
+    ]);
+    expect(profile.facts.slice(1).every((fact) => fact.noteId === note.id)).toBe(true);
+    expect(version).toMatchObject({ summary: 'Cập nhật KYC 14/09/2026', material: true });
+    expect(listKycVersions(database, customer.id)).toHaveLength(2);
+    expect(persist).toHaveBeenCalledTimes(1);
+  });
+
+  it('records a note alone without a version, and a manual material switch', async () => {
+    const { db: database, customer } = await withCustomer();
+
+    const alone = recordKycNote(database, customer.id, {
+      text: 'Hỏi thăm',
+      date: d(3, 9),
+      facts: [],
+    });
+    const minor = recordKycNote(database, customer.id, {
+      text: 'Ở Huế',
+      date: d(4, 9, 2026),
+      facts: [{ field: 'residence', value: 'Huế' }],
+    });
+    const manual = recordKycNote(database, customer.id, {
+      text: 'Chuyển ra Hà Nội',
+      date: d(5, 9, 2026),
+      facts: [{ field: 'residence', value: 'Hà Nội' }],
+      material: true,
+    });
+
+    expect(alone.version).toBeNull();
+    // The first version is always material (ADR-0008 7).
+    expect([minor.version?.material, manual.version?.material]).toEqual([true, true]);
+    const later = recordKycNote(database, customer.id, {
+      text: 'Về Huế',
+      date: d(6, 9, 2026),
+      facts: [{ field: 'residence', value: 'Huế' }],
+    });
+    expect(later.version?.material).toBe(false);
+  });
+
+  it('writes nothing when one fact is refused', async () => {
+    const { db: database, customer, persist } = await withCustomer();
+    persist.mockClear();
+    const record = (fact: { field: 'occupation'; value: string; conflict?: boolean }, text = 'x') =>
+      codeOf(() =>
+        recordKycNote(database, customer.id, {
+          text,
+          date: d(3, 9, 2026),
+          facts: [{ field: 'residence', value: 'Huế' }, fact],
+        }),
+      );
+
+    expect(record({ field: 'occupation', value: 'A' }, '  ')).toBe('KYC_NOTE_EMPTY');
+    expect(record({ field: 'occupation', value: 'A', conflict: true })).toBe('KYC_NO_CONFLICT');
+    expect(record({ field: 'occupation', value: ' ' })).toBe('INVALID_KYC_VALUE');
+    expect(record({ field: 'birthYear' as 'occupation', value: '1984' })).toBe(
+      'KYC_FIELD_FROM_PROFILE',
+    );
+    expect(record({ field: 'shoeSize' as 'occupation', value: '42' })).toBe('INVALID_KYC_FIELD');
+
+    expect(persist).not.toHaveBeenCalled();
+    expect(getKycProfile(database, customer.id).notes).toHaveLength(1);
+    expect(listKycVersions(database, customer.id)).toEqual([]);
   });
 });

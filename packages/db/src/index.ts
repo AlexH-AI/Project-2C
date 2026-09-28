@@ -60,11 +60,13 @@ export {
   listKycVersions,
   markKycConflict,
   markKycVersionMaterial,
+  recordKycNote,
   resolveKycConflict,
 } from './kyc';
 export type {
   KycChange,
   KycFactCommand,
+  KycNoteFact,
   KycNoteRecord,
   KycProfileRecord,
   KycSource,
