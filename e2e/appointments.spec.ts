@@ -80,6 +80,51 @@ test('a day in the calendar shows that day, its count matching the list', async 
   await expect(rows).toHaveCount(count);
 });
 
+test('with the day period, a day in the calendar moves the period to that day', async ({
+  page,
+}) => {
+  const { calendar, day, kinds, rows, column } = screen(page);
+
+  await kinds.getByRole('radio', { name: 'Ngày' }).click();
+  const cell = calendar.getByRole('button', { name: /^18\/09\/2026:/ });
+  await cell.click();
+  await expect(cell).toHaveAttribute('aria-pressed', 'true');
+  await expect(day.getByRole('heading', { level: 2 })).toHaveText('Trong ngày 18/09/2026');
+
+  const count = Number((await cell.getAttribute('aria-label'))?.match(/: (\d+)/)?.[1]);
+  expect(count).toBeGreaterThan(0);
+  await expect(rows).toHaveCount(count);
+  expect(await total(page)).toBe(count);
+  expect(new Set(await column(1))).toEqual(new Set(['18/09/2026']));
+});
+
+test('with the week period, a day in another week moves the period to that week', async ({
+  page,
+}) => {
+  const { calendar, day, kinds, column } = screen(page);
+
+  await kinds.getByRole('radio', { name: 'Tuần' }).click();
+  await calendar.getByRole('button', { name: /^23\/09\/2026:/ }).click();
+  await expect(day.getByRole('heading', { level: 2 })).toHaveText('Trong ngày 23/09/2026');
+
+  const week = ['21', '22', '23', '24', '25', '26', '27'].map((d) => `${d}/09/2026`);
+  const dates = await column(1);
+  expect(dates.length).toBeGreaterThan(0);
+  for (const date of dates) expect(week).toContain(date);
+});
+
+test('with a custom range, days outside it cannot be picked', async ({ page }) => {
+  const { calendar, kinds } = screen(page);
+
+  await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
+  await page.getByRole('textbox', { name: 'Từ ngày' }).fill('10/09/2026');
+  await page.getByRole('textbox', { name: 'Đến ngày' }).fill('20/09/2026');
+  await page.getByRole('textbox', { name: 'Đến ngày' }).press('Enter');
+
+  await expect(calendar.getByRole('button')).toHaveCount(11);
+  await expect(calendar.getByRole('button', { name: /^21\/09\/2026:/ })).toHaveCount(0);
+});
+
 test('the scope narrows the day and the list to one team, then one RE', async ({ page }) => {
   const { day, rows, column } = screen(page);
   const all = await total(page);

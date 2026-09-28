@@ -28,6 +28,7 @@ import {
   monthGrid,
   outcomeText,
   personLabel,
+  pickDay,
   type AppointmentRow,
   type CoordinatorFilter,
   type DayCell,
@@ -137,6 +138,12 @@ export function AppointmentsScreen() {
     setPeriod(next);
     setDay(dayIn(next, today));
   };
+  const pick = (date: CalendarDate) => {
+    const next = pickDay(period, date);
+    if (!next) return;
+    setPeriod(next);
+    setDay(date);
+  };
 
   return (
     <>
@@ -160,7 +167,7 @@ export function AppointmentsScreen() {
       </div>
       <div className="flex flex-col items-start gap-4 lg:flex-row">
         <div className="flex w-full min-w-0 flex-1 flex-col gap-4">
-          <MonthCalendar day={day} today={today} rows={rows} onPick={setDay} />
+          <MonthCalendar period={period} day={day} today={today} rows={rows} onPick={pick} />
           <DayTable day={day} rows={rows} onSelect={setSelectedId} />
         </div>
         <Detail row={selected} />
@@ -182,11 +189,13 @@ export function AppointmentsScreen() {
 }
 
 function MonthCalendar({
+  period,
   day,
   today,
   rows,
   onPick,
 }: {
+  period: Period;
   day: CalendarDate;
   today: CalendarDate;
   rows: readonly AppointmentRow[];
@@ -217,6 +226,7 @@ function MonthCalendar({
           <DayButton
             key={formatDate(cell.date)}
             cell={cell}
+            pickable={cell.inMonth && pickDay(period, cell.date) !== null}
             weekend={i % 7 >= 5}
             picked={compareDates(cell.date, day) === 0}
             isToday={compareDates(cell.date, today) === 0}
@@ -253,12 +263,14 @@ const CELL = 'flex min-h-15 flex-col rounded-sm border px-2 py-1.5 text-left tab
 
 function DayButton({
   cell,
+  pickable,
   weekend,
   picked,
   isToday,
   onPick,
 }: {
   cell: DayCell;
+  pickable: boolean;
   weekend: boolean;
   picked: boolean;
   isToday: boolean;
@@ -270,8 +282,9 @@ function DayButton({
       {String(cell.date.day).padStart(2, '0')}
     </span>
   );
-  // Days outside the month only fill the weeks: the period picker moves to another month.
-  if (!cell.inMonth) {
+  // Days outside the month only fill the weeks, days outside a custom range cannot be picked:
+  // the period picker moves there.
+  if (!pickable) {
     return (
       <div aria-hidden="true" className={`${CELL} border-border opacity-35 ${background}`}>
         {dayNumber}

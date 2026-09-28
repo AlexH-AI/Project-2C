@@ -1,5 +1,11 @@
 import type { AppointmentRecord, CustomerRecord } from '@p2c/db';
-import type { CalendarDate, Person, StageTransition, Team } from '@p2c/domain';
+import {
+  periodOf,
+  type CalendarDate,
+  type Person,
+  type StageTransition,
+  type Team,
+} from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
   appointmentRows,
@@ -7,6 +13,7 @@ import {
   monthGrid,
   outcomeText,
   personLabel,
+  pickDay,
   type AppointmentData,
 } from './appointments-view';
 
@@ -210,6 +217,30 @@ describe('monthGrid', () => {
     const january = monthGrid(jan2, rows);
     expect(january[0]?.[0]).toMatchObject({ date: day(12, 28), inMonth: false });
     expect(january[0]?.[5]).toMatchObject({ date: jan2, inMonth: true, planned: 1 });
+  });
+});
+
+describe('pickDay', () => {
+  it('keeps the period when the day is in it', () => {
+    const month = periodOf('month', day(9, 15));
+    expect(pickDay(month, day(9, 30))).toBe(month);
+    const custom = { kind: 'custom', start: day(9, 10), end: day(9, 20) } as const;
+    expect(pickDay(custom, day(9, 10))).toBe(custom);
+  });
+
+  it('moves a day or week period to the one holding the day', () => {
+    expect(pickDay(periodOf('day', day(9, 15)), day(9, 20))).toEqual(periodOf('day', day(9, 20)));
+    expect(pickDay(periodOf('week', day(9, 15)), day(9, 23))).toEqual({
+      kind: 'week',
+      start: day(9, 21),
+      end: day(9, 27),
+    });
+  });
+
+  it('refuses a day outside a custom range', () => {
+    const custom = { kind: 'custom', start: day(9, 10), end: day(9, 20) } as const;
+    expect(pickDay(custom, day(9, 9))).toBeNull();
+    expect(pickDay(custom, day(9, 21))).toBeNull();
   });
 });
 
