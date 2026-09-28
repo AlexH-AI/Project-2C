@@ -4,6 +4,7 @@ import {
   EMPTY_KYC_PROFILE,
   addNote,
   confirmFact,
+  currentFacts,
   isMaterialChange,
   kycHash,
   markConflict,
@@ -164,6 +165,18 @@ describe('KYC conflicts', () => {
       ['f3', 'conflict'],
       ['f4', 'conflict'],
     ]);
+  });
+
+  it('reads the current facts of a trường: the facts in conflict, not the superseded one', () => {
+    const fact = { noteId: 'n1', confirmedDate: DAY } as const;
+    let profile = withNotes('n1');
+    profile = confirmFact(profile, { ...fact, id: 'f1', field: 'birthYear', value: 1970 });
+    profile = confirmFact(profile, { ...fact, id: 'f2', field: 'gender', value: 'Nam' });
+    expect(currentFacts(profile, 'birthYear').map((f) => f.id)).toEqual(['f1']);
+    profile = confirmFact(profile, { ...fact, id: 'f3', field: 'birthYear', value: 1972 });
+    profile = markConflict(profile, { ...fact, id: 'f4', field: 'birthYear', value: 1974 });
+    expect(currentFacts(profile, 'birthYear').map((f) => f.id)).toEqual(['f3', 'f4']);
+    expect(currentFacts(profile, 'childrenCount')).toEqual([]);
   });
 
   it('refuses a conflict with nothing to disagree with, or with an equal value', () => {

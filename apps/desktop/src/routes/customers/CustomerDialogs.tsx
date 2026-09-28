@@ -36,7 +36,7 @@ const readRes = (db: Database) => reOptions(listPeople(db), listTeams(db));
 
 const badge = (stage: CustomerStage) => <StageBadge stage={stage} label={t(`stage.${stage}`)} />;
 
-const ALERT = 'm-0 rounded-md border px-3 py-2';
+export const ALERT = 'm-0 rounded-md border px-3 py-2';
 
 export function Actions({ onClose, save }: { onClose: () => void; save: string }) {
   return (

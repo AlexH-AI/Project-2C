@@ -7,25 +7,19 @@ import {
   type KycProfileRecord,
   type KycVersionRecord,
 } from '@p2c/db';
-import { formatDate, KYC_FIELDS, type KycField } from '@p2c/domain';
+import { currentFacts, formatDate, KYC_FIELDS, type KycField } from '@p2c/domain';
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
-import { Actions, useDateField } from './CustomerDialogs';
+import { Actions, ALERT, useDateField } from './CustomerDialogs';
+import { BADGE, YES_NO } from './CustomerKyc';
 import { factText, previewKycNote } from './kyc-view';
-
-const ALERT = 'm-0 rounded-md border px-3 py-2';
-const BADGE = 'rounded-full border border-current px-2 py-0.5 text-xs font-semibold';
-const YES_NO = { yes: t('kyc.yes'), no: t('kyc.no') };
 
 /** Birth year and gender are set in the customer profile only (D2). */
 const NOTE_FIELDS = (Object.keys(KYC_FIELDS) as KycField[]).filter(
   (field) => field !== 'birthYear' && field !== 'gender',
 );
 const FIELD_OPTIONS = NOTE_FIELDS.map((field) => ({ value: field, label: t(`kycField.${field}`) }));
-
-const current = (profile: KycProfileRecord, field: KycField) =>
-  profile.facts.filter((fact) => fact.field === field && fact.status !== 'superseded');
 
 function Material({
   auto,
@@ -76,7 +70,7 @@ export function KycNoteDialog({
 
   const day = date.parsed.ok ? date.parsed.date : today;
   const preview = previewKycNote(profile, versions, facts, day, material);
-  const has = field ? current(profile, field) : [];
+  const has = field ? currentFacts(profile, field) : [];
   const boolean = field === 'hasProtection';
   const last = versions.at(-1);
 
@@ -186,7 +180,7 @@ export function KycNoteDialog({
                   {t(
                     fact.conflict
                       ? 'kycNote.badge.conflict'
-                      : current(profile, fact.field).length > 0
+                      : currentFacts(profile, fact.field).length > 0
                         ? 'kycNote.badge.update'
                         : 'kycNote.badge.new',
                   )}

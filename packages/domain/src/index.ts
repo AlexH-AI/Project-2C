@@ -33,6 +33,7 @@ export {
   EMPTY_KYC_PROFILE,
   addNote,
   confirmFact,
+  currentFacts,
   isMaterialChange,
   kycHash,
   markConflict,

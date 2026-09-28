@@ -6,7 +6,7 @@ import { factText, kycOverview, kycTimeline, type KycCategoryRow } from './kyc-v
 
 const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 const HEADING = 'm-0 text-sm font-medium text-heading';
-const BADGE = 'rounded-full border border-current px-2 py-0.5 text-xs font-semibold';
+export const BADGE = 'rounded-full border border-current px-2 py-0.5 text-xs font-semibold';
 
 const GATE_COLORS: Record<KycGateState, string> = {
   CONFLICT_RESOLUTION: 'text-danger',
@@ -15,7 +15,7 @@ const GATE_COLORS: Record<KycGateState, string> = {
   PAIN_POINT_ANALYSIS: 'text-ok',
 };
 
-const YES_NO = { yes: t('kyc.yes'), no: t('kyc.no') };
+export const YES_NO = { yes: t('kyc.yes'), no: t('kyc.no') };
 
 function CategoryRow({ row }: { row: KycCategoryRow }) {
   const [mark, color, state] = row.conflict
