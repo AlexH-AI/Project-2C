@@ -4,11 +4,13 @@ import {
   compareDates,
   formatDayMonth,
   inScope,
+  isInPeriod,
   isRfTransition,
   periodOf,
   type AppointmentStatus,
   type CalendarDate,
   type CustomerStage,
+  type Period,
   type Person,
   type Scope,
   type StageTransition,
@@ -163,6 +165,16 @@ export function monthGrid(date: CalendarDate, rows: readonly AppointmentRow[]): 
     weeks.push(week);
   }
   return weeks;
+}
+
+/**
+ * The period after picking `date` on the calendar, so the list always matches the day shown:
+ * the same period when the day is in it, else the day or week holding it; null when a
+ * custom range does not hold it (the day cannot be picked).
+ */
+export function pickDay(period: Period, date: CalendarDate): Period | null {
+  if (isInPeriod(date, period)) return period;
+  return period.kind === 'custom' ? null : periodOf(period.kind, date);
 }
 
 /** The appointments on `date` by team, then RE (both by name), each RE's by time. */
