@@ -12,6 +12,9 @@ use tauri::ipc::{InvokeBody, Request, Response};
 /// Header carrying the export file name (the body is the raw file).
 const EXPORT_NAME_HEADER: &str = "x-p2c-file-name";
 
+/// Held from the first `db_open` until the process ends: one exe per data folder.
+static DATA_LOCK: storage::DataLock = storage::DataLock::new();
+
 /// `Project2C-data\` next to the exe (portable, ADR-0006).
 fn data_dir() -> Result<PathBuf, String> {
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
@@ -26,13 +29,14 @@ fn raw_body<'a>(request: &'a Request<'_>) -> Result<&'a [u8], String> {
     }
 }
 
-/// Startup: backs up and returns the database file; an empty body means a first start (a file
-/// that is missing with backups left, empty or not SQLite is an error, see `storage::open`).
+/// Startup: locks the data folder, backs up and returns the database file; an empty body means a
+/// first start (a file that is missing with backups left, empty or not SQLite is an error, see
+/// `storage::open`). Another exe already running → the error `ALREADY_OPEN`.
 /// `utc_offset_minutes` comes from the webview so backup names use local time.
 #[tauri::command(async)]
 fn db_open(utc_offset_minutes: i64) -> Result<Response, String> {
     let stamp = local_stamp(utc_offset_minutes)?;
-    let bytes = storage::open(&data_dir()?, &stamp).map_err(|e| e.to_string())?;
+    let bytes = storage::open(&data_dir()?, &stamp, &DATA_LOCK).map_err(|e| e.to_string())?;
     Ok(Response::new(bytes.unwrap_or_default()))
 }
 

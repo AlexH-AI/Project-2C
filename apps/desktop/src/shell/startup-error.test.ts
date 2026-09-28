@@ -1,0 +1,23 @@
+import { describe, expect, it } from 'vitest';
+import { startupMessage } from './startup-error';
+
+describe('startupMessage', () => {
+  it('tells the user to use the window already open, without technical detail', () => {
+    expect(startupMessage('ALREADY_OPEN')).toEqual({
+      title: 'Project-2C đang mở ở một cửa sổ khác',
+      help: 'Hãy dùng cửa sổ đó. App không đọc hay ghi gì ở cửa sổ này; đóng cửa sổ này đi.',
+    });
+  });
+
+  it('keeps the open-failed message and the detail for any other error', () => {
+    expect(startupMessage('Access is denied. (os error 5)')).toEqual({
+      title: 'Không mở được file dữ liệu',
+      help: expect.stringContaining('Project2C-data\\backups') as string,
+      detail: 'Access is denied. (os error 5)',
+    });
+    expect(startupMessage(new Error('ALREADY_OPEN elsewhere'))).toMatchObject({
+      title: 'Không mở được file dữ liệu',
+      detail: 'Error: ALREADY_OPEN elsewhere',
+    });
+  });
+});

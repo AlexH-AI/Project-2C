@@ -17,7 +17,7 @@ export function tauriStorage(
   return {
     async load() {
       const reply = (await invoke('db_open', local())) as ArrayBuffer;
-      // Rust answers empty only when the file does not exist; an existing empty file fails.
+      // Rust answers empty only on a first start (no file and no backups); an empty file fails.
       return reply.byteLength === 0 ? undefined : new Uint8Array(reply);
     },
     async save(bytes) {
