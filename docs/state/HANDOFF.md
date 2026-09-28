@@ -2,18 +2,19 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-09-28 · máy `D13_ThinkPad` (Office Laptop)
-- **Nhánh:** `docs/handoff-2026-09-28-t017` (= `main` `fbd23d7` + file này); không còn PR code mở. #17 T-017 đã merge (PR #128), #9 đã đóng (PR #127). Checkout chính `C:\workspace\Project-2C` sạch; nhánh `task/T-017-icon-colors` đã xóa cả local lẫn remote. Worktree review `C:\workspace\Project-2C-review` đã có trên Office Laptop (detached ở `origin/main`)
+- **Cập nhật:** 2026-09-28 · máy `D13_ThinkPad` (Office Laptop) · sau khi đóng Phase 1
+- **Nhánh:** `docs/handoff-2026-09-28-close-phase1` (= `main` `97737b1` + file này); không còn PR code mở. Checkout chính `C:\workspace\Project-2C` sạch. Worktree review `C:\workspace\Project-2C-review` đã có trên Office Laptop (detached ở `origin/main`)
 - **Máy kế tiếp:** Home PC hoặc Office Laptop — cả hai đã có môi trường + worktree review
 - **Repo đã chuyển public** (27/09, Owner tự làm) vì Actions private chạm ~1.800/2.000 phút; Actions giờ miễn phí
 - **Ruleset `protect-main`** (28/09, Owner duyệt): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
-- **Phase:** 3 — Nghiệp vụ & màn hình (milestone mở 26/09/2026; G2/G1/G4 đã duyệt) · Phase 2 đã đóng · Phase 1 milestone còn mở nhưng **0 Issue mở** — chờ Owner đóng (G7)
+- **Phase:** 3 — Nghiệp vụ & màn hình (milestone mở 26/09/2026; G2/G1/G4 đã duyệt) · Phase 2 đã đóng · **Phase 1 đã đóng** (G7, Owner duyệt 28/09/2026; 18/18 Issue)
 
 ## Trạng thái
 
 | Việc | Trạng thái |
 |---|---|
-| #17 T-017 favicon/app icon màu ADR-0013 | ✅ merge PR #128 (`--squash`, `fbd23d7`, 28/09); review mức high (nâng từ low vì `src-tauri/icons`) PASS kèm ghi chú; icon sinh lại bằng `tauri icon` khớp từng byte; Owner chụp taskbar exe đạt. CI `main` build exe run `36372015679` đang chạy lúc handoff (kiểm ở phiên sau) |
+| Milestone Phase 1 — Nền móng | ✅ đóng 28/09/2026 (G7, Owner duyệt) |
+| #17 T-017 favicon/app icon màu ADR-0013 | ✅ merge PR #128 (`--squash`, `fbd23d7`, 28/09); review mức high (nâng từ low vì `src-tauri/icons`) PASS kèm ghi chú; icon sinh lại bằng `tauri icon` khớp từng byte; Owner chụp taskbar exe đạt. CI `main` run `36372015679` `success`, artifact `Project-2C-fbd23d7…` (exe mới nhất: icon mới + T-057) |
 | #9 exe trên 2 máy + `docs/metrics/phase-1.md` | ✅ merge PR #127 (`7cccc9c`) |
 | #110 T-062 run CI của `main` không hủy nhau | ✅ merge PR #116; **test chấp nhận 3 chưa kiểm** (xem "Bước kế tiếp" 2) |
 
@@ -43,11 +44,11 @@ Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 đ�
 
 - [x] #9: exe `Project-2C-86b4e2c…` chạy trên Office Laptop (`D13_ThinkPad`) 28/09, Owner kiểm không lỗi, khởi động 1–2 giây; `docs/metrics/phase-1.md` đã ghi.
 - [x] #17: favicon/app icon màu ADR-0013 — merge PR #128 28/09, Owner chụp icon trên taskbar exe (Office Laptop).
-- [ ] Đóng milestone Phase 1 (G7) — milestone còn 0 Issue mở, chờ Owner.
+- [x] Đóng milestone Phase 1 (G7) — Owner duyệt, đóng 28/09/2026.
 
 ## Bước kế tiếp chính xác
 
-1. `/session-start` (pull `main`). Kiểm run CI `main` của `fbd23d7` (`gh run view 36372015679`) → `success` và có artifact `Project-2C-fbd23d7…` (exe mới nhất, có icon mới + T-057). Hỏi Owner đóng milestone Phase 1 (G7) nếu chưa đóng.
+1. `/session-start` (pull `main`). Phase 1 đã đóng; exe mới nhất là artifact `Project-2C-fbd23d7…` (run `36372015679`, `success`).
 2. **Còn nợ test chấp nhận 3 của #110 (T-062):** ở lần kế tiếp có 2 push code lên `main` sát nhau (vd. merge PR xếp chồng bằng `--merge`), chạy `gh run list --branch main --limit 5` → cả hai run `completed`/`success`, không `cancelled`, và mỗi SHA có artifact `Project-2C-<sha>`. Ghi kết quả thành comment trên PR #116. Nếu có run bị hủy → mở lại #110.
 3. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Frontier (không bị chặn):
    - **Thứ tự Owner chốt 28/09: #91 (✅ xong) → #65 → #89 → #90**, rồi tới #66–#70.
@@ -102,7 +103,6 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- G7: đóng milestone Phase 1 (#9, #17 đã xong; milestone 0 Issue mở). Sau đó tiếp #65.
 - Merge PR `risk:med`/`high` (#65, #89, #90): Owner merge sau review PASS.
 
 ## Ghi chú môi trường
