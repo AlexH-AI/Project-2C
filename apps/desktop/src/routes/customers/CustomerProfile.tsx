@@ -9,13 +9,14 @@ import {
   listTeams,
   type Database,
 } from '@p2c/db';
-import { formatDate } from '@p2c/domain';
+import { formatDate, type KycField } from '@p2c/domain';
 import { Button, StageBadge } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { ChangeStageDialog, CustomerFormDialog } from './CustomerDialogs';
 import { KycCard, Timeline } from './CustomerKyc';
+import { KycNoteDialog, ResolveKycDialog } from './KycDialogs';
 import { ageOn, birthLabel } from './customers-view';
 
 function readProfile(db: Database, id: string) {
@@ -46,7 +47,9 @@ const BACK = (
 export function CustomerProfile({ id }: { id: string }) {
   const today = useAppData().today();
   const profile = useQuery(useCallback((db: Database) => readProfile(db, id), [id]));
-  const [editing, setEditing] = useState<'profile' | 'stage' | null>(null);
+  const [editing, setEditing] = useState<
+    'profile' | 'stage' | 'note' | { resolve: KycField } | null
+  >(null);
 
   if (!profile) {
     return (
@@ -85,11 +88,18 @@ export function CustomerProfile({ id }: { id: string }) {
           <div className="flex-1" />
           <Button onClick={() => setEditing('profile')}>{t('customer.edit')}</Button>
           <Button onClick={() => setEditing('stage')}>{t('customer.changeStage')}</Button>
+          <Button variant="primary" onClick={() => setEditing('note')}>
+            {t('kycNote.open')}
+          </Button>
         </div>
         <p className="m-0 text-sm text-fg-2 tabular-nums">{facts.join(' · ')}</p>
       </section>
       <div className="grid items-start gap-4 lg:grid-cols-2">
-        <KycCard profile={kyc} versions={versions} />
+        <KycCard
+          profile={kyc}
+          versions={versions}
+          onResolve={(field) => setEditing({ resolve: field })}
+        />
         <Timeline transitions={transitions} notes={kyc.notes} versions={versions} />
       </div>
       {editing === 'profile' && (
@@ -97,6 +107,23 @@ export function CustomerProfile({ id }: { id: string }) {
       )}
       {editing === 'stage' && (
         <ChangeStageDialog customer={customer} since={since} onClose={() => setEditing(null)} />
+      )}
+      {editing === 'note' && (
+        <KycNoteDialog
+          customer={customer}
+          profile={kyc}
+          versions={versions}
+          onClose={() => setEditing(null)}
+        />
+      )}
+      {typeof editing === 'object' && editing && (
+        <ResolveKycDialog
+          customer={customer}
+          profile={kyc}
+          versions={versions}
+          field={editing.resolve}
+          onClose={() => setEditing(null)}
+        />
       )}
     </>
   );

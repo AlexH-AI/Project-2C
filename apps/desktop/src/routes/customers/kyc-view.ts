@@ -2,17 +2,29 @@
  * KYC in the customer profile (mockup customer.html): the hạng mục with their facts and the gate,
  * and the timeline of KYC and stage changes. Pure, so the screen only lays them out.
  */
-import type { KycNoteRecord, KycVersionRecord } from '@p2c/db';
 import {
+  normalizeKycValue,
+  type KycNoteFact,
+  type KycNoteRecord,
+  type KycVersionRecord,
+} from '@p2c/db';
+import {
+  addNote,
   compareDates,
+  confirmFact,
   evaluateKycGate,
   KYC_CATEGORIES,
   KYC_FIELDS,
+  markConflict,
+  nextKycVersion,
   type CalendarDate,
   type KycCategory,
   type KycFact,
+  type KycField,
   type KycGateResult,
+  type KycProfile,
   type KycValue,
+  type KycVersion,
   type StageTransition,
 } from '@p2c/domain';
 
@@ -93,4 +105,55 @@ export function kycTimeline(
   return events
     .reverse()
     .sort((a, b) => compareDates(b.date, a.date) || RANK[b.kind] - RANK[a.kind]);
+}
+
+export type KycNotePreview =
+  | { readonly kind: 'none' }
+  /** `auto`: material because a cốt lõi trường changed, so the RE cannot switch it off. */
+  | {
+      readonly kind: 'version';
+      readonly number: number;
+      readonly material: boolean;
+      readonly auto: boolean;
+    }
+  /** The trường cannot take the fact: nothing to disagree with, or a value it cannot hold. */
+  | { readonly kind: 'refused'; readonly field: KycField };
+
+/**
+ * Mockup 7a/7e "Sau khi lưu": the version `recordKycNote` would record for the facts of a new note,
+ * worked out with the same domain rules on the profile as it stands.
+ */
+export function previewKycNote(
+  profile: KycProfile,
+  versions: readonly KycVersion[],
+  facts: readonly KycNoteFact[],
+  date: CalendarDate,
+  manualMaterial: boolean,
+): KycNotePreview {
+  if (facts.length === 0) return { kind: 'none' };
+  const noteId = 'preview';
+  let after = addNote(profile, { id: noteId, text: '', createdDate: date });
+  for (const [index, fact] of facts.entries()) {
+    try {
+      const input = {
+        id: `${noteId}-${index}`,
+        field: fact.field,
+        value: normalizeKycValue(fact.field, fact.value),
+        noteId,
+        confirmedDate: date,
+      };
+      after = fact.conflict ? markConflict(after, input) : confirmFact(after, input);
+    } catch {
+      return { kind: 'refused', field: fact.field };
+    }
+  }
+  const previous = versions.at(-1) ?? null;
+  const version = nextKycVersion(previous, previous && profile, after, date, false);
+  if (!version) return { kind: 'none' };
+  return {
+    kind: 'version',
+    number: versions.length + 1,
+    material: version.material || manualMaterial,
+    auto: version.material,
+  };
 }

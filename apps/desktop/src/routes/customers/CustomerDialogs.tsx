@@ -38,7 +38,7 @@ const badge = (stage: CustomerStage) => <StageBadge stage={stage} label={t(`stag
 
 const ALERT = 'm-0 rounded-md border px-3 py-2';
 
-function Actions({ onClose, save }: { onClose: () => void; save: string }) {
+export function Actions({ onClose, save }: { onClose: () => void; save: string }) {
   return (
     <>
       <Button onClick={onClose}>{t('customerForm.cancel')}</Button>
@@ -53,7 +53,7 @@ function Actions({ onClose, save }: { onClose: () => void; save: string }) {
  * A quick date field defaulting to today, showing the day it understood (mockup `.read`); a day
  * after today is refused.
  */
-function useDateField(today: CalendarDate) {
+export function useDateField(today: CalendarDate) {
   const [text, setText] = useState(formatDate(today));
   const parsed = parseRecordDate(text, today);
   return {

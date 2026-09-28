@@ -15,9 +15,11 @@ interface TextFieldProps {
   required?: boolean;
   disabled?: boolean;
   autoFocus?: boolean;
+  /** A multi-line box of this many rows instead of a one-line input. */
+  rows?: number;
 }
 
-/** Labelled one-line text input (mockup `.field`), with its error under it. */
+/** Labelled text input (mockup `.field`), one line unless `rows` is set, with its error under it. */
 export function TextField({
   label,
   value,
@@ -27,9 +29,11 @@ export function TextField({
   required,
   disabled,
   autoFocus,
+  rows,
 }: TextFieldProps) {
   const id = useId();
   const noteId = `${id}-note`;
+  const Input = rows ? 'textarea' : 'input';
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={id} className="font-medium">
@@ -40,8 +44,9 @@ export function TextField({
           </span>
         )}
       </label>
-      <input
+      <Input
         id={id}
+        rows={rows}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-required={required}
