@@ -16,7 +16,6 @@
 | #67 T-048 Hồ sơ KH — KYC | ✅ đóng 28/09, ba phần: A PR #148 (`315999a`), B PR #149 (`1fc6739`), C PR #150 (`370bf07`); CI `main` cả ba success |
 | #151 T-067 KYC — một nguồn cho trường hồ sơ KH (D2) + test hộp "Giải quyết" | ✅ đóng 28/09, PR #152 (`risk:med`, review PASS 0 phát hiện, Owner merge `f0608ca`). `KYC_FIELDS[field].fromProfile` là nguồn duy nhất; `resolveKycOptions` trong `kyc-view.ts`. Xử lý hết ghi chú review #150. CI `main` của `f0608ca` đang chạy lúc handoff → khi xanh, artifact `Project-2C-f0608ca…` là exe mới nhất (trước đó: `Project-2C-370bf07…`) |
 | #142 T-065 form KH theo sát mockup 5a–5c | Mở, `risk:med`; Owner quyết "có làm, không gấp". Gom 4 chỗ lệch mockup từ review #140 |
-| #110 T-062 run CI của `main` không hủy nhau | Issue đã đóng (PR #116); **test chấp nhận 3 chưa kiểm** (xem "Bước kế tiếp" 2). Các lần 28/09 chưa tính vì không chồng nhau (mỗi run ~4–5 phút): `a1fb6ab` 13:44, `3ca0448` 14:00, `315999a` 15:04, `1fc6739` 16:09, `370bf07` 16:40, `f0608ca` 17:03 (UTC) |
 
 Ghi chú review #146 (không chặn): `shift(value, -1)` với kỳ ngày/tuần/tùy chọn sát 01/01/1900 giờ ném `RangeError` trong `onClick` của `PeriodPicker.tsx` (kỳ giữ nguyên, không vỡ màn), còn kỳ tháng/năm vẫn lùi về 1899 → nếu muốn nhất quán: disable nút ‹ khi kỳ trước < `MIN_YEAR` (task riêng, không gấp; liên quan R3 "`shift` vượt `MIN_YEAR`"); `addDays` với `days` nguyên cực lớn (vd `1e12`) trả `{NaN…}` không bị chặn, chưa có đường gọi nào tới.
 
@@ -49,16 +48,15 @@ Ghi chú khác (còn từ Phase 1): `DataTable` chưa test `sortable: false` và
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`). Kiểm run CI của `f0608ca`: `gh run list --branch main --limit 1` → `success` thì exe mới nhất là artifact `Project-2C-f0608ca…` (gồm T-048 KYC + T-067); nếu lỗi → xem log, báo Owner.
-2. **Còn nợ test chấp nhận 3 của #110 (T-062):** ở lần kế tiếp có 2 push code lên `main` mà run thứ nhất **chưa xong** khi push thứ hai tới (build exe ~4–5 phút, nên phải merge cách nhau dưới ~4 phút), chạy `gh run list --branch main --limit 5` → cả hai run `completed`/`success`, không `cancelled`, và mỗi SHA có artifact `Project-2C-<sha>`. Ghi kết quả thành comment trên PR #116. Nếu có run bị hủy → mở lại #110.
-3. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Đã đóng 28/09: #65 (Team), #89, #90, #66, #131, #145, #67 (KYC), #151. Issue còn mở của milestone (6): #68, #69, #70, #142, #71, #72.
-   - **Việc kế tiếp đề xuất: #68 T-049 Lịch hẹn** (tạo, dời lịch, bảng trong ngày từ DB) → **#69** T-050 Ghi kết quả cuộc gặp (phụ thuộc lịch hẹn) → **#70** T-051 Hợp đồng (G3 đã duyệt). Nếu task quá ngưỡng (xem 5) thì tách phần A/B/C như T-048.
+2. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Đã đóng 28/09: #65 (Team), #89, #90, #66, #131, #145, #67 (KYC), #151. Issue còn mở của milestone (6): #68, #69, #70, #142, #71, #72.
+   - **Việc kế tiếp đề xuất: #68 T-049 Lịch hẹn** (tạo, dời lịch, bảng trong ngày từ DB) → **#69** T-050 Ghi kết quả cuộc gặp (phụ thuộc lịch hẹn) → **#70** T-051 Hợp đồng (G3 đã duyệt). Nếu task quá ngưỡng (xem 4) thì tách phần A/B/C như T-048.
    - **#142** T-065 form KH theo mockup 5a–5c — không gấp; có thể gộp các NIT review #141 cùng file.
    - **#69 T-050**: migration mới thêm `outcome_reviewer_id` — CHECK cấp bảng trên SQLite có thể khiến drizzle-kit dựng lại bảng `appointments`; kiểm SQL sinh ra + test migrate DB có dữ liệu (review #80). Hồ sơ KH (#141) đã hiện "sau cuộc gặp" cho transition có `appointmentId` — T-050 chỉ cần ghi đúng.
    - **Thứ tự:** Owner chốt 28/09 "#91 → #65 → #89 → #90 → #66–#70", đã xong tới #67. Nếu Owner không nói gì thì làm tiếp theo số Issue: #68 → #69 → #70, #142 chen khi rảnh.
    - Task đều `risk:med` → Owner merge sau review PASS. PR nào đụng `apps/desktop/src-tauri/**` hoặc cấu hình build thì gắn nhãn `build-exe` ngay lúc tạo.
-4. Sau đó theo blocking edges: #71 backup (`risk:high`); #72 đóng phase (G7).
-5. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
-6. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2). #61/#62 chạy golden G01–G22, K01–K15 qua DB.
+3. Sau đó theo blocking edges: #71 backup (`risk:high`); #72 đóng phase (G7).
+4. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
+5. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2). #61/#62 chạy golden G01–G22, K01–K15 qua DB.
 
 ## Lệnh chạy tiếp
 
