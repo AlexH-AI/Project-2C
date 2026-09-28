@@ -5,10 +5,19 @@ const NAME = 'An Thử Nghiệm';
 
 const column = (page: Page, stage: string) =>
   page.getByRole('region', { name: stage, exact: true });
+const history = (page: Page) => page.getByRole('region', { name: 'Lịch sử nhóm' });
 
 async function openCreate(page: Page) {
   await page.getByRole('button', { name: '+ Khách hàng' }).click();
   return page.getByRole('dialog', { name: 'Khách hàng mới' });
+}
+
+async function changeStage(page: Page, to: string) {
+  await page.getByRole('button', { name: 'Chuyển nhóm' }).click();
+  const dialog = page.getByRole('dialog', { name: /^Chuyển nhóm · / });
+  await dialog.getByRole('radio', { name: to, exact: true }).check();
+  await dialog.getByRole('button', { name: 'Chuyển nhóm' }).click();
+  await expect(dialog).toBeHidden();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -16,7 +25,7 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByText(/KH đang mở/)).toBeVisible();
 });
 
-test('creates a customer in N4, shown on the kanban and in its profile', async ({ page }) => {
+test('creates a customer in N4 on the kanban, then moves it to N2 by hand', async ({ page }) => {
   // One RE's board, so the new card is among the few shown per column.
   await page
     .getByRole('radiogroup', { name: 'Góc nhìn' })
@@ -49,6 +58,14 @@ test('creates a customer in N4, shown on the kanban and in its profile', async (
     .click();
   const profile = page.getByRole('region', { name: NAME });
   await expect(profile).toContainText(/K-[0-9A-HJKMNP-TV-Z]{4} · Nữ · 1984 \(42 tuổi\)/);
+  await expect(history(page).getByRole('listitem')).toHaveText(['15/09/2026N4tạo KH']);
+
+  await changeStage(page, 'N2');
+  await expect(profile).toContainText('N2');
+  // A manual change points to no appointment, so it never counts as an RF (#44).
+  await expect(history(page).getByRole('listitem').first()).toHaveText(
+    '15/09/2026N4→N2chuyển tay · không tính RF',
+  );
 });
 
 test('edits the profile, showing the customer code and the birth date as understood', async ({
@@ -68,6 +85,22 @@ test('edits the profile, showing the customer code and the birth date as underst
 
   await expect(dialog).toBeHidden();
   await expect(page.getByRole('region', { name })).toContainText('12/03/1984 (42 tuổi)');
+});
+
+test('a closed customer reopens only to N3', async ({ page }) => {
+  await column(page, 'Tạm hoãn').getByRole('link').first().click();
+  await page.getByRole('button', { name: 'Chuyển nhóm' }).click();
+  const dialog = page.getByRole('dialog', { name: /^Chuyển nhóm · / });
+
+  for (const stage of ['N4', 'N2', 'N1', 'Tạm hoãn hiện tại']) {
+    await expect(dialog.getByRole('radio', { name: stage, exact: true })).toBeDisabled();
+  }
+  await expect(dialog.getByRole('radio', { name: 'N3 mở lại' })).toBeEnabled();
+  await expect(dialog.getByRole('radio', { name: 'Mất cơ hội' })).toBeEnabled();
+  await dialog.getByRole('button', { name: 'Hủy' }).click();
+
+  await changeStage(page, 'N3 mở lại');
+  await expect(history(page).getByRole('listitem').first()).toContainText('Tạm hoãn→N3chuyển tay');
 });
 
 test('refuses a customer with wrong fields and saves nothing', async ({ page }) => {

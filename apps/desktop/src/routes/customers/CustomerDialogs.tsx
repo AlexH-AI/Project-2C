@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  changeStageManually,
   createCustomer,
   listPeople,
   listTeams,
@@ -9,6 +10,7 @@ import {
   type Gender,
 } from '@p2c/db';
 import {
+  CLOSED_STAGES,
   PIPELINE_STAGES,
   formatDate,
   parseQuickDate,
@@ -20,9 +22,9 @@ import { Button, Choices, Dialog, SelectField, StageBadge, TextField } from '@p2
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
-import { ageOn, birthLabel, parseBirthDate } from './customers-view';
+import { ageOn, allowedStages, birthLabel, parseBirthDate } from './customers-view';
 
-type Field = 'name' | 're' | 'birth' | 'date' | 'form';
+type Field = 'name' | 're' | 'birth' | 'date' | 'stage' | 'form';
 type Errors = Partial<Record<Field, string>>;
 
 const readRes = (db: Database) => reOptions(listPeople(db), listTeams(db));
@@ -208,6 +210,105 @@ export function CustomerFormDialog({
         </>
       )}
       <p className="m-0 text-xs text-fg-3">{t('customerForm.kycNote')}</p>
+    </Dialog>
+  );
+}
+
+/** Mockup 5d–5e: a manual stage change, which never counts as an RF. */
+export function ChangeStageDialog({
+  customer,
+  since,
+  onClose,
+}: {
+  customer: CustomerRecord;
+  since: CalendarDate;
+  onClose: () => void;
+}) {
+  const data = useAppData();
+  const allowed = allowedStages(customer.stage);
+  const closed = (CLOSED_STAGES as readonly string[]).includes(customer.stage);
+  const [to, setTo] = useState<CustomerStage | null>(null);
+  const date = useDateField(data.today());
+  const [errors, setErrors] = useState<Errors>({});
+
+  const save = () => {
+    if (!to || !date.parsed.ok) {
+      setErrors({ stage: to ? undefined : t('stageForm.pick'), date: date.error });
+      return;
+    }
+    const change = { to, date: date.parsed.date };
+    try {
+      data.run((db) => changeStageManually(db, customer.id, change));
+      onClose();
+    } catch (failure) {
+      setErrors({ form: errorMessage(failure, { date: formatDate(since) }) });
+    }
+  };
+
+  const mark = (stage: CustomerStage) =>
+    stage === customer.stage
+      ? t('stageForm.current')
+      : closed && stage === 'N3'
+        ? t('stageForm.reopen')
+        : '';
+
+  return (
+    <Dialog
+      title={t('stageForm.title', { name: customer.name })}
+      subtitle={t('stageForm.sub', {
+        code: customer.code,
+        stage: t(`stage.${customer.stage}`),
+        date: formatDate(since),
+      })}
+      onClose={onClose}
+      onSubmit={save}
+      actions={<Actions onClose={onClose} save={t('stageForm.save')} />}
+    >
+      {(errors.form ?? errors.stage) && (
+        <p role="alert" className={`${ALERT} border-danger text-danger`}>
+          {errors.form ?? errors.stage}
+        </p>
+      )}
+      <Choices
+        label={t('stageForm.to')}
+        value={to}
+        onChange={(stage) => {
+          setTo(stage);
+          setErrors({});
+        }}
+        options={[...PIPELINE_STAGES, ...CLOSED_STAGES].map((s) => ({
+          value: s,
+          disabled: !allowed.includes(s),
+          label: (
+            <>
+              {badge(s)}
+              {mark(s) && ` ${mark(s)}`}
+            </>
+          ),
+        }))}
+        help={closed ? t('stageForm.closedHelp') : undefined}
+        required
+      />
+      <TextField
+        label={t('stageForm.date')}
+        value={date.text}
+        onChange={(value) => {
+          date.setText(value);
+          setErrors({});
+        }}
+        error={errors.date}
+        hint={date.hint}
+        required
+      />
+      <p className={`${ALERT} border-warn`}>
+        <b className="block">{t('stageForm.noRfTitle')}</b>
+        {t('stageForm.noRfBody')}
+      </p>
+      {to && (
+        <p className="m-0 flex items-center gap-1.5">
+          {t('stageForm.after')} {badge(customer.stage)} → {badge(to)}
+        </p>
+      )}
     </Dialog>
   );
 }

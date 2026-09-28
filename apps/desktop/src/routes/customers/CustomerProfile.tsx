@@ -12,7 +12,7 @@ import { Button, StageBadge } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
-import { CustomerFormDialog } from './CustomerDialogs';
+import { ChangeStageDialog, CustomerFormDialog } from './CustomerDialogs';
 import { ageOn, birthLabel } from './customers-view';
 
 function readProfile(db: Database, id: string) {
@@ -41,7 +41,7 @@ const BACK = (
 export function CustomerProfile({ id }: { id: string }) {
   const today = useAppData().today();
   const profile = useQuery(useCallback((db: Database) => readProfile(db, id), [id]));
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState<'profile' | 'stage' | null>(null);
 
   if (!profile) {
     return (
@@ -78,11 +78,44 @@ export function CustomerProfile({ id }: { id: string }) {
             {t('customer.since', { date: formatDate(since) })}
           </span>
           <div className="flex-1" />
-          <Button onClick={() => setEditing(true)}>{t('customer.edit')}</Button>
+          <Button onClick={() => setEditing('profile')}>{t('customer.edit')}</Button>
+          <Button onClick={() => setEditing('stage')}>{t('customer.changeStage')}</Button>
         </div>
         <p className="m-0 text-sm text-fg-2 tabular-nums">{facts.join(' · ')}</p>
       </section>
-      {editing && <CustomerFormDialog customer={customer} onClose={() => setEditing(false)} />}
+      <section
+        aria-labelledby="stage-history"
+        className="rounded-lg border border-border bg-surface-1 p-4"
+      >
+        <h2 id="stage-history" className="m-0 mb-2 text-sm font-medium text-heading">
+          {t('customer.history')}
+        </h2>
+        <ol className="m-0 flex list-none flex-col gap-1.5 p-0 text-sm">
+          {[...transitions].reverse().map((move) => (
+            <li key={move.id} className="flex items-center gap-2">
+              <span className="w-24 text-fg-3 tabular-nums">{formatDate(move.date)}</span>
+              {move.from && <StageBadge stage={move.from} label={t(`stage.${move.from}`)} />}
+              {move.from && '→'}
+              <StageBadge stage={move.to} label={t(`stage.${move.to}`)} />
+              <span className="text-xs text-fg-3">
+                {t(
+                  move.from === null
+                    ? 'customer.created'
+                    : move.appointmentId
+                      ? 'customer.byMeeting'
+                      : 'customer.manual',
+                )}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
+      {editing === 'profile' && (
+        <CustomerFormDialog customer={customer} onClose={() => setEditing(null)} />
+      )}
+      {editing === 'stage' && (
+        <ChangeStageDialog customer={customer} since={since} onClose={() => setEditing(null)} />
+      )}
     </>
   );
 }

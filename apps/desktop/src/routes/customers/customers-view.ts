@@ -2,12 +2,14 @@ import type { BirthDate, CustomerRecord } from '@p2c/db';
 import {
   CLOSED_STAGES,
   PIPELINE_STAGES,
+  assertValidTransition,
   compareDates,
   formatDate,
   inScope,
   parseQuickDate,
   type CalendarDate,
   type ClosedStage,
+  type CustomerStage,
   type QuickDateError,
   type Person,
   type PipelineStage,
@@ -100,6 +102,18 @@ export function parseBirthDate(text: string, today: CalendarDate): BirthDateResu
   const birth = year === null ? parsed.date : { year };
   const tooLate = year === null ? compareDates(parsed.date, today) > 0 : year > today.year;
   return tooLate ? { ok: false, error: 'future' } : { ok: true, birth };
+}
+
+/** Stages a manual change may move the customer to (ADR-0007: closed reopens only to N3). */
+export function allowedStages(current: CustomerStage): CustomerStage[] {
+  return [...PIPELINE_STAGES, ...CLOSED_STAGES].filter((stage) => {
+    try {
+      assertValidTransition(current, stage);
+      return true;
+    } catch {
+      return false;
+    }
+  });
 }
 
 /** "1984" when only the year is known, else "12/03/1984". */
