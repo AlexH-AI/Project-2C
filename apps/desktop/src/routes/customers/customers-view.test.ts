@@ -3,6 +3,7 @@ import type { CalendarDate, Person, Policy, StageTransition } from '@p2c/domain'
 import { describe, expect, it } from 'vitest';
 import {
   ageOn,
+  allowedStages,
   birthLabel,
   customerBoard,
   parseBirthDate,
@@ -136,6 +137,17 @@ describe('parseBirthDate', () => {
     expect(parseBirthDate('1899', today)).toEqual({ ok: false, error: 'year-out-of-range' });
     expect(parseBirthDate('2027', today)).toEqual({ ok: false, error: 'future' });
     expect(parseBirthDate('27/09/2026', today)).toEqual({ ok: false, error: 'future' });
+  });
+});
+
+describe('allowedStages', () => {
+  it('lets an open customer move to any other stage', () => {
+    expect(allowedStages('N2')).toEqual(['N4', 'N3', 'N1', 'ON_HOLD', 'LOST']);
+  });
+
+  it('reopens a closed customer only to N3, or moves it to the other closed stage', () => {
+    expect(allowedStages('ON_HOLD')).toEqual(['N3', 'LOST']);
+    expect(allowedStages('LOST')).toEqual(['N3', 'ON_HOLD']);
   });
 });
 
