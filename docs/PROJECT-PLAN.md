@@ -297,7 +297,7 @@ Ghi chú KYC ─► Dữ kiện có cấu trúc (RE xác nhận) ─► kyc_vers
 
 Ước lượng tổng: **~30%** khối lượng tới v1.0 (trọng số phase 0–6: 5 / 15 / 15 / 25 / 15 / 15 / 10%).
 
-Mọi phase do **Claude Code** thực hiện (model / effort do Owner chọn, ghi vào metrics phase). Cuối mỗi phase ghi `docs/metrics/phase-<N>.md` theo `docs/COMPARISON.md`.
+Mọi phase do **Claude Code** thực hiện (model / effort do Owner chọn). Cuối mỗi phase ghi `docs/metrics/phase-<N>.md` theo `docs/COMPARISON.md`.
 
 Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue ≤ ~400 dòng diff.
 
