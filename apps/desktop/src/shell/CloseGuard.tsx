@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import { t } from '../i18n';
 import { closeAfterSaving, type CloseChoice } from './close-guard';
@@ -10,9 +11,6 @@ export interface AppWindow {
   ): Promise<() => void>;
   destroy(): Promise<void>;
 }
-
-const BUTTON =
-  'rounded-md border border-border bg-surface-2 px-3 py-1.5 text-sm hover:bg-surface-3';
 
 /**
  * Exe only (T-057): closing the window first saves what is still waiting, and asks before
@@ -32,10 +30,15 @@ export function CloseGuard({ appWindow }: { appWindow: AppWindow }) {
         event.preventDefault();
         if (closing) return;
         closing = true;
-        await closeAfterSaving(saves, {
-          ask: () => new Promise((resolve) => setAnswer(() => resolve)),
-          close: () => appWindow.destroy(),
-        });
+        try {
+          await closeAfterSaving(saves, {
+            ask: () => new Promise((resolve) => setAnswer(() => resolve)),
+            close: () => appWindow.destroy(),
+          });
+        } finally {
+          // Only matters when closing failed (review of PR 125): the next click must try again.
+          closing = false;
+        }
       })
       .then((stop) => {
         if (gone) stop();
@@ -56,40 +59,22 @@ export function CloseGuard({ appWindow }: { appWindow: AppWindow }) {
 }
 
 function CloseDialog({ onChoose }: { onChoose: (choice: CloseChoice) => void }) {
-  const dialog = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    dialog.current?.showModal();
-  }, []);
-
+  // No onClose: Escape does nothing, the window stays open until one of the two answers.
   return (
-    <dialog
-      ref={dialog}
-      aria-labelledby="close-title"
-      className="m-auto w-full max-w-md rounded-lg border border-border bg-surface-1 p-0 text-fg backdrop:bg-surface-0/70"
-      // Escape does nothing: the window stays open until the user picks one of the two answers.
-      onCancel={(event) => {
-        event.preventDefault();
-      }}
-    >
-      <div className="flex flex-col gap-3 p-4 text-sm">
-        <h2 id="close-title" className="m-0 text-base font-semibold">
-          {t('close.unsavedTitle')}
-        </h2>
-        <p className="m-0">{t('close.unsavedBody')}</p>
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            className="rounded-md bg-danger px-3 py-1.5 text-sm text-on-accent"
-            onClick={() => onChoose('discard')}
-          >
+    <Dialog
+      title={t('close.unsavedTitle')}
+      actions={
+        <>
+          <Button variant="danger" onClick={() => onChoose('discard')}>
             {t('close.discard')}
-          </button>
-          <button type="button" className={BUTTON} onClick={() => onChoose('retry')} autoFocus>
+          </Button>
+          <Button onClick={() => onChoose('retry')} autoFocus>
             {t('close.retry')}
-          </button>
-        </div>
-      </div>
-    </dialog>
+          </Button>
+        </>
+      }
+    >
+      <p className="m-0">{t('close.unsavedBody')}</p>
+    </Dialog>
   );
 }

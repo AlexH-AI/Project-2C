@@ -1,14 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { formatDate } from '@p2c/domain';
+import { Button, Dialog, TextField } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import { t } from '../i18n';
 
 type Outcome =
   | { readonly ok: true; readonly anchor: string; readonly backup: string | undefined }
   | { readonly ok: false; readonly unsaved: boolean };
-
-const BUTTON =
-  'rounded-md border border-border bg-surface-2 px-3 py-1.5 text-sm hover:bg-surface-3';
 
 /** Settings → Data (mockup settings-data): for now only "Reload simulated data" (T-045). */
 export function Settings() {
@@ -31,14 +29,12 @@ export function Settings() {
             {t('settings.demo.reloadHelp')} {hasFile && t('settings.demo.reloadHelpBackup')}
           </span>
         </div>
-        <button type="button" className={BUTTON} onClick={() => setConfirming(true)}>
-          {t('settings.demo.reloadOpen')}
-        </button>
+        <Button onClick={() => setConfirming(true)}>{t('settings.demo.reloadOpen')}</Button>
       </div>
       {outcome?.ok && (
         <p role="status" className="m-0 py-1 text-sm text-ok">
-          {t('settings.demo.done').replace('{date}', outcome.anchor)}{' '}
-          {outcome.backup && t('settings.demo.doneBackup').replace('{file}', outcome.backup)}
+          {t('settings.demo.done', { date: outcome.anchor })}{' '}
+          {outcome.backup && t('settings.demo.doneBackup', { file: outcome.backup })}
         </p>
       )}
       {outcome?.ok === false && (
@@ -61,15 +57,12 @@ export function Settings() {
 /** Mockup 10c: type the confirmation word, then back up (exe) and reload. */
 function ReloadDialog({ onClose }: { onClose: (outcome?: Outcome) => void }) {
   const data = useAppData();
-  const dialog = useRef<HTMLDialogElement>(null);
   const [word, setWord] = useState('');
   const [running, setRunning] = useState(false);
   const anchor = formatDate(data.today());
   const confirmWord = t('settings.demo.confirmWord');
-
-  useEffect(() => {
-    dialog.current?.showModal();
-  }, []);
+  // An IME may type the word decomposed (review R4).
+  const confirmed = word.normalize('NFC') === confirmWord;
 
   const reload = async () => {
     setRunning(true);
@@ -83,56 +76,36 @@ function ReloadDialog({ onClose }: { onClose: (outcome?: Outcome) => void }) {
   };
 
   return (
-    <dialog
-      ref={dialog}
-      aria-labelledby="reload-title"
-      className="m-auto w-full max-w-md rounded-lg border border-border bg-surface-1 p-0 text-fg backdrop:bg-surface-0/70"
-      // Escape closes the dialog natively; nothing may close it while the reload runs.
-      onCancel={(event) => {
-        event.preventDefault();
-        if (!running) onClose();
+    <Dialog
+      title={t('settings.demo.confirmTitle')}
+      // Nothing may close the dialog while the reload runs.
+      onClose={running ? undefined : () => onClose()}
+      onSubmit={() => {
+        if (confirmed && !running) void reload();
       }}
-    >
-      <form
-        method="dialog"
-        className="flex flex-col gap-3 p-4 text-sm"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (word === confirmWord && !running) void reload();
-        }}
-      >
-        <h2 id="reload-title" className="m-0 text-base font-semibold">
-          {t('settings.demo.confirmTitle')}
-        </h2>
-        <p className="m-0">{t('settings.demo.confirmBody').replace('{date}', anchor)}</p>
-        <p className="m-0 text-fg-2">
-          {t(data.hasFile ? 'settings.demo.confirmBackup' : 'settings.demo.confirmWeb')}
-        </p>
-        <label className="flex flex-col gap-1">
-          {t('settings.demo.confirmWordLabel').replace('{word}', confirmWord)}
-          <input
-            className="rounded-md border border-border bg-surface-0 px-2 py-1.5"
-            value={word}
-            disabled={running}
-            onChange={(event) => setWord(event.target.value)}
-            autoComplete="off"
-          />
-        </label>
-        <div className="flex justify-end gap-2">
-          <button type="button" className={BUTTON} disabled={running} onClick={() => onClose()}>
+      actions={
+        <>
+          <Button disabled={running} onClick={() => onClose()}>
             {t('settings.demo.cancel')}
-          </button>
-          <button
-            type="submit"
-            className="rounded-md bg-danger px-3 py-1.5 text-sm text-on-accent disabled:opacity-50"
-            disabled={word !== confirmWord || running}
-          >
+          </Button>
+          <Button type="submit" variant="danger" disabled={!confirmed || running}>
             {running
               ? t('settings.demo.running')
               : t(data.hasFile ? 'settings.demo.confirmWithBackup' : 'settings.demo.confirm')}
-          </button>
-        </div>
-      </form>
-    </dialog>
+          </Button>
+        </>
+      }
+    >
+      <p className="m-0">{t('settings.demo.confirmBody', { date: anchor })}</p>
+      <p className="m-0 text-fg-2">
+        {t(data.hasFile ? 'settings.demo.confirmBackup' : 'settings.demo.confirmWeb')}
+      </p>
+      <TextField
+        label={t('settings.demo.confirmWordLabel', { word: confirmWord })}
+        value={word}
+        disabled={running}
+        onChange={setWord}
+      />
+    </Dialog>
   );
 }

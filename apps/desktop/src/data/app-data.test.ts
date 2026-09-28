@@ -79,6 +79,32 @@ describe('openAppData', () => {
     expect(teamNames(onDisk)).toEqual(['Bình Minh', 'Sao Mai']);
   });
 
+  it('run() returns what the command returns and tells subscribers the data changed', async () => {
+    const app = await openAppData({ today: () => TODAY, seed: fakeSeed });
+    const listener = vi.fn();
+    app.subscribe(listener);
+    const before = app.revision();
+
+    const team = app.run((db) => createTeam(db, { name: 'Sao Mai' }));
+
+    expect(team.name).toBe('Sao Mai');
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(app.revision()).toBeGreaterThan(before);
+  });
+
+  it('run() of a rejected command rethrows and tells no one: nothing changed', async () => {
+    const app = await openAppData({ today: () => TODAY, seed: fakeSeed });
+    const listener = vi.fn();
+    app.subscribe(listener);
+    const before = app.revision();
+
+    expect(() => app.run((db) => createTeam(db, { name: 'Seed 27/09/2026' }))).toThrow(
+      'TEAM_NAME_TAKEN',
+    );
+    expect(listener).not.toHaveBeenCalled();
+    expect(app.revision()).toBe(before);
+  });
+
   it('measures the seeding time for the browser check of #64', async () => {
     await openAppData({ today: () => TODAY, seed: fakeSeed });
     expect(performance.getEntriesByName('p2c:demo-seed', 'measure').length).toBeGreaterThan(0);
