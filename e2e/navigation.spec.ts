@@ -89,3 +89,26 @@ test('the scope switch selects one of All / Team / RE', async ({ page }) => {
   await scope.getByRole('radio', { name: 'Team' }).click();
   await expect(scope.getByRole('radio', { checked: true })).toHaveText('Team');
 });
+
+test('Team and RE scopes pick the team or RE next to the switch', async ({ page }) => {
+  await page.goto('/');
+  const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
+  const team = page.getByRole('combobox', { name: 'Team của góc nhìn' });
+  const re = page.getByRole('combobox', { name: 'RE của góc nhìn' });
+  await expect(team).toHaveCount(0);
+
+  await scope.getByRole('radio', { name: 'Team' }).click();
+  await expect(team.locator('option')).toHaveText(['Bình Minh', 'Hừng Đông', 'Sao Mai']);
+  await expect(team).toHaveValue(/.+/);
+  await team.selectOption({ label: 'Sao Mai' });
+  await expect(team.locator('option:checked')).toHaveText('Sao Mai');
+
+  // Only an RE has metrics: the list holds the 30 RE of the simulated data, with their team.
+  await scope.getByRole('radio', { name: 'RE' }).click();
+  await expect(team).toHaveCount(0);
+  await expect(re.locator('option')).toHaveCount(30);
+  await expect(re.locator('option').first()).toHaveText(/ · (Bình Minh|Hừng Đông|Sao Mai)$/);
+
+  await scope.getByRole('radio', { name: 'Toàn bộ' }).click();
+  await expect(re).toHaveCount(0);
+});
