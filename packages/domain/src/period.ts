@@ -30,10 +30,6 @@ function fromDayNumber(dayNumber: number): CalendarDate {
   return { year: date.getUTCFullYear(), month: date.getUTCMonth() + 1, day: date.getUTCDate() };
 }
 
-function addDays(date: CalendarDate, days: number): CalendarDate {
-  return fromDayNumber(toDayNumber(date) + days);
-}
-
 function lastDayOfMonth(year: number, month: number): number {
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
@@ -52,6 +48,19 @@ export function calendarDate(year: number, month: number, day: number): Calendar
     day <= lastDayOfMonth(year, month);
   if (!valid) throw new RangeError(`Not a calendar date: ${year}-${month}-${day}`);
   return { year, month, day };
+}
+
+/**
+ * `date` moved by `days` calendar days (negative = earlier); rolls over months and years.
+ * Throws a RangeError when `days` is not a whole number or the result is before 1900.
+ */
+export function addDays(date: CalendarDate, days: number): CalendarDate {
+  if (!Number.isInteger(days)) throw new RangeError(`Not a whole number of days: ${days}`);
+  const result = fromDayNumber(toDayNumber(date) + days);
+  if (result.year < MIN_YEAR) {
+    throw new RangeError(`${formatDate(date)} moved by ${days} days is before ${MIN_YEAR}`);
+  }
+  return result;
 }
 
 /** The calendar day a JS Date falls on in the local time zone (e.g. "today"). */

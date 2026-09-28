@@ -1,6 +1,6 @@
 import {
+  addDays,
   customPeriod,
-  fromLocalDate,
   isInPeriod,
   isPipelineStage,
   periodOf,
@@ -58,9 +58,7 @@ export interface StaffMetrics {
 
 /** The 30 days ending today, today included. */
 function last30Days(today: CalendarDate): Period {
-  // `Date` rolls day −29 over into the previous month or year; the domain has no day arithmetic.
-  const start = fromLocalDate(new Date(today.year, today.month - 1, today.day - 29));
-  return customPeriod(start, today);
+  return customPeriod(addDays(today, -29), today);
 }
 
 /** The records a person is the RE of. */

@@ -4,6 +4,7 @@ export {
   MIN_YEAR,
   NEXT_YEAR_SUGGESTION_DAYS,
   PERIOD_KINDS,
+  addDays,
   calendarDate,
   compareDates,
   customPeriod,

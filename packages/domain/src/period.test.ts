@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addDays,
   calendarDate,
   compareDates,
   customPeriod,
@@ -281,5 +282,29 @@ describe('compareDates', () => {
       '30/09/2026',
       '01/10/2026',
     ]);
+  });
+});
+
+describe('addDays', () => {
+  it('rolls over months, years and 29 February, forward and back', () => {
+    expect(addDays(d(28, 9, 2026), -29)).toEqual(d(30, 8, 2026));
+    expect(addDays(d(1, 1, 2027), -1)).toEqual(d(31, 12, 2026));
+    expect(addDays(d(31, 12, 2026), 1)).toEqual(d(1, 1, 2027));
+    expect(addDays(d(28, 2, 2028), 1)).toEqual(d(29, 2, 2028));
+    expect(addDays(d(1, 3, 2026), -1)).toEqual(d(28, 2, 2026));
+  });
+
+  it('returns the same day for 0', () => {
+    expect(addDays(d(28, 9, 2026), 0)).toEqual(d(28, 9, 2026));
+  });
+
+  it('rejects a day count that is not a whole number', () => {
+    expect(() => addDays(d(28, 9, 2026), 1.5)).toThrow(RangeError);
+    expect(() => addDays(d(28, 9, 2026), Number.NaN)).toThrow(RangeError);
+  });
+
+  it('rejects a result before 1900', () => {
+    expect(addDays(d(2, 1, 1900), -1)).toEqual(d(1, 1, 1900));
+    expect(() => addDays(d(1, 1, 1900), -1)).toThrow(RangeError);
   });
 });
