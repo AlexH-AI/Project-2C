@@ -5,7 +5,12 @@ const NAME = 'An Thử Nghiệm';
 
 const column = (page: Page, stage: string) =>
   page.getByRole('region', { name: stage, exact: true });
-const history = (page: Page) => page.getByRole('region', { name: 'Lịch sử nhóm' });
+// The stage changes of the timeline, newest first; KYC notes and versions sit between them.
+const history = (page: Page) =>
+  page
+    .getByRole('region', { name: 'Dòng thời gian' })
+    .getByRole('listitem')
+    .filter({ hasText: /tạo KH|chuyển tay|sau cuộc gặp/ });
 
 async function openCreate(page: Page) {
   await page.getByRole('button', { name: '+ Khách hàng' }).click();
@@ -61,14 +66,12 @@ test('creates a customer in N4 on the kanban, then moves it to N2 by hand', asyn
     .click();
   const profile = page.getByRole('region', { name: NAME });
   await expect(profile).toContainText(/K-[0-9A-HJKMNP-TV-Z]{4} · Nữ · 1984 \(42 tuổi\)/);
-  await expect(history(page).getByRole('listitem')).toHaveText(['15/09/2026N4tạo KH']);
+  await expect(history(page)).toHaveText(['15/09/2026N4tạo KH']);
 
   await changeStage(page, 'N2');
   await expect(profile).toContainText('N2');
   // A manual change points to no appointment, so it never counts as an RF (#44).
-  await expect(history(page).getByRole('listitem').first()).toHaveText(
-    '15/09/2026N4→N2chuyển tay · không tính RF',
-  );
+  await expect(history(page).first()).toHaveText('15/09/2026N4→N2chuyển tay · không tính RF');
 });
 
 test('edits the profile, showing the customer code and the birth date as understood', async ({
@@ -103,7 +106,7 @@ test('a closed customer reopens only to N3', async ({ page }) => {
   await dialog.getByRole('button', { name: 'Hủy' }).click();
 
   await changeStage(page, 'N3 mở lại');
-  await expect(history(page).getByRole('listitem').first()).toContainText('Tạm hoãn→N3chuyển tay');
+  await expect(history(page).first()).toContainText('Tạm hoãn→N3chuyển tay');
 });
 
 test('refuses a customer with wrong fields and saves nothing', async ({ page }) => {

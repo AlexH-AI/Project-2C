@@ -102,16 +102,49 @@ export function addKycNote(
   });
 }
 
+/** A fact confirmed from the note being recorded; `conflict` marks it as disagreeing. */
+export interface KycNoteFact {
+  readonly field: KycField;
+  readonly value: KycValue;
+  readonly conflict?: boolean;
+}
+
+/**
+ * Mockup 7a: a new note from the RE and the facts confirmed from it, saved at once as a single
+ * version (none when the facts in effect did not change). Any refused fact rejects the whole note.
+ */
+export function recordKycNote(
+  db: Database,
+  customerId: string,
+  command: {
+    readonly text: string;
+    readonly date: CalendarDate;
+    readonly facts: readonly KycNoteFact[];
+    readonly material?: boolean;
+  },
+): { readonly note: KycNoteRecord; readonly version: KycVersionRecord | null } {
+  return db.transaction(() => {
+    const note = addKycNote(db, customerId, command);
+    // Like `addKycNote`: a note alone never records a version, not even the first one.
+    if (command.facts.length === 0) return { note, version: null };
+    const before = loadProfile(db, customerId);
+    const after = command.facts.reduce<KycProfile>(
+      (profile, fact) =>
+        applyFact(profile, toInput(db, fact, note.id, command.date), fact.conflict ?? false),
+      before,
+    );
+    const version = save(db, customerId, before, after, command.date, command.material ?? false);
+    return { note, version };
+  });
+}
+
 /** The value becomes the latest of its trường; what was current there is superseded. */
 export function confirmKycFact(
   db: Database,
   customerId: string,
   command: KycFactCommand,
 ): KycChange {
-  return factCommand(db, customerId, command, (profile, input) => {
-    if (PROFILE_FIELDS.has(input.field)) throw new DbError('KYC_FIELD_FROM_PROFILE');
-    return confirmFact(profile, input);
-  });
+  return factCommand(db, customerId, command, false);
 }
 
 /** A value that disagrees with the current one: both stay in conflict until resolved. */
@@ -120,13 +153,7 @@ export function markKycConflict(
   customerId: string,
   command: KycFactCommand,
 ): KycChange {
-  return factCommand(db, customerId, command, (profile, input) => {
-    try {
-      return markConflict(profile, input);
-    } catch {
-      throw new DbError('KYC_NO_CONFLICT');
-    }
-  });
+  return factCommand(db, customerId, command, true);
 }
 
 /** Keeps the chosen fact of a conflict; for birth year and gender it must be the profile's. */
@@ -219,26 +246,48 @@ function factCommand(
   db: Database,
   customerId: string,
   command: KycFactCommand,
-  apply: (profile: KycProfile, input: KycFactInput) => KycProfile,
+  conflict: boolean,
 ): KycChange {
   return db.transaction(() => {
     liveCustomer(db, customerId);
     const before = loadProfile(db, customerId);
-    const field = requireField(command.field);
     if (!before.notes.some((note) => note.id === command.noteId)) {
       throw new DbError('KYC_NOTE_NOT_FOUND');
     }
-    const input: KycFactInput = {
-      id: ulid(db.now(), db.random),
-      field,
-      value: normalizeValue(field, command.value),
-      noteId: command.noteId,
-      confirmedDate: command.date,
-    };
-    const after = apply(before, input);
+    const input = toInput(db, command, command.noteId, command.date);
+    const after = applyFact(before, input, conflict);
     const version = save(db, customerId, before, after, command.date, command.material ?? false);
     return { fact: after.facts.find((fact) => fact.id === input.id)!, version };
   });
+}
+
+function toInput(
+  db: Database,
+  fact: { readonly field: string; readonly value: KycValue },
+  noteId: string,
+  date: CalendarDate,
+): KycFactInput {
+  const field = requireField(fact.field);
+  return {
+    id: ulid(db.now(), db.random),
+    field,
+    value: normalizeValue(field, fact.value),
+    noteId,
+    confirmedDate: date,
+  };
+}
+
+/** The RE may flag a birth year or gender as a conflict, but never confirm one (D2). */
+function applyFact(profile: KycProfile, input: KycFactInput, conflict: boolean): KycProfile {
+  if (!conflict) {
+    if (PROFILE_FIELDS.has(input.field)) throw new DbError('KYC_FIELD_FROM_PROFILE');
+    return confirmFact(profile, input);
+  }
+  try {
+    return markConflict(profile, input);
+  } catch {
+    throw new DbError('KYC_NO_CONFLICT');
+  }
 }
 
 function requireField(field: string): KycField {

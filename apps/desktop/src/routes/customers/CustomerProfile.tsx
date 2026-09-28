@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react';
 import {
   getCustomer,
+  getKycProfile,
+  listKycVersions,
   listPeople,
   listPolicies,
   listStageTransitions,
@@ -13,6 +15,7 @@ import { useAppData, useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { ChangeStageDialog, CustomerFormDialog } from './CustomerDialogs';
+import { KycCard, Timeline } from './CustomerKyc';
 import { ageOn, birthLabel } from './customers-view';
 
 function readProfile(db: Database, id: string) {
@@ -25,6 +28,8 @@ function readProfile(db: Database, id: string) {
     team: listTeams(db).find((team) => team.id === re?.teamId),
     policies: listPolicies(db).filter((policy) => policy.customerId === id).length,
     transitions: listStageTransitions(db, id),
+    kyc: getKycProfile(db, id),
+    versions: listKycVersions(db, id),
   };
 }
 
@@ -37,7 +42,7 @@ const BACK = (
   </a>
 );
 
-/** Customer profile (mockup customer.html): the basics; KYC, appointments and policies come later. */
+/** Customer profile (mockup customer.html): the basics, KYC and timeline; appointments and policies come later. */
 export function CustomerProfile({ id }: { id: string }) {
   const today = useAppData().today();
   const profile = useQuery(useCallback((db: Database) => readProfile(db, id), [id]));
@@ -52,7 +57,7 @@ export function CustomerProfile({ id }: { id: string }) {
     );
   }
 
-  const { customer, re, team, policies, transitions } = profile;
+  const { customer, re, team, policies, transitions, kyc, versions } = profile;
   // Every customer has its first transition (spec §3.4).
   const since = transitions.at(-1)!.date;
   const birth = customer.birthDate;
@@ -83,33 +88,10 @@ export function CustomerProfile({ id }: { id: string }) {
         </div>
         <p className="m-0 text-sm text-fg-2 tabular-nums">{facts.join(' · ')}</p>
       </section>
-      <section
-        aria-labelledby="stage-history"
-        className="rounded-lg border border-border bg-surface-1 p-4"
-      >
-        <h2 id="stage-history" className="m-0 mb-2 text-sm font-medium text-heading">
-          {t('customer.history')}
-        </h2>
-        <ol className="m-0 flex list-none flex-col gap-1.5 p-0 text-sm">
-          {[...transitions].reverse().map((move) => (
-            <li key={move.id} className="flex items-center gap-2">
-              <span className="w-24 text-fg-3 tabular-nums">{formatDate(move.date)}</span>
-              {move.from && <StageBadge stage={move.from} label={t(`stage.${move.from}`)} />}
-              {move.from && '→'}
-              <StageBadge stage={move.to} label={t(`stage.${move.to}`)} />
-              <span className="text-xs text-fg-3">
-                {t(
-                  move.from === null
-                    ? 'customer.created'
-                    : move.appointmentId
-                      ? 'customer.byMeeting'
-                      : 'customer.manual',
-                )}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </section>
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <KycCard profile={kyc} versions={versions} />
+        <Timeline transitions={transitions} notes={kyc.notes} versions={versions} />
+      </div>
       {editing === 'profile' && (
         <CustomerFormDialog customer={customer} onClose={() => setEditing(null)} />
       )}
