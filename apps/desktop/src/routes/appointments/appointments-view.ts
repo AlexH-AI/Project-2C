@@ -1,6 +1,7 @@
 import type { AppointmentRecord, CustomerRecord } from '@p2c/db';
 import {
   compareDates,
+  formatDayMonth,
   inScope,
   isRfTransition,
   type CalendarDate,
@@ -10,6 +11,7 @@ import {
   type StageTransition,
   type Team,
 } from '@p2c/domain';
+import { t } from '../../i18n';
 
 export interface AppointmentData {
   readonly appointments: readonly AppointmentRecord[];
@@ -33,6 +35,25 @@ export type Outcome =
   | { readonly kind: 'keep'; readonly stage: CustomerStage }
   | { readonly kind: 'rescheduled'; readonly to: CalendarDate }
   | null;
+
+/** The "Kết quả" text: `Tạm hoãn → N3`, `N3 → N2 · RF`, `Giữ N3`, `Dời sang 02/10`; empty when none. */
+export function outcomeText(outcome: Outcome): string {
+  if (!outcome) return '';
+  switch (outcome.kind) {
+    case 'move':
+      return t(outcome.rf ? 'appointments.moveRf' : 'appointments.move', {
+        from: outcome.from ? t(`stage.${outcome.from}`) : '—',
+        to: t(`stage.${outcome.to}`),
+      });
+    case 'keep':
+      return t('appointments.keep', { stage: t(`stage.${outcome.stage}`) });
+    case 'rescheduled':
+      return t('appointments.rescheduledTo', { date: formatDayMonth(outcome.to) });
+  }
+}
+
+/** A coordinator as the lists show them: role, then name. */
+export const personLabel = (person: Person) => `${person.role} ${person.name}`;
 
 export interface AppointmentRow {
   readonly appointment: AppointmentRecord;

@@ -75,6 +75,11 @@ export function formatDate(date: CalendarDate): string {
   return `${pad(date.day)}/${pad(date.month)}/${date.year}`;
 }
 
+/** `dd/mm` — a day whose year is clear from context. */
+export function formatDayMonth(date: CalendarDate): string {
+  return `${pad(date.day)}/${pad(date.month)}`;
+}
+
 /** Negative when `a` is earlier, positive when later, 0 on the same day — for `Array.sort`. */
 export function compareDates(a: CalendarDate, b: CalendarDate): number {
   return toDayNumber(a) - toDayNumber(b);

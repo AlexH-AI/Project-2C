@@ -9,6 +9,7 @@ export {
   compareDates,
   customPeriod,
   formatDate,
+  formatDayMonth,
   formatPeriodValue,
   fromLocalDate,
   isInPeriod,
