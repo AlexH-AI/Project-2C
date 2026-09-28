@@ -16,6 +16,8 @@ export const vi = {
   'scope.all': 'Toàn bộ',
   'scope.team': 'Team',
   'scope.re': 'RE',
+  'scope.pickTeam': 'Team của góc nhìn',
+  'scope.pickRe': 'RE của góc nhìn',
   'period.title': 'Kỳ thống kê',
   'period.kinds': 'Loại kỳ',
   'period.day': 'Ngày',
