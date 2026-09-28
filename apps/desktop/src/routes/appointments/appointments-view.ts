@@ -6,6 +6,7 @@ import {
   inScope,
   isRfTransition,
   periodOf,
+  type AppointmentStatus,
   type CalendarDate,
   type CustomerStage,
   type Person,
@@ -133,6 +134,15 @@ export function appointmentRows(
     });
 }
 
+/** The calendar dot of each status; a new status must pick one. */
+const CALENDAR_GROUP: Record<AppointmentStatus, 'met' | 'planned' | 'missed'> = {
+  MET: 'met',
+  SCHEDULED: 'planned',
+  RESCHEDULED: 'missed',
+  CANCELLED: 'missed',
+  NO_SHOW: 'missed',
+};
+
 /** The weeks, Monday to Sunday, covering the month of `date`, with each day's appointments. */
 export function monthGrid(date: CalendarDate, rows: readonly AppointmentRow[]): DayCell[][] {
   const month = periodOf('month', date);
@@ -142,16 +152,13 @@ export function monthGrid(date: CalendarDate, rows: readonly AppointmentRow[]): 
   while (compareDates(day, last) <= 0) {
     const week: DayCell[] = [];
     for (let i = 0; i < 7; i++, day = addDays(day, 1)) {
-      const on = rows.filter((row) => compareDates(row.appointment.date, day) === 0);
-      const count = (match: (status: string) => boolean) =>
-        on.filter((row) => match(row.appointment.status)).length;
-      week.push({
-        date: day,
-        inMonth: day.month === date.month,
-        met: count((s) => s === 'MET'),
-        planned: count((s) => s === 'SCHEDULED'),
-        missed: count((s) => s !== 'MET' && s !== 'SCHEDULED'),
-      });
+      const cell = { date: day, inMonth: day.month === date.month, met: 0, planned: 0, missed: 0 };
+      for (const row of rows) {
+        if (compareDates(row.appointment.date, day) === 0) {
+          cell[CALENDAR_GROUP[row.appointment.status]] += 1;
+        }
+      }
+      week.push(cell);
     }
     weeks.push(week);
   }

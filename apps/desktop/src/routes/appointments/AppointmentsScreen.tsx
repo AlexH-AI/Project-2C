@@ -194,21 +194,30 @@ function MonthCalendar({
 }) {
   const weeks = useMemo(() => monthGrid(day, rows), [day, rows]);
   const month = formatPeriodValue(periodOf('month', day));
+  const days = weeks.flat().filter((cell) => cell.inMonth);
+  const met = days.reduce((sum, cell) => sum + cell.met, 0);
+  const total = days.reduce((sum, cell) => sum + cell.met + cell.planned + cell.missed, 0);
   return (
     <section aria-labelledby="appointments-calendar" className={CARD}>
-      <h2 id="appointments-calendar" className="m-0 mb-2 text-sm font-medium text-heading">
-        {t('appointments.calendar', { month })}
-      </h2>
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <h2 id="appointments-calendar" className="m-0 text-sm font-medium text-heading">
+          {t('appointments.calendar', { month })}
+        </h2>
+        <span className="text-xs text-fg-3 tabular-nums">
+          {t('appointments.summary', { total, met })}
+        </span>
+      </div>
       <div className="grid grid-cols-7 gap-1.5">
         {WEEKDAYS.map((n) => (
           <span key={n} className="px-1.5 text-xs tracking-wider text-fg-3 uppercase">
             {t(`weekday.${n}`)}
           </span>
         ))}
-        {weeks.flat().map((cell) => (
+        {weeks.flat().map((cell, i) => (
           <DayButton
             key={formatDate(cell.date)}
             cell={cell}
+            weekend={i % 7 >= 5}
             picked={compareDates(cell.date, day) === 0}
             isToday={compareDates(cell.date, today) === 0}
             onPick={onPick}
@@ -240,17 +249,35 @@ function Dot({ kind }: { kind: keyof typeof DOT }) {
   return <i aria-hidden="true" className={`inline-block size-2 rounded-full ${DOT[kind]}`} />;
 }
 
+const CELL = 'flex min-h-15 flex-col rounded-sm border px-2 py-1.5 text-left tabular-nums';
+
 function DayButton({
   cell,
+  weekend,
   picked,
   isToday,
   onPick,
 }: {
   cell: DayCell;
+  weekend: boolean;
   picked: boolean;
   isToday: boolean;
   onPick: (date: CalendarDate) => void;
 }) {
+  const background = picked ? 'bg-accent-soft' : weekend ? 'bg-surface-1' : 'bg-surface-2';
+  const dayNumber = (
+    <span className={`text-xs ${isToday ? 'font-bold text-accent' : 'text-fg-3'}`}>
+      {String(cell.date.day).padStart(2, '0')}
+    </span>
+  );
+  // Days outside the month only fill the weeks: the period picker moves to another month.
+  if (!cell.inMonth) {
+    return (
+      <div aria-hidden="true" className={`${CELL} border-border opacity-35 ${background}`}>
+        {dayNumber}
+      </div>
+    );
+  }
   const count = cell.met + cell.planned + cell.missed;
   const dots = [
     ...Array<'met'>(cell.met).fill('met'),
@@ -263,14 +290,12 @@ function DayButton({
       aria-pressed={picked}
       aria-label={t('appointments.dayCount', { date: formatDate(cell.date), count })}
       onClick={() => onPick(cell.date)}
-      className={`flex min-h-15 cursor-pointer flex-col rounded-sm border px-2 py-1.5 text-left tabular-nums ${FOCUS} ${
-        picked ? 'border-accent bg-accent-soft' : isToday ? 'border-accent' : 'border-border'
-      } ${cell.inMonth ? 'bg-surface-2' : 'opacity-40'}`}
+      className={`${CELL} cursor-pointer ${FOCUS} ${background} ${
+        picked || isToday ? 'border-accent' : 'border-border'
+      } ${isToday ? 'inset-ring inset-ring-accent' : ''}`}
     >
       <span className="flex items-start justify-between">
-        <span className={`text-xs ${isToday ? 'font-bold text-accent' : 'text-fg-3'}`}>
-          {String(cell.date.day).padStart(2, '0')}
-        </span>
+        {dayNumber}
         <b className="text-lg">{count > 0 ? count : ''}</b>
       </span>
       <span className="mt-auto flex gap-0.5">

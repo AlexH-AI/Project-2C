@@ -18,9 +18,11 @@ function screen(page: Page) {
   };
 }
 
-/** "482 lịch · 349 đã gặp" → 482. */
+const SUMMARY = /\d+ lịch · \d+ đã gặp/;
+
+/** The period's "482 lịch · 349 đã gặp" → 482 (the header comes before the calendar's). */
 async function total(page: Page): Promise<number> {
-  const text = await page.getByText(/\d+ lịch · \d+ đã gặp/).textContent();
+  const text = await page.getByText(SUMMARY).first().textContent();
   return Number(text?.match(/\d+/)?.[0]);
 }
 
@@ -45,6 +47,12 @@ test("opens on this month, today's day by team → RE, the list matching the sum
   expect(count).toBeGreaterThan(0);
   await expect(rows).toHaveCount(count);
   for (const date of await column(1)) expect(date).toMatch(/^\d\d\/09\/2026$/);
+
+  // The month's own count matches the period's; only its 30 days are buttons.
+  await expect(calendar.getByText(SUMMARY)).toHaveText(
+    (await page.getByText(SUMMARY).first().textContent()) ?? '',
+  );
+  await expect(calendar.getByRole('button')).toHaveCount(30);
 });
 
 test('the day period narrows the day and the list to one day', async ({ page }) => {

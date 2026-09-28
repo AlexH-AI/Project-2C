@@ -167,6 +167,50 @@ describe('monthGrid', () => {
     });
     expect(weeks[4]?.[3]).toMatchObject({ date: day(10, 1), planned: 1 });
   });
+
+  it('counts every status other than met and scheduled as missed', () => {
+    const rows = appointmentRows(
+      data([
+        appointment('a', 're1', day(9, 16), { status: 'RESCHEDULED' }),
+        appointment('b', 're1', day(9, 16), { status: 'NO_SHOW' }),
+        appointment('c', 're1', day(9, 16), { status: 'CANCELLED' }),
+      ]),
+      { kind: 'all' },
+      'any',
+    );
+    const cell = monthGrid(day(9, 16), rows)
+      .flat()
+      .find((c) => c.date.day === 16 && c.inMonth);
+    expect(cell).toMatchObject({ met: 0, planned: 0, missed: 3 });
+  });
+
+  it('starts on the first when the month starts on a Monday', () => {
+    // June 2026 starts on a Monday and ends on a Tuesday.
+    const weeks = monthGrid(day(6, 10), []);
+    expect(weeks).toHaveLength(5);
+    expect(weeks[0]?.[0]).toMatchObject({ date: day(6, 1), inMonth: true });
+    expect(weeks[4]?.[6]).toMatchObject({ date: day(7, 5), inMonth: false });
+  });
+
+  it('spans six weeks when the month needs them', () => {
+    // August 2026 starts on a Saturday and ends on a Monday.
+    const weeks = monthGrid(day(8, 1), []);
+    expect(weeks).toHaveLength(6);
+    expect(weeks[0]?.[0]).toMatchObject({ date: day(7, 27), inMonth: false });
+    expect(weeks[5]?.[0]).toMatchObject({ date: day(8, 31), inMonth: true });
+    expect(weeks[5]?.[6]).toMatchObject({ date: day(9, 6), inMonth: false });
+  });
+
+  it('crosses the new year on both sides', () => {
+    const jan2 = { year: 2027, month: 1, day: 2 };
+    const rows = appointmentRows(data([appointment('a', 're1', jan2)]), { kind: 'all' }, 'any');
+    const december = monthGrid(day(12, 31), rows);
+    expect(december.at(-1)?.[5]).toMatchObject({ date: jan2, inMonth: false, planned: 1 });
+
+    const january = monthGrid(jan2, rows);
+    expect(january[0]?.[0]).toMatchObject({ date: day(12, 28), inMonth: false });
+    expect(january[0]?.[5]).toMatchObject({ date: jan2, inMonth: true, planned: 1 });
+  });
 });
 
 describe('dayBoard', () => {
