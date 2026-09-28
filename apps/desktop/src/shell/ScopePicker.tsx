@@ -2,7 +2,7 @@ import type { Person, Scope, Team } from '@p2c/domain';
 import { Segmented, SelectField } from '@p2c/ui';
 import type { Dispatch, SetStateAction } from 'react';
 import { t } from '../i18n';
-import { chooseKind, type ScopeChoice } from './scope';
+import { chooseKind, reOptions, type ScopeChoice } from './scope';
 
 const KINDS = [
   { value: 'all', label: t('scope.all') },
@@ -24,14 +24,6 @@ export function ScopePicker({
   /** The state setter of the choice: a click on a kind needs the choice it replaces. */
   onChange: Dispatch<SetStateAction<ScopeChoice>>;
 }) {
-  const teamName = (id: string | null) => teams.find((team) => team.id === id)?.name;
-  const reOptions = people
-    .filter((person) => person.role === 'RE')
-    .map((re) => ({
-      value: re.id,
-      label: [re.name, teamName(re.teamId)].filter(Boolean).join(' · '),
-    }));
-
   return (
     <div className="flex items-center gap-2">
       <Segmented
@@ -54,7 +46,7 @@ export function ScopePicker({
           label={t('scope.pickRe')}
           labelHidden
           value={scope.reId}
-          options={reOptions}
+          options={reOptions(people, teams)}
           onChange={(id) => onChange({ kind: 're', id })}
         />
       )}

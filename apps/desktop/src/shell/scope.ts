@@ -34,3 +34,18 @@ export function resolveScope(
 export function chooseKind(choice: ScopeChoice, kind: Scope['kind']): ScopeChoice {
   return kind === choice.kind ? choice : { kind };
 }
+
+/** The RE a scope or a customer can be given, as "Name · Team", in the order of `people`. */
+export function reOptions(
+  people: readonly Person[],
+  teams: readonly Team[],
+): { value: string; label: string }[] {
+  return people
+    .filter((person) => person.role === 'RE')
+    .map((re) => ({
+      value: re.id,
+      label: [re.name, teams.find((team) => team.id === re.teamId)?.name]
+        .filter(Boolean)
+        .join(' · '),
+    }));
+}
