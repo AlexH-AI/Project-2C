@@ -21,11 +21,11 @@ import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { Actions, ALERT, useDateField } from './CustomerDialogs';
 import { BADGE, YES_NO } from './CustomerKyc';
-import { factText, previewKycNote } from './kyc-view';
+import { factText, previewKycNote, resolveKycOptions } from './kyc-view';
 
 /** Birth year and gender are set in the customer profile only (D2). */
 const NOTE_FIELDS = (Object.keys(KYC_FIELDS) as KycField[]).filter(
-  (field) => field !== 'birthYear' && field !== 'gender',
+  (field) => !KYC_FIELDS[field].fromProfile,
 );
 const FIELD_OPTIONS = NOTE_FIELDS.map((field) => ({ value: field, label: t(`kycField.${field}`) }));
 
@@ -292,12 +292,7 @@ export function ResolveKycDialog({
   const [chosen, setChosen] = useState<string | null>(null);
   const [material, setMaterial] = useState(false);
   const [error, setError] = useState<string>();
-  const conflicts = profile.facts.filter(
-    (fact) => fact.field === field && fact.status === 'conflict',
-  );
-  const fromProfile = field === 'birthYear' || field === 'gender';
-  const source = (noteId: string) => profile.notes.find((note) => note.id === noteId);
-  const core = KYC_FIELDS[field].core;
+  const { core, fromProfile } = KYC_FIELDS[field];
   const gate = chosen && evaluateKycGate(resolveConflict(profile, chosen).facts).state;
 
   const save = () => {
@@ -332,23 +327,20 @@ export function ResolveKycDialog({
           setChosen(id);
           setError(undefined);
         }}
-        options={conflicts.map((fact) => {
-          const note = source(fact.noteId);
-          return {
-            value: fact.id,
-            disabled: fromProfile && note?.source !== 'SYSTEM',
-            label: (
-              <span className="flex flex-col">
-                <b>"{factText(fact.value, YES_NO)}"</b>
-                <span className="text-xs text-fg-3 tabular-nums">
-                  {t(note?.source === 'SYSTEM' ? 'kycResolve.systemSource' : 'kycResolve.source', {
-                    date: formatDate(fact.confirmedDate),
-                  })}
-                </span>
+        options={resolveKycOptions(profile, field).map((option) => ({
+          value: option.factId,
+          disabled: option.disabled,
+          label: (
+            <span className="flex flex-col">
+              <b>"{factText(option.value, YES_NO)}"</b>
+              <span className="text-xs text-fg-3 tabular-nums">
+                {t(option.source === 'SYSTEM' ? 'kycResolve.systemSource' : 'kycResolve.source', {
+                  date: formatDate(option.confirmedDate),
+                })}
               </span>
-            ),
-          };
-        })}
+            </span>
+          ),
+        }))}
         help={fromProfile ? t('kycResolve.profileOnly') : undefined}
         required
       />

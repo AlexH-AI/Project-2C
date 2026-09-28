@@ -21,30 +21,34 @@ export type KycCategory = (typeof KYC_CATEGORIES)[number];
 /**
  * Trường, each in exactly one hạng mục. A cốt lõi trường in conflict blocks the AI
  * (`CONFLICT_RESOLUTION`); a conflict on any other trường is only a warning (G2 2, 6).
+ * A `fromProfile` trường is only ever taken from the hồ sơ KH, never from a ghi chú (D2).
  */
 export const KYC_FIELDS = {
-  birthYear: { category: 'IDENTITY', core: true },
-  gender: { category: 'IDENTITY', core: false },
-  residence: { category: 'IDENTITY', core: false },
-  maritalStatus: { category: 'FAMILY', core: true },
-  childrenCount: { category: 'FAMILY', core: true },
-  dependents: { category: 'FAMILY', core: false },
-  occupation: { category: 'OCCUPATION_INCOME', core: false },
-  annualIncome: { category: 'OCCUPATION_INCOME', core: false },
-  incomeSources: { category: 'OCCUPATION_INCOME', core: false },
-  totalAssets: { category: 'ASSETS', core: true },
-  assetAllocation: { category: 'ASSETS', core: false },
-  liabilities: { category: 'ASSETS', core: false },
-  primaryGoal: { category: 'GOALS', core: true },
-  goalHorizon: { category: 'GOALS', core: false },
-  otherGoals: { category: 'GOALS', core: false },
-  riskProfile: { category: 'RISK_APPETITE', core: false },
-  investmentExperience: { category: 'RISK_APPETITE', core: false },
-  hasProtection: { category: 'EXISTING_PROTECTION', core: false },
-  protectionDetails: { category: 'EXISTING_PROTECTION', core: false },
-  mainConcern: { category: 'CONCERNS', core: false },
-  otherConcerns: { category: 'CONCERNS', core: false },
-} as const satisfies Record<string, { readonly category: KycCategory; readonly core: boolean }>;
+  birthYear: { category: 'IDENTITY', core: true, fromProfile: true },
+  gender: { category: 'IDENTITY', core: false, fromProfile: true },
+  residence: { category: 'IDENTITY', core: false, fromProfile: false },
+  maritalStatus: { category: 'FAMILY', core: true, fromProfile: false },
+  childrenCount: { category: 'FAMILY', core: true, fromProfile: false },
+  dependents: { category: 'FAMILY', core: false, fromProfile: false },
+  occupation: { category: 'OCCUPATION_INCOME', core: false, fromProfile: false },
+  annualIncome: { category: 'OCCUPATION_INCOME', core: false, fromProfile: false },
+  incomeSources: { category: 'OCCUPATION_INCOME', core: false, fromProfile: false },
+  totalAssets: { category: 'ASSETS', core: true, fromProfile: false },
+  assetAllocation: { category: 'ASSETS', core: false, fromProfile: false },
+  liabilities: { category: 'ASSETS', core: false, fromProfile: false },
+  primaryGoal: { category: 'GOALS', core: true, fromProfile: false },
+  goalHorizon: { category: 'GOALS', core: false, fromProfile: false },
+  otherGoals: { category: 'GOALS', core: false, fromProfile: false },
+  riskProfile: { category: 'RISK_APPETITE', core: false, fromProfile: false },
+  investmentExperience: { category: 'RISK_APPETITE', core: false, fromProfile: false },
+  hasProtection: { category: 'EXISTING_PROTECTION', core: false, fromProfile: false },
+  protectionDetails: { category: 'EXISTING_PROTECTION', core: false, fromProfile: false },
+  mainConcern: { category: 'CONCERNS', core: false, fromProfile: false },
+  otherConcerns: { category: 'CONCERNS', core: false, fromProfile: false },
+} as const satisfies Record<
+  string,
+  { readonly category: KycCategory; readonly core: boolean; readonly fromProfile: boolean }
+>;
 
 export type KycField = keyof typeof KYC_FIELDS;
 
