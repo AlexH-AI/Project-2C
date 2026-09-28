@@ -1,26 +1,77 @@
 //! Database file storage for the exe (ADR-0016): `std` only, no extra crates.
 //!
-//! Layout next to the exe: `Project2C-data\project2c.db`, `backups\`, `exports\`.
+//! Layout next to the exe: `Project2C-data\project2c.db`, `project2c.lock`, `backups\`, `exports\`.
 
 use std::fs;
 use std::io::{self, ErrorKind, Write};
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
 pub const DATA_DIR: &str = "Project2C-data";
+/// Error message when another process holds the data folder; the app matches it exactly.
+pub const ALREADY_OPEN: &str = "ALREADY_OPEN";
 const DB_FILE: &str = "project2c.db";
+const LOCK_FILE: &str = "project2c.lock";
 const BACKUP_DIR: &str = "backups";
 const EXPORT_DIR: &str = "exports";
 const BACKUP_PREFIX: &str = "project2c-";
 const KEEP_BACKUPS: usize = 10;
 const SQLITE_HEADER: &[u8] = b"SQLite format 3\0";
 
-/// Reads the database at startup; `None` on a first start (no file and no backups). A missing
+/// Keeps the data folder to one process: holds `project2c.lock` open without sharing until the
+/// process ends. Windows releases it when the app closes or crashes, so the file is never removed.
+pub struct DataLock(Mutex<Option<fs::File>>);
+
+impl DataLock {
+    pub const fn new() -> Self {
+        Self(Mutex::new(None))
+    }
+
+    /// Takes the lock on `dir` once; later calls from the same process succeed without reopening.
+    /// Another process holding it → `ResourceBusy` with the message [`ALREADY_OPEN`].
+    #[cfg(windows)]
+    fn acquire(&self, dir: &Path) -> io::Result<()> {
+        use std::os::windows::fs::OpenOptionsExt;
+        // Windows `ERROR_SHARING_VIOLATION`.
+        const SHARING_VIOLATION: i32 = 32;
+        let mut held = self
+            .0
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if held.is_some() {
+            return Ok(());
+        }
+        let file = fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .share_mode(0)
+            .open(dir.join(LOCK_FILE))
+            .map_err(|error| match error.raw_os_error() {
+                Some(SHARING_VIOLATION) => io::Error::new(ErrorKind::ResourceBusy, ALREADY_OPEN),
+                _ => error,
+            })?;
+        *held = Some(file);
+        Ok(())
+    }
+
+    /// The app ships for Windows only (ADR-0006): no lock elsewhere.
+    #[cfg(not(windows))]
+    fn acquire(&self, _dir: &Path) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+/// Reads the database at startup; `None` on a first start (no file and no backups). The data
+/// folder is locked first, so a second process touches nothing (see [`DataLock`]). A missing
 /// file with backups left is an error, so the app never starts over them. An existing file is first
 /// copied into `backups\` under `stamp` (unless an identical copy is already there), keeping the
 /// newest ten copies. A file that is empty or not SQLite is an error, never a first start, and is
 /// not backed up: the app would otherwise write a new database over it.
-pub fn open(dir: &Path, stamp: &str) -> io::Result<Option<Vec<u8>>> {
+pub fn open(dir: &Path, stamp: &str, lock: &DataLock) -> io::Result<Option<Vec<u8>>> {
     fs::create_dir_all(dir)?;
+    lock.acquire(dir)?;
     // A crash between writing and renaming leaves this behind; the database file itself is whole.
     remove_if_exists(&dir.join(tmp_name(DB_FILE)))?;
     let backups = dir.join(BACKUP_DIR);
@@ -242,6 +293,11 @@ mod tests {
             .collect();
         names.sort();
         names
+    }
+
+    /// `open` as one process start: a fresh lock, released when the call returns.
+    fn open(dir: &Path, stamp: &str) -> io::Result<Option<Vec<u8>>> {
+        super::open(dir, stamp, &DataLock::new())
     }
 
     /// A database file whose content is `tag` after the SQLite header.
@@ -505,6 +561,62 @@ mod tests {
         assert_eq!(names(&backups).len(), 10);
         assert!(oldest.exists());
         assert!(!backups.join("project2c-20260911-080000.db").exists());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn open_while_another_process_holds_the_lock_touches_nothing() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let dir = temp_dir();
+        save(&dir, &db("data")).unwrap();
+        open(&dir, "20260927-080000").unwrap();
+        let backups_before = names(&dir.join(BACKUP_DIR));
+        let other = fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .share_mode(0)
+            .open(dir.join(LOCK_FILE))
+            .unwrap();
+        save(&dir, &db("changed")).unwrap();
+        fs::write(dir.join("project2c.db.tmp"), b"being written").unwrap();
+
+        let error = open(&dir, "20260927-090000").unwrap_err();
+        assert_eq!(error.kind(), ErrorKind::ResourceBusy);
+        assert_eq!(error.to_string(), ALREADY_OPEN);
+        assert_eq!(fs::read(dir.join(DB_FILE)).unwrap(), db("changed"));
+        assert_eq!(
+            fs::read(dir.join("project2c.db.tmp")).unwrap(),
+            b"being written"
+        );
+        assert_eq!(names(&dir.join(BACKUP_DIR)), backups_before);
+
+        drop(other);
+        assert_eq!(open(&dir, "20260927-090000").unwrap(), Some(db("changed")));
+        assert!(!dir.join("project2c.db.tmp").exists());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn open_keeps_the_lock_and_does_not_lock_itself_out() {
+        let dir = temp_dir();
+        let lock = DataLock::new();
+        save(&dir, &db("data")).unwrap();
+        assert_eq!(
+            super::open(&dir, "20260927-080000", &lock).unwrap(),
+            Some(db("data"))
+        );
+        // Same process again (a webview reload): still opens.
+        assert_eq!(
+            super::open(&dir, "20260927-080001", &lock).unwrap(),
+            Some(db("data"))
+        );
+        // A second process is refused while the first one runs.
+        assert_eq!(
+            open(&dir, "20260927-080002").unwrap_err().to_string(),
+            ALREADY_OPEN
+        );
+        drop(lock);
+        assert!(open(&dir, "20260927-080003").is_ok());
     }
 
     #[test]

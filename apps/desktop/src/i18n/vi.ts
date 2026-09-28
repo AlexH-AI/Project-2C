@@ -40,6 +40,9 @@ export const vi = {
   'storage.openFailedHelp':
     'App chưa ghi gì vào file. Các bản sao lưu tự động nằm trong thư mục Project2C-data\\backups: chép bản mới nhất thành Project2C-data\\project2c.db để khôi phục; nếu vẫn lỗi, thử bản cũ hơn.',
   'storage.technicalDetail': 'Chi tiết kỹ thuật:',
+  'storage.alreadyOpen': 'Project-2C đang mở ở một cửa sổ khác',
+  'storage.alreadyOpenHelp':
+    'Hãy dùng cửa sổ đó. App không đọc hay ghi gì ở cửa sổ này; đóng cửa sổ này đi.',
   'startup.loading': 'Đang mở dữ liệu…',
   'settings.demo.title': 'Dữ liệu giả lập',
   'settings.demo.reload': 'Nạp lại dữ liệu giả lập',
