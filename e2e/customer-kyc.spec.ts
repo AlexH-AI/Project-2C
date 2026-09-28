@@ -61,9 +61,7 @@ test('a new customer: birth year and gender from the profile, gate KYC_INSUFFICI
   await expect(timeline.nth(1)).toContainText('Hồ sơ KH: giới tính Nam');
 });
 
-test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it is resolved', async ({
-  page,
-}) => {
+test('a KYC note confirms facts; a cốt lõi conflict blocks the gate', async ({ page }) => {
   await createCustomer(page);
   const kyc = page.getByRole('region', { name: 'Dữ kiện KYC' });
   const timeline = page.getByRole('region', { name: 'Dòng thời gian' }).getByRole('listitem');
@@ -104,6 +102,18 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it 
   await expect(dialog.getByText('Đang có: 2 (15/09/2026)')).toBeVisible();
   await dialog.getByRole('textbox', { name: 'Giá trị' }).fill('3');
   await dialog.getByRole('radio', { name: /Đánh dấu mâu thuẫn/ }).check();
+
+  // A fact picked but not added blocks the save, from the button and from Enter alike.
+  const pending = dialog.getByRole('alert').filter({ hasText: 'chưa được thêm' });
+  await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
+  await expect(pending).toBeVisible();
+  await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Chọn trường' });
+  await expect(pending).toBeHidden();
+  await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Số con' });
+  await dialog.getByRole('textbox', { name: 'Giá trị' }).press('Enter');
+  await expect(pending).toBeVisible();
+  await expect(kyc).not.toContainText('Cổng KYC CONFLICT_RESOLUTION');
+
   await dialog.getByRole('button', { name: 'Thêm dữ kiện' }).click();
   await expect(dialog.getByRole('list', { name: 'Dữ kiện từ ghi chú này' })).toContainText(
     'Số con3mâu thuẫn',
@@ -113,17 +123,4 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it 
 
   await expect(kyc).toContainText('Cổng KYC CONFLICT_RESOLUTION');
   await expect(kyc).toContainText('Trường mâu thuẫn: Số con');
-
-  // Mockup 7d: keep one value; the other becomes history.
-  await kyc.getByRole('button', { name: 'Giải quyết · Số con' }).click();
-  dialog = page.getByRole('dialog', { name: 'Giải quyết · Số con' });
-  await dialog.getByRole('radio', { name: /^"3"/ }).check();
-  await dialog.getByRole('button', { name: 'Giải quyết', exact: true }).click();
-  await expect(dialog).toBeHidden();
-
-  await expect(kyc).toContainText('Cổng KYC PROFILE_DISCOVERY');
-  await expect(kyc).not.toContainText('Trường mâu thuẫn');
-  await expect(kyc).toContainText('Số con: 3');
-  await expect(kyc).not.toContainText('Số con: 2');
-  await expect(kyc.getByRole('button')).toHaveCount(0);
 });

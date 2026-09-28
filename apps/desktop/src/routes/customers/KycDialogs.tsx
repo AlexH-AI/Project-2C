@@ -2,19 +2,12 @@ import { useState } from 'react';
 import {
   normalizeKycValue,
   recordKycNote,
-  resolveKycConflict,
   type CustomerRecord,
   type KycNoteFact,
   type KycProfileRecord,
   type KycVersionRecord,
 } from '@p2c/db';
-import {
-  evaluateKycGate,
-  formatDate,
-  KYC_FIELDS,
-  resolveConflict,
-  type KycField,
-} from '@p2c/domain';
+import { formatDate, KYC_FIELDS, type KycField } from '@p2c/domain';
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
@@ -118,8 +111,10 @@ export function KycNoteDialog({
 
   const save = () => {
     const clean = text.normalize('NFC').trim();
-    if (!clean || !date.parsed.ok) {
-      setErrors({ text: clean ? undefined : t('error.KYC_NOTE_EMPTY') });
+    // A fact picked but not added yet would be lost: the note cannot be edited after saving.
+    const pending = field ? t('kycNote.error.pending') : undefined;
+    if (!clean || !date.parsed.ok || pending) {
+      setErrors({ text: clean ? undefined : t('error.KYC_NOTE_EMPTY'), fact: pending });
       return;
     }
     const command = { text: clean, date: date.parsed.date, facts, material };
@@ -272,93 +267,6 @@ export function KycNoteDialog({
         </div>
       ) : (
         <p className="m-0 text-xs text-fg-3">{t('kycNote.noVersion')}</p>
-      )}
-    </Dialog>
-  );
-}
-
-/** Mockup 7d: keep one value of a trường in conflict; the others become history. */
-export function ResolveKycDialog({
-  customer,
-  profile,
-  versions,
-  field,
-  onClose,
-}: {
-  customer: CustomerRecord;
-  profile: KycProfileRecord;
-  versions: readonly KycVersionRecord[];
-  field: KycField;
-  onClose: () => void;
-}) {
-  const data = useAppData();
-  const [chosen, setChosen] = useState<string | null>(null);
-  const [material, setMaterial] = useState(false);
-  const [error, setError] = useState<string>();
-  const conflicts = profile.facts.filter(
-    (fact) => fact.field === field && fact.status === 'conflict',
-  );
-  const fromProfile = field === 'birthYear' || field === 'gender';
-  const source = (noteId: string) => profile.notes.find((note) => note.id === noteId);
-  const core = KYC_FIELDS[field].core;
-  const gate = chosen && evaluateKycGate(resolveConflict(profile, chosen).facts).state;
-
-  const save = () => {
-    if (!chosen) return setError(t('kycResolve.pick'));
-    const command = { factId: chosen, date: data.today(), material };
-    try {
-      data.run((db) => resolveKycConflict(db, customer.id, command));
-      onClose();
-    } catch (failure) {
-      setError(errorMessage(failure));
-    }
-  };
-
-  return (
-    <Dialog
-      title={t('kycResolve.title', { field: t(`kycField.${field}`) })}
-      subtitle={`${customer.name} · ${t(core ? 'kyc.conflict.core' : 'kyc.conflict.minor')}`}
-      onClose={onClose}
-      onSubmit={save}
-      actions={<Actions onClose={onClose} save={t('kycResolve.save')} />}
-    >
-      {error && (
-        <p role="alert" className={`${ALERT} border-danger text-danger`}>
-          {error}
-        </p>
-      )}
-      <p className="m-0 text-fg-2">{t('kycResolve.body')}</p>
-      <Choices
-        label={t('kycResolve.values')}
-        value={chosen}
-        onChange={(id) => {
-          setChosen(id);
-          setError(undefined);
-        }}
-        options={conflicts.map((fact) => {
-          const note = source(fact.noteId);
-          return {
-            value: fact.id,
-            disabled: fromProfile && note?.source !== 'SYSTEM',
-            label: (
-              <span className="flex flex-col">
-                <b>"{factText(fact.value, YES_NO)}"</b>
-                <span className="text-xs text-fg-3 tabular-nums">
-                  {t(note?.source === 'SYSTEM' ? 'kycResolve.systemSource' : 'kycResolve.source', {
-                    date: formatDate(fact.confirmedDate),
-                  })}
-                </span>
-              </span>
-            ),
-          };
-        })}
-        help={fromProfile ? t('kycResolve.profileOnly') : undefined}
-        required
-      />
-      <p className={`${ALERT} border-info`}>{t('kycResolve.hint')}</p>
-      <Material auto={core} value={material} onChange={setMaterial} />
-      {gate && (
-        <p className="m-0">{t('kycResolve.after', { number: versions.length + 1, gate })}</p>
       )}
     </Dialog>
   );

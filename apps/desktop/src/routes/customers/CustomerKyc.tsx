@@ -1,6 +1,6 @@
 import type { KycNoteRecord, KycProfileRecord, KycVersionRecord } from '@p2c/db';
-import { formatDate, type KycField, type KycGateState, type StageTransition } from '@p2c/domain';
-import { Button, StageBadge } from '@p2c/ui';
+import { formatDate, type KycGateState, type StageTransition } from '@p2c/domain';
+import { StageBadge } from '@p2c/ui';
 import { t } from '../../i18n';
 import { factText, kycOverview, kycTimeline, type KycCategoryRow } from './kyc-view';
 
@@ -17,16 +17,7 @@ const GATE_COLORS: Record<KycGateState, string> = {
 
 const YES_NO = { yes: t('kyc.yes'), no: t('kyc.no') };
 
-function CategoryRow({
-  row,
-  onResolve,
-}: {
-  row: KycCategoryRow;
-  onResolve: (field: KycField) => void;
-}) {
-  const conflicting = [
-    ...new Set(row.facts.filter((f) => f.status === 'conflict').map((f) => f.field)),
-  ];
+function CategoryRow({ row }: { row: KycCategoryRow }) {
   const [mark, color, state] = row.conflict
     ? [
         '!',
@@ -61,16 +52,6 @@ function CategoryRow({
             </span>
           </span>
         ))}
-        {conflicting.map((field) => (
-          <Button
-            key={field}
-            className="self-start"
-            aria-label={t('kycResolve.openLabel', { field: t(`kycField.${field}`) })}
-            onClick={() => onResolve(field)}
-          >
-            {t('kycResolve.open')}
-          </Button>
-        ))}
       </div>
     </li>
   );
@@ -80,11 +61,9 @@ function CategoryRow({
 export function KycCard({
   profile,
   versions,
-  onResolve,
 }: {
   profile: KycProfileRecord;
   versions: readonly KycVersionRecord[];
-  onResolve: (field: KycField) => void;
 }) {
   const { gate, rows } = kycOverview(profile.facts);
   const asking = gate.state === 'KYC_INSUFFICIENT' || gate.state === 'PROFILE_DISCOVERY';
@@ -120,7 +99,7 @@ export function KycCard({
       </div>
       <ul className="m-0 list-none p-0">
         {rows.map((row) => (
-          <CategoryRow key={row.category} row={row} onResolve={onResolve} />
+          <CategoryRow key={row.category} row={row} />
         ))}
       </ul>
       {asking && (
