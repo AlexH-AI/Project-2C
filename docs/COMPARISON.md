@@ -8,7 +8,7 @@ So sánh **sản phẩm cuối** khi cùng một yêu cầu được làm theo h
 
 | Nhánh | Repo | Cách thực hiện |
 |---|---|---|
-| **2C (đối chứng)** | `AlexH-AI/Project-2C` → `C:\workspace\Project-2C` | **Chỉ Claude Code**: Opus 5.5, effort *medium*, **không subagent**. Không dùng OpenCode, Muse Code, Cursor, Codex để viết/review code. |
+| **2C (đối chứng)** | `AlexH-AI/Project-2C` → `C:\workspace\Project-2C` | **Chỉ Claude Code**, **không subagent**; model và effort do Owner chọn từng phiên (tới 29/09/2026: Opus 5.5, effort *medium*; ADR-0001 phụ lục M1). Không dùng OpenCode, Muse Code, Cursor, Codex để viết/review code. |
 | **2 (đa agent)** | `AlexH-AI/Project-2` → `C:\workspace\Project-2` | Opus 5.5 làm kiến trúc sư/điều phối; các agent khác Claude (OpenCode, Muse, Cursor, Codex) làm task theo `docs/PROJECT-PLAN.md`. |
 
 **Thứ tự:** làm **2C trước**, xong 2C mới làm Project-2.

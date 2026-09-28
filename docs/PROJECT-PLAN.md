@@ -6,7 +6,7 @@ Status: **ACCEPTED (G1)** — kế thừa quyết định Q1–Q16 của Project
 
 Nguồn: `AlexH-AI/Project-2` → `docs/PROJECT-PLAN.md` tại commit `884dba6` (Owner đã duyệt G1), chuyển thể cho cách làm chỉ bằng Claude Code.
 
-**Project-2C là nhánh đối chứng**: cùng yêu cầu sản phẩm với Project-2, khác duy nhất ở cách thực hiện — **toàn bộ do Claude Code (Opus 5.5, effort medium, không subagent)** làm. Quy tắc so sánh và cách ly: `docs/COMPARISON.md`.
+**Project-2C là nhánh đối chứng**: cùng yêu cầu sản phẩm với Project-2, khác duy nhất ở cách thực hiện — **toàn bộ do Claude Code (không subagent; model và effort do Owner chọn từng phiên — ADR-0001 phụ lục M1, trước 29/09/2026 là Opus 5.5 effort medium)** làm. Quy tắc so sánh và cách ly: `docs/COMPARISON.md`.
 
 Các mục §1, §2, §4.4–§4.6, §7 giữ nguyên nội dung sản phẩm của Project-2; các mục về cách làm (§0, §3, §4.1–§4.3, §5, §6, §8) đã được viết lại cho 2C.
 
@@ -16,7 +16,7 @@ Các mục §1, §2, §4.4–§4.6, §7 giữ nguyên nội dung sản phẩm c�
 
 | Chủ đề | Đề xuất |
 |---|---|
-| Mô hình làm việc | **Opus 5.5 (effort medium) làm toàn bộ**: kiến trúc, code, test, review. **Không subagent**, không agent ngoài Claude. Tự động trong mọi task, chỉ dừng ở cổng Owner duyệt (G1–G8). Hạn mức dùng do Owner tự cân đối. |
+| Mô hình làm việc | **Claude Code làm toàn bộ** (model / effort do Owner chọn từng phiên, ADR-0001 M1): kiến trúc, code, test, review. **Không subagent**, không agent ngoài Claude. Tự động trong mọi task, chỉ dừng ở cổng Owner duyệt (G1–G8). Hạn mức dùng do Owner tự cân đối. |
 | Liên tục 2 máy | **GitHub là nguồn sự thật duy nhất**: code + spec + `docs/state/HANDOFF.md` + GitHub Issues/PR. Mỗi phiên kết thúc bằng push; mỗi phiên bắt đầu bằng pull + đọc handoff. Không phụ thuộc bất kỳ trạng thái local nào (DB dev sinh lại từ seed, key API nhập riêng từng máy). |
 | Plugins/skills | **Superpowers** (chỉ các skill chạy trong phiên chính: TDD, verify, debugging, writing/executing plans) + **mattpocock/skills** (`grill-me` → `to-spec` → `to-tickets`). Không dùng skill/framework dựa trên subagent (GSD Core, OMC, `subagent-driven-development`). |
 | Tech stack | **Tauri 2 + React + TypeScript + Vite + Tailwind + shadcn/ui + SQLite (Drizzle)**, monorepo pnpm. Build ra 1 file `.exe` portable (~10–20 MB) trên GitHub Actions. Lõi nghiệp vụ là TypeScript thuần, test được không cần Tauri. |
@@ -99,7 +99,7 @@ Bảng dưới là bản tóm tắt; định nghĩa đầy đủ, vai trò tính
 
 | Công cụ | Dùng trong 2C? | Ghi chú |
 |---|---|---|
-| **Claude Code — Opus 5.5, effort medium** | ✅ Duy nhất | Viết spec, code, test, review, tài liệu. Chạy trong phiên chính, không subagent. |
+| **Claude Code** (model / effort do Owner chọn, ADR-0001 M1) | ✅ Duy nhất | Viết spec, code, test, review, tài liệu. Chạy trong phiên chính, không subagent. |
 | **GitHub** (`gh`, Issues, PR, Actions, Releases) | ✅ | Nguồn sự thật cho 2 máy; CI build exe. |
 | **Antigravity IDE** | ✅ (bàn làm việc) | Owner mở terminal chạy Claude Code; không phải nơi lưu trạng thái. |
 | **OpenCode Go** | ⚠️ Chỉ làm **AI runtime của sản phẩm** (C2) | **Không** dùng `opencode` CLI để viết/review code. |
@@ -110,7 +110,7 @@ Bảng dưới là bản tóm tắt; định nghĩa đầy đủ, vai trò tính
 - **Ưu:** nhất quán tuyệt đối về kiến trúc và phong cách; không tốn chi phí điều phối; không có lỗi "bàn giao" giữa các agent.
 - **Nhược 1 — context rot:** không subagent nên phiên dài sẽ đầy context, chất lượng giảm. → **Mỗi task một phiên mới** (hoặc `/clear`), đầu vào là Issue + `HANDOFF.md` + file liên quan; task đủ nhỏ (≤ ~400 dòng diff).
 - **Nhược 2 — điểm mù của chính mình:** không có review chéo. → **Review ở phiên riêng, context sạch**, chỉ đọc spec + diff, theo checklist cố định; CI và test chấp nhận là trọng tài khách quan; `dependency-cruiser` chặn vi phạm ranh giới module.
-- **Nhược 3 — tốc độ và hạn mức:** mọi việc đi qua Opus. → Owner tự cân đối (C8); `HANDOFF.md` luôn cập nhật để dừng/tiếp lúc nào cũng được.
+- **Nhược 3 — tốc độ và hạn mức:** mọi việc đi qua Claude Code. → Owner tự cân đối (C8); `HANDOFF.md` luôn cập nhật để dừng/tiếp lúc nào cũng được.
 
 ---
 
@@ -121,7 +121,7 @@ Bảng dưới là bản tóm tắt; định nghĩa đầy đủ, vai trò tính
 ```
 Owner ──(chỉ dừng ở cổng G1–G8)──┐
                                   ▼
-          Opus 5.5 (effort medium) — một phiên Claude Code cho mỗi task
+          Claude Code (model do Owner chọn) — một phiên cho mỗi task
    Issue (spec + test chấp nhận) ─► nhánh task/T-xxx ─► TDD: test đỏ → code → test xanh
                                                                    ▼
                                               pnpm verify (lint · typecheck · unit · e2e)
@@ -155,7 +155,7 @@ Ngoài các cổng trên, Owner **trao quyền tự động** cho Claude (C4): t
 **Cơ chế kỹ thuật:**
 
 - `CLAUDE.md` là nguồn quy tắc duy nhất (không cần `AGENTS.md` vì chỉ có Claude).
-- Ghi rõ trong `CLAUDE.md`: **không dùng subagent / Agent tool**; model Opus 5.5, effort medium. Phase 1 kiểm tra khả năng chặn cứng Agent tool bằng `permissions.deny` trong `.claude/settings.json`.
+- Ghi rõ trong `CLAUDE.md`: **không dùng subagent / Agent tool**; model và effort do Owner chọn từng phiên (ADR-0001 M1; ban đầu Opus 5.5, effort medium). Phase 1 kiểm tra khả năng chặn cứng Agent tool bằng `permissions.deny` trong `.claude/settings.json`.
 - Không cần `dispatch.ps1`, không cần worktree song song: làm tuần tự từng task trên nhánh riêng.
 
 ### 4.2 Liên tục công việc giữa 2 máy (tiêu chí bắt buộc)
@@ -297,7 +297,7 @@ Ghi chú KYC ─► Dữ kiện có cấu trúc (RE xác nhận) ─► kyc_vers
 
 Ước lượng tổng: **~30%** khối lượng tới v1.0 (trọng số phase 0–6: 5 / 15 / 15 / 25 / 15 / 15 / 10%).
 
-Mọi phase do **Opus 5.5 (effort medium)** thực hiện. Cuối mỗi phase ghi `docs/metrics/phase-<N>.md` theo `docs/COMPARISON.md`.
+Mọi phase do **Claude Code** thực hiện (model / effort do Owner chọn). Cuối mỗi phase ghi `docs/metrics/phase-<N>.md` theo `docs/COMPARISON.md`.
 
 Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue ≤ ~400 dòng diff.
 
@@ -365,7 +365,7 @@ Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue ≤ ~400 dòng diff.
 |---|---|
 | C1 | Viết/review code **chỉ bằng Claude Code**. Không dùng OpenCode, Muse Code, Cursor, Codex cho phát triển. |
 | C2 | AI trong sản phẩm **giống Project-2**: OpenCode Go + Mock. |
-| C3 | **Không subagent.** Mọi task do **Opus 5.5, effort medium** thực hiện để bảo đảm chất lượng. |
+| C3 | **Không subagent.** Mọi task do **Claude Code** thực hiện trong phiên chính. Model và effort do Owner chọn từng phiên (ADR-0001 M1, 29/09/2026; trước đó Opus 5.5, effort medium). |
 | C4 | Owner trao quyền tự động cho Claude trong mọi task, trừ các cổng cần Owner quyết định (G1–G8). |
 | C5 | **Làm 2C trước**; xong 2C mới làm Project-2 (đa agent khác Claude). |
 | C6 | Thiết kế UI **làm riêng** cho 2C, Owner duyệt riêng (G3). |

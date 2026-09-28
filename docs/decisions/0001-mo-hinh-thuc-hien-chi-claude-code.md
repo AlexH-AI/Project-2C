@@ -1,4 +1,4 @@
-# ADR-0001: Mô hình thực hiện — chỉ Claude Code, Opus 5.5, không subagent
+# ADR-0001: Mô hình thực hiện — chỉ Claude Code, không subagent
 
 - **Trạng thái:** Accepted (G1)
 - **Ngày:** 2026-09-26
@@ -11,7 +11,7 @@ Project-2C là nhánh đối chứng của Project-2: cùng yêu cầu sản ph�
 
 ## Quyết định
 
-1. Mọi việc (spec, code, test, review, tài liệu) do **Claude Code — Opus 5.5, effort medium** làm, trong phiên chính (C1, C3).
+1. Mọi việc (spec, code, test, review, tài liệu) do **Claude Code** làm, trong phiên chính (C1, C3). Model và effort do Owner chọn cho từng phiên (phụ lục M1; trước 29/09/2026: Opus 5.5, effort medium).
 2. **Không subagent / Agent tool**, không agent ngoài Claude. OpenCode, Muse Code, Cursor, Codex không dùng cho phát triển.
 3. Claude làm tự động trong mọi task, **chỉ dừng ở cổng Owner G1–G8** (C4):
 
@@ -50,3 +50,7 @@ Nhất quán kiến trúc/phong cách, không chi phí điều phối, không l�
 ## Phụ lục — ngưỡng cỡ task (P1 — Accepted G1, Owner duyệt 26/09/2026 · PR #58)
 
 Mục 6 "task ≤ ~400 dòng diff" đổi thành: **≤ ~400 dòng code sản phẩm** (không tính test) và **≤ ~800 dòng tổng diff** kể cả test. Không tính file sinh tự động: lockfile, migration SQL, snapshot drizzle-kit, bảng dữ liệu tĩnh của seed; PR phải liệt kê các file không tính. Lý do: phần cần review kỹ giữ mức cũ, chỉ nới cho test (Phase 3 có nhiều test tầng DB). Nguồn: `docs/design/phase-3-du-lieu.md` §1 (P1).
+
+## Phụ lục — model và effort do Owner chọn (M1 — Accepted G1, Owner quyết 29/09/2026)
+
+Mục 1 bỏ ràng buộc "Opus 5.5, effort medium": **model và effort do Owner tự chọn cho từng phiên** trong app Claude Code; repo không ghim model hay effort. Các ràng buộc khác giữ nguyên: chỉ Claude Code, không subagent / Agent tool, cổng G1–G8, review ở phiên riêng. Lý do: Owner muốn dùng model mới ngay khi ra mà không phải sửa ADR mỗi lần, và tự cân đối chất lượng / hạn mức (C8).
