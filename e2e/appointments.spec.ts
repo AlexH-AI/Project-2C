@@ -11,15 +11,18 @@ function screen(page: Page) {
     rows: list.locator('tbody tr'),
     column: (index: number) => list.locator(`tbody tr td:nth-child(${index})`).allTextContents(),
     day: page.getByRole('region', { name: /^Trong ngày/ }),
+    calendar: page.getByRole('region', { name: /^Lịch tháng/ }),
     detail: page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' }),
     kinds: page.getByRole('radiogroup', { name: 'Loại kỳ' }),
     coordinator: page.getByRole('combobox', { name: 'Phối hợp' }),
   };
 }
 
-/** "482 lịch · 349 đã gặp" → 482. */
+const SUMMARY = /\d+ lịch · \d+ đã gặp/;
+
+/** The period's "482 lịch · 349 đã gặp" → 482 (the header comes before the calendar's). */
 async function total(page: Page): Promise<number> {
-  const text = await page.getByText(/\d+ lịch · \d+ đã gặp/).textContent();
+  const text = await page.getByText(SUMMARY).first().textContent();
   return Number(text?.match(/\d+/)?.[0]);
 }
 
@@ -31,8 +34,12 @@ test.beforeEach(async ({ page }) => {
 test("opens on this month, today's day by team → RE, the list matching the summary", async ({
   page,
 }) => {
-  const { day, rows, column } = screen(page);
+  const { calendar, day, rows, column } = screen(page);
 
+  await expect(calendar.getByRole('heading')).toHaveText('Lịch tháng 09/2026');
+  await expect(calendar.getByRole('button', { pressed: true })).toHaveAccessibleName(
+    new RegExp(`^${TODAY}: \\d+ lịch hẹn$`),
+  );
   await expect(day.getByRole('heading', { level: 2 })).toHaveText(`Trong ngày ${TODAY}`);
   await expect(day.getByRole('heading', { level: 3 })).toHaveText(TEAMS);
 
@@ -40,6 +47,12 @@ test("opens on this month, today's day by team → RE, the list matching the sum
   expect(count).toBeGreaterThan(0);
   await expect(rows).toHaveCount(count);
   for (const date of await column(1)) expect(date).toMatch(/^\d\d\/09\/2026$/);
+
+  // The month's own count matches the period's; only its 30 days are buttons.
+  await expect(calendar.getByText(SUMMARY)).toHaveText(
+    (await page.getByText(SUMMARY).first().textContent()) ?? '',
+  );
+  await expect(calendar.getByRole('button')).toHaveCount(30);
 });
 
 test('the day period narrows the day and the list to one day', async ({ page }) => {
@@ -51,6 +64,20 @@ test('the day period narrows the day and the list to one day', async ({ page }) 
   const dates = await column(1);
   expect(dates.length).toBeGreaterThan(0);
   expect(new Set(dates)).toEqual(new Set(['16/09/2026']));
+});
+
+test('a day in the calendar shows that day, its count matching the list', async ({ page }) => {
+  const { calendar, day, kinds, rows } = screen(page);
+
+  const cell = calendar.getByRole('button', { name: /^16\/09\/2026:/ });
+  await cell.click();
+  await expect(cell).toHaveAttribute('aria-pressed', 'true');
+  await expect(day.getByRole('heading', { level: 2 })).toHaveText('Trong ngày 16/09/2026');
+
+  const count = Number((await cell.getAttribute('aria-label'))?.match(/: (\d+)/)?.[1]);
+  await kinds.getByRole('radio', { name: 'Ngày' }).click();
+  await page.getByRole('button', { name: 'Kỳ sau' }).click();
+  await expect(rows).toHaveCount(count);
 });
 
 test('the scope narrows the day and the list to one team, then one RE', async ({ page }) => {

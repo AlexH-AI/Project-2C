@@ -7,7 +7,15 @@ import {
   listTeams,
   type Database,
 } from '@p2c/db';
-import { formatDate, isInPeriod, periodOf, type CalendarDate, type Period } from '@p2c/domain';
+import {
+  compareDates,
+  formatDate,
+  formatPeriodValue,
+  isInPeriod,
+  periodOf,
+  type CalendarDate,
+  type Period,
+} from '@p2c/domain';
 import { DataTable, PeriodPicker, SelectField, type DataTableColumn } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
@@ -17,14 +25,17 @@ import { PERIOD_LABELS } from '../period-labels';
 import {
   appointmentRows,
   dayBoard,
+  monthGrid,
   outcomeText,
   personLabel,
   type AppointmentRow,
   type CoordinatorFilter,
+  type DayCell,
 } from './appointments-view';
 
 const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-accent';
+const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 const readAppointments = (db: Database) => ({
   appointments: listAppointments(db),
@@ -44,14 +55,13 @@ const coordinatorText = (row: AppointmentRow) =>
 const dayIn = (period: Period, today: CalendarDate) =>
   isInPeriod(today, period) ? today : period.start;
 
-/** Appointments (mockup appointments.html): the day by team → RE, the list, a detail. */
+/** Appointments (mockup appointments.html): month calendar, the day by team → RE, the list, a detail. */
 export function AppointmentsScreen() {
   const today = useAppData().today();
   const data = useQuery(readAppointments);
   const scope = useScope();
   const [period, setPeriod] = useState(() => periodOf('month', today));
   const [day, setDay] = useState(today);
-
   const [coordinator, setCoordinator] = useState<CoordinatorFilter>('any');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -150,6 +160,7 @@ export function AppointmentsScreen() {
       </div>
       <div className="flex flex-col items-start gap-4 lg:flex-row">
         <div className="flex w-full min-w-0 flex-1 flex-col gap-4">
+          <MonthCalendar day={day} today={today} rows={rows} onPick={setDay} />
           <DayTable day={day} rows={rows} onSelect={setSelectedId} />
         </div>
         <Detail row={selected} />
@@ -167,6 +178,132 @@ export function AppointmentsScreen() {
         />
       </section>
     </>
+  );
+}
+
+function MonthCalendar({
+  day,
+  today,
+  rows,
+  onPick,
+}: {
+  day: CalendarDate;
+  today: CalendarDate;
+  rows: readonly AppointmentRow[];
+  onPick: (date: CalendarDate) => void;
+}) {
+  const weeks = useMemo(() => monthGrid(day, rows), [day, rows]);
+  const month = formatPeriodValue(periodOf('month', day));
+  const days = weeks.flat().filter((cell) => cell.inMonth);
+  const met = days.reduce((sum, cell) => sum + cell.met, 0);
+  const total = days.reduce((sum, cell) => sum + cell.met + cell.planned + cell.missed, 0);
+  return (
+    <section aria-labelledby="appointments-calendar" className={CARD}>
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <h2 id="appointments-calendar" className="m-0 text-sm font-medium text-heading">
+          {t('appointments.calendar', { month })}
+        </h2>
+        <span className="text-xs text-fg-3 tabular-nums">
+          {t('appointments.summary', { total, met })}
+        </span>
+      </div>
+      <div className="grid grid-cols-7 gap-1.5">
+        {WEEKDAYS.map((n) => (
+          <span key={n} className="px-1.5 text-xs tracking-wider text-fg-3 uppercase">
+            {t(`weekday.${n}`)}
+          </span>
+        ))}
+        {weeks.flat().map((cell, i) => (
+          <DayButton
+            key={formatDate(cell.date)}
+            cell={cell}
+            weekend={i % 7 >= 5}
+            picked={compareDates(cell.date, day) === 0}
+            isToday={compareDates(cell.date, today) === 0}
+            onPick={onPick}
+          />
+        ))}
+      </div>
+      <p className="m-0 mt-2.5 flex gap-3.5 text-xs text-fg-2">
+        <span>
+          <Dot kind="met" /> {t('appointments.legendMet')}
+        </span>
+        <span>
+          <Dot kind="planned" /> {t('appointments.legendPlanned')}
+        </span>
+        <span>
+          <Dot kind="missed" /> {t('appointments.legendMissed')}
+        </span>
+      </p>
+    </section>
+  );
+}
+
+const DOT = {
+  met: 'bg-ok',
+  planned: 'border border-info',
+  missed: 'bg-warn',
+} as const;
+
+function Dot({ kind }: { kind: keyof typeof DOT }) {
+  return <i aria-hidden="true" className={`inline-block size-2 rounded-full ${DOT[kind]}`} />;
+}
+
+const CELL = 'flex min-h-15 flex-col rounded-sm border px-2 py-1.5 text-left tabular-nums';
+
+function DayButton({
+  cell,
+  weekend,
+  picked,
+  isToday,
+  onPick,
+}: {
+  cell: DayCell;
+  weekend: boolean;
+  picked: boolean;
+  isToday: boolean;
+  onPick: (date: CalendarDate) => void;
+}) {
+  const background = picked ? 'bg-accent-soft' : weekend ? 'bg-surface-1' : 'bg-surface-2';
+  const dayNumber = (
+    <span className={`text-xs ${isToday ? 'font-bold text-accent' : 'text-fg-3'}`}>
+      {String(cell.date.day).padStart(2, '0')}
+    </span>
+  );
+  // Days outside the month only fill the weeks: the period picker moves to another month.
+  if (!cell.inMonth) {
+    return (
+      <div aria-hidden="true" className={`${CELL} border-border opacity-35 ${background}`}>
+        {dayNumber}
+      </div>
+    );
+  }
+  const count = cell.met + cell.planned + cell.missed;
+  const dots = [
+    ...Array<'met'>(cell.met).fill('met'),
+    ...Array<'planned'>(cell.planned).fill('planned'),
+    ...Array<'missed'>(cell.missed).fill('missed'),
+  ].slice(0, 8);
+  return (
+    <button
+      type="button"
+      aria-pressed={picked}
+      aria-label={t('appointments.dayCount', { date: formatDate(cell.date), count })}
+      onClick={() => onPick(cell.date)}
+      className={`${CELL} cursor-pointer ${FOCUS} ${background} ${
+        picked || isToday ? 'border-accent' : 'border-border'
+      } ${isToday ? 'inset-ring inset-ring-accent' : ''}`}
+    >
+      <span className="flex items-start justify-between">
+        {dayNumber}
+        <b className="text-lg">{count > 0 ? count : ''}</b>
+      </span>
+      <span className="mt-auto flex gap-0.5">
+        {dots.map((kind, i) => (
+          <Dot key={i} kind={kind} />
+        ))}
+      </span>
+    </button>
   );
 }
 
