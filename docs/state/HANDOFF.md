@@ -2,8 +2,8 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-09-28 · máy `D13_THINKPAD` (Office Laptop) · sau khi merge T-047 (#66, PR #138–#141)
-- **Nhánh:** `docs/handoff-2026-09-28-t047` (= `main` `c87f045` + file này); không còn PR nào mở. Checkout chính `C:\workspace\Project-2C` sạch. Worktree review `C:\workspace\Project-2C-review` detached ở `c87f045`
+- **Cập nhật:** 2026-09-28 · máy `DESKTOP-KDURKJP` · sau khi merge T-064 (#131, PR #144) và T-066 (#145, PR #146)
+- **Nhánh:** `docs/handoff-2026-09-28-t066` (= `main` `3ca0448` + file này); không còn PR code nào mở. Checkout chính `C:\workspace\Project-2C` sạch. Worktree review `C:\workspace\Project-2C-review` detached ở `3ca0448`
 - **Máy kế tiếp:** Home PC hoặc Office Laptop — cả hai đã có môi trường + worktree review
 - **Repo đã chuyển public** (27/09, Owner tự làm) vì Actions private chạm ~1.800/2.000 phút; Actions giờ miễn phí
 - **Ruleset `protect-main`** (28/09, Owner duyệt): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
@@ -13,10 +13,14 @@
 
 | Việc | Trạng thái |
 |---|---|
-| #66 T-047 Khách hàng: kanban/bảng, tạo/sửa, chuyển nhóm tay | ✅ đóng 28/09 qua 4 PR xếp chồng: #138 (A1 scope picker), #139 (A2 kanban/bảng + hồ sơ), #140 (B1 tạo/sửa KH), #141 (B2 chuyển nhóm tay + lịch sử nhóm; review `risk:med` PASS kèm ghi chú, merge `--squash` `c87f045`). CI `main` run `36419788076` trên `c87f045` đang chạy lúc handoff → artifact `Project-2C-c87f045…` |
-| #142 T-065 form KH theo sát mockup 5a–5c | Mở, `risk:med`; Owner quyết "có làm, không gấp", làm sau #140/#141 (đã merge → hết chặn). Gom 4 chỗ lệch mockup từ review #140 |
-| #131 T-064 Team & nhân sự — phần Nhân sự | Mở, `risk:med` (tách từ #65; phần Team #65 đã đóng) |
-| #110 T-062 run CI của `main` không hủy nhau | Issue đã đóng (PR #116); **test chấp nhận 3 chưa kiểm** (xem "Bước kế tiếp" 2). Lần 28/09 chưa tính: run `115c2cb` xong 12:03, trước khi run `c87f045` bắt đầu 12:07 — không chồng nhau |
+| #131 T-064 Nhân sự trên màn Team | ✅ đóng 28/09, PR #144 merge `a1fb6ab`; CI `main` run `36430794930` success |
+| #145 T-066 `addDays` công khai trong `domain` | ✅ đóng 28/09, PR #146 (`risk:low`, review PASS kèm 2 ghi chú, Claude merge `--squash` `3ca0448`); CI `main` run `36432716075` success → artifact `Project-2C-3ca0448…` (exe mới nhất) |
+| #142 T-065 form KH theo sát mockup 5a–5c | Mở, `risk:med`; Owner quyết "có làm, không gấp". Gom 4 chỗ lệch mockup từ review #140 |
+| #110 T-062 run CI của `main` không hủy nhau | Issue đã đóng (PR #116); **test chấp nhận 3 chưa kiểm** (xem "Bước kế tiếp" 2). Các lần 28/09 chưa tính vì không chồng nhau: `c87f045` (12:07), `a1fb6ab` (13:44, 4m16s), `3ca0448` (14:00) |
+
+Ghi chú review #146 (không chặn): `shift(value, -1)` với kỳ ngày/tuần/tùy chọn sát 01/01/1900 giờ ném `RangeError` trong `onClick` của `PeriodPicker.tsx` (kỳ giữ nguyên, không vỡ màn), còn kỳ tháng/năm vẫn lùi về 1899 → nếu muốn nhất quán: disable nút ‹ khi kỳ trước < `MIN_YEAR` (task riêng, không gấp; liên quan R3 "`shift` vượt `MIN_YEAR`"); `addDays` với `days` nguyên cực lớn (vd `1e12`) trả `{NaN…}` không bị chặn, chưa có đường gọi nào tới.
+
+Ghi chú review #144 (không chặn): hộp "Nhân sự mới" (`PersonDialogs.tsx:82`) mặc định chọn team đang xem → chọn IS/BD/BDM mà không tự xóa team thì người đó vào team thay vì "Hỗ trợ dùng chung" (mockup 9a / `person.help` ghi "IS, BD, BDM để trống"); gợi ý xóa `teamId` khi đổi sang IS/BD/BDM ở hộp tạo mới. Mùi: `role === 'RE' || role === 'TL'` lặp ở `PersonDialogs.tsx:146/152`; lọc theo `reId` lặp ở `staffMetrics` và `personUsage`. NIT: "Xóa nhân sự" trong hộp Sửa bỏ thay đổi chưa lưu mà không báo. (Phép tính ngày tự viết đã sửa ở #146; tiêu đề năm cứng trong e2e đã sửa trước merge.)
 
 Ghi chú review #141 (không chặn): dòng "Sau khi lưu: N2 → N3" thiếu "· hạ nhóm / lên nhóm" như mockup 5d (gợi ý `compareStages` khi cả hai là nhóm mở); khối cảnh báo "Chuyển tay không bao giờ tính RF" hiện cả khi KH đã đóng (mockup 5e không có); ký tự `→` viết thẳng trong JSX (`CustomerProfile.tsx`, `CustomerDialogs.tsx`); câu `error.INVALID_TRANSITION` chỉ nói "KH đã đóng" dù lỗi cũng bắn khi trùng nhóm hiện tại; `CustomerDialogs.tsx` lặp `CLOSED_STAGES.includes` (dùng `!isPipelineStage`), `CustomerProfile.tsx` dựng `StageBadge` tay thay vì helper `badge()`. Có thể gộp vào #142 vì cùng file.
 
@@ -44,14 +48,13 @@ Ghi chú khác (còn từ Phase 1): `DataTable` chưa test `sortable: false` và
 
 ## Bước kế tiếp chính xác
 
-1. `/session-start` (pull `main`). Kiểm run `main` trên `c87f045` (`gh run list --branch main --limit 3`) đã `success` và có artifact `Project-2C-c87f045…` (exe mới nhất: T-046/T-055/T-056/T-047).
+1. `/session-start` (pull `main`). Exe mới nhất: artifact `Project-2C-3ca0448…` (run `36432716075`, success; gồm T-047/T-064/T-066).
 2. **Còn nợ test chấp nhận 3 của #110 (T-062):** ở lần kế tiếp có 2 push code lên `main` mà run thứ nhất **chưa xong** khi push thứ hai tới (build exe ~4–5 phút, nên phải merge cách nhau dưới ~4 phút), chạy `gh run list --branch main --limit 5` → cả hai run `completed`/`success`, không `cancelled`, và mỗi SHA có artifact `Project-2C-<sha>`. Ghi kết quả thành comment trên PR #116. Nếu có run bị hủy → mở lại #110.
-3. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Đã đóng hôm nay: #65 (Team), #89, #90, #66. Issue còn mở của milestone:
-   - **#131** T-064 Nhân sự (tách từ #65) — mang theo ghi chú review cho T-046 (R1 `PERSON_IN_USE`, R4 viền 3:1 / ô ngày / NFC, #96, #125).
+3. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Đã đóng hôm nay: #65 (Team), #89, #90, #66, #131, #145. Issue còn mở của milestone:
    - **#67** T-048 Hồ sơ KH — KYC · **#68** T-049 Lịch hẹn · **#69** T-050 Ghi kết quả cuộc gặp · **#70** T-051 Hợp đồng (G3 đã duyệt).
    - **#142** T-065 form KH theo mockup 5a–5c — không gấp; có thể gộp các NIT review #141 cùng file.
    - **#69 T-050**: migration mới thêm `outcome_reviewer_id` — CHECK cấp bảng trên SQLite có thể khiến drizzle-kit dựng lại bảng `appointments`; kiểm SQL sinh ra + test migrate DB có dữ liệu (review #80). Hồ sơ KH (#141) đã hiện "sau cuộc gặp" cho transition có `appointmentId` — T-050 chỉ cần ghi đúng.
-   - **Thứ tự chưa chốt** (thứ tự Owner chốt 28/09 "#91 → #65 → #89 → #90 → #66–#70" đã xong tới #66): hỏi Owner việc kế tiếp trước khi mở nhánh. Nếu Owner không nói gì thì theo số Issue: #131 → #67 → #68 → #69 → #70, #142 chen khi rảnh.
+   - **Thứ tự chưa chốt** (thứ tự Owner chốt 28/09 "#91 → #65 → #89 → #90 → #66–#70" đã xong tới #66; sau đó đã làm #131, #145): hỏi Owner việc kế tiếp trước khi mở nhánh. Nếu Owner không nói gì thì theo số Issue: #67 → #68 → #69 → #70, #142 chen khi rảnh.
    - Task đều `risk:med` → Owner merge sau review PASS. PR nào đụng `apps/desktop/src-tauri/**` hoặc cấu hình build thì gắn nhãn `build-exe` ngay lúc tạo.
 4. Sau đó theo blocking edges: #71 backup (`risk:high`); #72 đóng phase (G7).
 5. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
@@ -99,7 +102,7 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- Chốt thứ tự Phase 3 còn lại: #131, #67–#70, #142 (xem "Bước kế tiếp" 3).
+- Chốt thứ tự Phase 3 còn lại: #67–#70, #142 (xem "Bước kế tiếp" 3).
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
 ## Ghi chú môi trường

@@ -51,5 +51,6 @@ Claude Code only: Opus 5.5, effort medium, no subagents. Claude works autonomous
 - 2026-09-28: #91 T-057 merged (PR #125, `86b4e2c`): `PersistQueue.flush()` + exe close guard; Owner's manual exe check passed. Next: #65 T-046.
 - 2026-09-28: Office checks done: #9 exe runs on Office Laptop, `docs/metrics/phase-1.md` written (PR #127); #17 icons in ADR-0013 colors merged (PR #128, `fbd23d7`). Phase 1 milestone has 0 open issues — waiting for OWNER to close it (G7). Next: #65 T-046.
 - 2026-09-28: Phase 1 milestone closed (G7). Owner's order done through #66: #65 T-046 Team (PR #132/#133; Staff split to #131), #89 T-055 (PR #134), #90 T-056 (PR #136), #66 T-047 Customers (stacked PRs #138–#141, `c87f045`). New #142 T-065 (customer form closer to mockups 5a–5c, not urgent). Next: OWNER picks the order of #131, #67–#70, #142.
+- 2026-09-28: #131 T-064 Staff merged (PR #144, `a1fb6ab`); #145 T-066 public `addDays` in `domain` merged (PR #146, `3ca0448`). Open in Phase 3: #67–#70, #142, then #71, #72. Next: OWNER picks the order (default #67 → #68 → #69 → #70).
 - Project-2 should adopt the upstream skill renames (`to-prd` → `to-spec`, `to-issues` → `to-tickets`).
 - ADR-0003 still mentions `/resume` and branch protection; the actual practice is `/session-start` and the pre-push hook (#3). Left as-is (accepted ADR text); `CLAUDE.md` and the plan are current.
