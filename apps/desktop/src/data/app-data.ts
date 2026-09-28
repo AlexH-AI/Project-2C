@@ -19,8 +19,15 @@ export interface StoragePort {
 export interface AppData {
   /** The open database; `reloadDemoData` replaces it, see `subscribe`. */
   db(): Database;
-  /** Called whenever `db()` changes; returns the unsubscribe function. */
+  /** Called whenever the data changes (`run`, `reloadDemoData`); returns the unsubscribe function. */
   subscribe(listener: () => void): () => void;
+  /** Grows with every change; screens re-read the database when it does. */
+  revision(): number;
+  /**
+   * Runs a command of `@p2c/db` and, when it succeeds, tells the screens to re-read. Screens write
+   * only through this; a rejected command changed nothing and rethrows its `DbError`.
+   */
+  run<T>(command: (db: Database) => T): T;
   /** True in the exe (saved to a file, backed up); false in web mode (in memory only). */
   readonly hasFile: boolean;
   /** Save status for the UI warning; never fails in web mode. */
@@ -91,12 +98,23 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   const stored = await storage?.load();
   let db = stored ? await open(stored) : await openNew();
   const listeners = new Set<() => void>();
+  let revision = 0;
+  const changed = () => {
+    revision++;
+    for (const listener of listeners) listener();
+  };
 
   return {
     db: () => db,
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
+    },
+    revision: () => revision,
+    run(command) {
+      const result = command(db);
+      changed();
+      return result;
     },
     hasFile: storage !== undefined,
     saves,
@@ -106,7 +124,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
       if (saves.failed()) throw new Error('RELOAD_UNSAVED_CHANGES');
       const backup = await storage?.backup();
       db = await openNew();
-      for (const listener of listeners) listener();
+      changed();
       return backup;
     },
   };

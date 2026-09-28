@@ -71,6 +71,11 @@ export const vi = {
     'Các thay đổi gần nhất chưa ghi được vào file (file có thể đang bị chương trình khác mở). Đóng chương trình đó rồi chọn Thử lại, hoặc đóng app và bỏ các thay đổi chưa lưu.',
   'close.retry': 'Thử lại',
   'close.discard': 'Đóng và bỏ thay đổi chưa lưu',
+  'error.NAME_REQUIRED': 'Chưa nhập tên.',
+  'error.TEAM_NAME_TAKEN': 'Đã có team "{name}".',
+  'error.TEAM_HAS_MEMBERS': 'Team còn nhân sự: chuyển hoặc xóa hết nhân sự trước khi xóa team.',
+  'error.TEAM_NOT_FOUND': 'Team không còn trong dữ liệu (có thể đã bị xóa).',
+  'error.unknown': 'Chưa lưu được thay đổi. Dữ liệu không bị đổi.',
 } as const;
 
 export type MessageKey = keyof typeof vi;
