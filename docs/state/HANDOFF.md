@@ -39,7 +39,7 @@ Ghi chú khác (còn từ Phase 1): `DataTable` chưa test `sortable: false` và
 
 Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 để mở cho tới khi làm xong các mục dưới trên Office Laptop:
 
-- [ ] #9: exe (artifact CI mới nhất của `main`) chạy trên Office Laptop; kiểm các màn đã merge ở PR #18, #20, #22, #23 (sidebar, PeriodPicker, DataTable sort, Chart hiện đúng màu); ghi `docs/metrics/phase-1.md`.
+- [x] #9: exe `Project-2C-86b4e2c…` chạy trên Office Laptop (`D13_ThinkPad`) 28/09, Owner kiểm không lỗi, khởi động 1–2 giây; `docs/metrics/phase-1.md` đã ghi.
 - [ ] #17: favicon/app icon màu ADR-0013 — có thể code trước trên Home PC, nhưng ảnh chụp icon trong exe/taskbar để kiểm ở văn phòng.
 - [ ] Sau đó: đóng milestone Phase 1 (G7).
 
