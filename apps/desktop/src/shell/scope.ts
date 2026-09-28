@@ -20,8 +20,8 @@ export function resolveScope(
     return team ? { kind: 'team', teamId: team.id } : { kind: 'all' };
   }
   if (choice.kind === 're') {
-    const res = people.filter((person) => person.role === 'RE');
-    const re = res.find((p) => p.id === choice.id) ?? res[0];
+    const reps = people.filter((person) => person.role === 'RE');
+    const re = reps.find((p) => p.id === choice.id) ?? reps[0];
     return re ? { kind: 're', reId: re.id } : { kind: 'all' };
   }
   return { kind: 'all' };

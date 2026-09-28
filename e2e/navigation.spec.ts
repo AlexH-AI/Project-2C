@@ -103,12 +103,19 @@ test('Team and RE scopes pick the team or RE next to the switch', async ({ page 
   await expect(team).toHaveValue(/.+/);
   await team.selectOption({ label: 'Sao Mai' });
   await expect(team.locator('option:checked')).toHaveText('Sao Mai');
+  // Clicking the scope already selected keeps the team picked.
+  await scope.getByRole('radio', { name: 'Team' }).click();
+  await expect(team.locator('option:checked')).toHaveText('Sao Mai');
 
   // Only an RE has metrics: the list holds the 30 RE of the simulated data, with their team.
   await scope.getByRole('radio', { name: 'RE' }).click();
   await expect(team).toHaveCount(0);
   await expect(re.locator('option')).toHaveCount(30);
   await expect(re.locator('option').first()).toHaveText(/ · (Bình Minh|Hừng Đông|Sao Mai)$/);
+  const secondRe = (await re.locator('option').nth(1).textContent()) ?? '';
+  await re.selectOption({ index: 1 });
+  await scope.getByRole('radio', { name: 'RE' }).click();
+  await expect(re.locator('option:checked')).toHaveText(secondRe);
 
   await scope.getByRole('radio', { name: 'Toàn bộ' }).click();
   await expect(re).toHaveCount(0);
