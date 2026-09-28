@@ -69,7 +69,8 @@ test('a customer profile keeps Customers selected', async ({ page }) => {
   await page.goto('/#/customers/kh-1');
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hồ sơ khách hàng');
-  await expect(page.getByRole('link', { name: 'Khách hàng' })).toHaveAttribute(
+  const nav = page.getByRole('navigation', { name: 'Điều hướng chính' });
+  await expect(nav.getByRole('link', { name: 'Khách hàng' })).toHaveAttribute(
     'aria-current',
     'page',
   );
