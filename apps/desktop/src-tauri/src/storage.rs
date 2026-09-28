@@ -6,6 +6,7 @@ use std::fs;
 use std::io::{self, ErrorKind, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
+use std::time::SystemTime;
 
 pub const DATA_DIR: &str = "Project2C-data";
 /// Error message when another process holds the data folder; the app matches it exactly.
@@ -225,7 +226,7 @@ fn all_digits(s: &str) -> bool {
     !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit())
 }
 
-/// Our backups, oldest first. Only files named like our backups count; anything else in the
+/// Our backups, in the order of the stamps in their names. Only files named like our backups count; anything else in the
 /// folder is left alone, and an unreadable folder counts as empty.
 fn backup_names(backups: &Path) -> Vec<String> {
     let mut names: Vec<String> = fs::read_dir(backups)
@@ -248,11 +249,19 @@ fn find_copy(backups: &Path, bytes: &[u8]) -> Option<String> {
     })
 }
 
-/// Deletes the oldest backups until `KEEP_BACKUPS` remain, never `keep` (the copy just written,
-/// even when a clock set back makes it look oldest). Best effort, so it never blocks startup: a
-/// backup another program holds open stays, and a later start tries again.
+/// Deletes the oldest backups by write time until `KEEP_BACKUPS` remain, never `keep` (the copy
+/// just written). Best effort, so it never blocks startup: a backup another program holds open
+/// stays, and a later start tries again.
 fn prune_backups(backups: &Path, keep: &str) {
-    let names = backup_names(backups);
+    let names = oldest_first(
+        backup_names(backups)
+            .into_iter()
+            .map(|name| {
+                let modified = fs::metadata(backups.join(&name)).and_then(|meta| meta.modified());
+                (modified.ok(), name)
+            })
+            .collect(),
+    );
     let mut excess = names.len().saturating_sub(KEEP_BACKUPS);
     for name in names.iter().filter(|name| *name != keep) {
         if excess == 0 {
@@ -262,6 +271,19 @@ fn prune_backups(backups: &Path, keep: &str) {
             excess -= 1;
         }
     }
+}
+
+/// Backup names by write time, oldest first; the same time falls back to the name's order. The
+/// stamp in a name comes from the clock at that start, which can be set back, so it only breaks
+/// ties. A file whose write time cannot be read sorts first and is pruned first: its age is unknown,
+/// and keeping it could push out a copy known to be recent.
+fn oldest_first(mut backups: Vec<(Option<SystemTime>, String)>) -> Vec<String> {
+    backups.sort_by(|(a_time, a), (b_time, b)| {
+        a_time
+            .cmp(b_time)
+            .then_with(|| backup_key(a).cmp(&backup_key(b)))
+    });
+    backups.into_iter().map(|(_, name)| name).collect()
 }
 
 fn is_export_name(name: &str) -> bool {
@@ -277,6 +299,7 @@ fn is_export_name(name: &str) -> bool {
 mod tests {
     use super::*;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::time::Duration;
 
     fn temp_dir() -> PathBuf {
         static NEXT: AtomicUsize = AtomicUsize::new(0);
@@ -539,6 +562,67 @@ mod tests {
         assert_eq!(
             fs::read(backups.join("project2c-20250101-080000.db")).unwrap(),
             db("latest")
+        );
+    }
+
+    #[test]
+    fn starts_with_the_clock_set_back_prune_by_write_time_not_by_name() {
+        // A dead CMOS battery: every start stamps its backup in the year 2000.
+        let dir = temp_dir();
+        ten_backups(&dir);
+        let backups = dir.join(BACKUP_DIR);
+        // The ten September copies were written hours ago, the oldest first.
+        let now = SystemTime::now();
+        for day in 10..20u64 {
+            let file = fs::File::options()
+                .write(true)
+                .open(backups.join(format!("project2c-202609{day}-080000.db")))
+                .unwrap();
+            file.set_modified(now - Duration::from_secs((30 - day) * 3600))
+                .unwrap();
+        }
+        for start in 0..5 {
+            save(&dir, &db(&format!("session {start}"))).unwrap();
+            open(&dir, &format!("20000101-08{start:02}00")).unwrap();
+        }
+        let kept = names(&backups);
+        assert_eq!(kept.len(), 10);
+        for start in 0..5 {
+            let name = format!("project2c-20000101-08{start:02}00.db");
+            assert_eq!(
+                fs::read(backups.join(&name)).unwrap(),
+                db(&format!("session {start}")),
+                "{name}"
+            );
+        }
+        for day in 10..15 {
+            assert!(!kept.contains(&format!("project2c-202609{day}-080000.db")));
+        }
+        for day in 15..20 {
+            assert!(kept.contains(&format!("project2c-202609{day}-080000.db")));
+        }
+    }
+
+    #[test]
+    fn oldest_first_sorts_by_write_time_then_name_with_unknown_times_first() {
+        let t = SystemTime::UNIX_EPOCH + Duration::from_secs(1_790_496_309);
+        let later = t + Duration::from_secs(1);
+        let sorted = oldest_first(vec![
+            (Some(t), "project2c-20000101-080000.db".to_owned()),
+            (Some(later), "project2c-19990101-080000.db".to_owned()),
+            (None, "project2c-20260927-080000.db".to_owned()),
+            (Some(t), "project2c-19990101-080000-2.db".to_owned()),
+            (Some(t), "project2c-19990101-080000-1.db".to_owned()),
+        ]);
+        assert_eq!(
+            sorted,
+            vec![
+                "project2c-20260927-080000.db",
+                "project2c-19990101-080000-1.db",
+                "project2c-19990101-080000-2.db",
+                "project2c-20000101-080000.db",
+                "project2c-19990101-080000.db",
+            ]
         );
     }
 
