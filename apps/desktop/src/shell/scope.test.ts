@@ -1,6 +1,6 @@
 import type { Person, Team } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { resolveScope } from './scope';
+import { chooseKind, resolveScope, type ScopeChoice } from './scope';
 
 const teams: Team[] = [
   { id: 't1', name: 'Bình Minh' },
@@ -44,5 +44,22 @@ describe('resolveScope', () => {
   it('shows everyone when there is no team or RE to pick', () => {
     expect(resolveScope({ kind: 'team' }, [], people)).toEqual({ kind: 'all' });
     expect(resolveScope({ kind: 're' }, teams, [])).toEqual({ kind: 'all' });
+  });
+});
+
+describe('chooseKind', () => {
+  it('keeps the team or RE picked when its kind is clicked again', () => {
+    expect(chooseKind({ kind: 'team', id: 't2' }, 'team')).toEqual({ kind: 'team', id: 't2' });
+  });
+
+  it('drops the team or RE picked when another kind is clicked', () => {
+    expect(chooseKind({ kind: 'team', id: 't2' }, 're')).toEqual({ kind: 're' });
+  });
+
+  it('takes Everyone while a Team choice with no team to pick already shows everyone', () => {
+    const choice: ScopeChoice = { kind: 'team' };
+    expect(resolveScope(choice, [], people)).toEqual({ kind: 'all' });
+    // Otherwise the scope jumps to Team as soon as a team is created.
+    expect(resolveScope(chooseKind(choice, 'all'), teams, people)).toEqual({ kind: 'all' });
   });
 });
