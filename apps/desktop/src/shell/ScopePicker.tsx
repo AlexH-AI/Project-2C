@@ -23,7 +23,7 @@ export function ScopePicker({
   onChange: (choice: ScopeChoice) => void;
 }) {
   const teamName = (id: string | null) => teams.find((team) => team.id === id)?.name;
-  const res = people
+  const reOptions = people
     .filter((person) => person.role === 'RE')
     .map((re) => ({
       value: re.id,
@@ -36,7 +36,10 @@ export function ScopePicker({
         label={t('scope.label')}
         options={KINDS}
         value={scope.kind}
-        onChange={(kind) => onChange({ kind })}
+        // Segmented reports a click on the kind already selected: keep the team or RE picked.
+        onChange={(kind) => {
+          if (kind !== scope.kind) onChange({ kind });
+        }}
       />
       {scope.kind === 'team' && (
         <SelectField
@@ -52,7 +55,7 @@ export function ScopePicker({
           label={t('scope.pickRe')}
           labelHidden
           value={scope.reId}
-          options={res}
+          options={reOptions}
           onChange={(id) => onChange({ kind: 're', id })}
         />
       )}
