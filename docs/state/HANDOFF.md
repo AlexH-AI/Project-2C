@@ -2,8 +2,8 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-09-28 · máy `DESKTOP-KDURKJP` · sau khi merge T-064 (#131, PR #144) và T-066 (#145, PR #146)
-- **Nhánh:** `docs/handoff-2026-09-28-t066` (= `main` `3ca0448` + file này); không còn PR code nào mở. Checkout chính `C:\workspace\Project-2C` sạch. Worktree review `C:\workspace\Project-2C-review` detached ở `3ca0448`
+- **Cập nhật:** 2026-09-29 · máy `DESKTOP-KDURKJP` · sau khi merge T-048 (#67, PR #148–#150) và T-067 (#151, PR #152)
+- **Nhánh:** `docs/handoff-2026-09-29-t067` (= `main` `f0608ca` + file này); không còn PR code nào mở. Checkout chính `C:\workspace\Project-2C` sạch. Worktree review `C:\workspace\Project-2C-review` detached ở `f0608ca`
 - **Máy kế tiếp:** Home PC hoặc Office Laptop — cả hai đã có môi trường + worktree review
 - **Repo đã chuyển public** (27/09, Owner tự làm) vì Actions private chạm ~1.800/2.000 phút; Actions giờ miễn phí
 - **Ruleset `protect-main`** (28/09, Owner duyệt): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
@@ -13,10 +13,10 @@
 
 | Việc | Trạng thái |
 |---|---|
-| #131 T-064 Nhân sự trên màn Team | ✅ đóng 28/09, PR #144 merge `a1fb6ab`; CI `main` run `36430794930` success |
-| #145 T-066 `addDays` công khai trong `domain` | ✅ đóng 28/09, PR #146 (`risk:low`, review PASS kèm 2 ghi chú, Claude merge `--squash` `3ca0448`); CI `main` run `36432716075` success → artifact `Project-2C-3ca0448…` (exe mới nhất) |
+| #67 T-048 Hồ sơ KH — KYC | ✅ đóng 28/09, ba phần: A PR #148 (`315999a`), B PR #149 (`1fc6739`), C PR #150 (`370bf07`); CI `main` cả ba success |
+| #151 T-067 KYC — một nguồn cho trường hồ sơ KH (D2) + test hộp "Giải quyết" | ✅ đóng 28/09, PR #152 (`risk:med`, review PASS 0 phát hiện, Owner merge `f0608ca`). `KYC_FIELDS[field].fromProfile` là nguồn duy nhất; `resolveKycOptions` trong `kyc-view.ts`. Xử lý hết ghi chú review #150. CI `main` của `f0608ca` đang chạy lúc handoff → khi xanh, artifact `Project-2C-f0608ca…` là exe mới nhất (trước đó: `Project-2C-370bf07…`) |
 | #142 T-065 form KH theo sát mockup 5a–5c | Mở, `risk:med`; Owner quyết "có làm, không gấp". Gom 4 chỗ lệch mockup từ review #140 |
-| #110 T-062 run CI của `main` không hủy nhau | Issue đã đóng (PR #116); **test chấp nhận 3 chưa kiểm** (xem "Bước kế tiếp" 2). Các lần 28/09 chưa tính vì không chồng nhau: `c87f045` (12:07), `a1fb6ab` (13:44, 4m16s), `3ca0448` (14:00) |
+| #110 T-062 run CI của `main` không hủy nhau | Issue đã đóng (PR #116); **test chấp nhận 3 chưa kiểm** (xem "Bước kế tiếp" 2). Các lần 28/09 chưa tính vì không chồng nhau (mỗi run ~4–5 phút): `a1fb6ab` 13:44, `3ca0448` 14:00, `315999a` 15:04, `1fc6739` 16:09, `370bf07` 16:40, `f0608ca` 17:03 (UTC) |
 
 Ghi chú review #146 (không chặn): `shift(value, -1)` với kỳ ngày/tuần/tùy chọn sát 01/01/1900 giờ ném `RangeError` trong `onClick` của `PeriodPicker.tsx` (kỳ giữ nguyên, không vỡ màn), còn kỳ tháng/năm vẫn lùi về 1899 → nếu muốn nhất quán: disable nút ‹ khi kỳ trước < `MIN_YEAR` (task riêng, không gấp; liên quan R3 "`shift` vượt `MIN_YEAR`"); `addDays` với `days` nguyên cực lớn (vd `1e12`) trả `{NaN…}` không bị chặn, chưa có đường gọi nào tới.
 
@@ -48,13 +48,13 @@ Ghi chú khác (còn từ Phase 1): `DataTable` chưa test `sortable: false` và
 
 ## Bước kế tiếp chính xác
 
-1. `/session-start` (pull `main`). Exe mới nhất: artifact `Project-2C-3ca0448…` (run `36432716075`, success; gồm T-047/T-064/T-066).
+1. `/session-start` (pull `main`). Kiểm run CI của `f0608ca`: `gh run list --branch main --limit 1` → `success` thì exe mới nhất là artifact `Project-2C-f0608ca…` (gồm T-048 KYC + T-067); nếu lỗi → xem log, báo Owner.
 2. **Còn nợ test chấp nhận 3 của #110 (T-062):** ở lần kế tiếp có 2 push code lên `main` mà run thứ nhất **chưa xong** khi push thứ hai tới (build exe ~4–5 phút, nên phải merge cách nhau dưới ~4 phút), chạy `gh run list --branch main --limit 5` → cả hai run `completed`/`success`, không `cancelled`, và mỗi SHA có artifact `Project-2C-<sha>`. Ghi kết quả thành comment trên PR #116. Nếu có run bị hủy → mở lại #110.
-3. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Đã đóng hôm nay: #65 (Team), #89, #90, #66, #131, #145. Issue còn mở của milestone:
-   - **#67** T-048 Hồ sơ KH — KYC · **#68** T-049 Lịch hẹn · **#69** T-050 Ghi kết quả cuộc gặp · **#70** T-051 Hợp đồng (G3 đã duyệt).
+3. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Đã đóng 28/09: #65 (Team), #89, #90, #66, #131, #145, #67 (KYC), #151. Issue còn mở của milestone (6): #68, #69, #70, #142, #71, #72.
+   - **Việc kế tiếp đề xuất: #68 T-049 Lịch hẹn** (tạo, dời lịch, bảng trong ngày từ DB) → **#69** T-050 Ghi kết quả cuộc gặp (phụ thuộc lịch hẹn) → **#70** T-051 Hợp đồng (G3 đã duyệt). Nếu task quá ngưỡng (xem 5) thì tách phần A/B/C như T-048.
    - **#142** T-065 form KH theo mockup 5a–5c — không gấp; có thể gộp các NIT review #141 cùng file.
    - **#69 T-050**: migration mới thêm `outcome_reviewer_id` — CHECK cấp bảng trên SQLite có thể khiến drizzle-kit dựng lại bảng `appointments`; kiểm SQL sinh ra + test migrate DB có dữ liệu (review #80). Hồ sơ KH (#141) đã hiện "sau cuộc gặp" cho transition có `appointmentId` — T-050 chỉ cần ghi đúng.
-   - **Thứ tự chưa chốt** (thứ tự Owner chốt 28/09 "#91 → #65 → #89 → #90 → #66–#70" đã xong tới #66; sau đó đã làm #131, #145): hỏi Owner việc kế tiếp trước khi mở nhánh. Nếu Owner không nói gì thì theo số Issue: #67 → #68 → #69 → #70, #142 chen khi rảnh.
+   - **Thứ tự:** Owner chốt 28/09 "#91 → #65 → #89 → #90 → #66–#70", đã xong tới #67. Nếu Owner không nói gì thì làm tiếp theo số Issue: #68 → #69 → #70, #142 chen khi rảnh.
    - Task đều `risk:med` → Owner merge sau review PASS. PR nào đụng `apps/desktop/src-tauri/**` hoặc cấu hình build thì gắn nhãn `build-exe` ngay lúc tạo.
 4. Sau đó theo blocking edges: #71 backup (`risk:high`); #72 đóng phase (G7).
 5. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
@@ -102,7 +102,7 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- Chốt thứ tự Phase 3 còn lại: #67–#70, #142 (xem "Bước kế tiếp" 3).
+- Xác nhận việc kế tiếp: mặc định #68 → #69 → #70, #142 chen khi rảnh (xem "Bước kế tiếp" 3).
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
 ## Ghi chú môi trường
