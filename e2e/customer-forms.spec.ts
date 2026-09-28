@@ -38,7 +38,10 @@ test('creates a customer in N4, shown on the kanban and in its profile', async (
   await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(NAME);
   await dialog.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ label: re ?? '' });
   await dialog.getByRole('textbox', { name: /^Ngày sinh/ }).fill('1984');
-  await expect(dialog).toContainText('Chỉ năm sinh 1984 · 42 tuổi trong năm 2026');
+  // Screen readers hear what the app understood, not only sighted users.
+  await expect(dialog.getByRole('textbox', { name: /^Ngày sinh/ })).toHaveAccessibleDescription(
+    'Chỉ năm sinh 1984 · 42 tuổi trong năm 2026',
+  );
   await dialog.getByRole('radio', { name: 'Nữ' }).check();
   await expect(dialog.getByRole('textbox', { name: 'Ngày ghi nhận KH' })).toHaveValue('15/09/2026');
   await dialog.getByRole('button', { name: 'Lưu KH' }).click();
@@ -88,6 +91,14 @@ test('refuses a customer with wrong fields and saves nothing', async ({ page }) 
   await birth.fill('12/3/84');
   await dialog.getByRole('button', { name: 'Lưu KH' }).click();
   await expect(birth).toHaveAccessibleDescription('Gõ năm (1984) hoặc dd/mm/yyyy (12/03/1984).');
+
+  // A record date after today would block every stage change dated before it.
+  const recorded = dialog.getByRole('textbox', { name: 'Ngày ghi nhận KH' });
+  await recorded.fill('16/09');
+  await dialog.getByRole('button', { name: 'Lưu KH' }).click();
+  await expect(recorded).toHaveAccessibleDescription(
+    'Ngày này sau hôm nay. Ngày của năm trước: gõ đủ dd/mm/yyyy.',
+  );
 
   await dialog.getByRole('button', { name: 'Hủy' }).click();
   await expect(dialog).toBeHidden();

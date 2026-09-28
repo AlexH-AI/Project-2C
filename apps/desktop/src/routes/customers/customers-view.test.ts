@@ -1,7 +1,13 @@
 import type { CustomerRecord } from '@p2c/db';
 import type { CalendarDate, Person, Policy, StageTransition } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { ageOn, birthLabel, customerBoard, parseBirthDate } from './customers-view';
+import {
+  ageOn,
+  birthLabel,
+  customerBoard,
+  parseBirthDate,
+  parseRecordDate,
+} from './customers-view';
 
 const day = (month: number, dayOfMonth: number): CalendarDate => ({
   year: 2026,
@@ -130,5 +136,25 @@ describe('parseBirthDate', () => {
     expect(parseBirthDate('1899', today)).toEqual({ ok: false, error: 'year-out-of-range' });
     expect(parseBirthDate('2027', today)).toEqual({ ok: false, error: 'future' });
     expect(parseBirthDate('27/09/2026', today)).toEqual({ ok: false, error: 'future' });
+  });
+});
+
+describe('parseRecordDate', () => {
+  const today = day(9, 26);
+
+  it('reads a quick date up to today', () => {
+    expect(parseRecordDate('26/9', today)).toEqual({ ok: true, date: today });
+    expect(parseRecordDate('01/01/2025', today)).toEqual({
+      ok: true,
+      date: { year: 2025, month: 1, day: 1 },
+    });
+  });
+
+  it('refuses a day after today, typed in full or read into the current year', () => {
+    // In early January, "28/12" means this year's 28/12: a record there would block every
+    // stage change dated before it.
+    expect(parseRecordDate('27/9', today)).toEqual({ ok: false, error: 'future' });
+    expect(parseRecordDate('28/12/2026', today)).toEqual({ ok: false, error: 'future' });
+    expect(parseRecordDate('31/02', today)).toEqual({ ok: false, error: 'invalid-date' });
   });
 });

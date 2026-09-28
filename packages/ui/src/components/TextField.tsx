@@ -6,7 +6,10 @@ interface TextFieldProps {
   onChange: (value: string) => void;
   /** Shown under the field and read as its description. */
   error?: string;
-  /** What the app understood from the text (mockup `.read`), shown under the field when valid. */
+  /**
+   * What the app understood from the text (mockup `.read`), shown under the field and read as its
+   * description while there is no error.
+   */
   hint?: string;
   /** Marks the label with *; the command, not the browser, rejects an empty value. */
   required?: boolean;
@@ -26,7 +29,7 @@ export function TextField({
   autoFocus,
 }: TextFieldProps) {
   const id = useId();
-  const errorId = `${id}-error`;
+  const noteId = `${id}-note`;
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={id} className="font-medium">
@@ -43,7 +46,7 @@ export function TextField({
         onChange={(event) => onChange(event.target.value)}
         aria-required={required}
         aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : undefined}
+        aria-describedby={error || hint ? noteId : undefined}
         disabled={disabled}
         autoFocus={autoFocus}
         autoComplete="off"
@@ -52,11 +55,15 @@ export function TextField({
         }`}
       />
       {error ? (
-        <span id={errorId} className="text-xs text-danger">
+        <span id={noteId} className="text-xs text-danger">
           {error}
         </span>
       ) : (
-        hint && <span className="text-xs text-fg-2 tabular-nums">{hint}</span>
+        hint && (
+          <span id={noteId} className="text-xs text-fg-2 tabular-nums">
+            {hint}
+          </span>
+        )
       )}
     </div>
   );
