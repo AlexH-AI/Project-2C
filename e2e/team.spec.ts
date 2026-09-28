@@ -156,6 +156,24 @@ test('refuses an RE without a team, with the reason on the field', async ({ page
   await expect(shared).toContainText('Trần Hải Yến');
 });
 
+test('a new IS / BD / BDM leaves the selected team for the shared support', async ({ page }) => {
+  const dialog = await openPersonDialog(page);
+  const team = dialog.getByRole('combobox', { name: 'Team' });
+  const selected = await team.inputValue();
+  expect(selected).not.toBe('');
+  await dialog.getByRole('textbox', { name: 'Họ tên' }).fill('Lê Thu Hà');
+  await dialog.getByRole('radio', { name: 'BD', exact: true }).check();
+  await expect(team).toHaveValue('');
+  // Back to a role that needs a team: the selected team returns.
+  await dialog.getByRole('radio', { name: 'TL', exact: true }).check();
+  await expect(team).toHaveValue(selected);
+  await dialog.getByRole('radio', { name: 'BD', exact: true }).check();
+  await dialog.getByRole('button', { name: 'Thêm' }).click();
+
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('region', { name: 'Hỗ trợ dùng chung' })).toContainText('Lê Thu Hà');
+});
+
 test('refuses to delete an RE who still has records, and says how many (9b)', async ({ page }) => {
   await teamButton(page, 'Sao Mai').click();
   const row = members(page, 'Sao Mai')
@@ -200,7 +218,11 @@ test('member columns: an RE open customers match the Customers screen, a TL has 
   await page.goto('/#/team');
   await teamButton(page, team).click();
   const table = members(page, team).getByRole('table');
-  await expect(table.getByRole('columnheader', { name: /HĐ năm 2026/ })).toBeVisible();
+  // The app counts the year of the machine clock.
+  const year = new Date().getFullYear();
+  await expect(
+    table.getByRole('columnheader', { name: new RegExp(`HĐ năm ${year}`) }),
+  ).toBeVisible();
   const row = table.getByRole('row', { name: new RegExp(re) });
   await expect(row.getByRole('cell').nth(2)).toHaveText(open);
   const tl = table

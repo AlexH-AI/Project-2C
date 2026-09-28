@@ -9,6 +9,9 @@ import type { PersonUsage } from './team-view';
 const ALERT = 'm-0 rounded-md border border-danger px-3 py-2 text-danger';
 const ROLE_CHOICES = PERSON_ROLES.map((role) => ({ value: role, label: role }));
 
+/** RE and TL belong to a team; IS / BD / BDM are shared by every team (D8). */
+const needsTeam = (role: PersonRole) => role === 'RE' || role === 'TL';
+
 /** Where a refused save shows its reason: on the field it is about, else above the buttons. */
 type Errors = { readonly name?: string; readonly team?: string; readonly form?: string };
 
@@ -88,6 +91,11 @@ export function PersonDialog({
         onChange={(value) => {
           setRole(value);
           setErrors({});
+          // A new person starts on the team being viewed, which only suits RE and TL.
+          if (!person) {
+            if (!needsTeam(value)) setTeamId('');
+            else if (!teamId) setTeamId(defaultTeamId ?? '');
+          }
         }}
         required
       />
@@ -95,13 +103,13 @@ export function PersonDialog({
         label={t('person.team')}
         value={teamId}
         options={teams.map((team) => ({ value: team.id, label: team.name }))}
-        placeholder={t(role === 'RE' || role === 'TL' ? 'person.pickTeam' : 'person.noTeam')}
+        placeholder={t(needsTeam(role) ? 'person.pickTeam' : 'person.noTeam')}
         onChange={(value) => {
           setTeamId(value);
           setErrors({});
         }}
         error={errors.team}
-        required={role === 'RE' || role === 'TL'}
+        required={needsTeam(role)}
       />
       <span className="text-xs text-fg-3">{t('person.help')}</span>
       {errors.form && (

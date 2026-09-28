@@ -1,4 +1,5 @@
 import {
+  customPeriod,
   fromLocalDate,
   isInPeriod,
   isPipelineStage,
@@ -59,7 +60,12 @@ export interface StaffMetrics {
 function last30Days(today: CalendarDate): Period {
   // `Date` rolls day −29 over into the previous month or year; the domain has no day arithmetic.
   const start = fromLocalDate(new Date(today.year, today.month - 1, today.day - 29));
-  return { kind: 'custom', start, end: today };
+  return customPeriod(start, today);
+}
+
+/** The records a person is the RE of. */
+function ownedBy<T extends { readonly reId: string }>(list: readonly T[], personId: string) {
+  return list.filter((record) => record.reId === personId);
 }
 
 export function staffMetrics(
@@ -72,8 +78,6 @@ export function staffMetrics(
   return new Map(
     people.map((person) => {
       const isRe = person.role === 'RE';
-      const own = <T extends { readonly reId: string }>(list: readonly T[]) =>
-        list.filter((record) => record.reId === person.id);
       const appointments30 = records.appointments.filter(
         (a) =>
           (a.reId === person.id || a.coordinatorIds.includes(person.id)) &&
@@ -81,12 +85,13 @@ export function staffMetrics(
       ).length;
       const metrics: StaffMetrics = {
         openCustomers: isRe
-          ? own(records.customers).filter((c) => isPipelineStage(c.stage)).length
+          ? ownedBy(records.customers, person.id).filter((c) => isPipelineStage(c.stage)).length
           : null,
         appointments30,
         issuedThisYear: isRe
-          ? own(records.policies).filter((p) => p.issuedDate && isInPeriod(p.issuedDate, year))
-              .length
+          ? ownedBy(records.policies, person.id).filter(
+              (p) => p.issuedDate && isInPeriod(p.issuedDate, year),
+            ).length
           : null,
       };
       return [person.id, metrics];
@@ -103,8 +108,7 @@ export interface PersonUsage {
 }
 
 export function personUsage(personId: string, records: StaffRecords): PersonUsage {
-  const count = (list: ReadonlyArray<{ readonly reId: string }>) =>
-    list.filter((record) => record.reId === personId).length;
+  const count = (list: ReadonlyArray<{ readonly reId: string }>) => ownedBy(list, personId).length;
   return {
     customers: count(records.customers),
     appointments: count(records.appointments),
