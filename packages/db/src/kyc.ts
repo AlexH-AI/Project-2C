@@ -63,7 +63,9 @@ export interface KycChange {
 const NUMBER_FIELDS: ReadonlySet<KycField> = new Set(['birthYear', 'childrenCount']);
 const BOOLEAN_FIELDS: ReadonlySet<KycField> = new Set(['hasProtection']);
 /** Set from the customer profile only (D2). */
-const PROFILE_FIELDS: ReadonlySet<KycField> = new Set(['birthYear', 'gender']);
+const PROFILE_FIELDS: ReadonlySet<KycField> = new Set(
+  (Object.keys(KYC_FIELDS) as KycField[]).filter((field) => KYC_FIELDS[field].fromProfile),
+);
 const GENDER_LABELS = { MALE: 'Nam', FEMALE: 'Nữ' } as const satisfies Record<
   (typeof GENDERS)[number],
   string

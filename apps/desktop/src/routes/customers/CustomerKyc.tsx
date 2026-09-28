@@ -1,5 +1,11 @@
 import type { KycNoteRecord, KycProfileRecord, KycVersionRecord } from '@p2c/db';
-import { formatDate, type KycField, type KycGateState, type StageTransition } from '@p2c/domain';
+import {
+  formatDate,
+  KYC_FIELDS,
+  type KycField,
+  type KycGateState,
+  type StageTransition,
+} from '@p2c/domain';
 import { Button, StageBadge } from '@p2c/ui';
 import { t } from '../../i18n';
 import { factText, kycOverview, kycTimeline, type KycCategoryRow } from './kyc-view';
@@ -52,7 +58,7 @@ function CategoryRow({
           <span key={fact.id} className="flex justify-between gap-2 text-fg-2">
             <span>
               {t(`kycField.${fact.field}`)}: {factText(fact.value, YES_NO)}
-              {(fact.field === 'birthYear' || fact.field === 'gender') && (
+              {KYC_FIELDS[fact.field].fromProfile && (
                 <span className="text-xs text-fg-3"> · {t('kyc.fromProfile')}</span>
               )}
             </span>

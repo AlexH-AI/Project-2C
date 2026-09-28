@@ -31,6 +31,16 @@ describe('KYC catalog', () => {
     ]);
   });
 
+  it('takes exactly birth year and gender from the hồ sơ KH (D2)', () => {
+    expect(fields.filter((field) => KYC_FIELDS[field].fromProfile)).toEqual([
+      'birthYear',
+      'gender',
+    ]);
+    for (const field of fields) {
+      expect(typeof KYC_FIELDS[field].fromProfile, field).toBe('boolean');
+    }
+  });
+
   it('takes each hạng mục’s trường chính from its own trường', () => {
     for (const category of KYC_CATEGORIES) {
       const { fields: keyFields } = KYC_CATEGORY_SPECS[category].keyFields;

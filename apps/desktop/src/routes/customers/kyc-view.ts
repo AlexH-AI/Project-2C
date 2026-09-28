@@ -6,6 +6,7 @@ import {
   normalizeKycValue,
   type KycNoteFact,
   type KycNoteRecord,
+  type KycProfileRecord,
   type KycVersionRecord,
 } from '@p2c/db';
 import {
@@ -156,4 +157,30 @@ export function previewKycNote(
     material: version.material || manualMaterial,
     auto: version.material,
   };
+}
+
+export interface KycResolveOption {
+  readonly factId: string;
+  readonly value: KycValue;
+  /** `SYSTEM`: set from the hồ sơ KH; `NOTE`: confirmed from a ghi chú KYC. */
+  readonly source: 'NOTE' | 'SYSTEM';
+  readonly confirmedDate: CalendarDate;
+  /** A trường taken from the hồ sơ KH only keeps a value that came from it (D2). */
+  readonly disabled: boolean;
+}
+
+/** Mockup 7d: the values of a trường in conflict that "Giải quyết" can keep, in recording order. */
+export function resolveKycOptions(profile: KycProfileRecord, field: KycField): KycResolveOption[] {
+  return profile.facts
+    .filter((fact) => fact.field === field && fact.status === 'conflict')
+    .map((fact) => {
+      const system = profile.notes.find((note) => note.id === fact.noteId)?.source === 'SYSTEM';
+      return {
+        factId: fact.id,
+        value: fact.value,
+        source: system ? 'SYSTEM' : 'NOTE',
+        confirmedDate: fact.confirmedDate,
+        disabled: KYC_FIELDS[field].fromProfile && !system,
+      };
+    });
 }
