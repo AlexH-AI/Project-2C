@@ -76,7 +76,8 @@ export function listAppointments(db: Database, customerId?: string): Appointment
     )
     .orderBy(asc(appointments.date), asc(appointments.time), asc(appointments.id))
     .all();
-  return rows.map(({ a }) => toAppointment(db, a));
+  const coordinators = coordinatorsByAppointment(db, customerId);
+  return rows.map(({ a }) => toAppointment(db, a, coordinators.get(a.id) ?? []));
 }
 
 export function getAppointment(db: Database, id: string): AppointmentRecord | undefined {
@@ -267,6 +268,27 @@ function coordinatorsOf(db: Database, appointmentId: string): string[] {
     .orderBy(asc(appointmentCoordinators.personId))
     .all()
     .map((c) => c.personId);
+}
+
+/** `coordinatorsOf` for every appointment (of one customer when given), in a single query. */
+function coordinatorsByAppointment(db: Database, customerId?: string): Map<string, string[]> {
+  const rows = db.orm
+    .select({
+      appointmentId: appointmentCoordinators.appointmentId,
+      personId: appointmentCoordinators.personId,
+    })
+    .from(appointmentCoordinators)
+    .innerJoin(appointments, eq(appointments.id, appointmentCoordinators.appointmentId))
+    .where(customerId === undefined ? undefined : eq(appointments.customerId, customerId))
+    .orderBy(asc(appointmentCoordinators.personId))
+    .all();
+  const byAppointment = new Map<string, string[]>();
+  for (const { appointmentId, personId } of rows) {
+    const ids = byAppointment.get(appointmentId);
+    if (ids) ids.push(personId);
+    else byAppointment.set(appointmentId, [personId]);
+  }
+  return byAppointment;
 }
 
 function toAppointment(

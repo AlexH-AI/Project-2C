@@ -1,6 +1,6 @@
 import { t } from '../i18n';
 import type { Route } from '../shell/routes';
-import { Appointments } from './Appointments';
+import { AppointmentsScreen } from './appointments/AppointmentsScreen';
 import { CustomerProfile } from './customers/CustomerProfile';
 import { CustomersScreen } from './customers/CustomersScreen';
 import { Overview } from './Overview';
@@ -10,7 +10,7 @@ import { TeamScreen } from './team/TeamScreen';
 /** Screen bodies. Mostly empty for now: each screen gets its content in Phase 3–4. */
 export function Screen({ route }: { route: Route }) {
   if (route.screen === 'overview') return <Overview />;
-  if (route.screen === 'appointments') return <Appointments />;
+  if (route.screen === 'appointments') return <AppointmentsScreen />;
   if (route.screen === 'settings') return <Settings />;
   if (route.screen === 'team') return <TeamScreen />;
   if (route.screen === 'customers') return <CustomersScreen />;
