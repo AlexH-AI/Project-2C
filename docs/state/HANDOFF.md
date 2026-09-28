@@ -2,8 +2,8 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-09-28 · máy `D13_ThinkPad` (Office Laptop) · sau khi đóng Phase 1
-- **Nhánh:** `docs/handoff-2026-09-28-close-phase1` (= `main` `97737b1` + file này); không còn PR code mở. Checkout chính `C:\workspace\Project-2C` sạch. Worktree review `C:\workspace\Project-2C-review` đã có trên Office Laptop (detached ở `origin/main`)
+- **Cập nhật:** 2026-09-28 · máy `D13_THINKPAD` (Office Laptop) · sau khi merge T-047 (#66, PR #138–#141)
+- **Nhánh:** `docs/handoff-2026-09-28-t047` (= `main` `c87f045` + file này); không còn PR nào mở. Checkout chính `C:\workspace\Project-2C` sạch. Worktree review `C:\workspace\Project-2C-review` detached ở `c87f045`
 - **Máy kế tiếp:** Home PC hoặc Office Laptop — cả hai đã có môi trường + worktree review
 - **Repo đã chuyển public** (27/09, Owner tự làm) vì Actions private chạm ~1.800/2.000 phút; Actions giờ miễn phí
 - **Ruleset `protect-main`** (28/09, Owner duyệt): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
@@ -13,10 +13,14 @@
 
 | Việc | Trạng thái |
 |---|---|
-| Milestone Phase 1 — Nền móng | ✅ đóng 28/09/2026 (G7, Owner duyệt) |
-| #17 T-017 favicon/app icon màu ADR-0013 | ✅ merge PR #128 (`--squash`, `fbd23d7`, 28/09); review mức high (nâng từ low vì `src-tauri/icons`) PASS kèm ghi chú; icon sinh lại bằng `tauri icon` khớp từng byte; Owner chụp taskbar exe đạt. CI `main` run `36372015679` `success`, artifact `Project-2C-fbd23d7…` (exe mới nhất: icon mới + T-057) |
-| #9 exe trên 2 máy + `docs/metrics/phase-1.md` | ✅ merge PR #127 (`7cccc9c`) |
-| #110 T-062 run CI của `main` không hủy nhau | ✅ merge PR #116; **test chấp nhận 3 chưa kiểm** (xem "Bước kế tiếp" 2) |
+| #66 T-047 Khách hàng: kanban/bảng, tạo/sửa, chuyển nhóm tay | ✅ đóng 28/09 qua 4 PR xếp chồng: #138 (A1 scope picker), #139 (A2 kanban/bảng + hồ sơ), #140 (B1 tạo/sửa KH), #141 (B2 chuyển nhóm tay + lịch sử nhóm; review `risk:med` PASS kèm ghi chú, merge `--squash` `c87f045`). CI `main` run `36419788076` trên `c87f045` đang chạy lúc handoff → artifact `Project-2C-c87f045…` |
+| #142 T-065 form KH theo sát mockup 5a–5c | Mở, `risk:med`; Owner quyết "có làm, không gấp", làm sau #140/#141 (đã merge → hết chặn). Gom 4 chỗ lệch mockup từ review #140 |
+| #131 T-064 Team & nhân sự — phần Nhân sự | Mở, `risk:med` (tách từ #65; phần Team #65 đã đóng) |
+| #110 T-062 run CI của `main` không hủy nhau | Issue đã đóng (PR #116); **test chấp nhận 3 chưa kiểm** (xem "Bước kế tiếp" 2). Lần 28/09 chưa tính: run `115c2cb` xong 12:03, trước khi run `c87f045` bắt đầu 12:07 — không chồng nhau |
+
+Ghi chú review #141 (không chặn): dòng "Sau khi lưu: N2 → N3" thiếu "· hạ nhóm / lên nhóm" như mockup 5d (gợi ý `compareStages` khi cả hai là nhóm mở); khối cảnh báo "Chuyển tay không bao giờ tính RF" hiện cả khi KH đã đóng (mockup 5e không có); ký tự `→` viết thẳng trong JSX (`CustomerProfile.tsx`, `CustomerDialogs.tsx`); câu `error.INVALID_TRANSITION` chỉ nói "KH đã đóng" dù lỗi cũng bắn khi trùng nhóm hiện tại; `CustomerDialogs.tsx` lặp `CLOSED_STAGES.includes` (dùng `!isPipelineStage`), `CustomerProfile.tsx` dựng `StageBadge` tay thay vì helper `badge()`. Có thể gộp vào #142 vì cùng file.
+
+Ghi chú review #140: 4 chỗ lệch mockup 5a–5c đã thành Issue #142.
 
 Ghi chú review #128 (không chặn, NIT): `app-icon.svg` và `public/favicon.svg` thiếu dòng trống cuối file (trái `.editorconfig`); `favicon.svg` là bản sao y hệt `app-icon.svg` → đổi icon phải sửa cả hai file.
 
@@ -38,26 +42,18 @@ Ghi chú #33: `suggestedQuestions` trả cho mọi hạng mục thiếu ở cả
 
 Ghi chú khác (còn từ Phase 1): `DataTable` chưa test `sortable: false` và bảng rỗng; cột Giờ chưa `tabular-nums`.
 
-## Chờ test ở văn phòng (Owner quyết 26/09/2026)
-
-Tiếp tục dev trên Home PC; **không chặn Phase 2**. Milestone Phase 1 để mở cho tới khi làm xong các mục dưới trên Office Laptop:
-
-- [x] #9: exe `Project-2C-86b4e2c…` chạy trên Office Laptop (`D13_ThinkPad`) 28/09, Owner kiểm không lỗi, khởi động 1–2 giây; `docs/metrics/phase-1.md` đã ghi.
-- [x] #17: favicon/app icon màu ADR-0013 — merge PR #128 28/09, Owner chụp icon trên taskbar exe (Office Laptop).
-- [x] Đóng milestone Phase 1 (G7) — Owner duyệt, đóng 28/09/2026.
-
 ## Bước kế tiếp chính xác
 
-1. `/session-start` (pull `main`). Phase 1 đã đóng; exe mới nhất là artifact `Project-2C-fbd23d7…` (run `36372015679`, `success`).
-2. **Còn nợ test chấp nhận 3 của #110 (T-062):** ở lần kế tiếp có 2 push code lên `main` sát nhau (vd. merge PR xếp chồng bằng `--merge`), chạy `gh run list --branch main --limit 5` → cả hai run `completed`/`success`, không `cancelled`, và mỗi SHA có artifact `Project-2C-<sha>`. Ghi kết quả thành comment trên PR #116. Nếu có run bị hủy → mở lại #110.
-3. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Frontier (không bị chặn):
-   - **Thứ tự Owner chốt 28/09: #91 (✅ xong) → #65 → #89 → #90**, rồi tới #66–#70.
-     - **Việc kế tiếp: #65** T-046 Team & nhân sự — phiên mới, nhánh `task/T-046-…` từ `main`. Các Issue chặn (#59, #63, #64, #91) đã đóng; dựng trên `PersistQueue` đã có `flush()`. Nếu vượt ngưỡng ~400 dòng code sản phẩm thì đề xuất tách Team / Nhân sự trước khi code. Mang theo các ghi chú review cho T-046 (R1 `PERSON_IN_USE`, R4 viền 3:1 / ô ngày / NFC, #96, #125).
-     - **#89** T-055 chặn 2 exe → **#90** T-056 dọn backup theo mtime: chỉ sửa `src-tauri`, không đụng #65, và chỉ gây hại khi đã dùng dữ liệu thật.
-     - Cả 3 task còn lại đều `risk:med`. PR nào đụng `apps/desktop/src-tauri/**` thì phải gắn nhãn `build-exe` ngay lúc tạo.
-   - UI #66–#70 (G3 đã duyệt; #100 xong nên hết chặn #66, #69).
-   - **#69 T-050**: migration mới thêm `outcome_reviewer_id` — CHECK cấp bảng trên SQLite có thể khiến drizzle-kit dựng lại bảng `appointments`; kiểm SQL sinh ra + test migrate DB có dữ liệu (review #80).
-4. Sau đó theo blocking edges: #71 backup; #72 đóng phase (G7).
+1. `/session-start` (pull `main`). Kiểm run `main` trên `c87f045` (`gh run list --branch main --limit 3`) đã `success` và có artifact `Project-2C-c87f045…` (exe mới nhất: T-046/T-055/T-056/T-047).
+2. **Còn nợ test chấp nhận 3 của #110 (T-062):** ở lần kế tiếp có 2 push code lên `main` mà run thứ nhất **chưa xong** khi push thứ hai tới (build exe ~4–5 phút, nên phải merge cách nhau dưới ~4 phút), chạy `gh run list --branch main --limit 5` → cả hai run `completed`/`success`, không `cancelled`, và mỗi SHA có artifact `Project-2C-<sha>`. Ghi kết quả thành comment trên PR #116. Nếu có run bị hủy → mở lại #110.
+3. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Đã đóng hôm nay: #65 (Team), #89, #90, #66. Issue còn mở của milestone:
+   - **#131** T-064 Nhân sự (tách từ #65) — mang theo ghi chú review cho T-046 (R1 `PERSON_IN_USE`, R4 viền 3:1 / ô ngày / NFC, #96, #125).
+   - **#67** T-048 Hồ sơ KH — KYC · **#68** T-049 Lịch hẹn · **#69** T-050 Ghi kết quả cuộc gặp · **#70** T-051 Hợp đồng (G3 đã duyệt).
+   - **#142** T-065 form KH theo mockup 5a–5c — không gấp; có thể gộp các NIT review #141 cùng file.
+   - **#69 T-050**: migration mới thêm `outcome_reviewer_id` — CHECK cấp bảng trên SQLite có thể khiến drizzle-kit dựng lại bảng `appointments`; kiểm SQL sinh ra + test migrate DB có dữ liệu (review #80). Hồ sơ KH (#141) đã hiện "sau cuộc gặp" cho transition có `appointmentId` — T-050 chỉ cần ghi đúng.
+   - **Thứ tự chưa chốt** (thứ tự Owner chốt 28/09 "#91 → #65 → #89 → #90 → #66–#70" đã xong tới #66): hỏi Owner việc kế tiếp trước khi mở nhánh. Nếu Owner không nói gì thì theo số Issue: #131 → #67 → #68 → #69 → #70, #142 chen khi rảnh.
+   - Task đều `risk:med` → Owner merge sau review PASS. PR nào đụng `apps/desktop/src-tauri/**` hoặc cấu hình build thì gắn nhãn `build-exe` ngay lúc tạo.
+4. Sau đó theo blocking edges: #71 backup (`risk:high`); #72 đóng phase (G7).
 5. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
 6. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2). #61/#62 chạy golden G01–G22, K01–K15 qua DB.
 
@@ -103,7 +99,8 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- Merge PR `risk:med`/`high` (#65, #89, #90): Owner merge sau review PASS.
+- Chốt thứ tự Phase 3 còn lại: #131, #67–#70, #142 (xem "Bước kế tiếp" 3).
+- Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
 ## Ghi chú môi trường
 
