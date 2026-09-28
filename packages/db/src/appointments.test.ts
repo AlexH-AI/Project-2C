@@ -1,5 +1,5 @@
 import { stageOn } from '@p2c/domain';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   getAppointment,
   listAppointments,
@@ -96,6 +96,45 @@ describe('scheduleAppointment', () => {
       'CUSTOMER_NOT_FOUND',
     );
     expect(listAppointments(db)).toEqual([]);
+  });
+});
+
+describe('listAppointments', () => {
+  it('reads the coordinators of every appointment in one query, not one per appointment', async () => {
+    const { db, re, otherRe, tl, customer, schedule } = await withCustomer();
+    const other = createCustomer(db, {
+      name: 'Minh',
+      reId: otherRe.id,
+      stage: 'N2',
+      date: d(1, 1),
+    });
+    const prepare = vi.spyOn(db.sqlite, 'prepare');
+    const queries = () => {
+      prepare.mockClear();
+      listAppointments(db);
+      return prepare.mock.calls.length;
+    };
+    const plain = schedule(10);
+    const one = queries();
+    const both = scheduleAppointment(db, {
+      customerId: customer.id,
+      reId: re.id,
+      date: d(11, 1),
+      triggerType: 'EVENT',
+      coordinatorIds: [tl.id, otherRe.id],
+    });
+    const theirs = scheduleAppointment(db, {
+      customerId: other.id,
+      reId: otherRe.id,
+      date: d(12, 1),
+      triggerType: 'OTHER',
+      coordinatorIds: [tl.id],
+    });
+
+    expect(queries()).toBe(one);
+    expect(listAppointments(db)).toEqual([plain, both, theirs]);
+    expect(both.coordinatorIds).toEqual([tl.id, otherRe.id].sort());
+    expect(listAppointments(db, other.id)).toEqual([theirs]);
   });
 });
 

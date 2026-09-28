@@ -91,7 +91,10 @@ export function appointmentRows(
   scope: Scope,
   coordinator: CoordinatorFilter,
 ): AppointmentRow[] {
-  const person = (id: string) => data.people.find((p) => p.id === id);
+  // Maps, not `find`: every screen visit joins the whole year of appointments (~6000 seeded).
+  const people = new Map(data.people.map((p) => [p.id, p]));
+  const customers = new Map(data.customers.map((c) => [c.id, c]));
+  const teams = new Map(data.teams.map((team) => [team.id, team]));
   const movedBy = new Map(
     data.transitions.flatMap((tr) => (tr.appointmentId ? [[tr.appointmentId, tr] as const] : [])),
   );
@@ -118,13 +121,13 @@ export function appointmentRows(
             : a.coordinatorIds.includes(coordinator))),
     )
     .map((a) => {
-      const re = person(a.reId);
+      const re = people.get(a.reId);
       return {
         appointment: a,
-        customer: data.customers.find((c) => c.id === a.customerId),
+        customer: customers.get(a.customerId),
         re,
-        team: data.teams.find((team) => team.id === re?.teamId),
-        coordinators: a.coordinatorIds.flatMap((id) => person(id) ?? []),
+        team: re?.teamId ? teams.get(re.teamId) : undefined,
+        coordinators: a.coordinatorIds.flatMap((id) => people.get(id) ?? []),
         outcome: outcome(a),
       };
     });
