@@ -32,16 +32,20 @@ export {
   getAppointment,
   listAppointments,
   recordMeetingOutcome,
+  recordOutcomeWithNext,
   rescheduleAppointment,
   restoreAppointment,
   scheduleAppointment,
   softDeleteAppointment,
+  updateAppointmentDetails,
 } from './appointments';
 export type {
+  AppointmentDetails,
   AppointmentRecord,
   AppointmentTrigger,
   MeetingOutcome,
   NewAppointment,
+  NextAppointment,
 } from './appointments';
 export {
   getPolicy,
