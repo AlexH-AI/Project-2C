@@ -140,23 +140,26 @@ describe('priorMeetings', () => {
     appt('C1', d(20, 6, 2026), null, { status: 'NO_SHOW' }),
     appt('C2', d(15, 9, 2026), '09:00'),
     appt('C1', d(14, 9, 2026), '15:00', { status: 'CANCELLED' }),
+    appt('C1', d(26, 9, 2026), '16:00', { status: 'SCHEDULED' }),
+    appt('C1', d(27, 9, 2026), '09:00', { status: 'SCHEDULED' }),
   ];
 
-  it("lists the customer's appointments, newest first, and counts the ones met", () => {
-    const history = priorMeetings({ appointments, transitions: [move] }, 'C1');
+  it("lists the customer's appointments up to today, newest first, and counts the ones met", () => {
+    const history = priorMeetings({ appointments, transitions: [move] }, 'C1', TODAY);
     expect(history.rows.map((r) => [formatDate(r.appointment.date), r.appointment.time])).toEqual([
+      ['26/09/2026', '16:00'],
       ['14/09/2026', '15:00'],
       ['14/09/2026', '10:00'],
       ['20/06/2026', null],
       ['01/06/2026', '10:00'],
     ]);
-    expect(history.rows[1]?.outcome).toMatchObject({ kind: 'move', from: 'N2', to: 'N1' });
+    expect(history.rows[2]?.outcome).toMatchObject({ kind: 'move', from: 'N2', to: 'N1' });
     expect(history.metCount).toBe(2);
     expect(formatDate(history.lastMet as CalendarDate)).toBe('14/09/2026');
   });
 
   it('has no last meeting for a customer never met', () => {
-    const history = priorMeetings({ appointments, transitions: [] }, 'C3');
+    const history = priorMeetings({ appointments, transitions: [] }, 'C3', TODAY);
     expect(history).toEqual({ rows: [], metCount: 0, lastMet: null });
   });
 });

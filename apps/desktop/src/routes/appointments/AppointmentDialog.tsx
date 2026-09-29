@@ -87,8 +87,8 @@ export function AppointmentDialog({
 
   const reChoices = useMemo(() => reOptions(data.people, data.teams), [data]);
   const history = useMemo(
-    () => (customer ? priorMeetings(data, customer.id) : undefined),
-    [data, customer],
+    () => (customer ? priorMeetings(data, customer.id, today) : undefined),
+    [data, customer, today],
   );
   const date = readScheduleDate(dateText, today, from ? 'fromToday' : 'any');
   const time = parseTime(timeText);

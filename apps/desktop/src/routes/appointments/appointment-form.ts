@@ -72,20 +72,24 @@ export const isPastOrToday = (date: CalendarDate, today: CalendarDate) =>
   compareDates(date, today) <= 0;
 
 export interface PriorMeetings {
-  /** The customer's appointments, newest first. */
+  /** The customer's appointments up to today, newest first. */
   readonly rows: readonly { readonly appointment: AppointmentRecord; readonly outcome: Outcome }[];
   readonly metCount: number;
   readonly lastMet: CalendarDate | null;
 }
 
-/** The earlier appointments of one customer, for the form to show before a new one is made. */
+/**
+ * The earlier appointments of one customer, for the form to show before a new one is made:
+ * today's and before, never one still ahead (mockup 6a, Owner 29/09/2026).
+ */
 export function priorMeetings(
   data: Pick<AppointmentData, 'appointments' | 'transitions'>,
   customerId: string,
+  today: CalendarDate,
 ): PriorMeetings {
   const outcome = outcomeResolver(data);
   const list = data.appointments
-    .filter((a) => a.customerId === customerId)
+    .filter((a) => a.customerId === customerId && isPastOrToday(a.date, today))
     .sort((a, b) => compareDates(b.date, a.date) || (b.time ?? '').localeCompare(a.time ?? ''));
   const met = list.filter((a) => a.status === 'MET');
   return {
