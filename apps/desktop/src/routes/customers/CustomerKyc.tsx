@@ -1,13 +1,16 @@
-import type { KycNoteRecord, KycProfileRecord, KycVersionRecord } from '@p2c/db';
+import type { AppointmentRecord, KycNoteRecord, KycProfileRecord, KycVersionRecord } from '@p2c/db';
 import {
   formatDate,
   KYC_FIELDS,
+  type CalendarDate,
   type KycField,
   type KycGateState,
+  type Person,
   type StageTransition,
 } from '@p2c/domain';
 import { Button, StageBadge } from '@p2c/ui';
 import { t } from '../../i18n';
+import { isPastOrToday } from '../appointments/appointment-form';
 import { factText, kycOverview, kycTimeline, type KycCategoryRow } from './kyc-view';
 
 const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
@@ -152,25 +155,84 @@ const badge = (stage: StageTransition['to']) => (
   <StageBadge stage={stage} label={t(`stage.${stage}`)} />
 );
 
-/** Mockup customer.html "Dòng thời gian": KYC notes and versions with the stage changes. */
+/** A meeting's own line: the trigger while planned, else its note and next step. */
+function meetingText(a: AppointmentRecord): string {
+  if (a.status === 'SCHEDULED') {
+    return t('timeline.trigger', { trigger: a.triggerNote ?? t(`trigger.${a.triggerType}`) });
+  }
+  return [a.note, a.nextStep && t('timeline.nextStep', { step: a.nextStep })]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+/**
+ * Mockup customer.html "Dòng thời gian": KYC notes and versions, the stage changes and the
+ * appointments; any appointment up to today offers the next one ("Hẹn tiếp", 6h).
+ */
 export function Timeline({
   transitions,
   notes,
   versions,
+  appointments,
+  people,
+  today,
+  onNext,
 }: {
   transitions: readonly StageTransition[];
   notes: readonly KycNoteRecord[];
   versions: readonly KycVersionRecord[];
+  appointments: readonly AppointmentRecord[];
+  people: readonly Person[];
+  today: CalendarDate;
+  onNext: (from: AppointmentRecord) => void;
 }) {
+  const roles = (a: AppointmentRecord) =>
+    a.coordinatorIds.flatMap((id) => people.find((person) => person.id === id)?.role ?? []);
   return (
     <section aria-labelledby="timeline" className={CARD}>
       <h2 id="timeline" className={`${HEADING} mb-2`}>
         {t('timeline.title')}
       </h2>
       <ol className="m-0 flex list-none flex-col gap-3 p-0 text-sm">
-        {kycTimeline(transitions, notes, versions).map((event) => (
+        {kycTimeline(transitions, notes, versions, appointments).map((event) => (
           <li key={event.id} className="flex flex-col gap-0.5">
-            <span className="text-xs text-fg-3 tabular-nums">{formatDate(event.date)}</span>
+            <span className="text-xs text-fg-3 tabular-nums">
+              {event.kind === 'meeting'
+                ? t('timeline.meetingWhen', {
+                    when: [formatDate(event.date), event.appointment.time]
+                      .filter(Boolean)
+                      .join(' '),
+                    status: t(`appointmentStatus.${event.appointment.status}`),
+                  })
+                : formatDate(event.date)}
+            </span>
+            {event.kind === 'meeting' && (
+              <>
+                <b>
+                  {[
+                    event.number === null
+                      ? t('timeline.meetingPlain')
+                      : t('timeline.meeting', { number: event.number }),
+                    roles(event.appointment).length > 0 &&
+                      t('timeline.coordinators', { roles: roles(event.appointment).join(', ') }),
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </b>
+                <span className="flex flex-wrap items-baseline gap-x-2 text-fg-2">
+                  {meetingText(event.appointment)}
+                  {isPastOrToday(event.date, today) && (
+                    <button
+                      type="button"
+                      onClick={() => onNext(event.appointment)}
+                      className="cursor-pointer rounded-sm text-accent hover:underline focus-visible:outline-2 focus-visible:outline-accent"
+                    >
+                      {t('timeline.next')}
+                    </button>
+                  )}
+                </span>
+              </>
+            )}
             {event.kind === 'stage' && (
               <span className="flex items-center gap-2">
                 {event.transition.from && badge(event.transition.from)}

@@ -1,4 +1,4 @@
-import type { KycNoteRecord, KycProfileRecord, KycVersionRecord } from '@p2c/db';
+import type { AppointmentRecord, KycNoteRecord, KycProfileRecord, KycVersionRecord } from '@p2c/db';
 import {
   kycHash,
   type CalendarDate,
@@ -117,6 +117,40 @@ describe('kycTimeline', () => {
     ]);
     expect(events[0]).toMatchObject({ kind: 'version', number: 2, date: day(9, 5) });
     expect(events[4]).toMatchObject({ kind: 'version', number: 1 });
+  });
+
+  it('adds the appointments, numbering the meetings held or planned, each under its stage change', () => {
+    const meeting = (id: string, date: CalendarDate, status: AppointmentRecord['status']) =>
+      ({ id, date, status }) as AppointmentRecord;
+    const events = kycTimeline(
+      [{ ...move('t1', day(9, 14)), appointmentId: 'a4' }],
+      [],
+      [],
+      [
+        meeting('a1', day(6, 1), 'MET'),
+        meeting('a2', day(6, 20), 'NO_SHOW'),
+        meeting('a3', day(7, 12), 'MET'),
+        meeting('a4', day(9, 14), 'MET'),
+        meeting('a5', day(9, 28), 'SCHEDULED'),
+      ],
+    );
+
+    expect(events.map((event) => `${event.kind}:${event.id}`)).toEqual([
+      'meeting:a5',
+      'stage:t1',
+      'meeting:a4',
+      'meeting:a3',
+      'meeting:a2',
+      'meeting:a1',
+    ]);
+    expect(events.map((event) => event.kind === 'meeting' && event.number)).toEqual([
+      4,
+      false,
+      3,
+      2,
+      null,
+      1,
+    ]);
   });
 });
 

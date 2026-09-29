@@ -4,6 +4,7 @@
  */
 import {
   normalizeKycValue,
+  type AppointmentRecord,
   type KycNoteFact,
   type KycNoteRecord,
   type KycProfileRecord,
@@ -72,21 +73,50 @@ export type TimelineEvent = { readonly id: string; readonly date: CalendarDate }
   | { readonly kind: 'stage'; readonly transition: StageTransition }
   | { readonly kind: 'note'; readonly note: KycNoteRecord }
   | { readonly kind: 'version'; readonly version: KycVersionRecord; readonly number: number }
+  /** `number`: "Lịch hẹn lần n" of a meeting held or planned; null for one that did not happen. */
+  | {
+      readonly kind: 'meeting';
+      readonly appointment: AppointmentRecord;
+      readonly number: number | null;
+    }
 );
 
 /**
  * Records carry a day, not a time: on one day a version comes after the note it was saved with,
  * and a stage change is taken as earlier than both (a new customer's SYSTEM note follows it).
+ * A meeting comes before the stage change it led to.
  */
-const RANK = { stage: 0, note: 1, version: 2 } as const;
+const RANK = { meeting: -1, stage: 0, note: 1, version: 2 } as const;
 
-/** Newest first. Each list is in recording order, which breaks ties within its kind. */
+/** The appointments in date order, each met or planned one numbered after the meetings held. */
+function meetingEvents(appointments: readonly AppointmentRecord[]): TimelineEvent[] {
+  let met = 0;
+  return appointments.map((appointment) => {
+    const counted = appointment.status === 'MET' || appointment.status === 'SCHEDULED';
+    const event = {
+      kind: 'meeting' as const,
+      id: appointment.id,
+      date: appointment.date,
+      appointment,
+      number: counted ? met + 1 : null,
+    };
+    if (appointment.status === 'MET') met += 1;
+    return event;
+  });
+}
+
+/**
+ * Newest first. Each list is in recording order (appointments by date and time), which breaks
+ * ties within its kind.
+ */
 export function kycTimeline(
   transitions: readonly StageTransition[],
   notes: readonly KycNoteRecord[],
   versions: readonly KycVersionRecord[],
+  appointments: readonly AppointmentRecord[] = [],
 ): TimelineEvent[] {
   const events: TimelineEvent[] = [
+    ...meetingEvents(appointments),
     ...transitions.map((transition) => ({
       kind: 'stage' as const,
       id: transition.id,

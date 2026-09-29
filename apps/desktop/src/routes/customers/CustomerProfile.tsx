@@ -2,11 +2,13 @@ import { useCallback, useState } from 'react';
 import {
   getCustomer,
   getKycProfile,
+  listAppointments,
   listKycVersions,
   listPeople,
   listPolicies,
   listStageTransitions,
   listTeams,
+  type AppointmentRecord,
   type Database,
 } from '@p2c/db';
 import { formatDate, type KycField } from '@p2c/domain';
@@ -14,6 +16,8 @@ import { Button, StageBadge } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
+import { AppointmentDialog } from '../appointments/AppointmentDialog';
+import { CustomerAppointments } from './CustomerAppointments';
 import { ChangeStageDialog, CustomerFormDialog } from './CustomerDialogs';
 import { KycCard, Timeline } from './CustomerKyc';
 import { KycNoteDialog, ResolveKycDialog } from './KycDialogs';
@@ -22,15 +26,26 @@ import { ageOn, birthLabel } from './customers-view';
 function readProfile(db: Database, id: string) {
   const customer = getCustomer(db, id);
   if (!customer) return undefined;
-  const re = listPeople(db).find((person) => person.id === customer.reId);
+  const people = listPeople(db);
+  const teams = listTeams(db);
+  const re = people.find((person) => person.id === customer.reId);
+  const transitions = listStageTransitions(db, id);
   return {
     customer,
     re,
-    team: listTeams(db).find((team) => team.id === re?.teamId),
+    team: teams.find((team) => team.id === re?.teamId),
     policies: listPolicies(db).filter((policy) => policy.customerId === id).length,
-    transitions: listStageTransitions(db, id),
+    transitions,
     kyc: getKycProfile(db, id),
     versions: listKycVersions(db, id),
+    // What the appointment dialog reads, for this one customer.
+    appointmentData: {
+      appointments: listAppointments(db, id),
+      customers: [customer],
+      people,
+      teams,
+      transitions,
+    },
   };
 }
 
@@ -43,13 +58,15 @@ const BACK = (
   </a>
 );
 
-/** Customer profile (mockup customer.html): the basics, KYC and timeline; appointments and policies come later. */
+/** Customer profile (mockup customer.html): the basics, KYC, timeline and appointments; policies come later. */
 export function CustomerProfile({ id }: { id: string }) {
   const today = useAppData().today();
   const profile = useQuery(useCallback((db: Database) => readProfile(db, id), [id]));
   const [editing, setEditing] = useState<
     'profile' | 'stage' | 'note' | { resolve: KycField } | null
   >(null);
+  const [appointing, setAppointing] = useState<{ from?: AppointmentRecord } | null>(null);
+  const next = (from: AppointmentRecord) => setAppointing({ from });
 
   if (!profile) {
     return (
@@ -60,7 +77,7 @@ export function CustomerProfile({ id }: { id: string }) {
     );
   }
 
-  const { customer, re, team, policies, transitions, kyc, versions } = profile;
+  const { customer, re, team, policies, transitions, kyc, versions, appointmentData } = profile;
   // Every customer has its first transition (spec §3.4).
   const since = transitions.at(-1)!.date;
   const birth = customer.birthDate;
@@ -88,6 +105,7 @@ export function CustomerProfile({ id }: { id: string }) {
           <div className="flex-1" />
           <Button onClick={() => setEditing('profile')}>{t('customer.edit')}</Button>
           <Button onClick={() => setEditing('stage')}>{t('customer.changeStage')}</Button>
+          <Button onClick={() => setAppointing({})}>{t('appointments.new')}</Button>
           <Button variant="primary" onClick={() => setEditing('note')}>
             {t('kycNote.open')}
           </Button>
@@ -100,8 +118,33 @@ export function CustomerProfile({ id }: { id: string }) {
           versions={versions}
           onResolve={(field) => setEditing({ resolve: field })}
         />
-        <Timeline transitions={transitions} notes={kyc.notes} versions={versions} />
+        <div className="flex flex-col gap-4">
+          <Timeline
+            transitions={transitions}
+            notes={kyc.notes}
+            versions={versions}
+            appointments={appointmentData.appointments}
+            people={appointmentData.people}
+            today={today}
+            onNext={next}
+          />
+          <CustomerAppointments
+            appointments={appointmentData.appointments}
+            transitions={transitions}
+            today={today}
+            onNext={next}
+          />
+        </div>
       </div>
+      {appointing && (
+        <AppointmentDialog
+          data={appointmentData}
+          customer={customer}
+          from={appointing.from}
+          onClose={() => setAppointing(null)}
+          onCreated={() => undefined}
+        />
+      )}
       {editing === 'profile' && (
         <CustomerFormDialog customer={customer} onClose={() => setEditing(null)} />
       )}

@@ -25,7 +25,7 @@ import {
 } from './appointment-form';
 import { outcomeText, personLabel, type AppointmentData } from './appointments-view';
 
-const STATUS_TONE = {
+export const STATUS_TONE = {
   SCHEDULED: 'text-info',
   MET: 'text-ok',
   RESCHEDULED: 'text-warn',
