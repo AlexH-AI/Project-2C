@@ -4,10 +4,12 @@ import {
   getAppointment,
   listAppointments,
   recordMeetingOutcome,
+  recordOutcomeWithNext,
   rescheduleAppointment,
   restoreAppointment,
   scheduleAppointment,
   softDeleteAppointment,
+  updateAppointmentDetails,
 } from './appointments';
 import {
   changeStageManually,
@@ -16,7 +18,7 @@ import {
   listStageTransitions,
   softDeleteCustomer,
 } from './customers';
-import { softDeletePerson, updatePerson } from './team';
+import { createPerson, softDeletePerson, updatePerson } from './team';
 import { codeOf, d, setup } from './test-support';
 
 async function withCustomer() {
@@ -27,12 +29,13 @@ async function withCustomer() {
     stage: 'N3',
     date: d(1, 1),
   });
-  const schedule = (day = 10) =>
+  const schedule = (day = 10, coordinatorIds: string[] = []) =>
     scheduleAppointment(ctx.db, {
       customerId: customer.id,
       reId: ctx.re.id,
       date: d(day, 1),
       triggerType: 'REFERRAL',
+      coordinatorIds,
     });
   const stage = () => getCustomer(ctx.db, customer.id)?.stage;
   return { ...ctx, customer, schedule, stage };
@@ -69,6 +72,7 @@ describe('scheduleAppointment', () => {
       nextStep: null,
       note: '',
       rescheduledFromId: null,
+      outcomeReviewerId: null,
     });
     expect(getAppointment(db, appointment.id)).toEqual(appointment);
     expect(listAppointments(db)).toEqual([appointment]);
@@ -227,6 +231,265 @@ describe('recordMeetingOutcome', () => {
     expect(codeOf(() => softDeleteAppointment(db, id))).toBe('TRANSITION_NOT_LATEST');
     expect(stage()).toBe('N1');
     expect(getAppointment(db, id)?.status).toBe('MET');
+  });
+
+  it('edits the other fields once the transition is no longer the latest, keeping it (D7)', async () => {
+    const { db, tl, customer, schedule, stage } = await withCustomer();
+    const { id } = schedule();
+    recordMeetingOutcome(db, id, MET_N2);
+    const caused = listStageTransitions(db, customer.id)[1];
+    changeStageManually(db, customer.id, { to: 'N1', date: d(12, 1) });
+
+    const edited = recordMeetingOutcome(db, id, {
+      ...MET_N2,
+      nextStep: 'Gặp cùng TL',
+      expectedCaseSize: 800_000_000,
+      note: 'Hai vợ chồng cùng quyết',
+      outcomeReviewerId: tl.id,
+    });
+
+    expect(edited).toMatchObject({
+      status: 'MET',
+      stageAfter: 'N2',
+      nextStep: 'Gặp cùng TL',
+      expectedCaseSize: 800_000_000,
+      note: 'Hai vợ chồng cùng quyết',
+      outcomeReviewerId: tl.id,
+    });
+    expect(listStageTransitions(db, customer.id)[1]).toEqual(caused);
+    expect(stage()).toBe('N1');
+    // The three locked fields: status, stage after and the meeting day.
+    expect(codeOf(() => recordMeetingOutcome(db, id, { status: 'CANCELLED' }))).toBe(
+      'TRANSITION_NOT_LATEST',
+    );
+    expect(codeOf(() => recordMeetingOutcome(db, id, { ...MET_N2, stageAfter: 'N1' }))).toBe(
+      'TRANSITION_NOT_LATEST',
+    );
+    expect(codeOf(() => updateAppointmentDetails(db, id, { date: d(11, 1) }))).toBe(
+      'TRANSITION_NOT_LATEST',
+    );
+    expect(updateAppointmentDetails(db, id, { triggerType: 'EVENT' }).triggerType).toBe('EVENT');
+  });
+
+  it('keeps the same transition when a met outcome is saved again unchanged', async () => {
+    const { db, customer, schedule } = await withCustomer();
+    const { id } = schedule();
+    recordMeetingOutcome(db, id, MET_N2);
+    const before = listStageTransitions(db, customer.id);
+
+    recordMeetingOutcome(db, id, { ...MET_N2, note: 'Thêm ghi chú' });
+
+    expect(listStageTransitions(db, customer.id)).toEqual(before);
+  });
+});
+
+// D9: who decided the stage after the meeting — optional, any role, only on a met appointment.
+describe('outcome reviewer', () => {
+  it('keeps a live person of any role as reviewer of a met appointment, or none', async () => {
+    const { db, schedule } = await withCustomer();
+    const is = createPerson(db, { name: 'Tâm', role: 'IS', teamId: null });
+    const { id } = schedule();
+
+    expect(recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: is.id })).toMatchObject({
+      outcomeReviewerId: is.id,
+    });
+    expect(getAppointment(db, id)?.outcomeReviewerId).toBe(is.id);
+    expect(recordMeetingOutcome(db, id, MET_N2).outcomeReviewerId).toBeNull();
+  });
+
+  it('refuses a reviewer on another status, and one deleted or unknown, recording nothing', async () => {
+    const { db, tl, otherRe, schedule } = await withCustomer();
+    const { id } = schedule();
+    softDeletePerson(db, otherRe.id);
+
+    expect(
+      codeOf(() => recordMeetingOutcome(db, id, { status: 'NO_SHOW', outcomeReviewerId: tl.id })),
+    ).toBe('REVIEWER_NOT_ALLOWED');
+    expect(
+      codeOf(() => recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: otherRe.id })),
+    ).toBe('PERSON_NOT_FOUND');
+    expect(codeOf(() => recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: 'x' }))).toBe(
+      'PERSON_NOT_FOUND',
+    );
+    expect(getAppointment(db, id)?.status).toBe('SCHEDULED');
+  });
+
+  it('clears the reviewer when a met appointment becomes cancelled', async () => {
+    const { db, tl, schedule } = await withCustomer();
+    const { id } = schedule();
+    recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: tl.id });
+
+    expect(recordMeetingOutcome(db, id, { status: 'CANCELLED' }).outcomeReviewerId).toBeNull();
+  });
+
+  it('keeps a reviewer of a live appointment from deletion, and restores none they left', async () => {
+    const { db, tl, schedule } = await withCustomer();
+    const { id } = schedule();
+    recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: tl.id });
+
+    expect(codeOf(() => softDeletePerson(db, tl.id))).toBe('PERSON_IN_USE');
+    softDeleteAppointment(db, id);
+    softDeletePerson(db, tl.id);
+
+    expect(codeOf(() => restoreAppointment(db, id))).toBe('PERSON_NOT_FOUND');
+  });
+});
+
+// Mockups 6c, 6i: "Hẹn lần tiếp theo" is saved with the outcome, in one transaction.
+describe('recordOutcomeWithNext', () => {
+  it('records the outcome and books the next appointment like it, without linking them', async () => {
+    const { db, re, tl, customer, stage } = await withCustomer();
+    const { id } = scheduleAppointment(db, {
+      customerId: customer.id,
+      reId: re.id,
+      date: d(10, 1),
+      time: '09:00',
+      triggerType: 'EVENT',
+      triggerNote: 'Hội thảo',
+      coordinatorIds: [tl.id],
+    });
+
+    const saved = recordOutcomeWithNext(db, id, MET_N2, { date: d(20, 1), time: '14:00' });
+
+    expect(saved.recorded).toMatchObject({ id, status: 'MET', stageAfter: 'N2' });
+    expect(saved.next).toEqual({
+      id: expect.any(String),
+      customerId: customer.id,
+      reId: re.id,
+      coordinatorIds: [tl.id],
+      date: d(20, 1),
+      time: '14:00',
+      status: 'SCHEDULED',
+      triggerType: 'EVENT',
+      triggerNote: 'Hội thảo',
+      stageAfter: null,
+      expectedCaseSize: null,
+      nextStep: null,
+      note: '',
+      rescheduledFromId: null,
+      outcomeReviewerId: null,
+    });
+    expect(stage()).toBe('N2');
+    expect(listAppointments(db).map((a) => a.id)).toEqual([id, saved.next.id]);
+  });
+
+  it('books after a cancelled or no-show appointment too', async () => {
+    const { db, schedule } = await withCustomer();
+
+    const saved = recordOutcomeWithNext(
+      db,
+      schedule().id,
+      { status: 'NO_SHOW' },
+      { date: d(1, 2) },
+    );
+
+    expect(saved.recorded.status).toBe('NO_SHOW');
+    expect(saved.next).toMatchObject({ date: d(1, 2), time: null, status: 'SCHEDULED' });
+  });
+
+  it('saves nothing when the next day has passed or either part is refused', async () => {
+    const { db, customer, schedule, stage } = await withCustomer();
+    const { id } = schedule();
+    // The test clock reads 26/09/2026.
+    const next = { date: d(20, 1) };
+
+    expect(codeOf(() => recordOutcomeWithNext(db, id, MET_N2, { date: d(25, 9, 2026) }))).toBe(
+      'NEXT_APPOINTMENT_PAST',
+    );
+    expect(
+      codeOf(() => recordOutcomeWithNext(db, id, { status: 'MET', nextStep: 'x' }, next)),
+    ).toBe('OUTCOME_REQUIRED');
+    expect(codeOf(() => recordOutcomeWithNext(db, id, MET_N2, { ...next, time: '25:00' }))).toBe(
+      'INVALID_TIME',
+    );
+    expect(listAppointments(db).map((a) => a.status)).toEqual(['SCHEDULED']);
+    expect(stage()).toBe('N3');
+    expect(listStageTransitions(db, customer.id)).toHaveLength(1);
+    expect(recordOutcomeWithNext(db, id, MET_N2, { date: d(26, 9, 2026) }).next.date).toEqual(
+      d(26, 9, 2026),
+    );
+  });
+});
+
+// Mockup 6f: the trigger, coordinators and meeting day are edited with the outcome.
+describe('updateAppointmentDetails', () => {
+  it('changes the trigger, time and coordinators', async () => {
+    const { db, tl, otherRe, schedule } = await withCustomer();
+    const { id } = schedule(10, [tl.id]);
+
+    const edited = updateAppointmentDetails(db, id, {
+      time: '15:30',
+      triggerType: 'OCCASION',
+      triggerNote: ' Sinh nhật ',
+      coordinatorIds: [otherRe.id, otherRe.id],
+    });
+
+    expect(edited).toMatchObject({
+      time: '15:30',
+      triggerType: 'OCCASION',
+      triggerNote: 'Sinh nhật',
+      coordinatorIds: [otherRe.id],
+    });
+    expect(getAppointment(db, id)).toEqual(edited);
+    expect(updateAppointmentDetails(db, id, { triggerNote: null, time: null })).toMatchObject({
+      time: null,
+      triggerType: 'OCCASION',
+      triggerNote: null,
+      coordinatorIds: [otherRe.id],
+    });
+  });
+
+  it('adds no coordinator who is deleted, unknown or the RE, and changes nothing then', async () => {
+    const { db, re, tl, otherRe, schedule } = await withCustomer();
+    const { id } = schedule(10, [tl.id]);
+    const deleted = schedule(11).id;
+    softDeleteAppointment(db, deleted);
+    softDeletePerson(db, otherRe.id);
+
+    const refused = (coordinatorIds: string[]) =>
+      codeOf(() => updateAppointmentDetails(db, id, { triggerType: 'OTHER', coordinatorIds }));
+    expect(refused([otherRe.id])).toBe('PERSON_NOT_FOUND');
+    expect(refused(['x'])).toBe('PERSON_NOT_FOUND');
+    expect(refused([re.id])).toBe('INVALID_COORDINATOR');
+    expect(codeOf(() => updateAppointmentDetails(db, id, { time: '7h' }))).toBe('INVALID_TIME');
+    expect(codeOf(() => updateAppointmentDetails(db, deleted, {}))).toBe('APPOINTMENT_NOT_FOUND');
+    expect(getAppointment(db, id)).toMatchObject({
+      triggerType: 'REFERRAL',
+      coordinatorIds: [tl.id],
+    });
+  });
+
+  it('moves the transition of a met appointment to its new day', async () => {
+    const { db, customer, schedule, stage } = await withCustomer();
+    const { id } = schedule();
+    recordMeetingOutcome(db, id, MET_N2);
+
+    updateAppointmentDetails(db, id, { date: d(14, 1) });
+
+    expect(getAppointment(db, id)?.date).toEqual(d(14, 1));
+    expect(
+      listStageTransitions(db, customer.id).map((t) => [t.to, t.date, t.appointmentId]),
+    ).toEqual([
+      ['N3', d(1, 1), null],
+      ['N2', d(14, 1), id],
+    ]);
+    expect(stage()).toBe('N2');
+    // D10: never before the transition that came before it.
+    expect(codeOf(() => updateAppointmentDetails(db, id, { date: d(1, 12, 2026) }))).toBe(
+      'TRANSITION_BEFORE_LATEST',
+    );
+    expect(getAppointment(db, id)?.date).toEqual(d(14, 1));
+  });
+
+  it('makes no transition when the day of a met appointment that moved no one changes', async () => {
+    const { db, customer, schedule } = await withCustomer();
+    const { id } = schedule();
+    recordMeetingOutcome(db, id, { ...MET_N2, stageAfter: 'N3' });
+    changeStageManually(db, customer.id, { to: 'N2', date: d(12, 1) });
+
+    updateAppointmentDetails(db, id, { date: d(11, 1) });
+
+    expect(listStageTransitions(db, customer.id).map((t) => t.to)).toEqual(['N3', 'N2']);
   });
 });
 

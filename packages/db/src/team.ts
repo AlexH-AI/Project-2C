@@ -220,7 +220,7 @@ function ownsLiveRecords(db: Database, id: string): boolean {
   return [live(customers), live(appointments), live(policies)].some(Boolean);
 }
 
-/** Whether a live record still points to the person, as RE or coordinator (spec §4). */
+/** Whether a live record still points to the person, as RE, coordinator or reviewer (spec §4, D9). */
 function isPersonInUse(db: Database, id: string): boolean {
   const coordinating = db.orm
     .select({ id: appointments.id })
@@ -228,7 +228,12 @@ function isPersonInUse(db: Database, id: string): boolean {
     .innerJoin(appointments, eq(appointments.id, appointmentCoordinators.appointmentId))
     .where(and(eq(appointmentCoordinators.personId, id), isNull(appointments.deletedAt)))
     .get();
-  return ownsLiveRecords(db, id) || coordinating !== undefined;
+  const reviewing = db.orm
+    .select({ id: appointments.id })
+    .from(appointments)
+    .where(and(eq(appointments.outcomeReviewerId, id), isNull(appointments.deletedAt)))
+    .get();
+  return ownsLiveRecords(db, id) || coordinating !== undefined || reviewing !== undefined;
 }
 
 function validatePerson(db: Database, input: PersonInput): PersonInput {

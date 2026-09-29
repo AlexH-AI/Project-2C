@@ -1,10 +1,18 @@
 /**
- * Appointments and meeting outcomes (spec §3.5–3.6, §4; D3, D6, D7). A met appointment whose stage
- * after differs from the customer's stage moves the customer through a transition that points back
- * to it — the only transitions that can count as an RF (#44). That transition carries the meeting
- * day, so an outcome recorded or restored after a later stage change is refused (D10).
+ * Appointments and meeting outcomes (spec §3.5–3.6, §4; D3, D6, D7, D9). A met appointment whose
+ * stage after differs from the customer's stage moves the customer through a transition that points
+ * back to it — the only transitions that can count as an RF (#44). That transition carries the
+ * meeting day, so an outcome recorded or restored after a later stage change is refused (D10).
+ * Once a later transition exists, only the status, the stage after and the day are locked (D7).
  */
-import type { Appointment, CalendarDate, CustomerStage, Vnd } from '@p2c/domain';
+import {
+  compareDates,
+  fromLocalDate,
+  type Appointment,
+  type CalendarDate,
+  type CustomerStage,
+  type Vnd,
+} from '@p2c/domain';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import {
   fromIsoDate,
@@ -37,6 +45,8 @@ export interface AppointmentRecord extends Appointment {
   readonly triggerNote: string | null;
   /** The appointment this one replaced (D3). */
   readonly rescheduledFromId: string | null;
+  /** Who decided the stage after the meeting (D9); only on a met appointment. */
+  readonly outcomeReviewerId: string | null;
 }
 
 export interface NewAppointment {
@@ -55,6 +65,22 @@ export interface MeetingOutcome {
   readonly nextStep?: string | null;
   readonly expectedCaseSize?: Vnd | null;
   readonly note?: string;
+  readonly outcomeReviewerId?: string | null;
+}
+
+/** The day and time of the appointment booked with an outcome (mockups 6c, 6i). */
+export interface NextAppointment {
+  readonly date: CalendarDate;
+  readonly time?: string | null;
+}
+
+/** What the edit dialog changes besides the outcome (mockup 6f); omitted fields stay. */
+export interface AppointmentDetails {
+  readonly date?: CalendarDate;
+  readonly time?: string | null;
+  readonly triggerType?: AppointmentTrigger;
+  readonly triggerNote?: string | null;
+  readonly coordinatorIds?: readonly string[];
 }
 
 const OUTCOME_STATUSES: readonly string[] = ['MET', 'CANCELLED', 'NO_SHOW'];
@@ -110,9 +136,17 @@ export function recordMeetingOutcome(
     if (outcome.status !== 'MET' && stageAfter !== null) {
       throw new DbError('STAGE_AFTER_NOT_ALLOWED');
     }
+    const reviewerId = outcome.outcomeReviewerId ?? null;
+    if (reviewerId !== null) {
+      if (outcome.status !== 'MET') throw new DbError('REVIEWER_NOT_ALLOWED');
+      requirePerson(db, reviewerId);
+    }
     const size = outcome.expectedCaseSize ?? null;
-    // Only a met appointment can have moved the customer.
-    if (row.status === 'MET') withdrawAppointmentTransition(db, id);
+    // Still met with the same stage after: the transition stays as it is, even once a later one
+    // exists (D7). Otherwise only a met appointment can have moved the customer.
+    const keepsStage =
+      row.status === 'MET' && outcome.status === 'MET' && row.stageAfter === stageAfter;
+    if (row.status === 'MET' && !keepsStage) withdrawAppointmentTransition(db, id);
     const updated: AppointmentRow = {
       ...row,
       ...updateAppointmentRow(db, id, {
@@ -121,9 +155,69 @@ export function recordMeetingOutcome(
         nextStep,
         expectedCaseSize: size === null ? null : requireAmount(size),
         note: outcome.note?.trim() ?? row.note,
+        outcomeReviewerId: reviewerId,
       }),
     };
-    applyOutcome(db, updated);
+    if (!keepsStage) applyOutcome(db, updated);
+    return toAppointment(db, updated);
+  });
+}
+
+/**
+ * Records the outcome and books the next appointment in one go (mockups 6c, 6i): same customer,
+ * RE, coordinators and trigger, today or later, and not linked to this one.
+ */
+export function recordOutcomeWithNext(
+  db: Database,
+  id: string,
+  outcome: MeetingOutcome,
+  next: NextAppointment,
+): { readonly recorded: AppointmentRecord; readonly next: AppointmentRecord } {
+  return db.transaction(() => {
+    const recorded = recordMeetingOutcome(db, id, outcome);
+    if (compareDates(next.date, fromLocalDate(db.now())) < 0) {
+      throw new DbError('NEXT_APPOINTMENT_PAST');
+    }
+    const booked = insertScheduled(db, { ...recorded, date: next.date, time: next.time }, null);
+    return { recorded, next: booked };
+  });
+}
+
+/**
+ * Edits the day, time, trigger and coordinators (mockup 6f). A met appointment's transition moves
+ * to the new day, so its day is locked like its outcome once a later transition exists (D7, D10).
+ */
+export function updateAppointmentDetails(
+  db: Database,
+  id: string,
+  changes: AppointmentDetails,
+): AppointmentRecord {
+  return db.transaction(() => {
+    const row = liveAppointment(db, id);
+    const date = changes.date === undefined ? row.date : toIsoDate(changes.date);
+    const moved = date !== row.date && withdrawAppointmentTransition(db, id);
+    const updated: AppointmentRow = {
+      ...row,
+      ...updateAppointmentRow(db, id, {
+        date,
+        time: changes.time === undefined ? row.time : requireTime(changes.time),
+        triggerType: changes.triggerType ?? row.triggerType,
+        triggerNote:
+          changes.triggerNote === undefined ? row.triggerNote : optionalText(changes.triggerNote),
+      }),
+    };
+    if (changes.coordinatorIds !== undefined) {
+      const coordinatorIds = [...new Set(changes.coordinatorIds)];
+      requirePeople(db, row.reId, coordinatorIds);
+      db.orm
+        .delete(appointmentCoordinators)
+        .where(eq(appointmentCoordinators.appointmentId, id))
+        .run();
+      insertCoordinators(db, id, coordinatorIds);
+    }
+    // Only a withdrawn transition comes back, on the new day: a met appointment that moved no one
+    // stays so, whatever the customer's stage is now.
+    if (moved) applyOutcome(db, updated);
     return toAppointment(db, updated);
   });
 }
@@ -169,6 +263,7 @@ export function restoreAppointment(db: Database, id: string): void {
     liveCustomer(db, row.customerId);
     // The people were free to leave while the appointment was deleted.
     requirePeople(db, row.reId, toAppointment(db, row).coordinatorIds);
+    if (row.outcomeReviewerId !== null) requirePerson(db, row.outcomeReviewerId);
     updateAppointmentRow(db, id, { deletedAt: null });
     applyOutcome(db, row);
   });
@@ -210,13 +305,18 @@ function insertScheduled(
     createdAt: at,
     updatedAt: at,
     deletedAt: null,
+    outcomeReviewerId: null,
   };
   db.orm.insert(appointments).values(row).run();
-  for (const personId of coordinatorIds) {
-    db.orm.insert(appointmentCoordinators).values({ appointmentId: row.id, personId }).run();
-  }
+  insertCoordinators(db, row.id, coordinatorIds);
   // Same order as `coordinatorsOf`: SQLite compares text byte by byte, as does the default sort.
   return toAppointment(db, row, coordinatorIds.sort());
+}
+
+function insertCoordinators(db: Database, appointmentId: string, ids: readonly string[]): void {
+  for (const personId of ids) {
+    db.orm.insert(appointmentCoordinators).values({ appointmentId, personId }).run();
+  }
 }
 
 /** A live RE and live coordinators other than the RE — checked again on restore (spec §4). */
@@ -224,13 +324,18 @@ function requirePeople(db: Database, reId: string, coordinatorIds: readonly stri
   requireRe(db, reId);
   for (const personId of coordinatorIds) {
     if (personId === reId) throw new DbError('INVALID_COORDINATOR');
-    const person = db.orm
-      .select({ id: people.id })
-      .from(people)
-      .where(and(eq(people.id, personId), isNull(people.deletedAt)))
-      .get();
-    if (!person) throw new DbError('PERSON_NOT_FOUND');
+    requirePerson(db, personId);
   }
+}
+
+/** A live person of any role: a coordinator or the outcome reviewer (D9). */
+function requirePerson(db: Database, personId: string): void {
+  const person = db.orm
+    .select({ id: people.id })
+    .from(people)
+    .where(and(eq(people.id, personId), isNull(people.deletedAt)))
+    .get();
+  if (!person) throw new DbError('PERSON_NOT_FOUND');
 }
 
 function requireTime(time: string | null): string | null {
@@ -320,5 +425,6 @@ function toAppointment(
     nextStep: row.nextStep,
     note: row.note,
     rescheduledFromId: row.rescheduledFromId,
+    outcomeReviewerId: row.outcomeReviewerId,
   };
 }
