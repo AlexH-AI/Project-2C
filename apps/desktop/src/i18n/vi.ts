@@ -302,7 +302,8 @@ export const vi = {
   'appointmentForm.coordinatorAdd': '+ thêm',
   'appointmentForm.coordinatorPick': 'Thêm người phối hợp',
   'appointmentForm.coordinatorRemove': 'Bỏ {name}',
-  'appointmentForm.coordinatorHelp': 'Danh sách không có RE của lịch hẹn.',
+  'appointmentForm.coordinatorHelp':
+    'Người phối hợp là TL, IS, BD hoặc BDM; danh sách không có RE.',
   'appointmentForm.create': 'Tạo lịch hẹn',
   'error.INVALID_TIME': 'Giờ từ 00:00 đến 23:59.',
   'error.INVALID_COORDINATOR': 'RE của lịch hẹn không phối hợp cho chính mình.',
