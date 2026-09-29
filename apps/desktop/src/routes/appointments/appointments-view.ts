@@ -156,6 +156,17 @@ export function revealCreated(
   };
 }
 
+/** The appointment `a` replaced and the one that replaced it (D3), each when there is one. */
+export function rescheduleLinks(
+  appointments: readonly AppointmentRecord[],
+  a: AppointmentRecord,
+): { readonly from: AppointmentRecord | undefined; readonly to: AppointmentRecord | undefined } {
+  return {
+    from: appointments.find((other) => other.id === a.rescheduledFromId),
+    to: appointments.find((other) => other.rescheduledFromId === a.id),
+  };
+}
+
 /** The calendar dot of each status; a new status must pick one. */
 const CALENDAR_GROUP: Record<AppointmentStatus, 'met' | 'planned' | 'missed'> = {
   MET: 'met',

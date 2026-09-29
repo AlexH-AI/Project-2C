@@ -302,6 +302,18 @@ describe('rescheduleAppointment', () => {
     );
     expect(codeOf(() => recordMeetingOutcome(db, old.id, MET_N2))).toBe('INVALID_STATUS');
   });
+
+  it('writes the reason into the old appointment note, the new one starting without a note', async () => {
+    const { db, schedule } = await withCustomer();
+    const plain = schedule();
+    const noted = schedule();
+    rescheduleAppointment(db, plain.id, { date: d(15, 1) }, '  ');
+    const moved = rescheduleAppointment(db, noted.id, { date: d(15, 1) }, ' KH đi công tác ');
+
+    expect(getAppointment(db, plain.id)?.note).toBe('');
+    expect(getAppointment(db, noted.id)?.note).toBe('KH đi công tác');
+    expect(moved.note).toBe('');
+  });
 });
 
 describe('deleting appointments', () => {

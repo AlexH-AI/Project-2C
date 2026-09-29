@@ -14,6 +14,7 @@ import {
   outcomeText,
   personLabel,
   pickDay,
+  rescheduleLinks,
   revealCreated,
   type AppointmentData,
 } from './appointments-view';
@@ -316,5 +317,21 @@ describe('outcomeText', () => {
 describe('personLabel', () => {
   it('is the role then the name', () => {
     expect(personLabel(people[3]!)).toBe('TL Nguyễn Thu Hà');
+  });
+});
+
+describe('rescheduleLinks', () => {
+  it('finds the appointment this one replaced and the one that replaced it', () => {
+    const first = appointment('first', 're1', day(9, 8), { status: 'RESCHEDULED' });
+    const second = appointment('second', 're1', day(9, 15), {
+      status: 'RESCHEDULED',
+      rescheduledFromId: 'first',
+    });
+    const third = appointment('third', 're1', day(9, 22), { rescheduledFromId: 'second' });
+    const all = [first, second, third, appointment('other', 're1', day(9, 9))];
+
+    expect(rescheduleLinks(all, second)).toEqual({ from: first, to: third });
+    expect(rescheduleLinks(all, first)).toEqual({ from: undefined, to: second });
+    expect(rescheduleLinks(all, all[3]!)).toEqual({ from: undefined, to: undefined });
   });
 });
