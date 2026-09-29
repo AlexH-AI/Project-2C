@@ -657,6 +657,40 @@ describe('editMeetingOutcome', () => {
     expect(stage()).toBe('N1');
   });
 
+  it.each([
+    ['a no-show', { status: 'NO_SHOW' } as const],
+    ['a meeting that moves no one', MET_N2],
+  ])('moves a meeting to a day before an earlier change once it becomes %s', async (_, outcome) => {
+    const { db, customer, schedule, stage } = await withCustomer();
+    changeStageManually(db, customer.id, { to: 'N2', date: d(5, 1) });
+    const { id } = schedule();
+    recordMeetingOutcome(db, id, { ...MET_N2, stageAfter: 'N1' });
+
+    editMeetingOutcome(db, id, outcome, { date: d(3, 1) });
+
+    expect(getAppointment(db, id)).toMatchObject({ status: outcome.status, date: d(3, 1) });
+    expect(listStageTransitions(db, customer.id).map((t) => [t.to, t.date])).toEqual([
+      ['N3', d(1, 1)],
+      ['N2', d(5, 1)],
+    ]);
+    expect(stage()).toBe('N2');
+  });
+
+  it('moves the transition of an unchanged meeting to its new day', async () => {
+    const { db, customer, schedule, stage } = await withCustomer();
+    const { id } = schedule();
+    recordMeetingOutcome(db, id, MET_N2);
+
+    editMeetingOutcome(db, id, { ...MET_N2, note: 'Dời ngày' }, { date: d(14, 1) });
+
+    expect(getAppointment(db, id)).toMatchObject({ note: 'Dời ngày', date: d(14, 1) });
+    expect(listStageTransitions(db, customer.id).map((t) => [t.to, t.date])).toEqual([
+      ['N3', d(1, 1)],
+      ['N2', d(14, 1)],
+    ]);
+    expect(stage()).toBe('N2');
+  });
+
   it('turns a meeting into a cancellation moved ahead of today', async () => {
     const { db, schedule, stage } = await withCustomer();
     const { id } = schedule();
