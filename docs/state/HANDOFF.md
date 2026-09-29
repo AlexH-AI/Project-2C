@@ -2,8 +2,8 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-09-29 · máy `D13_THINKPAD` · sau khi merge T-049 phần B1 (#162), B2 (#163), C1 (#164), C2 (#165) → **#68 đã đóng**; và T-050 phần A (PR #166, squash `fa0d39a`)
-- **Nhánh:** `docs/handoff-2026-09-29-t050a` (= `main` `fa0d39a` + file này); không còn PR code nào mở. Nhánh `task/T-050a-outcome-db` đã xóa cả local lẫn remote. Checkout chính `C:\workspace\Project-2C` sạch. Worktree review `C:\workspace\Project-2C-review` detached ở `fa0d39a`. Nhánh local `claude/amazing-elion-8aa8f3` ở checkout chính không thuộc phiên này, chưa đụng
+- **Cập nhật:** 2026-09-29 · máy `DESKTOP-KDURKJP` · sau khi merge T-050 phần B1 (#168), B2 (#169), C1 (#170, merge commit `41524d4`), C2 (#171, squash `76072d9`) → **#69 đã đóng**
+- **Nhánh:** `docs/handoff-2026-09-29-t050-done` (= `main` `76072d9` + file này); không còn PR code nào mở. Các nhánh `task/T-050*` đã xóa cả local lẫn remote. Nhánh `docs/handoff-2026-09-29-sync` (handoff cũ, không có PR, nội dung đã bị file này thay) đã xóa. Checkout chính `C:\workspace\Project-2C` sạch. Worktree review `C:\workspace\Project-2C-review` detached ở `76072d9`
 - **Máy kế tiếp:** Home PC hoặc Office Laptop — cả hai đã có môi trường + worktree review
 - **Repo đã chuyển public** (27/09, Owner tự làm) vì Actions private chạm ~1.800/2.000 phút; Actions giờ miễn phí
 - **Ruleset `protect-main`** (28/09, Owner duyệt): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
@@ -14,13 +14,16 @@
 
 | Việc | Trạng thái |
 |---|---|
-| #69 T-050 Ghi kết quả cuộc gặp | **Đang làm**, Issue mở. Owner tách 3 phần A/B/C, mỗi PR `Refs #69`, `risk:med` ([quyết định 29/09](https://github.com/AlexH-AI/Project-2C/issues/69#issuecomment-5885746417)). ✅ **A** PR #166 (squash `fa0d39a`, review vòng 2 PASS): migration `0004_appointment_outcome_reviewer` (viết tay `ALTER TABLE … ADD`, snapshot giữ bản drizzle-kit, lý do ghi ở đầu file SQL); `recordMeetingOutcome` nhận `outcomeReviewerId` (D9) + D7 sửa từng phần; `recordOutcomeWithNext` (chỉ lịch `SCHEDULED`, ghi kết quả + tạo lịch tiếp theo trong một transaction); `updateAppointmentDetails` (chỉ lịch đã có kết quả; đổi ngày `MET` thì transition đi theo); `PERSON_IN_USE` cho người đánh giá; 4 mã lỗi mới `REVIEWER_NOT_ALLOWED`, `NEXT_APPOINTMENT_PAST`, `INVALID_TRIGGER`, `OUTCOME_IN_FUTURE` (**chưa có câu i18n**, làm ở B/C). Quy tắc Owner 29/09: `MET` / `NO_SHOW` chỉ ghi khi ngày cuộc hẹn ≤ hôm nay; `CANCELLED` không giới hạn. ⏳ **B** hộp Kết quả cuộc gặp 6c / 6d / 6i + lựa chọn trạng thái "Dời lịch" 6e + e2e N3 → N2. ⏳ **C** hộp Sửa kết quả 6f (khóa 3 ô theo D7) + Xóa 6g. CI `main` của `fa0d39a` đang build exe lúc handoff; exe xanh gần nhất là artifact `Project-2C-39d58cf…` |
+| #70 T-051 Hợp đồng: nộp, phát hành, sửa FYP phát hành | **Kế tiếp**, Issue mở, `risk:med`, `ready-for-agent`; G3 mockup đã duyệt |
 | #142 T-065 form KH theo sát mockup 5a–5c | Mở, `risk:med`; Owner quyết "có làm, không gấp". Gom 4 chỗ lệch mockup từ review #140 |
 
-Ghi chú review #166 (không chặn, **cho #69 phần B/C**):
-- `recordOutcomeWithNext`, `updateAppointmentDetails` và hai kiểu `NextAppointment`, `AppointmentDetails` chưa được export ở `packages/db/src/index.ts`. Cần thêm export khi UI gọi tới.
-- `recordMeetingOutcome` xóa người đánh giá khi bỏ trống `outcomeReviewerId`, trong khi bỏ trống `note` thì ghi chú giữ nguyên. Hộp 6f phải gửi lại người đánh giá hiện có.
-- Mùi code: "hôm nay" được tính bằng `fromLocalDate(db.now())` lặp 3 chỗ (`appointments.ts` ×2, `customers.ts`). Có thể gom thành một helper `today(db)`.
+Ghi chú review #168–#171 (T-050, không chặn; #69 đã đóng):
+- **Cần Owner xem (lệch mockup, #171):** hộp 6f có thêm ô Giờ cạnh Ngày (db cho sửa giờ; Giờ không thuộc 3 ô khóa D7); chỉ xóa được lịch từ hộp Sửa kết quả như mockup, lịch Dự kiến / Dời lịch chưa có nút xóa; hộp 6g nói "khôi phục được" nhưng chưa có UI khôi phục (db có `restoreAppointment`).
+- **Chưa làm (#169):** link "+ Ghi chú KYC từ cuộc gặp này" của mockup 6c. Owner quyết: task riêng hay bỏ.
+- **#169 UX:** lịch chưa tới ngày có trạng thái mặc định `null`; bấm "Lưu kết quả" khi chưa chọn trạng thái thì không báo gì (`OutcomeDialog.tsx:~91`). Nên hiện lỗi "Chọn trạng thái".
+- **#168:** `outcomeChoices` không chặn Đã gặp / Hủy / Không đến cho lịch `RESCHEDULED` (UI hiện không mở hộp kết quả cho lịch đã dời, db ném `INVALID_STATUS`).
+- Mùi *Duplicated Code*: quy tắc "case size > 0" ở `OutcomeDialog.tsx` (khi gõ) và `outcome-form.ts` (khi lưu) → gợi ý `readCaseSize`; `setErrors(errors.filter(...))` lặp trong `OutcomeDialog.tsx` → helper `clear`; khối `<p role="alert" …>` lặp ở `EditOutcomeDialog.tsx` và các hộp khác → component `FailureAlert`.
+- Còn từ #166: "hôm nay" tính bằng `fromLocalDate(db.now())` lặp 3 chỗ (`appointments.ts` ×2, `customers.ts`) → helper `today(db)`.
 
 Ghi chú review #162–#165 (không chặn):
 - **#165:** mockup tô "RF" bằng màu accent và đưa dòng năm khác xuống dòng giờ, còn `CustomerAppointments.tsx:84` viết thành chuỗi phẳng. Khi sắp tăng dần theo ngày, các lịch cùng ngày vẫn ra giờ muộn trước (`AppointmentsScreen.tsx:83`, `CustomerAppointments.tsx:67`). Sửa triệt để: cột ngày sắp theo cả ngày lẫn giờ.
@@ -65,29 +68,12 @@ Ghi chú khác (còn từ Phase 1): `DataTable` chưa test `sortable: false` và
 
 ## Bước kế tiếp chính xác
 
-1. `/session-start` (pull `main`). Kiểm CI `main` của `fa0d39a` (build exe, push sau merge #166) đã xanh chưa: `gh run list --branch main --limit 1`. Xanh thì exe mới nhất là `Project-2C-fa0d39a…`.
-2. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Issue còn mở của milestone (5): #69 (đang làm), #70, #142, #71, #72.
-   - **Việc kế tiếp: #69 phần B.** Nhánh `task/T-050b-outcome-dialog` từ `main`, PR `Refs #69`, nhãn `risk:med`.
-     - Phạm vi: hộp **Kết quả cuộc gặp**, mở từ bảng chi tiết lịch hẹn ở `apps/desktop/src/routes/appointments/AppointmentsScreen.tsx`. Mockup `docs/design/mockups/appointment-forms.html`: 6c (Đã gặp), 6d (Hủy / Không đến), 6i (hẹn lần tiếp theo), 6e (Dời lịch là một lựa chọn trạng thái).
-     - Trạng thái Đã gặp / Dời lịch / Hủy / Không đến. "Dời lịch" chỉ có khi lịch còn Dự kiến.
-     - Tách phần ngày / giờ / lý do / "Khi lưu" của `RescheduleDialog.tsx` thành component dùng chung, và **giữ** nút "Dời lịch" riêng làm lối tắt (Owner quyết 29/09). Ngày dời từ hôm nay trở đi, trừ khi tích "Nhập bù".
-     - Đã gặp: nhóm sau cuộc gặp và việc tiếp theo là bắt buộc; case size, ghi chú, người đánh giá kết quả (D9, vai trò bất kỳ) để trống được. Trạng thái khác Đã gặp thì không nhập được nhóm sau và người đánh giá.
-     - "Hẹn lần tiếp theo": ngày + giờ, không bắt buộc, ngày từ hôm nay trở đi. Có hẹn thì gọi `recordOutcomeWithNext`, không thì gọi `recordMeetingOutcome`.
-     - Việc phía db phải làm: export `recordOutcomeWithNext`, `updateAppointmentDetails`, `NextAppointment`, `AppointmentDetails` ở `packages/db/src/index.ts`.
-     - i18n: thêm câu `error.*` cho `REVIEWER_NOT_ALLOWED`, `NEXT_APPOINTMENT_PAST`, `INVALID_TRIGGER`, `OUTCOME_IN_FUTURE` trong `apps/desktop/src/i18n/vi.ts`.
-     - Test chấp nhận (body #69):
-       - e2e: cuộc hẹn Đã gặp N3 → N2 thì KH lên N2 và dòng thời gian ghi "sau cuộc gặp dd/mm";
-       - trạng thái khác Đã gặp thì không nhập được nhóm sau;
-       - Đã gặp mà thiếu nhóm sau hoặc việc tiếp theo thì báo lỗi, case size để trống được;
-       - "Lưu kết quả + tạo lịch": lỗi thì không lưu gì.
-     - Quá ngưỡng (xem 4) thì tách B1/B2.
-   - Sau B: **#69 phần C**.
-     - Hộp Sửa kết quả 6f gọi `recordMeetingOutcome` và `updateAppointmentDetails`; sửa được trigger, người phối hợp, ngày (ngày chỉ khi không bị khóa).
-     - Khi đã có transition mới hơn: khóa 3 ô trạng thái / ngày / nhóm sau cuộc gặp và hướng dẫn sửa nhóm tay (D7). Phải gửi lại người đánh giá hiện có (ghi chú review #166).
-     - Xóa 6g: bị chặn khi transition không còn mới nhất.
-     - Xong C → đóng #69 → **#70** T-051 Hợp đồng (G3 đã duyệt).
+1. `/session-start` (pull `main`). Kiểm CI `main` của `76072d9` (build exe, push sau merge #171; lúc handoff đang chạy): `gh run list --branch main --limit 1`. Xanh thì exe mới nhất là `Project-2C-76072d9…`.
+2. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Mỗi issue một phiên mới. Issue còn mở của milestone (4): #70, #142, #71, #72.
+   - **Việc kế tiếp: #70 T-051 Hợp đồng** (nộp, phát hành, sửa FYP phát hành; G3 đã duyệt). Đọc body #70 (spec, test chấp nhận, file được phép sửa), mockup hợp đồng trong `docs/design/mockups/`, và `docs/design/phase-3-du-lieu.md` phần hợp đồng. Nhánh `task/T-051-slug` từ `main`, PR `Closes #70` (hoặc `Refs #70` nếu tách phần), nhãn `risk:med`. Ước lượng trước; quá ngưỡng (xem 4) thì xin Owner tách phần như #69 (A db → B/C UI, PR xếp chồng).
+   - Ghi chú review T-050 ở trên: mục "Cần Owner xem" và link KYC 6c chờ Owner quyết; các mùi code gộp vào lần chạm sau cùng file.
    - **#142** T-065 form KH theo mockup 5a–5c: không gấp; có thể gộp các NIT review #141 cùng file.
-   - **Thứ tự:** Owner chốt 28/09 "#91 → #65 → #89 → #90 → #66–#70"; đã xong tới #68, giờ đang làm #69. Nếu Owner không nói gì thì làm tiếp: #69 B → #69 C → #70; #142 chen vào khi rảnh.
+   - **Thứ tự:** Owner chốt 28/09 "#91 → #65 → #89 → #90 → #66–#70"; đã xong tới #69. Nếu Owner không nói gì thì làm #70; #142 chen vào khi rảnh.
    - Task đều `risk:med` → Owner merge sau review PASS. PR nào đụng `apps/desktop/src-tauri/**` hoặc cấu hình build thì gắn nhãn `build-exe` ngay lúc tạo.
 3. Sau đó theo blocking edges: #71 backup (`risk:high`); #72 đóng phase (G7).
 4. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
@@ -135,7 +121,8 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- Xác nhận việc kế tiếp: mặc định #69 phần B → phần C → #70, #142 chen khi rảnh (xem "Bước kế tiếp" 2).
+- Xác nhận việc kế tiếp: mặc định #70, #142 chen khi rảnh (xem "Bước kế tiếp" 2).
+- Xem 3 chỗ lệch mockup của #171 và quyết link "+ Ghi chú KYC từ cuộc gặp này" (6c): task riêng hay bỏ (xem ghi chú review #168–#171).
 - Merge PR handoff này (docs-only, không chạy CI) để `main` có HANDOFF mới.
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
