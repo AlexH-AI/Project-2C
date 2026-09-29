@@ -2,8 +2,8 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-09-30 · máy `DESKTOP-KDURKJP` · sau khi mở PR #177 (T-065, #142). Trước đó: #70 T-051 hợp đồng đã đóng (PR #174 phần A, #175 phần B, `1d0593a`)
-- **Nhánh:** `docs/handoff-2026-09-30-t065` (= `main` `1d0593a` + file này; tách riêng để không hủy CI đang chạy của #177). PR code đang mở: **#177** `task/T-065-customer-form-mockup` (`risk:med`, không cần `build-exe`); lúc handoff CI Verify đang chạy. Checkout chính `C:\workspace\Project-2C` sạch
+- **Cập nhật:** 2026-09-30 · máy `DESKTOP-KDURKJP` · sau khi mở PR #179 (T-068, #173) và Owner chốt các lệch mockup #171 + link KYC 6c (→ #180). Trước đó: #142 T-065 đã merge (PR #177, `20c8504`)
+- **Nhánh:** `docs/handoff-2026-09-30-t068` (= `main` `b64ef6e` + file này, làm trong worktree tạm `C:\workspace\Project-2C-docs`; tách riêng để không hủy CI của #179). PR code đang mở: **#179** `task/T-068-delete-planned-appointment` (`risk:low`, không cần `build-exe`). Checkout chính `C:\workspace\Project-2C` đang đứng trên nhánh #179, sạch
 - **Phiên song song:** một phiên khác đang chạy dev server `web` (cổng 1420) trên cùng checkout — commit theo pathspec, không `git add -A`
 - **Máy kế tiếp:** Home PC hoặc Office Laptop — cả hai đã có môi trường + worktree review
 - **Repo đã chuyển public** (27/09, Owner tự làm) vì Actions private chạm ~1.800/2.000 phút; Actions giờ miễn phí
@@ -15,8 +15,9 @@
 
 | Việc | Trạng thái |
 |---|---|
-| #142 T-065 form KH theo mockup 5a–5c + ghi chú dialog HĐ từ review #175 | **PR #177 mở**, chờ CI + review phiên sạch; `risk:med` → Owner merge. Code + test xong (`pnpm verify` 633 test, `pnpm e2e` 83/83 xanh local) |
-| #173 T-068 xóa lịch hẹn Dự kiến nhập nhầm (D4) | **Kế tiếp**, `risk:low`; Owner: làm cùng đợt với #142, nhánh / PR riêng (`routes/appointments/**`, chung `i18n/vi.ts`); tự merge khi CI xanh + review PASS |
+| #142 T-065 form KH theo mockup 5a–5c | **Đã merge** (PR #177, `20c8504`) |
+| #173 T-068 xóa lịch hẹn Dự kiến nhập nhầm (D4) | **PR #179 mở**, `risk:low`; chờ CI + review phiên sạch → Claude tự merge khi PASS. `pnpm verify` 633 test, `pnpm e2e` 84/84 xanh local |
+| #180 T-069 link "+ Ghi chú KYC từ cuộc gặp này" (6c) | Mở, `risk:low`; Owner quyết 30/09 tách task riêng. Body có "Hành vi đề xuất" — Owner chốt trước khi code nếu muốn khác |
 | #71 T-052 backup `.p2cbackup` | Mở, `risk:high` |
 | #72 T-053 đóng Phase 3 | Mở, cổng G7 |
 
@@ -27,8 +28,8 @@ Ghi chú PR #177 (cho người review / Owner):
 - Chưa gộp các NIT review #141 (cùng file `CustomerDialogs.tsx`/`CustomerProfile.tsx`) vào #177 — vẫn mở, xem ghi chú review #141 bên dưới.
 
 Ghi chú review #168–#171 (T-050, không chặn; #69 đã đóng):
-- **Cần Owner xem (lệch mockup, #171):** hộp 6f có thêm ô Giờ cạnh Ngày (db cho sửa giờ; Giờ không thuộc 3 ô khóa D7); chỉ xóa được lịch từ hộp Sửa kết quả như mockup, lịch Dự kiến / Dời lịch chưa có nút xóa; hộp 6g nói "khôi phục được" nhưng chưa có UI khôi phục (db có `restoreAppointment`).
-- **Chưa làm (#169):** link "+ Ghi chú KYC từ cuộc gặp này" của mockup 6c. Owner quyết: task riêng hay bỏ.
+- **Lệch mockup #171 — Owner đã quyết 30/09/2026:** (1) nút xóa lịch Dự kiến → làm ở #173 (PR #179); lịch Dời lịch vẫn không có nút xóa (chuỗi dời, cần quy tắc riêng G1/G2). (2) Ô **Giờ** ở hộp 6f **giữ**, coi mockup là thiếu. (3) Câu "Xóa mềm, khôi phục được" ở 6g **giữ**; UI khôi phục ("Thùng rác") ngoài Phase 3 (spec §10).
+- **Link "+ Ghi chú KYC từ cuộc gặp này" (6c, #169):** Owner quyết 30/09 tách task riêng → **#180 T-069**.
 - **#169 UX:** lịch chưa tới ngày có trạng thái mặc định `null`; bấm "Lưu kết quả" khi chưa chọn trạng thái thì không báo gì (`OutcomeDialog.tsx:~91`). Nên hiện lỗi "Chọn trạng thái".
 - **#168:** `outcomeChoices` không chặn Đã gặp / Hủy / Không đến cho lịch `RESCHEDULED` (UI hiện không mở hộp kết quả cho lịch đã dời, db ném `INVALID_STATUS`).
 - Mùi *Duplicated Code*: quy tắc "case size > 0" ở `OutcomeDialog.tsx` (khi gõ) và `outcome-form.ts` (khi lưu) → gợi ý `readCaseSize`; `setErrors(errors.filter(...))` lặp trong `OutcomeDialog.tsx` → helper `clear`; khối `<p role="alert" …>` lặp ở `EditOutcomeDialog.tsx` và các hộp khác → component `FailureAlert`.
@@ -77,11 +78,11 @@ Ghi chú khác (còn từ Phase 1): `DataTable` chưa test `sortable: false` và
 
 ## Bước kế tiếp chính xác
 
-1. `/session-start` (pull `main`). Kiểm CI của PR #177: `gh pr checks 177`. Đỏ → sửa trên nhánh `task/T-065-customer-form-mockup` (tối đa 2 vòng, sau đó G8).
-2. CI #177 xanh → Owner mở **phiên mới** ở worktree `C:\workspace\Project-2C-review` và gõ "review PR #177" (skill `review-pr`, mức `risk:med`). Review PASS → Owner merge (squash), rồi dọn nhánh theo `CLAUDE.md` (fetch --prune, xóa nhánh remote/local, worktree review `git checkout --detach origin/main`).
-3. **Việc kế tiếp: #173 T-068** xóa lịch hẹn Dự kiến nhập nhầm (D4), `risk:low`, cùng đợt review với #177. Phiên mới: đọc body #173 (spec, test chấp nhận, file được phép sửa); nhánh `task/T-068-slug` từ `main`, PR `Closes #173`, nhãn `risk:low`. Đụng `apps/desktop/src/i18n/vi.ts` như #177 → nếu #177 chưa merge thì có thể phải rebase / giải xung đột ở `vi.ts`. `risk:low` + CI xanh + review PASS → Claude tự merge `gh pr merge --squash`.
-4. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Issue còn mở của milestone: #142 (PR #177), #173, #71, #72. Sau #173: #71 backup (`risk:high`); #72 đóng phase (G7).
-   - Ghi chú review T-050 ở trên: mục "Cần Owner xem" và link KYC 6c chờ Owner quyết; các mùi code gộp vào lần chạm sau cùng file.
+1. `/session-start` (pull `main`). Kiểm CI của PR #179: `gh pr checks 179`. Đỏ → sửa trên nhánh `task/T-068-delete-planned-appointment` (tối đa 2 vòng, sau đó G8).
+2. CI #179 xanh → Owner mở **phiên mới** ở worktree `C:\workspace\Project-2C-review` và gõ "review PR #179" (skill `review-pr`, mức `risk:low`). Review PASS → Claude merge `gh pr merge --squash`, rồi dọn nhánh theo `CLAUDE.md`.
+3. **Việc kế tiếp:** #180 T-069 (link KYC 6c, `risk:low`) hoặc #71 T-052 backup (`risk:high`) — Owner chọn thứ tự. Phiên mới: đọc body Issue, nhánh `task/T-0xx-slug` từ `main`.
+4. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Issue còn mở của milestone: #173 (PR #179), #180, #71, #72. #72 đóng phase (G7) làm cuối.
+   - Ghi chú review T-050 ở trên: các mục chờ Owner đã quyết 30/09; các mùi code gộp vào lần chạm sau cùng file.
    - PR nào đụng `apps/desktop/src-tauri/**` hoặc cấu hình build thì gắn nhãn `build-exe` ngay lúc tạo.
 4. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
 5. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2). #61/#62 chạy golden G01–G22, K01–K15 qua DB.
@@ -128,8 +129,8 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- Review PR #177 ở phiên sạch khi CI xanh, rồi merge (`risk:med`).
-- Xem 3 chỗ lệch mockup của #171 và quyết link "+ Ghi chú KYC từ cuộc gặp này" (6c): task riêng hay bỏ (xem ghi chú review #168–#171).
+- Review PR #179 ở phiên sạch khi CI xanh ("review PR #179"); PASS thì Claude tự merge (`risk:low`).
+- Xem "Hành vi đề xuất" trong #180 (link KYC 6c) trước khi làm, nếu muốn khác thì sửa body Issue.
 - Merge PR handoff này (docs-only, không chạy CI) để `main` có HANDOFF mới.
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
