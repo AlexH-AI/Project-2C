@@ -399,6 +399,7 @@ export const vi = {
   'outcome.save': 'Lưu kết quả',
   'outcome.saveWithNext': 'Lưu kết quả + tạo lịch',
   'appointments.edit': 'Sửa kết quả',
+  'appointments.delete': 'Xóa',
   'outcomeEdit.title': 'Sửa kết quả cuộc gặp',
   'outcomeEdit.date': 'Ngày cuộc hẹn',
   'outcomeEdit.lockTitle': 'Khóa 3 ô: trạng thái, ngày cuộc hẹn, nhóm sau cuộc gặp',
@@ -421,7 +422,8 @@ export const vi = {
   'appointmentDelete.rfSame': 'không đổi ({from} → {to} không tính RF)',
   'appointmentDelete.kyc': 'Ghi chú KYC',
   'appointmentDelete.kycKept': 'giữ nguyên',
-  'appointmentDelete.noMove': 'Cuộc hẹn này không đổi nhóm KH.',
+  'appointmentDelete.noMove': 'Cuộc hẹn này không đổi nhóm KH. Khi xóa:',
+  'appointmentDelete.unchanged': 'không đổi',
   'appointmentDelete.soft': 'Xóa mềm, khôi phục được.',
   'error.TRANSITION_NOT_LATEST':
     'KH đã đổi nhóm sau cuộc gặp này: không đổi được trạng thái, ngày, nhóm sau cuộc gặp, cũng không xóa được. Sửa nhóm bằng Chuyển nhóm tay.',
