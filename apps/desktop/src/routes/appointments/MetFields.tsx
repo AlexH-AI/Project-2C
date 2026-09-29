@@ -59,8 +59,10 @@ export function MetFields({
   errors: readonly OutcomeError[];
   stageLocked?: boolean;
 }) {
-  const set = (field: keyof MetDraft) => (value: string) =>
-    onChange({ ...draft, [field]: value }, field);
+  const set =
+    <K extends keyof MetDraft>(field: K) =>
+    (value: MetDraft[K]) =>
+      onChange({ ...draft, [field]: value }, field);
   const size = draft.caseSize.trim() === '' ? null : parseVnd(draft.caseSize);
   const { stageAfter } = draft;
   return (
