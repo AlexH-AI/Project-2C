@@ -224,9 +224,15 @@ export function OutcomeDialog({
             label={t('outcome.caseSize')}
             value={caseSize}
             onChange={edit(setCaseSize)}
-            error={size && !size.ok ? t(`money.error.${size.error}`) : undefined}
+            error={
+              size && !size.ok
+                ? t(`money.error.${size.error}`)
+                : size && size.amount <= 0
+                  ? t('outcome.caseSizePositive')
+                  : undefined
+            }
             hint={
-              size?.ok
+              size?.ok && size.amount > 0
                 ? t('outcome.caseSizeRead', {
                     amount: formatVnd(size.amount),
                     compact: formatVndCompact(size.amount),

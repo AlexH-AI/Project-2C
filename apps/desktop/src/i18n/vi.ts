@@ -373,6 +373,7 @@ export const vi = {
   'outcome.nextStepRequired': 'Nhập việc tiếp theo.',
   'outcome.caseSize': 'Case size dự kiến (để trống = chưa ước lượng)',
   'outcome.caseSizeRead': '{amount} ({compact})',
+  'outcome.caseSizePositive': 'Case size phải lớn hơn 0 (hoặc để trống).',
   'outcome.note': 'Ghi chú cuộc gặp',
   'outcome.noteHelp': 'Ghi chú cuộc gặp không phải ghi chú KYC.',
   'outcome.noteOther': 'Ghi chú',

@@ -62,6 +62,8 @@ test('a meeting met N3 → N2 moves the customer, the timeline says after the me
   await o.nextStep.fill('Gửi bảng minh họa');
   await o.caseSize.fill('800tr');
   await expect(o.dialog).toContainText('800.000.000 ₫ (800 tr)');
+  await o.caseSize.fill('0');
+  await expect(o.dialog).toContainText('Case size phải lớn hơn 0');
   await o.caseSize.fill('');
   await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
 
