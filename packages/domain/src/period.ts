@@ -80,6 +80,18 @@ export function formatDayMonth(date: CalendarDate): string {
   return `${pad(date.day)}/${pad(date.month)}`;
 }
 
+/** Monday 1 … Sunday 7. */
+export type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+export function weekdayOf(date: CalendarDate): Weekday {
+  return (((toDayNumber(date) + 3) % 7) + 1) as Weekday;
+}
+
+/** Calendar days from `from` to `to`; negative when `to` is earlier. */
+export function daysBetween(from: CalendarDate, to: CalendarDate): number {
+  return toDayNumber(to) - toDayNumber(from);
+}
+
 /** Negative when `a` is earlier, positive when later, 0 on the same day — for `Array.sort`. */
 export function compareDates(a: CalendarDate, b: CalendarDate): number {
   return toDayNumber(a) - toDayNumber(b);

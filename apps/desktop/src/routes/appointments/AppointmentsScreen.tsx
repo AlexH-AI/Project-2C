@@ -5,6 +5,7 @@ import {
   listPeople,
   listStageTransitions,
   listTeams,
+  type AppointmentRecord,
   type Database,
 } from '@p2c/db';
 import {
@@ -16,12 +17,13 @@ import {
   type CalendarDate,
   type Period,
 } from '@p2c/domain';
-import { DataTable, PeriodPicker, SelectField, type DataTableColumn } from '@p2c/ui';
+import { Button, DataTable, PeriodPicker, SelectField, type DataTableColumn } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { useScope } from '../../shell/ScopeContext';
 import { PERIOD_LABELS } from '../period-labels';
+import { AppointmentDialog } from './AppointmentDialog';
 import {
   appointmentRows,
   dayBoard,
@@ -65,6 +67,7 @@ export function AppointmentsScreen() {
   const [day, setDay] = useState(today);
   const [coordinator, setCoordinator] = useState<CoordinatorFilter>('any');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const rows = useMemo(() => appointmentRows(data, scope, coordinator), [data, scope, coordinator]);
   const inPeriod = useMemo(
@@ -145,6 +148,13 @@ export function AppointmentsScreen() {
     setDay(date);
   };
 
+  // Shows the day of the appointment just made, so it is there to see.
+  const show = (created: AppointmentRecord) => {
+    setPeriod(pickDay(period, created.date) ?? periodOf('month', created.date));
+    setDay(created.date);
+    setSelectedId(created.id);
+  };
+
   return (
     <>
       <div className="flex flex-wrap items-end gap-3">
@@ -158,6 +168,9 @@ export function AppointmentsScreen() {
           />
         </div>
         <div className="flex-1" />
+        <Button variant="primary" onClick={() => setCreating(true)}>
+          {t('appointments.new')}
+        </Button>
         <span className="text-sm text-fg-2 tabular-nums">
           {t('appointments.summary', {
             total: inPeriod.length,
@@ -184,6 +197,9 @@ export function AppointmentsScreen() {
           initialSort={{ id: 'date', desc: true }}
         />
       </section>
+      {creating && (
+        <AppointmentDialog data={data} onClose={() => setCreating(false)} onCreated={show} />
+      )}
     </>
   );
 }

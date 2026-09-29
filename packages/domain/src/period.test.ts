@@ -4,6 +4,7 @@ import {
   calendarDate,
   compareDates,
   customPeriod,
+  daysBetween,
   formatDate,
   formatDayMonth,
   formatPeriodValue,
@@ -14,6 +15,7 @@ import {
   periodOf,
   shift,
   switchKind,
+  weekdayOf,
   type Period,
 } from './period';
 
@@ -311,5 +313,22 @@ describe('addDays', () => {
   it('rejects a result before 1900', () => {
     expect(addDays(d(2, 1, 1900), -1)).toEqual(d(1, 1, 1900));
     expect(() => addDays(d(1, 1, 1900), -1)).toThrow(RangeError);
+  });
+});
+
+describe('weekdayOf', () => {
+  it('numbers Monday 1 to Sunday 7', () => {
+    expect(weekdayOf(d(28, 9, 2026))).toBe(1);
+    expect(weekdayOf(d(26, 9, 2026))).toBe(6);
+    expect(weekdayOf(d(27, 9, 2026))).toBe(7);
+  });
+});
+
+describe('daysBetween', () => {
+  it('counts calendar days from the first date to the second, negative when earlier', () => {
+    expect(daysBetween(d(26, 9, 2026), d(28, 9, 2026))).toBe(2);
+    expect(daysBetween(d(28, 9, 2026), d(26, 9, 2026))).toBe(-2);
+    expect(daysBetween(d(28, 9, 2026), d(28, 9, 2026))).toBe(0);
+    expect(daysBetween(d(31, 12, 2026), d(1, 1, 2027))).toBe(1);
   });
 });
