@@ -79,7 +79,8 @@ export function AppointmentsScreen() {
 
   const rows = useMemo(() => appointmentRows(data, scope, coordinator), [data, scope, coordinator]);
   const inPeriod = useMemo(
-    () => rows.filter((row) => isInPeriod(row.appointment.date, period)),
+    // Latest first, so two on one day (which the date sort keeps in this order) stay newest first.
+    () => rows.filter((row) => isInPeriod(row.appointment.date, period)).reverse(),
     [rows, period],
   );
   const selected = rows.find((row) => row.appointment.id === selectedId);

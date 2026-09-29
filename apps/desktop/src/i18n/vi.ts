@@ -117,7 +117,7 @@ export const vi = {
   'customer.appointments': 'Lịch hẹn',
   'customer.noAppointments': 'KH chưa có lịch hẹn.',
   'customer.appointmentsHelp':
-    '"Hẹn tiếp" = Tạo lịch hẹn tiếp theo (có trên mọi lịch đã qua) · người phối hợp xem ở dòng thời gian',
+    '"Hẹn tiếp" = Tạo lịch hẹn tiếp theo (có trên mọi lịch đã qua) · ghi chú dài cắt 1 dòng · người phối hợp xem ở dòng thời gian',
   'customer.next': 'Hẹn tiếp',
   'customer.nextLabel': 'Hẹn tiếp sau lịch {date}',
   'kycNote.open': '+ Ghi chú KYC',

@@ -14,6 +14,16 @@ async function openProfile(page: Page): Promise<string> {
   return name;
 }
 
+/** Fills in the open dialog for a new appointment (trigger "Khác") and creates it. */
+async function create(page: Page, day: string, time: string | null) {
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('textbox', { name: /^Ngày/ }).fill(day);
+  if (time) await dialog.getByRole('textbox', { name: /^Giờ/ }).fill(time);
+  await dialog.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
+  await dialog.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+  await expect(dialog).toHaveCount(0);
+}
+
 function appointments(page: Page) {
   const card = page.getByRole('region', { name: 'Lịch hẹn', exact: true });
   return { card, rows: card.getByRole('table', { name: 'Lịch hẹn' }).locator('tbody tr') };
@@ -50,9 +60,11 @@ test('the timeline shows the appointments; a past one offers "Hẹn tiếp →"'
   await openProfile(page);
   const timeline = page.getByRole('region', { name: 'Dòng thời gian' });
   await expect(timeline).toContainText(/Lịch hẹn lần \d+/);
-  await expect(timeline).toContainText(/\d\d\/\d\d\/\d{4}( \d\d:\d\d)? · Đã gặp/);
+  await expect(timeline).toContainText(/\d\d\/\d\d\/\d{4}( \d\d:\d\d)? · đã gặp/);
 
-  await timeline.getByRole('button', { name: 'Hẹn tiếp →' }).first().click();
+  const next = timeline.getByRole('button', { name: /^Hẹn tiếp sau lịch \d\d\/\d\d/ }).first();
+  await expect(next).toHaveText('Hẹn tiếp →');
+  await next.click();
   await expect(page.getByRole('dialog').getByRole('heading', { level: 2 })).toHaveText(
     'Lịch hẹn tiếp theo',
   );
@@ -67,13 +79,52 @@ test('"+ Lịch hẹn" in the profile makes an appointment for this customer', a
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('heading', { level: 2 })).toHaveText('Lịch hẹn mới');
   await expect(dialog.locator('b').first()).toHaveText(name);
-  await dialog.getByRole('textbox', { name: /^Ngày/ }).fill('1/10');
-  await dialog.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
-  await dialog.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+  await create(page, '1/10', '15:00');
 
-  await expect(dialog).toHaveCount(0);
   await expect(rows).toHaveCount(count + 1);
   // A day ahead offers no next appointment yet.
-  await expect(rows.first()).toContainText('01/10');
+  await expect(rows.first()).toContainText('01/10 15:00');
   await expect(rows.first().getByRole('button')).toHaveCount(0);
+
+  // Two on one day: the later one stays on top.
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  await create(page, '1/10', '9:00');
+  await expect(rows).toHaveCount(count + 2);
+  await expect(rows.nth(0)).toContainText('01/10 15:00');
+  await expect(rows.nth(1)).toContainText('01/10 09:00');
+});
+
+test('a customer without appointments says so', async ({ page }) => {
+  await page.goto('/#/customers');
+  await page.getByRole('button', { name: '+ Khách hàng' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Khách hàng mới' });
+  await dialog.getByRole('textbox', { name: 'Họ tên' }).fill('Chưa Hẹn Lần Nào');
+  await dialog.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
+  await dialog.getByRole('button', { name: 'Lưu KH' }).click();
+  await expect(dialog).toBeHidden();
+  await page.getByRole('link', { name: /Chưa Hẹn Lần Nào/ }).click();
+
+  const { card } = appointments(page);
+  await expect(card).toContainText('0 lịch · 0 đã gặp');
+  await expect(card).toContainText('KH chưa có lịch hẹn.');
+  await expect(card.getByRole('table')).toHaveCount(0);
+});
+
+test('"Xem tất cả" in the dialog opened on the profile shows the appointments card', async ({
+  page,
+}) => {
+  await openProfile(page);
+  const dialog = page.getByRole('dialog');
+  const seeAll = dialog.getByRole('link', { name: /^Xem tất cả/ });
+  // Past appointments until there are more than the dialog lists.
+  for (let day = 1; day <= 6; day += 1) {
+    await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+    if ((await seeAll.count()) > 0) break;
+    await create(page, `${day}/9`, null);
+  }
+
+  await seeAll.click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page).toHaveURL(/#\/customers\//);
+  await expect(page.getByRole('heading', { name: 'Lịch hẹn', exact: true })).toBeInViewport();
 });

@@ -20,21 +20,20 @@ import {
   priorMeetings,
   readScheduleDate,
   searchCustomers,
+  withTime,
   type PriorMeetings,
   type ScheduleDate,
 } from './appointment-form';
-import { outcomeText, personLabel, type AppointmentData } from './appointments-view';
-
-export const STATUS_TONE = {
-  SCHEDULED: 'text-info',
-  MET: 'text-ok',
-  RESCHEDULED: 'text-warn',
-  CANCELLED: 'text-fg-2',
-  NO_SHOW: 'text-danger',
-} as const;
+import {
+  FOCUS,
+  LINK,
+  outcomeText,
+  personLabel,
+  STATUS_TONE,
+  type AppointmentData,
+} from './appointments-view';
 
 const CHIP = 'cursor-pointer rounded-md border border-border bg-surface-2 px-2 py-0.5 text-xs';
-const FOCUS = 'focus-visible:outline-2 focus-visible:outline-accent';
 const MATCHES = 6;
 
 /** How the day typed reads back: `Thứ Hai 28/09/2026 · 2 ngày nữa` (mockup `.read`). */
@@ -56,6 +55,7 @@ export function dateReading(date: Extract<ScheduleDate, { ok: true }>): string {
 /**
  * Mockup 6a/6b: a new appointment. With `from` (a past appointment) it is the next one (6h):
  * filled in from it, the day today or later, and no link back to it. `customer` fixes the customer.
+ * `onSeeAll` replaces going to the customer profile for "Xem tất cả" (the dialog is open on it).
  */
 export function AppointmentDialog({
   data,
@@ -63,12 +63,14 @@ export function AppointmentDialog({
   from,
   onClose,
   onCreated,
+  onSeeAll,
 }: {
   data: AppointmentData;
   customer?: CustomerRecord;
   from?: AppointmentRecord;
   onClose: () => void;
   onCreated: (appointment: AppointmentRecord) => void;
+  onSeeAll?: () => void;
 }) {
   const app = useAppData();
   const today = app.today();
@@ -136,7 +138,7 @@ export function AppointmentDialog({
       subtitle={
         from
           ? t('appointmentForm.nextSub', {
-              date: [formatDate(from.date), from.time].filter(Boolean).join(' '),
+              date: withTime(formatDate(from.date), from.time),
               status: t(`appointmentStatus.${from.status}`),
             })
           : t('appointmentForm.sub')
@@ -163,7 +165,9 @@ export function AppointmentDialog({
         error={attempted && !customer ? t('appointmentForm.customerRequired') : undefined}
         history={history}
       />
-      {customer && history && <History customer={customer} history={history} today={today} />}
+      {customer && history && (
+        <History customer={customer} history={history} today={today} onSeeAll={onSeeAll} />
+      )}
       <SelectField
         label={t('appointmentForm.re')}
         value={reId}
@@ -367,10 +371,12 @@ function History({
   customer,
   history,
   today,
+  onSeeAll,
 }: {
   customer: CustomerRecord;
   history: PriorMeetings;
   today: CalendarDate;
+  onSeeAll: (() => void) | undefined;
 }) {
   if (history.rows.length === 0) return null;
   return (
@@ -380,7 +386,14 @@ function History({
         {history.rows.length > MAX_HISTORY && (
           <a
             href={routeToHash({ screen: 'customer', id: customer.id })}
-            className={`rounded-sm text-accent hover:underline ${FOCUS}`}
+            onClick={
+              onSeeAll &&
+              ((event) => {
+                event.preventDefault();
+                onSeeAll();
+              })
+            }
+            className={LINK}
           >
             {t('appointmentForm.historyAll', { n: history.rows.length })}
           </a>

@@ -1,11 +1,16 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import type { AppointmentRecord } from '@p2c/db';
 import type { CalendarDate, StageTransition } from '@p2c/domain';
 import { DataTable, type DataTableColumn } from '@p2c/ui';
 import { t } from '../../i18n';
-import { STATUS_TONE } from '../appointments/AppointmentDialog';
-import { dayText, isPastOrToday } from '../appointments/appointment-form';
-import { outcomeResolver, outcomeText, type Outcome } from '../appointments/appointments-view';
+import { dayText, isPastOrToday, withTime } from '../appointments/appointment-form';
+import {
+  LINK,
+  outcomeResolver,
+  outcomeText,
+  STATUS_TONE,
+  type Outcome,
+} from '../appointments/appointments-view';
 
 interface Row {
   readonly appointment: AppointmentRecord;
@@ -17,6 +22,31 @@ const resultText = ({ appointment: a, outcome }: Row) =>
   outcome?.kind === 'move' || outcome?.kind === 'keep'
     ? outcomeText(outcome)
     : t(`appointmentStatus.${a.status}`);
+
+/** "Hẹn tiếp": the next appointment after one up to today (6h); nothing for one ahead. */
+export function NextButton({
+  appointment: a,
+  today,
+  onNext,
+  children,
+}: {
+  appointment: AppointmentRecord;
+  today: CalendarDate;
+  onNext: (from: AppointmentRecord) => void;
+  children: ReactNode;
+}) {
+  if (!isPastOrToday(a.date, today)) return null;
+  return (
+    <button
+      type="button"
+      aria-label={t('customer.nextLabel', { date: withTime(dayText(a.date, today), a.time) })}
+      onClick={() => onNext(a)}
+      className={LINK}
+    >
+      {children}
+    </button>
+  );
+}
 
 /**
  * Mockup customer.html "Lịch hẹn": every appointment of the customer, newest first; any one up
@@ -35,7 +65,10 @@ export function CustomerAppointments({
 }) {
   const rows = useMemo(() => {
     const outcome = outcomeResolver({ appointments, transitions });
-    return appointments.map((appointment) => ({ appointment, outcome: outcome(appointment) }));
+    // Latest first, so two on one day (which the date sort keeps in this order) stay newest first.
+    return appointments
+      .map((appointment) => ({ appointment, outcome: outcome(appointment) }))
+      .reverse();
   }, [appointments, transitions]);
 
   const columns = useMemo<ReadonlyArray<DataTableColumn<Row>>>(
@@ -45,7 +78,7 @@ export function CustomerAppointments({
         header: t('appointments.date'),
         kind: 'date',
         value: (r) => r.appointment.date,
-        cell: ({ appointment: a }) => [dayText(a.date, today), a.time].filter(Boolean).join(' '),
+        cell: ({ appointment: a }) => withTime(dayText(a.date, today), a.time),
       },
       {
         id: 'result',
@@ -71,17 +104,11 @@ export function CustomerAppointments({
         kind: 'text',
         sortable: false,
         value: () => '',
-        cell: ({ appointment: a }) =>
-          isPastOrToday(a.date, today) && (
-            <button
-              type="button"
-              aria-label={t('customer.nextLabel', { date: dayText(a.date, today) })}
-              onClick={() => onNext(a)}
-              className="cursor-pointer rounded-sm text-accent hover:underline focus-visible:outline-2 focus-visible:outline-accent"
-            >
-              {t('customer.next')}
-            </button>
-          ),
+        cell: ({ appointment }) => (
+          <NextButton appointment={appointment} today={today} onNext={onNext}>
+            {t('customer.next')}
+          </NextButton>
+        ),
       },
     ],
     [today, onNext],

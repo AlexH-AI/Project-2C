@@ -58,6 +58,9 @@ export function readScheduleDate(
 export const dayText = (date: CalendarDate, today: CalendarDate) =>
   date.year === today.year ? formatDayMonth(date) : formatDate(date);
 
+/** A day as written, then its time when it has one: `dd/mm/yyyy hh:mm`. */
+export const withTime = (day: string, time: string | null) => (time ? `${day} ${time}` : day);
+
 /** `hh:mm` (the hour may lose its zero); empty means no time. */
 export function parseTime(text: string): { ok: true; time: string | null } | { ok: false } {
   const trimmed = text.trim();

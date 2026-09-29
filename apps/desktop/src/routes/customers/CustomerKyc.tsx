@@ -10,7 +10,8 @@ import {
 } from '@p2c/domain';
 import { Button, StageBadge } from '@p2c/ui';
 import { t } from '../../i18n';
-import { isPastOrToday } from '../appointments/appointment-form';
+import { withTime } from '../appointments/appointment-form';
+import { NextButton } from './CustomerAppointments';
 import { factText, kycOverview, kycTimeline, type KycCategoryRow } from './kyc-view';
 
 const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
@@ -199,10 +200,10 @@ export function Timeline({
             <span className="text-xs text-fg-3 tabular-nums">
               {event.kind === 'meeting'
                 ? t('timeline.meetingWhen', {
-                    when: [formatDate(event.date), event.appointment.time]
-                      .filter(Boolean)
-                      .join(' '),
-                    status: t(`appointmentStatus.${event.appointment.status}`),
+                    when: withTime(formatDate(event.date), event.appointment.time),
+                    status: t(`appointmentStatus.${event.appointment.status}`).toLocaleLowerCase(
+                      'vi',
+                    ),
                   })
                 : formatDate(event.date)}
             </span>
@@ -221,15 +222,9 @@ export function Timeline({
                 </b>
                 <span className="flex flex-wrap items-baseline gap-x-2 text-fg-2">
                   {meetingText(event.appointment)}
-                  {isPastOrToday(event.date, today) && (
-                    <button
-                      type="button"
-                      onClick={() => onNext(event.appointment)}
-                      className="cursor-pointer rounded-sm text-accent hover:underline focus-visible:outline-2 focus-visible:outline-accent"
-                    >
-                      {t('timeline.next')}
-                    </button>
-                  )}
+                  <NextButton appointment={event.appointment} today={today} onNext={onNext}>
+                    {t('timeline.next')}
+                  </NextButton>
                 </span>
               </>
             )}

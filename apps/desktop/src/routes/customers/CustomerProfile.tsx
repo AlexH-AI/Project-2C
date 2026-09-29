@@ -143,6 +143,10 @@ export function CustomerProfile({ id }: { id: string }) {
           from={appointing.from}
           onClose={() => setAppointing(null)}
           onCreated={() => undefined}
+          onSeeAll={() => {
+            setAppointing(null);
+            document.getElementById('customer-appointments')?.scrollIntoView({ block: 'start' });
+          }}
         />
       )}
       {editing === 'profile' && (
