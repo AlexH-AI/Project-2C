@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { calendarDate, type Appointment } from '@p2c/domain';
-import { expectedCaseSize, readFyp, readPolicy, type PolicyDraft } from './policy-form';
+import { calendarDate, type Appointment, type Policy } from '@p2c/domain';
+import {
+  expectedCaseSize,
+  issuedChange,
+  readFyp,
+  readPolicy,
+  type PolicyDraft,
+} from './policy-form';
 
 const d = (day: number, month: number, year = 2026) => calendarDate(year, month, day);
 const TODAY = d(26, 9);
@@ -66,6 +72,36 @@ describe('readPolicy', () => {
   it('does not compare with a submission day it cannot read', () => {
     const read = readPolicy({ ...issued, submittedDate: 'x' }, TODAY);
     expect(read.issuedDate).toEqual({ ok: true, date: d(18, 9), daysAfter: null });
+  });
+});
+
+describe('issuedChange', () => {
+  const policy: Policy = {
+    id: 'p',
+    customerId: 'c',
+    reId: 're',
+    submittedDate: d(20, 8),
+    submittedFyp: 400 * MILLION,
+    issuedDate: d(18, 9),
+    issuedFyp: 400 * MILLION,
+  };
+
+  it('tells how far the issued FYP now is from the submitted one and from the saved one', () => {
+    expect(issuedChange(policy, { issuedDate: d(18, 9), issuedFyp: 385_500_000 })).toEqual({
+      fromSubmitted: -14_500_000,
+      metric: { year: 2026, month: 9, diff: -14_500_000 },
+    });
+  });
+
+  it('leaves out the effect on the month when the FYP stays or the issue month moves', () => {
+    expect(issuedChange(policy, { issuedDate: d(19, 9), issuedFyp: 400 * MILLION })).toEqual({
+      fromSubmitted: 0,
+      metric: null,
+    });
+    expect(issuedChange(policy, { issuedDate: d(1, 10), issuedFyp: 410 * MILLION })).toEqual({
+      fromSubmitted: 10 * MILLION,
+      metric: null,
+    });
   });
 });
 

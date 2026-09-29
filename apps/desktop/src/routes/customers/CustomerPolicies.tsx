@@ -14,7 +14,7 @@ import { LINK } from '../appointments/appointments-view';
 
 /**
  * Mockup customer.html "Hợp đồng": the customer's policies, newest submission first, each
- * submitted then issued; "Phát hành" until issued (8b). A short list rather than a
+ * submitted then issued; "Phát hành" until issued, and "Sửa" (8b, 8d). A short list rather than a
  * table, so it fits the narrow column. The customer's stage never depends on them.
  */
 export function CustomerPolicies({
@@ -24,6 +24,7 @@ export function CustomerPolicies({
   today,
   onNew,
   onIssue,
+  onEdit,
 }: {
   policies: readonly Policy[];
   people: readonly Person[];
@@ -31,6 +32,7 @@ export function CustomerPolicies({
   today: CalendarDate;
   onNew: () => void;
   onIssue: (policy: Policy) => void;
+  onEdit: (policy: Policy) => void;
 }) {
   const dayFyp = (key: 'policies.submitted' | 'policies.issued', date: CalendarDate, fyp: Vnd) =>
     t(key, { date: dayText(date, today), fyp: formatVndCompact(fyp) });
@@ -89,6 +91,14 @@ export function CustomerPolicies({
                       {t('policies.issue')}
                     </button>
                   )}
+                  <button
+                    type="button"
+                    aria-label={t('policies.editLabel', { date: submitted })}
+                    onClick={() => onEdit(p)}
+                    className={LINK}
+                  >
+                    {t('policies.edit')}
+                  </button>
                 </li>
               );
             })}

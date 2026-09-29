@@ -71,6 +71,7 @@ export function CustomerProfile({ id }: { id: string }) {
   const [appointing, setAppointing] = useState<{ from?: AppointmentRecord } | null>(null);
   const [policyMode, setPolicyMode] = useState<PolicyMode | null>(null);
   const onIssue = (policy: Policy) => setPolicyMode({ kind: 'issue', policy });
+  const onEditPolicy = (policy: Policy) => setPolicyMode({ kind: 'edit', policy });
   const next = (from: AppointmentRecord) => setAppointing({ from });
 
   if (!profile) {
@@ -134,6 +135,7 @@ export function CustomerProfile({ id }: { id: string }) {
             today={today}
             onNew={() => setPolicyMode({ kind: 'new' })}
             onIssue={onIssue}
+            onEdit={onEditPolicy}
           />
         </div>
         <div className="flex flex-col gap-4">
