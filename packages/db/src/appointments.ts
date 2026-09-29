@@ -128,16 +128,25 @@ export function recordMeetingOutcome(
   });
 }
 
-/** The old appointment becomes rescheduled; a new one takes its place on the new day (D3). */
+/**
+ * The old appointment becomes rescheduled, with the reason in its note (mockup 6e); a new one
+ * takes its place on the new day (D3).
+ */
 export function rescheduleAppointment(
   db: Database,
   id: string,
   when: { readonly date: CalendarDate; readonly time?: string | null },
+  note?: string,
 ): AppointmentRecord {
   return db.transaction(() => {
     const old = toAppointment(db, liveAppointment(db, id));
     if (old.status !== 'SCHEDULED') throw new DbError('APPOINTMENT_NOT_SCHEDULED');
-    updateAppointmentRow(db, id, { status: 'RESCHEDULED' });
+    // A note already there stays, the reason goes under it.
+    const reason = optionalText(note);
+    updateAppointmentRow(db, id, {
+      status: 'RESCHEDULED',
+      note: [old.note, reason].filter(Boolean).join('\n'),
+    });
     return insertScheduled(db, { ...old, date: when.date, time: when.time ?? null }, id);
   });
 }

@@ -38,7 +38,7 @@ const FOCUS = 'focus-visible:outline-2 focus-visible:outline-accent';
 const MATCHES = 6;
 
 /** How the day typed reads back: `Thứ Hai 28/09/2026 · 2 ngày nữa` (mockup `.read`). */
-function dateReading(date: Extract<ScheduleDate, { ok: true }>): string {
+export function dateReading(date: Extract<ScheduleDate, { ok: true }>): string {
   const n = Math.abs(date.daysFromToday);
   const when =
     date.daysFromToday === 0
@@ -99,13 +99,7 @@ export function AppointmentDialog({
     .map((person) => ({ value: person.id, label: personLabel(person) }));
   const pending = dateText.trim() === '' && !attempted;
 
-  const dateError =
-    date.ok || pending
-      ? undefined
-      : date.error === 'past'
-        ? t('appointmentForm.past', { date: formatDate(date.date), today: formatDate(today) })
-        : t(`date.error.${date.error}`);
-  const read = date.ok || date.error === 'past' ? date : null;
+  const dateError = pending ? undefined : dateFieldError(date, today);
 
   const edit =
     <T,>(set: (value: T) => void) =>
@@ -196,23 +190,7 @@ export function AppointmentDialog({
           error={time.ok ? undefined : t('appointmentForm.timeError')}
         />
       </div>
-      {read?.suggestion && (
-        <p className={`${ALERT} flex flex-col items-start gap-1.5 border-warn`}>
-          {t('appointmentForm.suggest', {
-            date: formatDate(read.date),
-            n: Math.abs(read.daysFromToday),
-            next: formatDate(read.suggestion),
-          })}
-          <button
-            type="button"
-            className={`${CHIP} ${FOCUS}`}
-            onClick={() => edit(setDateText)(formatDate(read.suggestion as CalendarDate))}
-          >
-            {t('appointmentForm.suggestUse', { date: formatDate(read.suggestion) })}
-          </button>
-          {!from && <span className="text-xs text-fg-2">{t('appointmentForm.suggestHelp')}</span>}
-        </p>
-      )}
+      <DateSuggestion date={date} onUse={edit(setDateText)} help={!from} />
       <SelectField
         label={t('appointmentForm.trigger')}
         value={trigger}
@@ -255,6 +233,42 @@ export function AppointmentDialog({
         <span className="text-xs text-fg-3">{t('appointmentForm.coordinatorHelp')}</span>
       </fieldset>
     </Dialog>
+  );
+}
+
+/** The error under the day field, once it is not a day the form takes. */
+export function dateFieldError(date: ScheduleDate, today: CalendarDate): string | undefined {
+  if (date.ok) return undefined;
+  return date.error === 'past'
+    ? t('appointmentForm.past', { date: formatDate(date.date), today: formatDate(today) })
+    : t(`date.error.${date.error}`);
+}
+
+/** A year-less day long past offers the same day next year (6b); the RE picks. */
+export function DateSuggestion({
+  date,
+  onUse,
+  help,
+}: {
+  date: ScheduleDate;
+  onUse: (text: string) => void;
+  help: boolean;
+}) {
+  const read = date.ok || date.error === 'past' ? date : null;
+  if (!read?.suggestion) return null;
+  const next = formatDate(read.suggestion);
+  return (
+    <p className={`${ALERT} flex flex-col items-start gap-1.5 border-warn`}>
+      {t('appointmentForm.suggest', {
+        date: formatDate(read.date),
+        n: Math.abs(read.daysFromToday),
+        next,
+      })}
+      <button type="button" className={`${CHIP} ${FOCUS}`} onClick={() => onUse(next)}>
+        {t('appointmentForm.suggestUse', { date: next })}
+      </button>
+      {help && <span className="text-xs text-fg-2">{t('appointmentForm.suggestHelp')}</span>}
+    </p>
   );
 }
 

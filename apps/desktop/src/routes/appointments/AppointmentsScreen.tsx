@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
   listAppointments,
   listCustomers,
@@ -25,6 +25,7 @@ import { useScope } from '../../shell/ScopeContext';
 import { ALERT } from '../customers/CustomerDialogs';
 import { PERIOD_LABELS } from '../period-labels';
 import { AppointmentDialog } from './AppointmentDialog';
+import { RescheduleDialog } from './RescheduleDialog';
 import { isPastOrToday } from './appointment-form';
 import {
   appointmentRows,
@@ -33,6 +34,7 @@ import {
   outcomeText,
   personLabel,
   pickDay,
+  rescheduleLinks,
   revealCreated,
   type AppointmentRow,
   type CoordinatorFilter,
@@ -71,6 +73,7 @@ export function AppointmentsScreen() {
   const [coordinator, setCoordinator] = useState<CoordinatorFilter>('any');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState<{ from?: AppointmentRow } | null>(null);
+  const [moving, setMoving] = useState<AppointmentRow | null>(null);
   // The appointment just made for an RE outside the scope, while it is the one selected.
   const [hiddenCreated, setHiddenCreated] = useState<AppointmentRecord | null>(null);
 
@@ -153,9 +156,10 @@ export function AppointmentsScreen() {
     setDay(date);
   };
 
-  // Shows the day of the appointment just made, so it is there to see. A coordinator filter
-  // hiding it is cleared; the scope is shared by every screen, so a line says it hides it.
-  const showCreated = (created: AppointmentRecord) => {
+  // Shows the day of the appointment just made (or linked by a reschedule), so it is there to see.
+  // A coordinator filter hiding it is cleared; the scope is shared by every screen, so a line
+  // says it hides it.
+  const show = (created: AppointmentRecord) => {
     const reveal = revealCreated(created, data.people, scope, coordinator);
     setPeriod(pickDay(period, created.date) ?? periodOf('month', created.date));
     setDay(created.date);
@@ -201,7 +205,14 @@ export function AppointmentsScreen() {
           <MonthCalendar period={period} day={day} today={today} rows={rows} onPick={pick} />
           <DayTable day={day} rows={rows} onSelect={setSelectedId} />
         </div>
-        <Detail row={selected} today={today} onNext={(from) => setCreating({ from })} />
+        <Detail
+          row={selected}
+          links={selected && rescheduleLinks(data.appointments, selected.appointment)}
+          today={today}
+          onNext={(from) => setCreating({ from })}
+          onReschedule={setMoving}
+          onShow={show}
+        />
       </div>
       <section aria-labelledby="appointments-list" className={CARD}>
         <h2 id="appointments-list" className="m-0 mb-2 text-sm font-medium text-heading">
@@ -221,9 +232,10 @@ export function AppointmentsScreen() {
           customer={creating.from?.customer}
           from={creating.from?.appointment}
           onClose={() => setCreating(null)}
-          onCreated={showCreated}
+          onCreated={show}
         />
       )}
+      {moving && <RescheduleDialog row={moving} onClose={() => setMoving(null)} onMoved={show} />}
     </>
   );
 }
@@ -411,14 +423,22 @@ function DayTable({
   );
 }
 
+const dateTime = (a: AppointmentRecord) => [formatDate(a.date), a.time].filter(Boolean).join(' ');
+
 function Detail({
   row,
+  links,
   today,
   onNext,
+  onReschedule,
+  onShow,
 }: {
   row: AppointmentRow | undefined;
+  links: ReturnType<typeof rescheduleLinks> | undefined;
   today: CalendarDate;
   onNext: (from: AppointmentRow) => void;
+  onReschedule: (row: AppointmentRow) => void;
+  onShow: (appointment: AppointmentRecord) => void;
 }) {
   if (!row) {
     return (
@@ -428,7 +448,16 @@ function Detail({
     );
   }
   const a = row.appointment;
-  const facts: [string, string][] = [
+  const link = (other: AppointmentRecord) => (
+    <button
+      type="button"
+      onClick={() => onShow(other)}
+      className={`cursor-pointer rounded-sm text-accent tabular-nums hover:underline ${FOCUS}`}
+    >
+      {dateTime(other)}
+    </button>
+  );
+  const facts: [string, ReactNode][] = [
     [t('appointments.re'), [row.re?.name, row.team?.name].filter(Boolean).join(' · ')],
     [t('appointments.coordinators'), row.coordinators.map(personLabel).join(', ') || '—'],
     [
@@ -439,19 +468,21 @@ function Detail({
     [t('appointments.outcome'), outcomeText(row.outcome) || '—'],
     [t('appointments.note'), a.note || '—'],
   ];
+  if (links?.from) facts.push([t('appointments.rescheduledFrom'), link(links.from)]);
+  if (links?.to) facts.push([t('appointments.rescheduledToLink'), link(links.to)]);
   return (
     <aside
       aria-label={t('appointments.detail')}
       className={`${CARD} flex w-full flex-col gap-3 lg:sticky lg:top-20 lg:w-84 lg:shrink-0`}
     >
       <h2 className="m-0 text-base font-semibold tabular-nums">
-        {[formatDate(a.date), a.time].filter(Boolean).join(' ')} · {row.customer?.name}
+        {dateTime(a)} · {row.customer?.name}
       </h2>
       <dl className="m-0 flex flex-col gap-1.5 text-sm">
         {facts.map(([term, value]) => (
           <div key={term} className="flex gap-3">
             <dt className="w-24 shrink-0 text-fg-3">{term}</dt>
-            <dd className="m-0">{value}</dd>
+            <dd className="m-0 whitespace-pre-line">{value}</dd>
           </div>
         ))}
       </dl>
@@ -461,11 +492,14 @@ function Detail({
       >
         {t('appointments.profile')}
       </a>
-      {row.customer && isPastOrToday(a.date, today) && (
-        <Button className="self-start" onClick={() => onNext(row)}>
-          {t('appointments.next')}
-        </Button>
-      )}
+      <div className="flex flex-wrap gap-2">
+        {a.status === 'SCHEDULED' && (
+          <Button onClick={() => onReschedule(row)}>{t('appointments.reschedule')}</Button>
+        )}
+        {row.customer && isPastOrToday(a.date, today) && (
+          <Button onClick={() => onNext(row)}>{t('appointments.next')}</Button>
+        )}
+      </div>
     </aside>
   );
 }
