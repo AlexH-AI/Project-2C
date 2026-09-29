@@ -275,6 +275,8 @@ export const vi = {
   'weekdayLong.7': 'Chủ nhật',
   'appointments.new': '+ Lịch hẹn',
   'appointments.next': 'Tạo lịch hẹn tiếp theo',
+  'appointments.createdOutside':
+    'Đã tạo lịch hẹn {date} cho {re}. RE này nằm ngoài góc nhìn hiện tại nên lịch không hiện ở đây; đổi góc nhìn để xem.',
   'appointmentForm.title': 'Lịch hẹn mới',
   'appointmentForm.sub': 'Trạng thái: Dự kiến',
   'appointmentForm.nextTitle': 'Lịch hẹn tiếp theo',

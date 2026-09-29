@@ -109,6 +109,10 @@ export function outcomeResolver(
   };
 }
 
+const matchesCoordinator = (a: AppointmentRecord, coordinator: CoordinatorFilter) =>
+  coordinator === 'any' ||
+  (coordinator === 'none' ? a.coordinatorIds.length === 0 : a.coordinatorIds.includes(coordinator));
+
 /** The appointments of the RE in scope, filtered by coordinator, in the repository's order. */
 export function appointmentRows(
   data: AppointmentData,
@@ -122,14 +126,7 @@ export function appointmentRows(
   const outcome = outcomeResolver(data);
 
   return data.appointments
-    .filter(
-      (a) =>
-        inScope(data.people, a.reId, scope) &&
-        (coordinator === 'any' ||
-          (coordinator === 'none'
-            ? a.coordinatorIds.length === 0
-            : a.coordinatorIds.includes(coordinator))),
-    )
+    .filter((a) => inScope(data.people, a.reId, scope) && matchesCoordinator(a, coordinator))
     .map((a) => {
       const re = people.get(a.reId);
       return {
@@ -141,6 +138,22 @@ export function appointmentRows(
         outcome: outcome(a),
       };
     });
+}
+
+/**
+ * How the screen shows an appointment just made: the coordinator filter, cleared when it would
+ * hide it; whether its RE is outside the scope, which is shared by every screen and so stays.
+ */
+export function revealCreated(
+  created: AppointmentRecord,
+  people: readonly Person[],
+  scope: Scope,
+  coordinator: CoordinatorFilter,
+): { readonly coordinator: CoordinatorFilter; readonly outsideScope: boolean } {
+  return {
+    coordinator: matchesCoordinator(created, coordinator) ? coordinator : 'any',
+    outsideScope: !inScope(people, created.reId, scope),
+  };
 }
 
 /** The calendar dot of each status; a new status must pick one. */
