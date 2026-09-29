@@ -323,6 +323,33 @@ test('rescheduling keeps the old appointment with its reason and links it to the
   await expect(detail.getByRole('heading')).toHaveText(`02/10/2026 10:00 · ${name}`);
 });
 
+test('a rescheduled day already past is refused unless it back-fills a meeting held then', async ({
+  page,
+}) => {
+  const { rows, detail } = screen(page);
+  const planned = rows.filter({ hasText: 'Dự kiến' }).first();
+  const name = (await planned.getByRole('button').textContent()) ?? '';
+  await planned.getByRole('button').click();
+  await detail.getByRole('button', { name: 'Dời lịch' }).click();
+
+  const dialog = page.getByRole('dialog');
+  const backfill = dialog.getByRole('checkbox', { name: /^Nhập bù/ });
+  await expect(backfill).toHaveCount(0);
+  await dialog.getByRole('textbox', { name: /^Ngày mới/ }).fill('10/9');
+  await expect(dialog).toContainText(
+    `10/09/2026 đã qua. Ngày dời phải từ hôm nay (${TODAY}) trở đi`,
+  );
+  await dialog.getByRole('button', { name: 'Dời lịch' }).click();
+  await expect(dialog).toBeVisible();
+
+  await backfill.check();
+  await expect(dialog).toContainText('Thứ Năm 10/09/2026 · đã qua 5 ngày');
+  await dialog.getByRole('button', { name: 'Dời lịch' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(detail.getByRole('heading')).toContainText(`10/09/2026`);
+  await expect(detail.getByRole('heading')).toContainText(name);
+});
+
 /** Opens the dialog and fills a customer (its RE, or another team's), `date` and a trigger. */
 async function fillAppointment(page: Page, date: string, otherTeam?: string) {
   await page.getByRole('button', { name: '+ Lịch hẹn' }).click();

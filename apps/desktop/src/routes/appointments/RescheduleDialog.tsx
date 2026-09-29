@@ -31,15 +31,24 @@ export function RescheduleDialog({
   const [dateText, setDateText] = useState('');
   const [timeText, setTimeText] = useState(old.time ?? '');
   const [reason, setReason] = useState('');
+  const [backfill, setBackfill] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const [failure, setFailure] = useState<string>();
 
-  const date = readScheduleDate(dateText, today, 'any');
+  // The new day is today or later; a day past only to back-fill a meeting held then (Owner 29/09).
+  const date = readScheduleDate(dateText, today, backfill ? 'any' : 'fromToday');
   const time = parseTime(timeText);
   const same =
     date.ok && time.ok && compareDates(date.date, old.date) === 0 && time.time === old.time;
   const pending = dateText.trim() === '' && !attempted;
-  const dateError = same ? t('reschedule.same') : pending ? undefined : dateFieldError(date, today);
+  const past = !date.ok && date.error === 'past';
+  const dateError = same
+    ? t('reschedule.same')
+    : pending
+      ? undefined
+      : past
+        ? t('reschedule.past', { date: formatDate(date.date), today: formatDate(today) })
+        : dateFieldError(date, today);
 
   const edit = (set: (value: string) => void) => (value: string) => {
     set(value);
@@ -96,6 +105,17 @@ export function RescheduleDialog({
         />
       </div>
       <DateSuggestion date={date} onUse={edit(setDateText)} help={false} />
+      {(past || backfill) && (
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={backfill}
+            onChange={(event) => setBackfill(event.target.checked)}
+            className="accent-accent"
+          />
+          {t('reschedule.backfill')}
+        </label>
+      )}
       <TextField label={t('reschedule.reason')} value={reason} onChange={edit(setReason)} />
       <div className={`${ALERT} border-info`}>
         <b>{t('reschedule.onSave')}</b>

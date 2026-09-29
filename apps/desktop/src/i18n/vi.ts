@@ -326,6 +326,9 @@ export const vi = {
   'reschedule.time': 'Giờ mới (mặc định giờ cũ)',
   'reschedule.reason': 'Lý do dời (ghi vào ghi chú cuộc hẹn cũ)',
   'reschedule.same': 'Ngày giờ mới trùng lịch cũ.',
+  'reschedule.past':
+    '{date} đã qua. Ngày dời phải từ hôm nay ({today}) trở đi; ngày đã qua chỉ dùng để nhập bù.',
+  'reschedule.backfill': 'Nhập bù: cuộc gặp đã diễn ra vào ngày này',
   'reschedule.onSave': 'Khi lưu',
   'reschedule.oldBecomes': '{when} → Dời lịch (giữ lại trong lịch sử, không tính gặp)',
   'reschedule.newOne': 'Tạo lịch hẹn mới {when} · Dự kiến · cùng RE, trigger, người phối hợp',
