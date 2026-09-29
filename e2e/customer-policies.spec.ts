@@ -53,7 +53,9 @@ test('submits "500tr", then issues it: the FYP defaults to the submitted one, ch
   );
   await dialog.getByRole('textbox', { name: /^Ngày phát hành/ }).fill('5/9');
   await dialog.getByRole('button', { name: 'Phát hành' }).click();
-  await expect(dialog).toContainText('Chưa lưu được — 1 ô cần sửa');
+  await expect(dialog.getByRole('alert')).toHaveText(
+    'Chưa lưu được — 1 ô cần sửaKhông có gì được ghi vào dữ liệu.',
+  );
   await expect(dialog).toContainText('05/09/2026 trước ngày nộp 10/09/2026.');
   await dialog.getByRole('textbox', { name: /^Ngày phát hành/ }).fill('12/9');
   await expect(dialog).toContainText('2 ngày sau khi nộp');
@@ -114,7 +116,8 @@ test('edits the issued FYP (8d), then deletes the policy softly', async ({ page 
   await row.getByRole('button', { name: 'Sửa HĐ nộp 01/09/2026' }).click();
   dialog = page.getByRole('dialog', { name: `Sửa HĐ · ${name}` });
   await expect(dialog).toContainText('Đã phát hành 15/09/2026');
-  await dialog.getByRole('textbox', { name: /^FYP phát hành/ }).fill('385,5tr');
+  // Mockup 8d: once issued, the issued FYP is a hand correction.
+  await dialog.getByRole('textbox', { name: 'FYP phát hành sửa tay' }).fill('385,5tr');
   await expect(dialog).toContainText('385.500.000 ₫ (385,5 tr) · khác FYP nộp −14,5 tr');
   await expect(dialog).toContainText('FYP phát hành tháng 09/2026 của RE');
   await expect(dialog).toContainText('giảm 14,5 tr');

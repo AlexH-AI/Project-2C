@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { calendarDate, type Appointment, type Policy } from '@p2c/domain';
 import {
+  effectText,
   expectedCaseSize,
   issuedChange,
   readFyp,
@@ -11,6 +12,23 @@ import {
 const d = (day: number, month: number, year = 2026) => calendarDate(year, month, day);
 const TODAY = d(26, 9);
 const MILLION = 1_000_000;
+
+describe('effectText', () => {
+  const down = { year: 2026, month: 9, diff: -14_500_000 };
+
+  it('names the RE of the policy', () => {
+    expect(effectText(down, 'Đỗ Khánh Linh')).toMatch(
+      /^FYP phát hành tháng \S+ của RE Đỗ Khánh Linh giảm 14,5 tr$/,
+    );
+    expect(effectText({ ...down, diff: 2 * MILLION }, 'Linh')).toMatch(/của RE Linh tăng 2 tr$/);
+  });
+
+  it('never shows an empty RE name, e.g. when the RE was deleted', () => {
+    for (const name of [undefined, '', '  ']) {
+      expect(effectText(down, name)).toMatch(/^FYP phát hành tháng \S+ giảm 14,5 tr$/);
+    }
+  });
+});
 
 describe('readFyp', () => {
   it('reads a positive amount the way the money field does', () => {

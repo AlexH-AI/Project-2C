@@ -27,7 +27,7 @@ import {
 import type { Database } from './database';
 import { DbError } from './errors';
 import { encodeBase32, ulid } from './ids';
-import { recordProfileFacts } from './kyc';
+import { previewProfileFacts, recordProfileFacts, type ProfileKycPreview } from './kyc';
 import { customers, GENDERS, stageTransitions } from './schema';
 
 type CustomerRow = typeof customers.$inferSelect;
@@ -136,6 +136,22 @@ export function updateCustomerProfile(
     recordProfileFacts(db, id, row, profile, fromLocalDate(db.now()));
     return toCustomer(liveCustomer(db, id));
   });
+}
+
+/**
+ * Mockup 5c: what `updateCustomerProfile` would record in KYC for these birth date / gender
+ * changes (omitted = unchanged), without writing; null when it records nothing.
+ */
+export function previewCustomerProfile(
+  db: Database,
+  id: string,
+  changes: Pick<Partial<CustomerProfile>, 'birthDate' | 'gender'>,
+): ProfileKycPreview | null {
+  const current = toCustomer(liveCustomer(db, id));
+  const birthDate = changes.birthDate === undefined ? current.birthDate : changes.birthDate;
+  const gender = changes.gender === undefined ? current.gender : changes.gender;
+  const next = { birthDate: birthDate ? birthDateText(birthDate) : null, gender: gender ?? null };
+  return previewProfileFacts(db, id, next, fromLocalDate(db.now()));
 }
 
 /** A manual change points to no appointment, so it never counts as an RF (#44). */

@@ -2,23 +2,28 @@ import { useState } from 'react';
 import {
   changeStageManually,
   createCustomer,
+  DbError,
   listPeople,
   listTeams,
+  previewCustomerProfile,
   updateCustomerProfile,
+  type BirthDate,
   type CustomerRecord,
   type Database,
   type Gender,
+  type ProfileKycPreview,
 } from '@p2c/db';
 import {
   CLOSED_STAGES,
   PIPELINE_STAGES,
   formatDate,
+  weekdayOf,
   type CalendarDate,
   type CustomerStage,
   type PipelineStage,
 } from '@p2c/domain';
 import { Button, Choices, Dialog, SelectField, StageBadge, TextField } from '@p2c/ui';
-import { useAppData, useQuery } from '../../data/AppDataContext';
+import { useAppData, useDatabase, useQuery } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
 import {
@@ -49,6 +54,10 @@ export function Actions({ onClose, save }: { onClose: () => void; save: string }
   );
 }
 
+/** A day as read back under a date field, e.g. "Thứ Năm 24/09/2026" (mockups 5a, 8a). */
+export const dayRead = (date: CalendarDate) =>
+  t('date.read', { weekday: t(`weekdayLong.${weekdayOf(date)}`), date: formatDate(date) });
+
 /**
  * A quick date field defaulting to today, showing the day it understood (mockup `.read`); a day
  * after today is refused.
@@ -60,9 +69,57 @@ export function useDateField(today: CalendarDate) {
     text,
     setText,
     parsed,
-    hint: parsed.ok ? formatDate(parsed.date) : undefined,
+    hint: parsed.ok ? dayRead(parsed.date) : undefined,
     error: parsed.ok ? undefined : t(`date.error.${parsed.error}`),
   };
+}
+
+/** Mockup 5b: how many fields to fix, above the form; each error stays under its field. */
+export function InvalidAlert({ count }: { count: number }) {
+  if (count === 0) return null;
+  return (
+    <p role="alert" className={`${ALERT} flex flex-col border-danger`}>
+      <b className="text-danger">{t('form.invalid', { count })}</b>
+      <span className="text-fg-3">{t('form.nothingSaved')}</span>
+    </p>
+  );
+}
+
+/**
+ * Mockup 5c: what saving the profile records in KYC, worked out by the same code that records it;
+ * null when it records nothing or the birth date / gender cannot be saved as typed.
+ */
+function useKycPreview(
+  customer: CustomerRecord | undefined,
+  birthDate: BirthDate | null | undefined,
+  gender: Gender | null,
+): ProfileKycPreview | null {
+  const db = useDatabase();
+  if (!customer || birthDate === undefined) return null;
+  try {
+    return previewCustomerProfile(db, customer.id, { birthDate, gender });
+  } catch (error) {
+    // Clearing a birth date or gender, or a date out of range: saving reports it.
+    if (error instanceof DbError || error instanceof RangeError) return null;
+    throw error;
+  }
+}
+
+function KycPreview({ preview }: { preview: ProfileKycPreview }) {
+  const chip = 'rounded border border-border px-1 font-mono text-xs';
+  return (
+    <div role="status" className={`${ALERT} border-info`}>
+      <b className="block">{t('customerForm.kycTitle')}</b>
+      {t('customerForm.kycSource')} <span className={chip}>{t('customerForm.kycSystem')}</span>{' '}
+      {t('customerForm.kycFacts', { note: preview.note })}{' '}
+      {preview.facts.map(({ field, value }) => (
+        <span key={field} className={`${chip} mr-1`}>
+          {`${field} = ${String(value)}`}
+        </span>
+      ))}
+      {t(preview.newVersion ? 'customerForm.kycNewVersion' : 'customerForm.kycSameVersion')}
+    </div>
+  );
 }
 
 /** Mockup 5a–5c: a new customer (`customer` omitted), or the profile of one. */
@@ -93,6 +150,9 @@ export function CustomerFormDialog({
     };
 
   const birth = parseBirthDate(birthText, today);
+  const profileGender = gender === 'UNKNOWN' ? null : gender;
+  const kyc = useKycPreview(customer, birth.ok ? birth.birth : undefined, profileGender);
+  const invalid = (['name', 're', 'birth', 'date'] as const).filter((f) => errors[f]).length;
   const birthHint =
     birth.ok && birth.birth
       ? 'month' in birth.birth
@@ -121,7 +181,7 @@ export function CustomerFormDialog({
       name: clean,
       reId,
       birthDate: birth.birth,
-      gender: gender === 'UNKNOWN' ? null : gender,
+      gender: profileGender,
     };
     try {
       data.run((db) =>
@@ -163,6 +223,7 @@ export function CustomerFormDialog({
           {errors.form}
         </p>
       )}
+      <InvalidAlert count={invalid} />
       <TextField
         label={t('customerForm.name')}
         value={name}
@@ -178,6 +239,7 @@ export function CustomerFormDialog({
         placeholder={t('customerForm.rePick')}
         onChange={edit('re', setReId)}
         error={errors.re}
+        help={customer ? t('customerForm.reHelp') : undefined}
         required
       />
       <TextField
@@ -217,7 +279,8 @@ export function CustomerFormDialog({
           />
         </>
       )}
-      <p className="m-0 text-xs text-fg-3">{t('customerForm.kycNote')}</p>
+      {kyc && <KycPreview preview={kyc} />}
+      {!customer && <p className="m-0 text-xs text-fg-3">{t('customerForm.kycNote')}</p>}
     </Dialog>
   );
 }

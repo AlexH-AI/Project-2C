@@ -1,13 +1,18 @@
 import {
+  calendarDate,
   compareDates,
   daysBetween,
+  formatPeriodValue,
+  formatVndCompact,
   parseVnd,
+  periodOf,
   type Appointment,
   type CalendarDate,
   type Policy,
   type Vnd,
   type VndParseError,
 } from '@p2c/domain';
+import { t } from '../../i18n';
 import { parseRecordDate, type RecordDateResult } from './customers-view';
 
 export type FypResult =
@@ -92,6 +97,25 @@ export function issuedChange(
     fromSubmitted: next.issuedFyp - saved.submittedFyp,
     metric: sameMonth && diff !== 0 ? { year: before.year, month: before.month, diff } : null,
   };
+}
+
+export const monthOf = (date: CalendarDate) => formatPeriodValue(periodOf('month', date));
+
+/**
+ * "Ảnh hưởng chỉ số" (8d) for the `metric` of `issuedChange`. Without the RE's name (an RE no
+ * longer listed, e.g. deleted), the sentence leaves the RE out rather than show an empty name.
+ */
+export function effectText(
+  metric: { readonly year: number; readonly month: number; readonly diff: Vnd },
+  reName: string | undefined,
+): string {
+  const params = {
+    month: monthOf(calendarDate(metric.year, metric.month, 1)),
+    re: reName?.trim() ?? '',
+    amount: formatVndCompact(Math.abs(metric.diff)),
+  };
+  const key = metric.diff < 0 ? 'Down' : 'Up';
+  return t(params.re ? `policyForm.effect${key}` : `policyForm.effect${key}NoRe`, params);
 }
 
 /** "Case size dự kiến": the one of the latest met meeting that has it, for reference only (8a). */

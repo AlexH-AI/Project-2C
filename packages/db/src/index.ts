@@ -23,6 +23,7 @@ export {
   getCustomer,
   listCustomers,
   listStageTransitions,
+  previewCustomerProfile,
   restoreCustomer,
   softDeleteCustomer,
   updateCustomerProfile,
@@ -77,6 +78,7 @@ export type {
   KycProfileRecord,
   KycSource,
   KycVersionRecord,
+  ProfileKycPreview,
 } from './kyc';
 export { loadMetricsData } from './metrics';
 export { seedDemoData } from './seed';

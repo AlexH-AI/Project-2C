@@ -208,7 +208,53 @@ export function recordProfileFacts(
   next: ProfileFields,
   date: CalendarDate,
 ): void {
-  const changes: [KycField, KycValue, string][] = [];
+  const change = profileChange(previous, next);
+  if (!change) return;
+  const before = loadProfile(db, customerId);
+  const note = insertNote(db, customerId, change.note, date, 'SYSTEM');
+  const after = withProfileFacts(before, note, change, date, () => ulid(db.now(), db.random));
+  save(db, customerId, before, after, date, false);
+}
+
+/** What `recordProfileFacts` records in KYC for a profile change (mockup 5c). */
+export interface ProfileKycPreview {
+  /** The text of the `SYSTEM` note. */
+  readonly note: string;
+  /** The facts confirmed from that note. */
+  readonly facts: readonly { readonly field: KycField; readonly value: KycValue }[];
+  /** Whether the facts in effect change, so a new KYC version is recorded. */
+  readonly newVersion: boolean;
+}
+
+/**
+ * The same work as `recordProfileFacts` on the profile as stored, without writing; null when
+ * saving `next` records nothing in KYC. Throws like it for a birth date or gender being cleared.
+ */
+export function previewProfileFacts(
+  db: Database,
+  customerId: string,
+  next: ProfileFields,
+  date: CalendarDate,
+): ProfileKycPreview | null {
+  const change = profileChange(liveCustomer(db, customerId), next);
+  if (!change) return null;
+  const before = loadProfile(db, customerId);
+  const note = { id: 'preview', text: change.note, createdDate: date };
+  let count = 0;
+  const after = withProfileFacts(before, note, change, date, () => `preview-${count++}`);
+  const latest = prepared(db, latestVersion).get({ customerId });
+  const previous = latest ? toVersion(latest) : null;
+  const version = nextKycVersion(previous, previous && before, after, date, false);
+  return { ...change, newVersion: version !== null };
+}
+
+// ---- helpers --------------------------------------------------------------
+
+function profileChange(
+  previous: ProfileFields,
+  next: ProfileFields,
+): Omit<ProfileKycPreview, 'newVersion'> | null {
+  const changes: { field: KycField; value: KycValue; text: string }[] = [];
   if (next.birthDate !== previous.birthDate) {
     if (next.birthDate === null) throw new DbError('KYC_PROFILE_FIELD_REQUIRED');
     const year = Number(next.birthDate.slice(0, 4));
@@ -216,33 +262,33 @@ export function recordProfileFacts(
       next.birthDate.length === 4
         ? `năm sinh ${year}`
         : `ngày sinh ${formatDate(fromIsoDate(next.birthDate))}`;
-    changes.push(['birthYear', year, text]);
+    changes.push({ field: 'birthYear', value: year, text });
   }
   if (next.gender !== previous.gender) {
     if (next.gender === null) throw new DbError('KYC_PROFILE_FIELD_REQUIRED');
     const label = GENDER_LABELS[next.gender];
-    changes.push(['gender', label, `giới tính ${label}`]);
+    changes.push({ field: 'gender', value: label, text: `giới tính ${label}` });
   }
-  if (changes.length === 0) return;
-
-  const before = loadProfile(db, customerId);
-  const text = `Hồ sơ KH: ${changes.map(([, , part]) => part).join('; ')}`;
-  const note = insertNote(db, customerId, text, date, 'SYSTEM');
-  const after = changes.reduce(
-    (profile, [field, value]) =>
-      confirmFact(profile, {
-        id: ulid(db.now(), db.random),
-        field,
-        value,
-        noteId: note.id,
-        confirmedDate: date,
-      }),
-    addNote(before, note),
-  );
-  save(db, customerId, before, after, date, false);
+  if (changes.length === 0) return null;
+  return {
+    note: `Hồ sơ KH: ${changes.map((change) => change.text).join('; ')}`,
+    facts: changes.map(({ field, value }) => ({ field, value })),
+  };
 }
 
-// ---- helpers --------------------------------------------------------------
+function withProfileFacts(
+  before: KycProfile,
+  note: KycNote,
+  change: Omit<ProfileKycPreview, 'newVersion'>,
+  date: CalendarDate,
+  newId: () => string,
+): KycProfile {
+  return change.facts.reduce(
+    (profile, { field, value }) =>
+      confirmFact(profile, { id: newId(), field, value, noteId: note.id, confirmedDate: date }),
+    addNote(before, note),
+  );
+}
 
 function factCommand(
   db: Database,
