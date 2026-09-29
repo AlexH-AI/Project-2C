@@ -1,4 +1,4 @@
-import { stageOn } from '@p2c/domain';
+import { calendarDate, stageOn, type CalendarDate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import {
   getAppointment,
@@ -19,7 +19,10 @@ import {
   softDeleteCustomer,
 } from './customers';
 import { createPerson, softDeletePerson, updatePerson } from './team';
-import { codeOf, d, setup } from './test-support';
+import { codeOf, setup } from './test-support';
+
+// The test clock reads 26/09/2026: a meeting is held or missed by then, the next one booked after.
+const d = (day: number, month: number, year = 2026): CalendarDate => calendarDate(year, month, day);
 
 async function withCustomer() {
   const ctx = await setup();
@@ -94,6 +97,9 @@ describe('scheduleAppointment', () => {
     );
     expect(codeOf(() => scheduleAppointment(db, { ...base, coordinatorIds: ['x'] }))).toBe(
       'PERSON_NOT_FOUND',
+    );
+    expect(codeOf(() => scheduleAppointment(db, { ...base, triggerType: 'X' as never }))).toBe(
+      'INVALID_TRIGGER',
     );
     expect(codeOf(() => scheduleAppointment(db, { ...base, reId: tl.id }))).toBe('RE_REQUIRED');
     expect(codeOf(() => scheduleAppointment(db, { ...base, customerId: 'x' }))).toBe(
@@ -281,6 +287,28 @@ describe('recordMeetingOutcome', () => {
 
     expect(listStageTransitions(db, customer.id)).toEqual(before);
   });
+
+  it('records a meeting held or missed only by today, a cancellation ahead of time', async () => {
+    const { db, customer, stage } = await withCustomer();
+    const book = (date: CalendarDate) =>
+      scheduleAppointment(db, {
+        customerId: customer.id,
+        reId: customer.reId,
+        date,
+        triggerType: 'OTHER',
+      }).id;
+    const tomorrow = book(d(27, 9));
+
+    expect(codeOf(() => recordMeetingOutcome(db, tomorrow, MET_N2))).toBe('OUTCOME_IN_FUTURE');
+    expect(codeOf(() => recordMeetingOutcome(db, tomorrow, { status: 'NO_SHOW' }))).toBe(
+      'OUTCOME_IN_FUTURE',
+    );
+    expect(getAppointment(db, tomorrow)?.status).toBe('SCHEDULED');
+    expect(listStageTransitions(db, customer.id)).toHaveLength(1);
+    expect(recordMeetingOutcome(db, tomorrow, { status: 'CANCELLED' }).status).toBe('CANCELLED');
+    expect(recordMeetingOutcome(db, book(d(26, 9)), MET_N2).status).toBe('MET');
+    expect(stage()).toBe('N2');
+  });
 });
 
 // D9: who decided the stage after the meeting — optional, any role, only on a met appointment.
@@ -349,7 +377,7 @@ describe('recordOutcomeWithNext', () => {
       coordinatorIds: [tl.id],
     });
 
-    const saved = recordOutcomeWithNext(db, id, MET_N2, { date: d(20, 1), time: '14:00' });
+    const saved = recordOutcomeWithNext(db, id, MET_N2, { date: d(20, 10), time: '14:00' });
 
     expect(saved.recorded).toMatchObject({ id, status: 'MET', stageAfter: 'N2' });
     expect(saved.next).toEqual({
@@ -357,7 +385,7 @@ describe('recordOutcomeWithNext', () => {
       customerId: customer.id,
       reId: re.id,
       coordinatorIds: [tl.id],
-      date: d(20, 1),
+      date: d(20, 10),
       time: '14:00',
       status: 'SCHEDULED',
       triggerType: 'EVENT',
@@ -380,18 +408,17 @@ describe('recordOutcomeWithNext', () => {
       db,
       schedule().id,
       { status: 'NO_SHOW' },
-      { date: d(1, 2) },
+      { date: d(1, 10) },
     );
 
     expect(saved.recorded.status).toBe('NO_SHOW');
-    expect(saved.next).toMatchObject({ date: d(1, 2), time: null, status: 'SCHEDULED' });
+    expect(saved.next).toMatchObject({ date: d(1, 10), time: null, status: 'SCHEDULED' });
   });
 
   it('saves nothing when the next day has passed or either part is refused', async () => {
     const { db, customer, schedule, stage } = await withCustomer();
     const { id } = schedule();
-    // The test clock reads 26/09/2026.
-    const next = { date: d(20, 1) };
+    const next = { date: d(20, 10) };
 
     expect(codeOf(() => recordOutcomeWithNext(db, id, MET_N2, { date: d(25, 9, 2026) }))).toBe(
       'NEXT_APPOINTMENT_PAST',
@@ -409,6 +436,21 @@ describe('recordOutcomeWithNext', () => {
       d(26, 9, 2026),
     );
   });
+
+  it('books nothing for an appointment whose outcome is already recorded', async () => {
+    const { db, customer, schedule, stage } = await withCustomer();
+    const { id } = schedule();
+    const met = recordMeetingOutcome(db, id, { ...MET_N2, note: 'Lần đầu' });
+    const transitions = listStageTransitions(db, customer.id);
+
+    expect(
+      codeOf(() => recordOutcomeWithNext(db, id, { status: 'NO_SHOW' }, { date: d(1, 10) })),
+    ).toBe('INVALID_STATUS');
+    expect(getAppointment(db, id)).toEqual(met);
+    expect(listStageTransitions(db, customer.id)).toEqual(transitions);
+    expect(stage()).toBe('N2');
+    expect(listAppointments(db)).toHaveLength(1);
+  });
 });
 
 // Mockup 6f: the trigger, coordinators and meeting day are edited with the outcome.
@@ -416,6 +458,7 @@ describe('updateAppointmentDetails', () => {
   it('changes the trigger, time and coordinators', async () => {
     const { db, tl, otherRe, schedule } = await withCustomer();
     const { id } = schedule(10, [tl.id]);
+    recordMeetingOutcome(db, id, { status: 'CANCELLED' });
 
     const edited = updateAppointmentDetails(db, id, {
       time: '15:30',
@@ -442,6 +485,7 @@ describe('updateAppointmentDetails', () => {
   it('adds no coordinator who is deleted, unknown or the RE, and changes nothing then', async () => {
     const { db, re, tl, otherRe, schedule } = await withCustomer();
     const { id } = schedule(10, [tl.id]);
+    recordMeetingOutcome(db, id, MET_N2);
     const deleted = schedule(11).id;
     softDeleteAppointment(db, deleted);
     softDeletePerson(db, otherRe.id);
@@ -452,11 +496,69 @@ describe('updateAppointmentDetails', () => {
     expect(refused(['x'])).toBe('PERSON_NOT_FOUND');
     expect(refused([re.id])).toBe('INVALID_COORDINATOR');
     expect(codeOf(() => updateAppointmentDetails(db, id, { time: '7h' }))).toBe('INVALID_TIME');
+    expect(codeOf(() => updateAppointmentDetails(db, id, { triggerType: 'X' as never }))).toBe(
+      'INVALID_TRIGGER',
+    );
     expect(codeOf(() => updateAppointmentDetails(db, deleted, {}))).toBe('APPOINTMENT_NOT_FOUND');
     expect(getAppointment(db, id)).toMatchObject({
       triggerType: 'REFERRAL',
       coordinatorIds: [tl.id],
     });
+  });
+
+  it('edits only an appointment with an outcome: a scheduled or rescheduled one stays as it is', async () => {
+    const { db, tl, otherRe, schedule } = await withCustomer();
+    const scheduled = schedule(10, [tl.id]);
+    const old = schedule(12);
+    rescheduleAppointment(db, old.id, { date: d(15, 10) });
+    const changes = {
+      date: d(5, 1),
+      triggerType: 'EVENT',
+      coordinatorIds: [otherRe.id],
+    } as const;
+
+    expect(codeOf(() => updateAppointmentDetails(db, scheduled.id, changes))).toBe(
+      'INVALID_STATUS',
+    );
+    expect(codeOf(() => updateAppointmentDetails(db, old.id, { date: d(20, 10) }))).toBe(
+      'INVALID_STATUS',
+    );
+    expect(getAppointment(db, scheduled.id)).toEqual(scheduled);
+    expect(getAppointment(db, old.id)).toMatchObject({ status: 'RESCHEDULED', date: d(12, 1) });
+  });
+
+  it('edits a cancelled or no-show appointment, its day even into the future when cancelled', async () => {
+    const { db, tl, schedule } = await withCustomer();
+    const cancelled = schedule(10).id;
+    const missed = schedule(11).id;
+    recordMeetingOutcome(db, cancelled, { status: 'CANCELLED' });
+    recordMeetingOutcome(db, missed, { status: 'NO_SHOW' });
+    const changes = { date: d(3, 2), triggerType: 'EVENT', coordinatorIds: [tl.id] } as const;
+
+    expect(updateAppointmentDetails(db, missed, changes)).toMatchObject(changes);
+    expect(updateAppointmentDetails(db, cancelled, changes)).toMatchObject(changes);
+    expect(updateAppointmentDetails(db, cancelled, { date: d(27, 9) }).date).toEqual(d(27, 9));
+  });
+
+  it('keeps a met or no-show appointment from moving to a day after today', async () => {
+    const { db, customer, schedule, stage } = await withCustomer();
+    const met = schedule(10).id;
+    const missed = schedule(11).id;
+    recordMeetingOutcome(db, met, MET_N2);
+    recordMeetingOutcome(db, missed, { status: 'NO_SHOW' });
+    const transitions = listStageTransitions(db, customer.id);
+
+    expect(codeOf(() => updateAppointmentDetails(db, met, { date: d(27, 9) }))).toBe(
+      'OUTCOME_IN_FUTURE',
+    );
+    expect(codeOf(() => updateAppointmentDetails(db, missed, { date: d(27, 9) }))).toBe(
+      'OUTCOME_IN_FUTURE',
+    );
+    expect(getAppointment(db, met)?.date).toEqual(d(10, 1));
+    expect(getAppointment(db, missed)?.date).toEqual(d(11, 1));
+    expect(listStageTransitions(db, customer.id)).toEqual(transitions);
+    expect(stage()).toBe('N2');
+    expect(updateAppointmentDetails(db, met, { date: d(26, 9) }).date).toEqual(d(26, 9));
   });
 
   it('moves the transition of a met appointment to its new day', async () => {
@@ -475,7 +577,7 @@ describe('updateAppointmentDetails', () => {
     ]);
     expect(stage()).toBe('N2');
     // D10: never before the transition that came before it.
-    expect(codeOf(() => updateAppointmentDetails(db, id, { date: d(1, 12, 2026) }))).toBe(
+    expect(codeOf(() => updateAppointmentDetails(db, id, { date: d(1, 12, 2025) }))).toBe(
       'TRANSITION_BEFORE_LATEST',
     );
     expect(getAppointment(db, id)?.date).toEqual(d(14, 1));

@@ -4,6 +4,7 @@
  * back to it — the only transitions that can count as an RF (#44). That transition carries the
  * meeting day, so an outcome recorded or restored after a later stage change is refused (D10).
  * Once a later transition exists, only the status, the stage after and the day are locked (D7).
+ * A meeting held or missed is dated today at the latest; only a cancellation may come ahead.
  */
 import {
   compareDates,
@@ -141,6 +142,7 @@ export function recordMeetingOutcome(
       if (outcome.status !== 'MET') throw new DbError('REVIEWER_NOT_ALLOWED');
       requirePerson(db, reviewerId);
     }
+    requireOutcomeDay(db, outcome.status, row.date);
     const size = outcome.expectedCaseSize ?? null;
     // Still met with the same stage after: the transition stays as it is, even once a later one
     // exists (D7). Otherwise only a met appointment can have moved the customer.
@@ -164,8 +166,9 @@ export function recordMeetingOutcome(
 }
 
 /**
- * Records the outcome and books the next appointment in one go (mockups 6c, 6i): same customer,
- * RE, coordinators and trigger, today or later, and not linked to this one.
+ * Records the first outcome of a scheduled appointment and books the next one in one go (mockups
+ * 6c, 6i): same customer, RE, coordinators and trigger, today or later, and not linked to this one.
+ * Editing an outcome (6f) books nothing.
  */
 export function recordOutcomeWithNext(
   db: Database,
@@ -174,18 +177,20 @@ export function recordOutcomeWithNext(
   next: NextAppointment,
 ): { readonly recorded: AppointmentRecord; readonly next: AppointmentRecord } {
   return db.transaction(() => {
-    const recorded = recordMeetingOutcome(db, id, outcome);
+    if (liveAppointment(db, id).status !== 'SCHEDULED') throw new DbError('INVALID_STATUS');
     if (compareDates(next.date, fromLocalDate(db.now())) < 0) {
       throw new DbError('NEXT_APPOINTMENT_PAST');
     }
+    const recorded = recordMeetingOutcome(db, id, outcome);
     const booked = insertScheduled(db, { ...recorded, date: next.date, time: next.time }, null);
     return { recorded, next: booked };
   });
 }
 
 /**
- * Edits the day, time, trigger and coordinators (mockup 6f). A met appointment's transition moves
- * to the new day, so its day is locked like its outcome once a later transition exists (D7, D10).
+ * Edits the day, time, trigger and coordinators of an appointment with an outcome (mockup 6f); a
+ * scheduled one changes day by rescheduling (D3). A met appointment's transition moves to the new
+ * day, so its day is locked like its outcome once a later transition exists (D7, D10).
  */
 export function updateAppointmentDetails(
   db: Database,
@@ -194,14 +199,18 @@ export function updateAppointmentDetails(
 ): AppointmentRecord {
   return db.transaction(() => {
     const row = liveAppointment(db, id);
+    if (!OUTCOME_STATUSES.includes(row.status)) throw new DbError('INVALID_STATUS');
     const date = changes.date === undefined ? row.date : toIsoDate(changes.date);
+    if (changes.date !== undefined) requireOutcomeDay(db, row.status, date);
+    const triggerType =
+      changes.triggerType === undefined ? row.triggerType : requireTrigger(changes.triggerType);
     const moved = date !== row.date && withdrawAppointmentTransition(db, id);
     const updated: AppointmentRow = {
       ...row,
       ...updateAppointmentRow(db, id, {
         date,
         time: changes.time === undefined ? row.time : requireTime(changes.time),
-        triggerType: changes.triggerType ?? row.triggerType,
+        triggerType,
         triggerNote:
           changes.triggerNote === undefined ? row.triggerNote : optionalText(changes.triggerNote),
       }),
@@ -295,7 +304,7 @@ function insertScheduled(
     date: toIsoDate(input.date),
     time: requireTime(input.time ?? null),
     status: 'SCHEDULED',
-    triggerType: input.triggerType,
+    triggerType: requireTrigger(input.triggerType),
     triggerNote: optionalText(input.triggerNote),
     stageAfter: null,
     nextStep: null,
@@ -341,6 +350,21 @@ function requirePerson(db: Database, personId: string): void {
 function requireTime(time: string | null): string | null {
   if (time !== null && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new DbError('INVALID_TIME');
   return time;
+}
+
+function requireTrigger(trigger: AppointmentTrigger): AppointmentTrigger {
+  if (!(APPOINTMENT_TRIGGERS as readonly string[]).includes(trigger)) {
+    throw new DbError('INVALID_TRIGGER');
+  }
+  return trigger;
+}
+
+/** A meeting is held or missed by today at the latest; a cancellation may come ahead of it. */
+function requireOutcomeDay(db: Database, status: string, isoDate: string): void {
+  const held = status === 'MET' || status === 'NO_SHOW';
+  if (held && compareDates(fromIsoDate(isoDate), fromLocalDate(db.now())) > 0) {
+    throw new DbError('OUTCOME_IN_FUTURE');
+  }
 }
 
 function findAppointment(db: Database, id: string): AppointmentRow | undefined {
