@@ -66,3 +66,8 @@
    | R4 | UI còn lại của `apps/desktop`, `packages/ui`, `tools/*.ps1`, CI, hook | checklist, ADR-0013, ADR-0015 |
 
    Kết quả mỗi đợt ghi vào một Issue review. Bug xác nhận được tách thành task `risk:*` riêng và sửa theo quy trình thường; phiên review không sửa code. R1 và R2 xong trước màn đầu tiên ghi DB (T-046); R3 và R4 chạy song song với các màn UI được.
+
+4. **Worktree review thứ hai (Owner duyệt 29/09/2026):**
+   - Sự cố: #174 và #175 được review gần như cùng lúc, cả hai trong `Project-2C-review`. Phiên #175 `git checkout` head của nó, đè lên worktree mà phiên #174 đang đọc. Phiên #174 suýt kết luận sai khi đọc file e2e của #175.
+   - Quyết định: mỗi worktree review chỉ phục vụ một phiên review tại một thời điểm. Phiên review song song thứ hai dùng `C:\workspace\Project-2C-review-2`, quy tắc y như mục 2. Mỗi máy tạo worktree này một lần: `git worktree add --detach ../Project-2C-review-2 origin/main`.
+   - Chốt chặn: trước khi đăng comment, phiên review so `git rev-parse HEAD` với `headRefOid`. Nếu khác, đọc lại bằng chứng qua `git show <headRefOid>:<path>`.
