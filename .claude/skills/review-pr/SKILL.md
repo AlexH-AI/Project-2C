@@ -26,6 +26,8 @@ description: Review a Project-2C pull request by number, choosing the review tie
   ```
 
 - Chưa có worktree (máy mới) → tạo một lần, chạy từ checkout chính: `git worktree add --detach ../Project-2C-review origin/main`, rồi `cd ../Project-2C-review` và `pnpm install --frozen-lockfile` bên trong đó.
+- **Review song song:** mỗi worktree review chỉ phục vụ **một phiên review tại một thời điểm**. Hai phiên review chung một worktree sẽ `git checkout` đè lên nhau, và phiên này đọc nhầm code của PR kia mà không biết (xảy ra khi review #174 và #175 cùng lúc). Phiên review thứ hai chạy trong worktree `C:\workspace\Project-2C-review-2`. Worktree này có vai trò và quy tắc y như `Project-2C-review`, và cũng tạo một lần cho mỗi máy: `git worktree add --detach ../Project-2C-review-2 origin/main`, rồi `pnpm install --frozen-lockfile` bên trong đó. Chọn worktree review nào là việc của Owner, qua việc mở phiên ở thư mục đó.
+- Chốt chặn: trước khi đăng comment, chạy `git rev-parse HEAD` và so với `headRefOid`. Nếu khác, tức là có phiên khác đã đổi worktree. Khi đó đọc lại mọi file đã dùng làm bằng chứng bằng `git show <headRefOid>:<path>` rồi mới kết luận, và ghi việc này vào comment.
 - Vòng sửa sau review:
   1. Phiên review chỉ đọc và đăng comment.
   2. Phiên code sửa ở checkout chính hoặc worktree của task, rồi push.
