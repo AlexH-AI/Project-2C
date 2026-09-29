@@ -88,6 +88,27 @@ export interface DayGroup {
 
 const byName = new Intl.Collator('vi').compare;
 
+/** What each appointment came to: the stage move it caused, the stage kept, or its new day. */
+export function outcomeResolver(
+  data: Pick<AppointmentData, 'appointments' | 'transitions'>,
+): (a: AppointmentRecord) => Outcome {
+  const movedBy = new Map(
+    data.transitions.flatMap((tr) => (tr.appointmentId ? [[tr.appointmentId, tr] as const] : [])),
+  );
+  const newDay = new Map(
+    data.appointments.flatMap((a) =>
+      a.rescheduledFromId ? [[a.rescheduledFromId, a.date] as const] : [],
+    ),
+  );
+  return (a) => {
+    const tr = movedBy.get(a.id);
+    if (tr) return { kind: 'move', from: tr.from, to: tr.to, rf: isRfTransition(tr.from, tr.to) };
+    if (a.status === 'MET' && a.stageAfter) return { kind: 'keep', stage: a.stageAfter };
+    const to = newDay.get(a.id);
+    return to ? { kind: 'rescheduled', to } : null;
+  };
+}
+
 const matchesCoordinator = (a: AppointmentRecord, coordinator: CoordinatorFilter) =>
   coordinator === 'any' ||
   (coordinator === 'none' ? a.coordinatorIds.length === 0 : a.coordinatorIds.includes(coordinator));
@@ -102,21 +123,7 @@ export function appointmentRows(
   const people = new Map(data.people.map((p) => [p.id, p]));
   const customers = new Map(data.customers.map((c) => [c.id, c]));
   const teams = new Map(data.teams.map((team) => [team.id, team]));
-  const movedBy = new Map(
-    data.transitions.flatMap((tr) => (tr.appointmentId ? [[tr.appointmentId, tr] as const] : [])),
-  );
-  const newDay = new Map(
-    data.appointments.flatMap((a) =>
-      a.rescheduledFromId ? [[a.rescheduledFromId, a.date] as const] : [],
-    ),
-  );
-  const outcome = (a: AppointmentRecord): Outcome => {
-    const tr = movedBy.get(a.id);
-    if (tr) return { kind: 'move', from: tr.from, to: tr.to, rf: isRfTransition(tr.from, tr.to) };
-    if (a.status === 'MET' && a.stageAfter) return { kind: 'keep', stage: a.stageAfter };
-    const to = newDay.get(a.id);
-    return to ? { kind: 'rescheduled', to } : null;
-  };
+  const outcome = outcomeResolver(data);
 
   return data.appointments
     .filter((a) => inScope(data.people, a.reId, scope) && matchesCoordinator(a, coordinator))

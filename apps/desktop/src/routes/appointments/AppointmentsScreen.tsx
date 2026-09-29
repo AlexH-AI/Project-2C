@@ -25,6 +25,7 @@ import { useScope } from '../../shell/ScopeContext';
 import { ALERT } from '../customers/CustomerDialogs';
 import { PERIOD_LABELS } from '../period-labels';
 import { AppointmentDialog } from './AppointmentDialog';
+import { isPastOrToday } from './appointment-form';
 import {
   appointmentRows,
   dayBoard,
@@ -69,7 +70,7 @@ export function AppointmentsScreen() {
   const [day, setDay] = useState(today);
   const [coordinator, setCoordinator] = useState<CoordinatorFilter>('any');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState<{ from?: AppointmentRow } | null>(null);
   // The appointment just made for an RE outside the scope, while it is the one selected.
   const [hiddenCreated, setHiddenCreated] = useState<AppointmentRecord | null>(null);
 
@@ -177,7 +178,7 @@ export function AppointmentsScreen() {
           />
         </div>
         <div className="flex-1" />
-        <Button variant="primary" onClick={() => setCreating(true)}>
+        <Button variant="primary" onClick={() => setCreating({})}>
           {t('appointments.new')}
         </Button>
         <span className="text-sm text-fg-2 tabular-nums">
@@ -200,7 +201,7 @@ export function AppointmentsScreen() {
           <MonthCalendar period={period} day={day} today={today} rows={rows} onPick={pick} />
           <DayTable day={day} rows={rows} onSelect={setSelectedId} />
         </div>
-        <Detail row={selected} />
+        <Detail row={selected} today={today} onNext={(from) => setCreating({ from })} />
       </div>
       <section aria-labelledby="appointments-list" className={CARD}>
         <h2 id="appointments-list" className="m-0 mb-2 text-sm font-medium text-heading">
@@ -215,7 +216,13 @@ export function AppointmentsScreen() {
         />
       </section>
       {creating && (
-        <AppointmentDialog data={data} onClose={() => setCreating(false)} onCreated={showCreated} />
+        <AppointmentDialog
+          data={data}
+          customer={creating.from?.customer}
+          from={creating.from?.appointment}
+          onClose={() => setCreating(null)}
+          onCreated={showCreated}
+        />
       )}
     </>
   );
@@ -404,7 +411,15 @@ function DayTable({
   );
 }
 
-function Detail({ row }: { row: AppointmentRow | undefined }) {
+function Detail({
+  row,
+  today,
+  onNext,
+}: {
+  row: AppointmentRow | undefined;
+  today: CalendarDate;
+  onNext: (from: AppointmentRow) => void;
+}) {
   if (!row) {
     return (
       <aside aria-label={t('appointments.detail')} className={`${CARD} w-full lg:w-84 lg:shrink-0`}>
@@ -446,6 +461,11 @@ function Detail({ row }: { row: AppointmentRow | undefined }) {
       >
         {t('appointments.profile')}
       </a>
+      {row.customer && isPastOrToday(a.date, today) && (
+        <Button className="self-start" onClick={() => onNext(row)}>
+          {t('appointments.next')}
+        </Button>
+      )}
     </aside>
   );
 }

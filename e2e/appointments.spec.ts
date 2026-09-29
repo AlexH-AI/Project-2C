@@ -195,6 +195,7 @@ function form(page: Page) {
     time: dialog.getByRole('textbox', { name: /^Giờ/ }),
     trigger: dialog.getByRole('combobox', { name: /^Trigger/ }),
     create: dialog.getByRole('button', { name: 'Tạo lịch hẹn' }),
+    history: dialog.getByRole('region', { name: 'Các lần hẹn trước' }),
   };
 }
 
@@ -253,6 +254,34 @@ test('a day long past without a year offers next year; the RE picks', async ({ p
   await expect(f.dialog).toContainText('Gõ dd/mm hoặc dd/mm/yyyy.');
   await f.time.fill('25:00');
   await expect(f.dialog).toContainText('Giờ từ 00:00 đến 23:59.');
+});
+
+test('the next appointment from a past one is filled in and must be from today on', async ({
+  page,
+}) => {
+  const { rows, detail } = screen(page);
+  const past = rows.filter({ hasText: 'Đã gặp' }).filter({ hasNotText: TODAY }).first();
+  await past.getByRole('button').click();
+  const date = (await past.locator('td:nth-child(1)').textContent()) ?? '';
+  await detail.getByRole('button', { name: 'Tạo lịch hẹn tiếp theo' }).click();
+
+  const f = form(page);
+  await expect(f.dialog.getByRole('heading', { level: 2 })).toHaveText('Lịch hẹn tiếp theo');
+  await expect(f.dialog).toContainText(date);
+  await expect(f.date).toHaveValue(date.slice(0, 5));
+  await expect(f.trigger).not.toHaveValue('');
+  await expect(f.dialog).toContainText(`${date} đã qua`);
+  // The history shows at most five earlier appointments, newest first.
+  await expect(f.history.getByRole('listitem')).not.toHaveCount(0);
+  expect(await f.history.getByRole('listitem').count()).toBeLessThanOrEqual(5);
+
+  await f.create.click();
+  await expect(f.dialog).toBeVisible();
+  await f.date.fill('15/09');
+  await expect(f.dialog).toContainText('Thứ Ba 15/09/2026 · hôm nay');
+  await f.create.click();
+  await expect(f.dialog).toHaveCount(0);
+  await expect(page.getByRole('region', { name: /^Trong ngày/ })).toContainText('Dự kiến');
 });
 
 /** Opens the dialog and fills a customer (its RE, or another team's), `date` and a trigger. */
