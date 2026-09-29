@@ -6,19 +6,30 @@ import {
   type AppointmentTrigger,
   type CustomerRecord,
 } from '@p2c/db';
-import { formatDate, type CalendarDate } from '@p2c/domain';
+import { formatDate, formatDayMonth, type CalendarDate } from '@p2c/domain';
 import { Dialog, SelectField, StageBadge, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
+import { routeToHash } from '../../shell/routes';
 import { Actions, ALERT } from '../customers/CustomerDialogs';
 import {
+  MAX_HISTORY,
   parseTime,
+  priorMeetings,
   readScheduleDate,
   searchCustomers,
   type ScheduleDate,
 } from './appointment-form';
-import { personLabel, type AppointmentData } from './appointments-view';
+import { outcomeText, personLabel, type AppointmentData } from './appointments-view';
+
+const STATUS_TONE = {
+  SCHEDULED: 'text-info',
+  MET: 'text-ok',
+  RESCHEDULED: 'text-warn',
+  CANCELLED: 'text-fg-2',
+  NO_SHOW: 'text-danger',
+} as const;
 
 const CHIP = 'cursor-pointer rounded-md border border-border bg-surface-2 px-2 py-0.5 text-xs';
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-accent';
@@ -40,31 +51,44 @@ function dateReading(date: Extract<ScheduleDate, { ok: true }>): string {
   });
 }
 
-/** Mockup 6a/6b: a new appointment, for a customer found by name or code. */
+/**
+ * Mockup 6a/6b: a new appointment. With `from` (a past appointment) it is the next one (6h):
+ * filled in from it, the day today or later, and no link back to it. `customer` fixes the customer.
+ */
 export function AppointmentDialog({
   data,
+  customer: fixed,
+  from,
   onClose,
   onCreated,
 }: {
   data: AppointmentData;
+  customer?: CustomerRecord;
+  from?: AppointmentRecord;
   onClose: () => void;
   onCreated?: (appointment: AppointmentRecord) => void;
 }) {
   const app = useAppData();
   const today = app.today();
-  const [customer, setCustomer] = useState<CustomerRecord>();
+  const [customer, setCustomer] = useState(fixed);
   const [query, setQuery] = useState('');
-  const [reId, setReId] = useState('');
-  const [dateText, setDateText] = useState('');
-  const [timeText, setTimeText] = useState('');
-  const [trigger, setTrigger] = useState<AppointmentTrigger | ''>('');
-  const [triggerNote, setTriggerNote] = useState('');
-  const [coordinatorIds, setCoordinatorIds] = useState<readonly string[]>([]);
+  const [reId, setReId] = useState(from?.reId ?? fixed?.reId ?? '');
+  const [dateText, setDateText] = useState(from ? formatDayMonth(from.date) : '');
+  const [timeText, setTimeText] = useState(from?.time ?? '');
+  const [trigger, setTrigger] = useState<AppointmentTrigger | ''>(from?.triggerType ?? '');
+  const [triggerNote, setTriggerNote] = useState(from?.triggerNote ?? '');
+  const [coordinatorIds, setCoordinatorIds] = useState<readonly string[]>(
+    from?.coordinatorIds ?? [],
+  );
   const [attempted, setAttempted] = useState(false);
   const [failure, setFailure] = useState<string>();
 
   const res = useMemo(() => reOptions(data.people, data.teams), [data]);
-  const date = readScheduleDate(dateText, today);
+  const history = useMemo(
+    () => (customer ? priorMeetings(data, customer.id) : undefined),
+    [data, customer],
+  );
+  const date = readScheduleDate(dateText, today, from ? 'fromToday' : 'any');
   const time = parseTime(timeText);
   const coordinators = data.people.filter(
     (person) => coordinatorIds.includes(person.id) && person.id !== reId,
@@ -76,7 +100,13 @@ export function AppointmentDialog({
     .map((person) => ({ value: person.id, label: personLabel(person) }));
   const pending = dateText.trim() === '' && !attempted;
 
-  const dateError = date.ok || pending ? undefined : t(`date.error.${date.error}`);
+  const dateError =
+    date.ok || pending
+      ? undefined
+      : date.error === 'past'
+        ? t('appointmentForm.past', { date: formatDate(date.date), today: formatDate(today) })
+        : t(`date.error.${date.error}`);
+  const read = date.ok || date.error === 'past' ? date : null;
 
   const edit =
     <T,>(set: (value: T) => void) =>
@@ -109,8 +139,15 @@ export function AppointmentDialog({
 
   return (
     <Dialog
-      title={t('appointmentForm.title')}
-      subtitle={t('appointmentForm.sub')}
+      title={t(from ? 'appointmentForm.nextTitle' : 'appointmentForm.title')}
+      subtitle={
+        from
+          ? t('appointmentForm.nextSub', {
+              date: [formatDate(from.date), from.time].filter(Boolean).join(' '),
+              status: t(`appointmentStatus.${from.status}`),
+            })
+          : t('appointmentForm.sub')
+      }
       onClose={onClose}
       onSubmit={save}
       actions={<Actions onClose={onClose} save={t('appointmentForm.create')} />}
@@ -123,6 +160,7 @@ export function AppointmentDialog({
       <CustomerField
         customers={data.customers}
         customer={customer}
+        fixed={fixed !== undefined}
         query={query}
         onQuery={setQuery}
         onPick={(picked) => {
@@ -130,7 +168,9 @@ export function AppointmentDialog({
           setReId(picked?.reId ?? '');
         }}
         error={attempted && !customer ? t('appointmentForm.customerRequired') : undefined}
+        history={history}
       />
+      {customer && history && <History customer={customer} history={history} today={today} />}
       <SelectField
         label={t('appointmentForm.re')}
         value={reId}
@@ -142,12 +182,13 @@ export function AppointmentDialog({
       />
       <div className="grid grid-cols-2 gap-3">
         <TextField
-          label={t('appointmentForm.date')}
+          label={t(from ? 'appointmentForm.dateNext' : 'appointmentForm.date')}
           value={dateText}
           onChange={edit(setDateText)}
           error={dateError}
           hint={date.ok ? dateReading(date) : undefined}
           required
+          autoFocus={fixed !== undefined}
         />
         <TextField
           label={t('appointmentForm.time')}
@@ -156,21 +197,21 @@ export function AppointmentDialog({
           error={time.ok ? undefined : t('appointmentForm.timeError')}
         />
       </div>
-      {date.ok && date.suggestion && (
+      {read?.suggestion && (
         <p className={`${ALERT} flex flex-col items-start gap-1.5 border-warn`}>
           {t('appointmentForm.suggest', {
-            date: formatDate(date.date),
-            n: Math.abs(date.daysFromToday),
-            next: formatDate(date.suggestion),
+            date: formatDate(read.date),
+            n: Math.abs(read.daysFromToday),
+            next: formatDate(read.suggestion),
           })}
           <button
             type="button"
             className={`${CHIP} ${FOCUS}`}
-            onClick={() => edit(setDateText)(formatDate(date.suggestion as CalendarDate))}
+            onClick={() => edit(setDateText)(formatDate(read.suggestion as CalendarDate))}
           >
-            {t('appointmentForm.suggestUse', { date: formatDate(date.suggestion) })}
+            {t('appointmentForm.suggestUse', { date: formatDate(read.suggestion) })}
           </button>
-          <span className="text-xs text-fg-2">{t('appointmentForm.suggestHelp')}</span>
+          {!from && <span className="text-xs text-fg-2">{t('appointmentForm.suggestHelp')}</span>}
         </p>
       )}
       <SelectField
@@ -218,21 +259,25 @@ export function AppointmentDialog({
   );
 }
 
-/** The customer picked, or a search by name / code to pick one (mockup 6a "Khách hàng"). */
+/** A fixed customer, or a search by name / code to pick one (mockup 6a "Khách hàng"). */
 function CustomerField({
   customers,
   customer,
+  fixed,
   query,
   onQuery,
   onPick,
   error,
+  history,
 }: {
   customers: readonly CustomerRecord[];
   customer: CustomerRecord | undefined;
+  fixed: boolean;
   query: string;
   onQuery: (query: string) => void;
   onPick: (customer: CustomerRecord | undefined) => void;
   error: string | undefined;
+  history: ReturnType<typeof priorMeetings> | undefined;
 }) {
   const matches = useMemo(() => searchCustomers(customers, query, MATCHES), [customers, query]);
   if (customer) {
@@ -243,14 +288,26 @@ function CustomerField({
           <b>{customer.name}</b>
           <span className="text-fg-3 tabular-nums">{customer.code}</span>
           <StageBadge stage={customer.stage} label={t(`stage.${customer.stage}`)} />
-          <button
-            type="button"
-            className={`${CHIP} ${FOCUS} ml-auto`}
-            onClick={() => onPick(undefined)}
-          >
-            {t('appointmentForm.customerChange')}
-          </button>
+          {!fixed && (
+            <button
+              type="button"
+              className={`${CHIP} ${FOCUS} ml-auto`}
+              onClick={() => onPick(undefined)}
+            >
+              {t('appointmentForm.customerChange')}
+            </button>
+          )}
         </p>
+        {history && (
+          <span className="text-xs text-fg-2 tabular-nums">
+            {history.lastMet
+              ? t('appointmentForm.meetings', {
+                  n: history.metCount + 1,
+                  date: formatDate(history.lastMet),
+                })
+              : t('appointmentForm.neverMet')}
+          </span>
+        )}
       </div>
     );
   }
@@ -289,5 +346,52 @@ function CustomerField({
         </ul>
       )}
     </div>
+  );
+}
+
+/** "Các lần hẹn trước": the 5 latest, newest first; the year shows when it is not this year's. */
+function History({
+  customer,
+  history,
+  today,
+}: {
+  customer: CustomerRecord;
+  history: ReturnType<typeof priorMeetings>;
+  today: CalendarDate;
+}) {
+  if (history.rows.length === 0) return null;
+  return (
+    <section aria-label={t('appointmentForm.history')} className="flex flex-col gap-1">
+      <div className="flex items-baseline justify-between">
+        <span className="font-medium">{t('appointmentForm.history')}</span>
+        {history.rows.length > MAX_HISTORY && (
+          <a
+            href={routeToHash({ screen: 'customer', id: customer.id })}
+            className={`rounded-sm text-accent hover:underline ${FOCUS}`}
+          >
+            {t('appointmentForm.historyAll', { n: history.rows.length })}
+          </a>
+        )}
+      </div>
+      <ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-xs">
+        {history.rows.slice(0, MAX_HISTORY).map(({ appointment: a, outcome }) => (
+          <li key={a.id} className="flex gap-1 whitespace-nowrap">
+            <span className="tabular-nums">
+              {a.date.year === today.year ? formatDayMonth(a.date) : formatDate(a.date)}
+            </span>
+            <span>·</span>
+            <span className={STATUS_TONE[a.status]}>{t(`appointmentStatus.${a.status}`)}</span>
+            {(outcome?.kind === 'move' || outcome?.kind === 'keep') && (
+              <span>· {outcomeText(outcome)}</span>
+            )}
+            {a.note && (
+              <span className="min-w-0 truncate text-fg-3">
+                · {t('appointmentForm.historyNote', { note: a.note })}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
