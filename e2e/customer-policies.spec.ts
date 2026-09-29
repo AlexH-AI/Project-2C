@@ -53,7 +53,9 @@ test('submits "500tr", then issues it: the FYP defaults to the submitted one, ch
   );
   await dialog.getByRole('textbox', { name: /^Ngày phát hành/ }).fill('5/9');
   await dialog.getByRole('button', { name: 'Phát hành' }).click();
-  await expect(dialog).toContainText('Chưa lưu được — 1 ô cần sửa');
+  await expect(dialog.getByRole('alert')).toHaveText(
+    'Chưa lưu được — 1 ô cần sửaKhông có gì được ghi vào dữ liệu.',
+  );
   await expect(dialog).toContainText('05/09/2026 trước ngày nộp 10/09/2026.');
   await dialog.getByRole('textbox', { name: /^Ngày phát hành/ }).fill('12/9');
   await expect(dialog).toContainText('2 ngày sau khi nộp');

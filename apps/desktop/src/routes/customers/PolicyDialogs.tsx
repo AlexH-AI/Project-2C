@@ -22,7 +22,7 @@ import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
 import { dayText } from '../appointments/appointment-form';
-import { Actions, ALERT, dayRead } from './CustomerDialogs';
+import { Actions, ALERT, dayRead, InvalidAlert } from './CustomerDialogs';
 import {
   effectText,
   issuedChange,
@@ -201,11 +201,7 @@ export function PolicyDialog({
           {failure}
         </p>
       )}
-      {attempted && errorCount > 0 && (
-        <p role="alert" className={`${ALERT} border-danger font-semibold text-danger`}>
-          {t('form.invalid', { count: errorCount })}
-        </p>
-      )}
+      <InvalidAlert count={attempted ? errorCount : 0} />
       {mode.kind !== 'issue' && (
         <>
           {mode.kind === 'new' && (

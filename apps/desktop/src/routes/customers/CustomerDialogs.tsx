@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   changeStageManually,
   createCustomer,
+  DbError,
   listPeople,
   listTeams,
   previewCustomerProfile,
@@ -97,9 +98,10 @@ function useKycPreview(
   if (!customer || birthDate === undefined) return null;
   try {
     return previewCustomerProfile(db, customer.id, { birthDate, gender });
-  } catch {
+  } catch (error) {
     // Clearing a birth date or gender, or a date out of range: saving reports it.
-    return null;
+    if (error instanceof DbError || error instanceof RangeError) return null;
+    throw error;
   }
 }
 
