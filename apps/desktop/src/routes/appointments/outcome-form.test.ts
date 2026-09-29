@@ -49,11 +49,13 @@ describe('readOutcome', () => {
     });
   });
 
-  it('refuses a case size that is not a whole amount of đồng', () => {
-    expect(readOutcome({ ...met, caseSize: '12,5 đồng' })).toEqual({
-      ok: false,
-      errors: ['caseSize'],
-    });
+  it('refuses a case size that is not a whole, positive amount of đồng', () => {
+    for (const caseSize of ['12,5 đồng', '0']) {
+      expect(readOutcome({ ...met, caseSize })).toEqual({
+        ok: false,
+        errors: ['caseSize'],
+      });
+    }
   });
 
   it('keeps only the note when not met, whatever else was typed', () => {
