@@ -150,7 +150,7 @@ export function AppointmentsScreen() {
   };
 
   // Shows the day of the appointment just made, so it is there to see.
-  const show = (created: AppointmentRecord) => {
+  const showCreated = (created: AppointmentRecord) => {
     setPeriod(pickDay(period, created.date) ?? periodOf('month', created.date));
     setDay(created.date);
     setSelectedId(created.id);
@@ -204,7 +204,7 @@ export function AppointmentsScreen() {
           customer={creating.from?.customer}
           from={creating.from?.appointment}
           onClose={() => setCreating(null)}
-          onCreated={show}
+          onCreated={showCreated}
         />
       )}
     </>

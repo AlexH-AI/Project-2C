@@ -209,7 +209,10 @@ test('creates an appointment: the day is read back, a trigger is required, the d
   await f.dialog.getByRole('textbox', { name: /^Khách hàng/ }).fill('K-');
   await f.dialog.getByRole('list', { name: 'KH khớp' }).getByRole('button').first().click();
   const name = (await f.dialog.locator('b').first().textContent()) ?? '';
-  await expect(f.dialog.getByRole('combobox', { name: /^RE/ })).not.toHaveValue('');
+  const re = f.dialog.getByRole('combobox', { name: /^RE/ });
+  await expect(re).not.toHaveValue('');
+  // The RE option reads "RE · team".
+  const [reName, team] = ((await re.locator('option:checked').textContent()) ?? '').split(' · ');
 
   await f.date.fill('30/9');
   await expect(f.dialog).toContainText('Thứ Tư 30/09/2026 · 15 ngày nữa');
@@ -225,7 +228,12 @@ test('creates an appointment: the day is read back, a trigger is required, the d
 
   await expect(f.dialog).toHaveCount(0);
   await expect(day.getByRole('heading', { level: 2 })).toHaveText('Trong ngày 30/09/2026');
-  await expect(day.getByRole('button', { name }).first()).toBeVisible();
+  await expect(
+    day
+      .getByRole('region', { name: team, exact: true })
+      .getByRole('region', { name: reName, exact: true })
+      .getByRole('button', { name }),
+  ).toBeVisible();
   await expect(detail.getByRole('heading')).toContainText(`30/09/2026 14:00 · ${name}`);
   await expect(detail).toContainText('Hội thảo / sự kiện');
 });

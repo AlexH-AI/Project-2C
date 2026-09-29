@@ -84,7 +84,8 @@ export function formatDayMonth(date: CalendarDate): string {
 export type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export function weekdayOf(date: CalendarDate): Weekday {
-  return (((toDayNumber(date) + 3) % 7) + 1) as Weekday;
+  // Day 0 (01/01/1970) is a Thursday; day numbers are negative before it and JS `%` keeps the sign.
+  return (((((toDayNumber(date) + 3) % 7) + 7) % 7) + 1) as Weekday;
 }
 
 /** Calendar days from `from` to `to`; negative when `to` is earlier. */

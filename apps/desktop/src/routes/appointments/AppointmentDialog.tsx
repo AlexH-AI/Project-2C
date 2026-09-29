@@ -66,7 +66,7 @@ export function AppointmentDialog({
   customer?: CustomerRecord;
   from?: AppointmentRecord;
   onClose: () => void;
-  onCreated?: (appointment: AppointmentRecord) => void;
+  onCreated: (appointment: AppointmentRecord) => void;
 }) {
   const app = useAppData();
   const today = app.today();
@@ -83,20 +83,17 @@ export function AppointmentDialog({
   const [attempted, setAttempted] = useState(false);
   const [failure, setFailure] = useState<string>();
 
-  const res = useMemo(() => reOptions(data.people, data.teams), [data]);
+  const reChoices = useMemo(() => reOptions(data.people, data.teams), [data]);
   const history = useMemo(
     () => (customer ? priorMeetings(data, customer.id) : undefined),
     [data, customer],
   );
   const date = readScheduleDate(dateText, today, from ? 'fromToday' : 'any');
   const time = parseTime(timeText);
-  const coordinators = data.people.filter(
-    (person) => coordinatorIds.includes(person.id) && person.id !== reId,
-  );
+  // No RE coordinates (ADR-0007: TL / IS / BD / BDM do), so the appointment's RE never is one.
+  const coordinators = data.people.filter((person) => coordinatorIds.includes(person.id));
   const addable = data.people
-    .filter(
-      (person) => person.role !== 'RE' && person.id !== reId && !coordinatorIds.includes(person.id),
-    )
+    .filter((person) => person.role !== 'RE' && !coordinatorIds.includes(person.id))
     .map((person) => ({ value: person.id, label: personLabel(person) }));
   const pending = dateText.trim() === '' && !attempted;
 
@@ -130,7 +127,7 @@ export function AppointmentDialog({
           coordinatorIds: coordinators.map((person) => person.id),
         }),
       );
-      onCreated?.(created);
+      onCreated(created);
       onClose();
     } catch (error) {
       setFailure(errorMessage(error));
@@ -174,7 +171,7 @@ export function AppointmentDialog({
       <SelectField
         label={t('appointmentForm.re')}
         value={reId}
-        options={res}
+        options={reChoices}
         placeholder={t('customerForm.rePick')}
         onChange={edit(setReId)}
         error={attempted && !reId ? t('error.RE_REQUIRED') : undefined}

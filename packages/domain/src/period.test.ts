@@ -322,6 +322,13 @@ describe('weekdayOf', () => {
     expect(weekdayOf(d(26, 9, 2026))).toBe(6);
     expect(weekdayOf(d(27, 9, 2026))).toBe(7);
   });
+
+  it('stays in 1 to 7 before 1970, where day numbers are negative', () => {
+    expect(weekdayOf(d(31, 12, 1969))).toBe(3);
+    expect(weekdayOf(d(28, 12, 1969))).toBe(7);
+    expect(weekdayOf(d(22, 12, 1969))).toBe(1);
+    expect(weekdayOf(d(1, 1, 1900))).toBe(1);
+  });
 });
 
 describe('daysBetween', () => {
