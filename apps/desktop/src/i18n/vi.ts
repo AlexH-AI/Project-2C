@@ -352,6 +352,15 @@ export const vi = {
   'error.APPOINTMENT_NOT_FOUND': 'Lịch hẹn không còn trong dữ liệu (có thể đã bị xóa).',
   'error.INVALID_TIME': 'Giờ từ 00:00 đến 23:59.',
   'error.INVALID_COORDINATOR': 'RE của lịch hẹn không phối hợp cho chính mình.',
+  'error.OUTCOME_REQUIRED': 'Đã gặp thì cần nhóm sau cuộc gặp và việc tiếp theo.',
+  'error.OUTCOME_IN_FUTURE':
+    'Lịch chưa tới ngày: Đã gặp và Không đến chỉ ghi khi ngày hẹn là hôm nay hoặc đã qua.',
+  'error.STAGE_AFTER_NOT_ALLOWED': 'Chỉ Đã gặp mới có nhóm sau cuộc gặp.',
+  'error.REVIEWER_NOT_ALLOWED': 'Chỉ Đã gặp mới có người đánh giá kết quả.',
+  'error.NEXT_APPOINTMENT_PAST': 'Lịch hẹn tiếp theo phải từ hôm nay trở đi.',
+  'error.INVALID_TRIGGER': 'Chọn loại trigger ("—" là chưa chọn).',
+  'error.INVALID_STATUS': 'Lịch này không nhận kết quả đó (có thể đã có kết quả hoặc đã dời).',
+  'error.INVALID_AMOUNT': 'Số tiền phải là số đồng nguyên, lớn hơn 0.',
   'chart.teamAppointments': 'Lịch hẹn theo team',
   'storage.openFailed': 'Không mở được file dữ liệu',
   'storage.openFailedHelp':
