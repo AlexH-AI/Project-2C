@@ -127,6 +127,8 @@ export const appointments = sqliteTable(
       (): AnySQLiteColumn => appointments.id,
     ),
     ...timestamps,
+    /** Who decided the stage after the meeting (D9); added by a later migration, hence last. */
+    outcomeReviewerId: text('outcome_reviewer_id').references(() => people.id),
   },
   (t) => [
     check('appointments_status', sql`${t.status} IN (${list(APPOINTMENT_STATUSES)})`),
@@ -138,6 +140,10 @@ export const appointments = sqliteTable(
     check(
       'appointments_met_outcome',
       sql`${t.status} <> 'MET' OR (${t.stageAfter} IS NOT NULL AND ${t.nextStep} IS NOT NULL)`,
+    ),
+    check(
+      'appointments_outcome_reviewer',
+      sql`${t.status} = 'MET' OR ${t.outcomeReviewerId} IS NULL`,
     ),
   ],
 );

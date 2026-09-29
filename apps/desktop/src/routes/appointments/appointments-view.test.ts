@@ -68,6 +68,7 @@ const appointment = (
   nextStep: null,
   note: '',
   rescheduledFromId: null,
+  outcomeReviewerId: null,
   ...extra,
 });
 

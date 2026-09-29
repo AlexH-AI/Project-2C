@@ -121,6 +121,7 @@ function appt(customerId: string, date: CalendarDate, time: string | null, extra
     nextStep: null,
     note: '',
     rescheduledFromId: null,
+    outcomeReviewerId: null,
     ...extra,
   } as AppointmentRecord;
 }

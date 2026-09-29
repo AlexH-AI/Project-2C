@@ -1,4 +1,5 @@
 import { getTableConfig } from 'drizzle-orm/sqlite-core';
+import initSqlJs, { type Database as SqlJsDatabase } from 'sql.js';
 import { describe, expect, it, vi } from 'vitest';
 import journal from '../migrations/meta/_journal.json';
 import { openDatabase } from './database';
@@ -42,7 +43,7 @@ describe('openDatabase', () => {
   it('migrates an empty database to the latest schema version', async () => {
     const db = await openDatabase();
 
-    expect(db.schemaVersion()).toBe(4);
+    expect(db.schemaVersion()).toBe(5);
     expect(tableNames(db)).toEqual([
       'appointment_coordinators',
       'appointments',
@@ -93,9 +94,9 @@ describe('openDatabase', () => {
 
     const second = await openDatabase({ bytes });
 
-    expect(second.schemaVersion()).toBe(4);
+    expect(second.schemaVersion()).toBe(5);
     const applied = second.sqlite.exec('SELECT count(*) FROM schema_migrations');
-    expect(applied[0]?.values[0]?.[0]).toBe(4);
+    expect(applied[0]?.values[0]?.[0]).toBe(5);
   });
 
   it('persists once after migrating, and not at all when already up to date', async () => {
@@ -199,6 +200,19 @@ describe('schema constraints', () => {
     expect(() => insert('a6', 'DONE', null, null)).toThrow(/CHECK/);
   });
 
+  it('keeps an outcome reviewer only on met appointments, and only an existing person (D9)', async () => {
+    const db = await withCustomer();
+    const insert = (id: string, status: string, reviewer: string) =>
+      db.sqlite.run(
+        "INSERT INTO appointments (id, customer_id, re_id, date, status, trigger_type, stage_after, next_step, note, created_at, updated_at, outcome_reviewer_id) VALUES (?, 'c', 'p', '2026-01-01', ?, 'OTHER', ?, ?, '', 'x', 'x', ?)",
+        [id, status, status === 'MET' ? 'N3' : null, status === 'MET' ? 'x' : null, reviewer],
+      );
+
+    insert('a1', 'MET', 'p');
+    expect(() => insert('a2', 'NO_SHOW', 'p')).toThrow(/CHECK/);
+    expect(() => insert('a3', 'MET', 'nobody')).toThrow(/FOREIGN KEY/);
+  });
+
   it('keeps policy amounts positive and issue data paired and not before submission', async () => {
     const db = await withCustomer();
     const insert = (id: string, fyp: number, issuedDate: string | null, issuedFyp: number | null) =>
@@ -244,6 +258,76 @@ describe('schema constraints', () => {
     expect(() => fact('f4', 1, 'occupation', 'active')).toThrow(/UNIQUE/);
     version('v1', 1, 1);
     expect(() => version('v2', 2, 2)).toThrow(/CHECK/);
+  });
+});
+
+describe('migrating a saved database', () => {
+  const rowsOf = (sqlite: SqlJsDatabase, table: string) =>
+    sqlite.exec(`SELECT * FROM ${table} ORDER BY rowid`)[0]?.values ?? [];
+
+  /** A database file saved by the app before the outcome reviewer (schema version 4), with data. */
+  async function savedAtVersion4() {
+    const SQL = await initSqlJs();
+    const sqlite = new SQL.Database();
+    sqlite.run('PRAGMA foreign_keys = ON');
+    for (const migration of MIGRATIONS.slice(0, 4)) {
+      sqlite.exec(migration.sql);
+      sqlite.run('INSERT INTO schema_migrations (id, applied_at) VALUES (?, ?)', [
+        migration.id,
+        'x',
+      ]);
+    }
+    sqlite.exec(`
+      INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x');
+      INSERT INTO people (id, name, role, team_id, created_at, updated_at) VALUES
+        ('re', 'An', 'RE', 't', 'x', 'x'), ('tl', 'Hà', 'TL', 't', 'x', 'x');
+      INSERT INTO customers (id, code, name, re_id, stage, created_at, updated_at)
+        VALUES ('c', 'K-0001', 'Lan', 're', 'N2', 'x', 'x');
+      INSERT INTO appointments (id, customer_id, re_id, date, time, status, trigger_type, trigger_note,
+          stage_after, next_step, expected_case_size, note, rescheduled_from_id, created_at, updated_at)
+        VALUES
+        ('a1', 'c', 're', '2026-09-10', '09:30', 'MET', 'REFERRAL', 'Chị Mai', 'N2', 'Gửi minh họa',
+          500000000, 'Quan tâm hưu trí', NULL, 'x', 'x'),
+        ('a2', 'c', 're', '2026-09-20', NULL, 'RESCHEDULED', 'OTHER', NULL, NULL, NULL, NULL,
+          'KH bận', NULL, 'x', 'x'),
+        ('a3', 'c', 're', '2026-09-25', NULL, 'SCHEDULED', 'OTHER', NULL, NULL, NULL, NULL, '',
+          'a2', 'x', 'x');
+      INSERT INTO appointment_coordinators (appointment_id, person_id) VALUES ('a1', 'tl');
+      INSERT INTO stage_transitions (id, customer_id, seq, from_stage, to_stage, date, appointment_id,
+          created_at) VALUES
+        ('s1', 'c', 1, NULL, 'N3', '2026-09-01', NULL, 'x'),
+        ('s2', 'c', 2, 'N3', 'N2', '2026-09-10', 'a1', 'x');
+    `);
+    return sqlite;
+  }
+
+  it('adds the outcome reviewer to a database with data, keeping every row and foreign key', async () => {
+    const old = await savedAtVersion4();
+    const tables = ['people', 'customers', 'appointment_coordinators', 'stage_transitions'];
+    const before = Object.fromEntries(tables.map((table) => [table, rowsOf(old, table)]));
+    const appointmentsBefore = rowsOf(old, 'appointments');
+
+    const db = await openDatabase({ bytes: old.export() });
+
+    expect(db.schemaVersion()).toBe(5);
+    for (const table of tables) expect(rowsOf(db.sqlite, table)).toEqual(before[table]);
+    // The new column comes last and is empty on every existing appointment.
+    expect(rowsOf(db.sqlite, 'appointments')).toEqual(
+      appointmentsBefore.map((row) => [...row, null]),
+    );
+    expect(columnNames(db, 'appointments').at(-1)).toBe('outcome_reviewer_id');
+    expect(foreignKeys(db, 'appointments')).toContain('outcome_reviewer_id->people.id');
+    expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
+  });
+
+  it('checks the outcome reviewer on the migrated table as on a new one', async () => {
+    const db = await openDatabase({ bytes: (await savedAtVersion4()).export() });
+    const setReviewer = (id: string, reviewer: string) =>
+      db.sqlite.run('UPDATE appointments SET outcome_reviewer_id = ? WHERE id = ?', [reviewer, id]);
+
+    setReviewer('a1', 'tl');
+    expect(() => setReviewer('a3', 'tl')).toThrow(/CHECK/);
+    expect(() => setReviewer('a1', 'nobody')).toThrow(/FOREIGN KEY/);
   });
 });
 

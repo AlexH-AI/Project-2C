@@ -123,7 +123,9 @@ describe('golden metrics through the database', () => {
   let ids: Map<string, string>;
 
   beforeAll(async () => {
-    db = await openDatabase();
+    // The fixture is entered once its last meeting (February 2027) is over: an outcome is never
+    // recorded ahead of its day.
+    db = await openDatabase({ now: () => new Date(Date.UTC(2027, 1, 28, 12)) });
     ids = loadFixture(db);
   });
 
