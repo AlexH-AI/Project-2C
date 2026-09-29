@@ -232,9 +232,10 @@ export function updateAppointmentDetails(
 }
 
 /**
- * Saves the edit dialog (mockup 6f) in one go: the outcome and the details. A cancellation starts
- * with its day, anything else with its outcome, so that no step holds a meeting met or missed
- * ahead of today when the end result does not.
+ * Saves the edit dialog (mockup 6f) in one go: the outcome and the details. The day moves first,
+ * so that a new transition lands on the new day and not before a later one on the old day (D10).
+ * Only a cancellation moved ahead of today starts with its outcome, so that no step holds a
+ * meeting met or missed ahead of today.
  */
 export function editMeetingOutcome(
   db: Database,
@@ -245,12 +246,16 @@ export function editMeetingOutcome(
   return db.transaction(() => {
     const status = liveAppointment(db, id).status;
     if (!OUTCOME_STATUSES.includes(status)) throw new DbError('INVALID_STATUS');
-    if (status === 'CANCELLED') {
-      updateAppointmentDetails(db, id, details);
-      return recordMeetingOutcome(db, id, outcome);
+    const cancelledAhead =
+      outcome.status === 'CANCELLED' &&
+      details.date !== undefined &&
+      compareDates(details.date, fromLocalDate(db.now())) > 0;
+    if (cancelledAhead) {
+      recordMeetingOutcome(db, id, outcome);
+      return updateAppointmentDetails(db, id, details);
     }
-    recordMeetingOutcome(db, id, outcome);
-    return updateAppointmentDetails(db, id, details);
+    updateAppointmentDetails(db, id, details);
+    return recordMeetingOutcome(db, id, outcome);
   });
 }
 
