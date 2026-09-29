@@ -132,6 +132,97 @@ test('no-show with a next appointment records both in one go', async ({ page }) 
   await expect(page.getByRole('region', { name: /^Trong ngày/ })).toContainText(name);
 });
 
+/** Books a meeting today for an N3 customer and records it met, N3 → N2; returns the name. */
+async function metToN2(page: Page) {
+  const name = await book(page, '15/9', 'N3');
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
+  const o = outcome(page);
+  await o.stageAfter.getByRole('radio', { name: 'N2', exact: true }).check();
+  await o.nextStep.fill('Gửi bảng minh họa');
+  await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
+  await expect(o.dialog).toHaveCount(0);
+  return name;
+}
+
+const editDialog = (page: Page) => page.getByRole('dialog', { name: 'Sửa kết quả cuộc gặp' });
+
+test('the outcome of a meeting is edited, its details with it', async ({ page }) => {
+  await metToN2(page);
+  await detail(page).getByRole('button', { name: 'Sửa kết quả' }).click();
+  const dialog = editDialog(page);
+
+  await expect(dialog.getByRole('textbox', { name: /^Việc tiếp theo/ })).toHaveValue(
+    'Gửi bảng minh họa',
+  );
+  await expect(dialog.getByRole('radio', { name: 'N3 giữ nguyên' })).toBeVisible();
+  await dialog.getByRole('radio', { name: 'N1', exact: true }).check();
+  await expect(dialog).toContainText(`ngày ${TODAY} · tính RF`);
+  await dialog
+    .getByRole('combobox', { name: /^Trigger/ })
+    .selectOption({ label: 'Hội thảo / sự kiện' });
+  await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
+
+  await expect(dialog).toHaveCount(0);
+  await expect(detail(page)).toContainText('N3 → N1 · RF');
+  await expect(detail(page)).toContainText('Hội thảo / sự kiện');
+});
+
+test('once the customer moved on, status, day and stage after are locked and delete too (D7)', async ({
+  page,
+}) => {
+  const name = await metToN2(page);
+  await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).click();
+  await expect(page.getByRole('region', { name })).toBeVisible();
+  await page.getByRole('button', { name: 'Chuyển nhóm' }).click();
+  const change = page.getByRole('dialog', { name: /^Chuyển nhóm · / });
+  await change.getByRole('radio', { name: 'N1', exact: true }).check();
+  await change.getByRole('button', { name: 'Chuyển nhóm' }).click();
+  await expect(change).toBeHidden();
+
+  await page.goto('/#/appointments');
+  await page
+    .getByRole('region', { name: /^Trong ngày/ })
+    .getByRole('button', { name })
+    .click();
+  await detail(page).getByRole('button', { name: 'Sửa kết quả' }).click();
+  const dialog = editDialog(page);
+
+  await expect(dialog).toContainText('Khóa 3 ô: trạng thái, ngày cuộc hẹn, nhóm sau cuộc gặp');
+  await expect(dialog.getByRole('link', { name: 'Chuyển nhóm tay ở Hồ sơ KH' })).toBeVisible();
+  await expect(dialog.getByRole('group', { name: 'Trạng thái' })).toHaveCount(0);
+  await expect(dialog.getByRole('textbox', { name: /^Ngày cuộc hẹn/ })).toHaveCount(0);
+  await expect(dialog.getByRole('group', { name: 'Nhóm sau cuộc gặp' })).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: 'Xóa lịch hẹn' })).toBeDisabled();
+  await expect(dialog).toContainText('Xóa cũng bị chặn');
+
+  // The other fields, the reviewer among them, still change.
+  await dialog.getByRole('textbox', { name: /^Việc tiếp theo/ }).fill('Gặp cùng TL');
+  await dialog.getByRole('combobox', { name: /^Người đánh giá/ }).selectOption({ index: 1 });
+  await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(detail(page)).toContainText('N3 → N2 · RF');
+});
+
+test('deleting the meeting that moved the customer takes the move back (6g)', async ({ page }) => {
+  const name = await metToN2(page);
+  const profile = await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).getAttribute('href');
+  await detail(page).getByRole('button', { name: 'Sửa kết quả' }).click();
+  await editDialog(page).getByRole('button', { name: 'Xóa lịch hẹn' }).click();
+  const confirm = page.getByRole('dialog', { name: `Xóa lịch hẹn ${TODAY}?` });
+
+  await expect(confirm).toContainText('Cuộc gặp này đã chuyển nhóm KH');
+  await expect(confirm).toContainText('(hủy chuyển nhóm 15/09)');
+  await expect(confirm).toContainText('bớt 1 (N3 → N2 tính RF)');
+  await confirm.getByRole('button', { name: 'Xóa lịch hẹn' }).click();
+
+  await expect(confirm).toHaveCount(0);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(detail(page)).toContainText('Chọn một lịch hẹn');
+  await page.goto(`/${profile}`);
+  const region = page.getByRole('region', { name });
+  await expect(region.getByText('N3', { exact: true }).first()).toBeVisible();
+});
+
 test('a day not yet come only reschedules or cancels; rescheduling moves it', async ({ page }) => {
   const name = await book(page, '30/9', 'N3');
   await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
