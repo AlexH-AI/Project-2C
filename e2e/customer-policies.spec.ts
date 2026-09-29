@@ -91,3 +91,43 @@ test('refuses a zero, negative or unreadable FYP', async ({ page }) => {
   await expect(row).toContainText('Đã nộp');
   expect(await policyCount(page)).toBe(before + 1);
 });
+
+test('edits the issued FYP (8d), then deletes the policy softly', async ({ page }) => {
+  const name = await openProfile(page);
+  const header = page.locator('section').filter({ has: page.locator('#customer-name') });
+  const stage = await header.locator('span.rounded-full').first().textContent();
+  const before = await policyCount(page);
+  const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
+  await card.getByRole('button', { name: '+ Hợp đồng' }).first().click();
+  let dialog = page.getByRole('dialog', { name: 'Hợp đồng mới · đã nộp' });
+  await dialog.getByRole('textbox', { name: /^Ngày nộp/ }).fill('1/9');
+  await dialog.getByRole('textbox', { name: /^FYP nộp/ }).fill('400tr');
+  await dialog.getByRole('button', { name: 'Lưu HĐ' }).click();
+  const row = card.getByRole('listitem').filter({ hasText: 'Nộp 01/09 · 400 tr' });
+  await row.getByRole('button', { name: 'Phát hành HĐ nộp 01/09/2026' }).click();
+  await page
+    .getByRole('dialog', { name: 'Phát hành HĐ' })
+    .getByRole('button', { name: 'Phát hành', exact: true })
+    .click();
+  await expect(row).toContainText('Phát hành 15/09 · 400 tr');
+
+  await row.getByRole('button', { name: 'Sửa HĐ nộp 01/09/2026' }).click();
+  dialog = page.getByRole('dialog', { name: `Sửa HĐ · ${name}` });
+  await expect(dialog).toContainText('Đã phát hành 15/09/2026');
+  await dialog.getByRole('textbox', { name: /^FYP phát hành/ }).fill('385,5tr');
+  await expect(dialog).toContainText('385.500.000 ₫ (385,5 tr) · khác FYP nộp −14,5 tr');
+  await expect(dialog).toContainText('FYP phát hành tháng 09/2026 của RE');
+  await expect(dialog).toContainText('giảm 14,5 tr');
+  await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(row).toContainText('Phát hành 15/09 · 385,5 tr');
+
+  await row.getByRole('button', { name: 'Sửa HĐ nộp 01/09/2026' }).click();
+  await dialog.getByRole('button', { name: 'Xóa HĐ…' }).click();
+  const confirm = page.getByRole('dialog', { name: 'Xóa HĐ nộp 01/09/2026' });
+  await confirm.getByRole('button', { name: 'Xóa HĐ' }).click();
+  await expect(confirm).toBeHidden();
+  await expect(row).toHaveCount(0);
+  expect(await policyCount(page)).toBe(before);
+  await expect(header.locator('span.rounded-full').first()).toHaveText(stage ?? '');
+});

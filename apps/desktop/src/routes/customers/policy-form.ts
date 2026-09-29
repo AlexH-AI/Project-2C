@@ -74,6 +74,26 @@ function readIssuedDate(
     : { ok: true, date: parsed.date, daysAfter };
 }
 
+/**
+ * Mockup 8d: how far the issued FYP is from the submitted one, and what the edit does to the
+ * issued FYP of the saved issue month (null when the FYP stays or the issue month moves).
+ */
+export function issuedChange(
+  saved: Policy,
+  next: { readonly issuedDate: CalendarDate; readonly issuedFyp: Vnd },
+) {
+  const before = saved.issuedDate;
+  const sameMonth =
+    before !== null &&
+    before.year === next.issuedDate.year &&
+    before.month === next.issuedDate.month;
+  const diff = next.issuedFyp - (saved.issuedFyp ?? 0);
+  return {
+    fromSubmitted: next.issuedFyp - saved.submittedFyp,
+    metric: sameMonth && diff !== 0 ? { year: before.year, month: before.month, diff } : null,
+  };
+}
+
 /** "Case size dự kiến": the one of the latest met meeting that has it, for reference only (8a). */
 export function expectedCaseSize(
   appointments: readonly Pick<Appointment, 'date' | 'status' | 'expectedCaseSize'>[],
