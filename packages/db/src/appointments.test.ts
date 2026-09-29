@@ -641,6 +641,22 @@ describe('editMeetingOutcome', () => {
     expect(stage()).toBe('N2');
   });
 
+  it('moves the day before recording a new stage after a later manual change', async () => {
+    const { db, customer, schedule, stage } = await withCustomer();
+    const { id } = schedule();
+    recordMeetingOutcome(db, id, { ...MET_N2, stageAfter: 'N3' });
+    changeStageManually(db, customer.id, { to: 'N2', date: d(12, 1) });
+
+    editMeetingOutcome(db, id, { ...MET_N2, stageAfter: 'N1' }, { date: d(14, 1) });
+
+    expect(listStageTransitions(db, customer.id).map((t) => [t.to, t.date])).toEqual([
+      ['N3', d(1, 1)],
+      ['N2', d(12, 1)],
+      ['N1', d(14, 1)],
+    ]);
+    expect(stage()).toBe('N1');
+  });
+
   it('turns a meeting into a cancellation moved ahead of today', async () => {
     const { db, schedule, stage } = await withCustomer();
     const { id } = schedule();
