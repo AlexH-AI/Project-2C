@@ -5,6 +5,7 @@ import {
   listPeople,
   listStageTransitions,
   listTeams,
+  type AppointmentRecord,
   type Database,
 } from '@p2c/db';
 import {
@@ -16,12 +17,14 @@ import {
   type CalendarDate,
   type Period,
 } from '@p2c/domain';
-import { DataTable, PeriodPicker, SelectField, type DataTableColumn } from '@p2c/ui';
+import { Button, DataTable, PeriodPicker, SelectField, type DataTableColumn } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { useScope } from '../../shell/ScopeContext';
+import { ALERT } from '../customers/CustomerDialogs';
 import { PERIOD_LABELS } from '../period-labels';
+import { AppointmentDialog } from './AppointmentDialog';
 import {
   appointmentRows,
   dayBoard,
@@ -29,6 +32,7 @@ import {
   outcomeText,
   personLabel,
   pickDay,
+  revealCreated,
   type AppointmentRow,
   type CoordinatorFilter,
   type DayCell,
@@ -65,6 +69,9 @@ export function AppointmentsScreen() {
   const [day, setDay] = useState(today);
   const [coordinator, setCoordinator] = useState<CoordinatorFilter>('any');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  // The appointment just made for an RE outside the scope, while it is the one selected.
+  const [hiddenCreated, setHiddenCreated] = useState<AppointmentRecord | null>(null);
 
   const rows = useMemo(() => appointmentRows(data, scope, coordinator), [data, scope, coordinator]);
   const inPeriod = useMemo(
@@ -145,6 +152,18 @@ export function AppointmentsScreen() {
     setDay(date);
   };
 
+  // Shows the day of the appointment just made, so it is there to see. A coordinator filter
+  // hiding it is cleared; the scope is shared by every screen, so a line says it hides it.
+  const showCreated = (created: AppointmentRecord) => {
+    const reveal = revealCreated(created, data.people, scope, coordinator);
+    setPeriod(pickDay(period, created.date) ?? periodOf('month', created.date));
+    setDay(created.date);
+    setCoordinator(reveal.coordinator);
+    setSelectedId(created.id);
+    setHiddenCreated(reveal.outsideScope ? created : null);
+  };
+  const outside = hiddenCreated?.id === selectedId && !selected ? hiddenCreated : null;
+
   return (
     <>
       <div className="flex flex-wrap items-end gap-3">
@@ -158,6 +177,9 @@ export function AppointmentsScreen() {
           />
         </div>
         <div className="flex-1" />
+        <Button variant="primary" onClick={() => setCreating(true)}>
+          {t('appointments.new')}
+        </Button>
         <span className="text-sm text-fg-2 tabular-nums">
           {t('appointments.summary', {
             total: inPeriod.length,
@@ -165,6 +187,14 @@ export function AppointmentsScreen() {
           })}
         </span>
       </div>
+      {outside && (
+        <p role="status" className={`${ALERT} border-info text-sm`}>
+          {t('appointments.createdOutside', {
+            date: formatDate(outside.date),
+            re: data.people.find((person) => person.id === outside.reId)?.name ?? '',
+          })}
+        </p>
+      )}
       <div className="flex flex-col items-start gap-4 lg:flex-row">
         <div className="flex w-full min-w-0 flex-1 flex-col gap-4">
           <MonthCalendar period={period} day={day} today={today} rows={rows} onPick={pick} />
@@ -184,6 +214,9 @@ export function AppointmentsScreen() {
           initialSort={{ id: 'date', desc: true }}
         />
       </section>
+      {creating && (
+        <AppointmentDialog data={data} onClose={() => setCreating(false)} onCreated={showCreated} />
+      )}
     </>
   );
 }

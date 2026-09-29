@@ -1,0 +1,290 @@
+import { useMemo, useState } from 'react';
+import {
+  APPOINTMENT_TRIGGERS,
+  scheduleAppointment,
+  type AppointmentRecord,
+  type AppointmentTrigger,
+  type CustomerRecord,
+} from '@p2c/db';
+import { formatDate, type CalendarDate } from '@p2c/domain';
+import { Dialog, SelectField, StageBadge, TextField } from '@p2c/ui';
+import { useAppData } from '../../data/AppDataContext';
+import { errorMessage, t } from '../../i18n';
+import { reOptions } from '../../shell/scope';
+import { Actions, ALERT } from '../customers/CustomerDialogs';
+import {
+  parseTime,
+  readScheduleDate,
+  searchCustomers,
+  type ScheduleDate,
+} from './appointment-form';
+import { personLabel, type AppointmentData } from './appointments-view';
+
+const CHIP = 'cursor-pointer rounded-md border border-border bg-surface-2 px-2 py-0.5 text-xs';
+const FOCUS = 'focus-visible:outline-2 focus-visible:outline-accent';
+const MATCHES = 6;
+
+/** How the day typed reads back: `Thứ Hai 28/09/2026 · 2 ngày nữa` (mockup `.read`). */
+function dateReading(date: Extract<ScheduleDate, { ok: true }>): string {
+  const n = Math.abs(date.daysFromToday);
+  const when =
+    date.daysFromToday === 0
+      ? t('appointmentForm.whenToday')
+      : t(date.daysFromToday > 0 ? 'appointmentForm.whenAhead' : 'appointmentForm.whenBehind', {
+          n,
+        });
+  return t('appointmentForm.dateRead', {
+    weekday: t(`weekdayLong.${date.weekday}`),
+    date: formatDate(date.date),
+    when,
+  });
+}
+
+/** Mockup 6a/6b: a new appointment, for a customer found by name or code. */
+export function AppointmentDialog({
+  data,
+  onClose,
+  onCreated,
+}: {
+  data: AppointmentData;
+  onClose: () => void;
+  onCreated: (appointment: AppointmentRecord) => void;
+}) {
+  const app = useAppData();
+  const today = app.today();
+  const [customer, setCustomer] = useState<CustomerRecord>();
+  const [query, setQuery] = useState('');
+  const [reId, setReId] = useState('');
+  const [dateText, setDateText] = useState('');
+  const [timeText, setTimeText] = useState('');
+  const [trigger, setTrigger] = useState<AppointmentTrigger | ''>('');
+  const [triggerNote, setTriggerNote] = useState('');
+  const [coordinatorIds, setCoordinatorIds] = useState<readonly string[]>([]);
+  const [attempted, setAttempted] = useState(false);
+  const [failure, setFailure] = useState<string>();
+
+  const reChoices = useMemo(() => reOptions(data.people, data.teams), [data]);
+  const date = readScheduleDate(dateText, today);
+  const time = parseTime(timeText);
+  // No RE coordinates (ADR-0007: TL / IS / BD / BDM do), so the appointment's RE never is one.
+  const coordinators = data.people.filter((person) => coordinatorIds.includes(person.id));
+  const addable = data.people
+    .filter((person) => person.role !== 'RE' && !coordinatorIds.includes(person.id))
+    .map((person) => ({ value: person.id, label: personLabel(person) }));
+  const pending = dateText.trim() === '' && !attempted;
+
+  const dateError = date.ok || pending ? undefined : t(`date.error.${date.error}`);
+
+  const edit =
+    <T,>(set: (value: T) => void) =>
+    (value: T) => {
+      set(value);
+      setFailure(undefined);
+    };
+
+  const save = () => {
+    setAttempted(true);
+    if (!customer || !reId || !trigger || !date.ok || !time.ok) return;
+    try {
+      const created = app.run((db) =>
+        scheduleAppointment(db, {
+          customerId: customer.id,
+          reId,
+          date: date.date,
+          time: time.time,
+          triggerType: trigger,
+          triggerNote,
+          coordinatorIds: coordinators.map((person) => person.id),
+        }),
+      );
+      onCreated(created);
+      onClose();
+    } catch (error) {
+      setFailure(errorMessage(error));
+    }
+  };
+
+  return (
+    <Dialog
+      title={t('appointmentForm.title')}
+      subtitle={t('appointmentForm.sub')}
+      onClose={onClose}
+      onSubmit={save}
+      actions={<Actions onClose={onClose} save={t('appointmentForm.create')} />}
+    >
+      {failure && (
+        <p role="alert" className={`${ALERT} border-danger text-danger`}>
+          {failure}
+        </p>
+      )}
+      <CustomerField
+        customers={data.customers}
+        customer={customer}
+        query={query}
+        onQuery={setQuery}
+        onPick={(picked) => {
+          setCustomer(picked);
+          setReId(picked?.reId ?? '');
+        }}
+        error={attempted && !customer ? t('appointmentForm.customerRequired') : undefined}
+      />
+      <SelectField
+        label={t('appointmentForm.re')}
+        value={reId}
+        options={reChoices}
+        placeholder={t('customerForm.rePick')}
+        onChange={edit(setReId)}
+        error={attempted && !reId ? t('error.RE_REQUIRED') : undefined}
+        required
+      />
+      <div className="grid grid-cols-2 gap-3">
+        <TextField
+          label={t('appointmentForm.date')}
+          value={dateText}
+          onChange={edit(setDateText)}
+          error={dateError}
+          hint={date.ok ? dateReading(date) : undefined}
+          required
+        />
+        <TextField
+          label={t('appointmentForm.time')}
+          value={timeText}
+          onChange={edit(setTimeText)}
+          error={time.ok ? undefined : t('appointmentForm.timeError')}
+        />
+      </div>
+      {date.ok && date.suggestion && (
+        <p className={`${ALERT} flex flex-col items-start gap-1.5 border-warn`}>
+          {t('appointmentForm.suggest', {
+            date: formatDate(date.date),
+            n: Math.abs(date.daysFromToday),
+            next: formatDate(date.suggestion),
+          })}
+          <button
+            type="button"
+            className={`${CHIP} ${FOCUS}`}
+            onClick={() => edit(setDateText)(formatDate(date.suggestion as CalendarDate))}
+          >
+            {t('appointmentForm.suggestUse', { date: formatDate(date.suggestion) })}
+          </button>
+          <span className="text-xs text-fg-2">{t('appointmentForm.suggestHelp')}</span>
+        </p>
+      )}
+      <SelectField
+        label={t('appointmentForm.trigger')}
+        value={trigger}
+        options={APPOINTMENT_TRIGGERS.map((value) => ({ value, label: t(`trigger.${value}`) }))}
+        placeholder={t('appointmentForm.triggerPick')}
+        onChange={edit((value: string) => setTrigger(value as AppointmentTrigger | ''))}
+        error={attempted && !trigger ? t('appointmentForm.triggerRequired') : undefined}
+        required
+      />
+      <TextField
+        label={t('appointmentForm.triggerNote')}
+        value={triggerNote}
+        onChange={edit(setTriggerNote)}
+      />
+      <fieldset className="m-0 flex flex-col gap-1 border-0 p-0">
+        <legend className="p-0 font-medium">{t('appointmentForm.coordinators')}</legend>
+        {coordinators.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {coordinators.map((person) => (
+              <button
+                key={person.id}
+                type="button"
+                aria-label={t('appointmentForm.coordinatorRemove', { name: personLabel(person) })}
+                className={`${CHIP} ${FOCUS}`}
+                onClick={() => setCoordinatorIds(coordinatorIds.filter((id) => id !== person.id))}
+              >
+                {personLabel(person)} ×
+              </button>
+            ))}
+          </div>
+        )}
+        <SelectField
+          label={t('appointmentForm.coordinatorPick')}
+          labelHidden
+          value=""
+          options={addable}
+          placeholder={t('appointmentForm.coordinatorAdd')}
+          onChange={(id) => id && setCoordinatorIds([...coordinatorIds, id])}
+        />
+        <span className="text-xs text-fg-3">{t('appointmentForm.coordinatorHelp')}</span>
+      </fieldset>
+    </Dialog>
+  );
+}
+
+/** The customer picked, or a search by name / code to pick one (mockup 6a "Khách hàng"). */
+function CustomerField({
+  customers,
+  customer,
+  query,
+  onQuery,
+  onPick,
+  error,
+}: {
+  customers: readonly CustomerRecord[];
+  customer: CustomerRecord | undefined;
+  query: string;
+  onQuery: (query: string) => void;
+  onPick: (customer: CustomerRecord | undefined) => void;
+  error: string | undefined;
+}) {
+  const matches = useMemo(() => searchCustomers(customers, query, MATCHES), [customers, query]);
+  if (customer) {
+    return (
+      <div className="flex flex-col gap-1">
+        <span className="font-medium">{t('appointmentForm.customer')}</span>
+        <p className="m-0 flex flex-wrap items-center gap-2">
+          <b>{customer.name}</b>
+          <span className="text-fg-3 tabular-nums">{customer.code}</span>
+          <StageBadge stage={customer.stage} label={t(`stage.${customer.stage}`)} />
+          <button
+            type="button"
+            className={`${CHIP} ${FOCUS} ml-auto`}
+            onClick={() => onPick(undefined)}
+          >
+            {t('appointmentForm.customerChange')}
+          </button>
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-1.5">
+      <TextField
+        label={t('appointmentForm.customer')}
+        value={query}
+        onChange={onQuery}
+        hint={t('appointmentForm.customerHint')}
+        error={error}
+        required
+        autoFocus
+      />
+      {query.trim() !== '' && (
+        <ul
+          aria-label={t('appointmentForm.customerResults')}
+          className="m-0 flex list-none flex-col gap-1 p-0"
+        >
+          {matches.length === 0 && (
+            <li className="text-fg-3">{t('appointmentForm.customerNone')}</li>
+          )}
+          {matches.map((match) => (
+            <li key={match.id}>
+              <button
+                type="button"
+                className={`${CHIP} ${FOCUS} flex w-full items-center gap-2 text-left text-sm`}
+                onClick={() => onPick(match)}
+              >
+                <b>{match.name}</b>
+                <span className="text-fg-3 tabular-nums">{match.code}</span>
+                <StageBadge stage={match.stage} label={t(`stage.${match.stage}`)} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

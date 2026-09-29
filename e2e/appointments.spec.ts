@@ -186,3 +186,141 @@ test('times line up in tabular figures; a customer opens the detail and its prof
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hồ sơ khách hàng');
   await expect(page.getByRole('region', { name })).toBeVisible();
 });
+
+function form(page: Page) {
+  const dialog = page.getByRole('dialog');
+  return {
+    dialog,
+    date: dialog.getByRole('textbox', { name: /^Ngày/ }),
+    time: dialog.getByRole('textbox', { name: /^Giờ/ }),
+    trigger: dialog.getByRole('combobox', { name: /^Trigger/ }),
+    create: dialog.getByRole('button', { name: 'Tạo lịch hẹn' }),
+  };
+}
+
+test('creates an appointment: the day is read back, a trigger is required, the day lists it', async ({
+  page,
+}) => {
+  const { day, detail } = screen(page);
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const f = form(page);
+
+  await f.dialog.getByRole('textbox', { name: /^Khách hàng/ }).fill('K-');
+  await f.dialog.getByRole('list', { name: 'KH khớp' }).getByRole('button').first().click();
+  const name = (await f.dialog.locator('b').first().textContent()) ?? '';
+  const re = f.dialog.getByRole('combobox', { name: /^RE/ });
+  await expect(re).not.toHaveValue('');
+  // The RE option reads "RE · team".
+  const [reName, team] = ((await re.locator('option:checked').textContent()) ?? '').split(' · ');
+
+  await f.date.fill('30/9');
+  await expect(f.dialog).toContainText('Thứ Tư 30/09/2026 · 15 ngày nữa');
+  await f.time.fill('14:00');
+  await f.dialog.getByRole('combobox', { name: 'Thêm người phối hợp' }).selectOption({ index: 1 });
+  await expect(f.dialog.getByRole('button', { name: /^Bỏ / })).toHaveCount(1);
+
+  // No trigger yet: nothing is created and the dialog says why.
+  await f.create.click();
+  await expect(f.dialog).toContainText('Chọn loại trigger');
+  await f.trigger.selectOption({ label: 'Hội thảo / sự kiện' });
+  await f.create.click();
+
+  await expect(f.dialog).toHaveCount(0);
+  await expect(day.getByRole('heading', { level: 2 })).toHaveText('Trong ngày 30/09/2026');
+  await expect(
+    day
+      .getByRole('region', { name: team, exact: true })
+      .getByRole('region', { name: reName, exact: true })
+      .getByRole('button', { name }),
+  ).toBeVisible();
+  await expect(detail.getByRole('heading')).toContainText(`30/09/2026 14:00 · ${name}`);
+  await expect(detail).toContainText('Hội thảo / sự kiện');
+});
+
+test('a day long past without a year offers next year; the RE picks', async ({ page }) => {
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const f = form(page);
+
+  await f.date.fill('5/1');
+  await expect(f.dialog).toContainText('05/01/2026 đã qua 253 ngày. Ý anh là 05/01/2027?');
+  await f.dialog.getByRole('button', { name: 'Dùng 05/01/2027' }).click();
+  await expect(f.date).toHaveValue('05/01/2027');
+  await expect(f.dialog).toContainText('Thứ Ba 05/01/2027');
+
+  await f.date.fill('29/02');
+  await expect(f.dialog).toContainText('Ngày này không tồn tại.');
+  await f.date.fill('28-9');
+  await expect(f.dialog).toContainText('Gõ dd/mm hoặc dd/mm/yyyy.');
+  await f.time.fill('25:00');
+  await expect(f.dialog).toContainText('Giờ từ 00:00 đến 23:59.');
+});
+
+/** Opens the dialog and fills a customer (its RE, or another team's), `date` and a trigger. */
+async function fillAppointment(page: Page, date: string, otherTeam?: string) {
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const f = form(page);
+  await f.dialog.getByRole('textbox', { name: /^Khách hàng/ }).fill('K-');
+  await f.dialog.getByRole('list', { name: 'KH khớp' }).getByRole('button').first().click();
+  const name = (await f.dialog.locator('b').first().textContent()) ?? '';
+  const re = f.dialog.getByRole('combobox', { name: /^RE/ });
+  if (otherTeam) {
+    const options = await re.locator('option').allTextContents();
+    const other = options.find((option) => option.includes(' · ') && !option.endsWith(otherTeam));
+    await re.selectOption({ label: other ?? '' });
+  }
+  const reName = ((await re.locator('option:checked').textContent()) ?? '').split(' · ')[0] ?? '';
+  await f.date.fill(date);
+  await f.trigger.selectOption({ label: 'Hội thảo / sự kiện' });
+  return { ...f, name, reName };
+}
+
+test('keeping a day long past records a late appointment on that day', async ({ page }) => {
+  const { day, detail } = screen(page);
+  const f = await fillAppointment(page, '5/1');
+  await expect(f.dialog).toContainText('Ý anh là 05/01/2027?');
+  await f.create.click();
+
+  await expect(f.dialog).toHaveCount(0);
+  await expect(day.getByRole('heading', { level: 2 })).toHaveText('Trong ngày 05/01/2026');
+  await expect(detail.getByRole('heading')).toContainText(`05/01/2026 · ${f.name}`);
+});
+
+test('a coordinator filter hiding the new appointment is cleared', async ({ page }) => {
+  const { coordinator, day, detail } = screen(page);
+  await coordinator.selectOption({ label: 'Không có người phối hợp' });
+  const f = await fillAppointment(page, '30/9');
+  await f.dialog.getByRole('combobox', { name: 'Thêm người phối hợp' }).selectOption({ index: 1 });
+  await f.create.click();
+
+  await expect(f.dialog).toHaveCount(0);
+  await expect(coordinator).toHaveValue('any');
+  await expect(day.getByRole('button', { name: f.name })).toBeVisible();
+  await expect(detail.getByRole('heading')).toContainText(`30/09/2026 · ${f.name}`);
+});
+
+test('an appointment for an RE outside the scope says so; the scope stays', async ({ page }) => {
+  const { detail } = screen(page);
+  await page
+    .getByRole('radiogroup', { name: 'Góc nhìn' })
+    .getByRole('radio', { name: 'Team' })
+    .click();
+  const team = page.getByRole('combobox', { name: 'Team của góc nhìn' });
+  await team.selectOption({ label: 'Sao Mai' });
+  const f = await fillAppointment(page, '30/9', 'Sao Mai');
+  await f.create.click();
+
+  await expect(f.dialog).toHaveCount(0);
+  const notice = page.getByRole('status').filter({ hasText: 'Đã tạo lịch hẹn' });
+  await expect(notice).toHaveText(
+    `Đã tạo lịch hẹn 30/09/2026 cho ${f.reName}. RE này nằm ngoài góc nhìn hiện tại nên lịch không hiện ở đây; đổi góc nhìn để xem.`,
+  );
+  await expect(team.locator('option:checked')).toHaveText('Sao Mai');
+  await expect(detail).toContainText('Chọn một lịch hẹn để xem chi tiết.');
+
+  await page
+    .getByRole('radiogroup', { name: 'Góc nhìn' })
+    .getByRole('radio', { name: 'Toàn bộ' })
+    .click();
+  await expect(notice).toHaveCount(0);
+  await expect(detail.getByRole('heading')).toContainText(`30/09/2026 · ${f.name}`);
+});

@@ -14,6 +14,7 @@ import {
   outcomeText,
   personLabel,
   pickDay,
+  revealCreated,
   type AppointmentData,
 } from './appointments-view';
 
@@ -142,6 +143,32 @@ describe('appointmentRows', () => {
       null,
       null,
     ]);
+  });
+});
+
+describe('revealCreated', () => {
+  const withCoordinator = appointment('a', 're1', day(9, 1), { coordinatorIds: ['tl1'] });
+  const alone = appointment('b', 're3', day(9, 1));
+
+  it('keeps the coordinator filter when it shows the new appointment', () => {
+    expect(revealCreated(withCoordinator, people, { kind: 'all' }, 'tl1').coordinator).toBe('tl1');
+    expect(revealCreated(alone, people, { kind: 'all' }, 'none').coordinator).toBe('none');
+    expect(revealCreated(alone, people, { kind: 'all' }, 'any').coordinator).toBe('any');
+  });
+
+  it('clears the coordinator filter when it hides the new appointment', () => {
+    expect(revealCreated(withCoordinator, people, { kind: 'all' }, 'none').coordinator).toBe('any');
+    expect(revealCreated(withCoordinator, people, { kind: 'all' }, 'is1').coordinator).toBe('any');
+    expect(revealCreated(alone, people, { kind: 'all' }, 'tl1').coordinator).toBe('any');
+  });
+
+  it('says when the RE is outside the scope, which it leaves alone', () => {
+    const team = { kind: 'team', teamId: 't1' } as const;
+    expect(revealCreated(withCoordinator, people, team, 'any').outsideScope).toBe(false);
+    expect(revealCreated(alone, people, team, 'any').outsideScope).toBe(true);
+    expect(revealCreated(alone, people, { kind: 're', reId: 're1' }, 'any').outsideScope).toBe(
+      true,
+    );
   });
 });
 

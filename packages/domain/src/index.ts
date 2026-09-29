@@ -8,6 +8,7 @@ export {
   calendarDate,
   compareDates,
   customPeriod,
+  daysBetween,
   formatDate,
   formatDayMonth,
   formatPeriodValue,
@@ -18,8 +19,16 @@ export {
   periodOf,
   shift,
   switchKind,
+  weekdayOf,
 } from './period';
-export type { CalendarDate, Period, PeriodKind, QuickDateError, QuickDateResult } from './period';
+export type {
+  CalendarDate,
+  Period,
+  PeriodKind,
+  QuickDateError,
+  QuickDateResult,
+  Weekday,
+} from './period';
 export {
   KYC_CATEGORIES,
   KYC_CATEGORY_SPECS,
