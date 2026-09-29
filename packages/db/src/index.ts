@@ -29,6 +29,7 @@ export {
 } from './customers';
 export type { BirthDate, CustomerProfile, CustomerRecord, Gender, NewCustomer } from './customers';
 export {
+  editMeetingOutcome,
   getAppointment,
   listAppointments,
   recordMeetingOutcome,

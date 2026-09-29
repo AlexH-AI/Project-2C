@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { calendarDate, formatDate } from '@p2c/domain';
+import { calendarDate, formatDate, type CustomerStage, type StageTransition } from '@p2c/domain';
 import { parseTime, readScheduleDate } from './appointment-form';
-import { outcomeChoices, readOutcome, stageAfterChoices, type OutcomeDraft } from './outcome-form';
+import {
+  outcomeChoices,
+  outcomeLock,
+  readOutcome,
+  stageAfterChoices,
+  type OutcomeDraft,
+} from './outcome-form';
 
 const d = (day: number, month: number, year: number) => calendarDate(year, month, day);
 const TODAY = d(26, 9, 2026);
@@ -105,6 +111,33 @@ describe('outcomeChoices', () => {
     expect(disabled(outcomeChoices({ status: 'MET', date: TODAY }, TODAY))).toEqual([
       'RESCHEDULED',
     ]);
+  });
+});
+
+describe('outcomeLock', () => {
+  const move = (
+    id: string,
+    customerId: string,
+    from: CustomerStage,
+    to: CustomerStage,
+    appointmentId: string | null = null,
+  ): StageTransition => ({ id, customerId, from, to, date: TODAY, appointmentId });
+  const a = { id: 'a1', customerId: 'c1' };
+
+  it('finds nothing to lock when the appointment moved no one', () => {
+    expect(outcomeLock([move('t1', 'c1', 'N3', 'N2')], a)).toEqual({});
+  });
+
+  it('holds the move the appointment made while it is the latest (D7)', () => {
+    const caused = move('t1', 'c1', 'N3', 'N2', 'a1');
+    const elsewhere = move('t2', 'c2', 'N2', 'N1');
+    expect(outcomeLock([caused, elsewhere], a)).toEqual({ caused });
+  });
+
+  it('is locked by a later move of the same customer', () => {
+    const caused = move('t1', 'c1', 'N3', 'N2', 'a1');
+    const later = move('t2', 'c1', 'N2', 'N1');
+    expect(outcomeLock([caused, later], a)).toEqual({ caused, later });
   });
 });
 

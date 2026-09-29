@@ -6,7 +6,7 @@ import {
   type AppointmentTrigger,
   type CustomerRecord,
 } from '@p2c/db';
-import { formatDate, type CalendarDate } from '@p2c/domain';
+import { formatDate, type CalendarDate, type Person } from '@p2c/domain';
 import { Dialog, SelectField, StageBadge, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
@@ -94,11 +94,6 @@ export function AppointmentDialog({
   );
   const date = readScheduleDate(dateText, today, from ? 'fromToday' : 'any');
   const time = parseTime(timeText);
-  // No RE coordinates (ADR-0007: TL / IS / BD / BDM do), so the appointment's RE never is one.
-  const coordinators = data.people.filter((person) => coordinatorIds.includes(person.id));
-  const addable = data.people
-    .filter((person) => person.role !== 'RE' && !coordinatorIds.includes(person.id))
-    .map((person) => ({ value: person.id, label: personLabel(person) }));
   const pending = dateText.trim() === '' && !attempted;
 
   const dateError = pending ? undefined : dateFieldError(date, today);
@@ -122,7 +117,7 @@ export function AppointmentDialog({
           time: time.time,
           triggerType: trigger,
           triggerNote,
-          coordinatorIds: coordinators.map((person) => person.id),
+          coordinatorIds: liveIds(data.people, coordinatorIds),
         }),
       );
       onCreated(created);
@@ -209,34 +204,58 @@ export function AppointmentDialog({
         value={triggerNote}
         onChange={edit(setTriggerNote)}
       />
-      <fieldset className="m-0 flex flex-col gap-1 border-0 p-0">
-        <legend className="p-0 font-medium">{t('appointmentForm.coordinators')}</legend>
-        {coordinators.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {coordinators.map((person) => (
-              <button
-                key={person.id}
-                type="button"
-                aria-label={t('appointmentForm.coordinatorRemove', { name: personLabel(person) })}
-                className={`${CHIP} ${FOCUS}`}
-                onClick={() => setCoordinatorIds(coordinatorIds.filter((id) => id !== person.id))}
-              >
-                {personLabel(person)} ×
-              </button>
-            ))}
-          </div>
-        )}
-        <SelectField
-          label={t('appointmentForm.coordinatorPick')}
-          labelHidden
-          value=""
-          options={addable}
-          placeholder={t('appointmentForm.coordinatorAdd')}
-          onChange={(id) => id && setCoordinatorIds([...coordinatorIds, id])}
-        />
-        <span className="text-xs text-fg-3">{t('appointmentForm.coordinatorHelp')}</span>
-      </fieldset>
+      <CoordinatorsField people={data.people} ids={coordinatorIds} onChange={setCoordinatorIds} />
     </Dialog>
+  );
+}
+
+/** The ids of people still there: a coordinator deleted since is dropped, not refused. */
+export const liveIds = (people: readonly Person[], ids: readonly string[]) =>
+  ids.filter((id) => people.some((person) => person.id === id));
+
+/** "Người phối hợp": chips to remove, a list to add (mockups 6a, 6f). */
+export function CoordinatorsField({
+  people,
+  ids,
+  onChange,
+}: {
+  people: readonly Person[];
+  ids: readonly string[];
+  onChange: (ids: readonly string[]) => void;
+}) {
+  // No RE coordinates (ADR-0007: TL / IS / BD / BDM do), so the appointment's RE never is one.
+  const coordinators = people.filter((person) => ids.includes(person.id));
+  const addable = people
+    .filter((person) => person.role !== 'RE' && !ids.includes(person.id))
+    .map((person) => ({ value: person.id, label: personLabel(person) }));
+  return (
+    <fieldset className="m-0 flex flex-col gap-1 border-0 p-0">
+      <legend className="p-0 font-medium">{t('appointmentForm.coordinators')}</legend>
+      {coordinators.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {coordinators.map((person) => (
+            <button
+              key={person.id}
+              type="button"
+              aria-label={t('appointmentForm.coordinatorRemove', { name: personLabel(person) })}
+              className={`${CHIP} ${FOCUS}`}
+              onClick={() => onChange(ids.filter((id) => id !== person.id))}
+            >
+              {personLabel(person)} ×
+            </button>
+          ))}
+        </div>
+      )}
+      <SelectField
+        label={t('appointmentForm.coordinatorPick')}
+        labelHidden
+        value=""
+        options={addable}
+        placeholder={t('appointmentForm.coordinatorAdd')}
+        onChange={(id) => id && onChange([...ids, id])}
+      />
+      <span className="text-xs text-fg-3">{t('appointmentForm.coordinatorHelp')}</span>
+    </fieldset>
   );
 }
 

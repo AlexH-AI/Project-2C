@@ -232,6 +232,29 @@ export function updateAppointmentDetails(
 }
 
 /**
+ * Saves the edit dialog (mockup 6f) in one go: the outcome and the details. A cancellation starts
+ * with its day, anything else with its outcome, so that no step holds a meeting met or missed
+ * ahead of today when the end result does not.
+ */
+export function editMeetingOutcome(
+  db: Database,
+  id: string,
+  outcome: MeetingOutcome,
+  details: AppointmentDetails,
+): AppointmentRecord {
+  return db.transaction(() => {
+    const status = liveAppointment(db, id).status;
+    if (!OUTCOME_STATUSES.includes(status)) throw new DbError('INVALID_STATUS');
+    if (status === 'CANCELLED') {
+      updateAppointmentDetails(db, id, details);
+      return recordMeetingOutcome(db, id, outcome);
+    }
+    recordMeetingOutcome(db, id, outcome);
+    return updateAppointmentDetails(db, id, details);
+  });
+}
+
+/**
  * The old appointment becomes rescheduled, with the reason in its note (mockup 6e); a new one
  * takes its place on the new day (D3).
  */

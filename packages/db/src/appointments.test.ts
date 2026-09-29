@@ -1,6 +1,7 @@
 import { calendarDate, stageOn, type CalendarDate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  editMeetingOutcome,
   getAppointment,
   listAppointments,
   recordMeetingOutcome,
@@ -592,6 +593,83 @@ describe('updateAppointmentDetails', () => {
     updateAppointmentDetails(db, id, { date: d(11, 1) });
 
     expect(listStageTransitions(db, customer.id).map((t) => t.to)).toEqual(['N3', 'N2']);
+  });
+});
+
+describe('editMeetingOutcome', () => {
+  it('saves the outcome and the details together (mockup 6f)', async () => {
+    const { db, tl, customer, schedule, stage } = await withCustomer();
+    const { id } = schedule();
+    recordMeetingOutcome(db, id, MET_N2);
+
+    const edited = editMeetingOutcome(
+      db,
+      id,
+      { ...MET_N2, stageAfter: 'N1', outcomeReviewerId: tl.id },
+      { date: d(14, 1), time: '15:30', triggerType: 'EVENT', coordinatorIds: [tl.id] },
+    );
+
+    expect(edited).toMatchObject({
+      stageAfter: 'N1',
+      outcomeReviewerId: tl.id,
+      date: d(14, 1),
+      time: '15:30',
+      triggerType: 'EVENT',
+      coordinatorIds: [tl.id],
+    });
+    expect(getAppointment(db, id)).toEqual(edited);
+    expect(listStageTransitions(db, customer.id).map((t) => [t.to, t.date])).toEqual([
+      ['N3', d(1, 1)],
+      ['N1', d(14, 1)],
+    ]);
+    expect(stage()).toBe('N1');
+  });
+
+  it('turns a cancellation ahead of time into a meeting once its day is moved back', async () => {
+    const { db, re, customer, stage } = await withCustomer();
+    const { id } = scheduleAppointment(db, {
+      customerId: customer.id,
+      reId: re.id,
+      date: d(30, 9),
+      triggerType: 'OTHER',
+    });
+    recordMeetingOutcome(db, id, { status: 'CANCELLED' });
+
+    editMeetingOutcome(db, id, MET_N2, { date: d(20, 9) });
+
+    expect(getAppointment(db, id)).toMatchObject({ status: 'MET', date: d(20, 9) });
+    expect(stage()).toBe('N2');
+  });
+
+  it('turns a meeting into a cancellation moved ahead of today', async () => {
+    const { db, schedule, stage } = await withCustomer();
+    const { id } = schedule();
+    recordMeetingOutcome(db, id, MET_N2);
+
+    editMeetingOutcome(db, id, { status: 'CANCELLED' }, { date: d(30, 9) });
+
+    expect(getAppointment(db, id)).toMatchObject({ status: 'CANCELLED', date: d(30, 9) });
+    expect(stage()).toBe('N3');
+  });
+
+  it('saves nothing when a part is refused', async () => {
+    const { db, schedule } = await withCustomer();
+    const { id } = schedule();
+    recordMeetingOutcome(db, id, MET_N2);
+    const before = getAppointment(db, id);
+
+    expect(
+      codeOf(() => editMeetingOutcome(db, id, { ...MET_N2, note: 'Mới' }, { time: '7h' })),
+    ).toBe('INVALID_TIME');
+    expect(getAppointment(db, id)).toEqual(before);
+  });
+
+  it('edits only an appointment with an outcome', async () => {
+    const { db, schedule } = await withCustomer();
+    const { id } = schedule();
+
+    expect(codeOf(() => editMeetingOutcome(db, id, MET_N2, {}))).toBe('INVALID_STATUS');
+    expect(getAppointment(db, id)?.status).toBe('SCHEDULED');
   });
 });
 
