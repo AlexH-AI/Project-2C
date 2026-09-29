@@ -14,6 +14,7 @@ import {
   formatPeriodValue,
   isInPeriod,
   periodOf,
+  type AppointmentStatus,
   type CalendarDate,
   type Period,
 } from '@p2c/domain';
@@ -25,6 +26,7 @@ import { useScope } from '../../shell/ScopeContext';
 import { ALERT } from '../customers/CustomerDialogs';
 import { PERIOD_LABELS } from '../period-labels';
 import { AppointmentDialog } from './AppointmentDialog';
+import { EditOutcomeDialog } from './EditOutcomeDialog';
 import { OutcomeDialog } from './OutcomeDialog';
 import { RescheduleDialog } from './RescheduleDialog';
 import { isPastOrToday } from './appointment-form';
@@ -76,6 +78,7 @@ export function AppointmentsScreen() {
   const [creating, setCreating] = useState<{ from?: AppointmentRow } | null>(null);
   const [moving, setMoving] = useState<AppointmentRow | null>(null);
   const [recording, setRecording] = useState<AppointmentRow | null>(null);
+  const [editing, setEditing] = useState<AppointmentRow | null>(null);
   // The appointment just made for an RE outside the scope, while it is the one selected.
   const [hiddenCreated, setHiddenCreated] = useState<AppointmentRecord | null>(null);
 
@@ -215,6 +218,7 @@ export function AppointmentsScreen() {
           onNext={(from) => setCreating({ from })}
           onReschedule={setMoving}
           onRecord={setRecording}
+          onEdit={setEditing}
           onShow={show}
         />
       </div>
@@ -247,6 +251,14 @@ export function AppointmentsScreen() {
           transitions={data.transitions}
           onClose={() => setRecording(null)}
           onMoved={show}
+        />
+      )}
+      {editing?.customer && (
+        <EditOutcomeDialog
+          row={{ ...editing, customer: editing.customer }}
+          people={data.people}
+          transitions={data.transitions}
+          onClose={() => setEditing(null)}
         />
       )}
     </>
@@ -436,6 +448,9 @@ function DayTable({
   );
 }
 
+/** The statuses whose outcome can be edited (mockup 6f). */
+const EDITABLE: readonly AppointmentStatus[] = ['MET', 'CANCELLED', 'NO_SHOW'];
+
 const dateTime = (a: AppointmentRecord) => [formatDate(a.date), a.time].filter(Boolean).join(' ');
 
 function Detail({
@@ -445,6 +460,7 @@ function Detail({
   onNext,
   onReschedule,
   onRecord,
+  onEdit,
   onShow,
 }: {
   row: AppointmentRow | undefined;
@@ -453,6 +469,7 @@ function Detail({
   onNext: (from: AppointmentRow) => void;
   onReschedule: (row: AppointmentRow) => void;
   onRecord: (row: AppointmentRow) => void;
+  onEdit: (row: AppointmentRow) => void;
   onShow: (appointment: AppointmentRecord) => void;
 }) {
   if (!row) {
@@ -515,6 +532,9 @@ function Detail({
         )}
         {a.status === 'SCHEDULED' && (
           <Button onClick={() => onReschedule(row)}>{t('appointments.reschedule')}</Button>
+        )}
+        {EDITABLE.includes(a.status) && row.customer && (
+          <Button onClick={() => onEdit(row)}>{t('appointments.edit')}</Button>
         )}
         {row.customer && isPastOrToday(a.date, today) && (
           <Button onClick={() => onNext(row)}>{t('appointments.next')}</Button>
