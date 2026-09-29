@@ -114,7 +114,8 @@ test('edits the issued FYP (8d), then deletes the policy softly', async ({ page 
   await row.getByRole('button', { name: 'Sửa HĐ nộp 01/09/2026' }).click();
   dialog = page.getByRole('dialog', { name: `Sửa HĐ · ${name}` });
   await expect(dialog).toContainText('Đã phát hành 15/09/2026');
-  await dialog.getByRole('textbox', { name: /^FYP phát hành/ }).fill('385,5tr');
+  // Mockup 8d: once issued, the issued FYP is a hand correction.
+  await dialog.getByRole('textbox', { name: 'FYP phát hành sửa tay' }).fill('385,5tr');
   await expect(dialog).toContainText('385.500.000 ₫ (385,5 tr) · khác FYP nộp −14,5 tr');
   await expect(dialog).toContainText('FYP phát hành tháng 09/2026 của RE');
   await expect(dialog).toContainText('giảm 14,5 tr');

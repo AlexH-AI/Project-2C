@@ -323,6 +323,13 @@ describe('weekdayOf', () => {
     expect(weekdayOf(d(27, 9, 2026))).toBe(7);
   });
 
+  it('walks a whole week in order, and knows 29 February', () => {
+    const week = [21, 22, 23, 24, 25, 26, 27].map((day) => weekdayOf(d(day, 9, 2026)));
+    expect(week).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(weekdayOf(d(29, 2, 2024))).toBe(4);
+    expect(weekdayOf(d(1, 3, 2024))).toBe(5);
+  });
+
   it('stays in 1 to 7 before 1970, where day numbers are negative', () => {
     expect(weekdayOf(d(31, 12, 1969))).toBe(3);
     expect(weekdayOf(d(28, 12, 1969))).toBe(7);

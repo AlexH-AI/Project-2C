@@ -7,13 +7,10 @@ import {
   type CustomerRecord,
 } from '@p2c/db';
 import {
-  calendarDate,
   formatDate,
-  formatPeriodValue,
   formatVnd,
   formatVndCompact,
-  periodOf,
-  weekdayOf,
+  formatVndDelta,
   type CalendarDate,
   type Person,
   type Policy,
@@ -25,9 +22,11 @@ import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
 import { dayText } from '../appointments/appointment-form';
-import { Actions, ALERT } from './CustomerDialogs';
+import { Actions, ALERT, dayRead } from './CustomerDialogs';
 import {
+  effectText,
   issuedChange,
+  monthOf,
   readPolicy,
   type FypResult,
   type IssuedDateResult,
@@ -40,12 +39,6 @@ export type PolicyMode =
 
 const fypRead = (amount: Vnd) =>
   t('policyForm.fypRead', { amount: formatVnd(amount), compact: formatVndCompact(amount) });
-
-const dateRead = (date: CalendarDate) =>
-  t('policyForm.dateRead', {
-    weekday: t(`weekdayLong.${weekdayOf(date)}`),
-    date: formatDate(date),
-  });
 
 const fypError = (read: FypResult) =>
   read.ok ? undefined : t(read.error === 'zero' ? 'policyForm.zero' : `money.error.${read.error}`);
@@ -210,7 +203,7 @@ export function PolicyDialog({
       )}
       {attempted && errorCount > 0 && (
         <p role="alert" className={`${ALERT} border-danger font-semibold text-danger`}>
-          {t('policyForm.invalid', { count: errorCount })}
+          {t('form.invalid', { count: errorCount })}
         </p>
       )}
       {mode.kind !== 'issue' && (
@@ -234,7 +227,7 @@ export function PolicyDialog({
               value={draft.submittedDate}
               onChange={(submittedDate) => edit({ submittedDate })}
               error={submittedDateError}
-              hint={read.submittedDate.ok ? dateRead(read.submittedDate.date) : undefined}
+              hint={read.submittedDate.ok ? dayRead(read.submittedDate.date) : undefined}
               required
               autoFocus={mode.kind === 'new'}
             />
@@ -276,7 +269,7 @@ export function PolicyDialog({
                 : change && change.fromSubmitted !== 0
                   ? t('policyForm.fromSubmitted', {
                       read: fypRead(issuedFyp),
-                      diff: signed(change.fromSubmitted),
+                      diff: formatVndDelta(change.fromSubmitted),
                     })
                   : fypRead(issuedFyp)
             }
@@ -295,13 +288,7 @@ export function PolicyDialog({
       {change?.metric && (
         <dl className="m-0 flex gap-3 tabular-nums">
           <dt className="shrink-0 text-fg-3">{t('policyForm.effect')}</dt>
-          <dd className="m-0">
-            {t(change.metric.diff < 0 ? 'policyForm.effectDown' : 'policyForm.effectUp', {
-              month: monthOf(calendarDate(change.metric.year, change.metric.month, 1)),
-              re: re?.name ?? '',
-              amount: formatVndCompact(Math.abs(change.metric.diff)),
-            })}
-          </dd>
+          <dd className="m-0">{effectText(change.metric, re?.name)}</dd>
         </dl>
       )}
     </Dialog>
@@ -320,16 +307,12 @@ function issuedDateMessage(read: IssuedDateResult, submitted: CalendarDate | nul
 }
 
 function issuedDateRead(read: Extract<IssuedDateResult, { ok: true }>) {
-  const day = dateRead(read.date);
+  const day = dayRead(read.date);
   if (read.daysAfter === null) return day;
   return read.daysAfter === 0
     ? t('policyForm.sameDay', { read: day })
     : t('policyForm.daysAfter', { read: day, n: read.daysAfter });
 }
-
-const monthOf = (date: CalendarDate) => formatPeriodValue(periodOf('month', date));
-
-const signed = (amount: Vnd) => `${amount < 0 ? '−' : '+'}${formatVndCompact(Math.abs(amount))}`;
 
 /** Deleting a policy is soft (D4); the customer's stage stays. */
 function DeletePolicyDialog({

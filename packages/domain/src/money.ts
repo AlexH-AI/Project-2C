@@ -127,3 +127,10 @@ export function formatVndCompact(amount: Vnd): string {
     .replace(/0+$/, '');
   return `${sign}${whole}${decimals ? `,${decimals}` : ''} ${unit}`;
 }
+
+/** A difference in the compact form, always signed with `−` (U+2212) or `+`; no sign for 0. */
+export function formatVndDelta(amount: Vnd): string {
+  const magnitude = formatVndCompact(Math.abs(amount));
+  if (amount === 0) return magnitude;
+  return `${amount < 0 ? '−' : '+'}${magnitude}`;
+}

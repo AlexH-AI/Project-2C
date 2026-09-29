@@ -109,6 +109,69 @@ test('a closed customer reopens only to N3', async ({ page }) => {
   await expect(history(page).first()).toContainText('Tạm hoãn→N3chuyển tay');
 });
 
+test('sums up the fields to fix above the form, and reads the record day with its weekday (5a, 5b)', async ({
+  page,
+}) => {
+  const dialog = await openCreate(page);
+  const alert = dialog.getByRole('alert');
+  const recorded = dialog.getByRole('textbox', { name: 'Ngày ghi nhận KH' });
+  await recorded.fill('10/9');
+  await expect(recorded).toHaveAccessibleDescription('Thứ Năm 10/09/2026');
+  await expect(dialog.getByText(/^Đổi RE:/)).toHaveCount(0);
+
+  await dialog.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
+  await dialog.getByRole('textbox', { name: /^Ngày sinh/ }).fill('31/02/1984');
+  await dialog.getByRole('button', { name: 'Lưu KH' }).click();
+  await expect(alert).toHaveText('Chưa lưu được — 2 ô cần sửaKhông có gì được ghi vào dữ liệu.');
+  await expect(dialog.getByRole('textbox', { name: 'Họ tên' })).toHaveAccessibleDescription(
+    'Chưa nhập tên.',
+  );
+
+  await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(NAME);
+  await expect(alert).toHaveText(/^Chưa lưu được — 1 ô cần sửa/);
+  await dialog.getByRole('textbox', { name: /^Ngày sinh/ }).fill('1984');
+  await expect(alert).toHaveCount(0);
+});
+
+test('editing the profile says what saving records in KYC (5c)', async ({ page }) => {
+  const card = column(page, 'N3').getByRole('link').first();
+  const name = (await card.locator('b').textContent()) ?? '';
+  await card.click();
+  await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
+  const dialog = page.getByRole('dialog', { name: `Sửa hồ sơ · ${name}` });
+  const birth = dialog.getByRole('textbox', { name: /^Ngày sinh/ });
+  const kyc = dialog.getByRole('status');
+  await expect(dialog.getByRole('combobox', { name: 'RE phụ trách' })).toHaveAccessibleDescription(
+    'Đổi RE: lịch hẹn và HĐ cũ vẫn tính cho RE đã ghi trên từng bản ghi.',
+  );
+
+  // Start from a year alone, saved, so the preview below does not depend on the seed.
+  await birth.fill('1984');
+  await dialog.getByRole('radio', { name: 'Nữ' }).check();
+  await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
+  await expect(kyc).toHaveCount(0);
+
+  await birth.fill('1985');
+  await expect(kyc).toContainText('"Hồ sơ KH: năm sinh 1985"');
+  await expect(kyc).toContainText('birthYear = 1985');
+  await expect(kyc).toContainText('tạo phiên bản KYC mới');
+  await expect(kyc).not.toContainText('không tạo');
+
+  await birth.fill('12/3/1984');
+  await expect(kyc).toContainText(
+    'Khi lưu, app tự ghi vào KYCGhi chú KYC nguồn Hệ thống "Hồ sơ KH: ngày sinh 12/03/1984" và xác nhận dữ kiện birthYear = 1984',
+  );
+  await expect(kyc).toContainText('không tạo phiên bản KYC mới');
+  await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
+
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('region', { name: 'Dòng thời gian' })).toContainText(
+    'Hồ sơ KH: ngày sinh 12/03/1984',
+  );
+});
+
 test('refuses a customer with wrong fields and saves nothing', async ({ page }) => {
   const before = await page.getByText(/KH đang mở/).textContent();
   const dialog = await openCreate(page);

@@ -1,5 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { formatVnd, formatVndCompact, parseVnd, type VndParseResult } from './money';
+import {
+  formatVnd,
+  formatVndCompact,
+  formatVndDelta,
+  parseVnd,
+  type VndParseResult,
+} from './money';
+
+describe('formatVndDelta', () => {
+  it('signs a difference with − or +, in the compact form', () => {
+    expect(formatVndDelta(-14_500_000)).toBe('−14,5 tr');
+    expect(formatVndDelta(2_000_000_000)).toBe('+2 tỷ');
+    expect(formatVndDelta(500_000)).toBe('+500.000 ₫');
+  });
+
+  it('shows no sign when there is no difference', () => {
+    expect(formatVndDelta(0)).toBe('0 ₫');
+  });
+});
 
 const amountOf = (result: VndParseResult) => (result.ok ? result.amount : result.error);
 

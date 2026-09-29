@@ -6,10 +6,12 @@ import {
   getCustomer,
   listCustomers,
   listStageTransitions,
+  previewCustomerProfile,
   restoreCustomer,
   softDeleteCustomer,
   updateCustomerProfile,
 } from './customers';
+import { getKycProfile, listKycVersions } from './kyc';
 import { softDeletePerson, updatePerson } from './team';
 import { codeOf, d, setup } from './test-support';
 
@@ -115,6 +117,59 @@ describe('customers', () => {
     expect(codeOf(() => updateCustomerProfile(db, 'nobody', { name: 'X' }))).toBe(
       'CUSTOMER_NOT_FOUND',
     );
+  });
+
+  it('previews the KYC note, facts and version that saving the profile records (5c)', async () => {
+    const { db, re } = await setup();
+    const customer = createCustomer(db, {
+      name: 'Lan',
+      reId: re.id,
+      stage: 'N3',
+      date: d(1, 1),
+      birthDate: { year: 1984 },
+      gender: 'FEMALE',
+    });
+    const kyc = () => ({
+      notes: getKycProfile(db, customer.id).notes.map((note) => [note.source, note.text]),
+      facts: getKycProfile(db, customer.id)
+        .facts.filter((fact) => fact.status === 'active')
+        .map((fact) => [fact.field, fact.value])
+        .sort(([a], [b]) => String(a).localeCompare(String(b))),
+      versions: listKycVersions(db, customer.id).length,
+    });
+
+    expect(previewCustomerProfile(db, customer.id, { birthDate: { year: 1984 } })).toBeNull();
+    expect(previewCustomerProfile(db, customer.id, { gender: 'FEMALE' })).toBeNull();
+
+    const sameYear = { birthDate: d(12, 3, 1984) };
+    const before = kyc();
+    expect(previewCustomerProfile(db, customer.id, sameYear)).toEqual({
+      note: 'Hồ sơ KH: ngày sinh 12/03/1984',
+      facts: [{ field: 'birthYear', value: 1984 }],
+      newVersion: false,
+    });
+    expect(kyc()).toEqual(before);
+    updateCustomerProfile(db, customer.id, sameYear);
+    expect(kyc().notes.at(-1)).toEqual(['SYSTEM', 'Hồ sơ KH: ngày sinh 12/03/1984']);
+    expect(kyc().facts).toEqual(before.facts);
+    expect(kyc().versions).toBe(before.versions);
+
+    const otherYear = { birthDate: { year: 1985 }, gender: 'MALE' as const };
+    expect(previewCustomerProfile(db, customer.id, otherYear)).toEqual({
+      note: 'Hồ sơ KH: năm sinh 1985; giới tính Nam',
+      facts: [
+        { field: 'birthYear', value: 1985 },
+        { field: 'gender', value: 'Nam' },
+      ],
+      newVersion: true,
+    });
+    updateCustomerProfile(db, customer.id, otherYear);
+    expect(kyc().notes.at(-1)).toEqual(['SYSTEM', 'Hồ sơ KH: năm sinh 1985; giới tính Nam']);
+    expect(kyc().facts).toEqual([
+      ['birthYear', 1985],
+      ['gender', 'Nam'],
+    ]);
+    expect(kyc().versions).toBe(before.versions + 1);
   });
 
   it('changes the stage by hand, keeping the stage equal to the latest transition', async () => {
