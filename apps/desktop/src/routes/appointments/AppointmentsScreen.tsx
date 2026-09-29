@@ -25,6 +25,7 @@ import { useScope } from '../../shell/ScopeContext';
 import { ALERT } from '../customers/CustomerDialogs';
 import { PERIOD_LABELS } from '../period-labels';
 import { AppointmentDialog } from './AppointmentDialog';
+import { OutcomeDialog } from './OutcomeDialog';
 import { RescheduleDialog } from './RescheduleDialog';
 import { isPastOrToday } from './appointment-form';
 import {
@@ -74,6 +75,7 @@ export function AppointmentsScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState<{ from?: AppointmentRow } | null>(null);
   const [moving, setMoving] = useState<AppointmentRow | null>(null);
+  const [recording, setRecording] = useState<AppointmentRow | null>(null);
   // The appointment just made for an RE outside the scope, while it is the one selected.
   const [hiddenCreated, setHiddenCreated] = useState<AppointmentRecord | null>(null);
 
@@ -212,6 +214,7 @@ export function AppointmentsScreen() {
           today={today}
           onNext={(from) => setCreating({ from })}
           onReschedule={setMoving}
+          onRecord={setRecording}
           onShow={show}
         />
       </div>
@@ -237,6 +240,15 @@ export function AppointmentsScreen() {
         />
       )}
       {moving && <RescheduleDialog row={moving} onClose={() => setMoving(null)} onMoved={show} />}
+      {recording?.customer && (
+        <OutcomeDialog
+          row={{ ...recording, customer: recording.customer }}
+          people={data.people}
+          transitions={data.transitions}
+          onClose={() => setRecording(null)}
+          onMoved={show}
+        />
+      )}
     </>
   );
 }
@@ -432,6 +444,7 @@ function Detail({
   today,
   onNext,
   onReschedule,
+  onRecord,
   onShow,
 }: {
   row: AppointmentRow | undefined;
@@ -439,6 +452,7 @@ function Detail({
   today: CalendarDate;
   onNext: (from: AppointmentRow) => void;
   onReschedule: (row: AppointmentRow) => void;
+  onRecord: (row: AppointmentRow) => void;
   onShow: (appointment: AppointmentRecord) => void;
 }) {
   if (!row) {
@@ -494,6 +508,11 @@ function Detail({
         {t('appointments.profile')}
       </a>
       <div className="flex flex-wrap gap-2">
+        {a.status === 'SCHEDULED' && row.customer && (
+          <Button variant="primary" onClick={() => onRecord(row)}>
+            {t('appointments.record')}
+          </Button>
+        )}
         {a.status === 'SCHEDULED' && (
           <Button onClick={() => onReschedule(row)}>{t('appointments.reschedule')}</Button>
         )}
