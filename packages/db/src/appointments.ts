@@ -126,40 +126,14 @@ export function recordMeetingOutcome(
 ): AppointmentRecord {
   return db.transaction(() => {
     const row = liveAppointment(db, id);
-    if (!OUTCOME_STATUSES.includes(outcome.status) || row.status === 'RESCHEDULED') {
-      throw new DbError('INVALID_STATUS');
-    }
-    const stageAfter = outcome.stageAfter ?? null;
-    const nextStep = optionalText(outcome.nextStep);
-    if (outcome.status === 'MET' && (stageAfter === null || nextStep === null)) {
-      throw new DbError('OUTCOME_REQUIRED');
-    }
-    if (outcome.status !== 'MET' && stageAfter !== null) {
-      throw new DbError('STAGE_AFTER_NOT_ALLOWED');
-    }
-    const reviewerId = outcome.outcomeReviewerId ?? null;
-    if (reviewerId !== null) {
-      if (outcome.status !== 'MET') throw new DbError('REVIEWER_NOT_ALLOWED');
-      requirePerson(db, reviewerId);
-    }
-    requireOutcomeDay(db, outcome.status, row.date);
-    const size = outcome.expectedCaseSize ?? null;
+    if (row.status === 'RESCHEDULED') throw new DbError('INVALID_STATUS');
+    const fields = outcomeFields(db, outcome, row.note);
+    requireOutcomeDay(db, fields.status, row.date);
     // Still met with the same stage after: the transition stays as it is, even once a later one
     // exists (D7). Otherwise only a met appointment can have moved the customer.
-    const keepsStage =
-      row.status === 'MET' && outcome.status === 'MET' && row.stageAfter === stageAfter;
+    const keepsStage = keepsTransition(row, fields);
     if (row.status === 'MET' && !keepsStage) withdrawAppointmentTransition(db, id);
-    const updated: AppointmentRow = {
-      ...row,
-      ...updateAppointmentRow(db, id, {
-        status: outcome.status,
-        stageAfter,
-        nextStep,
-        expectedCaseSize: size === null ? null : requireAmount(size),
-        note: outcome.note?.trim() ?? row.note,
-        outcomeReviewerId: reviewerId,
-      }),
-    };
+    const updated: AppointmentRow = { ...row, ...updateAppointmentRow(db, id, fields) };
     if (!keepsStage) applyOutcome(db, updated);
     return toAppointment(db, updated);
   });
@@ -200,33 +174,44 @@ export function updateAppointmentDetails(
   return db.transaction(() => {
     const row = liveAppointment(db, id);
     if (!OUTCOME_STATUSES.includes(row.status)) throw new DbError('INVALID_STATUS');
-    const date = changes.date === undefined ? row.date : toIsoDate(changes.date);
-    if (changes.date !== undefined) requireOutcomeDay(db, row.status, date);
-    const triggerType =
-      changes.triggerType === undefined ? row.triggerType : requireTrigger(changes.triggerType);
-    const moved = date !== row.date && withdrawAppointmentTransition(db, id);
-    const updated: AppointmentRow = {
-      ...row,
-      ...updateAppointmentRow(db, id, {
-        date,
-        time: changes.time === undefined ? row.time : requireTime(changes.time),
-        triggerType,
-        triggerNote:
-          changes.triggerNote === undefined ? row.triggerNote : optionalText(changes.triggerNote),
-      }),
-    };
-    if (changes.coordinatorIds !== undefined) {
-      const coordinatorIds = [...new Set(changes.coordinatorIds)];
-      requirePeople(db, row.reId, coordinatorIds);
-      db.orm
-        .delete(appointmentCoordinators)
-        .where(eq(appointmentCoordinators.appointmentId, id))
-        .run();
-      insertCoordinators(db, id, coordinatorIds);
-    }
+    const fields = detailFields(row, changes);
+    if (changes.date !== undefined) requireOutcomeDay(db, row.status, fields.date);
+    const moved = fields.date !== row.date && withdrawAppointmentTransition(db, id);
+    const updated: AppointmentRow = { ...row, ...updateAppointmentRow(db, id, fields) };
+    replaceCoordinators(db, row, changes.coordinatorIds);
     // Only a withdrawn transition comes back, on the new day: a met appointment that moved no one
     // stays so, whatever the customer's stage is now.
     if (moved) applyOutcome(db, updated);
+    return toAppointment(db, updated);
+  });
+}
+
+/**
+ * Saves the edit dialog (mockup 6f) in one go: the outcome and the details. The transition of the
+ * appointment is withdrawn once and the new outcome applied once, on the new day, so that no step
+ * in between holds the old outcome on the new day or the new outcome on the old one (D10).
+ */
+export function editMeetingOutcome(
+  db: Database,
+  id: string,
+  outcome: MeetingOutcome,
+  details: AppointmentDetails,
+): AppointmentRecord {
+  return db.transaction(() => {
+    const row = liveAppointment(db, id);
+    if (!OUTCOME_STATUSES.includes(row.status)) throw new DbError('INVALID_STATUS');
+    const fields = { ...outcomeFields(db, outcome, row.note), ...detailFields(row, details) };
+    requireOutcomeDay(db, fields.status, fields.date);
+    // Same rule as the two commands: an unchanged met outcome keeps its transition, which only
+    // comes back on the new day; any other outcome replaces it.
+    const keepsStage = keepsTransition(row, fields);
+    const withdrawn =
+      row.status === 'MET' &&
+      (!keepsStage || fields.date !== row.date) &&
+      withdrawAppointmentTransition(db, id);
+    const updated: AppointmentRow = { ...row, ...updateAppointmentRow(db, id, fields) };
+    replaceCoordinators(db, row, details.coordinatorIds);
+    if (!keepsStage || withdrawn) applyOutcome(db, updated);
     return toAppointment(db, updated);
   });
 }
@@ -279,6 +264,67 @@ export function restoreAppointment(db: Database, id: string): void {
 }
 
 // ---- helpers --------------------------------------------------------------
+
+/** The outcome columns of an appointment, checked (spec §4, D9); the note stays when not given. */
+function outcomeFields(db: Database, outcome: MeetingOutcome, note: string) {
+  if (!OUTCOME_STATUSES.includes(outcome.status)) throw new DbError('INVALID_STATUS');
+  const stageAfter = outcome.stageAfter ?? null;
+  const nextStep = optionalText(outcome.nextStep);
+  if (outcome.status === 'MET' && (stageAfter === null || nextStep === null)) {
+    throw new DbError('OUTCOME_REQUIRED');
+  }
+  if (outcome.status !== 'MET' && stageAfter !== null) {
+    throw new DbError('STAGE_AFTER_NOT_ALLOWED');
+  }
+  const reviewerId = outcome.outcomeReviewerId ?? null;
+  if (reviewerId !== null) {
+    if (outcome.status !== 'MET') throw new DbError('REVIEWER_NOT_ALLOWED');
+    requirePerson(db, reviewerId);
+  }
+  const size = outcome.expectedCaseSize ?? null;
+  return {
+    status: outcome.status,
+    stageAfter,
+    nextStep,
+    expectedCaseSize: size === null ? null : requireAmount(size),
+    note: outcome.note?.trim() ?? note,
+    outcomeReviewerId: reviewerId,
+  };
+}
+
+/** Day, time and trigger of an appointment after the changes, checked; the rest stays. */
+function detailFields(row: AppointmentRow, changes: AppointmentDetails) {
+  return {
+    date: changes.date === undefined ? row.date : toIsoDate(changes.date),
+    time: changes.time === undefined ? row.time : requireTime(changes.time),
+    triggerType:
+      changes.triggerType === undefined ? row.triggerType : requireTrigger(changes.triggerType),
+    triggerNote:
+      changes.triggerNote === undefined ? row.triggerNote : optionalText(changes.triggerNote),
+  };
+}
+
+function keepsTransition(
+  row: AppointmentRow,
+  outcome: { readonly status: string; readonly stageAfter: string | null },
+): boolean {
+  return row.status === 'MET' && outcome.status === 'MET' && row.stageAfter === outcome.stageAfter;
+}
+
+function replaceCoordinators(
+  db: Database,
+  row: AppointmentRow,
+  ids: readonly string[] | undefined,
+): void {
+  if (ids === undefined) return;
+  const coordinatorIds = [...new Set(ids)];
+  requirePeople(db, row.reId, coordinatorIds);
+  db.orm
+    .delete(appointmentCoordinators)
+    .where(eq(appointmentCoordinators.appointmentId, row.id))
+    .run();
+  insertCoordinators(db, row.id, coordinatorIds);
+}
 
 function applyOutcome(db: Database, row: AppointmentRow): void {
   const current = liveCustomer(db, row.customerId).stage;

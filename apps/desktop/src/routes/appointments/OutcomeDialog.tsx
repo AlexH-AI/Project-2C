@@ -8,33 +8,20 @@ import {
 import {
   compareDates,
   formatDate,
-  formatVnd,
-  formatVndCompact,
-  isRfTransition,
-  parseVnd,
   weekdayOf,
-  type CustomerStage,
   type Person,
   type StageTransition,
 } from '@p2c/domain';
-import { Choices, Dialog, SelectField, StageBadge, TextField } from '@p2c/ui';
+import { Choices, Dialog, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { Actions, ALERT } from '../customers/CustomerDialogs';
 import { dateFieldError, dateReading } from './AppointmentDialog';
+import { EMPTY_MET, MetFields } from './MetFields';
 import { RescheduleFields, useRescheduleForm, whenText } from './RescheduleFields';
 import { parseTime, readScheduleDate } from './appointment-form';
-import { personLabel, type AppointmentRow } from './appointments-view';
-import {
-  outcomeChoices,
-  readOutcome,
-  stageAfterChoices,
-  type OutcomeChoice,
-  type OutcomeError,
-} from './outcome-form';
-
-const badge = (stage: CustomerStage) => <StageBadge stage={stage} label={t(`stage.${stage}`)} />;
-const FIELD_ERROR = 'm-0 text-sm text-danger';
+import type { AppointmentRow } from './appointments-view';
+import { outcomeChoices, readOutcome, type OutcomeChoice, type OutcomeError } from './outcome-form';
 
 /**
  * Mockups 6c, 6d, 6e, 6i: the outcome of a scheduled appointment. Met moves the customer to the
@@ -62,10 +49,7 @@ export function OutcomeDialog({
   const [status, setStatus] = useState<OutcomeChoice | null>(
     choices.find((choice) => !choice.disabled && choice.value === 'MET') ? 'MET' : null,
   );
-  const [stageAfter, setStageAfter] = useState<CustomerStage | null>(null);
-  const [reviewerId, setReviewerId] = useState('');
-  const [nextStep, setNextStep] = useState('');
-  const [caseSize, setCaseSize] = useState('');
+  const [metDraft, setMetDraft] = useState(EMPTY_MET);
   const [note, setNote] = useState('');
   const [booking, setBooking] = useState(false);
   const [nextDateText, setNextDateText] = useState('');
@@ -77,7 +61,6 @@ export function OutcomeDialog({
   const met = status === 'MET';
   const nextDate = readScheduleDate(nextDateText, today, 'fromToday');
   const nextTime = parseTime(nextTimeText);
-  const size = caseSize.trim() === '' ? null : parseVnd(caseSize);
   const has = (error: OutcomeError) => errors.includes(error);
 
   const edit =
@@ -97,10 +80,7 @@ export function OutcomeDialog({
       } else {
         const read = readOutcome({
           status,
-          stageAfter,
-          reviewerId,
-          nextStep,
-          caseSize,
+          ...metDraft,
           note,
           next: booking ? { date: nextDate, time: nextTime } : null,
         });
@@ -180,67 +160,18 @@ export function OutcomeDialog({
         <RescheduleFields form={moving} onEdit={() => setFailure(undefined)} />
       )}
       {met && (
-        <>
-          <Choices
-            label={t('outcome.stageAfter')}
-            value={stageAfter}
-            onChange={(stage) => {
-              setStageAfter(stage);
-              setErrors(errors.filter((error) => error !== 'stageAfter'));
-            }}
-            options={stageAfterChoices(customer.stage).map((choice) => ({
-              value: choice.stage,
-              disabled: !choice.allowed,
-              label: (
-                <>
-                  {badge(choice.stage)}
-                  {choice.current && ` ${t('outcome.keep')}`}
-                </>
-              ),
-            }))}
-            required
-          />
-          {has('stageAfter') && <p className={FIELD_ERROR}>{t('outcome.stageAfterRequired')}</p>}
-          {stageAfter && <StageRead from={customer.stage} to={stageAfter} date={a.date} />}
-          <SelectField
-            label={t('outcome.reviewer')}
-            value={reviewerId}
-            options={people.map((person) => ({ value: person.id, label: personLabel(person) }))}
-            placeholder={t('outcome.reviewerNone')}
-            onChange={edit(setReviewerId)}
-          />
-          <span className="-mt-2 text-xs text-fg-3">{t('outcome.reviewerHelp')}</span>
-          <TextField
-            label={t('outcome.nextStep')}
-            value={nextStep}
-            onChange={(value) => {
-              edit(setNextStep)(value);
-              setErrors(errors.filter((error) => error !== 'nextStep'));
-            }}
-            error={has('nextStep') ? t('outcome.nextStepRequired') : undefined}
-            required
-          />
-          <TextField
-            label={t('outcome.caseSize')}
-            value={caseSize}
-            onChange={edit(setCaseSize)}
-            error={
-              size && !size.ok
-                ? t(`money.error.${size.error}`)
-                : size && size.amount <= 0
-                  ? t('outcome.caseSizePositive')
-                  : undefined
-            }
-            hint={
-              size?.ok && size.amount > 0
-                ? t('outcome.caseSizeRead', {
-                    amount: formatVnd(size.amount),
-                    compact: formatVndCompact(size.amount),
-                  })
-                : undefined
-            }
-          />
-        </>
+        <MetFields
+          draft={metDraft}
+          onChange={(draft, field) => {
+            setMetDraft(draft);
+            setFailure(undefined);
+            setErrors(errors.filter((error) => error !== field));
+          }}
+          from={customer.stage}
+          date={a.date}
+          people={people}
+          errors={errors}
+        />
       )}
       {status !== null && status !== 'RESCHEDULED' && (
         <>
@@ -311,28 +242,5 @@ export function OutcomeDialog({
         </>
       )}
     </Dialog>
-  );
-}
-
-/** Under the stage after: `N2 → N1 ngày 14/09/2026 · không tính RF`, or that it stays (6c). */
-function StageRead({
-  from,
-  to,
-  date,
-}: {
-  from: CustomerStage;
-  to: CustomerStage;
-  date: AppointmentRecord['date'];
-}) {
-  if (from === to) return <p className="m-0 text-sm text-fg-2">{t('outcome.keepRead')}</p>;
-  const rf = isRfTransition(from, to);
-  return (
-    <p className="m-0 flex flex-wrap items-center gap-1.5 text-sm tabular-nums">
-      {badge(from)} {t('timeline.arrow')} {badge(to)}{' '}
-      {t('outcome.moveOn', { date: formatDate(date) })}{' '}
-      <span className={rf ? 'text-accent' : 'text-fg-3'}>
-        · {t(rf ? 'outcome.rf' : 'outcome.noRf')}
-      </span>
-    </p>
   );
 }

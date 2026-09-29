@@ -388,6 +388,7 @@ export const vi = {
   'outcome.newOne': 'Tạo lịch hẹn mới {when} · Dự kiến',
   'outcome.save': 'Lưu kết quả',
   'outcome.saveWithNext': 'Lưu kết quả + tạo lịch',
+  'outcomeEdit.lockMark': '🔒',
   'money.error.empty': 'Chưa nhập số tiền.',
   'money.error.negative': 'Số tiền không được âm.',
   'money.error.format': 'Gõ số tiền như 800tr, 1,2 tỷ hoặc 500.000.000.',

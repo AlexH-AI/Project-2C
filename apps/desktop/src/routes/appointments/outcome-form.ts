@@ -5,6 +5,7 @@ import {
   parseVnd,
   type CalendarDate,
   type CustomerStage,
+  type StageTransition,
 } from '@p2c/domain';
 import { allowedStages } from '../customers/customers-view';
 import { isPastOrToday, type parseTime, type ScheduleDate } from './appointment-form';
@@ -29,6 +30,20 @@ export function outcomeChoices(
         ? appointment.status !== 'SCHEDULED'
         : value !== 'CANCELLED' && !arrived,
   }));
+}
+
+/**
+ * D7: the stage move the appointment made, and the customer's later move that now locks its
+ * status, day and stage after (and its deletion). `transitions` come in the order they were made.
+ */
+export function outcomeLock(
+  transitions: readonly StageTransition[],
+  appointment: Pick<AppointmentRecord, 'id' | 'customerId'>,
+): { readonly caused?: StageTransition; readonly later?: StageTransition } {
+  const caused = transitions.find((tr) => tr.appointmentId === appointment.id);
+  if (!caused) return {};
+  const latest = transitions.findLast((tr) => tr.customerId === appointment.customerId);
+  return latest === caused ? { caused } : { caused, later: latest };
 }
 
 /** "Nhóm sau cuộc gặp": the current stage (kept) and the ones a transition reaches (ADR-0007). */
