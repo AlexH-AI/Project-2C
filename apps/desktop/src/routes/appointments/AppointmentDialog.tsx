@@ -6,7 +6,7 @@ import {
   type AppointmentTrigger,
   type CustomerRecord,
 } from '@p2c/db';
-import { formatDate, formatDayMonth, type CalendarDate } from '@p2c/domain';
+import { formatDate, type CalendarDate } from '@p2c/domain';
 import { Dialog, SelectField, StageBadge, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
@@ -14,11 +14,13 @@ import { reOptions } from '../../shell/scope';
 import { routeToHash } from '../../shell/routes';
 import { Actions, ALERT } from '../customers/CustomerDialogs';
 import {
+  dayText,
   MAX_HISTORY,
   parseTime,
   priorMeetings,
   readScheduleDate,
   searchCustomers,
+  type PriorMeetings,
   type ScheduleDate,
 } from './appointment-form';
 import { outcomeText, personLabel, type AppointmentData } from './appointments-view';
@@ -73,7 +75,7 @@ export function AppointmentDialog({
   const [customer, setCustomer] = useState(fixed);
   const [query, setQuery] = useState('');
   const [reId, setReId] = useState(from?.reId ?? fixed?.reId ?? '');
-  const [dateText, setDateText] = useState(from ? formatDayMonth(from.date) : '');
+  const [dateText, setDateText] = useState(from ? dayText(from.date, today) : '');
   const [timeText, setTimeText] = useState(from?.time ?? '');
   const [trigger, setTrigger] = useState<AppointmentTrigger | ''>(from?.triggerType ?? '');
   const [triggerNote, setTriggerNote] = useState(from?.triggerNote ?? '');
@@ -274,7 +276,7 @@ function CustomerField({
   onQuery: (query: string) => void;
   onPick: (customer: CustomerRecord | undefined) => void;
   error: string | undefined;
-  history: ReturnType<typeof priorMeetings> | undefined;
+  history: PriorMeetings | undefined;
 }) {
   const matches = useMemo(() => searchCustomers(customers, query, MATCHES), [customers, query]);
   if (customer) {
@@ -353,7 +355,7 @@ function History({
   today,
 }: {
   customer: CustomerRecord;
-  history: ReturnType<typeof priorMeetings>;
+  history: PriorMeetings;
   today: CalendarDate;
 }) {
   if (history.rows.length === 0) return null;
@@ -373,9 +375,7 @@ function History({
       <ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-xs">
         {history.rows.slice(0, MAX_HISTORY).map(({ appointment: a, outcome }) => (
           <li key={a.id} className="flex gap-1 whitespace-nowrap">
-            <span className="tabular-nums">
-              {a.date.year === today.year ? formatDayMonth(a.date) : formatDate(a.date)}
-            </span>
+            <span className="tabular-nums">{dayText(a.date, today)}</span>
             <span>·</span>
             <span className={STATUS_TONE[a.status]}>{t(`appointmentStatus.${a.status}`)}</span>
             {(outcome?.kind === 'move' || outcome?.kind === 'keep') && (

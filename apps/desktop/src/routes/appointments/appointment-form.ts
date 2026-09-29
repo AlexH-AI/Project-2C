@@ -2,6 +2,8 @@ import type { AppointmentRecord, CustomerRecord } from '@p2c/db';
 import {
   compareDates,
   daysBetween,
+  formatDate,
+  formatDayMonth,
   parseQuickDate,
   weekdayOf,
   type CalendarDate,
@@ -48,6 +50,13 @@ export function readScheduleDate(
   if (mode === 'fromToday' && read.daysFromToday < 0) return { ok: false, error: 'past', ...read };
   return { ok: true, weekday: weekdayOf(parsed.date), ...read };
 }
+
+/**
+ * A day as the form writes it: `dd/mm` this year, `dd/mm/yyyy` otherwise. `readScheduleDate`
+ * reads it back as the same day, so an earlier year's day never turns into this year's.
+ */
+export const dayText = (date: CalendarDate, today: CalendarDate) =>
+  date.year === today.year ? formatDayMonth(date) : formatDate(date);
 
 /** `hh:mm` (the hour may lose its zero); empty means no time. */
 export function parseTime(text: string): { ok: true; time: string | null } | { ok: false } {

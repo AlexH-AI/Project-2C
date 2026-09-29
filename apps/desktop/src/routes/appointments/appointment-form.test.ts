@@ -3,6 +3,7 @@ import { calendarDate, formatDate, type CalendarDate } from '@p2c/domain';
 import type { AppointmentRecord, CustomerRecord } from '@p2c/db';
 import type { StageTransition } from '@p2c/domain';
 import {
+  dayText,
   isPastOrToday,
   parseTime,
   priorMeetings,
@@ -59,6 +60,24 @@ describe('readScheduleDate (from today)', () => {
     const old = readScheduleDate('20/6', TODAY, 'fromToday');
     if (old.ok || old.error !== 'past') throw new Error('expected a past day');
     expect(formatDate(old.suggestion as CalendarDate)).toBe('20/06/2027');
+  });
+
+  it('refuses the prefilled day of an appointment from an earlier year; never makes it a future one', () => {
+    const lastYear = readScheduleDate(dayText(d(5, 11, 2025), TODAY), TODAY, 'fromToday');
+    expect(lastYear).toMatchObject({ ok: false, error: 'past', suggestion: null });
+    if (lastYear.ok || lastYear.error !== 'past') throw new Error('expected a past day');
+    expect(formatDate(lastYear.date)).toBe('05/11/2025');
+
+    const leapDay = readScheduleDate(dayText(d(29, 2, 2024), TODAY), TODAY, 'fromToday');
+    expect(leapDay).toMatchObject({ ok: false, error: 'past', suggestion: null });
+  });
+});
+
+describe('dayText', () => {
+  it('drops the year only when it is this year', () => {
+    expect(dayText(d(20, 9, 2026), TODAY)).toBe('20/09');
+    expect(dayText(d(5, 11, 2025), TODAY)).toBe('05/11/2025');
+    expect(dayText(d(3, 1, 2027), TODAY)).toBe('03/01/2027');
   });
 });
 
