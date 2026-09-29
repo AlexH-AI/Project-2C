@@ -75,7 +75,8 @@ export function readOutcome(draft: OutcomeDraft): OutcomeRead {
     const size = draft.caseSize.trim() === '' ? null : parseVnd(draft.caseSize);
     if (draft.stageAfter === null) errors.push('stageAfter');
     if (nextStep === '') errors.push('nextStep');
-    if (size && !size.ok) errors.push('caseSize');
+    // The db only stores a positive case size (requireAmount).
+    if (size && (!size.ok || size.amount <= 0)) errors.push('caseSize');
     outcome = {
       ...outcome,
       stageAfter: draft.stageAfter,

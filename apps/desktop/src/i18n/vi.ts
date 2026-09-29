@@ -360,7 +360,7 @@ export const vi = {
   'error.NEXT_APPOINTMENT_PAST': 'Lịch hẹn tiếp theo phải từ hôm nay trở đi.',
   'error.INVALID_TRIGGER': 'Chọn loại trigger ("—" là chưa chọn).',
   'error.INVALID_STATUS': 'Lịch này không nhận kết quả đó (có thể đã có kết quả hoặc đã dời).',
-  'error.INVALID_AMOUNT': 'Số tiền phải là số đồng nguyên, không âm.',
+  'error.INVALID_AMOUNT': 'Số tiền phải là số đồng nguyên, lớn hơn 0.',
   'chart.teamAppointments': 'Lịch hẹn theo team',
   'storage.openFailed': 'Không mở được file dữ liệu',
   'storage.openFailedHelp':
