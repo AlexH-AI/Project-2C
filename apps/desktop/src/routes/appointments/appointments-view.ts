@@ -41,6 +41,19 @@ export type Outcome =
   | { readonly kind: 'rescheduled'; readonly to: CalendarDate }
   | null;
 
+/** The colour of each status wherever it is written. */
+export const STATUS_TONE = {
+  SCHEDULED: 'text-info',
+  MET: 'text-ok',
+  RESCHEDULED: 'text-warn',
+  CANCELLED: 'text-fg-2',
+  NO_SHOW: 'text-danger',
+} as const satisfies Record<AppointmentStatus, string>;
+
+export const FOCUS = 'focus-visible:outline-2 focus-visible:outline-accent';
+/** An action written as a link in running text or a table ("Hẹn tiếp", "Xem tất cả"). */
+export const LINK = `cursor-pointer rounded-sm text-accent hover:underline ${FOCUS}`;
+
 /** The "Kết quả" text: `Tạm hoãn → N3`, `N3 → N2 · RF`, `Giữ N3`, `Dời sang 02/10`; empty when none. */
 export function outcomeText(outcome: Outcome): string {
   if (!outcome) return '';
