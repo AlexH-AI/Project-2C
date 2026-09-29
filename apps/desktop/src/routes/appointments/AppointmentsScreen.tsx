@@ -26,6 +26,7 @@ import { useScope } from '../../shell/ScopeContext';
 import { ALERT } from '../customers/CustomerDialogs';
 import { PERIOD_LABELS } from '../period-labels';
 import { AppointmentDialog } from './AppointmentDialog';
+import { DeleteAppointmentDialog } from './DeleteAppointmentDialog';
 import { EditOutcomeDialog } from './EditOutcomeDialog';
 import { OutcomeDialog } from './OutcomeDialog';
 import { RescheduleDialog } from './RescheduleDialog';
@@ -79,6 +80,7 @@ export function AppointmentsScreen() {
   const [moving, setMoving] = useState<AppointmentRow | null>(null);
   const [recording, setRecording] = useState<AppointmentRow | null>(null);
   const [editing, setEditing] = useState<AppointmentRow | null>(null);
+  const [deleting, setDeleting] = useState<AppointmentRow | null>(null);
   // The appointment just made for an RE outside the scope, while it is the one selected.
   const [hiddenCreated, setHiddenCreated] = useState<AppointmentRecord | null>(null);
 
@@ -219,6 +221,7 @@ export function AppointmentsScreen() {
           onReschedule={setMoving}
           onRecord={setRecording}
           onEdit={setEditing}
+          onDelete={setDeleting}
           onShow={show}
         />
       </div>
@@ -259,6 +262,15 @@ export function AppointmentsScreen() {
           people={data.people}
           transitions={data.transitions}
           onClose={() => setEditing(null)}
+        />
+      )}
+      {deleting?.customer && (
+        <DeleteAppointmentDialog
+          appointment={deleting.appointment}
+          customer={deleting.customer}
+          caused={undefined}
+          onClose={() => setDeleting(null)}
+          onDeleted={() => setDeleting(null)}
         />
       )}
     </>
@@ -461,6 +473,7 @@ function Detail({
   onReschedule,
   onRecord,
   onEdit,
+  onDelete,
   onShow,
 }: {
   row: AppointmentRow | undefined;
@@ -470,6 +483,8 @@ function Detail({
   onReschedule: (row: AppointmentRow) => void;
   onRecord: (row: AppointmentRow) => void;
   onEdit: (row: AppointmentRow) => void;
+  /** Planned appointments only: they moved no stage (D7); rescheduled ones sit in a chain. */
+  onDelete: (row: AppointmentRow) => void;
   onShow: (appointment: AppointmentRecord) => void;
 }) {
   if (!row) {
@@ -538,6 +553,9 @@ function Detail({
         )}
         {row.customer && isPastOrToday(a.date, today) && (
           <Button onClick={() => onNext(row)}>{t('appointments.next')}</Button>
+        )}
+        {a.status === 'SCHEDULED' && row.customer && (
+          <Button onClick={() => onDelete(row)}>{t('appointments.delete')}</Button>
         )}
       </div>
     </aside>

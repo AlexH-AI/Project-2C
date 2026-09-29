@@ -206,6 +206,7 @@ test('once the customer moved on, status, day and stage after are locked and del
 test('deleting the meeting that moved the customer takes the move back (6g)', async ({ page }) => {
   const name = await metToN2(page);
   const profile = await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).getAttribute('href');
+  await expect(detail(page).getByRole('button', { name: 'Xóa', exact: true })).toHaveCount(0);
   await detail(page).getByRole('button', { name: 'Sửa kết quả' }).click();
   await editDialog(page).getByRole('button', { name: 'Xóa lịch hẹn' }).click();
   const confirm = page.getByRole('dialog', { name: `Xóa lịch hẹn ${TODAY}?` });
@@ -240,4 +241,49 @@ test('a day not yet come only reschedules or cancels; rescheduling moves it', as
   await expect(o.dialog).toHaveCount(0);
   await expect(detail(page).getByRole('heading')).toHaveText(`02/10/2026 · ${name}`);
   await expect(detail(page).getByRole('button', { name: '30/09/2026' })).toBeVisible();
+
+  await detail(page).getByRole('button', { name: '30/09/2026' }).click();
+  await expect(detail(page).getByRole('heading')).toHaveText(`30/09/2026 · ${name}`);
+  await expect(detail(page).getByRole('button', { name: 'Xóa', exact: true })).toHaveCount(0);
+});
+
+test('a planned appointment booked by mistake is deleted, the stage kept (D4)', async ({
+  page,
+}) => {
+  const name = await book(page, '28/9', 'N3');
+  const profile = await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).getAttribute('href');
+  const listed = page
+    .getByRole('table', { name: 'Danh sách lịch hẹn' })
+    .getByRole('row')
+    .filter({ hasText: name })
+    .filter({ hasText: '28/09/2026' });
+  await expect(listed).toHaveCount(1);
+
+  await detail(page).getByRole('button', { name: 'Xóa', exact: true }).click();
+  const confirm = page.getByRole('dialog', { name: 'Xóa lịch hẹn 28/09/2026?' });
+  await expect(confirm).toContainText(`${name} · Dự kiến`);
+  await expect(confirm).toContainText('Cuộc hẹn này không đổi nhóm KH');
+  await expect(confirm.getByRole('definition')).toHaveText([
+    'không đổi',
+    'không đổi',
+    'giữ nguyên',
+  ]);
+
+  await confirm.getByRole('button', { name: 'Hủy' }).click();
+  await expect(confirm).toHaveCount(0);
+  await expect(listed).toHaveCount(1);
+  await expect(detail(page).getByRole('heading')).toContainText(name);
+
+  await detail(page).getByRole('button', { name: 'Xóa', exact: true }).click();
+  await confirm.getByRole('button', { name: 'Xóa lịch hẹn' }).click();
+  await expect(confirm).toHaveCount(0);
+  await expect(listed).toHaveCount(0);
+  await expect(detail(page)).toContainText('Chọn một lịch hẹn');
+
+  await page.goto(`/${profile}`);
+  const region = page.getByRole('region', { name });
+  await expect(region.getByText('N3', { exact: true }).first()).toBeVisible();
+  const card = page.getByRole('region', { name: 'Lịch hẹn', exact: true });
+  await expect(card).toBeVisible();
+  await expect(card).not.toContainText('28/09/2026');
 });

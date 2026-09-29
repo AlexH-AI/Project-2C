@@ -2,24 +2,17 @@ import { useState, type ReactNode } from 'react';
 import {
   APPOINTMENT_TRIGGERS,
   editMeetingOutcome,
-  softDeleteAppointment,
-  type AppointmentRecord,
   type AppointmentTrigger,
   type CustomerRecord,
 } from '@p2c/db';
-import {
-  formatDate,
-  formatDayMonth,
-  isRfTransition,
-  type Person,
-  type StageTransition,
-} from '@p2c/domain';
+import { formatDate, type Person, type StageTransition } from '@p2c/domain';
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { Actions, ALERT } from '../customers/CustomerDialogs';
 import { CoordinatorsField, dateFieldError, dateReading, liveIds } from './AppointmentDialog';
+import { DeleteAppointmentDialog } from './DeleteAppointmentDialog';
 import { badge, MetFields, metDraftOf, EMPTY_MET } from './MetFields';
 import { whenText } from './RescheduleFields';
 import { dayText, isPastOrToday, parseTime, readScheduleDate } from './appointment-form';
@@ -253,96 +246,5 @@ function Locked({ label, children }: { label: string; children: ReactNode }) {
         {children} {t('outcomeEdit.lockMark')}
       </p>
     </div>
-  );
-}
-
-/**
- * Mockup 6g: deleting an appointment takes back the stage move it made, when it is the latest
- * (D7); the KYC notes stay. The deletion is soft (D4).
- */
-function DeleteAppointmentDialog({
-  appointment: a,
-  customer,
-  caused,
-  onClose,
-  onDeleted,
-}: {
-  appointment: AppointmentRecord;
-  customer: CustomerRecord;
-  caused: StageTransition | undefined;
-  onClose: () => void;
-  onDeleted: () => void;
-}) {
-  const app = useAppData();
-  const [failure, setFailure] = useState<string>();
-  const remove = () => {
-    try {
-      app.run((db) => softDeleteAppointment(db, a.id));
-      onDeleted();
-    } catch (error) {
-      setFailure(errorMessage(error));
-    }
-  };
-  const from = caused?.from;
-  return (
-    <Dialog
-      title={t('appointmentDelete.title', { when: whenText(a) })}
-      subtitle={t('appointmentDelete.sub', {
-        customer: customer.name,
-        status: t(`appointmentStatus.${a.status}`),
-      })}
-      onClose={onClose}
-      onSubmit={remove}
-      actions={
-        <>
-          <Button onClick={onClose}>{t('customerForm.cancel')}</Button>
-          <Button type="submit" variant="danger">
-            {t('outcomeEdit.delete')}
-          </Button>
-        </>
-      }
-    >
-      {failure && (
-        <p role="alert" className={`${ALERT} border-danger text-danger`}>
-          {failure}
-        </p>
-      )}
-      {caused && from ? (
-        <>
-          <p className="m-0 text-fg-2">{t('appointmentDelete.moved')}</p>
-          <dl className="m-0 flex flex-col gap-1.5 tabular-nums">
-            {(
-              [
-                [
-                  t('appointmentDelete.stage'),
-                  <>
-                    {badge(caused.to)} {t('appointmentDelete.back')} {badge(from)}{' '}
-                    {t('appointmentDelete.undo', { date: formatDayMonth(caused.date) })}
-                  </>,
-                ],
-                [
-                  t('appointmentDelete.rf'),
-                  t(
-                    isRfTransition(from, caused.to)
-                      ? 'appointmentDelete.rfLess'
-                      : 'appointmentDelete.rfSame',
-                    { from: t(`stage.${from}`), to: t(`stage.${caused.to}`) },
-                  ),
-                ],
-                [t('appointmentDelete.kyc'), t('appointmentDelete.kycKept')],
-              ] as const
-            ).map(([term, value]) => (
-              <div key={term} className="flex gap-3">
-                <dt className="w-24 shrink-0 text-fg-3">{term}</dt>
-                <dd className="m-0 flex flex-wrap items-center gap-1">{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </>
-      ) : (
-        <p className="m-0 text-fg-2">{t('appointmentDelete.noMove')}</p>
-      )}
-      <p className={`${ALERT} border-info`}>{t('appointmentDelete.soft')}</p>
-    </Dialog>
   );
 }
