@@ -2,9 +2,9 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-09-30 · máy `DESKTOP-KDURKJP` · sau khi mở PR #179 (T-068, #173) và Owner chốt các lệch mockup #171 + link KYC 6c (→ #180). Trước đó: #142 T-065 đã merge (PR #177, `20c8504`)
-- **Nhánh:** `docs/handoff-2026-09-30-t068` (= `main` `b64ef6e` + file này, làm trong worktree tạm `C:\workspace\Project-2C-docs`; tách riêng để không hủy CI của #179). PR code đang mở: **#179** `task/T-068-delete-planned-appointment` (`risk:low`, không cần `build-exe`). Checkout chính `C:\workspace\Project-2C` đang đứng trên nhánh #179, sạch
-- **Phiên song song:** một phiên khác đang chạy dev server `web` (cổng 1420) trên cùng checkout — commit theo pathspec, không `git add -A`
+- **Cập nhật:** 2026-09-30 · máy `DESKTOP-KDURKJP` · dừng làm việc sau khi merge #179 (T-068, `3e9fe58`) và #181 (handoff, `8e49526`). Không có task dở
+- **Nhánh:** `wip/…` do `session-end.ps1` tạo từ `main` `8e49526` (chỉ file này). Không có PR code nào đang mở. Checkout chính `C:\workspace\Project-2C` sạch; worktree review `Project-2C-review` ở `3e9fe58`, `Project-2C-review-2` ở `b64ef6e` (đưa về `origin/main` trước khi review tiếp)
+- **Phiên song song:** trong phiên 30/09 có một phiên khác chạy dev server `web` (cổng 1420) trên cùng checkout — nếu vẫn còn: commit theo pathspec, không `git add -A`
 - **Máy kế tiếp:** Home PC hoặc Office Laptop — cả hai đã có môi trường + worktree review
 - **Repo đã chuyển public** (27/09, Owner tự làm) vì Actions private chạm ~1.800/2.000 phút; Actions giờ miễn phí
 - **Ruleset `protect-main`** (28/09, Owner duyệt): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
@@ -15,17 +15,12 @@
 
 | Việc | Trạng thái |
 |---|---|
-| #142 T-065 form KH theo mockup 5a–5c | **Đã merge** (PR #177, `20c8504`) |
-| #173 T-068 xóa lịch hẹn Dự kiến nhập nhầm (D4) | **PR #179 mở**, `risk:low`; chờ CI + review phiên sạch → Claude tự merge khi PASS. `pnpm verify` 633 test, `pnpm e2e` 84/84 xanh local |
+| #173 T-068 xóa lịch hẹn Dự kiến nhập nhầm (D4) | **Đã merge** trong phiên 30/09 (PR #179, `3e9fe58`), review PASS |
 | #180 T-069 link "+ Ghi chú KYC từ cuộc gặp này" (6c) | Mở, `risk:low`; Owner quyết 30/09 tách task riêng. Body có "Hành vi đề xuất" — Owner chốt trước khi code nếu muốn khác |
 | #71 T-052 backup `.p2cbackup` | Mở, `risk:high` |
 | #72 T-053 đóng Phase 3 | Mở, cổng G7 |
 
-Ghi chú PR #177 (cho người review / Owner):
-- Owner quyết trong phiên 29/09: khung KYC 5c hiện đúng chữ ghi thật "Hồ sơ KH: ngày sinh 12/03/1984" (không phải "Cập nhật ngày sinh: …" của mockup / test chấp nhận), vì Issue cấm đổi hành vi ghi.
-- Xem trước KYC một nguồn: `profileChange` / `withProfileFacts` trong `packages/db/src/kyc.ts`, dùng bởi `recordProfileFacts` và `previewProfileFacts`; `previewCustomerProfile` trong `customers.ts`.
-- File ngoài danh sách: `packages/db/src/index.ts` (+2 export). Gộp khóa `policyForm.invalid` → `form.invalid`, `policyForm.dateRead` → `date.read`. Form sửa hồ sơ bỏ dòng chân "Ngày sinh, giới tính được ghi thêm…".
-- Chưa gộp các NIT review #141 (cùng file `CustomerDialogs.tsx`/`CustomerProfile.tsx`) vào #177 — vẫn mở, xem ghi chú review #141 bên dưới.
+Ghi chú review #179 (không chặn, NIT): `AppointmentsScreen.tsx:~271` truyền `caused={undefined}` cho `DeleteAppointmentDialog` → có thể cho `caused` là prop tùy chọn. Biến thể "không đổi nhóm KH" của hộp xóa giờ hiện bảng 3 dòng cả cho lịch Hủy / Không đến (đã ghi trong PR).
 
 Ghi chú review #168–#171 (T-050, không chặn; #69 đã đóng):
 - **Lệch mockup #171 — Owner đã quyết 30/09/2026:** (1) nút xóa lịch Dự kiến → làm ở #173 (PR #179); lịch Dời lịch vẫn không có nút xóa (chuỗi dời, cần quy tắc riêng G1/G2). (2) Ô **Giờ** ở hộp 6f **giữ**, coi mockup là thiếu. (3) Câu "Xóa mềm, khôi phục được" ở 6g **giữ**; UI khôi phục ("Thùng rác") ngoài Phase 3 (spec §10).
@@ -78,14 +73,14 @@ Ghi chú khác (còn từ Phase 1): `DataTable` chưa test `sortable: false` và
 
 ## Bước kế tiếp chính xác
 
-1. `/session-start` (pull `main`). Kiểm CI của PR #179: `gh pr checks 179`. Đỏ → sửa trên nhánh `task/T-068-delete-planned-appointment` (tối đa 2 vòng, sau đó G8).
-2. CI #179 xanh → Owner mở **phiên mới** ở worktree `C:\workspace\Project-2C-review` và gõ "review PR #179" (skill `review-pr`, mức `risk:low`). Review PASS → Claude merge `gh pr merge --squash`, rồi dọn nhánh theo `CLAUDE.md`.
-3. **Việc kế tiếp:** #180 T-069 (link KYC 6c, `risk:low`) hoặc #71 T-052 backup (`risk:high`) — Owner chọn thứ tự. Phiên mới: đọc body Issue, nhánh `task/T-0xx-slug` từ `main`.
-4. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Issue còn mở của milestone: #173 (PR #179), #180, #71, #72. #72 đóng phase (G7) làm cuối.
+1. `/session-start` (pull `main`). Không có PR code mở. Nếu còn PR handoff `wip/…` của phiên này chưa merge → merge (docs-only) trước.
+2. **Việc kế tiếp:** Owner chọn giữa **#180 T-069** (link "+ Ghi chú KYC từ cuộc gặp này" ở hộp Ghi kết quả 6c, `risk:low`; sửa `routes/appointments/OutcomeDialog.tsx`, `routes/customers/KycDialogs.tsx` thêm prop điền sẵn, `i18n/vi.ts`, e2e) và **#71 T-052** backup `.p2cbackup` (`risk:high`; đọc ghi chú review #87, #96 bên dưới trước). Phiên mới: đọc body Issue, nhánh `task/T-0xx-slug` từ `main`, TDD, `pnpm verify` + `pnpm e2e` trước PR.
+3. Sau cả hai: #72 T-053 đóng Phase 3 (G7, ghi `docs/metrics/phase-3.md`).
+4. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Issue còn mở của milestone: #180, #71, #72.
    - Ghi chú review T-050 ở trên: các mục chờ Owner đã quyết 30/09; các mùi code gộp vào lần chạm sau cùng file.
    - PR nào đụng `apps/desktop/src-tauri/**` hoặc cấu hình build thì gắn nhãn `build-exe` ngay lúc tạo.
-4. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
-5. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2). #61/#62 chạy golden G01–G22, K01–K15 qua DB.
+5. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
+6. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2). #61/#62 chạy golden G01–G22, K01–K15 qua DB.
 
 ## Lệnh chạy tiếp
 
@@ -129,9 +124,8 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- Review PR #179 ở phiên sạch khi CI xanh ("review PR #179"); PASS thì Claude tự merge (`risk:low`).
-- Xem "Hành vi đề xuất" trong #180 (link KYC 6c) trước khi làm, nếu muốn khác thì sửa body Issue.
-- Merge PR handoff này (docs-only, không chạy CI) để `main` có HANDOFF mới.
+- Chọn thứ tự #180 / #71; xem "Hành vi đề xuất" trong #180 (link KYC 6c) trước khi làm, nếu muốn khác thì sửa body Issue.
+- Merge PR handoff này (`wip/…`, docs-only, không chạy CI) để `main` có HANDOFF mới.
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
 ## Ghi chú môi trường
