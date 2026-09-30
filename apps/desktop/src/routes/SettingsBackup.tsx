@@ -18,7 +18,7 @@ interface Chosen {
 
 interface Refused {
   readonly name: string;
-  readonly error: unknown;
+  readonly error: DbError;
 }
 
 const ALERT = 'm-0 flex flex-col gap-1 rounded-md border px-3 py-2';
@@ -52,7 +52,9 @@ export function BackupSection() {
     try {
       setChosen({ name: file.name, preview: await data.readBackup(await file.text()) });
     } catch (error) {
-      setRefused({ name: file.name, error });
+      // Only the file's own faults are refused (10b); a failing engine or read is not the file's.
+      if (error instanceof DbError) setRefused({ name: file.name, error });
+      else setNotice({ kind: 'failed', message: t('settings.backup.failed') });
     } finally {
       setBusy(null);
     }
@@ -243,8 +245,8 @@ function ImportDialog({
 
 /** Mockup 10b: the file cannot be used; the current data is untouched. */
 function RefusedDialog({ refused, onClose }: { refused: Refused; onClose: () => void }) {
-  const tooNew = refused.error instanceof DbError && refused.error.code === 'SCHEMA_TOO_NEW';
-  const params = refused.error instanceof DbError ? refused.error.params : undefined;
+  const tooNew = refused.error.code === 'SCHEMA_TOO_NEW';
+  const params = refused.error.params;
   return (
     <Dialog
       title={t('settings.backup.refusedTitle')}

@@ -172,7 +172,7 @@ function schemaVersion(sqlite: SqlJsDatabase): number {
 }
 
 /** Applies every migration newer than the database, all in one transaction. */
-function migrate(db: Database, migrations: readonly Migration[]): void {
+export function migrate(db: Database, migrations: readonly Migration[]): void {
   const current = schemaVersion(db.sqlite);
   const pending = migrations.filter((m) => m.id > current);
   if (pending.length === 0) return;

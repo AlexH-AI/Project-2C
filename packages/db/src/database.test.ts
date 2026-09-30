@@ -140,6 +140,21 @@ describe('openDatabase', () => {
     expect(columnNames(db, 'teams')).toContain('color');
   });
 
+  it('rejects with the error of a failing migration, saving nothing', async () => {
+    const saved = (await openDatabase()).export();
+    const fake = { id: LATEST_SCHEMA_VERSION + 1, tag: 'fake', sql: 'SELECT * FROM nowhere;' };
+    const persist = vi.fn();
+
+    const error = await openDatabase({
+      bytes: saved,
+      migrations: [...MIGRATIONS, fake],
+      persist,
+    }).catch((e: unknown) => e);
+
+    expect(error).toMatchObject({ message: expect.stringContaining('nowhere') as unknown });
+    expect(persist).not.toHaveBeenCalled();
+  });
+
   it('enforces foreign keys, also after the database was exported', async () => {
     const persist = vi.fn();
     const db = await openDatabase({ persist });
