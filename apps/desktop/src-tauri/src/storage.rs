@@ -78,6 +78,7 @@ pub fn open(dir: &Path, stamp: &str, lock: &DataLock) -> io::Result<Option<Vec<u
     lock.acquire(dir)?;
     // A crash between writing and renaming leaves this behind; the database file itself is whole.
     remove_if_exists(&dir.join(tmp_name(DB_FILE)))?;
+    remove_interrupted_exports(&dir.join(EXPORT_DIR));
     let backups = dir.join(BACKUP_DIR);
     let bytes = match fs::read(dir.join(DB_FILE)) {
         Ok(bytes) => bytes,
@@ -127,7 +128,9 @@ pub fn save(dir: &Path, bytes: &[u8]) -> io::Result<()> {
 }
 
 /// Writes an export file into `exports\` and returns its path. An earlier export is never
-/// overwritten: a taken name gets `-2`, `-3`… before `.p2cbackup` (spec §6).
+/// overwritten: a taken name gets `-2`, `-3`… before `.p2cbackup` (spec §6). The final name
+/// appears only with the whole file in it; an interrupted export leaves just its `.claim` and
+/// `.tmp`, which [`open`] removes.
 pub fn write_export(dir: &Path, name: &str, bytes: &[u8]) -> io::Result<PathBuf> {
     if !is_export_name(name) {
         return Err(io::Error::new(
@@ -138,16 +141,15 @@ pub fn write_export(dir: &Path, name: &str, bytes: &[u8]) -> io::Result<PathBuf>
     let exports = dir.join(EXPORT_DIR);
     fs::create_dir_all(&exports)?;
     let free = claim_export_name(&exports, name)?;
-    // The claimed name is ours alone, so its `.tmp` is too; the rename replaces only our claim.
-    if let Err(error) = write_atomic(&exports, &free, bytes) {
-        let _ = fs::remove_file(exports.join(&free));
-        return Err(error);
-    }
-    Ok(exports.join(free))
+    let claim = exports.join(claim_name(&free));
+    // The claimed name is ours alone, so its `.tmp` is too, and nothing sits under it to replace.
+    let result = write_atomic(&exports, &free, bytes);
+    let _ = fs::remove_file(claim);
+    result.map(|()| exports.join(free))
 }
 
-/// Creates an empty file under the first free name (`create_new`, so two exports at once never
-/// get the same one) and returns that name.
+/// Takes the first name with neither a file nor a claim under it and returns it. The claim is an
+/// empty `<name>.claim` made with `create_new`, so two exports at once never get the same name.
 fn claim_export_name(exports: &Path, name: &str) -> io::Result<String> {
     let stem = name.strip_suffix(".p2cbackup").unwrap_or(name);
     for n in 1..=MAX_EXPORT_SUFFIX {
@@ -156,17 +158,20 @@ fn claim_export_name(exports: &Path, name: &str) -> io::Result<String> {
         } else {
             format!("{stem}-{n}.p2cbackup")
         };
-        let path = exports.join(&candidate);
+        let claim = exports.join(claim_name(&candidate));
         match fs::OpenOptions::new()
             .write(true)
             .create_new(true)
-            .open(&path)
+            .open(&claim)
         {
+            Ok(_) if fs::symlink_metadata(exports.join(&candidate)).is_ok() => {
+                fs::remove_file(&claim)?;
+            }
             Ok(_) => return Ok(candidate),
             // Windows reports a folder under that name as access denied, not as existing.
             Err(error)
                 if error.kind() == ErrorKind::AlreadyExists
-                    || fs::symlink_metadata(&path).is_ok() => {}
+                    || fs::symlink_metadata(&claim).is_ok() => {}
             Err(error) => return Err(error),
         }
     }
@@ -174,6 +179,30 @@ fn claim_export_name(exports: &Path, name: &str) -> io::Result<String> {
         ErrorKind::AlreadyExists,
         format!("no free export name for {name}"),
     ))
+}
+
+fn claim_name(name: &str) -> String {
+    format!("{name}.claim")
+}
+
+/// Removes what an export cut short by a crash left in `exports\`: claims, `.tmp` files, and the
+/// empty file the first version of [`write_export`] kept under the final name — an empty file is
+/// never a real export. Runs when the webview opens the data, holding the data lock, so no other
+/// app instance is exporting. The lock is re-entrant within this process, though: a webview
+/// reloaded in the middle of an export can remove that export's claim or `.tmp`, and the export
+/// then fails at the rename — it never leaves a broken file or overwrites one. Best effort: a
+/// file another program holds stays until a later start.
+fn remove_interrupted_exports(exports: &Path) {
+    for entry in fs::read_dir(exports).into_iter().flatten().flatten() {
+        let Ok(meta) = entry.metadata() else { continue };
+        let name = entry.file_name().to_string_lossy().into_owned();
+        let left = name.ends_with(".p2cbackup.claim")
+            || name.ends_with(".p2cbackup.tmp")
+            || (name.ends_with(".p2cbackup") && meta.len() == 0);
+        if left && meta.is_file() {
+            let _ = fs::remove_file(entry.path());
+        }
+    }
 }
 
 /// Formats seconds since 1970 (already shifted to local time) as `YYYYMMDD-HHMMSS`.
@@ -872,6 +901,59 @@ mod tests {
         let path = write_export(&dir, "a.p2cbackup", b"x").unwrap();
         assert_eq!(path, exports.join("a-2.p2cbackup"));
         assert_eq!(fs::read(&path).unwrap(), b"x");
+    }
+
+    #[test]
+    fn write_export_leaves_no_claim_behind() {
+        let dir = temp_dir();
+        write_export(&dir, "a.p2cbackup", b"x").unwrap();
+        assert_eq!(names(&dir.join(EXPORT_DIR)), vec!["a.p2cbackup"]);
+    }
+
+    #[test]
+    fn write_export_skips_a_name_whose_claim_is_left() {
+        // Another export in this process holds the name, or a crash left its claim.
+        let dir = temp_dir();
+        let exports = dir.join(EXPORT_DIR);
+        fs::create_dir_all(&exports).unwrap();
+        fs::write(exports.join("a.p2cbackup.claim"), b"").unwrap();
+        let path = write_export(&dir, "a.p2cbackup", b"x").unwrap();
+        assert_eq!(path, exports.join("a-2.p2cbackup"));
+        assert!(!exports.join("a.p2cbackup").exists());
+    }
+
+    #[test]
+    fn open_removes_what_an_interrupted_export_left_and_keeps_real_exports() {
+        let dir = temp_dir();
+        let exports = dir.join(EXPORT_DIR);
+        fs::create_dir_all(exports.join("folder.p2cbackup")).unwrap();
+        // A crash mid-export: its claim, its half-written `.tmp`, and the empty placeholder
+        // the first version of `write_export` kept under the final name.
+        fs::write(exports.join("a.p2cbackup"), b"").unwrap();
+        fs::write(exports.join("b.p2cbackup.claim"), b"").unwrap();
+        fs::write(exports.join("b.p2cbackup.tmp"), b"half").unwrap();
+        fs::write(exports.join("c.p2cbackup"), b"real export").unwrap();
+        fs::write(exports.join("notes.txt"), b"").unwrap();
+
+        open(&dir, "20260930-080000").unwrap();
+
+        assert_eq!(
+            names(&exports),
+            vec!["c.p2cbackup", "folder.p2cbackup", "notes.txt"]
+        );
+        // The freed names are used again; a real export is still never overwritten.
+        assert_eq!(
+            write_export(&dir, "a.p2cbackup", b"new").unwrap(),
+            exports.join("a.p2cbackup")
+        );
+        assert_eq!(
+            write_export(&dir, "c.p2cbackup", b"new").unwrap(),
+            exports.join("c-2.p2cbackup")
+        );
+        assert_eq!(
+            fs::read(exports.join("c.p2cbackup")).unwrap(),
+            b"real export"
+        );
     }
 
     #[test]
