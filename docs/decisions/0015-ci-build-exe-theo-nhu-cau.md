@@ -20,6 +20,8 @@ Từ Phase 1, mọi PR chạy nối tiếp: Verify (lint, typecheck, unit, ranh 
 
 ## Bắt buộc mở lại build exe
 
+> **Đã thay** bởi phụ lục Phase 3 (26/09/2026), rồi phụ lục "Tiết kiệm phút Actions" (27/09/2026) bên dưới: PR code chỉ build exe khi có nhãn `build-exe`; danh sách file bắt buộc gắn nhãn nằm ở phụ lục 27/09. Giữ mục này để lưu lịch sử.
+
 - PR đụng `apps/desktop/**` (UI, Tauri, `src-tauri`), `packages/ui/**`, `pnpm-lock.yaml`, `package.json`, `rust-toolchain.toml` hoặc Cargo → **gắn nhãn `build-exe`** trước khi coi CI là xanh.
 - **Khi bắt đầu Phase 3** (nghiệp vụ & màn hình — UI và Tauri thay đổi liên tục): bỏ điều kiện `if` của job `build-exe` để build lại ở **mọi PR**, qua PR riêng, ghi vào ADR này (Superseded hoặc bổ sung).
 

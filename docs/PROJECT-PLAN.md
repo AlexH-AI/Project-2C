@@ -109,7 +109,7 @@ Bảng dưới là bản tóm tắt; định nghĩa đầy đủ, vai trò tính
 ### 3.2 Mô hình một agent — ưu, nhược, cách bù
 
 - **Ưu:** nhất quán tuyệt đối về kiến trúc và phong cách; không tốn chi phí điều phối; không có lỗi "bàn giao" giữa các agent.
-- **Nhược 1 — context rot:** không subagent nên phiên dài sẽ đầy context, chất lượng giảm. → **Mỗi task một phiên mới** (hoặc `/clear`), đầu vào là Issue + `HANDOFF.md` + file liên quan; task đủ nhỏ (≤ ~400 dòng diff).
+- **Nhược 1 — context rot:** không subagent nên phiên dài sẽ đầy context, chất lượng giảm. → **Mỗi task một phiên mới** (hoặc `/clear`), đầu vào là Issue + `HANDOFF.md` + file liên quan; task đủ nhỏ (P1: ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test).
 - **Nhược 2 — điểm mù của chính mình:** không có review chéo. → **Review ở phiên riêng, context sạch**, chỉ đọc spec + diff, theo checklist cố định; CI và test chấp nhận là trọng tài khách quan; `dependency-cruiser` chặn vi phạm ranh giới module; từ 30/09/2026 thêm review độc lập bằng Codex khi đóng phase (ADR-0001 M2).
 - **Nhược 3 — tốc độ và hạn mức:** mọi việc đi qua Claude Code. → Owner tự cân đối (C8); `HANDOFF.md` luôn cập nhật để dừng/tiếp lúc nào cũng được.
 
@@ -125,7 +125,7 @@ Owner ──(chỉ dừng ở cổng G1–G8)──┐
           Claude Code (model do Owner chọn) — một phiên cho mỗi task
    Issue (spec + test chấp nhận) ─► nhánh task/T-xxx ─► TDD: test đỏ → code → test xanh
                                                                    ▼
-                                              pnpm verify (lint · typecheck · unit · e2e)
+                                        pnpm verify (lint · typecheck · unit · ranh giới) + pnpm e2e
                                                                    ▼
                                                  commit + push ─► PR ─► CI (Windows)
                                                                    ▼
@@ -185,7 +185,7 @@ Ngoài các cổng trên, Owner **trao quyền tự động** cho Claude (C4): t
 
 - `tools/bootstrap.ps1` (idempotent, dùng `winget`): Git, Node LTS, pnpm (qua `packageManager` + corepack), Rust (`rust-toolchain.toml`), VS Build Tools, `gh`, WebView2 check.
 - `.gitattributes` (`* text=auto eol=lf`), `git config core.longpaths true`, `.nvmrc`, lockfile commit.
-- Bảo vệ `main`: GitHub Free không có branch protection cho repo private (#3) → hook `.githooks/pre-push` chặn push thẳng `main` (bootstrap đặt `core.hooksPath`); chỉ merge qua PR khi CI xanh.
+- Bảo vệ `main`: hook `.githooks/pre-push` chặn push thẳng `main` (bootstrap đặt `core.hooksPath`, #3); từ 28/09/2026 repo public nên có thêm ruleset `protect-main` trên GitHub (bắt buộc PR, cấm force-push và xóa nhánh). Chỉ merge qua PR khi CI xanh.
 
 **Tùy chọn:** vì 2C chỉ dùng Claude Code, có thể chạy phiên trên cloud (claude.ai/code, gắn repo GitHub) để tiếp tục từ bất kỳ máy nào mà không cần toolchain local cho phần code/test (vẫn cần máy Windows để chạy thử exe).
 
@@ -221,14 +221,14 @@ apps/desktop/        Tauri shell + React UI (routes, screens)
 packages/domain/     TS thuần: entity, state machine N4→N1, stats engine, KYC gate,
                      parse ngày dd/mm & tiền VND ("500tr", "1,2 tỷ") — không phụ thuộc gì
 packages/db/         Drizzle schema + migrations + repositories;
-                     adapter TauriSqlite (app thật) & sql.js (chạy trong trình duyệt để dev/e2e)
+                     sql.js ở mọi nơi; exe chỉ có lệnh Rust mỏng đọc/ghi file (ADR-0016)
 packages/ai/         provider adapters, prompt templates có version, zod schema, validators
 packages/ui/         design system (tokens, components)
 tools/               bootstrap, session scripts, seed generator
 ```
 
 - **Chế độ trình duyệt**: `pnpm dev:web` chạy UI trên Vite với sql.js → dev nhanh và Playwright test không cần build Tauri.
-- **Portable**: dữ liệu ở `.\Project2C-data\` cạnh exe; tự backup khi khởi động; xuất/nhập backup JSON.
+- **Portable**: dữ liệu ở `.\Project2C-data\` cạnh exe; tự backup khi khởi động; xuất/nhập backup `.p2cbackup` (thay toàn bộ, ADR-0016, spec Phase 3 §6).
 - **Xuất báo cáo (Q12 ✅)**: `.xlsx` (ExcelJS) có định dạng, mỗi sheet 1 bảng (tổng hợp / theo team / theo RE). PDF không làm ở v1.
 - **Ngôn ngữ (Q13 ✅)**: giao diện tiếng Việt, giữ thuật ngữ ngành tiếng Anh (FYP, KYC, N1–N4, submitted/issued); mọi chuỗi đi qua lớp i18n để sau này thêm ngôn ngữ.
 - **Chart**: ✅ ECharts 6 (ADR-0014, G4 — chốt ở Phase 1 theo mockup).
@@ -239,7 +239,7 @@ tools/               bootstrap, session scripts, seed generator
 
 **Kiểm thử:** Vitest cho `domain` (mục tiêu ≥ 95% coverage, golden examples của Owner là test); Playwright e2e + ảnh chụp giao diện; AI test bằng Mock provider + fixture ghi sẵn; **bộ eval AI** ~20 hồ sơ KYC giả lập (trạng thái cổng mong đợi + kiểm tra guardrail) chạy thủ công với provider thật, không chạy trong CI.
 
-**CI (GitHub Actions, windows-latest):** lint → typecheck → unit → e2e (web mode) → build Tauri → upload artifact exe. Phase 2 (ADR-0015): build exe chỉ chạy trên `main` hoặc PR có nhãn `build-exe`; PR chỉ sửa docs không chạy CI. Từ Phase 3: build exe lại chạy ở mọi PR code.
+**CI (GitHub Actions, windows-latest):** lint → typecheck → unit → e2e (web mode) → build Tauri → upload artifact exe. Phase 2 (ADR-0015): build exe chỉ chạy trên `main` hoặc PR có nhãn `build-exe`; PR chỉ sửa docs không chạy CI. Phụ lục 26/09 cho build exe chạy ở mọi PR code từ Phase 3, rồi phụ lục "Tiết kiệm phút Actions" (27/09) thay lại: PR code build exe chỉ khi có nhãn `build-exe` (bắt buộc khi đụng Rust / cấu hình build); push lên `main` chỉ build exe.
 
 ### 4.5 Thiết kế AI copilot
 
@@ -286,21 +286,21 @@ Ghi chú KYC ─► Dữ kiện có cấu trúc (RE xác nhận) ─► kyc_vers
 
 ## 5. Lộ trình
 
-| Phase | Nội dung | Kết quả / Cổng | Tiến độ (26/09/2026) |
+| Phase | Nội dung | Kết quả / Cổng | Tiến độ (30/09/2026) |
 |---|---|---|---|
 | **0. Chốt yêu cầu** | Kế thừa Q1–Q16; ADR: stack, kiến trúc, mô hình một agent, giao thức 2 máy | ADR · **G1, G2** | ✅ ADR-0001…0014 |
-| **1. Nền móng** | `CLAUDE.md`, `.gitattributes`, bootstrap/session scripts, `/session-start` `/handoff`, CI + build exe, pre-push hook bảo vệ `main`, Issue/PR template, checklist review; skeleton Tauri + chế độ web; app shell dark; mockup | Exe chạy được trên **cả 2 máy** · **G3** | 🟡 16/18 issue; còn #9 (exe trên Office Laptop + `phase-1.md`), #17 (icon) — chờ Owner ở văn phòng |
-| **2. Lõi domain** | State machine, stats engine + golden tests, parse ngày/tiền, mô hình KYC (notes/facts/versions), cổng KYC | Domain coverage ≥ 95% | 🟡 9/11 issue, coverage 100%; còn #25 (ngày), #26 (tiền) |
-| **3. Nghiệp vụ & màn hình** | `packages/db`; Team/RE, Khách hàng, KYC timeline, Lịch hẹn, Kết quả cuộc gặp, Hợp đồng; seed 3 × 10 RE × ~12 tháng dữ liệu; xuất/nhập backup; **việc đầu tiên: mở lại build exe cho mọi PR (ADR-0015)** | Nhập liệu hoàn chỉnh | 🟡 kế hoạch + G2 xong (spec `docs/design/phase-3-du-lieu.md`, ADR-0016); 14 issue #59–#72 |
-| **4. Dashboard & báo cáo** | Tổng quan hôm nay, MTD, drill-down team/RE, báo cáo tuần/tháng/năm, xuất Excel | · **G7** (milestone) | ⬜ |
-| **5. AI copilot** | Adapter OpenCode Go + Mock, prompt + schema, validators, versioning/STALE, Settings, bộ eval | · **G5, G6** | ⬜ |
-| **6. Hoàn thiện & phát hành** | Hiệu năng, rà soát UX, đồng bộ `Project-2C-data`, hướng dẫn sử dụng tiếng Việt, GitHub Release v1.0 | · **G7** | ⬜ |
+| **1. Nền móng** | `CLAUDE.md`, `.gitattributes`, bootstrap/session scripts, `/session-start` `/handoff`, CI + build exe, pre-push hook bảo vệ `main`, Issue/PR template, checklist review; skeleton Tauri + chế độ web; app shell dark; mockup | Exe chạy được trên **cả 2 máy** · **G3** | ✅ 18/18 issue, đóng 28/09 (G7) — `docs/metrics/phase-1.md` |
+| **2. Lõi domain** | State machine, stats engine + golden tests, parse ngày/tiền, mô hình KYC (notes/facts/versions), cổng KYC | Domain coverage ≥ 95% | ✅ 10/10 issue, coverage 100%, đóng 26/09 (G7) — `docs/metrics/phase-2.md` |
+| **3. Nghiệp vụ & màn hình** | `packages/db`; Team/RE, Khách hàng, KYC timeline, Lịch hẹn, Kết quả cuộc gặp, Hợp đồng; seed 3 × 10 RE × ~12 tháng dữ liệu; xuất/nhập backup | Nhập liệu hoàn chỉnh · **G7** | 🟡 42/43 issue; còn #72 (đóng phase, chờ Owner kiểm tay exe + G7) — `docs/metrics/phase-3.md`, review đóng phase `docs/reviews/2026-09-30-phase-1-3-tong-hop.md` |
+| **4. Dashboard & báo cáo** | Tổng quan hôm nay, MTD, drill-down team/RE, báo cáo tuần/tháng/năm, xuất Excel. Đầu phase: Đợt 2 của review đóng Phase 3 (e2e local ổn định; G2 cách đếm lịch dự kiến / đã gặp + chuỗi dời, miền năm, mockup Tổng quan theo ADR-0007; index chỉ số + MTD; CI coverage riêng + ghim SHA Actions; dọn UI/i18n) | · **G2, G7** (milestone) | ⬜ |
+| **5. AI copilot** | Adapter OpenCode Go + Mock, prompt + schema, validators, versioning/STALE, Settings, bộ eval. Trước `packages/ai`: quyết định gọi mạng + lưu key (D-1) | · **G4, G5, G6** | ⬜ |
+| **6. Hoàn thiện & phát hành** | Hiệu năng, rà soát UX, màn "Thùng rác" khôi phục bản ghi xóa mềm (#72), gộp backup / phát hiện xung đột, snapshot mỗi bảng một file (S-1), tuần tự hóa thay DB / lưu / xuất / đồng bộ (S-2), đồng bộ `Project-2C-data`, hướng dẫn sử dụng tiếng Việt, GitHub Release v1.0 | · **G7** | ⬜ |
 
-Ước lượng tổng: **~30%** khối lượng tới v1.0 (trọng số phase 0–6: 5 / 15 / 15 / 25 / 15 / 15 / 10%).
+Ước lượng tổng: **~60%** khối lượng tới v1.0 khi đóng Phase 3 (trọng số phase 0–6: 5 / 15 / 15 / 25 / 15 / 15 / 10%).
 
 Mọi phase do **Claude Code** thực hiện (model / effort do Owner chọn). Cuối mỗi phase ghi `docs/metrics/phase-<N>.md` theo `docs/COMPARISON.md`.
 
-Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue ≤ ~400 dòng diff.
+Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue, cỡ theo P1 (ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test.
 
 ---
 
@@ -377,8 +377,7 @@ Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue ≤ ~400 dòng diff.
 
 ## 8. Bước tiếp theo ngay
 
-Bước chi tiết từng phiên: `docs/state/HANDOFF.md`. Thứ tự lớn (cập nhật 26/09/2026):
+Bước chi tiết từng phiên: `docs/state/HANDOFF.md`. Thứ tự lớn (cập nhật 30/09/2026):
 
-1. Phase 2: #25 nhập ngày dd/mm, #26 tiền VND (`risk:low`) → Owner quyết đóng milestone Phase 2.
-2. Lập kế hoạch Phase 3 (`to-spec` → `to-tickets`): `packages/db` (Drizzle schema, migrations, repositories, adapter sql.js / Tauri SQLite) → seed 3 × 10 RE → các màn nhập liệu → xuất/nhập backup. Mô hình dữ liệu DB qua **G2**; màn chưa có mockup qua **G3**.
-3. Khi Owner ở văn phòng: #9, #17 → đóng milestone Phase 1 (**G7**).
+1. Đóng Phase 3 (#72): Owner kiểm tay exe build sau #202–#204, rồi duyệt **G7** đóng milestone.
+2. Mở Phase 4: tạo Issue Đợt 2 của review đóng Phase 3 (`docs/reviews/2026-09-30-phase-1-3-tong-hop.md` §4), làm e2e local ổn định (T-d) trước; G2 Phase 4 (cách đếm lịch, miền năm, mockup Tổng quan) trước màn dashboard.

@@ -46,7 +46,7 @@ git diff --stat origin/<baseRefName>...<headRefOid>
 
 - PR đã đóng/merge, draft, ref không tồn tại, hoặc diff rỗng → dừng, báo Owner.
 - Base là nhánh khác `main` (PR xếp chồng) → so với base đó, không so với `main`.
-- Ghi SHA head vào comment. Review là của đúng SHA đó.
+- Ghi SHA head vào comment. Review là của đúng SHA đó (P-1, review đóng Phase 3 F-16): `REVIEW: PASS` chỉ có giá trị cho SHA ghi trong comment.
 
 ## 2. Xác định mức (bắt buộc trước khi review)
 
@@ -134,4 +134,6 @@ Trục nào không có mục thì ghi "Không có phát hiện".
 ## 5. Sau comment
 
 - `risk:low` (sau khi nâng mức vẫn là low) + `REVIEW: PASS` + CI xanh trên head → merge theo CLAUDE.md (`--squash`, hoặc `--merge` khi có PR xếp chồng).
-- Còn lại → báo Owner: kết luận, số mục mỗi trục, mục chặn nặng nhất. Không tự sửa code trong phiên review.
+- Còn lại → báo Owner: kết luận, số mục mỗi trục, mục chặn nặng nhất.
+- **Phiên review không commit, không push, không sửa code** — kể cả sửa "nhỏ" cho mục vừa báo (P-1). Sửa là việc của phiên code; comment không bao giờ ghi "đã sửa trong PR" thay cho một vòng review mới.
+- **Trước khi merge** (Claude tự merge hoặc Owner bảo merge): `gh pr view <N> --json headRefOid` phải trùng SHA trong comment `REVIEW: PASS` mới nhất. Head đã đổi sau PASS (thêm commit, rebase, cập nhật base) → **review lại** diff từ SHA đã PASS tới head mới, ở phiên sạch, rồi mới merge.
