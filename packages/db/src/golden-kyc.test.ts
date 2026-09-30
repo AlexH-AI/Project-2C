@@ -7,11 +7,14 @@
 import { evaluateKycGate, type KycFact } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { KYC_GOLDEN_PROFILES } from '../../domain/src/golden/kyc.fixture';
+import { exportBackup, importBackup } from './backup';
 import { createCustomer, type Gender } from './customers';
 import { addKycNote, confirmKycFact, getKycProfile, markKycConflict } from './kyc';
 import { d, setup } from './test-support';
 
 const GENDERS_BY_LABEL: Readonly<Record<string, Gender>> = { Nam: 'MALE', Nữ: 'FEMALE' };
+
+const tablesOf = (backup: string): unknown => (JSON.parse(backup) as { tables: unknown }).tables;
 
 const entries = (facts: readonly KycFact[]) =>
   facts.map((f) => JSON.stringify([f.field, f.value, f.status])).sort();
@@ -61,5 +64,8 @@ describe('golden KYC profiles through the database', () => {
       coreConflictFields: result.coreConflictFields,
       warningFields: result.warningFields,
     }).toEqual(golden.expected);
+    // A backup of the profile imports again, every rule across tables kept (spec §6).
+    const text = exportBackup(db);
+    expect(tablesOf(exportBackup((await importBackup(text)).db))).toEqual(tablesOf(text));
   });
 });

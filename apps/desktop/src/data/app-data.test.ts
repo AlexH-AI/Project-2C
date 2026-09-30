@@ -436,7 +436,10 @@ describe('backup files', () => {
     expect(teamNames(app.db())).toEqual(['Seed 27/09/2026']);
   });
 
-  it('rejects a file with a date that does not exist before counting its records', async () => {
+  it.each([
+    ['a date that does not exist', '"date":"2026-09-27"', '"date":"2026-02-30"'],
+    ['a stage its transitions never reached', '"stage":"N3"', '"stage":"N1"'],
+  ])('rejects a file with %s before counting its records', async (_, from, to) => {
     const source = await openAppData({
       seed: (db) => {
         const team = createTeam(db, { name: 'Sao Mai' });
@@ -450,8 +453,8 @@ describe('backup files', () => {
         });
       },
     });
-    const text = (await source.exportBackup()).text.replace('"2026-09-27"', '"2026-02-30"');
-    expect(text).toContain('"date":"2026-02-30"');
+    const text = (await source.exportBackup()).text.replace(from, to);
+    expect(text).toContain(to);
     const { storage, events } = memoryStorage();
     const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
     await app.saves.idle();

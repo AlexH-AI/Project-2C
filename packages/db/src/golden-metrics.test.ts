@@ -22,6 +22,7 @@ import {
   TEAMS,
 } from '../../domain/src/golden/metrics.fixture';
 import { recordMeetingOutcome, rescheduleAppointment, scheduleAppointment } from './appointments';
+import { exportBackup, importBackup } from './backup';
 import {
   changeStageManually,
   createCustomer,
@@ -162,5 +163,13 @@ describe('golden metrics through the database', () => {
 
   it.each(GOLDEN_CASES)('$id', ({ period, scope, expected }) => {
     expect(periodMetrics(loadMetricsData(db), period, scopeOf(scope))).toEqual(expected);
+  });
+
+  it('exports a backup that imports again, every rule across tables kept (spec §6)', async () => {
+    const text = exportBackup(db);
+
+    const imported = await importBackup(text, { now: db.now });
+
+    expect(exportBackup(imported.db)).toBe(text);
   });
 });
