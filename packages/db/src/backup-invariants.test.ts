@@ -178,6 +178,14 @@ describe('importBackup — rules across tables', () => {
       (b, ids) => remove(b, 'stage_transitions', (t) => t.customer_id === ids.kien),
     ],
     [
+      '1: a customer whose first transition is soft-deleted',
+      (b, ids) => (transition(b, ids.lan, 1).deleted_at = '2026-09-26T08:00:00.000Z'),
+    ],
+    [
+      '1: a withdrawn later transition from no stage',
+      (b, ids) => (transition(b, ids.hoa, 2).from_stage = null),
+    ],
+    [
       '3: a transition dated before the one recorded ahead of it (D10)',
       (b, ids) => (transition(b, ids.lan, 3).date = '2026-09-09'),
     ],
