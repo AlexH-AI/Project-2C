@@ -287,3 +287,55 @@ test('a planned appointment booked by mistake is deleted, the stage kept (D4)', 
   await expect(card).toBeVisible();
   await expect(card).not.toContainText('28/09/2026');
 });
+
+test('a KYC note from the meeting opens over the outcome, filled from it (6c → 7a)', async ({
+  page,
+}) => {
+  const name = await book(page, '10/9', 'N3');
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
+  const o = outcome(page);
+  const link = o.dialog.getByRole('button', { name: '+ Ghi chú KYC từ cuộc gặp này' });
+  await expect(link).toBeVisible();
+  await o.status.getByRole('radio', { name: 'Không đến' }).check();
+  await expect(link).toHaveCount(0);
+  await o.status.getByRole('radio', { name: 'Đã gặp' }).check();
+
+  await o.stageAfter.getByRole('radio', { name: 'N2', exact: true }).check();
+  await o.nextStep.fill('Gửi bảng minh họa');
+  const note = o.dialog.getByRole('textbox', { name: 'Ghi chú cuộc gặp' });
+  await note.fill('KH vừa có con thứ hai.');
+  await link.click();
+
+  const kyc = page.getByRole('dialog', { name: `Ghi chú KYC · ${name}` });
+  const text = kyc.getByRole('textbox', { name: 'Ghi chú' });
+  await expect(text).toHaveValue('KH vừa có con thứ hai.');
+  await expect(kyc.getByRole('textbox', { name: /^Ngày ghi nhận/ })).toHaveValue('10/09/2026');
+
+  // Cancelling saves nothing and leaves the outcome as typed.
+  await kyc.getByRole('button', { name: 'Hủy', exact: true }).click();
+  await expect(kyc).toHaveCount(0);
+  await expect(note).toHaveValue('KH vừa có con thứ hai.');
+
+  await link.click();
+  await text.fill('Có con thứ hai, tháng 8.');
+  await kyc.getByRole('button', { name: 'Lưu ghi chú' }).click();
+  await expect(kyc).toHaveCount(0);
+  await expect(note).toHaveValue('KH vừa có con thứ hai.');
+  await expect(o.stageAfter.getByRole('radio', { name: 'N2', exact: true })).toBeChecked();
+  await expect(o.nextStep).toHaveValue('Gửi bảng minh họa');
+  await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
+  await expect(o.dialog).toHaveCount(0);
+
+  await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).click();
+  await expect(page.getByRole('region', { name })).toBeVisible();
+  const timeline = page.getByRole('region', { name: 'Dòng thời gian' }).getByRole('listitem');
+  await expect(timeline.filter({ hasText: /^10\/09\/2026Ghi chú KYC/ })).toHaveText(
+    '10/09/2026Ghi chú KYCCó con thứ hai, tháng 8.',
+  );
+
+  // From the profile the note still opens empty, dated today.
+  await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
+  const fromProfile = page.getByRole('dialog', { name: `Ghi chú KYC · ${name}` });
+  await expect(fromProfile.getByRole('textbox', { name: 'Ghi chú' })).toHaveValue('');
+  await expect(fromProfile.getByRole('textbox', { name: /^Ngày ghi nhận/ })).toHaveValue(TODAY);
+});

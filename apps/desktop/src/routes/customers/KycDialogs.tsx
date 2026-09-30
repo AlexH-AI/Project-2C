@@ -14,6 +14,7 @@ import {
   formatDate,
   KYC_FIELDS,
   resolveConflict,
+  type CalendarDate,
   type KycField,
 } from '@p2c/domain';
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
@@ -52,22 +53,29 @@ function Material({
   );
 }
 
-/** Mockup 7a–7c, 7e: a new KYC note and the facts confirmed from it, saved as one version. */
+/**
+ * Mockup 7a–7c, 7e: a new KYC note and the facts confirmed from it, saved as one version. Opened
+ * from a meeting's outcome (6c), it starts from the meeting's note and day.
+ */
 export function KycNoteDialog({
   customer,
   profile,
   versions,
+  initialText = '',
+  initialDate,
   onClose,
 }: {
   customer: CustomerRecord;
   profile: KycProfileRecord;
   versions: readonly KycVersionRecord[];
+  initialText?: string;
+  initialDate?: CalendarDate;
   onClose: () => void;
 }) {
   const data = useAppData();
   const today = data.today();
-  const [text, setText] = useState('');
-  const date = useDateField(today);
+  const [text, setText] = useState(initialText);
+  const date = useDateField(today, initialDate);
   const [facts, setFacts] = useState<KycNoteFact[]>([]);
   const [field, setField] = useState<KycField | ''>('');
   const [value, setValue] = useState('');
