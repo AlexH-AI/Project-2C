@@ -2,8 +2,8 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-09-30 · máy `DESKTOP-KDURKJP` · dừng làm việc sau khi merge #179 (T-068, `3e9fe58`) và #181 (handoff, `8e49526`). Không có task dở
-- **Nhánh:** `wip/…` do `session-end.ps1` tạo từ `main` `8e49526` (chỉ file này). Không có PR code nào đang mở. Checkout chính `C:\workspace\Project-2C` sạch; worktree review `Project-2C-review` ở `3e9fe58`, `Project-2C-review-2` ở `b64ef6e` (đưa về `origin/main` trước khi review tiếp)
+- **Cập nhật:** 2026-09-30 · máy `D13_THINKPAD` · sau khi merge #192 (T-073, `b428c90`). Không có task dở
+- **Nhánh:** `wip/…` do `session-end.ps1` tạo từ `main` `b428c90` (chỉ file này). Không có PR code nào đang mở. Checkout chính sạch; worktree review `Project-2C-review` và `Project-2C-review-2` đều ở `b428c90`
 - **Phiên song song:** trong phiên 30/09 có một phiên khác chạy dev server `web` (cổng 1420) trên cùng checkout — nếu vẫn còn: commit theo pathspec, không `git add -A`
 - **Máy kế tiếp:** Home PC hoặc Office Laptop — cả hai đã có môi trường + worktree review
 - **Repo đã chuyển public** (27/09, Owner tự làm) vì Actions private chạm ~1.800/2.000 phút; Actions giờ miễn phí
@@ -15,10 +15,18 @@
 
 | Việc | Trạng thái |
 |---|---|
-| #173 T-068 xóa lịch hẹn Dự kiến nhập nhầm (D4) | **Đã merge** trong phiên 30/09 (PR #179, `3e9fe58`), review PASS |
-| #180 T-069 link "+ Ghi chú KYC từ cuộc gặp này" (6c) | Mở, `risk:low`; Owner quyết 30/09 tách task riêng. Body có "Hành vi đề xuất" — Owner chốt trước khi code nếu muốn khác |
-| #71 T-052 backup `.p2cbackup` | Mở, `risk:high` |
-| #72 T-053 đóng Phase 3 | Mở, cổng G7 |
+| #180 T-069 link KYC 6c | **Đã merge** 30/09 (PR #183) |
+| #71 T-052 backup `.p2cbackup` | **Đã merge** 30/09 (PR #184 phần A, #185 phần B) |
+| #187 T-071, #189 T-072, #191 T-073 dọn file xuất dở / đóng DB cũ | **Đã merge** 30/09 (PR #188, #190, #192), review PASS |
+| #186 T-070 Cài đặt → Dữ liệu: card File dữ liệu, dung lượng, Mở thư mục | Mở, `risk:low`, sẵn sàng làm (khối #71 đã xong) |
+| #72 T-053 đóng Phase 3 | Mở, cổng G7 — làm sau #186 |
+
+Ghi chú review #183–#192 (T-069, T-052, T-071–T-073; không chặn, gộp vào lần chạm sau cùng file):
+- `packages/db/src/database.test.ts:47,98,100,353` ghi cứng phiên bản schema `5` → suy từ `LATEST_SCHEMA_VERSION` trước migration kế tiếp.
+- `backup.ts`: danh sách cột `columns.map(quote).join` lặp 2 chỗ; `valueOf` chỉ nhận cột `integer`/`text` (thêm cột `real` sẽ thành `BACKUP_INVALID`); `ORDER BY` dựa vào khóa chính → nên có test mọi bảng có PK. `database.ts`: hai khối `try/catch sqlite.close()` có thể gộp.
+- `SettingsBackup.tsx`: nhánh `SCHEMA_TOO_NEW` của hộp 10b chưa có test; `": "` giữa nhãn và đường dẫn viết cứng trong JSX (~dòng 112, nên vào i18n); so chuỗi `'RELOAD_UNSAVED_CHANGES'` lặp với `Settings.tsx` → hằng / `isUnsavedChangesError`. `formatCount` nằm trong `money.ts` (nên tách module số).
+- `app-data.ts`: hai `replace` chồng nhau (nạp lại + nhập) → DB cũ đóng hai lần, DB giữa không đóng (UI khóa nút nên gần như không xảy ra).
+- `storage.rs`: trên Windows `rename` ghi đè đích — không ghi đè chỉ nhờ claim (chương trình ngoài tạo trùng tên trong vài ms thì bị ghi đè; chấp nhận). `open_lock_file` dùng `Some(32)` thay hằng `SHARING_VIOLATION`; ngoài Windows closure `map_err` thành identity (clippy `map_identity` nếu có lúc chạy clippy ngoài Windows).
 
 Ghi chú review #179 (không chặn, NIT): `AppointmentsScreen.tsx:~271` truyền `caused={undefined}` cho `DeleteAppointmentDialog` → có thể cho `caused` là prop tùy chọn. Biến thể "không đổi nhóm KH" của hộp xóa giờ hiện bảng 3 dòng cả cho lịch Hủy / Không đến (đã ghi trong PR).
 
@@ -73,11 +81,10 @@ Ghi chú khác (còn từ Phase 1): `DataTable` chưa test `sortable: false` và
 
 ## Bước kế tiếp chính xác
 
-1. `/session-start` (pull `main`). Không có PR code mở. Nếu còn PR handoff `wip/…` của phiên này chưa merge → merge (docs-only) trước.
-2. **Việc kế tiếp:** Owner chọn giữa **#180 T-069** (link "+ Ghi chú KYC từ cuộc gặp này" ở hộp Ghi kết quả 6c, `risk:low`; sửa `routes/appointments/OutcomeDialog.tsx`, `routes/customers/KycDialogs.tsx` thêm prop điền sẵn, `i18n/vi.ts`, e2e) và **#71 T-052** backup `.p2cbackup` (`risk:high`; đọc ghi chú review #87, #96 bên dưới trước). Phiên mới: đọc body Issue, nhánh `task/T-0xx-slug` từ `main`, TDD, `pnpm verify` + `pnpm e2e` trước PR.
-3. Sau cả hai: #72 T-053 đóng Phase 3 (G7, ghi `docs/metrics/phase-3.md`).
-4. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Issue còn mở của milestone: #180, #71, #72.
-   - Ghi chú review T-050 ở trên: các mục chờ Owner đã quyết 30/09; các mùi code gộp vào lần chạm sau cùng file.
+1. `/session-start` (pull `main`). Không có PR code mở. Nếu còn PR handoff `wip/…` chưa merge → merge (docs-only) trước.
+2. **Việc kế tiếp: #186 T-070** (`risk:low`): card "File dữ liệu" + dung lượng + nút "Mở thư mục" ở Cài đặt → Dữ liệu, theo mockup `docs/design/mockups/settings-data.html`. Đọc body Issue (hành vi, file được phép, test chấp nhận). Gồm: `formatFileSize` trong `packages/domain` (TDD), lệnh Rust `open_folder(kind)` (tách hàm thuần chọn thư mục để test) + `db_latest_backup`, `AppData` ghi giờ + dung lượng lần lưu cuối, `StoragePort.latestBackup()/openFolder()`, i18n, e2e. Đụng `src-tauri` → PR gắn `build-exe` + chạy `pnpm verify:rust`. Owner kiểm tay trên exe (card, hai nút mở thư mục).
+3. Sau #186: **#72 T-053** đóng Phase 3 (G7, ghi `docs/metrics/phase-3.md` theo `docs/COMPARISON.md`).
+4. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Issue còn mở của milestone: #186, #72.
    - PR nào đụng `apps/desktop/src-tauri/**` hoặc cấu hình build thì gắn nhãn `build-exe` ngay lúc tạo.
 5. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
 6. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2). #61/#62 chạy golden G01–G22, K01–K15 qua DB.
@@ -124,8 +131,9 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- Chọn thứ tự #180 / #71; xem "Hành vi đề xuất" trong #180 (link KYC 6c) trước khi làm, nếu muốn khác thì sửa body Issue.
 - Merge PR handoff này (`wip/…`, docs-only, không chạy CI) để `main` có HANDOFF mới.
+- Kiểm tay trên exe bản `main` `b428c90` (artifact `Project-2C-b428c90…`): xuất / nhập backup, nạp lại — nếu chưa làm sau #188/#190/#192.
+- #72 T-053: cổng G7 đóng Phase 3.
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
 ## Ghi chú môi trường
