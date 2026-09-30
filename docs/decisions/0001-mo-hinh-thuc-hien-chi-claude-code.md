@@ -12,7 +12,7 @@ Project-2C là nhánh đối chứng của Project-2: cùng yêu cầu sản ph�
 ## Quyết định
 
 1. Mọi việc (spec, code, test, review, tài liệu) do **Claude Code** làm, trong phiên chính (C1, C3). Model và effort do Owner chọn cho từng phiên (phụ lục M1; trước 29/09/2026: Opus 5.5, effort medium).
-2. **Không subagent / Agent tool**, không agent ngoài Claude. OpenCode, Muse Code, Cursor, Codex không dùng cho phát triển.
+2. **Không subagent / Agent tool**. OpenCode, Muse Code, Cursor không dùng cho phát triển. **Codex được phép viết và review code** (phụ lục M2; trước 30/09/2026: Codex cũng không dùng, không agent ngoài Claude).
 3. Claude làm tự động trong mọi task, **chỉ dừng ở cổng Owner G1–G8** (C4):
 
    | Cổng | Khi nào |
@@ -54,3 +54,15 @@ Mục 6 "task ≤ ~400 dòng diff" đổi thành: **≤ ~400 dòng code sản ph
 ## Phụ lục — model và effort do Owner chọn (M1 — Accepted G1, Owner quyết 29/09/2026)
 
 Mục 1 bỏ ràng buộc "Opus 5.5, effort medium": **model và effort do Owner tự chọn cho từng phiên** trong app Claude Code; repo không ghim model hay effort. Các ràng buộc khác giữ nguyên: chỉ Claude Code, không subagent / Agent tool, cổng G1–G8, review ở phiên riêng. Lý do: Owner muốn dùng model mới ngay khi ra mà không phải sửa ADR mỗi lần, và tự cân đối chất lượng / hạn mức (C8).
+
+## Phụ lục — Codex được phép viết và review code (M2 — Accepted G1, Owner quyết 30/09/2026 · Issue #198)
+
+Mục 2 bỏ câu cấm Codex: **Codex được phép viết và review code** trong 2C. Claude Code vẫn là người thực hiện chính; OpenCode (CLI), Muse Code, Cursor vẫn không dùng cho phát triển; không subagent / Agent tool, cổng G1–G8 và quy trình một task (mục 5) giữ nguyên.
+
+Lý do: trước khi đóng Phase 3, Owner muốn một big review độc lập từ ngoài Claude (Codex Astra) cho Phase 1→3 — bù điểm mù tự review (xem Hệ quả). Review ngoài bằng Codex từng tìm ra lỗi mất dữ liệu ở PR #87 (ADR-0017 Bối cảnh).
+
+Hệ quả:
+
+- Code do Codex viết vẫn đi đúng quy trình: Issue → nhánh `task/T-xxx` → PR → CI Windows → review phiên sạch bằng `review-pr`. PR ghi rõ phần nào do Codex viết.
+- Review của Codex **bổ sung**, không thay review phiên sạch của `review-pr`. Báo cáo của Codex là dữ liệu tham khảo: Claude kiểm lại từng phát hiện trên code, phân loại (đúng / đã biết / sai) rồi mới tạo Issue hoặc sửa.
+- So sánh với Project-2 (`docs/COMPARISON.md`): biến "ai viết / review code" của 2C không còn là "chỉ Claude" từ 30/09/2026. `docs/metrics/phase-<N>.md` ghi các lần dùng Codex (task / PR, viết hay review) để đánh giá cuối tách được phần đóng góp.
