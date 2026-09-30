@@ -5,7 +5,13 @@
  */
 import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
-import { assertSupported, openDatabase, type Database, type OpenDatabaseOptions } from './database';
+import {
+  assertSupported,
+  migrate,
+  openDatabase,
+  type Database,
+  type OpenDatabaseOptions,
+} from './database';
 import { DbError } from './errors';
 import { MIGRATIONS } from './migrations';
 
@@ -67,37 +73,37 @@ export async function importBackup(
   const file = parse(text);
   const migrations = options.migrations ?? MIGRATIONS;
   assertSupported(file.schemaVersion, migrations);
-  const loaded = await staged(
-    {
-      ...options,
-      bytes: undefined,
-      migrations: migrations.filter((m) => m.id <= file.schemaVersion),
-    },
-    (staging) => load(staging, file.tables),
-  );
-  // Migrating is a transaction, which would persist: run it apart too.
-  const migrated = await staged({ ...options, bytes: loaded, migrations }, () => undefined);
-  const db = await openDatabase({ ...options, bytes: migrated, migrations });
+  // A database at the file's version that is never saved: loading and migrating are transactions.
+  const staging = await openDatabase({
+    ...options,
+    bytes: undefined,
+    persist: undefined,
+    migrations: migrations.filter((m) => m.id <= file.schemaVersion),
+  });
+  let bytes: Uint8Array;
+  try {
+    fromFile(() => {
+      load(staging, file.tables);
+      migrate(staging, migrations);
+    });
+    bytes = staging.export();
+  } finally {
+    staging.sqlite.close();
+  }
+  const db = await openDatabase({ ...options, bytes, migrations });
   return { db, exportedAt: file.exportedAt, schemaVersion: file.schemaVersion };
 }
 
 /**
- * Opens a database that is never saved, runs `fn` on it and returns its bytes. Errors of SQLite
- * (CHECK, UNIQUE, NOT NULL, a migration the file's rows break) mean a damaged file too.
+ * Runs the steps that read the file's rows. Their errors of SQLite (CHECK, UNIQUE, NOT NULL, a
+ * migration the rows break) mean a damaged file too; opening the engine stays outside, so its
+ * failures reach the UI as they are.
  */
-async function staged(
-  options: OpenDatabaseOptions,
-  fn: (db: Database) => void,
-): Promise<Uint8Array> {
-  let db: Database | undefined;
+function fromFile(fn: () => void): void {
   try {
-    db = await openDatabase({ ...options, persist: undefined });
-    fn(db);
-    return db.export();
+    fn();
   } catch (error) {
     throw error instanceof DbError ? error : invalid();
-  } finally {
-    db?.sqlite.close();
   }
 }
 
@@ -113,7 +119,10 @@ function parse(text: string): z.infer<typeof envelope> {
   return result.data;
 }
 
-/** Inserts every row with foreign keys off (rows reference each other in any order), then checks. */
+/**
+ * Inserts every row with foreign keys off (rows reference each other in any order), then checks and
+ * turns them back on for the migrations.
+ */
 function load(db: Database, tables: Record<string, Record<string, unknown>[]>): void {
   const names = dataTables(db.sqlite);
   if (!sameSet(Object.keys(tables), names)) throw invalid();
@@ -138,6 +147,7 @@ function load(db: Database, tables: Record<string, Record<string, unknown>[]>): 
     }
     if (db.sqlite.exec('PRAGMA foreign_key_check').length > 0) throw invalid();
   });
+  db.sqlite.run('PRAGMA foreign_keys = ON');
 }
 
 interface Column {

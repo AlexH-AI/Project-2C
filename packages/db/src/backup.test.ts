@@ -209,6 +209,15 @@ describe('importBackup', () => {
     expect(types[0]?.values.flat()).toEqual(['integer', 'text']);
   });
 
+  it('only meets data tables with a primary key, the order an export sorts by', async () => {
+    const db = await openDatabase();
+    const keyless = db.sqlite.exec(
+      "SELECT t.name FROM sqlite_master t WHERE t.type = 'table' AND t.name NOT LIKE 'sqlite_%' AND NOT EXISTS (SELECT 1 FROM pragma_table_info(t.name) c WHERE c.pk > 0)",
+    );
+
+    expect(keyless).toEqual([]);
+  });
+
   const damaged: [string, (backup: BackupJson) => unknown][] = [
     ['another format (Project-2)', (b) => ({ ...b, format: 'project2-backup' })],
     ['an unknown key', (b) => ({ ...b, extra: 1 })],

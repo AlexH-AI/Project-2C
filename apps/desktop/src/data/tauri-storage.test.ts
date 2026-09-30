@@ -32,4 +32,16 @@ describe('tauriStorage', () => {
     expect(await tauriStorage(invoke, () => -420).backup()).toBe('project2c-20260927-101500.db');
     expect(invoke).toHaveBeenCalledWith('db_backup', { utcOffsetMinutes: 420 });
   });
+
+  it('writes an export as raw bytes, the file name in a header, and returns the path', async () => {
+    const invoke = vi.fn().mockResolvedValue('C:\\P2C\\Project2C-data\\exports\\a.p2cbackup');
+    const bytes = new Uint8Array([7]);
+
+    const path = await tauriStorage(invoke, () => 0).writeExport('a.p2cbackup', bytes);
+
+    expect(path).toBe('C:\\P2C\\Project2C-data\\exports\\a.p2cbackup');
+    expect(invoke).toHaveBeenCalledWith('export_write', bytes, {
+      headers: { 'x-p2c-file-name': 'a.p2cbackup' },
+    });
+  });
 });

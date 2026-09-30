@@ -1,7 +1,16 @@
-import { createTeam, DbError, listTeams, openDatabase, type Database } from '@p2c/db';
+import {
+  createTeam,
+  DbError,
+  importBackup,
+  LATEST_SCHEMA_VERSION,
+  listTeams,
+  openDatabase,
+  softDeleteTeam,
+  type Database,
+} from '@p2c/db';
 import { calendarDate, formatDate, type CalendarDate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
-import { openAppData, type StoragePort } from './app-data';
+import { isUnsavedChangesError, openAppData, type StoragePort } from './app-data';
 
 const TODAY = calendarDate(2026, 9, 27);
 
@@ -30,8 +39,14 @@ function memoryStorage(initial?: Uint8Array) {
       events.push('backup');
       return Promise.resolve('project2c-20260927-101500.db');
     },
+    writeExport: (name, bytes) => {
+      events.push('export');
+      exports.push({ name, text: new TextDecoder().decode(bytes) });
+      return Promise.resolve(`C:\\P2C\\Project2C-data\\exports\\${name}`);
+    },
   };
-  return { storage, saves, events, failSave: () => (failNextSave = true) };
+  const exports: { name: string; text: string }[] = [];
+  return { storage, saves, events, exports, failSave: () => (failNextSave = true) };
 }
 
 const teamNames = (db: Database) => listTeams(db).map((team) => team.name);
@@ -133,9 +148,10 @@ describe('reloadDemoData', () => {
     const before = app.db();
     const listener = vi.fn();
     app.subscribe(listener);
+    await app.saves.idle();
+    events.length = 0;
     createTeam(before, { name: 'Sao Mai' });
     today = calendarDate(2026, 10, 1);
-    events.length = 0;
 
     const backup = await app.reloadDemoData();
     await app.saves.idle();
@@ -184,9 +200,139 @@ describe('reloadDemoData', () => {
     createTeam(app.db(), { name: 'Sao Mai' });
     const before = app.db();
 
-    await expect(app.reloadDemoData()).rejects.toThrow('RELOAD_UNSAVED_CHANGES');
+    await expect(app.reloadDemoData()).rejects.toSatisfy(isUnsavedChangesError);
     expect(events).toEqual(['save']);
     expect(app.db()).toBe(before);
     expect(teamNames(before)).toContain('Sao Mai');
+  });
+});
+
+describe('isUnsavedChangesError', () => {
+  it('tells the refusal of a replace apart from any other failure', () => {
+    expect(isUnsavedChangesError(new Error('boom'))).toBe(false);
+    expect(isUnsavedChangesError('RELOAD_UNSAVED_CHANGES')).toBe(false);
+    expect(isUnsavedChangesError(undefined)).toBe(false);
+  });
+});
+
+describe('backup files', () => {
+  /** 30/09/2026 07:45 local time. */
+  const clock = () => new Date(2026, 8, 30, 7, 45, 12);
+
+  /** A backup of a database holding the teams `names`, one soft-deleted when `deleted` is set. */
+  async function backupOf(names: string[], deleted?: string) {
+    const app = await openAppData({
+      clock,
+      seed: (db) => names.forEach((name) => createTeam(db, { name })),
+    });
+    if (deleted) {
+      const team = listTeams(app.db()).find((t) => t.name === deleted)!;
+      app.run((db) => softDeleteTeam(db, team.id));
+    }
+    return (await app.exportBackup()).text;
+  }
+
+  it('in web mode exports a named file for the screen to download', async () => {
+    const app = await openAppData({ clock, today: () => TODAY, seed: fakeSeed });
+
+    const exported = await app.exportBackup();
+
+    expect(exported.name).toBe('project2c-20260930-0745.p2cbackup');
+    expect(exported.path).toBeUndefined();
+    const imported = await importBackup(exported.text);
+    expect(teamNames(imported.db)).toEqual(['Seed 27/09/2026']);
+  });
+
+  it('in the exe writes the file into exports and returns its path', async () => {
+    const { storage, exports } = memoryStorage();
+    const app = await openAppData({ storage, clock, today: () => TODAY, seed: fakeSeed });
+
+    const exported = await app.exportBackup();
+
+    expect(exported.path).toBe(
+      'C:\\P2C\\Project2C-data\\exports\\project2c-20260930-0745.p2cbackup',
+    );
+    expect(exports).toEqual([{ name: exported.name, text: exported.text }]);
+  });
+
+  it('reads a backup without touching the current data, and counts both', async () => {
+    const text = await backupOf(['Sao Mai', 'Bình Minh', 'Hừng Đông'], 'Hừng Đông');
+    const { storage, events } = memoryStorage();
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+    await app.saves.idle();
+    events.length = 0;
+    const before = app.db();
+
+    const preview = await app.readBackup(text);
+
+    expect(preview.schemaVersion).toBe(LATEST_SCHEMA_VERSION);
+    expect(preview.counts).toEqual({
+      teams: 2,
+      people: 0,
+      customers: 0,
+      appointments: 0,
+      policies: 0,
+    });
+    expect(app.counts()).toMatchObject({ teams: 1 });
+    expect(app.db()).toBe(before);
+    expect(events).toEqual([]);
+  });
+
+  it('rejects a damaged file with its code, changing nothing', async () => {
+    const app = await openAppData({ today: () => TODAY, seed: fakeSeed });
+    const listener = vi.fn();
+    app.subscribe(listener);
+
+    const error = await app.readBackup('{"format":"project2-backup"}').catch((e: unknown) => e);
+
+    expect(error).toMatchObject({ code: 'BACKUP_INVALID' });
+    expect(listener).not.toHaveBeenCalled();
+    expect(teamNames(app.db())).toEqual(['Seed 27/09/2026']);
+  });
+
+  it('imports like a reload: saves pending changes, backs up, swaps and saves the new data', async () => {
+    const text = await backupOf(['Sao Mai', 'Bình Minh'], 'Bình Minh');
+    const { storage, saves, events } = memoryStorage();
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+    const before = app.db();
+    const listener = vi.fn();
+    app.subscribe(listener);
+    const preview = await app.readBackup(text);
+    await app.saves.idle();
+    events.length = 0;
+    createTeam(before, { name: 'Late' });
+
+    const backup = await app.importBackup(preview);
+    await app.saves.idle();
+
+    expect(backup).toBe('project2c-20260927-101500.db');
+    expect(events).toEqual(['save', 'backup', 'save']);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(teamNames(app.db())).toEqual(['Sao Mai']);
+    const onDisk = await openDatabase({ bytes: saves.at(-1) });
+    expect(teamNames(onDisk)).toEqual(['Sao Mai']);
+    // The soft-deleted team came along, as in the file.
+    expect((await app.exportBackup()).text).toContain('"Bình Minh"');
+
+    createTeam(before, { name: 'Stale' });
+    await app.saves.idle();
+    expect(teamNames(await openDatabase({ bytes: saves.at(-1) }))).toEqual(['Sao Mai']);
+  });
+
+  it('refuses to import while the last save failed', async () => {
+    const text = await backupOf(['Sao Mai']);
+    const { storage, events, failSave } = memoryStorage();
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+    await app.saves.idle();
+    const preview = await app.readBackup(text);
+    failSave();
+    events.length = 0;
+    createTeam(app.db(), { name: 'Hừng Đông' });
+    const before = app.db();
+
+    await expect(app.importBackup(preview)).rejects.toSatisfy(isUnsavedChangesError);
+    expect(events).toEqual(['save']);
+    expect(app.db()).toBe(before);
+    expect(teamNames(before)).toContain('Hừng Đông');
   });
 });

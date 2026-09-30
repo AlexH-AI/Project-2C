@@ -2,14 +2,25 @@ import { useState } from 'react';
 import { formatDate } from '@p2c/domain';
 import { Button, Dialog, TextField } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
+import { isUnsavedChangesError } from '../data/app-data';
 import { t } from '../i18n';
+import { BackupSection } from './SettingsBackup';
 
 type Outcome =
   | { readonly ok: true; readonly anchor: string; readonly backup: string | undefined }
   | { readonly ok: false; readonly unsaved: boolean };
 
-/** Settings → Data (mockup settings-data): for now only "Reload simulated data" (T-045). */
+/** Settings → Data (mockup settings-data): backup files (T-052), then the simulated data (T-045). */
 export function Settings() {
+  return (
+    <div className="flex max-w-3xl flex-col gap-4">
+      <BackupSection />
+      <DemoSection />
+    </div>
+  );
+}
+
+function DemoSection() {
   const [confirming, setConfirming] = useState(false);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const { hasFile } = useAppData();
@@ -17,7 +28,7 @@ export function Settings() {
   return (
     <section
       aria-labelledby="demo-data-title"
-      className="max-w-3xl rounded-lg border border-border bg-surface-1 px-4 py-3"
+      className="rounded-lg border border-border bg-surface-1 px-4 py-3"
     >
       <h2 id="demo-data-title" className="m-0 mb-1 text-sm font-medium text-heading">
         {t('settings.demo.title')}
@@ -70,7 +81,7 @@ function ReloadDialog({ onClose }: { onClose: (outcome?: Outcome) => void }) {
       const backup = await data.reloadDemoData();
       onClose({ ok: true, anchor, backup });
     } catch (error) {
-      const unsaved = error instanceof Error && error.message === 'RELOAD_UNSAVED_CHANGES';
+      const unsaved = isUnsavedChangesError(error);
       onClose({ ok: false, unsaved });
     }
   };

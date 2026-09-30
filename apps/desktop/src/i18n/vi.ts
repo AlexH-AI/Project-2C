@@ -454,6 +454,51 @@ export const vi = {
   'storage.tooNewHelp':
     'File dùng schema v{version}, app này chỉ đọc tới v{supported}. Hãy dùng bản app mới hơn. App không thay đổi gì trong file.',
   'startup.loading': 'Đang mở dữ liệu…',
+  'settings.backup.title': 'Xuất / nhập backup',
+  'settings.backup.meta': 'file .p2cbackup',
+  'settings.backup.export': 'Xuất backup',
+  'settings.backup.exportHelp':
+    'Ghi toàn bộ dữ liệu (kể cả bản ghi đã xóa mềm) vào Project2C-data\\exports\\',
+  'settings.backup.exportHelpWeb': 'Tải về toàn bộ dữ liệu (kể cả bản ghi đã xóa mềm).',
+  'settings.backup.exporting': 'Đang xuất…',
+  'settings.backup.exported': 'Đã xuất backup: {where}',
+  'settings.backup.exportFailed':
+    'Chưa xuất được backup. Kiểm tra ổ đĩa và quyền ghi thư mục Project2C-data\\exports\\ rồi thử lại.',
+  'settings.backup.import': 'Nhập backup',
+  'settings.backup.importHelp': 'Thay toàn bộ dữ liệu hiện tại bằng dữ liệu trong file.',
+  'settings.backup.importHelpBackup': 'App tự backup dữ liệu hiện tại trước.',
+  'settings.backup.importOpen': 'Chọn file…',
+  'settings.backup.reading': 'Đang đọc file…',
+  'settings.backup.confirmTitle': 'Thay toàn bộ dữ liệu?',
+  'settings.backup.exportedAt': 'Xuất lúc',
+  'settings.backup.version': 'Phiên bản',
+  'settings.backup.versionSame': 'schema v{version} (bằng app)',
+  'settings.backup.versionOlder':
+    'schema v{version} (app này v{supported}): app tự nâng cấp dữ liệu sau khi nhập',
+  'settings.backup.inFile': 'Trong file',
+  'settings.backup.current': 'Hiện tại',
+  'settings.backup.counts':
+    '{teams} team · {people} nhân sự · {customers} KH · {appointments} lịch hẹn · {policies} HĐ',
+  'settings.backup.lossWarning': 'Mọi thay đổi sau {date} sẽ mất khỏi app',
+  'settings.backup.confirmBackup':
+    'Dữ liệu hiện tại được backup trước vào Project2C-data\\backups\\. Nhập không gộp dữ liệu.',
+  'settings.backup.confirmWeb':
+    'Bản web không lưu file: dữ liệu chỉ nằm trong trình duyệt. Nhập không gộp dữ liệu.',
+  'settings.backup.cancel': 'Hủy',
+  'settings.backup.confirm': 'Thay dữ liệu',
+  'settings.backup.confirmWithBackup': 'Backup rồi thay dữ liệu',
+  'settings.backup.running': 'Đang nhập…',
+  'settings.backup.done': 'Đã nhập backup xuất lúc {date}.',
+  'settings.backup.failed': 'Chưa nhập được backup. Dữ liệu hiện tại không bị đổi.',
+  'settings.backup.failedUnsaved':
+    'Chưa nhập: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Dữ liệu hiện tại không bị đổi.',
+  'settings.backup.refusedTitle': 'Không nhập được file',
+  'settings.backup.tooNew': 'File tạo từ bản app mới hơn (schema v{version}, app này v{supported})',
+  'settings.backup.tooNewHelp': 'Cập nhật app rồi nhập lại. Dữ liệu hiện tại không bị đổi.',
+  'settings.backup.invalid': 'File hỏng hoặc không phải backup Project-2C',
+  'settings.backup.invalidHelp':
+    'Chỉ nhận file .p2cbackup do Project-2C xuất (không nhận .p2backup của Project-2). Dữ liệu hiện tại không bị đổi.',
+  'settings.backup.close': 'Đóng',
   'settings.demo.title': 'Dữ liệu giả lập',
   'settings.demo.reload': 'Nạp lại dữ liệu giả lập',
   'settings.demo.reloadHelp':
