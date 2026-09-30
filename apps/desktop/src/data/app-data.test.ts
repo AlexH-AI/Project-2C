@@ -1,4 +1,4 @@
-import { createTeam, listTeams, openDatabase, type Database } from '@p2c/db';
+import { createTeam, DbError, listTeams, openDatabase, type Database } from '@p2c/db';
 import { calendarDate, formatDate, type CalendarDate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import { openAppData, type StoragePort } from './app-data';
@@ -77,6 +77,20 @@ describe('openAppData', () => {
     await app.saves.idle();
     const onDisk = await openDatabase({ bytes: saves.at(-1) });
     expect(teamNames(onDisk)).toEqual(['Bình Minh', 'Sao Mai']);
+  });
+
+  it('refuses a file made by a newer app: no seeding, no migrating, nothing saved', async () => {
+    const newer = await openDatabase();
+    newer.sqlite.run("INSERT INTO schema_migrations (id, applied_at) VALUES (99, 'x')");
+    const { storage, events } = memoryStorage(newer.export());
+    const seed = vi.fn(fakeSeed);
+
+    const error = await openAppData({ storage, seed }).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(DbError);
+    expect(error).toMatchObject({ code: 'SCHEMA_TOO_NEW', params: { version: 99 } });
+    expect(seed).not.toHaveBeenCalled();
+    expect(events).toEqual([]);
   });
 
   it('run() returns what the command returns and tells subscribers the data changed', async () => {

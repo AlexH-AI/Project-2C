@@ -22,3 +22,10 @@ export const MIGRATIONS: readonly Migration[] = [
   { id: 4, tag: '0003_kyc_append_only', sql: m0003 },
   { id: 5, tag: '0004_appointment_outcome_reviewer', sql: m0004 },
 ];
+
+/** The highest schema version a list of migrations reaches. */
+export const latestVersion = (migrations: readonly Migration[]): number =>
+  Math.max(0, ...migrations.map((m) => m.id));
+
+/** The schema version this app writes; files above it come from a newer app. */
+export const LATEST_SCHEMA_VERSION = latestVersion(MIGRATIONS);
