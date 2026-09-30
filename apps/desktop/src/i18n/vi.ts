@@ -461,7 +461,7 @@ export const vi = {
     'Ghi toàn bộ dữ liệu (kể cả bản ghi đã xóa mềm) vào Project2C-data\\exports\\',
   'settings.backup.exportHelpWeb': 'Tải về toàn bộ dữ liệu (kể cả bản ghi đã xóa mềm).',
   'settings.backup.exporting': 'Đang xuất…',
-  'settings.backup.exported': 'Đã xuất backup',
+  'settings.backup.exported': 'Đã xuất backup: {where}',
   'settings.backup.exportFailed':
     'Chưa xuất được backup. Kiểm tra ổ đĩa và quyền ghi thư mục Project2C-data\\exports\\ rồi thử lại.',
   'settings.backup.import': 'Nhập backup',

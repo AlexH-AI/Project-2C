@@ -40,7 +40,7 @@ test('exports, then imports the file back after confirming: later changes are go
   await chooseFile(page, exported.name, exported.text);
   const dialog = page.getByRole('dialog', { name: 'Thay toàn bộ dữ liệu?' });
   await expect(dialog).toContainText(exported.name);
-  await expect(dialog).toContainText('schema v5 (bằng app)');
+  await expect(dialog).toContainText(/schema v\d+ \(bằng app\)/);
   await expect(dialog).toContainText(/Trong file\s*3 team · 36 nhân sự · 1\.\d{3} KH/);
   await expect(dialog).toContainText(/Hiện tại\s*4 team/);
   await expect(dialog).toContainText('Bản web không lưu file');

@@ -3,7 +3,7 @@ import { DbError, LATEST_SCHEMA_VERSION } from '@p2c/db';
 import { formatCount, formatLocalDateTime } from '@p2c/domain';
 import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
-import type { BackupPreview, RecordCounts } from '../data/app-data';
+import { isUnsavedChangesError, type BackupPreview, type RecordCounts } from '../data/app-data';
 import { t } from '../i18n';
 
 type Notice =
@@ -14,6 +14,8 @@ type Notice =
 interface Chosen {
   readonly name: string;
   readonly preview: BackupPreview;
+  /** The current data, counted once when the file is chosen (not on every render). */
+  readonly current: RecordCounts;
 }
 
 interface Refused {
@@ -50,7 +52,8 @@ export function BackupSection() {
     setBusy('read');
     setNotice(null);
     try {
-      setChosen({ name: file.name, preview: await data.readBackup(await file.text()) });
+      const preview = await data.readBackup(await file.text());
+      setChosen({ name: file.name, preview, current: data.counts() });
     } catch (error) {
       // Only the file's own faults are refused (10b); a failing engine or read is not the file's.
       if (error instanceof DbError) setRefused({ name: file.name, error });
@@ -108,8 +111,8 @@ export function BackupSection() {
         </Button>
       </div>
       {notice?.kind === 'exported' && (
-        <p role="status" className="m-0 py-1 text-sm text-ok">
-          {t('settings.backup.exported')}: <span className="tabular-nums">{notice.where}</span>
+        <p role="status" className="m-0 py-1 text-sm text-ok tabular-nums">
+          {t('settings.backup.exported', { where: notice.where })}
         </p>
       )}
       {notice?.kind === 'imported' && (
@@ -126,7 +129,6 @@ export function BackupSection() {
       {chosen && (
         <ImportDialog
           chosen={chosen}
-          current={data.counts()}
           onClose={(result) => {
             setChosen(null);
             if (result) setNotice(result);
@@ -159,15 +161,7 @@ const countsText = (counts: RecordCounts) =>
   });
 
 /** Mockup 10a: what the file holds against the current data, then back up (exe) and replace. */
-function ImportDialog({
-  chosen,
-  current,
-  onClose,
-}: {
-  chosen: Chosen;
-  current: RecordCounts;
-  onClose: (notice?: Notice) => void;
-}) {
+function ImportDialog({ chosen, onClose }: { chosen: Chosen; onClose: (notice?: Notice) => void }) {
   const data = useAppData();
   const [running, setRunning] = useState(false);
   const { preview } = chosen;
@@ -180,10 +174,11 @@ function ImportDialog({
       const backup = await data.importBackup(preview);
       onClose({ kind: 'imported', exportedAt: preview.exportedAt, backup });
     } catch (error) {
-      const unsaved = error instanceof Error && error.message === 'RELOAD_UNSAVED_CHANGES';
       onClose({
         kind: 'failed',
-        message: t(unsaved ? 'settings.backup.failedUnsaved' : 'settings.backup.failed'),
+        message: t(
+          isUnsavedChangesError(error) ? 'settings.backup.failedUnsaved' : 'settings.backup.failed',
+        ),
       });
     }
   };
@@ -200,7 +195,7 @@ function ImportDialog({
       ),
     ],
     [t('settings.backup.inFile'), countsText(preview.counts)],
-    [t('settings.backup.current'), countsText(current)],
+    [t('settings.backup.current'), countsText(chosen.current)],
   ];
 
   return (

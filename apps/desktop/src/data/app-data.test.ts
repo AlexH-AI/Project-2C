@@ -10,7 +10,7 @@ import {
 } from '@p2c/db';
 import { calendarDate, formatDate, type CalendarDate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
-import { openAppData, type StoragePort } from './app-data';
+import { isUnsavedChangesError, openAppData, type StoragePort } from './app-data';
 
 const TODAY = calendarDate(2026, 9, 27);
 
@@ -200,10 +200,18 @@ describe('reloadDemoData', () => {
     createTeam(app.db(), { name: 'Sao Mai' });
     const before = app.db();
 
-    await expect(app.reloadDemoData()).rejects.toThrow('RELOAD_UNSAVED_CHANGES');
+    await expect(app.reloadDemoData()).rejects.toSatisfy(isUnsavedChangesError);
     expect(events).toEqual(['save']);
     expect(app.db()).toBe(before);
     expect(teamNames(before)).toContain('Sao Mai');
+  });
+});
+
+describe('isUnsavedChangesError', () => {
+  it('tells the refusal of a replace apart from any other failure', () => {
+    expect(isUnsavedChangesError(new Error('boom'))).toBe(false);
+    expect(isUnsavedChangesError('RELOAD_UNSAVED_CHANGES')).toBe(false);
+    expect(isUnsavedChangesError(undefined)).toBe(false);
   });
 });
 
@@ -322,7 +330,7 @@ describe('backup files', () => {
     createTeam(app.db(), { name: 'Hừng Đông' });
     const before = app.db();
 
-    await expect(app.importBackup(preview)).rejects.toThrow('RELOAD_UNSAVED_CHANGES');
+    await expect(app.importBackup(preview)).rejects.toSatisfy(isUnsavedChangesError);
     expect(events).toEqual(['save']);
     expect(app.db()).toBe(before);
     expect(teamNames(before)).toContain('Hừng Đông');

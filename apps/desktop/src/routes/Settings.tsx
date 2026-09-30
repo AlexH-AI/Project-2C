@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { formatDate } from '@p2c/domain';
 import { Button, Dialog, TextField } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
+import { isUnsavedChangesError } from '../data/app-data';
 import { t } from '../i18n';
 import { BackupSection } from './SettingsBackup';
 
@@ -80,7 +81,7 @@ function ReloadDialog({ onClose }: { onClose: (outcome?: Outcome) => void }) {
       const backup = await data.reloadDemoData();
       onClose({ ok: true, anchor, backup });
     } catch (error) {
-      const unsaved = error instanceof Error && error.message === 'RELOAD_UNSAVED_CHANGES';
+      const unsaved = isUnsavedChangesError(error);
       onClose({ ok: false, unsaved });
     }
   };
