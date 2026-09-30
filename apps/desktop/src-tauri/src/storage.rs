@@ -187,8 +187,11 @@ fn claim_name(name: &str) -> String {
 
 /// Removes what an export cut short by a crash left in `exports\`: claims, `.tmp` files, and the
 /// empty file the first version of [`write_export`] kept under the final name — an empty file is
-/// never a real export. Runs at startup, holding the data lock, so no export is under way. Best
-/// effort: a file another program holds stays until a later start.
+/// never a real export. Runs when the webview opens the data, holding the data lock, so no other
+/// app instance is exporting. The lock is re-entrant within this process, though: a webview
+/// reloaded in the middle of an export can remove that export's claim or `.tmp`, and the export
+/// then fails at the rename — it never leaves a broken file or overwrites one. Best effort: a
+/// file another program holds stays until a later start.
 fn remove_interrupted_exports(exports: &Path) {
     for entry in fs::read_dir(exports).into_iter().flatten().flatten() {
         let Ok(meta) = entry.metadata() else { continue };

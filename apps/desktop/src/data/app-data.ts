@@ -185,7 +185,8 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     db = await next();
     changed();
     // Frees its WASM memory once the screens have re-rendered on the new database; a write to it
-    // before then is never saved (`generation`).
+    // before then is never saved (`generation`); after it, one throws. So callers must not keep a
+    // `db` across an `await`: read it again through `db()` / `run` instead.
     await new Promise((resolve) => setTimeout(resolve, 0));
     previous.sqlite.close();
     return backup;
