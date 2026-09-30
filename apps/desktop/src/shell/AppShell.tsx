@@ -35,7 +35,7 @@ export function AppShell() {
         </header>
         <main className="flex flex-col gap-4.5 px-6 pt-5 pb-8">
           <ScopeContext value={scope}>
-            <ErrorBoundary key={routeToHash(route)}>
+            <ErrorBoundary key={routeToHash(route)} resetKey={scope}>
               <Screen route={route} />
             </ErrorBoundary>
           </ScopeContext>
