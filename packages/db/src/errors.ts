@@ -43,6 +43,8 @@ export const DB_ERROR_CODES = [
   'SCHEMA_TOO_NEW',
   /** A backup file that is damaged or not a Project-2C backup. */
   'BACKUP_INVALID',
+  /** A backup file over `MAX_BACKUP_BYTES`; params `limitMb`. */
+  'BACKUP_TOO_LARGE',
 ] as const;
 
 export type DbErrorCode = (typeof DB_ERROR_CODES)[number];

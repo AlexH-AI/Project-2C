@@ -1,10 +1,13 @@
 import { calendarDate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
-import { BACKUP_FORMAT, exportBackup, importBackup } from './backup';
+import { scheduleAppointment } from './appointments';
+import { BACKUP_FORMAT, exportBackup, importBackup, MAX_BACKUP_BYTES } from './backup';
 import { createCustomer, listCustomers, softDeleteCustomer } from './customers';
 import { openDatabase } from './database';
 import { DbError } from './errors';
+import { recordKycNote } from './kyc';
 import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations';
+import { submitPolicy } from './policies';
 import { seedDemoData } from './seed';
 import { listTeams } from './team';
 import { setup } from './test-support';
@@ -12,6 +15,7 @@ import { setup } from './test-support';
 const SLOW = 60_000;
 const EXPORTED_AT = new Date(Date.UTC(2026, 8, 30, 7, 45, 0));
 const exportClock = () => EXPORTED_AT;
+const STAMP = EXPORTED_AT.toISOString();
 
 interface BackupJson {
   format: string;
@@ -20,10 +24,38 @@ interface BackupJson {
   tables: Record<string, Record<string, unknown>[]>;
 }
 
-/** A small database: one team, two REs, a TL, a live customer and a soft-deleted one. */
+/**
+ * A small database: one team, two REs, a TL, a live customer with a birth year, an appointment, a
+ * policy and a KYC note, and a soft-deleted customer — a row in every table a value check reads.
+ */
 async function small() {
   const { db, re } = await setup();
-  createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: calendarDate(2026, 9, 1) });
+  const date = calendarDate(2026, 9, 1);
+  const lan = createCustomer(db, {
+    name: 'Lan',
+    reId: re.id,
+    stage: 'N3',
+    date,
+    birthDate: { year: 1984 },
+  });
+  scheduleAppointment(db, {
+    customerId: lan.id,
+    reId: re.id,
+    date: calendarDate(2026, 9, 3),
+    time: '09:30',
+    triggerType: 'REFERRAL',
+  });
+  submitPolicy(db, {
+    customerId: lan.id,
+    reId: re.id,
+    submittedDate: date,
+    submittedFyp: 20_000_000,
+  });
+  recordKycNote(db, lan.id, {
+    text: 'Hai con',
+    date,
+    facts: [{ field: 'childrenCount', value: 2 }],
+  });
   const gone = createCustomer(db, {
     name: 'Minh',
     reId: re.id,
@@ -143,7 +175,7 @@ describe('importBackup', () => {
   it('loads a file from an older app at its own version, then runs the missing migrations', async () => {
     const old = await openDatabase({ migrations: MIGRATIONS.slice(0, 4) });
     old.sqlite.run(
-      "INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x')",
+      `INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', '${STAMP}', '${STAMP}')`,
     );
     const fake = {
       id: LATEST_SCHEMA_VERSION + 1,
@@ -184,12 +216,12 @@ describe('importBackup', () => {
   it('refuses an older file whose rows the missing migrations reject', async () => {
     const old = await openDatabase({ migrations: MIGRATIONS.slice(0, 4) });
     old.sqlite.run(
-      "INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x')",
+      `INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', '${STAMP}', '${STAMP}')`,
     );
     const fake = {
       id: LATEST_SCHEMA_VERSION + 1,
       tag: 'fake',
-      sql: "CREATE UNIQUE INDEX teams_name ON teams (name); INSERT INTO teams (id, name, created_at, updated_at) VALUES ('u', 'Sao Mai', 'x', 'x');",
+      sql: `CREATE UNIQUE INDEX teams_name ON teams (name); INSERT INTO teams (id, name, created_at, updated_at) VALUES ('u', 'Sao Mai', '${STAMP}', '${STAMP}');`,
     };
 
     const error = await importBackup(exportBackup(old), {
@@ -249,6 +281,66 @@ describe('importBackup', () => {
   it.each(damaged)('refuses a file with %s', async (_, damage) => {
     const backup = await smallBackup();
     expect(await codeOfImport(JSON.stringify(damage(backup)))).toBe('BACKUP_INVALID');
+  });
+
+  type Pick = (row: Record<string, unknown>, backup: BackupJson) => boolean;
+  const ofDeletedCustomer: Pick = (row, backup) =>
+    backup.tables.customers!.some((c) => c.id === row.customer_id && c.deleted_at !== null);
+  const badValues: [string, string, unknown, Pick?][] = [
+    ['appointments', 'date', 'hello'],
+    ['stage_transitions', 'date', '2026-02-30'],
+    ['policies', 'submitted_date', '26/09/2026'],
+    ['appointments', 'time', '25:00'],
+    ['kyc_facts', 'value_json', '{not json'],
+    ['kyc_facts', 'value_json', '"2"', (row) => row.field === 'childrenCount'],
+    ['kyc_facts', 'value_json', '-1', (row) => row.field === 'childrenCount'],
+    ['kyc_facts', 'value_json', '[2]', (row) => row.field === 'childrenCount'],
+    ['kyc_notes', 'created_date', '2026-13-01'],
+    ['customers', 'birth_date', '84'],
+    ['stage_transitions', 'seq', 0],
+    ['teams', 'created_at', 'x'],
+    ['customers', 'deleted_at', '2026-09-30'],
+    ['kyc_versions', 'date', '2026-9-1'],
+    ['stage_transitions', 'date', 'soon', ofDeletedCustomer],
+  ];
+
+  it.each(badValues)(
+    'refuses %s.%s = %j, the current database unchanged',
+    async (table, column, value, which) => {
+      const current = await small();
+      const before = current.export();
+      const backup = JSON.parse(exportBackup(current)) as BackupJson;
+      const rows = backup.tables[table]!;
+      const index = which ? rows.findIndex((row) => which(row, backup)) : 0;
+      expect(index).toBeGreaterThanOrEqual(0);
+      rows[index] = { ...rows[index], [column]: value };
+
+      expect(await codeOfImport(JSON.stringify(backup))).toBe('BACKUP_INVALID');
+      expect(current.export()).toEqual(before);
+    },
+  );
+
+  it('accepts a birth year alone, no time and a soft-deleted row with valid values', async () => {
+    const backup = await smallBackup();
+    const lan = backup.tables.customers!.find((c) => c.name === 'Lan')!;
+    expect(lan.birth_date).toBe('1984');
+    backup.tables.appointments![0]!.time = null;
+
+    const { db } = await importBackup(JSON.stringify(backup));
+
+    expect(listCustomers(db).map((c) => c.name)).toEqual(['Lan']);
+  });
+
+  it('refuses text longer than the limit before reading it as JSON', async () => {
+    const parse = vi.spyOn(JSON, 'parse');
+    const text = { length: MAX_BACKUP_BYTES + 1 } as unknown as string;
+
+    const error = await importBackup(text).catch((e: unknown) => e);
+
+    expect(MAX_BACKUP_BYTES).toBe(100 * 1024 * 1024);
+    expect(error).toMatchObject({ code: 'BACKUP_TOO_LARGE', params: { limitMb: 100 } });
+    expect(parse).not.toHaveBeenCalled();
+    parse.mockRestore();
   });
 
   it('refuses text that is not JSON, or JSON that is not a backup', async () => {

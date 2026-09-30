@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { DbError, LATEST_SCHEMA_VERSION } from '@p2c/db';
+import { DbError, LATEST_SCHEMA_VERSION, MAX_BACKUP_BYTES } from '@p2c/db';
 import { formatFileSize, formatLocalDateTime } from '@p2c/domain';
 import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
@@ -61,8 +61,14 @@ export function BackupSection() {
   };
 
   const readFile = async (file: File) => {
-    setBusy('read');
     setNotice(null);
+    // Refused unread: reading a file this big would freeze the app (spec §6).
+    if (file.size > MAX_BACKUP_BYTES) {
+      const limitMb = MAX_BACKUP_BYTES / 1024 / 1024;
+      setRefused({ name: file.name, error: new DbError('BACKUP_TOO_LARGE', { limitMb }) });
+      return;
+    }
+    setBusy('read');
     try {
       const preview = await data.readBackup(await file.text());
       setChosen({ name: file.name, preview, current: data.counts() });
@@ -250,8 +256,13 @@ function ImportDialog({ chosen, onClose }: { chosen: Chosen; onClose: (notice?: 
 
 /** Mockup 10b: the file cannot be used; the current data is untouched. */
 function RefusedDialog({ refused, onClose }: { refused: Refused; onClose: () => void }) {
-  const tooNew = refused.error.code === 'SCHEMA_TOO_NEW';
-  const params = refused.error.params;
+  const { code, params } = refused.error;
+  const [message, help] =
+    code === 'SCHEMA_TOO_NEW'
+      ? (['settings.backup.tooNew', 'settings.backup.tooNewHelp'] as const)
+      : code === 'BACKUP_TOO_LARGE'
+        ? (['settings.backup.tooLarge', 'settings.backup.tooLargeHelp'] as const)
+        : (['settings.backup.invalid', 'settings.backup.invalidHelp'] as const);
   return (
     <Dialog
       title={t('settings.backup.refusedTitle')}
@@ -261,12 +272,8 @@ function RefusedDialog({ refused, onClose }: { refused: Refused; onClose: () => 
       actions={<Button type="submit">{t('settings.backup.close')}</Button>}
     >
       <div role="alert" className={`${ALERT} border-danger`}>
-        <b className="text-danger">
-          {tooNew ? t('settings.backup.tooNew', params) : t('settings.backup.invalid')}
-        </b>
-        <span className="text-fg-2">
-          {t(tooNew ? 'settings.backup.tooNewHelp' : 'settings.backup.invalidHelp')}
-        </span>
+        <b className="text-danger">{t(message, params)}</b>
+        <span className="text-fg-2">{t(help)}</span>
       </div>
     </Dialog>
   );
