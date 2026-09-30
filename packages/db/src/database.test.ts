@@ -117,23 +117,27 @@ describe('openDatabase', () => {
 
   it('refuses a file made by a newer app, without migrating or saving it', async () => {
     const newer = await openDatabase();
-    newer.sqlite.run("INSERT INTO schema_migrations (id, applied_at) VALUES (6, 'x')");
+    const version = LATEST_SCHEMA_VERSION + 1;
+    newer.sqlite.run("INSERT INTO schema_migrations (id, applied_at) VALUES (?, 'x')", [version]);
     const persist = vi.fn();
 
     const error = await openDatabase({ bytes: newer.export(), persist }).catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(DbError);
-    expect(error).toMatchObject({ code: 'SCHEMA_TOO_NEW', params: { version: 6, supported: 5 } });
+    expect(error).toMatchObject({
+      code: 'SCHEMA_TOO_NEW',
+      params: { version, supported: LATEST_SCHEMA_VERSION },
+    });
     expect(persist).not.toHaveBeenCalled();
   });
 
   it('runs the given migrations instead of the app ones (tests pass fake ones)', async () => {
-    const fake = { id: 6, tag: '0005_fake', sql: 'ALTER TABLE teams ADD COLUMN color text;' };
+    const id = LATEST_SCHEMA_VERSION + 1;
+    const fake = { id, tag: 'fake', sql: 'ALTER TABLE teams ADD COLUMN color text;' };
     const db = await openDatabase({ migrations: [...MIGRATIONS, fake] });
 
-    expect(db.schemaVersion()).toBe(6);
+    expect(db.schemaVersion()).toBe(id);
     expect(columnNames(db, 'teams')).toContain('color');
-    expect(LATEST_SCHEMA_VERSION).toBe(5);
   });
 
   it('enforces foreign keys, also after the database was exported', async () => {

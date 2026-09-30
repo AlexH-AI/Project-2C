@@ -109,7 +109,12 @@ export async function openDatabase(options: OpenDatabaseOptions = {}): Promise<D
     export: exportBytes,
   };
 
-  migrate(db, migrations);
+  try {
+    migrate(db, migrations);
+  } catch (error) {
+    sqlite.close();
+    throw error;
+  }
   return db;
 }
 

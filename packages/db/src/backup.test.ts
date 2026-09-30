@@ -4,7 +4,7 @@ import { BACKUP_FORMAT, exportBackup, importBackup } from './backup';
 import { createCustomer, listCustomers, softDeleteCustomer } from './customers';
 import { openDatabase } from './database';
 import { DbError } from './errors';
-import { MIGRATIONS } from './migrations';
+import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations';
 import { seedDemoData } from './seed';
 import { listTeams } from './team';
 import { setup } from './test-support';
@@ -50,7 +50,7 @@ describe('exportBackup', () => {
 
     expect(Object.keys(backup)).toEqual(['format', 'schemaVersion', 'exportedAt', 'tables']);
     expect(backup.format).toBe(BACKUP_FORMAT);
-    expect(backup.schemaVersion).toBe(5);
+    expect(backup.schemaVersion).toBe(LATEST_SCHEMA_VERSION);
     expect(Object.keys(backup.tables)).toEqual([
       'appointment_coordinators',
       'appointments',
@@ -106,9 +106,9 @@ describe('importBackup', () => {
 
       const imported = await importBackup(first, { now: exportClock });
 
-      expect(imported.schemaVersion).toBe(5);
+      expect(imported.schemaVersion).toBe(LATEST_SCHEMA_VERSION);
       expect(imported.exportedAt).toBe('2026-09-30T07:45:00.000Z');
-      expect(imported.db.schemaVersion()).toBe(5);
+      expect(imported.db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
       expect(exportBackup(imported.db)).toBe(first);
     },
     SLOW,
@@ -130,11 +130,14 @@ describe('importBackup', () => {
 
   it('refuses a file from a newer app, naming both schema versions', async () => {
     const backup = await smallBackup();
-    backup.schemaVersion = 6;
+    backup.schemaVersion = LATEST_SCHEMA_VERSION + 1;
 
     const error = await importBackup(JSON.stringify(backup)).catch((e: unknown) => e);
 
-    expect(error).toMatchObject({ code: 'SCHEMA_TOO_NEW', params: { version: 6, supported: 5 } });
+    expect(error).toMatchObject({
+      code: 'SCHEMA_TOO_NEW',
+      params: { version: LATEST_SCHEMA_VERSION + 1, supported: LATEST_SCHEMA_VERSION },
+    });
   });
 
   it('loads a file from an older app at its own version, then runs the missing migrations', async () => {
@@ -143,8 +146,8 @@ describe('importBackup', () => {
       "INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x')",
     );
     const fake = {
-      id: 6,
-      tag: '0005_fake',
+      id: LATEST_SCHEMA_VERSION + 1,
+      tag: 'fake',
       sql: "ALTER TABLE teams ADD COLUMN color text DEFAULT 'blue';",
     };
 
@@ -153,7 +156,7 @@ describe('importBackup', () => {
     });
 
     expect(imported.schemaVersion).toBe(4);
-    expect(imported.db.schemaVersion()).toBe(6);
+    expect(imported.db.schemaVersion()).toBe(fake.id);
     expect(listTeams(imported.db).map((t) => t.name)).toEqual(['Sao Mai']);
     const after = JSON.parse(exportBackup(imported.db)) as BackupJson;
     expect(after.tables.teams).toEqual([
@@ -164,6 +167,46 @@ describe('importBackup', () => {
         .exec("SELECT name FROM pragma_table_info('appointments')")[0]
         ?.values.at(-1),
     ).toEqual(['outcome_reviewer_id']);
+  });
+
+  it('saves nothing while importing an older file: the app asks and backs up first', async () => {
+    const old = await openDatabase({ migrations: MIGRATIONS.slice(0, 4) });
+    const persist = vi.fn();
+
+    const { db } = await importBackup(exportBackup(old), { persist });
+
+    expect(persist).not.toHaveBeenCalled();
+    expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
+    db.transaction(() => undefined);
+    expect(persist).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses an older file whose rows the missing migrations reject', async () => {
+    const old = await openDatabase({ migrations: MIGRATIONS.slice(0, 4) });
+    old.sqlite.run(
+      "INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x')",
+    );
+    const fake = {
+      id: LATEST_SCHEMA_VERSION + 1,
+      tag: 'fake',
+      sql: "CREATE UNIQUE INDEX teams_name ON teams (name); INSERT INTO teams (id, name, created_at, updated_at) VALUES ('u', 'Sao Mai', 'x', 'x');",
+    };
+
+    const error = await importBackup(exportBackup(old), {
+      migrations: [...MIGRATIONS, fake],
+    }).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(DbError);
+    expect(error).toMatchObject({ code: 'BACKUP_INVALID' });
+  });
+
+  it('only meets integer and text columns, the two kinds a backup value can be', async () => {
+    const db = await openDatabase();
+    const types = db.sqlite.exec(
+      "SELECT DISTINCT lower(c.type) FROM sqlite_master t, pragma_table_info(t.name) c WHERE t.type = 'table' ORDER BY 1",
+    );
+
+    expect(types[0]?.values.flat()).toEqual(['integer', 'text']);
   });
 
   const damaged: [string, (backup: BackupJson) => unknown][] = [
