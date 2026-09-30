@@ -2,8 +2,8 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-10-01 · máy `DESKTOP-KDURKJP` (Home PC) · ghi phản hồi Owner sau kiểm exe (16 ý) + kế hoạch sửa đã duyệt; tạo #214–#217. `main` `39e76fd` (PR #213 đã merge)
-- **Nhánh:** `docs/owner-exe-feedback-2026-10-01` (PR docs-only). Không có PR code nào đang mở. Worktree review `Project-2C-review`, `Project-2C-review-2` trên Home PC: đưa về `origin/main` khi review
+- **Cập nhật:** 2026-10-01 (cuối ngày) · máy `DESKTOP-KDURKJP` (Home PC) · phản hồi Owner sau kiểm exe (16 ý) + kế hoạch sửa đã duyệt đã vào `main` (PR #218, `main` `d6a45d0`); Issue #214–#217 đã tạo, **chưa bắt đầu task nào**
+- **Nhánh:** `main` (sạch). Không có PR nào đang mở. Worktree review `Project-2C-review`, `Project-2C-review-2` trên Home PC: đưa về `origin/main` khi review
 - **Phiên song song:** có thể có phiên khác trên cùng checkout — commit theo pathspec, không `git add -A`
 - **Repo public** (27/09) · **ruleset `protect-main`** (28/09): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
 - **Model / effort:** Owner chọn từng phiên (ADR-0001 M1). Chỉ Claude Code viết code, không subagent, cổng G1–G8. **Codex chỉ review độc lập khi đóng phase** (ADR-0001 M2)
