@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 3 — business screens and data (milestone "Phase 3 — Nghiệp vụ & màn hình", 43 issues from #57 to #210). All work is merged except #72 T-053 (phase close): it waits for the OWNER's manual exe check and G7. Phases 1 and 2 are closed. Overall progress ≈ 60% to v1.0 once Phase 3 closes (see `docs/PROJECT-PLAN.md` §5).
+Phase 3 — business screens and data (milestone "Phase 3 — Nghiệp vụ & màn hình", 43 issues from #57 to #210). Open: the OWNER's exe feedback of 2026-10-01 (#214–#217, then B1–B6) and #72 T-053 (phase close), which waits for that work, a new manual exe check, two independent reviews and G7. Phases 1 and 2 are closed. Overall progress ≈ 60% to v1.0 once Phase 3 closes (see `docs/PROJECT-PLAN.md` §5).
 
 ## Canonical repository
 
@@ -60,5 +60,6 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
 - 2026-09-29: ADR-0001 appendix M1 — the OWNER picks the Claude Code model and effort for each session; the repo no longer pins "Opus 5.5, effort medium".
 - 2026-09-30: ADR-0001 appendix M2 (Issue #198) — Codex joins 2C only as an independent reviewer at phase close (run by the OWNER); it does not write code or review task PRs. Its report adds to, not replaces, the clean-session review; Claude checks each finding before filing Issues or fixing. Claude still writes 100% of the code; OpenCode (CLI), Muse Code, Cursor stay out; no subagents.
 - 2026-09-30: Batch 1 of the big review merged: #202 T-077 (PR #206), #203 T-078 (PR #208, backup import checks every value, 100 MB limit), #204 T-079 (PR #209, cross-table invariants), #210 T-080 (PR #211, tests). `main` `abdff20`: `pnpm verify` 757 tests, `pnpm e2e` 95/95, exe build green. #72 T-053: `docs/metrics/phase-3.md`, the merged review report in `docs/reviews/2026-09-30-phase-1-3-tong-hop.md`, docs drift F-10 fixed, review process rules P-1…P-3 (skill `review-pr`, `docs/agents/issue-tracker.md`, HANDOFF ledger) and the ECharts escape item in `docs/process/REVIEW-CHECKLIST.md` (F-18). Waiting for the OWNER: manual exe check, then G7.
+- 2026-10-01: OWNER tested the exe and sent 16 UI/feature requests (full list and decisions in `docs/state/HANDOFF.md`, "Phản hồi Owner sau kiểm exe"). OWNER approved the plan: batch A (#214 T-081 labels, #215 T-082 RE order by team, #216 T-083 scope picker size + only on Customers/Appointments) and batch B (#217 T-084 mockup → G3 → B1–B6: Team header with TL, RE chip row on Customers/Appointments shared by both tabs, week/custom range highlight, date colouring, 12-month year grid) are done in Phase 3 **before G7**; G7 waits for a new manual exe check and two independent reviews. Request 9 (Overview on real data: stage counts as an end-of-period snapshot, 1 chart for All/RE, 3 charts for Team) moves to Phase 4 with G2 + G3.
 - Project-2 should adopt the upstream skill renames (`to-prd` → `to-spec`, `to-issues` → `to-tickets`).
 - ADR-0003 still mentions `/resume` and branch protection; the actual practice is `/session-start` and the pre-push hook (#3). Left as-is (accepted ADR text); `CLAUDE.md` and the plan are current.
