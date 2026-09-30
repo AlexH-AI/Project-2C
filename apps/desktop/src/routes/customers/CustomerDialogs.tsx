@@ -59,11 +59,11 @@ export const dayRead = (date: CalendarDate) =>
   t('date.read', { weekday: t(`weekdayLong.${weekdayOf(date)}`), date: formatDate(date) });
 
 /**
- * A quick date field defaulting to today, showing the day it understood (mockup `.read`); a day
- * after today is refused.
+ * A quick date field defaulting to today (or `initial`), showing the day it understood (mockup
+ * `.read`); a day after today is refused.
  */
-export function useDateField(today: CalendarDate) {
-  const [text, setText] = useState(formatDate(today));
+export function useDateField(today: CalendarDate, initial: CalendarDate = today) {
+  const [text, setText] = useState(formatDate(initial));
   const parsed = parseRecordDate(text, today);
   return {
     text,

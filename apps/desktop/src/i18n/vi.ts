@@ -386,6 +386,7 @@ export const vi = {
   'outcome.caseSizePositive': 'Case size phải lớn hơn 0 (hoặc để trống).',
   'outcome.note': 'Ghi chú cuộc gặp',
   'outcome.noteHelp': 'Ghi chú cuộc gặp không phải ghi chú KYC.',
+  'outcome.kycNote': '+ Ghi chú KYC từ cuộc gặp này',
   'outcome.noteOther': 'Ghi chú',
   'outcome.missing': 'Đã gặp thì cần nhóm sau cuộc gặp và việc tiếp theo',
   'outcome.missingHelp': 'Case size được để trống.',
