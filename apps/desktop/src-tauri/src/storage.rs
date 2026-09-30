@@ -2,6 +2,7 @@
 //!
 //! Layout next to the exe: `Project2C-data\project2c.db`, `project2c.lock`, `backups\`, `exports\`.
 
+use std::ffi::OsString;
 use std::fs;
 use std::io::{self, ErrorKind, Write};
 use std::path::{Path, PathBuf};
@@ -367,6 +368,17 @@ pub fn folder(dir: &Path, kind: &str) -> io::Result<PathBuf> {
     let path = dir.join(name);
     fs::create_dir_all(&path)?;
     Ok(path)
+}
+
+/// The command-line argument that makes Explorer show `path`. Always quoted and passed raw:
+/// `std` quotes an argument only when it has a space or tab, and Explorer splits an unquoted one
+/// at commas (`/select,…`), so `D:\Apps\P2C,v2\…` opened Documents instead. A Windows path
+/// never contains `"`, so nothing inside needs escaping.
+pub fn explorer_arg(path: &Path) -> OsString {
+    let mut arg = OsString::from("\"");
+    arg.push(path);
+    arg.push("\"");
+    arg
 }
 
 fn find_copy(backups: &Path, bytes: &[u8]) -> Option<String> {
@@ -1050,6 +1062,21 @@ mod tests {
         for kind in ["", "..", "Backups", "C:\\Windows", "exports\\..\\.."] {
             let error = folder(&dir, kind).unwrap_err();
             assert_eq!(error.kind(), ErrorKind::InvalidInput);
+        }
+    }
+
+    #[test]
+    fn explorer_arg_quotes_the_path_and_keeps_it_verbatim() {
+        for path in [
+            r"D:\Apps\P2C,v2\Project2C-data\exports",
+            r"D:\My Apps\P2C, v2\Project2C-data\backups",
+            r"D:\Apps\Project-2C\Project2C-data\exports",
+            r"C:\Program Files\Project-2C\Project2C-data\backups",
+        ] {
+            assert_eq!(
+                explorer_arg(Path::new(path)),
+                OsString::from(format!("\"{path}\""))
+            );
         }
     }
 

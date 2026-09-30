@@ -86,12 +86,13 @@ fn db_latest_backup() -> Result<Option<String>, String> {
 #[tauri::command(async)]
 fn open_folder(kind: String) -> Result<(), String> {
     let path = storage::folder(&data_dir()?, &kind).map_err(|e| e.to_string())?;
+    let mut explorer = std::process::Command::new("explorer.exe");
+    #[cfg(windows)]
+    std::os::windows::process::CommandExt::raw_arg(&mut explorer, storage::explorer_arg(&path));
+    #[cfg(not(windows))]
+    explorer.arg(path);
     // Not waited on: Explorer reports exit code 1 even when it opened the folder.
-    std::process::Command::new("explorer.exe")
-        .arg(path)
-        .spawn()
-        .map(drop)
-        .map_err(|e| e.to_string())
+    explorer.spawn().map(drop).map_err(|e| e.to_string())
 }
 
 pub fn run() {
