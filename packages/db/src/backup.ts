@@ -34,13 +34,14 @@ export function exportBackup(db: Database): string {
   const tables: Record<string, Row[]> = {};
   for (const table of dataTables(db.sqlite)) {
     const columns = columnsOf(db.sqlite, table);
-    const names = columns.map((c) => quote(c.name)).join(', ');
     const key = columns
       .filter((c) => c.pk > 0)
       .sort((a, b) => a.pk - b.pk)
       .map((c) => quote(c.name))
       .join(', ');
-    const result = db.sqlite.exec(`SELECT ${names} FROM ${quote(table)} ORDER BY ${key}`);
+    const result = db.sqlite.exec(
+      `SELECT ${columnList(columns)} FROM ${quote(table)} ORDER BY ${key}`,
+    );
     tables[table] = (result[0]?.values ?? []).map((values) =>
       Object.fromEntries(columns.map((c, i) => [c.name, values[i]!])),
     );
@@ -56,7 +57,8 @@ export function exportBackup(db: Database): string {
 /**
  * Builds a database at the file's schema version, loads the rows, then runs the migrations the
  * file is missing. Rejects with `SCHEMA_TOO_NEW` or `BACKUP_INVALID`; the open database is never
- * touched. `options` are those of the new database (`persist` fires only for later transactions).
+ * touched. `options` are those of the new database: nothing is saved while importing, `persist`
+ * fires only for later transactions (the app asks and backs up the current file first, spec §6).
  */
 export async function importBackup(
   text: string,
@@ -65,25 +67,38 @@ export async function importBackup(
   const file = parse(text);
   const migrations = options.migrations ?? MIGRATIONS;
   assertSupported(file.schemaVersion, migrations);
-  // Staged apart: never from the caller's bytes, never saved.
-  const staging = await openDatabase({
-    ...options,
-    bytes: undefined,
-    persist: undefined,
-    migrations: migrations.filter((m) => m.id <= file.schemaVersion),
-  });
-  let bytes: Uint8Array;
+  const loaded = await staged(
+    {
+      ...options,
+      bytes: undefined,
+      migrations: migrations.filter((m) => m.id <= file.schemaVersion),
+    },
+    (staging) => load(staging, file.tables),
+  );
+  // Migrating is a transaction, which would persist: run it apart too.
+  const migrated = await staged({ ...options, bytes: loaded, migrations }, () => undefined);
+  const db = await openDatabase({ ...options, bytes: migrated, migrations });
+  return { db, exportedAt: file.exportedAt, schemaVersion: file.schemaVersion };
+}
+
+/**
+ * Opens a database that is never saved, runs `fn` on it and returns its bytes. Errors of SQLite
+ * (CHECK, UNIQUE, NOT NULL, a migration the file's rows break) mean a damaged file too.
+ */
+async function staged(
+  options: OpenDatabaseOptions,
+  fn: (db: Database) => void,
+): Promise<Uint8Array> {
+  let db: Database | undefined;
   try {
-    load(staging, file.tables);
-    bytes = staging.export();
+    db = await openDatabase({ ...options, persist: undefined });
+    fn(db);
+    return db.export();
   } catch (error) {
-    // Constraint errors of SQLite (CHECK, UNIQUE, NOT NULL) mean a damaged file too.
     throw error instanceof DbError ? error : invalid();
   } finally {
-    staging.sqlite.close();
+    db?.sqlite.close();
   }
-  const db = await openDatabase({ ...options, bytes, migrations });
-  return { db, exportedAt: file.exportedAt, schemaVersion: file.schemaVersion };
 }
 
 function parse(text: string): z.infer<typeof envelope> {
@@ -106,7 +121,7 @@ function load(db: Database, tables: Record<string, Record<string, unknown>[]>): 
   db.transaction(() => {
     for (const table of names) {
       const columns = columnsOf(db.sqlite, table);
-      const insert = `INSERT INTO ${quote(table)} (${columns.map((c) => quote(c.name)).join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`;
+      const insert = `INSERT INTO ${quote(table)} (${columnList(columns)}) VALUES (${columns.map(() => '?').join(', ')})`;
       for (const row of tables[table]!) {
         if (
           !sameSet(
@@ -151,7 +166,10 @@ function columnsOf(sqlite: SqlJsDatabase, table: string): Column[] {
   }));
 }
 
-/** The file's value for an insert; SQLite alone would store text in an integer column. */
+/**
+ * The file's value for an insert; SQLite alone would store text in an integer column. The schema
+ * has integer and text columns only (a test checks it): a new kind of column needs a case here.
+ */
 function valueOf(column: Column, value: unknown): SqlValue {
   if (value === null) return null;
   if (column.type === 'integer' && Number.isSafeInteger(value)) return value as number;
@@ -161,6 +179,8 @@ function valueOf(column: Column, value: unknown): SqlValue {
 
 const sameSet = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && b.every((name) => a.includes(name));
+
+const columnList = (columns: readonly Column[]) => columns.map((c) => quote(c.name)).join(', ');
 
 const quote = (name: string) => `"${name.replaceAll('"', '""')}"`;
 
