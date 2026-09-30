@@ -454,6 +454,9 @@ export const vi = {
   'storage.tooNewHelp':
     'File dùng schema v{version}, app này chỉ đọc tới v{supported}. Hãy dùng bản app mới hơn. App không thay đổi gì trong file.',
   'startup.loading': 'Đang mở dữ liệu…',
+  'screenError.title': 'Màn này gặp lỗi và không hiển thị được',
+  'screenError.help':
+    'Dữ liệu đã lưu không bị ảnh hưởng. Chọn một màn khác ở thanh bên để làm tiếp; nếu lỗi lặp lại, gửi chi tiết kỹ thuật dưới đây cho người hỗ trợ.',
   'settings.file.title': 'File dữ liệu',
   'settings.file.schema': 'schema v{version}',
   'settings.file.location': 'Vị trí',
