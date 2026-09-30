@@ -16,6 +16,8 @@ const BACKUP_DIR: &str = "backups";
 const EXPORT_DIR: &str = "exports";
 const BACKUP_PREFIX: &str = "project2c-";
 const KEEP_BACKUPS: usize = 10;
+/// How many `-n` suffixes an export tries before giving up.
+const MAX_EXPORT_SUFFIX: u32 = 1000;
 /// Digits of the write order in a backup name, zero-padded so the folder lists in order.
 const SEQ_WIDTH: usize = 8;
 const SQLITE_HEADER: &[u8] = b"SQLite format 3\0";
@@ -124,7 +126,8 @@ pub fn save(dir: &Path, bytes: &[u8]) -> io::Result<()> {
     write_atomic(dir, DB_FILE, bytes)
 }
 
-/// Writes an export file into `exports\` and returns its path.
+/// Writes an export file into `exports\` and returns its path. An earlier export is never
+/// overwritten: a taken name gets `-2`, `-3`… before `.p2cbackup` (spec §6).
 pub fn write_export(dir: &Path, name: &str, bytes: &[u8]) -> io::Result<PathBuf> {
     if !is_export_name(name) {
         return Err(io::Error::new(
@@ -133,8 +136,44 @@ pub fn write_export(dir: &Path, name: &str, bytes: &[u8]) -> io::Result<PathBuf>
         ));
     }
     let exports = dir.join(EXPORT_DIR);
-    write_atomic(&exports, name, bytes)?;
-    Ok(exports.join(name))
+    fs::create_dir_all(&exports)?;
+    let free = claim_export_name(&exports, name)?;
+    // The claimed name is ours alone, so its `.tmp` is too; the rename replaces only our claim.
+    if let Err(error) = write_atomic(&exports, &free, bytes) {
+        let _ = fs::remove_file(exports.join(&free));
+        return Err(error);
+    }
+    Ok(exports.join(free))
+}
+
+/// Creates an empty file under the first free name (`create_new`, so two exports at once never
+/// get the same one) and returns that name.
+fn claim_export_name(exports: &Path, name: &str) -> io::Result<String> {
+    let stem = name.strip_suffix(".p2cbackup").unwrap_or(name);
+    for n in 1..=MAX_EXPORT_SUFFIX {
+        let candidate = if n == 1 {
+            name.to_owned()
+        } else {
+            format!("{stem}-{n}.p2cbackup")
+        };
+        let path = exports.join(&candidate);
+        match fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)
+        {
+            Ok(_) => return Ok(candidate),
+            // Windows reports a folder under that name as access denied, not as existing.
+            Err(error)
+                if error.kind() == ErrorKind::AlreadyExists
+                    || fs::symlink_metadata(&path).is_ok() => {}
+            Err(error) => return Err(error),
+        }
+    }
+    Err(io::Error::new(
+        ErrorKind::AlreadyExists,
+        format!("no free export name for {name}"),
+    ))
 }
 
 /// Formats seconds since 1970 (already shifted to local time) as `YYYYMMDD-HHMMSS`.
@@ -801,6 +840,38 @@ mod tests {
             let error = write_export(&dir, name, b"x").unwrap_err();
             assert_eq!(error.kind(), ErrorKind::InvalidInput, "{name}");
         }
+    }
+
+    #[test]
+    fn write_export_never_overwrites_an_earlier_export() {
+        let dir = temp_dir();
+        let name = "project2c-20260930-0745.p2cbackup";
+        let first = write_export(&dir, name, b"first").unwrap();
+        let second = write_export(&dir, name, b"second").unwrap();
+        let third = write_export(&dir, name, b"third").unwrap();
+        let exports = dir.join(EXPORT_DIR);
+        assert_eq!(first, exports.join(name));
+        assert_eq!(second, exports.join("project2c-20260930-0745-2.p2cbackup"));
+        assert_eq!(third, exports.join("project2c-20260930-0745-3.p2cbackup"));
+        assert_eq!(fs::read(&first).unwrap(), b"first");
+        assert_eq!(fs::read(&second).unwrap(), b"second");
+        assert_eq!(fs::read(&third).unwrap(), b"third");
+        let mut left: Vec<_> = fs::read_dir(&exports)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+            .collect();
+        left.sort();
+        assert_eq!(left.len(), 3, "no .tmp left behind: {left:?}");
+    }
+
+    #[test]
+    fn write_export_skips_a_name_taken_by_a_folder() {
+        let dir = temp_dir();
+        let exports = dir.join(EXPORT_DIR);
+        fs::create_dir_all(exports.join("a.p2cbackup")).unwrap();
+        let path = write_export(&dir, "a.p2cbackup", b"x").unwrap();
+        assert_eq!(path, exports.join("a-2.p2cbackup"));
+        assert_eq!(fs::read(&path).unwrap(), b"x");
     }
 
     #[test]

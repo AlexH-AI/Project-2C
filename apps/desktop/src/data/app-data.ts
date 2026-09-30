@@ -25,7 +25,7 @@ export interface StoragePort {
   save(bytes: Uint8Array): Promise<void>;
   /** Copies the saved file into `backups\`; returns the backup's file name. */
   backup(): Promise<string>;
-  /** Writes a `.p2cbackup` file into `exports\`; returns its path. */
+  /** Writes a `.p2cbackup` file into `exports\` (never over an earlier one); returns its path. */
   writeExport(name: string, bytes: Uint8Array): Promise<string>;
 }
 
@@ -42,7 +42,10 @@ export interface ExportedBackup {
   /** `project2c-YYYYMMDD-HHMM.p2cbackup`, local time. */
   readonly name: string;
   readonly text: string;
-  /** Where the exe wrote the file; `undefined` in web mode, where the screen downloads `text`. */
+  /**
+   * Where the exe wrote the file, with a `-n` suffix when `name` was taken; `undefined` in web
+   * mode, where the screen downloads `text`.
+   */
   readonly path: string | undefined;
 }
 
@@ -103,6 +106,12 @@ export interface OpenAppDataOptions {
   /** Local time for export file names; tests pin it. */
   readonly clock?: () => Date;
 }
+
+const UNSAVED_CHANGES = 'RELOAD_UNSAVED_CHANGES';
+
+/** The refusal of `reloadDemoData` / `importBackup` while the last save failed. */
+export const isUnsavedChangesError = (error: unknown): boolean =>
+  error instanceof Error && error.message === UNSAVED_CHANGES;
 
 /** The same seed on every machine: the same day gives the same data (spec §7). */
 const DEMO_SEED = 1;
@@ -166,7 +175,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   // then swap. A failed save would leave changes out of the backup, so it refuses instead.
   const replace = async (next: () => Promise<Database>): Promise<string | undefined> => {
     await saves.idle();
-    if (saves.failed()) throw new Error('RELOAD_UNSAVED_CHANGES');
+    if (saves.failed()) throw new Error(UNSAVED_CHANGES);
     const backup = await storage?.backup();
     db = await next();
     changed();
