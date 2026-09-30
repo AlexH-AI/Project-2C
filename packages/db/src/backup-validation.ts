@@ -16,8 +16,7 @@ import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
 import type { Database } from './database';
 import { DbError } from './errors';
-import { normalizeKycValue } from './kyc';
-import { GENDERS } from './schema';
+import { GENDER_LABELS, normalizeKycValue } from './kyc';
 
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const YEAR = /^\d{4}$/;
@@ -90,39 +89,49 @@ function validKycValue(field: string, json: string): boolean {
 
 type Row = Record<string, SqlValue>;
 
+/** A rule across tables, by its number in spec §6. */
+type Rule = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+
 /**
- * Throws `BACKUP_INVALID` when the tables disagree in a way no command could leave them (spec §6):
- * run after `validateBackupValues`, on rows whose every value is readable. A rule about live data
- * only reads live rows, so records soft-deleted by the commands still load. `seq` is unique per
- * customer by the tables' own UNIQUE indexes, checked while loading.
+ * Throws `BACKUP_INVALID`, params `rule` (the first rule of spec §6 broken), when the tables
+ * disagree in a way no command could leave them: run after `validateBackupValues`, on rows whose
+ * every value is readable. A rule about live data only reads live rows, so records soft-deleted
+ * by the commands still load. `seq` is unique per customer by the tables' own UNIQUE indexes,
+ * checked while loading.
  */
 export function validateBackupInvariants(db: Database): void {
   const read = (sql: string) => rowsOf(db.sqlite, sql);
   const customers = read('SELECT * FROM customers');
   const transitions = read('SELECT * FROM stage_transitions ORDER BY customer_id, seq');
   const appointments = read('SELECT * FROM appointments');
-  const valid =
-    transitionsHold(customers, transitions) &&
-    meetingsHold(appointments, transitions) &&
-    ownersHold(read, appointments) &&
-    kycHolds(read, customers);
-  if (!valid) throw new DbError('BACKUP_INVALID');
+  const broken =
+    transitionRule(customers, transitions) ??
+    meetingRule(appointments, transitions) ??
+    ownerRule(read, appointments) ??
+    kycRule(read, customers);
+  if (broken !== null) throw new DbError('BACKUP_INVALID', { rule: broken });
 }
 
 /** Rules 1–3: each customer's transitions chain from creation to its stage (ADR-0007, D10). */
-function transitionsHold(customers: Row[], transitions: Row[]): boolean {
+function transitionRule(customers: Row[], transitions: Row[]): Rule | null {
   const byCustomer = groupBy(transitions, 'customer_id');
-  return customers.every((customer) => {
+  for (const customer of customers) {
     const [first, ...later] = byCustomer.get(customer.id) ?? [];
     // Created in an open stage; only an appointment's transition is ever withdrawn, never the first.
-    if (!first || first.from_stage !== null || first.deleted_at !== null) return false;
-    if (!OPEN_STAGES.includes(first.to_stage) || later.some((t) => t.from_stage === null)) {
-      return false;
+    if (
+      !first ||
+      first.from_stage !== null ||
+      first.deleted_at !== null ||
+      !OPEN_STAGES.includes(first.to_stage) ||
+      later.some((t) => t.from_stage === null)
+    ) {
+      return 1;
     }
     const live = [first, ...later].filter((t) => t.deleted_at === null);
-    const chained = live.slice(1).every((t, i) => follows(live[i]!, t));
-    return chained && live.at(-1)!.to_stage === customer.stage;
-  });
+    if (!live.slice(1).every((t, i) => follows(live[i]!, t))) return 3;
+    if (live.at(-1)!.to_stage !== customer.stage) return 2;
+  }
+  return null;
 }
 
 /** `next` goes on from `previous`: same stage, not an earlier day, an allowed move. */
@@ -138,23 +147,25 @@ function follows(previous: Row, next: Row): boolean {
   }
 }
 
-/** Rule 4: a live transition caused by a meeting carries its customer, day and stage after. */
-function meetingsHold(appointments: Row[], transitions: Row[]): boolean {
+/**
+ * Rule 4: a live transition caused by a meeting carries its customer, day and stage after, and the
+ * meeting is live too: deleting an appointment withdraws its transition (D7).
+ */
+function meetingRule(appointments: Row[], transitions: Row[]): Rule | null {
   const byId = new Map(appointments.map((a) => [a.id, a]));
   const caused = transitions.filter((t) => t.deleted_at === null && t.appointment_id !== null);
   const once = new Set(caused.map((t) => t.appointment_id)).size === caused.length;
-  return (
-    once &&
-    caused.every((t) => {
-      const a = byId.get(t.appointment_id)!;
-      return (
-        a.customer_id === t.customer_id &&
-        a.status === 'MET' &&
-        a.stage_after === t.to_stage &&
-        a.date === t.date
-      );
-    })
-  );
+  const matching = caused.every((t) => {
+    const a = byId.get(t.appointment_id)!;
+    return (
+      a.deleted_at === null &&
+      a.customer_id === t.customer_id &&
+      a.status === 'MET' &&
+      a.stage_after === t.to_stage &&
+      a.date === t.date
+    );
+  });
+  return once && matching ? null : 4;
 }
 
 /**
@@ -162,7 +173,7 @@ function meetingsHold(appointments: Row[], transitions: Row[]): boolean {
  * once their records are deleted); the RE never coordinates their own appointment; an appointment
  * is rescheduled from one of the same customer (D3).
  */
-function ownersHold(read: (sql: string) => Row[], appointments: Row[]): boolean {
+function ownerRule(read: (sql: string) => Row[], appointments: Row[]): Rule | null {
   const notRe = read(
     ['customers', 'appointments', 'policies']
       .map(
@@ -180,7 +191,7 @@ function ownersHold(read: (sql: string) => Row[], appointments: Row[]): boolean 
     const from = byId.get(a.rescheduled_from_id)!;
     return from.customer_id === a.customer_id && from.status === 'RESCHEDULED';
   });
-  return notRe.length === 0 && selfCoordinating.length === 0 && rescheduled;
+  return notRe.length === 0 && selfCoordinating.length === 0 && rescheduled ? null : 5;
 }
 
 /**
@@ -188,28 +199,30 @@ function ownersHold(read: (sql: string) => Row[], appointments: Row[]): boolean 
  * active fact or at least two in conflict; the birth year and gender in effect are the profile's,
  * from a `SYSTEM` note.
  */
-function kycHolds(read: (sql: string) => Row[], customers: Row[]): boolean {
+function kycRule(read: (sql: string) => Row[], customers: Row[]): Rule | null {
   const facts = read(
     'SELECT f.*, n.customer_id AS note_customer_id, n.source FROM kyc_facts f JOIN kyc_notes n ON n.id = f.note_id',
   );
   const byCustomer = new Map(customers.map((c) => [c.id, c]));
   const counts = new Map<string, { active: number; conflict: number }>();
   for (const fact of facts) {
-    if (fact.note_customer_id !== fact.customer_id) return false;
+    if (fact.note_customer_id !== fact.customer_id) return 6;
     const key = `${String(fact.customer_id)}\n${String(fact.field)}`;
     const count = counts.get(key) ?? { active: 0, conflict: 0 };
     counts.set(key, count);
     if (fact.status === 'superseded') continue;
     count[fact.status as 'active' | 'conflict']++;
-    if (fact.status === 'active' && String(fact.field) in PROFILE_VALUES) {
-      const profile = PROFILE_VALUES[fact.field as keyof typeof PROFILE_VALUES];
+    const field = String(fact.field);
+    if (fact.status === 'active' && Object.hasOwn(PROFILE_VALUES, field)) {
+      const profile = PROFILE_VALUES[field as keyof typeof PROFILE_VALUES];
       const expected = profile(byCustomer.get(fact.customer_id)!);
-      if (fact.source !== 'SYSTEM' || fact.value_json !== expected) return false;
+      if (fact.source !== 'SYSTEM' || fact.value_json !== expected) return 8;
     }
   }
-  return [...counts.values()].every(
+  const settled = [...counts.values()].every(
     ({ active, conflict }) => (active === 1 && conflict === 0) || (active === 0 && conflict >= 2),
   );
+  return settled ? null : 7;
 }
 
 /** JSON of the birth year and gender facts the profile writes (`recordProfileFacts`, D2). */
@@ -219,11 +232,10 @@ const PROFILE_VALUES = {
       ? null
       : JSON.stringify(Number(String(customer.birth_date).slice(0, 4))),
   gender: (customer: Row) =>
-    customer.gender === null ? null : JSON.stringify(GENDER_LABELS[customer.gender as Gender]),
+    customer.gender === null
+      ? null
+      : JSON.stringify(GENDER_LABELS[customer.gender as keyof typeof GENDER_LABELS]),
 };
-/** Same labels as `kyc.ts` writes. */
-const GENDER_LABELS: Readonly<Record<Gender, string>> = { MALE: 'Nam', FEMALE: 'Nữ' };
-type Gender = (typeof GENDERS)[number];
 
 function groupBy(rows: Row[], column: string): Map<unknown, Row[]> {
   const groups = new Map<unknown, Row[]>();

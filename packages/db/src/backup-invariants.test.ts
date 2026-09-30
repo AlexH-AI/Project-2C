@@ -157,6 +157,10 @@ describe('importBackup — rules across tables', () => {
     expect(listCustomers(imported.db)).toHaveLength(3);
   });
 
+  /**
+   * Each label starts with the number of the rule it breaks (spec §6), which the error names, so a
+   * case cannot pass on another rule; UNIQUE is caught by the schema while loading.
+   */
   const broken: [string, (b: BackupJson, ids: Ids) => void][] = [
     [
       '1: a customer created in a closed stage',
@@ -206,6 +210,11 @@ describe('importBackup — rules across tables', () => {
       },
     ],
     [
+      '4: a live transition caused by a deleted appointment (D7)',
+      (b, ids) =>
+        (row(b, 'appointments', (a) => a.id === ids.met).deleted_at = '2026-09-26T08:00:00.000Z'),
+    ],
+    [
       '4: an appointment with two live transitions',
       (b, ids) => {
         Object.assign(transition(b, ids.lan, 3), { to_stage: 'LOST', date: '2026-09-10' });
@@ -250,7 +259,7 @@ describe('importBackup — rules across tables', () => {
       },
     ],
     [
-      '6: two notes of a customer with the same seq',
+      'UNIQUE: two notes of a customer with the same seq',
       (b, ids) => (row(b, 'kyc_notes', (n) => n.customer_id === ids.lan && n.seq === 2).seq = 1),
     ],
     [
@@ -282,7 +291,7 @@ describe('importBackup — rules across tables', () => {
     ],
   ];
 
-  it.each(broken)('refuses %s, the current database unchanged', async (_, damage) => {
+  it.each(broken)('refuses %s, the current database unchanged', async (label, damage) => {
     const { db, persist, ids } = await history();
     const before = db.export();
     const backup = JSON.parse(exportBackup(db)) as BackupJson;
@@ -291,7 +300,11 @@ describe('importBackup — rules across tables', () => {
     const error = await importBackup(JSON.stringify(backup)).catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(DbError);
+    const rule = label.split(':')[0];
     expect(error).toMatchObject({ code: 'BACKUP_INVALID' });
+    expect((error as DbError).params).toEqual(
+      rule === 'UNIQUE' ? undefined : { rule: Number(rule) },
+    );
     expect(db.export()).toEqual(before);
     expect(persist).not.toHaveBeenCalled();
   });

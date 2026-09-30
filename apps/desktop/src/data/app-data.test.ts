@@ -439,12 +439,20 @@ describe('backup files', () => {
   it.each([
     ['a date that does not exist', '"date":"2026-09-27"', '"date":"2026-02-30"'],
     ['a stage its transitions never reached', '"stage":"N3"', '"stage":"N1"'],
+    ['a customer whose RE is a TL', '"role":"RE"', '"role":"TL"'],
+    ['a gender other than its KYC fact', '"gender":"FEMALE"', '"gender":"MALE"'],
   ])('rejects a file with %s before counting its records', async (_, from, to) => {
     const source = await openAppData({
       seed: (db) => {
         const team = createTeam(db, { name: 'Sao Mai' });
         const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
-        const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: TODAY });
+        const lan = createCustomer(db, {
+          name: 'Lan',
+          reId: re.id,
+          stage: 'N3',
+          date: TODAY,
+          gender: 'FEMALE',
+        });
         scheduleAppointment(db, {
           customerId: lan.id,
           reId: re.id,

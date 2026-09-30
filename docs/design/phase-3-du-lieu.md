@@ -215,11 +215,11 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
     - `seq` ≥ 1;
     - `kyc_facts.value_json`: JSON parse được, là chuỗi / số / true-false và đã chuẩn hóa theo kiểu của trường (`normalizeKycValue` không đổi giá trị: `"2"` cho `childrenCount` bị từ chối);
     - tiền là số nguyên dương: CHECK của schema.
-  - **Kiểm bất biến liên bảng** (#204, `validateBackupInvariants`, chạy sau kiểm giá trị; Phase 6 kéo snapshot dùng lại): các giá trị đều hợp lệ nhưng bảng mâu thuẫn nhau → `BACKUP_INVALID`, DB hiện tại không đổi. Cũng là hàm đọc thuần trên DB tạm. Quy tắc nói về dữ liệu sống chỉ đọc bản ghi chưa xóa, nên bản ghi xóa mềm / khôi phục theo lệnh nghiệp vụ (D7) vẫn nhận:
+  - **Kiểm bất biến liên bảng** (#204, `validateBackupInvariants`, chạy sau kiểm giá trị; Phase 6 kéo snapshot dùng lại): các giá trị đều hợp lệ nhưng bảng mâu thuẫn nhau → `BACKUP_INVALID` với params `rule` = số của bất biến đầu tiên bị vi phạm (để chẩn đoán; hộp 10b không đổi), DB hiện tại không đổi. Cũng là hàm đọc thuần trên DB tạm. Quy tắc nói về dữ liệu sống chỉ đọc bản ghi chưa xóa, nên bản ghi xóa mềm / khôi phục theo lệnh nghiệp vụ (D7) vẫn nhận:
     1. Mỗi KH (kể cả đã xóa) có transition đầu là `seq` nhỏ nhất, chưa xóa, `from_stage` null, `to_stage` là nhóm mở N4–N1; không transition nào khác có `from_stage` null. `seq` duy nhất theo KH: UNIQUE của schema.
     2. `customers.stage` = `to_stage` của transition chưa xóa có `seq` lớn nhất.
     3. Theo `seq`, transition chưa xóa: ngày không giảm (D10), `from_stage` = `to_stage` của transition chưa xóa trước nó, mỗi bước qua `assertValidTransition`.
-    4. Transition chưa xóa có `appointment_id` → cuộc hẹn cùng KH, `MET`, `stage_after` = `to_stage`, cùng ngày; mỗi cuộc hẹn tối đa một transition chưa xóa.
+    4. Transition chưa xóa có `appointment_id` → cuộc hẹn chưa xóa (xóa cuộc hẹn luôn rút transition, D7), cùng KH, `MET`, `stage_after` = `to_stage`, cùng ngày; mỗi cuộc hẹn tối đa một transition chưa xóa.
     5. `re_id` của KH / cuộc hẹn / HĐ **chưa xóa** là người vai trò RE (RE đổi vai trò được khi bản ghi của họ đã xóa, §3.3); RE/TL có team: CHECK của schema; người phối hợp ≠ `re_id` của cuộc hẹn; `rescheduled_from_id` trỏ cuộc hẹn cùng KH, status `RESCHEDULED`.
     6. `kyc_facts.note_id` là ghi chú cùng KH. `seq` ghi chú / dữ kiện / phiên bản duy nhất theo KH: UNIQUE của schema.
     7. Mỗi trường KYC có dữ kiện của một KH: đúng một fact `active` và không `conflict`, hoặc ≥ 2 fact `conflict` và không `active`.

@@ -66,7 +66,8 @@ const BOOLEAN_FIELDS: ReadonlySet<KycField> = new Set(['hasProtection']);
 const PROFILE_FIELDS: ReadonlySet<KycField> = new Set(
   (Object.keys(KYC_FIELDS) as KycField[]).filter((field) => KYC_FIELDS[field].fromProfile),
 );
-const GENDER_LABELS = { MALE: 'Nam', FEMALE: 'Nữ' } as const satisfies Record<
+/** The gender facts' values; the backup import checks them against the profile (spec §6). */
+export const GENDER_LABELS = { MALE: 'Nam', FEMALE: 'Nữ' } as const satisfies Record<
   (typeof GENDERS)[number],
   string
 >;
