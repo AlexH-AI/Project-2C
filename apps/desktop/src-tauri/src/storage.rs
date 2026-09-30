@@ -31,40 +31,49 @@ impl DataLock {
         Self(Mutex::new(None))
     }
 
-    /// Takes the lock on `dir` once; later calls from the same process succeed without reopening.
-    /// Another process holding it → `ResourceBusy` with the message [`ALREADY_OPEN`].
-    #[cfg(windows)]
-    fn acquire(&self, dir: &Path) -> io::Result<()> {
-        use std::os::windows::fs::OpenOptionsExt;
-        // Windows `ERROR_SHARING_VIOLATION`.
-        const SHARING_VIOLATION: i32 = 32;
+    /// Takes the lock on `dir` once and returns `true`; later calls from the same process (a
+    /// webview reload) succeed without reopening and return `false`. Another process holding it
+    /// → `ResourceBusy` with the message [`ALREADY_OPEN`].
+    fn acquire(&self, dir: &Path) -> io::Result<bool> {
         let mut held = self
             .0
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         if held.is_some() {
-            return Ok(());
+            return Ok(false);
         }
-        let file = fs::OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .truncate(false)
-            .share_mode(0)
-            .open(dir.join(LOCK_FILE))
-            .map_err(|error| match error.raw_os_error() {
-                Some(SHARING_VIOLATION) => io::Error::new(ErrorKind::ResourceBusy, ALREADY_OPEN),
-                _ => error,
-            })?;
-        *held = Some(file);
-        Ok(())
+        *held = Some(open_lock_file(&dir.join(LOCK_FILE))?);
+        Ok(true)
     }
+}
 
-    /// The app ships for Windows only (ADR-0006): no lock elsewhere.
-    #[cfg(not(windows))]
-    fn acquire(&self, _dir: &Path) -> io::Result<()> {
-        Ok(())
-    }
+#[cfg(windows)]
+fn open_lock_file(path: &Path) -> io::Result<fs::File> {
+    use std::os::windows::fs::OpenOptionsExt;
+    // Windows `ERROR_SHARING_VIOLATION`.
+    const SHARING_VIOLATION: i32 = 32;
+    fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .share_mode(0)
+        .open(path)
+        .map_err(|error| match error.raw_os_error() {
+            Some(SHARING_VIOLATION) => io::Error::new(ErrorKind::ResourceBusy, ALREADY_OPEN),
+            _ => error,
+        })
+}
+
+/// The app ships for Windows only (ADR-0006): elsewhere the file is opened but locks nothing.
+#[cfg(not(windows))]
+fn open_lock_file(path: &Path) -> io::Result<fs::File> {
+    fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(path)
 }
 
 /// Reads the database at startup; `None` on a first start (no file and no backups). The data
@@ -75,10 +84,12 @@ impl DataLock {
 /// not backed up: the app would otherwise write a new database over it.
 pub fn open(dir: &Path, stamp: &str, lock: &DataLock) -> io::Result<Option<Vec<u8>>> {
     fs::create_dir_all(dir)?;
-    lock.acquire(dir)?;
+    let first_open = lock.acquire(dir)?;
     // A crash between writing and renaming leaves this behind; the database file itself is whole.
     remove_if_exists(&dir.join(tmp_name(DB_FILE)))?;
-    remove_interrupted_exports(&dir.join(EXPORT_DIR));
+    if first_open {
+        remove_interrupted_exports(&dir.join(EXPORT_DIR));
+    }
     let backups = dir.join(BACKUP_DIR);
     let bytes = match fs::read(dir.join(DB_FILE)) {
         Ok(bytes) => bytes,
@@ -130,7 +141,7 @@ pub fn save(dir: &Path, bytes: &[u8]) -> io::Result<()> {
 /// Writes an export file into `exports\` and returns its path. An earlier export is never
 /// overwritten: a taken name gets `-2`, `-3`… before `.p2cbackup` (spec §6). The final name
 /// appears only with the whole file in it; an interrupted export leaves just its `.claim` and
-/// `.tmp`, which [`open`] removes.
+/// `.tmp`, which the next app start removes (see [`remove_interrupted_exports`]).
 pub fn write_export(dir: &Path, name: &str, bytes: &[u8]) -> io::Result<PathBuf> {
     if !is_export_name(name) {
         return Err(io::Error::new(
@@ -164,8 +175,10 @@ fn claim_export_name(exports: &Path, name: &str) -> io::Result<String> {
             .create_new(true)
             .open(&claim)
         {
+            // A claim that cannot be removed (another program holds it) only keeps its name
+            // taken; the next app start removes it.
             Ok(_) if fs::symlink_metadata(exports.join(&candidate)).is_ok() => {
-                fs::remove_file(&claim)?;
+                let _ = fs::remove_file(&claim);
             }
             Ok(_) => return Ok(candidate),
             // Windows reports a folder under that name as access denied, not as existing.
@@ -187,11 +200,10 @@ fn claim_name(name: &str) -> String {
 
 /// Removes what an export cut short by a crash left in `exports\`: claims, `.tmp` files, and the
 /// empty file the first version of [`write_export`] kept under the final name — an empty file is
-/// never a real export. Runs when the webview opens the data, holding the data lock, so no other
-/// app instance is exporting. The lock is re-entrant within this process, though: a webview
-/// reloaded in the middle of an export can remove that export's claim or `.tmp`, and the export
-/// then fails at the rename — it never leaves a broken file or overwrites one. Best effort: a
-/// file another program holds stays until a later start.
+/// never a real export. Runs only when [`open`] takes the data lock for this process, before any
+/// export of this process can start and while no other app instance can export. A webview reload
+/// opens again under the lock already held and skips this, so an export still running keeps its
+/// claim and `.tmp`. Best effort: a file another program holds stays until a later start.
 fn remove_interrupted_exports(exports: &Path) {
     for entry in fs::read_dir(exports).into_iter().flatten().flatten() {
         let Ok(meta) = entry.metadata() else { continue };
@@ -953,6 +965,27 @@ mod tests {
         assert_eq!(
             fs::read(exports.join("c.p2cbackup")).unwrap(),
             b"real export"
+        );
+    }
+
+    #[test]
+    fn open_again_in_the_same_process_keeps_a_running_export() {
+        // A webview reload mid-export opens the data again with the lock the process holds.
+        let dir = temp_dir();
+        let lock = DataLock::new();
+        let exports = dir.join(EXPORT_DIR);
+        fs::create_dir_all(&exports).unwrap();
+        fs::write(exports.join("a.p2cbackup.claim"), b"").unwrap();
+        fs::write(exports.join("a.p2cbackup.tmp"), b"half").unwrap();
+        super::open(&dir, "20260930-080000", &lock).unwrap();
+        assert_eq!(names(&exports), Vec::<String>::new());
+
+        fs::write(exports.join("b.p2cbackup.claim"), b"").unwrap();
+        fs::write(exports.join("b.p2cbackup.tmp"), b"half").unwrap();
+        super::open(&dir, "20260930-080001", &lock).unwrap();
+        assert_eq!(
+            names(&exports),
+            vec!["b.p2cbackup.claim", "b.p2cbackup.tmp"]
         );
     }
 
