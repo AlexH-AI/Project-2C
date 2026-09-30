@@ -9,6 +9,8 @@ Issues and specs for this repo live as GitHub issues in `AlexH-AI/Project-2C`. U
 - Labels: always `type:task` plus exactly one of `risk:low` / `risk:med` / `risk:high`. Add `gate` when the issue waits on an Owner gate (G1–G8), `status:in-progress` while being worked on, and `ready-for-agent` when fully specified.
 - Milestone: the current phase, e.g. `Phase 1 — Nền móng`.
 - Size: ≤ ~400 lines of product code and ≤ ~800 lines of total diff including tests per issue (generated files excluded — ADR-0001 addendum); split otherwise.
+  - Estimate the size **when writing the issue**, counting everything the task will touch: product code, tests, i18n strings (`vi.ts`) and e2e specs. If the estimate is over the limit, split into several issues (or parts A/B/…) up front — do not discover it in the PR (P-2, Phase 3 closing review F-17).
+  - Every PR lists each file it changes outside the issue's "files allowed to change", with the reason. An unlisted file outside the list is a blocking Spec finding in review.
 - Write issue bodies in Vietnamese; code identifiers stay in English.
 
 ## Conventions

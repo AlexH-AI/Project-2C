@@ -8,7 +8,7 @@ function day(text: string): string {
   return formatDate(date);
 }
 
-// Placeholder numbers until appointments come from the database (Phase 3).
+// Placeholder numbers until the dashboard reads appointments from the database (Phase 4).
 const DAYS = ['22/09/2026', '23/09/2026', '24/09/2026', '25/09/2026', '26/09/2026'].map(day);
 const TEAMS: ReadonlyArray<[string, number[]]> = [
   ['Sao Mai', [6, 8, 5, 9, 7]],

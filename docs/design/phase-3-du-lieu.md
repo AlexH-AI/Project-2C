@@ -189,7 +189,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
 ## 5. Lưu file và khởi động (ADR-0016)
 
 - **Exe**: `Project2C-data\project2c.db` cạnh exe.
-  1. Khởi động: lệnh Rust đọc file → sql.js mở. Có file → sao một bản vào `Project2C-data\backups\project2c-YYYYMMDD-HHMMSS.db`, giữ 10 bản mới nhất → chạy migration còn thiếu.
+  1. Khởi động: lệnh Rust đọc file → sql.js mở. Có file → sao một bản vào `Project2C-data\backups\project2c-s<seq8>-YYYYMMDD-HHMMSS.db` (`seq` = thứ tự ghi, không lấy từ đồng hồ — T-056 #90), giữ 10 bản mới nhất theo `seq`, bỏ bản trùng nội dung → chạy migration còn thiếu.
   2. Chưa có file (lần đầu) → tạo DB, chạy migration, **nạp dữ liệu giả lập** (§7).
   3. Sau mỗi transaction thành công: `export()` → lệnh Rust ghi `.tmp` rồi đổi tên. Các lần ghi xếp hàng tuần tự; ghi lỗi → cảnh báo trên UI, dữ liệu vẫn trong bộ nhớ, thử lại ở lần ghi sau.
 - **Web** (`dev:web`, Playwright): DB trong bộ nhớ, migration + seed mỗi lần mở trang, không lưu.
@@ -243,7 +243,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
 - **Backup**: seed → xuất → nhập → xuất lại giống hệt từng byte; file phiên bản mới hơn / hỏng / cũ hơn cần migrate.
 - **Bất biến**: `customers.stage` = transition mới nhất chưa xóa; ngày transition không giảm theo `seq` (D10), nên `stageOn(ngày neo)` = `customers.stage`; transition từ cuộc gặp luôn có `appointment_id`; bản ghi xóa mềm không vào chỉ số.
 - **e2e** (Playwright, web): luồng nhập chính trên seed với ngày neo cố định.
-- **Lớp Rust**: kiểm tay trên exe ở PR đụng tới nó (CI build exe mọi PR — ADR-0015).
+- **Lớp Rust**: `cargo fmt --check`, `clippy -D warnings`, `cargo test` chạy trong job `build-exe` (T-054), job này chạy khi PR có nhãn `build-exe` — bắt buộc với PR đụng `src-tauri`/Cargo (ADR-0015 phụ lục "Tiết kiệm phút Actions"); local: `pnpm verify:rust`. Hành vi chỉ có trên exe (Explorer, hai process, file khóa) Owner kiểm tay khi đóng phase.
 
 ## 9. Lộ trình Phase 3 (dự kiến — tách issue sau khi duyệt spec)
 

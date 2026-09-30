@@ -19,7 +19,7 @@ Theo bảng chỉ số của `docs/COMPARISON.md`.
 | #8 | Chọn thư viện chart → ECharts | #15 | low · G4 | — (Owner duyệt ADR-0014) |
 | #7 | `packages/ui` + app shell (7.1–7.5) | #16, #18, #19, #20, #22, #23 | med · gate | ✅ |
 | #9 | Exe chạy trên 2 máy + file này | (PR này) | low · gate | ✅ |
-| #17 | Favicon / app icon màu ADR-0013 | — | low | Chưa làm |
+| #17 | Favicon / app icon màu ADR-0013 | #128 | low | ✅ (merge 28/09, sau khi file này được viết lần đầu) |
 
 ## Chỉ số
 
