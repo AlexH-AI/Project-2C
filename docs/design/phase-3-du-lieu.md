@@ -205,7 +205,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
   ```
 
   Đây cũng là khuôn snapshot cho đồng bộ `Project-2C-data` ở Phase 6 (ADR-0010 D).
-- **Xuất**: lệnh Rust ghi vào `Project2C-data\exports\project2c-YYYYMMDD-HHMM.p2cbackup`, app hiện đường dẫn. **Không bao giờ ghi đè file xuất đã có** (Owner quyết 30/09/2026, #185): tên đã có thì thêm hậu tố `-2`, `-3`… trước `.p2cbackup` (vd hai lần xuất trong cùng một phút → `…-0745.p2cbackup` và `…-0745-2.p2cbackup`), app hiện đường dẫn thật. Web: tải file về (trình duyệt tự đặt tên khi trùng).
+- **Xuất**: lệnh Rust ghi vào `Project2C-data\exports\project2c-YYYYMMDD-HHMM.p2cbackup`, app hiện đường dẫn. **Không bao giờ ghi đè file xuất đã có** (Owner quyết 30/09/2026, #185): tên đã có thì thêm hậu tố `-2`, `-3`… trước `.p2cbackup` (vd hai lần xuất trong cùng một phút → `…-0745.p2cbackup` và `…-0745-2.p2cbackup`), app hiện đường dẫn thật. Tên cuối chỉ xuất hiện khi file đã ghi đủ (giữ tên bằng file `.claim` riêng, ghi `.tmp` rồi đổi tên); xuất bị ngắt giữa chừng chỉ để lại `.claim`/`.tmp`, app dọn khi mở lần sau cùng file `.p2cbackup` rỗng của bản cũ (#187). Web: tải file về (trình duyệt tự đặt tên khi trùng).
 - **Nhập** — thay toàn bộ (D5): chọn file bằng `<input type=file>` → kiểm bằng zod → `schemaVersion` mới hơn app → từ chối, yêu cầu cập nhật app; cũ hơn → dựng DB ở đúng phiên bản đó, nạp, chạy nốt migration → hỏi xác nhận → backup DB hiện tại → thay.
 
 ## 7. Dữ liệu giả lập (seed)

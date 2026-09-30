@@ -172,15 +172,68 @@ describe('reloadDemoData', () => {
     const { storage, saves } = memoryStorage();
     const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
     const before = app.db();
+    // A screen still holding the old database while the others re-render on the new one.
+    app.subscribe(() => createTeam(before, { name: 'Stale' }));
 
     await app.reloadDemoData();
     await app.saves.idle();
-    const count = saves.length;
-    createTeam(before, { name: 'Stale' });
-    await app.saves.idle();
 
-    expect(saves).toHaveLength(count);
     expect(teamNames(await openDatabase({ bytes: saves.at(-1) }))).toEqual(['Seed 27/09/2026']);
+  });
+
+  it('closes the replaced database once the screens moved to the new one', async () => {
+    const { storage } = memoryStorage();
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+    const before = app.db();
+    const close = vi.spyOn(before.sqlite, 'close');
+    let closedOnChange = true;
+    app.subscribe(() => (closedOnChange = close.mock.calls.length > 0));
+
+    await app.reloadDemoData();
+
+    expect(closedOnChange).toBe(false);
+    expect(close).toHaveBeenCalledTimes(1);
+    createTeam(app.db(), { name: 'Hừng Đông' });
+    expect(teamNames(app.db())).toContain('Hừng Đông');
+  });
+
+  it('keeps the current database open when the new data cannot be built', async () => {
+    let fail = false;
+    const app = await openAppData({
+      today: () => TODAY,
+      seed: (db, anchorDate) => {
+        if (fail) throw new Error('seed failed');
+        fakeSeed(db, anchorDate);
+      },
+    });
+    const before = app.db();
+    const close = vi.spyOn(before.sqlite, 'close');
+    fail = true;
+
+    await expect(app.reloadDemoData()).rejects.toThrow('seed failed');
+
+    expect(close).not.toHaveBeenCalled();
+    expect(app.db()).toBe(before);
+    createTeam(before, { name: 'Sao Mai' });
+    expect(teamNames(before)).toContain('Sao Mai');
+  });
+
+  it('closes the database it seeds the simulated data in', async () => {
+    const seeded: Database[] = [];
+    const app = await openAppData({
+      today: () => TODAY,
+      seed: (db, anchorDate) => {
+        seeded.push(db);
+        fakeSeed(db, anchorDate);
+      },
+    });
+    await app.reloadDemoData();
+
+    expect(seeded).toHaveLength(2);
+    for (const db of seeded) {
+      expect(db).not.toBe(app.db());
+      expect(() => db.sqlite.exec('SELECT 1')).toThrow();
+    }
   });
 
   it('in web mode swaps the data without a backup', async () => {
@@ -313,10 +366,24 @@ describe('backup files', () => {
     expect(teamNames(onDisk)).toEqual(['Sao Mai']);
     // The soft-deleted team came along, as in the file.
     expect((await app.exportBackup()).text).toContain('"Bình Minh"');
+  });
 
-    createTeam(before, { name: 'Stale' });
-    await app.saves.idle();
-    expect(teamNames(await openDatabase({ bytes: saves.at(-1) }))).toEqual(['Sao Mai']);
+  it('closes the replaced database after an import, and keeps it when the import fails', async () => {
+    const text = await backupOf(['Sao Mai']);
+    const app = await openAppData({ today: () => TODAY, seed: fakeSeed });
+    const before = app.db();
+    const close = vi.spyOn(before.sqlite, 'close');
+    const preview = await app.readBackup(text);
+
+    const damaged = { ...preview, bytes: new TextEncoder().encode('not a database') };
+    await expect(app.importBackup(damaged)).rejects.toThrow();
+    expect(close).not.toHaveBeenCalled();
+    expect(app.db()).toBe(before);
+    expect(teamNames(before)).toEqual(['Seed 27/09/2026']);
+
+    await app.importBackup(preview);
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(teamNames(app.db())).toEqual(['Sao Mai']);
   });
 
   it('refuses to import while the last save failed', async () => {

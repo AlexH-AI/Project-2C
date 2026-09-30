@@ -148,11 +148,15 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   // Seeded apart and saved as one file: the saved file never holds a half-built database.
   const demoData = async (): Promise<Uint8Array> => {
     const db = await openDatabase({ locateFile });
-    const start = performance.now();
-    seed(db, today());
-    // Read by the e2e check of #64 (under 5 s in the browser).
-    performance.measure('p2c:demo-seed', { start });
-    return db.export();
+    try {
+      const start = performance.now();
+      seed(db, today());
+      // Read by the e2e check of #64 (under 5 s in the browser).
+      performance.measure('p2c:demo-seed', { start });
+      return db.export();
+    } finally {
+      db.sqlite.close();
+    }
   };
 
   const openFrom = async (bytes: Uint8Array): Promise<Database> => {
@@ -177,8 +181,13 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     await saves.idle();
     if (saves.failed()) throw new Error(UNSAVED_CHANGES);
     const backup = await storage?.backup();
+    const previous = db;
     db = await next();
     changed();
+    // Frees its WASM memory once the screens have re-rendered on the new database; a write to it
+    // before then is never saved (`generation`).
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    previous.sqlite.close();
     return backup;
   };
 
