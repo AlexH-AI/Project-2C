@@ -5,7 +5,7 @@
  */
 import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
-import { dataTables, validateBackupValues } from './backup-validation';
+import { dataTables, validateBackupInvariants, validateBackupValues } from './backup-validation';
 import {
   assertSupported,
   migrate,
@@ -66,7 +66,8 @@ export function exportBackup(db: Database): string {
 
 /**
  * Builds a database at the file's schema version, loads the rows, runs the migrations the file is
- * missing, then checks every value (`validateBackupValues`). Rejects with `BACKUP_TOO_LARGE`,
+ * missing, then checks every value (`validateBackupValues`) and the rules across tables
+ * (`validateBackupInvariants`). Rejects with `BACKUP_TOO_LARGE`,
  * `SCHEMA_TOO_NEW` or `BACKUP_INVALID`; the open database is never touched. `options` are those
  * of the new database: nothing is saved while importing, `persist` fires only for later
  * transactions (the app asks and backs up the current file first, spec §6).
@@ -95,6 +96,7 @@ export async function importBackup(
       load(staging, file.tables);
       migrate(staging, migrations);
       validateBackupValues(staging);
+      validateBackupInvariants(staging);
     });
     bytes = staging.export();
   } finally {
