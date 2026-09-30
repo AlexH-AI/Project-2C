@@ -2,22 +2,41 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-09-30 · máy `D13_THINKPAD` · sau khi merge #194 (T-070) và #196 (T-074, `724794a`). Không có task dở
-- **Nhánh:** `wip/…` do `session-end.ps1` tạo từ `main` `724794a` (chỉ file này). Không có PR code nào đang mở. Checkout chính sạch; worktree review `Project-2C-review` và `Project-2C-review-2` đều ở `724794a`
+- **Cập nhật:** 2026-09-30 17:50 · máy `D13_THINKPAD` · sau khi merge #199 (T-075), #201 (T-076, `a36f94d`, docs-only) và **xong big review Phase 1→3** (Claude + Codex Astra) → 3 Issue Đợt 1 (#202–#204). Không có task code dở
+- **Nhánh:** `wip/…` do `session-end.ps1` tạo từ `main` `a36f94d` (chỉ file này). Không có PR code nào đang mở. Checkout chính sạch; worktree review `Project-2C-review` và `Project-2C-review-2` đều ở `a36f94d`
 - **Phiên song song:** trong phiên 30/09 có một phiên khác chạy dev server `web` (cổng 1420) trên cùng checkout — nếu vẫn còn: commit theo pathspec, không `git add -A`
 - **Máy kế tiếp:** Home PC hoặc Office Laptop — cả hai đã có môi trường + worktree review
 - **Repo đã chuyển public** (27/09, Owner tự làm) vì Actions private chạm ~1.800/2.000 phút; Actions giờ miễn phí
 - **Ruleset `protect-main`** (28/09, Owner duyệt): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
-- **Model / effort** (ADR-0001 phụ lục M1, Owner quyết 29/09, PR #160): Owner tự chọn model và effort cho từng phiên trong app; repo không ghim nữa (trước đó: Opus 5.5, effort medium). Vẫn giữ: chỉ Claude Code viết code, không subagent, cổng G1–G8. **Codex chỉ review độc lập khi đóng phase** từ 30/09 (ADR-0001 phụ lục M2, #198); Owner đang cho Codex Astra big review Phase 1→3 trước #72 — báo cáo gửi lại để Claude đối chiếu
+- **Model / effort** (ADR-0001 phụ lục M1, Owner quyết 29/09, PR #160): Owner tự chọn model và effort cho từng phiên trong app; repo không ghim nữa (trước đó: Opus 5.5, effort medium). Vẫn giữ: chỉ Claude Code viết code, không subagent, cổng G1–G8. **Codex chỉ review độc lập khi đóng phase** từ 30/09 (ADR-0001 phụ lục M2, #198); lần đầu áp dụng: big review Phase 1→3 ngày 30/09 (mục "Big review Phase 1→3" dưới)
 - **Phase:** 3 — Nghiệp vụ & màn hình (milestone mở 26/09/2026; G2/G1/G4 đã duyệt) · Phase 2 đã đóng · **Phase 1 đã đóng** (G7, Owner duyệt 28/09/2026; 18/18 Issue)
 
 ## Trạng thái
 
 | Việc | Trạng thái |
 |---|---|
-| #186 T-070 Cài đặt → Dữ liệu: card File dữ liệu, dung lượng, Mở thư mục | **Đã merge** 30/09 (PR #194) |
-| #195 T-074 Mở thư mục đúng khi đường dẫn exe có dấu phẩy | **Đã merge** 30/09 (PR #196), review PASS. Tái hiện trước khi sửa: đường dẫn `…\P2C,v2\exports` không ngoặc kép → Explorer mở Documents; bọc ngoặc kép (`explorer_arg` + `raw_arg`) → đúng |
-| #72 T-053 đóng Phase 3 | Mở, cổng G7 — **việc kế tiếp**, là Issue mở duy nhất của milestone |
+| #198 T-075 Codex chỉ review độc lập khi đóng phase (ADR-0001 phụ lục M2) | **Đã merge** 30/09 (PR #199, Owner duyệt G1 trong chat). Owner sửa bản nháp: bỏ "Codex được viết code" — Claude viết 100% code |
+| #200 T-076 Bỏ ghi so sánh cho quy tắc Codex | **Đã merge** 30/09 (PR #201). `COMPARISON.md` trả về như trước #199; Owner quyết không cần ghi so sánh / đồng bộ Project-2 |
+| Big review Phase 1→3 (Claude + Codex Astra) | **Xong** 30/09. Verdict: **chưa đóng G7** — làm Đợt 1 trước |
+| #202 T-077 Thay DB không làm DB cũ ngừng lưu + ErrorBoundary (F-02, F-03) | Mở, `risk:high` — **việc kế tiếp** |
+| #203 T-078 Nhập backup kiểm giá trị từng ô + giới hạn 100 MB (F-01 phần 1, F-04) | Mở, `risk:high` |
+| #204 T-079 Nhập backup kiểm bất biến liên bảng (F-01 phần 2) | Mở, `risk:high`, bị chặn bởi #203 (nhánh xếp chồng trên #203) |
+| #72 T-053 đóng Phase 3 | Mở, cổng G7 — sau #202–#204; thêm việc từ review (xem dưới) |
+
+## Big review Phase 1→3 (30/09, xong)
+
+Hai review độc lập ở SHA `0fa0eea` (code giống hệt `main` `a36f94d`): Claude (phiên sạch, được chạy test) và Codex Astra (Owner chạy, chỉ đọc). Đã hợp nhất thành 19 phát hiện F-01…F-19 + kế hoạch 3 đợt. Owner quyết: ngưỡng nhập backup **100 MB**.
+
+- **Báo cáo chỉ nằm trên máy `D13_THINKPAD`** (ngoài repo) cho tới khi #72 lưu vào `docs/reviews/`:
+  - Tổng hợp (nguồn chính): `C:\workspace\review-reports\2026-09-30-bao-cao-tong-hop-phase-1-3.md`
+  - Claude: `C:\workspace\review-reports\2026-09-30-claude-phase-1-3-review.md` (+ `notes.md`, `tmp\*.repro.ts` tái hiện lỗi)
+  - Astra: `C:\workspace\astra-reports\2026-09-30-project-2c-phase-1-3-review.md`; so sánh: `review-reports\2026-09-30-so-sanh-claude-astra.md`
+  - Cấu hình Codex đã dùng: `astra-reports\codex-setup\`. Clone `Project-2C-astra` đã xóa nội dung (thư mục rỗng).
+- Body của #202–#204 đã chép đủ bối cảnh + test chấp nhận → làm được trên máy khác mà không cần báo cáo.
+- **Đợt 1 (trước G7):** #202 → #203 → #204 → #72.
+- **#72 thêm từ review** (tổng hợp §4): F-10 tài liệu/mockup lệch thực tế (đối chiếu với `main` mới nhất); quy trình P-1 (skill `review-pr`: PASS ghi SHA head, head đổi → review lại, phiên review không commit), P-2 (ước lượng cỡ Issue gồm i18n + e2e, vượt ngưỡng thì tách từ đầu), P-3 (ghi chú review chia OPEN / RESOLVED / ACCEPTED); F-18 thêm checklist escape formatter ECharts; lưu báo cáo tổng hợp vào `docs/reviews/`; Owner kiểm tay exe build **sau** #202–#204, ghi SHA + kết quả vào #72.
+- **Đợt 2 (đầu Phase 4, tạo Issue khi bắt đầu Phase 4):** T-d e2e local ổn định (F-05, làm đầu tiên) · G2 Phase 4 (đếm lịch dự kiến/đã gặp + chuỗi dời, miền năm, mockup Tổng quan theo ADR-0007) · T-e index chỉ số + MTD (F-06, F-07) · T-f miền năm (F-14) · T-g CI: coverage riêng domain/db + ghim SHA Actions (F-08, F-09) · T-h dọn UI/i18n/lệnh DB (F-11, F-12, F-13, F-15, F-19) · T-i task dashboard đầu tiên: escape formatter (F-18).
+- **Đợt 3:** D-1 quyết định G4/G6 gọi mạng + lưu key trước `packages/ai` (Phase 5) · S-1 snapshot mỗi bảng một file dùng lại validator #203/#204 · S-2 tuần tự hóa replace/save/export/sync (#96/#192).
 
 Ghi chú review #196 (T-074, không chặn, gộp vào lần chạm sau `storage.rs`):
 - `explorer_arg` (`storage.rs:~377`) biên dịch mọi nền tảng nhưng chỉ `#[cfg(windows)]` gọi → build ngoài Windows báo `dead_code` (clippy `-D warnings` fail). CI chỉ build Windows. Gợi ý `#[cfg(any(windows, test))]`.
@@ -84,12 +103,14 @@ Ghi chú khác (còn từ Phase 1): `DataTable` chưa test `sortable: false` và
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`). Không có PR code mở. Nếu còn PR handoff `wip/…` chưa merge → merge (docs-only) trước.
-2. **Việc kế tiếp: #72 T-053 đóng Phase 3** (cổng G7). Đọc body Issue. Ghi `docs/metrics/phase-3.md` theo `docs/COMPARISON.md` (xem mẫu `docs/metrics/phase-2.md`); số liệu lấy từ GitHub (Issue/PR của milestone "Phase 3 — Nghiệp vụ & màn hình", số test, coverage từ `pnpm verify`). Review đóng phase, rồi **dừng hỏi Owner** trước khi đóng milestone (G7).
-3. Trước/trong #72: Owner kiểm tay exe bản `main` `724794a` (xem "Chờ Owner"). Lỗi tìm được → Issue mới trước khi đóng Phase 3.
-4. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Ghi chú review không chặn ở trên: gom thành Issue dọn dẹp (nếu Owner muốn) hoặc chuyển sang Phase 4 khi đóng phase.
+2. **Việc kế tiếp: #202 T-077** (phiên mới, nhánh `task/T-077-…` từ `main`). Đọc body Issue (đủ bối cảnh F-02/F-03, file được phép, test chấp nhận). TDD: test đỏ trước — ca `openDatabase` reject trong `replace` (`apps/desktop/src/data/app-data.ts`, `generation` tăng trước `await`) rồi sửa đường mất lưu im lặng; thêm `ErrorBoundary` cho màn hình. `risk:high` → CI xanh + `review-pr` phiên sạch, **Owner merge**.
+3. Rồi **#203 T-078** → **#204 T-079** (nhánh xếp chồng trên nhánh #203; merge #203 bằng `--merge` nếu #204 còn mở trên nó). Cả hai `risk:high`, Owner merge.
+4. **Cuối cùng #72 T-053 đóng Phase 3** (cổng G7). Đọc body Issue + phần "#72 thêm từ review" ở trên. Ghi `docs/metrics/phase-3.md` theo `docs/COMPARISON.md` (mẫu `docs/metrics/phase-2.md`; số liệu từ GitHub milestone "Phase 3 — Nghiệp vụ & màn hình", test/coverage từ `pnpm verify`); ghi lần dùng Codex review. Lưu báo cáo tổng hợp vào `docs/reviews/` (chỉ làm được trên `D13_THINKPAD`, hoặc Owner chép file sang máy kia). **Dừng hỏi Owner** trước khi đóng milestone (G7).
+   - Owner kiểm tay exe build **sau** #202–#204 (không dùng exe `724794a` nữa), ghi SHA + kết quả vào #72. Lỗi tìm được → Issue mới trước khi đóng Phase 3.
+5. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Ghi chú review không chặn ở trên: gom thành Issue dọn dẹp (nếu Owner muốn) hoặc chuyển sang Phase 4 khi đóng phase.
    - PR nào đụng `apps/desktop/src-tauri/**` hoặc cấu hình build thì gắn nhãn `build-exe` ngay lúc tạo.
-5. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
-6. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2). #61/#62 chạy golden G01–G22, K01–K15 qua DB.
+6. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
+7. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2). #61/#62 chạy golden G01–G22, K01–K15 qua DB.
 
 ## Lệnh chạy tiếp
 
@@ -134,10 +155,8 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 ## Chờ Owner
 
 - Merge PR handoff này (`wip/…`, docs-only, không chạy CI) để `main` có HANDOFF mới.
-- Kiểm tay trên exe bản `main` `724794a` (artifact `Project-2C-724794a…` của run push lên `main`):
-  - Cài đặt → Dữ liệu (#186): card File dữ liệu, dung lượng, hai nút **Mở thư mục**.
-  - #195: chép exe vào thư mục có dấu phẩy (vd. `P2C,v2`) → hai nút mở đúng `exports\` / `backups\`; thư mục có khoảng trắng vẫn đúng.
-  - Xuất / nhập backup, nạp lại (#188/#190/#192) nếu chưa làm.
+- Merge #202, #203, #204 (`risk:high`) sau CI xanh + review PASS.
+- Kiểm tay trên exe build **sau** #202–#204 (theo tổng hợp §4, #72): mở lại giữ dữ liệu, mở exe thứ hai, lưu lỗi → thử lại / đóng, xuất trùng tên, nhập (kể cả file hỏng, file > 100 MB) / nạp lại, Cài đặt → Dữ liệu (#186) và Mở thư mục với đường dẫn có dấu phẩy / khoảng trắng (#195). Ghi SHA + kết quả vào #72.
 - #72 T-053: cổng G7 đóng Phase 3.
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
