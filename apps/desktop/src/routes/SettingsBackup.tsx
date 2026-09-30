@@ -123,8 +123,9 @@ export function BackupSection() {
         </Button>
       </div>
       {notice?.kind === 'exported' && (
-        <div className="flex flex-wrap items-center gap-2 py-1 text-sm">
-          <p role="status" className="m-0 text-ok tabular-nums">
+        <div className="flex items-center gap-3 py-1 text-sm">
+          {/* A long exe path wraps anywhere, so the button stays beside it (mockup). */}
+          <p role="status" className="m-0 min-w-0 flex-1 break-all text-ok tabular-nums">
             {t('settings.backup.exported', {
               where: notice.where,
               size: formatFileSize(notice.size),

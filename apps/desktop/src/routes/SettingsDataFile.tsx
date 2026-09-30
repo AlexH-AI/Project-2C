@@ -121,7 +121,7 @@ export function OpenFolderButton({ folder }: { folder: DataFolder }) {
   };
 
   return (
-    <span className="inline-flex items-center gap-2">
+    <span className="inline-flex shrink-0 items-center gap-2">
       <Button className="px-2 py-0.5" onClick={() => void open()}>
         {t('settings.file.openFolder')}
       </Button>
