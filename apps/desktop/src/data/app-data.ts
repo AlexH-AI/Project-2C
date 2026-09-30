@@ -160,21 +160,32 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     lastSave = { at: clock(), size: bytes.byteLength };
     for (const listener of lastSaveListeners) listener();
   });
-  // Bumped by every open: a database replaced by `reloadDemoData` must never save again, or a
-  // late write to it would overwrite the file with the old data.
-  let generation = 0;
-  const open = (bytes: Uint8Array) => {
-    const mine = ++generation;
-    return openDatabase({
-      bytes,
-      // Web mode skips exporting the file after every transaction: nothing would keep it.
-      persist: storage
-        ? (snapshot) => {
-            if (mine === generation) saves.persist(snapshot);
-          }
-        : undefined,
-      locateFile,
-    });
+  // Only the current database saves: one replaced by `reloadDemoData` must never save again, or a
+  // late write to it would overwrite the file with the old data. `current` moves only once the
+  // new database opened, so a failed open leaves the current one saving. While `opening`, both
+  // save: the new one's migration, the current one's changes made meanwhile.
+  let opens = 0;
+  let current = 0;
+  let opening: number | undefined;
+  const open = async (bytes: Uint8Array) => {
+    const mine = ++opens;
+    opening = mine;
+    try {
+      const db = await openDatabase({
+        bytes,
+        // Web mode skips exporting the file after every transaction: nothing would keep it.
+        persist: storage
+          ? (snapshot) => {
+              if (mine === current || mine === opening) saves.persist(snapshot);
+            }
+          : undefined,
+        locateFile,
+      });
+      current = mine;
+      return db;
+    } finally {
+      if (opening === mine) opening = undefined;
+    }
   };
 
   // Seeded apart and saved as one file: the saved file never holds a half-built database.
@@ -217,7 +228,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     db = await next();
     changed();
     // Frees its WASM memory once the screens have re-rendered on the new database; a write to it
-    // before then is never saved (`generation`); after it, one throws. So callers must not keep a
+    // before then is never saved (`current`); after it, one throws. So callers must not keep a
     // `db` across an `await`: read it again through `db()` / `run` instead.
     await new Promise((resolve) => setTimeout(resolve, 0));
     previous.sqlite.close();

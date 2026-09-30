@@ -3,7 +3,11 @@ import { AppDataContext } from './data/AppDataContext';
 import { AppShell } from './shell/AppShell';
 import { CloseGuard, type AppWindow } from './shell/CloseGuard';
 
-/** `appWindow` is the exe window; web mode has none and keeps the database in memory. */
+/**
+ * `appWindow` is the exe window; web mode has none and keeps the database in memory. `CloseGuard`
+ * stays a sibling of `AppShell`, outside the screens' `ErrorBoundary`: a failed screen must never
+ * take the save-on-close with it (T-077).
+ */
 export function App({ data, appWindow }: { data: AppData; appWindow?: AppWindow }) {
   return (
     <AppDataContext value={data}>

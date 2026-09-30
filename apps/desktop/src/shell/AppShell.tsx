@@ -3,8 +3,9 @@ import { listPeople, listTeams, type Database } from '@p2c/db';
 import { useQuery } from '../data/AppDataContext';
 import { t } from '../i18n';
 import { Screen } from '../routes/Screen';
+import { ErrorBoundary } from './ErrorBoundary';
 import { SaveWarning } from './SaveWarning';
-import { sectionOf } from './routes';
+import { routeToHash, sectionOf } from './routes';
 import { resolveScope, type ScopeChoice } from './scope';
 import { ScopeContext } from './ScopeContext';
 import { ScopePicker } from './ScopePicker';
@@ -34,7 +35,9 @@ export function AppShell() {
         </header>
         <main className="flex flex-col gap-4.5 px-6 pt-5 pb-8">
           <ScopeContext value={scope}>
-            <Screen route={route} />
+            <ErrorBoundary key={routeToHash(route)}>
+              <Screen route={route} />
+            </ErrorBoundary>
           </ScopeContext>
         </main>
       </div>

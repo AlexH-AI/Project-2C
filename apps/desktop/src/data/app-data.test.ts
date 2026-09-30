@@ -223,6 +223,32 @@ describe('reloadDemoData', () => {
     expect(teamNames(before)).toContain('Sao Mai');
   });
 
+  it('keeps saving the current database when the new one cannot be opened', async () => {
+    const { storage, saves } = memoryStorage();
+    let tooNew = false;
+    const app = await openAppData({
+      storage,
+      today: () => TODAY,
+      seed: (db, anchorDate) => {
+        fakeSeed(db, anchorDate);
+        // Built fine but refused by `openDatabase`: made by a newer app.
+        if (tooNew)
+          db.sqlite.run("INSERT INTO schema_migrations (id, applied_at) VALUES (99, 'x')");
+      },
+    });
+    await app.saves.idle();
+    tooNew = true;
+
+    await expect(app.reloadDemoData()).rejects.toMatchObject({ code: 'SCHEMA_TOO_NEW' });
+    const before = saves.length;
+    app.run((db) => createTeam(db, { name: 'Sao Mai' }));
+    await app.saves.flush();
+
+    expect(app.saves.failed()).toBe(false);
+    expect(saves).toHaveLength(before + 1);
+    expect(teamNames(await openDatabase({ bytes: saves.at(-1) }))).toContain('Sao Mai');
+  });
+
   it('closes the database it seeds the simulated data in', async () => {
     const seeded: Database[] = [];
     const app = await openAppData({
@@ -448,6 +474,27 @@ describe('backup files', () => {
     await app.importBackup(preview);
     expect(close).toHaveBeenCalledTimes(1);
     expect(teamNames(app.db())).toEqual(['Sao Mai']);
+  });
+
+  it('keeps saving the current database after an import that cannot be opened', async () => {
+    const text = await backupOf(['Sao Mai']);
+    const { storage, saves } = memoryStorage();
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+    const preview = await app.readBackup(text);
+    await app.saves.idle();
+    const damaged = { ...preview, bytes: new TextEncoder().encode('not a database') };
+
+    await expect(app.importBackup(damaged)).rejects.toThrow();
+    const before = saves.length;
+    app.run((db) => createTeam(db, { name: 'Hừng Đông' }));
+    await app.saves.flush();
+
+    expect(app.saves.failed()).toBe(false);
+    expect(saves).toHaveLength(before + 1);
+    expect(teamNames(await openDatabase({ bytes: saves.at(-1) }))).toEqual([
+      'Hừng Đông',
+      'Seed 27/09/2026',
+    ]);
   });
 
   it('refuses to import while the last save failed', async () => {
