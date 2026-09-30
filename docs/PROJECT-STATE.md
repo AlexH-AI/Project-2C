@@ -22,7 +22,7 @@ GitHub is the source of truth for Home PC <-> Office laptop continuity.
 
 ## Execution model
 
-Claude Code as the main executor (Codex may write and review code since 2026-09-30, ADR-0001 appendix M2), no subagents; the OWNER picks the model and effort for each session (ADR-0001 appendix M1, 2026-09-29; before: Opus 5.5, effort medium). Claude works autonomously except at OWNER approval gates G1–G8. See `docs/PROJECT-PLAN.md` §4.1 and §7.2.
+Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex joins only as an independent reviewer at phase close, ADR-0001 appendix M2), no subagents; the OWNER picks the model and effort for each session (ADR-0001 appendix M1, 2026-09-29; before: Opus 5.5, effort medium). Claude works autonomously except at OWNER approval gates G1–G8. See `docs/PROJECT-PLAN.md` §4.1 and §7.2.
 
 ## Current OWNER decisions
 
@@ -57,6 +57,6 @@ Claude Code as the main executor (Codex may write and review code since 2026-09-
 - 2026-09-30: #70 T-051 contracts merged (PRs #174/#175, `1d0593a`) and closed. #142 T-065 in PR #177 (`risk:med`, waiting for CI + clean review). Next: #173 T-068 (delete a planned appointment, `risk:low`) in the same review round, then #71 backup (`risk:high`) and #72 phase close (G7).
 - 2026-09-30: #71 T-052 backup (PRs #184/#185), follow-ups #187/#189/#191 (T-071–T-073), #186 T-070 Settings → Data card (PR #194) and #195 T-074 Explorer comma path (PR #196, `724794a`) merged. Only #72 T-053 (phase close, G7) remains open in Phase 3.
 - 2026-09-29: ADR-0001 appendix M1 — the OWNER picks the Claude Code model and effort for each session; the repo no longer pins "Opus 5.5, effort medium".
-- 2026-09-30: ADR-0001 appendix M2 (Issue #198) — Codex may write and review code in 2C. Its code follows the same task flow (Issue → PR → CI → `review-pr`) and the PR says which parts Codex wrote; a Codex review adds to, not replaces, the clean-session review. OpenCode (CLI), Muse Code, Cursor stay out; no subagents. The Project-2 copy of `docs/COMPARISON.md` must get the same change log row (OWNER).
+- 2026-09-30: ADR-0001 appendix M2 (Issue #198) — Codex joins 2C only as an independent reviewer at phase close (run by the OWNER); it does not write code or review task PRs. Its report adds to, not replaces, the clean-session review; Claude checks each finding before filing Issues or fixing. Claude still writes 100% of the code; OpenCode (CLI), Muse Code, Cursor stay out; no subagents. The Project-2 copy of `docs/COMPARISON.md` must get the same change log row (OWNER).
 - Project-2 should adopt the upstream skill renames (`to-prd` → `to-spec`, `to-issues` → `to-tickets`).
 - ADR-0003 still mentions `/resume` and branch protection; the actual practice is `/session-start` and the pre-push hook (#3). Left as-is (accepted ADR text); `CLAUDE.md` and the plan are current.
