@@ -1,10 +1,13 @@
 import {
+  createCustomer,
+  createPerson,
   createTeam,
   DbError,
   importBackup,
   LATEST_SCHEMA_VERSION,
   listTeams,
   openDatabase,
+  scheduleAppointment,
   softDeleteTeam,
   type Database,
 } from '@p2c/db';
@@ -430,6 +433,38 @@ describe('backup files', () => {
 
     expect(error).toMatchObject({ code: 'BACKUP_INVALID' });
     expect(listener).not.toHaveBeenCalled();
+    expect(teamNames(app.db())).toEqual(['Seed 27/09/2026']);
+  });
+
+  it('rejects a file with a date that does not exist before counting its records', async () => {
+    const source = await openAppData({
+      seed: (db) => {
+        const team = createTeam(db, { name: 'Sao Mai' });
+        const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+        const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: TODAY });
+        scheduleAppointment(db, {
+          customerId: lan.id,
+          reId: re.id,
+          date: TODAY,
+          triggerType: 'REFERRAL',
+        });
+      },
+    });
+    const text = (await source.exportBackup()).text.replace('"2026-09-27"', '"2026-02-30"');
+    expect(text).toContain('"date":"2026-02-30"');
+    const { storage, events } = memoryStorage();
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+    await app.saves.idle();
+    events.length = 0;
+    const listener = vi.fn();
+    app.subscribe(listener);
+
+    const error = await app.readBackup(text).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(DbError);
+    expect(error).toMatchObject({ code: 'BACKUP_INVALID' });
+    expect(listener).not.toHaveBeenCalled();
+    expect(events).toEqual([]);
     expect(teamNames(app.db())).toEqual(['Seed 27/09/2026']);
   });
 

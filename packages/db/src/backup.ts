@@ -5,6 +5,7 @@
  */
 import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
+import { dataTables, validateBackupValues } from './backup-validation';
 import {
   assertSupported,
   migrate,
@@ -17,6 +18,9 @@ import { MIGRATIONS } from './migrations';
 
 /** Tells our files apart from any other JSON, including Project-2's `.p2backup`. */
 export const BACKUP_FORMAT = 'project2c-backup';
+
+/** The largest file an import reads (Owner, 30/09/2026): a bigger one would freeze the app. */
+export const MAX_BACKUP_BYTES = 100 * 1024 * 1024;
 
 export interface ImportedBackup {
   /** The new database, migrated to the app's schema version. */
@@ -61,15 +65,20 @@ export function exportBackup(db: Database): string {
 }
 
 /**
- * Builds a database at the file's schema version, loads the rows, then runs the migrations the
- * file is missing. Rejects with `SCHEMA_TOO_NEW` or `BACKUP_INVALID`; the open database is never
- * touched. `options` are those of the new database: nothing is saved while importing, `persist`
- * fires only for later transactions (the app asks and backs up the current file first, spec §6).
+ * Builds a database at the file's schema version, loads the rows, runs the migrations the file is
+ * missing, then checks every value (`validateBackupValues`). Rejects with `BACKUP_TOO_LARGE`,
+ * `SCHEMA_TOO_NEW` or `BACKUP_INVALID`; the open database is never touched. `options` are those
+ * of the new database: nothing is saved while importing, `persist` fires only for later
+ * transactions (the app asks and backs up the current file first, spec §6).
  */
 export async function importBackup(
   text: string,
   options: OpenDatabaseOptions = {},
 ): Promise<ImportedBackup> {
+  // Characters, not bytes: a file of at most the limit in bytes never has more characters.
+  if (text.length > MAX_BACKUP_BYTES) {
+    throw new DbError('BACKUP_TOO_LARGE', { limitMb: MAX_BACKUP_BYTES / 1024 / 1024 });
+  }
   const file = parse(text);
   const migrations = options.migrations ?? MIGRATIONS;
   assertSupported(file.schemaVersion, migrations);
@@ -85,6 +94,7 @@ export async function importBackup(
     fromFile(() => {
       load(staging, file.tables);
       migrate(staging, migrations);
+      validateBackupValues(staging);
     });
     bytes = staging.export();
   } finally {
@@ -155,14 +165,6 @@ interface Column {
   readonly type: string;
   /** Position in the primary key, 0 when not part of it. */
   readonly pk: number;
-}
-
-/** Every table that holds data: all but SQLite's own and the migration log. */
-function dataTables(sqlite: SqlJsDatabase): string[] {
-  const result = sqlite.exec(
-    "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name <> 'schema_migrations' ORDER BY name",
-  );
-  return result[0]!.values.map(([name]) => String(name));
 }
 
 function columnsOf(sqlite: SqlJsDatabase, table: string): Column[] {

@@ -514,6 +514,9 @@ export const vi = {
   'settings.backup.refusedTitle': 'Không nhập được file',
   'settings.backup.tooNew': 'File tạo từ bản app mới hơn (schema v{version}, app này v{supported})',
   'settings.backup.tooNewHelp': 'Cập nhật app rồi nhập lại. Dữ liệu hiện tại không bị đổi.',
+  'settings.backup.tooLarge': 'File lớn hơn {limitMb} MB, app không đọc',
+  'settings.backup.tooLargeHelp':
+    'Backup của Project-2C nhỏ hơn nhiều: kiểm tra lại file đã chọn. Dữ liệu hiện tại không bị đổi.',
   'settings.backup.invalid': 'File hỏng hoặc không phải backup Project-2C',
   'settings.backup.invalidHelp':
     'Chỉ nhận file .p2cbackup do Project-2C xuất (không nhận .p2backup của Project-2). Dữ liệu hiện tại không bị đổi.',
