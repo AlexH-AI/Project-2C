@@ -2,12 +2,12 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-09-30 · máy `DESKTOP-KDURKJP` (Home PC) · trong PR docs thứ hai của **#72 T-053** (điền kết quả kiểm tay exe). Đợt 1 của big review đã merge hết (PR #206, #208, #209, #211); PR #212 (đóng Phase 3, docs) đã merge — `main` `476173c`
-- **Nhánh:** `task/T-053-phase-3-exe-check` (PR docs-only). Không có PR code nào đang mở. Worktree review `Project-2C-review`, `Project-2C-review-2` trên Home PC: đưa về `origin/main` khi review
+- **Cập nhật:** 2026-10-01 · máy `DESKTOP-KDURKJP` (Home PC) · ghi phản hồi Owner sau kiểm exe (16 ý) + kế hoạch sửa đã duyệt; tạo #214–#217. `main` `39e76fd` (PR #213 đã merge)
+- **Nhánh:** `docs/owner-exe-feedback-2026-10-01` (PR docs-only). Không có PR code nào đang mở. Worktree review `Project-2C-review`, `Project-2C-review-2` trên Home PC: đưa về `origin/main` khi review
 - **Phiên song song:** có thể có phiên khác trên cùng checkout — commit theo pathspec, không `git add -A`
 - **Repo public** (27/09) · **ruleset `protect-main`** (28/09): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
 - **Model / effort:** Owner chọn từng phiên (ADR-0001 M1). Chỉ Claude Code viết code, không subagent, cổng G1–G8. **Codex chỉ review độc lập khi đóng phase** (ADR-0001 M2)
-- **Phase:** 3 — Nghiệp vụ & màn hình: 42/43 Issue đã đóng, chỉ còn #72 (G7) · Phase 1, 2 đã đóng
+- **Phase:** 3 — Nghiệp vụ & màn hình: còn #72 (G7) và gói sửa theo phản hồi Owner 01/10 (#214–#217, rồi B1–B6) · Phase 1, 2 đã đóng
 
 ## Trạng thái
 
@@ -15,8 +15,40 @@
 |---|---|
 | Big review Phase 1→3 (Claude + Codex Astra) | Xong 30/09. Báo cáo tổng hợp lưu ở `docs/reviews/2026-09-30-phase-1-3-tong-hop.md` (F-01…F-19, kế hoạch 3 đợt) |
 | Đợt 1: #202 T-077, #203 T-078, #204 T-079, #210 T-080 | **Đã merge** 30/09 (PR #206, #208, #209, #211) |
-| #72 T-053 đóng Phase 3 | PR #212 đã merge (metrics, báo cáo, F-10, P-1…P-3, F-18). Owner kiểm tay exe 30/09: **0 lỗi** (comment trên #72) → điền vào `phase-3.md` ở PR docs này. Còn: deep review Phase 1→3 lần 2, rồi **G7** |
+| #72 T-053 đóng Phase 3 | PR #212, #213 đã merge (metrics, báo cáo, kiểm tay exe 30/09: 0 lỗi). **Hoãn G7** tới khi xong gói A + B phản hồi Owner 01/10, kiểm tay exe lại, 2 review độc lập |
+| Phản hồi Owner 01/10 — gói A | #214 T-081, #215 T-082, #216 T-083 (`risk:low`, `ready-for-agent`) |
+| Phản hồi Owner 01/10 — gói B | #217 T-084 mockup (**G3**) → rồi tạo Issue B1–B6 |
 | Đợt 2 (đầu Phase 4) | Chưa tạo Issue — tạo khi mở Phase 4 (báo cáo §4) |
+
+## Phản hồi Owner sau kiểm exe (01/10/2026)
+
+Owner kiểm exe và gửi 16 ý (ảnh chụp trong hội thoại). Owner duyệt kế hoạch 01/10: **gói A + B làm trong Phase 3, trước G7**; có thể còn ý bổ sung; đóng Phase 3 sau khi kiểm tay exe lại + 2 review độc lập. Ý 9 sang Phase 4.
+
+| Ý | Nội dung | Gói / Issue |
+|---|---|---|
+| 1 | Bộ chọn góc nhìn chữ to hơn: 12,5px → 14px, chỉ bộ chọn trên thanh đầu trang | A3 #216 |
+| 2 | Khách hàng, góc nhìn Team: hàng chọn RE của team (mỗi hàng 5 RE, chỉ RE); bấm lọc theo RE, bấm lại → cả team; trình bày lại bố cục | B2 |
+| 3 | Như ý 2 cho Lịch hẹn (lọc theo RE phụ trách, không tính phối hợp) | B3 |
+| 4 | Danh sách chọn RE sắp theo team rồi tên (cả 4 chỗ dùng `reOptions`) | A2 #215 |
+| 5, 10 | Bỏ bộ chọn góc nhìn ở màn không lọc theo nó: Team & nhân sự, Hồ sơ KH (và Cài đặt, Báo cáo, Tổng quan) | A3 #216 |
+| 6 | Team: "Team Bình Minh · TL Lý Gia Trang · Sửa" (không số lịch hẹn); TL bỏ khỏi bảng; "Hỗ trợ dùng chung" → "Người hỗ trợ" | B1 |
+| 7 | Bỏ chữ viết tắt 2 ký tự trước tên người | A1 #214 |
+| 8 | "Tổng quan hôm nay" → "Tổng quan" | A1 #214 |
+| 9 | Tổng quan chạy bằng dữ liệu thật: nút Lọc cạnh kỳ; 4 ô N4–N1 bốn màu; Toàn bộ / RE = 1 chart, Team = 3 chart (một team một chart), 4 nhóm cơ hội | **Phase 4** (G2 + G3) |
+| 11 | Bỏ nhãn "material" trên dòng thời gian KYC (dữ liệu + hộp Ghi chú KYC giữ nguyên) | A1 #214 |
+| 12 | Lịch tháng: số ngày ô đang chọn màu vàng gold | B4 |
+| 13 | Danh sách lịch hẹn: cột Ngày tô theo hôm nay — đã qua vàng nhạt, hôm nay xanh lá nhạt, sắp tới xanh dương nhạt | B5 |
+| 14 | Kỳ Tuần tô nổi dải 7 ngày trên lịch tháng | B4 |
+| 15 | Kỳ Tháng giữ nguyên | — |
+| 16 | Kỳ Năm: lưới 12 tháng, 4 cột = 4 quý; tương lai mờ, tháng hiện tại nổi; ô = số tháng + tổng lịch + thanh ngang 3 màu (đã gặp / dời-hủy-không đến / dự kiến) có số ở giữa | B6 |
+
+Quyết định Owner (AskUserQuestion 01/10):
+- Ý 9: đếm KH theo nhóm = **ảnh chụp cuối kỳ** (nhóm của KH tính tới ngày cuối kỳ; kỳ chưa hết → tới hôm nay). Góc nhìn Team trên Tổng quan: **ẩn ô chọn team**, luôn 3 chart. Mặc định Claude đề xuất (chốt ở mockup Phase 4): đổi kỳ / góc nhìn chỉ áp dụng khi bấm Lọc; 4 ô N4–N1 dùng màu `StageBadge` và là chú giải chart; bỏ chart mẫu "Lịch hẹn theo team".
+- Ý 2–3: RE đang chọn **dùng chung** Khách hàng và Lịch hẹn; đổi team hoặc góc nhìn → tự bỏ chọn RE.
+- Ý 16: bấm ô tháng → **mở kỳ Tháng đó**; khối "Trong ngày" **ẩn** ở kỳ Năm.
+- Kỳ Tùy chọn: **tô dải ngày như Tuần**. Kèm sửa lỗi Claude tìm thấy: tuần / khoảng vắt 2 tháng không xem được phần tháng sau (ngày tháng khác bị mờ, không bấm được) → ngày trong kỳ vẫn tô và bấm được, lịch chuyển sang tháng đó (B4).
+
+Kế hoạch (thứ tự để ít rủi ro): A1 → A2 → A3 (không cần mockup) · song song mockup #217 → G3 → B1 → B2 (`risk:med`, bộ lọc team + RE dùng chung; sau A3 vì cùng thanh đầu trang) → B3 → B4 → B5 → B6 (`risk:med`; B4–B6 cùng `AppointmentsScreen.tsx` nên làm lần lượt, lưới năm tách file mới) → Owner kiểm tay exe → 2 review độc lập → G7.
 
 `main` `abdff20` (30/09, Home PC): `pnpm verify` xanh — 757 test, coverage 99,49 / 98,4 / 100 / 99,78 (domain 100%, `db/src` 99,33 / 97,8), 0 vi phạm ranh giới; `pnpm e2e` 95/95 xanh (lần này không có test vượt 30 s); build exe trên `main` xanh (run `36732226056`, artifact `Project-2C-abdff201d0c347d0175436b6668d26e3ec667ccb`).
 
@@ -101,13 +133,15 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. **#72 T-053** — PR #212 đã merge; kiểm tay exe xong (0 lỗi) và đã điền vào `phase-3.md` (PR docs `task/T-053-phase-3-exe-check`, `Refs #72`). #72 vẫn mở. Còn:
-   - **Deep review Phase 1→3 lần 2** trên `main` sau khi PR docs này merge (phiên sạch). Phát hiện mới → đối chiếu sổ P-3 bên dưới trước khi ghi là MỚI; lỗi chặn → Issue trước khi đóng Phase 3.
+2. **Phản hồi Owner 01/10** (mục trên): làm #214 T-081 → #215 T-082 → #216 T-083 (mỗi Issue một phiên, `risk:low`); song song #217 T-084 mockup gói B → dừng hỏi Owner **G3** → tạo Issue B1–B6 theo #217 rồi làm lần lượt. Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
+3. **#72 T-053** (sau gói A + B) — #72 vẫn mở. Còn:
+   - Owner kiểm tay exe bản sau gói A + B; cập nhật `phase-3.md` (số Issue, lỗi Owner phát hiện, kiểm tay).
+   - **2 review độc lập** trên `main` (gồm deep review Phase 1→3 lần 2 ở phiên sạch). Phát hiện mới → đối chiếu sổ P-3 bên dưới trước khi ghi là MỚI; lỗi chặn → Issue trước khi đóng Phase 3.
    - Rồi **dừng hỏi Owner G7** (đóng milestone Phase 3). G7 sang ngày khác 30/09 → sửa ngày đóng milestone trong `phase-3.md` (dòng đầu và dòng "Ngày bắt đầu / kết thúc").
-3. Sau G7: mở Phase 4 — tạo milestone + Issue Đợt 2 theo báo cáo §4 (T-d e2e local làm đầu tiên; G2 Phase 4 trước T-e/T-f và màn dashboard).
-4. Ngưỡng task (P1, P-2): ước lượng cỡ khi viết Issue gồm cả i18n + e2e; vượt ngưỡng thì tách từ đầu; PR liệt kê mọi file ngoài danh sách được phép.
-5. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
-6. Merge (P-1): SHA head lúc merge phải trùng SHA trong `REVIEW: PASS`; head đổi → review lại.
+4. Sau G7: mở Phase 4 — tạo milestone + Issue Đợt 2 theo báo cáo §4 (T-d e2e local làm đầu tiên; G2 Phase 4 trước T-e/T-f và màn dashboard). Màn Tổng quan theo ý 9 phản hồi Owner 01/10 (mục trên).
+5. Ngưỡng task (P1, P-2): ước lượng cỡ khi viết Issue gồm cả i18n + e2e; vượt ngưỡng thì tách từ đầu; PR liệt kê mọi file ngoài danh sách được phép.
+6. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
+7. Merge (P-1): SHA head lúc merge phải trùng SHA trong `REVIEW: PASS`; head đổi → review lại.
 
 ## Lệnh chạy tiếp
 
@@ -151,7 +185,8 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- #72 T-053: cổng **G7** đóng milestone Phase 3 — sau deep review Phase 1→3 lần 2.
+- #217 T-084: cổng **G3** duyệt mockup gói B (khi PR mockup sẵn sàng).
+- #72 T-053: cổng **G7** đóng milestone Phase 3 — sau gói A + B, kiểm tay exe lại và 2 review độc lập.
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
 ## Ghi chú môi trường
