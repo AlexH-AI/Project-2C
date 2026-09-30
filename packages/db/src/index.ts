@@ -1,5 +1,9 @@
 export { openDatabase } from './database';
 export type { Database, OpenDatabaseOptions, Sources } from './database';
+export { LATEST_SCHEMA_VERSION } from './migrations';
+export type { Migration } from './migrations';
+export { BACKUP_FORMAT, exportBackup, importBackup } from './backup';
+export type { ImportedBackup } from './backup';
 export { DB_ERROR_CODES, DbError } from './errors';
 export type { DbErrorCode } from './errors';
 export {

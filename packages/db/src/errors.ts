@@ -39,16 +39,23 @@ export const DB_ERROR_CODES = [
   'KYC_NO_CONFLICT',
   'KYC_NOT_IN_CONFLICT',
   'SEED_DATABASE_NOT_EMPTY',
+  /** The file was written by a newer app; params `version` (the file's), `supported` (the app's). */
+  'SCHEMA_TOO_NEW',
+  /** A backup file that is damaged or not a Project-2C backup. */
+  'BACKUP_INVALID',
 ] as const;
 
 export type DbErrorCode = (typeof DB_ERROR_CODES)[number];
 
 export class DbError extends Error {
   readonly code: DbErrorCode;
+  /** Values for the slots of the error's message, when it has any. */
+  readonly params?: Readonly<Record<string, string | number>>;
 
-  constructor(code: DbErrorCode) {
+  constructor(code: DbErrorCode, params?: Readonly<Record<string, string | number>>) {
     super(code);
     this.name = 'DbError';
     this.code = code;
+    if (params) this.params = params;
   }
 }

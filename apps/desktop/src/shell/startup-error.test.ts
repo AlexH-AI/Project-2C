@@ -1,3 +1,4 @@
+import { DbError } from '@p2c/db';
 import { describe, expect, it } from 'vitest';
 import { startupMessage } from './startup-error';
 
@@ -6,6 +7,13 @@ describe('startupMessage', () => {
     expect(startupMessage('ALREADY_OPEN')).toEqual({
       title: 'Project-2C đang mở ở một cửa sổ khác',
       help: 'Hãy dùng cửa sổ đó. App không đọc hay ghi gì ở cửa sổ này; đóng cửa sổ này đi.',
+    });
+  });
+
+  it('asks for a newer app when the file comes from one, naming both schema versions', () => {
+    expect(startupMessage(new DbError('SCHEMA_TOO_NEW', { version: 7, supported: 5 }))).toEqual({
+      title: 'File dữ liệu do bản app mới hơn tạo',
+      help: 'File dùng schema v7, app này chỉ đọc tới v5. Hãy dùng bản app mới hơn. App không thay đổi gì trong file.',
     });
   });
 

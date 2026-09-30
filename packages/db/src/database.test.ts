@@ -3,7 +3,8 @@ import initSqlJs, { type Database as SqlJsDatabase } from 'sql.js';
 import { describe, expect, it, vi } from 'vitest';
 import journal from '../migrations/meta/_journal.json';
 import { openDatabase } from './database';
-import { MIGRATIONS } from './migrations';
+import { DbError } from './errors';
+import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations';
 import {
   appointmentCoordinators,
   appointments,
@@ -112,6 +113,27 @@ describe('openDatabase', () => {
   it('matches the migration list with the drizzle-kit journal', () => {
     expect(MIGRATIONS.map((m) => m.tag)).toEqual(journal.entries.map((e) => e.tag));
     expect(MIGRATIONS.map((m) => m.id)).toEqual(journal.entries.map((e) => e.idx + 1));
+  });
+
+  it('refuses a file made by a newer app, without migrating or saving it', async () => {
+    const newer = await openDatabase();
+    newer.sqlite.run("INSERT INTO schema_migrations (id, applied_at) VALUES (6, 'x')");
+    const persist = vi.fn();
+
+    const error = await openDatabase({ bytes: newer.export(), persist }).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(DbError);
+    expect(error).toMatchObject({ code: 'SCHEMA_TOO_NEW', params: { version: 6, supported: 5 } });
+    expect(persist).not.toHaveBeenCalled();
+  });
+
+  it('runs the given migrations instead of the app ones (tests pass fake ones)', async () => {
+    const fake = { id: 6, tag: '0005_fake', sql: 'ALTER TABLE teams ADD COLUMN color text;' };
+    const db = await openDatabase({ migrations: [...MIGRATIONS, fake] });
+
+    expect(db.schemaVersion()).toBe(6);
+    expect(columnNames(db, 'teams')).toContain('color');
+    expect(LATEST_SCHEMA_VERSION).toBe(5);
   });
 
   it('enforces foreign keys, also after the database was exported', async () => {

@@ -13,7 +13,8 @@
   "dependencies": {
     "@p2c/domain": "workspace:*",
     "drizzle-orm": "0.45.3",
-    "sql.js": "1.14.2"
+    "sql.js": "1.14.2",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@types/sql.js": "1.4.11",

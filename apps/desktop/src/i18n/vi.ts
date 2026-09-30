@@ -450,6 +450,9 @@ export const vi = {
   'storage.alreadyOpen': 'Project-2C đang mở ở một cửa sổ khác',
   'storage.alreadyOpenHelp':
     'Hãy dùng cửa sổ đó. App không đọc hay ghi gì ở cửa sổ này; đóng cửa sổ này đi.',
+  'storage.tooNew': 'File dữ liệu do bản app mới hơn tạo',
+  'storage.tooNewHelp':
+    'File dùng schema v{version}, app này chỉ đọc tới v{supported}. Hãy dùng bản app mới hơn. App không thay đổi gì trong file.',
   'startup.loading': 'Đang mở dữ liệu…',
   'settings.demo.title': 'Dữ liệu giả lập',
   'settings.demo.reload': 'Nạp lại dữ liệu giả lập',

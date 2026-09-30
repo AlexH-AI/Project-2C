@@ -4,8 +4,9 @@
  */
 import { drizzle, type SQLJsDatabase } from 'drizzle-orm/sql-js';
 import initSqlJs, { type Database as SqlJsDatabase, type Statement } from 'sql.js';
+import { DbError } from './errors';
 import { cryptoFill, type RandomFill } from './ids';
-import { MIGRATIONS, type Migration } from './migrations';
+import { latestVersion, MIGRATIONS, type Migration } from './migrations';
 import * as schema from './schema';
 
 export interface OpenDatabaseOptions {
@@ -19,6 +20,8 @@ export interface OpenDatabaseOptions {
   readonly now?: () => Date;
   /** Random bytes for ids and customer codes; defaults to `crypto`. */
   readonly random?: RandomFill;
+  /** The migrations to run; defaults to the app's. Tests pass fake ones. */
+  readonly migrations?: readonly Migration[];
 }
 
 /** Where timestamps, ids and customer codes come from. */
@@ -47,6 +50,13 @@ export interface Database {
 export async function openDatabase(options: OpenDatabaseOptions = {}): Promise<Database> {
   const SQL = await initSqlJs(options.locateFile ? { locateFile: options.locateFile } : {});
   const sqlite = new SQL.Database(options.bytes);
+  const migrations = options.migrations ?? MIGRATIONS;
+  try {
+    assertSupported(schemaVersion(sqlite), migrations);
+  } catch (error) {
+    sqlite.close();
+    throw error;
+  }
   let sources: Sources = {
     now: options.now ?? (() => new Date()),
     random: options.random ?? cryptoFill,
@@ -99,8 +109,14 @@ export async function openDatabase(options: OpenDatabaseOptions = {}): Promise<D
     export: exportBytes,
   };
 
-  migrate(db, MIGRATIONS);
+  migrate(db, migrations);
   return db;
+}
+
+/** A newer app wrote this schema version: opening it could lose what this app does not know. */
+export function assertSupported(version: number, migrations: readonly Migration[]): void {
+  const supported = latestVersion(migrations);
+  if (version > supported) throw new DbError('SCHEMA_TOO_NEW', { version, supported });
 }
 
 /**

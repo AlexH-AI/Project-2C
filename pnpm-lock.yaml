@@ -263,6 +263,9 @@ importers:
       sql.js:
         specifier: 1.14.2
         version: 1.14.2
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
     devDependencies:
       '@types/sql.js':
         specifier: 1.4.11
