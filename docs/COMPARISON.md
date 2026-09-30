@@ -8,7 +8,7 @@ So sánh **sản phẩm cuối** khi cùng một yêu cầu được làm theo h
 
 | Nhánh | Repo | Cách thực hiện |
 |---|---|---|
-| **2C (đối chứng)** | `AlexH-AI/Project-2C` → `C:\workspace\Project-2C` | **Chỉ Claude Code**, **không subagent**; model và effort do Owner chọn từng phiên (tới 29/09/2026: Opus 5.5, effort *medium*; ADR-0001 phụ lục M1). Không dùng OpenCode, Muse Code, Cursor, Codex để viết code; không dùng OpenCode, Muse Code, Cursor để review. Từ 30/09/2026 Codex chỉ review độc lập khi đóng phase (ADR-0001 phụ lục M2). |
+| **2C (đối chứng)** | `AlexH-AI/Project-2C` → `C:\workspace\Project-2C` | **Chỉ Claude Code**, **không subagent**; model và effort do Owner chọn từng phiên (tới 29/09/2026: Opus 5.5, effort *medium*; ADR-0001 phụ lục M1). Không dùng OpenCode, Muse Code, Cursor, Codex để viết/review code. |
 | **2 (đa agent)** | `AlexH-AI/Project-2` → `C:\workspace\Project-2` | Opus 5.5 làm kiến trúc sư/điều phối; các agent khác Claude (OpenCode, Muse, Cursor, Codex) làm task theo `docs/PROJECT-PLAN.md`. |
 
 **Thứ tự:** làm **2C trước**, xong 2C mới làm Project-2.
@@ -54,4 +54,3 @@ Sau khi cả hai đạt v1.0: Owner chạy cùng một kịch bản demo (3 team
 | Ngày | Thay đổi | Áp dụng 2C | Áp dụng 2 |
 |---|---|---|---|
 | 2026-09-26 | Khởi tạo: yêu cầu = Q1–Q16 của Project-2 | ✅ | ✅ |
-| 2026-09-30 | Không phải thay đổi yêu cầu — đổi **biến** cách làm của 2C: Codex được tham gia **review độc lập khi đóng phase** (ADR-0001 M2 của 2C); code vẫn 100% Claude. Ghi các lần Codex review trong `phase-<N>.md` để đánh giá cuối tách được phần đóng góp | ✅ | ⬜ Owner chép dòng này + câu ở bảng nhánh 2C sang bản ở Project-2 (Claude 2C không mở repo kia) |

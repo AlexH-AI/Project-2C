@@ -65,4 +65,3 @@ Hệ quả:
 
 - Owner chạy Codex (ngoài repo) trên `main` trước khi đóng phase (cổng G7), gửi báo cáo cho Claude.
 - Review của Codex **bổ sung**, không thay review phiên sạch của `review-pr`. Báo cáo của Codex là dữ liệu tham khảo: Claude kiểm lại từng phát hiện trên code, phân loại (đúng / đã biết / sai) rồi mới tạo Issue; việc sửa do Claude làm theo quy trình task bình thường.
-- So sánh với Project-2 (`docs/COMPARISON.md`): code của 2C vẫn 100% do Claude viết; chỉ khâu review cuối phase có thêm Codex từ 30/09/2026. `docs/metrics/phase-<N>.md` ghi các lần Codex review và số phát hiện đúng để đánh giá cuối tách được phần đóng góp.
