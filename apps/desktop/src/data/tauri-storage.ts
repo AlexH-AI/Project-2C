@@ -34,5 +34,11 @@ export function tauriStorage(
         headers: { [EXPORT_NAME_HEADER]: name },
       })) as string;
     },
+    async latestBackup() {
+      return ((await invoke('db_latest_backup')) as string | null) ?? undefined;
+    },
+    async openFolder(kind) {
+      await invoke('open_folder', { kind });
+    },
   };
 }

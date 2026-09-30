@@ -1,13 +1,20 @@
 import { useRef, useState } from 'react';
 import { DbError, LATEST_SCHEMA_VERSION } from '@p2c/db';
-import { formatCount, formatLocalDateTime } from '@p2c/domain';
+import { formatFileSize, formatLocalDateTime } from '@p2c/domain';
 import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import { isUnsavedChangesError, type BackupPreview, type RecordCounts } from '../data/app-data';
 import { t } from '../i18n';
+import { countsText, OpenFolderButton } from './SettingsDataFile';
 
 type Notice =
-  | { readonly kind: 'exported'; readonly where: string }
+  | {
+      readonly kind: 'exported';
+      readonly where: string;
+      readonly size: number;
+      /** False in web mode: the browser's downloads are no folder the app can open. */
+      readonly inFolder: boolean;
+    }
   | { readonly kind: 'imported'; readonly exportedAt: string; readonly backup: string | undefined }
   | { readonly kind: 'failed'; readonly message: string };
 
@@ -40,7 +47,12 @@ export function BackupSection() {
     try {
       const exported = await data.exportBackup();
       if (exported.path === undefined) download(exported.name, exported.text);
-      setNotice({ kind: 'exported', where: exported.path ?? exported.name });
+      setNotice({
+        kind: 'exported',
+        where: exported.path ?? exported.name,
+        size: exported.size,
+        inFolder: exported.path !== undefined,
+      });
     } catch {
       setNotice({ kind: 'failed', message: t('settings.backup.exportFailed') });
     } finally {
@@ -111,9 +123,16 @@ export function BackupSection() {
         </Button>
       </div>
       {notice?.kind === 'exported' && (
-        <p role="status" className="m-0 py-1 text-sm text-ok tabular-nums">
-          {t('settings.backup.exported', { where: notice.where })}
-        </p>
+        <div className="flex items-center gap-3 py-1 text-sm">
+          {/* A long exe path wraps anywhere, so the button stays beside it (mockup). */}
+          <p role="status" className="m-0 min-w-0 flex-1 break-all text-ok tabular-nums">
+            {t('settings.backup.exported', {
+              where: notice.where,
+              size: formatFileSize(notice.size),
+            })}
+          </p>
+          {notice.inFolder && <OpenFolderButton folder="exports" />}
+        </div>
       )}
       {notice?.kind === 'imported' && (
         <p role="status" className="m-0 py-1 text-sm text-ok">
@@ -150,15 +169,6 @@ function download(name: string, text: string) {
   // Revoked later: the download may start only after `click` returns.
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
-
-const countsText = (counts: RecordCounts) =>
-  t('settings.backup.counts', {
-    teams: formatCount(counts.teams),
-    people: formatCount(counts.people),
-    customers: formatCount(counts.customers),
-    appointments: formatCount(counts.appointments),
-    policies: formatCount(counts.policies),
-  });
 
 /** Mockup 10a: what the file holds against the current data, then back up (exe) and replace. */
 function ImportDialog({ chosen, onClose }: { chosen: Chosen; onClose: (notice?: Notice) => void }) {

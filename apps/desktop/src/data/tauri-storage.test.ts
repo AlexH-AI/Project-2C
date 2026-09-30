@@ -44,4 +44,22 @@ describe('tauriStorage', () => {
       headers: { 'x-p2c-file-name': 'a.p2cbackup' },
     });
   });
+
+  it('asks for the newest backup name; null means none', async () => {
+    const invoke = vi.fn().mockResolvedValueOnce('project2c-s00000003-20260930-080000.db');
+    const storage = tauriStorage(invoke, () => 0);
+
+    expect(await storage.latestBackup()).toBe('project2c-s00000003-20260930-080000.db');
+    expect(invoke).toHaveBeenCalledWith('db_latest_backup');
+    invoke.mockResolvedValueOnce(null);
+    expect(await storage.latestBackup()).toBeUndefined();
+  });
+
+  it('opens a folder by its kind, never by a path', async () => {
+    const invoke = vi.fn().mockResolvedValue(null);
+
+    await tauriStorage(invoke, () => 0).openFolder('backups');
+
+    expect(invoke).toHaveBeenCalledWith('open_folder', { kind: 'backups' });
+  });
 });

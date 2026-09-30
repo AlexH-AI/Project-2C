@@ -75,9 +75,14 @@ export function formatDate(date: CalendarDate): string {
   return `${pad(date.day)}/${pad(date.month)}/${date.year}`;
 }
 
-/** `dd/mm/yyyy HH:MM` of a moment in the local time zone (e.g. when a file was written). */
-export function formatLocalDateTime(at: Date): string {
-  return `${formatDate(fromLocalDate(at))} ${pad(at.getHours())}:${pad(at.getMinutes())}`;
+/**
+ * `dd/mm/yyyy HH:MM` of a moment in the local time zone (e.g. when a file was written);
+ * `dd/mm/yyyy HH:MM:SS` with `seconds`.
+ */
+export function formatLocalDateTime(at: Date, options: { seconds?: boolean } = {}): string {
+  const time = `${pad(at.getHours())}:${pad(at.getMinutes())}`;
+  const full = options.seconds ? `${time}:${pad(at.getSeconds())}` : time;
+  return `${formatDate(fromLocalDate(at))} ${full}`;
 }
 
 /** `YYYYMMDD-HHMM` in the local time zone, for file names that sort by time. */

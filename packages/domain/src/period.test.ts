@@ -53,6 +53,10 @@ describe('local date and time', () => {
     expect(formatLocalDateTime(new Date(2026, 11, 31, 23, 59))).toBe('31/12/2026 23:59');
   });
 
+  it('adds :SS when asked for seconds', () => {
+    expect(formatLocalDateTime(at, { seconds: true })).toBe('05/09/2026 07:04:59');
+  });
+
   it('stamps file names as YYYYMMDD-HHMM', () => {
     expect(localFileStamp(at)).toBe('20260905-0704');
   });
