@@ -2,8 +2,8 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-09-30 · máy `D13_THINKPAD` · sau khi merge #192 (T-073, `b428c90`). Không có task dở
-- **Nhánh:** `wip/…` do `session-end.ps1` tạo từ `main` `b428c90` (chỉ file này). Không có PR code nào đang mở. Checkout chính sạch; worktree review `Project-2C-review` và `Project-2C-review-2` đều ở `b428c90`
+- **Cập nhật:** 2026-09-30 · máy `D13_THINKPAD` · sau khi merge #194 (T-070) và #196 (T-074, `724794a`). Không có task dở
+- **Nhánh:** `wip/…` do `session-end.ps1` tạo từ `main` `724794a` (chỉ file này). Không có PR code nào đang mở. Checkout chính sạch; worktree review `Project-2C-review` và `Project-2C-review-2` đều ở `724794a`
 - **Phiên song song:** trong phiên 30/09 có một phiên khác chạy dev server `web` (cổng 1420) trên cùng checkout — nếu vẫn còn: commit theo pathspec, không `git add -A`
 - **Máy kế tiếp:** Home PC hoặc Office Laptop — cả hai đã có môi trường + worktree review
 - **Repo đã chuyển public** (27/09, Owner tự làm) vì Actions private chạm ~1.800/2.000 phút; Actions giờ miễn phí
@@ -15,11 +15,13 @@
 
 | Việc | Trạng thái |
 |---|---|
-| #180 T-069 link KYC 6c | **Đã merge** 30/09 (PR #183) |
-| #71 T-052 backup `.p2cbackup` | **Đã merge** 30/09 (PR #184 phần A, #185 phần B) |
-| #187 T-071, #189 T-072, #191 T-073 dọn file xuất dở / đóng DB cũ | **Đã merge** 30/09 (PR #188, #190, #192), review PASS |
-| #186 T-070 Cài đặt → Dữ liệu: card File dữ liệu, dung lượng, Mở thư mục | Mở, `risk:low`, sẵn sàng làm (khối #71 đã xong) |
-| #72 T-053 đóng Phase 3 | Mở, cổng G7 — làm sau #186 |
+| #186 T-070 Cài đặt → Dữ liệu: card File dữ liệu, dung lượng, Mở thư mục | **Đã merge** 30/09 (PR #194) |
+| #195 T-074 Mở thư mục đúng khi đường dẫn exe có dấu phẩy | **Đã merge** 30/09 (PR #196), review PASS. Tái hiện trước khi sửa: đường dẫn `…\P2C,v2\exports` không ngoặc kép → Explorer mở Documents; bọc ngoặc kép (`explorer_arg` + `raw_arg`) → đúng |
+| #72 T-053 đóng Phase 3 | Mở, cổng G7 — **việc kế tiếp**, là Issue mở duy nhất của milestone |
+
+Ghi chú review #196 (T-074, không chặn, gộp vào lần chạm sau `storage.rs`):
+- `explorer_arg` (`storage.rs:~377`) biên dịch mọi nền tảng nhưng chỉ `#[cfg(windows)]` gọi → build ngoài Windows báo `dead_code` (clippy `-D warnings` fail). CI chỉ build Windows. Gợi ý `#[cfg(any(windows, test))]`.
+- Đường dẫn kết thúc bằng `\` sẽ thành `"…\"` (argv đọc `\"` là ngoặc kép escape). Hiện không xảy ra: `folder()` luôn trả `…\Project2C-data\exports|backups`.
 
 Ghi chú review #183–#192 (T-069, T-052, T-071–T-073; không chặn, gộp vào lần chạm sau cùng file):
 - `packages/db/src/database.test.ts:47,98,100,353` ghi cứng phiên bản schema `5` → suy từ `LATEST_SCHEMA_VERSION` trước migration kế tiếp.
@@ -82,9 +84,9 @@ Ghi chú khác (còn từ Phase 1): `DataTable` chưa test `sortable: false` và
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`). Không có PR code mở. Nếu còn PR handoff `wip/…` chưa merge → merge (docs-only) trước.
-2. **Việc kế tiếp: #186 T-070** (`risk:low`): card "File dữ liệu" + dung lượng + nút "Mở thư mục" ở Cài đặt → Dữ liệu, theo mockup `docs/design/mockups/settings-data.html`. Đọc body Issue (hành vi, file được phép, test chấp nhận). Gồm: `formatFileSize` trong `packages/domain` (TDD), lệnh Rust `open_folder(kind)` (tách hàm thuần chọn thư mục để test) + `db_latest_backup`, `AppData` ghi giờ + dung lượng lần lưu cuối, `StoragePort.latestBackup()/openFolder()`, i18n, e2e. Đụng `src-tauri` → PR gắn `build-exe` + chạy `pnpm verify:rust`. Owner kiểm tay trên exe (card, hai nút mở thư mục).
-3. Sau #186: **#72 T-053** đóng Phase 3 (G7, ghi `docs/metrics/phase-3.md` theo `docs/COMPARISON.md`).
-4. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Issue còn mở của milestone: #186, #72.
+2. **Việc kế tiếp: #72 T-053 đóng Phase 3** (cổng G7). Đọc body Issue. Ghi `docs/metrics/phase-3.md` theo `docs/COMPARISON.md` (xem mẫu `docs/metrics/phase-2.md`); số liệu lấy từ GitHub (Issue/PR của milestone "Phase 3 — Nghiệp vụ & màn hình", số test, coverage từ `pnpm verify`). Review đóng phase, rồi **dừng hỏi Owner** trước khi đóng milestone (G7).
+3. Trước/trong #72: Owner kiểm tay exe bản `main` `724794a` (xem "Chờ Owner"). Lỗi tìm được → Issue mới trước khi đóng Phase 3.
+4. Phase 3 — spec: `docs/design/phase-3-du-lieu.md` (Accepted G2), ADR-0016. Ghi chú review không chặn ở trên: gom thành Issue dọn dẹp (nếu Owner muốn) hoặc chuyển sang Phase 4 khi đóng phase.
    - PR nào đụng `apps/desktop/src-tauri/**` hoặc cấu hình build thì gắn nhãn `build-exe` ngay lúc tạo.
 5. Ngưỡng task mới (P1, ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test; PR liệt kê file sinh tự động không tính.
 6. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2). #61/#62 chạy golden G01–G22, K01–K15 qua DB.
@@ -132,7 +134,10 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 ## Chờ Owner
 
 - Merge PR handoff này (`wip/…`, docs-only, không chạy CI) để `main` có HANDOFF mới.
-- Kiểm tay trên exe bản `main` `b428c90` (artifact `Project-2C-b428c90…`): xuất / nhập backup, nạp lại — nếu chưa làm sau #188/#190/#192.
+- Kiểm tay trên exe bản `main` `724794a` (artifact `Project-2C-724794a…` của run push lên `main`):
+  - Cài đặt → Dữ liệu (#186): card File dữ liệu, dung lượng, hai nút **Mở thư mục**.
+  - #195: chép exe vào thư mục có dấu phẩy (vd. `P2C,v2`) → hai nút mở đúng `exports\` / `backups\`; thư mục có khoảng trắng vẫn đúng.
+  - Xuất / nhập backup, nạp lại (#188/#190/#192) nếu chưa làm.
 - #72 T-053: cổng G7 đóng Phase 3.
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
