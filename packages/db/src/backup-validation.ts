@@ -64,8 +64,8 @@ function isCalendarDate(year: number, month: number, day: number): boolean {
 }
 
 /**
- * JSON of a value already normalised to the type of its trường, as the KYC commands store it; the
- * trường itself is one of `KYC_FIELDS` by the table's CHECK.
+ * JSON of a value already normalised to the type of its field, as the KYC commands store it; the
+ * field itself is one of `KYC_FIELDS` by the table's CHECK.
  */
 function validKycValue(field: string, json: string): boolean {
   let value: unknown;
