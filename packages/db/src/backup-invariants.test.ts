@@ -259,6 +259,18 @@ describe('importBackup — rules across tables', () => {
       },
     ],
     [
+      'UNIQUE: two transitions of a customer with the same seq',
+      (b, ids) => (transition(b, ids.lan, 3).seq = 2),
+    ],
+    [
+      'UNIQUE: two KYC facts of a customer with the same seq',
+      (b, ids) => (row(b, 'kyc_facts', (f) => f.customer_id === ids.lan && f.seq === 2).seq = 1),
+    ],
+    [
+      'UNIQUE: two KYC versions of a customer with the same seq',
+      (b, ids) => (row(b, 'kyc_versions', (v) => v.customer_id === ids.lan && v.seq === 2).seq = 1),
+    ],
+    [
       'UNIQUE: two notes of a customer with the same seq',
       (b, ids) => (row(b, 'kyc_notes', (n) => n.customer_id === ids.lan && n.seq === 2).seq = 1),
     ],

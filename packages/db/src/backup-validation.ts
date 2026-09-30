@@ -16,7 +16,7 @@ import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
 import type { Database } from './database';
 import { DbError } from './errors';
-import { GENDER_LABELS, normalizeKycValue } from './kyc';
+import { normalizeKycValue, profileFactValue, type ProfileFields } from './kyc';
 
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const YEAR = /^\d{4}$/;
@@ -103,7 +103,7 @@ export function validateBackupInvariants(db: Database): void {
   const read = (sql: string) => rowsOf(db.sqlite, sql);
   const customers = read('SELECT * FROM customers');
   const transitions = read('SELECT * FROM stage_transitions ORDER BY customer_id, seq');
-  const appointments = read('SELECT * FROM appointments');
+  const appointments = new Map(read('SELECT * FROM appointments').map((a) => [a.id, a]));
   const broken =
     transitionRule(customers, transitions) ??
     meetingRule(appointments, transitions) ??
@@ -151,12 +151,11 @@ function follows(previous: Row, next: Row): boolean {
  * Rule 4: a live transition caused by a meeting carries its customer, day and stage after, and the
  * meeting is live too: deleting an appointment withdraws its transition (D7).
  */
-function meetingRule(appointments: Row[], transitions: Row[]): Rule | null {
-  const byId = new Map(appointments.map((a) => [a.id, a]));
+function meetingRule(appointments: Map<unknown, Row>, transitions: Row[]): Rule | null {
   const caused = transitions.filter((t) => t.deleted_at === null && t.appointment_id !== null);
   const once = new Set(caused.map((t) => t.appointment_id)).size === caused.length;
   const matching = caused.every((t) => {
-    const a = byId.get(t.appointment_id)!;
+    const a = appointments.get(t.appointment_id)!;
     return (
       a.deleted_at === null &&
       a.customer_id === t.customer_id &&
@@ -173,7 +172,7 @@ function meetingRule(appointments: Row[], transitions: Row[]): Rule | null {
  * once their records are deleted); the RE never coordinates their own appointment; an appointment
  * is rescheduled from one of the same customer (D3).
  */
-function ownerRule(read: (sql: string) => Row[], appointments: Row[]): Rule | null {
+function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>): Rule | null {
   const notRe = read(
     ['customers', 'appointments', 'policies']
       .map(
@@ -185,10 +184,9 @@ function ownerRule(read: (sql: string) => Row[], appointments: Row[]): Rule | nu
   const selfCoordinating = read(
     'SELECT 1 FROM appointment_coordinators c JOIN appointments a ON a.id = c.appointment_id WHERE c.person_id = a.re_id',
   );
-  const byId = new Map(appointments.map((a) => [a.id, a]));
-  const rescheduled = appointments.every((a) => {
+  const rescheduled = [...appointments.values()].every((a) => {
     if (a.rescheduled_from_id === null) return true;
-    const from = byId.get(a.rescheduled_from_id)!;
+    const from = appointments.get(a.rescheduled_from_id)!;
     return from.customer_id === a.customer_id && from.status === 'RESCHEDULED';
   });
   return notRe.length === 0 && selfCoordinating.length === 0 && rescheduled ? null : 5;
@@ -212,10 +210,10 @@ function kycRule(read: (sql: string) => Row[], customers: Row[]): Rule | null {
     counts.set(key, count);
     if (fact.status === 'superseded') continue;
     count[fact.status as 'active' | 'conflict']++;
-    const field = String(fact.field);
-    if (fact.status === 'active' && Object.hasOwn(PROFILE_VALUES, field)) {
-      const profile = PROFILE_VALUES[field as keyof typeof PROFILE_VALUES];
-      const expected = profile(byCustomer.get(fact.customer_id)!);
+    if (fact.status === 'active' && (fact.field === 'birthYear' || fact.field === 'gender')) {
+      const customer = byCustomer.get(fact.customer_id)!;
+      const profile = { birthDate: customer.birth_date, gender: customer.gender } as ProfileFields;
+      const expected = JSON.stringify(profileFactValue(fact.field, profile));
       if (fact.source !== 'SYSTEM' || fact.value_json !== expected) return 8;
     }
   }
@@ -224,18 +222,6 @@ function kycRule(read: (sql: string) => Row[], customers: Row[]): Rule | null {
   );
   return settled ? null : 7;
 }
-
-/** JSON of the birth year and gender facts the profile writes (`recordProfileFacts`, D2). */
-const PROFILE_VALUES = {
-  birthYear: (customer: Row) =>
-    customer.birth_date === null
-      ? null
-      : JSON.stringify(Number(String(customer.birth_date).slice(0, 4))),
-  gender: (customer: Row) =>
-    customer.gender === null
-      ? null
-      : JSON.stringify(GENDER_LABELS[customer.gender as keyof typeof GENDER_LABELS]),
-};
 
 function groupBy(rows: Row[], column: string): Map<unknown, Row[]> {
   const groups = new Map<unknown, Row[]>();

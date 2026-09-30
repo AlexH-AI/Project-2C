@@ -66,8 +66,7 @@ const BOOLEAN_FIELDS: ReadonlySet<KycField> = new Set(['hasProtection']);
 const PROFILE_FIELDS: ReadonlySet<KycField> = new Set(
   (Object.keys(KYC_FIELDS) as KycField[]).filter((field) => KYC_FIELDS[field].fromProfile),
 );
-/** The gender facts' values; the backup import checks them against the profile (spec §6). */
-export const GENDER_LABELS = { MALE: 'Nam', FEMALE: 'Nữ' } as const satisfies Record<
+const GENDER_LABELS = { MALE: 'Nam', FEMALE: 'Nữ' } as const satisfies Record<
   (typeof GENDERS)[number],
   string
 >;
@@ -249,6 +248,20 @@ export function previewProfileFacts(
   return { ...change, newVersion: version !== null };
 }
 
+/**
+ * The value of the birth year or gender fact that the profile writes (D2), null when the profile
+ * has none; the backup import checks the facts in effect against it (spec §6).
+ */
+export function profileFactValue(
+  field: 'birthYear' | 'gender',
+  profile: ProfileFields,
+): KycValue | null {
+  if (field === 'birthYear') {
+    return profile.birthDate === null ? null : Number(profile.birthDate.slice(0, 4));
+  }
+  return profile.gender === null ? null : GENDER_LABELS[profile.gender];
+}
+
 // ---- helpers --------------------------------------------------------------
 
 function profileChange(
@@ -258,7 +271,7 @@ function profileChange(
   const changes: { field: KycField; value: KycValue; text: string }[] = [];
   if (next.birthDate !== previous.birthDate) {
     if (next.birthDate === null) throw new DbError('KYC_PROFILE_FIELD_REQUIRED');
-    const year = Number(next.birthDate.slice(0, 4));
+    const year = profileFactValue('birthYear', next) as number;
     const text =
       next.birthDate.length === 4
         ? `năm sinh ${year}`
@@ -267,7 +280,7 @@ function profileChange(
   }
   if (next.gender !== previous.gender) {
     if (next.gender === null) throw new DbError('KYC_PROFILE_FIELD_REQUIRED');
-    const label = GENDER_LABELS[next.gender];
+    const label = profileFactValue('gender', next) as string;
     changes.push({ field: 'gender', value: label, text: `giới tính ${label}` });
   }
   if (changes.length === 0) return null;
