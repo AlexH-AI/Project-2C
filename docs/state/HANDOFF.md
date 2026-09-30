@@ -2,8 +2,8 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-09-30 · máy `DESKTOP-KDURKJP` (Home PC) · trong PR của **#72 T-053** (đóng Phase 3). Đợt 1 của big review đã merge hết: #202 (PR #206), #203 (PR #208), #204 (PR #209), #210 (PR #211) — `main` `abdff20`
-- **Nhánh:** `task/T-053-phase-3-close` (PR docs + một comment trong `TeamAppointmentsChart.tsx`). Không có PR code nào khác đang mở. Worktree review `Project-2C-review`, `Project-2C-review-2` trên Home PC: đưa về `origin/main` khi review
+- **Cập nhật:** 2026-09-30 · máy `DESKTOP-KDURKJP` (Home PC) · trong PR docs thứ hai của **#72 T-053** (điền kết quả kiểm tay exe). Đợt 1 của big review đã merge hết (PR #206, #208, #209, #211); PR #212 (đóng Phase 3, docs) đã merge — `main` `476173c`
+- **Nhánh:** `task/T-053-phase-3-exe-check` (PR docs-only). Không có PR code nào đang mở. Worktree review `Project-2C-review`, `Project-2C-review-2` trên Home PC: đưa về `origin/main` khi review
 - **Phiên song song:** có thể có phiên khác trên cùng checkout — commit theo pathspec, không `git add -A`
 - **Repo public** (27/09) · **ruleset `protect-main`** (28/09): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
 - **Model / effort:** Owner chọn từng phiên (ADR-0001 M1). Chỉ Claude Code viết code, không subagent, cổng G1–G8. **Codex chỉ review độc lập khi đóng phase** (ADR-0001 M2)
@@ -15,7 +15,7 @@
 |---|---|
 | Big review Phase 1→3 (Claude + Codex Astra) | Xong 30/09. Báo cáo tổng hợp lưu ở `docs/reviews/2026-09-30-phase-1-3-tong-hop.md` (F-01…F-19, kế hoạch 3 đợt) |
 | Đợt 1: #202 T-077, #203 T-078, #204 T-079, #210 T-080 | **Đã merge** 30/09 (PR #206, #208, #209, #211) |
-| #72 T-053 đóng Phase 3 | PR đang mở: `docs/metrics/phase-3.md`, lưu báo cáo, F-10, P-1…P-3, checklist F-18, số liệu Owner (30/09). **Chờ Owner:** kiểm tay exe, G7 |
+| #72 T-053 đóng Phase 3 | PR #212 đã merge (metrics, báo cáo, F-10, P-1…P-3, F-18). Owner kiểm tay exe 30/09: **0 lỗi** (comment trên #72) → điền vào `phase-3.md` ở PR docs này. Còn: deep review Phase 1→3 lần 2, rồi **G7** |
 | Đợt 2 (đầu Phase 4) | Chưa tạo Issue — tạo khi mở Phase 4 (báo cáo §4) |
 
 `main` `abdff20` (30/09, Home PC): `pnpm verify` xanh — 757 test, coverage 99,49 / 98,4 / 100 / 99,78 (domain 100%, `db/src` 99,33 / 97,8), 0 vi phạm ranh giới; `pnpm e2e` 95/95 xanh (lần này không có test vượt 30 s); build exe trên `main` xanh (run `36732226056`, artifact `Project-2C-abdff201d0c347d0175436b6668d26e3ec667ccb`).
@@ -101,11 +101,9 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. **#72 T-053** — PR #212 (`task/T-053-phase-3-close`) đã có: metrics (kể cả số liệu Owner 30/09), báo cáo, F-10, P-1…P-3, F-18, sổ ghi chú. Còn:
-   - Review lại ở phiên sạch phần thay đổi từ `7e98a89` (P-1: head đã đổi sau `REVIEW: PASS`), rồi Owner merge #212 (G7). #72 vẫn mở (`Refs`).
-   - Owner kiểm tay exe artifact `Project-2C-abdff201d0c347d0175436b6668d26e3ec667ccb` (danh sách ở "Chờ Owner") → comment SHA + kết quả trên #72. Lỗi tìm được → Issue mới trước khi đóng Phase 3.
-   - PR docs nhỏ (`Refs #72`) điền các mục còn "(chờ Owner)" trong `phase-3.md`: lỗi sau merge (kiểm tay exe), kích thước exe, thời gian khởi động, dòng "Kiểm tay exe". Kiểm tay sang ngày khác → sửa luôn ngày đóng milestone (đang ghi 30/09).
-   - **Dừng hỏi Owner** trước khi đóng milestone (G7).
+2. **#72 T-053** — PR #212 đã merge; kiểm tay exe xong (0 lỗi) và đã điền vào `phase-3.md` (PR docs `task/T-053-phase-3-exe-check`, `Refs #72`). #72 vẫn mở. Còn:
+   - **Deep review Phase 1→3 lần 2** trên `main` sau khi PR docs này merge (phiên sạch). Phát hiện mới → đối chiếu sổ P-3 bên dưới trước khi ghi là MỚI; lỗi chặn → Issue trước khi đóng Phase 3.
+   - Rồi **dừng hỏi Owner G7** (đóng milestone Phase 3). G7 sang ngày khác 30/09 → sửa ngày đóng milestone trong `phase-3.md` (dòng đầu và dòng "Ngày bắt đầu / kết thúc").
 3. Sau G7: mở Phase 4 — tạo milestone + Issue Đợt 2 theo báo cáo §4 (T-d e2e local làm đầu tiên; G2 Phase 4 trước T-e/T-f và màn dashboard).
 4. Ngưỡng task (P1, P-2): ước lượng cỡ khi viết Issue gồm cả i18n + e2e; vượt ngưỡng thì tách từ đầu; PR liệt kê mọi file ngoài danh sách được phép.
 5. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
@@ -153,8 +151,7 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- Kiểm tay exe artifact `Project-2C-abdff201d0c347d0175436b6668d26e3ec667ccb` (run `36732226056`, đã gồm #202–#204): mở lại giữ dữ liệu; mở exe thứ hai; lưu lỗi → thử lại / đóng; xuất trùng tên; nhập (kể cả file hỏng, file > 100 MB) / nạp lại; Cài đặt → Dữ liệu (#186); Mở thư mục với đường dẫn có dấu phẩy / khoảng trắng (#195). Ghi kết quả vào #72.
-- #72 T-053: cổng **G7** đóng milestone Phase 3.
+- #72 T-053: cổng **G7** đóng milestone Phase 3 — sau deep review Phase 1→3 lần 2.
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
 ## Ghi chú môi trường
