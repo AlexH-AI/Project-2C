@@ -47,33 +47,24 @@ impl DataLock {
     }
 }
 
-#[cfg(windows)]
+/// Opens the lock file without sharing. The app ships for Windows only (ADR-0006): elsewhere the
+/// file is opened but locks nothing.
 fn open_lock_file(path: &Path) -> io::Result<fs::File> {
-    use std::os::windows::fs::OpenOptionsExt;
-    // Windows `ERROR_SHARING_VIOLATION`.
-    const SHARING_VIOLATION: i32 = 32;
-    fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .share_mode(0)
-        .open(path)
-        .map_err(|error| match error.raw_os_error() {
-            Some(SHARING_VIOLATION) => io::Error::new(ErrorKind::ResourceBusy, ALREADY_OPEN),
-            _ => error,
-        })
-}
-
-/// The app ships for Windows only (ADR-0006): elsewhere the file is opened but locks nothing.
-#[cfg(not(windows))]
-fn open_lock_file(path: &Path) -> io::Result<fs::File> {
-    fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .open(path)
+    let mut options = fs::OpenOptions::new();
+    options.read(true).write(true).create(true).truncate(false);
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        options.share_mode(0);
+    }
+    options.open(path).map_err(|error| {
+        // Windows `ERROR_SHARING_VIOLATION`.
+        #[cfg(windows)]
+        if error.raw_os_error() == Some(32) {
+            return io::Error::new(ErrorKind::ResourceBusy, ALREADY_OPEN);
+        }
+        error
+    })
 }
 
 /// Reads the database at startup; `None` on a first start (no file and no backups). The data
@@ -84,12 +75,12 @@ fn open_lock_file(path: &Path) -> io::Result<fs::File> {
 /// not backed up: the app would otherwise write a new database over it.
 pub fn open(dir: &Path, stamp: &str, lock: &DataLock) -> io::Result<Option<Vec<u8>>> {
     fs::create_dir_all(dir)?;
-    let first_open = lock.acquire(dir)?;
-    // A crash between writing and renaming leaves this behind; the database file itself is whole.
-    remove_if_exists(&dir.join(tmp_name(DB_FILE)))?;
-    if first_open {
+    // Cleaned before anything below can fail: a retry holds the lock already and skips this.
+    if lock.acquire(dir)? {
         remove_interrupted_exports(&dir.join(EXPORT_DIR));
     }
+    // A crash between writing and renaming leaves this behind; the database file itself is whole.
+    remove_if_exists(&dir.join(tmp_name(DB_FILE)))?;
     let backups = dir.join(BACKUP_DIR);
     let bytes = match fs::read(dir.join(DB_FILE)) {
         Ok(bytes) => bytes,
@@ -987,6 +978,28 @@ mod tests {
             names(&exports),
             vec!["b.p2cbackup.claim", "b.p2cbackup.tmp"]
         );
+    }
+
+    #[test]
+    fn the_first_open_cleans_exports_even_when_it_cannot_remove_the_db_tmp() {
+        // A folder under the `.tmp` name makes its removal fail on every platform, like a
+        // `.tmp` file an antivirus holds.
+        let dir = temp_dir();
+        let lock = DataLock::new();
+        let exports = dir.join(EXPORT_DIR);
+        fs::create_dir_all(&exports).unwrap();
+        fs::create_dir_all(dir.join("project2c.db.tmp")).unwrap();
+        fs::write(exports.join("a.p2cbackup.claim"), b"").unwrap();
+        fs::write(exports.join("a.p2cbackup.tmp"), b"half").unwrap();
+
+        assert!(super::open(&dir, "20260930-080000", &lock).is_err());
+        assert_eq!(names(&exports), Vec::<String>::new());
+
+        // The retry opens under the lock already held and leaves a running export alone.
+        fs::remove_dir(dir.join("project2c.db.tmp")).unwrap();
+        fs::write(exports.join("b.p2cbackup.claim"), b"").unwrap();
+        super::open(&dir, "20260930-080001", &lock).unwrap();
+        assert_eq!(names(&exports), vec!["b.p2cbackup.claim"]);
     }
 
     #[test]
