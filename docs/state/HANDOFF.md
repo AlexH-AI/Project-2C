@@ -15,7 +15,7 @@
 |---|---|
 | Big review Phase 1→3 (Claude + Codex Astra) | Xong 30/09. Báo cáo tổng hợp lưu ở `docs/reviews/2026-09-30-phase-1-3-tong-hop.md` (F-01…F-19, kế hoạch 3 đợt) |
 | Đợt 1: #202 T-077, #203 T-078, #204 T-079, #210 T-080 | **Đã merge** 30/09 (PR #206, #208, #209, #211) |
-| #72 T-053 đóng Phase 3 | PR đang mở: `docs/metrics/phase-3.md`, lưu báo cáo, F-10, P-1…P-3, checklist F-18. **Chờ Owner:** số liệu Owner cho metrics, kiểm tay exe, G7 |
+| #72 T-053 đóng Phase 3 | PR đang mở: `docs/metrics/phase-3.md`, lưu báo cáo, F-10, P-1…P-3, checklist F-18, số liệu Owner (30/09). **Chờ Owner:** kiểm tay exe, G7 |
 | Đợt 2 (đầu Phase 4) | Chưa tạo Issue — tạo khi mở Phase 4 (báo cáo §4) |
 
 `main` `abdff20` (30/09, Home PC): `pnpm verify` xanh — 757 test, coverage 99,49 / 98,4 / 100 / 99,78 (domain 100%, `db/src` 99,33 / 97,8), 0 vi phạm ranh giới; `pnpm e2e` 95/95 xanh (lần này không có test vượt 30 s); build exe trên `main` xanh (run `36732226056`, artifact `Project-2C-abdff201d0c347d0175436b6668d26e3ec667ccb`).
@@ -58,7 +58,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
   - #165: lịch cùng ngày khi sắp tăng dần vẫn ra giờ muộn trước (`AppointmentsScreen.tsx`, `CustomerAppointments.tsx`) → sắp theo cả ngày lẫn giờ; mockup tô "RF" màu accent và đưa năm khác xuống dòng giờ, code viết chuỗi phẳng.
   - #163: nhóm trước → sau trong 6a hiện bằng chữ (mockup: badge); hộp 6h hiện thêm "Các lần hẹn trước"; e2e chưa kiểm link "Xem tất cả (n)" khi > 5 lịch.
 - Team & nhân sự (#144): `role === 'RE' || role === 'TL'` lặp ở `PersonDialogs.tsx`; lọc theo `reId` lặp ở `staffMetrics` và `personUsage`; "Xóa nhân sự" trong hộp Sửa bỏ thay đổi chưa lưu mà không báo.
-- Khách hàng (#141): dòng "Sau khi lưu: N2 → N3" thiếu "· hạ nhóm / lên nhóm" như mockup 5d; khối cảnh báo "Chuyển tay không bao giờ tính RF" hiện cả khi KH đã đóng; `error.INVALID_TRANSITION` chỉ nói "KH đã đóng" dù cũng bắn khi trùng nhóm hiện tại; `CustomerDialogs.tsx:~300` lặp `CLOSED_STAGES.includes` (dùng `!isPipelineStage`).
+- Khách hàng (#141): dòng "Sau khi lưu: N2 → N3" thiếu "· hạ nhóm / lên nhóm" như mockup 5d; khối cảnh báo "Chuyển tay không bao giờ tính RF" hiện cả khi KH đã đóng; `error.INVALID_TRANSITION` chỉ nói "KH đã đóng" dù cũng bắn khi trùng nhóm hiện tại; `CustomerDialogs.tsx:~300` lặp `CLOSED_STAGES.includes` (dùng `!isPipelineStage`); `CustomerProfile.tsx:110` dựng `StageBadge` tay; 3 helper `badge` riêng (`MetFields.tsx:16`, `CustomerDialogs.tsx:42`, `CustomerKyc.tsx:155`) → *Duplicated Code*, T-h.
 - `CloseGuard.tsx` (#125): bấm X lúc đang seed "Nạp lại" thì app đóng trước khi lưu bản mới (không mất dữ liệu); không có dấu hiệu "đang lưu" khi chờ `flush()`; phần nối React chưa có test tự động; chuỗi class `BUTTON` chép từ `Settings.tsx`.
 - Cài đặt (#96, #87): sau một lần lưu lỗi, "Nạp lại" bị từ chối mà không có cách thử lưu lại; hộp 10c thiếu số lượng dữ liệu sắp thay; `backups\` không đọc được thì app coi như lần đầu. NIT (#87): file `.tmp` sót trong `backups\`/`exports\`, listener ném lỗi, dọn thư mục tạm của test Rust.
 - `Overview.tsx:9` (R4): lấy "hôm nay" từ đồng hồ máy thay vì `useAppData().today()`. Ô ngày tùy chọn báo đỏ sớm khi Tab.
@@ -101,10 +101,10 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. **#72 T-053** — PR `task/T-053-phase-3-close` đã có: metrics, báo cáo, F-10, P-1…P-3, F-18, sổ ghi chú. Còn:
-   - Owner điền / xác nhận số liệu Owner trong `docs/metrics/phase-3.md` (điểm UI/UX, số phiên, hạn mức, can thiệp ngoài cổng) → Claude cập nhật PR.
-   - Owner kiểm tay exe artifact `Project-2C-abdff201d0c347d0175436b6668d26e3ec667ccb` (danh sách ở "Chờ Owner") → ghi SHA + kết quả vào #72 và `phase-3.md`. Lỗi tìm được → Issue mới trước khi đóng Phase 3.
-   - PR đụng `TeamAppointmentsChart.tsx` (comment) nên có CI Verify + e2e; `risk:low` → CI xanh + `review-pr` phiên sạch.
+2. **#72 T-053** — PR #212 (`task/T-053-phase-3-close`) đã có: metrics (kể cả số liệu Owner 30/09), báo cáo, F-10, P-1…P-3, F-18, sổ ghi chú. Còn:
+   - Review lại ở phiên sạch phần thay đổi từ `7e98a89` (P-1: head đã đổi sau `REVIEW: PASS`), rồi Owner merge #212 (G7). #72 vẫn mở (`Refs`).
+   - Owner kiểm tay exe artifact `Project-2C-abdff201d0c347d0175436b6668d26e3ec667ccb` (danh sách ở "Chờ Owner") → comment SHA + kết quả trên #72. Lỗi tìm được → Issue mới trước khi đóng Phase 3.
+   - PR docs nhỏ (`Refs #72`) điền các mục còn "(chờ Owner)" trong `phase-3.md`: lỗi sau merge (kiểm tay exe), kích thước exe, thời gian khởi động, dòng "Kiểm tay exe". Kiểm tay sang ngày khác → sửa luôn ngày đóng milestone (đang ghi 30/09).
    - **Dừng hỏi Owner** trước khi đóng milestone (G7).
 3. Sau G7: mở Phase 4 — tạo milestone + Issue Đợt 2 theo báo cáo §4 (T-d e2e local làm đầu tiên; G2 Phase 4 trước T-e/T-f và màn dashboard).
 4. Ngưỡng task (P1, P-2): ước lượng cỡ khi viết Issue gồm cả i18n + e2e; vượt ngưỡng thì tách từ đầu; PR liệt kê mọi file ngoài danh sách được phép.
@@ -153,7 +153,6 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- Số liệu Owner cho `docs/metrics/phase-3.md`: điểm 1–10 (thẩm mỹ dark mode, độ rõ số liệu, tốc độ thao tác nhập liệu), số phiên, mức dùng hạn mức Claude, số lần can thiệp ngoài G1–G8.
 - Kiểm tay exe artifact `Project-2C-abdff201d0c347d0175436b6668d26e3ec667ccb` (run `36732226056`, đã gồm #202–#204): mở lại giữ dữ liệu; mở exe thứ hai; lưu lỗi → thử lại / đóng; xuất trùng tên; nhập (kể cả file hỏng, file > 100 MB) / nạp lại; Cài đặt → Dữ liệu (#186); Mở thư mục với đường dẫn có dấu phẩy / khoảng trắng (#195). Ghi kết quả vào #72.
 - #72 T-053: cổng **G7** đóng milestone Phase 3.
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.

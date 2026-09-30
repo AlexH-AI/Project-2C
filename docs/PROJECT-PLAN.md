@@ -125,7 +125,7 @@ Owner ──(chỉ dừng ở cổng G1–G8)──┐
           Claude Code (model do Owner chọn) — một phiên cho mỗi task
    Issue (spec + test chấp nhận) ─► nhánh task/T-xxx ─► TDD: test đỏ → code → test xanh
                                                                    ▼
-                                              pnpm verify (lint · typecheck · unit) + pnpm e2e
+                                        pnpm verify (lint · typecheck · unit · ranh giới) + pnpm e2e
                                                                    ▼
                                                  commit + push ─► PR ─► CI (Windows)
                                                                    ▼

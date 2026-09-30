@@ -3,7 +3,7 @@
 Theo bảng chỉ số của `docs/COMPARISON.md`. Mục ghi **(chờ Owner)** là số liệu Owner cung cấp trước G7.
 
 - **Milestone:** "Phase 3 — Nghiệp vụ & màn hình" — 43 Issue (#57 → #210), 42 đã đóng khi viết file này, còn #72 (file này, G7)
-- **Bắt đầu:** 2026-09-26 (G2 #57 → PR #58, spec `docs/design/phase-3-du-lieu.md` + ADR-0016) · **Task cuối merge:** 2026-09-30 (PR #211, `main` `abdff20`) · **Đóng milestone:** (chờ Owner, G7)
+- **Bắt đầu:** 2026-09-26 (G2 #57 → PR #58, spec `docs/design/phase-3-du-lieu.md` + ADR-0016) · **Task cuối merge:** 2026-09-30 (PR #211, `main` `abdff20`) · **Đóng milestone:** 2026-09-30 (G7)
 - **Máy:** Home PC (`DESKTOP-KDURKJP`) và Office Laptop (`D13_THINKPAD`), chuyển qua lại bằng `HANDOFF.md`
 - **Ngưỡng cỡ task đổi từ Phase 3** (G1 P1, ADR-0001 phụ lục, PR #58): ≤ ~400 dòng code sản phẩm và ≤ ~800 dòng tổng diff kể cả test, không tính file sinh tự động (Phase 1–2: ≤ ~400 dòng diff)
 
@@ -28,7 +28,7 @@ Theo bảng chỉ số của `docs/COMPARISON.md`. Mục ghi **(chờ Owner)** l
 | #70 | Hợp đồng | #174, #175 | med | PASS ×2 |
 | #71 | Xuất / nhập backup `.p2cbackup` | #184, #185 | high | CHANGES, PASS |
 | #88, #89, #90, #91 | Việc tách từ review #87: cargo test trong CI, chặn exe thứ hai, dọn backup theo thứ tự ghi, không mất dữ liệu khi đóng | #118, #134, #136, #125 | low, med ×3 | PASS ×4 |
-| #99, #101 (+ R3, R4) | Review theo vùng R1–R4 (ADR-0017 phụ lục) | — | — | — |
+| #99 (R1), #101 (R2); R3 #103, R4 #108 ngoài milestone | Review theo vùng R1–R4 (ADR-0017 phụ lục) | — | — | — |
 | #100, #105, #106, #109, #110, #119 | Sửa từ R1–R4: D10, i18n kỳ, `parseVnd`, bootstrap PS 5.1, CI `main`, nhãn `build-exe` | #102, #107, #112, #115, #116, #122 | low / med | PASS ×6 |
 | #131 | Màn Nhân sự (tách từ #65) | #144 | med | PASS |
 | #142, #145, #151 | Form KH sát mockup, `addDays` công khai, một nguồn cho trường KYC hồ sơ | #177, #146, #152 | med, low, med | PASS ×3 |
@@ -43,14 +43,14 @@ Theo bảng chỉ số của `docs/COMPARISON.md`. Mục ghi **(chờ Owner)** l
 | Nhóm | Chỉ số | Giá trị |
 |---|---|---|
 | Chất lượng | % test chấp nhận pass lần đầu | PR code: **50/62 (81%)** PASS ở review vòng đầu. Theo Issue: **31/37 (84%)** Issue code không có PR nào bị CHANGES vòng đầu (6 Issue có: #61, #63, #66, #68, #69, #71). Golden G01–G22, K01–K15 chạy qua DB, fixture không sửa |
-| Chất lượng | Lỗi Owner phát hiện khi duyệt | (chờ Owner) — Claude không ghi nhận lỗi code nào do Owner tìm; Owner quyết các lệch mockup do review nêu (#171, #186, 6c) |
+| Chất lượng | Lỗi Owner phát hiện khi duyệt | **~3** (Owner ước lượng) — Claude không ghi nhận lỗi code nào do Owner tìm; Owner quyết các lệch mockup do review nêu (#171, #186, 6c) |
 | Chất lượng | Lỗi sau merge | **Do review tìm, không do người dùng gặp:** review theo vùng R1–R4 → 6 task sửa (#100, #105, #106, #109, #110, #119); review PR sau → #88–#91, #187–#195; review đóng phase (Claude + Codex) → 1 High (F-01 nhập backup bỏ qua bất biến), 5 Medium, 12 Low, 2 Nit — F-01…F-04 sửa ở Đợt 1 (#202–#204, #210). Owner kiểm tay exe: (chờ Owner) |
 | Chất lượng | Coverage `packages/domain` | 100% (ngưỡng gộp của `vitest.config.ts`; ép riêng theo gói là F-08, Đợt 2). `packages/db/src`: 99,33% statements / 97,8% branches / 100% functions / 99,71% lines. Toàn bộ: 757 test, 99,49 / 98,4 / 100 / 99,78 (`main` `abdff20`) |
-| UI/UX | Điểm Owner (1–10): thẩm mỹ dark mode / độ rõ số liệu / tốc độ thao tác nhập liệu | (chờ Owner) / (chờ Owner) / (chờ Owner). Mockup màn nhập liệu Owner duyệt ở G3 (#59) |
-| Tiến độ | Ngày bắt đầu / kết thúc | 26/09 → 30/09/2026 (task cuối); đóng milestone: (chờ Owner) |
-| Tiến độ | Số phiên làm việc | (chờ Owner) — 140 PR merge từ 26/09 tới 30/09 trên cả repo, trong đó 62 PR code của Phase 3 |
-| Chi phí | Mức dùng hạn mức Claude | (chờ Owner) |
-| Công sức Owner | Can thiệp ngoài cổng G1–G8 | (chờ Owner) |
+| UI/UX | Điểm Owner (1–10): thẩm mỹ dark mode / độ rõ số liệu / tốc độ thao tác nhập liệu | **8 / 8 / 8** (Owner chấm chung một điểm 8/10 cho cả 3 tiêu chí). Mockup màn nhập liệu Owner duyệt ở G3 (#59) |
+| Tiến độ | Ngày bắt đầu / kết thúc | 26/09 → 30/09/2026 (task cuối); đóng milestone: 30/09/2026 |
+| Tiến độ | Số phiên làm việc | **≥ ~180 phiên** (Owner ước lượng từ số PR, gồm cả PR docs / handoff và phiên review) — 140 PR merge từ 26/09 tới 30/09 trên cả repo, trong đó 62 PR code của Phase 3 |
+| Chi phí | Mức dùng hạn mức Claude | **~2 tuần hạn mức** (Owner ước lượng) |
+| Công sức Owner | Can thiệp ngoài cổng G1–G8 | **~3 lần** (Owner ước lượng) |
 | Kỹ thuật | Kích thước exe | (chờ Owner, đo khi kiểm tay) — artifact `Project-2C-abdff201d0c347d0175436b6668d26e3ec667ccb` là file zip 2,16 MB (2.160.444 byte); Phase 1 đo 3,85 MB exe |
 | Kỹ thuật | Thời gian khởi động | (chờ Owner, đo khi kiểm tay) |
 | Kỹ thuật | Vi phạm ranh giới module | 0 (`pnpm lint:deps`: 177 module, 670 phụ thuộc) |
