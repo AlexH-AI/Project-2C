@@ -16,7 +16,7 @@ Các mục §1, §2, §4.4–§4.6, §7 giữ nguyên nội dung sản phẩm c�
 
 | Chủ đề | Đề xuất |
 |---|---|
-| Mô hình làm việc | **Claude Code làm toàn bộ** (model / effort do Owner chọn từng phiên, ADR-0001 M1): kiến trúc, code, test, review. **Không subagent**, không agent ngoài Claude. Tự động trong mọi task, chỉ dừng ở cổng Owner duyệt (G1–G8). Hạn mức dùng do Owner tự cân đối. |
+| Mô hình làm việc | **Claude Code làm toàn bộ** (model / effort do Owner chọn từng phiên, ADR-0001 M1): kiến trúc, code, test, review. Codex chỉ **review độc lập khi đóng phase** (ADR-0001 M2, 30/09/2026). **Không subagent**, không agent ngoài Claude viết code. Tự động trong mọi task, chỉ dừng ở cổng Owner duyệt (G1–G8). Hạn mức dùng do Owner tự cân đối. |
 | Liên tục 2 máy | **GitHub là nguồn sự thật duy nhất**: code + spec + `docs/state/HANDOFF.md` + GitHub Issues/PR. Mỗi phiên kết thúc bằng push; mỗi phiên bắt đầu bằng pull + đọc handoff. Không phụ thuộc bất kỳ trạng thái local nào (DB dev sinh lại từ seed, key API nhập riêng từng máy). |
 | Plugins/skills | **Superpowers** (chỉ các skill chạy trong phiên chính: TDD, verify, debugging, writing/executing plans) + **mattpocock/skills** (`grill-me` → `to-spec` → `to-tickets`). Không dùng skill/framework dựa trên subagent (GSD Core, OMC, `subagent-driven-development`). |
 | Tech stack | **Tauri 2 + React + TypeScript + Vite + Tailwind + shadcn/ui + SQLite (Drizzle)**, monorepo pnpm. Build ra 1 file `.exe` portable (~10–20 MB) trên GitHub Actions. Lõi nghiệp vụ là TypeScript thuần, test được không cần Tauri. |
@@ -99,17 +99,18 @@ Bảng dưới là bản tóm tắt; định nghĩa đầy đủ, vai trò tính
 
 | Công cụ | Dùng trong 2C? | Ghi chú |
 |---|---|---|
-| **Claude Code** (model / effort do Owner chọn, ADR-0001 M1) | ✅ Duy nhất | Viết spec, code, test, review, tài liệu. Chạy trong phiên chính, không subagent. |
+| **Claude Code** (model / effort do Owner chọn, ADR-0001 M1) | ✅ Duy nhất viết code | Viết spec, code, test, review, tài liệu. Chạy trong phiên chính, không subagent. |
 | **GitHub** (`gh`, Issues, PR, Actions, Releases) | ✅ | Nguồn sự thật cho 2 máy; CI build exe. |
 | **Antigravity IDE** | ✅ (bàn làm việc) | Owner mở terminal chạy Claude Code; không phải nơi lưu trạng thái. |
 | **OpenCode Go** | ⚠️ Chỉ làm **AI runtime của sản phẩm** (C2) | **Không** dùng `opencode` CLI để viết/review code. |
-| Muse Code, Cursor, Codex CLI | ❌ | Dành cho Project-2. |
+| **Codex** (CLI / Astra) | ⚠️ Chỉ review độc lập khi đóng phase (từ 30/09/2026, ADR-0001 M2) | Owner chạy; **không viết code**, không review PR task. Báo cáo bổ sung, không thay review phiên sạch; Claude kiểm lại từng phát hiện. |
+| Muse Code, Cursor | ❌ | Dành cho Project-2. |
 
 ### 3.2 Mô hình một agent — ưu, nhược, cách bù
 
 - **Ưu:** nhất quán tuyệt đối về kiến trúc và phong cách; không tốn chi phí điều phối; không có lỗi "bàn giao" giữa các agent.
 - **Nhược 1 — context rot:** không subagent nên phiên dài sẽ đầy context, chất lượng giảm. → **Mỗi task một phiên mới** (hoặc `/clear`), đầu vào là Issue + `HANDOFF.md` + file liên quan; task đủ nhỏ (≤ ~400 dòng diff).
-- **Nhược 2 — điểm mù của chính mình:** không có review chéo. → **Review ở phiên riêng, context sạch**, chỉ đọc spec + diff, theo checklist cố định; CI và test chấp nhận là trọng tài khách quan; `dependency-cruiser` chặn vi phạm ranh giới module.
+- **Nhược 2 — điểm mù của chính mình:** không có review chéo. → **Review ở phiên riêng, context sạch**, chỉ đọc spec + diff, theo checklist cố định; CI và test chấp nhận là trọng tài khách quan; `dependency-cruiser` chặn vi phạm ranh giới module; từ 30/09/2026 thêm review độc lập bằng Codex khi đóng phase (ADR-0001 M2).
 - **Nhược 3 — tốc độ và hạn mức:** mọi việc đi qua Claude Code. → Owner tự cân đối (C8); `HANDOFF.md` luôn cập nhật để dừng/tiếp lúc nào cũng được.
 
 ---
@@ -363,7 +364,7 @@ Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue ≤ ~400 dòng diff.
 
 | # | Quyết định |
 |---|---|
-| C1 | Viết/review code **chỉ bằng Claude Code**. Không dùng OpenCode, Muse Code, Cursor, Codex cho phát triển. |
+| C1 | Viết/review code **chỉ bằng Claude Code**. Không dùng OpenCode, Muse Code, Cursor, Codex cho phát triển. **Bổ sung 30/09/2026:** Codex được review độc lập khi đóng phase, không viết code (ADR-0001 M2). |
 | C2 | AI trong sản phẩm **giống Project-2**: OpenCode Go + Mock. |
 | C3 | **Không subagent.** Mọi task do **Claude Code** thực hiện trong phiên chính. Model và effort do Owner chọn từng phiên (ADR-0001 M1, 29/09/2026; trước đó Opus 5.5, effort medium). |
 | C4 | Owner trao quyền tự động cho Claude trong mọi task, trừ các cổng cần Owner quyết định (G1–G8). |

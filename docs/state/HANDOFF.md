@@ -8,7 +8,7 @@
 - **Máy kế tiếp:** Home PC hoặc Office Laptop — cả hai đã có môi trường + worktree review
 - **Repo đã chuyển public** (27/09, Owner tự làm) vì Actions private chạm ~1.800/2.000 phút; Actions giờ miễn phí
 - **Ruleset `protect-main`** (28/09, Owner duyệt): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
-- **Model / effort** (ADR-0001 phụ lục M1, Owner quyết 29/09, PR #160): Owner tự chọn model và effort cho từng phiên trong app; repo không ghim nữa (trước đó: Opus 5.5, effort medium). Vẫn giữ: chỉ Claude Code, không subagent, cổng G1–G8
+- **Model / effort** (ADR-0001 phụ lục M1, Owner quyết 29/09, PR #160): Owner tự chọn model và effort cho từng phiên trong app; repo không ghim nữa (trước đó: Opus 5.5, effort medium). Vẫn giữ: chỉ Claude Code viết code, không subagent, cổng G1–G8. **Codex chỉ review độc lập khi đóng phase** từ 30/09 (ADR-0001 phụ lục M2, #198); Owner đang cho Codex Astra big review Phase 1→3 trước #72 — báo cáo gửi lại để Claude đối chiếu
 - **Phase:** 3 — Nghiệp vụ & màn hình (milestone mở 26/09/2026; G2/G1/G4 đã duyệt) · Phase 2 đã đóng · **Phase 1 đã đóng** (G7, Owner duyệt 28/09/2026; 18/18 Issue)
 
 ## Trạng thái

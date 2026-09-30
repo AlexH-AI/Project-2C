@@ -6,13 +6,14 @@ Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh
 
 ## Mô hình thực hiện (ADR-0001)
 
-- Chỉ Claude Code; **model và effort do Owner chọn từng phiên** (ADR-0001 phụ lục M1) — không ghim trong repo. **Không subagent / Agent tool** (bị chặn trong `.claude/settings.json`). Mọi việc làm trong phiên chính.
+- Chỉ Claude Code (Claude làm 100%: spec, code, test, review, tài liệu); **model và effort do Owner chọn từng phiên** (ADR-0001 phụ lục M1) — không ghim trong repo. **Không subagent / Agent tool** (bị chặn trong `.claude/settings.json`). Mọi việc làm trong phiên chính.
 - Tự động trong mọi task; **dừng và hỏi Owner** ở các cổng:
   - **G1** kế hoạch/ADR · **G2** golden examples + mô hình dữ liệu · **G3** mockup UI
   - **G4** dependency lớn / công cụ / dịch vụ mới / bất cứ thứ gì tốn tiền
   - **G5** prompt + guardrail AI · **G6** lưu API key / bảo mật · **G7** merge cuối milestone + phát hành exe
   - **G8** task vẫn lỗi sau 2 vòng tự sửa, hoặc spec mâu thuẫn
-- Không dùng OpenCode/Muse/Cursor/Codex để viết hay review code. OpenCode Go chỉ là AI runtime của sản phẩm.
+- **Codex chỉ review độc lập khi đóng phase** (Owner quyết 30/09/2026, ADR-0001 phụ lục M2): Owner chạy, Codex không viết code, không review PR task. Báo cáo của Codex là dữ liệu tham khảo, bổ sung chứ không thay review phiên sạch — Claude kiểm lại từng phát hiện trên code, phân loại rồi mới tạo Issue / sửa.
+- Không dùng OpenCode/Muse/Cursor/Codex để viết code, không dùng OpenCode/Muse/Cursor để review. OpenCode Go chỉ là AI runtime của sản phẩm.
 - Cách ly với Project-2 (`docs/COMPARISON.md`): không mở, không copy code/test/mockup từ `C:\workspace\Project-2`.
 
 ## Nghi thức phiên (ADR-0003)
