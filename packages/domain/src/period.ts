@@ -75,6 +75,17 @@ export function formatDate(date: CalendarDate): string {
   return `${pad(date.day)}/${pad(date.month)}/${date.year}`;
 }
 
+/** `dd/mm/yyyy HH:MM` of a moment in the local time zone (e.g. when a file was written). */
+export function formatLocalDateTime(at: Date): string {
+  return `${formatDate(fromLocalDate(at))} ${pad(at.getHours())}:${pad(at.getMinutes())}`;
+}
+
+/** `YYYYMMDD-HHMM` in the local time zone, for file names that sort by time. */
+export function localFileStamp(at: Date): string {
+  const { year, month, day } = fromLocalDate(at);
+  return `${year}${pad(month)}${pad(day)}-${pad(at.getHours())}${pad(at.getMinutes())}`;
+}
+
 /** `dd/mm` — a day whose year is clear from context. */
 export function formatDayMonth(date: CalendarDate): string {
   return `${pad(date.day)}/${pad(date.month)}`;

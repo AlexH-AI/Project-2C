@@ -7,8 +7,10 @@ import {
   daysBetween,
   formatDate,
   formatDayMonth,
+  formatLocalDateTime,
   formatPeriodValue,
   fromLocalDate,
+  localFileStamp,
   isInPeriod,
   parseDate,
   parseQuickDate,
@@ -39,6 +41,20 @@ describe('calendarDate', () => {
 
   it('formats the day and month alone as dd/mm', () => {
     expect(formatDayMonth(d(2, 10, 2026))).toBe('02/10');
+  });
+});
+
+describe('local date and time', () => {
+  // Built from local parts, so the expectations hold in any time zone.
+  const at = new Date(2026, 8, 5, 7, 4, 59);
+
+  it('formats as dd/mm/yyyy HH:MM', () => {
+    expect(formatLocalDateTime(at)).toBe('05/09/2026 07:04');
+    expect(formatLocalDateTime(new Date(2026, 11, 31, 23, 59))).toBe('31/12/2026 23:59');
+  });
+
+  it('stamps file names as YYYYMMDD-HHMM', () => {
+    expect(localFileStamp(at)).toBe('20260905-0704');
   });
 });
 

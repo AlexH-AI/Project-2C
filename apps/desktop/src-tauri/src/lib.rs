@@ -62,7 +62,7 @@ fn db_save(request: Request<'_>) -> Result<(), String> {
     storage::save(&data_dir()?, raw_body(&request)?).map_err(|e| e.to_string())
 }
 
-/// Writes the request body into `exports\` (used by T-052); returns the file path.
+/// Writes the request body into `exports\` (Settings → Data, `.p2cbackup`); returns the file path.
 #[tauri::command(async)]
 fn export_write(request: Request<'_>) -> Result<String, String> {
     let name = request

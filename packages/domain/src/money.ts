@@ -96,6 +96,12 @@ function assertVnd(amount: Vnd): void {
 
 const groupThousands = (value: number) => String(value).replace(/\B(?=(\d{3})+$)/g, '.');
 
+/** A count with thousands grouped the Vietnamese way: `1.204`. */
+export function formatCount(count: number): string {
+  if (!Number.isSafeInteger(count) || count < 0) throw new RangeError(`Not a count: ${count}`);
+  return groupThousands(count);
+}
+
 /** Full form: `500.000.000 ₫`. */
 export function formatVnd(amount: Vnd): string {
   assertVnd(amount);

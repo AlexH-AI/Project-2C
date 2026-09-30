@@ -1,8 +1,11 @@
 /** Storage port backed by the Rust file commands in `src-tauri` (ADR-0016). */
-import type { InvokeArgs } from '@tauri-apps/api/core';
+import type { InvokeArgs, InvokeOptions } from '@tauri-apps/api/core';
 import type { StoragePort } from './app-data';
 
-type Invoke = (command: string, args?: InvokeArgs) => Promise<unknown>;
+type Invoke = (command: string, args?: InvokeArgs, options?: InvokeOptions) => Promise<unknown>;
+
+/** Carries the export file name; the body is the raw file (`EXPORT_NAME_HEADER` in `lib.rs`). */
+const EXPORT_NAME_HEADER = 'x-p2c-file-name';
 
 /**
  * @param invoke Tauri's `invoke`.
@@ -25,6 +28,11 @@ export function tauriStorage(
     },
     async backup() {
       return (await invoke('db_backup', local())) as string;
+    },
+    async writeExport(name, bytes) {
+      return (await invoke('export_write', bytes, {
+        headers: { [EXPORT_NAME_HEADER]: name },
+      })) as string;
     },
   };
 }
