@@ -26,7 +26,9 @@ test('exports, then imports the file back after confirming: later changes are go
   const exported = await exportFile(page);
   expect(exported.name).toMatch(/^project2c-\d{8}-\d{4}\.p2cbackup$/);
   expect(JSON.parse(exported.text)).toMatchObject({ format: 'project2c-backup' });
-  await expect(section(page).getByRole('status')).toHaveText(`Đã xuất backup: ${exported.name}`);
+  await expect(section(page).getByRole('status')).toContainText(
+    `Đã xuất backup: ${exported.name} · `,
+  );
 
   // A change made after the export, which the import must undo.
   await nav(page, 'Team & nhân sự');
@@ -51,6 +53,36 @@ test('exports, then imports the file back after confirming: later changes are go
   await nav(page, 'Team & nhân sự');
   await expect(teamList(page).getByRole('button')).toHaveCount(3);
   await expect(page.getByRole('alert')).toHaveCount(0);
+});
+
+test('the data file card shows what the simulated data holds, and that web mode keeps no file', async ({
+  page,
+}) => {
+  await page.goto('/#/settings');
+
+  const card = page.getByRole('region', { name: 'File dữ liệu' });
+  await expect(card).toContainText(/schema v\d+/);
+  await expect(card).toContainText(
+    /Nội dung\s*3 team · 36 nhân sự · 1\.\d{3} KH · [\d.]+ lịch hẹn/,
+  );
+  await expect(card).toContainText(
+    'Bản web — dữ liệu chỉ trong trình duyệt, mất khi tải lại trang',
+  );
+  await expect(card).not.toContainText('Vị trí');
+  await expect(card.getByRole('button')).toHaveCount(0);
+});
+
+test('the export notice gives the file name and size, with no folder to open in web mode', async ({
+  page,
+}) => {
+  await page.goto('/#/settings');
+  const exported = await exportFile(page);
+
+  const notice = section(page).getByRole('status');
+  await expect(notice).toHaveText(
+    new RegExp(`^Đã xuất backup: ${exported.name.replaceAll('.', '\\.')} · [\\d,.]+ (KB|MB)$`),
+  );
+  await expect(section(page).getByRole('button', { name: 'Mở thư mục' })).toHaveCount(0);
 });
 
 test('cancelling the import changes nothing', async ({ page }) => {

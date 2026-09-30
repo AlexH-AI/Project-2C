@@ -44,6 +44,11 @@ function memoryStorage(initial?: Uint8Array) {
       exports.push({ name, text: new TextDecoder().decode(bytes) });
       return Promise.resolve(`C:\\P2C\\Project2C-data\\exports\\${name}`);
     },
+    latestBackup: () => Promise.resolve('project2c-s00000001-20260927-101500.db'),
+    openFolder: (kind) => {
+      events.push(`open ${kind}`);
+      return Promise.resolve();
+    },
   };
   const exports: { name: string; text: string }[] = [];
   return { storage, saves, events, exports, failSave: () => (failNextSave = true) };
@@ -260,6 +265,56 @@ describe('reloadDemoData', () => {
   });
 });
 
+describe('the data file card', () => {
+  it('records the time and size of the last successful save, and tells subscribers', async () => {
+    const { storage, saves, failSave } = memoryStorage();
+    let now = new Date(2026, 8, 30, 7, 42, 13);
+    const app = await openAppData({
+      storage,
+      clock: () => now,
+      today: () => TODAY,
+      seed: fakeSeed,
+    });
+    await app.saves.idle();
+    const first = app.lastSave();
+    expect(first).toEqual({ at: now, size: saves[0]!.byteLength });
+
+    const listener = vi.fn();
+    app.subscribeLastSave(listener);
+    failSave();
+    now = new Date(2026, 8, 30, 8, 0, 0);
+    createTeam(app.db(), { name: 'Sao Mai' });
+    await app.saves.idle();
+    expect(app.saves.failed()).toBe(true);
+    expect(app.lastSave()).toBe(first);
+    expect(listener).not.toHaveBeenCalled();
+
+    await app.saves.flush();
+    expect(app.lastSave()).toEqual({ at: now, size: saves[1]!.byteLength });
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('has no last save in web mode', async () => {
+    const app = await openAppData({ today: () => TODAY, seed: fakeSeed });
+    createTeam(app.db(), { name: 'Sao Mai' });
+    await app.saves.idle();
+
+    expect(app.lastSave()).toBeUndefined();
+  });
+
+  it('asks the storage for the newest backup and to open a folder; web mode has neither', async () => {
+    const { storage, events } = memoryStorage();
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+
+    expect(await app.latestBackup()).toBe('project2c-s00000001-20260927-101500.db');
+    await app.openFolder('exports');
+    expect(events).toContain('open exports');
+
+    const web = await openAppData({ today: () => TODAY, seed: fakeSeed });
+    expect(await web.latestBackup()).toBeUndefined();
+  });
+});
+
 describe('isUnsavedChangesError', () => {
   it('tells the refusal of a replace apart from any other failure', () => {
     expect(isUnsavedChangesError(new Error('boom'))).toBe(false);
@@ -306,6 +361,15 @@ describe('backup files', () => {
       'C:\\P2C\\Project2C-data\\exports\\project2c-20260930-0745.p2cbackup',
     );
     expect(exports).toEqual([{ name: exported.name, text: exported.text }]);
+    expect(exported.size).toBe(new TextEncoder().encode(exported.text).byteLength);
+  });
+
+  it('gives the size in bytes of the file, not its length in characters', async () => {
+    const app = await openAppData({ clock, seed: (db) => createTeam(db, { name: 'Hừng Đông' }) });
+
+    const exported = await app.exportBackup();
+
+    expect(exported.size).toBeGreaterThan(exported.text.length);
   });
 
   it('reads a backup without touching the current data, and counts both', async () => {

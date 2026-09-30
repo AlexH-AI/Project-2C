@@ -346,6 +346,29 @@ fn backup_names(backups: &Path) -> Vec<String> {
     names
 }
 
+/// The name of the last written backup (Settings → Data); `None` when there is none.
+pub fn latest_backup(dir: &Path) -> Option<String> {
+    backup_names(&dir.join(BACKUP_DIR)).pop()
+}
+
+/// The folder Settings → Data opens, created if missing. Only `exports` and `backups`: the
+/// webview never names a path.
+pub fn folder(dir: &Path, kind: &str) -> io::Result<PathBuf> {
+    let name = match kind {
+        "exports" => EXPORT_DIR,
+        "backups" => BACKUP_DIR,
+        _ => {
+            return Err(io::Error::new(
+                ErrorKind::InvalidInput,
+                format!("unknown folder: {kind}"),
+            ))
+        }
+    };
+    let path = dir.join(name);
+    fs::create_dir_all(&path)?;
+    Ok(path)
+}
+
 fn find_copy(backups: &Path, bytes: &[u8]) -> Option<String> {
     backup_names(backups).into_iter().find(|name| {
         let path = backups.join(name);
@@ -1000,6 +1023,34 @@ mod tests {
         fs::write(exports.join("b.p2cbackup.claim"), b"").unwrap();
         super::open(&dir, "20260930-080001", &lock).unwrap();
         assert_eq!(names(&exports), vec!["b.p2cbackup.claim"]);
+    }
+
+    #[test]
+    fn latest_backup_is_the_last_written_and_none_without_backups() {
+        let dir = temp_dir();
+        assert_eq!(latest_backup(&dir), None);
+        save(&dir, &db("a")).unwrap();
+        open(&dir, "20260920-080000").unwrap();
+        save(&dir, &db("b")).unwrap();
+        // The clock set back: write order still decides, not the stamp.
+        open(&dir, "20260910-080000").unwrap();
+        assert_eq!(
+            latest_backup(&dir).as_deref(),
+            Some("project2c-s00000002-20260910-080000.db")
+        );
+    }
+
+    #[test]
+    fn folder_takes_only_exports_or_backups_and_creates_it() {
+        let dir = temp_dir();
+        assert_eq!(folder(&dir, "exports").unwrap(), dir.join(EXPORT_DIR));
+        assert!(dir.join(EXPORT_DIR).is_dir());
+        assert_eq!(folder(&dir, "backups").unwrap(), dir.join(BACKUP_DIR));
+        assert!(dir.join(BACKUP_DIR).is_dir());
+        for kind in ["", "..", "Backups", "C:\\Windows", "exports\\..\\.."] {
+            let error = folder(&dir, kind).unwrap_err();
+            assert_eq!(error.kind(), ErrorKind::InvalidInput);
+        }
     }
 
     #[test]

@@ -76,13 +76,33 @@ fn export_write(request: Request<'_>) -> Result<String, String> {
     Ok(path.to_string_lossy().into_owned())
 }
 
+/// The name of the newest automatic backup (Settings → Data), `null` when there is none.
+#[tauri::command(async)]
+fn db_latest_backup() -> Result<Option<String>, String> {
+    Ok(storage::latest_backup(&data_dir()?))
+}
+
+/// Shows `exports\` or `backups\` in Explorer (Settings → Data); any other `kind` is an error.
+#[tauri::command(async)]
+fn open_folder(kind: String) -> Result<(), String> {
+    let path = storage::folder(&data_dir()?, &kind).map_err(|e| e.to_string())?;
+    // Not waited on: Explorer reports exit code 1 even when it opened the folder.
+    std::process::Command::new("explorer.exe")
+        .arg(path)
+        .spawn()
+        .map(drop)
+        .map_err(|e| e.to_string())
+}
+
 pub fn run() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             db_open,
             db_save,
             db_backup,
-            export_write
+            db_latest_backup,
+            export_write,
+            open_folder
         ])
         .run(tauri::generate_context!())
         .expect("error while running Project-2C");

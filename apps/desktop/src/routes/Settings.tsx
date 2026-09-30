@@ -5,15 +5,20 @@ import { useAppData } from '../data/AppDataContext';
 import { isUnsavedChangesError } from '../data/app-data';
 import { t } from '../i18n';
 import { BackupSection } from './SettingsBackup';
+import { DataFileSection } from './SettingsDataFile';
 
 type Outcome =
   | { readonly ok: true; readonly anchor: string; readonly backup: string | undefined }
   | { readonly ok: false; readonly unsaved: boolean };
 
-/** Settings → Data (mockup settings-data): backup files (T-052), then the simulated data (T-045). */
+/**
+ * Settings → Data (mockup settings-data): the data file (T-070), backup files (T-052), then the
+ * simulated data (T-045).
+ */
 export function Settings() {
   return (
     <div className="flex max-w-3xl flex-col gap-4">
+      <DataFileSection />
       <BackupSection />
       <DemoSection />
     </div>

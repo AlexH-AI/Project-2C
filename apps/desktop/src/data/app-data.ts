@@ -27,6 +27,21 @@ export interface StoragePort {
   backup(): Promise<string>;
   /** Writes a `.p2cbackup` file into `exports\` (never over an earlier one); returns its path. */
   writeExport(name: string, bytes: Uint8Array): Promise<string>;
+  /** The name of the newest file in `backups\`; `undefined` when there is none. */
+  latestBackup(): Promise<string | undefined>;
+  /** Shows `exports\` or `backups\` in Explorer. */
+  openFolder(kind: DataFolder): Promise<void>;
+}
+
+/** The folders of `Project2C-data\` that Settings → Data opens. */
+export type DataFolder = 'exports' | 'backups';
+
+/** The last write of the database file that succeeded in this session. */
+export interface LastSave {
+  /** Local time the write finished. */
+  readonly at: Date;
+  /** Bytes written. */
+  readonly size: number;
 }
 
 /** Live records per kind, as the screens count them (soft-deleted ones left out). */
@@ -42,6 +57,8 @@ export interface ExportedBackup {
   /** `project2c-YYYYMMDD-HHMM.p2cbackup`, local time. */
   readonly name: string;
   readonly text: string;
+  /** Bytes in the file. */
+  readonly size: number;
   /**
    * Where the exe wrote the file, with a `-n` suffix when `name` was taken; `undefined` in web
    * mode, where the screen downloads `text`.
@@ -93,6 +110,14 @@ export interface AppData {
   readBackup(text: string): Promise<BackupPreview>;
   /** Replaces everything with a read backup (D5), exactly as `reloadDemoData` does. */
   importBackup(backup: BackupPreview): Promise<string | undefined>;
+  /** Settings → Data: the last successful save of this session; always `undefined` in web mode. */
+  lastSave(): LastSave | undefined;
+  /** Called whenever `lastSave` changes; returns the unsubscribe function. */
+  subscribeLastSave(listener: () => void): () => void;
+  /** The newest automatic backup's file name; `undefined` in web mode or when there is none. */
+  latestBackup(): Promise<string | undefined>;
+  /** Shows a data folder in Explorer; does nothing in web mode. */
+  openFolder(kind: DataFolder): Promise<void>;
 }
 
 export interface OpenAppDataOptions {
@@ -103,7 +128,7 @@ export interface OpenAppDataOptions {
   readonly today?: () => CalendarDate;
   /** Writes the simulated data into a new database; tests pass a small stand-in. */
   readonly seed?: (db: Database, anchorDate: CalendarDate) => void;
-  /** Local time for export file names; tests pin it. */
+  /** Local time for export file names and the last save; tests pin it. */
   readonly clock?: () => Date;
 }
 
@@ -127,7 +152,14 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     seed = seedDemo,
     clock = () => new Date(),
   } = options;
-  const saves = createPersistQueue((bytes) => storage?.save(bytes) ?? Promise.resolve());
+  let lastSave: LastSave | undefined;
+  const lastSaveListeners = new Set<() => void>();
+  const saves = createPersistQueue(async (bytes) => {
+    if (!storage) return;
+    await storage.save(bytes);
+    lastSave = { at: clock(), size: bytes.byteLength };
+    for (const listener of lastSaveListeners) listener();
+  });
   // Bumped by every open: a database replaced by `reloadDemoData` must never save again, or a
   // late write to it would overwrite the file with the old data.
   let generation = 0;
@@ -212,8 +244,9 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     async exportBackup() {
       const name = `project2c-${localFileStamp(clock())}.p2cbackup`;
       const text = exportBackup(db);
-      const path = await storage?.writeExport(name, new TextEncoder().encode(text));
-      return { name, text, path };
+      const bytes = new TextEncoder().encode(text);
+      const path = await storage?.writeExport(name, bytes);
+      return { name, text, size: bytes.byteLength, path };
     },
     async readBackup(text) {
       const imported = await importBackup(text, { locateFile });
@@ -229,10 +262,18 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
       }
     },
     importBackup: (backup) => replace(() => openFrom(backup.bytes)),
+    lastSave: () => lastSave,
+    subscribeLastSave(listener) {
+      lastSaveListeners.add(listener);
+      return () => lastSaveListeners.delete(listener);
+    },
+    latestBackup: () => storage?.latestBackup() ?? Promise.resolve(undefined),
+    openFolder: (kind) => storage?.openFolder(kind) ?? Promise.resolve(),
   };
 }
 
-function countRecords(db: Database): RecordCounts {
+/** The live records per kind of db. */
+export function countRecords(db: Database): RecordCounts {
   return {
     teams: listTeams(db).length,
     people: listPeople(db).length,
