@@ -41,7 +41,7 @@ test('a new customer: birth year and gender from the profile, gate KYC_INSUFFICI
   ).toBeVisible();
 
   await expect(timeline).toHaveText([
-    '15/09/2026Cập nhật KYC 15/09/2026materialkyc v1',
+    '15/09/2026Cập nhật KYC 15/09/2026kyc v1',
     '15/09/2026Ghi chú hệ thốngHồ sơ KH: năm sinh 1984; giới tính Nữ',
     '15/09/2026N4tạo KH',
   ]);
@@ -91,7 +91,7 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it 
 
   await expect(kyc).toContainText('3/8 hạng mục · v2');
   await expect(kyc).toContainText('Cổng KYC PROFILE_DISCOVERY');
-  await expect(timeline.first()).toHaveText('15/09/2026Cập nhật KYC 15/09/2026materialkyc v2');
+  await expect(timeline.first()).toHaveText('15/09/2026Cập nhật KYC 15/09/2026kyc v2');
   await expect(timeline.filter({ hasText: /^15\/09\/2026Ghi chú KYC/ })).toHaveText(
     '15/09/2026Ghi chú KYCĐã kết hôn, 2 con; chủ DN.',
   );

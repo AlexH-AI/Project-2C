@@ -42,6 +42,28 @@ test('lists the seeded teams, their members and the shared support staff', async
   await expect(table.getByRole('cell', { name: 'RE', exact: true })).toHaveCount(10);
 });
 
+test('names show without initials (Owner, 01/10/2026)', async ({ page }) => {
+  // Each row's "Sửa <name>" button gives the full name the name text must equal.
+  const nameOf = async (edit: ReturnType<Page['getByRole']>) =>
+    ((await edit.getAttribute('aria-label')) ?? '').replace(/^Sửa /, '');
+
+  const rows = members(page, 'Bình Minh')
+    .getByRole('row')
+    .filter({ has: page.getByRole('cell') });
+  await expect(rows).toHaveCount(11);
+  for (const row of await rows.all()) {
+    const name = await nameOf(row.getByRole('button', { name: /^Sửa / }));
+    await expect(row.getByRole('cell').first()).toHaveText(name);
+  }
+
+  const shared = page.getByRole('region', { name: 'Hỗ trợ dùng chung' }).getByRole('listitem');
+  await expect(shared).toHaveCount(3);
+  for (const item of await shared.all()) {
+    const name = await nameOf(item.getByRole('button', { name: /^Sửa / }));
+    await expect(item.locator('span').first()).toHaveText(name);
+  }
+});
+
 test('adds a team, then renames it', async ({ page }) => {
   const dialog = await createTeam(page, 'Thiên Hà');
 

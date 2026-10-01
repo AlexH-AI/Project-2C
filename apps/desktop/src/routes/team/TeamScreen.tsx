@@ -15,7 +15,6 @@ import { DeletePersonDialog, PersonDialog } from './PersonDialogs';
 import { DeleteTeamDialog, TeamNameDialog } from './TeamDialogs';
 import {
   groupByTeam,
-  initials,
   personUsage,
   staffMetrics,
   type StaffMetrics,
@@ -49,19 +48,9 @@ const ROLE = 'text-xs font-bold tracking-wider text-fg-3';
 const LINK =
   'cursor-pointer rounded-sm text-xs text-accent hover:underline focus-visible:outline-2 focus-visible:outline-accent';
 
-/** Avatar with the person's initials, then their full name. */
+/** The person's full name, no avatar (Owner, 01/10/2026). */
 function PersonName({ person }: { person: Person }) {
-  return (
-    <span className="flex items-center gap-2 whitespace-nowrap">
-      <span
-        aria-hidden="true"
-        className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-3 text-xs font-semibold text-fg-2"
-      >
-        {initials(person.name)}
-      </span>
-      {person.name}
-    </span>
-  );
+  return <span className="whitespace-nowrap">{person.name}</span>;
 }
 
 function EditLink({ person, onEdit }: { person: Person; onEdit: (person: Person) => void }) {

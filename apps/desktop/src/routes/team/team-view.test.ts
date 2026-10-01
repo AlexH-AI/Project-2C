@@ -1,6 +1,6 @@
 import type { Person, Team } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { groupByTeam, initials, personUsage, staffMetrics } from './team-view';
+import { groupByTeam, personUsage, staffMetrics } from './team-view';
 
 const SAO_MAI: Team = { id: 't1', name: 'Sao Mai' };
 const BINH_MINH: Team = { id: 't2', name: 'Bình Minh' };
@@ -119,18 +119,5 @@ describe('personUsage', () => {
       policies: 0,
       coordinating: 0,
     });
-  });
-});
-
-describe('initials', () => {
-  it('takes the family and the given name', () => {
-    expect(initials('Nguyễn Thu Hà')).toBe('NH');
-    expect(initials('  đỗ   khánh linh ')).toBe('ĐL');
-    expect(initials('Huy')).toBe('H');
-  });
-
-  it('gives nothing for a blank name', () => {
-    expect(initials('')).toBe('');
-    expect(initials('   ')).toBe('');
   });
 });

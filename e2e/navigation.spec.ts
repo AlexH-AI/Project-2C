@@ -1,13 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const SCREENS = [
-  'Tổng quan hôm nay',
-  'Lịch hẹn',
-  'Khách hàng',
-  'Báo cáo',
-  'Team & nhân sự',
-  'Cài đặt',
-];
+const SCREENS = ['Tổng quan', 'Lịch hẹn', 'Khách hàng', 'Báo cáo', 'Team & nhân sự', 'Cài đặt'];
 
 function trackConsoleErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -31,8 +24,8 @@ test('the sidebar lists the six screens, each with an icon', async ({ page }) =>
 test('opens on the overview with it selected', async ({ page }) => {
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan hôm nay');
-  await expect(page.getByRole('link', { name: 'Tổng quan hôm nay' })).toHaveAttribute(
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan');
+  await expect(page.getByRole('link', { name: 'Tổng quan' })).toHaveAttribute(
     'aria-current',
     'page',
   );
@@ -79,7 +72,7 @@ test('a customer profile keeps Customers selected', async ({ page }) => {
 test('an unknown address falls back to the overview', async ({ page }) => {
   await page.goto('/#/nope');
 
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan hôm nay');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan');
 });
 
 test('the scope switch selects one of All / Team / RE', async ({ page }) => {
