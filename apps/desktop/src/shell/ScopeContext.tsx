@@ -19,11 +19,6 @@ export const ScopeContext = createContext<ScopeState>({
   pickRe: () => {},
 });
 
-/** The topbar scope, before the RE strip narrows it (Appointments until it gets the strip). */
-export function useScope(): Scope {
-  return useContext(ScopeContext).picked;
-}
-
 export function useScopeState(): ScopeState {
   return useContext(ScopeContext);
 }
