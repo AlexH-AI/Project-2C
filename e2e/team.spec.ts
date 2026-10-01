@@ -5,7 +5,7 @@ const SEEDED = ['Bình Minh', 'Hừng Đông', 'Sao Mai'];
 
 const teamList = (page: Page) => page.getByRole('region', { name: 'Team', exact: true });
 const teamButton = (page: Page, name: string) =>
-  teamList(page).getByRole('button', { name: new RegExp(`^${name} \\d`) });
+  teamList(page).getByRole('button', { name: new RegExp(`^${name} (TL|chưa)`) });
 const members = (page: Page, team: string) =>
   page.getByRole('region', { name: `Thành viên team ${team}` });
 
@@ -24,11 +24,11 @@ test.beforeEach(async ({ page }) => {
 
 test('lists the seeded teams, their members and the shared support staff', async ({ page }) => {
   for (const name of SEEDED) {
-    await expect(teamButton(page, name)).toContainText('1 TL · 10 RE');
+    await expect(teamButton(page, name)).toContainText('TL · 10 RE');
   }
-  await expect(page.getByText('3 team · 33 RE / TL · 3 hỗ trợ dùng chung')).toBeVisible();
+  await expect(page.getByText('3 team · 3 TL · 30 RE · 3 người hỗ trợ')).toBeVisible();
 
-  const shared = page.getByRole('region', { name: 'Hỗ trợ dùng chung' });
+  const shared = page.getByRole('region', { name: 'Người hỗ trợ' });
   await expect(shared.getByRole('listitem')).toHaveCount(3);
   for (const role of ['IS', 'BD', 'BDM']) {
     await expect(shared.getByText(role, { exact: true })).toBeVisible();
@@ -37,9 +37,38 @@ test('lists the seeded teams, their members and the shared support staff', async
   await teamButton(page, 'Sao Mai').click();
   await expect(teamButton(page, 'Sao Mai')).toHaveAttribute('aria-pressed', 'true');
   const table = members(page, 'Sao Mai').getByRole('table');
-  await expect(table.getByRole('row')).toHaveCount(1 + 11);
-  await expect(table.getByRole('cell', { name: 'TL', exact: true })).toHaveCount(1);
+  await expect(table.getByRole('row')).toHaveCount(1 + 10);
+  await expect(table.getByRole('cell', { name: 'TL', exact: true })).toHaveCount(0);
   await expect(table.getByRole('cell', { name: 'RE', exact: true })).toHaveCount(10);
+});
+
+test('the TL sits in the table header with an Edit button (B1)', async ({ page }) => {
+  await teamButton(page, 'Sao Mai').click();
+  const region = members(page, 'Sao Mai');
+  await expect(region.getByRole('heading', { name: 'Team Sao Mai', exact: true })).toBeVisible();
+  const edit = region.getByRole('button', { name: /^Sửa / }).first();
+  const name = ((await edit.getAttribute('aria-label')) ?? '').replace(/^Sửa /, '');
+  await expect(region.getByText(name).first()).toBeVisible();
+  await expect(edit.locator('..')).toContainText(/TL.+·\s*Sửa/);
+  await edit.click();
+  const dialog = page.getByRole('dialog', { name: 'Sửa nhân sự' });
+  await expect(dialog.getByRole('textbox', { name: 'Họ tên' })).toHaveValue(name);
+  await expect(dialog.getByRole('radio', { name: 'TL', exact: true })).toBeChecked();
+});
+
+test('a team without a TL offers "+ Thêm TL", which opens the dialog on TL and that team', async ({
+  page,
+}) => {
+  await createTeam(page, 'Thiên Hà');
+  await expect(teamButton(page, 'Thiên Hà')).toContainText('chưa có TL · 0 RE');
+  const region = members(page, 'Thiên Hà');
+  await expect(region).toContainText('chưa có TL');
+  await region.getByRole('button', { name: '+ Thêm TL' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Nhân sự mới' });
+  await expect(dialog.getByRole('radio', { name: 'TL', exact: true })).toBeChecked();
+  await expect(dialog.getByRole('combobox', { name: 'Team' }).locator('option:checked')).toHaveText(
+    'Thiên Hà',
+  );
 });
 
 test('names show without initials (Owner, 01/10/2026)', async ({ page }) => {
@@ -50,13 +79,13 @@ test('names show without initials (Owner, 01/10/2026)', async ({ page }) => {
   const rows = members(page, 'Bình Minh')
     .getByRole('row')
     .filter({ has: page.getByRole('cell') });
-  await expect(rows).toHaveCount(11);
+  await expect(rows).toHaveCount(10);
   for (const row of await rows.all()) {
     const name = await nameOf(row.getByRole('button', { name: /^Sửa / }));
     await expect(row.getByRole('cell').first()).toHaveText(name);
   }
 
-  const shared = page.getByRole('region', { name: 'Hỗ trợ dùng chung' }).getByRole('listitem');
+  const shared = page.getByRole('region', { name: 'Người hỗ trợ' }).getByRole('listitem');
   await expect(shared).toHaveCount(3);
   for (const item of await shared.all()) {
     const name = await nameOf(item.getByRole('button', { name: /^Sửa / }));
@@ -69,8 +98,8 @@ test('adds a team, then renames it', async ({ page }) => {
 
   await expect(dialog).toBeHidden();
   await expect(teamButton(page, 'Thiên Hà')).toHaveAttribute('aria-pressed', 'true');
-  await expect(teamButton(page, 'Thiên Hà')).toContainText('0 TL · 0 RE');
-  await expect(members(page, 'Thiên Hà')).toContainText('Team chưa có nhân sự.');
+  await expect(teamButton(page, 'Thiên Hà')).toContainText('chưa có TL · 0 RE');
+  await expect(members(page, 'Thiên Hà')).toContainText('Team chưa có RE.');
 
   await members(page, 'Thiên Hà').getByRole('button', { name: 'Đổi tên team' }).click();
   const rename = page.getByRole('dialog', { name: 'Đổi tên team' });
@@ -126,7 +155,7 @@ test('adds an RE to a team, renames them, then deletes them', async ({ page }) =
   await addRe(page, 'Trần Hải Yến', 'Hừng Đông');
 
   await expect(teamButton(page, 'Hừng Đông')).toHaveAttribute('aria-pressed', 'true');
-  await expect(teamButton(page, 'Hừng Đông')).toContainText('1 TL · 11 RE');
+  await expect(teamButton(page, 'Hừng Đông')).toContainText('TL · 11 RE');
   const table = members(page, 'Hừng Đông').getByRole('table');
   // A new RE: role, then no open customers, no appointments, no policies issued.
   await expect(table.getByRole('row', { name: /Trần Hải Yến/ }).getByRole('cell')).toHaveText([
@@ -154,7 +183,7 @@ test('adds an RE to a team, renames them, then deletes them', async ({ page }) =
   await remove.getByRole('button', { name: 'Xóa', exact: true }).click();
   await expect(remove).toBeHidden();
   await expect(table.getByRole('row', { name: /Trần Hải Âu/ })).toHaveCount(0);
-  await expect(teamButton(page, 'Hừng Đông')).toContainText('1 TL · 10 RE');
+  await expect(teamButton(page, 'Hừng Đông')).toContainText('TL · 10 RE');
 });
 
 test('refuses an RE without a team, with the reason on the field', async ({ page }) => {
@@ -173,7 +202,7 @@ test('refuses an RE without a team, with the reason on the field', async ({ page
   await dialog.getByRole('radio', { name: 'IS', exact: true }).check();
   await dialog.getByRole('button', { name: 'Thêm' }).click();
   await expect(dialog).toBeHidden();
-  const shared = page.getByRole('region', { name: 'Hỗ trợ dùng chung' });
+  const shared = page.getByRole('region', { name: 'Người hỗ trợ' });
   await expect(shared.getByRole('listitem')).toHaveCount(4);
   await expect(shared).toContainText('Trần Hải Yến');
 });
@@ -193,7 +222,7 @@ test('a new IS / BD / BDM leaves the selected team for the shared support', asyn
   await dialog.getByRole('button', { name: 'Thêm' }).click();
 
   await expect(dialog).toBeHidden();
-  await expect(page.getByRole('region', { name: 'Hỗ trợ dùng chung' })).toContainText('Lê Thu Hà');
+  await expect(page.getByRole('region', { name: 'Người hỗ trợ' })).toContainText('Lê Thu Hà');
 });
 
 test('refuses to delete an RE who still has records, and says how many (9b)', async ({ page }) => {
@@ -221,9 +250,7 @@ test('refuses to delete an RE who still has records, and says how many (9b)', as
   await expect(members(page, 'Sao Mai').getByRole('row', { name: new RegExp(name) })).toBeVisible();
 });
 
-test('member columns: an RE open customers match the Customers screen, a TL has none', async ({
-  page,
-}) => {
+test('member columns: an RE open customers match the Customers screen', async ({ page }) => {
   await page.goto('/#/customers');
   await page
     .getByRole('radiogroup', { name: 'Góc nhìn' })
@@ -247,12 +274,6 @@ test('member columns: an RE open customers match the Customers screen, a TL has 
   ).toBeVisible();
   const row = table.getByRole('row', { name: new RegExp(re) });
   await expect(row.getByRole('cell').nth(2)).toHaveText(open);
-  const tl = table
-    .getByRole('row')
-    .filter({ has: page.getByRole('cell', { name: 'TL', exact: true }) });
-  await expect(tl.getByRole('cell').nth(2)).toHaveText('—');
-  await expect(tl.getByRole('cell').nth(3)).toHaveText(/^\d+$/);
-  await expect(tl.getByRole('cell').nth(4)).toHaveText('—');
 });
 
 test('deletes an empty team', async ({ page }) => {

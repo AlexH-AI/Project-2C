@@ -20,6 +20,7 @@ export function PersonDialog({
   person,
   teams,
   defaultTeamId,
+  defaultRole = 'RE',
   onClose,
   onSaved,
   onDelete,
@@ -27,13 +28,14 @@ export function PersonDialog({
   person?: Person;
   teams: readonly Team[];
   defaultTeamId?: string;
+  defaultRole?: PersonRole;
   onClose: () => void;
   onSaved: (person: Person) => void;
   onDelete?: () => void;
 }) {
   const data = useAppData();
   const [name, setName] = useState(person?.name ?? '');
-  const [role, setRole] = useState<PersonRole>(person?.role ?? 'RE');
+  const [role, setRole] = useState<PersonRole>(person?.role ?? defaultRole);
   const [teamId, setTeamId] = useState(person ? (person.teamId ?? '') : (defaultTeamId ?? ''));
   const [errors, setErrors] = useState<Errors>({});
 

@@ -24,19 +24,35 @@ describe('groupByTeam', () => {
 
     const view = groupByTeam([SAO_MAI, BINH_MINH], people);
 
-    expect(view.teams.map((entry) => [entry.team.name, entry.members.map((p) => p.id)])).toEqual([
-      ['Sao Mai', ['re1', 'tl1', 're2']],
-      ['Bình Minh', ['bd']],
+    expect(view.teams.map((entry) => [entry.team.name, entry.reps.map((p) => p.id)])).toEqual([
+      ['Sao Mai', ['re1', 're2']],
+      ['Bình Minh', []],
     ]);
     expect(view.teams[0]).toMatchObject({ tl: 1, re: 2 });
     expect(view.teams[1]).toMatchObject({ tl: 0, re: 0 });
     expect(view.shared.map((p) => p.id)).toEqual(['is']);
   });
 
+  it('gives the TL of each team: the one, none, or the first by name of several', () => {
+    const view = groupByTeam(
+      [SAO_MAI, BINH_MINH, { id: 't3', name: 'Hừng Đông' }],
+      [
+        person('tl1', 'TL', 't1'),
+        person('re1', 'RE', 't1'),
+        person('re2', 'RE', 't2'),
+        person('tlA', 'TL', 't3'),
+        person('tlB', 'TL', 't3'),
+      ],
+    );
+
+    expect(view.teams.map((entry) => entry.lead?.id)).toEqual(['tl1', undefined, 'tlA']);
+    expect(view.teams[2]).toMatchObject({ tl: 2, reps: [] });
+  });
+
   it('keeps an empty team', () => {
     const view = groupByTeam([SAO_MAI], []);
 
-    expect(view.teams).toEqual([{ team: SAO_MAI, members: [], tl: 0, re: 0 }]);
+    expect(view.teams).toEqual([{ team: SAO_MAI, lead: undefined, reps: [], tl: 0, re: 0 }]);
     expect(view.shared).toEqual([]);
   });
 });

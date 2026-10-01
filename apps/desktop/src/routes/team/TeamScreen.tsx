@@ -7,7 +7,7 @@ import {
   listTeams,
   type Database,
 } from '@p2c/db';
-import type { Person, Team } from '@p2c/domain';
+import type { Person, PersonRole, Team } from '@p2c/domain';
 import { Button, DataTable, type DataTableColumn } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
@@ -25,7 +25,7 @@ type Editing =
   | { readonly kind: 'create' }
   | { readonly kind: 'rename'; readonly team: Team }
   | { readonly kind: 'delete'; readonly team: Team }
-  | { readonly kind: 'addPerson'; readonly teamId?: string }
+  | { readonly kind: 'addPerson'; readonly teamId?: string; readonly role?: PersonRole }
   | { readonly kind: 'editPerson'; readonly person: Person }
   | { readonly kind: 'deletePerson'; readonly person: Person };
 
@@ -132,7 +132,8 @@ export function TeamScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing | null>(null);
   const selected = view.teams.find((entry) => entry.team.id === selectedId) ?? view.teams[0];
-  const staff = view.teams.reduce((sum, entry) => sum + entry.tl + entry.re, 0);
+  const tlCount = view.teams.reduce((sum, entry) => sum + entry.tl, 0);
+  const reCount = view.teams.reduce((sum, entry) => sum + entry.re, 0);
   const teams = view.teams.map((entry) => entry.team);
   const close = () => setEditing(null);
   const editPerson = (person: Person) => setEditing({ kind: 'editPerson', person });
@@ -147,7 +148,12 @@ export function TeamScreen() {
     <>
       <div className="flex items-center gap-3">
         <span className="text-sm text-fg-2 tabular-nums">
-          {t('team.summary', { teams: view.teams.length, staff, shared: view.shared.length })}
+          {t('team.summary', {
+            teams: view.teams.length,
+            tl: tlCount,
+            re: reCount,
+            shared: view.shared.length,
+          })}
         </span>
         <div className="flex-1" />
         <Button onClick={() => setEditing({ kind: 'addPerson', teamId: selected?.team.id })}>
@@ -178,7 +184,7 @@ export function TeamScreen() {
                 >
                   {entry.team.name}
                   <span className="ml-auto font-normal text-fg-3 tabular-nums">
-                    {t('team.count', { tl: entry.tl, re: entry.re })}
+                    {t(entry.lead ? 'team.count' : 'team.countNoLead', { re: entry.re })}
                   </span>
                 </button>
               );
@@ -190,6 +196,10 @@ export function TeamScreen() {
           <Members
             entry={selected}
             columns={columns}
+            onEditLead={editPerson}
+            onAddLead={() =>
+              setEditing({ kind: 'addPerson', teamId: selected.team.id, role: 'TL' })
+            }
             onRename={() => setEditing({ kind: 'rename', team: selected.team })}
             onDelete={() => setEditing({ kind: 'delete', team: selected.team })}
           />
@@ -213,6 +223,7 @@ export function TeamScreen() {
           person={editing.kind === 'editPerson' ? editing.person : undefined}
           teams={teams}
           defaultTeamId={editing.kind === 'addPerson' ? editing.teamId : undefined}
+          defaultRole={editing.kind === 'addPerson' ? editing.role : undefined}
           onClose={close}
           onSaved={(person) => {
             if (person.teamId) setSelectedId(person.teamId);
@@ -248,12 +259,9 @@ function SharedSupport({
 }) {
   return (
     <section aria-labelledby="team-shared-title" className={CARD}>
-      <div className="mb-2 flex items-baseline gap-2">
-        <h2 id="team-shared-title" className={CARD_TITLE}>
-          {t('team.shared')}
-        </h2>
-        <span className="text-xs text-fg-3">{t('team.sharedMeta')}</span>
-      </div>
+      <h2 id="team-shared-title" className={`${CARD_TITLE} mb-2`}>
+        {t('team.shared')}
+      </h2>
       {people.length === 0 ? (
         <p className="m-0 text-sm text-fg-3">{t('team.sharedNone')}</p>
       ) : (
@@ -275,11 +283,15 @@ function SharedSupport({
 function Members({
   entry,
   columns,
+  onEditLead,
+  onAddLead,
   onRename,
   onDelete,
 }: {
   entry: TeamEntry;
   columns: ReadonlyArray<DataTableColumn<Person>>;
+  onEditLead: (person: Person) => void;
+  onAddLead: () => void;
   onRename: () => void;
   onDelete: () => void;
 }) {
@@ -289,22 +301,38 @@ function Members({
       className={`${CARD} min-w-0 flex-1`}
     >
       <div className="mb-2 flex items-center gap-2">
-        <h2 className={CARD_TITLE}>{entry.team.name}</h2>
-        <span className="text-xs text-fg-3 tabular-nums">
-          {t('team.memberCount', { count: entry.members.length })}
-        </span>
+        <h2 className={CARD_TITLE}>{t('team.heading', { name: entry.team.name })}</h2>
+        <span className="text-fg-3">·</span>
+        {entry.lead ? (
+          <>
+            <span className="text-sm text-fg-2">
+              <span className={`${ROLE} mr-1.5`}>{t('team.leadOf')}</span>
+              {entry.lead.name}
+            </span>
+            <span className="text-fg-3">·</span>
+            <EditLink person={entry.lead} onEdit={onEditLead} />
+          </>
+        ) : (
+          <>
+            <span className="text-sm text-fg-3">{t('team.noLead')}</span>
+            <span className="text-fg-3">·</span>
+            <button type="button" onClick={onAddLead} className={LINK}>
+              {t('team.addLead')}
+            </button>
+          </>
+        )}
         <div className="flex-1" />
         <Button onClick={onRename}>{t('team.rename')}</Button>
         <Button onClick={onDelete}>{t('team.delete')}</Button>
       </div>
-      {entry.members.length === 0 ? (
+      {entry.reps.length === 0 ? (
         <p className="m-0 text-sm text-fg-3">{t('team.empty')}</p>
       ) : (
         <div className="overflow-x-auto">
           <DataTable
             label={t('team.members', { name: entry.team.name })}
             columns={columns}
-            rows={entry.members}
+            rows={entry.reps}
             getRowId={(person) => person.id}
             initialSort={{ id: 'name', desc: false }}
           />
