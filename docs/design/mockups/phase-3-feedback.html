@@ -1,0 +1,1180 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Phản hồi Owner 01/10 — gói B — Project-2C mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="mockups.css" />
+    <style>
+      /* New tokens proposed by this mockup (G3, #217) */
+      :root {
+        /* B4: days inside a week / custom period */
+        --period-band: rgba(217, 178, 106, 0.08);
+        --period-band-border: rgba(217, 178, 106, 0.45);
+        /* B5 option A: tinted date cell (text stays --text) */
+        --date-past-bg: rgba(240, 210, 110, 0.2);
+        --date-today-bg: rgba(63, 214, 154, 0.2);
+        --date-future-bg: rgba(111, 168, 255, 0.22);
+        /* B5 option B: light date text */
+        --date-past: #f0dc9a;
+        --date-today: #9be8c0;
+        --date-future: #a8cbff;
+        /* B5 option C: bar on the left of the date cell */
+        --date-past-bar: #e8c766;
+        --date-today-bar: var(--ok);
+        --date-future-bar: var(--info);
+      }
+
+      .page {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 28px 24px 48px;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+      .page > header h1 {
+        margin: 0;
+        font-size: var(--fs-2xl);
+      }
+      .lead {
+        color: var(--text-2);
+        margin: 4px 0 0;
+      }
+      .part {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .part-head {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 8px;
+      }
+      .part-head h2 {
+        margin: 0;
+        font-size: var(--fs-xl);
+      }
+      .idea {
+        font-size: var(--fs-xs);
+        font-weight: 700;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+        border-radius: 999px;
+        padding: 1px 9px;
+        white-space: nowrap;
+      }
+      .notes {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--text-2);
+        font-size: var(--fs-sm);
+      }
+      .notes li {
+        margin-bottom: 4px;
+      }
+      .notes b {
+        color: var(--text);
+      }
+      .cap {
+        font-size: var(--fs-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-3);
+        font-weight: 600;
+        margin: 0 0 6px;
+      }
+      .cap .was {
+        text-transform: none;
+        letter-spacing: 0;
+        font-weight: 400;
+      }
+
+      /* A screen frame: topbar + content, no sidebar (saves width) */
+      .frame {
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        background: var(--bg-0);
+      }
+      .frame .topbar {
+        position: static;
+      }
+      .frame .content {
+        padding: 16px 20px 20px;
+        gap: 14px;
+      }
+      /* A3 (#216): scope picker text 14px in the topbar */
+      .topbar .segmented button,
+      .topbar .select {
+        font-size: var(--fs-md);
+      }
+      .link {
+        color: var(--accent);
+        font-size: var(--fs-sm);
+        cursor: pointer;
+      }
+      .link:hover {
+        text-decoration: underline;
+      }
+      .role {
+        font-size: var(--fs-xs);
+        font-weight: 700;
+        color: var(--text-3);
+        letter-spacing: 0.04em;
+      }
+
+      /* ---------- B1 Team ---------- */
+      .team-layout {
+        display: grid;
+        grid-template-columns: 256px minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+      }
+      .team-list a {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: var(--radius-sm);
+        color: var(--text-2);
+        font-size: var(--fs-sm);
+      }
+      .team-list a.on {
+        background: var(--accent-soft);
+        color: var(--text);
+        font-weight: 600;
+      }
+      .team-list a .n {
+        margin-left: auto;
+        color: var(--text-3);
+        font-weight: 400;
+        font-variant-numeric: tabular-nums;
+      }
+      .members-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+      }
+      .members-head h2 {
+        margin: 0;
+        font-size: var(--fs-md);
+        font-weight: 650;
+        color: var(--heading);
+      }
+      .members-head .sep {
+        color: var(--text-3);
+      }
+      .members-head .tl {
+        font-size: var(--fs-md);
+      }
+      .members-head .tl .role {
+        margin-right: 4px;
+      }
+      .support li {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 3px 0;
+      }
+      .support ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        font-size: var(--fs-sm);
+      }
+      .variants {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .variants .card {
+        padding: 12px 14px;
+      }
+
+      /* ---------- B2/B3 RE strip ---------- */
+      .re-strip {
+        display: grid;
+        grid-template-columns: 200px minmax(0, 1fr);
+        gap: 14px;
+        align-items: stretch;
+        padding: 12px 14px;
+      }
+      .re-strip .team-side {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        border-right: 1px solid var(--border);
+        padding-right: 14px;
+      }
+      .re-strip .team-side h3 {
+        margin: 0;
+        font-size: var(--fs-sm);
+        color: var(--heading);
+        font-weight: 650;
+      }
+      .re-strip .hint {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        margin-top: auto;
+      }
+      .re-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 6px;
+      }
+      .re-chip {
+        all: unset;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--bg-2);
+        font-size: var(--fs-sm);
+        color: var(--text-2);
+        min-width: 0;
+      }
+      .re-chip .nm {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .re-chip .n {
+        margin-left: auto;
+        color: var(--text-3);
+        font-variant-numeric: tabular-nums;
+      }
+      .re-chip:hover {
+        border-color: var(--border-strong);
+        color: var(--text);
+      }
+      .re-chip.on {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .re-chip.on .n {
+        color: var(--accent);
+      }
+      .re-chip.all {
+        width: auto;
+      }
+      .re-chip:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .tools {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .viewing {
+        font-size: var(--fs-sm);
+        color: var(--text-2);
+        font-variant-numeric: tabular-nums;
+      }
+      .viewing b {
+        color: var(--accent);
+      }
+      .kanban {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr)) 220px;
+        gap: 10px;
+      }
+      .kcol {
+        background: var(--bg-1);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: var(--fs-sm);
+      }
+      .kcol .kh {
+        display: flex;
+        align-items: center;
+      }
+      .kcol .kh .n {
+        margin-left: auto;
+        color: var(--text-2);
+      }
+      .kcard {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 6px 9px;
+      }
+      .kcard b {
+        display: block;
+        font-weight: 600;
+      }
+      .kcard span {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+      }
+      .two {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 14px;
+        align-items: start;
+      }
+      .day-list h3 {
+        margin: 6px 0 2px;
+        font-size: var(--fs-sm);
+      }
+      .day-list h4 {
+        margin: 2px 0;
+        padding-left: 12px;
+        font-size: var(--fs-xs);
+        color: var(--text-2);
+        font-weight: 500;
+      }
+      .day-list ul {
+        list-style: none;
+        margin: 0;
+        padding: 0 0 4px 12px;
+        font-size: var(--fs-sm);
+      }
+      .day-list li {
+        display: flex;
+        gap: 12px;
+        padding: 1px 0;
+      }
+      .day-list li .t {
+        width: 40px;
+        color: var(--text-3);
+        font-variant-numeric: tabular-nums;
+      }
+      .day-list li .s {
+        margin-left: auto;
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+      }
+
+      /* ---------- B4 Month calendar ---------- */
+      .cals {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+      .cal {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 5px;
+      }
+      .cal .h {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0 6px;
+      }
+      .cell {
+        all: unset;
+        box-sizing: border-box;
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        min-height: 58px;
+        padding: 5px 7px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto 1fr;
+        font-variant-numeric: tabular-nums;
+        cursor: pointer;
+        position: relative;
+      }
+      .cell .dn {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+      }
+      .cell b {
+        font-size: var(--fs-lg);
+        text-align: right;
+      }
+      .cell .dots {
+        grid-column: 1 / -1;
+        align-self: end;
+        display: flex;
+        gap: 3px;
+      }
+      .cell .dots i {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+      }
+      .dots .met,
+      .lg .met {
+        background: var(--ok);
+      }
+      .dots .plan,
+      .lg .plan {
+        border: 1.5px solid var(--info);
+        box-sizing: border-box;
+      }
+      .dots .miss,
+      .lg .miss {
+        background: var(--warn);
+      }
+      .cell.wk {
+        background: var(--bg-1);
+      }
+      .cell.out {
+        opacity: 0.35;
+        cursor: default;
+      }
+      /* today: ring + small tag (number no longer gold: gold now means "picked") */
+      .cell.today {
+        box-shadow: inset 0 0 0 1px var(--text-2);
+        border-color: var(--text-2);
+      }
+      .cell.today .dn::after {
+        content: ' · hôm nay';
+        color: var(--text-2);
+      }
+      /* B4 ý 12: picked day number in gold */
+      .cell.picked {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+      }
+      .cell.picked .dn {
+        color: var(--accent);
+        font-weight: 700;
+        font-size: var(--fs-sm);
+      }
+      /* B4 ý 14: days of a week / custom period */
+      .cell.band {
+        background: var(--period-band);
+        border-color: var(--period-band-border);
+        opacity: 1;
+        cursor: pointer;
+      }
+      .cell.band.picked {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+      }
+      .cell.band.other::after {
+        content: '→';
+        position: absolute;
+        right: 6px;
+        bottom: 4px;
+        font-size: var(--fs-xs);
+        color: var(--accent);
+      }
+      .lg {
+        display: flex;
+        gap: 14px;
+        font-size: var(--fs-xs);
+        color: var(--text-2);
+        margin-top: 8px;
+        flex-wrap: wrap;
+      }
+      .lg i {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 5px;
+        vertical-align: baseline;
+      }
+      .lg .sw-band {
+        border-radius: 3px;
+        width: 14px;
+        background: var(--period-band);
+        border: 1px solid var(--period-band-border);
+      }
+
+      /* ---------- B5 date column ---------- */
+      .opts {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .opts .card {
+        padding: 12px 12px 8px;
+      }
+      .opts table td,
+      .opts table th {
+        padding: 6px 8px;
+      }
+      td.d {
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+      .optA td.past {
+        background: var(--date-past-bg);
+      }
+      .optA td.today {
+        background: var(--date-today-bg);
+        font-weight: 600;
+      }
+      .optA td.future {
+        background: var(--date-future-bg);
+      }
+      .optB td.past {
+        color: var(--date-past);
+      }
+      .optB td.today {
+        color: var(--date-today);
+        font-weight: 600;
+      }
+      .optB td.future {
+        color: var(--date-future);
+      }
+      .optC td.d {
+        border-left: 3px solid transparent;
+      }
+      .optC td.past {
+        border-left-color: var(--date-past-bar);
+      }
+      .optC td.today {
+        border-left-color: var(--date-today-bar);
+        font-weight: 600;
+      }
+      .optC td.future {
+        border-left-color: var(--date-future-bar);
+      }
+      .ratio {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        margin: 8px 0 0;
+      }
+
+      /* ---------- B6 Year grid ---------- */
+      .year {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .quarter {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .quarter .qh {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0 4px;
+        display: flex;
+        justify-content: space-between;
+        font-variant-numeric: tabular-nums;
+      }
+      .mcell {
+        all: unset;
+        box-sizing: border-box;
+        cursor: pointer;
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 9px 11px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-variant-numeric: tabular-nums;
+      }
+      .mcell:hover {
+        border-color: var(--border-strong);
+      }
+      .mcell:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .mcell .top {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+      }
+      .mcell .mn {
+        font-size: var(--fs-md);
+        font-weight: 650;
+      }
+      .mcell .tot {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+      }
+      .mcell .tot b {
+        font-size: var(--fs-lg);
+        color: var(--text);
+        margin-right: 3px;
+      }
+      .mbar {
+        display: flex;
+        height: 20px;
+        border-radius: 5px;
+        overflow: hidden;
+        background: var(--bg-3);
+        gap: 1px;
+      }
+      .mbar span {
+        display: grid;
+        place-items: center;
+        font-size: var(--fs-xs);
+        font-weight: 700;
+        color: var(--on-accent);
+        min-width: 3px;
+      }
+      .mbar .met {
+        background: var(--ok);
+      }
+      .mbar .miss {
+        background: var(--warn);
+      }
+      .mbar .plan {
+        background: var(--info);
+      }
+      .mbar span.narrow {
+        font-size: 0;
+      }
+      .mcell.current {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 1px var(--accent);
+      }
+      .mcell.current .mn {
+        color: var(--accent);
+      }
+      /* future: flat surface, dashed border, outlined bar — text keeps ≥ 4.5:1 (no opacity on text) */
+      .mcell.future {
+        background: var(--bg-1);
+        border-style: dashed;
+      }
+      .mcell.future .mn {
+        color: var(--text-3);
+        font-weight: 500;
+      }
+      .mcell.future .mbar {
+        background: transparent;
+        border: 1px dashed var(--border-strong);
+      }
+      .mcell.future .mbar .plan {
+        background: rgba(111, 168, 255, 0.25);
+        color: var(--text);
+      }
+      .mcell.future .mbar .empty {
+        background: transparent;
+        color: var(--text-3);
+        font-weight: 500;
+        flex: 1;
+      }
+
+      .ask li {
+        margin-bottom: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header>
+        <h1>Phản hồi Owner 01/10 · gói B (G3, #217)</h1>
+        <p class="lead">
+          Mockup cho các ý 2, 3, 6, 12, 13, 14, 16 sau khi Owner kiểm exe 01/10/2026. Đã áp dụng sẵn gói A: không còn chữ viết tắt trước tên (ý 7), bộ chọn góc nhìn chữ 14px (ý 1). Dữ liệu giả lập theo seed (3 team × 1 TL + 10 RE), hôm nay = <b class="num">Thứ năm 01/10/2026</b>.
+        </p>
+      </header>
+
+      <!-- ================= B1 ================= -->
+      <section class="part" aria-labelledby="b1">
+        <div class="part-head"><h2 id="b1">B1 · Team &amp; nhân sự</h2><span class="idea">ý 6</span></div>
+        <ul class="notes">
+          <li>Đầu bảng thành viên: <b>"Team Bình Minh · TL Lý Gia Trang · Sửa"</b> — không kèm số người / số lịch hẹn. "Sửa" mở hộp Sửa nhân sự của TL.</li>
+          <li>TL <b>bỏ khỏi bảng</b>: bảng chỉ còn RE (vẫn sắp xếp được mọi cột). Nút Đổi tên team / Xóa team giữ bên phải.</li>
+          <li>"Hỗ trợ dùng chung / không thuộc team" → <b>"Người hỗ trợ"</b>. Dòng tóm tắt: <span class="num">3 team · 3 TL · 30 RE · 3 người hỗ trợ</span> (trước: "33 RE / TL · 3 hỗ trợ dùng chung").</li>
+        </ul>
+        <div class="frame">
+          <header class="topbar"><h1>Team &amp; nhân sự</h1><div class="spacer"></div></header>
+          <div class="content">
+            <div class="tools">
+              <span class="viewing">3 team · 3 TL · 30 RE · 3 người hỗ trợ</span>
+              <div class="spacer"></div>
+              <button class="btn">+ Nhân sự</button>
+              <button class="btn btn-primary">+ Team</button>
+            </div>
+            <div class="team-layout">
+              <div class="stack" style="gap: 14px">
+                <section class="card team-list">
+                  <div class="card-head"><h2 style="color: var(--heading)">Team</h2></div>
+                  <a href="#">Sao Mai <span class="n">1 TL · 10 RE</span></a>
+                  <a href="#" class="on">Bình Minh <span class="n">1 TL · 10 RE</span></a>
+                  <a href="#">Hừng Đông <span class="n">1 TL · 10 RE</span></a>
+                </section>
+                <section class="card support">
+                  <div class="card-head"><h2 style="color: var(--heading)">Người hỗ trợ</h2></div>
+                  <ul>
+                    <li>Ngô Quang Vinh <span class="role" style="margin-left: auto">BDM</span><span class="link">Sửa</span></li>
+                    <li>Phó Đức Huy <span class="role" style="margin-left: auto">IS</span><span class="link">Sửa</span></li>
+                    <li>Vũ Thanh Tâm <span class="role" style="margin-left: auto">BD</span><span class="link">Sửa</span></li>
+                  </ul>
+                  <p class="muted" style="margin: 10px 0 0; font-size: var(--fs-xs)">IS / BD / BDM chỉ là người phối hợp lịch hẹn, không có chỉ số.</p>
+                </section>
+              </div>
+              <section class="card">
+                <div class="members-head">
+                  <h2>Team Bình Minh</h2>
+                  <span class="sep">·</span>
+                  <span class="tl"><span class="role">TL</span>Lý Gia Trang</span>
+                  <span class="sep">·</span>
+                  <span class="link">Sửa</span>
+                  <div class="spacer"></div>
+                  <button class="btn" style="padding: 4px 10px">Đổi tên team</button>
+                  <button class="btn" style="padding: 4px 10px">Xóa team</button>
+                </div>
+                <table>
+                  <thead>
+                    <tr><th class="sort asc">Họ tên</th><th class="sort">Vai trò</th><th class="sort r">KH đang mở</th><th class="sort r">Lịch hẹn 30 ngày</th><th class="sort r">HĐ năm 2026</th><th></th></tr>
+                  </thead>
+                  <tbody class="num">
+                    <tr><td>Đặng Hải Nam</td><td><span class="role">RE</span></td><td class="r">38</td><td class="r">19</td><td class="r">9</td><td class="r"><span class="link">Sửa</span></td></tr>
+                    <tr><td>Đinh Gia Huy</td><td><span class="role">RE</span></td><td class="r">41</td><td class="r">16</td><td class="r">7</td><td class="r"><span class="link">Sửa</span></td></tr>
+                    <tr><td>Hồ Thanh Vy</td><td><span class="role">RE</span></td><td class="r">36</td><td class="r">21</td><td class="r">11</td><td class="r"><span class="link">Sửa</span></td></tr>
+                    <tr><td>Lê Minh Khang</td><td><span class="role">RE</span></td><td class="r">44</td><td class="r">12</td><td class="r">5</td><td class="r"><span class="link">Sửa</span></td></tr>
+                    <tr><td colspan="6" class="muted" style="text-align: center">… 6 RE khác (TL không còn trong bảng)</td></tr>
+                  </tbody>
+                </table>
+              </section>
+            </div>
+          </div>
+        </div>
+        <div>
+          <p class="cap">B1 · biến thể đầu bảng <span class="was">(code cho phép team có 0 hoặc nhiều TL)</span></p>
+          <div class="variants">
+            <div class="card">
+              <div class="members-head" style="margin: 0">
+                <h2>Team Hừng Đông</h2><span class="sep">·</span><span class="muted">chưa có TL</span><span class="sep">·</span><span class="link">+ Thêm TL</span>
+              </div>
+              <p class="muted" style="margin: 6px 0 0; font-size: var(--fs-xs)">"+ Thêm TL" mở hộp Nhân sự mới, chọn sẵn vai trò TL và team này.</p>
+            </div>
+            <div class="card">
+              <div class="members-head" style="margin: 0">
+                <h2>Team Sao Mai</h2><span class="sep">·</span><span class="tl"><span class="role">TL</span>Nguyễn Thu Hà</span><span class="sep">·</span><span class="link">Sửa</span><span class="sep">·</span><span class="tl"><span class="role">TL</span>Trần Hải Yến</span><span class="sep">·</span><span class="link">Sửa</span>
+              </div>
+              <p class="muted" style="margin: 6px 0 0; font-size: var(--fs-xs)">Nhiều TL: liệt kê lần lượt theo tên, mỗi người một "Sửa".</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= B2 ================= -->
+      <section class="part" aria-labelledby="b2">
+        <div class="part-head"><h2 id="b2">B2 · Khách hàng — hàng chọn RE</h2><span class="idea">ý 2</span></div>
+        <ul class="notes">
+          <li>Chỉ hiện ở <b>góc nhìn Team</b>, ngay dưới thanh đầu trang. Góc nhìn Toàn bộ / RE: không có hàng này (góc nhìn RE đã chọn RE ở thanh đầu trang).</li>
+          <li>Bên trái: tên team + nút <b>"Cả team"</b> (đang bật khi chưa chọn RE). Bên phải: các <b>RE của team</b>, mỗi hàng 5 RE, sắp theo tên như danh sách RE (A2); chỉ RE, không TL / người hỗ trợ. Số cạnh tên = KH đang mở.</li>
+          <li>Bấm một RE → kanban / bảng chỉ còn KH của RE đó; <b>bấm lại RE đó</b> (hoặc "Cả team") → về cả team.</li>
+          <li>RE đang chọn <b>dùng chung</b> với Lịch hẹn (B3). Đổi team hoặc đổi góc nhìn ở thanh đầu trang → tự bỏ chọn RE.</li>
+          <li>Bố cục phần đầu: hàng 1 = hàng chọn RE; hàng 2 = dòng "đang xem" + chuyển Kanban / Bảng + "+ KH mới".</li>
+        </ul>
+
+        <div>
+          <p class="cap">2a · Góc nhìn Team Bình Minh, chưa chọn RE</p>
+          <div class="frame">
+            <header class="topbar">
+              <h1>Khách hàng</h1>
+              <div class="spacer"></div>
+              <div class="segmented"><button>Toàn bộ</button><button class="on">Team</button><button>RE</button></div>
+              <span class="select"><b>Bình Minh</b> ▾</span>
+            </header>
+            <div class="content">
+              <section class="card re-strip" aria-label="RE của team Bình Minh">
+                <div class="team-side">
+                  <h3>Team Bình Minh · 10 RE</h3>
+                  <button class="re-chip all on"><span class="nm">Cả team</span><span class="n">382</span></button>
+                  <span class="hint">Bấm RE để lọc · bấm lại để bỏ</span>
+                </div>
+                <div class="re-grid">
+                  <button class="re-chip"><span class="nm">Đặng Hải Nam</span><span class="n">38</span></button>
+                  <button class="re-chip"><span class="nm">Đinh Gia Huy</span><span class="n">41</span></button>
+                  <button class="re-chip"><span class="nm">Hồ Thanh Vy</span><span class="n">36</span></button>
+                  <button class="re-chip"><span class="nm">Lê Minh Khang</span><span class="n">44</span></button>
+                  <button class="re-chip"><span class="nm">Mai Khánh Linh</span><span class="n">29</span></button>
+                  <button class="re-chip"><span class="nm">Phạm Thu Thảo</span><span class="n">40</span></button>
+                  <button class="re-chip"><span class="nm">Phan Đức Long</span><span class="n">33</span></button>
+                  <button class="re-chip"><span class="nm">Trần Quốc Bảo</span><span class="n">47</span></button>
+                  <button class="re-chip"><span class="nm">Trịnh Mai Phương</span><span class="n">35</span></button>
+                  <button class="re-chip"><span class="nm">Võ Ngọc Anh</span><span class="n">39</span></button>
+                </div>
+              </section>
+              <div class="tools">
+                <span class="viewing">Cả team Bình Minh · 382 KH đang mở · 57 đã đóng</span>
+                <div class="spacer"></div>
+                <div class="segmented"><button class="on">Kanban</button><button>Bảng</button></div>
+                <button class="btn btn-primary">+ KH mới</button>
+              </div>
+              <div class="kanban">
+                <div class="kcol"><div class="kh"><span class="badge st-n4">N4</span><span class="n num">171</span></div><div class="kcard"><b>Trương Bảo Ngọc</b><span>RE Hồ Thanh Vy · Nữ · 1988</span></div><div class="kcard"><b>Lưu Quang Đạt</b><span>RE Trần Quốc Bảo · Nam · 1979</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
+                <div class="kcol"><div class="kh"><span class="badge st-n3">N3</span><span class="n num">118</span></div><div class="kcard"><b>Đoàn Thị Mỹ</b><span>RE Đặng Hải Nam · Nữ · 1984</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
+                <div class="kcol"><div class="kh"><span class="badge st-n2">N2</span><span class="n num">64</span></div><div class="kcard"><b>Hà Minh Tuấn</b><span>RE Lê Minh Khang · Nam · 1975</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
+                <div class="kcol"><div class="kh"><span class="badge st-n1">N1</span><span class="n num">29</span></div><div class="kcard"><b>Cao Thùy Dung</b><span>RE Võ Ngọc Anh · Nữ · 1990</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
+                <div class="kcol"><div class="kh"><span class="badge st-hold">Tạm hoãn</span><span class="n num">31</span></div><div class="kh"><span class="badge st-lost">Mất cơ hội</span><span class="n num">26</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p class="cap">2b · Đã chọn RE Lê Minh Khang <span class="was">(bấm lại "Lê Minh Khang" hoặc "Cả team" → về 2a)</span></p>
+          <div class="frame">
+            <header class="topbar">
+              <h1>Khách hàng</h1>
+              <div class="spacer"></div>
+              <div class="segmented"><button>Toàn bộ</button><button class="on">Team</button><button>RE</button></div>
+              <span class="select"><b>Bình Minh</b> ▾</span>
+            </header>
+            <div class="content">
+              <section class="card re-strip" aria-label="RE của team Bình Minh">
+                <div class="team-side">
+                  <h3>Team Bình Minh · 10 RE</h3>
+                  <button class="re-chip all"><span class="nm">Cả team</span><span class="n">382</span></button>
+                  <span class="hint">Bấm RE để lọc · bấm lại để bỏ</span>
+                </div>
+                <div class="re-grid">
+                  <button class="re-chip"><span class="nm">Đặng Hải Nam</span><span class="n">38</span></button>
+                  <button class="re-chip"><span class="nm">Đinh Gia Huy</span><span class="n">41</span></button>
+                  <button class="re-chip"><span class="nm">Hồ Thanh Vy</span><span class="n">36</span></button>
+                  <button class="re-chip on" aria-pressed="true"><span class="nm">Lê Minh Khang</span><span class="n">44</span></button>
+                  <button class="re-chip"><span class="nm">Mai Khánh Linh</span><span class="n">29</span></button>
+                  <button class="re-chip"><span class="nm">Phạm Thu Thảo</span><span class="n">40</span></button>
+                  <button class="re-chip"><span class="nm">Phan Đức Long</span><span class="n">33</span></button>
+                  <button class="re-chip"><span class="nm">Trần Quốc Bảo</span><span class="n">47</span></button>
+                  <button class="re-chip"><span class="nm">Trịnh Mai Phương</span><span class="n">35</span></button>
+                  <button class="re-chip"><span class="nm">Võ Ngọc Anh</span><span class="n">39</span></button>
+                </div>
+              </section>
+              <div class="tools">
+                <span class="viewing"><b>Lê Minh Khang</b> · 44 KH đang mở · 6 đã đóng</span>
+                <div class="spacer"></div>
+                <div class="segmented"><button class="on">Kanban</button><button>Bảng</button></div>
+                <button class="btn btn-primary">+ KH mới</button>
+              </div>
+              <div class="kanban">
+                <div class="kcol"><div class="kh"><span class="badge st-n4">N4</span><span class="n num">19</span></div><div class="kcard"><b>Nghiêm Hoài An</b><span>RE Lê Minh Khang · Nữ · 1986</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
+                <div class="kcol"><div class="kh"><span class="badge st-n3">N3</span><span class="n num">14</span></div><div class="kcard"><b>Tạ Đình Phúc</b><span>RE Lê Minh Khang · Nam · 1981</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
+                <div class="kcol"><div class="kh"><span class="badge st-n2">N2</span><span class="n num">8</span></div><div class="kcard"><b>Hà Minh Tuấn</b><span>RE Lê Minh Khang · Nam · 1975</span></div><span class="muted" style="font-size: var(--fs-xs)">…</span></div>
+                <div class="kcol"><div class="kh"><span class="badge st-n1">N1</span><span class="n num">3</span></div><div class="kcard"><b>Kiều Phương Nhi</b><span>RE Lê Minh Khang · Nữ · 1992</span></div></div>
+                <div class="kcol"><div class="kh"><span class="badge st-hold">Tạm hoãn</span><span class="n num">4</span></div><div class="kh"><span class="badge st-lost">Mất cơ hội</span><span class="n num">2</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= B3 ================= -->
+      <section class="part" aria-labelledby="b3">
+        <div class="part-head"><h2 id="b3">B3 · Lịch hẹn — hàng chọn RE</h2><span class="idea">ý 3</span></div>
+        <ul class="notes">
+          <li>Cùng thành phần và cùng vị trí như B2. Số cạnh tên = <b>số lịch trong kỳ</b> đang chọn (đổi kỳ → số đổi theo).</li>
+          <li>Chọn RE → lịch tháng, "Trong ngày" và danh sách chỉ còn lịch <b>RE đó phụ trách</b>; lịch mà RE chỉ là người phối hợp không tính.</li>
+          <li>Ví dụ dưới: anh chọn Lê Minh Khang ở tab Khách hàng rồi sang Lịch hẹn → RE vẫn được chọn (dùng chung).</li>
+          <li>Bố cục phần đầu: hàng 1 = hàng chọn RE; hàng 2 = kỳ + người phối hợp + dòng "đang xem" + "+ Lịch hẹn mới".</li>
+        </ul>
+        <div class="frame">
+          <header class="topbar">
+            <h1>Lịch hẹn</h1>
+            <div class="spacer"></div>
+            <div class="segmented"><button>Toàn bộ</button><button class="on">Team</button><button>RE</button></div>
+            <span class="select"><b>Bình Minh</b> ▾</span>
+          </header>
+          <div class="content">
+            <section class="card re-strip" aria-label="RE của team Bình Minh">
+              <div class="team-side">
+                <h3>Team Bình Minh · 10 RE</h3>
+                <button class="re-chip all"><span class="nm">Cả team</span><span class="n">161</span></button>
+                <span class="hint">Bấm RE để lọc · bấm lại để bỏ</span>
+              </div>
+              <div class="re-grid">
+                <button class="re-chip"><span class="nm">Đặng Hải Nam</span><span class="n">17</span></button>
+                <button class="re-chip"><span class="nm">Đinh Gia Huy</span><span class="n">15</span></button>
+                <button class="re-chip"><span class="nm">Hồ Thanh Vy</span><span class="n">19</span></button>
+                <button class="re-chip on" aria-pressed="true"><span class="nm">Lê Minh Khang</span><span class="n">14</span></button>
+                <button class="re-chip"><span class="nm">Mai Khánh Linh</span><span class="n">12</span></button>
+                <button class="re-chip"><span class="nm">Phạm Thu Thảo</span><span class="n">18</span></button>
+                <button class="re-chip"><span class="nm">Phan Đức Long</span><span class="n">16</span></button>
+                <button class="re-chip"><span class="nm">Trần Quốc Bảo</span><span class="n">20</span></button>
+                <button class="re-chip"><span class="nm">Trịnh Mai Phương</span><span class="n">13</span></button>
+                <button class="re-chip"><span class="nm">Võ Ngọc Anh</span><span class="n">17</span></button>
+              </div>
+            </section>
+            <div class="tools">
+              <div class="segmented"><button>Ngày</button><button>Tuần</button><button class="on">Tháng</button><button>Năm</button><button>Tùy chọn</button></div>
+              <span class="period"><span class="step">‹</span><span class="range">Tháng 10/2026</span><span class="step">›</span></span>
+              <span class="select">Người phối hợp: <b>Tất cả</b> ▾</span>
+              <div class="spacer"></div>
+              <span class="viewing"><b>Lê Minh Khang</b> · 14 lịch · 1 đã gặp</span>
+              <button class="btn btn-primary">+ Lịch hẹn mới</button>
+            </div>
+            <div class="two">
+              <section class="card">
+                <div class="card-head"><h3 style="color: var(--heading)">Trong ngày 01/10/2026</h3><span class="meta">chỉ lịch của RE đang chọn</span></div>
+                <div class="day-list">
+                  <h3>Bình Minh</h3>
+                  <h4>Lê Minh Khang</h4>
+                  <ul>
+                    <li><span class="t">09:00</span>Hà Minh Tuấn<span class="s">Đã gặp</span></li>
+                    <li><span class="t">14:30</span>Tạ Đình Phúc<span class="s">Dự kiến</span></li>
+                    <li><span class="t">16:00</span>Nghiêm Hoài An<span class="s">Dự kiến</span></li>
+                  </ul>
+                </div>
+              </section>
+              <aside class="card muted" style="font-size: var(--fs-sm)">Chi tiết lịch hẹn (giữ nguyên) — bấm tên KH để xem.</aside>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= B4 ================= -->
+      <section class="part" aria-labelledby="b4">
+        <div class="part-head"><h2 id="b4">B4 · Lịch tháng — ngày đang chọn, dải kỳ Tuần / Tùy chọn</h2><span class="idea">ý 12, 14, 15</span></div>
+        <ul class="notes">
+          <li><b>Ý 12:</b> số ngày của ô đang chọn màu <b class="c-accent">vàng gold</b> (đậm, to hơn một cỡ), nền ô vàng nhạt như hiện nay. Vì vàng giờ nghĩa là "đang chọn", ô <b>hôm nay</b> đổi sang viền sáng + chữ "· hôm nay" (trước: số vàng + viền vàng).</li>
+          <li><b>Ý 14 + Tùy chọn:</b> mọi ngày trong kỳ được <b>tô dải</b> (nền vàng rất nhạt + viền vàng mờ) — token mới <code>--period-band</code>, <code>--period-band-border</code>. <b>Ý 15:</b> kỳ Tháng giữ nguyên, không tô dải (cả tháng đã là kỳ).</li>
+          <li><b>Sửa lỗi:</b> ngày trong kỳ nhưng thuộc tháng khác (tuần 28/09–04/10 vắt 2 tháng) vẫn tô dải, hiện kèm tháng ("28/09"), có dấu → và <b>bấm được</b>: lịch chuyển sang tháng đó, dải tiếp tục ở tháng mới. Ngày ngoài kỳ, ngoài tháng: mờ như hiện nay.</li>
+        </ul>
+        <div class="cals">
+          <section class="card">
+            <p class="cap">4a · Kỳ Tháng 10/2026, đang chọn 08/10 <span class="was">(không dải)</span></p>
+            <div class="cal" id="cal-month"></div>
+            <div class="lg"><span><i class="met"></i>Đã gặp</span><span><i class="plan"></i>Dự kiến</span><span><i class="miss"></i>Dời lịch / hủy / không đến</span></div>
+          </section>
+          <section class="card">
+            <p class="cap">4b · Kỳ Tuần 28/09–04/10, đang chọn hôm nay 01/10</p>
+            <div class="cal" id="cal-week-oct"></div>
+            <div class="lg"><span><i class="sw-band"></i>Trong kỳ</span><span><i class="met"></i>Đã gặp</span><span><i class="plan"></i>Dự kiến</span><span><i class="miss"></i>Dời / hủy / không đến</span></div>
+          </section>
+          <section class="card">
+            <p class="cap">4c · Sau khi bấm 29/09 ở 4b → lịch sang tháng 9 <span class="was">(trước đây: ô mờ, không bấm được)</span></p>
+            <div class="cal" id="cal-week-sep"></div>
+            <div class="lg"><span><i class="sw-band"></i>Trong kỳ</span><span>"01/10 →" = ngày của tháng 10 trong kỳ, bấm để sang tháng 10</span></div>
+          </section>
+          <section class="card">
+            <p class="cap">4d · Kỳ Tùy chọn 24/09–07/10, đang chọn 06/10 <span class="was">(tô dải như Tuần)</span></p>
+            <div class="cal" id="cal-custom"></div>
+            <div class="lg"><span><i class="sw-band"></i>Trong kỳ</span><span>24–27/09 ở tháng 9 (bấm ‹ hoặc ô "28/09 →")</span></div>
+          </section>
+        </div>
+      </section>
+
+      <!-- ================= B5 ================= -->
+      <section class="part" aria-labelledby="b5">
+        <div class="part-head"><h2 id="b5">B5 · Danh sách lịch hẹn — cột Ngày tô theo hôm nay</h2><span class="idea">ý 13</span></div>
+        <ul class="notes">
+          <li>Đã qua = <b>vàng nhạt</b>, hôm nay = <b>xanh lá nhạt</b>, sắp tới = <b>xanh dương nhạt</b>. Chỉ tô <b>ô Ngày</b> (các cột khác giữ nguyên). Màu mới thành token.</li>
+          <li><b>Anh chọn 1 trong 3 phương án.</b> Cả 3 đều giữ chữ ≥ 4,5:1 (số đo dưới mỗi bảng). Ví dụ: kỳ Tuần 28/09–04/10, sắp ngày giảm dần như hiện nay.</li>
+          <li>Lưu ý: vàng nhạt "đã qua" gần với màu nhấn vàng champagne — phương án A / C ít lẫn hơn B vì chữ vẫn trắng.</li>
+        </ul>
+        <div class="opts">
+          <section class="card optA">
+            <p class="cap">A · Tô nền ô Ngày</p>
+            <table>
+              <thead><tr><th class="sort desc">Ngày</th><th>Giờ</th><th>Khách hàng</th><th>Trạng thái</th></tr></thead>
+              <tbody class="num">
+                <tr><td class="d future">03/10/2026</td><td>10:00</td><td>Cao Thùy Dung</td><td>Dự kiến</td></tr>
+                <tr><td class="d future">02/10/2026</td><td>15:00</td><td>Lưu Quang Đạt</td><td>Dự kiến</td></tr>
+                <tr><td class="d today">01/10/2026</td><td>16:00</td><td>Nghiêm Hoài An</td><td>Dự kiến</td></tr>
+                <tr><td class="d today">01/10/2026</td><td>09:00</td><td>Hà Minh Tuấn</td><td>Đã gặp</td></tr>
+                <tr><td class="d past">30/09/2026</td><td>14:00</td><td>Đoàn Thị Mỹ</td><td>Dời lịch</td></tr>
+                <tr><td class="d past">29/09/2026</td><td>09:30</td><td>Trương Bảo Ngọc</td><td>Đã gặp</td></tr>
+              </tbody>
+            </table>
+            <p class="ratio">Chữ --text trên nền: đã qua 9,31 · hôm nay 9,95 · sắp tới 10,07 (khi rê chuột ≥ 8,39)</p>
+          </section>
+          <section class="card optB">
+            <p class="cap">B · Tô chữ ô Ngày</p>
+            <table>
+              <thead><tr><th class="sort desc">Ngày</th><th>Giờ</th><th>Khách hàng</th><th>Trạng thái</th></tr></thead>
+              <tbody class="num">
+                <tr><td class="d future">03/10/2026</td><td>10:00</td><td>Cao Thùy Dung</td><td>Dự kiến</td></tr>
+                <tr><td class="d future">02/10/2026</td><td>15:00</td><td>Lưu Quang Đạt</td><td>Dự kiến</td></tr>
+                <tr><td class="d today">01/10/2026</td><td>16:00</td><td>Nghiêm Hoài An</td><td>Dự kiến</td></tr>
+                <tr><td class="d today">01/10/2026</td><td>09:00</td><td>Hà Minh Tuấn</td><td>Đã gặp</td></tr>
+                <tr><td class="d past">30/09/2026</td><td>14:00</td><td>Đoàn Thị Mỹ</td><td>Dời lịch</td></tr>
+                <tr><td class="d past">29/09/2026</td><td>09:30</td><td>Trương Bảo Ngọc</td><td>Đã gặp</td></tr>
+              </tbody>
+            </table>
+            <p class="ratio">Chữ màu trên --bg-1: đã qua 13,09 · hôm nay 12,48 · sắp tới 10,74</p>
+          </section>
+          <section class="card optC">
+            <p class="cap">C · Vạch trái ô Ngày</p>
+            <table>
+              <thead><tr><th class="sort desc">Ngày</th><th>Giờ</th><th>Khách hàng</th><th>Trạng thái</th></tr></thead>
+              <tbody class="num">
+                <tr><td class="d future">03/10/2026</td><td>10:00</td><td>Cao Thùy Dung</td><td>Dự kiến</td></tr>
+                <tr><td class="d future">02/10/2026</td><td>15:00</td><td>Lưu Quang Đạt</td><td>Dự kiến</td></tr>
+                <tr><td class="d today">01/10/2026</td><td>16:00</td><td>Nghiêm Hoài An</td><td>Dự kiến</td></tr>
+                <tr><td class="d today">01/10/2026</td><td>09:00</td><td>Hà Minh Tuấn</td><td>Đã gặp</td></tr>
+                <tr><td class="d past">30/09/2026</td><td>14:00</td><td>Đoàn Thị Mỹ</td><td>Dời lịch</td></tr>
+                <tr><td class="d past">29/09/2026</td><td>09:30</td><td>Trương Bảo Ngọc</td><td>Đã gặp</td></tr>
+              </tbody>
+            </table>
+            <p class="ratio">Chữ giữ --text (15,16); vạch 3px trên --bg-1: 10,86 · 9,59 · 7,41 (≥ 3:1)</p>
+          </section>
+        </div>
+      </section>
+
+      <!-- ================= B6 ================= -->
+      <section class="part" aria-labelledby="b6">
+        <div class="part-head"><h2 id="b6">B6 · Lịch hẹn kỳ Năm — lưới 12 tháng</h2><span class="idea">ý 16</span></div>
+        <ul class="notes">
+          <li>Kỳ Năm thay lịch tháng bằng lưới <b>4 cột = 4 quý</b>, mỗi cột 3 tháng; đầu cột ghi tổng lịch của quý. Khối <b>"Trong ngày" ẩn</b>; chi tiết lịch hẹn và danh sách (cả năm) giữ nguyên.</li>
+          <li>Mỗi ô: tên tháng, <b>tổng số lịch</b> ở góc, thanh ngang 3 màu — <span class="c-ok">đã gặp</span> · <span class="c-warn">dời / hủy / không đến</span> · <span class="c-info">dự kiến</span> — dài theo số lịch, số ở giữa từng phần. Phần quá hẹp (&lt; 22px): ẩn số, rê chuột hiện "Hủy… 3 lịch".</li>
+          <li><b>Tháng hiện tại</b> nổi (nền + viền vàng, tên tháng vàng); <b>tháng tương lai</b> mờ: nền phẳng, viền đứt, thanh chỉ có phần dự kiến dạng nhạt (chữ vẫn ≥ 4,5:1, không dùng độ trong suốt cho chữ); tháng đã qua mặc định.</li>
+          <li><b>Bấm ô tháng → kỳ Tháng đó</b> (lịch tháng như 4a, chọn ngày 1, hoặc hôm nay nếu là tháng này). Năm khác năm nay: không có tháng hiện tại / tương lai nếu là năm đã qua.</li>
+        </ul>
+        <div class="frame">
+          <header class="topbar">
+            <h1>Lịch hẹn</h1>
+            <div class="spacer"></div>
+            <div class="segmented"><button class="on">Toàn bộ</button><button>Team</button><button>RE</button></div>
+          </header>
+          <div class="content">
+            <div class="tools">
+              <div class="segmented"><button>Ngày</button><button>Tuần</button><button>Tháng</button><button class="on">Năm</button><button>Tùy chọn</button></div>
+              <span class="period"><span class="step">‹</span><span class="range">Năm 2026</span><span class="step">›</span></span>
+              <span class="select">Người phối hợp: <b>Tất cả</b> ▾</span>
+              <div class="spacer"></div>
+              <span class="viewing">1.687 lịch · 1.303 đã gặp</span>
+              <button class="btn btn-primary">+ Lịch hẹn mới</button>
+            </div>
+            <div class="two">
+              <section class="card">
+                <div class="card-head"><h3 style="color: var(--heading)">Lịch năm 2026</h3><span class="meta num">bấm một tháng để mở kỳ Tháng</span></div>
+                <div class="year" id="year"></div>
+                <div class="lg"><span><i class="met"></i>Đã gặp</span><span><i class="miss"></i>Dời lịch / hủy / không đến</span><span><i class="plan" style="background: var(--info); border: 0"></i>Dự kiến</span><span>Số trong thanh = số lịch</span></div>
+              </section>
+              <aside class="card muted" style="font-size: var(--fs-sm)">Chi tiết lịch hẹn (giữ nguyên).<br />Khối "Trong ngày" không hiện ở kỳ Năm.</aside>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Questions ================= -->
+      <section class="card" aria-labelledby="ask">
+        <div class="card-head"><h2 id="ask">Cần anh chốt ở G3</h2></div>
+        <ol class="notes ask">
+          <li><b>B5:</b> chọn phương án A (tô nền), B (tô chữ) hay C (vạch trái).</li>
+          <li><b>B4:</b> ô hôm nay đổi sang viền sáng + "· hôm nay" để vàng chỉ còn nghĩa "đang chọn" — đồng ý?</li>
+          <li><b>B2/B3:</b> thêm nút "Cả team" bên trái (ngoài cách bấm lại RE) và hiện số cạnh tên RE (KH đang mở / lịch trong kỳ) — đồng ý?</li>
+          <li><b>B1:</b> team chưa có TL hiện "chưa có TL · + Thêm TL"; nhiều TL liệt kê lần lượt — đồng ý?</li>
+          <li><b>B6:</b> đầu mỗi cột quý ghi tổng lịch của quý — giữ hay bỏ?</li>
+        </ol>
+        <p class="lead" style="font-size: var(--fs-sm)">Sau G3: tạo Issue B1–B6 (B2, B6 <code>risk:med</code>; B2 chờ T-083; B3 chờ B2; B4 → B5 → B6 lần lượt vì cùng <code>AppointmentsScreen.tsx</code>, lưới năm tách file mới).</p>
+      </section>
+
+      <p class="mock-note">Mockup G3 · phản hồi Owner 01/10/2026 · dữ liệu giả lập · lịch và lưới năm vẽ bằng script nhỏ trong file để ngày / thứ chính xác.</p>
+    </main>
+
+    <script>
+      // Deterministic sample counts per day, so the mockup looks the same every time.
+      const counts = (y, m, d) => {
+        const s = (y * 372 + m * 31 + d) * 2654435761;
+        const r = (n) => Math.abs(Math.floor(Math.sin(s + n) * 10000)) % 10;
+        const wd = new Date(y, m - 1, d).getDay();
+        const total = wd === 0 ? r(1) % 2 : wd === 6 ? r(1) % 4 : 3 + (r(1) % 6);
+        const date = new Date(y, m - 1, d);
+        const today = new Date(2026, 9, 1);
+        if (date > today) return { met: 0, plan: total, miss: 0 };
+        if (+date === +today) return { met: 1, plan: Math.max(total - 1, 0), miss: 0 };
+        const miss = r(2) % 3 === 0 ? 1 : 0;
+        return { met: Math.max(total - miss, 0), plan: 0, miss };
+      };
+      const iso = (dt) => dt.getFullYear() * 10000 + (dt.getMonth() + 1) * 100 + dt.getDate();
+      const HEAD = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
+      // month: 1-12 shown; band: [startIso, endIso] or null; picked: iso
+      function calendar(id, year, month, band, picked) {
+        const el = document.getElementById(id);
+        HEAD.forEach((h) => el.insertAdjacentHTML('beforeend', `<span class="h">${h}</span>`));
+        const first = new Date(year, month - 1, 1);
+        const start = new Date(first);
+        start.setDate(1 - ((first.getDay() + 6) % 7));
+        const last = new Date(year, month, 0);
+        const end = new Date(last);
+        end.setDate(last.getDate() + (7 - ((last.getDay() + 6) % 7) - 1));
+        const todayIso = 20261001;
+        for (let dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
+          const k = iso(dt);
+          const inMonth = dt.getMonth() === month - 1;
+          const inBand = band && k >= band[0] && k <= band[1];
+          const cls = ['cell'];
+          const wd = (dt.getDay() + 6) % 7;
+          if (wd >= 5) cls.push('wk');
+          if (inBand) cls.push('band');
+          if (inBand && !inMonth) cls.push('other');
+          if (!inMonth && !inBand) cls.push('out');
+          if (k === todayIso) cls.push('today');
+          if (k === picked) cls.push('picked');
+          const c = counts(dt.getFullYear(), dt.getMonth() + 1, dt.getDate());
+          const n = c.met + c.plan + c.miss;
+          const dots = [
+            ...Array(c.met).fill('met'),
+            ...Array(c.plan).fill('plan'),
+            ...Array(c.miss).fill('miss'),
+          ]
+            .slice(0, 8)
+            .map((k2) => `<i class="${k2}"></i>`)
+            .join('');
+          const showCounts = inMonth || inBand;
+          const pad = (v) => String(v).padStart(2, '0');
+          const dn = inBand && !inMonth ? `${pad(dt.getDate())}/${pad(dt.getMonth() + 1)}` : pad(dt.getDate());
+          el.insertAdjacentHTML(
+            'beforeend',
+            `<button class="${cls.join(' ')}"${!showCounts ? ' aria-hidden="true" tabindex="-1"' : ''}>` +
+              `<span class="dn">${dn}</span><b>${showCounts && n ? n : ''}</b>` +
+              `<span class="dots">${showCounts ? dots : ''}</span></button>`,
+          );
+        }
+      }
+      calendar('cal-month', 2026, 10, null, 20261008);
+      calendar('cal-week-oct', 2026, 10, [20260928, 20261004], 20261001);
+      calendar('cal-week-sep', 2026, 9, [20260928, 20261004], 20260929);
+      calendar('cal-custom', 2026, 10, [20260924, 20261007], 20261006);
+
+      // Year grid: sample totals per month (Toàn bộ, 2026).
+      const MONTHS = [
+        [152, 21, 0], [118, 17, 0], [161, 24, 2],
+        [149, 19, 0], [157, 26, 0], [143, 18, 1],
+        [138, 22, 0], [126, 31, 3], [154, 20, 4],
+        [5, 1, 158], [0, 0, 14], [0, 0, 3],
+      ];
+      const yearEl = document.getElementById('year');
+      const WIDTH = 210; // approx bar width in px for the "narrow" rule
+      for (let q = 0; q < 4; q++) {
+        const months = MONTHS.slice(q * 3, q * 3 + 3);
+        const qTotal = months.reduce((s, [a, b, c]) => s + a + b + c, 0);
+        let html = `<div class="quarter"><div class="qh"><span>Quý ${q + 1}</span><span>${qTotal.toLocaleString('vi-VN')} lịch</span></div>`;
+        months.forEach(([met, miss, plan], i) => {
+          const m = q * 3 + i + 1;
+          const total = met + miss + plan;
+          const state = m === 10 ? 'current' : m > 10 ? 'future' : '';
+          const seg = (cls, n, label) => {
+            if (!n) return '';
+            const narrow = (n / total) * WIDTH < 22;
+            return `<span class="${cls}${narrow ? ' narrow' : ''}" style="flex:${n}" title="${label}: ${n} lịch">${n}</span>`;
+          };
+          const bar = total
+            ? seg('met', met, 'Đã gặp') + seg('miss', miss, 'Dời lịch / hủy / không đến') + seg('plan', plan, 'Dự kiến')
+            : '<span class="empty">chưa có lịch</span>';
+          html +=
+            `<button class="mcell ${state}" aria-label="Tháng ${m}/2026: ${total} lịch, mở kỳ Tháng">` +
+            `<span class="top"><span class="mn">Tháng ${m}</span><span class="tot"><b>${total}</b>lịch</span></span>` +
+            `<span class="mbar">${bar}</span></button>`;
+        });
+        yearEl.insertAdjacentHTML('beforeend', html + '</div>');
+      }
+    </script>
+  </body>
+</html>
