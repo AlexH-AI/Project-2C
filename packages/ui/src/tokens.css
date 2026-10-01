@@ -26,6 +26,10 @@
   --period-band-border: rgba(217, 178, 106, 0.45);
   /* Today on calendars and date cells: light green, apart from the gold of the picked day */
   --date-today: #9be8c0;
+  /* "Ngày" cell of a list against today: past, today, future (mockup B5 option A; text stays --text) */
+  --date-past-bg: rgba(240, 210, 110, 0.2);
+  --date-today-bg: rgba(63, 214, 154, 0.2);
+  --date-future-bg: rgba(111, 168, 255, 0.22);
 
   /* Opportunity stages */
   --n4: #94a3b8;

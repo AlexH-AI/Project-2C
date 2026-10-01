@@ -73,6 +73,21 @@ export function outcomeText(outcome: Outcome): string {
   }
 }
 
+/** Where a day stands against today; tints the "Ngày" cell of the list (mockup B5). */
+export type DateTone = 'past' | 'today' | 'future';
+
+/** The "Ngày" cell of each tone (`--date-*-bg`; text stays `--text`). */
+export const DATE_TONE_CELL = {
+  past: 'bg-date-past-bg',
+  today: 'bg-date-today-bg font-semibold',
+  future: 'bg-date-future-bg',
+} as const satisfies Record<DateTone, string>;
+
+export function dateTone(date: CalendarDate, today: CalendarDate): DateTone {
+  const order = compareDates(date, today);
+  return order < 0 ? 'past' : order === 0 ? 'today' : 'future';
+}
+
 /** A coordinator as the lists show them: role, then name. */
 export const personLabel = (person: Person) => `${person.role} ${person.name}`;
 
