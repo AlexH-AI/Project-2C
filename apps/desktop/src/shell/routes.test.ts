@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_ROUTE, parseHash, routeToHash, sectionOf } from './routes';
+import { DEFAULT_ROUTE, SECTIONS, parseHash, routeToHash, sectionOf, usesScope } from './routes';
 
 describe('parseHash', () => {
   it('reads each sidebar screen', () => {
@@ -43,5 +43,13 @@ describe('sectionOf', () => {
   it('keeps Customers selected on a customer profile', () => {
     expect(sectionOf({ screen: 'customer', id: 'x' })).toBe('customers');
     expect(sectionOf({ screen: 'team' })).toBe('team');
+  });
+});
+
+describe('usesScope', () => {
+  it('is true only for Customers and Appointments', () => {
+    const used = SECTIONS.filter((screen) => usesScope(screen));
+    expect(used).toEqual(['appointments', 'customers']);
+    expect(usesScope('customer')).toBe(false);
   });
 });

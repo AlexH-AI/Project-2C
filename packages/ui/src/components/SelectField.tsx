@@ -20,6 +20,8 @@ interface SelectFieldProps {
   help?: string;
   /** Marks the label with *; the command, not the browser, rejects an empty value. */
   required?: boolean;
+  /** `md` is the larger text of a topbar picker; `sm` (default) is the usual size. */
+  size?: 'sm' | 'md';
 }
 
 /** Labelled drop-down list (mockup `.field` with a caret), with its error under it. */
@@ -33,6 +35,7 @@ export function SelectField({
   error,
   help,
   required,
+  size = 'sm',
 }: SelectFieldProps) {
   const id = useId();
   const noteId = `${id}-note`;
@@ -53,7 +56,7 @@ export function SelectField({
         aria-required={required}
         aria-invalid={error ? true : undefined}
         aria-describedby={error || help ? noteId : undefined}
-        className={`cursor-pointer rounded-md border bg-surface-0 px-2 py-1.5 text-sm text-fg focus-visible:outline-2 focus-visible:outline-accent ${
+        className={`cursor-pointer rounded-md border bg-surface-0 px-2 py-1.5 ${size === 'md' ? 'text-md' : 'text-sm'} text-fg focus-visible:outline-2 focus-visible:outline-accent ${
           error ? 'border-danger' : 'border-border-strong'
         }`}
       >

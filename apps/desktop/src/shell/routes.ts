@@ -47,3 +47,8 @@ export function routeToHash(route: Route): string {
 export function sectionOf(route: Route): Section {
   return route.screen === 'customer' ? 'customers' : route.screen;
 }
+
+/** Only these screens filter by the scope picker; the others do not read it. */
+export function usesScope(screen: Route['screen']): boolean {
+  return screen === 'customers' || screen === 'appointments';
+}

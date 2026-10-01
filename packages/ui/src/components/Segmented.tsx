@@ -10,6 +10,8 @@ interface SegmentedProps<T extends string> {
   options: ReadonlyArray<SegmentedOption<T>>;
   value: T;
   onChange: (value: T) => void;
+  /** `md` is the larger text of a topbar picker; `sm` (default) is the usual size. */
+  size?: 'sm' | 'md';
 }
 
 /** Single-choice button group (ADR-0013 "segmented"): a radio group with arrow-key support. */
@@ -18,6 +20,7 @@ export function Segmented<T extends string>({
   options,
   value,
   onChange,
+  size = 'sm',
 }: SegmentedProps<T>) {
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
@@ -48,7 +51,7 @@ export function Segmented<T extends string>({
             aria-checked={checked}
             tabIndex={checked ? 0 : -1}
             onClick={() => onChange(option.value)}
-            className={`cursor-pointer rounded-sm px-3 py-1 text-sm whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+            className={`cursor-pointer rounded-sm px-3 py-1 ${size === 'md' ? 'text-md' : 'text-sm'} whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
               checked ? 'bg-surface-3 font-semibold text-fg' : 'text-fg-2 hover:text-fg'
             }`}
           >
