@@ -38,7 +38,9 @@ import { isPastOrToday } from './appointment-form';
 import {
   appointmentRows,
   appointmentsByRe,
+  dateTone,
   dayBoard,
+  DATE_TONE_CELL,
   monthGrid,
   outcomeText,
   personLabel,
@@ -130,6 +132,7 @@ export function AppointmentsScreen() {
         header: t('appointments.date'),
         kind: 'date',
         value: (r) => r.appointment.date,
+        cellClass: (r) => DATE_TONE_CELL[dateTone(r.appointment.date, today)],
       },
       {
         id: 'time',
@@ -174,7 +177,8 @@ export function AppointmentsScreen() {
         value: (r) => outcomeText(r.outcome),
       },
     ],
-    [],
+    // today() is a new object each render; its fields keep the columns stable.
+    [today.year, today.month, today.day],
   );
 
   const changePeriod = (next: Period) => {

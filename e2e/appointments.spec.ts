@@ -128,6 +128,9 @@ test('with a custom range, days outside it cannot be picked', async ({ page }) =
 const ACCENT = 'rgb(217, 178, 106)';
 const DATE_TODAY = 'rgb(155, 232, 192)';
 const PERIOD_BAND = 'rgba(217, 178, 106, 0.08)';
+const DATE_PAST_BG = 'rgba(240, 210, 110, 0.2)';
+const DATE_TODAY_BG = 'rgba(63, 214, 154, 0.2)';
+const DATE_FUTURE_BG = 'rgba(111, 168, 255, 0.22)';
 const css = (locator: Locator, property: string) =>
   locator.evaluate((el, name) => getComputedStyle(el).getPropertyValue(name), property);
 
@@ -181,6 +184,26 @@ test('a custom range bands its days, not the others', async ({ page }) => {
   expect(await css(inside, 'background-color')).toBe(PERIOD_BAND);
   const outside = calendar.locator('[aria-hidden="true"]').filter({ hasText: /^21$/ });
   expect(await css(outside, 'background-color')).not.toBe(PERIOD_BAND);
+});
+
+test('the date cell is tinted past, today or future, kept on hover; the time cell is not', async ({
+  page,
+}) => {
+  const { list, kinds } = screen(page);
+  await kinds.getByRole('radio', { name: 'Tuần' }).click();
+
+  const dateCell = (date: string) =>
+    list.locator('tbody tr td:first-child').filter({ hasText: date }).first();
+  const past = await css(dateCell('14/09/2026'), 'background-color');
+  const today = await css(dateCell(TODAY), 'background-color');
+  const future = await css(dateCell('16/09/2026'), 'background-color');
+  expect([past, today, future]).toEqual([DATE_PAST_BG, DATE_TODAY_BG, DATE_FUTURE_BG]);
+  expect(await css(dateCell(TODAY), 'font-weight')).toBe('600');
+
+  const row = list.locator('tbody tr').filter({ hasText: TODAY }).first();
+  await row.hover();
+  expect(await css(row.locator('td').first(), 'background-color')).toBe(DATE_TODAY_BG);
+  expect(await css(row.locator('td').nth(1), 'background-color')).toBe('rgba(0, 0, 0, 0)');
 });
 
 test('the scope narrows the day and the list to one team, then one RE', async ({ page }) => {

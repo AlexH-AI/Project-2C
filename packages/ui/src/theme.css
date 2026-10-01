@@ -27,6 +27,9 @@
   --color-period-band: var(--period-band);
   --color-period-band-border: var(--period-band-border);
   --color-date-today: var(--date-today);
+  --color-date-past-bg: var(--date-past-bg);
+  --color-date-today-bg: var(--date-today-bg);
+  --color-date-future-bg: var(--date-future-bg);
   --color-n4: var(--n4);
   --color-n3: var(--n3);
   --color-n2: var(--n2);

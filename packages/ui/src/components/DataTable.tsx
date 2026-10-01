@@ -20,6 +20,8 @@ interface ColumnBase<Row extends RowData> {
   align?: 'start' | 'end';
   /** Defaults to true (ADR-0013: every column sorts). */
   sortable?: boolean;
+  /** Extra classes for a row's cell, e.g. a translucent background kept over the row hover. */
+  cellClass?: (row: Row) => string;
 }
 
 /** A column is text, number or date; the kind decides how it sorts and how it is shown. */
@@ -133,11 +135,13 @@ export function DataTable<Row extends RowData>({
       </thead>
       <tbody>
         {table.getRowModel().rows.map((row) => (
-          <tr key={row.id} className="group">
+          <tr key={row.id} className="group hover:bg-surface-2">
             {columns.map((column) => (
               <td
                 key={column.id}
-                className={`border-b border-border px-2.5 py-2 align-middle group-last:border-b-0 group-hover:bg-surface-2 ${align(column)}`}
+                className={`border-b border-border px-2.5 py-2 align-middle group-last:border-b-0 ${align(column)} ${
+                  column.cellClass?.(row.original) ?? ''
+                }`}
               >
                 {column.cell ? column.cell(row.original) : defaultCell(column, row.original)}
               </td>

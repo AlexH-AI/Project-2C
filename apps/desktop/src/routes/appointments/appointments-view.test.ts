@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import {
   appointmentRows,
   appointmentsByRe,
+  dateTone,
   dayBoard,
   monthGrid,
   outcomeText,
@@ -390,5 +391,20 @@ describe('appointmentsByRe', () => {
       ]),
     );
     expect(appointmentsByRe(rows, periodOf('month', day(10, 15)))).toEqual(new Map([['re1', 1]]));
+  });
+});
+
+describe('dateTone', () => {
+  const today = day(9, 15);
+
+  it('is past before today, today on it, future after it', () => {
+    expect(dateTone(day(9, 14), today)).toBe('past');
+    expect(dateTone(day(9, 15), today)).toBe('today');
+    expect(dateTone(day(9, 16), today)).toBe('future');
+  });
+
+  it('compares across months and years', () => {
+    expect(dateTone({ year: 2025, month: 12, day: 31 }, today)).toBe('past');
+    expect(dateTone(day(10, 1), today)).toBe('future');
   });
 });
