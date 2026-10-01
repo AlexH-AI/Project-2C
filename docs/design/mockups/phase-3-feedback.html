@@ -29,6 +29,17 @@
         --date-today-bar: var(--ok);
         --date-future-bar: var(--info);
       }
+      .opts .card.chosen {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 1px var(--accent);
+      }
+      .opts .card.dropped {
+        opacity: 0.55;
+      }
+      .chosen-tag {
+        color: var(--accent);
+        font-weight: 700;
+      }
 
       .page {
         max-width: 1280px;
@@ -438,14 +449,15 @@
         opacity: 0.35;
         cursor: default;
       }
-      /* today: ring + small tag (number no longer gold: gold now means "picked") */
-      .cell.today {
-        box-shadow: inset 0 0 0 1px var(--text-2);
-        border-color: var(--text-2);
+      /* today: light green ring + tag (G3 01/10: gold means "picked"; green stays visible on the band) */
+      .cell.today,
+      .cell.band.today {
+        box-shadow: inset 0 0 0 1px var(--date-today);
+        border-color: var(--date-today);
       }
       .cell.today .dn::after {
         content: ' · hôm nay';
-        color: var(--text-2);
+        color: var(--date-today);
       }
       /* B4 ý 12: picked day number in gold */
       .cell.picked {
@@ -695,6 +707,7 @@
           <li>Đầu bảng thành viên: <b>"Team Bình Minh · TL Lý Gia Trang · Sửa"</b> — không kèm số người / số lịch hẹn. "Sửa" mở hộp Sửa nhân sự của TL.</li>
           <li>TL <b>bỏ khỏi bảng</b>: bảng chỉ còn RE (vẫn sắp xếp được mọi cột). Nút Đổi tên team / Xóa team giữ bên phải.</li>
           <li>"Hỗ trợ dùng chung / không thuộc team" → <b>"Người hỗ trợ"</b>. Dòng tóm tắt: <span class="num">3 team · 3 TL · 30 RE · 3 người hỗ trợ</span> (trước: "33 RE / TL · 3 hỗ trợ dùng chung").</li>
+          <li><b>Mỗi team chỉ 1 TL</b> (Owner G3 01/10): danh sách team bỏ số "1" trước TL — "TL · 10 RE"; team chưa có TL: "chưa có TL · 10 RE".</li>
         </ul>
         <div class="frame">
           <header class="topbar"><h1>Team &amp; nhân sự</h1><div class="spacer"></div></header>
@@ -709,9 +722,9 @@
               <div class="stack" style="gap: 14px">
                 <section class="card team-list">
                   <div class="card-head"><h2 style="color: var(--heading)">Team</h2></div>
-                  <a href="#">Sao Mai <span class="n">1 TL · 10 RE</span></a>
-                  <a href="#" class="on">Bình Minh <span class="n">1 TL · 10 RE</span></a>
-                  <a href="#">Hừng Đông <span class="n">1 TL · 10 RE</span></a>
+                  <a href="#">Sao Mai <span class="n">TL · 10 RE</span></a>
+                  <a href="#" class="on">Bình Minh <span class="n">TL · 10 RE</span></a>
+                  <a href="#">Hừng Đông <span class="n">TL · 10 RE</span></a>
                 </section>
                 <section class="card support">
                   <div class="card-head"><h2 style="color: var(--heading)">Người hỗ trợ</h2></div>
@@ -751,7 +764,7 @@
           </div>
         </div>
         <div>
-          <p class="cap">B1 · biến thể đầu bảng <span class="was">(code cho phép team có 0 hoặc nhiều TL)</span></p>
+          <p class="cap">B1 · team chưa có TL <span class="was">(mỗi team tối đa 1 TL)</span></p>
           <div class="variants">
             <div class="card">
               <div class="members-head" style="margin: 0">
@@ -760,11 +773,10 @@
               <p class="muted" style="margin: 6px 0 0; font-size: var(--fs-xs)">"+ Thêm TL" mở hộp Nhân sự mới, chọn sẵn vai trò TL và team này.</p>
             </div>
             <div class="card">
-              <div class="members-head" style="margin: 0">
-                <h2>Team Sao Mai</h2><span class="sep">·</span><span class="tl"><span class="role">TL</span>Nguyễn Thu Hà</span><span class="sep">·</span><span class="link">Sửa</span><span class="sep">·</span><span class="tl"><span class="role">TL</span>Trần Hải Yến</span><span class="sep">·</span><span class="link">Sửa</span>
-              </div>
-              <p class="muted" style="margin: 6px 0 0; font-size: var(--fs-xs)">Nhiều TL: liệt kê lần lượt theo tên, mỗi người một "Sửa".</p>
+              <p class="muted" style="margin: 0; font-size: var(--fs-xs)">Danh sách team khi có team chưa có TL:</p>
+              <div class="team-list" style="margin-top: 4px"><a href="#">Hừng Đông <span class="n">chưa có TL · 10 RE</span></a></div>
             </div>
+</div>
           </div>
         </div>
       </section>
@@ -940,7 +952,7 @@
       <section class="part" aria-labelledby="b4">
         <div class="part-head"><h2 id="b4">B4 · Lịch tháng — ngày đang chọn, dải kỳ Tuần / Tùy chọn</h2><span class="idea">ý 12, 14, 15</span></div>
         <ul class="notes">
-          <li><b>Ý 12:</b> số ngày của ô đang chọn màu <b class="c-accent">vàng gold</b> (đậm, to hơn một cỡ), nền ô vàng nhạt như hiện nay. Vì vàng giờ nghĩa là "đang chọn", ô <b>hôm nay</b> đổi sang viền sáng + chữ "· hôm nay" (trước: số vàng + viền vàng).</li>
+          <li><b>Ý 12:</b> số ngày của ô đang chọn màu <b class="c-accent">vàng gold</b> (đậm, to hơn một cỡ), nền ô vàng nhạt như hiện nay. Vì vàng giờ nghĩa là "đang chọn", ô <b>hôm nay</b> đổi sang <b class="num" style="color: var(--date-today)">viền xanh lá nhạt</b> + chữ "· hôm nay" (trước: số vàng + viền vàng) — nổi cả khi nằm trong dải kỳ Tuần (Owner G3 01/10). Màu dùng chung token <code>--date-today</code>.</li>
           <li><b>Ý 14 + Tùy chọn:</b> mọi ngày trong kỳ được <b>tô dải</b> (nền vàng rất nhạt + viền vàng mờ) — token mới <code>--period-band</code>, <code>--period-band-border</code>. <b>Ý 15:</b> kỳ Tháng giữ nguyên, không tô dải (cả tháng đã là kỳ).</li>
           <li><b>Sửa lỗi:</b> ngày trong kỳ nhưng thuộc tháng khác (tuần 28/09–04/10 vắt 2 tháng) vẫn tô dải, hiện kèm tháng ("28/09"), có dấu → và <b>bấm được</b>: lịch chuyển sang tháng đó, dải tiếp tục ở tháng mới. Ngày ngoài kỳ, ngoài tháng: mờ như hiện nay.</li>
         </ul>
@@ -973,12 +985,12 @@
         <div class="part-head"><h2 id="b5">B5 · Danh sách lịch hẹn — cột Ngày tô theo hôm nay</h2><span class="idea">ý 13</span></div>
         <ul class="notes">
           <li>Đã qua = <b>vàng nhạt</b>, hôm nay = <b>xanh lá nhạt</b>, sắp tới = <b>xanh dương nhạt</b>. Chỉ tô <b>ô Ngày</b> (các cột khác giữ nguyên). Màu mới thành token.</li>
-          <li><b>Anh chọn 1 trong 3 phương án.</b> Cả 3 đều giữ chữ ≥ 4,5:1 (số đo dưới mỗi bảng). Ví dụ: kỳ Tuần 28/09–04/10, sắp ngày giảm dần như hiện nay.</li>
+          <li><b>Owner chọn A — tô nền ô Ngày</b> (G3 01/10); B, C để tham khảo. Cả 3 đều giữ chữ ≥ 4,5:1 (số đo dưới mỗi bảng). Ví dụ: kỳ Tuần 28/09–04/10, sắp ngày giảm dần như hiện nay.</li>
           <li>Lưu ý: vàng nhạt "đã qua" gần với màu nhấn vàng champagne — phương án A / C ít lẫn hơn B vì chữ vẫn trắng.</li>
         </ul>
         <div class="opts">
-          <section class="card optA">
-            <p class="cap">A · Tô nền ô Ngày</p>
+          <section class="card optA chosen">
+            <p class="cap">A · Tô nền ô Ngày · <span class="chosen-tag">Owner chọn (G3 01/10)</span></p>
             <table>
               <thead><tr><th class="sort desc">Ngày</th><th>Giờ</th><th>Khách hàng</th><th>Trạng thái</th></tr></thead>
               <tbody class="num">
@@ -992,7 +1004,7 @@
             </table>
             <p class="ratio">Chữ --text trên nền: đã qua 9,31 · hôm nay 9,95 · sắp tới 10,07 (khi rê chuột ≥ 8,39)</p>
           </section>
-          <section class="card optB">
+          <section class="card optB dropped">
             <p class="cap">B · Tô chữ ô Ngày</p>
             <table>
               <thead><tr><th class="sort desc">Ngày</th><th>Giờ</th><th>Khách hàng</th><th>Trạng thái</th></tr></thead>
@@ -1007,7 +1019,7 @@
             </table>
             <p class="ratio">Chữ màu trên --bg-1: đã qua 13,09 · hôm nay 12,48 · sắp tới 10,74</p>
           </section>
-          <section class="card optC">
+          <section class="card optC dropped">
             <p class="cap">C · Vạch trái ô Ngày</p>
             <table>
               <thead><tr><th class="sort desc">Ngày</th><th>Giờ</th><th>Khách hàng</th><th>Trạng thái</th></tr></thead>
@@ -1061,17 +1073,17 @@
         </div>
       </section>
 
-      <!-- ================= Questions ================= -->
+      <!-- ================= Decisions ================= -->
       <section class="card" aria-labelledby="ask">
-        <div class="card-head"><h2 id="ask">Cần anh chốt ở G3</h2></div>
+        <div class="card-head"><h2 id="ask">Owner đã duyệt G3 (01/10/2026)</h2></div>
         <ol class="notes ask">
-          <li><b>B5:</b> chọn phương án A (tô nền), B (tô chữ) hay C (vạch trái).</li>
-          <li><b>B4:</b> ô hôm nay đổi sang viền sáng + "· hôm nay" để vàng chỉ còn nghĩa "đang chọn" — đồng ý?</li>
-          <li><b>B2/B3:</b> thêm nút "Cả team" bên trái (ngoài cách bấm lại RE) và hiện số cạnh tên RE (KH đang mở / lịch trong kỳ) — đồng ý?</li>
-          <li><b>B1:</b> team chưa có TL hiện "chưa có TL · + Thêm TL"; nhiều TL liệt kê lần lượt — đồng ý?</li>
-          <li><b>B6:</b> đầu mỗi cột quý ghi tổng lịch của quý — giữ hay bỏ?</li>
+          <li><b>B5:</b> chọn phương án <b>A</b> — tô nền ô Ngày (token <code>--date-past-bg</code>, <code>--date-today-bg</code>, <code>--date-future-bg</code>).</li>
+          <li><b>B4:</b> ô hôm nay viền <b>xanh lá nhạt</b> (<code>--date-today</code>) để nổi cả khi nằm trong dải kỳ Tuần; số ngày đang chọn màu vàng gold.</li>
+          <li><b>B2/B3:</b> đồng ý nút "Cả team" và số cạnh tên RE.</li>
+          <li><b>B1:</b> đồng ý "chưa có TL · + Thêm TL"; <b>mỗi team chỉ 1 TL</b> → bỏ số "1" trước TL trong danh sách team, bỏ biến thể nhiều TL.</li>
+          <li><b>B6:</b> giữ tổng lịch của quý ở đầu mỗi cột như mockup.</li>
         </ol>
-        <p class="lead" style="font-size: var(--fs-sm)">Sau G3: tạo Issue B1–B6 (B2, B6 <code>risk:med</code>; B2 chờ T-083; B3 chờ B2; B4 → B5 → B6 lần lượt vì cùng <code>AppointmentsScreen.tsx</code>, lưới năm tách file mới).</p>
+        <p class="lead" style="font-size: var(--fs-sm)">Sau G3: Issue B1–B6 (B2, B6 <code>risk:med</code>; B2 chờ T-083; B3 chờ B2; B4 → B5 → B6 lần lượt vì cùng <code>AppointmentsScreen.tsx</code>, lưới năm tách file mới).</p>
       </section>
 
       <p class="mock-note">Mockup G3 · phản hồi Owner 01/10/2026 · dữ liệu giả lập · lịch và lưới năm vẽ bằng script nhỏ trong file để ngày / thứ chính xác.</p>
