@@ -76,7 +76,7 @@ test('an unknown address falls back to the overview', async ({ page }) => {
 });
 
 test('the scope switch selects one of All / Team / RE', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/#/customers');
   const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
 
   await expect(scope.getByRole('radio', { checked: true })).toHaveText('Toàn bộ');
@@ -85,7 +85,7 @@ test('the scope switch selects one of All / Team / RE', async ({ page }) => {
 });
 
 test('Team and RE scopes pick the team or RE next to the switch', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/#/customers');
   const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
   const team = page.getByRole('combobox', { name: 'Team của góc nhìn' });
   const re = page.getByRole('combobox', { name: 'RE của góc nhìn' });
@@ -119,4 +119,60 @@ test('Team and RE scopes pick the team or RE next to the switch', async ({ page 
 
   await scope.getByRole('radio', { name: 'Toàn bộ' }).click();
   await expect(re).toHaveCount(0);
+});
+
+test('the scope picker shows only on Customers and Appointments', async ({ page }) => {
+  const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
+  for (const [hash, shown] of [
+    ['overview', false],
+    ['appointments', true],
+    ['customers', true],
+    ['reports', false],
+    ['team', false],
+    ['settings', false],
+  ] as const) {
+    await page.goto(`/#/${hash}`);
+    await expect(scope).toHaveCount(shown ? 1 : 0);
+  }
+  await page.goto('/#/customers');
+  await page.locator('a[href^="#/customers/"]').first().click();
+  await expect(page).toHaveURL(/#\/customers\/.+/);
+  await expect(scope).toHaveCount(0);
+});
+
+test('the scope kept while its picker is hidden', async ({ page }) => {
+  await page.goto('/#/customers');
+  await page
+    .getByRole('radiogroup', { name: 'Góc nhìn' })
+    .getByRole('radio', { name: 'Team' })
+    .click();
+  await page
+    .getByRole('combobox', { name: 'Team của góc nhìn' })
+    .selectOption({ label: 'Sao Mai' });
+
+  await page.getByRole('link', { name: 'Team & nhân sự' }).click();
+  await expect(page.getByRole('radiogroup', { name: 'Góc nhìn' })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Khách hàng' }).click();
+
+  await expect(
+    page.getByRole('radiogroup', { name: 'Góc nhìn' }).getByRole('radio', { checked: true }),
+  ).toHaveText('Team');
+  await expect(
+    page.getByRole('combobox', { name: 'Team của góc nhìn' }).locator('option:checked'),
+  ).toHaveText('Sao Mai');
+});
+
+test('the scope picker text is 14px; other segmented buttons stay 12.5px', async ({ page }) => {
+  await page.goto('/#/customers');
+  const size = (locator: import('@playwright/test').Locator) =>
+    locator.evaluate((el) => getComputedStyle(el).fontSize);
+  const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
+  await expect.poll(() => size(scope.getByRole('radio').first())).toBe('14px');
+  await scope.getByRole('radio', { name: 'Team' }).click();
+  await expect
+    .poll(() => size(page.getByRole('combobox', { name: 'Team của góc nhìn' })))
+    .toBe('14px');
+  await expect
+    .poll(() => size(page.getByRole('radiogroup', { name: 'Cách xem' }).getByRole('radio').first()))
+    .toBe('12.5px');
 });

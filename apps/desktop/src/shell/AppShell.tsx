@@ -5,7 +5,7 @@ import { t } from '../i18n';
 import { Screen } from '../routes/Screen';
 import { ErrorBoundary } from './ErrorBoundary';
 import { SaveWarning } from './SaveWarning';
-import { routeToHash, sectionOf } from './routes';
+import { routeToHash, sectionOf, usesScope } from './routes';
 import { resolveScope, type ScopeChoice } from './scope';
 import { ScopeContext } from './ScopeContext';
 import { ScopePicker } from './ScopePicker';
@@ -31,7 +31,9 @@ export function AppShell() {
             {t(`screen.${route.screen}`)}
           </h1>
           <div className="flex-1" />
-          <ScopePicker scope={scope} teams={teams} people={people} onChange={setChoice} />
+          {usesScope(route.screen) && (
+            <ScopePicker scope={scope} teams={teams} people={people} onChange={setChoice} />
+          )}
         </header>
         <main className="flex flex-col gap-4.5 px-6 pt-5 pb-8">
           <ScopeContext value={scope}>

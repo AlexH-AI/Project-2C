@@ -29,6 +29,7 @@ export function ScopePicker({
       <Segmented
         label={t('scope.label')}
         options={KINDS}
+        size="md"
         value={scope.kind}
         onChange={(kind) => onChange((choice) => chooseKind(choice, kind))}
       />
@@ -36,6 +37,7 @@ export function ScopePicker({
         <SelectField
           label={t('scope.pickTeam')}
           labelHidden
+          size="md"
           value={scope.teamId}
           options={teams.map((team) => ({ value: team.id, label: team.name }))}
           onChange={(id) => onChange({ kind: 'team', id })}
@@ -45,6 +47,7 @@ export function ScopePicker({
         <SelectField
           label={t('scope.pickRe')}
           labelHidden
+          size="md"
           value={scope.reId}
           options={reOptions(people, teams)}
           onChange={(id) => onChange({ kind: 're', id })}
