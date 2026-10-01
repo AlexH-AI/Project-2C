@@ -2,12 +2,12 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-10-01 (chiều) · máy `D13_THINKPAD` · gói A (#214–#216) và B1 (#222, PR #231, `main` `f2d6be9`) đã merge; **làm tiếp #223 B1b**
-- **Nhánh:** `main` (sạch, `f2d6be9`). Không có PR nào đang mở. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
+- **Cập nhật:** 2026-10-01 (tối) · máy `DESKTOP-KDURKJP` (Home PC) · gói A, B1, B1b (#223, PR #233), B2 (#224, PR #234, `main` `de1ba6a`) đã merge; **làm tiếp #225 B3**
+- **Nhánh:** `main` (sạch, `de1ba6a`). Không có PR nào đang mở. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
 - **Phiên song song:** có thể có phiên khác trên cùng checkout — commit theo pathspec, không `git add -A`
 - **Repo public** (27/09) · **ruleset `protect-main`** (28/09): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
 - **Model / effort:** Owner chọn từng phiên (ADR-0001 M1). Chỉ Claude Code viết code, không subagent, cổng G1–G8. **Codex chỉ review độc lập khi đóng phase** (ADR-0001 M2)
-- **Phase:** 3 — Nghiệp vụ & màn hình: còn #72 (G7) và gói B phản hồi Owner 01/10 (B1b–B6; gói A và B1 đã xong) · Phase 1, 2 đã đóng
+- **Phase:** 3 — Nghiệp vụ & màn hình: còn #72 (G7) và gói B phản hồi Owner 01/10 (B3–B6; gói A, B1, B1b, B2 đã xong) · Phase 1, 2 đã đóng
 
 ## Trạng thái
 
@@ -17,7 +17,7 @@
 | Đợt 1: #202 T-077, #203 T-078, #204 T-079, #210 T-080 | **Đã merge** 30/09 (PR #206, #208, #209, #211) |
 | #72 T-053 đóng Phase 3 | PR #212, #213 đã merge (metrics, báo cáo, kiểm tay exe 30/09: 0 lỗi). **Hoãn G7** tới khi xong gói A + B phản hồi Owner 01/10, kiểm tay exe lại, 2 review độc lập |
 | Phản hồi Owner 01/10 — gói A | **Đã merge** 01/10: #214 T-081 (PR #221), #215 T-082 (PR #229), #216 T-083 (PR #230) |
-| Phản hồi Owner 01/10 — gói B | Mockup #217 T-084 (PR #220) và #222 T-085 B1 (PR #231, review PASS sau 2 vòng sửa) **đã merge** 01/10. Còn mở, làm tuần tự: #223 T-086 B1b (1 TL / team) → #224 T-087 B2 (`risk:med`) → #225 T-088 B3 → #226 T-089 B4 → #227 T-090 B5 → #228 T-091 B6 (`risk:med`) |
+| Phản hồi Owner 01/10 — gói B | Mockup #217 T-084 (PR #220) và #222 T-085 B1 (PR #231), #223 T-086 B1b (PR #233), #224 T-087 B2 (PR #234, `risk:med`) **đã merge** 01/10. Còn mở, làm tuần tự: #225 T-088 B3 → #226 T-089 B4 → #227 T-090 B5 → #228 T-091 B6 (`risk:med`) |
 | Đợt 2 (đầu Phase 4) | Chưa tạo Issue — tạo khi mở Phase 4 (báo cáo §4) |
 
 ## Phản hồi Owner sau kiểm exe (01/10/2026)
@@ -135,7 +135,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. **Phản hồi Owner 01/10** (mục trên): gói A và B1 xong. **Làm tuần tự** (Owner 01/10), mỗi Issue một phiên: **#223 B1b (kế tiếp: mỗi team tối đa 1 TL; xử lý luôn dữ liệu cũ > 1 TL mà B1 chỉ hiện TL đầu theo tên)** → #224 B2 → #225 B3 → #226 B4 → #227 B5 → #228 B6. Mở đầu bằng `gh issue view 223`, nhánh `task/T-086-<slug>` từ `main`. Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
+2. **Phản hồi Owner 01/10** (mục trên): gói A, B1, B1b, B2 xong. **Làm tuần tự** (Owner 01/10), mỗi Issue một phiên: **#225 B3 (kế tiếp: Lịch hẹn, hàng chọn RE ở góc nhìn Team; dùng lại `shell/RePicker.tsx` và RE chọn trong `ScopeContext.tsx` / `scope.ts` của B2; chỉ lọc RE phụ trách, không tính phối hợp)** → #226 B4 → #227 B5 → #228 B6. Mở đầu bằng `gh issue view 225`, nhánh `task/T-088-<slug>` từ `main`. Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
 3. **#72 T-053** (sau gói A + B) — #72 vẫn mở. Còn:
    - Owner kiểm tay exe bản sau gói A + B; cập nhật `phase-3.md` (số Issue, lỗi Owner phát hiện, kiểm tay).
    - **2 review độc lập** trên `main` (gồm deep review Phase 1→3 lần 2 ở phiên sạch). Phát hiện mới → đối chiếu sổ P-3 bên dưới trước khi ghi là MỚI; lỗi chặn → Issue trước khi đóng Phase 3.
