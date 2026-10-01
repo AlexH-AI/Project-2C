@@ -2,12 +2,12 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-10-01 (cuối ngày) · máy `DESKTOP-KDURKJP` (Home PC) · phản hồi Owner sau kiểm exe (16 ý) + kế hoạch sửa đã duyệt đã vào `main` (PR #218, `main` `d6a45d0`); Issue #214–#217 đã tạo, **chưa bắt đầu task nào**
-- **Nhánh:** `main` (sạch). Không có PR nào đang mở. Worktree review `Project-2C-review`, `Project-2C-review-2` trên Home PC: đưa về `origin/main` khi review
+- **Cập nhật:** 2026-10-01 (chiều) · máy `D13_THINKPAD` · gói A (#214–#216) và B1 (#222, PR #231, `main` `f2d6be9`) đã merge; **làm tiếp #223 B1b**
+- **Nhánh:** `main` (sạch, `f2d6be9`). Không có PR nào đang mở. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
 - **Phiên song song:** có thể có phiên khác trên cùng checkout — commit theo pathspec, không `git add -A`
 - **Repo public** (27/09) · **ruleset `protect-main`** (28/09): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
 - **Model / effort:** Owner chọn từng phiên (ADR-0001 M1). Chỉ Claude Code viết code, không subagent, cổng G1–G8. **Codex chỉ review độc lập khi đóng phase** (ADR-0001 M2)
-- **Phase:** 3 — Nghiệp vụ & màn hình: còn #72 (G7) và gói sửa theo phản hồi Owner 01/10 (#214–#217, rồi B1–B6) · Phase 1, 2 đã đóng
+- **Phase:** 3 — Nghiệp vụ & màn hình: còn #72 (G7) và gói B phản hồi Owner 01/10 (B1b–B6; gói A và B1 đã xong) · Phase 1, 2 đã đóng
 
 ## Trạng thái
 
@@ -16,8 +16,8 @@
 | Big review Phase 1→3 (Claude + Codex Astra) | Xong 30/09. Báo cáo tổng hợp lưu ở `docs/reviews/2026-09-30-phase-1-3-tong-hop.md` (F-01…F-19, kế hoạch 3 đợt) |
 | Đợt 1: #202 T-077, #203 T-078, #204 T-079, #210 T-080 | **Đã merge** 30/09 (PR #206, #208, #209, #211) |
 | #72 T-053 đóng Phase 3 | PR #212, #213 đã merge (metrics, báo cáo, kiểm tay exe 30/09: 0 lỗi). **Hoãn G7** tới khi xong gói A + B phản hồi Owner 01/10, kiểm tay exe lại, 2 review độc lập |
-| Phản hồi Owner 01/10 — gói A | #214 T-081, #215 T-082, #216 T-083 (`risk:low`, `ready-for-agent`) |
-| Phản hồi Owner 01/10 — gói B | #217 T-084: mockup `phase-3-feedback.html` **G3 đã duyệt 01/10** (PR #220, chờ Owner merge). Issue: #222 T-085 B1, #223 T-086 B1b (1 TL / team), #224 T-087 B2 (`risk:med`, chờ #216), #225 T-088 B3 (chờ #224), #226 T-089 B4, #227 T-090 B5 (chờ #226), #228 T-091 B6 (`risk:med`, chờ #227) |
+| Phản hồi Owner 01/10 — gói A | **Đã merge** 01/10: #214 T-081 (PR #221), #215 T-082 (PR #229), #216 T-083 (PR #230) |
+| Phản hồi Owner 01/10 — gói B | Mockup #217 T-084 (PR #220) và #222 T-085 B1 (PR #231, review PASS sau 2 vòng sửa) **đã merge** 01/10. Còn mở, làm tuần tự: #223 T-086 B1b (1 TL / team) → #224 T-087 B2 (`risk:med`) → #225 T-088 B3 → #226 T-089 B4 → #227 T-090 B5 → #228 T-091 B6 (`risk:med`) |
 | Đợt 2 (đầu Phase 4) | Chưa tạo Issue — tạo khi mở Phase 4 (báo cáo §4) |
 
 ## Phản hồi Owner sau kiểm exe (01/10/2026)
@@ -60,7 +60,7 @@ Quy tắc (review đóng Phase 3, P-3): ghi chú review không chặn nằm ở 
 ### OPEN
 
 Theo task đã có chỗ trong kế hoạch:
-- **T-d (F-05):** e2e local chập chờn khi nhiều worker cùng seed (`chart.spec.ts:35` từng vượt 30 s); e2e local dùng lại server cũ ở cổng 4173 (`reuseExistingServer`); `trackConsoleErrors` còn lặp ở `chart.spec.ts` và `navigation.spec.ts`.
+- **T-d (F-05):** e2e local chập chờn khi nhiều worker cùng seed (`chart.spec.ts:35` từng vượt 30 s); trên `D13_THINKPAD` (01/10) `seed-timing` local đo 5,4 s > ngưỡng 5 s, `packages/db/src/seed.test.ts` chạy riêng ~58 s trên ngưỡng 60 s (verify đỏ chập chờn), `appointment-outcome.spec.ts` quá 25–35 s/test dưới `CI=1`; e2e local dùng lại server cũ ở cổng 4173 (`reuseExistingServer`); `trackConsoleErrors` còn lặp ở `chart.spec.ts` và `navigation.spec.ts`.
 - **T-e (F-06, F-07):** `rfCount` / `inScope` O(A×T), `inScope` góc nhìn team quét `data.people` cho từng lịch (#155); chưa có hàm MTD trong `domain`.
 - **T-f (F-14):** chưa có `MAX_YEAR` trong `period.ts`; `shift` kỳ ngày/tuần/tùy chọn sát 01/01/1900 ném `RangeError` trong `PeriodPicker`, kỳ tháng/năm lùi về 1899 (#146); `addDays` với `days` cực lớn trả `NaN` (chưa có đường gọi).
 - **T-h (F-11, F-12, F-13, F-15, F-19):**
@@ -90,6 +90,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
     - `weekdayOf` (`period.ts:102`) và `periodOf('week')` tính thứ bằng hai cách.
   - #165: lịch cùng ngày khi sắp tăng dần vẫn ra giờ muộn trước (`AppointmentsScreen.tsx`, `CustomerAppointments.tsx`) → sắp theo cả ngày lẫn giờ; mockup tô "RF" màu accent và đưa năm khác xuống dòng giờ, code viết chuỗi phẳng.
   - #163: nhóm trước → sau trong 6a hiện bằng chữ (mockup: badge); hộp 6h hiện thêm "Các lần hẹn trước"; e2e chưa kiểm link "Xem tất cả (n)" khi > 5 lịch.
+- Team & nhân sự (#231, review 01/10): `groupByTeam` (`team-view.ts:37-39`) chỉ cho `shared` người có `teamId === null`; IS/BD/BDM có `team_id` khác null (dữ liệu cũ / backup, DB cho phép) không hiện ở đâu → cân nhắc `shared` lấy theo vai trò. TL thứ hai trở đi không hiện / sửa được cho tới khi B1b xong.
 - Team & nhân sự (#144): `role === 'RE' || role === 'TL'` lặp ở `PersonDialogs.tsx`; lọc theo `reId` lặp ở `staffMetrics` và `personUsage`; "Xóa nhân sự" trong hộp Sửa bỏ thay đổi chưa lưu mà không báo.
 - Khách hàng (#141): dòng "Sau khi lưu: N2 → N3" thiếu "· hạ nhóm / lên nhóm" như mockup 5d; khối cảnh báo "Chuyển tay không bao giờ tính RF" hiện cả khi KH đã đóng; `error.INVALID_TRANSITION` chỉ nói "KH đã đóng" dù cũng bắn khi trùng nhóm hiện tại; `CustomerDialogs.tsx:~300` lặp `CLOSED_STAGES.includes` (dùng `!isPipelineStage`); `CustomerProfile.tsx:110` dựng `StageBadge` tay; 3 helper `badge` riêng (`MetFields.tsx:16`, `CustomerDialogs.tsx:42`, `CustomerKyc.tsx:155`) → *Duplicated Code*, T-h.
 - `CloseGuard.tsx` (#125): bấm X lúc đang seed "Nạp lại" thì app đóng trước khi lưu bản mới (không mất dữ liệu); không có dấu hiệu "đang lưu" khi chờ `flush()`; phần nối React chưa có test tự động; chuỗi class `BUTTON` chép từ `Settings.tsx`.
@@ -134,7 +135,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. **Phản hồi Owner 01/10** (mục trên): làm #214 T-081 → #215 T-082 → #216 T-083 (mỗi Issue một phiên, `risk:low`); gói B: G3 đã duyệt (PR #220). **Làm tuần tự** (Owner 01/10), mỗi Issue một phiên: #216 → #222 B1 → #223 B1b → #224 B2 → #225 B3 → #226 B4 → #227 B5 → #228 B6. Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
+2. **Phản hồi Owner 01/10** (mục trên): gói A và B1 xong. **Làm tuần tự** (Owner 01/10), mỗi Issue một phiên: **#223 B1b (kế tiếp: mỗi team tối đa 1 TL; xử lý luôn dữ liệu cũ > 1 TL mà B1 chỉ hiện TL đầu theo tên)** → #224 B2 → #225 B3 → #226 B4 → #227 B5 → #228 B6. Mở đầu bằng `gh issue view 223`, nhánh `task/T-086-<slug>` từ `main`. Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
 3. **#72 T-053** (sau gói A + B) — #72 vẫn mở. Còn:
    - Owner kiểm tay exe bản sau gói A + B; cập nhật `phase-3.md` (số Issue, lỗi Owner phát hiện, kiểm tay).
    - **2 review độc lập** trên `main` (gồm deep review Phase 1→3 lần 2 ở phiên sạch). Phát hiện mới → đối chiếu sổ P-3 bên dưới trước khi ghi là MỚI; lỗi chặn → Issue trước khi đóng Phase 3.
@@ -186,7 +187,6 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- PR #220 (#217 T-084): G3 đã duyệt 01/10 — Owner merge PR mockup (docs-only, không CI).
 - #72 T-053: cổng **G7** đóng milestone Phase 3 — sau gói A + B, kiểm tay exe lại và 2 review độc lập.
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
