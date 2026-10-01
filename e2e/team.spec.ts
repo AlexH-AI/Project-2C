@@ -207,6 +207,24 @@ test('refuses an RE without a team, with the reason on the field', async ({ page
   await expect(shared).toContainText('Trần Hải Yến');
 });
 
+test('refuses a second TL in a team and names the current one (B1b)', async ({ page }) => {
+  await teamButton(page, 'Sao Mai').click();
+  const edit = members(page, 'Sao Mai').getByRole('button', { name: /^Sửa / }).first();
+  const lead = ((await edit.getAttribute('aria-label')) ?? '').replace(/^Sửa /, '');
+
+  const dialog = await openPersonDialog(page);
+  await dialog.getByRole('textbox', { name: 'Họ tên' }).fill('Trần Hải Yến');
+  await dialog.getByRole('radio', { name: 'TL', exact: true }).check();
+  await dialog.getByRole('combobox', { name: 'Team' }).selectOption({ label: 'Sao Mai' });
+  await dialog.getByRole('button', { name: 'Thêm' }).click();
+
+  await expect(dialog.getByRole('alert')).toHaveText(`Team này đã có TL: ${lead}.`);
+  await dialog.getByRole('button', { name: 'Hủy' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText('Trần Hải Yến')).toHaveCount(0);
+  await expect(page.getByText('3 team · 3 TL · 30 RE · 3 người hỗ trợ')).toBeVisible();
+});
+
 test('a new IS / BD / BDM leaves the selected team for the shared support', async ({ page }) => {
   const dialog = await openPersonDialog(page);
   const team = dialog.getByRole('combobox', { name: 'Team' });

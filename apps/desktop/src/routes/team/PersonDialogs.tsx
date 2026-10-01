@@ -47,8 +47,9 @@ export function PersonDialog({
         data.run((db) => (person ? updatePerson(db, person.id, input) : createPerson(db, input))),
       );
     } catch (failure) {
-      const message = errorMessage(failure, { role });
       const code = failure instanceof DbError ? failure.code : undefined;
+      const params = failure instanceof DbError ? failure.params : undefined;
+      const message = errorMessage(failure, { role, ...params });
       if (code === 'NAME_REQUIRED') setErrors({ name: message });
       else if (code === 'TEAM_REQUIRED' || code === 'TEAM_NOT_FOUND') setErrors({ team: message });
       else setErrors({ form: message });

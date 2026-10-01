@@ -271,6 +271,7 @@ describe('customers', () => {
     expect(updatePerson(db, re.id, { name: 'An Nguyễn', role: 'RE' }).name).toBe('An Nguyễn');
 
     softDeleteCustomer(db, customer.id);
-    expect(updatePerson(db, re.id, { role: 'TL' }).role).toBe('TL');
+    // The team already has its one TL (B1b), so leave for a shared role instead.
+    expect(updatePerson(db, re.id, { role: 'IS', teamId: null }).role).toBe('IS');
   });
 });

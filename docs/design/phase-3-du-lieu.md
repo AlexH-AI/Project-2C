@@ -172,7 +172,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
 
 | Lệnh | Quy tắc chính |
 |---|---|
-| `createTeam`, `renameTeam`, `createPerson`, `updatePerson` | RE/TL phải có team |
+| `createTeam`, `renameTeam`, `createPerson`, `updatePerson` | RE/TL phải có team; mỗi team tối đa 1 TL chưa xóa (Owner, G3 01/10/2026): tạo / đổi / khôi phục nhân sự thành TL thứ hai → `TEAM_HAS_LEAD` (B1b) |
 | `createCustomer` | Chỉ ở nhóm mở N4–N1 (`assertValidTransition`, ADR-0007); ghi transition đầu (`from` null); nếu có ngày sinh/giới tính → ghi chú `SYSTEM` + dữ kiện (D2) |
 | `updateCustomerProfile` | Đổi tên / RE / ngày sinh / giới tính; đổi ngày sinh hoặc giới tính → ghi chú `SYSTEM` + `confirmFact` |
 | `changeStageManually` | `assertValidTransition`; transition `appointment_id` null — không bao giờ tính RF; ngày không được trước transition mới nhất (D10) |
