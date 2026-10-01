@@ -82,3 +82,70 @@ test('an unknown customer shows a message instead of a profile', async ({ page }
   await page.goto('/#/customers/nobody');
   await expect(page.getByText('Không tìm thấy KH này (có thể đã bị xóa).')).toBeVisible();
 });
+
+const pickTeam = async (page: Page, name: string) => {
+  await page
+    .getByRole('radiogroup', { name: 'Góc nhìn' })
+    .getByRole('radio', { name: 'Team' })
+    .click();
+  await page.getByRole('combobox', { name: 'Team của góc nhìn' }).selectOption({ label: name });
+};
+
+test('the RE strip shows on the Team scope only, with the RE of the team', async ({ page }) => {
+  const strip = page.getByRole('region', { name: /^RE của team/ });
+  await expect(strip).toHaveCount(0);
+
+  await pickTeam(page, 'Sao Mai');
+  await expect(strip).toHaveAccessibleName('RE của team Sao Mai');
+  await expect(strip.getByRole('button')).toHaveCount(11);
+  await expect(strip.getByRole('button', { name: /^Cả team/ })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(page.getByText(/KH đang mở/)).toContainText('Cả team Sao Mai');
+
+  const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
+  await scope.getByRole('radio', { name: 'RE' }).click();
+  await expect(strip).toHaveCount(0);
+  await scope.getByRole('radio', { name: 'Toàn bộ' }).click();
+  await expect(strip).toHaveCount(0);
+});
+
+test('an RE picked in the strip narrows the customers to it, until picked again', async ({
+  page,
+}) => {
+  await pickTeam(page, 'Sao Mai');
+  const [teamOpen] = await summary(page);
+  const strip = page.getByRole('region', { name: 'RE của team Sao Mai' });
+  const chip = strip.getByRole('button').nth(1);
+  const name = (await chip.locator('span').first().textContent()) ?? '';
+
+  await chip.click();
+  await expect(chip).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText(/KH đang mở/)).toContainText(name);
+  const [reOpen] = await summary(page);
+  expect(reOpen).toBe(Number(await chip.locator('span').last().textContent()));
+  expect(reOpen).toBeLessThan(teamOpen);
+  for (const stage of OPEN) {
+    for (const card of await column(page, stage).getByRole('link').all()) {
+      await expect(card).toContainText(`RE ${name}`);
+    }
+  }
+
+  await chip.click();
+  await expect(chip).toHaveAttribute('aria-pressed', 'false');
+  await expect.poll(async () => (await summary(page))[0]).toBe(teamOpen);
+});
+
+test('another team drops the RE picked in the strip', async ({ page }) => {
+  await pickTeam(page, 'Sao Mai');
+  await page
+    .getByRole('region', { name: 'RE của team Sao Mai' })
+    .getByRole('button')
+    .nth(1)
+    .click();
+
+  await pickTeam(page, 'Bình Minh');
+  const strip = page.getByRole('region', { name: 'RE của team Bình Minh' });
+  await expect(strip.getByRole('button', { pressed: true })).toHaveText(/^Cả team/);
+});

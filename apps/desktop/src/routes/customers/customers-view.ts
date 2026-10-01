@@ -34,6 +34,8 @@ export interface CustomerBoard {
   readonly closed: Readonly<Record<ClosedStage, readonly CustomerCard[]>>;
   readonly openCount: number;
   readonly closedCount: number;
+  /** Open customers per RE id, for the RE strip; an RE with none is not listed. */
+  readonly openByRe: ReadonlyMap<string, number>;
 }
 
 export interface CustomerData {
@@ -67,12 +69,12 @@ export function customerBoard(data: CustomerData, scope: Scope): CustomerBoard {
     .sort((a, b) => compareDates(b.since, a.since) || byName(a.customer.name, b.customer.name));
   const closed = byStage(CLOSED_STAGES, cards);
   const closedCount = CLOSED_STAGES.reduce((sum, s) => sum + closed[s].length, 0);
-  return {
-    open: byStage(PIPELINE_STAGES, cards),
-    closed,
-    openCount: cards.length - closedCount,
-    closedCount,
-  };
+  const open = byStage(PIPELINE_STAGES, cards);
+  const openByRe = new Map<string, number>();
+  for (const { customer } of PIPELINE_STAGES.flatMap((s) => open[s])) {
+    openByRe.set(customer.reId, (openByRe.get(customer.reId) ?? 0) + 1);
+  }
+  return { open, closed, openCount: cards.length - closedCount, closedCount, openByRe };
 }
 
 function byStage<S extends CustomerRecord['stage']>(

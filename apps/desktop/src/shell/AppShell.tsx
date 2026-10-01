@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { listPeople, listTeams, type Database } from '@p2c/db';
 import { useQuery } from '../data/AppDataContext';
 import { t } from '../i18n';
@@ -6,7 +6,7 @@ import { Screen } from '../routes/Screen';
 import { ErrorBoundary } from './ErrorBoundary';
 import { SaveWarning } from './SaveWarning';
 import { routeToHash, sectionOf, usesScope } from './routes';
-import { resolveScope, type ScopeChoice } from './scope';
+import { narrowScope, resolveScope, type ScopeChoice } from './scope';
 import { ScopeContext } from './ScopeContext';
 import { ScopePicker } from './ScopePicker';
 import { Sidebar } from './Sidebar';
@@ -19,7 +19,16 @@ export function AppShell() {
   const route = useRoute();
   const { teams, people } = useQuery(readScopeOptions);
   const [choice, setChoice] = useState<ScopeChoice>({ kind: 'all' });
-  const scope = useMemo(() => resolveScope(choice, teams, people), [choice, teams, people]);
+  const picked = useMemo(() => resolveScope(choice, teams, people), [choice, teams, people]);
+  const scope = useMemo(
+    () => narrowScope(picked, choice.reInTeam, people),
+    [picked, choice.reInTeam, people],
+  );
+  const pickRe = useCallback(
+    (reId: string | null) => setChoice((current) => ({ ...current, reInTeam: reId ?? undefined })),
+    [],
+  );
+  const scopeState = useMemo(() => ({ picked, scope, pickRe }), [picked, scope, pickRe]);
 
   return (
     <div className="flex min-h-screen">
@@ -32,11 +41,11 @@ export function AppShell() {
           </h1>
           <div className="flex-1" />
           {usesScope(route.screen) && (
-            <ScopePicker scope={scope} teams={teams} people={people} onChange={setChoice} />
+            <ScopePicker scope={picked} teams={teams} people={people} onChange={setChoice} />
           )}
         </header>
         <main className="flex flex-col gap-4.5 px-6 pt-5 pb-8">
-          <ScopeContext value={scope}>
+          <ScopeContext value={scopeState}>
             <ErrorBoundary key={routeToHash(route)} resetKey={scope}>
               <Screen route={route} />
             </ErrorBoundary>

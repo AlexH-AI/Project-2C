@@ -4,6 +4,7 @@ import {
   listPeople,
   listPolicies,
   listStageTransitions,
+  listTeams,
   type Database,
 } from '@p2c/db';
 import { CLOSED_STAGES, PIPELINE_STAGES, formatDate, type ClosedStage } from '@p2c/domain';
@@ -11,7 +12,9 @@ import { Button, DataTable, Segmented, StageBadge, type DataTableColumn } from '
 import { useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
-import { useScope } from '../../shell/ScopeContext';
+import { RePicker } from '../../shell/RePicker';
+import { teamRes } from '../../shell/scope';
+import { useScopeState } from '../../shell/ScopeContext';
 import { CustomerFormDialog } from './CustomerDialogs';
 import { birthLabel, customerBoard, type CustomerCard } from './customers-view';
 
@@ -32,6 +35,7 @@ const LINK = 'rounded-sm focus-visible:outline-2 focus-visible:outline-accent';
 const readCustomers = (db: Database) => ({
   customers: listCustomers(db),
   people: listPeople(db),
+  teams: listTeams(db),
   transitions: listStageTransitions(db),
   policies: listPolicies(db),
 });
@@ -94,8 +98,20 @@ const COLUMNS: ReadonlyArray<DataTableColumn<CustomerCard>> = [
 /** Customers (mockup customers.html): kanban N4 → N1 with the closed stages beside, or a table. */
 export function CustomersScreen() {
   const data = useQuery(readCustomers);
-  const scope = useScope();
-  const board = useMemo(() => customerBoard(data, scope), [data, scope]);
+  const { picked, scope, pickRe } = useScopeState();
+  const pickedBoard = useMemo(() => customerBoard(data, picked), [data, picked]);
+  const board = useMemo(
+    () => (scope === picked ? pickedBoard : customerBoard(data, scope)),
+    [data, scope, picked, pickedBoard],
+  );
+  // The RE strip and its "đang xem" line belong to the Team scope (mockup phase-3-feedback B2).
+  const team =
+    picked.kind === 'team' ? data.teams.find((item) => item.id === picked.teamId) : undefined;
+  const re =
+    scope !== picked && scope.kind === 're'
+      ? data.people.find((person) => person.id === scope.reId)
+      : undefined;
+  const summary = t('customers.summary', { open: board.openCount, closed: board.closedCount });
   const rows = useMemo(
     () => [
       ...PIPELINE_STAGES.flatMap((s) => board.open[s]),
@@ -108,9 +124,27 @@ export function CustomersScreen() {
 
   return (
     <>
+      {team && (
+        <RePicker
+          team={team}
+          res={teamRes(data.people, team.id)}
+          picked={re?.id ?? null}
+          counts={pickedBoard.openByRe}
+          total={pickedBoard.openCount}
+          onPick={pickRe}
+        />
+      )}
       <div className="flex items-center gap-3">
         <span className="text-sm text-fg-2 tabular-nums">
-          {t('customers.summary', { open: board.openCount, closed: board.closedCount })}
+          {re ? (
+            <>
+              <b className="font-semibold text-fg">{re.name}</b> · {summary}
+            </>
+          ) : team ? (
+            `${t('customers.viewingTeam', { team: team.name })} · ${summary}`
+          ) : (
+            summary
+          )}
         </span>
         <div className="flex-1" />
         <Segmented label={t('customers.view')} options={VIEWS} value={view} onChange={setView} />
