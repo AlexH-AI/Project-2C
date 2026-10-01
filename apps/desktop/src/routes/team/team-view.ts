@@ -114,11 +114,3 @@ export function personUsage(personId: string, records: StaffRecords): PersonUsag
     coordinating: records.appointments.filter((a) => a.coordinatorIds.includes(personId)).length,
   };
 }
-
-/** Avatar letters: family name and given name, "Nguyễn Thu Hà" → "NH". */
-export function initials(name: string): string {
-  const words = name.trim().split(/\s+/);
-  const first = words[0]?.charAt(0) ?? '';
-  const last = words.length > 1 ? (words.at(-1)?.charAt(0) ?? '') : '';
-  return (first + last).toLocaleUpperCase('vi');
-}

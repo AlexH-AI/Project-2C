@@ -40,7 +40,7 @@ test('switching screens 10 times keeps one chart and logs no errors', async ({ p
   for (let round = 0; round < 10; round++) {
     await nav.getByRole('link', { name: 'Lịch hẹn' }).click();
     await expect(page.getByRole('img', { name: CHART })).toHaveCount(0);
-    await nav.getByRole('link', { name: 'Tổng quan hôm nay' }).click();
+    await nav.getByRole('link', { name: 'Tổng quan' }).click();
     await expect(page.getByRole('img', { name: CHART }).locator('svg')).toHaveCount(1);
   }
 

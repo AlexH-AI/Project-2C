@@ -6,7 +6,7 @@ test('app shell shows the brand, the overview and the pipeline stages in order',
   await page.goto('/');
 
   await expect(page.getByRole('complementary')).toContainText('Project-2C');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan hôm nay');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan');
 
   const stages = page.getByRole('region', { name: 'Nhóm cơ hội' }).getByRole('listitem');
   await expect(stages).toHaveText(['N4', 'N3', 'N2', 'N1']);
@@ -32,6 +32,6 @@ test('web mode opens the in-memory database: sql.js wasm loads, no storage alert
   await page.goto('/');
 
   expect((await wasm).ok()).toBe(true);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan hôm nay');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan');
   await expect(page.getByRole('alert')).toHaveCount(0);
 });

@@ -7,7 +7,7 @@ const LIMIT_MS = process.env.CI ? 15_000 : 5_000;
 // Its own Playwright project, run before the others and alone (playwright.config.ts).
 test('web mode seeds the simulated data in time (#64)', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan hôm nay');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan');
 
   const duration = await page.evaluate(
     () => performance.getEntriesByName('p2c:demo-seed', 'measure')[0]?.duration,

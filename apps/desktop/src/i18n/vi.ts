@@ -4,7 +4,7 @@ export const vi = {
   'app.subtitle': 'Quản lý hoạt động tư vấn bảo hiểm nhân thọ',
   'nav.label': 'Điều hướng chính',
   'nav.group.manage': 'Quản lý',
-  'screen.overview': 'Tổng quan hôm nay',
+  'screen.overview': 'Tổng quan',
   'screen.appointments': 'Lịch hẹn',
   'screen.customers': 'Khách hàng',
   'screen.customer': 'Hồ sơ khách hàng',

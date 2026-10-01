@@ -253,9 +253,6 @@ export function Timeline({
             {event.kind === 'version' && (
               <span className="flex items-center gap-2">
                 <b>{event.version.summary}</b>
-                {event.version.material && (
-                  <span className={`${BADGE} text-accent`}>{t('timeline.material')}</span>
-                )}
                 <span className="text-xs text-fg-3">
                   {t('timeline.version', { number: event.number })}
                 </span>
