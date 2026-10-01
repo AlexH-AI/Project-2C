@@ -1,6 +1,6 @@
 import type { Person, Team } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { chooseKind, resolveScope, type ScopeChoice } from './scope';
+import { chooseKind, reOptions, resolveScope, type ScopeChoice } from './scope';
 
 const teams: Team[] = [
   { id: 't1', name: 'Bình Minh' },
@@ -61,5 +61,45 @@ describe('chooseKind', () => {
     expect(resolveScope(choice, [], people)).toEqual({ kind: 'all' });
     // Otherwise the scope jumps to Team as soon as a team is created.
     expect(resolveScope(chooseKind(choice, 'all'), teams, people)).toEqual({ kind: 'all' });
+  });
+});
+
+describe('reOptions', () => {
+  const threeTeams: Team[] = [
+    { id: 'sm', name: 'Sao Mai' },
+    { id: 'bm', name: 'Bình Minh' },
+    { id: 'hd', name: 'Hừng Đông' },
+  ];
+  const staff: Person[] = [
+    { id: 'r1', name: 'Yến', role: 'RE', teamId: 'sm' },
+    { id: 'r2', name: 'Đạt', role: 'RE', teamId: 'bm' },
+    { id: 'tl', name: 'Ánh', role: 'TL', teamId: 'bm' },
+    { id: 'r3', name: 'Dung', role: 'RE', teamId: 'bm' },
+    { id: 'is', name: 'Bảo', role: 'IS', teamId: 'hd' },
+    { id: 'r4', name: 'Hà', role: 'RE', teamId: 'hd' },
+    { id: 'bd', name: 'Cường', role: 'BD', teamId: 'sm' },
+    { id: 'r5', name: 'An', role: 'RE', teamId: 'sm' },
+    { id: 'bdm', name: 'Duy', role: 'BDM', teamId: 'hd' },
+    { id: 'r6', name: 'Em', role: 'RE', teamId: 'bm' },
+  ];
+
+  it('orders the RE by team, then by name, with Vietnamese letters in place', () => {
+    expect(reOptions(staff, threeTeams).map((option) => option.label)).toEqual([
+      'Dung · Bình Minh',
+      'Đạt · Bình Minh',
+      'Em · Bình Minh',
+      'Hà · Hừng Đông',
+      'An · Sao Mai',
+      'Yến · Sao Mai',
+    ]);
+  });
+
+  it('is where the RE scope falls back to its first RE', () => {
+    expect(resolveScope({ kind: 're' }, threeTeams, staff)).toEqual({ kind: 're', reId: 'r3' });
+  });
+
+  it('leaves out TL, IS, BD and BDM', () => {
+    const values = reOptions(staff, threeTeams).map((option) => option.value);
+    for (const id of ['tl', 'is', 'bd', 'bdm']) expect(values).not.toContain(id);
   });
 });

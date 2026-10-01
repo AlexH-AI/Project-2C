@@ -105,6 +105,13 @@ test('Team and RE scopes pick the team or RE next to the switch', async ({ page 
   await expect(team).toHaveCount(0);
   await expect(re.locator('option')).toHaveCount(30);
   await expect(re.locator('option').first()).toHaveText(/ · (Bình Minh|Hừng Đông|Sao Mai)$/);
+  // All the RE of one team come before the next team's.
+  const teamsInOrder = (await re.locator('option').allTextContents()).map(
+    (label) => label.split(' · ')[1] ?? '',
+  );
+  expect([...new Set(teamsInOrder)]).toEqual(['Bình Minh', 'Hừng Đông', 'Sao Mai']);
+  expect(teamsInOrder).toEqual([...teamsInOrder].sort(new Intl.Collator('vi').compare));
+  await expect(re.locator('option:checked')).toHaveText(/ · Bình Minh$/);
   const secondRe = (await re.locator('option').nth(1).textContent()) ?? '';
   await re.selectOption({ index: 1 });
   await scope.getByRole('radio', { name: 'RE' }).click();
