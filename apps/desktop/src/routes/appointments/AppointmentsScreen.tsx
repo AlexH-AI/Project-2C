@@ -11,6 +11,8 @@ import {
 import {
   compareDates,
   formatDate,
+  formatDayMonth,
+  formatDayOfMonth,
   formatPeriodValue,
   isInPeriod,
   periodOf,
@@ -327,7 +329,7 @@ function MonthCalendar({
   rows: readonly AppointmentRow[];
   onPick: (date: CalendarDate) => void;
 }) {
-  const weeks = useMemo(() => monthGrid(day, rows), [day, rows]);
+  const weeks = useMemo(() => monthGrid(day, rows, period), [day, rows, period]);
   const month = formatPeriodValue(periodOf('month', day));
   const days = weeks.flat().filter((cell) => cell.inMonth);
   const met = days.reduce((sum, cell) => sum + cell.met, 0);
@@ -352,7 +354,7 @@ function MonthCalendar({
           <DayButton
             key={formatDate(cell.date)}
             cell={cell}
-            pickable={cell.inMonth && pickDay(period, cell.date) !== null}
+            pickable={(cell.inMonth && pickDay(period, cell.date) !== null) || cell.inPeriod}
             weekend={i % 7 >= 5}
             picked={compareDates(cell.date, day) === 0}
             isToday={compareDates(cell.date, today) === 0}
@@ -385,7 +387,7 @@ function Dot({ kind }: { kind: keyof typeof DOT }) {
   return <i aria-hidden="true" className={`inline-block size-2 rounded-full ${DOT[kind]}`} />;
 }
 
-const CELL = 'flex min-h-15 flex-col rounded-sm border px-2 py-1.5 text-left tabular-nums';
+const CELL = 'relative flex min-h-15 flex-col rounded-sm border px-2 py-1.5 text-left tabular-nums';
 
 function DayButton({
   cell,
@@ -402,17 +404,38 @@ function DayButton({
   isToday: boolean;
   onPick: (date: CalendarDate) => void;
 }) {
-  const background = picked ? 'bg-accent-soft' : weekend ? 'bg-surface-1' : 'bg-surface-2';
+  // A day of the period in another month says which month, and picking it moves the calendar there.
+  const otherMonth = cell.inPeriod && !cell.inMonth;
+  const background = picked
+    ? 'bg-accent-soft'
+    : cell.inPeriod
+      ? 'bg-period-band'
+      : weekend
+        ? 'bg-surface-1'
+        : 'bg-surface-2';
+  const border = picked
+    ? 'border-accent'
+    : isToday
+      ? 'border-date-today'
+      : cell.inPeriod
+        ? 'border-period-band-border'
+        : 'border-border';
   const dayNumber = (
-    <span className={`text-xs ${isToday ? 'font-bold text-accent' : 'text-fg-3'}`}>
-      {String(cell.date.day).padStart(2, '0')}
+    <span className={picked ? 'text-sm font-bold text-accent' : 'text-xs text-fg-3'}>
+      {otherMonth ? formatDayMonth(cell.date) : formatDayOfMonth(cell.date)}
+      {isToday && (
+        <span className="ml-1 inline-block text-xs font-normal whitespace-nowrap text-date-today">
+          {t('appointments.todayTag')}
+        </span>
+      )}
     </span>
   );
-  // Days outside the month only fill the weeks, days outside a custom range cannot be picked:
-  // the period picker moves there.
+  const ring = isToday ? 'inset-ring inset-ring-date-today' : '';
+  // Days outside the month and the period only fill the weeks, days outside a custom range
+  // cannot be picked: the period picker moves there.
   if (!pickable) {
     return (
-      <div aria-hidden="true" className={`${CELL} border-border opacity-35 ${background}`}>
+      <div aria-hidden="true" className={`${CELL} opacity-35 ${border} ${ring} ${background}`}>
         {dayNumber}
       </div>
     );
@@ -427,11 +450,10 @@ function DayButton({
     <button
       type="button"
       aria-pressed={picked}
+      aria-current={isToday ? 'date' : undefined}
       aria-label={t('appointments.dayCount', { date: formatDate(cell.date), count })}
       onClick={() => onPick(cell.date)}
-      className={`${CELL} cursor-pointer ${FOCUS} ${background} ${
-        picked || isToday ? 'border-accent' : 'border-border'
-      } ${isToday ? 'inset-ring inset-ring-accent' : ''}`}
+      className={`${CELL} cursor-pointer ${FOCUS} ${background} ${border} ${ring}`}
     >
       <span className="flex items-start justify-between">
         {dayNumber}
@@ -442,6 +464,11 @@ function DayButton({
           <Dot key={i} kind={kind} />
         ))}
       </span>
+      {otherMonth && (
+        <span aria-hidden="true" className="absolute right-1.5 bottom-1 text-xs text-accent">
+          →
+        </span>
+      )}
     </button>
   );
 }

@@ -88,6 +88,8 @@ export interface AppointmentRow {
 export interface DayCell {
   readonly date: CalendarDate;
   readonly inMonth: boolean;
+  /** In a week or custom period, which the calendar bands; a month or a day is not banded. */
+  readonly inPeriod: boolean;
   readonly met: number;
   readonly planned: number;
   /** Rescheduled, cancelled or no show. */
@@ -207,8 +209,16 @@ const CALENDAR_GROUP: Record<AppointmentStatus, 'met' | 'planned' | 'missed'> = 
   NO_SHOW: 'missed',
 };
 
-/** The weeks, Monday to Sunday, covering the month of `date`, with each day's appointments. */
-export function monthGrid(date: CalendarDate, rows: readonly AppointmentRow[]): DayCell[][] {
+/**
+ * The weeks, Monday to Sunday, covering the month of `date`, with each day's appointments and
+ * whether it is in the banded `period`.
+ */
+export function monthGrid(
+  date: CalendarDate,
+  rows: readonly AppointmentRow[],
+  period: Period,
+): DayCell[][] {
+  const banded = period.kind === 'week' || period.kind === 'custom';
   const month = periodOf('month', date);
   let day = periodOf('week', month.start).start;
   const last = periodOf('week', month.end).end;
@@ -216,7 +226,14 @@ export function monthGrid(date: CalendarDate, rows: readonly AppointmentRow[]): 
   while (compareDates(day, last) <= 0) {
     const week: DayCell[] = [];
     for (let i = 0; i < 7; i++, day = addDays(day, 1)) {
-      const cell = { date: day, inMonth: day.month === date.month, met: 0, planned: 0, missed: 0 };
+      const cell = {
+        date: day,
+        inMonth: day.month === date.month,
+        inPeriod: banded && isInPeriod(day, period),
+        met: 0,
+        planned: 0,
+        missed: 0,
+      };
       for (const row of rows) {
         if (compareDates(row.appointment.date, day) === 0) {
           cell[CALENDAR_GROUP[row.appointment.status]] += 1;

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
 const TODAY = '15/09/2026';
@@ -123,6 +123,64 @@ test('with a custom range, days outside it cannot be picked', async ({ page }) =
 
   await expect(calendar.getByRole('button')).toHaveCount(11);
   await expect(calendar.getByRole('button', { name: /^21\/09\/2026:/ })).toHaveCount(0);
+});
+
+const ACCENT = 'rgb(217, 178, 106)';
+const DATE_TODAY = 'rgb(155, 232, 192)';
+const PERIOD_BAND = 'rgba(217, 178, 106, 0.08)';
+const css = (locator: Locator, property: string) =>
+  locator.evaluate((el, name) => getComputedStyle(el).getPropertyValue(name), property);
+
+test('a week across two months can be picked in either month, keeping the week', async ({
+  page,
+}) => {
+  const { calendar, day, kinds } = screen(page);
+
+  await kinds.getByRole('radio', { name: 'Tuần' }).click();
+  await calendar.getByRole('button', { name: /^29\/09\/2026:/ }).click();
+  const week = page.getByText('28/09 – 04/10/2026');
+  await expect(week).toBeVisible();
+
+  // 01/10 is in the week, so it can be picked from September; the calendar follows it.
+  await calendar.getByRole('button', { name: /^01\/10\/2026:/ }).click();
+  await expect(calendar.getByRole('heading')).toHaveText('Lịch tháng 10/2026');
+  await expect(calendar.getByText('29/09', { exact: true })).toBeVisible();
+
+  await calendar.getByRole('button', { name: /^29\/09\/2026:/ }).click();
+  await expect(calendar.getByRole('heading')).toHaveText('Lịch tháng 09/2026');
+  await expect(calendar.getByRole('button', { pressed: true })).toHaveAccessibleName(
+    /^29\/09\/2026:/,
+  );
+  await expect(day.getByRole('heading', { level: 2 })).toHaveText('Trong ngày 29/09/2026');
+  await expect(week).toBeVisible();
+});
+
+test('the picked day has its number in the accent, today a light green ring', async ({ page }) => {
+  const { calendar } = screen(page);
+
+  const picked = calendar.getByRole('button', { name: /^16\/09\/2026:/ });
+  await picked.click();
+  await expect(picked).toHaveAttribute('aria-pressed', 'true');
+  expect(await css(picked.getByText('16', { exact: true }), 'color')).toBe(ACCENT);
+
+  const today = calendar.getByRole('button', { name: `${TODAY}:` });
+  await expect(today).toHaveAttribute('aria-current', 'date');
+  await expect(today).toContainText('· hôm nay');
+  expect(await css(today, 'border-top-color')).toBe(DATE_TODAY);
+});
+
+test('a custom range bands its days, not the others', async ({ page }) => {
+  const { calendar, kinds } = screen(page);
+
+  await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
+  await page.getByRole('textbox', { name: 'Từ ngày' }).fill('10/09/2026');
+  await page.getByRole('textbox', { name: 'Đến ngày' }).fill('20/09/2026');
+  await page.getByRole('textbox', { name: 'Đến ngày' }).press('Enter');
+
+  const inside = calendar.getByRole('button', { name: /^11\/09\/2026:/ });
+  expect(await css(inside, 'background-color')).toBe(PERIOD_BAND);
+  const outside = calendar.locator('[aria-hidden="true"]').filter({ hasText: /^21$/ });
+  expect(await css(outside, 'background-color')).not.toBe(PERIOD_BAND);
 });
 
 test('the scope narrows the day and the list to one team, then one RE', async ({ page }) => {

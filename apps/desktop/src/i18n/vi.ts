@@ -259,6 +259,7 @@ export const vi = {
   'appointments.legendPlanned': 'Dự kiến',
   'appointments.legendMissed': 'Dời lịch / hủy / không đến',
   'appointments.dayCount': '{date}: {count} lịch hẹn',
+  'appointments.todayTag': '· hôm nay',
   'appointments.day': 'Trong ngày {date}',
   'appointments.dayEmpty': 'Không có lịch hẹn trong ngày.',
   'appointments.list': 'Danh sách lịch hẹn',

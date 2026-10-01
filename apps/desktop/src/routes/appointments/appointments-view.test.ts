@@ -1,5 +1,6 @@
 import type { AppointmentRecord, CustomerRecord } from '@p2c/db';
 import {
+  customPeriod,
   periodOf,
   type CalendarDate,
   type Person,
@@ -187,7 +188,7 @@ describe('monthGrid', () => {
       { kind: 'all' },
       'any',
     );
-    const weeks = monthGrid(day(9, 15), rows);
+    const weeks = monthGrid(day(9, 15), rows, periodOf('month', day(9, 15)));
     // September 2026 starts on a Tuesday and ends on a Wednesday.
     expect(weeks).toHaveLength(5);
     expect(weeks[0]?.[0]).toMatchObject({
@@ -215,7 +216,7 @@ describe('monthGrid', () => {
       { kind: 'all' },
       'any',
     );
-    const cell = monthGrid(day(9, 16), rows)
+    const cell = monthGrid(day(9, 16), rows, periodOf('month', day(9, 16)))
       .flat()
       .find((c) => c.date.day === 16 && c.inMonth);
     expect(cell).toMatchObject({ met: 0, planned: 0, missed: 3 });
@@ -223,7 +224,7 @@ describe('monthGrid', () => {
 
   it('starts on the first when the month starts on a Monday', () => {
     // June 2026 starts on a Monday and ends on a Tuesday.
-    const weeks = monthGrid(day(6, 10), []);
+    const weeks = monthGrid(day(6, 10), [], periodOf('month', day(6, 10)));
     expect(weeks).toHaveLength(5);
     expect(weeks[0]?.[0]).toMatchObject({ date: day(6, 1), inMonth: true });
     expect(weeks[4]?.[6]).toMatchObject({ date: day(7, 5), inMonth: false });
@@ -231,7 +232,7 @@ describe('monthGrid', () => {
 
   it('spans six weeks when the month needs them', () => {
     // August 2026 starts on a Saturday and ends on a Monday.
-    const weeks = monthGrid(day(8, 1), []);
+    const weeks = monthGrid(day(8, 1), [], periodOf('month', day(8, 1)));
     expect(weeks).toHaveLength(6);
     expect(weeks[0]?.[0]).toMatchObject({ date: day(7, 27), inMonth: false });
     expect(weeks[5]?.[0]).toMatchObject({ date: day(8, 31), inMonth: true });
@@ -241,12 +242,43 @@ describe('monthGrid', () => {
   it('crosses the new year on both sides', () => {
     const jan2 = { year: 2027, month: 1, day: 2 };
     const rows = appointmentRows(data([appointment('a', 're1', jan2)]), { kind: 'all' }, 'any');
-    const december = monthGrid(day(12, 31), rows);
+    const december = monthGrid(day(12, 31), rows, periodOf('month', day(12, 31)));
     expect(december.at(-1)?.[5]).toMatchObject({ date: jan2, inMonth: false, planned: 1 });
 
-    const january = monthGrid(jan2, rows);
+    const january = monthGrid(jan2, rows, periodOf('month', jan2));
     expect(january[0]?.[0]).toMatchObject({ date: day(12, 28), inMonth: false });
     expect(january[0]?.[5]).toMatchObject({ date: jan2, inMonth: true, planned: 1 });
+  });
+  it('marks the days of a week period, in the month shown or not', () => {
+    const week = periodOf('week', day(10, 1));
+    const cells = monthGrid(day(10, 1), [], week).flat();
+    const inPeriod = cells.filter((c) => c.inPeriod).map((c) => [c.date.month, c.date.day]);
+    expect(inPeriod).toEqual([
+      [9, 28],
+      [9, 29],
+      [9, 30],
+      [10, 1],
+      [10, 2],
+      [10, 3],
+      [10, 4],
+    ]);
+    expect(cells[0]).toMatchObject({ date: day(9, 28), inMonth: false, inPeriod: true });
+  });
+
+  it('marks the days of a custom range only', () => {
+    const cells = monthGrid(day(10, 6), [], customPeriod(day(9, 24), day(10, 7))).flat();
+    expect(cells.find((c) => c.date.day === 7 && c.inMonth)?.inPeriod).toBe(true);
+    expect(cells.find((c) => c.date.day === 8 && c.inMonth)?.inPeriod).toBe(false);
+  });
+
+  it('marks no band for a month or a day period', () => {
+    for (const period of [periodOf('month', day(10, 1)), periodOf('day', day(10, 1))]) {
+      expect(
+        monthGrid(day(10, 1), [], period)
+          .flat()
+          .some((c) => c.inPeriod),
+      ).toBe(false);
+    }
   });
 });
 

@@ -96,6 +96,11 @@ export function formatDayMonth(date: CalendarDate): string {
   return `${pad(date.day)}/${pad(date.month)}`;
 }
 
+/** `dd` — the day of the month alone, as a calendar cell shows it. */
+export function formatDayOfMonth(date: CalendarDate): string {
+  return pad(date.day);
+}
+
 /** Monday 1 … Sunday 7. */
 export type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 

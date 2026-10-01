@@ -24,6 +24,9 @@
   --color-accent-soft: var(--accent-soft);
   --color-on-accent: var(--on-accent);
   --color-heading: var(--heading);
+  --color-period-band: var(--period-band);
+  --color-period-band-border: var(--period-band-border);
+  --color-date-today: var(--date-today);
   --color-n4: var(--n4);
   --color-n3: var(--n3);
   --color-n2: var(--n2);
