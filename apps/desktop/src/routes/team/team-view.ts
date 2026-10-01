@@ -15,8 +15,10 @@ import {
 
 export interface TeamEntry {
   readonly team: Team;
-  /** In the order given (the repository sorts by name). */
-  readonly members: readonly Person[];
+  /** The team's TL (one per team); the first by name if old data has several. */
+  readonly lead: Person | undefined;
+  /** Only the RE, in the order given (the repository sorts by name). */
+  readonly reps: readonly Person[];
   readonly tl: number;
   readonly re: number;
 }
@@ -32,8 +34,9 @@ export function groupByTeam(teams: readonly Team[], people: readonly Person[]): 
   return {
     teams: teams.map((team) => {
       const members = people.filter((person) => person.teamId === team.id);
-      const count = (role: Person['role']) => members.filter((p) => p.role === role).length;
-      return { team, members, tl: count('TL'), re: count('RE') };
+      const leads = members.filter((p) => p.role === 'TL');
+      const reps = members.filter((p) => p.role === 'RE');
+      return { team, lead: leads[0], reps, tl: leads.length, re: reps.length };
     }),
     shared: people.filter((person) => person.teamId === null),
   };
