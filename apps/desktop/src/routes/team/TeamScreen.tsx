@@ -309,6 +309,7 @@ function Members({
               <span className={`${ROLE} mr-1.5`}>{t('team.leadOf')}</span>
               {entry.lead.name}
             </span>
+            <span className="text-fg-3">·</span>
             <EditLink person={entry.lead} onEdit={onEditLead} />
           </>
         ) : (

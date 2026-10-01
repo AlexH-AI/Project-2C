@@ -49,6 +49,7 @@ test('the TL sits in the table header with an Edit button (B1)', async ({ page }
   const edit = region.getByRole('button', { name: /^Sửa / }).first();
   const name = ((await edit.getAttribute('aria-label')) ?? '').replace(/^Sửa /, '');
   await expect(region.getByText(name).first()).toBeVisible();
+  await expect(edit.locator('..')).toContainText(/TL.+·\s*Sửa/);
   await edit.click();
   const dialog = page.getByRole('dialog', { name: 'Sửa nhân sự' });
   await expect(dialog.getByRole('textbox', { name: 'Họ tên' })).toHaveValue(name);
