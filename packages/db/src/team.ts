@@ -115,7 +115,7 @@ export interface PersonInput {
 
 export function createPerson(db: Database, input: PersonInput): Person {
   return db.transaction(() => {
-    const valid = validatePerson(db, input);
+    const valid = validatePerson(db, input, null);
     const at = db.now();
     const row: PersonRow = {
       id: ulid(at, db.random),
@@ -133,15 +133,20 @@ export function updatePerson(db: Database, id: string, changes: Partial<PersonIn
   return db.transaction(() => {
     const current = toPerson(livePerson(db, id));
     // `undefined` keeps the current value; `teamId: null` clears the team.
-    const valid = validatePerson(db, {
-      name: changes.name ?? current.name,
-      role: changes.role ?? current.role,
-      teamId: changes.teamId === undefined ? current.teamId : changes.teamId,
-    });
+    const role = changes.role ?? current.role;
     // Records keep pointing to their RE, who therefore has to stay an RE (spec §3.3).
-    if (current.role === 'RE' && valid.role !== 'RE' && ownsLiveRecords(db, id)) {
+    if (current.role === 'RE' && role !== 'RE' && ownsLiveRecords(db, id)) {
       throw new DbError('PERSON_IN_USE');
     }
+    const valid = validatePerson(
+      db,
+      {
+        name: changes.name ?? current.name,
+        role,
+        teamId: changes.teamId === undefined ? current.teamId : changes.teamId,
+      },
+      id,
+    );
     updatePersonRow(db, id, valid);
     return toPerson(livePerson(db, id));
   });
@@ -159,7 +164,7 @@ export function restorePerson(db: Database, id: string): void {
   db.transaction(() => {
     const row = findPerson(db, id);
     if (!row) throw new DbError('PERSON_NOT_FOUND');
-    validatePerson(db, toPerson(row));
+    validatePerson(db, toPerson(row), id);
     updatePersonRow(db, id, { deletedAt: null });
   });
 }
@@ -236,14 +241,33 @@ function isPersonInUse(db: Database, id: string): boolean {
   return ownsLiveRecords(db, id) || coordinating !== undefined || reviewing !== undefined;
 }
 
-function validatePerson(db: Database, input: PersonInput): PersonInput {
+/** Checks a person's fields; `selfId` is the person being changed or restored, else null. */
+function validatePerson(db: Database, input: PersonInput, selfId: string | null): PersonInput {
   const name = requireName(input.name);
   if (input.teamId === null) {
     if (ROLES_WITH_TEAM.includes(input.role)) throw new DbError('TEAM_REQUIRED');
   } else {
     liveTeam(db, input.teamId);
+    if (input.role === 'TL') assertNoOtherLead(db, input.teamId, selfId);
   }
   return { name, role: input.role, teamId: input.teamId };
+}
+
+/** A team has at most one live TL (Owner, G3 01/10/2026). */
+function assertNoOtherLead(db: Database, teamId: string, selfId: string | null): void {
+  const lead = db.orm
+    .select({ name: people.name })
+    .from(people)
+    .where(
+      and(
+        eq(people.teamId, teamId),
+        eq(people.role, 'TL'),
+        isNull(people.deletedAt),
+        selfId === null ? isNotNull(people.id) : ne(people.id, selfId),
+      ),
+    )
+    .get();
+  if (lead) throw new DbError('TEAM_HAS_LEAD', { name: lead.name });
 }
 
 function updateTeamRow(db: Database, id: string, changes: Partial<TeamRow>): void {

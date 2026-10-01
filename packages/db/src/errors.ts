@@ -5,6 +5,8 @@ export const DB_ERROR_CODES = [
   'TEAM_NAME_TAKEN',
   'TEAM_HAS_MEMBERS',
   'TEAM_REQUIRED',
+  /** A team already has a live TL; params `name` (that TL's). */
+  'TEAM_HAS_LEAD',
   'PERSON_NOT_FOUND',
   'PERSON_IN_USE',
   'RE_REQUIRED',

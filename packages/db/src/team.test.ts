@@ -205,6 +205,69 @@ describe('people', () => {
   });
 });
 
+describe('one TL per team (B1b)', () => {
+  async function withLead() {
+    const { db, persist } = await setup();
+    const saoMai = createTeam(db, { name: 'Sao Mai' });
+    const binhMinh = createTeam(db, { name: 'Bình Minh' });
+    const lead = createPerson(db, { name: 'Lan', role: 'TL', teamId: saoMai.id });
+    persist.mockClear();
+    return { db, persist, saoMai, binhMinh, lead };
+  }
+
+  function errorOf(fn: () => unknown): DbError | undefined {
+    try {
+      fn();
+    } catch (error) {
+      if (error instanceof DbError) return error;
+      throw error;
+    }
+    return undefined;
+  }
+
+  it('refuses a second TL in a team and leaves the database untouched', async () => {
+    const { db, persist, saoMai, lead } = await withLead();
+
+    const error = errorOf(() => createPerson(db, { name: 'Minh', role: 'TL', teamId: saoMai.id }));
+
+    expect(error?.code).toBe('TEAM_HAS_LEAD');
+    expect(error?.params).toEqual({ name: 'Lan' });
+    expect(listPeople(db)).toEqual([lead]);
+    expect(persist).not.toHaveBeenCalled();
+  });
+
+  it('makes an RE the TL only of a team without one', async () => {
+    const { db, saoMai, binhMinh } = await withLead();
+    const an = createPerson(db, { name: 'An', role: 'RE', teamId: saoMai.id });
+    const binh = createPerson(db, { name: 'Bình', role: 'RE', teamId: binhMinh.id });
+
+    expect(codeOf(() => updatePerson(db, an.id, { role: 'TL' }))).toBe('TEAM_HAS_LEAD');
+    expect(getPerson(db, an.id)?.role).toBe('RE');
+    expect(updatePerson(db, binh.id, { role: 'TL' }).role).toBe('TL');
+  });
+
+  it('refuses to move a TL into a team that has one, but lets the TL be edited', async () => {
+    const { db, saoMai, binhMinh, lead } = await withLead();
+    const other = createPerson(db, { name: 'Hà', role: 'TL', teamId: binhMinh.id });
+
+    expect(codeOf(() => updatePerson(db, other.id, { teamId: saoMai.id }))).toBe('TEAM_HAS_LEAD');
+    expect(updatePerson(db, lead.id, { name: 'Lan Trần', role: 'TL', teamId: saoMai.id })).toEqual({
+      ...lead,
+      name: 'Lan Trần',
+    });
+  });
+
+  it('does not count a soft-deleted TL, but checks again on restore', async () => {
+    const { db, saoMai, lead } = await withLead();
+    softDeletePerson(db, lead.id);
+
+    const next = createPerson(db, { name: 'Minh', role: 'TL', teamId: saoMai.id });
+
+    expect(next.role).toBe('TL');
+    expect(codeOf(() => restorePerson(db, lead.id))).toBe('TEAM_HAS_LEAD');
+  });
+});
+
 describe('commands and the save port', () => {
   it('persists once per successful command and never on a rejected one', async () => {
     const { db, persist } = await setup();
