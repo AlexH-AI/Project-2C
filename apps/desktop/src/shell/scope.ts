@@ -4,6 +4,8 @@ import type { Person, Scope, Team } from '@p2c/domain';
 export interface ScopeChoice {
   readonly kind: Scope['kind'];
   readonly id?: string;
+  /** The RE picked within the team on Customers and Appointments; another kind or team drops it. */
+  readonly reInTeam?: string;
 }
 
 /**
@@ -35,7 +37,28 @@ export function chooseKind(choice: ScopeChoice, kind: Scope['kind']): ScopeChoic
   return kind === choice.kind ? choice : { kind };
 }
 
+/**
+ * The scope the screens filter by once an RE is picked within the team. An RE no longer in the
+ * team (moved, deleted) counts as none picked.
+ */
+export function narrowScope(
+  scope: Scope,
+  reInTeam: string | undefined,
+  people: readonly Person[],
+): Scope {
+  if (scope.kind !== 'team' || reInTeam === undefined) return scope;
+  const re = teamRes(people, scope.teamId).find((person) => person.id === reInTeam);
+  return re ? { kind: 're', reId: re.id } : scope;
+}
+
 const byName = new Intl.Collator('vi').compare;
+
+/** The RE of one team, by name, as the RE strip of Customers and Appointments lists them. */
+export function teamRes(people: readonly Person[], teamId: string): Person[] {
+  return people
+    .filter((person) => person.role === 'RE' && person.teamId === teamId)
+    .sort((a, b) => byName(a.name, b.name));
+}
 
 /** The RE a scope or a customer can be given, as "Name · Team", ordered by team, then by name. */
 export function reOptions(

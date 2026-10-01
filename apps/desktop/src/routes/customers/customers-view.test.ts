@@ -97,6 +97,19 @@ describe('customerBoard', () => {
     const re = customerBoard(data, { kind: 're', reId: 're1' });
     expect(re.open.N4.map((card) => card.customer.id)).toEqual(['binh', 'an']);
   });
+
+  it('counts the open customers of each RE in scope, leaving the closed ones out', () => {
+    const board = customerBoard(data, { kind: 'all' });
+    expect(board.openByRe).toEqual(
+      new Map([
+        ['re2', 1],
+        ['re1', 3],
+      ]),
+    );
+    expect(customerBoard(data, { kind: 'team', teamId: 't2' }).openByRe).toEqual(
+      new Map([['re2', 1]]),
+    );
+  });
 });
 
 describe('birthLabel', () => {

@@ -1,6 +1,13 @@
 import type { Person, Team } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { chooseKind, reOptions, resolveScope, type ScopeChoice } from './scope';
+import {
+  chooseKind,
+  narrowScope,
+  reOptions,
+  resolveScope,
+  teamRes,
+  type ScopeChoice,
+} from './scope';
 
 const teams: Team[] = [
   { id: 't1', name: 'Bình Minh' },
@@ -56,6 +63,13 @@ describe('chooseKind', () => {
     expect(chooseKind({ kind: 'team', id: 't2' }, 're')).toEqual({ kind: 're' });
   });
 
+  it('drops the RE picked within the team when another kind is clicked', () => {
+    expect(chooseKind({ kind: 'team', id: 't1', reInTeam: 're1' }, 'all')).toEqual({
+      kind: 'all',
+    });
+    expect(chooseKind({ kind: 'team', id: 't1', reInTeam: 're1' }, 're')).toEqual({ kind: 're' });
+  });
+
   it('takes Everyone while a Team choice with no team to pick already shows everyone', () => {
     const choice: ScopeChoice = { kind: 'team' };
     expect(resolveScope(choice, [], people)).toEqual({ kind: 'all' });
@@ -101,5 +115,43 @@ describe('reOptions', () => {
   it('leaves out TL, IS, BD and BDM', () => {
     const values = reOptions(staff, threeTeams).map((option) => option.value);
     for (const id of ['tl', 'is', 'bd', 'bdm']) expect(values).not.toContain(id);
+  });
+});
+
+describe('narrowScope', () => {
+  const team = { kind: 'team', teamId: 't1' } as const;
+
+  it('narrows a team to the RE picked within it', () => {
+    expect(narrowScope(team, 're1', people)).toEqual({ kind: 're', reId: 're1' });
+  });
+
+  it('keeps the team when the RE picked is not one of its RE', () => {
+    expect(narrowScope(team, undefined, people)).toBe(team);
+    // Of another team, moved away, or deleted (not listed any more).
+    expect(narrowScope(team, 're2', people)).toBe(team);
+    expect(narrowScope(team, 'gone', people)).toBe(team);
+    // A TL is not an RE.
+    expect(narrowScope(team, 'tl1', people)).toBe(team);
+  });
+
+  it('leaves the Everyone and RE scopes as they are', () => {
+    expect(narrowScope({ kind: 'all' }, 're1', people)).toEqual({ kind: 'all' });
+    expect(narrowScope({ kind: 're', reId: 're2' }, 're1', people)).toEqual({
+      kind: 're',
+      reId: 're2',
+    });
+  });
+});
+
+describe('teamRes', () => {
+  it('lists the RE of one team by name, with Vietnamese letters in place', () => {
+    const staff: Person[] = [
+      { id: 'r1', name: 'Em', role: 'RE', teamId: 'bm' },
+      { id: 'tl', name: 'Ánh', role: 'TL', teamId: 'bm' },
+      { id: 'r2', name: 'Đạt', role: 'RE', teamId: 'bm' },
+      { id: 'r3', name: 'An', role: 'RE', teamId: 'sm' },
+      { id: 'r4', name: 'Dung', role: 'RE', teamId: 'bm' },
+    ];
+    expect(teamRes(staff, 'bm').map((re) => re.name)).toEqual(['Dung', 'Đạt', 'Em']);
   });
 });
