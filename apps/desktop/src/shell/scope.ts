@@ -20,9 +20,9 @@ export function resolveScope(
     return team ? { kind: 'team', teamId: team.id } : { kind: 'all' };
   }
   if (choice.kind === 're') {
-    const reps = people.filter((person) => person.role === 'RE');
-    const re = reps.find((p) => p.id === choice.id) ?? reps[0];
-    return re ? { kind: 're', reId: re.id } : { kind: 'all' };
+    const reps = reOptions(people, teams);
+    const re = reps.find((option) => option.value === choice.id) ?? reps[0];
+    return re ? { kind: 're', reId: re.value } : { kind: 'all' };
   }
   return { kind: 'all' };
 }
@@ -35,17 +35,19 @@ export function chooseKind(choice: ScopeChoice, kind: Scope['kind']): ScopeChoic
   return kind === choice.kind ? choice : { kind };
 }
 
-/** The RE a scope or a customer can be given, as "Name · Team", in the order of `people`. */
+const byName = new Intl.Collator('vi').compare;
+
+/** The RE a scope or a customer can be given, as "Name · Team", ordered by team, then by name. */
 export function reOptions(
   people: readonly Person[],
   teams: readonly Team[],
 ): { value: string; label: string }[] {
   return people
     .filter((person) => person.role === 'RE')
-    .map((re) => ({
+    .map((re) => ({ re, team: teams.find((team) => team.id === re.teamId)?.name ?? '' }))
+    .sort((a, b) => byName(a.team, b.team) || byName(a.re.name, b.re.name))
+    .map(({ re, team }) => ({
       value: re.id,
-      label: [re.name, teams.find((team) => team.id === re.teamId)?.name]
-        .filter(Boolean)
-        .join(' · '),
+      label: [re.name, team].filter(Boolean).join(' · '),
     }));
 }
