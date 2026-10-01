@@ -22,7 +22,9 @@ import { Button, DataTable, PeriodPicker, SelectField, type DataTableColumn } fr
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
-import { useScope } from '../../shell/ScopeContext';
+import { RePicker } from '../../shell/RePicker';
+import { teamRes } from '../../shell/scope';
+import { useScopeState } from '../../shell/ScopeContext';
 import { ALERT } from '../customers/CustomerDialogs';
 import { PERIOD_LABELS } from '../period-labels';
 import { AppointmentDialog } from './AppointmentDialog';
@@ -33,6 +35,7 @@ import { RescheduleDialog } from './RescheduleDialog';
 import { isPastOrToday } from './appointment-form';
 import {
   appointmentRows,
+  appointmentsByRe,
   dayBoard,
   monthGrid,
   outcomeText,
@@ -71,7 +74,7 @@ const dayIn = (period: Period, today: CalendarDate) =>
 export function AppointmentsScreen() {
   const today = useAppData().today();
   const data = useQuery(readAppointments);
-  const scope = useScope();
+  const { picked, scope, pickRe } = useScopeState();
   const [period, setPeriod] = useState(() => periodOf('month', today));
   const [day, setDay] = useState(today);
   const [coordinator, setCoordinator] = useState<CoordinatorFilter>('any');
@@ -84,12 +87,31 @@ export function AppointmentsScreen() {
   // The appointment just made for an RE outside the scope, while it is the one selected.
   const [hiddenCreated, setHiddenCreated] = useState<AppointmentRecord | null>(null);
 
-  const rows = useMemo(() => appointmentRows(data, scope, coordinator), [data, scope, coordinator]);
+  const pickedRows = useMemo(
+    () => appointmentRows(data, picked, coordinator),
+    [data, picked, coordinator],
+  );
+  const rows = useMemo(
+    () => (scope === picked ? pickedRows : appointmentRows(data, scope, coordinator)),
+    [data, scope, picked, coordinator, pickedRows],
+  );
   const inPeriod = useMemo(
     // Latest first, so two on one day (which the date sort keeps in this order) stay newest first.
     () => rows.filter((row) => isInPeriod(row.appointment.date, period)).reverse(),
     [rows, period],
   );
+  // The RE strip and its "đang xem" line belong to the Team scope (mockup phase-3-feedback B3).
+  const team =
+    picked.kind === 'team' ? data.teams.find((item) => item.id === picked.teamId) : undefined;
+  const re =
+    scope !== picked && scope.kind === 're'
+      ? data.people.find((person) => person.id === scope.reId)
+      : undefined;
+  const reCounts = useMemo(() => appointmentsByRe(pickedRows, period), [pickedRows, period]);
+  const summary = t('appointments.summary', {
+    total: inPeriod.length,
+    met: inPeriod.filter((row) => row.appointment.status === 'MET').length,
+  });
   const selected = rows.find((row) => row.appointment.id === selectedId);
   const coordinatorOptions = [
     { value: 'any', label: t('appointments.coordinatorAny') },
@@ -179,6 +201,16 @@ export function AppointmentsScreen() {
 
   return (
     <>
+      {team && (
+        <RePicker
+          team={team}
+          res={teamRes(data.people, team.id)}
+          picked={re?.id ?? null}
+          counts={reCounts}
+          total={[...reCounts.values()].reduce((sum, n) => sum + n, 0)}
+          onPick={pickRe}
+        />
+      )}
       <div className="flex flex-wrap items-end gap-3">
         <PeriodPicker value={period} onChange={changePeriod} today={today} labels={PERIOD_LABELS} />
         <div className="w-60">
@@ -190,15 +222,20 @@ export function AppointmentsScreen() {
           />
         </div>
         <div className="flex-1" />
+        <span className="text-sm text-fg-2 tabular-nums">
+          {re ? (
+            <>
+              <b className="font-semibold text-fg">{re.name}</b> · {summary}
+            </>
+          ) : team ? (
+            `${t('appointments.viewingTeam', { team: team.name })} · ${summary}`
+          ) : (
+            summary
+          )}
+        </span>
         <Button variant="primary" onClick={() => setCreating({})}>
           {t('appointments.new')}
         </Button>
-        <span className="text-sm text-fg-2 tabular-nums">
-          {t('appointments.summary', {
-            total: inPeriod.length,
-            met: inPeriod.filter((row) => row.appointment.status === 'MET').length,
-          })}
-        </span>
       </div>
       {outside && (
         <p role="status" className={`${ALERT} border-info text-sm`}>
