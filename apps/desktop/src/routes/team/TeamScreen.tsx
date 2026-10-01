@@ -301,7 +301,7 @@ function Members({
       className={`${CARD} min-w-0 flex-1`}
     >
       <div className="mb-2 flex items-center gap-2">
-        <h2 className={CARD_TITLE}>{entry.team.name}</h2>
+        <h2 className={CARD_TITLE}>{t('team.heading', { name: entry.team.name })}</h2>
         <span className="text-fg-3">·</span>
         {entry.lead ? (
           <>

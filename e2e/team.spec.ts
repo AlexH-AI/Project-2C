@@ -45,7 +45,7 @@ test('lists the seeded teams, their members and the shared support staff', async
 test('the TL sits in the table header with an Edit button (B1)', async ({ page }) => {
   await teamButton(page, 'Sao Mai').click();
   const region = members(page, 'Sao Mai');
-  await expect(region.getByRole('heading', { name: 'Sao Mai' })).toBeVisible();
+  await expect(region.getByRole('heading', { name: 'Team Sao Mai', exact: true })).toBeVisible();
   const edit = region.getByRole('button', { name: /^Sửa / }).first();
   const name = ((await edit.getAttribute('aria-label')) ?? '').replace(/^Sửa /, '');
   await expect(region.getByText(name).first()).toBeVisible();
@@ -98,7 +98,7 @@ test('adds a team, then renames it', async ({ page }) => {
   await expect(dialog).toBeHidden();
   await expect(teamButton(page, 'Thiên Hà')).toHaveAttribute('aria-pressed', 'true');
   await expect(teamButton(page, 'Thiên Hà')).toContainText('chưa có TL · 0 RE');
-  await expect(members(page, 'Thiên Hà')).toContainText('Team chưa có nhân sự.');
+  await expect(members(page, 'Thiên Hà')).toContainText('Team chưa có RE.');
 
   await members(page, 'Thiên Hà').getByRole('button', { name: 'Đổi tên team' }).click();
   const rename = page.getByRole('dialog', { name: 'Đổi tên team' });
