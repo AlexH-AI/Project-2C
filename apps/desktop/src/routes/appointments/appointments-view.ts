@@ -157,6 +157,21 @@ export function appointmentRows(
 }
 
 /**
+ * The appointments in `period` per RE in charge (`re_id`; a coordinator counts nothing), for the
+ * RE strip; an RE with none is not listed.
+ */
+export function appointmentsByRe(
+  rows: readonly AppointmentRow[],
+  period: Period,
+): ReadonlyMap<string, number> {
+  const counts = new Map<string, number>();
+  for (const { appointment: a } of rows) {
+    if (isInPeriod(a.date, period)) counts.set(a.reId, (counts.get(a.reId) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/**
  * How the screen shows an appointment just made: the coordinator filter, cleared when it would
  * hide it; whether its RE is outside the scope, which is shared by every screen and so stays.
  */

@@ -419,3 +419,65 @@ test('an appointment for an RE outside the scope says so; the scope stays', asyn
   await expect(notice).toHaveCount(0);
   await expect(detail.getByRole('heading')).toContainText(`30/09/2026 · ${f.name}`);
 });
+
+const pickTeam = async (page: Page, name: string) => {
+  await page
+    .getByRole('radiogroup', { name: 'Góc nhìn' })
+    .getByRole('radio', { name: 'Team' })
+    .click();
+  await page.getByRole('combobox', { name: 'Team của góc nhìn' }).selectOption({ label: name });
+};
+
+const chipCount = async (chip: ReturnType<Page['getByRole']>) =>
+  Number(await chip.locator('span').last().textContent());
+
+test('an RE picked in the strip narrows the appointments to it, until picked again', async ({
+  page,
+}) => {
+  const { day, rows, column } = screen(page);
+  await pickTeam(page, 'Sao Mai');
+  const strip = page.getByRole('region', { name: 'RE của team Sao Mai' });
+  const teamTotal = await total(page);
+  expect(await chipCount(strip.getByRole('button', { name: /^Cả team/ }))).toBe(teamTotal);
+  const chip = strip.getByRole('button').nth(1);
+  const name = (await chip.locator('span').first().textContent()) ?? '';
+
+  await chip.click();
+  await expect(chip).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText(SUMMARY).first()).toContainText(name);
+  await expect.poll(() => total(page)).toBe(await chipCount(chip));
+  await expect(rows).toHaveCount(await total(page));
+  expect(new Set(await column(4))).toEqual(new Set([name]));
+  for (const re of await day.getByRole('heading', { level: 4 }).allTextContents()) {
+    expect(re).toBe(name);
+  }
+
+  await chip.click();
+  await expect(chip).toHaveAttribute('aria-pressed', 'false');
+  await expect.poll(() => total(page)).toBe(teamTotal);
+});
+
+test('the RE picked on Customers is still picked on Appointments', async ({ page }) => {
+  const nav = page.getByRole('navigation', { name: 'Điều hướng chính' });
+  await nav.getByRole('link', { name: 'Khách hàng' }).click();
+  await pickTeam(page, 'Sao Mai');
+  const chip = page.getByRole('region', { name: 'RE của team Sao Mai' }).getByRole('button').nth(2);
+  const name = (await chip.locator('span').first().textContent()) ?? '';
+  await chip.click();
+
+  await nav.getByRole('link', { name: 'Lịch hẹn' }).click();
+  const strip = page.getByRole('region', { name: 'RE của team Sao Mai' });
+  await expect(strip.getByRole('button', { pressed: true })).toHaveText(new RegExp(`^${name}`));
+  await expect.poll(async () => new Set(await screen(page).column(4))).toEqual(new Set([name]));
+});
+
+test('the numbers in the strip follow the period', async ({ page }) => {
+  await pickTeam(page, 'Sao Mai');
+  const strip = page.getByRole('region', { name: 'RE của team Sao Mai' });
+  const counts = () => strip.getByRole('button').locator('span:last-child').allTextContents();
+  const month = await counts();
+
+  await screen(page).kinds.getByRole('radio', { name: 'Ngày' }).click();
+  await expect.poll(counts).not.toEqual(month);
+  expect(await chipCount(strip.getByRole('button', { name: /^Cả team/ }))).toBe(await total(page));
+});

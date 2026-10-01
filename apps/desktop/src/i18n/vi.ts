@@ -250,6 +250,7 @@ export const vi = {
   'period.yearLabel': 'Năm {value}',
   'pipeline.title': 'Nhóm cơ hội',
   'appointments.summary': '{total} lịch · {met} đã gặp',
+  'appointments.viewingTeam': 'Cả team {team}',
   'appointments.coordinator': 'Phối hợp',
   'appointments.coordinatorAny': 'Bất kỳ',
   'appointments.coordinatorNone': 'Không có người phối hợp',

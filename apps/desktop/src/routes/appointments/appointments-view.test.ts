@@ -9,6 +9,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import {
   appointmentRows,
+  appointmentsByRe,
   dayBoard,
   monthGrid,
   outcomeText,
@@ -334,5 +335,28 @@ describe('rescheduleLinks', () => {
     expect(rescheduleLinks(all, second)).toEqual({ from: first, to: third });
     expect(rescheduleLinks(all, first)).toEqual({ from: undefined, to: second });
     expect(rescheduleLinks(all, all[3]!)).toEqual({ from: undefined, to: undefined });
+  });
+});
+
+describe('appointmentsByRe', () => {
+  it('counts the appointments in the period by the RE in charge, not by coordinator', () => {
+    const rows = appointmentRows(
+      data([
+        appointment('a', 're1', day(9, 1)),
+        appointment('b', 're1', day(9, 30), { status: 'MET' }),
+        appointment('c', 're2', day(9, 2), { coordinatorIds: ['re1', 'tl1'] }),
+        appointment('d', 're1', day(10, 1)),
+        appointment('e', 're2', day(8, 31)),
+      ]),
+      { kind: 'team', teamId: 't1' },
+      'any',
+    );
+    expect(appointmentsByRe(rows, periodOf('month', day(9, 15)))).toEqual(
+      new Map([
+        ['re1', 2],
+        ['re2', 1],
+      ]),
+    );
+    expect(appointmentsByRe(rows, periodOf('month', day(10, 15)))).toEqual(new Map([['re1', 1]]));
   });
 });
