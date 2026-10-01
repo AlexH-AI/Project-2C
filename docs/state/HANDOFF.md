@@ -134,7 +134,12 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. **Phản hồi Owner 01/10** (mục trên): làm #214 T-081 → #215 T-082 → #216 T-083 (mỗi Issue một phiên, `risk:low`); gói B: G3 đã duyệt (PR #220) → làm #222, #223, #224 (sau #216), #225, #226, #227, #228 (mỗi Issue một phiên). Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
+2. **Phản hồi Owner 01/10** (mục trên): làm #214 T-081 → #215 T-082 → #216 T-083 (mỗi Issue một phiên, `risk:low`); gói B: G3 đã duyệt (PR #220). Chạy song song theo 3 luồng, mỗi Issue một phiên + worktree riêng; trong một luồng merge lần lượt:
+   - Luồng thanh đầu trang: #215 → #216 → #224 (B2)
+   - Luồng Team: #222 (B1, merge sau #216 vì chung `e2e/team.spec.ts`) → #223 (B1b)
+   - Luồng Lịch hẹn: #226 (B4) → #227 (B5) → #228 (B6) → #225 (B3, cần cả #224)
+   - Đợt 1 (ngay): #215, #216, #222, #226 · Đợt 2: #223, #224, #227 · Đợt 3: #228 · Đợt 4: #225.
+   - PR sau trong cùng luồng: đồng bộ `main` **trước** khi review (đồng bộ sau PASS đổi head → phải review lại, P-1). `vi.ts` nhiều task cùng sửa: xung đột nhỏ, gộp tay khi đồng bộ. Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
 3. **#72 T-053** (sau gói A + B) — #72 vẫn mở. Còn:
    - Owner kiểm tay exe bản sau gói A + B; cập nhật `phase-3.md` (số Issue, lỗi Owner phát hiện, kiểm tay).
    - **2 review độc lập** trên `main` (gồm deep review Phase 1→3 lần 2 ở phiên sạch). Phát hiện mới → đối chiếu sổ P-3 bên dưới trước khi ghi là MỚI; lỗi chặn → Issue trước khi đóng Phase 3.
