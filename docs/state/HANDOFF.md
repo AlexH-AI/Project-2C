@@ -17,7 +17,7 @@
 | Đợt 1: #202 T-077, #203 T-078, #204 T-079, #210 T-080 | **Đã merge** 30/09 (PR #206, #208, #209, #211) |
 | #72 T-053 đóng Phase 3 | PR #212, #213 đã merge (metrics, báo cáo, kiểm tay exe 30/09: 0 lỗi). **Hoãn G7** tới khi xong gói A + B phản hồi Owner 01/10, kiểm tay exe lại, 2 review độc lập |
 | Phản hồi Owner 01/10 — gói A | #214 T-081, #215 T-082, #216 T-083 (`risk:low`, `ready-for-agent`) |
-| Phản hồi Owner 01/10 — gói B | #217 T-084 mockup (**G3**) → rồi tạo Issue B1–B6 |
+| Phản hồi Owner 01/10 — gói B | #217 T-084: mockup `phase-3-feedback.html` **G3 đã duyệt 01/10** (PR #220, chờ Owner merge). Issue: #222 T-085 B1, #223 T-086 B1b (1 TL / team), #224 T-087 B2 (`risk:med`, chờ #216), #225 T-088 B3 (chờ #224), #226 T-089 B4, #227 T-090 B5 (chờ #226), #228 T-091 B6 (`risk:med`, chờ #227) |
 | Đợt 2 (đầu Phase 4) | Chưa tạo Issue — tạo khi mở Phase 4 (báo cáo §4) |
 
 ## Phản hồi Owner sau kiểm exe (01/10/2026)
@@ -46,6 +46,7 @@ Quyết định Owner (AskUserQuestion 01/10):
 - Ý 9: đếm KH theo nhóm = **ảnh chụp cuối kỳ** (nhóm của KH tính tới ngày cuối kỳ; kỳ chưa hết → tới hôm nay). Góc nhìn Team trên Tổng quan: **ẩn ô chọn team**, luôn 3 chart. Mặc định Claude đề xuất (chốt ở mockup Phase 4): đổi kỳ / góc nhìn chỉ áp dụng khi bấm Lọc; 4 ô N4–N1 dùng màu `StageBadge` và là chú giải chart; bỏ chart mẫu "Lịch hẹn theo team".
 - Ý 2–3: RE đang chọn **dùng chung** Khách hàng và Lịch hẹn; đổi team hoặc góc nhìn → tự bỏ chọn RE.
 - Ý 16: bấm ô tháng → **mở kỳ Tháng đó**; khối "Trong ngày" **ẩn** ở kỳ Năm.
+- G3 gói B (01/10, PR #220): B5 = **phương án A** (tô nền ô Ngày); ô hôm nay viền **xanh lá nhạt**; nút "Cả team" + số cạnh tên RE; **mỗi team tối đa 1 TL** (→ #223); giữ tổng lịch quý ở lưới năm.
 - Kỳ Tùy chọn: **tô dải ngày như Tuần**. Kèm sửa lỗi Claude tìm thấy: tuần / khoảng vắt 2 tháng không xem được phần tháng sau (ngày tháng khác bị mờ, không bấm được) → ngày trong kỳ vẫn tô và bấm được, lịch chuyển sang tháng đó (B4).
 
 Kế hoạch (thứ tự để ít rủi ro): A1 → A2 → A3 (không cần mockup) · song song mockup #217 → G3 → B1 → B2 (`risk:med`, bộ lọc team + RE dùng chung; sau A3 vì cùng thanh đầu trang) → B3 → B4 → B5 → B6 (`risk:med`; B4–B6 cùng `AppointmentsScreen.tsx` nên làm lần lượt, lưới năm tách file mới) → Owner kiểm tay exe → 2 review độc lập → G7.
@@ -133,7 +134,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. **Phản hồi Owner 01/10** (mục trên): làm #214 T-081 → #215 T-082 → #216 T-083 (mỗi Issue một phiên, `risk:low`); song song #217 T-084 mockup gói B → dừng hỏi Owner **G3** → tạo Issue B1–B6 theo #217 rồi làm lần lượt. Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
+2. **Phản hồi Owner 01/10** (mục trên): làm #214 T-081 → #215 T-082 → #216 T-083 (mỗi Issue một phiên, `risk:low`); gói B: G3 đã duyệt (PR #220) → làm #222, #223, #224 (sau #216), #225, #226, #227, #228 (mỗi Issue một phiên). Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
 3. **#72 T-053** (sau gói A + B) — #72 vẫn mở. Còn:
    - Owner kiểm tay exe bản sau gói A + B; cập nhật `phase-3.md` (số Issue, lỗi Owner phát hiện, kiểm tay).
    - **2 review độc lập** trên `main` (gồm deep review Phase 1→3 lần 2 ở phiên sạch). Phát hiện mới → đối chiếu sổ P-3 bên dưới trước khi ghi là MỚI; lỗi chặn → Issue trước khi đóng Phase 3.
@@ -185,7 +186,7 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- #217 T-084: cổng **G3** duyệt mockup gói B (khi PR mockup sẵn sàng).
+- PR #220 (#217 T-084): G3 đã duyệt 01/10 — Owner merge PR mockup (docs-only, không CI).
 - #72 T-053: cổng **G7** đóng milestone Phase 3 — sau gói A + B, kiểm tay exe lại và 2 review độc lập.
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
