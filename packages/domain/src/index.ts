@@ -11,6 +11,7 @@ export {
   daysBetween,
   formatDate,
   formatDayMonth,
+  formatDayOfMonth,
   formatLocalDateTime,
   formatPeriodValue,
   fromLocalDate,

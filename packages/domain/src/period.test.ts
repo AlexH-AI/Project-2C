@@ -7,6 +7,7 @@ import {
   daysBetween,
   formatDate,
   formatDayMonth,
+  formatDayOfMonth,
   formatLocalDateTime,
   formatPeriodValue,
   fromLocalDate,
@@ -41,6 +42,11 @@ describe('calendarDate', () => {
 
   it('formats the day and month alone as dd/mm', () => {
     expect(formatDayMonth(d(2, 10, 2026))).toBe('02/10');
+  });
+
+  it('formats the day of the month alone as dd', () => {
+    expect(formatDayOfMonth(d(2, 10, 2026))).toBe('02');
+    expect(formatDayOfMonth(d(28, 9, 2026))).toBe('28');
   });
 });
 

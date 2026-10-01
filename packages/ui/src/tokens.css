@@ -21,6 +21,11 @@
   --accent-soft: rgba(217, 178, 106, 0.14);
   --on-accent: #0b1017;
   --heading: var(--accent); /* headings inside cards */
+  /* Days of a week / custom period on the month calendar (accent 8% / 45%) */
+  --period-band: rgba(217, 178, 106, 0.08);
+  --period-band-border: rgba(217, 178, 106, 0.45);
+  /* Today on calendars and date cells: light green, apart from the gold of the picked day */
+  --date-today: #9be8c0;
 
   /* Opportunity stages */
   --n4: #94a3b8;
