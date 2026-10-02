@@ -67,7 +67,6 @@ Theo task đã có chỗ trong kế hoạch:
   - luật 8: xét cả fact `SYSTEM` năm sinh / giới tính ở trạng thái `conflict`; `resolveKycConflict` (`kyc.ts:173`) so giá trị `SYSTEM` với hồ sơ (nay giải quyết xong thì app xuất ra backup không nhập lại được);
   - luật 9 "nhân sự" (Owner 02/10, dữ liệu giả lập → từ chối / xóa dữ liệu sai, không migration, không UI cho dữ liệu cũ): ≤ 1 TL chưa xóa / team; IS/BD/BDM luôn không có team (`createPerson` / `updatePerson` từ chối hoặc tự bỏ team; spec §3.3 "có thể trống" → "luôn trống"); người chưa xóa thuộc team chưa xóa. Thay ghi chú sổ #231 (IS/BD/BDM có `team_id` và TL thứ hai không hiện ở đâu — màn Team giữ nguyên). Bỏ chú thích "first by name if old data has several" ở `team-view.ts`. DB đang có dữ liệu sai: Owner dùng "Nạp lại dữ liệu giả lập";
   - test mẫu "nhập → thao tác → xuất → nhập lại"; cập nhật spec §6 (gồm quy tắc 1 TL / team của #223).
-- **T-d (F-05, R2-06):** e2e local chập chờn khi nhiều worker cùng seed (`chart.spec.ts:35` từng vượt 30 s); trên `D13_THINKPAD` (01/10) `seed-timing` local đo 5,4 s > ngưỡng 5 s, `packages/db/src/seed.test.ts` chạy riêng ~58 s trên ngưỡng 60 s (verify đỏ chập chờn), `appointment-outcome.spec.ts` quá 25–35 s/test dưới `CI=1`; e2e local dùng lại server cũ ở cổng 4173 (`reuseExistingServer`); `trackConsoleErrors` còn lặp ở `chart.spec.ts` và `navigation.spec.ts`. R2-06 (02/10): teardown Vite treo sau `pnpm e2e` (Codex Sol phải dừng tay); 1/114 chập chờn dưới `CI=1` khi máy tải nặng (`customer-forms.spec.ts:30` `beforeEach` chờ seed 15 s).
 - **T-e (F-06, F-07):** `rfCount` / `inScope` O(A×T), `inScope` góc nhìn team quét `data.people` cho từng lịch (#155); chưa có hàm MTD trong `domain`.
 - **T-f (F-14):** chưa có `MAX_YEAR` trong `period.ts`; `shift` kỳ ngày/tuần/tùy chọn sát 01/01/1900 ném `RangeError` trong `PeriodPicker`, kỳ tháng/năm lùi về 1899 (#146); `addDays` với `days` cực lớn trả `NaN` (chưa có đường gọi).
 - **T-h (F-11, F-12, F-13, F-15, F-19):**
@@ -120,6 +119,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 
 ### RESOLVED
 
+- T-d (F-05, R2-06): e2e local giới hạn worker (≤ 4), không dùng lại server cũ ở cổng 4173 (chỉ khi `PW_REUSE=1`), server preview chạy một tiến trình (`e2e/serve.mjs`) nên dừng sạch, `trackConsoleErrors` một chỗ (`e2e/support.ts`), ngưỡng `SLOW` của `seed.test.ts` nâng 60 s → 180 s (#251, T-095).
 - Ghi chú #244: `now` gọi `new Date()` hai lần (có thể lệch qua nửa đêm) và không đi qua `clock` → đọc một lần qua `clock` (#245, PR #246).
 - `useScope()` chết sau B3 → bỏ (#237, PR #238). Số ngày ô lịch `padStart` → `formatDayOfMonth` / `formatDayMonth` của `domain` (#239).
 - `formatCount` tách khỏi `money.ts` → `domain/number.ts`; `": "` cứng ở `SettingsBackup.tsx` → i18n (#185).

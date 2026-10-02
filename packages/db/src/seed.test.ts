@@ -12,7 +12,9 @@ import { createTeam, listPeople, listTeams } from './team';
 import { codeOf } from './test-support';
 
 const ANCHOR = calendarDate(2026, 9, 15);
-const SLOW = 60_000;
+// A seed takes ~58 s alone on the Home PC, and more when other test files run in parallel: 60 s made
+// `pnpm verify` flaky (T-095). Only the timeout moved, no assertion changed.
+const SLOW = 180_000;
 
 /** SHA-256 of every business row, in insertion order — equal hashes mean the same data. */
 async function contentHash(db: Database): Promise<string> {
