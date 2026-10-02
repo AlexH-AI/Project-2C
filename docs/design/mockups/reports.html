@@ -11,10 +11,13 @@
     />
     <link rel="stylesheet" href="mockups.css" />
     <style>
-      /* Tokens already in packages/ui/src/tokens.css (ADR-0013) that mockups.css predates; proposed token of overview.html */
+      /* Tokens already in packages/ui/src/tokens.css (ADR-0013) that mockups.css predates */
       :root {
         --date-today: #9be8c0;
-        --appt-unrecorded: var(--danger);
+      }
+      /* New token, Owner G3 03/10/2026 (#254, overview.html part 2): "Chưa ghi kết quả" */
+      :root {
+        --appt-unrecorded: var(--warn);
       }
 
       .page {
@@ -378,7 +381,7 @@
       <section class="part" aria-labelledby="r2d">
         <div class="part-head"><h2 id="r2d">2d · Team Bình Minh · Tuần 12/10 – 18/10/2026 · Theo mốc</h2><span class="idea">§4.4</span></div>
         <ul class="notes">
-          <li>Đề xuất: ở Báo cáo, góc nhìn <b>Team có ô chọn team</b> như Khách hàng / Lịch hẹn (khác Tổng quan, nơi Team = mọi team, mỗi team một chart) — nếu ẩn ô chọn thì Team trùng Toàn bộ. Khi đó bảng Theo team chỉ còn 1 dòng = Tổng hợp nên <b>ẩn</b> (gạch tên); Theo RE = 10 RE của team.</li>
+          <li>Owner chốt: ở Báo cáo, góc nhìn <b>Team có ô chọn team</b> như Khách hàng / Lịch hẹn (khác Tổng quan, nơi Team = mọi team, mỗi team một chart) — nếu ẩn ô chọn thì Team trùng Toàn bộ. Khi đó bảng Theo team chỉ còn 1 dòng = Tổng hợp nên <b>ẩn</b> (gạch tên); Theo RE = 10 RE của team.</li>
           <li>Kỳ Tuần: 7 mốc = 7 ngày. Hôm nay Thứ Năm → T6–CN chỉ có Dự kiến.</li>
         </ul>
         <div class="frame">
@@ -489,11 +492,11 @@
 
       <!-- ================= Questions ================= -->
       <section class="card" aria-labelledby="ask">
-        <div class="card-head"><h2 id="ask">Cần Owner chốt (G3) — Báo cáo</h2><span class="meta">Tổng quan: xem cuối <a href="overview.html" style="color: var(--accent)">overview.html</a></span></div>
+        <div class="card-head"><h2 id="ask">Owner đã duyệt G3 (03/10/2026) — Báo cáo</h2><span class="meta">Tổng quan: xem cuối <a href="overview.html" style="color: var(--accent)">overview.html</a></span></div>
         <ol class="notes ask">
-          <li><b>Bố cục:</b> Tổng hợp luôn hiện + chọn 1 trong 3 bảng (đề xuất), hay xếp cả 4 bảng dọc một trang.</li>
-          <li><b>Góc nhìn Team ở Báo cáo có ô chọn team</b> (đề xuất, 2d) — khác Tổng quan. Bảng trùng Tổng hợp thì ẩn (Team: Theo team · RE: Theo team, Theo RE); file Excel cũng bỏ sheet đó.</li>
-          <li><b>Nút Lọc</b> ở Báo cáo như Tổng quan (đề xuất: có, cho đồng nhất).</li>
+          <li><b>Bố cục:</b> Tổng hợp luôn hiện + chọn 1 trong 3 bảng Theo team / Theo RE / Theo mốc.</li>
+          <li><b>Góc nhìn Team ở Báo cáo có ô chọn team</b> (2d), khác Tổng quan. Bảng trùng Tổng hợp thì ẩn (Team: Theo team · RE: Theo team, Theo RE); file Excel cũng bỏ sheet đó.</li>
+          <li><b>Nút Lọc</b> ở Báo cáo như Tổng quan.</li>
         </ol>
       </section>
 

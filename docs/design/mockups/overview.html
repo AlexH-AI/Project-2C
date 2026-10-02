@@ -18,9 +18,10 @@
         --date-today-bg: rgba(63, 214, 154, 0.2);
         --date-future-bg: rgba(111, 168, 255, 0.22);
       }
-      /* New token proposed by this mockup (G3, #254): group "Chưa ghi kết quả" (spec §1). Option A. */
+      /* New tokens, Owner G3 03/10/2026 (#254): colours of two appointment groups (spec §1) */
       :root {
-        --appt-unrecorded: var(--danger);
+        --appt-unrecorded: var(--warn); /* Chưa ghi kết quả */
+        --appt-missed: var(--text-3); /* Dời lịch / hủy / không đến (was --warn) */
       }
 
       .page {
@@ -277,7 +278,7 @@
         background: var(--ok);
       }
       .g-miss {
-        background: var(--warn);
+        background: var(--appt-missed);
       }
       .g-unrec {
         background: var(--appt-unrecorded);
@@ -571,14 +572,6 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 12px;
       }
-      .opts .card.chosen {
-        border-color: var(--accent);
-        box-shadow: inset 0 0 0 1px var(--accent);
-      }
-      .chosen-tag {
-        color: var(--accent);
-        font-weight: 700;
-      }
       .cal {
         display: grid;
         grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -642,40 +635,22 @@
         background: var(--ok);
       }
       .dots .miss {
-        background: var(--warn);
+        background: var(--appt-missed);
       }
       .dots .plan,
       .lg .plan-ring {
         border: 1.5px solid var(--info);
       }
-      /* Option A: red dot */
-      .optA .dots .unrec,
-      .optA .lg .unrec {
+      .dots .unrec,
+      .lg .unrec,
+      .mbar .unrec {
         background: var(--appt-unrecorded);
-      }
-      .optA .mbar .unrec {
-        background: var(--appt-unrecorded);
-      }
-      /* Option B: blue, hatched (a planned appointment past its date) */
-      .optB .dots .unrec,
-      .optB .lg .unrec {
-        border: 1.5px solid var(--info);
-        background: repeating-linear-gradient(135deg, var(--info) 0 1.5px, transparent 1.5px 3px);
-      }
-      .optB .mbar .unrec {
-        background: repeating-linear-gradient(
-          135deg,
-          color-mix(in srgb, var(--info) 55%, transparent) 0 4px,
-          color-mix(in srgb, var(--info) 20%, transparent) 4px 8px
-        );
-        box-shadow: inset 0 0 0 1px var(--info);
-        color: var(--text);
       }
       .mbar .met {
         background: var(--ok);
       }
       .mbar .miss {
-        background: var(--warn);
+        background: var(--appt-missed);
       }
       .mbar .plan {
         background: var(--info);
@@ -696,7 +671,7 @@
         background: var(--ok);
       }
       .lg .miss {
-        background: var(--warn);
+        background: var(--appt-missed);
       }
       .lg i {
         box-sizing: border-box;
@@ -780,12 +755,8 @@
       td.future {
         background: var(--date-future-bg);
       }
-      .optA .badge.unrec {
+      .badge.unrec {
         color: var(--appt-unrecorded);
-      }
-      .optB .badge.unrec {
-        color: var(--info);
-        border-style: dashed;
       }
 
       .spec td,
@@ -1130,36 +1101,25 @@
         <div class="part-head"><h2 id="p2">2 · Màn Lịch hẹn: 4 nhóm đếm thay 3</h2><span class="idea">spec §1</span></div>
         <ul class="notes">
           <li>Spec §1 (G2 03/10): lịch đã qua mà còn <b>Đã lên lịch</b> tách khỏi Dự kiến thành nhóm <b>"Chưa ghi kết quả"</b>; lịch hôm nay vẫn là Dự kiến. Lịch tháng, thanh của lưới năm (B6), dòng đếm của kỳ và ô Lịch hẹn của Tổng quan dùng chung 4 nhóm, cùng màu, cùng thứ tự: <b>Đã gặp · Dời – hủy – không đến · Chưa ghi kết quả · Dự kiến</b>.</li>
-          <li>Cần <b>màu mới</b> cho nhóm này (token <code>--appt-unrecorded</code>). Hai phương án, Owner chọn: <b>A — đỏ</b> (<code>--danger</code>, "cần ghi kết quả", nổi nhất); <b>B — xanh dương sọc</b> (lịch dự kiến đã quá ngày; không thêm màu mới vào bảng màu). Em đề xuất <b>A</b>: nhóm này là việc cần làm, phải thấy ngay; số trong thanh và chú giải luôn có chữ nên không chỉ dựa vào màu.</li>
-          <li>Đề xuất kèm: cột Trạng thái của danh sách lịch hẹn hiện <b>"Chưa ghi kết quả"</b> cho lịch đã qua còn Đã lên lịch (chỉ hiển thị, dữ liệu không đổi), để khớp số đếm.</li>
+          <li><b>Màu (Owner G3 03/10):</b> Chưa ghi kết quả = <b class="c-warn">cam</b> (<code>--warn</code>, việc cần làm); Dời – hủy – không đến đổi từ cam sang <b class="muted">xám</b> (<code>--text-3</code>, lịch không diễn ra). Token mới <code>--appt-unrecorded</code>, <code>--appt-missed</code>. Số trong thanh và chú giải luôn có chữ nên không chỉ dựa vào màu.</li>
+          <li><b>Owner đồng ý:</b> cột Trạng thái của danh sách lịch hẹn hiện <b>"Chưa ghi kết quả"</b> cho lịch đã qua còn Đã lên lịch (chỉ hiển thị, dữ liệu không đổi), để khớp số đếm.</li>
           <li>Lịch tháng: chấm <b>Chưa ghi kết quả đứng đầu</b> ô ngày (rồi Dời – hủy – không đến, Đã gặp, Dự kiến) để ngày nhiều lịch (&gt; 8 chấm, vd. 14/10) không che mất nó.</li>
           <li>Dòng đếm của kỳ (thanh công cụ Lịch hẹn): <span class="num">"172 lịch · 64 đã gặp · 5 chưa ghi kết quả"</span> — phần cuối chỉ hiện khi &gt; 0.</li>
         </ul>
         <div class="opts">
-          <section class="card optA chosen">
-            <p class="cap">A · Đỏ <code>--danger</code> · <span class="chosen-tag">Claude đề xuất</span></p>
+          <section class="card">
+            <p class="cap">Lịch tháng · Tháng 10/2026</p>
             <div class="stack">
               <div class="summary-line">Tháng 10/2026 · <b>172 lịch · 64 đã gặp · 5 chưa ghi kết quả</b></div>
               <div class="cal" id="cal-a"></div>
               <div class="lg"><span><i class="met"></i>Đã gặp</span><span><i class="miss"></i>Dời lịch / hủy / không đến</span><span><i class="unrec"></i>Chưa ghi kết quả</span><span><i class="plan-ring"></i>Dự kiến</span></div>
-              <div class="ycells" id="year-a"></div>
-              <table>
-                <thead><tr><th class="sort desc">Ngày</th><th>Giờ</th><th>Khách hàng</th><th>Trạng thái</th></tr></thead>
-                <tbody class="num">
-                  <tr><td class="d today">15/10/2026</td><td>14:00</td><td>Nghiêm Hoài An</td><td><span class="badge plain c-info">Dự kiến</span></td></tr>
-                  <tr><td class="d past">14/10/2026</td><td>16:30</td><td>Lưu Quang Đạt</td><td><span class="badge plain unrec">Chưa ghi kết quả</span></td></tr>
-                  <tr><td class="d past">14/10/2026</td><td>09:00</td><td>Hà Minh Tuấn</td><td><span class="badge plain c-ok">Đã gặp</span></td></tr>
-                </tbody>
-              </table>
             </div>
           </section>
-          <section class="card optB">
-            <p class="cap">B · Xanh dương sọc</p>
+          <section class="card">
+            <p class="cap">Lưới năm (B6) · danh sách lịch hẹn</p>
             <div class="stack">
-              <div class="summary-line">Tháng 10/2026 · <b>172 lịch · 64 đã gặp · 5 chưa ghi kết quả</b></div>
-              <div class="cal" id="cal-b"></div>
-              <div class="lg"><span><i class="met"></i>Đã gặp</span><span><i class="miss"></i>Dời lịch / hủy / không đến</span><span><i class="unrec"></i>Chưa ghi kết quả</span><span><i class="plan-ring"></i>Dự kiến</span></div>
-              <div class="ycells" id="year-b"></div>
+              <div class="ycells" id="year-a"></div>
+              <div class="lg"><span><i class="met"></i>Đã gặp</span><span><i class="miss"></i>Dời lịch / hủy / không đến</span><span><i class="unrec"></i>Chưa ghi kết quả</span><span><i class="g-plan"></i>Dự kiến</span></div>
               <table>
                 <thead><tr><th class="sort desc">Ngày</th><th>Giờ</th><th>Khách hàng</th><th>Trạng thái</th></tr></thead>
                 <tbody class="num">
@@ -1175,12 +1135,12 @@
 
       <!-- ================= Questions ================= -->
       <section class="card" aria-labelledby="ask">
-        <div class="card-head"><h2 id="ask">Cần Owner chốt (G3)</h2><span class="meta">Báo cáo: xem cuối <a href="reports.html" style="color: var(--accent)">reports.html</a></span></div>
+        <div class="card-head"><h2 id="ask">Owner đã duyệt G3 (03/10/2026)</h2><span class="meta">Báo cáo: xem cuối <a href="reports.html" style="color: var(--accent)">reports.html</a></span></div>
         <ol class="notes ask">
-          <li><b>Màu "Chưa ghi kết quả":</b> A đỏ (đề xuất) hay B xanh dương sọc (phần 2).</li>
-          <li><b>Badge "Chưa ghi kết quả"</b> ở cột Trạng thái danh sách lịch hẹn cho lịch đã qua còn Đã lên lịch (đề xuất: có).</li>
-          <li><b>Khối lịch trong ngày / 7 ngày tới</b> của mockup cũ: đề xuất <b>bỏ</b> — Tổng quan xem theo kỳ, còn khối "Trong ngày" đã có ở màn Lịch hẹn.</li>
-          <li><b>Bấm ô N4–N1 để ẩn / hiện nhóm</b> trên chart (1b): đề xuất có.</li>
+          <li><b>Màu:</b> Chưa ghi kết quả = <b>cam</b> (<code>--warn</code>); Dời – hủy – không đến = <b>xám</b> (<code>--text-3</code>, trước là cam).</li>
+          <li><b>Badge "Chưa ghi kết quả"</b> ở cột Trạng thái danh sách lịch hẹn cho lịch đã qua còn Đã lên lịch: đồng ý.</li>
+          <li><b>Bỏ</b> khối lịch trong ngày / 7 ngày tới của mockup cũ.</li>
+          <li><b>Bấm ô N4–N1 để ẩn / hiện nhóm</b> trên chart: đồng ý.</li>
         </ol>
       </section>
 
@@ -1363,7 +1323,6 @@
         }
       }
       calendar('cal-a');
-      calendar('cal-b');
 
       const YEAR = [
         ['Tháng 8', [126, 31, 1, 0], ''],
@@ -1383,7 +1342,6 @@
         });
       }
       yearCells('year-a');
-      yearCells('year-b');
     </script>
   </body>
 </html>
