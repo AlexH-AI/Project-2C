@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Báo cáo (Phase 4) — Project-2C mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="mockups.css" />
+    <style>
+      /* Tokens already in packages/ui/src/tokens.css (ADR-0013) that mockups.css predates */
+      :root {
+        --date-today: #9be8c0;
+      }
+      /* New token, Owner G3 03/10/2026 (#254, overview.html part 2): "Chưa ghi kết quả" */
+      :root {
+        --appt-unrecorded: var(--warn);
+      }
+
+      .page {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 28px 24px 48px;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+      .page > header h1 {
+        margin: 0;
+        font-size: var(--fs-2xl);
+      }
+      .lead {
+        color: var(--text-2);
+        margin: 4px 0 0;
+      }
+      .lead a {
+        color: var(--accent);
+      }
+      .part {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .part-head {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 8px;
+      }
+      .part-head h2 {
+        margin: 0;
+        font-size: var(--fs-xl);
+      }
+      .idea {
+        font-size: var(--fs-xs);
+        font-weight: 700;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+        border-radius: 999px;
+        padding: 1px 9px;
+        white-space: nowrap;
+      }
+      .notes {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--text-2);
+        font-size: var(--fs-sm);
+      }
+      .notes li {
+        margin-bottom: 4px;
+      }
+      .notes b {
+        color: var(--text);
+      }
+      code {
+        font-size: var(--fs-sm);
+        color: var(--text-2);
+      }
+      .frame {
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        background: var(--bg-0);
+      }
+      .frame .topbar {
+        position: static;
+      }
+      .frame .content {
+        padding: 16px 20px 20px;
+        gap: 14px;
+      }
+      .topbar .segmented button,
+      .topbar .select {
+        font-size: var(--fs-md);
+      }
+      .tools {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .btn-sm {
+        padding: 5px 12px;
+      }
+      .mtd {
+        font-size: var(--fs-xs);
+        font-weight: 700;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+        border-radius: 999px;
+        padding: 1px 8px;
+      }
+      .viewing {
+        font-size: var(--fs-sm);
+        color: var(--text-3);
+        font-variant-numeric: tabular-nums;
+      }
+      .viewing b {
+        color: var(--text-2);
+        font-weight: 600;
+      }
+      .src {
+        font-size: var(--fs-xs);
+        font-weight: 600;
+        color: var(--text-3);
+        border: 1px solid var(--border-strong);
+        border-radius: 4px;
+        padding: 0 5px;
+        white-space: nowrap;
+      }
+      .tabs-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .tabs-row .meta {
+        color: var(--text-3);
+        font-size: var(--fs-sm);
+      }
+      .segmented button.off {
+        color: var(--text-3);
+        text-decoration: line-through;
+        cursor: default;
+      }
+
+      /* ---------- Wide report table: 3 column groups ---------- */
+      .scroll {
+        overflow-x: auto;
+      }
+      table.rep {
+        font-size: var(--fs-sm);
+      }
+      table.rep th,
+      table.rep td {
+        padding: 6px 7px;
+        white-space: nowrap;
+      }
+      table.rep thead th {
+        text-transform: none;
+        letter-spacing: 0;
+        font-size: var(--fs-xs);
+        white-space: normal;
+        vertical-align: bottom;
+        line-height: 1.25;
+      }
+      /* Even number columns; the name column takes the rest */
+      table.rep thead tr:not(.grp) th {
+        width: 58px;
+      }
+      table.rep thead tr.grp th {
+        text-align: center;
+        color: var(--heading);
+        font-size: var(--fs-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid var(--border-strong);
+      }
+      table.rep .g {
+        border-left: 1px solid var(--border-strong);
+      }
+      table.rep td.name {
+        font-weight: 600;
+      }
+      table.rep td.team-col {
+        color: var(--text-2);
+      }
+      table.rep td.dash {
+        color: var(--text-3);
+      }
+      table.rep tr.future td {
+        color: var(--text-3);
+      }
+      table.rep tr.future td.appt {
+        color: var(--text);
+      }
+      table.rep tr.today-row td:first-child {
+        box-shadow: inset 3px 0 0 var(--date-today);
+      }
+      table.rep th.n4 {
+        color: var(--n4);
+      }
+      table.rep th.n3 {
+        color: var(--n3);
+      }
+      table.rep th.n2 {
+        color: var(--n2);
+      }
+      table.rep th.n1 {
+        color: var(--n1);
+      }
+      table.rep th.hold {
+        color: var(--on-hold);
+      }
+      table.rep th.lost {
+        color: var(--lost);
+      }
+      table.rep th.unrec {
+        color: var(--appt-unrecorded);
+      }
+      tr.total td {
+        font-weight: 650;
+        border-top: 1px solid var(--border-strong);
+      }
+      tr.team-start td {
+        border-top: 1px solid var(--border-strong);
+      }
+
+      /* ---------- Excel export ---------- */
+      .export {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+        gap: 14px;
+        align-items: start;
+      }
+      .toast {
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--ok);
+        background: var(--bg-2);
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+        font-size: var(--fs-sm);
+      }
+      .toast .path {
+        color: var(--text-2);
+        font-variant-numeric: tabular-nums;
+        word-break: break-all;
+      }
+      .toast .link {
+        color: var(--accent);
+      }
+      .sheet {
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        background: var(--bg-1);
+      }
+      .sheet table td,
+      .sheet table th {
+        padding: 3px 7px;
+        border: 1px solid var(--border);
+        font-size: var(--fs-xs);
+        text-transform: none;
+        letter-spacing: 0;
+      }
+      .sheet .tabs {
+        display: flex;
+        gap: 2px;
+        background: var(--bg-2);
+        border-top: 1px solid var(--border-strong);
+        padding: 4px 6px 0;
+        font-size: var(--fs-xs);
+      }
+      .sheet .tabs span {
+        padding: 3px 10px;
+        border-radius: 4px 4px 0 0;
+        color: var(--text-3);
+      }
+      .sheet .tabs span.on {
+        background: var(--bg-1);
+        color: var(--text);
+        font-weight: 600;
+      }
+      .ask li {
+        margin-bottom: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header>
+        <h1>Báo cáo · Phase 4 (G3, #254)</h1>
+        <p class="lead">
+          Màn Báo cáo theo spec G2 <code>docs/design/phase-4-chi-so.md</code> §4.4: 4 bảng = 4 sheet Excel (Tổng hợp, Theo team, Theo RE, Theo mốc), đủ kỳ Tuần / Tháng / Năm. Cùng dữ liệu giả lập và hôm nay (<b class="num">Thứ Năm 15/10/2026</b>) với <a href="overview.html">overview.html</a> — số ở đây khớp Tổng quan. Không có cột so kỳ trước.
+        </p>
+      </header>
+
+      <!-- ================= 2a ================= -->
+      <section class="part" aria-labelledby="r2a">
+        <div class="part-head"><h2 id="r2a">2a · Toàn bộ · Tháng 10/2026 (MTD) · Theo team</h2><span class="idea">§4.4</span></div>
+        <ul class="notes">
+          <li>Thanh lọc giống Tổng quan: kỳ (Ngày / Tuần / Tháng / Năm / Tùy chọn) + góc nhìn ở thanh đầu trang + <b>Lọc</b>. <b>Xuất Excel</b> xuất đúng kỳ + góc nhìn đang xem (dòng "Đang xem").</li>
+          <li><b>Tổng hợp</b> luôn hiện ở trên (1 dòng). Bên dưới: chọn bảng <b>Theo team · Theo RE · Theo mốc</b> (tên = tên sheet). Mỗi bảng 3 nhóm cột: <b>Lịch hẹn</b> (5 cột §1, cả kỳ) · <b>Kết quả</b> (ADR-0007, tới hôm nay) · <b>KH cuối kỳ</b> (ảnh chụp §2, 6 cột kể cả Tạm hoãn, Mất cơ hội).</li>
+          <li>Dòng Tổng: cộng số đếm và tiền; tỉ lệ chốt = Σ HĐ phát hành ÷ Σ RF (§4.1). 0 RF → "—". Bảng hẹp hơn màn hình thì cuộn ngang, cột tên đứng yên.</li>
+        </ul>
+        <div class="frame">
+          <header class="topbar">
+            <h1>Báo cáo</h1>
+            <div class="spacer"></div>
+            <div class="segmented"><button class="on">Toàn bộ</button><button>Team</button><button>RE</button></div>
+          </header>
+          <div class="content">
+            <div class="tools">
+              <div class="segmented"><button>Ngày</button><button>Tuần</button><button class="on">Tháng</button><button>Năm</button><button>Tùy chọn</button></div>
+              <span class="period"><span class="step">‹</span><span class="range">Tháng 10/2026</span><span class="step">›</span></span>
+              <button class="btn btn-sm">Hôm nay</button>
+              <button class="btn btn-sm">Lọc</button>
+              <span class="viewing">Đang xem: <b>Tháng 10/2026</b> <span class="mtd">MTD</span> 01/10 – 15/10/2026 · <b>Toàn bộ</b></span>
+              <div class="spacer"></div>
+              <button class="btn btn-primary btn-sm">Xuất Excel</button>
+            </div>
+            <section class="card">
+              <div class="card-head"><h2 style="color: var(--heading)">Tổng hợp</h2><span class="meta">Toàn bộ · 30 RE</span></div>
+              <div class="scroll"><table class="rep" id="sum-a"></table></div>
+            </section>
+            <section class="card">
+              <div class="tabs-row">
+                <div class="segmented"><button class="on">Theo team</button><button>Theo RE</button><button>Theo mốc</button></div>
+                <span class="meta">3 team · thứ tự theo tên</span>
+              </div>
+              <div class="scroll"><table class="rep" id="team-a"></table></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 2b ================= -->
+      <section class="part" aria-labelledby="r2b">
+        <div class="part-head"><h2 id="r2b">2b · Cùng kỳ · Theo RE</h2><span class="idea">§4.4</span></div>
+        <ul class="notes">
+          <li>Mỗi RE một dòng, <b>sắp theo team rồi tên</b> (như <code>reOptions</code>); vạch ngang giữa các team. RE không có số nào vẫn có dòng (số 0) để Σ RE = Σ team. TL, IS, BD, BDM và người phối hợp không có dòng.</li>
+        </ul>
+        <div class="frame">
+          <div class="content">
+            <section class="card">
+              <div class="tabs-row">
+                <div class="segmented"><button>Theo team</button><button class="on">Theo RE</button><button>Theo mốc</button></div>
+                <span class="meta">30 RE · Tháng 10/2026 (MTD) · Toàn bộ</span>
+              </div>
+              <div class="scroll"><table class="rep" id="re-a"></table></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 2c ================= -->
+      <section class="part" aria-labelledby="r2c">
+        <div class="part-head"><h2 id="r2c">2c · Cùng kỳ · Theo mốc (Tháng → từng tuần)</h2><span class="idea">§4.4 · M01</span></div>
+        <ul class="notes">
+          <li>Kỳ Tháng: mốc = từng tuần T2–CN <b>cắt theo biên tháng</b> (10/2026 bắt đầu Thứ Năm → mốc đầu 01–04/10). Mốc chứa hôm nay tính tới hôm nay (vạch xanh lá nhạt bên trái).</li>
+          <li><b>Mốc sau hôm nay:</b> Lịch hẹn vẫn đếm (Dự kiến); Kết quả và KH cuối mốc để "—". Bảng này không có dòng Tổng (Tổng = bảng Tổng hợp).</li>
+        </ul>
+        <div class="frame">
+          <div class="content">
+            <section class="card">
+              <div class="tabs-row">
+                <div class="segmented"><button>Theo team</button><button>Theo RE</button><button class="on">Theo mốc</button></div>
+                <span class="meta">5 mốc · Tháng 10/2026 (MTD) · Toàn bộ</span>
+              </div>
+              <div class="scroll"><table class="rep" id="mark-month"></table></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 2d ================= -->
+      <section class="part" aria-labelledby="r2d">
+        <div class="part-head"><h2 id="r2d">2d · Team Bình Minh · Tuần 12/10 – 18/10/2026 · Theo mốc</h2><span class="idea">§4.4</span></div>
+        <ul class="notes">
+          <li>Owner chốt: ở Báo cáo, góc nhìn <b>Team có ô chọn team</b> như Khách hàng / Lịch hẹn (khác Tổng quan, nơi Team = mọi team, mỗi team một chart) — nếu ẩn ô chọn thì Team trùng Toàn bộ. Khi đó bảng Theo team chỉ còn 1 dòng = Tổng hợp nên <b>ẩn</b> (gạch tên); Theo RE = 10 RE của team.</li>
+          <li>Kỳ Tuần: 7 mốc = 7 ngày. Hôm nay Thứ Năm → T6–CN chỉ có Dự kiến.</li>
+        </ul>
+        <div class="frame">
+          <header class="topbar">
+            <h1>Báo cáo</h1>
+            <div class="spacer"></div>
+            <div class="segmented"><button>Toàn bộ</button><button class="on">Team</button><button>RE</button></div>
+            <span class="select">Team: <b>Bình Minh</b> ▾</span>
+          </header>
+          <div class="content">
+            <div class="tools">
+              <div class="segmented"><button>Ngày</button><button class="on">Tuần</button><button>Tháng</button><button>Năm</button><button>Tùy chọn</button></div>
+              <span class="period"><span class="step">‹</span><span class="range">12/10 – 18/10/2026</span><span class="step">›</span></span>
+              <button class="btn btn-sm">Hôm nay</button>
+              <button class="btn btn-sm">Lọc</button>
+              <span class="viewing">Đang xem: <b>12/10 – 18/10/2026</b> · Team <b>Bình Minh</b></span>
+              <div class="spacer"></div>
+              <button class="btn btn-primary btn-sm">Xuất Excel</button>
+            </div>
+            <section class="card">
+              <div class="card-head"><h2 style="color: var(--heading)">Tổng hợp</h2><span class="meta">Team Bình Minh · 10 RE</span></div>
+              <div class="scroll"><table class="rep" id="sum-week"></table></div>
+            </section>
+            <section class="card">
+              <div class="tabs-row">
+                <div class="segmented"><button class="off" title="Góc nhìn Team: bảng Theo team = Tổng hợp">Theo team</button><button>Theo RE</button><button class="on">Theo mốc</button></div>
+                <span class="meta">7 mốc</span>
+              </div>
+              <div class="scroll"><table class="rep" id="mark-week"></table></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 2e ================= -->
+      <section class="part" aria-labelledby="r2e">
+        <div class="part-head"><h2 id="r2e">2e · RE Bùi Ngọc Trâm · Năm 2026 · Theo mốc</h2><span class="idea">§4.4</span></div>
+        <ul class="notes">
+          <li>Góc nhìn RE: chỉ còn Tổng hợp + Theo mốc (Theo team, Theo RE ẩn). Kỳ Năm: 12 mốc = 12 tháng; KH = cuối tháng (tháng 10 → hôm nay). Khớp Tổng quan 1c.</li>
+        </ul>
+        <div class="frame">
+          <header class="topbar">
+            <h1>Báo cáo</h1>
+            <div class="spacer"></div>
+            <div class="segmented"><button>Toàn bộ</button><button>Team</button><button class="on">RE</button></div>
+            <span class="select">RE: <b>Bùi Ngọc Trâm</b> · Bình Minh ▾</span>
+          </header>
+          <div class="content">
+            <div class="tools">
+              <div class="segmented"><button>Ngày</button><button>Tuần</button><button>Tháng</button><button class="on">Năm</button><button>Tùy chọn</button></div>
+              <span class="period"><span class="step">‹</span><span class="range">Năm 2026</span><span class="step">›</span></span>
+              <button class="btn btn-sm">Hôm nay</button>
+              <button class="btn btn-sm">Lọc</button>
+              <span class="viewing">Đang xem: <b>Năm 2026</b> · 01/01 – 15/10/2026 · RE <b>Bùi Ngọc Trâm</b></span>
+              <div class="spacer"></div>
+              <button class="btn btn-primary btn-sm">Xuất Excel</button>
+            </div>
+            <section class="card">
+              <div class="card-head"><h2 style="color: var(--heading)">Tổng hợp</h2><span class="meta">RE Bùi Ngọc Trâm · Bình Minh</span></div>
+              <div class="scroll"><table class="rep" id="sum-year"></table></div>
+            </section>
+            <section class="card">
+              <div class="tabs-row">
+                <div class="segmented"><button class="off">Theo team</button><button class="off">Theo RE</button><button class="on">Theo mốc</button></div>
+                <span class="meta">12 mốc</span>
+              </div>
+              <div class="scroll"><table class="rep" id="mark-year"></table></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 2f ================= -->
+      <section class="part" aria-labelledby="r2f">
+        <div class="part-head"><h2 id="r2f">2f · Xuất Excel</h2><span class="idea">ADR-0011 · Q12</span></div>
+        <ul class="notes">
+          <li>Một file <code>.xlsx</code>, <b>mỗi bảng một sheet</b>, đúng các bảng đang hiện cho góc nhìn (Toàn bộ: 4 sheet · Team: 3 · RE: 2). Lưu vào thư mục <code>exports\</code> cạnh file dữ liệu như xuất backup (D5), không ghi đè (trùng tên → hậu tố <code>-2</code>); báo xong kèm "Mở thư mục".</li>
+          <li>Sheet giữ số thật (tiền theo đồng, tỉ lệ dạng %) để Excel tính tiếp; dòng đầu ghi kỳ + góc nhìn + ngày xuất. <b>Thư viện Excel = cổng G4</b>, tên file và định dạng ô chốt ở task xuất Excel.</li>
+        </ul>
+        <div class="export">
+          <section class="card stack">
+            <p class="cap" style="font-size: var(--fs-xs); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin: 0">Sau khi bấm "Xuất Excel" (2a)</p>
+            <div class="toast">
+              <b>Đã xuất báo cáo</b> · 4 sheet<br />
+              <span class="path">…\Project-2C\exports\bao-cao_2026-10_toan-bo_2026-10-15.xlsx</span><br />
+              <span class="link">Mở thư mục</span>
+            </div>
+            <div class="toast" style="border-left-color: var(--danger)">
+              <b>Không xuất được báo cáo</b><br />
+              <span class="dim">Không ghi được vào thư mục exports\ (đầy ổ đĩa hoặc không có quyền). Dữ liệu trong app không bị ảnh hưởng.</span>
+            </div>
+          </section>
+          <section class="sheet" aria-label="Xem trước sheet Theo team">
+            <table>
+              <tbody class="num">
+                <tr><td colspan="8"><b>Báo cáo Theo team</b> · Tháng 10/2026 (MTD 01/10 – 15/10/2026) · Toàn bộ · xuất 15/10/2026</td></tr>
+                <tr><th>Team</th><th>Đã gặp</th><th>…</th><th>Chuyển RF</th><th>Case size (₫)</th><th>Doanh số (₫)</th><th>Tỉ lệ chốt</th><th>…</th></tr>
+                <tr><td>Bình Minh</td><td class="r">22</td><td>…</td><td class="r">5</td><td class="r">150.000.000</td><td class="r">165.000.000</td><td class="r">60,0%</td><td>…</td></tr>
+                <tr><td>Hừng Đông</td><td class="r">18</td><td>…</td><td class="r">4</td><td class="r">80.000.000</td><td class="r">40.000.000</td><td class="r">25,0%</td><td>…</td></tr>
+                <tr><td>Sao Mai</td><td class="r">24</td><td>…</td><td class="r">7</td><td class="r">210.000.000</td><td class="r">140.000.000</td><td class="r">42,9%</td><td>…</td></tr>
+                <tr><td><b>Tổng</b></td><td class="r"><b>64</b></td><td>…</td><td class="r"><b>16</b></td><td class="r"><b>440.000.000</b></td><td class="r"><b>345.000.000</b></td><td class="r"><b>43,8%</b></td><td>…</td></tr>
+              </tbody>
+            </table>
+            <div class="tabs"><span>Tổng hợp</span><span class="on">Theo team</span><span>Theo RE</span><span>Theo mốc</span></div>
+          </section>
+        </div>
+      </section>
+
+      <!-- ================= Questions ================= -->
+      <section class="card" aria-labelledby="ask">
+        <div class="card-head"><h2 id="ask">Owner đã duyệt G3 (03/10/2026) — Báo cáo</h2><span class="meta">Tổng quan: xem cuối <a href="overview.html" style="color: var(--accent)">overview.html</a></span></div>
+        <ol class="notes ask">
+          <li><b>Bố cục:</b> Tổng hợp luôn hiện + chọn 1 trong 3 bảng Theo team / Theo RE / Theo mốc.</li>
+          <li><b>Góc nhìn Team ở Báo cáo có ô chọn team</b> (2d), khác Tổng quan. Bảng trùng Tổng hợp thì ẩn (Team: Theo team · RE: Theo team, Theo RE); file Excel cũng bỏ sheet đó.</li>
+          <li><b>Nút Lọc</b> ở Báo cáo như Tổng quan.</li>
+        </ol>
+      </section>
+
+      <p class="mock-note">Mockup G3 · Phase 4 · dữ liệu giả lập · bảng dựng bằng script nhỏ trong file từ số từng RE, nên Σ RE = team = Toàn bộ.</p>
+    </main>
+
+    <script>
+      const fmt = (n) => n.toLocaleString('vi-VN');
+      // Money in million đồng → compact form of formatVndCompact (`0 ₫`, `150 tr`, `1,2 tỷ`).
+      const money = (tr) => (tr === 0 ? '0 ₫' : tr >= 1000 ? `${fmt(Math.round(tr / 10) / 100)} tỷ` : `${fmt(tr)} tr`);
+      const rate = (ph, rf) => (rf === 0 ? '—' : `${(Math.round((ph / rf) * 1000) / 10).toFixed(1).replace('.', ',')}%`);
+
+      // ---------- Data: one row per RE, Tháng 10/2026 MTD ----------
+      // r = [met, missed, unrecorded, planned, RF, HĐ nộp, case size (tr), HĐ phát hành, doanh số (tr)]
+      // k = [N4, N3, N2, N1, Tạm hoãn, Mất cơ hội] at 15/10/2026
+      const TEAMS = [
+        {
+          name: 'Bình Minh',
+          res: [
+            ['Bùi Ngọc Trâm', [3, 1, 0, 3, 1, 1, 60, 1, 50], [18, 9, 5, 3, 3, 2]],
+            ['Dương Mỹ Quyên', [2, 0, 0, 3, 0, 0, 0, 0, 0], [17, 10, 4, 2, 4, 3]],
+            ['Hồ Thành Phát', [2, 1, 0, 3, 0, 0, 0, 0, 0], [16, 9, 5, 2, 4, 4]],
+            ['Kiều Minh Anh', [3, 0, 1, 4, 1, 1, 40, 1, 70], [18, 8, 4, 3, 4, 3]],
+            ['Lê Hoài Nam', [1, 1, 0, 2, 0, 0, 0, 0, 0], [19, 8, 4, 1, 4, 4]],
+            ['Ngô Thanh Hương', [2, 0, 0, 3, 1, 0, 0, 0, 0], [17, 9, 5, 2, 3, 4]],
+            ['Phan Tuấn Kiệt', [3, 0, 1, 4, 1, 1, 50, 0, 0], [16, 10, 4, 3, 4, 3]],
+            ['Tạ Hải Yến', [2, 1, 0, 3, 0, 0, 0, 0, 0], [17, 9, 4, 2, 4, 4]],
+            ['Trần Gia Bảo', [2, 0, 0, 3, 1, 0, 0, 1, 45], [16, 9, 5, 2, 4, 4]],
+            ['Võ Kim Ngân', [2, 0, 0, 3, 0, 0, 0, 0, 0], [16, 9, 4, 2, 4, 5]],
+          ],
+        },
+        {
+          name: 'Hừng Đông',
+          res: [
+            ['Âu Gia Bảo', [2, 0, 0, 3, 1, 0, 0, 0, 0], [17, 9, 4, 2, 4, 4]],
+            ['Cao Văn Đức', [2, 1, 0, 3, 0, 0, 0, 0, 0], [16, 8, 5, 2, 4, 5]],
+            ['Đinh Bảo Ngọc', [1, 0, 0, 3, 0, 0, 0, 0, 0], [18, 8, 4, 1, 4, 5]],
+            ['Khúc Duy Thịnh', [2, 0, 1, 3, 1, 1, 30, 0, 0], [16, 9, 4, 2, 4, 5]],
+            ['Lâm Thị Hường', [2, 1, 0, 3, 0, 0, 0, 0, 0], [17, 8, 4, 2, 4, 5]],
+            ['Mạc Tiến Đạt', [2, 0, 0, 3, 0, 0, 0, 0, 0], [16, 9, 4, 2, 4, 5]],
+            ['Nghiêm Tú Anh', [2, 0, 0, 3, 1, 0, 0, 0, 0], [17, 9, 4, 2, 4, 4]],
+            ['Quách Thảo Nhi', [1, 1, 0, 3, 0, 0, 0, 0, 0], [16, 8, 5, 1, 5, 5]],
+            ['Văn Thùy Linh', [2, 0, 0, 3, 1, 1, 50, 1, 40], [17, 9, 4, 2, 4, 4]],
+            ['Vũ Thanh Tâm', [2, 0, 0, 3, 0, 0, 0, 0, 0], [16, 9, 4, 2, 4, 5]],
+          ],
+        },
+        {
+          name: 'Sao Mai',
+          res: [
+            ['Đặng Quốc Khánh', [3, 0, 0, 3, 1, 1, 50, 0, 0], [18, 9, 4, 2, 3, 4]],
+            ['Đỗ Khánh Linh', [3, 1, 1, 4, 2, 1, 60, 1, 50], [17, 10, 5, 3, 3, 2]],
+            ['Hoàng Nam Phong', [2, 0, 0, 3, 1, 0, 0, 0, 0], [18, 9, 5, 2, 3, 3]],
+            ['Lý Quang Vinh', [2, 1, 0, 3, 0, 0, 0, 0, 0], [17, 9, 4, 3, 4, 3]],
+            ['Mai Phương Thảo', [2, 0, 0, 3, 0, 0, 0, 0, 0], [18, 9, 4, 2, 4, 3]],
+            ['Ngô Bảo Hân', [3, 0, 0, 3, 1, 1, 40, 1, 40], [17, 10, 5, 3, 3, 2]],
+            ['Phạm Gia Long', [3, 1, 0, 3, 1, 0, 0, 1, 50], [18, 9, 5, 3, 3, 2]],
+            ['Tôn Thất Sơn', [2, 0, 1, 3, 0, 0, 0, 0, 0], [18, 9, 4, 2, 3, 4]],
+            ['Trịnh Minh Anh', [2, 1, 0, 3, 1, 1, 60, 0, 0], [17, 9, 5, 2, 3, 4]],
+            ['Yên Khánh Ly', [2, 0, 0, 3, 0, 0, 0, 0, 0], [18, 9, 4, 2, 4, 3]],
+          ],
+        },
+      ];
+
+      const add = (a, b) => a.map((v, i) => v + b[i]);
+      const zero = (n) => Array(n).fill(0);
+      const sum = (rows) => rows.reduce((acc, [, r, k]) => [add(acc[0], r), add(acc[1], k)], [zero(9), zero(6)]);
+      const teamRows = TEAMS.map((t) => [t.name, ...sum(t.res)]);
+      const [allR, allK] = sum(teamRows);
+
+      // ---------- Table rendering ----------
+      function head(lead) {
+        const leadTh = lead.map((l) => `<th rowspan="2">${l}</th>`).join('');
+        return (
+          `<thead><tr class="grp">${leadTh}<th colspan="5" class="g">Lịch hẹn · cả kỳ</th><th colspan="6" class="g">Kết quả · tới hôm nay</th><th colspan="6" class="g">KH cuối kỳ</th></tr>` +
+          '<tr><th class="r g">Đã gặp</th><th class="r">Dời – hủy – không đến</th><th class="r unrec">Chưa ghi kết quả</th><th class="r">Dự kiến</th><th class="r">Tổng</th>' +
+          '<th class="r g">Chuyển RF</th><th class="r">HĐ nộp</th><th class="r">Case size</th><th class="r">HĐ phát hành</th><th class="r">Doanh số</th><th class="r">Tỉ lệ chốt</th>' +
+          '<th class="r g n4">N4</th><th class="r n3">N3</th><th class="r n2">N2</th><th class="r n1">N1</th><th class="r hold">Tạm hoãn</th><th class="r lost">Mất cơ hội</th></tr></thead>'
+        );
+      }
+      // r may hold nulls for "—" (results of a mark after today); k may be null.
+      function cells(r, k) {
+        const [met, miss, unrec, plan, rf, nop, cs, ph, ds] = r;
+        const d = (v, f = fmt) => (v === null ? '<td class="r dash">—</td>' : `<td class="r">${f(v)}</td>`);
+        const appt = [met, miss, unrec, plan, met + miss + unrec + plan]
+          .map((v, i) => `<td class="r appt${i === 0 ? ' g' : ''}">${fmt(v)}</td>`)
+          .join('');
+        const res =
+          rf === null
+            ? '<td class="r dash g">—</td>' + '<td class="r dash">—</td>'.repeat(5)
+            : `<td class="r g">${fmt(rf)}</td>` + d(nop) + d(cs, money) + d(ph) + d(ds, money) + `<td class="r">${rate(ph, rf)}</td>`;
+        const kh = k === null ? '<td class="r dash g">—</td>' + '<td class="r dash">—</td>'.repeat(5) : k.map((v, i) => `<td class="r${i === 0 ? ' g' : ''}">${fmt(v)}</td>`).join('');
+        return appt + res + kh;
+      }
+      const table = (id, html) => (document.getElementById(id).innerHTML = html);
+
+      // 2a Tổng hợp + Theo team
+      table('sum-a', head(['Góc nhìn']) + `<tbody class="num"><tr><td class="name">Toàn bộ</td>${cells(allR, allK)}</tr></tbody>`);
+      table(
+        'team-a',
+        head(['Team']) +
+          '<tbody class="num">' +
+          teamRows.map(([n, r, k]) => `<tr><td class="name">${n}</td>${cells(r, k)}</tr>`).join('') +
+          `<tr class="total"><td>Tổng</td>${cells(allR, allK)}</tr></tbody>`,
+      );
+
+      // 2b Theo RE
+      table(
+        're-a',
+        head(['Team', 'RE']) +
+          '<tbody class="num">' +
+          TEAMS.map((t, ti) =>
+            t.res
+              .map(([n, r, k], i) => `<tr class="${ti > 0 && i === 0 ? 'team-start' : ''}"><td class="team-col">${t.name}</td><td class="name">${n}</td>${cells(r, k)}</tr>`)
+              .join(''),
+          ).join('') +
+          `<tr class="total"><td colspan="2">Tổng</td>${cells(allR, allK)}</tr></tbody>`,
+      );
+
+      // 2c Theo mốc, month → weeks cut at the month (M01 pattern), Toàn bộ
+      const N = null;
+      const markRows = (rows) =>
+        rows
+          .map(([label, r, k, cls = '']) => `<tr class="${cls}"><td class="name">${label}</td>${cells(r, k)}</tr>`)
+          .join('');
+      table(
+        'mark-month',
+        head(['Mốc']) +
+          '<tbody class="num">' +
+          markRows([
+            ['01–04/10 (T5–CN)', [14, 3, 0, 0, 4, 2, 90, 1, 40], [528, 262, 127, 59, 110, 105]],
+            ['05–11/10', [28, 5, 2, 0, 7, 4, 210, 4, 205], [520, 265, 129, 61, 111, 108]],
+            ['12–18/10 (tới 15/10)', [22, 3, 3, 17, 5, 3, 140, 2, 100], [512, 268, 131, 64, 112, 113], 'today-row'],
+            ['19–25/10', [0, 0, 0, 40, N, N, N, N, N], N, 'future'],
+            ['26–31/10', [0, 0, 0, 35, N, N, N, N, N], N, 'future'],
+          ]) +
+          '</tbody>',
+      );
+
+      // 2d Team Bình Minh, week → 7 days
+      const bm = teamRows[0];
+      const weekSum = [8, 1, 2, 7, 2, 1, 40, 1, 70];
+      table('sum-week', head(['Góc nhìn']) + `<tbody class="num"><tr><td class="name">Team Bình Minh</td>${cells(weekSum, bm[2])}</tr></tbody>`);
+      table(
+        'mark-week',
+        head(['Mốc']) +
+          '<tbody class="num">' +
+          markRows([
+            ['T2 12/10', [2, 0, 1, 0, 1, 0, 0, 0, 0], [172, 88, 43, 21, 38, 38]],
+            ['T3 13/10', [2, 1, 0, 0, 0, 1, 40, 1, 70], [171, 89, 43, 21, 38, 38]],
+            ['T4 14/10', [3, 0, 1, 0, 1, 0, 0, 0, 0], [171, 89, 44, 21, 38, 37]],
+            ['T5 15/10 (hôm nay)', [1, 0, 0, 2, 0, 0, 0, 0, 0], [170, 90, 44, 22, 38, 36], 'today-row'],
+            ['T6 16/10', [0, 0, 0, 3, N, N, N, N, N], N, 'future'],
+            ['T7 17/10', [0, 0, 0, 1, N, N, N, N, N], N, 'future'],
+            ['CN 18/10', [0, 0, 0, 1, N, N, N, N, N], N, 'future'],
+          ]) +
+          '</tbody>',
+      );
+
+      // 2e RE Bùi Ngọc Trâm, year → 12 months (matches Overview 1c)
+      const YEAR = [
+        [[11, 2, 0, 0, 1, 1, 40, 0, 0], [24, 6, 3, 1, 4, 2]],
+        [[9, 1, 0, 0, 2, 1, 50, 1, 40], [23, 7, 3, 1, 4, 2]],
+        [[12, 2, 0, 0, 1, 0, 0, 0, 0], [23, 7, 3, 2, 3, 2]],
+        [[13, 1, 0, 0, 2, 1, 30, 1, 45], [22, 7, 4, 2, 3, 2]],
+        [[11, 2, 0, 0, 1, 1, 60, 0, 0], [21, 8, 4, 2, 3, 2]],
+        [[10, 1, 0, 0, 2, 1, 40, 1, 50], [21, 8, 4, 2, 3, 2]],
+        [[12, 2, 0, 0, 1, 1, 50, 1, 30], [20, 8, 5, 2, 3, 2]],
+        [[11, 2, 0, 0, 2, 1, 30, 0, 0], [20, 8, 4, 3, 3, 2]],
+        [[14, 2, 0, 0, 1, 0, 0, 1, 40], [19, 9, 4, 3, 3, 2]],
+        [[9, 1, 1, 3, 1, 1, 60, 1, 50], [18, 9, 5, 3, 3, 2]],
+        [[0, 0, 0, 4, N, N, N, N, N], N],
+        [[0, 0, 0, 2, N, N, N, N, N], N],
+      ];
+      const yearSum = YEAR.slice(0, 10).reduce((acc, [r]) => add(acc, r), zero(9));
+      yearSum[3] += 6; // planned appointments of November and December
+      table('sum-year', head(['Góc nhìn']) + `<tbody class="num"><tr><td class="name">RE Bùi Ngọc Trâm</td>${cells(yearSum, YEAR[9][1])}</tr></tbody>`);
+      table(
+        'mark-year',
+        head(['Mốc']) +
+          '<tbody class="num">' +
+          markRows(
+            YEAR.map(([r, k], i) => [
+              i === 9 ? 'Tháng 10 (tới 15/10)' : `Tháng ${i + 1}`,
+              r,
+              k,
+              i === 9 ? 'today-row' : i > 9 ? 'future' : '',
+            ]),
+          ) +
+          '</tbody>',
+      );
+
+      // Self-check: the report adds up to the Overview mockup (1a, 1c).
+      console.assert(allR.join() === '64,11,5,92,16,9,440,7,345', 'Toàn bộ', allR.join());
+      console.assert(allK.join() === '512,268,131,64,112,113', 'KH', allK.join());
+      console.assert(teamRows.map(([, r]) => r.slice(4).join()).join('|') === '5,3,150,3,165|4,2,80,1,40|7,4,210,3,140', 'teams');
+      console.assert(yearSum.join() === '112,16,1,9,14,8,360,6,255', 'year', yearSum.join());
+    </script>
+  </body>
+</html>

@@ -171,11 +171,19 @@ Mốc của bảng Theo mốc:
 
 Mốc sau hôm nay: lịch hẹn vẫn đếm (Dự kiến); chỉ số kết quả và KH theo nhóm để trống ("—").
 
+### 4.5 Màn hình (G3, #254) — Owner duyệt 03/10/2026
+
+Mockup: `docs/design/mockups/overview.html` (Tổng quan 1a–1e + màn Lịch hẹn 4 nhóm, phần 2), `docs/design/mockups/reports.html` (Báo cáo 2a–2f). Số trên hai mockup khớp nhau (cùng hôm nay 15/10/2026, Σ RE = team = Toàn bộ).
+
+- **Tổng quan:** thanh lọc = bộ chọn kỳ + góc nhìn (thanh đầu trang) + **Lọc**; lựa chọn khác số đang hiện → nút Lọc vàng + dòng nhắc, dòng "Đang xem" ghi kỳ + góc nhìn đang hiện. Hàng trên: ô Lịch hẹn (Đã gặp / Tổng, thanh 4 nhóm) + 6 ô KPI có dòng so kỳ trước (§4.2). Khối "Khách hàng theo nhóm": 4 ô N4–N1 = chú giải, **bấm ô để ẩn / hiện nhóm** trên chart (áp cho mọi chart), chart cột chồng (N1 sát trục). Bảng So sánh team bấm team → RE. **Bỏ** khối lịch trong ngày / 7 ngày tới.
+- **Lịch hẹn (4 nhóm):** thứ tự Đã gặp · Dời – hủy – không đến · Chưa ghi kết quả · Dự kiến. Màu (Owner 03/10): **Chưa ghi kết quả = cam** (`--appt-unrecorded` = `--warn`); **Dời – hủy – không đến đổi từ cam sang xám** (`--appt-missed` = `--text-3`). Chấm "Chưa ghi kết quả" đứng đầu ô ngày; dòng đếm kỳ thêm "· n chưa ghi kết quả" khi > 0; cột Trạng thái của danh sách hiện badge "Chưa ghi kết quả" cho lịch đã qua còn Đã lên lịch (chỉ hiển thị).
+- **Báo cáo:** Tổng hợp luôn hiện + chọn Theo team / Theo RE / Theo mốc; 3 nhóm cột Lịch hẹn · Kết quả · KH cuối kỳ; có nút **Lọc** như Tổng quan. Góc nhìn **Team có ô chọn team** (khác Tổng quan); bảng trùng Tổng hợp thì ẩn, file Excel cũng bỏ sheet đó (Team: Theo team · RE: Theo team, Theo RE). Xuất Excel vào `exports\` như xuất backup.
+
 ## 5. Hệ quả cho task sau
 
 | Task | Việc do spec này |
 |---|---|
-| #254 T-098 (G3) | Mockup Tổng quan + Báo cáo theo §4; **thêm** nhóm "Chưa ghi kết quả" cho màn Lịch hẹn (lịch tháng, lưới năm) |
+| #254 T-098 (G3) | Mockup Tổng quan + Báo cáo theo §4; **thêm** nhóm "Chưa ghi kết quả" cho màn Lịch hẹn (lịch tháng, lưới năm) — xong, §4.5 |
 | #255 T-099 (T-e) | Index chỉ số + MTD + cửa sổ so sánh §4.2 (C01–C09); golden A01–A13, S01–S13 thành fixture |
 | #256 T-100 (T-f) | §3: `MAX_YEAR`, cắt tuần ở biên, `PeriodPicker` tắt nút |
 | Task UI Lịch hẹn (mới, sau G3) | 4 nhóm đếm thay 3 |
