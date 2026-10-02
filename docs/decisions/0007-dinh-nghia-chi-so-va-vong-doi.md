@@ -68,3 +68,12 @@ Chỉ số mơ hồ → hai người đọc ra hai con số khác nhau. Pipeline
 - Golden examples: `packages/domain/src/golden/metrics.fixture.ts`, bảng đối chiếu `docs/golden/chi-so.md` (Owner duyệt G2). Là test bắt buộc của stats engine; không sửa để "cho xanh".
 - Mô hình dữ liệu cho chỉ số: `packages/domain/src/model.ts` (`Team`, `Person`, `Customer`, `StageTransition`, `Appointment`, `Policy`, `Scope`).
 - Thực thể cốt lõi: `teams`, `people`, `customers`, `kyc_notes`, `kyc_facts`, `kyc_versions`, `stage_transitions`, `appointments`, `policies`, `ai_analyses`, `settings` — các thực thể dùng cho chỉ số chốt ở G2 (xem trên); KYC chốt ở ADR-0008 / #30.
+
+## Phụ lục — G2 Phase 4 (03/10/2026, #253)
+
+Chi tiết + golden: `docs/design/phase-4-chi-so.md`, `docs/golden/lich-hen.md` (A01–A13), `docs/golden/kh-theo-nhom.md` (S01–S13). Định nghĩa trong bảng chỉ số ở trên không đổi; G01–G22 giữ nguyên.
+
+- **Đếm lịch hẹn:** 4 nhóm — Đã gặp / Dời – hủy – không đến / **Chưa ghi kết quả** (Đã lên lịch, ngày trước hôm nay) / Dự kiến (Đã lên lịch, từ hôm nay). Mỗi mắt xích của chuỗi dời tính một lần ở kỳ của ngày mình; xóa lịch con → lịch gốc vẫn là Dời lịch. Góc nhìn theo RE trên cuộc hẹn.
+- **KH theo nhóm:** ảnh chụp ở mốc (cuối kỳ; kỳ chưa hết → hôm nay), theo RE hiện tại của KH; KH đã xóa không tính. Tổng quan 4 ô N4–N1 + chart diễn biến; báo cáo thêm Tạm hoãn, Mất cơ hội.
+- **Miền năm:** 1900–2100 (`MAX_YEAR = 2100`); kỳ luôn nằm trong miền, `PeriodPicker` tắt nút ở biên.
+- **Tổng quan / Báo cáo:** kỳ chưa hết tính tới hôm nay (tháng = MTD); 6 ô KPI so với kỳ trước cùng số ngày; bảng So sánh team bấm xổ RE; báo cáo có bảng Theo mốc; dòng Tổng tính tỉ lệ chốt từ tổng (Σ PH ÷ Σ RF).

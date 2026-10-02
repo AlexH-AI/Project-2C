@@ -2,8 +2,8 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-10-02 · máy `DESKTOP-KDURKJP` (Home PC) · Phase 3 đã đóng (G7 02/10); **Phase 4 đã mở**: milestone + 9 Issue #251–#259; **làm tiếp #251 T-095**
-- **Nhánh:** `main` (`50737a7` + PR này). Không có PR code nào đang mở. Worktree `Project-2C-astra` (Codex) và hai worktree review đứng ở `5eb7c03`. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
+- **Cập nhật:** 2026-10-03 · máy `DESKTOP-KDURKJP` (Home PC) · Phase 4: #251 T-095, #252 T-096 (+ T-104 #264) đã merge; **#253 T-097 G2: spec + golden chờ Owner duyệt** (`docs/design/phase-4-chi-so.md`)
+- **Nhánh:** `main` (`a20135e` + PR này). Không có PR code nào đang mở. Worktree `Project-2C-astra` (Codex) và hai worktree review đứng ở `5eb7c03`. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
 - **Phiên song song:** có thể có phiên khác trên cùng checkout — commit theo pathspec, không `git add -A`
 - **Repo public** (27/09) · **ruleset `protect-main`** (28/09): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
 - **Model / effort:** Owner chọn từng phiên (ADR-0001 M1). Chỉ Claude Code viết code, không subagent, cổng G1–G8. **Codex chỉ review độc lập khi đóng phase** (ADR-0001 M2)
@@ -149,7 +149,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. **Phase 4, thứ tự:** **#251 T-095** e2e local (làm tiếp, `gh issue view 251`, nhánh `task/T-095-<slug>`) → **#252 T-096** nhập backup lần 3 + luật nhân sự (`risk:high`, Owner merge) → **#253 T-097** G2 (dừng hỏi Owner) → #254 T-098 G3 mockup → #255 T-099, #256 T-100 → #257 T-101 → #258 T-102, #259 T-103 → task dashboard / báo cáo / xuất Excel (tạo sau G3; task đầu tiên mang tiêu chí F-18 escape tooltip; thư viện Excel = G4). #257–#259 không bị chặn, làm xen được khi chờ cổng. Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
+2. **Phase 4, thứ tự:** #251 T-095, #252 T-096 đã merge → **#253 T-097** G2: Owner duyệt PR spec (`docs/design/phase-4-chi-so.md`, golden `docs/golden/lich-hen.md`, `docs/golden/kh-theo-nhom.md`; 8 quyết định Owner 03/10 đã ghi) → #254 T-098 G3 mockup (thêm nhóm "Chưa ghi kết quả" cho màn Lịch hẹn, spec §1) → #255 T-099, #256 T-100 → #257 T-101 → #258 T-102, #259 T-103 → task dashboard / báo cáo / xuất Excel (tạo sau G3; task đầu tiên mang tiêu chí F-18 escape tooltip; thư viện Excel = G4). #257–#259 không bị chặn, làm xen được khi chờ cổng. Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
 3. Ngưỡng task (P1, P-2): ước lượng cỡ khi viết Issue gồm cả i18n + e2e; vượt ngưỡng thì tách từ đầu; PR liệt kê mọi file ngoài danh sách được phép.
 4. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
 5. Merge (P-1): SHA head lúc merge phải trùng SHA trong `REVIEW: PASS`; head đổi → review lại.
@@ -196,7 +196,7 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- Mở Phase 4: G1 kế hoạch / Issue Đợt 2 (T-d, T-j…) nếu Owner muốn duyệt trước khi tạo; G2 Phase 4 trước màn dashboard.
+- **G2 Phase 4 (#253):** duyệt spec + golden A01–A13, S01–S13, C01–C09, M01–M04 trên PR của T-097.
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
 ## Ghi chú môi trường
