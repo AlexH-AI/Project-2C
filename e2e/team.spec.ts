@@ -243,6 +243,36 @@ test('a new IS / BD / BDM leaves the selected team for the shared support', asyn
   await expect(page.getByRole('region', { name: 'Người hỗ trợ' })).toContainText('Lê Thu Hà');
 });
 
+test('an RE changed to BDM leaves their team; a team picked for them is refused on the field', async ({
+  page,
+}) => {
+  await addRe(page, 'Trần Hải Yến', 'Hừng Đông');
+  const table = members(page, 'Hừng Đông').getByRole('table');
+  await table.getByRole('button', { name: 'Sửa Trần Hải Yến' }).click();
+  const edit = page.getByRole('dialog', { name: 'Sửa nhân sự' });
+  const team = edit.getByRole('combobox', { name: 'Team' });
+  const own = await team.inputValue();
+
+  await edit.getByRole('radio', { name: 'BDM', exact: true }).check();
+  await expect(team).toHaveValue('');
+  // Back to RE: their own team returns.
+  await edit.getByRole('radio', { name: 'RE', exact: true }).check();
+  await expect(team).toHaveValue(own);
+  await edit.getByRole('radio', { name: 'BDM', exact: true }).check();
+  await team.selectOption({ label: 'Sao Mai' });
+  await edit.getByRole('button', { name: 'Lưu' }).click();
+  await expect(team).toHaveAttribute('aria-invalid', 'true');
+  await expect(team).toHaveAccessibleDescription(
+    'IS, BD và BDM không thuộc team nào: bỏ chọn team.',
+  );
+
+  await team.selectOption('');
+  await edit.getByRole('button', { name: 'Lưu' }).click();
+  await expect(edit).toBeHidden();
+  await expect(table.getByRole('row', { name: /Trần Hải Yến/ })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Người hỗ trợ' })).toContainText('Trần Hải Yến');
+});
+
 test('refuses to delete an RE who still has records, and says how many (9b)', async ({ page }) => {
   await teamButton(page, 'Sao Mai').click();
   const row = members(page, 'Sao Mai')

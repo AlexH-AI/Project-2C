@@ -51,7 +51,8 @@ export function PersonDialog({
       const params = failure instanceof DbError ? failure.params : undefined;
       const message = errorMessage(failure, { role, ...params });
       if (code === 'NAME_REQUIRED') setErrors({ name: message });
-      else if (code === 'TEAM_REQUIRED' || code === 'TEAM_NOT_FOUND') setErrors({ team: message });
+      else if (code === 'TEAM_REQUIRED' || code === 'TEAM_NOT_FOUND' || code === 'TEAM_NOT_ALLOWED')
+        setErrors({ team: message });
       else setErrors({ form: message });
     }
   };
@@ -94,11 +95,10 @@ export function PersonDialog({
         onChange={(value) => {
           setRole(value);
           setErrors({});
-          // A new person starts on the team being viewed, which only suits RE and TL.
-          if (!person) {
-            if (!needsTeam(value)) setTeamId('');
-            else if (!teamId) setTeamId(defaultTeamId ?? '');
-          }
+          // IS / BD / BDM have no team (spec §6 rule 9); back to RE or TL, the person's own team
+          // returns, or for a new one the team being viewed.
+          if (!needsTeam(value)) setTeamId('');
+          else if (!teamId) setTeamId(person?.teamId ?? defaultTeamId ?? '');
         }}
         required
       />
