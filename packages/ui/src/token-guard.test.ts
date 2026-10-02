@@ -47,6 +47,13 @@ describe('findTokenViolations', () => {
     ]);
   });
 
+  it('allows a flex share taken from data, and nothing beside it', () => {
+    expect(findTokenViolations('<span style={{ flex: cell.met }}>')).toEqual([]);
+    expect(findTokenViolations('<span style={{ flex: 1, color: c }}>')).toEqual([
+      { line: 1, match: 'style={', rule: 'inline-style' },
+    ]);
+  });
+
   it('does not treat Tailwind spacing utilities as raw lengths', () => {
     expect(findTokenViolations('<p className="px-3 py-1 gap-6 text-2xl">')).toEqual([]);
   });

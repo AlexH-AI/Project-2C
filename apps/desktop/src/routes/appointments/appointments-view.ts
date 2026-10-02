@@ -111,6 +111,16 @@ export interface DayCell {
   readonly missed: number;
 }
 
+/** A month of the year grid (mockup B6): its appointments by calendar group, where it stands. */
+export interface MonthCell {
+  readonly month: number;
+  readonly met: number;
+  /** Rescheduled, cancelled or no show. */
+  readonly missed: number;
+  readonly planned: number;
+  readonly state: 'past' | 'current' | 'future';
+}
+
 export interface DayGroup {
   readonly team: Team | undefined;
   readonly res: readonly {
@@ -259,6 +269,27 @@ export function monthGrid(
     weeks.push(week);
   }
   return weeks;
+}
+
+/** The twelve months of `year`, each with its appointments by calendar group and against today. */
+export function yearGrid(
+  year: number,
+  rows: readonly AppointmentRow[],
+  today: CalendarDate,
+): MonthCell[] {
+  const counts = Array.from({ length: 12 }, () => ({ met: 0, planned: 0, missed: 0 }));
+  for (const { appointment: a } of rows) {
+    const cell = a.date.year === year ? counts[a.date.month - 1] : undefined;
+    if (cell) cell[CALENDAR_GROUP[a.status]] += 1;
+  }
+  return counts.map((count, i) => {
+    const order = year === today.year ? i + 1 - today.month : year - today.year;
+    return {
+      month: i + 1,
+      ...count,
+      state: order < 0 ? 'past' : order === 0 ? 'current' : 'future',
+    };
+  });
 }
 
 /**
