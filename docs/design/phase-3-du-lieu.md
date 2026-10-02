@@ -180,7 +180,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
 | `recordMeetingOutcome` | Đặt trạng thái + kết quả. `MET`: bắt buộc `stage_after`, `next_step` (D6); `stage_after` ≠ nhóm hiện tại → transition gắn `appointment_id` (#44); `outcome_reviewer_id` tùy chọn, phải là nhân sự chưa xóa (D9). Sửa lại kết quả → theo D7. Transition mang ngày cuộc hẹn → ghi kết quả muộn bị từ chối (D10) nếu KH đã có transition ngày muộn hơn; `MET` với `stage_after` = nhóm hiện tại, `CANCELLED`, `NO_SHOW` không sinh transition nên vẫn ghi được |
 | `rescheduleAppointment` | Cuộc hẹn cũ → `RESCHEDULED`; tạo cuộc hẹn mới `SCHEDULED` trỏ `rescheduled_from_id` (D3) |
 | `addKycNote` | Chỉ thêm |
-| `confirmKycFact`, `markKycConflict`, `resolveKycConflict` | Dùng `confirmFact` / `markConflict` / `resolveConflict` của `domain`; từ chối `birthYear` / `gender` từ nguồn RE (D2); sau đó `nextKycVersion` → ghi `kyc_versions` nếu hash đổi; cờ material tay theo ADR-0008 §7 |
+| `confirmKycFact`, `markKycConflict`, `resolveKycConflict` | Dùng `confirmFact` / `markConflict` / `resolveConflict` của `domain`; từ chối `birthYear` / `gender` từ nguồn RE (D2); `confirmKycFact` / `markKycConflict` trên ghi chú `SYSTEM` → `KYC_NOTE_FROM_PROFILE` (ghi chú `SYSTEM` chỉ do hồ sơ KH ghi, #263); sau đó `nextKycVersion` → ghi `kyc_versions` nếu hash đổi; cờ material tay theo ADR-0008 §7 |
 | `submitPolicy`, `issuePolicy`, `updatePolicy` | Ràng buộc §3.7; FYP qua `Vnd` |
 | `softDelete…`, `restore…` | D4; không xóa được team / nhân sự còn được tham chiếu bởi bản ghi chưa xóa; xóa cuộc hẹn có transition theo D7 (transition bị hủy, `customers.stage` về `from_stage`); khôi phục cuộc hẹn `MET` mà transition của nó giờ lùi ngày → từ chối (D10), cuộc hẹn vẫn bị xóa |
 
@@ -223,7 +223,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
     5. `re_id` của KH / cuộc hẹn / HĐ **chưa xóa** là người **chưa xóa** vai trò RE (RE đổi vai trò hay bị xóa được khi bản ghi của họ đã xóa, §3.3); RE/TL có team: CHECK của schema; người phối hợp ≠ `re_id` của cuộc hẹn; `rescheduled_from_id` trỏ cuộc hẹn cùng KH, status `RESCHEDULED`.
     6. `kyc_facts.note_id` là ghi chú cùng KH. `seq` ghi chú / dữ kiện / phiên bản duy nhất theo KH: UNIQUE của schema.
     7. Mỗi trường KYC có dữ kiện của một KH: đúng một fact `active` và không `conflict`, hoặc ≥ 2 fact `conflict` và không `active`.
-    8. Fact `birthYear` / `gender` đang `active` đến từ ghi chú nguồn `SYSTEM` và khớp `customers.birth_date` (năm) / `gender` (D2). Fact `birthYear` / `gender` đang `conflict` từ ghi chú `SYSTEM` cũng khớp hồ sơ (fact `conflict` từ ghi chú khác giữ quy tắc 7); `resolveKycConflict` chọn fact `SYSTEM` lệch hồ sơ → `KYC_FIELD_FROM_PROFILE`.
+    8. Fact `birthYear` / `gender` đang `active` đến từ ghi chú nguồn `SYSTEM` và khớp `customers.birth_date` (năm) / `gender` (D2). Fact `birthYear` / `gender` đang `conflict` từ ghi chú `SYSTEM` cũng khớp hồ sơ (fact `conflict` từ ghi chú khác giữ quy tắc 7); `resolveKycConflict` chọn fact `SYSTEM` lệch hồ sơ → `KYC_FIELD_FROM_PROFILE`. Mọi fact (mọi trạng thái, kể cả `superseded`) từ ghi chú `SYSTEM` là `birthYear` / `gender` (#263).
     9. Nhân sự (#252, Owner 02/10/2026): (i) mỗi team chưa xóa có tối đa 1 TL chưa xóa (#223); (ii) IS / BD / BDM có `team_id` null, kể cả người đã xóa; (iii) người chưa xóa có `team_id` → team chưa xóa. Dữ liệu cũ sai bị từ chối, không migration (dữ liệu hiện có là giả lập: nạp lại seed).
 
 ## 7. Dữ liệu giả lập (seed)

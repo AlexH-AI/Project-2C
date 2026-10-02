@@ -22,10 +22,10 @@ import {
 } from './customers';
 import { openDatabase } from './database';
 import { DbError } from './errors';
-import { markKycConflict, recordKycNote, resolveKycConflict } from './kyc';
+import { getKycProfile, markKycConflict, recordKycNote, resolveKycConflict } from './kyc';
 import { submitPolicy } from './policies';
 import { seedDemoData } from './seed';
-import { updatePerson } from './team';
+import { createPerson, restorePerson, softDeletePerson, updatePerson } from './team';
 import { setup } from './test-support';
 
 type Row = Record<string, unknown>;
@@ -356,6 +356,21 @@ describe('importBackup — rules across tables', () => {
       '8: a birth year in conflict from the profile, other than the profile’s (D2)',
       (b, ids) => birthYearConflict(b, ids, '1983'),
     ],
+    [
+      '8: an occupation in effect from the profile’s note (D2)',
+      (b, ids) => occupationFromProfile(b, ids, 'active'),
+    ],
+    [
+      '8: an occupation superseded, from the profile’s note (D2)',
+      (b, ids) => occupationFromProfile(b, ids, 'superseded'),
+    ],
+    [
+      '8: children counts in conflict, one from the profile’s note (D2)',
+      (b, ids) => {
+        const note = row(b, 'kyc_notes', (n) => n.customer_id === ids.lan && n.source === 'SYSTEM');
+        fact(b, ids.lan, 'childrenCount').note_id = note.id;
+      },
+    ],
     ['9: two live TLs in a team', (b, ids) => person(b, ids.tl, { id: 'second-tl', name: 'Hải' })],
     [
       '9: two live TLs in a deleted team',
@@ -439,6 +454,26 @@ describe('importBackup — a file the app wrote from an imported one', () => {
     resolveKycConflict(db, conflictCustomerId!, { factId: factId!, date: day(15) });
     updatePerson(db, reId!, { name: 'An Mới' });
     updatePerson(db, tlId!, { name: 'Hà Mới' });
+    // The RE gives another birth year; the profile's settles it (D2).
+    const flagged = recordKycNote(db, lan.id, {
+      text: 'KH nói sinh năm 1985',
+      date: day(15),
+      facts: [{ field: 'birthYear', value: 1985, conflict: true }],
+    });
+    expect(flagged.version).not.toBeNull();
+    const fromProfile = getKycProfile(db, lan.id).facts.find(
+      (f) => f.field === 'birthYear' && f.value === 1984,
+    )!;
+    resolveKycConflict(db, lan.id, { factId: fromProfile.id, date: day(15) });
+    // Staff: the TL leaves the team for a shared role and another takes over; an RE joins, moves
+    // to a shared role, is deleted and comes back (rule 9).
+    const [teamId] = first(`SELECT team_id FROM people WHERE id = '${tlId}'`);
+    updatePerson(db, tlId!, { role: 'BDM', teamId: null });
+    createPerson(db, { name: 'Hải', role: 'TL', teamId: teamId! });
+    const newcomer = createPerson(db, { name: 'Bảo', role: 'RE', teamId: teamId! });
+    updatePerson(db, newcomer.id, { role: 'IS', teamId: null });
+    softDeletePerson(db, newcomer.id);
+    restorePerson(db, newcomer.id);
 
     await expect(importBackup(exportBackup(db))).resolves.toBeDefined();
   }, 60_000);
@@ -487,6 +522,28 @@ function birthYearConflict(backup: BackupJson, ids: Ids, systemValue: string): v
     seq: seq + 1,
     value_json: '1985',
   });
+}
+
+/**
+ * Adds Lan's occupation from the profile's `SYSTEM` note with `status`; a superseded one is
+ * followed by the RE's, so the trường stays settled.
+ */
+function occupationFromProfile(backup: BackupJson, ids: Ids, status: string): void {
+  const facts = backup.tables.kyc_facts!;
+  const base = fact(backup, ids.lan, 'birthYear');
+  const seq = Math.max(...facts.filter((f) => f.customer_id === ids.lan).map((f) => Number(f.seq)));
+  const occupation = { ...base, field: 'occupation', value_json: '"Bác sĩ"' };
+  facts.push({ ...occupation, id: 'from-profile', seq: seq + 1, status });
+  if (status === 'superseded') {
+    const note = row(backup, 'kyc_notes', (n) => n.customer_id === ids.lan && n.source === 'RE');
+    facts.push({
+      ...occupation,
+      id: 'from-note',
+      seq: seq + 2,
+      note_id: note.id,
+      status: 'active',
+    });
+  }
 }
 
 function remove(backup: BackupJson, table: string, which: (row: Row) => boolean): void {

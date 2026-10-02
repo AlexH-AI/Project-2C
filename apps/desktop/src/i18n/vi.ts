@@ -638,6 +638,8 @@ export const vi = {
   'error.KYC_NO_CONFLICT':
     'Không đánh dấu mâu thuẫn được: trường chưa có giá trị, hoặc giá trị mới trùng giá trị đang có.',
   'error.KYC_FIELD_FROM_PROFILE': 'Năm sinh và giới tính chỉ sửa ở hồ sơ KH.',
+  'error.KYC_NOTE_FROM_PROFILE':
+    'Ghi chú do hồ sơ KH tự ghi không nhận thêm dữ kiện: chọn ghi chú của RE.',
   'error.KYC_NOT_IN_CONFLICT': 'Mâu thuẫn này đã được giải quyết.',
   'error.KYC_FACT_NOT_FOUND': 'Dữ kiện không còn trong dữ liệu.',
   'error.unknown': 'Chưa lưu được thay đổi. Dữ liệu không bị đổi.',
