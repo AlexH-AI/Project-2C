@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tổng quan hôm nay — Project-2C mockup</title>
+    <title>Tổng quan (Phase 4) — Project-2C mockup</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
@@ -11,431 +11,1379 @@
     />
     <link rel="stylesheet" href="mockups.css" />
     <style>
-      .team-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 16px;
+      /* Tokens already in packages/ui/src/tokens.css (ADR-0013, B4/B5) that mockups.css predates */
+      :root {
+        --date-today: #9be8c0;
+        --date-past-bg: rgba(240, 210, 110, 0.2);
+        --date-today-bg: rgba(63, 214, 154, 0.2);
+        --date-future-bg: rgba(111, 168, 255, 0.22);
       }
-      .team-card .card-head .tl {
-        color: var(--text-3);
-        font-size: var(--fs-sm);
+      /* New token proposed by this mockup (G3, #254): group "Chưa ghi kết quả" (spec §1). Option A. */
+      :root {
+        --appt-unrecorded: var(--danger);
       }
-      .appt td:first-child {
-        width: 48px;
-        color: var(--text-2);
-        padding-right: 0;
-      }
-      .appt .name .badge {
-        margin-left: 4px;
-        vertical-align: 1px;
-      }
-      .appt td.r {
-        width: 1%;
-      }
-      .rank td {
-        padding: 6px 10px;
-      }
-      .legend {
-        display: flex;
-        gap: 14px;
-        font-size: var(--fs-xs);
-        color: var(--text-2);
-      }
-      .legend i {
-        display: inline-block;
-        width: 10px;
-        height: 10px;
-        border-radius: 2px;
-        margin-right: 5px;
-        vertical-align: -1px;
-      }
-      .trend {
-        display: grid;
-        grid-template-columns: 120px 1fr 80px;
-        align-items: center;
-        gap: 10px;
-        font-size: var(--fs-sm);
-        padding: 5px 0;
-      }
-      .trend .bar {
-        height: 10px;
-      }
-      .team-card {
+
+      .page {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 28px 24px 48px;
         display: flex;
         flex-direction: column;
+        gap: 22px;
       }
-      .team-foot {
-        margin-top: auto;
-        padding-top: 12px;
-        border-top: 1px solid var(--border);
+      .page > header h1 {
+        margin: 0;
+        font-size: var(--fs-2xl);
+      }
+      .lead {
+        color: var(--text-2);
+        margin: 4px 0 0;
+      }
+      .lead a,
+      .notes a {
+        color: var(--accent);
+      }
+      .part {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .part-head {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 8px;
+      }
+      .part-head h2 {
+        margin: 0;
+        font-size: var(--fs-xl);
+      }
+      .idea {
+        font-size: var(--fs-xs);
+        font-weight: 700;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+        border-radius: 999px;
+        padding: 1px 9px;
+        white-space: nowrap;
+      }
+      .notes {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--text-2);
+        font-size: var(--fs-sm);
+      }
+      .notes li {
+        margin-bottom: 4px;
+      }
+      .notes b {
+        color: var(--text);
+      }
+      code {
+        font-size: var(--fs-sm);
+        color: var(--text-2);
+      }
+      .cap {
+        font-size: var(--fs-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-3);
+        font-weight: 600;
+        margin: 0 0 6px;
+      }
+      .cap .was {
+        text-transform: none;
+        letter-spacing: 0;
+        font-weight: 400;
+      }
+
+      /* A screen frame: topbar + content, no sidebar (saves width; sidebar unchanged) */
+      .frame {
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        background: var(--bg-0);
+      }
+      .frame .topbar {
+        position: static;
+      }
+      .frame .content {
+        padding: 16px 20px 20px;
+        gap: 14px;
+      }
+      /* A3 (#216): scope picker text 14px in the topbar */
+      .topbar .segmented button,
+      .topbar .select {
+        font-size: var(--fs-md);
+      }
+      .elided {
+        border: 1px dashed var(--border-strong);
+        border-radius: var(--radius);
+        padding: 10px 14px;
+        color: var(--text-3);
+        font-size: var(--fs-sm);
+      }
+
+      /* ---------- Filter row: period + Lọc ---------- */
+      .tools {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .tools .step.off {
+        opacity: 0.35;
+      }
+      .btn-sm {
+        padding: 5px 12px;
+      }
+      .btn.pending {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--on-accent);
+      }
+      .btn.pending::after {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--on-accent);
+      }
+      .mtd {
+        font-size: var(--fs-xs);
+        font-weight: 700;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+        border-radius: 999px;
+        padding: 1px 8px;
+      }
+      .viewing {
+        font-size: var(--fs-sm);
+        color: var(--text-3);
+        font-variant-numeric: tabular-nums;
+      }
+      .viewing b {
+        color: var(--text-2);
+        font-weight: 600;
+      }
+      .hint-pending {
+        font-size: var(--fs-sm);
+        color: var(--accent);
+      }
+
+      /* ---------- Source tags (spec section of each block) ---------- */
+      .src {
+        font-size: var(--fs-xs);
+        font-weight: 600;
+        color: var(--text-3);
+        border: 1px solid var(--border-strong);
+        border-radius: 4px;
+        padding: 0 5px;
+        margin-left: 6px;
+        white-space: nowrap;
+        letter-spacing: 0;
+        text-transform: none;
+      }
+
+      /* ---------- Top: appointments tile + 6 KPI ---------- */
+      .top {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 6px;
+        grid-template-columns: 330px minmax(0, 1fr);
+        gap: 12px;
+      }
+      .kpis-6 {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .kpi .label {
+        display: flex;
+        align-items: baseline;
+      }
+      .kpi .label .src {
+        margin-left: auto;
+      }
+      .kpi .formula {
         font-size: var(--fs-xs);
         color: var(--text-3);
       }
-      .team-foot b {
-        display: block;
-        font-size: var(--fs-lg);
-        color: var(--text);
+      .same {
+        color: var(--text-2);
       }
-      .bottom-grid td {
+      .appt-tile {
+        background: var(--bg-1);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .appt-tile .label {
+        color: var(--text-2);
+        font-size: var(--fs-sm);
+        display: flex;
+        align-items: baseline;
+      }
+      .appt-tile .label .src {
+        margin-left: auto;
+      }
+      .appt-tile .value {
+        font-size: var(--fs-2xl);
+        font-weight: 650;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.2;
+      }
+      .appt-tile .value small {
+        font-size: var(--fs-md);
+        color: var(--text-3);
+        font-weight: 500;
+      }
+      .appt-tile .foot {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        margin-top: -6px;
+      }
+      .groups {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2px;
+        font-size: var(--fs-sm);
+        color: var(--text-2);
+      }
+      .groups li {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .groups li b {
+        margin-left: auto;
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+      }
+      .groups i,
+      .lg i {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex: none;
+      }
+      .g-met {
+        background: var(--ok);
+      }
+      .g-miss {
+        background: var(--warn);
+      }
+      .g-unrec {
+        background: var(--appt-unrecorded);
+      }
+      .g-plan {
+        background: var(--info);
+      }
+
+      /* 4-part bar (same as the year grid of Appointments, B6) */
+      .mbar {
+        display: flex;
+        height: 20px;
+        border-radius: 5px;
+        overflow: hidden;
+        background: var(--bg-3);
+        gap: 1px;
+      }
+      .mbar span {
+        display: grid;
+        place-items: center;
+        font-size: var(--fs-xs);
+        font-weight: 700;
+        color: var(--on-accent);
+        min-width: 3px;
+        font-variant-numeric: tabular-nums;
+      }
+      .mbar span.narrow {
+        font-size: 0;
+      }
+      .mbar .empty {
+        background: transparent;
+        color: var(--text-3);
+        font-weight: 500;
+        flex: 1;
+      }
+
+      /* ---------- Customers by stage: 4 tiles = chart legend ---------- */
+      .stage-tiles {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .stile {
+        all: unset;
+        box-sizing: border-box;
+        cursor: pointer;
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-top: 3px solid var(--c);
+        border-radius: var(--radius);
+        padding: 8px 12px 10px;
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+      }
+      .stile:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .stile b {
+        margin-left: auto;
+        font-size: var(--fs-2xl);
+        font-weight: 650;
+        font-variant-numeric: tabular-nums;
+      }
+      .stile.off {
+        background: var(--bg-1);
+        border-top-style: dashed;
+      }
+      .stile.off b {
+        color: var(--text-3);
+        font-weight: 500;
+      }
+      .stile.off .badge {
+        color: var(--text-3);
+      }
+      .stile .hidden-tag {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+      }
+
+      /* ---------- Stacked column chart (stand-in for ECharts, ADR-0014) ---------- */
+      .chart {
+        display: grid;
+        grid-template-columns: 40px minmax(0, 1fr);
+        grid-template-rows: 180px auto;
+        position: relative;
+      }
+      .chart.short {
+        grid-template-rows: 130px auto;
+      }
+      .chart .yaxis {
+        position: relative;
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        font-variant-numeric: tabular-nums;
+      }
+      .chart .yaxis span {
+        position: absolute;
+        right: 8px;
+        transform: translateY(50%);
+      }
+      .chart .plot {
+        position: relative;
+        border-bottom: 1px solid var(--border-strong);
+      }
+      .chart .grid-line {
+        position: absolute;
+        left: 0;
+        right: 0;
+        border-top: 1px solid var(--border);
+      }
+      .chart .cols {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: flex-end;
+        gap: 3px;
+        padding: 0 3px;
+      }
+      .chart .col {
+        flex: 1;
+        min-width: 0;
+        height: 100%;
+        display: flex;
+        flex-direction: column-reverse;
+      }
+      .chart .col i {
+        display: block;
+        flex: none;
+      }
+      .chart .col.future {
+        justify-content: flex-start;
+      }
+      .chart .col.future::before {
+        content: '';
+        display: block;
+        height: 3px;
+        border-bottom: 2px dashed var(--border-strong);
+      }
+      .chart .col.today i:last-child {
+        border-radius: 2px 2px 0 0;
+      }
+      .chart .col.hover {
+        outline: 1px solid var(--text-3);
+        outline-offset: 1px;
+      }
+      .chart .xaxis {
+        grid-column: 2;
+        display: flex;
+        gap: 3px;
+        padding: 4px 3px 0;
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        font-variant-numeric: tabular-nums;
+      }
+      .chart .xaxis span {
+        flex: 1;
+        min-width: 0;
+        text-align: center;
+        white-space: nowrap;
+        overflow: visible;
+      }
+      .chart .xaxis span.today {
+        color: var(--date-today);
+        font-weight: 700;
+      }
+      .chart .empty-note {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        color: var(--text-3);
+        font-size: var(--fs-sm);
+      }
+      .s-n4 {
+        background: var(--n4);
+      }
+      .s-n3 {
+        background: var(--n3);
+      }
+      .s-n2 {
+        background: var(--n2);
+      }
+      .s-n1 {
+        background: var(--n1);
+      }
+      .tip {
+        position: absolute;
+        z-index: 2;
+        background: var(--bg-2);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-sm);
+        padding: 8px 10px;
+        font-size: var(--fs-xs);
+        color: var(--text);
+        min-width: 150px;
+        font-variant-numeric: tabular-nums;
+      }
+      .tip .t {
+        color: var(--text-2);
+        margin-bottom: 4px;
+      }
+      .tip div.r {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .tip div.r b {
+        margin-left: auto;
+      }
+      .tip i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      .tip .sum {
+        border-top: 1px solid var(--border);
+        margin-top: 4px;
+        padding-top: 4px;
+      }
+      .team-charts {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+      .team-charts h3 {
+        margin: 0 0 6px;
+        font-size: var(--fs-sm);
+        font-weight: 650;
+        display: flex;
+        gap: 8px;
+        align-items: baseline;
+      }
+      .team-charts h3 .meta {
+        font-weight: 400;
+        color: var(--text-3);
+        font-size: var(--fs-xs);
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* ---------- Team comparison: click a team → its RE ---------- */
+      .cmp td,
+      .cmp th {
         white-space: nowrap;
       }
-      .bottom-grid {
-        display: grid;
-        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-        gap: 16px;
+      .cmp tr.team td:first-child {
+        font-weight: 600;
       }
-      .inline-bar {
-        display: grid;
-        grid-template-columns: 1fr 56px;
-        align-items: center;
-        gap: 8px;
-        text-align: right;
+      .cmp .tog {
+        display: inline-block;
+        width: 14px;
+        color: var(--text-3);
       }
-      .inline-bar .bar {
-        height: 8px;
+      .cmp tr.team.open td {
+        background: var(--bg-2);
+      }
+      .cmp tr.team.open .tog {
+        color: var(--accent);
+      }
+      .cmp tr.re td {
+        background: var(--bg-0);
+        color: var(--text-2);
+      }
+      .cmp tr.re td:first-child {
+        padding-left: 34px;
       }
       tr.total td {
         font-weight: 650;
         border-top: 1px solid var(--border-strong);
       }
-      .week {
+
+      /* ---------- Small state cards ---------- */
+      .states {
         display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 8px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
       }
-      .week .d {
-        position: relative;
+      .states .card {
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      /* ---------- Part 2: Appointments, 4 groups ---------- */
+      .opts {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .opts .card.chosen {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 1px var(--accent);
+      }
+      .chosen-tag {
+        color: var(--accent);
+        font-weight: 700;
+      }
+      .cal {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 4px;
+      }
+      .cal .h {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0 6px;
+      }
+      .cell {
+        box-sizing: border-box;
         background: var(--bg-2);
         border: 1px solid var(--border);
         border-radius: var(--radius-sm);
-        padding: 8px 8px 22px;
+        min-height: 50px;
+        padding: 4px 6px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto 1fr;
+        font-variant-numeric: tabular-nums;
+      }
+      .cell .dn {
         font-size: var(--fs-xs);
         color: var(--text-3);
-        overflow: hidden;
       }
-      .week .d b {
-        display: block;
-        font-size: var(--fs-xl);
+      .cell b {
+        font-size: var(--fs-md);
+        text-align: right;
+      }
+      .cell .dots {
+        grid-column: 1 / -1;
+        align-self: end;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
+      }
+      .cell .dots i {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        box-sizing: border-box;
+      }
+      .cell.wk {
+        background: var(--bg-1);
+      }
+      .cell.out {
+        opacity: 0.35;
+      }
+      .cell.today {
+        box-shadow: inset 0 0 0 1px var(--date-today);
+        border-color: var(--date-today);
+      }
+      .cell.today .dn::after {
+        content: ' · hôm nay';
+        color: var(--date-today);
+      }
+      .dots .met {
+        background: var(--ok);
+      }
+      .dots .miss {
+        background: var(--warn);
+      }
+      .dots .plan,
+      .lg .plan-ring {
+        border: 1.5px solid var(--info);
+      }
+      /* Option A: red dot */
+      .optA .dots .unrec,
+      .optA .lg .unrec {
+        background: var(--appt-unrecorded);
+      }
+      .optA .mbar .unrec {
+        background: var(--appt-unrecorded);
+      }
+      /* Option B: blue, hatched (a planned appointment past its date) */
+      .optB .dots .unrec,
+      .optB .lg .unrec {
+        border: 1.5px solid var(--info);
+        background: repeating-linear-gradient(135deg, var(--info) 0 1.5px, transparent 1.5px 3px);
+      }
+      .optB .mbar .unrec {
+        background: repeating-linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--info) 55%, transparent) 0 4px,
+          color-mix(in srgb, var(--info) 20%, transparent) 4px 8px
+        );
+        box-shadow: inset 0 0 0 1px var(--info);
         color: var(--text);
       }
-      .week .d i {
-        position: absolute;
-        left: 8px;
-        bottom: 8px;
-        height: 6px;
-        border-radius: 3px;
-        background: var(--n3);
-        opacity: 0.8;
+      .mbar .met {
+        background: var(--ok);
       }
-      .week .d.on {
+      .mbar .miss {
+        background: var(--warn);
+      }
+      .mbar .plan {
+        background: var(--info);
+      }
+      .lg {
+        display: flex;
+        gap: 14px;
+        font-size: var(--fs-xs);
+        color: var(--text-2);
+        flex-wrap: wrap;
+      }
+      .lg span {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .lg .met {
+        background: var(--ok);
+      }
+      .lg .miss {
+        background: var(--warn);
+      }
+      .lg i {
+        box-sizing: border-box;
+      }
+      .ycells {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .mcell {
+        box-sizing: border-box;
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 8px 10px 9px;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        font-variant-numeric: tabular-nums;
+      }
+      .mcell .top2 {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+      }
+      .mcell .mn {
+        font-weight: 650;
+      }
+      .mcell .tot {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+      }
+      .mcell .tot b {
+        font-size: var(--fs-lg);
+        color: var(--text);
+        margin-right: 3px;
+      }
+      .mcell.current {
+        background: var(--accent-soft);
         border-color: var(--accent);
+        box-shadow: inset 0 0 0 1px var(--accent);
       }
-      .more-link {
-        font-size: var(--fs-sm);
+      .mcell.current .mn {
         color: var(--accent);
-        padding: 10px 10px 0;
+      }
+      .mcell.future {
+        background: var(--bg-1);
+        border-style: dashed;
+      }
+      .mcell.future .mn {
+        color: var(--text-3);
+        font-weight: 500;
+      }
+      .mcell.future .mbar {
+        background: transparent;
+        border: 1px dashed var(--border-strong);
+      }
+      .mcell.future .mbar .plan {
+        background: color-mix(in srgb, var(--info) 25%, transparent);
+        color: var(--text);
+      }
+      .summary-line {
+        font-size: var(--fs-sm);
+        color: var(--text-3);
+        font-variant-numeric: tabular-nums;
+      }
+      .summary-line b {
+        color: var(--text-2);
+      }
+      td.d {
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+      td.past {
+        background: var(--date-past-bg);
+      }
+      td.today {
+        background: var(--date-today-bg);
+        font-weight: 600;
+      }
+      td.future {
+        background: var(--date-future-bg);
+      }
+      .optA .badge.unrec {
+        color: var(--appt-unrecorded);
+      }
+      .optB .badge.unrec {
+        color: var(--info);
+        border-style: dashed;
+      }
+
+      .spec td,
+      .spec th {
+        vertical-align: top;
+        white-space: normal;
+      }
+      .spec td:first-child {
+        white-space: nowrap;
+        font-weight: 600;
+      }
+      .ask li {
+        margin-bottom: 6px;
       }
     </style>
   </head>
   <body>
-    <svg xmlns="http://www.w3.org/2000/svg" style="display: none" aria-hidden="true">
-      <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" /><rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="16" width="7" height="5" rx="1.5" /></symbol>
-      <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M8 14h2M14 14h2M8 17.5h2" /></symbol>
-      <symbol id="i-customers" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.5a6.5 6.5 0 0 1 3 5.5" /></symbol>
-      <symbol id="i-reports" viewBox="0 0 24 24"><path d="M3 3v18h18" /><path d="M7.5 16.5v-4M12 16.5V8M16.5 16.5v-6.5" /></symbol>
-      <symbol id="i-team" viewBox="0 0 24 24"><rect x="9" y="2.5" width="6" height="5" rx="1" /><rect x="2.5" y="16.5" width="6" height="5" rx="1" /><rect x="15.5" y="16.5" width="6" height="5" rx="1" /><path d="M12 7.5v4M5.5 16.5v-2a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v2" /></symbol>
-      <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" /><circle cx="15" cy="6" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="18" r="2" /></symbol>
-    </svg>
-    <div class="app">
-      <aside class="sidebar">
-        <div class="brand"><span class="brand-mark">2C</span> Project-2C</div>
-        <nav class="nav">
-          <a href="overview.html" class="active"><svg class="ico" aria-hidden="true"><use href="#i-overview" /></svg>Tổng quan hôm nay</a>
-          <a href="appointments.html"><svg class="ico" aria-hidden="true"><use href="#i-calendar" /></svg>Lịch hẹn</a>
-          <a href="customers.html"><svg class="ico" aria-hidden="true"><use href="#i-customers" /></svg>Khách hàng</a>
-          <a href="#"><svg class="ico" aria-hidden="true"><use href="#i-reports" /></svg>Báo cáo</a>
-          <div class="nav-label">Quản lý</div>
-          <a href="#"><svg class="ico" aria-hidden="true"><use href="#i-team" /></svg>Team &amp; nhân sự</a>
-          <a href="#"><svg class="ico" aria-hidden="true"><use href="#i-settings" /></svg>Cài đặt</a>
-        </nav>
-        <div class="sidebar-foot">Dữ liệu giả lập · Đồng bộ lần cuối 07:42</div>
-      </aside>
+    <main class="page">
+      <header>
+        <h1>Tổng quan · Phase 4 (G3, #254)</h1>
+        <p class="lead">
+          Tổng quan chạy bằng dữ liệu thật theo ý 9 của Owner và spec G2 <code>docs/design/phase-4-chi-so.md</code> (§1, §2, §4.2, §4.3). Thay mockup Tổng quan cũ (bỏ ô "Tỉ lệ chốt · lũy kế" công thức cũ, F-10; bỏ "Top RE" và lịch hẹn hôm nay theo team). Màn Báo cáo: <a href="reports.html">reports.html</a>.
+          Dữ liệu giả lập theo seed (3 team × 1 TL + 10 RE), hôm nay = <b class="num">Thứ Năm 15/10/2026</b>. Chart vẽ bằng HTML để mockup chạy offline; app thật dùng ECharts (ADR-0014).
+        </p>
+      </header>
 
-      <div class="main">
-        <header class="topbar">
-          <div>
-            <h1>Tổng quan hôm nay</h1>
-            <div class="sub num">Thứ Hai, 28/09/2026</div>
-          </div>
-          <div class="spacer"></div>
-          <div class="search">Tìm KH, RE, lịch hẹn… <span class="spacer"></span><span class="kbd">Ctrl K</span></div>
-          <button class="btn btn-primary">+ Lịch hẹn</button>
-        </header>
-
-        <div class="content">
-          <div class="filter-bar">
-            <span class="section-title" style="margin: 0 4px 0 0">Kỳ thống kê</span>
-            <div class="period">
-              <div class="segmented"><button>Ngày</button><button>Tuần</button><button class="on">Tháng</button><button>Năm</button><button>Tùy chọn</button></div>
-              <span class="step">‹</span><span class="range">01/09 – 28/09/2026 · MTD</span><span class="step">›</span>
-            </div>
-            <span class="spacer"></span>
-            <span class="section-title" style="margin: 0 4px 0 0">Góc nhìn</span>
+      <!-- ================= 1a ================= -->
+      <section class="part" aria-labelledby="p1a">
+        <div class="part-head"><h2 id="p1a">1a · Toàn bộ · Tháng 10/2026 (MTD)</h2><span class="idea">ý 9</span></div>
+        <ul class="notes">
+          <li><b>Lọc:</b> đổi kỳ (bộ chọn kỳ) hay góc nhìn (thanh đầu trang) <b>chỉ áp dụng khi bấm Lọc</b>. Dòng "Đang xem" luôn ghi kỳ + góc nhìn đang hiện số. Mở Tổng quan lần đầu: Tháng hiện tại (MTD) + góc nhìn đang chọn, đã áp dụng sẵn.</li>
+          <li><b>Kỳ tháng chưa hết = MTD</b> (01/10 → hôm nay): nhãn "MTD" cạnh kỳ. Ô Lịch hẹn vẫn đếm <b>cả tháng</b> (Dự kiến có ngày sau hôm nay); 6 ô KPI tính tới hôm nay và so với cùng số ngày của tháng trước (C01).</li>
+          <li><b>4 ô N4–N1 là chú giải của chart</b> (màu <code>StageBadge</code>): bấm một ô để ẩn / hiện nhóm đó trên chart (xem 1b). Chart: mỗi cột = ảnh chụp cuối ngày; cột sau hôm nay để trống (vạch đứt). N1 nằm sát trục để dễ so ngày với ngày.</li>
+          <li><b>So sánh team:</b> thứ tự team theo tên; bấm một team → RE của team hiện ngay dưới (sắp theo tên), bấm lại → thu. Không so kỳ trước trong bảng. Đầu cột không sắp xếp (giữ khối team → RE liền nhau).</li>
+        </ul>
+        <div class="frame">
+          <header class="topbar">
+            <h1>Tổng quan</h1>
+            <div class="spacer"></div>
             <div class="segmented"><button class="on">Toàn bộ</button><button>Team</button><button>RE</button></div>
-            <span class="select">Team: <b>Tất cả</b> ▾</span>
+          </header>
+          <div class="content">
+            <div class="tools">
+              <div class="segmented"><button>Ngày</button><button>Tuần</button><button class="on">Tháng</button><button>Năm</button><button>Tùy chọn</button></div>
+              <span class="period"><span class="step">‹</span><span class="range">Tháng 10/2026</span><span class="step">›</span></span>
+              <button class="btn btn-sm">Hôm nay</button>
+              <button class="btn btn-sm">Lọc</button>
+              <div class="spacer"></div>
+              <span class="viewing">Đang xem: <b>Tháng 10/2026</b> <span class="mtd">MTD</span> 01/10 – 15/10/2026 · <b>Toàn bộ</b></span>
+            </div>
+
+            <div class="top">
+              <div class="appt-tile">
+                <div class="label">Lịch hẹn · cả tháng <span class="src">§1</span></div>
+                <div class="value">64 <small>/ 172</small></div>
+                <div class="foot">đã gặp / tổng lịch</div>
+                <div class="mbar" data-bar="64,11,5,92"></div>
+                <ul class="groups num">
+                  <li><i class="g-met"></i>Đã gặp<b>64</b></li>
+                  <li><i class="g-miss"></i>Dời – hủy – không đến<b>11</b></li>
+                  <li><i class="g-unrec"></i>Chưa ghi kết quả<b>5</b></li>
+                  <li><i class="g-plan"></i>Dự kiến<b>92</b></li>
+                </ul>
+              </div>
+              <div class="kpis-6">
+                <div class="kpi">
+                  <div class="label">Chuyển RF <span class="src">ADR-0007</span></div>
+                  <div class="value">16</div>
+                  <div class="foot"><span class="up">▲ 3</span> so với 01/09 – 15/09</div>
+                </div>
+                <div class="kpi">
+                  <div class="label">HĐ nộp <span class="src">ADR-0007</span></div>
+                  <div class="value">9</div>
+                  <div class="foot"><span class="same">= </span> so với 01/09 – 15/09</div>
+                </div>
+                <div class="kpi">
+                  <div class="label">Case size <span class="src">ADR-0007</span></div>
+                  <div class="value">440 <small>tr</small></div>
+                  <div class="foot"><span class="down">▼ 80 tr</span> so với 01/09 – 15/09</div>
+                </div>
+                <div class="kpi">
+                  <div class="label">HĐ phát hành <span class="src">ADR-0007</span></div>
+                  <div class="value">7</div>
+                  <div class="foot"><span class="up">▲ 1</span> so với 01/09 – 15/09</div>
+                </div>
+                <div class="kpi">
+                  <div class="label">Doanh số <span class="src">ADR-0007</span></div>
+                  <div class="value">345 <small>tr</small></div>
+                  <div class="foot"><span class="up">▲ 55 tr</span> so với 01/09 – 15/09</div>
+                </div>
+                <div class="kpi">
+                  <div class="label">Tỉ lệ chốt <span class="src">§4.1</span></div>
+                  <div class="value">43,8<small>%</small></div>
+                  <div class="foot"><span class="down">▼ 2,4 điểm %</span> so với 01/09 – 15/09 <span class="formula">· 7 HĐ phát hành ÷ 16 RF</span></div>
+                </div>
+              </div>
+            </div>
+
+            <section class="card">
+              <div class="card-head">
+                <h2 style="color: var(--heading)">Khách hàng theo nhóm</h2>
+                <span class="meta num">ảnh chụp cuối ngày 15/10/2026 (hôm nay)</span>
+                <span class="src">§2</span>
+              </div>
+              <div class="stage-tiles num">
+                <button class="stile" style="--c: var(--n4)"><span class="badge st-n4">N4</span><b>512</b></button>
+                <button class="stile" style="--c: var(--n3)"><span class="badge st-n3">N3</span><b>268</b></button>
+                <button class="stile" style="--c: var(--n2)"><span class="badge st-n2">N2</span><b>131</b></button>
+                <button class="stile" style="--c: var(--n1)"><span class="badge st-n1">N1</span><b>64</b></button>
+              </div>
+              <div class="chart" id="chart-all"></div>
+            </section>
+
+            <section class="card">
+              <div class="card-head">
+                <h2 style="color: var(--heading)">So sánh team</h2>
+                <span class="meta num">01/10 – 15/10/2026 (MTD)</span>
+                <span class="src">§4.1 · §4.3</span>
+                <span class="actions meta">bấm một team để xem RE</span>
+              </div>
+              <table class="cmp">
+                <thead>
+                  <tr><th>Team</th><th class="r">Đã gặp</th><th class="r">Chuyển RF</th><th class="r">HĐ nộp</th><th class="r">Case size</th><th class="r">HĐ phát hành</th><th class="r">Doanh số</th><th class="r">Tỉ lệ chốt</th></tr>
+                </thead>
+                <tbody class="num">
+                  <tr class="team open"><td><span class="tog">▾</span>Bình Minh</td><td class="r">22</td><td class="r">5</td><td class="r">3</td><td class="r">150 tr</td><td class="r">3</td><td class="r">165 tr</td><td class="r">60,0%</td></tr>
+                  <tr class="re"><td>Bùi Ngọc Trâm</td><td class="r">3</td><td class="r">1</td><td class="r">1</td><td class="r">60 tr</td><td class="r">1</td><td class="r">50 tr</td><td class="r">100,0%</td></tr>
+                  <tr class="re"><td>Dương Mỹ Quyên</td><td class="r">2</td><td class="r">0</td><td class="r">0</td><td class="r">0 ₫</td><td class="r">0</td><td class="r">0 ₫</td><td class="r">—</td></tr>
+                  <tr class="re"><td>Hồ Thành Phát</td><td class="r">2</td><td class="r">0</td><td class="r">0</td><td class="r">0 ₫</td><td class="r">0</td><td class="r">0 ₫</td><td class="r">—</td></tr>
+                  <tr class="re"><td>Kiều Minh Anh</td><td class="r">3</td><td class="r">1</td><td class="r">1</td><td class="r">40 tr</td><td class="r">1</td><td class="r">70 tr</td><td class="r">100,0%</td></tr>
+                  <tr class="re"><td>Lê Hoài Nam</td><td class="r">1</td><td class="r">0</td><td class="r">0</td><td class="r">0 ₫</td><td class="r">0</td><td class="r">0 ₫</td><td class="r">—</td></tr>
+                  <tr class="re"><td>Ngô Thanh Hương</td><td class="r">2</td><td class="r">1</td><td class="r">0</td><td class="r">0 ₫</td><td class="r">0</td><td class="r">0 ₫</td><td class="r">0,0%</td></tr>
+                  <tr class="re"><td>Phan Tuấn Kiệt</td><td class="r">3</td><td class="r">1</td><td class="r">1</td><td class="r">50 tr</td><td class="r">0</td><td class="r">0 ₫</td><td class="r">0,0%</td></tr>
+                  <tr class="re"><td>Tạ Hải Yến</td><td class="r">2</td><td class="r">0</td><td class="r">0</td><td class="r">0 ₫</td><td class="r">0</td><td class="r">0 ₫</td><td class="r">—</td></tr>
+                  <tr class="re"><td>Trần Gia Bảo</td><td class="r">2</td><td class="r">1</td><td class="r">0</td><td class="r">0 ₫</td><td class="r">1</td><td class="r">45 tr</td><td class="r">100,0%</td></tr>
+                  <tr class="re"><td>Võ Kim Ngân</td><td class="r">2</td><td class="r">0</td><td class="r">0</td><td class="r">0 ₫</td><td class="r">0</td><td class="r">0 ₫</td><td class="r">—</td></tr>
+                  <tr class="team"><td><span class="tog">▸</span>Hừng Đông</td><td class="r">18</td><td class="r">4</td><td class="r">2</td><td class="r">80 tr</td><td class="r">1</td><td class="r">40 tr</td><td class="r">25,0%</td></tr>
+                  <tr class="team"><td><span class="tog">▸</span>Sao Mai</td><td class="r">24</td><td class="r">7</td><td class="r">4</td><td class="r">210 tr</td><td class="r">3</td><td class="r">140 tr</td><td class="r">42,9%</td></tr>
+                  <tr class="total"><td>Tổng</td><td class="r">64</td><td class="r">16</td><td class="r">9</td><td class="r">440 tr</td><td class="r">7</td><td class="r">345 tr</td><td class="r">43,8%</td></tr>
+                </tbody>
+              </table>
+            </section>
           </div>
-          <section class="kpis" aria-label="Chỉ số">
-            <div class="kpi">
-              <div class="label">Lịch hẹn hôm nay</div>
-              <div class="value">6 <small>/ 17</small></div>
-              <div class="foot">đã gặp / dự kiến · 1 hoãn</div>
-            </div>
-            <div class="kpi">
-              <div class="label">Chuyển RF · MTD</div>
-              <div class="value">38</div>
-              <div class="foot"><span class="up">▲ 5</span> so với cùng kỳ tháng 8</div>
-            </div>
-            <div class="kpi">
-              <div class="label">HĐ nộp · MTD</div>
-              <div class="value">24</div>
-              <div class="foot">3 hôm nay</div>
-            </div>
-            <div class="kpi">
-              <div class="label">Case size · MTD</div>
-              <div class="value">18,6 <small>tỷ</small></div>
-              <div class="foot">Σ FYP HĐ đã nộp</div>
-            </div>
-            <div class="kpi">
-              <div class="label">Doanh số · MTD</div>
-              <div class="value">14,2 <small>tỷ</small></div>
-              <div class="foot">Σ FYP theo ngày phát hành</div>
-            </div>
-            <div class="kpi">
-              <div class="label">Tỉ lệ chốt · lũy kế</div>
-              <div class="value">41,7<small>%</small></div>
-              <!-- F-10 (review đóng Phase 3): công thức này đã bị G2 thay (ADR-0007: HĐ phát hành ÷ RF cùng kỳ). Sửa hẳn ở G2 Phase 4. -->
-              <div class="foot">212 HĐ ÷ 508 KH từng ở N2/N1 · ⚠ công thức cũ, xem ADR-0007</div>
-            </div>
-          </section>
-
-          <section class="team-grid" aria-label="Lịch hẹn hôm nay theo team">
-            <div class="card team-card">
-              <div class="card-head">
-                <h2>Team Sao Mai</h2>
-                <span class="tl">TL Nguyễn Thu Hà</span>
-                <span class="actions meta num">2/6 đã gặp</span>
-              </div>
-              <table class="appt">
-                <tbody>
-                  <tr>
-                    <td class="num">08:30</td>
-                    <td>
-                      <div class="who">
-                        <span class="avatar">PL</span>
-                        <div><div class="name">Phạm Gia Long <span class="badge st-n2">N2</span></div><div class="id">RE Đỗ Khánh Linh · K-7F3Q</div></div>
-                      </div>
-                    </td>
-                    <td class="r"><span class="badge c-ok plain">Đã gặp</span></td>
-                  </tr>
-                  <tr>
-                    <td class="num">10:00</td>
-                    <td>
-                      <div class="who">
-                        <span class="avatar">VT</span>
-                        <div><div class="name">Vũ Thanh Tâm <span class="badge st-n3">N3</span></div><div class="id">RE Hoàng Nam · K-2M8D</div></div>
-                      </div>
-                    </td>
-                    <td class="r"><span class="badge c-ok plain">Đã gặp</span></td>
-                  </tr>
-                  <tr class="selected">
-                    <td class="num">14:00</td>
-                    <td>
-                      <div class="who">
-                        <span class="avatar">TA</span>
-                        <div><div class="name">Trịnh Minh Anh <span class="badge st-n1">N1</span></div><div class="id">RE Đỗ Khánh Linh · K-9A1C · + TL, IS</div></div>
-                      </div>
-                    </td>
-                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
-                  </tr>
-                  <tr>
-                    <td class="num">15:30</td>
-                    <td>
-                      <div class="who">
-                        <span class="avatar">NH</span>
-                        <div><div class="name">Ngô Bảo Hân <span class="badge st-n4">N4</span></div><div class="id">RE Lý Quang Vinh · K-4T6R</div></div>
-                      </div>
-                    </td>
-                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
-                  </tr>
-                  <tr>
-                    <td class="num">16:30</td>
-                    <td>
-                      <div class="who">
-                        <span class="avatar">ĐK</span>
-                        <div><div class="name">Đặng Quốc Khánh <span class="badge st-n2">N2</span></div><div class="id">RE Mai Phương · K-8W2E · + BDM</div></div>
-                      </div>
-                    </td>
-                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
-                  </tr>
-                  <tr>
-                    <td class="num">17:00</td>
-                    <td>
-                      <div class="who">
-                        <span class="avatar">LH</span>
-                        <div><div class="name">Lâm Thị Hường <span class="badge st-n3">N3</span></div><div class="id">RE Hoàng Nam · K-1B5N</div></div>
-                      </div>
-                    </td>
-                    <td class="r"><span class="badge c-warn plain">Hoãn</span></td>
-                  </tr>
-                </tbody>
-              </table>
-              <div class="team-foot num"><div><b>15</b>RF</div><div><b>10</b>HĐ nộp</div><div><b>5,6 tỷ</b>Doanh số</div><div><b>44,1%</b>Tỉ lệ chốt</div></div>
-            </div>
-
-            <div class="card team-card">
-              <div class="card-head">
-                <h2>Team Bình Minh</h2>
-                <span class="tl">TL Trần Quốc Bảo</span>
-                <span class="actions meta num">3/6 đã gặp</span>
-              </div>
-              <table class="appt">
-                <tbody>
-                  <tr>
-                    <td class="num">08:00</td>
-                    <td><div class="who"><span class="avatar">CĐ</span><div><div class="name">Cao Văn Đức <span class="badge st-n3">N3</span></div><div class="id">RE Tạ Hải Yến · K-3H7P</div></div></div></td>
-                    <td class="r"><span class="badge c-ok plain">Đã gặp</span></td>
-                  </tr>
-                  <tr>
-                    <td class="num">09:30</td>
-                    <td><div class="who"><span class="avatar">BT</span><div><div class="name">Bùi Ngọc Trâm <span class="badge st-n1">N1</span></div><div class="id">RE Phan Tuấn · K-6C9X · + BD</div></div></div></td>
-                    <td class="r"><span class="badge c-ok plain">Đã gặp</span></td>
-                  </tr>
-                  <tr>
-                    <td class="num">11:00</td>
-                    <td><div class="who"><span class="avatar">HP</span><div><div class="name">Hồ Thành Phát <span class="badge st-n4">N4</span></div><div class="id">RE Tạ Hải Yến · K-5J2L</div></div></div></td>
-                    <td class="r"><span class="badge c-ok plain">Đã gặp</span></td>
-                  </tr>
-                  <tr>
-                    <td class="num">14:30</td>
-                    <td><div class="who"><span class="avatar">DQ</span><div><div class="name">Dương Mỹ Quyên <span class="badge st-n2">N2</span></div><div class="id">RE Kiều Minh · K-0R4S</div></div></div></td>
-                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
-                  </tr>
-                  <tr>
-                    <td class="num">16:00</td>
-                    <td><div class="who"><span class="avatar">TS</span><div><div class="name">Tôn Thất Sơn <span class="badge st-n2">N2</span></div><div class="id">RE Phan Tuấn · K-7V1K · + TL</div></div></div></td>
-                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
-                  </tr>
-                  <tr>
-                    <td class="num">18:30</td>
-                    <td><div class="who"><span class="avatar">LV</span><div><div class="name">La Hoài Vy <span class="badge st-n3">N3</span></div><div class="id">RE Kiều Minh · K-2Z8M</div></div></div></td>
-                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
-                  </tr>
-                </tbody>
-              </table>
-              <div class="team-foot num"><div><b>13</b>RF</div><div><b>8</b>HĐ nộp</div><div><b>4,8 tỷ</b>Doanh số</div><div><b>41,5%</b>Tỉ lệ chốt</div></div>
-            </div>
-
-            <div class="card team-card">
-              <div class="card-head">
-                <h2>Team Hừng Đông</h2>
-                <span class="tl">TL Lê Minh Châu</span>
-                <span class="actions meta num">1/5 đã gặp</span>
-              </div>
-              <table class="appt">
-                <tbody>
-                  <tr>
-                    <td class="num">09:00</td>
-                    <td><div class="who"><span class="avatar">KT</span><div><div class="name">Khúc Duy Thịnh <span class="badge st-n3">N3</span></div><div class="id">RE Âu Gia Bảo · K-9D3F</div></div></div></td>
-                    <td class="r"><span class="badge c-ok plain">Đã gặp</span></td>
-                  </tr>
-                  <tr>
-                    <td class="num">13:30</td>
-                    <td><div class="who"><span class="avatar">QN</span><div><div class="name">Quách Thảo Nhi <span class="badge st-n1">N1</span></div><div class="id">RE Văn Thùy · K-1G6H · + IS</div></div></div></td>
-                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
-                  </tr>
-                  <tr>
-                    <td class="num">15:00</td>
-                    <td><div class="who"><span class="avatar">MĐ</span><div><div class="name">Mạc Tiến Đạt <span class="badge st-n4">N4</span></div><div class="id">RE Âu Gia Bảo · K-4N7Y</div></div></div></td>
-                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
-                  </tr>
-                  <tr>
-                    <td class="num">16:00</td>
-                    <td><div class="who"><span class="avatar">YL</span><div><div class="name">Yên Khánh Ly <span class="badge st-hold">Tạm hoãn</span></div><div class="id">RE Nghiêm Tú · K-8P0T</div></div></div></td>
-                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
-                  </tr>
-                  <tr>
-                    <td class="num">19:00</td>
-                    <td><div class="who"><span class="avatar">SH</span><div><div class="name">Sầm Minh Hiếu <span class="badge st-n2">N2</span></div><div class="id">RE Văn Thùy · K-6E2U</div></div></div></td>
-                    <td class="r"><span class="badge c-info plain">Dự kiến</span></td>
-                  </tr>
-                </tbody>
-              </table>
-              <div class="team-foot num"><div><b>10</b>RF</div><div><b>6</b>HĐ nộp</div><div><b>3,8 tỷ</b>Doanh số</div><div><b>38,9%</b>Tỉ lệ chốt</div></div>
-            </div>
-          </section>
-
-          <section class="bottom-grid">
-            <div class="card">
-              <div class="card-head">
-                <h2>So sánh team</h2>
-                <span class="meta num">01/09 – 28/09/2026</span>
-                <span class="actions"><span class="select">Chỉ số: <b>Doanh số</b> ▾</span></span>
-              </div>
-              <table>
-                <thead>
-                  <tr><th class="sort">Team</th><th class="sort r">Đã gặp</th><th class="sort r">RF</th><th class="sort r">HĐ nộp</th><th class="sort r">Case size</th><th class="sort desc" style="width: 34%">Doanh số</th><th class="sort r">Tỉ lệ chốt</th></tr>
-                </thead>
-                <tbody class="num">
-                  <tr><td>Sao Mai</td><td class="r">118</td><td class="r">15</td><td class="r">10</td><td class="r">7,4 tỷ</td><td><div class="inline-bar"><div class="bar"><span style="width: 100%; background: var(--accent)"></span></div>5,6 tỷ</div></td><td class="r">44,1%</td></tr>
-                  <tr><td>Bình Minh</td><td class="r">104</td><td class="r">13</td><td class="r">8</td><td class="r">6,2 tỷ</td><td><div class="inline-bar"><div class="bar"><span style="width: 86%; background: var(--accent)"></span></div>4,8 tỷ</div></td><td class="r">41,5%</td></tr>
-                  <tr><td>Hừng Đông</td><td class="r">91</td><td class="r">10</td><td class="r">6</td><td class="r">5,0 tỷ</td><td><div class="inline-bar"><div class="bar"><span style="width: 68%; background: var(--accent)"></span></div>3,8 tỷ</div></td><td class="r">38,9%</td></tr>
-                  <tr class="total"><td>Tổng</td><td class="r">313</td><td class="r">38</td><td class="r">24</td><td class="r">18,6 tỷ</td><td><div class="inline-bar"><span></span>14,2 tỷ</div></td><td class="r">41,7%</td></tr>
-                </tbody>
-              </table>
-
-              <div class="subhead">Lịch hẹn 7 ngày tới</div>
-              <div class="week num">
-                <div class="d on"><span>T2 28/09</span><b>17</b><i style="width: calc((100% - 16px) * 1)"></i></div>
-                <div class="d"><span>T3 29/09</span><b>14</b><i style="width: calc((100% - 16px) * 0.82)"></i></div>
-                <div class="d"><span>T4 30/09</span><b>15</b><i style="width: calc((100% - 16px) * 0.88)"></i></div>
-                <div class="d"><span>T5 01/10</span><b>12</b><i style="width: calc((100% - 16px) * 0.7)"></i></div>
-                <div class="d"><span>T6 02/10</span><b>16</b><i style="width: calc((100% - 16px) * 0.94)"></i></div>
-                <div class="d"><span>T7 03/10</span><b>5</b><i style="width: calc((100% - 16px) * 0.3)"></i></div>
-                <div class="d"><span>CN 04/10</span><b>1</b><i style="width: calc((100% - 16px) * 0.06)"></i></div>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="card-head">
-                <h2>Top RE</h2>
-                <span class="meta num">01/09 – 28/09/2026</span>
-                <span class="actions"><span class="select">Team: <b>Tất cả</b> ▾</span></span>
-              </div>
-              <table class="rank">
-                <thead>
-                  <tr><th class="sort">RE</th><th class="sort">Team</th><th class="sort r">Đã gặp</th><th class="sort r">RF</th><th class="sort r">HĐ nộp</th><th class="sort r desc">Doanh số</th></tr>
-                </thead>
-                <tbody class="num">
-                  <tr><td>Đỗ Khánh Linh</td><td class="dim">Sao Mai</td><td class="r">21</td><td class="r">6</td><td class="r">4</td><td class="r">2,1 tỷ</td></tr>
-                  <tr><td>Phan Tuấn</td><td class="dim">Bình Minh</td><td class="r">18</td><td class="r">5</td><td class="r">3</td><td class="r">1,7 tỷ</td></tr>
-                  <tr><td>Văn Thùy</td><td class="dim">Hừng Đông</td><td class="r">16</td><td class="r">4</td><td class="r">3</td><td class="r">1,4 tỷ</td></tr>
-                  <tr><td>Hoàng Nam</td><td class="dim">Sao Mai</td><td class="r">19</td><td class="r">4</td><td class="r">2</td><td class="r">1,2 tỷ</td></tr>
-                  <tr><td>Tạ Hải Yến</td><td class="dim">Bình Minh</td><td class="r">15</td><td class="r">3</td><td class="r">2</td><td class="r">950 tr</td></tr>
-                  <tr><td>Kiều Minh</td><td class="dim">Bình Minh</td><td class="r">14</td><td class="r">3</td><td class="r">2</td><td class="r">880 tr</td></tr>
-                  <tr><td>Âu Gia Bảo</td><td class="dim">Hừng Đông</td><td class="r">17</td><td class="r">3</td><td class="r">1</td><td class="r">720 tr</td></tr>
-                  <tr><td>Mai Phương</td><td class="dim">Sao Mai</td><td class="r">13</td><td class="r">2</td><td class="r">1</td><td class="r">650 tr</td></tr>
-                </tbody>
-              </table>
-              <div class="more-link">Xem cả 30 RE →</div>
-            </div>
-          </section>
-
-          <div class="mock-note">Mockup G3 · dữ liệu giả lập · bấm một dòng lịch hẹn → màn hình Lịch hẹn</div>
         </div>
-      </div>
-    </div>
+
+        <section class="card">
+          <div class="card-head"><h3 style="color: var(--heading)">Khối ↔ chỉ số ↔ định nghĩa</h3><span class="meta">spec G2 <code>phase-4-chi-so.md</code></span></div>
+          <table class="spec">
+            <thead><tr><th>Khối</th><th>Chỉ số · định nghĩa nguồn</th><th>Toàn bộ</th><th>Team</th><th>RE</th><th>Rỗng / 0 RF</th></tr></thead>
+            <tbody>
+              <tr><td>Lịch hẹn</td><td>Đã gặp / Tổng + Dời – hủy – không đến, Chưa ghi kết quả, Dự kiến — §1 (mỗi bản ghi một lần, ở kỳ của ngày của nó; RE ghi trên cuộc hẹn). Cả kỳ, kể cả ngày sau hôm nay.</td><td>✓</td><td>✓ cộng mọi team</td><td>✓</td><td>Không lịch: "0 / 0", thanh ghi "chưa có lịch". Không so kỳ trước.</td></tr>
+              <tr><td>6 ô KPI</td><td>Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số (ADR-0007), Tỉ lệ chốt = HĐ phát hành ÷ RF cùng kỳ (§4.1). Tới hôm nay. So kỳ trước §4.2 (C01–C09): số / tiền ▲ ▼ =, tỉ lệ chốt theo điểm %.</td><td>✓</td><td>✓ cộng mọi team</td><td>✓</td><td>0 RF → tỉ lệ chốt "—", không so. Kỳ chưa bắt đầu → "—" cả 6 ô. Tùy chọn, kỳ trước ngoài miền 1900–2100 → không có dòng so.</td></tr>
+              <tr><td>4 ô N4–N1</td><td>Ảnh chụp cuối ngày mốc (§2): mốc = ngày cuối kỳ, kỳ chưa hết → hôm nay. RE hiện tại của KH.</td><td>✓</td><td>✓ cộng mọi team</td><td>✓</td><td>Kỳ chưa bắt đầu → "—". Không KH → 0.</td></tr>
+              <tr><td>Chart N4–N1</td><td>Cột chồng 4 màu, mỗi cột = ảnh chụp cuối mốc con (§2.8: Ngày 1 cột · Tuần 7 · Tháng từng ngày · Năm 12 tháng · Tùy chọn ≤ 31 ngày từng ngày, dài hơn từng tháng). Cột sau hôm nay trống. Tooltip: formatter mặc định / escape tên (F-18).</td><td>1 chart</td><td>mỗi team 1 chart, ẩn ô chọn team</td><td>1 chart</td><td>Kỳ chưa bắt đầu: mọi cột trống + "Kỳ chưa bắt đầu".</td></tr>
+              <tr><td>So sánh team</td><td>Đã gặp, Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt; dòng Tổng = cộng, tỉ lệ chốt Tổng = Σ HĐ phát hành ÷ Σ RF (§4.1, G09–G11).</td><td>✓</td><td>✓</td><td>ẩn</td><td>Tỉ lệ chốt dòng 0 RF → "—". Tiền 0 → "0 ₫" (<code>formatVndCompact</code>).</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </section>
+
+      <!-- ================= 1b ================= -->
+      <section class="part" aria-labelledby="p1b">
+        <div class="part-head"><h2 id="p1b">1b · Team · Tuần 12/10 – 18/10/2026</h2><span class="idea">ý 9</span></div>
+        <ul class="notes">
+          <li>Góc nhìn <b>Team</b> trên Tổng quan: <b>ẩn ô chọn team</b>; luôn mỗi team một chart (số chart = số team, seed có 3). Ô Lịch hẹn, 6 ô KPI, 4 ô N4–N1 và bảng So sánh team: bố cục như 1a, số cộng mọi team.</li>
+          <li>Kỳ Tuần: 7 cột (T2–CN); hôm nay Thứ Năm nên 3 cột cuối trống. Ví dụ đang <b>tắt N4</b> (bấm ô N4): ô N4 viền đứt, số mờ, chart chỉ còn N3–N1 và trục y co lại — nhóm nhỏ dễ đọc hơn. Bấm lại để hiện. Tắt / bật áp cho cả 3 chart.</li>
+        </ul>
+        <div class="frame">
+          <header class="topbar">
+            <h1>Tổng quan</h1>
+            <div class="spacer"></div>
+            <div class="segmented"><button>Toàn bộ</button><button class="on">Team</button><button>RE</button></div>
+          </header>
+          <div class="content">
+            <div class="tools">
+              <div class="segmented"><button>Ngày</button><button class="on">Tuần</button><button>Tháng</button><button>Năm</button><button>Tùy chọn</button></div>
+              <span class="period"><span class="step">‹</span><span class="range">12/10 – 18/10/2026</span><span class="step">›</span></span>
+              <button class="btn btn-sm">Hôm nay</button>
+              <button class="btn btn-sm">Lọc</button>
+              <div class="spacer"></div>
+              <span class="viewing">Đang xem: <b>12/10 – 18/10/2026</b> · <b>Team</b> (3 team)</span>
+            </div>
+            <div class="elided">Ô Lịch hẹn · 6 ô KPI (so với 05/10 – 08/10, C04) — như 1a, cộng mọi team</div>
+            <section class="card">
+              <div class="card-head">
+                <h2 style="color: var(--heading)">Khách hàng theo nhóm</h2>
+                <span class="meta num">ảnh chụp cuối ngày 15/10/2026 (hôm nay) · cộng 3 team</span>
+                <span class="src">§2</span>
+              </div>
+              <div class="stage-tiles num">
+                <button class="stile off" style="--c: var(--n4)"><span class="badge st-n4">N4</span><span class="hidden-tag">đang ẩn</span><b>512</b></button>
+                <button class="stile" style="--c: var(--n3)"><span class="badge st-n3">N3</span><b>268</b></button>
+                <button class="stile" style="--c: var(--n2)"><span class="badge st-n2">N2</span><b>131</b></button>
+                <button class="stile" style="--c: var(--n1)"><span class="badge st-n1">N1</span><b>64</b></button>
+              </div>
+              <div class="team-charts">
+                <div><h3>Team Bình Minh <span class="meta">N3 90 · N2 44 · N1 22</span></h3><div class="chart short" id="chart-bm"></div></div>
+                <div><h3>Team Hừng Đông <span class="meta">N3 86 · N2 42 · N1 18</span></h3><div class="chart short" id="chart-hd"></div></div>
+                <div><h3>Team Sao Mai <span class="meta">N3 92 · N2 45 · N1 24</span></h3><div class="chart short" id="chart-sm"></div></div>
+              </div>
+            </section>
+            <div class="elided">So sánh team — như 1a</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 1c ================= -->
+      <section class="part" aria-labelledby="p1c">
+        <div class="part-head"><h2 id="p1c">1c · RE · Năm 2026</h2><span class="idea">ý 9</span></div>
+        <ul class="notes">
+          <li>Góc nhìn <b>RE</b>: chọn RE ở thanh đầu trang (danh sách theo team rồi tên, như <code>reOptions</code>). Một chart; <b>không có bảng So sánh team</b>.</li>
+          <li>Năm chưa hết: so theo <b>cùng ngày tháng</b> của năm trước, 01/01 → 15/10/2025 (§4.2 mục 3, C06). Chart 12 cột = cuối mỗi tháng; tháng 10 = hôm nay; tháng 11, 12 trống.</li>
+        </ul>
+        <div class="frame">
+          <header class="topbar">
+            <h1>Tổng quan</h1>
+            <div class="spacer"></div>
+            <div class="segmented"><button>Toàn bộ</button><button>Team</button><button class="on">RE</button></div>
+            <span class="select">RE: <b>Bùi Ngọc Trâm</b> · Bình Minh ▾</span>
+          </header>
+          <div class="content">
+            <div class="tools">
+              <div class="segmented"><button>Ngày</button><button>Tuần</button><button>Tháng</button><button class="on">Năm</button><button>Tùy chọn</button></div>
+              <span class="period"><span class="step">‹</span><span class="range">Năm 2026</span><span class="step">›</span></span>
+              <button class="btn btn-sm">Hôm nay</button>
+              <button class="btn btn-sm">Lọc</button>
+              <div class="spacer"></div>
+              <span class="viewing">Đang xem: <b>Năm 2026</b> · 01/01 – 15/10/2026 · RE <b>Bùi Ngọc Trâm</b></span>
+            </div>
+            <div class="top">
+              <div class="appt-tile">
+                <div class="label">Lịch hẹn · cả năm <span class="src">§1</span></div>
+                <div class="value">112 <small>/ 138</small></div>
+                <div class="foot">đã gặp / tổng lịch</div>
+                <div class="mbar" data-bar="112,16,1,9"></div>
+                <ul class="groups num">
+                  <li><i class="g-met"></i>Đã gặp<b>112</b></li>
+                  <li><i class="g-miss"></i>Dời – hủy – không đến<b>16</b></li>
+                  <li><i class="g-unrec"></i>Chưa ghi kết quả<b>1</b></li>
+                  <li><i class="g-plan"></i>Dự kiến<b>9</b></li>
+                </ul>
+              </div>
+              <div class="kpis-6">
+                <div class="kpi"><div class="label">Chuyển RF</div><div class="value">14</div><div class="foot"><span class="up">▲ 3</span> so với 01/01 – 15/10/2025</div></div>
+                <div class="kpi"><div class="label">HĐ nộp</div><div class="value">8</div><div class="foot"><span class="down">▼ 1</span> so với 01/01 – 15/10/2025</div></div>
+                <div class="kpi"><div class="label">Case size</div><div class="value">360 <small>tr</small></div><div class="foot"><span class="down">▼ 50 tr</span> so với 01/01 – 15/10/2025</div></div>
+                <div class="kpi"><div class="label">HĐ phát hành</div><div class="value">6</div><div class="foot"><span class="same">=</span> so với 01/01 – 15/10/2025</div></div>
+                <div class="kpi"><div class="label">Doanh số</div><div class="value">255 <small>tr</small></div><div class="foot"><span class="up">▲ 25 tr</span> so với 01/01 – 15/10/2025</div></div>
+                <div class="kpi"><div class="label">Tỉ lệ chốt</div><div class="value">42,9<small>%</small></div><div class="foot"><span class="down">▼ 11,6 điểm %</span> so với 01/01 – 15/10/2025 <span class="formula">· 6 ÷ 14 RF</span></div></div>
+              </div>
+            </div>
+            <section class="card">
+              <div class="card-head">
+                <h2 style="color: var(--heading)">Khách hàng theo nhóm</h2>
+                <span class="meta num">ảnh chụp cuối ngày 15/10/2026 (hôm nay)</span>
+                <span class="src">§2</span>
+              </div>
+              <div class="stage-tiles num">
+                <button class="stile" style="--c: var(--n4)"><span class="badge st-n4">N4</span><b>18</b></button>
+                <button class="stile" style="--c: var(--n3)"><span class="badge st-n3">N3</span><b>9</b></button>
+                <button class="stile" style="--c: var(--n2)"><span class="badge st-n2">N2</span><b>5</b></button>
+                <button class="stile" style="--c: var(--n1)"><span class="badge st-n1">N1</span><b>3</b></button>
+              </div>
+              <div class="chart" id="chart-re"></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 1d ================= -->
+      <section class="part" aria-labelledby="p1d">
+        <div class="part-head"><h2 id="p1d">1d · Đã đổi kỳ / góc nhìn, chưa bấm Lọc</h2><span class="idea">ý 9</span></div>
+        <ul class="notes">
+          <li>Lựa chọn khác với số đang hiện → nút <b>Lọc</b> chuyển vàng (có chấm) + dòng nhắc; số trên màn giữ nguyên tới khi bấm Lọc. Chọn lại đúng kỳ + góc nhìn đang xem → nút về bình thường.</li>
+          <li>Góc nhìn ở thanh đầu trang dùng chung với Khách hàng / Lịch hẹn (các màn đó vẫn áp dụng ngay như hiện nay). Quay lại Tổng quan: kỳ + góc nhìn đang chọn được áp dụng sẵn.</li>
+        </ul>
+        <div class="frame">
+          <header class="topbar">
+            <h1>Tổng quan</h1>
+            <div class="spacer"></div>
+            <div class="segmented"><button>Toàn bộ</button><button>Team</button><button class="on">RE</button></div>
+            <span class="select">RE: <b>Bùi Ngọc Trâm</b> · Bình Minh ▾</span>
+          </header>
+          <div class="content">
+            <div class="tools">
+              <div class="segmented"><button>Ngày</button><button>Tuần</button><button>Tháng</button><button class="on">Năm</button><button>Tùy chọn</button></div>
+              <span class="period"><span class="step">‹</span><span class="range">Năm 2026</span><span class="step">›</span></span>
+              <button class="btn btn-sm">Hôm nay</button>
+              <button class="btn btn-sm pending">Lọc</button>
+              <span class="hint-pending">Đã đổi kỳ / góc nhìn — bấm Lọc để cập nhật</span>
+              <div class="spacer"></div>
+              <span class="viewing">Đang xem: <b>Tháng 10/2026</b> <span class="mtd">MTD</span> 01/10 – 15/10/2026 · <b>Toàn bộ</b></span>
+            </div>
+            <div class="elided">Số trên màn vẫn là của Tháng 10/2026 · Toàn bộ (như 1a)</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 1e ================= -->
+      <section class="part" aria-labelledby="p1e">
+        <div class="part-head"><h2 id="p1e">1e · Trạng thái rỗng, 0 RF, không so</h2></div>
+        <div class="states">
+          <section class="card">
+            <p class="cap">Kỳ chưa bắt đầu · Tháng 11/2026 <span class="was">(C08)</span></p>
+            <div class="appt-tile">
+              <div class="label">Lịch hẹn · cả tháng</div>
+              <div class="value">0 <small>/ 14</small></div>
+              <div class="mbar" data-bar="0,0,0,14"></div>
+            </div>
+            <div class="kpi"><div class="label">Chuyển RF</div><div class="value muted">—</div><div class="foot">kỳ chưa bắt đầu</div></div>
+            <div class="stage-tiles num" style="margin: 0; grid-template-columns: repeat(2, minmax(0, 1fr))">
+              <span class="stile" style="--c: var(--n4)"><span class="badge st-n4">N4</span><b class="muted">—</b></span>
+              <span class="stile" style="--c: var(--n3)"><span class="badge st-n3">N3</span><b class="muted">—</b></span>
+              <span class="stile" style="--c: var(--n2)"><span class="badge st-n2">N2</span><b class="muted">—</b></span>
+              <span class="stile" style="--c: var(--n1)"><span class="badge st-n1">N1</span><b class="muted">—</b></span>
+            </div>
+            <div class="chart short" id="chart-future"></div>
+          </section>
+          <section class="card">
+            <p class="cap">0 RF · và kỳ trước 0 RF</p>
+            <div class="kpi"><div class="label">Tỉ lệ chốt</div><div class="value muted">—</div><div class="foot">0 RF trong kỳ · không so</div></div>
+            <div class="kpi"><div class="label">Tỉ lệ chốt</div><div class="value">66,7<small>%</small></div><div class="foot">— kỳ trước 0 RF, không so <span class="formula">· 2 ÷ 3 RF</span></div></div>
+            <div class="kpi"><div class="label">Chuyển RF</div><div class="value">3</div><div class="foot"><span class="up">▲ 3</span> so với 01/12 – 15/12/2026</div></div>
+            <p class="notes" style="padding: 0">Ví dụ số của spec §4.2 (golden <code>chi-so.md</code>, hôm nay 15/01/2027, Tháng 01 MTD).</p>
+          </section>
+          <section class="card">
+            <p class="cap">Tùy chọn · kỳ trước ngoài miền · không có dữ liệu</p>
+            <div class="kpi"><div class="label">Doanh số</div><div class="value">1,2 <small>tỷ</small></div><div class="foot">Kỳ Tùy chọn không so với kỳ trước (C09)</div></div>
+            <div class="kpi"><div class="label">HĐ nộp</div><div class="value">4</div><div class="foot">Năm 1900: kỳ trước ngoài miền 1900–2100 · không so (§3.5)</div></div>
+            <div class="appt-tile">
+              <div class="label">Lịch hẹn · cả năm (Năm 2000)</div>
+              <div class="value">0 <small>/ 0</small></div>
+              <div class="mbar" data-bar="0,0,0,0"></div>
+            </div>
+            <div class="kpi"><div class="label">Case size</div><div class="value">0 <small>₫</small></div><div class="foot">= so với 01/01 – 31/12/1999</div></div>
+          </section>
+        </div>
+      </section>
+
+      <!-- ================= 2 ================= -->
+      <section class="part" aria-labelledby="p2">
+        <div class="part-head"><h2 id="p2">2 · Màn Lịch hẹn: 4 nhóm đếm thay 3</h2><span class="idea">spec §1</span></div>
+        <ul class="notes">
+          <li>Spec §1 (G2 03/10): lịch đã qua mà còn <b>Đã lên lịch</b> tách khỏi Dự kiến thành nhóm <b>"Chưa ghi kết quả"</b>; lịch hôm nay vẫn là Dự kiến. Lịch tháng, thanh của lưới năm (B6), dòng đếm của kỳ và ô Lịch hẹn của Tổng quan dùng chung 4 nhóm, cùng màu, cùng thứ tự: <b>Đã gặp · Dời – hủy – không đến · Chưa ghi kết quả · Dự kiến</b>.</li>
+          <li>Cần <b>màu mới</b> cho nhóm này (token <code>--appt-unrecorded</code>). Hai phương án, Owner chọn: <b>A — đỏ</b> (<code>--danger</code>, "cần ghi kết quả", nổi nhất); <b>B — xanh dương sọc</b> (lịch dự kiến đã quá ngày; không thêm màu mới vào bảng màu). Em đề xuất <b>A</b>: nhóm này là việc cần làm, phải thấy ngay; số trong thanh và chú giải luôn có chữ nên không chỉ dựa vào màu.</li>
+          <li>Đề xuất kèm: cột Trạng thái của danh sách lịch hẹn hiện <b>"Chưa ghi kết quả"</b> cho lịch đã qua còn Đã lên lịch (chỉ hiển thị, dữ liệu không đổi), để khớp số đếm.</li>
+          <li>Lịch tháng: chấm <b>Chưa ghi kết quả đứng đầu</b> ô ngày (rồi Dời – hủy – không đến, Đã gặp, Dự kiến) để ngày nhiều lịch (&gt; 8 chấm, vd. 14/10) không che mất nó.</li>
+          <li>Dòng đếm của kỳ (thanh công cụ Lịch hẹn): <span class="num">"172 lịch · 64 đã gặp · 5 chưa ghi kết quả"</span> — phần cuối chỉ hiện khi &gt; 0.</li>
+        </ul>
+        <div class="opts">
+          <section class="card optA chosen">
+            <p class="cap">A · Đỏ <code>--danger</code> · <span class="chosen-tag">Claude đề xuất</span></p>
+            <div class="stack">
+              <div class="summary-line">Tháng 10/2026 · <b>172 lịch · 64 đã gặp · 5 chưa ghi kết quả</b></div>
+              <div class="cal" id="cal-a"></div>
+              <div class="lg"><span><i class="met"></i>Đã gặp</span><span><i class="miss"></i>Dời lịch / hủy / không đến</span><span><i class="unrec"></i>Chưa ghi kết quả</span><span><i class="plan-ring"></i>Dự kiến</span></div>
+              <div class="ycells" id="year-a"></div>
+              <table>
+                <thead><tr><th class="sort desc">Ngày</th><th>Giờ</th><th>Khách hàng</th><th>Trạng thái</th></tr></thead>
+                <tbody class="num">
+                  <tr><td class="d today">15/10/2026</td><td>14:00</td><td>Nghiêm Hoài An</td><td><span class="badge plain c-info">Dự kiến</span></td></tr>
+                  <tr><td class="d past">14/10/2026</td><td>16:30</td><td>Lưu Quang Đạt</td><td><span class="badge plain unrec">Chưa ghi kết quả</span></td></tr>
+                  <tr><td class="d past">14/10/2026</td><td>09:00</td><td>Hà Minh Tuấn</td><td><span class="badge plain c-ok">Đã gặp</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section class="card optB">
+            <p class="cap">B · Xanh dương sọc</p>
+            <div class="stack">
+              <div class="summary-line">Tháng 10/2026 · <b>172 lịch · 64 đã gặp · 5 chưa ghi kết quả</b></div>
+              <div class="cal" id="cal-b"></div>
+              <div class="lg"><span><i class="met"></i>Đã gặp</span><span><i class="miss"></i>Dời lịch / hủy / không đến</span><span><i class="unrec"></i>Chưa ghi kết quả</span><span><i class="plan-ring"></i>Dự kiến</span></div>
+              <div class="ycells" id="year-b"></div>
+              <table>
+                <thead><tr><th class="sort desc">Ngày</th><th>Giờ</th><th>Khách hàng</th><th>Trạng thái</th></tr></thead>
+                <tbody class="num">
+                  <tr><td class="d today">15/10/2026</td><td>14:00</td><td>Nghiêm Hoài An</td><td><span class="badge plain c-info">Dự kiến</span></td></tr>
+                  <tr><td class="d past">14/10/2026</td><td>16:30</td><td>Lưu Quang Đạt</td><td><span class="badge plain unrec">Chưa ghi kết quả</span></td></tr>
+                  <tr><td class="d past">14/10/2026</td><td>09:00</td><td>Hà Minh Tuấn</td><td><span class="badge plain c-ok">Đã gặp</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- ================= Questions ================= -->
+      <section class="card" aria-labelledby="ask">
+        <div class="card-head"><h2 id="ask">Cần Owner chốt (G3)</h2><span class="meta">Báo cáo: xem cuối <a href="reports.html" style="color: var(--accent)">reports.html</a></span></div>
+        <ol class="notes ask">
+          <li><b>Màu "Chưa ghi kết quả":</b> A đỏ (đề xuất) hay B xanh dương sọc (phần 2).</li>
+          <li><b>Badge "Chưa ghi kết quả"</b> ở cột Trạng thái danh sách lịch hẹn cho lịch đã qua còn Đã lên lịch (đề xuất: có).</li>
+          <li><b>Khối lịch trong ngày / 7 ngày tới</b> của mockup cũ: đề xuất <b>bỏ</b> — Tổng quan xem theo kỳ, còn khối "Trong ngày" đã có ở màn Lịch hẹn.</li>
+          <li><b>Bấm ô N4–N1 để ẩn / hiện nhóm</b> trên chart (1b): đề xuất có.</li>
+        </ol>
+      </section>
+
+      <p class="mock-note">Mockup G3 · Phase 4 · dữ liệu giả lập · chart, lịch và lưới năm vẽ bằng script nhỏ trong file (app thật: ECharts + component sẵn có).</p>
+    </main>
+
+    <script>
+      const fmt = (n) => n.toLocaleString('vi-VN');
+
+      // ---------- 4-part bars ----------
+      const GROUPS = [
+        ['met', 'Đã gặp'],
+        ['miss', 'Dời lịch / hủy / không đến'],
+        ['unrec', 'Chưa ghi kết quả'],
+        ['plan', 'Dự kiến'],
+      ];
+      function bar(values, width) {
+        const total = values.reduce((s, v) => s + v, 0);
+        if (!total) return '<span class="empty">chưa có lịch</span>';
+        return GROUPS.map(([cls, label], i) => {
+          const n = values[i];
+          if (!n) return '';
+          const narrow = (n / total) * width < 22;
+          return `<span class="${cls} g-${cls}${narrow ? ' narrow' : ''}" style="flex:${n}" title="${label}: ${fmt(n)} lịch">${fmt(n)}</span>`;
+        }).join('');
+      }
+      document.querySelectorAll('[data-bar]').forEach((el) => {
+        el.innerHTML = bar(el.dataset.bar.split(',').map(Number), el.clientWidth || 280);
+      });
+
+      // ---------- Stacked column chart ----------
+      const STAGES = ['n1', 'n2', 'n3', 'n4']; // bottom → top
+      const NAMES = { n1: 'N1', n2: 'N2', n3: 'N3', n4: 'N4' };
+      function niceMax(v) {
+        const step = Math.pow(10, Math.floor(Math.log10(v)));
+        for (const m of [1, 2, 2.5, 5, 10]) if (m * step >= v) return m * step;
+        return 10 * step;
+      }
+      // cols: [{ label, values: {n1..n4} | null, today }]; opts: { hidden: [], showLabel(i), tip: index, empty }
+      function chart(id, cols, opts = {}) {
+        const el = document.getElementById(id);
+        const hidden = new Set(opts.hidden || []);
+        const shown = STAGES.filter((s) => !hidden.has(s));
+        const totals = cols.map((c) => (c.values ? shown.reduce((s, k) => s + c.values[k], 0) : 0));
+        const max = niceMax(Math.max(...totals, 1));
+        const ticks = [0, max / 2, max];
+        let y = '<div class="yaxis">';
+        if (!opts.empty) ticks.forEach((t) => (y += `<span style="bottom:${(t / max) * 100}%">${fmt(t)}</span>`));
+        y += '</div>';
+        let plot = '<div class="plot">';
+        ticks.slice(1).forEach((t) => (plot += `<div class="grid-line" style="bottom:${(t / max) * 100}%"></div>`));
+        plot += '<div class="cols">';
+        cols.forEach((c, i) => {
+          const cls = ['col'];
+          if (!c.values) cls.push('future');
+          if (c.today) cls.push('today');
+          if (opts.tip === i) cls.push('hover');
+          plot += `<div class="${cls.join(' ')}">`;
+          if (c.values) shown.forEach((k) => (plot += `<i class="s-${k}" style="height:${(c.values[k] / max) * 100}%"></i>`));
+          plot += '</div>';
+        });
+        plot += '</div>';
+        if (opts.empty) plot += `<div class="empty-note">${opts.empty}</div>`;
+        if (opts.tip !== undefined) {
+          const c = cols[opts.tip];
+          const left = ((opts.tip + 1) / cols.length) * 100;
+          plot +=
+            `<div class="tip" style="left:calc(${left}% + 10px); top:10px">` +
+            `<div class="t">${c.tipTitle}</div>` +
+            ['n4', 'n3', 'n2', 'n1'].map((k) => `<div class="r"><i class="s-${k}"></i>${NAMES[k]}<b>${fmt(c.values[k])}</b></div>`).join('') +
+            `<div class="r sum">Tổng<b>${fmt(STAGES.reduce((s, k) => s + c.values[k], 0))}</b></div></div>`;
+        }
+        plot += '</div>';
+        let x = '<div class="xaxis">';
+        cols.forEach((c, i) => {
+          const show = opts.showLabel ? opts.showLabel(i, c) : true;
+          x += `<span class="${c.today ? 'today' : ''}">${show ? c.label : ''}</span>`;
+        });
+        x += '</div>';
+        el.innerHTML = y + plot + x;
+      }
+      const wave = (seed, i, size) => Math.round(Math.sin(seed * 12.9898 + i * 78.233) * size * 0.012);
+      const lerp = (a, b, t) => a + (b - a) * t;
+      function series(n, filled, from, to, seed) {
+        return Array.from({ length: n }, (_, i) => {
+          if (i >= filled) return null;
+          const t = filled === 1 ? 1 : i / (filled - 1);
+          const v = {};
+          STAGES.forEach((k, j) => {
+            const base = Math.round(lerp(from[k], to[k], t));
+            v[k] = i === filled - 1 ? to[k] : Math.max(0, base + wave(seed + j, i, base));
+          });
+          return v;
+        });
+      }
+      const pad = (n) => String(n).padStart(2, '0');
+
+      // 1a: month, daily, today = 15
+      const monthVals = series(31, 15, { n4: 530, n3: 260, n2: 125, n1: 58 }, { n4: 512, n3: 268, n2: 131, n1: 64 }, 1);
+      chart(
+        'chart-all',
+        monthVals.map((values, i) => ({ label: pad(i + 1), values, today: i === 14, tipTitle: `${pad(i + 1)}/10/2026 · cuối ngày` })),
+        { showLabel: (i) => [0, 4, 9, 14, 19, 24, 30].includes(i), tip: 14 },
+      );
+
+      // 1b: week, three teams, N4 hidden
+      const WEEK = ['T2 12', 'T3 13', 'T4 14', 'T5 15', 'T6 16', 'T7 17', 'CN 18'];
+      const team = (id, from, to, seed) =>
+        chart(
+          id,
+          series(7, 4, from, to, seed).map((values, i) => ({ label: WEEK[i], values, today: i === 3 })),
+          { hidden: ['n4'] },
+        );
+      team('chart-bm', { n4: 173, n3: 88, n2: 43, n1: 21 }, { n4: 170, n3: 90, n2: 44, n1: 22 }, 3);
+      team('chart-hd', { n4: 168, n3: 85, n2: 41, n1: 18 }, { n4: 166, n3: 86, n2: 42, n1: 18 }, 5);
+      team('chart-sm', { n4: 178, n3: 90, n2: 45, n1: 23 }, { n4: 176, n3: 92, n2: 45, n1: 24 }, 7);
+
+      // 1c: year, monthly, current = October
+      chart(
+        'chart-re',
+        series(12, 10, { n4: 24, n3: 6, n2: 3, n1: 1 }, { n4: 18, n3: 9, n2: 5, n1: 3 }, 9).map((values, i) => ({
+          label: `T${i + 1}`,
+          values,
+          today: i === 9,
+        })),
+      );
+
+      // 1e: period not started
+      chart(
+        'chart-future',
+        Array.from({ length: 30 }, (_, i) => ({ label: pad(i + 1), values: null })),
+        { showLabel: (i) => [0, 9, 19, 29].includes(i), empty: 'Kỳ chưa bắt đầu' },
+      );
+
+      // ---------- Part 2: month calendar + year cells (Oct 2026, today 15/10) ----------
+      const TODAY = 20261015;
+      const iso = (dt) => dt.getFullYear() * 10000 + (dt.getMonth() + 1) * 100 + dt.getDate();
+      // Day by day, so the month adds up to the Overview tile of 1a: 64 · 11 · 5 · 92 = 172.
+      // Oct 1–14: [met, missed, unrecorded]; Oct 15 (today): 2 met + 4 planned; then planned only.
+      const PAST = [[5, 1, 0], [6, 1, 0], [3, 0, 0], [0, 1, 0], [6, 1, 0], [5, 1, 1], [4, 1, 0], [5, 0, 0], [5, 1, 1], [2, 1, 0], [1, 0, 0], [6, 1, 1], [6, 1, 0], [8, 1, 2]];
+      const PLANNED = { 15: 4, 16: 8, 17: 3, 18: 2, 19: 7, 20: 8, 21: 6, 22: 7, 23: 8, 24: 3, 25: 1, 26: 7, 27: 6, 28: 7, 29: 6, 30: 7, 31: 2 };
+      function dayCounts(dt) {
+        const d = dt.getDate();
+        if (d <= 14) {
+          const [met, miss, unrec] = PAST[d - 1];
+          return { met, miss, unrec, plan: 0 };
+        }
+        return { met: d === 15 ? 2 : 0, miss: 0, unrec: 0, plan: PLANNED[d] };
+      }
+      const HEAD = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+      function calendar(id) {
+        const el = document.getElementById(id);
+        HEAD.forEach((h) => el.insertAdjacentHTML('beforeend', `<span class="h">${h}</span>`));
+        const first = new Date(2026, 9, 1);
+        const start = new Date(first);
+        start.setDate(1 - ((first.getDay() + 6) % 7));
+        const end = new Date(2026, 10, 1);
+        end.setDate(end.getDate() + ((7 - ((end.getDay() + 6) % 7)) % 7) - 1);
+        for (let dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
+          const inMonth = dt.getMonth() === 9;
+          const cls = ['cell'];
+          if ((dt.getDay() + 6) % 7 >= 5) cls.push('wk');
+          if (!inMonth) cls.push('out');
+          if (iso(dt) === TODAY) cls.push('today');
+          const c = inMonth ? dayCounts(dt) : { met: 0, miss: 0, unrec: 0, plan: 0 };
+          const n = c.met + c.miss + c.unrec + c.plan;
+          const dots = [
+            ...Array(c.unrec).fill('unrec'),
+            ...Array(c.miss).fill('miss'),
+            ...Array(c.met).fill('met'),
+            ...Array(c.plan).fill('plan'),
+          ]
+            .slice(0, 8)
+            .map((k) => `<i class="${k}"></i>`)
+            .join('');
+          el.insertAdjacentHTML(
+            'beforeend',
+            `<div class="${cls.join(' ')}"><span class="dn">${pad(dt.getDate())}</span><b>${inMonth && n ? n : ''}</b><span class="dots">${inMonth ? dots : ''}</span></div>`,
+          );
+        }
+      }
+      calendar('cal-a');
+      calendar('cal-b');
+
+      const YEAR = [
+        ['Tháng 8', [126, 31, 1, 0], ''],
+        ['Tháng 9', [154, 20, 2, 0], ''],
+        ['Tháng 10', [64, 11, 5, 92], 'current'],
+        ['Tháng 11', [0, 0, 0, 14], 'future'],
+      ];
+      function yearCells(id) {
+        const el = document.getElementById(id);
+        YEAR.forEach(([name, values, state]) => {
+          const total = values.reduce((s, v) => s + v, 0);
+          el.insertAdjacentHTML(
+            'beforeend',
+            `<div class="mcell ${state}"><span class="top2"><span class="mn">${name}</span><span class="tot"><b>${fmt(total)}</b>lịch</span></span>` +
+              `<span class="mbar">${bar(values, 120)}</span></div>`,
+          );
+        });
+      }
+      yearCells('year-a');
+      yearCells('year-b');
+    </script>
   </body>
 </html>
