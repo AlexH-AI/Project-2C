@@ -134,10 +134,13 @@ describe('rfCount', () => {
     expect(isRfAppointment(met, rf)).toBe(true);
   });
 
-  it('refuses to change a stage change list in place once indexed', () => {
+  it('leaves the stage change list untouched, so a later change is read', () => {
+    const met = appointment('ap', 5, 'MET', 'N3');
     const transitions = [move('N4', 'N3', 5, 'ap')];
-    isRfAppointment(appointment('ap', 5, 'MET', 'N3'), transitions);
-    expect(() => transitions.push(move('N3', 'N2', 5, 'ap'))).toThrow(TypeError);
+    expect(isRfAppointment(met, transitions)).toBe(false);
+    transitions.push(move('N3', 'N2', 5, 'ap'));
+    expect(Object.isFrozen(transitions)).toBe(false);
+    expect(isRfAppointment(met, transitions)).toBe(true);
   });
 
   it('counts for the RE on the appointment', () => {

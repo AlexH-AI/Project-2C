@@ -100,12 +100,21 @@ describe('inScope', () => {
     expect(inScope(before, 're-1', team)).toBe(true);
   });
 
-  it('refuses to change a people list in place once indexed, so it never reads a stale team', () => {
+  it('leaves the people list untouched, so a later change is read', () => {
     const people: Person[] = [{ id: 're-1', name: 'RE 1', role: 'RE', teamId: 'team-1' }];
-    inScope(people, 're-1', team);
-    expect(() => people.push({ id: 're-2', name: 'RE 2', role: 'RE', teamId: 'team-1' })).toThrow(
-      TypeError,
-    );
+    expect(inScope(people, 're-2', team)).toBe(false);
+    people.push({ id: 're-2', name: 'RE 2', role: 'RE', teamId: 'team-1' });
+    expect(Object.isFrozen(people)).toBe(false);
+    expect(inScope(people, 're-2', team)).toBe(true);
+  });
+
+  it('counts an RE for the team when any entry with that id is in the team', () => {
+    const people: readonly Person[] = [
+      { id: 're-1', name: 'RE 1', role: 'RE', teamId: 'team-1' },
+      { id: 're-1', name: 'RE 1', role: 'RE', teamId: 'team-2' },
+    ];
+    expect(inScope(people, 're-1', team)).toBe(true);
+    expect(inScope(people, 're-1', { kind: 'team', teamId: 'team-2' })).toBe(true);
   });
 
   it('leaves an RE outside any team, or not in the list, out of every team', () => {
