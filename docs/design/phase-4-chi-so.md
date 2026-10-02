@@ -101,11 +101,11 @@ Hàng cuối: kỳ Tùy chọn dời nguyên độ dài; nếu kỳ dời ra **m
 
 ### 4.2 So với kỳ trước (ô KPI Tổng quan)
 
-**Quyết định Owner 03/10/2026:** có so sánh, **cùng số ngày**. Áp cho 6 ô: Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt (ô Lịch hẹn và KH theo nhóm không so).
+**Quyết định Owner 03/10/2026:** có so sánh, **cùng số ngày** (trừ kỳ Năm: cùng ngày tháng, mục 3). Áp cho 6 ô: Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt (ô Lịch hẹn và KH theo nhóm không so).
 
 1. **Kỳ đã hết** → so với **cả** kỳ liền trước cùng loại.
-2. **Kỳ chưa hết** → cửa sổ hiện tại = ngày đầu kỳ → hôm nay (n ngày); so với n ngày đầu của kỳ liền trước, **cắt** ở ngày cuối của kỳ trước nếu kỳ trước ngắn hơn.
-3. **Năm chưa hết:** 01/01 → hôm nay so với 01/01 → cùng ngày tháng năm trước; 29/02 → 28/02.
+2. **Kỳ chưa hết** → cửa sổ hiện tại = ngày đầu kỳ → hôm nay (n ngày); so với n ngày đầu của kỳ liền trước, **cắt** ở ngày cuối của kỳ trước nếu kỳ trước ngắn hơn. Áp cho Ngày, Tuần, Tháng; kỳ Năm theo mục 3.
+3. **Năm chưa hết — ngoại lệ của mục 2:** so theo **cùng ngày tháng**, không theo số ngày: 01/01 → hôm nay so với 01/01 → cùng ngày tháng năm trước; hôm nay 29/02 → so tới 28/02. Vì vậy hai cửa sổ có thể lệch một ngày quanh năm nhuận (C07: 60 ngày so với 59 ngày; theo mục 2 sẽ là 01/01 – 01/03/2027).
 4. **Tùy chọn** và **kỳ chưa bắt đầu** → không so. Kỳ trước ra ngoài miền năm → không so.
 5. Hiển thị: số và tiền → chênh lệch có dấu (▲ / ▼ / "="); tỉ lệ chốt → chênh lệch **điểm %**; kỳ trước "—" (0 RF) hoặc hiện tại "—" → không so ("—").
 
@@ -129,10 +129,10 @@ Thanh trên: bộ chọn kỳ + góc nhìn (Toàn bộ / Team / RE) + **nút L�
 
 | Khối | Toàn bộ | Team | RE |
 |---|---|---|---|
-| Ô Lịch hẹn (`Đã gặp / Tổng` + 3 nhóm còn lại) | ✓ | ✓ (cộng 3 team) | ✓ |
-| 6 ô KPI + so kỳ trước (§4.2) | ✓ | ✓ (cộng 3 team) | ✓ |
-| 4 ô N4–N1 (ảnh chụp cuối kỳ) | ✓ | ✓ (cộng 3 team) | ✓ |
-| Chart diễn biến N4–N1 | 1 chart | **mỗi team 1 chart** (3 chart), ẩn ô chọn team | 1 chart |
+| Ô Lịch hẹn (`Đã gặp / Tổng` + 3 nhóm còn lại) | ✓ | ✓ (cộng mọi team) | ✓ |
+| 6 ô KPI + so kỳ trước (§4.2) | ✓ | ✓ (cộng mọi team) | ✓ |
+| 4 ô N4–N1 (ảnh chụp cuối kỳ) | ✓ | ✓ (cộng mọi team) | ✓ |
+| Chart diễn biến N4–N1 | 1 chart | **mỗi team 1 chart** (số chart = số team trong dữ liệu; seed có 3), ẩn ô chọn team | 1 chart |
 | Bảng So sánh team, bấm team → xổ RE của team | ✓ | ✓ | — |
 
 - **Bảng So sánh team** (Owner 03/10, thay khối "Top RE" của mockup cũ): cột Đã gặp, Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt; dòng Tổng (§4.1). Bấm một team → các RE của team hiện ngay dưới, cùng cột, sắp theo tên; bấm lại → thu. Không so kỳ trước trong bảng.
