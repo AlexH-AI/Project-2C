@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 4 — dashboard and reports (milestone not created yet). Phases 1, 2 and 3 are closed; Phase 3 closed at G7 on 2026-10-02 (57 issues, #57 to #245, `docs/metrics/phase-3.md`). Overall progress ≈ 60% to v1.0 (see `docs/PROJECT-PLAN.md` §5).
+Phase 4 — dashboard and reports (milestone "Phase 4 — Dashboard & báo cáo", opened 2026-10-02 with #251–#259). Phases 1, 2 and 3 are closed; Phase 3 closed at G7 on 2026-10-02 (57 issues, #57 to #245, `docs/metrics/phase-3.md`). Overall progress ≈ 60% to v1.0 (see `docs/PROJECT-PLAN.md` §5).
 
 ## Canonical repository
 
@@ -64,5 +64,6 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
 - 2026-10-01: batch A (#214 T-081, #215 T-082, #216 T-083), the G3 mockup (#217 T-084, PR #220) and B1 (#222 T-085, PR #231) merged. Next: #223 T-086 (one TL per team), then B2–B6 (#224–#228) in order, then the manual exe check, two independent reviews and G7 (#72).
 - 2026-10-02: batch B finished — B2–B6 (#224–#228, PRs #234, #236, #239, #240, #247), #237 T-092 (PR #238) and the database clock fixes #243 T-093 / #245 T-094 (PRs #244, #246) merged, `main` `5eb7c03`. The OWNER's second manual exe check passed. Second Phase 1→3 review at `5eb7c03` (clean Claude session + Codex Sol 6.1, independent; merged into R2-01…R2-07, `docs/reviews/2026-10-02-phase-1-3-review-2-tong-hop.md`): no Critical / High. R2-01 (Medium): backup import still accepts four hand-edited cases (live record of a deleted RE, first transition tied to a meeting, wrong `SYSTEM` fact in conflict, live person of a deleted team). R2-02 (Medium): hidden legacy staff (two TLs per team, IS/BD/BDM with a team). OWNER decisions: fix R2-01 after G7 as T-j, the first data task of Phase 4 right after T-d; R2-02 — the data is simulated, so inconsistent data is refused or removed, not migrated or shown; folded into T-j as rule 9 "staff" (at most one live TL per team, IS/BD/BDM never have a team, live people belong to live teams). Next: G7 (#72), then Phase 4.
 - 2026-10-02: OWNER approved G7 — #72 T-053 and the Phase 3 milestone are closed (docs PR #248, `50737a7`). Next: open Phase 4 — batch 2 Issues in order T-d (local e2e) → T-j (backup import check, round 3, plus staff rule 9) → G2 Phase 4 → T-e, T-f → T-g → T-h → T-i.
+- 2026-10-02: Phase 4 opened — milestone + batch 2 Issues: #251 T-095 local e2e, #252 T-096 backup import round 3 + staff rule (`risk:high`), #253 T-097 G2 (appointment counts, stage counts as end-of-period snapshot, year range, metrics per screen), #254 T-098 G3 mockups (Overview request 9, reports), #255 T-099 stats index + MTD, #256 T-100 year range, #257 T-101 CI coverage per package + pinned Actions, #258 T-102 / #259 T-103 DB and UI clean-up. #254–#256 are blocked by #253. Next: #251.
 - Project-2 should adopt the upstream skill renames (`to-prd` → `to-spec`, `to-issues` → `to-tickets`).
 - ADR-0003 still mentions `/resume` and branch protection; the actual practice is `/session-start` and the pre-push hook (#3). Left as-is (accepted ADR text); `CLAUDE.md` and the plan are current.
