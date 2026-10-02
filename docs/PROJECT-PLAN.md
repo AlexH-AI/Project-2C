@@ -291,7 +291,7 @@ Ghi chú KYC ─► Dữ kiện có cấu trúc (RE xác nhận) ─► kyc_vers
 | **0. Chốt yêu cầu** | Kế thừa Q1–Q16; ADR: stack, kiến trúc, mô hình một agent, giao thức 2 máy | ADR · **G1, G2** | ✅ ADR-0001…0014 |
 | **1. Nền móng** | `CLAUDE.md`, `.gitattributes`, bootstrap/session scripts, `/session-start` `/handoff`, CI + build exe, pre-push hook bảo vệ `main`, Issue/PR template, checklist review; skeleton Tauri + chế độ web; app shell dark; mockup | Exe chạy được trên **cả 2 máy** · **G3** | ✅ 18/18 issue, đóng 28/09 (G7) — `docs/metrics/phase-1.md` |
 | **2. Lõi domain** | State machine, stats engine + golden tests, parse ngày/tiền, mô hình KYC (notes/facts/versions), cổng KYC | Domain coverage ≥ 95% | ✅ 10/10 issue, coverage 100%, đóng 26/09 (G7) — `docs/metrics/phase-2.md` |
-| **3. Nghiệp vụ & màn hình** | `packages/db`; Team/RE, Khách hàng, KYC timeline, Lịch hẹn, Kết quả cuộc gặp, Hợp đồng; seed 3 × 10 RE × ~12 tháng dữ liệu; xuất/nhập backup | Nhập liệu hoàn chỉnh · **G7** | 🟡 56/57 issue (gói A + B phản hồi Owner 01/10 đã xong, kiểm tay exe lần 2 và review lần 2 xong 02/10); còn #72 chờ **G7** — `docs/metrics/phase-3.md`, review đóng phase `docs/reviews/2026-09-30-phase-1-3-tong-hop.md`, `docs/reviews/2026-10-02-phase-1-3-review-2-tong-hop.md` |
+| **3. Nghiệp vụ & màn hình** | `packages/db`; Team/RE, Khách hàng, KYC timeline, Lịch hẹn, Kết quả cuộc gặp, Hợp đồng; seed 3 × 10 RE × ~12 tháng dữ liệu; xuất/nhập backup | Nhập liệu hoàn chỉnh · **G7** | ✅ 57/57 issue, đóng 02/10 (G7) — `docs/metrics/phase-3.md`, review đóng phase `docs/reviews/2026-09-30-phase-1-3-tong-hop.md`, `docs/reviews/2026-10-02-phase-1-3-review-2-tong-hop.md` |
 | **4. Dashboard & báo cáo** | Tổng quan (ý 9 phản hồi Owner 01/10: đếm KH theo nhóm = ảnh chụp cuối kỳ, nút Lọc), MTD, drill-down team/RE, báo cáo tuần/tháng/năm, xuất Excel. Đầu phase: Đợt 2 của review đóng Phase 3 (e2e local ổn định; validator nhập lần 3 + luật nhân sự T-j; G2 cách đếm lịch dự kiến / đã gặp + chuỗi dời, miền năm, mockup Tổng quan theo ADR-0007; index chỉ số + MTD; CI coverage riêng + ghim SHA Actions; dọn UI/i18n) | · **G2, G7** (milestone) | ⬜ |
 | **5. AI copilot** | Adapter OpenCode Go + Mock, prompt + schema, validators, versioning/STALE, Settings, bộ eval. Trước `packages/ai`: quyết định gọi mạng + lưu key (D-1) | · **G4, G5, G6** | ⬜ |
 | **6. Hoàn thiện & phát hành** | Hiệu năng, rà soát UX, màn "Thùng rác" khôi phục bản ghi xóa mềm (#72), gộp backup / phát hiện xung đột, snapshot mỗi bảng một file (S-1), tuần tự hóa thay DB / lưu / xuất / đồng bộ (S-2), đồng bộ `Project-2C-data`, hướng dẫn sử dụng tiếng Việt, GitHub Release v1.0 | · **G7** | ⬜ |
@@ -377,7 +377,6 @@ Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue, cỡ theo P1 (ADR-0001 p
 
 ## 8. Bước tiếp theo ngay
 
-Bước chi tiết từng phiên: `docs/state/HANDOFF.md`. Thứ tự lớn (cập nhật 01/10/2026):
+Bước chi tiết từng phiên: `docs/state/HANDOFF.md`. Thứ tự lớn (cập nhật 02/10/2026):
 
-1. Đóng Phase 3 (#72): gói A + B, kiểm tay exe lần 2 và 2 review độc lập đã xong (02/10) — Owner duyệt **G7** đóng milestone.
-2. Mở Phase 4: tạo Issue Đợt 2 của review đóng Phase 3 (`docs/reviews/2026-09-30-phase-1-3-tong-hop.md` §4 và `docs/reviews/2026-10-02-phase-1-3-review-2-tong-hop.md` §5), làm e2e local ổn định (T-d) trước, rồi T-j (validator nhập lần 3 + luật 9 nhân sự); G2 Phase 4 (cách đếm lịch, miền năm, mockup Tổng quan) trước màn dashboard.
+1. Mở Phase 4 (Phase 3 đã đóng 02/10, G7): tạo Issue Đợt 2 của review đóng Phase 3 (`docs/reviews/2026-09-30-phase-1-3-tong-hop.md` §4 và `docs/reviews/2026-10-02-phase-1-3-review-2-tong-hop.md` §5), làm e2e local ổn định (T-d) trước, rồi T-j (validator nhập lần 3 + luật 9 nhân sự); G2 Phase 4 (cách đếm lịch, miền năm, mockup Tổng quan) trước màn dashboard.
