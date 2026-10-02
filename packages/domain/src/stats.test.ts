@@ -100,6 +100,14 @@ describe('inScope', () => {
     expect(inScope(before, 're-1', team)).toBe(true);
   });
 
+  it('refuses to change a people list in place once indexed, so it never reads a stale team', () => {
+    const people: Person[] = [{ id: 're-1', name: 'RE 1', role: 'RE', teamId: 'team-1' }];
+    inScope(people, 're-1', team);
+    expect(() => people.push({ id: 're-2', name: 'RE 2', role: 'RE', teamId: 'team-1' })).toThrow(
+      TypeError,
+    );
+  });
+
   it('leaves an RE outside any team, or not in the list, out of every team', () => {
     const people: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RE', teamId: null }];
     expect(inScope(people, 're-1', team)).toBe(false);

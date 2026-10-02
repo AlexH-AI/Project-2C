@@ -21,15 +21,15 @@ export interface PolicyMetrics {
 
 /**
  * Lookups built once per input list (F-06), so a dashboard computing many periods and scopes
- * does not rescan every list for each record. Inputs are read-only snapshots: a list is never
- * changed after it is handed in, so its index never goes stale.
+ * does not rescan every list for each record. A list is frozen when indexed: changing it in
+ * place afterwards throws instead of leaving a stale index.
  */
 function memoize<K extends object, V>(build: (key: K) => V): (key: K) => V {
   const cache = new WeakMap<K, V>();
   return (key) => {
     let value = cache.get(key);
     if (value === undefined) {
-      value = build(key);
+      value = build(Object.freeze(key));
       cache.set(key, value);
     }
     return value;
