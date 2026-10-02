@@ -3,7 +3,7 @@
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
 - **Cập nhật:** 2026-10-03 · máy `DESKTOP-KDURKJP` (Home PC) · Phase 4: #251 T-095, #252 T-096 (+ T-104 #264), #253 T-097 G2 (PR #265) đã merge; #254 T-098 G3 mockup Tổng quan + Báo cáo (Owner duyệt 03/10, PR #266) đã merge (`docs/design/mockups/overview.html`, `reports.html`, spec §4.5)
-- **Nhánh:** `main` (`605157a`). Không có PR code nào đang mở. Hai worktree review đứng ở `605157a`; worktree `Project-2C-astra` (Codex) ở `5eb7c03`. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
+- **Nhánh:** `main` (`605157a`). Không có PR code nào đang mở. Hai worktree review đứng ở `605157a`. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
 - **Phiên song song:** có thể có phiên khác trên cùng checkout — commit theo pathspec, không `git add -A`
 - **Repo public** (27/09) · **ruleset `protect-main`** (28/09): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
 - **Model / effort:** Owner chọn từng phiên (ADR-0001 M1). Chỉ Claude Code viết code, không subagent, cổng G1–G8. **Codex chỉ review độc lập khi đóng phase** (ADR-0001 M2)
@@ -150,14 +150,11 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 
 1. `/session-start` (pull `main`).
 2. **Phase 4 — việc nên làm tiếp** (#251–#254 đã xong; G2 + G3 đã duyệt, quyết định ở `docs/design/phase-4-chi-so.md` §4.5):
-   1. **Tạo Issue cho task sau G3** (Claude viết, theo mẫu Task, ước lượng cỡ gồm i18n + e2e):
-      - UI Lịch hẹn 4 nhóm: "Chưa ghi kết quả" (cam `--appt-unrecorded` = `--warn`), Dời – hủy – không đến đổi sang xám (`--appt-missed` = `--text-3`); lịch tháng (chấm chưa ghi đứng đầu), lưới năm, dòng đếm kỳ, badge ở danh sách. Token mới vào `packages/ui/src/tokens.css`.
-      - Tổng quan (dashboard): Lọc, ô Lịch hẹn, 6 KPI + so kỳ trước, 4 ô N4–N1 + chart (bấm ô ẩn nhóm), bảng So sánh team → RE; bỏ `TeamAppointmentsChart`. Task đầu tiên mang tiêu chí F-18 (escape tooltip). Chặn bởi #255. Có thể tách 2–3 task.
-      - Báo cáo: Tổng hợp + Theo team / Theo RE / Theo mốc, góc nhìn Team có ô chọn team, nút Lọc. Chặn bởi #255.
-      - Xuất Excel: **G4** chọn thư viện trước; mỗi bảng một sheet, lưu `exports\`.
-   2. **#255 T-099** index chỉ số + MTD + cửa sổ so sánh (C01–C09, golden A/S thành fixture) — nền cho dashboard / báo cáo, làm trước.
-   3. **#256 T-100** miền năm `MAX_YEAR` + `PeriodPicker` tắt nút ở biên.
-   4. Làm xen khi chờ cổng / review: **#257 T-101** (CI coverage, ghim SHA), **#258 T-102**, **#259 T-103** (T-h dọn UI / i18n / lỗi).
+   1. **Domain (không bị chặn, làm trước, song song được):** **#255 T-099** index + MTD · **#268 T-105** đếm lịch hẹn 4 nhóm (§1, golden A) · **#269 T-106** KH theo nhóm + mốc chart / báo cáo (§2, §4.4, golden S, M01–M04) · **#270 T-107** cửa sổ so kỳ trước (§4.2, C01–C09). (#255 thu hẹp còn index + MTD — comment trên #255.)
+   2. **#271 T-108** màn Lịch hẹn 4 nhóm (cam = chưa ghi kết quả, xám = dời / hủy / không đến) ← #268.
+   3. **Tổng quan:** **#272 T-109** Lọc + ô Lịch hẹn + 6 KPI ← #255, #268, #270, #271 → **#273 T-110** KH theo nhóm + chart (F-18 escape tooltip) ← #269, #272 · **#274 T-111** So sánh team → RE ← #272.
+   4. **Báo cáo:** **#275 T-112** Lọc + Tổng hợp / Theo team / Theo RE ← #255, #268, #269, #272 → **#276 T-113** Theo mốc ← #269, #275 → **#277 T-114** xuất Excel (ExcelJS, **G4** xác nhận, nhãn `build-exe`) ← #275, #276.
+   - Làm xen khi chờ review: **#256 T-100** `MAX_YEAR` + `PeriodPicker` tắt nút ở biên · **#257 T-101** CI · **#258 T-102**, **#259 T-103** (T-h).
    5. Cuối phase: kiểm tay exe, review độc lập (Codex), `docs/metrics/phase-4.md`, G7.
    - Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
 3. Ngưỡng task (P1, P-2): ước lượng cỡ khi viết Issue gồm cả i18n + e2e; vượt ngưỡng thì tách từ đầu; PR liệt kê mọi file ngoài danh sách được phép.
@@ -206,7 +203,7 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- **G4 thư viện Excel** (trước task xuất Excel): Claude đề xuất ứng viên khi tạo Issue.
+- **G4 #277:** xác nhận ExcelJS (đã có trong ADR-0005 / ADR-0011) — phiên bản ghim, kích thước bundle — trước khi làm xuất Excel.
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
 ## Ghi chú môi trường
