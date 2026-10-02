@@ -2,12 +2,12 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-10-02 · máy `DESKTOP-KDURKJP` (Home PC) · gói A + B xong (B6 PR #247), T-093 / T-094 đã merge (PR #244, #246), `main` `5eb7c03`; Owner kiểm tay exe lần 2 OK; review lần 2 (Claude + Codex Sol) xong; **chờ G7 (#72)**
-- **Nhánh:** `main` (`5eb7c03`). Không có PR code nào đang mở. Worktree `Project-2C-astra` (Codex) và hai worktree review đứng ở `5eb7c03`. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
+- **Cập nhật:** 2026-10-02 · máy `DESKTOP-KDURKJP` (Home PC) · **Phase 3 đã đóng** (G7 Owner duyệt 02/10, #72 đóng, PR #248 `50737a7`); **làm tiếp: mở Phase 4**
+- **Nhánh:** `main` (`50737a7` + PR này). Không có PR code nào đang mở. Worktree `Project-2C-astra` (Codex) và hai worktree review đứng ở `5eb7c03`. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
 - **Phiên song song:** có thể có phiên khác trên cùng checkout — commit theo pathspec, không `git add -A`
 - **Repo public** (27/09) · **ruleset `protect-main`** (28/09): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
 - **Model / effort:** Owner chọn từng phiên (ADR-0001 M1). Chỉ Claude Code viết code, không subagent, cổng G1–G8. **Codex chỉ review độc lập khi đóng phase** (ADR-0001 M2)
-- **Phase:** 3 — Nghiệp vụ & màn hình: chỉ còn #72 (G7) · Phase 1, 2 đã đóng
+- **Phase:** 4 — Dashboard & báo cáo: chưa mở milestone · Phase 1, 2, 3 đã đóng
 
 ## Trạng thái
 
@@ -15,7 +15,7 @@
 |---|---|
 | Big review Phase 1→3 (Claude + Codex Astra) | Xong 30/09. Báo cáo tổng hợp lưu ở `docs/reviews/2026-09-30-phase-1-3-tong-hop.md` (F-01…F-19, kế hoạch 3 đợt) |
 | Đợt 1: #202 T-077, #203 T-078, #204 T-079, #210 T-080 | **Đã merge** 30/09 (PR #206, #208, #209, #211) |
-| #72 T-053 đóng Phase 3 | PR #212, #213 đã merge (metrics, báo cáo, kiểm tay exe 30/09: 0 lỗi). Gói A + B xong, Owner kiểm tay exe lần 2 (02/10, bản cuối `main`): không có vấn đề. PR docs review lần 2 (metrics, STATE, PLAN §5, HANDOFF, báo cáo). **Chờ G7** |
+| #72 T-053 đóng Phase 3 | PR #212, #213 đã merge (metrics, báo cáo, kiểm tay exe 30/09: 0 lỗi). Gói A + B xong, Owner kiểm tay exe lần 2 (02/10, bản cuối `main`): không có vấn đề. PR #248 (review lần 2: metrics, STATE, PLAN §5, HANDOFF, báo cáo). **G7 Owner duyệt 02/10 — #72 và milestone Phase 3 đã đóng** |
 | Review lần 2 Phase 1→3 (Claude + Codex Sol 6.1) | Xong 02/10 trên `5eb7c03`. Tổng hợp: `docs/reviews/2026-10-02-phase-1-3-review-2-tong-hop.md` (R2-01…R2-07): 0 Critical / High; R2-01, R2-02 Medium → **T-j** Phase 4 (Owner quyết sửa sau G7) |
 | Phản hồi Owner 01/10 — gói A | **Đã merge** 01/10: #214 T-081 (PR #221), #215 T-082 (PR #229), #216 T-083 (PR #230) |
 | Phản hồi Owner 01/10 — gói B | Mockup #217 T-084 (PR #220) và #222 T-085 B1 (PR #231), #223 T-086 B1b (PR #233), #224 T-087 B2 (PR #234, `risk:med`), #225 T-088 B3 (PR #236), #226 T-089 B4 (PR #239), #227 T-090 B5 (PR #240) **đã merge** 01/10; #237 T-092 bỏ `useScope` chết (PR #238); #228 T-091 B6 (PR #247) **đã merge** 02/10. Kèm #243 T-093 / #245 T-094 đồng hồ DB theo ngày của app (PR #244, #246) |
@@ -76,7 +76,7 @@ Theo task đã có chỗ trong kế hoạch:
   - `OutcomeDialog.tsx:~81`: "Lưu kết quả" khi chưa chọn trạng thái không báo gì (#169).
   - `·` / `→` viết cứng trong JSX (~15 chỗ, vd `CustomerDialogs.tsx:380`).
   - `getPolicy` quét mọi HĐ (`policies.ts:30`); `t()` dùng `name in params` (`i18n/index.ts:11`).
-  - R2-03: số đếm truyền vào `t()` không qua `formatCount` ("4528 lịch" cạnh "1.234 lịch" ở kỳ Năm): `AppointmentsScreen.tsx:123-126, 369`, `CustomersScreen.tsx:114`, `RePicker.tsx:139, 183` → `formatCount` (cân nhắc helper `tCount` / test grep).
+  - R2-03: số đếm truyền vào `t()` không qua `formatCount` ("4528 lịch" cạnh "1.234 lịch" ở kỳ Năm): `AppointmentsScreen.tsx:123-126, 369`, `CustomersScreen.tsx:114`, `RePicker.tsx:39` (`rePicker.title`) và số trong `Chip` (`:83`) → `formatCount` (cân nhắc helper `tCount` / test grep).
   - R2-04: `·` / `→` viết cứng tăng thêm sau F-15 (`AppointmentsScreen.tsx:242, 245, 494`, `CustomersScreen.tsx:141, 144`) → thêm luật chặn trong `lint:tokens` hoặc test grep.
   - R2-05: cảnh báo ESLint `react-hooks/exhaustive-deps` ở `AppointmentsScreen.tsx:188-189` (#240) → dựng `today` trong memo như `:116-121`; cân nhắc `eslint --max-warnings 0`.
 - **T-i (F-18):** formatter ECharts escape chuỗi từ DB — đã thành mục checklist, áp dụng ở task dashboard đầu tiên.
@@ -154,11 +154,10 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. **#72 T-053 — dừng hỏi Owner G7** (đóng milestone Phase 3). Gói A + B, kiểm tay exe lần 2 và 2 review độc lập đã xong 02/10; `phase-3.md` ghi ngày đóng 02/10 — G7 sang ngày khác thì sửa ngày ở dòng đầu và dòng "Ngày bắt đầu / kết thúc".
-3. Sau G7: mở Phase 4 — tạo milestone + Issue Đợt 2 theo báo cáo 30/09 §4 và báo cáo 02/10 §5. Thứ tự: **T-d** e2e local (+ teardown Vite) → **T-j** validator nhập lần 3 + luật 9 nhân sự (`risk:high`, sổ OPEN) → G2 Phase 4 (lịch dự kiến / đã gặp, miền năm, mockup Tổng quan ý 9) → T-e, T-f → T-g → T-h (+ R2-03…R2-05) → T-i ở dashboard đầu tiên. Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
-4. Ngưỡng task (P1, P-2): ước lượng cỡ khi viết Issue gồm cả i18n + e2e; vượt ngưỡng thì tách từ đầu; PR liệt kê mọi file ngoài danh sách được phép.
-5. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
-6. Merge (P-1): SHA head lúc merge phải trùng SHA trong `REVIEW: PASS`; head đổi → review lại.
+2. **Mở Phase 4** — tạo milestone "Phase 4 — Dashboard & báo cáo" + Issue Đợt 2 theo báo cáo 30/09 §4 và báo cáo 02/10 §5. Thứ tự: **T-d** e2e local (+ teardown Vite) → **T-j** validator nhập lần 3 + luật 9 nhân sự (`risk:high`, sổ OPEN) → G2 Phase 4 (lịch dự kiến / đã gặp, miền năm, mockup Tổng quan ý 9) → T-e, T-f → T-g → T-h (+ R2-03…R2-05) → T-i ở dashboard đầu tiên. Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
+3. Ngưỡng task (P1, P-2): ước lượng cỡ khi viết Issue gồm cả i18n + e2e; vượt ngưỡng thì tách từ đầu; PR liệt kê mọi file ngoài danh sách được phép.
+4. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
+5. Merge (P-1): SHA head lúc merge phải trùng SHA trong `REVIEW: PASS`; head đổi → review lại.
 
 ## Lệnh chạy tiếp
 
@@ -202,7 +201,7 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- #72 T-053: cổng **G7** đóng milestone Phase 3 — điều kiện đã đủ (gói A + B, kiểm tay exe lần 2 OK, 2 review độc lập 02/10, PR docs review lần 2 đã merge).
+- Mở Phase 4: G1 kế hoạch / Issue Đợt 2 (T-d, T-j…) nếu Owner muốn duyệt trước khi tạo; G2 Phase 4 trước màn dashboard.
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
 ## Ghi chú môi trường
