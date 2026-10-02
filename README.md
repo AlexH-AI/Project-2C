@@ -38,7 +38,10 @@ Bootstrap cài/kiểm tra Git, Node 24, pnpm (corepack), Rust (theo `rust-toolch
 
 - `docs/PROJECT-PLAN.md` — kế hoạch triển khai của 2C
 - `docs/COMPARISON.md` — giao thức so sánh và quy tắc cách ly với Project-2
-- `docs/PROJECT-STATE.md` — trạng thái hiện tại và bước tiếp theo
+- `docs/PROJECT-STATE.md` — phase hiện tại và quyết định Owner theo ngày
 - `docs/decisions/` — ADR
-- `docs/state/HANDOFF.md` — bàn giao giữa các phiên / giữa 2 máy
+- `docs/state/HANDOFF.md` — bàn giao giữa các phiên / giữa 2 máy (giữ dưới 8.000 ký tự)
+- `docs/state/review-notes.md` — sổ ghi chú review không chặn (OPEN / RESOLVED / ACCEPTED)
+- `docs/reviews/` — báo cáo review đóng phase (bản gốc ở `docs/reviews/raw/`)
+- `docs/setup/office-laptop.md` — dựng môi trường trên máy mới
 - `CLAUDE.md` — quy tắc cho Claude Code

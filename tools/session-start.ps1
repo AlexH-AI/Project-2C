@@ -1,10 +1,19 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Start a work session: sync with GitHub, show open work, print HANDOFF.md.
+    Start a work session: sync with GitHub, show open work, check the toolchain.
+
+.DESCRIPTION
+    HANDOFF.md reaches Claude through the SessionStart hook (.claude/hooks/handoff-context.mjs,
+    origin/main copy), so it is not printed here unless -ShowHandoff is given.
+
+.PARAMETER ShowHandoff
+    Also print docs/state/HANDOFF.md (for a human at the terminal, or when the hook did not run).
 #>
 [CmdletBinding()]
-param()
+param(
+    [switch]$ShowHandoff
+)
 
 $ErrorActionPreference = 'Continue'
 $RepoRoot = Split-Path -Parent $PSScriptRoot
@@ -43,8 +52,14 @@ if (-not $branch) {
 if (Get-Command gh -ErrorAction SilentlyContinue) {
     Write-Host "`n== open pull requests"
     gh pr list --state open
-    Write-Host "`n== issues in progress"
-    gh issue list --label 'status:in-progress' --state open
+    # Open issues of the open milestone (lowest number = current phase).
+    $milestone = gh api 'repos/{owner}/{repo}/milestones?state=open' --jq 'sort_by(.number) | .[0].title // empty'
+    if ($LASTEXITCODE -eq 0 -and $milestone) {
+        Write-Host "`n== open issues: $milestone"
+        gh issue list --milestone $milestone --state open --limit 50
+    } else {
+        Write-Host "`n(no open milestone)"
+    }
 } else {
     Write-Host "`n(gh not installed - skipping PR/issue listing)"
 }
@@ -54,6 +69,14 @@ Write-Host "`n== toolchain"
 
 Write-Host "`n== docs/state/HANDOFF.md"
 foreach ($warning in $script:SyncWarnings) {
-    Write-Host "WARNING: $warning - HANDOFF below may be stale" -ForegroundColor Red
+    Write-Host "WARNING: $warning - HANDOFF may be stale" -ForegroundColor Red
 }
-Get-Content (Join-Path $RepoRoot 'docs\state\HANDOFF.md') -Encoding UTF8
+git diff --quiet origin/main -- docs/state/HANDOFF.md
+if ($LASTEXITCODE -ne 0) {
+    Write-Host 'Local HANDOFF.md differs from origin/main (the hook showed the origin/main copy): read the local file if this branch edits it.' -ForegroundColor Yellow
+}
+if ($ShowHandoff) {
+    Get-Content (Join-Path $RepoRoot 'docs\state\HANDOFF.md') -Encoding UTF8
+} else {
+    Write-Host 'Loaded by the SessionStart hook (origin/main copy). Print it here with -ShowHandoff.'
+}

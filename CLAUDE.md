@@ -1,6 +1,6 @@
 # Project-2C — quy tắc cho Claude Code
 
-Đây là nguồn quy tắc duy nhất của repo. Kế hoạch: `docs/PROJECT-PLAN.md`. Quyết định: `docs/decisions/` (ADR). Trạng thái: `docs/PROJECT-STATE.md` + `docs/state/HANDOFF.md`.
+Đây là nguồn quy tắc duy nhất của repo. Kế hoạch: `docs/PROJECT-PLAN.md`. Quyết định: `docs/decisions/` (ADR). Trạng thái phiên: `docs/state/HANDOFF.md` (hook nạp sẵn). Quyết định Owner theo ngày: `docs/PROJECT-STATE.md`. Ghi chú review không chặn: `docs/state/review-notes.md`.
 
 Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh"**.
 
@@ -12,15 +12,23 @@ Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh
   - **G4** dependency lớn / công cụ / dịch vụ mới / bất cứ thứ gì tốn tiền
   - **G5** prompt + guardrail AI · **G6** lưu API key / bảo mật · **G7** merge cuối milestone + phát hành exe
   - **G8** task vẫn lỗi sau 2 vòng tự sửa, hoặc spec mâu thuẫn
-- **Codex chỉ review độc lập khi đóng phase** (Owner quyết 30/09/2026, ADR-0001 phụ lục M2): Owner chạy, Codex không viết code, không review PR task. Báo cáo của Codex là dữ liệu tham khảo, bổ sung chứ không thay review phiên sạch — Claude kiểm lại từng phát hiện trên code, phân loại rồi mới tạo Issue / sửa.
+- **Codex chỉ review độc lập khi đóng phase** (Owner quyết 30/09/2026, ADR-0001 phụ lục M2): Owner chạy, Codex không viết code, không review PR task. Báo cáo của Codex là dữ liệu tham khảo, bổ sung chứ không thay review phiên sạch — Claude kiểm lại từng phát hiện trên code, phân loại rồi mới tạo Issue / sửa. Báo cáo gốc của mọi review đóng phase (Claude + Codex) lưu nguyên văn ở `docs/reviews/raw/<yyyy-mm-dd>/` qua PR docs, không để ngoài repo; bản tổng hợp ở `docs/reviews/`.
 - Không dùng OpenCode/Muse/Cursor/Codex để viết code, không dùng OpenCode/Muse/Cursor để review. OpenCode Go chỉ là AI runtime của sản phẩm.
 - Cách ly với Project-2 (`docs/COMPARISON.md`): không mở, không copy code/test/mockup từ `C:\workspace\Project-2`.
 
+## Quy tắc Owner đã chốt
+
+Memory của Claude chỉ nằm trên từng máy, nên quy tắc dùng chung cho cả hai máy ghi ở đây.
+
+- **Nhãn UI hiểu theo nghĩa thường** (PR #163, 29/09): danh sách / bộ lọc / số đếm phải khớp đúng nghĩa của nhãn tiếng Việt (trước / sau / đã qua / sắp tới / hôm nay…) và dòng mẫu trong mockup. Ví dụ "Các lần hẹn trước" = hôm nay trở về trước, không gồm lịch tương lai. Kết quả trái nhãn là lỗi, không phải phương án để hỏi Owner. Chỉ hỏi khi nhãn và mockup thật sự mâu thuẫn.
+- **Dữ liệu hiện là giả lập** (R2-02, 02/10): khi siết một luật mà dữ liệu cũ có thể vi phạm, áp luật ở mọi nơi (lệnh + kiểm khi nhập backup) và để Owner nạp lại dữ liệu giả lập. Không viết migration, cảnh báo hay UI để hiện / sửa dữ liệu cũ sai. Xem lại quy tắc này khi có đồng bộ Phase 6 hoặc dữ liệu khách hàng thật.
+
 ## Nghi thức phiên (ADR-0003)
 
-- **Bắt đầu phiên:** `/session-start` — pull, đọc `docs/state/HANDOFF.md`, xem PR/Issue đang mở. (Không đặt tên `/resume` vì trùng lệnh có sẵn của Claude Code.) Hook `SessionStart` cũng tự nạp `HANDOFF.md`.
-- **Kết thúc phiên / trước khi rời máy:** `/handoff` — commit WIP, push, cập nhật `HANDOFF.md` (đang làm gì, bước kế tiếp chính xác, việc chờ Owner).
-- **Giữa các task trên cùng máy:** không cần `/handoff` — PR đã merge / Issue đã đóng trên GitHub là trạng thái thật. Cập nhật `HANDOFF.md` khi rời máy / hết ngày, hoặc khi có điều GitHub chưa ghi mà phiên sau phải biết (quyết định Owner, ghi chú review, việc chờ Owner, đổi thứ tự làm). Có thể sửa `HANDOFF.md` ngay trong PR của task khi không có phiên song song. Handoff chỉ có tác dụng khi đã vào `main`.
+- **Mở phiên:** hook `SessionStart` (`.claude/hooks/handoff-context.mjs`) fetch rồi nạp `HANDOFF.md` của `origin/main` — máy vừa đổi sang cũng thấy bản mới nhất trước khi pull. Không đọc lại file khi hook đã nạp (trừ khi hook báo lệch / cắt).
+- **Bắt đầu phiên:** `/session-start` — pull, xem PR mở + Issue mở của milestone, kiểm toolchain. (Không đặt tên `/resume` vì trùng lệnh có sẵn của Claude Code.)
+- **Kết thúc phiên / trước khi rời máy:** `/handoff` — commit WIP, push, cập nhật `HANDOFF.md` (đang làm gì, bước kế tiếp chính xác, việc chờ Owner). **HANDOFF dưới 8.000 ký tự** (hook giới hạn 10.000; quá thì chỉ 2.000 ký tự đầu vào context).
+- **Giữa các task trên cùng máy:** không cần `/handoff` — PR đã merge / Issue đã đóng trên GitHub là trạng thái thật. Cập nhật `HANDOFF.md` khi rời máy / hết ngày, hoặc khi có điều GitHub chưa ghi mà phiên sau phải biết (quyết định Owner, việc chờ Owner, đổi thứ tự làm). Ghi chú review không chặn ghi vào `docs/state/review-notes.md`, không vào HANDOFF. Có thể sửa `HANDOFF.md` ngay trong PR của task khi không có phiên song song. Handoff chỉ có tác dụng khi đã vào `main`.
 - GitHub là nguồn sự thật. Không để gì quan trọng chỉ nằm trên một máy. DB dev sinh lại bằng seed; API key nhập riêng từng máy.
 
 ## Quy trình một task (ADR-0001)
@@ -65,18 +73,21 @@ GitHub Issues của `AlexH-AI/Project-2C`, theo mẫu Task, nhãn `type:task` + 
 
 ### Domain docs
 
-Single-context: `CONTEXT.md` ở gốc (tạo khi cần) + ADR ở `docs/decisions/`. See `docs/agents/domain.md`.
+Single-context: `CONTEXT.md` ở gốc (từ điển thuật ngữ nghiệp vụ) + ADR ở `docs/decisions/`. See `docs/agents/domain.md`.
 
 ## Kiến trúc (ADR-0005, ADR-0006)
 
 ```
 apps/desktop/      Tauri 2 shell + React UI
 packages/domain/   TS thuần — không import package nào khác
-packages/db/       Drizzle schema, migrations, repositories; adapter Tauri SQLite + sql.js
-packages/ai/       provider adapters, prompts có version, zod schema, validators
+packages/db/       Drizzle schema, migrations, repositories; adapter Tauri SQLite + sql.js; seed
 packages/ui/       design tokens + components
-tools/             bootstrap, session scripts, seed
+packages/ai/       (chưa tạo — Phase 5) provider adapters, prompts có version, zod schema, validators
+tools/             bootstrap, session scripts
+e2e/               Playwright (chạy trên bản build web)
 ```
+
+- Mốc hay tìm: màn hình ở `apps/desktop/src/routes/` (màn lớn có thư mục con; logic thuần, có unit test, ở `*-view.ts`), i18n ở `apps/desktop/src/i18n/vi.ts`; dữ liệu giả lập `packages/db/src/seed.ts` + `seed-data.ts`; helper test DB `packages/db/src/test-support.ts`; golden fixture `packages/domain/src/golden/` (spec ở `docs/golden/`); tiền / ngày / kỳ / chỉ số ở `packages/domain/src/{money,number,period,stats}.ts`; spec theo phase `docs/design/`, mockup `docs/design/mockups/`.
 
 - Ranh giới module kiểm tra bằng `dependency-cruiser` (`pnpm lint:deps`). `domain` không phụ thuộc gì.
 - Tiền, ngày, chỉ số: chỉ dùng hàm chuẩn trong `packages/domain`. Không tự parse/format rải rác.
@@ -104,3 +115,15 @@ tools/             bootstrap, session scripts, seed
 - File theo LF (`.gitattributes`), trừ `.ps1/.cmd` dùng CRLF.
 - Script PowerShell: `$ErrorActionPreference = 'Stop'` **không** bắt lỗi lệnh native (`git`, `pnpm`, `rustup`, `winget`…). Sau mỗi lệnh native có tác dụng phụ phải kiểm `$LASTEXITCODE` (hoặc bọc qua hàm helper throw khi ≠ 0) trước khi báo thành công.
 - Cuối mỗi phase ghi `docs/metrics/phase-<N>.md` theo `docs/COMPARISON.md`.
+
+## Môi trường Windows và 2 máy
+
+Owner làm ở Home PC (`DESKTOP-KDURKJP`) và Office Laptop (`D13_THINKPAD`). Dựng máy mới: `docs/setup/office-laptop.md`.
+
+- **Phiên song song** có thể chạy trên cùng checkout: commit theo pathspec, không `git add -A`.
+- **pnpm:** ở máy không có quyền admin, shim nằm ở `%APPDATA%\npm` và lỗi trong Git Bash → chạy pnpm từ PowerShell. Terminal mở trước khi chạy bootstrap chưa có PATH mới → mở terminal mới.
+- **Script tạm:** dùng `node` (`node -e` / file `.mjs` trong scratchpad). `python3` là stub WindowsApps (có thể treo phiên), không dùng.
+- **Sửa file:** dùng công cụ Edit/Write. Chuỗi có `\` (đường dẫn Windows, regex) đi qua heredoc Bash dễ bị hỏng; heredoc dài dễ lỗi `unexpected EOF`.
+- **gh:** `gh pr view <n> --comments` và `--json` không dùng chung được → `gh pr view <n> --json comments --jq …`. Nội dung dài (body PR / Issue / comment) ghi ra file rồi `--body-file`.
+- **PR xếp chồng:** đổi base (`gh pr edit --base main`) **không** tự chạy lại CI (workflow nghe `opened/synchronize/reopened`) → `gh pr close <n>` + `gh pr reopen <n>` rồi mới merge.
+- **Không đồng bộ giữa 2 máy:** memory của Claude, lịch sử hội thoại, DB dev (sinh lại bằng seed), API key. Điều gì phiên ở máy kia phải biết → ghi vào repo (`CLAUDE.md`, HANDOFF, ADR, `docs/`) rồi push.

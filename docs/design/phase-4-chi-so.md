@@ -1,7 +1,7 @@
 # Phase 4 — Định nghĩa chỉ số Tổng quan và Báo cáo (G2)
 
 - **Issue:** #253 (T-097) · **Cổng:** G2 · **Trạng thái:** **Owner duyệt G2 03/10/2026** (PR #265)
-- **Quyết định Owner:** 03/10/2026 (AskUserQuestion trong phiên #253) + 01/10/2026 (ý 9, HANDOFF "Phản hồi Owner sau kiểm exe")
+- **Quyết định Owner:** 03/10/2026 (AskUserQuestion trong phiên #253) + 01/10/2026 (ý 9, `docs/reviews/2026-10-01-phan-hoi-owner-kiem-exe.md`)
 - **Nền:** ADR-0007 (định nghĩa HĐ, case size, doanh số, RF, tỉ lệ chốt, tuần T2–CN, MTD; góc nhìn G2 E); golden `docs/golden/chi-so.md` (G01–G22, không đổi)
 - **Golden mới:** `docs/golden/lich-hen.md` (A01–A13), `docs/golden/kh-theo-nhom.md` (S01–S13); bảng C01–C09 và M01–M04 ngay trong file này
 - **Không làm ở đây:** bố cục, màu, chữ trên màn (G3, #254); fixture TS (task cài đặt chép từ bảng đã duyệt)
