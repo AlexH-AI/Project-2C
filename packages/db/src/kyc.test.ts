@@ -346,6 +346,36 @@ describe('birth year and gender come from the customer profile (D2)', () => {
     ]);
   });
 
+  it('refuses a fact on a SYSTEM note: only the profile writes there (D2)', async () => {
+    const { db: database, customer, note } = await withCustomer({ birthDate: { year: 1972 } });
+    const system = getKycProfile(database, customer.id).notes[0]!;
+    const versions = listKycVersions(database, customer.id).length;
+    const onSystem = { noteId: system.id, date: d(3, 9, 2026) };
+
+    expect(
+      codeOf(() =>
+        markKycConflict(database, customer.id, { ...onSystem, field: 'birthYear', value: 1974 }),
+      ),
+    ).toBe('KYC_NOTE_FROM_PROFILE');
+    expect(
+      codeOf(() =>
+        confirmKycFact(database, customer.id, {
+          ...onSystem,
+          field: 'occupation',
+          value: 'Bác sĩ',
+        }),
+      ),
+    ).toBe('KYC_NOTE_FROM_PROFILE');
+    expect(getKycProfile(database, customer.id).facts).toHaveLength(1);
+    expect(listKycVersions(database, customer.id)).toHaveLength(versions);
+
+    // The same facts on the RE's note are recorded.
+    const onNote = { noteId: note.id, date: d(3, 9, 2026) };
+    markKycConflict(database, customer.id, { ...onNote, field: 'birthYear', value: 1974 });
+    confirmKycFact(database, customer.id, { ...onNote, field: 'occupation', value: 'Bác sĩ' });
+    expect(getKycProfile(database, customer.id).facts).toHaveLength(3);
+  });
+
   it('refuses a profile fact in conflict whose value is no longer the profile’s (D2)', async () => {
     const { db: database, customer, note } = await withCustomer({ birthDate: { year: 1972 } });
     const system = getKycProfile(database, customer.id).facts[0]!;

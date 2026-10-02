@@ -34,6 +34,8 @@ export const DB_ERROR_CODES = [
   'ISSUE_INCOMPLETE',
   'KYC_NOTE_EMPTY',
   'KYC_NOTE_NOT_FOUND',
+  /** A fact given a `SYSTEM` note: only the customer profile writes there (D2). */
+  'KYC_NOTE_FROM_PROFILE',
   'KYC_FACT_NOT_FOUND',
   'KYC_VERSION_NOT_FOUND',
   'INVALID_KYC_FIELD',

@@ -199,7 +199,7 @@ function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>
  * Rules 6–8 (ADR-0008, D2): a fact comes from a note of its own customer; each field has either one
  * active fact or at least two in conflict; the birth year and gender in effect are the profile's,
  * from a `SYSTEM` note, and one in conflict from a `SYSTEM` note is the profile's too, which
- * resolving the conflict would confirm.
+ * resolving the conflict would confirm; a `SYSTEM` note holds nothing else.
  */
 function kycRule(read: (sql: string) => Row[], customers: Row[]): Rule | null {
   const facts = read(
@@ -212,16 +212,17 @@ function kycRule(read: (sql: string) => Row[], customers: Row[]): Rule | null {
     const key = `${String(fact.customer_id)}\n${String(fact.field)}`;
     const count = counts.get(key) ?? { active: 0, conflict: 0 };
     counts.set(key, count);
+    const fromProfile = fact.source === 'SYSTEM';
+    const profileField = fact.field === 'birthYear' || fact.field === 'gender';
+    // A `SYSTEM` note holds only the profile's birth year and gender, whatever their status.
+    if (fromProfile && !profileField) return 8;
     if (fact.status === 'superseded') continue;
     count[fact.status as 'active' | 'conflict']++;
-    const fromProfile = fact.source === 'SYSTEM';
-    if (
-      (fact.field === 'birthYear' || fact.field === 'gender') &&
-      (fact.status === 'active' || fromProfile)
-    ) {
+    if (profileField && (fact.status === 'active' || fromProfile)) {
       const customer = byCustomer.get(fact.customer_id)!;
       const profile = { birthDate: customer.birth_date, gender: customer.gender } as ProfileFields;
-      const expected = JSON.stringify(profileFactValue(fact.field, profile));
+      const field = fact.field as 'birthYear' | 'gender';
+      const expected = JSON.stringify(profileFactValue(field, profile));
       if (!fromProfile || fact.value_json !== expected) return 8;
     }
   }

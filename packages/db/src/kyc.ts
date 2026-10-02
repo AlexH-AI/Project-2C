@@ -318,9 +318,10 @@ function factCommand(
   return db.transaction(() => {
     liveCustomer(db, customerId);
     const before = loadProfile(db, customerId);
-    if (!before.notes.some((note) => note.id === command.noteId)) {
-      throw new DbError('KYC_NOTE_NOT_FOUND');
-    }
+    const note = before.notes.find((n) => n.id === command.noteId);
+    if (!note) throw new DbError('KYC_NOTE_NOT_FOUND');
+    // A `SYSTEM` note holds only what the profile wrote there (D2).
+    if (note.source === 'SYSTEM') throw new DbError('KYC_NOTE_FROM_PROFILE');
     const input = toInput(db, command, command.noteId, command.date);
     const after = applyFact(before, input, conflict);
     const version = save(db, customerId, before, after, command.date, command.material ?? false);
