@@ -54,6 +54,9 @@
   --text-xl: var(--fs-xl);
   --text-2xl: var(--fs-2xl);
 
+  /* A part of a bar narrower than this hides its count (`@max-bar-label:`, mockup phase-3-feedback B6) */
+  --container-bar-label: 22px;
+
   --radius-*: initial;
   --radius-sm: var(--corner-sm);
   --radius-md: var(--corner-md);

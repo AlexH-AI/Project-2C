@@ -12,6 +12,7 @@ function screen(page: Page) {
     column: (index: number) => list.locator(`tbody tr td:nth-child(${index})`).allTextContents(),
     day: page.getByRole('region', { name: /^Trong ngày/ }),
     calendar: page.getByRole('region', { name: /^Lịch tháng/ }),
+    year: page.getByRole('region', { name: /^Lịch năm/ }),
     detail: page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' }),
     kinds: page.getByRole('radiogroup', { name: 'Loại kỳ' }),
     coordinator: page.getByRole('combobox', { name: 'Phối hợp' }),
@@ -111,6 +112,47 @@ test('with the week period, a day in another week moves the period to that week'
   const dates = await column(1);
   expect(dates.length).toBeGreaterThan(0);
   for (const date of dates) expect(week).toContain(date);
+});
+
+test('the year period shows twelve months in four quarters, without the day', async ({ page }) => {
+  const { year, day, calendar, kinds, rows } = screen(page);
+
+  await kinds.getByRole('radio', { name: 'Năm' }).click();
+  await expect(year.getByRole('heading', { level: 2 })).toHaveText('Lịch năm 2026');
+  await expect(year.getByRole('group')).toHaveCount(4);
+  for (let q = 1; q <= 4; q++) {
+    await expect(year.getByRole('group', { name: `Quý ${q}` }).getByRole('button')).toHaveCount(3);
+  }
+  await expect(year.getByRole('button')).toHaveCount(12);
+  await expect(calendar).toHaveCount(0);
+  await expect(day).toHaveCount(0);
+  await expect(year.getByRole('button', { name: /^Tháng 9\/2026:/ })).toHaveAttribute(
+    'aria-current',
+    'date',
+  );
+
+  // The months' totals add up to the year's list.
+  const labels = await year
+    .getByRole('button')
+    .evaluateAll((cells) => cells.map((cell) => cell.getAttribute('aria-label') ?? ''));
+  const sum = labels.reduce(
+    (n, label) => n + Number(label.match(/: ([\d.]+) lịch/)?.[1]?.replaceAll('.', '')),
+    0,
+  );
+  expect(sum).toBeGreaterThan(0);
+  expect(sum).toBe(await total(page));
+  await expect(rows).toHaveCount(sum);
+});
+
+test('a month of the year grid opens that month', async ({ page }) => {
+  const { year, calendar, day, kinds, column } = screen(page);
+
+  await kinds.getByRole('radio', { name: 'Năm' }).click();
+  await year.getByRole('button', { name: /^Tháng 3\/2026:/ }).click();
+  await expect(kinds.getByRole('radio', { name: 'Tháng' })).toBeChecked();
+  await expect(calendar.getByRole('heading')).toHaveText('Lịch tháng 03/2026');
+  await expect(day.getByRole('heading', { level: 2 })).toHaveText('Trong ngày 01/03/2026');
+  for (const date of await column(1)) expect(date).toMatch(/^\d\d\/03\/2026$/);
 });
 
 test('with a custom range, days outside it cannot be picked', async ({ page }) => {

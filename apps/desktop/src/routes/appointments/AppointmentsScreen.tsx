@@ -34,6 +34,7 @@ import { DeleteAppointmentDialog } from './DeleteAppointmentDialog';
 import { EditOutcomeDialog } from './EditOutcomeDialog';
 import { OutcomeDialog } from './OutcomeDialog';
 import { RescheduleDialog } from './RescheduleDialog';
+import { YearGrid } from './YearGrid';
 import { isPastOrToday } from './appointment-form';
 import {
   appointmentRows,
@@ -47,13 +48,14 @@ import {
   pickDay,
   rescheduleLinks,
   revealCreated,
+  yearGrid,
   type AppointmentRow,
+  FOCUS,
   type CoordinatorFilter,
   type DayCell,
 } from './appointments-view';
 
 const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
-const FOCUS = 'focus-visible:outline-2 focus-visible:outline-accent';
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 const readAppointments = (db: Database) => ({
@@ -111,6 +113,12 @@ export function AppointmentsScreen() {
     scope !== picked && scope.kind === 're'
       ? data.people.find((person) => person.id === scope.reId)
       : undefined;
+  // today() is a new object each render; its year and month keep the grid stable.
+  const { year: thisYear, month: thisMonth } = today;
+  const yearCells = useMemo(
+    () => yearGrid(period.start.year, rows, { year: thisYear, month: thisMonth, day: 1 }),
+    [period.start.year, rows, thisYear, thisMonth],
+  );
   const reCounts = useMemo(() => appointmentsByRe(pickedRows, period), [pickedRows, period]);
   const summary = t('appointments.summary', {
     total: inPeriod.length,
@@ -253,8 +261,21 @@ export function AppointmentsScreen() {
       )}
       <div className="flex flex-col items-start gap-4 lg:flex-row">
         <div className="flex w-full min-w-0 flex-1 flex-col gap-4">
-          <MonthCalendar period={period} day={day} today={today} rows={rows} onPick={pick} />
-          <DayTable day={day} rows={rows} onSelect={setSelectedId} />
+          {period.kind === 'year' ? (
+            // The year has no day of its own: the grid opens a month (mockup phase-3-feedback B6).
+            <YearGrid
+              cells={yearCells}
+              year={period.start.year}
+              onPickMonth={(month) =>
+                changePeriod(periodOf('month', { year: period.start.year, month, day: 1 }))
+              }
+            />
+          ) : (
+            <>
+              <MonthCalendar period={period} day={day} today={today} rows={rows} onPick={pick} />
+              <DayTable day={day} rows={rows} onSelect={setSelectedId} />
+            </>
+          )}
         </div>
         <Detail
           row={selected}

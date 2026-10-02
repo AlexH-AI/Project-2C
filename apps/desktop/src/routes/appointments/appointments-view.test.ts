@@ -19,6 +19,7 @@ import {
   pickDay,
   rescheduleLinks,
   revealCreated,
+  yearGrid,
   type AppointmentData,
 } from './appointments-view';
 
@@ -280,6 +281,48 @@ describe('monthGrid', () => {
           .some((c) => c.inPeriod),
       ).toBe(false);
     }
+  });
+});
+
+describe('yearGrid', () => {
+  const rows = appointmentRows(
+    data([
+      appointment('a', 're1', day(1, 5), { status: 'MET' }),
+      appointment('b', 're1', day(1, 31), { status: 'MET' }),
+      appointment('c', 're1', day(3, 2), { status: 'RESCHEDULED' }),
+      appointment('d', 're1', day(3, 9), { status: 'NO_SHOW' }),
+      appointment('e', 're1', day(3, 9), { status: 'CANCELLED' }),
+      appointment('f', 're1', day(10, 1)),
+      appointment('g', 're1', day(12, 31), { status: 'MET' }),
+      appointment('h', 're1', { year: 2027, month: 1, day: 1 }),
+      appointment('i', 're1', { year: 2025, month: 12, day: 31 }),
+    ]),
+    { kind: 'all' },
+    'any',
+  );
+
+  it("counts each month's appointments of the year by calendar group", () => {
+    const cells = yearGrid(2026, rows, day(9, 15));
+    expect(cells.map((cell) => cell.month)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(cells[0]).toMatchObject({ met: 2, missed: 0, planned: 0 });
+    expect(cells[1]).toMatchObject({ met: 0, missed: 0, planned: 0 });
+    expect(cells[2]).toMatchObject({ met: 0, missed: 3, planned: 0 });
+    expect(cells[9]).toMatchObject({ met: 0, missed: 0, planned: 1 });
+    expect(cells[11]).toMatchObject({ met: 1, missed: 0, planned: 0 });
+  });
+
+  it('marks months past, current and future against today', () => {
+    const states = (year: number) => yearGrid(year, rows, day(9, 15)).map((cell) => cell.state);
+    expect(states(2026)).toEqual([
+      ...Array<'past'>(8).fill('past'),
+      'current',
+      'future',
+      'future',
+      'future',
+    ]);
+    expect(states(2025)).toEqual(Array<'past'>(12).fill('past'));
+    expect(states(2027)).toEqual(Array<'future'>(12).fill('future'));
+    expect(yearGrid(2027, rows, day(9, 15))[0]).toMatchObject({ planned: 1 });
   });
 });
 
