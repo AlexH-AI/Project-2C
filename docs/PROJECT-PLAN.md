@@ -286,7 +286,7 @@ Ghi chú KYC ─► Dữ kiện có cấu trúc (RE xác nhận) ─► kyc_vers
 
 ## 5. Lộ trình
 
-| Phase | Nội dung | Kết quả / Cổng | Tiến độ (30/09/2026) |
+| Phase | Nội dung | Kết quả / Cổng | Tiến độ (02/10/2026) |
 |---|---|---|---|
 | **0. Chốt yêu cầu** | Kế thừa Q1–Q16; ADR: stack, kiến trúc, mô hình một agent, giao thức 2 máy | ADR · **G1, G2** | ✅ ADR-0001…0014 |
 | **1. Nền móng** | `CLAUDE.md`, `.gitattributes`, bootstrap/session scripts, `/session-start` `/handoff`, CI + build exe, pre-push hook bảo vệ `main`, Issue/PR template, checklist review; skeleton Tauri + chế độ web; app shell dark; mockup | Exe chạy được trên **cả 2 máy** · **G3** | ✅ 18/18 issue, đóng 28/09 (G7) — `docs/metrics/phase-1.md` |
