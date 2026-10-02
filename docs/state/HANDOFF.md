@@ -2,12 +2,12 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-10-02 · máy `DESKTOP-KDURKJP` (Home PC) · **Phase 3 đã đóng** (G7 Owner duyệt 02/10, #72 đóng, PR #248 `50737a7`); **làm tiếp: mở Phase 4**
+- **Cập nhật:** 2026-10-02 · máy `DESKTOP-KDURKJP` (Home PC) · Phase 3 đã đóng (G7 02/10); **Phase 4 đã mở**: milestone + 9 Issue #251–#259; **làm tiếp #251 T-095**
 - **Nhánh:** `main` (`50737a7` + PR này). Không có PR code nào đang mở. Worktree `Project-2C-astra` (Codex) và hai worktree review đứng ở `5eb7c03`. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
 - **Phiên song song:** có thể có phiên khác trên cùng checkout — commit theo pathspec, không `git add -A`
 - **Repo public** (27/09) · **ruleset `protect-main`** (28/09): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
 - **Model / effort:** Owner chọn từng phiên (ADR-0001 M1). Chỉ Claude Code viết code, không subagent, cổng G1–G8. **Codex chỉ review độc lập khi đóng phase** (ADR-0001 M2)
-- **Phase:** 4 — Dashboard & báo cáo: chưa mở milestone · Phase 1, 2, 3 đã đóng
+- **Phase:** 4 — Dashboard & báo cáo (milestone mở 02/10) · Phase 1, 2, 3 đã đóng
 
 ## Trạng thái
 
@@ -19,7 +19,7 @@
 | Review lần 2 Phase 1→3 (Claude + Codex Sol 6.1) | Xong 02/10 trên `5eb7c03`. Tổng hợp: `docs/reviews/2026-10-02-phase-1-3-review-2-tong-hop.md` (R2-01…R2-07): 0 Critical / High; R2-01, R2-02 Medium → **T-j** Phase 4 (Owner quyết sửa sau G7) |
 | Phản hồi Owner 01/10 — gói A | **Đã merge** 01/10: #214 T-081 (PR #221), #215 T-082 (PR #229), #216 T-083 (PR #230) |
 | Phản hồi Owner 01/10 — gói B | Mockup #217 T-084 (PR #220) và #222 T-085 B1 (PR #231), #223 T-086 B1b (PR #233), #224 T-087 B2 (PR #234, `risk:med`), #225 T-088 B3 (PR #236), #226 T-089 B4 (PR #239), #227 T-090 B5 (PR #240) **đã merge** 01/10; #237 T-092 bỏ `useScope` chết (PR #238); #228 T-091 B6 (PR #247) **đã merge** 02/10. Kèm #243 T-093 / #245 T-094 đồng hồ DB theo ngày của app (PR #244, #246) |
-| Đợt 2 (đầu Phase 4) | Chưa tạo Issue — tạo khi mở Phase 4 (báo cáo 30/09 §4 + báo cáo 02/10 §5: thêm **T-j** ngay sau T-d, bỏ T-k) |
+| Đợt 2 (đầu Phase 4) | **Đã tạo 02/10** (milestone Phase 4): #251 T-095 (T-d e2e) · #252 T-096 (T-j nhập backup lần 3 + luật nhân sự, `risk:high`) · #253 T-097 (G2 Phase 4) · #254 T-098 (G3 mockup Tổng quan + Báo cáo, chặn bởi #253) · #255 T-099 (T-e index + MTD, chặn bởi #253) · #256 T-100 (T-f miền năm, chặn bởi #253) · #257 T-101 (T-g CI) · #258 T-102 / #259 T-103 (T-h phần 1 / 2). T-i (F-18) thành tiêu chí của task dashboard đầu tiên, tạo sau G3 |
 
 ## Phản hồi Owner sau kiểm exe (01/10/2026)
 
@@ -154,7 +154,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. **Mở Phase 4** — tạo milestone "Phase 4 — Dashboard & báo cáo" + Issue Đợt 2 theo báo cáo 30/09 §4 và báo cáo 02/10 §5. Thứ tự: **T-d** e2e local (+ teardown Vite) → **T-j** validator nhập lần 3 + luật 9 nhân sự (`risk:high`, sổ OPEN) → G2 Phase 4 (lịch dự kiến / đã gặp, miền năm, mockup Tổng quan ý 9) → T-e, T-f → T-g → T-h (+ R2-03…R2-05) → T-i ở dashboard đầu tiên. Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
+2. **Phase 4, thứ tự:** **#251 T-095** e2e local (làm tiếp, `gh issue view 251`, nhánh `task/T-095-<slug>`) → **#252 T-096** nhập backup lần 3 + luật nhân sự (`risk:high`, Owner merge) → **#253 T-097** G2 (dừng hỏi Owner) → #254 T-098 G3 mockup → #255 T-099, #256 T-100 → #257 T-101 → #258 T-102, #259 T-103 → task dashboard / báo cáo / xuất Excel (tạo sau G3; task đầu tiên mang tiêu chí F-18 escape tooltip; thư viện Excel = G4). #257–#259 không bị chặn, làm xen được khi chờ cổng. Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
 3. Ngưỡng task (P1, P-2): ước lượng cỡ khi viết Issue gồm cả i18n + e2e; vượt ngưỡng thì tách từ đầu; PR liệt kê mọi file ngoài danh sách được phép.
 4. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
 5. Merge (P-1): SHA head lúc merge phải trùng SHA trong `REVIEW: PASS`; head đổi → review lại.
