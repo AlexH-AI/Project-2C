@@ -13,6 +13,7 @@ import {
   fromLocalDate,
   localFileStamp,
   isInPeriod,
+  monthToDate,
   parseDate,
   parseQuickDate,
   periodOf,
@@ -134,6 +135,25 @@ describe('customPeriod', () => {
 
   it('allows a single day', () => {
     expect(range(customPeriod(d(2, 9, 2026), d(2, 9, 2026)))).toBe('02/09/2026 – 02/09/2026');
+  });
+});
+
+describe('monthToDate', () => {
+  it('runs from the 1st of the month to the viewing day, as a custom range', () => {
+    expect(monthToDate(d(15, 1, 2027))).toEqual(customPeriod(d(1, 1, 2027), d(15, 1, 2027)));
+  });
+
+  it('is the 1st alone on the 1st', () => {
+    expect(range(monthToDate(d(1, 3, 2027)))).toBe('01/03/2027 – 01/03/2027');
+  });
+
+  it('covers the whole month on its last day', () => {
+    expect(range(monthToDate(d(30, 4, 2027)))).toBe('01/04/2027 – 30/04/2027');
+    expect(range(monthToDate(d(31, 12, 2027)))).toBe('01/12/2027 – 31/12/2027');
+  });
+
+  it('ends on 29/02 in a leap year', () => {
+    expect(range(monthToDate(d(29, 2, 2028)))).toBe('01/02/2028 – 29/02/2028');
   });
 });
 

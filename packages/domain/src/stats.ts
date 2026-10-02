@@ -20,6 +20,38 @@ export interface PolicyMetrics {
 }
 
 /**
+ * Lookups built once per input list (F-06), so a dashboard computing many periods and scopes
+ * does not rescan every list for each record. Inputs are read-only snapshots: a list is never
+ * changed after it is handed in, so its index never goes stale.
+ */
+function memoize<K extends object, V>(build: (key: K) => V): (key: K) => V {
+  const cache = new WeakMap<K, V>();
+  return (key) => {
+    let value = cache.get(key);
+    if (value === undefined) {
+      value = build(key);
+      cache.set(key, value);
+    }
+    return value;
+  };
+}
+
+/** Each person's current team, by person id. */
+const teamById = memoize(
+  (people: readonly Person[]) => new Map(people.map((person) => [person.id, person.teamId])),
+);
+
+/** Ids of the appointments whose own "stage after" moved the customer up to N2/N1. */
+const rfAppointmentIds = memoize(
+  (transitions: readonly StageTransition[]) =>
+    new Set(
+      transitions
+        .filter((t) => t.appointmentId !== null && isRfTransition(t.from, t.to))
+        .map((t) => t.appointmentId),
+    ),
+);
+
+/**
  * Whether a record owned by `reId` counts in the scope. A record counts for its RE and for that
  * RE's current team (G2 E).
  */
@@ -30,7 +62,7 @@ export function inScope(people: readonly Person[], reId: string, scope: Scope): 
     case 're':
       return reId === scope.reId;
     case 'team':
-      return people.some((person) => person.id === reId && person.teamId === scope.teamId);
+      return teamById(people).get(reId) === scope.teamId;
   }
 }
 
@@ -63,10 +95,7 @@ export function isRfAppointment(
   appointment: Appointment,
   transitions: readonly StageTransition[],
 ): boolean {
-  return (
-    appointment.status === 'MET' &&
-    transitions.some((t) => t.appointmentId === appointment.id && isRfTransition(t.from, t.to))
-  );
+  return appointment.status === 'MET' && rfAppointmentIds(transitions).has(appointment.id);
 }
 
 /** Cuộc gặp chuyển RF with the meeting day in the period, for the RE on the appointment (G2 C). */
@@ -81,8 +110,8 @@ export function rfCount(
 ): number {
   return data.appointments.filter(
     (appointment) =>
-      isInPeriod(appointment.date, period) &&
       inScope(data.people, appointment.reId, scope) &&
+      isInPeriod(appointment.date, period) &&
       isRfAppointment(appointment, data.transitions),
   ).length;
 }

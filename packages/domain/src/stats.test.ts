@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { GOLDEN_CASES, PEOPLE, POLICIES } from './golden/metrics.fixture';
 import type { Person, Policy } from './model';
 import { calendarDate, customPeriod, periodOf } from './period';
-import { policyMetrics } from './stats';
+import { inScope, policyMetrics } from './stats';
 
 const d = (day: number, month: number, year: number) => calendarDate(year, month, day);
 
@@ -86,5 +86,24 @@ describe('policyMetrics', () => {
       policyMetrics({ people, policies }, month, { kind: 're', reId: 're-2' }).submittedCount,
     ).toBe(1);
     expect(policyMetrics({ people, policies }, month, { kind: 'all' }).submittedCount).toBe(2);
+  });
+});
+
+describe('inScope', () => {
+  const team = { kind: 'team', teamId: 'team-1' } as const;
+
+  it('reads the team of the RE from the people list it is given', () => {
+    const before: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RE', teamId: 'team-1' }];
+    const after: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RE', teamId: 'team-2' }];
+    expect(inScope(before, 're-1', team)).toBe(true);
+    expect(inScope(after, 're-1', team)).toBe(false);
+    expect(inScope(before, 're-1', team)).toBe(true);
+  });
+
+  it('leaves an RE outside any team, or not in the list, out of every team', () => {
+    const people: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RE', teamId: null }];
+    expect(inScope(people, 're-1', team)).toBe(false);
+    expect(inScope(people, 're-9', team)).toBe(false);
+    expect(inScope(people, 're-9', { kind: 'all' })).toBe(true);
   });
 });

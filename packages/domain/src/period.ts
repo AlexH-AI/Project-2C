@@ -216,6 +216,11 @@ export function customPeriod(start: CalendarDate, end: CalendarDate): Period {
   return { kind: 'custom', start, end };
 }
 
+/** MTD (ADR-0007): from the 1st of the month to the viewing `date`, both days in full. */
+export function monthToDate(date: CalendarDate): Period {
+  return customPeriod({ year: date.year, month: date.month, day: 1 }, date);
+}
+
 /** The next (+1) or previous (−1) period of the same kind; a custom range moves by its length. */
 export function shift(period: Period, step: 1 | -1): Period {
   const { kind, start, end } = period;

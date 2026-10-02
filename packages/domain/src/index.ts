@@ -17,6 +17,7 @@ export {
   fromLocalDate,
   localFileStamp,
   isInPeriod,
+  monthToDate,
   parseDate,
   parseQuickDate,
   periodOf,

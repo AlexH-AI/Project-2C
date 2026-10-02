@@ -125,6 +125,15 @@ describe('rfCount', () => {
     expect(rfCount(data, periodOf('month', d(1, 2, 2027)), { kind: 'all' })).toBe(0);
   });
 
+  it('reads the stage changes from the list it is given', () => {
+    const met = appointment('ap', 5, 'MET', 'N2');
+    const rf = [move('N3', 'N2', 5, 'ap')];
+    const notRf = [move('N4', 'N3', 5, 'ap')];
+    expect(isRfAppointment(met, rf)).toBe(true);
+    expect(isRfAppointment(met, notRf)).toBe(false);
+    expect(isRfAppointment(met, rf)).toBe(true);
+  });
+
   it('counts for the RE on the appointment', () => {
     const appointments = [appointment('ap', 5, 'MET', 'N2')];
     const transitions = [move('N3', 'N2', 5, 'ap')];
