@@ -83,6 +83,16 @@ describe('openAppData', () => {
     expect(fromLocalDate(app.db().now())).toEqual(today);
   });
 
+  it("keeps the clock's time of day on the pinned day, and the clock itself when nothing is pinned", async () => {
+    const at = new Date(2026, 11, 31, 23, 59, 59);
+    const pinned = await openAppData({ today: () => TODAY, clock: () => at, seed: fakeSeed });
+    expect(pinned.db().now()).toEqual(new Date(2026, 8, 27, 23, 59, 59));
+    expect(at).toEqual(new Date(2026, 11, 31, 23, 59, 59));
+
+    const real = await openAppData({ clock: () => at, seed: fakeSeed });
+    expect(real.db().now()).toEqual(at);
+  });
+
   it('with no file yet loads the simulated data and saves it', async () => {
     const { storage, saves } = memoryStorage();
 

@@ -153,13 +153,16 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     clock = () => new Date(),
   } = options;
   // The database's clock keeps the app's day, so its "from today on" checks agree with the screens
-  // when e2e pins the day; the time of day is the real one.
-  const now = () => {
-    const at = new Date();
-    const day = today();
-    at.setFullYear(day.year, day.month - 1, day.day);
-    return at;
-  };
+  // when e2e pins the day; the time of day is the clock's. Unpinned, it is the clock itself: one
+  // reading, so a day and a time read either side of midnight never meet.
+  const now = options.today
+    ? () => {
+        const at = new Date(clock());
+        const day = today();
+        at.setFullYear(day.year, day.month - 1, day.day);
+        return at;
+      }
+    : clock;
   let lastSave: LastSave | undefined;
   const lastSaveListeners = new Set<() => void>();
   const saves = createPersistQueue(async (bytes) => {
