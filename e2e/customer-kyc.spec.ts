@@ -46,8 +46,8 @@ test('a new customer: birth year and gender from the profile, gate KYC_INSUFFICI
     '15/09/2026N4tạo KH',
   ]);
 
-  // Gender is not a cốt lõi trường: the new version is not material. The profile command dates it
-  // by the clock, not the pinned day of the simulated data, so the date is left out.
+  // Gender is not a cốt lõi trường: the new version is not material. The database's clock keeps
+  // the pinned day, so it is dated that day: versions come before notes, the later first.
   await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
   const dialog = page.getByRole('dialog', { name: `Sửa hồ sơ · ${NAME}` });
   await dialog.getByRole('radio', { name: 'Nam' }).check();
@@ -55,10 +55,13 @@ test('a new customer: birth year and gender from the profile, gate KYC_INSUFFICI
   await expect(dialog).toBeHidden();
 
   await expect(kyc).toContainText('Giới tính: Nam');
-  await expect(timeline.first()).toHaveText(
-    /^(\d\d\/){2}\d{4}Cập nhật KYC (\d\d\/){2}\d{4}kyc v2$/,
-  );
-  await expect(timeline.nth(1)).toContainText('Hồ sơ KH: giới tính Nam');
+  await expect(timeline).toHaveText([
+    '15/09/2026Cập nhật KYC 15/09/2026kyc v2',
+    '15/09/2026Cập nhật KYC 15/09/2026kyc v1',
+    '15/09/2026Ghi chú hệ thốngHồ sơ KH: giới tính Nam',
+    '15/09/2026Ghi chú hệ thốngHồ sơ KH: năm sinh 1984; giới tính Nữ',
+    '15/09/2026N4tạo KH',
+  ]);
 });
 
 test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it is resolved', async ({

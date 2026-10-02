@@ -152,6 +152,14 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     seed = seedDemo,
     clock = () => new Date(),
   } = options;
+  // The database's clock keeps the app's day, so its "from today on" checks agree with the screens
+  // when e2e pins the day; the time of day is the real one.
+  const now = () => {
+    const at = new Date();
+    const day = today();
+    at.setFullYear(day.year, day.month - 1, day.day);
+    return at;
+  };
   let lastSave: LastSave | undefined;
   const lastSaveListeners = new Set<() => void>();
   const saves = createPersistQueue(async (bytes) => {
@@ -180,6 +188,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
             }
           : undefined,
         locateFile,
+        now,
       });
       current = mine;
       return db;
@@ -190,7 +199,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
 
   // Seeded apart and saved as one file: the saved file never holds a half-built database.
   const demoData = async (): Promise<Uint8Array> => {
-    const db = await openDatabase({ locateFile });
+    const db = await openDatabase({ locateFile, now });
     try {
       const start = performance.now();
       seed(db, today());

@@ -11,7 +11,7 @@ import {
   softDeleteTeam,
   type Database,
 } from '@p2c/db';
-import { calendarDate, formatDate, type CalendarDate } from '@p2c/domain';
+import { calendarDate, formatDate, fromLocalDate, type CalendarDate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import { isUnsavedChangesError, openAppData, type StoragePort } from './app-data';
 
@@ -71,6 +71,16 @@ describe('openAppData', () => {
     createTeam(app.db(), { name: 'Sao Mai' });
     await app.saves.idle();
     expect(app.saves.failed()).toBe(false);
+  });
+
+  it("dates the database's writes and checks on the app's day, also after new data", async () => {
+    let today = TODAY;
+    const app = await openAppData({ today: () => today, seed: fakeSeed });
+    expect(fromLocalDate(app.db().now())).toEqual(TODAY);
+
+    today = calendarDate(2026, 10, 1);
+    await app.reloadDemoData();
+    expect(fromLocalDate(app.db().now())).toEqual(today);
   });
 
   it('with no file yet loads the simulated data and saves it', async () => {
