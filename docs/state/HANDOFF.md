@@ -2,8 +2,8 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-10-03 · máy `DESKTOP-KDURKJP` (Home PC) · Phase 4: #251 T-095, #252 T-096 (+ T-104 #264), #253 T-097 G2 (PR #265) đã merge; **#254 T-098 G3 mockup Tổng quan + Báo cáo: Owner duyệt 03/10** (PR #266, chờ review + merge; `docs/design/mockups/overview.html`, `reports.html`, spec §4.5)
-- **Nhánh:** `main` (`0b0e884`) + `task/T-098-mockup-overview-reports` (PR docs của #254). Không có PR code nào đang mở. Worktree `Project-2C-astra` (Codex) và hai worktree review đứng ở `5eb7c03`. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
+- **Cập nhật:** 2026-10-03 · máy `DESKTOP-KDURKJP` (Home PC) · Phase 4: #251 T-095, #252 T-096 (+ T-104 #264), #253 T-097 G2 (PR #265) đã merge; #254 T-098 G3 mockup Tổng quan + Báo cáo (Owner duyệt 03/10, PR #266) đã merge (`docs/design/mockups/overview.html`, `reports.html`, spec §4.5)
+- **Nhánh:** `main` (`605157a`). Không có PR code nào đang mở. Hai worktree review đứng ở `605157a`; worktree `Project-2C-astra` (Codex) ở `5eb7c03`. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
 - **Phiên song song:** có thể có phiên khác trên cùng checkout — commit theo pathspec, không `git add -A`
 - **Repo public** (27/09) · **ruleset `protect-main`** (28/09): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
 - **Model / effort:** Owner chọn từng phiên (ADR-0001 M1). Chỉ Claude Code viết code, không subagent, cổng G1–G8. **Codex chỉ review độc lập khi đóng phase** (ADR-0001 M2)
@@ -149,7 +149,17 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. **Phase 4, thứ tự:** #251 T-095, #252 T-096 đã merge → #253 T-097 G2 đã merge (`docs/design/phase-4-chi-so.md`, golden `docs/golden/lich-hen.md`, `docs/golden/kh-theo-nhom.md`) → **#254 T-098 G3**: mockup xong (`overview.html` Tổng quan 1a–1e + màn Lịch hẹn 4 nhóm; `reports.html` Báo cáo 2a–2f; spec §4.5) — **Owner duyệt G3 03/10** (cam = Chưa ghi kết quả, xám = Dời – hủy – không đến; quyết định ở spec §4.5) — review PR #266 rồi merge → #255 T-099, #256 T-100 → #257 T-101 → #258 T-102, #259 T-103 → task dashboard / báo cáo / xuất Excel (tạo sau G3; task đầu tiên mang tiêu chí F-18 escape tooltip; thư viện Excel = G4). #257–#259 không bị chặn, làm xen được khi chờ cổng. Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
+2. **Phase 4 — việc nên làm tiếp** (#251–#254 đã xong; G2 + G3 đã duyệt, quyết định ở `docs/design/phase-4-chi-so.md` §4.5):
+   1. **Tạo Issue cho task sau G3** (Claude viết, theo mẫu Task, ước lượng cỡ gồm i18n + e2e):
+      - UI Lịch hẹn 4 nhóm: "Chưa ghi kết quả" (cam `--appt-unrecorded` = `--warn`), Dời – hủy – không đến đổi sang xám (`--appt-missed` = `--text-3`); lịch tháng (chấm chưa ghi đứng đầu), lưới năm, dòng đếm kỳ, badge ở danh sách. Token mới vào `packages/ui/src/tokens.css`.
+      - Tổng quan (dashboard): Lọc, ô Lịch hẹn, 6 KPI + so kỳ trước, 4 ô N4–N1 + chart (bấm ô ẩn nhóm), bảng So sánh team → RE; bỏ `TeamAppointmentsChart`. Task đầu tiên mang tiêu chí F-18 (escape tooltip). Chặn bởi #255. Có thể tách 2–3 task.
+      - Báo cáo: Tổng hợp + Theo team / Theo RE / Theo mốc, góc nhìn Team có ô chọn team, nút Lọc. Chặn bởi #255.
+      - Xuất Excel: **G4** chọn thư viện trước; mỗi bảng một sheet, lưu `exports\`.
+   2. **#255 T-099** index chỉ số + MTD + cửa sổ so sánh (C01–C09, golden A/S thành fixture) — nền cho dashboard / báo cáo, làm trước.
+   3. **#256 T-100** miền năm `MAX_YEAR` + `PeriodPicker` tắt nút ở biên.
+   4. Làm xen khi chờ cổng / review: **#257 T-101** (CI coverage, ghim SHA), **#258 T-102**, **#259 T-103** (T-h dọn UI / i18n / lỗi).
+   5. Cuối phase: kiểm tay exe, review độc lập (Codex), `docs/metrics/phase-4.md`, G7.
+   - Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
 3. Ngưỡng task (P1, P-2): ước lượng cỡ khi viết Issue gồm cả i18n + e2e; vượt ngưỡng thì tách từ đầu; PR liệt kê mọi file ngoài danh sách được phép.
 4. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
 5. Merge (P-1): SHA head lúc merge phải trùng SHA trong `REVIEW: PASS`; head đổi → review lại.
@@ -196,7 +206,7 @@ Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C
 
 ## Chờ Owner
 
-- **G3 Phase 4 (#254):** Owner duyệt 03/10. Còn: review PR #266 ở phiên sạch → merge; sau đó tạo Issue task UI Lịch hẹn 4 nhóm + dashboard / báo cáo / xuất Excel (thư viện Excel = G4).
+- **G4 thư viện Excel** (trước task xuất Excel): Claude đề xuất ứng viên khi tạo Issue.
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
 ## Ghi chú môi trường
