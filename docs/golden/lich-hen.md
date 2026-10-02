@@ -1,6 +1,6 @@
 # Golden examples — Đếm lịch hẹn theo kỳ (G2 Phase 4)
 
-Bảng đối chiếu cho Owner duyệt (#253). Định nghĩa: `docs/design/phase-4-chi-so.md` §1. Sau khi Owner duyệt, task cài đặt chép bảng này thành fixture `packages/domain/src/golden/*.fixture.ts` (cùng mã `L-…`, `A…`); **không sửa để "cho xanh"** — muốn đổi phải qua Owner.
+Bảng đối chiếu, **Owner duyệt G2 03/10/2026** (#253, PR #265). Định nghĩa: `docs/design/phase-4-chi-so.md` §1. Sau khi Owner duyệt, task cài đặt chép bảng này thành fixture `packages/domain/src/golden/*.fixture.ts` (cùng mã `L-…`, `A…`); **không sửa để "cho xanh"** — muốn đổi phải qua Owner.
 
 | Nhóm | Gồm |
 |---|---|
@@ -59,7 +59,7 @@ Cột: **Gặp** = Đã gặp · **DHK** = Dời – hủy – không đến · 
 - **Chuỗi dời** `L-03` (07/01) → `L-04` (12/01) → `L-05` (20/01): ba bản ghi, ba lần tính, mỗi lần ở kỳ của ngày mình. Tuần 04–10/01 thấy `L-03`, tuần 11–17/01 thấy `L-04`, tuần 18–24/01 thấy `L-05`. Khớp lịch tháng và lưới năm của màn Lịch hẹn.
 - **Ô "Lịch hẹn" của Tổng quan** ghi `Gặp / Tổng` — A03: **2 / 10**, kèm số của 3 nhóm còn lại.
 
-## 3. Owner duyệt
+## 3. Owner duyệt — đã duyệt G2 03/10/2026 (PR #265)
 
-- [ ] Dữ liệu kịch bản đúng ý (mục 1)
-- [ ] Kết quả A01–A13 đúng (mục 2)
+- [x] Dữ liệu kịch bản đúng ý (mục 1)
+- [x] Kết quả A01–A13 đúng (mục 2)

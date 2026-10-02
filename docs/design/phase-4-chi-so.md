@@ -1,6 +1,6 @@
 # Phase 4 — Định nghĩa chỉ số Tổng quan và Báo cáo (G2)
 
-- **Issue:** #253 (T-097) · **Cổng:** G2 · **Trạng thái:** chờ Owner duyệt
+- **Issue:** #253 (T-097) · **Cổng:** G2 · **Trạng thái:** **Owner duyệt G2 03/10/2026** (PR #265)
 - **Quyết định Owner:** 03/10/2026 (AskUserQuestion trong phiên #253) + 01/10/2026 (ý 9, HANDOFF "Phản hồi Owner sau kiểm exe")
 - **Nền:** ADR-0007 (định nghĩa HĐ, case size, doanh số, RF, tỉ lệ chốt, tuần T2–CN, MTD; góc nhìn G2 E); golden `docs/golden/chi-so.md` (G01–G22, không đổi)
 - **Golden mới:** `docs/golden/lich-hen.md` (A01–A13), `docs/golden/kh-theo-nhom.md` (S01–S13); bảng C01–C09 và M01–M04 ngay trong file này
@@ -181,9 +181,9 @@ Mốc sau hôm nay: lịch hẹn vẫn đếm (Dự kiến); chỉ số kết qu
 | Task UI Lịch hẹn (mới, sau G3) | 4 nhóm đếm thay 3 |
 | Task dashboard / báo cáo (sau G3) | §4.3, §4.4; tiêu chí F-18 (escape tooltip) ở task dashboard đầu tiên |
 
-## 6. Owner duyệt (G2)
+## 6. Owner duyệt (G2) — đã duyệt 03/10/2026
 
-- [ ] §1 Đếm lịch hẹn + golden A01–A13
-- [ ] §2 Đếm KH theo nhóm + golden S01–S13
-- [ ] §3 Miền năm 1900–2100 + hành vi biên
-- [ ] §4 Bộ chỉ số từng màn, so kỳ trước C01–C09, mốc báo cáo M01–M04
+- [x] §1 Đếm lịch hẹn + golden A01–A13
+- [x] §2 Đếm KH theo nhóm + golden S01–S13
+- [x] §3 Miền năm 1900–2100 + hành vi biên
+- [x] §4 Bộ chỉ số từng màn, so kỳ trước C01–C09, mốc báo cáo M01–M04

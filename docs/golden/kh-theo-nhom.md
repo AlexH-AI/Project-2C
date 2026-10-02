@@ -1,6 +1,6 @@
 # Golden examples — Đếm KH theo nhóm, ảnh chụp cuối kỳ (G2 Phase 4)
 
-Bảng đối chiếu cho Owner duyệt (#253). Định nghĩa: `docs/design/phase-4-chi-so.md` §2. Sau khi Owner duyệt, task cài đặt chép bảng này thành fixture `packages/domain/src/golden/*.fixture.ts` (cùng mã `K-…`, `S…`); **không sửa để "cho xanh"** — muốn đổi phải qua Owner.
+Bảng đối chiếu, **Owner duyệt G2 03/10/2026** (#253, PR #265). Định nghĩa: `docs/design/phase-4-chi-so.md` §2. Sau khi Owner duyệt, task cài đặt chép bảng này thành fixture `packages/domain/src/golden/*.fixture.ts` (cùng mã `K-…`, `S…`); **không sửa để "cho xanh"** — muốn đổi phải qua Owner.
 
 Mỗi KH tính **một lần**, ở nhóm của KH **tại cuối ngày mốc** (`stageOn`, ADR-0007): mốc = ngày cuối kỳ; kỳ chưa hết → hôm nay. KH chưa có lần chuyển nhóm nào tới ngày mốc (tạo sau mốc) không tính. KH đã xóa (xóa mềm) không tính ở mọi kỳ. Góc nhìn: RE **hiện tại** của KH; team = team hiện tại của RE (ADR-0007 G2 E). Tổng quan hiện 4 ô N4–N1; báo cáo thêm Tạm hoãn và Mất cơ hội.
 
@@ -52,7 +52,7 @@ Mỗi cột = ảnh chụp cuối ngày của cột. Kỳ Tuần 11/01 – 17/01
 - **S02** — tới 10/01: `K-21` N2, `K-22` N3, `K-24` N3, `K-25` Mất cơ hội, `K-27` N4, `K-28` N4, `K-29` N1.
 - Số KH đã đóng (TH, MCH) không cộng vào 4 ô của Tổng quan.
 
-## 3. Owner duyệt
+## 3. Owner duyệt — đã duyệt G2 03/10/2026 (PR #265)
 
-- [ ] Dữ liệu kịch bản đúng ý (mục 1)
-- [ ] Kết quả S01–S13 đúng (mục 2)
+- [x] Dữ liệu kịch bản đúng ý (mục 1)
+- [x] Kết quả S01–S13 đúng (mục 2)

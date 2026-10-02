@@ -69,7 +69,7 @@ Chỉ số mơ hồ → hai người đọc ra hai con số khác nhau. Pipeline
 - Mô hình dữ liệu cho chỉ số: `packages/domain/src/model.ts` (`Team`, `Person`, `Customer`, `StageTransition`, `Appointment`, `Policy`, `Scope`).
 - Thực thể cốt lõi: `teams`, `people`, `customers`, `kyc_notes`, `kyc_facts`, `kyc_versions`, `stage_transitions`, `appointments`, `policies`, `ai_analyses`, `settings` — các thực thể dùng cho chỉ số chốt ở G2 (xem trên); KYC chốt ở ADR-0008 / #30.
 
-## Phụ lục — G2 Phase 4 (03/10/2026, #253)
+## Phụ lục — G2 Phase 4 (Owner duyệt 03/10/2026, #253, PR #265)
 
 Chi tiết + golden: `docs/design/phase-4-chi-so.md`, `docs/golden/lich-hen.md` (A01–A13), `docs/golden/kh-theo-nhom.md` (S01–S13). Định nghĩa trong bảng chỉ số ở trên không đổi; G01–G22 giữ nguyên.
 
