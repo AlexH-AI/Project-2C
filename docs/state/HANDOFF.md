@@ -3,7 +3,7 @@
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
 - **Cập nhật:** 2026-10-02 · máy `DESKTOP-KDURKJP` (Home PC) · gói A, B1–B5 đã merge (B3 PR #236, T-092 PR #238, B4 PR #239, B5 PR #240, `main` `0eaf0c4`); **làm tiếp #228 B6**
-- **Nhánh:** `main` (sạch, `0eaf0c4`). Không có PR code nào đang mở. Nhánh local lạ `claude/xenodochial-murdock-66272a` (không phải của phiên này) — không xóa, Owner xem. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
+- **Nhánh:** `main` (sạch, `0eaf0c4`). Không có PR code nào đang mở. Đã dọn 02/10: nhánh `claude/xenodochial-murdock-66272a` + worktree `.claude/worktrees/` của T-092; worktree review đứng ở `origin/main`. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
 - **Phiên song song:** có thể có phiên khác trên cùng checkout — commit theo pathspec, không `git add -A`
 - **Repo public** (27/09) · **ruleset `protect-main`** (28/09): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
 - **Model / effort:** Owner chọn từng phiên (ADR-0001 M1). Chỉ Claude Code viết code, không subagent, cổng G1–G8. **Codex chỉ review độc lập khi đóng phase** (ADR-0001 M2)
