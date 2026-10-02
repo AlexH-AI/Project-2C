@@ -3,7 +3,7 @@
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
 - **Cập nhật:** 2026-10-03 · máy `DESKTOP-KDURKJP` (Home PC) · Phase 4: #251 T-095, #252 T-096 (+ T-104 #264), #253 T-097 G2 (PR #265) đã merge; #254 T-098 G3 mockup Tổng quan + Báo cáo (Owner duyệt 03/10, PR #266) đã merge (`docs/design/mockups/overview.html`, `reports.html`, spec §4.5)
-- **Nhánh:** `main` (`605157a`). Không có PR code nào đang mở. Hai worktree review đứng ở `605157a`; worktree `Project-2C-astra` (Codex) ở `5eb7c03`. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
+- **Nhánh:** `main` (`605157a`). Không có PR code nào đang mở. Hai worktree review đứng ở `605157a`. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
 - **Phiên song song:** có thể có phiên khác trên cùng checkout — commit theo pathspec, không `git add -A`
 - **Repo public** (27/09) · **ruleset `protect-main`** (28/09): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
 - **Model / effort:** Owner chọn từng phiên (ADR-0001 M1). Chỉ Claude Code viết code, không subagent, cổng G1–G8. **Codex chỉ review độc lập khi đóng phase** (ADR-0001 M2)
