@@ -1,3 +1,4 @@
+import { availableParallelism } from 'node:os';
 import { defineConfig, devices } from '@playwright/test';
 
 const port = 4173;
@@ -8,6 +9,9 @@ const EDGE = { ...devices['Desktop Edge'], channel: 'msedge' };
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: true,
+  // Locally every worker seeds its own copy of the data, so many workers only measure CPU
+  // contention (T-095): cap them. CI keeps Playwright's default.
+  workers: process.env.CI ? undefined : Math.min(4, Math.max(1, availableParallelism() >> 2)),
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
@@ -26,11 +30,12 @@ export default defineConfig({
     { name: 'edge', testIgnore: 'seed-timing.spec.ts', dependencies: ['seed-timing'], use: EDGE },
   ],
   webServer: {
-    command: `pnpm build:web && pnpm --filter @p2c/desktop preview --port ${port} --strictPort`,
+    command: 'node e2e/serve.mjs',
     url: `http://localhost:${port}`,
-    reuseExistingServer: !process.env.CI,
+    // Never test another checkout's stale server by accident: reuse only on request (PW_REUSE=1).
+    reuseExistingServer: process.env.PW_REUSE === '1',
     timeout: 120_000,
     // New databases get simulated data anchored on this day instead of today (spec §7).
-    env: { VITE_DEMO_ANCHOR: '15/09/2026' },
+    env: { E2E_PORT: String(port), VITE_DEMO_ANCHOR: '15/09/2026' },
   },
 });
