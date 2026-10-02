@@ -2,12 +2,12 @@
 
 > Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
 
-- **Cập nhật:** 2026-10-01 (tối) · máy `DESKTOP-KDURKJP` (Home PC) · gói A, B1, B1b (#223, PR #233), B2 (#224, PR #234, `main` `de1ba6a`) đã merge; **làm tiếp #225 B3**
-- **Nhánh:** `main` (sạch, `de1ba6a`). Không có PR nào đang mở. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
+- **Cập nhật:** 2026-10-02 · máy `DESKTOP-KDURKJP` (Home PC) · gói A, B1–B5 đã merge (B3 PR #236, T-092 PR #238, B4 PR #239, B5 PR #240, `main` `0eaf0c4`); **làm tiếp #228 B6**
+- **Nhánh:** `main` (sạch, `0eaf0c4`). Không có PR code nào đang mở. Nhánh local lạ `claude/xenodochial-murdock-66272a` (không phải của phiên này) — không xóa, Owner xem. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
 - **Phiên song song:** có thể có phiên khác trên cùng checkout — commit theo pathspec, không `git add -A`
 - **Repo public** (27/09) · **ruleset `protect-main`** (28/09): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
 - **Model / effort:** Owner chọn từng phiên (ADR-0001 M1). Chỉ Claude Code viết code, không subagent, cổng G1–G8. **Codex chỉ review độc lập khi đóng phase** (ADR-0001 M2)
-- **Phase:** 3 — Nghiệp vụ & màn hình: còn #72 (G7) và gói B phản hồi Owner 01/10 (B3–B6; gói A, B1, B1b, B2 đã xong) · Phase 1, 2 đã đóng
+- **Phase:** 3 — Nghiệp vụ & màn hình: còn #72 (G7) và B6 #228 (gói A, B1–B5 đã xong) · Phase 1, 2 đã đóng
 
 ## Trạng thái
 
@@ -17,7 +17,7 @@
 | Đợt 1: #202 T-077, #203 T-078, #204 T-079, #210 T-080 | **Đã merge** 30/09 (PR #206, #208, #209, #211) |
 | #72 T-053 đóng Phase 3 | PR #212, #213 đã merge (metrics, báo cáo, kiểm tay exe 30/09: 0 lỗi). **Hoãn G7** tới khi xong gói A + B phản hồi Owner 01/10, kiểm tay exe lại, 2 review độc lập |
 | Phản hồi Owner 01/10 — gói A | **Đã merge** 01/10: #214 T-081 (PR #221), #215 T-082 (PR #229), #216 T-083 (PR #230) |
-| Phản hồi Owner 01/10 — gói B | Mockup #217 T-084 (PR #220) và #222 T-085 B1 (PR #231), #223 T-086 B1b (PR #233), #224 T-087 B2 (PR #234, `risk:med`) **đã merge** 01/10. Còn mở, làm tuần tự: #225 T-088 B3 → #226 T-089 B4 → #227 T-090 B5 → #228 T-091 B6 (`risk:med`) |
+| Phản hồi Owner 01/10 — gói B | Mockup #217 T-084 (PR #220) và #222 T-085 B1 (PR #231), #223 T-086 B1b (PR #233), #224 T-087 B2 (PR #234, `risk:med`), #225 T-088 B3 (PR #236), #226 T-089 B4 (PR #239), #227 T-090 B5 (PR #240) **đã merge** 01/10; #237 T-092 bỏ `useScope` chết (PR #238). Còn mở: **#228 T-091 B6** (`risk:med`) |
 | Đợt 2 (đầu Phase 4) | Chưa tạo Issue — tạo khi mở Phase 4 (báo cáo §4) |
 
 ## Phản hồi Owner sau kiểm exe (01/10/2026)
@@ -79,7 +79,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - `packages/db/src/database.test.ts:47,98,100,353` ghi cứng phiên bản schema `5` → suy từ `LATEST_SCHEMA_VERSION` trước migration kế tiếp.
 - `backup.ts` (#184): `valueOf` chỉ nhận cột `integer`/`text` (thêm cột `real` sẽ thành `BACKUP_INVALID`); `ORDER BY` dựa vào khóa chính → nên có test mọi bảng có PK. `database.ts`: hai khối `try/catch sqlite.close()` có thể gộp.
 - `SettingsBackup.tsx` (#185): nhánh `SCHEMA_TOO_NEW` của hộp 10b chưa có test.
-- `AppointmentsScreen.tsx:~271` (#179): truyền `caused={undefined}` → cho `caused` là prop tùy chọn. `:~371`: số ngày trong ô lịch dùng `String(day).padStart(2, '0')` thay hàm `domain` (#156). Ô ngoài tháng / ngoài khoảng là `aria-hidden` nên trình đọc màn hình không đọc số lịch ngày đó (#156).
+- `AppointmentsScreen.tsx:~271` (#179): truyền `caused={undefined}` → cho `caused` là prop tùy chọn. Ô ngoài tháng / ngoài khoảng là `aria-hidden` nên trình đọc màn hình không đọc số lịch ngày đó (#156).
 - Lịch hẹn (#162–#168):
   - `outcomeChoices` (`outcome-form.ts:21`) không chặn Đã gặp / Hủy / Không đến cho lịch `RESCHEDULED` (UI không mở hộp, db ném `INVALID_STATUS`).
   - Mùi *Duplicated Code*:
@@ -98,12 +98,15 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - `Overview.tsx:9` (R4): lấy "hôm nay" từ đồng hồ máy thay vì `useAppData().today()`. Ô ngày tùy chọn báo đỏ sớm khi Tab.
 - Tooling (R4): `session-end.ps1:39` `git add -A` gom file phiên khác; hook `review-pr-hint.mjs` nhận "issue #N" gần chữ "review" thành PR.
 - `app-icon.svg`, `public/favicon.svg` (#128): thiếu dòng trống cuối file; `favicon.svg` là bản sao `app-icon.svg` → đổi icon phải sửa cả hai.
-- `DataTable` (Phase 1): chưa có test `sortable: false` và bảng rỗng; kiểm lại cột Giờ có `tabular-nums` (cột không phải `text` đã có).
+- `DataTable` (Phase 1): chưa có test `sortable: false` và bảng rỗng; kiểm lại cột Giờ có `tabular-nums` (cột không phải `text` đã có). `cellClass` (#240) chỉ có e2e phủ — repo chưa có công cụ test component (thêm là G4).
+- `e2e/appointments.spec.ts` (#236, NIT): `new RegExp(`^${name}`)` không escape tên RE; tên seed hiện không có ký tự regex.
+- `AppointmentsScreen.tsx` (#239, không chặn): nhánh `!pickable` vẫn có thể gắn `bg-period-band` về lý thuyết; `inPeriod` ⇒ `pickable` nên không xảy ra.
 - Domain (R3): API `nextKycVersion`; ngày nhanh đầu năm (gợi ý năm trước?).
 - Token G3 (R4, Owner cân nhắc): viền ô nhập / mũi tên sắp xếp dưới 3:1.
 
 ### RESOLVED
 
+- `useScope()` chết sau B3 → bỏ (#237, PR #238). Số ngày ô lịch `padStart` → `formatDayOfMonth` / `formatDayMonth` của `domain` (#239).
 - `formatCount` tách khỏi `money.ts` → `domain/number.ts`; `": "` cứng ở `SettingsBackup.tsx` → i18n (#185).
 - So chuỗi `'RELOAD_UNSAVED_CHANGES'` lặp → `isUnsavedChangesError` (`app-data.ts`).
 - Danh sách cột `columns.map(quote).join` lặp ở `backup.ts` → `columnList`.
@@ -123,6 +126,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - Hộp lỗi màn hình chỉ hiện `String(error)`, không stack (#206 vòng 1; React 19 tự `console.error` kèm stack).
 - `storage.rs`: đường dẫn kết thúc bằng `\` sẽ thành `"…\"` — không xảy ra vì `folder()` luôn trả `…\exports|backups` (#196); `rename` trên Windows ghi đè đích, chỉ tránh nhờ claim (chương trình ngoài tạo trùng tên trong vài ms thì bị ghi đè) (#192).
 - Lịch hẹn: chưa có cây Team → RE ở cột trái (góc nhìn dùng bộ chọn chung; "Trong ngày" đảm nhận team → RE); tóm tắt tháng / trigger / chuyển nhóm của mockup là chỉ số Phase 4 (#156/#158). Biến thể "không đổi nhóm KH" của hộp xóa hiện bảng 3 dòng cả cho lịch Hủy / Không đến (#179).
+- #227 (PR #240): test unit tùy chọn "`DataTable` gắn class của cột vào ô" thay bằng e2e (`appointments.spec.ts:189`) — mâu thuẫn spec với hạ tầng test, review chấp nhận.
 - Hai file ngoài danh sách của #68 (`domain/period.ts` `formatDayMonth`, `db/appointments.ts` `coordinatorsByAppointment`) — Owner ghi nhận (#155).
 - Hành vi theo spec, lớp gọi phải tuân (#33, #36, #44, #62):
   - `suggestedQuestions` trả cho mọi hạng mục thiếu ở cả 4 trạng thái (UI quyết định hiện); trường mâu thuẫn xếp theo `KYC_FIELDS`.
@@ -135,7 +139,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. **Phản hồi Owner 01/10** (mục trên): gói A, B1, B1b, B2 xong. **Làm tuần tự** (Owner 01/10), mỗi Issue một phiên: **#225 B3 (kế tiếp: Lịch hẹn, hàng chọn RE ở góc nhìn Team; dùng lại `shell/RePicker.tsx` và RE chọn trong `ScopeContext.tsx` / `scope.ts` của B2; chỉ lọc RE phụ trách, không tính phối hợp)** → #226 B4 → #227 B5 → #228 B6. Mở đầu bằng `gh issue view 225`, nhánh `task/T-088-<slug>` từ `main`. Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
+2. **Phản hồi Owner 01/10** (mục trên): gói A, B1–B5 xong. Còn **#228 T-091 B6** (`risk:med`): lịch hẹn kỳ Năm — lưới 12 tháng, 4 cột = 4 quý, tháng tương lai mờ, tháng hiện tại nổi; ô = số tháng + tổng lịch + thanh ngang 3 màu (đã gặp / dời-hủy-không đến / dự kiến); bấm ô → mở kỳ Tháng đó; khối "Trong ngày" ẩn ở kỳ Năm; giữ tổng lịch quý (mockup B6 `phase-3-feedback.html`). Lưới năm tách file mới (không dồn vào `AppointmentsScreen.tsx`). Mở đầu bằng `gh issue view 228`, nhánh `task/T-091-<slug>` từ `main`. `risk:med` → sau review PASS chờ Owner merge. Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
 3. **#72 T-053** (sau gói A + B) — #72 vẫn mở. Còn:
    - Owner kiểm tay exe bản sau gói A + B; cập nhật `phase-3.md` (số Issue, lỗi Owner phát hiện, kiểm tay).
    - **2 review độc lập** trên `main` (gồm deep review Phase 1→3 lần 2 ở phiên sạch). Phát hiện mới → đối chiếu sổ P-3 bên dưới trước khi ghi là MỚI; lỗi chặn → Issue trước khi đóng Phase 3.
