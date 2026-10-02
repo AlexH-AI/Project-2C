@@ -246,6 +246,8 @@ function validatePerson(db: Database, input: PersonInput, selfId: string | null)
   const name = requireName(input.name);
   if (input.teamId === null) {
     if (ROLES_WITH_TEAM.includes(input.role)) throw new DbError('TEAM_REQUIRED');
+  } else if (!ROLES_WITH_TEAM.includes(input.role)) {
+    throw new DbError('TEAM_NOT_ALLOWED');
   } else {
     liveTeam(db, input.teamId);
     if (input.role === 'TL') assertNoOtherLead(db, input.teamId, selfId);

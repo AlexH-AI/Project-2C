@@ -346,6 +346,22 @@ describe('birth year and gender come from the customer profile (D2)', () => {
     ]);
   });
 
+  it('refuses a profile fact in conflict whose value is no longer the profile’s (D2)', async () => {
+    const { db: database, customer, note } = await withCustomer({ birthDate: { year: 1972 } });
+    const system = getKycProfile(database, customer.id).facts[0]!;
+    const input = { field: 'birthYear', noteId: note.id, date: d(3, 9, 2026) } as const;
+    markKycConflict(database, customer.id, { ...input, value: 1974 });
+    // Only a hand-edited file leaves the profile on another year than its `SYSTEM` fact.
+    database.sqlite.run("UPDATE customers SET birth_date = '1980' WHERE id = ?", [customer.id]);
+
+    expect(
+      codeOf(() =>
+        resolveKycConflict(database, customer.id, { factId: system.id, date: d(4, 9, 2026) }),
+      ),
+    ).toBe('KYC_FIELD_FROM_PROFILE');
+    expect(listKycVersions(database, customer.id)).toHaveLength(2);
+  });
+
   it('settles a birth year conflict when the profile birth date is corrected', async () => {
     const { db: database, customer, note } = await withCustomer({ birthDate: { year: 1972 } });
     const input = { field: 'birthYear', noteId: note.id, date: d(3, 9, 2026) } as const;

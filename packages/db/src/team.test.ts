@@ -139,6 +139,29 @@ describe('people', () => {
     }
   });
 
+  it('refuses a team for IS, BD and BDM, also when the role changes or the person is restored', async () => {
+    const { db } = await setup();
+    const team = createTeam(db, { name: 'Sao Mai' });
+    const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const bd = createPerson(db, { name: 'Bình', role: 'BD', teamId: null });
+
+    for (const role of ['IS', 'BD', 'BDM'] as const) {
+      expect(codeOf(() => createPerson(db, { name: role, role, teamId: team.id }))).toBe(
+        'TEAM_NOT_ALLOWED',
+      );
+    }
+    expect(codeOf(() => updatePerson(db, bd.id, { teamId: team.id }))).toBe('TEAM_NOT_ALLOWED');
+    expect(codeOf(() => updatePerson(db, re.id, { role: 'BD' }))).toBe('TEAM_NOT_ALLOWED');
+    expect(updatePerson(db, re.id, { role: 'BD', teamId: null })).toMatchObject({
+      role: 'BD',
+      teamId: null,
+    });
+    // A deleted IS from a file written before the rule cannot come back with a team.
+    softDeletePerson(db, bd.id);
+    db.sqlite.run('UPDATE people SET team_id = ? WHERE id = ?', [team.id, bd.id]);
+    expect(codeOf(() => restorePerson(db, bd.id))).toBe('TEAM_NOT_ALLOWED');
+  });
+
   it('rejects an empty name or a team that does not exist', async () => {
     const { db } = await setup();
     const team = createTeam(db, { name: 'Sao Mai' });

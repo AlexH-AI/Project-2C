@@ -22,9 +22,10 @@ import {
 } from './customers';
 import { openDatabase } from './database';
 import { DbError } from './errors';
-import { markKycConflict, recordKycNote } from './kyc';
+import { markKycConflict, recordKycNote, resolveKycConflict } from './kyc';
 import { submitPolicy } from './policies';
 import { seedDemoData } from './seed';
+import { updatePerson } from './team';
 import { setup } from './test-support';
 
 type Row = Record<string, unknown>;
@@ -157,6 +158,33 @@ describe('importBackup — rules across tables', () => {
     expect(listCustomers(imported.db)).toHaveLength(3);
   });
 
+  /** Records a command could leave, next to each refused case of rules 1, 5, 8 and 9 below. */
+  const accepted: [string, (b: BackupJson, ids: Ids) => void][] = [
+    [
+      'a deleted customer of a deleted RE',
+      (b, ids) => {
+        const gone = person(b, ids.re, { id: 'gone-re', deleted_at: DELETED });
+        row(b, 'customers', (c) => c.id === ids.kien).re_id = gone.id;
+      },
+    ],
+    [
+      'a deleted TL next to the live TL of the team',
+      (b, ids) => person(b, ids.tl, { id: 'old-tl', name: 'Cũ', deleted_at: DELETED }),
+    ],
+    [
+      'a birth year in conflict between the profile and the RE’s note',
+      (b, ids) => birthYearConflict(b, ids, '1984'),
+    ],
+  ];
+
+  it.each(accepted)('accepts %s', async (_label, edit) => {
+    const { db, ids } = await history();
+    const backup = JSON.parse(exportBackup(db)) as BackupJson;
+    edit(backup, ids);
+
+    await expect(importBackup(JSON.stringify(backup))).resolves.toBeDefined();
+  });
+
   /**
    * Each label starts with the number of the rule it breaks (spec §6), which the error names, so a
    * case cannot pass on another rule; UNIQUE is caught by the schema while loading.
@@ -184,6 +212,21 @@ describe('importBackup — rules across tables', () => {
     [
       '1: a withdrawn later transition from no stage',
       (b, ids) => (transition(b, ids.hoa, 2).from_stage = null),
+    ],
+    [
+      '1: a customer’s creation tied to a meeting kept in its stage, same day',
+      (b, ids) => {
+        Object.assign(
+          row(b, 'appointments', (a) => a.id === ids.met),
+          {
+            date: '2026-09-01',
+            stage_after: 'N4',
+          },
+        );
+        transition(b, ids.lan, 1).appointment_id = ids.met;
+        remove(b, 'stage_transitions', (t) => t.customer_id === ids.lan && t.seq === 2);
+        transition(b, ids.lan, 3).from_stage = 'N4';
+      },
     ],
     [
       '3: a transition dated before the one recorded ahead of it (D10)',
@@ -240,6 +283,10 @@ describe('importBackup — rules across tables', () => {
       (b, ids) => (row(b, 'appointments', (a) => a.rescheduled_from_id !== null).re_id = ids.tl),
     ],
     ['5: a live policy whose RE is a TL', (b, ids) => (b.tables.policies![0]!.re_id = ids.tl)],
+    [
+      '5: a live customer, appointment and policy of a deleted RE',
+      (b, ids) => (row(b, 'people', (p) => p.id === ids.re).deleted_at = DELETED),
+    ],
     [
       '5: the RE of an appointment also coordinating it',
       (b, ids) => (b.tables.appointment_coordinators![0]!.person_id = ids.re),
@@ -306,6 +353,26 @@ describe('importBackup — rules across tables', () => {
       },
     ],
     [
+      '8: a birth year in conflict from the profile, other than the profile’s (D2)',
+      (b, ids) => birthYearConflict(b, ids, '1983'),
+    ],
+    ['9: two live TLs in a team', (b, ids) => person(b, ids.tl, { id: 'second-tl', name: 'Hải' })],
+    [
+      '9: two live TLs in a deleted team',
+      (b, ids) => {
+        const team = { ...b.tables.teams![0]!, id: 'old-team', name: 'Cũ', deleted_at: DELETED };
+        b.tables.teams!.push(team);
+        person(b, ids.tl, { id: 'first-tl', team_id: team.id });
+        person(b, ids.tl, { id: 'second-tl', team_id: team.id });
+      },
+    ],
+    ['9: live people in a deleted team', (b) => (b.tables.teams![0]!.deleted_at = DELETED)],
+    ['9: an IS in a team', (b, ids) => person(b, ids.tl, { id: 'is', role: 'IS' })],
+    [
+      '9: a deleted BDM in a team',
+      (b, ids) => person(b, ids.tl, { id: 'bdm', role: 'BDM', deleted_at: DELETED }),
+    ],
+    [
       '2: a stage other than the latest live transition’s',
       (b, ids) => (row(b, 'customers', (c) => c.id === ids.lan).stage = 'N1'),
     ],
@@ -330,6 +397,53 @@ describe('importBackup — rules across tables', () => {
   });
 });
 
+describe('importBackup — a file the app wrote from an imported one', () => {
+  it('imports again after each main command ran on the imported demo data', async () => {
+    const now = () => new Date(Date.UTC(2026, 8, 15, 10, 0, 0));
+    const seeded = await openDatabase({ now });
+    seedDemoData(seeded, { anchorDate: day(15), seed: 2 });
+    const { db } = await importBackup(exportBackup(seeded), { now });
+    const first = (sql: string) => db.sqlite.exec(`${sql} LIMIT 1`)[0]!.values[0]!.map(String);
+    const [reId] = first("SELECT id FROM people WHERE role = 'RE' AND deleted_at IS NULL");
+    const [tlId] = first("SELECT id FROM people WHERE role = 'TL' AND deleted_at IS NULL");
+    // A meeting whose transition is still its customer's latest, so deleting it withdraws it.
+    const [metId] = first(
+      `SELECT a.id FROM appointments a
+       JOIN stage_transitions t ON t.appointment_id = a.id AND t.deleted_at IS NULL
+       JOIN customers c ON c.id = a.customer_id AND c.deleted_at IS NULL
+       WHERE a.deleted_at IS NULL AND t.seq = (SELECT MAX(seq) FROM stage_transitions
+         WHERE customer_id = t.customer_id AND deleted_at IS NULL)`,
+    );
+    const [factId, conflictCustomerId] = first(
+      `SELECT f.id, f.customer_id FROM kyc_facts f
+       JOIN customers c ON c.id = f.customer_id AND c.deleted_at IS NULL
+       WHERE f.status = 'conflict'`,
+    );
+
+    const lan = createCustomer(db, {
+      name: 'Lan',
+      reId: reId!,
+      stage: 'N4',
+      date: day(14),
+      birthDate: { year: 1984 },
+      gender: 'FEMALE',
+    });
+    const meeting = scheduleAppointment(db, {
+      customerId: lan.id,
+      reId: reId!,
+      date: day(15),
+      triggerType: 'REFERRAL',
+    });
+    recordMeetingOutcome(db, meeting.id, { status: 'MET', stageAfter: 'N3', nextStep: 'Gặp lại' });
+    softDeleteAppointment(db, metId!);
+    resolveKycConflict(db, conflictCustomerId!, { factId: factId!, date: day(15) });
+    updatePerson(db, reId!, { name: 'An Mới' });
+    updatePerson(db, tlId!, { name: 'Hà Mới' });
+
+    await expect(importBackup(exportBackup(db))).resolves.toBeDefined();
+  }, 60_000);
+});
+
 /** The row of `table` that `which` picks; the test fails when there is none. */
 function row(backup: BackupJson, table: string, which: (row: Row) => boolean): Row {
   const found = backup.tables[table]!.find(which);
@@ -344,6 +458,35 @@ function transition(backup: BackupJson, customerId: string, seq: number): Row {
 /** The customer's first fact of the field. */
 function fact(backup: BackupJson, customerId: string, field: string): Row {
   return row(backup, 'kyc_facts', (f) => f.customer_id === customerId && f.field === field);
+}
+
+const DELETED = '2026-09-26T08:00:00.000Z';
+
+/** Adds a copy of a person's row with `changes`, and returns it. */
+function person(backup: BackupJson, copyOf: string, changes: Row): Row {
+  const added = { ...row(backup, 'people', (p) => p.id === copyOf), ...changes };
+  backup.tables.people!.push(added);
+  return added;
+}
+
+/**
+ * Lan's birth year from the profile turned to a conflict, with `systemValue`, against 1985 from
+ * the RE's note.
+ */
+function birthYearConflict(backup: BackupJson, ids: Ids, systemValue: string): void {
+  const system = fact(backup, ids.lan, 'birthYear');
+  Object.assign(system, { status: 'conflict', value_json: systemValue });
+  const note = row(backup, 'kyc_notes', (n) => n.customer_id === ids.lan && n.source === 'RE');
+  const seq = Math.max(
+    ...backup.tables.kyc_facts!.filter((f) => f.customer_id === ids.lan).map((f) => Number(f.seq)),
+  );
+  backup.tables.kyc_facts!.push({
+    ...system,
+    id: 'flagged',
+    note_id: note.id,
+    seq: seq + 1,
+    value_json: '1985',
+  });
 }
 
 function remove(backup: BackupJson, table: string, which: (row: Row) => boolean): void {

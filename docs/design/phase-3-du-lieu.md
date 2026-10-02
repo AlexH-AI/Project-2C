@@ -57,7 +57,7 @@ Phase 3 cho phép **nhập liệu hoàn chỉnh** trong app: Team/nhân sự, KH
 | `id` | text | PK |
 | `name` | text | not null |
 | `role` | text | `RE` / `TL` / `IS` / `BD` / `BDM` |
-| `team_id` | text | FK `teams`; **bắt buộc** với RE và TL, có thể trống với IS/BD/BDM |
+| `team_id` | text | FK `teams`; **bắt buộc** với RE và TL, **luôn trống** với IS/BD/BDM (#252) |
 | `created_at` / `updated_at` / `deleted_at` | text | |
 
 Team hiện tại của RE = `team_id` (v1 không lưu lịch sử chuyển team — ADR-0007 G2 E).
@@ -172,7 +172,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
 
 | Lệnh | Quy tắc chính |
 |---|---|
-| `createTeam`, `renameTeam`, `createPerson`, `updatePerson` | RE/TL phải có team; mỗi team tối đa 1 TL chưa xóa (Owner, G3 01/10/2026): tạo / đổi / khôi phục nhân sự thành TL thứ hai → `TEAM_HAS_LEAD` (B1b) |
+| `createTeam`, `renameTeam`, `createPerson`, `updatePerson`, `restorePerson` | RE/TL phải có team; IS/BD/BDM kèm team → `TEAM_NOT_ALLOWED` (#252; đổi RE/TL sang IS/BD/BDM phải truyền `teamId: null`, UI tự bỏ team); mỗi team tối đa 1 TL chưa xóa (Owner, G3 01/10/2026): tạo / đổi / khôi phục nhân sự thành TL thứ hai → `TEAM_HAS_LEAD` (B1b) |
 | `createCustomer` | Chỉ ở nhóm mở N4–N1 (`assertValidTransition`, ADR-0007); ghi transition đầu (`from` null); nếu có ngày sinh/giới tính → ghi chú `SYSTEM` + dữ kiện (D2) |
 | `updateCustomerProfile` | Đổi tên / RE / ngày sinh / giới tính; đổi ngày sinh hoặc giới tính → ghi chú `SYSTEM` + `confirmFact` |
 | `changeStageManually` | `assertValidTransition`; transition `appointment_id` null — không bao giờ tính RF; ngày không được trước transition mới nhất (D10) |
@@ -216,14 +216,15 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
     - `kyc_facts.value_json`: JSON parse được, là chuỗi / số / true-false và đã chuẩn hóa theo kiểu của trường (`normalizeKycValue` không đổi giá trị: `"2"` cho `childrenCount` bị từ chối);
     - tiền là số nguyên dương: CHECK của schema.
   - **Kiểm bất biến liên bảng** (#204, `validateBackupInvariants`, chạy sau kiểm giá trị; Phase 6 kéo snapshot dùng lại): các giá trị đều hợp lệ nhưng bảng mâu thuẫn nhau → `BACKUP_INVALID` với params `rule` = số của bất biến đầu tiên bị vi phạm (để chẩn đoán; hộp 10b không đổi), DB hiện tại không đổi. Cũng là hàm đọc thuần trên DB tạm. Quy tắc nói về dữ liệu sống chỉ đọc bản ghi chưa xóa, nên bản ghi xóa mềm / khôi phục theo lệnh nghiệp vụ (D7) vẫn nhận:
-    1. Mỗi KH (kể cả đã xóa) có transition đầu là `seq` nhỏ nhất, chưa xóa, `from_stage` null, `to_stage` là nhóm mở N4–N1; không transition nào khác có `from_stage` null. `seq` duy nhất theo KH: UNIQUE của schema.
+    1. Mỗi KH (kể cả đã xóa) có transition đầu là `seq` nhỏ nhất, chưa xóa, `from_stage` null, `appointment_id` null (tạo KH không do cuộc hẹn; `withdrawAppointmentTransition` gặp transition gắn cuộc hẹn mà `from_stage` null → `INVALID_TRANSITION`), `to_stage` là nhóm mở N4–N1; không transition nào khác có `from_stage` null. `seq` duy nhất theo KH: UNIQUE của schema.
     2. `customers.stage` = `to_stage` của transition chưa xóa có `seq` lớn nhất.
     3. Theo `seq`, transition chưa xóa: ngày không giảm (D10), `from_stage` = `to_stage` của transition chưa xóa trước nó, mỗi bước qua `assertValidTransition`.
     4. Transition chưa xóa có `appointment_id` → cuộc hẹn chưa xóa (xóa cuộc hẹn luôn rút transition, D7), cùng KH, `MET`, `stage_after` = `to_stage`, cùng ngày; mỗi cuộc hẹn tối đa một transition chưa xóa.
-    5. `re_id` của KH / cuộc hẹn / HĐ **chưa xóa** là người vai trò RE (RE đổi vai trò được khi bản ghi của họ đã xóa, §3.3); RE/TL có team: CHECK của schema; người phối hợp ≠ `re_id` của cuộc hẹn; `rescheduled_from_id` trỏ cuộc hẹn cùng KH, status `RESCHEDULED`.
+    5. `re_id` của KH / cuộc hẹn / HĐ **chưa xóa** là người **chưa xóa** vai trò RE (RE đổi vai trò hay bị xóa được khi bản ghi của họ đã xóa, §3.3); RE/TL có team: CHECK của schema; người phối hợp ≠ `re_id` của cuộc hẹn; `rescheduled_from_id` trỏ cuộc hẹn cùng KH, status `RESCHEDULED`.
     6. `kyc_facts.note_id` là ghi chú cùng KH. `seq` ghi chú / dữ kiện / phiên bản duy nhất theo KH: UNIQUE của schema.
     7. Mỗi trường KYC có dữ kiện của một KH: đúng một fact `active` và không `conflict`, hoặc ≥ 2 fact `conflict` và không `active`.
-    8. Fact `birthYear` / `gender` đang `active` đến từ ghi chú nguồn `SYSTEM` và khớp `customers.birth_date` (năm) / `gender` (D2).
+    8. Fact `birthYear` / `gender` đang `active` đến từ ghi chú nguồn `SYSTEM` và khớp `customers.birth_date` (năm) / `gender` (D2). Fact `birthYear` / `gender` đang `conflict` từ ghi chú `SYSTEM` cũng khớp hồ sơ (fact `conflict` từ ghi chú khác giữ quy tắc 7); `resolveKycConflict` chọn fact `SYSTEM` lệch hồ sơ → `KYC_FIELD_FROM_PROFILE`.
+    9. Nhân sự (#252, Owner 02/10/2026): (i) mỗi team chưa xóa có tối đa 1 TL chưa xóa (#223); (ii) IS / BD / BDM có `team_id` null, kể cả người đã xóa; (iii) người chưa xóa có `team_id` → team chưa xóa. Dữ liệu cũ sai bị từ chối, không migration (dữ liệu hiện có là giả lập: nạp lại seed).
 
 ## 7. Dữ liệu giả lập (seed)
 

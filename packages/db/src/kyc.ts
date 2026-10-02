@@ -165,13 +165,18 @@ export function resolveKycConflict(
   command: { readonly factId: string; readonly date: CalendarDate; readonly material?: boolean },
 ): KycChange {
   return db.transaction(() => {
-    liveCustomer(db, customerId);
+    const customer = liveCustomer(db, customerId);
     const before = loadProfile(db, customerId);
     const chosen = before.facts.find((fact) => fact.id === command.factId);
     if (!chosen) throw new DbError('KYC_FACT_NOT_FOUND');
     if (chosen.status !== 'conflict') throw new DbError('KYC_NOT_IN_CONFLICT');
     const source = before.notes.find((note) => note.id === chosen.noteId)?.source;
-    if (PROFILE_FIELDS.has(chosen.field) && source !== 'SYSTEM') {
+    // Only the profile's own value settles a birth year or gender (D2).
+    if (
+      PROFILE_FIELDS.has(chosen.field) &&
+      (source !== 'SYSTEM' ||
+        chosen.value !== profileFactValue(chosen.field as 'birthYear' | 'gender', customer))
+    ) {
       throw new DbError('KYC_FIELD_FROM_PROFILE');
     }
     const after = resolveConflict(before, chosen.id);

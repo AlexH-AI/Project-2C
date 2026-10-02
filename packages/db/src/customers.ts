@@ -246,6 +246,8 @@ export function withdrawAppointmentTransition(db: Database, appointmentId: strin
     )
     .get();
   if (!caused) return false;
+  // A customer's creation is never caused by an appointment; only a hand-edited file says so.
+  if (caused.fromStage === null) throw new DbError('INVALID_TRANSITION');
   if (latestTransition(db, caused.customerId)?.id !== caused.id) {
     throw new DbError('TRANSITION_NOT_LATEST');
   }
@@ -254,8 +256,7 @@ export function withdrawAppointmentTransition(db: Database, appointmentId: strin
     .set({ deletedAt: db.now().toISOString() })
     .where(eq(stageTransitions.id, caused.id))
     .run();
-  // An appointment's transition is never a customer's first, so `from` is set.
-  updateCustomerRow(db, caused.customerId, { stage: caused.fromStage! });
+  updateCustomerRow(db, caused.customerId, { stage: caused.fromStage });
   return true;
 }
 

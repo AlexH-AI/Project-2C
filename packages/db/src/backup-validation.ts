@@ -90,7 +90,7 @@ function validKycValue(field: string, json: string): boolean {
 type Row = Record<string, SqlValue>;
 
 /** A rule across tables, by its number in spec §6. */
-type Rule = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+type Rule = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
 /**
  * Throws `BACKUP_INVALID`, params `rule` (the first rule of spec §6 broken), when the tables
@@ -108,7 +108,8 @@ export function validateBackupInvariants(db: Database): void {
     transitionRule(customers, transitions) ??
     meetingRule(appointments, transitions) ??
     ownerRule(read, appointments) ??
-    kycRule(read, customers);
+    kycRule(read, customers) ??
+    staffRule(read);
   if (broken !== null) throw new DbError('BACKUP_INVALID', { rule: broken });
 }
 
@@ -117,10 +118,12 @@ function transitionRule(customers: Row[], transitions: Row[]): Rule | null {
   const byCustomer = groupBy(transitions, 'customer_id');
   for (const customer of customers) {
     const [first, ...later] = byCustomer.get(customer.id) ?? [];
-    // Created in an open stage; only an appointment's transition is ever withdrawn, never the first.
+    // Created in an open stage by hand; only an appointment's transition is ever withdrawn, never
+    // the first.
     if (
       !first ||
       first.from_stage !== null ||
+      first.appointment_id !== null ||
       first.deleted_at !== null ||
       !OPEN_STAGES.includes(first.to_stage) ||
       later.some((t) => t.from_stage === null)
@@ -168,16 +171,16 @@ function meetingRule(appointments: Map<unknown, Row>, transitions: Row[]): Rule 
 }
 
 /**
- * Rule 5: a live customer, appointment or policy belongs to an RE (who may stop being one only
- * once their records are deleted); the RE never coordinates their own appointment; an appointment
- * is rescheduled from one of the same customer (D3).
+ * Rule 5: a live customer, appointment or policy belongs to a live RE (who may stop being one, or
+ * be deleted, only once their records are deleted); the RE never coordinates their own
+ * appointment; an appointment is rescheduled from one of the same customer (D3).
  */
 function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>): Rule | null {
   const notRe = read(
     ['customers', 'appointments', 'policies']
       .map(
         (table) =>
-          `SELECT 1 FROM ${table} r JOIN people p ON p.id = r.re_id WHERE r.deleted_at IS NULL AND p.role <> 'RE'`,
+          `SELECT 1 FROM ${table} r JOIN people p ON p.id = r.re_id WHERE r.deleted_at IS NULL AND (p.role <> 'RE' OR p.deleted_at IS NOT NULL)`,
       )
       .join(' UNION ALL '),
   );
@@ -195,7 +198,8 @@ function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>
 /**
  * Rules 6–8 (ADR-0008, D2): a fact comes from a note of its own customer; each field has either one
  * active fact or at least two in conflict; the birth year and gender in effect are the profile's,
- * from a `SYSTEM` note.
+ * from a `SYSTEM` note, and one in conflict from a `SYSTEM` note is the profile's too, which
+ * resolving the conflict would confirm.
  */
 function kycRule(read: (sql: string) => Row[], customers: Row[]): Rule | null {
   const facts = read(
@@ -210,17 +214,37 @@ function kycRule(read: (sql: string) => Row[], customers: Row[]): Rule | null {
     counts.set(key, count);
     if (fact.status === 'superseded') continue;
     count[fact.status as 'active' | 'conflict']++;
-    if (fact.status === 'active' && (fact.field === 'birthYear' || fact.field === 'gender')) {
+    const fromProfile = fact.source === 'SYSTEM';
+    if (
+      (fact.field === 'birthYear' || fact.field === 'gender') &&
+      (fact.status === 'active' || fromProfile)
+    ) {
       const customer = byCustomer.get(fact.customer_id)!;
       const profile = { birthDate: customer.birth_date, gender: customer.gender } as ProfileFields;
       const expected = JSON.stringify(profileFactValue(fact.field, profile));
-      if (fact.source !== 'SYSTEM' || fact.value_json !== expected) return 8;
+      if (!fromProfile || fact.value_json !== expected) return 8;
     }
   }
   const settled = [...counts.values()].every(
     ({ active, conflict }) => (active === 1 && conflict === 0) || (active === 0 && conflict >= 2),
   );
   return settled ? null : 7;
+}
+
+/**
+ * Rule 9 (staff): only RE and TL belong to a team, deleted or not; a live person's team is live;
+ * a team has at most one live TL (#223). A live TL of a deleted team breaks the second part, so
+ * the third is counted over every team.
+ */
+function staffRule(read: (sql: string) => Row[]): Rule | null {
+  const broken = read(
+    [
+      "SELECT 1 FROM people WHERE role NOT IN ('RE', 'TL') AND team_id IS NOT NULL",
+      'SELECT 1 FROM people p JOIN teams t ON t.id = p.team_id WHERE p.deleted_at IS NULL AND t.deleted_at IS NOT NULL',
+      "SELECT 1 FROM people WHERE role = 'TL' AND deleted_at IS NULL GROUP BY team_id HAVING COUNT(*) > 1",
+    ].join(' UNION ALL '),
+  );
+  return broken.length === 0 ? null : 9;
 }
 
 function groupBy(rows: Row[], column: string): Map<unknown, Row[]> {
