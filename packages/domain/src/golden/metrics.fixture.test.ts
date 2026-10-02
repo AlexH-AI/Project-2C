@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { compareDates, formatDate } from '../period';
+import { compareDates, formatDate, monthToDate } from '../period';
 import {
   APPOINTMENTS,
   CUSTOMERS,
   EXPECTED_RF_APPOINTMENT_IDS,
   GOLDEN_CASES,
+  MTD_VIEWING_DATE,
   PEOPLE,
   POLICIES,
   STAGE_TRANSITIONS,
@@ -87,6 +88,11 @@ describe('golden metrics fixture', () => {
         expect(compareDates(policy.submittedDate, policy.issuedDate)).toBeLessThanOrEqual(0);
       }
     }
+  });
+
+  it('takes G18 month to date up to the viewing day', () => {
+    const g18 = GOLDEN_CASES.find((goldenCase) => goldenCase.id === 'G18');
+    expect(g18?.period).toEqual(monthToDate(MTD_VIEWING_DATE));
   });
 
   it('lists RF only among appointments that exist', () => {

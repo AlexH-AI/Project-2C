@@ -61,7 +61,6 @@ Quy tắc (review đóng Phase 3, P-3): ghi chú review không chặn nằm ở 
 ### OPEN
 
 Theo task đã có chỗ trong kế hoạch:
-- **T-e (F-06, F-07):** `rfCount` / `inScope` O(A×T), `inScope` góc nhìn team quét `data.people` cho từng lịch (#155); chưa có hàm MTD trong `domain`.
 - **T-f (F-14):** chưa có `MAX_YEAR` trong `period.ts`; `shift` kỳ ngày/tuần/tùy chọn sát 01/01/1900 ném `RangeError` trong `PeriodPicker`, kỳ tháng/năm lùi về 1899 (#146); `addDays` với `days` cực lớn trả `NaN` (chưa có đường gọi).
 - **T-h (F-11, F-12, F-13, F-15, F-19):**
   - "hôm nay" = `fromLocalDate(db.now())` lặp 4 chỗ (`appointments.ts` ×2, `customers.ts` ×2) → helper `today(db)`; lệnh sửa nhóm tay / HĐ không chặn ngày tương lai.
@@ -113,6 +112,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 
 ### RESOLVED
 
+- T-e (F-06, F-07): `stats.ts` dựng index một lần cho mỗi danh sách đầu vào (`Map` người → team, `Set` lịch chuyển RF, `WeakMap`), chữ ký công khai giữ nguyên; `rfCount` lọc phạm vi trước kỳ. Seed: một kỳ toàn bộ 21,6 → 1,3 ms; 12 tháng × 30 RE 374 → 82 ms. `monthToDate` trong `period.ts`, G18 kiểm bằng hàm này (#255, T-099).
 - T-j (R2-01, R2-02): nhập backup kiểm thêm luật 1 (transition đầu `appointment_id` null), luật 5 (RE **chưa xóa**), luật 8 (fact `SYSTEM` năm sinh / giới tính `conflict` khớp hồ sơ), luật 9 nhân sự (≤ 1 TL chưa xóa / team; IS/BD/BDM không team; người chưa xóa → team chưa xóa). Lệnh: `TEAM_NOT_ALLOWED` cho IS/BD/BDM có team; `withdrawAppointmentTransition` → `INVALID_TRANSITION` thay lỗi SQLite thô; `resolveKycConflict` so giá trị `SYSTEM` với hồ sơ. Thay ghi chú #231 (IS/BD/BDM có team, TL thứ hai). DB dev có dữ liệu sai: nạp lại dữ liệu giả lập (#252, T-096).
 - T-d (F-05, R2-06): e2e local giới hạn worker (≤ 4), không dùng lại server cũ ở cổng 4173 (chỉ khi `PW_REUSE=1`), server preview chạy một tiến trình (`e2e/serve.mjs`) nên dừng sạch, `trackConsoleErrors` một chỗ (`e2e/support.ts`), ngưỡng `SLOW` của `seed.test.ts` nâng 60 s → 180 s (#251, T-095).
 - Ghi chú #244: `now` gọi `new Date()` hai lần (có thể lệch qua nửa đêm) và không đi qua `clock` → đọc một lần qua `clock` (#245, PR #246).

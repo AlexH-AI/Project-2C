@@ -19,19 +19,43 @@ export interface PolicyMetrics {
   readonly revenue: number;
 }
 
+/*
+ * Matchers index their list once per metric call (F-06) and are never cached across calls, so
+ * the caller's lists stay untouched and a later change to them is always read.
+ */
+
+/** Whether a record owned by an RE counts in the scope; built once, then checked per record. */
+function scopeMatcher(people: readonly Person[], scope: Scope): (reId: string) => boolean {
+  switch (scope.kind) {
+    case 'all':
+      return () => true;
+    case 're':
+      return (reId) => reId === scope.reId;
+    case 'team': {
+      const members = new Set(
+        people.filter((person) => person.teamId === scope.teamId).map((person) => person.id),
+      );
+      return (reId) => members.has(reId);
+    }
+  }
+}
+
+/** Whether an appointment is a cuộc gặp chuyển RF; built once, then checked per appointment. */
+function rfMatcher(transitions: readonly StageTransition[]): (appointment: Appointment) => boolean {
+  const rfIds = new Set(
+    transitions
+      .filter((t) => t.appointmentId !== null && isRfTransition(t.from, t.to))
+      .map((t) => t.appointmentId),
+  );
+  return (appointment) => appointment.status === 'MET' && rfIds.has(appointment.id);
+}
+
 /**
  * Whether a record owned by `reId` counts in the scope. A record counts for its RE and for that
  * RE's current team (G2 E).
  */
 export function inScope(people: readonly Person[], reId: string, scope: Scope): boolean {
-  switch (scope.kind) {
-    case 'all':
-      return true;
-    case 're':
-      return reId === scope.reId;
-    case 'team':
-      return people.some((person) => person.id === reId && person.teamId === scope.teamId);
-  }
+  return scopeMatcher(people, scope)(reId);
 }
 
 const sum = (values: readonly number[]) => values.reduce((total, value) => total + value, 0);
@@ -41,7 +65,8 @@ export function policyMetrics(
   period: Period,
   scope: Scope,
 ): PolicyMetrics {
-  const policies = data.policies.filter((policy) => inScope(data.people, policy.reId, scope));
+  const matches = scopeMatcher(data.people, scope);
+  const policies = data.policies.filter((policy) => matches(policy.reId));
   const submitted = policies.filter((policy) => isInPeriod(policy.submittedDate, period));
   const issued = policies.filter(
     (policy) => policy.issuedDate !== null && isInPeriod(policy.issuedDate, period),
@@ -63,10 +88,7 @@ export function isRfAppointment(
   appointment: Appointment,
   transitions: readonly StageTransition[],
 ): boolean {
-  return (
-    appointment.status === 'MET' &&
-    transitions.some((t) => t.appointmentId === appointment.id && isRfTransition(t.from, t.to))
-  );
+  return rfMatcher(transitions)(appointment);
 }
 
 /** Cuộc gặp chuyển RF with the meeting day in the period, for the RE on the appointment (G2 C). */
@@ -79,11 +101,11 @@ export function rfCount(
   period: Period,
   scope: Scope,
 ): number {
+  const matches = scopeMatcher(data.people, scope);
+  const isRf = rfMatcher(data.transitions);
   return data.appointments.filter(
     (appointment) =>
-      isInPeriod(appointment.date, period) &&
-      inScope(data.people, appointment.reId, scope) &&
-      isRfAppointment(appointment, data.transitions),
+      matches(appointment.reId) && isInPeriod(appointment.date, period) && isRf(appointment),
   ).length;
 }
 
