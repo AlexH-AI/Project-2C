@@ -7,6 +7,8 @@ export const DB_ERROR_CODES = [
   'TEAM_REQUIRED',
   /** A team already has a live TL; params `name` (that TL's). */
   'TEAM_HAS_LEAD',
+  /** An IS, BD or BDM given a team: only RE and TL belong to one. */
+  'TEAM_NOT_ALLOWED',
   'PERSON_NOT_FOUND',
   'PERSON_IN_USE',
   'RE_REQUIRED',

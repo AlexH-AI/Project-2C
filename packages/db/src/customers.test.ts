@@ -11,6 +11,7 @@ import {
   softDeleteCustomer,
   updateCustomerProfile,
 } from './customers';
+import { recordMeetingOutcome, scheduleAppointment, softDeleteAppointment } from './appointments';
 import { getKycProfile, listKycVersions } from './kyc';
 import { softDeletePerson, updatePerson } from './team';
 import { codeOf, d, setup } from './test-support';
@@ -273,5 +274,31 @@ describe('customers', () => {
     softDeleteCustomer(db, customer.id);
     // The team already has its one TL (B1b), so leave for a shared role instead.
     expect(updatePerson(db, re.id, { role: 'IS', teamId: null }).role).toBe('IS');
+  });
+
+  it('refuses to withdraw a first transition tied to an appointment, leaving the stage as it was', async () => {
+    const { db, re } = await setup();
+    const customer = createCustomer(db, {
+      name: 'Lan',
+      reId: re.id,
+      stage: 'N3',
+      date: d(1, 9, 2026),
+    });
+    const met = scheduleAppointment(db, {
+      customerId: customer.id,
+      reId: re.id,
+      date: d(1, 9, 2026),
+      triggerType: 'REFERRAL',
+    });
+    recordMeetingOutcome(db, met.id, { status: 'MET', stageAfter: 'N3', nextStep: 'Gặp lại' });
+    // Only a hand-edited file ties the creation to a meeting kept in the same stage, same day.
+    db.sqlite.run('UPDATE stage_transitions SET appointment_id = ? WHERE customer_id = ?', [
+      met.id,
+      customer.id,
+    ]);
+
+    expect(codeOf(() => softDeleteAppointment(db, met.id))).toBe('INVALID_TRANSITION');
+    expect(getCustomer(db, customer.id)?.stage).toBe('N3');
+    expect(listStageTransitions(db, customer.id)).toHaveLength(1);
   });
 });

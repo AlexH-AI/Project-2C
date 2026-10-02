@@ -631,6 +631,7 @@ export const vi = {
   'error.TEAM_NAME_TAKEN': 'Đã có team "{name}".',
   'error.TEAM_HAS_MEMBERS': 'Team còn nhân sự: chuyển hoặc xóa hết nhân sự trước khi xóa team.',
   'error.TEAM_HAS_LEAD': 'Team này đã có TL: {name}.',
+  'error.TEAM_NOT_ALLOWED': 'IS, BD và BDM không thuộc team nào: bỏ chọn team.',
   'error.TEAM_NOT_FOUND': 'Team không còn trong dữ liệu (có thể đã bị xóa).',
   'error.KYC_NOTE_EMPTY': 'Mỗi dữ kiện phải gắn với một ghi chú có nội dung: nhập ghi chú.',
   'error.INVALID_KYC_VALUE': 'Giá trị không hợp lệ cho trường này (vd. số con là số nguyên).',

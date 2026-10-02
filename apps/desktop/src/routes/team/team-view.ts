@@ -15,7 +15,7 @@ import {
 
 export interface TeamEntry {
   readonly team: Team;
-  /** The team's TL (one per team); the first by name if old data has several. */
+  /** The team's TL (one per team, spec §6 rule 9). */
   readonly lead: Person | undefined;
   /** Only the RE, in the order given (the repository sorts by name). */
   readonly reps: readonly Person[];

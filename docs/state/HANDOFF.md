@@ -61,12 +61,6 @@ Quy tắc (review đóng Phase 3, P-3): ghi chú review không chặn nằm ở 
 ### OPEN
 
 Theo task đã có chỗ trong kế hoạch:
-- **T-j (R2-01, R2-02 — Phase 4, task dữ liệu đầu tiên sau T-d, `risk:high`):** validator nhập lần 3 + phòng thủ trong lệnh (báo cáo 02/10 §5):
-  - luật 1: transition đầu phải có `appointment_id` null (nay `softDeleteAppointment` ném lỗi SQLite thô `NOT NULL constraint failed: customers.stage`, `customers.ts:257` `fromStage!`) → `withdrawAppointmentTransition` ném `DbError` khi `fromStage` null;
-  - luật 5: `re_id` của KH / lịch / HĐ chưa xóa → người **chưa xóa** vai trò RE (nay sửa tên KH ném `PERSON_NOT_FOUND`);
-  - luật 8: xét cả fact `SYSTEM` năm sinh / giới tính ở trạng thái `conflict`; `resolveKycConflict` (`kyc.ts:173`) so giá trị `SYSTEM` với hồ sơ (nay giải quyết xong thì app xuất ra backup không nhập lại được);
-  - luật 9 "nhân sự" (Owner 02/10, dữ liệu giả lập → từ chối / xóa dữ liệu sai, không migration, không UI cho dữ liệu cũ): ≤ 1 TL chưa xóa / team; IS/BD/BDM luôn không có team (`createPerson` / `updatePerson` từ chối hoặc tự bỏ team; spec §3.3 "có thể trống" → "luôn trống"); người chưa xóa thuộc team chưa xóa. Thay ghi chú sổ #231 (IS/BD/BDM có `team_id` và TL thứ hai không hiện ở đâu — màn Team giữ nguyên). Bỏ chú thích "first by name if old data has several" ở `team-view.ts`. DB đang có dữ liệu sai: Owner dùng "Nạp lại dữ liệu giả lập";
-  - test mẫu "nhập → thao tác → xuất → nhập lại"; cập nhật spec §6 (gồm quy tắc 1 TL / team của #223).
 - **T-e (F-06, F-07):** `rfCount` / `inScope` O(A×T), `inScope` góc nhìn team quét `data.people` cho từng lịch (#155); chưa có hàm MTD trong `domain`.
 - **T-f (F-14):** chưa có `MAX_YEAR` trong `period.ts`; `shift` kỳ ngày/tuần/tùy chọn sát 01/01/1900 ném `RangeError` trong `PeriodPicker`, kỳ tháng/năm lùi về 1899 (#146); `addDays` với `days` cực lớn trả `NaN` (chưa có đường gọi).
 - **T-h (F-11, F-12, F-13, F-15, F-19):**
@@ -119,6 +113,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 
 ### RESOLVED
 
+- T-j (R2-01, R2-02): nhập backup kiểm thêm luật 1 (transition đầu `appointment_id` null), luật 5 (RE **chưa xóa**), luật 8 (fact `SYSTEM` năm sinh / giới tính `conflict` khớp hồ sơ), luật 9 nhân sự (≤ 1 TL chưa xóa / team; IS/BD/BDM không team; người chưa xóa → team chưa xóa). Lệnh: `TEAM_NOT_ALLOWED` cho IS/BD/BDM có team; `withdrawAppointmentTransition` → `INVALID_TRANSITION` thay lỗi SQLite thô; `resolveKycConflict` so giá trị `SYSTEM` với hồ sơ. Thay ghi chú #231 (IS/BD/BDM có team, TL thứ hai). DB dev có dữ liệu sai: nạp lại dữ liệu giả lập (#252, T-096).
 - T-d (F-05, R2-06): e2e local giới hạn worker (≤ 4), không dùng lại server cũ ở cổng 4173 (chỉ khi `PW_REUSE=1`), server preview chạy một tiến trình (`e2e/serve.mjs`) nên dừng sạch, `trackConsoleErrors` một chỗ (`e2e/support.ts`), ngưỡng `SLOW` của `seed.test.ts` nâng 60 s → 180 s (#251, T-095).
 - Ghi chú #244: `now` gọi `new Date()` hai lần (có thể lệch qua nửa đêm) và không đi qua `clock` → đọc một lần qua `clock` (#245, PR #246).
 - `useScope()` chết sau B3 → bỏ (#237, PR #238). Số ngày ô lịch `padStart` → `formatDayOfMonth` / `formatDayMonth` của `domain` (#239).
