@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addDays,
   calendarDate,
+  canShift,
   compareDates,
   customPeriod,
   daysBetween,
@@ -13,6 +14,8 @@ import {
   fromLocalDate,
   localFileStamp,
   isInPeriod,
+  MAX_YEAR,
+  MIN_YEAR,
   monthToDate,
   parseDate,
   parseQuickDate,
@@ -126,6 +129,61 @@ describe('shift', () => {
   });
 });
 
+describe('periods at the edges of 1900–2100', () => {
+  it('cuts the last week at 31/12/2100, a Friday', () => {
+    expect(range(periodOf('week', d(31, 12, 2100)))).toBe('27/12/2100 – 31/12/2100');
+    expect(range(periodOf('week', d(1, 1, 1900)))).toBe('01/01/1900 – 07/01/1900');
+  });
+
+  // Spec Phase 4 §3: which of ‹ › are enabled, by the period being viewed.
+  const cases: [string, Period, boolean, boolean][] = [
+    ['day 01/01/1900', periodOf('day', d(1, 1, 1900)), false, true],
+    ['week 01/01 – 07/01/1900', periodOf('week', d(3, 1, 1900)), false, true],
+    ['month 01/1900', periodOf('month', d(1, 1, 1900)), false, true],
+    ['year 1900', periodOf('year', d(1, 1, 1900)), false, true],
+    ['day 31/12/2100', periodOf('day', d(31, 12, 2100)), true, false],
+    ['month 12/2100', periodOf('month', d(31, 12, 2100)), true, false],
+    ['year 2100', periodOf('year', d(31, 12, 2100)), true, false],
+    ['week 27/12 – 31/12/2100', periodOf('week', d(31, 12, 2100)), true, false],
+    ['custom 01/01 – 10/01/1900', customPeriod(d(1, 1, 1900), d(10, 1, 1900)), false, true],
+    ['custom 25/12 – 31/12/2100', customPeriod(d(25, 12, 2100), d(31, 12, 2100)), true, false],
+    ['custom 15/01 – 24/01/1900', customPeriod(d(15, 1, 1900), d(24, 1, 1900)), true, true],
+    ['custom 10/01 – 24/01/1900', customPeriod(d(10, 1, 1900), d(24, 1, 1900)), false, true],
+  ];
+
+  it.each(cases)('%s: canShift back %s, forward %s', (_, period, back, forward) => {
+    expect(canShift(period, -1)).toBe(back);
+    expect(canShift(period, 1)).toBe(forward);
+  });
+
+  it.each(cases)('%s: shift refuses to leave 1900–2100', (_, period, back, forward) => {
+    for (const [step, allowed] of [
+      [-1, back],
+      [1, forward],
+    ] as const) {
+      if (allowed) {
+        const moved = shift(period, step);
+        expect(moved.start.year).toBeGreaterThanOrEqual(MIN_YEAR);
+        expect(moved.end.year).toBeLessThanOrEqual(MAX_YEAR);
+      } else {
+        expect(() => shift(period, step)).toThrow(RangeError);
+      }
+    }
+  });
+
+  it('steps a custom period of 10 days back from 15/01/1900 to 05/01/1900', () => {
+    expect(range(shift(customPeriod(d(15, 1, 1900), d(24, 1, 1900)), -1))).toBe(
+      '05/01/1900 – 14/01/1900',
+    );
+  });
+
+  it('steps back into the cut last week and out of it', () => {
+    const lastWeek = periodOf('week', d(31, 12, 2100));
+    expect(range(shift(periodOf('week', d(20, 12, 2100)), 1))).toBe('27/12/2100 – 31/12/2100');
+    expect(range(shift(lastWeek, -1))).toBe('20/12/2100 – 26/12/2100');
+  });
+});
+
 describe('customPeriod', () => {
   it('rejects a start after the end instead of swapping them', () => {
     expect(() => customPeriod(d(2, 9, 2026), d(1, 9, 2026))).toThrow(
@@ -224,6 +282,16 @@ describe('calendarDate before 1900', () => {
   });
 });
 
+describe('calendarDate after 2100', () => {
+  it('rejects years after MAX_YEAR', () => {
+    expect(MAX_YEAR).toBe(2100);
+    expect(formatDate(calendarDate(2100, 12, 31))).toBe('31/12/2100');
+    expect(() => calendarDate(2101, 1, 1)).toThrow(RangeError);
+    expect(() => calendarDate(9999, 1, 1)).toThrow(RangeError);
+    expect(parseDate('01/01/2101')).toBeNull();
+  });
+});
+
 describe('parseQuickDate', () => {
   it('fills in the current year for dd/mm, with no suggestion when the date is ahead', () => {
     expect(parseQuickDate('05/10', d(26, 9, 2026))).toEqual({
@@ -313,6 +381,17 @@ describe('parseQuickDate', () => {
     expect(parseQuickDate('01/01/0099', today)).toEqual({ ok: false, error: 'year-out-of-range' });
     expect(parseQuickDate('01/01/1899', today)).toEqual({ ok: false, error: 'year-out-of-range' });
   });
+
+  it('reports years after 2100', () => {
+    const today = d(26, 9, 2026);
+    expect(parseQuickDate('01/01/2101', today)).toEqual({ ok: false, error: 'year-out-of-range' });
+    expect(parseQuickDate('31/12/9999', today)).toEqual({ ok: false, error: 'year-out-of-range' });
+  });
+
+  it('suggests no next year past 2100', () => {
+    const result = parseQuickDate('01/01', d(31, 12, 2100));
+    expect(result).toMatchObject({ ok: true, nextYearSuggestion: null });
+  });
 });
 
 describe('fromLocalDate', () => {
@@ -359,6 +438,17 @@ describe('addDays', () => {
   it('rejects a result before 1900', () => {
     expect(addDays(d(2, 1, 1900), -1)).toEqual(d(1, 1, 1900));
     expect(() => addDays(d(1, 1, 1900), -1)).toThrow(RangeError);
+  });
+
+  it('rejects a result after 2100', () => {
+    expect(addDays(d(30, 12, 2100), 1)).toEqual(d(31, 12, 2100));
+    expect(() => addDays(d(31, 12, 2100), 1)).toThrow(RangeError);
+  });
+
+  it('rejects a very large day count instead of returning NaN', () => {
+    expect(() => addDays(d(28, 9, 2026), 1e12)).toThrow(RangeError);
+    expect(() => addDays(d(28, 9, 2026), -1e12)).toThrow(RangeError);
+    expect(() => addDays(d(28, 9, 2026), Number.MAX_SAFE_INTEGER)).toThrow(RangeError);
   });
 });
 

@@ -356,7 +356,7 @@ function MonthCalendar({
 }) {
   const weeks = useMemo(() => monthGrid(day, rows, period), [day, rows, period]);
   const month = formatPeriodValue(periodOf('month', day));
-  const days = weeks.flat().filter((cell) => cell.inMonth);
+  const days = weeks.flat().filter((cell): cell is DayCell => cell?.inMonth === true);
   const met = days.reduce((sum, cell) => sum + cell.met, 0);
   const total = days.reduce((sum, cell) => sum + cell.met + cell.planned + cell.missed, 0);
   return (
@@ -375,17 +375,22 @@ function MonthCalendar({
             {t(`weekday.${n}`)}
           </span>
         ))}
-        {weeks.flat().map((cell, i) => (
-          <DayButton
-            key={formatDate(cell.date)}
-            cell={cell}
-            pickable={(cell.inMonth && pickDay(period, cell.date) !== null) || cell.inPeriod}
-            weekend={i % 7 >= 5}
-            picked={compareDates(cell.date, day) === 0}
-            isToday={compareDates(cell.date, today) === 0}
-            onPick={onPick}
-          />
-        ))}
+        {weeks.flat().map((cell, i) =>
+          // After 31/12/2100: a blank cell that cannot be picked (spec Phase 4 §3.4).
+          cell === null ? (
+            <div key={`blank-${i}`} aria-hidden="true" />
+          ) : (
+            <DayButton
+              key={formatDate(cell.date)}
+              cell={cell}
+              pickable={(cell.inMonth && pickDay(period, cell.date) !== null) || cell.inPeriod}
+              weekend={i % 7 >= 5}
+              picked={compareDates(cell.date, day) === 0}
+              isToday={compareDates(cell.date, today) === 0}
+              onPick={onPick}
+            />
+          ),
+        )}
       </div>
       <p className="m-0 mt-2.5 flex gap-3.5 text-xs text-fg-2">
         <span>

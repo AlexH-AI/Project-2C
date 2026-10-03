@@ -1,11 +1,13 @@
 export { PIPELINE_STAGES, compareStages, isPipelineStage } from './pipeline-stage';
 export type { PipelineStage } from './pipeline-stage';
 export {
+  MAX_YEAR,
   MIN_YEAR,
   NEXT_YEAR_SUGGESTION_DAYS,
   PERIOD_KINDS,
   addDays,
   calendarDate,
+  canShift,
   compareDates,
   customPeriod,
   daysBetween,
