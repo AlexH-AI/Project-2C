@@ -34,18 +34,21 @@ export function checkBody(body) {
 }
 
 /**
- * A write is safe only if the issue is still the version this machine last read,
- * so a session never overwrites a handoff written meanwhile on the other machine.
+ * A write is safe only if the issue is still the version the edited file was saved from
+ * (`base`, written next to it by `read --out`), so a session never overwrites a handoff
+ * written meanwhile by the other machine, even if another session read it since.
  */
-export function checkWrite(cache, current) {
-  if (!cache) return 'No local copy of HANDOFF: read it first (node tools/handoff.mjs read).';
-  if (cache.number !== current.number) {
-    return `The local copy is of #${cache.number} but the handoff issue is now #${current.number}: read it again.`;
+export function checkWrite(base, current) {
+  if (!base) {
+    return 'No base version for this file: save HANDOFF with node tools/handoff.mjs read --out <file>, edit it, then write.';
   }
-  if (cache.updatedAt !== current.updatedAt) {
+  if (base.number !== current.number) {
+    return `The file was saved from #${base.number} but the handoff issue is now #${current.number}: read --out again.`;
+  }
+  if (base.updatedAt !== current.updatedAt) {
     return (
-      `HANDOFF #${current.number} changed since it was read here (${cache.updatedAt} -> ${current.updatedAt}): ` +
-      'read it again, merge your changes, then write.'
+      `HANDOFF #${current.number} changed since this file was saved (${base.updatedAt} -> ${current.updatedAt}): ` +
+      'read --out again, merge your changes, then write.'
     );
   }
   return null;

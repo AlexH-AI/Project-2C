@@ -25,7 +25,7 @@ Memory của Claude chỉ nằm trên từng máy, nên quy tắc dùng chung ch
 
 ## Nghi thức phiên (ADR-0003)
 
-- **HANDOFF** (ADR-0003 phụ lục, #283) là **Issue ghim nhãn `handoff`** trên GitHub, không phải file trong git. Ghi xong là máy kia thấy ngay, không cần PR / review. Chỉ đọc / ghi qua `tools/handoff.mjs`: lệnh ghi từ chối khi Issue đã đổi kể từ lần đọc gần nhất trên máy này (không đè bản của máy kia). Mỗi lần đọc lưu bản tạm trong thư mục git chung, dùng khi mất mạng. **Dưới 8.000 ký tự** (hook giới hạn 10.000; lệnh ghi chặn ở 9.000).
+- **HANDOFF** (ADR-0003 phụ lục, #283) là **Issue ghim nhãn `handoff`** trên GitHub, không phải file trong git. Ghi xong là máy kia thấy ngay, không cần PR / review. Chỉ đọc / ghi qua `tools/handoff.mjs`: `read --out <file>` ghi kèm mốc phiên bản (`<file>.base.json`), lệnh ghi từ chối khi Issue đã đổi so với mốc đó (không đè bản của máy kia, kể cả khi phiên khác vừa đọc lại). Mỗi lần đọc lưu bản tạm trong thư mục git chung, chỉ dùng khi mất mạng. **Dưới 8.000 ký tự** (hook giới hạn 10.000; lệnh ghi chặn ở 9.000).
 - **Mở phiên:** hook `SessionStart` (`.claude/hooks/handoff-context.mjs`) nạp HANDOFF từ Issue. Không đọc lại khi hook đã nạp (trừ khi hook báo lỗi / cắt / dùng bản tạm).
 - **Bắt đầu phiên:** `/session-start` — pull, rồi `tools/status.mjs` tự in PR mở (head, `REVIEW` mới nhất + SHA, CI), Issue mở của milestone, worktree; kiểm toolchain. (Không đặt tên `/resume` vì trùng lệnh có sẵn của Claude Code.)
 - **Kết thúc phiên / trước khi rời máy:** `/handoff` — cập nhật HANDOFF (đang làm gì, bước kế tiếp chính xác, việc chờ Owner), commit WIP + push nhánh code còn dở.

@@ -51,14 +51,15 @@ describe('checkBody', () => {
 });
 
 describe('checkWrite', () => {
+  // The base version saved next to the file by `read --out`.
   const cache = { number: 7, updatedAt: '2026-10-03T01:00:00Z' };
 
   it('allows a write when the issue is unchanged since the last read', () => {
     expect(checkWrite(cache, issue(7))).toBeNull();
   });
 
-  it('refuses without a previous read', () => {
-    expect(checkWrite(null, issue(7))).toMatch(/read it first/);
+  it('refuses a file that was not saved by read --out (no base version)', () => {
+    expect(checkWrite(null, issue(7))).toMatch(/read --out/);
   });
 
   it('refuses when the issue changed since the last read', () => {
