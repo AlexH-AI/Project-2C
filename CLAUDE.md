@@ -83,7 +83,7 @@ tools/             bootstrap, session-start/end, status.mjs, handoff.mjs (+ unit
 e2e/               Playwright (chạy trên bản build web)
 ```
 
-- Mốc hay tìm: màn hình ở `apps/desktop/src/routes/` (màn lớn có thư mục con; logic thuần, có unit test, ở `*-view.ts`), i18n ở `apps/desktop/src/i18n/vi.ts`; dữ liệu giả lập `packages/db/src/seed.ts` + `seed-data.ts`; helper test DB `packages/db/src/test-support.ts`; golden fixture `packages/domain/src/golden/` (spec ở `docs/golden/`); tiền / ngày / kỳ / chỉ số ở `packages/domain/src/{money,number,period,stats}.ts`; spec theo phase `docs/design/`, mockup `docs/design/mockups/`.
+- Mốc hay tìm: mỗi package có `CLAUDE.md` riêng (tự nạp khi đọc file trong thư mục đó): vai trò, ranh giới, file hay tìm và **bản đồ export / route sinh tự động** (`pnpm codemap`; `pnpm verify` báo đỏ khi lệch code). Spec theo phase `docs/design/`, mockup `docs/design/mockups/`.
 
 - Ranh giới module kiểm tra bằng `dependency-cruiser` (`pnpm lint:deps`). `domain` không phụ thuộc gì.
 - Tiền, ngày, chỉ số: chỉ dùng hàm chuẩn trong `packages/domain`. Không tự parse/format rải rác.

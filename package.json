@@ -14,13 +14,15 @@
     "lint": "eslint .",
     "lint:deps": "depcruise apps packages",
     "lint:tokens": "node packages/ui/scripts/check-tokens.ts apps/desktop/src packages/ui/src/components",
+    "codemap": "node tools/codemap.mjs",
+    "codemap:check": "node tools/codemap.mjs --check",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r typecheck && tsc -p e2e",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
-    "verify": "pnpm format:check && pnpm lint && pnpm lint:deps && pnpm lint:tokens && pnpm typecheck && pnpm test:coverage",
+    "verify": "pnpm format:check && pnpm lint && pnpm lint:deps && pnpm lint:tokens && pnpm codemap:check && pnpm typecheck && pnpm test:coverage",
     "verify:rust": "cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml --check && cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --lib --tests --locked -- -D warnings && cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --lib --locked"
   },
   "devDependencies": {
