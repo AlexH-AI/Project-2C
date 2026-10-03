@@ -173,7 +173,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
 | Lệnh | Quy tắc chính |
 |---|---|
 | `createTeam`, `renameTeam`, `createPerson`, `updatePerson`, `restorePerson` | RE/TL phải có team; IS/BD/BDM kèm team → `TEAM_NOT_ALLOWED` (#252; đổi RE/TL sang IS/BD/BDM phải truyền `teamId: null`, UI tự bỏ team); mỗi team tối đa 1 TL chưa xóa (Owner, G3 01/10/2026): tạo / đổi / khôi phục nhân sự thành TL thứ hai → `TEAM_HAS_LEAD` (B1b) |
-| `createCustomer` | Chỉ ở nhóm mở N4–N1 (`assertValidTransition`, ADR-0007); ghi transition đầu (`from` null); nếu có ngày sinh/giới tính → ghi chú `SYSTEM` + dữ kiện (D2) |
+| `createCustomer` | Chỉ ở nhóm mở N4–N1 (`assertValidTransition`, ADR-0007); ghi transition đầu (`from` null), ngày tạo sau hôm nay → `DATE_IN_FUTURE` (F-11, #258); nếu có ngày sinh/giới tính → ghi chú `SYSTEM` + dữ kiện (D2) |
 | `updateCustomerProfile` | Đổi tên / RE / ngày sinh / giới tính; đổi ngày sinh hoặc giới tính → ghi chú `SYSTEM` + `confirmFact` |
 | `changeStageManually` | `assertValidTransition`; transition `appointment_id` null — không bao giờ tính RF; ngày không được trước transition mới nhất (D10), không được sau hôm nay → `DATE_IN_FUTURE` (F-11, #258) |
 | `scheduleAppointment` | Trạng thái `SCHEDULED`, không có `stage_after` |
@@ -225,6 +225,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
     7. Mỗi trường KYC có dữ kiện của một KH: đúng một fact `active` và không `conflict`, hoặc ≥ 2 fact `conflict` và không `active`.
     8. Fact `birthYear` / `gender` đang `active` đến từ ghi chú nguồn `SYSTEM` và khớp `customers.birth_date` (năm) / `gender` (D2). Fact `birthYear` / `gender` đang `conflict` từ ghi chú `SYSTEM` cũng khớp hồ sơ (fact `conflict` từ ghi chú khác giữ quy tắc 7); `resolveKycConflict` chọn fact `SYSTEM` lệch hồ sơ → `KYC_FIELD_FROM_PROFILE`. Mọi fact (mọi trạng thái, kể cả `superseded`) từ ghi chú `SYSTEM` là `birthYear` / `gender` (#263).
     9. Nhân sự (#252, Owner 02/10/2026): (i) mỗi team chưa xóa có tối đa 1 TL chưa xóa (#223); (ii) IS / BD / BDM có `team_id` null, kể cả người đã xóa; (iii) người chưa xóa có `team_id` → team chưa xóa. Dữ liệu cũ sai bị từ chối, không migration (dữ liệu hiện có là giả lập: nạp lại seed).
+    10. Việc đã xảy ra không sau hôm nay (ngày theo đồng hồ lúc nhập; F-11, #258, Owner 04/10/2026): transition chưa xóa (kể cả transition đầu = ngày tạo KH, cả KH đã xóa), ngày nộp / ngày phát hành của HĐ chưa xóa, cuộc hẹn chưa xóa MET / NO_SHOW. Cuộc hẹn SCHEDULED / CANCELLED được ở tương lai. Dữ liệu cũ sai bị từ chối, không migration.
 
 ## 7. Dữ liệu giả lập (seed)
 

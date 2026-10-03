@@ -1,4 +1,4 @@
-import { calendarDate, stageOn, type CalendarDate } from '@p2c/domain';
+import { stageOn } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
   changeStageManually,
@@ -14,10 +14,7 @@ import {
 import { recordMeetingOutcome, scheduleAppointment, softDeleteAppointment } from './appointments';
 import { getKycProfile, listKycVersions } from './kyc';
 import { softDeletePerson, updatePerson } from './team';
-import { codeOf, setup } from './test-support';
-
-// The test clock reads 26/09/2026: a stage change is dated by then.
-const d = (day: number, month: number, year = 2026): CalendarDate => calendarDate(year, month, day);
+import { codeOf, d, setup } from './test-support';
 
 describe('customers', () => {
   it('creates a customer in an open stage with its first transition', async () => {
@@ -27,7 +24,7 @@ describe('customers', () => {
       name: ' Lan ',
       reId: re.id,
       stage: 'N4',
-      date: d(1, 12, 2026),
+      date: d(1, 9),
       birthDate: { year: 1985 },
       gender: 'FEMALE',
     });
@@ -48,7 +45,7 @@ describe('customers', () => {
         customerId: customer.id,
         from: null,
         to: 'N4',
-        date: d(1, 12, 2026),
+        date: d(1, 9),
         appointmentId: null,
       },
     ]);
@@ -230,15 +227,17 @@ describe('customers', () => {
     );
   });
 
-  // F-11: `stageOn(today)` equals `customers.stage` only while no transition is dated after today.
-  it('refuses a stage change dated after today, and takes today itself', async () => {
+  // F-11: `stageOn(today)` equals `customers.stage` only while no transition, the creation's
+  // included, is dated after today.
+  it('refuses a creation or stage change dated after today, and takes today itself', async () => {
     const { db, re, persist } = await setup();
-    const customer = createCustomer(db, {
-      name: 'Lan',
-      reId: re.id,
-      stage: 'N3',
-      date: d(1, 9),
-    });
+    const input = { name: 'Lan', reId: re.id, stage: 'N3', birthDate: { year: 1984 } } as const;
+
+    expect(codeOf(() => createCustomer(db, { ...input, date: d(27, 9) }))).toBe('DATE_IN_FUTURE');
+    expect(listCustomers(db)).toEqual([]);
+    expect(persist).not.toHaveBeenCalled();
+
+    const customer = createCustomer(db, { ...input, date: d(26, 9) });
     persist.mockClear();
 
     expect(codeOf(() => changeStageManually(db, customer.id, { to: 'N2', date: d(27, 9) }))).toBe(

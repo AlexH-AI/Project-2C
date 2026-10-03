@@ -1,4 +1,3 @@
-import { calendarDate, type CalendarDate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { createCustomer, softDeleteCustomer } from './customers';
 import {
@@ -10,10 +9,7 @@ import {
   submitPolicy,
   updatePolicy,
 } from './policies';
-import { codeOf, setup } from './test-support';
-
-// The test clock reads 26/09/2026: a policy is submitted and issued by then.
-const d = (day: number, month: number, year = 2026): CalendarDate => calendarDate(year, month, day);
+import { codeOf, d, setup } from './test-support';
 
 const MILLION = 1_000_000;
 

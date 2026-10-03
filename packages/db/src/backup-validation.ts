@@ -14,6 +14,7 @@ import {
 } from '@p2c/domain';
 import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
+import { today, toIsoDate } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { normalizeKycValue, profileFactValue, type ProfileFields } from './kyc';
@@ -90,7 +91,7 @@ function validKycValue(field: string, json: string): boolean {
 type Row = Record<string, SqlValue>;
 
 /** A rule across tables, by its number in spec §6. */
-type Rule = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+type Rule = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
 /**
  * Throws `BACKUP_INVALID`, params `rule` (the first rule of spec §6 broken), when the tables
@@ -109,7 +110,8 @@ export function validateBackupInvariants(db: Database): void {
     meetingRule(appointments, transitions) ??
     ownerRule(read, appointments) ??
     kycRule(read, customers) ??
-    staffRule(read);
+    staffRule(read) ??
+    futureRule(read, toIsoDate(today(db)));
   if (broken !== null) throw new DbError('BACKUP_INVALID', { rule: broken });
 }
 
@@ -246,6 +248,23 @@ function staffRule(read: (sql: string) => Row[]): Rule | null {
     ].join(' UNION ALL '),
   );
   return broken.length === 0 ? null : 9;
+}
+
+/**
+ * Rule 10 (F-11): what already happened is dated today at the latest, by the clock of the import —
+ * a live transition (a customer's creation too), a policy's submission and issue, a meeting held
+ * or missed. Only a booked or cancelled appointment may lie ahead.
+ */
+function futureRule(read: (sql: string) => Row[], today: string): Rule | null {
+  const after = `'${today}'`;
+  const broken = read(
+    [
+      `SELECT 1 FROM stage_transitions WHERE deleted_at IS NULL AND date > ${after}`,
+      `SELECT 1 FROM policies WHERE deleted_at IS NULL AND (submitted_date > ${after} OR issued_date > ${after})`,
+      `SELECT 1 FROM appointments WHERE deleted_at IS NULL AND status IN ('MET', 'NO_SHOW') AND date > ${after}`,
+    ].join(' UNION ALL '),
+  );
+  return broken.length === 0 ? null : 10;
 }
 
 function groupBy(rows: Row[], column: string): Map<unknown, Row[]> {

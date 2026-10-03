@@ -99,6 +99,7 @@ export function listStageTransitions(db: Database, customerId?: string): StageTr
 export function createCustomer(db: Database, input: NewCustomer): CustomerRecord {
   return db.transaction(() => {
     const profile = validateProfile(db, input);
+    toPastIsoDate(db, input.date);
     const at = db.now().toISOString();
     const id = ulid(db.now(), db.random);
     db.orm

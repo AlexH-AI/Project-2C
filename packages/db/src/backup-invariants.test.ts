@@ -35,6 +35,10 @@ interface BackupJson {
 
 const day = (d: number) => calendarDate(2026, 9, d);
 
+/** The test clock's day, which the import of history() reads as today (rule 10). */
+const TODAY = '2026-09-26';
+const TOMORROW = '2026-09-27';
+
 /**
  * Lan: created N4, met at an appointment with a TL coordinating (→ N3), a rescheduled appointment,
  * moved to N2 by hand, a policy, a birth year and gender, and two children counts in conflict.
@@ -158,7 +162,7 @@ describe('importBackup — rules across tables', () => {
     expect(listCustomers(imported.db)).toHaveLength(3);
   });
 
-  /** Records a command could leave, next to each refused case of rules 1, 5, 8 and 9 below. */
+  /** Records a command could leave, next to each refused case of rules 1, 5, 8, 9 and 10 below. */
   const accepted: [string, (b: BackupJson, ids: Ids) => void][] = [
     [
       'a deleted customer of a deleted RE',
@@ -175,6 +179,22 @@ describe('importBackup — rules across tables', () => {
       'a birth year in conflict between the profile and the RE’s note',
       (b, ids) => birthYearConflict(b, ids, '1984'),
     ],
+    [
+      'a stage change and a policy dated today, the day of the import',
+      (b, ids) => {
+        transition(b, ids.lan, 3).date = TODAY;
+        b.tables.policies![0]!.issued_date = TODAY;
+        b.tables.policies![0]!.issued_fyp = 20_000_000;
+      },
+    ],
+    [
+      'appointments booked or cancelled after today',
+      (b) => {
+        const booked = row(b, 'appointments', (a) => a.rescheduled_from_id !== null);
+        booked.date = TOMORROW;
+        b.tables.appointments!.push({ ...booked, id: 'cancelled', status: 'CANCELLED' });
+      },
+    ],
   ];
 
   it.each(accepted)('accepts %s', async (_label, edit) => {
@@ -182,7 +202,7 @@ describe('importBackup — rules across tables', () => {
     const backup = JSON.parse(exportBackup(db)) as BackupJson;
     edit(backup, ids);
 
-    await expect(importBackup(JSON.stringify(backup))).resolves.toBeDefined();
+    await expect(importBackup(JSON.stringify(backup), { now: db.now })).resolves.toBeDefined();
   });
 
   /**
@@ -388,6 +408,29 @@ describe('importBackup — rules across tables', () => {
       (b, ids) => person(b, ids.tl, { id: 'bdm', role: 'BDM', deleted_at: DELETED }),
     ],
     [
+      '10: a customer created after today, the day of the import',
+      (b, ids) => (transition(b, ids.kien, 1).date = TOMORROW),
+    ],
+    [
+      '10: a stage change dated after today',
+      (b, ids) => (transition(b, ids.lan, 3).date = TOMORROW),
+    ],
+    [
+      '10: a policy submitted after today',
+      (b) => (b.tables.policies![0]!.submitted_date = TOMORROW),
+    ],
+    [
+      '10: a policy issued after today',
+      (b) => Object.assign(b.tables.policies![0]!, { issued_date: TOMORROW, issued_fyp: 1 }),
+    ],
+    [
+      '10: a meeting missed after today',
+      (b) => {
+        const booked = row(b, 'appointments', (a) => a.rescheduled_from_id !== null);
+        Object.assign(booked, { status: 'NO_SHOW', date: TOMORROW });
+      },
+    ],
+    [
       '2: a stage other than the latest live transition’s',
       (b, ids) => (row(b, 'customers', (c) => c.id === ids.lan).stage = 'N1'),
     ],
@@ -399,7 +442,9 @@ describe('importBackup — rules across tables', () => {
     const backup = JSON.parse(exportBackup(db)) as BackupJson;
     damage(backup, ids);
 
-    const error = await importBackup(JSON.stringify(backup)).catch((e: unknown) => e);
+    const error = await importBackup(JSON.stringify(backup), { now: db.now }).catch(
+      (e: unknown) => e,
+    );
 
     expect(error).toBeInstanceOf(DbError);
     const rule = label.split(':')[0];
