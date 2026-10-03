@@ -17,7 +17,7 @@ Các mục §1, §2, §4.4–§4.6, §7 giữ nguyên nội dung sản phẩm c�
 | Chủ đề | Đề xuất |
 |---|---|
 | Mô hình làm việc | **Claude Code làm toàn bộ** (model / effort do Owner chọn từng phiên, ADR-0001 M1): kiến trúc, code, test, review. Codex chỉ **review độc lập khi đóng phase** (ADR-0001 M2, 30/09/2026). **Không subagent**, không agent ngoài Claude viết code. Tự động trong mọi task, chỉ dừng ở cổng Owner duyệt (G1–G8). Hạn mức dùng do Owner tự cân đối. |
-| Liên tục 2 máy | **GitHub là nguồn sự thật duy nhất**: code + spec + `docs/state/HANDOFF.md` + GitHub Issues/PR. Mỗi phiên kết thúc bằng push; mỗi phiên bắt đầu bằng pull + đọc handoff. Không phụ thuộc bất kỳ trạng thái local nào (DB dev sinh lại từ seed, key API nhập riêng từng máy). |
+| Liên tục 2 máy | **GitHub là nguồn sự thật duy nhất**: code + spec + GitHub Issues/PR (kể cả HANDOFF ở Issue ghim nhãn `handoff`). Mỗi phiên kết thúc bằng push; mỗi phiên bắt đầu bằng pull + đọc handoff. Không phụ thuộc bất kỳ trạng thái local nào (DB dev sinh lại từ seed, key API nhập riêng từng máy). |
 | Plugins/skills | **Superpowers** (chỉ các skill chạy trong phiên chính: TDD, verify, debugging, writing/executing plans) + **mattpocock/skills** (`grill-me` → `to-spec` → `to-tickets`). Không dùng skill/framework dựa trên subagent (GSD Core, OMC, `subagent-driven-development`). |
 | Tech stack | **Tauri 2 + React + TypeScript + Vite + Tailwind + shadcn/ui + SQLite (Drizzle)**, monorepo pnpm. Build ra 1 file `.exe` portable (~10–20 MB) trên GitHub Actions. Lõi nghiệp vụ là TypeScript thuần, test được không cần Tauri. |
 | AI copilot | Cổng KYC **deterministic** chạy trên *dữ kiện KYC đã có cấu trúc*; output AI ép theo JSON schema + validator chặn nội dung cấm; mỗi kết quả gắn `kyc_version`, kết quả trễ tự thành `STALE`. v1: Mock + OpenCode Go (giống Project-2). |
@@ -109,9 +109,9 @@ Bảng dưới là bản tóm tắt; định nghĩa đầy đủ, vai trò tính
 ### 3.2 Mô hình một agent — ưu, nhược, cách bù
 
 - **Ưu:** nhất quán tuyệt đối về kiến trúc và phong cách; không tốn chi phí điều phối; không có lỗi "bàn giao" giữa các agent.
-- **Nhược 1 — context rot:** không subagent nên phiên dài sẽ đầy context, chất lượng giảm. → **Mỗi task một phiên mới** (hoặc `/clear`), đầu vào là Issue + `HANDOFF.md` + file liên quan; task đủ nhỏ (P1: ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test).
+- **Nhược 1 — context rot:** không subagent nên phiên dài sẽ đầy context, chất lượng giảm. → **Mỗi task một phiên mới** (hoặc `/clear`), đầu vào là Issue + HANDOFF + file liên quan; task đủ nhỏ (P1: ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test).
 - **Nhược 2 — điểm mù của chính mình:** không có review chéo. → **Review ở phiên riêng, context sạch**, chỉ đọc spec + diff, theo checklist cố định; CI và test chấp nhận là trọng tài khách quan; `dependency-cruiser` chặn vi phạm ranh giới module; từ 30/09/2026 thêm review độc lập bằng Codex khi đóng phase (ADR-0001 M2).
-- **Nhược 3 — tốc độ và hạn mức:** mọi việc đi qua Claude Code. → Owner tự cân đối (C8); `HANDOFF.md` luôn cập nhật để dừng/tiếp lúc nào cũng được.
+- **Nhược 3 — tốc độ và hạn mức:** mọi việc đi qua Claude Code. → Owner tự cân đối (C8); HANDOFF luôn cập nhật để dừng/tiếp lúc nào cũng được.
 
 ---
 
@@ -166,7 +166,7 @@ Ngoài các cổng trên, Owner **trao quyền tự động** cho Claude (C4): t
 | Thứ | Ở đâu |
 |---|---|
 | Code, spec, ADR, kế hoạch | Repo |
-| Trạng thái đang làm dở, bước tiếp theo, việc chờ Owner | `docs/state/HANDOFF.md` (commit mỗi cuối phiên) |
+| Trạng thái đang làm dở, bước tiếp theo, việc chờ Owner | HANDOFF: Issue ghim nhãn `handoff` (ghi bằng `tools/handoff.mjs`, không qua PR; ADR-0003 phụ lục) |
 | Danh sách task, tiến độ | GitHub Issues + Milestones (+ Project board) |
 | Việc đang làm | Nhánh `task/*` / `wip/*` đã push + Draft PR |
 | Quy tắc, hooks, lệnh Claude | `CLAUDE.md`, `.claude/settings.json`, `.claude/commands/` (commit) |
@@ -176,9 +176,9 @@ Ngoài các cổng trên, Owner **trao quyền tự động** cho Claude (C4): t
 
 **Nghi thức phiên làm việc (tự động hóa bằng script + lệnh Claude):**
 
-- `/session-start` (hoặc `tools/session-start.ps1`; không đặt tên `/resume` vì trùng lệnh có sẵn của Claude Code): `git fetch` + pull, liệt kê PR mở và Issue mở của milestone đang mở, báo khi `HANDOFF.md` local lệch `origin/main`, kiểm tra toolchain.
-- `/handoff` (hoặc `tools/session-end.ps1`): commit WIP lên nhánh, push, cập nhật `HANDOFF.md` (đang làm gì, bước kế tiếp chính xác, việc chờ Owner, lệnh cần chạy tiếp).
-- Hook `SessionStart` của Claude Code (`.claude/hooks/handoff-context.mjs`) fetch rồi nạp `HANDOFF.md` của `origin/main` khi mở phiên (dưới 10.000 ký tự — giới hạn output hook; HANDOFF giữ dưới 8.000 ký tự, #280).
+- `/session-start` (hoặc `tools/session-start.ps1`; không đặt tên `/resume` vì trùng lệnh có sẵn của Claude Code): `git fetch` + pull, `tools/status.mjs` in PR mở (head, `REVIEW` mới nhất + SHA, CI), Issue mở của milestone đang mở, worktree; kiểm tra toolchain.
+- `/handoff`: cập nhật HANDOFF qua `tools/handoff.mjs` (đang làm gì, bước kế tiếp chính xác, việc chờ Owner); `tools/session-end.ps1` commit WIP lên nhánh, push.
+- Hook `SessionStart` của Claude Code (`.claude/hooks/handoff-context.mjs`) nạp HANDOFF từ Issue ghim khi mở phiên, hoặc bản tạm khi mất mạng (dưới 10.000 ký tự — giới hạn output hook; HANDOFF giữ dưới 8.000 ký tự, #280, #283).
 - Quy tắc: **trước khi rời máy, không để phiên Claude nào đang chạy dở** — hoặc chờ xong task, hoặc chạy `/handoff` để commit WIP và ghi bước tiếp theo.
 
 **Đồng nhất môi trường 2 máy:**
@@ -308,7 +308,7 @@ Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue, cỡ theo P1 (ADR-0001 p
 
 | Rủi ro | Giảm thiểu |
 |---|---|
-| Context rot trong phiên dài (không subagent) | Một phiên cho mỗi task; `HANDOFF.md` + Issue là đầu vào; task nhỏ |
+| Context rot trong phiên dài (không subagent) | Một phiên cho mỗi task; HANDOFF + Issue là đầu vào; task nhỏ |
 | Điểm mù khi tự review | Review ở phiên mới context sạch + checklist; CI/test chấp nhận/`dependency-cruiser` là trọng tài |
 | Hạn mức Claude chạm trần giữa task | Owner tự cân đối (C8); commit nhỏ, `/handoff` bất cứ lúc nào |
 | Chỉ số bị hiểu sai | Golden examples của Owner là test bắt buộc |
@@ -377,6 +377,6 @@ Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue, cỡ theo P1 (ADR-0001 p
 
 ## 8. Bước tiếp theo ngay
 
-Bước chi tiết từng phiên: `docs/state/HANDOFF.md`. Thứ tự lớn (cập nhật 02/10/2026):
+Bước chi tiết từng phiên: HANDOFF (Issue ghim nhãn `handoff`). Thứ tự lớn (cập nhật 02/10/2026):
 
 1. Phase 4 (mở 02/10, milestone "Phase 4 — Dashboard & báo cáo"): Đợt 2 của review đóng Phase 3 là #251–#259 — e2e local (#251) trước, rồi nhập backup lần 3 + luật nhân sự (#252); G2 Phase 4 (#253: đếm lịch, đếm KH theo nhóm, miền năm, chỉ số từng màn) và G3 mockup Tổng quan + Báo cáo (#254) trước màn dashboard.

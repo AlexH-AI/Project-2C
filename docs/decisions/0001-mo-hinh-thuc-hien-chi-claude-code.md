@@ -42,7 +42,7 @@ Nhất quán kiến trúc/phong cách, không chi phí điều phối, không l�
 
 ## Hệ quả
 
-- **Context rot** → task nhỏ, một phiên mỗi task, đầu vào là Issue + `docs/state/HANDOFF.md`.
+- **Context rot** → task nhỏ, một phiên mỗi task, đầu vào là Issue + HANDOFF (từ 03/10/2026 là Issue ghim nhãn `handoff`, không còn là `docs/state/HANDOFF.md` — ADR-0003 phụ lục, #283).
 - **Điểm mù tự review** → review ở phiên riêng + checklist `docs/process/REVIEW-CHECKLIST.md` (Phase 1); CI, test chấp nhận và `dependency-cruiser` là trọng tài khách quan.
 - `CLAUDE.md` là nguồn quy tắc duy nhất (không cần `AGENTS.md`) và ghi rõ cấm subagent. Chặn cứng Agent tool bằng `permissions.deny` trong `.claude/settings.json` (xem ADR-0012).
 - Không cần `dispatch.ps1` hay worktree song song: làm tuần tự từng task.
