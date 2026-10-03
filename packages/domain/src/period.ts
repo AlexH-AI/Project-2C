@@ -65,7 +65,9 @@ export function addDays(date: CalendarDate, days: number): CalendarDate {
   if (!Number.isInteger(days)) throw new RangeError(`Not a whole number of days: ${days}`);
   const result = toDayNumber(date) + days;
   if (result < FIRST_DAY || result > LAST_DAY) {
-    throw new RangeError(`${formatDate(date)} moved by ${days} days is outside 1900–2100`);
+    throw new RangeError(
+      `${formatDate(date)} moved by ${days} days is outside ${MIN_YEAR}–${MAX_YEAR}`,
+    );
   }
   return fromDayNumber(result);
 }

@@ -110,3 +110,27 @@ test('disables ‹ at year 1900 and › at year 2100 without console errors', as
 
   expect(errors).toEqual([]);
 });
+
+test('the appointments calendar shows December 2100 with blank cells after it', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('console', (message) => message.type() === 'error' && errors.push(message.text()));
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.clock.setFixedTime(TODAY);
+  await page.goto('/#/appointments');
+  const picker = page.getByRole('group', { name: 'Kỳ thống kê' });
+  const kinds = picker.getByRole('radiogroup', { name: 'Loại kỳ' });
+
+  await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
+  await picker.getByRole('textbox', { name: 'Từ ngày' }).fill('01/12/2100');
+  const end = picker.getByRole('textbox', { name: 'Đến ngày' });
+  await end.fill('31/12/2100');
+  await end.press('Enter');
+  await kinds.getByRole('radio', { name: 'Tháng' }).click();
+
+  await expect(picker.getByRole('status')).toHaveText('Tháng 12/2100');
+  await expect(page.getByRole('heading', { name: 'Lịch tháng 12/2100' })).toBeVisible();
+  await expect(picker.getByRole('button', { name: 'Kỳ sau' })).toBeDisabled();
+  expect(errors).toEqual([]);
+});

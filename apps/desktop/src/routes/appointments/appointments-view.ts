@@ -2,11 +2,13 @@ import type { AppointmentRecord, CustomerRecord } from '@p2c/db';
 import {
   addDays,
   compareDates,
+  daysBetween,
   formatDayMonth,
   inScope,
   isInPeriod,
   isRfTransition,
   periodOf,
+  shift,
   type AppointmentStatus,
   type CalendarDate,
   type CustomerStage,
@@ -236,21 +238,26 @@ const CALENDAR_GROUP: Record<AppointmentStatus, 'met' | 'planned' | 'missed'> = 
 
 /**
  * The weeks, Monday to Sunday, covering the month of `date`, with each day's appointments and
- * whether it is in the banded `period`.
+ * whether it is in the banded `period`. A day after 31/12/2100 is null: a blank cell (spec Phase 4
+ * §3.4); 01/01/1900 is a Monday, so the first week is whole.
  */
 export function monthGrid(
   date: CalendarDate,
   rows: readonly AppointmentRow[],
   period: Period,
-): DayCell[][] {
+): (DayCell | null)[][] {
   const banded = period.kind === 'week' || period.kind === 'custom';
   const month = periodOf('month', date);
-  let day = periodOf('week', month.start).start;
-  const last = periodOf('week', month.end).end;
-  const weeks: DayCell[][] = [];
-  while (compareDates(day, last) <= 0) {
-    const week: DayCell[] = [];
-    for (let i = 0; i < 7; i++, day = addDays(day, 1)) {
+  const weeks: (DayCell | null)[][] = [];
+  for (let span = periodOf('week', month.start); ; span = shift(span, 1)) {
+    const week: (DayCell | null)[] = [];
+    const days = daysBetween(span.start, span.end) + 1;
+    for (let i = 0; i < 7; i++) {
+      if (i >= days) {
+        week.push(null);
+        continue;
+      }
+      const day = addDays(span.start, i);
       const cell = {
         date: day,
         inMonth: day.month === date.month,
@@ -267,8 +274,8 @@ export function monthGrid(
       week.push(cell);
     }
     weeks.push(week);
+    if (compareDates(span.end, month.end) >= 0) return weeks;
   }
-  return weeks;
 }
 
 /** The twelve months of `year`, each with its appointments by calendar group and against today. */

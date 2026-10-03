@@ -220,7 +220,7 @@ describe('monthGrid', () => {
     );
     const cell = monthGrid(day(9, 16), rows, periodOf('month', day(9, 16)))
       .flat()
-      .find((c) => c.date.day === 16 && c.inMonth);
+      .find((c) => c?.date.day === 16 && c?.inMonth);
     expect(cell).toMatchObject({ met: 0, planned: 0, missed: 3 });
   });
 
@@ -241,6 +241,19 @@ describe('monthGrid', () => {
     expect(weeks[5]?.[6]).toMatchObject({ date: day(9, 6), inMonth: false });
   });
 
+  it('leaves the days after 31/12/2100 blank and starts on 01/01/1900, a Monday', () => {
+    const lastDay = { year: 2100, month: 12, day: 31 };
+    const december = monthGrid(lastDay, [], periodOf('month', lastDay));
+    expect(december).toHaveLength(5);
+    // 31/12/2100 is a Friday: the last week ends with two blank cells.
+    expect(december[4]?.[4]).toMatchObject({ date: lastDay, inMonth: true });
+    expect(december[4]?.slice(5)).toEqual([null, null]);
+
+    const firstDay = { year: 1900, month: 1, day: 1 };
+    const january = monthGrid(firstDay, [], periodOf('month', firstDay));
+    expect(january[0]?.[0]).toMatchObject({ date: firstDay, inMonth: true });
+  });
+
   it('crosses the new year on both sides', () => {
     const jan2 = { year: 2027, month: 1, day: 2 };
     const rows = appointmentRows(data([appointment('a', 're1', jan2)]), { kind: 'all' }, 'any');
@@ -254,7 +267,7 @@ describe('monthGrid', () => {
   it('marks the days of a week period, in the month shown or not', () => {
     const week = periodOf('week', day(10, 1));
     const cells = monthGrid(day(10, 1), [], week).flat();
-    const inPeriod = cells.filter((c) => c.inPeriod).map((c) => [c.date.month, c.date.day]);
+    const inPeriod = cells.filter((c) => c?.inPeriod).map((c) => [c?.date.month, c?.date.day]);
     expect(inPeriod).toEqual([
       [9, 28],
       [9, 29],
@@ -269,8 +282,8 @@ describe('monthGrid', () => {
 
   it('marks the days of a custom range only', () => {
     const cells = monthGrid(day(10, 6), [], customPeriod(day(9, 24), day(10, 7))).flat();
-    expect(cells.find((c) => c.date.day === 7 && c.inMonth)?.inPeriod).toBe(true);
-    expect(cells.find((c) => c.date.day === 8 && c.inMonth)?.inPeriod).toBe(false);
+    expect(cells.find((c) => c?.date.day === 7 && c?.inMonth)?.inPeriod).toBe(true);
+    expect(cells.find((c) => c?.date.day === 8 && c?.inMonth)?.inPeriod).toBe(false);
   });
 
   it('marks no band for a month or a day period', () => {
@@ -278,7 +291,7 @@ describe('monthGrid', () => {
       expect(
         monthGrid(day(10, 1), [], period)
           .flat()
-          .some((c) => c.inPeriod),
+          .some((c) => c?.inPeriod),
       ).toBe(false);
     }
   });
