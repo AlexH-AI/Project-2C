@@ -8,7 +8,7 @@
 
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { isDocsOnly, mergeBlockers, riskLevel } from './pr-core.mjs';
+import { isDocsOnly, mergeBlockers, prList, riskLevel } from './pr-core.mjs';
 import { checksSummary, latestReview } from './session-core.mjs';
 import { run as runIn } from './session-io.mjs';
 
@@ -85,7 +85,7 @@ export function formatStatus({ pr, stacked, baseMerged }, { withVerdict = true }
     `  review   ${reviewText}`,
     `  ci       ${checksSummary(pr.statusCheckRollup ?? [])}${docsOnly ? ' (docs-only: CI not needed)' : ''}`,
     `  files    ${pr.files.length} changed · docs-only ${docsOnly ? 'yes' : 'no'}`,
-    `  stacked  ${stacked.length ? stacked.map((n) => `#${n}`).join(', ') + ' based on this branch' : 'none on this branch'}`,
+    `  stacked  ${stacked.length ? prList(stacked) + ' based on this branch' : 'none on this branch'}`,
     ...(withVerdict ? [`  merge    ${verdict}`] : []),
   ].join('\n');
 }

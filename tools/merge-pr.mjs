@@ -137,9 +137,9 @@ const done = [];
 runSteps([mergeStep, fetchStep], done, ['clean-up (see the steps in tools/merge-pr.mjs)']);
 const plan = planCleanup(pr.headRefName, stacked);
 runSteps(plan.steps, done);
-out(`\nMerged PR #${pr.number} (${opts.mode}) and cleaned up.`);
 if (plan.problems.length) {
-  out('Left for the Owner:');
+  out(`\nMerged PR #${pr.number} (${opts.mode}); clean-up NOT finished, left for the Owner:`);
   for (const problem of plan.problems) out(`  ! ${problem}`);
   process.exit(1);
 }
+out(`\nMerged PR #${pr.number} (${opts.mode}) and cleaned up.`);

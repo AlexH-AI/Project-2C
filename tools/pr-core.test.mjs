@@ -323,6 +323,18 @@ describe('cleanupPlan', () => {
     expect(plan.problems).toEqual([expect.stringMatching(/other has main checked out/)]);
   });
 
+  it('reports every worktree holding main that cannot be moved, dirty or not', () => {
+    const other = 'C:/workspace/Project-2C-wt-T2';
+    for (const holder of [other, REVIEW2]) {
+      const worktrees = [wt(MAIN, 'task/T-1-x'), wt(holder, 'main')];
+      const plan = cleanupPlan(state({ worktrees, remoteExists: false, dirty: new Set([holder]) }));
+      expect(plan.steps).toEqual([]);
+      expect(plan.problems).toEqual([
+        `${holder} has main checked out (uncommitted changes): main checkout left on task/T-1-x.`,
+      ]);
+    }
+  });
+
   it('detaches a review worktree left on the merged branch', () => {
     const worktrees = [wt(MAIN, 'main'), wt(REVIEW2, 'task/T-1-x')];
     expect(describeSteps(cleanupPlan(state({ worktrees, remoteExists: false })))).toEqual([

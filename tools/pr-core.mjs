@@ -5,6 +5,9 @@
 import { checkCounts, latestReview } from './session-core.mjs';
 
 const LEVELS = ['low', 'med', 'high'];
+
+/** PR numbers as "#12, #14". */
+export const prList = (numbers) => numbers.map((n) => `#${n}`).join(', ');
 // Job name in .github/workflows/ci.yml, run only for PRs labelled build-exe.
 const EXE_CHECK = 'Build portable exe';
 
@@ -78,8 +81,9 @@ export function mergeBlockers(pr, { owner, mode, stacked, baseMerged }) {
   }
 
   if (stacked.length && mode !== 'merge') {
-    const list = stacked.map((n) => `#${n}`).join(', ');
-    blockers.push(`PR ${list} is stacked on this branch: use --merge to keep its history.`);
+    blockers.push(
+      `PR ${prList(stacked)} is stacked on this branch: use --merge to keep its history.`,
+    );
   }
   return blockers;
 }
@@ -130,18 +134,22 @@ export function cleanupPlan({ branch, worktrees, dirty, stacked, remoteExists, l
   let branchInUse = false;
 
   if (stacked.length) {
-    const list = stacked.map((n) => `#${n}`).join(', ');
-    problems.push(`PR ${list} is stacked on it: branch ${branch} kept, local and remote.`);
+    problems.push(
+      `PR ${prList(stacked)} is stacked on it: branch ${branch} kept, local and remote.`,
+    );
   } else if (remoteExists) {
     git(main.path, 'push', 'origin', '--delete', branch);
   }
 
   if (main.branch === branch) {
-    // git switch main fails while another worktree has main checked out.
+    // git switch main fails while another worktree has main checked out; only a clean
+    // review worktree may be moved off it.
     const holders = others.filter((w) => w.branch === 'main');
-    const stuck = holders.filter((w) => !isReviewWorktree(w.path) || isDirty(w));
-    for (const w of stuck.filter((w) => !dirty.has(w.path)))
-      problems.push(`${w.path} has main checked out: main checkout left on ${branch}.`);
+    const stuck = holders.filter((w) => !isReviewWorktree(w.path) || dirty.has(w.path));
+    for (const w of stuck) {
+      const changes = dirty.has(w.path) ? ' (uncommitted changes)' : '';
+      problems.push(`${w.path} has main checked out${changes}: main checkout left on ${branch}.`);
+    }
     if (isDirty(main) || stuck.length) {
       branchInUse = true;
     } else {
