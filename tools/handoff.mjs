@@ -9,23 +9,14 @@
 // <file>.base.json; `write <file>` is refused if the issue changed since that version, so
 // one machine never silently overwrites the other's handoff (other reads do not move it).
 
-import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { checkBody, checkWrite, pickHandoffIssue } from './session-core.mjs';
-
-function run(cmd, args, root, timeout = 15000) {
-  const result = spawnSync(cmd, args, { cwd: root, encoding: 'utf8', timeout });
-  if (result.status !== 0) {
-    const reason = result.error?.message || result.stderr?.trim() || `exit ${result.status}`;
-    throw new Error(`${cmd} ${args.slice(0, 2).join(' ')} failed: ${reason}`);
-  }
-  return result.stdout;
-}
+import { run } from './session-io.mjs';
 
 function cachePath(root) {
-  const dir = run('git', ['rev-parse', '--git-common-dir'], root).trim();
+  const dir = run('git', ['rev-parse', '--git-common-dir'], { cwd: root }).trim();
   return join(isAbsolute(dir) ? dir : resolve(root, dir), 'handoff-cache.json');
 }
 
@@ -56,8 +47,7 @@ function fetchIssue(root, timeout) {
   const json = run(
     'gh',
     ['issue', 'list', '--label', 'handoff', '--state', 'open', '--limit', '5', '--json', fields],
-    root,
-    timeout,
+    { cwd: root, timeout },
   );
   const issue = pickHandoffIssue(JSON.parse(json));
   return { ...issue, body: issue.body.replace(/\r\n/g, '\n') };
@@ -74,16 +64,9 @@ function saveCache(root, issue) {
  * Returns { body, number, updatedAt, source, warnings }; throws only when neither is available.
  */
 export function readHandoff(root, timeout = 15000) {
+  let issue;
   try {
-    const issue = fetchIssue(root, timeout);
-    saveCache(root, issue);
-    return {
-      body: issue.body,
-      number: issue.number,
-      updatedAt: issue.updatedAt,
-      source: `issue #${issue.number}`,
-      warnings: [],
-    };
+    issue = fetchIssue(root, timeout);
   } catch (error) {
     const cache = loadCache(root);
     if (!cache) throw error;
@@ -95,6 +78,20 @@ export function readHandoff(root, timeout = 15000) {
       warnings: [`Could not read GitHub (${error.message}): this copy may be stale.`],
     };
   }
+  // The data from GitHub is good even if the offline copy cannot be saved.
+  const warnings = [];
+  try {
+    saveCache(root, issue);
+  } catch (error) {
+    warnings.push(`Read from GitHub, but the offline copy was not saved (${error.message}).`);
+  }
+  return {
+    body: issue.body,
+    number: issue.number,
+    updatedAt: issue.updatedAt,
+    source: `issue #${issue.number}`,
+    warnings,
+  };
 }
 
 export function writeHandoff(root, file) {
@@ -104,13 +101,16 @@ export function writeHandoff(root, file) {
   const current = fetchIssue(root);
   const conflict = checkWrite(loadBase(file), current);
   if (conflict) throw new Error(conflict);
-  run('gh', ['issue', 'edit', String(current.number), '--body-file', file], root);
+  // GitHub has no conditional issue update: a write from the other machine landing between
+  // this check and the edit would still be overwritten. Accepted for two machines (ADR-0003).
+  run('gh', ['issue', 'edit', String(current.number), '--body-file', file], { cwd: root });
   // The edit is done; failing to refresh the copies afterwards must not report it as failed.
+  // The base is saved first: if it is not, the next write is refused (the safe side).
   let refreshWarning = null;
   try {
     const updated = fetchIssue(root);
-    saveCache(root, updated);
     saveBase(file, updated.number, updated.updatedAt);
+    saveCache(root, updated);
   } catch (error) {
     refreshWarning =
       `Written, but the local copy was not refreshed (${error.message}). ` +

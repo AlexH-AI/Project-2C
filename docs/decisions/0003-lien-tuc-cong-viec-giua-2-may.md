@@ -55,7 +55,7 @@ Thay bảng ở mục Quyết định:
 | PR mở, kết quả `REVIEW`, CI, Issue của milestone, worktree | Không chép tay: `tools/status.mjs` sinh từ GitHub mỗi lần `/session-start` |
 | Ghi chú review không chặn | `docs/state/review-notes.md` (qua PR) |
 
-- **Không đè nhau giữa 2 máy:** `read --out <file>` ghi mốc (số Issue, `updatedAt`) vào `<file>.base.json`. Lệnh ghi từ chối khi `updatedAt` trên GitHub khác mốc của chính file đó → `read --out` lại, gộp, ghi lại. Mốc gắn với file đang sửa, không với lần đọc gần nhất trên máy, nên hook hay phiên khác đọc lại cũng không làm mất bước kiểm (review PR #285). Không sửa trên web khi có phiên đang chạy.
+- **Không đè nhau giữa 2 máy:** `read --out <file>` ghi mốc (số Issue, `updatedAt`) vào `<file>.base.json`. Lệnh ghi từ chối khi `updatedAt` trên GitHub khác mốc của chính file đó → `read --out` lại, gộp, ghi lại. Mốc gắn với file đang sửa, không với lần đọc gần nhất trên máy, nên hook hay phiên khác đọc lại cũng không làm mất bước kiểm (review PR #285). Còn một khoảng rất ngắn giữa bước kiểm và lệnh ghi (GitHub không có cập nhật có điều kiện cho Issue): hai máy ghi đúng cùng lúc thì bản ghi sau vẫn đè. Chấp nhận với 2 máy một người dùng. Không sửa trên web khi có phiên đang chạy.
 - **Mất mạng / không vào được GitHub:** mỗi lần đọc thành công lưu bản tạm (số Issue, `updatedAt`, nội dung) trong thư mục git chung; hook và `handoff.mjs read` dùng bản tạm, kèm cảnh báo "có thể cũ" và thời điểm đọc.
 - **Độ dài:** dưới 8.000 ký tự; lệnh ghi chặn ở 9.000; hook cắt output dưới 10.000.
 - **Điều kiện:** cả hai máy có `gh` đã đăng nhập (`tools/bootstrap.ps1` kiểm). Phiên cloud (phương án C) tự chạy `node tools/handoff.mjs read`.

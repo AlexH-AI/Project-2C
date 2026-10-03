@@ -3,16 +3,10 @@
 // open PRs (head, latest REVIEW verdict and its SHA, CI), open issues of the open
 // milestone, worktrees. Called by tools/session-start.ps1 (ADR-0003 appendix, #283).
 
-import { spawnSync } from 'node:child_process';
 import { checksSummary, latestReview } from './session-core.mjs';
+import { run as runIn } from './session-io.mjs';
 
-function run(cmd, args) {
-  const result = spawnSync(cmd, args, { encoding: 'utf8', timeout: 30000 });
-  if (result.status !== 0) {
-    throw new Error(result.error?.message || result.stderr?.trim() || `exit ${result.status}`);
-  }
-  return result.stdout;
-}
+const run = (cmd, args) => runIn(cmd, args, { timeout: 30000 });
 
 const labels = (item) => {
   const names = item.labels.map((l) => l.name).filter((n) => n !== 'type:task');
