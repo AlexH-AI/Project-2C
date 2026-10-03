@@ -30,4 +30,4 @@ Kiểm tra repo nguồn ngày 2026-09-26:
 
 - Tên skill trong kế hoạch (`to-prd`, `to-issues`) đã lỗi thời; Project-2 cũng cần dùng `to-spec` / `to-tickets` để giữ hằng số "Plugin" (`docs/COMPARISON.md`).
 - Trước lần dùng `to-spec` / `to-tickets` đầu tiên phải chạy `/setup-matt-pocock-skills` (issue tracker = GitHub Issues). Skill này mặc định ADR ở `docs/adr/`; 2C giữ `docs/decisions/` và khai báo khi setup.
-- Hook `SessionStart` của Superpowers chạy mỗi phiên; phải cùng tồn tại với hook hiện `HANDOFF.md` (ADR-0003).
+- Hook `SessionStart` của Superpowers chạy mỗi phiên; phải cùng tồn tại với hook nạp HANDOFF (`.claude/hooks/handoff-context.mjs`, từ 03/10/2026 đọc Issue ghim nhãn `handoff` — ADR-0003 phụ lục).
