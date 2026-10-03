@@ -83,27 +83,8 @@ Do NOT close or modify any parent issue.
 
 <issue-template>
 
-## Parent
-
-A reference to the parent issue on the tracker (if the source was an existing issue, otherwise omit this section).
-
-## What to build
-
-The end-to-end behaviour this ticket makes work, from the user's perspective, not layer-by-layer implementation.
-
-## Tài liệu cần đọc
-
-- Exact paths + sections the implementing session must read first (spec §, golden cases, mockup block, ADR appendix, code files to change). Filled now, while the context is at hand (project rule, `docs/agents/issue-tracker.md`).
-
-## Acceptance criteria
-
-- [ ] Criterion 1
-- [ ] Criterion 2
-
-## Blocked by
-
-- A reference to each blocking ticket, or "None (can start immediately)".
+Fill every field of the project's Task template, `.github/ISSUE_TEMPLATE/task.yml` (conventions in `docs/agents/issue-tracker.md`). Do not keep a second list of sections here: `task.yml` is the only definition. Reference a parent issue, if any, in "Bối cảnh"; put blocking issues in "Bị chặn bởi".
 
 </issue-template>
 
-In either form, avoid specific file paths or code snippets: they go stale fast. Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it and note briefly that it came from a prototype. Trim to the decision-rich parts, not a working demo, just the important bits.
+In either form, avoid specific file paths or code snippets: they go stale fast. Two exceptions on the issue tracker, both required by `task.yml`: "Tài liệu cần đọc" lists exact paths and sections to read first, and "File / thư mục được phép sửa" lists the paths or globs the task may change. Another exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it and note briefly that it came from a prototype. Trim to the decision-rich parts, not a working demo, just the important bits.

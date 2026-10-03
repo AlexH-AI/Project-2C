@@ -43,4 +43,5 @@ Quy trình đầy đủ nằm ở skill `review-pr` (ADR-0017): xác định m�
 - [ ] Không bí mật, key, dữ liệu thật trong diff.
 - [ ] Không code chết, `console.log` gỡ lỗi, TODO không có Issue.
 - [ ] Commit message theo Conventional Commits.
+- [ ] PR sửa file trong `.claude/skills/` (trừ `review-pr`) cập nhật bảng "Sửa cục bộ" trong `.claude/skills/README.md` (ADR-0012 phụ lục 03/10).
 - [ ] Script (`.ps1`, shell): mọi lệnh native có tác dụng phụ đều kiểm exit code; không in "thành công" khi một bước trước đó có thể đã lỗi.

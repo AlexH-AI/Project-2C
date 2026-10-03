@@ -4,8 +4,9 @@ Issues and specs for this repo live as GitHub issues in `AlexH-AI/Project-2C`. U
 
 ## Project conventions
 
-- Every task is one issue created from the **Task** template (`.github/ISSUE_TEMPLATE/task.yml`): goal, context, **docs to read** ("Tài liệu cần đọc"), files allowed to change, contract, acceptance tests, definition of done, risk.
-- **Docs to read** is required: the exact paths and sections (spec §, golden cases, mockup block, ADR appendix, the code files to change) the implementing session must read first. Fill it while writing the issue, when that context is at hand; `/session-start <issue>` reads only this list, so a missing entry costs a later session a search.
+- Every task is one issue created from the **Task** template, `.github/ISSUE_TEMPLATE/task.yml`. That file is the only definition of the issue's sections: fill every field it has, in its order. Skills (`to-tickets`) point here and do not keep their own list.
+- **File paths** in the issue body go only in two fields: "Tài liệu cần đọc" (paths + sections to read) and "File / thư mục được phép sửa" (paths or globs). Keep them out of the other fields; they go stale.
+- **Docs to read** ("Tài liệu cần đọc") is required: the exact paths and sections (spec §, golden cases, mockup block, ADR appendix, the code files to change) the implementing session must read first. Fill it while writing the issue, when that context is at hand; `/session-start <issue>` reads only this list, so a missing entry costs a later session a search.
 - Title: `T-xxx: <Vietnamese title>` — take the next free number from `gh issue list --state all --search "T- in:title"`.
 - Labels: always `type:task` plus exactly one of `risk:low` / `risk:med` / `risk:high`. Add `gate` when the issue waits on an Owner gate (G1–G8), `status:in-progress` while being worked on, and `ready-for-agent` when fully specified.
 - Milestone: the current phase, e.g. `Phase 1 — Nền móng`.
@@ -37,7 +38,7 @@ Put `Bị chặn bởi: #<n>, #<n>` in the issue's "Bị chặn bởi" field (or
 
 Create a GitHub issue following the project conventions above.
 
-The Task template's "files allowed to change" field is required and overrides the skills' "avoid file paths" rule: list paths or globs there (e.g. `packages/db/**`); keep them out of the rest of the body.
+The skills' "avoid file paths" rule holds except in the two path fields above ("Tài liệu cần đọc", "File / thư mục được phép sửa", e.g. `packages/db/**`), which `task.yml` requires.
 
 ## When a skill says "fetch the relevant ticket"
 
