@@ -8,6 +8,7 @@ export {
   addDays,
   calendarDate,
   canShift,
+  chartMarks,
   compareDates,
   customPeriod,
   daysBetween,
@@ -23,6 +24,7 @@ export {
   parseDate,
   parseQuickDate,
   periodOf,
+  reportMarks,
   shift,
   switchKind,
   weekdayOf,
@@ -72,6 +74,8 @@ export {
 export type { CloseRate, MetricsData, PeriodMetrics, PolicyMetrics } from './stats';
 export { appointmentCounts, appointmentGroup } from './appointment-counts';
 export type { AppointmentCounts, AppointmentGroup } from './appointment-counts';
+export { snapshotDate, stageSnapshot } from './stage-snapshot';
+export type { StageCounts } from './stage-snapshot';
 export { formatVnd, formatVndCompact, formatVndDelta, parseVnd } from './money';
 export { formatCount, formatFileSize } from './number';
 export type { Vnd, VndParseError, VndParseResult } from './money';
