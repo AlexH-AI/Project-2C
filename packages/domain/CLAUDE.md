@@ -5,7 +5,7 @@ TypeScript thuần: định nghĩa chỉ số, vòng đời khách hàng, KYC, k
 ## Ranh giới
 
 - **Không import package nào khác** (kể cả `node:*`, trình duyệt) — `dependency-cruiser` rule `domain-is-pure` (`pnpm lint:deps`). Test (`*.test.ts`) được import `vitest`.
-- Mọi package khác dùng domain qua `@p2c/domain` (`src/index.ts`); thêm export mới thì thêm vào `index.ts`.
+- Mọi package khác dùng domain qua `@p2c/domain` (`src/index.ts`); thêm export mới thì thêm vào `index.ts`. Ngoại lệ: hàm chỉ dùng chung giữa các file trong `src/` (vd. `scopeMatcher` của `stats.ts`, dùng ở `appointment-counts.ts`) được `export` nhưng không vào `index.ts`.
 - Coverage ≥ 95% (`pnpm test:coverage` trong `pnpm verify`).
 
 ## File hay tìm
