@@ -27,10 +27,12 @@ TypeScript thuần: định nghĩa chỉ số, vòng đời khách hàng, KYC, k
 Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `pnpm verify` báo đỏ khi lệch code.
 
 <!-- codemap:start -->
+- `src/appointment-counts.ts` — type AppointmentGroup, appointmentGroup, type AppointmentCounts, appointmentCounts
 - `src/customer-lifecycle.ts` — assertValidTransition, isRfTransition, stageOn, policyBadge
+- `src/golden/appointments.fixture.ts` — APPOINTMENT_TODAY, type GoldenAppointmentRow, APPOINTMENT_ROWS, type ExpectedAppointmentCounts, type AppointmentGoldenCase, APPOINTMENT_GOLDEN_CASES
 - `src/golden/kyc.fixture.ts` — type ExpectedGate, type KycGoldenProfile, KYC_GOLDEN_PROFILES
 - `src/golden/metrics.fixture.ts` — TEAMS, PEOPLE, CUSTOMERS, APPOINTMENTS, STAGE_TRANSITIONS, POLICIES, EXPECTED_RF_APPOINTMENT_IDS, type ExpectedMetrics, type GoldenCase, MTD_VIEWING_DATE, GOLDEN_CASES
-- `src/index.ts` — re-exports ./pipeline-stage, ./period, ./kyc-catalog, ./kyc-fact, ./kyc, ./kyc-gate, ./customer-lifecycle, ./stats, ./money, ./number, ./model
+- `src/index.ts` — re-exports ./pipeline-stage, ./period, ./kyc-catalog, ./kyc-fact, ./kyc, ./kyc-gate, ./customer-lifecycle, ./stats, ./appointment-counts, ./money, ./number, ./model
 - `src/kyc-catalog.ts` — KYC_CATEGORIES, type KycCategory, KYC_FIELDS, type KycField, type KycCategorySpec, KYC_CATEGORY_SPECS, KYC_GATE_STATES, type KycGateState, KYC_GATE_THRESHOLDS, KYC_INSUFFICIENT_MESSAGE
 - `src/kyc-fact.ts` — KYC_FACT_STATUSES, type KycFactStatus, type KycValue, type KycFact
 - `src/kyc-gate.ts` — type KycSuggestedQuestions, type KycGateResult, evaluateKycGate
@@ -40,5 +42,5 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/number.ts` — groupThousands, formatCount, formatFileSize
 - `src/period.ts` — type CalendarDate, PERIOD_KINDS, type PeriodKind, type Period, MIN_YEAR, calendarDate, addDays, fromLocalDate, formatDate, formatLocalDateTime, localFileStamp, formatDayMonth, formatDayOfMonth, type Weekday, weekdayOf, daysBetween, compareDates, isInPeriod, parseDate, type QuickDateError, type QuickDateResult, NEXT_YEAR_SUGGESTION_DAYS, parseQuickDate, periodOf, customPeriod, monthToDate, shift, switchKind, formatPeriodValue
 - `src/pipeline-stage.ts` — PIPELINE_STAGES, type PipelineStage, isPipelineStage, compareStages
-- `src/stats.ts` — type PolicyMetrics, inScope, policyMetrics, isRfAppointment, rfCount, type CloseRate, closeRate, type PeriodMetrics, type MetricsData, periodMetrics
+- `src/stats.ts` — type PolicyMetrics, scopeMatcher, inScope, policyMetrics, isRfAppointment, rfCount, type CloseRate, closeRate, type PeriodMetrics, type MetricsData, periodMetrics
 <!-- codemap:end -->

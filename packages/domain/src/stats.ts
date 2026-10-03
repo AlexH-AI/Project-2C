@@ -25,7 +25,7 @@ export interface PolicyMetrics {
  */
 
 /** Whether a record owned by an RE counts in the scope; built once, then checked per record. */
-function scopeMatcher(people: readonly Person[], scope: Scope): (reId: string) => boolean {
+export function scopeMatcher(people: readonly Person[], scope: Scope): (reId: string) => boolean {
   switch (scope.kind) {
     case 'all':
       return () => true;

@@ -68,6 +68,8 @@ export {
   rfCount,
 } from './stats';
 export type { CloseRate, MetricsData, PeriodMetrics, PolicyMetrics } from './stats';
+export { appointmentCounts, appointmentGroup } from './appointment-counts';
+export type { AppointmentCounts, AppointmentGroup } from './appointment-counts';
 export { formatVnd, formatVndCompact, formatVndDelta, parseVnd } from './money';
 export { formatCount, formatFileSize } from './number';
 export type { Vnd, VndParseError, VndParseResult } from './money';
