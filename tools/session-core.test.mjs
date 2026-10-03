@@ -85,15 +85,15 @@ describe('fitOutput', () => {
 });
 
 describe('latestReview', () => {
-  const comment = (body) => ({ body });
+  const comment = (body, authorAssociation = 'OWNER') => ({ body, authorAssociation });
 
-  it('returns the last REVIEW comment with its verdict and head SHA', () => {
+  it('returns the last REVIEW comment with its verdict, head SHA and level', () => {
     const review = latestReview([
       comment('REVIEW: CHANGES\nPR #5, head `aaaaaaa`, mức `low`.'),
       comment('looks fine'),
       comment('REVIEW: PASS (kèm ghi chú)\nPR #5, head `b37132d`, mức `low`.'),
     ]);
-    expect(review).toEqual({ verdict: 'PASS (kèm ghi chú)', sha: 'b37132d' });
+    expect(review).toEqual({ verdict: 'PASS (kèm ghi chú)', sha: 'b37132d', level: 'low' });
   });
 
   it('returns null when nobody reviewed yet', () => {
@@ -101,7 +101,28 @@ describe('latestReview', () => {
   });
 
   it('keeps a review without a SHA', () => {
-    expect(latestReview([comment('REVIEW: PASS')])).toEqual({ verdict: 'PASS', sha: null });
+    expect(latestReview([comment('REVIEW: PASS')])).toEqual({
+      verdict: 'PASS',
+      sha: null,
+      level: null,
+    });
+  });
+
+  it('reads a level written as risk:<level>', () => {
+    const review = latestReview([
+      comment('REVIEW: PASS\nPR #5, head `b37132d`, mức `risk:med` (nâng từ low).'),
+    ]);
+    expect(review.level).toBe('med');
+  });
+
+  it('ignores REVIEW comments from anyone without write access', () => {
+    const review = latestReview([
+      comment('REVIEW: CHANGES\nPR #5, head `aaaaaaa`, mức `low`.', 'COLLABORATOR'),
+      comment('REVIEW: PASS\nPR #5, head `bbbbbbb`, mức `low`.', 'CONTRIBUTOR'),
+      comment('REVIEW: PASS\nPR #5, head `ccccccc`, mức `low`.', 'NONE'),
+      { body: 'REVIEW: PASS\nPR #5, head `ddddddd`, mức `low`.' },
+    ]);
+    expect(review).toEqual({ verdict: 'CHANGES', sha: 'aaaaaaa', level: 'low' });
   });
 });
 
@@ -116,6 +137,18 @@ describe('checksSummary', () => {
         { state: 'SUCCESS' },
       ]),
     ).toBe('CI 2 pass, 1 fail, 1 pending');
+  });
+
+  it('counts any other finished result as a failure, skipped and neutral as none', () => {
+    expect(
+      checksSummary([
+        { status: 'COMPLETED', conclusion: 'SUCCESS' },
+        { status: 'COMPLETED', conclusion: 'STARTUP_FAILURE' },
+        { status: 'COMPLETED', conclusion: 'STALE' },
+        { status: 'COMPLETED', conclusion: 'NEUTRAL' },
+        { state: 'ERROR' },
+      ]),
+    ).toBe('CI 1 pass, 3 fail, 0 pending');
   });
 
   it('says when there are no checks', () => {

@@ -39,17 +39,11 @@ Memory của Claude chỉ nằm trên từng máy, nên quy tắc dùng chung ch
 3. TDD: test đỏ → code → test xanh. Chạy `pnpm verify` trước khi commit. Test chấp nhận trong Issue là seam đã thống nhất với Owner — không cần hỏi lại seam (skill `tdd`); chỉ hỏi khi cần seam ngoài Issue.
 4. PR → CI Windows xanh → **review ở phiên mới, context sạch** bằng skill `review-pr` (ADR-0017): Owner gõ "review PR #N" → skill đọc nhãn `risk:*`, chọn mức (low: Spec + checklist · med: + `code-review medium` · high: + `code-review high`). Không gọi `code-review` trực tiếp; không dùng `--comment`/`--fix`/`ultra`.
    - Review chạy trong worktree cố định `C:\workspace\Project-2C-review`, ngoài checkout chính (detached HEAD ở đúng SHA đang review, chỉ đọc, không commit). Code chỉ làm ở checkout chính hoặc worktree của task. Review hai PR song song → phiên thứ hai dùng `C:\workspace\Project-2C-review-2` (mỗi worktree review chỉ một phiên tại một thời điểm). Chi tiết: skill `review-pr` §0.
-5. `risk:low` + CI xanh + review đạt → Claude tự merge bằng `gh pr merge --squash` (dùng `--merge` khi có PR khác xếp chồng lên nhánh này, để giữ lịch sử commit). Ngược lại chờ Owner. Sửa tối đa 2 vòng, sau đó G8.
+5. `risk:low` + CI xanh + review đạt → Claude tự merge (squash; `--merge` khi có PR khác xếp chồng lên nhánh này, để giữ lịch sử commit). Ngược lại chờ Owner. Sửa tối đa 2 vòng, sau đó G8.
+   - **Merge luôn bằng `node tools/merge-pr.mjs <N>`** (`--merge` khi xếp chồng, `--owner` khi Owner bảo merge PR `risk:med`/`high`, `--dry-run` để xem trước): lệnh kiểm mọi điều kiện dưới, merge, rồi dọn nhánh. Xem nhanh trạng thái một PR: `node tools/pr-status.mjs <N>`.
    - Trước mọi lần merge: `headRefOid` của PR phải trùng SHA ghi trong `REVIEW: PASS` mới nhất; head đổi sau PASS → review lại ở phiên sạch. Phiên review không commit (skill `review-pr` §5, P-1).
    - `main` được bảo vệ hai lớp: ruleset `protect-main` trên GitHub (bắt buộc qua PR, cấm force-push và xóa nhánh; không bắt buộc status check vì PR docs-only không chạy CI; bật 28/09/2026 khi repo đã public) và hook `.githooks/pre-push` chặn push thẳng lên `main` (bootstrap đặt `core.hooksPath`). Không bật auto-merge. Việc "CI xanh mới merge" không do server ép, nên Claude phải tự tuân thủ. **Không bao giờ** dùng `--no-verify` hay merge PR code khi CI chưa xanh.
-   - **Dọn nhánh ngay sau mỗi lần merge** (Owner quyết định 28/09/2026), cả khi Claude merge lẫn khi Owner bảo merge. Không cần hỏi lại:
-     1. `git fetch origin --prune`.
-     2. Xóa nhánh remote của PR nếu GitHub chưa tự xóa: `git push origin --delete <nhánh>`.
-     3. Checkout chính đang đứng trên nhánh vừa merge và sạch → `git switch main` + `git merge --ff-only origin/main`. Có thay đổi chưa commit → dừng, báo Owner.
-     4. Xóa nhánh local: `git branch -D <nhánh>` (squash merge nên `-d` không nhận là đã merge).
-     5. Nhánh của PR cùng task đã đóng không merge (hướng làm bị thay thế) → xóa cả remote lẫn local.
-     6. Worktree review → `git checkout --detach origin/main`. Worktree của task đã merge → `git worktree remove`.
-     - Không xóa nhánh còn PR mở, nhánh có PR khác xếp chồng lên, hay nhánh đang checkout ở worktree có thay đổi chưa commit: báo Owner.
+   - **Dọn nhánh ngay sau mỗi lần merge** (Owner quyết định 28/09/2026), cả khi Claude merge lẫn khi Owner bảo merge, không cần hỏi lại: `merge-pr.mjs` tự làm (các bước chi tiết ở đầu file). Lệnh báo thay vì làm khi gặp thay đổi chưa commit hay PR khác xếp chồng → báo Owner. Nhánh của PR cùng task đã đóng không merge (hướng làm bị thay thế) → tự xóa cả remote lẫn local.
    - CI (`.github/workflows/ci.yml`, ADR-0015; chi tiết ở `.claude/rules/ci.md`): PR chỉ đụng `docs/**` / `**/*.md` không chạy CI và merge được không cần CI; PR code chạy Verify + e2e.
      - Nhãn `build-exe` **bắt buộc** khi PR đụng `apps/desktop/src-tauri/**`, Cargo, `rust-toolchain.toml`, `package.json`, `pnpm-lock.yaml` hoặc cấu hình build (`vite.config.*`, `tauri.conf.json`). Gắn lúc tạo (`gh pr create --label build-exe`); gắn sau thì CI không chạy lại: push thêm hoặc `gh pr close` + `gh pr reopen`.
 6. Mỗi task một phiên mới (hoặc `/clear`).

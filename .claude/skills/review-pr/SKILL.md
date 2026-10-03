@@ -133,7 +133,7 @@ Trục nào không có mục thì ghi "Không có phát hiện".
 
 ## 5. Sau comment
 
-- `risk:low` (sau khi nâng mức vẫn là low) + `REVIEW: PASS` + CI xanh trên head → merge theo CLAUDE.md (`--squash`, hoặc `--merge` khi có PR xếp chồng).
+- `risk:low` (sau khi nâng mức vẫn là low) + `REVIEW: PASS` + CI xanh trên head → `node tools/merge-pr.mjs <N>` (`--merge` khi có PR xếp chồng): lệnh kiểm lại các điều kiện, merge và dọn nhánh theo CLAUDE.md. Lệnh đọc mức từ phần ``mức `<risk>` `` của comment (mẫu §4), nên mức đã nâng phải ghi đúng dạng đó.
 - Còn lại → báo Owner: kết luận, số mục mỗi trục, mục chặn nặng nhất.
 - **Phiên review không commit, không push, không sửa code** — kể cả sửa "nhỏ" cho mục vừa báo (P-1). Sửa là việc của phiên code; comment không bao giờ ghi "đã sửa trong PR" thay cho một vòng review mới.
-- **Trước khi merge** (Claude tự merge hoặc Owner bảo merge): `gh pr view <N> --json headRefOid` phải trùng SHA trong comment `REVIEW: PASS` mới nhất. Head đã đổi sau PASS (thêm commit, rebase, cập nhật base) → **review lại** diff từ SHA đã PASS tới head mới, ở phiên sạch, rồi mới merge.
+- **Trước khi merge** (Claude tự merge hoặc Owner bảo merge): `headRefOid` phải trùng SHA trong comment `REVIEW: PASS` mới nhất (`node tools/pr-status.mjs <N>` in cả hai; `merge-pr.mjs` từ chối khi lệch). Head đã đổi sau PASS (thêm commit, rebase, cập nhật base) → **review lại** diff từ SHA đã PASS tới head mới, ở phiên sạch, rồi mới merge.
