@@ -31,3 +31,12 @@ Kiểm tra repo nguồn ngày 2026-09-26:
 - Tên skill trong kế hoạch (`to-prd`, `to-issues`) đã lỗi thời; Project-2 cũng cần dùng `to-spec` / `to-tickets` để giữ hằng số "Plugin" (`docs/COMPARISON.md`).
 - Trước lần dùng `to-spec` / `to-tickets` đầu tiên phải chạy `/setup-matt-pocock-skills` (issue tracker = GitHub Issues). Skill này mặc định ADR ở `docs/adr/`; 2C giữ `docs/decisions/` và khai báo khi setup.
 - Hook `SessionStart` của Superpowers chạy mỗi phiên; phải cùng tồn tại với hook nạp HANDOFF (`.claude/hooks/handoff-context.mjs`, từ 03/10/2026 đọc Issue ghim nhãn `handoff` — ADR-0003 phụ lục).
+
+## Phụ lục — sửa cục bộ skill vendored, phân vai hai skill TDD (Accepted G1, Owner duyệt 03/10/2026 · #296)
+
+Lý do: prompt audit 03/10 thấy thân ADR lệch thực tế. Quyết định 2 ghi "chép chọn lọc, không sửa", nhưng T-116 (#283) đã thêm mục "Tài liệu cần đọc" vào `to-tickets`. Hai skill TDD cùng bật mà không phân vai, và mâu thuẫn ở bước refactor.
+
+- **Sửa cục bộ có ghi chép** (thay "không sửa" ở Quyết định 2): được sửa file skill vendored khi cần cho quy trình 2C. Mỗi chỗ sửa ghi một dòng trong bảng "Sửa cục bộ" của `.claude/skills/README.md` (file, nội dung, lý do, Issue). Cập nhật upstream = chép lại bản mới, rồi áp lại các dòng trong bảng. Review kiểm bảng này (`docs/process/REVIEW-CHECKLIST.md` §6). `tdd` giữ nguyên upstream; phân vai đặt ở `CLAUDE.md`.
+- **Phân vai TDD:** `tdd` là chuẩn, seam = test chấp nhận của Issue (không hỏi lại). `superpowers:test-driven-development` bổ sung kỷ luật đỏ → xanh. **Refactor ngay trong vòng khi test còn xanh** (theo superpowers), thay cho dòng "Refactoring is not part of the loop" của `tdd`.
+- **Skill upstream được nhắc nhưng không cài:** `codebase-design` (`DESIGN-IT-TWICE.md` cần sub-agent song song; seam ở 2C đã chốt trong Issue) → bỏ qua. `code-review` của mattpocock (chạy hai sub-agent) → đọc là `review-pr` (ADR-0017).
+- **Đính chính Bối cảnh:** `grilling` có nhắc sub-agent ("dispatch a sub-agent" khi tra dữ kiện). Quyết định 3 đã xử lý: Agent tool bị chặn nên tra cứu trong phiên.
