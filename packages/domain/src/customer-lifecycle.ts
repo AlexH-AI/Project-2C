@@ -43,18 +43,18 @@ export function stageOn(
   customerId: string,
   date: CalendarDate,
 ): CustomerStage | null {
-  return stageAtEndOf(byDate(transitions.filter((t) => t.customerId === customerId)), date);
+  return stageAtEndOf(sortedByDate(transitions.filter((t) => t.customerId === customerId)), date);
 }
 
 /**
  * One customer's transitions by day; a stable sort, so transitions of the same day keep the order
  * they were recorded in. Shared with `stage-snapshot.ts`, which sorts each customer once.
  */
-export function byDate(transitions: readonly StageTransition[]): StageTransition[] {
+export function sortedByDate(transitions: readonly StageTransition[]): StageTransition[] {
   return [...transitions].sort((a, b) => compareDates(a.date, b.date));
 }
 
-/** The stage at the end of `date` from one customer's transitions sorted by `byDate`. */
+/** The stage at the end of `date` from one customer's transitions sorted by `sortedByDate`. */
 export function stageAtEndOf(
   sorted: readonly StageTransition[],
   date: CalendarDate,

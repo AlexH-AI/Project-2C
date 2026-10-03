@@ -8,7 +8,8 @@ import {
   SNAPSHOT_GOLDEN_CASES,
   SNAPSHOT_TODAY,
 } from './golden/stage-snapshot.fixture';
-import { calendarDate, chartMarks, customPeriod, isInPeriod, periodOf } from './period';
+import { calendarDate, chartMarks, customPeriod, formatDate, isInPeriod, periodOf } from './period';
+import type { CalendarDate } from './period';
 import { snapshotDate, stageSnapshot, stageSnapshotter } from './stage-snapshot';
 
 // The repository never returns a deleted customer, so the golden deleted rows are dropped here.
@@ -126,5 +127,39 @@ describe('stageSnapshotter', () => {
     );
     expect(snapshot(calendarDate(2027, 1, 5), ALL).N2).toBe(1);
     expect(snapshot(calendarDate(2027, 1, 6), ALL).N4).toBe(1);
+  });
+});
+
+describe('chart of a year that is running (§2.8)', () => {
+  const columnDates = (today: CalendarDate) =>
+    chartMarks(periodOf('year', today)).map((mark) => {
+      const date = snapshotDate(mark, today);
+      return date === null ? null : formatDate(date);
+    });
+
+  it('takes past months at their end, the current month today, later months empty', () => {
+    expect(columnDates(calendarDate(2026, 10, 15))).toEqual([
+      '31/01/2026',
+      '28/02/2026',
+      '31/03/2026',
+      '30/04/2026',
+      '31/05/2026',
+      '30/06/2026',
+      '31/07/2026',
+      '31/08/2026',
+      '30/09/2026',
+      '15/10/2026',
+      null,
+      null,
+    ]);
+  });
+
+  it('draws January of 2027 as the four boxes of the month on 13/01 (S03)', () => {
+    const [january, february] = chartMarks(periodOf('year', SNAPSHOT_TODAY));
+    const snapshot = stageSnapshotter(LIVE_CUSTOMERS, TRANSITIONS, PEOPLE);
+    expect(snapshot(snapshotDate(january!, SNAPSHOT_TODAY)!, ALL)).toEqual(
+      SNAPSHOT_GOLDEN_CASES.find((golden) => golden.id === 'S03')!.expected,
+    );
+    expect(snapshotDate(february!, SNAPSHOT_TODAY)).toBeNull();
   });
 });

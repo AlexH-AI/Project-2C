@@ -28,7 +28,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 
 <!-- codemap:start -->
 - `src/appointment-counts.ts` — type AppointmentGroup, appointmentGroup, type AppointmentCounts, appointmentCounts
-- `src/customer-lifecycle.ts` — assertValidTransition, isRfTransition, stageOn, byDate, stageAtEndOf, policyBadge
+- `src/customer-lifecycle.ts` — assertValidTransition, isRfTransition, stageOn, sortedByDate, stageAtEndOf, policyBadge
 - `src/golden/appointments.fixture.ts` — APPOINTMENT_TODAY, type GoldenAppointmentRow, APPOINTMENT_ROWS, type AppointmentGoldenCase, APPOINTMENT_GOLDEN_CASES
 - `src/golden/kyc.fixture.ts` — type ExpectedGate, type KycGoldenProfile, KYC_GOLDEN_PROFILES
 - `src/golden/metrics.fixture.ts` — TEAMS, PEOPLE, CUSTOMERS, APPOINTMENTS, STAGE_TRANSITIONS, POLICIES, EXPECTED_RF_APPOINTMENT_IDS, type ExpectedMetrics, type GoldenCase, MTD_VIEWING_DATE, GOLDEN_CASES

@@ -2,7 +2,7 @@
  * Customers by stage as a snapshot at the end of a period (Phase 4 G2 §2, golden
  * `docs/golden/kh-theo-nhom.md`), shared by the Tổng quan boxes and chart and the Báo cáo columns.
  */
-import { byDate, stageAtEndOf } from './customer-lifecycle';
+import { sortedByDate, stageAtEndOf } from './customer-lifecycle';
 import type { Customer, CustomerStage, Person, Scope, StageTransition } from './model';
 import { compareDates } from './period';
 import type { CalendarDate, Period } from './period';
@@ -56,7 +56,7 @@ export function stageSnapshotter(
   }
   const histories = customers.map((customer) => ({
     reId: customer.reId,
-    sorted: byDate(grouped.get(customer.id) ?? []),
+    sorted: sortedByDate(grouped.get(customer.id) ?? []),
   }));
   return (date, scope) => {
     const matches = scopeMatcher(people, scope);
