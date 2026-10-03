@@ -1,0 +1,8 @@
+{not json
+{"type":"assistant"}
+{"type":"user","message":{"content":[{"type":"tool_result"}]}}
+{"cwd":"C:workspaceProject-2C","sessionId":"broken-0003-cccc","isSidechain":false,"type":"assistant","timestamp":"2026-10-03T10:00:00.000Z","message":{"id":"b_1","content":"plain"}}
+{"cwd":"C:workspaceProject-2C","sessionId":"broken-0003-cccc","isSidechain":false,"type":"user","timestamp":"2026-10-03T10:00:01.000Z","message":{"role":"user","content":"/review-pr 5"}}
+
+null
+42
