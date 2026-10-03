@@ -1,7 +1,7 @@
 /** Policies (spec §3.7, §4): submitted, then issued with the submitted FYP unless changed (G2 D). */
 import { compareDates, type CalendarDate, type Policy, type Vnd } from '@p2c/domain';
 import { and, asc, eq, isNull } from 'drizzle-orm';
-import { fromIsoDate, requireAmount, requireRe, stampDeleted, toIsoDate } from './common';
+import { fromIsoDate, requireAmount, requireRe, stampDeleted, toPastIsoDate } from './common';
 import { liveCustomer } from './customers';
 import type { Database } from './database';
 import { DbError } from './errors';
@@ -27,8 +27,15 @@ export function listPolicies(db: Database): Policy[] {
     .map(({ p }) => toPolicy(p));
 }
 
+/** The policy, when it and its customer are live. */
 export function getPolicy(db: Database, id: string): Policy | undefined {
-  return listPolicies(db).find((policy) => policy.id === id);
+  const row = db.orm
+    .select({ p: policies })
+    .from(policies)
+    .innerJoin(customers, eq(customers.id, policies.customerId))
+    .where(and(eq(policies.id, id), isNull(policies.deletedAt), isNull(customers.deletedAt)))
+    .get();
+  return row && toPolicy(row.p);
 }
 
 // ---- commands -------------------------------------------------------------
@@ -106,9 +113,9 @@ function validate(db: Database, policy: Omit<Policy, 'id' | 'customerId'>) {
   }
   return {
     reId: requireRe(db, policy.reId),
-    submittedDate: toIsoDate(policy.submittedDate),
+    submittedDate: toPastIsoDate(db, policy.submittedDate),
     submittedFyp: requireAmount(policy.submittedFyp),
-    issuedDate: issuedDate === null ? null : toIsoDate(issuedDate),
+    issuedDate: issuedDate === null ? null : toPastIsoDate(db, issuedDate),
     issuedFyp: issuedFyp === null ? null : requireAmount(issuedFyp),
   };
 }

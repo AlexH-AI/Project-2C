@@ -27,5 +27,6 @@ export function codeOf(fn: () => unknown): string | undefined {
   return undefined;
 }
 
-export const d = (day: number, month: number, year = 2027): CalendarDate =>
+/** A day; the default year is the test clock's (26/09/2026), by which past records are dated. */
+export const d = (day: number, month: number, year = 2026): CalendarDate =>
   calendarDate(year, month, day);

@@ -112,6 +112,27 @@ describe('policies', () => {
     expect(updatePolicy(db, id, {})).toMatchObject({ submittedFyp: 2 * MILLION });
   });
 
+  // F-11: the commands keep this rule, not only the dialogs.
+  it('refuses a submission or issue dated after today, and takes today itself', async () => {
+    const { db, re, customer, persist } = await withCustomer();
+    const today = d(26, 9);
+    const tomorrow = d(27, 9);
+    const base = { customerId: customer.id, reId: re.id, submittedFyp: MILLION };
+    persist.mockClear();
+
+    expect(codeOf(() => submitPolicy(db, { ...base, submittedDate: tomorrow }))).toBe(
+      'DATE_IN_FUTURE',
+    );
+    expect(listPolicies(db)).toEqual([]);
+    expect(persist).not.toHaveBeenCalled();
+
+    const { id } = submitPolicy(db, { ...base, submittedDate: today });
+    expect(codeOf(() => issuePolicy(db, id, { issuedDate: tomorrow }))).toBe('DATE_IN_FUTURE');
+    expect(codeOf(() => updatePolicy(db, id, { submittedDate: tomorrow }))).toBe('DATE_IN_FUTURE');
+    expect(getPolicy(db, id)).toMatchObject({ submittedDate: today, issuedDate: null });
+    expect(issuePolicy(db, id, { issuedDate: today }).issuedDate).toEqual(today);
+  });
+
   it('hides deleted policies and those of deleted customers', async () => {
     const { db, customer, submit } = await withCustomer();
     const kept = submit();

@@ -7,7 +7,6 @@
 import {
   assertValidTransition,
   compareDates,
-  fromLocalDate,
   type CalendarDate,
   type Customer,
   type CustomerStage,
@@ -22,7 +21,9 @@ import {
   requireRe,
   rowInsert,
   stampDeleted,
+  today,
   toIsoDate,
+  toPastIsoDate,
 } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
@@ -98,6 +99,7 @@ export function listStageTransitions(db: Database, customerId?: string): StageTr
 export function createCustomer(db: Database, input: NewCustomer): CustomerRecord {
   return db.transaction(() => {
     const profile = validateProfile(db, input);
+    toPastIsoDate(db, input.date);
     const at = db.now().toISOString();
     const id = ulid(db.now(), db.random);
     db.orm
@@ -133,7 +135,7 @@ export function updateCustomerProfile(
       gender: changes.gender === undefined ? current.gender : changes.gender,
     });
     updateCustomerRow(db, id, profile);
-    recordProfileFacts(db, id, row, profile, fromLocalDate(db.now()));
+    recordProfileFacts(db, id, row, profile, today(db));
     return toCustomer(liveCustomer(db, id));
   });
 }
@@ -151,7 +153,7 @@ export function previewCustomerProfile(
   const birthDate = changes.birthDate === undefined ? current.birthDate : changes.birthDate;
   const gender = changes.gender === undefined ? current.gender : changes.gender;
   const next = { birthDate: birthDate ? birthDateText(birthDate) : null, gender: gender ?? null };
-  return previewProfileFacts(db, id, next, fromLocalDate(db.now()));
+  return previewProfileFacts(db, id, next, today(db));
 }
 
 /** A manual change points to no appointment, so it never counts as an RF (#44). */
@@ -162,6 +164,7 @@ export function changeStageManually(
 ): StageTransition {
   return db.transaction(() => {
     liveCustomer(db, customerId);
+    toPastIsoDate(db, change.date);
     return appendTransition(db, customerId, change.to, change.date, null);
   });
 }

@@ -8,12 +8,10 @@ Quy tắc (review đóng Phase 3, P-3): ghi chú review không chặn nằm ở 
 
 Theo task đã có chỗ trong kế hoạch:
 - **T-f (F-14):** chưa có `MAX_YEAR` trong `period.ts`; `shift` kỳ ngày/tuần/tùy chọn sát 01/01/1900 ném `RangeError` trong `PeriodPicker`, kỳ tháng/năm lùi về 1899 (#146); `addDays` với `days` cực lớn trả `NaN` (chưa có đường gọi).
-- **T-h (F-11, F-12, F-13, F-15, F-19):**
-  - "hôm nay" = `fromLocalDate(db.now())` lặp 4 chỗ (`appointments.ts` ×2, `customers.ts` ×2) → helper `today(db)`; lệnh sửa nhóm tay / HĐ không chặn ngày tương lai.
-  - Xóa ngày sinh / chọn "Chưa rõ" giới tính → lỗi chung.
+- **T-h phần 2, #259 (F-13, F-15, F-19 phần `t()`):**
   - `OutcomeDialog.tsx:~81`: "Lưu kết quả" khi chưa chọn trạng thái không báo gì (#169).
   - `·` / `→` viết cứng trong JSX (~15 chỗ, vd `CustomerDialogs.tsx:380`).
-  - `getPolicy` quét mọi HĐ (`policies.ts:30`); `t()` dùng `name in params` (`i18n/index.ts:11`).
+  - `t()` dùng `name in params` (`i18n/index.ts:11`).
   - R2-03: số đếm truyền vào `t()` không qua `formatCount` ("4528 lịch" cạnh "1.234 lịch" ở kỳ Năm): `AppointmentsScreen.tsx:123-126, 369`, `CustomersScreen.tsx:114`, `RePicker.tsx:39` (`rePicker.title`) và số trong `Chip` (`:83`) → `formatCount` (cân nhắc helper `tCount` / test grep).
   - R2-04: `·` / `→` viết cứng tăng thêm sau F-15 (`AppointmentsScreen.tsx:242, 245, 494`, `CustomersScreen.tsx:141, 144`) → thêm luật chặn trong `lint:tokens` hoặc test grep.
   - R2-05: cảnh báo ESLint `react-hooks/exhaustive-deps` ở `AppointmentsScreen.tsx:188-189` (#240) → dựng `today` trong memo như `:116-121`; cân nhắc `eslint --max-warnings 0`.
@@ -59,6 +57,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 
 ## RESOLVED
 
+- T-h phần 1 (F-11, F-12, F-19 phần `getPolicy`): helper `today(db)` thay 4 chỗ `fromLocalDate(db.now())`; tạo KH, sửa nhóm tay, nộp / phát hành HĐ sau hôm nay → `DATE_IN_FUTURE`, nhập backup kiểm luật 10 (Owner quyết 04/10); câu `error.KYC_PROFILE_FIELD_REQUIRED` và test phủ `error.*` cho mọi mã UI chạm được; `getPolicy` truy vấn theo id (#258, PR #303).
 - T-e (F-06, F-07): `stats.ts` dựng index một lần cho mỗi danh sách đầu vào (`Map` người → team, `Set` lịch chuyển RF, `WeakMap`), chữ ký công khai giữ nguyên; `rfCount` lọc phạm vi trước kỳ. Seed: một kỳ toàn bộ 21,6 → 1,3 ms; 12 tháng × 30 RE 374 → 82 ms. `monthToDate` trong `period.ts`, G18 kiểm bằng hàm này (#255, T-099).
 - T-j (R2-01, R2-02): nhập backup kiểm thêm luật 1 (transition đầu `appointment_id` null), luật 5 (RE **chưa xóa**), luật 8 (fact `SYSTEM` năm sinh / giới tính `conflict` khớp hồ sơ), luật 9 nhân sự (≤ 1 TL chưa xóa / team; IS/BD/BDM không team; người chưa xóa → team chưa xóa). Lệnh: `TEAM_NOT_ALLOWED` cho IS/BD/BDM có team; `withdrawAppointmentTransition` → `INVALID_TRANSITION` thay lỗi SQLite thô; `resolveKycConflict` so giá trị `SYSTEM` với hồ sơ. Thay ghi chú #231 (IS/BD/BDM có team, TL thứ hai). DB dev có dữ liệu sai: nạp lại dữ liệu giả lập (#252, T-096).
 - T-d (F-05, R2-06): e2e local giới hạn worker (≤ 4), không dùng lại server cũ ở cổng 4173 (chỉ khi `PW_REUSE=1`), server preview chạy một tiến trình (`e2e/serve.mjs`) nên dừng sạch, `trackConsoleErrors` một chỗ (`e2e/support.ts`), ngưỡng `SLOW` của `seed.test.ts` nâng 60 s → 180 s (#251, T-095).

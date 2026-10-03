@@ -1,5 +1,11 @@
 /** Helpers shared by the commands: names, soft-delete stamps, stored dates and money. */
-import { calendarDate, type CalendarDate, type Vnd } from '@p2c/domain';
+import {
+  calendarDate,
+  compareDates,
+  fromLocalDate,
+  type CalendarDate,
+  type Vnd,
+} from '@p2c/domain';
 import { and, eq, getTableColumns, isNull, sql } from 'drizzle-orm';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import type { Database } from './database';
@@ -40,6 +46,18 @@ export function toIsoDate(date: CalendarDate): string {
 export function fromIsoDate(text: string): CalendarDate {
   const [year, month, day] = text.split('-').map(Number);
   return calendarDate(year!, month!, day!);
+}
+
+/** The local calendar day of the database clock, read once. */
+export function today(db: Database): CalendarDate {
+  return fromLocalDate(db.now());
+}
+
+/** `toIsoDate` of the day something already happened: today or before. */
+export function toPastIsoDate(db: Database, date: CalendarDate): string {
+  const iso = toIsoDate(date);
+  if (compareDates(date, today(db)) > 0) throw new DbError('DATE_IN_FUTURE');
+  return iso;
 }
 
 /** A whole, positive number of đồng. */

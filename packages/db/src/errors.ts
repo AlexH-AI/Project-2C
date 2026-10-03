@@ -13,6 +13,11 @@ export const DB_ERROR_CODES = [
   'PERSON_IN_USE',
   'RE_REQUIRED',
   'INVALID_DATE',
+  /**
+   * A day after today for something that already happened: a customer's creation, a manual stage
+   * change, a policy's submission or issue.
+   */
+  'DATE_IN_FUTURE',
   'INVALID_TIME',
   'INVALID_TRIGGER',
   'INVALID_AMOUNT',
