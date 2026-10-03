@@ -72,6 +72,8 @@ export {
   rfCount,
 } from './stats';
 export type { CloseRate, MetricsData, PeriodMetrics, PolicyMetrics } from './stats';
+export { comparisonWindows, metricDeltas } from './compare';
+export type { ComparisonWindows, MetricDeltas } from './compare';
 export { appointmentCounts, appointmentGroup } from './appointment-counts';
 export type { AppointmentCounts, AppointmentGroup } from './appointment-counts';
 export { snapshotDate, stageSnapshot, stageSnapshotter } from './stage-snapshot';
