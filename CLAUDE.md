@@ -1,6 +1,6 @@
 # Project-2C — quy tắc cho Claude Code
 
-Đây là nguồn quy tắc duy nhất của repo. Kế hoạch: `docs/PROJECT-PLAN.md`. Quyết định: `docs/decisions/` (ADR). Trạng thái phiên: HANDOFF ở Issue ghim nhãn `handoff` (hook nạp sẵn; `node tools/handoff.mjs read`). Quyết định Owner theo ngày: `docs/PROJECT-STATE.md`. Ghi chú review không chặn: `docs/state/review-notes.md`.
+Đây là nguồn quy tắc chung của repo; quy ước riêng từng vùng nằm ở `.claude/rules/*.md` (Claude Code tự nạp khi đụng file khớp `paths:`: mockup, test, UI / i18n, CI). Bản đồ tài liệu: `docs/README.md`; mockup: `docs/design/mockups/README.md`. Kế hoạch: `docs/PROJECT-PLAN.md`. Quyết định: `docs/decisions/` (ADR). Trạng thái phiên: HANDOFF ở Issue ghim nhãn `handoff` (hook nạp sẵn; `node tools/handoff.mjs read`). Quyết định Owner theo ngày: `docs/PROJECT-STATE.md`. Ghi chú review không chặn: `docs/state/review-notes.md`.
 
 Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh"**.
 
@@ -50,13 +50,8 @@ Memory của Claude chỉ nằm trên từng máy, nên quy tắc dùng chung ch
      5. Nhánh của PR cùng task đã đóng không merge (hướng làm bị thay thế) → xóa cả remote lẫn local.
      6. Worktree review → `git checkout --detach origin/main`. Worktree của task đã merge → `git worktree remove`.
      - Không xóa nhánh còn PR mở, nhánh có PR khác xếp chồng lên, hay nhánh đang checkout ở worktree có thay đổi chưa commit: báo Owner.
-   - CI (`.github/workflows/ci.yml`, ADR-0015 + phụ lục "Tiết kiệm phút Actions"):
-     - Thay đổi chỉ gồm `docs/**` và `**/*.md` (mọi file `.md`): không chạy CI, cả ở PR lẫn push lên `main`. PR docs-only merge được không cần CI.
-     - PR code (mở, push thêm, mở lại): Verify (`pnpm verify`) + e2e. Build exe chỉ khi PR có nhãn `build-exe`.
-     - Nhãn `build-exe` **bắt buộc** khi PR đụng `apps/desktop/src-tauri/**`, Cargo, `rust-toolchain.toml`, `package.json`, `pnpm-lock.yaml` hoặc cấu hình build (`vite.config.*`, `tauri.conf.json`). Gắn lúc tạo (`gh pr create --label build-exe`): job Verify đọc nhãn hiện tại của PR qua API ở cuối job (T-063). Gắn sau khi Verify đã qua bước đó thì CI không chạy lại (không nghe sự kiện `labeled`): push thêm hoặc `gh pr close` + `gh pr reopen`.
-     - Push lên `main` (sau merge): bỏ Verify, chỉ build exe → artifact `Project-2C-<sha>`.
-     - Chạy tay (`workflow_dispatch`): Verify + build exe.
-     - Push mới lên cùng nhánh hủy run cũ đang chạy (`concurrency`).
+   - CI (`.github/workflows/ci.yml`, ADR-0015; chi tiết ở `.claude/rules/ci.md`): PR chỉ đụng `docs/**` / `**/*.md` không chạy CI và merge được không cần CI; PR code chạy Verify + e2e.
+     - Nhãn `build-exe` **bắt buộc** khi PR đụng `apps/desktop/src-tauri/**`, Cargo, `rust-toolchain.toml`, `package.json`, `pnpm-lock.yaml` hoặc cấu hình build (`vite.config.*`, `tauri.conf.json`). Gắn lúc tạo (`gh pr create --label build-exe`); gắn sau thì CI không chạy lại: push thêm hoặc `gh pr close` + `gh pr reopen`.
 6. Mỗi task một phiên mới (hoặc `/clear`).
 
 ## Skills được phép (ADR-0012)
