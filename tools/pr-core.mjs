@@ -170,3 +170,17 @@ export function cleanupPlan({ branch, worktrees, dirty, stacked, remoteExists, l
   if (localExists && !branchInUse && !stacked.length) git(main.path, 'branch', '-D', branch);
   return { steps, problems };
 }
+
+/**
+ * A note when `step` failed with `message` only because its work is already done, else null.
+ * GitHub deletes the head branch on merge, asynchronously: the ref can survive
+ * `git fetch origin --prune` and be gone by the time the clean-up deletes it.
+ */
+export function alreadyDone(step, message) {
+  const [verb, remote, flag, branch] = step.args;
+  if (verb === 'push' && remote === 'origin' && flag === '--delete') {
+    if (/remote ref does not exist/.test(message))
+      return `remote branch ${branch} was already deleted (GitHub deletes it on merge).`;
+  }
+  return null;
+}

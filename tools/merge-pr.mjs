@@ -14,7 +14,8 @@
 //
 // Clean-up, right after the merge (Owner decision 28/09/2026):
 //   1. git fetch origin --prune
-//   2. delete the remote branch if GitHub did not
+//   2. delete the remote branch if GitHub did not ("remote ref does not exist" counts as done:
+//      GitHub deletes it on merge, sometimes only after the fetch)
 //   3. main checkout on the merged branch and clean -> git switch main + git merge --ff-only
 //      origin/main (a clean review worktree holding main is detached first); dirty -> report
 //   4. git branch -D the local branch (squash merges are not seen as merged by -d)
@@ -26,7 +27,7 @@
 // are printed so the rest can be finished by hand.
 
 import { spawnSync } from 'node:child_process';
-import { cleanupPlan, mergeBlockers, parseWorktrees } from './pr-core.mjs';
+import { alreadyDone, cleanupPlan, mergeBlockers, parseWorktrees } from './pr-core.mjs';
 import { formatStatus, loadPr } from './pr-status.mjs';
 import { run } from './session-io.mjs';
 
@@ -73,7 +74,10 @@ function planCleanup(branch, stacked) {
   });
 }
 
-/** Run steps in order; on a failure print what was done and what is left, then exit 1. */
+/**
+ * Run steps in order; a failure that only means the work is already done (alreadyDone) is
+ * noted and skipped, any other prints what was done and what is left, then exit 1.
+ */
 function runSteps(steps, done, later = []) {
   steps.forEach((step, i) => {
     out(`> ${show(step)}`);
@@ -81,6 +85,12 @@ function runSteps(steps, done, later = []) {
       run(step.cmd, step.args, { cwd: step.cwd, timeout: 120000 });
       done.push(show(step));
     } catch (error) {
+      const note = alreadyDone(step, error.message);
+      if (note) {
+        out(`  (${note})`);
+        done.push(`${show(step)} (${note})`);
+        return;
+      }
       out(`\nFAILED: ${error.message}`);
       out(`Done:\n${done.map((d) => `  ${d}`).join('\n') || '  (nothing)'}`);
       const left = steps.slice(i).map(show).concat(later);

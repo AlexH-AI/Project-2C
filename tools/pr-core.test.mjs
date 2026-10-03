@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  alreadyDone,
   cleanupPlan,
   isDocsOnly,
   isReviewWorktree,
@@ -364,5 +365,26 @@ describe('cleanupPlan', () => {
       `${MAIN}: git merge --ff-only origin/main`,
     ]);
     expect(plan.problems).toEqual([expect.stringMatching(/#12 .*task\/T-1-x kept/)]);
+  });
+});
+
+describe('alreadyDone', () => {
+  const MSG =
+    "git push origin failed: error: unable to delete 'task/T-1-x': remote ref does not exist";
+  const step = (...args) => ({ cwd: MAIN, cmd: 'git', args });
+
+  it('treats deleting a remote branch GitHub already deleted as done', () => {
+    expect(alreadyDone(step('push', 'origin', '--delete', 'task/T-1-x'), MSG)).toBe(
+      'remote branch task/T-1-x was already deleted (GitHub deletes it on merge).',
+    );
+  });
+
+  it('keeps any other failure of the remote delete a failure', () => {
+    const denied = 'git push origin failed: remote: Permission to AlexH-AI/Project-2C.git denied';
+    expect(alreadyDone(step('push', 'origin', '--delete', 'task/T-1-x'), denied)).toBeNull();
+  });
+
+  it('only applies to the remote delete step', () => {
+    expect(alreadyDone(step('branch', '-D', 'task/T-1-x'), MSG)).toBeNull();
   });
 });
