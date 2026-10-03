@@ -3,6 +3,7 @@
  * `docs/golden/lich-hen.md` (rows `L-…`, cases `A…`). Never edit it to make a test green — a change
  * needs the Owner's approval again (G2). People are those of `metrics.fixture.ts`.
  */
+import type { AppointmentCounts } from '../appointment-counts';
 import type { Appointment, Scope } from '../model';
 import { calendarDate, periodOf } from '../period';
 import type { CalendarDate, Period } from '../period';
@@ -55,35 +56,27 @@ const row = (
 });
 
 export const APPOINTMENT_ROWS: readonly GoldenAppointmentRow[] = [
-  row('L-01', 'kh-01', d(5, 1), 're-an', 'MET', { coordinatorIds: ['tl-ha'] }),
-  row('L-02', 'kh-02', d(6, 1), 're-an', 'CANCELLED'),
-  row('L-03', 'kh-03', d(7, 1), 're-an', 'RESCHEDULED'),
-  row('L-04', 'kh-03', d(12, 1), 're-an', 'RESCHEDULED', { rescheduledFromId: 'L-03' }),
-  row('L-05', 'kh-03', d(20, 1), 're-an', 'SCHEDULED', { rescheduledFromId: 'L-04' }),
-  row('L-06', 'kh-06', d(11, 1), 're-chi', 'SCHEDULED'),
-  row('L-07', 'kh-07', d(13, 1), 're-chi', 'SCHEDULED'),
-  row('L-08', 'kh-08', d(29, 12, 2026), 're-chi', 'RESCHEDULED'),
-  row('L-09', 'kh-08', d(4, 1), 're-chi', 'MET', {
+  row('L-01', 'kh-l01', d(5, 1), 're-an', 'MET', { coordinatorIds: ['tl-ha'] }),
+  row('L-02', 'kh-l02', d(6, 1), 're-an', 'CANCELLED'),
+  row('L-03', 'kh-l03', d(7, 1), 're-an', 'RESCHEDULED'),
+  row('L-04', 'kh-l03', d(12, 1), 're-an', 'RESCHEDULED', { rescheduledFromId: 'L-03' }),
+  row('L-05', 'kh-l03', d(20, 1), 're-an', 'SCHEDULED', { rescheduledFromId: 'L-04' }),
+  row('L-06', 'kh-l06', d(11, 1), 're-chi', 'SCHEDULED'),
+  row('L-07', 'kh-l07', d(13, 1), 're-chi', 'SCHEDULED'),
+  row('L-08', 'kh-l08', d(29, 12, 2026), 're-chi', 'RESCHEDULED'),
+  row('L-09', 'kh-l08', d(4, 1), 're-chi', 'MET', {
     coordinatorIds: ['re-dung'],
     rescheduledFromId: 'L-08',
   }),
-  row('L-10', 'kh-10', d(8, 1), 're-binh', 'NO_SHOW'),
-  row('L-11', 'kh-11', d(9, 1), 're-binh', 'RESCHEDULED'),
-  row('L-12', 'kh-11', d(15, 1), 're-binh', 'SCHEDULED', {
+  row('L-10', 'kh-l10', d(8, 1), 're-binh', 'NO_SHOW'),
+  row('L-11', 'kh-l11', d(9, 1), 're-binh', 'RESCHEDULED'),
+  row('L-12', 'kh-l11', d(15, 1), 're-binh', 'SCHEDULED', {
     rescheduledFromId: 'L-11',
     deleted: true,
   }),
-  row('L-13', 'kh-13', d(10, 1), 're-binh', 'MET', { deleted: true }),
-  row('L-14', 'kh-14', d(8, 1), 're-dung', 'SCHEDULED', { customerDeleted: true }),
+  row('L-13', 'kh-l13', d(10, 1), 're-binh', 'MET', { deleted: true }),
+  row('L-14', 'kh-l14', d(8, 1), 're-dung', 'SCHEDULED', { customerDeleted: true }),
 ];
-
-export interface ExpectedAppointmentCounts {
-  readonly met: number;
-  readonly missed: number;
-  readonly unrecorded: number;
-  readonly planned: number;
-  readonly total: number;
-}
 
 export interface AppointmentGoldenCase {
   readonly id: string;
@@ -92,7 +85,7 @@ export interface AppointmentGoldenCase {
   readonly today: CalendarDate;
   /** Deleted rows restored before counting (A13). */
   readonly restoredIds: readonly string[];
-  readonly expected: ExpectedAppointmentCounts;
+  readonly expected: AppointmentCounts;
 }
 
 const ALL: Scope = { kind: 'all' };
@@ -106,13 +99,13 @@ const counts = (
   unrecorded: number,
   planned: number,
   total: number,
-): ExpectedAppointmentCounts => ({ met, missed, unrecorded, planned, total });
+): AppointmentCounts => ({ met, missed, unrecorded, planned, total });
 
 const golden = (
   id: string,
   period: Period,
   scope: Scope,
-  expected: ExpectedAppointmentCounts,
+  expected: AppointmentCounts,
   extra: { readonly today?: CalendarDate; readonly restoredIds?: readonly string[] } = {},
 ): AppointmentGoldenCase => ({
   id,
