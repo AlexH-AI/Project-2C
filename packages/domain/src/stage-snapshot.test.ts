@@ -9,7 +9,7 @@ import {
   SNAPSHOT_TODAY,
 } from './golden/stage-snapshot.fixture';
 import { calendarDate, chartMarks, customPeriod, isInPeriod, periodOf } from './period';
-import { snapshotDate, stageSnapshot } from './stage-snapshot';
+import { snapshotDate, stageSnapshot, stageSnapshotter } from './stage-snapshot';
 
 // The repository never returns a deleted customer, so the golden deleted rows are dropped here.
 const live = SNAPSHOT_CUSTOMERS.filter((row) => !row.deleted);
@@ -53,6 +53,7 @@ describe('stageSnapshot — golden S01–S09', () => {
 
 describe('chart of week 11/01 – 17/01 — golden S10–S13', () => {
   const marks = chartMarks(CHART_GOLDEN_PERIOD);
+  const snapshot = stageSnapshotter(LIVE_CUSTOMERS, TRANSITIONS, PEOPLE);
 
   for (const golden of CHART_GOLDEN_CASES) {
     it(golden.id, () => {
@@ -65,7 +66,7 @@ describe('chart of week 11/01 – 17/01 — golden S10–S13', () => {
           expect(date).toBeNull();
           continue;
         }
-        const { N4, N3, N2, N1 } = stageSnapshot(LIVE_CUSTOMERS, TRANSITIONS, date!, ALL, PEOPLE);
+        const { N4, N3, N2, N1 } = snapshot(date!, ALL);
         expect({ N4, N3, N2, N1 }).toEqual(golden.expected);
       }
     });
@@ -96,5 +97,34 @@ describe('stageSnapshot', () => {
       ON_HOLD: 0,
       LOST: 0,
     });
+  });
+});
+
+describe('stageSnapshotter', () => {
+  it('answers every golden period and scope from one build (S01–S09)', () => {
+    const snapshot = stageSnapshotter(LIVE_CUSTOMERS, TRANSITIONS, PEOPLE);
+    for (const golden of SNAPSHOT_GOLDEN_CASES) {
+      expect(snapshot(golden.date, golden.scope), golden.id).toEqual(golden.expected);
+    }
+  });
+
+  it('orders transitions by day, keeping the recorded order within a day', () => {
+    const t = (id: string, day: number, to: 'N4' | 'N3' | 'N2') => ({
+      id,
+      customerId: 'K-21',
+      from: null,
+      to,
+      date: calendarDate(2027, 1, day),
+      appointmentId: null,
+    });
+    const k21 = LIVE_CUSTOMERS.filter((customer) => customer.id === 'K-21');
+    // Given newest first; on 05/01 N3 was recorded before N2, so the day ends in N2.
+    const snapshot = stageSnapshotter(
+      k21,
+      [t('c', 6, 'N4'), t('a', 5, 'N3'), t('b', 5, 'N2'), t('z', 1, 'N4')],
+      PEOPLE,
+    );
+    expect(snapshot(calendarDate(2027, 1, 5), ALL).N2).toBe(1);
+    expect(snapshot(calendarDate(2027, 1, 6), ALL).N4).toBe(1);
   });
 });

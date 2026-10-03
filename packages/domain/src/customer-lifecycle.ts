@@ -43,10 +43,23 @@ export function stageOn(
   customerId: string,
   date: CalendarDate,
 ): CustomerStage | null {
-  const upToDate = transitions
-    .filter((t) => t.customerId === customerId && compareDates(t.date, date) <= 0)
-    .sort((a, b) => compareDates(a.date, b.date));
-  return upToDate.at(-1)?.to ?? null;
+  return stageAtEndOf(byDate(transitions.filter((t) => t.customerId === customerId)), date);
+}
+
+/**
+ * One customer's transitions by day; a stable sort, so transitions of the same day keep the order
+ * they were recorded in. Shared with `stage-snapshot.ts`, which sorts each customer once.
+ */
+export function byDate(transitions: readonly StageTransition[]): StageTransition[] {
+  return [...transitions].sort((a, b) => compareDates(a.date, b.date));
+}
+
+/** The stage at the end of `date` from one customer's transitions sorted by `byDate`. */
+export function stageAtEndOf(
+  sorted: readonly StageTransition[],
+  date: CalendarDate,
+): CustomerStage | null {
+  return sorted.findLast((t) => compareDates(t.date, date) <= 0)?.to ?? null;
 }
 
 /** The "Đã có HĐ" badge: the number of the customer's submitted policies, or null when none. */

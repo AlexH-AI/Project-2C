@@ -2,7 +2,7 @@
  * Customers by stage as a snapshot at the end of a period (Phase 4 G2 §2, golden
  * `docs/golden/kh-theo-nhom.md`), shared by the Tổng quan boxes and chart and the Báo cáo columns.
  */
-import { stageOn } from './customer-lifecycle';
+import { byDate, stageAtEndOf } from './customer-lifecycle';
 import type { Customer, CustomerStage, Person, Scope, StageTransition } from './model';
 import { compareDates } from './period';
 import type { CalendarDate, Period } from './period';
@@ -35,18 +35,37 @@ export function stageSnapshot(
   scope: Scope,
   people: readonly Person[],
 ): StageCounts {
-  const matches = scopeMatcher(people, scope);
-  const byCustomer = new Map<string, StageTransition[]>();
+  return stageSnapshotter(customers, transitions, people)(date, scope);
+}
+
+/**
+ * `stageSnapshot` for many days or scopes over the same data (chart columns, Theo mốc rows, one
+ * row per team or RE): each customer's transitions are grouped and sorted once, then every call
+ * only looks up the stage at its day.
+ */
+export function stageSnapshotter(
+  customers: readonly Customer[],
+  transitions: readonly StageTransition[],
+  people: readonly Person[],
+): (date: CalendarDate, scope: Scope) => StageCounts {
+  const grouped = new Map<string, StageTransition[]>();
   for (const transition of transitions) {
-    const list = byCustomer.get(transition.customerId);
+    const list = grouped.get(transition.customerId);
     if (list) list.push(transition);
-    else byCustomer.set(transition.customerId, [transition]);
+    else grouped.set(transition.customerId, [transition]);
   }
-  const counts = { N4: 0, N3: 0, N2: 0, N1: 0, ON_HOLD: 0, LOST: 0 };
-  for (const customer of customers) {
-    if (!matches(customer.reId)) continue;
-    const stage = stageOn(byCustomer.get(customer.id) ?? [], customer.id, date);
-    if (stage !== null) counts[stage] += 1;
-  }
-  return counts;
+  const histories = customers.map((customer) => ({
+    reId: customer.reId,
+    sorted: byDate(grouped.get(customer.id) ?? []),
+  }));
+  return (date, scope) => {
+    const matches = scopeMatcher(people, scope);
+    const counts = { N4: 0, N3: 0, N2: 0, N1: 0, ON_HOLD: 0, LOST: 0 };
+    for (const { reId, sorted } of histories) {
+      if (!matches(reId)) continue;
+      const stage = stageAtEndOf(sorted, date);
+      if (stage !== null) counts[stage] += 1;
+    }
+    return counts;
+  };
 }

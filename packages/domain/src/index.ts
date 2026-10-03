@@ -74,7 +74,7 @@ export {
 export type { CloseRate, MetricsData, PeriodMetrics, PolicyMetrics } from './stats';
 export { appointmentCounts, appointmentGroup } from './appointment-counts';
 export type { AppointmentCounts, AppointmentGroup } from './appointment-counts';
-export { snapshotDate, stageSnapshot } from './stage-snapshot';
+export { snapshotDate, stageSnapshot, stageSnapshotter } from './stage-snapshot';
 export type { StageCounts } from './stage-snapshot';
 export { formatVnd, formatVndCompact, formatVndDelta, parseVnd } from './money';
 export { formatCount, formatFileSize } from './number';
