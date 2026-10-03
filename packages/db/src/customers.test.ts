@@ -1,4 +1,4 @@
-import { stageOn } from '@p2c/domain';
+import { calendarDate, stageOn, type CalendarDate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
   changeStageManually,
@@ -14,7 +14,10 @@ import {
 import { recordMeetingOutcome, scheduleAppointment, softDeleteAppointment } from './appointments';
 import { getKycProfile, listKycVersions } from './kyc';
 import { softDeletePerson, updatePerson } from './team';
-import { codeOf, d, setup } from './test-support';
+import { codeOf, setup } from './test-support';
+
+// The test clock reads 26/09/2026: a stage change is dated by then.
+const d = (day: number, month: number, year = 2026): CalendarDate => calendarDate(year, month, day);
 
 describe('customers', () => {
   it('creates a customer in an open stage with its first transition', async () => {
@@ -227,6 +230,28 @@ describe('customers', () => {
     );
   });
 
+  // F-11: `stageOn(today)` equals `customers.stage` only while no transition is dated after today.
+  it('refuses a stage change dated after today, and takes today itself', async () => {
+    const { db, re, persist } = await setup();
+    const customer = createCustomer(db, {
+      name: 'Lan',
+      reId: re.id,
+      stage: 'N3',
+      date: d(1, 9),
+    });
+    persist.mockClear();
+
+    expect(codeOf(() => changeStageManually(db, customer.id, { to: 'N2', date: d(27, 9) }))).toBe(
+      'DATE_IN_FUTURE',
+    );
+    expect(listStageTransitions(db, customer.id)).toHaveLength(1);
+    expect(getCustomer(db, customer.id)?.stage).toBe('N3');
+    expect(persist).not.toHaveBeenCalled();
+
+    changeStageManually(db, customer.id, { to: 'N2', date: d(26, 9) });
+    expect(stageOn(listStageTransitions(db), customer.id, d(26, 9))).toBe('N2');
+  });
+
   it('allows a stage change on the day of the latest transition, in recording order', async () => {
     const { db, re } = await setup();
     const customer = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(10, 1) });
@@ -288,12 +313,12 @@ describe('customers', () => {
       name: 'Lan',
       reId: re.id,
       stage: 'N3',
-      date: d(1, 9, 2026),
+      date: d(1, 9),
     });
     const met = scheduleAppointment(db, {
       customerId: customer.id,
       reId: re.id,
-      date: d(1, 9, 2026),
+      date: d(1, 9),
       triggerType: 'REFERRAL',
     });
     recordMeetingOutcome(db, met.id, { status: 'MET', stageAfter: 'N3', nextStep: 'Gặp lại' });

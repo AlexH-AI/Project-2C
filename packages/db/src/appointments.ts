@@ -8,7 +8,6 @@
  */
 import {
   compareDates,
-  fromLocalDate,
   type Appointment,
   type CalendarDate,
   type CustomerStage,
@@ -21,6 +20,7 @@ import {
   requireAmount,
   requireRe,
   stampDeleted,
+  today,
   toIsoDate,
 } from './common';
 import { appendTransition, liveCustomer, withdrawAppointmentTransition } from './customers';
@@ -152,7 +152,7 @@ export function recordOutcomeWithNext(
 ): { readonly recorded: AppointmentRecord; readonly next: AppointmentRecord } {
   return db.transaction(() => {
     if (liveAppointment(db, id).status !== 'SCHEDULED') throw new DbError('INVALID_STATUS');
-    if (compareDates(next.date, fromLocalDate(db.now())) < 0) {
+    if (compareDates(next.date, today(db)) < 0) {
       throw new DbError('NEXT_APPOINTMENT_PAST');
     }
     const recorded = recordMeetingOutcome(db, id, outcome);
@@ -408,7 +408,7 @@ function requireTrigger(trigger: AppointmentTrigger): AppointmentTrigger {
 /** A meeting is held or missed by today at the latest; a cancellation may come ahead of it. */
 function requireOutcomeDay(db: Database, status: string, isoDate: string): void {
   const held = status === 'MET' || status === 'NO_SHOW';
-  if (held && compareDates(fromIsoDate(isoDate), fromLocalDate(db.now())) > 0) {
+  if (held && compareDates(fromIsoDate(isoDate), today(db)) > 0) {
     throw new DbError('OUTCOME_IN_FUTURE');
   }
 }

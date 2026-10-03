@@ -175,13 +175,13 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
 | `createTeam`, `renameTeam`, `createPerson`, `updatePerson`, `restorePerson` | RE/TL phải có team; IS/BD/BDM kèm team → `TEAM_NOT_ALLOWED` (#252; đổi RE/TL sang IS/BD/BDM phải truyền `teamId: null`, UI tự bỏ team); mỗi team tối đa 1 TL chưa xóa (Owner, G3 01/10/2026): tạo / đổi / khôi phục nhân sự thành TL thứ hai → `TEAM_HAS_LEAD` (B1b) |
 | `createCustomer` | Chỉ ở nhóm mở N4–N1 (`assertValidTransition`, ADR-0007); ghi transition đầu (`from` null); nếu có ngày sinh/giới tính → ghi chú `SYSTEM` + dữ kiện (D2) |
 | `updateCustomerProfile` | Đổi tên / RE / ngày sinh / giới tính; đổi ngày sinh hoặc giới tính → ghi chú `SYSTEM` + `confirmFact` |
-| `changeStageManually` | `assertValidTransition`; transition `appointment_id` null — không bao giờ tính RF; ngày không được trước transition mới nhất (D10) |
+| `changeStageManually` | `assertValidTransition`; transition `appointment_id` null — không bao giờ tính RF; ngày không được trước transition mới nhất (D10), không được sau hôm nay → `DATE_IN_FUTURE` (F-11, #258) |
 | `scheduleAppointment` | Trạng thái `SCHEDULED`, không có `stage_after` |
 | `recordMeetingOutcome` | Đặt trạng thái + kết quả. `MET`: bắt buộc `stage_after`, `next_step` (D6); `stage_after` ≠ nhóm hiện tại → transition gắn `appointment_id` (#44); `outcome_reviewer_id` tùy chọn, phải là nhân sự chưa xóa (D9). Sửa lại kết quả → theo D7. Transition mang ngày cuộc hẹn → ghi kết quả muộn bị từ chối (D10) nếu KH đã có transition ngày muộn hơn; `MET` với `stage_after` = nhóm hiện tại, `CANCELLED`, `NO_SHOW` không sinh transition nên vẫn ghi được |
 | `rescheduleAppointment` | Cuộc hẹn cũ → `RESCHEDULED`; tạo cuộc hẹn mới `SCHEDULED` trỏ `rescheduled_from_id` (D3) |
 | `addKycNote` | Chỉ thêm |
 | `confirmKycFact`, `markKycConflict`, `resolveKycConflict` | Dùng `confirmFact` / `markConflict` / `resolveConflict` của `domain`; từ chối `birthYear` / `gender` từ nguồn RE (D2); `confirmKycFact` / `markKycConflict` trên ghi chú `SYSTEM` → `KYC_NOTE_FROM_PROFILE` (ghi chú `SYSTEM` chỉ do hồ sơ KH ghi, #263); sau đó `nextKycVersion` → ghi `kyc_versions` nếu hash đổi; cờ material tay theo ADR-0008 §7 |
-| `submitPolicy`, `issuePolicy`, `updatePolicy` | Ràng buộc §3.7; FYP qua `Vnd` |
+| `submitPolicy`, `issuePolicy`, `updatePolicy` | Ràng buộc §3.7; FYP qua `Vnd`; ngày nộp / ngày phát hành sau hôm nay → `DATE_IN_FUTURE` (F-11, #258) |
 | `softDelete…`, `restore…` | D4; không xóa được team / nhân sự còn được tham chiếu bởi bản ghi chưa xóa; xóa cuộc hẹn có transition theo D7 (transition bị hủy, `customers.stage` về `from_stage`); khôi phục cuộc hẹn `MET` mà transition của nó giờ lùi ngày → từ chối (D10), cuộc hẹn vẫn bị xóa |
 
 **Đọc dữ liệu** qua repository trả về đúng kiểu của `domain` (`Team`, `Person`, `Customer`, `StageTransition`, `Appointment`, `Policy`, `KycProfile`, `KycVersion`). Chỉ số (Phase 4) tính bằng `stats.ts` trên dữ liệu đã nạp — quy mô demo đủ nhỏ để tính trong bộ nhớ.
