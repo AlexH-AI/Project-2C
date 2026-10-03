@@ -1,159 +1,24 @@
 # HANDOFF
 
-> Cập nhật mỗi cuối phiên bằng `/handoff`. Phiên mới đọc file này đầu tiên (`/session-start`).
+> Trạng thái giữa các phiên / giữa 2 máy. **Giữ dưới 8.000 ký tự**: hook `SessionStart` chỉ đưa được 10.000 ký tự vào context. Chỉ ghi điều GitHub chưa ghi. Lịch sử đã có ở PR/Issue; quy tắc bền ở `CLAUDE.md`; ghi chú review ở `docs/state/review-notes.md`.
 
-- **Cập nhật:** 2026-10-03 · máy `DESKTOP-KDURKJP` (Home PC) · Phase 4: #251 T-095, #252 T-096 (+ T-104 #264), #253 T-097 G2 (PR #265) đã merge; #254 T-098 G3 mockup Tổng quan + Báo cáo (Owner duyệt 03/10, PR #266) đã merge (`docs/design/mockups/overview.html`, `reports.html`, spec §4.5)
-- **Nhánh:** `main` (`605157a`). Không có PR code nào đang mở. Hai worktree review đứng ở `605157a`. Worktree review `Project-2C-review`, `Project-2C-review-2` (nếu có): đưa về `origin/main` khi review
-- **Phiên song song:** có thể có phiên khác trên cùng checkout — commit theo pathspec, không `git add -A`
-- **Repo public** (27/09) · **ruleset `protect-main`** (28/09): bắt buộc PR, cấm force-push và xóa `main`; không bắt buộc status check, không auto-merge. Hook `pre-push` giữ nguyên
-- **Model / effort:** Owner chọn từng phiên (ADR-0001 M1). Chỉ Claude Code viết code, không subagent, cổng G1–G8. **Codex chỉ review độc lập khi đóng phase** (ADR-0001 M2)
+- **Cập nhật:** 2026-10-03 · máy `DESKTOP-KDURKJP` (Home PC)
+- **Nhánh:** `main` (`b16f632`). Worktree review `Project-2C-review`, `Project-2C-review-2`: đưa về `origin/main` khi review
 - **Phase:** 4 — Dashboard & báo cáo (milestone mở 02/10) · Phase 1, 2, 3 đã đóng
 
 ## Trạng thái
 
-| Việc | Trạng thái |
-|---|---|
-| Big review Phase 1→3 (Claude + Codex Astra) | Xong 30/09. Báo cáo tổng hợp lưu ở `docs/reviews/2026-09-30-phase-1-3-tong-hop.md` (F-01…F-19, kế hoạch 3 đợt) |
-| Đợt 1: #202 T-077, #203 T-078, #204 T-079, #210 T-080 | **Đã merge** 30/09 (PR #206, #208, #209, #211) |
-| #72 T-053 đóng Phase 3 | PR #212, #213 đã merge (metrics, báo cáo, kiểm tay exe 30/09: 0 lỗi). Gói A + B xong, Owner kiểm tay exe lần 2 (02/10, bản cuối `main`): không có vấn đề. PR #248 (review lần 2: metrics, STATE, PLAN §5, HANDOFF, báo cáo). **G7 Owner duyệt 02/10 — #72 và milestone Phase 3 đã đóng** |
-| Review lần 2 Phase 1→3 (Claude + Codex Sol 6.1) | Xong 02/10 trên `5eb7c03`. Tổng hợp: `docs/reviews/2026-10-02-phase-1-3-review-2-tong-hop.md` (R2-01…R2-07): 0 Critical / High; R2-01, R2-02 Medium → **T-j** Phase 4 (Owner quyết sửa sau G7) |
-| Phản hồi Owner 01/10 — gói A | **Đã merge** 01/10: #214 T-081 (PR #221), #215 T-082 (PR #229), #216 T-083 (PR #230) |
-| Phản hồi Owner 01/10 — gói B | Mockup #217 T-084 (PR #220) và #222 T-085 B1 (PR #231), #223 T-086 B1b (PR #233), #224 T-087 B2 (PR #234, `risk:med`), #225 T-088 B3 (PR #236), #226 T-089 B4 (PR #239), #227 T-090 B5 (PR #240) **đã merge** 01/10; #237 T-092 bỏ `useScope` chết (PR #238); #228 T-091 B6 (PR #247) **đã merge** 02/10. Kèm #243 T-093 / #245 T-094 đồng hồ DB theo ngày của app (PR #244, #246) |
-| Đợt 2 (đầu Phase 4) | **Đã tạo 02/10** (milestone Phase 4): #251 T-095 (T-d e2e) · #252 T-096 (T-j nhập backup lần 3 + luật nhân sự, `risk:high`) · #253 T-097 (G2 Phase 4) · #254 T-098 (G3 mockup Tổng quan + Báo cáo, chặn bởi #253) · #255 T-099 (T-e index + MTD, chặn bởi #253) · #256 T-100 (T-f miền năm, chặn bởi #253) · #257 T-101 (T-g CI) · #258 T-102 / #259 T-103 (T-h phần 1 / 2). T-i (F-18) thành tiêu chí của task dashboard đầu tiên, tạo sau G3 |
-
-## Phản hồi Owner sau kiểm exe (01/10/2026)
-
-Owner kiểm exe và gửi 16 ý (ảnh chụp trong hội thoại). Owner duyệt kế hoạch 01/10: **gói A + B làm trong Phase 3, trước G7**; có thể còn ý bổ sung; đóng Phase 3 sau khi kiểm tay exe lại + 2 review độc lập. Ý 9 sang Phase 4.
-
-| Ý | Nội dung | Gói / Issue |
-|---|---|---|
-| 1 | Bộ chọn góc nhìn chữ to hơn: 12,5px → 14px, chỉ bộ chọn trên thanh đầu trang | A3 #216 |
-| 2 | Khách hàng, góc nhìn Team: hàng chọn RE của team (mỗi hàng 5 RE, chỉ RE); bấm lọc theo RE, bấm lại → cả team; trình bày lại bố cục | B2 |
-| 3 | Như ý 2 cho Lịch hẹn (lọc theo RE phụ trách, không tính phối hợp) | B3 |
-| 4 | Danh sách chọn RE sắp theo team rồi tên (cả 4 chỗ dùng `reOptions`) | A2 #215 |
-| 5, 10 | Bỏ bộ chọn góc nhìn ở màn không lọc theo nó: Team & nhân sự, Hồ sơ KH (và Cài đặt, Báo cáo, Tổng quan) | A3 #216 |
-| 6 | Team: "Team Bình Minh · TL Lý Gia Trang · Sửa" (không số lịch hẹn); TL bỏ khỏi bảng; "Hỗ trợ dùng chung" → "Người hỗ trợ" | B1 |
-| 7 | Bỏ chữ viết tắt 2 ký tự trước tên người | A1 #214 |
-| 8 | "Tổng quan hôm nay" → "Tổng quan" | A1 #214 |
-| 9 | Tổng quan chạy bằng dữ liệu thật: nút Lọc cạnh kỳ; 4 ô N4–N1 bốn màu; Toàn bộ / RE = 1 chart, Team = 3 chart (một team một chart), 4 nhóm cơ hội | **Phase 4** (G2 + G3) |
-| 11 | Bỏ nhãn "material" trên dòng thời gian KYC (dữ liệu + hộp Ghi chú KYC giữ nguyên) | A1 #214 |
-| 12 | Lịch tháng: số ngày ô đang chọn màu vàng gold | B4 |
-| 13 | Danh sách lịch hẹn: cột Ngày tô theo hôm nay — đã qua vàng nhạt, hôm nay xanh lá nhạt, sắp tới xanh dương nhạt | B5 |
-| 14 | Kỳ Tuần tô nổi dải 7 ngày trên lịch tháng | B4 |
-| 15 | Kỳ Tháng giữ nguyên | — |
-| 16 | Kỳ Năm: lưới 12 tháng, 4 cột = 4 quý; tương lai mờ, tháng hiện tại nổi; ô = số tháng + tổng lịch + thanh ngang 3 màu (đã gặp / dời-hủy-không đến / dự kiến) có số ở giữa | B6 |
-
-Quyết định Owner (AskUserQuestion 01/10):
-- Ý 9: đếm KH theo nhóm = **ảnh chụp cuối kỳ** (nhóm của KH tính tới ngày cuối kỳ; kỳ chưa hết → tới hôm nay). Góc nhìn Team trên Tổng quan: **ẩn ô chọn team**, luôn 3 chart. Mặc định Claude đề xuất (chốt ở mockup Phase 4): đổi kỳ / góc nhìn chỉ áp dụng khi bấm Lọc; 4 ô N4–N1 dùng màu `StageBadge` và là chú giải chart; bỏ chart mẫu "Lịch hẹn theo team".
-- Ý 2–3: RE đang chọn **dùng chung** Khách hàng và Lịch hẹn; đổi team hoặc góc nhìn → tự bỏ chọn RE.
-- Ý 16: bấm ô tháng → **mở kỳ Tháng đó**; khối "Trong ngày" **ẩn** ở kỳ Năm.
-- G3 gói B (01/10, PR #220): B5 = **phương án A** (tô nền ô Ngày); ô hôm nay viền **xanh lá nhạt**; nút "Cả team" + số cạnh tên RE; **mỗi team tối đa 1 TL** (→ #223); giữ tổng lịch quý ở lưới năm.
-- Kỳ Tùy chọn: **tô dải ngày như Tuần**. Kèm sửa lỗi Claude tìm thấy: tuần / khoảng vắt 2 tháng không xem được phần tháng sau (ngày tháng khác bị mờ, không bấm được) → ngày trong kỳ vẫn tô và bấm được, lịch chuyển sang tháng đó (B4).
-
-Kế hoạch (thứ tự để ít rủi ro): A1 → A2 → A3 (không cần mockup) · song song mockup #217 → G3 → B1 → B2 (`risk:med`, bộ lọc team + RE dùng chung; sau A3 vì cùng thanh đầu trang) → B3 → B4 → B5 → B6 (`risk:med`; B4–B6 cùng `AppointmentsScreen.tsx` nên làm lần lượt, lưới năm tách file mới) → Owner kiểm tay exe → 2 review độc lập → G7.
-
-`main` `abdff20` (30/09, Home PC): `pnpm verify` xanh — 757 test, coverage 99,49 / 98,4 / 100 / 99,78 (domain 100%, `db/src` 99,33 / 97,8), 0 vi phạm ranh giới; `pnpm e2e` 95/95 xanh (lần này không có test vượt 30 s); build exe trên `main` xanh (run `36732226056`, artifact `Project-2C-abdff201d0c347d0175436b6668d26e3ec667ccb`).
-
-## Sổ ghi chú review (P-3)
-
-Quy tắc (review đóng Phase 3, P-3): ghi chú review không chặn nằm ở đây, chia **OPEN** (còn phải làm), **RESOLVED** (đã sửa, ghi PR), **ACCEPTED** (Owner hoặc spec chấp nhận, không sửa). Khi đóng mỗi phase, kiểm lại từng dòng OPEN trên code và chuyển nhóm. Review sau đối chiếu sổ này trước khi ghi một phát hiện là MỚI. Đối chiếu lần này: `main` `5eb7c03`, 02/10 (review lần 2). Mã T-d…T-i, S-1, S-2 là task Đợt 2/3 trong báo cáo tổng hợp 30/09 §4; T-j và R2-xx ở báo cáo 02/10 §4–§5.
-
-### OPEN
-
-Theo task đã có chỗ trong kế hoạch:
-- **T-f (F-14):** chưa có `MAX_YEAR` trong `period.ts`; `shift` kỳ ngày/tuần/tùy chọn sát 01/01/1900 ném `RangeError` trong `PeriodPicker`, kỳ tháng/năm lùi về 1899 (#146); `addDays` với `days` cực lớn trả `NaN` (chưa có đường gọi).
-- **T-h (F-11, F-12, F-13, F-15, F-19):**
-  - "hôm nay" = `fromLocalDate(db.now())` lặp 4 chỗ (`appointments.ts` ×2, `customers.ts` ×2) → helper `today(db)`; lệnh sửa nhóm tay / HĐ không chặn ngày tương lai.
-  - Xóa ngày sinh / chọn "Chưa rõ" giới tính → lỗi chung.
-  - `OutcomeDialog.tsx:~81`: "Lưu kết quả" khi chưa chọn trạng thái không báo gì (#169).
-  - `·` / `→` viết cứng trong JSX (~15 chỗ, vd `CustomerDialogs.tsx:380`).
-  - `getPolicy` quét mọi HĐ (`policies.ts:30`); `t()` dùng `name in params` (`i18n/index.ts:11`).
-  - R2-03: số đếm truyền vào `t()` không qua `formatCount` ("4528 lịch" cạnh "1.234 lịch" ở kỳ Năm): `AppointmentsScreen.tsx:123-126, 369`, `CustomersScreen.tsx:114`, `RePicker.tsx:39` (`rePicker.title`) và số trong `Chip` (`:83`) → `formatCount` (cân nhắc helper `tCount` / test grep).
-  - R2-04: `·` / `→` viết cứng tăng thêm sau F-15 (`AppointmentsScreen.tsx:242, 245, 494`, `CustomersScreen.tsx:141, 144`) → thêm luật chặn trong `lint:tokens` hoặc test grep.
-  - R2-05: cảnh báo ESLint `react-hooks/exhaustive-deps` ở `AppointmentsScreen.tsx:188-189` (#240) → dựng `today` trong memo như `:116-121`; cân nhắc `eslint --max-warnings 0`.
-- **T-i (F-18):** formatter ECharts escape chuỗi từ DB — đã thành mục checklist, áp dụng ở task dashboard đầu tiên.
-- **S-1 / D-1 (probe Codex Sol 02/10):** nhập backup nhận `kyc_versions.hash` sai → tính lại hoặc kiểm hash khi nhập snapshot.
-- **S-2 (Đợt 3):** ghi muộn trong khoảng chờ backup → thay DB (#96); hai `replace` chồng nhau đóng DB cũ hai lần (#192); chưa có test cho cửa sổ `opening` (#206).
-
-Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
-- `app-data.ts:~179` (#206): `mine === current || mine === opening` tương đương `mine >= current` → bỏ được `opening` + `try/finally`.
-- `shell/ErrorBoundary.tsx:~29` (#206): `resetKey={scope}` đổi mỗi khi `teams`/`people` tính lại → sửa câu doc comment cho đúng (hành vi vô hại).
-- `storage.rs` (#196, #192): `explorer_arg` (`~377`) không có `#[cfg(any(windows, test))]` → build ngoài Windows báo `dead_code`; `open_lock_file` dùng `Some(32)` thay hằng `SHARING_VIOLATION`; ngoài Windows closure `map_err` thành identity.
-- `packages/db/src/database.test.ts:47,98,100,353` ghi cứng phiên bản schema `5` → suy từ `LATEST_SCHEMA_VERSION` trước migration kế tiếp.
-- `backup.ts` (#184): `valueOf` chỉ nhận cột `integer`/`text` (thêm cột `real` sẽ thành `BACKUP_INVALID`); `ORDER BY` dựa vào khóa chính → nên có test mọi bảng có PK. `database.ts`: hai khối `try/catch sqlite.close()` có thể gộp.
-- `SettingsBackup.tsx` (#185): nhánh `SCHEMA_TOO_NEW` của hộp 10b chưa có test.
-- `AppointmentsScreen.tsx:~271` (#179): truyền `caused={undefined}` → cho `caused` là prop tùy chọn. Ô ngoài tháng / ngoài khoảng là `aria-hidden` nên trình đọc màn hình không đọc số lịch ngày đó (#156).
-- Lịch hẹn (#162–#168):
-  - `outcomeChoices` (`outcome-form.ts:21`) không chặn Đã gặp / Hủy / Không đến cho lịch `RESCHEDULED` (UI không mở hộp, db ném `INVALID_STATUS`).
-  - Mùi *Duplicated Code*:
-    - quy tắc "case size > 0" ở `OutcomeDialog.tsx` và `outcome-form.ts` → `readCaseSize`;
-    - `setErrors(errors.filter(...))` lặp → helper `clear`;
-    - khối `<p role="alert" …>` lặp → `FailureAlert`;
-    - `RescheduleDialog.tsx` và `AppointmentsScreen.tsx` cùng tự ghép `formatDate` với giờ → một helper trong `appointments-view.ts`;
-    - `weekdayOf` (`period.ts:102`) và `periodOf('week')` tính thứ bằng hai cách.
-  - #165: lịch cùng ngày khi sắp tăng dần vẫn ra giờ muộn trước (`AppointmentsScreen.tsx`, `CustomerAppointments.tsx`) → sắp theo cả ngày lẫn giờ; mockup tô "RF" màu accent và đưa năm khác xuống dòng giờ, code viết chuỗi phẳng.
-  - #163: nhóm trước → sau trong 6a hiện bằng chữ (mockup: badge); hộp 6h hiện thêm "Các lần hẹn trước"; e2e chưa kiểm link "Xem tất cả (n)" khi > 5 lịch.
-- Team & nhân sự (#144): `role === 'RE' || role === 'TL'` lặp ở `PersonDialogs.tsx`; lọc theo `reId` lặp ở `staffMetrics` và `personUsage`; "Xóa nhân sự" trong hộp Sửa bỏ thay đổi chưa lưu mà không báo.
-- Khách hàng (#141): dòng "Sau khi lưu: N2 → N3" thiếu "· hạ nhóm / lên nhóm" như mockup 5d; khối cảnh báo "Chuyển tay không bao giờ tính RF" hiện cả khi KH đã đóng; `error.INVALID_TRANSITION` chỉ nói "KH đã đóng" dù cũng bắn khi trùng nhóm hiện tại; `CustomerDialogs.tsx:~300` lặp `CLOSED_STAGES.includes` (dùng `!isPipelineStage`); `CustomerProfile.tsx:110` dựng `StageBadge` tay; 3 helper `badge` riêng (`MetFields.tsx:16`, `CustomerDialogs.tsx:42`, `CustomerKyc.tsx:155`) → *Duplicated Code*, T-h.
-- `CloseGuard.tsx` (#125): bấm X lúc đang seed "Nạp lại" thì app đóng trước khi lưu bản mới (không mất dữ liệu); không có dấu hiệu "đang lưu" khi chờ `flush()`; phần nối React chưa có test tự động; chuỗi class `BUTTON` chép từ `Settings.tsx`.
-- Cài đặt (#96, #87): sau một lần lưu lỗi, "Nạp lại" bị từ chối mà không có cách thử lưu lại; hộp 10c thiếu số lượng dữ liệu sắp thay; `backups\` không đọc được thì app coi như lần đầu. NIT (#87): file `.tmp` sót trong `backups\`/`exports\`, listener ném lỗi, dọn thư mục tạm của test Rust.
-- `Overview.tsx:9` (R4): lấy "hôm nay" từ đồng hồ máy thay vì `useAppData().today()`. Ô ngày tùy chọn báo đỏ sớm khi Tab.
-- Tooling (R4): `session-end.ps1:39` `git add -A` gom file phiên khác; hook `review-pr-hint.mjs` nhận "issue #N" gần chữ "review" thành PR.
-- `app-icon.svg`, `public/favicon.svg` (#128): thiếu dòng trống cuối file; `favicon.svg` là bản sao `app-icon.svg` → đổi icon phải sửa cả hai.
-- `DataTable` (Phase 1): chưa có test `sortable: false` và bảng rỗng; kiểm lại cột Giờ có `tabular-nums` (cột không phải `text` đã có). `cellClass` (#240) chỉ có e2e phủ — repo chưa có công cụ test component (thêm là G4).
-- Lưới năm (#247, không chặn):
-  - `token-guard.ts:26` regex miễn trừ nhận mọi `style={{ flex: <định danh hoặc số> }}`, kể cả hằng `flex: 1`; doc comment `token-guard.ts:3` dài (NIT);
-  - `AppointmentsScreen.tsx:53` `FOCUS` xen giữa các import `type` (NIT);
-  - *Duplicated Code*: `CARD` lặp ở `YearGrid.tsx:5` và `AppointmentsScreen.tsx` → export từ `appointments-view.ts` như `FOCUS`.
-- `e2e/appointments.spec.ts` (#236, NIT): `new RegExp(`^${name}`)` không escape tên RE; tên seed hiện không có ký tự regex.
-- `AppointmentsScreen.tsx` (#239, không chặn): nhánh `!pickable` vẫn có thể gắn `bg-period-band` về lý thuyết; `inPeriod` ⇒ `pickable` nên không xảy ra.
-- Domain (R3): API `nextKycVersion`; ngày nhanh đầu năm (gợi ý năm trước?).
-- Token G3 (R4, Owner cân nhắc): viền ô nhập / mũi tên sắp xếp dưới 3:1.
-
-### RESOLVED
-
-- T-e (F-06, F-07): `stats.ts` dựng index một lần cho mỗi danh sách đầu vào (`Map` người → team, `Set` lịch chuyển RF, `WeakMap`), chữ ký công khai giữ nguyên; `rfCount` lọc phạm vi trước kỳ. Seed: một kỳ toàn bộ 21,6 → 1,3 ms; 12 tháng × 30 RE 374 → 82 ms. `monthToDate` trong `period.ts`, G18 kiểm bằng hàm này (#255, T-099).
-- T-j (R2-01, R2-02): nhập backup kiểm thêm luật 1 (transition đầu `appointment_id` null), luật 5 (RE **chưa xóa**), luật 8 (fact `SYSTEM` năm sinh / giới tính `conflict` khớp hồ sơ), luật 9 nhân sự (≤ 1 TL chưa xóa / team; IS/BD/BDM không team; người chưa xóa → team chưa xóa). Lệnh: `TEAM_NOT_ALLOWED` cho IS/BD/BDM có team; `withdrawAppointmentTransition` → `INVALID_TRANSITION` thay lỗi SQLite thô; `resolveKycConflict` so giá trị `SYSTEM` với hồ sơ. Thay ghi chú #231 (IS/BD/BDM có team, TL thứ hai). DB dev có dữ liệu sai: nạp lại dữ liệu giả lập (#252, T-096).
-- T-d (F-05, R2-06): e2e local giới hạn worker (≤ 4), không dùng lại server cũ ở cổng 4173 (chỉ khi `PW_REUSE=1`), server preview chạy một tiến trình (`e2e/serve.mjs`) nên dừng sạch, `trackConsoleErrors` một chỗ (`e2e/support.ts`), ngưỡng `SLOW` của `seed.test.ts` nâng 60 s → 180 s (#251, T-095).
-- Ghi chú #244: `now` gọi `new Date()` hai lần (có thể lệch qua nửa đêm) và không đi qua `clock` → đọc một lần qua `clock` (#245, PR #246).
-- `useScope()` chết sau B3 → bỏ (#237, PR #238). Số ngày ô lịch `padStart` → `formatDayOfMonth` / `formatDayMonth` của `domain` (#239).
-- `formatCount` tách khỏi `money.ts` → `domain/number.ts`; `": "` cứng ở `SettingsBackup.tsx` → i18n (#185).
-- So chuỗi `'RELOAD_UNSAVED_CHANGES'` lặp → `isUnsavedChangesError` (`app-data.ts`).
-- Danh sách cột `columns.map(quote).join` lặp ở `backup.ts` → `columnList`.
-- `CloseGuard.tsx` cờ `closing` không reset khi `destroy()` lỗi → có `finally` (#125).
-- "NẠP LẠI" so `===` không `normalize('NFC')` → `Settings.tsx:81` chuẩn hóa (R4).
-- `useDatabase()` chưa có nơi gọi → `CustomerDialogs.tsx` dùng (#96); i18n chèn tham số bằng `.replace` → `t(key, params)` (#96).
-- Comment `tauri-storage.ts` "empty only when the file does not exist" → đã sửa đúng (#87). Hai lần xuất trùng tên ghi chung `name.tmp` → claim + hậu tố `-2` (#185, #187–#192).
-- Hộp "Nhân sự mới" chọn IS/BD/BDM vẫn giữ team → tự bỏ team (`PersonDialogs.tsx:~95`, e2e `team.spec.ts:159`) (#144).
-- R1/R2: sửa kết quả cuộc gặp từng phần (D7) → #166/#170; DB mới hơn app mở im lặng → `SCHEMA_TOO_NEW` (#184).
-- Phép tính ngày tự viết ở màn Team → `addDays` (#146); tiêu đề năm cứng trong e2e (#144).
-- F-01…F-04 (big review) → #202–#204, #210. Nhãn kỳ, `parseVnd`, bootstrap PS 5.1, CI main (R3/R4) → #105–#110.
-- 4 chỗ lệch mockup 5a–5c (#140) → #142. Link "+ Ghi chú KYC từ cuộc gặp này" (6c) → #180. Nút xóa lịch Dự kiến → #173.
-
-### ACCEPTED
-
-- **Owner quyết 30/09 (#171):** lịch Dời lịch không có nút xóa (chuỗi dời, cần quy tắc riêng G1/G2); ô **Giờ** ở hộp 6f giữ; câu "Xóa mềm, khôi phục được" ở 6g giữ — màn "Thùng rác" xếp Phase 6 (xem comment Owner trên #72).
-- Hộp lỗi màn hình chỉ hiện `String(error)`, không stack (#206 vòng 1; React 19 tự `console.error` kèm stack).
-- `storage.rs`: đường dẫn kết thúc bằng `\` sẽ thành `"…\"` — không xảy ra vì `folder()` luôn trả `…\exports|backups` (#196); `rename` trên Windows ghi đè đích, chỉ tránh nhờ claim (chương trình ngoài tạo trùng tên trong vài ms thì bị ghi đè) (#192).
-- Lịch hẹn: chưa có cây Team → RE ở cột trái (góc nhìn dùng bộ chọn chung; "Trong ngày" đảm nhận team → RE); tóm tắt tháng / trigger / chuyển nhóm của mockup là chỉ số Phase 4 (#156/#158). Biến thể "không đổi nhóm KH" của hộp xóa hiện bảng 3 dòng cả cho lịch Hủy / Không đến (#179).
-- #227 (PR #240): test unit tùy chọn "`DataTable` gắn class của cột vào ô" thay bằng e2e (`appointments.spec.ts:189`) — mâu thuẫn spec với hạ tầng test, review chấp nhận.
-- Hai file ngoài danh sách của #68 (`domain/period.ts` `formatDayMonth`, `db/appointments.ts` `coordinatorsByAppointment`) — Owner ghi nhận (#155).
-- Hành vi theo spec, lớp gọi phải tuân (#33, #36, #44, #62):
-  - `suggestedQuestions` trả cho mọi hạng mục thiếu ở cả 4 trạng thái (UI quyết định hiện); trường mâu thuẫn xếp theo `KYC_FIELDS`.
-  - "Mới nhất" theo thứ tự thao tác, không theo `confirmedDate`; lớp nhập liệu chuẩn hóa kiểu giá trị theo trường.
-  - `isRfAppointment` dựa vào `StageTransition.appointmentId` → db/UI luôn tạo transition gắn `appointmentId` khi ghi "nhóm sau cuộc gặp".
-  - `markKycConflict` đổi mọi lỗi của `markConflict` thành `KYC_NO_CONFLICT`; chuỗi "Cập nhật KYC dd/mm/yyyy" có ở cả `db/kyc.ts` và `domain/kyc.ts`; ghi chú `SYSTEM` là dữ liệu DB, UI không dịch lại; đổi ngày sinh cùng năm vẫn tạo ghi chú + dữ kiện thay thế, không tạo phiên bản.
-- R1: `PERSON_IN_USE` đếm cả KH xóa mềm (câu báo ở T-046); năm > 9999 (gộp vào miền năm T-f).
-- ADR-0003 còn nói `/resume` và branch protection — Owner để nguyên (ADR đã Accepted); `CLAUDE.md` và PLAN là bản đúng.
+- Phase 4 đã merge: #251 T-095, #252 T-096 (+ T-104 #264), #253 T-097 G2 (PR #265), #254 T-098 G3 mockup Tổng quan + Báo cáo (PR #266), #255 T-099 index + MTD (PR #279). Quyết định G2/G3: `docs/design/phase-4-chi-so.md` §4.5.
+- #280 T-115 (retro điều hướng repo, đợt 1): đang làm ở worktree `C:\workspace\Project-2C-T115`. Đợt 2 (HANDOFF thành Issue ghim + trạng thái tự sinh, phụ lục ADR-0003, mục "Tài liệu cần đọc" trong mẫu Issue) chờ **G1**. Đợt 3: `CLAUDE.md` theo package + bản đồ export tự sinh, rules theo đường dẫn, script `pr-status` / `merge-pr`.
 
 ## Bước kế tiếp chính xác
 
 1. `/session-start` (pull `main`).
-2. **Phase 4 — việc nên làm tiếp** (#251–#254 đã xong; G2 + G3 đã duyệt, quyết định ở `docs/design/phase-4-chi-so.md` §4.5):
-   1. **Domain (không bị chặn, làm trước, song song được):** **#255 T-099** index + MTD · **#268 T-105** đếm lịch hẹn 4 nhóm (§1, golden A) · **#269 T-106** KH theo nhóm + mốc chart / báo cáo (§2, §4.4, golden S, M01–M04) · **#270 T-107** cửa sổ so kỳ trước (§4.2, C01–C09). (#255 thu hẹp còn index + MTD — comment trên #255.)
+2. **Phase 4 — việc nên làm tiếp:**
+   1. **Domain (không bị chặn, song song được):** **#268 T-105** đếm lịch hẹn 4 nhóm (§1, golden A) · **#269 T-106** KH theo nhóm + mốc chart / báo cáo (§2, §4.4, golden S, M01–M04) · **#270 T-107** cửa sổ so kỳ trước (§4.2, C01–C09).
    2. **#271 T-108** màn Lịch hẹn 4 nhóm (cam = chưa ghi kết quả, xám = dời / hủy / không đến) ← #268.
-   3. **Tổng quan:** **#272 T-109** Lọc + ô Lịch hẹn + 6 KPI ← #255, #268, #270, #271 → **#273 T-110** KH theo nhóm + chart (F-18 escape tooltip) ← #269, #272 · **#274 T-111** So sánh team → RE ← #272.
-   4. **Báo cáo:** **#275 T-112** Lọc + Tổng hợp / Theo team / Theo RE ← #255, #268, #269, #272 → **#276 T-113** Theo mốc ← #269, #275 → **#277 T-114** xuất Excel (ExcelJS, **G4** xác nhận, nhãn `build-exe`) ← #275, #276.
+   3. **Tổng quan:** **#272 T-109** Lọc + ô Lịch hẹn + 6 KPI ← #268, #270, #271 → **#273 T-110** KH theo nhóm + chart (F-18 escape tooltip) ← #269, #272 · **#274 T-111** So sánh team → RE ← #272.
+   4. **Báo cáo:** **#275 T-112** Lọc + Tổng hợp / Theo team / Theo RE ← #268, #269, #272 → **#276 T-113** Theo mốc ← #269, #275 → **#277 T-114** xuất Excel (ExcelJS, **G4** xác nhận, nhãn `build-exe`) ← #275, #276.
    - Làm xen khi chờ review: **#256 T-100** `MAX_YEAR` + `PeriodPicker` tắt nút ở biên · **#257 T-101** CI · **#258 T-102**, **#259 T-103** (T-h).
    5. Cuối phase: kiểm tay exe, review độc lập (Codex), `docs/metrics/phase-4.md`, G7.
    - Ý bổ sung mới của Owner: xếp vào gói A (đổi nhỏ) hoặc B (cần mockup).
@@ -161,55 +26,15 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 4. Golden fixtures là test bắt buộc: **không sửa để "cho xanh"**, muốn đổi phải qua Owner (G2).
 5. Merge (P-1): SHA head lúc merge phải trùng SHA trong `REVIEW: PASS`; head đổi → review lại.
 
-## Lệnh chạy tiếp
-
-```powershell
-cd C:\workspace\Project-2C
-git switch main; git pull
-pnpm install --frozen-lockfile
-pnpm verify
-```
-
-Rồi trong Claude Code: `/session-start`.
-
-## Dựng môi trường trên Office Laptop
-
-### Phương án A — đầy đủ (build được exe ở local)
-
-```powershell
-git --version        # nếu thiếu: winget install --id Git.Git -e
-git clone https://github.com/AlexH-AI/Project-2C.git C:\workspace\Project-2C
-cd C:\workspace\Project-2C
-powershell -ExecutionPolicy Bypass -File tools\bootstrap.ps1
-```
-
-- Cài Node 24, pnpm, Rust 1.98.1, MSVC Build Tools (≈ 10–20 phút, có hộp UAC), gh, rồi `pnpm install`.
-- Mở **terminal mới**, chạy `gh auth login`, rồi `powershell -File tools\bootstrap.ps1 -CheckOnly` → phải ra `Toolchain ready.`
-- Mở Claude Code tại `C:\workspace\Project-2C`: đồng ý tin cậy thư mục và cài plugin `superpowers@superpowers-marketplace` khi được hỏi.
-- Worktree review (ADR-0017 phụ lục), tạo một lần từ checkout chính: `git worktree add --detach ../Project-2C-review origin/main`, rồi `pnpm install --frozen-lockfile` **bên trong** `C:\workspace\Project-2C-review`. Phiên review mở tại `C:\workspace\Project-2C-review`.
-
-### Phương án B — máy công ty không có quyền admin / chặn winget
-
-Chỉ cần **Git + Node 24 + pnpm** (không cần Rust/Build Tools):
-
-- Node 24 (đúng major trong `.nvmrc`, không lấy LTS mới nhất): bản cài không cần admin (zip từ nodejs.org, thêm vào PATH người dùng) hoặc, nếu được phép, `winget install --id OpenJS.NodeJS.LTS --exact --version 24.19.0 --scope user` (bản 24.x mới nhất: `winget show --id OpenJS.NodeJS.LTS --versions`). `tools/bootstrap.ps1` tự chọn bản này và chạy được bằng cả `powershell` 5.1 lẫn `pwsh` (T-061).
-- pnpm: `corepack enable pnpm --install-directory "$env:APPDATA\npm"`.
-- `pnpm install` → làm được mọi việc của #7/#8: `pnpm verify`, `pnpm dev:web`, `pnpm e2e` (dùng Microsoft Edge có sẵn).
-- Exe: tải từ GitHub Actions (run mới nhất trên `main` → artifact `Project-2C-<sha>`). Mỗi push code lên `main` build exe (PR chỉ build khi có nhãn `build-exe`, ADR-0015 phụ lục).
-
-### Phương án C — không cài được gì
-
-Dùng **Claude Code trên web** (claude.ai/code) gắn repo `AlexH-AI/Project-2C`: code, test, PR chạy trên cloud; CI build exe; laptop chỉ cần trình duyệt. Không chạy được `.ps1`/hook local — việc chặn push thẳng lên `main` do ruleset `protect-main` trên GitHub đảm nhận.
-
 ## Chờ Owner
 
+- **G1 đợt 2 retro (#280):** chuyển HANDOFF sang Issue ghim + phần trạng thái tự sinh từ GitHub; phụ lục ADR-0003.
 - **G4 #277:** xác nhận ExcelJS (đã có trong ADR-0005 / ADR-0011) — phiên bản ghim, kích thước bundle — trước khi làm xuất Excel.
 - Merge PR `risk:med`/`high`: Owner merge sau review PASS.
 
-## Ghi chú môi trường
+## Tài liệu tách khỏi HANDOFF (03/10)
 
-- pnpm shim ở `%APPDATA%\npm` khi không có admin; trong Git Bash shim này lỗi — chạy pnpm từ PowerShell.
-- Terminal mở trước khi chạy bootstrap chưa có PATH mới → mở terminal mới.
-- Bộ nhớ Claude (memory) nằm riêng từng máy và **không** đồng bộ: điều gì cần nhớ giữa 2 máy phải ghi vào `CLAUDE.md` hoặc file này.
-- Lần đầu mở Claude Code ở máy mới, lịch sử hội thoại của Home PC không có sẵn — phiên mới đọc `CLAUDE.md` + file này là đủ để tiếp tục.
-- Đổi base PR xếp chồng (`gh pr edit --base main`) **không** tự chạy lại CI (workflow nghe `opened/synchronize/reopened`): `gh pr close <n>` + `gh pr reopen <n>` để CI chạy trên base mới rồi mới merge.
+- Sổ ghi chú review OPEN / RESOLVED / ACCEPTED: `docs/state/review-notes.md`
+- Phản hồi Owner sau kiểm exe 01/10 (16 ý + quyết định): `docs/reviews/2026-10-01-phan-hoi-owner-kiem-exe.md`
+- Dựng Office Laptop / máy mới (phương án A/B/C): `docs/setup/office-laptop.md`
+- Ghi chú môi trường Windows / 2 máy: `CLAUDE.md` § "Môi trường Windows và 2 máy"

@@ -176,9 +176,9 @@ Ngoài các cổng trên, Owner **trao quyền tự động** cho Claude (C4): t
 
 **Nghi thức phiên làm việc (tự động hóa bằng script + lệnh Claude):**
 
-- `/session-start` (hoặc `tools/session-start.ps1`; không đặt tên `/resume` vì trùng lệnh có sẵn của Claude Code): `git fetch` + pull, liệt kê PR mở và Issue `status:in-progress`, in `HANDOFF.md`, kiểm tra toolchain.
+- `/session-start` (hoặc `tools/session-start.ps1`; không đặt tên `/resume` vì trùng lệnh có sẵn của Claude Code): `git fetch` + pull, liệt kê PR mở và Issue mở của milestone đang mở, báo khi `HANDOFF.md` local lệch `origin/main`, kiểm tra toolchain.
 - `/handoff` (hoặc `tools/session-end.ps1`): commit WIP lên nhánh, push, cập nhật `HANDOFF.md` (đang làm gì, bước kế tiếp chính xác, việc chờ Owner, lệnh cần chạy tiếp).
-- Hook `SessionStart` của Claude Code tự hiện `HANDOFF.md` khi mở phiên.
+- Hook `SessionStart` của Claude Code (`.claude/hooks/handoff-context.mjs`) fetch rồi nạp `HANDOFF.md` của `origin/main` khi mở phiên (dưới 10.000 ký tự — giới hạn output hook; HANDOFF giữ dưới 8.000 ký tự, #280).
 - Quy tắc: **trước khi rời máy, không để phiên Claude nào đang chạy dở** — hoặc chờ xong task, hoặc chạy `/handoff` để commit WIP và ghi bước tiếp theo.
 
 **Đồng nhất môi trường 2 máy:**
