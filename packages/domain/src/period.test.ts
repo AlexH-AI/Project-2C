@@ -3,6 +3,7 @@ import {
   addDays,
   calendarDate,
   canShift,
+  chartMarks,
   compareDates,
   customPeriod,
   daysBetween,
@@ -20,11 +21,13 @@ import {
   parseDate,
   parseQuickDate,
   periodOf,
+  reportMarks,
   shift,
   switchKind,
   weekdayOf,
   type Period,
 } from './period';
+import { REPORT_MARKS_GOLDEN_CASES } from './golden/stage-snapshot.fixture';
 
 const d = (day: number, month: number, year: number) => calendarDate(year, month, day);
 
@@ -480,5 +483,106 @@ describe('daysBetween', () => {
     expect(daysBetween(d(28, 9, 2026), d(26, 9, 2026))).toBe(-2);
     expect(daysBetween(d(28, 9, 2026), d(28, 9, 2026))).toBe(0);
     expect(daysBetween(d(31, 12, 2026), d(1, 1, 2027))).toBe(1);
+  });
+});
+
+/** Each mark as `kind dd/mm/yyyy–dd/mm/yyyy`, so a whole split reads as one literal list. */
+const marksOf = (marks: readonly Period[]) =>
+  marks.map(({ kind, start, end }) => `${kind} ${formatDate(start)}–${formatDate(end)}`);
+
+describe('chartMarks', () => {
+  it('gives a day one mark, itself', () => {
+    expect(marksOf(chartMarks(periodOf('day', calendarDate(2027, 1, 13))))).toEqual([
+      'day 13/01/2027–13/01/2027',
+    ]);
+  });
+
+  it('splits a week into its 7 days, across a year end too', () => {
+    expect(marksOf(chartMarks(periodOf('week', calendarDate(2026, 12, 31))))).toEqual([
+      'day 28/12/2026–28/12/2026',
+      'day 29/12/2026–29/12/2026',
+      'day 30/12/2026–30/12/2026',
+      'day 31/12/2026–31/12/2026',
+      'day 01/01/2027–01/01/2027',
+      'day 02/01/2027–02/01/2027',
+      'day 03/01/2027–03/01/2027',
+    ]);
+  });
+
+  it('splits a month into its days', () => {
+    const marks = chartMarks(periodOf('month', calendarDate(2028, 2, 1)));
+    expect(marks).toHaveLength(29);
+    expect(marksOf([marks[0]!, marks[28]!])).toEqual([
+      'day 01/02/2028–01/02/2028',
+      'day 29/02/2028–29/02/2028',
+    ]);
+  });
+
+  it('splits a year into its 12 months', () => {
+    const marks = chartMarks(periodOf('year', calendarDate(2027, 5, 5)));
+    expect(marks).toHaveLength(12);
+    expect(marksOf([marks[0]!, marks[1]!, marks[11]!])).toEqual([
+      'month 01/01/2027–31/01/2027',
+      'month 01/02/2027–28/02/2027',
+      'month 01/12/2027–31/12/2027',
+    ]);
+  });
+
+  it('splits a custom range of up to 31 days into days', () => {
+    const marks = chartMarks(customPeriod(calendarDate(2027, 1, 1), calendarDate(2027, 1, 31)));
+    expect(marks).toHaveLength(31);
+    expect(marksOf([marks[30]!])).toEqual(['day 31/01/2027–31/01/2027']);
+  });
+
+  it('splits a longer custom range into months, cutting the first and last to the range', () => {
+    expect(
+      marksOf(chartMarks(customPeriod(calendarDate(2027, 1, 1), calendarDate(2027, 2, 1)))),
+    ).toEqual(['month 01/01/2027–31/01/2027', 'custom 01/02/2027–01/02/2027']);
+    expect(
+      marksOf(chartMarks(customPeriod(calendarDate(2026, 11, 20), calendarDate(2027, 2, 15)))),
+    ).toEqual([
+      'custom 20/11/2026–30/11/2026',
+      'month 01/12/2026–31/12/2026',
+      'month 01/01/2027–31/01/2027',
+      'custom 01/02/2027–15/02/2027',
+    ]);
+  });
+
+  it('splits a range across a year end into days when it is short', () => {
+    const marks = chartMarks(customPeriod(calendarDate(2026, 12, 15), calendarDate(2027, 1, 10)));
+    expect(marks).toHaveLength(27);
+    expect(marksOf([marks[16]!, marks[17]!])).toEqual([
+      'day 31/12/2026–31/12/2026',
+      'day 01/01/2027–01/01/2027',
+    ]);
+  });
+});
+
+describe('reportMarks', () => {
+  for (const golden of REPORT_MARKS_GOLDEN_CASES) {
+    it(`${golden.id}: ${formatPeriodValue(golden.period)}`, () => {
+      expect(reportMarks(golden.period).map(({ start, end }) => [start, end])).toEqual(
+        golden.marks,
+      );
+    });
+  }
+
+  it('keeps a whole week as a week and makes a week cut at the month edge custom', () => {
+    expect(marksOf(reportMarks(periodOf('month', calendarDate(2027, 1, 1))).slice(0, 2))).toEqual([
+      'custom 01/01/2027–03/01/2027',
+      'week 04/01/2027–10/01/2027',
+    ]);
+  });
+
+  it('marks a day, a week, a year and a custom range as the chart does', () => {
+    for (const period of [
+      periodOf('day', calendarDate(2027, 1, 13)),
+      periodOf('week', calendarDate(2026, 12, 31)),
+      periodOf('year', calendarDate(2027, 1, 1)),
+      customPeriod(calendarDate(2027, 1, 1), calendarDate(2027, 1, 31)),
+      customPeriod(calendarDate(2027, 1, 1), calendarDate(2027, 2, 1)),
+    ]) {
+      expect(reportMarks(period)).toEqual(chartMarks(period));
+    }
   });
 });

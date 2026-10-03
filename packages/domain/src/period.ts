@@ -298,3 +298,56 @@ export function formatPeriodValue(period: Period): string {
         : `${formatDate(start)} – ${formatDate(end)}`;
   }
 }
+
+/** A custom range of at most this many days is charted day by day; a longer one month by month. */
+const DAILY_MARKS_MAX_DAYS = 31;
+
+/** `mark` cut to `range`; a mark left whole keeps its kind, a cut one becomes custom. */
+function clip(mark: Period, range: Period): Period {
+  const start = compareDates(mark.start, range.start) < 0 ? range.start : mark.start;
+  const end = compareDates(mark.end, range.end) > 0 ? range.end : mark.end;
+  const whole = compareDates(start, mark.start) === 0 && compareDates(end, mark.end) === 0;
+  return { kind: whole ? mark.kind : 'custom', start, end };
+}
+
+/** The periods of `kind` (day, week or month) covering `range`, each cut to it, in order. */
+function splitBy(range: Period, kind: 'day' | 'week' | 'month'): Period[] {
+  const marks: Period[] = [];
+  let next: CalendarDate | null = range.start;
+  while (next !== null) {
+    const mark = periodOf(kind, next);
+    marks.push(clip(mark, range));
+    next = compareDates(mark.end, range.end) < 0 ? addDays(mark.end, 1) : null;
+  }
+  return marks;
+}
+
+/**
+ * The marks (columns) of the Tổng quan chart (spec Phase 4 §2.8): a day is one mark; a week and a
+ * month are split into days, a year into months; a custom range of up to 31 days into days, a
+ * longer one into months, the first and last cut to the range (kind custom).
+ */
+export function chartMarks(period: Period): Period[] {
+  switch (period.kind) {
+    case 'day':
+      return [period];
+    case 'week':
+    case 'month':
+      return splitBy(period, 'day');
+    case 'year':
+      return splitBy(period, 'month');
+    case 'custom':
+      return splitBy(
+        period,
+        daysBetween(period.start, period.end) < DAILY_MARKS_MAX_DAYS ? 'day' : 'month',
+      );
+  }
+}
+
+/**
+ * The marks (rows) of the Báo cáo "Theo mốc" table (spec Phase 4 §4.4): as the chart, except that a
+ * month is split into Monday – Sunday weeks cut at the month edges (kind custom when cut).
+ */
+export function reportMarks(period: Period): Period[] {
+  return period.kind === 'month' ? splitBy(period, 'week') : chartMarks(period);
+}
