@@ -5,6 +5,8 @@
 import { checkCounts, latestReview } from './session-core.mjs';
 
 const LEVELS = ['low', 'med', 'high'];
+// Job name in .github/workflows/ci.yml, run only for PRs labelled build-exe.
+const EXE_CHECK = 'Build portable exe';
 
 /** True when CI skips the PR (ci.yml paths-ignore: docs/** and **\/*.md). */
 export function isDocsOnly(paths) {
@@ -43,10 +45,22 @@ export function mergeBlockers(pr, { owner, mode, stacked, baseMerged }) {
     );
 
   if (!isDocsOnly(pr.files.map((f) => f.path))) {
-    const { pass, fail, pending } = checkCounts(pr.statusCheckRollup ?? []);
+    const rollup = pr.statusCheckRollup ?? [];
+    const { pass, fail, pending } = checkCounts(rollup);
     if (pass + fail + pending === 0) blockers.push(`Code PR with no CI check on head ${head}.`);
     else if (fail || pending)
       blockers.push(`CI not green on head ${head}: ${fail} failed, ${pending} pending.`);
+
+    // The exe job needs verify, so its check only appears once verify is done; and it is
+    // skipped when the label was added after the run (CLAUDE.md, build-exe).
+    if (pr.labels.some((l) => l.name === 'build-exe')) {
+      const exe = rollup.find((c) => c.name === EXE_CHECK);
+      if (!exe) blockers.push(`Label build-exe but no ${EXE_CHECK} check on head ${head} yet.`);
+      else if (exe.conclusion === 'SKIPPED')
+        blockers.push(
+          `${EXE_CHECK} was skipped: push again, or gh pr close + gh pr reopen, so CI builds it.`,
+        );
+    }
   }
 
   const risk = riskLevel(pr.labels, review);

@@ -61,12 +61,18 @@ export function fitOutput(header, body, limit = HOOK_LIMIT) {
   return `${header}${body.slice(0, room - 120)}\n\n[cut here: run node tools/handoff.mjs read for the rest]\n`;
 }
 
+// Only people with write access may post the REVIEW that gates a merge: the repo is
+// public, so anyone else can comment "REVIEW: PASS" (gh's authorAssociation).
+const REVIEWERS = new Set(['OWNER', 'MEMBER', 'COLLABORATOR']);
+
 /**
- * The last "REVIEW: …" comment of a PR: verdict line, the head SHA it names and the
- * review level ("mức `risk:med`", skill review-pr §4), null when not written.
+ * The last "REVIEW: …" comment of a PR written by a REVIEWER: verdict line, the head SHA
+ * it names and the review level ("mức `risk:med`", skill review-pr §4), null when not written.
  */
 export function latestReview(comments) {
-  const reviews = comments.filter((c) => c.body.startsWith('REVIEW:'));
+  const reviews = comments.filter(
+    (c) => c.body.startsWith('REVIEW:') && REVIEWERS.has(c.authorAssociation),
+  );
   if (reviews.length === 0) return null;
   const body = reviews[reviews.length - 1].body;
   const verdict = body.split('\n')[0].slice('REVIEW:'.length).trim();
@@ -75,7 +81,10 @@ export function latestReview(comments) {
   return { verdict, sha, level };
 }
 
-/** Pass / fail / pending counts of gh's statusCheckRollup; skipped and neutral checks count as none. */
+/**
+ * Pass / fail / pending counts of gh's statusCheckRollup. Skipped and neutral checks count
+ * as none; any other finished result (FAILURE, STARTUP_FAILURE, STALE…) is a failure.
+ */
 export function checkCounts(rollup) {
   let pass = 0;
   let fail = 0;
@@ -84,9 +93,8 @@ export function checkCounts(rollup) {
     const result = check.conclusion || check.state || '';
     if (check.status && check.status !== 'COMPLETED') pending++;
     else if (result === 'SUCCESS') pass++;
-    else if (['FAILURE', 'ERROR', 'CANCELLED', 'TIMED_OUT', 'ACTION_REQUIRED'].includes(result))
-      fail++;
     else if (result === 'PENDING' || result === 'EXPECTED') pending++;
+    else if (result !== 'SKIPPED' && result !== 'NEUTRAL') fail++;
   }
   return { pass, fail, pending };
 }

@@ -10,9 +10,16 @@ import {
 
 const HEAD = 'abc1234def5678abc1234def5678abc1234def56';
 const review = (verdict, sha = HEAD.slice(0, 7), level = 'risk:low') => ({
+  authorAssociation: 'OWNER',
   body: `REVIEW: ${verdict}\n\nPR #9, head \`${sha}\`, mức \`${level}\`. Đầu vào: …`,
 });
-const green = [{ status: 'COMPLETED', conclusion: 'SUCCESS' }];
+const green = [{ name: 'Verify', status: 'COMPLETED', conclusion: 'SUCCESS' }];
+const exe = (over = {}) => ({
+  name: 'Build portable exe',
+  status: 'COMPLETED',
+  conclusion: 'SUCCESS',
+  ...over,
+});
 
 const pr = (over = {}) => ({
   number: 9,
@@ -106,8 +113,16 @@ describe('mergeBlockers', () => {
     ]);
   });
 
+  it('ignores a REVIEW: PASS written by someone without write access', () => {
+    const outsider = { ...review('PASS'), authorAssociation: 'NONE' };
+    const comments = [review('CHANGES', '1111111'), outsider];
+    expect(mergeBlockers(pr({ comments }), ctx())).toEqual([
+      expect.stringMatching(/Latest REVIEW is CHANGES/),
+    ]);
+  });
+
   it('stops when the PASS names no SHA', () => {
-    const comments = [{ body: 'REVIEW: PASS\n\nno sha here' }];
+    const comments = [{ authorAssociation: 'OWNER', body: 'REVIEW: PASS\n\nno sha here' }];
     expect(mergeBlockers(pr({ comments }), ctx())).toEqual([
       expect.stringMatching(/names no head SHA/),
     ]);
@@ -132,6 +147,26 @@ describe('mergeBlockers', () => {
     expect(mergeBlockers(pr({ statusCheckRollup: rollup }), ctx())).toEqual([]);
   });
 
+  it('stops a code PR whose check ended in an unlisted failure', () => {
+    const rollup = [...green, exe({ conclusion: 'STARTUP_FAILURE' })];
+    expect(mergeBlockers(pr({ statusCheckRollup: rollup }), ctx())).toEqual([
+      expect.stringMatching(/1 failed/),
+    ]);
+  });
+
+  it('with build-exe, waits for the exe check and refuses it skipped', () => {
+    const labels = [{ name: 'risk:low' }, { name: 'build-exe' }];
+    expect(mergeBlockers(pr({ labels }), ctx())).toEqual([
+      expect.stringMatching(/build-exe.*no Build portable exe check/),
+    ]);
+    const skipped = [...green, exe({ conclusion: 'SKIPPED' })];
+    expect(mergeBlockers(pr({ labels, statusCheckRollup: skipped }), ctx())).toEqual([
+      expect.stringMatching(/Build portable exe was skipped.*close.*reopen/),
+    ]);
+    const built = [...green, exe()];
+    expect(mergeBlockers(pr({ labels, statusCheckRollup: built }), ctx())).toEqual([]);
+  });
+
   it('lets a docs-only PR through without CI', () => {
     const files = [{ path: 'docs/x.md' }, { path: 'CLAUDE.md' }];
     expect(mergeBlockers(pr({ files, statusCheckRollup: [] }), ctx())).toEqual([]);
@@ -152,7 +187,9 @@ describe('mergeBlockers', () => {
   });
 
   it('stops when no risk level is known', () => {
-    const comments = [{ body: `REVIEW: PASS\n\nhead \`${HEAD.slice(0, 7)}\`` }];
+    const comments = [
+      { authorAssociation: 'OWNER', body: `REVIEW: PASS\n\nhead \`${HEAD.slice(0, 7)}\`` },
+    ];
     expect(mergeBlockers(pr({ labels: [], comments }), ctx())).toEqual([
       expect.stringMatching(/Risk is unknown/),
     ]);
