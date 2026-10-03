@@ -38,3 +38,4 @@ Quy tắc làm việc nằm ở `CLAUDE.md` (gốc repo) và `.claude/rules/` (n
 | `reviews/<ngày>-*.md` | Tổng hợp review đóng phase, phản hồi Owner sau kiểm exe | Task sửa phát hiện review / phản hồi Owner |
 | `reviews/raw/<ngày>/` | Báo cáo gốc nguyên văn (Claude + Codex) | Chỉ khi cần đối chiếu bản tổng hợp |
 | `metrics/phase-<N>.md` | Chỉ số cuối mỗi phase | Đóng phase (lấy mẫu từ phase trước) |
+| `metrics/README.md` | Chỉ số điều hướng riêng của 2C (dò trước lần sửa đầu, HANDOFF) + lệnh đo `tools/retro.mjs` | Đóng phase |
