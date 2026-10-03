@@ -1,6 +1,7 @@
 import { useId, useState, type KeyboardEvent } from 'react';
 import {
   PERIOD_KINDS,
+  canShift,
   customPeriod,
   formatDate,
   parseDate,
@@ -50,10 +51,11 @@ function tryCustomPeriod(start: string, end: string): Period | null {
 }
 
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-accent';
-const stepClass = `cursor-pointer rounded-sm px-1.5 py-0.5 text-lg leading-none text-fg-3 hover:text-fg ${focusRing}`;
+const stepClass = `cursor-pointer rounded-sm px-1.5 py-0.5 text-lg leading-none text-fg-3 hover:text-fg disabled:cursor-default disabled:opacity-50 disabled:hover:text-fg-3 ${focusRing}`;
 
 /**
- * Shared period selector (ADR-0013): Ngày · Tuần · Tháng · Năm · Tùy chọn, with ‹ › stepping.
+ * Shared period selector (ADR-0013): Ngày · Tuần · Tháng · Năm · Tùy chọn, with ‹ › stepping;
+ * a step that would leave 1900–2100 is disabled.
  * Custom dates are typed as dd/mm/yyyy (not `<input type="date">`, whose format follows the OS
  * locale) and applied on Enter or leaving the field.
  */
@@ -110,6 +112,7 @@ export function PeriodPicker({ value, onChange, today, labels }: PeriodPickerPro
       <button
         type="button"
         aria-label={labels.previous}
+        disabled={!canShift(value, -1)}
         onClick={() => change(shift(value, -1))}
         className={stepClass}
       >
@@ -124,6 +127,7 @@ export function PeriodPicker({ value, onChange, today, labels }: PeriodPickerPro
       <button
         type="button"
         aria-label={labels.next}
+        disabled={!canShift(value, 1)}
         onClick={() => change(shift(value, 1))}
         className={stepClass}
       >

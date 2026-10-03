@@ -37,11 +37,18 @@ function lastDayOfMonth(year: number, month: number): number {
 /** `Date.UTC` reads years 0–99 as 19xx, so earlier years are refused rather than misread. */
 export const MIN_YEAR = 1900;
 
-/** Throws a RangeError for a date that does not exist (31/04, 29/02/2026…) or is before 1900. */
+/** Last year of the app's dates (spec Phase 4 §3): every date lies in 01/01/1900 – 31/12/2100. */
+export const MAX_YEAR = 2100;
+
+const FIRST_DAY = Date.UTC(MIN_YEAR, 0, 1) / MS_PER_DAY;
+const LAST_DAY = Date.UTC(MAX_YEAR, 11, 31) / MS_PER_DAY;
+
+/** Throws a RangeError for a date that does not exist (31/04, 29/02/2026…) or is not in 1900–2100. */
 export function calendarDate(year: number, month: number, day: number): CalendarDate {
   const valid =
     [year, month, day].every(Number.isInteger) &&
     year >= MIN_YEAR &&
+    year <= MAX_YEAR &&
     month >= 1 &&
     month <= 12 &&
     day >= 1 &&
@@ -52,15 +59,15 @@ export function calendarDate(year: number, month: number, day: number): Calendar
 
 /**
  * `date` moved by `days` calendar days (negative = earlier); rolls over months and years.
- * Throws a RangeError when `days` is not a whole number or the result is before 1900.
+ * Throws a RangeError when `days` is not a whole number or the result is not in 1900–2100.
  */
 export function addDays(date: CalendarDate, days: number): CalendarDate {
   if (!Number.isInteger(days)) throw new RangeError(`Not a whole number of days: ${days}`);
-  const result = fromDayNumber(toDayNumber(date) + days);
-  if (result.year < MIN_YEAR) {
-    throw new RangeError(`${formatDate(date)} moved by ${days} days is before ${MIN_YEAR}`);
+  const result = toDayNumber(date) + days;
+  if (result < FIRST_DAY || result > LAST_DAY) {
+    throw new RangeError(`${formatDate(date)} moved by ${days} days is outside 1900–2100`);
   }
-  return result;
+  return fromDayNumber(result);
 }
 
 /** The calendar day a JS Date falls on in the local time zone (e.g. "today"). */
@@ -163,7 +170,7 @@ export function parseQuickDate(text: string, today: CalendarDate): QuickDateResu
   const month = Number(match[2]);
   const yearInferred = match[3] === undefined;
   const year = yearInferred ? today.year : Number(match[3]);
-  if (year < MIN_YEAR) return { ok: false, error: 'year-out-of-range' };
+  if (year < MIN_YEAR || year > MAX_YEAR) return { ok: false, error: 'year-out-of-range' };
 
   const date = tryCalendarDate(year, month, day);
   if (!date) return { ok: false, error: 'invalid-date' };
@@ -187,9 +194,13 @@ export function periodOf(kind: Exclude<PeriodKind, 'custom'>, date: CalendarDate
     case 'day':
       return { kind, start: date, end: date };
     case 'week': {
-      const mondayOffset = (new Date(toDayNumber(date) * MS_PER_DAY).getUTCDay() + 6) % 7;
-      const start = addDays(date, -mondayOffset);
-      return { kind, start, end: addDays(start, 6) };
+      // Cut to the app's dates: the last week is 27/12 – 31/12/2100 (01/01/1900 is a Monday).
+      const monday = toDayNumber(date) - (weekdayOf(date) - 1);
+      return {
+        kind,
+        start: fromDayNumber(Math.max(monday, FIRST_DAY)),
+        end: fromDayNumber(Math.min(monday + 6, LAST_DAY)),
+      };
     }
     case 'month':
       return {
@@ -221,7 +232,10 @@ export function monthToDate(date: CalendarDate): Period {
   return customPeriod({ year: date.year, month: date.month, day: 1 }, date);
 }
 
-/** The next (+1) or previous (−1) period of the same kind; a custom range moves by its length. */
+/**
+ * The next (+1) or previous (−1) period of the same kind; a custom range moves by its length.
+ * Throws a RangeError when that period is not in 1900–2100 (a custom range: not wholly in it).
+ */
 export function shift(period: Period, step: 1 | -1): Period {
   const { kind, start, end } = period;
   switch (kind) {
@@ -230,14 +244,24 @@ export function shift(period: Period, step: 1 | -1): Period {
       return periodOf(kind, addDays(start, step * (kind === 'day' ? 1 : 7)));
     case 'month': {
       const index = start.year * 12 + (start.month - 1) + step;
-      return periodOf(kind, { year: Math.floor(index / 12), month: (index % 12) + 1, day: 1 });
+      return periodOf(kind, calendarDate(Math.floor(index / 12), (index % 12) + 1, 1));
     }
     case 'year':
-      return periodOf(kind, { year: start.year + step, month: 1, day: 1 });
+      return periodOf(kind, calendarDate(start.year + step, 1, 1));
     case 'custom': {
       const length = toDayNumber(end) - toDayNumber(start) + 1;
       return customPeriod(addDays(start, step * length), addDays(end, step * length));
     }
+  }
+}
+
+/** Whether `shift(period, step)` has a period to move to, so the picker can disable ‹ or ›. */
+export function canShift(period: Period, step: 1 | -1): boolean {
+  try {
+    shift(period, step);
+    return true;
+  } catch {
+    return false;
   }
 }
 

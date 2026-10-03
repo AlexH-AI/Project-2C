@@ -72,6 +72,12 @@ describe('customers', () => {
     expect(
       codeOf(() => createCustomer(db, { ...base, date: { year: 2027, month: 13, day: 1 } })),
     ).toBe('INVALID_DATE');
+    expect(codeOf(() => createCustomer(db, { ...base, birthDate: { year: 2101 } }))).toBe(
+      'INVALID_DATE',
+    );
+    expect(
+      codeOf(() => createCustomer(db, { ...base, date: { year: 2101, month: 1, day: 1 } })),
+    ).toBe('INVALID_DATE');
     expect(listCustomers(db)).toEqual([]);
   });
 

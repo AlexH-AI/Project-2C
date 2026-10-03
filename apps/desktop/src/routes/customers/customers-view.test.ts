@@ -148,6 +148,7 @@ describe('parseBirthDate', () => {
     expect(parseBirthDate('12/3/84', today)).toEqual({ ok: false, error: 'format' });
     expect(parseBirthDate('12/3', today)).toEqual({ ok: false, error: 'format' });
     expect(parseBirthDate('1899', today)).toEqual({ ok: false, error: 'year-out-of-range' });
+    expect(parseBirthDate('2101', today)).toEqual({ ok: false, error: 'year-out-of-range' });
     expect(parseBirthDate('2027', today)).toEqual({ ok: false, error: 'future' });
     expect(parseBirthDate('27/09/2026', today)).toEqual({ ok: false, error: 'future' });
   });
