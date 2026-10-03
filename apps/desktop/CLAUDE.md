@@ -46,7 +46,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/data/app-data.ts` — type StoragePort, type DataFolder, type LastSave, type RecordCounts, type ExportedBackup, type BackupPreview, type AppData, type OpenAppDataOptions, isUnsavedChangesError, openAppData, countRecords
 - `src/data/persist-queue.ts` — type PersistQueue, createPersistQueue
 - `src/data/tauri-storage.ts` — tauriStorage
-- `src/i18n/index.ts` — type MessageParams, t, errorMessage, type MessageKey
+- `src/i18n/index.ts` — type MessageParams, COUNT_SLOTS, PLAIN_SLOTS, fillSlots, t, joinParts, errorMessage, type MessageKey
 - `src/i18n/vi.ts` — vi, type MessageKey
 - `src/main.tsx` — (no exports)
 - `src/routes/Overview.tsx` — Overview
@@ -65,7 +65,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/routes/appointments/RescheduleFields.tsx` — whenText, useRescheduleForm, type RescheduleForm, RescheduleFields
 - `src/routes/appointments/YearGrid.tsx` — YearGrid
 - `src/routes/appointments/appointment-form.ts` — MAX_HISTORY, type ScheduleMode, type ScheduleDate, readScheduleDate, dayText, withTime, parseTime, isPastOrToday, type PriorMeetings, priorMeetings, searchCustomers
-- `src/routes/appointments/appointments-view.ts` — type AppointmentData, type CoordinatorFilter, type Outcome, STATUS_TONE, FOCUS, LOCKED, LINK, outcomeText, type DateTone, DATE_TONE_CELL, dateTone, personLabel, type AppointmentRow, type DayCell, type MonthCell, type DayGroup, outcomeResolver, appointmentRows, appointmentsByRe, revealCreated, rescheduleLinks, monthGrid, yearGrid, pickDay, dayBoard
+- `src/routes/appointments/appointments-view.ts` — type AppointmentData, type CoordinatorFilter, type Outcome, STATUS_TONE, FOCUS, CARD, LOCKED, LINK, outcomeText, type DateTone, DATE_TONE_CELL, dateTone, personLabel, type AppointmentRow, type DayCell, type MonthCell, type DayGroup, outcomeResolver, appointmentRows, appointmentsByRe, revealCreated, rescheduleLinks, monthGrid, yearGrid, pickDay, dayBoard
 - `src/routes/appointments/outcome-form.ts` — OUTCOME_CHOICES, type OutcomeChoice, outcomeChoices, outcomeLock, stageAfterChoices, type OutcomeDraft, type OutcomeError, type OutcomeRead, readOutcome
 - `src/routes/customers/CustomerAppointments.tsx` — NextButton, CustomerAppointments
 - `src/routes/customers/CustomerDialogs.tsx` — ALERT, Actions, dayRead, useDateField, InvalidAlert, CustomerFormDialog, ChangeStageDialog

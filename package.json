@@ -11,7 +11,7 @@
     "dev:web": "pnpm --filter @p2c/desktop dev:web",
     "build:web": "pnpm --filter @p2c/desktop build:web",
     "build:exe": "pnpm --filter @p2c/desktop build:exe",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "lint:deps": "depcruise apps packages",
     "lint:tokens": "node packages/ui/scripts/check-tokens.ts apps/desktop/src packages/ui/src/components",
     "codemap": "node tools/codemap.mjs",

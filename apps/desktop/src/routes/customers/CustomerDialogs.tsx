@@ -377,7 +377,7 @@ export function ChangeStageDialog({
       </p>
       {to && (
         <p className="m-0 flex items-center gap-1.5">
-          {t('stageForm.after')} {badge(customer.stage)} → {badge(to)}
+          {t('stageForm.after')} {badge(customer.stage)} {t('sep.arrow')} {badge(to)}
         </p>
       )}
     </Dialog>

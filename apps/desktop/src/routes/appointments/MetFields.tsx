@@ -151,10 +151,9 @@ function StageRead({
   const rf = isRfTransition(from, to);
   return (
     <p className="m-0 flex flex-wrap items-center gap-1.5 text-sm tabular-nums">
-      {badge(from)} {t('timeline.arrow')} {badge(to)}{' '}
-      {t('outcome.moveOn', { date: formatDate(date) })}{' '}
+      {badge(from)} {t('sep.arrow')} {badge(to)} {t('outcome.moveOn', { date: formatDate(date) })}{' '}
       <span className={rf ? 'text-accent' : 'text-fg-3'}>
-        · {t(rf ? 'outcome.rf' : 'outcome.noRf')}
+        {t('sep.dot')} {t(rf ? 'outcome.rf' : 'outcome.noRf')}
       </span>
     </p>
   );

@@ -53,6 +53,8 @@ export const STATUS_TONE = {
 } as const satisfies Record<AppointmentStatus, string>;
 
 export const FOCUS = 'focus-visible:outline-2 focus-visible:outline-accent';
+/** A card of the Appointments screen: the calendar, the year, the day, the list, a detail. */
+export const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 /** A field shown but locked (mockup 6f `.input.locked`). */
 export const LOCKED =
   'm-0 flex items-center gap-1.5 rounded-md border border-border bg-surface-2 px-2.5 py-1.5 text-fg-2 tabular-nums';

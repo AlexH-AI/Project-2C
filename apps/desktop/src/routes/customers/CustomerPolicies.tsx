@@ -8,7 +8,7 @@ import {
   type Vnd,
 } from '@p2c/domain';
 import { Button, PolicyBadge } from '@p2c/ui';
-import { t } from '../../i18n';
+import { joinParts, t } from '../../i18n';
 import { dayText } from '../appointments/appointment-form';
 import { LINK } from '../appointments/appointments-view';
 
@@ -50,7 +50,7 @@ export function CustomerPolicies({
         <h2 id="customer-policies" className="m-0 shrink-0 text-sm font-medium text-heading">
           {t('policies.title')}
         </h2>
-        <span className="text-xs text-fg-3 tabular-nums">{meta.join(' · ')}</span>
+        <span className="text-xs text-fg-3 tabular-nums">{joinParts(meta)}</span>
         <div className="flex-1" />
         {policies.length > 0 && <Button onClick={onNew}>{t('policies.new')}</Button>}
       </div>

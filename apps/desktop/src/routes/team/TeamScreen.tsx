@@ -302,20 +302,20 @@ function Members({
     >
       <div className="mb-2 flex items-center gap-2">
         <h2 className={CARD_TITLE}>{t('team.heading', { name: entry.team.name })}</h2>
-        <span className="text-fg-3">·</span>
+        <span className="text-fg-3">{t('sep.dot')}</span>
         {entry.lead ? (
           <>
             <span className="text-sm text-fg-2">
               <span className={`${ROLE} mr-1.5`}>{t('team.leadOf')}</span>
               {entry.lead.name}
             </span>
-            <span className="text-fg-3">·</span>
+            <span className="text-fg-3">{t('sep.dot')}</span>
             <EditLink person={entry.lead} onEdit={onEditLead} />
           </>
         ) : (
           <>
             <span className="text-sm text-fg-3">{t('team.noLead')}</span>
-            <span className="text-fg-3">·</span>
+            <span className="text-fg-3">{t('sep.dot')}</span>
             <button type="button" onClick={onAddLead} className={LINK}>
               {t('team.addLead')}
             </button>

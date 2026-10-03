@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findTokenViolations } from './token-guard';
+import { findHardcodedSeparators, findTokenViolations } from './token-guard';
 
 describe('findTokenViolations', () => {
   it('accepts token-backed utilities', () => {
@@ -60,5 +60,34 @@ describe('findTokenViolations', () => {
 
   it('does not treat JSX fragments or i18n keys as violations', () => {
     expect(findTokenViolations(`<>{t('app.title')}</>`)).toEqual([]);
+  });
+});
+
+describe('findHardcodedSeparators', () => {
+  it('flags a dot or arrow written into the markup or a string', () => {
+    const source = [
+      '<b>{re.name}</b> · {summary}',
+      "parts.join(' · ')",
+      '{from} → {to}',
+      "{t('sep.dot')}",
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 1, match: '·', rule: 'hardcoded-separator' },
+      { line: 2, match: '·', rule: 'hardcoded-separator' },
+      { line: 3, match: '→', rule: 'hardcoded-separator' },
+    ]);
+  });
+
+  it('lets comments use them', () => {
+    const source = [
+      '/** Kanban N4 → N1 · closed beside. */',
+      '/**',
+      ' * Mockup 6c → 7a',
+      ' */',
+      '// Settings → Data',
+      'const a = 1; // N2 → N1',
+      '{/* 5a · 5b */}',
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([]);
   });
 });
