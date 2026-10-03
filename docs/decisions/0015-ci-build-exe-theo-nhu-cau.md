@@ -62,3 +62,11 @@ Hệ quả:
 - ≈ 23 phút tính phí mỗi task thay vì ≈ 48 (Windows tính gấp đôi); commit docs lên `main`: 0.
 - Nếu PR merge khi `main` đã đi tiếp, tổ hợp sau merge không được Verify lại trên CI; lỗi lộ ra ở PR kế tiếp hoặc khi chạy `pnpm verify` local. Rủi ro thấp vì mỗi task một nhánh mới từ `main`.
 - Lỗi build exe ở PR không gắn nhãn chỉ lộ ra ở build trên `main` → sửa bằng PR tiếp theo.
+
+## Phụ lục: Ghim SHA Actions, coverage theo vùng (04/10/2026, T-101, #257)
+
+Repo public (từ 28/09) → tag của Action (`@v7`) có thể bị chủ repo Action dời sang commit khác. Báo cáo T-g (F-08, F-09, `docs/reviews/2026-09-30-phase-1-3-tong-hop.md`):
+
+- **Mỗi `uses:` ghim SHA 40 ký tự** + comment bản phát hành đang trỏ tới (`# v7.0.1`). Lần ghim đầu lấy đúng commit tag lớn đang trỏ lúc đó, nên hành vi CI không đổi (tag `v6` của `pnpm/action-setup` vẫn ở 6.0.10, chưa lên 6.1.0).
+- **Cập nhật mỗi phase** (khi đóng phase, cùng việc ghi `docs/metrics/phase-<N>.md`): với từng Action, `gh api repos/<owner>/<repo>/commits/<tag lớn> --jq .sha` → thay SHA + comment, qua PR có nhãn `build-exe` để chạy đủ các job. Lên tag lớn mới (`v8`) là đổi công cụ → xem changelog trước. Dependabot là công cụ mới → G4, chưa dùng.
+- **Coverage** (`vitest.config.ts`): bỏ ngưỡng gộp 95, mỗi vùng một ngưỡng riêng (`coverage.thresholds` theo glob) để tụt ở một gói không bị gói khác che: `packages/domain/src/**` 100; `packages/db/src/**`, `apps/desktop/src/data/**`, `apps/desktop/src/shell/*.ts` lấy phần nguyên của số đo lúc đặt. Lớp app (`data/`, `shell/*.ts`) nay có trong báo cáo. Chỉ nâng ngưỡng, không hạ; task làm tụt dưới ngưỡng thì thêm test.

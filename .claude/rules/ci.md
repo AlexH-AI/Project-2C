@@ -12,4 +12,4 @@ paths:
 - Chạy tay (`workflow_dispatch`): Verify + build exe.
 - Push mới lên cùng nhánh hủy run cũ đang chạy (`concurrency`).
 - Đổi base PR xếp chồng không chạy lại CI (workflow nghe `opened/synchronize/reopened`).
-- Sửa workflow: giữ tiết kiệm phút (không thêm job chạy mọi PR khi không cần). Ghim SHA Actions đang chờ ở #257 T-101.
+- Sửa workflow: giữ tiết kiệm phút (không thêm job chạy mọi PR khi không cần). Mỗi `uses:` ghim SHA 40 ký tự + comment bản (`# v7.0.1`); cập nhật mỗi phase (ADR-0015, phụ lục T-101).
