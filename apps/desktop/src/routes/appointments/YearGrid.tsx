@@ -6,7 +6,8 @@ const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 
 const GROUPS = [
   { key: 'met', label: 'appointments.legendMet', fill: 'bg-ok' },
-  { key: 'missed', label: 'appointments.legendMissed', fill: 'bg-warn' },
+  { key: 'missed', label: 'appointments.legendMissed', fill: 'bg-appt-missed' },
+  { key: 'unrecorded', label: 'appointments.legendUnrecorded', fill: 'bg-appt-unrecorded' },
   { key: 'planned', label: 'appointments.legendPlanned', fill: 'bg-info' },
 ] as const;
 
@@ -22,7 +23,7 @@ const NAME = {
   future: 'font-medium text-fg-3',
 } as const satisfies Record<MonthCell['state'], string>;
 
-const total = (cell: MonthCell) => cell.met + cell.missed + cell.planned;
+const total = (cell: MonthCell) => cell.met + cell.missed + cell.unrecorded + cell.planned;
 
 /** The year period of Appointments (mockup phase-3-feedback B6): four quarters of three months. */
 export function YearGrid({

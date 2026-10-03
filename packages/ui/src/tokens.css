@@ -49,6 +49,10 @@
   --danger: #f07e7e;
   --info: #6fa8ff;
 
+  /* Appointment groups (spec Phase 4 §1, Owner G3 03/10): no outcome recorded yet = to do; rescheduled / cancelled / no show = did not happen */
+  --appt-unrecorded: var(--warn);
+  --appt-missed: var(--text-3);
+
   /* Type & shape */
   --font: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
   --fs-xs: 11px;

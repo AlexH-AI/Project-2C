@@ -19,6 +19,8 @@ import {
   pickDay,
   rescheduleLinks,
   revealCreated,
+  statusLabel,
+  summaryText,
   yearGrid,
   type AppointmentData,
 } from './appointments-view';
@@ -28,6 +30,9 @@ const day = (month: number, dayOfMonth: number): CalendarDate => ({
   month,
   day: dayOfMonth,
 });
+
+/** Today in these tests; a scheduled appointment before it has no outcome recorded yet. */
+const TODAY = day(9, 15);
 
 const teams: Team[] = [
   { id: 't1', name: 'Sao Mai' },
@@ -190,7 +195,7 @@ describe('monthGrid', () => {
       { kind: 'all' },
       'any',
     );
-    const weeks = monthGrid(day(9, 15), rows, periodOf('month', day(9, 15)));
+    const weeks = monthGrid(day(9, 15), rows, periodOf('month', day(9, 15)), TODAY);
     // September 2026 starts on a Tuesday and ends on a Wednesday.
     expect(weeks).toHaveLength(5);
     expect(weeks[0]?.[0]).toMatchObject({
@@ -218,15 +223,31 @@ describe('monthGrid', () => {
       { kind: 'all' },
       'any',
     );
-    const cell = monthGrid(day(9, 16), rows, periodOf('month', day(9, 16)))
+    const cell = monthGrid(day(9, 16), rows, periodOf('month', day(9, 16)), TODAY)
       .flat()
       .find((c) => c?.date.day === 16 && c?.inMonth);
-    expect(cell).toMatchObject({ met: 0, planned: 0, missed: 3 });
+    expect(cell).toMatchObject({ met: 0, planned: 0, missed: 3, unrecorded: 0 });
+  });
+
+  it('counts a scheduled appointment before today as unrecorded, one today as planned', () => {
+    const rows = appointmentRows(
+      data([
+        appointment('a', 're1', day(9, 14)),
+        appointment('b', 're1', day(9, 15)),
+        appointment('c', 're1', day(9, 14), { status: 'MET' }),
+      ]),
+      { kind: 'all' },
+      'any',
+    );
+    const cells = monthGrid(TODAY, rows, periodOf('month', TODAY), TODAY).flat();
+    const on = (d: number) => cells.find((c) => c?.inMonth && c.date.day === d);
+    expect(on(14)).toMatchObject({ met: 1, missed: 0, unrecorded: 1, planned: 0 });
+    expect(on(15)).toMatchObject({ met: 0, missed: 0, unrecorded: 0, planned: 1 });
   });
 
   it('starts on the first when the month starts on a Monday', () => {
     // June 2026 starts on a Monday and ends on a Tuesday.
-    const weeks = monthGrid(day(6, 10), [], periodOf('month', day(6, 10)));
+    const weeks = monthGrid(day(6, 10), [], periodOf('month', day(6, 10)), TODAY);
     expect(weeks).toHaveLength(5);
     expect(weeks[0]?.[0]).toMatchObject({ date: day(6, 1), inMonth: true });
     expect(weeks[4]?.[6]).toMatchObject({ date: day(7, 5), inMonth: false });
@@ -234,7 +255,7 @@ describe('monthGrid', () => {
 
   it('spans six weeks when the month needs them', () => {
     // August 2026 starts on a Saturday and ends on a Monday.
-    const weeks = monthGrid(day(8, 1), [], periodOf('month', day(8, 1)));
+    const weeks = monthGrid(day(8, 1), [], periodOf('month', day(8, 1)), TODAY);
     expect(weeks).toHaveLength(6);
     expect(weeks[0]?.[0]).toMatchObject({ date: day(7, 27), inMonth: false });
     expect(weeks[5]?.[0]).toMatchObject({ date: day(8, 31), inMonth: true });
@@ -243,30 +264,30 @@ describe('monthGrid', () => {
 
   it('leaves the days after 31/12/2100 blank and starts on 01/01/1900, a Monday', () => {
     const lastDay = { year: 2100, month: 12, day: 31 };
-    const december = monthGrid(lastDay, [], periodOf('month', lastDay));
+    const december = monthGrid(lastDay, [], periodOf('month', lastDay), TODAY);
     expect(december).toHaveLength(5);
     // 31/12/2100 is a Friday: the last week ends with two blank cells.
     expect(december[4]?.[4]).toMatchObject({ date: lastDay, inMonth: true });
     expect(december[4]?.slice(5)).toEqual([null, null]);
 
     const firstDay = { year: 1900, month: 1, day: 1 };
-    const january = monthGrid(firstDay, [], periodOf('month', firstDay));
+    const january = monthGrid(firstDay, [], periodOf('month', firstDay), TODAY);
     expect(january[0]?.[0]).toMatchObject({ date: firstDay, inMonth: true });
   });
 
   it('crosses the new year on both sides', () => {
     const jan2 = { year: 2027, month: 1, day: 2 };
     const rows = appointmentRows(data([appointment('a', 're1', jan2)]), { kind: 'all' }, 'any');
-    const december = monthGrid(day(12, 31), rows, periodOf('month', day(12, 31)));
+    const december = monthGrid(day(12, 31), rows, periodOf('month', day(12, 31)), TODAY);
     expect(december.at(-1)?.[5]).toMatchObject({ date: jan2, inMonth: false, planned: 1 });
 
-    const january = monthGrid(jan2, rows, periodOf('month', jan2));
+    const january = monthGrid(jan2, rows, periodOf('month', jan2), TODAY);
     expect(january[0]?.[0]).toMatchObject({ date: day(12, 28), inMonth: false });
     expect(january[0]?.[5]).toMatchObject({ date: jan2, inMonth: true, planned: 1 });
   });
   it('marks the days of a week period, in the month shown or not', () => {
     const week = periodOf('week', day(10, 1));
-    const cells = monthGrid(day(10, 1), [], week).flat();
+    const cells = monthGrid(day(10, 1), [], week, TODAY).flat();
     const inPeriod = cells.filter((c) => c?.inPeriod).map((c) => [c?.date.month, c?.date.day]);
     expect(inPeriod).toEqual([
       [9, 28],
@@ -281,7 +302,7 @@ describe('monthGrid', () => {
   });
 
   it('marks the days of a custom range only', () => {
-    const cells = monthGrid(day(10, 6), [], customPeriod(day(9, 24), day(10, 7))).flat();
+    const cells = monthGrid(day(10, 6), [], customPeriod(day(9, 24), day(10, 7)), TODAY).flat();
     expect(cells.find((c) => c?.date.day === 7 && c?.inMonth)?.inPeriod).toBe(true);
     expect(cells.find((c) => c?.date.day === 8 && c?.inMonth)?.inPeriod).toBe(false);
   });
@@ -289,7 +310,7 @@ describe('monthGrid', () => {
   it('marks no band for a month or a day period', () => {
     for (const period of [periodOf('month', day(10, 1)), periodOf('day', day(10, 1))]) {
       expect(
-        monthGrid(day(10, 1), [], period)
+        monthGrid(day(10, 1), [], period, TODAY)
           .flat()
           .some((c) => c?.inPeriod),
       ).toBe(false);
@@ -317,7 +338,7 @@ describe('yearGrid', () => {
   it("counts each month's appointments of the year by calendar group", () => {
     const cells = yearGrid(2026, rows, day(9, 15));
     expect(cells.map((cell) => cell.month)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
-    expect(cells[0]).toMatchObject({ met: 2, missed: 0, planned: 0 });
+    expect(cells[0]).toMatchObject({ met: 2, missed: 0, unrecorded: 0, planned: 0 });
     expect(cells[1]).toMatchObject({ met: 0, missed: 0, planned: 0 });
     expect(cells[2]).toMatchObject({ met: 0, missed: 3, planned: 0 });
     expect(cells[9]).toMatchObject({ met: 0, missed: 0, planned: 1 });
@@ -336,6 +357,21 @@ describe('yearGrid', () => {
     expect(states(2025)).toEqual(Array<'past'>(12).fill('past'));
     expect(states(2027)).toEqual(Array<'future'>(12).fill('future'));
     expect(yearGrid(2027, rows, day(9, 15))[0]).toMatchObject({ planned: 1 });
+  });
+
+  it('counts a scheduled appointment before today as unrecorded, one today as planned', () => {
+    const september = appointmentRows(
+      data([
+        appointment('a', 're1', day(9, 14)),
+        appointment('b', 're1', day(9, 15)),
+        appointment('c', 're1', day(8, 31)),
+      ]),
+      { kind: 'all' },
+      'any',
+    );
+    const cells = yearGrid(2026, september, TODAY);
+    expect(cells[7]).toMatchObject({ unrecorded: 1, planned: 0 });
+    expect(cells[8]).toMatchObject({ met: 0, missed: 0, unrecorded: 1, planned: 1 });
   });
 });
 
@@ -462,5 +498,34 @@ describe('dateTone', () => {
   it('compares across months and years', () => {
     expect(dateTone({ year: 2025, month: 12, day: 31 }, today)).toBe('past');
     expect(dateTone(day(10, 1), today)).toBe('future');
+  });
+});
+
+describe('statusLabel', () => {
+  it('says a scheduled appointment before today has no outcome recorded yet', () => {
+    expect(statusLabel(appointment('a', 're1', day(9, 14)), TODAY)).toEqual({
+      text: 'Chưa ghi kết quả',
+      tone: expect.stringContaining('text-appt-unrecorded') as string,
+    });
+  });
+
+  it('keeps the status of one today or after, or already recorded', () => {
+    expect(statusLabel(appointment('a', 're1', day(9, 15)), TODAY)).toEqual({
+      text: 'Dự kiến',
+      tone: '',
+    });
+    expect(statusLabel(appointment('b', 're1', day(9, 1), { status: 'MET' }), TODAY)).toEqual({
+      text: 'Đã gặp',
+      tone: '',
+    });
+  });
+});
+
+describe('summaryText', () => {
+  it('adds the unrecorded count only when there are some', () => {
+    expect(summaryText({ total: 172, met: 64, unrecorded: 5 })).toBe(
+      '172 lịch · 64 đã gặp · 5 chưa ghi kết quả',
+    );
+    expect(summaryText({ total: 12, met: 3, unrecorded: 0 })).toBe('12 lịch · 3 đã gặp');
   });
 });

@@ -1,6 +1,7 @@
 import type { AppointmentRecord, CustomerRecord } from '@p2c/db';
 import {
   addDays,
+  appointmentGroup,
   compareDates,
   daysBetween,
   formatDayMonth,
@@ -9,6 +10,7 @@ import {
   isRfTransition,
   periodOf,
   shift,
+  type AppointmentGroup,
   type AppointmentStatus,
   type CalendarDate,
   type CustomerStage,
@@ -85,6 +87,34 @@ export const DATE_TONE_CELL = {
   future: 'bg-date-future-bg',
 } as const satisfies Record<DateTone, string>;
 
+/** The "Chưa ghi kết quả" badge (mockup overview.html part 2 `.badge.plain.unrec`). */
+const UNRECORDED_BADGE =
+  'rounded-full border border-current px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-appt-unrecorded';
+
+/**
+ * The "Trạng thái" column: a scheduled appointment before today says no outcome is recorded yet,
+ * so the list matches the counts (display only, the status stays).
+ */
+export function statusLabel(
+  a: AppointmentRecord,
+  today: CalendarDate,
+): { readonly text: string; readonly tone: string } {
+  return appointmentGroup(a, today) === 'unrecorded'
+    ? { text: t('appointments.statusUnrecorded'), tone: UNRECORDED_BADGE }
+    : { text: t(`appointmentStatus.${a.status}`), tone: '' };
+}
+
+/** The count line of a period or a month: "172 lịch · 64 đã gặp", then "· 5 chưa ghi kết quả" if any. */
+export function summaryText(counts: {
+  readonly total: number;
+  readonly met: number;
+  readonly unrecorded: number;
+}): string {
+  return t(counts.unrecorded > 0 ? 'appointments.summaryUnrecorded' : 'appointments.summary', {
+    ...counts,
+  });
+}
+
 export function dateTone(date: CalendarDate, today: CalendarDate): DateTone {
   const order = compareDates(date, today);
   return order < 0 ? 'past' : order === 0 ? 'today' : 'future';
@@ -111,6 +141,8 @@ export interface DayCell {
   readonly planned: number;
   /** Rescheduled, cancelled or no show. */
   readonly missed: number;
+  /** Scheduled before today: no outcome recorded yet. */
+  readonly unrecorded: number;
 }
 
 /** A month of the year grid (mockup B6): its appointments by calendar group, where it stands. */
@@ -119,6 +151,8 @@ export interface MonthCell {
   readonly met: number;
   /** Rescheduled, cancelled or no show. */
   readonly missed: number;
+  /** Scheduled before today: no outcome recorded yet. */
+  readonly unrecorded: number;
   readonly planned: number;
   readonly state: 'past' | 'current' | 'future';
 }
@@ -227,24 +261,23 @@ export function rescheduleLinks(
   };
 }
 
-/** The calendar dot of each status; a new status must pick one. */
-const CALENDAR_GROUP: Record<AppointmentStatus, 'met' | 'planned' | 'missed'> = {
-  MET: 'met',
-  SCHEDULED: 'planned',
-  RESCHEDULED: 'missed',
-  CANCELLED: 'missed',
-  NO_SHOW: 'missed',
-};
+const noAppointments = (): Record<AppointmentGroup, number> => ({
+  met: 0,
+  missed: 0,
+  unrecorded: 0,
+  planned: 0,
+});
 
 /**
- * The weeks, Monday to Sunday, covering the month of `date`, with each day's appointments and
- * whether it is in the banded `period`. A day after 31/12/2100 is null: a blank cell (spec Phase 4
+ * The weeks, Monday to Sunday, covering the month of `date`, with each day's appointments by group
+ * (spec Phase 4 §1, against `today`) and whether it is in the banded `period`. A day after 31/12/2100 is null: a blank cell (spec Phase 4
  * §3.4); 01/01/1900 is a Monday, so the first week is whole.
  */
 export function monthGrid(
   date: CalendarDate,
   rows: readonly AppointmentRow[],
   period: Period,
+  today: CalendarDate,
 ): (DayCell | null)[][] {
   const banded = period.kind === 'week' || period.kind === 'custom';
   const month = periodOf('month', date);
@@ -262,13 +295,11 @@ export function monthGrid(
         date: day,
         inMonth: day.month === date.month,
         inPeriod: banded && isInPeriod(day, period),
-        met: 0,
-        planned: 0,
-        missed: 0,
+        ...noAppointments(),
       };
       for (const row of rows) {
         if (compareDates(row.appointment.date, day) === 0) {
-          cell[CALENDAR_GROUP[row.appointment.status]] += 1;
+          cell[appointmentGroup(row.appointment, today)] += 1;
         }
       }
       week.push(cell);
@@ -278,16 +309,16 @@ export function monthGrid(
   }
 }
 
-/** The twelve months of `year`, each with its appointments by calendar group and against today. */
+/** The twelve months of `year`, each with its appointments by group (§1) and against today. */
 export function yearGrid(
   year: number,
   rows: readonly AppointmentRow[],
   today: CalendarDate,
 ): MonthCell[] {
-  const counts = Array.from({ length: 12 }, () => ({ met: 0, planned: 0, missed: 0 }));
+  const counts = Array.from({ length: 12 }, noAppointments);
   for (const { appointment: a } of rows) {
     const cell = a.date.year === year ? counts[a.date.month - 1] : undefined;
-    if (cell) cell[CALENDAR_GROUP[a.status]] += 1;
+    if (cell) cell[appointmentGroup(a, today)] += 1;
   }
   return counts.map((count, i) => {
     const order = year === today.year ? i + 1 - today.month : year - today.year;
