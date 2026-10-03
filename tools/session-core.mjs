@@ -61,18 +61,22 @@ export function fitOutput(header, body, limit = HOOK_LIMIT) {
   return `${header}${body.slice(0, room - 120)}\n\n[cut here: run node tools/handoff.mjs read for the rest]\n`;
 }
 
-/** The last "REVIEW: …" comment of a PR: verdict line and the head SHA it names. */
+/**
+ * The last "REVIEW: …" comment of a PR: verdict line, the head SHA it names and the
+ * review level ("mức `risk:med`", skill review-pr §4), null when not written.
+ */
 export function latestReview(comments) {
   const reviews = comments.filter((c) => c.body.startsWith('REVIEW:'));
   if (reviews.length === 0) return null;
   const body = reviews[reviews.length - 1].body;
   const verdict = body.split('\n')[0].slice('REVIEW:'.length).trim();
   const sha = body.match(/head `([0-9a-f]{7,40})`/)?.[1] ?? null;
-  return { verdict, sha };
+  const level = body.match(/mức `(?:risk:)?(low|med|high)`/)?.[1] ?? null;
+  return { verdict, sha, level };
 }
 
-/** One-line CI state from gh's statusCheckRollup (check runs and commit statuses). */
-export function checksSummary(rollup) {
+/** Pass / fail / pending counts of gh's statusCheckRollup; skipped and neutral checks count as none. */
+export function checkCounts(rollup) {
   let pass = 0;
   let fail = 0;
   let pending = 0;
@@ -84,6 +88,12 @@ export function checksSummary(rollup) {
       fail++;
     else if (result === 'PENDING' || result === 'EXPECTED') pending++;
   }
+  return { pass, fail, pending };
+}
+
+/** One-line CI state from gh's statusCheckRollup (check runs and commit statuses). */
+export function checksSummary(rollup) {
+  const { pass, fail, pending } = checkCounts(rollup);
   if (pass + fail + pending === 0) return 'CI none';
   return `CI ${pass} pass, ${fail} fail, ${pending} pending`;
 }

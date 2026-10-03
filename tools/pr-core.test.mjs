@@ -1,0 +1,319 @@
+import { describe, expect, it } from 'vitest';
+import {
+  cleanupPlan,
+  isDocsOnly,
+  isReviewWorktree,
+  mergeBlockers,
+  parseWorktrees,
+  riskLevel,
+} from './pr-core.mjs';
+
+const HEAD = 'abc1234def5678abc1234def5678abc1234def56';
+const review = (verdict, sha = HEAD.slice(0, 7), level = 'risk:low') => ({
+  body: `REVIEW: ${verdict}\n\nPR #9, head \`${sha}\`, mức \`${level}\`. Đầu vào: …`,
+});
+const green = [{ status: 'COMPLETED', conclusion: 'SUCCESS' }];
+
+const pr = (over = {}) => ({
+  number: 9,
+  state: 'OPEN',
+  isDraft: false,
+  baseRefName: 'main',
+  headRefName: 'task/T-1-x',
+  headRefOid: HEAD,
+  labels: [{ name: 'type:task' }, { name: 'risk:low' }],
+  comments: [review('PASS')],
+  statusCheckRollup: green,
+  files: [{ path: 'tools/a.mjs' }],
+  ...over,
+});
+const ctx = (over = {}) => ({
+  owner: false,
+  mode: 'squash',
+  stacked: [],
+  baseMerged: null,
+  ...over,
+});
+
+describe('isDocsOnly', () => {
+  it('is true when every file is under docs/ or a Markdown file', () => {
+    expect(isDocsOnly(['docs/a/b.png', 'CLAUDE.md', 'packages/db/CLAUDE.md'])).toBe(true);
+  });
+
+  it('is false as soon as one file is code', () => {
+    expect(isDocsOnly(['docs/a.md', 'tools/a.mjs'])).toBe(false);
+  });
+
+  it('is false for an empty file list', () => {
+    expect(isDocsOnly([])).toBe(false);
+  });
+
+  it('does not treat a docs-like name outside docs/ as docs', () => {
+    expect(isDocsOnly(['apps/docs/x.ts', 'README.mdx'])).toBe(false);
+  });
+});
+
+describe('riskLevel', () => {
+  it('takes the PR label when the review keeps it', () => {
+    expect(riskLevel([{ name: 'risk:low' }], { level: 'low' })).toBe('low');
+  });
+
+  it('takes the higher level when the review raised it', () => {
+    expect(riskLevel([{ name: 'risk:low' }], { level: 'med' })).toBe('med');
+  });
+
+  it('never lowers the PR label', () => {
+    expect(riskLevel([{ name: 'risk:high' }], { level: 'low' })).toBe('high');
+  });
+
+  it('is null when neither names a level', () => {
+    expect(riskLevel([{ name: 'type:task' }], null)).toBeNull();
+  });
+});
+
+describe('mergeBlockers', () => {
+  it('passes a reviewed, green, low-risk PR', () => {
+    expect(mergeBlockers(pr(), ctx())).toEqual([]);
+  });
+
+  it('stops when the PR is not open', () => {
+    expect(mergeBlockers(pr({ state: 'MERGED' }), ctx())).toEqual([
+      expect.stringMatching(/MERGED, not open/),
+    ]);
+  });
+
+  it('stops on a draft', () => {
+    expect(mergeBlockers(pr({ isDraft: true }), ctx())).toEqual([expect.stringMatching(/draft/)]);
+  });
+
+  it('stops without a REVIEW comment', () => {
+    expect(mergeBlockers(pr({ comments: [{ body: 'LGTM' }] }), ctx())).toEqual([
+      expect.stringMatching(/No REVIEW comment/),
+    ]);
+  });
+
+  it('stops when the latest REVIEW is CHANGES, even after an older PASS', () => {
+    const comments = [review('PASS'), review('CHANGES')];
+    expect(mergeBlockers(pr({ comments }), ctx())).toEqual([
+      expect.stringMatching(/Latest REVIEW is CHANGES/),
+    ]);
+  });
+
+  it('stops when the PASS names another SHA than the head (P-1)', () => {
+    const comments = [review('PASS', '1111111')];
+    expect(mergeBlockers(pr({ comments }), ctx())).toEqual([
+      expect.stringMatching(/PASS is for 1111111 but head is abc1234/),
+    ]);
+  });
+
+  it('stops when the PASS names no SHA', () => {
+    const comments = [{ body: 'REVIEW: PASS\n\nno sha here' }];
+    expect(mergeBlockers(pr({ comments }), ctx())).toEqual([
+      expect.stringMatching(/names no head SHA/),
+    ]);
+  });
+
+  it('stops a code PR with a failing, pending or missing check', () => {
+    const failed = [...green, { status: 'COMPLETED', conclusion: 'FAILURE' }];
+    const pending = [...green, { status: 'IN_PROGRESS', conclusion: '' }];
+    expect(mergeBlockers(pr({ statusCheckRollup: failed }), ctx())).toEqual([
+      expect.stringMatching(/1 failed/),
+    ]);
+    expect(mergeBlockers(pr({ statusCheckRollup: pending }), ctx())).toEqual([
+      expect.stringMatching(/1 pending/),
+    ]);
+    expect(mergeBlockers(pr({ statusCheckRollup: [] }), ctx())).toEqual([
+      expect.stringMatching(/no CI check/),
+    ]);
+  });
+
+  it('ignores skipped checks on a green code PR', () => {
+    const rollup = [...green, { status: 'COMPLETED', conclusion: 'SKIPPED' }];
+    expect(mergeBlockers(pr({ statusCheckRollup: rollup }), ctx())).toEqual([]);
+  });
+
+  it('lets a docs-only PR through without CI', () => {
+    const files = [{ path: 'docs/x.md' }, { path: 'CLAUDE.md' }];
+    expect(mergeBlockers(pr({ files, statusCheckRollup: [] }), ctx())).toEqual([]);
+  });
+
+  it('stops a med PR unless the Owner said to merge', () => {
+    const labels = [{ name: 'risk:med' }];
+    const comments = [review('PASS', HEAD.slice(0, 7), 'med')];
+    expect(mergeBlockers(pr({ labels, comments }), ctx())).toEqual([
+      expect.stringMatching(/Risk is med.*--owner/),
+    ]);
+    expect(mergeBlockers(pr({ labels, comments }), ctx({ owner: true }))).toEqual([]);
+  });
+
+  it('stops a low PR that the review raised to med', () => {
+    const comments = [review('PASS', HEAD.slice(0, 7), 'med')];
+    expect(mergeBlockers(pr({ comments }), ctx())).toEqual([expect.stringMatching(/Risk is med/)]);
+  });
+
+  it('stops when no risk level is known', () => {
+    const comments = [{ body: `REVIEW: PASS\n\nhead \`${HEAD.slice(0, 7)}\`` }];
+    expect(mergeBlockers(pr({ labels: [], comments }), ctx())).toEqual([
+      expect.stringMatching(/Risk is unknown/),
+    ]);
+  });
+
+  it('stops when the base is another branch that is not merged yet', () => {
+    const blockers = mergeBlockers(pr({ baseRefName: 'task/T-0-a' }), ctx({ baseMerged: false }));
+    expect(blockers).toEqual([expect.stringMatching(/Base task\/T-0-a is not merged yet/)]);
+  });
+
+  it('stops when the base branch is merged but the PR still targets it', () => {
+    const blockers = mergeBlockers(pr({ baseRefName: 'task/T-0-a' }), ctx({ baseMerged: true }));
+    expect(blockers).toEqual([expect.stringMatching(/--base main.*close.*reopen/)]);
+  });
+
+  it('asks for --merge when another PR is stacked on this branch', () => {
+    expect(mergeBlockers(pr(), ctx({ stacked: [12] }))).toEqual([
+      expect.stringMatching(/#12 is stacked.*--merge/),
+    ]);
+    expect(mergeBlockers(pr(), ctx({ stacked: [12], mode: 'merge' }))).toEqual([]);
+  });
+
+  it('lists every reason at once', () => {
+    const blockers = mergeBlockers(pr({ isDraft: true, statusCheckRollup: [] }), ctx());
+    expect(blockers).toHaveLength(2);
+  });
+});
+
+const PORCELAIN = [
+  'worktree C:/workspace/Project-2C',
+  'HEAD 1111111111111111111111111111111111111111',
+  'branch refs/heads/task/T-1-x',
+  '',
+  'worktree C:/workspace/Project-2C-review',
+  'HEAD 2222222222222222222222222222222222222222',
+  'detached',
+  '',
+  'worktree C:/workspace/Project-2C-review-2',
+  'HEAD 3333333333333333333333333333333333333333',
+  'branch refs/heads/main',
+  '',
+  'worktree C:/workspace/2C-T-1',
+  'HEAD 4444444444444444444444444444444444444444',
+  'branch refs/heads/task/T-2-y',
+  '',
+].join('\n');
+
+describe('parseWorktrees', () => {
+  it('reads path, head and branch (null when detached), main checkout first', () => {
+    expect(parseWorktrees(PORCELAIN)).toEqual([
+      { path: 'C:/workspace/Project-2C', head: '1'.repeat(40), branch: 'task/T-1-x' },
+      { path: 'C:/workspace/Project-2C-review', head: '2'.repeat(40), branch: null },
+      { path: 'C:/workspace/Project-2C-review-2', head: '3'.repeat(40), branch: 'main' },
+      { path: 'C:/workspace/2C-T-1', head: '4'.repeat(40), branch: 'task/T-2-y' },
+    ]);
+  });
+
+  it('accepts CRLF output', () => {
+    expect(parseWorktrees(PORCELAIN.replace(/\n/g, '\r\n'))).toHaveLength(4);
+  });
+});
+
+describe('isReviewWorktree', () => {
+  it('matches Project-2C-review and Project-2C-review-N only', () => {
+    expect(isReviewWorktree('C:/workspace/Project-2C-review')).toBe(true);
+    expect(isReviewWorktree('C:\\workspace\\Project-2C-review-2')).toBe(true);
+    expect(isReviewWorktree('C:/workspace/Project-2C')).toBe(false);
+    expect(isReviewWorktree('C:/workspace/review-notes')).toBe(false);
+  });
+});
+
+const describeSteps = (plan) => plan.steps.map((s) => `${s.cwd}: ${s.cmd} ${s.args.join(' ')}`);
+const MAIN = 'C:/workspace/Project-2C';
+const REVIEW2 = 'C:/workspace/Project-2C-review-2';
+const wt = (path, branch) => ({ path, head: HEAD, branch });
+
+const state = (over = {}) => ({
+  branch: 'task/T-1-x',
+  worktrees: [wt(MAIN, 'task/T-1-x'), wt('C:/workspace/Project-2C-review', null)],
+  dirty: new Set(),
+  stacked: [],
+  remoteExists: true,
+  localExists: true,
+  ...over,
+});
+
+describe('cleanupPlan', () => {
+  it('deletes the remote branch, moves the main checkout to main, deletes the local branch', () => {
+    const plan = cleanupPlan(state());
+    expect(describeSteps(plan)).toEqual([
+      `${MAIN}: git push origin --delete task/T-1-x`,
+      `${MAIN}: git switch main`,
+      `${MAIN}: git merge --ff-only origin/main`,
+      `${MAIN}: git branch -D task/T-1-x`,
+    ]);
+    expect(plan.problems).toEqual([]);
+  });
+
+  it('skips what is already gone', () => {
+    const plan = cleanupPlan(
+      state({ worktrees: [wt(MAIN, 'main')], remoteExists: false, localExists: false }),
+    );
+    expect(describeSteps(plan)).toEqual([`${MAIN}: git merge --ff-only origin/main`]);
+  });
+
+  it('leaves a main checkout on another branch alone', () => {
+    const plan = cleanupPlan(state({ worktrees: [wt(MAIN, 'task/T-9-z')], remoteExists: false }));
+    expect(describeSteps(plan)).toEqual([`${MAIN}: git branch -D task/T-1-x`]);
+  });
+
+  it('stops at a dirty main checkout and keeps the local branch', () => {
+    const plan = cleanupPlan(state({ dirty: new Set([MAIN]), remoteExists: false }));
+    expect(plan.steps).toEqual([]);
+    expect(plan.problems).toEqual([expect.stringMatching(/Project-2C has uncommitted changes/)]);
+  });
+
+  it('detaches a clean review worktree holding main before switching the main checkout', () => {
+    const worktrees = [wt(MAIN, 'task/T-1-x'), wt(REVIEW2, 'main')];
+    expect(describeSteps(cleanupPlan(state({ worktrees, remoteExists: false })))).toEqual([
+      `${REVIEW2}: git checkout --detach origin/main`,
+      `${MAIN}: git switch main`,
+      `${MAIN}: git merge --ff-only origin/main`,
+      `${MAIN}: git branch -D task/T-1-x`,
+    ]);
+  });
+
+  it('does not switch when another worktree that cannot be moved holds main', () => {
+    const worktrees = [wt(MAIN, 'task/T-1-x'), wt('C:/workspace/other', 'main')];
+    const plan = cleanupPlan(state({ worktrees, remoteExists: false }));
+    expect(plan.steps).toEqual([]);
+    expect(plan.problems).toEqual([expect.stringMatching(/other has main checked out/)]);
+  });
+
+  it('detaches a review worktree left on the merged branch', () => {
+    const worktrees = [wt(MAIN, 'main'), wt(REVIEW2, 'task/T-1-x')];
+    expect(describeSteps(cleanupPlan(state({ worktrees, remoteExists: false })))).toEqual([
+      `${MAIN}: git merge --ff-only origin/main`,
+      `${REVIEW2}: git checkout --detach origin/main`,
+      `${MAIN}: git branch -D task/T-1-x`,
+    ]);
+  });
+
+  it('removes a clean task worktree of the branch, reports a dirty one', () => {
+    const task = 'C:/workspace/2C-T-1';
+    const worktrees = [wt(MAIN, 'main'), wt(task, 'task/T-1-x')];
+    expect(describeSteps(cleanupPlan(state({ worktrees, remoteExists: false })))).toEqual([
+      `${MAIN}: git merge --ff-only origin/main`,
+      `${MAIN}: git worktree remove ${task}`,
+      `${MAIN}: git branch -D task/T-1-x`,
+    ]);
+    const dirty = cleanupPlan(state({ worktrees, remoteExists: false, dirty: new Set([task]) }));
+    expect(describeSteps(dirty)).toEqual([`${MAIN}: git merge --ff-only origin/main`]);
+    expect(dirty.problems).toEqual([expect.stringMatching(/2C-T-1 has uncommitted changes/)]);
+  });
+
+  it('keeps the branch, local and remote, while another PR is stacked on it', () => {
+    const plan = cleanupPlan(state({ stacked: [12] }));
+    expect(describeSteps(plan)).toEqual([
+      `${MAIN}: git switch main`,
+      `${MAIN}: git merge --ff-only origin/main`,
+    ]);
+    expect(plan.problems).toEqual([expect.stringMatching(/#12 .*task\/T-1-x kept/)]);
+  });
+});

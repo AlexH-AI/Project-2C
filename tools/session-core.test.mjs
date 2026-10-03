@@ -87,13 +87,13 @@ describe('fitOutput', () => {
 describe('latestReview', () => {
   const comment = (body) => ({ body });
 
-  it('returns the last REVIEW comment with its verdict and head SHA', () => {
+  it('returns the last REVIEW comment with its verdict, head SHA and level', () => {
     const review = latestReview([
       comment('REVIEW: CHANGES\nPR #5, head `aaaaaaa`, mức `low`.'),
       comment('looks fine'),
       comment('REVIEW: PASS (kèm ghi chú)\nPR #5, head `b37132d`, mức `low`.'),
     ]);
-    expect(review).toEqual({ verdict: 'PASS (kèm ghi chú)', sha: 'b37132d' });
+    expect(review).toEqual({ verdict: 'PASS (kèm ghi chú)', sha: 'b37132d', level: 'low' });
   });
 
   it('returns null when nobody reviewed yet', () => {
@@ -101,7 +101,18 @@ describe('latestReview', () => {
   });
 
   it('keeps a review without a SHA', () => {
-    expect(latestReview([comment('REVIEW: PASS')])).toEqual({ verdict: 'PASS', sha: null });
+    expect(latestReview([comment('REVIEW: PASS')])).toEqual({
+      verdict: 'PASS',
+      sha: null,
+      level: null,
+    });
+  });
+
+  it('reads a level written as risk:<level>', () => {
+    const review = latestReview([
+      comment('REVIEW: PASS\nPR #5, head `b37132d`, mức `risk:med` (nâng từ low).'),
+    ]);
+    expect(review.level).toBe('med');
   });
 });
 
