@@ -45,6 +45,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - Cài đặt (#96, #87): sau một lần lưu lỗi, "Nạp lại" bị từ chối mà không có cách thử lưu lại; hộp 10c thiếu số lượng dữ liệu sắp thay; `backups\` không đọc được thì app coi như lần đầu. NIT (#87): file `.tmp` sót trong `backups\`/`exports\`, listener ném lỗi, dọn thư mục tạm của test Rust.
 - `Overview.tsx:9` (R4): lấy "hôm nay" từ đồng hồ máy thay vì `useAppData().today()`. Ô ngày tùy chọn báo đỏ sớm khi Tab.
 - Tooling (R4): `session-end.ps1:39` `git add -A` gom file phiên khác; hook `review-pr-hint.mjs` nhận "issue #N" gần chữ "review" thành PR.
+- `.claude/skills/README.md` bảng "Sửa cục bộ" (#297): dòng T-116 ("Thêm mục 'Tài liệu cần đọc' vào issue template") đã bị dòng T-122 thay thế (template giờ chỉ trỏ sang `task.yml`). Áp lại tuần tự vẫn ra đúng kết quả nhưng đọc dễ nhầm → ghi "(thay bởi dòng T-122)" ở dòng T-116 hoặc gộp hai dòng.
 - `app-icon.svg`, `public/favicon.svg` (#128): thiếu dòng trống cuối file; `favicon.svg` là bản sao `app-icon.svg` → đổi icon phải sửa cả hai.
 - `DataTable` (Phase 1): chưa có test `sortable: false` và bảng rỗng; kiểm lại cột Giờ có `tabular-nums` (cột không phải `text` đã có). `cellClass` (#240) chỉ có e2e phủ — repo chưa có công cụ test component (thêm là G4).
 - Lưới năm (#247, không chặn):
