@@ -1,6 +1,6 @@
 # Project-2C — quy tắc cho Claude Code
 
-Đây là nguồn quy tắc duy nhất của repo. Kế hoạch: `docs/PROJECT-PLAN.md`. Quyết định: `docs/decisions/` (ADR). Trạng thái phiên: `docs/state/HANDOFF.md` (hook nạp sẵn). Quyết định Owner theo ngày: `docs/PROJECT-STATE.md`. Ghi chú review không chặn: `docs/state/review-notes.md`.
+Đây là nguồn quy tắc duy nhất của repo. Kế hoạch: `docs/PROJECT-PLAN.md`. Quyết định: `docs/decisions/` (ADR). Trạng thái phiên: HANDOFF ở Issue ghim nhãn `handoff` (hook nạp sẵn; `node tools/handoff.mjs read`). Quyết định Owner theo ngày: `docs/PROJECT-STATE.md`. Ghi chú review không chặn: `docs/state/review-notes.md`.
 
 Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh"**.
 
@@ -25,10 +25,11 @@ Memory của Claude chỉ nằm trên từng máy, nên quy tắc dùng chung ch
 
 ## Nghi thức phiên (ADR-0003)
 
-- **Mở phiên:** hook `SessionStart` (`.claude/hooks/handoff-context.mjs`) fetch rồi nạp `HANDOFF.md` của `origin/main` — máy vừa đổi sang cũng thấy bản mới nhất trước khi pull. Không đọc lại file khi hook đã nạp (trừ khi hook báo lệch / cắt).
-- **Bắt đầu phiên:** `/session-start` — pull, xem PR mở + Issue mở của milestone, kiểm toolchain. (Không đặt tên `/resume` vì trùng lệnh có sẵn của Claude Code.)
-- **Kết thúc phiên / trước khi rời máy:** `/handoff` — commit WIP, push, cập nhật `HANDOFF.md` (đang làm gì, bước kế tiếp chính xác, việc chờ Owner). **HANDOFF dưới 8.000 ký tự** (hook giới hạn 10.000; quá thì chỉ 2.000 ký tự đầu vào context).
-- **Giữa các task trên cùng máy:** không cần `/handoff` — PR đã merge / Issue đã đóng trên GitHub là trạng thái thật. Cập nhật `HANDOFF.md` khi rời máy / hết ngày, hoặc khi có điều GitHub chưa ghi mà phiên sau phải biết (quyết định Owner, việc chờ Owner, đổi thứ tự làm). Ghi chú review không chặn ghi vào `docs/state/review-notes.md`, không vào HANDOFF. Có thể sửa `HANDOFF.md` ngay trong PR của task khi không có phiên song song. Handoff chỉ có tác dụng khi đã vào `main`.
+- **HANDOFF** (ADR-0003 phụ lục, #283) là **Issue ghim nhãn `handoff`** trên GitHub, không phải file trong git. Ghi xong là máy kia thấy ngay, không cần PR / review. Chỉ đọc / ghi qua `tools/handoff.mjs`: lệnh ghi từ chối khi Issue đã đổi kể từ lần đọc gần nhất trên máy này (không đè bản của máy kia). Mỗi lần đọc lưu bản tạm trong thư mục git chung, dùng khi mất mạng. **Dưới 8.000 ký tự** (hook giới hạn 10.000; lệnh ghi chặn ở 9.000).
+- **Mở phiên:** hook `SessionStart` (`.claude/hooks/handoff-context.mjs`) nạp HANDOFF từ Issue. Không đọc lại khi hook đã nạp (trừ khi hook báo lỗi / cắt / dùng bản tạm).
+- **Bắt đầu phiên:** `/session-start` — pull, rồi `tools/status.mjs` tự in PR mở (head, `REVIEW` mới nhất + SHA, CI), Issue mở của milestone, worktree; kiểm toolchain. (Không đặt tên `/resume` vì trùng lệnh có sẵn của Claude Code.)
+- **Kết thúc phiên / trước khi rời máy:** `/handoff` — cập nhật HANDOFF (đang làm gì, bước kế tiếp chính xác, việc chờ Owner), commit WIP + push nhánh code còn dở.
+- **Giữa các task trên cùng máy:** không cần `/handoff` — PR đã merge / Issue đã đóng trên GitHub là trạng thái thật. Cập nhật HANDOFF khi rời máy / hết ngày, hoặc khi có điều GitHub chưa ghi mà phiên sau phải biết (quyết định Owner, việc chờ Owner, đổi thứ tự làm). Ghi chú review không chặn ghi vào `docs/state/review-notes.md` (qua PR), không vào HANDOFF.
 - GitHub là nguồn sự thật. Không để gì quan trọng chỉ nằm trên một máy. DB dev sinh lại bằng seed; API key nhập riêng từng máy.
 
 ## Quy trình một task (ADR-0001)
@@ -83,7 +84,7 @@ packages/domain/   TS thuần — không import package nào khác
 packages/db/       Drizzle schema, migrations, repositories; adapter Tauri SQLite + sql.js; seed
 packages/ui/       design tokens + components
 packages/ai/       (chưa tạo — Phase 5) provider adapters, prompts có version, zod schema, validators
-tools/             bootstrap, session scripts
+tools/             bootstrap, session-start/end, status.mjs, handoff.mjs (+ unit test)
 e2e/               Playwright (chạy trên bản build web)
 ```
 
@@ -126,4 +127,4 @@ Owner làm ở Home PC (`DESKTOP-KDURKJP`) và Office Laptop (`D13_THINKPAD`). D
 - **Sửa file:** dùng công cụ Edit/Write. Chuỗi có `\` (đường dẫn Windows, regex) đi qua heredoc Bash dễ bị hỏng; heredoc dài dễ lỗi `unexpected EOF`.
 - **gh:** `gh pr view <n> --comments` và `--json` không dùng chung được → `gh pr view <n> --json comments --jq …`. Nội dung dài (body PR / Issue / comment) ghi ra file rồi `--body-file`.
 - **PR xếp chồng:** đổi base (`gh pr edit --base main`) **không** tự chạy lại CI (workflow nghe `opened/synchronize/reopened`) → `gh pr close <n>` + `gh pr reopen <n>` rồi mới merge.
-- **Không đồng bộ giữa 2 máy:** memory của Claude, lịch sử hội thoại, DB dev (sinh lại bằng seed), API key. Điều gì phiên ở máy kia phải biết → ghi vào repo (`CLAUDE.md`, HANDOFF, ADR, `docs/`) rồi push.
+- **Không đồng bộ giữa 2 máy:** memory của Claude, lịch sử hội thoại, DB dev (sinh lại bằng seed), API key. Điều gì phiên ở máy kia phải biết → ghi vào repo (`CLAUDE.md`, ADR, `docs/`) rồi push, hoặc vào HANDOFF (Issue ghim). Cả hai máy cần `gh` đã `gh auth login` (bootstrap kiểm).

@@ -1,6 +1,6 @@
 # Dựng môi trường trên Office Laptop (hoặc máy mới)
 
-> Tách khỏi `docs/state/HANDOFF.md` ngày 03/10/2026 (#280). Kiểm toolchain: `tools/bootstrap.ps1 -CheckOnly`.
+> Tách khỏi `docs/state/HANDOFF.md` ngày 03/10/2026 (#280). Kiểm toolchain: `tools/bootstrap.ps1 -CheckOnly`. Mọi phương án đều cần `gh` đã `gh auth login`: HANDOFF nằm ở Issue ghim trên GitHub (#283).
 
 ## Phương án A — đầy đủ (build được exe ở local)
 

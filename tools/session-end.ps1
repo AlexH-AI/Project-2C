@@ -4,7 +4,7 @@
     End a work session: commit everything as WIP (never on main) and push.
 
 .DESCRIPTION
-    Update docs/state/HANDOFF.md before running this (the /handoff command does it).
+    Update HANDOFF (pinned issue, node tools/handoff.mjs) before running this (the /handoff command does it).
     On main, a wip/<machine>-<timestamp> branch is created first.
 
 .PARAMETER Message

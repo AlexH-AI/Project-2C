@@ -4,11 +4,13 @@
     Start a work session: sync with GitHub, show open work, check the toolchain.
 
 .DESCRIPTION
-    HANDOFF.md reaches Claude through the SessionStart hook (.claude/hooks/handoff-context.mjs,
-    origin/main copy), so it is not printed here unless -ShowHandoff is given.
+    Open PRs (head, latest REVIEW and its SHA, CI), open issues of the open milestone and
+    worktrees come from tools/status.mjs. HANDOFF lives in the pinned issue labelled
+    "handoff" and reaches Claude through the SessionStart hook, so it is not printed here
+    unless -ShowHandoff is given (ADR-0003 appendix).
 
 .PARAMETER ShowHandoff
-    Also print docs/state/HANDOFF.md (for a human at the terminal, or when the hook did not run).
+    Also print HANDOFF (for a human at the terminal, or when the hook did not run).
 #>
 [CmdletBinding()]
 param(
@@ -19,10 +21,10 @@ $ErrorActionPreference = 'Continue'
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $RepoRoot
 
-# Any sync problem is repeated right above HANDOFF so it cannot scroll out of sight.
+# Any sync problem is repeated at the end so it cannot scroll out of sight.
 $script:SyncWarnings = @()
 function Write-SyncWarning([string]$Message) {
-    Write-Host "WARNING: $Message - HANDOFF may be stale" -ForegroundColor Red
+    Write-Host "WARNING: $Message" -ForegroundColor Red
     $script:SyncWarnings += $Message
 }
 
@@ -50,33 +52,21 @@ if (-not $branch) {
 }
 
 if (Get-Command gh -ErrorAction SilentlyContinue) {
-    Write-Host "`n== open pull requests"
-    gh pr list --state open
-    # Open issues of the open milestone (lowest number = current phase).
-    $milestone = gh api 'repos/{owner}/{repo}/milestones?state=open' --jq 'sort_by(.number) | .[0].title // empty'
-    if ($LASTEXITCODE -eq 0 -and $milestone) {
-        Write-Host "`n== open issues: $milestone"
-        gh issue list --milestone $milestone --state open --limit 50
-    } else {
-        Write-Host "`n(no open milestone)"
-    }
+    node (Join-Path $PSScriptRoot 'status.mjs')
+    if ($LASTEXITCODE -ne 0) { Write-SyncWarning "tools/status.mjs failed (exit $LASTEXITCODE)" }
 } else {
-    Write-Host "`n(gh not installed - skipping PR/issue listing)"
+    Write-SyncWarning 'gh not installed - no PR/issue status and no HANDOFF (run tools/bootstrap.ps1)'
 }
 
 Write-Host "`n== toolchain"
 & (Join-Path $PSScriptRoot 'bootstrap.ps1') -CheckOnly | Out-Host
 
-Write-Host "`n== docs/state/HANDOFF.md"
-foreach ($warning in $script:SyncWarnings) {
-    Write-Host "WARNING: $warning - HANDOFF may be stale" -ForegroundColor Red
-}
-git diff --quiet origin/main -- docs/state/HANDOFF.md
-if ($LASTEXITCODE -ne 0) {
-    Write-Host 'Local HANDOFF.md differs from origin/main (the hook showed the origin/main copy): read the local file if this branch edits it.' -ForegroundColor Yellow
-}
+Write-Host "`n== HANDOFF"
 if ($ShowHandoff) {
-    Get-Content (Join-Path $RepoRoot 'docs\state\HANDOFF.md') -Encoding UTF8
+    node (Join-Path $PSScriptRoot 'handoff.mjs') read
 } else {
-    Write-Host 'Loaded by the SessionStart hook (origin/main copy). Print it here with -ShowHandoff.'
+    Write-Host 'Pinned issue labelled "handoff", loaded by the SessionStart hook. Print it here with -ShowHandoff.'
+}
+foreach ($warning in $script:SyncWarnings) {
+    Write-Host "WARNING: $warning" -ForegroundColor Red
 }

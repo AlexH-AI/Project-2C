@@ -1,18 +1,19 @@
 ---
-description: Kết thúc phiên — cập nhật HANDOFF, commit WIP, push
+description: Kết thúc phiên — cập nhật HANDOFF (Issue ghim), commit WIP, push
 argument-hint: "[mô tả ngắn việc đang làm]"
 ---
 
-1. Cập nhật `docs/state/HANDOFF.md` theo đúng khung đang có. **Giữ dưới 8.000 ký tự**: hook `SessionStart` chỉ đưa được 10.000 ký tự vào context, phần thừa sẽ bị cắt.
-   - **Cập nhật:** ngày hôm nay; **Máy:** `$env:COMPUTERNAME`; **Nhánh:** nhánh hiện tại; **Phase**.
-   - **Trạng thái:** task/Issue đang làm (xong gì, dở gì) và việc merge trong phiên này. Việc đã đóng trên GitHub thì xóa (GitHub là nguồn sự thật). Không chép lại danh sách PR/Issue mở: `session-start.ps1` đã in.
+1. Lấy bản HANDOFF mới nhất ra file tạm trong scratchpad: `node tools/handoff.mjs read --out <scratchpad>/handoff.md`. Luôn đọc lại ngay trước khi sửa, kể cả khi hook đã nạp ở đầu phiên, vì máy kia có thể vừa ghi.
+2. Sửa file đó bằng Edit theo đúng khung đang có. **Giữ dưới 8.000 ký tự** (hook chỉ đưa được 10.000 ký tự vào context; lệnh ghi từ chối khi quá 9.000).
+   - **Cập nhật:** ngày hôm nay · máy `$env:COMPUTERNAME`; **Phase**.
+   - **Đang làm:** task/Issue (xong gì, dở gì), nhánh / worktree nếu còn việc dở. Việc đã đóng trên GitHub thì xóa. Không chép PR / REVIEW / CI / Issue mở / worktree: `tools/status.mjs` tự in.
    - **Bước kế tiếp chính xác:** đủ cụ thể để một phiên mới trên máy khác làm tiếp mà không cần hỏi (file, hàm, test đang đỏ, lệnh).
    - **Chờ Owner:** cổng G1–G8 hoặc quyết định đang chờ.
-2. Không để vào HANDOFF những thứ có chỗ riêng:
-   - ghi chú review không chặn → `docs/state/review-notes.md` (OPEN / RESOLVED / ACCEPTED);
+3. Không để vào HANDOFF những thứ có chỗ riêng:
+   - ghi chú review không chặn → `docs/state/review-notes.md` (OPEN / RESOLVED / ACCEPTED), đi qua PR;
    - quy tắc / quyết định bền của Owner → `CLAUDE.md` (quy tắc làm việc), ADR (thiết kế) hoặc "Current OWNER decisions" trong `docs/PROJECT-STATE.md`;
    - ghi chú môi trường dùng lâu dài → `CLAUDE.md` § "Môi trường Windows và 2 máy";
    - danh sách phản hồi dài của Owner → `docs/reviews/<ngày>-….md` rồi trỏ tới.
-3. Nếu phase đổi, cập nhật "Current phase" trong `docs/PROJECT-STATE.md`.
-4. Chạy `pwsh -NoProfile -File tools/session-end.ps1 -Message "$ARGUMENTS"`.
-5. Xác nhận push thành công và báo tên nhánh. Nếu push lỗi, nói rõ — Owner không được rời máy khi chưa push.
+4. Ghi: `node tools/handoff.mjs write <scratchpad>/handoff.md`. Bị từ chối vì Issue đã đổi → làm lại bước 1, gộp thay đổi của mình vào bản mới, rồi ghi lại. **Không** sửa trực tiếp trên web để vượt qua bước kiểm này.
+5. Nếu phase đổi, cập nhật "Current phase" trong `docs/PROJECT-STATE.md` (qua PR).
+6. Có code chưa commit → chạy `pwsh -NoProfile -File tools/session-end.ps1 -Message "$ARGUMENTS"` (commit WIP + push nhánh). Xác nhận push thành công và báo tên nhánh. Nếu push lỗi, nói rõ — Owner không được rời máy khi chưa push.

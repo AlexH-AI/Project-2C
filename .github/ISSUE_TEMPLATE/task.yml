@@ -16,6 +16,18 @@ body:
       label: Bối cảnh
       description: ADR, phần kế hoạch, Issue liên quan.
   - type: textarea
+    id: docs
+    attributes:
+      label: Tài liệu cần đọc
+      description: >-
+        Đúng những gì phiên làm task phải đọc trước khi code, mỗi dòng một đường dẫn kèm mục
+        (vd. `docs/design/phase-4-chi-so.md` §1, golden A; mockup `overview.html` khối 2;
+        ADR-0007 phụ lục G2 Phase 4; file code gốc cần sửa). Phiên làm task chỉ đọc danh sách này.
+      value: |
+        -
+    validations:
+      required: true
+  - type: textarea
     id: files
     attributes:
       label: File / thư mục được phép sửa

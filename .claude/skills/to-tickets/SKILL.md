@@ -91,6 +91,10 @@ A reference to the parent issue on the tracker (if the source was an existing is
 
 The end-to-end behaviour this ticket makes work, from the user's perspective, not layer-by-layer implementation.
 
+## Tài liệu cần đọc
+
+- Exact paths + sections the implementing session must read first (spec §, golden cases, mockup block, ADR appendix, code files to change). Filled now, while the context is at hand (project rule, `docs/agents/issue-tracker.md`).
+
 ## Acceptance criteria
 
 - [ ] Criterion 1

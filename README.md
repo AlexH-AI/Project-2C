@@ -40,7 +40,7 @@ Bootstrap cài/kiểm tra Git, Node 24, pnpm (corepack), Rust (theo `rust-toolch
 - `docs/COMPARISON.md` — giao thức so sánh và quy tắc cách ly với Project-2
 - `docs/PROJECT-STATE.md` — phase hiện tại và quyết định Owner theo ngày
 - `docs/decisions/` — ADR
-- `docs/state/HANDOFF.md` — bàn giao giữa các phiên / giữa 2 máy (giữ dưới 8.000 ký tự)
+- HANDOFF — bàn giao giữa các phiên / giữa 2 máy: Issue ghim nhãn `handoff` trên GitHub (`node tools/handoff.mjs read`)
 - `docs/state/review-notes.md` — sổ ghi chú review không chặn (OPEN / RESOLVED / ACCEPTED)
 - `docs/reviews/` — báo cáo review đóng phase (bản gốc ở `docs/reviews/raw/`)
 - `docs/setup/office-laptop.md` — dựng môi trường trên máy mới

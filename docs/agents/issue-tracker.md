@@ -4,7 +4,8 @@ Issues and specs for this repo live as GitHub issues in `AlexH-AI/Project-2C`. U
 
 ## Project conventions
 
-- Every task is one issue created from the **Task** template (`.github/ISSUE_TEMPLATE/task.yml`): goal, context, files allowed to change, contract, acceptance tests, definition of done, risk.
+- Every task is one issue created from the **Task** template (`.github/ISSUE_TEMPLATE/task.yml`): goal, context, **docs to read** ("Tài liệu cần đọc"), files allowed to change, contract, acceptance tests, definition of done, risk.
+- **Docs to read** is required: the exact paths and sections (spec §, golden cases, mockup block, ADR appendix, the code files to change) the implementing session must read first. Fill it while writing the issue, when that context is at hand; `/session-start <issue>` reads only this list, so a missing entry costs a later session a search.
 - Title: `T-xxx: <Vietnamese title>` — take the next free number from `gh issue list --state all --search "T- in:title"`.
 - Labels: always `type:task` plus exactly one of `risk:low` / `risk:med` / `risk:high`. Add `gate` when the issue waits on an Owner gate (G1–G8), `status:in-progress` while being worked on, and `ready-for-agent` when fully specified.
 - Milestone: the current phase, e.g. `Phase 1 — Nền móng`.
