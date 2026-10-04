@@ -356,6 +356,16 @@ describe('outcome reviewer', () => {
     expect(updatePerson(db, is.id, { role: 'RE', teamId: team.id }).role).toBe('RE');
   });
 
+  it('lets a reviewer of a live appointment move to another reviewer role', async () => {
+    const { db, schedule } = await withCustomer();
+    const is = createPerson(db, { name: 'Tâm', role: 'IS', teamId: null });
+    const { id } = schedule();
+    recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: is.id });
+
+    expect(updatePerson(db, is.id, { role: 'BD' }).role).toBe('BD');
+    expect(codeOf(() => updatePerson(db, is.id, { role: 'RE' }))).toBe('REVIEWER_IN_USE');
+  });
+
   it('restores no appointment whose reviewer became an RE while it was deleted', async () => {
     const { db, tl, schedule } = await withCustomer();
     const { id } = schedule();

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { OpenFolderButton } from '../SettingsDataFile';
-import type { FilterSelection } from '../applied-filter';
+import { sameSelection, type FilterSelection } from '../applied-filter';
 import {
   exportFailedHelp,
   exportReport,
@@ -42,23 +42,24 @@ export function useReportExport(applied: FilterSelection) {
     const exported = applied;
     setBusy(true);
     setLast(null);
-    const outcome = await exportReport(report, write);
-    const notice: ExportNotice =
-      outcome.kind === 'failed'
-        ? { kind: 'failed', step: outcome.step, inFolder: data.hasFile }
-        : {
-            kind: 'exported',
-            sheets: reportSheetCount(report.rows),
-            where: outcome.path ?? outcome.name,
-            inFolder: outcome.path !== undefined,
-          };
-    setLast({ notice, for: exported });
-    setBusy(false);
+    try {
+      const outcome = await exportReport(report, write);
+      const notice: ExportNotice =
+        outcome.kind === 'failed'
+          ? { kind: 'failed', step: outcome.step, inFolder: data.hasFile }
+          : {
+              kind: 'exported',
+              sheets: reportSheetCount(report.rows),
+              where: outcome.path ?? outcome.name,
+              inFolder: outcome.path !== undefined,
+            };
+      setLast({ notice, for: exported });
+    } finally {
+      setBusy(false);
+    }
   };
-  const notice =
-    last && last.for.period === applied.period && last.for.scope === applied.scope
-      ? last.notice
-      : null;
+  // By value: Lọc may apply the same period and scope again as new objects.
+  const notice = last && sameSelection(last.for, applied) ? last.notice : null;
   return { busy, notice, run };
 }
 

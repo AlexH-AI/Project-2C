@@ -248,6 +248,9 @@ describe('custom range cap', () => {
     const range92 = customPeriod(d(16, 7, 2027), d(15, 10, 2027));
     expect(canShift(range92, -1)).toBe(false);
     expect(() => shift(range92, -1)).toThrow(RangeError);
+    expect(() => shift(range92, -1)).toThrow(
+      'Custom period 15/04/2027 – 15/07/2027 is over 3 months',
+    );
     // Forward: 16/10/2027 – 15/01/2028 is within the cap (max 15/01/2028).
     expect(canShift(range92, 1)).toBe(true);
     expect(range(shift(range92, 1))).toBe('16/10/2027 – 15/01/2028');

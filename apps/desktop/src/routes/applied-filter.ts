@@ -29,6 +29,10 @@ function sameScope(a: Scope, b: Scope): boolean {
   }
 }
 
+/** The same period and scope, whether or not the same objects. */
+export const sameSelection = (a: FilterSelection, b: FilterSelection): boolean =>
+  samePeriod(a.period, b.period) && sameScope(a.scope, b.scope);
+
 /** A screen opens with its selection applied already. */
 export const startFilter = (selection: FilterSelection): FilterState => ({
   chosen: selection,
@@ -44,4 +48,4 @@ export const applyFilter = (state: FilterState): FilterState => startFilter(stat
 
 /** The choice differs from the numbers shown: Lọc is highlighted with a reminder beside it. */
 export const isPending = ({ chosen, applied }: FilterState): boolean =>
-  !samePeriod(chosen.period, applied.period) || !sameScope(chosen.scope, applied.scope);
+  !sameSelection(chosen, applied);

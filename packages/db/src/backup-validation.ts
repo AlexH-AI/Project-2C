@@ -8,6 +8,7 @@ import {
   assertValidTransition,
   calendarDate,
   PIPELINE_STAGES,
+  REVIEWER_ROLES,
   type CustomerStage,
   type KycField,
   type KycValue,
@@ -177,8 +178,8 @@ function meetingRule(appointments: Map<unknown, Row>, transitions: Row[]): Rule 
 /**
  * Rule 5: a live customer, appointment or policy belongs to a live RE (who may stop being one, or
  * be deleted, only once their records are deleted); the RE never coordinates their own
- * appointment, and no RE reviews a live meeting (D9); an appointment is rescheduled from one of the
- * same customer (D3).
+ * appointment, and only a reviewer role (`REVIEWER_ROLES`) reviews a live meeting (D9); an
+ * appointment is rescheduled from one of the same customer (D3).
  */
 function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>): Rule | null {
   const notRe = read(
@@ -193,7 +194,7 @@ function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>
   const misplaced = read(
     [
       'SELECT 1 FROM appointment_coordinators c JOIN appointments a ON a.id = c.appointment_id WHERE c.person_id = a.re_id',
-      "SELECT 1 FROM appointments a JOIN people p ON p.id = a.outcome_reviewer_id WHERE a.deleted_at IS NULL AND p.role = 'RE'",
+      `SELECT 1 FROM appointments a JOIN people p ON p.id = a.outcome_reviewer_id WHERE a.deleted_at IS NULL AND p.role NOT IN (${REVIEWER_ROLES.map((role) => `'${role}'`).join(', ')})`,
     ].join(' UNION ALL '),
   );
   const rescheduled = [...appointments.values()].every((a) => {
