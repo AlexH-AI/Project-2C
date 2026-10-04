@@ -2,7 +2,7 @@
 
 Theo bảng chỉ số của `docs/COMPARISON.md`. Số đo lấy trên `main` `1625568` (05/10/2026, Home PC `DESKTOP-KDURKJP`). Ô ghi **Owner điền** là số chỉ Owner biết (điểm UI/UX, ước lượng phiên / hạn mức, can thiệp ngoài cổng); Claude không tự ước.
 
-- **Milestone:** "Phase 4 — Dashboard & báo cáo" — 65 Issue, 0 mở (#251 → #329), 47 PR merge từ #260 tới #334.
+- **Milestone:** "Phase 4 — Dashboard & báo cáo" — 38 Issue, 0 mở (#251 → #329; gắn thêm 27 PR vào milestone), 45 PR merge từ #260 tới #334.
 - **Bắt đầu:** 2026-10-02 (mở milestone sau G7 Phase 3, Đợt 2 của review đóng phase: #251–#259) · **Task cuối merge:** 2026-10-04 (PR #334, T-126, `main` `1625568`) · **Đóng milestone:** chờ G7.
 - **Máy:** Home PC (số đo và kiểm tay đều ở máy này). HANDOFF chuyển từ `docs/state/HANDOFF.md` sang Issue ghim #284 (ADR-0003 phụ lục, T-116).
 - **Spec:** `docs/design/phase-4-chi-so.md` (G2 Owner duyệt 03/10, thêm C10–C11 ngày 04/10); mockup Tổng quan + Báo cáo duyệt ở G3 (#254).
@@ -42,7 +42,7 @@ Theo bảng chỉ số của `docs/COMPARISON.md`. Số đo lấy trên `main` `
 | Chất lượng | Số test | **1.239** test / 65 file (Phase 3: 782 / 47). e2e **143/143** pass, 0 flaky, `CI=1`, Edge, 2,4 phút (Phase 3: 113 + 1 flaky / 114). Rust 37/37 (Phase 3: 36) |
 | UI/UX | Điểm Owner (1–10): thẩm mỹ dark mode / độ rõ số liệu / tốc độ thao tác nhập liệu | **Owner điền** (Phase 3: 8 / 8 / 8). Mockup Tổng quan + Báo cáo Owner duyệt ở G3 (#254) |
 | Tiến độ | Ngày bắt đầu / kết thúc | 02/10 → 04/10/2026 (task cuối PR #334); đóng milestone chờ G7. Cùng thời gian có retro điều hướng repo (T-115…T-122, 03/10) |
-| Tiến độ | Số phiên làm việc | **Owner điền.** Dữ liệu tham khảo: 47 PR merge (28 PR code task sản phẩm, 9 PR retro, còn lại docs / handoff); `retro.mjs` trên Home PC thấy 15 phiên task + 15 phiên review trong 30 phiên gần nhất (gần hết là 04/10) |
+| Tiến độ | Số phiên làm việc | **Owner điền.** Dữ liệu tham khảo: 45 PR merge (28 PR code task sản phẩm, 9 PR retro, 8 PR docs); `retro.mjs` trên Home PC thấy 15 phiên task + 15 phiên review trong 30 phiên gần nhất (gần hết là 04/10) |
 | Chi phí | Mức dùng hạn mức Claude | **Owner điền** (Phase 3: ~2 tuần hạn mức) |
 | Công sức Owner | Can thiệp ngoài cổng G1–G8 | **Owner điền** (Phase 3: ~3 lần). Ghi nhận từ repo: Owner chọn thứ tự sửa A–F, thêm T-132, duyệt thêm spec C10–C11 và trần kỳ Tùy chọn 3 tháng ở bước tổng hợp review đóng phase; chạy Codex review (theo ADR-0001 M2) |
 | Kỹ thuật | Kích thước exe | **Chưa đo trực tiếp:** artifact CI của `main` `1625568` (run `37223670700`) là zip **2,28 MB** (2.394.325 byte); tải về đo `project2c.exe` cần Owner đồng ý tải file. Phase 3: exe 3,93 MB, zip 2,16 MB. Có thêm ExcelJS (G4) từ Phase 4; chưa tách phần tăng do ExcelJS |
