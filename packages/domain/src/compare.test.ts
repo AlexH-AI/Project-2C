@@ -91,6 +91,50 @@ describe('comparisonWindows (spec Phase 4 §4.2)', () => {
     });
   });
 
+  it('C10: the last day of a month is still in progress and compares the same number of days', () => {
+    expect(windows(periodOf('month', d(1, 4, 2027)), d(30, 4, 2027))).toEqual({
+      current: '01/04/2027 – 30/04/2027',
+      previous: '01/03/2027 – 30/03/2027',
+    });
+  });
+
+  it('C11: on 28/02 February compares with 01/01 → 28/01', () => {
+    expect(windows(periodOf('month', d(1, 2, 2027)), d(28, 2, 2027))).toEqual({
+      current: '01/02/2027 – 28/02/2027',
+      previous: '01/01/2027 – 28/01/2027',
+    });
+  });
+
+  it('on 29/02 of a leap year February compares with 01/01 → 29/01', () => {
+    expect(windows(periodOf('month', d(1, 2, 2028)), d(29, 2, 2028))).toEqual({
+      current: '01/02/2028 – 29/02/2028',
+      previous: '01/01/2028 – 29/01/2028',
+    });
+  });
+
+  it.each([
+    ['a day', 'day', d(13, 1, 2027), '13/01/2027 – 13/01/2027', '12/01/2027 – 12/01/2027'],
+    [
+      'a week on Sunday',
+      'week',
+      d(17, 1, 2027),
+      '11/01/2027 – 17/01/2027',
+      '04/01/2027 – 10/01/2027',
+    ],
+    [
+      'a year on 31/12',
+      'year',
+      d(31, 12, 2027),
+      '01/01/2027 – 31/12/2027',
+      '01/01/2026 – 31/12/2026',
+    ],
+  ] as const)(
+    'on the last day of %s the windows are the whole periods',
+    (_, kind, today, current, previous) => {
+      expect(windows(periodOf(kind, today), today)).toEqual({ current, previous });
+    },
+  );
+
   it('C08: a period that has not started is not compared', () => {
     expect(comparisonWindows(periodOf('month', d(1, 2, 2027)), d(13, 1, 2027))).toBeNull();
   });
@@ -117,9 +161,10 @@ describe('comparisonWindows (spec Phase 4 §4.2)', () => {
       current: '01/01/2100 – 31/12/2100',
       previous: '01/01/2099 – 31/12/2099',
     });
+    // The week cut at 31/12 (Monday → Friday) is still in progress on its last day: 5 days against 5.
     expect(windows(periodOf('week', lastDay), lastDay)).toEqual({
       current: '27/12/2100 – 31/12/2100',
-      previous: '20/12/2100 – 26/12/2100',
+      previous: '20/12/2100 – 24/12/2100',
     });
   });
 });

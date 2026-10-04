@@ -73,6 +73,29 @@ describe('kpiTiles', () => {
     });
   });
 
+  it('on the last day of a month compares the same number of days (spec §4.2 C10)', () => {
+    const submittedOn31March = {
+      ...EMPTY,
+      policies: [
+        {
+          id: 'hd-31-03',
+          customerId: 'kh-01',
+          reId: 're-an',
+          submittedDate: d(2027, 3, 31),
+          submittedFyp: 100_000_000,
+          issuedDate: null,
+          issuedFyp: null,
+        },
+      ],
+    };
+    const today = d(2027, 4, 30);
+    const tiles = byKey(kpiTiles(submittedOn31March, periodOf('month', today), ALL, today));
+    const compared = 'so với 01/03 – 30/03';
+
+    expect(tiles.submitted).toMatchObject({ value: '0', delta: { text: '=' }, note: compared });
+    expect(tiles.caseSize).toMatchObject({ value: '0', delta: { text: '=' }, note: compared });
+  });
+
   it('the close rate changes in percentage points (G20 vs G19)', () => {
     const tiles = byKey(kpiTiles(GOLDEN, periodOf('year', d(2027, 1, 1)), ALL, d(2028, 1, 10)));
 
