@@ -1,6 +1,6 @@
 import { calendarDate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
-import { scheduleAppointment } from './appointments';
+import { recordMeetingOutcome, scheduleAppointment } from './appointments';
 import { BACKUP_FORMAT, exportBackup, importBackup, MAX_BACKUP_BYTES } from './backup';
 import { createCustomer, listCustomers, softDeleteCustomer } from './customers';
 import { openDatabase } from './database';
@@ -305,6 +305,12 @@ describe('importBackup', () => {
     ['customers', 'deleted_at', '2026-09-30'],
     ['kyc_versions', 'date', '2026-9-1'],
     ['stage_transitions', 'date', 'soon', ofDeletedCustomer],
+    ['appointments', 'expected_case_size', -1],
+    ['appointments', 'expected_case_size', 0],
+    ['appointments', 'expected_case_size', 1.5],
+    // FYP is refused by the schema's CHECK, not by the value checks.
+    ['policies', 'submitted_fyp', 0],
+    ['policies', 'submitted_fyp', -1],
   ];
 
   it.each(badValues)(
@@ -322,6 +328,71 @@ describe('importBackup', () => {
       expect(current.export()).toEqual(before);
     },
   );
+
+  /** A row given several values at once: valid with `good`, refused with `bad`. */
+  const amountRows: [string, string, (row: Record<string, unknown>) => Record<string, unknown>][] =
+    [
+      [
+        'a soft-deleted appointment',
+        'appointments',
+        (row) => ({ deleted_at: row.created_at, expected_case_size: -1 }),
+      ],
+      [
+        'an issued policy (CHECK of the schema)',
+        'policies',
+        () => ({ issued_date: '2026-09-01', issued_fyp: 0 }),
+      ],
+    ];
+  const good = { expected_case_size: 100_000_000, issued_fyp: 20_000_000 };
+
+  it.each(amountRows)(
+    'refuses an amount that is not positive on %s, accepts a positive one',
+    async (_, table, change) => {
+      const backup = await smallBackup();
+      const row = backup.tables[table]![0]!;
+      const bad = change(row);
+      const fixed = Object.fromEntries(
+        Object.keys(bad).map((key) => [
+          key,
+          key in good ? good[key as keyof typeof good] : bad[key],
+        ]),
+      );
+
+      backup.tables[table]![0] = { ...row, ...bad };
+      expect(await codeOfImport(JSON.stringify(backup))).toBe('BACKUP_INVALID');
+      backup.tables[table]![0] = { ...row, ...fixed };
+      await expect(importBackup(JSON.stringify(backup))).resolves.toBeDefined();
+    },
+  );
+
+  it('keeps an expected case size, or none, through export and import', async () => {
+    const { db, re } = await setup();
+    const date = calendarDate(2026, 9, 3);
+    const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date });
+    for (const expectedCaseSize of [100_000_000, null]) {
+      const { id } = scheduleAppointment(db, {
+        customerId: lan.id,
+        reId: re.id,
+        date,
+        triggerType: 'REFERRAL',
+      });
+      recordMeetingOutcome(db, id, {
+        status: 'MET',
+        stageAfter: 'N3',
+        nextStep: 'Gọi lại',
+        expectedCaseSize,
+      });
+    }
+    const first = exportBackup(db);
+    const { tables } = JSON.parse(first) as BackupJson;
+    expect(tables.appointments!.map((a) => a.expected_case_size)).toEqual(
+      expect.arrayContaining([100_000_000, null]),
+    );
+
+    const { db: imported } = await importBackup(first);
+
+    expect((JSON.parse(exportBackup(imported)) as BackupJson).tables).toEqual(tables);
+  });
 
   it('accepts a birth year alone, no time and a soft-deleted row with valid values', async () => {
     const backup = await smallBackup();

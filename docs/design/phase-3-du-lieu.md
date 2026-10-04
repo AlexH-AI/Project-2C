@@ -214,7 +214,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
     - `created_at` / `updated_at` / `deleted_at`: ISO-8601 UTC như app ghi (`…Z`);
     - `seq` ≥ 1;
     - `kyc_facts.value_json`: JSON parse được, là chuỗi / số / true-false và đã chuẩn hóa theo kiểu của trường (`normalizeKycValue` không đổi giá trị: `"2"` cho `childrenCount` bị từ chối);
-    - tiền là số nguyên dương: CHECK của schema.
+    - tiền là số nguyên dương: FYP (`submitted_fyp`, `issued_fyp`) bằng CHECK của schema; `expected_case_size` (null hoặc > 0, như `requireAmount`) bằng kiểm giá trị (T-128 #320); số lẻ bị chặn khi nạp vào cột integer.
   - **Kiểm bất biến liên bảng** (#204, `validateBackupInvariants`, chạy sau kiểm giá trị; Phase 6 kéo snapshot dùng lại): các giá trị đều hợp lệ nhưng bảng mâu thuẫn nhau → `BACKUP_INVALID` với params `rule` = số của bất biến đầu tiên bị vi phạm (để chẩn đoán; hộp 10b không đổi), DB hiện tại không đổi. Cũng là hàm đọc thuần trên DB tạm. Quy tắc nói về dữ liệu sống chỉ đọc bản ghi chưa xóa, nên bản ghi xóa mềm / khôi phục theo lệnh nghiệp vụ (D7) vẫn nhận:
     1. Mỗi KH (kể cả đã xóa) có transition đầu là `seq` nhỏ nhất, chưa xóa, `from_stage` null, `appointment_id` null (tạo KH không do cuộc hẹn; `withdrawAppointmentTransition` gặp transition gắn cuộc hẹn mà `from_stage` null → `INVALID_TRANSITION`), `to_stage` là nhóm mở N4–N1; không transition nào khác có `from_stage` null. `seq` duy nhất theo KH: UNIQUE của schema.
     2. `customers.stage` = `to_stage` của transition chưa xóa có `seq` lớn nhất.
