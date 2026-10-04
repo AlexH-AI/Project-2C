@@ -225,3 +225,56 @@ test('the appointments screen has the "Hôm nay" button too', async ({ page }) =
   await picker.getByRole('button', { name: 'Hôm nay' }).click();
   await expect(picker.getByRole('status')).toHaveText('Tháng 09/2026');
 });
+
+// T-126: the app's day follows the clock past midnight. The e2e build pins the day the app opens
+// on (15/09/2026, playwright.config.ts); the clock moves it on from there.
+const LAST_MINUTE = new Date(2026, 8, 15, 23, 59);
+const MINUTE = 60_000;
+const DAY = 24 * 60 * MINUTE;
+
+test('after midnight "Hôm nay" goes to the new month; the numbers wait for Lọc', async ({
+  page,
+}) => {
+  await page.clock.install({ time: LAST_MINUTE });
+  await page.goto('/#/overview');
+  const picker = page.getByRole('group', { name: 'Kỳ thống kê' });
+  const label = picker.getByRole('status');
+  const viewing = page.locator('p', { hasText: 'Đang xem:' });
+  await expect(label).toHaveText('Tháng 09/2026');
+
+  // 15 days and 2 minutes on, the app left open: its day is 01/10/2026.
+  await page.clock.fastForward(15 * DAY + 2 * MINUTE);
+  await expect(label).toHaveText('Tháng 09/2026');
+  await picker.getByRole('button', { name: 'Hôm nay' }).click();
+  await expect(label).toHaveText('Tháng 10/2026');
+  await expect(page.getByText('Đã đổi kỳ / góc nhìn — bấm Lọc để cập nhật')).toBeVisible();
+  await expect(viewing).toContainText('Tháng 09/2026');
+
+  await page.getByRole('button', { name: 'Lọc', exact: true }).click();
+  await expect(viewing).toHaveText('Đang xem: Tháng 10/2026MTD 01/10/2026 · Toàn bộ');
+});
+
+test('after midnight the appointments expected the day before read unrecorded, on the same screen', async ({
+  page,
+}) => {
+  await page.clock.install({ time: LAST_MINUTE });
+  await page.goto('/#/appointments');
+  const picker = page.getByRole('group', { name: 'Kỳ thống kê' });
+  await picker
+    .getByRole('radiogroup', { name: 'Loại kỳ' })
+    .getByRole('radio', { name: 'Ngày' })
+    .click();
+  await expect(picker.getByRole('status')).toHaveText('15/09/2026');
+  const status = page
+    .getByRole('table', { name: 'Danh sách lịch hẹn' })
+    .locator('tbody tr td:nth-child(7)');
+  const expected = status.filter({ hasText: 'Dự kiến' });
+  const unrecorded = status.filter({ hasText: 'Chưa ghi kết quả' });
+  await expect(expected.first()).toBeVisible();
+  const count = await expected.count();
+  await expect(unrecorded).toHaveCount(0);
+
+  await page.clock.fastForward(2 * MINUTE);
+  await expect(expected).toHaveCount(0);
+  await expect(unrecorded).toHaveCount(count);
+});

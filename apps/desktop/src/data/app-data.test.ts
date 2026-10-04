@@ -93,6 +93,16 @@ describe('openAppData', () => {
     expect(real.db().now()).toEqual(at);
   });
 
+  it('moves a pinned day on with the clock, so an app left open crosses midnight (T-126)', async () => {
+    let at = new Date(2026, 9, 31, 23, 59);
+    const app = await openAppData({ today: () => TODAY, clock: () => at, seed: fakeSeed });
+    expect(app.today()).toEqual(TODAY);
+
+    at = new Date(2026, 10, 1, 0, 1);
+    expect(app.today()).toEqual(calendarDate(2026, 9, 28));
+    expect(fromLocalDate(app.db().now())).toEqual(calendarDate(2026, 9, 28));
+  });
+
   it('with no file yet loads the simulated data and saves it', async () => {
     const { storage, saves } = memoryStorage();
 

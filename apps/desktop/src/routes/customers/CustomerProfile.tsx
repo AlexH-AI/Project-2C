@@ -13,7 +13,7 @@ import {
 } from '@p2c/db';
 import { formatDate, type KycField, type Policy } from '@p2c/domain';
 import { Button, StageBadge } from '@p2c/ui';
-import { useAppData, useQuery } from '../../data/AppDataContext';
+import { useQuery, useToday } from '../../data/AppDataContext';
 import { joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { AppointmentDialog } from '../appointments/AppointmentDialog';
@@ -63,7 +63,7 @@ const BACK = (
 
 /** Customer profile (mockup customer.html): the basics, KYC and policies, timeline and appointments. */
 export function CustomerProfile({ id }: { id: string }) {
-  const today = useAppData().today();
+  const today = useToday();
   const profile = useQuery(useCallback((db: Database) => readProfile(db, id), [id]));
   const [editing, setEditing] = useState<
     'profile' | 'stage' | 'note' | { resolve: KycField } | null
