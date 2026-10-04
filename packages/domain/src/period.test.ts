@@ -24,6 +24,7 @@ import {
   reportMarks,
   shift,
   switchKind,
+  todayPeriod,
   weekdayOf,
   type Period,
 } from './period';
@@ -255,6 +256,38 @@ describe('switchKind', () => {
   it('turns the period being viewed into a custom range', () => {
     const week = periodOf('week', today);
     expect(switchKind(week, 'custom', today)).toEqual({ ...week, kind: 'custom' });
+  });
+});
+
+describe('todayPeriod', () => {
+  const today = d(15, 9, 2026);
+
+  it('moves a day, week, month or year to the one of the same kind containing today', () => {
+    expect(range(todayPeriod(periodOf('day', d(3, 2, 2030)), today))).toBe(
+      '15/09/2026 – 15/09/2026',
+    );
+    const week = todayPeriod(periodOf('week', d(4, 1, 2027)), today);
+    expect(week.kind).toBe('week');
+    expect(range(week)).toBe('14/09/2026 – 20/09/2026');
+    expect(todayPeriod(periodOf('month', d(1, 11, 2026)), today)).toEqual(periodOf('month', today));
+    expect(todayPeriod(periodOf('year', d(1, 1, 2027)), today)).toEqual(periodOf('year', today));
+  });
+
+  it('turns a custom range into the month containing today', () => {
+    const custom = customPeriod(d(1, 1, 2020), d(10, 1, 2020));
+    expect(todayPeriod(custom, today)).toEqual(periodOf('month', today));
+  });
+
+  it('keeps the period being viewed when it already contains today', () => {
+    const week = periodOf('week', today);
+    expect(todayPeriod(week, today)).toBe(week);
+  });
+
+  it('leaves the edges of 1900–2100', () => {
+    expect(todayPeriod(periodOf('year', d(1, 1, 1900)), today)).toEqual(periodOf('year', today));
+    expect(range(todayPeriod(periodOf('week', d(31, 12, 2100)), today))).toBe(
+      '14/09/2026 – 20/09/2026',
+    );
   });
 });
 

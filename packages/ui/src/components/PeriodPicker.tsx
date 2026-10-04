@@ -7,11 +7,13 @@ import {
   parseDate,
   shift,
   switchKind,
+  todayPeriod,
   type CalendarDate,
   type Period,
   type PeriodKind,
 } from '@p2c/domain';
 import { periodLabel, type PeriodLabelTemplates } from './PeriodPicker.label';
+import { Button } from './Button';
 import { Segmented } from './Segmented';
 
 export interface PeriodPickerLabels extends PeriodLabelTemplates {
@@ -19,6 +21,8 @@ export interface PeriodPickerLabels extends PeriodLabelTemplates {
   kinds: Record<PeriodKind, string> & { group: string };
   previous: string;
   next: string;
+  /** The button going back to the period containing today. */
+  today: string;
   from: string;
   to: string;
   /** Placeholder of the custom date fields, e.g. dd/mm/yyyy. */
@@ -55,7 +59,8 @@ const stepClass = `cursor-pointer rounded-sm px-1.5 py-0.5 text-lg leading-none 
 
 /**
  * Shared period selector (ADR-0013): Ngày · Tuần · Tháng · Năm · Tùy chọn, with ‹ › stepping;
- * a step that would leave 1900–2100 is disabled.
+ * a step that would leave 1900–2100 is disabled; "Hôm nay" (always enabled) goes to the period
+ * containing today.
  * Custom dates are typed as dd/mm/yyyy (not `<input type="date">`, whose format follows the OS
  * locale) and applied on Enter or leaving the field.
  */
@@ -133,6 +138,15 @@ export function PeriodPicker({ value, onChange, today, labels }: PeriodPickerPro
       >
         ›
       </button>
+      <Button
+        onClick={() => {
+          const target = todayPeriod(value, today);
+          if (target !== value) change(target);
+        }}
+        className="px-2.5 py-1"
+      >
+        {labels.today}
+      </Button>
       {value.kind === 'custom' && (
         <>
           {dateField('start', labels.from)}

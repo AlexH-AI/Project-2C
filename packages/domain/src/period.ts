@@ -279,6 +279,19 @@ export function switchKind(period: Period, kind: PeriodKind, today: CalendarDate
 }
 
 /**
+ * The period the picker's "Hôm nay" button goes to: the one of the same kind containing today, a
+ * custom range becoming the current month. Returns `period` itself when it already contains today.
+ */
+export function todayPeriod(period: Period, today: CalendarDate): Period {
+  const target = periodOf(period.kind === 'custom' ? 'month' : period.kind, today);
+  const same =
+    target.kind === period.kind &&
+    compareDates(target.start, period.start) === 0 &&
+    compareDates(target.end, period.end) === 0;
+  return same ? period : target;
+}
+
+/**
  * Dates of a period as the picker shows them (ADR-0013): `28/09/2026`, `28/09 – 04/10/2026`,
  * `09/2026`, `2026`. Words around them come from the UI's i18n.
  */

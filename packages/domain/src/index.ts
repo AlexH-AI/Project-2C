@@ -27,6 +27,7 @@ export {
   reportMarks,
   shift,
   switchKind,
+  todayPeriod,
   weekdayOf,
 } from './period';
 export type {
