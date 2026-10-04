@@ -16,6 +16,9 @@ export const PERSON_ROLES = ['RE', 'TL', 'IS', 'BD', 'BDM'] as const;
 
 export type PersonRole = (typeof PERSON_ROLES)[number];
 
+/** Who may review a met meeting's outcome: the people who support it, never an RE (D9). */
+export const REVIEWER_ROLES: readonly PersonRole[] = ['IS', 'TL', 'BDM', 'BD'];
+
 export interface Person {
   readonly id: string;
   readonly name: string;

@@ -9,6 +9,7 @@ import {
   isInPeriod,
   isRfTransition,
   periodOf,
+  REVIEWER_ROLES,
   shift,
   type AppointmentGroup,
   type AppointmentStatus,
@@ -124,6 +125,10 @@ export function dateTone(date: CalendarDate, today: CalendarDate): DateTone {
 
 /** A coordinator as the lists show them: role, then name. */
 export const personLabel = (person: Person) => `${person.role} ${person.name}`;
+
+/** Who may review a met meeting's outcome (D9): every IS, TL, BDM and BD, in the given order. */
+export const reviewerChoices = (people: readonly Person[]): Person[] =>
+  people.filter((person) => REVIEWER_ROLES.includes(person.role));
 
 export interface AppointmentRow {
   readonly appointment: AppointmentRecord;

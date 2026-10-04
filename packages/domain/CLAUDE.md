@@ -39,7 +39,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/kyc-fact.ts` — KYC_FACT_STATUSES, type KycFactStatus, type KycValue, type KycFact
 - `src/kyc-gate.ts` — type KycSuggestedQuestions, type KycGateResult, evaluateKycGate
 - `src/kyc.ts` — type KycNote, type KycProfile, type KycFactInput, type KycVersion, EMPTY_KYC_PROFILE, addNote, currentFacts, confirmFact, markConflict, resolveConflict, kycHash, isMaterialChange, nextKycVersion
-- `src/model.ts` — type Team, PERSON_ROLES, type PersonRole, type Person, CLOSED_STAGES, type ClosedStage, type CustomerStage, type Customer, type StageTransition, APPOINTMENT_STATUSES, type AppointmentStatus, type Appointment, type Policy, type Scope
+- `src/model.ts` — type Team, PERSON_ROLES, type PersonRole, REVIEWER_ROLES, type Person, CLOSED_STAGES, type ClosedStage, type CustomerStage, type Customer, type StageTransition, APPOINTMENT_STATUSES, type AppointmentStatus, type Appointment, type Policy, type Scope
 - `src/money.ts` — type Vnd, type VndParseError, type VndParseResult, parseVnd, formatVnd, formatVndCompact, formatVndDelta
 - `src/number.ts` — groupThousands, formatCount, formatPercent, formatFileSize
 - `src/period.ts` — type CalendarDate, PERIOD_KINDS, type PeriodKind, type Period, MIN_YEAR, MAX_YEAR, calendarDate, addDays, fromLocalDate, formatDate, formatLocalDateTime, formatIsoDate, localFileStamp, formatDayMonth, formatDayOfMonth, type Weekday, weekdayOf, daysBetween, compareDates, isInPeriod, parseDate, type QuickDateError, type QuickDateResult, NEXT_YEAR_SUGGESTION_DAYS, parseQuickDate, periodOf, customPeriod, monthToDate, shift, canShift, switchKind, todayPeriod, formatPeriodValue, chartMarks, reportMarks

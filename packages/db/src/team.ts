@@ -138,6 +138,10 @@ export function updatePerson(db: Database, id: string, changes: Partial<PersonIn
     if (current.role === 'RE' && role !== 'RE' && ownsLiveRecords(db, id)) {
       throw new DbError('PERSON_IN_USE');
     }
+    // A reviewer of a live meeting stays one of the roles that may review it (D9).
+    if (current.role !== 'RE' && role === 'RE' && reviewsLiveAppointment(db, id)) {
+      throw new DbError('REVIEWER_IN_USE');
+    }
     const valid = validatePerson(
       db,
       {
@@ -233,12 +237,16 @@ function isPersonInUse(db: Database, id: string): boolean {
     .innerJoin(appointments, eq(appointments.id, appointmentCoordinators.appointmentId))
     .where(and(eq(appointmentCoordinators.personId, id), isNull(appointments.deletedAt)))
     .get();
+  return ownsLiveRecords(db, id) || coordinating !== undefined || reviewsLiveAppointment(db, id);
+}
+
+function reviewsLiveAppointment(db: Database, id: string): boolean {
   const reviewing = db.orm
     .select({ id: appointments.id })
     .from(appointments)
     .where(and(eq(appointments.outcomeReviewerId, id), isNull(appointments.deletedAt)))
     .get();
-  return ownsLiveRecords(db, id) || coordinating !== undefined || reviewing !== undefined;
+  return reviewing !== undefined;
 }
 
 /** Checks a person's fields; `selfId` is the person being changed or restored, else null. */

@@ -8,9 +8,11 @@
  */
 import {
   compareDates,
+  REVIEWER_ROLES,
   type Appointment,
   type CalendarDate,
   type CustomerStage,
+  type PersonRole,
   type Vnd,
 } from '@p2c/domain';
 import { and, asc, eq, isNull } from 'drizzle-orm';
@@ -257,7 +259,7 @@ export function restoreAppointment(db: Database, id: string): void {
     liveCustomer(db, row.customerId);
     // The people were free to leave while the appointment was deleted.
     requirePeople(db, row.reId, toAppointment(db, row).coordinatorIds);
-    if (row.outcomeReviewerId !== null) requirePerson(db, row.outcomeReviewerId);
+    if (row.outcomeReviewerId !== null) requireReviewer(db, row.outcomeReviewerId);
     updateAppointmentRow(db, id, { deletedAt: null });
     applyOutcome(db, row);
   });
@@ -279,7 +281,7 @@ function outcomeFields(db: Database, outcome: MeetingOutcome, note: string) {
   const reviewerId = outcome.outcomeReviewerId ?? null;
   if (reviewerId !== null) {
     if (outcome.status !== 'MET') throw new DbError('REVIEWER_NOT_ALLOWED');
-    requirePerson(db, reviewerId);
+    requireReviewer(db, reviewerId);
   }
   const size = outcome.expectedCaseSize ?? null;
   return {
@@ -383,14 +385,22 @@ function requirePeople(db: Database, reId: string, coordinatorIds: readonly stri
   }
 }
 
-/** A live person of any role: a coordinator or the outcome reviewer (D9). */
-function requirePerson(db: Database, personId: string): void {
+/** A live person of any role, as a coordinator; returns their role. */
+function requirePerson(db: Database, personId: string): PersonRole {
   const person = db.orm
-    .select({ id: people.id })
+    .select({ role: people.role })
     .from(people)
     .where(and(eq(people.id, personId), isNull(people.deletedAt)))
     .get();
   if (!person) throw new DbError('PERSON_NOT_FOUND');
+  return person.role;
+}
+
+/** A live IS, TL, BDM or BD, as the outcome reviewer (D9). */
+function requireReviewer(db: Database, personId: string): void {
+  if (!REVIEWER_ROLES.includes(requirePerson(db, personId))) {
+    throw new DbError('INVALID_REVIEWER');
+  }
 }
 
 function requireTime(time: string | null): string | null {

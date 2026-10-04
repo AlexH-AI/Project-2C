@@ -10,7 +10,7 @@ import {
 } from '@p2c/domain';
 import { Choices, SelectField, StageBadge, TextField } from '@p2c/ui';
 import { t } from '../../i18n';
-import { LOCKED, personLabel } from './appointments-view';
+import { LOCKED, personLabel, reviewerChoices } from './appointments-view';
 import { stageAfterChoices, type OutcomeError } from './outcome-form';
 
 export const badge = (stage: CustomerStage) => (
@@ -101,7 +101,10 @@ export function MetFields({
       <SelectField
         label={t('outcome.reviewer')}
         value={draft.reviewerId}
-        options={people.map((person) => ({ value: person.id, label: personLabel(person) }))}
+        options={reviewerChoices(people).map((person) => ({
+          value: person.id,
+          label: personLabel(person),
+        }))}
         placeholder={t('outcome.reviewerNone')}
         onChange={set('reviewerId')}
       />

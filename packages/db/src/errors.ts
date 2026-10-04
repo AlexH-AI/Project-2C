@@ -32,6 +32,10 @@ export const DB_ERROR_CODES = [
   'OUTCOME_IN_FUTURE',
   'STAGE_AFTER_NOT_ALLOWED',
   'REVIEWER_NOT_ALLOWED',
+  /** An outcome reviewer who is not an IS, TL, BDM or BD (D9). */
+  'INVALID_REVIEWER',
+  /** A reviewer of a live appointment made an RE (D9). */
+  'REVIEWER_IN_USE',
   'NEXT_APPOINTMENT_PAST',
   'INVALID_COORDINATOR',
   'POLICY_NOT_FOUND',
