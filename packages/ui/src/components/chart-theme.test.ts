@@ -10,6 +10,10 @@ describe('chartTheme', () => {
     expect(chartTheme(read).color).toEqual(SERIES_TOKENS.map((name) => `value${name}`));
   });
 
+  it('colours series from the palette given, in its order', () => {
+    expect(chartTheme(read, ['--n1', '--n4']).color).toEqual(['value--n1', 'value--n4']);
+  });
+
   it('draws text, axes and tooltips with token colours on a transparent background', () => {
     const theme = chartTheme(read);
 
@@ -27,6 +31,13 @@ describe('chartTheme', () => {
       backgroundColor: 'value--bg-2',
       borderColor: 'value--border-strong',
       textStyle: { color: 'value--text' },
+    });
+  });
+
+  it('offers a `today` style for category labels: the date-today colour, bold', () => {
+    expect(chartTheme(read).categoryAxis.axisLabel.rich.today).toEqual({
+      color: 'value--date-today',
+      fontWeight: 700,
     });
   });
 
