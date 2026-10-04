@@ -55,9 +55,9 @@ describe('sectionOf', () => {
 });
 
 describe('usesScope', () => {
-  it('is true only for Overview, Customers and Appointments', () => {
+  it('is true only for Overview, Customers, Appointments and Reports', () => {
     const used = SECTIONS.filter((screen) => usesScope(screen));
-    expect(used).toEqual(['overview', 'appointments', 'customers']);
+    expect(used).toEqual(['overview', 'appointments', 'customers', 'reports']);
     expect(usesScope('customer')).toBe(false);
   });
 });
@@ -67,5 +67,6 @@ describe('teamPickerShown', () => {
     expect(teamPickerShown('overview')).toBe(false);
     expect(teamPickerShown('customers')).toBe(true);
     expect(teamPickerShown('appointments')).toBe(true);
+    expect(teamPickerShown('reports')).toBe(true);
   });
 });
