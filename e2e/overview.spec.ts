@@ -75,3 +75,21 @@ test('the Team scope has no team to pick and counts every team', async ({ page }
   await filter.click();
   await expect(viewing).toContainText('· RE ');
 });
+
+test('a period without appointments shows "0 / 0" and "chưa có lịch" in the bar', async ({
+  page,
+}) => {
+  const { kinds, filter } = await openOverview(page);
+
+  await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
+  const picker = page.getByRole('group', { name: 'Kỳ thống kê' });
+  await picker.getByRole('textbox', { name: 'Từ ngày' }).fill('01/01/2000');
+  const end = picker.getByRole('textbox', { name: 'Đến ngày' });
+  await end.fill('10/01/2000');
+  await end.press('Enter');
+  await filter.click();
+
+  const tile = page.getByRole('region', { name: 'Lịch hẹn · cả khoảng' });
+  await expect(tile).toContainText('0 / 0');
+  await expect(tile).toContainText('chưa có lịch');
+});

@@ -27,14 +27,21 @@ export function AppointmentsTile({
         <small className={UNIT}>{t('overview.ofTotal', { total: counts.total })}</small>
       </p>
       <p className={`m-0 -mt-1.5 ${FOOT}`}>{t('overview.appointments.foot')}</p>
-      <div aria-hidden="true" className="flex h-2 overflow-hidden rounded-full bg-surface-3">
-        {APPOINTMENT_GROUPS.map(
-          (group) =>
-            counts[group.key] > 0 && (
-              <span key={group.key} className={group.fill} style={{ flex: counts[group.key] }} />
-            ),
-        )}
-      </div>
+      {counts.total === 0 ? (
+        // An empty bar says so (mockup 1e), as the months of the Lịch hẹn year grid do.
+        <p className="m-0 grid h-5 place-items-center rounded-sm bg-surface-3 text-xs font-medium text-fg-3">
+          {t('appointments.monthEmpty')}
+        </p>
+      ) : (
+        <div aria-hidden="true" className="flex h-2 overflow-hidden rounded-full bg-surface-3">
+          {APPOINTMENT_GROUPS.map(
+            (group) =>
+              counts[group.key] > 0 && (
+                <span key={group.key} className={group.fill} style={{ flex: counts[group.key] }} />
+              ),
+          )}
+        </div>
+      )}
       <ul className="m-0 flex list-none flex-col gap-1 p-0 text-sm tabular-nums">
         {APPOINTMENT_GROUPS.map((group) => (
           <li key={group.key} className="flex items-center gap-2 text-fg-2">
