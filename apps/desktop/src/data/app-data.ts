@@ -15,7 +15,13 @@ import {
   seedDemoData,
   type Database,
 } from '@p2c/db';
-import { fromLocalDate, localFileStamp, type CalendarDate } from '@p2c/domain';
+import {
+  addDays,
+  daysBetween,
+  fromLocalDate,
+  localFileStamp,
+  type CalendarDate,
+} from '@p2c/domain';
 import { createPersistQueue, type PersistQueue } from './persist-queue';
 
 /** Where the database file lives. */
@@ -94,7 +100,10 @@ export interface AppData {
   readonly hasFile: boolean;
   /** Save status for the UI warning; never fails in web mode. */
   readonly saves: PersistQueue;
-  /** The anchor day of new simulated data. */
+  /**
+   * The app's day ("hôm nay"), also the anchor day of new simulated data. Screens read it through
+   * `useToday`, which re-renders them when the day changes.
+   */
   today(): CalendarDate;
   /**
    * Settings → Data: replaces everything with new simulated data anchored today. The exe first
@@ -132,7 +141,10 @@ export interface OpenAppDataOptions {
   readonly storage?: StoragePort;
   /** Where sql.js finds its wasm file in the browser. */
   readonly locateFile?: (file: string) => string;
-  /** Defaults to the local calendar day; e2e pins it. */
+  /**
+   * Pins the day the app opens on (e2e, demo); the clock moves it on from there. Unpinned, the
+   * app's day is the clock's local calendar day.
+   */
   readonly today?: () => CalendarDate;
   /** Writes the simulated data into a new database; tests pass a small stand-in. */
   readonly seed?: (db: Database, anchorDate: CalendarDate) => void;
@@ -153,20 +165,21 @@ const seedDemo = (db: Database, anchorDate: CalendarDate) =>
   seedDemoData(db, { anchorDate, seed: DEMO_SEED });
 
 export async function openAppData(options: OpenAppDataOptions = {}): Promise<AppData> {
-  const {
-    storage,
-    locateFile,
-    today = () => fromLocalDate(new Date()),
-    seed = seedDemo,
-    clock = () => new Date(),
-  } = options;
+  const { storage, locateFile, seed = seedDemo, clock = () => new Date() } = options;
+  // A pinned day is the day the app opened on; the clock moves it on from there, so an app left
+  // open past midnight (e2e: `page.clock`) reaches the next day as an unpinned one does (T-126).
+  const opened = fromLocalDate(clock());
+  const pinned = options.today;
+  const dayAt = (at: Date) =>
+    pinned ? addDays(pinned(), daysBetween(opened, fromLocalDate(at))) : fromLocalDate(at);
+  const today = () => dayAt(clock());
   // The database's clock keeps the app's day, so its "from today on" checks agree with the screens
-  // when e2e pins the day; the time of day is the clock's. Unpinned, it is the clock itself: one
-  // reading, so a day and a time read either side of midnight never meet.
-  const now = options.today
+  // when e2e pins the day; the time of day is the clock's. One reading of the clock, so a day and
+  // a time read either side of midnight never meet; unpinned, it is the clock itself.
+  const now = pinned
     ? () => {
         const at = new Date(clock());
-        const day = today();
+        const day = dayAt(at);
         at.setFullYear(day.year, day.month - 1, day.day);
         return at;
       }

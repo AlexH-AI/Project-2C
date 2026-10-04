@@ -8,9 +8,8 @@ import {
   listTeams,
   type Database,
 } from '@p2c/db';
-import { calendarDate } from '@p2c/domain';
 import { Button, Segmented } from '@p2c/ui';
-import { useAppData, useQuery } from '../../data/AppDataContext';
+import { useQuery, useToday } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { useScopeState } from '../../shell/ScopeContext';
 import { FilterBar, useAppliedFilter } from '../FilterBar';
@@ -44,9 +43,7 @@ const CARD = 'flex flex-col gap-3 rounded-md border border-border bg-surface-1 p
  * Excel exports every table shown for the scope, one sheet each (2f).
  */
 export function ReportsScreen() {
-  // today() is a new object each render; its fields keep the memos below stable.
-  const { year, month, day } = useAppData().today();
-  const today = useMemo(() => calendarDate(year, month, day), [year, month, day]);
+  const today = useToday();
   const { picked } = useScopeState();
   const data = useQuery(readReports);
   const filter = useAppliedFilter(today, picked);

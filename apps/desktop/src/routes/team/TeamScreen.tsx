@@ -9,7 +9,7 @@ import {
 } from '@p2c/db';
 import type { Person, PersonRole, Team } from '@p2c/domain';
 import { Button, DataTable, type DataTableColumn } from '@p2c/ui';
-import { useAppData, useQuery } from '../../data/AppDataContext';
+import { useQuery, useToday } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { DeletePersonDialog, PersonDialog } from './PersonDialogs';
 import { DeleteTeamDialog, TeamNameDialog } from './TeamDialogs';
@@ -128,7 +128,7 @@ function memberColumns(
 /** Team & staff (mockup team.html): teams, their members, and the shared support staff. */
 export function TeamScreen() {
   const view = useQuery(readTeams);
-  const today = useAppData().today();
+  const today = useToday();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing | null>(null);
   const selected = view.teams.find((entry) => entry.team.id === selectedId) ?? view.teams[0];
@@ -139,9 +139,7 @@ export function TeamScreen() {
   const editPerson = (person: Person) => setEditing({ kind: 'editPerson', person });
   const columns = useMemo(
     () => memberColumns(staffMetrics(view.people, view.records, today), today.year, editPerson),
-    // `today` is a new object on every call; its fields are what matter.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [view, today.year, today.month, today.day],
+    [view, today],
   );
 
   return (

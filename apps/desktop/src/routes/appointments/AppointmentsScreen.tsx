@@ -24,7 +24,7 @@ import {
   type Period,
 } from '@p2c/domain';
 import { Button, DataTable, PeriodPicker, SelectField, type DataTableColumn } from '@p2c/ui';
-import { useAppData, useQuery } from '../../data/AppDataContext';
+import { useQuery, useToday } from '../../data/AppDataContext';
 import { joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { RePicker } from '../../shell/RePicker';
@@ -85,7 +85,7 @@ const dayIn = (period: Period, today: CalendarDate) =>
 
 /** Appointments (mockup appointments.html): month calendar, the day by team → RE, the list, a detail. */
 export function AppointmentsScreen() {
-  const today = useAppData().today();
+  const today = useToday();
   const data = useQuery(readAppointments);
   const { picked, scope, pickRe } = useScopeState();
   const [period, setPeriod] = useState(() => periodOf('month', today));
@@ -120,11 +120,9 @@ export function AppointmentsScreen() {
     scope !== picked && scope.kind === 're'
       ? data.people.find((person) => person.id === scope.reId)
       : undefined;
-  // today() is a new object each render; its fields keep the grid and the columns stable.
-  const { year: thisYear, month: thisMonth, day: thisDay } = today;
   const yearCells = useMemo(
-    () => yearGrid(period.start.year, rows, { year: thisYear, month: thisMonth, day: thisDay }),
-    [period.start.year, rows, thisYear, thisMonth, thisDay],
+    () => yearGrid(period.start.year, rows, today),
+    [period.start.year, rows, today],
   );
   const reCounts = useMemo(() => appointmentsByRe(pickedRows, period), [pickedRows, period]);
   const summary = summaryText({
@@ -143,14 +141,13 @@ export function AppointmentsScreen() {
   ];
 
   const columns = useMemo<ReadonlyArray<DataTableColumn<AppointmentRow>>>(() => {
-    const day = { year: thisYear, month: thisMonth, day: thisDay };
     return [
       {
         id: 'date',
         header: t('appointments.date'),
         kind: 'date',
         value: (r) => r.appointment.date,
-        cellClass: (r) => DATE_TONE_CELL[dateTone(r.appointment.date, day)],
+        cellClass: (r) => DATE_TONE_CELL[dateTone(r.appointment.date, today)],
       },
       {
         id: 'time',
@@ -186,8 +183,8 @@ export function AppointmentsScreen() {
         id: 'status',
         header: t('appointments.status'),
         kind: 'text',
-        value: (r) => statusLabel(r.appointment, day).text,
-        cell: (r) => <Status label={statusLabel(r.appointment, day)} />,
+        value: (r) => statusLabel(r.appointment, today).text,
+        cell: (r) => <Status label={statusLabel(r.appointment, today)} />,
       },
       {
         id: 'outcome',
@@ -196,7 +193,7 @@ export function AppointmentsScreen() {
         value: (r) => outcomeText(r.outcome),
       },
     ];
-  }, [thisYear, thisMonth, thisDay]);
+  }, [today]);
 
   const changePeriod = (next: Period) => {
     setPeriod(next);
@@ -363,12 +360,7 @@ function MonthCalendar({
   rows: readonly AppointmentRow[];
   onPick: (date: CalendarDate) => void;
 }) {
-  // today is a new object each render; its fields keep the grid stable.
-  const { year, month: thisMonth, day: thisDay } = today;
-  const weeks = useMemo(
-    () => monthGrid(day, rows, period, { year, month: thisMonth, day: thisDay }),
-    [day, rows, period, year, thisMonth, thisDay],
-  );
+  const weeks = useMemo(() => monthGrid(day, rows, period, today), [day, rows, period, today]);
   const month = formatPeriodValue(periodOf('month', day));
   const days = weeks.flat().filter((cell): cell is DayCell => cell?.inMonth === true);
   const sum = (count: (cell: DayCell) => number) => days.reduce((n, cell) => n + count(cell), 0);

@@ -8,8 +8,8 @@ import {
   listTeams,
   type Database,
 } from '@p2c/db';
-import { appointmentCounts, calendarDate } from '@p2c/domain';
-import { useAppData, useQuery } from '../data/AppDataContext';
+import { appointmentCounts } from '@p2c/domain';
+import { useQuery, useToday } from '../data/AppDataContext';
 import { t } from '../i18n';
 import { useScopeState } from '../shell/ScopeContext';
 import { FilterBar, useAppliedFilter } from './FilterBar';
@@ -34,9 +34,7 @@ const readOverview = (db: Database) => ({
  * customers by stage and So sánh team.
  */
 export function Overview() {
-  // today() is a new object each render; its fields keep the memos below stable.
-  const { year, month, day } = useAppData().today();
-  const today = useMemo(() => calendarDate(year, month, day), [year, month, day]);
+  const today = useToday();
   const { picked } = useScopeState();
   const data = useQuery(readOverview);
   const filter = useAppliedFilter(today, picked);
