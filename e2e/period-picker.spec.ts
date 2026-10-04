@@ -135,3 +135,44 @@ test('the appointments calendar shows December 2100 with blank cells after it', 
   await expect(picker.getByRole('button', { name: 'Kỳ sau' })).toBeDisabled();
   expect(errors).toEqual([]);
 });
+
+test('"Hôm nay" goes back to the period containing today and stays enabled at year 1900', async ({
+  page,
+}) => {
+  const { kinds, label, picker, previous, next } = await openPicker(page);
+  const todayButton = picker.getByRole('button', { name: 'Hôm nay' });
+
+  await next.click();
+  await next.click();
+  await expect(label).toHaveText('Tháng 11/2026');
+  await todayButton.click();
+  await expect(label).toHaveText('Tháng 09/2026');
+
+  await kinds.getByRole('radio', { name: 'Tuần' }).click();
+  await next.click();
+  await todayButton.click();
+  await expect(label).toHaveText('14/09 – 20/09/2026');
+
+  await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
+  await picker.getByRole('textbox', { name: 'Từ ngày' }).fill('01/01/1900');
+  const end = picker.getByRole('textbox', { name: 'Đến ngày' });
+  await end.fill('10/01/1900');
+  await end.press('Enter');
+  await kinds.getByRole('radio', { name: 'Năm' }).click();
+  await expect(label).toHaveText('Năm 1900');
+  await expect(previous).toBeDisabled();
+  await expect(todayButton).toBeEnabled();
+  await todayButton.click();
+  await expect(label).toHaveText('Năm 2026');
+});
+
+test('the appointments screen has the "Hôm nay" button too', async ({ page }) => {
+  await page.clock.setFixedTime(TODAY);
+  await page.goto('/#/appointments');
+  const picker = page.getByRole('group', { name: 'Kỳ thống kê' });
+
+  await picker.getByRole('button', { name: 'Kỳ sau' }).click();
+  await expect(picker.getByRole('status')).toHaveText('Tháng 10/2026');
+  await picker.getByRole('button', { name: 'Hôm nay' }).click();
+  await expect(picker.getByRole('status')).toHaveText('Tháng 09/2026');
+});

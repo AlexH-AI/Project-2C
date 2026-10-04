@@ -245,6 +245,7 @@ export const vi = {
   'period.custom': 'Tùy chọn',
   'period.previous': 'Kỳ trước',
   'period.next': 'Kỳ sau',
+  'period.today': 'Hôm nay',
   'period.from': 'Từ ngày',
   'period.to': 'Đến ngày',
   'period.dateFormat': 'dd/mm/yyyy',

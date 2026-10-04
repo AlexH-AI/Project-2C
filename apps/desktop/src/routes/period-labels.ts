@@ -14,6 +14,7 @@ export const PERIOD_LABELS: PeriodPickerLabels = {
   },
   previous: t('period.previous'),
   next: t('period.next'),
+  today: t('period.today'),
   from: t('period.from'),
   to: t('period.to'),
   dateFormat: t('period.dateFormat'),
