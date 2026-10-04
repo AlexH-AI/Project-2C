@@ -31,7 +31,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 
 | route | screen | view |
 |---|---|---|
-| `overview` | `src/routes/Overview.tsx` | — |
+| `overview` | `src/routes/Overview.tsx` | `src/routes/overview/overview-view.ts` |
 | `appointments` | `src/routes/appointments/AppointmentsScreen.tsx` | `src/routes/appointments/appointments-view.ts` |
 | `customers` | `src/routes/customers/CustomersScreen.tsx` | `src/routes/customers/customers-view.ts` |
 | `reports` | (placeholder) | — |
@@ -54,7 +54,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/routes/Settings.tsx` — Settings
 - `src/routes/SettingsBackup.tsx` — BackupSection
 - `src/routes/SettingsDataFile.tsx` — countsText, DataFileSection, OpenFolderButton
-- `src/routes/TeamAppointmentsChart.tsx` — TeamAppointmentsChart
+- `src/routes/applied-filter.ts` — type FilterSelection, type FilterState, startFilter, chooseFilter, applyFilter, isPending
 - `src/routes/appointments/AppointmentDialog.tsx` — dateReading, AppointmentDialog, liveIds, CoordinatorsField, dateFieldError, DateSuggestion
 - `src/routes/appointments/AppointmentsScreen.tsx` — AppointmentsScreen
 - `src/routes/appointments/DeleteAppointmentDialog.tsx` — DeleteAppointmentDialog
@@ -78,6 +78,8 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/routes/customers/customers-view.ts` — type CustomerCard, type CustomerBoard, type CustomerData, customerBoard, type RecordDateResult, parseRecordDate, type BirthDateResult, parseBirthDate, allowedStages, birthLabel, ageOn
 - `src/routes/customers/kyc-view.ts` — type KycCategoryRow, kycOverview, factText, type TimelineEvent, kycTimeline, type KycNotePreview, previewKycNote, type KycResolveOption, resolveKycOptions
 - `src/routes/customers/policy-form.ts` — type FypResult, readFyp, type IssuedDateResult, type PolicyDraft, type PolicyValues, readPolicy, issuedChange, monthOf, effectText, expectedCaseSize
+- `src/routes/overview/OverviewTiles.tsx` — AppointmentsTile, KpiCard
+- `src/routes/overview/overview-view.ts` — type KpiKey, type KpiDelta, type KpiTile, kpiTiles, metricsScope, type ViewingText, viewingText
 - `src/routes/period-labels.ts` — PERIOD_LABELS
 - `src/routes/team/PersonDialogs.tsx` — PersonDialog, DeletePersonDialog
 - `src/routes/team/TeamDialogs.tsx` — TeamNameDialog, DeleteTeamDialog
@@ -93,7 +95,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/shell/Sidebar.tsx` — Sidebar
 - `src/shell/StartupError.tsx` — StartupError
 - `src/shell/close-guard.ts` — type CloseChoice, type ClosePort, closeAfterSaving
-- `src/shell/routes.ts` — SECTIONS, type Section, type Route, DEFAULT_ROUTE, parseHash, routeToHash, sectionOf, usesScope
+- `src/shell/routes.ts` — SECTIONS, type Section, type Route, DEFAULT_ROUTE, parseHash, routeToHash, sectionOf, usesScope, teamPickerShown
 - `src/shell/scope.ts` — type ScopeChoice, resolveScope, chooseKind, narrowScope, teamRes, reOptions
 - `src/shell/screen-error.ts` — type ScreenErrorMessage, screenErrorMessage
 - `src/shell/startup-error.ts` — type StartupMessage, startupMessage

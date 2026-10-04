@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCount, formatFileSize } from './number';
+import { formatCount, formatFileSize, formatPercent } from './number';
 
 describe('formatCount', () => {
   it('groups thousands with dots', () => {
@@ -48,5 +48,25 @@ describe('formatFileSize', () => {
     for (const value of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
       expect(() => formatFileSize(value)).toThrow(RangeError);
     }
+  });
+});
+
+describe('formatPercent', () => {
+  it('shows one decimal after a comma, without ",0"', () => {
+    expect(formatPercent((2 / 3) * 100)).toBe('66,7');
+    expect(formatPercent(43.75)).toBe('43,8');
+    expect(formatPercent(100)).toBe('100');
+    expect(formatPercent(0)).toBe('0');
+    expect(formatPercent(1250)).toBe('1.250');
+  });
+
+  it('keeps the sign of a negative change; one that rounds to 0 is 0', () => {
+    expect(formatPercent(-2.43)).toBe('-2,4');
+    expect(formatPercent(-0.04)).toBe('0');
+  });
+
+  it('rejects a value that is not a finite number', () => {
+    for (const value of [Number.NaN, Infinity])
+      expect(() => formatPercent(value)).toThrow(RangeError);
   });
 });

@@ -1,15 +1,14 @@
 import { expect, test } from '@playwright/test';
 
-test('app shell shows the brand, the overview and the pipeline stages in order', async ({
-  page,
-}) => {
+test('app shell shows the brand and the overview with its KPI', async ({ page }) => {
   await page.goto('/');
 
   await expect(page.getByRole('complementary')).toContainText('Project-2C');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan');
 
-  const stages = page.getByRole('region', { name: 'Nhóm cơ hội' }).getByRole('listitem');
-  await expect(stages).toHaveText(['N4', 'N3', 'N2', 'N1']);
+  await expect(page.getByRole('region', { name: 'Chỉ số của kỳ' }).getByRole('region')).toHaveCount(
+    6,
+  );
 });
 
 test('page loads without console errors', async ({ page }) => {

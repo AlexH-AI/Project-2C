@@ -9,6 +9,18 @@ export function formatCount(count: number): string {
   return groupThousands(count);
 }
 
+/**
+ * The number of a percentage, without the `%` sign: one decimal after a comma and no `,0`, thousands
+ * grouped: `66,7`, `100`, `-2,4`. A value that rounds to zero is `0`, never `-0`.
+ */
+export function formatPercent(value: number): string {
+  if (!Number.isFinite(value)) throw new RangeError(`Not a percentage: ${value}`);
+  const tenths = Math.round(Math.abs(value) * 10);
+  const sign = value < 0 && tenths > 0 ? '-' : '';
+  const decimal = tenths % 10;
+  return `${sign}${groupThousands(Math.floor(tenths / 10))}${decimal ? `,${decimal}` : ''}`;
+}
+
 const SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'] as const;
 
 /**

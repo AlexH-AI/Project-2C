@@ -79,7 +79,7 @@ export type { AppointmentCounts, AppointmentGroup } from './appointment-counts';
 export { snapshotDate, stageSnapshot, stageSnapshotter } from './stage-snapshot';
 export type { StageCounts } from './stage-snapshot';
 export { formatVnd, formatVndCompact, formatVndDelta, parseVnd } from './money';
-export { formatCount, formatFileSize } from './number';
+export { formatCount, formatFileSize, formatPercent } from './number';
 export type { Vnd, VndParseError, VndParseResult } from './money';
 export { APPOINTMENT_STATUSES, CLOSED_STAGES, PERSON_ROLES } from './model';
 export type {

@@ -24,24 +24,25 @@ test('opens on the current month', async ({ page }) => {
   await expect(label).toHaveCSS('font-variant-numeric', 'tabular-nums');
 });
 
+// Tổng quan takes today from the app (T-109): the e2e build pins it to Tuesday 15/09/2026.
 test('switching kind and stepping ‹ › updates the label', async ({ page }) => {
   const { kinds, label, previous, next } = await openPicker(page);
 
   await kinds.getByRole('radio', { name: 'Tuần' }).click();
-  await expect(label).toHaveText('28/09 – 04/10/2026');
+  await expect(label).toHaveText('14/09 – 20/09/2026');
   await next.click();
-  await expect(label).toHaveText('05/10 – 11/10/2026');
+  await expect(label).toHaveText('21/09 – 27/09/2026');
 
   await kinds.getByRole('radio', { name: 'Ngày' }).click();
-  await expect(label).toHaveText('05/10/2026');
+  await expect(label).toHaveText('21/09/2026');
   await previous.click();
-  await expect(label).toHaveText('04/10/2026');
+  await expect(label).toHaveText('20/09/2026');
 
   await kinds.getByRole('radio', { name: 'Tháng' }).click();
-  await expect(label).toHaveText('Tháng 10/2026');
+  await expect(label).toHaveText('Tháng 09/2026');
   await next.click();
   await next.click();
-  await expect(label).toHaveText('Tháng 12/2026');
+  await expect(label).toHaveText('Tháng 11/2026');
 
   await kinds.getByRole('radio', { name: 'Năm' }).click();
   await expect(label).toHaveText('Năm 2026');
