@@ -511,6 +511,12 @@ export const vi = {
   'overview.stages.chart': 'Diễn biến khách hàng theo nhóm',
   'overview.stages.teamChart': 'Diễn biến khách hàng theo nhóm · Team {name}',
   'overview.stages.notStarted': 'Kỳ chưa bắt đầu',
+  'overview.compare.title': 'So sánh team',
+  'overview.compare.hint': 'bấm một team để xem RE',
+  'overview.compare.mtd': '(MTD)',
+  'overview.compare.team': 'Team',
+  'overview.compare.met': 'Đã gặp',
+  'overview.compare.total': 'Tổng',
   'storage.openFailed': 'Không mở được file dữ liệu',
   'storage.openFailedHelp':
     'App chưa ghi gì vào file. Các bản sao lưu tự động nằm trong thư mục Project2C-data\\backups: chép bản mới nhất thành Project2C-data\\project2c.db để khôi phục; nếu vẫn lỗi, thử bản cũ hơn.',

@@ -93,7 +93,7 @@ function windowText(window: Period, period: Period): string {
 }
 
 /** Days the KPI are counted over (§4.1: up to today); null when the period has not started. */
-function countedWindow(period: Period, today: CalendarDate): Period | null {
+export function countedWindow(period: Period, today: CalendarDate): Period | null {
   if (compareDates(today, period.start) < 0) return null;
   return compareDates(today, period.end) < 0 ? customPeriod(period.start, today) : period;
 }

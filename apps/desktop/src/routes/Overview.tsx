@@ -16,8 +16,10 @@ import { useScopeState } from '../shell/ScopeContext';
 import { applyFilter, chooseFilter, isPending, startFilter } from './applied-filter';
 import { AppointmentsTile, KpiCard } from './overview/OverviewTiles';
 import { StageBlock } from './overview/StageBlock';
+import { TeamCompare } from './overview/TeamCompare';
 import { kpiTiles, metricsScope, viewingText } from './overview/overview-view';
 import { stageBlock } from './overview/stage-view';
+import { teamCompare } from './overview/team-compare-view';
 import { PERIOD_LABELS } from './period-labels';
 
 const readOverview = (db: Database) => ({
@@ -30,8 +32,8 @@ const readOverview = (db: Database) => ({
 });
 
 /**
- * Tổng quan (spec Phase 4 §4.3, mockup overview.html 1a–1e): the Lọc bar, appointments, KPI and
- * customers by stage.
+ * Tổng quan (spec Phase 4 §4.3, mockup overview.html 1a–1e): the Lọc bar, appointments, KPI,
+ * customers by stage and So sánh team.
  */
 export function Overview() {
   // today() is a new object each render; its fields keep the memos below stable.
@@ -56,6 +58,10 @@ export function Overview() {
   const stages = useMemo(
     () => stageBlock(data, applied.period, applied.scope, today),
     [data, applied.period, applied.scope, today],
+  );
+  const compare = useMemo(
+    () => (applied.scope.kind === 're' ? null : teamCompare(data, applied.period, today)),
+    [data, applied.period, applied.scope.kind, today],
   );
   const tiles = useMemo(
     () => kpiTiles(data, applied.period, scope, today),
@@ -98,6 +104,7 @@ export function Overview() {
         </section>
       </div>
       <StageBlock block={stages} />
+      {compare && <TeamCompare view={compare} mtd={viewing.mtd} />}
     </>
   );
 }
