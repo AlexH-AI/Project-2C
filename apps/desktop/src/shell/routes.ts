@@ -50,7 +50,12 @@ export function sectionOf(route: Route): Section {
 
 /** Only these screens filter by the scope picker; the others do not read it. */
 export function usesScope(screen: Route['screen']): boolean {
-  return screen === 'overview' || screen === 'customers' || screen === 'appointments';
+  return (
+    screen === 'overview' ||
+    screen === 'customers' ||
+    screen === 'appointments' ||
+    screen === 'reports'
+  );
 }
 
 /** Tổng quan counts every team together in the Team scope (spec Phase 4 §4.3): no team to pick. */

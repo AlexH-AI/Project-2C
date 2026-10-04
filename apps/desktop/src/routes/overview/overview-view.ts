@@ -62,6 +62,10 @@ const METRIC = {
 
 const percentOf = ({ numerator, denominator }: CloseRate) => (numerator / denominator) * 100;
 
+/** A close rate in a table cell: `66,7%`, or "—" without RF (§4.1). */
+export const closeRateText = (rate: CloseRate | null): string =>
+  rate ? `${formatPercent(percentOf(rate))}${t('overview.percentUnit')}` : t('overview.none');
+
 interface Shown {
   readonly value: string;
   readonly unit: string;

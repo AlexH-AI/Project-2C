@@ -3,7 +3,6 @@ import {
   closeRate,
   customPeriod,
   formatCount,
-  formatPercent,
   formatPeriodValue,
   formatVndCompact,
   periodMetrics,
@@ -16,7 +15,7 @@ import {
 } from '@p2c/domain';
 import { t } from '../../i18n';
 import { teamRes } from '../../shell/scope';
-import { countedWindow } from './overview-view';
+import { closeRateText, countedWindow } from './overview-view';
 
 export interface TeamCompareData extends MetricsData {
   readonly teams: readonly Team[];
@@ -51,7 +50,6 @@ const byName = new Intl.Collator('vi').compare;
 
 function cells(met: number, metrics: PeriodMetrics | null): string[] {
   if (!metrics) return [formatCount(met), ...Array<string>(6).fill(t('overview.none'))];
-  const rate = metrics.closeRate;
   return [
     formatCount(met),
     formatCount(metrics.rfCount),
@@ -59,9 +57,7 @@ function cells(met: number, metrics: PeriodMetrics | null): string[] {
     formatVndCompact(metrics.caseSize),
     formatCount(metrics.issuedCount),
     formatVndCompact(metrics.revenue),
-    rate
-      ? `${formatPercent((rate.numerator / rate.denominator) * 100)}${t('overview.percentUnit')}`
-      : t('overview.none'),
+    closeRateText(metrics.closeRate),
   ];
 }
 
