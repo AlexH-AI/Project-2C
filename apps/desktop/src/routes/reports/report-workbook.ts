@@ -161,6 +161,65 @@ export async function buildReportWorkbook(
   return new Uint8Array(await workbook.xlsx.writeBuffer());
 }
 
+/** What Xuất Excel exports: the tables on screen, for the period and scope viewed. */
+export interface ExportedReport {
+  readonly rows: ReportRows;
+  readonly period: Period;
+  readonly viewing: ViewingText;
+  readonly today: CalendarDate;
+}
+
+/** The step an export failed at: making the workbook, or writing (in web mode, handing) the file. */
+export type ExportStep = 'build' | 'write';
+
+export type ExportOutcome =
+  | {
+      readonly kind: 'exported';
+      readonly name: string;
+      /** Where the exe wrote the file; `undefined` when `write` handed it on (web mode). */
+      readonly path: string | undefined;
+    }
+  | { readonly kind: 'failed'; readonly step: ExportStep };
+
+/**
+ * Builds the report's workbook and gives it to `write` under its file name. A failure says only at
+ * which step it happened, so the line under Lọc names the right cause.
+ */
+export async function exportReport(
+  { rows, period, viewing, today }: ExportedReport,
+  write: (name: string, bytes: Uint8Array<ArrayBuffer>) => Promise<string | undefined>,
+): Promise<ExportOutcome> {
+  let name: string;
+  let bytes: Uint8Array<ArrayBuffer>;
+  try {
+    name = reportFileName(period, viewing.scope, today);
+    bytes = await buildReportWorkbook(rows, reportWorkbookMeta(viewing, today));
+  } catch {
+    return { kind: 'failed', step: 'build' };
+  }
+  try {
+    return { kind: 'exported', name, path: await write(name, bytes) };
+  } catch {
+    return { kind: 'failed', step: 'write' };
+  }
+}
+
+/** Why an export failed, under "Không xuất được báo cáo"; `inFolder` is the exe's `exports\`. */
+export const exportFailedHelp = (step: ExportStep, inFolder: boolean): string =>
+  t(
+    step === 'build'
+      ? 'reports.exportBuildFailedHelp'
+      : inFolder
+        ? 'reports.exportFailedHelp'
+        : 'reports.exportFailedHelpWeb',
+  );
+
+/**
+ * The scope's part of a file name is cut to this, so the whole name stays within 120 characters:
+ * Windows takes 255 per name, and the exe adds a `-n` suffix, `.claim` and `.tmp` to it.
+ */
+const SCOPE_SLUG_MAX = 60;
+
 /** Lower-case ASCII letters and digits joined by `-`: `Team Đông Á` → `team-dong-a`. */
 const slug = (text: string) =>
   text
@@ -169,7 +228,9 @@ const slug = (text: string) =>
     .normalize('NFD')
     .replace(/\p{M}/gu, '')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
+    .replace(/^-/, '')
+    .slice(0, SCOPE_SLUG_MAX)
+    .replace(/-$/, '');
 
 /** The period as the file name gives it: `2026-10`, `2026`, a day, or its first and last day. */
 function periodStamp({ kind, start, end }: Period): string {
@@ -189,7 +250,8 @@ function periodStamp({ kind, start, end }: Period): string {
 /**
  * `bao-cao_<period>_<scope>_<day>.xlsx` (mockup reports.html 2f), e.g.
  * `bao-cao_2026-10_toan-bo_2026-10-15.xlsx`: only ASCII letters, digits, `-` and `_`, as the exe's
- * export command takes them. An export of the same name gets a `-2` suffix there.
+ * export command takes them, and a long scope cut short (the sheets keep its full name). An export
+ * of the same name gets a `-2` suffix there.
  */
 export function reportFileName(period: Period, scope: string, today: CalendarDate): string {
   const parts = [t('reports.excel.file'), periodStamp(period), slug(scope), formatIsoDate(today)];

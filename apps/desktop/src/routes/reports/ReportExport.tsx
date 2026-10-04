@@ -1,16 +1,15 @@
 import { useState } from 'react';
-import type { CalendarDate, Period } from '@p2c/domain';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { OpenFolderButton } from '../SettingsDataFile';
-import type { ViewingText } from '../overview/overview-view';
+import type { FilterSelection } from '../applied-filter';
 import {
-  buildReportWorkbook,
-  reportFileName,
+  exportFailedHelp,
+  exportReport,
   reportSheetCount,
-  reportWorkbookMeta,
+  type ExportedReport,
+  type ExportStep,
 } from './report-workbook';
-import type { ReportRows } from './reports-view';
 
 const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
@@ -22,45 +21,44 @@ export type ExportNotice =
       /** False in web mode: the browser's downloads are no folder the app can open. */
       readonly inFolder: boolean;
     }
-  | { readonly kind: 'failed'; readonly inFolder: boolean };
-
-/** What Xuất Excel exports: the tables on screen, for the period and scope viewed. */
-export interface ExportedReport {
-  readonly rows: ReportRows;
-  readonly period: Period;
-  readonly viewing: ViewingText;
-  readonly today: CalendarDate;
-}
+  | { readonly kind: 'failed'; readonly step: ExportStep; readonly inFolder: boolean };
 
 /**
  * Xuất Excel (mockup reports.html 2f): the exe writes the file into `exports\`, web mode downloads
- * it. A failure only says so; the data in the app is untouched.
+ * it. A failure only says so; the data in the app is untouched. The notice is for the period and
+ * scope applied when Xuất Excel was pressed, and goes once Lọc applies others.
  */
-export function useReportExport() {
+export function useReportExport(applied: FilterSelection) {
   const data = useAppData();
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<ExportNotice | null>(null);
+  const [last, setLast] = useState<{ notice: ExportNotice; for: FilterSelection } | null>(null);
 
-  const run = async ({ rows, period, viewing, today }: ExportedReport) => {
-    setBusy(true);
-    setNotice(null);
-    try {
-      const name = reportFileName(period, viewing.scope, today);
-      const bytes = await buildReportWorkbook(rows, reportWorkbookMeta(viewing, today));
-      const path = await data.exportFile(name, bytes);
-      if (path === undefined) download(name, bytes);
-      setNotice({
-        kind: 'exported',
-        sheets: reportSheetCount(rows),
-        where: path ?? name,
-        inFolder: path !== undefined,
-      });
-    } catch {
-      setNotice({ kind: 'failed', inFolder: data.hasFile });
-    } finally {
-      setBusy(false);
-    }
+  const write = async (name: string, bytes: Uint8Array<ArrayBuffer>) => {
+    const path = await data.exportFile(name, bytes);
+    if (path === undefined) download(name, bytes);
+    return path;
   };
+  const run = async (report: ExportedReport) => {
+    const exported = applied;
+    setBusy(true);
+    setLast(null);
+    const outcome = await exportReport(report, write);
+    const notice: ExportNotice =
+      outcome.kind === 'failed'
+        ? { kind: 'failed', step: outcome.step, inFolder: data.hasFile }
+        : {
+            kind: 'exported',
+            sheets: reportSheetCount(report.rows),
+            where: outcome.path ?? outcome.name,
+            inFolder: outcome.path !== undefined,
+          };
+    setLast({ notice, for: exported });
+    setBusy(false);
+  };
+  const notice =
+    last && last.for.period === applied.period && last.for.scope === applied.scope
+      ? last.notice
+      : null;
   return { busy, notice, run };
 }
 
@@ -70,9 +68,7 @@ export function ExportNoticeLine({ notice }: { notice: ExportNotice }) {
     return (
       <p role="alert" className="m-0 flex flex-col text-sm">
         <b className="text-danger">{t('reports.exportFailed')}</b>
-        <span className="text-fg-2">
-          {t(notice.inFolder ? 'reports.exportFailedHelp' : 'reports.exportFailedHelpWeb')}
-        </span>
+        <span className="text-fg-2">{exportFailedHelp(notice.step, notice.inFolder)}</span>
       </p>
     );
   }

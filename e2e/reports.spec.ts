@@ -156,3 +156,23 @@ test('Xuất Excel downloads the report of the period and scope viewed, a sheet 
   );
   expect(errors).toEqual([]);
 });
+
+test('the export line stays while a new period waits for Lọc, and goes once it is applied', async ({
+  page,
+}) => {
+  const { kinds, filter, pending } = await openReports(page);
+  const exported = page.getByRole('status').filter({ hasText: 'Đã xuất báo cáo' });
+
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Xuất Excel' }).click();
+  await download;
+  await expect(exported).toBeVisible();
+
+  await kinds.getByRole('radio', { name: 'Năm' }).click();
+  await expect(pending).toBeVisible();
+  await expect(exported).toBeVisible();
+
+  await filter.click();
+  await expect(pending).toHaveCount(0);
+  await expect(exported).toHaveCount(0);
+});
