@@ -1,8 +1,6 @@
 import { formatCount } from '@p2c/domain';
 import { t } from '../../i18n';
-import { FOCUS, type MonthCell } from './appointments-view';
-
-const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
+import { CARD, FOCUS, type MonthCell } from './appointments-view';
 
 const GROUPS = [
   { key: 'met', label: 'appointments.legendMet', fill: 'bg-ok' },

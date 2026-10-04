@@ -8,13 +8,6 @@ Quy tắc (review đóng Phase 3, P-3): ghi chú review không chặn nằm ở 
 
 Theo task đã có chỗ trong kế hoạch:
 - **T-f (F-14):** chưa có `MAX_YEAR` trong `period.ts`; `shift` kỳ ngày/tuần/tùy chọn sát 01/01/1900 ném `RangeError` trong `PeriodPicker`, kỳ tháng/năm lùi về 1899 (#146); `addDays` với `days` cực lớn trả `NaN` (chưa có đường gọi).
-- **T-h phần 2, #259 (F-13, F-15, F-19 phần `t()`):**
-  - `OutcomeDialog.tsx:~81`: "Lưu kết quả" khi chưa chọn trạng thái không báo gì (#169).
-  - `·` / `→` viết cứng trong JSX (~15 chỗ, vd `CustomerDialogs.tsx:380`).
-  - `t()` dùng `name in params` (`i18n/index.ts:11`).
-  - R2-03: số đếm truyền vào `t()` không qua `formatCount` ("4528 lịch" cạnh "1.234 lịch" ở kỳ Năm): `AppointmentsScreen.tsx:123-126, 369`, `CustomersScreen.tsx:114`, `RePicker.tsx:39` (`rePicker.title`) và số trong `Chip` (`:83`) → `formatCount` (cân nhắc helper `tCount` / test grep).
-  - R2-04: `·` / `→` viết cứng tăng thêm sau F-15 (`AppointmentsScreen.tsx:242, 245, 494`, `CustomersScreen.tsx:141, 144`) → thêm luật chặn trong `lint:tokens` hoặc test grep.
-  - R2-05: cảnh báo ESLint `react-hooks/exhaustive-deps` ở `AppointmentsScreen.tsx:188-189` (#240) → dựng `today` trong memo như `:116-121`; cân nhắc `eslint --max-warnings 0`.
 - **T-i (F-18):** formatter ECharts escape chuỗi từ DB — đã thành mục checklist, áp dụng ở task dashboard đầu tiên.
 - **S-1 / D-1 (probe Codex Sol 02/10):** nhập backup nhận `kyc_versions.hash` sai → tính lại hoặc kiểm hash khi nhập snapshot.
 - **S-2 (Đợt 3):** ghi muộn trong khoảng chờ backup → thay DB (#96); hai `replace` chồng nhau đóng DB cũ hai lần (#192); chưa có test cho cửa sổ `opening` (#206).
@@ -48,14 +41,14 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - `DataTable` (Phase 1): chưa có test `sortable: false` và bảng rỗng; kiểm lại cột Giờ có `tabular-nums` (cột không phải `text` đã có). `cellClass` (#240) chỉ có e2e phủ — repo chưa có công cụ test component (thêm là G4).
 - Lưới năm (#247, không chặn):
   - `token-guard.ts:26` regex miễn trừ nhận mọi `style={{ flex: <định danh hoặc số> }}`, kể cả hằng `flex: 1`; doc comment `token-guard.ts:3` dài (NIT);
-  - `AppointmentsScreen.tsx:53` `FOCUS` xen giữa các import `type` (NIT);
-  - *Duplicated Code*: `CARD` lặp ở `YearGrid.tsx:5` và `AppointmentsScreen.tsx` → export từ `appointments-view.ts` như `FOCUS`.
 - `e2e/appointments.spec.ts` (#236, NIT): `new RegExp(`^${name}`)` không escape tên RE; tên seed hiện không có ký tự regex.
 - `AppointmentsScreen.tsx` (#239, không chặn): nhánh `!pickable` vẫn có thể gắn `bg-period-band` về lý thuyết; `inPeriod` ⇒ `pickable` nên không xảy ra.
 - Domain (R3): API `nextKycVersion`; ngày nhanh đầu năm (gợi ý năm trước?).
 - Token G3 (R4, Owner cân nhắc): viền ô nhập / mũi tên sắp xếp dưới 3:1.
 
 ## RESOLVED
+
+- T-h phần 2 (F-13, F-15, F-19 phần `t()`, R2-03, R2-04, R2-05): "Lưu kết quả" khi chưa chọn trạng thái báo "Chọn trạng thái."; `·` / `→` qua `sep.*` + `joinParts`, `lint:tokens` chặn phân cách cứng; `t()` chỉ đọc tên riêng của params (`Object.hasOwn`) và nhóm nghìn số ở ô đếm (`COUNT_SLOTS`, test bắt ô mới chưa phân loại); `eslint --max-warnings 0`; `CARD` dùng chung từ `appointments-view.ts`, thứ tự import `FOCUS` (#259).
 
 - T-h phần 1 (F-11, F-12, F-19 phần `getPolicy`): helper `today(db)` thay 4 chỗ `fromLocalDate(db.now())`; tạo KH, sửa nhóm tay, nộp / phát hành HĐ sau hôm nay → `DATE_IN_FUTURE`, nhập backup kiểm luật 10 (Owner quyết 04/10); câu `error.KYC_PROFILE_FIELD_REQUIRED` và test phủ `error.*` cho mọi mã UI chạm được; `getPolicy` truy vấn theo id (#258, PR #303).
 - T-e (F-06, F-07): `stats.ts` dựng index một lần cho mỗi danh sách đầu vào (`Map` người → team, `Set` lịch chuyển RF, `WeakMap`), chữ ký công khai giữ nguyên; `rfCount` lọc phạm vi trước kỳ. Seed: một kỳ toàn bộ 21,6 → 1,3 ms; 12 tháng × 30 RE 374 → 82 ms. `monthToDate` trong `period.ts`, G18 kiểm bằng hàm này (#255, T-099).

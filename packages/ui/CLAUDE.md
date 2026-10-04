@@ -42,5 +42,5 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/components/chart-theme.ts` — type TokenReader, SERIES_TOKENS, chartTheme
 - `src/components/compare-cells.ts` — type CellValues, type CellKind, compareCells
 - `src/index.ts` — re-exports ./components/NavIcon, ./components/Segmented, ./components/PeriodPicker, ./components/DataTable, ./components/Chart, ./components/Button, ./components/Dialog, ./components/TextField, ./components/SelectField, ./components/StageBadge, ./components/PolicyBadge, ./components/Choices
-- `src/token-guard.ts` — type TokenViolation, findTokenViolations
+- `src/token-guard.ts` — type TokenViolation, findTokenViolations, findHardcodedSeparators
 <!-- codemap:end -->

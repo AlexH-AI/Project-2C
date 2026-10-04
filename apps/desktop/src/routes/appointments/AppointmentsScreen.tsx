@@ -12,6 +12,7 @@ import {
   compareDates,
   formatDate,
   formatDayMonth,
+  formatCount,
   formatDayOfMonth,
   formatPeriodValue,
   isInPeriod,
@@ -22,7 +23,7 @@ import {
 } from '@p2c/domain';
 import { Button, DataTable, PeriodPicker, SelectField, type DataTableColumn } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
-import { t } from '../../i18n';
+import { joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { RePicker } from '../../shell/RePicker';
 import { teamRes } from '../../shell/scope';
@@ -39,9 +40,11 @@ import { isPastOrToday } from './appointment-form';
 import {
   appointmentRows,
   appointmentsByRe,
+  CARD,
   dateTone,
   dayBoard,
   DATE_TONE_CELL,
+  FOCUS,
   monthGrid,
   outcomeText,
   personLabel,
@@ -50,12 +53,10 @@ import {
   revealCreated,
   yearGrid,
   type AppointmentRow,
-  FOCUS,
   type CoordinatorFilter,
   type DayCell,
 } from './appointments-view';
 
-const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 const readAppointments = (db: Database) => ({
@@ -113,8 +114,8 @@ export function AppointmentsScreen() {
     scope !== picked && scope.kind === 're'
       ? data.people.find((person) => person.id === scope.reId)
       : undefined;
-  // today() is a new object each render; its year and month keep the grid stable.
-  const { year: thisYear, month: thisMonth } = today;
+  // today() is a new object each render; its fields keep the grid and the columns stable.
+  const { year: thisYear, month: thisMonth, day: thisDay } = today;
   const yearCells = useMemo(
     () => yearGrid(period.start.year, rows, { year: thisYear, month: thisMonth, day: 1 }),
     [period.start.year, rows, thisYear, thisMonth],
@@ -133,14 +134,15 @@ export function AppointmentsScreen() {
       .map((person) => ({ value: person.id, label: personLabel(person) })),
   ];
 
-  const columns = useMemo<ReadonlyArray<DataTableColumn<AppointmentRow>>>(
-    () => [
+  const columns = useMemo<ReadonlyArray<DataTableColumn<AppointmentRow>>>(() => {
+    const day = { year: thisYear, month: thisMonth, day: thisDay };
+    return [
       {
         id: 'date',
         header: t('appointments.date'),
         kind: 'date',
         value: (r) => r.appointment.date,
-        cellClass: (r) => DATE_TONE_CELL[dateTone(r.appointment.date, today)],
+        cellClass: (r) => DATE_TONE_CELL[dateTone(r.appointment.date, day)],
       },
       {
         id: 'time',
@@ -184,10 +186,8 @@ export function AppointmentsScreen() {
         kind: 'text',
         value: (r) => outcomeText(r.outcome),
       },
-    ],
-    // today() is a new object each render; its fields keep the columns stable.
-    [today.year, today.month, today.day],
-  );
+    ];
+  }, [thisYear, thisMonth, thisDay]);
 
   const changePeriod = (next: Period) => {
     setPeriod(next);
@@ -239,10 +239,10 @@ export function AppointmentsScreen() {
         <span className="text-sm text-fg-2 tabular-nums">
           {re ? (
             <>
-              <b className="font-semibold text-fg">{re.name}</b> · {summary}
+              <b className="font-semibold text-fg">{re.name}</b> {t('sep.dot')} {summary}
             </>
           ) : team ? (
-            `${t('appointments.viewingTeam', { team: team.name })} · ${summary}`
+            joinParts([t('appointments.viewingTeam', { team: team.name }), summary])
           ) : (
             summary
           )}
@@ -487,7 +487,7 @@ function DayButton({
     >
       <span className="flex items-start justify-between">
         {dayNumber}
-        <b className="text-lg">{count > 0 ? count : ''}</b>
+        <b className="text-lg">{count > 0 ? formatCount(count) : ''}</b>
       </span>
       <span className="mt-auto flex gap-0.5">
         {dots.map((kind, i) => (
@@ -496,7 +496,7 @@ function DayButton({
       </span>
       {otherMonth && (
         <span aria-hidden="true" className="absolute right-1.5 bottom-1 text-xs text-accent">
-          →
+          {t('sep.arrow')}
         </span>
       )}
     </button>
@@ -599,12 +599,9 @@ function Detail({
     </button>
   );
   const facts: [string, ReactNode][] = [
-    [t('appointments.re'), [row.re?.name, row.team?.name].filter(Boolean).join(' · ')],
+    [t('appointments.re'), joinParts([row.re?.name, row.team?.name])],
     [t('appointments.coordinators'), row.coordinators.map(personLabel).join(', ') || '—'],
-    [
-      t('appointments.trigger'),
-      [t(`trigger.${a.triggerType}`), a.triggerNote].filter(Boolean).join(' · '),
-    ],
+    [t('appointments.trigger'), joinParts([t(`trigger.${a.triggerType}`), a.triggerNote])],
     [t('appointments.status'), t(`appointmentStatus.${a.status}`)],
     [t('appointments.outcome'), outcomeText(row.outcome) || '—'],
     [t('appointments.note'), a.note || '—'],
@@ -617,7 +614,7 @@ function Detail({
       className={`${CARD} flex w-full flex-col gap-3 lg:sticky lg:top-20 lg:w-84 lg:shrink-0`}
     >
       <h2 className="m-0 text-base font-semibold tabular-nums">
-        {dateTime(a)} · {row.customer?.name}
+        {joinParts([dateTime(a), row.customer?.name])}
       </h2>
       <dl className="m-0 flex flex-col gap-1.5 text-sm">
         {facts.map(([term, value]) => (

@@ -12,7 +12,8 @@ export interface TokenViolation {
     | 'raw-length'
     | 'inline-style'
     | 'arbitrary-value'
-    | 'default-palette';
+    | 'default-palette'
+    | 'hardcoded-separator';
 }
 
 const PALETTE =
@@ -35,6 +36,41 @@ export function findTokenViolations(source: string): TokenViolation[] {
       for (const found of text.matchAll(pattern)) {
         violations.push({ line: index + 1, match: found[0], rule });
       }
+    }
+  });
+  return violations;
+}
+
+/**
+ * Finds a `·` or `→` written into app code: the app joins parts through i18n (`sep.*`), so the
+ * marks live in `vi.ts` only. Comments may use them.
+ */
+export function findHardcodedSeparators(source: string): TokenViolation[] {
+  const violations: TokenViolation[] = [];
+  let inComment = false;
+  source.split('\n').forEach((text, index) => {
+    let code = '';
+    let rest = text;
+    while (rest) {
+      if (inComment) {
+        const end = rest.indexOf('*/');
+        inComment = end < 0;
+        rest = inComment ? '' : rest.slice(end + 2);
+        continue;
+      }
+      const line = rest.indexOf('//');
+      const block = rest.indexOf('/*');
+      if (block >= 0 && (line < 0 || block < line)) {
+        code += rest.slice(0, block);
+        rest = rest.slice(block + 2);
+        inComment = true;
+      } else {
+        code += line < 0 ? rest : rest.slice(0, line);
+        rest = '';
+      }
+    }
+    for (const found of code.matchAll(/[·→]/g)) {
+      violations.push({ line: index + 1, match: found[0], rule: 'hardcoded-separator' });
     }
   });
   return violations;

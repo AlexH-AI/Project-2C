@@ -1,4 +1,5 @@
 import type { Person, Scope, Team } from '@p2c/domain';
+import { joinParts } from '../i18n';
 
 /** What the "Góc nhìn" picker holds: the kind, and the team or RE picked for it. */
 export interface ScopeChoice {
@@ -71,6 +72,6 @@ export function reOptions(
     .sort((a, b) => byName(a.team, b.team) || byName(a.re.name, b.re.name))
     .map(({ re, team }) => ({
       value: re.id,
-      label: [re.name, team].filter(Boolean).join(' · '),
+      label: joinParts([re.name, team]),
     }));
 }

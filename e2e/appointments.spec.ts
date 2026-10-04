@@ -19,12 +19,12 @@ function screen(page: Page) {
   };
 }
 
-const SUMMARY = /\d+ lịch · \d+ đã gặp/;
+const SUMMARY = /[\d.]+ lịch · [\d.]+ đã gặp/;
 
-/** The period's "482 lịch · 349 đã gặp" → 482 (the header comes before the calendar's). */
+/** The period's "1.482 lịch · 349 đã gặp" → 1482 (the header comes before the calendar's). */
 async function total(page: Page): Promise<number> {
   const text = await page.getByText(SUMMARY).first().textContent();
-  return Number(text?.match(/\d+/)?.[0]);
+  return Number(text?.match(/[\d.]+/)?.[0].replaceAll('.', ''));
 }
 
 test.beforeEach(async ({ page }) => {
@@ -139,8 +139,10 @@ test('the year period shows twelve months in four quarters, without the day', as
     (n, label) => n + Number(label.match(/: ([\d.]+) lịch/)?.[1]?.replaceAll('.', '')),
     0,
   );
-  expect(sum).toBeGreaterThan(0);
+  expect(sum).toBeGreaterThan(999);
   expect(sum).toBe(await total(page));
+  // R2-03: the year's line in the whole scope groups its thousands, like the months.
+  await expect(page.getByText(SUMMARY).first()).toHaveText(/^\d{1,3}(\.\d{3})+ lịch · /);
   await expect(rows).toHaveCount(sum);
 });
 

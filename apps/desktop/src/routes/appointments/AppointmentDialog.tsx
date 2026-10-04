@@ -422,14 +422,16 @@ function History({
         {history.rows.slice(0, MAX_HISTORY).map(({ appointment: a, outcome }) => (
           <li key={a.id} className="flex gap-1 whitespace-nowrap">
             <span className="tabular-nums">{dayText(a.date, today)}</span>
-            <span>·</span>
+            <span>{t('sep.dot')}</span>
             <span className={STATUS_TONE[a.status]}>{t(`appointmentStatus.${a.status}`)}</span>
             {(outcome?.kind === 'move' || outcome?.kind === 'keep') && (
-              <span>· {outcomeText(outcome)}</span>
+              <span>
+                {t('sep.dot')} {outcomeText(outcome)}
+              </span>
             )}
             {a.note && (
               <span className="min-w-0 truncate text-fg-3">
-                · {t('appointmentForm.historyNote', { note: a.note })}
+                {t('sep.dot')} {t('appointmentForm.historyNote', { note: a.note })}
               </span>
             )}
           </li>

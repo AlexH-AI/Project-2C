@@ -8,7 +8,7 @@ import {
 import { formatDate, type Person, type StageTransition } from '@p2c/domain';
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
-import { errorMessage, t } from '../../i18n';
+import { errorMessage, joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { Actions, ALERT } from '../customers/CustomerDialogs';
 import { CoordinatorsField, dateFieldError, dateReading, liveIds } from './AppointmentDialog';
@@ -119,14 +119,12 @@ export function EditOutcomeDialog({
   return (
     <Dialog
       title={t('outcomeEdit.title')}
-      subtitle={[
+      subtitle={joinParts([
         customer.name,
         whenText(a),
         t(`appointmentStatus.${a.status}`),
         outcomeText(row.outcome),
-      ]
-        .filter(Boolean)
-        .join(' · ')}
+      ])}
       onClose={onClose}
       onSubmit={save}
       actions={
@@ -151,7 +149,7 @@ export function EditOutcomeDialog({
           <b>{t('outcomeEdit.lockTitle')}</b>
           <span className="flex flex-wrap items-center gap-1 tabular-nums">
             {t('outcomeEdit.lockBody', { date: formatDate(later.date) })}
-            {later.from && badge(later.from)} {t('timeline.arrow')} {badge(later.to)}
+            {later.from && badge(later.from)} {t('sep.arrow')} {badge(later.to)}
           </span>
           <span>
             {t('outcomeEdit.lockHelp')}{' '}

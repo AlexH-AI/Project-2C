@@ -7,10 +7,16 @@ import {
   listTeams,
   type Database,
 } from '@p2c/db';
-import { CLOSED_STAGES, PIPELINE_STAGES, formatDate, type ClosedStage } from '@p2c/domain';
+import {
+  CLOSED_STAGES,
+  PIPELINE_STAGES,
+  formatCount,
+  formatDate,
+  type ClosedStage,
+} from '@p2c/domain';
 import { Button, DataTable, Segmented, StageBadge, type DataTableColumn } from '@p2c/ui';
 import { useQuery } from '../../data/AppDataContext';
-import { t } from '../../i18n';
+import { joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { RePicker } from '../../shell/RePicker';
 import { teamRes } from '../../shell/scope';
@@ -45,12 +51,10 @@ const profileHref = (card: CustomerCard) =>
 
 /** "Nữ · 1991": whatever is known of gender and birth year. */
 const personal = ({ customer }: CustomerCard) =>
-  [
+  joinParts([
     customer.gender && t(`gender.${customer.gender}`),
     customer.birthDate && String(customer.birthDate.year),
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  ]);
 
 const COLUMNS: ReadonlyArray<DataTableColumn<CustomerCard>> = [
   { id: 'code', header: t('customers.colCode'), kind: 'text', value: (c) => c.customer.code },
@@ -138,10 +142,10 @@ export function CustomersScreen() {
         <span className="text-sm text-fg-2 tabular-nums">
           {re ? (
             <>
-              <b className="font-semibold text-fg">{re.name}</b> · {summary}
+              <b className="font-semibold text-fg">{re.name}</b> {t('sep.dot')} {summary}
             </>
           ) : team ? (
-            `${t('customers.viewingTeam', { team: team.name })} · ${summary}`
+            joinParts([t('customers.viewingTeam', { team: team.name }), summary])
           ) : (
             summary
           )}
@@ -229,7 +233,7 @@ function Closed({ stage, cards }: { stage: ClosedStage; cards: readonly Customer
     <section aria-label={t(`stage.${stage}`)} className={CARD}>
       <div className="mb-1 flex items-center">
         <StageBadge stage={stage} label={t(`stage.${stage}`)} />
-        <span className="ml-auto text-sm text-fg-2 tabular-nums">{cards.length}</span>
+        <span className="ml-auto text-sm text-fg-2 tabular-nums">{formatCount(cards.length)}</span>
       </div>
       <ul className="m-0 list-none p-0 text-sm">
         {cards.slice(0, CLOSED_LIMIT).map((card) => (

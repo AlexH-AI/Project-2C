@@ -247,6 +247,30 @@ test('a day not yet come only reschedules or cancels; rescheduling moves it', as
   await expect(detail(page).getByRole('button', { name: 'Xóa', exact: true })).toHaveCount(0);
 });
 
+// F-13: a day not yet come opens with no status picked; saving says so and keeps the dialog.
+test('saving with no status picked asks for one, by click or Enter', async ({ page }) => {
+  await book(page, '30/9', 'N3');
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
+  const o = outcome(page);
+  await expect(o.status.getByRole('radio', { checked: true })).toHaveCount(0);
+
+  await o.status.getByRole('radio', { name: 'Dời lịch' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(o.dialog.getByRole('alert')).toHaveText('Chọn trạng thái.');
+  await expect(o.dialog).toBeVisible();
+
+  await o.dialog.getByRole('button', { name: 'Hủy', exact: true }).last().click();
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
+  await expect(o.dialog.getByRole('alert')).toHaveCount(0);
+  await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
+  await expect(o.dialog.getByRole('alert')).toHaveText('Chọn trạng thái.');
+  await expect(o.dialog).toBeVisible();
+
+  // Picking one clears the error.
+  await o.status.getByRole('radio', { name: 'Dời lịch' }).check();
+  await expect(o.dialog.getByRole('alert')).toHaveCount(0);
+});
+
 test('a planned appointment booked by mistake is deleted, the stage kept (D4)', async ({
   page,
 }) => {
