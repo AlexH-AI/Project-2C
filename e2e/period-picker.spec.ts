@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 // Monday 28/09/2026, mid-morning local time.
 const TODAY = new Date(2026, 8, 28, 9, 30);
@@ -75,6 +75,55 @@ test('custom range edits start and end and refuses a start after the end', async
   await start.press('Enter');
   await expect(start).toHaveAttribute('aria-invalid', 'true');
   await expect(label).toHaveText('11/09 – 20/09/2026');
+});
+
+// Spec Phase 4 §3.1: a custom range runs at most 3 calendar months.
+async function expectCapRefused(picker: Locator, label: Locator, shown: string) {
+  const start = picker.getByRole('textbox', { name: 'Từ ngày' });
+  const end = picker.getByRole('textbox', { name: 'Đến ngày' });
+  const tooLong = picker.getByText('Kỳ Tùy chọn tối đa 3 tháng');
+
+  await start.fill('01/01/2026');
+  await end.fill('01/04/2026');
+  await end.press('Enter');
+  await expect(end).toHaveAttribute('aria-invalid', 'true');
+  await expect(end).toHaveAccessibleDescription('Kỳ Tùy chọn tối đa 3 tháng');
+  await expect(tooLong).toBeVisible();
+  await expect(label).toHaveText(shown);
+
+  await end.fill('31/03/2026');
+  await end.press('Enter');
+  await expect(label).toHaveText('01/01 – 31/03/2026');
+  await expect(end).toHaveAttribute('aria-invalid', 'false');
+  await expect(tooLong).toHaveCount(0);
+}
+
+test('a custom range longer than 3 months is refused with a note', async ({ page }) => {
+  const { kinds, label, picker, next } = await openPicker(page);
+
+  await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
+  await expectCapRefused(picker, label, '01/09 – 30/09/2026');
+
+  // A year turned into a custom range keeps its first 3 months.
+  await kinds.getByRole('radio', { name: 'Năm' }).click();
+  await next.click();
+  await expect(label).toHaveText('Năm 2027');
+  await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
+  await expect(label).toHaveText('01/01 – 31/03/2027');
+});
+
+test('the appointments screen refuses a custom range longer than 3 months too', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(TODAY);
+  await page.goto('/#/appointments');
+  const picker = page.getByRole('group', { name: 'Kỳ thống kê' });
+
+  await picker
+    .getByRole('radiogroup', { name: 'Loại kỳ' })
+    .getByRole('radio', { name: 'Tùy chọn' })
+    .click();
+  await expectCapRefused(picker, picker.getByRole('status'), '01/09 – 30/09/2026');
 });
 
 test('disables ‹ at year 1900 and › at year 2100 without console errors', async ({ page }) => {

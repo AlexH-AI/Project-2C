@@ -11,6 +11,8 @@ export {
   chartMarks,
   compareDates,
   customPeriod,
+  customRangeAllowed,
+  customRangeMaxEnd,
   daysBetween,
   formatDate,
   formatDayMonth,
