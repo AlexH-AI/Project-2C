@@ -578,6 +578,38 @@ test('an appointment of yesterday still scheduled reads unrecorded everywhere it
   );
 });
 
+test('the dialogs and the KYC timeline of a past appointment still scheduled say unrecorded', async ({
+  page,
+}) => {
+  const { detail } = screen(page);
+  const f = await fillAppointment(page, '14/9');
+  await f.create.click();
+  await expect(f.dialog).toHaveCount(0);
+  const dialog = page.getByRole('dialog');
+  const closeWith = async (name: string) => {
+    await dialog.getByRole('button', { name, exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+  };
+
+  await detail.getByRole('button', { name: 'Dời lịch' }).click();
+  // The new appointment it books is still "Dự kiến"; the old one is not.
+  await expect(dialog).toContainText(`${f.name} · Thứ Hai 14/09/2026 · Chưa ghi kết quả`);
+  await closeWith('Hủy');
+
+  await detail.getByRole('button', { name: 'Tạo lịch hẹn tiếp theo' }).click();
+  await expect(dialog).toContainText('Từ lịch 14/09/2026 · Chưa ghi kết quả · điền sẵn, sửa được');
+  await closeWith('Hủy');
+
+  await detail.getByRole('button', { name: 'Xóa', exact: true }).click();
+  await expect(dialog).toContainText(`${f.name} · Chưa ghi kết quả`);
+  await closeWith('Hủy');
+
+  await detail.getByRole('link', { name: 'Hồ sơ KH →' }).click();
+  await expect(page.getByRole('region', { name: 'Dòng thời gian' })).toContainText(
+    '14/09/2026 · chưa ghi kết quả',
+  );
+});
+
 test('a coordinator filter hiding the new appointment is cleared', async ({ page }) => {
   const { coordinator, day, detail } = screen(page);
   await coordinator.selectOption({ label: 'Không có người phối hợp' });

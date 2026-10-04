@@ -135,7 +135,7 @@ export function AppointmentDialog({
         from
           ? t('appointmentForm.nextSub', {
               date: withTime(formatDate(from.date), from.time),
-              status: t(`appointmentStatus.${from.status}`),
+              status: statusLabel(from, today).text,
             })
           : t('appointmentForm.sub')
       }

@@ -7,6 +7,7 @@ import { errorMessage, t } from '../../i18n';
 import { ALERT } from '../customers/CustomerDialogs';
 import { badge } from './MetFields';
 import { whenText } from './RescheduleFields';
+import { statusLabel } from './appointments-view';
 
 /**
  * Mockup 6g: deleting an appointment takes back the stage move it made, when it is the latest
@@ -68,7 +69,7 @@ export function DeleteAppointmentDialog({
       title={t('appointmentDelete.title', { when: whenText(a) })}
       subtitle={t('appointmentDelete.sub', {
         customer: customer.name,
-        status: t(`appointmentStatus.${a.status}`),
+        status: statusLabel(a, app.today()).text,
       })}
       onClose={onClose}
       onSubmit={remove}
