@@ -311,6 +311,7 @@ export function formatPeriodValue(period: Period): string {
       return `${start.year}`;
     case 'week':
     case 'custom':
+      if (compareDates(start, end) === 0) return formatDate(start);
       return start.year === end.year
         ? `${pad(start.day)}/${pad(start.month)} – ${formatDate(end)}`
         : `${formatDate(start)} – ${formatDate(end)}`;

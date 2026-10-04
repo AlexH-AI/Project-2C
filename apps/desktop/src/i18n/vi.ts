@@ -4,6 +4,7 @@ export const vi = {
   'app.subtitle': 'Quản lý hoạt động tư vấn bảo hiểm nhân thọ',
   'sep.dot': '·',
   'sep.arrow': '→',
+  'sep.range': '{from} – {to}',
   'nav.label': 'Điều hướng chính',
   'nav.group.manage': 'Quản lý',
   'screen.overview': 'Tổng quan',

@@ -69,10 +69,13 @@ const row = (key: string, name: string, met: number, metrics: PeriodMetrics | nu
   cells: cells(met, metrics),
 });
 
-/** Counts and money add up; the close rate of a sum is Σ issued ÷ Σ RF (§4.1, G09–G11). */
-function sum(rows: readonly CompareRow[]): Pick<CompareRow, 'met' | 'metrics'> {
+/**
+ * Counts and money add up; the close rate of a sum is Σ issued ÷ Σ RF (§4.1, G09–G11). Whether
+ * there are results comes from the period, so no teams still sum to 0 once it has started.
+ */
+function sum(rows: readonly CompareRow[], counted: boolean): Pick<CompareRow, 'met' | 'metrics'> {
   const met = rows.reduce((total, { met }) => total + met, 0);
-  if (rows.some(({ metrics }) => !metrics)) return { met, metrics: null };
+  if (!counted) return { met, metrics: null };
   const add = (key: 'rfCount' | 'submittedCount' | 'caseSize' | 'issuedCount' | 'revenue') =>
     rows.reduce((total, { metrics }) => total + (metrics?.[key] ?? 0), 0);
   const rfCount = add('rfCount');
@@ -115,7 +118,7 @@ export function teamCompare(
       });
       return { ...row(team.id, team.name, met, metrics), res };
     });
-  const total = sum(teams);
+  const total = sum(teams, counted !== null);
   return {
     range: counted && formatPeriodValue(customPeriod(counted.start, counted.end)),
     teams,
