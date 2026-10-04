@@ -2,7 +2,6 @@ import {
   appointmentCounts,
   closeRate,
   formatCount,
-  formatPercent,
   formatVndCompact,
   periodMetrics,
   snapshotDate,
@@ -21,7 +20,7 @@ import {
 } from '@p2c/domain';
 import { joinParts, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
-import { countedWindow } from '../overview/overview-view';
+import { closeRateText, countedWindow } from '../overview/overview-view';
 
 export interface ReportData extends MetricsData {
   readonly customers: readonly Customer[];
@@ -85,18 +84,33 @@ const total = <K extends string>(
     keys.map((key) => [key, parts.reduce((sum, part) => sum + part[key], 0)]),
   ) as Record<K, number>;
 
-/** Counts and money add up; the close rate of a sum is Σ issued ÷ Σ RF (§4.1, G09–G11). */
-function sumFigures(rows: readonly ReportFigures[]): ReportFigures {
-  const metrics = rows.map((row) => row.metrics);
-  const stages = rows.map((row) => row.stages);
-  const summed = metrics.every((m) => m !== null) ? total(METRIC_SUMS, metrics) : null;
+/**
+ * Counts and money add up; the close rate of a sum is Σ issued ÷ Σ RF (§4.1, G09–G11). Whether
+ * there are results and stages yet comes from the period, not the rows, so a table without rows
+ * still matches Tổng hợp: 0 once the period has started, "—" before.
+ */
+function sumFigures(
+  rows: readonly ReportFigures[],
+  has: { readonly results: boolean; readonly stages: boolean },
+): ReportFigures {
+  const summed = total(
+    METRIC_SUMS,
+    rows.flatMap((row) => (row.metrics ? [row.metrics] : [])),
+  );
   return {
     appointments: total(
       APPOINTMENT_SUMS,
       rows.map((row) => row.appointments),
     ),
-    metrics: summed && { ...summed, closeRate: closeRate(summed.issuedCount, summed.rfCount) },
-    stages: stages.every((s) => s !== null) ? total(REPORT_STAGES, stages) : null,
+    metrics: has.results
+      ? { ...summed, closeRate: closeRate(summed.issuedCount, summed.rfCount) }
+      : null,
+    stages: has.stages
+      ? total(
+          REPORT_STAGES,
+          rows.flatMap((row) => (row.stages ? [row.stages] : [])),
+        )
+      : null,
   };
 }
 
@@ -160,7 +174,7 @@ export function reportRows(
     key: 'total',
     name: t('reports.total'),
     team: null,
-    ...sumFigures(rows),
+    ...sumFigures(rows, { results: counted !== null, stages: date !== null }),
   });
   const table = (rows: readonly ReportRow[]): ReportTable => ({ rows, total: totalRow(rows) });
 
@@ -197,13 +211,6 @@ export function reportRows(
   return { summary, byTeam: table(teams), byRe: table(res) };
 }
 
-function rateText(metrics: PeriodMetrics): string {
-  const rate = metrics.closeRate;
-  return rate
-    ? `${formatPercent((rate.numerator / rate.denominator) * 100)}${t('overview.percentUnit')}`
-    : t('overview.none');
-}
-
 /**
  * A row as the screen shows it, 17 cells: Lịch hẹn (Đã gặp, Dời – hủy – không đến, Chưa ghi kết
  * quả, Dự kiến, Tổng) · Kết quả (Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt)
@@ -219,7 +226,7 @@ export function reportCells({ appointments, metrics, stages }: ReportFigures): s
         formatVndCompact(metrics.caseSize),
         formatCount(metrics.issuedCount),
         formatVndCompact(metrics.revenue),
-        rateText(metrics),
+        closeRateText(metrics.closeRate),
       ]
     : Array<string>(6).fill(none);
   const stageCells = REPORT_STAGES.map((stage) => (stages ? formatCount(stages[stage]) : none));

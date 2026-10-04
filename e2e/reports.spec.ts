@@ -40,6 +40,43 @@ test('Toàn bộ: Tổng hợp over Theo team, and Theo RE can be chosen', async
   expect(errors).toEqual([]);
 });
 
+test('scrolled sideways, Theo RE keeps the RE name and every figure of Tổng readable', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1100, height: 800 });
+  const { tables } = await openReports(page);
+  await tables.getByRole('radio', { name: 'Theo RE' }).click();
+  const table = page.getByRole('table', { name: 'Theo RE' });
+  await expect(table.getByRole('rowheader')).toHaveCount(31);
+
+  // Scrolled to the far right: the RE name stays at the left edge, and every cell of the first RE
+  // row and of Tổng whose middle is right of the RE column is the element seen there, not covered.
+  const seen = await table.evaluate((element) => {
+    const box = element.parentElement!;
+    const rows = [
+      element.querySelector('tbody tr')!,
+      element.querySelector('tbody tr:last-child')!,
+    ];
+    const covered: string[] = [];
+    for (const row of rows) {
+      row.scrollIntoView({ block: 'center' });
+      box.scrollLeft = box.scrollWidth;
+      const view = box.getBoundingClientRect();
+      const reColumn = rows[0]!.querySelector('th')!.getBoundingClientRect();
+      if (reColumn.left !== view.left) covered.push('RE name moved');
+      for (const cell of row.querySelectorAll('td')) {
+        const rect = cell.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        if (x <= reColumn.right || x >= view.right) continue;
+        if (document.elementFromPoint(x, y) !== cell) covered.push(cell.textContent ?? '');
+      }
+    }
+    return { scrolled: box.scrollLeft > 0, covered };
+  });
+  expect(seen).toEqual({ scrolled: true, covered: [] });
+});
+
 test('Team Bình Minh has no Theo team, and Theo RE lists its 10 RE', async ({ page }) => {
   const { scope, filter, viewing, summary, tables } = await openReports(page);
 

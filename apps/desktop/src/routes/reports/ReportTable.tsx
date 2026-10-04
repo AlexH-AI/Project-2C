@@ -124,9 +124,11 @@ export function ReportTable({
           })}
           {total && (
             <tr className="font-semibold">
+              {/* Tổng sits in the RE column, sticky like the RE names; a wider sticky cell would
+                  cover the first figures once the table scrolls. */}
+              {lead === 're' && <td className={`${CELL} border-t border-t-border-strong`} />}
               <th
                 scope="row"
-                colSpan={leads.length}
                 className={`${CELL} ${STICKY} border-t border-t-border-strong text-left`}
               >
                 {total.name}

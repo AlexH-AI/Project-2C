@@ -111,6 +111,20 @@ describe('reportRows', () => {
     expect(cells.slice(0, 5)).toEqual(reportCells(rows.summary).slice(0, 5));
     expect(cells.slice(5)).toEqual(Array(12).fill('—'));
   });
+
+  it('a team without RE: Tổng of the empty Theo RE matches Tổng hợp, "—" or 0', () => {
+    const data = { ...GOLDEN, teams: [...TEAMS, { id: 'team-c', name: 'Team C' }] };
+    const scope = { kind: 'team', teamId: 'team-c' } as const;
+
+    const notStarted = reportRows(data, JAN_2027, scope, d(2026, 12, 20));
+    expect(notStarted.byRe?.rows).toEqual([]);
+    expect(reportCells(notStarted.byRe!.total)).toEqual(reportCells(notStarted.summary));
+    expect(reportCells(notStarted.byRe!.total).slice(5)).toEqual(Array(12).fill('—'));
+
+    const past = reportRows(data, JAN_2027, scope, d(2027, 3, 15));
+    expect(reportCells(past.byRe!.total)).toEqual(reportCells(past.summary));
+    expect(reportCells(past.byRe!.total).slice(5, 11)).toEqual(['0', '0', '0 ₫', '0', '0 ₫', '—']);
+  });
 });
 
 describe('summaryMeta', () => {
