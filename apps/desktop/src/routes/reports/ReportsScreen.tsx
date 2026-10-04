@@ -52,7 +52,7 @@ export function ReportsScreen() {
   const filter = useAppliedFilter(today, picked);
   const { applied } = filter;
   const [chosenTable, setTable] = useState<TableKey>('byTeam');
-  const exporter = useReportExport();
+  const exporter = useReportExport(applied);
 
   const viewing = {
     ...viewingText(applied, today, data.people, data.teams),

@@ -554,6 +554,8 @@ export const vi = {
   'reports.exportFailedHelp':
     'Không ghi được vào thư mục exports\\ (đầy ổ đĩa hoặc không có quyền). Dữ liệu trong app không bị ảnh hưởng.',
   'reports.exportFailedHelpWeb': 'Không tạo được file. Dữ liệu trong app không bị ảnh hưởng.',
+  'reports.exportBuildFailedHelp':
+    'Không tạo được file Excel. Thử lại; nếu vẫn lỗi, mở lại app. Dữ liệu trong app không bị ảnh hưởng.',
   'reports.excel.title': 'Báo cáo {table} · {period} · {scope} · xuất {exported}',
   'reports.excel.money': '{label} (₫)',
   'reports.excel.period': '{period} ({range})',

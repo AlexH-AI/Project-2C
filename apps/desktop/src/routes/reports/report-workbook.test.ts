@@ -1,8 +1,10 @@
 import ExcelJS from 'exceljs';
 import { calendarDate, customPeriod, periodOf } from '@p2c/domain';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   buildReportWorkbook,
+  exportFailedHelp,
+  exportReport,
   reportFileName,
   reportSheetCount,
   reportWorkbookMeta,
@@ -200,6 +202,72 @@ describe('reportWorkbookMeta', () => {
   });
 });
 
+describe('exportReport', () => {
+  const today = calendarDate(2026, 10, 15);
+  const report = {
+    rows: ALL,
+    period: periodOf('month', today),
+    viewing: { period: 'Tháng 10/2026', mtd: true, range: '01/10 – 15/10/2026', scope: 'Toàn bộ' },
+    today,
+  };
+  const NAME = 'bao-cao_2026-10_toan-bo_2026-10-15.xlsx';
+
+  it('writes the workbook under its file name and gives back where it went', async () => {
+    const write = vi.fn<(name: string, bytes: Uint8Array<ArrayBuffer>) => Promise<string>>(
+      async (name) => `C:\\data\\exports\\${name}`,
+    );
+
+    expect(await exportReport(report, write)).toEqual({
+      kind: 'exported',
+      name: NAME,
+      path: `C:\\data\\exports\\${NAME}`,
+    });
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(write.mock.calls[0]![1].buffer);
+    expect(sheetNames(workbook)).toEqual(['Tổng hợp', 'Theo team', 'Theo RE', 'Theo mốc']);
+  });
+
+  it('fails at writing when the file cannot be written', async () => {
+    const write = vi.fn(() => Promise.reject(new Error('os error 123')));
+
+    expect(await exportReport(report, write)).toEqual({ kind: 'failed', step: 'write' });
+  });
+
+  it('fails at building when ExcelJS does not load, and writes nothing', async () => {
+    vi.resetModules();
+    vi.doMock('exceljs', () => {
+      throw new Error('Failed to fetch dynamically imported module');
+    });
+    try {
+      const { exportReport: exportWithoutExcel } = await import('./report-workbook');
+      const write = vi.fn(() => Promise.resolve(undefined));
+
+      expect(await exportWithoutExcel(report, write)).toEqual({ kind: 'failed', step: 'build' });
+      expect(write).not.toHaveBeenCalled();
+    } finally {
+      vi.doUnmock('exceljs');
+      vi.resetModules();
+    }
+  });
+});
+
+describe('exportFailedHelp', () => {
+  it('says the file could not be made when building failed, in the exe and in web mode', () => {
+    const made = 'Không tạo được file Excel. Thử lại; nếu vẫn lỗi, mở lại app.';
+    expect(exportFailedHelp('build', true)).toBe(`${made} Dữ liệu trong app không bị ảnh hưởng.`);
+    expect(exportFailedHelp('build', false)).toBe(exportFailedHelp('build', true));
+  });
+
+  it('names the exports folder when writing failed in the exe', () => {
+    expect(exportFailedHelp('write', true)).toBe(
+      'Không ghi được vào thư mục exports\\ (đầy ổ đĩa hoặc không có quyền). Dữ liệu trong app không bị ảnh hưởng.',
+    );
+    expect(exportFailedHelp('write', false)).toBe(
+      'Không tạo được file. Dữ liệu trong app không bị ảnh hưởng.',
+    );
+  });
+});
+
 describe('reportFileName', () => {
   const d = calendarDate;
   const today = d(2026, 10, 15);
@@ -229,5 +297,16 @@ describe('reportFileName', () => {
     expect(reportFileName(periodOf('month', today), 'Team ..\\A/B: "C"*', today)).toBe(
       'bao-cao_2026-10_team-a-b-c_2026-10-15.xlsx',
     );
+  });
+
+  it('cuts a long scope to 60 characters, so the exe can always write the file', () => {
+    // An RE name as long as the db takes; its 60th character is a `-`, which is dropped too.
+    const name = `RE ${'Lê '.repeat(85)}Lê`;
+    const file = reportFileName(customPeriod(d(2026, 9, 20), d(2026, 10, 5)), name, today);
+
+    expect(name).toHaveLength(260);
+    expect(file).toBe(`bao-cao_2026-09-20-den-2026-10-05_re-${'le-'.repeat(18)}le_2026-10-15.xlsx`);
+    expect(file.length).toBeLessThanOrEqual(120);
+    expect(file).toMatch(/^[a-z0-9_-]+\.xlsx$/);
   });
 });
