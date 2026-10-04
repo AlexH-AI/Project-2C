@@ -48,7 +48,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/routes/appointments/` — AppointmentDialog.tsx, AppointmentsScreen.tsx, DeleteAppointmentDialog.tsx, EditOutcomeDialog.tsx, MetFields.tsx, OutcomeDialog.tsx, RescheduleDialog.tsx, RescheduleFields.tsx, YearGrid.tsx, appointment-form.ts, appointments-view.ts, outcome-form.ts
 - `src/routes/customers/` — CustomerAppointments.tsx, CustomerDialogs.tsx, CustomerKyc.tsx, CustomerPolicies.tsx, CustomerProfile.tsx, CustomersScreen.tsx, KycDialogs.tsx, PolicyDialogs.tsx, customers-view.ts, kyc-view.ts, policy-form.ts
 - `src/routes/overview/` — OverviewTiles.tsx, StageBlock.tsx, TeamCompare.tsx, overview-view.ts, stage-chart.ts, stage-view.ts, team-compare-view.ts
-- `src/routes/reports/` — ReportTable.tsx, ReportsScreen.tsx, reports-view.ts
+- `src/routes/reports/` — ReportExport.tsx, ReportTable.tsx, ReportsScreen.tsx, report-workbook.ts, reports-view.ts
 - `src/routes/team/` — PersonDialogs.tsx, TeamDialogs.tsx, TeamScreen.tsx, team-view.ts
 - `src/shell/` — AppShell.tsx, CloseGuard.tsx, ErrorBoundary.tsx, RePicker.tsx, SaveWarning.tsx, ScopeContext.tsx, ScopePicker.tsx, Sidebar.tsx, StartupError.tsx, close-guard.ts, routes.ts, scope.ts, screen-error.ts, startup-error.ts, useRoute.ts
 <!-- codemap:end -->

@@ -10,6 +10,7 @@ import {
   formatDate,
   formatDayMonth,
   formatDayOfMonth,
+  formatIsoDate,
   formatLocalDateTime,
   formatPeriodValue,
   fromLocalDate,
@@ -73,6 +74,13 @@ describe('local date and time', () => {
 
   it('stamps file names as YYYYMMDD-HHMM', () => {
     expect(localFileStamp(at)).toBe('20260905-0704');
+  });
+});
+
+describe('formatIsoDate', () => {
+  it('writes a day as YYYY-MM-DD, for file names', () => {
+    expect(formatIsoDate(d(5, 9, 2026))).toBe('2026-09-05');
+    expect(formatIsoDate(d(31, 12, 1900))).toBe('1900-12-31');
   });
 });
 

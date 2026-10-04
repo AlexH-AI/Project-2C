@@ -15,6 +15,7 @@ export {
   formatDate,
   formatDayMonth,
   formatDayOfMonth,
+  formatIsoDate,
   formatLocalDateTime,
   formatPeriodValue,
   fromLocalDate,

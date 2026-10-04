@@ -94,6 +94,11 @@ export function formatLocalDateTime(at: Date, options: { seconds?: boolean } = {
   return `${formatDate(fromLocalDate(at))} ${full}`;
 }
 
+/** `YYYY-MM-DD`, for file names that sort by day. */
+export function formatIsoDate(date: CalendarDate): string {
+  return `${date.year}-${pad(date.month)}-${pad(date.day)}`;
+}
+
 /** `YYYYMMDD-HHMM` in the local time zone, for file names that sort by time. */
 export function localFileStamp(at: Date): string {
   const { year, month, day } = fromLocalDate(at);
