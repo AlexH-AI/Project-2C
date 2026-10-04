@@ -140,3 +140,39 @@ test('a period not started yet has "—" in the tiles and says so over the chart
   await n4.click();
   await expect(n4).toHaveAttribute('aria-pressed', 'true');
 });
+
+test('So sánh team: a team opens its RE by name, closes again, and the RE scope has no table', async ({
+  page,
+}) => {
+  const { scope, filter } = await openOverview(page);
+  const table = page.getByRole('table', { name: 'So sánh team' });
+  const rows = table.getByRole('row');
+  const team = table.getByRole('button', { name: 'Bình Minh' });
+
+  await expect(page.getByRole('region', { name: 'So sánh team' })).toContainText(
+    '01/09 – 15/09/2026 (MTD)',
+  );
+  await expect(table.getByRole('button')).toHaveText([/Bình Minh$/, /Hừng Đông$/, /Sao Mai$/]);
+  await expect(rows.last()).toContainText('Tổng');
+  await expect(rows).toHaveCount(5);
+  await expect(team).toHaveAttribute('aria-expanded', 'false');
+
+  await team.click();
+  await expect(team).toHaveAttribute('aria-expanded', 'true');
+  await expect(rows).toHaveCount(15);
+  const res = (await table.getByRole('rowheader').allInnerTexts()).slice(1, 11);
+  expect(res).toEqual([...res].sort(new Intl.Collator('vi').compare));
+
+  await team.click();
+  await expect(team).toHaveAttribute('aria-expanded', 'false');
+  await expect(rows).toHaveCount(5);
+
+  await scope.getByRole('radio', { name: 'Team' }).click();
+  await filter.click();
+  await expect(table).toBeVisible();
+
+  await scope.getByRole('radio', { name: 'RE' }).click();
+  await filter.click();
+  await expect(page.getByRole('region', { name: 'Khách hàng theo nhóm' })).toBeVisible();
+  await expect(table).toHaveCount(0);
+});

@@ -77,7 +77,9 @@ export function stageChartOption(chart: StageChart, shown: readonly ChartStage[]
           list.map((param) => [param.seriesName, String(param.marker ?? '')]),
         );
         const top = [...stages].reverse();
-        const rows = top.map((stage) => row(markers.get(stage) ?? '', stage, values[stage]));
+        const rows = top.map((stage) =>
+          row(markers.get(stage) ?? '', t(`stage.${stage}`), values[stage]),
+        );
         const total = top.reduce((sum, stage) => sum + values[stage], 0);
         return heading + rows.join('') + row('', t('overview.stages.total'), total);
       },
