@@ -34,6 +34,13 @@ describe('chartTheme', () => {
     });
   });
 
+  it('offers a `today` style for category labels: the date-today colour, bold', () => {
+    expect(chartTheme(read).categoryAxis.axisLabel.rich.today).toEqual({
+      color: 'value--date-today',
+      fontWeight: 700,
+    });
+  });
+
   it('ignores the whitespace getComputedStyle keeps around custom properties', () => {
     expect(chartTheme((name) => ` value${name} `).color[0]).toBe('value--accent');
   });

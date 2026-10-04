@@ -7,9 +7,37 @@ import { CHART_STAGES, type ChartStage, type StageChart } from './stage-view';
 const bottomUp = (shown: readonly ChartStage[]) =>
   CHART_STAGES.filter((stage) => shown.includes(stage)).reverse();
 
-/** Colours of the series of `stageChartOption`, as tokens: each stage in its `StageBadge` colour. */
-export const stagePalette = (shown: readonly ChartStage[]): string[] =>
-  bottomUp(shown).map((stage) => `--${stage.toLowerCase()}`);
+/**
+ * Colours of the series of `stageChartOption`, as tokens: each stage in its `StageBadge` colour,
+ * then the outline of the marks after today.
+ */
+export const stagePalette = (shown: readonly ChartStage[]): string[] => [
+  ...bottomUp(shown).map((stage) => `--${stage.toLowerCase()}`),
+  '--border-strong',
+];
+
+/** A chart of more marks than this labels only some of them (mockup 1a: 01, 05, 10 … 31). */
+const ALL_LABELS_MAX = 12;
+const EVERY = 5;
+
+/**
+ * The marks labelled under a long chart: today, then the first and the last, then every 5th; a
+ * label beside one that ranks higher gives way, so none overlap in a narrow team chart.
+ */
+function labelled(chart: StageChart): number | ((index: number) => boolean) {
+  const { columns } = chart;
+  if (columns.length <= ALL_LABELS_MAX) return 0;
+  const today = columns.findIndex((column) => column.today);
+  const edges = [0, columns.length - 1];
+  const beside = (index: number, other: number) => other >= 0 && Math.abs(index - other) === 1;
+  return (index) => {
+    if (index === today) return true;
+    if (beside(index, today)) return false;
+    if (edges.includes(index)) return true;
+    if (edges.some((edge) => beside(index, edge))) return false;
+    return (index + 1) % EVERY === 0;
+  };
+}
 
 /** What ECharts passes to an axis tooltip formatter, as far as it is read here. */
 interface TooltipParam {
@@ -58,18 +86,43 @@ export function stageChartOption(chart: StageChart, shown: readonly ChartStage[]
       type: 'category',
       data: chart.columns.map((column) => column.label),
       axisTick: { alignWithLabel: true },
+      axisLabel: {
+        interval: labelled(chart),
+        // The `today` rich style (date-today colour, bold) comes from the chart theme.
+        formatter: (value: string, index: number) =>
+          chart.columns[index]?.today ? `{today|${value}}` : value,
+      },
     },
     yAxis: {
       type: 'value',
       minInterval: 1,
       axisLabel: { formatter: (value: number) => formatCount(value) },
     },
-    series: stages.map((stage) => ({
-      type: 'bar',
-      name: stage,
-      stack: 'stages',
-      barCategoryGap: '25%',
-      data: chart.columns.map((column) => column.values?.[stage] ?? null),
-    })),
+    series: [
+      ...stages.map((stage) => ({
+        type: 'bar' as const,
+        name: stage,
+        stack: 'stages',
+        barCategoryGap: '25%',
+        data: chart.columns.map((column) => column.values?.[stage] ?? null),
+      })),
+      // A mark after today is left empty, a dashed line on the axis (mockup 1a): a zero bar kept
+      // at a minimum height, outlined in its palette colour.
+      {
+        type: 'bar' as const,
+        id: 'future',
+        stack: 'stages',
+        barCategoryGap: '25%',
+        barMinHeight: 2,
+        silent: true,
+        itemStyle: {
+          color: 'transparent',
+          borderColor: 'auto',
+          borderType: 'dashed',
+          borderWidth: 1,
+        },
+        data: chart.columns.map((column) => (column.values ? null : 0)),
+      },
+    ],
   };
 }

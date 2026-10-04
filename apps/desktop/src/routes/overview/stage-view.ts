@@ -53,7 +53,7 @@ export interface StageChart {
 }
 
 /** Khách hàng theo nhóm of Tổng quan (mockup overview.html 1a–1c, 1e). */
-export interface StageBlock {
+export interface StageBlockView {
   /** The four tiles, the snapshot of the whole period; null before the period starts ("—"). */
   readonly tiles: StageValues | null;
   /** "ảnh chụp cuối ngày …" beside the heading; null before the period starts. */
@@ -99,7 +99,7 @@ export function stageBlock(
   period: Period,
   scope: Scope,
   today: CalendarDate,
-): StageBlock {
+): StageBlockView {
   const snapshot = stageSnapshotter(data.customers, data.transitions, data.people);
   const marks = chartMarks(period).map((mark) => ({ mark, date: snapshotDate(mark, today) }));
   const chart = (key: string, team: string | null, chartScope: Scope): StageChart => ({

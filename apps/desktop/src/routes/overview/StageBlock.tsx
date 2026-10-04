@@ -3,12 +3,7 @@ import { formatCount } from '@p2c/domain';
 import { Chart, StageBadge } from '@p2c/ui';
 import { t } from '../../i18n';
 import { stageChartOption, stagePalette } from './stage-chart';
-import {
-  CHART_STAGES,
-  type ChartStage,
-  type StageBlock as Block,
-  type StageChart,
-} from './stage-view';
+import { CHART_STAGES, type ChartStage, type StageBlockView, type StageChart } from './stage-view';
 
 const TOP = {
   N4: 'border-t-n4',
@@ -21,7 +16,7 @@ const TOP = {
  * "Khách hàng theo nhóm" (mockup overview.html 1a–1c, 1e): the four tiles are the chart legend, a
  * click hides or shows that stage on every chart.
  */
-export function StageBlock({ block }: { block: Block }) {
+export function StageBlock({ block }: { block: StageBlockView }) {
   const [hidden, setHidden] = useState<ReadonlySet<ChartStage>>(new Set());
   const shown = useMemo(() => CHART_STAGES.filter((stage) => !hidden.has(stage)), [hidden]);
   const palette = useMemo(() => stagePalette(shown), [shown]);

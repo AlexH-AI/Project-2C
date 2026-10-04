@@ -21,6 +21,27 @@ test('the stage chart colours N4–N1 from the stage tokens', async ({ page }) =
   for (const colour of tokens) expect(fills).toContain(colour);
 });
 
+// Today is pinned to 15/09/2026 (playwright.config.ts): 15 days drawn, 15 after today.
+test('the stage chart marks today and draws the days after it as dashed lines', async ({
+  page,
+}) => {
+  await page.goto('/#/overview');
+  const chart = page.getByRole('img', { name: CHART, exact: true });
+  await expect(chart.locator('svg')).toHaveCount(1);
+
+  const [borderStrong, dateToday] = await page.evaluate(() => {
+    const style = getComputedStyle(document.documentElement);
+    return ['--border-strong', '--date-today'].map((name) => style.getPropertyValue(name).trim());
+  });
+  const dashes = chart.locator('svg path[stroke-dasharray]');
+  await expect(dashes).toHaveCount(15);
+  expect(await dashes.first().getAttribute('stroke')).toBe(borderStrong);
+
+  const today = chart.locator('svg text', { hasText: /^15$/ });
+  await expect(today).toHaveAttribute('fill', dateToday!);
+  await expect(today).toHaveCSS('font-weight', '700');
+});
+
 test('switching screens 10 times keeps one chart and logs no errors', async ({ page }) => {
   const errors = trackConsoleErrors(page);
   await page.goto('/#/overview');

@@ -39,7 +39,14 @@ export function chartTheme(readToken: TokenReader, palette: readonly string[] = 
       fontSize: Number.parseFloat(token('--fs-xs')),
     },
     legend: { textStyle: { color: text2 } },
-    categoryAxis: axis,
+    // A label formatted `{today|…}` marks the column of today, as the calendars do.
+    categoryAxis: {
+      ...axis,
+      axisLabel: {
+        ...axis.axisLabel,
+        rich: { today: { color: token('--date-today'), fontWeight: 700 } },
+      },
+    },
     valueAxis: axis,
     tooltip: {
       backgroundColor: token('--bg-2'),
