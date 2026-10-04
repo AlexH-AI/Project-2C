@@ -9,7 +9,7 @@ import {
   type StageTransition,
 } from '@p2c/domain';
 import { Button, StageBadge } from '@p2c/ui';
-import { t } from '../../i18n';
+import { joinParts, t } from '../../i18n';
 import { withTime } from '../appointments/appointment-form';
 import { NextButton } from './CustomerAppointments';
 import { factText, kycOverview, kycTimeline, type KycCategoryRow } from './kyc-view';
@@ -63,7 +63,10 @@ function CategoryRow({
             <span>
               {t(`kycField.${fact.field}`)}: {factText(fact.value, YES_NO)}
               {KYC_FIELDS[fact.field].fromProfile && (
-                <span className="text-xs text-fg-3"> · {t('kyc.fromProfile')}</span>
+                <span className="text-xs text-fg-3">
+                  {' '}
+                  {t('sep.dot')} {t('kyc.fromProfile')}
+                </span>
               )}
             </span>
             <span className="text-xs whitespace-nowrap text-fg-3 tabular-nums">
@@ -161,9 +164,7 @@ function meetingText(a: AppointmentRecord): string {
   if (a.status === 'SCHEDULED') {
     return t('timeline.trigger', { trigger: a.triggerNote ?? t(`trigger.${a.triggerType}`) });
   }
-  return [a.note, a.nextStep && t('timeline.nextStep', { step: a.nextStep })]
-    .filter(Boolean)
-    .join(' · ');
+  return joinParts([a.note, a.nextStep && t('timeline.nextStep', { step: a.nextStep })]);
 }
 
 /**
@@ -210,15 +211,13 @@ export function Timeline({
             {event.kind === 'meeting' && (
               <>
                 <b>
-                  {[
+                  {joinParts([
                     event.number === null
                       ? t('timeline.meetingPlain')
                       : t('timeline.meeting', { number: event.number }),
                     roles(event.appointment).length > 0 &&
                       t('timeline.coordinators', { roles: roles(event.appointment).join(', ') }),
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
+                  ])}
                 </b>
                 <span className="flex flex-wrap items-baseline gap-x-2 text-fg-2">
                   {meetingText(event.appointment)}
@@ -231,7 +230,7 @@ export function Timeline({
             {event.kind === 'stage' && (
               <span className="flex items-center gap-2">
                 {event.transition.from && badge(event.transition.from)}
-                {event.transition.from && t('timeline.arrow')}
+                {event.transition.from && t('sep.arrow')}
                 {badge(event.transition.to)}
                 <span className="text-xs text-fg-3">
                   {t(

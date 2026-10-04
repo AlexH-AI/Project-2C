@@ -62,6 +62,8 @@ export function OutcomeDialog({
   const [nextTimeText, setNextTimeText] = useState(a.time ?? '');
   const [errors, setErrors] = useState<readonly OutcomeError[]>([]);
   const [failure, setFailure] = useState<string>();
+  // Saved before a status was picked (F-13); picking one clears it.
+  const [noStatus, setNoStatus] = useState(false);
   const [kycNote, setKycNote] = useState(false);
   const moving = useRescheduleForm(a, today);
 
@@ -78,7 +80,10 @@ export function OutcomeDialog({
     };
 
   const save = () => {
-    if (status === null) return;
+    if (status === null) {
+      setNoStatus(true);
+      return;
+    }
     try {
       if (status === 'RESCHEDULED') {
         const when = moving.submit();
@@ -135,6 +140,11 @@ export function OutcomeDialog({
         {failure && (
           <p role="alert" className={`${ALERT} border-danger text-danger`}>
             {failure}
+          </p>
+        )}
+        {noStatus && status === null && (
+          <p role="alert" className={`${ALERT} border-danger text-danger`}>
+            {t('outcome.statusRequired')}
           </p>
         )}
         {met && (has('stageAfter') || has('nextStep')) && (

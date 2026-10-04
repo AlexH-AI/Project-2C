@@ -19,7 +19,7 @@ import {
 } from '@p2c/domain';
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
-import { errorMessage, t } from '../../i18n';
+import { errorMessage, joinParts, t } from '../../i18n';
 import { Actions, ALERT, useDateField } from './CustomerDialogs';
 import { BADGE, YES_NO } from './CustomerKyc';
 import { factText, previewKycNote, resolveKycOptions } from './kyc-view';
@@ -271,7 +271,7 @@ export function KycNoteDialog({
         <div className={`${ALERT} flex flex-col gap-1 border-ok`}>
           <b>
             {t('kycNote.after', { number: preview.number })}
-            {preview.material && ` · ${t('timeline.material')}`}
+            {preview.material && ` ${t('sep.dot')} ${t('timeline.material')}`}
           </b>
           <Material auto={preview.auto} value={material} onChange={setMaterial} />
         </div>
@@ -317,7 +317,7 @@ export function ResolveKycDialog({
   return (
     <Dialog
       title={t('kycResolve.title', { field: t(`kycField.${field}`) })}
-      subtitle={`${customer.name} · ${t(core ? 'kyc.conflict.core' : 'kyc.conflict.minor')}`}
+      subtitle={joinParts([customer.name, t(core ? 'kyc.conflict.core' : 'kyc.conflict.minor')])}
       onClose={onClose}
       onSubmit={save}
       actions={<Actions onClose={onClose} save={t('kycResolve.save')} />}

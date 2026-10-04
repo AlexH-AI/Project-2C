@@ -2,6 +2,8 @@
 export const vi = {
   'app.title': 'Project-2C',
   'app.subtitle': 'Quản lý hoạt động tư vấn bảo hiểm nhân thọ',
+  'sep.dot': '·',
+  'sep.arrow': '→',
   'nav.label': 'Điều hướng chính',
   'nav.group.manage': 'Quản lý',
   'screen.overview': 'Tổng quan',
@@ -107,7 +109,6 @@ export const vi = {
   'kycField.mainConcern': 'Mối quan tâm chính',
   'kycField.otherConcerns': 'Mối quan tâm khác',
   'timeline.title': 'Dòng thời gian',
-  'timeline.arrow': '→',
   'timeline.note': 'Ghi chú KYC',
   'timeline.systemNote': 'Ghi chú hệ thống',
   'timeline.material': 'material',
@@ -387,6 +388,7 @@ export const vi = {
   'outcome.title': 'Kết quả cuộc gặp',
   'outcome.sub': '{customer} · {weekday} {when} · hiện {stage}',
   'outcome.status': 'Trạng thái',
+  'outcome.statusRequired': 'Chọn trạng thái.',
   'outcome.futureHelp':
     'Lịch chưa tới ngày: Đã gặp và Không đến ghi được từ ngày {date}; trước đó chỉ Dời lịch hoặc Hủy.',
   'outcome.otherHelp': 'Không đến / Hủy: không có nhóm sau cuộc gặp, việc tiếp theo, case size.',

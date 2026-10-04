@@ -14,7 +14,7 @@ import {
 import { formatDate, type KycField, type Policy } from '@p2c/domain';
 import { Button, StageBadge } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
-import { t } from '../../i18n';
+import { joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { AppointmentDialog } from '../appointments/AppointmentDialog';
 import { CustomerAppointments } from './CustomerAppointments';
@@ -119,7 +119,7 @@ export function CustomerProfile({ id }: { id: string }) {
             {t('kycNote.open')}
           </Button>
         </div>
-        <p className="m-0 text-sm text-fg-2 tabular-nums">{facts.join(' · ')}</p>
+        <p className="m-0 text-sm text-fg-2 tabular-nums">{joinParts(facts)}</p>
       </section>
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <div className="flex flex-col gap-4">

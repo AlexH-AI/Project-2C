@@ -13,6 +13,7 @@ import {
   compareDates,
   formatDate,
   formatDayMonth,
+  formatCount,
   formatDayOfMonth,
   formatPeriodValue,
   isInPeriod,
@@ -24,7 +25,7 @@ import {
 } from '@p2c/domain';
 import { Button, DataTable, PeriodPicker, SelectField, type DataTableColumn } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
-import { t } from '../../i18n';
+import { joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { RePicker } from '../../shell/RePicker';
 import { teamRes } from '../../shell/scope';
@@ -39,11 +40,15 @@ import { RescheduleDialog } from './RescheduleDialog';
 import { YearGrid } from './YearGrid';
 import { isPastOrToday } from './appointment-form';
 import {
+  APPOINTMENT_GROUPS,
   appointmentRows,
   appointmentsByRe,
+  CARD,
   dateTone,
   dayBoard,
   DATE_TONE_CELL,
+  FOCUS,
+  groupTotal,
   monthGrid,
   outcomeText,
   personLabel,
@@ -54,12 +59,10 @@ import {
   summaryText,
   yearGrid,
   type AppointmentRow,
-  FOCUS,
   type CoordinatorFilter,
   type DayCell,
 } from './appointments-view';
 
-const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 const readAppointments = (db: Database) => ({
@@ -117,7 +120,7 @@ export function AppointmentsScreen() {
     scope !== picked && scope.kind === 're'
       ? data.people.find((person) => person.id === scope.reId)
       : undefined;
-  // today() is a new object each render; its fields keep the grid stable.
+  // today() is a new object each render; its fields keep the grid and the columns stable.
   const { year: thisYear, month: thisMonth, day: thisDay } = today;
   const yearCells = useMemo(
     () => yearGrid(period.start.year, rows, { year: thisYear, month: thisMonth, day: thisDay }),
@@ -139,14 +142,15 @@ export function AppointmentsScreen() {
       .map((person) => ({ value: person.id, label: personLabel(person) })),
   ];
 
-  const columns = useMemo<ReadonlyArray<DataTableColumn<AppointmentRow>>>(
-    () => [
+  const columns = useMemo<ReadonlyArray<DataTableColumn<AppointmentRow>>>(() => {
+    const day = { year: thisYear, month: thisMonth, day: thisDay };
+    return [
       {
         id: 'date',
         header: t('appointments.date'),
         kind: 'date',
         value: (r) => r.appointment.date,
-        cellClass: (r) => DATE_TONE_CELL[dateTone(r.appointment.date, today)],
+        cellClass: (r) => DATE_TONE_CELL[dateTone(r.appointment.date, day)],
       },
       {
         id: 'time',
@@ -182,9 +186,9 @@ export function AppointmentsScreen() {
         id: 'status',
         header: t('appointments.status'),
         kind: 'text',
-        value: (r) => statusLabel(r.appointment, today).text,
+        value: (r) => statusLabel(r.appointment, day).text,
         cell: (r) => {
-          const label = statusLabel(r.appointment, today);
+          const label = statusLabel(r.appointment, day);
           return <span className={label.tone}>{label.text}</span>;
         },
       },
@@ -194,10 +198,8 @@ export function AppointmentsScreen() {
         kind: 'text',
         value: (r) => outcomeText(r.outcome),
       },
-    ],
-    // today() is a new object each render; its fields keep the columns stable.
-    [today.year, today.month, today.day],
-  );
+    ];
+  }, [thisYear, thisMonth, thisDay]);
 
   const changePeriod = (next: Period) => {
     setPeriod(next);
@@ -249,10 +251,10 @@ export function AppointmentsScreen() {
         <span className="text-sm text-fg-2 tabular-nums">
           {re ? (
             <>
-              <b className="font-semibold text-fg">{re.name}</b> · {summary}
+              <b className="font-semibold text-fg">{re.name}</b> {t('sep.dot')} {summary}
             </>
           ) : team ? (
-            `${t('appointments.viewingTeam', { team: team.name })} · ${summary}`
+            joinParts([t('appointments.viewingTeam', { team: team.name }), summary])
           ) : (
             summary
           )}
@@ -381,7 +383,7 @@ function MonthCalendar({
         </h2>
         <span className="text-xs text-fg-3 tabular-nums">
           {summaryText({
-            total: sum(dayTotal),
+            total: sum(groupTotal),
             met: sum((cell) => cell.met),
             unrecorded: sum((cell) => cell.unrecorded),
           })}
@@ -411,9 +413,9 @@ function MonthCalendar({
         )}
       </div>
       <p className="m-0 mt-2.5 flex flex-wrap gap-3.5 text-xs text-fg-2">
-        {LEGEND.map(([kind, label]) => (
-          <span key={kind}>
-            <Dot kind={kind} /> {t(label)}
+        {APPOINTMENT_GROUPS.map((group) => (
+          <span key={group.key}>
+            <Dot kind={group.key} /> {t(group.label)}
           </span>
         ))}
       </p>
@@ -421,27 +423,15 @@ function MonthCalendar({
   );
 }
 
-const DOT = {
-  met: 'bg-ok',
-  missed: 'bg-appt-missed',
-  unrecorded: 'bg-appt-unrecorded',
-  planned: 'border border-info',
-} as const satisfies Record<AppointmentGroup, string>;
-
-/** The groups in the order of spec Phase 4 §4.5: Đã gặp · Dời – hủy – không đến · Chưa ghi kết quả · Dự kiến. */
-const LEGEND = [
-  ['met', 'appointments.legendMet'],
-  ['missed', 'appointments.legendMissed'],
-  ['unrecorded', 'appointments.legendUnrecorded'],
-  ['planned', 'appointments.legendPlanned'],
-] as const;
+const DOT = Object.fromEntries(APPOINTMENT_GROUPS.map((group) => [group.key, group.dot])) as Record<
+  AppointmentGroup,
+  string
+>;
 
 /** The dots of a day (mockup overview.html part 2). */
 const DOT_ORDER = ['unrecorded', 'missed', 'met', 'planned'] as const;
 
-const dayTotal = (cell: DayCell) => cell.met + cell.missed + cell.unrecorded + cell.planned;
-
-function Dot({ kind }: { kind: keyof typeof DOT }) {
+function Dot({ kind }: { kind: AppointmentGroup }) {
   return <i aria-hidden="true" className={`inline-block size-2 rounded-full ${DOT[kind]}`} />;
 }
 
@@ -498,7 +488,7 @@ function DayButton({
       </div>
     );
   }
-  const count = dayTotal(cell);
+  const count = groupTotal(cell);
   // Unrecorded first, so a day of many appointments never hides the ones still to record.
   const dots = DOT_ORDER.flatMap((kind) => Array<AppointmentGroup>(cell[kind]).fill(kind)).slice(
     0,
@@ -515,7 +505,7 @@ function DayButton({
     >
       <span className="flex items-start justify-between">
         {dayNumber}
-        <b className="text-lg">{count > 0 ? count : ''}</b>
+        <b className="text-lg">{count > 0 ? formatCount(count) : ''}</b>
       </span>
       <span className="mt-auto flex gap-0.5">
         {dots.map((kind, i) => (
@@ -524,7 +514,7 @@ function DayButton({
       </span>
       {otherMonth && (
         <span aria-hidden="true" className="absolute right-1.5 bottom-1 text-xs text-accent">
-          →
+          {t('sep.arrow')}
         </span>
       )}
     </button>
@@ -627,12 +617,9 @@ function Detail({
     </button>
   );
   const facts: [string, ReactNode][] = [
-    [t('appointments.re'), [row.re?.name, row.team?.name].filter(Boolean).join(' · ')],
+    [t('appointments.re'), joinParts([row.re?.name, row.team?.name])],
     [t('appointments.coordinators'), row.coordinators.map(personLabel).join(', ') || '—'],
-    [
-      t('appointments.trigger'),
-      [t(`trigger.${a.triggerType}`), a.triggerNote].filter(Boolean).join(' · '),
-    ],
+    [t('appointments.trigger'), joinParts([t(`trigger.${a.triggerType}`), a.triggerNote])],
     [t('appointments.status'), t(`appointmentStatus.${a.status}`)],
     [t('appointments.outcome'), outcomeText(row.outcome) || '—'],
     [t('appointments.note'), a.note || '—'],
@@ -645,7 +632,7 @@ function Detail({
       className={`${CARD} flex w-full flex-col gap-3 lg:sticky lg:top-20 lg:w-84 lg:shrink-0`}
     >
       <h2 className="m-0 text-base font-semibold tabular-nums">
-        {dateTime(a)} · {row.customer?.name}
+        {joinParts([dateTime(a), row.customer?.name])}
       </h2>
       <dl className="m-0 flex flex-col gap-1.5 text-sm">
         {facts.map(([term, value]) => (

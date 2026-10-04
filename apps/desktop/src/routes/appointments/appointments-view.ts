@@ -20,7 +20,7 @@ import {
   type StageTransition,
   type Team,
 } from '@p2c/domain';
-import { t } from '../../i18n';
+import { t, type MessageKey } from '../../i18n';
 
 export interface AppointmentData {
   readonly appointments: readonly AppointmentRecord[];
@@ -55,6 +55,8 @@ export const STATUS_TONE = {
 } as const satisfies Record<AppointmentStatus, string>;
 
 export const FOCUS = 'focus-visible:outline-2 focus-visible:outline-accent';
+/** A card of the Appointments screen: the calendar, the year, the day, the list, a detail. */
+export const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 /** A field shown but locked (mockup 6f `.input.locked`). */
 export const LOCKED =
   'm-0 flex items-center gap-1.5 rounded-md border border-border bg-surface-2 px-2.5 py-1.5 text-fg-2 tabular-nums';
@@ -260,6 +262,42 @@ export function rescheduleLinks(
     to: appointments.find((other) => other.rescheduledFromId === a.id),
   };
 }
+
+/**
+ * The four groups in the order of spec Phase 4 §4.5 (Đã gặp · Dời – hủy – không đến · Chưa ghi kết
+ * quả · Dự kiến): the legend label, the fill of a bar or a legend dot, the dot of a calendar day
+ * (Dự kiến is a ring there). Every view of the groups reads this, so they never drift apart.
+ */
+export const APPOINTMENT_GROUPS = [
+  { key: 'met', label: 'appointments.legendMet', fill: 'bg-ok', dot: 'bg-ok' },
+  {
+    key: 'missed',
+    label: 'appointments.legendMissed',
+    fill: 'bg-appt-missed',
+    dot: 'bg-appt-missed',
+  },
+  {
+    key: 'unrecorded',
+    label: 'appointments.legendUnrecorded',
+    fill: 'bg-appt-unrecorded',
+    dot: 'bg-appt-unrecorded',
+  },
+  {
+    key: 'planned',
+    label: 'appointments.legendPlanned',
+    fill: 'bg-info',
+    dot: 'border border-info',
+  },
+] as const satisfies readonly {
+  readonly key: AppointmentGroup;
+  readonly label: MessageKey;
+  readonly fill: string;
+  readonly dot: string;
+}[];
+
+/** All the appointments of a day or a month, the four groups together. */
+export const groupTotal = (counts: Readonly<Record<AppointmentGroup, number>>) =>
+  counts.met + counts.missed + counts.unrecorded + counts.planned;
 
 const noAppointments = (): Record<AppointmentGroup, number> => ({
   met: 0,

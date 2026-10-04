@@ -9,10 +9,12 @@ import {
 } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
+  APPOINTMENT_GROUPS,
   appointmentRows,
   appointmentsByRe,
   dateTone,
   dayBoard,
+  groupTotal,
   monthGrid,
   outcomeText,
   personLabel,
@@ -527,5 +529,17 @@ describe('summaryText', () => {
       '172 lịch · 64 đã gặp · 5 chưa ghi kết quả',
     );
     expect(summaryText({ total: 12, met: 3, unrecorded: 0 })).toBe('12 lịch · 3 đã gặp');
+  });
+});
+
+describe('APPOINTMENT_GROUPS', () => {
+  it('lists the four groups in the order of spec §4.5, a total adding them up', () => {
+    expect(APPOINTMENT_GROUPS.map((group) => group.key)).toEqual([
+      'met',
+      'missed',
+      'unrecorded',
+      'planned',
+    ]);
+    expect(groupTotal({ met: 4, missed: 3, unrecorded: 2, planned: 1 })).toBe(10);
   });
 });
