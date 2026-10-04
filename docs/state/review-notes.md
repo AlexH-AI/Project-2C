@@ -2,13 +2,12 @@
 
 > Tách khỏi `HANDOFF.md` ngày 03/10/2026 (#280). Phiên review đóng phase và skill `review-pr` đối chiếu sổ này trước khi ghi một phát hiện là MỚI. Ghi chú review không chặn của PR task ghi vào đây (OPEN), không ghi vào HANDOFF.
 
-Quy tắc (review đóng Phase 3, P-3): ghi chú review không chặn nằm ở đây, chia **OPEN** (còn phải làm), **RESOLVED** (đã sửa, ghi PR), **ACCEPTED** (Owner hoặc spec chấp nhận, không sửa). Khi đóng mỗi phase, kiểm lại từng dòng OPEN trên code và chuyển nhóm. Review sau đối chiếu sổ này trước khi ghi một phát hiện là MỚI. Đối chiếu lần này: `main` `5eb7c03`, 02/10 (review lần 2). Mã T-d…T-i, S-1, S-2 là task Đợt 2/3 trong báo cáo tổng hợp 30/09 §4; T-j và R2-xx ở báo cáo 02/10 §4–§5.
+Quy tắc (review đóng Phase 3, P-3): ghi chú review không chặn nằm ở đây, chia **OPEN** (còn phải làm), **RESOLVED** (đã sửa, ghi PR), **ACCEPTED** (Owner hoặc spec chấp nhận, không sửa). Khi đóng mỗi phase, kiểm lại từng dòng OPEN trên code và chuyển nhóm. Review sau đối chiếu sổ này trước khi ghi một phát hiện là MỚI. Đối chiếu lần này: `main` `595ef79`, 04/10 (review đóng Phase 4, `docs/reviews/2026-10-04-phase-4-tong-hop.md`). Mã T-d…T-i, S-1, S-2 là task Đợt 2/3 trong báo cáo tổng hợp 30/09 §4; T-j và R2-xx ở báo cáo 02/10 §4–§5.
 
 ## OPEN
 
 Theo task đã có chỗ trong kế hoạch:
-- **T-f (F-14):** chưa có `MAX_YEAR` trong `period.ts`; `shift` kỳ ngày/tuần/tùy chọn sát 01/01/1900 ném `RangeError` trong `PeriodPicker`, kỳ tháng/năm lùi về 1899 (#146); `addDays` với `days` cực lớn trả `NaN` (chưa có đường gọi).
-- **T-i (F-18):** formatter ECharts escape chuỗi từ DB — đã thành mục checklist, áp dụng ở task dashboard đầu tiên.
+- **Review đóng Phase 4 (04/10), làm trước G7:** T-125 #317 … T-131 #323 (bảng ở `docs/reviews/2026-10-04-phase-4-tong-hop.md` §2), gồm F-01 còn sót `expected_case_size` khi nhập backup (T-128 #320) và ba ghi chú review #316 — slug dài, câu "đầy ổ đĩa", thông báo sau Lọc (T-127 #319).
 - **S-1 / D-1 (probe Codex Sol 02/10):** nhập backup nhận `kyc_versions.hash` sai → tính lại hoặc kiểm hash khi nhập snapshot.
 - **S-2 (Đợt 3):** ghi muộn trong khoảng chờ backup → thay DB (#96); hai `replace` chồng nhau đóng DB cũ hai lần (#192); chưa có test cho cửa sổ `opening` (#206).
 
@@ -34,8 +33,12 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - Khách hàng (#141): dòng "Sau khi lưu: N2 → N3" thiếu "· hạ nhóm / lên nhóm" như mockup 5d; khối cảnh báo "Chuyển tay không bao giờ tính RF" hiện cả khi KH đã đóng; `error.INVALID_TRANSITION` chỉ nói "KH đã đóng" dù cũng bắn khi trùng nhóm hiện tại; `CustomerDialogs.tsx:~300` lặp `CLOSED_STAGES.includes` (dùng `!isPipelineStage`); `CustomerProfile.tsx:110` dựng `StageBadge` tay; 3 helper `badge` riêng (`MetFields.tsx:16`, `CustomerDialogs.tsx:42`, `CustomerKyc.tsx:155`) → *Duplicated Code*, T-h.
 - `CloseGuard.tsx` (#125): bấm X lúc đang seed "Nạp lại" thì app đóng trước khi lưu bản mới (không mất dữ liệu); không có dấu hiệu "đang lưu" khi chờ `flush()`; phần nối React chưa có test tự động; chuỗi class `BUTTON` chép từ `Settings.tsx`.
 - Cài đặt (#96, #87): sau một lần lưu lỗi, "Nạp lại" bị từ chối mà không có cách thử lưu lại; hộp 10c thiếu số lượng dữ liệu sắp thay; `backups\` không đọc được thì app coi như lần đầu. NIT (#87): file `.tmp` sót trong `backups\`/`exports\`, listener ném lỗi, dọn thư mục tạm của test Rust.
-- `Overview.tsx:9` (R4): lấy "hôm nay" từ đồng hồ máy thay vì `useAppData().today()`. Ô ngày tùy chọn báo đỏ sớm khi Tab.
-- Tooling (R4): `session-end.ps1:39` `git add -A` gom file phiên khác; hook `review-pr-hint.mjs` nhận "issue #N" gần chữ "review" thành PR.
+- `PeriodPicker.tsx` (R4): ô ngày Tùy chọn báo đỏ sớm khi Tab (áp dụng ở `onBlur` từng ô).
+- Tooling (R4): `session-end.ps1:39` `git add -A` gom file phiên khác; hook `review-pr-hint.mjs` nhận "issue #N" gần chữ "review" thành PR — gặp lại ở review đóng Phase 4 (lời nhắc đóng phase luôn có cả "review" lẫn "#N") → **sửa trước review đóng Phase 5**.
+- Review đóng Phase 4 (04/10, P8 / P12 / T2):
+  - Chart N4–N1 (`packages/ui/src/components/Chart.tsx` `role="img"`, `StageBlock.tsx`) không có số liệu cho trình đọc màn hình → bảng ẩn `sr-only` sinh từ `StageChart.columns` (`aria-describedby`), hoặc ghi chú mockup rằng Báo cáo → Theo mốc là bản dạng bảng.
+  - Coverage (`vitest.config.ts` `include`) không đo `apps/desktop/src/routes/**/*-view.ts`, `applied-filter.ts`, `report-workbook.ts`, `stage-chart.ts` → thêm glob + ngưỡng đo lúc thêm (phần còn lại của F-08).
+  - P-1: `mergedBy` luôn là AlexH-AI (Claude dùng chung tài khoản `gh`) → không kiểm được PR `risk:med/high` có đúng do Owner bảo merge; `merge-pr.mjs --owner` nên ghi một comment "merged on Owner request".
 - `.claude/skills/README.md` bảng "Sửa cục bộ" (#297): dòng T-116 ("Thêm mục 'Tài liệu cần đọc' vào issue template") đã bị dòng T-122 thay thế (template giờ chỉ trỏ sang `task.yml`). Áp lại tuần tự vẫn ra đúng kết quả nhưng đọc dễ nhầm → ghi "(thay bởi dòng T-122)" ở dòng T-116 hoặc gộp hai dòng.
 - `app-icon.svg`, `public/favicon.svg` (#128): thiếu dòng trống cuối file; `favicon.svg` là bản sao `app-icon.svg` → đổi icon phải sửa cả hai.
 - `DataTable` (Phase 1): chưa có test `sortable: false` và bảng rỗng; kiểm lại cột Giờ có `tabular-nums` (cột không phải `text` đã có). `cellClass` (#240) chỉ có e2e phủ — repo chưa có công cụ test component (thêm là G4).
@@ -48,6 +51,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 
 ## RESOLVED
 
+- Review đóng Phase 4 (04/10): T-f / F-14 — `MAX_YEAR = 2100`, `canShift` tắt ‹ ›, `addDays` kiểm miền và ném `RangeError` thay `NaN` (#256, PR #300); T-i / F-18 — `stage-chart.ts` escape mọi chuỗi qua `encodeHtml`, có test (PR #312); `Overview.tsx` lấy hôm nay qua `useAppData().today()` (PR #309; phần ngày cũ khi app mở qua nửa đêm → T-126 #318).
 - T-h phần 2 (F-13, F-15, F-19 phần `t()`, R2-03, R2-04, R2-05): "Lưu kết quả" khi chưa chọn trạng thái báo "Chọn trạng thái."; `·` / `→` qua `sep.*` + `joinParts`, `lint:tokens` chặn phân cách cứng; `t()` chỉ đọc tên riêng của params (`Object.hasOwn`) và nhóm nghìn số ở ô đếm (`COUNT_SLOTS`, test bắt ô mới chưa phân loại); `eslint --max-warnings 0`; `CARD` dùng chung từ `appointments-view.ts`, thứ tự import `FOCUS` (#259).
 
 - T-h phần 1 (F-11, F-12, F-19 phần `getPolicy`): helper `today(db)` thay 4 chỗ `fromLocalDate(db.now())`; tạo KH, sửa nhóm tay, nộp / phát hành HĐ sau hôm nay → `DATE_IN_FUTURE`, nhập backup kiểm luật 10 (Owner quyết 04/10); câu `error.KYC_PROFILE_FIELD_REQUIRED` và test phủ `error.*` cho mọi mã UI chạm được; `getPolicy` truy vấn theo id (#258, PR #303).
