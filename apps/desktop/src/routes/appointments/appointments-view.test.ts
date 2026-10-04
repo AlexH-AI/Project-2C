@@ -18,6 +18,7 @@ import {
   monthGrid,
   outcomeText,
   personLabel,
+  reviewerChoices,
   pickDay,
   rescheduleLinks,
   revealCreated,
@@ -447,6 +448,24 @@ describe('outcomeText', () => {
 describe('personLabel', () => {
   it('is the role then the name', () => {
     expect(personLabel(people[3]!)).toBe('TL Nguyễn Thu Hà');
+  });
+});
+
+// D9 (Owner, 04/10/2026): the people who support the meeting, never an RE.
+describe('reviewerChoices', () => {
+  it('keeps every IS, TL, BDM and BD in the given order, and no RE', () => {
+    const others: Person[] = [
+      { id: 'bdm1', name: 'Lê Khoa', role: 'BDM', teamId: null },
+      { id: 'bd1', name: 'Trần Long', role: 'BD', teamId: null },
+    ];
+
+    expect(reviewerChoices([...people, ...others]).map((p) => p.id)).toEqual([
+      'tl1',
+      'is1',
+      'bdm1',
+      'bd1',
+    ]);
+    expect(reviewerChoices(people.slice(0, 3))).toEqual([]);
   });
 });
 

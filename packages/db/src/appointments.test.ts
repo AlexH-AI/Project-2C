@@ -312,18 +312,59 @@ describe('recordMeetingOutcome', () => {
   });
 });
 
-// D9: who decided the stage after the meeting — optional, any role, only on a met appointment.
+// D9: who decided the stage after the meeting — optional, an IS, TL, BDM or BD (Owner,
+// 04/10/2026), only on a met appointment.
 describe('outcome reviewer', () => {
-  it('keeps a live person of any role as reviewer of a met appointment, or none', async () => {
-    const { db, schedule } = await withCustomer();
+  it('keeps a live IS, TL, BDM or BD as reviewer of a met appointment, or none', async () => {
+    const { db, tl, schedule } = await withCustomer();
     const is = createPerson(db, { name: 'Tâm', role: 'IS', teamId: null });
+    const bdm = createPerson(db, { name: 'Khoa', role: 'BDM', teamId: null });
+    const bd = createPerson(db, { name: 'Long', role: 'BD', teamId: null });
     const { id } = schedule();
 
     expect(recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: is.id })).toMatchObject({
       outcomeReviewerId: is.id,
     });
     expect(getAppointment(db, id)?.outcomeReviewerId).toBe(is.id);
+    for (const reviewer of [tl, bdm, bd]) {
+      const outcome = { ...MET_N2, outcomeReviewerId: reviewer.id };
+      expect(recordMeetingOutcome(db, id, outcome).outcomeReviewerId).toBe(reviewer.id);
+    }
     expect(recordMeetingOutcome(db, id, MET_N2).outcomeReviewerId).toBeNull();
+  });
+
+  it('refuses an RE as reviewer, the appointment’s own or another, recording nothing', async () => {
+    const { db, re, otherRe, schedule } = await withCustomer();
+    const { id } = schedule();
+
+    for (const reviewer of [re, otherRe]) {
+      expect(
+        codeOf(() => recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: reviewer.id })),
+      ).toBe('INVALID_REVIEWER');
+    }
+    expect(getAppointment(db, id)?.status).toBe('SCHEDULED');
+  });
+
+  it('keeps a reviewer of a live appointment from becoming an RE; others change role freely', async () => {
+    const { db, team, tl, schedule } = await withCustomer();
+    const is = createPerson(db, { name: 'Tâm', role: 'IS', teamId: null });
+    const { id } = schedule();
+    recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: tl.id });
+
+    expect(codeOf(() => updatePerson(db, tl.id, { role: 'RE' }))).toBe('REVIEWER_IN_USE');
+    expect(updatePerson(db, tl.id, { name: 'Hà Lê' }).role).toBe('TL');
+    expect(updatePerson(db, is.id, { role: 'RE', teamId: team.id }).role).toBe('RE');
+  });
+
+  it('restores no appointment whose reviewer became an RE while it was deleted', async () => {
+    const { db, tl, schedule } = await withCustomer();
+    const { id } = schedule();
+    recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: tl.id });
+    softDeleteAppointment(db, id);
+    updatePerson(db, tl.id, { role: 'RE' });
+
+    expect(codeOf(() => restoreAppointment(db, id))).toBe('INVALID_REVIEWER');
+    expect(listAppointments(db)).toEqual([]);
   });
 
   it('refuses a reviewer on another status, and one deleted or unknown, recording nothing', async () => {

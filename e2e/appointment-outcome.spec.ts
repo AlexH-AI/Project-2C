@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
 const TODAY = '15/09/2026';
@@ -42,6 +42,22 @@ function outcome(page: Page) {
   };
 }
 
+/**
+ * The reviewer's choices (D9, Owner 04/10/2026): none, then only IS, TL, BDM and BD — the seed's
+ * 3 TL and one of each other role, never one of its RE.
+ */
+async function expectReviewerChoices(dialog: Locator) {
+  const reviewer = dialog.getByRole('combobox', { name: /^Người đánh giá/ });
+  const labels = await reviewer.getByRole('option').allTextContents();
+  expect(labels[0]).toBe('—');
+  expect(
+    labels
+      .slice(1)
+      .map((label) => label.split(' ')[0])
+      .sort(),
+  ).toEqual(['BD', 'BDM', 'IS', 'TL', 'TL', 'TL']);
+}
+
 test('a meeting met N3 → N2 moves the customer, the timeline says after the meeting', async ({
   page,
 }) => {
@@ -49,6 +65,7 @@ test('a meeting met N3 → N2 moves the customer, the timeline says after the me
   await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
   const o = outcome(page);
   await expect(o.status.getByRole('radio', { name: 'Đã gặp' })).toBeChecked();
+  await expectReviewerChoices(o.dialog);
 
   // Met needs a stage after and a next step; the case size may stay empty.
   await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
@@ -196,6 +213,7 @@ test('once the customer moved on, status, day and stage after are locked and del
   await expect(dialog).toContainText('Xóa cũng bị chặn');
 
   // The other fields, the reviewer among them, still change.
+  await expectReviewerChoices(dialog);
   await dialog.getByRole('textbox', { name: /^Việc tiếp theo/ }).fill('Gặp cùng TL');
   await dialog.getByRole('combobox', { name: /^Người đánh giá/ }).selectOption({ index: 1 });
   await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();

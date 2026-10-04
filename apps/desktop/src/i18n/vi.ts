@@ -385,6 +385,9 @@ export const vi = {
   'error.APPOINTMENT_NOT_FOUND': 'Lịch hẹn không còn trong dữ liệu (có thể đã bị xóa).',
   'error.INVALID_TIME': 'Giờ từ 00:00 đến 23:59.',
   'error.INVALID_COORDINATOR': 'RE của lịch hẹn không phối hợp cho chính mình.',
+  'error.INVALID_REVIEWER': 'Người đánh giá kết quả phải là IS, TL, BDM hoặc BD.',
+  'error.REVIEWER_IN_USE':
+    'Nhân sự đang là người đánh giá kết quả của lịch hẹn chưa xóa, mà RE không được đánh giá. Bỏ người đánh giá ở các lịch đó (Sửa kết quả) trước khi đổi sang RE.',
   'appointments.record': 'Ghi kết quả',
   'outcome.title': 'Kết quả cuộc gặp',
   'outcome.sub': '{customer} · {weekday} {when} · hiện {stage}',
@@ -401,7 +404,7 @@ export const vi = {
   'outcome.noRf': 'không tính RF — RF chỉ khi N4 / N3 lên N2 / N1',
   'outcome.keepRead': 'Giữ nhóm hiện tại, không tạo chuyển nhóm.',
   'outcome.reviewer': 'Người đánh giá kết quả (không bắt buộc)',
-  'outcome.reviewerHelp': 'Người quyết định nhóm sau cuộc gặp, vai trò bất kỳ.',
+  'outcome.reviewerHelp': 'Người quyết định nhóm sau cuộc gặp: IS, TL, BDM hoặc BD.',
   'outcome.reviewerNone': '—',
   'outcome.nextStep': 'Việc tiếp theo',
   'outcome.nextStepRequired': 'Nhập việc tiếp theo.',

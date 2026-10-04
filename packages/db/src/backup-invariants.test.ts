@@ -172,6 +172,11 @@ describe('importBackup — rules across tables', () => {
       },
     ],
     [
+      'a deleted appointment reviewed by someone who has since become an RE',
+      (b, ids) =>
+        (row(b, 'appointments', (a) => a.customer_id === ids.hoa).outcome_reviewer_id = ids.re),
+    ],
+    [
       'a deleted TL next to the live TL of the team',
       (b, ids) => person(b, ids.tl, { id: 'old-tl', name: 'Cũ', deleted_at: DELETED }),
     ],
@@ -306,6 +311,10 @@ describe('importBackup — rules across tables', () => {
     [
       '5: a live customer, appointment and policy of a deleted RE',
       (b, ids) => (row(b, 'people', (p) => p.id === ids.re).deleted_at = DELETED),
+    ],
+    [
+      '5: a live met appointment reviewed by an RE (D9)',
+      (b, ids) => (row(b, 'appointments', (a) => a.id === ids.met).outcome_reviewer_id = ids.re),
     ],
     [
       '5: the RE of an appointment also coordinating it',

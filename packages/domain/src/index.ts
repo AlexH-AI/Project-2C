@@ -83,7 +83,7 @@ export type { StageCounts } from './stage-snapshot';
 export { formatVnd, formatVndCompact, formatVndDelta, parseVnd } from './money';
 export { formatCount, formatFileSize, formatPercent } from './number';
 export type { Vnd, VndParseError, VndParseResult } from './money';
-export { APPOINTMENT_STATUSES, CLOSED_STAGES, PERSON_ROLES } from './model';
+export { APPOINTMENT_STATUSES, CLOSED_STAGES, PERSON_ROLES, REVIEWER_ROLES } from './model';
 export type {
   Appointment,
   AppointmentStatus,

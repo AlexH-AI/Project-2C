@@ -177,7 +177,8 @@ function meetingRule(appointments: Map<unknown, Row>, transitions: Row[]): Rule 
 /**
  * Rule 5: a live customer, appointment or policy belongs to a live RE (who may stop being one, or
  * be deleted, only once their records are deleted); the RE never coordinates their own
- * appointment; an appointment is rescheduled from one of the same customer (D3).
+ * appointment, and no RE reviews a live meeting (D9); an appointment is rescheduled from one of the
+ * same customer (D3).
  */
 function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>): Rule | null {
   const notRe = read(
@@ -188,15 +189,19 @@ function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>
       )
       .join(' UNION ALL '),
   );
-  const selfCoordinating = read(
-    'SELECT 1 FROM appointment_coordinators c JOIN appointments a ON a.id = c.appointment_id WHERE c.person_id = a.re_id',
+  // A reviewer may have become an RE once their appointment was deleted.
+  const misplaced = read(
+    [
+      'SELECT 1 FROM appointment_coordinators c JOIN appointments a ON a.id = c.appointment_id WHERE c.person_id = a.re_id',
+      "SELECT 1 FROM appointments a JOIN people p ON p.id = a.outcome_reviewer_id WHERE a.deleted_at IS NULL AND p.role = 'RE'",
+    ].join(' UNION ALL '),
   );
   const rescheduled = [...appointments.values()].every((a) => {
     if (a.rescheduled_from_id === null) return true;
     const from = appointments.get(a.rescheduled_from_id)!;
     return from.customer_id === a.customer_id && from.status === 'RESCHEDULED';
   });
-  return notRe.length === 0 && selfCoordinating.length === 0 && rescheduled ? null : 5;
+  return notRe.length === 0 && misplaced.length === 0 && rescheduled ? null : 5;
 }
 
 /**
