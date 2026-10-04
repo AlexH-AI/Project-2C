@@ -56,7 +56,7 @@ Theo bảng chỉ số của `docs/COMPARISON.md`. Số đo lấy trên `main` `
 | `pnpm verify` | ✅ Prettier, ESLint `--max-warnings 0`, `lint:deps` 0 vi phạm, `lint:tokens`, `codemap:check`, typecheck, 65 file / 1.247 test, coverage như trên |
 | `pnpm verify:rust` | ✅ `cargo fmt --check`, clippy `-D warnings`, 37/37 test |
 | `pnpm e2e` (`CI=1`) | ✅ 145/145 pass, 2,3 phút |
-| CI `main` (Verify + e2e + build exe) | ✅ run `37227193449` xanh (cả build exe) |
+| CI `main` (build exe) | ✅ run `37227193449` (push lên `main` chỉ chạy build exe; Verify + e2e xanh trên PR #339, head `6281783`) |
 | Kiểm tay exe | ✅ Owner, 04/10, bản `595ef79` (trước sửa A–F): không có vấn đề. Bản cuối `3d23739` chưa kiểm tay — **Owner kiểm trước G7** (xuất Excel, nút Hôm nay, trần kỳ Tùy chọn, Lịch hẹn 4 nhóm, người đánh giá kết quả) |
 
 ## Review đóng phase
