@@ -6,6 +6,8 @@ import {
   chartMarks,
   compareDates,
   customPeriod,
+  customRangeAllowed,
+  customRangeMaxEnd,
   daysBetween,
   formatDate,
   formatDayMonth,
@@ -206,6 +208,50 @@ describe('customPeriod', () => {
   it('allows a single day', () => {
     expect(range(customPeriod(d(2, 9, 2026), d(2, 9, 2026)))).toBe('02/09/2026 – 02/09/2026');
   });
+
+  // The 3-month cap belongs to the picker (spec §3.1 item 5): app-built windows stay unlimited.
+  it('still builds a range longer than 3 months', () => {
+    expect(range(customPeriod(d(1, 1, 2026), d(28, 9, 2026)))).toBe('01/01/2026 – 28/09/2026');
+  });
+});
+
+// Spec Phase 4 §3.1: a custom range chosen in the picker runs at most 3 calendar months.
+describe('custom range cap', () => {
+  const cases: [string, string][] = [
+    ['01/01/2027', '31/03/2027'],
+    ['15/01/2027', '14/04/2027'],
+    ['31/01/2027', '30/04/2027'],
+    ['30/11/2026', '28/02/2027'],
+    ['01/12/2027', '29/02/2028'],
+    ['15/11/2100', '31/12/2100'],
+  ];
+
+  it.each(cases)('from %s the last day allowed is %s', (from, maxEnd) => {
+    expect(formatDate(customRangeMaxEnd(parseDate(from)!))).toBe(maxEnd);
+  });
+
+  it.each(cases)('allows a range from %s up to %s and no further', (from) => {
+    const start = parseDate(from)!;
+    const end = customRangeMaxEnd(start);
+    expect(customRangeAllowed(start, start)).toBe(true);
+    expect(customRangeAllowed(start, end)).toBe(true);
+    if (compareDates(end, d(31, 12, 2100)) < 0) {
+      expect(customRangeAllowed(start, addDays(end, 1))).toBe(false);
+    }
+  });
+
+  it('refuses a start after the end', () => {
+    expect(customRangeAllowed(d(2, 9, 2026), d(1, 9, 2026))).toBe(false);
+  });
+
+  it('disables ‹ when the moved range would pass the cap', () => {
+    const range92 = customPeriod(d(16, 7, 2027), d(15, 10, 2027));
+    expect(canShift(range92, -1)).toBe(false);
+    expect(() => shift(range92, -1)).toThrow(RangeError);
+    // Forward: 16/10/2027 – 15/01/2028 is within the cap (max 15/01/2028).
+    expect(canShift(range92, 1)).toBe(true);
+    expect(range(shift(range92, 1))).toBe('16/10/2027 – 15/01/2028');
+  });
 });
 
 describe('monthToDate', () => {
@@ -268,6 +314,16 @@ describe('switchKind', () => {
   it('turns the period being viewed into a custom range', () => {
     const week = periodOf('week', today);
     expect(switchKind(week, 'custom', today)).toEqual({ ...week, kind: 'custom' });
+  });
+
+  it('keeps a month as it is when turning it into a custom range', () => {
+    const month = periodOf('month', today);
+    expect(switchKind(month, 'custom', today)).toEqual({ ...month, kind: 'custom' });
+  });
+
+  it('cuts a year to its first 3 months when turning it into a custom range', () => {
+    const year = periodOf('year', today);
+    expect(switchKind(year, 'custom', today)).toEqual(customPeriod(d(1, 1, 2026), d(31, 3, 2026)));
   });
 });
 

@@ -234,6 +234,31 @@ export function customPeriod(start: CalendarDate, end: CalendarDate): Period {
   return { kind: 'custom', start, end };
 }
 
+/** Calendar months a custom range chosen in the picker may run (spec Phase 4 §3.1). */
+const CUSTOM_RANGE_MAX_MONTHS = 3;
+
+/**
+ * The last day a custom range from `start` may end on (spec Phase 4 §3.1): the day before the same
+ * day 3 months later, or the last day of that month when it is shorter; at most 31/12/2100.
+ * Only the picker applies this cap — windows the app builds with `customPeriod` are not limited.
+ */
+export function customRangeMaxEnd(start: CalendarDate): CalendarDate {
+  const index = start.year * 12 + (start.month - 1) + CUSTOM_RANGE_MAX_MONTHS;
+  const year = Math.floor(index / 12);
+  const month = (index % 12) + 1;
+  const last = lastDayOfMonth(year, month);
+  const end =
+    start.day > last
+      ? toDayNumber({ year, month, day: last })
+      : toDayNumber({ year, month, day: start.day }) - 1;
+  return fromDayNumber(Math.min(end, LAST_DAY));
+}
+
+/** Whether the picker accepts the custom range `start` – `end`: in order and within the cap. */
+export function customRangeAllowed(start: CalendarDate, end: CalendarDate): boolean {
+  return compareDates(start, end) <= 0 && compareDates(end, customRangeMaxEnd(start)) <= 0;
+}
+
 /** MTD (ADR-0007): from the 1st of the month to the viewing `date`, both days in full. */
 export function monthToDate(date: CalendarDate): Period {
   return customPeriod({ year: date.year, month: date.month, day: 1 }, date);
@@ -241,7 +266,8 @@ export function monthToDate(date: CalendarDate): Period {
 
 /**
  * The next (+1) or previous (−1) period of the same kind; a custom range moves by its length.
- * Throws a RangeError when that period is not in 1900–2100 (a custom range: not wholly in it).
+ * Throws a RangeError when that period is not in 1900–2100 (a custom range: not wholly in it), or
+ * when a moved custom range runs past the picker's 3-month cap (spec Phase 4 §3.1).
  */
 export function shift(period: Period, step: 1 | -1): Period {
   const { kind, start, end } = period;
@@ -257,7 +283,13 @@ export function shift(period: Period, step: 1 | -1): Period {
       return periodOf(kind, calendarDate(start.year + step, 1, 1));
     case 'custom': {
       const length = toDayNumber(end) - toDayNumber(start) + 1;
-      return customPeriod(addDays(start, step * length), addDays(end, step * length));
+      const moved = customPeriod(addDays(start, step * length), addDays(end, step * length));
+      if (!customRangeAllowed(moved.start, moved.end)) {
+        throw new RangeError(
+          `Custom period ${formatDate(moved.start)} – ${formatDate(moved.end)} is over 3 months`,
+        );
+      }
+      return moved;
     }
   }
 }
@@ -274,10 +306,14 @@ export function canShift(period: Period, step: 1 | -1): boolean {
 
 /**
  * The period of another kind to show when the user switches kind: around today when today is in
- * the period being viewed, else around its first day. Custom keeps the current range.
+ * the period being viewed, else around its first day. Custom keeps the current range, its end cut
+ * to the 3-month cap (a year becomes its first 3 months, spec Phase 4 §3.1).
  */
 export function switchKind(period: Period, kind: PeriodKind, today: CalendarDate): Period {
-  if (kind === 'custom') return customPeriod(period.start, period.end);
+  if (kind === 'custom') {
+    const maxEnd = customRangeMaxEnd(period.start);
+    return customPeriod(period.start, compareDates(period.end, maxEnd) > 0 ? maxEnd : period.end);
+  }
   const day = toDayNumber(today);
   const viewingToday = toDayNumber(period.start) <= day && day <= toDayNumber(period.end);
   return periodOf(kind, viewingToday ? today : period.start);

@@ -250,6 +250,7 @@ export const vi = {
   'period.from': 'Từ ngày',
   'period.to': 'Đến ngày',
   'period.dateFormat': 'dd/mm/yyyy',
+  'period.customTooLong': 'Kỳ Tùy chọn tối đa 3 tháng',
   'period.monthLabel': 'Tháng {value}',
   'period.yearLabel': 'Năm {value}',
   'appointments.summary': '{total} lịch · {met} đã gặp',
