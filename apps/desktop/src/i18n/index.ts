@@ -21,6 +21,7 @@ export const COUNT_SLOTS: ReadonlySet<string> = new Set([
   'tl',
   're',
   'shared',
+  'unrecorded',
 ]);
 
 /** Slots shown as given: text, or a number that is no count (a year, a version, a month). */

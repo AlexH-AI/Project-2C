@@ -42,6 +42,8 @@
   --color-warn: var(--warn);
   --color-danger: var(--danger);
   --color-info: var(--info);
+  --color-appt-unrecorded: var(--appt-unrecorded);
+  --color-appt-missed: var(--appt-missed);
 
   --font-*: initial;
   --font-sans: var(--font);

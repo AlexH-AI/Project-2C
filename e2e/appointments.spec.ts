@@ -505,6 +505,48 @@ test('keeping a day long past records a late appointment on that day', async ({ 
   await expect(detail.getByRole('heading')).toContainText(`05/01/2026 · ${f.name}`);
 });
 
+/** The background of a legend's dot, by its label. */
+const legendFill = (region: Locator, label: string) =>
+  region
+    .locator('p > span', { hasText: label })
+    .locator('i')
+    .evaluate((dot) => getComputedStyle(dot).backgroundColor);
+
+test('an appointment past and still scheduled counts as unrecorded: count line, badge, year grid', async ({
+  page,
+}) => {
+  const { calendar, year, kinds, list } = screen(page);
+  const groups = ['Đã gặp', 'Dời lịch / hủy / không đến', 'Chưa ghi kết quả', 'Dự kiến'];
+  await expect(calendar.locator('p > span')).toHaveText(groups);
+  // --appt-unrecorded = --warn (orange), --appt-missed = --text-3 (grey): Owner G3 03/10.
+  expect(await legendFill(calendar, 'Chưa ghi kết quả')).toBe('rgb(240, 160, 75)');
+  expect(await legendFill(calendar, 'Dời lịch')).toBe('rgb(140, 153, 172)');
+
+  const f = await fillAppointment(page, '10/9');
+  await f.create.click();
+  await expect(f.dialog).toHaveCount(0);
+
+  const unrecorded = /^\d+ lịch · \d+ đã gặp · [1-9]\d* chưa ghi kết quả$/;
+  await expect(calendar.getByText(unrecorded)).toBeVisible();
+  await expect(page.getByText(/ · [1-9]\d* chưa ghi kết quả$/).first()).toBeVisible();
+  // Its dot comes first in the day, before the met ones.
+  const firstDot = calendar
+    .getByRole('button', { name: /^10\/09\/2026:/ })
+    .locator('i')
+    .first()
+    .evaluate((dot) => getComputedStyle(dot).backgroundColor);
+  expect(await firstDot).toBe('rgb(240, 160, 75)');
+  // The list says so in the status column (display only).
+  const row = list.locator('tbody tr', { hasText: f.name }).filter({ hasText: '10/09/2026' });
+  await expect(row.locator('td').nth(6)).toHaveText('Chưa ghi kết quả');
+
+  await kinds.getByRole('radio', { name: 'Năm' }).click();
+  await expect(year.locator('p > span').filter({ has: page.locator('i') })).toHaveText(groups);
+  await expect(
+    year.getByRole('button', { name: /^Tháng 9\/2026:/ }).locator('[title^="Chưa ghi kết quả: "]'),
+  ).toHaveCount(1);
+});
+
 test('a coordinator filter hiding the new appointment is cleared', async ({ page }) => {
   const { coordinator, day, detail } = screen(page);
   await coordinator.selectOption({ label: 'Không có người phối hợp' });

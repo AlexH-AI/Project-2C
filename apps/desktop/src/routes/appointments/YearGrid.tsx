@@ -1,12 +1,12 @@
 import { formatCount } from '@p2c/domain';
 import { t } from '../../i18n';
-import { CARD, FOCUS, type MonthCell } from './appointments-view';
-
-const GROUPS = [
-  { key: 'met', label: 'appointments.legendMet', fill: 'bg-ok' },
-  { key: 'missed', label: 'appointments.legendMissed', fill: 'bg-warn' },
-  { key: 'planned', label: 'appointments.legendPlanned', fill: 'bg-info' },
-] as const;
+import {
+  APPOINTMENT_GROUPS as GROUPS,
+  CARD,
+  FOCUS,
+  groupTotal as total,
+  type MonthCell,
+} from './appointments-view';
 
 const CELL = {
   past: 'border-border bg-surface-2 hover:border-border-strong',
@@ -19,8 +19,6 @@ const NAME = {
   current: 'font-semibold text-accent',
   future: 'font-medium text-fg-3',
 } as const satisfies Record<MonthCell['state'], string>;
-
-const total = (cell: MonthCell) => cell.met + cell.missed + cell.planned;
 
 /** The year period of Appointments (mockup phase-3-feedback B6): four quarters of three months. */
 export function YearGrid({
