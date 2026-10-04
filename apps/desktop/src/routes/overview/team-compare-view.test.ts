@@ -1,4 +1,4 @@
-import { calendarDate, periodOf } from '@p2c/domain';
+import { calendarDate, periodOf, type Period } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
   APPOINTMENTS,
@@ -87,5 +87,31 @@ describe('teamCompare', () => {
 
     expect(view.range).toBeNull();
     expect(view.total.cells).toEqual(['0', '—', '—', '—', '—', '—', '—']);
+  });
+
+  it('without teams, Tổng is "—" before the period starts and 0 once it has', () => {
+    const noTeams = { ...GOLDEN, teams: [] };
+    const today = d(2027, 1, 15);
+    const total = (period: Period) => teamCompare(noTeams, period, today).total;
+
+    expect(total(periodOf('month', d(2027, 2, 1))).metrics).toBeNull();
+    expect(total(periodOf('month', d(2027, 2, 1))).cells).toEqual([
+      '0',
+      '—',
+      '—',
+      '—',
+      '—',
+      '—',
+      '—',
+    ]);
+    for (const period of [periodOf('month', today), periodOf('month', d(2026, 12, 1))]) {
+      expect(total(period).cells).toEqual(['0', '0', '0', '0 ₫', '0', '0 ₫', '—']);
+    }
+  });
+
+  it('counts the first day of the month as that one day', () => {
+    const today = d(2027, 4, 1);
+
+    expect(teamCompare(GOLDEN, periodOf('month', today), today).range).toBe('01/04/2027');
   });
 });

@@ -129,6 +129,19 @@ describe('kpiTiles', () => {
       note: 'kỳ trước ngoài miền 1900–2100 · không so',
     });
   });
+
+  it('a custom period not started yet says so, not that custom is never compared (mockup 1e)', () => {
+    const tiles = kpiTiles(
+      GOLDEN,
+      customPeriod(d(2026, 11, 1), d(2026, 11, 15)),
+      ALL,
+      d(2026, 10, 15),
+    );
+
+    for (const tile of tiles) {
+      expect(tile).toMatchObject({ value: '—', delta: null, note: 'kỳ chưa bắt đầu' });
+    }
+  });
 });
 
 describe('viewingText ("Đang xem")', () => {
@@ -158,6 +171,18 @@ describe('viewingText ("Đang xem")', () => {
     );
 
     expect(viewing).toMatchObject({ mtd: true, range: '01/03 – 31/03/2027' });
+  });
+
+  it('the first day of the month counts that one day, written once', () => {
+    const today = d(2027, 4, 1);
+    const viewing = viewingText(
+      { period: periodOf('month', today), scope: ALL },
+      today,
+      PEOPLE,
+      TEAMS,
+    );
+
+    expect(viewing).toMatchObject({ period: 'Tháng 04/2027', mtd: true, range: '01/04/2027' });
   });
 
   it('names the RE, or counts the teams of the Team scope; an ended year has no range', () => {

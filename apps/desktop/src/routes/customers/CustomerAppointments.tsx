@@ -9,6 +9,7 @@ import {
   outcomeResolver,
   outcomeText,
   STATUS_TONE,
+  statusLabel,
   type Outcome,
 } from '../appointments/appointments-view';
 
@@ -17,11 +18,16 @@ interface Row {
   readonly outcome: Outcome;
 }
 
-/** The stage move or stage kept; else the status (planned, rescheduled, cancelled, no show). */
-const resultText = ({ appointment: a, outcome }: Row) =>
-  outcome?.kind === 'move' || outcome?.kind === 'keep'
-    ? outcomeText(outcome)
-    : t(`appointmentStatus.${a.status}`);
+/**
+ * The stage move or stage kept; else the status (planned, unrecorded, rescheduled, cancelled, no
+ * show), with its tone.
+ */
+function result({ appointment: a, outcome }: Row, today: CalendarDate) {
+  if (outcome?.kind === 'move') return { text: outcomeText(outcome), tone: '' };
+  if (outcome?.kind === 'keep') return { text: outcomeText(outcome), tone: STATUS_TONE[a.status] };
+  const label = statusLabel(a, today);
+  return { text: label.text, tone: label.tone || STATUS_TONE[a.status] };
+}
 
 /** "Hẹn tiếp": the next appointment after one up to today (6h); nothing for one ahead. */
 export function NextButton({
@@ -84,12 +90,11 @@ export function CustomerAppointments({
         id: 'result',
         header: t('appointments.outcome'),
         kind: 'text',
-        value: resultText,
-        cell: (r) => (
-          <span className={r.outcome?.kind === 'move' ? '' : STATUS_TONE[r.appointment.status]}>
-            {resultText(r)}
-          </span>
-        ),
+        value: (r) => result(r, today).text,
+        cell: (r) => {
+          const { text, tone } = result(r, today);
+          return <span className={tone}>{text}</span>;
+        },
       },
       {
         id: 'note',

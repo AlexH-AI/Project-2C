@@ -244,6 +244,10 @@ describe('formatPeriodValue', () => {
       '01/09 – 10/09/2026',
     );
   });
+
+  it('writes a one-day range as that day', () => {
+    expect(formatPeriodValue(customPeriod(d(1, 4, 2027), d(1, 4, 2027)))).toBe('01/04/2027');
+  });
 });
 
 describe('switchKind', () => {

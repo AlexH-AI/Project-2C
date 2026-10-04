@@ -30,6 +30,7 @@ import {
   outcomeText,
   personLabel,
   STATUS_TONE,
+  statusLabel,
   type AppointmentData,
 } from './appointments-view';
 
@@ -419,23 +420,26 @@ function History({
         )}
       </div>
       <ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-xs">
-        {history.rows.slice(0, MAX_HISTORY).map(({ appointment: a, outcome }) => (
-          <li key={a.id} className="flex gap-1 whitespace-nowrap">
-            <span className="tabular-nums">{dayText(a.date, today)}</span>
-            <span>{t('sep.dot')}</span>
-            <span className={STATUS_TONE[a.status]}>{t(`appointmentStatus.${a.status}`)}</span>
-            {(outcome?.kind === 'move' || outcome?.kind === 'keep') && (
-              <span>
-                {t('sep.dot')} {outcomeText(outcome)}
-              </span>
-            )}
-            {a.note && (
-              <span className="min-w-0 truncate text-fg-3">
-                {t('sep.dot')} {t('appointmentForm.historyNote', { note: a.note })}
-              </span>
-            )}
-          </li>
-        ))}
+        {history.rows.slice(0, MAX_HISTORY).map(({ appointment: a, outcome }) => {
+          const status = statusLabel(a, today);
+          return (
+            <li key={a.id} className="flex gap-1 whitespace-nowrap">
+              <span className="tabular-nums">{dayText(a.date, today)}</span>
+              <span>{t('sep.dot')}</span>
+              <span className={status.tone || STATUS_TONE[a.status]}>{status.text}</span>
+              {(outcome?.kind === 'move' || outcome?.kind === 'keep') && (
+                <span>
+                  {t('sep.dot')} {outcomeText(outcome)}
+                </span>
+              )}
+              {a.note && (
+                <span className="min-w-0 truncate text-fg-3">
+                  {t('sep.dot')} {t('appointmentForm.historyNote', { note: a.note })}
+                </span>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

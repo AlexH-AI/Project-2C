@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import { calendarDate, customPeriod, periodOf } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
+import { viewingText } from '../overview/overview-view';
 import {
   buildReportWorkbook,
   exportFailedHelp,
@@ -199,6 +200,18 @@ describe('reportWorkbookMeta', () => {
     );
     const ended = { ...viewing, period: 'Tháng 09/2026', mtd: false, range: null };
     expect(reportWorkbookMeta(ended, today).period).toBe('Tháng 09/2026');
+  });
+
+  it('writes one day as that day on the first of the month', () => {
+    const firstOfApril = calendarDate(2027, 4, 1);
+    const shown = viewingText(
+      { period: periodOf('month', firstOfApril), scope: { kind: 'all' } },
+      firstOfApril,
+      [],
+      [],
+    );
+
+    expect(reportWorkbookMeta(shown, firstOfApril).period).toBe('Tháng 04/2027 (MTD 01/04/2027)');
   });
 });
 

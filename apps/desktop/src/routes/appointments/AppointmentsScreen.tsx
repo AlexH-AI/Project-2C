@@ -187,10 +187,7 @@ export function AppointmentsScreen() {
         header: t('appointments.status'),
         kind: 'text',
         value: (r) => statusLabel(r.appointment, day).text,
-        cell: (r) => {
-          const label = statusLabel(r.appointment, day);
-          return <span className={label.tone}>{label.text}</span>;
-        },
+        cell: (r) => <Status label={statusLabel(r.appointment, day)} />,
       },
       {
         id: 'outcome',
@@ -285,7 +282,7 @@ export function AppointmentsScreen() {
           ) : (
             <>
               <MonthCalendar period={period} day={day} today={today} rows={rows} onPick={pick} />
-              <DayTable day={day} rows={rows} onSelect={setSelectedId} />
+              <DayTable day={day} today={today} rows={rows} onSelect={setSelectedId} />
             </>
           )}
         </div>
@@ -523,10 +520,12 @@ function DayButton({
 
 function DayTable({
   day,
+  today,
   rows,
   onSelect,
 }: {
   day: CalendarDate;
+  today: CalendarDate;
   rows: readonly AppointmentRow[];
   onSelect: (id: string) => void;
 }) {
@@ -559,7 +558,7 @@ function DayTable({
                       {row.customer?.name}
                     </button>
                     <span className="ml-auto text-xs text-fg-3">
-                      {t(`appointmentStatus.${row.appointment.status}`)}
+                      <Status label={statusLabel(row.appointment, today)} />
                     </span>
                   </li>
                 ))}
@@ -571,6 +570,10 @@ function DayTable({
     </section>
   );
 }
+
+const Status = ({ label }: { label: ReturnType<typeof statusLabel> }) => (
+  <span className={label.tone}>{label.text}</span>
+);
 
 /** The statuses whose outcome can be edited (mockup 6f). */
 const EDITABLE: readonly AppointmentStatus[] = ['MET', 'CANCELLED', 'NO_SHOW'];
@@ -620,7 +623,7 @@ function Detail({
     [t('appointments.re'), joinParts([row.re?.name, row.team?.name])],
     [t('appointments.coordinators'), row.coordinators.map(personLabel).join(', ') || '—'],
     [t('appointments.trigger'), joinParts([t(`trigger.${a.triggerType}`), a.triggerNote])],
-    [t('appointments.status'), t(`appointmentStatus.${a.status}`)],
+    [t('appointments.status'), <Status label={statusLabel(a, today)} />],
     [t('appointments.outcome'), outcomeText(row.outcome) || '—'],
     [t('appointments.note'), a.note || '—'],
   ];

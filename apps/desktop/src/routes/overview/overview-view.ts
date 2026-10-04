@@ -93,7 +93,7 @@ function windowText(window: Period, period: Period): string {
     return sameYear ? formatDayMonth(window.start) : formatDate(window.start);
   }
   if (!sameYear) return formatPeriodValue(customPeriod(window.start, window.end));
-  return `${formatDayMonth(window.start)} – ${formatDayMonth(window.end)}`;
+  return t('sep.range', { from: formatDayMonth(window.start), to: formatDayMonth(window.end) });
 }
 
 /** Days the KPI are counted over (§4.1: up to today); null when the period has not started. */
@@ -103,8 +103,8 @@ export function countedWindow(period: Period, today: CalendarDate): Period | nul
 }
 
 function notComparedReason(period: Period, today: CalendarDate): string {
-  if (period.kind === 'custom') return t('overview.notCompared.custom');
   if (compareDates(today, period.start) < 0) return t('overview.notCompared.notStarted');
+  if (period.kind === 'custom') return t('overview.notCompared.custom');
   return t('overview.notCompared.outOfRange', { from: MIN_YEAR, to: MAX_YEAR });
 }
 

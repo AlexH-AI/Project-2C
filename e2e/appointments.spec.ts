@@ -547,6 +547,37 @@ test('an appointment past and still scheduled counts as unrecorded: count line, 
   ).toHaveCount(1);
 });
 
+test('an appointment of yesterday still scheduled reads unrecorded everywhere it is shown', async ({
+  page,
+}) => {
+  const { day, detail } = screen(page);
+  const f = await fillAppointment(page, '14/9');
+  await f.create.click();
+  await expect(f.dialog).toHaveCount(0);
+
+  await expect(day.getByRole('listitem').filter({ hasText: f.name })).toContainText(
+    'Chưa ghi kết quả',
+  );
+  const status = detail.locator('div', { has: page.getByText('Trạng thái', { exact: true }) });
+  await expect(status.locator('dd')).toHaveText('Chưa ghi kết quả');
+
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const next = form(page);
+  await next.dialog.getByRole('textbox', { name: /^Khách hàng/ }).fill(f.name);
+  await next.dialog.getByRole('list', { name: 'KH khớp' }).getByRole('button').first().click();
+  await expect(next.history.getByRole('listitem').filter({ hasText: '14/09' })).toContainText(
+    'Chưa ghi kết quả',
+  );
+  await next.dialog.getByRole('button', { name: 'Hủy', exact: true }).click();
+  await expect(next.dialog).toHaveCount(0);
+
+  await detail.getByRole('link', { name: 'Hồ sơ KH →' }).click();
+  const appointments = page.getByRole('table', { name: 'Lịch hẹn' });
+  await expect(appointments.locator('tbody tr', { hasText: '14/09' })).toContainText(
+    'Chưa ghi kết quả',
+  );
+});
+
 test('a coordinator filter hiding the new appointment is cleared', async ({ page }) => {
   const { coordinator, day, detail } = screen(page);
   await coordinator.selectOption({ label: 'Không có người phối hợp' });
