@@ -2,12 +2,11 @@
 
 > Tách khỏi `HANDOFF.md` ngày 03/10/2026 (#280). Phiên review đóng phase và skill `review-pr` đối chiếu sổ này trước khi ghi một phát hiện là MỚI. Ghi chú review không chặn của PR task ghi vào đây (OPEN), không ghi vào HANDOFF.
 
-Quy tắc (review đóng Phase 3, P-3): ghi chú review không chặn nằm ở đây, chia **OPEN** (còn phải làm), **RESOLVED** (đã sửa, ghi PR), **ACCEPTED** (Owner hoặc spec chấp nhận, không sửa). Khi đóng mỗi phase, kiểm lại từng dòng OPEN trên code và chuyển nhóm. Review sau đối chiếu sổ này trước khi ghi một phát hiện là MỚI. Đối chiếu lần này: `main` `595ef79`, 04/10 (review đóng Phase 4, `docs/reviews/2026-10-04-phase-4-tong-hop.md`). Mã T-d…T-i, S-1, S-2 là task Đợt 2/3 trong báo cáo tổng hợp 30/09 §4; T-j và R2-xx ở báo cáo 02/10 §4–§5.
+Quy tắc (review đóng Phase 3, P-3): ghi chú review không chặn nằm ở đây, chia **OPEN** (còn phải làm), **RESOLVED** (đã sửa, ghi PR), **ACCEPTED** (Owner hoặc spec chấp nhận, không sửa). Khi đóng mỗi phase, kiểm lại từng dòng OPEN trên code và chuyển nhóm. Review sau đối chiếu sổ này trước khi ghi một phát hiện là MỚI. Đối chiếu lần này: `main` `1625568`, 05/10 (đóng Phase 4, sau các task sửa từ review đóng phase; lần trước: `595ef79`, 04/10, `docs/reviews/2026-10-04-phase-4-tong-hop.md`). Mã T-d…T-i, S-1, S-2 là task Đợt 2/3 trong báo cáo tổng hợp 30/09 §4; T-j và R2-xx ở báo cáo 02/10 §4–§5.
 
 ## OPEN
 
 Theo task đã có chỗ trong kế hoạch:
-- **Review đóng Phase 4 (04/10), làm trước G7:** T-125 #317 … T-131 #323 (bảng ở `docs/reviews/2026-10-04-phase-4-tong-hop.md` §2), gồm F-01 còn sót `expected_case_size` khi nhập backup (T-128 #320) và ba ghi chú review #316 — slug dài, câu "đầy ổ đĩa", thông báo sau Lọc (T-127 #319).
 - **S-1 / D-1 (probe Codex Sol 02/10):** nhập backup nhận `kyc_versions.hash` sai → tính lại hoặc kiểm hash khi nhập snapshot.
 - **S-2 (Đợt 3):** ghi muộn trong khoảng chờ backup → thay DB (#96); hai `replace` chồng nhau đóng DB cũ hai lần (#192); chưa có test cho cửa sổ `opening` (#206).
 
@@ -55,6 +54,8 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 
 ## RESOLVED
 
+- Đóng Phase 4 (05/10), ghi chú không chặn của PR sửa Phase 4: lịch đã qua còn Đã lên lịch ghi "Chưa ghi kết quả" cả ở phụ đề Hẹn tiếp / Dời lịch / Xóa lịch và timeline KYC (phần "Chưa làm" của PR #328 → T-133 #336, PR #338); dòng "Đã xuất báo cáo" so kỳ / góc nhìn theo giá trị (`sameSelection`) và `setBusy` trong `finally` (review #327), `updatePerson` + luật 5 nhập backup dùng `REVIEWER_ROLES` (review #330), thông báo `RangeError` kỳ Tùy chọn đọc `CUSTOM_RANGE_MAX_MONTHS` (review #331) → T-134 #337, PR #339.
+- Review đóng Phase 4 (04/10), sửa trước G7 (bảng §2 của `docs/reviews/2026-10-04-phase-4-tong-hop.md`): P1 so với kỳ trước ở ngày cuối kỳ (T-125 #317, PR #325); P2 nửa đêm — ngày của app đi theo đồng hồ ở mọi màn (T-126 #318, PR #334); P3 / P4 slug ≤ 60, câu lỗi theo bước, thông báo sau Lọc — ba ghi chú review #316 (T-127 #319, PR #327); P5 `expected_case_size` ≤ 0 khi nhập backup, phần sót của F-01 (T-128 #320, PR #326); P6, P9–P11 dọn hiển thị (T-129 #321, PR #328); P7 trần kỳ Tùy chọn 3 tháng (T-130 #322, PR #331) và Theo mốc một lượt (T-131 #323, PR #332); đổi D9 người đánh giá chỉ IS / TL / BDM / BD (T-132 #329, PR #330).
 - Review đóng Phase 4 (04/10): T-f / F-14 — `MAX_YEAR = 2100`, `canShift` tắt ‹ ›, `addDays` kiểm miền và ném `RangeError` thay `NaN` (#256, PR #300); T-i / F-18 — `stage-chart.ts` escape mọi chuỗi qua `encodeHtml`, có test (PR #312); `Overview.tsx` lấy hôm nay qua `useAppData().today()` (PR #309; phần ngày cũ khi app mở qua nửa đêm → T-126 #318).
 - T-h phần 2 (F-13, F-15, F-19 phần `t()`, R2-03, R2-04, R2-05): "Lưu kết quả" khi chưa chọn trạng thái báo "Chọn trạng thái."; `·` / `→` qua `sep.*` + `joinParts`, `lint:tokens` chặn phân cách cứng; `t()` chỉ đọc tên riêng của params (`Object.hasOwn`) và nhóm nghìn số ở ô đếm (`COUNT_SLOTS`, test bắt ô mới chưa phân loại); `eslint --max-warnings 0`; `CARD` dùng chung từ `appointments-view.ts`, thứ tự import `FOCUS` (#259).
 
@@ -79,6 +80,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 
 ## ACCEPTED
 
+- Review #334 (T-126): `apps/desktop/src/data/today.ts` `untilMidnight` tự tính `new Date(y, m, d + 1)` ngoài `packages/domain` — chỉ ra mili giây cho hẹn giờ, không parse / format; đưa vào `domain` nếu nơi khác cần. Ngày được chọn của màn Lịch hẹn không tự nhảy sang ngày mới qua nửa đêm (Issue #318 "Hệ quả thêm").
 - **Owner quyết 30/09 (#171):** lịch Dời lịch không có nút xóa (chuỗi dời, cần quy tắc riêng G1/G2); ô **Giờ** ở hộp 6f giữ; câu "Xóa mềm, khôi phục được" ở 6g giữ — màn "Thùng rác" xếp Phase 6 (xem comment Owner trên #72).
 - Hộp lỗi màn hình chỉ hiện `String(error)`, không stack (#206 vòng 1; React 19 tự `console.error` kèm stack).
 - `storage.rs`: đường dẫn kết thúc bằng `\` sẽ thành `"…\"` — không xảy ra vì `folder()` luôn trả `…\exports|backups` (#196); `rename` trên Windows ghi đè đích, chỉ tránh nhờ claim (chương trình ngoài tạo trùng tên trong vài ms thì bị ghi đè) (#192).
