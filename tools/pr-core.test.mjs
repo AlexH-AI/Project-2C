@@ -5,6 +5,7 @@ import {
   isDocsOnly,
   isReviewWorktree,
   mergeBlockers,
+  mergeSteps,
   parseWorktrees,
   riskLevel,
 } from './pr-core.mjs';
@@ -237,6 +238,32 @@ const PORCELAIN = [
   'branch refs/heads/task/T-2-y',
   '',
 ].join('\n');
+
+describe('mergeSteps', () => {
+  const merge = ['gh', 'pr', 'merge', '9', '--squash', '--match-head-commit', HEAD];
+  const fetch = ['git', 'fetch', 'origin', '--prune'];
+  const argv = (steps) => steps.map((s) => [s.cmd, ...s.args]);
+
+  it('merges pinned to the head, then fetches', () => {
+    expect(argv(mergeSteps(pr(), ctx()))).toEqual([merge, fetch]);
+    expect(argv(mergeSteps(pr(), ctx({ mode: 'merge' })))[0]).toContain('--merge');
+  });
+
+  it('leaves a note on the PR when the Owner said merge (P-1: mergedBy is always the shared account)', () => {
+    expect(argv(mergeSteps(pr(), ctx({ owner: true })))).toEqual([
+      merge,
+      [
+        'gh',
+        'pr',
+        'comment',
+        '9',
+        '--body',
+        'Merged on Owner request (merge-pr --owner), head `abc1234`.',
+      ],
+      fetch,
+    ]);
+  });
+});
 
 describe('parseWorktrees', () => {
   it('reads path, head and branch (null when detached), main checkout first', () => {

@@ -4,7 +4,9 @@
 //   node tools/merge-pr.mjs <N> [--merge] [--owner] [--dry-run]
 //
 //   --merge    merge commit instead of squash: needed when another PR is stacked on this branch
-//   --owner    the Owner said to merge (any risk); without it only risk:low PRs are merged
+//   --owner    the Owner said to merge (any risk); without it only risk:low PRs are merged.
+//              Leaves a "Merged on Owner request" comment on the PR (P-1: mergedBy is always
+//              the shared account)
 //   --dry-run  print the checks and the clean-up plan, change nothing
 //
 // It refuses to merge (exit 1) when the PR is not open or is a draft, the latest REVIEW is
@@ -27,7 +29,7 @@
 // are printed so the rest can be finished by hand.
 
 import { spawnSync } from 'node:child_process';
-import { alreadyDone, cleanupPlan, mergeBlockers, parseWorktrees } from './pr-core.mjs';
+import { alreadyDone, cleanupPlan, mergeBlockers, mergeSteps, parseWorktrees } from './pr-core.mjs';
 import { formatStatus, loadPr } from './pr-status.mjs';
 import { run } from './session-io.mjs';
 
@@ -121,17 +123,11 @@ const blockers = mergeBlockers(pr, { ...opts, stacked, baseMerged });
 out(`\nChecks (${opts.mode}${opts.owner ? ', Owner said merge' : ''}):`);
 out(blockers.length ? blockers.map((b) => `  x ${b}`).join('\n') : '  ok');
 
-const mergeStep = {
-  cmd: 'gh',
-  args: ['pr', 'merge', pr.number, `--${opts.mode}`, '--match-head-commit', pr.headRefOid].map(
-    String,
-  ),
-};
-const fetchStep = { cmd: 'git', args: ['fetch', 'origin', '--prune'] };
+const steps = mergeSteps(pr, opts);
 
 if (opts.dryRun) {
   out('\nDry run, nothing changed. Would run:');
-  out(`  ${show(mergeStep)}\n  ${show(fetchStep)}`);
+  for (const step of steps) out(`  ${show(step)}`);
   out('Then clean up (as the repo is now; recomputed after the fetch):');
   printPlan(planCleanup(pr.headRefName, stacked));
   process.exit(blockers.length ? 1 : 0);
@@ -144,7 +140,7 @@ if (blockers.length) {
 
 out('');
 const done = [];
-runSteps([mergeStep, fetchStep], done, ['clean-up (see the steps in tools/merge-pr.mjs)']);
+runSteps(steps, done, ['clean-up (see the steps in tools/merge-pr.mjs)']);
 const plan = planCleanup(pr.headRefName, stacked);
 runSteps(plan.steps, done);
 if (plan.problems.length) {
