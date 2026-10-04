@@ -5,8 +5,8 @@
  */
 import { isRfTransition } from './customer-lifecycle';
 import type { Appointment, Person, Policy, Scope, StageTransition } from './model';
-import { isInPeriod } from './period';
-import type { Period } from './period';
+import { daysBetween, formatDate, isInPeriod } from './period';
+import type { CalendarDate, Period } from './period';
 
 export interface PolicyMetrics {
   /** HĐ đã nộp: policies with `submittedDate` in the period. */
@@ -38,6 +38,27 @@ export function scopeMatcher(people: readonly Person[], scope: Scope): (reId: st
       return (reId) => members.has(reId);
     }
   }
+}
+
+/**
+ * The index of the mark holding a day, or -1 when none does; built once, then checked per record.
+ * Marks run earliest first and never overlap, as `chartMarks` and `reportMarks` cut them, though
+ * gaps between them are allowed. Each day of the marks is indexed, so a lookup is one subtraction.
+ */
+export function markIndexer(marks: readonly Period[]): (date: CalendarDate) => number {
+  const first = marks[0]?.start;
+  const last = marks.at(-1)?.end;
+  if (first === undefined || last === undefined) return () => -1;
+  const byDay = new Int32Array(Math.max(daysBetween(first, last) + 1, 0)).fill(-1);
+  marks.forEach((mark, index) => {
+    const from = daysBetween(first, mark.start);
+    const to = daysBetween(first, mark.end);
+    if (from < 0 || to >= byDay.length || byDay.subarray(from, to + 1).some((at) => at !== -1)) {
+      throw new RangeError(`Mark ${formatDate(mark.start)} is out of order or overlaps another`);
+    }
+    byDay.fill(index, from, to + 1);
+  });
+  return (date) => byDay[daysBetween(first, date)] ?? -1;
 }
 
 /** Whether an appointment is a cuộc gặp chuyển RF; built once, then checked per appointment. */
@@ -137,4 +158,45 @@ export function periodMetrics(data: MetricsData, period: Period, scope: Scope): 
   const policies = policyMetrics(data, period, scope);
   const rf = rfCount(data, period, scope);
   return { ...policies, rfCount: rf, closeRate: closeRate(policies.issuedCount, rf) };
+}
+
+/**
+ * `periodMetrics` of each mark, in one pass over the records (Theo mốc, spec Phase 4 §4.4): each
+ * policy and appointment is put in the mark holding its day. Equal, mark by mark, to calling
+ * `periodMetrics` for each one; marks as `markIndexer` takes them.
+ */
+export function periodMetricsByMark(
+  data: MetricsData,
+  marks: readonly Period[],
+  scope: Scope,
+): PeriodMetrics[] {
+  const matches = scopeMatcher(data.people, scope);
+  const markOf = markIndexer(marks);
+  const isRf = rfMatcher(data.transitions);
+  const parts = marks.map(() => ({
+    submittedCount: 0,
+    caseSize: 0,
+    issuedCount: 0,
+    revenue: 0,
+    rfCount: 0,
+  }));
+  for (const policy of data.policies) {
+    if (!matches(policy.reId)) continue;
+    const submitted = parts[markOf(policy.submittedDate)];
+    if (submitted) {
+      submitted.submittedCount += 1;
+      submitted.caseSize += policy.submittedFyp;
+    }
+    const issued = policy.issuedDate && parts[markOf(policy.issuedDate)];
+    if (issued) {
+      issued.issuedCount += 1;
+      issued.revenue += policy.issuedFyp ?? policy.submittedFyp;
+    }
+  }
+  for (const appointment of data.appointments) {
+    if (!matches(appointment.reId) || !isRf(appointment)) continue;
+    const part = parts[markOf(appointment.date)];
+    if (part) part.rfCount += 1;
+  }
+  return parts.map((part) => ({ ...part, closeRate: closeRate(part.issuedCount, part.rfCount) }));
 }

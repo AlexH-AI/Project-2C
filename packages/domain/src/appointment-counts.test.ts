@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { appointmentCounts, appointmentGroup } from './appointment-counts';
+import { appointmentCounts, appointmentCountsByMark, appointmentGroup } from './appointment-counts';
 import { APPOINTMENT_GOLDEN_CASES, APPOINTMENT_ROWS } from './golden/appointments.fixture';
 import { PEOPLE } from './golden/metrics.fixture';
-import type { Appointment, AppointmentStatus } from './model';
-import { calendarDate } from './period';
-import type { CalendarDate } from './period';
+import type { Appointment, AppointmentStatus, Scope } from './model';
+import { calendarDate, chartMarks, periodOf, reportMarks } from './period';
+import type { CalendarDate, Period } from './period';
 
 const TODAY = calendarDate(2027, 1, 13);
 
@@ -67,4 +67,40 @@ describe('appointmentCounts — golden A01–A13', () => {
       ).toEqual(golden.expected);
     });
   }
+});
+
+describe('appointmentCountsByMark', () => {
+  const appointments = APPOINTMENT_ROWS.filter((row) => !row.deleted && !row.customerDeleted).map(
+    (row) => row.appointment,
+  );
+  const SCOPES: readonly Scope[] = [
+    { kind: 'all' },
+    { kind: 'team', teamId: 'team-a' },
+    { kind: 're', reId: 're-an' },
+  ];
+  const MARKS: Readonly<Record<string, readonly Period[]>> = {
+    'days of 12/2026 – 03/2027': [
+      calendarDate(2026, 12, 1),
+      calendarDate(2027, 1, 1),
+      calendarDate(2027, 2, 1),
+      calendarDate(2027, 3, 1),
+    ].flatMap((day) => chartMarks(periodOf('month', day))),
+    'weeks of 01/2027 cut at the month': reportMarks(periodOf('month', TODAY)),
+    'months of 2027': reportMarks(periodOf('year', TODAY)),
+  };
+
+  for (const [name, marks] of Object.entries(MARKS)) {
+    it.each(SCOPES)(`equals appointmentCounts of each mark: ${name}, $kind`, (scope) => {
+      expect(appointmentCountsByMark(appointments, marks, scope, PEOPLE, TODAY)).toEqual(
+        marks.map((mark) => appointmentCounts(appointments, mark, scope, PEOPLE, TODAY)),
+      );
+    });
+  }
+
+  it('counts an appointment between two marks in neither', () => {
+    const marks = [periodOf('day', calendarDate(2027, 1, 4)), periodOf('day', TODAY)];
+    expect(appointmentCountsByMark(appointments, marks, { kind: 'all' }, PEOPLE, TODAY)).toEqual(
+      marks.map((mark) => appointmentCounts(appointments, mark, { kind: 'all' }, PEOPLE, TODAY)),
+    );
+  });
 });

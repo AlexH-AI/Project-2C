@@ -5,7 +5,7 @@
 import type { Appointment, Person, Scope } from './model';
 import { compareDates, isInPeriod } from './period';
 import type { CalendarDate, Period } from './period';
-import { scopeMatcher } from './stats';
+import { markIndexer, scopeMatcher } from './stats';
 
 /** Đã gặp · Dời – hủy – không đến · Chưa ghi kết quả · Dự kiến. */
 export type AppointmentGroup = 'met' | 'missed' | 'unrecorded' | 'planned';
@@ -50,6 +50,31 @@ export function appointmentCounts(
     if (!matches(appointment.reId) || !isInPeriod(appointment.date, period)) continue;
     counts[appointmentGroup(appointment, today)] += 1;
     counts.total += 1;
+  }
+  return counts;
+}
+
+/**
+ * `appointmentCounts` of each mark, in one pass over the appointments (Theo mốc, spec Phase 4 §4.4):
+ * each one is put in the mark holding its day. Equal, mark by mark, to calling `appointmentCounts`
+ * for each one; marks as `markIndexer` takes them.
+ */
+export function appointmentCountsByMark(
+  appointments: readonly Appointment[],
+  marks: readonly Period[],
+  scope: Scope,
+  people: readonly Person[],
+  today: CalendarDate,
+): AppointmentCounts[] {
+  const matches = scopeMatcher(people, scope);
+  const markOf = markIndexer(marks);
+  const counts = marks.map(() => ({ met: 0, missed: 0, unrecorded: 0, planned: 0, total: 0 }));
+  for (const appointment of appointments) {
+    if (!matches(appointment.reId)) continue;
+    const mark = counts[markOf(appointment.date)];
+    if (!mark) continue;
+    mark[appointmentGroup(appointment, today)] += 1;
+    mark.total += 1;
   }
   return counts;
 }

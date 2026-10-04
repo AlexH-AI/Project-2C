@@ -4,7 +4,7 @@
  */
 import { sortedByDate, stageAtEndOf } from './customer-lifecycle';
 import type { Customer, CustomerStage, Person, Scope, StageTransition } from './model';
-import { compareDates } from './period';
+import { compareDates, formatDate } from './period';
 import type { CalendarDate, Period } from './period';
 import { scopeMatcher } from './stats';
 
@@ -38,34 +38,112 @@ export function stageSnapshot(
   return stageSnapshotter(customers, transitions, people)(date, scope);
 }
 
-/**
- * `stageSnapshot` for many days or scopes over the same data (chart columns, Theo mốc rows, one
- * row per team or RE): each customer's transitions are grouped and sorted once, then every call
- * only looks up the stage at its day.
- */
-export function stageSnapshotter(
+const noCustomers = (): Record<CustomerStage, number> => ({
+  N4: 0,
+  N3: 0,
+  N2: 0,
+  N1: 0,
+  ON_HOLD: 0,
+  LOST: 0,
+});
+
+/** Each customer with its RE and its transitions by day, grouped and sorted once. */
+function customerHistories(
   customers: readonly Customer[],
   transitions: readonly StageTransition[],
-  people: readonly Person[],
-): (date: CalendarDate, scope: Scope) => StageCounts {
+): { readonly reId: string; readonly sorted: readonly StageTransition[] }[] {
   const grouped = new Map<string, StageTransition[]>();
   for (const transition of transitions) {
     const list = grouped.get(transition.customerId);
     if (list) list.push(transition);
     else grouped.set(transition.customerId, [transition]);
   }
-  const histories = customers.map((customer) => ({
+  return customers.map((customer) => ({
     reId: customer.reId,
     sorted: sortedByDate(grouped.get(customer.id) ?? []),
   }));
+}
+
+/**
+ * `stageSnapshot` for many scopes over the same data (one row per team or RE): each customer's
+ * transitions are grouped and sorted once, then every call only looks up the stage at its day.
+ */
+export function stageSnapshotter(
+  customers: readonly Customer[],
+  transitions: readonly StageTransition[],
+  people: readonly Person[],
+): (date: CalendarDate, scope: Scope) => StageCounts {
+  const histories = customerHistories(customers, transitions);
   return (date, scope) => {
     const matches = scopeMatcher(people, scope);
-    const counts = { N4: 0, N3: 0, N2: 0, N1: 0, ON_HOLD: 0, LOST: 0 };
+    const counts = noCustomers();
     for (const { reId, sorted } of histories) {
       if (!matches(reId)) continue;
       const stage = stageAtEndOf(sorted, date);
       if (stage !== null) counts[stage] += 1;
     }
     return counts;
+  };
+}
+
+/** The index of the first of `dates` (earliest first) on or after `date`; their length if none. */
+function firstOnOrAfter(dates: readonly CalendarDate[], date: CalendarDate): number {
+  let low = 0;
+  let high = dates.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if (compareDates(dates[middle]!, date) < 0) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+
+/**
+ * `stageSnapshotter` for many days at once (chart columns, Theo mốc rows), in one pass over the
+ * transitions: a transition holds its stage from its day until the customer's next transition, so
+ * it adds the customer to the days in between. Equal, day by day, to the snapshot of each day; the
+ * days run earliest first and may repeat.
+ */
+export function stageSnapshotSeries(
+  customers: readonly Customer[],
+  transitions: readonly StageTransition[],
+  people: readonly Person[],
+): (dates: readonly CalendarDate[], scope: Scope) => StageCounts[] {
+  const histories = customerHistories(customers, transitions);
+  return (dates, scope) => {
+    dates.forEach((date, index) => {
+      const previous = dates[index - 1];
+      if (previous && compareDates(previous, date) > 0) {
+        throw new RangeError(`Snapshot day ${formatDate(date)} is out of order`);
+      }
+    });
+    const matches = scopeMatcher(people, scope);
+    // How the count of each stage moves from the previous day of `dates` to this one.
+    const changes = dates.map(noCustomers);
+    for (const { reId, sorted } of histories) {
+      if (!matches(reId)) continue;
+      sorted.forEach((transition, index) => {
+        const next = sorted[index + 1];
+        const from = firstOnOrAfter(dates, transition.date);
+        const until = next ? firstOnOrAfter(dates, next.date) : dates.length;
+        if (from >= until) return;
+        changes[from]![transition.to] += 1;
+        const after = changes[until];
+        if (after) after[transition.to] -= 1;
+      });
+    }
+    let counts: StageCounts = noCustomers();
+    return changes.map((change) => {
+      const before = counts;
+      counts = {
+        N4: before.N4 + change.N4,
+        N3: before.N3 + change.N3,
+        N2: before.N2 + change.N2,
+        N1: before.N1 + change.N1,
+        ON_HOLD: before.ON_HOLD + change.ON_HOLD,
+        LOST: before.LOST + change.LOST,
+      };
+      return counts;
+    });
   };
 }

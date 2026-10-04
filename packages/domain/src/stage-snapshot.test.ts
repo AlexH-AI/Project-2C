@@ -10,7 +10,12 @@ import {
 } from './golden/stage-snapshot.fixture';
 import { calendarDate, chartMarks, customPeriod, formatDate, isInPeriod, periodOf } from './period';
 import type { CalendarDate } from './period';
-import { snapshotDate, stageSnapshot, stageSnapshotter } from './stage-snapshot';
+import {
+  snapshotDate,
+  stageSnapshot,
+  stageSnapshotSeries,
+  stageSnapshotter,
+} from './stage-snapshot';
 
 // The repository never returns a deleted customer, so the golden deleted rows are dropped here.
 const live = SNAPSHOT_CUSTOMERS.filter((row) => !row.deleted);
@@ -161,5 +166,63 @@ describe('chart of a year that is running (§2.8)', () => {
       SNAPSHOT_GOLDEN_CASES.find((golden) => golden.id === 'S03')!.expected,
     );
     expect(snapshotDate(february!, SNAPSHOT_TODAY)).toBeNull();
+  });
+});
+
+describe('stageSnapshotSeries', () => {
+  const SCOPES: readonly Scope[] = [
+    ALL,
+    { kind: 'team', teamId: 'team-a' },
+    { kind: 're', reId: 're-an' },
+  ];
+  const DATES: Readonly<Record<string, readonly CalendarDate[]>> = {
+    'every day of 12/2026 – 02/2027': [
+      calendarDate(2026, 12, 1),
+      calendarDate(2027, 1, 1),
+      calendarDate(2027, 2, 1),
+    ].flatMap((day) => chartMarks(periodOf('month', day)).map((mark) => mark.end)),
+    'the end of each month of 2027': chartMarks(periodOf('year', TODAY)).map((mark) => mark.end),
+    'two days far apart': [calendarDate(2026, 1, 1), calendarDate(2027, 1, 13)],
+  };
+
+  for (const [name, dates] of Object.entries(DATES)) {
+    it.each(SCOPES)(`equals the snapshot of each day: ${name}, $kind`, (scope) => {
+      const snapshot = stageSnapshotter(LIVE_CUSTOMERS, TRANSITIONS, PEOPLE);
+      expect(stageSnapshotSeries(LIVE_CUSTOMERS, TRANSITIONS, PEOPLE)(dates, scope)).toEqual(
+        dates.map((date) => snapshot(date, scope)),
+      );
+    });
+  }
+
+  it('takes the last transition recorded on a day, and a day twice the same', () => {
+    const t = (id: string, day: number, to: 'N4' | 'N3' | 'N2') => ({
+      id,
+      customerId: 'K-21',
+      from: null,
+      to,
+      date: calendarDate(2027, 1, day),
+      appointmentId: null,
+    });
+    const k21 = LIVE_CUSTOMERS.filter((customer) => customer.id === 'K-21');
+    const series = stageSnapshotSeries(
+      k21,
+      [t('c', 6, 'N4'), t('a', 5, 'N3'), t('b', 5, 'N2'), t('z', 1, 'N4')],
+      PEOPLE,
+    );
+    const days = [4, 5, 5, 6].map((day) => calendarDate(2027, 1, day));
+    expect(series(days, ALL).map((counts) => [counts.N4, counts.N3, counts.N2])).toEqual([
+      [1, 0, 0],
+      [0, 0, 1],
+      [0, 0, 1],
+      [1, 0, 0],
+    ]);
+  });
+
+  it('has no snapshots for no days, and refuses days out of order', () => {
+    const series = stageSnapshotSeries(LIVE_CUSTOMERS, TRANSITIONS, PEOPLE);
+    expect(series([], ALL)).toEqual([]);
+    expect(() => series([calendarDate(2027, 1, 13), calendarDate(2027, 1, 12)], ALL)).toThrow(
+      RangeError,
+    );
   });
 });
