@@ -8,8 +8,20 @@ import {
   openDatabase,
   seedDemoData,
 } from '@p2c/db';
-import { calendarDate, customPeriod, periodOf, type Period, type Scope } from '@p2c/domain';
+import {
+  appointmentCounts,
+  calendarDate,
+  customPeriod,
+  periodMetrics,
+  periodOf,
+  reportMarks,
+  snapshotDate,
+  stageSnapshot,
+  type Period,
+  type Scope,
+} from '@p2c/domain';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { countedWindow } from '../overview/overview-view';
 import {
   APPOINTMENTS,
   CUSTOMERS,
@@ -299,5 +311,45 @@ describe('reportRows on the demo data', () => {
     const rf = teams.reduce((sum, team) => sum + team.metrics!.rfCount, 0);
 
     expect(rows.byTeam!.total.metrics!.closeRate).toEqual({ numerator: issued, denominator: rf });
+  });
+
+  describe('Theo mốc equals each mark counted on its own', () => {
+    const PERIODS: Readonly<Record<string, Period>> = {
+      'Ngày đang chạy': periodOf('day', TODAY),
+      'Ngày đã qua': periodOf('day', d(2026, 9, 10)),
+      'Ngày chưa tới': periodOf('day', d(2026, 9, 20)),
+      'Tuần đang chạy': periodOf('week', TODAY),
+      'Tuần đã qua': periodOf('week', d(2026, 9, 1)),
+      'Tuần chưa tới': periodOf('week', d(2026, 9, 28)),
+      'Tháng đang chạy': periodOf('month', TODAY),
+      'Tháng đã qua': periodOf('month', d(2026, 8, 1)),
+      'Tháng chưa tới': periodOf('month', d(2026, 10, 1)),
+      Năm: periodOf('year', TODAY),
+      'Tùy chọn': customPeriod(d(2026, 7, 15), d(2026, 10, 14)),
+    };
+    const scopes = (): readonly Scope[] => [
+      { kind: 'all' },
+      { kind: 'team', teamId: data.teams[0]!.id },
+      { kind: 're', reId: data.people.find((person) => person.role === 'RE')!.id },
+    ];
+
+    it.each(Object.entries(PERIODS))('%s, every scope', (_, period) => {
+      for (const scope of scopes()) {
+        const alone = reportMarks(period).map((mark) => {
+          const window = countedWindow(mark, TODAY);
+          const day = snapshotDate(mark, TODAY);
+          return {
+            appointments: appointmentCounts(data.appointments, mark, scope, data.people, TODAY),
+            metrics: window && periodMetrics(data, window, scope),
+            stages: day && stageSnapshot(data.customers, data.transitions, day, scope, data.people),
+          };
+        });
+        const byMark = reportRows(data, period, scope, TODAY).byMark.map(
+          ({ appointments, metrics, stages }) => ({ appointments, metrics, stages }),
+        );
+
+        expect(byMark, scope.kind).toEqual(alone);
+      }
+    });
   });
 });

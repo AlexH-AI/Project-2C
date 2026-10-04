@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { GOLDEN_CASES, PEOPLE, POLICIES } from './golden/metrics.fixture';
-import type { Person, Policy } from './model';
-import { calendarDate, customPeriod, periodOf } from './period';
-import { inScope, policyMetrics } from './stats';
+import {
+  APPOINTMENTS,
+  GOLDEN_CASES,
+  PEOPLE,
+  POLICIES,
+  STAGE_TRANSITIONS,
+} from './golden/metrics.fixture';
+import type { Person, Policy, Scope } from './model';
+import { calendarDate, chartMarks, customPeriod, periodOf, reportMarks } from './period';
+import type { Period } from './period';
+import { inScope, periodMetrics, periodMetricsByMark, policyMetrics } from './stats';
 
 const d = (day: number, month: number, year: number) => calendarDate(year, month, day);
 
@@ -122,5 +129,76 @@ describe('inScope', () => {
     expect(inScope(people, 're-1', team)).toBe(false);
     expect(inScope(people, 're-9', team)).toBe(false);
     expect(inScope(people, 're-9', { kind: 'all' })).toBe(true);
+  });
+});
+
+describe('periodMetricsByMark', () => {
+  const data = {
+    people: PEOPLE,
+    policies: POLICIES,
+    appointments: APPOINTMENTS,
+    transitions: STAGE_TRANSITIONS,
+  };
+  const SCOPES: readonly Scope[] = [
+    { kind: 'all' },
+    { kind: 'team', teamId: 'team-b' },
+    { kind: 're', reId: 're-an' },
+  ];
+  const months = [d(1, 12, 2026), d(1, 1, 2027), d(1, 2, 2027)].map((day) =>
+    periodOf('month', day),
+  );
+  const MARKS: Readonly<Record<string, readonly Period[]>> = {
+    'days of 01/12/2026 – 28/02/2027': months.flatMap(chartMarks),
+    'weeks of 01/2027 cut at the month': reportMarks(periodOf('month', d(1, 1, 2027))),
+    'months of 2027': reportMarks(periodOf('year', d(1, 1, 2027))),
+    'months of a custom range': reportMarks(customPeriod(d(20, 12, 2026), d(10, 2, 2027))),
+  };
+
+  for (const [name, marks] of Object.entries(MARKS)) {
+    it.each(SCOPES)(`equals periodMetrics of each mark: ${name}, $kind`, (scope) => {
+      expect(periodMetricsByMark(data, marks, scope)).toEqual(
+        marks.map((mark) => periodMetrics(data, mark, scope)),
+      );
+    });
+  }
+
+  it('counts a record between two marks in neither', () => {
+    const marks = [customPeriod(d(1, 1, 2027), d(10, 1, 2027)), periodOf('day', d(20, 1, 2027))];
+    const gap = customPeriod(d(11, 1, 2027), d(19, 1, 2027));
+    expect(periodMetrics(data, gap, { kind: 'all' }).submittedCount).toBeGreaterThan(0);
+    expect(periodMetricsByMark(data, marks, { kind: 'all' })).toEqual(
+      marks.map((mark) => periodMetrics(data, mark, { kind: 'all' })),
+    );
+  });
+
+  it('counts the FYP submitted as revenue when the policy was issued without its own', () => {
+    const issued: Policy = {
+      id: 'p-issued',
+      customerId: 'kh',
+      reId: 're-an',
+      submittedDate: d(4, 1, 2027),
+      submittedFyp: 100,
+      issuedDate: d(12, 1, 2027),
+      issuedFyp: null,
+    };
+    const marks = reportMarks(periodOf('month', d(1, 1, 2027)));
+    const policies = { ...data, policies: [issued] };
+    expect(periodMetricsByMark(policies, marks, { kind: 'all' })[2]?.revenue).toBe(100);
+    expect(periodMetricsByMark(policies, marks, { kind: 'all' })).toEqual(
+      marks.map((mark) => periodMetrics(policies, mark, { kind: 'all' })),
+    );
+  });
+
+  it('has no rows for no marks', () => {
+    expect(periodMetricsByMark(data, [], { kind: 'all' })).toEqual([]);
+  });
+
+  it('refuses marks out of order or overlapping, rather than count a record twice', () => {
+    const jan = periodOf('month', d(1, 1, 2027));
+    const feb = periodOf('month', d(1, 2, 2027));
+    expect(() => periodMetricsByMark(data, [feb, jan], { kind: 'all' })).toThrow(RangeError);
+    expect(() =>
+      periodMetricsByMark(data, [jan, periodOf('day', d(31, 1, 2027))], { kind: 'all' }),
+    ).toThrow(RangeError);
   });
 });

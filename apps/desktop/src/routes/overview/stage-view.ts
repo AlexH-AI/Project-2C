@@ -8,7 +8,7 @@ import {
   isInPeriod,
   periodOf,
   snapshotDate,
-  stageSnapshotter,
+  stageSnapshotSeries,
   weekdayOf,
   type CalendarDate,
   type Customer,
@@ -100,24 +100,30 @@ export function stageBlock(
   scope: Scope,
   today: CalendarDate,
 ): StageBlockView {
-  const snapshot = stageSnapshotter(data.customers, data.transitions, data.people);
+  const series = stageSnapshotSeries(data.customers, data.transitions, data.people);
   const marks = chartMarks(period).map((mark) => ({ mark, date: snapshotDate(mark, today) }));
-  const chart = (key: string, team: string | null, chartScope: Scope): StageChart => ({
-    key,
-    team,
-    columns: marks.map(({ mark, date }) => ({
-      label: markLabel(mark, period),
-      title: t('overview.stages.endOfDay', { date: formatDate(date ?? mark.end) }),
-      values: date && fourOf(snapshot(date, chartScope)),
-      today: isInPeriod(today, mark),
-    })),
-  });
+  // Every column in one pass over the transitions. Marks after today, the only ones without a
+  // snapshot day, come last, so the n-th day is that of the n-th mark.
+  const days = marks.flatMap(({ date }) => date ?? []);
+  const chart = (key: string, team: string | null, chartScope: Scope): StageChart => {
+    const snapshots = series(days, chartScope);
+    return {
+      key,
+      team,
+      columns: marks.map(({ mark, date }, index) => ({
+        label: markLabel(mark, period),
+        title: t('overview.stages.endOfDay', { date: formatDate(date ?? mark.end) }),
+        values: date && fourOf(snapshots[index]!),
+        today: isInPeriod(today, mark),
+      })),
+    };
+  };
 
   const date = snapshotDate(period, today);
   const teams = scope.kind === 'team';
   const counted = metricsScope(scope);
   return {
-    tiles: date && fourOf(snapshot(date, counted)),
+    tiles: date && fourOf(series([date], counted)[0]!),
     note: date && stageNote(date, today, teams ? data.teams.length : null),
     charts: teams
       ? data.teams.map((team) => chart(team.id, team.name, { kind: 'team', teamId: team.id }))

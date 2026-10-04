@@ -72,15 +72,21 @@ export {
   inScope,
   isRfAppointment,
   periodMetrics,
+  periodMetricsByMark,
   policyMetrics,
   rfCount,
 } from './stats';
 export type { CloseRate, MetricsData, PeriodMetrics, PolicyMetrics } from './stats';
 export { comparisonWindows, metricDeltas } from './compare';
 export type { ComparisonWindows, MetricDeltas } from './compare';
-export { appointmentCounts, appointmentGroup } from './appointment-counts';
+export { appointmentCounts, appointmentCountsByMark, appointmentGroup } from './appointment-counts';
 export type { AppointmentCounts, AppointmentGroup } from './appointment-counts';
-export { snapshotDate, stageSnapshot, stageSnapshotter } from './stage-snapshot';
+export {
+  snapshotDate,
+  stageSnapshot,
+  stageSnapshotSeries,
+  stageSnapshotter,
+} from './stage-snapshot';
 export type { StageCounts } from './stage-snapshot';
 export { formatVnd, formatVndCompact, formatVndDelta, parseVnd } from './money';
 export { formatCount, formatFileSize, formatPercent } from './number';

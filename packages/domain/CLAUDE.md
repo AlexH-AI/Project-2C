@@ -27,7 +27,7 @@ TypeScript thuần: định nghĩa chỉ số, vòng đời khách hàng, KYC, k
 Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `pnpm verify` báo đỏ khi lệch code.
 
 <!-- codemap:start -->
-- `src/appointment-counts.ts` — type AppointmentGroup, appointmentGroup, type AppointmentCounts, appointmentCounts
+- `src/appointment-counts.ts` — type AppointmentGroup, appointmentGroup, type AppointmentCounts, appointmentCounts, appointmentCountsByMark
 - `src/compare.ts` — type ComparisonWindows, comparisonWindows, type MetricDeltas, metricDeltas
 - `src/customer-lifecycle.ts` — assertValidTransition, isRfTransition, stageOn, sortedByDate, stageAtEndOf, policyBadge
 - `src/golden/appointments.fixture.ts` — APPOINTMENT_TODAY, type GoldenAppointmentRow, APPOINTMENT_ROWS, type AppointmentGoldenCase, APPOINTMENT_GOLDEN_CASES
@@ -44,6 +44,6 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/number.ts` — groupThousands, formatCount, formatPercent, formatFileSize
 - `src/period.ts` — type CalendarDate, PERIOD_KINDS, type PeriodKind, type Period, MIN_YEAR, MAX_YEAR, calendarDate, addDays, fromLocalDate, formatDate, formatLocalDateTime, formatIsoDate, localFileStamp, formatDayMonth, formatDayOfMonth, type Weekday, weekdayOf, daysBetween, compareDates, isInPeriod, parseDate, type QuickDateError, type QuickDateResult, NEXT_YEAR_SUGGESTION_DAYS, parseQuickDate, periodOf, customPeriod, customRangeMaxEnd, customRangeAllowed, monthToDate, shift, canShift, switchKind, todayPeriod, formatPeriodValue, chartMarks, reportMarks
 - `src/pipeline-stage.ts` — PIPELINE_STAGES, type PipelineStage, isPipelineStage, compareStages
-- `src/stage-snapshot.ts` — snapshotDate, type StageCounts, stageSnapshot, stageSnapshotter
-- `src/stats.ts` — type PolicyMetrics, scopeMatcher, inScope, policyMetrics, isRfAppointment, rfCount, type CloseRate, closeRate, type PeriodMetrics, type MetricsData, periodMetrics
+- `src/stage-snapshot.ts` — snapshotDate, type StageCounts, stageSnapshot, stageSnapshotter, stageSnapshotSeries
+- `src/stats.ts` — type PolicyMetrics, scopeMatcher, markIndexer, inScope, policyMetrics, isRfAppointment, rfCount, type CloseRate, closeRate, type PeriodMetrics, type MetricsData, periodMetrics, periodMetricsByMark
 <!-- codemap:end -->

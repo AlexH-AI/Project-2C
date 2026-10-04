@@ -1,5 +1,6 @@
 import {
   appointmentCounts,
+  appointmentCountsByMark,
   closeRate,
   compareDates,
   formatCount,
@@ -9,9 +10,10 @@ import {
   formatVndCompact,
   isInPeriod,
   periodMetrics,
+  periodMetricsByMark,
   reportMarks,
   snapshotDate,
-  stageSnapshotter,
+  stageSnapshotSeries,
   weekdayOf,
   type AppointmentCounts,
   type CalendarDate,
@@ -222,18 +224,13 @@ export function reportRows(
   today: CalendarDate,
 ): ReportRows {
   const counted = countedWindow(period, today);
-  const snapshot = stageSnapshotter(data.customers, data.transitions, data.people);
+  const series = stageSnapshotSeries(data.customers, data.transitions, data.people);
   const date = snapshotDate(period, today);
-  const figuresOf = (of: Scope, over: Period): ReportFigures => {
-    const window = countedWindow(over, today);
-    const day = snapshotDate(over, today);
-    return {
-      appointments: appointmentCounts(data.appointments, over, of, data.people, today),
-      metrics: window && periodMetrics(data, window, of),
-      stages: day && snapshot(day, of),
-    };
-  };
-  const figures = (of: Scope) => figuresOf(of, period);
+  const figures = (of: Scope): ReportFigures => ({
+    appointments: appointmentCounts(data.appointments, period, of, data.people, today),
+    metrics: counted && periodMetrics(data, counted, of),
+    stages: date && series([date], of)[0]!,
+  });
   const totalRow = (rows: readonly ReportRow[]): ReportRow => ({
     key: 'total',
     name: t('reports.total'),
@@ -248,12 +245,33 @@ export function reportRows(
     team: null,
     ...figures(scope),
   };
-  const byMark = reportMarks(period).map((mark): ReportMarkRow => ({
+  // Every mark in one pass over the data. Marks after today, the only ones without a window or a
+  // snapshot day, come last, so the n-th window and day are those of the n-th mark.
+  const marks = reportMarks(period);
+  const markAppointments = appointmentCountsByMark(
+    data.appointments,
+    marks,
+    scope,
+    data.people,
+    today,
+  );
+  const markMetrics = periodMetricsByMark(
+    data,
+    marks.flatMap((mark) => countedWindow(mark, today) ?? []),
+    scope,
+  );
+  const markStages = series(
+    marks.flatMap((mark) => snapshotDate(mark, today) ?? []),
+    scope,
+  );
+  const byMark = marks.map((mark, index): ReportMarkRow => ({
     key: formatDate(mark.start),
     name: markName(mark, period, today),
     team: null,
     today: isInPeriod(today, mark),
-    ...figuresOf(scope, mark),
+    appointments: markAppointments[index]!,
+    metrics: markMetrics[index] ?? null,
+    stages: markStages[index] ?? null,
   }));
   if (scope.kind === 're') return { summary, byTeam: null, byRe: null, byMark };
 

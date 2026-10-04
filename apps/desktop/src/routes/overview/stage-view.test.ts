@@ -1,5 +1,22 @@
-import { calendarDate, periodOf, type Scope } from '@p2c/domain';
-import { describe, expect, it } from 'vitest';
+import {
+  listCustomers,
+  listPeople,
+  listStageTransitions,
+  listTeams,
+  openDatabase,
+  seedDemoData,
+} from '@p2c/db';
+import {
+  calendarDate,
+  chartMarks,
+  customPeriod,
+  periodOf,
+  snapshotDate,
+  stageSnapshot,
+  type Period,
+  type Scope,
+} from '@p2c/domain';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { PEOPLE, TEAMS } from '../../../../../packages/domain/src/golden/metrics.fixture';
 import {
   CHART_GOLDEN_CASES,
@@ -18,6 +35,8 @@ const DATA: StageData = {
   teams: TEAMS,
 };
 const ALL: Scope = { kind: 'all' };
+/** Seeding the demo data takes seconds, more under coverage on a busy machine. */
+const SEEDING = 60_000;
 const golden = (id: string) => SNAPSHOT_GOLDEN_CASES.find((c) => c.id === id)!;
 const n4ToN1 = ({ N4, N3, N2, N1 }: Record<'N4' | 'N3' | 'N2' | 'N1', number>) => ({
   N4,
@@ -157,5 +176,60 @@ describe('stageBlock', () => {
     ).charts[0]!.columns.map((column) => column.label);
 
     expect(labels).toEqual(['11/2026', '12/2026', '01/2027', '02/2027', '03/2027']);
+  });
+});
+
+describe('stageBlock on the demo data: each column equals the snapshot of its day alone', () => {
+  const TODAY = calendarDate(2026, 9, 15);
+  const PERIODS: Readonly<Record<string, Period>> = {
+    'Ngày đang chạy': periodOf('day', TODAY),
+    'Ngày đã qua': periodOf('day', calendarDate(2026, 9, 10)),
+    'Ngày chưa tới': periodOf('day', calendarDate(2026, 9, 20)),
+    'Tuần đang chạy': periodOf('week', TODAY),
+    'Tuần đã qua': periodOf('week', calendarDate(2026, 9, 1)),
+    'Tuần chưa tới': periodOf('week', calendarDate(2026, 9, 28)),
+    'Tháng đang chạy': periodOf('month', TODAY),
+    'Tháng đã qua': periodOf('month', calendarDate(2026, 8, 1)),
+    'Tháng chưa tới': periodOf('month', calendarDate(2026, 10, 1)),
+    Năm: periodOf('year', TODAY),
+    'Tùy chọn': customPeriod(calendarDate(2026, 7, 15), calendarDate(2026, 10, 14)),
+  };
+
+  let data: StageData;
+  beforeAll(async () => {
+    const db = await openDatabase();
+    seedDemoData(db, { anchorDate: TODAY, seed: 1 });
+    data = {
+      customers: listCustomers(db),
+      transitions: listStageTransitions(db),
+      people: listPeople(db),
+      teams: listTeams(db),
+    };
+  }, SEEDING);
+
+  it.each(Object.entries(PERIODS))('%s, every scope', (_, period) => {
+    const scopes: readonly Scope[] = [
+      ALL,
+      { kind: 'team', teamId: data.teams[0]!.id },
+      { kind: 're', reId: data.people.find((person) => person.role === 'RE')!.id },
+    ];
+    const alone = (scope: Scope) =>
+      chartMarks(period).map((mark) => {
+        const day = snapshotDate(mark, TODAY);
+        return (
+          day && n4ToN1(stageSnapshot(data.customers, data.transitions, day, scope, data.people))
+        );
+      });
+    for (const scope of scopes) {
+      const block = stageBlock(data, period, scope, TODAY);
+      const charts = block.charts.map((chart) => chart.columns.map((column) => column.values));
+      // The Team scope of Tổng quan draws one chart per team.
+      const expected =
+        scope.kind === 'team'
+          ? data.teams.map((team) => alone({ kind: 'team', teamId: team.id }))
+          : [alone(scope)];
+
+      expect(charts, scope.kind).toEqual(expected);
+    }
   });
 });
