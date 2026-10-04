@@ -6,7 +6,7 @@ import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { Actions, ALERT } from '../customers/CustomerDialogs';
 import { RescheduleFields, useRescheduleForm, whenText } from './RescheduleFields';
-import type { AppointmentRow } from './appointments-view';
+import { statusLabel, type AppointmentRow } from './appointments-view';
 
 /**
  * Mockup 6e: a scheduled appointment moves to a new day. The old one stays as rescheduled, with
@@ -24,7 +24,8 @@ export function RescheduleDialog({
 }) {
   const app = useAppData();
   const old = row.appointment;
-  const form = useRescheduleForm(old, app.today());
+  const today = app.today();
+  const form = useRescheduleForm(old, today);
   const [failure, setFailure] = useState<string>();
 
   const save = () => {
@@ -46,7 +47,7 @@ export function RescheduleDialog({
         customer: row.customer?.name ?? '',
         weekday: t(`weekdayLong.${weekdayOf(old.date)}`),
         when: whenText(old),
-        status: t(`appointmentStatus.${old.status}`),
+        status: statusLabel(old, today).text,
       })}
       onClose={onClose}
       onSubmit={save}

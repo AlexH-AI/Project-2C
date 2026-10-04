@@ -11,6 +11,7 @@ import {
 import { Button, StageBadge } from '@p2c/ui';
 import { joinParts, t } from '../../i18n';
 import { withTime } from '../appointments/appointment-form';
+import { statusLabel } from '../appointments/appointments-view';
 import { NextButton } from './CustomerAppointments';
 import { factText, kycOverview, kycTimeline, type KycCategoryRow } from './kyc-view';
 
@@ -202,9 +203,7 @@ export function Timeline({
               {event.kind === 'meeting'
                 ? t('timeline.meetingWhen', {
                     when: withTime(formatDate(event.date), event.appointment.time),
-                    status: t(`appointmentStatus.${event.appointment.status}`).toLocaleLowerCase(
-                      'vi',
-                    ),
+                    status: statusLabel(event.appointment, today).text.toLocaleLowerCase('vi'),
                   })
                 : formatDate(event.date)}
             </span>
