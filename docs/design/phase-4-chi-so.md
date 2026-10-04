@@ -1,9 +1,9 @@
 # Phase 4 — Định nghĩa chỉ số Tổng quan và Báo cáo (G2)
 
-- **Issue:** #253 (T-097) · **Cổng:** G2 · **Trạng thái:** **Owner duyệt G2 03/10/2026** (PR #265)
+- **Issue:** #253 (T-097) · **Cổng:** G2 · **Trạng thái:** **Owner duyệt G2 03/10/2026** (PR #265) · **Bổ sung 04/10/2026** (Owner duyệt, review đóng Phase 4): §4.2 C10–C11 (ngày cuối kỳ vẫn là kỳ chưa hết), §3.1 trần kỳ Tùy chọn 3 tháng
 - **Quyết định Owner:** 03/10/2026 (AskUserQuestion trong phiên #253) + 01/10/2026 (ý 9, `docs/reviews/2026-10-01-phan-hoi-owner-kiem-exe.md`)
 - **Nền:** ADR-0007 (định nghĩa HĐ, case size, doanh số, RF, tỉ lệ chốt, tuần T2–CN, MTD; góc nhìn G2 E); golden `docs/golden/chi-so.md` (G01–G22, không đổi)
-- **Golden mới:** `docs/golden/lich-hen.md` (A01–A13), `docs/golden/kh-theo-nhom.md` (S01–S13); bảng C01–C09 và M01–M04 ngay trong file này
+- **Golden mới:** `docs/golden/lich-hen.md` (A01–A13), `docs/golden/kh-theo-nhom.md` (S01–S13); bảng C01–C11 và M01–M04 ngay trong file này
 - **Không làm ở đây:** bố cục, màu, chữ trên màn (G3, #254); fixture TS (task cài đặt chép từ bảng đã duyệt)
 
 Quy ước chung cho mọi số trong file:
@@ -83,6 +83,27 @@ Golden: `docs/golden/kh-theo-nhom.md` S01–S13 (tạo sau kỳ, đóng / mở l
 
 Hàng cuối: kỳ Tùy chọn dời nguyên độ dài; nếu kỳ dời ra **một phần** ngoài miền thì tắt (không cắt) — chỉ kỳ tuần được cắt vì tuần luôn neo T2–CN.
 
+### 3.1 Trần kỳ Tùy chọn — tối đa 3 tháng lịch
+
+**Quyết định Owner 04/10/2026** (review đóng Phase 4, P7): kỳ Tùy chọn dài **tối đa 3 tháng lịch**, áp ở **mọi màn có bộ chọn kỳ** (Lịch hẹn, Tổng quan, Báo cáo).
+
+1. **Ngày cuối lớn nhất** = ngày liền trước "cùng ngày, 3 tháng sau"; tháng đó ngắn hơn thì là ngày cuối của tháng đó. Ngày đầu là ngày 1 → ngày cuối của tháng thứ 3 (tính cả tháng đầu).
+2. Ô ngày nhập quá trần → báo đỏ như khi nhập ngày ngược, kèm dòng "Kỳ Tùy chọn tối đa 3 tháng"; kỳ đang xem không đổi.
+3. Nút ‹ / › của kỳ Tùy chọn: kỳ dời giữ nguyên số ngày (mục 3); nếu kỳ dời **vượt trần** thì nút tắt, như khi ra ngoài miền.
+4. Chuyển loại kỳ sang Tùy chọn từ kỳ dài hơn trần (Năm) → giữ ngày đầu, ngày cuối cắt về trần.
+5. Trần chỉ là luật của **bộ chọn kỳ** (kỳ người dùng chọn). Các cửa sổ app tự dựng bằng `customPeriod` (MTD, Năm tới hôm nay, cửa sổ so sánh §4.2, mốc cắt) không bị giới hạn.
+6. Hệ quả: Tùy chọn > 31 ngày tách theo tháng (§2, §4.4) có tối đa 4 mốc.
+
+| Ngày đầu | Ngày cuối lớn nhất | Ghi chú |
+|---|---|---|
+| 01/01/2027 | 31/03/2027 | ngày 1 → cuối tháng thứ 3 |
+| 15/01/2027 | 14/04/2027 | |
+| 31/01/2027 | 30/04/2027 | tháng 4 không có ngày 31 |
+| 30/11/2026 | 28/02/2027 | tháng 2 không có ngày 29 |
+| 01/12/2027 | 29/02/2028 | năm nhuận |
+| 15/11/2100 | 31/12/2100 | cắt ở cuối miền |
+| Tùy chọn 16/07 – 15/10/2027 (92 ngày), bấm ‹ | — | kỳ dời 15/04 – 15/07/2027 vượt trần (14/07) → ‹ tắt |
+
 ## 4. Chỉ số của Tổng quan và Báo cáo
 
 ### 4.1 Bộ chỉ số
@@ -103,8 +124,8 @@ Hàng cuối: kỳ Tùy chọn dời nguyên độ dài; nếu kỳ dời ra **m
 
 **Quyết định Owner 03/10/2026:** có so sánh, **cùng số ngày** (trừ kỳ Năm: cùng ngày tháng, mục 3). Áp cho 6 ô: Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt (ô Lịch hẹn và KH theo nhóm không so).
 
-1. **Kỳ đã hết** → so với **cả** kỳ liền trước cùng loại.
-2. **Kỳ chưa hết** → cửa sổ hiện tại = ngày đầu kỳ → hôm nay (n ngày); so với n ngày đầu của kỳ liền trước, **cắt** ở ngày cuối của kỳ trước nếu kỳ trước ngắn hơn. Áp cho Ngày, Tuần, Tháng; kỳ Năm theo mục 3.
+1. **Kỳ đã hết** (hôm nay **sau** ngày cuối kỳ) → so với **cả** kỳ liền trước cùng loại.
+2. **Kỳ chưa hết** (hôm nay nằm trong kỳ, **kể cả ngày cuối kỳ**) → cửa sổ hiện tại = ngày đầu kỳ → hôm nay (n ngày); so với n ngày đầu của kỳ liền trước, **cắt** ở ngày cuối của kỳ trước nếu kỳ trước ngắn hơn. Áp cho Ngày, Tuần, Tháng; kỳ Năm theo mục 3. Ngày cuối tháng vẫn là MTD nên so cùng số ngày (C10, C11; Owner duyệt G2 04/10/2026, review đóng Phase 4 P1).
 3. **Năm chưa hết — ngoại lệ của mục 2:** so theo **cùng ngày tháng**, không theo số ngày: 01/01 → hôm nay so với 01/01 → cùng ngày tháng năm trước; hôm nay 29/02 → so tới 28/02. Vì vậy hai cửa sổ có thể lệch một ngày quanh năm nhuận (C07: 60 ngày so với 59 ngày; theo mục 2 sẽ là 01/01 – 01/03/2027).
 4. **Tùy chọn** và **kỳ chưa bắt đầu** → không so. Kỳ trước ra ngoài miền năm → không so.
 5. Hiển thị: số và tiền → chênh lệch có dấu (▲ / ▼ / "="); tỉ lệ chốt → chênh lệch **điểm %**; kỳ trước "—" (0 RF) hoặc hiện tại "—" → không so ("—").
@@ -120,6 +141,8 @@ Hàng cuối: kỳ Tùy chọn dời nguyên độ dài; nếu kỳ dời ra **m
 | C07 | 29/02/2028 | Năm 2028 | 01/01 – 29/02/2028 | 01/01 – 28/02/2027 |
 | C08 | 13/01/2027 | Tháng 02/2027 (chưa bắt đầu) | — | không so |
 | C09 | 13/01/2027 | Tùy chọn 05/01 – 20/01/2027 | 05/01 – 13/01/2027 | không so |
+| C10 | 30/04/2027 | Tháng 04/2027 (MTD, ngày cuối) | 01/04 – 30/04/2027 | 01/03 – 30/03/2027 |
+| C11 | 28/02/2027 | Tháng 02/2027 (MTD, ngày cuối) | 01/02 – 28/02/2027 | 01/01 – 28/01/2027 |
 
 Ví dụ số trên dữ liệu `docs/golden/chi-so.md`, hôm nay **15/01/2027**, Tháng 01 (MTD, G18): RF 3, HĐ nộp 2, Case size 400, HĐ phát hành 2, Doanh số 900, Tỉ lệ chốt 66,7%. Kỳ trước 01/12 – 15/12/2026: RF 0 (`ap-01` 15/12 là N4→N3), HĐ nộp 0, HĐ phát hành 0 → ▲ 3 RF, ▲ 2 HĐ nộp, ▲ 400 tr case size, ▲ 2 HĐ phát hành, ▲ 900 tr doanh số; tỉ lệ chốt kỳ trước "—" → không so.
 
