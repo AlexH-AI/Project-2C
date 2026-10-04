@@ -1,11 +1,18 @@
 import {
   appointmentCounts,
   closeRate,
+  compareDates,
   formatCount,
+  formatDate,
+  formatDayMonth,
+  formatDayOfMonth,
   formatVndCompact,
+  isInPeriod,
   periodMetrics,
+  reportMarks,
   snapshotDate,
   stageSnapshotter,
+  weekdayOf,
   type AppointmentCounts,
   type CalendarDate,
   type Customer,
@@ -50,15 +57,22 @@ export interface ReportTable {
   readonly total: ReportRow;
 }
 
+/** One row of Theo mốc: a mark of the period, for the scope viewed. */
+export interface ReportMarkRow extends ReportRow {
+  /** The mark holds today, so it counts up to today. */
+  readonly today: boolean;
+}
+
 /**
- * The tables of Báo cáo part 1 (spec Phase 4 §4.4, mockup reports.html 2a, 2b, 2d), shared by the
- * screen and the Excel export. A table that would repeat Tổng hợp is null: Theo team in the Team
- * scope, Theo team and Theo RE in the RE scope.
+ * The tables of Báo cáo (spec Phase 4 §4.4, mockup reports.html 2a–2e), shared by the screen and
+ * the Excel export. A table that would repeat Tổng hợp is null: Theo team in the Team scope, Theo
+ * team and Theo RE in the RE scope. Theo mốc has no Tổng: it adds up to Tổng hợp.
  */
 export interface ReportRows {
   readonly summary: ReportRow;
   readonly byTeam: ReportTable | null;
   readonly byRe: ReportTable | null;
+  readonly byMark: readonly ReportMarkRow[];
 }
 
 /** The six stages of KH cuối kỳ, in the order of the columns. */
@@ -151,10 +165,55 @@ export function summaryMeta(
   return t('reports.summaryMeta', { name, re: res.length });
 }
 
+/** `T2 12/10`; with its year when the period spans two years. */
+function dayName(date: CalendarDate, withYear: boolean): string {
+  return t('reports.mark.day', {
+    weekday: t(`weekday.${weekdayOf(date)}`),
+    date: withYear ? formatDate(date) : formatDayMonth(date),
+  });
+}
+
+/**
+ * The name of a Theo mốc row (mockup reports.html 2c–2e): a day `T2 12/10`, a month of the year
+ * `Tháng 10`, a week or a month of a custom range `05–11/10`; a week cut at the start of the month
+ * names its weekdays, a mark counted up to today says so.
+ */
+export function markName(mark: Period, period: Period, today: CalendarDate): string {
+  const withYear = period.start.year !== period.end.year;
+  const oneDay = compareDates(mark.start, mark.end) === 0;
+  const name =
+    period.kind === 'year'
+      ? t('reports.mark.month', { month: mark.start.month })
+      : oneDay
+        ? dayName(mark.start, withYear)
+        : t('reports.mark.range', {
+            from: formatDayOfMonth(mark.start),
+            to: withYear ? formatDate(mark.end) : formatDayMonth(mark.end),
+          });
+  const notes = [
+    period.kind === 'month' &&
+      !oneDay &&
+      weekdayOf(mark.start) !== 1 &&
+      t('reports.mark.weekdays', {
+        from: t(`weekday.${weekdayOf(mark.start)}`),
+        to: t(`weekday.${weekdayOf(mark.end)}`),
+      }),
+    oneDay && isInPeriod(today, mark) && t('reports.mark.today'),
+    // A mark ending today is counted whole; one with days after today only up to today.
+    !oneDay &&
+      isInPeriod(today, mark) &&
+      compareDates(today, mark.end) < 0 &&
+      t('reports.mark.until', { date: formatDayMonth(today) }),
+  ];
+  const note = joinParts(notes);
+  return note ? t('reports.mark.noted', { name, note }) : name;
+}
+
 /**
  * The report rows for `period` and `scope` viewed on `today` (spec Phase 4 §4.4): appointments over
  * the whole period, results up to today, customers by stage at the snapshot day. Teams by name; RE
- * by team, then name, as `reOptions` lists them, an RE without numbers still with its row.
+ * by team, then name, as `reOptions` lists them, an RE without numbers still with its row. Theo mốc
+ * counts each mark the same way, so a mark after today has its appointments only.
  */
 export function reportRows(
   data: ReportData,
@@ -165,11 +224,16 @@ export function reportRows(
   const counted = countedWindow(period, today);
   const snapshot = stageSnapshotter(data.customers, data.transitions, data.people);
   const date = snapshotDate(period, today);
-  const figures = (of: Scope): ReportFigures => ({
-    appointments: appointmentCounts(data.appointments, period, of, data.people, today),
-    metrics: counted && periodMetrics(data, counted, of),
-    stages: date && snapshot(date, of),
-  });
+  const figuresOf = (of: Scope, over: Period): ReportFigures => {
+    const window = countedWindow(over, today);
+    const day = snapshotDate(over, today);
+    return {
+      appointments: appointmentCounts(data.appointments, over, of, data.people, today),
+      metrics: window && periodMetrics(data, window, of),
+      stages: day && snapshot(day, of),
+    };
+  };
+  const figures = (of: Scope) => figuresOf(of, period);
   const totalRow = (rows: readonly ReportRow[]): ReportRow => ({
     key: 'total',
     name: t('reports.total'),
@@ -184,7 +248,14 @@ export function reportRows(
     team: null,
     ...figures(scope),
   };
-  if (scope.kind === 're') return { summary, byTeam: null, byRe: null };
+  const byMark = reportMarks(period).map((mark): ReportMarkRow => ({
+    key: formatDate(mark.start),
+    name: markName(mark, period, today),
+    team: null,
+    today: isInPeriod(today, mark),
+    ...figuresOf(scope, mark),
+  }));
+  if (scope.kind === 're') return { summary, byTeam: null, byRe: null, byMark };
 
   const teamName = new Map(data.teams.map((team) => [team.id, team.name]));
   const people = new Map(data.people.map((person) => [person.id, person]));
@@ -198,7 +269,7 @@ export function reportRows(
       team: (re.teamId && teamName.get(re.teamId)) ?? '',
       ...figures({ kind: 're', reId: re.id }),
     }));
-  if (scope.kind === 'team') return { summary, byTeam: null, byRe: table(res) };
+  if (scope.kind === 'team') return { summary, byTeam: null, byRe: table(res), byMark };
 
   const teams = [...data.teams]
     .sort((a, b) => byName(a.name, b.name))
@@ -208,7 +279,7 @@ export function reportRows(
       team: null,
       ...figures({ kind: 'team', teamId: team.id }),
     }));
-  return { summary, byTeam: table(teams), byRe: table(res) };
+  return { summary, byTeam: table(teams), byRe: table(res), byMark };
 }
 
 /**

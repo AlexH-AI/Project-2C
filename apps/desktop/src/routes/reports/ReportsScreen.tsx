@@ -15,8 +15,14 @@ import { t } from '../../i18n';
 import { useScopeState } from '../../shell/ScopeContext';
 import { FilterBar, useAppliedFilter } from '../FilterBar';
 import { viewingText } from '../overview/overview-view';
-import { ReportTable } from './ReportTable';
-import { reportRows, reportScopeName, summaryMeta } from './reports-view';
+import { ReportTable, type ReportLead } from './ReportTable';
+import {
+  reportRows,
+  reportScopeName,
+  summaryMeta,
+  type ReportRow,
+  type ReportRows,
+} from './reports-view';
 
 const readReports = (db: Database) => ({
   appointments: listAppointments(db),
@@ -27,13 +33,13 @@ const readReports = (db: Database) => ({
   transitions: listStageTransitions(db),
 });
 
-type TableKey = 'byTeam' | 'byRe';
+type TableKey = 'byTeam' | 'byRe' | 'byMark';
 
 const CARD = 'flex flex-col gap-3 rounded-md border border-border bg-surface-1 px-3.5 py-3';
 
 /**
- * Báo cáo part 1 (spec Phase 4 §4.4, mockup reports.html 2a, 2b, 2d): the Lọc bar, Tổng hợp always,
- * and one of Theo team / Theo RE under it. A table that would repeat Tổng hợp is left out.
+ * Báo cáo (spec Phase 4 §4.4, mockup reports.html 2a–2e): the Lọc bar, Tổng hợp always, and one of
+ * Theo team / Theo RE / Theo mốc under it. A table that would repeat Tổng hợp is left out.
  */
 export function ReportsScreen() {
   // today() is a new object each render; its fields keep the memos below stable.
@@ -53,10 +59,11 @@ export function ReportsScreen() {
     () => reportRows(data, applied.period, applied.scope, today),
     [data, applied.period, applied.scope, today],
   );
-  const tables = (['byTeam', 'byRe'] as const).filter((key) => rows[key]);
-  const shown = tables.includes(chosenTable) ? chosenTable : tables[0];
-  const table = shown && rows[shown];
+  const tables = (['byTeam', 'byRe', 'byMark'] as const).filter((key) => rows[key]);
+  // Theo mốc is always there, so the list is never empty.
+  const shown = tables.includes(chosenTable) ? chosenTable : (tables[0] ?? 'byMark');
   const summary = t('reports.summary');
+  const table = tableOf(rows, shown);
 
   return (
     <>
@@ -70,29 +77,42 @@ export function ReportsScreen() {
         </div>
         <ReportTable label={summary} lead="scope" rows={[rows.summary]} />
       </section>
-      {shown && table && (
-        <section aria-label={t(`reports.${shown}`)} className={CARD}>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <Segmented
-              label={t('reports.tables')}
-              options={tables.map((key) => ({ value: key, label: t(`reports.${key}`) }))}
-              value={shown}
-              onChange={setTable}
-            />
-            <span className="text-xs text-fg-3">
-              {shown === 'byTeam'
-                ? t('reports.byTeamMeta', { teams: table.rows.length })
-                : t('reports.byReMeta', { re: table.rows.length })}
-            </span>
-          </div>
-          <ReportTable
-            label={t(`reports.${shown}`)}
-            lead={shown === 'byTeam' ? 'team' : 're'}
-            rows={table.rows}
-            total={table.total}
+      <section aria-label={t(`reports.${shown}`)} className={CARD}>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Segmented
+            label={t('reports.tables')}
+            options={tables.map((key) => ({ value: key, label: t(`reports.${key}`) }))}
+            value={shown}
+            onChange={setTable}
           />
-        </section>
-      )}
+          <span className="text-xs text-fg-3">{table.meta}</span>
+        </div>
+        <ReportTable
+          label={t(`reports.${shown}`)}
+          lead={table.lead}
+          rows={table.rows}
+          total={table.total}
+        />
+      </section>
     </>
   );
+}
+
+interface ShownTable {
+  readonly lead: ReportLead;
+  readonly rows: readonly ReportRow[];
+  readonly total?: ReportRow;
+  readonly meta: string;
+}
+
+function tableOf(rows: ReportRows, shown: TableKey): ShownTable {
+  if (shown === 'byMark') {
+    const marks = rows.byMark;
+    return { lead: 'mark', rows: marks, meta: t('reports.byMarkMeta', { count: marks.length }) };
+  }
+  // Only a table the scope has is ever shown.
+  const table = rows[shown]!;
+  return shown === 'byTeam'
+    ? { lead: 'team', ...table, meta: t('reports.byTeamMeta', { teams: table.rows.length }) }
+    : { lead: 're', ...table, meta: t('reports.byReMeta', { re: table.rows.length }) };
 }
