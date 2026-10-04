@@ -39,6 +39,8 @@ export interface KpiTile {
   /** The number, `—` when there is none; its unit (`tr`, `₫`, `%`) apart, or empty. */
   readonly value: string;
   readonly unit: string;
+  /** A space between the number and its unit: `400 tr`, but `66,7%`. */
+  readonly unitSpaced: boolean;
   /** Change against the previous window; null when not compared. */
   readonly delta: KpiDelta | null;
   /** "so với …" after the change, or the reason it is not compared. */
@@ -60,10 +62,16 @@ const METRIC = {
 
 const percentOf = ({ numerator, denominator }: CloseRate) => (numerator / denominator) * 100;
 
+interface Shown {
+  readonly value: string;
+  readonly unit: string;
+  readonly unitSpaced: boolean;
+}
+
 /** `400 tr` → `400` + `tr`, so the unit can be set smaller beside the number. */
-function splitUnit(text: string): { value: string; unit: string } {
+function splitUnit(text: string): Shown {
   const space = text.lastIndexOf(' ');
-  return { value: text.slice(0, space), unit: text.slice(space + 1) };
+  return { value: text.slice(0, space), unit: text.slice(space + 1), unitSpaced: true };
 }
 
 function delta(change: number, text: (magnitude: number) => string): KpiDelta {
@@ -114,13 +122,9 @@ export function kpiTiles(
   const note = windows
     ? t('overview.comparedWith', { value: windowText(windows.previous, period) })
     : notComparedReason(period, today);
-  const none = { value: t('overview.none'), unit: '' };
+  const none: Shown = { value: t('overview.none'), unit: '', unitSpaced: false };
 
-  const tile = (
-    key: KpiKey,
-    shown: { value: string; unit: string },
-    change: KpiDelta | null,
-  ): KpiTile => ({
+  const tile = (key: KpiKey, shown: Shown, change: KpiDelta | null): KpiTile => ({
     key,
     label: t(`overview.kpi.${key}`),
     ...shown,
@@ -132,7 +136,7 @@ export function kpiTiles(
   const counts = COUNTS.map((key) =>
     tile(
       key,
-      current ? { value: formatCount(current[METRIC[key]]), unit: '' } : none,
+      current ? { value: formatCount(current[METRIC[key]]), unit: '', unitSpaced: false } : none,
       deltas && delta(deltas[METRIC[key]], formatCount),
     ),
   );
@@ -158,7 +162,15 @@ function closeRateTile(
   const base = { key: 'closeRate', label: t('overview.kpi.closeRate') } as const;
   if (!current || !rate) {
     const note = current && previous ? t('overview.noRf') : comparedNote;
-    return { ...base, value: t('overview.none'), unit: '', delta: null, note, formula: null };
+    return {
+      ...base,
+      value: t('overview.none'),
+      unit: '',
+      unitSpaced: false,
+      delta: null,
+      note,
+      formula: null,
+    };
   }
   const points = deltas?.closeRatePoints ?? null;
   const roundsToZero = points !== null && formatPercent(points) === '0';
@@ -166,6 +178,7 @@ function closeRateTile(
     ...base,
     value: formatPercent(percentOf(rate)),
     unit: t('overview.percentUnit'),
+    unitSpaced: false,
     delta:
       points === null
         ? null
@@ -187,7 +200,7 @@ export const metricsScope = (scope: Scope): Scope =>
 /** The "Đang xem" line: the period and scope the numbers on screen are for (mockup 1a–1c). */
 export interface ViewingText {
   readonly period: string;
-  /** A month in progress is counted month to date. */
+  /** A month in progress, its last day included, is counted month to date (§4.2 C02). */
   readonly mtd: boolean;
   /** The days counted when the month or year is in progress; null otherwise. */
   readonly range: string | null;
@@ -203,7 +216,7 @@ export function viewingText(
   const inProgress =
     (period.kind === 'month' || period.kind === 'year') &&
     compareDates(period.start, today) <= 0 &&
-    compareDates(today, period.end) < 0;
+    compareDates(today, period.end) <= 0;
   return {
     period: periodName(period),
     mtd: inProgress && period.kind === 'month',

@@ -56,9 +56,7 @@ export function KpiCard({ tile }: { tile: KpiTile }) {
       <p className={`m-0 ${VALUE}`}>
         {tile.value}
         {tile.unit && (
-          <small className={UNIT}>
-            {tile.unit === t('overview.percentUnit') ? tile.unit : ` ${tile.unit}`}
-          </small>
+          <small className={UNIT}>{tile.unitSpaced ? ` ${tile.unit}` : tile.unit}</small>
         )}
       </p>
       <p className={`m-0 ${FOOT}`}>

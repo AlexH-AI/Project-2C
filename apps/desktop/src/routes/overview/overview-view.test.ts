@@ -36,12 +36,18 @@ describe('kpiTiles', () => {
       note: compared,
     });
     expect(tiles.submitted).toMatchObject({ value: '2', delta: { text: '▲ 2' }, note: compared });
-    expect(tiles.caseSize).toMatchObject({ value: '400', unit: 'tr', delta: { text: '▲ 400 tr' } });
+    expect(tiles.caseSize).toMatchObject({
+      value: '400',
+      unit: 'tr',
+      unitSpaced: true,
+      delta: { text: '▲ 400 tr' },
+    });
     expect(tiles.issued).toMatchObject({ value: '2', delta: { text: '▲ 2' } });
     expect(tiles.revenue).toMatchObject({ value: '900', unit: 'tr', delta: { text: '▲ 900 tr' } });
     expect(tiles.closeRate).toMatchObject({
       value: '66,7',
       unit: '%',
+      unitSpaced: false,
       delta: null,
       note: '— kỳ trước 0 RF, không so',
       formula: '2 HĐ phát hành ÷ 3 RF',
@@ -117,6 +123,18 @@ describe('viewingText ("Đang xem")', () => {
       range: '01/01 – 15/01/2027',
       scope: 'Toàn bộ',
     });
+  });
+
+  it('the last day of the month is still MTD (spec §4.2 C02)', () => {
+    const today = d(2027, 3, 31);
+    const viewing = viewingText(
+      { period: periodOf('month', today), scope: ALL },
+      today,
+      PEOPLE,
+      TEAMS,
+    );
+
+    expect(viewing).toMatchObject({ mtd: true, range: '01/03 – 31/03/2027' });
   });
 
   it('names the RE, or counts the teams of the Team scope; an ended year has no range', () => {
