@@ -113,10 +113,10 @@ test('Team and RE scopes pick the team or RE next to the switch', async ({ page 
   await expect(re).toHaveCount(0);
 });
 
-test('the scope picker shows only on Customers and Appointments', async ({ page }) => {
+test('the scope picker shows only on Overview, Customers and Appointments', async ({ page }) => {
   const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
   for (const [hash, shown] of [
-    ['overview', false],
+    ['overview', true],
     ['appointments', true],
     ['customers', true],
     ['reports', false],

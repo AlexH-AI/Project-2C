@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_ROUTE, SECTIONS, parseHash, routeToHash, sectionOf, usesScope } from './routes';
+import {
+  DEFAULT_ROUTE,
+  SECTIONS,
+  parseHash,
+  routeToHash,
+  sectionOf,
+  teamPickerShown,
+  usesScope,
+} from './routes';
 
 describe('parseHash', () => {
   it('reads each sidebar screen', () => {
@@ -47,9 +55,17 @@ describe('sectionOf', () => {
 });
 
 describe('usesScope', () => {
-  it('is true only for Customers and Appointments', () => {
+  it('is true only for Overview, Customers and Appointments', () => {
     const used = SECTIONS.filter((screen) => usesScope(screen));
-    expect(used).toEqual(['appointments', 'customers']);
+    expect(used).toEqual(['overview', 'appointments', 'customers']);
     expect(usesScope('customer')).toBe(false);
+  });
+});
+
+describe('teamPickerShown', () => {
+  it('Overview counts every team together, so it has no team to pick (spec Phase 4 §4.3)', () => {
+    expect(teamPickerShown('overview')).toBe(false);
+    expect(teamPickerShown('customers')).toBe(true);
+    expect(teamPickerShown('appointments')).toBe(true);
   });
 });

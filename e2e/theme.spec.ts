@@ -62,13 +62,13 @@ test('the app makes no requests to hosts other than localhost', async ({ page })
 test('figures use tabular numerals', async ({ page }) => {
   await page.goto('/');
 
-  const stage = page.getByRole('region', { name: 'Nhóm cơ hội' }).getByRole('listitem').first();
-  await expect(stage).toHaveCSS('font-variant-numeric', 'tabular-nums');
+  const value = page.getByRole('region', { name: 'Chuyển RF' }).getByRole('paragraph').first();
+  await expect(value).toHaveCSS('font-variant-numeric', 'tabular-nums');
 });
 
 test('token-backed corner radius is applied', async ({ page }) => {
   await page.goto('/');
 
-  const stage = page.getByRole('region', { name: 'Nhóm cơ hội' }).getByRole('listitem').first();
-  await expect(stage).toHaveCSS('border-radius', '10px');
+  const tile = page.getByRole('region', { name: 'Chuyển RF' });
+  await expect(tile).toHaveCSS('border-radius', '10px');
 });

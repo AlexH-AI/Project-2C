@@ -15,12 +15,15 @@ export function ScopePicker({
   scope,
   teams,
   people,
+  teamPicker = true,
   onChange,
 }: {
   /** The resolved scope, so the list shows the team or RE actually used. */
   scope: Scope;
   teams: readonly Team[];
   people: readonly Person[];
+  /** Whether the Team scope shows its team list; Tổng quan counts every team together. */
+  teamPicker?: boolean;
   /** The state setter of the choice: a click on a kind needs the choice it replaces. */
   onChange: Dispatch<SetStateAction<ScopeChoice>>;
 }) {
@@ -33,7 +36,7 @@ export function ScopePicker({
         value={scope.kind}
         onChange={(kind) => onChange((choice) => chooseKind(choice, kind))}
       />
-      {scope.kind === 'team' && (
+      {scope.kind === 'team' && teamPicker && (
         <SelectField
           label={t('scope.pickTeam')}
           labelHidden
