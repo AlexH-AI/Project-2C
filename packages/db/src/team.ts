@@ -2,7 +2,7 @@
  * Commands and reads for teams and people (spec §3.1–3.2, §4). Every command runs in one
  * transaction; a rejected command throws `DbError` and leaves the database untouched.
  */
-import type { Person, PersonRole, Team } from '@p2c/domain';
+import { REVIEWER_ROLES, type Person, type PersonRole, type Team } from '@p2c/domain';
 import { and, asc, eq, isNotNull, isNull, ne } from 'drizzle-orm';
 import { requireName, stampDeleted } from './common';
 import type { Database } from './database';
@@ -139,7 +139,11 @@ export function updatePerson(db: Database, id: string, changes: Partial<PersonIn
       throw new DbError('PERSON_IN_USE');
     }
     // A reviewer of a live meeting stays one of the roles that may review it (D9).
-    if (current.role !== 'RE' && role === 'RE' && reviewsLiveAppointment(db, id)) {
+    if (
+      REVIEWER_ROLES.includes(current.role) &&
+      !REVIEWER_ROLES.includes(role) &&
+      reviewsLiveAppointment(db, id)
+    ) {
       throw new DbError('REVIEWER_IN_USE');
     }
     const valid = validatePerson(

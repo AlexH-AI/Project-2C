@@ -286,7 +286,7 @@ export function shift(period: Period, step: 1 | -1): Period {
       const moved = customPeriod(addDays(start, step * length), addDays(end, step * length));
       if (!customRangeAllowed(moved.start, moved.end)) {
         throw new RangeError(
-          `Custom period ${formatDate(moved.start)} – ${formatDate(moved.end)} is over 3 months`,
+          `Custom period ${formatDate(moved.start)} – ${formatDate(moved.end)} is over ${CUSTOM_RANGE_MAX_MONTHS} months`,
         );
       }
       return moved;

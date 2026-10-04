@@ -176,3 +176,21 @@ test('the export line stays while a new period waits for Lọc, and goes once it
   await expect(pending).toHaveCount(0);
   await expect(exported).toHaveCount(0);
 });
+
+test('the export line stays when Lọc applies the same period and scope again', async ({ page }) => {
+  const { kinds, filter, pending, viewing } = await openReports(page);
+  const exported = page.getByRole('status').filter({ hasText: 'Đã xuất báo cáo' });
+
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Xuất Excel' }).click();
+  await download;
+  await expect(exported).toBeVisible();
+
+  // Year, then back to the month: the same period as the one exported, though made anew.
+  await kinds.getByRole('radio', { name: 'Năm' }).click();
+  await kinds.getByRole('radio', { name: 'Tháng' }).click();
+  await expect(pending).toHaveCount(0);
+  await filter.click();
+  await expect(viewing).toContainText('Tháng 09/2026');
+  await expect(exported).toBeVisible();
+});
