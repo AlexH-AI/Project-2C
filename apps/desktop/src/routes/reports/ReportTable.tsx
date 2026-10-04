@@ -1,5 +1,5 @@
 import { t } from '../../i18n';
-import { REPORT_STAGES, reportCells, type ReportRow } from './reports-view';
+import { REPORT_STAGES, reportCells, type ReportMarkRow, type ReportRow } from './reports-view';
 
 const STAGE_COLOR = {
   N4: 'text-n4',
@@ -36,12 +36,21 @@ const CELL = 'border-b border-border px-2 py-1.5 whitespace-nowrap';
 const RULE = 'border-l border-l-border-strong';
 /** The name column stays put while the figures scroll sideways. */
 const STICKY = 'sticky left-0 z-1 bg-surface-1';
+/** The light green bar on the left of the mark holding today (mockup reports.html 2c). */
+const TODAY_BAR = 'before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-date-today';
 
-export type ReportLead = 'scope' | 'team' | 're';
+const LEAD_HEADER = {
+  scope: 'reports.col.scope',
+  team: 'reports.col.team',
+  mark: 'reports.col.mark',
+} as const;
+
+export type ReportLead = 'scope' | 'team' | 're' | 'mark';
 
 /**
- * A report table (mockup reports.html 2a, 2b): the name column(s), then Lịch hẹn · Kết quả · KH
+ * A report table (mockup reports.html 2a–2e): the name column(s), then Lịch hẹn · Kết quả · KH
  * cuối kỳ. Theo RE has Team before RE, a rule where the team changes, and the RE name stays put.
+ * Theo mốc marks the mark holding today. A "—" is dimmed.
  */
 export function ReportTable({
   label,
@@ -51,20 +60,19 @@ export function ReportTable({
 }: {
   label: string;
   lead: ReportLead;
-  rows: readonly ReportRow[];
-  total?: ReportRow;
+  rows: readonly (ReportRow | ReportMarkRow)[];
+  total?: ReportRow | undefined;
 }) {
   const leads =
-    lead === 're'
-      ? [t('reports.col.team'), t('reports.col.re')]
-      : [t(lead === 'team' ? 'reports.col.team' : 'reports.col.scope')];
+    lead === 're' ? [t('reports.col.team'), t('reports.col.re')] : [t(LEAD_HEADER[lead])];
+  const none = t('overview.none');
   const nameIndex = leads.length - 1;
 
   const figures = (row: ReportRow, extra: string) =>
     reportCells(row).map((cell, index) => (
       <td
         key={COLUMNS[index]?.label}
-        className={`${CELL} ${extra} text-right ${GROUP_STARTS.has(index) ? RULE : ''}`}
+        className={`${CELL} ${extra} text-right ${GROUP_STARTS.has(index) ? RULE : ''} ${cell === none ? 'text-fg-3' : ''}`}
       >
         {cell}
       </td>
@@ -115,7 +123,10 @@ export function ReportTable({
             return (
               <tr key={row.key}>
                 {lead === 're' && <td className={`${CELL} ${start} text-fg-2`}>{row.team}</td>}
-                <th scope="row" className={`${CELL} ${start} ${STICKY} text-left font-semibold`}>
+                <th
+                  scope="row"
+                  className={`${CELL} ${start} ${STICKY} text-left font-semibold ${'today' in row && row.today ? TODAY_BAR : ''}`}
+                >
                   {row.name}
                 </th>
                 {figures(row, start)}

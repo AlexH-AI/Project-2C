@@ -25,7 +25,7 @@ test('Toàn bộ: Tổng hợp over Theo team, and Theo RE can be chosen', async
   await expect(summary.getByRole('columnheader', { name: 'Kết quả · tới hôm nay' })).toBeVisible();
   await expect(summary.getByRole('columnheader', { name: 'Mất cơ hội' })).toBeVisible();
 
-  await expect(tables.getByRole('radio')).toHaveText(['Theo team', 'Theo RE']);
+  await expect(tables.getByRole('radio')).toHaveText(['Theo team', 'Theo RE', 'Theo mốc']);
   await expect(tables.getByRole('radio', { checked: true })).toHaveText('Theo team');
   const byTeam = page.getByRole('table', { name: 'Theo team' });
   await expect(byTeam.getByRole('rowheader')).toHaveCount(4);
@@ -88,22 +88,43 @@ test('Team Bình Minh has no Theo team, and Theo RE lists its 10 RE', async ({ p
 
   await expect(viewing).toContainText('· Team Bình Minh');
   await expect(summary.getByRole('rowheader')).toHaveText(['Team Bình Minh']);
-  await expect(tables.getByRole('radio')).toHaveText(['Theo RE']);
+  await expect(tables.getByRole('radio')).toHaveText(['Theo RE', 'Theo mốc']);
   const byRe = page.getByRole('table', { name: 'Theo RE' });
   await expect(byRe.getByRole('rowheader')).toHaveCount(11);
   await expect(byRe.getByRole('row').filter({ hasText: 'Bình Minh' })).toHaveCount(10);
 });
 
-test('the RE scope shows Tổng hợp only', async ({ page }) => {
-  const { scope, filter, viewing, summary, tables } = await openReports(page);
+test('RE · Năm: Tổng hợp and Theo mốc of 12 months, the months after today "—"', async ({
+  page,
+}) => {
+  const errors = trackConsoleErrors(page);
+  const { kinds, scope, filter, viewing, summary, tables } = await openReports(page);
 
   await scope.getByRole('radio', { name: 'RE' }).click();
+  await kinds.getByRole('radio', { name: 'Năm' }).click();
   await filter.click();
 
+  await expect(viewing).toContainText('Năm 2026');
   await expect(viewing).toContainText('· RE ');
   await expect(summary).toBeVisible();
-  await expect(tables).toHaveCount(0);
-  await expect(page.getByRole('table')).toHaveCount(1);
+  await expect(tables.getByRole('radio')).toHaveText(['Theo mốc']);
+  await expect(page.getByRole('table')).toHaveCount(2);
+  const byMark = page.getByRole('table', { name: 'Theo mốc' });
+  await expect(page.getByRole('region', { name: 'Theo mốc' })).toContainText('12 mốc');
+  await expect(byMark.getByRole('rowheader')).toHaveText([
+    ...Array.from({ length: 8 }, (_, index) => `Tháng ${index + 1}`),
+    'Tháng 9 (tới 15/09)',
+    'Tháng 10',
+    'Tháng 11',
+    'Tháng 12',
+  ]);
+  // A month after today: its appointments counted (Dự kiến), the results and KH "—".
+  const december = byMark.getByRole('row', { name: /^Tháng 12/ }).getByRole('cell');
+  await expect(december.nth(4)).not.toHaveText('—');
+  for (let index = 5; index < 17; index += 1) await expect(december.nth(index)).toHaveText('—');
+  const august = byMark.getByRole('row', { name: /^Tháng 8/ }).getByRole('cell');
+  await expect(august.nth(5)).not.toHaveText('—');
+  expect(errors).toEqual([]);
 });
 
 test('a new period waits for Lọc: the tables keep their numbers until then', async ({ page }) => {

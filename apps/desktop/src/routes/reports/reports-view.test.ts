@@ -8,7 +8,7 @@ import {
   openDatabase,
   seedDemoData,
 } from '@p2c/db';
-import { calendarDate, periodOf } from '@p2c/domain';
+import { calendarDate, customPeriod, periodOf, type Period, type Scope } from '@p2c/domain';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   APPOINTMENTS,
@@ -41,6 +41,16 @@ const JAN_2027 = periodOf('month', d(2027, 1, 1));
 const SEEDING = 60_000;
 /** Columns 5–10 of a row: Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt. */
 const results = (cells: readonly string[]) => cells.slice(5, 11);
+const APPOINTMENT_KEYS = ['met', 'missed', 'unrecorded', 'planned', 'total'];
+const RESULT_KEYS = ['rfCount', 'submittedCount', 'caseSize', 'issuedCount', 'revenue'];
+/** Each key added over the parts. */
+const total = (parts: readonly object[], keys = APPOINTMENT_KEYS) =>
+  Object.fromEntries(
+    keys.map((key) => [
+      key,
+      parts.reduce((sum, part) => sum + (part as Record<string, number>)[key]!, 0),
+    ]),
+  );
 
 describe('reportRows', () => {
   it('adds the teams up in Tổng: Team A 2/3 + Team B 3/2 → 5/5 = 100% (G09–G11)', () => {
@@ -127,6 +137,93 @@ describe('reportRows', () => {
   });
 });
 
+describe('reportRows Theo mốc', () => {
+  const marksOf = (period: Period, today = d(2027, 3, 15), scope: Scope = { kind: 'all' }) =>
+    reportRows(GOLDEN, period, scope, today).byMark;
+
+  it('Tháng 01/2027 → 5 weeks cut at the month (M01); Tháng 02/2027 → 4 whole weeks (M02)', () => {
+    expect(marksOf(JAN_2027).map((row) => row.name)).toEqual([
+      '01–03/01 (T6–CN)',
+      '04–10/01',
+      '11–17/01',
+      '18–24/01',
+      '25–31/01',
+    ]);
+    expect(marksOf(periodOf('month', d(2027, 2, 1))).map((row) => row.name)).toEqual([
+      '01–07/02',
+      '08–14/02',
+      '15–21/02',
+      '22–28/02',
+    ]);
+  });
+
+  it('Tùy chọn of 55 days → 3 months cut to the range (M03); 16 days → 16 days (M04)', () => {
+    expect(marksOf(customPeriod(d(2027, 1, 20), d(2027, 3, 15))).map((row) => row.name)).toEqual([
+      '20–31/01',
+      '01–28/02',
+      '01–15/03',
+    ]);
+    const days = marksOf(customPeriod(d(2027, 1, 5), d(2027, 1, 20)));
+    expect(days).toHaveLength(16);
+    expect(days[0]?.name).toBe('T3 05/01');
+  });
+
+  it('Ngày → 1 mark, Tuần → 7 days, Năm → 12 months; a year in the range shows its year', () => {
+    expect(marksOf(periodOf('day', d(2027, 1, 13))).map((row) => row.name)).toEqual(['T4 13/01']);
+    expect(marksOf(periodOf('week', d(2027, 1, 13))).map((row) => row.name)).toEqual([
+      'T2 11/01',
+      'T3 12/01',
+      'T4 13/01',
+      'T5 14/01',
+      'T6 15/01',
+      'T7 16/01',
+      'CN 17/01',
+    ]);
+    expect(marksOf(periodOf('year', d(2026, 1, 1))).map((row) => row.name)).toEqual(
+      Array.from({ length: 12 }, (_, index) => `Tháng ${index + 1}`),
+    );
+    expect(marksOf(periodOf('week', d(2026, 12, 31)))[0]?.name).toBe('T2 28/12/2026');
+  });
+
+  it('the mark holding today counts up to today; a mark after today has appointments only', () => {
+    const marks = marksOf(JAN_2027, d(2027, 1, 15));
+
+    expect(marks.map((row) => [row.name, row.today])).toEqual([
+      ['01–03/01 (T6–CN)', false],
+      ['04–10/01', false],
+      ['11–17/01 (tới 15/01)', true],
+      ['18–24/01', false],
+      ['25–31/01', false],
+    ]);
+    expect(marks[2]?.metrics).not.toBeNull();
+    for (const future of marks.slice(3)) {
+      expect(future.metrics).toBeNull();
+      expect(future.stages).toBeNull();
+      expect(reportCells(future).slice(5)).toEqual(Array(12).fill('—'));
+    }
+    expect(marksOf(periodOf('week', d(2027, 1, 13)), d(2027, 1, 13))[2]?.name).toBe(
+      'T4 13/01 (hôm nay)',
+    );
+  });
+
+  it('adds up to Tổng hợp: Σ appointments and results; KH of the last mark with numbers', () => {
+    for (const today of [d(2027, 1, 15), d(2027, 3, 15)]) {
+      const rows = reportRows(GOLDEN, JAN_2027, { kind: 'team', teamId: 'team-a' }, today);
+      const marks = rows.byMark;
+      const counted = marks.filter((row) => row.metrics);
+
+      expect(total(marks.map((row) => row.appointments))).toEqual(rows.summary.appointments);
+      expect(
+        total(
+          counted.map((row) => row.metrics!),
+          RESULT_KEYS,
+        ),
+      ).toEqual(total([rows.summary.metrics!], RESULT_KEYS));
+      expect(counted.at(-1)?.stages).toEqual(rows.summary.stages);
+    }
+  });
+});
+
 describe('summaryMeta', () => {
   it('counts the RE of the scope, or names the team of the RE (mockup 2a, 2d, 2e)', () => {
     expect(summaryMeta({ kind: 'all' }, PEOPLE, TEAMS)).toBe('Toàn bộ · 4 RE');
@@ -181,6 +278,18 @@ describe('reportRows on the demo data', () => {
       expect(res, team.name).toHaveLength(10);
       expect(added(res), team.name).toEqual(numbers(team));
     }
+  });
+
+  it('Theo mốc of the year: 12 months adding up to Tổng hợp, the months after today "—"', () => {
+    const rows = reportRows(data, periodOf('year', TODAY), { kind: 'all' }, TODAY);
+    const marks = rows.byMark;
+    const counted = marks.filter((row) => row.metrics);
+
+    expect(marks).toHaveLength(12);
+    expect(counted).toHaveLength(9);
+    expect(marks[8]?.name).toBe('Tháng 9 (tới 15/09)');
+    expect(added(marks).slice(0, 10)).toEqual(numbers(rows.summary).slice(0, 10));
+    expect(counted.at(-1)?.stages).toEqual(rows.summary.stages);
   });
 
   it('the close rate of Tổng is Σ HĐ phát hành ÷ Σ RF, not a mean of the rates', () => {
