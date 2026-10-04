@@ -147,4 +147,15 @@ describe('stageBlock', () => {
     expect(custom(12, 1).slice(0, 2)).toEqual(['15/12', '16/12']);
     expect(custom(12, 1)).toHaveLength(27);
   });
+
+  it('names a month cut to one day of a long custom range by its month, not its day', () => {
+    const labels = stageBlock(
+      DATA,
+      { kind: 'custom', start: calendarDate(2026, 11, 30), end: calendarDate(2027, 3, 1) },
+      ALL,
+      SNAPSHOT_TODAY,
+    ).charts[0]!.columns.map((column) => column.label);
+
+    expect(labels).toEqual(['11/2026', '12/2026', '01/2027', '02/2027', '03/2027']);
+  });
 });

@@ -19,6 +19,7 @@ import {
   type Team,
 } from '@p2c/domain';
 import { t } from '../../i18n';
+import { metricsScope } from './overview-view';
 
 /** The four open stages Tổng quan shows, top of the stack first (spec Phase 4 §2.7). */
 export const CHART_STAGES = ['N4', 'N3', 'N2', 'N1'] as const;
@@ -81,7 +82,8 @@ function markLabel(mark: Period, period: Period): string {
     case 'year':
       return t('overview.stages.yearMark', { month: mark.start.month });
     case 'custom':
-      return compareDates(mark.start, mark.end) === 0
+      // A day mark is always a whole day; a month mark cut to the range (even to one day) is custom.
+      return mark.kind === 'day'
         ? formatDayMonth(mark.start)
         : formatPeriodValue(periodOf('month', mark.start));
   }
@@ -113,7 +115,7 @@ export function stageBlock(
 
   const date = snapshotDate(period, today);
   const teams = scope.kind === 'team';
-  const counted: Scope = teams ? { kind: 'all' } : scope;
+  const counted = metricsScope(scope);
   return {
     tiles: date && fourOf(snapshot(date, counted)),
     note: date && stageNote(date, today, teams ? data.teams.length : null),

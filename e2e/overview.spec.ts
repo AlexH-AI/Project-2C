@@ -131,6 +131,12 @@ test('a period not started yet has "—" in the tiles and says so over the chart
   await filter.click();
 
   const block = page.getByRole('region', { name: 'Khách hàng theo nhóm' });
-  await expect(block.getByRole('button', { name: /^N4/ })).toContainText('—');
+  const n4 = block.getByRole('button', { name: /^N4/ });
+  await expect(n4).toContainText('—');
   await expect(block).toContainText('Kỳ chưa bắt đầu');
+  // A stage hidden stays hidden on the next period, so its tile must still turn it back on.
+  await n4.click();
+  await expect(n4).toHaveAttribute('aria-pressed', 'false');
+  await n4.click();
+  await expect(n4).toHaveAttribute('aria-pressed', 'true');
 });

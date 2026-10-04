@@ -51,9 +51,8 @@ export function StageBlock({ block }: { block: Block }) {
               key={stage}
               type="button"
               aria-pressed={!off}
-              disabled={!block.tiles}
               onClick={() => toggle(stage)}
-              className={`flex cursor-pointer items-baseline gap-2.5 rounded-md border border-t-3 border-border px-3 pt-2 pb-2.5 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-default ${TOP[stage]} ${off ? 'border-dashed bg-surface-1' : 'bg-surface-2'}`}
+              className={`flex cursor-pointer items-baseline gap-2.5 rounded-md border border-t-3 border-border px-3 pt-2 pb-2.5 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${TOP[stage]} ${off ? 'border-dashed bg-surface-1' : 'bg-surface-2'}`}
             >
               <StageBadge stage={stage} label={t(`stage.${stage}`)} />
               {off && <span className="text-xs text-fg-3">{t('overview.stages.hidden')}</span>}
