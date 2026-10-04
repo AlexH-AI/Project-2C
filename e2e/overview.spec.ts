@@ -93,3 +93,44 @@ test('a period without appointments shows "0 / 0" and "chưa có lịch" in the 
   await expect(tile).toContainText('0 / 0');
   await expect(tile).toContainText('chưa có lịch');
 });
+
+test('customers by stage: four tiles over the chart, a stage hidden and shown again', async ({
+  page,
+}) => {
+  const { scope, filter } = await openOverview(page);
+  const block = page.getByRole('region', { name: 'Khách hàng theo nhóm' });
+  const n4 = block.getByRole('button', { name: /^N4/ });
+
+  await expect(block).toContainText('ảnh chụp cuối ngày 15/09/2026 (hôm nay)');
+  await expect(block.getByRole('button')).toHaveCount(4);
+  await expect(block.getByRole('img', { name: /^Diễn biến khách hàng theo nhóm/ })).toHaveCount(1);
+
+  await scope.getByRole('radio', { name: 'Team' }).click();
+  await filter.click();
+  await expect(block).toContainText('cộng 3 team');
+  const charts = block.getByRole('img', { name: /^Diễn biến khách hàng theo nhóm · Team / });
+  await expect(charts).toHaveCount(3);
+  await expect(charts.locator('svg')).toHaveCount(3);
+
+  await n4.click();
+  await expect(n4).toHaveAttribute('aria-pressed', 'false');
+  await expect(n4).toContainText('đang ẩn');
+  await expect(charts.locator('svg')).toHaveCount(3);
+
+  await n4.click();
+  await expect(n4).toHaveAttribute('aria-pressed', 'true');
+  await expect(block.getByText('đang ẩn')).toHaveCount(0);
+});
+
+test('a period not started yet has "—" in the tiles and says so over the chart', async ({
+  page,
+}) => {
+  const { filter } = await openOverview(page);
+
+  await page.getByRole('button', { name: 'Kỳ sau' }).click();
+  await filter.click();
+
+  const block = page.getByRole('region', { name: 'Khách hàng theo nhóm' });
+  await expect(block.getByRole('button', { name: /^N4/ })).toContainText('—');
+  await expect(block).toContainText('Kỳ chưa bắt đầu');
+});

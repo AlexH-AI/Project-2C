@@ -31,7 +31,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 
 | route | screen | view |
 |---|---|---|
-| `overview` | `src/routes/Overview.tsx` | `src/routes/overview/overview-view.ts` |
+| `overview` | `src/routes/Overview.tsx` | `src/routes/overview/overview-view.ts`, `src/routes/overview/stage-view.ts` |
 | `appointments` | `src/routes/appointments/AppointmentsScreen.tsx` | `src/routes/appointments/appointments-view.ts` |
 | `customers` | `src/routes/customers/CustomersScreen.tsx` | `src/routes/customers/customers-view.ts` |
 | `reports` | (placeholder) | — |
@@ -41,63 +41,13 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 
 ### Export
 
-- `src/App.tsx` — App
-- `src/data/AppDataContext.tsx` — AppDataContext, useAppData, useDatabase, useQuery
-- `src/data/app-data.ts` — type StoragePort, type DataFolder, type LastSave, type RecordCounts, type ExportedBackup, type BackupPreview, type AppData, type OpenAppDataOptions, isUnsavedChangesError, openAppData, countRecords
-- `src/data/persist-queue.ts` — type PersistQueue, createPersistQueue
-- `src/data/tauri-storage.ts` — tauriStorage
-- `src/i18n/index.ts` — type MessageParams, COUNT_SLOTS, PLAIN_SLOTS, fillSlots, t, joinParts, errorMessage, type MessageKey
-- `src/i18n/vi.ts` — vi, type MessageKey
-- `src/main.tsx` — (no exports)
-- `src/routes/Overview.tsx` — Overview
-- `src/routes/Screen.tsx` — Screen
-- `src/routes/Settings.tsx` — Settings
-- `src/routes/SettingsBackup.tsx` — BackupSection
-- `src/routes/SettingsDataFile.tsx` — countsText, DataFileSection, OpenFolderButton
-- `src/routes/applied-filter.ts` — type FilterSelection, type FilterState, startFilter, chooseFilter, applyFilter, isPending
-- `src/routes/appointments/AppointmentDialog.tsx` — dateReading, AppointmentDialog, liveIds, CoordinatorsField, dateFieldError, DateSuggestion
-- `src/routes/appointments/AppointmentsScreen.tsx` — AppointmentsScreen
-- `src/routes/appointments/DeleteAppointmentDialog.tsx` — DeleteAppointmentDialog
-- `src/routes/appointments/EditOutcomeDialog.tsx` — EditOutcomeDialog
-- `src/routes/appointments/MetFields.tsx` — badge, type MetDraft, EMPTY_MET, metDraftOf, MetFields
-- `src/routes/appointments/OutcomeDialog.tsx` — OutcomeDialog
-- `src/routes/appointments/RescheduleDialog.tsx` — RescheduleDialog
-- `src/routes/appointments/RescheduleFields.tsx` — whenText, useRescheduleForm, type RescheduleForm, RescheduleFields
-- `src/routes/appointments/YearGrid.tsx` — YearGrid
-- `src/routes/appointments/appointment-form.ts` — MAX_HISTORY, type ScheduleMode, type ScheduleDate, readScheduleDate, dayText, withTime, parseTime, isPastOrToday, type PriorMeetings, priorMeetings, searchCustomers
-- `src/routes/appointments/appointments-view.ts` — type AppointmentData, type CoordinatorFilter, type Outcome, STATUS_TONE, FOCUS, CARD, LOCKED, LINK, outcomeText, type DateTone, DATE_TONE_CELL, statusLabel, summaryText, dateTone, personLabel, type AppointmentRow, type DayCell, type MonthCell, type DayGroup, outcomeResolver, appointmentRows, appointmentsByRe, revealCreated, rescheduleLinks, APPOINTMENT_GROUPS, groupTotal, monthGrid, yearGrid, pickDay, dayBoard
-- `src/routes/appointments/outcome-form.ts` — OUTCOME_CHOICES, type OutcomeChoice, outcomeChoices, outcomeLock, stageAfterChoices, type OutcomeDraft, type OutcomeError, type OutcomeRead, readOutcome
-- `src/routes/customers/CustomerAppointments.tsx` — NextButton, CustomerAppointments
-- `src/routes/customers/CustomerDialogs.tsx` — ALERT, Actions, dayRead, useDateField, InvalidAlert, CustomerFormDialog, ChangeStageDialog
-- `src/routes/customers/CustomerKyc.tsx` — BADGE, YES_NO, KycCard, Timeline
-- `src/routes/customers/CustomerPolicies.tsx` — CustomerPolicies
-- `src/routes/customers/CustomerProfile.tsx` — CustomerProfile
-- `src/routes/customers/CustomersScreen.tsx` — CustomersScreen
-- `src/routes/customers/KycDialogs.tsx` — KycNoteDialog, ResolveKycDialog
-- `src/routes/customers/PolicyDialogs.tsx` — type PolicyMode, PolicyDialog
-- `src/routes/customers/customers-view.ts` — type CustomerCard, type CustomerBoard, type CustomerData, customerBoard, type RecordDateResult, parseRecordDate, type BirthDateResult, parseBirthDate, allowedStages, birthLabel, ageOn
-- `src/routes/customers/kyc-view.ts` — type KycCategoryRow, kycOverview, factText, type TimelineEvent, kycTimeline, type KycNotePreview, previewKycNote, type KycResolveOption, resolveKycOptions
-- `src/routes/customers/policy-form.ts` — type FypResult, readFyp, type IssuedDateResult, type PolicyDraft, type PolicyValues, readPolicy, issuedChange, monthOf, effectText, expectedCaseSize
-- `src/routes/overview/OverviewTiles.tsx` — AppointmentsTile, KpiCard
-- `src/routes/overview/overview-view.ts` — type KpiKey, type KpiDelta, type KpiTile, kpiTiles, metricsScope, type ViewingText, viewingText
-- `src/routes/period-labels.ts` — PERIOD_LABELS
-- `src/routes/team/PersonDialogs.tsx` — PersonDialog, DeletePersonDialog
-- `src/routes/team/TeamDialogs.tsx` — TeamNameDialog, DeleteTeamDialog
-- `src/routes/team/TeamScreen.tsx` — TeamScreen
-- `src/routes/team/team-view.ts` — type TeamEntry, type TeamView, groupByTeam, type StaffRecords, type StaffMetrics, staffMetrics, type PersonUsage, personUsage
-- `src/shell/AppShell.tsx` — AppShell
-- `src/shell/CloseGuard.tsx` — type AppWindow, CloseGuard
-- `src/shell/ErrorBoundary.tsx` — ErrorBoundary
-- `src/shell/RePicker.tsx` — RePicker
-- `src/shell/SaveWarning.tsx` — SaveWarning
-- `src/shell/ScopeContext.tsx` — type ScopeState, ScopeContext, useScopeState
-- `src/shell/ScopePicker.tsx` — ScopePicker
-- `src/shell/Sidebar.tsx` — Sidebar
-- `src/shell/StartupError.tsx` — StartupError
-- `src/shell/close-guard.ts` — type CloseChoice, type ClosePort, closeAfterSaving
-- `src/shell/routes.ts` — SECTIONS, type Section, type Route, DEFAULT_ROUTE, parseHash, routeToHash, sectionOf, usesScope, teamPickerShown
-- `src/shell/scope.ts` — type ScopeChoice, resolveScope, chooseKind, narrowScope, teamRes, reOptions
-- `src/shell/screen-error.ts` — type ScreenErrorMessage, screenErrorMessage
-- `src/shell/startup-error.ts` — type StartupMessage, startupMessage
-- `src/shell/useRoute.ts` — useRoute
+- `src/` — App.tsx, main.tsx
+- `src/data/` — AppDataContext.tsx, app-data.ts, persist-queue.ts, tauri-storage.ts
+- `src/i18n/` — index.ts, vi.ts
+- `src/routes/` — Overview.tsx, Screen.tsx, Settings.tsx, SettingsBackup.tsx, SettingsDataFile.tsx, applied-filter.ts, period-labels.ts
+- `src/routes/appointments/` — AppointmentDialog.tsx, AppointmentsScreen.tsx, DeleteAppointmentDialog.tsx, EditOutcomeDialog.tsx, MetFields.tsx, OutcomeDialog.tsx, RescheduleDialog.tsx, RescheduleFields.tsx, YearGrid.tsx, appointment-form.ts, appointments-view.ts, outcome-form.ts
+- `src/routes/customers/` — CustomerAppointments.tsx, CustomerDialogs.tsx, CustomerKyc.tsx, CustomerPolicies.tsx, CustomerProfile.tsx, CustomersScreen.tsx, KycDialogs.tsx, PolicyDialogs.tsx, customers-view.ts, kyc-view.ts, policy-form.ts
+- `src/routes/overview/` — OverviewTiles.tsx, StageBlock.tsx, overview-view.ts, stage-chart.ts, stage-view.ts
+- `src/routes/team/` — PersonDialogs.tsx, TeamDialogs.tsx, TeamScreen.tsx, team-view.ts
+- `src/shell/` — AppShell.tsx, CloseGuard.tsx, ErrorBoundary.tsx, RePicker.tsx, SaveWarning.tsx, ScopeContext.tsx, ScopePicker.tsx, Sidebar.tsx, StartupError.tsx, close-guard.ts, routes.ts, scope.ts, screen-error.ts, startup-error.ts, useRoute.ts
 <!-- codemap:end -->

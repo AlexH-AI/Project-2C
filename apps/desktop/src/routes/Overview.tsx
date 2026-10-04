@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   listAppointments,
+  listCustomers,
   listPeople,
   listPolicies,
   listStageTransitions,
@@ -14,18 +15,24 @@ import { t } from '../i18n';
 import { useScopeState } from '../shell/ScopeContext';
 import { applyFilter, chooseFilter, isPending, startFilter } from './applied-filter';
 import { AppointmentsTile, KpiCard } from './overview/OverviewTiles';
+import { StageBlock } from './overview/StageBlock';
 import { kpiTiles, metricsScope, viewingText } from './overview/overview-view';
+import { stageBlock } from './overview/stage-view';
 import { PERIOD_LABELS } from './period-labels';
 
 const readOverview = (db: Database) => ({
   appointments: listAppointments(db),
+  customers: listCustomers(db),
   people: listPeople(db),
   teams: listTeams(db),
   policies: listPolicies(db),
   transitions: listStageTransitions(db),
 });
 
-/** Tổng quan (spec Phase 4 §4.3, mockup overview.html 1a–1e): the Lọc bar, appointments and KPI. */
+/**
+ * Tổng quan (spec Phase 4 §4.3, mockup overview.html 1a–1e): the Lọc bar, appointments, KPI and
+ * customers by stage.
+ */
 export function Overview() {
   // today() is a new object each render; its fields keep the memos below stable.
   const { year, month, day } = useAppData().today();
@@ -45,6 +52,10 @@ export function Overview() {
   const counts = useMemo(
     () => appointmentCounts(data.appointments, applied.period, scope, data.people, today),
     [data, applied.period, scope, today],
+  );
+  const stages = useMemo(
+    () => stageBlock(data, applied.period, applied.scope, today),
+    [data, applied.period, applied.scope, today],
   );
   const tiles = useMemo(
     () => kpiTiles(data, applied.period, scope, today),
@@ -86,6 +97,7 @@ export function Overview() {
           ))}
         </section>
       </div>
+      <StageBlock block={stages} />
     </>
   );
 }

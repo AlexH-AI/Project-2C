@@ -12,8 +12,11 @@ export const SERIES_TOKENS = [
   '--n4',
 ] as const;
 
-/** ECharts theme built from the ADR-0013 tokens, so charts follow the app's colours and font. */
-export function chartTheme(readToken: TokenReader) {
+/**
+ * ECharts theme built from the ADR-0013 tokens, so charts follow the app's colours and font; series
+ * take the `palette` colours in order.
+ */
+export function chartTheme(readToken: TokenReader, palette: readonly string[] = SERIES_TOKENS) {
   const token = (name: string) => readToken(name).trim();
   const text2 = token('--text-2');
   const text3 = token('--text-3');
@@ -28,7 +31,7 @@ export function chartTheme(readToken: TokenReader) {
   };
 
   return {
-    color: SERIES_TOKENS.map(token),
+    color: palette.map(token),
     backgroundColor: 'transparent',
     textStyle: {
       color: text2,

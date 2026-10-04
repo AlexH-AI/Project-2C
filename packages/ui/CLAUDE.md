@@ -27,7 +27,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 
 <!-- codemap:start -->
 - `src/components/Button.tsx` — type ButtonVariant, Button
-- `src/components/Chart.tsx` — type ChartOption, Chart
+- `src/components/Chart.tsx` — type ChartOption, encodeHtml, Chart
 - `src/components/Choices.tsx` — type Choice, Choices
 - `src/components/DataTable.tsx` — type DataTableColumn, type DataTableSort, DataTable
 - `src/components/Dialog.tsx` — Dialog
