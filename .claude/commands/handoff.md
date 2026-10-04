@@ -16,4 +16,4 @@ argument-hint: "[mô tả ngắn việc đang làm]"
    - danh sách phản hồi dài của Owner → `docs/reviews/<ngày>-….md` rồi trỏ tới.
 4. Ghi: `node tools/handoff.mjs write <scratchpad>/handoff.md`. Bị từ chối vì Issue đã đổi → làm lại bước 1, gộp thay đổi của mình vào bản mới, rồi ghi lại. **Không** sửa trực tiếp trên web để vượt qua bước kiểm này.
 5. Nếu phase đổi, cập nhật "Current phase" trong `docs/PROJECT-STATE.md` (qua PR).
-6. Có code chưa commit → chạy `pwsh -NoProfile -File tools/session-end.ps1 -Message "$ARGUMENTS"` (commit WIP + push nhánh). Xác nhận push thành công và báo tên nhánh. Nếu push lỗi, nói rõ — Owner không được rời máy khi chưa push.
+6. Có code chưa commit → chạy `pwsh -NoProfile -File tools/session-end.ps1 -Message "$ARGUMENTS" -Paths <file1>,<file2>` (commit WIP + push nhánh). `-Paths` gồm **đúng** các file phiên này đã sửa, cách nhau bằng dấu phẩy. Phiên khác có thể đang dùng chung checkout, nên script không `git add -A`: thiếu `-Paths` thì nó liệt kê thay đổi rồi dừng. Xác nhận push thành công và báo tên nhánh. Nếu push lỗi, nói rõ — Owner không được rời máy khi chưa push.

@@ -27,6 +27,24 @@ export function riskLevel(labels, review) {
 }
 
 /**
+ * The merge itself, as { cmd, args } steps: merge pinned to the head, then (--owner) a note
+ * on the PR, since `mergedBy` is always the account Claude shares with the Owner (P-1),
+ * then fetch. `ctx` is { owner, mode: 'squash'|'merge' }.
+ */
+export function mergeSteps(pr, { owner, mode }) {
+  const number = String(pr.number);
+  const note = `Merged on Owner request (merge-pr --owner), head \`${pr.headRefOid.slice(0, 7)}\`.`;
+  return [
+    {
+      cmd: 'gh',
+      args: ['pr', 'merge', number, `--${mode}`, '--match-head-commit', pr.headRefOid],
+    },
+    ...(owner ? [{ cmd: 'gh', args: ['pr', 'comment', number, '--body', note] }] : []),
+    { cmd: 'git', args: ['fetch', 'origin', '--prune'] },
+  ];
+}
+
+/**
  * Every reason merge-pr must not merge the PR; empty means it may.
  * `pr` is `gh pr view --json` output; `ctx` is { owner, mode: 'squash'|'merge',
  * stacked: numbers of open PRs based on this branch, baseMerged: when base is not main }.
