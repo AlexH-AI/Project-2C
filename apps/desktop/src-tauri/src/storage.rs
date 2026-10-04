@@ -17,6 +17,8 @@ const BACKUP_DIR: &str = "backups";
 const EXPORT_DIR: &str = "exports";
 const BACKUP_PREFIX: &str = "project2c-";
 const KEEP_BACKUPS: usize = 10;
+/// The kinds of export: a backup (Settings → Data) and a report (Báo cáo → Xuất Excel).
+const EXPORT_EXTENSIONS: [&str; 2] = [".p2cbackup", ".xlsx"];
 /// How many `-n` suffixes an export tries before giving up.
 const MAX_EXPORT_SUFFIX: u32 = 1000;
 /// Digits of the write order in a backup name, zero-padded so the folder lists in order.
@@ -131,7 +133,7 @@ pub fn save(dir: &Path, bytes: &[u8]) -> io::Result<()> {
 }
 
 /// Writes an export file into `exports\` and returns its path. An earlier export is never
-/// overwritten: a taken name gets `-2`, `-3`… before `.p2cbackup` (spec §6). The final name
+/// overwritten: a taken name gets `-2`, `-3`… before its extension (spec §6). The final name
 /// appears only with the whole file in it; an interrupted export leaves just its `.claim` and
 /// `.tmp`, which the next app start removes (see [`remove_interrupted_exports`]).
 pub fn write_export(dir: &Path, name: &str, bytes: &[u8]) -> io::Result<PathBuf> {
@@ -154,12 +156,13 @@ pub fn write_export(dir: &Path, name: &str, bytes: &[u8]) -> io::Result<PathBuf>
 /// Takes the first name with neither a file nor a claim under it and returns it. The claim is an
 /// empty `<name>.claim` made with `create_new`, so two exports at once never get the same name.
 fn claim_export_name(exports: &Path, name: &str) -> io::Result<String> {
-    let stem = name.strip_suffix(".p2cbackup").unwrap_or(name);
+    let extension = export_extension(name).unwrap_or_default();
+    let stem = &name[..name.len() - extension.len()];
     for n in 1..=MAX_EXPORT_SUFFIX {
         let candidate = if n == 1 {
             name.to_owned()
         } else {
-            format!("{stem}-{n}.p2cbackup")
+            format!("{stem}-{n}{extension}")
         };
         let claim = exports.join(claim_name(&candidate));
         match fs::OpenOptions::new()
@@ -200,9 +203,11 @@ fn remove_interrupted_exports(exports: &Path) {
     for entry in fs::read_dir(exports).into_iter().flatten().flatten() {
         let Ok(meta) = entry.metadata() else { continue };
         let name = entry.file_name().to_string_lossy().into_owned();
-        let left = name.ends_with(".p2cbackup.claim")
-            || name.ends_with(".p2cbackup.tmp")
-            || (name.ends_with(".p2cbackup") && meta.len() == 0);
+        let left = EXPORT_EXTENSIONS.iter().any(|extension| {
+            name.ends_with(&format!("{extension}.claim"))
+                || name.ends_with(&format!("{extension}.tmp"))
+                || (name.ends_with(extension) && meta.len() == 0)
+        });
         if left && meta.is_file() {
             let _ = fs::remove_file(entry.path());
         }
@@ -405,9 +410,15 @@ fn prune_backups(backups: &Path, keep: &str) {
     }
 }
 
+/// The extension of an export file name, `None` for any other name.
+fn export_extension(name: &str) -> Option<&'static str> {
+    EXPORT_EXTENSIONS
+        .into_iter()
+        .find(|extension| name.ends_with(extension))
+}
+
 fn is_export_name(name: &str) -> bool {
-    name.len() > ".p2cbackup".len()
-        && name.ends_with(".p2cbackup")
+    export_extension(name).is_some_and(|extension| name.len() > extension.len())
         && !name.starts_with('.')
         && name
             .chars()
@@ -932,6 +943,25 @@ mod tests {
     }
 
     #[test]
+    fn write_export_takes_a_report_and_suffixes_it_before_xlsx() {
+        let dir = temp_dir();
+        let name = "bao-cao_2026-10_toan-bo_2026-10-15.xlsx";
+        let first = write_export(&dir, name, b"first").unwrap();
+        let second = write_export(&dir, name, b"second").unwrap();
+        let exports = dir.join(EXPORT_DIR);
+        assert_eq!(first, exports.join(name));
+        assert_eq!(
+            second,
+            exports.join("bao-cao_2026-10_toan-bo_2026-10-15-2.xlsx")
+        );
+        assert_eq!(fs::read(&first).unwrap(), b"first");
+        for name in [".xlsx", "a.xls", "a.xlsx.exe", "a b.xlsx"] {
+            let error = write_export(&dir, name, b"x").unwrap_err();
+            assert_eq!(error.kind(), ErrorKind::InvalidInput, "{name}");
+        }
+    }
+
+    #[test]
     fn write_export_skips_a_name_taken_by_a_folder() {
         let dir = temp_dir();
         let exports = dir.join(EXPORT_DIR);
@@ -971,13 +1001,16 @@ mod tests {
         fs::write(exports.join("b.p2cbackup.claim"), b"").unwrap();
         fs::write(exports.join("b.p2cbackup.tmp"), b"half").unwrap();
         fs::write(exports.join("c.p2cbackup"), b"real export").unwrap();
+        fs::write(exports.join("d.xlsx.claim"), b"").unwrap();
+        fs::write(exports.join("d.xlsx.tmp"), b"half").unwrap();
+        fs::write(exports.join("e.xlsx"), b"real report").unwrap();
         fs::write(exports.join("notes.txt"), b"").unwrap();
 
         open(&dir, "20260930-080000").unwrap();
 
         assert_eq!(
             names(&exports),
-            vec!["c.p2cbackup", "folder.p2cbackup", "notes.txt"]
+            vec!["c.p2cbackup", "e.xlsx", "folder.p2cbackup", "notes.txt"]
         );
         // The freed names are used again; a real export is still never overwritten.
         assert_eq!(

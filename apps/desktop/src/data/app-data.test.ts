@@ -413,6 +413,19 @@ describe('backup files', () => {
     expect(exported.size).toBe(new TextEncoder().encode(exported.text).byteLength);
   });
 
+  it('writes a report into exports in the exe; web mode leaves it to the screen', async () => {
+    const { storage, exports } = memoryStorage();
+    const exe = await openAppData({ storage, clock, today: () => TODAY, seed: fakeSeed });
+    const web = await openAppData({ clock, today: () => TODAY, seed: fakeSeed });
+    const bytes = new TextEncoder().encode('xlsx');
+
+    expect(await exe.exportFile('bao-cao.xlsx', bytes)).toBe(
+      'C:\\P2C\\Project2C-data\\exports\\bao-cao.xlsx',
+    );
+    expect(exports).toEqual([{ name: 'bao-cao.xlsx', text: 'xlsx' }]);
+    expect(await web.exportFile('bao-cao.xlsx', bytes)).toBeUndefined();
+  });
+
   it('gives the size in bytes of the file, not its length in characters', async () => {
     const app = await openAppData({ clock, seed: (db) => createTeam(db, { name: 'Hừng Đông' }) });
 

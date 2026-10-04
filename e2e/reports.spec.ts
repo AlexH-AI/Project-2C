@@ -139,3 +139,20 @@ test('a new period waits for Lọc: the tables keep their numbers until then', a
   await expect(pending).toHaveCount(0);
   await expect(summary).not.toHaveText(before ?? '');
 });
+
+test('Xuất Excel downloads the report of the period and scope viewed, a sheet per table', async ({
+  page,
+}) => {
+  const errors = trackConsoleErrors(page);
+  await openReports(page);
+
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Xuất Excel' }).click();
+  const file = await download;
+
+  expect(file.suggestedFilename()).toBe('bao-cao_2026-09_toan-bo_2026-09-15.xlsx');
+  await expect(page.getByRole('status').filter({ hasText: 'Đã xuất báo cáo' })).toHaveText(
+    'Đã xuất báo cáo · 4 sheet: bao-cao_2026-09_toan-bo_2026-09-15.xlsx',
+  );
+  expect(errors).toEqual([]);
+});

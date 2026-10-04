@@ -33,3 +33,7 @@ Exe nhỏ, khởi động nhanh, hệ sinh thái React/TS mạnh cho UI và AI v
 
 - `bootstrap.ps1` phải cài Rust + VS Build Tools trên cả 2 máy.
 - Mỗi dependency lớn mới ngoài danh sách trên cần G4.
+
+## Phụ lục — phiên bản đã ghim
+
+- **ExcelJS 4.4.0** (G4 Owner xác nhận 04/10/2026, T-114 #277): chỉ ở `apps/desktop`, ghim đúng phiên bản. Màn Báo cáo nạp thư viện khi bấm "Xuất Excel" lần đầu (`import()` động), nên nó nằm ở chunk riêng (~908 KB min, ~256 KB gzip) và không làm nặng lúc mở app.

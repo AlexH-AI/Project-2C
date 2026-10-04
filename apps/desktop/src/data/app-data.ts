@@ -25,7 +25,10 @@ export interface StoragePort {
   save(bytes: Uint8Array): Promise<void>;
   /** Copies the saved file into `backups\`; returns the backup's file name. */
   backup(): Promise<string>;
-  /** Writes a `.p2cbackup` file into `exports\` (never over an earlier one); returns its path. */
+  /**
+   * Writes a `.p2cbackup` or `.xlsx` file into `exports\` (never over an earlier one); returns its
+   * path.
+   */
   writeExport(name: string, bytes: Uint8Array): Promise<string>;
   /** The name of the newest file in `backups\`; `undefined` when there is none. */
   latestBackup(): Promise<string | undefined>;
@@ -103,6 +106,11 @@ export interface AppData {
   counts(): RecordCounts;
   /** Settings → Data: everything as a `.p2cbackup` file; the exe writes it into `exports\`. */
   exportBackup(): Promise<ExportedBackup>;
+  /**
+   * Báo cáo → Xuất Excel: the exe writes the file into `exports\` (with a `-n` suffix when `name`
+   * is taken) and resolves to its path; web mode resolves to `undefined` and the screen downloads it.
+   */
+  exportFile(name: string, bytes: Uint8Array): Promise<string | undefined>;
   /**
    * Reads and checks a backup file without touching the current data. Rejects with the `DbError`
    * `BACKUP_INVALID` or `SCHEMA_TOO_NEW`.
@@ -271,6 +279,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
       const path = await storage?.writeExport(name, bytes);
       return { name, text, size: bytes.byteLength, path };
     },
+    exportFile: (name, bytes) => storage?.writeExport(name, bytes) ?? Promise.resolve(undefined),
     async readBackup(text) {
       const imported = await importBackup(text, { locateFile });
       try {
