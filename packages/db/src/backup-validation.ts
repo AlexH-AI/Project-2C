@@ -46,6 +46,8 @@ function validValue(column: string, value: SqlValue): boolean {
   if (column === 'time') return typeof value === 'string' && TIME.test(value);
   if (TIMESTAMPS.has(column)) return timestamp.safeParse(value).success;
   if (column === 'seq') return typeof value === 'number' && value >= 1;
+  // An amount, as `requireAmount` takes it; the FYP columns have the same rule as a CHECK.
+  if (column === 'expected_case_size') return typeof value === 'number' && value > 0;
   return true;
 }
 
