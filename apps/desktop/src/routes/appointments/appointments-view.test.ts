@@ -22,6 +22,7 @@ import {
   rescheduleLinks,
   revealCreated,
   statusLabel,
+  STATUS_TONE,
   summaryText,
   yearGrid,
   type AppointmentData,
@@ -541,5 +542,18 @@ describe('APPOINTMENT_GROUPS', () => {
       'planned',
     ]);
     expect(groupTotal({ met: 4, missed: 3, unrecorded: 2, planned: 1 })).toBe(10);
+  });
+});
+
+describe('STATUS_TONE', () => {
+  it('greys a rescheduled appointment like its missed group; the others keep their colour', () => {
+    // Owner G3 03/10 + 04/10: orange is only for "unrecorded".
+    expect(STATUS_TONE).toEqual({
+      SCHEDULED: 'text-info',
+      MET: 'text-ok',
+      RESCHEDULED: 'text-appt-missed',
+      CANCELLED: 'text-fg-2',
+      NO_SHOW: 'text-danger',
+    });
   });
 });

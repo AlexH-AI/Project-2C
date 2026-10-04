@@ -49,7 +49,7 @@ export type Outcome =
 export const STATUS_TONE = {
   SCHEDULED: 'text-info',
   MET: 'text-ok',
-  RESCHEDULED: 'text-warn',
+  RESCHEDULED: 'text-appt-missed',
   CANCELLED: 'text-fg-2',
   NO_SHOW: 'text-danger',
 } as const satisfies Record<AppointmentStatus, string>;

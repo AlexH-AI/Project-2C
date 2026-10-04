@@ -648,3 +648,28 @@ test('the numbers in the strip follow the period', async ({ page }) => {
   await expect.poll(counts).not.toEqual(month);
   expect(await chipCount(strip.getByRole('button', { name: /^Cả team/ }))).toBe(await total(page));
 });
+
+test('a rescheduled appointment reads grey in the history, not the orange of unrecorded', async ({
+  page,
+}) => {
+  const { detail } = screen(page);
+  // Yesterday, still scheduled, then moved on: a past rescheduled appointment.
+  const f = await fillAppointment(page, '14/9');
+  await f.create.click();
+  await expect(f.dialog).toHaveCount(0);
+  await detail.getByRole('button', { name: 'Dời lịch' }).click();
+  const move = page.getByRole('dialog');
+  await move.getByRole('textbox', { name: /^Ngày mới/ }).fill('2/10');
+  await move.getByRole('textbox', { name: /^Lý do dời/ }).fill('KH bận');
+  await move.getByRole('button', { name: 'Dời lịch' }).click();
+  await expect(move).toHaveCount(0);
+
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const next = form(page);
+  await next.dialog.getByRole('textbox', { name: /^Khách hàng/ }).fill(f.name);
+  await next.dialog.getByRole('list', { name: 'KH khớp' }).getByRole('button').first().click();
+  const status = next.history.getByText('Dời lịch', { exact: true }).first();
+  await expect(status).toBeVisible();
+  // --appt-missed = --text-3 (grey), not --warn rgb(240, 160, 75): Owner G3 03/10.
+  expect(await css(status, 'color')).toBe('rgb(140, 153, 172)');
+});
