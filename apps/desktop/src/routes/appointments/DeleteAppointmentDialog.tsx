@@ -5,6 +5,7 @@ import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { ALERT } from '../customers/CustomerDialogs';
+import { FailureAlert } from './FailureAlert';
 import { badge } from './MetFields';
 import { whenText } from './RescheduleFields';
 import { statusLabel } from './appointments-view';
@@ -23,7 +24,7 @@ export function DeleteAppointmentDialog({
 }: {
   appointment: AppointmentRecord;
   customer: CustomerRecord;
-  caused: StageTransition | undefined;
+  caused?: StageTransition;
   onClose: () => void;
   onDeleted: () => void;
 }) {
@@ -82,11 +83,7 @@ export function DeleteAppointmentDialog({
         </>
       }
     >
-      {failure && (
-        <p role="alert" className={`${ALERT} border-danger text-danger`}>
-          {failure}
-        </p>
-      )}
+      {failure && <FailureAlert>{failure}</FailureAlert>}
       <p className="m-0 text-fg-2">
         {t(move ? 'appointmentDelete.moved' : 'appointmentDelete.noMove')}
       </p>

@@ -11,6 +11,7 @@ import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { Actions, ALERT } from '../customers/CustomerDialogs';
+import { FailureAlert } from './FailureAlert';
 import { CoordinatorsField, dateFieldError, dateReading, liveIds } from './AppointmentDialog';
 import { DeleteAppointmentDialog } from './DeleteAppointmentDialog';
 import { badge, MetFields, metDraftOf, EMPTY_MET } from './MetFields';
@@ -21,6 +22,7 @@ import {
   outcomeChoices,
   outcomeLock,
   readOutcome,
+  withoutError,
   type OutcomeChoice,
   type OutcomeError,
 } from './outcome-form';
@@ -139,11 +141,7 @@ export function EditOutcomeDialog({
         </>
       }
     >
-      {failure && (
-        <p role="alert" className={`${ALERT} border-danger text-danger`}>
-          {failure}
-        </p>
-      )}
+      {failure && <FailureAlert>{failure}</FailureAlert>}
       {later && (
         <div role="note" className={`${ALERT} flex flex-col gap-1 border-warn`}>
           <b>{t('outcomeEdit.lockTitle')}</b>
@@ -204,7 +202,7 @@ export function EditOutcomeDialog({
           onChange={(draft, field) => {
             setMetDraft(draft);
             setFailure(undefined);
-            setErrors(errors.filter((error) => error !== field));
+            setErrors(withoutError(errors, field));
           }}
           from={from}
           date={day}

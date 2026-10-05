@@ -21,13 +21,20 @@ import { Choices, Dialog, TextField } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { Actions, ALERT } from '../customers/CustomerDialogs';
+import { FailureAlert } from './FailureAlert';
 import { KycNoteDialog } from '../customers/KycDialogs';
 import { dateFieldError, dateReading } from './AppointmentDialog';
 import { EMPTY_MET, MetFields } from './MetFields';
 import { RescheduleFields, useRescheduleForm, whenText } from './RescheduleFields';
 import { parseTime, readScheduleDate } from './appointment-form';
 import { LINK, type AppointmentRow } from './appointments-view';
-import { outcomeChoices, readOutcome, type OutcomeChoice, type OutcomeError } from './outcome-form';
+import {
+  outcomeChoices,
+  readOutcome,
+  withoutError,
+  type OutcomeChoice,
+  type OutcomeError,
+} from './outcome-form';
 
 /**
  * Mockups 6c, 6d, 6e, 6i: the outcome of a scheduled appointment. Met moves the customer to the
@@ -137,16 +144,8 @@ export function OutcomeDialog({
         onSubmit={save}
         actions={<Actions onClose={onClose} save={saveLabel} />}
       >
-        {failure && (
-          <p role="alert" className={`${ALERT} border-danger text-danger`}>
-            {failure}
-          </p>
-        )}
-        {noStatus && status === null && (
-          <p role="alert" className={`${ALERT} border-danger text-danger`}>
-            {t('outcome.statusRequired')}
-          </p>
-        )}
+        {failure && <FailureAlert>{failure}</FailureAlert>}
+        {noStatus && status === null && <FailureAlert>{t('outcome.statusRequired')}</FailureAlert>}
         {met && (has('stageAfter') || has('nextStep')) && (
           <p role="alert" className={`${ALERT} flex flex-col border-danger`}>
             <b>{t('outcome.missing')}</b>
@@ -183,7 +182,7 @@ export function OutcomeDialog({
             onChange={(draft, field) => {
               setMetDraft(draft);
               setFailure(undefined);
-              setErrors(errors.filter((error) => error !== field));
+              setErrors(withoutError(errors, field));
             }}
             from={customer.stage}
             date={a.date}

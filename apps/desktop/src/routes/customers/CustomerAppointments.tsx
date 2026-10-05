@@ -84,6 +84,7 @@ export function CustomerAppointments({
         header: t('appointments.date'),
         kind: 'date',
         value: (r) => r.appointment.date,
+        thenBy: (r) => r.appointment.time ?? '',
         cell: ({ appointment: a }) => withTime(dayText(a.date, today), a.time),
       },
       {

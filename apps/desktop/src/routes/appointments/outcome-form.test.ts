@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { calendarDate, formatDate, type CustomerStage, type StageTransition } from '@p2c/domain';
 import { parseTime, readScheduleDate } from './appointment-form';
 import {
+  OUTCOME_CHOICES,
   outcomeChoices,
   outcomeLock,
+  readCaseSize,
   readOutcome,
   stageAfterChoices,
   type OutcomeDraft,
@@ -107,6 +109,14 @@ describe('outcomeChoices', () => {
     expect(disabled(outcomeChoices(scheduled(d(27, 9, 2026)), TODAY))).toEqual(['MET', 'NO_SHOW']);
   });
 
+  it('offers nothing for an appointment that was already moved (D3)', () => {
+    for (const date of [TODAY, d(27, 9, 2026)]) {
+      expect(disabled(outcomeChoices({ status: 'RESCHEDULED', date }, TODAY))).toEqual(
+        OUTCOME_CHOICES,
+      );
+    }
+  });
+
   it('reschedules only a scheduled appointment', () => {
     expect(disabled(outcomeChoices({ status: 'MET', date: TODAY }, TODAY))).toEqual([
       'RESCHEDULED',
@@ -152,5 +162,21 @@ describe('stageAfterChoices', () => {
   it('from a closed stage, no open stage but N3 (ADR-0007)', () => {
     const refused = stageAfterChoices('LOST').filter((c) => !c.allowed);
     expect(refused.map((c) => c.stage)).toEqual(['N4', 'N2', 'N1']);
+  });
+});
+
+describe('readCaseSize', () => {
+  it('reads an empty text as no case size', () => {
+    expect(readCaseSize('')).toBeNull();
+    expect(readCaseSize('  ')).toBeNull();
+  });
+
+  it('reads a positive amount', () => {
+    expect(readCaseSize('800tr')).toEqual({ ok: true, amount: 800_000_000 });
+  });
+
+  it('rejects zero and text that is not an amount', () => {
+    expect(readCaseSize('0')).toMatchObject({ ok: false });
+    expect(readCaseSize('sai')).toMatchObject({ ok: false });
   });
 });
