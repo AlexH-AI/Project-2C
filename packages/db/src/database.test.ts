@@ -44,7 +44,7 @@ describe('openDatabase', () => {
   it('migrates an empty database to the latest schema version', async () => {
     const db = await openDatabase();
 
-    expect(db.schemaVersion()).toBe(5);
+    expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
     expect(tableNames(db)).toEqual([
       'appointment_coordinators',
       'appointments',
@@ -95,9 +95,9 @@ describe('openDatabase', () => {
 
     const second = await openDatabase({ bytes });
 
-    expect(second.schemaVersion()).toBe(5);
+    expect(second.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
     const applied = second.sqlite.exec('SELECT count(*) FROM schema_migrations');
-    expect(applied[0]?.values[0]?.[0]).toBe(5);
+    expect(applied[0]?.values[0]?.[0]).toBe(LATEST_SCHEMA_VERSION);
   });
 
   it('persists once after migrating, and not at all when already up to date', async () => {
@@ -350,7 +350,7 @@ describe('migrating a saved database', () => {
 
     const db = await openDatabase({ bytes: old.export() });
 
-    expect(db.schemaVersion()).toBe(5);
+    expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
     for (const table of tables) expect(rowsOf(db.sqlite, table)).toEqual(before[table]);
     // The new column comes last and is empty on every existing appointment.
     expect(rowsOf(db.sqlite, 'appointments')).toEqual(

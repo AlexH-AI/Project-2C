@@ -201,4 +201,11 @@ describe('periodMetricsByMark', () => {
       periodMetricsByMark(data, [jan, periodOf('day', d(31, 1, 2027))], { kind: 'all' }),
     ).toThrow(RangeError);
   });
+
+  it('refuses marks out of order even when none overlaps and all sit inside the range', () => {
+    const [jan, feb, mar, apr] = [1, 2, 3, 4].map((month) => periodOf('month', d(1, month, 2027)));
+    expect(() => periodMetricsByMark(data, [jan!, mar!, feb!, apr!], { kind: 'all' })).toThrow(
+      RangeError,
+    );
+  });
 });

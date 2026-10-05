@@ -14,6 +14,10 @@ export default defineConfig({
         'packages/db/src/**/*.ts',
         'apps/desktop/src/data/**/*.ts',
         'apps/desktop/src/shell/*.ts',
+        'apps/desktop/src/routes/**/*-view.ts',
+        'apps/desktop/src/routes/applied-filter.ts',
+        'apps/desktop/src/routes/reports/report-workbook.ts',
+        'apps/desktop/src/routes/**/stage-chart.ts',
       ],
       exclude: ['**/*.test.ts', '**/*.d.ts'],
       // One threshold per area, so a drop in one is not hidden by the others (T-101).
@@ -43,6 +47,13 @@ export default defineConfig({
           branches: 86,
           functions: 77,
           lines: 75,
+        },
+        // Only the pure view helpers of routes are measured; the React screens are covered by e2e.
+        'apps/desktop/src/routes/**': {
+          statements: 99,
+          branches: 92,
+          functions: 99,
+          lines: 99,
         },
       },
     },

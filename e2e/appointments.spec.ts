@@ -721,7 +721,9 @@ test('the RE picked on Customers is still picked on Appointments', async ({ page
 
   await nav.getByRole('link', { name: 'Lịch hẹn' }).click();
   const strip = page.getByRole('region', { name: 'RE của team Sao Mai' });
-  await expect(strip.getByRole('button', { pressed: true })).toHaveText(new RegExp(`^${name}`));
+  await expect(strip.getByRole('button', { pressed: true })).toHaveText(
+    new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
+  );
   await expect.poll(async () => new Set(await screen(page).column(4))).toEqual(new Set([name]));
 });
 
