@@ -77,7 +77,7 @@ Dùng sẵn có, không cần duyệt thêm:
 
 - `pnpm verify`, `pnpm lint:deps`, `pnpm test --coverage` (số thật, đọc cả file không nằm trong `coverage.include`), `pnpm e2e`, `pnpm verify:rust`, `cargo clippy` mức nghiêm hơn (`-W clippy::pedantic` chạy một lần, ghi kết quả, không đổi cấu hình repo), `tsc --noUnusedLocals --noUnusedParameters` chạy tạm.
 - Profile trình duyệt (Edge DevTools / Performance, React Profiler dạng build dev) trên `pnpm dev:web`; đo trong Node cho phần thuần.
-- **Bộ dữ liệu tải** ngoài repo (Owner chốt 05/10): **1 000 khách hàng, 10 000 lịch hẹn, 50 nhân sự**, trải 5 năm, giữ đúng các bất biến của seed (`packages/db/src/seed-data.ts`, `seed-invariants.test.ts`).
+- **Bộ dữ liệu tải** ngoài repo (Owner chốt 05/10): **≈ 1 500 khách hàng, 10 000 lịch hẹn, 50 nhân sự** (seed demo hiện đã ≈ 1 200 KH / 6 000 lịch hẹn / 36 nhân sự). Sinh bằng bản sao của `seed.ts` chỉ đổi thông số, đi qua đúng các lệnh nghiệp vụ nên giữ mọi bất biến của seed; xuất thành file backup để nhập vào app hoặc mở bằng `importBackup` trong Node. Cách dùng và số thực tế ở `common\README.md`.
 
 **Không dùng công cụ mới** (Owner chốt 05/10, giữ mặc định — không mở G4): không `knip` / `jscpd` / `rollup-plugin-visualizer`. Trục B làm bằng `tsc --noUnusedLocals --noUnusedParameters`, `rg` kiểm export, bản đồ `pnpm codemap`; cấu thành bundle đọc từ output `vite build` (kích thước từng chunk).
 
@@ -116,7 +116,7 @@ Claude: 1 phiên chuẩn bị + 8 phiên gói (A–H) + 1–2 phiên tổng hợ
 ## 10. Quyết định Owner (05/10/2026)
 
 1. **G1 duyệt**, kèm yêu cầu: cả hai prompt ghi rõ cấm đọc kết quả review của nhau; xong đủ 8 gói, Claude chờ Owner yêu cầu mới đọc tất cả báo cáo và tổng hợp (§2, §8).
-2. Dữ liệu tải: 1 000 KH / 10 000 lịch hẹn / 50 nhân sự (§6).
+2. Dữ liệu tải: ≈ 1 500 KH / 10 000 lịch hẹn / 50 nhân sự (§6; ban đầu 1 000 KH, Owner nâng lên 1 500 vì seed demo đã ≈ 1 200 KH).
 3. Không dùng công cụ mới, không mở G4 (§6).
 4. Model / effort: Owner tự chọn từng phiên (ADR-0001 M1), không ghi vào kế hoạch.
 5. Claude soạn prompt cho cả hai bên: phụ lục A (Claude, mỗi gói một phiên), phụ lục B (Codex).
@@ -132,7 +132,7 @@ Owner mở **phiên mới** (context sạch), thay `<GÓI>` bằng một chữ A
 > 2. Chỉ đọc: repo ở SHA trên, `C:\workspace\deep-review-1-4\common\` (baseline, `known.md`, dữ liệu tải) và báo cáo Claude các gói trước trong `C:\workspace\deep-review-1-4\claude\` (để khỏi lặp; mục đã báo ở gói trước thì chỉ dẫn ID).
 > 3. Chỉ đọc và chạy lệnh trong repo: **không sửa file, không commit**, không subagent. Test tạm, probe, patch thử "phá code" để ở `C:\workspace\deep-review-1-4\claude\<GÓI>\`.
 > 4. Mục có trong `common\known.md` gắn `KNOWN`, chỉ nêu khi có bằng chứng mới. Golden fixture đúng theo spec, không đề xuất sửa golden cho xanh.
-> 5. Đi qua **mọi trục** ở §5 cho phạm vi gói `<GÓI>`; trục không có gì thì ghi "đã xét, không thấy" kèm cách đã xét. Phát hiện hiệu năng phải có số đo (dữ liệu tải 1 000 KH / 10 000 lịch hẹn / 50 nhân sự). Không bình luận phong cách / đặt tên trừ khi gây lỗi.
+> 5. Đi qua **mọi trục** ở §5 cho phạm vi gói `<GÓI>`; trục không có gì thì ghi "đã xét, không thấy" kèm cách đã xét. Phát hiện hiệu năng phải có số đo (dữ liệu tải `common\load\load-backup.json`, ≈ 1 500 KH / 10 000 lịch hẹn / 50 nhân sự). Không bình luận phong cách / đặt tên trừ khi gây lỗi.
 > 6. Nộp `C:\workspace\deep-review-1-4\claude\<GÓI>.md`: phạm vi đã đọc (file, dòng), phát hiện theo định dạng §7 với ID `CL-<GÓI><số>`, bảng đếm mức × trục, "đã xét, không thấy", phụ lục nguồn test tạm.
 > 7. **Không tổng hợp, không so với Codex, không tạo Issue.** Xong gói thì dừng và báo Owner tên file. Gói H (xuyên gói) được đọc mọi báo cáo `claude\A…G.md`; sau gói H thêm vào cuối `H.md` kết luận SẴN SÀNG / CHƯA SẴN SÀNG cho G7 phía Claude, rồi **chờ Owner yêu cầu** đọc tất cả báo cáo và tổng hợp.
 
@@ -147,6 +147,6 @@ Owner chạy Codex trong `C:\workspace\Project-2C-review-2`; có thể một phi
 > 2. Chỉ đọc: repo ở SHA trên, `C:\workspace\deep-review-1-4\common\` (baseline, `known.md`, script dữ liệu tải) và báo cáo Codex của chính bạn trong `C:\workspace\deep-review-1-4\codex\`.
 > 3. **Chỉ đọc và chạy lệnh; không sửa file trong repo, không commit, không viết code sản phẩm.** Test tạm, probe, log để ở `C:\workspace\deep-review-1-4\codex\<GÓI>\`.
 > 4. Đọc trước: `docs/process/deep-review-phase-1-4.md` (§1 phạm vi, §4 gói, §5 trục, §7 định dạng), `CLAUDE.md`, `CONTEXT.md`, `docs/design/phase-3-du-lieu.md`, `docs/design/phase-4-chi-so.md`, `docs/golden/*.md`. Golden fixture đúng theo spec; không đề xuất sửa golden cho xanh. Mục có trong `common\known.md` gắn `KNOWN`.
-> 5. Mục tiêu: (1) lỗi và edge case, (2) mất / sai dữ liệu, (3) hiệu năng **có số đo** trên dữ liệu tải 1 000 KH / 10 000 lịch hẹn / 50 nhân sự, (4) code thừa / chết / lặp, (5) test yếu (thử phá code bằng patch tạm ngoài repo), (6) trợ năng / i18n, (7) an toàn hẹp: nhập backup, đường dẫn file Tauri, tên file xuất. Đi qua mọi trục §5 cho từng gói; trục không có gì ghi "đã xét, không thấy" kèm cách đã xét. Mỗi phát hiện theo §7, ID `CX-<GÓI><số>`, ghi rõ CONFIRMED hay PLAUSIBLE và cách tái hiện. Không bình luận phong cách / đặt tên trừ khi gây lỗi.
+> 5. Mục tiêu: (1) lỗi và edge case, (2) mất / sai dữ liệu, (3) hiệu năng **có số đo** trên dữ liệu tải `common\load\load-backup.json`, ≈ 1 500 KH / 10 000 lịch hẹn / 50 nhân sự, (4) code thừa / chết / lặp, (5) test yếu (thử phá code bằng patch tạm ngoài repo), (6) trợ năng / i18n, (7) an toàn hẹp: nhập backup, đường dẫn file Tauri, tên file xuất. Đi qua mọi trục §5 cho từng gói; trục không có gì ghi "đã xét, không thấy" kèm cách đã xét. Mỗi phát hiện theo §7, ID `CX-<GÓI><số>`, ghi rõ CONFIRMED hay PLAUSIBLE và cách tái hiện. Không bình luận phong cách / đặt tên trừ khi gây lỗi.
 > 6. Nộp mỗi gói một file `C:\workspace\deep-review-1-4\codex\<GÓI>.md`: phạm vi đã đọc, phát hiện, bảng đếm mức × trục, "đã xét, không thấy", phụ lục nguồn test tạm. Sau gói H thêm kết luận SẴN SÀNG / CHƯA SẴN SÀNG cho đóng Phase 4 kèm lý do.
 > 7. Không tổng hợp với báo cáo nào khác, không tạo Issue, không đề xuất merge.
