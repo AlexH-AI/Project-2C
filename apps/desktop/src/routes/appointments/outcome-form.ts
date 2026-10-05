@@ -6,6 +6,7 @@ import {
   type CalendarDate,
   type CustomerStage,
   type StageTransition,
+  type VndParseError,
 } from '@p2c/domain';
 import { allowedStages } from '../customers/customers-view';
 import { isPastOrToday, type parseTime, type ScheduleDate } from './appointment-form';
@@ -13,6 +14,19 @@ import { isPastOrToday, type parseTime, type ScheduleDate } from './appointment-
 /** The statuses the outcome dialog offers (mockups 6c–6e, 6i), in their order. */
 export const OUTCOME_CHOICES = ['MET', 'RESCHEDULED', 'CANCELLED', 'NO_SHOW'] as const;
 export type OutcomeChoice = (typeof OUTCOME_CHOICES)[number];
+
+/** The case size typed: none when empty; the db only stores a positive one (requireAmount). */
+export type CaseSizeRead =
+  | null
+  | { readonly ok: true; readonly amount: number }
+  | { readonly ok: false; readonly error: VndParseError | 'notPositive' };
+
+export function readCaseSize(text: string): CaseSizeRead {
+  if (text.trim() === '') return null;
+  const size = parseVnd(text);
+  if (!size.ok) return size;
+  return size.amount > 0 ? size : { ok: false, error: 'notPositive' };
+}
 
 /**
  * The statuses the appointment can take now: met and no-show only once its day has come (Owner
@@ -23,12 +37,15 @@ export function outcomeChoices(
   today: CalendarDate,
 ): { readonly value: OutcomeChoice; readonly disabled: boolean }[] {
   const arrived = isPastOrToday(appointment.date, today);
+  // A moved appointment is closed: the db refuses any new status for it (INVALID_STATUS).
+  const moved = appointment.status === 'RESCHEDULED';
   return OUTCOME_CHOICES.map((value) => ({
     value,
     disabled:
-      value === 'RESCHEDULED'
+      moved ||
+      (value === 'RESCHEDULED'
         ? appointment.status !== 'SCHEDULED'
-        : value !== 'CANCELLED' && !arrived,
+        : value !== 'CANCELLED' && !arrived),
   }));
 }
 
@@ -74,6 +91,10 @@ export interface OutcomeDraft {
 
 export type OutcomeError = 'stageAfter' | 'nextStep' | 'caseSize' | 'nextDate' | 'nextTime';
 
+/** The errors left once the field the user just changed is no longer in error. */
+export const withoutError = (errors: readonly OutcomeError[], field: string) =>
+  errors.filter((error) => error !== field);
+
 export type OutcomeRead =
   | { readonly ok: true; readonly outcome: MeetingOutcome; readonly next: NextAppointment | null }
   | { readonly ok: false; readonly errors: readonly OutcomeError[] };
@@ -87,11 +108,10 @@ export function readOutcome(draft: OutcomeDraft): OutcomeRead {
   let outcome: MeetingOutcome = { status: draft.status, note: draft.note };
   if (draft.status === 'MET') {
     const nextStep = draft.nextStep.trim();
-    const size = draft.caseSize.trim() === '' ? null : parseVnd(draft.caseSize);
+    const size = readCaseSize(draft.caseSize);
     if (draft.stageAfter === null) errors.push('stageAfter');
     if (nextStep === '') errors.push('nextStep');
-    // The db only stores a positive case size (requireAmount).
-    if (size && (!size.ok || size.amount <= 0)) errors.push('caseSize');
+    if (size && !size.ok) errors.push('caseSize');
     outcome = {
       ...outcome,
       stageAfter: draft.stageAfter,

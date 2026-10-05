@@ -21,3 +21,17 @@ const COMPARE: { [K in CellKind]: (a: CellValues[K], b: CellValues[K]) => number
 export function compareCells<K extends CellKind>(kind: K, a: CellValues[K], b: CellValues[K]) {
   return COMPARE[kind](a, b);
 }
+
+/**
+ * Like , then the tie-break texts when the cells are equal (the time of a day);
+ * an empty tie-break sorts first.
+ */
+export function compareCellsThen<K extends CellKind>(
+  kind: K,
+  a: CellValues[K],
+  b: CellValues[K],
+  thenA = '',
+  thenB = '',
+) {
+  return compareCells(kind, a, b) || (thenA < thenB ? -1 : thenA > thenB ? 1 : 0);
+}

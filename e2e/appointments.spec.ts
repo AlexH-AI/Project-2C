@@ -292,6 +292,30 @@ test('the coordinator filter keeps the appointments with or without that person'
   throw new Error('Nobody coordinated a meeting this month');
 });
 
+test('sorting by day puts the appointments of one day in time order, either way', async ({
+  page,
+}) => {
+  const { list, kinds, column } = screen(page);
+  await kinds.getByRole('radio', { name: 'Ngày' }).click();
+  const header = list.getByRole('button', { name: /^Ngày/ });
+  const times = async () => (await column(2)).map((text) => text.trim()).filter(Boolean);
+  const rising = (list: string[]) => [...list].sort();
+
+  // The list opens sorted by day, newest first; clicks cycle on to none, then ascending.
+  const sortedBy = list.getByRole('columnheader', { name: /^Ngày/ });
+  for (let click = 0; click < 3; click++) {
+    if ((await sortedBy.getAttribute('aria-sort')) === 'ascending') break;
+    await header.click();
+  }
+  await expect(sortedBy).toHaveAttribute('aria-sort', 'ascending');
+  const up = await times();
+  expect(up.length).toBeGreaterThanOrEqual(2);
+  expect(up).toEqual(rising(up));
+
+  await header.click();
+  expect(await times()).toEqual(rising(up).reverse());
+});
+
 test('times line up in tabular figures; a customer opens the detail and its profile', async ({
   page,
 }) => {

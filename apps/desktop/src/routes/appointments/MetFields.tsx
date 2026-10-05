@@ -4,14 +4,13 @@ import {
   formatVnd,
   formatVndCompact,
   isRfTransition,
-  parseVnd,
   type CustomerStage,
   type Person,
 } from '@p2c/domain';
 import { Choices, SelectField, StageBadge, TextField } from '@p2c/ui';
 import { t } from '../../i18n';
 import { LOCKED, personLabel, reviewerChoices } from './appointments-view';
-import { stageAfterChoices, type OutcomeError } from './outcome-form';
+import { readCaseSize, stageAfterChoices, type OutcomeError } from './outcome-form';
 
 export const badge = (stage: CustomerStage) => (
   <StageBadge stage={stage} label={t(`stage.${stage}`)} />
@@ -63,7 +62,7 @@ export function MetFields({
     <K extends keyof MetDraft>(field: K) =>
     (value: MetDraft[K]) =>
       onChange({ ...draft, [field]: value }, field);
-  const size = draft.caseSize.trim() === '' ? null : parseVnd(draft.caseSize);
+  const size = readCaseSize(draft.caseSize);
   const { stageAfter } = draft;
   return (
     <>
@@ -122,13 +121,15 @@ export function MetFields({
         onChange={set('caseSize')}
         error={
           size && !size.ok
-            ? t(`money.error.${size.error}`)
-            : size && size.amount <= 0
-              ? t('outcome.caseSizePositive')
-              : undefined
+            ? t(
+                size.error === 'notPositive'
+                  ? 'outcome.caseSizePositive'
+                  : `money.error.${size.error}`,
+              )
+            : undefined
         }
         hint={
-          size?.ok && size.amount > 0
+          size?.ok
             ? t('outcome.caseSizeRead', {
                 amount: formatVnd(size.amount),
                 compact: formatVndCompact(size.amount),

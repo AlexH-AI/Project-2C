@@ -17,16 +17,9 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - `packages/db/src/database.test.ts:47,98,100,353` ghi cứng phiên bản schema `5` → suy từ `LATEST_SCHEMA_VERSION` trước migration kế tiếp.
 - `backup.ts` (#184): `valueOf` chỉ nhận cột `integer`/`text` (thêm cột `real` sẽ thành `BACKUP_INVALID`); `ORDER BY` dựa vào khóa chính → nên có test mọi bảng có PK. `database.ts`: hai khối `try/catch sqlite.close()` có thể gộp.
 - `SettingsBackup.tsx` (#185): nhánh `SCHEMA_TOO_NEW` của hộp 10b chưa có test.
-- `AppointmentsScreen.tsx:~271` (#179): truyền `caused={undefined}` → cho `caused` là prop tùy chọn. Ô ngoài tháng / ngoài khoảng là `aria-hidden` nên trình đọc màn hình không đọc số lịch ngày đó (#156).
+- Lịch hẹn, ô ngoài tháng / ngoài khoảng là `aria-hidden` nên trình đọc màn hình không đọc số lịch ngày đó (#156).
 - Lịch hẹn (#162–#168):
-  - `outcomeChoices` (`outcome-form.ts:21`) không chặn Đã gặp / Hủy / Không đến cho lịch `RESCHEDULED` (UI không mở hộp, db ném `INVALID_STATUS`).
-  - Mùi *Duplicated Code*:
-    - quy tắc "case size > 0" ở `OutcomeDialog.tsx` và `outcome-form.ts` → `readCaseSize`;
-    - `setErrors(errors.filter(...))` lặp → helper `clear`;
-    - khối `<p role="alert" …>` lặp → `FailureAlert`;
-    - `RescheduleDialog.tsx` và `AppointmentsScreen.tsx` cùng tự ghép `formatDate` với giờ → một helper trong `appointments-view.ts`;
-    - `weekdayOf` (`period.ts:102`) và `periodOf('week')` tính thứ bằng hai cách.
-  - #165: lịch cùng ngày khi sắp tăng dần vẫn ra giờ muộn trước (`AppointmentsScreen.tsx`, `CustomerAppointments.tsx`) → sắp theo cả ngày lẫn giờ; mockup tô "RF" màu accent và đưa năm khác xuống dòng giờ, code viết chuỗi phẳng.
+  - #165: mockup tô "RF" màu accent và đưa năm khác xuống dòng giờ, code viết chuỗi phẳng.
   - #163: nhóm trước → sau trong 6a hiện bằng chữ (mockup: badge); hộp 6h hiện thêm "Các lần hẹn trước"; e2e chưa kiểm link "Xem tất cả (n)" khi > 5 lịch.
 - Team & nhân sự (#144): `role === 'RE' || role === 'TL'` lặp ở `PersonDialogs.tsx`; lọc theo `reId` lặp ở `staffMetrics` và `personUsage`; "Xóa nhân sự" trong hộp Sửa bỏ thay đổi chưa lưu mà không báo.
 - Khách hàng (#141): dòng "Sau khi lưu: N2 → N3" thiếu "· hạ nhóm / lên nhóm" như mockup 5d; khối cảnh báo "Chuyển tay không bao giờ tính RF" hiện cả khi KH đã đóng; `error.INVALID_TRANSITION` chỉ nói "KH đã đóng" dù cũng bắn khi trùng nhóm hiện tại; `CustomerDialogs.tsx:~300` lặp `CLOSED_STAGES.includes` (dùng `!isPipelineStage`); `CustomerProfile.tsx:110` dựng `StageBadge` tay; 3 helper `badge` riêng (`MetFields.tsx:16`, `CustomerDialogs.tsx:42`, `CustomerKyc.tsx:155`) → *Duplicated Code*, T-h.
@@ -51,6 +44,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 
 ## RESOLVED
 
+- Lịch hẹn (T-136 #342): bảng sắp theo ngày rồi giờ (`thenBy` của cột `DataTable`, `compareCellsThen`, cả màn Lịch hẹn lẫn tab của hồ sơ KH); `outcomeChoices` khóa mọi lựa chọn cho lịch `RESCHEDULED`; `caused` của `DeleteAppointmentDialog` là prop tùy chọn; gỡ lặp: `readCaseSize`, `withoutError`, `FailureAlert`, `dateTime` dùng `withTime`. `weekdayOf` / `periodOf('week')` đã dùng chung một phép tính thứ từ trước, không phải sửa.
 - Tooling (T-135 #341, PR #344): hook `review-pr-hint.mjs` không còn nhận "issue #N" thành PR (logic ở `tools/review-hint-core.mjs`, có test); `session-end.ps1` chỉ commit `-Paths`, không `git add -A` (R4); `merge-pr.mjs --owner` để comment "Merged on Owner request" trên PR (P-1); dòng T-116 của bảng "Sửa cục bộ" ghi đã bị dòng T-122 thay (#297).
 - Đóng Phase 4 (05/10), ghi chú không chặn của PR sửa Phase 4: lịch đã qua còn Đã lên lịch ghi "Chưa ghi kết quả" cả ở phụ đề Hẹn tiếp / Dời lịch / Xóa lịch và timeline KYC (phần "Chưa làm" của PR #328 → T-133 #336, PR #338); dòng "Đã xuất báo cáo" so kỳ / góc nhìn theo giá trị (`sameSelection`) và `setBusy` trong `finally` (review #327), `updatePerson` + luật 5 nhập backup dùng `REVIEWER_ROLES` (review #330), thông báo `RangeError` kỳ Tùy chọn đọc `CUSTOM_RANGE_MAX_MONTHS` (review #331) → T-134 #337, PR #339.
 - Review đóng Phase 4 (04/10), sửa trước G7 (bảng §2 của `docs/reviews/2026-10-04-phase-4-tong-hop.md`): P1 so với kỳ trước ở ngày cuối kỳ (T-125 #317, PR #325); P2 nửa đêm — ngày của app đi theo đồng hồ ở mọi màn (T-126 #318, PR #334); P3 / P4 slug ≤ 60, câu lỗi theo bước, thông báo sau Lọc — ba ghi chú review #316 (T-127 #319, PR #327); P5 `expected_case_size` ≤ 0 khi nhập backup, phần sót của F-01 (T-128 #320, PR #326); P6, P9–P11 dọn hiển thị (T-129 #321, PR #328); P7 trần kỳ Tùy chọn 3 tháng (T-130 #322, PR #331) và Theo mốc một lượt (T-131 #323, PR #332); đổi D9 người đánh giá chỉ IS / TL / BDM / BD (T-132 #329, PR #330).

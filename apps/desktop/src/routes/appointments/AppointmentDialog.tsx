@@ -13,6 +13,7 @@ import { errorMessage, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
 import { routeToHash } from '../../shell/routes';
 import { Actions, ALERT } from '../customers/CustomerDialogs';
+import { FailureAlert } from './FailureAlert';
 import {
   dayText,
   MAX_HISTORY,
@@ -143,11 +144,7 @@ export function AppointmentDialog({
       onSubmit={save}
       actions={<Actions onClose={onClose} save={t('appointmentForm.create')} />}
     >
-      {failure && (
-        <p role="alert" className={`${ALERT} border-danger text-danger`}>
-          {failure}
-        </p>
-      )}
+      {failure && <FailureAlert>{failure}</FailureAlert>}
       <CustomerField
         customers={data.customers}
         customer={customer}

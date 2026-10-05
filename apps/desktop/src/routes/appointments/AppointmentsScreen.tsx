@@ -38,7 +38,7 @@ import { EditOutcomeDialog } from './EditOutcomeDialog';
 import { OutcomeDialog } from './OutcomeDialog';
 import { RescheduleDialog } from './RescheduleDialog';
 import { YearGrid } from './YearGrid';
-import { isPastOrToday } from './appointment-form';
+import { isPastOrToday, withTime } from './appointment-form';
 import {
   APPOINTMENT_GROUPS,
   appointmentRows,
@@ -147,6 +147,7 @@ export function AppointmentsScreen() {
         header: t('appointments.date'),
         kind: 'date',
         value: (r) => r.appointment.date,
+        thenBy: (r) => r.appointment.time ?? '',
         cellClass: (r) => DATE_TONE_CELL[dateTone(r.appointment.date, today)],
       },
       {
@@ -338,7 +339,6 @@ export function AppointmentsScreen() {
         <DeleteAppointmentDialog
           appointment={deleting.appointment}
           customer={deleting.customer}
-          caused={undefined}
           onClose={() => setDeleting(null)}
           onDeleted={() => setDeleting(null)}
         />
@@ -570,7 +570,7 @@ const Status = ({ label }: { label: ReturnType<typeof statusLabel> }) => (
 /** The statuses whose outcome can be edited (mockup 6f). */
 const EDITABLE: readonly AppointmentStatus[] = ['MET', 'CANCELLED', 'NO_SHOW'];
 
-const dateTime = (a: AppointmentRecord) => [formatDate(a.date), a.time].filter(Boolean).join(' ');
+const dateTime = (a: AppointmentRecord) => withTime(formatDate(a.date), a.time);
 
 function Detail({
   row,

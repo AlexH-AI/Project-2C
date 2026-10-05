@@ -4,7 +4,8 @@ import { weekdayOf } from '@p2c/domain';
 import { Dialog } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
-import { Actions, ALERT } from '../customers/CustomerDialogs';
+import { Actions } from '../customers/CustomerDialogs';
+import { FailureAlert } from './FailureAlert';
 import { RescheduleFields, useRescheduleForm, whenText } from './RescheduleFields';
 import { statusLabel, type AppointmentRow } from './appointments-view';
 
@@ -53,11 +54,7 @@ export function RescheduleDialog({
       onSubmit={save}
       actions={<Actions onClose={onClose} save={t('reschedule.save')} />}
     >
-      {failure && (
-        <p role="alert" className={`${ALERT} border-danger text-danger`}>
-          {failure}
-        </p>
-      )}
+      {failure && <FailureAlert>{failure}</FailureAlert>}
       <RescheduleFields form={form} onEdit={() => setFailure(undefined)} autoFocus />
     </Dialog>
   );

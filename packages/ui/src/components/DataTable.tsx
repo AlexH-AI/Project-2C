@@ -10,7 +10,7 @@ import {
   type SortDirection,
 } from '@tanstack/react-table';
 import { formatDate } from '@p2c/domain';
-import { compareCells, type CellKind, type CellValues } from './compare-cells';
+import { compareCellsThen, type CellKind, type CellValues } from './compare-cells';
 
 interface ColumnBase<Row extends RowData> {
   id: string;
@@ -20,6 +20,8 @@ interface ColumnBase<Row extends RowData> {
   align?: 'start' | 'end';
   /** Defaults to true (ADR-0013: every column sorts). */
   sortable?: boolean;
+  /** Orders rows whose cells are equal, as plain text (a day's time, 'HH:MM'); empty first. */
+  thenBy?: (row: Row) => string;
   /** Extra classes for a row's cell, e.g. a translucent background kept over the row hover. */
   cellClass?: (row: Row) => string;
 }
@@ -61,7 +63,14 @@ function toColumnDef<Row extends RowData>(
     header: column.header,
     accessorFn: (row: Row) => column.value(row),
     enableSorting: column.sortable ?? true,
-    sortFn: (a, b, id) => compareCells(column.kind, a.getValue(id), b.getValue(id)),
+    sortFn: (a, b, id) =>
+      compareCellsThen(
+        column.kind,
+        a.getValue(id),
+        b.getValue(id),
+        column.thenBy?.(a.original),
+        column.thenBy?.(b.original),
+      ),
   };
 }
 
