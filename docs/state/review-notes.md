@@ -11,10 +11,7 @@ Theo task đã có chỗ trong kế hoạch:
 - **S-2 (Đợt 3):** ghi muộn trong khoảng chờ backup → thay DB (#96); hai `replace` chồng nhau đóng DB cũ hai lần (#192); chưa có test cho cửa sổ `opening` (#206).
 
 Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
-- `app-data.ts:~179` (#206): `mine === current || mine === opening` tương đương `mine >= current` → bỏ được `opening` + `try/finally`.
-- `shell/ErrorBoundary.tsx:~29` (#206): `resetKey={scope}` đổi mỗi khi `teams`/`people` tính lại → sửa câu doc comment cho đúng (hành vi vô hại).
 - `storage.rs` (#196, #192): `explorer_arg` (`~377`) không có `#[cfg(any(windows, test))]` → build ngoài Windows báo `dead_code`; `open_lock_file` dùng `Some(32)` thay hằng `SHARING_VIOLATION`; ngoài Windows closure `map_err` thành identity.
-- `packages/db/src/database.test.ts:47,98,100,353` ghi cứng phiên bản schema `5` → suy từ `LATEST_SCHEMA_VERSION` trước migration kế tiếp.
 - `backup.ts` (#184): `valueOf` chỉ nhận cột `integer`/`text` (thêm cột `real` sẽ thành `BACKUP_INVALID`); `ORDER BY` dựa vào khóa chính → nên có test mọi bảng có PK. `database.ts`: hai khối `try/catch sqlite.close()` có thể gộp.
 - `SettingsBackup.tsx` (#185): nhánh `SCHEMA_TOO_NEW` của hộp 10b chưa có test.
 - Lịch hẹn, ô ngoài tháng / ngoài khoảng là `aria-hidden` nên trình đọc màn hình không đọc số lịch ngày đó (#156).
@@ -28,21 +25,19 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - `PeriodPicker.tsx` (R4): ô ngày Tùy chọn báo đỏ sớm khi Tab (áp dụng ở `onBlur` từng ô).
 - Review đóng Phase 4 (04/10, P8 / P12 / T2):
   - Chart N4–N1 (`packages/ui/src/components/Chart.tsx` `role="img"`, `StageBlock.tsx`) không có số liệu cho trình đọc màn hình → bảng ẩn `sr-only` sinh từ `StageChart.columns` (`aria-describedby`), hoặc ghi chú mockup rằng Báo cáo → Theo mốc là bản dạng bảng.
-  - Coverage (`vitest.config.ts` `include`) không đo `apps/desktop/src/routes/**/*-view.ts`, `applied-filter.ts`, `report-workbook.ts`, `stage-chart.ts` → thêm glob + ngưỡng đo lúc thêm (phần còn lại của F-08).
 - Theo mốc một lượt (#332, T-131, không chặn):
-  - `stage-snapshot.ts` JSDoc `stageSnapshotter` vẫn ghi dùng cho "one row per team or RE", nhưng app không còn gọi (`reportRows` dùng `stageSnapshotSeries([ngày], …)`); giờ chỉ còn `stageSnapshot` và test dùng làm mốc so sánh → sửa câu hoặc bỏ export khi chạm file.
   - Mùi *Duplicated Code*: `reports-view.ts` (`reportRows`, Theo mốc) và `stage-view.ts` (`stageBlock`) cùng dựa vào bất biến "mốc sau hôm nay luôn ở cuối" để ghép kết quả với mốc theo chỉ số (`flatMap(… ?? [])` rồi `[index]`). Đúng hiện nay (`countedWindow` / `snapshotDate` chỉ null khi `today < mark.start`), test tương đương trên seed báo đỏ nếu lệch → làm helper khi có nơi thứ ba.
-  - `stats.ts` `markIndexer`: chỉ bắt mốc sai thứ tự khi chồng nhau hoặc ra ngoài khoảng (`[T1, T3, T2, T4]` lọt), số đếm vẫn đúng → sửa JSDoc / thông báo cho khớp, hoặc kiểm `start` của mốc sau > `end` mốc trước.
-- `app-icon.svg`, `public/favicon.svg` (#128): thiếu dòng trống cuối file; `favicon.svg` là bản sao `app-icon.svg` → đổi icon phải sửa cả hai.
+- `public/favicon.svg` (#128) là bản sao `app-icon.svg` → đổi icon phải sửa cả hai.
 - `DataTable` (Phase 1): chưa có test `sortable: false` và bảng rỗng; kiểm lại cột Giờ có `tabular-nums` (cột không phải `text` đã có). `cellClass` (#240) chỉ có e2e phủ — repo chưa có công cụ test component (thêm là G4).
 - Lưới năm (#247, không chặn):
   - `token-guard.ts:26` regex miễn trừ nhận mọi `style={{ flex: <định danh hoặc số> }}`, kể cả hằng `flex: 1`; doc comment `token-guard.ts:3` dài (NIT);
-- `e2e/appointments.spec.ts` (#236, NIT): `new RegExp(`^${name}`)` không escape tên RE; tên seed hiện không có ký tự regex.
 - `AppointmentsScreen.tsx` (#239, không chặn): nhánh `!pickable` vẫn có thể gắn `bg-period-band` về lý thuyết; `inPeriod` ⇒ `pickable` nên không xảy ra.
 - Domain (R3): API `nextKycVersion`; ngày nhanh đầu năm (gợi ý năm trước?).
 - Token G3 (R4, Owner cân nhắc): viền ô nhập / mũi tên sắp xếp dưới 3:1.
 
 ## RESOLVED
+
+- Coverage, test, doc comment (T-137 #343): coverage đo cả các file thuần của `routes` (`*-view.ts`, `applied-filter.ts`, `report-workbook.ts`, `stage-chart.ts`) với ngưỡng riêng 99 / 92 / 99 / 99 (phần còn lại của F-08); `database.test.ts` so với `LATEST_SCHEMA_VERSION`; JSDoc `stageSnapshotter` khớp nơi dùng; `markIndexer` kiểm mốc sau bắt đầu sau khi mốc trước kết thúc (`[T1, T3, T2, T4]` giờ ném `RangeError`, có test); doc comment `ErrorBoundary` nói `resetKey` đổi cả khi teams / people đọc lại; e2e escape tên RE trước `new RegExp` (#236); hai file svg có dòng trống cuối (#128).
 
 - Lịch hẹn (T-136 #342): bảng sắp theo ngày rồi giờ (`thenBy` của cột `DataTable`, `compareCellsThen`, cả màn Lịch hẹn lẫn tab của hồ sơ KH); `outcomeChoices` khóa mọi lựa chọn cho lịch `RESCHEDULED`; `caused` của `DeleteAppointmentDialog` là prop tùy chọn; gỡ lặp: `readCaseSize`, `withoutError`, `FailureAlert`, `dateTime` dùng `withTime`. `weekdayOf` / `periodOf('week')` đã dùng chung một phép tính thứ từ trước, không phải sửa.
 - Tooling (T-135 #341, PR #344): hook `review-pr-hint.mjs` không còn nhận "issue #N" thành PR (logic ở `tools/review-hint-core.mjs`, có test); `session-end.ps1` chỉ commit `-Paths`, không `git add -A` (R4); `merge-pr.mjs --owner` để comment "Merged on Owner request" trên PR (P-1); dòng T-116 của bảng "Sửa cục bộ" ghi đã bị dòng T-122 thay (#297).
@@ -71,6 +66,8 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - 4 chỗ lệch mockup 5a–5c (#140) → #142. Link "+ Ghi chú KYC từ cuộc gặp này" (6c) → #180. Nút xóa lịch Dự kiến → #173.
 
 ## ACCEPTED
+
+- `app-data.ts` `open` (#206, kiểm lại ở T-137 #343): `mine === current || mine === opening` **không** tương đương `mine >= current` khi hai lần mở chồng nhau (hai `replace` chồng nhau, #192): `current` = 1, mở 2 rồi mở 3 (`opening` = 3) → bản 2 không lưu migration của nó, còn `mine >= current` sẽ lưu. Giữ code; cửa sổ `opening` và `replace` chồng nhau xử lý ở S-2.
 
 - Review #334 (T-126): `apps/desktop/src/data/today.ts` `untilMidnight` tự tính `new Date(y, m, d + 1)` ngoài `packages/domain` — chỉ ra mili giây cho hẹn giờ, không parse / format; đưa vào `domain` nếu nơi khác cần. Ngày được chọn của màn Lịch hẹn không tự nhảy sang ngày mới qua nửa đêm (Issue #318 "Hệ quả thêm").
 - **Owner quyết 30/09 (#171):** lịch Dời lịch không có nút xóa (chuỗi dời, cần quy tắc riêng G1/G2); ô **Giờ** ở hộp 6f giữ; câu "Xóa mềm, khôi phục được" ở 6g giữ — màn "Thùng rác" xếp Phase 6 (xem comment Owner trên #72).

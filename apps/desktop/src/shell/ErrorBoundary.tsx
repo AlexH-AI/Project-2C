@@ -6,8 +6,10 @@ type State = { failed: false } | { failed: true; error: unknown };
 
 interface Props {
   /**
-   * A failed screen renders again when this changes (compared by identity), e.g. the scope picked
-   * in the topbar. A screen that did not fail keeps its state.
+   * A failed screen renders again when this changes (compared by identity). The shell passes the
+   * scope object, which is rebuilt both when the topbar pick changes and when the teams or people
+   * behind it are read again (e.g. after a save), so the screen may retry without a new pick.
+   * A screen that did not fail keeps its state.
    */
   resetKey: unknown;
   children: ReactNode;

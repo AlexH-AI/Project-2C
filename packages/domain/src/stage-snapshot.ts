@@ -65,8 +65,10 @@ function customerHistories(
 }
 
 /**
- * `stageSnapshot` for many scopes over the same data (one row per team or RE): each customer's
- * transitions are grouped and sorted once, then every call only looks up the stage at its day.
+ * `stageSnapshot` over the same data for many calls: each customer's transitions are grouped and
+ * sorted once, then every call only looks up the stage at its day. The app counts many days with
+ * `stageSnapshotSeries`; this per-day form backs `stageSnapshot` and is the reference its tests
+ * compare the series against.
  */
 export function stageSnapshotter(
   customers: readonly Customer[],

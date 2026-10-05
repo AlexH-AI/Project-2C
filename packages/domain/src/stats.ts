@@ -43,20 +43,26 @@ export function scopeMatcher(people: readonly Person[], scope: Scope): (reId: st
 /**
  * The index of the mark holding a day, or -1 when none does; built once, then checked per record.
  * Marks run earliest first and never overlap, as `chartMarks` and `reportMarks` cut them, though
- * gaps between them are allowed. Each day of the marks is indexed, so a lookup is one subtraction.
+ * gaps between them are allowed: each mark must start after the previous one ends, or this throws
+ * a `RangeError`. Each day of the marks is indexed, so a lookup is one subtraction.
  */
 export function markIndexer(marks: readonly Period[]): (date: CalendarDate) => number {
   const first = marks[0]?.start;
   const last = marks.at(-1)?.end;
   if (first === undefined || last === undefined) return () => -1;
-  const byDay = new Int32Array(Math.max(daysBetween(first, last) + 1, 0)).fill(-1);
   marks.forEach((mark, index) => {
-    const from = daysBetween(first, mark.start);
-    const to = daysBetween(first, mark.end);
-    if (from < 0 || to >= byDay.length || byDay.subarray(from, to + 1).some((at) => at !== -1)) {
+    const previous = marks[index - 1];
+    if (
+      daysBetween(mark.start, mark.end) < 0 ||
+      (previous !== undefined && daysBetween(previous.end, mark.start) <= 0)
+    ) {
       throw new RangeError(`Mark ${formatDate(mark.start)} is out of order or overlaps another`);
     }
-    byDay.fill(index, from, to + 1);
+  });
+  // Ordered and apart, so every mark lies between `first` and `last`.
+  const byDay = new Int32Array(daysBetween(first, last) + 1).fill(-1);
+  marks.forEach((mark, index) => {
+    byDay.fill(index, daysBetween(first, mark.start), daysBetween(first, mark.end) + 1);
   });
   return (date) => byDay[daysBetween(first, date)] ?? -1;
 }
