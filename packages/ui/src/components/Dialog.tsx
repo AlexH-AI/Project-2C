@@ -26,17 +26,19 @@ function open(node: HTMLDialogElement) {
 export function Dialog({ title, subtitle, onClose, onSubmit, actions, children }: DialogProps) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  // Kept from the first run: StrictMode runs the effect again once focus is inside the dialog.
+  const opener = useRef<Element | null>(null);
 
   useEffect(() => {
     const node = dialog.current;
     if (!node) return;
-    const opener = document.activeElement;
+    opener.current ??= document.activeElement;
     open(node);
     return () => {
       // Unmounting skips the browser's own focus return, which only close() does. No scrolling:
       // a dialog may have just moved the page on purpose ("Xem tất cả").
-      if (opener instanceof HTMLElement && opener.isConnected)
-        opener.focus({ preventScroll: true });
+      const back = opener.current;
+      if (back instanceof HTMLElement && back.isConnected) back.focus({ preventScroll: true });
     };
   }, []);
 
