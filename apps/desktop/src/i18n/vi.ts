@@ -569,7 +569,7 @@ export const vi = {
   'reports.excel.fileRange': '{from}-den-{to}',
   'storage.openFailed': 'Không mở được file dữ liệu',
   'storage.openFailedHelp':
-    'App chưa ghi gì vào file. Các bản sao lưu tự động nằm trong thư mục Project2C-data\\backups: chép bản mới nhất thành Project2C-data\\project2c.db để khôi phục; nếu vẫn lỗi, thử bản cũ hơn.',
+    'App chưa ghi gì vào file. Các bản sao lưu tự động nằm trong thư mục Project2C-data\\backups: chép bản mới nhất thành Project2C-data\\project2c.db để khôi phục. Bản mới nhất có thể chính là file đang lỗi: khi đó chép bản liền trước nó, rồi tới các bản cũ hơn.',
   'storage.technicalDetail': 'Chi tiết kỹ thuật:',
   'storage.alreadyOpen': 'Project-2C đang mở ở một cửa sổ khác',
   'storage.alreadyOpenHelp':
@@ -669,7 +669,7 @@ export const vi = {
   'settings.demo.failedUnsaved':
     'Chưa nạp lại: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Dữ liệu hiện tại không bị đổi.',
   'storage.saveFailed':
-    'Chưa lưu được dữ liệu vào file. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
+    'Chưa lưu được dữ liệu vào file (file có thể đang mở trong chương trình khác). Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
   'close.unsavedTitle': 'Chưa lưu được thay đổi',
   'close.unsavedBody':
     'Các thay đổi gần nhất chưa ghi được vào file (file có thể đang bị chương trình khác mở). Đóng chương trình đó rồi chọn Thử lại, hoặc đóng app và bỏ các thay đổi chưa lưu.',

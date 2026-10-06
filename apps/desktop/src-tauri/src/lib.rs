@@ -12,7 +12,8 @@ use tauri::ipc::{InvokeBody, Request, Response};
 /// Header carrying the export file name (the body is the raw file).
 const EXPORT_NAME_HEADER: &str = "x-p2c-file-name";
 
-/// Held from the first `db_open` until the process ends: one exe per data folder.
+/// Held from the first `db_open` until the process ends (one exe per data folder), and by each of
+/// `db_open`, `db_save` and `db_backup` while it runs (one file command at a time, see `DataLock`).
 static DATA_LOCK: storage::DataLock = storage::DataLock::new();
 
 /// `Project2C-data\` next to the exe (portable, ADR-0006).
@@ -29,22 +30,23 @@ fn raw_body<'a>(request: &'a Request<'_>) -> Result<&'a [u8], String> {
     }
 }
 
-/// Startup: locks the data folder, backs up and returns the database file; an empty body means a
-/// first start (a file that is missing with backups left, empty or not SQLite is an error, see
-/// `storage::open`). Another exe already running → the error `ALREADY_OPEN`.
-/// `utc_offset_minutes` comes from the webview so backup names use local time.
+/// Startup: locks the data folder and returns the database file; an empty body means a first
+/// start (a file that is missing with backups left, empty or not SQLite is an error, see
+/// `storage::open`). Another exe already running → the error `ALREADY_OPEN`. The app backs the
+/// file up with `db_backup` once it opened it.
 #[tauri::command(async)]
-fn db_open(utc_offset_minutes: i64) -> Result<Response, String> {
-    let stamp = local_stamp(utc_offset_minutes)?;
-    let bytes = storage::open(&data_dir()?, &stamp, &DATA_LOCK).map_err(|e| e.to_string())?;
+fn db_open() -> Result<Response, String> {
+    let bytes = storage::open(&data_dir()?, &DATA_LOCK).map_err(|e| e.to_string())?;
     Ok(Response::new(bytes.unwrap_or_default()))
 }
 
-/// Backs the saved file up before the simulated data is reloaded; returns the backup file name.
+/// Backs the saved file up (at startup once the app opened it, and before the data is replaced);
+/// returns the backup file name. `utc_offset_minutes` comes from the webview so backup names use
+/// local time.
 #[tauri::command(async)]
 fn db_backup(utc_offset_minutes: i64) -> Result<String, String> {
     let stamp = local_stamp(utc_offset_minutes)?;
-    storage::backup(&data_dir()?, &stamp).map_err(|e| e.to_string())
+    storage::backup(&data_dir()?, &stamp, &DATA_LOCK).map_err(|e| e.to_string())
 }
 
 /// `YYYYMMDD-HHMMSS` in local time for backup names.
@@ -59,7 +61,7 @@ fn local_stamp(utc_offset_minutes: i64) -> Result<String, String> {
 /// Replaces the database file with the request body (atomic).
 #[tauri::command(async)]
 fn db_save(request: Request<'_>) -> Result<(), String> {
-    storage::save(&data_dir()?, raw_body(&request)?).map_err(|e| e.to_string())
+    storage::save(&data_dir()?, raw_body(&request)?, &DATA_LOCK).map_err(|e| e.to_string())
 }
 
 /// Writes the request body into `exports\` (Settings → Data `.p2cbackup`, Báo cáo `.xlsx`) without

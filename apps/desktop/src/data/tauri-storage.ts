@@ -19,7 +19,7 @@ export function tauriStorage(
   const local = () => ({ utcOffsetMinutes: -timezoneOffset() });
   return {
     async load() {
-      const reply = (await invoke('db_open', local())) as ArrayBuffer;
+      const reply = (await invoke('db_open')) as ArrayBuffer;
       // Rust answers empty only on a first start (no file and no backups); an empty file fails.
       return reply.byteLength === 0 ? undefined : new Uint8Array(reply);
     },

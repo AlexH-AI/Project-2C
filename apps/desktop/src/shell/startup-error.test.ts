@@ -17,6 +17,12 @@ describe('startupMessage', () => {
     });
   });
 
+  it('warns that the newest backup may be the failing file itself (DR-51)', () => {
+    const { help } = startupMessage('database disk image is malformed');
+    expect(help).toContain('Bản mới nhất có thể chính là file đang lỗi');
+    expect(help).toContain('chép bản liền trước nó');
+  });
+
   it('keeps the open-failed message and the detail for any other error', () => {
     expect(startupMessage('Access is denied. (os error 5)')).toEqual({
       title: 'Không mở được file dữ liệu',

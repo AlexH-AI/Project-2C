@@ -45,6 +45,13 @@ describe('t', () => {
   });
 });
 
+describe('the save warning', () => {
+  // DR-52: a SQLite tool holding the file is the usual reason a save fails.
+  it('names a program holding the file as the likely cause', () => {
+    expect(t('storage.saveFailed')).toContain('file có thể đang mở trong chương trình khác');
+  });
+});
+
 describe('joinParts', () => {
   it('joins with a dot, or an arrow', () => {
     expect(joinParts(['Nữ', '1991'])).toBe('Nữ · 1991');

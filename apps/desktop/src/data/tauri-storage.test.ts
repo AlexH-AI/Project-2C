@@ -2,13 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { tauriStorage } from './tauri-storage';
 
 describe('tauriStorage', () => {
-  it('loads the file bytes with the local UTC offset for backup names', async () => {
+  it('loads the file bytes; the app backs them up afterwards with db_backup', async () => {
     const invoke = vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3]).buffer);
     const storage = tauriStorage(invoke, () => -420);
 
     expect(await storage.load()).toEqual(new Uint8Array([1, 2, 3]));
-    // getTimezoneOffset is minutes behind UTC; Vietnam (UTC+7) reports -420.
-    expect(invoke).toHaveBeenCalledWith('db_open', { utcOffsetMinutes: 420 });
+    expect(invoke).toHaveBeenCalledWith('db_open');
   });
 
   it('treats an empty reply as no file yet', async () => {
@@ -30,6 +29,7 @@ describe('tauriStorage', () => {
     const invoke = vi.fn().mockResolvedValue('project2c-20260927-101500.db');
 
     expect(await tauriStorage(invoke, () => -420).backup()).toBe('project2c-20260927-101500.db');
+    // getTimezoneOffset is minutes behind UTC; Vietnam (UTC+7) reports -420.
     expect(invoke).toHaveBeenCalledWith('db_backup', { utcOffsetMinutes: 420 });
   });
 

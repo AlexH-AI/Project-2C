@@ -29,7 +29,10 @@ export interface StoragePort {
   /** The saved file, or `undefined` on first start. */
   load(): Promise<Uint8Array | undefined>;
   save(bytes: Uint8Array): Promise<void>;
-  /** Copies the saved file into `backups\`; returns the backup's file name. */
+  /**
+   * Copies the saved file into `backups\`; returns the backup's file name. Called at startup once
+   * the stored file opened, and before the data is replaced.
+   */
   backup(): Promise<string>;
   /**
    * Writes a `.p2cbackup` or `.xlsx` file into `exports\` (never over an earlier one); returns its
@@ -186,8 +189,13 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     : clock;
   let lastSave: LastSave | undefined;
   const lastSaveListeners = new Set<() => void>();
+  // The stored file is backed up only once it opened (a file damaged inside never becomes the
+  // newest backup, DR-51); saves wait for that copy, so the migration's save never lands first,
+  // and nothing is saved when the copy fails (the app then does not start).
+  let backedUp = Promise.resolve();
   const saves = createPersistQueue(async (bytes) => {
     if (!storage) return;
+    await backedUp;
     await storage.save(bytes);
     lastSave = { at: clock(), size: bytes.byteLength };
     for (const listener of lastSaveListeners) listener();
@@ -243,7 +251,16 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   const openNew = async (): Promise<Database> => openFrom(await demoData());
 
   const stored = await storage?.load();
-  let db = stored ? await open(stored) : await openNew();
+  let db: Database;
+  if (stored && storage) {
+    let release!: () => void;
+    backedUp = new Promise<void>((resolve) => (release = resolve));
+    db = await open(stored);
+    await storage.backup();
+    release();
+  } else {
+    db = await openNew();
+  }
   const listeners = new Set<() => void>();
   let revision = 0;
   const changed = () => {
