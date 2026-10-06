@@ -194,8 +194,9 @@ function meetingRule(appointments: Map<unknown, Row>, transitions: Row[]): Rule 
 /**
  * Rule 5: a live customer, appointment or policy belongs to a live RE (who may stop being one, or
  * be deleted, only once their records are deleted); the RE never coordinates their own
- * appointment, and only a reviewer role (`REVIEWER_ROLES`) reviews a live meeting (D9); an
- * appointment is rescheduled from one of the same customer (D3).
+ * appointment, and only a supporting role (`REVIEWER_ROLES`) coordinates a live appointment
+ * (ADR-0007) or reviews a live meeting (D9); an appointment is rescheduled from one of the same
+ * customer (D3).
  */
 function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>): Rule | null {
   const notRe = read(
@@ -206,11 +207,13 @@ function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>
       )
       .join(' UNION ALL '),
   );
-  // A reviewer may have become an RE once their appointment was deleted.
+  // A coordinator or reviewer may have become an RE once their appointment was deleted.
+  const supporting = `(${REVIEWER_ROLES.map((role) => `'${role}'`).join(', ')})`;
   const misplaced = read(
     [
       'SELECT 1 FROM appointment_coordinators c JOIN appointments a ON a.id = c.appointment_id WHERE c.person_id = a.re_id',
-      `SELECT 1 FROM appointments a JOIN people p ON p.id = a.outcome_reviewer_id WHERE a.deleted_at IS NULL AND p.role NOT IN (${REVIEWER_ROLES.map((role) => `'${role}'`).join(', ')})`,
+      `SELECT 1 FROM appointment_coordinators c JOIN appointments a ON a.id = c.appointment_id JOIN people p ON p.id = c.person_id WHERE a.deleted_at IS NULL AND p.role NOT IN ${supporting}`,
+      `SELECT 1 FROM appointments a JOIN people p ON p.id = a.outcome_reviewer_id WHERE a.deleted_at IS NULL AND p.role NOT IN ${supporting}`,
     ].join(' UNION ALL '),
   );
   const rescheduled = [...appointments.values()].every((a) => {

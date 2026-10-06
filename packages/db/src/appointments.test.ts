@@ -82,6 +82,28 @@ describe('scheduleAppointment', () => {
     expect(listAppointments(db)).toEqual([appointment]);
   });
 
+  it('takes as coordinator an IS, TL, BDM or BD, never an RE (ADR-0007)', async () => {
+    const { db, re, otherRe, tl, customer } = await withCustomer();
+    const support = (['IS', 'BDM', 'BD'] as const).map(
+      (role) => createPerson(db, { name: role, role, teamId: null }).id,
+    );
+    const base = {
+      customerId: customer.id,
+      reId: re.id,
+      date: d(10, 1),
+      triggerType: 'OTHER' as const,
+    };
+
+    const coordinated = scheduleAppointment(db, { ...base, coordinatorIds: [tl.id, ...support] });
+    expect(coordinated.coordinatorIds).toEqual([tl.id, ...support].sort());
+    for (const coordinatorIds of [[re.id], [tl.id, otherRe.id]]) {
+      expect(codeOf(() => scheduleAppointment(db, { ...base, coordinatorIds }))).toBe(
+        'INVALID_COORDINATOR',
+      );
+    }
+    expect(listAppointments(db)).toEqual([coordinated]);
+  });
+
   it('refuses a bad time, a coordinator who is the RE or unknown, and a missing customer', async () => {
     const { db, re, tl, customer } = await withCustomer();
     const base = {
@@ -125,6 +147,7 @@ describe('listAppointments', () => {
       listAppointments(db);
       return prepare.mock.calls.length;
     };
+    const is = createPerson(db, { name: 'Tâm', role: 'IS', teamId: null });
     const plain = schedule(10);
     const one = queries();
     const both = scheduleAppointment(db, {
@@ -132,7 +155,7 @@ describe('listAppointments', () => {
       reId: re.id,
       date: d(11, 1),
       triggerType: 'EVENT',
-      coordinatorIds: [tl.id, otherRe.id],
+      coordinatorIds: [tl.id, is.id],
     });
     const theirs = scheduleAppointment(db, {
       customerId: other.id,
@@ -144,7 +167,7 @@ describe('listAppointments', () => {
 
     expect(queries()).toBe(one);
     expect(listAppointments(db)).toEqual([plain, both, theirs]);
-    expect(both.coordinatorIds).toEqual([tl.id, otherRe.id].sort());
+    expect(both.coordinatorIds).toEqual([tl.id, is.id].sort());
     expect(listAppointments(db, other.id)).toEqual([theirs]);
   });
 });
@@ -524,7 +547,8 @@ describe('recordOutcomeWithNext', () => {
 // Mockup 6f: the trigger, coordinators and meeting day are edited with the outcome.
 describe('updateAppointmentDetails', () => {
   it('changes the trigger, time and coordinators', async () => {
-    const { db, tl, otherRe, schedule } = await withCustomer();
+    const { db, tl, schedule } = await withCustomer();
+    const bd = createPerson(db, { name: 'Khoa', role: 'BD', teamId: null });
     const { id } = schedule(10, [tl.id]);
     recordMeetingOutcome(db, id, { status: 'CANCELLED' });
 
@@ -532,37 +556,39 @@ describe('updateAppointmentDetails', () => {
       time: '15:30',
       triggerType: 'OCCASION',
       triggerNote: ' Sinh nhật ',
-      coordinatorIds: [otherRe.id, otherRe.id],
+      coordinatorIds: [bd.id, bd.id],
     });
 
     expect(edited).toMatchObject({
       time: '15:30',
       triggerType: 'OCCASION',
       triggerNote: 'Sinh nhật',
-      coordinatorIds: [otherRe.id],
+      coordinatorIds: [bd.id],
     });
     expect(getAppointment(db, id)).toEqual(edited);
     expect(updateAppointmentDetails(db, id, { triggerNote: null, time: null })).toMatchObject({
       time: null,
       triggerType: 'OCCASION',
       triggerNote: null,
-      coordinatorIds: [otherRe.id],
+      coordinatorIds: [bd.id],
     });
   });
 
-  it('adds no coordinator who is deleted, unknown or the RE, and changes nothing then', async () => {
+  it('adds no coordinator who is deleted, unknown or an RE, and changes nothing then', async () => {
     const { db, re, tl, otherRe, schedule } = await withCustomer();
+    const is = createPerson(db, { name: 'Tâm', role: 'IS', teamId: null });
     const { id } = schedule(10, [tl.id]);
     recordMeetingOutcome(db, id, MET_N2);
     const deleted = schedule(11).id;
     softDeleteAppointment(db, deleted);
-    softDeletePerson(db, otherRe.id);
+    softDeletePerson(db, is.id);
 
     const refused = (coordinatorIds: string[]) =>
       codeOf(() => updateAppointmentDetails(db, id, { triggerType: 'OTHER', coordinatorIds }));
-    expect(refused([otherRe.id])).toBe('PERSON_NOT_FOUND');
+    expect(refused([is.id])).toBe('PERSON_NOT_FOUND');
     expect(refused(['x'])).toBe('PERSON_NOT_FOUND');
     expect(refused([re.id])).toBe('INVALID_COORDINATOR');
+    expect(refused([otherRe.id])).toBe('INVALID_COORDINATOR');
     expect(codeOf(() => updateAppointmentDetails(db, id, { time: '7h' }))).toBe('INVALID_TIME');
     expect(codeOf(() => updateAppointmentDetails(db, id, { triggerType: 'X' as never }))).toBe(
       'INVALID_TRIGGER',
@@ -575,15 +601,11 @@ describe('updateAppointmentDetails', () => {
   });
 
   it('edits only an appointment with an outcome: a scheduled or rescheduled one stays as it is', async () => {
-    const { db, tl, otherRe, schedule } = await withCustomer();
+    const { db, tl, schedule } = await withCustomer();
     const scheduled = schedule(10, [tl.id]);
     const old = schedule(12);
     rescheduleAppointment(db, old.id, { date: d(15, 10) });
-    const changes = {
-      date: d(5, 1),
-      triggerType: 'EVENT',
-      coordinatorIds: [otherRe.id],
-    } as const;
+    const changes = { date: d(5, 1), triggerType: 'EVENT', coordinatorIds: [] } as const;
 
     expect(codeOf(() => updateAppointmentDetails(db, scheduled.id, changes))).toBe(
       'INVALID_STATUS',
@@ -958,6 +980,29 @@ describe('deleting appointments', () => {
 
     expect(codeOf(() => restoreAppointment(db, coordinated))).toBe('PERSON_NOT_FOUND');
     expect(codeOf(() => restoreAppointment(db, owned))).toBe('RE_REQUIRED');
+    expect(listAppointments(db)).toEqual([]);
+  });
+
+  it('keeps a coordinator of a live appointment from becoming an RE (ADR-0007)', async () => {
+    const { db, team, tl, schedule } = await withCustomer();
+    const is = createPerson(db, { name: 'Tâm', role: 'IS', teamId: null });
+    schedule(10, [tl.id, is.id]);
+
+    expect(codeOf(() => updatePerson(db, tl.id, { role: 'RE' }))).toBe('COORDINATOR_IN_USE');
+    expect(codeOf(() => updatePerson(db, is.id, { role: 'RE', teamId: team.id }))).toBe(
+      'COORDINATOR_IN_USE',
+    );
+    expect(updatePerson(db, is.id, { role: 'BDM' }).role).toBe('BDM');
+    expect(updatePerson(db, tl.id, { name: 'Hà Lê' }).role).toBe('TL');
+  });
+
+  it('restores no appointment whose coordinator became an RE while it was deleted', async () => {
+    const { db, tl, schedule } = await withCustomer();
+    const { id } = schedule(10, [tl.id]);
+    softDeleteAppointment(db, id);
+    updatePerson(db, tl.id, { role: 'RE' });
+
+    expect(codeOf(() => restoreAppointment(db, id))).toBe('INVALID_COORDINATOR');
     expect(listAppointments(db)).toEqual([]);
   });
 

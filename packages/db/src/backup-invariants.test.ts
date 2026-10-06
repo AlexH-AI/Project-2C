@@ -133,6 +133,7 @@ async function history() {
       met: met.id,
       tl: tl.id,
       re: re.id,
+      otherRe: otherRe.id,
     },
   };
 }
@@ -182,6 +183,13 @@ describe('importBackup — rules across tables', () => {
       'a deleted appointment reviewed by someone who has since become an RE',
       (b, ids) =>
         (row(b, 'appointments', (a) => a.customer_id === ids.hoa).outcome_reviewer_id = ids.re),
+    ],
+    [
+      'a deleted appointment coordinated by someone who has since become an RE',
+      (b, ids) => {
+        const deleted = row(b, 'appointments', (a) => a.customer_id === ids.hoa);
+        b.tables.appointment_coordinators!.push({ appointment_id: deleted.id, person_id: ids.re });
+      },
     ],
     [
       'a deleted TL next to the live TL of the team',
@@ -326,6 +334,10 @@ describe('importBackup — rules across tables', () => {
     [
       '5: the RE of an appointment also coordinating it',
       (b, ids) => (b.tables.appointment_coordinators![0]!.person_id = ids.re),
+    ],
+    [
+      '5: a live appointment coordinated by another RE (ADR-0007)',
+      (b, ids) => (b.tables.appointment_coordinators![0]!.person_id = ids.otherRe),
     ],
     [
       '5: an appointment rescheduled from one that was not rescheduled',
