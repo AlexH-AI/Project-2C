@@ -525,6 +525,28 @@ describe('backup files', () => {
     expect(teamNames(app.db())).toEqual(['Seed 27/09/2026']);
   });
 
+  it("checks a backup's dates against the app's pinned day, as the commands do (DR-86)", async () => {
+    // Created on 30/09, after the pinned day but before the machine's.
+    const source = await openAppData({
+      today: () => calendarDate(2026, 9, 30),
+      seed: (db, anchorDate) => {
+        const team = createTeam(db, { name: 'Sao Mai' });
+        const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+        createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: anchorDate });
+      },
+    });
+    const text = (await source.exportBackup()).text;
+    const app = await openAppData({
+      today: () => TODAY,
+      clock: () => new Date(2026, 9, 6, 9, 0),
+      seed: fakeSeed,
+    });
+
+    const error = await app.readBackup(text).catch((e: unknown) => e);
+
+    expect(error).toMatchObject({ code: 'BACKUP_INVALID', params: { rule: 10 } });
+  });
+
   it.each([
     ['a date that does not exist', '"date":"2026-09-27"', '"date":"2026-02-30"'],
     ['a stage its transitions never reached', '"stage":"N3"', '"stage":"N1"'],

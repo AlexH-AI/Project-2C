@@ -324,7 +324,8 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     },
     exportFile: (name, bytes) => storage?.writeExport(name, bytes) ?? Promise.resolve(undefined),
     async readBackup(text) {
-      const imported = await importBackup(text, { locateFile });
+      // The app's day, as the commands check theirs (DR-86).
+      const imported = await importBackup(text, { locateFile, now });
       try {
         return {
           exportedAt: imported.exportedAt,

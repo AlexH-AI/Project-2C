@@ -307,6 +307,7 @@ describe('importBackup', () => {
     ['people', 'name', ' An'],
     ['customers', 'name', ''],
     ['kyc_notes', 'text', 'Hai con '],
+    ['kyc_notes', 'text', ''],
     ['kyc_notes', 'text', 'Hà Nội'.normalize('NFD')],
     ['teams', 'created_at', 'x'],
     ['customers', 'deleted_at', '2026-09-30'],
