@@ -15,7 +15,7 @@ import {
 } from '@p2c/domain';
 import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
-import { today, toIsoDate } from './common';
+import { isFee, today, toIsoDate } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { normalizeKycValue, profileFactValue, type ProfileFields } from './kyc';
@@ -47,10 +47,12 @@ function validValue(column: string, value: SqlValue): boolean {
   if (column === 'time') return typeof value === 'string' && TIME.test(value);
   if (TIMESTAMPS.has(column)) return timestamp.safeParse(value).success;
   if (column === 'seq') return typeof value === 'number' && value >= 1;
-  // An amount, as `requireAmount` takes it; the FYP columns have the same rule as a CHECK.
-  if (column === 'expected_case_size') return typeof value === 'number' && value > 0;
+  // A fee, as `requireAmount` takes it (DR-23).
+  if (FEES.has(column)) return isFee(value);
   return true;
 }
+
+const FEES = new Set(['expected_case_size', 'submitted_fyp', 'issued_fyp']);
 
 /** `YYYY-MM-DD` of a day that exists, as `calendarDate` reads it. */
 function validDate(value: SqlValue): boolean {

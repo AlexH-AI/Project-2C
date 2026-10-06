@@ -8,6 +8,20 @@ import { groupThousands } from './number';
 
 export type Vnd = number;
 
+/**
+ * The largest fee — FYP nộp, FYP phát hành, case size dự kiến — the commands and a backup accept:
+ * 100 tỷ đồng (Owner, 06/10/2026, DR-23). Totals of up to ~90 000 such fees stay exact. A sum
+ * insured, should one be recorded, is not a fee and has no such cap.
+ */
+export const MAX_FEE_VND: Vnd = 100_000_000_000;
+
+/** `total + amount`, or a `RangeError` when the sum is past a safe integer and so not exact. */
+export function addVnd(total: Vnd, amount: Vnd): Vnd {
+  const sum = total + amount;
+  if (!Number.isSafeInteger(sum)) throw new RangeError(`Total past a safe integer: ${sum}`);
+  return sum;
+}
+
 export type VndParseError = 'empty' | 'negative' | 'format' | 'fraction' | 'too-large';
 
 export type VndParseResult =
@@ -29,36 +43,74 @@ const UNIT_EXPONENTS: Readonly<Record<string, number>> = {
   k: 3,
 };
 
+/*
+ * Matched after every run of spaces became one space, so each optional space is a single
+ * character and the pattern never backtracks over a long run of them (DR-38).
+ */
 const AMOUNT_PATTERN =
-  /^([\d.,]+)\s*(tỷ|tỉ|ty|ti|triệu|trieu|tr|nghìn|nghin|ngàn|ngan|k)?\s*(?:₫|đồng|dong|đ|vnd)?$/;
+  /^([\d.,]+(?: \d+)*)(?: ?(tỷ|tỉ|ty|ti|triệu|trieu|tr|nghìn|nghin|ngàn|ngan|k)(?: ?(\d+))?)? ?(?:₫|đồng|dong|đ|vnđ|vnd)?$/;
+
+/** Thousands grouped by spaces: `500 000 000`, `1 500`. */
+const SPACE_GROUPED = /^[1-9]\d{0,2}(?: \d{3})+$/;
 
 /**
  * Reads an amount the way an RE types it: `500tr`, `1,2 tỷ`, `750k`, `500.000.000`, `500,000`,
- * `500000000 ₫`. `.` and `,` follow the same rule (see `splitNumber`), so `500,000` is 500 000
- * đồng and `1,500 tỷ` is 1 500 tỷ; `1,5 tỷ` is 1,5 tỷ. Anything below 1 đồng is an error, never
- * rounded away.
+ * `500 000 000`, `500000000 ₫`, `500.000 VNĐ`. `.` and `,` follow the same rule (see
+ * `splitNumber`), so `500,000` is 500 000 đồng and `1,500 tỷ` is 1 500 tỷ; `1,5 tỷ` is 1,5 tỷ.
+ * Digits after the unit are said as the next group of three below it (see `spokenTail`): `1tr5` is
+ * 1 triệu 500 nghìn, `1tr50` is 1 triệu 50 nghìn, `1 tỷ 2` is 1 tỷ 200 triệu. One unit per amount.
+ * Anything below 1 đồng is an error, never rounded away.
  */
 export function parseVnd(text: string): VndParseResult {
-  const trimmed = text.normalize('NFC').trim().toLowerCase();
-  if (trimmed === '') return { ok: false, error: 'empty' };
-  if (trimmed.startsWith('-') || trimmed.startsWith('−')) {
-    const magnitude = parseVnd(trimmed.slice(1));
-    return magnitude.ok ? { ok: false, error: 'negative' } : magnitude;
-  }
+  let body = text.normalize('NFC').trim().toLowerCase();
+  if (body === '') return { ok: false, error: 'empty' };
+  // The sign is read once (DR-32): `--500` is malformed, not a negative of a negative.
+  const negative = body.startsWith('-') || body.startsWith('−');
+  if (negative) body = body.slice(1).trimStart();
+  const magnitude = parseMagnitude(body.replace(/\s+/g, ' '));
+  return negative && magnitude.ok ? { ok: false, error: 'negative' } : magnitude;
+}
 
-  const match = AMOUNT_PATTERN.exec(trimmed);
+function parseMagnitude(text: string): VndParseResult {
+  const match = AMOUNT_PATTERN.exec(text);
   if (!match) return { ok: false, error: 'format' };
-  const number = splitNumber(match[1] as string);
+  const written = match[1] as string;
+  const number = written.includes(' ')
+    ? SPACE_GROUPED.test(written)
+      ? { integer: written.replaceAll(' ', ''), fraction: '' }
+      : null
+    : splitNumber(written);
   if (!number) return { ok: false, error: 'format' };
 
   const exponent = match[2] === undefined ? 0 : (UNIT_EXPONENTS[match[2]] as number);
+  const tail = match[3];
+  if (tail !== undefined) {
+    const group = spokenTail(tail);
+    if (group === null || number.fraction !== '') return { ok: false, error: 'format' };
+    return wholeAmount(number.integer + group + '0'.repeat(exponent - 3));
+  }
+
   const scale = exponent - number.fraction.length;
   let digits = number.integer + number.fraction;
   if (scale < 0) {
     if (!/^0*$/.test(digits.slice(scale))) return { ok: false, error: 'fraction' };
     digits = digits.slice(0, scale);
   }
-  const amount = Number(digits + '0'.repeat(Math.max(scale, 0)));
+  return wholeAmount(digits + '0'.repeat(Math.max(scale, 0)));
+}
+
+/**
+ * The three digits of the group below the unit, as the digits after it are said: one digit is
+ * hundreds (`1tr5` → 500 nghìn), two are tens (`1tr50` → 050), three are the whole group. Null
+ * past three digits.
+ */
+function spokenTail(tail: string): string | null {
+  if (tail.length > 3) return null;
+  return tail.length === 1 ? `${tail}00` : tail.padStart(3, '0');
+}
+
+function wholeAmount(digits: string): VndParseResult {
+  const amount = Number(digits);
   if (!Number.isSafeInteger(amount)) return { ok: false, error: 'too-large' };
   return { ok: true, amount };
 }

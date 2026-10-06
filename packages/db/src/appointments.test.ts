@@ -1,4 +1,4 @@
-import { calendarDate, stageOn, type CalendarDate } from '@p2c/domain';
+import { calendarDate, MAX_FEE_VND, stageOn, type CalendarDate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import {
   editMeetingOutcome,
@@ -207,6 +207,22 @@ describe('recordMeetingOutcome', () => {
     expect(
       recordMeetingOutcome(db, id, { status: 'CANCELLED', nextStep: 'Hẹn lại' }),
     ).toMatchObject({ status: 'CANCELLED', stageAfter: null, nextStep: 'Hẹn lại' });
+  });
+
+  // DR-23: a case size dự kiến is a fee, at most 100 tỷ đồng.
+  it('takes a case size up to the cap and refuses one past it', async () => {
+    const { db, schedule } = await withCustomer();
+    const { id } = schedule();
+    const sized = (expectedCaseSize: number) => ({ ...MET_N2, expectedCaseSize });
+
+    for (const size of [MAX_FEE_VND + 1, Number.MAX_SAFE_INTEGER]) {
+      expect(codeOf(() => recordMeetingOutcome(db, id, sized(size)))).toBe('AMOUNT_TOO_LARGE');
+    }
+    expect(getAppointment(db, id)?.status).toBe('SCHEDULED');
+    expect(recordMeetingOutcome(db, id, sized(MAX_FEE_VND)).expectedCaseSize).toBe(100_000_000_000);
+    expect(codeOf(() => editMeetingOutcome(db, id, sized(MAX_FEE_VND + 1), {}))).toBe(
+      'AMOUNT_TOO_LARGE',
+    );
   });
 
   it('re-records an outcome by withdrawing its transition while it is the latest (D7)', async () => {

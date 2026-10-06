@@ -1,10 +1,12 @@
 /**
  * Stats engine (ADR-0007, golden examples approved at G2 in T-028). Every metric is computed for
  * one period and one scope from the raw records; nothing is accumulated across periods.
- * FYP amounts are integer đồng (see `model.ts`), so sums stay exact.
+ * FYP amounts are integer đồng (see `model.ts`), so sums stay exact; `addVnd` refuses a sum past a
+ * safe integer rather than round it (DR-23).
  */
 import { isRfTransition } from './customer-lifecycle';
 import type { Appointment, Person, Policy, Scope, StageTransition } from './model';
+import { addVnd, type Vnd } from './money';
 import { daysBetween, formatDate, isInPeriod } from './period';
 import type { CalendarDate, Period } from './period';
 
@@ -85,7 +87,7 @@ export function inScope(people: readonly Person[], reId: string, scope: Scope): 
   return scopeMatcher(people, scope)(reId);
 }
 
-const sum = (values: readonly number[]) => values.reduce((total, value) => total + value, 0);
+const sum = (values: readonly Vnd[]) => values.reduce(addVnd, 0);
 
 export function policyMetrics(
   data: { readonly people: readonly Person[]; readonly policies: readonly Policy[] },
@@ -191,12 +193,12 @@ export function periodMetricsByMark(
     const submitted = parts[markOf(policy.submittedDate)];
     if (submitted) {
       submitted.submittedCount += 1;
-      submitted.caseSize += policy.submittedFyp;
+      submitted.caseSize = addVnd(submitted.caseSize, policy.submittedFyp);
     }
     const issued = policy.issuedDate && parts[markOf(policy.issuedDate)];
     if (issued) {
       issued.issuedCount += 1;
-      issued.revenue += policy.issuedFyp ?? policy.submittedFyp;
+      issued.revenue = addVnd(issued.revenue, policy.issuedFyp ?? policy.submittedFyp);
     }
   }
   for (const appointment of data.appointments) {

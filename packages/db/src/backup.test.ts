@@ -1,4 +1,4 @@
-import { calendarDate } from '@p2c/domain';
+import { calendarDate, MAX_FEE_VND } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import { recordMeetingOutcome, scheduleAppointment } from './appointments';
 import { BACKUP_FORMAT, exportBackup, importBackup, MAX_BACKUP_BYTES } from './backup';
@@ -308,7 +308,7 @@ describe('importBackup', () => {
     ['appointments', 'expected_case_size', -1],
     ['appointments', 'expected_case_size', 0],
     ['appointments', 'expected_case_size', 1.5],
-    // FYP is refused by the schema's CHECK, not by the value checks.
+    // FYP is refused by the value checks and by the schema's CHECK.
     ['policies', 'submitted_fyp', 0],
     ['policies', 'submitted_fyp', -1],
   ];
@@ -364,6 +364,25 @@ describe('importBackup', () => {
       await expect(importBackup(JSON.stringify(backup))).resolves.toBeDefined();
     },
   );
+
+  // DR-23: the commands' cap holds for a backup too, so no file brings a total past a safe integer.
+  const feeRows: [string, string, (fee: number) => Record<string, unknown>][] = [
+    ['an expected case size', 'appointments', (fee) => ({ expected_case_size: fee })],
+    ['a submitted FYP', 'policies', (fee) => ({ submitted_fyp: fee })],
+    ['an issued FYP', 'policies', (fee) => ({ issued_date: '2026-09-01', issued_fyp: fee })],
+  ];
+
+  it.each(feeRows)('accepts %s at the cap and refuses one past it', async (_, table, change) => {
+    const backup = await smallBackup();
+    const row = backup.tables[table]![0]!;
+
+    for (const fee of [MAX_FEE_VND + 1, Number.MAX_SAFE_INTEGER]) {
+      backup.tables[table]![0] = { ...row, ...change(fee) };
+      expect(await codeOfImport(JSON.stringify(backup))).toBe('BACKUP_INVALID');
+    }
+    backup.tables[table]![0] = { ...row, ...change(100_000_000_000) };
+    await expect(importBackup(JSON.stringify(backup))).resolves.toBeDefined();
+  });
 
   it('keeps an expected case size, or none, through export and import', async () => {
     const { db, re } = await setup();
