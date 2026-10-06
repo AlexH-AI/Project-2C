@@ -40,6 +40,27 @@ async function seeded(seed: number, anchorDate = ANCHOR) {
   return { db, persist };
 }
 
+/** Every day the data records, by table — what must not move with the machine's time zone. */
+function recordedDays(db: Database): unknown[] {
+  return db.sqlite
+    .exec(
+      `SELECT 'note', created_date FROM kyc_notes UNION ALL SELECT 'version', date FROM kyc_versions
+       UNION ALL SELECT 'stage', date FROM stage_transitions UNION ALL SELECT 'meeting', date FROM appointments
+       ORDER BY 1, 2`,
+    )[0]!
+    .values.map((row) => row.join(' '));
+}
+
+/** Runs `fn` with the process in `zone`; Vitest gives each test file a process of its own. */
+async function inTimeZone<T>(zone: string, fn: () => Promise<T>): Promise<T> {
+  vi.stubEnv('TZ', zone);
+  try {
+    return await fn();
+  } finally {
+    vi.unstubAllEnvs();
+  }
+}
+
 describe('seedDemoData', () => {
   it(
     'writes the same data for the same anchor day and seed, and other data for another seed',
@@ -49,6 +70,9 @@ describe('seedDemoData', () => {
       const other = await seeded(2);
       expect(await contentHash(second.db)).toBe(await contentHash(first.db));
       expect(await contentHash(other.db)).not.toBe(await contentHash(first.db));
+      // DR-15: at UTC+14 noon UTC is already the next day, yet a profile change keeps its day.
+      const east = await inTimeZone('Pacific/Kiritimati', () => seeded(1));
+      expect(recordedDays(east.db)).toEqual(recordedDays(first.db));
     },
     SLOW,
   );

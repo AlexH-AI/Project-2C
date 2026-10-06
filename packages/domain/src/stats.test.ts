@@ -209,6 +209,18 @@ describe('periodMetricsByMark', () => {
       RangeError,
     );
   });
+
+  // DR-41: `customPeriod` refuses a range ending before it starts, so the mark is built by hand.
+  it('refuses a mark that ends before it starts', () => {
+    const jan = periodOf('month', d(1, 1, 2027));
+    const backwards: Period = {
+      ...customPeriod(d(10, 2, 2027), d(20, 2, 2027)),
+      end: d(5, 2, 2027),
+    };
+    expect(() => periodMetricsByMark(data, [jan, backwards], { kind: 'all' })).toThrow(
+      /out of order or overlaps/,
+    );
+  });
 });
 
 // DR-23: each fee is at most `MAX_FEE_VND`, so a real total stays exact; a total past a safe
