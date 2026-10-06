@@ -51,6 +51,15 @@ describe('calendarDate', () => {
     expect(formatDate(d(29, 2, 2028))).toBe('29/02/2028');
   });
 
+  // DR-33: a century year is a leap year only when it divides by 400.
+  it('takes 29/02/2000 but not 29/02 of 1900 or 2100', () => {
+    expect(formatDate(d(29, 2, 2000))).toBe('29/02/2000');
+    expect(() => calendarDate(1900, 2, 29)).toThrow(RangeError);
+    expect(() => calendarDate(2100, 2, 29)).toThrow(RangeError);
+    expect(formatDate(addDays(d(28, 2, 2100), 1))).toBe('01/03/2100');
+    expect(parseDate('29/02/2100')).toBeNull();
+  });
+
   it('formats the day and month alone as dd/mm', () => {
     expect(formatDayMonth(d(2, 10, 2026))).toBe('02/10');
   });
@@ -224,6 +233,11 @@ describe('custom range cap', () => {
     ['30/11/2026', '28/02/2027'],
     ['01/12/2027', '29/02/2028'],
     ['15/11/2100', '31/12/2100'],
+    // DR-36: the start day is the last day of the third month, so that day itself is not allowed.
+    ['28/11/2026', '27/02/2027'],
+    ['30/01/2027', '29/04/2027'],
+    ['31/12/2026', '30/03/2027'],
+    ['29/11/2027', '28/02/2028'],
   ];
 
   it.each(cases)('from %s the last day allowed is %s', (from, maxEnd) => {

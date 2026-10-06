@@ -170,6 +170,25 @@ describe('listAppointments', () => {
     expect(both.coordinatorIds).toEqual([tl.id, is.id].sort());
     expect(listAppointments(db, other.id)).toEqual([theirs]);
   });
+
+  // DR-45: the customer's list puts the latest first by reversing this order.
+  it('orders the appointments of one day by time, those without a time first', async () => {
+    const { db, re, customer } = await withCustomer();
+    const at = (time: string | null) =>
+      scheduleAppointment(db, {
+        customerId: customer.id,
+        reId: re.id,
+        date: d(10, 1),
+        time,
+        triggerType: 'REFERRAL',
+        coordinatorIds: [],
+      }).id;
+    const afternoon = at('15:00');
+    const morning = at('09:00');
+    const untimed = at(null);
+
+    expect(listAppointments(db).map((a) => a.id)).toEqual([untimed, morning, afternoon]);
+  });
 });
 
 describe('recordMeetingOutcome', () => {
@@ -994,6 +1013,16 @@ describe('deleting appointments', () => {
     );
     expect(updatePerson(db, is.id, { role: 'BDM' }).role).toBe('BDM');
     expect(updatePerson(db, tl.id, { name: 'Hà Lê' }).role).toBe('TL');
+  });
+
+  it('keeps a coordinator of a live appointment from deletion', async () => {
+    const { db, tl, schedule } = await withCustomer();
+    const { id } = schedule(10, [tl.id]);
+
+    expect(codeOf(() => softDeletePerson(db, tl.id))).toBe('PERSON_IN_USE');
+    softDeleteAppointment(db, id);
+    softDeletePerson(db, tl.id);
+    expect(codeOf(() => restoreAppointment(db, id))).toBe('PERSON_NOT_FOUND');
   });
 
   it('restores no appointment whose coordinator became an RE while it was deleted', async () => {

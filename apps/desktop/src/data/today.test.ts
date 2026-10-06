@@ -41,7 +41,8 @@ describe('watchToday', () => {
     expect(listener).toHaveBeenCalledTimes(1);
     expect(watcher.current()).toEqual(calendarDate(2026, 11, 1));
 
-    vi.advanceTimersByTime(24 * 60 * 60_000);
+    // To the next local midnight, not 24 h on: 01/11/2026 has 25 h where DST ends that day (DR-15).
+    vi.advanceTimersByTime(new Date(2026, 10, 2).getTime() - Date.now() + 60_000);
     expect(listener).toHaveBeenCalledTimes(2);
     expect(watcher.current()).toEqual(calendarDate(2026, 11, 2));
   });

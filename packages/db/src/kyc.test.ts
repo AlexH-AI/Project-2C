@@ -471,6 +471,23 @@ describe('KYC versions', () => {
     ]);
     expect(codeOf(() => markKycVersionMaterial(database, 'missing'))).toBe('KYC_VERSION_NOT_FOUND');
   });
+
+  it('switches no version of a deleted customer', async () => {
+    const { db: database, customer, note, persist } = await withCustomer();
+    const input = { noteId: note.id, date: d(3, 9, 2026) };
+    confirmKycFact(database, customer.id, { ...input, field: 'occupation', value: 'Bác sĩ' });
+    const { version } = confirmKycFact(database, customer.id, {
+      ...input,
+      field: 'residence',
+      value: 'Huế',
+    });
+    softDeleteCustomer(database, customer.id);
+    persist.mockClear();
+
+    expect(version?.material).toBe(false);
+    expect(codeOf(() => markKycVersionMaterial(database, version!.id))).toBe('CUSTOMER_NOT_FOUND');
+    expect(persist).not.toHaveBeenCalled();
+  });
 });
 
 describe('a note with its facts, recorded at once (mockup 7a)', () => {

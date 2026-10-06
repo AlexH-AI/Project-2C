@@ -2,7 +2,8 @@
  * Simulated data (spec §7, D8): 3 teams of 1 TL + 10 RE with a shared IS, BD and BDM; 12 months of
  * customers, appointments and policies up to the anchor day, and 2-4 weeks of appointments after
  * it. Everything goes through the commands (spec §4), day by day, in one transaction with seeded
- * sources — the same anchor day and seed give the same data on any machine.
+ * sources — the same anchor day and seed give the same data on any machine from UTC−12 to UTC+11,
+ * and the same days in any time zone (`middayOf`).
  */
 import {
   calendarDate,
@@ -111,9 +112,8 @@ export function seedDemoData(db: Database, options: SeedOptions): void {
   let today = anchor - HISTORY_DAYS;
   let tick = 0;
   const sources = {
-    // Timestamps stop at the anchor day: what lies after it is only scheduled. Noon UTC keeps the
-    // local day of a profile change (D2) on the simulated day in any time zone of UTC±11.
-    now: () => new Date((Math.min(today, anchor) + 0.5) * DAY_MS + tick++),
+    // Timestamps stop at the anchor day: what lies after it is only scheduled.
+    now: () => new Date(middayOf(Math.min(today, anchor)) + tick++),
     random: rng.fill,
   };
   db.withSources(sources, () =>
@@ -418,6 +418,17 @@ function profile(rng: Rng): { birthDate: BirthDate | null; gender: Gender | null
 
 function dayNumber(date: CalendarDate): number {
   return Date.UTC(date.year, date.month - 1, date.day) / DAY_MS;
+}
+
+/**
+ * When the commands of a simulated day run, so that its local day — the day of a profile change
+ * (D2) — is that day. Noon UTC, the same instant on every machine from UTC−12 to UTC+11 (DR-15);
+ * further east, local noon.
+ */
+function middayOf(day: number): number {
+  const noon = new Date((day + 0.5) * DAY_MS);
+  if (noon.getDate() === noon.getUTCDate()) return noon.getTime();
+  return new Date(noon.getUTCFullYear(), noon.getUTCMonth(), noon.getUTCDate(), 12).getTime();
 }
 
 function toDate(day: number): CalendarDate {
