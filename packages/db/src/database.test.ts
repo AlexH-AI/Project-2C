@@ -370,6 +370,96 @@ describe('migrating a saved database', () => {
     expect(() => setReviewer('a3', 'tl')).toThrow(/CHECK/);
     expect(() => setReviewer('a1', 'nobody')).toThrow(/FOREIGN KEY/);
   });
+
+  /** A database at the latest version where a team is referenced by a person, who has a customer. */
+  async function savedWithReferences() {
+    const db = await openDatabase();
+    db.sqlite.exec(`
+      INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x');
+      INSERT INTO people (id, name, role, team_id, created_at, updated_at)
+        VALUES ('re', 'An', 'RE', 't', 'x', 'x');
+      INSERT INTO customers (id, code, name, re_id, stage, created_at, updated_at)
+        VALUES ('c', 'K-0001', 'Lan', 're', 'N2', 'x', 'x');
+    `);
+    return db.export();
+  }
+
+  /** How drizzle-kit adds a CHECK: copy into a new table, drop the old one, rename the new one. */
+  const rebuildTeams = {
+    id: LATEST_SCHEMA_VERSION + 1,
+    tag: 'rebuild_teams',
+    sql: `
+      PRAGMA foreign_keys=OFF;--> statement-breakpoint
+      CREATE TABLE \`__new_teams\` (
+        \`id\` text PRIMARY KEY NOT NULL,
+        \`name\` text NOT NULL,
+        \`created_at\` text NOT NULL,
+        \`updated_at\` text NOT NULL,
+        \`deleted_at\` text,
+        CONSTRAINT "teams_name_filled" CHECK(length("__new_teams"."name") > 0)
+      );
+      --> statement-breakpoint
+      INSERT INTO \`__new_teams\`("id", "name", "created_at", "updated_at", "deleted_at")
+        SELECT "id", "name", "created_at", "updated_at", "deleted_at" FROM \`teams\`;--> statement-breakpoint
+      DROP TABLE \`teams\`;--> statement-breakpoint
+      ALTER TABLE \`__new_teams\` RENAME TO \`teams\`;--> statement-breakpoint
+      PRAGMA foreign_keys=ON;--> statement-breakpoint
+      CREATE UNIQUE INDEX \`teams_active_name\` ON \`teams\` (\`name\`) WHERE "teams"."deleted_at" IS NULL;
+    `,
+  };
+
+  it('rebuilds a referenced table on a database with data, keeping every row and reference', async () => {
+    const saved = await openDatabase({ bytes: await savedWithReferences() });
+    const before = ['teams', 'people', 'customers'].map((table) => rowsOf(saved.sqlite, table));
+    const persist = vi.fn();
+
+    const db = await openDatabase({
+      bytes: saved.export(),
+      migrations: [...MIGRATIONS, rebuildTeams],
+      persist,
+    });
+
+    expect(db.schemaVersion()).toBe(rebuildTeams.id);
+    expect(persist).toHaveBeenCalledTimes(1);
+    expect(['teams', 'people', 'customers'].map((table) => rowsOf(db.sqlite, table))).toEqual(
+      before,
+    );
+    expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
+    expect(() =>
+      db.sqlite.run(
+        "INSERT INTO teams (id, name, created_at, updated_at) VALUES ('e', '', 'x', 'x')",
+      ),
+    ).toThrow(/CHECK/);
+    // Foreign keys are enforced again once the migrations are done.
+    expect(() =>
+      db.sqlite.run(
+        "INSERT INTO people (id, name, role, team_id, created_at, updated_at) VALUES ('p', 'Hà', 'TL', 'nowhere', 'x', 'x')",
+      ),
+    ).toThrow(/FOREIGN KEY/);
+  });
+
+  it('rejects a migration that leaves references pointing nowhere, saving nothing', async () => {
+    const bytes = await savedWithReferences();
+    const dropTeam = {
+      id: LATEST_SCHEMA_VERSION + 1,
+      tag: 'drop_team',
+      sql: "DELETE FROM teams WHERE id = 't';",
+    };
+    const persist = vi.fn();
+
+    const error = await openDatabase({
+      bytes,
+      migrations: [...MIGRATIONS, dropTeam],
+      persist,
+    }).catch((e: unknown) => e);
+
+    expect(error).toMatchObject({
+      message: expect.stringMatching(/migration 6 .*people → teams/i) as unknown,
+    });
+    expect(persist).not.toHaveBeenCalled();
+    const reopened = await openDatabase({ bytes });
+    expect(rowsOf(reopened.sqlite, 'teams')).toHaveLength(1);
+  });
 });
 
 describe('transaction', () => {
@@ -403,6 +493,36 @@ describe('transaction', () => {
 
     expect(persist).not.toHaveBeenCalled();
     expect(db.sqlite.exec('SELECT key FROM settings')).toEqual([]);
+  });
+
+  it('rolls back and does not persist when COMMIT fails, so the next transaction can start', async () => {
+    const persist = vi.fn();
+    const db = await openDatabase({ persist });
+    persist.mockClear();
+    const insertPerson = (id: string, team: string) =>
+      db.sqlite.run(
+        "INSERT INTO people (id, name, role, team_id, created_at, updated_at) VALUES (?, 'An', 'TL', ?, 'x', 'x')",
+        [id, team],
+      );
+
+    // Deferred foreign keys are only checked at COMMIT.
+    expect(() =>
+      db.transaction(() => {
+        db.sqlite.run('PRAGMA defer_foreign_keys = ON');
+        insertPerson('lost', 'nowhere');
+      }),
+    ).toThrow(/FOREIGN KEY/);
+
+    expect(persist).not.toHaveBeenCalled();
+    expect(db.sqlite.exec('SELECT id FROM people')).toEqual([]);
+    db.transaction(() => {
+      db.sqlite.run(
+        "INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x')",
+      );
+      insertPerson('kept', 't');
+    });
+    expect(db.sqlite.exec('SELECT id FROM people')[0]?.values).toEqual([['kept']]);
+    expect(persist).toHaveBeenCalledTimes(1);
   });
 
   it('undoes only a failed nested transaction and persists once, after the outer one', async () => {
