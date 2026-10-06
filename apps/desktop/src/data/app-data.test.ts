@@ -224,6 +224,93 @@ describe('openAppData', () => {
   });
 });
 
+describe('tables', () => {
+  /** Every SQL text the database runs from now on. */
+  function watchQueries(db: Database): string[] {
+    const queries: string[] = [];
+    const exec = db.sqlite.exec.bind(db.sqlite);
+    const prepare = db.sqlite.prepare.bind(db.sqlite);
+    vi.spyOn(db.sqlite, 'exec').mockImplementation((sql, params) => {
+      queries.push(sql);
+      return exec(sql, params);
+    });
+    vi.spyOn(db.sqlite, 'prepare').mockImplementation((sql, params) => {
+      queries.push(sql);
+      return prepare(sql, params);
+    });
+    return queries;
+  }
+
+  async function withCustomer() {
+    const app = await openAppData({ today: () => TODAY, seed: fakeSeed });
+    app.run((db) => {
+      const team = createTeam(db, { name: 'Sao Mai' });
+      const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+      const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N4', date: TODAY });
+      scheduleAppointment(db, {
+        customerId: lan.id,
+        reId: re.id,
+        date: TODAY,
+        triggerType: 'OTHER',
+      });
+    });
+    return app;
+  }
+
+  it('reads each table once per revision and shares it with every screen', async () => {
+    const app = await withCustomer();
+    const first = app.tables();
+    const { appointments, customers, people, teams, policies, transitions } = first;
+    expect(appointments.map((a) => a.date)).toEqual([TODAY]);
+    expect(customers.map((c) => c.name)).toEqual(['Lan']);
+    expect(people.map((p) => p.name)).toEqual(['An']);
+    expect(teams.map((t) => t.name)).toEqual(['Sao Mai', 'Seed 27/09/2026']);
+    expect(policies).toEqual([]);
+    expect(transitions.map((t) => t.to)).toEqual(['N4']);
+
+    const queries = watchQueries(app.db());
+    const again = app.tables();
+    expect(again).toBe(first);
+    expect(again.appointments).toBe(appointments);
+    expect(again.transitions).toBe(transitions);
+    expect(again.people).toBe(people);
+    expect(queries).toEqual([]);
+  });
+
+  it('reads a table only when a screen asks for it', async () => {
+    const app = await withCustomer();
+    const queries = watchQueries(app.db());
+
+    expect(app.tables().people.map((p) => p.name)).toEqual(['An']);
+    expect(
+      queries.some((sql) => /appointments|customers|policies|stage_transitions/.test(sql)),
+    ).toBe(false);
+  });
+
+  it('reads again after a change, and from the new database after a reload', async () => {
+    const app = await withCustomer();
+    const before = app.tables();
+    expect(before.teams).toHaveLength(2);
+
+    app.run((db) => createTeam(db, { name: 'Bình Minh' }));
+    const after = app.tables();
+    expect(after).not.toBe(before);
+    expect(after.teams.map((t) => t.name)).toEqual(['Bình Minh', 'Sao Mai', 'Seed 27/09/2026']);
+
+    await app.reloadDemoData();
+    expect(app.tables().teams.map((t) => t.name)).toEqual(['Seed 27/09/2026']);
+    expect(app.tables().customers).toEqual([]);
+  });
+
+  it('keeps the tables when a command is rejected: nothing changed', async () => {
+    const app = await withCustomer();
+    const before = app.tables();
+
+    expect(() => app.run((db) => createTeam(db, { name: 'Sao Mai' }))).toThrow('TEAM_NAME_TAKEN');
+    expect(app.tables()).toBe(before);
+  });
+});
+
 describe('reloadDemoData', () => {
   it('saves pending changes, backs the file up, then swaps in new simulated data anchored today', async () => {
     const { storage, saves, events } = memoryStorage();

@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { listPeople, listTeams, type Database } from '@p2c/db';
-import { useQuery } from '../data/AppDataContext';
+import { useTables } from '../data/AppDataContext';
 import { t } from '../i18n';
 import { Screen } from '../routes/Screen';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -12,12 +11,10 @@ import { ScopePicker } from './ScopePicker';
 import { Sidebar } from './Sidebar';
 import { useRoute } from './useRoute';
 
-const readScopeOptions = (db: Database) => ({ teams: listTeams(db), people: listPeople(db) });
-
 /** Sidebar + topbar + current screen (ADR-0013 layout). */
 export function AppShell() {
   const route = useRoute();
-  const { teams, people } = useQuery(readScopeOptions);
+  const { teams, people } = useTables();
   const [choice, setChoice] = useState<ScopeChoice>({ kind: 'all' });
   const picked = useMemo(() => resolveScope(choice, teams, people), [choice, teams, people]);
   const scope = useMemo(

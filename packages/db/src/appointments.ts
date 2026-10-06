@@ -21,6 +21,7 @@ import {
   optionalText,
   requireAmount,
   requireRe,
+  selectRows,
   stampDeleted,
   today,
   toIsoDate,
@@ -92,21 +93,38 @@ const OUTCOME_STATUSES: readonly string[] = ['MET', 'CANCELLED', 'NO_SHOW'];
 
 /** Live appointments of live customers (of one customer when given), by date and time. */
 export function listAppointments(db: Database, customerId?: string): AppointmentRecord[] {
-  const rows = db.orm
-    .select({ a: appointments })
-    .from(appointments)
-    .innerJoin(customers, eq(customers.id, appointments.customerId))
-    .where(
-      and(
-        isNull(appointments.deletedAt),
-        isNull(customers.deletedAt),
-        customerId === undefined ? undefined : eq(appointments.customerId, customerId),
-      ),
-    )
-    .orderBy(asc(appointments.date), asc(appointments.time), asc(appointments.id))
-    .all();
+  const one = customerId === undefined ? '' : 'AND a.customer_id = ?';
+  const rows = selectRows(
+    db,
+    `SELECT a.id, a.customer_id, a.re_id, a.date, a.time, a.status, a.trigger_type,
+       a.trigger_note, a.stage_after, a.expected_case_size, a.next_step, a.note,
+       a.rescheduled_from_id, a.outcome_reviewer_id
+     FROM appointments a JOIN customers c ON c.id = a.customer_id
+     WHERE a.deleted_at IS NULL AND c.deleted_at IS NULL ${one}
+     ORDER BY a.date, a.time, a.id`,
+    customerId === undefined ? [] : [customerId],
+  );
   const coordinators = coordinatorsByAppointment(db, customerId);
-  return rows.map(({ a }) => toAppointment(db, a, coordinators.get(a.id) ?? []));
+  return rows.map((row) => {
+    const id = row[0] as string;
+    return {
+      id,
+      customerId: row[1] as string,
+      reId: row[2] as string,
+      coordinatorIds: coordinators.get(id) ?? [],
+      date: fromIsoDate(row[3] as string),
+      time: row[4] as string | null,
+      status: row[5] as AppointmentRow['status'],
+      triggerType: row[6] as AppointmentTrigger,
+      triggerNote: row[7] as string | null,
+      stageAfter: row[8] as CustomerStage | null,
+      expectedCaseSize: row[9] as Vnd | null,
+      nextStep: row[10] as string | null,
+      note: row[11] as string,
+      rescheduledFromId: row[12] as string | null,
+      outcomeReviewerId: row[13] as string | null,
+    };
+  });
 }
 
 export function getAppointment(db: Database, id: string): AppointmentRecord | undefined {
@@ -478,18 +496,17 @@ function coordinatorsOf(db: Database, appointmentId: string): string[] {
 
 /** `coordinatorsOf` for every appointment (of one customer when given), in a single query. */
 function coordinatorsByAppointment(db: Database, customerId?: string): Map<string, string[]> {
-  const rows = db.orm
-    .select({
-      appointmentId: appointmentCoordinators.appointmentId,
-      personId: appointmentCoordinators.personId,
-    })
-    .from(appointmentCoordinators)
-    .innerJoin(appointments, eq(appointments.id, appointmentCoordinators.appointmentId))
-    .where(customerId === undefined ? undefined : eq(appointments.customerId, customerId))
-    .orderBy(asc(appointmentCoordinators.personId))
-    .all();
+  const rows = selectRows(
+    db,
+    customerId === undefined
+      ? 'SELECT appointment_id, person_id FROM appointment_coordinators ORDER BY person_id'
+      : `SELECT ac.appointment_id, ac.person_id FROM appointment_coordinators ac
+         JOIN appointments a ON a.id = ac.appointment_id
+         WHERE a.customer_id = ? ORDER BY ac.person_id`,
+    customerId === undefined ? [] : [customerId],
+  ) as [string, string][];
   const byAppointment = new Map<string, string[]>();
-  for (const { appointmentId, personId } of rows) {
+  for (const [appointmentId, personId] of rows) {
     const ids = byAppointment.get(appointmentId);
     if (ids) ids.push(personId);
     else byAppointment.set(appointmentId, [personId]);

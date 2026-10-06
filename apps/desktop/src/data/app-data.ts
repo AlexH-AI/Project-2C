@@ -4,16 +4,13 @@
  * (first start of the exe, every start of web mode) gets the simulated data (spec §7).
  */
 import {
+  countRecords,
   exportBackup,
   importBackup,
-  listAppointments,
-  listCustomers,
-  listPeople,
-  listPolicies,
-  listTeams,
   openDatabase,
   seedDemoData,
   type Database,
+  type RecordCounts,
 } from '@p2c/db';
 import {
   addDays,
@@ -23,6 +20,9 @@ import {
   type CalendarDate,
 } from '@p2c/domain';
 import { createPersistQueue, type PersistQueue } from './persist-queue';
+import { readTables, type Tables } from './tables';
+
+export { countRecords, type RecordCounts };
 
 /** Where the database file lives. */
 export interface StoragePort {
@@ -56,15 +56,6 @@ export interface LastSave {
   readonly size: number;
 }
 
-/** Live records per kind, as the screens count them (soft-deleted ones left out). */
-export interface RecordCounts {
-  readonly teams: number;
-  readonly people: number;
-  readonly customers: number;
-  readonly appointments: number;
-  readonly policies: number;
-}
-
 export interface ExportedBackup {
   /** `project2c-YYYYMMDD-HHMM.p2cbackup`, local time. */
   readonly name: string;
@@ -94,6 +85,11 @@ export interface AppData {
   subscribe(listener: () => void): () => void;
   /** Grows with every change; screens re-read the database when it does. */
   revision(): number;
+  /**
+   * The tables of the current revision, shared by every screen: each is read when first asked for
+   * and kept until the data changes, so moving between screens reads nothing again.
+   */
+  tables(): Tables;
   /**
    * Runs a command of `@p2c/db` and, when it succeeds, tells the screens to re-read. Screens write
    * only through this; a rejected command changed nothing and rethrows its `DbError`.
@@ -276,8 +272,10 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   }
   const listeners = new Set<() => void>();
   let revision = 0;
+  let tables: Tables | undefined;
   const changed = () => {
     revision++;
+    tables = undefined;
     for (const listener of listeners) listener();
   };
 
@@ -305,6 +303,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
       return () => listeners.delete(listener);
     },
     revision: () => revision,
+    tables: () => (tables ??= readTables(db)),
     run(command) {
       const result = command(db);
       changed();
@@ -345,16 +344,5 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     },
     latestBackup: () => storage?.latestBackup() ?? Promise.resolve(undefined),
     openFolder: (kind) => storage?.openFolder(kind) ?? Promise.resolve(),
-  };
-}
-
-/** The live records per kind of db. */
-export function countRecords(db: Database): RecordCounts {
-  return {
-    teams: listTeams(db).length,
-    people: listPeople(db).length,
-    customers: listCustomers(db).length,
-    appointments: listAppointments(db).length,
-    policies: listPolicies(db).length,
   };
 }

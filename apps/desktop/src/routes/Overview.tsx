@@ -1,15 +1,6 @@
 import { useMemo } from 'react';
-import {
-  listAppointments,
-  listCustomers,
-  listPeople,
-  listPolicies,
-  listStageTransitions,
-  listTeams,
-  type Database,
-} from '@p2c/db';
 import { appointmentCounts } from '@p2c/domain';
-import { useQuery, useToday } from '../data/AppDataContext';
+import { useTables, useToday } from '../data/AppDataContext';
 import { t } from '../i18n';
 import { useScopeState } from '../shell/ScopeContext';
 import { FilterBar, useAppliedFilter } from './FilterBar';
@@ -20,15 +11,6 @@ import { kpiTiles, metricsScope, viewingText } from './overview/overview-view';
 import { stageBlock } from './overview/stage-view';
 import { teamCompare } from './overview/team-compare-view';
 
-const readOverview = (db: Database) => ({
-  appointments: listAppointments(db),
-  customers: listCustomers(db),
-  people: listPeople(db),
-  teams: listTeams(db),
-  policies: listPolicies(db),
-  transitions: listStageTransitions(db),
-});
-
 /**
  * Tổng quan (spec Phase 4 §4.3, mockup overview.html 1a–1e): the Lọc bar, appointments, KPI,
  * customers by stage and So sánh team.
@@ -36,7 +18,7 @@ const readOverview = (db: Database) => ({
 export function Overview() {
   const today = useToday();
   const { picked } = useScopeState();
-  const data = useQuery(readOverview);
+  const data = useTables();
   const filter = useAppliedFilter(today, picked);
   const { applied } = filter;
 

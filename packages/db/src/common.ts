@@ -9,6 +9,7 @@ import {
 } from '@p2c/domain';
 import { and, eq, getTableColumns, isNull, sql } from 'drizzle-orm';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
+import type { SqlValue } from 'sql.js';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { customers, people } from './schema';
@@ -105,6 +106,14 @@ export function requireRe(db: Database, id: string): string {
   if (!row) throw new DbError('PERSON_NOT_FOUND');
   if (row.role !== 'RE') throw new DbError('RE_REQUIRED');
   return id;
+}
+
+/**
+ * The rows of a SELECT as sql.js returns them, one array of column values each. For the big reads
+ * the screens share (T-151): drizzle maps every row into a nested object first, a third of the time.
+ */
+export function selectRows(db: Database, query: string, params: SqlValue[] = []): SqlValue[][] {
+  return db.sqlite.exec(query, params)[0]?.values ?? [];
 }
 
 const queries = new WeakMap<Database, Map<(db: Database) => unknown, unknown>>();
