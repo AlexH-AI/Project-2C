@@ -161,6 +161,15 @@ const UNSAVED_CHANGES = 'RELOAD_UNSAVED_CHANGES';
 export const isUnsavedChangesError = (error: unknown): boolean =>
   error instanceof Error && error.message === UNSAVED_CHANGES;
 
+const STARTUP_BACKUP_FAILED = 'STARTUP_BACKUP_FAILED';
+
+/**
+ * The refusal to start when the stored file opened but could not be backed up (disk full,
+ * `backups\` read-only): the file itself is fine. The storage's error is the `cause`.
+ */
+export const isStartupBackupError = (error: unknown): error is Error =>
+  error instanceof Error && error.message === STARTUP_BACKUP_FAILED;
+
 /** The same seed on every machine: the same day gives the same data (spec §7). */
 const DEMO_SEED = 1;
 
@@ -256,7 +265,11 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     let release!: () => void;
     backedUp = new Promise<void>((resolve) => (release = resolve));
     db = await open(stored);
-    await storage.backup();
+    try {
+      await storage.backup();
+    } catch (cause) {
+      throw new Error(STARTUP_BACKUP_FAILED, { cause });
+    }
     release();
   } else {
     db = await openNew();

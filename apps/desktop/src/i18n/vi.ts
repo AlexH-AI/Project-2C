@@ -570,6 +570,9 @@ export const vi = {
   'storage.openFailed': 'Không mở được file dữ liệu',
   'storage.openFailedHelp':
     'App chưa ghi gì vào file. Các bản sao lưu tự động nằm trong thư mục Project2C-data\\backups: chép bản mới nhất thành Project2C-data\\project2c.db để khôi phục. Bản mới nhất có thể chính là file đang lỗi: khi đó chép bản liền trước nó, rồi tới các bản cũ hơn.',
+  'storage.backupFailed': 'Không sao lưu được file dữ liệu',
+  'storage.backupFailedHelp':
+    'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở: hãy kiểm tra ổ đĩa còn chỗ trống và thư mục đó không chỉ đọc hay bị chương trình khác giữ, rồi mở lại app.',
   'storage.technicalDetail': 'Chi tiết kỹ thuật:',
   'storage.alreadyOpen': 'Project-2C đang mở ở một cửa sổ khác',
   'storage.alreadyOpenHelp':

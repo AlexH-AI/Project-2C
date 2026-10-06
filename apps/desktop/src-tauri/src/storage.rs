@@ -11,6 +11,8 @@ use std::sync::{Mutex, MutexGuard};
 pub const DATA_DIR: &str = "Project2C-data";
 /// Error message when another process holds the data folder; the app matches it exactly.
 pub const ALREADY_OPEN: &str = "ALREADY_OPEN";
+/// Error message of a save from a page that a webview reload replaced.
+pub const STALE_PAGE: &str = "STALE_PAGE";
 const DB_FILE: &str = "project2c.db";
 const LOCK_FILE: &str = "project2c.lock";
 const BACKUP_DIR: &str = "backups";
@@ -30,16 +32,28 @@ const SQLITE_HEADER: &[u8] = b"SQLite format 3\0";
 /// releases it when the app closes or crashes, so the file is never removed. [`open`], [`save`]
 /// and [`backup`] each hold the lock while they run: after a webview reload, the new page's
 /// `open` waits for a save the old page started, and two saves or backups never share a `.tmp`.
-pub struct DataLock(Mutex<Option<fs::File>>);
+/// A save of the old page that arrives after the new page's `open` is refused (see [`save`]).
+pub struct DataLock(Mutex<Held>);
+
+/// What [`DataLock`] guards.
+struct Held {
+    /// `project2c.lock`, from the first [`open`] on.
+    file: Option<fs::File>,
+    /// The page (webview load) of the last [`open`]: the only one whose saves are written.
+    page: Option<String>,
+}
 
 impl DataLock {
     pub const fn new() -> Self {
-        Self(Mutex::new(None))
+        Self(Mutex::new(Held {
+            file: None,
+            page: None,
+        }))
     }
 
     /// Waits for the file command running in this process, then holds off the others until the
     /// guard drops.
-    fn hold(&self) -> MutexGuard<'_, Option<fs::File>> {
+    fn hold(&self) -> MutexGuard<'_, Held> {
         self.0
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -74,11 +88,11 @@ fn open_lock_file(path: &Path) -> io::Result<fs::File> {
 /// error, never a first start: the app would otherwise write a new database over it. Nothing is
 /// backed up here: the app calls [`backup`] once it opened the file, before saving anything, so a
 /// file damaged inside never becomes the newest backup (DR-51).
-pub fn open(dir: &Path, lock: &DataLock) -> io::Result<Option<Vec<u8>>> {
+pub fn open(dir: &Path, page: &str, lock: &DataLock) -> io::Result<Option<Vec<u8>>> {
     let mut held = lock.hold();
     fs::create_dir_all(dir)?;
-    if held.is_none() {
-        *held = Some(open_lock_file(&dir.join(LOCK_FILE))?);
+    if held.file.is_none() {
+        held.file = Some(open_lock_file(&dir.join(LOCK_FILE))?);
         // What a crash left, cleaned by the first open of the process only: a reload's open must
         // keep an export still running, and never finds a save of the old page half done (it
         // waited for the lock). Cleaned before anything below can fail, since a retry holds the
@@ -87,6 +101,7 @@ pub fn open(dir: &Path, lock: &DataLock) -> io::Result<Option<Vec<u8>>> {
         // A crash between writing and renaming; the database file itself is whole.
         remove_if_exists(&dir.join(tmp_name(DB_FILE)))?;
     }
+    held.page = Some(page.to_owned());
     let backups = dir.join(BACKUP_DIR);
     let bytes = match fs::read(dir.join(DB_FILE)) {
         Ok(bytes) => bytes,
@@ -131,9 +146,14 @@ fn copy_to_backups(backups: &Path, bytes: &[u8], stamp: &str) -> io::Result<Stri
     Ok(name)
 }
 
-/// Replaces the database file atomically.
-pub fn save(dir: &Path, bytes: &[u8], lock: &DataLock) -> io::Result<()> {
-    let _held = lock.hold();
+/// Replaces the database file atomically. A save from another page than the last [`open`]'s (one
+/// still on its way from before a webview reload) is refused with [`STALE_PAGE`]: the new page
+/// read the file without it, and its next save would write over it unseen.
+pub fn save(dir: &Path, bytes: &[u8], page: &str, lock: &DataLock) -> io::Result<()> {
+    let held = lock.hold();
+    if held.page.as_deref().is_some_and(|opened| opened != page) {
+        return Err(io::Error::other(STALE_PAGE));
+    }
     write_atomic(dir, DB_FILE, bytes)
 }
 
@@ -454,16 +474,19 @@ mod tests {
 
     /// `open` as one process start: a fresh lock, released when the call returns.
     fn open(dir: &Path) -> io::Result<Option<Vec<u8>>> {
-        super::open(dir, &DataLock::new())
+        super::open(dir, PAGE, &DataLock::new())
     }
 
     fn save(dir: &Path, bytes: &[u8]) -> io::Result<()> {
-        super::save(dir, bytes, &DataLock::new())
+        super::save(dir, bytes, PAGE, &DataLock::new())
     }
 
     fn backup(dir: &Path, stamp: &str) -> io::Result<String> {
         super::backup(dir, stamp, &DataLock::new())
     }
+
+    /// The page (webview load) the tests open and save from.
+    const PAGE: &str = "page-1";
 
     /// Long enough for a command that is not held off to finish on any disk.
     const HELD_OFF: std::time::Duration = std::time::Duration::from_millis(200);
@@ -472,13 +495,13 @@ mod tests {
     fn each_file_command_waits_while_another_one_runs() {
         let dir = temp_dir();
         let lock = DataLock::new();
-        super::save(&dir, &db("before"), &lock).unwrap();
+        super::save(&dir, &db("before"), PAGE, &lock).unwrap();
         let commands: [(&str, &(dyn Fn() -> io::Result<()> + Sync)); 3] = [
-            ("save", &|| super::save(&dir, &db("after"), &lock)),
+            ("save", &|| super::save(&dir, &db("after"), PAGE, &lock)),
             ("backup", &|| {
                 super::backup(&dir, "20261006-080000", &lock).map(drop)
             }),
-            ("open", &|| super::open(&dir, &lock).map(drop)),
+            ("open", &|| super::open(&dir, PAGE, &lock).map(drop)),
         ];
         for (name, command) in commands {
             std::thread::scope(|scope| {
@@ -505,7 +528,7 @@ mod tests {
                     scope.spawn(move || {
                         let bytes = vec![b'a' + n as u8; 1 << 20];
                         barrier.wait();
-                        super::save(dir, &bytes, lock).unwrap();
+                        super::save(dir, &bytes, PAGE, lock).unwrap();
                     });
                 }
             });
@@ -978,9 +1001,9 @@ mod tests {
         let dir = temp_dir();
         let lock = DataLock::new();
         save(&dir, &db("data")).unwrap();
-        assert_eq!(super::open(&dir, &lock).unwrap(), Some(db("data")));
+        assert_eq!(super::open(&dir, PAGE, &lock).unwrap(), Some(db("data")));
         // Same process again (a webview reload): still opens.
-        assert_eq!(super::open(&dir, &lock).unwrap(), Some(db("data")));
+        assert_eq!(super::open(&dir, PAGE, &lock).unwrap(), Some(db("data")));
         // A second process is refused while the first one runs.
         assert_eq!(open(&dir).unwrap_err().to_string(), ALREADY_OPEN);
         drop(lock);
@@ -1034,14 +1057,37 @@ mod tests {
     }
 
     #[test]
+    fn a_save_from_the_page_before_a_reload_is_refused_once_the_new_page_opened() {
+        // A save still on its way from the old page must not land over the file the new page
+        // read and shows: the new page's next save would write over it unseen.
+        let dir = temp_dir();
+        let lock = DataLock::new();
+        super::save(&dir, &db("first"), "old", &lock).unwrap();
+        super::open(&dir, "old", &lock).unwrap();
+        super::save(&dir, &db("old page"), "old", &lock).unwrap();
+
+        assert_eq!(
+            super::open(&dir, "new", &lock).unwrap(),
+            Some(db("old page"))
+        );
+        let error = super::save(&dir, &db("late"), "old", &lock).unwrap_err();
+        assert_eq!(error.to_string(), STALE_PAGE);
+        assert_eq!(fs::read(dir.join(DB_FILE)).unwrap(), db("old page"));
+        assert_eq!(names(&dir), vec![DB_FILE, LOCK_FILE]);
+
+        super::save(&dir, &db("new page"), "new", &lock).unwrap();
+        assert_eq!(fs::read(dir.join(DB_FILE)).unwrap(), db("new page"));
+    }
+
+    #[test]
     fn open_again_in_the_same_process_leaves_the_db_tmp_alone() {
         // Only the first open of a process cleans up after a crash (DR-01).
         let dir = temp_dir();
         let lock = DataLock::new();
-        super::save(&dir, &db("data"), &lock).unwrap();
-        super::open(&dir, &lock).unwrap();
+        super::save(&dir, &db("data"), PAGE, &lock).unwrap();
+        super::open(&dir, PAGE, &lock).unwrap();
         fs::write(dir.join("project2c.db.tmp"), b"being written").unwrap();
-        assert_eq!(super::open(&dir, &lock).unwrap(), Some(db("data")));
+        assert_eq!(super::open(&dir, PAGE, &lock).unwrap(), Some(db("data")));
         assert_eq!(
             fs::read(dir.join("project2c.db.tmp")).unwrap(),
             b"being written"
@@ -1198,12 +1244,12 @@ mod tests {
         fs::create_dir_all(&exports).unwrap();
         fs::write(exports.join("a.p2cbackup.claim"), b"").unwrap();
         fs::write(exports.join("a.p2cbackup.tmp"), b"half").unwrap();
-        super::open(&dir, &lock).unwrap();
+        super::open(&dir, PAGE, &lock).unwrap();
         assert_eq!(names(&exports), Vec::<String>::new());
 
         fs::write(exports.join("b.p2cbackup.claim"), b"").unwrap();
         fs::write(exports.join("b.p2cbackup.tmp"), b"half").unwrap();
-        super::open(&dir, &lock).unwrap();
+        super::open(&dir, PAGE, &lock).unwrap();
         assert_eq!(
             names(&exports),
             vec!["b.p2cbackup.claim", "b.p2cbackup.tmp"]
@@ -1222,13 +1268,13 @@ mod tests {
         fs::write(exports.join("a.p2cbackup.claim"), b"").unwrap();
         fs::write(exports.join("a.p2cbackup.tmp"), b"half").unwrap();
 
-        assert!(super::open(&dir, &lock).is_err());
+        assert!(super::open(&dir, PAGE, &lock).is_err());
         assert_eq!(names(&exports), Vec::<String>::new());
 
         // The retry opens under the lock already held and leaves a running export alone.
         fs::remove_dir(dir.join("project2c.db.tmp")).unwrap();
         fs::write(exports.join("b.p2cbackup.claim"), b"").unwrap();
-        super::open(&dir, &lock).unwrap();
+        super::open(&dir, PAGE, &lock).unwrap();
         assert_eq!(names(&exports), vec!["b.p2cbackup.claim"]);
     }
 

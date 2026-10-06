@@ -2,12 +2,22 @@ import { describe, expect, it, vi } from 'vitest';
 import { tauriStorage } from './tauri-storage';
 
 describe('tauriStorage', () => {
-  it('loads the file bytes; the app backs them up afterwards with db_backup', async () => {
+  it('loads the file bytes for this page; the app backs them up afterwards with db_backup', async () => {
     const invoke = vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3]).buffer);
-    const storage = tauriStorage(invoke, () => -420);
+    const storage = tauriStorage(invoke, () => -420, 'page-1');
 
     expect(await storage.load()).toEqual(new Uint8Array([1, 2, 3]));
-    expect(invoke).toHaveBeenCalledWith('db_open');
+    expect(invoke).toHaveBeenCalledWith('db_open', { page: 'page-1' });
+  });
+
+  it('names each load of the page apart, so Rust refuses saves from before a reload', async () => {
+    const invoke = vi.fn().mockResolvedValue(new ArrayBuffer(0));
+    await tauriStorage(invoke).load();
+    await tauriStorage(invoke).load();
+
+    const [first, second] = invoke.mock.calls.map(([, args]) => (args as { page: string }).page);
+    expect(first).toEqual(expect.any(String));
+    expect(first).not.toBe(second);
   });
 
   it('treats an empty reply as no file yet', async () => {
@@ -16,13 +26,13 @@ describe('tauriStorage', () => {
     expect(await tauriStorage(invoke, () => 0).load()).toBeUndefined();
   });
 
-  it('saves by sending the raw bytes', async () => {
+  it('saves by sending the raw bytes, the page in a header', async () => {
     const invoke = vi.fn().mockResolvedValue(null);
     const bytes = new Uint8Array([4, 5]);
 
-    await tauriStorage(invoke, () => 0).save(bytes);
+    await tauriStorage(invoke, () => 0, 'page-1').save(bytes);
 
-    expect(invoke).toHaveBeenCalledWith('db_save', bytes);
+    expect(invoke).toHaveBeenCalledWith('db_save', bytes, { headers: { 'x-p2c-page': 'page-1' } });
   });
 
   it('backs the saved file up under a local-time name and returns that name', async () => {

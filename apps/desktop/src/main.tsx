@@ -8,7 +8,7 @@ import { App } from './App';
 import { openAppData } from './data/app-data';
 import { tauriStorage } from './data/tauri-storage';
 import { t } from './i18n';
-import { blockReloadKeys } from './shell/reload-keys';
+import { blockReload } from './shell/block-reload';
 import { StartupError } from './shell/StartupError';
 import './index.css';
 
@@ -22,7 +22,7 @@ const pinnedDay = parseDate(String(import.meta.env.VITE_DEMO_ANCHOR ?? ''));
 
 render(<p className="px-6 py-8 text-sm text-fg-2">{t('startup.loading')}</p>);
 
-if (isTauri()) blockReloadKeys(window);
+if (isTauri()) blockReload(window);
 
 // Opened once, outside React: StrictMode would otherwise open (and back up) the file twice.
 // The exe backs the file up once it opened, then saves (DR-51).

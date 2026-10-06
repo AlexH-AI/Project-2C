@@ -13,7 +13,12 @@ import {
 } from '@p2c/db';
 import { calendarDate, formatDate, fromLocalDate, type CalendarDate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
-import { isUnsavedChangesError, openAppData, type StoragePort } from './app-data';
+import {
+  isStartupBackupError,
+  isUnsavedChangesError,
+  openAppData,
+  type StoragePort,
+} from './app-data';
 
 const TODAY = calendarDate(2026, 9, 27);
 
@@ -149,7 +154,9 @@ describe('openAppData', () => {
     const { storage, events } = memoryStorage(older.export());
     storage.backup = () => Promise.reject(new Error('disk full'));
 
-    await expect(openAppData({ storage })).rejects.toThrow('disk full');
+    const error = await openAppData({ storage }).catch((e: unknown) => e);
+    expect(isStartupBackupError(error)).toBe(true);
+    expect((error as Error).cause).toEqual(new Error('disk full'));
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(events).toEqual([]);
   });

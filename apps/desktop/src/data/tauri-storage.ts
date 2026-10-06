@@ -6,25 +6,37 @@ type Invoke = (command: string, args?: InvokeArgs, options?: InvokeOptions) => P
 
 /** Carries the export file name; the body is the raw file (`EXPORT_NAME_HEADER` in `lib.rs`). */
 const EXPORT_NAME_HEADER = 'x-p2c-file-name';
+/** Carries the page a save comes from (`PAGE_HEADER` in `lib.rs`). */
+const PAGE_HEADER = 'x-p2c-page';
+
+/** 128 random bits in hex; `getRandomValues`, unlike `randomUUID`, needs no secure context. */
+const newPage = () =>
+  Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+    byte.toString(16).padStart(2, '0'),
+  ).join('');
 
 /**
  * @param invoke Tauri's `invoke`.
  * @param timezoneOffset `Date#getTimezoneOffset`; Rust has no time zones, so backup file names get
  *   local time from here.
+ * @param page Names this load of the webview. Rust writes only the saves of the page that opened the
+ *   file last, so a save still on its way from before a reload never lands over what the new page
+ *   read (`STALE_PAGE`).
  */
 export function tauriStorage(
   invoke: Invoke,
   timezoneOffset: () => number = () => new Date().getTimezoneOffset(),
+  page: string = newPage(),
 ): StoragePort {
   const local = () => ({ utcOffsetMinutes: -timezoneOffset() });
   return {
     async load() {
-      const reply = (await invoke('db_open')) as ArrayBuffer;
+      const reply = (await invoke('db_open', { page })) as ArrayBuffer;
       // Rust answers empty only on a first start (no file and no backups); an empty file fails.
       return reply.byteLength === 0 ? undefined : new Uint8Array(reply);
     },
     async save(bytes) {
-      await invoke('db_save', bytes);
+      await invoke('db_save', bytes, { headers: { [PAGE_HEADER]: page } });
     },
     async backup() {
       return (await invoke('db_backup', local())) as string;

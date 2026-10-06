@@ -1,7 +1,8 @@
 // Keep the Rust layer thin: business logic lives in packages/domain (ADR-0005, ADR-0006).
-// The only commands are file I/O for the sql.js database (ADR-0016). They run on the async
-// threadpool (`async`): a plain command runs on the main thread and would freeze the window
-// while a whole file is written and flushed after every transaction.
+// The only commands are file I/O for the sql.js database (ADR-0016). None runs on the main thread,
+// which would freeze the window while a whole file is written and flushed after every
+// transaction: the database commands run on the blocking pool ([`blocking`]), the others on the
+// async threadpool (`async`).
 
 mod storage;
 
@@ -11,6 +12,8 @@ use tauri::ipc::{InvokeBody, Request, Response};
 
 /// Header carrying the export file name (the body is the raw file).
 const EXPORT_NAME_HEADER: &str = "x-p2c-file-name";
+/// Header carrying the page a save comes from (`db_save`).
+const PAGE_HEADER: &str = "x-p2c-page";
 
 /// Held from the first `db_open` until the process ends (one exe per data folder), and by each of
 /// `db_open`, `db_save` and `db_backup` while it runs (one file command at a time, see `DataLock`).
@@ -33,20 +36,23 @@ fn raw_body<'a>(request: &'a Request<'_>) -> Result<&'a [u8], String> {
 /// Startup: locks the data folder and returns the database file; an empty body means a first
 /// start (a file that is missing with backups left, empty or not SQLite is an error, see
 /// `storage::open`). Another exe already running → the error `ALREADY_OPEN`. The app backs the
-/// file up with `db_backup` once it opened it.
-#[tauri::command(async)]
-fn db_open() -> Result<Response, String> {
-    let bytes = storage::open(&data_dir()?, &DATA_LOCK).map_err(|e| e.to_string())?;
+/// file up with `db_backup` once it opened it. `page` names this load of the webview: from now on
+/// only its saves are written (see `storage::save`).
+#[tauri::command]
+async fn db_open(page: String) -> Result<Response, String> {
+    let dir = data_dir()?;
+    let bytes = blocking(move || storage::open(&dir, &page, &DATA_LOCK)).await?;
     Ok(Response::new(bytes.unwrap_or_default()))
 }
 
 /// Backs the saved file up (at startup once the app opened it, and before the data is replaced);
 /// returns the backup file name. `utc_offset_minutes` comes from the webview so backup names use
 /// local time.
-#[tauri::command(async)]
-fn db_backup(utc_offset_minutes: i64) -> Result<String, String> {
+#[tauri::command]
+async fn db_backup(utc_offset_minutes: i64) -> Result<String, String> {
     let stamp = local_stamp(utc_offset_minutes)?;
-    storage::backup(&data_dir()?, &stamp, &DATA_LOCK).map_err(|e| e.to_string())
+    let dir = data_dir()?;
+    blocking(move || storage::backup(&dir, &stamp, &DATA_LOCK)).await
 }
 
 /// `YYYYMMDD-HHMMSS` in local time for backup names.
@@ -58,21 +64,40 @@ fn local_stamp(utc_offset_minutes: i64) -> Result<String, String> {
     Ok(storage::stamp(secs + utc_offset_minutes * 60))
 }
 
-/// Replaces the database file with the request body (atomic).
-#[tauri::command(async)]
-fn db_save(request: Request<'_>) -> Result<(), String> {
-    storage::save(&data_dir()?, raw_body(&request)?, &DATA_LOCK).map_err(|e| e.to_string())
+/// Replaces the database file with the request body (atomic), unless a later `db_open` came from
+/// another page than the one in the page header (`STALE_PAGE`).
+#[tauri::command]
+async fn db_save(request: Request<'_>) -> Result<(), String> {
+    let page = header(&request, PAGE_HEADER)?.to_owned();
+    let bytes = raw_body(&request)?.to_vec();
+    let dir = data_dir()?;
+    blocking(move || storage::save(&dir, &bytes, &page, &DATA_LOCK)).await
+}
+
+/// Runs a file command on the blocking pool: waiting for [`DATA_LOCK`] or the disk never holds up
+/// an async worker, so other commands keep running meanwhile.
+async fn blocking<T: Send + 'static>(
+    command: impl FnOnce() -> std::io::Result<T> + Send + 'static,
+) -> Result<T, String> {
+    tauri::async_runtime::spawn_blocking(command)
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
+}
+
+fn header<'a>(request: &'a Request<'_>, name: &str) -> Result<&'a str, String> {
+    request
+        .headers()
+        .get(name)
+        .and_then(|value| value.to_str().ok())
+        .ok_or_else(|| format!("missing header {name}"))
 }
 
 /// Writes the request body into `exports\` (Settings → Data `.p2cbackup`, Báo cáo `.xlsx`) without
 /// overwriting an earlier export; returns the path actually written, which may carry a `-n` suffix.
 #[tauri::command(async)]
 fn export_write(request: Request<'_>) -> Result<String, String> {
-    let name = request
-        .headers()
-        .get(EXPORT_NAME_HEADER)
-        .and_then(|value| value.to_str().ok())
-        .ok_or("missing export file name")?;
+    let name = header(&request, EXPORT_NAME_HEADER)?;
     let path = storage::write_export(&data_dir()?, name, raw_body(&request)?)
         .map_err(|e| e.to_string())?;
     Ok(path.to_string_lossy().into_owned())
