@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bảng "Hiện thêm" — Project-2C mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="mockups.css" />
+    <style>
+      body {
+        padding: 24px;
+      }
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .wrap > p {
+        color: var(--text-2);
+        margin: 0;
+      }
+      .wrap code {
+        color: var(--text-2);
+      }
+      .more-foot {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 10px 4px;
+        font-size: var(--fs-sm);
+        color: var(--text-2);
+      }
+      .more-foot .spacer {
+        flex: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Bảng lớn: "Hiện thêm" (T-150, DR-03)</h1>
+        <p>
+          Áp cho cả bốn bảng dùng <code>DataTable</code> (Lịch hẹn, Khách hàng dạng bảng, Lịch hẹn trong hồ sơ KH, Team). Bảng hiện <b>100 dòng đầu</b> sau khi đã lọc và sắp trên <b>toàn bộ</b> dữ liệu; mỗi lần bấm hiện thêm <b>100 dòng</b>. Từ 100 dòng trở xuống không có chân bảng. Chân bảng chỉ gồm hai phần: dòng đếm và nút. Đổi kỳ / bộ lọc thì quay về 100 dòng; bấm sắp cột thì giữ nguyên số dòng đang hiện. Số đếm ở đầu thẻ vẫn là tổng thật.
+        </p>
+      </header>
+
+      <!-- Trạng thái 1: kỳ Năm, 7.071 lịch, mới mở -->
+      <section class="card" aria-label="Trạng thái 1">
+        <div class="card-head">
+          <h2>1 · Kỳ Năm, mới mở</h2>
+          <span class="meta num">7.071 lịch · sắp xếp: Ngày ↓</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th class="sort desc">Ngày</th>
+              <th class="sort">Giờ</th>
+              <th class="sort">Khách hàng</th>
+              <th class="sort">Trạng thái</th>
+              <th class="sort">Kết quả</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="num">15/09</td><td class="num">16:00</td>
+              <td><div class="name">Trịnh Minh Anh <span class="badge st-n1">N1</span></div><div class="id num">K-9A1C</div></td>
+              <td><span class="badge c-ok plain">Đã gặp</span></td>
+              <td class="dim">N2 → N1</td>
+            </tr>
+            <tr>
+              <td class="num">15/09</td><td class="num">09:00</td>
+              <td><div class="name">Phạm Gia Long <span class="badge st-n2">N2</span></div><div class="id num">K-7F3Q</div></td>
+              <td><span class="badge c-ok plain">Đã gặp</span></td>
+              <td class="dim">Giữ N2</td>
+            </tr>
+            <tr>
+              <td class="num">14/09</td><td class="num">14:30</td>
+              <td><div class="name">Đinh Công Hậu <span class="badge st-n3">N3</span></div><div class="id num">K-0H4A</div></td>
+              <td><span class="badge c-warn plain">Hoãn</span></td>
+              <td class="dim">Dời sang 21/09</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="more-foot num">
+          <span>Đang hiện 100 / 7.071 lịch</span>
+          <span class="spacer"></span>
+          <button class="btn">Hiện thêm 100 lịch</button>
+        </div>
+      </section>
+
+      <!-- Trạng thái 2: sau vài lần bấm -->
+      <section class="card" aria-label="Trạng thái 2">
+        <div class="card-head">
+          <h2>2 · Sau hai lần bấm</h2>
+          <span class="meta num">7.071 lịch · sắp xếp: Ngày ↓</span>
+        </div>
+        <div class="more-foot num" style="padding-top: 4px">
+          <span>Đang hiện 300 / 7.071 lịch</span>
+          <span class="spacer"></span>
+          <button class="btn">Hiện thêm 100 lịch</button>
+        </div>
+      </section>
+
+      <!-- Trạng thái 3: dòng cuối -->
+      <section class="card" aria-label="Trạng thái 3">
+        <div class="card-head">
+          <h2>3 · Lần bấm cuối (còn ít hơn 100 dòng)</h2>
+          <span class="meta num">7.071 lịch</span>
+        </div>
+        <div class="more-foot num" style="padding-top: 4px">
+          <span>Đang hiện 7.000 / 7.071 lịch</span>
+          <span class="spacer"></span>
+          <button class="btn">Hiện thêm 71 lịch</button>
+        </div>
+        <div class="more-foot num" style="padding-top: 4px">
+          <span>Đã hiện hết 7.071 lịch</span>
+        </div>
+      </section>
+
+      <!-- Trạng thái 4: bảng nhỏ -->
+      <section class="card" aria-label="Trạng thái 4">
+        <div class="card-head">
+          <h2>4 · Bảng từ 100 dòng trở xuống (vd. kỳ Tháng 34 lịch)</h2>
+          <span class="meta num">34 lịch · sắp xếp: Ngày ↓</span>
+        </div>
+        <div class="more-foot" style="padding-top: 4px">
+          <span class="dim">Không có chân bảng, không có nút</span>
+        </div>
+      </section>
+
+      <div class="mock-note">Mockup G3 · T-150 · chữ trên nút theo từng bảng: "lịch" (Lịch hẹn), "khách hàng" (Khách hàng), "người" (Team)</div>
+    </div>
+  </body>
+</html>

@@ -20,6 +20,7 @@ Mockup lớn có **mục lục ở comment đầu file** (khối → neo `#id` �
 | `team.html` | `team/TeamScreen.tsx`, `TeamDialogs.tsx`, `PersonDialogs.tsx` | #59, vòng 2 | `phase-3-du-lieu.md` §3.1, §3.2 |
 | `settings-data.html` | `Settings.tsx`, `SettingsDataFile.tsx`, `SettingsBackup.tsx` | #59, vòng 2 | `phase-3-du-lieu.md` §5–§7; ADR-0010, ADR-0016 |
 | `phase-3-feedback.html` (lớn, B1–B6) | B1 → `team/`; B2 → `CustomersScreen.tsx`; B3, B5 → `AppointmentsScreen.tsx`; B4 → `MonthCalendar` trong `AppointmentsScreen.tsx`; B6 → `appointments/YearGrid.tsx` | #217, duyệt 01/10/2026 (B5 = phương án A) | `docs/reviews/2026-10-01-phan-hoi-owner-kiem-exe.md` |
+| `table-more.html` | Bảng lớn của `packages/ui` `DataTable` (Lịch hẹn, Khách hàng, hồ sơ KH, Team) | Chờ duyệt (T-150) | `docs/reviews/2026-10-06-deep-review-phase-1-4-tong-hop.md` DR-03, §11.3 |
 
 `mockups.css` dùng chung cho mọi mockup; `forms.css` thêm cho các mockup hộp thoại (`*-forms.html`, `team.html`, `settings-data.html`).
 
