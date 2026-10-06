@@ -26,6 +26,13 @@ describe('startupMessage', () => {
     });
   });
 
+  it('says the disk is full when the startup backup found no room (DR-57)', () => {
+    expect(startupMessage(new Error('STARTUP_BACKUP_FAILED', { cause: 'DISK_FULL' }))).toEqual({
+      title: 'Ổ đĩa đã đầy, không sao lưu được file dữ liệu',
+      help: 'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở nhưng ổ đĩa chứa thư mục app không còn đủ chỗ trống. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports) rồi mở lại app.',
+    });
+  });
+
   it('warns that the newest backup may be the failing file itself (DR-51)', () => {
     const { help } = startupMessage('database disk image is malformed');
     expect(help).toContain('Bản mới nhất có thể chính là file đang lỗi');

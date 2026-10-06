@@ -9,6 +9,11 @@ const EXPORT_NAME_HEADER = 'x-p2c-file-name';
 /** Carries the page a save comes from (`PAGE_HEADER` in `lib.rs`). */
 const PAGE_HEADER = 'x-p2c-page';
 
+/** `db_open`'s error when another exe already has the data folder open (`storage::ALREADY_OPEN`). */
+export const ALREADY_OPEN = 'ALREADY_OPEN';
+/** `db_backup`'s error when the disk is full (`storage::DISK_FULL`). */
+export const DISK_FULL = 'DISK_FULL';
+
 /** 128 random bits in hex; `getRandomValues`, unlike `randomUUID`, needs no secure context. */
 const newPage = () =>
   Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>

@@ -113,7 +113,8 @@ fn db_latest_backup() -> Result<Option<String>, String> {
 #[tauri::command(async)]
 fn open_folder(kind: String) -> Result<(), String> {
     let path = storage::folder(&data_dir()?, &kind).map_err(|e| e.to_string())?;
-    let mut explorer = std::process::Command::new("explorer.exe");
+    let explorer = storage::explorer(std::env::var_os("SystemRoot")).map_err(|e| e.to_string())?;
+    let mut explorer = std::process::Command::new(explorer);
     #[cfg(windows)]
     std::os::windows::process::CommandExt::raw_arg(&mut explorer, storage::explorer_arg(&path));
     #[cfg(not(windows))]
