@@ -322,7 +322,6 @@ export function AppointmentsScreen() {
         <OutcomeDialog
           row={{ ...recording, customer: recording.customer }}
           people={data.people}
-          transitions={data.transitions}
           onClose={() => setRecording(null)}
           onMoved={show}
         />

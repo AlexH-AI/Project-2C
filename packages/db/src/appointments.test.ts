@@ -20,7 +20,7 @@ import {
   softDeleteCustomer,
 } from './customers';
 import { createPerson, softDeletePerson, updatePerson } from './team';
-import { codeOf, setup } from './test-support';
+import { codeOf, errorOf, setup } from './test-support';
 
 // The test clock reads 26/09/2026: a meeting is held or missed by then, the next one booked after.
 const d = (day: number, month: number, year = 2026): CalendarDate => calendarDate(year, month, day);
@@ -628,9 +628,13 @@ describe('updateAppointmentDetails', () => {
       ['N2', d(14, 1), id],
     ]);
     expect(stage()).toBe('N2');
-    // D10: never before the transition that came before it.
-    expect(codeOf(() => updateAppointmentDetails(db, id, { date: d(1, 12, 2025) }))).toBe(
-      'TRANSITION_BEFORE_LATEST',
+    // D10: never before the transition that came before it, whose day the error carries: the
+    // creation's, not the meeting's own old day.
+    expect(errorOf(() => updateAppointmentDetails(db, id, { date: d(1, 12, 2025) }))).toMatchObject(
+      {
+        code: 'TRANSITION_BEFORE_LATEST',
+        params: { date: '01/01/2026' },
+      },
     );
     expect(getAppointment(db, id)?.date).toEqual(d(14, 1));
   });

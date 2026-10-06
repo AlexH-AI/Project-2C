@@ -5,6 +5,7 @@ import {
   ageOn,
   allowedStages,
   birthLabel,
+  birthSortKey,
   customerBoard,
   parseBirthDate,
   parseRecordDate,
@@ -116,6 +117,33 @@ describe('birthLabel', () => {
   it('shows the year alone, or the full date', () => {
     expect(birthLabel({ year: 1984 })).toBe('1984');
     expect(birthLabel({ year: 1984, month: 3, day: 12 })).toBe('12/03/1984');
+  });
+});
+
+// DR-65: the "Ngày sinh" column sorts by this key, as DataTable sorts text, not by the label.
+describe('birthSortKey', () => {
+  const tableOrder = new Intl.Collator('vi', { sensitivity: 'base', numeric: true }).compare;
+
+  it('sorts by the day of birth, a year alone ahead of the full dates in it', () => {
+    const births = [
+      { year: 1984, month: 3, day: 12 },
+      { year: 2000 },
+      { year: 1961, month: 1, day: 1 },
+      { year: 1984 },
+      { year: 1984, month: 11, day: 2 },
+      { year: 1984, month: 3, day: 2 },
+    ];
+
+    const sorted = [...births].sort((a, b) => tableOrder(birthSortKey(a), birthSortKey(b)));
+
+    expect(sorted.map(birthLabel)).toEqual([
+      '01/01/1961',
+      '1984',
+      '02/03/1984',
+      '12/03/1984',
+      '02/11/1984',
+      '2000',
+    ]);
   });
 });
 

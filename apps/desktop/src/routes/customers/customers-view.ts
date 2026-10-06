@@ -5,6 +5,7 @@ import {
   assertValidTransition,
   compareDates,
   formatDate,
+  formatIsoDate,
   inScope,
   parseQuickDate,
   type CalendarDate,
@@ -137,6 +138,14 @@ export function allowedStages(current: CustomerStage): CustomerStage[] {
 /** "1984" when only the year is known, else "12/03/1984". */
 export function birthLabel(birth: BirthDate): string {
   return 'month' in birth ? formatDate(birth) : String(birth.year);
+}
+
+/**
+ * What the "Ngày sinh" column sorts by: "1984" or "1984-03-12", so the days of birth come in
+ * order and a year alone goes ahead of the full dates in it.
+ */
+export function birthSortKey(birth: BirthDate): string {
+  return 'month' in birth ? formatIsoDate(birth) : String(birth.year);
 }
 
 /** Full years on `today`; from a year alone, the age reached during `today`'s year. */

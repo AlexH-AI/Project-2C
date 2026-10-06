@@ -90,6 +90,15 @@ export function KycNoteDialog({
   const boolean = field === 'hasProtection';
   const last = versions.at(-1);
 
+  /** Picks a trường afresh: nothing typed or chosen for another one carries over (DR-21). */
+  const pick = (next: KycField | '') => {
+    setField(next);
+    setValue('');
+    setAnswer(null);
+    setMode('update');
+    setErrors({});
+  };
+
   const add = () => {
     if (!field) return setErrors({ fact: t('kycNote.error.field') });
     if (boolean ? answer === null : value.trim() === '') {
@@ -112,11 +121,7 @@ export function KycNoteDialog({
       return setErrors({ fact: t('kycNote.error.refused', { field: t(`kycField.${field}`) }) });
     }
     setFacts(next);
-    setField('');
-    setValue('');
-    setAnswer(null);
-    setMode('update');
-    setErrors({});
+    pick('');
   };
 
   const save = () => {
@@ -216,10 +221,7 @@ export function KycNoteDialog({
           value={field}
           options={FIELD_OPTIONS}
           placeholder={t('kycNote.fieldPick')}
-          onChange={(next) => {
-            setField(next as KycField | '');
-            setErrors({});
-          }}
+          onChange={(next) => pick(next as KycField | '')}
         />
         {has.length > 0 && (
           <p className="m-0 text-xs text-warn tabular-nums">

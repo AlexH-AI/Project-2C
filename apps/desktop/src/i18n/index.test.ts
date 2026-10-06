@@ -80,6 +80,15 @@ describe('errorMessage', () => {
     );
   });
 
+  // DR-64: the command knows the day it was blocked by; the dialog does not work it out again.
+  it("fills in the error's own parameters, which win over the caller's", () => {
+    const error = new DbError('TRANSITION_BEFORE_LATEST', { date: '23/01/2026' });
+    expect(errorMessage(error)).toBe('Ngày chuyển trước lần đổi nhóm gần nhất (23/01/2026).');
+    expect(errorMessage(error, { date: '25/08/2026' })).toBe(
+      'Ngày chuyển trước lần đổi nhóm gần nhất (23/01/2026).',
+    );
+  });
+
   // F-12: a code the UI can show without its own text reads as the general error.
   it('has a message for every code a command can reject with in the UI', () => {
     // Shown by their own screens, never through `errorMessage`: the seed runs on an empty

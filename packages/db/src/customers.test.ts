@@ -14,7 +14,7 @@ import {
 import { recordMeetingOutcome, scheduleAppointment, softDeleteAppointment } from './appointments';
 import { getKycProfile, listKycVersions } from './kyc';
 import { softDeletePerson, updatePerson } from './team';
-import { codeOf, d, setup } from './test-support';
+import { codeOf, d, errorOf, setup } from './test-support';
 
 describe('customers', () => {
   it('creates a customer in an open stage with its first transition', async () => {
@@ -210,9 +210,12 @@ describe('customers', () => {
     changeStageManually(db, customer.id, { to: 'N4', date: d(20, 1) });
     persist.mockClear();
 
-    expect(codeOf(() => changeStageManually(db, customer.id, { to: 'N2', date: d(19, 1) }))).toBe(
-      'TRANSITION_BEFORE_LATEST',
-    );
+    expect(
+      errorOf(() => changeStageManually(db, customer.id, { to: 'N2', date: d(19, 1) })),
+    ).toMatchObject({
+      code: 'TRANSITION_BEFORE_LATEST',
+      params: { date: '20/01/2026' },
+    });
     // Checked before the transition rule: an earlier date is reported even for a disallowed move.
     expect(codeOf(() => changeStageManually(db, customer.id, { to: 'N4', date: d(19, 1) }))).toBe(
       'TRANSITION_BEFORE_LATEST',
