@@ -1,6 +1,6 @@
 import type { CustomerRecord } from '@p2c/db';
 import type { CalendarDate, Person, Policy, StageTransition } from '@p2c/domain';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   ageOn,
   allowedStages,
@@ -97,6 +97,15 @@ describe('customerBoard', () => {
 
     const re = customerBoard(data, { kind: 're', reId: 're1' });
     expect(re.open.N4.map((card) => card.customer.id)).toEqual(['binh', 'an']);
+  });
+
+  // DR-17: the team's members are listed once per pass, not once per customer.
+  it('reads the team of the scope once for the whole board', () => {
+    const watched = [...people];
+    const filter = vi.spyOn(watched, 'filter');
+    const team = customerBoard({ ...data, people: watched }, { kind: 'team', teamId: 't2' });
+    expect(team.open.N4.map((card) => card.customer.id)).toEqual(['em']);
+    expect(filter).toHaveBeenCalledTimes(1);
   });
 
   it('counts the open customers of each RE in scope, leaving the closed ones out', () => {

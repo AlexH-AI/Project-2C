@@ -181,13 +181,7 @@ export function periodMetricsByMark(
   const matches = scopeMatcher(data.people, scope);
   const markOf = markIndexer(marks);
   const isRf = rfMatcher(data.transitions);
-  const parts = marks.map(() => ({
-    submittedCount: 0,
-    caseSize: 0,
-    issuedCount: 0,
-    revenue: 0,
-    rfCount: 0,
-  }));
+  const parts = marks.map(noParts);
   for (const policy of data.policies) {
     if (!matches(policy.reId)) continue;
     const submitted = parts[markOf(policy.submittedDate)];
@@ -206,5 +200,68 @@ export function periodMetricsByMark(
     const part = parts[markOf(appointment.date)];
     if (part) part.rfCount += 1;
   }
-  return parts.map((part) => ({ ...part, closeRate: closeRate(part.issuedCount, part.rfCount) }));
+  return parts.map(withCloseRate);
 }
+
+/**
+ * `periodMetrics` of one period for any scope, after one pass over the records (So sánh team and
+ * Báo cáo read every team and RE, DR-20): each policy and appointment is added to its RE, then a
+ * scope adds up the RE it holds. Equal, scope by scope, to calling `periodMetrics`.
+ */
+export function periodMetricsByScope(
+  data: MetricsData,
+  period: Period,
+): (scope: Scope) => PeriodMetrics {
+  const isRf = rfMatcher(data.transitions);
+  const byRe = new Map<string, MetricParts>();
+  const partOf = (reId: string) => {
+    const part = byRe.get(reId) ?? noParts();
+    byRe.set(reId, part);
+    return part;
+  };
+  for (const policy of data.policies) {
+    if (isInPeriod(policy.submittedDate, period)) {
+      const part = partOf(policy.reId);
+      part.submittedCount += 1;
+      part.caseSize = addVnd(part.caseSize, policy.submittedFyp);
+    }
+    if (policy.issuedDate && isInPeriod(policy.issuedDate, period)) {
+      const part = partOf(policy.reId);
+      part.issuedCount += 1;
+      part.revenue = addVnd(part.revenue, policy.issuedFyp ?? policy.submittedFyp);
+    }
+  }
+  for (const appointment of data.appointments) {
+    if (isInPeriod(appointment.date, period) && isRf(appointment)) {
+      partOf(appointment.reId).rfCount += 1;
+    }
+  }
+  return (scope) => {
+    const matches = scopeMatcher(data.people, scope);
+    const total = noParts();
+    for (const [reId, part] of byRe) {
+      if (!matches(reId)) continue;
+      total.submittedCount += part.submittedCount;
+      total.caseSize = addVnd(total.caseSize, part.caseSize);
+      total.issuedCount += part.issuedCount;
+      total.revenue = addVnd(total.revenue, part.revenue);
+      total.rfCount += part.rfCount;
+    }
+    return withCloseRate(total);
+  };
+}
+
+type MetricParts = { -readonly [K in keyof Omit<PeriodMetrics, 'closeRate'>]: number };
+
+const noParts = (): MetricParts => ({
+  submittedCount: 0,
+  caseSize: 0,
+  issuedCount: 0,
+  revenue: 0,
+  rfCount: 0,
+});
+
+const withCloseRate = (part: MetricParts): PeriodMetrics => ({
+  ...part,
+  closeRate: closeRate(part.issuedCount, part.rfCount),
+});

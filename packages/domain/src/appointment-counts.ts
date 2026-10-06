@@ -45,7 +45,7 @@ export function appointmentCounts(
   today: CalendarDate,
 ): AppointmentCounts {
   const matches = scopeMatcher(people, scope);
-  const counts = { met: 0, missed: 0, unrecorded: 0, planned: 0, total: 0 };
+  const counts = noCounts();
   for (const appointment of appointments) {
     if (!matches(appointment.reId) || !isInPeriod(appointment.date, period)) continue;
     counts[appointmentGroup(appointment, today)] += 1;
@@ -53,6 +53,42 @@ export function appointmentCounts(
   }
   return counts;
 }
+
+/**
+ * `appointmentCounts` of one period for any scope, after one pass over the appointments (So sánh
+ * team and Báo cáo count every team and RE, DR-20): each one is added to its RE, then a scope adds
+ * up the RE it holds. Equal, scope by scope, to calling `appointmentCounts`.
+ */
+export function appointmentCountsByScope(
+  appointments: readonly Appointment[],
+  period: Period,
+  people: readonly Person[],
+  today: CalendarDate,
+): (scope: Scope) => AppointmentCounts {
+  const byRe = new Map<string, Counts>();
+  for (const appointment of appointments) {
+    if (!isInPeriod(appointment.date, period)) continue;
+    const counts = byRe.get(appointment.reId) ?? noCounts();
+    byRe.set(appointment.reId, counts);
+    counts[appointmentGroup(appointment, today)] += 1;
+    counts.total += 1;
+  }
+  return (scope) => {
+    const matches = scopeMatcher(people, scope);
+    const total = noCounts();
+    for (const [reId, counts] of byRe) {
+      if (!matches(reId)) continue;
+      for (const key of COUNT_KEYS) total[key] += counts[key];
+    }
+    return total;
+  };
+}
+
+type Counts = Record<AppointmentGroup | 'total', number>;
+
+const COUNT_KEYS = ['met', 'missed', 'unrecorded', 'planned', 'total'] as const;
+
+const noCounts = (): Counts => ({ met: 0, missed: 0, unrecorded: 0, planned: 0, total: 0 });
 
 /**
  * `appointmentCounts` of each mark, in one pass over the appointments (Theo mốc, spec Phase 4 §4.4):
@@ -68,7 +104,7 @@ export function appointmentCountsByMark(
 ): AppointmentCounts[] {
   const matches = scopeMatcher(people, scope);
   const markOf = markIndexer(marks);
-  const counts = marks.map(() => ({ met: 0, missed: 0, unrecorded: 0, planned: 0, total: 0 }));
+  const counts = marks.map(noCounts);
   for (const appointment of appointments) {
     if (!matches(appointment.reId)) continue;
     const mark = counts[markOf(appointment.date)];

@@ -1,11 +1,11 @@
 import {
-  appointmentCounts,
+  appointmentCountsByScope,
   closeRate,
   customPeriod,
   formatCount,
   formatPeriodValue,
   formatVndCompact,
-  periodMetrics,
+  periodMetricsByScope,
   type CalendarDate,
   type MetricsData,
   type Period,
@@ -103,9 +103,12 @@ export function teamCompare(
   today: CalendarDate,
 ): TeamCompareView {
   const counted = countedWindow(period, today);
+  // Each record is grouped by RE once; every team and RE row then adds up its RE (DR-20).
+  const counts = appointmentCountsByScope(data.appointments, period, data.people, today);
+  const metrics = counted && periodMetricsByScope(data, counted);
   const figures = (scope: Scope) => ({
-    met: appointmentCounts(data.appointments, period, scope, data.people, today).met,
-    metrics: counted && periodMetrics(data, counted, scope),
+    met: counts(scope).met,
+    metrics: metrics && metrics(scope),
   });
 
   const teams = [...data.teams]
