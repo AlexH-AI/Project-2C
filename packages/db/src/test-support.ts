@@ -6,7 +6,8 @@ import { DbError } from './errors';
 import { createPerson, createTeam } from './team';
 
 export async function setup() {
-  let clock = Date.UTC(2026, 8, 26, 8, 0, 0);
+  // DR-15: 11:00 UTC is 26/09 local from UTC−11 to UTC+12 (Auckland before its DST, 27/09).
+  let clock = Date.UTC(2026, 8, 26, 11, 0, 0);
   const persist = vi.fn();
   const db = await openDatabase({ persist, now: () => new Date(clock++) });
   const team = createTeam(db, { name: 'Sao Mai' });

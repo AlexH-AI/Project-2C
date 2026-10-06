@@ -1,6 +1,6 @@
 import { MAX_FEE_VND } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { createCustomer, softDeleteCustomer } from './customers';
+import { createCustomer, softDeleteCustomer, updateCustomerProfile } from './customers';
 import {
   getPolicy,
   issuePolicy,
@@ -10,6 +10,7 @@ import {
   submitPolicy,
   updatePolicy,
 } from './policies';
+import { restorePerson, softDeletePerson, updatePerson } from './team';
 import { codeOf, d, setup } from './test-support';
 
 const MILLION = 1_000_000;
@@ -179,5 +180,35 @@ describe('policies', () => {
     expect(listPolicies(db)).toEqual([]);
     expect(getPolicy(db, id)).toBeUndefined();
     expect(codeOf(() => restorePolicy(db, id))).toBe('CUSTOMER_NOT_FOUND');
+  });
+
+  // DR-12, DR-45: a live policy points to its RE, so the backup it ends up in imports again (rule 5).
+  it('keeps an RE whose only live record is a policy from leaving the role or being deleted', async () => {
+    const { db, re, otherRe, customer, submit } = await withCustomer();
+    const { id } = submit();
+    updateCustomerProfile(db, customer.id, { reId: otherRe.id });
+
+    expect(codeOf(() => updatePerson(db, re.id, { role: 'IS', teamId: null }))).toBe(
+      'PERSON_IN_USE',
+    );
+    expect(codeOf(() => softDeletePerson(db, re.id))).toBe('PERSON_IN_USE');
+    softDeletePolicy(db, id);
+    expect(updatePerson(db, re.id, { role: 'IS', teamId: null }).role).toBe('IS');
+  });
+
+  it('restores no policy whose RE was deleted or left the role while it was deleted', async () => {
+    const { db, re, otherRe, customer, submit, persist } = await withCustomer();
+    const { id } = submit();
+    softDeletePolicy(db, id);
+    updateCustomerProfile(db, customer.id, { reId: otherRe.id });
+    softDeletePerson(db, re.id);
+    persist.mockClear();
+
+    expect(codeOf(() => restorePolicy(db, id))).toBe('PERSON_NOT_FOUND');
+    restorePerson(db, re.id);
+    updatePerson(db, re.id, { role: 'IS', teamId: null });
+    expect(codeOf(() => restorePolicy(db, id))).toBe('RE_REQUIRED');
+    expect(getPolicy(db, id)).toBeUndefined();
+    expect(persist).toHaveBeenCalledTimes(2);
   });
 });

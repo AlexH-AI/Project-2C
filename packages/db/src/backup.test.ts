@@ -9,8 +9,8 @@ import { recordKycNote } from './kyc';
 import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations';
 import { submitPolicy } from './policies';
 import { seedDemoData } from './seed';
-import { listTeams } from './team';
-import { setup } from './test-support';
+import { createPerson, createTeam, listTeams } from './team';
+import { d, setup } from './test-support';
 
 const SLOW = 60_000;
 const EXPORTED_AT = new Date(Date.UTC(2026, 8, 30, 7, 45, 0));
@@ -117,6 +117,39 @@ describe('exportBackup', () => {
       'created_at',
       'updated_at',
       'deleted_at',
+    ]);
+  });
+
+  // CX-B9: the fixtures above insert rows in id order, where the primary key and rowid agree.
+  it('sorts each table by its primary key, not by the order the rows went in', async () => {
+    // A clock running backwards gives every new row an id below the ones before it.
+    let clock = Date.UTC(2026, 8, 26, 11, 0, 0);
+    const db = await openDatabase({ now: () => new Date((clock -= 1000)) });
+    const team = createTeam(db, { name: 'Sao Mai' });
+    const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const tl = createPerson(db, { name: 'Hà', role: 'TL', teamId: team.id });
+    const is = createPerson(db, { name: 'Tâm', role: 'IS', teamId: null });
+    const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 9) });
+    const book = (coordinatorId: string) =>
+      scheduleAppointment(db, {
+        customerId: lan.id,
+        reId: re.id,
+        date: d(3, 9),
+        triggerType: 'REFERRAL',
+        coordinatorIds: [coordinatorId],
+      }).id;
+    const first = book(is.id);
+    const second = book(tl.id);
+
+    const backup = JSON.parse(exportBackup(db)) as BackupJson;
+    const inserted = db.sqlite.exec('SELECT id FROM people ORDER BY rowid')[0]!.values.flat();
+    expect(inserted).toEqual([re.id, tl.id, is.id]);
+    expect(backup.tables.people!.map((p) => p.id)).toEqual([is.id, tl.id, re.id]);
+    expect(
+      backup.tables.appointment_coordinators!.map((c) => [c.appointment_id, c.person_id]),
+    ).toEqual([
+      [second, tl.id],
+      [first, is.id],
     ]);
   });
 
@@ -298,6 +331,8 @@ describe('importBackup', () => {
     ['kyc_notes', 'created_date', '2026-13-01'],
     ['customers', 'birth_date', '84'],
     ['customers', 'birth_date', '2101'],
+    // DR-45: a full birth date has to be a real day, or every read of the customer throws.
+    ['customers', 'birth_date', '1984-02-30'],
     ['appointments', 'date', '2101-01-01'],
     ['stage_transitions', 'date', '1899-12-31'],
     ['stage_transitions', 'seq', 0],
