@@ -14,6 +14,9 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - `storage.rs` (#196, #192): `explorer_arg` (`~377`) không có `#[cfg(any(windows, test))]` → build ngoài Windows báo `dead_code`; `open_lock_file` dùng `Some(32)` thay hằng `SHARING_VIOLATION`; ngoài Windows closure `map_err` thành identity.
 - `backup.ts` (#184): `valueOf` chỉ nhận cột `integer`/`text` (thêm cột `real` sẽ thành `BACKUP_INVALID`); `ORDER BY` dựa vào khóa chính → nên có test mọi bảng có PK. `database.ts`: hai khối `try/catch sqlite.close()` có thể gộp.
 - `SettingsBackup.tsx` (#185): nhánh `SCHEMA_TOO_NEW` của hộp 10b chưa có test.
+- Đọc bảng dùng chung (#386, T-151, không chặn):
+  - `backup.ts` `load`: statement `prepare` của mỗi bảng không `free()`. Hiện không rò vì DB tạm được `export()` rồi `close()` (sql.js giải phóng mọi statement còn mở, kể cả khi `throw invalid()` giữa chừng) → `try { … } finally { insert.free(); }`.
+  - `apps/desktop/src/data/tables.ts`: getter lười đọc từ `db` lúc tạo, nên một `Tables` giữ qua `replace` (nạp lại / nhập) rồi mới hỏi bảng chưa đọc sẽ đọc DB cũ đã `close()`. Chưa có đường nào như vậy (màn nhận snapshot mới khi re-render, trước khi DB cũ đóng) → ghi cảnh báo "không giữ qua `await`" vào JSDoc `Tables` / `useTables`.
 - Lịch hẹn, ô ngoài tháng / ngoài khoảng là `aria-hidden` nên trình đọc màn hình không đọc số lịch ngày đó (#156).
 - Lịch hẹn (#162–#168):
   - #165: mockup tô "RF" màu accent và đưa năm khác xuống dòng giờ, code viết chuỗi phẳng.
