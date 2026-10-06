@@ -17,7 +17,12 @@ async function summary(page: Page): Promise<[number, number]> {
 const counts = (page: Page, stages: string[]) =>
   Promise.all(
     stages.map(async (stage) =>
-      Number(await column(page, stage).locator('> div > span').last().textContent()),
+      Number(
+        (await column(page, stage).locator('> div > span').last().textContent())?.replace(
+          /\./g,
+          '',
+        ),
+      ),
     ),
   );
 

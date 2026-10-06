@@ -119,9 +119,12 @@ describe('kycTimeline', () => {
     expect(events[4]).toMatchObject({ kind: 'version', number: 1 });
   });
 
-  it('adds the appointments, numbering the meetings held or planned, each under its stage change', () => {
-    const meeting = (id: string, date: CalendarDate, status: AppointmentRecord['status']) =>
-      ({ id, date, status }) as AppointmentRecord;
+  const meeting = (id: string, date: CalendarDate, status: AppointmentRecord['status']) =>
+    ({ id, date, status }) as AppointmentRecord;
+  const numbers = (appointments: AppointmentRecord[]) =>
+    kycTimeline([], [], [], appointments).map((event) => event.kind === 'meeting' && event.number);
+
+  it('adds the appointments, numbering the meetings held, each under its stage change', () => {
     const events = kycTimeline(
       [{ ...move('t1', day(9, 14)), appointmentId: 'a4' }],
       [],
@@ -144,13 +147,31 @@ describe('kycTimeline', () => {
       'meeting:a1',
     ]);
     expect(events.map((event) => event.kind === 'meeting' && event.number)).toEqual([
-      4,
+      null,
       false,
       3,
       2,
       null,
       1,
     ]);
+  });
+
+  // DR-67 (Owner, option A): only a meeting held is "Lịch hẹn lần n", so no two share a number.
+  it('numbers no planned meeting, nor one past its day without an outcome', () => {
+    expect(
+      numbers([
+        meeting('a1', day(9, 1), 'MET'),
+        meeting('a2', day(10, 10), 'SCHEDULED'),
+        meeting('a3', day(10, 20), 'SCHEDULED'),
+      ]),
+    ).toEqual([null, null, 1]);
+    expect(
+      numbers([
+        meeting('a1', day(8, 1), 'MET'),
+        meeting('a2', day(9, 1), 'SCHEDULED'),
+        meeting('a3', day(9, 10), 'MET'),
+      ]),
+    ).toEqual([2, null, 1]);
   });
 });
 

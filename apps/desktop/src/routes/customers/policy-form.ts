@@ -1,3 +1,4 @@
+import type { AppointmentRecord } from '@p2c/db';
 import {
   calendarDate,
   compareDates,
@@ -6,7 +7,6 @@ import {
   formatVndCompact,
   parseVnd,
   periodOf,
-  type Appointment,
   type CalendarDate,
   type Policy,
   type Vnd,
@@ -118,12 +118,21 @@ export function effectText(
   return t(params.re ? `policyForm.effect${key}` : `policyForm.effect${key}NoRe`, params);
 }
 
-/** "Case size dự kiến": the one of the latest met meeting that has it, for reference only (8a). */
+/**
+ * "Case size dự kiến": the one of the latest met meeting that has it, for reference only (8a).
+ * Latest by day, then hour (an untimed meeting first); a tie goes to the one listed last, as
+ * `listAppointments` lists them in the order made.
+ */
 export function expectedCaseSize(
-  appointments: readonly Pick<Appointment, 'date' | 'status' | 'expectedCaseSize'>[],
+  appointments: readonly Pick<AppointmentRecord, 'date' | 'time' | 'status' | 'expectedCaseSize'>[],
 ): Vnd | null {
-  const latest = appointments
-    .filter((a) => a.status === 'MET' && a.expectedCaseSize !== null)
-    .sort((a, b) => compareDates(b.date, a.date))[0];
+  let latest: (typeof appointments)[number] | undefined;
+  for (const a of appointments) {
+    if (a.status !== 'MET' || a.expectedCaseSize === null) continue;
+    const order = latest
+      ? compareDates(a.date, latest.date) || (a.time ?? '').localeCompare(latest.time ?? '')
+      : 1;
+    if (order >= 0) latest = a;
+  }
   return latest?.expectedCaseSize ?? null;
 }

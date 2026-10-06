@@ -312,7 +312,7 @@ export function ChangeStageDialog({
       data.run((db) => changeStageManually(db, customer.id, change));
       onClose();
     } catch (failure) {
-      setErrors({ form: errorMessage(failure, { date: formatDate(since) }) });
+      setErrors({ form: errorMessage(failure) });
     }
   };
 

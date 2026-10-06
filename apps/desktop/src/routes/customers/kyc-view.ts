@@ -73,7 +73,7 @@ export type TimelineEvent = { readonly id: string; readonly date: CalendarDate }
   | { readonly kind: 'stage'; readonly transition: StageTransition }
   | { readonly kind: 'note'; readonly note: KycNoteRecord }
   | { readonly kind: 'version'; readonly version: KycVersionRecord; readonly number: number }
-  /** `number`: "Lịch hẹn lần n" of a meeting held or planned; null for one that did not happen. */
+  /** `number`: "Lịch hẹn lần n" of a meeting held; null for any other appointment. */
   | {
       readonly kind: 'meeting';
       readonly appointment: AppointmentRecord;
@@ -88,21 +88,19 @@ export type TimelineEvent = { readonly id: string; readonly date: CalendarDate }
  */
 const RANK = { meeting: -1, stage: 0, note: 1, version: 2 } as const;
 
-/** The appointments in date order, each met or planned one numbered after the meetings held. */
+/**
+ * The appointments in date order, only the meetings held numbered (DR-67): a planned one, or one
+ * past its day without an outcome, is a plain "Lịch hẹn" with its status.
+ */
 function meetingEvents(appointments: readonly AppointmentRecord[]): TimelineEvent[] {
   let met = 0;
-  return appointments.map((appointment) => {
-    const counted = appointment.status === 'MET' || appointment.status === 'SCHEDULED';
-    const event = {
-      kind: 'meeting' as const,
-      id: appointment.id,
-      date: appointment.date,
-      appointment,
-      number: counted ? met + 1 : null,
-    };
-    if (appointment.status === 'MET') met += 1;
-    return event;
-  });
+  return appointments.map((appointment) => ({
+    kind: 'meeting' as const,
+    id: appointment.id,
+    date: appointment.date,
+    appointment,
+    number: appointment.status === 'MET' ? ++met : null,
+  }));
 }
 
 /**
