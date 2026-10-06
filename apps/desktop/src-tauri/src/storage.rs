@@ -403,7 +403,12 @@ pub fn explorer(system_root: Option<OsString>) -> io::Result<PathBuf> {
         .map(PathBuf::from)
         .filter(|root| root.is_absolute())
         .map(|root| root.join("explorer.exe"))
-        .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "SystemRoot is not set"))
+        .ok_or_else(|| {
+            io::Error::new(
+                ErrorKind::NotFound,
+                "SystemRoot is missing or not an absolute path",
+            )
+        })
 }
 
 /// The newest backup with the same bytes. An unchanged file matches the newest, so it is tried
@@ -413,11 +418,11 @@ fn find_copy(backups: &Path, bytes: &[u8]) -> Option<String> {
     backup_names(backups)
         .into_iter()
         .rev()
-        .find(|name| holds(&backups.join(name), bytes).unwrap_or(false))
+        .find(|name| has_same_bytes(&backups.join(name), bytes).unwrap_or(false))
 }
 
-/// Whether the file at `path` holds exactly `bytes`.
-fn holds(path: &Path, bytes: &[u8]) -> io::Result<bool> {
+/// Whether the file at `path` has exactly `bytes` in it.
+fn has_same_bytes(path: &Path, bytes: &[u8]) -> io::Result<bool> {
     let mut file = fs::File::open(path)?;
     if file.metadata()?.len() != bytes.len() as u64 {
         return Ok(false);

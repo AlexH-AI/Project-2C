@@ -44,17 +44,27 @@ const handlers = () =>
 const commandSource = (command: string) =>
   new RegExp(`fn ${command}\\(.*?\\n\\}`, 's').exec(lib)?.[0];
 
-/** The parameters of a command with their types. */
+/** Splits at the commas outside `<…>`, `(…)` and `[…]`, so a type like `(u8, u8)` stays whole. */
+const splitTopLevel = (list: string) => {
+  const parts = [''];
+  let depth = 0;
+  for (const char of list) {
+    if ('<(['.includes(char)) depth++;
+    if ('>)]'.includes(char)) depth--;
+    if (char === ',' && depth === 0) parts.push('');
+    else parts[parts.length - 1] += char;
+  }
+  return parts.map((part) => part.trim()).filter(Boolean);
+};
+
+/** The parameters of a command with their types: everything between `fn name(` and `) ->`. */
 const parameters = (command: string) =>
-  /\(([^)]*)\)/
-    .exec(commandSource(command)!)![1]!
-    .split(',')
-    .map((parameter) => parameter.trim())
-    .filter(Boolean)
-    .map((parameter) => {
-      const [name, type] = parameter.split(/:\s*/);
-      return { name: name!, type: type! };
-    });
+  splitTopLevel(new RegExp(`fn ${command}\\((.*?)\\)\\s*->`, 's').exec(lib)![1]!).map(
+    (parameter) => {
+      const colon = parameter.indexOf(':');
+      return { name: parameter.slice(0, colon).trim(), type: parameter.slice(colon + 1).trim() };
+    },
+  );
 
 const camel = (snake: string) =>
   snake.replace(/_(\w)/g, (_, letter: string) => letter.toUpperCase());
