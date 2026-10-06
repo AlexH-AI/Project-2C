@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { ANCHOR_YEAR } from './anchor';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
 
@@ -75,6 +76,29 @@ test('submits "500tr", then issues it: the FYP defaults to the submitted one, ch
   await expect(row.getByRole('button', { name: /^Phát hành HĐ/ })).toHaveCount(0);
   await expect(header).toContainText(`Đã có HĐ (${before + 1})`);
   await expect(header.locator('span.rounded-full').first()).toHaveText(stage ?? '');
+});
+
+test('lists the policies by submission day, newest first, whatever order they were added', async ({
+  page,
+}) => {
+  await openProfile(page);
+  const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
+  for (const day of ['2/1', '14/9']) {
+    await card.getByRole('button', { name: '+ Hợp đồng' }).first().click();
+    const dialog = page.getByRole('dialog', { name: 'Hợp đồng mới · đã nộp' });
+    await dialog.getByRole('textbox', { name: /^Ngày nộp/ }).fill(day);
+    await dialog.getByRole('textbox', { name: /^FYP nộp/ }).fill('100tr');
+    await dialog.getByRole('button', { name: 'Lưu HĐ' }).click();
+    await expect(dialog).toBeHidden();
+  }
+
+  // dd/mm (this year) or dd/mm/yyyy as yyyy-mm-dd, which sorts as text in date order.
+  const days = (await card.getByRole('listitem').allTextContents()).map((text) => {
+    const [, day, month, year] = /Nộp (\d\d)\/(\d\d)(?:\/(\d{4}))?/.exec(text)!;
+    return `${year ?? ANCHOR_YEAR}-${month}-${day}`;
+  });
+  expect(days).toContain(`${ANCHOR_YEAR}-01-02`);
+  expect(days).toEqual([...days].sort().reverse());
 });
 
 test('refuses a zero, negative or unreadable FYP', async ({ page }) => {

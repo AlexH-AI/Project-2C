@@ -121,6 +121,28 @@ describe('createPersistQueue', () => {
     expect(queue.unsaved()).toBe(false);
   });
 
+  it('flush() leaves a newer running write last on disk, never the snapshot that failed', async () => {
+    const disk = fakeDisk();
+    const queue = createPersistQueue(disk.write);
+
+    queue.persist(bytes('v1'));
+    disk.next().fail();
+    await queue.idle();
+    queue.persist(bytes('v2'));
+
+    const flushed = queue.flush();
+    // Let every write it starts finish, so a wrong extra write shows on disk instead of hanging.
+    for (let write = disk.next(); write; write = disk.next()) {
+      write.finish();
+      await tick();
+    }
+    await flushed;
+
+    expect(disk.started).toEqual(['v1', 'v2']);
+    expect(disk.onDisk).toBe('v2');
+    expect(queue.unsaved()).toBe(false);
+  });
+
   it('flush() resolves at once when nothing is unsaved', async () => {
     const disk = fakeDisk();
     const queue = createPersistQueue(disk.write);

@@ -15,6 +15,7 @@ export default defineConfig({
         'apps/desktop/src/data/**/*.ts',
         'apps/desktop/src/shell/*.ts',
         'apps/desktop/src/routes/**/*-view.ts',
+        'apps/desktop/src/routes/**/*-form.ts',
         'apps/desktop/src/routes/applied-filter.ts',
         'apps/desktop/src/routes/reports/report-workbook.ts',
         'apps/desktop/src/routes/**/stage-chart.ts',
@@ -36,9 +37,9 @@ export default defineConfig({
           lines: 99,
         },
         'apps/desktop/src/data/**': {
-          statements: 96,
-          branches: 91,
-          functions: 92,
+          statements: 97,
+          branches: 92,
+          functions: 93,
           lines: 98,
         },
         // useRoute.ts is a React hook with no unit test (no DOM in Vitest); e2e covers it.
@@ -48,10 +49,11 @@ export default defineConfig({
           functions: 77,
           lines: 75,
         },
-        // Only the pure view helpers of routes are measured; the React screens are covered by e2e.
+        // Only the pure view and form helpers of routes are measured; the React screens are covered
+        // by e2e.
         'apps/desktop/src/routes/**': {
           statements: 99,
-          branches: 92,
+          branches: 94,
           functions: 99,
           lines: 99,
         },

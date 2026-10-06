@@ -46,9 +46,11 @@ test('dates sort by time, not as text: 01/10 comes after 30/09', async ({ page }
 test('a header cycles none → ↑ → ↓ → none, one sorted column at a time', async ({ page }) => {
   const { header, column } = await openTable(page);
   const customer = header('Khách hàng');
+  await expect(customer).toContainText('↕');
 
   await customer.click();
   await expect(customer).toHaveAttribute('aria-sort', 'ascending');
+  await expect(customer).toContainText('↑');
   await expect(header('Ngày')).toHaveAttribute('aria-sort', 'none');
   const names = await column(3);
   expect(names).toEqual([...names].sort(collator.compare));
@@ -63,6 +65,9 @@ test('a header cycles none → ↑ → ↓ → none, one sorted column at a time
   await customer.click();
   await expect(customer).toHaveAttribute('aria-sort', 'none');
   await expect(header('Ngày')).toHaveAttribute('aria-sort', 'none');
+  // Unsorted, the list keeps its own order: newest first.
+  const unsorted = (await column(1)).map(iso);
+  expect(unsorted).toEqual([...unsorted].sort().reverse());
 });
 
 test('headers sort from the keyboard', async ({ page }) => {

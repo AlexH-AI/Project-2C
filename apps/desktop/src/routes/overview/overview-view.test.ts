@@ -1,4 +1,12 @@
-import { calendarDate, customPeriod, periodOf, type MetricsData, type Scope } from '@p2c/domain';
+import {
+  calendarDate,
+  customPeriod,
+  periodOf,
+  type Appointment,
+  type CalendarDate,
+  type MetricsData,
+  type Scope,
+} from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
   APPOINTMENTS,
@@ -22,6 +30,50 @@ const d = calendarDate;
 
 const byKey = (tiles: readonly KpiTile[]) =>
   Object.fromEntries(tiles.map((tile) => [tile.key, tile]));
+
+let made = 0;
+/** `rf` cuộc gặp chuyển RF and `issued` issued policies of one RE, all on `day`. */
+function closing(day: CalendarDate, rf: number, issued: number): MetricsData {
+  const appointments = Array.from(
+    { length: rf },
+    () =>
+      ({
+        id: `rf-${++made}`,
+        customerId: 'kh',
+        reId: 're-an',
+        date: day,
+        status: 'MET',
+      }) as Appointment,
+  );
+  return {
+    people: PEOPLE,
+    appointments,
+    transitions: appointments.map((a) => ({
+      id: `tr-${a.id}`,
+      customerId: 'kh',
+      appointmentId: a.id,
+      from: 'N3',
+      to: 'N2',
+      date: day,
+    })),
+    policies: Array.from({ length: issued }, () => ({
+      id: `hd-${++made}`,
+      customerId: 'kh',
+      reId: 're-an',
+      submittedDate: day,
+      submittedFyp: 1_000_000,
+      issuedDate: day,
+      issuedFyp: 1_000_000,
+    })),
+  };
+}
+
+const together = (a: MetricsData, b: MetricsData): MetricsData => ({
+  people: a.people,
+  appointments: [...a.appointments, ...b.appointments],
+  transitions: [...a.transitions, ...b.transitions],
+  policies: [...a.policies, ...b.policies],
+});
 
 describe('kpiTiles', () => {
   it('matches the worked example of spec §4.2: month to date on 15/01/2027 (G18)', () => {
@@ -107,6 +159,39 @@ describe('kpiTiles', () => {
     });
   });
 
+  it('lists the six tiles in the order of the screen (mockup 1a)', () => {
+    const tiles = kpiTiles(GOLDEN, periodOf('month', MTD_VIEWING_DATE), ALL, MTD_VIEWING_DATE);
+    expect(tiles.map((tile) => tile.key)).toEqual([
+      'rf',
+      'submitted',
+      'caseSize',
+      'issued',
+      'revenue',
+      'closeRate',
+    ]);
+  });
+
+  it('names the one-day window before with its year only when it is another year', () => {
+    const newYear = d(2027, 1, 1);
+    const firstOfFeb = d(2027, 2, 1);
+    expect(kpiTiles(EMPTY, periodOf('month', newYear), ALL, newYear)[0]!.note).toBe(
+      'so với 01/12/2026',
+    );
+    expect(kpiTiles(EMPTY, periodOf('day', newYear), ALL, newYear)[0]!.note).toBe(
+      'so với 31/12/2026',
+    );
+    expect(kpiTiles(EMPTY, periodOf('month', firstOfFeb), ALL, firstOfFeb)[0]!.note).toBe(
+      'so với 01/01',
+    );
+  });
+
+  it('a close rate that moved less than 0,05 point reads "=", not "▲ 0 điểm %"', () => {
+    // 1 ÷ 46 RF = 2,17% against 1 ÷ 45 RF = 2,22%: -0,048 point.
+    const data = together(closing(d(2027, 1, 10), 45, 1), closing(d(2027, 2, 10), 46, 1));
+    const tiles = byKey(kpiTiles(data, periodOf('month', d(2027, 2, 1)), ALL, d(2027, 3, 15)));
+    expect(tiles.closeRate).toMatchObject({ value: '2,2', delta: { tone: 'same', text: '=' } });
+  });
+
   it('no change reads "="', () => {
     const tiles = byKey(kpiTiles(EMPTY, periodOf('year', d(2000, 1, 1)), ALL, d(2026, 10, 15)));
 
@@ -121,6 +206,19 @@ describe('kpiTiles', () => {
     const outOfRange = byKey(kpiTiles(EMPTY, periodOf('year', d(1900, 1, 1)), ALL, today));
 
     expect(custom.rf).toMatchObject({ delta: null, note: 'Kỳ Tùy chọn không so với kỳ trước' });
+    const customRate = byKey(
+      kpiTiles(
+        closing(d(2027, 1, 8), 2, 1),
+        customPeriod(d(2027, 1, 5), d(2027, 1, 20)),
+        ALL,
+        today,
+      ),
+    );
+    expect(customRate.closeRate).toMatchObject({
+      value: '50',
+      delta: null,
+      note: 'Kỳ Tùy chọn không so với kỳ trước',
+    });
     expect(future.rf).toMatchObject({ value: '—', delta: null, note: 'kỳ chưa bắt đầu' });
     expect(future.closeRate).toMatchObject({ value: '—', note: 'kỳ chưa bắt đầu', formula: null });
     expect(outOfRange.submitted).toMatchObject({

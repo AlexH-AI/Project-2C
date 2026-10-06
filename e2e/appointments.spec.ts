@@ -159,6 +159,18 @@ test('the year period shows twelve months in four quarters, without the day', as
   );
   expect(sum).toBeGreaterThan(999);
   expect(sum).toBe(await total(page));
+  // Each quarter's total adds up every appointment of its three months, not only the met ones.
+  const quarters = await year
+    .getByRole('group')
+    .evaluateAll((groups) =>
+      groups.map((group) => group.querySelector('p > span:last-child')?.textContent ?? ''),
+    );
+  expect(
+    quarters.reduce(
+      (n, text) => n + Number(text.match(/^([\d.]+) lịch$/)?.[1]?.replaceAll('.', '')),
+      0,
+    ),
+  ).toBe(sum);
   // R2-03: the year's line in the whole scope groups its thousands, like the months.
   await expect(page.getByText(SUMMARY).first()).toHaveText(/^\d{1,3}(\.\d{3})+ lịch · /);
   await expectList(page, sum);
@@ -421,6 +433,15 @@ test('a day long past without a year offers next year; the RE picks', async ({ p
   await expect(f.dialog).toContainText('Gõ dd/mm hoặc dd/mm/yyyy.');
   await f.time.fill('25:00');
   await expect(f.dialog).toContainText('Giờ từ 00:00 đến 23:59.');
+});
+
+test('an appointment still ahead offers no next one (mockup 6h)', async ({ page }) => {
+  const { rows, detail } = screen(page);
+  await showDay(page, '16/09/2026');
+  await rows.first().getByRole('button').click();
+
+  await expect(detail.getByRole('button', { name: 'Dời lịch' })).toBeVisible();
+  await expect(detail.getByRole('button', { name: 'Tạo lịch hẹn tiếp theo' })).toHaveCount(0);
 });
 
 test('the next appointment from a past one is filled in and must be from today on', async ({

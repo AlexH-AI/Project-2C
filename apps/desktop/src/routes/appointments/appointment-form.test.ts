@@ -9,6 +9,7 @@ import {
   priorMeetings,
   readScheduleDate,
   searchCustomers,
+  withTime,
 } from './appointment-form';
 
 const d = (day: number, month: number, year: number) => calendarDate(year, month, day);
@@ -81,15 +82,24 @@ describe('dayText', () => {
   });
 });
 
+describe('withTime', () => {
+  it('adds the time after the day, and leaves an untimed day alone', () => {
+    expect(withTime('20/09', '14:00')).toBe('20/09 14:00');
+    expect(withTime('20/09', null)).toBe('20/09');
+  });
+});
+
 describe('parseTime', () => {
   it('reads hh:mm, padding the hour, and empty as no time', () => {
     expect(parseTime('14:00')).toEqual({ ok: true, time: '14:00' });
     expect(parseTime(' 9:30 ')).toEqual({ ok: true, time: '09:30' });
     expect(parseTime('')).toEqual({ ok: true, time: null });
+    expect(parseTime('23:59')).toEqual({ ok: true, time: '23:59' });
+    expect(parseTime('0:00')).toEqual({ ok: true, time: '00:00' });
   });
 
   it('refuses an hour or minute out of range and other text', () => {
-    for (const text of ['25:00', '12:60', '1400', 'abc', '12:5']) {
+    for (const text of ['24:00', '25:00', '12:60', '1400', 'abc', '12:5']) {
       expect(parseTime(text)).toEqual({ ok: false });
     }
   });
@@ -143,6 +153,7 @@ describe('priorMeetings', () => {
     appt('C1', d(14, 9, 2026), '15:00', { status: 'CANCELLED' }),
     appt('C1', d(26, 9, 2026), '16:00', { status: 'SCHEDULED' }),
     appt('C1', d(27, 9, 2026), '09:00', { status: 'SCHEDULED' }),
+    appt('C1', d(14, 9, 2026), null, { status: 'CANCELLED' }),
   ];
 
   it("lists the customer's appointments up to today, newest first, and counts the ones met", () => {
@@ -151,6 +162,7 @@ describe('priorMeetings', () => {
       ['26/09/2026', '16:00'],
       ['14/09/2026', '15:00'],
       ['14/09/2026', '10:00'],
+      ['14/09/2026', null],
       ['20/06/2026', null],
       ['01/06/2026', '10:00'],
     ]);
@@ -180,6 +192,7 @@ describe('searchCustomers', () => {
     ]);
     expect(searchCustomers(all, 'do minh', 10).map((c) => c.code)).toEqual(['K-0001']);
     expect(searchCustomers(all, 'k-m2', 10).map((c) => c.name)).toEqual(['Lê Hoài Nam']);
+    expect(searchCustomers(all, '  nam ', 10).map((c) => c.name)).toEqual(['Lê Hoài Nam']);
   });
 
   it('returns nothing for empty text and no more than the limit', () => {

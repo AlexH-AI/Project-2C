@@ -30,9 +30,44 @@ test('opens on the current month to date with the appointments tile and six KPI'
   await expect(kpis.getByRole('region', { name: 'Chuyển RF' })).toContainText(
     'so với 01/08 – 15/08',
   );
-  await expect(kpis.getByRole('region', { name: 'Tỉ lệ chốt' })).toBeVisible();
+  await expect(kpis.getByRole('region', { name: 'Tỉ lệ chốt' })).toContainText(
+    /\d+ HĐ phát hành ÷ \d+ RF/,
+  );
+  // ▲ reads in the ok colour and ▼ in the danger colour (mockup 1a).
+  const tones = await kpis.evaluate((section) => {
+    const colour = (token: string) => {
+      const probe = document.createElement('i');
+      probe.style.color = `var(${token})`;
+      section.append(probe);
+      const value = getComputedStyle(probe).color;
+      probe.remove();
+      return value;
+    };
+    const tone = { '▲': colour('--ok'), '▼': colour('--danger') };
+    return [...section.querySelectorAll('span')]
+      .filter((span) => /^[▲▼]/.test(span.textContent ?? ''))
+      .map((span) => getComputedStyle(span).color === tone[span.textContent![0] as '▲' | '▼']);
+  });
+  expect(tones.length).toBeGreaterThan(0);
+  expect(tones).not.toContain(false);
+  // Each group line has its own count: the four add up to the total, met first.
+  const tile = await appointmentsTile(page);
+  expect(tile.lines.reduce((sum, line) => sum + line, 0)).toBe(tile.total);
+  expect(tile.lines[0]).toBe(tile.met);
   expect(errors).toEqual([]);
 });
+
+/** The appointments tile of the month: "met / total" and the count of each of its four lines. */
+async function appointmentsTile(page: Page) {
+  const tile = page.getByRole('region', { name: 'Lịch hẹn · cả tháng' });
+  await expect(tile.getByRole('listitem')).toHaveCount(4);
+  const count = (text: string) => Number(text.replace(/\./g, ''));
+  const [met, total] = ((await tile.getByRole('paragraph').first().textContent()) ?? '')
+    .split('/')
+    .map(count);
+  const lines = (await tile.getByRole('listitem').locator('b').allTextContents()).map(count);
+  return { met: met!, total: total!, lines };
+}
 
 test('a new period waits for Lọc, then "Đang xem" changes', async ({ page }) => {
   const { kinds, filter, pending, viewing } = await openOverview(page);
@@ -62,6 +97,7 @@ test('choosing the shown period again leaves nothing to apply', async ({ page })
 
 test('the Team scope has no team to pick and counts every team', async ({ page }) => {
   const { scope, filter, pending, viewing } = await openOverview(page);
+  const all = await appointmentsTile(page);
 
   await scope.getByRole('radio', { name: 'Team' }).click();
   await expect(page.getByRole('combobox', { name: 'Team của góc nhìn' })).toHaveCount(0);
@@ -69,6 +105,7 @@ test('the Team scope has no team to pick and counts every team', async ({ page }
 
   await filter.click();
   await expect(viewing).toContainText('· Team (3 team)');
+  expect(await appointmentsTile(page)).toEqual(all);
 
   await scope.getByRole('radio', { name: 'RE' }).click();
   await expect(page.getByRole('combobox', { name: 'RE của góc nhìn' })).toBeVisible();
@@ -111,11 +148,27 @@ test('customers by stage: four tiles over the chart, a stage hidden and shown ag
   const charts = block.getByRole('img', { name: /^Diễn biến khách hàng theo nhóm · Team / });
   await expect(charts).toHaveCount(3);
   await expect(charts.locator('svg')).toHaveCount(3);
+  // Each team's chart is headed by its last column of the stages shown (mockup 1b).
+  const headings = block.getByRole('heading', { name: /^Team / });
+  await expect(headings).toHaveText(
+    Array(3).fill(/^Team [^·]+N4 [\d.]+ · N3 [\d.]+ · N2 [\d.]+ · N1 [\d.]+$/),
+  );
+  // Hiding N4 drops its series, not only its colour: fewer parts are drawn.
+  const n4Colour = await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--n4').trim(),
+  );
+  const n4Drawn = charts.locator(`svg path[fill="${n4Colour}"]`);
+  await expect(n4Drawn).not.toHaveCount(0);
+  const drawn = charts.locator('svg path');
+  const allDrawn = await drawn.count();
 
   await n4.click();
   await expect(n4).toHaveAttribute('aria-pressed', 'false');
   await expect(n4).toContainText('đang ẩn');
   await expect(charts.locator('svg')).toHaveCount(3);
+  await expect(n4Drawn).toHaveCount(0);
+  expect(await drawn.count()).toBeLessThan(allDrawn);
+  await expect(headings).toHaveText(Array(3).fill(/^Team [^·]+N3 [\d.]+ · N2 [\d.]+ · N1 [\d.]+$/));
 
   await n4.click();
   await expect(n4).toHaveAttribute('aria-pressed', 'true');

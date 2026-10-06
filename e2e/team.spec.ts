@@ -299,6 +299,25 @@ test('refuses to delete an RE who still has records, and says how many (9b)', as
   await expect(members(page, 'Sao Mai').getByRole('row', { name: new RegExp(name) })).toBeVisible();
 });
 
+test('refuses to delete the IS who still joins appointments, and says how many (9b)', async ({
+  page,
+}) => {
+  const shared = page.getByRole('region', { name: 'Người hỗ trợ' });
+  const is = shared.getByRole('listitem').filter({ hasText: 'IS' });
+  const name = (await is.getByRole('button', { name: /^Sửa / }).getAttribute('aria-label'))!.slice(
+    'Sửa '.length,
+  );
+  await is.getByRole('button', { name: /^Sửa / }).click();
+  await page
+    .getByRole('dialog', { name: 'Sửa nhân sự' })
+    .getByRole('button', { name: 'Xóa nhân sự' })
+    .click();
+
+  const alert = page.getByRole('dialog', { name: `Xóa ${name}?` }).getByRole('alert');
+  await expect(alert).toContainText('Chưa xóa được — IS còn dữ liệu');
+  await expect(alert).toContainText(/[1-9][\d.]* lịch hẹn là người phối hợp/);
+});
+
 test('member columns: an RE open customers match the Customers screen', async ({ page }) => {
   await page.goto('/#/customers');
   await page
@@ -322,6 +341,31 @@ test('member columns: an RE open customers match the Customers screen', async ({
   ).toBeVisible();
   const row = table.getByRole('row', { name: new RegExp(re) });
   await expect(row.getByRole('cell').nth(2)).toHaveText(open);
+  const [appointments30, issued] = await Promise.all(
+    [3, 4].map((index) => row.getByRole('cell').nth(index).textContent()),
+  );
+
+  // The other two match Báo cáo for that RE: the 30 days up to today, and the year so far.
+  await page.goto('/#/reports');
+  const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
+  await scope.getByRole('radio', { name: 'RE' }).click();
+  await page.getByRole('combobox', { name: 'RE của góc nhìn' }).selectOption(`${re} · ${team}`);
+  const kinds = page.getByRole('radiogroup', { name: 'Loại kỳ' });
+  await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
+  const picker = page.getByRole('group', { name: 'Kỳ thống kê' });
+  await picker.getByRole('textbox', { name: 'Từ ngày' }).fill('17/08/2026');
+  await picker.getByRole('textbox', { name: 'Đến ngày' }).fill('15/09/2026');
+  const filter = page.getByRole('button', { name: 'Lọc', exact: true });
+  await filter.click();
+  const viewing = page.locator('p', { hasText: 'Đang xem:' });
+  await expect(viewing).toContainText(`17/08 – 15/09/2026 · RE ${re}`);
+  const totals = page.getByRole('table', { name: 'Tổng hợp' }).getByRole('cell');
+  await expect(totals.nth(4)).toHaveText(appointments30!);
+
+  await kinds.getByRole('radio', { name: 'Năm' }).click();
+  await filter.click();
+  await expect(viewing).toContainText(`Năm ${ANCHOR_YEAR}`);
+  await expect(totals.nth(8)).toHaveText(issued!);
 });
 
 test('deletes an empty team', async ({ page }) => {

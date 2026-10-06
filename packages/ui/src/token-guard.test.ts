@@ -90,4 +90,19 @@ describe('findHardcodedSeparators', () => {
     ].join('\n');
     expect(findHardcodedSeparators(source)).toEqual([]);
   });
+
+  it('checks the code after a block comment ends, on its line and the next', () => {
+    const source = [
+      '/**',
+      ' * Mockup 6c → 7a',
+      " */ const a = ' · ';",
+      "/* N4 → N1 */ const b = ' → ';",
+      "const c = ' · ';",
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 3, match: '·', rule: 'hardcoded-separator' },
+      { line: 4, match: '→', rule: 'hardcoded-separator' },
+      { line: 5, match: '·', rule: 'hardcoded-separator' },
+    ]);
+  });
 });

@@ -8,6 +8,7 @@ import {
   readCaseSize,
   readOutcome,
   stageAfterChoices,
+  withoutError,
   type OutcomeDraft,
 } from './outcome-form';
 
@@ -86,6 +87,16 @@ describe('readOutcome', () => {
       errors: ['nextDate', 'nextTime'],
     });
     expect(readOutcome({ ...met, next: next('') })).toEqual({ ok: false, errors: ['nextDate'] });
+  });
+});
+
+describe('withoutError', () => {
+  it('drops the error of the field just changed and keeps the others', () => {
+    expect(withoutError(['stageAfter', 'nextStep', 'nextDate'], 'nextStep')).toEqual([
+      'stageAfter',
+      'nextDate',
+    ]);
+    expect(withoutError(['stageAfter'], 'note')).toEqual(['stageAfter']);
   });
 });
 

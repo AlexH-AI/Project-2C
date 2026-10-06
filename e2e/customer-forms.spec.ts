@@ -95,6 +95,10 @@ test('edits the profile, showing the customer code and the birth date as underst
 
 test('a closed customer reopens only to N3', async ({ page }) => {
   await column(page, 'Tạm hoãn').getByRole('link').first().click();
+  // In Tạm hoãn "từ" the latest stage change, the first of the timeline, not the first made.
+  const latest = ((await history(page).first().textContent()) ?? '').slice(0, 10);
+  await expect(history(page)).not.toHaveCount(1);
+  await expect(page.getByText(`từ ${latest}`, { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Chuyển nhóm' }).click();
   const dialog = page.getByRole('dialog', { name: /^Chuyển nhóm · / });
 

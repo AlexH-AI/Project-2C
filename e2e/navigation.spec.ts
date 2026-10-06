@@ -8,6 +8,10 @@ test('the sidebar lists the six screens, each with an icon', async ({ page }) =>
 
   const links = page.getByRole('navigation', { name: 'Điều hướng chính' }).getByRole('link');
   await expect(links).toHaveText(SCREENS);
+  // Team & nhân sự and Cài đặt sit under the "Quản lý" group label.
+  await expect(page.getByRole('navigation', { name: 'Điều hướng chính' })).toContainText(
+    /Báo cáoQuản lýTeam & nhân sự/,
+  );
   for (const link of await links.all()) {
     await expect(link.locator('svg')).toHaveCount(1);
   }
@@ -65,6 +69,7 @@ test('an unknown address falls back to the overview', async ({ page }) => {
   await page.goto('/#/nope');
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan');
+  await expect(page).toHaveURL(/#\/overview$/);
 });
 
 test('the scope switch selects one of All / Team / RE', async ({ page }) => {

@@ -52,6 +52,17 @@ describe('teamCompare', () => {
     expect(view.total.cells).toEqual(['9', '5', '5', '1,9 tỷ', '5', '2,3 tỷ', '100%']);
   });
 
+  it('lists the teams by Vietnamese name: D before Đ, whatever order they were made in', () => {
+    const [a, b] = TEAMS as [(typeof TEAMS)[number], (typeof TEAMS)[number]];
+    const teams = [
+      { ...b, name: 'Đông Hải' },
+      { ...a, name: 'Dương Quang' },
+    ];
+    const view = teamCompare({ ...GOLDEN, teams }, JAN_2027, d(2027, 3, 15));
+
+    expect(view.teams.map((team) => team.name)).toEqual(['Dương Quang', 'Đông Hải']);
+  });
+
   it('lists the RE of each team by name, and they add up to the team row', () => {
     const view = teamCompare(GOLDEN, JAN_2027, d(2027, 3, 15));
     const [a] = view.teams;
