@@ -18,7 +18,10 @@ interface ChoicesProps<T extends string> {
   help?: string;
 }
 
-/** Labelled row of radio chips (mockup `.choices`); arrow keys move between the enabled ones. */
+/**
+ * Labelled row of radio chips (mockup `.choices`); arrow keys move between the enabled ones. A radio
+ * group rather than a plain group, so `required` reaches assistive technology as `aria-required`.
+ */
 export function Choices<T extends string>({
   label,
   options,
@@ -30,7 +33,9 @@ export function Choices<T extends string>({
   const name = useId();
   return (
     <fieldset
+      role="radiogroup"
       className="m-0 flex flex-col gap-1 border-0 p-0"
+      aria-required={required}
       aria-describedby={help && `${name}-help`}
     >
       <legend className="mb-1 p-0 font-medium">

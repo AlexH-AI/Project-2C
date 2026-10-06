@@ -97,4 +97,22 @@ describe('closeAfterSaving', () => {
     expect(disk.onDisk).toEqual([]);
     expect(win.events).toEqual(['ask', 'close']);
   });
+
+  it('keeps the window open when the question is dismissed unanswered, and asks again next time', async () => {
+    const disk = fakeDisk();
+    const saves = createPersistQueue(disk.write);
+    const win = fakeWindow('stay', 'discard');
+
+    saves.persist(bytes('v1'));
+    const first = closeAfterSaving(saves, win.port);
+    disk.next().fail();
+    await first;
+    expect(win.events).toEqual(['ask']);
+
+    const second = closeAfterSaving(saves, win.port);
+    disk.next().fail();
+    await second;
+    expect(disk.onDisk).toEqual([]);
+    expect(win.events).toEqual(['ask', 'ask', 'close']);
+  });
 });

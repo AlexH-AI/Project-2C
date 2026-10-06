@@ -14,6 +14,7 @@ interface TextFieldProps {
   /** Marks the label with *; the command, not the browser, rejects an empty value. */
   required?: boolean;
   disabled?: boolean;
+  /** Also marks the field for `Dialog`, which focuses it once open. */
   autoFocus?: boolean;
   /** A multi-line box of this many rows instead of a one-line input. */
   rows?: number;
@@ -54,6 +55,7 @@ export function TextField({
         aria-describedby={error || hint ? noteId : undefined}
         disabled={disabled}
         autoFocus={autoFocus}
+        data-autofocus={autoFocus || undefined}
         autoComplete="off"
         className={`rounded-md border bg-surface-0 px-2 py-1.5 text-fg focus-visible:outline-2 focus-visible:outline-accent ${
           error ? 'border-danger' : 'border-border-strong'

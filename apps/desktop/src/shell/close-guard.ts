@@ -1,7 +1,10 @@
 import type { PersistQueue } from '../data/persist-queue';
 
-/** The answer to "the last changes are not saved": try saving again, or close without them. */
-export type CloseChoice = 'retry' | 'discard';
+/**
+ * The answer to "the last changes are not saved": try saving again, close without them, or
+ * `stay` when the question was dismissed unanswered (Escape) — the window stays open.
+ */
+export type CloseChoice = 'retry' | 'discard' | 'stay';
 
 /** The window being closed (exe only; web mode keeps the database in memory). */
 export interface ClosePort {
@@ -23,7 +26,9 @@ export async function closeAfterSaving(
       await saves.flush();
       break;
     } catch {
-      if ((await port.ask()) === 'discard') break;
+      const choice = await port.ask();
+      if (choice === 'stay') return;
+      if (choice === 'discard') break;
     }
   }
   await port.close();

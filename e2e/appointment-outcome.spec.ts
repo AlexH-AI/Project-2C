@@ -34,8 +34,8 @@ function outcome(page: Page) {
   const dialog = page.getByRole('dialog', { name: 'Kết quả cuộc gặp' });
   return {
     dialog,
-    status: dialog.getByRole('group', { name: 'Trạng thái' }),
-    stageAfter: dialog.getByRole('group', { name: 'Nhóm sau cuộc gặp' }),
+    status: dialog.getByRole('radiogroup', { name: 'Trạng thái' }),
+    stageAfter: dialog.getByRole('radiogroup', { name: 'Nhóm sau cuộc gặp' }),
     nextStep: dialog.getByRole('textbox', { name: /^Việc tiếp theo/ }),
     caseSize: dialog.getByRole('textbox', { name: /^Case size/ }),
     booking: dialog.getByRole('checkbox', { name: 'Hẹn lần tiếp theo' }),
@@ -66,6 +66,9 @@ test('a meeting met N3 → N2 moves the customer, the timeline says after the me
   const o = outcome(page);
   await expect(o.status.getByRole('radio', { name: 'Đã gặp' })).toBeChecked();
   await expectReviewerChoices(o.dialog);
+  // Both groups must be answered; screen readers say so before the save refuses (DR-26).
+  await expect(o.status).toHaveAttribute('aria-required', 'true');
+  await expect(o.stageAfter).toHaveAttribute('aria-required', 'true');
 
   // Met needs a stage after and a next step; the case size may stay empty.
   await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
@@ -206,9 +209,9 @@ test('once the customer moved on, status, day and stage after are locked and del
 
   await expect(dialog).toContainText('Khóa 3 ô: trạng thái, ngày cuộc hẹn, nhóm sau cuộc gặp');
   await expect(dialog.getByRole('link', { name: 'Chuyển nhóm tay ở Hồ sơ KH' })).toBeVisible();
-  await expect(dialog.getByRole('group', { name: 'Trạng thái' })).toHaveCount(0);
+  await expect(dialog.getByRole('radiogroup', { name: 'Trạng thái' })).toHaveCount(0);
   await expect(dialog.getByRole('textbox', { name: /^Ngày cuộc hẹn/ })).toHaveCount(0);
-  await expect(dialog.getByRole('group', { name: 'Nhóm sau cuộc gặp' })).toHaveCount(0);
+  await expect(dialog.getByRole('radiogroup', { name: 'Nhóm sau cuộc gặp' })).toHaveCount(0);
   await expect(dialog.getByRole('button', { name: 'Xóa lịch hẹn' })).toBeDisabled();
   await expect(dialog).toContainText('Xóa cũng bị chặn');
 

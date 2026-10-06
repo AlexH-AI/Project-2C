@@ -43,7 +43,7 @@ test('creates a customer in N4 on the kanban, then moves it to N2 by hand', asyn
 
   const dialog = await openCreate(page);
   await expect(dialog).toContainText('Mã KH (vd. K-9A1C) sinh khi lưu');
-  const stages = dialog.getByRole('group', { name: 'Nhóm ban đầu' }).getByRole('radio');
+  const stages = dialog.getByRole('radiogroup', { name: 'Nhóm ban đầu' }).getByRole('radio');
   await expect(stages).toHaveCount(4);
   await expect(stages.nth(0)).toBeChecked();
   await expect(dialog.getByRole('radio', { name: 'Tạm hoãn' })).toHaveCount(0);
