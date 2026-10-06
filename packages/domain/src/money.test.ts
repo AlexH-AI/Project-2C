@@ -195,16 +195,20 @@ describe('parseVnd', () => {
     });
 
     // DR-38: spaces in a row are one space, so the pattern never backtracks over them.
+    // Timed warm, best of a few runs, so a slow CI runner's first call or a pause does not fail it;
+    // the quadratic pattern took 173 ms here, far past the bound either way.
     it('reads a long run of spaces quickly', () => {
       const texts = ['1' + ' '.repeat(20_000) + 'x', '1' + ' '.repeat(20_000) + '2'];
-      const started = Date.now();
-      const results = texts.map(parseVnd);
-      const elapsed = Date.now() - started;
-      expect(results).toEqual([
+      expect(texts.map(parseVnd)).toEqual([
         { ok: false, error: 'format' },
         { ok: false, error: 'format' },
       ]);
-      expect(elapsed).toBeLessThan(20);
+      const runs = Array.from({ length: 5 }, () => {
+        const started = Date.now();
+        texts.forEach(parseVnd);
+        return Date.now() - started;
+      });
+      expect(Math.min(...runs)).toBeLessThan(20);
     });
   });
 });

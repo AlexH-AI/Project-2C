@@ -61,11 +61,19 @@ export function toPastIsoDate(db: Database, date: CalendarDate): string {
   return iso;
 }
 
-/** A fee (FYP, case size): a whole, positive number of đồng, at most `MAX_FEE_VND` (DR-23). */
+/** Whether a value is a fee (FYP, case size): whole đồng, above 0, at most `MAX_FEE_VND` (DR-23). */
+export function isFee(value: unknown): value is Vnd {
+  return (
+    typeof value === 'number' && Number.isSafeInteger(value) && value > 0 && value <= MAX_FEE_VND
+  );
+}
+
+/** A fee, as `isFee` reads it; past the cap is its own error, so the UI can name the cap. */
 export function requireAmount(amount: Vnd): Vnd {
-  if (!Number.isSafeInteger(amount) || amount <= 0) throw new DbError('INVALID_AMOUNT');
-  if (amount > MAX_FEE_VND) throw new DbError('AMOUNT_TOO_LARGE');
-  return amount;
+  if (isFee(amount)) return amount;
+  throw new DbError(
+    Number.isSafeInteger(amount) && amount > 0 ? 'AMOUNT_TOO_LARGE' : 'INVALID_AMOUNT',
+  );
 }
 
 /** The id of a live person with the RE role — the only role that owns records (G2 G). */

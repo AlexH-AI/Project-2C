@@ -7,7 +7,6 @@
 import {
   assertValidTransition,
   calendarDate,
-  MAX_FEE_VND,
   PIPELINE_STAGES,
   REVIEWER_ROLES,
   type CustomerStage,
@@ -16,7 +15,7 @@ import {
 } from '@p2c/domain';
 import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
-import { today, toIsoDate } from './common';
+import { isFee, today, toIsoDate } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { normalizeKycValue, profileFactValue, type ProfileFields } from './kyc';
@@ -48,18 +47,12 @@ function validValue(column: string, value: SqlValue): boolean {
   if (column === 'time') return typeof value === 'string' && TIME.test(value);
   if (TIMESTAMPS.has(column)) return timestamp.safeParse(value).success;
   if (column === 'seq') return typeof value === 'number' && value >= 1;
-  if (FEES.has(column)) return validFee(value);
+  // A fee, as `requireAmount` takes it (DR-23).
+  if (FEES.has(column)) return isFee(value);
   return true;
 }
 
 const FEES = new Set(['expected_case_size', 'submitted_fyp', 'issued_fyp']);
-
-/** A fee as `requireAmount` takes it: whole đồng, above 0, at most `MAX_FEE_VND` (DR-23). */
-function validFee(value: SqlValue): boolean {
-  return (
-    typeof value === 'number' && Number.isSafeInteger(value) && value > 0 && value <= MAX_FEE_VND
-  );
-}
 
 /** `YYYY-MM-DD` of a day that exists, as `calendarDate` reads it. */
 function validDate(value: SqlValue): boolean {
