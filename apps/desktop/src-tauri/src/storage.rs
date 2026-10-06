@@ -4,7 +4,7 @@
 
 use std::ffi::OsString;
 use std::fs;
-use std::io::{self, ErrorKind, Write};
+use std::io::{self, ErrorKind, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard};
 
@@ -13,6 +13,8 @@ pub const DATA_DIR: &str = "Project2C-data";
 pub const ALREADY_OPEN: &str = "ALREADY_OPEN";
 /// Error message of a save from a page that a webview reload replaced.
 pub const STALE_PAGE: &str = "STALE_PAGE";
+/// Error message of a backup that found the disk full; the app matches it exactly.
+pub const DISK_FULL: &str = "DISK_FULL";
 const DB_FILE: &str = "project2c.db";
 const LOCK_FILE: &str = "project2c.lock";
 const BACKUP_DIR: &str = "backups";
@@ -26,6 +28,8 @@ const MAX_EXPORT_SUFFIX: u32 = 1000;
 /// Digits of the write order in a backup name, zero-padded so the folder lists in order.
 const SEQ_WIDTH: usize = 8;
 const SQLITE_HEADER: &[u8] = b"SQLite format 3\0";
+/// How much of a backup [`find_copy`] reads at a time.
+const COMPARE_BLOCK: usize = 64 * 1024;
 
 /// Keeps the data folder to one process, and the file commands of this process to one at a time.
 /// The first [`open`] holds `project2c.lock` open without sharing until the process ends; Windows
@@ -126,23 +130,35 @@ pub fn open(dir: &Path, page: &str, lock: &DataLock) -> io::Result<Option<Vec<u8
 
 /// Copies the saved database file into `backups\` (at startup once the app opened it, and before
 /// replacing the data) and returns the backup's file name — an identical copy already there is
-/// reused.
+/// reused. A full disk → `StorageFull` with the message [`DISK_FULL`].
 pub fn backup(dir: &Path, stamp: &str, lock: &DataLock) -> io::Result<String> {
     let _held = lock.hold();
     let bytes = fs::read(dir.join(DB_FILE))?;
-    copy_to_backups(&dir.join(BACKUP_DIR), &bytes, stamp)
+    copy_to_backups(&dir.join(BACKUP_DIR), &bytes, stamp).map_err(disk_full)
+}
+
+/// Gives a full disk the message the app tells apart; any other error stays as it is.
+fn disk_full(error: io::Error) -> io::Error {
+    if error.kind() == ErrorKind::StorageFull {
+        io::Error::new(ErrorKind::StorageFull, DISK_FULL)
+    } else {
+        error
+    }
 }
 
 /// Writes `bytes` as the next backup, keeping the ten last written; returns the name of the copy.
 /// Starts on a file that did not change must not push the older backups out, so an identical copy
-/// is never written twice.
+/// is reused instead of written twice, and the backups are pruned again then: a prune another
+/// program held off is retried (DR-31). The oldest backup goes before the copy is written, so a
+/// nearly full disk needs room for one copy only (DR-57); a copy that still fails costs that one.
 fn copy_to_backups(backups: &Path, bytes: &[u8], stamp: &str) -> io::Result<String> {
     if let Some(name) = find_copy(backups, bytes) {
+        prune_backups(backups, KEEP_BACKUPS, Some(&name));
         return Ok(name);
     }
+    prune_backups(backups, KEEP_BACKUPS - 1, None);
     let name = backup_name(next_seq(backups), stamp);
     write_atomic(backups, &name, bytes)?;
-    prune_backups(backups, &name);
     Ok(name)
 }
 
@@ -218,9 +234,8 @@ fn claim_name(name: &str) -> String {
     format!("{name}.claim")
 }
 
-/// Removes what an export cut short by a crash left in `exports\`: claims, `.tmp` files, and the
-/// empty file the first version of [`write_export`] kept under the final name — an empty file is
-/// never a real export. Runs only when [`open`] takes the data lock for this process, before any
+/// Removes what an export cut short by a crash left in `exports\`: claims and `.tmp` files. Runs
+/// only when [`open`] takes the data lock for this process, before any
 /// export of this process can start and while no other app instance can export. A webview reload
 /// opens again under the lock already held and skips this, so an export still running keeps its
 /// claim and `.tmp`. Best effort: a file another program holds stays until a later start.
@@ -231,7 +246,6 @@ fn remove_interrupted_exports(exports: &Path) {
         let left = EXPORT_EXTENSIONS.iter().any(|extension| {
             name.ends_with(&format!("{extension}.claim"))
                 || name.ends_with(&format!("{extension}.tmp"))
-                || (name.ends_with(extension) && meta.len() == 0)
         });
         if left && meta.is_file() {
             let _ = fs::remove_file(entry.path());
@@ -300,38 +314,14 @@ fn backup_name(seq: u64, stamp: &str) -> String {
     format!("{BACKUP_PREFIX}s{seq:0SEQ_WIDTH$}-{stamp}.db")
 }
 
-/// Where a backup sits in write order. Names from before write order existed
-/// (`project2c-<stamp>[-<n>].db`) are older than every numbered one and sort by `(stamp, n)`.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-enum BackupKey<'a> {
-    Stamped(&'a str, u64),
-    Numbered(u64),
-}
-
-/// The sort key of a backup name; `None` for any other name.
-fn backup_key(name: &str) -> Option<BackupKey<'_>> {
+/// The write order of a backup name; `None` for any other name.
+fn backup_seq(name: &str) -> Option<u64> {
     let rest = name.strip_prefix(BACKUP_PREFIX)?.strip_suffix(".db")?;
-    if let Some(numbered) = rest.strip_prefix('s') {
-        let (seq, stamp) = numbered.split_once('-')?;
-        if !all_digits(seq) || !is_stamp(stamp) {
-            return None;
-        }
-        return seq.parse().ok().map(BackupKey::Numbered);
-    }
-    let stamp = rest.get(..15)?;
-    if !is_stamp(stamp) {
+    let (seq, stamp) = rest.strip_prefix('s')?.split_once('-')?;
+    if !all_digits(seq) || !is_stamp(stamp) {
         return None;
     }
-    let n = match &rest[15..] {
-        "" => 0,
-        suffix => {
-            let digits = suffix
-                .strip_prefix('-')
-                .filter(|d| all_digits(d) && !d.starts_with('0'))?;
-            digits.parse().ok()?
-        }
-    };
-    Some(BackupKey::Stamped(stamp, n))
+    seq.parse().ok()
 }
 
 /// `YYYYMMDD-HHMMSS` as [`stamp`] makes it.
@@ -348,12 +338,7 @@ fn next_seq(backups: &Path) -> u64 {
         .into_iter()
         .flatten()
         .flatten()
-        .filter_map(
-            |entry| match backup_key(&entry.file_name().to_string_lossy()) {
-                Some(BackupKey::Numbered(seq)) => Some(seq),
-                _ => None,
-            },
-        )
+        .filter_map(|entry| backup_seq(&entry.file_name().to_string_lossy()))
         .max()
         .map_or(1, |seq| seq.saturating_add(1))
 }
@@ -371,9 +356,9 @@ fn backup_names(backups: &Path) -> Vec<String> {
         .flatten()
         .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_file()))
         .map(|entry| entry.file_name().to_string_lossy().into_owned())
-        .filter(|name| backup_key(name).is_some())
+        .filter(|name| backup_seq(name).is_some())
         .collect();
-    names.sort_by(|a, b| backup_key(a).cmp(&backup_key(b)));
+    names.sort_by_key(|name| backup_seq(name));
     names
 }
 
@@ -411,21 +396,55 @@ pub fn explorer_arg(path: &Path) -> OsString {
     arg
 }
 
-fn find_copy(backups: &Path, bytes: &[u8]) -> Option<String> {
-    backup_names(backups).into_iter().find(|name| {
-        let path = backups.join(name);
-        fs::metadata(&path).is_ok_and(|meta| meta.len() == bytes.len() as u64)
-            && fs::read(&path).is_ok_and(|copy| copy == bytes)
-    })
+/// Explorer by its full path in `system_root` (`%SystemRoot%`): a bare name is looked up in the
+/// exe's folder first, so an `explorer.exe` put next to the portable exe would run instead (DR-54).
+pub fn explorer(system_root: Option<OsString>) -> io::Result<PathBuf> {
+    system_root
+        .map(PathBuf::from)
+        .filter(|root| root.is_absolute())
+        .map(|root| root.join("explorer.exe"))
+        .ok_or_else(|| {
+            io::Error::new(
+                ErrorKind::NotFound,
+                "SystemRoot is missing or not an absolute path",
+            )
+        })
 }
 
-/// Deletes the oldest written backups until `KEEP_BACKUPS` remain, never `keep` (the copy just
-/// written). Best effort, so it never blocks startup: a backup another program holds open stays,
-/// and a later start tries again.
-fn prune_backups(backups: &Path, keep: &str) {
+/// The newest backup with the same bytes. An unchanged file matches the newest, so it is tried
+/// first; each one is read a block at a time and left at its first difference, since backups of
+/// the same size usually differ in the header already (DR-53).
+fn find_copy(backups: &Path, bytes: &[u8]) -> Option<String> {
+    backup_names(backups)
+        .into_iter()
+        .rev()
+        .find(|name| has_same_bytes(&backups.join(name), bytes).unwrap_or(false))
+}
+
+/// Whether the file at `path` has exactly `bytes` in it.
+fn has_same_bytes(path: &Path, bytes: &[u8]) -> io::Result<bool> {
+    let mut file = fs::File::open(path)?;
+    if file.metadata()?.len() != bytes.len() as u64 {
+        return Ok(false);
+    }
+    let mut block = vec![0; COMPARE_BLOCK];
+    for expected in bytes.chunks(COMPARE_BLOCK) {
+        let read = &mut block[..expected.len()];
+        file.read_exact(read)?;
+        if read != expected {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
+/// Deletes the oldest written backups until `count` remain, never `keep` (the copy reused).
+/// Best effort, so it never blocks startup: a backup another program holds open stays, and a
+/// later start tries again.
+fn prune_backups(backups: &Path, count: usize, keep: Option<&str>) {
     let names = backup_names(backups);
-    let mut excess = names.len().saturating_sub(KEEP_BACKUPS);
-    for name in names.iter().filter(|name| *name != keep) {
+    let mut excess = names.len().saturating_sub(count);
+    for name in names.iter().filter(|name| Some(name.as_str()) != keep) {
         if excess == 0 {
             break;
         }
@@ -641,6 +660,87 @@ mod tests {
     }
 
     #[test]
+    fn backup_reusing_a_copy_still_keeps_only_the_ten_newest() {
+        // Eleven left by a prune another program held off: the next start on an unchanged file
+        // reuses its copy and prunes again (DR-31).
+        let dir = temp_dir();
+        ten_backups(&dir);
+        let backups = dir.join(BACKUP_DIR);
+        let eleventh = backup_name(11, "20260927-080000");
+        fs::write(backups.join(&eleventh), db("latest")).unwrap();
+        save(&dir, &db("latest")).unwrap();
+        assert_eq!(backup(&dir, "20260927-090000").unwrap(), eleventh);
+        let kept = backup_names(&backups);
+        assert_eq!(kept.len(), 10);
+        assert_eq!(kept[0], "project2c-s00000002-20260911-080000.db");
+    }
+
+    #[test]
+    fn backup_reusing_the_oldest_copy_keeps_it_and_prunes_the_next() {
+        let dir = temp_dir();
+        ten_backups(&dir);
+        let backups = dir.join(BACKUP_DIR);
+        fs::write(
+            backups.join(backup_name(11, "20260927-080000")),
+            db("latest"),
+        )
+        .unwrap();
+        save(&dir, &db("day 10")).unwrap();
+        let oldest = "project2c-s00000001-20260910-080000.db";
+        assert_eq!(backup(&dir, "20260927-090000").unwrap(), oldest);
+        let kept = backup_names(&backups);
+        assert_eq!(kept.len(), 10);
+        assert_eq!(kept[0], oldest);
+        assert_eq!(kept[1], "project2c-s00000003-20260912-080000.db");
+    }
+
+    #[test]
+    fn backup_makes_room_before_it_writes_the_copy() {
+        // A nearly full disk then only needs room for the copy over the one it replaces (DR-57).
+        let dir = temp_dir();
+        ten_backups(&dir);
+        let backups = dir.join(BACKUP_DIR);
+        // A folder under the copy's `.tmp` name makes the write fail, like a full disk.
+        let tmp = tmp_name(&backup_name(11, "20260927-080000"));
+        fs::create_dir_all(backups.join(&tmp)).unwrap();
+        save(&dir, &db("latest")).unwrap();
+        assert!(backup(&dir, "20260927-080000").is_err());
+        let kept = backup_names(&backups);
+        assert_eq!(kept.len(), 9);
+        assert_eq!(kept[0], "project2c-s00000002-20260911-080000.db");
+    }
+
+    #[test]
+    fn a_full_disk_is_reported_as_disk_full() {
+        let full = disk_full(io::Error::from(ErrorKind::StorageFull));
+        assert_eq!(full.kind(), ErrorKind::StorageFull);
+        assert_eq!(full.to_string(), DISK_FULL);
+        // Windows `ERROR_HANDLE_DISK_FULL` and `ERROR_DISK_FULL`.
+        #[cfg(windows)]
+        for code in [39, 112] {
+            let full = disk_full(io::Error::from_raw_os_error(code));
+            assert_eq!(full.to_string(), DISK_FULL, "os error {code}");
+        }
+        let other = disk_full(io::Error::from(ErrorKind::PermissionDenied));
+        assert_eq!(other.kind(), ErrorKind::PermissionDenied);
+        assert_ne!(other.to_string(), DISK_FULL);
+    }
+
+    #[test]
+    fn backup_of_a_file_of_the_same_size_that_differs_only_at_the_end_writes_a_copy() {
+        // Compared block by block (DR-53): a partial last block and a late difference still count.
+        let dir = temp_dir();
+        let mut bytes = db(&"x".repeat(3 * COMPARE_BLOCK));
+        save(&dir, &bytes).unwrap();
+        let first = backup(&dir, "20261006-080000").unwrap();
+        *bytes.last_mut().unwrap() = b'y';
+        save(&dir, &bytes).unwrap();
+        let second = backup(&dir, "20261006-080001").unwrap();
+        assert_ne!(second, first);
+        assert_eq!(fs::read(dir.join(BACKUP_DIR).join(second)).unwrap(), bytes);
+    }
+
+    #[test]
     fn backup_without_a_file_is_an_error() {
         let dir = temp_dir();
         fs::create_dir_all(&dir).unwrap();
@@ -673,6 +773,8 @@ mod tests {
         let backups = dir.join(BACKUP_DIR);
         fs::create_dir_all(backups.join("project2c-20260101-000000.db")).unwrap();
         let foreign = [
+            // Named before write order existed (R2-02: no longer read as backups).
+            "project2c-20260101-080000.db",
             "project2c-000-important.db",
             "project2c-notes.db",
             "project2c-20260101-00000x.db",
@@ -691,7 +793,7 @@ mod tests {
             backup(&dir, &format!("202609{day}-080000")).unwrap();
         }
         let kept = names(&backups);
-        assert_eq!(kept.len(), 20);
+        assert_eq!(kept.len(), 21);
         for name in foreign {
             assert_eq!(fs::read(backups.join(name)).unwrap(), b"keep", "{name}");
         }
@@ -814,39 +916,6 @@ mod tests {
     }
 
     #[test]
-    fn starts_with_the_clock_in_2000_keep_the_latest_sessions_over_old_named_backups() {
-        let dir = temp_dir();
-        let backups = dir.join(BACKUP_DIR);
-        fs::create_dir_all(&backups).unwrap();
-        // Backups from before write order existed, written newest first so that file times
-        // disagree with their names: the result must not depend on file times.
-        let mut old: Vec<String> = (10..19)
-            .map(|day| format!("project2c-202609{day}-080000.db"))
-            .collect();
-        old.push("project2c-20260918-080000-1.db".into());
-        for name in old.iter().rev() {
-            fs::write(backups.join(name), db(name)).unwrap();
-        }
-        let stamps: Vec<String> = (0..5)
-            .map(|i| format!("200001{:02}-000000", 5 - i))
-            .collect();
-        for (i, stamp) in stamps.iter().enumerate() {
-            save(&dir, &db(&format!("session {i}"))).unwrap();
-            backup(&dir, stamp).unwrap();
-        }
-        let sessions: Vec<String> = (1..)
-            .zip(&stamps)
-            .map(|(seq, stamp)| backup_name(seq, stamp))
-            .collect();
-        let expected = [&old[5..], &sessions[..]].concat();
-        assert_eq!(backup_names(&backups), expected);
-        for (i, name) in sessions.iter().enumerate() {
-            let copy = fs::read(backups.join(name)).unwrap();
-            assert_eq!(copy, db(&format!("session {i}")));
-        }
-    }
-
-    #[test]
     fn a_clock_going_back_and_forth_keeps_the_ten_last_written_backups() {
         let dir = temp_dir();
         let stamps = [
@@ -886,8 +955,6 @@ mod tests {
         assert_eq!(next_seq(&dir), 1);
         fs::create_dir_all(&dir).unwrap();
         assert_eq!(next_seq(&dir), 1);
-        fs::write(dir.join("project2c-20260927-080000.db"), b"old").unwrap();
-        fs::write(dir.join("project2c-20260927-080000-1.db"), b"old").unwrap();
         fs::write(dir.join("project2c-s00000077-2026.db"), b"foreign").unwrap();
         assert_eq!(next_seq(&dir), 1);
         // Lower numbers already pruned: counting goes on from the highest left.
@@ -897,22 +964,6 @@ mod tests {
         // A folder squatting on a numbered name is never written over.
         fs::create_dir_all(dir.join(backup_name(12, "20000101-000000"))).unwrap();
         assert_eq!(next_seq(&dir), 13);
-    }
-
-    #[test]
-    fn old_named_backups_sort_before_numbered_ones() {
-        assert!(
-            backup_key("project2c-20301231-235959-9.db")
-                < backup_key("project2c-s00000001-19700101-000000.db")
-        );
-        assert!(
-            backup_key("project2c-20260927-080000.db")
-                < backup_key("project2c-20260927-080000-1.db")
-        );
-        assert!(
-            backup_key("project2c-s00000002-20000101-000000.db")
-                < backup_key("project2c-s00000010-19990101-000000.db")
-        );
     }
 
     #[cfg(windows)]
@@ -943,13 +994,13 @@ mod tests {
 
     #[cfg(windows)]
     #[test]
-    fn pruning_never_removes_the_copy_just_written() {
+    fn a_prune_held_off_is_done_by_the_next_backup_of_the_unchanged_file() {
         use std::os::windows::fs::OpenOptionsExt;
         let dir = temp_dir();
         ten_backups(&dir);
         let backups = dir.join(BACKUP_DIR);
         // Every older backup is held open by another program, so none of them can go.
-        let _held: Vec<fs::File> = names(&backups)
+        let held: Vec<fs::File> = names(&backups)
             .iter()
             .map(|name| {
                 fs::OpenOptions::new()
@@ -963,6 +1014,13 @@ mod tests {
         let name = backup(&dir, "20260927-080000").unwrap();
         assert_eq!(fs::read(backups.join(&name)).unwrap(), db("latest"));
         assert_eq!(names(&backups).len(), 11);
+
+        // Released: the next start on the unchanged file prunes again (DR-31).
+        drop(held);
+        assert_eq!(backup(&dir, "20260927-090000").unwrap(), name);
+        let kept = names(&backups);
+        assert_eq!(kept.len(), 10);
+        assert_eq!(kept[0], "project2c-s00000002-20260911-080000.db");
     }
 
     #[cfg(windows)]
@@ -1203,9 +1261,7 @@ mod tests {
         let dir = temp_dir();
         let exports = dir.join(EXPORT_DIR);
         fs::create_dir_all(exports.join("folder.p2cbackup")).unwrap();
-        // A crash mid-export: its claim, its half-written `.tmp`, and the empty placeholder
-        // the first version of `write_export` kept under the final name.
-        fs::write(exports.join("a.p2cbackup"), b"").unwrap();
+        // A crash mid-export: its claim and its half-written `.tmp`.
         fs::write(exports.join("b.p2cbackup.claim"), b"").unwrap();
         fs::write(exports.join("b.p2cbackup.tmp"), b"half").unwrap();
         fs::write(exports.join("c.p2cbackup"), b"real export").unwrap();
@@ -1222,8 +1278,8 @@ mod tests {
         );
         // The freed names are used again; a real export is still never overwritten.
         assert_eq!(
-            write_export(&dir, "a.p2cbackup", b"new").unwrap(),
-            exports.join("a.p2cbackup")
+            write_export(&dir, "b.p2cbackup", b"new").unwrap(),
+            exports.join("b.p2cbackup")
         );
         assert_eq!(
             write_export(&dir, "c.p2cbackup", b"new").unwrap(),
@@ -1318,6 +1374,19 @@ mod tests {
                 explorer_arg(Path::new(path)),
                 OsString::from(format!("\"{path}\""))
             );
+        }
+    }
+
+    #[test]
+    fn explorer_is_named_by_its_full_path_in_the_windows_folder() {
+        // A bare name would run an `explorer.exe` put next to the portable exe (DR-54).
+        let root = std::env::temp_dir();
+        assert_eq!(
+            explorer(Some(root.clone().into_os_string())).unwrap(),
+            root.join("explorer.exe")
+        );
+        for root in [None, Some(OsString::new()), Some(OsString::from("Windows"))] {
+            assert_eq!(explorer(root).unwrap_err().kind(), ErrorKind::NotFound);
         }
     }
 

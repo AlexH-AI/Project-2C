@@ -1,9 +1,7 @@
 import { DbError } from '@p2c/db';
 import { isStartupBackupError } from '../data/app-data';
+import { ALREADY_OPEN, DISK_FULL } from '../data/tauri-storage';
 import { t } from '../i18n';
-
-/** `db_open`'s error when another exe already has the data folder open (`storage::ALREADY_OPEN`). */
-const ALREADY_OPEN = 'ALREADY_OPEN';
 
 export interface StartupMessage {
   title: string;
@@ -18,6 +16,9 @@ export function startupMessage(error: unknown): StartupMessage {
     return { title: t('storage.alreadyOpen'), help: t('storage.alreadyOpenHelp') };
   }
   if (isStartupBackupError(error)) {
+    if (error.cause === DISK_FULL) {
+      return { title: t('storage.diskFull'), help: t('storage.diskFullHelp') };
+    }
     return {
       title: t('storage.backupFailed'),
       help: t('storage.backupFailedHelp'),
