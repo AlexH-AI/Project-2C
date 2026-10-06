@@ -4,15 +4,27 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     # Docs-only PRs skip CI entirely (ADR-0015).
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
+    # Package CLAUDE.md files are code: pnpm verify checks their codemap block (DR-74).
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!**/*.md'
+      - 'apps/desktop/CLAUDE.md'
+      - 'packages/db/CLAUDE.md'
+      - 'packages/domain/CLAUDE.md'
+      - 'packages/ui/CLAUDE.md'
   push:
     branches: [main]
     # Docs-only pushes to main skip CI too (ADR-0015, Actions minutes addendum).
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
+    # Package CLAUDE.md files are code: pnpm verify checks their codemap block (DR-74).
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!**/*.md'
+      - 'apps/desktop/CLAUDE.md'
+      - 'packages/db/CLAUDE.md'
+      - 'packages/domain/CLAUDE.md'
+      - 'packages/ui/CLAUDE.md'
   workflow_dispatch:
 
 # A new push to a PR cancels that PR's older run. Runs on main never cancel each

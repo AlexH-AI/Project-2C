@@ -1,8 +1,13 @@
+/* global URL */
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
+  CODEMAP_DOCS,
   alreadyDone,
+  ciStartedAt,
   cleanupPlan,
   isDocsOnly,
+  needsExe,
   isReviewWorktree,
   mergeBlockers,
   mergeSteps,
@@ -46,7 +51,24 @@ const ctx = (over = {}) => ({
 
 describe('isDocsOnly', () => {
   it('is true when every file is under docs/ or a Markdown file', () => {
-    expect(isDocsOnly(['docs/a/b.png', 'CLAUDE.md', 'packages/db/CLAUDE.md'])).toBe(true);
+    expect(isDocsOnly(['docs/a/b.png', 'CLAUDE.md', 'packages/db/README.md'])).toBe(true);
+  });
+
+  it('treats a package CLAUDE.md as code: pnpm verify checks its codemap block (DR-74)', () => {
+    expect(CODEMAP_DOCS).toHaveLength(4);
+    for (const path of CODEMAP_DOCS) expect(isDocsOnly(['docs/a.md', path])).toBe(false);
+  });
+
+  it('matches the paths filter of ci.yml, for PRs and for pushes to main', () => {
+    const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+    expect(ci).not.toMatch(/paths-ignore/);
+    const filter = [
+      "- '**'",
+      "- '!docs/**'",
+      "- '!**/*.md'",
+      ...CODEMAP_DOCS.map((p) => `- '${p}'`),
+    ];
+    for (const line of filter) expect(ci.split(line).length - 1).toBe(2);
   });
 
   it('is false as soon as one file is code', () => {
@@ -174,6 +196,39 @@ describe('mergeBlockers', () => {
     expect(mergeBlockers(pr({ files, statusCheckRollup: [] }), ctx())).toEqual([]);
   });
 
+  it('stops a PR whose files need the exe build but that has no build-exe label (DR-09)', () => {
+    const files = [{ path: 'tools/a.mjs' }, { path: 'pnpm-lock.yaml' }, { path: 'package.json' }];
+    expect(mergeBlockers(pr({ files }), ctx())).toEqual([
+      'pnpm-lock.yaml, package.json need the build-exe label: gh pr edit 9 --add-label build-exe, then gh pr close 9 + gh pr reopen 9 so CI builds it.',
+    ]);
+    const labels = [{ name: 'risk:low' }, { name: 'build-exe' }];
+    const built = [...green, exe()];
+    expect(mergeBlockers(pr({ files, labels, statusCheckRollup: built }), ctx())).toEqual([]);
+  });
+
+  it('stops a code PR when main got code after its CI started (DR-80)', () => {
+    const rollup = [
+      { ...green[0], startedAt: '2026-10-06T10:00:00Z' },
+      exe({ conclusion: 'SKIPPED', startedAt: '2026-10-06T10:09:00Z' }),
+    ];
+    const commit = (sha, date, ...files) => ({ sha, date, files });
+    const mainSince = [
+      commit('1111111aaaa', '2026-10-06T09:00:00Z', 'tools/old.mjs'),
+      commit('2222222bbbb', '2026-10-06T11:00:00Z', 'docs/x.md'),
+    ];
+    const at = () => mergeBlockers(pr({ statusCheckRollup: rollup }), ctx({ mainSince }));
+    expect(at()).toEqual([]);
+
+    mainSince.push(commit('3333333cccc', '2026-10-06T10:05:00Z', 'docs/y.md', 'apps/x.ts'));
+    expect(at()).toEqual([
+      'main got code after CI started on head abc1234 (3333333): gh pr update-branch 9, wait for CI, then review the new head again (P-1).',
+    ]);
+    const docs = [{ path: 'docs/z.md' }];
+    expect(mergeBlockers(pr({ files: docs, statusCheckRollup: [] }), ctx({ mainSince }))).toEqual(
+      [],
+    );
+  });
+
   it('stops a med PR unless the Owner said to merge', () => {
     const labels = [{ name: 'risk:med' }];
     const comments = [review('PASS', HEAD.slice(0, 7), 'med')];
@@ -217,6 +272,50 @@ describe('mergeBlockers', () => {
   it('lists every reason at once', () => {
     const blockers = mergeBlockers(pr({ isDraft: true, statusCheckRollup: [] }), ctx());
     expect(blockers).toHaveLength(2);
+  });
+});
+
+describe('needsExe', () => {
+  it('is true for Rust, toolchain, dependencies and build configuration', () => {
+    for (const path of [
+      'apps/desktop/src-tauri/src/storage.rs',
+      'apps/desktop/src-tauri/tauri.conf.json',
+      'apps/desktop/src-tauri/Cargo.toml',
+      'apps/desktop/src-tauri/Cargo.lock',
+      'rust-toolchain.toml',
+      'package.json',
+      'packages/db/package.json',
+      'pnpm-lock.yaml',
+      'apps/desktop/vite.config.ts',
+      'vite.config.mjs',
+    ])
+      expect(needsExe(path), path).toBe(true);
+  });
+
+  it('is false for app code, tests, docs and look-alike names', () => {
+    for (const path of [
+      'apps/desktop/src/App.tsx',
+      'packages/db/src/schema.ts',
+      'docs/x.md',
+      'package.json.bak',
+      'apps/desktop/vitest.config.ts',
+      '.github/workflows/ci.yml',
+    ])
+      expect(needsExe(path), path).toBe(false);
+  });
+});
+
+describe('ciStartedAt', () => {
+  it('is the earliest start among the checks, null when none started', () => {
+    expect(
+      ciStartedAt([
+        { startedAt: '2026-10-06T10:05:00Z' },
+        { startedAt: '2026-10-06T10:00:00Z' },
+        { name: 'status context' },
+      ]),
+    ).toBe('2026-10-06T10:00:00Z');
+    expect(ciStartedAt([{ name: 'x' }])).toBeNull();
+    expect(ciStartedAt([])).toBeNull();
   });
 });
 
@@ -299,8 +398,9 @@ const state = (over = {}) => ({
   worktrees: [wt(MAIN, 'task/T-1-x'), wt('C:/workspace/Project-2C-review', null)],
   dirty: new Set(),
   stacked: [],
-  remoteExists: true,
-  localExists: true,
+  merged: HEAD,
+  remoteHead: HEAD,
+  localHead: HEAD,
   ...over,
 });
 
@@ -318,25 +418,25 @@ describe('cleanupPlan', () => {
 
   it('skips what is already gone', () => {
     const plan = cleanupPlan(
-      state({ worktrees: [wt(MAIN, 'main')], remoteExists: false, localExists: false }),
+      state({ worktrees: [wt(MAIN, 'main')], remoteHead: null, localHead: null }),
     );
     expect(describeSteps(plan)).toEqual([`${MAIN}: git merge --ff-only origin/main`]);
   });
 
   it('leaves a main checkout on another branch alone', () => {
-    const plan = cleanupPlan(state({ worktrees: [wt(MAIN, 'task/T-9-z')], remoteExists: false }));
+    const plan = cleanupPlan(state({ worktrees: [wt(MAIN, 'task/T-9-z')], remoteHead: null }));
     expect(describeSteps(plan)).toEqual([`${MAIN}: git branch -D task/T-1-x`]);
   });
 
   it('stops at a dirty main checkout and keeps the local branch', () => {
-    const plan = cleanupPlan(state({ dirty: new Set([MAIN]), remoteExists: false }));
+    const plan = cleanupPlan(state({ dirty: new Set([MAIN]), remoteHead: null }));
     expect(plan.steps).toEqual([]);
     expect(plan.problems).toEqual([expect.stringMatching(/Project-2C has uncommitted changes/)]);
   });
 
   it('detaches a clean review worktree holding main before switching the main checkout', () => {
     const worktrees = [wt(MAIN, 'task/T-1-x'), wt(REVIEW2, 'main')];
-    expect(describeSteps(cleanupPlan(state({ worktrees, remoteExists: false })))).toEqual([
+    expect(describeSteps(cleanupPlan(state({ worktrees, remoteHead: null })))).toEqual([
       `${REVIEW2}: git checkout --detach origin/main`,
       `${MAIN}: git switch main`,
       `${MAIN}: git merge --ff-only origin/main`,
@@ -346,7 +446,7 @@ describe('cleanupPlan', () => {
 
   it('does not switch when another worktree that cannot be moved holds main', () => {
     const worktrees = [wt(MAIN, 'task/T-1-x'), wt('C:/workspace/other', 'main')];
-    const plan = cleanupPlan(state({ worktrees, remoteExists: false }));
+    const plan = cleanupPlan(state({ worktrees, remoteHead: null }));
     expect(plan.steps).toEqual([]);
     expect(plan.problems).toEqual([expect.stringMatching(/other has main checked out/)]);
   });
@@ -355,7 +455,7 @@ describe('cleanupPlan', () => {
     const other = 'C:/workspace/Project-2C-wt-T2';
     for (const holder of [other, REVIEW2]) {
       const worktrees = [wt(MAIN, 'task/T-1-x'), wt(holder, 'main')];
-      const plan = cleanupPlan(state({ worktrees, remoteExists: false, dirty: new Set([holder]) }));
+      const plan = cleanupPlan(state({ worktrees, remoteHead: null, dirty: new Set([holder]) }));
       expect(plan.steps).toEqual([]);
       expect(plan.problems).toEqual([
         `${holder} has main checked out (uncommitted changes): main checkout left on task/T-1-x.`,
@@ -365,7 +465,7 @@ describe('cleanupPlan', () => {
 
   it('detaches a review worktree left on the merged branch', () => {
     const worktrees = [wt(MAIN, 'main'), wt(REVIEW2, 'task/T-1-x')];
-    expect(describeSteps(cleanupPlan(state({ worktrees, remoteExists: false })))).toEqual([
+    expect(describeSteps(cleanupPlan(state({ worktrees, remoteHead: null })))).toEqual([
       `${MAIN}: git merge --ff-only origin/main`,
       `${REVIEW2}: git checkout --detach origin/main`,
       `${MAIN}: git branch -D task/T-1-x`,
@@ -375,12 +475,12 @@ describe('cleanupPlan', () => {
   it('removes a clean task worktree of the branch, reports a dirty one', () => {
     const task = 'C:/workspace/2C-T-1';
     const worktrees = [wt(MAIN, 'main'), wt(task, 'task/T-1-x')];
-    expect(describeSteps(cleanupPlan(state({ worktrees, remoteExists: false })))).toEqual([
+    expect(describeSteps(cleanupPlan(state({ worktrees, remoteHead: null })))).toEqual([
       `${MAIN}: git merge --ff-only origin/main`,
       `${MAIN}: git worktree remove ${task}`,
       `${MAIN}: git branch -D task/T-1-x`,
     ]);
-    const dirty = cleanupPlan(state({ worktrees, remoteExists: false, dirty: new Set([task]) }));
+    const dirty = cleanupPlan(state({ worktrees, remoteHead: null, dirty: new Set([task]) }));
     expect(describeSteps(dirty)).toEqual([`${MAIN}: git merge --ff-only origin/main`]);
     expect(dirty.problems).toEqual([expect.stringMatching(/2C-T-1 has uncommitted changes/)]);
   });
@@ -392,6 +492,45 @@ describe('cleanupPlan', () => {
       `${MAIN}: git merge --ff-only origin/main`,
     ]);
     expect(plan.problems).toEqual([expect.stringMatching(/#12 .*task\/T-1-x kept/)]);
+  });
+
+  it('keeps a clean task worktree and the local branch holding commits that were not merged (DR-22)', () => {
+    const task = 'C:/workspace/2C-T-1';
+    const NEWER = '9999999999999999999999999999999999999999';
+    const worktrees = [wt(MAIN, 'main'), { path: task, head: NEWER, branch: 'task/T-1-x' }];
+    const plan = cleanupPlan(state({ worktrees, localHead: NEWER }));
+    expect(describeSteps(plan)).toEqual([
+      `${MAIN}: git push origin --delete task/T-1-x`,
+      `${MAIN}: git merge --ff-only origin/main`,
+    ]);
+    expect(plan.problems).toEqual([
+      `${task} is at 9999999, not the merged head abc1234: left on task/T-1-x, nothing done there.`,
+    ]);
+  });
+
+  it('moves the main checkout off a branch with unmerged commits but keeps the branch', () => {
+    const NEWER = '9999999999999999999999999999999999999999';
+    const worktrees = [{ path: MAIN, head: NEWER, branch: 'task/T-1-x' }];
+    const plan = cleanupPlan(state({ worktrees, remoteHead: null, localHead: NEWER }));
+    expect(describeSteps(plan)).toEqual([
+      `${MAIN}: git switch main`,
+      `${MAIN}: git merge --ff-only origin/main`,
+    ]);
+    expect(plan.problems).toEqual([
+      'Local branch task/T-1-x is at 9999999, not the merged head abc1234: kept, check its commits.',
+    ]);
+  });
+
+  it('keeps a remote branch that moved after the merge', () => {
+    const NEWER = '9999999999999999999999999999999999999999';
+    const plan = cleanupPlan(state({ worktrees: [wt(MAIN, 'main')], remoteHead: NEWER }));
+    expect(describeSteps(plan)).toEqual([
+      `${MAIN}: git merge --ff-only origin/main`,
+      `${MAIN}: git branch -D task/T-1-x`,
+    ]);
+    expect(plan.problems).toEqual([
+      'origin/task/T-1-x is at 9999999, not the merged head abc1234: kept, check its commits.',
+    ]);
   });
 });
 
