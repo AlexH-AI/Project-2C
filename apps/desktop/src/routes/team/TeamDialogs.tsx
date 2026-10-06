@@ -20,14 +20,10 @@ export function TeamNameDialog({
   const [error, setError] = useState<string>();
 
   const save = () => {
-    // Typed Vietnamese may arrive decomposed; stored names are compared as NFC (review R4).
-    const clean = name.normalize('NFC');
     try {
-      onSaved(
-        data.run((db) => (team ? renameTeam(db, team.id, clean) : createTeam(db, { name: clean }))),
-      );
+      onSaved(data.run((db) => (team ? renameTeam(db, team.id, name) : createTeam(db, { name }))));
     } catch (failure) {
-      setError(errorMessage(failure, { name: clean.trim() }));
+      setError(errorMessage(failure, { name: name.trim() }));
     }
   };
 

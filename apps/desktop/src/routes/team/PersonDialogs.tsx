@@ -40,8 +40,7 @@ export function PersonDialog({
   const [errors, setErrors] = useState<Errors>({});
 
   const save = () => {
-    // Typed Vietnamese may arrive decomposed; names are stored as NFC (review R4).
-    const input = { name: name.normalize('NFC'), role, teamId: teamId || null };
+    const input = { name, role, teamId: teamId || null };
     try {
       onSaved(
         data.run((db) => (person ? updatePerson(db, person.id, input) : createPerson(db, input))),

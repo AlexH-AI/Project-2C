@@ -64,6 +64,17 @@ describe('teams', () => {
     expect(renameTeam(db, team.id, 'Sao Mai')).toEqual(team);
   });
 
+  // DR-49: the command itself composes the name, so a decomposed copy is the same name.
+  it('takes a name typed decomposed (NFD) as the composed one it looks like', async () => {
+    const { db } = await setup();
+    const team = createTeam(db, { name: 'Hừng Đông' });
+    const decomposed = 'Hừng Đông'.normalize('NFD');
+
+    expect(codeOf(() => createTeam(db, { name: decomposed }))).toBe('TEAM_NAME_TAKEN');
+    expect(createTeam(db, { name: 'Bình Minh'.normalize('NFD') }).name).toBe('Bình Minh');
+    expect(renameTeam(db, team.id, decomposed)).toEqual(team);
+  });
+
   it('renames a team', async () => {
     const { db } = await setup();
     const team = createTeam(db, { name: 'Sao Mai' });

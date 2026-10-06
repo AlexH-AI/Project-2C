@@ -104,7 +104,7 @@ export function KycNoteDialog({
     if (boolean ? answer === null : value.trim() === '') {
       return setErrors({ fact: t('kycNote.error.value') });
     }
-    const raw = boolean ? answer === 'yes' : value.normalize('NFC');
+    const raw = boolean ? answer === 'yes' : value;
     let fact: KycNoteFact;
     try {
       fact = {
@@ -125,7 +125,7 @@ export function KycNoteDialog({
   };
 
   const save = () => {
-    const clean = text.normalize('NFC').trim();
+    const clean = text.trim();
     // A fact picked but not added yet would be lost: the note cannot be edited after saving.
     const pending = field ? t('kycNote.error.pending') : undefined;
     if (!clean || !date.parsed.ok || pending) {

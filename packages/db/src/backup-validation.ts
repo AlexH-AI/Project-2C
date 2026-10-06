@@ -15,7 +15,7 @@ import {
 } from '@p2c/domain';
 import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
-import { isFee, today, toIsoDate } from './common';
+import { cleanText, isFee, requireName, today, toIsoDate } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { normalizeKycValue, profileFactValue, type ProfileFields } from './kyc';
@@ -37,6 +37,9 @@ export function validateBackupValues(db: Database): void {
       if (table === 'kyc_facts' && !validKycValue(String(row.field), String(row.value_json))) {
         throw new DbError('BACKUP_INVALID');
       }
+      if (table === 'kyc_notes' && !storedAs(cleanText, row.text))
+        throw new DbError('BACKUP_INVALID');
+      if (NAMED.has(table) && !storedAs(requireName, row.name)) throw new DbError('BACKUP_INVALID');
     }
   }
 }
@@ -46,13 +49,24 @@ function validValue(column: string, value: SqlValue): boolean {
   if (column === 'date' || column.endsWith('_date')) return validDate(value);
   if (column === 'time') return typeof value === 'string' && TIME.test(value);
   if (TIMESTAMPS.has(column)) return timestamp.safeParse(value).success;
-  if (column === 'seq') return typeof value === 'number' && value >= 1;
+  // A safe integer, as `nextSeq` writes it (DR-34).
+  if (column === 'seq') return Number.isSafeInteger(value) && (value as number) >= 1;
   // A fee, as `requireAmount` takes it (DR-23).
   if (FEES.has(column)) return isFee(value);
   return true;
 }
 
 const FEES = new Set(['expected_case_size', 'submitted_fyp', 'issued_fyp']);
+const NAMED = new Set(['teams', 'people', 'customers']);
+
+/** Text that `clean` keeps as it is, as the commands store it (DR-49). */
+function storedAs(clean: (text: string) => string, value: SqlValue | undefined): boolean {
+  try {
+    return typeof value === 'string' && clean(value) === value;
+  } catch {
+    return false;
+  }
+}
 
 /** `YYYY-MM-DD` of a day that exists, as `calendarDate` reads it. */
 function validDate(value: SqlValue): boolean {
@@ -263,7 +277,9 @@ function staffRule(read: (sql: string) => Row[]): Rule | null {
 /**
  * Rule 10 (F-11): what already happened is dated today at the latest, by the clock of the import —
  * a live transition (a customer's creation too), a policy's submission and issue, a meeting held
- * or missed. Only a booked or cancelled appointment may lie ahead.
+ * or missed, a KYC note, fact or version, a birth date (DR-42). Only a booked or cancelled
+ * appointment may lie ahead. A birth year alone (`YYYY`) sorts before every day of its year, so the
+ * same comparison of text holds for it.
  */
 function futureRule(read: (sql: string) => Row[], today: string): Rule | null {
   const after = `'${today}'`;
@@ -272,6 +288,10 @@ function futureRule(read: (sql: string) => Row[], today: string): Rule | null {
       `SELECT 1 FROM stage_transitions WHERE deleted_at IS NULL AND date > ${after}`,
       `SELECT 1 FROM policies WHERE deleted_at IS NULL AND (submitted_date > ${after} OR issued_date > ${after})`,
       `SELECT 1 FROM appointments WHERE deleted_at IS NULL AND status IN ('MET', 'NO_SHOW') AND date > ${after}`,
+      `SELECT 1 FROM kyc_notes WHERE created_date > ${after}`,
+      `SELECT 1 FROM kyc_facts WHERE confirmed_date > ${after}`,
+      `SELECT 1 FROM kyc_versions WHERE date > ${after}`,
+      `SELECT 1 FROM customers WHERE birth_date > ${after}`,
     ].join(' UNION ALL '),
   );
   return broken.length === 0 ? null : 10;

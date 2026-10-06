@@ -172,17 +172,19 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
 
 | Lệnh | Quy tắc chính |
 |---|---|
+| Mọi lệnh có tên / chữ KYC | Tên (team, nhân sự, KH), ghi chú và giá trị chữ của dữ kiện KYC lưu ở dạng NFC đã trim (`requireName` / `cleanText`, DR-49): tên gõ dạng NFD trùng tên team có sẵn → `TEAM_NAME_TAKEN`; ký tự NUL → `INVALID_TEXT`. UI không tự chuẩn hóa |
+| Mọi lệnh ghi `seq` | `seq` kế tiếp phải là số nguyên an toàn (`nextSeq`, DR-34), hết thì `SEQ_LIMIT` |
 | `createTeam`, `renameTeam`, `createPerson`, `updatePerson`, `restorePerson` | RE/TL phải có team; IS/BD/BDM kèm team → `TEAM_NOT_ALLOWED` (#252; đổi RE/TL sang IS/BD/BDM phải truyền `teamId: null`, UI tự bỏ team); mỗi team tối đa 1 TL chưa xóa (Owner, G3 01/10/2026): tạo / đổi / khôi phục nhân sự thành TL thứ hai → `TEAM_HAS_LEAD` (B1b) |
-| `createCustomer` | Chỉ ở nhóm mở N4–N1 (`assertValidTransition`, ADR-0007); ghi transition đầu (`from` null), ngày tạo sau hôm nay → `DATE_IN_FUTURE` (F-11, #258); nếu có ngày sinh/giới tính → ghi chú `SYSTEM` + dữ kiện (D2) |
-| `updateCustomerProfile` | Đổi tên / RE / ngày sinh / giới tính; đổi ngày sinh hoặc giới tính → ghi chú `SYSTEM` + `confirmFact` |
+| `createCustomer` | Chỉ ở nhóm mở N4–N1 (`assertValidTransition`, ADR-0007); ghi transition đầu (`from` null), ngày tạo sau hôm nay → `DATE_IN_FUTURE` (F-11, #258); nếu có ngày sinh/giới tính → ghi chú `SYSTEM` + dữ kiện (D2); ngày sinh sau hôm nay (chỉ năm: năm sau năm nay) → `DATE_IN_FUTURE` (DR-42) |
+| `updateCustomerProfile` | Đổi tên / RE / ngày sinh / giới tính; đổi ngày sinh hoặc giới tính → ghi chú `SYSTEM` + `confirmFact`; ngày sinh sau hôm nay → `DATE_IN_FUTURE` như `createCustomer` |
 | `changeStageManually` | `assertValidTransition`; transition `appointment_id` null — không bao giờ tính RF; ngày không được trước transition mới nhất (D10), không được sau hôm nay → `DATE_IN_FUTURE` (F-11, #258) |
 | `scheduleAppointment` | Trạng thái `SCHEDULED`, không có `stage_after` |
 | `recordMeetingOutcome` | Đặt trạng thái + kết quả. `MET`: bắt buộc `stage_after`, `next_step` (D6); case size dự kiến kiểm như FYP (`INVALID_AMOUNT`, `AMOUNT_TOO_LARGE`); `stage_after` ≠ nhóm hiện tại → transition gắn `appointment_id` (#44); `outcome_reviewer_id` tùy chọn, phải là nhân sự chưa xóa (`PERSON_NOT_FOUND`) vai trò IS / TL / BDM / BD (`INVALID_REVIEWER`, D9); khôi phục cuộc hẹn kiểm lại cả hai. `updatePerson` đổi người đang đánh giá một cuộc hẹn chưa xóa sang RE → `REVIEWER_IN_USE`. Sửa lại kết quả → theo D7. Transition mang ngày cuộc hẹn → ghi kết quả muộn bị từ chối (D10) nếu KH đã có transition ngày muộn hơn; `MET` với `stage_after` = nhóm hiện tại, `CANCELLED`, `NO_SHOW` không sinh transition nên vẫn ghi được |
-| `rescheduleAppointment` | Cuộc hẹn cũ → `RESCHEDULED`; tạo cuộc hẹn mới `SCHEDULED` trỏ `rescheduled_from_id` (D3) |
-| `addKycNote` | Chỉ thêm |
-| `confirmKycFact`, `markKycConflict`, `resolveKycConflict` | Dùng `confirmFact` / `markConflict` / `resolveConflict` của `domain`; từ chối `birthYear` / `gender` từ nguồn RE (D2); `confirmKycFact` / `markKycConflict` trên ghi chú `SYSTEM` → `KYC_NOTE_FROM_PROFILE` (ghi chú `SYSTEM` chỉ do hồ sơ KH ghi, #263); sau đó `nextKycVersion` → ghi `kyc_versions` nếu hash đổi; cờ material tay theo ADR-0008 §7 |
+| `rescheduleAppointment` | Cuộc hẹn cũ → `RESCHEDULED`; tạo cuộc hẹn mới `SCHEDULED` trỏ `rescheduled_from_id` (D3); ngày giờ mới trùng ngày giờ cuộc hẹn cũ → `RESCHEDULE_UNCHANGED` (mockup 6e, DR-66) |
+| `addKycNote` | Chỉ thêm; ngày ghi chú sau hôm nay → `DATE_IN_FUTURE` (DR-42) |
+| `confirmKycFact`, `markKycConflict`, `resolveKycConflict` | Dùng `confirmFact` / `markConflict` / `resolveConflict` của `domain`; từ chối `birthYear` / `gender` từ nguồn RE (D2); `confirmKycFact` / `markKycConflict` trên ghi chú `SYSTEM` → `KYC_NOTE_FROM_PROFILE` (ghi chú `SYSTEM` chỉ do hồ sơ KH ghi, #263); sau đó `nextKycVersion` → ghi `kyc_versions` nếu hash đổi; cờ material tay theo ADR-0008 §7; ngày dữ kiện / ngày giải quyết (ngày phiên bản) sau hôm nay → `DATE_IN_FUTURE` (DR-42) |
 | `submitPolicy`, `issuePolicy`, `updatePolicy` | Ràng buộc §3.7; FYP qua `Vnd`, không phải số nguyên dương → `INVALID_AMOUNT`, quá 100 tỷ đồng → `AMOUNT_TOO_LARGE`; ngày nộp / ngày phát hành sau hôm nay → `DATE_IN_FUTURE` (F-11, #258) |
-| `softDelete…`, `restore…` | D4; không xóa được team / nhân sự còn được tham chiếu bởi bản ghi chưa xóa; xóa cuộc hẹn có transition theo D7 (transition bị hủy, `customers.stage` về `from_stage`); khôi phục cuộc hẹn `MET` mà transition của nó giờ lùi ngày → từ chối (D10), cuộc hẹn vẫn bị xóa |
+| `softDelete…`, `restore…` | D4; không xóa được team / nhân sự còn được tham chiếu bởi bản ghi chưa xóa; xóa cuộc hẹn có transition theo D7 (transition bị hủy, `customers.stage` về `from_stage`); khôi phục cuộc hẹn `MET` mà transition của nó giờ lùi ngày → từ chối (D10), cuộc hẹn vẫn bị xóa; khôi phục kiểm lại ngày như lúc ghi (DR-25): cuộc hẹn `MET` / `NO_SHOW` sau hôm nay → `OUTCOME_IN_FUTURE`, HĐ nộp / phát hành sau hôm nay → `DATE_IN_FUTURE` (bản ghi đã xóa trong file nhập được mang ngày tương lai, §6 luật 10) |
 
 **Đọc dữ liệu** qua repository trả về đúng kiểu của `domain` (`Team`, `Person`, `Customer`, `StageTransition`, `Appointment`, `Policy`, `KycProfile`, `KycVersion`). Chỉ số (Phase 4) tính bằng `stats.ts` trên dữ liệu đã nạp — quy mô demo đủ nhỏ để tính trong bộ nhớ.
 
@@ -212,7 +214,8 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
     - cột ngày (`date`, `*_date`): `YYYY-MM-DD`, là ngày có thật theo `calendarDate` (từ năm 1900); `birth_date` thêm dạng `YYYY`;
     - `time`: `HH:MM` (00:00–23:59) hoặc null;
     - `created_at` / `updated_at` / `deleted_at`: ISO-8601 UTC như app ghi (`…Z`);
-    - `seq` ≥ 1;
+    - `seq` là số nguyên an toàn ≥ 1 (DR-34);
+    - `name` của team / nhân sự / KH và `kyc_notes.text`: như lệnh lưu — NFC, đã trim, không NUL; tên không rỗng (DR-49);
     - `kyc_facts.value_json`: JSON parse được, là chuỗi / số / true-false và đã chuẩn hóa theo kiểu của trường (`normalizeKycValue` không đổi giá trị: `"2"` cho `childrenCount` bị từ chối);
     - tiền là phí như `requireAmount` nhận: FYP (`submitted_fyp`, `issued_fyp`) và `expected_case_size` (hoặc null) là số nguyên > 0 và ≤ 100 tỷ đồng (`MAX_FEE_VND`, T-128 #320, DR-23), kiểm giá trị; FYP > 0 còn có CHECK của schema; số lẻ bị chặn khi nạp vào cột integer.
   - **Kiểm bất biến liên bảng** (#204, `validateBackupInvariants`, chạy sau kiểm giá trị; Phase 6 kéo snapshot dùng lại): các giá trị đều hợp lệ nhưng bảng mâu thuẫn nhau → `BACKUP_INVALID` với params `rule` = số của bất biến đầu tiên bị vi phạm (để chẩn đoán; hộp 10b không đổi), DB hiện tại không đổi. Cũng là hàm đọc thuần trên DB tạm. Quy tắc nói về dữ liệu sống chỉ đọc bản ghi chưa xóa, nên bản ghi xóa mềm / khôi phục theo lệnh nghiệp vụ (D7) vẫn nhận:
@@ -225,7 +228,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
     7. Mỗi trường KYC có dữ kiện của một KH: đúng một fact `active` và không `conflict`, hoặc ≥ 2 fact `conflict` và không `active`.
     8. Fact `birthYear` / `gender` đang `active` đến từ ghi chú nguồn `SYSTEM` và khớp `customers.birth_date` (năm) / `gender` (D2). Fact `birthYear` / `gender` đang `conflict` từ ghi chú `SYSTEM` cũng khớp hồ sơ (fact `conflict` từ ghi chú khác giữ quy tắc 7); `resolveKycConflict` chọn fact `SYSTEM` lệch hồ sơ → `KYC_FIELD_FROM_PROFILE`. Mọi fact (mọi trạng thái, kể cả `superseded`) từ ghi chú `SYSTEM` là `birthYear` / `gender` (#263).
     9. Nhân sự (#252, Owner 02/10/2026): (i) mỗi team chưa xóa có tối đa 1 TL chưa xóa (#223); (ii) IS / BD / BDM có `team_id` null, kể cả người đã xóa; (iii) người chưa xóa có `team_id` → team chưa xóa. Dữ liệu cũ sai bị từ chối, không migration (dữ liệu hiện có là giả lập: nạp lại seed).
-    10. Việc đã xảy ra không sau hôm nay (ngày theo đồng hồ lúc nhập; F-11, #258, Owner 04/10/2026): transition chưa xóa (kể cả transition đầu = ngày tạo KH, cả KH đã xóa), ngày nộp / ngày phát hành của HĐ chưa xóa, cuộc hẹn chưa xóa MET / NO_SHOW. Cuộc hẹn SCHEDULED / CANCELLED được ở tương lai. Dữ liệu cũ sai bị từ chối, không migration.
+    10. Việc đã xảy ra không sau hôm nay (ngày theo đồng hồ lúc nhập; F-11, #258, Owner 04/10/2026): transition chưa xóa (kể cả transition đầu = ngày tạo KH, cả KH đã xóa), ngày nộp / ngày phát hành của HĐ chưa xóa, cuộc hẹn chưa xóa MET / NO_SHOW, ngày ghi chú / dữ kiện / phiên bản KYC, ngày sinh (`YYYY` so như chuỗi: năm nay vẫn nhận) của mọi KH (DR-42). Cuộc hẹn SCHEDULED / CANCELLED được ở tương lai. Dữ liệu cũ sai bị từ chối, không migration.
 
 ## 7. Dữ liệu giả lập (seed)
 

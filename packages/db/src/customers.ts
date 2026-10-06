@@ -17,6 +17,7 @@ import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import {
   fromIsoDate,
   liveCustomer,
+  nextSeq,
   prepared,
   requireName,
   requireRe,
@@ -153,7 +154,10 @@ export function previewCustomerProfile(
   const current = toCustomer(liveCustomer(db, id));
   const birthDate = changes.birthDate === undefined ? current.birthDate : changes.birthDate;
   const gender = changes.gender === undefined ? current.gender : changes.gender;
-  const next = { birthDate: birthDate ? birthDateText(birthDate) : null, gender: gender ?? null };
+  const next = {
+    birthDate: birthDate ? birthDateText(db, birthDate) : null,
+    gender: gender ?? null,
+  };
   return previewProfileFacts(db, id, next, today(db));
 }
 
@@ -224,7 +228,7 @@ export function appendTransition(
   const row: TransitionRow = {
     id: ulid(db.now(), db.random),
     customerId,
-    seq: (lastSeq?.seq ?? 0) + 1,
+    seq: nextSeq(lastSeq?.seq),
     fromStage: from,
     toStage: to,
     date: isoDate,
@@ -283,15 +287,16 @@ function validateProfile(db: Database, input: CustomerProfile) {
   return {
     name: requireName(input.name),
     reId: requireRe(db, input.reId),
-    birthDate: input.birthDate ? birthDateText(input.birthDate) : null,
+    birthDate: input.birthDate ? birthDateText(db, input.birthDate) : null,
     gender: input.gender ?? null,
   };
 }
 
-function birthDateText(birthDate: BirthDate): string {
-  if ('month' in birthDate) return toIsoDate(birthDate);
+/** A birth has already happened (DR-42): a year alone is after today only from next year on. */
+function birthDateText(db: Database, birthDate: BirthDate): string {
+  if ('month' in birthDate) return toPastIsoDate(db, birthDate);
   // A year alone is checked as 1 January of that year.
-  return toIsoDate({ year: birthDate.year, month: 1, day: 1 }).slice(0, 4);
+  return toPastIsoDate(db, { year: birthDate.year, month: 1, day: 1 }).slice(0, 4);
 }
 
 function freeCode(db: Database): string {

@@ -878,6 +878,32 @@ describe('rescheduleAppointment', () => {
     expect(getAppointment(db, noted.id)?.note).toBe('KH đi công tác');
     expect(moved.note).toBe('');
   });
+
+  // DR-66 T7: the rule of the dialog (mockup 6e) is the command's, so nothing else can break it.
+  it('refuses the same day and time as the old appointment, and takes another time that day', async () => {
+    const { db, customer, re, persist } = await withCustomer();
+    const input = { customerId: customer.id, reId: re.id, triggerType: 'REFERRAL' } as const;
+    const timed = scheduleAppointment(db, { ...input, date: d(8, 1), time: '09:00' });
+    const untimed = scheduleAppointment(db, { ...input, date: d(9, 1) });
+    const before = db.export();
+    persist.mockClear();
+
+    expect(
+      codeOf(() => rescheduleAppointment(db, timed.id, { date: d(8, 1), time: '09:00' })),
+    ).toBe('RESCHEDULE_UNCHANGED');
+    expect(codeOf(() => rescheduleAppointment(db, untimed.id, { date: d(9, 1) }))).toBe(
+      'RESCHEDULE_UNCHANGED',
+    );
+    expect(db.export()).toEqual(before);
+    expect(persist).not.toHaveBeenCalled();
+
+    expect(rescheduleAppointment(db, timed.id, { date: d(8, 1), time: '10:00' }).time).toBe(
+      '10:00',
+    );
+    expect(rescheduleAppointment(db, untimed.id, { date: d(9, 1), time: '09:00' }).date).toEqual(
+      d(9, 1),
+    );
+  });
 });
 
 describe('deleting appointments', () => {
