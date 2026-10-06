@@ -93,8 +93,12 @@ export async function openDatabase(options: OpenDatabaseOptions = {}): Promise<D
       } finally {
         depth--;
       }
-      sqlite.run(nested ? 'RELEASE nested' : 'COMMIT');
-      if (!nested) persist?.(exportBytes());
+      if (nested) {
+        sqlite.run('RELEASE nested');
+      } else {
+        commit(sqlite);
+        persist?.(exportBytes());
+      }
       return result;
     },
     withSources<T>(next: Sources, fn: () => T): T {
@@ -154,6 +158,23 @@ function cacheStatements(sqlite: SqlJsDatabase): { clear(): void } {
   };
 }
 
+/**
+ * A failed COMMIT (deferred foreign keys) leaves the transaction open; roll it back so the error is
+ * the only effect and the next BEGIN works.
+ */
+function commit(sqlite: SqlJsDatabase): void {
+  try {
+    sqlite.run('COMMIT');
+  } catch (error) {
+    try {
+      sqlite.run('ROLLBACK');
+    } catch {
+      // SQLite already ended the transaction; the COMMIT error is the one to report.
+    }
+    throw error;
+  }
+}
+
 function enableForeignKeys(sqlite: SqlJsDatabase): void {
   sqlite.run('PRAGMA foreign_keys = ON');
 }
@@ -171,18 +192,38 @@ function schemaVersion(sqlite: SqlJsDatabase): number {
   return Number(rows[0]?.values[0]?.[0]);
 }
 
-/** Applies every migration newer than the database, all in one transaction. */
+/**
+ * Applies every migration newer than the database, all in one transaction. Foreign keys are off
+ * while they run, as for loading a backup: drizzle-kit rebuilds a table (copy, drop, rename) to add
+ * a CHECK, and its own `PRAGMA foreign_keys=OFF` does nothing inside a transaction, so dropping a
+ * referenced table with rows would fail. Every reference is checked before COMMIT instead.
+ */
 export function migrate(db: Database, migrations: readonly Migration[]): void {
   const current = schemaVersion(db.sqlite);
   const pending = migrations.filter((m) => m.id > current);
   if (pending.length === 0) return;
-  db.transaction(() => {
-    for (const migration of pending) {
-      db.sqlite.exec(migration.sql);
-      db.sqlite.run('INSERT INTO schema_migrations (id, applied_at) VALUES (?, ?)', [
-        migration.id,
-        db.now().toISOString(),
-      ]);
-    }
-  });
+  db.sqlite.run('PRAGMA foreign_keys = OFF');
+  try {
+    db.transaction(() => {
+      for (const migration of pending) {
+        db.sqlite.exec(migration.sql);
+        assertReferencesKept(db.sqlite, migration);
+        db.sqlite.run('INSERT INTO schema_migrations (id, applied_at) VALUES (?, ?)', [
+          migration.id,
+          db.now().toISOString(),
+        ]);
+      }
+    });
+  } finally {
+    enableForeignKeys(db.sqlite);
+  }
+}
+
+function assertReferencesKept(sqlite: SqlJsDatabase, migration: Migration): void {
+  const broken = sqlite.exec('PRAGMA foreign_key_check')[0]?.values ?? [];
+  if (broken.length === 0) return;
+  const pairs = new Set(broken.map(([table, , parent]) => `${String(table)} → ${String(parent)}`));
+  throw new Error(
+    `Migration ${migration.id} (${migration.tag}) leaves references pointing nowhere: ${[...pairs].join(', ')}`,
+  );
 }

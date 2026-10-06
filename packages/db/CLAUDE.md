@@ -10,6 +10,7 @@ Drizzle trên sql.js ở mọi nơi (ADR-0016): một DB SQLite trong bộ nhớ
 ## File hay tìm
 
 - Schema: `src/schema.ts` → `pnpm db:generate` sinh `migrations/*.sql`. **Không sửa tay migration đã sinh**; thêm một dòng vào `src/migrations.ts` cho file mới (test so với journal của drizzle-kit).
+- Migration "dựng lại bảng" của drizzle-kit (copy → drop → rename, để thêm CHECK) chạy được trên DB có dữ liệu: `migrate()` tắt khóa ngoại trước BEGIN và chạy `foreign_key_check` sau mỗi migration, như nhập backup. Migration đổi schema nên có test mở DB cũ **có dữ liệu** (mẫu: "migrating a saved database" trong `src/database.test.ts`).
 - Mở DB: `src/database.ts` (`openDatabase`) · lỗi: `src/errors.ts` (`DbError` + mã; UI dịch mã qua i18n).
 - Lệnh theo thực thể: `src/team.ts`, `src/customers.ts`, `src/appointments.ts`, `src/policies.ts`, `src/kyc.ts`; helper chung `src/common.ts`; ULID `src/ids.ts`.
 - Dữ liệu cho chỉ số: `src/metrics.ts` (`loadMetricsData`, chỉ số tính trong bộ nhớ bằng `domain`).
