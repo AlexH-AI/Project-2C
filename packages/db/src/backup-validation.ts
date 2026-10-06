@@ -15,7 +15,7 @@ import {
 } from '@p2c/domain';
 import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
-import { cleanText, isFee, requireName, today, toIsoDate } from './common';
+import { cleanText, isFee, optionalText, requireName, today, toIsoDate } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { normalizeKycValue, profileFactValue, type ProfileFields } from './kyc';
@@ -37,9 +37,18 @@ export function validateBackupValues(db: Database): void {
       if (table === 'kyc_facts' && !validKycValue(String(row.field), String(row.value_json))) {
         throw new DbError('BACKUP_INVALID');
       }
-      if (table === 'kyc_notes' && !storedAs(cleanText, row.text))
+      if (table === 'kyc_notes' && !storedAs(requireText, row.text)) {
         throw new DbError('BACKUP_INVALID');
+      }
       if (NAMED.has(table) && !storedAs(requireName, row.name)) throw new DbError('BACKUP_INVALID');
+      // A meeting held has its next step, as `recordMeetingOutcome` stores it (DR-05).
+      if (
+        table === 'appointments' &&
+        row.status === 'MET' &&
+        !storedAs(requireNextStep, row.next_step)
+      ) {
+        throw new DbError('BACKUP_INVALID');
+      }
     }
   }
 }
@@ -58,6 +67,19 @@ function validValue(column: string, value: SqlValue): boolean {
 
 const FEES = new Set(['expected_case_size', 'submitted_fyp', 'issued_fyp']);
 const NAMED = new Set(['teams', 'people', 'customers']);
+
+/** `cleanText` that is not empty, as a KYC note's text (DR-05). */
+function requireText(text: string): string {
+  const clean = cleanText(text);
+  if (clean === '') throw new DbError('BACKUP_INVALID');
+  return clean;
+}
+
+function requireNextStep(text: string): string {
+  const step = optionalText(text);
+  if (step === null) throw new DbError('BACKUP_INVALID');
+  return step;
+}
 
 /** Text that `clean` keeps as it is, as the commands store it (DR-49). */
 function storedAs(clean: (text: string) => string, value: SqlValue | undefined): boolean {
@@ -195,8 +217,9 @@ function meetingRule(appointments: Map<unknown, Row>, transitions: Row[]): Rule 
  * Rule 5: a live customer, appointment or policy belongs to a live RE (who may stop being one, or
  * be deleted, only once their records are deleted); the RE never coordinates their own
  * appointment, and only a supporting role (`REVIEWER_ROLES`) coordinates a live appointment
- * (ADR-0007) or reviews a live meeting (D9); an appointment is rescheduled from one of the same
- * customer (D3).
+ * (ADR-0007) or reviews a live meeting (D9), and is not deleted while it does (DR-04); an
+ * appointment is rescheduled from one of the same customer (D3), which has no other new one and is
+ * not rescheduled, at any remove, from it: deleted appointments too, as the chain keeps them (DR-06).
  */
 function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>): Rule | null {
   const notRe = read(
@@ -212,8 +235,8 @@ function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>
   const misplaced = read(
     [
       'SELECT 1 FROM appointment_coordinators c JOIN appointments a ON a.id = c.appointment_id WHERE c.person_id = a.re_id',
-      `SELECT 1 FROM appointment_coordinators c JOIN appointments a ON a.id = c.appointment_id JOIN people p ON p.id = c.person_id WHERE a.deleted_at IS NULL AND p.role NOT IN ${supporting}`,
-      `SELECT 1 FROM appointments a JOIN people p ON p.id = a.outcome_reviewer_id WHERE a.deleted_at IS NULL AND p.role NOT IN ${supporting}`,
+      `SELECT 1 FROM appointment_coordinators c JOIN appointments a ON a.id = c.appointment_id JOIN people p ON p.id = c.person_id WHERE a.deleted_at IS NULL AND (p.role NOT IN ${supporting} OR p.deleted_at IS NOT NULL)`,
+      `SELECT 1 FROM appointments a JOIN people p ON p.id = a.outcome_reviewer_id WHERE a.deleted_at IS NULL AND (p.role NOT IN ${supporting} OR p.deleted_at IS NOT NULL)`,
     ].join(' UNION ALL '),
   );
   const rescheduled = [...appointments.values()].every((a) => {
@@ -221,14 +244,35 @@ function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>
     const from = appointments.get(a.rescheduled_from_id)!;
     return from.customer_id === a.customer_id && from.status === 'RESCHEDULED';
   });
-  return notRe.length === 0 && misplaced.length === 0 && rescheduled ? null : 5;
+  return notRe.length === 0 && misplaced.length === 0 && rescheduled && chained(appointments)
+    ? null
+    : 5;
+}
+
+/** Each appointment has at most one new one, and following them never comes back to it. */
+function chained(appointments: Map<unknown, Row>): boolean {
+  const from = [...appointments.values()].map((a) => a.rescheduled_from_id).filter((id) => id);
+  if (new Set(from).size !== from.length) return false;
+  // With one new appointment each, a chain that comes back has no start: walk from each start.
+  const starts = [...appointments.values()].filter((a) => a.rescheduled_from_id === null);
+  const next = new Map(
+    [...appointments.values()]
+      .filter((a) => a.rescheduled_from_id)
+      .map((a) => [a.rescheduled_from_id, a]),
+  );
+  let reached = 0;
+  for (const start of starts) {
+    for (let a: Row | undefined = start; a; a = next.get(a.id)) reached++;
+  }
+  return reached === appointments.size;
 }
 
 /**
  * Rules 6–8 (ADR-0008, D2): a fact comes from a note of its own customer; each field has either one
  * active fact or at least two in conflict; the birth year and gender in effect are the profile's,
  * from a `SYSTEM` note, and one in conflict from a `SYSTEM` note is the profile's too, which
- * resolving the conflict would confirm; a `SYSTEM` note holds nothing else.
+ * resolving the conflict would confirm; a `SYSTEM` note holds nothing else. A birth date or gender
+ * in the profile has such a fact, active or in conflict, as saving it records one (DR-07).
  */
 function kycRule(read: (sql: string) => Row[], customers: Row[]): Rule | null {
   const facts = read(
@@ -236,29 +280,42 @@ function kycRule(read: (sql: string) => Row[], customers: Row[]): Rule | null {
   );
   const byCustomer = new Map(customers.map((c) => [c.id, c]));
   const counts = new Map<string, { active: number; conflict: number }>();
+  const fromProfile = new Set<string>();
   for (const fact of facts) {
     if (fact.note_customer_id !== fact.customer_id) return 6;
     const key = `${String(fact.customer_id)}\n${String(fact.field)}`;
     const count = counts.get(key) ?? { active: 0, conflict: 0 };
     counts.set(key, count);
-    const fromProfile = fact.source === 'SYSTEM';
+    const system = fact.source === 'SYSTEM';
     const profileField = fact.field === 'birthYear' || fact.field === 'gender';
     // A `SYSTEM` note holds only the profile's birth year and gender, whatever their status.
-    if (fromProfile && !profileField) return 8;
+    if (system && !profileField) return 8;
     if (fact.status === 'superseded') continue;
     count[fact.status as 'active' | 'conflict']++;
-    if (profileField && (fact.status === 'active' || fromProfile)) {
+    if (profileField && (fact.status === 'active' || system)) {
       const customer = byCustomer.get(fact.customer_id)!;
-      const profile = { birthDate: customer.birth_date, gender: customer.gender } as ProfileFields;
       const field = fact.field as 'birthYear' | 'gender';
-      const expected = JSON.stringify(profileFactValue(field, profile));
-      if (!fromProfile || fact.value_json !== expected) return 8;
+      const expected = JSON.stringify(profileFactValue(field, profileOf(customer)));
+      if (!system || fact.value_json !== expected) return 8;
+      fromProfile.add(key);
     }
   }
+  const missing = customers.some((customer) =>
+    (['birthYear', 'gender'] as const).some(
+      (field) =>
+        profileFactValue(field, profileOf(customer)) !== null &&
+        !fromProfile.has(`${String(customer.id)}\n${field}`),
+    ),
+  );
+  if (missing) return 8;
   const settled = [...counts.values()].every(
     ({ active, conflict }) => (active === 1 && conflict === 0) || (active === 0 && conflict >= 2),
   );
   return settled ? null : 7;
+}
+
+function profileOf(customer: Row): ProfileFields {
+  return { birthDate: customer.birth_date, gender: customer.gender } as ProfileFields;
 }
 
 /**

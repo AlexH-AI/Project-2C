@@ -192,6 +192,32 @@ describe('importBackup — rules across tables', () => {
       },
     ],
     [
+      'a deleted appointment coordinated and reviewed by someone since deleted',
+      (b, ids) => {
+        const gone = person(b, ids.tl, { id: 'gone-tl', name: 'Cũ', deleted_at: DELETED });
+        const deleted = row(b, 'appointments', (a) => a.customer_id === ids.hoa);
+        deleted.outcome_reviewer_id = gone.id;
+        b.tables.appointment_coordinators!.push({ appointment_id: deleted.id, person_id: gone.id });
+      },
+    ],
+    [
+      'a rescheduled appointment whose new one was deleted',
+      (b) => (row(b, 'appointments', (a) => a.rescheduled_from_id !== null).deleted_at = DELETED),
+    ],
+    [
+      'an appointment rescheduled twice, in one chain',
+      (b) => {
+        const next = row(b, 'appointments', (a) => a.rescheduled_from_id !== null);
+        b.tables.appointments!.push({ ...next, id: 'third', rescheduled_from_id: next.id });
+        next.status = 'RESCHEDULED';
+      },
+    ],
+    [
+      'a next step kept as typed, not composed, as `recordMeetingOutcome` stores it',
+      (b, ids) =>
+        (row(b, 'appointments', (a) => a.id === ids.met).next_step = 'Gặp lại'.normalize('NFD')),
+    ],
+    [
       'a deleted TL next to the live TL of the team',
       (b, ids) => person(b, ids.tl, { id: 'old-tl', name: 'Cũ', deleted_at: DELETED }),
     ],
@@ -212,7 +238,8 @@ describe('importBackup — rules across tables', () => {
       (b) => {
         const booked = row(b, 'appointments', (a) => a.rescheduled_from_id !== null);
         booked.date = TOMORROW;
-        b.tables.appointments!.push({ ...booked, id: 'cancelled', status: 'CANCELLED' });
+        const cancelled = { ...booked, id: 'cancelled', status: 'CANCELLED' };
+        b.tables.appointments!.push({ ...cancelled, rescheduled_from_id: null });
       },
     ],
   ];
@@ -227,7 +254,8 @@ describe('importBackup — rules across tables', () => {
 
   /**
    * Each label starts with the number of the rule it breaks (spec §6), which the error names, so a
-   * case cannot pass on another rule; UNIQUE is caught by the schema while loading.
+   * case cannot pass on another rule; UNIQUE is caught by the schema while loading, VALUE by the
+   * value checks.
    */
   const broken: [string, (b: BackupJson, ids: Ids) => void][] = [
     [
@@ -340,6 +368,42 @@ describe('importBackup — rules across tables', () => {
       (b, ids) => (b.tables.appointment_coordinators![0]!.person_id = ids.otherRe),
     ],
     [
+      '5: a live appointment coordinated by a deleted TL',
+      (b, ids) => (row(b, 'people', (p) => p.id === ids.tl).deleted_at = DELETED),
+    ],
+    [
+      '5: a live meeting reviewed by a deleted TL',
+      (b, ids) => {
+        const gone = person(b, ids.tl, { id: 'gone-tl', name: 'Cũ', deleted_at: DELETED });
+        row(b, 'appointments', (a) => a.id === ids.met).outcome_reviewer_id = gone.id;
+      },
+    ],
+    [
+      '5: an appointment rescheduled from itself',
+      (b) => {
+        const next = row(b, 'appointments', (a) => a.rescheduled_from_id !== null);
+        const moved = row(b, 'appointments', (a) => a.id === next.rescheduled_from_id);
+        next.rescheduled_from_id = null;
+        moved.rescheduled_from_id = moved.id;
+      },
+    ],
+    [
+      '5: two appointments rescheduled from the same one, one of them deleted',
+      (b) => {
+        const next = row(b, 'appointments', (a) => a.rescheduled_from_id !== null);
+        b.tables.appointments!.push({ ...next, id: 'twin', deleted_at: DELETED });
+      },
+    ],
+    [
+      '5: two rescheduled appointments rescheduled from each other',
+      (b) => {
+        const next = row(b, 'appointments', (a) => a.rescheduled_from_id !== null);
+        const moved = row(b, 'appointments', (a) => a.id === next.rescheduled_from_id);
+        next.status = 'RESCHEDULED';
+        moved.rescheduled_from_id = next.id;
+      },
+    ],
+    [
       '5: an appointment rescheduled from one that was not rescheduled',
       (b, ids) =>
         (row(b, 'appointments', (a) => a.rescheduled_from_id !== null).rescheduled_from_id =
@@ -392,6 +456,19 @@ describe('importBackup — rules across tables', () => {
     [
       '8: a gender other than the profile’s (D2)',
       (b, ids) => (row(b, 'customers', (c) => c.id === ids.lan).gender = 'MALE'),
+    ],
+    [
+      '8: a birth year in the profile with no fact of it (D2)',
+      (b, ids) =>
+        remove(b, 'kyc_facts', (f) => f.customer_id === ids.lan && f.field === 'birthYear'),
+    ],
+    [
+      '8: a gender in the profile with no fact of it (D2)',
+      (b, ids) => remove(b, 'kyc_facts', (f) => f.customer_id === ids.lan && f.field === 'gender'),
+    ],
+    [
+      '8: a birth year in the profile whose only fact is superseded (D2)',
+      (b, ids) => (fact(b, ids.lan, 'birthYear').status = 'superseded'),
     ],
     [
       '8: a birth year confirmed from the RE’s note, not the profile (D2)',
@@ -473,11 +550,30 @@ describe('importBackup — rules across tables', () => {
     ],
     [
       '10: a birth date after today',
-      (b, ids) => (row(b, 'customers', (c) => c.id === ids.kien).birth_date = TOMORROW),
+      (b, ids) => {
+        row(b, 'customers', (c) => c.id === ids.lan).birth_date = TOMORROW;
+        fact(b, ids.lan, 'birthYear').value_json = '2026';
+      },
     ],
     [
       '10: a birth year after this year',
-      (b, ids) => (row(b, 'customers', (c) => c.id === ids.kien).birth_date = '2027'),
+      (b, ids) => {
+        row(b, 'customers', (c) => c.id === ids.lan).birth_date = '2027';
+        fact(b, ids.lan, 'birthYear').value_json = '2027';
+      },
+    ],
+    // What the commands require of a meeting held, read with the other values.
+    [
+      'VALUE: a meeting held with no next step',
+      (b, ids) => (row(b, 'appointments', (a) => a.id === ids.met).next_step = null),
+    ],
+    [
+      'VALUE: a meeting held with an empty next step',
+      (b, ids) => (row(b, 'appointments', (a) => a.id === ids.met).next_step = ''),
+    ],
+    [
+      'VALUE: a meeting held with a blank next step',
+      (b, ids) => (row(b, 'appointments', (a) => a.id === ids.met).next_step = '   '),
     ],
     [
       '2: a stage other than the latest live transition’s',
@@ -499,7 +595,7 @@ describe('importBackup — rules across tables', () => {
     const rule = label.split(':')[0];
     expect(error).toMatchObject({ code: 'BACKUP_INVALID' });
     expect((error as DbError).params).toEqual(
-      rule === 'UNIQUE' ? undefined : { rule: Number(rule) },
+      rule === 'UNIQUE' || rule === 'VALUE' ? undefined : { rule: Number(rule) },
     );
     expect(db.export()).toEqual(before);
     expect(persist).not.toHaveBeenCalled();
