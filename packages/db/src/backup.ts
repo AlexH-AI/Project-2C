@@ -142,7 +142,10 @@ function load(db: Database, tables: Record<string, Record<string, unknown>[]>): 
   db.transaction(() => {
     for (const table of names) {
       const columns = columnsOf(db.sqlite, table);
-      const insert = `INSERT INTO ${quote(table)} (${columnList(columns)}) VALUES (${columns.map(() => '?').join(', ')})`;
+      // One statement per table: `run(sql, values)` would prepare and free one for every row.
+      const insert = db.sqlite.prepare(
+        `INSERT INTO ${quote(table)} (${columnList(columns)}) VALUES (${columns.map(() => '?').join(', ')})`,
+      );
       for (const row of tables[table]!) {
         if (
           !sameSet(
@@ -151,10 +154,7 @@ function load(db: Database, tables: Record<string, Record<string, unknown>[]>): 
           )
         )
           throw invalid();
-        db.sqlite.run(
-          insert,
-          columns.map((c) => valueOf(c, row[c.name])),
-        );
+        insert.run(columns.map((c) => valueOf(c, row[c.name])));
       }
     }
     if (db.sqlite.exec('PRAGMA foreign_key_check').length > 0) throw invalid();

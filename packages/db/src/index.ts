@@ -4,6 +4,8 @@ export { LATEST_SCHEMA_VERSION } from './migrations';
 export type { Migration } from './migrations';
 export { BACKUP_FORMAT, exportBackup, importBackup, MAX_BACKUP_BYTES } from './backup';
 export type { ImportedBackup } from './backup';
+export { countRecords } from './counts';
+export type { RecordCounts } from './counts';
 export { DB_ERROR_CODES, DbError } from './errors';
 export type { DbErrorCode } from './errors';
 export {

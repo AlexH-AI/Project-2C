@@ -22,6 +22,7 @@ import {
   requireName,
   requireRe,
   rowInsert,
+  selectRows,
   stampDeleted,
   today,
   toIsoDate,
@@ -80,20 +81,23 @@ export function getCustomer(db: Database, id: string): CustomerRecord | undefine
 
 /** Live transitions of live customers (of one customer when given), in recording order. */
 export function listStageTransitions(db: Database, customerId?: string): StageTransition[] {
-  return db.orm
-    .select({ t: stageTransitions })
-    .from(stageTransitions)
-    .innerJoin(customers, eq(customers.id, stageTransitions.customerId))
-    .where(
-      and(
-        isNull(stageTransitions.deletedAt),
-        isNull(customers.deletedAt),
-        customerId === undefined ? undefined : eq(stageTransitions.customerId, customerId),
-      ),
-    )
-    .orderBy(asc(stageTransitions.customerId), asc(stageTransitions.seq))
-    .all()
-    .map(({ t }) => toTransition(t));
+  const one = customerId === undefined ? '' : 'AND t.customer_id = ?';
+  const rows = selectRows(
+    db,
+    `SELECT t.id, t.customer_id, t.from_stage, t.to_stage, t.date, t.appointment_id
+     FROM stage_transitions t JOIN customers c ON c.id = t.customer_id
+     WHERE t.deleted_at IS NULL AND c.deleted_at IS NULL ${one}
+     ORDER BY t.customer_id, t.seq`,
+    customerId === undefined ? [] : [customerId],
+  );
+  return rows.map((row) => ({
+    id: row[0] as string,
+    customerId: row[1] as string,
+    from: row[2] as CustomerStage | null,
+    to: row[3] as CustomerStage,
+    date: fromIsoDate(row[4] as string),
+    appointmentId: row[5] as string | null,
+  }));
 }
 
 // ---- commands -------------------------------------------------------------

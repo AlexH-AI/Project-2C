@@ -1,15 +1,6 @@
 import { useMemo, useState } from 'react';
-import {
-  listAppointments,
-  listCustomers,
-  listPeople,
-  listPolicies,
-  listStageTransitions,
-  listTeams,
-  type Database,
-} from '@p2c/db';
 import { Button, Segmented } from '@p2c/ui';
-import { useQuery, useToday } from '../../data/AppDataContext';
+import { useTables, useToday } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { useScopeState } from '../../shell/ScopeContext';
 import { FilterBar, useAppliedFilter } from '../FilterBar';
@@ -24,15 +15,6 @@ import {
   type ReportRows,
 } from './reports-view';
 
-const readReports = (db: Database) => ({
-  appointments: listAppointments(db),
-  customers: listCustomers(db),
-  people: listPeople(db),
-  teams: listTeams(db),
-  policies: listPolicies(db),
-  transitions: listStageTransitions(db),
-});
-
 type TableKey = 'byTeam' | 'byRe' | 'byMark';
 
 const CARD = 'flex flex-col gap-3 rounded-md border border-border bg-surface-1 px-3.5 py-3';
@@ -45,7 +27,7 @@ const CARD = 'flex flex-col gap-3 rounded-md border border-border bg-surface-1 p
 export function ReportsScreen() {
   const today = useToday();
   const { picked } = useScopeState();
-  const data = useQuery(readReports);
+  const data = useTables();
   const filter = useAppliedFilter(today, picked);
   const { applied } = filter;
   const [chosenTable, setTable] = useState<TableKey>('byTeam');

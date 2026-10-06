@@ -1,13 +1,5 @@
 import { useMemo, useState } from 'react';
 import {
-  listCustomers,
-  listPeople,
-  listPolicies,
-  listStageTransitions,
-  listTeams,
-  type Database,
-} from '@p2c/db';
-import {
   CLOSED_STAGES,
   PIPELINE_STAGES,
   formatCount,
@@ -16,7 +8,7 @@ import {
   type CustomerStage,
 } from '@p2c/domain';
 import { Button, DataTable, Segmented, StageBadge, type DataTableColumn } from '@p2c/ui';
-import { useQuery } from '../../data/AppDataContext';
+import { useTables } from '../../data/AppDataContext';
 import { joinParts, t, tableMore } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { RePicker } from '../../shell/RePicker';
@@ -38,14 +30,6 @@ const CLOSED_LIMIT = 5;
 
 const CARD = 'rounded-lg border border-border bg-surface-1 p-3';
 const LINK = 'rounded-sm focus-visible:outline-2 focus-visible:outline-accent';
-
-const readCustomers = (db: Database) => ({
-  customers: listCustomers(db),
-  people: listPeople(db),
-  teams: listTeams(db),
-  transitions: listStageTransitions(db),
-  policies: listPolicies(db),
-});
 
 const profileHref = (card: CustomerCard) =>
   routeToHash({ screen: 'customer', id: card.customer.id });
@@ -103,7 +87,7 @@ const COLUMNS: ReadonlyArray<DataTableColumn<CustomerCard>> = [
 
 /** Customers (mockup customers.html): kanban N4 → N1 with the closed stages beside, or a table. */
 export function CustomersScreen() {
-  const data = useQuery(readCustomers);
+  const data = useTables();
   const { picked, scope, pickRe } = useScopeState();
   const pickedBoard = useMemo(() => customerBoard(data, picked), [data, picked]);
   const board = useMemo(

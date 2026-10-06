@@ -32,12 +32,13 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/appointments.ts` — type AppointmentTrigger, type AppointmentRecord, type NewAppointment, type MeetingOutcome, type NextAppointment, type AppointmentDetails, listAppointments, getAppointment, scheduleAppointment, recordMeetingOutcome, recordOutcomeWithNext, updateAppointmentDetails, editMeetingOutcome, rescheduleAppointment, softDeleteAppointment, restoreAppointment
 - `src/backup-validation.ts` — validateBackupValues, validateBackupInvariants, dataTables
 - `src/backup.ts` — BACKUP_FORMAT, MAX_BACKUP_BYTES, type ImportedBackup, exportBackup, importBackup
-- `src/common.ts` — cleanText, requireName, optionalText, stampDeleted, toIsoDate, fromIsoDate, today, toPastIsoDate, nextSeq, isFee, requireAmount, requireRe, prepared, rowInsert, liveCustomer
+- `src/common.ts` — cleanText, requireName, optionalText, stampDeleted, toIsoDate, fromIsoDate, today, toPastIsoDate, nextSeq, isFee, requireAmount, requireRe, selectRows, prepared, rowInsert, liveCustomer
+- `src/counts.ts` — type RecordCounts, countRecords
 - `src/customers.ts` — type Gender, type BirthDate, type CustomerRecord, type CustomerProfile, type NewCustomer, listCustomers, getCustomer, listStageTransitions, createCustomer, updateCustomerProfile, previewCustomerProfile, changeStageManually, softDeleteCustomer, restoreCustomer, liveCustomer, appendTransition, withdrawAppointmentTransition
 - `src/database.ts` — type OpenDatabaseOptions, type Sources, type Database, openDatabase, assertSupported, migrate
 - `src/errors.ts` — DB_ERROR_CODES, type DbErrorCode, DbError
 - `src/ids.ts` — CROCKFORD_BASE32, type RandomFill, cryptoFill, ulid, encodeBase32
-- `src/index.ts` — re-exports ./database, ./migrations, ./backup, ./errors, ./team, ./customers, ./appointments, ./policies, ./kyc, ./metrics, ./seed, ./schema
+- `src/index.ts` — re-exports ./database, ./migrations, ./backup, ./counts, ./errors, ./team, ./customers, ./appointments, ./policies, ./kyc, ./metrics, ./seed, ./schema
 - `src/kyc.ts` — type KycSource, type KycNoteRecord, type KycProfileRecord, type KycVersionRecord, type KycFactCommand, type KycChange, getKycProfile, listKycVersions, addKycNote, type KycNoteFact, recordKycNote, confirmKycFact, markKycConflict, resolveKycConflict, markKycVersionMaterial, type ProfileFields, recordProfileFacts, type ProfileKycPreview, previewProfileFacts, profileFactValue, normalizeKycValue
 - `src/metrics.ts` — loadMetricsData
 - `src/migrations.ts` — type Migration, MIGRATIONS, latestVersion, LATEST_SCHEMA_VERSION

@@ -1,13 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import {
-  listAppointments,
-  listCustomers,
-  listPeople,
-  listStageTransitions,
-  listTeams,
-  type AppointmentRecord,
-  type Database,
-} from '@p2c/db';
+import type { AppointmentRecord } from '@p2c/db';
 import {
   appointmentGroup,
   compareDates,
@@ -24,7 +16,7 @@ import {
   type Period,
 } from '@p2c/domain';
 import { Button, DataTable, PeriodPicker, SelectField, type DataTableColumn } from '@p2c/ui';
-import { useQuery, useToday } from '../../data/AppDataContext';
+import { useTables, useToday } from '../../data/AppDataContext';
 import { joinParts, t, tableMore } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { RePicker } from '../../shell/RePicker';
@@ -65,14 +57,6 @@ import {
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
-const readAppointments = (db: Database) => ({
-  appointments: listAppointments(db),
-  customers: listCustomers(db),
-  people: listPeople(db),
-  teams: listTeams(db),
-  transitions: listStageTransitions(db),
-});
-
 const triggerText = ({ appointment: a }: AppointmentRow) =>
   a.triggerNote ?? t(`trigger.${a.triggerType}`);
 
@@ -86,7 +70,7 @@ const dayIn = (period: Period, today: CalendarDate) =>
 /** Appointments (mockup appointments.html): month calendar, the day by team → RE, the list, a detail. */
 export function AppointmentsScreen() {
   const today = useToday();
-  const data = useQuery(readAppointments);
+  const data = useTables();
   const { picked, scope, pickRe } = useScopeState();
   const [period, setPeriod] = useState(() => periodOf('month', today));
   const [day, setDay] = useState(today);

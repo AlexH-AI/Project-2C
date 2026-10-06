@@ -1,15 +1,8 @@
 import { useMemo, useState } from 'react';
-import {
-  listAppointments,
-  listCustomers,
-  listPeople,
-  listPolicies,
-  listTeams,
-  type Database,
-} from '@p2c/db';
 import type { Person, PersonRole, Team } from '@p2c/domain';
 import { Button, DataTable, type DataTableColumn } from '@p2c/ui';
-import { useQuery, useToday } from '../../data/AppDataContext';
+import { useTables, useToday } from '../../data/AppDataContext';
+import type { Tables } from '../../data/tables';
 import { t, tableMore } from '../../i18n';
 import { DeletePersonDialog, PersonDialog } from './PersonDialogs';
 import { DeleteTeamDialog, TeamNameDialog } from './TeamDialogs';
@@ -29,18 +22,11 @@ type Editing =
   | { readonly kind: 'editPerson'; readonly person: Person }
   | { readonly kind: 'deletePerson'; readonly person: Person };
 
-const readTeams = (db: Database) => {
-  const people = listPeople(db);
-  return {
-    ...groupByTeam(listTeams(db), people),
-    people,
-    records: {
-      customers: listCustomers(db),
-      appointments: listAppointments(db),
-      policies: listPolicies(db),
-    },
-  };
-};
+const teamsView = ({ teams, people, customers, appointments, policies }: Tables) => ({
+  ...groupByTeam(teams, people),
+  people,
+  records: { customers, appointments, policies },
+});
 
 const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 const CARD_TITLE = 'm-0 text-sm font-medium text-heading';
@@ -127,7 +113,8 @@ function memberColumns(
 
 /** Team & staff (mockup team.html): teams, their members, and the shared support staff. */
 export function TeamScreen() {
-  const view = useQuery(readTeams);
+  const tables = useTables();
+  const view = useMemo(() => teamsView(tables), [tables]);
   const today = useToday();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing | null>(null);
