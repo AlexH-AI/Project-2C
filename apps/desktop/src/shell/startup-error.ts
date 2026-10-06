@@ -1,4 +1,5 @@
 import { DbError } from '@p2c/db';
+import { isStartupBackupError } from '../data/app-data';
 import { t } from '../i18n';
 
 /** `db_open`'s error when another exe already has the data folder open (`storage::ALREADY_OPEN`). */
@@ -15,6 +16,13 @@ export interface StartupMessage {
 export function startupMessage(error: unknown): StartupMessage {
   if (error === ALREADY_OPEN) {
     return { title: t('storage.alreadyOpen'), help: t('storage.alreadyOpenHelp') };
+  }
+  if (isStartupBackupError(error)) {
+    return {
+      title: t('storage.backupFailed'),
+      help: t('storage.backupFailedHelp'),
+      detail: String(error.cause),
+    };
   }
   if (error instanceof DbError && error.code === 'SCHEMA_TOO_NEW') {
     return { title: t('storage.tooNew'), help: t('storage.tooNewHelp', error.params) };

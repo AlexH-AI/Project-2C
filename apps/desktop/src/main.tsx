@@ -8,6 +8,7 @@ import { App } from './App';
 import { openAppData } from './data/app-data';
 import { tauriStorage } from './data/tauri-storage';
 import { t } from './i18n';
+import { blockReload } from './shell/block-reload';
 import { StartupError } from './shell/StartupError';
 import './index.css';
 
@@ -21,7 +22,10 @@ const pinnedDay = parseDate(String(import.meta.env.VITE_DEMO_ANCHOR ?? ''));
 
 render(<p className="px-6 py-8 text-sm text-fg-2">{t('startup.loading')}</p>);
 
+if (isTauri()) blockReload(window);
+
 // Opened once, outside React: StrictMode would otherwise open (and back up) the file twice.
+// The exe backs the file up once it opened, then saves (DR-51).
 // The exe keeps the database in Project2C-data\; web mode keeps it in memory (ADR-0016).
 openAppData({
   storage: isTauri() ? tauriStorage(invoke) : undefined,

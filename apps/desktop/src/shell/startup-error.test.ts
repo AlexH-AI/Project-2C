@@ -17,6 +17,21 @@ describe('startupMessage', () => {
     });
   });
 
+  it('says the file is fine when only the startup backup failed, and why it failed', () => {
+    const cause = 'There is not enough space on the disk. (os error 112)';
+    expect(startupMessage(new Error('STARTUP_BACKUP_FAILED', { cause }))).toEqual({
+      title: 'Không sao lưu được file dữ liệu',
+      help: 'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở: hãy kiểm tra ổ đĩa còn chỗ trống và thư mục đó không chỉ đọc hay bị chương trình khác giữ, rồi mở lại app.',
+      detail: 'There is not enough space on the disk. (os error 112)',
+    });
+  });
+
+  it('warns that the newest backup may be the failing file itself (DR-51)', () => {
+    const { help } = startupMessage('database disk image is malformed');
+    expect(help).toContain('Bản mới nhất có thể chính là file đang lỗi');
+    expect(help).toContain('chép bản liền trước nó');
+  });
+
   it('keeps the open-failed message and the detail for any other error', () => {
     expect(startupMessage('Access is denied. (os error 5)')).toEqual({
       title: 'Không mở được file dữ liệu',

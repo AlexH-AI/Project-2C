@@ -13,7 +13,12 @@ import {
 } from '@p2c/db';
 import { calendarDate, formatDate, fromLocalDate, type CalendarDate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
-import { isUnsavedChangesError, openAppData, type StoragePort } from './app-data';
+import {
+  isStartupBackupError,
+  isUnsavedChangesError,
+  openAppData,
+  type StoragePort,
+} from './app-data';
 
 const TODAY = calendarDate(2026, 9, 27);
 
@@ -130,6 +135,47 @@ describe('openAppData', () => {
     await app.saves.idle();
     const onDisk = await openDatabase({ bytes: saves.at(-1) });
     expect(teamNames(onDisk)).toEqual(['Bình Minh', 'Sao Mai']);
+  });
+
+  it('backs the stored file up once it opened it, before saving anything (DR-51)', async () => {
+    // A file from before the latest migration: opening it migrates, and that saves at once.
+    const older = await openDatabase({ migrations: [] });
+    const { storage, saves, events } = memoryStorage(older.export());
+
+    const app = await openAppData({ storage });
+    await app.saves.idle();
+
+    expect(events).toEqual(['backup', 'save']);
+    expect((await openDatabase({ bytes: saves[0] })).schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
+  });
+
+  it('does not start, and saves nothing, when the startup backup fails', async () => {
+    const older = await openDatabase({ migrations: [] });
+    const { storage, events } = memoryStorage(older.export());
+    storage.backup = () => Promise.reject(new Error('disk full'));
+
+    const error = await openAppData({ storage }).catch((e: unknown) => e);
+    expect(isStartupBackupError(error)).toBe(true);
+    expect((error as Error).cause).toEqual(new Error('disk full'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(events).toEqual([]);
+  });
+
+  it('never backs up a file it cannot open, so a damaged file is never the newest backup', async () => {
+    const header = new TextEncoder().encode('SQLite format 3\0');
+    const damaged = new Uint8Array(4096);
+    damaged.set(header);
+    const { storage, events } = memoryStorage(damaged);
+
+    await expect(openAppData({ storage })).rejects.toThrow();
+    expect(events).toEqual([]);
+  });
+
+  it('backs up nothing on a first start: there is no file yet', async () => {
+    const { storage, events } = memoryStorage();
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+    await app.saves.idle();
+    expect(events).toEqual(['save']);
   });
 
   it('refuses a file made by a newer app: no seeding, no migrating, nothing saved', async () => {

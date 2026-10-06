@@ -6,11 +6,13 @@ use std::ffi::OsString;
 use std::fs;
 use std::io::{self, ErrorKind, Write};
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 
 pub const DATA_DIR: &str = "Project2C-data";
 /// Error message when another process holds the data folder; the app matches it exactly.
 pub const ALREADY_OPEN: &str = "ALREADY_OPEN";
+/// Error message of a save from a page that a webview reload replaced.
+pub const STALE_PAGE: &str = "STALE_PAGE";
 const DB_FILE: &str = "project2c.db";
 const LOCK_FILE: &str = "project2c.lock";
 const BACKUP_DIR: &str = "backups";
@@ -25,28 +27,36 @@ const MAX_EXPORT_SUFFIX: u32 = 1000;
 const SEQ_WIDTH: usize = 8;
 const SQLITE_HEADER: &[u8] = b"SQLite format 3\0";
 
-/// Keeps the data folder to one process: holds `project2c.lock` open without sharing until the
-/// process ends. Windows releases it when the app closes or crashes, so the file is never removed.
-pub struct DataLock(Mutex<Option<fs::File>>);
+/// Keeps the data folder to one process, and the file commands of this process to one at a time.
+/// The first [`open`] holds `project2c.lock` open without sharing until the process ends; Windows
+/// releases it when the app closes or crashes, so the file is never removed. [`open`], [`save`]
+/// and [`backup`] each hold the lock while they run: after a webview reload, the new page's
+/// `open` waits for a save the old page started, and two saves or backups never share a `.tmp`.
+/// A save of the old page that arrives after the new page's `open` is refused (see [`save`]).
+pub struct DataLock(Mutex<Held>);
+
+/// What [`DataLock`] guards.
+struct Held {
+    /// `project2c.lock`, from the first [`open`] on.
+    file: Option<fs::File>,
+    /// The page (webview load) of the last [`open`]: the only one whose saves are written.
+    page: Option<String>,
+}
 
 impl DataLock {
     pub const fn new() -> Self {
-        Self(Mutex::new(None))
+        Self(Mutex::new(Held {
+            file: None,
+            page: None,
+        }))
     }
 
-    /// Takes the lock on `dir` once and returns `true`; later calls from the same process (a
-    /// webview reload) succeed without reopening and return `false`. Another process holding it
-    /// → `ResourceBusy` with the message [`ALREADY_OPEN`].
-    fn acquire(&self, dir: &Path) -> io::Result<bool> {
-        let mut held = self
-            .0
+    /// Waits for the file command running in this process, then holds off the others until the
+    /// guard drops.
+    fn hold(&self) -> MutexGuard<'_, Held> {
+        self.0
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if held.is_some() {
-            return Ok(false);
-        }
-        *held = Some(open_lock_file(&dir.join(LOCK_FILE))?);
-        Ok(true)
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 }
 
@@ -71,19 +81,27 @@ fn open_lock_file(path: &Path) -> io::Result<fs::File> {
 }
 
 /// Reads the database at startup; `None` on a first start (no file and no backups). The data
-/// folder is locked first, so a second process touches nothing (see [`DataLock`]). A missing
-/// file with backups left is an error, so the app never starts over them. An existing file is first
-/// copied into `backups\` (unless an identical copy is already there), keeping the ten last
-/// written copies. A file that is empty or not SQLite is an error, never a first start, and is
-/// not backed up: the app would otherwise write a new database over it.
-pub fn open(dir: &Path, stamp: &str, lock: &DataLock) -> io::Result<Option<Vec<u8>>> {
+/// folder is locked first, so a second process touches nothing (see [`DataLock`]); later calls
+/// from the same process (a webview reload) open again under the lock it holds. Another process
+/// holding it → `ResourceBusy` with the message [`ALREADY_OPEN`]. A missing file with backups
+/// left is an error, so the app never starts over them. A file that is empty or not SQLite is an
+/// error, never a first start: the app would otherwise write a new database over it. Nothing is
+/// backed up here: the app calls [`backup`] once it opened the file, before saving anything, so a
+/// file damaged inside never becomes the newest backup (DR-51).
+pub fn open(dir: &Path, page: &str, lock: &DataLock) -> io::Result<Option<Vec<u8>>> {
+    let mut held = lock.hold();
     fs::create_dir_all(dir)?;
-    // Cleaned before anything below can fail: a retry holds the lock already and skips this.
-    if lock.acquire(dir)? {
+    if held.file.is_none() {
+        held.file = Some(open_lock_file(&dir.join(LOCK_FILE))?);
+        // What a crash left, cleaned by the first open of the process only: a reload's open must
+        // keep an export still running, and never finds a save of the old page half done (it
+        // waited for the lock). Cleaned before anything below can fail, since a retry holds the
+        // lock already and skips this.
         remove_interrupted_exports(&dir.join(EXPORT_DIR));
+        // A crash between writing and renaming; the database file itself is whole.
+        remove_if_exists(&dir.join(tmp_name(DB_FILE)))?;
     }
-    // A crash between writing and renaming leaves this behind; the database file itself is whole.
-    remove_if_exists(&dir.join(tmp_name(DB_FILE)))?;
+    held.page = Some(page.to_owned());
     let backups = dir.join(BACKUP_DIR);
     let bytes = match fs::read(dir.join(DB_FILE)) {
         Ok(bytes) => bytes,
@@ -103,20 +121,21 @@ pub fn open(dir: &Path, stamp: &str, lock: &DataLock) -> io::Result<Option<Vec<u
             format!("{DB_FILE} is not a SQLite database"),
         ));
     }
-    copy_to_backups(&backups, &bytes, stamp)?;
     Ok(Some(bytes))
 }
 
-/// Copies the saved database file into `backups\` on demand (before reloading the simulated
-/// data) and returns the backup's file name — an identical copy already there is reused.
-pub fn backup(dir: &Path, stamp: &str) -> io::Result<String> {
+/// Copies the saved database file into `backups\` (at startup once the app opened it, and before
+/// replacing the data) and returns the backup's file name — an identical copy already there is
+/// reused.
+pub fn backup(dir: &Path, stamp: &str, lock: &DataLock) -> io::Result<String> {
+    let _held = lock.hold();
     let bytes = fs::read(dir.join(DB_FILE))?;
     copy_to_backups(&dir.join(BACKUP_DIR), &bytes, stamp)
 }
 
 /// Writes `bytes` as the next backup, keeping the ten last written; returns the name of the copy.
-/// A file the app keeps refusing (damaged inside) must not push the good backups out, so an
-/// identical copy is never written twice.
+/// Starts on a file that did not change must not push the older backups out, so an identical copy
+/// is never written twice.
 fn copy_to_backups(backups: &Path, bytes: &[u8], stamp: &str) -> io::Result<String> {
     if let Some(name) = find_copy(backups, bytes) {
         return Ok(name);
@@ -127,8 +146,14 @@ fn copy_to_backups(backups: &Path, bytes: &[u8], stamp: &str) -> io::Result<Stri
     Ok(name)
 }
 
-/// Replaces the database file atomically.
-pub fn save(dir: &Path, bytes: &[u8]) -> io::Result<()> {
+/// Replaces the database file atomically. A save from another page than the last [`open`]'s (one
+/// still on its way from before a webview reload) is refused with [`STALE_PAGE`]: the new page
+/// read the file without it, and its next save would write over it unseen.
+pub fn save(dir: &Path, bytes: &[u8], page: &str, lock: &DataLock) -> io::Result<()> {
+    let held = lock.hold();
+    if held.page.as_deref().is_some_and(|opened| opened != page) {
+        return Err(io::Error::other(STALE_PAGE));
+    }
     write_atomic(dir, DB_FILE, bytes)
 }
 
@@ -448,8 +473,93 @@ mod tests {
     }
 
     /// `open` as one process start: a fresh lock, released when the call returns.
-    fn open(dir: &Path, stamp: &str) -> io::Result<Option<Vec<u8>>> {
-        super::open(dir, stamp, &DataLock::new())
+    fn open(dir: &Path) -> io::Result<Option<Vec<u8>>> {
+        super::open(dir, PAGE, &DataLock::new())
+    }
+
+    fn save(dir: &Path, bytes: &[u8]) -> io::Result<()> {
+        super::save(dir, bytes, PAGE, &DataLock::new())
+    }
+
+    fn backup(dir: &Path, stamp: &str) -> io::Result<String> {
+        super::backup(dir, stamp, &DataLock::new())
+    }
+
+    /// The page (webview load) the tests open and save from.
+    const PAGE: &str = "page-1";
+
+    /// Long enough for a command that is not held off to finish on any disk.
+    const HELD_OFF: std::time::Duration = std::time::Duration::from_millis(200);
+
+    #[test]
+    fn each_file_command_waits_while_another_one_runs() {
+        let dir = temp_dir();
+        let lock = DataLock::new();
+        super::save(&dir, &db("before"), PAGE, &lock).unwrap();
+        let commands: [(&str, &(dyn Fn() -> io::Result<()> + Sync)); 3] = [
+            ("save", &|| super::save(&dir, &db("after"), PAGE, &lock)),
+            ("backup", &|| {
+                super::backup(&dir, "20261006-080000", &lock).map(drop)
+            }),
+            ("open", &|| super::open(&dir, PAGE, &lock).map(drop)),
+        ];
+        for (name, command) in commands {
+            std::thread::scope(|scope| {
+                let running = lock.hold();
+                let waiting = scope.spawn(command);
+                std::thread::sleep(HELD_OFF);
+                assert!(!waiting.is_finished(), "{name} ran while held off");
+                drop(running);
+                waiting.join().unwrap().unwrap();
+            });
+        }
+    }
+
+    #[test]
+    fn two_saves_at_once_never_mix_their_files() {
+        let dir = temp_dir();
+        let lock = DataLock::new();
+        let writers = 8;
+        let barrier = std::sync::Barrier::new(writers);
+        for _ in 0..3 {
+            std::thread::scope(|scope| {
+                for n in 0..writers {
+                    let (dir, lock, barrier) = (&dir, &lock, &barrier);
+                    scope.spawn(move || {
+                        let bytes = vec![b'a' + n as u8; 1 << 20];
+                        barrier.wait();
+                        super::save(dir, &bytes, PAGE, lock).unwrap();
+                    });
+                }
+            });
+            let file = fs::read(dir.join(DB_FILE)).unwrap();
+            assert_eq!(file.len(), 1 << 20);
+            assert!(file.iter().all(|byte| *byte == file[0]), "mixed file");
+            assert_eq!(names(&dir), vec![DB_FILE]);
+        }
+    }
+
+    #[test]
+    fn two_backups_at_once_write_one_copy() {
+        let dir = temp_dir();
+        let lock = DataLock::new();
+        save(&dir, &db("data")).unwrap();
+        let barrier = std::sync::Barrier::new(2);
+        let copies: Vec<String> = std::thread::scope(|scope| {
+            let threads: Vec<_> = ["20261006-080000", "20261006-080001"]
+                .into_iter()
+                .map(|stamp| {
+                    let (dir, lock, barrier) = (&dir, &lock, &barrier);
+                    scope.spawn(move || {
+                        barrier.wait();
+                        super::backup(dir, stamp, lock).unwrap()
+                    })
+                })
+                .collect();
+            threads.into_iter().map(|t| t.join().unwrap()).collect()
+        });
+        assert_eq!(copies[0], copies[1]);
+        assert_eq!(names(&dir.join(BACKUP_DIR)), vec![copies[0].clone()]);
     }
 
     /// A database file whose content is `tag` after the SQLite header.
@@ -461,14 +571,14 @@ mod tests {
     fn ten_backups(dir: &Path) {
         for day in 10..20 {
             save(dir, &db(&format!("day {day}"))).unwrap();
-            open(dir, &format!("202609{day}-080000")).unwrap();
+            backup(dir, &format!("202609{day}-080000")).unwrap();
         }
     }
 
     #[test]
     fn open_without_a_file_creates_the_folder_and_returns_none() {
         let dir = temp_dir();
-        assert_eq!(open(&dir, "20260927-080000").unwrap(), None);
+        assert_eq!(open(&dir).unwrap(), None);
         assert!(dir.is_dir());
         assert!(!dir.join(BACKUP_DIR).exists());
     }
@@ -479,23 +589,17 @@ mod tests {
         save(&dir, &db("first")).unwrap();
         save(&dir, &db("second")).unwrap();
         assert_eq!(names(&dir), vec![DB_FILE]);
-        assert_eq!(open(&dir, "20260927-080000").unwrap(), Some(db("second")));
+        assert_eq!(open(&dir).unwrap(), Some(db("second")));
     }
 
     #[test]
-    fn open_backs_up_the_existing_file() {
+    fn open_leaves_the_backup_to_the_app_once_it_opened_the_file() {
+        // A file damaged inside still has the SQLite header: only the app can tell, so the app
+        // backs it up after opening it (DR-51), and a damaged file never becomes the newest copy.
         let dir = temp_dir();
         save(&dir, &db("data")).unwrap();
-        open(&dir, "20260927-080000").unwrap();
-        let backups = dir.join(BACKUP_DIR);
-        assert_eq!(
-            names(&backups),
-            vec!["project2c-s00000001-20260927-080000.db"]
-        );
-        assert_eq!(
-            fs::read(backups.join("project2c-s00000001-20260927-080000.db")).unwrap(),
-            db("data")
-        );
+        assert_eq!(open(&dir).unwrap(), Some(db("data")));
+        assert!(!dir.join(BACKUP_DIR).exists());
     }
 
     #[test]
@@ -514,7 +618,7 @@ mod tests {
     fn backup_of_an_already_copied_file_returns_the_existing_copy() {
         let dir = temp_dir();
         save(&dir, &db("data")).unwrap();
-        open(&dir, "20260927-080000").unwrap();
+        backup(&dir, "20260927-080000").unwrap();
         assert_eq!(
             backup(&dir, "20260927-101500").unwrap(),
             "project2c-s00000001-20260927-080000.db"
@@ -547,14 +651,14 @@ mod tests {
     }
 
     #[test]
-    fn open_keeps_only_the_ten_newest_backups() {
+    fn backups_keep_the_ten_newest_and_leave_other_files_alone() {
         let dir = temp_dir();
         let backups = dir.join(BACKUP_DIR);
         fs::create_dir_all(&backups).unwrap();
         fs::write(backups.join("notes.txt"), b"not a backup").unwrap();
         for day in 10..22 {
             save(&dir, &db(&format!("day {day}"))).unwrap();
-            open(&dir, &format!("202609{day}-080000")).unwrap();
+            backup(&dir, &format!("202609{day}-080000")).unwrap();
         }
         let kept = names(&backups);
         assert_eq!(kept.len(), 11);
@@ -564,7 +668,7 @@ mod tests {
     }
 
     #[test]
-    fn open_prunes_only_backups_it_named() {
+    fn backup_prunes_only_backups_it_named() {
         let dir = temp_dir();
         let backups = dir.join(BACKUP_DIR);
         fs::create_dir_all(backups.join("project2c-20260101-000000.db")).unwrap();
@@ -584,7 +688,7 @@ mod tests {
         }
         for day in 10..22 {
             save(&dir, &db(&format!("day {day}"))).unwrap();
-            open(&dir, &format!("202609{day}-080000")).unwrap();
+            backup(&dir, &format!("202609{day}-080000")).unwrap();
         }
         let kept = names(&backups);
         assert_eq!(kept.len(), 20);
@@ -601,12 +705,12 @@ mod tests {
     }
 
     #[test]
-    fn open_twice_in_the_same_second_keeps_both_backups() {
+    fn two_backups_in_the_same_second_are_both_kept() {
         let dir = temp_dir();
         let backups = dir.join(BACKUP_DIR);
         for version in ["a", "b", "c"] {
             save(&dir, &db(version)).unwrap();
-            open(&dir, "20260927-080000").unwrap();
+            backup(&dir, "20260927-080000").unwrap();
         }
         assert_eq!(
             fs::read(backups.join("project2c-s00000001-20260927-080000.db")).unwrap(),
@@ -623,7 +727,7 @@ mod tests {
         // Eight later backups push out one: the first written in that second.
         for day in 10..18 {
             save(&dir, &db(&format!("day {day}"))).unwrap();
-            open(&dir, &format!("202610{day}-080000")).unwrap();
+            backup(&dir, &format!("202610{day}-080000")).unwrap();
         }
         assert!(!backups
             .join("project2c-s00000001-20260927-080000.db")
@@ -637,7 +741,7 @@ mod tests {
     fn open_refuses_an_empty_database_file() {
         let dir = temp_dir();
         save(&dir, b"").unwrap();
-        let error = open(&dir, "20260927-080000").unwrap_err();
+        let error = open(&dir).unwrap_err();
         assert_eq!(error.kind(), ErrorKind::InvalidData);
         assert!(!dir.join(BACKUP_DIR).exists());
     }
@@ -648,20 +752,20 @@ mod tests {
         ten_backups(&dir);
         let before = names(&dir.join(BACKUP_DIR));
         save(&dir, b"not a database").unwrap();
-        let error = open(&dir, "20260927-080000").unwrap_err();
+        let error = open(&dir).unwrap_err();
         assert_eq!(error.kind(), ErrorKind::InvalidData);
         assert_eq!(names(&dir.join(BACKUP_DIR)), before);
     }
 
     #[test]
     fn restarts_on_an_unchanged_file_keep_the_older_backups() {
-        // A damaged file that still has the SQLite header: the app refuses it on every start,
-        // and each start must not push out another good backup.
+        // Every start backs the file up once the app opened it: starts that changed nothing must
+        // not push out the older backups.
         let dir = temp_dir();
         ten_backups(&dir);
         save(&dir, &db("damaged")).unwrap();
         for minute in 10..20 {
-            open(&dir, &format!("20260927-08{minute}00")).unwrap();
+            backup(&dir, &format!("20260927-08{minute}00")).unwrap();
         }
         let backups = dir.join(BACKUP_DIR);
         let kept = names(&backups);
@@ -680,7 +784,7 @@ mod tests {
         ten_backups(&dir);
         let before = names(&dir.join(BACKUP_DIR));
         fs::remove_file(dir.join(DB_FILE)).unwrap();
-        let error = open(&dir, "20260927-080000").unwrap_err();
+        let error = open(&dir).unwrap_err();
         assert_eq!(error.kind(), ErrorKind::NotFound);
         assert_eq!(names(&dir.join(BACKUP_DIR)), before);
         assert!(!dir.join(DB_FILE).exists());
@@ -692,7 +796,7 @@ mod tests {
         let backups = dir.join(BACKUP_DIR);
         fs::create_dir_all(&backups).unwrap();
         fs::write(backups.join("notes.txt"), b"not a backup").unwrap();
-        assert_eq!(open(&dir, "20260927-080000").unwrap(), None);
+        assert_eq!(open(&dir).unwrap(), None);
     }
 
     #[test]
@@ -700,7 +804,7 @@ mod tests {
         let dir = temp_dir();
         ten_backups(&dir);
         save(&dir, &db("latest")).unwrap();
-        open(&dir, "20250101-080000").unwrap();
+        backup(&dir, "20250101-080000").unwrap();
         let backups = dir.join(BACKUP_DIR);
         assert_eq!(names(&backups).len(), 10);
         assert_eq!(
@@ -728,7 +832,7 @@ mod tests {
             .collect();
         for (i, stamp) in stamps.iter().enumerate() {
             save(&dir, &db(&format!("session {i}"))).unwrap();
-            open(&dir, stamp).unwrap();
+            backup(&dir, stamp).unwrap();
         }
         let sessions: Vec<String> = (1..)
             .zip(&stamps)
@@ -764,7 +868,7 @@ mod tests {
         ];
         for (i, stamp) in stamps.iter().enumerate() {
             save(&dir, &db(&format!("start {i}"))).unwrap();
-            open(&dir, stamp).unwrap();
+            backup(&dir, stamp).unwrap();
         }
         let expected: Vec<String> = (1..)
             .zip(stamps)
@@ -813,7 +917,7 @@ mod tests {
 
     #[cfg(windows)]
     #[test]
-    fn a_locked_old_backup_does_not_block_startup() {
+    fn a_locked_old_backup_does_not_block_a_backup() {
         use std::os::windows::fs::OpenOptionsExt;
         let dir = temp_dir();
         ten_backups(&dir);
@@ -826,7 +930,10 @@ mod tests {
             .open(&oldest)
             .unwrap();
         save(&dir, &db("latest")).unwrap();
-        assert_eq!(open(&dir, "20260927-080000").unwrap(), Some(db("latest")));
+        assert_eq!(
+            backup(&dir, "20260927-080000").unwrap(),
+            "project2c-s00000011-20260927-080000.db"
+        );
         assert_eq!(names(&backups).len(), 10);
         assert!(oldest.exists());
         assert!(!backups
@@ -836,22 +943,45 @@ mod tests {
 
     #[cfg(windows)]
     #[test]
+    fn pruning_never_removes_the_copy_just_written() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let dir = temp_dir();
+        ten_backups(&dir);
+        let backups = dir.join(BACKUP_DIR);
+        // Every older backup is held open by another program, so none of them can go.
+        let _held: Vec<fs::File> = names(&backups)
+            .iter()
+            .map(|name| {
+                fs::OpenOptions::new()
+                    .read(true)
+                    .share_mode(0)
+                    .open(backups.join(name))
+                    .unwrap()
+            })
+            .collect();
+        save(&dir, &db("latest")).unwrap();
+        let name = backup(&dir, "20260927-080000").unwrap();
+        assert_eq!(fs::read(backups.join(&name)).unwrap(), db("latest"));
+        assert_eq!(names(&backups).len(), 11);
+    }
+
+    #[cfg(windows)]
+    #[test]
     fn open_while_another_process_holds_the_lock_touches_nothing() {
         use std::os::windows::fs::OpenOptionsExt;
         let dir = temp_dir();
-        save(&dir, &db("data")).unwrap();
-        open(&dir, "20260927-080000").unwrap();
-        let backups_before = names(&dir.join(BACKUP_DIR));
+        save(&dir, &db("changed")).unwrap();
         let other = fs::OpenOptions::new()
             .read(true)
             .write(true)
+            .create(true)
+            .truncate(false)
             .share_mode(0)
             .open(dir.join(LOCK_FILE))
             .unwrap();
-        save(&dir, &db("changed")).unwrap();
         fs::write(dir.join("project2c.db.tmp"), b"being written").unwrap();
 
-        let error = open(&dir, "20260927-090000").unwrap_err();
+        let error = open(&dir).unwrap_err();
         assert_eq!(error.kind(), ErrorKind::ResourceBusy);
         assert_eq!(error.to_string(), ALREADY_OPEN);
         assert_eq!(fs::read(dir.join(DB_FILE)).unwrap(), db("changed"));
@@ -859,10 +989,9 @@ mod tests {
             fs::read(dir.join("project2c.db.tmp")).unwrap(),
             b"being written"
         );
-        assert_eq!(names(&dir.join(BACKUP_DIR)), backups_before);
 
         drop(other);
-        assert_eq!(open(&dir, "20260927-090000").unwrap(), Some(db("changed")));
+        assert_eq!(open(&dir).unwrap(), Some(db("changed")));
         assert!(!dir.join("project2c.db.tmp").exists());
     }
 
@@ -872,22 +1001,13 @@ mod tests {
         let dir = temp_dir();
         let lock = DataLock::new();
         save(&dir, &db("data")).unwrap();
-        assert_eq!(
-            super::open(&dir, "20260927-080000", &lock).unwrap(),
-            Some(db("data"))
-        );
+        assert_eq!(super::open(&dir, PAGE, &lock).unwrap(), Some(db("data")));
         // Same process again (a webview reload): still opens.
-        assert_eq!(
-            super::open(&dir, "20260927-080001", &lock).unwrap(),
-            Some(db("data"))
-        );
+        assert_eq!(super::open(&dir, PAGE, &lock).unwrap(), Some(db("data")));
         // A second process is refused while the first one runs.
-        assert_eq!(
-            open(&dir, "20260927-080002").unwrap_err().to_string(),
-            ALREADY_OPEN
-        );
+        assert_eq!(open(&dir).unwrap_err().to_string(), ALREADY_OPEN);
         drop(lock);
-        assert!(open(&dir, "20260927-080003").is_ok());
+        assert!(open(&dir).is_ok());
     }
 
     #[test]
@@ -895,8 +1015,83 @@ mod tests {
         let dir = temp_dir();
         save(&dir, &db("data")).unwrap();
         fs::write(dir.join("project2c.db.tmp"), b"half").unwrap();
-        assert_eq!(open(&dir, "20260927-080000").unwrap(), Some(db("data")));
+        assert_eq!(open(&dir).unwrap(), Some(db("data")));
         assert!(!dir.join("project2c.db.tmp").exists());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_save_whose_rename_fails_keeps_the_old_file_byte_for_byte() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let dir = temp_dir();
+        save(&dir, &db("old")).unwrap();
+        // Another program holds the `.tmp` without letting it be renamed (no share delete): the
+        // new bytes are written, the rename fails.
+        let tmp = dir.join("project2c.db.tmp");
+        let holder = fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .share_mode(1 | 2)
+            .open(&tmp)
+            .unwrap();
+        assert!(save(&dir, &db("new")).is_err());
+        assert_eq!(fs::read(dir.join(DB_FILE)).unwrap(), db("old"));
+
+        drop(holder);
+        save(&dir, &db("new")).unwrap();
+        assert_eq!(fs::read(dir.join(DB_FILE)).unwrap(), db("new"));
+        assert_eq!(names(&dir), vec![DB_FILE]);
+    }
+
+    #[test]
+    fn a_save_that_fails_leaves_no_tmp_behind() {
+        // A folder under the database's name: the write succeeds, the rename over it fails.
+        let dir = temp_dir();
+        fs::create_dir_all(dir.join(DB_FILE)).unwrap();
+        fs::write(dir.join(DB_FILE).join("inside"), b"kept").unwrap();
+        assert!(save(&dir, &db("new")).is_err());
+        assert_eq!(names(&dir), vec![DB_FILE]);
+        assert_eq!(fs::read(dir.join(DB_FILE).join("inside")).unwrap(), b"kept");
+    }
+
+    #[test]
+    fn a_save_from_the_page_before_a_reload_is_refused_once_the_new_page_opened() {
+        // A save still on its way from the old page must not land over the file the new page
+        // read and shows: the new page's next save would write over it unseen.
+        let dir = temp_dir();
+        let lock = DataLock::new();
+        super::save(&dir, &db("first"), "old", &lock).unwrap();
+        super::open(&dir, "old", &lock).unwrap();
+        super::save(&dir, &db("old page"), "old", &lock).unwrap();
+
+        assert_eq!(
+            super::open(&dir, "new", &lock).unwrap(),
+            Some(db("old page"))
+        );
+        let error = super::save(&dir, &db("late"), "old", &lock).unwrap_err();
+        assert_eq!(error.to_string(), STALE_PAGE);
+        assert_eq!(fs::read(dir.join(DB_FILE)).unwrap(), db("old page"));
+        assert_eq!(names(&dir), vec![DB_FILE, LOCK_FILE]);
+
+        super::save(&dir, &db("new page"), "new", &lock).unwrap();
+        assert_eq!(fs::read(dir.join(DB_FILE)).unwrap(), db("new page"));
+    }
+
+    #[test]
+    fn open_again_in_the_same_process_leaves_the_db_tmp_alone() {
+        // Only the first open of a process cleans up after a crash (DR-01).
+        let dir = temp_dir();
+        let lock = DataLock::new();
+        super::save(&dir, &db("data"), PAGE, &lock).unwrap();
+        super::open(&dir, PAGE, &lock).unwrap();
+        fs::write(dir.join("project2c.db.tmp"), b"being written").unwrap();
+        assert_eq!(super::open(&dir, PAGE, &lock).unwrap(), Some(db("data")));
+        assert_eq!(
+            fs::read(dir.join("project2c.db.tmp")).unwrap(),
+            b"being written"
+        );
     }
 
     #[test]
@@ -911,6 +1106,8 @@ mod tests {
         for name in [
             "",
             "..\\evil.p2cbackup",
+            // Starts like a plain name: only the character rule stops the path.
+            r"x\..\..\evil.p2cbackup",
             "a/b.p2cbackup",
             ".p2cbackup",
             "a.db",
@@ -972,6 +1169,17 @@ mod tests {
     }
 
     #[test]
+    fn write_export_skips_a_name_whose_claim_is_taken_by_a_folder() {
+        // Windows reports the folder as access denied, not as existing.
+        let dir = temp_dir();
+        let exports = dir.join(EXPORT_DIR);
+        fs::create_dir_all(exports.join("a.p2cbackup.claim")).unwrap();
+        let path = write_export(&dir, "a.p2cbackup", b"x").unwrap();
+        assert_eq!(path, exports.join("a-2.p2cbackup"));
+        assert_eq!(fs::read(&path).unwrap(), b"x");
+    }
+
+    #[test]
     fn write_export_leaves_no_claim_behind() {
         let dir = temp_dir();
         write_export(&dir, "a.p2cbackup", b"x").unwrap();
@@ -1006,7 +1214,7 @@ mod tests {
         fs::write(exports.join("e.xlsx"), b"real report").unwrap();
         fs::write(exports.join("notes.txt"), b"").unwrap();
 
-        open(&dir, "20260930-080000").unwrap();
+        open(&dir).unwrap();
 
         assert_eq!(
             names(&exports),
@@ -1036,12 +1244,12 @@ mod tests {
         fs::create_dir_all(&exports).unwrap();
         fs::write(exports.join("a.p2cbackup.claim"), b"").unwrap();
         fs::write(exports.join("a.p2cbackup.tmp"), b"half").unwrap();
-        super::open(&dir, "20260930-080000", &lock).unwrap();
+        super::open(&dir, PAGE, &lock).unwrap();
         assert_eq!(names(&exports), Vec::<String>::new());
 
         fs::write(exports.join("b.p2cbackup.claim"), b"").unwrap();
         fs::write(exports.join("b.p2cbackup.tmp"), b"half").unwrap();
-        super::open(&dir, "20260930-080001", &lock).unwrap();
+        super::open(&dir, PAGE, &lock).unwrap();
         assert_eq!(
             names(&exports),
             vec!["b.p2cbackup.claim", "b.p2cbackup.tmp"]
@@ -1060,13 +1268,13 @@ mod tests {
         fs::write(exports.join("a.p2cbackup.claim"), b"").unwrap();
         fs::write(exports.join("a.p2cbackup.tmp"), b"half").unwrap();
 
-        assert!(super::open(&dir, "20260930-080000", &lock).is_err());
+        assert!(super::open(&dir, PAGE, &lock).is_err());
         assert_eq!(names(&exports), Vec::<String>::new());
 
         // The retry opens under the lock already held and leaves a running export alone.
         fs::remove_dir(dir.join("project2c.db.tmp")).unwrap();
         fs::write(exports.join("b.p2cbackup.claim"), b"").unwrap();
-        super::open(&dir, "20260930-080001", &lock).unwrap();
+        super::open(&dir, PAGE, &lock).unwrap();
         assert_eq!(names(&exports), vec!["b.p2cbackup.claim"]);
     }
 
@@ -1075,10 +1283,10 @@ mod tests {
         let dir = temp_dir();
         assert_eq!(latest_backup(&dir), None);
         save(&dir, &db("a")).unwrap();
-        open(&dir, "20260920-080000").unwrap();
+        backup(&dir, "20260920-080000").unwrap();
         save(&dir, &db("b")).unwrap();
         // The clock set back: write order still decides, not the stamp.
-        open(&dir, "20260910-080000").unwrap();
+        backup(&dir, "20260910-080000").unwrap();
         assert_eq!(
             latest_backup(&dir).as_deref(),
             Some("project2c-s00000002-20260910-080000.db")
