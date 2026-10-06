@@ -470,6 +470,7 @@ export const vi = {
   'error.INVALID_TRIGGER': 'Chọn loại trigger ("—" là chưa chọn).',
   'error.INVALID_STATUS': 'Lịch này không nhận kết quả đó (có thể đã có kết quả hoặc đã dời).',
   'error.INVALID_AMOUNT': 'Số tiền phải là số đồng nguyên, lớn hơn 0.',
+  'error.AMOUNT_TOO_LARGE': 'Số tiền tối đa 100 tỷ đồng.',
   'overview.filter': 'Lọc',
   'overview.pending': 'Đã đổi kỳ / góc nhìn — bấm Lọc để cập nhật',
   'overview.viewing': 'Đang xem:',

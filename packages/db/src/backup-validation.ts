@@ -7,6 +7,7 @@
 import {
   assertValidTransition,
   calendarDate,
+  MAX_FEE_VND,
   PIPELINE_STAGES,
   REVIEWER_ROLES,
   type CustomerStage,
@@ -47,9 +48,17 @@ function validValue(column: string, value: SqlValue): boolean {
   if (column === 'time') return typeof value === 'string' && TIME.test(value);
   if (TIMESTAMPS.has(column)) return timestamp.safeParse(value).success;
   if (column === 'seq') return typeof value === 'number' && value >= 1;
-  // An amount, as `requireAmount` takes it; the FYP columns have the same rule as a CHECK.
-  if (column === 'expected_case_size') return typeof value === 'number' && value > 0;
+  if (FEES.has(column)) return validFee(value);
   return true;
+}
+
+const FEES = new Set(['expected_case_size', 'submitted_fyp', 'issued_fyp']);
+
+/** A fee as `requireAmount` takes it: whole đồng, above 0, at most `MAX_FEE_VND` (DR-23). */
+function validFee(value: SqlValue): boolean {
+  return (
+    typeof value === 'number' && Number.isSafeInteger(value) && value > 0 && value <= MAX_FEE_VND
+  );
 }
 
 /** `YYYY-MM-DD` of a day that exists, as `calendarDate` reads it. */

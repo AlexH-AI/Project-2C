@@ -26,7 +26,7 @@ Từ điển thuật ngữ dùng thống nhất trong issue, tài liệu và cod
 ## Hợp đồng và chỉ số
 
 - **HĐ** (`Policy`) — hợp đồng bảo hiểm; một KH có nhiều HĐ. Hai trạng thái: **submitted / đã nộp** (KH đã đóng phí) → **issued / phát hành**.
-- **FYP** — phí năm đầu. **FYP nộp** (`submittedFyp`) ghi khi nộp; **FYP phát hành** (`issuedFyp`) mặc định bằng FYP nộp, sửa tay được.
+- **FYP** — phí năm đầu. **FYP nộp** (`submittedFyp`) ghi khi nộp; **FYP phát hành** (`issuedFyp`) mặc định bằng FYP nộp, sửa tay được. Mỗi phí (FYP, case size dự kiến) tối đa 100 tỷ đồng; số tiền bảo hiểm không phải phí, không có trần này.
 - **Case size** — Σ FYP nộp của HĐ nộp trong kỳ (tổng, không trung bình).
 - **Doanh số** — Σ FYP phát hành của HĐ phát hành trong kỳ.
 - **Tỉ lệ chốt** — HĐ phát hành trong kỳ ÷ chuyển RF trong kỳ; không lũy kế; 0 RF hiện "—".

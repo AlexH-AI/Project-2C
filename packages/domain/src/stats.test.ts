@@ -9,6 +9,7 @@ import {
 import type { Person, Policy, Scope } from './model';
 import { calendarDate, chartMarks, customPeriod, periodOf, reportMarks } from './period';
 import type { Period } from './period';
+import { formatVndCompact, MAX_FEE_VND } from './money';
 import { inScope, periodMetrics, periodMetricsByMark, policyMetrics } from './stats';
 
 const d = (day: number, month: number, year: number) => calendarDate(year, month, day);
@@ -207,5 +208,42 @@ describe('periodMetricsByMark', () => {
     expect(() => periodMetricsByMark(data, [jan!, mar!, feb!, apr!], { kind: 'all' })).toThrow(
       RangeError,
     );
+  });
+});
+
+// DR-23: each fee is at most `MAX_FEE_VND`, so a real total stays exact; a total past a safe
+// integer is refused, never rounded into a number the formatters reject later.
+describe('totals of large fees', () => {
+  const people: readonly Person[] = [{ id: 're-1', name: 'RE 1', role: 'RE', teamId: null }];
+  const policy = (id: string, fyp: number): Policy => ({
+    id,
+    customerId: 'kh',
+    reId: 're-1',
+    submittedDate: d(5, 10, 2026),
+    submittedFyp: fyp,
+    issuedDate: d(5, 10, 2026),
+    issuedFyp: fyp,
+  });
+  const data = (policies: readonly Policy[]) => ({
+    people,
+    policies,
+    appointments: [],
+    transitions: [],
+  });
+  const month = periodOf('month', d(1, 10, 2026));
+
+  it('adds fees at the cap exactly, in a total the overview can show', () => {
+    const atCap = data([policy('p1', MAX_FEE_VND), policy('p2', MAX_FEE_VND)]);
+    const metrics = periodMetrics(atCap, month, { kind: 'all' });
+    expect(metrics.caseSize).toBe(200_000_000_000);
+    expect(metrics.revenue).toBe(200_000_000_000);
+    expect(formatVndCompact(metrics.caseSize)).toBe('200 tỷ');
+    expect(periodMetricsByMark(atCap, [month], { kind: 'all' })[0]?.caseSize).toBe(200_000_000_000);
+  });
+
+  it('refuses a total past the largest safe integer rather than round it', () => {
+    const past = data([policy('p1', Number.MAX_SAFE_INTEGER), policy('p2', 2)]);
+    expect(() => periodMetrics(past, month, { kind: 'all' })).toThrow(RangeError);
+    expect(() => periodMetricsByMark(past, [month], { kind: 'all' })).toThrow(RangeError);
   });
 });

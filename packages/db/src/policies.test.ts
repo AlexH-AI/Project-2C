@@ -1,3 +1,4 @@
+import { MAX_FEE_VND } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { createCustomer, softDeleteCustomer } from './customers';
 import {
@@ -82,6 +83,33 @@ describe('policies', () => {
       'INVALID_AMOUNT',
     );
     expect(codeOf(() => issuePolicy(db, 'x', { issuedDate: d(1, 2) }))).toBe('POLICY_NOT_FOUND');
+  });
+
+  // DR-23: a FYP is at most 100 tỷ đồng, so no total of them can lose a đồng.
+  it('takes a FYP up to the cap and refuses one past it, on every command', async () => {
+    const { db, re, customer, persist, submit } = await withCustomer();
+    const base = { customerId: customer.id, reId: re.id, submittedDate: d(31, 1) };
+    const { id } = submit();
+    persist.mockClear();
+
+    for (const fyp of [MAX_FEE_VND + 1, Number.MAX_SAFE_INTEGER]) {
+      expect(codeOf(() => submitPolicy(db, { ...base, submittedFyp: fyp }))).toBe(
+        'AMOUNT_TOO_LARGE',
+      );
+      expect(codeOf(() => issuePolicy(db, id, { issuedDate: d(1, 2), issuedFyp: fyp }))).toBe(
+        'AMOUNT_TOO_LARGE',
+      );
+      expect(codeOf(() => updatePolicy(db, id, { submittedFyp: fyp }))).toBe('AMOUNT_TOO_LARGE');
+    }
+    expect(persist).not.toHaveBeenCalled();
+    expect(listPolicies(db)).toHaveLength(1);
+
+    const atCap = submitPolicy(db, { ...base, submittedFyp: MAX_FEE_VND });
+    expect(atCap.submittedFyp).toBe(100_000_000_000);
+    expect(issuePolicy(db, id, { issuedDate: d(1, 2), issuedFyp: MAX_FEE_VND }).issuedFyp).toBe(
+      MAX_FEE_VND,
+    );
+    expect(updatePolicy(db, id, { submittedFyp: MAX_FEE_VND }).submittedFyp).toBe(MAX_FEE_VND);
   });
 
   it('updates any field but keeps the issued date and FYP together', async () => {

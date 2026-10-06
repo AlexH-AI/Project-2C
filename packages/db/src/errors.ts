@@ -21,6 +21,8 @@ export const DB_ERROR_CODES = [
   'INVALID_TIME',
   'INVALID_TRIGGER',
   'INVALID_AMOUNT',
+  /** A fee (FYP, case size) over `MAX_FEE_VND`, 100 tỷ đồng (DR-23). */
+  'AMOUNT_TOO_LARGE',
   'CUSTOMER_NOT_FOUND',
   'INVALID_TRANSITION',
   'TRANSITION_NOT_LATEST',

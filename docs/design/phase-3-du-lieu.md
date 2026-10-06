@@ -104,7 +104,7 @@ Không lưu: ngày tạo KH (= ngày của transition đầu tiên), nhãn "Đã
 | `trigger_note` | text | mô tả tự do, không bắt buộc |
 | `stage_after` | text | `CHECK (status = 'MET' OR stage_after IS NULL)`; bắt buộc khi `MET` (D6) |
 | `next_step` | text | bắt buộc khi `MET` (D6) |
-| `expected_case_size` | integer | VND, không bắt buộc (D6) |
+| `expected_case_size` | integer | VND, không bắt buộc (D6); có thì > 0 và ≤ 100 tỷ đồng (DR-23) |
 | `note` | text | kết quả cuộc gặp dạng văn bản |
 | `outcome_reviewer_id` | text | FK `people`, không bắt buộc; `CHECK (status = 'MET' OR outcome_reviewer_id IS NULL)`. Người quyết định nhóm sau cuộc gặp (D9): IS / TL / BDM / BD (`REVIEWER_ROLES` ở `packages/domain`), không RE. Không có chỉ số; không thuộc 3 ô bị khóa theo D7 |
 | `rescheduled_from_id` | text | FK `appointments`, cuộc hẹn bị dời (D3) |
@@ -122,9 +122,9 @@ Không lưu: ngày tạo KH (= ngày của transition đầu tiên), nhãn "Đã
 | `customer_id` | text | FK `customers` |
 | `re_id` | text | FK `people` (role RE) — HĐ tính cho RE này |
 | `submitted_date` | text | not null |
-| `submitted_fyp` | integer | > 0 |
+| `submitted_fyp` | integer | > 0, ≤ 100 tỷ đồng (`MAX_FEE_VND`, DR-23) |
 | `issued_date` | text | ≥ `submitted_date`; cùng có hoặc cùng trống với `issued_fyp` |
-| `issued_fyp` | integer | > 0; mặc định = `submitted_fyp` khi phát hành, sửa tay được (G2 D) |
+| `issued_fyp` | integer | > 0, ≤ 100 tỷ đồng; mặc định = `submitted_fyp` khi phát hành, sửa tay được (G2 D) |
 | `created_at` / `updated_at` / `deleted_at` | text | |
 
 ### 3.8 `kyc_notes`
@@ -177,11 +177,11 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
 | `updateCustomerProfile` | Đổi tên / RE / ngày sinh / giới tính; đổi ngày sinh hoặc giới tính → ghi chú `SYSTEM` + `confirmFact` |
 | `changeStageManually` | `assertValidTransition`; transition `appointment_id` null — không bao giờ tính RF; ngày không được trước transition mới nhất (D10), không được sau hôm nay → `DATE_IN_FUTURE` (F-11, #258) |
 | `scheduleAppointment` | Trạng thái `SCHEDULED`, không có `stage_after` |
-| `recordMeetingOutcome` | Đặt trạng thái + kết quả. `MET`: bắt buộc `stage_after`, `next_step` (D6); `stage_after` ≠ nhóm hiện tại → transition gắn `appointment_id` (#44); `outcome_reviewer_id` tùy chọn, phải là nhân sự chưa xóa (`PERSON_NOT_FOUND`) vai trò IS / TL / BDM / BD (`INVALID_REVIEWER`, D9); khôi phục cuộc hẹn kiểm lại cả hai. `updatePerson` đổi người đang đánh giá một cuộc hẹn chưa xóa sang RE → `REVIEWER_IN_USE`. Sửa lại kết quả → theo D7. Transition mang ngày cuộc hẹn → ghi kết quả muộn bị từ chối (D10) nếu KH đã có transition ngày muộn hơn; `MET` với `stage_after` = nhóm hiện tại, `CANCELLED`, `NO_SHOW` không sinh transition nên vẫn ghi được |
+| `recordMeetingOutcome` | Đặt trạng thái + kết quả. `MET`: bắt buộc `stage_after`, `next_step` (D6); case size dự kiến kiểm như FYP (`INVALID_AMOUNT`, `AMOUNT_TOO_LARGE`); `stage_after` ≠ nhóm hiện tại → transition gắn `appointment_id` (#44); `outcome_reviewer_id` tùy chọn, phải là nhân sự chưa xóa (`PERSON_NOT_FOUND`) vai trò IS / TL / BDM / BD (`INVALID_REVIEWER`, D9); khôi phục cuộc hẹn kiểm lại cả hai. `updatePerson` đổi người đang đánh giá một cuộc hẹn chưa xóa sang RE → `REVIEWER_IN_USE`. Sửa lại kết quả → theo D7. Transition mang ngày cuộc hẹn → ghi kết quả muộn bị từ chối (D10) nếu KH đã có transition ngày muộn hơn; `MET` với `stage_after` = nhóm hiện tại, `CANCELLED`, `NO_SHOW` không sinh transition nên vẫn ghi được |
 | `rescheduleAppointment` | Cuộc hẹn cũ → `RESCHEDULED`; tạo cuộc hẹn mới `SCHEDULED` trỏ `rescheduled_from_id` (D3) |
 | `addKycNote` | Chỉ thêm |
 | `confirmKycFact`, `markKycConflict`, `resolveKycConflict` | Dùng `confirmFact` / `markConflict` / `resolveConflict` của `domain`; từ chối `birthYear` / `gender` từ nguồn RE (D2); `confirmKycFact` / `markKycConflict` trên ghi chú `SYSTEM` → `KYC_NOTE_FROM_PROFILE` (ghi chú `SYSTEM` chỉ do hồ sơ KH ghi, #263); sau đó `nextKycVersion` → ghi `kyc_versions` nếu hash đổi; cờ material tay theo ADR-0008 §7 |
-| `submitPolicy`, `issuePolicy`, `updatePolicy` | Ràng buộc §3.7; FYP qua `Vnd`; ngày nộp / ngày phát hành sau hôm nay → `DATE_IN_FUTURE` (F-11, #258) |
+| `submitPolicy`, `issuePolicy`, `updatePolicy` | Ràng buộc §3.7; FYP qua `Vnd`, không phải số nguyên dương → `INVALID_AMOUNT`, quá 100 tỷ đồng → `AMOUNT_TOO_LARGE`; ngày nộp / ngày phát hành sau hôm nay → `DATE_IN_FUTURE` (F-11, #258) |
 | `softDelete…`, `restore…` | D4; không xóa được team / nhân sự còn được tham chiếu bởi bản ghi chưa xóa; xóa cuộc hẹn có transition theo D7 (transition bị hủy, `customers.stage` về `from_stage`); khôi phục cuộc hẹn `MET` mà transition của nó giờ lùi ngày → từ chối (D10), cuộc hẹn vẫn bị xóa |
 
 **Đọc dữ liệu** qua repository trả về đúng kiểu của `domain` (`Team`, `Person`, `Customer`, `StageTransition`, `Appointment`, `Policy`, `KycProfile`, `KycVersion`). Chỉ số (Phase 4) tính bằng `stats.ts` trên dữ liệu đã nạp — quy mô demo đủ nhỏ để tính trong bộ nhớ.
@@ -214,7 +214,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
     - `created_at` / `updated_at` / `deleted_at`: ISO-8601 UTC như app ghi (`…Z`);
     - `seq` ≥ 1;
     - `kyc_facts.value_json`: JSON parse được, là chuỗi / số / true-false và đã chuẩn hóa theo kiểu của trường (`normalizeKycValue` không đổi giá trị: `"2"` cho `childrenCount` bị từ chối);
-    - tiền là số nguyên dương: FYP (`submitted_fyp`, `issued_fyp`) bằng CHECK của schema; `expected_case_size` (null hoặc > 0, như `requireAmount`) bằng kiểm giá trị (T-128 #320); số lẻ bị chặn khi nạp vào cột integer.
+    - tiền là phí như `requireAmount` nhận: FYP (`submitted_fyp`, `issued_fyp`) và `expected_case_size` (hoặc null) là số nguyên > 0 và ≤ 100 tỷ đồng (`MAX_FEE_VND`, T-128 #320, DR-23), kiểm giá trị; FYP > 0 còn có CHECK của schema; số lẻ bị chặn khi nạp vào cột integer.
   - **Kiểm bất biến liên bảng** (#204, `validateBackupInvariants`, chạy sau kiểm giá trị; Phase 6 kéo snapshot dùng lại): các giá trị đều hợp lệ nhưng bảng mâu thuẫn nhau → `BACKUP_INVALID` với params `rule` = số của bất biến đầu tiên bị vi phạm (để chẩn đoán; hộp 10b không đổi), DB hiện tại không đổi. Cũng là hàm đọc thuần trên DB tạm. Quy tắc nói về dữ liệu sống chỉ đọc bản ghi chưa xóa, nên bản ghi xóa mềm / khôi phục theo lệnh nghiệp vụ (D7) vẫn nhận:
     1. Mỗi KH (kể cả đã xóa) có transition đầu là `seq` nhỏ nhất, chưa xóa, `from_stage` null, `appointment_id` null (tạo KH không do cuộc hẹn; `withdrawAppointmentTransition` gặp transition gắn cuộc hẹn mà `from_stage` null → `INVALID_TRANSITION`), `to_stage` là nhóm mở N4–N1; không transition nào khác có `from_stage` null. `seq` duy nhất theo KH: UNIQUE của schema.
     2. `customers.stage` = `to_stage` của transition chưa xóa có `seq` lớn nhất.

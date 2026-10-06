@@ -3,6 +3,7 @@ import {
   calendarDate,
   compareDates,
   fromLocalDate,
+  MAX_FEE_VND,
   type CalendarDate,
   type Vnd,
 } from '@p2c/domain';
@@ -60,9 +61,10 @@ export function toPastIsoDate(db: Database, date: CalendarDate): string {
   return iso;
 }
 
-/** A whole, positive number of đồng. */
+/** A fee (FYP, case size): a whole, positive number of đồng, at most `MAX_FEE_VND` (DR-23). */
 export function requireAmount(amount: Vnd): Vnd {
   if (!Number.isSafeInteger(amount) || amount <= 0) throw new DbError('INVALID_AMOUNT');
+  if (amount > MAX_FEE_VND) throw new DbError('AMOUNT_TOO_LARGE');
   return amount;
 }
 
