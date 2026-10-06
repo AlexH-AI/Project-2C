@@ -147,6 +147,11 @@ export interface OpenAppDataOptions {
   readonly today?: () => CalendarDate;
   /** Writes the simulated data into a new database; tests pass a small stand-in. */
   readonly seed?: (db: Database, anchorDate: CalendarDate) => void;
+  /**
+   * The simulated data of a day already seeded into a database file (e2e, DR-79): a new database
+   * at startup opens it instead of seeding; `undefined` seeds. Settings → Nạp lại always seeds.
+   */
+  readonly snapshot?: (day: CalendarDate) => Promise<Uint8Array | undefined>;
   /** Local time for export file names and the last save; tests pin it. */
   readonly clock?: () => Date;
 }
@@ -169,11 +174,11 @@ export const isStartupBackupError = (error: unknown): error is Error =>
 /** The same seed on every machine: the same day gives the same data (spec §7). */
 const DEMO_SEED = 1;
 
-const seedDemo = (db: Database, anchorDate: CalendarDate) =>
+export const seedDemo = (db: Database, anchorDate: CalendarDate): void =>
   seedDemoData(db, { anchorDate, seed: DEMO_SEED });
 
 export async function openAppData(options: OpenAppDataOptions = {}): Promise<AppData> {
-  const { storage, locateFile, seed = seedDemo, clock = () => new Date() } = options;
+  const { storage, locateFile, seed = seedDemo, snapshot, clock = () => new Date() } = options;
   // A pinned day is the day the app opened on; the clock moves it on from there, so an app left
   // open past midnight (e2e: `page.clock`) reaches the next day as an unpinned one does (T-126).
   const opened = fromLocalDate(clock());
@@ -268,7 +273,8 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     }
     release();
   } else {
-    db = await openNew();
+    const ready = await snapshot?.(today());
+    db = ready ? await openFrom(ready) : await openNew();
   }
   const listeners = new Set<() => void>();
   let revision = 0;

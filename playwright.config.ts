@@ -10,8 +10,8 @@ const EDGE = { ...devices['Desktop Edge'], channel: 'msedge' };
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: true,
-  // Locally every worker seeds its own copy of the data, so many workers only measure CPU
-  // contention (T-095): cap them. CI keeps Playwright's default.
+  // Many workers locally only measure CPU contention (T-095): cap them. CI keeps Playwright's
+  // default.
   workers: process.env.CI ? undefined : Math.min(4, Math.max(1, availableParallelism() >> 2)),
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
@@ -20,7 +20,8 @@ export default defineConfig({
   reporter: process.env.CI
     ? [['list'], ['html', { open: 'never' }], ['json', { outputFile: 'test-results/e2e.json' }]]
     : 'list',
-  // Every page load seeds the simulated data (~3 s alone, more with parallel workers).
+  // A page load opens the simulated data seeded once by e2e/serve.mjs (DR-79); the tests that seed
+  // on load (seedOnLoad) take ~3 s for it, more with parallel workers.
   expect: { timeout: 15_000 },
   use: {
     baseURL: `http://localhost:${port}`,

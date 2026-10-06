@@ -100,6 +100,8 @@ test('arrow keys move the choice around a segmented control, wrapping at both en
 }) => {
   await page.goto('/#/appointments');
   const radios = page.getByRole('radiogroup', { name: 'Loại kỳ' }).getByRole('radio');
+  // `count` does not wait for the screen to open.
+  await expect(radios.first()).toBeVisible();
   const count = await radios.count();
   const checked = async () => {
     for (let i = 0; i < count; i++) {

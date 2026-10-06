@@ -78,6 +78,36 @@ describe('openAppData', () => {
     expect(app.saves.failed()).toBe(false);
   });
 
+  it("opens a ready snapshot of the app's day instead of seeding, and seeds again on reload (DR-79)", async () => {
+    const ready = await openDatabase();
+    createTeam(ready, { name: 'Snapshot' });
+    const bytes = ready.export();
+    const snapshot = vi.fn((day: CalendarDate) =>
+      Promise.resolve(formatDate(day) === '27/09/2026' ? bytes : undefined),
+    );
+    const seed = vi.fn(fakeSeed);
+
+    const app = await openAppData({ today: () => TODAY, seed, snapshot });
+    expect(snapshot).toHaveBeenCalledWith(TODAY);
+    expect(seed).not.toHaveBeenCalled();
+    expect(teamNames(app.db())).toEqual(['Snapshot']);
+
+    await app.reloadDemoData();
+    expect(seed).toHaveBeenCalledTimes(1);
+    expect(teamNames(app.db())).toEqual(['Seed 27/09/2026']);
+  });
+
+  it('seeds when there is no snapshot for the day', async () => {
+    const seed = vi.fn(fakeSeed);
+    const app = await openAppData({
+      today: () => TODAY,
+      seed,
+      snapshot: () => Promise.resolve(undefined),
+    });
+    expect(seed).toHaveBeenCalledTimes(1);
+    expect(teamNames(app.db())).toEqual(['Seed 27/09/2026']);
+  });
+
   it("dates the database's writes and checks on the app's day, also after new data", async () => {
     let today = TODAY;
     const app = await openAppData({ today: () => today, seed: fakeSeed });
