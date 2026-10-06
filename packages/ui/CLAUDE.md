@@ -29,7 +29,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/components/Button.tsx` — type ButtonVariant, Button
 - `src/components/Chart.tsx` — type ChartOption, encodeHtml, Chart
 - `src/components/Choices.tsx` — type Choice, Choices
-- `src/components/DataTable.tsx` — type DataTableColumn, type DataTableSort, DataTable
+- `src/components/DataTable.tsx` — type DataTableColumn, type DataTableSort, type DataTableMoreLabels, DataTable
 - `src/components/Dialog.tsx` — Dialog
 - `src/components/NavIcon.tsx` — type NavIconName, NavIcon
 - `src/components/PeriodPicker.label.ts` — type PeriodLabelTemplates, periodLabel
@@ -41,6 +41,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/components/TextField.tsx` — TextField
 - `src/components/chart-theme.ts` — type TokenReader, SERIES_TOKENS, chartTheme
 - `src/components/compare-cells.ts` — type CellValues, type CellKind, compareCells, compareCellsThen
+- `src/components/show-more.ts` — SHOW_MORE_STEP, type ShowMoreFoot, showMore
 - `src/index.ts` — re-exports ./components/NavIcon, ./components/Segmented, ./components/PeriodPicker, ./components/DataTable, ./components/Chart, ./components/Button, ./components/Dialog, ./components/TextField, ./components/SelectField, ./components/StageBadge, ./components/PolicyBadge, ./components/Choices
 - `src/token-guard.ts` — type TokenViolation, findTokenViolations, findHardcodedSeparators
 <!-- codemap:end -->

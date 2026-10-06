@@ -1,6 +1,6 @@
 import { DB_ERROR_CODES, DbError } from '@p2c/db';
 import { describe, expect, it } from 'vitest';
-import { COUNT_SLOTS, PLAIN_SLOTS, errorMessage, fillSlots, joinParts, t } from '.';
+import { COUNT_SLOTS, PLAIN_SLOTS, errorMessage, fillSlots, joinParts, t, tableMore } from '.';
 import { vi } from './vi';
 
 describe('t', () => {
@@ -110,5 +110,16 @@ describe('errorMessage', () => {
     const general = 'Chưa lưu được thay đổi. Dữ liệu không bị đổi.';
     expect(errorMessage(new DbError('SEED_DATABASE_NOT_EMPTY'))).toBe(general);
     expect(errorMessage(new Error('boom'))).toBe(general);
+  });
+});
+
+describe('tableMore', () => {
+  it('words the foot of a big table as the mockup does, thousands grouped', () => {
+    const appointments = tableMore('appointments');
+    expect(appointments.shown(100, 7071)).toBe('Đang hiện 100 / 7.071 lịch');
+    expect(appointments.more(71)).toBe('Hiện thêm 71 lịch');
+    expect(appointments.all(7071)).toBe('Đã hiện hết 7.071 lịch');
+    expect(tableMore('customers').more(100)).toBe('Hiện thêm 100 khách hàng');
+    expect(tableMore('people').all(120)).toBe('Đã hiện hết 120 người');
   });
 });

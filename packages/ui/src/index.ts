@@ -1,7 +1,12 @@
 export { NavIcon, type NavIconName } from './components/NavIcon';
 export { Segmented, type SegmentedOption } from './components/Segmented';
 export { PeriodPicker, type PeriodPickerLabels } from './components/PeriodPicker';
-export { DataTable, type DataTableColumn, type DataTableSort } from './components/DataTable';
+export {
+  DataTable,
+  type DataTableColumn,
+  type DataTableMoreLabels,
+  type DataTableSort,
+} from './components/DataTable';
 export { Chart, encodeHtml, type ChartOption } from './components/Chart';
 export { Button, type ButtonVariant } from './components/Button';
 export { Dialog } from './components/Dialog';

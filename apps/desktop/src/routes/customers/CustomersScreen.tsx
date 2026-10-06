@@ -17,7 +17,7 @@ import {
 } from '@p2c/domain';
 import { Button, DataTable, Segmented, StageBadge, type DataTableColumn } from '@p2c/ui';
 import { useQuery } from '../../data/AppDataContext';
-import { joinParts, t } from '../../i18n';
+import { joinParts, t, tableMore } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { RePicker } from '../../shell/RePicker';
 import { teamRes } from '../../shell/scope';
@@ -166,6 +166,8 @@ export function CustomersScreen() {
           rows={rows}
           getRowId={(c) => c.customer.id}
           initialSort={{ id: 'since', desc: true }}
+          moreLabels={tableMore('customers')}
+          resetKey={JSON.stringify(scope)}
         />
       ) : (
         <div className="flex items-start gap-3.5">

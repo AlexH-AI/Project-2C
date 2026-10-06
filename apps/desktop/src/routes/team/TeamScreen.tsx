@@ -10,7 +10,7 @@ import {
 import type { Person, PersonRole, Team } from '@p2c/domain';
 import { Button, DataTable, type DataTableColumn } from '@p2c/ui';
 import { useQuery, useToday } from '../../data/AppDataContext';
-import { t } from '../../i18n';
+import { t, tableMore } from '../../i18n';
 import { DeletePersonDialog, PersonDialog } from './PersonDialogs';
 import { DeleteTeamDialog, TeamNameDialog } from './TeamDialogs';
 import {
@@ -333,6 +333,7 @@ function Members({
             rows={entry.reps}
             getRowId={(person) => person.id}
             initialSort={{ id: 'name', desc: false }}
+            moreLabels={tableMore('people')}
           />
         </div>
       )}
