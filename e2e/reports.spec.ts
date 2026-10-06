@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { trackConsoleErrors } from './support';
+import { readWorkbook, trackConsoleErrors } from './support';
 
 // The e2e build pins today to Tuesday 15/09/2026 (playwright.config.ts): September is in progress.
 async function openReports(page: Page) {
@@ -154,7 +154,49 @@ test('Xuất Excel downloads the report of the period and scope viewed, a sheet 
   await expect(page.getByRole('status').filter({ hasText: 'Đã xuất báo cáo' })).toHaveText(
     'Đã xuất báo cáo · 4 sheet: bao-cao_2026-09_toan-bo_2026-09-15.xlsx',
   );
+
+  // The file itself opens, and Theo team holds the rows and counts of the table on screen.
+  const workbook = await readWorkbook(file);
+  expect(workbook.worksheets.map((sheet) => sheet.name)).toEqual([
+    'Tổng hợp',
+    'Theo team',
+    'Theo RE',
+    'Theo mốc',
+  ]);
+  const sheet = workbook.getWorksheet('Theo team')!;
+  expect(sheet.getCell('A1').text).toBe(
+    'Báo cáo Theo team · Tháng 09/2026 (MTD 01/09 – 15/09/2026) · Toàn bộ · xuất 15/09/2026',
+  );
+  const onScreen = page.getByRole('table', { name: 'Theo team' }).getByRole('row');
+  const rows = await onScreen.evaluateAll((trs) =>
+    trs.slice(2).map((tr) => [...tr.children].map((cell) => cell.textContent ?? '')),
+  );
+  expect(rows).toHaveLength(4);
+  rows.forEach((cells, index) => {
+    const row = sheet.getRow(4 + index);
+    expect(row.getCell(1).value).toBe(cells[0]);
+    // Đã gặp … Chuyển RF, HĐ nộp: counts, written on screen with a thousands dot.
+    for (const column of [2, 3, 4, 5, 6, 7, 8]) {
+      expect(row.getCell(column).value, `${cells[0]} column ${column}`).toBe(
+        Number(cells[column - 1]!.replace(/\./g, '')),
+      );
+    }
+  });
   expect(errors).toEqual([]);
+});
+
+test('Xuất Excel exports the period applied, not one still waiting for Lọc', async ({ page }) => {
+  const { kinds, pending } = await openReports(page);
+  await kinds.getByRole('radio', { name: 'Năm' }).click();
+  await expect(pending).toBeVisible();
+
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Xuất Excel' }).click();
+  const file = await download;
+
+  expect(file.suggestedFilename()).toBe('bao-cao_2026-09_toan-bo_2026-09-15.xlsx');
+  const workbook = await readWorkbook(file);
+  expect(workbook.getWorksheet('Tổng hợp')!.getCell('A1').text).toContain('Tháng 09/2026');
 });
 
 test('the export line stays while a new period waits for Lọc, and goes once it is applied', async ({

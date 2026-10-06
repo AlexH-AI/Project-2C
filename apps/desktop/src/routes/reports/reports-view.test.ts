@@ -65,6 +65,17 @@ const total = (parts: readonly object[], keys = APPOINTMENT_KEYS) =>
   );
 
 describe('reportRows', () => {
+  it('lists the teams by Vietnamese name: D before Đ, whatever order they were made in', () => {
+    const [a, b] = TEAMS as [(typeof TEAMS)[number], (typeof TEAMS)[number]];
+    const teams = [
+      { ...b, name: 'Đông Hải' },
+      { ...a, name: 'Dương Quang' },
+    ];
+    const rows = reportRows({ ...GOLDEN, teams }, JAN_2027, { kind: 'all' }, d(2027, 3, 15));
+
+    expect(rows.byTeam?.rows.map((row) => row.name)).toEqual(['Dương Quang', 'Đông Hải']);
+  });
+
   it('adds the teams up in Tổng: Team A 2/3 + Team B 3/2 → 5/5 = 100% (G09–G11)', () => {
     const rows = reportRows(GOLDEN, JAN_2027, { kind: 'all' }, d(2027, 3, 15));
 

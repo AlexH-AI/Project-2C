@@ -42,7 +42,14 @@ test('the profile lists its appointments newest first; "Hẹn tiếp" fills in t
   const { card, rows } = appointments(page);
   const count = await rows.count();
   expect(count).toBeGreaterThan(0);
-  await expect(card).toContainText(`${count} lịch · `);
+  // The timeline marks each meeting held "· đã gặp".
+  const met = await page
+    .getByRole('region', { name: 'Dòng thời gian' })
+    .getByRole('listitem')
+    .filter({ hasText: '· đã gặp' })
+    .count();
+  expect(met).toBeGreaterThan(0);
+  await expect(card).toContainText(`${count} lịch · ${met} đã gặp`);
 
   const past = rows.filter({ has: page.getByRole('button', { name: /^Hẹn tiếp sau lịch/ }) });
   const date = (await past.first().locator('td:nth-child(1)').textContent()) ?? '';

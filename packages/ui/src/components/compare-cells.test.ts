@@ -13,6 +13,15 @@ describe('compareCells', () => {
     ]);
   });
 
+  it('orders the numbers inside a text by value: Team 2 before Team 10', () => {
+    const names = ['Team 10', 'Team 2', 'Team 1'];
+    expect([...names].sort((a, b) => compareCells('text', a, b))).toEqual([
+      'Team 1',
+      'Team 2',
+      'Team 10',
+    ]);
+  });
+
   it('orders numbers by value, not as text', () => {
     expect([10, 9, 100].sort((a, b) => compareCells('number', a, b))).toEqual([9, 10, 100]);
   });

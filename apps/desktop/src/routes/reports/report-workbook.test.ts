@@ -83,6 +83,17 @@ describe('buildReportWorkbook', () => {
     );
   });
 
+  it('keeps the three title and heading rows and the name column in view on scroll', async () => {
+    const workbook = await read(ALL);
+
+    expect(workbook.getWorksheet('Theo team')?.views[0]).toMatchObject({
+      state: 'frozen',
+      xSplit: 1,
+      ySplit: 3,
+    });
+    expect(workbook.getWorksheet('Theo RE')?.views[0]).toMatchObject({ xSplit: 2, ySplit: 3 });
+  });
+
   it('heads the columns as the screen does, money in đồng', async () => {
     const sheet = (await read(ALL)).getWorksheet('Theo team')!;
 

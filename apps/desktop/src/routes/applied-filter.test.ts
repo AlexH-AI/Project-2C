@@ -43,6 +43,17 @@ describe('applied filter (Lọc)', () => {
     expect(filter.applied.scope).toEqual(all);
   });
 
+  it('a new last day of the Tùy chọn period alone is waiting too', () => {
+    const applied = customPeriod(calendarDate(2026, 10, 1), calendarDate(2026, 10, 15));
+    const later = customPeriod(calendarDate(2026, 10, 1), calendarDate(2026, 10, 20));
+    const filter = chooseFilter(startFilter({ period: applied, scope: all }), {
+      period: later,
+      scope: all,
+    });
+
+    expect(isPending(filter)).toBe(true);
+  });
+
   it('Lọc applies the choice and nothing is waiting any more', () => {
     const chosen = { period: year, scope: re };
     const filter = applyFilter(chooseFilter(startFilter({ period: month, scope: all }), chosen));

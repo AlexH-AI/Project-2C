@@ -83,6 +83,18 @@ describe('customerBoard', () => {
     expect(board).toMatchObject({ openCount: 4, closedCount: 1 });
   });
 
+  it('orders the cards that entered the stage the same day by name', () => {
+    const board = customerBoard(
+      {
+        ...data,
+        customers: [customer('Bình', 'N3'), customer('An', 'N3')],
+        transitions: [move('Bình', null, 'N3', day(9, 5)), move('An', null, 'N3', day(9, 5))],
+      },
+      { kind: 'all' },
+    );
+    expect(board.open.N3.map((card) => card.customer.name)).toEqual(['An', 'Bình']);
+  });
+
   it('gives each card its RE, the day it entered the stage and its policy count', () => {
     const board = customerBoard(data, { kind: 'all' });
 
@@ -178,6 +190,10 @@ describe('parseBirthDate', () => {
       birth: { year: 1984, month: 3, day: 12 },
     });
     expect(parseBirthDate('  ', today)).toEqual({ ok: true, birth: null });
+    expect(parseBirthDate('26/09/2026', today)).toEqual({
+      ok: true,
+      birth: { year: 2026, month: 9, day: 26 },
+    });
   });
 
   it('refuses a day that does not exist, a short year or a birth after today', () => {

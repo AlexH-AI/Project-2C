@@ -64,6 +64,16 @@ describe('kycOverview', () => {
     expect(rows[5]).toMatchObject({ present: true, conflict: 'minor' });
     expect(rows[2]).toMatchObject({ present: false, facts: [], conflict: null });
   });
+
+  it('calls a hạng mục with a cốt lõi and a minor trường in conflict a core conflict', () => {
+    const { rows } = kycOverview([
+      fact('dependents', 'Mẹ', 'conflict', 'FAMILY'),
+      fact('dependents', 'Bố mẹ', 'conflict', 'FAMILY'),
+      fact('maritalStatus', 'Độc thân', 'conflict', 'FAMILY'),
+      fact('maritalStatus', 'Đã kết hôn', 'conflict', 'FAMILY'),
+    ]);
+    expect(rows[1]).toMatchObject({ category: 'FAMILY', conflict: 'core' });
+  });
 });
 
 describe('factText', () => {

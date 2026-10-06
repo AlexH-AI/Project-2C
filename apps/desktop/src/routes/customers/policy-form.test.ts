@@ -72,9 +72,19 @@ describe('readPolicy', () => {
     expect(read.issuedFyp).toEqual({ ok: false, error: 'zero' });
   });
 
-  it('allows the issue on the day of the submission', () => {
+  it('allows the issue on the day of the submission, not the day before', () => {
     const read = readPolicy({ ...issued, issued: { date: '20/8', fyp: '400tr' } }, TODAY);
     expect(read.issuedDate).toEqual({ ok: true, date: d(20, 8), daysAfter: 0 });
+    expect(readPolicy({ ...issued, issued: { date: '19/8', fyp: '400tr' } }, TODAY)).toMatchObject({
+      issuedDate: { ok: false, error: 'beforeSubmitted', date: d(19, 8) },
+      policy: null,
+    });
+  });
+
+  it('gives no policy while the issued FYP is wrong, even with a right issue day', () => {
+    const read = readPolicy({ ...issued, issued: { date: '18/9', fyp: '0' } }, TODAY);
+    expect(read.issuedDate).toEqual({ ok: true, date: d(18, 9), daysAfter: 29 });
+    expect(read.policy).toBeNull();
   });
 
   it('refuses a day after today and a day that does not exist', () => {
@@ -111,12 +121,25 @@ describe('issuedChange', () => {
     });
   });
 
+  it('measures the effect on the month from the saved issued FYP, not the submitted one', () => {
+    const saved = { ...policy, issuedFyp: 390 * MILLION };
+    expect(issuedChange(saved, { issuedDate: d(18, 9), issuedFyp: 385_500_000 })).toEqual({
+      fromSubmitted: -14_500_000,
+      metric: { year: 2026, month: 9, diff: -4_500_000 },
+    });
+  });
+
   it('leaves out the effect on the month when the FYP stays or the issue month moves', () => {
     expect(issuedChange(policy, { issuedDate: d(19, 9), issuedFyp: 400 * MILLION })).toEqual({
       fromSubmitted: 0,
       metric: null,
     });
     expect(issuedChange(policy, { issuedDate: d(1, 10), issuedFyp: 410 * MILLION })).toEqual({
+      fromSubmitted: 10 * MILLION,
+      metric: null,
+    });
+    // The same month of another year is another month.
+    expect(issuedChange(policy, { issuedDate: d(18, 9, 2025), issuedFyp: 410 * MILLION })).toEqual({
       fromSubmitted: 10 * MILLION,
       metric: null,
     });

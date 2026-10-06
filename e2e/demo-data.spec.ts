@@ -25,7 +25,16 @@ test('Settings reloads the simulated data after typing the confirmation word', a
 });
 
 test('cancelling the reload dialog changes nothing', async ({ page }) => {
-  await page.goto('/#/settings');
+  // A team made first would be gone after a reload: the data in memory is the sign.
+  await page.goto('/#/team');
+  await page.getByRole('button', { name: '+ Team' }).click();
+  const create = page.getByRole('dialog', { name: 'Team mới' });
+  await create.getByRole('textbox', { name: 'Tên team' }).fill('Thiên Hà');
+  await create.getByRole('button', { name: 'Tạo team' }).click();
+  const team = page.getByRole('button', { name: /^Thiên Hà / });
+  await expect(team).toHaveCount(1);
+
+  await page.getByRole('link', { name: 'Cài đặt' }).click();
   await page.getByRole('button', { name: 'Nạp lại…' }).click();
   const dialog = page.getByRole('dialog', { name: 'Nạp lại dữ liệu giả lập?' });
 
@@ -33,4 +42,9 @@ test('cancelling the reload dialog changes nothing', async ({ page }) => {
 
   await expect(dialog).toBeHidden();
   await expect(page.getByRole('status')).toHaveCount(0);
+  // Longer than a reload takes (the first test: about 3 s to seed), so one started behind Hủy
+  // would have replaced the data by now.
+  await page.waitForTimeout(6_000);
+  await page.getByRole('link', { name: 'Team & nhân sự' }).click();
+  await expect(team).toHaveCount(1);
 });
