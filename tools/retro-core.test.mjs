@@ -107,6 +107,23 @@ describe('sessionStats', () => {
     expect(stats.handoffLoads).toBe(4);
   });
 
+  it('leaves out sidechain lines', () => {
+    const line = { sessionId: 's', timestamp: '2026-10-03T00:00:00Z' };
+    const read = (id, isSidechain) => ({
+      ...line,
+      isSidechain,
+      type: 'assistant',
+      message: { id, content: [{ type: 'tool_use', id, name: 'Read', input: { file_path: 'a' } }] },
+    });
+    const edit = {
+      ...line,
+      type: 'assistant',
+      message: { id: 'e', content: [{ type: 'tool_use', id: 'e', name: 'Edit', input: {} }] },
+    };
+    expect(sessionStats([read('a', false), read('b', true), edit]).probesBeforeEdit).toBe(1);
+    expect(sessionStats([read('b', true)])).toBeNull();
+  });
+
   it('returns null for a transcript without any session line', () => {
     expect(sessionStats(parseTranscript('{"type":"summary"}\n'))).toBeNull();
   });

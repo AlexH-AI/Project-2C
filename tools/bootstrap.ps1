@@ -156,7 +156,8 @@ if (-not (Test-Command 'pnpm') -and -not $CheckOnly -and (Test-Command 'corepack
 Write-Status 'pnpm' (Test-Command 'pnpm') $(if (Test-Command 'pnpm') { "$(pnpm --version)" } else { 'via corepack' })
 
 # Rust (toolchain pinned in rust-toolchain.toml; rustup installs it on first cargo use)
-Update-SessionPath
+# -CheckOnly leaves $env:Path alone: session-start runs it in its own process (DR-82).
+if (-not $CheckOnly) { Update-SessionPath }
 if (-not (Test-Command 'rustup')) { Install-WingetPackage 'Rustlang.Rustup' }
 if (-not $CheckOnly -and (Test-Command 'rustup')) {
     Push-Location $RepoRoot

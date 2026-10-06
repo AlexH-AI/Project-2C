@@ -385,6 +385,8 @@ describe('isReviewWorktree', () => {
     expect(isReviewWorktree('C:\\workspace\\Project-2C-review-2')).toBe(true);
     expect(isReviewWorktree('C:/workspace/Project-2C')).toBe(false);
     expect(isReviewWorktree('C:/workspace/review-notes')).toBe(false);
+    expect(isReviewWorktree('C:/workspace/Project-2C-review-old')).toBe(false);
+    expect(isReviewWorktree('C:/workspace/Project-2C-review/task-1')).toBe(false);
   });
 });
 

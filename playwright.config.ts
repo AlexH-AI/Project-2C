@@ -15,7 +15,11 @@ export default defineConfig({
   workers: process.env.CI ? undefined : Math.min(4, Math.max(1, availableParallelism() >> 2)),
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
+  // CI also writes JSON: the job summary reads its flaky count, since retries turn a flaky test
+  // green without a trace (DR-78).
+  reporter: process.env.CI
+    ? [['list'], ['html', { open: 'never' }], ['json', { outputFile: 'test-results/e2e.json' }]]
+    : 'list',
   // Every page load seeds the simulated data (~3 s alone, more with parallel workers).
   expect: { timeout: 15_000 },
   use: {
