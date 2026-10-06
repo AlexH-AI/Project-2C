@@ -10,8 +10,9 @@
 //   --dry-run  print the checks and the clean-up plan, change nothing
 //
 // It refuses to merge (exit 1) when the PR is not open or is a draft, the latest REVIEW is
-// not PASS for the current head SHA (P-1), a code PR's CI is not all green, the risk is not
-// low without --owner, the base is not main, or a PR is stacked on it without --merge.
+// not PASS for the current head SHA (P-1), a code PR's CI is not all green, its files need
+// the exe build without the build-exe label, the base got code after its CI started, the risk
+// is not low without --owner, the base is not main, or a PR is stacked on it without --merge.
 // The merge itself pins the head (`gh pr merge --match-head-commit`).
 //
 // Clean-up, right after the merge (Owner decision 28/09/2026):
@@ -24,6 +25,8 @@
 //   5. review worktree (Project-2C-review*) on the branch -> git checkout --detach origin/main;
 //      task worktree of the branch -> git worktree remove; dirty -> report, leave it
 //   6. a branch with another PR stacked on it is kept, local and remote
+//   7. a branch or task worktree not at the merged head is kept and reported: it may hold
+//      commits never pushed (DR-22)
 // A PR of the same task closed without merging: delete its branch by hand (remote and local).
 // Every git / gh call checks its exit code; on a failure the steps done and the steps left
 // are printed so the rest can be finished by hand.
@@ -53,8 +56,11 @@ function parseArgs(argv) {
   };
 }
 
-const refExists = (ref) =>
-  spawnSync('git', ['rev-parse', '--verify', '--quiet', ref], { encoding: 'utf8' }).status === 0;
+/** SHA of `ref`, null when it does not exist. */
+function refHead(ref) {
+  const r = spawnSync('git', ['rev-parse', '--verify', '--quiet', ref], { encoding: 'utf8' });
+  return r.status === 0 ? r.stdout.trim() : null;
+}
 
 function isDirty(path) {
   try {
@@ -64,15 +70,16 @@ function isDirty(path) {
   }
 }
 
-function planCleanup(branch, stacked) {
+function planCleanup(branch, merged, stacked) {
   const worktrees = parseWorktrees(run('git', ['worktree', 'list', '--porcelain']));
   return cleanupPlan({
     branch,
+    merged,
     worktrees,
     dirty: new Set(worktrees.filter((w) => isDirty(w.path)).map((w) => w.path)),
     stacked,
-    remoteExists: refExists(`refs/remotes/origin/${branch}`),
-    localExists: refExists(`refs/heads/${branch}`),
+    remoteHead: refHead(`refs/remotes/origin/${branch}`),
+    localHead: refHead(`refs/heads/${branch}`),
   });
 }
 
@@ -116,10 +123,10 @@ try {
   process.stderr.write(`${error.message}\n`);
   process.exit(1);
 }
-const { pr, stacked, baseMerged } = loaded;
+const { pr, stacked, baseMerged, mainSince } = loaded;
 out(formatStatus(loaded, { withVerdict: false }));
 
-const blockers = mergeBlockers(pr, { ...opts, stacked, baseMerged });
+const blockers = mergeBlockers(pr, { ...opts, stacked, baseMerged, mainSince });
 out(`\nChecks (${opts.mode}${opts.owner ? ', Owner said merge' : ''}):`);
 out(blockers.length ? blockers.map((b) => `  x ${b}`).join('\n') : '  ok');
 
@@ -129,7 +136,7 @@ if (opts.dryRun) {
   out('\nDry run, nothing changed. Would run:');
   for (const step of steps) out(`  ${show(step)}`);
   out('Then clean up (as the repo is now; recomputed after the fetch):');
-  printPlan(planCleanup(pr.headRefName, stacked));
+  printPlan(planCleanup(pr.headRefName, pr.headRefOid, stacked));
   process.exit(blockers.length ? 1 : 0);
 }
 
@@ -141,7 +148,7 @@ if (blockers.length) {
 out('');
 const done = [];
 runSteps(steps, done, ['clean-up (see the steps in tools/merge-pr.mjs)']);
-const plan = planCleanup(pr.headRefName, stacked);
+const plan = planCleanup(pr.headRefName, pr.headRefOid, stacked);
 runSteps(plan.steps, done);
 if (plan.problems.length) {
   out(`\nMerged PR #${pr.number} (${opts.mode}); clean-up NOT finished, left for the Owner:`);

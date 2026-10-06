@@ -8,7 +8,7 @@
 
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { isDocsOnly, mergeBlockers, prList, riskLevel } from './pr-core.mjs';
+import { ciStartedAt, isDocsOnly, mergeBlockers, prList, riskLevel } from './pr-core.mjs';
 import { checksSummary, latestReview } from './session-core.mjs';
 import { run as runIn } from './session-io.mjs';
 
@@ -29,7 +29,23 @@ const FIELDS = [
   'url',
 ].join(',');
 
-/** The PR plus what the merge rules need from other PRs: stacked PRs, merged base. */
+/**
+ * The base's commits not in the PR head that landed after its CI started, with their files
+ * (DR-80). Older ones were in what CI tested, so their files are not fetched.
+ */
+function loadMainSince(pr) {
+  const started = ciStartedAt(pr.statusCheckRollup ?? []);
+  if (pr.state !== 'OPEN' || !started) return [];
+  const compare = `repos/{owner}/{repo}/compare/${pr.headRefOid}...${pr.baseRefName}`;
+  return gh(['api', compare, '--jq', '[.commits[] | {sha, date: .commit.committer.date}]'])
+    .filter((c) => Date.parse(c.date) > Date.parse(started))
+    .map((c) => ({
+      ...c,
+      files: gh(['api', `repos/{owner}/{repo}/commits/${c.sha}`, '--jq', '[.files[].filename]']),
+    }));
+}
+
+/** The PR plus what the merge rules need from elsewhere: stacked PRs, merged base, newer base. */
 export function loadPr(number) {
   const pr = gh(['pr', 'view', String(number), '--json', FIELDS]);
   const stacked = gh([
@@ -49,11 +65,11 @@ export function loadPr(number) {
       ? null
       : gh(['pr', 'list', '--state', 'merged', '--head', pr.baseRefName, '--json', 'number'])
           .length > 0;
-  return { pr, stacked, baseMerged };
+  return { pr, stacked, baseMerged, mainSince: loadMainSince(pr) };
 }
 
 /** Status lines; `withVerdict` adds what merge-pr would say under risk:low rules. */
-export function formatStatus({ pr, stacked, baseMerged }, { withVerdict = true } = {}) {
+export function formatStatus({ pr, stacked, baseMerged, mainSince }, { withVerdict = true } = {}) {
   const head = pr.headRefOid.slice(0, 7);
   const review = latestReview(pr.comments);
   let reviewText = 'none yet';
@@ -72,7 +88,13 @@ export function formatStatus({ pr, stacked, baseMerged }, { withVerdict = true }
       ? 'main'
       : `${pr.baseRefName} (stacked; base ${baseMerged ? 'merged: retarget to main' : 'not merged yet'})`;
   const labels = pr.labels.map((l) => l.name).join(', ') || '(none)';
-  const blockers = mergeBlockers(pr, { owner: false, mode: 'squash', stacked, baseMerged });
+  const blockers = mergeBlockers(pr, {
+    owner: false,
+    mode: 'squash',
+    stacked,
+    baseMerged,
+    mainSince,
+  });
   const verdict = blockers.length
     ? `blocked (risk:low rules, --squash):\n${blockers.map((b) => `    - ${b}`).join('\n')}`
     : 'ready: node tools/merge-pr.mjs ' + pr.number;
