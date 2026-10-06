@@ -1,7 +1,9 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-// Monday 28/09/2026, mid-morning local time.
-const TODAY = new Date(2026, 8, 28, 9, 30);
+import { ANCHOR_MORNING } from './anchor';
+
+// The clock stays on the pinned day so the app's today cannot move during a test.
+const TODAY = ANCHOR_MORNING;
 
 async function openPicker(page: Page) {
   await page.clock.setFixedTime(TODAY);

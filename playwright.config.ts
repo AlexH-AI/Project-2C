@@ -1,5 +1,6 @@
 import { availableParallelism } from 'node:os';
 import { defineConfig, devices } from '@playwright/test';
+import { DEMO_ANCHOR } from './e2e/anchor';
 
 const port = 4173;
 const EDGE = { ...devices['Desktop Edge'], channel: 'msedge' };
@@ -36,6 +37,6 @@ export default defineConfig({
     reuseExistingServer: process.env.PW_REUSE === '1',
     timeout: 120_000,
     // New databases get simulated data anchored on this day instead of today (spec §7).
-    env: { E2E_PORT: String(port), VITE_DEMO_ANCHOR: '15/09/2026' },
+    env: { E2E_PORT: String(port), VITE_DEMO_ANCHOR: DEMO_ANCHOR },
   },
 });

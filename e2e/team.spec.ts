@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { ANCHOR_YEAR } from './anchor';
 
 // The simulated data (spec §7, D8): 3 teams of 1 TL + 10 RE, and a shared IS, BD and BDM.
 const SEEDED = ['Bình Minh', 'Hừng Đông', 'Sao Mai'];
@@ -315,10 +316,9 @@ test('member columns: an RE open customers match the Customers screen', async ({
   await page.goto('/#/team');
   await teamButton(page, team).click();
   const table = members(page, team).getByRole('table');
-  // The app counts the year of the machine clock.
-  const year = new Date().getFullYear();
+  // The app counts the year of its own day, pinned in the e2e build.
   await expect(
-    table.getByRole('columnheader', { name: new RegExp(`HĐ năm ${year}`) }),
+    table.getByRole('columnheader', { name: new RegExp(`HĐ năm ${ANCHOR_YEAR}`) }),
   ).toBeVisible();
   const row = table.getByRole('row', { name: new RegExp(re) });
   await expect(row.getByRole('cell').nth(2)).toHaveText(open);
