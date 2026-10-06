@@ -26,7 +26,8 @@ export function CloseGuard({ appWindow }: { appWindow: AppWindow }) {
     let gone = false;
     void appWindow
       .onCloseRequested(async (event) => {
-        // The window closes itself once the save is settled; a second click waits for that.
+        // The window closes itself once the save is settled; a second click waits for that, or
+        // for the question to be answered or dismissed.
         event.preventDefault();
         if (closing) return;
         closing = true;
@@ -59,10 +60,11 @@ export function CloseGuard({ appWindow }: { appWindow: AppWindow }) {
 }
 
 function CloseDialog({ onChoose }: { onChoose: (choice: CloseChoice) => void }) {
-  // No onClose: Escape does nothing, the window stays open until one of the two answers.
+  // Escape leaves the question unanswered: the window stays open and the next close asks again.
   return (
     <Dialog
       title={t('close.unsavedTitle')}
+      onClose={() => onChoose('stay')}
       actions={
         <>
           <Button variant="danger" onClick={() => onChoose('discard')}>
