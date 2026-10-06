@@ -384,16 +384,20 @@ function insertCoordinators(db: Database, appointmentId: string, ids: readonly s
   }
 }
 
-/** A live RE and live coordinators other than the RE — checked again on restore (spec §4). */
+/**
+ * A live RE and live coordinators of a supporting role (`REVIEWER_ROLES`), never an RE, the
+ * appointment's own included (ADR-0007) — checked again on restore (spec §4).
+ */
 function requirePeople(db: Database, reId: string, coordinatorIds: readonly string[]): void {
   requireRe(db, reId);
   for (const personId of coordinatorIds) {
-    if (personId === reId) throw new DbError('INVALID_COORDINATOR');
-    requirePerson(db, personId);
+    if (!REVIEWER_ROLES.includes(requirePerson(db, personId))) {
+      throw new DbError('INVALID_COORDINATOR');
+    }
   }
 }
 
-/** A live person of any role, as a coordinator; returns their role. */
+/** A live person of any role; returns their role. */
 function requirePerson(db: Database, personId: string): PersonRole {
   const person = db.orm
     .select({ role: people.role })

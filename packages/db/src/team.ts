@@ -138,13 +138,11 @@ export function updatePerson(db: Database, id: string, changes: Partial<PersonIn
     if (current.role === 'RE' && role !== 'RE' && ownsLiveRecords(db, id)) {
       throw new DbError('PERSON_IN_USE');
     }
-    // A reviewer of a live meeting stays one of the roles that may review it (D9).
-    if (
-      REVIEWER_ROLES.includes(current.role) &&
-      !REVIEWER_ROLES.includes(role) &&
-      reviewsLiveAppointment(db, id)
-    ) {
-      throw new DbError('REVIEWER_IN_USE');
+    // A reviewer or coordinator of a live meeting stays one of the roles that may support it (D9,
+    // ADR-0007).
+    if (REVIEWER_ROLES.includes(current.role) && !REVIEWER_ROLES.includes(role)) {
+      if (reviewsLiveAppointment(db, id)) throw new DbError('REVIEWER_IN_USE');
+      if (coordinatesLiveAppointment(db, id)) throw new DbError('COORDINATOR_IN_USE');
     }
     const valid = validatePerson(
       db,
@@ -235,13 +233,19 @@ function ownsLiveRecords(db: Database, id: string): boolean {
 
 /** Whether a live record still points to the person, as RE, coordinator or reviewer (spec §4, D9). */
 function isPersonInUse(db: Database, id: string): boolean {
+  return (
+    ownsLiveRecords(db, id) || coordinatesLiveAppointment(db, id) || reviewsLiveAppointment(db, id)
+  );
+}
+
+function coordinatesLiveAppointment(db: Database, id: string): boolean {
   const coordinating = db.orm
     .select({ id: appointments.id })
     .from(appointmentCoordinators)
     .innerJoin(appointments, eq(appointments.id, appointmentCoordinators.appointmentId))
     .where(and(eq(appointmentCoordinators.personId, id), isNull(appointments.deletedAt)))
     .get();
-  return ownsLiveRecords(db, id) || coordinating !== undefined || reviewsLiveAppointment(db, id);
+  return coordinating !== undefined;
 }
 
 function reviewsLiveAppointment(db: Database, id: string): boolean {

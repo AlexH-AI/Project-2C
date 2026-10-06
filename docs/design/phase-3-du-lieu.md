@@ -112,7 +112,7 @@ Không lưu: ngày tạo KH (= ngày của transition đầu tiên), nhãn "Đã
 
 ### 3.6 `appointment_coordinators`
 
-`appointment_id` (FK), `person_id` (FK `people`, khác `re_id` của cuộc hẹn); PK (`appointment_id`, `person_id`). Người phối hợp không có chỉ số (ADR-0007 G2 G).
+`appointment_id` (FK), `person_id` (FK `people`, khác `re_id` của cuộc hẹn); PK (`appointment_id`, `person_id`). Người phối hợp là nhân sự chưa xóa vai trò **TL / IS / BD / BDM**, không RE nào, kể cả RE khác của lịch (ADR-0007; Owner 06/10/2026, DR-47). Người phối hợp không có chỉ số (ADR-0007 G2 G).
 
 ### 3.7 `policies`
 
@@ -178,7 +178,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
 | `createCustomer` | Chỉ ở nhóm mở N4–N1 (`assertValidTransition`, ADR-0007); ghi transition đầu (`from` null), ngày tạo sau hôm nay → `DATE_IN_FUTURE` (F-11, #258); nếu có ngày sinh/giới tính → ghi chú `SYSTEM` + dữ kiện (D2); ngày sinh sau hôm nay (chỉ năm: năm sau năm nay) → `DATE_IN_FUTURE` (DR-42) |
 | `updateCustomerProfile` | Đổi tên / RE / ngày sinh / giới tính; đổi ngày sinh hoặc giới tính → ghi chú `SYSTEM` + `confirmFact`; ngày sinh sau hôm nay → `DATE_IN_FUTURE` như `createCustomer` |
 | `changeStageManually` | `assertValidTransition`; transition `appointment_id` null — không bao giờ tính RF; ngày không được trước transition mới nhất (D10), không được sau hôm nay → `DATE_IN_FUTURE` (F-11, #258) |
-| `scheduleAppointment` | Trạng thái `SCHEDULED`, không có `stage_after` |
+| `scheduleAppointment` | Trạng thái `SCHEDULED`, không có `stage_after`. Người phối hợp (cả khi sửa ở 6f và khôi phục cuộc hẹn): nhân sự chưa xóa (`PERSON_NOT_FOUND`) vai trò TL / IS / BD / BDM (`INVALID_COORDINATOR`, §3.6). `updatePerson` đổi người đang phối hợp một cuộc hẹn chưa xóa sang RE → `COORDINATOR_IN_USE` |
 | `recordMeetingOutcome` | Đặt trạng thái + kết quả. `MET`: bắt buộc `stage_after`, `next_step` (D6); case size dự kiến kiểm như FYP (`INVALID_AMOUNT`, `AMOUNT_TOO_LARGE`); `stage_after` ≠ nhóm hiện tại → transition gắn `appointment_id` (#44); `outcome_reviewer_id` tùy chọn, phải là nhân sự chưa xóa (`PERSON_NOT_FOUND`) vai trò IS / TL / BDM / BD (`INVALID_REVIEWER`, D9); khôi phục cuộc hẹn kiểm lại cả hai. `updatePerson` đổi người đang đánh giá một cuộc hẹn chưa xóa sang RE → `REVIEWER_IN_USE`. Sửa lại kết quả → theo D7. Transition mang ngày cuộc hẹn → ghi kết quả muộn bị từ chối (D10) nếu KH đã có transition ngày muộn hơn; `MET` với `stage_after` = nhóm hiện tại, `CANCELLED`, `NO_SHOW` không sinh transition nên vẫn ghi được |
 | `rescheduleAppointment` | Cuộc hẹn cũ → `RESCHEDULED`; tạo cuộc hẹn mới `SCHEDULED` trỏ `rescheduled_from_id` (D3); ngày giờ mới trùng ngày giờ cuộc hẹn cũ → `RESCHEDULE_UNCHANGED` (mockup 6e, DR-66) |
 | `addKycNote` | Chỉ thêm; ngày ghi chú sau hôm nay → `DATE_IN_FUTURE` (DR-42) |
@@ -223,7 +223,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
     2. `customers.stage` = `to_stage` của transition chưa xóa có `seq` lớn nhất.
     3. Theo `seq`, transition chưa xóa: ngày không giảm (D10), `from_stage` = `to_stage` của transition chưa xóa trước nó, mỗi bước qua `assertValidTransition`.
     4. Transition chưa xóa có `appointment_id` → cuộc hẹn chưa xóa (xóa cuộc hẹn luôn rút transition, D7), cùng KH, `MET`, `stage_after` = `to_stage`, cùng ngày; mỗi cuộc hẹn tối đa một transition chưa xóa.
-    5. `re_id` của KH / cuộc hẹn / HĐ **chưa xóa** là người **chưa xóa** vai trò RE (RE đổi vai trò hay bị xóa được khi bản ghi của họ đã xóa, §3.3); RE/TL có team: CHECK của schema; người phối hợp ≠ `re_id` của cuộc hẹn; `outcome_reviewer_id` của cuộc hẹn **chưa xóa** không phải RE (D9, Owner 04/10/2026; cuộc hẹn đã xóa thì người đánh giá được đã đổi sang RE — khôi phục sẽ bị từ chối); `rescheduled_from_id` trỏ cuộc hẹn cùng KH, status `RESCHEDULED`.
+    5. `re_id` của KH / cuộc hẹn / HĐ **chưa xóa** là người **chưa xóa** vai trò RE (RE đổi vai trò hay bị xóa được khi bản ghi của họ đã xóa, §3.3); RE/TL có team: CHECK của schema; người phối hợp ≠ `re_id` của cuộc hẹn, và người phối hợp của cuộc hẹn **chưa xóa** có vai trò TL / IS / BD / BDM (§3.6, ADR-0007; cuộc hẹn đã xóa thì người phối hợp được đã đổi sang RE — khôi phục sẽ bị từ chối); `outcome_reviewer_id` của cuộc hẹn **chưa xóa** không phải RE (D9, Owner 04/10/2026; cuộc hẹn đã xóa thì người đánh giá được đã đổi sang RE — khôi phục sẽ bị từ chối); `rescheduled_from_id` trỏ cuộc hẹn cùng KH, status `RESCHEDULED`.
     6. `kyc_facts.note_id` là ghi chú cùng KH. `seq` ghi chú / dữ kiện / phiên bản duy nhất theo KH: UNIQUE của schema.
     7. Mỗi trường KYC có dữ kiện của một KH: đúng một fact `active` và không `conflict`, hoặc ≥ 2 fact `conflict` và không `active`.
     8. Fact `birthYear` / `gender` đang `active` đến từ ghi chú nguồn `SYSTEM` và khớp `customers.birth_date` (năm) / `gender` (D2). Fact `birthYear` / `gender` đang `conflict` từ ghi chú `SYSTEM` cũng khớp hồ sơ (fact `conflict` từ ghi chú khác giữ quy tắc 7); `resolveKycConflict` chọn fact `SYSTEM` lệch hồ sơ → `KYC_FIELD_FROM_PROFILE`. Mọi fact (mọi trạng thái, kể cả `superseded`) từ ghi chú `SYSTEM` là `birthYear` / `gender` (#263).

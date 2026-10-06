@@ -44,7 +44,10 @@ export const DB_ERROR_CODES = [
   /** A reviewer of a live appointment made an RE (D9). */
   'REVIEWER_IN_USE',
   'NEXT_APPOINTMENT_PAST',
+  /** A coordinator who is not an IS, TL, BDM or BD (ADR-0007). */
   'INVALID_COORDINATOR',
+  /** A coordinator of a live appointment made an RE (ADR-0007). */
+  'COORDINATOR_IN_USE',
   'POLICY_NOT_FOUND',
   'ISSUED_BEFORE_SUBMITTED',
   'ISSUE_INCOMPLETE',

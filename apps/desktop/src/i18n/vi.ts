@@ -386,7 +386,9 @@ export const vi = {
   'error.RESCHEDULE_UNCHANGED': 'Ngày giờ mới trùng lịch cũ.',
   'error.APPOINTMENT_NOT_FOUND': 'Lịch hẹn không còn trong dữ liệu (có thể đã bị xóa).',
   'error.INVALID_TIME': 'Giờ từ 00:00 đến 23:59.',
-  'error.INVALID_COORDINATOR': 'RE của lịch hẹn không phối hợp cho chính mình.',
+  'error.INVALID_COORDINATOR': 'Người phối hợp phải là IS, TL, BDM hoặc BD.',
+  'error.COORDINATOR_IN_USE':
+    'Nhân sự đang phối hợp lịch hẹn chưa xóa, mà RE không được phối hợp. Bỏ nhân sự này khỏi người phối hợp của các lịch đó trước khi đổi sang RE.',
   'error.INVALID_REVIEWER': 'Người đánh giá kết quả phải là IS, TL, BDM hoặc BD.',
   'error.REVIEWER_IN_USE':
     'Nhân sự đang là người đánh giá kết quả của lịch hẹn chưa xóa, mà RE không được đánh giá. Bỏ người đánh giá ở các lịch đó (Sửa kết quả) trước khi đổi sang RE.',
