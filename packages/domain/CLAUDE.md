@@ -5,7 +5,8 @@ TypeScript thuần: định nghĩa chỉ số, vòng đời khách hàng, KYC, k
 ## Ranh giới
 
 - **Không import package nào khác** (kể cả `node:*`, trình duyệt) — `dependency-cruiser` rule `domain-is-pure` (`pnpm lint:deps`). Test (`*.test.ts`) được import `vitest`.
-- Mọi package khác dùng domain qua `@p2c/domain` (`src/index.ts`); thêm export mới thì thêm vào `index.ts`. Ngoại lệ: hàm chỉ dùng chung giữa các file trong `src/` (vd. `scopeMatcher` của `stats.ts`, dùng ở `appointment-counts.ts`) được `export` nhưng không vào `index.ts`.
+- Mọi package khác dùng domain qua `@p2c/domain` (`src/index.ts`); thêm export mới thì thêm vào `index.ts`. Ngoại lệ: hàm chỉ dùng chung giữa các file trong `src/` (vd. `markIndexer` của `stats.ts`, dùng ở `appointment-counts.ts`) được `export` nhưng không vào `index.ts`.
+- Lọc nhiều bản ghi theo góc nhìn: dựng `scopeMatcher(people, scope)` một lần rồi gọi cho từng bản ghi (`inScope` chỉ cho một bản ghi). Chỉ số / số lịch của nhiều góc nhìn cùng kỳ: `periodMetricsByScope`, `appointmentCountsByScope` (gom theo RE một lượt).
 - Coverage ≥ 95% (`pnpm test:coverage` trong `pnpm verify`).
 
 ## File hay tìm
@@ -27,7 +28,7 @@ TypeScript thuần: định nghĩa chỉ số, vòng đời khách hàng, KYC, k
 Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `pnpm verify` báo đỏ khi lệch code.
 
 <!-- codemap:start -->
-- `src/appointment-counts.ts` — type AppointmentGroup, appointmentGroup, type AppointmentCounts, appointmentCounts, appointmentCountsByMark
+- `src/appointment-counts.ts` — type AppointmentGroup, appointmentGroup, type AppointmentCounts, appointmentCounts, appointmentCountsByScope, appointmentCountsByMark
 - `src/compare.ts` — type ComparisonWindows, comparisonWindows, type MetricDeltas, metricDeltas
 - `src/customer-lifecycle.ts` — assertValidTransition, isRfTransition, stageOn, sortedByDate, stageAtEndOf, policyBadge
 - `src/golden/appointments.fixture.ts` — APPOINTMENT_TODAY, type GoldenAppointmentRow, APPOINTMENT_ROWS, type AppointmentGoldenCase, APPOINTMENT_GOLDEN_CASES
@@ -44,6 +45,6 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/number.ts` — groupThousands, formatCount, formatPercent, formatFileSize
 - `src/period.ts` — type CalendarDate, PERIOD_KINDS, type PeriodKind, type Period, MIN_YEAR, MAX_YEAR, calendarDate, addDays, fromLocalDate, formatDate, formatLocalDateTime, formatIsoDate, localFileStamp, formatDayMonth, formatDayOfMonth, type Weekday, weekdayOf, daysBetween, compareDates, isInPeriod, parseDate, type QuickDateError, type QuickDateResult, NEXT_YEAR_SUGGESTION_DAYS, parseQuickDate, periodOf, customPeriod, customRangeMaxEnd, customRangeAllowed, monthToDate, shift, canShift, switchKind, todayPeriod, formatPeriodValue, chartMarks, reportMarks
 - `src/pipeline-stage.ts` — PIPELINE_STAGES, type PipelineStage, isPipelineStage, compareStages
-- `src/stage-snapshot.ts` — snapshotDate, type StageCounts, stageSnapshot, stageSnapshotter, stageSnapshotSeries
-- `src/stats.ts` — type PolicyMetrics, scopeMatcher, markIndexer, inScope, policyMetrics, isRfAppointment, rfCount, type CloseRate, closeRate, type PeriodMetrics, type MetricsData, periodMetrics, periodMetricsByMark
+- `src/stage-snapshot.ts` — snapshotDate, type StageCounts, stageSnapshot, stageSnapshotter, stageSnapshotByScope, stageSnapshotSeries
+- `src/stats.ts` — type PolicyMetrics, scopeMatcher, markIndexer, inScope, policyMetrics, isRfAppointment, rfCount, type CloseRate, closeRate, type PeriodMetrics, type MetricsData, periodMetrics, periodMetricsByMark, periodMetricsByScope
 <!-- codemap:end -->

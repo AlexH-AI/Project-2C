@@ -1,6 +1,6 @@
 import {
-  appointmentCounts,
   appointmentCountsByMark,
+  appointmentCountsByScope,
   closeRate,
   compareDates,
   formatCount,
@@ -9,10 +9,11 @@ import {
   formatDayOfMonth,
   formatVndCompact,
   isInPeriod,
-  periodMetrics,
   periodMetricsByMark,
+  periodMetricsByScope,
   reportMarks,
   snapshotDate,
+  stageSnapshotByScope,
   stageSnapshotSeries,
   weekdayOf,
   type AppointmentCounts,
@@ -226,10 +227,14 @@ export function reportRows(
   const counted = countedWindow(period, today);
   const series = stageSnapshotSeries(data.customers, data.transitions, data.people);
   const date = snapshotDate(period, today);
+  // Each record is grouped by RE once; every row then adds up the RE of its scope (DR-20).
+  const counts = appointmentCountsByScope(data.appointments, period, data.people, today);
+  const metrics = counted && periodMetricsByScope(data, counted);
+  const stages = date && stageSnapshotByScope(data.customers, data.transitions, data.people, date);
   const figures = (of: Scope): ReportFigures => ({
-    appointments: appointmentCounts(data.appointments, period, of, data.people, today),
-    metrics: counted && periodMetrics(data, counted, of),
-    stages: date && series([date], of)[0]!,
+    appointments: counts(of),
+    metrics: metrics && metrics(of),
+    stages: stages && stages(of),
   });
   const totalRow = (rows: readonly ReportRow[]): ReportRow => ({
     key: 'total',

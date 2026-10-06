@@ -13,6 +13,7 @@ import type { CalendarDate } from './period';
 import {
   snapshotDate,
   stageSnapshot,
+  stageSnapshotByScope,
   stageSnapshotSeries,
   stageSnapshotter,
 } from './stage-snapshot';
@@ -224,5 +225,60 @@ describe('stageSnapshotSeries', () => {
     expect(() => series([calendarDate(2027, 1, 13), calendarDate(2027, 1, 12)], ALL)).toThrow(
       RangeError,
     );
+  });
+});
+
+// DR-20: Báo cáo takes the snapshot of every team and RE on one day; grouped once by RE.
+describe('stageSnapshotByScope', () => {
+  // A customer of an RE outside any team and one of someone not listed.
+  const people = [...PEOPLE, { id: 're-solo', name: 'Solo', role: 'RE', teamId: null } as const];
+  const customers = [
+    ...LIVE_CUSTOMERS,
+    { id: 'K-solo', name: 'K-solo', reId: 're-solo', stage: 'N2' } as const,
+    { id: 'K-x', name: 'K-x', reId: 'x', stage: 'N3' } as const,
+  ];
+  const transitions = [
+    ...TRANSITIONS,
+    {
+      id: 't-solo',
+      customerId: 'K-solo',
+      from: null,
+      to: 'N2',
+      date: calendarDate(2026, 12, 3),
+      appointmentId: null,
+    } as const,
+    {
+      id: 't-x',
+      customerId: 'K-x',
+      from: null,
+      to: 'N3',
+      date: calendarDate(2026, 12, 3),
+      appointmentId: null,
+    } as const,
+  ];
+  const SCOPES: readonly Scope[] = [
+    ALL,
+    { kind: 'team', teamId: 'team-a' },
+    { kind: 'team', teamId: 'team-b' },
+    { kind: 'team', teamId: 'team-none' },
+    ...[...people.map(({ id }) => id), 'x', 'nobody'].map((reId): Scope => ({ kind: 're', reId })),
+  ];
+  const DATES = [calendarDate(2026, 11, 30), calendarDate(2026, 12, 31), TODAY];
+
+  for (const date of DATES) {
+    it.each(SCOPES)(`equals stageSnapshot on ${formatDate(date)}, %o`, (scope) => {
+      expect(stageSnapshotByScope(customers, transitions, people, date)(scope)).toEqual(
+        stageSnapshot(customers, transitions, date, scope, people),
+      );
+    });
+  }
+
+  it('golden S01–S09', () => {
+    for (const golden of SNAPSHOT_GOLDEN_CASES) {
+      expect(
+        stageSnapshotByScope(LIVE_CUSTOMERS, TRANSITIONS, PEOPLE, golden.date)(golden.scope),
+        golden.id,
+      ).toEqual(golden.expected);
+    }
   });
 });

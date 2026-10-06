@@ -88,6 +88,38 @@ export function stageSnapshotter(
   };
 }
 
+/**
+ * `stageSnapshot` of one day for any scope, after one pass over the customers (Báo cáo takes every
+ * team and RE, DR-20): each customer is counted for its RE, then a scope adds up the RE it holds.
+ * Equal, scope by scope, to calling `stageSnapshot`.
+ */
+export function stageSnapshotByScope(
+  customers: readonly Customer[],
+  transitions: readonly StageTransition[],
+  people: readonly Person[],
+  date: CalendarDate,
+): (scope: Scope) => StageCounts {
+  const byRe = new Map<string, Record<CustomerStage, number>>();
+  for (const { reId, sorted } of customerHistories(customers, transitions)) {
+    const stage = stageAtEndOf(sorted, date);
+    if (stage === null) continue;
+    const counts = byRe.get(reId) ?? noCustomers();
+    byRe.set(reId, counts);
+    counts[stage] += 1;
+  }
+  return (scope) => {
+    const matches = scopeMatcher(people, scope);
+    const total = noCustomers();
+    for (const [reId, counts] of byRe) {
+      if (!matches(reId)) continue;
+      for (const stage of STAGES) total[stage] += counts[stage];
+    }
+    return total;
+  };
+}
+
+const STAGES = ['N4', 'N3', 'N2', 'N1', 'ON_HOLD', 'LOST'] as const satisfies CustomerStage[];
+
 /** The index of the first of `dates` (earliest first) on or after `date`; their length if none. */
 function firstOnOrAfter(dates: readonly CalendarDate[], date: CalendarDate): number {
   let low = 0;

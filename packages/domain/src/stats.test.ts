@@ -10,7 +10,13 @@ import type { Person, Policy, Scope } from './model';
 import { calendarDate, chartMarks, customPeriod, periodOf, reportMarks } from './period';
 import type { Period } from './period';
 import { formatVndCompact, MAX_FEE_VND } from './money';
-import { inScope, periodMetrics, periodMetricsByMark, policyMetrics } from './stats';
+import {
+  inScope,
+  periodMetrics,
+  periodMetricsByMark,
+  periodMetricsByScope,
+  policyMetrics,
+} from './stats';
 
 const d = (day: number, month: number, year: number) => calendarDate(year, month, day);
 
@@ -220,6 +226,86 @@ describe('periodMetricsByMark', () => {
     expect(() => periodMetricsByMark(data, [jan, backwards], { kind: 'all' })).toThrow(
       /out of order or overlaps/,
     );
+  });
+});
+
+// DR-20: So sánh team and Báo cáo read every team and RE of one period; grouped once by RE.
+describe('periodMetricsByScope', () => {
+  const extra = (id: string, reId: string): Policy => ({
+    ...POLICIES[0]!,
+    id,
+    reId,
+  });
+  const people: readonly Person[] = [
+    ...PEOPLE,
+    { id: 're-solo', name: 'Solo', role: 'RE', teamId: null },
+  ];
+  // Records of a TL (once an RE), of an RE outside any team and of someone not listed.
+  const data = {
+    people,
+    policies: [
+      ...POLICIES,
+      extra('p-tl', 'tl-ha'),
+      extra('p-solo', 're-solo'),
+      extra('p-x', 'x'),
+      // Issued without its own FYP: the FYP submitted counts as revenue.
+      { ...extra('p-fyp', 're-an'), issuedDate: d(12, 1, 2027), issuedFyp: null },
+    ],
+    appointments: APPOINTMENTS,
+    transitions: STAGE_TRANSITIONS,
+  };
+  const SCOPES: readonly Scope[] = [
+    { kind: 'all' },
+    { kind: 'team', teamId: 'team-a' },
+    { kind: 'team', teamId: 'team-b' },
+    { kind: 'team', teamId: 'team-none' },
+    ...[...people.map(({ id }) => id), 'x', 'nobody'].map((reId): Scope => ({ kind: 're', reId })),
+  ];
+  const PERIODS: readonly Period[] = [
+    periodOf('month', d(1, 1, 2027)),
+    periodOf('year', d(1, 1, 2027)),
+    customPeriod(d(20, 12, 2026), d(10, 2, 2027)),
+    periodOf('day', d(1, 6, 2030)),
+  ];
+
+  for (const period of PERIODS) {
+    it.each(SCOPES)(`equals periodMetrics: ${period.kind} ${period.start.year}, %o`, (scope) => {
+      expect(periodMetricsByScope(data, period)(scope)).toEqual(periodMetrics(data, period, scope));
+    });
+  }
+
+  it('golden examples (T-028)', () => {
+    for (const { period, scope, expected } of GOLDEN_CASES) {
+      const metrics = periodMetricsByScope(
+        {
+          people: PEOPLE,
+          policies: POLICIES,
+          appointments: APPOINTMENTS,
+          transitions: STAGE_TRANSITIONS,
+        },
+        period,
+      )(scope);
+      expect(metrics).toMatchObject({
+        submittedCount: expected.submittedCount,
+        caseSize: expected.caseSize,
+        issuedCount: expected.issuedCount,
+        revenue: expected.revenue,
+      });
+    }
+  });
+
+  it('refuses a total past the largest safe integer rather than round it', () => {
+    const big = (id: string, reId: string): Policy => ({
+      ...extra(id, reId),
+      submittedDate: d(5, 1, 2027),
+      submittedFyp: Number.MAX_SAFE_INTEGER - 1,
+      issuedDate: null,
+    });
+    const past = { ...data, policies: [big('p1', 're-an'), big('p2', 're-binh')] };
+    const byScope = periodMetricsByScope(past, periodOf('month', d(1, 1, 2027)));
+    expect(byScope({ kind: 're', reId: 're-an' }).caseSize).toBe(Number.MAX_SAFE_INTEGER - 1);
+    expect(() => byScope({ kind: 'team', teamId: 'team-a' })).toThrow(RangeError);
+    expect(() => byScope({ kind: 'all' })).toThrow(RangeError);
   });
 });
 

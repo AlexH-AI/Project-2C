@@ -7,7 +7,7 @@ import {
   type StageTransition,
   type Team,
 } from '@p2c/domain';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   APPOINTMENT_GROUPS,
   appointmentRows,
@@ -118,6 +118,19 @@ describe('appointmentRows', () => {
     expect(ids(appointmentRows(all, { kind: 'all' }, 'any'))).toEqual(['a', 'b', 'c']);
     expect(ids(appointmentRows(all, { kind: 'team', teamId: 't1' }, 'any'))).toEqual(['a', 'b']);
     expect(ids(appointmentRows(all, { kind: 're', reId: 're3' }, 'any'))).toEqual(['c']);
+  });
+
+  // DR-17: the team's members are listed once per pass, not once per appointment.
+  it('reads the team of the scope once for the whole list', () => {
+    const watched = [...people];
+    const filter = vi.spyOn(watched, 'filter');
+    const rows = appointmentRows(
+      { ...all, people: watched },
+      { kind: 'team', teamId: 't1' },
+      'any',
+    );
+    expect(ids(rows)).toEqual(['a', 'b']);
+    expect(filter).toHaveBeenCalledTimes(1);
   });
 
   it('filters by coordinator: a given person, or none at all', () => {
@@ -277,6 +290,31 @@ describe('monthGrid', () => {
     const firstDay = { year: 1900, month: 1, day: 1 };
     const january = monthGrid(firstDay, [], periodOf('month', firstDay), TODAY);
     expect(january[0]?.[0]).toMatchObject({ date: firstDay, inMonth: true });
+  });
+
+  it('counts only the days shown: none from the weeks around, another month or year', () => {
+    // September 2026 shows 31/08 – 04/10.
+    const rows = appointmentRows(
+      data([
+        appointment('a', 're1', day(8, 30)),
+        appointment('b', 're1', day(8, 31)),
+        appointment('c', 're1', day(10, 4)),
+        appointment('d', 're1', day(10, 5)),
+        appointment('e', 're1', { year: 2025, month: 9, day: 16 }),
+        appointment('f', 're1', day(10, 16)),
+        appointment('g', 're1', day(9, 16), { status: 'MET' }),
+      ]),
+      { kind: 'all' },
+      'any',
+    );
+    const cells = monthGrid(day(9, 15), rows, periodOf('month', day(9, 15)), TODAY).flat();
+    const shown = cells.filter((c) => c && groupTotal(c) > 0);
+    expect(shown.map((c) => [c?.date.month, c?.date.day, c && groupTotal(c)])).toEqual([
+      [8, 31, 1],
+      [9, 16, 1],
+      [10, 4, 1],
+    ]);
+    expect(shown[1]).toMatchObject({ met: 1, planned: 0 });
   });
 
   it('crosses the new year on both sides', () => {

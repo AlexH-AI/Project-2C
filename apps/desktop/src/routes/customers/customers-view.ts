@@ -6,8 +6,8 @@ import {
   compareDates,
   formatDate,
   formatIsoDate,
-  inScope,
   parseQuickDate,
+  scopeMatcher,
   type CalendarDate,
   type ClosedStage,
   type CustomerStage,
@@ -58,11 +58,14 @@ export function customerBoard(data: CustomerData, scope: Scope): CustomerBoard {
     policies.set(policy.customerId, (policies.get(policy.customerId) ?? 0) + 1);
   }
 
+  const matches = scopeMatcher(data.people, scope);
+  const people = new Map(data.people.map((person) => [person.id, person]));
+
   const cards = data.customers
-    .filter((customer) => inScope(data.people, customer.reId, scope))
+    .filter((customer) => matches(customer.reId))
     .map((customer) => ({
       customer,
-      re: data.people.find((person) => person.id === customer.reId),
+      re: people.get(customer.reId),
       // Every customer has a first transition, written with it (spec §3.4).
       since: since.get(customer.id)!,
       policies: policies.get(customer.id) ?? 0,

@@ -10,6 +10,7 @@ import {
   isRfTransition,
   periodOf,
   REVIEWER_ROLES,
+  scopeMatcher,
   shift,
   type AppointmentGroup,
   type AppointmentStatus,
@@ -210,9 +211,10 @@ export function appointmentRows(
   const customers = new Map(data.customers.map((c) => [c.id, c]));
   const teams = new Map(data.teams.map((team) => [team.id, team]));
   const outcome = outcomeResolver(data);
+  const matches = scopeMatcher(data.people, scope);
 
   return data.appointments
-    .filter((a) => inScope(data.people, a.reId, scope) && matchesCoordinator(a, coordinator))
+    .filter((a) => matches(a.reId) && matchesCoordinator(a, coordinator))
     .map((a) => {
       const re = people.get(a.reId);
       return {
@@ -324,6 +326,16 @@ export function monthGrid(
 ): (DayCell | null)[][] {
   const banded = period.kind === 'week' || period.kind === 'custom';
   const month = periodOf('month', date);
+  const first = periodOf('week', month.start).start;
+  // The groups of each day shown, in one pass over the rows (DR-63): at most six weeks.
+  const byDay = new Map<number, Record<AppointmentGroup, number>>();
+  for (const { appointment: a } of rows) {
+    const index = daysBetween(first, a.date);
+    if (index < 0 || index >= 42) continue;
+    const counts = byDay.get(index) ?? noAppointments();
+    byDay.set(index, counts);
+    counts[appointmentGroup(a, today)] += 1;
+  }
   const weeks: (DayCell | null)[][] = [];
   for (let span = periodOf('week', month.start); ; span = shift(span, 1)) {
     const week: (DayCell | null)[] = [];
@@ -334,18 +346,12 @@ export function monthGrid(
         continue;
       }
       const day = addDays(span.start, i);
-      const cell = {
+      week.push({
         date: day,
         inMonth: day.month === date.month,
         inPeriod: banded && isInPeriod(day, period),
-        ...noAppointments(),
-      };
-      for (const row of rows) {
-        if (compareDates(row.appointment.date, day) === 0) {
-          cell[appointmentGroup(row.appointment, today)] += 1;
-        }
-      }
-      week.push(cell);
+        ...(byDay.get(daysBetween(first, day)) ?? noAppointments()),
+      });
     }
     weeks.push(week);
     if (compareDates(span.end, month.end) >= 0) return weeks;
