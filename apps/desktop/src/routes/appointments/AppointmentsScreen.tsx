@@ -25,7 +25,7 @@ import {
 } from '@p2c/domain';
 import { Button, DataTable, PeriodPicker, SelectField, type DataTableColumn } from '@p2c/ui';
 import { useQuery, useToday } from '../../data/AppDataContext';
-import { joinParts, t } from '../../i18n';
+import { joinParts, t, tableMore } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { RePicker } from '../../shell/RePicker';
 import { teamRes } from '../../shell/scope';
@@ -306,6 +306,8 @@ export function AppointmentsScreen() {
           rows={inPeriod}
           getRowId={(r) => r.appointment.id}
           initialSort={{ id: 'date', desc: true }}
+          moreLabels={tableMore('appointments')}
+          resetKey={JSON.stringify([period, scope, coordinator])}
         />
       </section>
       {creating && (

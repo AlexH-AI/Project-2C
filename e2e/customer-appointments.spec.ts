@@ -5,6 +5,12 @@ import { expect, test, type Page } from '@playwright/test';
 /** Opens the profile of the customer of a past met appointment; returns its name. */
 async function openProfile(page: Page): Promise<string> {
   await page.goto('/#/appointments');
+  // Yesterday's day alone, so the met ones are among the rows shown (T-150).
+  await page
+    .getByRole('radiogroup', { name: 'Loại kỳ' })
+    .getByRole('radio', { name: 'Ngày' })
+    .click();
+  await page.getByRole('button', { name: 'Kỳ trước' }).click();
   const list = page.getByRole('table', { name: 'Danh sách lịch hẹn' });
   const met = list.locator('tbody tr').filter({ hasText: 'Đã gặp' }).first();
   const name = (await met.getByRole('button').textContent()) ?? '';
