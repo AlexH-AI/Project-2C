@@ -12,7 +12,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { checkBody, checkWrite, pickHandoffIssue } from './session-core.mjs';
+import { baseAfterWrite, checkBody, checkWrite, pickHandoffIssue } from './session-core.mjs';
 import { run } from './session-io.mjs';
 
 function cachePath(root) {
@@ -109,8 +109,14 @@ export function writeHandoff(root, file) {
   let refreshWarning = null;
   try {
     const updated = fetchIssue(root);
-    saveBase(file, updated.number, updated.updatedAt);
+    const base = baseAfterWrite({ number: current.number, body }, updated);
+    if (base) saveBase(file, base.number, base.updatedAt);
     saveCache(root, updated);
+    if (!base) {
+      refreshWarning =
+        `Written, but HANDOFF #${updated.number} changed again right after (the other machine?). ` +
+        'Run read --out and check it before the next write.';
+    }
   } catch (error) {
     refreshWarning =
       `Written, but the local copy was not refreshed (${error.message}). ` +

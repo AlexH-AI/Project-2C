@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   HOOK_LIMIT,
+  baseAfterWrite,
   checkBody,
   checkWrite,
   checksSummary,
@@ -41,6 +42,12 @@ describe('checkBody', () => {
     expect(result.warning).toMatch(/8001/);
   });
 
+  it('accepts exactly 9,000 characters, with a warning', () => {
+    const result = checkBody('a'.repeat(9000));
+    expect(result.error).toBeNull();
+    expect(result.warning).toMatch(/9000/);
+  });
+
   it('refuses above 9,000 characters', () => {
     expect(checkBody('a'.repeat(9001)).error).toMatch(/9001/);
   });
@@ -68,6 +75,35 @@ describe('checkWrite', () => {
 
   it('refuses when the file was saved from another issue', () => {
     expect(checkWrite(base, issue(9))).toMatch(/#7.*#9/);
+  });
+});
+
+describe('baseAfterWrite', () => {
+  const written = { number: 7, body: 'mine\n' };
+  const fetched = (over = {}) => ({
+    ...issue(7, '2026-10-03T02:00:00Z'),
+    body: 'mine\n',
+    ...over,
+  });
+
+  it('is the version fetched after the edit when it holds the body just sent', () => {
+    expect(baseAfterWrite(written, fetched())).toEqual({
+      number: 7,
+      updatedAt: '2026-10-03T02:00:00Z',
+    });
+  });
+
+  it('ignores line endings and trailing blank space', () => {
+    const sent = { number: 7, body: 'a\r\nb\r\n' };
+    expect(baseAfterWrite(sent, fetched({ body: 'a\nb' }))).not.toBeNull();
+  });
+
+  it('is null when the other machine wrote between the edit and the fetch', () => {
+    expect(baseAfterWrite(written, fetched({ body: 'theirs\n' }))).toBeNull();
+  });
+
+  it('is null when the handoff issue is another one', () => {
+    expect(baseAfterWrite(written, fetched({ number: 8 }))).toBeNull();
   });
 });
 
@@ -149,6 +185,12 @@ describe('checksSummary', () => {
         { state: 'ERROR' },
       ]),
     ).toBe('CI 1 pass, 3 fail, 0 pending');
+  });
+
+  it('counts a required check that has not reported yet (EXPECTED) as pending', () => {
+    expect(
+      checksSummary([{ status: 'COMPLETED', conclusion: 'SUCCESS' }, { state: 'EXPECTED' }]),
+    ).toBe('CI 1 pass, 0 fail, 1 pending');
   });
 
   it('says when there are no checks', () => {

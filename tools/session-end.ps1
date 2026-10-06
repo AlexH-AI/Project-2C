@@ -8,7 +8,8 @@
     Only the files named in -Paths are committed: another session may be using the same checkout
     (CLAUDE.md, "Môi trường Windows và 2 máy"), so there is no `git add -A`. With uncommitted
     changes and no -Paths, it lists them and stops without committing.
-    On main, a wip/<machine>-<timestamp> branch is created first.
+    On main, a wip/<machine>-<yyyyMMdd-HHmmss> branch is created first, and only when there is
+    something to commit (otherwise nothing is created or pushed).
 
 .PARAMETER Message
     Short description of the work in progress.
@@ -47,14 +48,20 @@ if ($dirty -and $Paths.Count -eq 0) {
 
 $branch = git branch --show-current
 if (-not $branch) { throw 'Detached HEAD - switch to a branch before handing off.' }
+
+$mine = if ($Paths.Count -gt 0) { git status --porcelain -- @Paths } else { $null }
+if ($LASTEXITCODE -ne 0) { throw "git status failed (exit $LASTEXITCODE)." }
 if ($branch -eq 'main') {
-    $stamp = Get-Date -Format 'yyyyMMdd-HHmm'
+    # main is pushed only through PRs: with nothing to commit there is nothing to hand off.
+    if (-not $mine) {
+        Write-Host "Nothing to commit$(if ($Paths.Count -gt 0) { " in -Paths ($($Paths -join ', '))" }); main left as is." -ForegroundColor Yellow
+        return
+    }
+    $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
     $branch = "wip/$($env:COMPUTERNAME.ToLower())-$stamp"
     Invoke-Git switch -c $branch
 }
 
-$mine = if ($Paths.Count -gt 0) { git status --porcelain -- @Paths } else { $null }
-if ($LASTEXITCODE -ne 0) { throw "git status failed (exit $LASTEXITCODE)." }
 if ($mine) {
     Invoke-Git add -- @Paths
     # The pathspec keeps out anything another session staged.

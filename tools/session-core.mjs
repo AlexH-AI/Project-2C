@@ -54,6 +54,19 @@ export function checkWrite(base, current) {
   return null;
 }
 
+const sameBody = (a, b) =>
+  a.replace(/\r\n/g, '\n').trimEnd() === b.replace(/\r\n/g, '\n').trimEnd();
+
+/**
+ * The base to save after a write: the version fetched right after the edit, but only when it
+ * still holds the body just sent. Otherwise the other machine wrote in between, and taking its
+ * version as base would let the next write overwrite a handoff never read (DR-28): null.
+ */
+export function baseAfterWrite(written, fetched) {
+  if (fetched.number !== written.number || !sameBody(written.body, fetched.body)) return null;
+  return { number: fetched.number, updatedAt: fetched.updatedAt };
+}
+
 /** Header + body, cut so the whole output stays below HOOK_LIMIT. */
 export function fitOutput(header, body, limit = HOOK_LIMIT) {
   const room = limit - header.length;

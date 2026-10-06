@@ -57,6 +57,17 @@ jobs:
       - run: pnpm verify
       - name: E2E (web build, Microsoft Edge)
         run: pnpm e2e
+      # Retries turn a flaky test green (retries: 1 on CI): count them where a PR shows them (DR-78).
+      - name: E2E summary
+        id: e2e-summary
+        if: ${{ !cancelled() }}
+        run: |
+          $file = 'test-results/e2e.json'
+          if (-not (Test-Path $file)) { "No e2e results (e2e did not run)." >> $env:GITHUB_STEP_SUMMARY; exit 0 }
+          $s = (Get-Content $file -Raw | ConvertFrom-Json).stats
+          "### E2E`n`n$($s.expected) passed, $($s.flaky) flaky, $($s.unexpected) failed, $($s.skipped) skipped" >> $env:GITHUB_STEP_SUMMARY
+          "flaky=$($s.flaky)" >> $env:GITHUB_OUTPUT
+          if ($s.flaky -gt 0) { "::warning title=E2E flaky::$($s.flaky) test(s) passed only on retry: see the e2e-report artifact." }
       # Current labels, not the event payload: `gh pr create --label build-exe` opens
       # the PR before adding the label, so the `opened` payload has none (T-063, #119).
       # No `labeled` trigger: a run per label would add skipped checks that hide this
@@ -73,7 +84,8 @@ jobs:
           "build-exe=$buildExe" >> $env:GITHUB_OUTPUT
           "PR labels: $($labels -join ', ') -> build-exe=$buildExe"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: failure()
+        # Flaky runs keep the failed attempt's trace (retain-on-failure): upload it as well.
+        if: failure() || steps.e2e-summary.outputs.flaky > 0
         with:
           name: e2e-report-${{ github.sha }}
           path: |
