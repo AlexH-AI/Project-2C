@@ -564,3 +564,64 @@ describe('a note with its facts, recorded at once (mockup 7a)', () => {
     expect(listKycVersions(database, customer.id)).toEqual([]);
   });
 });
+
+// DR-42: a note, a fact and a version record what was already said, so none is dated after today
+// (the test clock's 26/09/2026) — in the command, not only in the dialog.
+describe('KYC dates are today at the latest', () => {
+  it('refuses a note, a fact, a conflict or a resolution dated after today, writing nothing', async () => {
+    const { db: database, customer, note, persist } = await withCustomer();
+    const tomorrow = d(27, 9, 2026);
+    const input = { field: 'riskProfile', noteId: note.id, value: 'A' } as const;
+    const first = confirmKycFact(database, customer.id, { ...input, date: d(26, 9, 2026) });
+    markKycConflict(database, customer.id, { ...input, value: 'B', date: d(26, 9, 2026) });
+    const before = database.export();
+    persist.mockClear();
+
+    expect(codeOf(() => addKycNote(database, customer.id, { text: 'x', date: tomorrow }))).toBe(
+      'DATE_IN_FUTURE',
+    );
+    const facts = [{ field: 'occupation', value: 'Bác sĩ' }] as const;
+    expect(
+      codeOf(() => recordKycNote(database, customer.id, { text: 'x', date: tomorrow, facts })),
+    ).toBe('DATE_IN_FUTURE');
+    expect(
+      codeOf(() =>
+        confirmKycFact(database, customer.id, { ...input, field: 'occupation', date: tomorrow }),
+      ),
+    ).toBe('DATE_IN_FUTURE');
+    expect(
+      codeOf(() =>
+        markKycConflict(database, customer.id, { ...input, value: 'C', date: tomorrow }),
+      ),
+    ).toBe('DATE_IN_FUTURE');
+    expect(
+      codeOf(() =>
+        resolveKycConflict(database, customer.id, { factId: first.fact.id, date: tomorrow }),
+      ),
+    ).toBe('DATE_IN_FUTURE');
+    expect(database.export()).toEqual(before);
+    expect(persist).not.toHaveBeenCalled();
+  });
+});
+
+// DR-49: what the RE types is stored composed (NFC), as the names are.
+describe('KYC text is stored composed', () => {
+  it('composes the note and a text value typed decomposed (NFD), and refuses a NUL', async () => {
+    const { db: database, customer } = await withCustomer();
+    const { note } = recordKycNote(database, customer.id, {
+      text: ' Làm ở Hà Nội '.normalize('NFD'),
+      date: d(3, 9, 2026),
+      facts: [{ field: 'occupation', value: 'Kỹ sư'.normalize('NFD') }],
+    });
+
+    expect(note.text).toBe('Làm ở Hà Nội');
+    expect(current(getKycProfile(database, customer.id).facts)).toContainEqual([
+      'occupation',
+      'Kỹ sư',
+      'active',
+    ]);
+    expect(
+      codeOf(() => addKycNote(database, customer.id, { text: 'A\u0000B', date: d(3, 9, 2026) })),
+    ).toBe('INVALID_TEXT');
+  });
+});

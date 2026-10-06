@@ -168,8 +168,8 @@ export function CustomerFormDialog({
       : undefined;
 
   const save = () => {
-    // Typed Vietnamese may arrive decomposed; stored names are NFC (review R4).
-    const clean = name.normalize('NFC').trim();
+    // The command stores the name composed (NFC) and trimmed (DR-49).
+    const clean = name.trim();
     const found: Errors = {};
     if (!clean) found.name = t('error.NAME_REQUIRED');
     if (!reId) found.re = t('error.RE_REQUIRED');

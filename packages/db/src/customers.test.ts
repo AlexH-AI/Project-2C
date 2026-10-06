@@ -254,6 +254,29 @@ describe('customers', () => {
     expect(stageOn(listStageTransitions(db), customer.id, d(26, 9))).toBe('N2');
   });
 
+  // DR-42: a birth date has already happened too; a year alone is after today only from next year.
+  it('refuses a birth date or birth year after today, and takes today and this year', async () => {
+    const { db, re, persist } = await setup();
+    const input = { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 9) } as const;
+
+    for (const birthDate of [d(27, 9), { year: 2027 }]) {
+      expect(codeOf(() => createCustomer(db, { ...input, birthDate }))).toBe('DATE_IN_FUTURE');
+    }
+    expect(listCustomers(db)).toEqual([]);
+    expect(persist).not.toHaveBeenCalled();
+
+    const customer = createCustomer(db, { ...input, birthDate: { year: 2026 } });
+    expect(codeOf(() => updateCustomerProfile(db, customer.id, { birthDate: d(27, 9) }))).toBe(
+      'DATE_IN_FUTURE',
+    );
+    expect(codeOf(() => previewCustomerProfile(db, customer.id, { birthDate: d(27, 9) }))).toBe(
+      'DATE_IN_FUTURE',
+    );
+    expect(updateCustomerProfile(db, customer.id, { birthDate: d(26, 9) }).birthDate).toEqual(
+      d(26, 9),
+    );
+  });
+
   it('allows a stage change on the day of the latest transition, in recording order', async () => {
     const { db, re } = await setup();
     const customer = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(10, 1) });

@@ -13,10 +13,19 @@ import type { Database } from './database';
 import { DbError } from './errors';
 import { customers, people } from './schema';
 
+/**
+ * Typed text as stored: composed (NFC), since typed Vietnamese may arrive decomposed and a name is
+ * compared byte by byte, and trimmed. A NUL would cut the text where the database stores it (DR-49).
+ */
+export function cleanText(text: string): string {
+  if (text.includes('\0')) throw new DbError('INVALID_TEXT');
+  return text.normalize('NFC').trim();
+}
+
 export function requireName(name: string): string {
-  const trimmed = name.trim();
-  if (trimmed === '') throw new DbError('NAME_REQUIRED');
-  return trimmed;
+  const clean = cleanText(name);
+  if (clean === '') throw new DbError('NAME_REQUIRED');
+  return clean;
 }
 
 /** Trimmed text, or null when empty. */
@@ -59,6 +68,16 @@ export function toPastIsoDate(db: Database, date: CalendarDate): string {
   const iso = toIsoDate(date);
   if (compareDates(date, today(db)) > 0) throw new DbError('DATE_IN_FUTURE');
   return iso;
+}
+
+/**
+ * The `seq` after `last` (spec §2), refused past the safe integers: one past them could not be told
+ * from the next, and the import refuses it (DR-34).
+ */
+export function nextSeq(last: number | null | undefined): number {
+  const next = (last ?? 0) + 1;
+  if (!Number.isSafeInteger(next)) throw new DbError('SEQ_LIMIT');
+  return next;
 }
 
 /** Whether a value is a fee (FYP, case size): whole đồng, above 0, at most `MAX_FEE_VND` (DR-23). */

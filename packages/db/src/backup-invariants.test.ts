@@ -6,6 +6,7 @@
 import { calendarDate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
+  getAppointment,
   recordMeetingOutcome,
   rescheduleAppointment,
   restoreAppointment,
@@ -22,11 +23,17 @@ import {
 } from './customers';
 import { openDatabase } from './database';
 import { DbError } from './errors';
-import { getKycProfile, markKycConflict, recordKycNote, resolveKycConflict } from './kyc';
-import { submitPolicy } from './policies';
+import {
+  addKycNote,
+  getKycProfile,
+  markKycConflict,
+  recordKycNote,
+  resolveKycConflict,
+} from './kyc';
+import { restorePolicy, softDeletePolicy, submitPolicy } from './policies';
 import { seedDemoData } from './seed';
 import { createPerson, restorePerson, softDeletePerson, updatePerson } from './team';
-import { setup } from './test-support';
+import { codeOf, setup } from './test-support';
 
 type Row = Record<string, unknown>;
 interface BackupJson {
@@ -439,6 +446,27 @@ describe('importBackup — rules across tables', () => {
         Object.assign(booked, { status: 'NO_SHOW', date: TOMORROW });
       },
     ],
+    // DR-42: KYC and the birth date record what already happened, as the commands now check.
+    [
+      '10: a KYC note dated after today',
+      (b, ids) => (row(b, 'kyc_notes', (n) => n.customer_id === ids.hoa).created_date = TOMORROW),
+    ],
+    [
+      '10: a KYC fact confirmed after today',
+      (b, ids) => (fact(b, ids.lan, 'gender').confirmed_date = TOMORROW),
+    ],
+    [
+      '10: a KYC version dated after today',
+      (b, ids) => (row(b, 'kyc_versions', (v) => v.customer_id === ids.lan).date = TOMORROW),
+    ],
+    [
+      '10: a birth date after today',
+      (b, ids) => (row(b, 'customers', (c) => c.id === ids.kien).birth_date = TOMORROW),
+    ],
+    [
+      '10: a birth year after this year',
+      (b, ids) => (row(b, 'customers', (c) => c.id === ids.kien).birth_date = '2027'),
+    ],
     [
       '2: a stage other than the latest live transition’s',
       (b, ids) => (row(b, 'customers', (c) => c.id === ids.lan).stage = 'N1'),
@@ -463,6 +491,97 @@ describe('importBackup — rules across tables', () => {
     );
     expect(db.export()).toEqual(before);
     expect(persist).not.toHaveBeenCalled();
+  });
+});
+
+/** `history()` exported, changed by `edit`, and imported with the same clock. */
+async function imported(edit: (backup: BackupJson, ids: Ids) => void = () => {}) {
+  const { db, ids } = await history();
+  const policy = b(db).tables.policies![0]!.id as string;
+  softDeletePolicy(db, policy);
+  const backup = b(db);
+  edit(backup, ids);
+  const { db: copy } = await importBackup(JSON.stringify(backup), { now: db.now });
+  return { db: copy, ids, policy };
+}
+
+const b = (db: Awaited<ReturnType<typeof history>>['db']) =>
+  JSON.parse(exportBackup(db)) as BackupJson;
+
+// DR-25: rule 10 lets a deleted record lie ahead; restoring it checks its dates again, so the
+// command never brings back a live record the import would refuse.
+describe('restoring a deleted record dated after today', () => {
+  it('refuses a meeting held or missed after today, and restores one held today', async () => {
+    const met =
+      (date: string, status = 'MET') =>
+      (backup: BackupJson, ids: Ids) =>
+        Object.assign(
+          row(backup, 'appointments', (a) => a.customer_id === ids.hoa),
+          { date, status },
+          status === 'MET' ? {} : { stage_after: null, next_step: null },
+        );
+    for (const [date, status] of [
+      [TOMORROW, 'MET'],
+      [TOMORROW, 'NO_SHOW'],
+    ] as const) {
+      const { db, ids } = await imported(met(date, status));
+      const id = row(b(db), 'appointments', (a) => a.customer_id === ids.hoa).id as string;
+      expect(codeOf(() => restoreAppointment(db, id))).toBe('OUTCOME_IN_FUTURE');
+      await expect(importBackup(exportBackup(db), { now: db.now })).resolves.toBeDefined();
+    }
+
+    const { db, ids } = await imported(met(TODAY));
+    const id = row(b(db), 'appointments', (a) => a.customer_id === ids.hoa).id as string;
+    restoreAppointment(db, id);
+    expect(getAppointment(db, id)?.date).toEqual(day(26));
+  });
+
+  it('refuses a policy submitted or issued after today', async () => {
+    const policyRow = (backup: BackupJson) => backup.tables.policies![0]!;
+    const submitted = await imported((backup) => (policyRow(backup).submitted_date = TOMORROW));
+    expect(codeOf(() => restorePolicy(submitted.db, submitted.policy))).toBe('DATE_IN_FUTURE');
+
+    const issued = await imported((backup) =>
+      Object.assign(policyRow(backup), { issued_date: TOMORROW, issued_fyp: 20_000_000 }),
+    );
+    expect(codeOf(() => restorePolicy(issued.db, issued.policy))).toBe('DATE_IN_FUTURE');
+
+    const fine = await imported();
+    restorePolicy(fine.db, fine.policy);
+    await expect(importBackup(exportBackup(fine.db), { now: fine.db.now })).resolves.toBeDefined();
+  });
+});
+
+// DR-34: a `seq` the import takes is a safe integer, and a command never writes one past it.
+describe('seq stays a safe integer', () => {
+  const LAST = Number.MAX_SAFE_INTEGER;
+
+  it('refuses a seq past the safe integers on import', async () => {
+    const { db, ids } = await history();
+    for (const table of ['stage_transitions', 'kyc_notes', 'kyc_facts', 'kyc_versions']) {
+      const backup = b(db);
+      row(backup, table, (r) => r.customer_id === ids.lan).seq = LAST + 1;
+      const error = await importBackup(JSON.stringify(backup), { now: db.now }).catch(
+        (e: unknown) => e,
+      );
+      expect(error).toMatchObject({ code: 'BACKUP_INVALID' });
+    }
+  });
+
+  it('refuses a command that would number past the last safe integer, writing nothing', async () => {
+    const { db, ids } = await imported((backup, ids) => {
+      transition(backup, ids.lan, 3).seq = LAST;
+      backup.tables.kyc_notes!.filter((n) => n.customer_id === ids.lan).at(-1)!.seq = LAST;
+    });
+    const before = db.export();
+
+    expect(codeOf(() => changeStageManually(db, ids.lan, { to: 'N1', date: day(26) }))).toBe(
+      'SEQ_LIMIT',
+    );
+    expect(codeOf(() => addKycNote(db, ids.lan, { text: 'Thêm', date: day(26) }))).toBe(
+      'SEQ_LIMIT',
+    );
+    expect(db.export()).toEqual(before);
   });
 });
 

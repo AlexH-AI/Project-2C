@@ -23,7 +23,15 @@ import {
   type KycVersion,
 } from '@p2c/domain';
 import { asc, desc, eq, max, sql } from 'drizzle-orm';
-import { fromIsoDate, liveCustomer, prepared, rowInsert, toIsoDate } from './common';
+import {
+  cleanText,
+  fromIsoDate,
+  liveCustomer,
+  nextSeq,
+  prepared,
+  rowInsert,
+  toPastIsoDate,
+} from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { ulid } from './ids';
@@ -98,7 +106,7 @@ export function addKycNote(
 ): KycNoteRecord {
   return db.transaction(() => {
     liveCustomer(db, customerId);
-    const text = note.text.trim();
+    const text = cleanText(note.text);
     if (text === '') throw new DbError('KYC_NOTE_EMPTY');
     return insertNote(db, customerId, text, note.date, 'RE');
   });
@@ -166,6 +174,7 @@ export function resolveKycConflict(
 ): KycChange {
   return db.transaction(() => {
     const customer = liveCustomer(db, customerId);
+    toPastIsoDate(db, command.date);
     const before = loadProfile(db, customerId);
     const chosen = before.facts.find((fact) => fact.id === command.factId);
     if (!chosen) throw new DbError('KYC_FACT_NOT_FOUND');
@@ -336,6 +345,7 @@ function toInput(
   date: CalendarDate,
 ): KycFactInput {
   const field = requireField(fact.field);
+  toPastIsoDate(db, date);
   return {
     id: ulid(db.now(), db.random),
     field,
@@ -368,7 +378,7 @@ function requireField(field: string): KycField {
  * trường is `2`. Throws `INVALID_KYC_VALUE` for a value the trường cannot hold.
  */
 export function normalizeKycValue(field: KycField, value: KycValue): KycValue {
-  const text = typeof value === 'string' ? value.trim() : null;
+  const text = typeof value === 'string' ? cleanText(value) : null;
   if (NUMBER_FIELDS.has(field)) {
     const number = text !== null && /^\d+$/.test(text) ? Number(text) : value;
     if (typeof number === 'number' && Number.isSafeInteger(number) && number >= 0) return number;
@@ -396,18 +406,18 @@ function save(
 ): KycVersionRecord | null {
   const at = db.now().toISOString();
   const statusBefore = new Map(before.facts.map((fact) => [fact.id, fact.status]));
-  let seq = nextSeq(db, lastFactSeq, customerId);
+  let last = prepared(db, lastFactSeq).get({ customerId })?.seq;
   for (const fact of after.facts) {
     const status = statusBefore.get(fact.id);
     if (status === undefined) {
       prepared(db, insertFact).run({
         id: fact.id,
         customerId,
-        seq: seq++,
+        seq: (last = nextSeq(last)),
         field: fact.field,
         valueJson: JSON.stringify(fact.value),
         noteId: fact.noteId,
-        confirmedDate: toIsoDate(fact.confirmedDate),
+        confirmedDate: toPastIsoDate(db, fact.confirmedDate),
         status: fact.status,
         createdAt: at,
         updatedAt: at,
@@ -428,9 +438,9 @@ function save(
   const row = {
     id: ulid(db.now(), db.random),
     customerId,
-    seq: (latest?.seq ?? 0) + 1,
+    seq: nextSeq(latest?.seq),
     hash: version.hash,
-    date: toIsoDate(version.date),
+    date: toPastIsoDate(db, version.date),
     material: version.material,
     createdAt: at,
   };
@@ -448,9 +458,9 @@ function insertNote(
   const row = {
     id: ulid(db.now(), db.random),
     customerId,
-    seq: nextSeq(db, lastNoteSeq, customerId),
+    seq: nextSeq(prepared(db, lastNoteSeq).get({ customerId })?.seq),
     text,
-    createdDate: toIsoDate(date),
+    createdDate: toPastIsoDate(db, date),
     source,
     createdAt: db.now().toISOString(),
   };
@@ -492,10 +502,6 @@ const factsOf = (db: Database) =>
     .where(eq(kycFacts.customerId, byCustomer))
     .orderBy(asc(kycFacts.seq))
     .prepare();
-
-function nextSeq(db: Database, last: typeof lastNoteSeq, customerId: string): number {
-  return (prepared(db, last).get({ customerId })?.seq ?? 0) + 1;
-}
 
 function loadProfile(db: Database, customerId: string): KycProfileRecord {
   const notes = prepared(db, notesOf).all({ customerId }).map(toNote);

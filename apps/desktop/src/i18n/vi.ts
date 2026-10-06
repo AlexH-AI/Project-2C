@@ -383,6 +383,7 @@ export const vi = {
   'reschedule.historyRead': 'Trong "Các lần hẹn trước": {date} · Dời lịch · Ghi chú: {note}',
   'reschedule.save': 'Dời lịch',
   'error.APPOINTMENT_NOT_SCHEDULED': 'Chỉ dời được lịch còn Dự kiến; lịch này đã có kết quả.',
+  'error.RESCHEDULE_UNCHANGED': 'Ngày giờ mới trùng lịch cũ.',
   'error.APPOINTMENT_NOT_FOUND': 'Lịch hẹn không còn trong dữ liệu (có thể đã bị xóa).',
   'error.INVALID_TIME': 'Giờ từ 00:00 đến 23:59.',
   'error.INVALID_COORDINATOR': 'RE của lịch hẹn không phối hợp cho chính mình.',
@@ -742,6 +743,8 @@ export const vi = {
   'error.PERSON_IN_USE':
     'Nhân sự còn KH, lịch hẹn hoặc HĐ ghi cho mình, kể cả của KH đã xóa (khôi phục KH cần RE này). Giữ vai trò RE, hoặc giữ lại thay vì xóa.',
   'error.NAME_REQUIRED': 'Chưa nhập tên.',
+  'error.INVALID_TEXT': 'Chữ có ký tự không lưu được (ký tự NUL): xóa ký tự đó rồi lưu lại.',
+  'error.SEQ_LIMIT': 'Không ghi thêm được cho KH này: số thứ tự thao tác đã tới giới hạn.',
   'error.TEAM_NAME_TAKEN': 'Đã có team "{name}".',
   'error.TEAM_HAS_MEMBERS': 'Team còn nhân sự: chuyển hoặc xóa hết nhân sự trước khi xóa team.',
   'error.TEAM_HAS_LEAD': 'Team này đã có TL: {name}.',

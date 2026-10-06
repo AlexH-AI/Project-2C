@@ -220,7 +220,7 @@ export function editMeetingOutcome(
 
 /**
  * The old appointment becomes rescheduled, with the reason in its note (mockup 6e); a new one
- * takes its place on the new day (D3).
+ * takes its place on the new day (D3), which is not the old day and time again.
  */
 export function rescheduleAppointment(
   db: Database,
@@ -231,13 +231,17 @@ export function rescheduleAppointment(
   return db.transaction(() => {
     const old = toAppointment(db, liveAppointment(db, id));
     if (old.status !== 'SCHEDULED') throw new DbError('APPOINTMENT_NOT_SCHEDULED');
+    const time = requireTime(when.time ?? null);
+    if (compareDates(when.date, old.date) === 0 && time === old.time) {
+      throw new DbError('RESCHEDULE_UNCHANGED');
+    }
     // A note already there stays, the reason goes under it.
     const reason = optionalText(note);
     updateAppointmentRow(db, id, {
       status: 'RESCHEDULED',
       note: [old.note, reason].filter(Boolean).join('\n'),
     });
-    return insertScheduled(db, { ...old, date: when.date, time: when.time ?? null }, id);
+    return insertScheduled(db, { ...old, date: when.date, time }, id);
   });
 }
 
@@ -250,7 +254,10 @@ export function softDeleteAppointment(db: Database, id: string): void {
   });
 }
 
-/** Restoring a met appointment applies its stage after again. */
+/**
+ * Restoring a met appointment applies its stage after again. A deleted meeting may lie ahead in an
+ * imported file (spec §6 rule 10), so its day is checked again (DR-25).
+ */
 export function restoreAppointment(db: Database, id: string): void {
   db.transaction(() => {
     const row = findAppointment(db, id);
@@ -260,6 +267,7 @@ export function restoreAppointment(db: Database, id: string): void {
     // The people were free to leave while the appointment was deleted.
     requirePeople(db, row.reId, toAppointment(db, row).coordinatorIds);
     if (row.outcomeReviewerId !== null) requireReviewer(db, row.outcomeReviewerId);
+    requireOutcomeDay(db, row.status, row.date);
     updateAppointmentRow(db, id, { deletedAt: null });
     applyOutcome(db, row);
   });

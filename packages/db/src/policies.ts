@@ -93,12 +93,13 @@ export function softDeletePolicy(db: Database, id: string): void {
   });
 }
 
+/** A deleted policy may be dated ahead in an imported file (spec §6 rule 10): checked again (DR-25). */
 export function restorePolicy(db: Database, id: string): void {
   db.transaction(() => {
     const row = db.orm.select().from(policies).where(eq(policies.id, id)).get();
     if (!row) throw new DbError('POLICY_NOT_FOUND');
     liveCustomer(db, row.customerId);
-    requireRe(db, row.reId);
+    validate(db, toPolicy(row));
     updatePolicyRow(db, id, { deletedAt: null });
   });
 }

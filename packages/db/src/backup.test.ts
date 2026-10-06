@@ -301,6 +301,13 @@ describe('importBackup', () => {
     ['appointments', 'date', '2101-01-01'],
     ['stage_transitions', 'date', '1899-12-31'],
     ['stage_transitions', 'seq', 0],
+    ['kyc_notes', 'seq', Number.MAX_SAFE_INTEGER + 1],
+    // DR-49: names and KYC text as `requireName` and the KYC commands store them.
+    ['teams', 'name', 'Hừng Đông'.normalize('NFD')],
+    ['people', 'name', ' An'],
+    ['customers', 'name', ''],
+    ['kyc_notes', 'text', 'Hai con '],
+    ['kyc_notes', 'text', 'Hà Nội'.normalize('NFD')],
     ['teams', 'created_at', 'x'],
     ['customers', 'deleted_at', '2026-09-30'],
     ['kyc_versions', 'date', '2026-9-1'],

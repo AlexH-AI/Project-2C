@@ -1,6 +1,8 @@
 /** Errors a command rejects with; the UI maps each code to an i18n message (spec §4). */
 export const DB_ERROR_CODES = [
   'NAME_REQUIRED',
+  /** Text with a NUL character, which the database would cut it at (DR-49). */
+  'INVALID_TEXT',
   'TEAM_NOT_FOUND',
   'TEAM_NAME_TAKEN',
   'TEAM_HAS_MEMBERS',
@@ -15,7 +17,7 @@ export const DB_ERROR_CODES = [
   'INVALID_DATE',
   /**
    * A day after today for something that already happened: a customer's creation, a manual stage
-   * change, a policy's submission or issue.
+   * change, a policy's submission or issue, a KYC note, fact or version, a birth date.
    */
   'DATE_IN_FUTURE',
   'INVALID_TIME',
@@ -30,6 +32,8 @@ export const DB_ERROR_CODES = [
   'TRANSITION_BEFORE_LATEST',
   'APPOINTMENT_NOT_FOUND',
   'APPOINTMENT_NOT_SCHEDULED',
+  /** A reschedule to the same day and time as the old appointment (mockup 6e). */
+  'RESCHEDULE_UNCHANGED',
   'INVALID_STATUS',
   'OUTCOME_REQUIRED',
   'OUTCOME_IN_FUTURE',
@@ -56,6 +60,8 @@ export const DB_ERROR_CODES = [
   'KYC_PROFILE_FIELD_REQUIRED',
   'KYC_NO_CONFLICT',
   'KYC_NOT_IN_CONFLICT',
+  /** A customer's records numbered up to the last safe integer: no `seq` is left (DR-34). */
+  'SEQ_LIMIT',
   'SEED_DATABASE_NOT_EMPTY',
   /** The file was written by a newer app; params `version` (the file's), `supported` (the app's). */
   'SCHEMA_TOO_NEW',
