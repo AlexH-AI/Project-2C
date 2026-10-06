@@ -1,5 +1,6 @@
 import { DbError } from '@p2c/db';
 import { formatCount } from '@p2c/domain';
+import type { DataTableMoreLabels } from '@p2c/ui';
 import { vi, type MessageKey } from './vi';
 
 export type MessageParams = Readonly<Record<string, string | number>>;
@@ -100,6 +101,13 @@ export const joinParts = (
   parts: readonly (string | null | undefined | false)[],
   sep: 'dot' | 'arrow' = 'dot',
 ) => parts.filter(Boolean).join(` ${t(`sep.${sep}`)} `);
+
+/** The words under a `DataTable` of over a hundred rows, counting `lịch`, `khách hàng` or `người`. */
+export const tableMore = (noun: 'appointments' | 'customers' | 'people'): DataTableMoreLabels => ({
+  shown: (count, total) => t(`tableMore.shown.${noun}`, { count, total }),
+  more: (count) => t(`tableMore.more.${noun}`, { count }),
+  all: (total) => t(`tableMore.all.${noun}`, { total }),
+});
 
 /**
  * The message for a rejected command: `error.<code>` of its `DbError`, else a general one. The

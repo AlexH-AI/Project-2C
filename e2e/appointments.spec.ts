@@ -21,6 +21,24 @@ function screen(page: Page) {
 
 const SUMMARY = /[\d.]+ lịch · [\d.]+ đã gặp/;
 
+/** The list shows the first hundred of the period's `count` rows, with a foot over a hundred (T-150). */
+async function expectList(page: Page, count: number) {
+  const { rows } = screen(page);
+  await expect(rows).toHaveCount(Math.min(count, 100));
+  const foot = page.getByText(/^Đang hiện \d+ \/ [\d.]+ lịch$/);
+  if (count > 100)
+    await expect(foot).toHaveText(`Đang hiện 100 / ${count.toLocaleString('vi-VN')} lịch`);
+  else await expect(foot).toHaveCount(0);
+}
+
+/** Moves to the day period on `date` (dd/mm/yyyy), so the list holds that day only. */
+async function showDay(page: Page, date: string) {
+  const { calendar, kinds, day } = screen(page);
+  await kinds.getByRole('radio', { name: 'Ngày' }).click();
+  await calendar.getByRole('button', { name: new RegExp(`^${date}:`) }).click();
+  await expect(day.getByRole('heading', { level: 2 })).toHaveText(`Trong ngày ${date}`);
+}
+
 /** The period's "1.482 lịch · 349 đã gặp" → 1482 (the header comes before the calendar's). */
 async function total(page: Page): Promise<number> {
   const text = await page.getByText(SUMMARY).first().textContent();
@@ -35,7 +53,7 @@ test.beforeEach(async ({ page }) => {
 test("opens on this month, today's day by team → RE, the list matching the summary", async ({
   page,
 }) => {
-  const { calendar, day, rows, column } = screen(page);
+  const { calendar, day, column } = screen(page);
 
   await expect(calendar.getByRole('heading')).toHaveText('Lịch tháng 09/2026');
   await expect(calendar.getByRole('button', { pressed: true })).toHaveAccessibleName(
@@ -46,7 +64,7 @@ test("opens on this month, today's day by team → RE, the list matching the sum
 
   const count = await total(page);
   expect(count).toBeGreaterThan(0);
-  await expect(rows).toHaveCount(count);
+  await expectList(page, count);
   for (const date of await column(1)) expect(date).toMatch(/^\d\d\/09\/2026$/);
 
   // The month's own count matches the period's; only its 30 days are buttons.
@@ -115,7 +133,7 @@ test('with the week period, a day in another week moves the period to that week'
 });
 
 test('the year period shows twelve months in four quarters, without the day', async ({ page }) => {
-  const { year, day, calendar, kinds, rows } = screen(page);
+  const { year, day, calendar, kinds } = screen(page);
 
   await kinds.getByRole('radio', { name: 'Năm' }).click();
   await expect(year.getByRole('heading', { level: 2 })).toHaveText('Lịch năm 2026');
@@ -143,7 +161,7 @@ test('the year period shows twelve months in four quarters, without the day', as
   expect(sum).toBe(await total(page));
   // R2-03: the year's line in the whole scope groups its thousands, like the months.
   await expect(page.getByText(SUMMARY).first()).toHaveText(/^\d{1,3}(\.\d{3})+ lịch · /);
-  await expect(rows).toHaveCount(sum);
+  await expectList(page, sum);
 });
 
 test('a month of the year grid opens that month', async ({ page }) => {
@@ -251,7 +269,7 @@ test('the date cell is tinted past, today or future, kept on hover; the time cel
 });
 
 test('the scope narrows the day and the list to one team, then one RE', async ({ page }) => {
-  const { day, rows, column } = screen(page);
+  const { day, column } = screen(page);
   const all = await total(page);
   const scope = page.getByRole('radiogroup', { name: 'Góc nhìn' });
 
@@ -266,13 +284,13 @@ test('the scope narrows the day and the list to one team, then one RE', async ({
   const re = page.getByRole('combobox', { name: 'RE của góc nhìn' });
   const reName = (await re.locator('option:checked').textContent())?.split(' · ')[0] ?? '';
   await expect.poll(async () => new Set(await column(4))).toEqual(new Set([reName]));
-  await expect(rows).toHaveCount(await total(page));
+  await expectList(page, await total(page));
 });
 
 test('the coordinator filter keeps the appointments with or without that person', async ({
   page,
 }) => {
-  const { coordinator, rows, column } = screen(page);
+  const { coordinator, column } = screen(page);
   const all = await total(page);
 
   await coordinator.selectOption({ label: 'Không có người phối hợp' });
@@ -284,7 +302,7 @@ test('the coordinator filter keeps the appointments with or without that person'
   for (const someone of people.slice(2)) {
     await coordinator.selectOption({ label: someone });
     if ((await total(page)) === 0) continue;
-    await expect(rows).toHaveCount(await total(page));
+    await expectList(page, await total(page));
     const role = someone.split(' ')[0] ?? '';
     for (const cell of await column(6)) expect(cell.split(', ')).toContain(role);
     return;
@@ -409,6 +427,7 @@ test('the next appointment from a past one is filled in and must be from today o
   page,
 }) => {
   const { rows, detail } = screen(page);
+  await showDay(page, '14/09/2026');
   const past = rows.filter({ hasText: 'Đã gặp' }).filter({ hasNotText: TODAY }).first();
   await past.getByRole('button').click();
   const date = (await past.locator('td:nth-child(1)').textContent()) ?? '';
@@ -561,6 +580,7 @@ test('an appointment past and still scheduled counts as unrecorded: count line, 
     .evaluate((dot) => getComputedStyle(dot).backgroundColor);
   expect(await firstDot).toBe('rgb(240, 160, 75)');
   // The list says so in the status column (display only).
+  await showDay(page, '10/09/2026');
   const row = list.locator('tbody tr', { hasText: f.name }).filter({ hasText: '10/09/2026' });
   await expect(row.locator('td').nth(6)).toHaveText('Chưa ghi kết quả');
 
@@ -688,7 +708,7 @@ const chipCount = async (chip: ReturnType<Page['getByRole']>) =>
 test('an RE picked in the strip narrows the appointments to it, until picked again', async ({
   page,
 }) => {
-  const { day, rows, column } = screen(page);
+  const { day, column } = screen(page);
   await pickTeam(page, 'Sao Mai');
   const strip = page.getByRole('region', { name: 'RE của team Sao Mai' });
   const teamTotal = await total(page);
@@ -700,7 +720,7 @@ test('an RE picked in the strip narrows the appointments to it, until picked aga
   await expect(chip).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByText(SUMMARY).first()).toContainText(name);
   await expect.poll(() => total(page)).toBe(await chipCount(chip));
-  await expect(rows).toHaveCount(await total(page));
+  await expectList(page, await total(page));
   expect(new Set(await column(4))).toEqual(new Set([name]));
   for (const re of await day.getByRole('heading', { level: 4 }).allTextContents()) {
     expect(re).toBe(name);

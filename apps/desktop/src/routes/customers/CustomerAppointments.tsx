@@ -2,7 +2,7 @@ import { useMemo, type ReactNode } from 'react';
 import type { AppointmentRecord } from '@p2c/db';
 import type { CalendarDate, StageTransition } from '@p2c/domain';
 import { DataTable, type DataTableColumn } from '@p2c/ui';
-import { t } from '../../i18n';
+import { t, tableMore } from '../../i18n';
 import { dayText, isPastOrToday, withTime } from '../appointments/appointment-form';
 import {
   LINK,
@@ -145,6 +145,7 @@ export function CustomerAppointments({
           rows={rows}
           getRowId={(r) => r.appointment.id}
           initialSort={{ id: 'date', desc: true }}
+          moreLabels={tableMore('appointments')}
         />
       )}
       <p className="m-0 mt-2 text-xs text-fg-3">{t('customer.appointmentsHelp')}</p>
