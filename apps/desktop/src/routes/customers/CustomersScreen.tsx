@@ -13,6 +13,7 @@ import {
   formatCount,
   formatDate,
   type ClosedStage,
+  type CustomerStage,
 } from '@p2c/domain';
 import { Button, DataTable, Segmented, StageBadge, type DataTableColumn } from '@p2c/ui';
 import { useQuery } from '../../data/AppDataContext';
@@ -22,7 +23,7 @@ import { RePicker } from '../../shell/RePicker';
 import { teamRes } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
 import { CustomerFormDialog } from './CustomerDialogs';
-import { birthLabel, customerBoard, type CustomerCard } from './customers-view';
+import { birthLabel, birthSortKey, customerBoard, type CustomerCard } from './customers-view';
 
 type View = 'kanban' | 'table';
 
@@ -81,7 +82,8 @@ const COLUMNS: ReadonlyArray<DataTableColumn<CustomerCard>> = [
     id: 'birth',
     header: t('customers.colBirth'),
     kind: 'text',
-    value: (c) => (c.customer.birthDate ? birthLabel(c.customer.birthDate) : ''),
+    value: (c) => (c.customer.birthDate ? birthSortKey(c.customer.birthDate) : ''),
+    cell: (c) => (c.customer.birthDate ? birthLabel(c.customer.birthDate) : ''),
   },
   {
     id: 'policies',
@@ -174,12 +176,7 @@ export function CustomersScreen() {
                 aria-label={t(`stage.${stage}`)}
                 className={`${CARD} flex flex-col gap-2`}
               >
-                <div className="flex items-center gap-2 pb-2">
-                  <StageBadge stage={stage} label={t(`stage.${stage}`)} />
-                  <span className="ml-auto text-sm text-fg-2 tabular-nums">
-                    {board.open[stage].length}
-                  </span>
-                </div>
+                <StageHead stage={stage} count={board.open[stage].length} className="gap-2 pb-2" />
                 {board.open[stage].slice(0, COLUMN_LIMIT).map((card) => (
                   <Card key={card.customer.id} card={card} />
                 ))}
@@ -203,6 +200,24 @@ export function CustomersScreen() {
         </div>
       )}
     </>
+  );
+}
+
+/** The head of a kanban column or closed block: the stage and its count, thousands grouped. */
+export function StageHead({
+  stage,
+  count,
+  className,
+}: {
+  stage: CustomerStage;
+  count: number;
+  className: string;
+}) {
+  return (
+    <div className={`flex items-center ${className}`}>
+      <StageBadge stage={stage} label={t(`stage.${stage}`)} />
+      <span className="ml-auto text-sm text-fg-2 tabular-nums">{formatCount(count)}</span>
+    </div>
   );
 }
 
@@ -231,10 +246,7 @@ function Card({ card }: { card: CustomerCard }) {
 function Closed({ stage, cards }: { stage: ClosedStage; cards: readonly CustomerCard[] }) {
   return (
     <section aria-label={t(`stage.${stage}`)} className={CARD}>
-      <div className="mb-1 flex items-center">
-        <StageBadge stage={stage} label={t(`stage.${stage}`)} />
-        <span className="ml-auto text-sm text-fg-2 tabular-nums">{formatCount(cards.length)}</span>
-      </div>
+      <StageHead stage={stage} count={cards.length} className="mb-1" />
       <ul className="m-0 list-none p-0 text-sm">
         {cards.slice(0, CLOSED_LIMIT).map((card) => (
           <li

@@ -1,4 +1,4 @@
-/** Test helpers: a fresh in-memory database with a pinned clock, and a DbError code catcher. */
+/** Test helpers: a fresh in-memory database with a pinned clock, and DbError catchers. */
 import { calendarDate, type CalendarDate } from '@p2c/domain';
 import { vi } from 'vitest';
 import { openDatabase } from './database';
@@ -17,14 +17,19 @@ export async function setup() {
   return { db, persist, team, re, otherRe, tl };
 }
 
-export function codeOf(fn: () => unknown): string | undefined {
+/** The DbError `fn` rejects with, or undefined when it does not throw. */
+export function errorOf(fn: () => unknown): DbError | undefined {
   try {
     fn();
   } catch (error) {
-    if (error instanceof DbError) return error.code;
+    if (error instanceof DbError) return error;
     throw error;
   }
   return undefined;
+}
+
+export function codeOf(fn: () => unknown): string | undefined {
+  return errorOf(fn)?.code;
 }
 
 /** A day; the default year is the test clock's (26/09/2026), by which past records are dated. */

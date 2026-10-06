@@ -76,6 +76,13 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it 
   let dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${NAME}` });
   await dialog.getByRole('textbox', { name: 'Ghi chú' }).fill('Đã kết hôn, 2 con; chủ DN.');
   await expect(dialog.getByText('Chỉ thêm ghi chú, không tạo phiên bản KYC.')).toBeVisible();
+  // DR-21: a value typed for one trường is not carried over to the next one picked.
+  await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Nơi sinh sống' });
+  await dialog.getByRole('textbox', { name: 'Giá trị' }).fill('Huế');
+  await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Mục tiêu chính' });
+  await expect(dialog.getByRole('textbox', { name: 'Giá trị' })).toHaveValue('');
+  await dialog.getByRole('button', { name: 'Thêm dữ kiện' }).click();
+  await expect(dialog.getByRole('alert')).toHaveText('Nhập giá trị.');
   for (const [field, value] of [
     ['Tình trạng hôn nhân', 'Đã kết hôn'],
     ['Số con', '2'],
@@ -115,6 +122,11 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it 
   await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Chọn trường' });
   await expect(pending).toBeHidden();
   await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Số con' });
+  // Picked again, the trường starts over: no value, an update.
+  await expect(dialog.getByRole('textbox', { name: 'Giá trị' })).toHaveValue('');
+  await expect(dialog.getByRole('radio', { name: 'Cập nhật', exact: true })).toBeChecked();
+  await dialog.getByRole('textbox', { name: 'Giá trị' }).fill('3');
+  await dialog.getByRole('radio', { name: /Đánh dấu mâu thuẫn/ }).check();
   await dialog.getByRole('textbox', { name: 'Giá trị' }).press('Enter');
   await expect(pending).toBeVisible();
   await expect(kyc).not.toContainText('Cổng KYC CONFLICT_RESOLUTION');

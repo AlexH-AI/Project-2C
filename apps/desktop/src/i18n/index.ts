@@ -101,11 +101,14 @@ export const joinParts = (
   sep: 'dot' | 'arrow' = 'dot',
 ) => parts.filter(Boolean).join(` ${t(`sep.${sep}`)} `);
 
-/** The message for a rejected command: `error.<code>` of its `DbError`, else a general one. */
+/**
+ * The message for a rejected command: `error.<code>` of its `DbError`, else a general one. The
+ * error's own `params` fill the slots ahead of the caller's.
+ */
 export function errorMessage(error: unknown, params?: MessageParams): string {
   if (error instanceof DbError) {
     const key = `error.${error.code}`;
-    if (Object.hasOwn(vi, key)) return t(key as MessageKey, params);
+    if (Object.hasOwn(vi, key)) return t(key as MessageKey, { ...params, ...error.params });
   }
   return t('error.unknown');
 }

@@ -101,8 +101,7 @@ export function EditOutcomeDialog({
       );
       onClose();
     } catch (error) {
-      const latest = transitions.findLast((tr) => tr.customerId === customer.id);
-      setFailure(errorMessage(error, { date: latest ? formatDate(latest.date) : '' }));
+      setFailure(errorMessage(error));
     }
   };
 

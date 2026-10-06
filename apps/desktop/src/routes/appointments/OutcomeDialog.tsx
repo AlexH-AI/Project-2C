@@ -9,14 +9,7 @@ import {
   type CustomerRecord,
   type Database,
 } from '@p2c/db';
-import {
-  compareDates,
-  formatDate,
-  weekdayOf,
-  type CalendarDate,
-  type Person,
-  type StageTransition,
-} from '@p2c/domain';
+import { formatDate, weekdayOf, type CalendarDate, type Person } from '@p2c/domain';
 import { Choices, Dialog, TextField } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
@@ -44,13 +37,11 @@ import {
 export function OutcomeDialog({
   row,
   people,
-  transitions,
   onClose,
   onMoved,
 }: {
   row: AppointmentRow & { customer: NonNullable<AppointmentRow['customer']> };
   people: readonly Person[];
-  transitions: readonly StageTransition[];
   onClose: () => void;
   onMoved: (appointment: AppointmentRecord) => void;
 }) {
@@ -114,14 +105,7 @@ export function OutcomeDialog({
       }
       onClose();
     } catch (error) {
-      const latest = transitions
-        .filter((transition) => transition.customerId === customer.id)
-        .reduce<StageTransition | undefined>(
-          (last, transition) =>
-            last && compareDates(last.date, transition.date) >= 0 ? last : transition,
-          undefined,
-        );
-      setFailure(errorMessage(error, { date: latest ? formatDate(latest.date) : '' }));
+      setFailure(errorMessage(error));
     }
   };
 

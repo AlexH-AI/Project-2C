@@ -126,6 +126,7 @@ describe('issuedChange', () => {
 describe('expectedCaseSize', () => {
   const met = (day: number, size: number | null, status: Appointment['status'] = 'MET') => ({
     date: d(day, 9),
+    time: null,
     status,
     expectedCaseSize: size,
   });
@@ -134,5 +135,16 @@ describe('expectedCaseSize', () => {
     const list = [met(10, 600 * MILLION), met(1, 800 * MILLION), met(12, null)];
     expect(expectedCaseSize(list)).toBe(600 * MILLION);
     expect(expectedCaseSize([])).toBeNull();
+  });
+
+  // DR-24: two meetings on one day are told apart by the hour, the later one being the latest.
+  it('takes the later meeting of the same day, an untimed one counting as the earliest', () => {
+    const at = (time: string | null, size: number) => ({ ...met(5, size * MILLION), time });
+
+    expect(expectedCaseSize([at('09:00', 100), at('16:00', 900)])).toBe(900 * MILLION);
+    expect(expectedCaseSize([at('16:00', 900), at('09:00', 100)])).toBe(900 * MILLION);
+    expect(expectedCaseSize([at('09:00', 100), at(null, 300)])).toBe(100 * MILLION);
+    // Same day and hour: the one listed last, as `listAppointments` lists them in the order made.
+    expect(expectedCaseSize([at('09:00', 100), at('09:00', 200)])).toBe(200 * MILLION);
   });
 });

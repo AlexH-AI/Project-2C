@@ -24,6 +24,7 @@ export const DB_ERROR_CODES = [
   'CUSTOMER_NOT_FOUND',
   'INVALID_TRANSITION',
   'TRANSITION_NOT_LATEST',
+  /** A transition dated before the customer's latest; params `date` (that latest one's, as shown). */
   'TRANSITION_BEFORE_LATEST',
   'APPOINTMENT_NOT_FOUND',
   'APPOINTMENT_NOT_SCHEDULED',
