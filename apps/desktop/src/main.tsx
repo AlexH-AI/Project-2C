@@ -6,6 +6,7 @@ import { parseDate } from '@p2c/domain';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { App } from './App';
 import { openAppData } from './data/app-data';
+import { fetchDemoSnapshot } from './data/demo-snapshot';
 import { tauriStorage } from './data/tauri-storage';
 import { t } from './i18n';
 import { blockReload } from './shell/block-reload';
@@ -31,6 +32,8 @@ openAppData({
   storage: isTauri() ? tauriStorage(invoke) : undefined,
   locateFile: () => wasmUrl,
   today: pinnedDay ? () => pinnedDay : undefined,
+  // e2e serves the pinned day's data already seeded (DR-79); without the file the app seeds.
+  snapshot: pinnedDay && !isTauri() ? (day) => fetchDemoSnapshot(day) : undefined,
 }).then(
   (data) => render(<App data={data} appWindow={isTauri() ? getCurrentWindow() : undefined} />),
   (error: unknown) => render(<StartupError error={error} />),
