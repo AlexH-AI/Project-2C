@@ -130,7 +130,7 @@ Trục: S
 Vị trí: apps/desktop/src-tauri/src/lib.rs:89 (`std::process::Command::new("explorer.exe")`) (f0c53eb)
 Tình trạng: CONFIRMED
 Mô tả: Trên Windows, `Command::new` với tên trần tìm chương trình trong thư mục của exe trước System32 / Windows (thứ tự tìm của Rust std). Exe portable nằm trong thư mục người dùng ghi được (ADR-0006), nên một `explorer.exe` đặt cạnh Project-2C.exe sẽ chạy khi bấm "Mở thư mục" ở Cài đặt → Dữ liệu.
-Tái hiện / bằng chứng: `which.exe` (phụ lục C) gọi `Command::new("whoami.exe")` theo cùng cách; chép `hostname.exe` cạnh nó dưới tên whoami.exe rồi chạy từ `C:\` → stdout "D13_ThinkPad" (chương trình cạnh exe chạy), không có file đó → "d13_thinkpad\death" (bản System32).
+Tái hiện / bằng chứng: `which.exe` (phụ lục C) gọi `Command::new("whoami.exe")` theo cùng cách; chép `hostname.exe` cạnh nó dưới tên whoami.exe rồi chạy từ `C:\` → stdout "D13_ThinkPad" (chương trình cạnh exe chạy), không có file đó → "d13_thinkpad\<user>" (bản System32).
 Ảnh hưởng: Thấp: ai ghi được vào thư mục exe cũng thay được chính exe hay đặt DLL. Chỉ là lớp phòng thủ rẻ còn thiếu.
 Đề xuất: Dùng đường dẫn đầy đủ (`%SystemRoot%\explorer.exe` qua `std::env::var_os("SystemRoot")`). Cỡ ≈ 5 dòng.
 ```
@@ -277,13 +277,13 @@ Bản sao `storage.rs` ở `C\mut\src\lib.rs`, mỗi lượt một thay đổi, 
 
 ```text
 ## perf-save load.db
-file load.db: 13074432 bytes, dir C:\Users\death\AppData\Local\Temp\p2c-probe-save-39120
+file load.db: 13074432 bytes, dir C:\Users\<user>\AppData\Local\Temp\p2c-probe-save-39120
 save (write_atomic): n=30 min=8.4 median=9.2 p90=10.4 max=14.3 ms
   create+write_all: n=30 min=2.8 median=3.1 p90=3.6 max=3.8 ms
   sync_all: n=30 min=3.8 median=4.8 p90=9.9 max=11.0 ms
   rename: n=30 min=0.2 median=1.3 p90=1.4 max=2.0 ms
 ## perf-save seed.db
-file seed.db: 9306112 bytes, dir C:\Users\death\AppData\Local\Temp\p2c-probe-save-28744
+file seed.db: 9306112 bytes, dir C:\Users\<user>\AppData\Local\Temp\p2c-probe-save-28744
 save (write_atomic): n=30 min=5.9 median=6.9 p90=7.9 max=11.7 ms
   create+write_all: n=30 min=2.1 median=2.2 p90=3.0 max=3.3 ms
   sync_all: n=30 min=2.8 median=3.5 p90=4.4 max=8.7 ms
@@ -329,14 +329,14 @@ race_backup rounds=300: both ok same name=27, both ok different names=0, one fai
 ## race-save-backup
 race_save_backup: saves=300 save errors=0 | backups ok=45 errors=0 | backup files not equal to any saved version=0
 ## paths
-path len 96: first start Ok(true); save Ok(()); backup Ok("project2c-s00000001-20261005-080001.db"); export Ok(138); explorer arg Ok("\"C:\\Users\\death\\AppData\\Local\\Temp\\p2c-probe-paths-14456\\Ứng dụng, bản 2 ✓\\Project2C-data\\exports\"")
-path len 312: first start Ok(true); save Ok(()); backup Ok("project2c-s00000001-20261005-080001.db"); export Ok(354); explorer arg Ok("\"C:\\Users\\death\\AppData\\Local\\Temp\\p2c-probe-paths-14456\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\Project2C-data\\exports\"")
+path len 96: first start Ok(true); save Ok(()); backup Ok("project2c-s00000001-20261005-080001.db"); export Ok(138); explorer arg Ok("\"C:\\Users\\<user>\\AppData\\Local\\Temp\\p2c-probe-paths-14456\\Ứng dụng, bản 2 ✓\\Project2C-data\\exports\"")
+path len 312: first start Ok(true); save Ok(()); backup Ok("project2c-s00000001-20261005-080001.db"); export Ok(354); explorer arg Ok("\"C:\\Users\\<user>\\AppData\\Local\\Temp\\p2c-probe-paths-14456\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\Project2C-data\\exports\"")
 ## devices
-NUL.p2cbackup: Ok("C:\\Users\\death\\AppData\\Local\\Temp\\p2c-probe-dev-28532\\exports\\NUL.p2cbackup"); exports now ["NUL.p2cbackup"]
-CON.xlsx: Ok("C:\\Users\\death\\AppData\\Local\\Temp\\p2c-probe-dev-28532\\exports\\CON.xlsx"); exports now ["CON.xlsx", "NUL.p2cbackup"]
-COM1.xlsx: Ok("C:\\Users\\death\\AppData\\Local\\Temp\\p2c-probe-dev-28532\\exports\\COM1.xlsx"); exports now ["COM1.xlsx", "CON.xlsx", "NUL.p2cbackup"]
-aux.p2cbackup: Ok("C:\\Users\\death\\AppData\\Local\\Temp\\p2c-probe-dev-28532\\exports\\aux.p2cbackup"); exports now ["aux.p2cbackup", "COM1.xlsx", "CON.xlsx", "NUL.p2cbackup"]
-nul.xlsx: Ok("C:\\Users\\death\\AppData\\Local\\Temp\\p2c-probe-dev-28532\\exports\\nul.xlsx"); exports now ["aux.p2cbackup", "COM1.xlsx", "CON.xlsx", "NUL.p2cbackup", "nul.xlsx"]
+NUL.p2cbackup: Ok("C:\\Users\\<user>\\AppData\\Local\\Temp\\p2c-probe-dev-28532\\exports\\NUL.p2cbackup"); exports now ["NUL.p2cbackup"]
+CON.xlsx: Ok("C:\\Users\\<user>\\AppData\\Local\\Temp\\p2c-probe-dev-28532\\exports\\CON.xlsx"); exports now ["CON.xlsx", "NUL.p2cbackup"]
+COM1.xlsx: Ok("C:\\Users\\<user>\\AppData\\Local\\Temp\\p2c-probe-dev-28532\\exports\\COM1.xlsx"); exports now ["COM1.xlsx", "CON.xlsx", "NUL.p2cbackup"]
+aux.p2cbackup: Ok("C:\\Users\\<user>\\AppData\\Local\\Temp\\p2c-probe-dev-28532\\exports\\aux.p2cbackup"); exports now ["aux.p2cbackup", "COM1.xlsx", "CON.xlsx", "NUL.p2cbackup"]
+nul.xlsx: Ok("C:\\Users\\<user>\\AppData\\Local\\Temp\\p2c-probe-dev-28532\\exports\\nul.xlsx"); exports now ["aux.p2cbackup", "COM1.xlsx", "CON.xlsx", "NUL.p2cbackup", "nul.xlsx"]
 ## damaged
 damaged: open returned the damaged bytes = true; newest backup project2c-s00000004-20261005-080000.db is the damaged file = true
 ```
@@ -346,12 +346,12 @@ damaged: open returned the damaged bytes = true; newest backup project2c-s000000
 ```text
 --- unchanged
 S18 create_new over a folder: PermissionDenied raw Some(5)
-S18 write_export: Ok("C:\\Users\\death\\AppData\\Local\\Temp\\p2c-storage-33784-0\\exports\\a-2.p2cbackup")
+S18 write_export: Ok("C:\\Users\\<user>\\AppData\\Local\\Temp\\p2c-storage-33784-0\\exports\\a-2.p2cbackup")
 .S23 write_export -> Err(Custom { kind: InvalidInput, error: "invalid export name: x\\..\\..\\evil.p2cbackup" }); file outside exports\: false
 --- S23
 S18 create_new over a folder: PermissionDenied raw Some(5)
-S18 write_export: Ok("C:\\Users\\death\\AppData\\Local\\Temp\\p2c-storage-5144-0\\exports\\a-2.p2cbackup")
-.S23 write_export -> Ok("C:\\Users\\death\\AppData\\Local\\Temp\\p2c-storage-5144-1\\exports\\x\\..\\..\\evil.p2cbackup"); file outside exports\: true
+S18 write_export: Ok("C:\\Users\\<user>\\AppData\\Local\\Temp\\p2c-storage-5144-0\\exports\\a-2.p2cbackup")
+.S23 write_export -> Ok("C:\\Users\\<user>\\AppData\\Local\\Temp\\p2c-storage-5144-1\\exports\\x\\..\\..\\evil.p2cbackup"); file outside exports\: true
 --- S18
 S18 create_new over a folder: PermissionDenied raw Some(5)
 S18 write_export: Err(Os { code: 5, kind: PermissionDenied, message: "Access is denied." })
@@ -362,7 +362,7 @@ S18 write_export: Err(Os { code: 5, kind: PermissionDenied, message: "Access is 
 
 ```text
 $d = Join-Path $env:TEMP "p2c-which-probe"; copy which.exe vào $d
-& "$d\which.exe"                      -> ran, stdout = d13_thinkpad\death   (whoami.exe của System32)
+& "$d\which.exe"                      -> ran, stdout = d13_thinkpad\<user>   (whoami.exe của System32)
 Copy-Item C:\Windows\System32\hostname.exe "$d\whoami.exe"; Set-Location C:\
 & "$d\which.exe"                      -> ran, stdout = D13_ThinkPad         (chương trình cạnh exe chạy)
 ```

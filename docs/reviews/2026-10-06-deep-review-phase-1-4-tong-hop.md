@@ -13,7 +13,7 @@
 - **Claude (H.md §6):** vì hộp thoại (Escape đóng hộp đang chạy / hộp đóng app, focus sai nút) — CL-D1, CL-D2; F5 trong exe bỏ thay đổi chưa lưu — CL-D4 + CL-C1; một test e2e chắc chắn đỏ từ 01/01/2027 — CL-F1. "Sẵn sàng có điều kiện" nếu Owner chấp nhận ba mục đó.
 - **Codex (H.md §7):** vì đường nhập backup nhận quan hệ mà lệnh không tạo được (CX-H2 người đã xóa, CX-H3 nhánh dời lịch) và tổng tiền vượt `MAX_SAFE_INTEGER` làm Tổng quan rơi vào màn lỗi (CX-H1).
 
-**Kết luận hợp nhất (phiên tổng hợp): CHƯA SẴN SÀNG — sẵn sàng sau Nhóm A (§8), ước lượng ≈ 170 dòng SP + test, 4 Issue.**
+**Kết luận hợp nhất (phiên tổng hợp): CHƯA SẴN SÀNG — tối thiểu phải xong Nhóm A (§8), ước lượng ≈ 170 dòng SP + test, 4 Issue.** **Owner quyết 06/10: sửa toàn bộ 88 vấn đề (trừ DR-43 ghi ACCEPTED) trước G7** — 22 Issue ở §12.
 
 - **Không có Critical.** Hai High của Codex (CX-C1 ghi file chồng nhau, CX-G1 dọn nhánh) có thật nhưng hạ xuống **Medium** (lý do ở §6).
 - **6 Medium sau khi chốt:** DR-01 ghi file khi tải lại webview, DR-03 bảng kỳ Năm ≈ 1 s, DR-08 test đỏ từ 2027, DR-21 đổi trường KYC mang giá trị cũ (lưu sai dữ liệu qua UI thường), DR-22 `merge-pr` xóa nhánh có commit chưa push, DR-58 Escape đóng hộp đang chạy / kẹt nút X.
@@ -225,7 +225,7 @@ Mỗi nhóm một Issue theo mẫu Task (≤ ~400 dòng SP / ~800 dòng tổng).
 - Nhập tiền: DR-37 (thêm hậu tố "vnđ"), DR-32 + DR-38 (`parseVnd` đọc dấu âm một lần, gộp dấu cách).
 - Bloat: DR-18, 19, 40, 46, 54 (đường dẫn đầy đủ `%SystemRoot%\explorer.exe`), 69, 73, 87, 30.
 
-## 9. Cần Owner quyết
+## 9. Cần Owner quyết (đã trả lời 06/10, xem §11)
 
 1. **Phạm vi trước G7:** đề xuất Nhóm A (A1–A4). Có kéo **B2** (siết nhập backup — lý do CHƯA SẴN SÀNG của Codex) lên trước G7 không? Phiên tổng hợp đề xuất **không** (chỉ file sửa tay, dữ liệu giả lập), làm đầu Phase 5.
 2. **Trần số tiền mỗi HĐ** (DR-23): đề xuất ≤ 100 tỷ đồng / HĐ (tổng an toàn tới ~90 000 HĐ, mọi FYP thực tế đều dưới), áp ở lệnh và khi nhập; hay giữ miền hiện tại và chỉ kiểm phép cộng.
@@ -242,8 +242,46 @@ Mỗi nhóm một Issue theo mẫu Task (≤ ~400 dòng SP / ~800 dòng tổng).
 - **Codex** sâu ở đường nhập backup (tìm cùng bốn lỗ ở gói B rồi lặp lại ở H), harness Rust có cổng điều phối tái hiện đúng file trộn A/B (DR-01), probe hành vi thật trên Edge production. Mức có xu hướng cao (hai High, nhiều Medium cho lỗi chỉ gặp với file sửa tay); tự lặp phát hiện giữa các gói (6 cặp); gói D đặt probe nhầm vào `codex\C\` (đã ghi trong báo cáo). Không có phát hiện sai.
 - Kết hợp: hai bên bổ sung tốt cho nhau — 26 / 43 phát hiện Codex trùng Claude, còn 15 phát hiện riêng của Codex có 2 Medium (DR-21, DR-22) đều thật.
 
-## 11. Việc tiếp theo
+## 11. Quyết định Owner (chat 06/10/2026)
 
-1. Owner chọn phạm vi (§9) → tạo Issue theo §8 (milestone Phase 4 cho Nhóm A, Phase 5 cho Nhóm B–F).
-2. Làm Nhóm A → cập nhật `docs/state/review-notes.md` (Nhóm B–F vào OPEN, mục Owner ghi ACCEPTED) → **G7 Phase 4**.
-3. Owner xóa thư mục bằng chứng `C:\workspace\deep-review-1-4\` khi không cần nữa (báo cáo gốc đã ở `raw/2026-10-06/`; probe / exe / log chỉ ở Home PC).
+Trả lời từng điểm của §9:
+
+1. **Làm hết trước G7:** cả Nhóm A–F (§8) vào milestone Phase 4; không đưa mục nào sang Phase 5, sổ OPEN hay ACCEPTED (trừ điểm 5).
+2. **Trần số tiền:** tối đa **100 tỷ đồng mỗi số tiền** (FYP nộp, FYP phát hành, case size dự kiến), áp ở lệnh **và** khi nhập backup. Phép cộng tổng ở domain vẫn kiểm tràn (lớp bảo vệ thứ hai, có test).
+3. **Bảng lớn (DR-03):** **"hiện thêm"** — bảng hiện một số dòng đầu sau khi đã sắp / lọc trên toàn bộ, nút "Hiện thêm" ở cuối; không dependency mới. Số dòng mỗi lần và chữ trên nút chốt trong Issue (Owner xem ở bước duyệt Issue).
+4. **Người phối hợp (DR-47):** theo **ADR-0007** — chỉ TL / IS / BD / BDM; không RE nào phối hợp. Áp ở lệnh (`scheduleAppointment`, sửa người phối hợp, khôi phục), `updatePerson` (không đổi người đang phối hợp lịch chưa xóa sang RE) và luật 5 khi nhập; spec Phase 3 §3.6 sửa theo.
+5. **HĐ / cuộc gặp trước ngày tạo KH (DR-43):** là **nhập bù hợp lệ** → ghi ACCEPTED, không thêm luật. (Câu báo của ca MET đổi nhóm trước ngày tạo KH mang đúng ngày chặn nhờ sửa DR-64.)
+6. **Cách gõ tiền (DR-37):** **nhận** "VNĐ" / "vnđ", "1tr5" (= 1,5 triệu), "1 tỷ 2" (= 1,2 tỷ) và nhóm nghìn bằng dấu cách ("500 000 000"). Bảng ca chuẩn (kể cả ca từ chối, vd. "1tr5k") ghi trong Issue để Owner duyệt.
+7. **"Lịch hẹn lần n" (DR-67): cách A** — chỉ lịch **đã gặp** được đánh số; lịch dự kiến / quá hạn chưa ghi kết quả hiện "Lịch hẹn" kèm trạng thái, không số. Mockup `customer.html` (dòng "Lịch hẹn lần 4 · dự kiến") sửa theo trong cùng PR.
+8. **Sửa hết, kể cả rủi ro thấp:** DR-35 (seed ở biên 1900 / 2100), DR-39 (gõ tắt 29/02 cuối năm gợi ý năm sau), DR-56 (bỏ code đọc tên backup cũ — R2-02), DR-57 (ổ đầy: tỉa trước khi ghi bản sao; không ghi được thì màn lỗi nói rõ bằng tiếng Việt), DR-79 (e2e nạp sẵn DB đã seed thay vì seed mỗi lần tải trang; giữ `seed-timing.spec.ts` đo seed thật), cùng mọi Nit còn lại.
+
+## 12. Kế hoạch Issue (milestone Phase 4, trước G7)
+
+Mỗi Issue theo mẫu Task, ≤ ~400 dòng SP / ~800 dòng tổng; Issue hiệu năng kèm số đo trước + ngưỡng sau (§8). Thứ tự đề xuất: việc rẻ / chặn CI trước, rồi dữ liệu, rồi hiệu năng, cuối cùng dọn code.
+
+| # | Issue | DR | Nhãn |
+|---|---|---|---|
+| 1 | Test e2e đọc đồng hồ máy | 08, 84 | `risk:low` |
+| 2 | Cổng merge: SHA khi dọn nhánh, `build-exe` theo file, `CLAUDE.md` có codemap không phải docs-only, nhánh cập nhật theo `main` | 22, 09, 74, 80 | `risk:low` |
+| 3 | Tools phiên: base HANDOFF, `session-end`, `bootstrap -CheckOnly`, hook review, số flaky, test tools | 28, 81, 82, 83, 78, 85 | `risk:low` |
+| 4 | Hộp thoại: Escape, focus mở / đóng, `aria-required` của `Choices`, e2e bàn phím | 58, 59, 02, 26, 76 | `risk:med` |
+| 5 | Ghi file an toàn khi tải lại webview (khóa chung Rust, chặn F5, test nguyên tử, câu khôi phục / lưu lỗi) | 01, 60, 14, 51, 52 | `risk:med`, `build-exe` |
+| 6 | `storage.rs` còn lại: tỉa khi dùng lại bản trùng, ổ đầy, `find_copy`, bỏ code tên cũ, `explorer.exe` đường dẫn đầy đủ, test hợp đồng JS ↔ Rust | 31, 57, 53, 56, 54, 55 | `risk:low`, `build-exe` |
+| 7 | Chữ / thứ tự sai nghĩa ở Lịch hẹn & KH (đổi trường KYC, case size cùng ngày, ngày trong câu `TRANSITION_BEFORE_LATEST`, sắp Ngày sinh, kanban, "Lịch hẹn lần n" cách A + mockup) | 21, 24, 64, 65, 68, 67 | `risk:low` |
+| 8 | Tiền: trần 100 tỷ, tổng có kiểm, `parseVnd` (VNĐ, "1tr5", "1 tỷ 2", dấu cách, không đệ quy, không quay lui) | 23, 37, 32, 38, 33 (phần tiền) | `risk:med` |
+| 9 | Luật vào lệnh: ngày KYC / ngày sinh không tương lai, NFC tên, dời lịch không trùng giờ cũ, khôi phục kiểm lại ngày, `seq` an toàn | 42, 49, 66-T7, 25, 34 | `risk:med` |
+| 10 | Người phối hợp theo ADR-0007 (lệnh, `updatePerson`, luật 5, spec §3.6) | 47 | `risk:med` |
+| 11 | Siết nhập backup: người đã xóa, chữ rỗng, chuỗi dời lịch, luật 8 hai chiều, `readBackup` truyền `now`, spec §6 | 04, 05, 06, 07, 86 | `risk:med` |
+| 12 | Migration dựng lại bảng an toàn | 44 | `risk:med` |
+| 13 | `DataTable` "hiện thêm" | 03 | `risk:med` |
+| 14 | Hiệu năng đọc db: `listAppointments` / `listStageTransitions` không qua drizzle lồng, đọc một lần mỗi revision dùng chung, `countRecords` bằng `COUNT(*)`, nhập backup một statement mỗi bảng | 20 (phần đọc), 71, 50 | `risk:med` |
+| 15 | Hiệu năng view: `monthGrid` O(N + 42), chỉ số theo RE một lượt, `scopeMatcher` dùng một lần | 63, 20 (phần tính), 17 | `risk:med` |
+| 16 | e2e nạp sẵn DB đã seed | 79 | `risk:low` (đụng `vite.config` → `build-exe`) |
+| 17 | Test hở domain / db | 12, 15, 33, 36, 41, 45, CX-B9 | `risk:low` |
+| 18 | Test hở app / e2e (gồm TG3 `lint:tokens` xanh giả, đọc file `.xlsx` tải về, `*-form.ts` vào coverage) | 10, 11, 13, 29, 61, 62, 66, 70, 75, 77 | `risk:low` |
+| 19 | Trợ năng nhỏ: số theo nhóm của lịch tháng / lưới năm, câu lỗi ngày Tùy chọn, dòng nhắc Lọc | 16, 27, 72 | `risk:low` |
+| 20 | Sắp tên chung `byName` + ngày ISO chỉ ở domain | 48, 88 | `risk:low` |
+| 21 | Ngày biên và gõ tắt: seed ở 1900 / 2100, "29/02" cuối năm, Nạp lại qua nửa đêm | 35, 39, 30 | `risk:low` |
+| 22 | Dọn code thừa: export domain / db không dùng, `app.subtitle` + nhánh chết, công thức % một nơi, `FailureAlert` chung, `staffMetrics` chỉ RE, `CanvasRenderer` | 18, 19, 40, 46, 69, 73, 87 | `risk:low` |
+
+Sau 22 Issue: cập nhật `docs/state/review-notes.md` (DR-43 vào ACCEPTED), đo lại đầu-cuối trên exe với dữ liệu tải → **G7 Phase 4**. Owner xóa `C:\workspace\deep-review-1-4\` khi không cần nữa (báo cáo gốc đã ở `raw/2026-10-06/`; probe / exe / log chỉ ở Home PC).
