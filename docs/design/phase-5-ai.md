@@ -3,7 +3,7 @@
 - **Cổng:** G1 (phạm vi, luồng, lược đồ) · G2 (schema output, mức bằng chứng, golden B01–B11) · **Trạng thái:** **Owner duyệt G1 / G2 07/10/2026** (PR #399; model mặc định `deepseek-v4.1-flash`)
 - **Quyết định Owner:** 07/10/2026 (AskUserQuestion trong phiên soạn spec, §1) + D-1 (07/10/2026, phụ lục ADR-0009)
 - **Nền:** ADR-0009 (provider, schema, validator, CURRENT / STALE / REJECTED, phụ lục D-1), ADR-0008 (cổng KYC, cờ material, "AI trích xuất"), ADR-0005 (zod đã duyệt), `docs/golden/kyc.md` (K01–K15), mockup `customer.html` (panel KYC Intelligence), `appointments.html` (khối AI ở chi tiết lịch)
-- **Không làm ở đây:** nội dung prompt và danh sách chặn (**G5**, file riêng sau khi Owner duyệt spec này); bố cục màn mới (**G3**, §9); hồ sơ eval E01–E20 (G2 riêng, §11)
+- **Không làm ở đây:** nội dung prompt và danh sách chặn (**G5**, `phase-5-prompts.md`); bố cục màn mới (**G3**, §9); hồ sơ eval E01–E20 (G2 riêng, §11)
 
 ## 1. Quyết định Owner 07/10/2026
 
