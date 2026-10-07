@@ -357,10 +357,13 @@ describe('reloadDemoData', () => {
     createTeam(before, { name: 'Sao Mai' });
     today = calendarDate(2026, 10, 1);
 
-    const backup = await app.reloadDemoData();
+    const reloaded = await app.reloadDemoData();
     await app.saves.idle();
 
-    expect(backup).toBe('project2c-20260927-101500.db');
+    expect(reloaded).toEqual({
+      anchor: calendarDate(2026, 10, 1),
+      backup: 'project2c-20260927-101500.db',
+    });
     expect(events).toEqual(['save', 'backup', 'save']);
     expect(app.db()).not.toBe(before);
     expect(listener).toHaveBeenCalledTimes(1);
@@ -370,6 +373,22 @@ describe('reloadDemoData', () => {
     createTeam(app.db(), { name: 'Hừng Đông' });
     await app.saves.idle();
     expect(teamNames(await openDatabase({ bytes: saves.at(-1) }))).toContain('Hừng Đông');
+  });
+
+  it('anchors the new data on the day it is seeded, after a backup that ran past midnight (DR-30)', async () => {
+    const { storage } = memoryStorage();
+    let today = TODAY;
+    const backup = storage.backup;
+    storage.backup = () => {
+      today = calendarDate(2026, 9, 28);
+      return backup();
+    };
+    const app = await openAppData({ storage, today: () => today, seed: fakeSeed });
+
+    const reloaded = await app.reloadDemoData();
+
+    expect(reloaded.anchor).toEqual(calendarDate(2026, 9, 28));
+    expect(teamNames(app.db())).toEqual(['Seed 28/09/2026']);
   });
 
   it('never saves the replaced database again: a late write to it cannot overwrite the file', async () => {
@@ -470,7 +489,7 @@ describe('reloadDemoData', () => {
     const app = await openAppData({ today: () => TODAY, seed: fakeSeed });
     createTeam(app.db(), { name: 'Sao Mai' });
 
-    await expect(app.reloadDemoData()).resolves.toBeUndefined();
+    await expect(app.reloadDemoData()).resolves.toEqual({ anchor: TODAY, backup: undefined });
     expect(teamNames(app.db())).toEqual(['Seed 27/09/2026']);
   });
 

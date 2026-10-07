@@ -500,6 +500,29 @@ describe('parseQuickDate', () => {
     });
   });
 
+  it('suggests 29/02 next year when this year has none and February is long past (DR-39)', () => {
+    expect(parseQuickDate('29/02', d(15, 12, 2027))).toEqual({
+      ok: false,
+      error: 'invalid-date',
+      nextYearSuggestion: d(29, 2, 2028),
+    });
+    // February ends 28/02/2027; 60 days later is 29/04/2027.
+    expect(parseQuickDate('29/02', d(29, 4, 2027))).toEqual({ ok: false, error: 'invalid-date' });
+    expect(parseQuickDate('29/02', d(30, 4, 2027))).toMatchObject({
+      nextYearSuggestion: d(29, 2, 2028),
+    });
+  });
+
+  it('suggests nothing for a missing day that next year lacks too, or that was typed with a year', () => {
+    // 2100 is not a leap year (a century not divisible by 400).
+    expect(parseQuickDate('29/02', d(15, 12, 2099))).toEqual({ ok: false, error: 'invalid-date' });
+    expect(parseQuickDate('31/04', d(15, 12, 2027))).toEqual({ ok: false, error: 'invalid-date' });
+    expect(parseQuickDate('29/02/2027', d(15, 12, 2027))).toEqual({
+      ok: false,
+      error: 'invalid-date',
+    });
+  });
+
   it('accepts short and padded forms, with surrounding spaces', () => {
     const today = d(26, 9, 2026);
     expect(parseQuickDate('5/1', today)).toMatchObject({ ok: true, date: d(5, 1, 2026) });

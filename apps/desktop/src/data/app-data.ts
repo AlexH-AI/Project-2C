@@ -106,10 +106,11 @@ export interface AppData {
   today(): CalendarDate;
   /**
    * Settings → Data: replaces everything with new simulated data anchored today. The exe first
-   * saves pending changes and backs the file up; resolves to the backup's file name (`undefined`
-   * in web mode). Rejects with `RELOAD_UNSAVED_CHANGES` while the last save failed.
+   * saves pending changes and backs the file up; resolves to the day the data is anchored on and
+   * the backup's file name (`undefined` in web mode). Rejects with `RELOAD_UNSAVED_CHANGES`
+   * while the last save failed.
    */
-  reloadDemoData(): Promise<string | undefined>;
+  reloadDemoData(): Promise<{ anchor: CalendarDate; backup: string | undefined }>;
   /** The current live records, for the import confirmation. */
   counts(): RecordCounts;
   /** Settings → Data: everything as a `.p2cbackup` file; the exe writes it into `exports\`. */
@@ -240,11 +241,11 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   };
 
   // Seeded apart and saved as one file: the saved file never holds a half-built database.
-  const demoData = async (): Promise<Uint8Array> => {
+  const demoData = async (anchor: CalendarDate): Promise<Uint8Array> => {
     const db = await openDatabase({ locateFile, now });
     try {
       const start = performance.now();
-      seed(db, today());
+      seed(db, anchor);
       // Read by the e2e check of #64 (under 5 s in the browser).
       performance.measure('p2c:demo-seed', { start });
       return db.export();
@@ -258,7 +259,8 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     if (storage) saves.persist(bytes);
     return db;
   };
-  const openNew = async (): Promise<Database> => openFrom(await demoData());
+  const openNew = async (anchor: CalendarDate): Promise<Database> =>
+    openFrom(await demoData(anchor));
 
   const stored = await storage?.load();
   let db: Database;
@@ -274,7 +276,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     release();
   } else {
     const ready = await snapshot?.(today());
-    db = ready ? await openFrom(ready) : await openNew();
+    db = ready ? await openFrom(ready) : await openNew(today());
   }
   const listeners = new Set<() => void>();
   let revision = 0;
@@ -318,7 +320,13 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     hasFile: storage !== undefined,
     saves,
     today,
-    reloadDemoData: () => replace(openNew),
+    async reloadDemoData() {
+      // The day is read once the backup is done, so the data and the message name the same day
+      // even when the dialog or the backup ran past midnight (DR-30).
+      let anchor!: CalendarDate;
+      const backup = await replace(() => openNew((anchor = today())));
+      return { anchor, backup };
+    },
     counts: () => countRecords(db),
     async exportBackup() {
       const name = `project2c-${localFileStamp(clock())}.p2cbackup`;

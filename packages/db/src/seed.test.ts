@@ -192,6 +192,23 @@ describe('seedDemoData', () => {
   });
 
   it(
+    'seeds on the first and the last day of the app, keeping every day in 1900–2100 (DR-35)',
+    async () => {
+      for (const anchorDate of [calendarDate(1900, 1, 1), calendarDate(2100, 12, 31)]) {
+        const { db } = await seeded(1, anchorDate);
+        expect(listTeams(db)).toHaveLength(3);
+        const days = db.sqlite.exec(
+          `SELECT MIN(day), MAX(day) FROM (SELECT date AS day FROM appointments
+           UNION ALL SELECT date FROM stage_transitions UNION ALL SELECT created_date FROM kyc_notes)`,
+        )[0]!.values[0]!;
+        expect(String(days[0]) >= '1900-01-01').toBe(true);
+        expect(String(days[1]) <= '2100-12-31').toBe(true);
+      }
+    },
+    SLOW,
+  );
+
+  it(
     'saves the file once, after the whole seed',
     async () => {
       const { persist } = await seeded(1);

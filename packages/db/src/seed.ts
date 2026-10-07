@@ -9,6 +9,8 @@ import {
   calendarDate,
   isPipelineStage,
   KYC_FIELDS,
+  MAX_YEAR,
+  MIN_YEAR,
   PIPELINE_STAGES,
   type CalendarDate,
   type CustomerStage,
@@ -109,7 +111,8 @@ interface Booked {
 export function seedDemoData(db: Database, options: SeedOptions): void {
   const rng = createRng(options.seed);
   const anchor = dayNumber(options.anchorDate);
-  let today = anchor - HISTORY_DAYS;
+  const { start, end } = simulatedDays(anchor);
+  let today = start;
   let tick = 0;
   const sources = {
     // Timestamps stop at the anchor day: what lies after it is only scheduled.
@@ -122,14 +125,26 @@ export function seedDemoData(db: Database, options: SeedOptions): void {
         throw new DbError('SEED_DATABASE_NOT_EMPTY');
       }
       const simulate = simulation(db, rng, anchor);
-      for (; today <= anchor + FUTURE_DAYS; today++) simulate(today);
+      for (; today <= end; today++) simulate(today);
     }),
   );
 }
 
+/**
+ * The days simulated: a year before the anchor day and 24 after it, cut to the app's dates
+ * (1900–2100, DR-35) — an anchor near either end gets a shorter history or future.
+ */
+function simulatedDays(anchor: number): { start: number; end: number } {
+  const first = dayNumber(calendarDate(MIN_YEAR, 1, 1));
+  const last = dayNumber(calendarDate(MAX_YEAR, 12, 31));
+  return {
+    start: Math.max(anchor - HISTORY_DAYS, first),
+    end: Math.min(anchor + FUTURE_DAYS, last),
+  };
+}
+
 function simulation(db: Database, rng: Rng, anchor: number): (day: number) => void {
-  const start = anchor - HISTORY_DAYS;
-  const end = anchor + FUTURE_DAYS;
+  const { start, end } = simulatedDays(anchor);
   const coordinators = new Map<string, Person[]>();
   const customers = new Map<string, SimCustomer[]>();
   const arrivals = new Map<number, Person[]>();
@@ -138,7 +153,8 @@ function simulation(db: Database, rng: Rng, anchor: number): (day: number) => vo
   const add = <T>(map: Map<number, T[]>, day: number, item: T) =>
     map.set(day, [...(map.get(day) ?? []), item]);
 
-  const kyc = kycSimulation(db, rng);
+  const born = birthYears(rng, toDate(anchor).year);
+  const kyc = kycSimulation(db, rng, born);
   const names = new Set<string>();
   const staffName = (): string => {
     const name = personName(rng);
@@ -159,13 +175,14 @@ function simulation(db: Database, rng: Rng, anchor: number): (day: number) => vo
       coordinators.set(re.id, [tl, ...shared]);
       customers.set(re.id, []);
       for (let c = 0; c < CUSTOMERS_PER_RE; c++) {
-        add(arrivals, c < STARTING_CUSTOMERS ? start : rng.int(start + 1, anchor - 7), re);
+        const late = c >= STARTING_CUSTOMERS && anchor - 7 > start;
+        add(arrivals, late ? rng.int(start + 1, anchor - 7) : start, re);
       }
     }
   }
 
   const arrive = (re: Person, day: number) => {
-    const given = profile(rng);
+    const given = profile(rng, born);
     const record = createCustomer(db, {
       name: personName(rng),
       reId: re.id,
@@ -226,7 +243,7 @@ function simulation(db: Database, rng: Rng, anchor: number): (day: number) => vo
   const resolve = (re: Person, { id, customer }: Booked, day: number) => {
     const outcome = rng.weighted(OUTCOMES);
     if (outcome === 'RESCHEDULE') {
-      const later = day + rng.int(1, 10);
+      const later = Math.min(day + rng.int(1, 10), end);
       const moved = rescheduleAppointment(db, id, {
         date: toDate(later),
         time: rng.pick(APPOINTMENT_TIMES),
@@ -290,7 +307,7 @@ function simulation(db: Database, rng: Rng, anchor: number): (day: number) => vo
 }
 
 /** KYC grows with the meetings (spec §7): notes, facts, conflicts and their settling. */
-function kycSimulation(db: Database, rng: Rng) {
+function kycSimulation(db: Database, rng: Rng, born: () => number | null) {
   const line = (field: KycField, value: KycValue) =>
     `${KYC_VALUES[field]!.label}: ${typeof value === 'boolean' ? (value ? 'có' : 'chưa có') : value}`;
   const addNote = (customer: SimCustomer, day: number, lines: string[]) => {
@@ -353,9 +370,10 @@ function kycSimulation(db: Database, rng: Rng) {
 
   const afterMeeting = (customer: SimCustomer, day: number) => {
     const { current } = customer.kyc;
-    if (!customer.kyc.hasBirthDate && rng.chance(BIRTH_DATE_CHANCE)) {
+    const year = !customer.kyc.hasBirthDate && rng.chance(BIRTH_DATE_CHANCE) ? born() : null;
+    if (year !== null) {
       // Through the profile: a SYSTEM note and the birth year fact (D2).
-      updateCustomerProfile(db, customer.id, { birthDate: { year: rng.int(1960, 2000) } });
+      updateCustomerProfile(db, customer.id, { birthDate: { year } });
       customer.kyc.hasBirthDate = true;
     }
     for (const [field, facts] of current) {
@@ -402,15 +420,31 @@ function personName(rng: Rng): string {
 }
 
 /** Most customers gave a full birth date, some only the year, a few nothing yet (spec §3.3). */
-function profile(rng: Rng): { birthDate: BirthDate | null; gender: Gender | null } {
-  const year = rng.int(1960, 2000);
+/**
+ * A customer's birth year: 26 to 66 years before the anchor's year (1960–2000 for 2026); null
+ * when it would fall before 1900, as near the app's first day (DR-35).
+ */
+function birthYears(rng: Rng, anchorYear: number): () => number | null {
+  return () => {
+    const year = rng.int(anchorYear - 66, anchorYear - 26);
+    return year < MIN_YEAR ? null : year;
+  };
+}
+
+function profile(
+  rng: Rng,
+  born: () => number | null,
+): { birthDate: BirthDate | null; gender: Gender | null } {
+  const year = born();
   const kind = rng.weighted(BIRTH_DATE_KINDS);
   const birthDate =
-    kind === 'full'
-      ? calendarDate(year, rng.int(1, 12), rng.int(1, 28))
-      : kind === 'year'
-        ? { year }
-        : null;
+    year === null
+      ? null
+      : kind === 'full'
+        ? calendarDate(year, rng.int(1, 12), rng.int(1, 28))
+        : kind === 'year'
+          ? { year }
+          : null;
   return { birthDate, gender: rng.chance(0.85) ? rng.pick(['MALE', 'FEMALE'] as const) : null };
 }
 

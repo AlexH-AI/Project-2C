@@ -6,7 +6,7 @@ import {
   type AppointmentTrigger,
   type CustomerRecord,
 } from '@p2c/db';
-import { formatDate, type CalendarDate, type Person } from '@p2c/domain';
+import { formatDate, formatDayMonth, type CalendarDate, type Person } from '@p2c/domain';
 import { Dialog, SelectField, StageBadge, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
@@ -265,7 +265,10 @@ export function dateFieldError(date: ScheduleDate, today: CalendarDate): string 
     : t(`date.error.${date.error}`);
 }
 
-/** A year-less day long past offers the same day next year (6b); the RE picks. */
+/**
+ * A year-less day long past, or one this year lacks (29/02), offers the same day next year (6b);
+ * the RE picks.
+ */
 export function DateSuggestion({
   date,
   onUse,
@@ -275,20 +278,29 @@ export function DateSuggestion({
   onUse: (text: string) => void;
   help: boolean;
 }) {
-  const read = date.ok || date.error === 'past' ? date : null;
-  if (!read?.suggestion) return null;
-  const next = formatDate(read.suggestion);
+  if (!('suggestion' in date) || !date.suggestion) return null;
+  const next = formatDate(date.suggestion);
+  // Without `date` it is a day this year lacks (29/02, DR-39): no past appointment, so no note
+  // about those.
   return (
     <p className={`${ALERT} flex flex-col items-start gap-1.5 border-warn`}>
-      {t('appointmentForm.suggest', {
-        date: formatDate(read.date),
-        n: Math.abs(read.daysFromToday),
-        next,
-      })}
+      {'date' in date
+        ? t('appointmentForm.suggest', {
+            date: formatDate(date.date),
+            n: Math.abs(date.daysFromToday),
+            next,
+          })
+        : t('appointmentForm.suggestMissing', {
+            year: date.suggestion.year - 1,
+            date: formatDayMonth(date.suggestion),
+            next,
+          })}
       <button type="button" className={`${CHIP} ${FOCUS}`} onClick={() => onUse(next)}>
         {t('appointmentForm.suggestUse', { date: next })}
       </button>
-      {help && <span className="text-xs text-fg-2">{t('appointmentForm.suggestHelp')}</span>}
+      {help && 'date' in date && (
+        <span className="text-xs text-fg-2">{t('appointmentForm.suggestHelp')}</span>
+      )}
     </p>
   );
 }

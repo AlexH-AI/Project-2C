@@ -364,6 +364,7 @@ export const vi = {
   'appointmentForm.whenBehind': 'đã qua {n} ngày',
   'appointmentForm.past': '{date} đã qua. Lịch mới phải từ hôm nay ({today}) trở đi.',
   'appointmentForm.suggest': '{date} đã qua {n} ngày. Ý anh là {next}?',
+  'appointmentForm.suggestMissing': 'Năm {year} không có ngày {date}. Ý anh là {next}?',
   'appointmentForm.suggestUse': 'Dùng {date}',
   'appointmentForm.suggestHelp':
     'App không tự đổi năm. Giữ nguyên là ghi lịch hẹn quá khứ (nhập bù).',
