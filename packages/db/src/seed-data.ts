@@ -304,3 +304,42 @@ export const KYC_VALUES: Readonly<
     values: ['Thuế thu nhập', 'Chăm sóc bố mẹ', 'Biến động thị trường'],
   },
 };
+
+/**
+ * Vietnamese labels of the AI input (prompts §1.1), the same as the app's i18n (`kycCategory.*`,
+ * `kycField.*`), which `db` cannot read.
+ */
+export const KYC_CATEGORY_LABELS: Readonly<Record<KycCategory, string>> = {
+  IDENTITY: 'Danh tính / tuổi',
+  FAMILY: 'Gia đình',
+  OCCUPATION_INCOME: 'Nghề nghiệp / nguồn thu',
+  ASSETS: 'Tài sản / AUM',
+  GOALS: 'Mục tiêu & mốc thời gian',
+  RISK_APPETITE: 'Khẩu vị rủi ro',
+  EXISTING_PROTECTION: 'Bảo vệ hiện có',
+  CONCERNS: 'Mối quan tâm',
+};
+
+export const KYC_FIELD_LABELS: Readonly<Record<KycField, string>> = {
+  birthYear: 'Năm sinh',
+  gender: 'Giới tính',
+  residence: 'Nơi sinh sống',
+  maritalStatus: 'Tình trạng hôn nhân',
+  childrenCount: 'Số con',
+  dependents: 'Người phụ thuộc',
+  occupation: 'Nghề nghiệp',
+  annualIncome: 'Thu nhập năm',
+  incomeSources: 'Nguồn thu',
+  totalAssets: 'Tổng tài sản',
+  assetAllocation: 'Phân bổ tài sản',
+  liabilities: 'Nợ phải trả',
+  primaryGoal: 'Mục tiêu chính',
+  goalHorizon: 'Mốc thời gian mục tiêu',
+  otherGoals: 'Mục tiêu khác',
+  riskProfile: 'Khẩu vị rủi ro',
+  investmentExperience: 'Kinh nghiệm đầu tư',
+  hasProtection: 'Đã có bảo vệ',
+  protectionDetails: 'Chi tiết bảo vệ',
+  mainConcern: 'Mối quan tâm chính',
+  otherConcerns: 'Mối quan tâm khác',
+};

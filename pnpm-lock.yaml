@@ -266,6 +266,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@p2c/ai':
+        specifier: workspace:*
+        version: link:../ai
       '@p2c/domain':
         specifier: workspace:*
         version: link:../domain

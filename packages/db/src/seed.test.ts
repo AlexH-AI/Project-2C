@@ -4,8 +4,11 @@ import {
   evaluateKycGate,
   formatIsoDate,
   KYC_GATE_STATES,
+  type KycCategory,
+  type KycField,
 } from '@p2c/domain';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { listAiAnalyses } from './ai-analyses';
 import { listAppointments } from './appointments';
 import { listCustomers, listStageTransitions } from './customers';
 import { openDatabase, type Database } from './database';
@@ -13,6 +16,7 @@ import { getKycProfile } from './kyc';
 import { listPolicies } from './policies';
 import { APPOINTMENT_TRIGGERS } from './schema';
 import { seedDemoData } from './seed';
+import { KYC_CATEGORY_LABELS, KYC_FIELD_LABELS } from './seed-data';
 import { createTeam, listPeople, listTeams } from './team';
 import { codeOf } from './test-support';
 
@@ -180,6 +184,46 @@ describe('seedDemoData', () => {
         gates.some((g) => g.warningFields.length > 0 && g.state !== 'CONFLICT_RESOLUTION'),
       ).toBe(true);
       expect(profiles.some(({ facts }) => facts.some((f) => f.status === 'superseded'))).toBe(true);
+    });
+
+    it('has a few Mock analyses (spec Phase 5 §7.3), current and stale, citing the facts sent', () => {
+      const analyses = listCustomers(db).flatMap((c) => listAiAnalyses(db, c.id));
+      expect(analyses.length).toBeGreaterThanOrEqual(10);
+      expect(analyses.length).toBeLessThanOrEqual(100);
+      expect(new Set(analyses.map((a) => a.mode))).toEqual(new Set(['analysis', 'discovery']));
+      expect(analyses.some((a) => a.state === 'CURRENT')).toBe(true);
+      // The latest of a customer whose KYC changed since: the panel shows the reminder (§7.2).
+      expect(analyses.some((a) => a.state === 'STALE' && a.reminder !== null)).toBe(true);
+      for (const analysis of analyses) {
+        expect(analysis).toMatchObject({ status: 'ACCEPTED', provider: 'MOCK', attempts: 1 });
+        expect(analysis.promptVersion).toBe(`${analysis.mode}@1`);
+        expect(formatIsoDate(analysis.date) < '2026-09-15').toBe(true);
+        // Each code is `F{seq}` of a fact of the customer, sent under the app's label (prompts §1.1).
+        const fieldOf = new Map(
+          db.sqlite
+            .exec(
+              `SELECT seq, field FROM kyc_facts WHERE customer_id = '${analysis.customerId}'`,
+            )[0]!
+            .values.map(([seq, field]) => [`F${String(seq)}`, field as KycField]),
+        );
+        const input = analysis.input as {
+          facts: { code: string; field: string }[];
+          missingCategories: { code: KycCategory; label: string }[];
+        };
+        for (const fact of input.facts) {
+          const field = fieldOf.get(fact.code)!;
+          expect(fact.field).toBe(field === 'birthYear' ? 'Tuổi' : KYC_FIELD_LABELS[field]);
+        }
+        for (const missing of input.missingCategories) {
+          expect(missing.label).toBe(KYC_CATEGORY_LABELS[missing.code]);
+        }
+        const sent = input.facts.map((f) => f.code);
+        const cited = Object.values(analysis.output as Record<string, { evidence: string[] }[]>)
+          .flat()
+          .flatMap((item) => item.evidence);
+        expect(cited.length).toBeGreaterThan(0);
+        expect(cited.every((code) => sent.includes(code))).toBe(true);
+      }
     });
   });
 

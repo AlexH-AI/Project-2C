@@ -1,16 +1,10 @@
 /**
  * Providers, models and reasoning levels of Settings → AI (spec Phase 5 §4.1, §4.2). The model list
  * is fixed in code (P3): only models served on `/chat/completions`; adding one is a small task, a
- * model on another endpoint goes through G4.
+ * model on another endpoint goes through G4. The providers and reasoning levels are in `./schema`,
+ * which `packages/db` shares to check the stored analyses.
  */
-export const AI_PROVIDERS = ['MOCK', 'OPENCODE_GO'] as const;
-
-export type AiProvider = (typeof AI_PROVIDERS)[number];
-
-/** `DEFAULT` sends no `reasoning_effort`; the others are sent as low / medium / high. */
-export const AI_REASONING_LEVELS = ['DEFAULT', 'LOW', 'MEDIUM', 'HIGH'] as const;
-
-export type AiReasoningLevel = (typeof AI_REASONING_LEVELS)[number];
+import type { AiReasoningLevel } from './schema';
 
 export type AiReasoningEffort = Exclude<AiReasoningLevel, 'DEFAULT'>;
 

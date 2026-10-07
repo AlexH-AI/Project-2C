@@ -5,6 +5,7 @@
  */
 import { calendarDate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
+import { listAiAnalyses, recordAiAnalysis, type NewAiAnalysis } from './ai-analyses';
 import {
   getAppointment,
   recordMeetingOutcome,
@@ -26,6 +27,7 @@ import { DbError } from './errors';
 import {
   addKycNote,
   getKycProfile,
+  listKycVersions,
   markKycConflict,
   recordKycNote,
   resolveKycConflict,
@@ -121,6 +123,10 @@ async function history() {
   restoreCustomer(db, minh.id);
   const kien = createCustomer(db, { name: 'Kiên', reId: re.id, stage: 'N3', date: day(4) });
   softDeleteCustomer(db, kien.id);
+  // Lan's analyses (spec Phase 5 §7): one by Mock, accepted, then one by a model, rejected.
+  const analysed = { customerId: lan.id, kycVersionId: listKycVersions(db, lan.id).at(-1)!.id };
+  const accepted = recordAiAnalysis(db, { ...ACCEPTED, ...analysed });
+  const rejected = recordAiAnalysis(db, { ...REJECTED, ...analysed });
   persist.mockClear();
   return {
     db,
@@ -134,9 +140,71 @@ async function history() {
       tl: tl.id,
       re: re.id,
       otherRe: otherRe.id,
+      accepted: accepted.id,
+      rejected: rejected.id,
     },
   };
 }
+
+/** What a Mock analysis is given (prompts §1.1), cut to the keys the import reads. */
+const INPUT = {
+  analysisDate: TODAY,
+  mode: 'analysis',
+  facts: [
+    { code: 'F1', field: 'Tuổi', value: '42', confirmedAt: '2026-09-01', conflict: false },
+    { code: 'F3', field: 'Số con', value: '2', confirmedAt: '2026-09-20', conflict: true },
+  ],
+  missingCategories: [{ code: 'RISK_APPETITE' }],
+  conflictWarnings: [],
+};
+
+/** An analysis output (spec §6.2) citing the input's facts and its missing hạng mục. */
+const OUTPUT = {
+  hypotheses: [{ text: 'Đặt gia đình lên trước', evidence: ['F1', 'F3'] }],
+  needs: [{ text: 'Kế hoạch học phí cho con', evidence: ['F3'] }],
+  painPoints: [{ text: 'Băn khoăn giữa hiện tại và mục tiêu xa', evidence: ['F1'] }],
+  themes: [{ text: 'Gia đình', evidence: ['F3'] }],
+  discoveryStrategy: [
+    { text: 'Làm rõ thứ tự ưu tiên', evidence: ['F1'] },
+    { text: 'Hỏi về khẩu vị rủi ro', evidence: [], missingCategory: 'RISK_APPETITE' },
+  ],
+  nextBestActions: [{ text: 'Hẹn buổi trao đổi về mục tiêu', evidence: ['F3'] }],
+  personalityNotes: [{ system: 'PSYCHOLOGY', text: 'Cần thời gian suy nghĩ', evidence: ['F1'] }],
+};
+
+const ACCEPTED: Omit<NewAiAnalysis, 'customerId' | 'kycVersionId'> = {
+  mode: 'analysis',
+  gateState: 'PAIN_POINT_ANALYSIS',
+  status: 'ACCEPTED',
+  provider: 'MOCK',
+  model: null,
+  reasoning: null,
+  promptVersion: 'analysis@1',
+  attempts: 1,
+  input: INPUT,
+  output: OUTPUT,
+  rawOutput: null,
+  validator: [{ attempt: 1, errors: [] }],
+  promptTokens: null,
+  completionTokens: null,
+};
+
+const REJECTED: Omit<NewAiAnalysis, 'customerId' | 'kycVersionId'> = {
+  ...ACCEPTED,
+  status: 'REJECTED',
+  provider: 'OPENCODE_GO',
+  model: 'deepseek-v4.1-flash',
+  reasoning: 'DEFAULT',
+  attempts: 2,
+  output: { hypotheses: [] },
+  rawOutput: '{"hypotheses": []}',
+  validator: [
+    { attempt: 1, errors: [{ code: 'V1', path: 'needs', detail: 'Required' }] },
+    { attempt: 2, errors: [{ code: 'V1', path: 'needs', detail: 'Required' }] },
+  ],
+  promptTokens: 1_200,
+  completionTokens: 300,
+};
 
 type Ids = Awaited<ReturnType<typeof history>>['ids'];
 
@@ -158,11 +226,50 @@ describe('importBackup — rules across tables', () => {
     async (seed) => {
       const db = await openDatabase();
       seedDemoData(db, { anchorDate: day(15), seed });
+      const backup = exportBackup(db);
+      // Its Mock analyses go through rules 11–14 too.
+      expect((JSON.parse(backup) as BackupJson).tables.ai_analyses!.length).toBeGreaterThan(0);
 
-      await expect(importBackup(exportBackup(db))).resolves.toBeDefined();
+      await expect(importBackup(backup)).resolves.toBeDefined();
     },
     60_000,
   );
+
+  it('brings the AI analyses back as they were (spec Phase 5 §7.3)', async () => {
+    const { db, ids } = await history();
+
+    const imported = await importBackup(exportBackup(db), { now: db.now });
+
+    expect(listAiAnalyses(imported.db, ids.lan)).toEqual(listAiAnalyses(db, ids.lan));
+    expect(b(imported.db).tables.ai_analyses).toEqual(b(db).tables.ai_analyses);
+  });
+
+  it('keeps no key, header or URL in an analysis (spec Phase 5 §7.1)', async () => {
+    const { db } = await history();
+
+    expect(Object.keys(b(db).tables.ai_analyses![0]!).sort()).toEqual([
+      'attempts',
+      'completion_tokens',
+      'created_at',
+      'customer_id',
+      'date',
+      'gate_state',
+      'id',
+      'input_json',
+      'kyc_version_id',
+      'mode',
+      'model',
+      'output_json',
+      'prompt_tokens',
+      'prompt_version',
+      'provider',
+      'raw_output',
+      'reasoning',
+      'seq',
+      'status',
+      'validator_json',
+    ]);
+  });
 
   it('accepts a deleted customer whose RE has since become a TL (spec §3.3)', async () => {
     const { db, ids } = await history();
@@ -245,6 +352,31 @@ describe('importBackup — rules across tables', () => {
         const cancelled = { ...booked, id: 'cancelled', status: 'CANCELLED' };
         b.tables.appointments!.push({ ...cancelled, rescheduled_from_id: null });
       },
+    ],
+    [
+      'a discovery analysis whose actions only name missing hạng mục',
+      (b, ids) => {
+        const ask = {
+          text: 'Hỏi về khẩu vị rủi ro',
+          evidence: [],
+          missingCategory: 'RISK_APPETITE',
+        };
+        Object.assign(analysis(b, ids.accepted), {
+          mode: 'discovery',
+          gate_state: 'PROFILE_DISCOVERY',
+          prompt_version: 'discovery@1',
+          output_json: JSON.stringify({
+            hypotheses: [],
+            discoveryStrategy: [ask, { ...ask, missingCategory: 'GOALS' }],
+            nextBestActions: [ask],
+            personalityNotes: [],
+          }),
+        });
+      },
+    ],
+    [
+      'a rejected analysis whose output could not be read',
+      (b, ids) => (analysis(b, ids.rejected).output_json = null),
     ],
   ];
 
@@ -583,6 +715,84 @@ describe('importBackup — rules across tables', () => {
       '2: a stage other than the latest live transition’s',
       (b, ids) => (row(b, 'customers', (c) => c.id === ids.lan).stage = 'N1'),
     ],
+    // Spec Phase 5 §7.3: its rules 1–4 are rules 11–14 here; what the table's CHECK refuses while
+    // loading is CHECK.
+    [
+      '11: an analysis of another customer’s KYC version',
+      (b, ids) => (analysis(b, ids.accepted).customer_id = ids.hoa),
+    ],
+    [
+      'UNIQUE: two analyses of a customer with the same seq',
+      (b, ids) => (analysis(b, ids.rejected).seq = 1),
+    ],
+    [
+      'CHECK: an analysis in extraction mode',
+      (b, ids) => (analysis(b, ids.accepted).mode = 'extraction'),
+    ],
+    [
+      'CHECK: an analysis at another gate than its mode’s',
+      (b, ids) => (analysis(b, ids.accepted).gate_state = 'PROFILE_DISCOVERY'),
+    ],
+    ['CHECK: an analysis pending', (b, ids) => (analysis(b, ids.accepted).status = 'PENDING')],
+    ['CHECK: an unknown provider', (b, ids) => (analysis(b, ids.rejected).provider = 'OPENAI')],
+    ['CHECK: an unknown reasoning', (b, ids) => (analysis(b, ids.rejected).reasoning = 'MAX')],
+    ['CHECK: Mock with a model', (b, ids) => (analysis(b, ids.accepted).model = 'glm-5.3')],
+    ['CHECK: Mock with a reasoning', (b, ids) => (analysis(b, ids.accepted).reasoning = 'LOW')],
+    ['CHECK: Mock with token counts', (b, ids) => (analysis(b, ids.accepted).prompt_tokens = 0)],
+    [
+      'CHECK: a model’s analysis with no model',
+      (b, ids) => (analysis(b, ids.rejected).model = null),
+    ],
+    [
+      'CHECK: a model’s analysis with no reasoning',
+      (b, ids) => (analysis(b, ids.rejected).reasoning = null),
+    ],
+    ['12: a blank model name', (b, ids) => (analysis(b, ids.rejected).model = '  ')],
+    ['12: a blank prompt version', (b, ids) => (analysis(b, ids.accepted).prompt_version = '')],
+    ['13: an input that is not JSON', (b, ids) => (analysis(b, ids.accepted).input_json = '{')],
+    [
+      '13: a validator report that is not JSON',
+      (b, ids) => (analysis(b, ids.rejected).validator_json = 'V1'),
+    ],
+    [
+      '13: a rejected output that is not JSON',
+      (b, ids) => (analysis(b, ids.rejected).output_json = '{"hypotheses":'),
+    ],
+    [
+      '13: an accepted output that is JSON null',
+      (b, ids) => (analysis(b, ids.accepted).output_json = 'null'),
+    ],
+    [
+      '13: an accepted output its mode’s schema refuses',
+      (b, ids) =>
+        (analysis(b, ids.accepted).output_json = JSON.stringify({ ...OUTPUT, needs: [] })),
+    ],
+    [
+      '13: evidence of a fact the input does not have',
+      (b, ids) => {
+        const themes = [{ text: 'Gia đình', evidence: ['F2'] }];
+        analysis(b, ids.accepted).output_json = JSON.stringify({ ...OUTPUT, themes });
+      },
+    ],
+    [
+      '13: evidence in the personality notes of a fact the input does not have',
+      (b, ids) => {
+        const notes = [{ system: 'ESOTERIC', text: 'Tuổi Thìn', evidence: ['F1', 'F9'] }];
+        analysis(b, ids.accepted).output_json = JSON.stringify({
+          ...OUTPUT,
+          personalityNotes: notes,
+        });
+      },
+    ],
+    [
+      '13: evidence when the input has no facts list',
+      (b, ids) => (analysis(b, ids.accepted).input_json = JSON.stringify({ facts: 'F1, F3' })),
+    ],
+    [
+      'CHECK: a rejected analysis with an empty raw output',
+      (b, ids) => (analysis(b, ids.rejected).raw_output = ''),
+    ],
+    ['14: an analysis dated after today', (b, ids) => (analysis(b, ids.rejected).date = TOMORROW)],
   ];
 
   it.each(broken)('refuses %s, the current database unchanged', async (label, damage) => {
@@ -599,7 +809,7 @@ describe('importBackup — rules across tables', () => {
     const rule = label.split(':')[0];
     expect(error).toMatchObject({ code: 'BACKUP_INVALID' });
     expect((error as DbError).params).toEqual(
-      rule === 'UNIQUE' || rule === 'VALUE' ? undefined : { rule: Number(rule) },
+      Number.isInteger(Number(rule)) ? { rule: Number(rule) } : undefined,
     );
     expect(db.export()).toEqual(before);
     expect(persist).not.toHaveBeenCalled();
@@ -773,6 +983,10 @@ function row(backup: BackupJson, table: string, which: (row: Row) => boolean): R
 
 function transition(backup: BackupJson, customerId: string, seq: number): Row {
   return row(backup, 'stage_transitions', (t) => t.customer_id === customerId && t.seq === seq);
+}
+
+function analysis(backup: BackupJson, id: string): Row {
+  return row(backup, 'ai_analyses', (a) => a.id === id);
 }
 
 /** The customer's first fact of the field. */
