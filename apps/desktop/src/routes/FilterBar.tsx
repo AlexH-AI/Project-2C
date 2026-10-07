@@ -62,7 +62,10 @@ export function FilterBar({
         {t('overview.filter')}
         {pending && <i aria-hidden="true" className="size-1.5 rounded-full bg-on-accent" />}
       </Button>
-      {pending && <span className="text-sm text-accent">{t('overview.pending')}</span>}
+      {/* Always there, so assistive tech reads the reminder the moment it appears (DR-72). */}
+      <span role="status" className={pending ? 'text-sm text-accent' : 'sr-only'}>
+        {pending && t('overview.pending')}
+      </span>
       <div className="flex-1" />
       <p className="m-0 text-sm text-fg-3 tabular-nums" aria-live="polite">
         {t('overview.viewing')} <b className="font-semibold text-fg-2">{viewing.period}</b>

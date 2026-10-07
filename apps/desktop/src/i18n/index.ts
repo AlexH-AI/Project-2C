@@ -52,6 +52,7 @@ export const PLAIN_SLOTS: ReadonlySet<string> = new Set([
   'note',
   'now',
   'number',
+  'parts',
   'period',
   'quarter',
   'range',

@@ -4,6 +4,7 @@ import {
   appointmentGroup,
   compareDates,
   daysBetween,
+  formatDate,
   formatDayMonth,
   inScope,
   isInPeriod,
@@ -305,6 +306,62 @@ export const APPOINTMENT_GROUPS = [
 /** All the appointments of a day or a month, the four groups together. */
 export const groupTotal = (counts: Readonly<Record<AppointmentGroup, number>>) =>
   counts.met + counts.missed + counts.unrecorded + counts.planned;
+
+/**
+ * The dots of a day (mockup overview.html part 2): unrecorded first, so a day of many appointments
+ * never hides the ones still to record.
+ */
+export const DOT_ORDER = [
+  'unrecorded',
+  'missed',
+  'met',
+  'planned',
+] as const satisfies readonly AppointmentGroup[];
+
+const GROUP_LABEL = Object.fromEntries(
+  APPOINTMENT_GROUPS.map((group) => [group.key, group.label]),
+) as Record<AppointmentGroup, MessageKey>;
+
+/** Each group with appointments and its count, as the dots or the bar show them. */
+function groupParts(
+  counts: Readonly<Record<AppointmentGroup, number>>,
+  order: readonly AppointmentGroup[],
+): string {
+  return order
+    .filter((group) => counts[group] > 0)
+    .map((group) => t('appointments.part', { group: t(GROUP_LABEL[group]), count: counts[group] }))
+    .join(t('sep.list'));
+}
+
+/**
+ * The accessible name of a day of the month calendar: its dots are hidden from assistive tech, so
+ * the name carries each group's count after the total (DR-16).
+ */
+export function dayLabel(cell: Pick<DayCell, 'date' | AppointmentGroup>): string {
+  const count = groupTotal(cell);
+  const values = { date: formatDate(cell.date), count };
+  return count === 0
+    ? t('appointments.dayCount', values)
+    : t('appointments.dayCountParts', { ...values, parts: groupParts(cell, DOT_ORDER) });
+}
+
+/** The accessible name of a month of the year grid, its bar's counts after the total (DR-16). */
+export function monthLabel(
+  cell: Pick<MonthCell, 'month' | AppointmentGroup>,
+  year: number,
+): string {
+  const count = groupTotal(cell);
+  const values = { month: cell.month, year, count };
+  return count === 0
+    ? t('appointments.monthCount', values)
+    : t('appointments.monthCountParts', {
+        ...values,
+        parts: groupParts(
+          cell,
+          APPOINTMENT_GROUPS.map((group) => group.key),
+        ),
+      });
+}
 
 const noAppointments = (): Record<AppointmentGroup, number> => ({
   met: 0,

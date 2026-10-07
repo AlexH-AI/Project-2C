@@ -57,7 +57,7 @@ test("opens on this month, today's day by team → RE, the list matching the sum
 
   await expect(calendar.getByRole('heading')).toHaveText('Lịch tháng 09/2026');
   await expect(calendar.getByRole('button', { pressed: true })).toHaveAccessibleName(
-    new RegExp(`^${TODAY}: \\d+ lịch hẹn$`),
+    new RegExp(`^${TODAY}: \\d+ lịch hẹn — Dự kiến \\d+$`),
   );
   await expect(day.getByRole('heading', { level: 2 })).toHaveText(`Trong ngày ${TODAY}`);
   await expect(day.getByRole('heading', { level: 3 })).toHaveText(TEAMS);
@@ -600,6 +600,10 @@ test('an appointment past and still scheduled counts as unrecorded: count line, 
     .first()
     .evaluate((dot) => getComputedStyle(dot).backgroundColor);
   expect(await firstDot).toBe('rgb(240, 160, 75)');
+  // Its name says so too: the dots are hidden from assistive tech (DR-16).
+  await expect(calendar.getByRole('button', { name: /^10\/09\/2026:/ })).toHaveAccessibleName(
+    /^10\/09\/2026: \d+ lịch hẹn — Chưa ghi kết quả [1-9]\d*, (Dời lịch \/ hủy \/ không đến \d+, )?Đã gặp \d+$/,
+  );
   // The list says so in the status column (display only).
   await showDay(page, '10/09/2026');
   const row = list.locator('tbody tr', { hasText: f.name }).filter({ hasText: '10/09/2026' });
@@ -610,6 +614,9 @@ test('an appointment past and still scheduled counts as unrecorded: count line, 
   await expect(
     year.getByRole('button', { name: /^Tháng 9\/2026:/ }).locator('[title^="Chưa ghi kết quả: "]'),
   ).toHaveCount(1);
+  await expect(year.getByRole('button', { name: /^Tháng 9\/2026:/ })).toHaveAccessibleName(
+    /^Tháng 9\/2026: [\d.]+ lịch — Đã gặp [\d.]+, Dời lịch \/ hủy \/ không đến [\d.]+, Chưa ghi kết quả [1-9]\d*, Dự kiến [\d.]+$/,
+  );
 });
 
 test('an appointment of yesterday still scheduled reads unrecorded everywhere it is shown', async ({
