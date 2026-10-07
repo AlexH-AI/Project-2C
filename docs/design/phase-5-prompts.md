@@ -299,6 +299,7 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 | Q1 | Chặn tên **loại** sản phẩm (§8.2 c)? | **Có** — cấm gợi ý sản phẩm theo ADR-0009; AI không viết "bảo hiểm trọn đời", "liên kết đơn vị"… kể cả khi chỉ mô tả nhu cầu |
 | Q2 | Chặn tên ngân hàng / công ty quản lý quỹ / mã chứng khoán? | **Chưa chặn ở v1**; prompt vẫn cấm gợi ý sản phẩm |
 | Q3 | Thêm dòng sản phẩm riêng của hãng Owner vào §8.2? | **Không** |
+| Q4 | V6 "khoản <số>" chỉ chặn khi đi kèm "Điều" (lệch chữ spec §6.4, §8.4) | **Đồng ý** |
 
 **Checklist:**
 
