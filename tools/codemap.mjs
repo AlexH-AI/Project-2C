@@ -6,6 +6,7 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, posix } from 'node:path';
 import {
+  CODEMAP_PACKAGES,
   END,
   START,
   listExports,
@@ -18,7 +19,6 @@ import {
   viewImports,
 } from './codemap-core.mjs';
 
-const PACKAGES = ['packages/domain', 'packages/db', 'packages/ui', 'apps/desktop'];
 // Claude Code loads the whole CLAUDE.md into context.
 const MAX_CHARS = 8000;
 
@@ -64,7 +64,7 @@ function generate(pkg, current) {
 
 const check = process.argv.includes('--check');
 const stale = [];
-for (const pkg of PACKAGES) {
+for (const pkg of CODEMAP_PACKAGES) {
   const path = join(pkg, 'CLAUDE.md');
   const current = read(path);
   let next;

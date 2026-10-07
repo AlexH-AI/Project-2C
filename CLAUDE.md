@@ -45,7 +45,7 @@ Memory của Claude chỉ nằm trên từng máy, nên quy tắc dùng chung ch
    - Trước mọi lần merge: `headRefOid` của PR phải trùng SHA ghi trong `REVIEW: PASS` mới nhất; head đổi sau PASS → review lại ở phiên sạch. Phiên review không commit (skill `review-pr` §5, P-1).
    - `main` được bảo vệ hai lớp: ruleset `protect-main` trên GitHub (bắt buộc qua PR, cấm force-push và xóa nhánh; không bắt buộc status check vì PR docs-only không chạy CI; bật 28/09/2026 khi repo đã public) và hook `.githooks/pre-push` chặn push thẳng lên `main` (bootstrap đặt `core.hooksPath`). Không bật auto-merge. Việc "CI xanh mới merge" không do server ép, nên Claude phải tự tuân thủ. **Không bao giờ** dùng `--no-verify` hay merge PR code khi CI chưa xanh.
    - **Dọn nhánh ngay sau mỗi lần merge** (Owner quyết định 28/09/2026), cả khi Claude merge lẫn khi Owner bảo merge, không cần hỏi lại: `merge-pr.mjs` tự làm (các bước chi tiết ở đầu file). Lệnh báo thay vì làm khi gặp thay đổi chưa commit, PR khác xếp chồng, hay nhánh / worktree không ở đúng SHA vừa merge (có thể có commit chưa push) → báo Owner. Nhánh của PR cùng task đã đóng không merge (hướng làm bị thay thế) → tự xóa cả remote lẫn local.
-   - CI (`.github/workflows/ci.yml`, ADR-0015; chi tiết ở `.claude/rules/ci.md`): PR chỉ đụng `docs/**` / `**/*.md` không chạy CI và merge được không cần CI, trừ 4 `CLAUDE.md` của package (có khối codemap, `pnpm verify` kiểm) tính là code; PR code chạy Verify + e2e. `merge-pr` chặn PR code khi `main` nhận code mới sau lúc CI của PR bắt đầu: `gh pr update-branch <N>` → CI → review lại head mới.
+   - CI (`.github/workflows/ci.yml`, ADR-0015; chi tiết ở `.claude/rules/ci.md`): PR chỉ đụng `docs/**` / `**/*.md` không chạy CI và merge được không cần CI, trừ `CLAUDE.md` của các package (có khối codemap, `pnpm verify` kiểm) tính là code; PR code chạy Verify + e2e. `merge-pr` chặn PR code khi `main` nhận code mới sau lúc CI của PR bắt đầu: `gh pr update-branch <N>` → CI → review lại head mới.
      - Nhãn `build-exe` **bắt buộc** khi PR đụng `apps/desktop/src-tauri/**`, Cargo, `rust-toolchain.toml`, `package.json`, `pnpm-lock.yaml` hoặc cấu hình build (`vite.config.*`, `tauri.conf.json`). `merge-pr` suy từ danh sách file và chặn khi thiếu nhãn. Gắn lúc tạo (`gh pr create --label build-exe`); gắn sau thì CI không chạy lại: push thêm hoặc `gh pr close` + `gh pr reopen`.
 6. Mỗi task một phiên mới (hoặc `/clear`).
 
@@ -73,7 +73,7 @@ apps/desktop/      Tauri 2 shell + React UI
 packages/domain/   TS thuần — không import package nào khác
 packages/db/       Drizzle schema, migrations, repositories; adapter Tauri SQLite + sql.js; seed
 packages/ui/       design tokens + components
-packages/ai/       (chưa tạo — Phase 5) provider adapters, prompts có version, zod schema, validators
+packages/ai/       zod schema output, adapter (Mock, OpenCode Go), prompt có version, validator — chỉ phụ thuộc domain + zod
 tools/             bootstrap, session-start/end, status.mjs, handoff.mjs (+ unit test)
 e2e/               Playwright (chạy trên bản build web)
 ```

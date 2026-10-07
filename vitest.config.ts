@@ -12,6 +12,7 @@ export default defineConfig({
       include: [
         'packages/domain/src/**/*.ts',
         'packages/db/src/**/*.ts',
+        'packages/ai/src/**/*.ts',
         'apps/desktop/src/data/**/*.ts',
         'apps/desktop/src/shell/*.ts',
         'apps/desktop/src/routes/**/*-view.ts',
@@ -25,6 +26,12 @@ export default defineConfig({
       // Numbers are the floor of what each area measured when set; raise them, never lower.
       thresholds: {
         'packages/domain/src/**': {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
+        'packages/ai/src/**': {
           statements: 100,
           branches: 100,
           functions: 100,

@@ -249,7 +249,7 @@ Chạy trên output đã parse; báo cáo = danh sách `{ code, path, detail }`.
 - Backup xuất / nhập nguyên bảng. Luật nhập mới (thêm vào `validateBackupInvariants`, lỗi → `BACKUP_INVALID`):
   1. `kyc_version_id` thuộc đúng `customer_id`; `seq` không trùng theo KH.
   2. `mode` / `gate_state` / `status` / `provider` / `reasoning` trong miền; Mock ⇔ `model`, `reasoning`, token đều `null`.
-  3. `input_json`, `validator_json` là JSON hợp lệ; `ACCEPTED` → `output_json` qua zod schema của `mode` và mọi `evidence` có trong `input_json`; `REJECTED` → `raw_output` không rỗng.
+  3. `input_json`, `validator_json` là JSON hợp lệ; `ACCEPTED` → `output_json` qua zod schema của `mode` và mọi `evidence` có trong `input_json`; `REJECTED` → `raw_output` không rỗng. Schema lấy từ `@p2c/ai/schema` (`db` chỉ được import module này của `ai`, ADR-0006 phụ lục 07/10/2026), luôn là **schema mới nhất** của mỗi chế độ, không giữ schema cũ theo `prompt_version`; đổi schema → nạp lại dữ liệu giả lập (R2-02).
   4. `date` không sau hôm nay (như luật 10 của Phase 3).
 - Dữ liệu giả lập (R2-02): seed thêm vài dòng Mock cho KH mẫu để màn có dữ liệu; không migration cho dữ liệu cũ.
 
@@ -296,6 +296,7 @@ Mục **AI** trong thanh mục Cài đặt (mockup `settings-data.html` đã có
 ## 10. `packages/ai` — ranh giới
 
 - Chỉ phụ thuộc `domain` + `zod`. Không import `db`, `ui`, Tauri. Adapter OpenCode Go nhận một hàm `invoke` được tiêm từ `apps/desktop` (ADR-0006, `pnpm lint:deps` thêm luật cho `ai`).
+- Ngược lại, `db` chỉ được import **đúng** module schema `@p2c/ai/schema` (cho luật nhập backup 3, §7.3); module này chỉ import `zod` + `domain` (ADR-0006 phụ lục 07/10/2026, Owner quyết).
 - Giao diện adapter: `complete({ model, reasoning, messages, maxTokens }) → { content, promptTokens, completionTokens }`; lỗi là `AiError` với mã §5.3.
 - **Mock**: không ngẫu nhiên, sinh output hợp lệ từ chính dữ kiện đầu vào (mỗi khối trích dữ kiện có thật, câu mẫu cố định); trích xuất Mock nhận vài mẫu chữ đơn giản ("<n> con", "kết hôn"…). Dùng cho demo, e2e.
 - Prompt: `packages/ai/src/prompts/<mode>.ts`, mỗi file một hằng `version`; đổi chữ prompt = tăng version + qua G5.

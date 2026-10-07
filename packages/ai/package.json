@@ -1,0 +1,17 @@
+{
+  "name": "@p2c/ai",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@p2c/domain": "workspace:*",
+    "zod": "4.6.5"
+  }
+}
