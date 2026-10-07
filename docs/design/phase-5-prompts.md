@@ -235,7 +235,7 @@ Ghi chú: "có thể", "có dấu hiệu" **không** bị chặn (prompt yêu c�
 |---|---|
 | liên kết đơn vị · liên kết chung · unit-linked · unit linked · universal life · whole life · term life · bảo hiểm tử kỳ · bảo hiểm hỗn hợp · bảo hiểm trọn đời · bảo hiểm niên kim · niên kim · bảo hiểm đầu tư · gói bảo hiểm · sản phẩm bảo hiểm · quyền lợi bổ trợ · sản phẩm bổ trợ · rider | có |
 
-Ghi chú: "giải pháp bảo vệ", "bảo vệ hiện có", "bảo vệ thu nhập", "quỹ dự phòng", "bảo hiểm sức khỏe" (chung chung, như câu hỏi gợi ý của danh mục) **không** bị chặn. Tên ngân hàng / công ty quản lý quỹ chưa chặn ở v1 (§9 câu hỏi 2).
+Ghi chú: "giải pháp bảo vệ", "bảo vệ hiện có", "bảo vệ thu nhập", "quỹ dự phòng", "bảo hiểm sức khỏe" (chung chung, như câu hỏi gợi ý của danh mục) **không** bị chặn. Tên ngân hàng / công ty quản lý quỹ / mã chứng khoán chưa chặn ở v1 (§9 Q2).
 
 ### 8.3 V5 — nhãn tính cách
 
@@ -292,11 +292,13 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 
 ## 9. Owner duyệt
 
-**Câu hỏi cần Owner chốt:**
+**Owner chốt 07/10/2026:**
 
-1. **Loại sản phẩm (§8.2 c)** có chặn không? Đề xuất **có** (ADR-0009 "không gợi ý sản phẩm"); hệ quả: AI không viết "bảo hiểm trọn đời", "liên kết đơn vị"… kể cả khi chỉ mô tả nhu cầu.
-2. **Tên ngân hàng / công ty quản lý quỹ / mã chứng khoán** có chặn ở v1 không? Đề xuất **chưa** (spec V4 chỉ nói sản phẩm / hãng bảo hiểm); prompt vẫn cấm gợi ý sản phẩm.
-3. **Hãng của anh** (công ty RE đang làm) có cần thêm tên dòng sản phẩm riêng nào vào §8.2 không? Anh gửi danh sách, em thêm.
+| # | Câu hỏi | Chốt |
+|---|---|---|
+| Q1 | Chặn tên **loại** sản phẩm (§8.2 c)? | **Có** — cấm gợi ý sản phẩm theo ADR-0009; AI không viết "bảo hiểm trọn đời", "liên kết đơn vị"… kể cả khi chỉ mô tả nhu cầu |
+| Q2 | Chặn tên ngân hàng / công ty quản lý quỹ / mã chứng khoán? | **Chưa chặn ở v1**; prompt vẫn cấm gợi ý sản phẩm |
+| Q3 | Thêm dòng sản phẩm riêng của hãng Owner vào §8.2? | **Không** |
 
 **Checklist:**
 
@@ -306,4 +308,4 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 - [ ] Prompt `extraction@1` + đầu vào (§4)
 - [ ] Message thử lại, Kiểm tra kết nối (§5, §6)
 - [ ] Cách so khớp (§7)
-- [ ] Danh sách chặn V3–V6 và ca kiểm C1–C14 (§8), gồm điểm lệch spec ở "khoản <số>" (§8.4)
+- [ ] Danh sách chặn V3–V6 và ca kiểm C1–C17 (§8), gồm điểm lệch spec ở "khoản <số>" (§8.4)
