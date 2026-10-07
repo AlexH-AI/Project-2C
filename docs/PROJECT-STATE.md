@@ -55,6 +55,7 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
 - 2026-10-07: Phase 4 closed at G7. OWNER checked the exe `3e84ce8` (CI artifact, run `37576148435`) by hand: stable, everything works (dialogs Escape / focus, F5 in the exe, "Hiện thêm", amount input "1tr5" / "VNĐ", coordinators, "Lịch hẹn lần n", Excel export). That exe is the Phase 4 release (CI artifact). OWNER metrics in `docs/metrics/phase-4.md`. Phase 5 next.
 - 2026-10-07: D-1 (G4 / G6, ADR-0009 appendix D-1): a Rust command calls OpenCode Go and holds the API key; the webview never sees the key and the CSP stays unchanged. New crates `keyring` 4.x (Windows store only) and `ureq` 3.x. The key lives only in Windows Credential Manager, never in the DB / `settings` / backup. No streaming in v1. A missing key or a network / 401 error is reported, with no automatic fallback to Mock.
 - 2026-10-07: Phase 5 spec approved at G1 / G2 (`docs/design/phase-5-ai.md`, PR #399). Any new KYC version makes older analyses STALE (material only changes the hint); a blocking KYC gate writes no history row; a short fixed model list (`/chat/completions` only), default `deepseek-v4.1-flash`, the Owner switches model and reasoning level in Settings; "AI trích xuất" is in Phase 5 and its suggestions are never stored.
+- 2026-10-07: Phase 5 spec §5.2 (after review of PR #399): only one AI request at a time, never two. Cancel keeps every AI button locked until the Rust request ends (up to the 120 s timeout); Rust itself rejects a second call with `AI_BUSY`.
 
 ## Next decision
 
