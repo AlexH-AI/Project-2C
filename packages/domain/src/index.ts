@@ -49,7 +49,9 @@ export {
   KYC_INSUFFICIENT_MESSAGE,
 } from './kyc-catalog';
 export type { KycCategory, KycCategorySpec, KycField, KycGateState } from './kyc-catalog';
-export { KYC_FACT_STATUSES } from './kyc-fact';
+export { KYC_FACT_STATUSES, normalizeKycValue } from './kyc-fact';
+export { EVIDENCE_LEVELS, evidenceLevel } from './evidence-level';
+export type { Evidence, EvidenceFact, EvidenceLevel } from './evidence-level';
 export {
   addNote,
   confirmFact,

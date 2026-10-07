@@ -12,6 +12,7 @@ import {
   KYC_FIELDS,
   markConflict,
   nextKycVersion,
+  normalizeKycValue as normalizeDomainKycValue,
   resolveConflict,
   type CalendarDate,
   type KycFact,
@@ -60,9 +61,6 @@ export interface KycChange {
   readonly version: KycVersionRecord | null;
 }
 
-/** Trường holding a whole number or a yes/no answer; every other trường holds text. */
-const NUMBER_FIELDS: ReadonlySet<KycField> = new Set(['birthYear', 'childrenCount']);
-const BOOLEAN_FIELDS: ReadonlySet<KycField> = new Set(['hasProtection']);
 /** Set from the customer profile only (D2). */
 const PROFILE_FIELDS: ReadonlySet<KycField> = new Set(
   (Object.keys(KYC_FIELDS) as KycField[]).filter((field) => KYC_FIELDS[field].fromProfile),
@@ -367,22 +365,16 @@ function requireField(field: string): KycField {
 }
 
 /**
- * Review #36: values are compared only after taking the type of their trường; `"2"` for a number
- * trường is `2`. Throws `INVALID_KYC_VALUE` for a value the trường cannot hold.
+ * The `domain` rules (spec Phase 5 §6.4), refusing as a `DbError` the UI can show: `INVALID_TEXT`
+ * for a NUL, as for any stored text, and `INVALID_KYC_VALUE` for a value the trường cannot hold.
  */
 export function normalizeKycValue(field: KycField, value: KycValue): KycValue {
-  const text = typeof value === 'string' ? cleanText(value) : null;
-  if (NUMBER_FIELDS.has(field)) {
-    const number = text !== null && /^\d+$/.test(text) ? Number(text) : value;
-    if (typeof number === 'number' && Number.isSafeInteger(number) && number >= 0) return number;
-  } else if (BOOLEAN_FIELDS.has(field)) {
-    if (typeof value === 'boolean') return value;
-    if (text === 'true' || text === 'false') return text === 'true';
-  } else if (typeof value !== 'boolean') {
-    const normalized = text ?? String(value);
-    if (normalized !== '') return normalized;
+  if (typeof value === 'string') cleanText(value);
+  try {
+    return normalizeDomainKycValue(field, value);
+  } catch {
+    throw new DbError('INVALID_KYC_VALUE');
   }
-  throw new DbError('INVALID_KYC_VALUE');
 }
 
 /**

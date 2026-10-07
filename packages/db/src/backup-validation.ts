@@ -8,6 +8,7 @@ import {
   assertValidTransition,
   calendarDate,
   fromIsoDate,
+  normalizeKycValue,
   PIPELINE_STAGES,
   REVIEWER_ROLES,
   type CustomerStage,
@@ -19,7 +20,7 @@ import { z } from 'zod';
 import { cleanText, isFee, optionalText, requireName, storedDate, today } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
-import { normalizeKycValue, profileFactValue, type ProfileFields } from './kyc';
+import { profileFactValue, type ProfileFields } from './kyc';
 
 const YEAR = /^\d{4}$/;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
