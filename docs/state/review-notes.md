@@ -37,6 +37,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - `AppointmentsScreen.tsx` (#239, không chặn): nhánh `!pickable` vẫn có thể gắn `bg-period-band` về lý thuyết; `inPeriod` ⇒ `pickable` nên không xảy ra.
 - Domain (R3): API `nextKycVersion`; ngày nhanh đầu năm (gợi ý năm trước?).
 - Token G3 (R4, Owner cân nhắc): viền ô nhập / mũi tên sắp xếp dưới 3:1.
+- Danh sách chặn G5 (#420, T-165, không chặn; chỉ đổi qua G5, xem khi chạy eval T-171): so bản bỏ dấu làm vài mục chặn cả câu bình thường. Đã thử: "khả năng ký" khớp "Khả năng kỹ thuật", "điểm số" khớp "Điểm sơ bộ…", "nhóm c" khớp "Nhóm C-level", "chốt được" khớp "Chốt được lịch hẹn". Một output đúng ranh giới bị chặn sẽ tốn một lần thử lại, hoặc thành `REJECTED`.
 
 ## RESOLVED
 
