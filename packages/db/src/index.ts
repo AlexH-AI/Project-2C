@@ -80,3 +80,15 @@ export type {
 export { seedDemoData } from './seed';
 export type { SeedOptions } from './seed';
 export { APPOINTMENT_TRIGGERS } from './schema';
+export { listAiAnalyses, recordAiAnalysis } from './ai-analyses';
+export type {
+  AiAnalysisMode,
+  AiAnalysisProvider,
+  AiAnalysisReasoning,
+  AiAnalysisRecord,
+  AiAnalysisReminder,
+  AiAnalysisState,
+  AiAnalysisStatus,
+  AiAnalysisView,
+  NewAiAnalysis,
+} from './ai-analyses';

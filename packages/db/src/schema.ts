@@ -282,3 +282,95 @@ export const kycVersions = sqliteTable(
     check('kyc_versions_material', sql`${t.material} IN (0, 1)`),
   ],
 );
+
+// ---- AI analyses (spec Phase 5 §7, ADR-0009) ----
+
+/**
+ * The modes that keep a history, each with the KYC gate it runs at (§7.1); extraction is never
+ * stored (P4), nor is a blocked gate (P2).
+ */
+export const AI_ANALYSIS_GATES = {
+  analysis: 'PAIN_POINT_ANALYSIS',
+  discovery: 'PROFILE_DISCOVERY',
+} as const;
+export const AI_ANALYSIS_MODES = ['analysis', 'discovery'] as const;
+export const AI_ANALYSIS_STATUSES = ['ACCEPTED', 'REJECTED'] as const;
+/**
+ * The same values as `AI_PROVIDERS` / `AI_REASONING_LEVELS` of `@p2c/ai`, whose models module `db`
+ * may not import (ADR-0006 phụ lục 07/10/2026).
+ */
+export const AI_ANALYSIS_PROVIDERS = ['MOCK', 'OPENCODE_GO'] as const;
+export const AI_ANALYSIS_REASONING = ['DEFAULT', 'LOW', 'MEDIUM', 'HIGH'] as const;
+/** Characters of a rejected raw output kept (§7.1). */
+export const MAX_AI_RAW_OUTPUT = 20_000;
+
+/** Append-only: no `updated_at` / `deleted_at`, and a trigger refuses any update or delete. */
+export const aiAnalyses = sqliteTable(
+  'ai_analyses',
+  {
+    id: text('id').primaryKey(),
+    customerId: text('customer_id')
+      .notNull()
+      .references(() => customers.id),
+    /** Order of recording per customer; "latest" is the highest `seq`, never the date. */
+    seq: integer('seq').notNull(),
+    /** The KYC version the input was taken from, of the same customer. */
+    kycVersionId: text('kyc_version_id')
+      .notNull()
+      .references(() => kycVersions.id),
+    mode: text('mode', { enum: AI_ANALYSIS_MODES }).notNull(),
+    gateState: text('gate_state').notNull(),
+    status: text('status', { enum: AI_ANALYSIS_STATUSES }).notNull(),
+    provider: text('provider', { enum: AI_ANALYSIS_PROVIDERS }).notNull(),
+    model: text('model'),
+    reasoning: text('reasoning', { enum: AI_ANALYSIS_REASONING }),
+    promptVersion: text('prompt_version').notNull(),
+    attempts: integer('attempts').notNull(),
+    inputJson: text('input_json').notNull(),
+    /** The parsed output of the last attempt; null for a rejected one that did not parse. */
+    outputJson: text('output_json'),
+    /** The raw text of the last attempt, kept only when rejected. */
+    rawOutput: text('raw_output'),
+    validatorJson: text('validator_json').notNull(),
+    promptTokens: integer('prompt_tokens'),
+    completionTokens: integer('completion_tokens'),
+    date: text('date').notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [
+    uniqueIndex('ai_analyses_customer_seq').on(t.customerId, t.seq),
+    check(
+      'ai_analyses_mode_gate',
+      sql.join(
+        Object.entries(AI_ANALYSIS_GATES).map(
+          ([mode, gate]) =>
+            sql`(${t.mode} = ${sql.raw(`'${mode}'`)} AND ${t.gateState} = ${sql.raw(`'${gate}'`)})`,
+        ),
+        sql` OR `,
+      ),
+    ),
+    check('ai_analyses_status', sql`${t.status} IN (${list(AI_ANALYSIS_STATUSES)})`),
+    check('ai_analyses_provider', sql`${t.provider} IN (${list(AI_ANALYSIS_PROVIDERS)})`),
+    check(
+      'ai_analyses_reasoning',
+      sql`${t.reasoning} IS NULL OR ${t.reasoning} IN (${list(AI_ANALYSIS_REASONING)})`,
+    ),
+    check(
+      'ai_analyses_mock',
+      sql`${t.provider} <> 'MOCK' OR (${t.model} IS NULL AND ${t.reasoning} IS NULL AND ${t.promptTokens} IS NULL AND ${t.completionTokens} IS NULL)`,
+    ),
+    check(
+      'ai_analyses_model',
+      sql`${t.provider} = 'MOCK' OR (${t.model} IS NOT NULL AND ${t.reasoning} IS NOT NULL)`,
+    ),
+    check('ai_analyses_attempts', sql`${t.attempts} IN (1, 2)`),
+    check(
+      'ai_analyses_tokens',
+      sql`(${t.promptTokens} IS NULL OR ${t.promptTokens} >= 0) AND (${t.completionTokens} IS NULL OR ${t.completionTokens} >= 0)`,
+    ),
+    check(
+      'ai_analyses_outcome',
+      sql`(${t.status} = 'ACCEPTED' AND ${t.outputJson} IS NOT NULL AND ${t.rawOutput} IS NULL) OR (${t.status} = 'REJECTED' AND coalesce(length(${t.rawOutput}), 0) BETWEEN 1 AND ${sql.raw(String(MAX_AI_RAW_OUTPUT))})`,
+    ),
+  ],
+);
