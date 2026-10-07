@@ -5,6 +5,7 @@ import {
   CARD,
   FOCUS,
   groupTotal as total,
+  monthLabel,
   type MonthCell,
 } from './appointments-view';
 
@@ -89,11 +90,7 @@ function MonthButton({
     <button
       type="button"
       aria-current={cell.state === 'current' ? 'date' : undefined}
-      aria-label={t('appointments.monthCount', {
-        month: cell.month,
-        year,
-        count: formatCount(count),
-      })}
+      aria-label={monthLabel(cell, year)}
       onClick={() => onPick(cell.month)}
       className={`flex cursor-pointer flex-col gap-2 rounded-md border px-2.75 pt-2.25 pb-2.5 text-left tabular-nums focus-visible:outline-offset-2 ${FOCUS} ${CELL[cell.state]}`}
     >

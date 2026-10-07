@@ -14,8 +14,10 @@ import {
   appointmentsByRe,
   dateTone,
   dayBoard,
+  dayLabel,
   groupTotal,
   monthGrid,
+  monthLabel,
   outcomeText,
   personLabel,
   reviewerChoices,
@@ -587,6 +589,25 @@ describe('summaryText', () => {
       '172 lịch · 64 đã gặp · 5 chưa ghi kết quả',
     );
     expect(summaryText({ total: 12, met: 3, unrecorded: 0 })).toBe('12 lịch · 3 đã gặp');
+  });
+});
+
+describe('dayLabel / monthLabel', () => {
+  // The dots and bars are hidden from assistive tech: the name carries each group's count (DR-16).
+  it('names a day with its total, then each group it has, unrecorded first like its dots', () => {
+    const cell = { date: day(10, 4), met: 2, missed: 0, unrecorded: 1, planned: 0 };
+    expect(dayLabel(cell)).toBe('04/10/2026: 3 lịch hẹn — Chưa ghi kết quả 1, Đã gặp 2');
+    expect(dayLabel({ ...cell, met: 0, unrecorded: 0 })).toBe('04/10/2026: 0 lịch hẹn');
+  });
+
+  it('names a month with its total, then each group it has in the order of its bar', () => {
+    const cell = { month: 9, met: 1566, missed: 151, unrecorded: 0, planned: 3 };
+    expect(monthLabel(cell, 2026)).toBe(
+      'Tháng 9/2026: 1.720 lịch — Đã gặp 1.566, Dời lịch / hủy / không đến 151, Dự kiến 3',
+    );
+    expect(monthLabel({ month: 12, met: 0, missed: 0, unrecorded: 0, planned: 0 }, 2026)).toBe(
+      'Tháng 12/2026: 0 lịch',
+    );
   });
 });
 

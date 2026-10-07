@@ -68,15 +68,34 @@ test('custom range edits start and end and refuses a start after the end', async
   await expect(label).toHaveText('11/09 – 20/09/2026');
   await expect(start).toHaveValue('11/09/2026');
 
+  // Each refusal says why, and both fields point to the note (DR-27).
+  const reversed = 'Từ ngày phải trước hoặc trùng Đến ngày';
   await start.fill('25/09/2026');
   await start.blur();
   await expect(start).toHaveAttribute('aria-invalid', 'true');
+  await expect(end).toHaveAttribute('aria-invalid', 'true');
+  await expect(picker.getByText(reversed)).toBeVisible();
+  await expect(start).toHaveAccessibleDescription(reversed);
+  await expect(end).toHaveAccessibleDescription(reversed);
   await expect(label).toHaveText('11/09 – 20/09/2026');
 
+  // A date that does not exist marks only its own field.
+  const invalid = 'Ngày không có thật — nhập theo dd/mm/yyyy';
   await start.fill('31/02/2026');
   await start.press('Enter');
   await expect(start).toHaveAttribute('aria-invalid', 'true');
+  await expect(end).toHaveAttribute('aria-invalid', 'false');
+  await expect(picker.getByText(invalid)).toBeVisible();
+  await expect(picker.getByText(reversed)).toHaveCount(0);
+  await expect(start).toHaveAccessibleDescription(invalid);
   await expect(label).toHaveText('11/09 – 20/09/2026');
+
+  await start.fill('12/09/2026');
+  await start.press('Enter');
+  await expect(label).toHaveText('12/09 – 20/09/2026');
+  await expect(start).toHaveAttribute('aria-invalid', 'false');
+  await expect(start).toHaveAccessibleDescription('');
+  await expect(picker.getByText(invalid)).toHaveCount(0);
 });
 
 // Spec Phase 4 §3.1: a custom range runs at most 3 calendar months.

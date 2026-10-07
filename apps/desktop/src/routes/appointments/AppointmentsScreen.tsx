@@ -38,7 +38,9 @@ import {
   CARD,
   dateTone,
   dayBoard,
+  dayLabel,
   DATE_TONE_CELL,
+  DOT_ORDER,
   FOCUS,
   groupTotal,
   monthGrid,
@@ -402,9 +404,6 @@ const DOT = Object.fromEntries(APPOINTMENT_GROUPS.map((group) => [group.key, gro
   string
 >;
 
-/** The dots of a day (mockup overview.html part 2). */
-const DOT_ORDER = ['unrecorded', 'missed', 'met', 'planned'] as const;
-
 function Dot({ kind }: { kind: AppointmentGroup }) {
   return <i aria-hidden="true" className={`inline-block size-2 rounded-full ${DOT[kind]}`} />;
 }
@@ -463,7 +462,6 @@ function DayButton({
     );
   }
   const count = groupTotal(cell);
-  // Unrecorded first, so a day of many appointments never hides the ones still to record.
   const dots = DOT_ORDER.flatMap((kind) => Array<AppointmentGroup>(cell[kind]).fill(kind)).slice(
     0,
     8,
@@ -473,7 +471,7 @@ function DayButton({
       type="button"
       aria-pressed={picked}
       aria-current={isToday ? 'date' : undefined}
-      aria-label={t('appointments.dayCount', { date: formatDate(cell.date), count })}
+      aria-label={dayLabel(cell)}
       onClick={() => onPick(cell.date)}
       className={`${CELL} cursor-pointer ${FOCUS} ${background} ${border} ${ring}`}
     >

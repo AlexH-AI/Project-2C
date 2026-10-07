@@ -7,7 +7,10 @@ async function openOverview(page: Page) {
   return {
     kinds: page.getByRole('radiogroup', { name: 'Loại kỳ' }),
     filter: page.getByRole('button', { name: 'Lọc', exact: true }),
-    pending: page.getByText('Đã đổi kỳ / góc nhìn — bấm Lọc để cập nhật'),
+    // A status, so assistive tech reads it the moment it appears (DR-72).
+    pending: page
+      .getByRole('status')
+      .filter({ hasText: 'Đã đổi kỳ / góc nhìn — bấm Lọc để cập nhật' }),
     viewing: page.locator('p', { hasText: 'Đang xem:' }),
     kpis: page.getByRole('region', { name: 'Chỉ số của kỳ' }),
     scope: page.getByRole('radiogroup', { name: 'Góc nhìn' }),

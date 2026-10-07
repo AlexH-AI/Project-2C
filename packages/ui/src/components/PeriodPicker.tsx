@@ -29,7 +29,11 @@ export interface PeriodPickerLabels extends PeriodLabelTemplates {
   to: string;
   /** Placeholder of the custom date fields, e.g. dd/mm/yyyy. */
   dateFormat: string;
-  /** Note under the custom date fields when the range runs past the 3-month cap. */
+  /** Note by the custom date fields when one is not a real dd/mm/yyyy date. */
+  customInvalid: string;
+  /** Note by the custom date fields when the start comes after the end. */
+  customReversed: string;
+  /** Note by the custom date fields when the range runs past the 3-month cap. */
   customTooLong: string;
 }
 
@@ -40,8 +44,8 @@ interface PeriodPickerProps {
   labels: PeriodPickerLabels;
 }
 
-/** Why typed custom dates were refused: not dates / start after end, or past the 3-month cap. */
-type DraftError = 'invalid' | 'too-long';
+/** Why typed custom dates were refused: not dates, start after end, or past the 3-month cap. */
+type DraftError = 'invalid' | 'reversed' | 'too-long';
 
 /** Text typed in the custom range fields, not yet applied. */
 interface Draft {
@@ -53,7 +57,8 @@ interface Draft {
 function tryCustomPeriod(start: string, end: string): Period | DraftError {
   const from = parseDate(start);
   const to = parseDate(end);
-  if (!from || !to || compareDates(from, to) > 0) return 'invalid';
+  if (!from || !to) return 'invalid';
+  if (compareDates(from, to) > 0) return 'reversed';
   return customRangeAllowed(from, to) ? customPeriod(from, to) : 'too-long';
 }
 
@@ -65,11 +70,12 @@ const stepClass = `cursor-pointer rounded-sm px-1.5 py-0.5 text-lg leading-none 
  * a step that would leave 1900–2100 (or a custom range's 3-month cap) is disabled; "Hôm nay"
  * (always enabled) goes to the period containing today.
  * Custom dates are typed as dd/mm/yyyy (not `<input type="date">`, whose format follows the OS
- * locale) and applied on Enter or leaving the field; a range over 3 months is refused with a note.
+ * locale) and applied on Enter or leaving the field; a date that does not exist, a start after the end
+ * or a range over 3 months is refused with a note the fields point to.
  */
 export function PeriodPicker({ value, onChange, today, labels }: PeriodPickerProps) {
   const titleId = useId();
-  const tooLongId = useId();
+  const errorId = useId();
   const [draft, setDraft] = useState<Draft | null>(null);
 
   const change = (period: Period) => {
@@ -90,20 +96,29 @@ export function PeriodPicker({ value, onChange, today, labels }: PeriodPickerPro
     else change(period);
   };
 
+  // A date that does not exist marks its own field; a reversed or too long range marks both.
+  const fieldInvalid = (field: 'start' | 'end') =>
+    shown.error === 'invalid' ? parseDate(shown[field]) === null : shown.error !== null;
+  const errorNote = {
+    invalid: labels.customInvalid,
+    reversed: labels.customReversed,
+    'too-long': labels.customTooLong,
+  } as const satisfies Record<DraftError, string>;
+
   const dateField = (field: 'start' | 'end', label: string) => (
     <input
       type="text"
       inputMode="numeric"
       aria-label={label}
-      aria-invalid={shown.error !== null}
-      aria-describedby={shown.error === 'too-long' ? tooLongId : undefined}
+      aria-invalid={fieldInvalid(field)}
+      aria-describedby={shown.error ? errorId : undefined}
       placeholder={labels.dateFormat}
       value={shown[field]}
       onChange={(event) => setDraft({ ...shown, [field]: event.target.value, error: null })}
       onBlur={apply}
       onKeyDown={(event: KeyboardEvent) => event.key === 'Enter' && apply()}
       className={`w-28 rounded-sm border bg-surface-2 px-2.5 py-1 text-sm text-fg tabular-nums ${focusRing} ${
-        shown.error ? 'border-danger' : 'border-border'
+        fieldInvalid(field) ? 'border-danger' : 'border-border'
       }`}
     />
   );
@@ -156,9 +171,9 @@ export function PeriodPicker({ value, onChange, today, labels }: PeriodPickerPro
         <>
           {dateField('start', labels.from)}
           {dateField('end', labels.to)}
-          {shown.error === 'too-long' && (
-            <span id={tooLongId} className="text-xs text-danger">
-              {labels.customTooLong}
+          {shown.error && (
+            <span id={errorId} className="text-xs text-danger">
+              {errorNote[shown.error]}
             </span>
           )}
         </>
