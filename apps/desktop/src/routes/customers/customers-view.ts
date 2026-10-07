@@ -1,5 +1,6 @@
 import type { BirthDate, CustomerRecord } from '@p2c/db';
 import {
+  byName,
   CLOSED_STAGES,
   PIPELINE_STAGES,
   assertValidTransition,
@@ -46,8 +47,6 @@ export interface CustomerData {
   readonly transitions: readonly StageTransition[];
   readonly policies: readonly Policy[];
 }
-
-const byName = new Intl.Collator('vi').compare;
 
 /** The customers in scope, by stage (mockup customers.html). */
 export function customerBoard(data: CustomerData, scope: Scope): CustomerBoard {

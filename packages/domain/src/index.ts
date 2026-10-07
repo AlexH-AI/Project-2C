@@ -20,6 +20,7 @@ export {
   formatIsoDate,
   formatLocalDateTime,
   formatPeriodValue,
+  fromIsoDate,
   fromLocalDate,
   localFileStamp,
   isInPeriod,
@@ -96,6 +97,7 @@ export {
   stageSnapshotter,
 } from './stage-snapshot';
 export type { StageCounts } from './stage-snapshot';
+export { byName } from './name-order';
 export { formatVnd, formatVndCompact, formatVndDelta, MAX_FEE_VND, parseVnd } from './money';
 export { formatCount, formatFileSize, formatPercent } from './number';
 export type { Vnd, VndParseError, VndParseResult } from './money';

@@ -12,10 +12,10 @@ import {
   type Customer,
   type CustomerStage,
   type StageTransition,
+  fromIsoDate,
 } from '@p2c/domain';
 import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import {
-  fromIsoDate,
   liveCustomer,
   nextSeq,
   prepared,
@@ -25,8 +25,8 @@ import {
   selectRows,
   stampDeleted,
   today,
-  toIsoDate,
-  toPastIsoDate,
+  storedDate,
+  storedPastDate,
 } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
@@ -64,12 +64,13 @@ export interface NewCustomer extends CustomerProfile {
 
 // ---- reads ----------------------------------------------------------------
 
+/** By id, as `listTeams`: the screens order names with `byName` of domain (DR-48). */
 export function listCustomers(db: Database): CustomerRecord[] {
   return db.orm
     .select()
     .from(customers)
     .where(isNull(customers.deletedAt))
-    .orderBy(asc(customers.name))
+    .orderBy(asc(customers.id))
     .all()
     .map(toCustomer);
 }
@@ -105,7 +106,7 @@ export function listStageTransitions(db: Database, customerId?: string): StageTr
 export function createCustomer(db: Database, input: NewCustomer): CustomerRecord {
   return db.transaction(() => {
     const profile = validateProfile(db, input);
-    toPastIsoDate(db, input.date);
+    storedPastDate(db, input.date);
     const at = db.now().toISOString();
     const id = ulid(db.now(), db.random);
     db.orm
@@ -173,7 +174,7 @@ export function changeStageManually(
 ): StageTransition {
   return db.transaction(() => {
     liveCustomer(db, customerId);
-    toPastIsoDate(db, change.date);
+    storedPastDate(db, change.date);
     return appendTransition(db, customerId, change.to, change.date, null);
   });
 }
@@ -213,7 +214,7 @@ export function appendTransition(
   appointmentId: string | null,
 ): StageTransition {
   const latest = latestTransition(db, customerId);
-  const isoDate = toIsoDate(date);
+  const isoDate = storedDate(date);
   if (latest && compareDates(date, fromIsoDate(latest.date)) < 0) {
     throw new DbError('TRANSITION_BEFORE_LATEST', { date: formatDate(fromIsoDate(latest.date)) });
   }
@@ -298,9 +299,9 @@ function validateProfile(db: Database, input: CustomerProfile) {
 
 /** A birth has already happened (DR-42): a year alone is after today only from next year on. */
 function birthDateText(db: Database, birthDate: BirthDate): string {
-  if ('month' in birthDate) return toPastIsoDate(db, birthDate);
+  if ('month' in birthDate) return storedPastDate(db, birthDate);
   // A year alone is checked as 1 January of that year.
-  return toPastIsoDate(db, { year: birthDate.year, month: 1, day: 1 }).slice(0, 4);
+  return storedPastDate(db, { year: birthDate.year, month: 1, day: 1 }).slice(0, 4);
 }
 
 function freeCode(db: Database): string {

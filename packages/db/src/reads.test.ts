@@ -3,7 +3,7 @@
  * through raw SQL, and `countRecords` counts in SQL. Each must give exactly what the drizzle
  * queries they replace gave — kept here as the reference.
  */
-import { calendarDate } from '@p2c/domain';
+import { calendarDate, fromIsoDate } from '@p2c/domain';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -13,7 +13,6 @@ import {
   scheduleAppointment,
   softDeleteAppointment,
 } from './appointments';
-import { fromIsoDate } from './common';
 import {
   changeStageManually,
   createCustomer,

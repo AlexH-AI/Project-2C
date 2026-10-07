@@ -1,4 +1,5 @@
 import {
+  byName,
   appointmentCountsByMark,
   appointmentCountsByScope,
   closeRate,
@@ -87,8 +88,6 @@ export const REPORT_STAGES = [
   'ON_HOLD',
   'LOST',
 ] as const satisfies readonly CustomerStage[];
-
-const byName = new Intl.Collator('vi').compare;
 
 const METRIC_SUMS = ['rfCount', 'submittedCount', 'caseSize', 'issuedCount', 'revenue'] as const;
 const APPOINTMENT_SUMS = ['met', 'missed', 'unrecorded', 'planned', 'total'] as const;

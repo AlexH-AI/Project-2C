@@ -3,7 +3,7 @@ import { calendarDate } from '@p2c/domain';
 import { compareCells, compareCellsThen } from './compare-cells';
 
 describe('compareCells', () => {
-  it('orders text with Vietnamese collation, ignoring case', () => {
+  it('orders text with Vietnamese collation, as byName of domain', () => {
     const names = ['Đào Minh', 'an Khang', 'Bình', 'Ân Thị'];
     expect([...names].sort((a, b) => compareCells('text', a, b))).toEqual([
       'an Khang',

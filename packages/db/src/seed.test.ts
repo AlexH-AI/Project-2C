@@ -1,7 +1,12 @@
-import { APPOINTMENT_STATUSES, calendarDate, evaluateKycGate, KYC_GATE_STATES } from '@p2c/domain';
+import {
+  APPOINTMENT_STATUSES,
+  calendarDate,
+  evaluateKycGate,
+  formatIsoDate,
+  KYC_GATE_STATES,
+} from '@p2c/domain';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { listAppointments } from './appointments';
-import { toIsoDate } from './common';
 import { listCustomers, listStageTransitions } from './customers';
 import { openDatabase, type Database } from './database';
 import { getKycProfile } from './kyc';
@@ -127,12 +132,12 @@ describe('seedDemoData', () => {
 
     it('keeps appointments within 12 months before and 2-4 weeks after the anchor day', () => {
       const days = listAppointments(db)
-        .map((a) => toIsoDate(a.date))
+        .map((a) => formatIsoDate(a.date))
         .sort();
       expect(days[0]! >= '2025-09-15').toBe(true);
       expect(days.at(-1)! > '2026-09-29').toBe(true);
       expect(days.at(-1)! <= '2026-10-13').toBe(true);
-      const future = listAppointments(db).filter((a) => toIsoDate(a.date) >= '2026-09-15');
+      const future = listAppointments(db).filter((a) => formatIsoDate(a.date) >= '2026-09-15');
       expect(future.length).toBeGreaterThan(0);
       expect(future.every((a) => a.status === 'SCHEDULED')).toBe(true);
     });

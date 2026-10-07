@@ -13,9 +13,12 @@ import {
   type CustomerRecord,
   type Database,
 } from '@p2c/db';
-import type { Person, Policy, StageTransition, Team } from '@p2c/domain';
+import { byName, type Person, type Policy, type StageTransition, type Team } from '@p2c/domain';
 
-/** Every live record of each kind, as the `list*` reads of `@p2c/db` give them. Never mutate. */
+/**
+ * Every live record of each kind, as the `list*` reads of `@p2c/db` give them; teams, people and
+ * customers by name (`byName`), the order every picker, chart and list shows. Never mutate.
+ */
 export interface Tables {
   readonly teams: readonly Team[];
   readonly people: readonly Person[];
@@ -25,15 +28,20 @@ export interface Tables {
   readonly transitions: readonly StageTransition[];
 }
 
+/** `rows` by name, in place: the database lists them by id (DR-48). */
+export function sortedByName<T extends { readonly name: string }>(rows: T[]): T[] {
+  return rows.sort((a, b) => byName(a.name, b.name));
+}
+
 /** The tables of `db`, each read the first time a screen asks for it, then kept. */
 export function readTables(db: Database): Tables {
   const once = <T>(read: (db: Database) => T) => {
     let value: { readonly rows: T } | undefined;
     return () => (value ??= { rows: read(db) }).rows;
   };
-  const teams = once(listTeams);
-  const people = once(listPeople);
-  const customers = once(listCustomers);
+  const teams = once((db) => sortedByName(listTeams(db)));
+  const people = once((db) => sortedByName(listPeople(db)));
+  const customers = once((db) => sortedByName(listCustomers(db)));
   const appointments = once(listAppointments);
   const policies = once(listPolicies);
   const transitions = once(listStageTransitions);

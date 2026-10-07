@@ -24,12 +24,15 @@ const ROLES_WITH_TEAM: readonly PersonRole[] = ['RE', 'TL'];
 
 // ---- reads ----------------------------------------------------------------
 
+// The lists are by id: SQLite orders names byte by byte ("Đ…" after "Z"), so the screens order
+// them with `byName` of domain (DR-48).
+
 export function listTeams(db: Database): Team[] {
   return db.orm
     .select()
     .from(teams)
     .where(isNull(teams.deletedAt))
-    .orderBy(asc(teams.name))
+    .orderBy(asc(teams.id))
     .all()
     .map(toTeam);
 }
@@ -44,7 +47,7 @@ export function listPeople(db: Database): Person[] {
     .select()
     .from(people)
     .where(isNull(people.deletedAt))
-    .orderBy(asc(people.name))
+    .orderBy(asc(people.id))
     .all()
     .map(toPerson);
 }

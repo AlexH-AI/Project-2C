@@ -14,6 +14,7 @@ import {
 import { formatDate, type KycField, type Policy } from '@p2c/domain';
 import { Button, StageBadge } from '@p2c/ui';
 import { useQuery, useToday } from '../../data/AppDataContext';
+import { sortedByName } from '../../data/tables';
 import { joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { AppointmentDialog } from '../appointments/AppointmentDialog';
@@ -29,8 +30,8 @@ import { expectedCaseSize } from './policy-form';
 function readProfile(db: Database, id: string) {
   const customer = getCustomer(db, id);
   if (!customer) return undefined;
-  const people = listPeople(db);
-  const teams = listTeams(db);
+  const people = sortedByName(listPeople(db));
+  const teams = sortedByName(listTeams(db));
   const re = people.find((person) => person.id === customer.reId);
   const transitions = listStageTransitions(db, id);
   return {

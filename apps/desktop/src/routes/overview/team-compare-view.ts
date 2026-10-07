@@ -1,4 +1,5 @@
 import {
+  byName,
   appointmentCountsByScope,
   closeRate,
   customPeriod,
@@ -45,8 +46,6 @@ export interface TeamCompareView {
   readonly teams: readonly CompareTeam[];
   readonly total: CompareRow;
 }
-
-const byName = new Intl.Collator('vi').compare;
 
 function cells(met: number, metrics: PeriodMetrics | null): string[] {
   if (!metrics) return [formatCount(met), ...Array<string>(6).fill(t('overview.none'))];

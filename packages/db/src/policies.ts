@@ -1,7 +1,7 @@
 /** Policies (spec §3.7, §4): submitted, then issued with the submitted FYP unless changed (G2 D). */
-import { compareDates, type CalendarDate, type Policy, type Vnd } from '@p2c/domain';
+import { compareDates, fromIsoDate, type CalendarDate, type Policy, type Vnd } from '@p2c/domain';
 import { and, asc, eq, isNull } from 'drizzle-orm';
-import { fromIsoDate, requireAmount, requireRe, stampDeleted, toPastIsoDate } from './common';
+import { requireAmount, requireRe, stampDeleted, storedPastDate } from './common';
 import { liveCustomer } from './customers';
 import type { Database } from './database';
 import { DbError } from './errors';
@@ -114,9 +114,9 @@ function validate(db: Database, policy: Omit<Policy, 'id' | 'customerId'>) {
   }
   return {
     reId: requireRe(db, policy.reId),
-    submittedDate: toPastIsoDate(db, policy.submittedDate),
+    submittedDate: storedPastDate(db, policy.submittedDate),
     submittedFyp: requireAmount(policy.submittedFyp),
-    issuedDate: issuedDate === null ? null : toPastIsoDate(db, issuedDate),
+    issuedDate: issuedDate === null ? null : storedPastDate(db, issuedDate),
     issuedFyp: issuedFyp === null ? null : requireAmount(issuedFyp),
   };
 }

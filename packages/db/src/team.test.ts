@@ -45,12 +45,12 @@ describe('teams', () => {
     expect(listTeams(db)).toEqual([team]);
   });
 
-  it('lists teams by name', async () => {
+  // DR-48: SQLite would put "Đ…" after "Z"; the screens order names with `byName` of domain.
+  it('lists teams in creation order, leaving the order of names to the screens', async () => {
     const { db } = await setup();
-    createTeam(db, { name: 'Sao Mai' });
-    createTeam(db, { name: 'Bình Minh' });
+    for (const name of ['Zeta', 'Đông', 'An']) createTeam(db, { name });
 
-    expect(listTeams(db).map((t) => t.name)).toEqual(['Bình Minh', 'Sao Mai']);
+    expect(listTeams(db).map((t) => t.name)).toEqual(['Zeta', 'Đông', 'An']);
   });
 
   it('rejects an empty or duplicate name', async () => {

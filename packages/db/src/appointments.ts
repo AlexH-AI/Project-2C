@@ -14,17 +14,17 @@ import {
   type CustomerStage,
   type PersonRole,
   type Vnd,
+  fromIsoDate,
 } from '@p2c/domain';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import {
-  fromIsoDate,
   optionalText,
   requireAmount,
   requireRe,
   selectRows,
   stampDeleted,
   today,
-  toIsoDate,
+  storedDate,
 } from './common';
 import { appendTransition, liveCustomer, withdrawAppointmentTransition } from './customers';
 import type { Database } from './database';
@@ -323,7 +323,7 @@ function outcomeFields(db: Database, outcome: MeetingOutcome, note: string) {
 /** Day, time and trigger of an appointment after the changes, checked; the rest stays. */
 function detailFields(row: AppointmentRow, changes: AppointmentDetails) {
   return {
-    date: changes.date === undefined ? row.date : toIsoDate(changes.date),
+    date: changes.date === undefined ? row.date : storedDate(changes.date),
     time: changes.time === undefined ? row.time : requireTime(changes.time),
     triggerType:
       changes.triggerType === undefined ? row.triggerType : requireTrigger(changes.triggerType),
@@ -375,7 +375,7 @@ function insertScheduled(
     id: ulid(db.now(), db.random),
     customerId: input.customerId,
     reId,
-    date: toIsoDate(input.date),
+    date: storedDate(input.date),
     time: requireTime(input.time ?? null),
     status: 'SCHEDULED',
     triggerType: requireTrigger(input.triggerType),
