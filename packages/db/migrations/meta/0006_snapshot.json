@@ -1,0 +1,1248 @@
+{
+  "id": "92bac186-3ead-45ff-a519-0bb693ded918",
+  "prevId": "edfc667b-3693-47c3-9191-44ee8252f048",
+  "version": "6",
+  "dialect": "sqlite",
+  "tables": {
+    "ai_analyses": {
+      "name": "ai_analyses",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "seq": {
+          "name": "seq",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kyc_version_id": {
+          "name": "kyc_version_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mode": {
+          "name": "mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "gate_state": {
+          "name": "gate_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "reasoning": {
+          "name": "reasoning",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "prompt_version": {
+          "name": "prompt_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "input_json": {
+          "name": "input_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "output_json": {
+          "name": "output_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "raw_output": {
+          "name": "raw_output",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "validator_json": {
+          "name": "validator_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "prompt_tokens": {
+          "name": "prompt_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "completion_tokens": {
+          "name": "completion_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "date": {
+          "name": "date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "ai_analyses_customer_seq": {
+          "name": "ai_analyses_customer_seq",
+          "columns": ["customer_id", "seq"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "ai_analyses_customer_id_customers_id_fk": {
+          "name": "ai_analyses_customer_id_customers_id_fk",
+          "tableFrom": "ai_analyses",
+          "columnsFrom": ["customer_id"],
+          "tableTo": "customers",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "ai_analyses_kyc_version_id_kyc_versions_id_fk": {
+          "name": "ai_analyses_kyc_version_id_kyc_versions_id_fk",
+          "tableFrom": "ai_analyses",
+          "columnsFrom": ["kyc_version_id"],
+          "tableTo": "kyc_versions",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "ai_analyses_mode_gate": {
+          "name": "ai_analyses_mode_gate",
+          "value": "(\"ai_analyses\".\"mode\" = 'analysis' AND \"ai_analyses\".\"gate_state\" = 'PAIN_POINT_ANALYSIS') OR (\"ai_analyses\".\"mode\" = 'discovery' AND \"ai_analyses\".\"gate_state\" = 'PROFILE_DISCOVERY')"
+        },
+        "ai_analyses_status": {
+          "name": "ai_analyses_status",
+          "value": "\"ai_analyses\".\"status\" IN ('ACCEPTED', 'REJECTED')"
+        },
+        "ai_analyses_provider": {
+          "name": "ai_analyses_provider",
+          "value": "\"ai_analyses\".\"provider\" IN ('MOCK', 'OPENCODE_GO')"
+        },
+        "ai_analyses_reasoning": {
+          "name": "ai_analyses_reasoning",
+          "value": "\"ai_analyses\".\"reasoning\" IS NULL OR \"ai_analyses\".\"reasoning\" IN ('DEFAULT', 'LOW', 'MEDIUM', 'HIGH')"
+        },
+        "ai_analyses_mock": {
+          "name": "ai_analyses_mock",
+          "value": "\"ai_analyses\".\"provider\" <> 'MOCK' OR (\"ai_analyses\".\"model\" IS NULL AND \"ai_analyses\".\"reasoning\" IS NULL AND \"ai_analyses\".\"prompt_tokens\" IS NULL AND \"ai_analyses\".\"completion_tokens\" IS NULL)"
+        },
+        "ai_analyses_model": {
+          "name": "ai_analyses_model",
+          "value": "\"ai_analyses\".\"provider\" = 'MOCK' OR (\"ai_analyses\".\"model\" IS NOT NULL AND \"ai_analyses\".\"reasoning\" IS NOT NULL)"
+        },
+        "ai_analyses_attempts": {
+          "name": "ai_analyses_attempts",
+          "value": "\"ai_analyses\".\"attempts\" IN (1, 2)"
+        },
+        "ai_analyses_tokens": {
+          "name": "ai_analyses_tokens",
+          "value": "(\"ai_analyses\".\"prompt_tokens\" IS NULL OR \"ai_analyses\".\"prompt_tokens\" >= 0) AND (\"ai_analyses\".\"completion_tokens\" IS NULL OR \"ai_analyses\".\"completion_tokens\" >= 0)"
+        },
+        "ai_analyses_outcome": {
+          "name": "ai_analyses_outcome",
+          "value": "(\"ai_analyses\".\"status\" = 'ACCEPTED' AND \"ai_analyses\".\"output_json\" IS NOT NULL AND \"ai_analyses\".\"raw_output\" IS NULL) OR (\"ai_analyses\".\"status\" = 'REJECTED' AND coalesce(length(\"ai_analyses\".\"raw_output\"), 0) BETWEEN 1 AND 20000)"
+        }
+      }
+    },
+    "appointment_coordinators": {
+      "name": "appointment_coordinators",
+      "columns": {
+        "appointment_id": {
+          "name": "appointment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "person_id": {
+          "name": "person_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "appointment_coordinators_appointment_id_appointments_id_fk": {
+          "name": "appointment_coordinators_appointment_id_appointments_id_fk",
+          "tableFrom": "appointment_coordinators",
+          "columnsFrom": ["appointment_id"],
+          "tableTo": "appointments",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "appointment_coordinators_person_id_people_id_fk": {
+          "name": "appointment_coordinators_person_id_people_id_fk",
+          "tableFrom": "appointment_coordinators",
+          "columnsFrom": ["person_id"],
+          "tableTo": "people",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "appointment_coordinators_appointment_id_person_id_pk": {
+          "columns": ["appointment_id", "person_id"],
+          "name": "appointment_coordinators_appointment_id_person_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "appointments": {
+      "name": "appointments",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "re_id": {
+          "name": "re_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "date": {
+          "name": "date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "time": {
+          "name": "time",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trigger_type": {
+          "name": "trigger_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trigger_note": {
+          "name": "trigger_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "stage_after": {
+          "name": "stage_after",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "next_step": {
+          "name": "next_step",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "expected_case_size": {
+          "name": "expected_case_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "rescheduled_from_id": {
+          "name": "rescheduled_from_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "outcome_reviewer_id": {
+          "name": "outcome_reviewer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "appointments_customer_id_customers_id_fk": {
+          "name": "appointments_customer_id_customers_id_fk",
+          "tableFrom": "appointments",
+          "columnsFrom": ["customer_id"],
+          "tableTo": "customers",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "appointments_re_id_people_id_fk": {
+          "name": "appointments_re_id_people_id_fk",
+          "tableFrom": "appointments",
+          "columnsFrom": ["re_id"],
+          "tableTo": "people",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "appointments_rescheduled_from_id_appointments_id_fk": {
+          "name": "appointments_rescheduled_from_id_appointments_id_fk",
+          "tableFrom": "appointments",
+          "columnsFrom": ["rescheduled_from_id"],
+          "tableTo": "appointments",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "appointments_outcome_reviewer_id_people_id_fk": {
+          "name": "appointments_outcome_reviewer_id_people_id_fk",
+          "tableFrom": "appointments",
+          "columnsFrom": ["outcome_reviewer_id"],
+          "tableTo": "people",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "appointments_status": {
+          "name": "appointments_status",
+          "value": "\"appointments\".\"status\" IN ('SCHEDULED', 'MET', 'RESCHEDULED', 'CANCELLED', 'NO_SHOW')"
+        },
+        "appointments_trigger": {
+          "name": "appointments_trigger",
+          "value": "\"appointments\".\"trigger_type\" IN ('REFERRAL', 'ASSET_MATURITY', 'EVENT', 'OCCASION', 'OTHER')"
+        },
+        "appointments_stage_after": {
+          "name": "appointments_stage_after",
+          "value": "\"appointments\".\"stage_after\" IS NULL OR (\"appointments\".\"status\" = 'MET' AND \"appointments\".\"stage_after\" IN ('N4', 'N3', 'N2', 'N1', 'ON_HOLD', 'LOST'))"
+        },
+        "appointments_met_outcome": {
+          "name": "appointments_met_outcome",
+          "value": "\"appointments\".\"status\" <> 'MET' OR (\"appointments\".\"stage_after\" IS NOT NULL AND \"appointments\".\"next_step\" IS NOT NULL)"
+        },
+        "appointments_outcome_reviewer": {
+          "name": "appointments_outcome_reviewer",
+          "value": "\"appointments\".\"status\" = 'MET' OR \"appointments\".\"outcome_reviewer_id\" IS NULL"
+        }
+      }
+    },
+    "customers": {
+      "name": "customers",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "re_id": {
+          "name": "re_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "birth_date": {
+          "name": "birth_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "gender": {
+          "name": "gender",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "stage": {
+          "name": "stage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "customers_code_unique": {
+          "name": "customers_code_unique",
+          "columns": ["code"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "customers_re_id_people_id_fk": {
+          "name": "customers_re_id_people_id_fk",
+          "tableFrom": "customers",
+          "columnsFrom": ["re_id"],
+          "tableTo": "people",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "customers_gender": {
+          "name": "customers_gender",
+          "value": "\"customers\".\"gender\" IN ('MALE', 'FEMALE')"
+        },
+        "customers_stage": {
+          "name": "customers_stage",
+          "value": "\"customers\".\"stage\" IN ('N4', 'N3', 'N2', 'N1', 'ON_HOLD', 'LOST')"
+        }
+      }
+    },
+    "kyc_facts": {
+      "name": "kyc_facts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "seq": {
+          "name": "seq",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "field": {
+          "name": "field",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value_json": {
+          "name": "value_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "note_id": {
+          "name": "note_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "confirmed_date": {
+          "name": "confirmed_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "kyc_facts_customer_seq": {
+          "name": "kyc_facts_customer_seq",
+          "columns": ["customer_id", "seq"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "kyc_facts_customer_id_customers_id_fk": {
+          "name": "kyc_facts_customer_id_customers_id_fk",
+          "tableFrom": "kyc_facts",
+          "columnsFrom": ["customer_id"],
+          "tableTo": "customers",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "kyc_facts_note_id_kyc_notes_id_fk": {
+          "name": "kyc_facts_note_id_kyc_notes_id_fk",
+          "tableFrom": "kyc_facts",
+          "columnsFrom": ["note_id"],
+          "tableTo": "kyc_notes",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "kyc_facts_field": {
+          "name": "kyc_facts_field",
+          "value": "\"kyc_facts\".\"field\" IN ('birthYear', 'gender', 'residence', 'maritalStatus', 'childrenCount', 'dependents', 'occupation', 'annualIncome', 'incomeSources', 'totalAssets', 'assetAllocation', 'liabilities', 'primaryGoal', 'goalHorizon', 'otherGoals', 'riskProfile', 'investmentExperience', 'hasProtection', 'protectionDetails', 'mainConcern', 'otherConcerns')"
+        },
+        "kyc_facts_status": {
+          "name": "kyc_facts_status",
+          "value": "\"kyc_facts\".\"status\" IN ('active', 'superseded', 'conflict')"
+        }
+      }
+    },
+    "kyc_notes": {
+      "name": "kyc_notes",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "seq": {
+          "name": "seq",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "text": {
+          "name": "text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_date": {
+          "name": "created_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "kyc_notes_customer_seq": {
+          "name": "kyc_notes_customer_seq",
+          "columns": ["customer_id", "seq"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "kyc_notes_customer_id_customers_id_fk": {
+          "name": "kyc_notes_customer_id_customers_id_fk",
+          "tableFrom": "kyc_notes",
+          "columnsFrom": ["customer_id"],
+          "tableTo": "customers",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "kyc_notes_source": {
+          "name": "kyc_notes_source",
+          "value": "\"kyc_notes\".\"source\" IN ('RE', 'SYSTEM')"
+        }
+      }
+    },
+    "kyc_versions": {
+      "name": "kyc_versions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "seq": {
+          "name": "seq",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "hash": {
+          "name": "hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "date": {
+          "name": "date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "material": {
+          "name": "material",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "kyc_versions_customer_seq": {
+          "name": "kyc_versions_customer_seq",
+          "columns": ["customer_id", "seq"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "kyc_versions_customer_id_customers_id_fk": {
+          "name": "kyc_versions_customer_id_customers_id_fk",
+          "tableFrom": "kyc_versions",
+          "columnsFrom": ["customer_id"],
+          "tableTo": "customers",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "kyc_versions_material": {
+          "name": "kyc_versions_material",
+          "value": "\"kyc_versions\".\"material\" IN (0, 1)"
+        }
+      }
+    },
+    "people": {
+      "name": "people",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "people_team_id_teams_id_fk": {
+          "name": "people_team_id_teams_id_fk",
+          "tableFrom": "people",
+          "columnsFrom": ["team_id"],
+          "tableTo": "teams",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "people_role": {
+          "name": "people_role",
+          "value": "\"people\".\"role\" IN ('RE', 'TL', 'IS', 'BD', 'BDM')"
+        },
+        "people_team_required": {
+          "name": "people_team_required",
+          "value": "\"people\".\"role\" NOT IN ('RE', 'TL') OR \"people\".\"team_id\" IS NOT NULL"
+        }
+      }
+    },
+    "policies": {
+      "name": "policies",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "re_id": {
+          "name": "re_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "submitted_date": {
+          "name": "submitted_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "submitted_fyp": {
+          "name": "submitted_fyp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "issued_date": {
+          "name": "issued_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "issued_fyp": {
+          "name": "issued_fyp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "policies_customer_id_customers_id_fk": {
+          "name": "policies_customer_id_customers_id_fk",
+          "tableFrom": "policies",
+          "columnsFrom": ["customer_id"],
+          "tableTo": "customers",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "policies_re_id_people_id_fk": {
+          "name": "policies_re_id_people_id_fk",
+          "tableFrom": "policies",
+          "columnsFrom": ["re_id"],
+          "tableTo": "people",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "policies_submitted_fyp": {
+          "name": "policies_submitted_fyp",
+          "value": "\"policies\".\"submitted_fyp\" > 0"
+        },
+        "policies_issued_pair": {
+          "name": "policies_issued_pair",
+          "value": "(\"policies\".\"issued_date\" IS NULL) = (\"policies\".\"issued_fyp\" IS NULL)"
+        },
+        "policies_issued": {
+          "name": "policies_issued",
+          "value": "\"policies\".\"issued_date\" IS NULL OR (\"policies\".\"issued_fyp\" > 0 AND \"policies\".\"issued_date\" >= \"policies\".\"submitted_date\")"
+        }
+      }
+    },
+    "schema_migrations": {
+      "name": "schema_migrations",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "applied_at": {
+          "name": "applied_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "settings": {
+      "name": "settings",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value_json": {
+          "name": "value_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "stage_transitions": {
+      "name": "stage_transitions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "seq": {
+          "name": "seq",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "from_stage": {
+          "name": "from_stage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "to_stage": {
+          "name": "to_stage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "date": {
+          "name": "date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "appointment_id": {
+          "name": "appointment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "stage_transitions_customer_seq": {
+          "name": "stage_transitions_customer_seq",
+          "columns": ["customer_id", "seq"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "stage_transitions_customer_id_customers_id_fk": {
+          "name": "stage_transitions_customer_id_customers_id_fk",
+          "tableFrom": "stage_transitions",
+          "columnsFrom": ["customer_id"],
+          "tableTo": "customers",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "stage_transitions_appointment_id_appointments_id_fk": {
+          "name": "stage_transitions_appointment_id_appointments_id_fk",
+          "tableFrom": "stage_transitions",
+          "columnsFrom": ["appointment_id"],
+          "tableTo": "appointments",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "stage_transitions_from": {
+          "name": "stage_transitions_from",
+          "value": "\"stage_transitions\".\"from_stage\" IN ('N4', 'N3', 'N2', 'N1', 'ON_HOLD', 'LOST')"
+        },
+        "stage_transitions_to": {
+          "name": "stage_transitions_to",
+          "value": "\"stage_transitions\".\"to_stage\" IN ('N4', 'N3', 'N2', 'N1', 'ON_HOLD', 'LOST')"
+        }
+      }
+    },
+    "teams": {
+      "name": "teams",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "teams_active_name": {
+          "name": "teams_active_name",
+          "columns": ["name"],
+          "where": "\"teams\".\"deleted_at\" IS NULL",
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

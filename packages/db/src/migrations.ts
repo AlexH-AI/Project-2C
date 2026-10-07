@@ -7,6 +7,8 @@ import m0001 from '../migrations/0001_customers_policies.sql?raw';
 import m0002 from '../migrations/0002_kyc.sql?raw';
 import m0003 from '../migrations/0003_kyc_append_only.sql?raw';
 import m0004 from '../migrations/0004_appointment_outcome_reviewer.sql?raw';
+import m0005 from '../migrations/0005_ai_analyses.sql?raw';
+import m0006 from '../migrations/0006_ai_analyses_append_only.sql?raw';
 
 export interface Migration {
   /** Migration number; the database `schemaVersion` is the highest applied id. */
@@ -21,6 +23,8 @@ export const MIGRATIONS: readonly Migration[] = [
   { id: 3, tag: '0002_kyc', sql: m0002 },
   { id: 4, tag: '0003_kyc_append_only', sql: m0003 },
   { id: 5, tag: '0004_appointment_outcome_reviewer', sql: m0004 },
+  { id: 6, tag: '0005_ai_analyses', sql: m0005 },
+  { id: 7, tag: '0006_ai_analyses_append_only', sql: m0006 },
 ];
 
 /** The highest schema version a list of migrations reaches. */

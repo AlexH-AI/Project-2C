@@ -6,6 +6,7 @@ import { openDatabase } from './database';
 import { DbError } from './errors';
 import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations';
 import {
+  aiAnalyses,
   appointmentCoordinators,
   appointments,
   customers,
@@ -46,6 +47,7 @@ describe('openDatabase', () => {
 
     expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
     expect(tableNames(db)).toEqual([
+      'ai_analyses',
       'appointment_coordinators',
       'appointments',
       'customers',
@@ -75,6 +77,7 @@ describe('openDatabase', () => {
       kycNotes,
       kycFacts,
       kycVersions,
+      aiAnalyses,
       settings,
       schemaMigrations,
     ];
@@ -454,7 +457,9 @@ describe('migrating a saved database', () => {
     }).catch((e: unknown) => e);
 
     expect(error).toMatchObject({
-      message: expect.stringMatching(/migration 6 .*people → teams/i) as unknown,
+      message: expect.stringMatching(
+        new RegExp(`migration ${dropTeam.id} .*people → teams`, 'i'),
+      ) as unknown,
     });
     expect(persist).not.toHaveBeenCalled();
     const reopened = await openDatabase({ bytes });

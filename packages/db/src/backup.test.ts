@@ -84,6 +84,7 @@ describe('exportBackup', () => {
     expect(backup.format).toBe(BACKUP_FORMAT);
     expect(backup.schemaVersion).toBe(LATEST_SCHEMA_VERSION);
     expect(Object.keys(backup.tables)).toEqual([
+      'ai_analyses',
       'appointment_coordinators',
       'appointments',
       'customers',

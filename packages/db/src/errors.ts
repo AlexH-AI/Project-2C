@@ -65,6 +65,8 @@ export const DB_ERROR_CODES = [
   'KYC_NOT_IN_CONFLICT',
   /** A customer's records numbered up to the last safe integer: no `seq` is left (DR-34). */
   'SEQ_LIMIT',
+  /** An AI analysis whose fields do not fit together (spec Phase 5 §7.1); a bug of the caller. */
+  'AI_ANALYSIS_INVALID',
   'SEED_DATABASE_NOT_EMPTY',
   /** The file was written by a newer app; params `version` (the file's), `supported` (the app's). */
   'SCHEMA_TOO_NEW',

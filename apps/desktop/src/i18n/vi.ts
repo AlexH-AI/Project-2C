@@ -761,6 +761,8 @@ export const vi = {
   'error.NAME_REQUIRED': 'Chưa nhập tên.',
   'error.INVALID_TEXT': 'Chữ có ký tự không lưu được (ký tự NUL): xóa ký tự đó rồi lưu lại.',
   'error.SEQ_LIMIT': 'Không ghi thêm được cho KH này: số thứ tự thao tác đã tới giới hạn.',
+  'error.AI_ANALYSIS_INVALID':
+    'Kết quả AI không lưu được vì thiếu hoặc sai thông tin: phân tích lại.',
   'error.TEAM_NAME_TAKEN': 'Đã có team "{name}".',
   'error.TEAM_HAS_MEMBERS': 'Team còn nhân sự: chuyển hoặc xóa hết nhân sự trước khi xóa team.',
   'error.TEAM_HAS_LEAD': 'Team này đã có TL: {name}.',
