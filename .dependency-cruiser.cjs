@@ -16,11 +16,27 @@ module.exports = {
       to: { path: '^apps/' },
     },
     {
-      name: 'db-and-ai-only-on-domain',
-      comment: 'packages/db and packages/ai may use packages/domain, not each other or the UI.',
+      name: 'ai-only-on-domain-and-zod',
+      comment: 'packages/ai uses only packages/domain and zod (spec Phase 5 §10).',
       severity: 'error',
-      from: { path: '^packages/(db|ai)/' },
-      to: { path: '^packages/(db|ai|ui)/', pathNot: '^packages/$1/' },
+      from: { path: '^packages/ai/', pathNot: '\\.test\\.ts$' },
+      to: { pathNot: ['^packages/(ai|domain)/', '(^|/)node_modules/zod/'] },
+    },
+    {
+      name: 'db-only-on-domain-and-ai-schema',
+      comment:
+        'packages/db uses packages/domain, and of packages/ai only its schema module, to check AI output in a backup (ADR-0006 phụ lục 07/10/2026).',
+      severity: 'error',
+      from: { path: '^packages/db/' },
+      to: { path: '^packages/(ai|ui)/', pathNot: '^packages/ai/src/schema\\.ts$' },
+    },
+    {
+      name: 'ai-schema-standalone',
+      comment:
+        'The schema module of packages/ai imports nothing else of packages/ai, so packages/db gets only the schemas.',
+      severity: 'error',
+      from: { path: '^packages/ai/src/schema\\.ts$' },
+      to: { path: '^packages/ai/', pathNot: '^packages/ai/src/schema\\.ts$' },
     },
     {
       name: 'ui-not-to-data',

@@ -18,7 +18,7 @@ import {
   viewImports,
 } from './codemap-core.mjs';
 
-const PACKAGES = ['packages/domain', 'packages/db', 'packages/ui', 'apps/desktop'];
+const PACKAGES = ['packages/domain', 'packages/db', 'packages/ai', 'packages/ui', 'apps/desktop'];
 // Claude Code loads the whole CLAUDE.md into context.
 const MAX_CHARS = 8000;
 

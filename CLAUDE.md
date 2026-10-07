@@ -73,7 +73,7 @@ apps/desktop/      Tauri 2 shell + React UI
 packages/domain/   TS thuần — không import package nào khác
 packages/db/       Drizzle schema, migrations, repositories; adapter Tauri SQLite + sql.js; seed
 packages/ui/       design tokens + components
-packages/ai/       (chưa tạo — Phase 5) provider adapters, prompts có version, zod schema, validators
+packages/ai/       zod schema output, adapter (Mock, OpenCode Go), prompt có version, validator — chỉ phụ thuộc domain + zod
 tools/             bootstrap, session-start/end, status.mjs, handoff.mjs (+ unit test)
 e2e/               Playwright (chạy trên bản build web)
 ```

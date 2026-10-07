@@ -4,7 +4,7 @@ Drizzle trên sql.js ở mọi nơi (ADR-0016): một DB SQLite trong bộ nhớ
 
 ## Ranh giới
 
-- Chỉ phụ thuộc `@p2c/domain` (rule `db-and-ai-only-on-domain`); không import `ui`, `ai`, `apps`.
+- Chỉ phụ thuộc `@p2c/domain` và đúng module schema của ai (`@p2c/ai/schema`, để kiểm output AI khi nhập backup — ADR-0006 phụ lục 07/10/2026; rule `db-only-on-domain-and-ai-schema`); không import `ui`, `apps`, module khác của `ai`.
 - Public API qua `src/index.ts` (`@p2c/db`); app không import file con.
 
 ## File hay tìm

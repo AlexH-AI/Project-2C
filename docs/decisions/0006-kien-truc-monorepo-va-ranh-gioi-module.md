@@ -45,3 +45,14 @@ Lõi thuần TS test nhanh và giữ được nếu đổi vỏ (ADR-0005); ch�
 ## Phụ lục — lưu trữ (Accepted G1, Owner duyệt 26/09/2026 · PR #58)
 
 Theo ADR-0016: dòng "adapter TauriSqlite (app thật) & sql.js (trình duyệt, dev/e2e)" đổi thành **sql.js ở mọi nơi (exe, web, test); exe lưu file DB qua lệnh Rust mỏng** trong `apps/desktop/src-tauri`. Lý do: plugin SQL của Tauri không bảo đảm transaction (connection pool). Hệ quả "hai adapter DB giữ hành vi giống nhau" thành: một engine, chỉ khác cổng lưu file (`persist(bytes)`), do `apps/desktop` cung cấp. Mô hình dữ liệu chi tiết: `docs/design/phase-3-du-lieu.md` (G2).
+
+## Phụ lục — `db` dùng schema của `ai` (Owner quyết 07/10/2026 · T-161 #402)
+
+Bối cảnh: luật nhập backup 3 của Phase 5 (`docs/design/phase-5-ai.md` §7.3) kiểm `output_json` của `ai_analyses` bằng zod schema output, mà schema nằm ở `packages/ai`. Luật cũ `db-and-ai-only-on-domain` cấm `db` và `ai` import nhau.
+
+1. **`db` được import đúng module schema của `ai`** (`@p2c/ai/schema` = `packages/ai/src/schema.ts`), không import module nào khác của `ai`. Không có vòng: `ai → domain`, `db → domain`, `db → ai/schema → domain`.
+2. **Module schema đứng riêng:** chỉ import `zod` và `domain`, không import file khác của `ai`, để `db` không kéo theo adapter, prompt hay validator.
+3. **Chỉ một schema mỗi chế độ, luôn bản mới nhất.** App giữ toàn bộ lịch sử phân tích, nên `db` kiểm mọi dòng bằng schema mới nhất, không giữ schema cũ theo `prompt_version`. Đổi schema → Owner nạp lại dữ liệu giả lập (R2-02); xem lại khi có dữ liệu khách hàng thật.
+4. `ai` chỉ phụ thuộc `domain` + `zod` (spec Phase 5 §10); không import `db`, `ui`, `apps`, Tauri, `node:*`.
+
+`pnpm lint:deps` kiểm bằng ba luật thay cho `db-and-ai-only-on-domain`: `ai-only-on-domain-and-zod`, `db-only-on-domain-and-ai-schema`, `ai-schema-standalone`.
