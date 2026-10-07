@@ -14,6 +14,7 @@
 | P3 | Danh sách model | **Danh sách ngắn cố định trong code**, chỉ model dùng `/chat/completions` (§4.2) |
 | P4 | "AI trích xuất" | **Làm trong Phase 5.** Đề xuất không lưu DB; chỉ dữ kiện RE xác nhận mới được ghi (§8) |
 | P5 | Hủy khi yêu cầu ở Rust còn chạy (Owner 07/10/2026, sau review PR #399) | **Chỉ một yêu cầu AI tại một thời điểm, không bao giờ hai.** Hủy không mở khóa nút AI tới khi yêu cầu ở Rust kết thúc; Rust tự từ chối yêu cầu thứ hai (`AI_BUSY`) (§5.2) |
+| P6 | Nhãn tính cách (Owner 07/10/2026, ở G5, PR #414) | **Không cấm.** Khối riêng `personalityNotes` — "Thông tin tham khảo": tâm lý học (MBTI, DISC…) và tử vi / huyền học (con giáp, mệnh…), mỗi phần tử ghi loại, AI suy ra từ dữ kiện, bắt buộc có bằng chứng. V5 chỉ chặn nhãn ở các khối khác (§6.2, §6.4, phụ lục G5 ADR-0009) |
 
 ## 2. Phạm vi
 
@@ -156,8 +157,9 @@ Mọi chuỗi là tiếng Việt, 1–300 ký tự sau khi cắt khoảng trắn
 | `needs` · `painPoints` · `themes` | `{ text, evidence[≥1] }` | mỗi khối 1–5 |
 | `discoveryStrategy` | `{ text, evidence[≥0], missingCategory? }` — phải có evidence **hoặc** `missingCategory` | 1–6 |
 | `nextBestActions` | như `discoveryStrategy` | 1–5 |
+| `personalityNotes` (Thông tin tham khảo, P6) | `{ system: 'PSYCHOLOGY' \| 'ESOTERIC', text, evidence[≥1] }` | 0–4 |
 
-**Chế độ `discovery`** (`PROFILE_DISCOVERY`): `hypotheses` 0–3, `discoveryStrategy` 2–6, `nextBestActions` 1–5; không có `needs` / `painPoints` / `themes`.
+**Chế độ `discovery`** (`PROFILE_DISCOVERY`): `hypotheses` 0–3, `discoveryStrategy` 2–6, `nextBestActions` 1–5, `personalityNotes` 0–4; không có `needs` / `painPoints` / `themes`.
 
 **Chế độ `extraction`:** `facts`: 0–20 phần tử `{ field, value, quote }` — `field` thuộc trường được phép, `quote` là đoạn trích nguyên văn từ ghi chú.
 
@@ -196,7 +198,7 @@ Chạy trên output đã parse; báo cáo = danh sách `{ code, path, detail }`.
 | V2 | Mọi `evidence` trỏ tới `F{seq}` có trong đầu vào; `missingCategory` là hạng mục đang thiếu trong cổng | analysis, discovery |
 | V3 | Không số phần trăm, "xác suất", "khả năng chốt", "tỉ lệ / tỷ lệ chốt", từ ngữ đoán khả năng mua (danh sách ở G5) | analysis, discovery |
 | V4 | Không tên sản phẩm / hãng bảo hiểm trong danh sách chặn (G5) | analysis, discovery |
-| V5 | Không nhãn tính cách: mã MBTI (`[IE][NS][TF][JP]`), DISC, cung hoàng đạo, nhóm máu… (G5) | analysis, discovery |
+| V5 | Nhãn tính cách — mã MBTI (`[IE][NS][TF][JP]`), DISC, cung hoàng đạo, nhóm máu… (G5) — chỉ được nằm trong `personalityNotes`; xuất hiện ở khối khác → chặn (P6) | analysis, discovery |
 | V6 | Không trích dẫn văn bản pháp lý: "Điều <số>", "khoản <số>", "Luật …", "Nghị định", "Thông tư", số hiệu văn bản (G5) | analysis, discovery |
 | V7 | `field` được phép (không `birthYear` / `gender` — lấy từ hồ sơ, D2); `value` qua `normalizeKycValue`; `quote` là chuỗi con của ghi chú (so sau khi gộp khoảng trắng) | extraction |
 
@@ -272,7 +274,7 @@ Chạy trên output đã parse; báo cáo = danh sách `{ code, path, detail }`.
 | Đang chạy | "Đang phân tích…" + **Hủy**; mọi nút AI khác tắt |
 | Đã Hủy, Rust chưa trả | "Đang hủy…"; mọi nút AI vẫn tắt tới khi yêu cầu kết thúc (§5.2) |
 | Lỗi | Thông báo §5.3 + **Thử lại** |
-| Có CURRENT | 4 khối (analysis) / 3 khối (discovery) như mockup, mỗi phần tử có bằng chứng + mức; chip "kyc v<seq> · <prompt_version> · <model hoặc Mock> · dd/mm hh:mm"; cảnh báo mâu thuẫn phụ; nút **Phân tích lại** |
+| Có CURRENT | 4 khối (analysis) / 3 khối (discovery) như mockup, mỗi phần tử có bằng chứng + mức; khối **"Thông tin tham khảo — không phải kết luận"** ở cuối khi `personalityNotes` không rỗng, mỗi dòng "Tâm lý học: …" / "Tử vi / huyền học: …" + bằng chứng + mức (P6); chip "kyc v<seq> · <prompt_version> · <model hoặc Mock> · dd/mm hh:mm"; cảnh báo mâu thuẫn phụ; nút **Phân tích lại** |
 | Bản mới nhất STALE | Hiện bản đó mờ + lời nhắc §7.2 + **Phân tích lại** (khi cổng cho phép) |
 | Lần gần nhất REJECTED | Dòng "Lần phân tích dd/mm bị loại: <lý do đầu tiên>"; vẫn hiện bản ACCEPTED mới nhất bên dưới |
 | Lịch sử | Bảng mọi dòng, mới nhất trên: ngày · kyc v · prompt · provider/model · CURRENT / STALE / REJECTED; bấm → xem nội dung dòng đó (REJECTED: báo cáo validator, không hiện output thô làm kết quả) |
@@ -288,7 +290,7 @@ Mục **AI** trong thanh mục Cài đặt (mockup `settings-data.html` đã có
 ### 9.4 Cần mockup (G3)
 
 1. Settings → AI (mới hoàn toàn).
-2. Panel KYC Intelligence: các trạng thái §9.1 chưa có trong mockup (cổng chặn, đang chạy, lỗi, STALE, REJECTED gần nhất, chip Mock), chế độ discovery; bỏ dòng `KYC_INSUFFICIENT` khỏi lịch sử (P2).
+2. Panel KYC Intelligence: các trạng thái §9.1 chưa có trong mockup (cổng chặn, đang chạy, lỗi, STALE, REJECTED gần nhất, chip Mock), chế độ discovery, khối "Thông tin tham khảo" (P6); bỏ dòng `KYC_INSUFFICIENT` khỏi lịch sử (P2).
 3. Mã `F{seq}` trên danh sách dữ kiện; đề xuất trích xuất (đã có một dòng mẫu — thêm trạng thái đang chạy / 0 đề xuất / lỗi).
 
 ## 10. `packages/ai` — ranh giới
@@ -309,7 +311,7 @@ Mục **AI** trong thanh mục Cài đặt (mockup `settings-data.html` đã có
 | Vùng | Test |
 |---|---|
 | `domain` | B01–B11; `normalizeKycValue` chuyển sang giữ nguyên hành vi (test cũ chạy lại) |
-| `ai` schema / validator | Mỗi luật V1–V7 một ca đạt + một ca chặn (gồm bản bỏ dấu); evidence trỏ dữ kiện không có / bị thay thế → V2 |
+| `ai` schema / validator | Mỗi luật V1–V7 một ca đạt + một ca chặn (gồm bản bỏ dấu); evidence trỏ dữ kiện không có / bị thay thế → V2; nhãn tính cách trong `personalityNotes` đạt, ở khối khác → V5 (ca kiểm G5 §8.5) |
 | `ai` điều phối | Adapter giả: đạt ngay; sai rồi đạt (message thử lại chứa lỗi); sai hai lần → REJECTED; lỗi mạng lần 1 / lần 2 → không lưu; Hủy → không lưu và nút AI vẫn khóa tới khi adapter trả; yêu cầu thứ hai trong lúc chờ (kể cả sau Hủy) → không gọi adapter; cổng chặn → không gọi adapter |
 | `db` | `recordAiAnalysis` kiểm như §7.1; trigger chặn sửa / xóa; CURRENT / STALE theo `seq` của phiên bản, không theo ngày; luật nhập 1–4 mỗi luật một file sai → `BACKUP_INVALID` |
 | Rust | Dựng body (có / không `reasoning_effort`), đọc response mẫu, ánh xạ 401 / 429 / 500 / body hỏng / quá 2 MB sang mã lỗi; gọi khi cờ đang chạy → `AI_BUSY`, cờ tắt sau lỗi / timeout; không mã lỗi nào chứa key (dữ liệu mẫu, không gọi mạng) |

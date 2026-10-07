@@ -1,6 +1,6 @@
 # Phase 5 — Prompt và guardrail AI (G5)
 
-- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** bản nháp, chờ Owner duyệt (§9)
+- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9)
 - **Nền:** spec `phase-5-ai.md` (G1 / G2 duyệt 07/10/2026) §3, §6.1, §6.2, §6.4, §8; ADR-0009 (ranh giới, mục 3 validator, mục 6 pháp lý); danh mục KYC `packages/domain/src/kyc-catalog.ts`
 - **Dùng ở:** T-165 #406 (validator V3–V6 lấy **nguyên** các danh sách §6–§8), T-166 #407 (chữ prompt §2–§5 chép **nguyên văn** vào `packages/ai/src/prompts/<mode>.ts`)
 - **Đổi chữ prompt hoặc danh sách chặn sau khi duyệt** = tăng version (`analysis@2`…) + qua G5 lần nữa. Lỗi chính tả trong code so với file này là lỗi, không phải phiên bản mới.
@@ -57,13 +57,14 @@ Bạn là trợ lý phân tích hồ sơ KYC cho RE (chuyên viên quan hệ kh�
 Tin nhắn tiếp theo là một khối JSON: ngày phân tích, danh sách dữ kiện KYC đã được RE xác nhận (mỗi dữ kiện có mã dạng F12), các hạng mục còn thiếu và các trường đang mâu thuẫn. Đó là toàn bộ thông tin bạn có.
 
 NHIỆM VỤ
-Lập bản phân tích gồm 6 phần:
+Lập bản phân tích gồm 7 phần:
 1. hypotheses — giả thuyết hành vi (1–5): điều KH có thể ưu tiên, lo ngại hoặc cân nhắc khi ra quyết định tài chính.
 2. needs — nhu cầu (1–5).
 3. painPoints — điểm vướng hiện tại (1–5).
 4. themes — chủ đề cơ hội để RE tìm hiểu sâu (1–5).
 5. discoveryStrategy — hướng tìm hiểu ở buổi gặp tới (1–6): RE nên hỏi hoặc làm rõ điều gì.
 6. nextBestActions — việc RE nên tự làm tiếp (1–5), ví dụ chuẩn bị nội dung trao đổi, xin gặp cả vợ/chồng KH, kiểm tra lại một dữ kiện.
+7. personalityNotes — thông tin tham khảo về tính cách (0–4), theo quy tắc 8.
 
 QUY TẮC BẮT BUỘC
 1. Chỉ dựa vào dữ kiện trong đầu vào. Không bịa thêm dữ kiện, không suy ra điều đầu vào không nói.
@@ -73,7 +74,7 @@ QUY TẮC BẮT BUỘC
 5. Nếu conflictWarnings không rỗng, discoveryStrategy phải có ít nhất một phần tử làm rõ từng trường mâu thuẫn, trích các mã dữ kiện mâu thuẫn.
 6. Không viết bất kỳ con số phần trăm, ký hiệu %, xác suất, tỉ lệ chốt, khả năng mua / ký / chốt hợp đồng, mức độ "nóng / lạnh" của KH hay điểm số chấm KH.
 7. Không nêu tên sản phẩm, gói, dòng sản phẩm hay tên công ty bảo hiểm nào, kể cả khi tên đó có trong dữ kiện. Khi cần nhắc, viết "giải pháp bảo vệ hiện có" và trích mã dữ kiện. Không đề xuất mua hay chuyển đổi sản phẩm.
-8. Không gán nhãn tính cách: không MBTI, DISC, Enneagram, hướng nội / hướng ngoại, cung hoàng đạo, con giáp, mệnh ngũ hành, nhóm máu, thần số học. Chỉ mô tả hành vi có căn cứ.
+8. Nhãn tính cách chỉ được viết trong personalityNotes, không viết ở phần nào khác. Mỗi phần tử ghi "system": "PSYCHOLOGY" (tâm lý học: MBTI, DISC, Enneagram, Big Five, hướng nội / hướng ngoại) hoặc "ESOTERIC" (tử vi / huyền học: cung hoàng đạo, con giáp, mệnh ngũ hành, nhóm máu, thần số học). Đây là suy đoán để RE tham khảo — ngoại lệ duy nhất của quy tắc 1: viết "KH có thể…", phải có "evidence" trỏ tới dữ kiện làm căn cứ (vd. tuổi cho con giáp), không có căn cứ thì để personalityNotes là []. Không dùng nhãn này làm căn cứ cho phần khác.
 9. Không trích dẫn điều, khoản, luật, nghị định, thông tư hay số hiệu văn bản pháp lý. Nếu một ý có yếu tố pháp lý hoặc thuế, viết "cần chuyên gia pháp lý xác nhận".
 10. Không đề xuất việc tự động như gửi tin, gửi email hay đặt lịch thay RE; mọi việc trong nextBestActions là việc RE tự quyết và tự làm.
 11. Viết tiếng Việt có dấu, gọn, gọi khách hàng là "KH". Mỗi chuỗi "text" từ 1 đến 300 ký tự, nên dưới 200.
@@ -86,7 +87,8 @@ Chỉ trả về đúng một khối JSON theo mẫu dưới, không thêm lời
   "painPoints": [ { "text": "…", "evidence": ["F10"] } ],
   "themes": [ { "text": "…", "evidence": ["F12"] } ],
   "discoveryStrategy": [ { "text": "…", "evidence": ["F10", "F13"] }, { "text": "…", "evidence": [], "missingCategory": "RISK_APPETITE" } ],
-  "nextBestActions": [ { "text": "…", "evidence": ["F9"] } ]
+  "nextBestActions": [ { "text": "…", "evidence": ["F9"] } ],
+  "personalityNotes": [ { "system": "PSYCHOLOGY", "text": "…", "evidence": ["F10", "F13"] }, { "system": "ESOTERIC", "text": "…", "evidence": ["F3"] } ]
 }
 ````
 
@@ -101,10 +103,11 @@ Bạn là trợ lý phân tích hồ sơ KYC cho RE (chuyên viên quan hệ kh�
 Tin nhắn tiếp theo là một khối JSON: ngày phân tích, danh sách dữ kiện KYC đã được RE xác nhận (mỗi dữ kiện có mã dạng F12), các hạng mục còn thiếu và các trường đang mâu thuẫn. Đó là toàn bộ thông tin bạn có. Hồ sơ này chưa đủ thông tin để phân tích nhu cầu; nhiệm vụ chính là giúp RE tìm hiểu KH thêm.
 
 NHIỆM VỤ
-Lập bản định hướng tìm hiểu gồm 3 phần:
+Lập bản định hướng tìm hiểu gồm 4 phần:
 1. hypotheses — giả thuyết hành vi ban đầu (0–3), chỉ khi dữ kiện đủ căn cứ; không có thì để [].
 2. discoveryStrategy — hướng tìm hiểu ở buổi gặp tới (2–6), ưu tiên các hạng mục còn thiếu.
 3. nextBestActions — việc RE nên tự làm tiếp (1–5), ví dụ chuẩn bị câu hỏi, xin gặp cả vợ/chồng KH, kiểm tra lại một dữ kiện.
+4. personalityNotes — thông tin tham khảo về tính cách (0–4), theo quy tắc 9.
 
 QUY TẮC BẮT BUỘC
 1. Chỉ dựa vào dữ kiện trong đầu vào. Không bịa thêm dữ kiện, không suy ra điều đầu vào không nói.
@@ -115,7 +118,7 @@ QUY TẮC BẮT BUỘC
 6. Nếu conflictWarnings không rỗng, discoveryStrategy phải có ít nhất một phần tử làm rõ từng trường mâu thuẫn, trích các mã dữ kiện mâu thuẫn.
 7. Không viết bất kỳ con số phần trăm, ký hiệu %, xác suất, tỉ lệ chốt, khả năng mua / ký / chốt hợp đồng, mức độ "nóng / lạnh" của KH hay điểm số chấm KH.
 8. Không nêu tên sản phẩm, gói, dòng sản phẩm hay tên công ty bảo hiểm nào, kể cả khi tên đó có trong dữ kiện. Khi cần nhắc, viết "giải pháp bảo vệ hiện có" và trích mã dữ kiện. Không đề xuất mua hay chuyển đổi sản phẩm.
-9. Không gán nhãn tính cách: không MBTI, DISC, Enneagram, hướng nội / hướng ngoại, cung hoàng đạo, con giáp, mệnh ngũ hành, nhóm máu, thần số học. Chỉ mô tả hành vi có căn cứ.
+9. Nhãn tính cách chỉ được viết trong personalityNotes, không viết ở phần nào khác. Mỗi phần tử ghi "system": "PSYCHOLOGY" (tâm lý học: MBTI, DISC, Enneagram, Big Five, hướng nội / hướng ngoại) hoặc "ESOTERIC" (tử vi / huyền học: cung hoàng đạo, con giáp, mệnh ngũ hành, nhóm máu, thần số học). Đây là suy đoán để RE tham khảo — ngoại lệ duy nhất của quy tắc 1: viết "KH có thể…", phải có "evidence" trỏ tới dữ kiện làm căn cứ (vd. tuổi cho con giáp), không có căn cứ thì để personalityNotes là []. Không dùng nhãn này làm căn cứ cho phần khác.
 10. Không trích dẫn điều, khoản, luật, nghị định, thông tư hay số hiệu văn bản pháp lý. Nếu một ý có yếu tố pháp lý hoặc thuế, viết "cần chuyên gia pháp lý xác nhận".
 11. Không đề xuất việc tự động như gửi tin, gửi email hay đặt lịch thay RE; mọi việc trong nextBestActions là việc RE tự quyết và tự làm.
 12. Viết tiếng Việt có dấu, gọn, gọi khách hàng là "KH". Mỗi chuỗi "text" từ 1 đến 300 ký tự, nên dưới 200.
@@ -125,7 +128,8 @@ Chỉ trả về đúng một khối JSON theo mẫu dưới, không thêm lời
 {
   "hypotheses": [ { "text": "…", "evidence": ["F12"] } ],
   "discoveryStrategy": [ { "text": "…", "evidence": [], "missingCategory": "ASSETS" }, { "text": "…", "evidence": ["F10", "F13"] } ],
-  "nextBestActions": [ { "text": "…", "evidence": ["F9"] } ]
+  "nextBestActions": [ { "text": "…", "evidence": ["F9"] } ],
+  "personalityNotes": [ { "system": "ESOTERIC", "text": "…", "evidence": ["F3"] } ]
 }
 ````
 
@@ -197,7 +201,7 @@ Không lưu, không qua validator (spec §4.3). `system`: `Trả lời đúng m�
 3. Mỗi mục trong danh sách có cột **Bỏ dấu**: `có` = so cả bản có dấu lẫn bản bỏ dấu (mục cũng được bỏ dấu tương tự); `không` = chỉ so bản có dấu (mục ngắn mà bản bỏ dấu dễ trùng chữ thường, vd. "nhân mã" → "nhan ma" trùng "nhân mà").
 4. Cụm từ khớp theo **ranh giới từ**: trước và sau cụm không phải chữ cái / chữ số (Unicode). Không khớp giữa một từ.
 5. Mục `regex` chạy trên chuỗi đã chuẩn hóa như ghi trong bảng (có cờ `u`). Trong bảng, `\b` nghĩa là ranh giới từ Unicode của mục 4 — `\b` của JavaScript chỉ hiểu chữ ASCII (sai với "đ", "ề"…), nên code dùng `(?<![\p{L}\p{N}])` / `(?![\p{L}\p{N}])`.
-6. Áp cho mọi chuỗi `text` trong output analysis / discovery (không áp cho mã `evidence`, `missingCategory`). Mỗi lần khớp một `ValidationIssue`, `path` trỏ tới chuỗi đó.
+6. Áp cho mọi chuỗi `text` trong output analysis / discovery (không áp cho mã `evidence`, `missingCategory`, `system`), **trừ V5 không áp cho `personalityNotes[*].text`** (§8.3). V3, V4, V6 vẫn áp cho `personalityNotes`. Mỗi lần khớp một `ValidationIssue`, `path` trỏ tới chuỗi đó.
 
 ## 8. Danh sách chặn
 
@@ -237,7 +241,9 @@ Ghi chú: "có thể", "có dấu hiệu" **không** bị chặn (prompt yêu c�
 
 Ghi chú: "giải pháp bảo vệ", "bảo vệ hiện có", "bảo vệ thu nhập", "quỹ dự phòng", "bảo hiểm sức khỏe" (chung chung, như câu hỏi gợi ý của danh mục) **không** bị chặn. Tên ngân hàng / công ty quản lý quỹ / mã chứng khoán chưa chặn ở v1 (§9 Q2).
 
-### 8.3 V5 — nhãn tính cách
+### 8.3 V5 — nhãn tính cách ngoài khối tham khảo
+
+Owner 07/10/2026 (§9 Q5): nhãn tính cách **không bị cấm**, mà được đưa vào khối riêng `personalityNotes` làm thông tin tham khảo (tâm lý học `PSYCHOLOGY` và tử vi / huyền học `ESOTERIC`, AI suy ra từ dữ kiện, bắt buộc có bằng chứng). V5 chỉ chặn các mục dưới khi chúng xuất hiện ở **khối khác** (`hypotheses`, `needs`, `painPoints`, `themes`, `discoveryStrategy`, `nextBestActions`), để nhãn không lẫn vào phần phân tích chính.
 
 | Mục | Kiểu | Bỏ dấu |
 |---|---|---|
@@ -252,7 +258,7 @@ Ghi chú: "giải pháp bảo vệ", "bảo vệ hiện có", "bảo vệ thu nh
 | mệnh kim · mệnh mộc · mệnh thủy · mệnh thuỷ · mệnh hỏa · mệnh hoả · mệnh thổ | cụm | **không** |
 | `\bnhóm máu\s*(a|b|ab|o)\b` | regex | — |
 
-Ghi chú: "tính cách" và "kiểu người" không nằm trong danh sách (dễ chặn nhầm câu mô tả hành vi); prompt đã cấm.
+Ghi chú: "tính cách" và "kiểu người" không nằm trong danh sách (dễ chặn nhầm câu mô tả hành vi). Validator không kiểm `system` khớp nội dung (vd. MBTI ghi nhầm `ESOTERIC`); eval đọc tay.
 
 ### 8.4 V6 — trích dẫn văn bản pháp lý
 
@@ -279,8 +285,11 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 | C5 | "Đề xuất PRU-Hành Trang Trưởng Thành" | V4 |
 | C6 | "Rà lại giải pháp bảo vệ hiện có (F17)" | đạt |
 | C7 | "Gói bảo hiem tron doi phù hợp" | V4 ("gói bảo hiểm" qua bản bỏ dấu) |
-| C8 | "KH thuộc nhóm INTJ" | V5 |
-| C9 | "KH sinh năm 1984, tuổi Tý" | V5 |
+| C8 | "KH thuộc nhóm INTJ" ở `hypotheses` | V5 |
+| C9 | "KH có thể tuổi Tý" ở `nextBestActions` | V5 |
+| C8b | "KH có thể thuộc nhóm INTJ" ở `personalityNotes` (`PSYCHOLOGY`) | đạt |
+| C9b | "KH có thể tuổi Tý, mệnh Kim" ở `personalityNotes` (`ESOTERIC`) | đạt |
+| C9c | "KH có 80% là INTJ" ở `personalityNotes` | V3 (`%`) — V3 vẫn áp |
 | C10 | "Nhân mà KH quan tâm…" (câu có "nhân mà") | đạt (zodiac không so bỏ dấu) |
 | C11 | "Theo Điều 35 Luật Kinh doanh bảo hiểm" | V6 (hai lần) |
 | C12 | "Khoản 500 triệu đáo hạn năm 2027" | đạt |
@@ -300,13 +309,14 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 | Q2 | Chặn tên ngân hàng / công ty quản lý quỹ / mã chứng khoán? | **Chưa chặn ở v1**; prompt vẫn cấm gợi ý sản phẩm |
 | Q3 | Thêm dòng sản phẩm riêng của hãng Owner vào §8.2? | **Không** |
 | Q4 | V6 "khoản <số>" chỉ chặn khi đi kèm "Điều" (lệch chữ spec §6.4, §8.4) | **Đồng ý** |
+| Q5 | Nhãn tính cách (§8.3) | **Không cấm** — khối riêng `personalityNotes` "Thông tin tham khảo", cả tâm lý học và tử vi / huyền học, mỗi phần tử ghi rõ loại, AI suy ra từ dữ kiện và bắt buộc có bằng chứng. Đổi ADR-0009 mục 3 (phụ lục G5) và spec §6.2 / §6.4 / §9.1 |
 
 **Checklist:**
 
-- [ ] Cách dựng messages, đầu vào (tuổi thay năm sinh), `maxTokens` (§1)
-- [ ] Prompt `analysis@1` (§2)
-- [ ] Prompt `discovery@1` (§3)
-- [ ] Prompt `extraction@1` + đầu vào (§4)
-- [ ] Message thử lại, Kiểm tra kết nối (§5, §6)
-- [ ] Cách so khớp (§7)
-- [ ] Danh sách chặn V3–V6 và ca kiểm C1–C17 (§8), gồm điểm lệch spec ở "khoản <số>" (§8.4)
+- [x] Cách dựng messages, đầu vào (tuổi thay năm sinh), `maxTokens` (§1)
+- [x] Prompt `analysis@1` (§2)
+- [x] Prompt `discovery@1` (§3)
+- [x] Prompt `extraction@1` + đầu vào (§4)
+- [x] Message thử lại, Kiểm tra kết nối (§5, §6)
+- [x] Cách so khớp (§7)
+- [x] Danh sách chặn V3–V6 và ca kiểm C1–C17 (§8), gồm điểm lệch spec ở "khoản <số>" (§8.4)
