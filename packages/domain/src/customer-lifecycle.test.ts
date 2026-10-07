@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { assertValidTransition, isRfTransition, policyBadge, stageOn } from './customer-lifecycle';
-import type { CustomerStage, Policy, StageTransition } from './model';
+import { assertValidTransition, isRfTransition, stageOn } from './customer-lifecycle';
+import type { CustomerStage, StageTransition } from './model';
 import { calendarDate } from './period';
 
 type Move = [from: CustomerStage | null, to: CustomerStage];
@@ -127,26 +127,5 @@ describe('stage on a day', () => {
 
   it('does not depend on the order of transitions on different days', () => {
     expect(stageOn([...history].reverse(), 'c1', calendarDate(2025, 12, 25))).toBe('LOST');
-  });
-});
-
-describe('"Đã có HĐ" badge', () => {
-  const policy = (id: string, customerId: string): Policy => ({
-    id,
-    customerId,
-    reId: 'r1',
-    submittedDate: calendarDate(2025, 12, 1),
-    submittedFyp: 100_000_000,
-    issuedDate: null,
-    issuedFyp: null,
-  });
-
-  it('shows no badge without a policy', () => {
-    expect(policyBadge([policy('p1', 'c2')], 'c1')).toBeNull();
-  });
-
-  it('counts the customer’s submitted policies', () => {
-    const policies = [policy('p1', 'c1'), policy('p2', 'c2'), policy('p3', 'c1')];
-    expect(policyBadge(policies, 'c1')).toEqual({ count: 2 });
   });
 });

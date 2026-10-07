@@ -12,8 +12,7 @@ import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
 import { routeToHash } from '../../shell/routes';
-import { Actions, ALERT } from '../customers/CustomerDialogs';
-import { FailureAlert } from './FailureAlert';
+import { Actions, ALERT, FailureAlert, useSaveFailure } from '../customers/CustomerDialogs';
 import {
   dayText,
   MAX_HISTORY,
@@ -87,7 +86,7 @@ export function AppointmentDialog({
     from?.coordinatorIds ?? [],
   );
   const [attempted, setAttempted] = useState(false);
-  const [failure, setFailure] = useState<string>();
+  const { failure, setFailure, edit } = useSaveFailure();
 
   const reChoices = useMemo(() => reOptions(data.people, data.teams), [data]);
   const history = useMemo(
@@ -99,13 +98,6 @@ export function AppointmentDialog({
   const pending = dateText.trim() === '' && !attempted;
 
   const dateError = pending ? undefined : dateFieldError(date, today);
-
-  const edit =
-    <T,>(set: (value: T) => void) =>
-    (value: T) => {
-      set(value);
-      setFailure(undefined);
-    };
 
   const save = () => {
     setAttempted(true);

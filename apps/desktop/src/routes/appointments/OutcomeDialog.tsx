@@ -13,8 +13,7 @@ import { formatDate, weekdayOf, type CalendarDate, type Person } from '@p2c/doma
 import { Choices, Dialog, TextField } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
-import { Actions, ALERT } from '../customers/CustomerDialogs';
-import { FailureAlert } from './FailureAlert';
+import { Actions, ALERT, FailureAlert, useSaveFailure } from '../customers/CustomerDialogs';
 import { KycNoteDialog } from '../customers/KycDialogs';
 import { dateFieldError, dateReading } from './AppointmentDialog';
 import { EMPTY_MET, MetFields } from './MetFields';
@@ -59,7 +58,7 @@ export function OutcomeDialog({
   const [nextDateText, setNextDateText] = useState('');
   const [nextTimeText, setNextTimeText] = useState(a.time ?? '');
   const [errors, setErrors] = useState<readonly OutcomeError[]>([]);
-  const [failure, setFailure] = useState<string>();
+  const { failure, setFailure, edit } = useSaveFailure();
   // Saved before a status was picked (F-13); picking one clears it.
   const [noStatus, setNoStatus] = useState(false);
   const [kycNote, setKycNote] = useState(false);
@@ -69,13 +68,6 @@ export function OutcomeDialog({
   const nextDate = readScheduleDate(nextDateText, today, 'fromToday');
   const nextTime = parseTime(nextTimeText);
   const has = (error: OutcomeError) => errors.includes(error);
-
-  const edit =
-    <T,>(set: (value: T) => void) =>
-    (value: T) => {
-      set(value);
-      setFailure(undefined);
-    };
 
   const save = () => {
     if (status === null) {

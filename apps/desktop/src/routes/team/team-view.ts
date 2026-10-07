@@ -49,14 +49,17 @@ export interface StaffRecords {
   readonly policies: ReadonlyArray<Pick<Policy, 'reId' | 'issuedDate'>>;
 }
 
-/** Member columns (mockup team.html); null where the role has no metrics (only RE do, G2 G). */
+/** Member columns of an RE (mockup team.html); the table lists only RE (B1, 01/10/2026). */
 export interface StaffMetrics {
   /** Customers in charge still in N4–N1. */
-  readonly openCustomers: number | null;
-  /** Appointments as RE or coordinator, dated in the 30 days up to today (Owner, 28/09/2026). */
+  readonly openCustomers: number;
+  /**
+   * Appointments as RE dated in the 30 days up to today (Owner, 28/09/2026); an RE never
+   * coordinates one (ADR-0007).
+   */
   readonly appointments30: number;
   /** Policies issued in the current calendar year (Owner, 28/09/2026). */
-  readonly issuedThisYear: number | null;
+  readonly issuedThisYear: number;
 }
 
 /** The 30 days ending today, today included. */
@@ -69,6 +72,7 @@ function ownedBy<T extends { readonly reId: string }>(list: readonly T[], person
   return list.filter((record) => record.reId === personId);
 }
 
+/** The member columns of each RE among `people`; other roles have none (G2 G). */
 export function staffMetrics(
   people: readonly Person[],
   records: StaffRecords,
@@ -77,26 +81,22 @@ export function staffMetrics(
   const recent = last30Days(today);
   const year = periodOf('year', today);
   return new Map(
-    people.map((person) => {
-      const isRe = person.role === 'RE';
-      const appointments30 = records.appointments.filter(
-        (a) =>
-          (a.reId === person.id || a.coordinatorIds.includes(person.id)) &&
-          isInPeriod(a.date, recent),
-      ).length;
-      const metrics: StaffMetrics = {
-        openCustomers: isRe
-          ? ownedBy(records.customers, person.id).filter((c) => isPipelineStage(c.stage)).length
-          : null,
-        appointments30,
-        issuedThisYear: isRe
-          ? ownedBy(records.policies, person.id).filter(
-              (p) => p.issuedDate && isInPeriod(p.issuedDate, year),
-            ).length
-          : null,
-      };
-      return [person.id, metrics];
-    }),
+    people
+      .filter((person) => person.role === 'RE')
+      .map((person) => {
+        const metrics: StaffMetrics = {
+          openCustomers: ownedBy(records.customers, person.id).filter((c) =>
+            isPipelineStage(c.stage),
+          ).length,
+          appointments30: ownedBy(records.appointments, person.id).filter((a) =>
+            isInPeriod(a.date, recent),
+          ).length,
+          issuedThisYear: ownedBy(records.policies, person.id).filter(
+            (p) => p.issuedDate && isInPeriod(p.issuedDate, year),
+          ).length,
+        };
+        return [person.id, metrics];
+      }),
   );
 }
 

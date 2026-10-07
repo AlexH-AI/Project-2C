@@ -149,6 +149,11 @@ export function closeRate(issuedCount: number, rfCount: number): CloseRate | nul
   return rfCount === 0 ? null : { numerator: issuedCount, denominator: rfCount };
 }
 
+/** The close rate in percent, unrounded: the KPI shows it, its delta is the difference in points. */
+export function closeRatePercent({ numerator, denominator }: CloseRate): number {
+  return (numerator / denominator) * 100;
+}
+
 export interface PeriodMetrics extends PolicyMetrics {
   readonly rfCount: number;
   readonly closeRate: CloseRate | null;

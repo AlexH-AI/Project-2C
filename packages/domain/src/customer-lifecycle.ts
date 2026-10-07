@@ -1,9 +1,9 @@
 /**
- * Customer lifecycle (ADR-0007, T-027): which stage changes are allowed, which count as an RF, the
- * customer's stage on a given day, and the "Đã có HĐ" badge.
+ * Customer lifecycle (ADR-0007, T-027): which stage changes are allowed, which count as an RF, and
+ * the customer's stage on a given day.
  */
 import { CLOSED_STAGES } from './model';
-import type { ClosedStage, CustomerStage, Policy, StageTransition } from './model';
+import type { ClosedStage, CustomerStage, StageTransition } from './model';
 import { compareDates } from './period';
 import type { CalendarDate } from './period';
 
@@ -60,13 +60,4 @@ export function stageAtEndOf(
   date: CalendarDate,
 ): CustomerStage | null {
   return sorted.findLast((t) => compareDates(t.date, date) <= 0)?.to ?? null;
-}
-
-/** The "Đã có HĐ" badge: the number of the customer's submitted policies, or null when none. */
-export function policyBadge(
-  policies: readonly Policy[],
-  customerId: string,
-): { readonly count: number } | null {
-  const count = policies.filter((policy) => policy.customerId === customerId).length;
-  return count === 0 ? null : { count };
 }

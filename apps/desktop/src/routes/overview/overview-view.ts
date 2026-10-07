@@ -1,6 +1,7 @@
 import {
   MAX_YEAR,
   MIN_YEAR,
+  closeRatePercent,
   compareDates,
   comparisonWindows,
   customPeriod,
@@ -60,11 +61,11 @@ const METRIC = {
   revenue: 'revenue',
 } as const satisfies Record<Exclude<KpiKey, 'closeRate'>, keyof PeriodMetrics & keyof MetricDeltas>;
 
-const percentOf = ({ numerator, denominator }: CloseRate) => (numerator / denominator) * 100;
-
 /** A close rate in a table cell: `66,7%`, or "—" without RF (§4.1). */
 export const closeRateText = (rate: CloseRate | null): string =>
-  rate ? `${formatPercent(percentOf(rate))}${t('overview.percentUnit')}` : t('overview.none');
+  rate
+    ? `${formatPercent(closeRatePercent(rate))}${t('overview.percentUnit')}`
+    : t('overview.none');
 
 interface Shown {
   readonly value: string;
@@ -180,7 +181,7 @@ function closeRateTile(
   const roundsToZero = points !== null && formatPercent(points) === '0';
   return {
     ...base,
-    value: formatPercent(percentOf(rate)),
+    value: formatPercent(closeRatePercent(rate)),
     unit: t('overview.percentUnit'),
     unitSpaced: false,
     delta:

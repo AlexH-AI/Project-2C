@@ -27,6 +27,9 @@ export type StageCounts = Readonly<Record<CustomerStage, number>>;
  *
  * `customers` must be the live ones only, as the repository lists them: a deleted customer is left
  * out by the caller, never passed here.
+ *
+ * The definition of one day, read by the golden tests: the screens count with
+ * `stageSnapshotSeries` and `stageSnapshotByScope`, which are tested equal to it.
  */
 export function stageSnapshot(
   customers: readonly Customer[],
@@ -35,7 +38,14 @@ export function stageSnapshot(
   scope: Scope,
   people: readonly Person[],
 ): StageCounts {
-  return stageSnapshotter(customers, transitions, people)(date, scope);
+  const matches = scopeMatcher(people, scope);
+  const counts = noCustomers();
+  for (const { reId, sorted } of customerHistories(customers, transitions)) {
+    if (!matches(reId)) continue;
+    const stage = stageAtEndOf(sorted, date);
+    if (stage !== null) counts[stage] += 1;
+  }
+  return counts;
 }
 
 const noCustomers = (): Record<CustomerStage, number> => ({
@@ -62,30 +72,6 @@ function customerHistories(
     reId: customer.reId,
     sorted: sortedByDate(grouped.get(customer.id) ?? []),
   }));
-}
-
-/**
- * `stageSnapshot` over the same data for many calls: each customer's transitions are grouped and
- * sorted once, then every call only looks up the stage at its day. The app counts many days with
- * `stageSnapshotSeries`; this per-day form backs `stageSnapshot` and is the reference its tests
- * compare the series against.
- */
-export function stageSnapshotter(
-  customers: readonly Customer[],
-  transitions: readonly StageTransition[],
-  people: readonly Person[],
-): (date: CalendarDate, scope: Scope) => StageCounts {
-  const histories = customerHistories(customers, transitions);
-  return (date, scope) => {
-    const matches = scopeMatcher(people, scope);
-    const counts = noCustomers();
-    for (const { reId, sorted } of histories) {
-      if (!matches(reId)) continue;
-      const stage = stageAtEndOf(sorted, date);
-      if (stage !== null) counts[stage] += 1;
-    }
-    return counts;
-  };
 }
 
 /**
@@ -133,7 +119,7 @@ function firstOnOrAfter(dates: readonly CalendarDate[], date: CalendarDate): num
 }
 
 /**
- * `stageSnapshotter` for many days at once (chart columns, Theo mốc rows), in one pass over the
+ * `stageSnapshot` for many days at once (chart columns, Theo mốc rows), in one pass over the
  * transitions: a transition holds its stage from its day until the customer's next transition, so
  * it adds the customer to the days in between. Equal, day by day, to the snapshot of each day; the
  * days run earliest first and may repeat.

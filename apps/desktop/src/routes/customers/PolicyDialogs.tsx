@@ -22,7 +22,7 @@ import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
 import { dayText } from '../appointments/appointment-form';
-import { Actions, ALERT, dayRead, InvalidAlert } from './CustomerDialogs';
+import { Actions, ALERT, dayRead, FailureAlert, InvalidAlert } from './CustomerDialogs';
 import {
   effectText,
   issuedChange,
@@ -196,11 +196,7 @@ export function PolicyDialog({
         )
       }
     >
-      {failure && (
-        <p role="alert" className={`${ALERT} border-danger text-danger`}>
-          {failure}
-        </p>
-      )}
+      {failure && <FailureAlert>{failure}</FailureAlert>}
       <InvalidAlert count={attempted ? errorCount : 0} />
       {mode.kind !== 'issue' && (
         <>
@@ -350,11 +346,7 @@ function DeletePolicyDialog({
         </>
       }
     >
-      {failure && (
-        <p role="alert" className={`${ALERT} border-danger text-danger`}>
-          {failure}
-        </p>
-      )}
+      {failure && <FailureAlert>{failure}</FailureAlert>}
       <p className="m-0 text-fg-2">{t('policyDelete.body')}</p>
       <p className={`${ALERT} border-info`}>{t('policyDelete.soft')}</p>
     </Dialog>

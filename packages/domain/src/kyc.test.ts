@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as kyc from './kyc';
 import {
-  EMPTY_KYC_PROFILE,
   addNote,
   confirmFact,
   currentFacts,
@@ -19,8 +18,10 @@ const LATER = calendarDate(2026, 1, 5);
 
 const note = (id: string, text = 'Gặp KH tại văn phòng') => ({ id, text, createdDate: DAY });
 
+const EMPTY_PROFILE: KycProfile = { notes: [], facts: [] };
+
 const withNotes = (...ids: string[]): KycProfile =>
-  ids.reduce((profile, id) => addNote(profile, note(id)), EMPTY_KYC_PROFILE);
+  ids.reduce((profile, id) => addNote(profile, note(id)), EMPTY_PROFILE);
 
 const statusOf = (profile: KycProfile, id: string) =>
   profile.facts.find((fact) => fact.id === id)?.status;

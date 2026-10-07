@@ -4,8 +4,7 @@ import { formatDayMonth, isRfTransition, type StageTransition } from '@p2c/domai
 import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
-import { ALERT } from '../customers/CustomerDialogs';
-import { FailureAlert } from './FailureAlert';
+import { ALERT, FailureAlert } from '../customers/CustomerDialogs';
 import { badge } from './MetFields';
 import { whenText } from './RescheduleFields';
 import { statusLabel } from './appointments-view';

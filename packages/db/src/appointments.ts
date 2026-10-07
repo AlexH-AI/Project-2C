@@ -182,34 +182,12 @@ export function recordOutcomeWithNext(
 }
 
 /**
- * Edits the day, time, trigger and coordinators of an appointment with an outcome (mockup 6f); a
- * scheduled one changes day by rescheduling (D3). A met appointment's transition moves to the new
- * day, so its day is locked like its outcome once a later transition exists (D7, D10).
- */
-export function updateAppointmentDetails(
-  db: Database,
-  id: string,
-  changes: AppointmentDetails,
-): AppointmentRecord {
-  return db.transaction(() => {
-    const row = liveAppointment(db, id);
-    if (!OUTCOME_STATUSES.includes(row.status)) throw new DbError('INVALID_STATUS');
-    const fields = detailFields(row, changes);
-    if (changes.date !== undefined) requireOutcomeDay(db, row.status, fields.date);
-    const moved = fields.date !== row.date && withdrawAppointmentTransition(db, id);
-    const updated: AppointmentRow = { ...row, ...updateAppointmentRow(db, id, fields) };
-    replaceCoordinators(db, row, changes.coordinatorIds);
-    // Only a withdrawn transition comes back, on the new day: a met appointment that moved no one
-    // stays so, whatever the customer's stage is now.
-    if (moved) applyOutcome(db, updated);
-    return toAppointment(db, updated);
-  });
-}
-
-/**
- * Saves the edit dialog (mockup 6f) in one go: the outcome and the details. The transition of the
- * appointment is withdrawn once and the new outcome applied once, on the new day, so that no step
- * in between holds the old outcome on the new day or the new outcome on the old one (D10).
+ * Saves the edit dialog (mockup 6f) in one go: the outcome and the details (day, time, trigger,
+ * coordinators) of an appointment with an outcome; a scheduled one changes day by rescheduling
+ * (D3). The transition of the appointment is withdrawn once and the new outcome applied once, on
+ * the new day, so that no step in between holds the old outcome on the new day or the new outcome
+ * on the old one (D10); a met appointment's day is locked like its outcome once a later transition
+ * exists (D7).
  */
 export function editMeetingOutcome(
   db: Database,

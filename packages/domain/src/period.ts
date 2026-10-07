@@ -176,7 +176,7 @@ export type QuickDateResult =
     };
 
 /** An inferred date more than this many days before today gets a next-year suggestion (W8). */
-export const NEXT_YEAR_SUGGESTION_DAYS = 60;
+const NEXT_YEAR_SUGGESTION_DAYS = 60;
 
 /**
  * Reads a quick date `dd/mm` or `dd/mm/yyyy` (leading zeros optional). Without a year, today's year
@@ -226,11 +226,12 @@ export function periodOf(kind: Exclude<PeriodKind, 'custom'>, date: CalendarDate
     case 'day':
       return { kind, start: date, end: date };
     case 'week': {
-      // Cut to the app's dates: the last week is 27/12 – 31/12/2100 (01/01/1900 is a Monday).
+      // Cut to the app's dates: the last week is 27/12 – 31/12/2100. 01/01/1900 is a Monday, so
+      // the first week needs no cut.
       const monday = toDayNumber(date) - (weekdayOf(date) - 1);
       return {
         kind,
-        start: fromDayNumber(Math.max(monday, FIRST_DAY)),
+        start: fromDayNumber(monday),
         end: fromDayNumber(Math.min(monday + 6, LAST_DAY)),
       };
     }

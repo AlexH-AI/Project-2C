@@ -10,7 +10,6 @@ import {
   restoreAppointment,
   scheduleAppointment,
   softDeleteAppointment,
-  updateAppointmentDetails,
 } from './appointments';
 import {
   changeStageManually,
@@ -330,10 +329,10 @@ describe('recordMeetingOutcome', () => {
     expect(codeOf(() => recordMeetingOutcome(db, id, { ...MET_N2, stageAfter: 'N1' }))).toBe(
       'TRANSITION_NOT_LATEST',
     );
-    expect(codeOf(() => updateAppointmentDetails(db, id, { date: d(11, 1) }))).toBe(
+    expect(codeOf(() => editMeetingOutcome(db, id, MET_N2, { date: d(11, 1) }))).toBe(
       'TRANSITION_NOT_LATEST',
     );
-    expect(updateAppointmentDetails(db, id, { triggerType: 'EVENT' }).triggerType).toBe('EVENT');
+    expect(editMeetingOutcome(db, id, MET_N2, { triggerType: 'EVENT' }).triggerType).toBe('EVENT');
   });
 
   it('keeps the same transition when a met outcome is saved again unchanged', async () => {
@@ -564,14 +563,17 @@ describe('recordOutcomeWithNext', () => {
 });
 
 // Mockup 6f: the trigger, coordinators and meeting day are edited with the outcome.
-describe('updateAppointmentDetails', () => {
+describe('editMeetingOutcome — the details', () => {
+  const CANCELLED = { status: 'CANCELLED' } as const;
+  const NO_SHOW = { status: 'NO_SHOW' } as const;
+
   it('changes the trigger, time and coordinators', async () => {
     const { db, tl, schedule } = await withCustomer();
     const bd = createPerson(db, { name: 'Khoa', role: 'BD', teamId: null });
     const { id } = schedule(10, [tl.id]);
     recordMeetingOutcome(db, id, { status: 'CANCELLED' });
 
-    const edited = updateAppointmentDetails(db, id, {
+    const edited = editMeetingOutcome(db, id, CANCELLED, {
       time: '15:30',
       triggerType: 'OCCASION',
       triggerNote: ' Sinh nhật ',
@@ -585,7 +587,7 @@ describe('updateAppointmentDetails', () => {
       coordinatorIds: [bd.id],
     });
     expect(getAppointment(db, id)).toEqual(edited);
-    expect(updateAppointmentDetails(db, id, { triggerNote: null, time: null })).toMatchObject({
+    expect(editMeetingOutcome(db, id, CANCELLED, { triggerNote: null, time: null })).toMatchObject({
       time: null,
       triggerType: 'OCCASION',
       triggerNote: null,
@@ -603,16 +605,18 @@ describe('updateAppointmentDetails', () => {
     softDeletePerson(db, is.id);
 
     const refused = (coordinatorIds: string[]) =>
-      codeOf(() => updateAppointmentDetails(db, id, { triggerType: 'OTHER', coordinatorIds }));
+      codeOf(() => editMeetingOutcome(db, id, MET_N2, { triggerType: 'OTHER', coordinatorIds }));
     expect(refused([is.id])).toBe('PERSON_NOT_FOUND');
     expect(refused(['x'])).toBe('PERSON_NOT_FOUND');
     expect(refused([re.id])).toBe('INVALID_COORDINATOR');
     expect(refused([otherRe.id])).toBe('INVALID_COORDINATOR');
-    expect(codeOf(() => updateAppointmentDetails(db, id, { time: '7h' }))).toBe('INVALID_TIME');
-    expect(codeOf(() => updateAppointmentDetails(db, id, { triggerType: 'X' as never }))).toBe(
+    expect(codeOf(() => editMeetingOutcome(db, id, MET_N2, { time: '7h' }))).toBe('INVALID_TIME');
+    expect(codeOf(() => editMeetingOutcome(db, id, MET_N2, { triggerType: 'X' as never }))).toBe(
       'INVALID_TRIGGER',
     );
-    expect(codeOf(() => updateAppointmentDetails(db, deleted, {}))).toBe('APPOINTMENT_NOT_FOUND');
+    expect(codeOf(() => editMeetingOutcome(db, deleted, CANCELLED, {}))).toBe(
+      'APPOINTMENT_NOT_FOUND',
+    );
     expect(getAppointment(db, id)).toMatchObject({
       triggerType: 'REFERRAL',
       coordinatorIds: [tl.id],
@@ -626,10 +630,10 @@ describe('updateAppointmentDetails', () => {
     rescheduleAppointment(db, old.id, { date: d(15, 10) });
     const changes = { date: d(5, 1), triggerType: 'EVENT', coordinatorIds: [] } as const;
 
-    expect(codeOf(() => updateAppointmentDetails(db, scheduled.id, changes))).toBe(
+    expect(codeOf(() => editMeetingOutcome(db, scheduled.id, CANCELLED, changes))).toBe(
       'INVALID_STATUS',
     );
-    expect(codeOf(() => updateAppointmentDetails(db, old.id, { date: d(20, 10) }))).toBe(
+    expect(codeOf(() => editMeetingOutcome(db, old.id, CANCELLED, { date: d(20, 10) }))).toBe(
       'INVALID_STATUS',
     );
     expect(getAppointment(db, scheduled.id)).toEqual(scheduled);
@@ -644,9 +648,9 @@ describe('updateAppointmentDetails', () => {
     recordMeetingOutcome(db, missed, { status: 'NO_SHOW' });
     const changes = { date: d(3, 2), triggerType: 'EVENT', coordinatorIds: [tl.id] } as const;
 
-    expect(updateAppointmentDetails(db, missed, changes)).toMatchObject(changes);
-    expect(updateAppointmentDetails(db, cancelled, changes)).toMatchObject(changes);
-    expect(updateAppointmentDetails(db, cancelled, { date: d(27, 9) }).date).toEqual(d(27, 9));
+    expect(editMeetingOutcome(db, missed, NO_SHOW, changes)).toMatchObject(changes);
+    expect(editMeetingOutcome(db, cancelled, CANCELLED, changes)).toMatchObject(changes);
+    expect(editMeetingOutcome(db, cancelled, CANCELLED, { date: d(27, 9) }).date).toEqual(d(27, 9));
   });
 
   it('keeps a met or no-show appointment from moving to a day after today', async () => {
@@ -657,17 +661,17 @@ describe('updateAppointmentDetails', () => {
     recordMeetingOutcome(db, missed, { status: 'NO_SHOW' });
     const transitions = listStageTransitions(db, customer.id);
 
-    expect(codeOf(() => updateAppointmentDetails(db, met, { date: d(27, 9) }))).toBe(
+    expect(codeOf(() => editMeetingOutcome(db, met, MET_N2, { date: d(27, 9) }))).toBe(
       'OUTCOME_IN_FUTURE',
     );
-    expect(codeOf(() => updateAppointmentDetails(db, missed, { date: d(27, 9) }))).toBe(
+    expect(codeOf(() => editMeetingOutcome(db, missed, NO_SHOW, { date: d(27, 9) }))).toBe(
       'OUTCOME_IN_FUTURE',
     );
     expect(getAppointment(db, met)?.date).toEqual(d(10, 1));
     expect(getAppointment(db, missed)?.date).toEqual(d(11, 1));
     expect(listStageTransitions(db, customer.id)).toEqual(transitions);
     expect(stage()).toBe('N2');
-    expect(updateAppointmentDetails(db, met, { date: d(26, 9) }).date).toEqual(d(26, 9));
+    expect(editMeetingOutcome(db, met, MET_N2, { date: d(26, 9) }).date).toEqual(d(26, 9));
   });
 
   it('moves the transition of a met appointment to its new day', async () => {
@@ -675,7 +679,7 @@ describe('updateAppointmentDetails', () => {
     const { id } = schedule();
     recordMeetingOutcome(db, id, MET_N2);
 
-    updateAppointmentDetails(db, id, { date: d(14, 1) });
+    editMeetingOutcome(db, id, MET_N2, { date: d(14, 1) });
 
     expect(getAppointment(db, id)?.date).toEqual(d(14, 1));
     expect(
@@ -687,12 +691,12 @@ describe('updateAppointmentDetails', () => {
     expect(stage()).toBe('N2');
     // D10: never before the transition that came before it, whose day the error carries: the
     // creation's, not the meeting's own old day.
-    expect(errorOf(() => updateAppointmentDetails(db, id, { date: d(1, 12, 2025) }))).toMatchObject(
-      {
-        code: 'TRANSITION_BEFORE_LATEST',
-        params: { date: '01/01/2026' },
-      },
-    );
+    expect(
+      errorOf(() => editMeetingOutcome(db, id, MET_N2, { date: d(1, 12, 2025) })),
+    ).toMatchObject({
+      code: 'TRANSITION_BEFORE_LATEST',
+      params: { date: '01/01/2026' },
+    });
     expect(getAppointment(db, id)?.date).toEqual(d(14, 1));
   });
 
@@ -702,7 +706,7 @@ describe('updateAppointmentDetails', () => {
     recordMeetingOutcome(db, id, { ...MET_N2, stageAfter: 'N3' });
     changeStageManually(db, customer.id, { to: 'N2', date: d(12, 1) });
 
-    updateAppointmentDetails(db, id, { date: d(11, 1) });
+    editMeetingOutcome(db, id, { ...MET_N2, stageAfter: 'N3' }, { date: d(11, 1) });
 
     expect(listStageTransitions(db, customer.id).map((t) => t.to)).toEqual(['N3', 'N2']);
   });

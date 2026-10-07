@@ -10,8 +10,7 @@ import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
-import { Actions, ALERT } from '../customers/CustomerDialogs';
-import { FailureAlert } from './FailureAlert';
+import { Actions, ALERT, FailureAlert, useSaveFailure } from '../customers/CustomerDialogs';
 import { CoordinatorsField, dateFieldError, dateReading, liveIds } from './AppointmentDialog';
 import { DeleteAppointmentDialog } from './DeleteAppointmentDialog';
 import { badge, MetFields, metDraftOf, EMPTY_MET } from './MetFields';
@@ -59,7 +58,7 @@ export function EditOutcomeDialog({
   const [triggerNote, setTriggerNote] = useState(a.triggerNote ?? '');
   const [coordinatorIds, setCoordinatorIds] = useState(a.coordinatorIds);
   const [errors, setErrors] = useState<readonly OutcomeError[]>([]);
-  const [failure, setFailure] = useState<string>();
+  const { failure, setFailure, edit } = useSaveFailure();
   const [deleting, setDeleting] = useState(false);
 
   const date = readScheduleDate(dateText, today, 'any');
@@ -77,13 +76,6 @@ export function EditOutcomeDialog({
   );
   // The meeting's own move starts from the stage before it; otherwise from where the customer is.
   const from = caused?.from ?? customer.stage;
-
-  const edit =
-    <T,>(set: (value: T) => void) =>
-    (value: T) => {
-      set(value);
-      setFailure(undefined);
-    };
 
   const save = () => {
     const read = readOutcome({ status, ...metDraft, note, next: null });

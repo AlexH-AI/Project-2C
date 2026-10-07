@@ -1,4 +1,3 @@
-import { t } from '../i18n';
 import type { Route } from '../shell/routes';
 import { AppointmentsScreen } from './appointments/AppointmentsScreen';
 import { CustomerProfile } from './customers/CustomerProfile';
@@ -8,7 +7,7 @@ import { ReportsScreen } from './reports/ReportsScreen';
 import { Settings } from './Settings';
 import { TeamScreen } from './team/TeamScreen';
 
-/** Screen bodies; a screen without its content yet shows a placeholder. */
+/** Screen bodies, one for every screen of `Route`; a new screen fails to compile until added. */
 export function Screen({ route }: { route: Route }) {
   if (route.screen === 'overview') return <Overview />;
   if (route.screen === 'appointments') return <AppointmentsScreen />;
@@ -17,5 +16,5 @@ export function Screen({ route }: { route: Route }) {
   if (route.screen === 'customers') return <CustomersScreen />;
   if (route.screen === 'reports') return <ReportsScreen />;
   if (route.screen === 'customer') return <CustomerProfile key={route.id} id={route.id} />;
-  return <p className="text-sm text-fg-3">{t('screen.placeholder')}</p>;
+  return route.screen satisfies never;
 }

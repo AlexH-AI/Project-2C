@@ -40,8 +40,6 @@ export interface KycVersion {
   readonly material: boolean;
 }
 
-export const EMPTY_KYC_PROFILE: KycProfile = { notes: [], facts: [] };
-
 export function addNote(profile: KycProfile, note: KycNote): KycProfile {
   if (profile.notes.some((existing) => existing.id === note.id)) {
     throw new Error(`KYC note ${note.id} already exists`);

@@ -9,18 +9,12 @@ import {
   type LegendComponentOption,
   type TooltipComponentOption,
 } from 'echarts/components';
-import { CanvasRenderer, SVGRenderer } from 'echarts/renderers';
+import { SVGRenderer } from 'echarts/renderers';
 import { SERIES_TOKENS, chartTheme } from './chart-theme';
 
 // Register only the ECharts modules in use (ADR-0014); add a chart type here when a screen needs it.
-registerModules([
-  BarChart,
-  GridComponent,
-  LegendComponent,
-  TooltipComponent,
-  SVGRenderer,
-  CanvasRenderer,
-]);
+// Every chart is small and drawn in SVG; register CanvasRenderer once one has many points (ADR-0014).
+registerModules([BarChart, GridComponent, LegendComponent, TooltipComponent, SVGRenderer]);
 
 export type ChartOption = ComposeOption<
   BarSeriesOption | GridComponentOption | LegendComponentOption | TooltipComponentOption
@@ -39,8 +33,6 @@ interface ChartProps {
   option: ChartOption;
   /** Series colours as token names, in series order; the default palette otherwise. Keep stable. */
   palette?: readonly string[];
-  /** SVG for small charts, Canvas for many points (ADR-0014). */
-  renderer?: 'svg' | 'canvas';
   /** Size classes; the chart fills the box. */
   className?: string;
 }
@@ -50,7 +42,6 @@ export function Chart({
   label,
   option,
   palette = SERIES_TOKENS,
-  renderer = 'svg',
   className = 'h-64 w-full',
 }: ChartProps) {
   const box = useRef<HTMLDivElement>(null);
@@ -62,7 +53,7 @@ export function Chart({
     const chart = init(
       element,
       chartTheme((name) => style.getPropertyValue(name), palette),
-      { renderer },
+      { renderer: 'svg' },
     );
     chart.setOption(option);
     const observer = new ResizeObserver(() => chart.resize());
@@ -71,7 +62,7 @@ export function Chart({
       observer.disconnect();
       chart.dispose();
     };
-  }, [option, palette, renderer]);
+  }, [option, palette]);
 
   return <div ref={box} role="img" aria-label={label} className={className} />;
 }

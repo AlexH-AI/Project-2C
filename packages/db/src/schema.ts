@@ -72,7 +72,7 @@ export const schemaMigrations = sqliteTable('schema_migrations', {
 
 // ---- customers, stage transitions, appointments, policies (spec §3.3–3.7) ----
 
-export const CUSTOMER_STAGES = [...PIPELINE_STAGES, ...CLOSED_STAGES] as const;
+const CUSTOMER_STAGES = [...PIPELINE_STAGES, ...CLOSED_STAGES] as const;
 export const GENDERS = ['MALE', 'FEMALE'] as const;
 /** Appointment triggers from the G3 mockup (spec §3.5). */
 export const APPOINTMENT_TRIGGERS = [

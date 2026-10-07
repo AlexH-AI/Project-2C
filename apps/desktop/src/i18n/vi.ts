@@ -1,7 +1,6 @@
 /** Vietnamese UI strings. Industry terms (FYP, KYC, N1–N4) stay in English — ADR-0011. */
 export const vi = {
   'app.title': 'Project-2C',
-  'app.subtitle': 'Quản lý hoạt động tư vấn bảo hiểm nhân thọ',
   'sep.dot': '·',
   'sep.arrow': '→',
   'sep.range': '{from} – {to}',
@@ -25,7 +24,6 @@ export const vi = {
   'screen.reports': 'Báo cáo',
   'screen.team': 'Team & nhân sự',
   'screen.settings': 'Cài đặt',
-  'screen.placeholder': 'Màn hình đang dựng — nội dung sẽ có khi có dữ liệu.',
   'scope.label': 'Góc nhìn',
   'scope.all': 'Toàn bộ',
   'scope.team': 'Team',
@@ -733,7 +731,6 @@ export const vi = {
   'team.colOpen': 'KH đang mở',
   'team.colAppointments': 'Lịch hẹn 30 ngày',
   'team.colIssued': 'HĐ năm {year}',
-  'team.noMetric': '—',
   'person.add': '+ Nhân sự',
   'person.new': 'Nhân sự mới',
   'person.edit': 'Sửa nhân sự',

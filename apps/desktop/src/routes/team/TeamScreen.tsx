@@ -52,28 +52,15 @@ function EditLink({ person, onEdit }: { person: Person; onEdit: (person: Person)
   );
 }
 
-/** A metric cell: "—" where the role has none; sorts below every count. */
+/** A metric cell of an RE, the only role the member table lists. */
 function metricColumn(
   id: string,
   header: string,
-  pick: (metrics: StaffMetrics) => number | null,
+  pick: (metrics: StaffMetrics) => number,
   metrics: ReadonlyMap<string, StaffMetrics>,
 ): DataTableColumn<Person> {
-  const valueOf = (person: Person) => {
-    const found = metrics.get(person.id);
-    return found ? pick(found) : null;
-  };
-  return {
-    id,
-    header,
-    kind: 'number',
-    align: 'end',
-    value: (person) => valueOf(person) ?? -1,
-    cell: (person) => {
-      const value = valueOf(person);
-      return value === null ? <span className="text-fg-3">{t('team.noMetric')}</span> : value;
-    },
-  };
+  const valueOf = (person: Person) => pick(metrics.get(person.id)!);
+  return { id, header, kind: 'number', align: 'end', value: valueOf };
 }
 
 function memberColumns(
