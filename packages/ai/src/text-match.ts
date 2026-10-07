@@ -39,14 +39,13 @@ export function char(c: string): Matcher {
 }
 
 /**
- * A whole-word phrase, written lower case with its diacritics. `folded`: also caught without
- * diacritics. The folded form of a matching accented text always holds the folded phrase, so only
- * that form is searched.
+ * A whole-word phrase, written lower case with its diacritics, on the accented form; `folded`:
+ * also, folded, on the folded form. Both forms are searched: a lone combining mark is a word
+ * boundary in the accented form but is gone from the folded one (review #420).
  */
 export function phrase(words: string, folded: boolean): Matcher {
-  const source = `${WORD_START}${escape(folded ? fold(words) : words)}${WORD_END}`;
-  const regex = new RegExp(source, 'u');
-  return (text) => (regex.test(folded ? text.folded : text.accented) ? words : null);
+  const found = pattern(`${WORD_START}${escape(words)}${WORD_END}`, folded ? 'both' : 'accented');
+  return (text) => (found(text) === null ? null : words);
 }
 
 /**
@@ -55,11 +54,7 @@ export function phrase(words: string, folded: boolean): Matcher {
  */
 export function pattern(source: string, on: 'accented' | 'both' | 'original'): Matcher {
   const regex = new RegExp(source, 'u');
-  const foldedRegex = new RegExp(fold(source), 'u');
-  return (text) => {
-    if (on === 'original') return regex.exec(text.original)?.[0] ?? null;
-    const match =
-      regex.exec(text.accented) ?? (on === 'both' ? foldedRegex.exec(text.folded) : null);
-    return match?.[0] ?? null;
-  };
+  if (on === 'original') return (text) => regex.exec(text.original)?.[0] ?? null;
+  const foldedRegex = on === 'both' ? new RegExp(fold(source), 'u') : null;
+  return (text) => (regex.exec(text.accented) ?? foldedRegex?.exec(text.folded))?.[0] ?? null;
 }

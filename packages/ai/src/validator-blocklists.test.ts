@@ -125,6 +125,11 @@ describe('validateOutput — V3 to V6', () => {
     expect(codesOf('hypotheses', `KH ${phrase}`)).toEqual(['V5']);
   });
 
+  it('compares a phrase on the accented form too, where a lone combining mark is a boundary', () => {
+    // NFC cannot compose "x" with U+0301; folding drops the mark and glues "x" to "xac".
+    expect(codesOf('hypotheses', 'Ý x́xác suất')).toEqual(['V3']);
+  });
+
   it('matches whole words only, whatever the case and spacing', () => {
     expect(codesOf('hypotheses', 'Thông tin chubby')).toEqual([]);
     expect(codesOf('hypotheses', 'Hợp đồng CHUBB')).toEqual(['V4']);

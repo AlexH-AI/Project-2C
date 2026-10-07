@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { AiMode } from './schema';
 import { validateOutput, type OutputCheckInput } from './validator';
 
 const item = (text: string, ...evidence: string[]) => ({ text, evidence });
@@ -41,6 +42,21 @@ describe('validateOutput — V1', () => {
     expect(validateOutput('extraction', null)).toEqual([
       { code: 'V1', path: '$', detail: 'không có khối JSON' },
     ]);
+  });
+
+  it('reports an answer with no JSON block given as undefined the same way', () => {
+    expect(validateOutput('analysis', undefined, input)).toEqual([
+      { code: 'V1', path: '$', detail: 'không có khối JSON' },
+    ]);
+  });
+
+  it('needs the input whenever the mode may be analysis or discovery', () => {
+    const mode = 'analysis' as AiMode;
+    expect(validateOutput(mode, analysis(), input)).toEqual([]);
+    // @ts-expect-error V2–V6 cannot run without the input
+    expect(() => validateOutput(mode, analysis())).toThrow(TypeError);
+    // @ts-expect-error same for a literal mode
+    expect(() => validateOutput('discovery', discovery())).toThrow(TypeError);
   });
 
   it.each([

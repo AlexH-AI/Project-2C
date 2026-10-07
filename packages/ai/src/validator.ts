@@ -42,19 +42,22 @@ export interface OutputCheckInput {
 }
 
 /**
- * Issues of an output parsed from the model's answer, `null` when the answer had no JSON block.
- * Extraction is checked for V1 only here: V7 drops single facts (`filterExtraction`), never the
- * whole answer, so it takes no `input`.
+ * Issues of an output parsed from the model's answer, `null` (or `undefined`) when the answer had no
+ * JSON block. Extraction is checked for V1 only here: V7 drops single facts (`filterExtraction`),
+ * never the whole answer, so it takes no `input`. Any other mode needs it, also a mode typed
+ * `AiMode` (`[M]` keeps the condition from distributing over the union, review #420); without it,
+ * the call throws rather than skip V2–V6.
  */
 export function validateOutput<M extends AiMode>(
   mode: M,
   parsed: unknown,
-  ...[input]: M extends 'extraction' ? [] : [input: OutputCheckInput]
+  ...[input]: [M] extends ['extraction'] ? [] : [input: OutputCheckInput]
 ): ValidationIssue[] {
-  if (parsed === null) return [{ code: 'V1', path: '$', detail: 'không có khối JSON' }];
+  if (parsed == null) return [{ code: 'V1', path: '$', detail: 'không có khối JSON' }];
   const result = AI_OUTPUT_SCHEMAS[mode].safeParse(parsed);
   if (!result.success) return result.error.issues.map(schemaIssue);
-  if (input === undefined) return [];
+  if (mode === 'extraction') return [];
+  if (input === undefined) throw new TypeError(`validateOutput needs the input in ${mode} mode`);
   const items = itemsOf(result.data as AnalysisOutput | DiscoveryOutput);
   return [...evidenceIssues(items, input), ...items.flatMap(phraseIssues)];
 }
@@ -172,7 +175,9 @@ function quoted(phrase: string): string {
 }
 
 /**
- * V3–V6 on the element's text: one issue per blocklist entry found (G5 §7). Personality labels are
+ * V3–V6 on the element's text: one issue per blocklist entry found (G5 §7.6 "mỗi lần khớp" read as
+ * per entry; the same phrase twice in one text is one issue, which changes neither pass / block
+ * nor the retry message). Personality labels are
  * allowed in `personalityNotes` (V5 only, Owner Q5); the codes of `evidence`, `missingCategory` and
  * `system` are not text.
  */
