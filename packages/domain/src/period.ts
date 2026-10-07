@@ -94,9 +94,20 @@ export function formatLocalDateTime(at: Date, options: { seconds?: boolean } = {
   return `${formatDate(fromLocalDate(at))} ${full}`;
 }
 
-/** `YYYY-MM-DD`, for file names that sort by day. */
+/**
+ * `YYYY-MM-DD`: how a day is stored (spec Phase 3 §2), and file names that sort by day. Throws a
+ * RangeError for a day `calendarDate` refuses.
+ */
 export function formatIsoDate(date: CalendarDate): string {
-  return `${date.year}-${pad(date.month)}-${pad(date.day)}`;
+  const { year, month, day } = calendarDate(date.year, date.month, date.day);
+  return `${year}-${pad(month)}-${pad(day)}`;
+}
+
+/** Reads a stored day, `YYYY-MM-DD` exactly; throws a RangeError for anything else. */
+export function fromIsoDate(text: string): CalendarDate {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  if (!match) throw new RangeError(`Not a YYYY-MM-DD date: ${text}`);
+  return calendarDate(Number(match[1]), Number(match[2]), Number(match[3]));
 }
 
 /** `YYYYMMDD-HHMM` in the local time zone, for file names that sort by time. */

@@ -1,4 +1,4 @@
-import type { Person, Scope, Team } from '@p2c/domain';
+import { byName, type Person, type Scope, type Team } from '@p2c/domain';
 import { joinParts } from '../i18n';
 
 /** What the "Góc nhìn" picker holds: the kind, and the team or RE picked for it. */
@@ -51,8 +51,6 @@ export function narrowScope(
   const re = teamRes(people, scope.teamId).find((person) => person.id === reInTeam);
   return re ? { kind: 're', reId: re.id } : scope;
 }
-
-const byName = new Intl.Collator('vi').compare;
 
 /** The RE of one team, by name, as the RE strip of Customers and Appointments lists them. */
 export function teamRes(people: readonly Person[], teamId: string): Person[] {

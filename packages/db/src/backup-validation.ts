@@ -7,6 +7,7 @@
 import {
   assertValidTransition,
   calendarDate,
+  fromIsoDate,
   PIPELINE_STAGES,
   REVIEWER_ROLES,
   type CustomerStage,
@@ -15,12 +16,11 @@ import {
 } from '@p2c/domain';
 import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
-import { cleanText, isFee, optionalText, requireName, today, toIsoDate } from './common';
+import { cleanText, isFee, optionalText, requireName, storedDate, today } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { normalizeKycValue, profileFactValue, type ProfileFields } from './kyc';
 
-const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const YEAR = /^\d{4}$/;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const TIMESTAMPS = new Set(['created_at', 'updated_at', 'deleted_at']);
@@ -90,10 +90,15 @@ function storedAs(clean: (text: string) => string, value: SqlValue | undefined):
   }
 }
 
-/** `YYYY-MM-DD` of a day that exists, as `calendarDate` reads it. */
+/** A stored day, as `fromIsoDate` reads it back. */
 function validDate(value: SqlValue): boolean {
-  const match = typeof value === 'string' ? ISO_DATE.exec(value) : null;
-  return match !== null && isCalendarDate(Number(match[1]), Number(match[2]), Number(match[3]));
+  if (typeof value !== 'string') return false;
+  try {
+    fromIsoDate(value);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** A birth year alone, from the year `calendarDate` accepts. */
@@ -152,7 +157,7 @@ export function validateBackupInvariants(db: Database): void {
     ownerRule(read, appointments) ??
     kycRule(read, customers) ??
     staffRule(read) ??
-    futureRule(read, toIsoDate(today(db)));
+    futureRule(read, storedDate(today(db)));
   if (broken !== null) throw new DbError('BACKUP_INVALID', { rule: broken });
 }
 

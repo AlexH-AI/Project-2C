@@ -1,5 +1,11 @@
 import type { CustomerRecord } from '@p2c/db';
-import type { CalendarDate, Person, Policy, StageTransition } from '@p2c/domain';
+import {
+  byName,
+  type CalendarDate,
+  type Person,
+  type Policy,
+  type StageTransition,
+} from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import {
   ageOn,
@@ -143,8 +149,6 @@ describe('birthLabel', () => {
 
 // DR-65: the "Ngày sinh" column sorts by this key, as DataTable sorts text, not by the label.
 describe('birthSortKey', () => {
-  const tableOrder = new Intl.Collator('vi', { sensitivity: 'base', numeric: true }).compare;
-
   it('sorts by the day of birth, a year alone ahead of the full dates in it', () => {
     const births = [
       { year: 1984, month: 3, day: 12 },
@@ -155,7 +159,7 @@ describe('birthSortKey', () => {
       { year: 1984, month: 3, day: 2 },
     ];
 
-    const sorted = [...births].sort((a, b) => tableOrder(birthSortKey(a), birthSortKey(b)));
+    const sorted = [...births].sort((a, b) => byName(birthSortKey(a), birthSortKey(b)));
 
     expect(sorted.map(birthLabel)).toEqual([
       '01/01/1961',

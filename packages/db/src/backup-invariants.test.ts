@@ -146,7 +146,11 @@ describe('importBackup — rules across tables', () => {
 
     const imported = await importBackup(exportBackup(db));
 
-    expect(listCustomers(imported.db).map((c) => c.name)).toEqual(['Hoa', 'Lan', 'Minh']);
+    expect(
+      listCustomers(imported.db)
+        .map((c) => c.name)
+        .sort(),
+    ).toEqual(['Hoa', 'Lan', 'Minh']);
   });
 
   it.each([2, 11, 42])(

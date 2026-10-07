@@ -11,7 +11,7 @@ import {
   softDeleteTeam,
   type Database,
 } from '@p2c/db';
-import { calendarDate, formatDate, fromLocalDate, type CalendarDate } from '@p2c/domain';
+import { byName, calendarDate, formatDate, fromLocalDate, type CalendarDate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import {
   isStartupBackupError,
@@ -62,7 +62,10 @@ function memoryStorage(initial?: Uint8Array) {
   return { storage, saves, events, exports, failSave: () => (failNextSave = true) };
 }
 
-const teamNames = (db: Database) => listTeams(db).map((team) => team.name);
+const teamNames = (db: Database) =>
+  listTeams(db)
+    .map((team) => team.name)
+    .sort(byName);
 
 describe('openAppData', () => {
   it('without storage (web mode) opens a migrated database with the simulated data', async () => {

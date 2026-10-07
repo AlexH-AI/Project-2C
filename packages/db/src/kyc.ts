@@ -21,17 +21,10 @@ import {
   type KycProfile,
   type KycValue,
   type KycVersion,
+  fromIsoDate,
 } from '@p2c/domain';
 import { asc, desc, eq, max, sql } from 'drizzle-orm';
-import {
-  cleanText,
-  fromIsoDate,
-  liveCustomer,
-  nextSeq,
-  prepared,
-  rowInsert,
-  toPastIsoDate,
-} from './common';
+import { cleanText, liveCustomer, nextSeq, prepared, rowInsert, storedPastDate } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { ulid } from './ids';
@@ -174,7 +167,7 @@ export function resolveKycConflict(
 ): KycChange {
   return db.transaction(() => {
     const customer = liveCustomer(db, customerId);
-    toPastIsoDate(db, command.date);
+    storedPastDate(db, command.date);
     const before = loadProfile(db, customerId);
     const chosen = before.facts.find((fact) => fact.id === command.factId);
     if (!chosen) throw new DbError('KYC_FACT_NOT_FOUND');
@@ -345,7 +338,7 @@ function toInput(
   date: CalendarDate,
 ): KycFactInput {
   const field = requireField(fact.field);
-  toPastIsoDate(db, date);
+  storedPastDate(db, date);
   return {
     id: ulid(db.now(), db.random),
     field,
@@ -417,7 +410,7 @@ function save(
         field: fact.field,
         valueJson: JSON.stringify(fact.value),
         noteId: fact.noteId,
-        confirmedDate: toPastIsoDate(db, fact.confirmedDate),
+        confirmedDate: storedPastDate(db, fact.confirmedDate),
         status: fact.status,
         createdAt: at,
         updatedAt: at,
@@ -440,7 +433,7 @@ function save(
     customerId,
     seq: nextSeq(latest?.seq),
     hash: version.hash,
-    date: toPastIsoDate(db, version.date),
+    date: storedPastDate(db, version.date),
     material: version.material,
     createdAt: at,
   };
@@ -460,7 +453,7 @@ function insertNote(
     customerId,
     seq: nextSeq(prepared(db, lastNoteSeq).get({ customerId })?.seq),
     text,
-    createdDate: toPastIsoDate(db, date),
+    createdDate: storedPastDate(db, date),
     source,
     createdAt: db.now().toISOString(),
   };

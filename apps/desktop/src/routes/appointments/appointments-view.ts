@@ -1,5 +1,6 @@
 import type { AppointmentRecord, CustomerRecord } from '@p2c/db';
 import {
+  byName,
   addDays,
   appointmentGroup,
   compareDates,
@@ -173,8 +174,6 @@ export interface DayGroup {
     readonly rows: readonly AppointmentRow[];
   }[];
 }
-
-const byName = new Intl.Collator('vi').compare;
 
 /** What each appointment came to: the stage move it caused, the stage kept, or its new day. */
 export function outcomeResolver(

@@ -1,7 +1,7 @@
 /** Helpers shared by the commands: names, soft-delete stamps, stored dates and money. */
 import {
-  calendarDate,
   compareDates,
+  formatIsoDate,
   fromLocalDate,
   MAX_FEE_VND,
   type CalendarDate,
@@ -41,22 +41,13 @@ export function stampDeleted(db: Database): { deletedAt: string; updatedAt: stri
   return { deletedAt: at, updatedAt: at };
 }
 
-const pad = (value: number, width = 2) => String(value).padStart(width, '0');
-
-/** `YYYY-MM-DD` (spec §2); rejects a day that does not exist. */
-export function toIsoDate(date: CalendarDate): string {
-  let valid: CalendarDate;
+/** A day as stored, `formatIsoDate` of `domain`; a day that does not exist is `INVALID_DATE`. */
+export function storedDate(date: CalendarDate): string {
   try {
-    valid = calendarDate(date.year, date.month, date.day);
+    return formatIsoDate(date);
   } catch {
     throw new DbError('INVALID_DATE');
   }
-  return `${pad(valid.year, 4)}-${pad(valid.month)}-${pad(valid.day)}`;
-}
-
-export function fromIsoDate(text: string): CalendarDate {
-  const [year, month, day] = text.split('-').map(Number);
-  return calendarDate(year!, month!, day!);
 }
 
 /** The local calendar day of the database clock, read once. */
@@ -64,9 +55,9 @@ export function today(db: Database): CalendarDate {
   return fromLocalDate(db.now());
 }
 
-/** `toIsoDate` of the day something already happened: today or before. */
-export function toPastIsoDate(db: Database, date: CalendarDate): string {
-  const iso = toIsoDate(date);
+/** `storedDate` of the day something already happened: today or before. */
+export function storedPastDate(db: Database, date: CalendarDate): string {
+  const iso = storedDate(date);
   if (compareDates(date, today(db)) > 0) throw new DbError('DATE_IN_FUTURE');
   return iso;
 }

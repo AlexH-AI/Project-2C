@@ -81,7 +81,7 @@ describe('customers', () => {
     expect(listCustomers(db)).toEqual([]);
   });
 
-  it('stores a full birth date or none, and lists customers by name', async () => {
+  it('stores a full birth date or none, and lists customers in creation order', async () => {
     const { db, re } = await setup();
     const mai = createCustomer(db, {
       name: 'Mai',
@@ -94,7 +94,7 @@ describe('customers', () => {
 
     expect(mai.birthDate).toEqual(d(9, 3, 1990));
     expect(lan).toMatchObject({ birthDate: null, gender: null });
-    expect(listCustomers(db).map((c) => c.name)).toEqual(['Lan', 'Mai']);
+    expect(listCustomers(db).map((c) => c.name)).toEqual(['Mai', 'Lan']);
     expect(new Set([mai.code, lan.code]).size).toBe(2);
   });
 

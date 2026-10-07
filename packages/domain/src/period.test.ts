@@ -15,6 +15,7 @@ import {
   formatIsoDate,
   formatLocalDateTime,
   formatPeriodValue,
+  fromIsoDate,
   fromLocalDate,
   localFileStamp,
   isInPeriod,
@@ -92,6 +93,31 @@ describe('formatIsoDate', () => {
   it('writes a day as YYYY-MM-DD, for file names', () => {
     expect(formatIsoDate(d(5, 9, 2026))).toBe('2026-09-05');
     expect(formatIsoDate(d(31, 12, 1900))).toBe('1900-12-31');
+  });
+
+  it('refuses a day that does not exist', () => {
+    expect(() => formatIsoDate({ year: 2026, month: 2, day: 29 })).toThrow(RangeError);
+    expect(() => formatIsoDate({ year: 1899, month: 12, day: 31 })).toThrow(RangeError);
+  });
+});
+
+describe('fromIsoDate', () => {
+  it('reads YYYY-MM-DD, as dates are stored', () => {
+    expect(fromIsoDate('2026-09-05')).toEqual(d(5, 9, 2026));
+    expect(fromIsoDate('2100-12-31')).toEqual(d(31, 12, 2100));
+    expect(fromIsoDate(formatIsoDate(d(29, 2, 2000)))).toEqual(d(29, 2, 2000));
+  });
+
+  it.each([
+    '2026-02-30',
+    '2026-9-05',
+    '2026-09-05T00:00',
+    '26-09-05',
+    '05/09/2026',
+    '1899-12-31',
+    '',
+  ])('refuses %j', (text) => {
+    expect(() => fromIsoDate(text)).toThrow(RangeError);
   });
 });
 
