@@ -292,11 +292,11 @@ Ghi chú KYC ─► Dữ kiện có cấu trúc (RE xác nhận) ─► kyc_vers
 | **1. Nền móng** | `CLAUDE.md`, `.gitattributes`, bootstrap/session scripts, `/session-start` `/handoff`, CI + build exe, pre-push hook bảo vệ `main`, Issue/PR template, checklist review; skeleton Tauri + chế độ web; app shell dark; mockup | Exe chạy được trên **cả 2 máy** · **G3** | ✅ 18/18 issue, đóng 28/09 (G7) — `docs/metrics/phase-1.md` |
 | **2. Lõi domain** | State machine, stats engine + golden tests, parse ngày/tiền, mô hình KYC (notes/facts/versions), cổng KYC | Domain coverage ≥ 95% | ✅ 10/10 issue, coverage 100%, đóng 26/09 (G7) — `docs/metrics/phase-2.md` |
 | **3. Nghiệp vụ & màn hình** | `packages/db`; Team/RE, Khách hàng, KYC timeline, Lịch hẹn, Kết quả cuộc gặp, Hợp đồng; seed 3 × 10 RE × ~12 tháng dữ liệu; xuất/nhập backup | Nhập liệu hoàn chỉnh · **G7** | ✅ 57/57 issue, đóng 02/10 (G7) — `docs/metrics/phase-3.md`, review đóng phase `docs/reviews/2026-09-30-phase-1-3-tong-hop.md`, `docs/reviews/2026-10-02-phase-1-3-review-2-tong-hop.md` |
-| **4. Dashboard & báo cáo** | Tổng quan (ý 9 phản hồi Owner 01/10: đếm KH theo nhóm = ảnh chụp cuối kỳ, nút Lọc), MTD, drill-down team/RE, báo cáo tuần/tháng/năm, xuất Excel. Đầu phase: Đợt 2 của review đóng Phase 3 (e2e local ổn định; validator nhập lần 3 + luật nhân sự T-j; G2 cách đếm lịch dự kiến / đã gặp + chuỗi dời, miền năm, mockup Tổng quan theo ADR-0007 — spec `docs/design/phase-4-chi-so.md`; index chỉ số + MTD; CI coverage riêng + ghim SHA Actions; dọn UI/i18n) | · **G2, G7** (milestone) | 🟡 65/65 issue (gồm 22 Issue sửa deep review Phase 1–4), task cuối 07/10 (PR #394), chờ G7 — `docs/metrics/phase-4.md`, review đóng phase `docs/reviews/2026-10-04-phase-4-tong-hop.md`, deep review `docs/reviews/2026-10-06-deep-review-phase-1-4-tong-hop.md` |
+| **4. Dashboard & báo cáo** | Tổng quan (ý 9 phản hồi Owner 01/10: đếm KH theo nhóm = ảnh chụp cuối kỳ, nút Lọc), MTD, drill-down team/RE, báo cáo tuần/tháng/năm, xuất Excel. Đầu phase: Đợt 2 của review đóng Phase 3 (e2e local ổn định; validator nhập lần 3 + luật nhân sự T-j; G2 cách đếm lịch dự kiến / đã gặp + chuỗi dời, miền năm, mockup Tổng quan theo ADR-0007 — spec `docs/design/phase-4-chi-so.md`; index chỉ số + MTD; CI coverage riêng + ghim SHA Actions; dọn UI/i18n) | · **G2, G7** (milestone) | ✅ 65/65 issue (gồm 22 Issue sửa deep review Phase 1–4), đóng 07/10 (G7, phát hành exe `3e84ce8`) — `docs/metrics/phase-4.md`, review đóng phase `docs/reviews/2026-10-04-phase-4-tong-hop.md`, deep review `docs/reviews/2026-10-06-deep-review-phase-1-4-tong-hop.md` |
 | **5. AI copilot** | Adapter OpenCode Go + Mock, prompt + schema, validators, versioning/STALE, Settings, bộ eval. Trước `packages/ai`: quyết định gọi mạng + lưu key (D-1) | · **G4, G5, G6** | ⬜ |
 | **6. Hoàn thiện & phát hành** | Hiệu năng, rà soát UX, màn "Thùng rác" khôi phục bản ghi xóa mềm (#72), gộp backup / phát hiện xung đột, snapshot mỗi bảng một file (S-1), tuần tự hóa thay DB / lưu / xuất / đồng bộ (S-2), đồng bộ `Project-2C-data`, hướng dẫn sử dụng tiếng Việt, GitHub Release v1.0 | · **G7** | ⬜ |
 
-Ước lượng tổng: **~60%** khối lượng tới v1.0 khi đóng Phase 3 (trọng số phase 0–6: 5 / 15 / 15 / 25 / 15 / 15 / 10%).
+Ước lượng tổng: **~75%** khối lượng tới v1.0 khi đóng Phase 4 (~60% khi đóng Phase 3; trọng số phase 0–6: 5 / 15 / 15 / 25 / 15 / 15 / 10%).
 
 Mọi phase do **Claude Code** thực hiện (model / effort do Owner chọn). Cuối mỗi phase ghi `docs/metrics/phase-<N>.md` theo `docs/COMPARISON.md`.
 
@@ -377,6 +377,6 @@ Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue, cỡ theo P1 (ADR-0001 p
 
 ## 8. Bước tiếp theo ngay
 
-Bước chi tiết từng phiên: HANDOFF (Issue ghim nhãn `handoff`). Thứ tự lớn (cập nhật 02/10/2026):
+Bước chi tiết từng phiên: HANDOFF (Issue ghim nhãn `handoff`). Thứ tự lớn (cập nhật 07/10/2026):
 
-1. Phase 4 (mở 02/10, milestone "Phase 4 — Dashboard & báo cáo"): Đợt 2 của review đóng Phase 3 là #251–#259 — e2e local (#251) trước, rồi nhập backup lần 3 + luật nhân sự (#252); G2 Phase 4 (#253: đếm lịch, đếm KH theo nhóm, miền năm, chỉ số từng màn) và G3 mockup Tổng quan + Báo cáo (#254) trước màn dashboard.
+1. Phase 5 — AI copilot (Phase 4 đóng 07/10, G7): trước `packages/ai` chốt gọi mạng + lưu API key (D-1); cổng G4 (dependency / dịch vụ), G5 (prompt + guardrail), G6 (lưu key / bảo mật). Mở milestone Phase 5 sau khi chốt D-1.

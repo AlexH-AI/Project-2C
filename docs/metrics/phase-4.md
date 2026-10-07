@@ -1,9 +1,9 @@
 # Chỉ số Phase 4 — Dashboard & báo cáo
 
-Theo bảng chỉ số của `docs/COMPARISON.md`. Số đo lần 1 trên `main` `3d23739` (05/10/2026, Home PC `DESKTOP-KDURKJP`); **đo lại trên `main` `3e84ce8`** (07/10/2026, Office Laptop `D13_THINKPAD`) sau deep review Phase 1–4 và 22 Issue sửa (mục "Deep review Phase 1–4" bên dưới). Ô ghi **Owner điền** là số chỉ Owner biết (điểm UI/UX, ước lượng phiên / hạn mức, can thiệp ngoài cổng); Claude không tự ước.
+Theo bảng chỉ số của `docs/COMPARISON.md`. Số đo lần 1 trên `main` `3d23739` (05/10/2026, Home PC `DESKTOP-KDURKJP`); **đo lại trên `main` `3e84ce8`** (07/10/2026, Office Laptop `D13_THINKPAD`) sau deep review Phase 1–4 và 22 Issue sửa (mục "Deep review Phase 1–4" bên dưới). Số chỉ Owner biết (điểm UI/UX, ước lượng phiên / hạn mức, can thiệp ngoài cổng, thời gian khởi động) do Owner điền ở G7 (07/10); Claude không tự ước.
 
 - **Milestone:** "Phase 4 — Dashboard & báo cáo" — **65 Issue**, 0 mở (#251 → #370: 40 Issue tới 05/10, T-135…T-137 #341–#343, 22 Issue deep review #349–#370), **78 PR merge** từ #260 tới #394.
-- **Bắt đầu:** 2026-10-02 (mở milestone sau G7 Phase 3, Đợt 2 của review đóng phase: #251–#259) · **Task cuối merge:** 2026-10-07 giờ VN (PR #394, T-159, `main` `3e84ce8`) · **Đóng milestone:** chờ G7.
+- **Bắt đầu:** 2026-10-02 (mở milestone sau G7 Phase 3, Đợt 2 của review đóng phase: #251–#259) · **Task cuối merge:** 2026-10-07 giờ VN (PR #394, T-159, `main` `3e84ce8`) · **Đóng milestone:** 2026-10-07 (G7; phát hành exe `3e84ce8`, artifact CI run `37576148435`).
 - **Máy:** Home PC (số đo lần 1, kiểm tay exe 04/10, deep review); Office Laptop (phần lớn 22 Issue sửa, số đo lại và đo đầu-cuối exe 07/10; bộ đo và dữ liệu tải của deep review nằm ở `C:\workspace\deep-review-1-4\` trên máy này). HANDOFF chuyển từ `docs/state/HANDOFF.md` sang Issue ghim #284 (ADR-0003 phụ lục, T-116).
 - **Spec:** `docs/design/phase-4-chi-so.md` (G2 Owner duyệt 03/10, thêm C10–C11 ngày 04/10); mockup Tổng quan + Báo cáo duyệt ở G3 (#254).
 
@@ -45,13 +45,13 @@ Theo bảng chỉ số của `docs/COMPARISON.md`. Số đo lần 1 trên `main`
 | Chất lượng | Lỗi sau merge | Do review tìm, không do người dùng gặp: review đóng phase (Claude + Codex họ GPT-6) → **0 Critical / High, 2 Medium** (so với kỳ trước ở ngày cuối kỳ cho ▼ giả; nút Hôm nay giữ kỳ cũ khi app mở qua nửa đêm), 7 Low, 3 Nit, 2 mục tooling; sửa trước G7 (#317–#323, #329, #336, #337; P12 ở T-137), P8 vào sổ OPEN. **Deep review Phase 1–4** (06/10): 88 vấn đề, 0 Critical / High, 6 Medium, 41 Low, 41 Nit — sửa hết trừ DR-43 (ACCEPTED), 22 Issue T-138…T-159. |
 | Chất lượng | Coverage | Đo lại 07/10 (`3e84ce8`): `packages/domain` 100%; `packages/db/src` 99,39 / 98,48 / 100 / 99,73; toàn bộ **98,79 / 97,08 / 98,58 / 99,04** (statements / branches / functions / lines; branches thấp hơn 05/10 vì `*-form.ts` vào `coverage.include` ở T-155). Lần 1 (05/10, `3d23739`): db 99,35 / 97,93 / 100 / 99,72; toàn bộ 98,49 / 97,8 / 98,2 / 98,84 — thấp hơn Phase 3 (99,49 / 98,41 / 100 / 99,78) vì T-101 (#302) đo thêm lớp `apps/desktop` (trước đó không tính; `useRoute.ts` 0%, `tauri-storage.ts` 91,7%). Ngưỡng coverage giờ ép theo từng gói + lớp app |
 | Chất lượng | Số test | **1.630** test / 77 file (05/10: 1.247 / 65; Phase 3: 782 / 47). e2e **163/163** pass, 0 flaky, `CI=1`, Edge, **1,5 phút** trên Office Laptop (05/10: 145 trong 2,3 phút trên Home PC — e2e mở DB đã seed sẵn từ T-153; Phase 3: 113 + 1 flaky / 114). Rust **50/50** (05/10: 37; Phase 3: 36) |
-| UI/UX | Điểm Owner (1–10): thẩm mỹ dark mode / độ rõ số liệu / tốc độ thao tác nhập liệu | **Owner điền** (Phase 3: 8 / 8 / 8). Mockup Tổng quan + Báo cáo Owner duyệt ở G3 (#254) |
-| Tiến độ | Ngày bắt đầu / kết thúc | 02/10 → 07/10/2026 giờ VN (task tính năng / sửa review đóng phase cuối PR #339 ngày 05/10; task deep review cuối PR #394 ngày 07/10); đóng milestone chờ G7. Cùng thời gian có retro điều hướng repo (T-115…T-122, 03/10) |
-| Tiến độ | Số phiên làm việc | **Owner điền.** Dữ liệu tham khảo: 78 PR merge (tới 05/10: 48 — 30 PR code task sản phẩm, 9 PR retro, 9 PR docs kể cả #335; 05/10 → 07/10: 30 — 25 PR task, 5 PR docs); `retro.mjs` trên Home PC thấy 15 phiên task + 15 phiên review trong 30 phiên gần nhất (gần hết là 04/10) |
-| Chi phí | Mức dùng hạn mức Claude | **Owner điền** (Phase 3: ~2 tuần hạn mức) |
-| Công sức Owner | Can thiệp ngoài cổng G1–G8 | **Owner điền** (Phase 3: ~3 lần). Ghi nhận từ repo: Owner chọn thứ tự sửa A–F, thêm T-132, duyệt thêm spec C10–C11 và trần kỳ Tùy chọn 3 tháng ở bước tổng hợp review đóng phase; chạy Codex review (theo ADR-0001 M2); duyệt kế hoạch deep review (G1) và trả lời 8 câu hỏi của bản tổng hợp (06/10) |
+| UI/UX | Điểm Owner (1–10): thẩm mỹ dark mode / độ rõ số liệu / tốc độ thao tác nhập liệu | **8 / 8 / 8** (Phase 3: 8 / 8 / 8). Mockup Tổng quan + Báo cáo Owner duyệt ở G3 (#254) |
+| Tiến độ | Ngày bắt đầu / kết thúc | 02/10 → 07/10/2026 giờ VN (task tính năng / sửa review đóng phase cuối PR #339 ngày 05/10; task deep review cuối PR #394 ngày 07/10); đóng milestone 07/10 (G7). Cùng thời gian có retro điều hướng repo (T-115…T-122, 03/10) |
+| Tiến độ | Số phiên làm việc | **~200 phiên** (Owner ước lượng). Dữ liệu tham khảo: 78 PR merge (tới 05/10: 48 — 30 PR code task sản phẩm, 9 PR retro, 9 PR docs kể cả #335; 05/10 → 07/10: 30 — 25 PR task, 5 PR docs); `retro.mjs` trên Home PC thấy 15 phiên task + 15 phiên review trong 30 phiên gần nhất (gần hết là 04/10) |
+| Chi phí | Mức dùng hạn mức Claude | **~3 tuần hạn mức** (Phase 3: ~2 tuần hạn mức) |
+| Công sức Owner | Can thiệp ngoài cổng G1–G8 | **~2 lần** (Phase 3: ~3 lần). Ghi nhận từ repo: Owner chọn thứ tự sửa A–F, thêm T-132, duyệt thêm spec C10–C11 và trần kỳ Tùy chọn 3 tháng ở bước tổng hợp review đóng phase; chạy Codex review (theo ADR-0001 M2); duyệt kế hoạch deep review (G1) và trả lời 8 câu hỏi của bản tổng hợp (06/10) |
 | Kỹ thuật | Kích thước exe | `project2c.exe` build release tại máy từ `3e84ce8` (07/10): **3,99 MB** (4.179.968 byte). Artifact CI của `main` `3e84ce8` (run `37576148435`) là zip **2,29 MB** (2.401.116 byte; 05/10 `3d23739`: 2.394.406 byte). Phase 3: exe 3,93 MB, zip 2,16 MB. Có thêm ExcelJS (G4) từ Phase 4; chưa tách phần tăng do ExcelJS |
-| Kỹ thuật | Thời gian khởi động | **Owner điền** (Phase 3: lần đầu ~2 s, mở lại ~1 s). Deep review đo exe release với dữ liệu tải (1 496 KH, 10 434 lịch): mở ≈ 0,5–0,6 s (06/10). Đo lại 07/10 (`3e84ce8`, Office Laptop): màn đầu sau tải lại 194–318 ms tùy màn (trước sửa 234–361 ms), mục "Đo đầu-cuối" |
+| Kỹ thuật | Thời gian khởi động | **Lần đầu ~2 s, mở lại ~1 s** (Owner đo; bằng Phase 3). Deep review đo exe release với dữ liệu tải (1 496 KH, 10 434 lịch): mở ≈ 0,5–0,6 s (06/10). Đo lại 07/10 (`3e84ce8`, Office Laptop): màn đầu sau tải lại 194–318 ms tùy màn (trước sửa 234–361 ms), mục "Đo đầu-cuối" |
 | Kỹ thuật | Vi phạm ranh giới module | 0 (`pnpm lint:deps`: 230 module, 883 phụ thuộc; 05/10: 214 / 842; Phase 3: 179 / 680) |
 
 ## Kiểm tra trên `main` `3e84ce8` (07/10/2026, Office Laptop)
@@ -63,7 +63,7 @@ Theo bảng chỉ số của `docs/COMPARISON.md`. Số đo lần 1 trên `main`
 | `pnpm e2e` (`CI=1`) | ✅ 163/163 pass, 0 flaky, 1,5 phút |
 | CI `main` (build exe) | ✅ run `37576148435`; Verify + e2e xanh trên PR #394 |
 | Đo đầu-cuối trên exe với dữ liệu tải | ✅ Đạt mọi ngưỡng Nhóm C của deep review — mục "Đo đầu-cuối" bên dưới |
-| Kiểm tay exe | ⏳ **Owner kiểm trước G7** bản `3e84ce8`: hộp thoại (Escape, focus), F5 trong exe, bảng "Hiện thêm", nhập tiền ("1tr5", "VNĐ"), người phối hợp, "Lịch hẹn lần n", xuất Excel |
+| Kiểm tay exe | ✅ Owner, 07/10, bản `3e84ce8` (artifact CI run `37576148435`): đạt — ổn định, hoạt động bình thường: hộp thoại (Escape, focus), F5 trong exe, bảng "Hiện thêm", nhập tiền ("1tr5", "VNĐ"), người phối hợp, "Lịch hẹn lần n", xuất Excel |
 
 ### Đo đầu-cuối — exe release `3e84ce8` với dữ liệu tải (07/10/2026, Office Laptop)
 
@@ -103,7 +103,7 @@ Hàm thuần trong Node (Vitest, trung vị 9 lần sau một lần chạy nóng
 | `pnpm verify:rust` | ✅ `cargo fmt --check`, clippy `-D warnings`, 37/37 test |
 | `pnpm e2e` (`CI=1`) | ✅ 145/145 pass, 2,3 phút |
 | CI `main` (build exe) | ✅ run `37227193449` (push lên `main` chỉ chạy build exe; Verify + e2e xanh trên PR #339, head `6281783`) |
-| Kiểm tay exe | ✅ Owner, 04/10, bản `595ef79` (trước sửa A–F): không có vấn đề. Bản cuối `3d23739` chưa kiểm tay — **Owner kiểm trước G7** (xuất Excel, nút Hôm nay, trần kỳ Tùy chọn, Lịch hẹn 4 nhóm, người đánh giá kết quả) |
+| Kiểm tay exe | ✅ Owner, 04/10, bản `595ef79` (trước sửa A–F): không có vấn đề. Bản `3d23739` không kiểm tay riêng; bản cuối `3e84ce8` Owner kiểm 07/10, đạt (bảng trên) |
 
 ## Review đóng phase
 
@@ -146,4 +146,4 @@ Nhận xét: HANDOFF, dò sai đường, PR sửa HANDOFF đã đạt; số lệ
 - Phase 4 ngắn (4 ngày tới task tính năng cuối) vì Phase 3 đã dựng sẵn stats engine (Phase 2), DB, kỳ / bộ chọn; phần mới là đếm 4 nhóm, ảnh chụp cuối kỳ, so với kỳ trước, hai màn và xuất Excel. Sau review đóng phase vẫn mất thêm 10 task (#317–#323, #329, #336, #337) vì 2 Medium và đổi yêu cầu D9; rồi 3 task dọn sổ OPEN và 22 task của deep review Phase 1–4 (06/10 → 07/10).
 - Dependency mới: `exceljs` 4.4.0 (G4, Owner xác nhận 04/10).
 - `docs/COMPARISON.md` không đổi (phải giống hệt Project-2).
-- Cổng còn lại: **G7** — Owner kiểm tay exe bản `3e84ce8` (artifact CI run `37576148435`), điền các ô **Owner điền** ở trên, rồi đóng milestone.
+- **G7** (07/10/2026): Owner kiểm tay exe bản `3e84ce8` (artifact CI run `37576148435`), đạt; điền các số Owner ở trên; chốt đóng Phase 4 và phát hành exe `3e84ce8` (artifact CI).
