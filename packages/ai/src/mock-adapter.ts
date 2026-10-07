@@ -135,7 +135,7 @@ const EXTRACTION_PATTERNS: readonly {
     fact: (match) => ({ field: 'childrenCount', value: match[1]! }),
   },
   {
-    pattern: /(?<!chưa\s+)kết hôn/giu,
+    pattern: /(?<!(?:chưa|không)(?:\s+từng)?\s+)kết hôn/giu,
     fact: () => ({ field: 'maritalStatus', value: 'Đã kết hôn' }),
   },
   { pattern: /độc thân/giu, fact: () => ({ field: 'maritalStatus', value: 'Độc thân' }) },

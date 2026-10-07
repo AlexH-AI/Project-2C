@@ -10,6 +10,10 @@ import {
   type AnalysisOutput,
 } from './schema';
 
+// @ts-expect-error A model outside the list of spec §4.2 is a type error.
+const unknownModel: AiCompleteRequest['model'] = 'gpt-5';
+void unknownModel;
+
 const request = (input: unknown): AiCompleteRequest => ({
   model: 'deepseek-v4.1-flash',
   reasoning: null,
@@ -130,12 +134,13 @@ describe('createMockAdapter', () => {
     for (const fact of output.facts) expect(note).toContain(fact.quote);
   });
 
-  it('does not read "chưa kết hôn" as married', async () => {
-    const output = extractionOutputSchema.parse(
-      (await complete({ note: 'Anh ấy chưa kết hôn.', fields: [] })).value,
-    );
-    expect(output.facts).toEqual([]);
-  });
+  it.each(['Anh ấy chưa kết hôn.', 'Anh ấy chưa từng kết hôn.', 'Chị nói sẽ không kết hôn.'])(
+    'does not read %j as married',
+    async (note) => {
+      const output = extractionOutputSchema.parse((await complete({ note, fields: [] })).value);
+      expect(output.facts).toEqual([]);
+    },
+  );
 
   it('extracts nothing from a note without a known pattern', async () => {
     const output = extractionOutputSchema.parse(

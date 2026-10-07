@@ -1,6 +1,7 @@
 /* global URL */
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { CODEMAP_PACKAGES } from './codemap-core.mjs';
 import {
   CODEMAP_DOCS,
   alreadyDone,
@@ -55,8 +56,12 @@ describe('isDocsOnly', () => {
   });
 
   it('treats a package CLAUDE.md as code: pnpm verify checks its codemap block (DR-74)', () => {
-    expect(CODEMAP_DOCS).toHaveLength(4);
+    expect(CODEMAP_DOCS).toContain('packages/ai/CLAUDE.md');
     for (const path of CODEMAP_DOCS) expect(isDocsOnly(['docs/a.md', path])).toBe(false);
+  });
+
+  it('lists the CLAUDE.md of every package that tools/codemap.mjs writes', () => {
+    expect(CODEMAP_DOCS).toEqual(CODEMAP_PACKAGES.map((pkg) => `${pkg}/CLAUDE.md`));
   });
 
   it('matches the paths filter of ci.yml, for PRs and for pushes to main', () => {

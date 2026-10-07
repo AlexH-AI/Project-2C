@@ -16,6 +16,12 @@ describe('extractJson', () => {
     expect(extractJson(content)).toEqual({ found: true, value: { a: '} {', b: '"x"' } });
   });
 
+  it('finds the JSON after a brace in the text that is never closed', () => {
+    // A later `{` can close at its own depth, so an unclosed brace must not stop the search.
+    const content = 'Ghi chú { chưa đóng. JSON: {"a": 1}';
+    expect(extractJson(content)).toEqual({ found: true, value: { a: 1 } });
+  });
+
   it('reads nested objects', () => {
     expect(extractJson('x {"a": {"b": [1, {"c": null}]}} y')).toEqual({
       found: true,

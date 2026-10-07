@@ -3,7 +3,7 @@
  * command `ai_complete`, whose `invoke` `apps/desktop` injects; `Mock` answers from the input alone.
  * A failure is thrown as an `AiError`.
  */
-import type { AiReasoningEffort } from './models';
+import type { AiModelId, AiReasoningEffort } from './models';
 
 export interface AiMessage {
   readonly role: 'system' | 'user' | 'assistant';
@@ -11,7 +11,8 @@ export interface AiMessage {
 }
 
 export interface AiCompleteRequest {
-  readonly model: string;
+  /** One of the models of spec §4.2. */
+  readonly model: AiModelId;
   /** `null` sends no `reasoning_effort` (Settings → AI "Mặc định", or a model that takes none). */
   readonly reasoning: AiReasoningEffort | null;
   readonly messages: readonly AiMessage[];

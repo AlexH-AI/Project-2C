@@ -12,12 +12,15 @@ export const prList = (numbers) => numbers.map((n) => `#${n}`).join(', ');
 const EXE_CHECK = 'Build portable exe';
 
 // Package CLAUDE.md files hold the export map that `pnpm verify` checks (tools/codemap.mjs),
-// so a change to them is code. ci.yml lists the same files in its `paths` filter.
+// so a change to them is code. ci.yml lists the same files in its `paths` filter. Same order as
+// CODEMAP_PACKAGES of tools/codemap-core.mjs (a test checks), not imported: merge-pr would load
+// TypeScript for it.
 export const CODEMAP_DOCS = [
-  'apps/desktop/CLAUDE.md',
-  'packages/db/CLAUDE.md',
   'packages/domain/CLAUDE.md',
+  'packages/db/CLAUDE.md',
+  'packages/ai/CLAUDE.md',
   'packages/ui/CLAUDE.md',
+  'apps/desktop/CLAUDE.md',
 ];
 
 /** True when CI skips the PR (ci.yml `paths`: docs/** and **\/*.md, but not CODEMAP_DOCS). */

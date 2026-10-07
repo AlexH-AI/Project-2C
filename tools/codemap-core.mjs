@@ -3,6 +3,18 @@
 
 import ts from 'typescript';
 
+/**
+ * Packages whose CLAUDE.md holds a codemap block. Their CLAUDE.md is code: keep CODEMAP_DOCS in
+ * tools/pr-core.mjs and the `paths` filter of .github/workflows/ci.yml in step (tests check both).
+ */
+export const CODEMAP_PACKAGES = [
+  'packages/domain',
+  'packages/db',
+  'packages/ai',
+  'packages/ui',
+  'apps/desktop',
+];
+
 export function parseSource(fileName, text) {
   const kind = fileName.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
   return ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true, kind);
