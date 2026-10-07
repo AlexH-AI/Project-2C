@@ -1,6 +1,6 @@
 # Phase 5 — Prompt và guardrail AI (G5)
 
-- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9)
+- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417)
 - **Nền:** spec `phase-5-ai.md` (G1 / G2 duyệt 07/10/2026) §3, §6.1, §6.2, §6.4, §8; ADR-0009 (ranh giới, mục 3 validator, mục 6 pháp lý); danh mục KYC `packages/domain/src/kyc-catalog.ts`
 - **Dùng ở:** T-165 #406 (validator V3–V6 lấy **nguyên** các danh sách §6–§8), T-166 #407 (chữ prompt §2–§5 chép **nguyên văn** vào `packages/ai/src/prompts/<mode>.ts`)
 - **Đổi chữ prompt hoặc danh sách chặn sau khi duyệt** = tăng version (`analysis@2`…) + qua G5 lần nữa. Lỗi chính tả trong code so với file này là lỗi, không phải phiên bản mới.
@@ -312,7 +312,7 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 | Q3 | Thêm dòng sản phẩm riêng của hãng Owner vào §8.2? | **Không** |
 | Q4 | V6 "khoản <số>" chỉ chặn khi đi kèm "Điều" (lệch chữ spec §6.4, §8.4) | **Đồng ý** |
 | Q5 | Nhãn tính cách (§8.3) | **Không cấm** — khối riêng `personalityNotes` "Thông tin tham khảo", cả tâm lý học và tử vi / huyền học, mỗi phần tử ghi rõ loại, AI suy ra từ dữ kiện và bắt buộc có bằng chứng. Đổi ADR-0009 mục 3 (phụ lục G5) và spec §6.2 / §6.4 / §9.1 |
-| Q6 | V6 mục `luật …` khớp nhầm "pháp luật Việt Nam" (ghi chú review PR #414) | **Chờ Owner duyệt** (PR sửa ghi chú review): thêm điều kiện "luật" không đứng sau "pháp"; thêm ca C18, C19 |
+| Q6 | V6 mục `luật …` khớp nhầm "pháp luật Việt Nam" (ghi chú review PR #414) | **Đồng ý** (PR #417): thêm điều kiện "luật" không đứng sau "pháp"; thêm ca C18, C19 |
 
 **Checklist:**
 
