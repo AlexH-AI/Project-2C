@@ -39,6 +39,11 @@ describe('AiError', () => {
     expect(error.serverMessage).toHaveLength(200);
   });
 
+  it('does not cut a character in two at the 200th', () => {
+    const error = new AiError('AI_HTTP', { serverMessage: `${'x'.repeat(199)}😀😀` });
+    expect(error.serverMessage).toBe(`${'x'.repeat(199)}😀`);
+  });
+
   it('tells the codes apart from other values', () => {
     expect(isAiErrorCode('AI_BUSY')).toBe(true);
     expect([isAiErrorCode('DB_ERROR'), isAiErrorCode(1), isAiErrorCode(null)]).toEqual([

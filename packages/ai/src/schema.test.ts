@@ -16,6 +16,7 @@ const analysis = () => ({
   themes: [item('Gia đình là trung tâm', 'F1')],
   discoveryStrategy: [{ text: 'Hỏi thêm về khẩu vị rủi ro', missingCategory: 'RISK_APPETITE' }],
   nextBestActions: [item('Hẹn trao đổi về kế hoạch học vấn', 'F3')],
+  personalityNotes: [{ system: 'PSYCHOLOGY', text: 'KH có thể thuộc nhóm INTJ', evidence: ['F1'] }],
 });
 
 const discovery = () => ({
@@ -25,7 +26,15 @@ const discovery = () => ({
     item('Làm rõ mối quan tâm chính', 'F2'),
   ],
   nextBestActions: [item('Gửi lời mời gặp lại', 'F1')],
+  personalityNotes: [],
 });
+
+const note = (system: string, ...evidence: string[]) => ({
+  system,
+  text: 'KH có thể tuổi Tý, mệnh Kim',
+  evidence,
+});
+const notes = (count: number) => Array.from({ length: count }, () => note('ESOTERIC', 'F3'));
 
 const errorsOf = (result: { success: boolean; error?: { issues: { path: PropertyKey[] }[] } }) =>
   result.success ? [] : result.error!.issues.map((issue) => issue.path.join('.'));
@@ -167,6 +176,35 @@ describe('discoveryOutputSchema', () => {
       discoveryStrategy: [{ text: 'Hỏi thêm' }, item('Làm rõ', 'F2')],
     };
     expect(errorsOf(discoveryOutputSchema.safeParse(output))).toEqual(['discoveryStrategy.0']);
+  });
+});
+
+describe.each([
+  ['analysisOutputSchema', analysisOutputSchema, analysis],
+  ['discoveryOutputSchema', discoveryOutputSchema, discovery],
+] as const)('personalityNotes of %s', (_, schema, valid) => {
+  const withNotes = (personalityNotes: unknown) => ({ ...valid(), personalityNotes });
+
+  it('holds 0–4 notes of either system', () => {
+    expect(schema.safeParse(withNotes([])).success).toBe(true);
+    const four = [note('PSYCHOLOGY', 'F1'), ...notes(3)];
+    expect(schema.parse(withNotes(four)).personalityNotes).toEqual(four);
+    expect(errorsOf(schema.safeParse(withNotes(notes(5))))).toEqual(['personalityNotes']);
+  });
+
+  it('is required, as an empty list when there is no note', () => {
+    const output: Partial<ReturnType<typeof valid>> = valid();
+    delete output.personalityNotes;
+    expect(errorsOf(schema.safeParse(output))).toEqual(['personalityNotes']);
+  });
+
+  it.each([
+    ['an unknown system', note('MBTI', 'F1'), 'personalityNotes.0.system'],
+    ['no evidence', note('PSYCHOLOGY'), 'personalityNotes.0.evidence'],
+    ['the same evidence twice', note('ESOTERIC', 'F3', 'F3'), 'personalityNotes.0.evidence'],
+    ['an empty text', { ...note('ESOTERIC', 'F3'), text: ' ' }, 'personalityNotes.0.text'],
+  ])('rejects a note with %s', (_, bad, path) => {
+    expect(errorsOf(schema.safeParse(withNotes([bad])))).toEqual([path]);
   });
 });
 

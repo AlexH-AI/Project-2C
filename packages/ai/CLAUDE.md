@@ -11,7 +11,7 @@ Phase 5 (`docs/design/phase-5-ai.md`, ADR-0009). Kiểu dữ liệu, mã lỗi `
 
 ## File hay tìm
 
-- Schema output + mã `F{seq}`: `src/schema.ts` (spec §6.2). Kiểm field / value / quote của trích xuất là V7, không ở schema.
+- Schema output + mã `F{seq}`: `src/schema.ts` (spec §6.2, gồm khối `personalityNotes` — P6). Kiểm field / value / quote của trích xuất là V7, không ở schema.
 - Lấy khối JSON đầu tiên từ trả lời: `src/extract-json.ts` (spec §6.1).
 - Mã lỗi: `src/errors.ts` (spec §5.3) · provider / model / reasoning: `src/models.ts` (spec §4).
 - Adapter: `src/adapter.ts` (giao diện) · Mock: `src/mock-adapter.ts` (đọc message `user` đầu tiên theo mẫu G5 §1.1 / §4.1).
@@ -27,5 +27,5 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/index.ts` — re-exports ./errors, ./models, ./adapter, ./extract-json, ./schema, ./mock-adapter
 - `src/mock-adapter.ts` — createMockAdapter
 - `src/models.ts` — AI_PROVIDERS, type AiProvider, AI_REASONING_LEVELS, type AiReasoningLevel, type AiReasoningEffort, type AiModel, AI_MODELS, type AiModelId, DEFAULT_AI_MODEL
-- `src/schema.ts` — AI_MODES, type AiMode, factCode, analysisOutputSchema, discoveryOutputSchema, extractionOutputSchema, type AnalysisOutput, type DiscoveryOutput, type ExtractionOutput, AI_OUTPUT_SCHEMAS
+- `src/schema.ts` — AI_MODES, type AiMode, FACT_CODE, factCode, PERSONALITY_SYSTEMS, analysisOutputSchema, discoveryOutputSchema, extractionOutputSchema, type AnalysisOutput, type DiscoveryOutput, type ExtractionOutput, AI_OUTPUT_SCHEMAS
 <!-- codemap:end -->

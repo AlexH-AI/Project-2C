@@ -39,7 +39,8 @@ export class AiError extends Error {
     this.code = code;
     if (details.httpStatus !== undefined) this.httpStatus = details.httpStatus;
     if (details.serverMessage !== undefined) {
-      this.serverMessage = details.serverMessage.slice(0, MAX_SERVER_MESSAGE);
+      // By code point, so an emoji at the limit is not cut in two.
+      this.serverMessage = Array.from(details.serverMessage).slice(0, MAX_SERVER_MESSAGE).join('');
     }
   }
 }

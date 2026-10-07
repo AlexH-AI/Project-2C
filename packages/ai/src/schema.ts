@@ -13,7 +13,8 @@ export const AI_MODES = ['analysis', 'discovery', 'extraction'] as const;
 
 export type AiMode = (typeof AI_MODES)[number];
 
-const FACT_CODE = /^F[1-9]\d*$/;
+/** A well-formed fact code: `F` and a seq with no leading zero. */
+export const FACT_CODE = /^F[1-9]\d*$/;
 
 /** Code of a confirmed fact in the AI input and on the KYC facts list: `F{seq}`. */
 export function factCode(seq: number): string {
@@ -43,6 +44,17 @@ const actionItem = z
     'Needs evidence or a missing hạng mục',
   );
 
+/** Personality systems of `personalityNotes`: psychology (MBTI, DISC…) or tử vi / huyền học. */
+export const PERSONALITY_SYSTEMS = ['PSYCHOLOGY', 'ESOTERIC'] as const;
+
+/**
+ * "Thông tin tham khảo" (P6, Owner G5 07/10/2026): the only block where personality labels may
+ * appear (V5 checks the others). Always present, `[]` when no fact supports a note.
+ */
+const personalityNotes = z
+  .array(z.object({ system: z.enum(PERSONALITY_SYSTEMS), text, evidence: evidence.min(1) }))
+  .max(4);
+
 export const analysisOutputSchema = z.object({
   hypotheses: z.array(evidencedItem).min(1).max(5),
   needs: z.array(evidencedItem).min(1).max(5),
@@ -50,12 +62,14 @@ export const analysisOutputSchema = z.object({
   themes: z.array(evidencedItem).min(1).max(5),
   discoveryStrategy: z.array(actionItem).min(1).max(6),
   nextBestActions: z.array(actionItem).min(1).max(5),
+  personalityNotes,
 });
 
 export const discoveryOutputSchema = z.object({
   hypotheses: z.array(evidencedItem).max(3),
   discoveryStrategy: z.array(actionItem).min(2).max(6),
   nextBestActions: z.array(actionItem).min(1).max(5),
+  personalityNotes,
 });
 
 /**

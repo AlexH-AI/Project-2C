@@ -65,6 +65,7 @@ describe('createMockAdapter', () => {
     expect([...cited].sort()).toEqual(['F10', 'F12', 'F13', 'F3', 'F9']);
     const missing = itemsOf(output).flatMap((item) => item.missingCategory ?? []);
     expect(missing).toEqual(['RISK_APPETITE']);
+    expect(output.personalityNotes.map((note) => note.system)).toEqual(['PSYCHOLOGY']);
   });
 
   it('cites a single fact when the input has only one', async () => {
@@ -100,6 +101,7 @@ describe('createMockAdapter', () => {
   it('writes a valid discovery that cites only facts and missing hạng mục of the input', async () => {
     const output = discoveryOutputSchema.parse((await complete(discoveryInput)).value);
     expect(output).not.toHaveProperty('needs');
+    expect(output.personalityNotes).toEqual([]);
     const items = itemsOf(output);
     expect(new Set(items.flatMap((item) => item.evidence))).toEqual(new Set(['F1', 'F2']));
     expect(new Set(items.flatMap((item) => item.missingCategory ?? []))).toEqual(

@@ -5,15 +5,22 @@
  * facts list and its missing hạng mục; extraction recognises a few simple phrases.
  *
  * The input is the first `user` message, a JSON block: `{ mode, facts, missingCategories, … }` for
- * analysis / discovery, `{ note, fields }` for extraction (G5 prompt draft §1.1, §4.1).
+ * analysis / discovery, `{ note, fields }` for extraction (prompts §1.1, §4.1).
+ *
+ * The answer passes the mode's schema only for inputs the KYC gate lets through: analysis needs at
+ * least one fact, discovery at least one fact and one missing hạng mục (`kyc-gate.ts`). Other inputs
+ * get an answer the schema rejects, as a real model's could be.
  */
 import { KYC_CATEGORIES, type KycCategory } from '@p2c/domain';
 import type { AiAdapter, AiCompleteRequest, AiCompletion } from './adapter';
 import { AiError } from './errors';
 import { extractJson } from './extract-json';
-import type { AnalysisOutput, DiscoveryOutput, ExtractionOutput } from './schema';
-
-const FACT_CODE = /^F[1-9]\d*$/;
+import {
+  FACT_CODE,
+  type AnalysisOutput,
+  type DiscoveryOutput,
+  type ExtractionOutput,
+} from './schema';
 
 export function createMockAdapter(): AiAdapter {
   return {
@@ -37,20 +44,22 @@ function answer(request: AiCompleteRequest): AiCompletion {
   return { content: JSON.stringify(output), promptTokens: 0, completionTokens: 0 };
 }
 
+/** The `code` of each element of an input list (facts, missing hạng mục); none when not a list. */
+function codesOf(value: unknown): unknown[] {
+  const items: unknown[] = Array.isArray(value) ? value : [];
+  return items.map((item) => (item as { code?: unknown } | null)?.code);
+}
+
 /** Codes of the facts list, in order; a `F…` word inside a fact's value is not a code. */
 function factCodes(value: unknown): string[] {
-  const items: unknown[] = Array.isArray(value) ? value : [];
-  const codes = items.map((item) => (item as { code?: unknown } | null)?.code);
-  return [
-    ...new Set(
-      codes.filter((code): code is string => typeof code === 'string' && FACT_CODE.test(code)),
-    ),
-  ];
+  const codes = codesOf(value).filter(
+    (code): code is string => typeof code === 'string' && FACT_CODE.test(code),
+  );
+  return [...new Set(codes)];
 }
 
 function missingCategories(value: unknown): KycCategory[] {
-  const items: unknown[] = Array.isArray(value) ? value : [];
-  const codes = items.map((item) => (item as { code?: unknown } | null)?.code);
+  const codes = codesOf(value);
   return KYC_CATEGORIES.filter((category) => codes.includes(category));
 }
 
@@ -86,6 +95,13 @@ function analysis(codes: readonly string[], missing: readonly KycCategory[]): An
       ...askAbout(missing),
     ].slice(0, 6),
     nextBestActions: [{ text: 'Hẹn buổi trao đổi về mục tiêu chính', evidence: cite(codes, 1, 1) }],
+    personalityNotes: [
+      {
+        system: 'PSYCHOLOGY',
+        text: 'KH có thể thiên về hướng nội, cần thời gian suy nghĩ trước khi quyết định',
+        evidence: cite(codes, 2, 1),
+      },
+    ],
   };
 }
 
@@ -106,6 +122,7 @@ function discovery(codes: readonly string[], missing: readonly KycCategory[]): D
         ? { text: 'Hẹn buổi gặp tiếp để tìm hiểu thêm', evidence: cite(codes, 0, 1) }
         : askAbout(missing.slice(0, 1))[0]!,
     ],
+    personalityNotes: [],
   };
 }
 
