@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 4 — dashboard and reports (milestone "Phase 4 — Dashboard & báo cáo", opened 2026-10-02 with #251–#259). Phases 1, 2 and 3 are closed; Phase 3 closed at G7 on 2026-10-02 (57 issues, #57 to #245, `docs/metrics/phase-3.md`). Overall progress ≈ 60% to v1.0 (see `docs/PROJECT-PLAN.md` §5).
+Phase 5 — AI copilot (not started; milestone to open). Phases 1 to 4 are closed; Phase 4 closed at G7 on 2026-10-07 (65 issues, #251 to #370, `docs/metrics/phase-4.md`), released exe `3e84ce8` (CI artifact, run `37576148435`). First step: decide network calls and API key storage (D-1) before `packages/ai`; gates G4 / G5 / G6. Overall progress ≈ 75% to v1.0 (see `docs/PROJECT-PLAN.md` §5).
 
 ## Canonical repository
 
@@ -52,6 +52,7 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
 - 2026-10-03: Retro on agent navigation (#280): HANDOFF kept short and loaded by the SessionStart hook from `origin/main`; review notes, the Office Laptop setup and the 01/10 feedback moved to their own files; raw phase-close review reports live in `docs/reviews/raw/`.
 - 2026-10-04: Phase 4 close review (Claude + Codex, `docs/reviews/2026-10-04-phase-4-tong-hop.md`): no Critical / High, two Medium. OWNER decisions: fix all findings T-125…T-131 (#317–#323) before G7; G2 adds C10–C11 to spec Phase 4 §4.2 (the last day of a period is still in progress, compared over the same number of days); custom periods are capped at 3 calendar months on every screen with a period picker (spec §3.1) and the per-mark report / chart computation is optimised.
 - 2026-10-06: Phase 1–4 deep review (Claude + Codex, packages A–H, `docs/reviews/2026-10-06-deep-review-phase-1-4-tong-hop.md`): 88 distinct findings, no Critical / High after checking, six Medium. OWNER decisions: fix everything before G7 (22 issues, synthesis §12), even low risks; amounts capped at 100 tỷ đồng each (commands and backup import); large tables use "show more"; coordinators are TL / IS / BD / BDM only (ADR-0007, spec Phase 3 §3.6 to follow); policies and meetings dated before the customer's creation are valid back-entry (ACCEPTED); amount input also takes "VNĐ", "1tr5", "1 tỷ 2" and space-grouped thousands; the timeline numbers met meetings only ("Lịch hẹn lần n", mockup updated with it).
+- 2026-10-07: Phase 4 closed at G7. OWNER checked the exe `3e84ce8` (CI artifact, run `37576148435`) by hand: stable, everything works (dialogs Escape / focus, F5 in the exe, "Hiện thêm", amount input "1tr5" / "VNĐ", coordinators, "Lịch hẹn lần n", Excel export). That exe is the Phase 4 release (CI artifact). OWNER metrics in `docs/metrics/phase-4.md`. Phase 5 next.
 
 ## Next decision
 
