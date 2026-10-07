@@ -1,6 +1,6 @@
 # Phase 5 — AI copilot (G1 / G2)
 
-- **Cổng:** G1 (phạm vi, luồng, lược đồ) · G2 (schema output, mức bằng chứng, golden B01–B10) · **Trạng thái:** bản nháp, chờ Owner duyệt
+- **Cổng:** G1 (phạm vi, luồng, lược đồ) · G2 (schema output, mức bằng chứng, golden B01–B11) · **Trạng thái:** **Owner duyệt G1 / G2 07/10/2026** (PR #399; model mặc định `deepseek-v4.1-flash`)
 - **Quyết định Owner:** 07/10/2026 (AskUserQuestion trong phiên soạn spec, §1) + D-1 (07/10/2026, phụ lục ADR-0009)
 - **Nền:** ADR-0009 (provider, schema, validator, CURRENT / STALE / REJECTED, phụ lục D-1), ADR-0008 (cổng KYC, cờ material, "AI trích xuất"), ADR-0005 (zod đã duyệt), `docs/golden/kyc.md` (K01–K15), mockup `customer.html` (panel KYC Intelligence), `appointments.html` (khối AI ở chi tiết lịch)
 - **Không làm ở đây:** nội dung prompt và danh sách chặn (**G5**, file riêng sau khi Owner duyệt spec này); bố cục màn mới (**G3**, §9); hồ sơ eval E01–E20 (G2 riêng, §11)
@@ -57,7 +57,7 @@ RE bấm "Phân tích" ở Hồ sơ KH
 Lưu ở bảng `settings`, khóa `ai`, giá trị JSON:
 
 ```json
-{ "provider": "MOCK", "model": "glm-5.3", "reasoning": "DEFAULT" }
+{ "provider": "MOCK", "model": "deepseek-v4.1-flash", "reasoning": "DEFAULT" }
 ```
 
 | Trường | Giá trị | Mặc định |
@@ -77,13 +77,13 @@ Hằng số trong `packages/ai`, mỗi dòng: mã model, tên hiện, có nhận
 
 | Mã | Ghi chú |
 |---|---|
-| `glm-5.3` | mặc định đề xuất |
+| `glm-5.3` | |
 | `kimi-k3` | |
 | `deepseek-v4-pro` | |
-| `deepseek-v4.1-flash` | rẻ, nhanh |
+| `deepseek-v4.1-flash` | **mặc định** (Owner 07/10/2026), rẻ, nhanh |
 
 - Model nào nhận `reasoning_effort` thì task đầu tiên gọi thật kiểm (một request mẫu, Owner chạy, §11); chưa kiểm → ô Reasoning tắt cho model đó.
-- Model mặc định chốt sau lần chạy eval đầu (§11). Thêm / bớt model = một task nhỏ; model cần `/responses` hay `/messages` (Grok, GPT, Qwen, MiniMax) phải qua G4 vì D-1 chỉ mở `/chat/completions`.
+- Model mặc định chỉ là giá trị ban đầu; Owner chủ động đổi model và reasoning level trong Settings (Owner 07/10/2026). Thêm / bớt model = một task nhỏ; model cần `/responses` hay `/messages` (Grok, GPT, Qwen, MiniMax) phải qua G4 vì D-1 chỉ mở `/chat/completions`.
 
 ### 4.3 Key
 
@@ -328,13 +328,13 @@ Mục **AI** trong thanh mục Cài đặt (mockup `settings-data.html` đã có
 
 ## 14. Owner duyệt
 
-- [ ] §1 P1–P4 ghi đúng quyết định
-- [ ] Phạm vi / không làm (§2)
-- [ ] Settings, danh sách model đề xuất (§4)
-- [ ] Timeout 120 s, Hủy không ngắt socket, bảng mã lỗi (§5)
-- [ ] Dữ liệu gửi AI tối thiểu (§6.1)
-- [ ] Schema output (§6.2) và mức bằng chứng B01–B11 (§6.3) — G2
-- [ ] Danh sách luật V1–V7 (§6.4); nội dung danh sách chặn để G5
-- [ ] Lược đồ `ai_analyses` và CURRENT / STALE suy ra (§7)
-- [ ] Trích xuất không lưu đề xuất (§8)
-- [ ] Danh sách mockup G3 (§9.4) và tách Issue (§13)
+- [x] §1 P1–P4 ghi đúng quyết định
+- [x] Phạm vi / không làm (§2)
+- [x] Settings, danh sách model đề xuất (§4)
+- [x] Timeout 120 s, Hủy không ngắt socket, bảng mã lỗi (§5)
+- [x] Dữ liệu gửi AI tối thiểu (§6.1)
+- [x] Schema output (§6.2) và mức bằng chứng B01–B11 (§6.3) — G2
+- [x] Danh sách luật V1–V7 (§6.4); nội dung danh sách chặn để G5
+- [x] Lược đồ `ai_analyses` và CURRENT / STALE suy ra (§7)
+- [x] Trích xuất không lưu đề xuất (§8)
+- [x] Danh sách mockup G3 (§9.4) và tách Issue (§13)
