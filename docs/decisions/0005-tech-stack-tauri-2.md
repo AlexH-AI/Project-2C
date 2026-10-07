@@ -37,3 +37,4 @@ Exe nhỏ, khởi động nhanh, hệ sinh thái React/TS mạnh cho UI và AI v
 ## Phụ lục — phiên bản đã ghim
 
 - **ExcelJS 4.4.0** (G4 Owner xác nhận 04/10/2026, T-114 #277): chỉ ở `apps/desktop`, ghim đúng phiên bản. Màn Báo cáo nạp thư viện khi bấm "Xuất Excel" lần đầu (`import()` động), nên nó nằm ở chunk riêng (~908 KB min, ~256 KB gzip) và không làm nặng lúc mở app.
+- **Crate Rust `keyring` 4.x (chỉ kho Windows) + `ureq` 3.x** (G4 Owner chốt 07/10/2026, D-1): chỉ cho lệnh AI trong `apps/desktop/src-tauri`, ghim đúng phiên bản ở task đầu tiên dùng chúng. Chi tiết: phụ lục D-1 của ADR-0009.
