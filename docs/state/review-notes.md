@@ -37,6 +37,11 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - `AppointmentsScreen.tsx` (#239, không chặn): nhánh `!pickable` vẫn có thể gắn `bg-period-band` về lý thuyết; `inPeriod` ⇒ `pickable` nên không xảy ra.
 - Domain (R3): API `nextKycVersion`; ngày nhanh đầu năm (gợi ý năm trước?).
 - Token G3 (R4, Owner cân nhắc): viền ô nhập / mũi tên sắp xếp dưới 3:1.
+- **G5 chặn nhầm câu thường** (#420, T-165, không chặn; chỉ sửa được qua G5 — code chép đúng `docs/design/phase-5-prompts.md`). Owner cân nhắc khi chạy eval (T-171 #413) hoặc khi lên `prompt_version` sau:
+  - Do so bản bỏ dấu: "Hẹn KH **để chốt** lịch" → V3 "dễ chốt" (dễ gặp ở `nextBestActions`, có thể tăng thử lại / REJECTED); "KH **báo mình** sẽ đi công tác" → V4 "bảo minh"; "**khả năng kỹ** thuật" → V3 "khả năng ký"; "**Điểm sơ** bộ" → "điểm số"; "**Nhóm C**-level" → "nhóm c"; "**Chốt được** lịch hẹn" → "chốt được".
+  - Do regex V6 `khoảns+d+[,]?s+điều`: "Hỏi KH về **khoản 2 điều** kiện vay" khớp vì ranh giới từ ngay sau "điều".
+  - Ứng viên sửa: "dễ chốt", "bảo minh" sang "Bỏ dấu: không"; regex khoản–Điều thêm `(?!s*kiện)` hoặc bắt `s+d+` sau "điều".
+  - Liên quan (code, không cần G5): `text-match.ts:46–49` `detail` ghi tên mục có dấu thay vì đoạn model đã viết (lần thử lại model có thể không tìm thấy cụm) → trả `regex.exec(...)[0]`; `validator.ts:190` mục trùng phần nhau sinh hai issue cho một chỗ ("PRUDENTIAL" → `prudential` + `prud`).
 
 ## RESOLVED
 
