@@ -199,7 +199,7 @@ Chạy trên output đã parse; báo cáo = danh sách `{ code, path, detail }`.
 | V3 | Không số phần trăm, "xác suất", "khả năng chốt", "tỉ lệ / tỷ lệ chốt", từ ngữ đoán khả năng mua (danh sách ở G5) | analysis, discovery |
 | V4 | Không tên sản phẩm / hãng bảo hiểm trong danh sách chặn (G5) | analysis, discovery |
 | V5 | Nhãn tính cách — mã MBTI (`[IE][NS][TF][JP]`), DISC, cung hoàng đạo, nhóm máu… (G5) — chỉ được nằm trong `personalityNotes`; xuất hiện ở khối khác → chặn (P6) | analysis, discovery |
-| V6 | Không trích dẫn văn bản pháp lý: "Điều <số>", "khoản <số>", "Luật …", "Nghị định", "Thông tư", số hiệu văn bản (G5) | analysis, discovery |
+| V6 | Không trích dẫn văn bản pháp lý: "Điều <số>", "khoản <số> Điều <số>" ("khoản <số>" đứng riêng là cách nói tiền, không chặn — G5 Q4), "Luật …", "Nghị định", "Thông tư", số hiệu văn bản (G5) | analysis, discovery |
 | V7 | `field` được phép (không `birthYear` / `gender` — lấy từ hồ sơ, D2); `value` qua `normalizeKycValue`; `quote` là chuỗi con của ghi chú (so sau khi gộp khoảng trắng) | extraction |
 
 - Phần tử trích xuất sai V7 bị **bỏ riêng phần tử đó**, phần còn lại vẫn hiện (không cần thử lại cả lần); V1 sai → thử lại như phân tích. Trích xuất không qua V3–V6: giá trị lấy nguyên văn lời KH (vd. tên HĐ bảo hiểm đang có là dữ kiện hợp lệ).

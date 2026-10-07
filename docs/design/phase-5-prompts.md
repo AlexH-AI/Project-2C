@@ -231,7 +231,7 @@ Ghi chú: "có thể", "có dấu hiệu" **không** bị chặn (prompt yêu c�
 |---|---|
 | prudential · pru · manulife · aia · dai-ichi · dai ichi · daiichi · fwd · generali · sun life · sunlife · chubb · hanwha · mb ageas · ageas · bidv metlife · metlife · cathay · fubon · shinhan life · phú hưng life · bảo việt · baoviet · bvnt · aviva · vietcombank-cardif · vcli · cardif · bic · pvi · bảo minh · pti · pjico · mic · vbi · liberty · tokio marine · msig · bảo long · aaa assurance | có |
 
-**b) Tiền tố dòng sản phẩm**: regex `\bpru[-\s]?[a-zà-ỹđ]` (vd. "PRU-Hành Trang"), `\baia\s+[a-zà-ỹđ]+` đã nằm trong (a).
+**b) Tiền tố dòng sản phẩm**: regex `\bpru[-\s]?[a-zà-ỹđ]` trên bản có dấu và bản bỏ dấu. Mục "pru" ở (a) chỉ khớp khi "pru" đứng riêng thành từ (vd. "PRU-Hành Trang", "Pru Link"); regex này bắt thêm tên dòng sản phẩm viết dính liền (vd. "PRULink", "Prumax"). Các hãng khác không cần regex riêng: tên dòng sản phẩm của họ đi kèm tên hãng viết rời (vd. "AIA Vitality"), nên mục ở (a) đã chặn.
 
 **c) Loại sản phẩm cụ thể** (nêu tên loại = gợi ý sản phẩm, ADR-0009):
 
@@ -267,12 +267,12 @@ Ghi chú: "tính cách" và "kiểu người" không nằm trong danh sách (d�
 | `\bđiều\s+\d+` (vd. "Điều 35") | regex, cả bản bỏ dấu `\bdieu\s+\d+` | — |
 | `\bkhoản\s+\d+[,]?\s+điều\b` (vd. "khoản 2 Điều 35") | regex, cả bản bỏ dấu | — |
 | `\bđiểm\s+[a-zđ]\s+khoản\b` | regex, cả bản bỏ dấu | — |
-| `(luật|Luật|LUẬT)\s+\p{Lu}` trên **chuỗi gốc NFC, giữ hoa thường** (vd. "Luật Kinh doanh bảo hiểm"; "Luật sư" không khớp) | regex | — |
+| `(?<!(pháp|Pháp|PHÁP)\s+)(luật|Luật|LUẬT)\s+\p{Lu}` trên **chuỗi gốc NFC, giữ hoa thường**, có ranh giới từ trước "luật" (vd. "Luật Kinh doanh bảo hiểm"; "Luật sư" và "pháp luật Việt Nam" không khớp) | regex | — |
 | bộ luật · nghị định · thông tư · nghị quyết · văn bản hợp nhất · quyết định số · công văn số | cụm | có |
 | `\b\d{1,4}/\d{4}/[a-zđ0-9-]+\b` (số hiệu, vd. "46/2023/NĐ-CP", "08/2022/QH15") | regex, cả bản bỏ dấu | — |
 | `\b(nđ-cp|tt-btc|qh1\d)\b` | regex, cả bản bỏ dấu | — |
 
-Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ** chặn khi đi kèm "Điều" vì "khoản 500 triệu" là cách nói tiền thường gặp. "Pháp luật", "pháp lý", "cần chuyên gia pháp lý xác nhận" không bị chặn.
+Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ** chặn khi đi kèm "Điều" vì "khoản 500 triệu" là cách nói tiền thường gặp. "Pháp luật", "pháp lý", "cần chuyên gia pháp lý xác nhận" không bị chặn, kể cả "pháp luật" đứng trước tên riêng (vd. "pháp luật Việt Nam", Owner 07/10/2026 — §9 Q6).
 
 ### 8.5 Ca kiểm bắt buộc (T-165)
 
@@ -298,6 +298,8 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 | C15 | "KH sẽ mua nhà năm 2027 (F12)" | đạt |
 | C16 | "Hỏi KH đã có luật sư gia đình chưa" | đạt |
 | C17 | "Hẹn lại từ 01/10 để làm rõ F10" | đạt |
+| C18 | "Di chúc cần đúng pháp luật Việt Nam" | đạt ("pháp luật" trước tên riêng — Q6) |
+| C19 | "Đề xuất PRULink cho KH" | V4 (regex §8.2 b, tên viết dính liền) |
 
 ## 9. Owner duyệt
 
@@ -310,6 +312,7 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 | Q3 | Thêm dòng sản phẩm riêng của hãng Owner vào §8.2? | **Không** |
 | Q4 | V6 "khoản <số>" chỉ chặn khi đi kèm "Điều" (lệch chữ spec §6.4, §8.4) | **Đồng ý** |
 | Q5 | Nhãn tính cách (§8.3) | **Không cấm** — khối riêng `personalityNotes` "Thông tin tham khảo", cả tâm lý học và tử vi / huyền học, mỗi phần tử ghi rõ loại, AI suy ra từ dữ kiện và bắt buộc có bằng chứng. Đổi ADR-0009 mục 3 (phụ lục G5) và spec §6.2 / §6.4 / §9.1 |
+| Q6 | V6 mục `luật …` khớp nhầm "pháp luật Việt Nam" (ghi chú review PR #414) | **Chờ Owner duyệt** (PR sửa ghi chú review): thêm điều kiện "luật" không đứng sau "pháp"; thêm ca C18, C19 |
 
 **Checklist:**
 
