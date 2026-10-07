@@ -4,6 +4,8 @@ import {
   evaluateKycGate,
   formatIsoDate,
   KYC_GATE_STATES,
+  type KycCategory,
+  type KycField,
 } from '@p2c/domain';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { listAiAnalyses } from './ai-analyses';
@@ -14,6 +16,7 @@ import { getKycProfile } from './kyc';
 import { listPolicies } from './policies';
 import { APPOINTMENT_TRIGGERS } from './schema';
 import { seedDemoData } from './seed';
+import { KYC_CATEGORY_LABELS, KYC_FIELD_LABELS } from './seed-data';
 import { createTeam, listPeople, listTeams } from './team';
 import { codeOf } from './test-support';
 
@@ -195,9 +198,26 @@ describe('seedDemoData', () => {
         expect(analysis).toMatchObject({ status: 'ACCEPTED', provider: 'MOCK', attempts: 1 });
         expect(analysis.promptVersion).toBe(`${analysis.mode}@1`);
         expect(formatIsoDate(analysis.date) < '2026-09-15').toBe(true);
-        const { facts } = getKycProfile(db, analysis.customerId);
-        const sent = (analysis.input as { facts: { code: string }[] }).facts.map((f) => f.code);
-        expect(sent.every((code) => Number(code.slice(1)) <= facts.length)).toBe(true);
+        // Each code is `F{seq}` of a fact of the customer, sent under the app's label (prompts §1.1).
+        const fieldOf = new Map(
+          db.sqlite
+            .exec(
+              `SELECT seq, field FROM kyc_facts WHERE customer_id = '${analysis.customerId}'`,
+            )[0]!
+            .values.map(([seq, field]) => [`F${String(seq)}`, field as KycField]),
+        );
+        const input = analysis.input as {
+          facts: { code: string; field: string }[];
+          missingCategories: { code: KycCategory; label: string }[];
+        };
+        for (const fact of input.facts) {
+          const field = fieldOf.get(fact.code)!;
+          expect(fact.field).toBe(field === 'birthYear' ? 'Tuổi' : KYC_FIELD_LABELS[field]);
+        }
+        for (const missing of input.missingCategories) {
+          expect(missing.label).toBe(KYC_CATEGORY_LABELS[missing.code]);
+        }
+        const sent = input.facts.map((f) => f.code);
         const cited = Object.values(analysis.output as Record<string, { evidence: string[] }[]>)
           .flat()
           .flatMap((item) => item.evidence);

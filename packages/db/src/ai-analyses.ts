@@ -6,7 +6,7 @@
  */
 import { fromIsoDate, type CalendarDate, type KycGateState } from '@p2c/domain';
 import { asc, desc, eq, max, sql } from 'drizzle-orm';
-import { liveCustomer, nextSeq, prepared, rowInsert, storedDate, today } from './common';
+import { isLabel, liveCustomer, nextSeq, prepared, rowInsert, storedDate, today } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { ulid } from './ids';
@@ -176,11 +176,6 @@ function toRow(a: NewAiAnalysis) {
  */
 function storedRawOutput(raw: string): string {
   return Array.from(raw.replaceAll('\0', '�')).slice(0, MAX_AI_RAW_OUTPUT).join('');
-}
-
-/** A model name or prompt version: not blank, and no NUL (DR-49). */
-function isLabel(text: string | null): boolean {
-  return typeof text === 'string' && text.trim() !== '' && !text.includes('\0');
 }
 
 function isTokenCount(count: number | null, mock: boolean): boolean {

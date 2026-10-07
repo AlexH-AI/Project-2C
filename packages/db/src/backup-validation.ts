@@ -18,7 +18,7 @@ import {
 } from '@p2c/domain';
 import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
-import { cleanText, isFee, optionalText, requireName, storedDate, today } from './common';
+import { cleanText, isFee, isLabel, optionalText, requireName, storedDate, today } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { profileFactValue, type ProfileFields } from './kyc';
@@ -379,10 +379,8 @@ function aiRule(read: (sql: string) => Row[], today: string): Rule | null {
   );
   if (foreign.length > 0) return 11;
   const analyses = read('SELECT * FROM ai_analyses');
-  const label = (text: SqlValue | undefined) =>
-    typeof text === 'string' && text.trim() !== '' && !text.includes('\0');
   const labelled = analyses.every(
-    (a) => label(a.prompt_version) && (a.model === null || label(a.model)),
+    (a) => isLabel(a.prompt_version) && (a.model === null || isLabel(a.model)),
   );
   if (!labelled) return 12;
   if (!analyses.every(readsBack)) return 13;

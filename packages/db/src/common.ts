@@ -35,6 +35,11 @@ export function optionalText(text: string | null | undefined): string | null {
   return trimmed === '' ? null : trimmed;
 }
 
+/** A label such as a model name or prompt version: text, not blank, and no NUL (DR-49). */
+export function isLabel(text: unknown): text is string {
+  return typeof text === 'string' && text.trim() !== '' && !text.includes('\0');
+}
+
 /** One instant for both columns, so a deleted row is never updated after its deletion. */
 export function stampDeleted(db: Database): { deletedAt: string; updatedAt: string } {
   const at = db.now().toISOString();

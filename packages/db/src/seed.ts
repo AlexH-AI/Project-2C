@@ -25,6 +25,7 @@ import {
   type Person,
   type Vnd,
 } from '@p2c/domain';
+import { eq } from 'drizzle-orm';
 import { recordAiAnalysis } from './ai-analyses';
 import { recordMeetingOutcome, rescheduleAppointment, scheduleAppointment } from './appointments';
 import {
@@ -46,12 +47,15 @@ import {
   resolveKycConflict,
 } from './kyc';
 import { issuePolicy, submitPolicy } from './policies';
+import { kycFacts } from './schema';
 import {
   APPOINTMENT_TIMES,
   BIRTH_DATE_KINDS,
   CASE_SIZES_MILLION,
   FAMILY_NAMES,
   GIVEN_NAMES,
+  KYC_CATEGORY_LABELS,
+  KYC_FIELD_LABELS,
   KYC_TOPICS,
   KYC_VALUES,
   MEETING_NOTES,
@@ -429,7 +433,14 @@ function aiSimulation(db: Database, rng: Rng) {
     const version = listKycVersions(db, customer.id).at(-1);
     if (!gate.aiAllowed || !version) return;
     const mode = gate.state === 'PAIN_POINT_ANALYSIS' ? 'analysis' : 'discovery';
-    const input = analysisInput(facts, gate, mode, toDate(day));
+    // The stored seq of each fact, which its code `F{seq}` names (spec §6.1).
+    const seqs = db.orm
+      .select({ id: kycFacts.id, seq: kycFacts.seq })
+      .from(kycFacts)
+      .where(eq(kycFacts.customerId, customer.id))
+      .all();
+    const seqOf = new Map(seqs.map((fact) => [fact.id, fact.seq]));
+    const input = analysisInput(facts, seqOf, gate, mode, toDate(day));
     const codes = input.facts.map((fact) => fact.code);
     db.withSources({ now: () => new Date(middayOf(day)), random: rng.fill }, () =>
       recordAiAnalysis(db, {
@@ -456,27 +467,28 @@ function aiSimulation(db: Database, rng: Rng) {
 }
 
 /**
- * The input sent (prompts §1.1): the facts in effect, each with its code `F{seq}` (the customer's
- * facts are numbered from 1 in recording order), the birth year as an age, and the gate.
+ * The input sent (prompts §1.1): the facts in effect, each with its code `F{seq}`, in catalog order
+ * then by code, with the app's Vietnamese labels, the birth year as an age, and the gate.
  */
 function analysisInput(
   facts: readonly KycFact[],
+  seqOf: ReadonlyMap<string, number>,
   gate: KycGateResult,
   mode: 'analysis' | 'discovery',
   date: CalendarDate,
 ) {
   const order = Object.keys(KYC_FIELDS);
-  const label = (field: KycField) => FIELD_LABELS[field] ?? KYC_VALUES[field]?.label ?? field;
+  const label = (field: KycField) => (field === 'birthYear' ? 'Tuổi' : KYC_FIELD_LABELS[field]);
   const sent = facts
-    .map((fact, i) => ({ fact, code: factCode(i + 1) }))
-    .filter(({ fact }) => fact.status !== 'superseded')
-    .sort((a, b) => order.indexOf(a.fact.field) - order.indexOf(b.fact.field));
+    .filter((fact) => fact.status !== 'superseded')
+    .map((fact) => ({ fact, seq: seqOf.get(fact.id)! }))
+    .sort((a, b) => order.indexOf(a.fact.field) - order.indexOf(b.fact.field) || a.seq - b.seq);
   return {
     analysisDate: formatIsoDate(date),
     mode,
-    facts: sent.map(({ fact, code }) => ({
-      code,
-      category: fact.category,
+    facts: sent.map(({ fact, seq }) => ({
+      code: factCode(seq),
+      category: KYC_CATEGORY_LABELS[fact.category],
       field: label(fact.field),
       value:
         fact.field === 'birthYear'
@@ -489,12 +501,13 @@ function analysisInput(
       confirmedAt: formatIsoDate(fact.confirmedDate),
       conflict: fact.status === 'conflict',
     })),
-    missingCategories: gate.missingCategories.map((code) => ({ code })),
+    missingCategories: gate.missingCategories.map((code) => ({
+      code,
+      label: KYC_CATEGORY_LABELS[code],
+    })),
     conflictWarnings: gate.warningFields.map(label),
   };
 }
-
-const FIELD_LABELS: Partial<Record<KycField, string>> = { birthYear: 'Tuổi', gender: 'Giới tính' };
 
 /** `count` distinct codes from position `start`, wrapping round, as the Mock adapter cites them. */
 function cite(codes: readonly string[], start: number, count: number): string[] {
