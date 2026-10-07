@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { formatDate } from '@p2c/domain';
 import { Button, Dialog, TextField } from '@p2c/ui';
-import { useAppData } from '../data/AppDataContext';
+import { useAppData, useToday } from '../data/AppDataContext';
 import { isUnsavedChangesError } from '../data/app-data';
 import { t } from '../i18n';
 import { BackupSection } from './SettingsBackup';
@@ -75,7 +75,8 @@ function ReloadDialog({ onClose }: { onClose: (outcome?: Outcome) => void }) {
   const data = useAppData();
   const [word, setWord] = useState('');
   const [running, setRunning] = useState(false);
-  const anchor = formatDate(data.today());
+  // Follows the day while the dialog stays open past midnight (DR-30).
+  const anchor = formatDate(useToday());
   const confirmWord = t('settings.demo.confirmWord');
   // An IME may type the word decomposed (review R4).
   const confirmed = word.normalize('NFC') === confirmWord;
@@ -83,8 +84,9 @@ function ReloadDialog({ onClose }: { onClose: (outcome?: Outcome) => void }) {
   const reload = async () => {
     setRunning(true);
     try {
-      const backup = await data.reloadDemoData();
-      onClose({ ok: true, anchor, backup });
+      // The day the data was really anchored on: the backup may have run past midnight.
+      const reloaded = await data.reloadDemoData();
+      onClose({ ok: true, anchor: formatDate(reloaded.anchor), backup: reloaded.backup });
     } catch (error) {
       const unsaved = isUnsavedChangesError(error);
       onClose({ ok: false, unsaved });

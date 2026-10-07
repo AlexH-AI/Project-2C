@@ -48,3 +48,24 @@ test('cancelling the reload dialog changes nothing', async ({ page }) => {
   await page.getByRole('link', { name: 'Team & nhân sự' }).click();
   await expect(team).toHaveCount(1);
 });
+
+// DR-30: the dialog left open past midnight names the new day, and the data is anchored on it.
+test('the reload dialog follows the day past midnight and the data is anchored on the new day', async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date(2026, 8, 15, 23, 59) });
+  await page.goto('/#/settings');
+  const section = page.getByRole('region', { name: 'Dữ liệu giả lập' });
+  await section.getByRole('button', { name: 'Nạp lại…' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Nạp lại dữ liệu giả lập?' });
+  await expect(dialog).toContainText(`neo ở ngày ${ANCHOR}`);
+
+  await page.clock.fastForward(2 * 60_000);
+  await expect(dialog).toContainText('neo ở ngày 16/09/2026');
+  await dialog.getByRole('textbox').fill('NẠP LẠI');
+  await dialog.getByRole('button', { name: 'Nạp lại', exact: true }).click();
+
+  await expect(section.getByRole('status')).toHaveText(
+    'Đã nạp lại dữ liệu giả lập, neo ở ngày 16/09/2026.',
+  );
+});

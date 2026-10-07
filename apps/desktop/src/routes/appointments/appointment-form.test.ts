@@ -46,6 +46,14 @@ describe('readScheduleDate (any day)', () => {
     expect(readScheduleDate('28-9', TODAY, 'any')).toEqual({ ok: false, error: 'format' });
     expect(readScheduleDate('29/02', TODAY, 'any')).toEqual({ ok: false, error: 'invalid-date' });
   });
+
+  it('offers 29/02 next year when this year has none and February is long past (DR-39)', () => {
+    expect(readScheduleDate('29/02', d(15, 12, 2027), 'fromToday')).toEqual({
+      ok: false,
+      error: 'invalid-date',
+      suggestion: d(29, 2, 2028),
+    });
+  });
 });
 
 describe('readScheduleDate (from today)', () => {

@@ -32,6 +32,7 @@ interface ReadDate {
 export type ScheduleDate =
   | ({ readonly ok: true; readonly weekday: Weekday } & ReadDate)
   | ({ readonly ok: false; readonly error: 'past' } & ReadDate)
+  | { readonly ok: false; readonly error: 'invalid-date'; readonly suggestion: CalendarDate }
   | { readonly ok: false; readonly error: QuickDateError };
 
 /** Reads the day typed into the form: `dd/mm` or `dd/mm/yyyy`, checked against `today`. */
@@ -41,7 +42,12 @@ export function readScheduleDate(
   mode: ScheduleMode,
 ): ScheduleDate {
   const parsed = parseQuickDate(text, today);
-  if (!parsed.ok) return parsed;
+  if (!parsed.ok) {
+    const { error, nextYearSuggestion } = parsed;
+    return nextYearSuggestion
+      ? { ok: false, error: 'invalid-date', suggestion: nextYearSuggestion }
+      : { ok: false, error };
+  }
   const read = {
     date: parsed.date,
     daysFromToday: daysBetween(today, parsed.date),
