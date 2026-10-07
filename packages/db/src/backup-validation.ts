@@ -4,6 +4,7 @@
  * then break the screens or the metrics that read it. Rows are read as they are; nothing is
  * replayed through the commands, which would change ids, `seq` and hashes.
  */
+import { AI_OUTPUT_SCHEMAS } from '@p2c/ai/schema';
 import {
   assertValidTransition,
   calendarDate,
@@ -21,6 +22,7 @@ import { cleanText, isFee, optionalText, requireName, storedDate, today } from '
 import type { Database } from './database';
 import { DbError } from './errors';
 import { profileFactValue, type ProfileFields } from './kyc';
+import type { AI_ANALYSIS_MODES } from './schema';
 
 const YEAR = /^\d{4}$/;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -137,8 +139,8 @@ function validKycValue(field: string, json: string): boolean {
 
 type Row = Record<string, SqlValue>;
 
-/** A rule across tables, by its number in spec §6. */
-type Rule = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+/** A rule across tables, by its number in spec §6; 11–14 are rules 1–4 of spec Phase 5 §7.3. */
+type Rule = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14;
 
 /**
  * Throws `BACKUP_INVALID`, params `rule` (the first rule of spec §6 broken), when the tables
@@ -158,7 +160,8 @@ export function validateBackupInvariants(db: Database): void {
     ownerRule(read, appointments) ??
     kycRule(read, customers) ??
     staffRule(read) ??
-    futureRule(read, storedDate(today(db)));
+    futureRule(read, storedDate(today(db))) ??
+    aiRule(read, storedDate(today(db)));
   if (broken !== null) throw new DbError('BACKUP_INVALID', { rule: broken });
 }
 
@@ -361,6 +364,61 @@ function futureRule(read: (sql: string) => Row[], today: string): Rule | null {
     ].join(' UNION ALL '),
   );
   return broken.length === 0 ? null : 10;
+}
+
+/**
+ * Rules 11–14 (spec Phase 5 §7.3), on what the table's CHECK and UNIQUE leave to the app: the KYC
+ * version analysed is the customer's own (11); a model and prompt version are labels as
+ * `recordAiAnalysis` takes them (12); the JSON reads back, an accepted output passes the latest
+ * schema of its mode and cites only facts of its input (13); the analysis is not dated after today
+ * (14).
+ */
+function aiRule(read: (sql: string) => Row[], today: string): Rule | null {
+  const foreign = read(
+    'SELECT 1 FROM ai_analyses a JOIN kyc_versions v ON v.id = a.kyc_version_id WHERE v.customer_id <> a.customer_id',
+  );
+  if (foreign.length > 0) return 11;
+  const analyses = read('SELECT * FROM ai_analyses');
+  const label = (text: SqlValue | undefined) =>
+    typeof text === 'string' && text.trim() !== '' && !text.includes('\0');
+  const labelled = analyses.every(
+    (a) => label(a.prompt_version) && (a.model === null || label(a.model)),
+  );
+  if (!labelled) return 12;
+  if (!analyses.every(readsBack)) return 13;
+  return analyses.some((a) => (a.date as string) > today) ? 14 : null;
+}
+
+/** Rule 13 for one analysis: what `listAiAnalyses` parses, and what the AI was allowed to answer. */
+function readsBack(analysis: Row): boolean {
+  const [input, output, validator] = [
+    analysis.input_json,
+    analysis.output_json,
+    analysis.validator_json,
+  ].map(parsed);
+  if (input === undefined || validator === undefined || output === undefined) return false;
+  if (analysis.status !== 'ACCEPTED') return true;
+  const schema = AI_OUTPUT_SCHEMAS[analysis.mode as (typeof AI_ANALYSIS_MODES)[number]];
+  const result = schema.safeParse(output);
+  if (!result.success) return false;
+  const facts = (input as { facts?: unknown } | null)?.facts;
+  const codes = new Set(
+    (Array.isArray(facts) ? facts : []).map((fact) => (fact as { code?: unknown } | null)?.code),
+  );
+  // Every block of an analysis or discovery output is a list of items that may cite facts.
+  return Object.values(result.data)
+    .flat()
+    .every((item) => item.evidence.every((code) => codes.has(code)));
+}
+
+/** The JSON value of a stored text; `undefined` when it does not parse, `null` for SQL NULL. */
+function parsed(text: SqlValue | undefined): unknown {
+  if (text === null || text === undefined) return null;
+  try {
+    return JSON.parse(String(text)) as unknown;
+  } catch {
+    return undefined;
+  }
 }
 
 function groupBy(rows: Row[], column: string): Map<unknown, Row[]> {

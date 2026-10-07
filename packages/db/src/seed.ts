@@ -5,8 +5,11 @@
  * sources — the same anchor day and seed give the same data on any machine from UTC−12 to UTC+11,
  * and the same days in any time zone (`middayOf`).
  */
+import { factCode } from '@p2c/ai/schema';
 import {
   calendarDate,
+  evaluateKycGate,
+  formatIsoDate,
   isPipelineStage,
   KYC_FIELDS,
   MAX_YEAR,
@@ -14,11 +17,15 @@ import {
   PIPELINE_STAGES,
   type CalendarDate,
   type CustomerStage,
+  type KycCategory,
+  type KycFact,
   type KycField,
+  type KycGateResult,
   type KycValue,
   type Person,
   type Vnd,
 } from '@p2c/domain';
+import { recordAiAnalysis } from './ai-analyses';
 import { recordMeetingOutcome, rescheduleAppointment, scheduleAppointment } from './appointments';
 import {
   changeStageManually,
@@ -30,7 +37,14 @@ import {
 import type { Database } from './database';
 import { DbError } from './errors';
 import type { RandomFill } from './ids';
-import { addKycNote, confirmKycFact, markKycConflict, resolveKycConflict } from './kyc';
+import {
+  addKycNote,
+  confirmKycFact,
+  getKycProfile,
+  listKycVersions,
+  markKycConflict,
+  resolveKycConflict,
+} from './kyc';
 import { issuePolicy, submitPolicy } from './policies';
 import {
   APPOINTMENT_TIMES,
@@ -78,6 +92,10 @@ const BIRTH_DATE_CHANCE = 0.3;
 const KYC_CONFLICT_CHANCE = 0.2;
 /** Chance per met meeting that the RE settles an open conflict. */
 const KYC_SETTLE_CHANCE = 0.25;
+/** Chance per met meeting that the RE runs the Mock analysis, when the gate lets the AI run. */
+const AI_ANALYSIS_CHANCE = 0.02;
+/** Mixed into the seed for the AI analyses' own random stream. */
+const AI_STREAM = 0x5eed_a1;
 
 interface SimCustomer {
   readonly id: string;
@@ -110,6 +128,8 @@ interface Booked {
 
 export function seedDemoData(db: Database, options: SeedOptions): void {
   const rng = createRng(options.seed);
+  // Its own stream, so the AI analyses leave the rest of the data as it was before them.
+  const aiRng = createRng(options.seed ^ AI_STREAM);
   const anchor = dayNumber(options.anchorDate);
   const { start, end } = simulatedDays(anchor);
   let today = start;
@@ -124,7 +144,7 @@ export function seedDemoData(db: Database, options: SeedOptions): void {
       if (listTeams(db).length > 0 || listPeople(db).length > 0) {
         throw new DbError('SEED_DATABASE_NOT_EMPTY');
       }
-      const simulate = simulation(db, rng, anchor);
+      const simulate = simulation(db, rng, aiRng, anchor);
       for (; today <= end; today++) simulate(today);
     }),
   );
@@ -143,7 +163,7 @@ function simulatedDays(anchor: number): { start: number; end: number } {
   };
 }
 
-function simulation(db: Database, rng: Rng, anchor: number): (day: number) => void {
+function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number): (day: number) => void {
   const { start, end } = simulatedDays(anchor);
   const coordinators = new Map<string, Person[]>();
   const customers = new Map<string, SimCustomer[]>();
@@ -155,6 +175,7 @@ function simulation(db: Database, rng: Rng, anchor: number): (day: number) => vo
 
   const born = birthYears(rng, toDate(anchor).year);
   const kyc = kycSimulation(db, rng, born);
+  const ai = aiSimulation(db, aiRng);
   const names = new Set<string>();
   const staffName = (): string => {
     const name = personName(rng);
@@ -266,6 +287,7 @@ function simulation(db: Database, rng: Rng, anchor: number): (day: number) => vo
     });
     customer.stage = stageAfter;
     kyc.afterMeeting(customer, day);
+    ai.afterMeeting(customer, day);
     if (stageAfter === 'N1' && rng.chance(POLICY_CHANCE)) submit(customer, day);
   };
 
@@ -391,6 +413,134 @@ function kycSimulation(db: Database, rng: Rng, born: () => number | null) {
   };
 
   return { learn, afterMeeting };
+}
+
+/**
+ * Now and then the RE runs the Mock analysis after a meeting (spec Phase 5 §7.3): on the KYC as it
+ * stands, at the mode of the gate, never at a gate that blocks the AI (P2). Later KYC changes leave
+ * it STALE, as on screen. It writes with its own random stream and a clock that does not tick, so
+ * every other record stays as it was without it.
+ */
+function aiSimulation(db: Database, rng: Rng) {
+  const afterMeeting = (customer: SimCustomer, day: number) => {
+    if (!rng.chance(AI_ANALYSIS_CHANCE)) return;
+    const { facts } = getKycProfile(db, customer.id);
+    const gate = evaluateKycGate(facts);
+    const version = listKycVersions(db, customer.id).at(-1);
+    if (!gate.aiAllowed || !version) return;
+    const mode = gate.state === 'PAIN_POINT_ANALYSIS' ? 'analysis' : 'discovery';
+    const input = analysisInput(facts, gate, mode, toDate(day));
+    const codes = input.facts.map((fact) => fact.code);
+    db.withSources({ now: () => new Date(middayOf(day)), random: rng.fill }, () =>
+      recordAiAnalysis(db, {
+        customerId: customer.id,
+        kycVersionId: version.id,
+        mode,
+        gateState: gate.state,
+        status: 'ACCEPTED',
+        provider: 'MOCK',
+        model: null,
+        reasoning: null,
+        promptVersion: `${mode}@1`,
+        attempts: 1,
+        input,
+        output: (mode === 'analysis' ? mockAnalysis : mockDiscovery)(codes, gate.missingCategories),
+        rawOutput: null,
+        validator: [{ attempt: 1, errors: [] }],
+        promptTokens: null,
+        completionTokens: null,
+      }),
+    );
+  };
+  return { afterMeeting };
+}
+
+/**
+ * The input sent (prompts §1.1): the facts in effect, each with its code `F{seq}` (the customer's
+ * facts are numbered from 1 in recording order), the birth year as an age, and the gate.
+ */
+function analysisInput(
+  facts: readonly KycFact[],
+  gate: KycGateResult,
+  mode: 'analysis' | 'discovery',
+  date: CalendarDate,
+) {
+  const order = Object.keys(KYC_FIELDS);
+  const label = (field: KycField) => FIELD_LABELS[field] ?? KYC_VALUES[field]?.label ?? field;
+  const sent = facts
+    .map((fact, i) => ({ fact, code: factCode(i + 1) }))
+    .filter(({ fact }) => fact.status !== 'superseded')
+    .sort((a, b) => order.indexOf(a.fact.field) - order.indexOf(b.fact.field));
+  return {
+    analysisDate: formatIsoDate(date),
+    mode,
+    facts: sent.map(({ fact, code }) => ({
+      code,
+      category: fact.category,
+      field: label(fact.field),
+      value:
+        fact.field === 'birthYear'
+          ? String(date.year - Number(fact.value))
+          : typeof fact.value === 'boolean'
+            ? fact.value
+              ? 'Có'
+              : 'Không'
+            : String(fact.value),
+      confirmedAt: formatIsoDate(fact.confirmedDate),
+      conflict: fact.status === 'conflict',
+    })),
+    missingCategories: gate.missingCategories.map((code) => ({ code })),
+    conflictWarnings: gate.warningFields.map(label),
+  };
+}
+
+const FIELD_LABELS: Partial<Record<KycField, string>> = { birthYear: 'Tuổi', gender: 'Giới tính' };
+
+/** `count` distinct codes from position `start`, wrapping round, as the Mock adapter cites them. */
+function cite(codes: readonly string[], start: number, count: number): string[] {
+  return [...new Set(Array.from({ length: count }, (_, i) => codes[(start + i) % codes.length]!))];
+}
+
+function askAbout(missing: readonly KycCategory[]) {
+  return missing.map((category) => ({
+    text: 'Tìm hiểu thêm hạng mục còn thiếu trong buổi gặp tới',
+    evidence: [],
+    missingCategory: category,
+  }));
+}
+
+/** The Mock adapter's fixed sentences (`@p2c/ai`), which `db` may not import. */
+function mockAnalysis(codes: readonly string[], missing: readonly KycCategory[]) {
+  return {
+    hypotheses: [
+      { text: 'Khách hàng đặt sự ổn định của gia đình lên trước', evidence: cite(codes, 0, 2) },
+    ],
+    needs: [
+      { text: 'Một kế hoạch tài chính cho các mục tiêu đã nêu', evidence: cite(codes, 1, 2) },
+    ],
+    painPoints: [
+      { text: 'Băn khoăn giữa nhu cầu hiện tại và mục tiêu xa', evidence: cite(codes, 2, 1) },
+    ],
+    themes: [{ text: 'Gia đình và sự an tâm lâu dài', evidence: cite(codes, 0, 3) }],
+    discoveryStrategy: [
+      { text: 'Làm rõ thứ tự ưu tiên giữa các mục tiêu', evidence: cite(codes, 0, 1) },
+      ...askAbout(missing),
+    ].slice(0, 6),
+    nextBestActions: [{ text: 'Hẹn buổi trao đổi về mục tiêu chính', evidence: cite(codes, 1, 1) }],
+    personalityNotes: [],
+  };
+}
+
+function mockDiscovery(codes: readonly string[], missing: readonly KycCategory[]) {
+  return {
+    hypotheses: [{ text: 'Khách hàng sẵn lòng chia sẻ về gia đình', evidence: cite(codes, 0, 2) }],
+    discoveryStrategy: [
+      ...askAbout(missing),
+      { text: 'Hỏi sâu thêm về điều khách hàng đã chia sẻ', evidence: cite(codes, 1, 1) },
+    ].slice(-6),
+    nextBestActions: [{ text: 'Hẹn buổi gặp tiếp để tìm hiểu thêm', evidence: cite(codes, 0, 1) }],
+    personalityNotes: [],
+  };
 }
 
 function nextStage(rng: Rng, stage: CustomerStage): CustomerStage {

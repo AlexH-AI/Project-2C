@@ -13,6 +13,16 @@ export const AI_MODES = ['analysis', 'discovery', 'extraction'] as const;
 
 export type AiMode = (typeof AI_MODES)[number];
 
+/** Settings → AI providers (spec §4.1); here so that `ai_analyses` stores the same values. */
+export const AI_PROVIDERS = ['MOCK', 'OPENCODE_GO'] as const;
+
+export type AiProvider = (typeof AI_PROVIDERS)[number];
+
+/** `DEFAULT` sends no `reasoning_effort`; the others are sent as low / medium / high. */
+export const AI_REASONING_LEVELS = ['DEFAULT', 'LOW', 'MEDIUM', 'HIGH'] as const;
+
+export type AiReasoningLevel = (typeof AI_REASONING_LEVELS)[number];
+
 /** A well-formed fact code: `F` and a seq with no leading zero. */
 export const FACT_CODE = /^F[1-9]\d*$/;
 

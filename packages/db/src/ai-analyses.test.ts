@@ -402,9 +402,14 @@ describe('the ai_analyses migration', () => {
   it(
     'runs on a seeded database saved before it, keeping every row',
     async () => {
-      const before = MIGRATIONS.filter((m) => !m.tag.includes('ai_analyses'));
-      const old = await openDatabase({ migrations: before });
+      // The seed writes analyses too (T-163): seed, then take the table and its migrations away.
+      const old = await openDatabase();
       seedDemoData(old, { anchorDate: d(15, 9), seed: 7 });
+      const added = MIGRATIONS.filter((m) => m.tag.includes('ai_analyses')).map((m) => m.id);
+      old.sqlite.run(
+        `DROP TABLE ai_analyses; DELETE FROM schema_migrations WHERE id IN (${added.join(', ')})`,
+      );
+      expect(old.schemaVersion()).toBe(Math.min(...added) - 1);
       const tables = ['customers', 'kyc_versions', 'kyc_facts', 'appointments', 'policies'];
       const rows = (database: Database, table: string) =>
         database.sqlite.exec(`SELECT * FROM ${table} ORDER BY rowid`)[0]?.values ?? [];

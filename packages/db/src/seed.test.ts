@@ -6,6 +6,7 @@ import {
   KYC_GATE_STATES,
 } from '@p2c/domain';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { listAiAnalyses } from './ai-analyses';
 import { listAppointments } from './appointments';
 import { listCustomers, listStageTransitions } from './customers';
 import { openDatabase, type Database } from './database';
@@ -180,6 +181,29 @@ describe('seedDemoData', () => {
         gates.some((g) => g.warningFields.length > 0 && g.state !== 'CONFLICT_RESOLUTION'),
       ).toBe(true);
       expect(profiles.some(({ facts }) => facts.some((f) => f.status === 'superseded'))).toBe(true);
+    });
+
+    it('has a few Mock analyses (spec Phase 5 §7.3), current and stale, citing the facts sent', () => {
+      const analyses = listCustomers(db).flatMap((c) => listAiAnalyses(db, c.id));
+      expect(analyses.length).toBeGreaterThanOrEqual(10);
+      expect(analyses.length).toBeLessThanOrEqual(100);
+      expect(new Set(analyses.map((a) => a.mode))).toEqual(new Set(['analysis', 'discovery']));
+      expect(analyses.some((a) => a.state === 'CURRENT')).toBe(true);
+      // The latest of a customer whose KYC changed since: the panel shows the reminder (§7.2).
+      expect(analyses.some((a) => a.state === 'STALE' && a.reminder !== null)).toBe(true);
+      for (const analysis of analyses) {
+        expect(analysis).toMatchObject({ status: 'ACCEPTED', provider: 'MOCK', attempts: 1 });
+        expect(analysis.promptVersion).toBe(`${analysis.mode}@1`);
+        expect(formatIsoDate(analysis.date) < '2026-09-15').toBe(true);
+        const { facts } = getKycProfile(db, analysis.customerId);
+        const sent = (analysis.input as { facts: { code: string }[] }).facts.map((f) => f.code);
+        expect(sent.every((code) => Number(code.slice(1)) <= facts.length)).toBe(true);
+        const cited = Object.values(analysis.output as Record<string, { evidence: string[] }[]>)
+          .flat()
+          .flatMap((item) => item.evidence);
+        expect(cited.length).toBeGreaterThan(0);
+        expect(cited.every((code) => sent.includes(code))).toBe(true);
+      }
     });
   });
 

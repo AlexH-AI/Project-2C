@@ -10,7 +10,9 @@ import {
   PERSON_ROLES,
   PIPELINE_STAGES,
   type KycField,
+  type KycGateState,
 } from '@p2c/domain';
+import { AI_PROVIDERS, AI_REASONING_LEVELS, type AiMode } from '@p2c/ai/schema';
 import { sql } from 'drizzle-orm';
 import {
   check,
@@ -289,18 +291,15 @@ export const kycVersions = sqliteTable(
  * The modes that keep a history, each with the KYC gate it runs at (§7.1); extraction is never
  * stored (P4), nor is a blocked gate (P2).
  */
+export const AI_ANALYSIS_MODES = ['analysis', 'discovery'] as const satisfies readonly AiMode[];
 export const AI_ANALYSIS_GATES = {
   analysis: 'PAIN_POINT_ANALYSIS',
   discovery: 'PROFILE_DISCOVERY',
-} as const;
-export const AI_ANALYSIS_MODES = ['analysis', 'discovery'] as const;
+} as const satisfies Record<(typeof AI_ANALYSIS_MODES)[number], KycGateState>;
 export const AI_ANALYSIS_STATUSES = ['ACCEPTED', 'REJECTED'] as const;
-/**
- * The same values as `AI_PROVIDERS` / `AI_REASONING_LEVELS` of `@p2c/ai`, whose models module `db`
- * may not import (ADR-0006 phụ lục 07/10/2026).
- */
-export const AI_ANALYSIS_PROVIDERS = ['MOCK', 'OPENCODE_GO'] as const;
-export const AI_ANALYSIS_REASONING = ['DEFAULT', 'LOW', 'MEDIUM', 'HIGH'] as const;
+/** `@p2c/ai`'s own lists, from the one module of it `db` may import (ADR-0006 phụ lục 07/10/2026). */
+export const AI_ANALYSIS_PROVIDERS = AI_PROVIDERS;
+export const AI_ANALYSIS_REASONING = AI_REASONING_LEVELS;
 /** Characters of a rejected raw output kept (§7.1). */
 export const MAX_AI_RAW_OUTPUT = 20_000;
 
