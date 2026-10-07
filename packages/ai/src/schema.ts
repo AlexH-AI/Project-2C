@@ -35,9 +35,11 @@ export function factCode(seq: number): string {
 /** Every string the AI writes: 1–300 characters once trimmed. */
 const text = z.string().trim().min(1).max(300);
 
+// Refinement messages are Vietnamese: the validator puts them in a V1 detail, which goes back to the
+// model in the retry message (prompts §5).
 const evidence = z
   .array(z.string().regex(FACT_CODE))
-  .refine((codes) => new Set(codes).size === codes.length, 'The same fact is cited twice');
+  .refine((codes) => new Set(codes).size === codes.length, 'trích trùng một dữ kiện');
 
 /** Hypotheses, needs, pain points and themes: always cite at least one fact. */
 const evidencedItem = z.object({ text, evidence: evidence.min(1) });
@@ -51,7 +53,7 @@ const actionItem = z
   })
   .refine(
     (item) => item.evidence.length > 0 || item.missingCategory !== undefined,
-    'Needs evidence or a missing hạng mục',
+    'cần evidence hoặc missingCategory',
   );
 
 /** Personality systems of `personalityNotes`: psychology (MBTI, DISC…) or tử vi / huyền học. */

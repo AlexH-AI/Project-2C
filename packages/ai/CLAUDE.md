@@ -1,6 +1,6 @@
 # packages/ai — AI copilot: schema, adapter, Mock
 
-Phase 5 (`docs/design/phase-5-ai.md`, ADR-0009). Kiểu dữ liệu, mã lỗi `AiError`, zod schema output của 3 chế độ (`analysis` / `discovery` / `extraction`), giao diện adapter và adapter Mock. Validator, prompt, điều phối thử lại thêm ở các task sau (T-165, T-166).
+Phase 5 (`docs/design/phase-5-ai.md`, ADR-0009). Kiểu dữ liệu, mã lỗi `AiError`, zod schema output của 3 chế độ (`analysis` / `discovery` / `extraction`), giao diện adapter, adapter Mock, validator V1–V7. Prompt, điều phối thử lại thêm ở T-166.
 
 ## Ranh giới
 
@@ -15,6 +15,7 @@ Phase 5 (`docs/design/phase-5-ai.md`, ADR-0009). Kiểu dữ liệu, mã lỗi `
 - Lấy khối JSON đầu tiên từ trả lời: `src/extract-json.ts` (spec §6.1).
 - Mã lỗi: `src/errors.ts` (spec §5.3) · model: `src/models.ts` (spec §4); danh sách provider / reasoning nằm ở `src/schema.ts` để `db` dùng chung cho `ai_analyses` (T-163).
 - Adapter: `src/adapter.ts` (giao diện) · Mock: `src/mock-adapter.ts` (đọc message `user` đầu tiên theo mẫu G5 §1.1 / §4.1).
+- Validator (spec §6.4): `src/validator.ts` — `validateOutput` (V1 cả ba chế độ; V2–V6 analysis / discovery), `filterExtraction` (V7 bỏ riêng từng dữ kiện trích xuất). Danh sách chặn V3–V6 chép nguyên từ G5 §8: `src/blocklists.ts`; cách so khớp G5 §7 (bản có dấu / bỏ dấu, ranh giới từ Unicode): `src/text-match.ts`. Đổi danh sách = qua G5 lại.
 
 ## Bản đồ export
 
@@ -22,10 +23,13 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 
 <!-- codemap:start -->
 - `src/adapter.ts` — type AiMessage, type AiCompleteRequest, type AiCompletion, type AiAdapter
+- `src/blocklists.ts` — BLOCKLISTS
 - `src/errors.ts` — AI_ERROR_CODES, type AiErrorCode, isAiErrorCode, AiError
 - `src/extract-json.ts` — type ExtractedJson, extractJson
-- `src/index.ts` — re-exports ./errors, ./models, ./adapter, ./extract-json, ./schema, ./mock-adapter
+- `src/index.ts` — re-exports ./errors, ./models, ./adapter, ./extract-json, ./schema, ./mock-adapter, ./validator
 - `src/mock-adapter.ts` — createMockAdapter
 - `src/models.ts` — type AiReasoningEffort, type AiModel, AI_MODELS, type AiModelId, DEFAULT_AI_MODEL
 - `src/schema.ts` — AI_MODES, type AiMode, AI_PROVIDERS, type AiProvider, AI_REASONING_LEVELS, type AiReasoningLevel, FACT_CODE, factCode, PERSONALITY_SYSTEMS, analysisOutputSchema, discoveryOutputSchema, extractionOutputSchema, type AnalysisOutput, type DiscoveryOutput, type ExtractionOutput, AI_OUTPUT_SCHEMAS
+- `src/text-match.ts` — type MatchText, type Matcher, fold, matchText, WORD_START, WORD_END, char, phrase, pattern
+- `src/validator.ts` — VALIDATION_CODES, type ValidationCode, type ValidationIssue, type OutputCheckInput, validateOutput, EXTRACTION_FIELDS, type ExtractionCheckInput, type ExtractedFact, filterExtraction
 <!-- codemap:end -->
