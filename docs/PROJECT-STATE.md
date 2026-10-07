@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 5 — AI copilot (not started; milestone to open). Phases 1 to 4 are closed; Phase 4 closed at G7 on 2026-10-07 (65 issues, #251 to #370, `docs/metrics/phase-4.md`), released exe `3e84ce8` (CI artifact, run `37576148435`). D-1 (network calls + API key storage) decided 2026-10-07 (ADR-0009 appendix); next: Phase 5 spec and G5 (prompt + guardrail). Overall progress ≈ 75% to v1.0 (see `docs/PROJECT-PLAN.md` §5).
+Phase 5 — AI copilot (started 2026-10-07; milestone open, 13 issues #401 to #413). Phases 1 to 4 are closed; Phase 4 closed at G7 on 2026-10-07 (65 issues, #251 to #370, `docs/metrics/phase-4.md`), released exe `3e84ce8` (CI artifact, run `37576148435`). D-1, Phase 5 spec (G1 / G2) and G5 (prompts + guardrail) approved 2026-10-07; next: G3 mockups and G2 eval cases. Overall progress ≈ 75% to v1.0 (see `docs/PROJECT-PLAN.md` §5).
 
 ## Canonical repository
 
@@ -56,6 +56,8 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
 - 2026-10-07: D-1 (G4 / G6, ADR-0009 appendix D-1): a Rust command calls OpenCode Go and holds the API key; the webview never sees the key and the CSP stays unchanged. New crates `keyring` 4.x (Windows store only) and `ureq` 3.x. The key lives only in Windows Credential Manager, never in the DB / `settings` / backup. No streaming in v1. A missing key or a network / 401 error is reported, with no automatic fallback to Mock.
 - 2026-10-07: Phase 5 spec approved at G1 / G2 (`docs/design/phase-5-ai.md`, PR #399). Any new KYC version makes older analyses STALE (material only changes the hint); a blocking KYC gate writes no history row; a short fixed model list (`/chat/completions` only), default `deepseek-v4.1-flash`, the Owner switches model and reasoning level in Settings; "AI trích xuất" is in Phase 5 and its suggestions are never stored.
 - 2026-10-07: Phase 5 spec §5.2 (after review of PR #399): only one AI request at a time, never two. Cancel keeps every AI button locked until the Rust request ends (up to the 120 s timeout); Rust itself rejects a second call with `AI_BUSY`.
+- 2026-10-07: Phase 5 issue split: `db` may import only the schema module of `@p2c/ai` (backup import rule 3) and always checks against the latest schema per mode; older schemas are not kept, the simulated data is reloaded when a schema changes (#402).
+- 2026-10-07: G5 approved (`docs/design/phase-5-prompts.md`, PR #414): prompts `analysis@1` / `discovery@1` / `extraction@1`, birth year sent as age, blocklists V3–V6. Insurance product types are blocked (ADR-0009, no product suggestions); bank / fund names / tickers are not blocked in v1; no company-specific product lines added. V6 blocks "khoản <số>" only next to "Điều". Personality labels are **not** banned: they go into a separate `personalityNotes` block shown as reference information (psychology and astrology / esoteric, type named on each item, inferred from facts with evidence); V5 blocks them only in the other blocks (ADR-0009 appendix G5).
 
 ## Next decision
 
