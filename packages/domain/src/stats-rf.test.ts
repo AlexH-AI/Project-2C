@@ -9,7 +9,7 @@ import {
 } from './golden/metrics.fixture';
 import type { Appointment, CustomerStage, Person, Policy, StageTransition } from './model';
 import { calendarDate, periodOf } from './period';
-import { closeRate, isRfAppointment, periodMetrics, rfCount } from './stats';
+import { closeRate, closeRatePercent, isRfAppointment, periodMetrics, rfCount } from './stats';
 
 const d = (day: number, month: number, year: number) => calendarDate(year, month, day);
 
@@ -161,6 +161,12 @@ describe('closeRate', () => {
   it('is none when there is no RF', () => {
     expect(closeRate(2, 0)).toBeNull();
     expect(closeRate(0, 0)).toBeNull();
+  });
+
+  it('reads as a percentage, unrounded: the KPI and its points of difference use this one', () => {
+    expect(closeRatePercent({ numerator: 3, denominator: 2 })).toBe(150);
+    expect(closeRatePercent({ numerator: 0, denominator: 4 })).toBe(0);
+    expect(closeRatePercent({ numerator: 2, denominator: 3 })).toBeCloseTo(66.667, 3);
   });
 
   it('counts a policy issued in the period even when its RF was in an earlier period', () => {

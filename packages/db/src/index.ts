@@ -2,7 +2,7 @@ export { openDatabase } from './database';
 export type { Database, OpenDatabaseOptions, Sources } from './database';
 export { LATEST_SCHEMA_VERSION } from './migrations';
 export type { Migration } from './migrations';
-export { BACKUP_FORMAT, exportBackup, importBackup, MAX_BACKUP_BYTES } from './backup';
+export { exportBackup, importBackup, MAX_BACKUP_BYTES } from './backup';
 export type { ImportedBackup } from './backup';
 export { countRecords } from './counts';
 export type { RecordCounts } from './counts';
@@ -11,8 +11,6 @@ export type { DbErrorCode } from './errors';
 export {
   createPerson,
   createTeam,
-  getPerson,
-  getTeam,
   listPeople,
   listTeams,
   renameTeam,
@@ -37,7 +35,6 @@ export {
 export type { BirthDate, CustomerProfile, CustomerRecord, Gender, NewCustomer } from './customers';
 export {
   editMeetingOutcome,
-  getAppointment,
   listAppointments,
   recordMeetingOutcome,
   recordOutcomeWithNext,
@@ -45,7 +42,6 @@ export {
   restoreAppointment,
   scheduleAppointment,
   softDeleteAppointment,
-  updateAppointmentDetails,
 } from './appointments';
 export type {
   AppointmentDetails,
@@ -56,7 +52,6 @@ export type {
   NextAppointment,
 } from './appointments';
 export {
-  getPolicy,
   issuePolicy,
   listPolicies,
   restorePolicy,
@@ -66,12 +61,8 @@ export {
 } from './policies';
 export type { NewPolicy, PolicyChanges } from './policies';
 export {
-  addKycNote,
-  confirmKycFact,
   getKycProfile,
   listKycVersions,
-  markKycConflict,
-  markKycVersionMaterial,
   normalizeKycValue,
   recordKycNote,
   resolveKycConflict,
@@ -86,7 +77,6 @@ export type {
   KycVersionRecord,
   ProfileKycPreview,
 } from './kyc';
-export { loadMetricsData } from './metrics';
 export { seedDemoData } from './seed';
 export type { SeedOptions } from './seed';
-export { APPOINTMENT_TRIGGERS, GENDERS, KYC_NOTE_SOURCES } from './schema';
+export { APPOINTMENT_TRIGGERS } from './schema';

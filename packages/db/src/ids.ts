@@ -1,6 +1,6 @@
 /** ULID ids (spec §2): 48-bit time + 80 random bits, Crockford base32, no dependency. */
 
-export const CROCKFORD_BASE32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+const CROCKFORD_BASE32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
 export type RandomFill = (bytes: Uint8Array<ArrayBuffer>) => Uint8Array;
 

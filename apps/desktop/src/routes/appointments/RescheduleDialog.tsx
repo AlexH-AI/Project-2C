@@ -4,8 +4,7 @@ import { weekdayOf } from '@p2c/domain';
 import { Dialog } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
-import { Actions } from '../customers/CustomerDialogs';
-import { FailureAlert } from './FailureAlert';
+import { Actions, FailureAlert } from '../customers/CustomerDialogs';
 import { RescheduleFields, useRescheduleForm, whenText } from './RescheduleFields';
 import { statusLabel, type AppointmentRow } from './appointments-view';
 

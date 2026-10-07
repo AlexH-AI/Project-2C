@@ -15,7 +15,6 @@ import {
   stageSnapshot,
   stageSnapshotByScope,
   stageSnapshotSeries,
-  stageSnapshotter,
 } from './stage-snapshot';
 
 // The repository never returns a deleted customer, so the golden deleted rows are dropped here.
@@ -24,6 +23,9 @@ const LIVE_CUSTOMERS = live.map((row) => row.customer);
 const TRANSITIONS = SNAPSHOT_CUSTOMERS.flatMap((row) => row.transitions);
 
 const ALL: Scope = { kind: 'all' };
+/** The golden snapshot of one day and scope, the reference the faster forms are compared with. */
+const snapshot = (date: CalendarDate, scope: Scope) =>
+  stageSnapshot(LIVE_CUSTOMERS, TRANSITIONS, date, scope, PEOPLE);
 const TODAY = calendarDate(2027, 1, 13);
 
 describe('snapshotDate', () => {
@@ -60,7 +62,6 @@ describe('stageSnapshot — golden S01–S09', () => {
 
 describe('chart of week 11/01 – 17/01 — golden S10–S13', () => {
   const marks = chartMarks(CHART_GOLDEN_PERIOD);
-  const snapshot = stageSnapshotter(LIVE_CUSTOMERS, TRANSITIONS, PEOPLE);
 
   for (const golden of CHART_GOLDEN_CASES) {
     it(golden.id, () => {
@@ -105,15 +106,6 @@ describe('stageSnapshot', () => {
       LOST: 0,
     });
   });
-});
-
-describe('stageSnapshotter', () => {
-  it('answers every golden period and scope from one build (S01–S09)', () => {
-    const snapshot = stageSnapshotter(LIVE_CUSTOMERS, TRANSITIONS, PEOPLE);
-    for (const golden of SNAPSHOT_GOLDEN_CASES) {
-      expect(snapshot(golden.date, golden.scope), golden.id).toEqual(golden.expected);
-    }
-  });
 
   it('orders transitions by day, keeping the recorded order within a day', () => {
     const t = (id: string, day: number, to: 'N4' | 'N3' | 'N2') => ({
@@ -126,13 +118,11 @@ describe('stageSnapshotter', () => {
     });
     const k21 = LIVE_CUSTOMERS.filter((customer) => customer.id === 'K-21');
     // Given newest first; on 05/01 N3 was recorded before N2, so the day ends in N2.
-    const snapshot = stageSnapshotter(
-      k21,
-      [t('c', 6, 'N4'), t('a', 5, 'N3'), t('b', 5, 'N2'), t('z', 1, 'N4')],
-      PEOPLE,
-    );
-    expect(snapshot(calendarDate(2027, 1, 5), ALL).N2).toBe(1);
-    expect(snapshot(calendarDate(2027, 1, 6), ALL).N4).toBe(1);
+    const transitions = [t('c', 6, 'N4'), t('a', 5, 'N3'), t('b', 5, 'N2'), t('z', 1, 'N4')];
+    const on = (day: number) =>
+      stageSnapshot(k21, transitions, calendarDate(2027, 1, day), ALL, PEOPLE);
+    expect(on(5).N2).toBe(1);
+    expect(on(6).N4).toBe(1);
   });
 });
 
@@ -162,7 +152,6 @@ describe('chart of a year that is running (§2.8)', () => {
 
   it('draws January of 2027 as the four boxes of the month on 13/01 (S03)', () => {
     const [january, february] = chartMarks(periodOf('year', SNAPSHOT_TODAY));
-    const snapshot = stageSnapshotter(LIVE_CUSTOMERS, TRANSITIONS, PEOPLE);
     expect(snapshot(snapshotDate(january!, SNAPSHOT_TODAY)!, ALL)).toEqual(
       SNAPSHOT_GOLDEN_CASES.find((golden) => golden.id === 'S03')!.expected,
     );
@@ -188,7 +177,6 @@ describe('stageSnapshotSeries', () => {
 
   for (const [name, dates] of Object.entries(DATES)) {
     it.each(SCOPES)(`equals the snapshot of each day: ${name}, $kind`, (scope) => {
-      const snapshot = stageSnapshotter(LIVE_CUSTOMERS, TRANSITIONS, PEOPLE);
       expect(stageSnapshotSeries(LIVE_CUSTOMERS, TRANSITIONS, PEOPLE)(dates, scope)).toEqual(
         dates.map((date) => snapshot(date, scope)),
       );

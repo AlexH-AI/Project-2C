@@ -8,6 +8,7 @@ import {
   isRfAppointment,
   periodMetrics,
   type Appointment,
+  type MetricsData,
   type Scope,
 } from '@p2c/domain';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -21,7 +22,12 @@ import {
   STAGE_TRANSITIONS,
   TEAMS,
 } from '../../domain/src/golden/metrics.fixture';
-import { recordMeetingOutcome, rescheduleAppointment, scheduleAppointment } from './appointments';
+import {
+  listAppointments,
+  recordMeetingOutcome,
+  rescheduleAppointment,
+  scheduleAppointment,
+} from './appointments';
 import { exportBackup, importBackup } from './backup';
 import {
   changeStageManually,
@@ -30,9 +36,16 @@ import {
   listStageTransitions,
 } from './customers';
 import { openDatabase, type Database } from './database';
-import { loadMetricsData } from './metrics';
-import { issuePolicy, submitPolicy } from './policies';
-import { createPerson, createTeam } from './team';
+import { issuePolicy, listPolicies, submitPolicy } from './policies';
+import { createPerson, createTeam, listPeople } from './team';
+
+/** Every live record the stats engine reads, as the app reads it (spec §4: computed in memory). */
+const readMetricsData = (db: Database): MetricsData => ({
+  people: listPeople(db),
+  policies: listPolicies(db),
+  appointments: listAppointments(db),
+  transitions: listStageTransitions(db),
+});
 
 /** D6 needs a next step on every met appointment; the fixture leaves most of them empty. */
 const DEFAULT_NEXT_STEP = 'Gặp lại';
@@ -153,7 +166,7 @@ describe('golden metrics through the database', () => {
   });
 
   it('finds exactly the golden RF appointments', () => {
-    const data = loadMetricsData(db);
+    const data = readMetricsData(db);
     const back = new Map([...ids].map(([fixtureId, dbId]) => [dbId, fixtureId]));
     const rf = data.appointments
       .filter((a) => isRfAppointment(a, data.transitions))
@@ -162,7 +175,7 @@ describe('golden metrics through the database', () => {
   });
 
   it.each(GOLDEN_CASES)('$id', ({ period, scope, expected }) => {
-    expect(periodMetrics(loadMetricsData(db), period, scopeOf(scope))).toEqual(expected);
+    expect(periodMetrics(readMetricsData(db), period, scopeOf(scope))).toEqual(expected);
   });
 
   it('exports a backup that imports again, every rule across tables kept (spec §6)', async () => {

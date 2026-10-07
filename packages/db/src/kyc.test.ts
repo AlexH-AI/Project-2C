@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createCustomer, softDeleteCustomer, updateCustomerProfile } from './customers';
 import * as db from './index';
+import * as kycCommands from './kyc';
 import {
   addKycNote,
   confirmKycFact,
@@ -77,12 +78,8 @@ describe('KYC notes', () => {
         .filter((name) => /Kyc/.test(name))
         .sort(),
     ).toEqual([
-      'addKycNote',
-      'confirmKycFact',
       'getKycProfile',
       'listKycVersions',
-      'markKycConflict',
-      'markKycVersionMaterial',
       'normalizeKycValue',
       'recordKycNote',
       'resolveKycConflict',
@@ -466,7 +463,7 @@ describe('KYC versions', () => {
 
     expect([switched.material, again.material]).toEqual([true, true]);
     expect(listKycVersions(database, customer.id).map((v) => v.material)).toEqual([true, true]);
-    expect(Object.keys(db).filter((name) => /Material/.test(name))).toEqual([
+    expect(Object.keys(kycCommands).filter((name) => /Material/.test(name))).toEqual([
       'markKycVersionMaterial',
     ]);
     expect(codeOf(() => markKycVersionMaterial(database, 'missing'))).toBe('KYC_VERSION_NOT_FOUND');

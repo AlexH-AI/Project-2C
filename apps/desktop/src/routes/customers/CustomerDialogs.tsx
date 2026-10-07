@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   changeStageManually,
   createCustomer,
@@ -83,6 +83,30 @@ export function InvalidAlert({ count }: { count: number }) {
       <span className="text-fg-3">{t('form.nothingSaved')}</span>
     </p>
   );
+}
+
+/** The red box a dialog shows when saving failed or its form cannot be read. */
+export function FailureAlert({ children }: { children: ReactNode }) {
+  return (
+    <p role="alert" className={`${ALERT} border-danger text-danger`}>
+      {children}
+    </p>
+  );
+}
+
+/**
+ * The failure of a dialog's last save, shown in a `FailureAlert` until a field changes: `edit`
+ * wraps a field's setter so that typing clears it.
+ */
+export function useSaveFailure() {
+  const [failure, setFailure] = useState<string>();
+  const edit =
+    <T,>(set: (value: T) => void) =>
+    (value: T) => {
+      set(value);
+      setFailure(undefined);
+    };
+  return { failure, setFailure, edit };
 }
 
 /**
@@ -218,11 +242,7 @@ export function CustomerFormDialog({
         />
       }
     >
-      {errors.form && (
-        <p role="alert" className={`${ALERT} border-danger text-danger`}>
-          {errors.form}
-        </p>
-      )}
+      {errors.form && <FailureAlert>{errors.form}</FailureAlert>}
       <InvalidAlert count={invalid} />
       <TextField
         label={t('customerForm.name')}
@@ -335,11 +355,7 @@ export function ChangeStageDialog({
       onSubmit={save}
       actions={<Actions onClose={onClose} save={t('stageForm.save')} />}
     >
-      {(errors.form ?? errors.stage) && (
-        <p role="alert" className={`${ALERT} border-danger text-danger`}>
-          {errors.form ?? errors.stage}
-        </p>
-      )}
+      {(errors.form ?? errors.stage) && <FailureAlert>{errors.form ?? errors.stage}</FailureAlert>}
       <Choices
         label={t('stageForm.to')}
         value={to}

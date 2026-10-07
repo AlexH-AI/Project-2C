@@ -10,9 +10,7 @@ import {
   type CalendarDate,
   type Period,
 } from './period';
-import type { CloseRate, PeriodMetrics } from './stats';
-
-const percent = ({ numerator, denominator }: CloseRate) => (numerator / denominator) * 100;
+import { closeRatePercent, type PeriodMetrics } from './stats';
 
 const earlier = (a: CalendarDate, b: CalendarDate) => (compareDates(a, b) <= 0 ? a : b);
 
@@ -76,7 +74,7 @@ export function metricDeltas(current: PeriodMetrics, previous: PeriodMetrics): M
     revenue: current.revenue - previous.revenue,
     closeRatePoints:
       current.closeRate && previous.closeRate
-        ? percent(current.closeRate) - percent(previous.closeRate)
+        ? closeRatePercent(current.closeRate) - closeRatePercent(previous.closeRate)
         : null,
   };
 }

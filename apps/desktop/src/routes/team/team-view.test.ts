@@ -93,25 +93,15 @@ describe('staffMetrics', () => {
 
     const metrics = staffMetrics(people, records, TODAY);
 
-    expect(metrics.get('re1')).toEqual({ openCustomers: 2, appointments30: 3, issuedThisYear: 1 });
+    // re1 also coordinates an appointment of re2 in the fixture: only the ones as RE count.
+    expect(metrics.get('re1')).toEqual({ openCustomers: 2, appointments30: 2, issuedThisYear: 1 });
     expect(metrics.get('re2')).toEqual({ openCustomers: 0, appointments30: 1, issuedThisYear: 1 });
   });
 
-  it('gives other roles only the appointments they coordinate', () => {
+  it('gives no metrics to other roles, which the member table never lists', () => {
     const people = [person('tl1', 'TL', 't1'), person('is', 'IS', null)];
 
-    const metrics = staffMetrics(people, records, TODAY);
-
-    expect(metrics.get('tl1')).toEqual({
-      openCustomers: null,
-      appointments30: 1,
-      issuedThisYear: null,
-    });
-    expect(metrics.get('is')).toEqual({
-      openCustomers: null,
-      appointments30: 0,
-      issuedThisYear: null,
-    });
+    expect(staffMetrics(people, records, TODAY).size).toBe(0);
   });
 });
 

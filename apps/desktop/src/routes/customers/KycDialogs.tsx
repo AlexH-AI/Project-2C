@@ -20,7 +20,7 @@ import {
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, joinParts, t } from '../../i18n';
-import { Actions, ALERT, useDateField } from './CustomerDialogs';
+import { Actions, ALERT, FailureAlert, useDateField } from './CustomerDialogs';
 import { BADGE, YES_NO } from './CustomerKyc';
 import { factText, previewKycNote, resolveKycOptions } from './kyc-view';
 
@@ -157,11 +157,7 @@ export function KycNoteDialog({
       onSubmit={save}
       actions={<Actions onClose={onClose} save={t('kycNote.save')} />}
     >
-      {errors.form && (
-        <p role="alert" className={`${ALERT} border-danger text-danger`}>
-          {errors.form}
-        </p>
-      )}
+      {errors.form && <FailureAlert>{errors.form}</FailureAlert>}
       <TextField
         label={t('kycNote.text')}
         value={text}
@@ -324,11 +320,7 @@ export function ResolveKycDialog({
       onSubmit={save}
       actions={<Actions onClose={onClose} save={t('kycResolve.save')} />}
     >
-      {error && (
-        <p role="alert" className={`${ALERT} border-danger text-danger`}>
-          {error}
-        </p>
-      )}
+      {error && <FailureAlert>{error}</FailureAlert>}
       <p className="m-0 text-fg-2">{t('kycResolve.body')}</p>
       <Choices
         label={t('kycResolve.values')}
