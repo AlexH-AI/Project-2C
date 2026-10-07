@@ -28,7 +28,7 @@ File naming: `NNNN-short-slug.md`. Status: `Proposed` → `Accepted (<gate>)` �
 | [0006](0006-kien-truc-monorepo-va-ranh-gioi-module.md) | Monorepo layout and module boundaries | Accepted (G1) | §4.4 |
 | [0007](0007-dinh-nghia-chi-so-va-vong-doi.md) | Metric definitions and customer/policy lifecycle | Accepted (G1); golden examples + data model Accepted (G2) | Q3–Q7 |
 | [0008](0008-kyc-du-kien-co-cau-truc-va-cong-deterministic.md) | Structured KYC facts + deterministic gate | Accepted (G1); catalog + thresholds + golden profiles Accepted (G2) | Q8, Q9 |
-| [0009](0009-ai-copilot-provider-va-guardrail.md) | AI copilot: OpenCode Go + Mock, schema + validator | Accepted (G1); prompts → G5, keys → G6 | Q10, Q11, C2 |
+| [0009](0009-ai-copilot-provider-va-guardrail.md) | AI copilot: OpenCode Go + Mock, schema + validator | Accepted (G1); network + keys Accepted (D-1, G4 / G6, 2026-10-07); prompts → G5 | Q10, Q11, C2 |
 | [0010](0010-dong-bo-du-lieu-app-backup-va-repo-data.md) | App data sync: backup file + `Project-2C-data` repo | Accepted (G1) | Q2b |
 | [0011](0011-bao-cao-excel-va-ngon-ngu.md) | Excel export; Vietnamese UI via i18n | Accepted (G1) | Q12, Q13 |
 | [0012](0012-plugins-superpowers-va-mattpocock-skills.md) | Plugins: Superpowers + mattpocock/skills (vendored subset); Agent tool denied | Accepted (G4) | §4.3 |

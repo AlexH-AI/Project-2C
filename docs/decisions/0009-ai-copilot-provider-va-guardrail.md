@@ -1,6 +1,6 @@
 # ADR-0009: AI copilot — provider OpenCode Go + Mock, output có schema và validator
 
-- **Trạng thái:** Accepted (G1); **prompt/guardrail chờ G5, lưu key chờ G6**
+- **Trạng thái:** Accepted (G1); gọi mạng + lưu key chốt ở phụ lục D-1 (G4 / G6, 07/10/2026); **prompt/guardrail chờ G5**
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §2.2 (W6, W7), §4.5 (Q10, Q11); C2
 - **Commit / PR:** `20e9c5e` · PR: —
@@ -33,3 +33,17 @@ Validator + schema biến ranh giới thành thứ test được; Mock cho phép
 
 - `ai_analyses` lưu kyc_version, trạng thái cổng, provider/model/reasoning, prompt_version, trạng thái, output, báo cáo validator, token/chi phí.
 - Bộ eval ~20 hồ sơ KYC giả lập, chạy thủ công với provider thật (tốn tiền → cần cổng Owner).
+
+## Phụ lục D-1 — gọi mạng và lưu API key (G4 / G6, Owner chốt 07/10/2026)
+
+Bối cảnh: review đóng Phase 1–3 (`docs/reviews/2026-09-30-phase-1-3-tong-hop.md`, D-1) chỉ ra CSP `connect-src` chỉ có `'self' ipc:` và Rust chỉ dùng `std` (ADR-0016), nên phải chọn cách gọi OpenCode Go trước khi viết `packages/ai`.
+
+1. **Rust gọi mạng và giữ key.** Một lệnh Tauri (tên dự kiến `ai_complete`) nhận model, reasoning level, messages, đọc key từ Windows Credential Manager rồi `POST https://opencode.ai/zen/go/v1/chat/completions` (endpoint tương thích OpenAI của OpenCode Go). Lệnh trả nội dung trả lời và số token về webview, **không bao giờ trả key**. Thêm các lệnh đặt / xóa key và hỏi "đã có key chưa"; không có lệnh đọc key ra webview. URL gốc cố định trong Rust, webview không truyền URL tùy ý.
+2. **CSP giữ nguyên** (`connect-src 'self' ipc: http://ipc.localhost`); webview không gọi mạng ra ngoài.
+3. **Crate mới (G4):** `keyring` 4.x, chỉ bật kho Windows (`default-features = false`, `windows-native-keyring-store`), và `ureq` 3.x (TLS rustls + webpki roots mặc định). Ghim đúng phiên bản ở task đầu tiên dùng chúng. Đây là ngoại lệ có chủ ý cho quy tắc "Rust chỉ dùng `std`" của ADR-0016, chỉ cho lệnh AI; lệnh lưu file giữ nguyên. Thêm crate khác (`reqwest`, `tauri-plugin-http`…) vẫn qua G4.
+4. **Chỗ lưu key (G6):** chỉ Windows Credential Manager, mỗi máy một key, Owner nhập ở Settings. Key **không** vào DB, bảng `settings`, `.p2cbackup`, log, thông báo lỗi hay file cạnh exe (bảng `settings` được xuất nguyên vào backup — deep review B, 06/10). Ô nhập key chỉ ghi, không hiện lại giá trị.
+5. **Không streaming ở v1:** chờ đủ JSON rồi mới qua zod schema + validator. UI hiện "Đang phân tích…" có nút Hủy; lệnh Rust có timeout (giá trị chốt ở spec Phase 5).
+6. **Thiếu key / lỗi mạng / 401 / timeout:** báo lỗi rõ, **không** tự đổi sang Mock và không lưu `ai_analyses`. Lỗi mạng / HTTP không tính là lần thử lại của validator (mục 4 ở trên chỉ áp cho output sai schema / bị chặn). Provider chọn rõ trong Settings (Mock / OpenCode Go); Mock chỉ chạy khi được chọn.
+7. **Test:** `packages/ai` chạy Mock và adapter giả lập lệnh Rust trong Vitest / e2e (không gọi mạng thật trong CI). Lệnh Rust test phần dựng request / đọc response bằng dữ liệu mẫu; gọi thật chỉ ở bộ eval thủ công (tốn tiền → cổng Owner).
+
+Còn chờ: **G5** (prompt + guardrail, danh sách chặn) và spec Phase 5 (timeout, Settings, lược đồ `ai_analyses`).
