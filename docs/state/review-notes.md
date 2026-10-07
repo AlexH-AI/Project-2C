@@ -2,13 +2,13 @@
 
 > Tách khỏi `HANDOFF.md` ngày 03/10/2026 (#280). Phiên review đóng phase và skill `review-pr` đối chiếu sổ này trước khi ghi một phát hiện là MỚI. Ghi chú review không chặn của PR task ghi vào đây (OPEN), không ghi vào HANDOFF.
 
-Quy tắc (review đóng Phase 3, P-3): ghi chú review không chặn nằm ở đây, chia **OPEN** (còn phải làm), **RESOLVED** (đã sửa, ghi PR), **ACCEPTED** (Owner hoặc spec chấp nhận, không sửa). Khi đóng mỗi phase, kiểm lại từng dòng OPEN trên code và chuyển nhóm. Review sau đối chiếu sổ này trước khi ghi một phát hiện là MỚI. Đối chiếu lần này: `main` `1625568`, 05/10 (đóng Phase 4, sau các task sửa từ review đóng phase; lần trước: `595ef79`, 04/10, `docs/reviews/2026-10-04-phase-4-tong-hop.md`). Mã T-d…T-i, S-1, S-2 là task Đợt 2/3 trong báo cáo tổng hợp 30/09 §4; T-j và R2-xx ở báo cáo 02/10 §4–§5.
+Quy tắc (review đóng Phase 3, P-3): ghi chú review không chặn nằm ở đây, chia **OPEN** (còn phải làm), **RESOLVED** (đã sửa, ghi PR), **ACCEPTED** (Owner hoặc spec chấp nhận, không sửa). Khi đóng mỗi phase, kiểm lại từng dòng OPEN trên code và chuyển nhóm. Review sau đối chiếu sổ này trước khi ghi một phát hiện là MỚI. Đối chiếu lần này: `main` `3e84ce8`, 07/10 (đóng Phase 4, sau 22 Issue sửa deep review Phase 1–4 T-138…T-159; lần trước: `1625568`, 05/10). Mã T-d…T-i, S-1, S-2 là task Đợt 2/3 trong báo cáo tổng hợp 30/09 §4; T-j và R2-xx ở báo cáo 02/10 §4–§5.
 
 ## OPEN
 
 Theo task đã có chỗ trong kế hoạch:
 - **S-1 / D-1 (probe Codex Sol 02/10):** nhập backup nhận `kyc_versions.hash` sai → tính lại hoặc kiểm hash khi nhập snapshot.
-- **S-2 (Đợt 3):** ghi muộn trong khoảng chờ backup → thay DB (#96); hai `replace` chồng nhau đóng DB cũ hai lần (#192); chưa có test cho cửa sổ `opening` (#206).
+- **S-2 (Đợt 3), phần JS:** ghi muộn trong khoảng chờ backup → thay DB (#96); hai `replace` chồng nhau đóng DB cũ hai lần (#192); chưa có test cho cửa sổ `opening` (#206). Phần Rust (lệnh file chạy tuần tự dưới một khóa, `.tmp` riêng) xong ở T-142 (#376).
 
 Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - `storage.rs` (#196, #192): `explorer_arg` (`~377`) không có `#[cfg(any(windows, test))]` → build ngoài Windows báo `dead_code`; `open_lock_file` dùng `Some(32)` thay hằng `SHARING_VIOLATION`; ngoài Windows closure `map_err` thành identity.
@@ -23,7 +23,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
   - #163: nhóm trước → sau trong 6a hiện bằng chữ (mockup: badge); hộp 6h hiện thêm "Các lần hẹn trước"; e2e chưa kiểm link "Xem tất cả (n)" khi > 5 lịch.
 - Team & nhân sự (#144): `role === 'RE' || role === 'TL'` lặp ở `PersonDialogs.tsx`; lọc theo `reId` lặp ở `staffMetrics` và `personUsage`; "Xóa nhân sự" trong hộp Sửa bỏ thay đổi chưa lưu mà không báo.
 - Khách hàng (#141): dòng "Sau khi lưu: N2 → N3" thiếu "· hạ nhóm / lên nhóm" như mockup 5d; khối cảnh báo "Chuyển tay không bao giờ tính RF" hiện cả khi KH đã đóng; `error.INVALID_TRANSITION` chỉ nói "KH đã đóng" dù cũng bắn khi trùng nhóm hiện tại; `CustomerDialogs.tsx:~300` lặp `CLOSED_STAGES.includes` (dùng `!isPipelineStage`); `CustomerProfile.tsx:110` dựng `StageBadge` tay; 3 helper `badge` riêng (`MetFields.tsx:16`, `CustomerDialogs.tsx:42`, `CustomerKyc.tsx:155`) → *Duplicated Code*, T-h.
-- `CloseGuard.tsx` (#125): bấm X lúc đang seed "Nạp lại" thì app đóng trước khi lưu bản mới (không mất dữ liệu); không có dấu hiệu "đang lưu" khi chờ `flush()`; phần nối React chưa có test tự động; chuỗi class `BUTTON` chép từ `Settings.tsx`.
+- `CloseGuard.tsx` (#125): bấm X lúc đang seed "Nạp lại" thì app đóng trước khi lưu bản mới (không mất dữ liệu); không có dấu hiệu "đang lưu" khi chờ `flush()`.
 - Cài đặt (#96, #87): sau một lần lưu lỗi, "Nạp lại" bị từ chối mà không có cách thử lưu lại; hộp 10c thiếu số lượng dữ liệu sắp thay; `backups\` không đọc được thì app coi như lần đầu. NIT (#87): file `.tmp` sót trong `backups\`/`exports\`, listener ném lỗi, dọn thư mục tạm của test Rust.
 - `PeriodPicker.tsx` (R4): ô ngày Tùy chọn báo đỏ sớm khi Tab (áp dụng ở `onBlur` từng ô).
 - Review đóng Phase 4 (04/10, P8 / P12 / T2):
@@ -39,6 +39,8 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - Token G3 (R4, Owner cân nhắc): viền ô nhập / mũi tên sắp xếp dưới 3:1.
 
 ## RESOLVED
+
+- **Deep review Phase 1–4** (06/10, `docs/reviews/2026-10-06-deep-review-phase-1-4-tong-hop.md`): 88 vấn đề DR-01…DR-88 sửa hết trừ DR-43 (ACCEPTED), 22 Issue T-138…T-159 (#349–#370) theo §12, PR #372–#386, #388–#394 (07/10). Kéo theo hai ghi chú cũ: `CloseGuard.tsx` có e2e phần nối React (Escape, đóng exe khi lưu lỗi, `e2e/dialog-keyboard.spec.ts`) và dùng `Button` của `@p2c/ui` thay chuỗi class `BUTTON` (T-141 #375).
 
 - Coverage, test, doc comment (T-137 #343): coverage đo cả các file thuần của `routes` (`*-view.ts`, `applied-filter.ts`, `report-workbook.ts`, `stage-chart.ts`) với ngưỡng riêng 99 / 92 / 99 / 99 (phần còn lại của F-08); `database.test.ts` so với `LATEST_SCHEMA_VERSION`; JSDoc `stageSnapshotter` khớp nơi dùng; `markIndexer` kiểm mốc sau bắt đầu sau khi mốc trước kết thúc (`[T1, T3, T2, T4]` giờ ném `RangeError`, có test); doc comment `ErrorBoundary` nói `resetKey` đổi cả khi teams / people đọc lại; e2e escape tên RE trước `new RegExp` (#236); hai file svg có dòng trống cuối (#128).
 
@@ -69,6 +71,8 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - 4 chỗ lệch mockup 5a–5c (#140) → #142. Link "+ Ghi chú KYC từ cuộc gặp này" (6c) → #180. Nút xóa lịch Dự kiến → #173.
 
 ## ACCEPTED
+
+- **DR-43 (Owner quyết 06/10, deep review §11 điểm 5):** HĐ / cuộc gặp MET mang ngày hoặc nhóm trước ngày tạo KH là **nhập bù hợp lệ** — không thêm luật ở lệnh hay khi nhập backup. Câu báo khi MET đổi nhóm bị chặn mang đúng ngày chặn (DR-64, T-144 #378).
 
 - `app-data.ts` `open` (#206, kiểm lại ở T-137 #343): `mine === current || mine === opening` **không** tương đương `mine >= current` khi hai lần mở chồng nhau (hai `replace` chồng nhau, #192): `current` = 1, mở 2 rồi mở 3 (`opening` = 3) → bản 2 không lưu migration của nó, còn `mine >= current` sẽ lưu. Giữ code; cửa sổ `opening` và `replace` chồng nhau xử lý ở S-2.
 
