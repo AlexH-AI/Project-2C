@@ -13,6 +13,7 @@
 | P2 | Cổng chặn có ghi vào lịch sử phân tích không | **Không.** Panel tính cổng trực tiếp; nút Phân tích tắt khi cổng chặn; lịch sử chỉ có lần gọi AI thật. Bỏ dòng `KYC_INSUFFICIENT` khỏi mockup ở G3 |
 | P3 | Danh sách model | **Danh sách ngắn cố định trong code**, chỉ model dùng `/chat/completions` (§4.2) |
 | P4 | "AI trích xuất" | **Làm trong Phase 5.** Đề xuất không lưu DB; chỉ dữ kiện RE xác nhận mới được ghi (§8) |
+| P5 | Hủy khi yêu cầu ở Rust còn chạy (Owner 07/10/2026, sau review PR #399) | **Chỉ một yêu cầu AI tại một thời điểm, không bao giờ hai.** Hủy không mở khóa nút AI tới khi yêu cầu ở Rust kết thúc; Rust tự từ chối yêu cầu thứ hai (`AI_BUSY`) (§5.2) |
 
 ## 2. Phạm vi
 
@@ -46,7 +47,7 @@ RE bấm "Phân tích" ở Hồ sơ KH
   └─ Panel đọc lại: CURRENT / STALE suy ra từ phiên bản KYC (§7.2)
 ```
 
-1. **Mỗi lúc chỉ một yêu cầu AI** trong cả app (phân tích hoặc trích xuất). Đang chạy → mọi nút AI tắt.
+1. **Mỗi lúc chỉ một yêu cầu AI** trong cả app (phân tích, trích xuất hoặc Kiểm tra kết nối), tính tới khi yêu cầu ở Rust kết thúc thật, kể cả sau Hủy (P5, §5.2). Đang chạy → mọi nút AI tắt.
 2. Đầu vào được chụp **lúc bấm**. RE đổi KYC khi yêu cầu đang chạy → kết quả vẫn lưu, gắn phiên bản cũ, nên hiện là STALE ngay.
 3. Lỗi mạng ở lần thử thứ hai (sau một lần output sai) → báo lỗi, không lưu gì; lần output sai trước đó cũng không lưu.
 
@@ -112,7 +113,10 @@ Hằng số trong `packages/ai`, mỗi dòng: mã model, tên hiện, có nhận
 
 - **Timeout toàn yêu cầu 120 giây** (kết nối 10 giây). Model có reasoning có thể chậm; 120 s là trần cho một lần thử, hai lần thử tối đa ~4 phút.
 - Thân trả lời đọc tối đa 2 MB; vượt → `AI_BAD_RESPONSE`.
-- **Hủy**: webview bỏ kết quả của yêu cầu đang chạy, không lưu gì, panel về trạng thái trước. Yêu cầu ở Rust chạy tiếp tới khi xong hoặc hết timeout (v1 không ngắt socket); trong lúc đó nút AI bật lại được — kết quả muộn của yêu cầu đã hủy bị bỏ.
+- **Chỉ một yêu cầu AI tại một thời điểm** (P5): không bao giờ có hai yêu cầu chạy cùng lúc, kể cả sau Hủy.
+  - Rust giữ một cờ "đang chạy" (`AtomicBool` trong state của app) cho cả `ai_complete`; gọi khi cờ đang bật → trả ngay `AI_BUSY`, không gọi mạng. Cờ tắt khi lệnh kết thúc theo mọi đường (xong, lỗi, timeout, panic — dùng guard `Drop`).
+  - Webview cũng khóa mọi nút AI trong lúc chờ; `AI_BUSY` chỉ là chốt chặn thứ hai.
+- **Hủy**: webview bỏ kết quả của yêu cầu đang chạy, không lưu gì, panel về trạng thái trước. v1 không ngắt socket nên yêu cầu ở Rust chạy tiếp tới khi xong hoặc hết timeout; **trong lúc đó mọi nút AI vẫn tắt**, hiện "Đang hủy…" (tối đa 120 s). Rust trả về → bỏ kết quả, mở khóa nút.
 
 ### 5.3 Mã lỗi
 
@@ -125,6 +129,7 @@ Hằng số trong `packages/ai`, mỗi dòng: mã model, tên hiện, có nhận
 | `AI_NETWORK` | DNS / TLS / mất kết nối | Không kết nối được OpenCode Go |
 | `AI_HTTP` | HTTP khác 2xx còn lại | OpenCode Go báo lỗi (mã HTTP) |
 | `AI_BAD_RESPONSE` | không phải JSON OpenAI, thiếu `choices[0].message.content`, > 2 MB | Trả lời của OpenCode Go không đọc được |
+| `AI_BUSY` | đã có một yêu cầu AI đang chạy (§5.2) | Đang có một yêu cầu AI khác — chờ xong rồi thử lại |
 | `AI_BAD_REQUEST` | đầu vào lệnh sai (§5.1) | lỗi lập trình — hiện thông báo chung |
 | `AI_KEYRING` | Credential Manager lỗi | Không đọc / ghi được key trong Windows Credential Manager |
 
@@ -265,6 +270,7 @@ Chạy trên output đã parse; báo cáo = danh sách `{ code, path, detail }`.
 | Cổng `KYC_INSUFFICIENT` | "Cần chăm sóc, KYC thêm thông tin khách hàng" (câu hỏi gợi ý đã có ở thẻ Dữ kiện KYC); nút tắt |
 | Được gọi AI, chưa có phân tích | Nút **Phân tích**, chế độ theo cổng (badge) |
 | Đang chạy | "Đang phân tích…" + **Hủy**; mọi nút AI khác tắt |
+| Đã Hủy, Rust chưa trả | "Đang hủy…"; mọi nút AI vẫn tắt tới khi yêu cầu kết thúc (§5.2) |
 | Lỗi | Thông báo §5.3 + **Thử lại** |
 | Có CURRENT | 4 khối (analysis) / 3 khối (discovery) như mockup, mỗi phần tử có bằng chứng + mức; chip "kyc v<seq> · <prompt_version> · <model hoặc Mock> · dd/mm hh:mm"; cảnh báo mâu thuẫn phụ; nút **Phân tích lại** |
 | Bản mới nhất STALE | Hiện bản đó mờ + lời nhắc §7.2 + **Phân tích lại** (khi cổng cho phép) |
@@ -304,9 +310,9 @@ Mục **AI** trong thanh mục Cài đặt (mockup `settings-data.html` đã có
 |---|---|
 | `domain` | B01–B11; `normalizeKycValue` chuyển sang giữ nguyên hành vi (test cũ chạy lại) |
 | `ai` schema / validator | Mỗi luật V1–V7 một ca đạt + một ca chặn (gồm bản bỏ dấu); evidence trỏ dữ kiện không có / bị thay thế → V2 |
-| `ai` điều phối | Adapter giả: đạt ngay; sai rồi đạt (message thử lại chứa lỗi); sai hai lần → REJECTED; lỗi mạng lần 1 / lần 2 → không lưu; Hủy → không lưu; cổng chặn → không gọi adapter |
+| `ai` điều phối | Adapter giả: đạt ngay; sai rồi đạt (message thử lại chứa lỗi); sai hai lần → REJECTED; lỗi mạng lần 1 / lần 2 → không lưu; Hủy → không lưu và nút AI vẫn khóa tới khi adapter trả; yêu cầu thứ hai trong lúc chờ (kể cả sau Hủy) → không gọi adapter; cổng chặn → không gọi adapter |
 | `db` | `recordAiAnalysis` kiểm như §7.1; trigger chặn sửa / xóa; CURRENT / STALE theo `seq` của phiên bản, không theo ngày; luật nhập 1–4 mỗi luật một file sai → `BACKUP_INVALID` |
-| Rust | Dựng body (có / không `reasoning_effort`), đọc response mẫu, ánh xạ 401 / 429 / 500 / body hỏng / quá 2 MB sang mã lỗi; không mã lỗi nào chứa key (dữ liệu mẫu, không gọi mạng) |
+| Rust | Dựng body (có / không `reasoning_effort`), đọc response mẫu, ánh xạ 401 / 429 / 500 / body hỏng / quá 2 MB sang mã lỗi; gọi khi cờ đang chạy → `AI_BUSY`, cờ tắt sau lỗi / timeout; không mã lỗi nào chứa key (dữ liệu mẫu, không gọi mạng) |
 | UI / e2e | Mock: phân tích → CURRENT; thêm dữ kiện → STALE + lời nhắc đúng material; cổng chặn → nút tắt; trích xuất → Xác nhận ghi dữ kiện, Bỏ không ghi; Settings không bao giờ hiện key (adapter Tauri giả) |
 
 ## 13. Tách Issue sơ bộ (chốt bằng `to-tickets` sau G1 / G2)
