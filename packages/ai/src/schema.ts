@@ -61,11 +61,13 @@ export const PERSONALITY_SYSTEMS = ['PSYCHOLOGY', 'ESOTERIC'] as const;
 
 /**
  * "Thông tin tham khảo" (P6, Owner G5 07/10/2026): the only block where personality labels may
- * appear (V5 checks the others). Always present, `[]` when no fact supports a note.
+ * appear (V5 checks the others). `[]` when no fact supports a note, also when the model leaves the
+ * block out: an empty block is a right answer, not worth a retry (review #416).
  */
 const personalityNotes = z
   .array(z.object({ system: z.enum(PERSONALITY_SYSTEMS), text, evidence: evidence.min(1) }))
-  .max(4);
+  .max(4)
+  .default([]);
 
 export const analysisOutputSchema = z.object({
   hypotheses: z.array(evidencedItem).min(1).max(5),
@@ -78,7 +80,8 @@ export const analysisOutputSchema = z.object({
 });
 
 export const discoveryOutputSchema = z.object({
-  hypotheses: z.array(evidencedItem).max(3),
+  // May be empty, so the model may leave it out, as `personalityNotes`.
+  hypotheses: z.array(evidencedItem).max(3).default([]),
   discoveryStrategy: z.array(actionItem).min(2).max(6),
   nextBestActions: z.array(actionItem).min(1).max(5),
   personalityNotes,

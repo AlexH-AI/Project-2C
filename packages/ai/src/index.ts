@@ -5,3 +5,4 @@ export * from './extract-json';
 export * from './schema';
 export * from './mock-adapter';
 export * from './validator';
+export * from './input';

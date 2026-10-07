@@ -2,7 +2,8 @@
  * Mock provider (spec Phase 5 §10, D-1 item 6): for demos and e2e, only when chosen in Settings.
  * Nothing random: the answer is built from the input message alone, with fixed sentences, so the
  * same input always gives the same output. Analysis and discovery cite only the codes of the input's
- * facts list and its missing hạng mục; extraction recognises a few simple phrases.
+ * facts list and its missing hạng mục; extraction recognises a few simple phrases, for the trường of
+ * the input's `fields` list only.
  *
  * The input is the first `user` message, a JSON block: `{ mode, facts, missingCategories, … }` for
  * analysis / discovery, `{ note, fields }` for extraction (prompts §1.1, §4.1).
@@ -36,7 +37,7 @@ function answer(request: AiCompleteRequest): AiCompletion {
   const input = json.value as Record<string, unknown>;
   const output =
     typeof input['note'] === 'string'
-      ? extraction(input['note'])
+      ? extraction(input['note'], allowedFields(input['fields']))
       : (input['mode'] === 'discovery' ? discovery : analysis)(
           factCodes(input['facts']),
           missingCategories(input['missingCategories']),
@@ -127,25 +128,37 @@ function discovery(codes: readonly string[], missing: readonly KycCategory[]): D
 }
 
 const EXTRACTION_PATTERNS: readonly {
+  readonly field: string;
   readonly pattern: RegExp;
-  readonly fact: (match: RegExpExecArray) => { field: string; value: string };
+  readonly value: (match: RegExpExecArray) => string;
 }[] = [
   {
+    field: 'childrenCount',
     pattern: /(?<!\p{N})(\d{1,2})\s+(?:con|bé|cháu)(?!\p{L})/gu,
-    fact: (match) => ({ field: 'childrenCount', value: match[1]! }),
+    value: (match) => match[1]!,
   },
   {
+    field: 'maritalStatus',
     pattern: /(?<!(?:chưa|không)(?:\s+từng)?\s+)kết hôn/giu,
-    fact: () => ({ field: 'maritalStatus', value: 'Đã kết hôn' }),
+    value: () => 'Đã kết hôn',
   },
-  { pattern: /độc thân/giu, fact: () => ({ field: 'maritalStatus', value: 'Độc thân' }) },
+  { field: 'maritalStatus', pattern: /độc thân/giu, value: () => 'Độc thân' },
 ];
 
-function extraction(note: string): ExtractionOutput {
-  const found = EXTRACTION_PATTERNS.flatMap(({ pattern, fact }) =>
+/** Trường of the input's `fields` list (prompts §4.1), so that V7 keeps what the Mock proposes. */
+function allowedFields(value: unknown): string[] {
+  const items: unknown[] = Array.isArray(value) ? value : [];
+  return items
+    .map((item) => (item as { field?: unknown } | null)?.field)
+    .filter((field): field is string => typeof field === 'string');
+}
+
+function extraction(note: string, fields: readonly string[]): ExtractionOutput {
+  const patterns = EXTRACTION_PATTERNS.filter(({ field }) => fields.includes(field));
+  const found = patterns.flatMap(({ field, pattern, value }) =>
     [...note.matchAll(pattern)].map((match) => ({
       at: match.index,
-      fact: { ...fact(match), quote: match[0] },
+      fact: { field, value: value(match), quote: match[0] },
     })),
   );
   return {

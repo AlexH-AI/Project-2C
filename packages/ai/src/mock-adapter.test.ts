@@ -123,9 +123,8 @@ describe('createMockAdapter', () => {
 
   it('extracts simple patterns with quotes taken from the note', async () => {
     const note = 'Chị nói hai vợ chồng đã kết hôn 10 năm, có 2 bé. Em trai chị còn độc thân.';
-    const output = extractionOutputSchema.parse(
-      (await complete({ note, fields: [{ field: 'childrenCount' }] })).value,
-    );
+    const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
+    const output = extractionOutputSchema.parse((await complete({ note, fields })).value);
     expect(output.facts).toEqual([
       { field: 'maritalStatus', value: 'Đã kết hôn', quote: 'kết hôn' },
       { field: 'childrenCount', value: '2', quote: '2 bé' },
@@ -134,10 +133,21 @@ describe('createMockAdapter', () => {
     for (const fact of output.facts) expect(note).toContain(fact.quote);
   });
 
+  it.each([
+    ['childrenCount only', [{ field: 'childrenCount' }], ['childrenCount']],
+    ['no list', undefined, []],
+    ['no field code', [null, { label: 'Số con' }], []],
+  ])('proposes only trường of the input fields: %s', async (_, fields, proposed) => {
+    const note = 'Hai vợ chồng đã kết hôn, có 2 bé.';
+    const output = extractionOutputSchema.parse((await complete({ note, fields })).value);
+    expect(output.facts.map((fact) => fact.field)).toEqual(proposed);
+  });
+
   it.each(['Anh ấy chưa kết hôn.', 'Anh ấy chưa từng kết hôn.', 'Chị nói sẽ không kết hôn.'])(
     'does not read %j as married',
     async (note) => {
-      const output = extractionOutputSchema.parse((await complete({ note, fields: [] })).value);
+      const fields = [{ field: 'maritalStatus' }];
+      const output = extractionOutputSchema.parse((await complete({ note, fields })).value);
       expect(output.facts).toEqual([]);
     },
   );
