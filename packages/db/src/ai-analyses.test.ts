@@ -161,6 +161,19 @@ describe('recordAiAnalysis', () => {
     expect(listAiAnalyses(database, customer.id)[0]!.rawOutput).toBe(record.rawOutput);
   });
 
+  it('keeps a rejected raw output with NUL characters whole, each NUL replaced', async () => {
+    const { db: database, customer } = await withCustomer();
+    const version = latestVersionId(database, customer.id);
+
+    const kept = ['ab\0cd', '\0abc', '\0\0'].map(
+      (raw) =>
+        recordAiAnalysis(database, { ...rejected(customer.id, version), rawOutput: raw }).rawOutput,
+    );
+
+    expect(kept).toEqual(['ab�cd', '�abc', '��']);
+    expect(listAiAnalyses(database, customer.id).map((a) => a.rawOutput)).toEqual(kept.reverse());
+  });
+
   it('refuses a deleted customer, a KYC version of another customer and a mode that is not its gate', async () => {
     const { db: database, customer, re, persist } = await withCustomer();
     const other = createCustomer(database, {
@@ -217,6 +230,7 @@ describe('recordAiAnalysis', () => {
       { promptTokens: 10 },
       { ...live, model: null },
       { ...live, model: ' ' },
+      { ...live, model: 'glm\0-5.3' },
       { ...live, reasoning: null },
       { ...live, reasoning: 'MAX' },
       { ...live, promptTokens: -1 },
@@ -224,7 +238,10 @@ describe('recordAiAnalysis', () => {
       { attempts: 0 },
       { attempts: 3 },
       { promptVersion: '' },
+      { promptVersion: 'analysis\0@1' },
       { output: null },
+      { output: Number.NaN },
+      { output: () => 'Tóm tắt' },
       { rawOutput: 'thừa' },
       { input: undefined },
       { validator: undefined },

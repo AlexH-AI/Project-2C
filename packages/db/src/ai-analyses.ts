@@ -125,19 +125,28 @@ function toRow(a: NewAiAnalysis) {
     AI_ANALYSIS_PROVIDERS.includes(a.provider) &&
     (mock
       ? a.model === null && a.reasoning === null
-      : typeof a.model === 'string' &&
-        a.model.trim() !== '' &&
-        AI_ANALYSIS_REASONING.includes(a.reasoning!)) &&
+      : isLabel(a.model) && AI_ANALYSIS_REASONING.includes(a.reasoning!)) &&
     isTokenCount(a.promptTokens, mock) &&
     isTokenCount(a.completionTokens, mock) &&
     (a.attempts === 1 || a.attempts === 2) &&
-    a.promptVersion.trim() !== '' &&
+    isLabel(a.promptVersion) &&
     (a.status === 'ACCEPTED'
       ? a.output !== null && a.output !== undefined && a.rawOutput === null
       : typeof a.rawOutput === 'string' && a.rawOutput !== '');
   const inputJson = JSON.stringify(a.input) as string | undefined;
   const validatorJson = JSON.stringify(a.validator) as string | undefined;
-  if (!fits || inputJson === undefined || validatorJson === undefined) {
+  // Checked after stringifying too: NaN would be stored as `null`, a function not at all.
+  const outputJson =
+    a.output === null || a.output === undefined
+      ? null
+      : (JSON.stringify(a.output) as string | undefined);
+  if (
+    !fits ||
+    inputJson === undefined ||
+    validatorJson === undefined ||
+    outputJson === undefined ||
+    outputJson === 'null'
+  ) {
     throw new DbError('AI_ANALYSIS_INVALID');
   }
   return {
@@ -152,14 +161,26 @@ function toRow(a: NewAiAnalysis) {
     promptVersion: a.promptVersion,
     attempts: a.attempts,
     inputJson,
-    outputJson: a.output === null || a.output === undefined ? null : JSON.stringify(a.output),
-    // Cut by code point, as SQLite counts the characters of the CHECK, never inside a pair.
-    rawOutput:
-      a.rawOutput === null ? null : Array.from(a.rawOutput).slice(0, MAX_AI_RAW_OUTPUT).join(''),
+    outputJson,
+    rawOutput: a.rawOutput === null ? null : storedRawOutput(a.rawOutput),
     validatorJson,
     promptTokens: a.promptTokens,
     completionTokens: a.completionTokens,
   };
+}
+
+/**
+ * A rejected raw output as stored. It is untrusted text kept to find out what went wrong, so a NUL
+ * (which SQLite would cut the text at, DR-49) is replaced rather than refused. Cut by code point, as
+ * SQLite counts the characters of the CHECK, never inside a pair.
+ */
+function storedRawOutput(raw: string): string {
+  return Array.from(raw.replaceAll('\0', '�')).slice(0, MAX_AI_RAW_OUTPUT).join('');
+}
+
+/** A model name or prompt version: not blank, and no NUL (DR-49). */
+function isLabel(text: string | null): boolean {
+  return typeof text === 'string' && text.trim() !== '' && !text.includes('\0');
 }
 
 function isTokenCount(count: number | null, mock: boolean): boolean {
