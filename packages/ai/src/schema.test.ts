@@ -165,6 +165,12 @@ describe('discoveryOutputSchema', () => {
     ).toEqual([block]);
   });
 
+  it('takes no hypotheses when the model leaves the block out', () => {
+    const output: Partial<ReturnType<typeof discovery>> = discovery();
+    delete output.hypotheses;
+    expect(discoveryOutputSchema.parse(output).hypotheses).toEqual([]);
+  });
+
   it('needs evidence on hypotheses', () => {
     const output = { ...discovery(), hypotheses: [item('KH thận trọng')] };
     expect(errorsOf(discoveryOutputSchema.safeParse(output))).toEqual(['hypotheses.0.evidence']);
@@ -192,10 +198,11 @@ describe.each([
     expect(errorsOf(schema.safeParse(withNotes(notes(5))))).toEqual(['personalityNotes']);
   });
 
-  it('is required, as an empty list when there is no note', () => {
+  it('is an empty list when the model leaves the block out', () => {
     const output: Partial<ReturnType<typeof valid>> = valid();
     delete output.personalityNotes;
-    expect(errorsOf(schema.safeParse(output))).toEqual(['personalityNotes']);
+    expect(schema.parse(output).personalityNotes).toEqual([]);
+    expect(errorsOf(schema.safeParse(withNotes(null)))).toEqual(['personalityNotes']);
   });
 
   it.each([
