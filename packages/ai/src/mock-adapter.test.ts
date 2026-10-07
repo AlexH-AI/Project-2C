@@ -74,6 +74,29 @@ describe('createMockAdapter', () => {
     expect(new Set(itemsOf(output).flatMap((item) => item.evidence))).toEqual(new Set(['F7']));
   });
 
+  it('takes fact codes from the facts list, not from words inside a fact', async () => {
+    const facts = [
+      { code: 'F1', field: 'Phương tiện', value: 'Xe Ford F150' },
+      { code: 'F2', field: 'Ghi chú F7', value: 'Không' },
+      { code: 'F01', field: 'Mục tiêu chính', value: 'Mã sai' },
+    ];
+    const output = analysisOutputSchema.parse(
+      (await complete({ ...analysisInput, facts, missingCategories: [] })).value,
+    );
+    expect(new Set(itemsOf(output).flatMap((item) => item.evidence))).toEqual(
+      new Set(['F1', 'F2']),
+    );
+  });
+
+  it.each([
+    ['missing', undefined],
+    ['not a list', 'F1'],
+    ['not facts with a code', [null, 'F1', { code: 3 }]],
+  ])('cites no fact when the facts are %s', async (_, facts) => {
+    const output = (await complete({ ...discoveryInput, facts })).value as Partial<AnalysisOutput>;
+    expect(itemsOf(output).flatMap((item) => item.evidence)).toEqual([]);
+  });
+
   it('writes a valid discovery that cites only facts and missing hạng mục of the input', async () => {
     const output = discoveryOutputSchema.parse((await complete(discoveryInput)).value);
     expect(output).not.toHaveProperty('needs');
@@ -103,6 +126,13 @@ describe('createMockAdapter', () => {
       { field: 'maritalStatus', value: 'Độc thân', quote: 'độc thân' },
     ]);
     for (const fact of output.facts) expect(note).toContain(fact.quote);
+  });
+
+  it('does not read "chưa kết hôn" as married', async () => {
+    const output = extractionOutputSchema.parse(
+      (await complete({ note: 'Anh ấy chưa kết hôn.', fields: [] })).value,
+    );
+    expect(output.facts).toEqual([]);
   });
 
   it('extracts nothing from a note without a known pattern', async () => {

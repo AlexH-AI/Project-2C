@@ -1,8 +1,8 @@
 /**
  * Mock provider (spec Phase 5 §10, D-1 item 6): for demos and e2e, only when chosen in Settings.
  * Nothing random: the answer is built from the input message alone, with fixed sentences, so the
- * same input always gives the same output. Analysis and discovery cite only fact codes and missing
- * hạng mục found in the input; extraction recognises a few simple phrases.
+ * same input always gives the same output. Analysis and discovery cite only the codes of the input's
+ * facts list and its missing hạng mục; extraction recognises a few simple phrases.
  *
  * The input is the first `user` message, a JSON block: `{ mode, facts, missingCategories, … }` for
  * analysis / discovery, `{ note, fields }` for extraction (G5 prompt draft §1.1, §4.1).
@@ -13,7 +13,7 @@ import { AiError } from './errors';
 import { extractJson } from './extract-json';
 import type { AnalysisOutput, DiscoveryOutput, ExtractionOutput } from './schema';
 
-const FACT_CODES = /(?<![\p{L}\p{N}])F[1-9]\d*(?![\p{L}\p{N}])/gu;
+const FACT_CODE = /^F[1-9]\d*$/;
 
 export function createMockAdapter(): AiAdapter {
   return {
@@ -31,10 +31,21 @@ function answer(request: AiCompleteRequest): AiCompletion {
     typeof input['note'] === 'string'
       ? extraction(input['note'])
       : (input['mode'] === 'discovery' ? discovery : analysis)(
-          [...new Set(content.match(FACT_CODES))],
+          factCodes(input['facts']),
           missingCategories(input['missingCategories']),
         );
   return { content: JSON.stringify(output), promptTokens: 0, completionTokens: 0 };
+}
+
+/** Codes of the facts list, in order; a `F…` word inside a fact's value is not a code. */
+function factCodes(value: unknown): string[] {
+  const items: unknown[] = Array.isArray(value) ? value : [];
+  const codes = items.map((item) => (item as { code?: unknown } | null)?.code);
+  return [
+    ...new Set(
+      codes.filter((code): code is string => typeof code === 'string' && FACT_CODE.test(code)),
+    ),
+  ];
 }
 
 function missingCategories(value: unknown): KycCategory[] {
@@ -106,7 +117,10 @@ const EXTRACTION_PATTERNS: readonly {
     pattern: /(?<!\p{N})(\d{1,2})\s+(?:con|bé|cháu)(?!\p{L})/gu,
     fact: (match) => ({ field: 'childrenCount', value: match[1]! }),
   },
-  { pattern: /kết hôn/giu, fact: () => ({ field: 'maritalStatus', value: 'Đã kết hôn' }) },
+  {
+    pattern: /(?<!chưa\s+)kết hôn/giu,
+    fact: () => ({ field: 'maritalStatus', value: 'Đã kết hôn' }),
+  },
   { pattern: /độc thân/giu, fact: () => ({ field: 'maritalStatus', value: 'Độc thân' }) },
 ];
 
