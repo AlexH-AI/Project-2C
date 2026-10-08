@@ -42,6 +42,11 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
   - Do regex V6 `\bkhoản\s+\d+[,]?\s+điều\b`: "Hỏi KH về **khoản 2 điều** kiện vay" khớp vì ranh giới từ ngay sau "điều".
   - Ứng viên sửa: "dễ chốt", "bảo minh" sang "Bỏ dấu: không"; regex khoản–Điều thêm `(?!\s*kiện)` hoặc bắt `\s+\d+` sau "điều".
   - Liên quan (code, không cần G5): `text-match.ts:46–49` `detail` ghi tên mục có dấu thay vì đoạn model đã viết (lần thử lại model có thể không tìm thấy cụm) → trả `regex.exec(...)[0]`; `validator.ts:190` mục trùng phần nhau sinh hai issue cho một chỗ ("PRUDENTIAL" → `prudential` + `prud`).
+- Panel KYC Intelligence, `apps/desktop/src/routes/customers/ai-panel-view.ts` (#438, T-168A phần 2a, không chặn). Gộp vào lần chạm sau của file: T-176 #440, nếu còn chỗ.
+  - `runAfter` dùng nhánh `default` cho `saved` / `blocked` / `discarded`, nên một `kind` mới thêm vào `AnalysisOutcome` vẫn qua typecheck và thành idle → liệt kê từng `kind`, kiểm `never`.
+  - `dayAndTime` lấy giờ bằng cách tách chuỗi của `formatLocalDateTime` (phụ thuộc dạng chuỗi) → thêm hàm `dd/mm HH:MM` vào `packages/domain` `period.ts` khi task được sửa domain.
+  - Chip: `versions.findIndex(...) + 1` ra "kyc v0" khi không thấy phiên bản, không báo gì. Luật nhập 1 đã ngăn, rủi ro thấp → ném lỗi thay vì 0.
+  - Đã chuyển đi: `input_json` không được kiểm khi nhập backup → T-176 #440; chip suy "Mock" từ `model === null` (sai với `CHATGPT_WEB`) → comment trên T-174 #433.
 
 ## RESOLVED
 
