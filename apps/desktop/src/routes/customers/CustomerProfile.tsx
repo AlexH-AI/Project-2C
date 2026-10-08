@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import {
   getCustomer,
   getKycProfile,
+  listAiAnalyses,
   listAppointments,
   listKycVersions,
   listPeople,
@@ -22,6 +23,7 @@ import { CustomerAppointments } from './CustomerAppointments';
 import { CustomerPolicies } from './CustomerPolicies';
 import { ChangeStageDialog, CustomerFormDialog } from './CustomerDialogs';
 import { KycCard, Timeline } from './CustomerKyc';
+import { KycIntelligence } from './KycIntelligence';
 import { KycNoteDialog, ResolveKycDialog } from './KycDialogs';
 import { PolicyDialog, type PolicyMode } from './PolicyDialogs';
 import { ageOn, birthLabel } from './customers-view';
@@ -42,6 +44,7 @@ function readProfile(db: Database, id: string) {
     transitions,
     kyc: getKycProfile(db, id),
     versions: listKycVersions(db, id),
+    analyses: listAiAnalyses(db, id),
     // What the appointment dialog reads, for this one customer.
     appointmentData: {
       appointments: listAppointments(db, id),
@@ -84,7 +87,8 @@ export function CustomerProfile({ id }: { id: string }) {
     );
   }
 
-  const { customer, re, team, policies, transitions, kyc, versions, appointmentData } = profile;
+  const { customer, re, team, policies, transitions, kyc, versions, analyses, appointmentData } =
+    profile;
   // Every customer has its first transition (spec §3.4).
   const since = transitions.at(-1)!.date;
   const birth = customer.birthDate;
@@ -122,7 +126,7 @@ export function CustomerProfile({ id }: { id: string }) {
         </div>
         <p className="m-0 text-sm text-fg-2 tabular-nums">{joinParts(facts)}</p>
       </section>
-      <div className="grid items-start gap-4 lg:grid-cols-2">
+      <div className="grid items-start gap-4 lg:grid-cols-2 2xl:grid-cols-3">
         <div className="flex flex-col gap-4">
           <KycCard
             profile={kyc}
@@ -154,6 +158,15 @@ export function CustomerProfile({ id }: { id: string }) {
             transitions={transitions}
             today={today}
             onNext={next}
+          />
+        </div>
+        <div className="lg:col-span-2 2xl:col-span-1">
+          <KycIntelligence
+            key={customer.id}
+            customerId={customer.id}
+            facts={kyc.facts}
+            versions={versions}
+            analyses={analyses}
           />
         </div>
       </div>
