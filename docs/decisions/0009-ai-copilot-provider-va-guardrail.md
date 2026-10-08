@@ -1,6 +1,6 @@
 # ADR-0009: AI copilot — provider OpenCode Go + Mock, output có schema và validator
 
-- **Trạng thái:** Accepted (G1); gọi mạng + lưu key chốt ở phụ lục D-1 (G4 / G6, 07/10/2026); prompt / guardrail chốt ở phụ lục G5 (07/10/2026)
+- **Trạng thái:** Accepted (G1); gọi mạng + lưu key chốt ở phụ lục D-1 (G4 / G6, 07/10/2026); prompt / guardrail chốt ở phụ lục G5 (07/10/2026); gói OpenCode Go / Credit và cổng ChatGPT web ở phụ lục W-1 (hướng Owner chốt 08/10/2026, chữ chờ duyệt G1 / G5)
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §2.2 (W6, W7), §4.5 (Q10, Q11); C2
 - **Commit / PR:** `20e9c5e` · PR: —
@@ -56,3 +56,26 @@ Chữ prompt, danh sách chặn và ca kiểm ở `docs/design/phase-5-prompts.m
 2. **Không gợi ý sản phẩm** (mục 3) được hiểu rộng: chặn cả tên hãng bảo hiểm lẫn tên **loại** sản phẩm (vd. "bảo hiểm trọn đời", "liên kết đơn vị"), kể cả khi tên có trong dữ kiện. Tên ngân hàng / công ty quản lý quỹ / mã chứng khoán chưa chặn ở v1.
 3. **Trích dẫn pháp lý** (mục 3, mục 6): "khoản <số>" chỉ bị chặn khi đi kèm "Điều"; ý có yếu tố pháp lý / thuế viết "cần chuyên gia pháp lý xác nhận".
 4. Dữ liệu gửi AI: năm sinh gửi dưới dạng tuổi.
+
+## Phụ lục W-1 — gói OpenCode Go / Credit và cổng ChatGPT web (Owner 08/10/2026)
+
+Bối cảnh: gói OpenCode Go của Owner hết hạn 11/10/2026; tài khoản OpenCode còn credit trả theo yêu cầu (dashboard: "Credits", "Extra usage — use credits when a Go limit is reached"). Owner muốn dùng thêm khả năng reasoning / viết của model ChatGPT trong gói trả phí, nhưng **không** trả API OpenAI riêng và **không** chấp nhận rủi ro điều khoản dù thấp. Các hướng đã xét (phiên 08/10/2026, nguồn ở spec Phase 5 §3.1):
+
+| Hướng | Kết luận |
+|---|---|
+| API key OpenAI (trả theo token) | Loại — Owner không trả API riêng |
+| "Sign in with ChatGPT" (dùng quota gói) | Loại — chỉ gói cá nhân Go / Plus / Pro, Owner dùng Business; luồng cho app open-source còn preview, repo chưa có license |
+| `codex exec` với gói Business | Loại — OpenAI khuyên API key cho luồng chạy bằng script; không có câu cho phép rõ |
+| Gói Claude Pro qua `claude -p` | Loại — Consumer Terms mục 3.7 cấm truy cập tự động trừ khi có API key hoặc được cho phép rõ; trang Legal and compliance của Claude Code ghi "Developers building products … should use API key authentication" |
+| Muse Code (Meta) | Loại — gói tháng "for use with Muse Code only", key tự tạo tính theo token |
+
+Quyết định:
+
+1. **Giữ OpenCode, chọn được gói Go / Credit.** Settings → AI có thêm ô **Gói OpenCode**: `GO` (mặc định) hoặc `CREDIT`. Lệnh Rust `ai_complete` nhận gói và chọn một trong **hai URL cố định** trong Rust: `https://opencode.ai/zen/go/v1/chat/completions` (Go) và `https://opencode.ai/zen/v1/chat/completions` (Credit). Webview vẫn không truyền URL. Cùng một key của workspace OpenCode (D-1 mục 4 giữ nguyên); T-164 kiểm bằng một yêu cầu thật mỗi gói (Owner chạy). Nếu Credit cần key khác → dừng, quay lại G6. Chỉ model dùng `/chat/completions` (P3); model GPT / Claude của OpenCode (cần `/responses`, `/messages`) vẫn ngoài phạm vi.
+2. **Cổng ChatGPT web (làm tay).** Nút **"Phân tích bằng ChatGPT web"** ở panel KYC Intelligence: app chụp đầu vào như khi gọi AI, ghép prompt + đầu vào thành **một tin nhắn** (G5, phụ lục prompt `web@1`) và copy vào clipboard, rồi mở `https://chatgpt.com/` bằng trình duyệt mặc định. Người dùng tự đăng nhập, tự chọn model / reasoning, tự dán, tự copy câu trả lời và dán lại vào khung của app. App **không** tự động hóa trang ChatGPT, không đọc clipboard, không đưa dữ liệu lên URL. Câu trả lời dán vào đi qua đúng zod schema + validator V1–V6 và luật thử lại (mục 4 ở trên): sai → app đưa message thử lại để người dùng dán vào cùng cuộc chat; tối đa 2 lần thử; vẫn sai → `REJECTED`.
+3. **Chỉ phân tích** (analysis / discovery). "AI trích xuất" không có cổng web.
+4. `ai_analyses.provider` thêm `CHATGPT_WEB`; `model`, `reasoning`, token đều `null` (người dùng chỉnh trên web, app không biết; Owner: không cần ghi tay tên model). Kết quả hiện chip **"ChatGPT web"** để không lẫn với lần gọi OpenCode.
+5. Mở trình duyệt bằng lệnh Rust mới chỉ dùng `std` (`std::process::Command`, URL hằng số); không thêm crate hay plugin → không cần G4 cho phần này. Gói Credit tốn tiền theo yêu cầu → mọi lần chạy eval vẫn do Owner bấm (G4 như cũ).
+6. Phiên web không gọi mạng từ app nên **không** giữ khóa "một yêu cầu AI" (P5); trong lúc chờ dán, các nút AI của chính KH đó tắt.
+
+Hệ quả: spec Phase 5 §1 (P7, P8), §3.1, §4.1, §5, §7, §9, §12, §13; prompts G5 phụ lục `web@1`; mockup G3 bổ sung cho cổng web và ô Gói OpenCode; migration mới đổi CHECK `provider` (dữ liệu giả lập nạp lại, R2-02). Khi có dữ liệu khách hàng thật: Owner duyệt lại việc đưa dữ kiện KYC (không tên, không mã KH) vào workspace ChatGPT Business.
