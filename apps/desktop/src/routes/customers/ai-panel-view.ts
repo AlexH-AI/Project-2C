@@ -155,10 +155,14 @@ export interface AiPanelSection {
 }
 
 export interface AiPanelContent {
-  /** "kyc v<n> · <prompt> · <model or Mock> · dd/mm hh:mm"; `model` null for Mock. */
+  /**
+   * "kyc v<n> · <prompt> · <model or Mock> · dd/mm hh:mm". The name follows `provider`, not
+   * `model`: a provider without a model (Mock, later ChatGPT web) has its own name.
+   */
   readonly chip: {
     readonly version: number;
     readonly prompt: string;
+    readonly provider: AiAnalysisView['provider'];
     readonly model: string | null;
     readonly at: string;
   };
@@ -229,6 +233,7 @@ export function analysisContent(
     chip: {
       version: versions.findIndex((version) => version.id === analysis.kycVersionId) + 1,
       prompt: analysis.promptVersion,
+      provider: analysis.provider,
       model: analysis.model === null ? null : modelLabel(analysis.model),
       at: dayAndTime(analysis.createdAt),
     },

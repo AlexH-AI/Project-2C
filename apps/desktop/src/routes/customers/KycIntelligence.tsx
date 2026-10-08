@@ -126,7 +126,8 @@ function Analysis({
           {t('aiPanel.chip', {
             version: chip.version,
             label: chip.prompt,
-            name: chip.model ?? t('aiPanel.mock'),
+            // The db keeps a model on every row that is not Mock.
+            name: chip.provider === 'MOCK' ? t('aiPanel.mock') : (chip.model ?? ''),
             when: chip.at,
           })}
         </span>
