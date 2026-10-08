@@ -343,6 +343,8 @@ Mockup: `mockups/ai.html` (+ `customer.html`), PR #427; quyết định ở `ai.
 
 ### 9.5 Cần mockup bổ sung (G3, W-1)
 
+Mockup: `mockups/ai.html#s4` (4a–4i), đề xuất ở `ai.html#ask-w1` — chờ Owner duyệt.
+
 1. Panel: nút **Phân tích bằng ChatGPT web**, phiên chờ dán, lần 1 không đạt, copy lỗi (ô chỉ đọc), chip "ChatGPT web" ở kết quả và lịch sử (§9.1).
 2. Settings → AI: ô **Gói OpenCode** (Go / Credit) và dòng ChatGPT web (§9.3).
 

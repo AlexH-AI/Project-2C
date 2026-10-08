@@ -5,6 +5,9 @@
   #s2  Panel KYC Intelligence ................... 2a chưa phân tích · 2b CONFLICT_RESOLUTION · 2c KYC_INSUFFICIENT · 2d đang chạy · 2e đang hủy
                                                   2f lỗi · 2g discovery + Mock · 2h STALE · 2i REJECTED gần nhất · 2j lịch sử · 2k xem dòng REJECTED · 2l thông báo lỗi
   #s3  Mã F và AI trích xuất .................... 3a mã F + bấm bằng chứng · 3b nút trên ghi chú · 3c đang chạy · 3d đề xuất · 3e 0 đề xuất / lỗi · 3f Xác nhận
+  #s4  Bổ sung W-1 (§9.5) ...................... 4a Cài đặt: Gói OpenCode + dòng ChatGPT web · 4b ẩn gói · 4c lỗi đổi theo W-1 · 4d nút ChatGPT web
+                                                  4e phiên chờ dán · 4f copy lỗi · 4g lần 1 không đạt · 4h lỗi khung dán · 4i chip + lịch sử
+  #ask-w1 Đề xuất G3 bổ sung W-1 (chờ Owner)
   #ask Quyết định G3 (Owner duyệt 08/10/2026, PR #427)
   Trạng thái CURRENT đầy đủ (analysis, 4 khối + Thông tin tham khảo) nằm ở customer.html.
 -->
@@ -759,6 +762,214 @@
           </div>
         </section>
       </div>
+
+      <!-- ================= 4 · W-1 supplement ================= -->
+      <h2 class="sec-title" id="s4">4 · Bổ sung W-1 — Gói OpenCode, ChatGPT web <span>§3.1, §4.1, §5.3–5.4, §9.1, §9.3, §9.5 — #408, Issue mới 14</span></h2>
+      <p class="help" style="margin: 0">P7 / P8 (Owner 08/10/2026, ADR-0009 W-1). Mục này <b>thay</b> chữ "OpenCode Go" ở 1a–1g và bảng 2l khi chữ đó chỉ nhà cung cấp: provider hiện là <b>OpenCode</b>, "gói Go" chỉ còn là một trong hai gói. Phần còn lại của §1–§3 giữ nguyên.</p>
+
+      <section class="specimen">
+        <p class="cap">4a · Cài đặt → AI — Provider OpenCode, ô Gói OpenCode, dòng ChatGPT web</p>
+        <div class="frame">
+          <div class="settings-layout">
+            <nav class="card subnav" aria-label="Mục cài đặt">
+              <a href="#">Chung</a>
+              <a href="settings-data.html">Dữ liệu</a>
+              <a href="#" class="on">AI</a>
+            </nav>
+            <div class="stack" style="gap: 16px">
+              <section class="card" aria-label="Provider và model">
+                <div class="card-head"><h2>Provider &amp; model</h2><span class="meta">lưu ngay khi đổi · đi theo backup</span></div>
+                <div class="set-row">
+                  <span class="k">Provider</span>
+                  <span class="v">
+                    <span class="choices"><span class="choice">Mock</span><span class="choice on">OpenCode</span></span>
+                    <span class="help">OpenCode: gọi model thật qua tài khoản OpenCode. Mock: câu mẫu cố định, không gọi mạng — chỉ để thử app.</span>
+                  </span>
+                </div>
+                <div class="set-row">
+                  <span class="k">Gói OpenCode</span>
+                  <span class="v">
+                    <span class="choices"><span class="choice">Gói Go</span><span class="choice on">Credit</span></span>
+                    <span class="help">Gói Go: trả theo tháng, có giới hạn dùng. Credit: trừ vào số dư credit của tài khoản (xem số dư trên dashboard OpenCode). Cùng một API key, cùng danh sách model.</span>
+                  </span>
+                </div>
+                <div class="set-row">
+                  <span class="k">Model</span>
+                  <span class="v">
+                    <span class="input wide">DeepSeek V4.1 Flash <span class="muted">· mặc định</span><span class="caret">▾</span></span>
+                    <span class="help">Danh sách cố định: GLM-5.3 · Kimi K3 · DeepSeek V4 Pro · DeepSeek V4.1 Flash</span>
+                  </span>
+                </div>
+                <div class="set-row">
+                  <span class="k">Mức suy luận</span>
+                  <span class="v"><span class="input wide off">Mặc định<span class="caret">▾</span></span></span>
+                </div>
+              </section>
+
+              <section class="card" aria-label="API key">
+                <div class="card-head"><h2>API key OpenCode</h2><span class="badge c-ok plain">Đã có key</span></div>
+                <p class="help" style="margin: 0">Như 1a / 1d / 1e; một key dùng cho cả hai gói.</p>
+              </section>
+
+              <section class="card" aria-label="Kiểm tra kết nối">
+                <div class="card-head"><h2>Kiểm tra kết nối</h2><span class="meta">theo gói đang chọn</span></div>
+                <div class="row" style="gap: 12px">
+                  <button class="btn">Kiểm tra kết nối</button>
+                  <span class="read"><b class="c-ok">Kết nối được</b> · Credit · DeepSeek V4.1 Flash</span>
+                </div>
+              </section>
+
+              <section class="card" aria-label="Dữ liệu gửi đi">
+                <div class="card-head"><h2>Dữ liệu gửi đi</h2></div>
+                <ul style="margin: 0; padding-left: 18px; color: var(--text-2); font-size: var(--fs-sm)">
+                  <li><b style="color: var(--text)">Phân tích:</b> như 1a.</li>
+                  <li><b style="color: var(--text)">AI trích xuất gửi nguyên văn ghi chú tới OpenCode</b> — ghi chú có thể có tên người.</li>
+                  <li><b style="color: var(--text)">Phân tích bằng ChatGPT web:</b> bạn tự dán dữ kiện KYC (không có tên, mã KH) vào tài khoản ChatGPT của mình. App không gửi gì tới ChatGPT, chỉ copy tin nhắn và mở trang.</li>
+                </ul>
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="specimens">
+        <section class="specimen">
+          <p class="cap">4b · Ô Gói OpenCode khi provider = Mock / bản web</p>
+          <div class="card">
+            <div class="set-row">
+              <span class="k">Provider</span>
+              <span class="v"><span class="choices"><span class="choice on">Mock</span><span class="choice">OpenCode</span></span></span>
+            </div>
+            <div class="set-row">
+              <span class="k">Model</span>
+              <span class="v"><span class="input wide off">DeepSeek V4.1 Flash<span class="caret">▾</span></span></span>
+            </div>
+          </div>
+          <p class="help" style="margin-top: 6px">Ô Gói OpenCode <b>ẩn</b> khi provider là Mock (giá trị vẫn giữ) và ở bản web (OpenCode tắt như 1c). Gói đã lưu sai / thiếu → Gói Go, không cảnh báo.</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">4c · Thông báo lỗi đổi theo W-1 (thay dòng tương ứng ở 2l)</p>
+          <div class="panel">
+            <table class="err-table">
+              <tbody>
+                <tr><td>AI_NO_KEY</td><td>Chưa có API key OpenCode — nhập ở <a class="c-accent" href="#s4">Cài đặt → AI</a></td></tr>
+                <tr><td>AI_UNAUTHORIZED</td><td>Key không hợp lệ hoặc hết hạn. Gói Go đã hết hạn → chọn gói Credit ở Cài đặt → AI</td></tr>
+                <tr><td>AI_RATE_LIMITED</td><td>Đã chạm giới hạn gói Go hoặc hết credit OpenCode — thử lại sau, hoặc đổi gói / nạp credit</td></tr>
+                <tr><td>AI_NETWORK</td><td>Không kết nối được OpenCode</td></tr>
+                <tr><td>AI_HTTP</td><td>OpenCode báo lỗi (HTTP 502): <span class="dim">≤ 200 ký tự đầu</span></td></tr>
+                <tr><td>AI_BAD_RESPONSE</td><td>Trả lời của OpenCode không đọc được</td></tr>
+                <tr><td>AI_OPEN_BROWSER</td><td>Không mở được trình duyệt — mở chatgpt.com bằng tay; tin nhắn đã được copy</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="help" style="margin-top: 6px">Các dòng khác của 2l giữ nguyên.</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">4d · Panel — nút Phân tích bằng ChatGPT web</p>
+          <div class="panel">
+            <div class="card-head"><h2>KYC Intelligence</h2><span class="badge c-info plain">PAIN_POINT_ANALYSIS</span><span class="actions"><button class="btn" style="padding: 4px 12px">Phân tích bằng ChatGPT web</button><button class="btn btn-primary" style="padding: 4px 12px">Phân tích</button></span></div>
+            <p class="dim" style="margin: 0; font-size: var(--fs-sm)">Chưa có phân tích AI cho KH này.</p>
+            <p class="help" style="margin: 6px 0 0">Phân tích: gửi 8 dữ kiện tới OpenCode · Credit · DeepSeek V4.1 Flash. ChatGPT web: app copy tin nhắn và mở chatgpt.com — bạn tự dán, rồi dán câu trả lời lại vào đây.</p>
+          </div>
+          <p class="help" style="margin-top: 6px">Nút có ở mọi provider (cả Mock), cùng điều kiện cổng với Phân tích; tắt khi đang có yêu cầu AI (P5) hoặc phiên web của KH này đang mở. Có cả ở Phân tích lại (2h, 2i).</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">4e · Phiên web — chờ dán câu trả lời</p>
+          <div class="panel">
+            <div class="card-head"><h2>KYC Intelligence</h2><span class="badge c-info plain">PAIN_POINT_ANALYSIS</span><span class="actions"><button class="btn" disabled style="padding: 4px 12px">Phân tích bằng ChatGPT web</button><button class="btn" disabled style="padding: 4px 12px">Phân tích</button></span></div>
+            <div class="callout">
+              <b>Đã copy tin nhắn và mở ChatGPT</b> — dán tin nhắn vào ChatGPT, chờ trả lời, bấm copy câu trả lời rồi dán vào đây.
+              <div class="row" style="gap: 6px; margin-top: 6px; flex-wrap: wrap"><span class="chip num">kyc v3 · analysis@1+web@1 · chụp 26/09 10:40</span><span class="dim" style="font-size: var(--fs-xs)">Lần thử 1 / 2</span></div>
+            </div>
+            <div class="field" style="margin-top: 10px">
+              <label>Dán kết quả</label>
+              <div class="input" style="min-height: 84px; align-items: flex-start; width: 100%"><span class="muted">Dán câu trả lời của ChatGPT (Ctrl+V)</span></div>
+            </div>
+            <div class="row" style="gap: 8px; margin-top: 8px; flex-wrap: wrap">
+              <button class="btn">Copy lại</button><button class="btn">Mở lại ChatGPT</button><span class="spacer"></span><button class="btn">Hủy</button><button class="btn btn-primary" disabled>Kiểm tra và lưu</button>
+            </div>
+          </div>
+          <p class="help" style="margin-top: 6px">Khung trống → nút Kiểm tra và lưu tắt. Hủy / đóng panel / rời Hồ sơ KH → không lưu gì. Bản cũ (nếu có) vẫn hiện bên dưới như 2d nhưng không mờ. Phiên web không khóa nút AI ở KH khác.</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">4f · Copy lỗi (quyền clipboard) — ô chỉ đọc</p>
+          <div class="panel">
+            <div class="callout warn">Không copy được — chọn hết đoạn dưới (Ctrl+A trong ô) rồi Ctrl+C. ChatGPT đã được mở.</div>
+            <div class="input" style="margin-top: 8px; width: 100%; min-height: 84px; align-items: flex-start; font-family: Consolas, 'Cascadia Mono', monospace; font-size: var(--fs-xs); color: var(--text-2)">Bạn là trợ lý phân tích KYC cho RE bảo hiểm… [prompt analysis@1]<br />Dữ kiện: F7 Gia đình: Đã kết hôn; 2 con… · F13 Mối quan tâm: …<br />Trả lời đúng một khối JSON …</div>
+          </div>
+          <p class="help" style="margin-top: 6px">Ô chỉ đọc, chọn được; khung Dán kết quả và các nút như 4e hiện ngay bên dưới. Không mở được trình duyệt → dòng AI_OPEN_BROWSER (4c), phiên vẫn mở.</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">4g · Lần 1 không đạt — còn 1 lần thử</p>
+          <div class="panel">
+            <div class="callout danger">
+              <b>Câu trả lời chưa đạt — còn 1 lần thử</b>
+              <ul style="margin: 6px 0 0; padding-left: 18px; font-size: var(--fs-sm)">
+                <li>V3 · Behavioral Hypotheses #1: có "xác suất"</li>
+                <li>V2 · Needs #2: bằng chứng F21 không có trong dữ kiện đã gửi</li>
+              </ul>
+            </div>
+            <div class="row" style="gap: 8px; margin-top: 8px"><button class="btn btn-primary">Copy yêu cầu sửa</button><span class="help">Dán vào <b>cùng cuộc chat</b> ChatGPT, rồi dán câu trả lời mới vào khung.</span></div>
+            <div class="field" style="margin-top: 10px">
+              <label>Dán kết quả <span class="opt">lần thử 2 / 2</span></label>
+              <div class="input" style="min-height: 60px; width: 100%"><span class="muted">Dán câu trả lời mới</span></div>
+            </div>
+            <div class="row" style="gap: 8px; margin-top: 8px"><button class="btn">Copy lại</button><button class="btn">Mở lại ChatGPT</button><span class="spacer"></span><button class="btn">Hủy</button><button class="btn btn-primary" disabled>Kiểm tra và lưu</button></div>
+          </div>
+          <p class="help" style="margin-top: 6px">Danh sách lỗi như 2k. Lần 2 không đạt → lưu REJECTED, đóng phiên, panel hiện 2i. Không có JSON → "V1 · Không có khối JSON hợp lệ", có tính lần thử.</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">4h · Lỗi tại khung dán — không tính lần thử</p>
+          <div class="panel">
+            <div class="field">
+              <label>Dán kết quả</label>
+              <div class="input error" style="width: 100%">{"hypotheses": [{"text": "KH có thể ưu tiên … <span class="muted">(23.410 ký tự)</span></div>
+              <span class="field-err">Câu trả lời dài quá 20.000 ký tự — kiểm tra đã copy đúng câu trả lời chưa.</span>
+            </div>
+          </div>
+          <p class="help" style="margin-top: 6px">Chữ hiện thường, không render HTML / Markdown. Rỗng (chỉ khoảng trắng) → nút tắt, không có thông báo.</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">4i · Kết quả ChatGPT web — chip và lịch sử</p>
+          <div class="panel">
+            <div class="card-head"><h2>KYC Intelligence</h2><span class="badge c-ok">CURRENT</span><span class="badge c-info plain">ChatGPT web</span><span class="actions"><button class="btn" style="padding: 4px 10px">Phân tích bằng ChatGPT web</button><button class="btn" style="padding: 4px 10px">Phân tích lại</button></span></div>
+            <div class="row" style="flex-wrap: wrap; gap: 6px">
+              <span class="badge c-info plain">PAIN_POINT_ANALYSIS</span>
+              <span class="chip num">kyc v3 · analysis@1+web@1 · ChatGPT web · 26/09 10:52</span>
+            </div>
+            <p class="muted" style="margin: 8px 0 0; font-size: var(--fs-xs)">… 4 khối như bản CURRENT (customer.html)</p>
+            <h4>Lịch sử phân tích</h4>
+            <table class="versions">
+              <thead><tr><th>Ngày</th><th>KYC</th><th>Prompt</th><th>Provider / model</th><th class="r"></th></tr></thead>
+              <tbody class="num">
+                <tr class="sel"><td>26/09 10:52</td><td>v3</td><td>analysis@1+web@1</td><td><span class="badge c-info plain">ChatGPT web</span></td><td class="r"><span class="badge c-ok plain">CURRENT</span></td></tr>
+                <tr><td>14/09 11:02</td><td>v3</td><td>analysis@1</td><td>DeepSeek V4.1 Flash</td><td class="r"><span class="badge plain" style="color: var(--text-3)">STALE</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="help" style="margin-top: 6px">Không ghi tên model ChatGPT (P7). Hộp xem REJECTED (2k): tiêu đề phụ "… · ChatGPT web · 2 lần thử", không có token.</p>
+        </section>
+      </div>
+
+      <section class="card" id="ask-w1">
+        <div class="card-head"><h2>Đề xuất G3 bổ sung W-1 — chờ Owner duyệt</h2><span class="meta">§9.5</span></div>
+        <ol class="q">
+          <li><b>Tên provider (4a, 4c):</b> đổi "OpenCode Go" thành <b>OpenCode</b> ở mọi chữ chỉ nhà cung cấp (nút chọn, tiêu đề thẻ key, thông báo lỗi); "Gói Go" / "Credit" chỉ ở ô Gói OpenCode và chip kết nối.</li>
+          <li><b>Ô Gói OpenCode (4a, 4b):</b> hai nút chọn ngay dưới Provider; ẩn khi Mock / bản web; giá trị sai → Gói Go không cảnh báo.</li>
+          <li><b>Vị trí nút ChatGPT web (4d):</b> nút phụ đứng <b>trước</b> nút Phân tích (chính) ở đầu panel; có ở mọi provider, kể cả Mock.</li>
+          <li><b>Phiên chờ dán (4e):</b> một hộp thông tin + chip ảnh chụp "kyc v · analysis@1+web@1 · chụp …" + "Lần thử 1 / 2"; khung dán cao ~4 dòng; Kiểm tra và lưu là nút chính.</li>
+          <li><b>Copy lỗi (4f):</b> ô chỉ đọc chữ đơn cách thay cho hộp thoại; phiên vẫn tiếp tục.</li>
+          <li><b>Lần 1 không đạt (4g):</b> lỗi trong khung đỏ, "Copy yêu cầu sửa" thành nút chính; khung dán trống lại, nhãn "lần thử 2 / 2".</li>
+          <li><b>Chip ChatGPT web (4i):</b> badge xanh "ChatGPT web" ở đầu panel và cột Provider / model của lịch sử (như badge Mock, khác màu).</li>
+        </ol>
+      </section>
 
       <!-- ================= Ask ================= -->
       <section class="card" id="ask">

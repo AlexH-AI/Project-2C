@@ -29,5 +29,5 @@ Mockup lớn có **mục lục ở comment đầu file** (khối → neo `#id` �
 
 - **`overview.html`** — `#p1a` Toàn bộ · Tháng (MTD): Lọc, ô Lịch hẹn, 6 KPI, KH theo nhóm + chart, So sánh team, bảng khối ↔ chỉ số · `#p1b` Team · Tuần · `#p1c` RE · Năm · `#p1d` đổi kỳ chưa bấm Lọc · `#p1e` trạng thái rỗng · `#p2` màn Lịch hẹn 4 nhóm · `#ask` quyết định G3.
 - **`reports.html`** — `#r2a` Tổng hợp + Theo team · `#r2b` Theo RE · `#r2c` Theo mốc (Tháng → tuần) · `#r2d` Team · Tuần · Theo mốc · `#r2e` RE · Năm · Theo mốc · `#r2f` Xuất Excel · `#ask` quyết định G3.
-- **`ai.html`** — `#s1` Cài đặt → AI (1a–1g) · `#s2` panel KYC Intelligence (2a–2l) · `#s3` mã F + AI trích xuất (3a–3f) · `#ask` quyết định G3.
+- **`ai.html`** — `#s1` Cài đặt → AI (1a–1g) · `#s2` panel KYC Intelligence (2a–2l) · `#s3` mã F + AI trích xuất (3a–3f) · `#s4` bổ sung W-1: Gói OpenCode, ChatGPT web (4a–4i) · `#ask-w1` đề xuất W-1 · `#ask` quyết định G3.
 - **`phase-3-feedback.html`** — `#b1` Team & nhân sự · `#b2` Khách hàng, hàng chọn RE · `#b3` Lịch hẹn, hàng chọn RE · `#b4` lịch tháng, dải kỳ · `#b5` cột Ngày (A chọn, B / C bỏ) · `#b6` lưới năm · `#ask` quyết định G3.
