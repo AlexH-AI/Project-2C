@@ -1,6 +1,6 @@
 # ADR-0009: AI copilot — provider OpenCode Go + Mock, output có schema và validator
 
-- **Trạng thái:** Accepted (G1); gọi mạng + lưu key chốt ở phụ lục D-1 (G4 / G6, 07/10/2026); prompt / guardrail chốt ở phụ lục G5 (07/10/2026); gói OpenCode Go / Credit và cổng ChatGPT web ở phụ lục W-1 (hướng Owner chốt 08/10/2026, chữ chờ duyệt G1 / G5)
+- **Trạng thái:** Accepted (G1); gọi mạng + lưu key chốt ở phụ lục D-1 (G4 / G6, 07/10/2026); prompt / guardrail chốt ở phụ lục G5 (07/10/2026); gói OpenCode Go / Credit và cổng ChatGPT web ở phụ lục W-1 (Owner duyệt G1 / G5 08/10/2026, PR #430)
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §2.2 (W6, W7), §4.5 (Q10, Q11); C2
 - **Commit / PR:** `20e9c5e` · PR: —

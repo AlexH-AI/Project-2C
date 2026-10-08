@@ -1,7 +1,7 @@
 # Phase 5 — AI copilot (G1 / G2)
 
 - **Cổng:** G1 (phạm vi, luồng, lược đồ) · G2 (schema output, mức bằng chứng, golden B01–B11) · **Trạng thái:** **Owner duyệt G1 / G2 07/10/2026** (PR #399; model mặc định `deepseek-v4.1-flash`)
-- **Quyết định Owner:** 07/10/2026 (AskUserQuestion trong phiên soạn spec, §1) + D-1 (07/10/2026, phụ lục ADR-0009) + W-1 (08/10/2026, gói Go / Credit và cổng ChatGPT web, phụ lục ADR-0009; P7, P8 — chữ chờ duyệt G1)
+- **Quyết định Owner:** 07/10/2026 (AskUserQuestion trong phiên soạn spec, §1) + D-1 (07/10/2026, phụ lục ADR-0009) + W-1 (08/10/2026, gói Go / Credit và cổng ChatGPT web, phụ lục ADR-0009; P7, P8 — Owner duyệt G1 08/10/2026, PR #430)
 - **Nền:** ADR-0009 (provider, schema, validator, CURRENT / STALE / REJECTED, phụ lục D-1), ADR-0008 (cổng KYC, cờ material, "AI trích xuất"), ADR-0005 (zod đã duyệt), `docs/golden/kyc.md` (K01–K15), mockup `customer.html` (panel KYC Intelligence), `appointments.html` (khối AI ở chi tiết lịch)
 - **Không làm ở đây:** nội dung prompt và danh sách chặn (**G5**, `phase-5-prompts.md`); bố cục màn mới (**G3**, §9); hồ sơ eval E01–E20 (G2 riêng, §11)
 
@@ -412,12 +412,12 @@ Mục **AI** trong thanh mục Cài đặt (mockup `settings-data.html` đã có
 - [x] Trích xuất không lưu đề xuất (§8)
 - [x] Danh sách mockup G3 (§9.4) và tách Issue (§13)
 
-**Bổ sung W-1 (Owner duyệt G1):**
+**Bổ sung W-1 (Owner duyệt G1 08/10/2026, PR #430):**
 
-- [ ] P7, P8 ghi đúng quyết định 08/10/2026 (§1)
-- [ ] Phạm vi / không làm có ChatGPT web, không tự động hóa trang ChatGPT (§2)
-- [ ] Luồng ChatGPT web: copy, mở trang, dán, kiểm, 2 lần thử, hủy, STALE (§3.1)
-- [ ] Gói Go / Credit: cấu hình, hai URL cố định, cùng key, mã lỗi (§4.1, §5.1, §5.3)
-- [ ] Lệnh `open_chatgpt` chỉ `std`, URL hằng số (§5.4)
-- [ ] `ai_analyses` thêm `CHATGPT_WEB`, `prompt_version` `+web@n`, luật nhập backup 2 (§7)
-- [ ] UI, mockup bổ sung G3, test, Issue (§9.1, §9.3, §9.5, §12, §13)
+- [x] P7, P8 ghi đúng quyết định 08/10/2026 (§1)
+- [x] Phạm vi / không làm có ChatGPT web, không tự động hóa trang ChatGPT (§2)
+- [x] Luồng ChatGPT web: copy, mở trang, dán, kiểm, 2 lần thử, hủy, STALE (§3.1)
+- [x] Gói Go / Credit: cấu hình, hai URL cố định, cùng key, mã lỗi (§4.1, §5.1, §5.3)
+- [x] Lệnh `open_chatgpt` chỉ `std`, URL hằng số (§5.4)
+- [x] `ai_analyses` thêm `CHATGPT_WEB`, `prompt_version` `+web@n`, luật nhập backup 2 (§7)
+- [x] UI, mockup bổ sung G3, test, Issue (§9.1, §9.3, §9.5, §12, §13)
