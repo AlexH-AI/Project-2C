@@ -60,17 +60,29 @@ export interface AiRunner {
   subscribe(listener: () => void): () => void;
   /**
    * Runs `job` unless busy (`AI_BUSY`, `job` not called). Hủy (`signal`) gives `cancelled` at once,
-   * but `busy` stays on until `job` settles: the request in Rust runs on (spec §5.2).
+   * but `busy` stays on until `job` settles: the request in Rust runs on (spec §5.2). `busy` turns
+   * off however `job` ends: it resolves, rejects, or throws before giving a promise.
    */
   run<R>(job: () => Promise<R>, signal?: AiAbortSignal): Promise<R | Cancelled | Failed>;
 }
 
-export function createAiRunner(): AiRunner {
+/**
+ * `reportError` gets every error the runner cannot give back to its caller (a listener that throws,
+ * a bug of the job after Hủy); the app logs it. Nothing is swallowed.
+ */
+export function createAiRunner(reportError: (error: unknown) => void): AiRunner {
   let busy = false;
   const listeners = new Set<() => void>();
+  // `busy` is set before any listener runs, and one that throws stops neither the others nor `run`.
   const setBusy = (value: boolean) => {
     busy = value;
-    for (const listener of listeners) listener();
+    for (const listener of listeners) {
+      try {
+        listener();
+      } catch (error) {
+        reportError(error);
+      }
+    }
   };
   return {
     get busy() {
@@ -80,20 +92,30 @@ export function createAiRunner(): AiRunner {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    run(job, signal) {
+    run<R>(job: () => Promise<R>, signal?: AiAbortSignal) {
       if (busy) return Promise.resolve(BUSY);
       if (signal?.aborted) return Promise.resolve(CANCELLED);
-      setBusy(true);
-      const done = job();
+      busy = true;
+      // A job that throws before giving a promise rejects `done` too, so `busy` still turns off.
+      const done = new Promise<R>((resolve) => resolve(job()));
       let cancel!: (value: Cancelled) => void;
       const aborted = new Promise<Cancelled>((resolve) => (cancel = resolve));
-      const onAbort = () => cancel(CANCELLED);
+      let cancelled = false;
+      const onAbort = () => {
+        cancelled = true;
+        cancel(CANCELLED);
+      };
       signal?.addEventListener('abort', onAbort, { once: true });
       const release = () => {
         signal?.removeEventListener('abort', onAbort);
         setBusy(false);
       };
-      done.then(release, release);
+      done.then(release, (error: unknown) => {
+        release();
+        // After Hủy the caller has `cancelled` and will never hear of it.
+        if (cancelled) reportError(error);
+      });
+      setBusy(true);
       return Promise.race([done, aborted]);
     },
   };
@@ -117,7 +139,7 @@ interface Attempt {
   readonly completionTokens: number;
 }
 
-function request(
+function completeRequest(
   call: AiCall,
   messages: readonly AiMessage[],
   maxTokens: number,
@@ -153,7 +175,7 @@ async function converse(
   const attempts: Attempt[] = [];
   while (attempts.length < 2) {
     const answer = await attempt(() =>
-      call.adapter.complete(request(call, messages, prompt.maxTokens)),
+      call.adapter.complete(completeRequest(call, messages, prompt.maxTokens)),
     );
     // After Hủy the answer is dropped and no retry is sent.
     if (call.signal?.aborted) return CANCELLED;
@@ -314,7 +336,9 @@ export type ConnectionResult = { readonly kind: 'ok' } | Failed | Cancelled;
 export async function checkConnection(call: AiCall): Promise<ConnectionResult> {
   return call.runner.run(async () => {
     const answer = await attempt(() =>
-      call.adapter.complete(request(call, connectionCheck.messages, connectionCheck.maxTokens)),
+      call.adapter.complete(
+        completeRequest(call, connectionCheck.messages, connectionCheck.maxTokens),
+      ),
     );
     return 'kind' in answer ? answer : { kind: 'ok' as const };
   }, call.signal);

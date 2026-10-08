@@ -1,5 +1,5 @@
 import { evaluateKycGate } from '@p2c/domain';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { AiAdapter, AiCompleteRequest, AiCompletion } from './adapter';
 import { AiError } from './errors';
 import { buildAnalysisInput } from './input';
@@ -97,7 +97,7 @@ const GOOD = JSON.stringify({
 const BAD = GOOD.replace('"F7"', '"F99"');
 
 const analysis = (settings: AiSettings, adapter: AiAdapter, extra: object = {}) => ({
-  runner: createAiRunner(),
+  runner: createAiRunner(vi.fn()),
   adapter,
   settings,
   customerId: 'customer-1',
@@ -371,19 +371,90 @@ describe('the shared runner', () => {
   });
 
   it('stops telling a listener once it unsubscribes', async () => {
-    const runner = createAiRunner();
+    const runner = createAiRunner(vi.fn());
     let calls = 0;
     const unsubscribe = runner.subscribe(() => calls++);
     unsubscribe();
     await checkConnection({ runner, adapter: scripted('OK').adapter, settings: OPENCODE });
     expect(calls).toBe(0);
   });
+
+  it('turns idle when the job throws before giving a promise', async () => {
+    const report = vi.fn();
+    const runner = createAiRunner(report);
+    const bug = new TypeError('bug');
+    const job = (): Promise<string> => {
+      throw bug;
+    };
+    await expect(runner.run(job)).rejects.toBe(bug);
+    expect(runner.busy).toBe(false);
+    expect(await runner.run(async () => 'next')).toBe('next');
+    expect(report).not.toHaveBeenCalled();
+  });
+
+  it('runs the job and tells the other listeners when one throws as it turns busy', async () => {
+    const report = vi.fn();
+    const runner = createAiRunner(report);
+    const bug = new Error('listener');
+    runner.subscribe(() => {
+      if (runner.busy) throw bug;
+    });
+    const seen: boolean[] = [];
+    runner.subscribe(() => seen.push(runner.busy));
+    const answer = deferred();
+    const result = runner.run(() => answer.promise);
+    expect(runner.busy).toBe(true);
+    answer.resolve('done');
+    expect(await result).toBe('done');
+    expect(runner.busy).toBe(false);
+    expect(seen).toEqual([true, false]);
+    expect(report).toHaveBeenCalledExactlyOnceWith(bug);
+  });
+
+  // An unhandled rejection here would fail the Vitest run.
+  it('turns idle and reports a listener that throws as it turns idle', async () => {
+    const report = vi.fn();
+    const runner = createAiRunner(report);
+    const bug = new Error('listener');
+    runner.subscribe(() => {
+      if (!runner.busy) throw bug;
+    });
+    expect(await runner.run(async () => 'done')).toBe('done');
+    expect(runner.busy).toBe(false);
+    expect(report).toHaveBeenCalledExactlyOnceWith(bug);
+  });
+
+  it('reports a bug of the job after Hủy, which the caller no longer hears', async () => {
+    const report = vi.fn();
+    const runner = createAiRunner(report);
+    let fail!: (error: unknown) => void;
+    const job = new Promise<string>((_, reject) => (fail = reject));
+    const cancel = cancelButton();
+    const result = runner.run(() => job, cancel.signal);
+    cancel.press();
+    expect(await result).toEqual({ kind: 'cancelled' });
+    const done = idle(runner);
+    const bug = new TypeError('bug');
+    fail(bug);
+    await done;
+    expect(runner.busy).toBe(false);
+    expect(report).toHaveBeenCalledExactlyOnceWith(bug);
+  });
+
+  it('gives a bug of the job to the caller and does not report it too', async () => {
+    const report = vi.fn();
+    const runner = createAiRunner(report);
+    const bug = new TypeError('bug');
+    await expect(runner.run(() => Promise.reject(bug))).rejects.toBe(bug);
+    expect(runner.busy).toBe(false);
+    expect(report).not.toHaveBeenCalled();
+  });
 });
 
 describe('runExtraction', () => {
   const NOTE = 'Chị nói hai vợ chồng đã kết hôn, có 2 bé.';
   const extraction = (adapter: AiAdapter, settings = OPENCODE) => ({
-    runner: createAiRunner(),
+    runner: createAiRunner(vi.fn()),
     adapter,
     settings,
     note: NOTE,
@@ -446,7 +517,7 @@ describe('runExtraction', () => {
 describe('checkConnection', () => {
   it('sends the G5 §6 messages and passes on any answer', async () => {
     const { adapter, requests } = scripted('Xin chào');
-    const runner = createAiRunner();
+    const runner = createAiRunner(vi.fn());
     expect(await checkConnection({ runner, adapter, settings: OPENCODE })).toEqual({ kind: 'ok' });
     expect(requests[0]).toMatchObject({ model: 'kimi-k3', reasoning: 'HIGH', maxTokens: 64 });
     expect(requests[0]!.messages).toEqual([
@@ -457,7 +528,7 @@ describe('checkConnection', () => {
 
   it('gives the adapter error', async () => {
     const { adapter } = scripted(new AiError('AI_UNAUTHORIZED'));
-    const runner = createAiRunner();
+    const runner = createAiRunner(vi.fn());
     expect(await checkConnection({ runner, adapter, settings: OPENCODE })).toEqual({
       kind: 'error',
       code: 'AI_UNAUTHORIZED',
