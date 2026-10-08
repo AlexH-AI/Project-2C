@@ -47,6 +47,12 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
   - `dayAndTime` lấy giờ bằng cách tách chuỗi của `formatLocalDateTime` (phụ thuộc dạng chuỗi) → thêm hàm `dd/mm HH:MM` vào `packages/domain` `period.ts` khi task được sửa domain.
   - Chip: `versions.findIndex(...) + 1` ra "kyc v0" khi không thấy phiên bản, không báo gì. Luật nhập 1 đã ngăn, rủi ro thấp → ném lỗi thay vì 0.
   - Đã chuyển đi: `input_json` không được kiểm khi nhập backup → T-176 #440; chip suy "Mock" từ `model === null` (sai với `CHATGPT_WEB`) → comment trên T-174 #433.
+- Panel KYC Intelligence, `apps/desktop/src/routes/customers/KycIntelligence.tsx` (#439, T-168A phần 2b, không chặn). Gộp vào T-167 #408 (lúc có độ trễ thật) hoặc T-168B #410:
+  - Trạng thái chạy chỉ nằm trong component (`useState` / `useRef`, `~218`): rời Hồ sơ KH giữa lúc chạy rồi quay lại thì không còn "Đang phân tích…" / Hủy, chỉ thấy nút tắt không lý do tới khi yêu cầu kết thúc (OpenCode: tối đa ~4 phút) → giữ lần chạy ở runner / context app, hoặc hiện lý do khi `busy`.
+  - Chưa có test component cho phần nối dây (`~226-240`): effect đưa "Đang hủy…" về idle khi runner nhả `busy`, chốt `running.current === controller`, dòng chạy / lỗi. Repo đã có test `.tsx` (`CustomersScreen.test.tsx`) → test với adapter giữ câu trả lời, viết khi T-167 đổi adapter.
+  - Lần chạy lưu REJECTED: panel không báo gì (về idle, vẫn hiện bản ACCEPTED cũ hoặc "Chưa có phân tích") → dòng 2i của T-168B #410.
+  - Mùi *Duplicated Code*: `vi.ts` `aiPanel.blocked.KYC_INSUFFICIENT` chép câu `KYC_INSUFFICIENT_MESSAGE` của `domain` (ADR-0008 Q9) mà thẻ Dữ kiện KYC hiện qua `gate.message`; domain đổi câu thì hai nơi lệch.
+  - Không sửa: `BADGE_COLORS` của panel không gộp với `GATE_COLORS` (`CustomerKyc.tsx`) vì mockup tô `PAIN_POINT_ANALYSIS` khác nhau (panel `c-info`, thẻ KYC `c-ok`). Chip theo `provider` đã sửa trong chính #439 (commit `6a3f242`) → comment chuyển đi trên T-174 #433 chỉ còn việc thêm tên "ChatGPT web".
 
 ## RESOLVED
 
