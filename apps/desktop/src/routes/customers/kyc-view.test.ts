@@ -1,4 +1,10 @@
-import type { AppointmentRecord, KycNoteRecord, KycProfileRecord, KycVersionRecord } from '@p2c/db';
+import type {
+  AppointmentRecord,
+  KycFactRecord,
+  KycNoteRecord,
+  KycProfileRecord,
+  KycVersionRecord,
+} from '@p2c/db';
 import {
   kycHash,
   type CalendarDate,
@@ -246,7 +252,16 @@ describe('resolveKycOptions', () => {
     noteId: string,
     date: CalendarDate,
     category: KycFact['category'],
-  ): KycFact => ({ id, category, field, value, noteId, confirmedDate: date, status: 'conflict' });
+  ): KycFactRecord => ({
+    id,
+    seq: Number(id.slice(1)),
+    category,
+    field,
+    value,
+    noteId,
+    confirmedDate: date,
+    status: 'conflict',
+  });
 
   it('offers every value of a trường in conflict between two ghi chú', () => {
     const profile: KycProfileRecord = {
@@ -282,8 +297,8 @@ describe('resolveKycOptions', () => {
     const profile: KycProfileRecord = {
       notes: [noteRecord('n1', 'RE', day(9, 1))],
       facts: [
-        { ...fact('residence', 'Huế'), noteId: 'n1' },
-        { ...fact('residence', 'Hà Nội', 'superseded'), noteId: 'n1' },
+        { ...fact('residence', 'Huế'), noteId: 'n1', seq: 1 },
+        { ...fact('residence', 'Hà Nội', 'superseded'), noteId: 'n1', seq: 2 },
       ],
     };
 

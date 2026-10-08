@@ -76,13 +76,17 @@ export interface AiAnalysisRecord {
   readonly completionTokens: number | null;
   /** The app day it was saved. */
   readonly date: CalendarDate;
+  /** The moment it was saved, by the database clock (the chip's time, spec §9.1). */
+  readonly createdAt: Date;
 }
 
 export type AiAnalysisState = 'CURRENT' | 'STALE' | 'REJECTED';
 
 /**
- * Why the latest accepted analysis is STALE: a material KYC version came after it (`since` that
- * version's date), or only minor ones did (`since` the first of them).
+ * Why the latest accepted analysis is STALE: a material KYC version came after it, or only minor
+ * ones did. `since` is the earliest day among those versions (only the material ones for a material
+ * reminder): a note may be dated back, so the first recorded is not always the earliest (G3
+ * `ai.html#ask` 4).
  */
 export interface AiAnalysisReminder {
   readonly material: boolean;
@@ -205,8 +209,13 @@ function reminderFor(
 ): AiAnalysisReminder {
   // Not CURRENT, so the analysed version is not the latest: at least one came after it.
   const after = versions.slice(versions.findIndex((v) => v.id === record.kycVersionId) + 1);
-  const since = after.find((v) => v.material) ?? after[0]!;
-  return { material: since.material, since: fromIsoDate(since.date) };
+  const material = after.some((v) => v.material);
+  // Stored days (`yyyy-mm-dd`) sort as text.
+  const since = after
+    .filter((v) => v.material === material)
+    .map((v) => v.date)
+    .reduce((a, b) => (b < a ? b : a));
+  return { material, since: fromIsoDate(since) };
 }
 
 function toRecord(row: typeof aiAnalyses.$inferSelect): AiAnalysisRecord {
@@ -230,6 +239,7 @@ function toRecord(row: typeof aiAnalyses.$inferSelect): AiAnalysisRecord {
     promptTokens: row.promptTokens,
     completionTokens: row.completionTokens,
     date: fromIsoDate(row.date),
+    createdAt: new Date(row.createdAt),
   };
 }
 
