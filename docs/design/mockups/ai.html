@@ -5,7 +5,7 @@
   #s2  Panel KYC Intelligence ................... 2a chưa phân tích · 2b CONFLICT_RESOLUTION · 2c KYC_INSUFFICIENT · 2d đang chạy · 2e đang hủy
                                                   2f lỗi · 2g discovery + Mock · 2h STALE · 2i REJECTED gần nhất · 2j lịch sử · 2k xem dòng REJECTED · 2l thông báo lỗi
   #s3  Mã F và AI trích xuất .................... 3a mã F + bấm bằng chứng · 3b nút trên ghi chú · 3c đang chạy · 3d đề xuất · 3e 0 đề xuất / lỗi · 3f Xác nhận
-  #ask Đề xuất cần Owner chốt
+  #ask Quyết định G3 (Owner duyệt 08/10/2026, PR #427)
   Trạng thái CURRENT đầy đủ (analysis, 4 khối + Thông tin tham khảo) nằm ở customer.html.
 -->
 <html lang="vi">
@@ -527,7 +527,7 @@
         </section>
 
         <section class="specimen">
-          <p class="cap">2g · Chế độ discovery (3 khối) + kết quả Mock</p>
+          <p class="cap">2g · Chế độ discovery (3 khối) + kết quả Mock — KH mẫu khác (KH mới, mới có KYC v1)</p>
           <div class="panel">
             <div class="card-head"><h2>KYC Intelligence</h2><span class="badge c-ok">CURRENT</span><span class="badge c-warn plain">Mock</span><span class="actions"><button class="btn" style="padding: 4px 10px">Phân tích lại</button></span></div>
             <div class="row" style="flex-wrap: wrap; gap: 6px">
@@ -762,7 +762,7 @@
 
       <!-- ================= Ask ================= -->
       <section class="card" id="ask">
-        <div class="card-head"><h2>Đề xuất cần Owner chốt (G3)</h2></div>
+        <div class="card-head"><h2>Quyết định G3 của Owner</h2><span class="meta num">duyệt 08/10/2026 · PR #427</span></div>
         <ol class="q">
           <li><b>Mock và Kiểm tra kết nối (1b):</b> ẩn nút, thay bằng "Mock chạy trong app, không cần kết nối". Ô Model / Mức suy luận tắt nhưng giữ giá trị khi chọn Mock.</li>
           <li><b>Mức suy luận với model chưa hỗ trợ (1a, 1g):</b> ô tắt, dòng giải thích cố định dưới ô; app luôn dùng Mặc định dù giá trị đã lưu (hay nhập từ backup) là Thấp / Vừa / Cao. Không hiện thêm cảnh báo.</li>
@@ -774,6 +774,8 @@
           <li><b>AI trích xuất (3b–3e):</b> chuyển nút từ đầu thẻ Dữ kiện KYC xuống <b>từng ghi chú ở Dòng thời gian</b> (đúng §8: "trên từng ghi chú"); đề xuất hiện ngay dưới ghi chú; có Hủy như panel; dòng "1 đề xuất trùng … đã ẩn".</li>
           <li><b>Xác nhận đề xuất (3f):</b> mở hộp "+ Dữ kiện" hiện có, điền sẵn trường / giá trị, gắn ghi chú nguồn, hiện câu AI trích; luồng Cập nhật / Mâu thuẫn giữ như 7c.</li>
           <li><b>Thông báo "lỗi khác" (2l):</b> câu chung cho <code>AI_BAD_REQUEST</code> và lỗi không phải <code>AiError</code>.</li>
+          <li><b>Mã F của dữ kiện đã bị thay thế (3a):</b> bấm từ bằng chứng → cuộn tới dòng "giá trị cũ" nếu đang hiện; không thì báo "F5 không còn hiệu lực".</li>
+          <li><b>Cài đặt AI hỏng (1g):</b> dùng mặc định cho cả khối (Mock · DeepSeek V4.1 Flash · Mặc định), kể cả khi chỉ sai model; Owner chọn lại để lưu.</li>
         </ol>
       </section>
 

@@ -333,7 +333,9 @@ Khối chỉ đọc như mockup `appointments.html`: Next Best Actions + Discove
 
 Mục **AI** trong thanh mục Cài đặt (mockup `settings-data.html` đã có mục "AI"): Provider, **Gói OpenCode** (Go / Credit, chỉ hiện khi provider là OpenCode — P8), Model, Reasoning, Key (§4.3), Kiểm tra kết nối (theo gói đang chọn), dòng giải thích dữ liệu gửi đi (§6.1), và một dòng về ChatGPT web: "Phân tích bằng ChatGPT web: bạn tự dán dữ kiện KYC (không có tên, mã KH) vào tài khoản ChatGPT của mình".
 
-### 9.4 Cần mockup (G3)
+### 9.4 Cần mockup (G3) — Owner duyệt 08/10/2026 (bổ sung W-1 ở §9.5 còn chờ)
+
+Mockup: `mockups/ai.html` (+ `customer.html`), PR #427; quyết định ở `ai.html#ask`. Mục §9.3 "mockup `settings-data.html`" thay bằng `ai.html` §1.
 
 1. Settings → AI (mới hoàn toàn).
 2. Panel KYC Intelligence: các trạng thái §9.1 chưa có trong mockup (cổng chặn, đang chạy, lỗi, STALE, REJECTED gần nhất, chip Mock), chế độ discovery, khối "Thông tin tham khảo" (P6); bỏ dòng `KYC_INSUFFICIENT` khỏi lịch sử (P2).
