@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { asExe } from './support';
 
 // Keyboard paths of the shared dialog and segmented control (DR-58, 59, 02, 76). The e2e build pins
 // today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
@@ -130,84 +131,6 @@ test('arrow keys move the choice around a segmented control, wrapping at both en
   await expect(radios.nth(count - 1)).toHaveAttribute('aria-checked', 'true');
   await expect(radios.nth(count - 1)).toBeFocused();
 });
-
-/**
- * Runs the web build as the exe: a stand-in for Tauri's IPC (`isTauri()`, `invoke`, events) whose
- * file commands the test steers through `window.exe`. A new database seeds as on a first start.
- */
-async function asExe(page: Page) {
-  await page.addInitScript(() => {
-    const callbacks = new Map<number, (event: unknown) => unknown>();
-    let nextId = 1;
-    let closeHandler: number | undefined;
-    let backupGate: Promise<void> | undefined;
-    let releaseBackup = () => {};
-    const exe = {
-      failSaves: false,
-      destroyed: false,
-      holdBackup() {
-        backupGate = new Promise((resolve) => (releaseBackup = resolve));
-      },
-      releaseBackup: () => releaseBackup(),
-      requestClose() {
-        if (closeHandler === undefined) throw new Error('no close listener');
-        void callbacks.get(closeHandler)?.({ event: 'tauri://close-requested', id: 1 });
-      },
-    };
-    const commands: Record<string, (args: Record<string, unknown>) => unknown> = {
-      db_open: () => new ArrayBuffer(0),
-      db_save: () => {
-        if (exe.failSaves) throw new Error('file locked');
-        return null;
-      },
-      db_backup: async () => {
-        await backupGate;
-        return 'project2c-20260915-0930.db';
-      },
-      db_latest_backup: () => null,
-      'plugin:event|listen': (args) => {
-        if (args.event === 'tauri://close-requested') closeHandler = args.handler as number;
-        return nextId++;
-      },
-      'plugin:event|unlisten': () => null,
-      'plugin:window|destroy': () => {
-        exe.destroyed = true;
-        return null;
-      },
-    };
-    Object.assign(window, {
-      exe,
-      isTauri: true,
-      __TAURI_EVENT_PLUGIN_INTERNALS__: { unregisterListener() {} },
-      __TAURI_INTERNALS__: {
-        metadata: { currentWindow: { label: 'main' }, currentWebview: { label: 'main' } },
-        transformCallback(callback: (event: unknown) => unknown) {
-          const id = nextId++;
-          callbacks.set(id, callback);
-          return id;
-        },
-        async invoke(command: string, args: Record<string, unknown>) {
-          const run = commands[command];
-          if (!run) throw new Error(`unexpected command ${command}`);
-          return run(args);
-        },
-      },
-    });
-  });
-}
-
-interface Exe {
-  failSaves: boolean;
-  destroyed: boolean;
-  holdBackup(): void;
-  releaseBackup(): void;
-  requestClose(): void;
-}
-declare global {
-  interface Window {
-    exe: Exe;
-  }
-}
 
 test('a second Escape does not close the dialog of a running reload', async ({ page }) => {
   await asExe(page);

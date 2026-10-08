@@ -306,6 +306,15 @@ describe('Settings → AI in the app (spec Phase 5 §4.1)', () => {
     expect(ai.settings()).toEqual(CREDIT);
   });
 
+  it('saves only the four fields, so a key carried by the form never reaches the backup (review of PR 443)', async () => {
+    const { app, ai } = await withCustomer({ opencode: fakeOpenCode().client });
+    const form = { ...CREDIT, key: 'sk-secret', extra: 1 };
+
+    ai.save(form);
+
+    expect(JSON.parse(getSetting(app.db(), 'ai')!)).toEqual(CREDIT);
+  });
+
   it('calls OpenCode under the saved plan and model, and saves the row under them', async () => {
     const { client, complete } = fakeOpenCode();
     const { app, ai, customer, rows } = await withCustomer({ opencode: client });

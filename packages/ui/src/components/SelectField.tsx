@@ -22,6 +22,8 @@ interface SelectFieldProps {
   required?: boolean;
   /** `md` is the larger text of a topbar picker; `sm` (default) is the usual size. */
   size?: 'sm' | 'md';
+  /** Shown but not changeable (mockup `.input.off`). */
+  disabled?: boolean;
 }
 
 /** Labelled drop-down list (mockup `.field` with a caret), with its error under it. */
@@ -36,6 +38,7 @@ export function SelectField({
   help,
   required,
   size = 'sm',
+  disabled,
 }: SelectFieldProps) {
   const id = useId();
   const noteId = `${id}-note`;
@@ -52,11 +55,12 @@ export function SelectField({
       <select
         id={id}
         value={value}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
         aria-required={required}
         aria-invalid={error ? true : undefined}
         aria-describedby={error || help ? noteId : undefined}
-        className={`cursor-pointer rounded-md border bg-surface-0 px-2 py-1.5 ${size === 'md' ? 'text-md' : 'text-sm'} text-fg focus-visible:outline-2 focus-visible:outline-accent ${
+        className={`cursor-pointer rounded-md disabled:cursor-default disabled:opacity-50 border bg-surface-0 px-2 py-1.5 ${size === 'md' ? 'text-md' : 'text-sm'} text-fg focus-visible:outline-2 focus-visible:outline-accent ${
           error ? 'border-danger' : 'border-border-strong'
         }`}
       >

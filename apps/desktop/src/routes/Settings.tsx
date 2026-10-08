@@ -4,6 +4,7 @@ import { Button, Dialog, TextField } from '@p2c/ui';
 import { useAppData, useToday } from '../data/AppDataContext';
 import { isUnsavedChangesError } from '../data/app-data';
 import { t } from '../i18n';
+import { AiSection } from './SettingsAi';
 import { BackupSection } from './SettingsBackup';
 import { DataFileSection } from './SettingsDataFile';
 
@@ -11,16 +12,50 @@ type Outcome =
   | { readonly ok: true; readonly anchor: string; readonly backup: string | undefined }
   | { readonly ok: false; readonly unsaved: boolean };
 
+const SECTIONS = ['data', 'ai'] as const;
+
+type Section = (typeof SECTIONS)[number];
+
+const NAV_ITEM =
+  'rounded-sm px-2.5 py-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-accent';
+
 /**
- * Settings → Data (mockup settings-data): the data file (T-070), backup files (T-052), then the
- * simulated data (T-045).
+ * Settings, with its sections side by side (mockup settings-data, ai.html 1a). Dữ liệu: the data
+ * file (T-070), backup files (T-052), then the simulated data (T-045). AI: Settings → AI (T-167).
  */
 export function Settings() {
+  const [section, setSection] = useState<Section>('data');
   return (
-    <div className="flex max-w-3xl flex-col gap-4">
-      <DataFileSection />
-      <BackupSection />
-      <DemoSection />
+    <div className="flex max-w-4xl items-start gap-4">
+      <nav
+        aria-label={t('settings.nav.label')}
+        className="flex w-36 shrink-0 flex-col rounded-lg border border-border bg-surface-1 p-1.5"
+      >
+        {SECTIONS.map((item) => (
+          <button
+            key={item}
+            type="button"
+            aria-current={item === section ? 'page' : undefined}
+            onClick={() => setSection(item)}
+            className={`${NAV_ITEM} ${
+              item === section ? 'bg-accent-soft font-semibold text-accent' : 'text-fg-2'
+            }`}
+          >
+            {t(`settings.nav.${item}`)}
+          </button>
+        ))}
+      </nav>
+      <div className="flex min-w-0 max-w-3xl flex-1 flex-col gap-4">
+        {section === 'data' ? (
+          <>
+            <DataFileSection />
+            <BackupSection />
+            <DemoSection />
+          </>
+        ) : (
+          <AiSection />
+        )}
+      </div>
     </div>
   );
 }
