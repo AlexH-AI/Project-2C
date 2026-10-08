@@ -39,13 +39,14 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/database.ts` — type OpenDatabaseOptions, type Sources, type Database, openDatabase, assertSupported, migrate
 - `src/errors.ts` — DB_ERROR_CODES, type DbErrorCode, DbError
 - `src/ids.ts` — type RandomFill, cryptoFill, ulid, encodeBase32
-- `src/index.ts` — re-exports ./database, ./migrations, ./backup, ./counts, ./errors, ./team, ./customers, ./appointments, ./policies, ./kyc, ./seed, ./schema, ./ai-analyses
+- `src/index.ts` — re-exports ./database, ./migrations, ./backup, ./counts, ./errors, ./team, ./customers, ./appointments, ./policies, ./kyc, ./seed, ./schema, ./ai-analyses, ./settings
 - `src/kyc.ts` — type KycSource, type KycNoteRecord, type KycFactRecord, type KycProfileRecord, type KycVersionRecord, type KycFactCommand, type KycChange, getKycProfile, listKycVersions, addKycNote, type KycNoteFact, recordKycNote, confirmKycFact, markKycConflict, resolveKycConflict, markKycVersionMaterial, type ProfileFields, recordProfileFacts, type ProfileKycPreview, previewProfileFacts, profileFactValue, normalizeKycValue
 - `src/migrations.ts` — type Migration, MIGRATIONS, latestVersion, LATEST_SCHEMA_VERSION
 - `src/policies.ts` — type NewPolicy, type PolicyChanges, listPolicies, getPolicy, submitPolicy, issuePolicy, updatePolicy, softDeletePolicy, restorePolicy
 - `src/schema.ts` — teams, people, settings, schemaMigrations, GENDERS, APPOINTMENT_TRIGGERS, customers, appointments, appointmentCoordinators, stageTransitions, policies, KYC_NOTE_SOURCES, kycNotes, kycFacts, kycVersions, AI_ANALYSIS_MODES, AI_ANALYSIS_GATES, AI_ANALYSIS_STATUSES, AI_ANALYSIS_PROVIDERS, AI_ANALYSIS_REASONING, MAX_AI_RAW_OUTPUT, aiAnalyses
 - `src/seed-data.ts` — type Weighted, STARTING_STAGES, BIRTH_DATE_KINDS, OUTCOMES, MOVES, TRIGGERS, TEAM_NAMES, FAMILY_NAMES, MIDDLE_NAMES, GIVEN_NAMES, APPOINTMENT_TIMES, TRIGGER_NOTES, NEXT_STEPS, MEETING_NOTES, CASE_SIZES_MILLION, KYC_TOPICS, KYC_VALUES, KYC_CATEGORY_LABELS, KYC_FIELD_LABELS
 - `src/seed.ts` — type SeedOptions, seedDemoData
+- `src/settings.ts` — getSetting, putSetting
 - `src/team.ts` — listTeams, getTeam, listPeople, getPerson, createTeam, renameTeam, softDeleteTeam, restoreTeam, type PersonInput, createPerson, updatePerson, softDeletePerson, restorePerson
 - `src/test-support.ts` — setup, errorOf, codeOf, d
 <!-- codemap:end -->

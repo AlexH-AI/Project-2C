@@ -1,16 +1,20 @@
 import {
   AiError,
   createMockAdapter,
+  DEFAULT_AI_SETTINGS,
   type AiAdapter,
   type AiCompleteRequest,
   type AiCompletion,
+  type AiSettings,
 } from '@p2c/ai';
 import {
   createCustomer,
   createPerson,
   createTeam,
+  getSetting,
   listAiAnalyses,
   listPeople,
+  putSetting,
   recordKycNote,
   restoreCustomer,
   softDeleteCustomer,
@@ -18,7 +22,13 @@ import {
 } from '@p2c/db';
 import { calendarDate, type KycField } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
-import { analyseCustomer, createAppAi, type AppAi } from './ai-analysis';
+import {
+  analyseCustomer,
+  createAppAi,
+  type AiSettingsStore,
+  type AppAiOptions,
+} from './ai-analysis';
+import type { OpenCodeClient } from './ai-tauri';
 import { openAppData } from './app-data';
 
 const TODAY = calendarDate(2026, 9, 27);
@@ -45,9 +55,16 @@ function heldAdapter() {
   return { adapter, held, answerWithMock };
 }
 
+/** Settings → AI kept apart from any database, for an `AppAi` of its own. */
+function memoryStore(): AiSettingsStore {
+  let stored: string | undefined;
+  return { read: () => stored, write: (settings) => (stored = JSON.stringify(settings)) };
+}
+
 /** A customer whose facts give `PROFILE_DISCOVERY`, the app and its AI. */
-async function withCustomer(ai: AppAi = createAppAi({ reportError: vi.fn() })) {
-  const app = await openAppData({ today: () => TODAY, seed: emptySeed, ai });
+async function withCustomer(options: AppAiOptions = { reportError: vi.fn() }) {
+  const app = await openAppData({ today: () => TODAY, seed: emptySeed, ai: options });
+  const { ai } = app;
   const reId = listPeople(app.db())[0]!.id;
   const customer = app.run((d) =>
     createCustomer(d, {
@@ -101,8 +118,10 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
     const complete = vi.fn(() =>
       Promise.resolve({ content: 'Không có JSON', promptTokens: 0, completionTokens: 0 }),
     );
-    const ai = createAppAi({ reportError: vi.fn(), adapter: { complete } });
-    const { app, customer, rows } = await withCustomer(ai);
+    const { app, customer, rows } = await withCustomer({
+      reportError: vi.fn(),
+      adapter: { complete },
+    });
 
     expect(await analyseCustomer(app, customer.id)).toEqual({ kind: 'saved', status: 'REJECTED' });
     expect(complete).toHaveBeenCalledTimes(2);
@@ -114,7 +133,7 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
   it('calls no AI and saves nothing when the gate lets none through (P2)', async () => {
     const { app, customer, confirm, rows } = await withCustomer();
     const complete = vi.fn();
-    const blocked = createAppAi({ reportError: vi.fn(), adapter: { complete } });
+    const blocked = createAppAi(memoryStore(), { reportError: vi.fn(), adapter: { complete } });
     confirm('maritalStatus', 'Độc thân', true);
 
     const outcome = await analyseCustomer({ ...app, ai: blocked }, customer.id);
@@ -127,7 +146,7 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
   it('is blocked for a customer with no KYC version yet', async () => {
     const { app } = await withCustomer();
     const complete = vi.fn();
-    const ai = createAppAi({ reportError: vi.fn(), adapter: { complete } });
+    const ai = createAppAi(memoryStore(), { reportError: vi.fn(), adapter: { complete } });
     const bare = app.run((d) =>
       createCustomer(d, {
         name: 'Minh',
@@ -145,11 +164,10 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
   });
 
   it('gives the error of the adapter and saves nothing', async () => {
-    const ai = createAppAi({
+    const { app, customer, rows, ai } = await withCustomer({
       reportError: vi.fn(),
       adapter: { complete: () => Promise.reject(new AiError('AI_RATE_LIMITED')) },
     });
-    const { app, customer, rows } = await withCustomer(ai);
 
     expect(await analyseCustomer(app, customer.id)).toEqual({
       kind: 'error',
@@ -161,8 +179,10 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
 
   it('Hủy gives cancelled at once, keeps every AI button off until the adapter answers, saves nothing', async () => {
     const held = heldAdapter();
-    const ai = createAppAi({ reportError: vi.fn(), adapter: held.adapter });
-    const { app, customer, rows } = await withCustomer(ai);
+    const { app, customer, rows, ai } = await withCustomer({
+      reportError: vi.fn(),
+      adapter: held.adapter,
+    });
     const abort = new AbortController();
 
     const running = analyseCustomer(app, customer.id, abort.signal);
@@ -181,8 +201,10 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
 
   it('ties the result to the version taken on click, so a KYC change meanwhile leaves it STALE', async () => {
     const held = heldAdapter();
-    const ai = createAppAi({ reportError: vi.fn(), adapter: held.adapter });
-    const { app, customer, confirm, rows } = await withCustomer(ai);
+    const { app, customer, confirm, rows } = await withCustomer({
+      reportError: vi.fn(),
+      adapter: held.adapter,
+    });
 
     const running = analyseCustomer(app, customer.id);
     confirm('occupation', 'Giám đốc');
@@ -195,8 +217,7 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
   it('discards the result, without reporting a bug, when the customer is deleted while it runs', async () => {
     const reportError = vi.fn();
     const held = heldAdapter();
-    const ai = createAppAi({ reportError, adapter: held.adapter });
-    const { app, customer, rows } = await withCustomer(ai);
+    const { app, customer, rows, ai } = await withCustomer({ reportError, adapter: held.adapter });
 
     const running = analyseCustomer(app, customer.id);
     app.run((d) => softDeleteCustomer(d, customer.id));
@@ -212,8 +233,7 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
   it('discards the result when the data is replaced by Nạp lại while it runs', async () => {
     const reportError = vi.fn();
     const held = heldAdapter();
-    const ai = createAppAi({ reportError, adapter: held.adapter });
-    const { app, customer } = await withCustomer(ai);
+    const { app, customer, ai } = await withCustomer({ reportError, adapter: held.adapter });
 
     const running = analyseCustomer(app, customer.id);
     await app.reloadDemoData();
@@ -227,8 +247,10 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
   it('turns a bug into a failure the panel can show, and reports it', async () => {
     const reportError = vi.fn();
     const bug = new TypeError('boom');
-    const ai = createAppAi({ reportError, adapter: { complete: () => Promise.reject(bug) } });
-    const { app, customer, rows } = await withCustomer(ai);
+    const { app, customer, rows, ai } = await withCustomer({
+      reportError,
+      adapter: { complete: () => Promise.reject(bug) },
+    });
 
     expect(await analyseCustomer(app, customer.id)).toEqual({ kind: 'failed' });
     expect(reportError).toHaveBeenCalledWith(bug);
@@ -239,16 +261,100 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
   it('logs what it cannot give back to a screen when no reporter is passed', () => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const bug = new Error('boom');
-    createAppAi().reportError(bug);
+    createAppAi(memoryStore()).reportError(bug);
     expect(log).toHaveBeenCalledWith(bug);
     log.mockRestore();
   });
+});
 
-  it('uses Mock with the default model until Settings → AI exists (T-167)', () => {
-    expect(createAppAi({ reportError: vi.fn() }).settings()).toEqual({
-      provider: 'MOCK',
-      model: 'deepseek-v4.1-flash',
-      reasoning: 'DEFAULT',
+describe('Settings → AI in the app (spec Phase 5 §4.1)', () => {
+  const CREDIT: AiSettings = {
+    provider: 'OPENCODE_GO',
+    opencodePlan: 'CREDIT',
+    model: 'glm-5.3',
+    reasoning: 'DEFAULT',
+  };
+
+  /** Rust's OpenCode commands, answering as the Mock would. */
+  function fakeOpenCode() {
+    const mock = createMockAdapter();
+    const complete = vi.fn((request: AiCompleteRequest) => mock.complete(request));
+    const client: OpenCodeClient = {
+      keyStatus: vi.fn(() => Promise.resolve(true)),
+      setKey: vi.fn(() => Promise.resolve()),
+      deleteKey: vi.fn(() => Promise.resolve()),
+      adapter: vi.fn(() => ({ complete })),
+    };
+    return { client, complete };
+  }
+
+  it('starts from the defaults, with nothing to report', async () => {
+    const { ai } = await withCustomer();
+    expect(ai.stored()).toEqual({ settings: DEFAULT_AI_SETTINGS, problem: null });
+  });
+
+  it('saves into the settings row ai, never a key, and the screens re-read', async () => {
+    const { app, ai } = await withCustomer({ opencode: fakeOpenCode().client });
+    const listener = vi.fn();
+    app.subscribe(listener);
+
+    ai.save(CREDIT);
+
+    expect(listener).toHaveBeenCalled();
+    expect(JSON.parse(getSetting(app.db(), 'ai')!)).toEqual(CREDIT);
+    expect(ai.stored()).toEqual({ settings: CREDIT, problem: null });
+    expect(ai.settings()).toEqual(CREDIT);
+  });
+
+  it('calls OpenCode under the saved plan and model, and saves the row under them', async () => {
+    const { client, complete } = fakeOpenCode();
+    const { app, ai, customer, rows } = await withCustomer({ opencode: client });
+    ai.save(CREDIT);
+
+    expect(await analyseCustomer(app, customer.id)).toEqual({ kind: 'saved', status: 'ACCEPTED' });
+
+    expect(client.adapter).toHaveBeenCalledWith('CREDIT');
+    expect(complete.mock.calls[0]![0]).toMatchObject({ model: 'glm-5.3', reasoning: null });
+    expect(rows()[0]).toMatchObject({ provider: 'OPENCODE_GO', model: 'glm-5.3' });
+  });
+
+  it('sends Mặc định for a level saved on a model not checked with reasoning_effort (review of PR 424)', async () => {
+    const { client, complete } = fakeOpenCode();
+    const { app, ai, customer, rows } = await withCustomer({ opencode: client });
+    app.run((d) => putSetting(d, 'ai', { ...CREDIT, model: 'kimi-k3', reasoning: 'HIGH' }));
+
+    expect(ai.settings().reasoning).toBe('DEFAULT');
+    await analyseCustomer(app, customer.id);
+    expect(complete.mock.calls[0]![0].reasoning).toBeNull();
+    expect(rows()[0]).toMatchObject({ model: 'kimi-k3', reasoning: 'DEFAULT' });
+  });
+
+  it('runs the Mock in web mode, keeping the saved provider for the exe', async () => {
+    const { app, ai, customer, rows } = await withCustomer();
+    ai.save(CREDIT);
+
+    expect(ai.opencode).toBeUndefined();
+    expect(ai.stored().settings).toEqual(CREDIT);
+    expect(ai.settings()).toEqual({ ...CREDIT, provider: 'MOCK' });
+    await analyseCustomer(app, customer.id);
+    expect(rows()[0]).toMatchObject({ provider: 'MOCK', model: null });
+  });
+
+  it('falls back to the defaults, with the reason, on a stored value it cannot read (1g)', async () => {
+    const { app, ai } = await withCustomer({ opencode: fakeOpenCode().client });
+    app.run((d) => putSetting(d, 'ai', { ...CREDIT, model: 'gpt-6' }));
+
+    expect(ai.stored()).toEqual({
+      settings: DEFAULT_AI_SETTINGS,
+      problem: { kind: 'model', model: 'gpt-6' },
     });
+    expect(ai.call().settings).toEqual(DEFAULT_AI_SETTINGS);
+  });
+
+  it('reads the settings of the data in use after Nạp lại', async () => {
+    const { app, ai } = await withCustomer({ opencode: fakeOpenCode().client });
+    ai.save(CREDIT);
+    await app.reloadDemoData();
+    expect(ai.stored().settings).toEqual(DEFAULT_AI_SETTINGS);
   });
 });

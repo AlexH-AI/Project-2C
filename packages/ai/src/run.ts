@@ -24,6 +24,7 @@ import { discoveryPrompt } from './prompts/discovery';
 import { extractionPrompt } from './prompts/extraction';
 import { retryMessage } from './prompts/retry';
 import { AI_OUTPUT_SCHEMAS, type AiProvider, type AiReasoningLevel } from './schema';
+import type { AiSettings } from './settings';
 import {
   filterExtraction,
   validateOutput,
@@ -31,15 +32,14 @@ import {
   type ValidationIssue,
 } from './validator';
 
-/** Settings → AI (spec §4.1); never the key. */
-export interface AiSettings {
-  readonly provider: AiProvider;
-  readonly model: AiModelId;
-  readonly reasoning: AiReasoningLevel;
-}
-
 type Cancelled = { readonly kind: 'cancelled' };
-type Failed = { readonly kind: 'error'; readonly code: AiErrorCode };
+/** An `AiError` as a result, with what Rust told of a failed HTTP call (Settings → AI shows it). */
+type Failed = {
+  readonly kind: 'error';
+  readonly code: AiErrorCode;
+  readonly httpStatus?: number;
+  readonly serverMessage?: string;
+};
 
 const CANCELLED: Cancelled = { kind: 'cancelled' };
 const BUSY: Failed = { kind: 'error', code: 'AI_BUSY' };
@@ -153,7 +153,15 @@ async function attempt<R>(call: () => Promise<R>): Promise<R | Failed> {
   try {
     return await call();
   } catch (error) {
-    if (error instanceof AiError) return { kind: 'error', code: error.code };
+    if (error instanceof AiError) {
+      const { code, httpStatus, serverMessage } = error;
+      return {
+        kind: 'error',
+        code,
+        ...(httpStatus !== undefined && { httpStatus }),
+        ...(serverMessage !== undefined && { serverMessage }),
+      };
+    }
     throw error;
   }
 }

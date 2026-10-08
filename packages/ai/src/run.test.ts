@@ -12,12 +12,22 @@ import {
   runExtraction,
   type AiAbortSignal,
   type AiRunner,
-  type AiSettings,
 } from './run';
+import type { AiSettings } from './settings';
 import { fact, PRIVATE, PROFILE, TODAY } from './test-support';
 
-const OPENCODE: AiSettings = { provider: 'OPENCODE_GO', model: 'kimi-k3', reasoning: 'HIGH' };
-const MOCK: AiSettings = { provider: 'MOCK', model: 'deepseek-v4.1-flash', reasoning: 'DEFAULT' };
+const OPENCODE: AiSettings = {
+  provider: 'OPENCODE_GO',
+  opencodePlan: 'GO',
+  model: 'kimi-k3',
+  reasoning: 'HIGH',
+};
+const MOCK: AiSettings = {
+  provider: 'MOCK',
+  opencodePlan: 'GO',
+  model: 'deepseek-v4.1-flash',
+  reasoning: 'DEFAULT',
+};
 
 type Reply = string | AiError | Promise<string>;
 
@@ -529,9 +539,25 @@ describe('checkConnection', () => {
   it('gives the adapter error', async () => {
     const { adapter } = scripted(new AiError('AI_UNAUTHORIZED'));
     const runner = createAiRunner(vi.fn());
-    expect(await checkConnection({ runner, adapter, settings: OPENCODE })).toEqual({
+    expect(await checkConnection({ runner, adapter, settings: OPENCODE })).toStrictEqual({
       kind: 'error',
       code: 'AI_UNAUTHORIZED',
+    });
+  });
+
+  it('gives the HTTP status and the start of the server message Rust passed on', async () => {
+    const error = new AiError('AI_HTTP', { httpStatus: 502, serverMessage: 'Bad gateway' });
+    const runner = createAiRunner(vi.fn());
+    const result = await checkConnection({
+      runner,
+      adapter: scripted(error).adapter,
+      settings: OPENCODE,
+    });
+    expect(result).toStrictEqual({
+      kind: 'error',
+      code: 'AI_HTTP',
+      httpStatus: 502,
+      serverMessage: 'Bad gateway',
     });
   });
 });

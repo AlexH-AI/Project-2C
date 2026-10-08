@@ -13,6 +13,7 @@ Phase 5 (`docs/design/phase-5-ai.md`, ADR-0009). Kiểu dữ liệu, mã lỗi `
 
 - Schema output + mã `F{seq}`: `src/schema.ts` (spec §6.2, gồm khối `personalityNotes` — P6). Kiểm field / value / quote của trích xuất là V7, không ở schema.
 - Lấy khối JSON đầu tiên từ trả lời: `src/extract-json.ts` (spec §6.1).
+- Cấu hình Settings → AI (`settings` khóa `ai`, spec §4.1): `src/settings.ts` — `readAiSettings` đọc / chuẩn hóa (hỏng → mặc định cả khối + lý do; gói thiếu / sai → `GO`; model chưa kiểm `reasoning_effort` → `DEFAULT`), không bao giờ có key.
 - Mã lỗi: `src/errors.ts` (spec §5.3) · model: `src/models.ts` (spec §4); danh sách provider / reasoning nằm ở `src/schema.ts` để `db` dùng chung cho `ai_analyses` (T-163).
 - Adapter: `src/adapter.ts` (giao diện) · Mock: `src/mock-adapter.ts` (đọc message `user` đầu tiên theo mẫu G5 §1.1 / §4.1).
 - Validator (spec §6.4): `src/validator.ts` — `validateOutput` (V1 cả ba chế độ; V2–V6 analysis / discovery), `filterExtraction` (V7 bỏ riêng từng dữ kiện trích xuất). Danh sách chặn V3–V6 chép nguyên từ G5 §8: `src/blocklists.ts`; cách so khớp G5 §7 (bản có dấu / bỏ dấu, ranh giới từ Unicode): `src/text-match.ts`. Đổi danh sách = qua G5 lại.
@@ -29,7 +30,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/blocklists.ts` — BLOCKLISTS
 - `src/errors.ts` — AI_ERROR_CODES, type AiErrorCode, isAiErrorCode, AiError
 - `src/extract-json.ts` — type ExtractedJson, extractJson
-- `src/index.ts` — re-exports ./errors, ./models, ./adapter, ./extract-json, ./schema, ./mock-adapter, ./validator, ./input, ./run
+- `src/index.ts` — re-exports ./errors, ./models, ./adapter, ./extract-json, ./schema, ./mock-adapter, ./validator, ./input, ./run, ./settings
 - `src/input.ts` — KYC_CATEGORY_LABELS, KYC_FIELD_LABELS, type AnalysisFact, type AnalysisProfile, type AnalysisInputFact, type AnalysisInput, buildAnalysisInput, type ExtractionInput, buildExtractionInput
 - `src/mock-adapter.ts` — createMockAdapter
 - `src/models.ts` — type AiReasoningEffort, type AiModel, AI_MODELS, type AiModelId, DEFAULT_AI_MODEL
@@ -38,8 +39,9 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/prompts/discovery.ts` — discoveryPrompt
 - `src/prompts/extraction.ts` — extractionPrompt
 - `src/prompts/retry.ts` — RETRY_TEMPLATE, retryMessage
-- `src/run.ts` — type AiSettings, type AiAbortSignal, type AiRunner, createAiRunner, type AnalysisRequest, type AnalysisRow, type AnalysisResult, EMPTY_RAW_OUTPUT, runAnalysis, type ExtractionRequest, type ExtractionResult, runExtraction, type ConnectionResult, checkConnection
+- `src/run.ts` — type AiAbortSignal, type AiRunner, createAiRunner, type AnalysisRequest, type AnalysisRow, type AnalysisResult, EMPTY_RAW_OUTPUT, runAnalysis, type ExtractionRequest, type ExtractionResult, runExtraction, type ConnectionResult, checkConnection
 - `src/schema.ts` — AI_MODES, type AiMode, AI_PROVIDERS, type AiProvider, AI_REASONING_LEVELS, type AiReasoningLevel, FACT_CODE, factCode, PERSONALITY_SYSTEMS, analysisOutputSchema, discoveryOutputSchema, extractionOutputSchema, type AnalysisOutput, type DiscoveryOutput, type ExtractionOutput, AI_OUTPUT_SCHEMAS
+- `src/settings.ts` — AI_OPENCODE_PLANS, type AiOpencodePlan, type AiSettings, DEFAULT_AI_SETTINGS, type AiSettingsProblem, type StoredAiSettings, readAiSettings
 - `src/test-support.ts` — TODAY, fact, PRIVATE, ANALYSIS_FACTS, PROFILE
 - `src/text-match.ts` — type MatchText, type Matcher, fold, matchText, WORD_START, WORD_END, char, phrase, pattern
 - `src/validator.ts` — VALIDATION_CODES, type ValidationCode, type ValidationIssue, type OutputCheckInput, validateOutput, EXTRACTION_FIELDS, type ExtractionCheckInput, type ExtractedFact, filterExtraction

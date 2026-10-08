@@ -7,3 +7,4 @@ export * from './mock-adapter';
 export * from './validator';
 export * from './input';
 export * from './run';
+export * from './settings';
