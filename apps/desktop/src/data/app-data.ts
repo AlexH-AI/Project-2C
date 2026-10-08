@@ -19,6 +19,7 @@ import {
   localFileStamp,
   type CalendarDate,
 } from '@p2c/domain';
+import { createAppAi, type AppAi } from './ai-analysis';
 import { createPersistQueue, type PersistQueue } from './persist-queue';
 import { readTables, type Tables } from './tables';
 
@@ -135,6 +136,8 @@ export interface AppData {
   latestBackup(): Promise<string | undefined>;
   /** Shows a data folder in Explorer; does nothing in web mode. */
   openFolder(kind: DataFolder): Promise<void>;
+  /** The AI of the app: one runner for every AI button (spec Phase 5 P5). */
+  readonly ai: AppAi;
 }
 
 export interface OpenAppDataOptions {
@@ -155,6 +158,8 @@ export interface OpenAppDataOptions {
   readonly snapshot?: (day: CalendarDate) => Promise<Uint8Array | undefined>;
   /** Local time for export file names and the last save; tests pin it. */
   readonly clock?: () => Date;
+  /** The AI; the Mock when left out. */
+  readonly ai?: AppAi;
 }
 
 const UNSAVED_CHANGES = 'RELOAD_UNSAVED_CHANGES';
@@ -358,5 +363,6 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     },
     latestBackup: () => storage?.latestBackup() ?? Promise.resolve(undefined),
     openFolder: (kind) => storage?.openFolder(kind) ?? Promise.resolve(),
+    ai: options.ai ?? createAppAi(),
   };
 }

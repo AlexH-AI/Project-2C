@@ -37,8 +37,14 @@ export interface KycNoteRecord extends KycNote {
   readonly source: KycSource;
 }
 
+/** A stored fact with its `seq` by customer, which names it `F{seq}` for the AI (spec Phase 5 §6.1). */
+export interface KycFactRecord extends KycFact {
+  readonly seq: number;
+}
+
 export interface KycProfileRecord extends KycProfile {
   readonly notes: readonly KycNoteRecord[];
+  readonly facts: readonly KycFactRecord[];
 }
 
 export interface KycVersionRecord extends KycVersion {
@@ -74,7 +80,11 @@ const GENDER_LABELS = { MALE: 'Nam', FEMALE: 'Nữ' } as const satisfies Record<
 
 export function getKycProfile(db: Database, customerId: string): KycProfileRecord {
   liveCustomer(db, customerId);
-  return loadProfile(db, customerId);
+  const notes = prepared(db, notesOf).all({ customerId }).map(toNote);
+  const facts = prepared(db, factsOf)
+    .all({ customerId })
+    .map((row) => ({ ...toFact(row), seq: row.seq }));
+  return { notes, facts };
 }
 
 export function listKycVersions(db: Database, customerId: string): KycVersionRecord[] {
@@ -488,20 +498,26 @@ const factsOf = (db: Database) =>
     .orderBy(asc(kycFacts.seq))
     .prepare();
 
-function loadProfile(db: Database, customerId: string): KycProfileRecord {
+/**
+ * The stored profile as the commands work on it: without `seq`, so a fact a command returns equals
+ * the same fact read back; `getKycProfile` adds it.
+ */
+function loadProfile(db: Database, customerId: string) {
   const notes = prepared(db, notesOf).all({ customerId }).map(toNote);
-  const facts = prepared(db, factsOf)
-    .all({ customerId })
-    .map((row): KycFact => ({
-      id: row.id,
-      category: KYC_FIELDS[row.field].category,
-      field: row.field,
-      value: JSON.parse(row.valueJson) as KycValue,
-      noteId: row.noteId,
-      confirmedDate: fromIsoDate(row.confirmedDate),
-      status: row.status,
-    }));
+  const facts = prepared(db, factsOf).all({ customerId }).map(toFact);
   return { notes, facts };
+}
+
+function toFact(row: typeof kycFacts.$inferSelect): KycFact {
+  return {
+    id: row.id,
+    category: KYC_FIELDS[row.field].category,
+    field: row.field,
+    value: JSON.parse(row.valueJson) as KycValue,
+    noteId: row.noteId,
+    confirmedDate: fromIsoDate(row.confirmedDate),
+    status: row.status,
+  };
 }
 
 function toNote(row: typeof kycNotes.$inferSelect): KycNoteRecord {

@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@p2c/ai": "workspace:*",
     "@p2c/db": "workspace:*",
     "@p2c/domain": "workspace:*",
     "@p2c/ui": "workspace:*",

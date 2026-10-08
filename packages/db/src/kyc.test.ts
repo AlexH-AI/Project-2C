@@ -111,9 +111,10 @@ describe('KYC facts', () => {
       confirmedDate: d(3, 9, 2026),
       status: 'active',
     });
+    // Read back with its seq by customer, which names it F{seq} for the AI (spec Phase 5 §6.1).
     expect(getKycProfile(database, customer.id).facts).toEqual([
-      { ...first.fact, status: 'superseded' },
-      second.fact,
+      { ...first.fact, status: 'superseded', seq: 1 },
+      { ...second.fact, seq: 2 },
     ]);
   });
 

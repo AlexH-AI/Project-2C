@@ -70,6 +70,7 @@ export {
 export type {
   KycChange,
   KycFactCommand,
+  KycFactRecord,
   KycNoteFact,
   KycNoteRecord,
   KycProfileRecord,

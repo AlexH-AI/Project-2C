@@ -205,6 +205,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@p2c/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@p2c/db':
         specifier: workspace:*
         version: link:../../packages/db

@@ -137,7 +137,10 @@ describe('recordAiAnalysis', () => {
       promptTokens: null,
       completionTokens: null,
       date: d(26, 9),
+      // The moment it was saved, for the chip's time (spec §9.1).
+      createdAt: expect.any(Date),
     });
+    expect(first.createdAt.getTime()).toBeLessThan(second.createdAt.getTime());
     expect([first.seq, second.seq, elsewhere.seq]).toEqual([1, 2, 1]);
     expect(elsewhere).toMatchObject({
       provider: 'OPENCODE_GO',
@@ -349,6 +352,28 @@ describe('listAiAnalyses: CURRENT / STALE / REJECTED', () => {
       [2, 'STALE', { material: true, since: d(15, 9) }],
       [1, 'STALE', null],
     ]);
+  });
+
+  it('reminds since the earliest day among the versions after the analysed one (G3 ask 4)', async () => {
+    const { db: database, customer } = await withCustomer();
+    recordAiAnalysis(database, analysis(customer.id, latestVersionId(database, customer.id)));
+
+    // A note written up later but dated earlier: the first version by recording order is not the
+    // earliest by day.
+    changeKyc(database, customer.id, 'occupation', 'Bác sĩ', d(12, 9));
+    changeKyc(database, customer.id, 'occupation', 'Giám đốc', d(5, 9));
+    expect(listAiAnalyses(database, customer.id)[0]!.reminder).toEqual({
+      material: false,
+      since: d(5, 9),
+    });
+
+    // Once one is material, only the material versions count.
+    changeKyc(database, customer.id, 'maritalStatus', 'Đã kết hôn', d(20, 9));
+    changeKyc(database, customer.id, 'maritalStatus', 'Độc thân', d(18, 9));
+    expect(listAiAnalyses(database, customer.id)[0]!.reminder).toEqual({
+      material: true,
+      since: d(18, 9),
+    });
   });
 
   it('goes by the KYC version recording order, not its date', async () => {
