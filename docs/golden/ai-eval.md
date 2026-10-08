@@ -9,7 +9,9 @@ Nền: `docs/golden/kyc.md` (K01–K15, cổng), prompt `analysis@1` / `discover
 - **Ngày phân tích cố định 01/10/2026.** Dữ kiện xác nhận 01/09/2026, bản cũ (đã bị thay thế) 01/06/2026 — như `kyc.fixture.ts`.
 - **Mã F** = thứ tự dữ kiện trong hồ sơ (seq), đếm cả bản cũ; bản cũ không được gửi (vd. E09 bắt đầu từ F3). Mọi dữ kiện đã được RE xác nhận.
 - **Đầu vào** dựng bằng chính `buildAnalysisInput` của app (G5 §1.1): năm sinh gửi thành tuổi, "Đã có bảo vệ" gửi Có / Không, sắp theo thứ tự trường. Chế độ, hạng mục thiếu và cảnh báo trong bảng dưới là kết quả của `evaluateKycGate` (đã chạy kiểm khi soạn file này).
-- **Cấu hình:** model mặc định `deepseek-v4.1-flash`, reasoning `DEFAULT`; mỗi hồ sơ / ghi chú chạy **một lần** (tối đa 2 lần thử như app). Model khác chạy thêm khi Owner muốn, ghi riêng.
+- **Cấu hình:** model mặc định `deepseek-v4.1-flash`, reasoning **`HIGH`** (mức cao nhất app có, spec §4.1; Owner chốt 08/10/2026); mỗi hồ sơ / ghi chú chạy **một lần** (tối đa 2 lần thử như app). Model khác chạy thêm khi Owner muốn, ghi riêng.
+  - Eval gửi `reasoning_effort: high` dù `models.ts` còn để `reasoningEffort: false` cho model này: lần chạy đầu cũng là lần kiểm model có nhận tham số đó không (spec §4.2).
+  - Model từ chối tham số → ghi vào file metrics (mã lỗi, nội dung trả về).
 - Dữ liệu 100% giả lập; hồ sơ không có tên, mã KH (spec §6.1). Ghi chú trích xuất có thể có tên người (gửi nguyên văn, đúng như app).
 
 ## 2. Tiêu chí
