@@ -1,6 +1,6 @@
 # apps/desktop — app Tauri 2 + React UI
 
-Vỏ Tauri (`src-tauri/`, Rust: chỉ lệnh đọc / ghi file, ADR-0016) và UI React (`src/`). Chạy web không cần Tauri: `pnpm dev:web` (DB trong bộ nhớ, seed mỗi lần mở).
+Vỏ Tauri (`src-tauri/`, Rust: lệnh đọc / ghi file, ADR-0016; lệnh AI `ai_complete`, `ai_key_*` giữ key và gọi OpenCode, ADR-0009 D-1) và UI React (`src/`). Chạy web không cần Tauri: `pnpm dev:web` (DB trong bộ nhớ, seed mỗi lần mở).
 
 ## Ranh giới
 

@@ -78,12 +78,16 @@ export function createAppAi(store: AiSettingsStore, options: AppAiOptions = {}):
     opencode,
     stored,
     settings,
-    save: (next) => store.write(next),
+    // Only the four fields: a form object may carry more (the key), which must not reach the backup.
+    save: ({ provider, opencodePlan, model, reasoning }) =>
+      store.write({ provider, opencodePlan, model, reasoning }),
     call() {
       const chosen = settings();
       const adapter =
         options.adapter ??
-        (chosen.provider === 'MOCK' || !opencode ? mock : opencode.adapter(chosen.opencodePlan));
+        (chosen.provider === 'OPENCODE_GO' && opencode
+          ? opencode.adapter(chosen.opencodePlan)
+          : mock);
       return { runner, adapter, settings: chosen };
     },
     reportError,
