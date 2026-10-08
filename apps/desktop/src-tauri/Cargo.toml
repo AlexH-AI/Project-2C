@@ -15,6 +15,14 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
+# AI commands only (ADR-0009 D-1, ADR-0005 appendix); the file commands stay on `std` (ADR-0016).
+keyring-core = "=1.0.0"
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.151"
+ureq = "=3.4.2"
+
+[target.'cfg(windows)'.dependencies]
+windows-native-keyring-store = { version = "=1.1.0", default-features = false }
 
 [profile.release]
 codegen-units = 1

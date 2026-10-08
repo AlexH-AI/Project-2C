@@ -8,6 +8,19 @@ const rust = (file: string) =>
   readFileSync(new URL(`../../src-tauri/src/${file}`, import.meta.url), 'utf8');
 const lib = rust('lib.rs');
 const storage = rust('storage.rs');
+const ai = rust('ai.rs');
+
+/**
+ * The AI commands (spec Phase 5 §5.1) and the camelCase arguments the webview sends. Their client
+ * comes with Settings → AI and the panel; until then this pins the names it must use.
+ */
+const AI_COMMANDS: Record<string, string[]> = {
+  ai_complete: ['plan', 'model', 'reasoning', 'messages', 'maxTokens'],
+  ai_key_set: ['key'],
+  ai_key_delete: [],
+  ai_key_status: [],
+  open_chatgpt: [],
+};
 
 interface Call {
   command: string;
@@ -76,8 +89,9 @@ const rustString = (source: string, name: string) =>
 describe('the JS ↔ Rust storage contract', () => {
   it('invokes exactly the commands Rust registers', async () => {
     const invoked = (await calls()).map(({ command }) => command);
-    expect(handlers()).toHaveLength(6);
-    expect([...invoked].sort()).toEqual([...handlers()].sort());
+    const fileCommands = handlers().filter((command) => !(command in AI_COMMANDS));
+    expect(fileCommands).toHaveLength(6);
+    expect([...invoked].sort()).toEqual([...fileCommands].sort());
     for (const command of invoked) {
       expect(lib, command).toMatch(
         new RegExp(`#\\[tauri::command[^\\]]*\\]\\s*(async )?fn ${command}\\(`),
@@ -124,5 +138,36 @@ describe('the JS ↔ Rust storage contract', () => {
 
   it('reads an empty reply of db_open as a first start, which Rust sends for no file', () => {
     expect(commandSource('db_open')).toContain('Response::new(bytes.unwrap_or_default())');
+  });
+});
+
+describe('the JS ↔ Rust AI contract', () => {
+  it('registers each AI command with the arguments of spec §5.1', () => {
+    for (const [command, args] of Object.entries(AI_COMMANDS)) {
+      expect(handlers(), command).toContain(command);
+      expect(lib, command).toMatch(
+        new RegExp(`#\\[tauri::command[^\\]]*\\]\\s*(async )?fn ${command}\\(`),
+      );
+      expect(
+        parameters(command).map(({ name }) => camel(name)),
+        command,
+      ).toEqual(args);
+    }
+  });
+
+  it('sends the error codes packages/ai knows, plus the ChatGPT web one', () => {
+    const errors = readFileSync(
+      new URL('../../../../packages/ai/src/errors.ts', import.meta.url),
+      'utf8',
+    );
+    const known = [.../AI_ERROR_CODES = \[([^\]]*)\]/.exec(errors)![1]!.matchAll(/'(\w+)'/g)].map(
+      ([, code]) => code!,
+    );
+    const sent = [...ai.matchAll(/const (AI_\w+): &str = "([^"]*)";/g)].map(([, name, code]) => {
+      expect(code).toBe(name);
+      return code!;
+    });
+    // `AI_OPEN_BROWSER` joins AI_ERROR_CODES with the ChatGPT web panel (T-174).
+    expect(sent.sort()).toEqual([...known, 'AI_OPEN_BROWSER'].sort());
   });
 });
