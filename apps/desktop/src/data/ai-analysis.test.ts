@@ -34,7 +34,15 @@ function heldAdapter() {
   const adapter: AiAdapter = {
     complete: (request) => new Promise((resolve) => held.push({ request, answer: resolve })),
   };
-  return { adapter, held };
+  /** Waits for the one request, then answers it as the Mock would. */
+  const answerWithMock = async () => {
+    const [call] = await vi.waitFor(() => {
+      expect(held).toHaveLength(1);
+      return held;
+    });
+    call!.answer(await createMockAdapter().complete(call!.request));
+  };
+  return { adapter, held, answerWithMock };
 }
 
 /** A customer whose facts give `PROFILE_DISCOVERY`, the app and its AI. */
@@ -86,6 +94,20 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
       'F2',
       'F3',
       'F4',
+    ]);
+  });
+
+  it('saves a REJECTED row when the answer fails the validator twice', async () => {
+    const complete = vi.fn(() =>
+      Promise.resolve({ content: 'Không có JSON', promptTokens: 0, completionTokens: 0 }),
+    );
+    const ai = createAppAi({ reportError: vi.fn(), adapter: { complete } });
+    const { app, customer, rows } = await withCustomer(ai);
+
+    expect(await analyseCustomer(app, customer.id)).toEqual({ kind: 'saved', status: 'REJECTED' });
+    expect(complete).toHaveBeenCalledTimes(2);
+    expect(rows()).toMatchObject([
+      { state: 'REJECTED', status: 'REJECTED', attempts: 2, rawOutput: 'Không có JSON' },
     ]);
   });
 
@@ -164,11 +186,7 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
 
     const running = analyseCustomer(app, customer.id);
     confirm('occupation', 'Giám đốc');
-    const [call] = await vi.waitFor(() => {
-      expect(held.held).toHaveLength(1);
-      return held.held;
-    });
-    call!.answer(await createMockAdapter().complete(call!.request));
+    await held.answerWithMock();
 
     expect(await running).toEqual({ kind: 'saved', status: 'ACCEPTED' });
     expect(rows()[0]).toMatchObject({ state: 'STALE', reminder: { material: false } });
@@ -182,11 +200,7 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
 
     const running = analyseCustomer(app, customer.id);
     app.run((d) => softDeleteCustomer(d, customer.id));
-    const [call] = await vi.waitFor(() => {
-      expect(held.held).toHaveLength(1);
-      return held.held;
-    });
-    call!.answer(await createMockAdapter().complete(call!.request));
+    await held.answerWithMock();
 
     expect(await running).toEqual({ kind: 'discarded' });
     expect(reportError).not.toHaveBeenCalled();
@@ -203,11 +217,7 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
 
     const running = analyseCustomer(app, customer.id);
     await app.reloadDemoData();
-    const [call] = await vi.waitFor(() => {
-      expect(held.held).toHaveLength(1);
-      return held.held;
-    });
-    call!.answer(await createMockAdapter().complete(call!.request));
+    await held.answerWithMock();
 
     expect(await running).toEqual({ kind: 'discarded' });
     expect(reportError).not.toHaveBeenCalled();

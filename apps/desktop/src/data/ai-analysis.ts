@@ -65,8 +65,9 @@ export type AnalysisOutcome =
   /** Hủy: the panel goes back to how it was. */
   | { readonly kind: 'cancelled' }
   /**
-   * The customer or its version is gone by the answer (deleted, or the data replaced by Nạp lại /
-   * Nhập backup): nothing is saved and the panel follows the data as it is now.
+   * The customer is gone: already deleted at the click (no AI called), or it or its version is
+   * gone by the answer (deleted, or the data replaced by Nạp lại / Nhập backup). Nothing is saved
+   * and the panel follows the data as it is now.
    */
   | { readonly kind: 'discarded' }
   /** A bug, or the save was refused: the panel shows the general message. */
