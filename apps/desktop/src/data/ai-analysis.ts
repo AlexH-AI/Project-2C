@@ -13,8 +13,15 @@ import {
   type AiRunner,
   type AiSettings,
 } from '@p2c/ai';
-import { getKycProfile, listKycVersions, recordAiAnalysis, type Database } from '@p2c/db';
-import { evaluateKycGate, type CalendarDate, type KycGateState } from '@p2c/domain';
+import {
+  DbError,
+  getKycProfile,
+  listKycVersions,
+  recordAiAnalysis,
+  type Database,
+  type DbErrorCode,
+} from '@p2c/db';
+import type { CalendarDate, KycGateState } from '@p2c/domain';
 
 export interface AppAi {
   /** The one runner of the app: while it is busy, every AI button is off (P5). */
@@ -57,6 +64,11 @@ export type AnalysisOutcome =
   | { readonly kind: 'error'; readonly code: AiErrorCode }
   /** Hủy: the panel goes back to how it was. */
   | { readonly kind: 'cancelled' }
+  /**
+   * The customer or its version is gone by the answer (deleted, or the data replaced by Nạp lại /
+   * Nhập backup): nothing is saved and the panel follows the data as it is now.
+   */
+  | { readonly kind: 'discarded' }
   /** A bug, or the save was refused: the panel shows the general message. */
   | { readonly kind: 'failed' };
 
@@ -67,6 +79,9 @@ export interface AnalysisApp {
   run<T>(command: (db: Database) => T): T;
   today(): CalendarDate;
 }
+
+/** The refusals of the save when what was analysed is no longer there: a user's doing, not a bug. */
+const GONE: readonly DbErrorCode[] = ['CUSTOMER_NOT_FOUND', 'KYC_VERSION_NOT_FOUND'];
 
 /**
  * One click on Phân tích. The latest KYC version and its facts are read together, at once, so the
@@ -82,8 +97,8 @@ export async function analyseCustomer(
     const db = app.db();
     const { facts } = getKycProfile(db, customerId);
     const version = listKycVersions(db, customerId).at(-1);
-    // Facts always come with a version; none means the gate has nothing to let through.
-    if (!version) return { kind: 'blocked', state: evaluateKycGate(facts).state };
+    // No version means no facts confirmed yet: nothing for the gate to let through.
+    if (!version) return { kind: 'blocked', state: 'KYC_INSUFFICIENT' };
     const result = await runAnalysis({
       runner: ai.runner,
       adapter: ai.adapter,
@@ -98,6 +113,7 @@ export async function analyseCustomer(
     const saved = app.run((d) => recordAiAnalysis(d, result.row));
     return { kind: 'saved', status: saved.status };
   } catch (error) {
+    if (error instanceof DbError && GONE.includes(error.code)) return { kind: 'discarded' };
     ai.reportError(error);
     return { kind: 'failed' };
   }

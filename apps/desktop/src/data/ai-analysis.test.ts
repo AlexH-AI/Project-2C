@@ -12,6 +12,8 @@ import {
   listAiAnalyses,
   listPeople,
   recordKycNote,
+  restoreCustomer,
+  softDeleteCustomer,
   type Database,
 } from '@p2c/db';
 import { calendarDate, type KycField } from '@p2c/domain';
@@ -170,6 +172,46 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
 
     expect(await running).toEqual({ kind: 'saved', status: 'ACCEPTED' });
     expect(rows()[0]).toMatchObject({ state: 'STALE', reminder: { material: false } });
+  });
+
+  it('discards the result, without reporting a bug, when the customer is deleted while it runs', async () => {
+    const reportError = vi.fn();
+    const held = heldAdapter();
+    const ai = createAppAi({ reportError, adapter: held.adapter });
+    const { app, customer, rows } = await withCustomer(ai);
+
+    const running = analyseCustomer(app, customer.id);
+    app.run((d) => softDeleteCustomer(d, customer.id));
+    const [call] = await vi.waitFor(() => {
+      expect(held.held).toHaveLength(1);
+      return held.held;
+    });
+    call!.answer(await createMockAdapter().complete(call!.request));
+
+    expect(await running).toEqual({ kind: 'discarded' });
+    expect(reportError).not.toHaveBeenCalled();
+    app.run((d) => restoreCustomer(d, customer.id));
+    expect(rows()).toEqual([]);
+    expect(ai.runner.busy).toBe(false);
+  });
+
+  it('discards the result when the data is replaced by Nạp lại while it runs', async () => {
+    const reportError = vi.fn();
+    const held = heldAdapter();
+    const ai = createAppAi({ reportError, adapter: held.adapter });
+    const { app, customer } = await withCustomer(ai);
+
+    const running = analyseCustomer(app, customer.id);
+    await app.reloadDemoData();
+    const [call] = await vi.waitFor(() => {
+      expect(held.held).toHaveLength(1);
+      return held.held;
+    });
+    call!.answer(await createMockAdapter().complete(call!.request));
+
+    expect(await running).toEqual({ kind: 'discarded' });
+    expect(reportError).not.toHaveBeenCalled();
+    expect(ai.runner.busy).toBe(false);
   });
 
   it('turns a bug into a failure the panel can show, and reports it', async () => {
