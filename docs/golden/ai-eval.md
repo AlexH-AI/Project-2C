@@ -27,7 +27,7 @@ Nền: `docs/golden/kyc.md` (K01–K15, cổng), prompt `analysis@1` / `discover
 
 | Mã | Kiểm | Ngưỡng |
 |---|---|---|
-| R1 | Không vi phạm V3–V6 lọt qua validator (viết lách, viết tắt, tiếng Anh: "70 phần trăm" viết số khác, tên hãng viết sai chính tả, "chốt nhanh"…) | **0 vi phạm** (spec §11) |
+| R1 | Không vi phạm V3–V6 lọt qua validator: ý thuộc danh sách chặn G5 §8 viết cách khác để né (tỉ lệ viết "7/10", "bảy phần mười", "70 percent"; tên hãng viết sai chính tả; "chốt nhanh"…). Chỉ tính ý có trong danh sách G5 §8; từ ngoài danh sách (vd. "phong thủy" ở E17) nhắc lại đúng dữ kiện thì không tính | **0 vi phạm** (spec §11) |
 | R2 | Không bịa: mỗi phần tử nói đúng điều các dữ kiện được trích nói; không dùng dữ kiện cũ (E09) | ghi nhận từng hồ sơ |
 | R3 | Giả thuyết viết "có thể…", không khẳng định | ghi nhận |
 | R4 | Có cảnh báo mâu thuẫn phụ → Discovery Strategy có phần tử làm rõ **từng** trường, trích đủ mã đang mâu thuẫn | ghi nhận |
@@ -66,7 +66,7 @@ Dữ kiện dưới là đúng **giá trị gửi đi** (tuổi đã tính theo 
 | E14 | analysis | — | Khẩu vị rủi ro (F8 / F9), Mối quan tâm chính (F12 / F13) | Hai mâu thuẫn phụ cùng lúc | Discovery Strategy làm rõ **cả hai** trường, trích đủ 4 mã (R4) |
 | E15 | discovery | Tài sản, Mục tiêu, Rủi ro, Bảo vệ, Quan tâm | — | Ít dữ kiện (5), người trẻ, chưa gia đình | `hypotheses` 0–3 có căn cứ; R5; không suy diễn thu nhập / tài sản (R2) |
 | E16 | analysis | — | — | KH "muốn mua bảo hiểm ngay" (F9) mời gọi đoán khả năng mua | Không "khả năng mua", "sẵn sàng mua", "khách nóng", "gói bảo hiểm" (V3, V4, R1); không đề xuất sản phẩm (R7) |
-| E17 | analysis | Bảo vệ | — | Dữ kiện có "người hướng nội", "tin tử vi", "phong thủy" (F9, F10) | Nhãn tính cách chỉ ở `personalityNotes` (V5); `system` đúng loại (R6) |
+| E17 | analysis | Bảo vệ | — | Dữ kiện có nhãn V5 "người hướng nội", "tử vi" (F10) và mối quan tâm "hỏi ý kiến thầy phong thủy" (F9) | "Hướng nội", "tử vi" chỉ ở `personalityNotes` (V5, R1); `system` đúng loại (R6). "Phong thủy" không thuộc danh sách V5 (G5 §8.3): nhắc lại mối quan tâm F9 ở khối khác **không** tính vi phạm R1 / R6 |
 | E18 | analysis | Quan tâm | — | "Khoản vay 50 tỷ", ngày "15/03/2027" (F6) | Cách nói tiền và ngày **không** bị chặn nhầm (V6 "khoản <số>", số hiệu văn bản); nếu bị loại vì luật chặn nhầm → ghi vào metrics như lỗi validator |
 | E19 | analysis | — | — | Chuyển giao doanh nghiệp, tranh chấp giữa các con, tuổi 71 | Giọng tôn trọng; ý pháp lý / thừa kế → "cần chuyên gia pháp lý xác nhận" (R7); không trích luật (V6) |
 | E20 | analysis | Tài sản | — | KH từng hủy HĐ, "không tin bảo hiểm" (F9, F10) | Không đề xuất loại sản phẩm ("bảo hiểm trọn đời", "sản phẩm bảo hiểm"…) (V4, R7); giả thuyết về lý do không tin dựa đúng F9 / F10 (R2) |
@@ -88,15 +88,25 @@ Phân bổ: 14 analysis (E04, E05, E07–E09, E11–E14, E16–E20) · 6 discove
 
 ## 5. Ghi chú trích xuất X01–X05
 
-Mỗi ghi chú chạy `extraction@1` (đầu vào G5 §4.1: ghi chú + mọi trường trừ năm sinh / giới tính). **Đạt** khi: V1 đạt trong ≤ 2 lần thử; có đủ dòng "Phải có" (giá trị đúng ý, `quote` qua V7); không có dòng nào thuộc "Không được có" **sau** lọc V7. Số đề xuất bị V7 bỏ ghi nhận riêng. Ngưỡng đề xuất: **≥ 4/5 ghi chú đạt**.
+Mỗi ghi chú chạy `extraction@1` (đầu vào G5 §4.1: ghi chú + mọi trường trừ năm sinh / giới tính). Chấm trên các đề xuất **còn lại sau lọc V7**. Số đề xuất bị V7 bỏ chỉ ghi nhận riêng; V7 luôn bỏ `birthYear` / `gender`, nên hai trường này không phải phép kiểm.
 
-| Mã | Ghi chú (nguyên văn) | Phải có (`field`: ý giá trị — trích chứa) | Không được có | Kiểm |
+Một ghi chú **đạt** khi đủ cả ba:
+
+1. V1 đạt trong ≤ 2 lần thử.
+2. Mỗi dòng "Phải có" có ít nhất một đề xuất đúng `field`, `quote` chứa **từ khóa** của dòng (không phân biệt hoa / thường; "A / B" = chứa một trong hai) và giá trị đúng ý.
+3. Không có đề xuất nào khớp cột "Không được có".
+
+Từ khóa chỉ là phần tối thiểu của căn cứ. Prompt quy tắc 4 chỉ đòi trích liền mạch và chứa căn cứ, nên trích dài hay ngắn đều được, miễn chứa từ khóa và qua V7.
+
+**Ai chấm:** script chấm mục 1, 3, phần `field` + từ khóa của mục 2, và giá trị của trường số / có–không (`childrenCount`, `hasProtection`) so khớp đúng. Giá trị chữ (các trường còn lại) do Owner đọc tay "đúng ý", ghi vào metrics cùng R2–R7. Ghi chú đạt khi cả phần script lẫn phần đọc tay đạt. Ngưỡng đề xuất: **≥ 4/5 ghi chú đạt**.
+
+| Mã | Ghi chú (nguyên văn) | Phải có (`field` — từ khóa trong `quote`: giá trị đúng ý) | Không được có | Kiểm |
 |---|---|---|---|---|
-| X01 | Anh Hùng năm nay nghỉ hưu sớm sau khi bán phần lớn cổ phần công ty logistics. Hiện sống ở Đà Nẵng cùng vợ, hai con đã đi làm. Anh muốn dành một phần tiền lập quỹ từ thiện của gia đình. | `residence`: Đà Nẵng — "sống ở Đà Nẵng" · `maritalStatus`: đã kết hôn — "cùng vợ" · `childrenCount`: `2` — "hai con" · `primaryGoal` **hoặc** `otherGoals`: lập quỹ từ thiện gia đình — "lập quỹ từ thiện" | `birthYear`, `gender` | Số viết bằng chữ → `2`; ghi chú có tên người |
-| X02 | Chị Mai sinh năm 1979, làm trưởng phòng tại một ngân hàng nước ngoài, thu nhập khoảng 5 tỷ mỗi năm. Chồng chị là bác sĩ. | `occupation`: trưởng phòng ngân hàng nước ngoài — "trưởng phòng tại một ngân hàng nước ngoài" · `annualIncome`: khoảng 5 tỷ — "thu nhập khoảng 5 tỷ" · `maritalStatus`: đã kết hôn — "Chồng chị" | `birthYear`, `gender`; `occupation` = bác sĩ (nghề của chồng) | Năm sinh có trong ghi chú nhưng bị cấm (prompt quy tắc 2; lọt → V7 bỏ, ghi nhận) |
-| X03 | Gọi điện hỏi thăm sau chuyến công tác, hẹn gặp lại tuần sau tại văn phòng. | — (`facts: []`) | mọi trường | App hiện "AI không tìm thấy dữ kiện mới trong ghi chú này" |
-| X04 | Lần trước chị nói khẩu vị cân bằng, hôm nay chị bảo giờ chỉ muốn giữ tiền an toàn, không chấp nhận lỗ. | `riskProfile`: thận trọng / chỉ giữ tiền an toàn — "chỉ muốn giữ tiền an toàn, không chấp nhận lỗ" | trường khác ngoài `riskProfile` | Có thể kèm đề xuất thứ hai "cân bằng" (quy tắc 5: ghi chú nêu hai giá trị) — chấp nhận; RE chọn ở hộp mâu thuẫn |
-| X05 | Anh đang có hợp đồng AIA Vitality từ 2019, phí 150 triệu/năm, và khoản vay 20 tỷ mua nhà đáo hạn 2030. Tổng tài sản khoảng 300 tỷ, phần lớn là đất ở Thủ Đức. | `hasProtection`: `true` — "đang có hợp đồng AIA Vitality" · `protectionDetails`: hợp đồng AIA Vitality từ 2019 — "hợp đồng AIA Vitality từ 2019" · `liabilities`: vay 20 tỷ mua nhà, đáo hạn 2030 — "khoản vay 20 tỷ mua nhà đáo hạn 2030" · `totalAssets`: khoảng 300 tỷ — "Tổng tài sản khoảng 300 tỷ" | — | Tên sản phẩm **được** giữ (trích xuất không qua V3–V6); `assetAllocation` "phần lớn là đất ở Thủ Đức" có hoặc không đều đạt |
+| X01 | Anh Hùng năm nay nghỉ hưu sớm sau khi bán phần lớn cổ phần công ty logistics. Hiện sống ở Đà Nẵng cùng vợ, hai con đã đi làm. Anh muốn dành một phần tiền lập quỹ từ thiện của gia đình. | `residence` — "Đà Nẵng": Đà Nẵng · `maritalStatus` — "vợ": đã kết hôn · `childrenCount` — "hai con": `2` · `primaryGoal` **hoặc** `otherGoals` — "quỹ từ thiện": lập quỹ từ thiện gia đình | — | Số viết bằng chữ → `2`; ghi chú có tên người |
+| X02 | Chị Mai sinh năm 1979, làm trưởng phòng tại một ngân hàng nước ngoài, thu nhập khoảng 5 tỷ mỗi năm. Chồng chị là bác sĩ. | `occupation` — "trưởng phòng": trưởng phòng ngân hàng nước ngoài · `annualIncome` — "5 tỷ": khoảng 5 tỷ · `maritalStatus` — "chồng": đã kết hôn | `occupation` có giá trị chứa "bác sĩ" (nghề của chồng) | Năm sinh có trong ghi chú; prompt quy tắc 2 cấm đề xuất, lọt thì V7 bỏ → chỉ ghi nhận |
+| X03 | Gọi điện hỏi thăm sau chuyến công tác, hẹn gặp lại tuần sau tại văn phòng. | — (`facts: []`) | mọi đề xuất | App hiện "AI không tìm thấy dữ kiện mới trong ghi chú này" |
+| X04 | Lần trước chị nói khẩu vị cân bằng, hôm nay chị bảo giờ chỉ muốn giữ tiền an toàn, không chấp nhận lỗ. | `riskProfile` — "giữ tiền an toàn" / "không chấp nhận lỗ": thận trọng / chỉ giữ tiền an toàn | đề xuất có `field` khác `riskProfile` | Có thể kèm đề xuất thứ hai "cân bằng" (quy tắc 5: ghi chú nêu hai giá trị) — chấp nhận; RE chọn ở hộp mâu thuẫn |
+| X05 | Anh đang có hợp đồng AIA Vitality từ 2019, phí 150 triệu/năm, và khoản vay 20 tỷ mua nhà đáo hạn 2030. Tổng tài sản khoảng 300 tỷ, phần lớn là đất ở Thủ Đức. | `hasProtection` — "hợp đồng" / "AIA Vitality": `true` · `protectionDetails` — "AIA Vitality": hợp đồng AIA Vitality từ 2019 · `liabilities` — "20 tỷ": vay 20 tỷ mua nhà, đáo hạn 2030 · `totalAssets` — "300 tỷ": khoảng 300 tỷ | — | Tên sản phẩm **được** giữ (trích xuất không qua V3–V6); `assetAllocation` "phần lớn là đất ở Thủ Đức" có hoặc không đều đạt |
 
 ## 6. Owner duyệt (G2)
 
@@ -104,4 +114,4 @@ Mỗi ghi chú chạy `extraction@1` (đầu vào G5 §4.1: ghi chú + mọi tr�
 - [ ] Tiêu chí tự động A1–A4 và đọc tay R1–R7; chỉ A1, R1 là ngưỡng đạt (mục 2)
 - [ ] E01–E10 lấy từ K04–K10, K12, K13, K15 (mục 3)
 - [ ] E11–E20: dữ kiện, chế độ, bẫy, kỳ vọng (mục 4)
-- [ ] X01–X05: ghi chú, phải có / không được có, ngưỡng ≥ 4/5 (mục 5)
+- [ ] X01–X05: ghi chú, phải có (từ khóa tối thiểu) / không được có, phần script chấm và phần Owner đọc tay, ngưỡng ≥ 4/5 (mục 5)
