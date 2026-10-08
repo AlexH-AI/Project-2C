@@ -1,0 +1,783 @@
+<!doctype html>
+<!--
+  Mục lục (Phase 5 · G3, spec docs/design/phase-5-ai.md §9.4):
+  #s1  Cài đặt → AI ............................ 1a trang chính · 1b Mock · 1c bản web · 1d key · 1e xóa key · 1f kiểm tra kết nối · 1g cài đặt hỏng
+  #s2  Panel KYC Intelligence ................... 2a chưa phân tích · 2b CONFLICT_RESOLUTION · 2c KYC_INSUFFICIENT · 2d đang chạy · 2e đang hủy
+                                                  2f lỗi · 2g discovery + Mock · 2h STALE · 2i REJECTED gần nhất · 2j lịch sử · 2k xem dòng REJECTED · 2l thông báo lỗi
+  #s3  Mã F và AI trích xuất .................... 3a mã F + bấm bằng chứng · 3b nút trên ghi chú · 3c đang chạy · 3d đề xuất · 3e 0 đề xuất / lỗi · 3f Xác nhận
+  #ask Đề xuất cần Owner chốt
+  Trạng thái CURRENT đầy đủ (analysis, 4 khối + Thông tin tham khảo) nằm ở customer.html.
+-->
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI copilot — Project-2C mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="mockups.css" />
+    <link rel="stylesheet" href="forms.css" />
+    <style>
+      .sec-title {
+        margin: 8px 0 0;
+        font-size: var(--fs-xl);
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+      }
+      .sec-title span {
+        font-size: var(--fs-sm);
+        font-weight: 400;
+        color: var(--text-3);
+      }
+      /* Settings frame (same layout as settings-data.html) */
+      .frame {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--bg-0);
+        padding: 16px;
+      }
+      .settings-layout {
+        display: grid;
+        grid-template-columns: 200px minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+      }
+      .subnav a {
+        display: block;
+        padding: 8px 10px;
+        border-radius: var(--radius-sm);
+        color: var(--text-2);
+        font-size: var(--fs-sm);
+      }
+      .subnav a.on {
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .set-row {
+        display: grid;
+        grid-template-columns: 170px minmax(0, 1fr);
+        gap: 6px 16px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: var(--fs-sm);
+        align-items: start;
+      }
+      .set-row:last-child {
+        border-bottom: none;
+      }
+      .set-row > .k {
+        font-weight: 600;
+        padding-top: 6px;
+      }
+      .set-row > .v {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-start;
+      }
+      .choice.off {
+        opacity: 0.45;
+      }
+      .input.wide {
+        width: 340px;
+      }
+      .input.off {
+        opacity: 0.45;
+      }
+      .path {
+        font-family: Consolas, 'Cascadia Mono', monospace;
+        font-size: var(--fs-sm);
+        color: var(--text-2);
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 2px 7px;
+      }
+      /* Panel pieces (same as customer.html) */
+      .panel {
+        background: var(--bg-1);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+      }
+      .panel h4 {
+        margin: 14px 0 6px;
+        color: var(--heading);
+        font-size: var(--fs-sm);
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .hyp {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 8px 10px;
+        font-size: var(--fs-sm);
+        margin-bottom: 6px;
+      }
+      .hyp .ev {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        margin-top: 4px;
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 2px 8px;
+      }
+      .ev a {
+        color: var(--info);
+      }
+      .sub-lbl {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 8px 0 4px;
+      }
+      .faded {
+        opacity: 0.5;
+      }
+      .busy {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-sm);
+        background: var(--bg-2);
+        font-size: var(--fs-sm);
+      }
+      .spin {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid var(--border-strong);
+        border-top-color: var(--accent);
+        flex: none;
+      }
+      .ref {
+        border: 1px dashed var(--border-strong);
+        border-radius: var(--radius-sm);
+        padding: 8px 10px;
+        margin-top: 14px;
+      }
+      .ref h4 {
+        margin-top: 0;
+      }
+      .versions td {
+        padding: 6px 8px;
+        white-space: nowrap;
+      }
+      .versions tr.sel td {
+        background: var(--accent-soft);
+      }
+      /* Facts / timeline pieces */
+      .dim-row {
+        display: grid;
+        grid-template-columns: 18px 1fr;
+        gap: 4px 8px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: var(--fs-sm);
+      }
+      .dim-row:last-child {
+        border-bottom: none;
+      }
+      .dim-row .mark {
+        font-weight: 700;
+        text-align: center;
+      }
+      .dim-row .title {
+        font-weight: 600;
+      }
+      .dim-row .fact {
+        grid-column: 2;
+        color: var(--text-2);
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 2px 4px;
+        border-radius: 5px;
+      }
+      .dim-row .fact.hl {
+        outline: 2px solid var(--accent);
+        background: var(--accent-soft);
+        color: var(--text);
+      }
+      .fid {
+        color: var(--text-3);
+        font-size: var(--fs-xs);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .ev-item {
+        font-size: var(--fs-sm);
+        border-left: 2px solid var(--accent);
+        padding: 2px 0 2px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .ev-item.sys {
+        border-left-color: var(--text-3);
+      }
+      .ev-item .when {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+        font-variant-numeric: tabular-nums;
+      }
+      .ev-item .what {
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .ev-item .what .btn {
+        margin-left: auto;
+        padding: 2px 9px;
+        font-size: var(--fs-xs);
+        font-weight: 500;
+      }
+      .ev-item .note {
+        color: var(--text-2);
+      }
+      .pending {
+        border: 1px dashed var(--border-strong);
+        border-radius: var(--radius-sm);
+        padding: 6px 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-2);
+        font-size: var(--fs-sm);
+      }
+      .pending .btn {
+        padding: 3px 9px;
+        font-size: var(--fs-xs);
+      }
+      .pending q {
+        color: var(--text-3);
+      }
+      .err-table td {
+        padding: 6px 8px;
+        vertical-align: top;
+        font-size: var(--fs-sm);
+      }
+      .err-table td:first-child {
+        white-space: nowrap;
+        color: var(--text-3);
+        font-size: var(--fs-xs);
+      }
+      ol.q li {
+        margin-bottom: 8px;
+        color: var(--text-2);
+      }
+      ol.q b {
+        color: var(--text);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="board">
+      <header class="board-head">
+        <a class="back" href="index.html">← Mockup G3</a>
+        <h1>Phase 5 · AI copilot — Cài đặt → AI, panel KYC Intelligence, AI trích xuất</h1>
+        <p>
+          Spec <code>docs/design/phase-5-ai.md</code> §4, §5.2–5.3, §6.3, §7.2, §8, §9. KH mẫu Trịnh Minh Anh như <a class="c-accent" href="customer.html">customer.html</a>
+          (bản CURRENT đầy đủ ở đó). Hôm nay giả lập <b class="num">26/09/2026</b>. Mỗi lúc chỉ một yêu cầu AI trong cả app (P5): khi một yêu cầu đang chạy, mọi nút AI (Phân tích, AI trích xuất, Kiểm tra kết nối) đều tắt.
+        </p>
+      </header>
+
+      <!-- ================= 1 · Settings → AI ================= -->
+      <h2 class="sec-title" id="s1">1 · Cài đặt → AI <span>§4, §9.3 — T-167 #408</span></h2>
+
+      <section class="specimen">
+        <p class="cap">1a · Trang chính — OpenCode Go, đã có key</p>
+        <div class="frame">
+          <div class="settings-layout">
+            <nav class="card subnav" aria-label="Mục cài đặt">
+              <a href="#">Chung</a>
+              <a href="settings-data.html">Dữ liệu</a>
+              <a href="#" class="on">AI</a>
+            </nav>
+            <div class="stack" style="gap: 16px">
+              <section class="card" aria-label="Provider và model">
+                <div class="card-head"><h2>Provider &amp; model</h2><span class="meta">lưu ngay khi đổi · đi theo backup</span></div>
+                <div class="set-row">
+                  <span class="k">Provider</span>
+                  <span class="v">
+                    <span class="choices"><span class="choice">Mock</span><span class="choice on">OpenCode Go</span></span>
+                    <span class="help">OpenCode Go: gọi model thật qua gói OpenCode Go (trả theo tháng). Mock: câu mẫu cố định, không gọi mạng — chỉ để thử app.</span>
+                  </span>
+                </div>
+                <div class="set-row">
+                  <span class="k">Model</span>
+                  <span class="v">
+                    <span class="input wide">DeepSeek V4.1 Flash <span class="muted">· mặc định</span><span class="caret">▾</span></span>
+                    <span class="help">Danh sách cố định: GLM-5.3 · Kimi K3 · DeepSeek V4 Pro · DeepSeek V4.1 Flash</span>
+                  </span>
+                </div>
+                <div class="set-row">
+                  <span class="k">Mức suy luận</span>
+                  <span class="v">
+                    <span class="input wide off">Mặc định<span class="caret">▾</span></span>
+                    <span class="help">Model này chưa được kiểm với mức suy luận — app dùng <b>Mặc định</b> (không gửi). Khi model hỗ trợ: Mặc định · Thấp · Vừa · Cao.</span>
+                  </span>
+                </div>
+              </section>
+
+              <section class="card" aria-label="API key">
+                <div class="card-head"><h2>API key OpenCode Go</h2><span class="badge c-ok plain">Đã có key</span></div>
+                <div class="set-row">
+                  <span class="k">Key mới</span>
+                  <span class="v">
+                    <span class="row" style="gap: 8px">
+                      <span class="input wide placeholder">Dán key mới để thay key đang có</span>
+                      <button class="btn btn-primary">Lưu key</button>
+                    </span>
+                    <span class="help">Key lưu trong Windows Credential Manager của máy này — không vào file dữ liệu, không vào backup, không bao giờ hiện lại. Mỗi máy nhập key riêng.</span>
+                  </span>
+                </div>
+                <div class="set-row">
+                  <span class="k">Xóa key</span>
+                  <span class="v"><button class="btn btn-danger">Xóa key…</button></span>
+                </div>
+              </section>
+
+              <section class="card" aria-label="Kiểm tra kết nối">
+                <div class="card-head"><h2>Kiểm tra kết nối</h2><span class="meta">một yêu cầu rất ngắn, tốn rất ít token, không lưu gì</span></div>
+                <div class="row" style="gap: 12px">
+                  <button class="btn">Kiểm tra kết nối</button>
+                  <span class="read"><b class="c-ok">Kết nối được</b> · DeepSeek V4.1 Flash</span>
+                </div>
+              </section>
+
+              <section class="card" aria-label="Dữ liệu gửi đi">
+                <div class="card-head"><h2>Dữ liệu gửi tới OpenCode Go</h2></div>
+                <ul style="margin: 0; padding-left: 18px; color: var(--text-2); font-size: var(--fs-sm)">
+                  <li><b style="color: var(--text)">Phân tích:</b> chỉ các dữ kiện KYC đã xác nhận còn hiệu lực (trường, giá trị, ngày xác nhận), tuổi thay cho năm sinh, hạng mục còn thiếu. Không gửi tên, mã KH, tên RE, ghi chú KYC, lịch hẹn, hợp đồng.</li>
+                  <li><b style="color: var(--text)">AI trích xuất gửi nguyên văn ghi chú tới OpenCode Go</b> — ghi chú có thể có tên người.</li>
+                  <li>Kiểm tra kết nối chỉ gửi một chữ "ping".</li>
+                </ul>
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="specimens">
+        <section class="specimen">
+          <p class="cap">1b · Provider = Mock</p>
+          <div class="card">
+            <div class="set-row">
+              <span class="k">Provider</span>
+              <span class="v">
+                <span class="choices"><span class="choice on">Mock</span><span class="choice">OpenCode Go</span></span>
+                <span class="help">Kết quả Mock luôn gắn nhãn <span class="badge c-warn plain">Mock</span> ở panel và lịch sử.</span>
+              </span>
+            </div>
+            <div class="set-row">
+              <span class="k">Model</span>
+              <span class="v"><span class="input wide off">DeepSeek V4.1 Flash<span class="caret">▾</span></span><span class="help">Chỉ dùng khi chọn OpenCode Go (giá trị vẫn giữ).</span></span>
+            </div>
+            <div class="set-row">
+              <span class="k">Kiểm tra kết nối</span>
+              <span class="v"><span class="dim">Mock chạy trong app, không cần kết nối.</span></span>
+            </div>
+          </div>
+          <p class="help" style="margin-top: 6px">Thẻ API key vẫn hiện (nhập key trước khi chuyển sang OpenCode Go).</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">1c · Bản web (<code>pnpm dev:web</code>, e2e) — không có Rust</p>
+          <div class="card">
+            <div class="set-row">
+              <span class="k">Provider</span>
+              <span class="v">
+                <span class="choices"><span class="choice on">Mock</span><span class="choice off">OpenCode Go</span></span>
+                <span class="help">OpenCode Go chỉ có trong app exe.</span>
+              </span>
+            </div>
+            <div class="set-row">
+              <span class="k">API key</span>
+              <span class="v"><span class="dim">Chỉ có trong app exe.</span></span>
+            </div>
+          </div>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">1d · Key — chưa có / lỗi tại ô / đã lưu</p>
+          <div class="card">
+            <div class="card-head"><h2>API key OpenCode Go</h2><span class="badge c-warn plain">Chưa có key</span></div>
+            <div class="field">
+              <label>Key</label>
+              <div class="row" style="gap: 8px"><span class="input wide placeholder">Dán key OpenCode Go</span><button class="btn btn-primary">Lưu key</button></div>
+            </div>
+            <div class="divider"></div>
+            <div class="field">
+              <label>Key</label>
+              <div class="row" style="gap: 8px"><span class="input wide error">&nbsp;</span><button class="btn btn-primary">Lưu key</button></div>
+              <span class="field-err">Chưa nhập key.</span>
+              <span class="field-err">Key dài quá 512 ký tự — kiểm tra lại đoạn đã dán.</span>
+            </div>
+            <div class="divider"></div>
+            <div class="read"><b>Đã lưu key</b> · ô nhập trống lại, thẻ chuyển sang <span class="badge c-ok plain">Đã có key</span></div>
+            <div class="alert" style="margin-top: 8px"><b>Không đọc / ghi được key trong Windows Credential Manager</b><span class="dim">Key chưa được lưu. Thử lại; nếu vẫn lỗi, kiểm tra Credential Manager của Windows.</span></div>
+          </div>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">1e · Xóa key</p>
+          <div class="dialog">
+            <div class="dialog-head"><div><h2>Xóa API key OpenCode Go?</h2><div class="sub">chỉ trên máy này</div></div><span class="x">×</span></div>
+            <div class="dialog-body">
+              <p style="margin: 0; color: var(--text-2)">Sau khi xóa, Phân tích và AI trích xuất với OpenCode Go báo "Chưa có API key" tới khi nhập key mới. Lịch sử phân tích không đổi.</p>
+            </div>
+            <div class="dialog-foot"><span class="spacer"></span><button class="btn">Hủy</button><button class="btn btn-danger">Xóa key</button></div>
+          </div>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">1f · Kiểm tra kết nối — đang chạy / lỗi / bị khóa</p>
+          <div class="card stack" style="gap: 10px">
+            <div class="row" style="gap: 12px"><button class="btn" disabled>Kiểm tra kết nối</button><span class="row dim" style="gap: 8px"><span class="spin"></span>Đang kiểm tra…</span></div>
+            <div class="row" style="gap: 12px"><button class="btn">Kiểm tra kết nối</button><span class="read err">Key không hợp lệ hoặc hết hạn</span></div>
+            <div class="row" style="gap: 12px"><button class="btn">Kiểm tra kết nối</button><span class="read err">OpenCode Go báo lỗi (HTTP 502): Bad gateway</span></div>
+            <div class="row" style="gap: 12px"><button class="btn" disabled>Kiểm tra kết nối</button><span class="help">Đang có một yêu cầu AI khác — chờ xong rồi thử lại.</span></div>
+          </div>
+          <p class="help" style="margin-top: 6px">Thông báo lỗi theo bảng 2l. Không có Hủy: yêu cầu tối đa 64 token.</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">1g · Cài đặt AI đã lưu không đọc được</p>
+          <div class="card">
+            <div class="callout warn">Cài đặt AI đã lưu không hợp lệ (model "gpt-6" không còn trong danh sách) — đang dùng mặc định: Mock · DeepSeek V4.1 Flash · Mặc định. Chọn lại để lưu.</div>
+          </div>
+          <p class="help" style="margin-top: 6px">Một dòng ở đầu trang Cài đặt → AI; app mở bình thường. Mức suy luận đã lưu (vd. Cao) với model chưa hỗ trợ <b>không</b> hiện cảnh báo: ô tắt, app dùng Mặc định (1a).</p>
+        </section>
+      </div>
+
+      <!-- ================= 2 · Panel ================= -->
+      <h2 class="sec-title" id="s2">2 · Panel KYC Intelligence <span>§3, §7.2, §9.1 — T-168A #409, T-168B #410</span></h2>
+
+      <div class="specimens">
+        <section class="specimen">
+          <p class="cap">2a · Được gọi AI, chưa có phân tích</p>
+          <div class="panel">
+            <div class="card-head"><h2>KYC Intelligence</h2><span class="badge c-info plain">PAIN_POINT_ANALYSIS</span><span class="actions"><button class="btn btn-primary" style="padding: 4px 12px">Phân tích</button></span></div>
+            <p class="dim" style="margin: 0; font-size: var(--fs-sm)">Chưa có phân tích AI cho KH này.</p>
+            <p class="help" style="margin: 6px 0 0">Gửi 8 dữ kiện đã xác nhận tới OpenCode Go · DeepSeek V4.1 Flash (đổi ở Cài đặt → AI). Không gửi tên, mã KH, ghi chú.</p>
+          </div>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">2b · Cổng CONFLICT_RESOLUTION — nút tắt, không gọi AI</p>
+          <div class="panel">
+            <div class="card-head"><h2>KYC Intelligence</h2><span class="badge c-danger plain">CONFLICT_RESOLUTION</span><span class="actions"><button class="btn" disabled style="padding: 4px 12px">Phân tích</button></span></div>
+            <div class="callout danger">Giải quyết mâu thuẫn ở <b>Số con</b> trước khi phân tích. <a class="c-accent" href="#s3">Xem ở Dữ kiện KYC →</a></div>
+            <p class="help" style="margin: 8px 0 0">Đã có phân tích trước đó → hiện bên dưới, mờ, như 2h nhưng không có nút Phân tích lại.</p>
+          </div>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">2c · Cổng KYC_INSUFFICIENT — nút tắt, không gọi AI</p>
+          <div class="panel">
+            <div class="card-head"><h2>KYC Intelligence</h2><span class="badge c-warn plain">KYC_INSUFFICIENT</span><span class="actions"><button class="btn" disabled style="padding: 4px 12px">Phân tích</button></span></div>
+            <div class="callout warn">Cần chăm sóc, KYC thêm thông tin khách hàng. Còn thiếu: <b>Gia đình</b>, <b>Nghề nghiệp / nguồn thu</b> — câu hỏi gợi ý ở thẻ Dữ kiện KYC.</div>
+          </div>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">2d · Đang chạy — mọi nút AI khác tắt</p>
+          <div class="panel">
+            <div class="card-head"><h2>KYC Intelligence</h2><span class="badge c-ok">CURRENT</span><span class="actions"><button class="btn" disabled style="padding: 4px 10px">Phân tích lại</button></span></div>
+            <div class="busy"><span class="spin"></span><span>Đang phân tích… <span class="muted">· DeepSeek V4.1 Flash · tối đa 2 phút mỗi lần thử</span></span><span class="spacer"></span><button class="btn">Hủy</button></div>
+            <div class="faded" style="margin-top: 10px">
+              <h4>Behavioral Hypotheses</h4>
+              <div class="hyp">KH có thể ưu tiên sự chắc chắn cho mục tiêu giáo dục hơn là tăng trưởng tài sản.</div>
+            </div>
+          </div>
+          <p class="help" style="margin-top: 6px">Bản cũ (nếu có) vẫn hiện, mờ, tới khi có kết quả. Lần thử lại do validator không hiện riêng.</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">2e · Đã Hủy, OpenCode Go chưa trả lời</p>
+          <div class="panel">
+            <div class="card-head"><h2>KYC Intelligence</h2><span class="badge c-ok">CURRENT</span><span class="actions"><button class="btn" disabled style="padding: 4px 10px">Phân tích lại</button></span></div>
+            <div class="busy"><span class="spin"></span><span>Đang hủy… <span class="muted">· chờ yêu cầu đang chạy kết thúc (tối đa 2 phút) rồi mới gọi AI được tiếp</span></span></div>
+          </div>
+          <p class="help" style="margin-top: 6px">Kết quả về sau khi Hủy bị bỏ, không lưu; panel về đúng trạng thái trước khi bấm.</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">2f · Lỗi — không lưu gì</p>
+          <div class="panel">
+            <div class="card-head"><h2>KYC Intelligence</h2><span class="badge c-ok">CURRENT</span><span class="actions"><button class="btn" style="padding: 4px 10px">Phân tích lại</button></span></div>
+            <div class="callout danger row" style="gap: 10px"><span>Đã chạm giới hạn dùng của gói OpenCode Go — thử lại sau.</span><span class="spacer"></span><button class="btn" style="padding: 3px 9px">Thử lại</button></div>
+            <div class="callout danger row" style="gap: 10px; margin-top: 8px"><span>Chưa có API key OpenCode Go — nhập ở <a class="c-accent" href="#s1">Cài đặt → AI</a>.</span><span class="spacer"></span><button class="btn" style="padding: 3px 9px">Thử lại</button></div>
+            <p class="help" style="margin: 8px 0 0">Bản cũ vẫn hiện bên dưới như trước khi bấm. Đóng thông báo khi bấm lại hoặc rời màn.</p>
+          </div>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">2g · Chế độ discovery (3 khối) + kết quả Mock</p>
+          <div class="panel">
+            <div class="card-head"><h2>KYC Intelligence</h2><span class="badge c-ok">CURRENT</span><span class="badge c-warn plain">Mock</span><span class="actions"><button class="btn" style="padding: 4px 10px">Phân tích lại</button></span></div>
+            <div class="row" style="flex-wrap: wrap; gap: 6px">
+              <span class="badge c-info plain">PROFILE_DISCOVERY</span>
+              <span class="chip num">kyc v1 · discovery@1 · Mock · 25/09 16:40</span>
+            </div>
+            <p class="help" style="margin: 6px 0 0">Kết quả Mock: câu mẫu cố định để thử app, không phải phân tích AI.</p>
+
+            <h4>Behavioral Hypotheses <span class="muted" style="font-weight: 400">giả thuyết ban đầu</span></h4>
+            <div class="hyp">KH có thể đang ở giai đoạn tích lũy, chưa có người phụ thuộc.
+              <div class="ev"><span>Bằng chứng: <a href="#">F2</a>, <a href="#">F3</a></span><span>Mức bằng chứng: trung bình · 2 dữ kiện, mới nhất 25/09/2026</span></div>
+            </div>
+
+            <h4>Discovery Strategy</h4>
+            <div class="hyp">Tìm hiểu quy mô và cách phân bổ tài sản hiện có.
+              <div class="ev"><span>Hạng mục còn thiếu: Tài sản / AUM</span></div>
+            </div>
+            <div class="hyp">Hỏi điều KH ưu tiên nhất trong 5–10 năm tới.
+              <div class="ev"><span>Hạng mục còn thiếu: Mục tiêu &amp; mốc thời gian</span></div>
+            </div>
+            <div class="hyp">Hỏi cách KH đang dùng nguồn thu hằng năm.
+              <div class="ev"><span>Bằng chứng: <a href="#">F4</a> · Hạng mục còn thiếu: Khẩu vị rủi ro</span><span>Mức bằng chứng: thấp · 1 dữ kiện, mới nhất 25/09/2026</span></div>
+            </div>
+
+            <h4>Next Best Actions</h4>
+            <div class="hyp">Chuẩn bị các câu hỏi gợi ý về mục tiêu và tài sản cho buổi gặp tới.
+              <div class="ev"><span>Hạng mục còn thiếu: Mục tiêu &amp; mốc thời gian</span></div>
+            </div>
+          </div>
+          <p class="help" style="margin-top: 6px">Không có khối Needs · Pain points · Themes. "Thông tin tham khảo" chỉ hiện khi có phần tử (customer.html).</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">2h · Bản mới nhất STALE — lời nhắc material / không material</p>
+          <div class="panel">
+            <div class="card-head"><h2>KYC Intelligence</h2><span class="badge plain" style="color: var(--text-3)">STALE</span><span class="actions"><button class="btn btn-primary" style="padding: 4px 10px">Phân tích lại</button></span></div>
+            <div class="callout warn">KYC đã đổi ở trường cốt lõi từ 20/09 — nên phân tích lại.</div>
+            <div class="callout" style="margin-top: 6px">KYC có thay đổi nhỏ từ 20/09.</div>
+            <div class="faded">
+              <div class="row" style="flex-wrap: wrap; gap: 6px; margin-top: 10px">
+                <span class="badge c-info plain">PAIN_POINT_ANALYSIS</span>
+                <span class="chip num">kyc v3 · analysis@1 · DeepSeek V4.1 Flash · 14/09 11:02</span>
+              </div>
+              <h4>Behavioral Hypotheses</h4>
+              <div class="hyp">KH có thể ưu tiên sự chắc chắn cho mục tiêu giáo dục hơn là tăng trưởng tài sản.
+                <div class="ev"><span>Bằng chứng: <a href="#">F12</a>, <a href="#">F13</a></span><span>Mức bằng chứng: trung bình · 2 dữ kiện, mới nhất 14/09/2026</span></div>
+              </div>
+              <p class="muted" style="margin: 0; font-size: var(--fs-xs)">… các khối còn lại như bản CURRENT</p>
+            </div>
+          </div>
+          <p class="help" style="margin-top: 6px">Hai lời nhắc là hai trường hợp, không hiện cùng lúc. "Từ dd/mm" = ngày ghi nhận sớm nhất trong các phiên bản KYC sau bản đã phân tích (material: chỉ xét phiên bản material) — #ask 4.</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">2i · Lần gần nhất bị REJECTED</p>
+          <div class="panel">
+            <div class="card-head"><h2>KYC Intelligence</h2><span class="badge c-ok">CURRENT</span><span class="actions"><button class="btn" style="padding: 4px 10px">Phân tích lại</button></span></div>
+            <div class="callout danger">Lần phân tích 26/09 bị loại: Behavioral Hypotheses #1 có "xác suất" (V3). <a class="c-accent" href="#s2k">Xem chi tiết</a></div>
+            <div class="row" style="flex-wrap: wrap; gap: 6px; margin-top: 10px">
+              <span class="badge c-info plain">PAIN_POINT_ANALYSIS</span>
+              <span class="chip num">kyc v3 · analysis@1 · DeepSeek V4.1 Flash · 14/09 11:02</span>
+            </div>
+            <p class="muted" style="margin: 8px 0 0; font-size: var(--fs-xs)">… bản ACCEPTED mới nhất hiện đủ bên dưới</p>
+          </div>
+          <p class="help" style="margin-top: 6px">Chỉ hiện khi dòng REJECTED mới hơn bản ACCEPTED mới nhất. Lý do = lỗi đầu tiên của lần thử cuối, tên khối tiếng Anh như đề mục + số thứ tự.</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">2j · Lịch sử phân tích — cuối panel</p>
+          <div class="panel">
+            <h4 style="margin-top: 0">Lịch sử phân tích <span class="muted" style="font-weight: 400">bấm một dòng để xem</span></h4>
+            <table class="versions">
+              <thead><tr><th>Ngày</th><th>KYC</th><th>Prompt</th><th>Provider / model</th><th class="r"></th></tr></thead>
+              <tbody class="num">
+                <tr><td>26/09 10:15</td><td>v3</td><td>analysis@1</td><td>DeepSeek V4.1 Flash</td><td class="r"><span class="badge c-danger plain">REJECTED</span></td></tr>
+                <tr class="sel"><td>14/09 11:02</td><td>v3</td><td>analysis@1</td><td>DeepSeek V4.1 Flash</td><td class="r"><span class="badge c-ok plain">CURRENT</span></td></tr>
+                <tr><td>13/07 09:30</td><td>v2</td><td>discovery@1</td><td><span class="badge c-warn plain">Mock</span></td><td class="r"><span class="badge plain" style="color: var(--text-3)">STALE</span></td></tr>
+                <tr><td>12/07 16:20</td><td>v2</td><td>discovery@1</td><td>Kimi K3</td><td class="r"><span class="badge plain" style="color: var(--text-3)">STALE</span></td></tr>
+                <tr><td>12/07 16:05</td><td>v2</td><td>discovery@1</td><td>Kimi K3</td><td class="r"><span class="badge c-danger plain">REJECTED</span></td></tr>
+              </tbody>
+            </table>
+            <p class="help" style="margin: 8px 0 0">Mới nhất ở trên (theo thứ tự ghi). Không có dòng cổng chặn (P2): v1 (01/06) là KYC_INSUFFICIENT nên không có lần gọi AI nào.</p>
+            <div class="divider"></div>
+            <div class="callout" style="font-size: var(--fs-sm)">Đang xem lần <b>12/07 16:20</b> · kyc v2 · <span class="badge plain" style="color: var(--text-3)">STALE</span> <a class="c-accent" href="#">← Về bản mới nhất</a></div>
+            <p class="help" style="margin: 6px 0 0">Xem dòng ACCEPTED cũ: nội dung dòng đó hiện ở chỗ bản mới nhất, mờ như 2h, có dải "Đang xem…" ở đầu.</p>
+          </div>
+        </section>
+
+        <section class="specimen" id="s2k">
+          <p class="cap">2k · Xem dòng REJECTED — báo cáo validator, không hiện output</p>
+          <div class="dialog">
+            <div class="dialog-head"><div><h2>Lần phân tích 26/09 10:15 bị loại</h2><div class="sub num">kyc v3 · analysis@1 · DeepSeek V4.1 Flash · 2 lần thử · 9.840 token</div></div><span class="x">×</span></div>
+            <div class="dialog-body">
+              <div class="sub-lbl">Lần thử 1</div>
+              <ul style="margin: 0; padding-left: 18px; color: var(--text-2); font-size: var(--fs-sm)">
+                <li>V3 · Behavioral Hypotheses #1: có "xác suất"</li>
+                <li>V4 · Next Best Actions #2: có "gói bảo hiểm"</li>
+              </ul>
+              <div class="sub-lbl">Lần thử 2</div>
+              <ul style="margin: 0; padding-left: 18px; color: var(--text-2); font-size: var(--fs-sm)">
+                <li>V3 · Behavioral Hypotheses #1: có "xác suất"</li>
+              </ul>
+              <div class="alert info">Kết quả bị loại không dùng làm phân tích. Bản hiện hành vẫn là lần 14/09.</div>
+            </div>
+            <div class="dialog-foot"><span class="spacer"></span><button class="btn">Đóng</button></div>
+          </div>
+          <p class="help" style="margin-top: 6px">Lần trả lời không đọc được JSON: "V1 · Không có khối JSON hợp lệ". Token chỉ hiện với OpenCode Go.</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">2l · Thông báo lỗi (§5.3) — dùng chung panel, trích xuất, Cài đặt</p>
+          <div class="panel">
+            <table class="err-table">
+              <tbody>
+                <tr><td>AI_NO_KEY</td><td>Chưa có API key OpenCode Go — nhập ở <a class="c-accent" href="#s1">Cài đặt → AI</a></td></tr>
+                <tr><td>AI_UNAUTHORIZED</td><td>Key không hợp lệ hoặc hết hạn</td></tr>
+                <tr><td>AI_RATE_LIMITED</td><td>Đã chạm giới hạn dùng của gói OpenCode Go — thử lại sau</td></tr>
+                <tr><td>AI_TIMEOUT</td><td>AI không trả lời trong 2 phút</td></tr>
+                <tr><td>AI_NETWORK</td><td>Không kết nối được OpenCode Go</td></tr>
+                <tr><td>AI_HTTP</td><td>OpenCode Go báo lỗi (HTTP 502): <span class="dim">≤ 200 ký tự đầu thông điệp của server</span></td></tr>
+                <tr><td>AI_BAD_RESPONSE</td><td>Trả lời của OpenCode Go không đọc được</td></tr>
+                <tr><td>AI_BUSY</td><td>Đang có một yêu cầu AI khác — chờ xong rồi thử lại</td></tr>
+                <tr><td>AI_KEYRING</td><td>Không đọc / ghi được key trong Windows Credential Manager</td></tr>
+                <tr><td>AI_BAD_REQUEST · lỗi khác</td><td>Có lỗi trong app khi gọi AI — thử lại; nếu lặp lại, báo cho người hỗ trợ</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="help" style="margin-top: 6px">Mã lỗi không hiện cho RE. Không thông báo nào chứa key, header hay nội dung gửi đi.</p>
+        </section>
+      </div>
+
+      <!-- ================= 3 · F codes + extraction ================= -->
+      <h2 class="sec-title" id="s3">3 · Mã F và AI trích xuất <span>§6.1, §8 — T-168B #410, T-170 #412</span></h2>
+
+      <div class="specimens">
+        <section class="specimen">
+          <p class="cap">3a · Mã F trên Dữ kiện KYC — bấm "F13" ở bằng chứng</p>
+          <div class="panel">
+            <div class="card-head"><h2>Dữ kiện KYC</h2><span class="meta num">6/8 chiều · v3</span></div>
+            <div class="dim-row">
+              <span class="mark c-ok">✓</span><span class="title">Gia đình</span>
+              <span class="fact"><span>Đã kết hôn; 2 con, 14 và 10 tuổi</span><span class="fid">F7 · N-0712</span></span>
+              <span class="fact"><span>Hai vợ chồng cùng quyết định chi tiêu giáo dục</span><span class="fid">F9 · N-0914</span></span>
+            </div>
+            <div class="dim-row">
+              <span class="mark c-warn">!</span><span class="title">Mối quan tâm <span class="badge c-warn plain">Mâu thuẫn phụ</span></span>
+              <span class="fact"><span>"Ưu tiên thanh khoản"</span><span class="fid">F10 · N-0712</span></span>
+              <span class="fact hl"><span>"Chấp nhận khóa vốn 10 năm cho quỹ giáo dục"</span><span class="fid">F13 · N-0914</span></span>
+            </div>
+          </div>
+          <p class="help" style="margin-top: 6px">Mã = <code>F{seq}</code> đúng như AI nhận và trả (F13, không "F-13"). Bấm mã ở bằng chứng → cuộn tới dữ kiện, viền vàng ~2 giây. Mã trỏ tới dữ kiện đã bị thay thế (bản STALE) → cuộn tới dòng "giá trị cũ" nếu đang hiện, không thì báo "F5 không còn hiệu lực".</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">3b · Nút AI trích xuất trên ghi chú (Dòng thời gian)</p>
+          <div class="panel stack" style="gap: 12px">
+            <div class="ev-item">
+              <span class="when">14/09/2026</span>
+              <span class="what">Ghi chú KYC <button class="btn">AI trích xuất</button></span>
+              <span class="note">N-0914: "Con lớn dự định du học 2029, hai vợ chồng cùng quyết chi tiêu giáo dục. Không muốn đầu tư chứng khoán."</span>
+            </div>
+            <div class="ev-item">
+              <span class="when">20/09/2026</span>
+              <span class="what">Ghi chú KYC <button class="btn" disabled title="Ghi chú quá ngắn">AI trích xuất</button></span>
+              <span class="note">N-0920: "Gọi lại sau." <span class="help">· Ghi chú quá ngắn</span></span>
+            </div>
+            <div class="ev-item sys">
+              <span class="when">12/07/2026</span>
+              <span class="what">Ghi chú hệ thống</span>
+              <span class="note">Năm sinh cập nhật từ hồ sơ KH: 1984</span>
+            </div>
+          </div>
+          <p class="help" style="margin-top: 6px">Nút chỉ có trên ghi chú do RE ghi; tắt khi ghi chú dưới 20 ký tự, hoặc khi đang có yêu cầu AI khác. Bỏ nút "AI trích xuất" ở đầu thẻ Dữ kiện KYC (bản cũ).</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">3c · Đang trích xuất</p>
+          <div class="panel">
+            <div class="ev-item">
+              <span class="when">14/09/2026</span>
+              <span class="what">Ghi chú KYC <button class="btn" disabled>AI trích xuất</button></span>
+              <span class="note">N-0914: "Con lớn dự định du học 2029, hai vợ chồng cùng quyết…"</span>
+              <div class="busy"><span class="spin"></span><span>Đang trích xuất…</span><span class="spacer"></span><button class="btn">Hủy</button></div>
+            </div>
+          </div>
+          <p class="help" style="margin-top: 6px">Hủy như panel (2e): "Đang hủy…" tới khi yêu cầu kết thúc.</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">3d · Đề xuất chờ xác nhận — dưới ghi chú</p>
+          <div class="panel">
+            <div class="ev-item">
+              <span class="when">14/09/2026</span>
+              <span class="what">Ghi chú KYC <button class="btn">AI trích xuất</button></span>
+              <span class="note">N-0914: "Con lớn dự định du học 2029, hai vợ chồng cùng quyết chi tiêu giáo dục. Không muốn đầu tư chứng khoán."</span>
+              <span class="pending"><span>AI đề xuất: <b>Khẩu vị rủi ro</b>: Không muốn đầu tư chứng khoán <q>Không muốn đầu tư chứng khoán</q></span><span class="spacer"></span><button class="btn">Xác nhận</button><button class="btn">Bỏ</button></span>
+              <span class="pending"><span>AI đề xuất: <b>Mốc thời gian mục tiêu</b>: 2029 <q>Con lớn dự định du học 2029</q></span><span class="spacer"></span><button class="btn">Xác nhận</button><button class="btn">Bỏ</button></span>
+              <span class="help">1 đề xuất trùng dữ kiện đang có đã ẩn. Đề xuất không lưu — rời màn là mất.</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">3e · 0 đề xuất / không đọc được / lỗi</p>
+          <div class="panel stack" style="gap: 8px">
+            <span class="pending"><span>AI không tìm thấy dữ kiện mới trong ghi chú này.</span><span class="spacer"></span><button class="btn">Đóng</button></span>
+            <div class="callout danger row" style="gap: 10px"><span>AI trả kết quả không đọc được.</span><span class="spacer"></span><button class="btn" style="padding: 3px 9px">Thử lại</button></div>
+            <div class="callout danger row" style="gap: 10px"><span>Không kết nối được OpenCode Go.</span><span class="spacer"></span><button class="btn" style="padding: 3px 9px">Thử lại</button></div>
+          </div>
+          <p class="help" style="margin-top: 6px">Hiện ngay dưới ghi chú, cùng chỗ với 3d.</p>
+        </section>
+
+        <section class="specimen">
+          <p class="cap">3f · Xác nhận → hộp + Dữ kiện điền sẵn (kyc-forms 7b / 7c)</p>
+          <div class="dialog">
+            <div class="dialog-head"><div><h2>+ Dữ kiện · Khẩu vị rủi ro</h2><div class="sub">Từ ghi chú N-0914 (14/09/2026) · AI đề xuất</div></div><span class="x">×</span></div>
+            <div class="dialog-body">
+              <div class="read">AI trích từ ghi chú: <b>"Không muốn đầu tư chứng khoán"</b></div>
+              <div class="field">
+                <label>Giá trị <span class="req">*</span> <span class="opt">sửa được trước khi lưu</span></label>
+                <div class="input focus">Thận trọng — không muốn đầu tư chứng khoán</div>
+              </div>
+              <div class="alert ok">
+                <b>Sau khi lưu: KYC v4</b>
+                <span class="dim">Dữ kiện gắn với ghi chú N-0914 như khi RE tự xác nhận. Trường đã có giá trị khác → chọn Cập nhật / Đánh dấu mâu thuẫn như 7c.</span>
+              </div>
+            </div>
+            <div class="dialog-foot"><span class="spacer"></span><button class="btn">Hủy</button><button class="btn btn-primary">Xác nhận dữ kiện</button></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ================= Ask ================= -->
+      <section class="card" id="ask">
+        <div class="card-head"><h2>Đề xuất cần Owner chốt (G3)</h2></div>
+        <ol class="q">
+          <li><b>Mock và Kiểm tra kết nối (1b):</b> ẩn nút, thay bằng "Mock chạy trong app, không cần kết nối". Ô Model / Mức suy luận tắt nhưng giữ giá trị khi chọn Mock.</li>
+          <li><b>Mức suy luận với model chưa hỗ trợ (1a, 1g):</b> ô tắt, dòng giải thích cố định dưới ô; app luôn dùng Mặc định dù giá trị đã lưu (hay nhập từ backup) là Thấp / Vừa / Cao. Không hiện thêm cảnh báo.</li>
+          <li><b>Mã F (3a):</b> hiện <code>F13</code> (đúng mã AI dùng) thay cho "F-13" ở mọi nơi: Dữ kiện KYC, bằng chứng, dòng thời gian.</li>
+          <li><b>Ngày "từ dd/mm" của lời nhắc STALE (2h):</b> ngày ghi nhận <b>sớm nhất</b> trong các phiên bản KYC sau bản đã phân tích (lời nhắc material: chỉ xét phiên bản material). Ghi chú có thể ghi lùi ngày, nên phiên bản đầu tiên theo thứ tự chưa chắc có ngày sớm nhất.</li>
+          <li><b>Đang chạy / lỗi (2d, 2f):</b> bản cũ vẫn hiện bên dưới (mờ khi đang chạy); không có trạng thái riêng cho lần thử lại.</li>
+          <li><b>Lý do REJECTED (2i, 2k):</b> hiện tên khối + số thứ tự + chi tiết của validator, kèm mã luật (V3…); không hiện output thô, kể cả trong hộp xem chi tiết.</li>
+          <li><b>Chip Mock (2g, 2j):</b> badge vàng "Mock" ở đầu panel + chip "· Mock ·" + một dòng "câu mẫu cố định"; ở lịch sử, cột Provider / model hiện badge Mock.</li>
+          <li><b>AI trích xuất (3b–3e):</b> chuyển nút từ đầu thẻ Dữ kiện KYC xuống <b>từng ghi chú ở Dòng thời gian</b> (đúng §8: "trên từng ghi chú"); đề xuất hiện ngay dưới ghi chú; có Hủy như panel; dòng "1 đề xuất trùng … đã ẩn".</li>
+          <li><b>Xác nhận đề xuất (3f):</b> mở hộp "+ Dữ kiện" hiện có, điền sẵn trường / giá trị, gắn ghi chú nguồn, hiện câu AI trích; luồng Cập nhật / Mâu thuẫn giữ như 7c.</li>
+          <li><b>Thông báo "lỗi khác" (2l):</b> câu chung cho <code>AI_BAD_REQUEST</code> và lỗi không phải <code>AiError</code>.</li>
+        </ol>
+      </section>
+
+      <p class="mock-note">Mockup G3 Phase 5 · dữ liệu 100% giả lập · mức bằng chứng tính deterministic (§6.3), không phải xác suất · AI không gửi, không đặt lịch thay RE</p>
+    </main>
+  </body>
+</html>
