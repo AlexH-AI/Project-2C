@@ -239,6 +239,7 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
     expect(analysisContent(row, versions).chip).toEqual({
       version: 3,
       prompt: 'analysis@1',
+      provider: 'MOCK',
       model: null,
       at: '14/09 11:02',
     });
@@ -254,6 +255,7 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
     });
     expect(analysisContent(real, versions).chip).toMatchObject({
       version: 1,
+      provider: 'OPENCODE_GO',
       model: 'DeepSeek V4.1 Flash',
     });
   });
