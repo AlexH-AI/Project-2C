@@ -183,7 +183,7 @@ Thông báo lỗi **không** chứa key, header hay thân yêu cầu; chỉ mã 
 ### 6.1 Đầu vào gửi AI (tối thiểu dữ liệu)
 
 - **Phân tích:** chỉ dữ kiện đã xác nhận còn hiệu lực (`active`, `conflict`) của phiên bản hiện tại, mỗi dữ kiện một mã **`F{seq}`** (seq của `kyc_facts`, theo KH), kèm nhãn trường tiếng Việt, giá trị, ngày xác nhận, cờ mâu thuẫn; tuổi = năm nay − năm sinh; trạng thái cổng + hạng mục còn thiếu. **Không gửi** tên, mã KH, tên RE, ghi chú KYC, lịch hẹn, HĐ.
-- **Trích xuất:** đúng một ghi chú KYC (văn bản RE đã ghi) + danh sách trường được phép. Ghi chú có thể chứa tên người: Settings → AI ghi rõ "Trích xuất gửi nguyên văn ghi chú tới OpenCode Go".
+- **Trích xuất:** đúng một ghi chú KYC (văn bản RE đã ghi) + danh sách trường được phép. Ghi chú có thể chứa tên người: Settings → AI ghi rõ "Trích xuất gửi nguyên văn ghi chú tới OpenCode".
 - Mã `F{seq}` cũng hiện ở danh sách dữ kiện của Hồ sơ KH (như mockup "F-09") để RE bấm từ bằng chứng tới dữ kiện.
 - Trả lời: lấy khối JSON đầu tiên trong `content` (bỏ rào ```` ```json ````); không có JSON → lỗi V1.
 
