@@ -377,6 +377,6 @@ Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue, cỡ theo P1 (ADR-0001 p
 
 ## 8. Bước tiếp theo ngay
 
-Bước chi tiết từng phiên: HANDOFF (Issue ghim nhãn `handoff`). Thứ tự lớn (cập nhật 07/10/2026):
+Bước chi tiết từng phiên: HANDOFF (Issue ghim nhãn `handoff`). Thứ tự lớn (cập nhật 08/10/2026):
 
-1. Phase 5 — AI copilot (bắt đầu 07/10): D-1 đã chốt (G4 / G6, phụ lục D-1 của ADR-0009); spec `design/phase-5-ai.md` duyệt G1 / G2 07/10; milestone Phase 5 mở với 13 Issue T-160…T-171. Kế tiếp: G5 (`design/phase-5-prompts.md`), G3 mockup, G2 hồ sơ eval; song song các task không chờ cổng (T-160…T-164).
+1. Phase 5 — AI copilot (bắt đầu 07/10): D-1 đã chốt (G4 / G6, phụ lục D-1 của ADR-0009); spec `design/phase-5-ai.md` duyệt G1 / G2 07/10; milestone Phase 5 mở với 13 Issue T-160…T-171. G5 duyệt 07/10 (`design/phase-5-prompts.md`); xong T-160…T-163, T-165, T-166. Kế tiếp: G3 mockup (`design/mockups/ai.html`) và G2 hồ sơ eval (`golden/ai-eval.md`) chờ Owner duyệt; song song T-164, T-169, T-172.

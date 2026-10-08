@@ -150,7 +150,8 @@
         margin-top: 4px;
         display: flex;
         justify-content: space-between;
-        gap: 8px;
+        flex-wrap: wrap;
+        gap: 2px 8px;
       }
       .ev a {
         color: var(--info);
@@ -158,26 +159,19 @@
       .strength {
         white-space: nowrap;
       }
-      .themes {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 6px;
-        font-size: var(--fs-sm);
-      }
-      .themes > div {
-        background: var(--bg-2);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        padding: 8px;
-      }
-      .themes b {
-        display: block;
+      .sub-lbl {
         font-size: var(--fs-xs);
         color: var(--text-3);
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        margin-bottom: 3px;
+        margin: 8px 0 4px;
+      }
+      .ref {
+        border: 1px dashed var(--border-strong);
+        border-radius: var(--radius-sm);
+        padding: 2px 10px 4px;
+        margin-top: 14px;
       }
       .col-stack {
         display: flex;
@@ -269,37 +263,35 @@
               <div class="card-head">
                 <h2>Dữ kiện KYC</h2>
                 <span class="meta num">6/8 chiều · v3</span>
-                <span class="actions"><button class="btn" style="padding: 4px 10px">AI trích xuất</button></span>
               </div>
 
               <div class="dim-row">
                 <span class="mark c-ok">✓</span><span class="title">Danh tính / tuổi</span>
-                <span class="fact"><span>Sinh 12/03/1984 (đủ ngày)</span><span class="fid">F-01 · N-0601</span></span>
+                <span class="fact"><span>Sinh 12/03/1984 (đủ ngày)</span><span class="fid">F1 · N-0601</span></span>
               </div>
               <div class="dim-row">
                 <span class="mark c-ok">✓</span><span class="title">Gia đình</span>
-                <span class="fact"><span>Đã kết hôn; 2 con, 14 và 10 tuổi</span><span class="fid">F-07 · N-0712</span></span>
-                <span class="fact"><span>Hai vợ chồng cùng quyết định chi tiêu giáo dục</span><span class="fid">F-09 · N-0914</span></span>
+                <span class="fact"><span>Đã kết hôn; 2 con, 14 và 10 tuổi</span><span class="fid">F7 · N-0712</span></span>
+                <span class="fact"><span>Hai vợ chồng cùng quyết định chi tiêu giáo dục</span><span class="fid">F9 · N-0914</span></span>
               </div>
               <div class="dim-row">
                 <span class="mark c-ok">✓</span><span class="title">Nghề nghiệp / nguồn thu</span>
-                <span class="fact"><span>Chủ DN phân phối thiết bị y tế</span><span class="fid">F-03 · N-0601</span></span>
+                <span class="fact"><span>Chủ DN phân phối thiết bị y tế</span><span class="fid">F3 · N-0601</span></span>
               </div>
               <div class="dim-row">
                 <span class="mark c-ok">✓</span><span class="title">Tài sản / AUM</span>
-                <span class="fact"><span class="num">AUM ước ~25 tỷ; 2 BĐS tại TP.HCM</span><span class="fid">F-05 · N-0712</span></span>
+                <span class="fact"><span class="num">AUM ước ~25 tỷ; 2 BĐS tại TP.HCM</span><span class="fid">F5 · N-0712</span></span>
               </div>
               <div class="dim-row">
                 <span class="mark c-ok">✓</span><span class="title">Mục tiêu &amp; mốc thời gian</span>
-                <span class="fact"><span class="num">Con lớn du học năm 2029</span><span class="fid">F-12 · N-0914</span></span>
+                <span class="fact"><span class="num">Con lớn du học năm 2029</span><span class="fid">F12 · N-0914</span></span>
               </div>
               <div class="dim-row">
                 <span class="mark c-warn">!</span><span class="title">Mối quan tâm <span class="badge c-warn plain">Mâu thuẫn phụ</span></span>
-                <span class="fact"><span>"Ưu tiên thanh khoản" <span class="muted">vs</span> "chấp nhận khóa vốn 10 năm"</span><span class="fid">F-10 / F-13</span></span>
+                <span class="fact"><span>"Ưu tiên thanh khoản" <span class="muted">vs</span> "chấp nhận khóa vốn 10 năm"</span><span class="fid">F10 / F13</span></span>
               </div>
               <div class="dim-row">
                 <span class="mark muted">○</span><span class="title">Khẩu vị rủi ro <span class="muted" style="font-weight: 400">thiếu</span></span>
-                <span class="pending"><span>AI đề xuất: "không muốn đầu tư chứng khoán" (N-0914)</span><span class="spacer"></span><button class="btn">Xác nhận</button><button class="btn">Bỏ</button></span>
               </div>
               <div class="dim-row">
                 <span class="mark muted">○</span><span class="title">Bảo vệ hiện có <span class="muted" style="font-weight: 400">thiếu</span></span>
@@ -333,9 +325,10 @@
                 </div>
                 <div class="ev-item kyc">
                   <div class="when">14/09/2026</div>
-                  <div class="what">Cập nhật KYC 14/09/2026 <span class="badge c-accent plain">material</span></div>
+                  <div class="what">Cập nhật KYC 14/09/2026 <span class="badge c-accent plain">material</span> <button class="btn" style="padding: 2px 9px; font-size: var(--fs-xs); font-weight: 500; float: right">AI trích xuất</button></div>
                   <div class="note">N-0914: "Con lớn dự định du học 2029, hai vợ chồng cùng quyết… không muốn đầu tư chứng khoán…"</div>
-                  <div class="fid">+ F-09, F-12, F-13 · kyc v3</div>
+                  <div class="fid">+ F9, F12, F13 · kyc v3</div>
+                  <div class="pending" style="margin-top: 6px"><span>AI đề xuất: <b>Khẩu vị rủi ro</b>: Không muốn đầu tư chứng khoán <span class="muted">"Không muốn đầu tư chứng khoán"</span></span><span class="spacer"></span><button class="btn">Xác nhận</button><button class="btn">Bỏ</button></div>
                 </div>
                 <div class="ev-item stage">
                   <div class="when">14/09/2026 · sau cuộc gặp lần 3</div>
@@ -350,7 +343,7 @@
                   <div class="when">12/07/2026</div>
                   <div class="what">Cập nhật KYC 12/07/2026 <span class="badge c-accent plain">material</span></div>
                   <div class="note">N-0712: gia đình, tài sản</div>
-                  <div class="fid">+ F-05, F-07, F-10 · kyc v2</div>
+                  <div class="fid">+ F5, F7, F10 · kyc v2</div>
                 </div>
                 <div class="ev-item stage">
                   <div class="when">12/07/2026</div>
@@ -359,7 +352,7 @@
                 <div class="ev-item kyc">
                   <div class="when">01/06/2026</div>
                   <div class="what">KYC lần đầu · <span class="badge st-n4">N4</span> → <span class="badge st-n3">N3</span></div>
-                  <div class="fid">+ F-01, F-03 · kyc v1</div>
+                  <div class="fid">+ F1, F3 · kyc v1</div>
                 </div>
               </div>
             </section>
@@ -395,45 +388,81 @@
               </div>
               <div class="row" style="flex-wrap: wrap; gap: 6px">
                 <span class="badge c-info plain">PAIN_POINT_ANALYSIS</span>
-                <span class="chip num">kyc v3 · prompt p1.2 · 14/09 11:02</span>
+                <span class="chip num">kyc v3 · analysis@1 · DeepSeek V4.1 Flash · 14/09 11:02</span>
               </div>
-              <div class="callout warn" style="margin-top: 10px">Mâu thuẫn phụ ở "Mối quan tâm" (F-10 / F-13) — phân tích vẫn chạy, cần RE làm rõ.</div>
+              <div class="callout warn" style="margin-top: 10px">Mâu thuẫn phụ ở "Mối quan tâm chính" (F10 / F13) — phân tích vẫn chạy, cần RE làm rõ.</div>
 
               <h4>Behavioral Hypotheses <span class="muted" style="font-weight: 400">giả thuyết, cần kiểm chứng</span></h4>
               <div class="hyp">
                 KH có thể ưu tiên sự chắc chắn cho mục tiêu giáo dục hơn là tăng trưởng tài sản.
-                <div class="ev"><span>Bằng chứng: <a href="#">F-12</a>, <a href="#">F-13</a></span><span class="strength">Mức bằng chứng: trung bình · 2 dữ kiện</span></div>
+                <div class="ev"><span>Bằng chứng: <a href="#">F12</a>, <a href="#">F13</a></span><span class="strength">Mức bằng chứng: trung bình · 2 dữ kiện, mới nhất 14/09/2026</span></div>
               </div>
               <div class="hyp">
                 Quyết định về giáo dục có thể cần sự đồng thuận của chồng KH.
-                <div class="ev"><span>Bằng chứng: <a href="#">F-09</a></span><span class="strength">Mức bằng chứng: thấp · 1 dữ kiện</span></div>
+                <div class="ev"><span>Bằng chứng: <a href="#">F9</a></span><span class="strength">Mức bằng chứng: thấp · 1 dữ kiện, mới nhất 14/09/2026</span></div>
               </div>
 
               <h4>Needs · Pain points · Opportunity Themes</h4>
-              <div class="themes">
-                <div><b>Needs</b>Dòng tiền học phí 2029–2033 cho con lớn</div>
-                <div><b>Pain points</b>Chưa rõ nguồn nào dùng cho học phí khi tiền gửi đáo hạn</div>
-                <div><b>Themes</b>Kế hoạch giáo dục; thanh khoản gia đình</div>
+              <div class="sub-lbl">Needs</div>
+              <div class="hyp">
+                Dòng tiền học phí 2029–2033 cho con lớn.
+                <div class="ev"><span>Bằng chứng: <a href="#">F7</a>, <a href="#">F12</a></span><span class="strength">Mức bằng chứng: trung bình · 2 dữ kiện, mới nhất 14/09/2026</span></div>
+              </div>
+              <div class="sub-lbl">Pain points</div>
+              <div class="hyp">
+                Chưa rõ nguồn nào dùng cho học phí khi cần thanh khoản.
+                <div class="ev"><span>Bằng chứng: <a href="#">F5</a>, <a href="#">F10</a></span><span class="strength">Mức bằng chứng: trung bình · 2 dữ kiện, mới nhất 12/07/2026</span></div>
+              </div>
+              <div class="sub-lbl">Opportunity Themes</div>
+              <div class="hyp">
+                Kế hoạch giáo dục gắn với thanh khoản gia đình.
+                <div class="ev"><span>Bằng chứng: <a href="#">F5</a>, <a href="#">F10</a>, <a href="#">F12</a></span><span class="strength">Mức bằng chứng: cao · 3 dữ kiện, mới nhất 14/09/2026</span></div>
               </div>
 
               <h4>Discovery Strategy</h4>
-              <ul style="margin: 0; padding-left: 18px; font-size: var(--fs-sm); color: var(--text-2)">
-                <li>Hỏi thứ tự ưu tiên giữa thanh khoản và khóa vốn dài hạn (làm rõ F-10 / F-13).</li>
-                <li>Hỏi các hợp đồng bảo vệ gia đình đang có.</li>
-              </ul>
+              <div class="hyp">
+                Hỏi thứ tự ưu tiên giữa thanh khoản và khóa vốn dài hạn.
+                <div class="ev"><span>Bằng chứng: <a href="#">F10</a>, <a href="#">F13</a></span><span class="strength">Mức bằng chứng: trung bình · 2 dữ kiện, mới nhất 14/09/2026</span></div>
+              </div>
+              <div class="hyp">
+                Hỏi các giải pháp bảo vệ gia đình đang có.
+                <div class="ev"><span>Hạng mục còn thiếu: Bảo vệ hiện có</span></div>
+              </div>
+
+              <h4>Next Best Actions</h4>
+              <div class="hyp">
+                Chuẩn bị bảng dòng tiền học phí 2029–2033 để trao đổi ở buổi gặp tới.
+                <div class="ev"><span>Bằng chứng: <a href="#">F12</a></span><span class="strength">Mức bằng chứng: thấp · 1 dữ kiện, mới nhất 14/09/2026</span></div>
+              </div>
+              <div class="hyp">
+                Xin gặp cả hai vợ chồng KH ở buổi tới.
+                <div class="ev"><span>Bằng chứng: <a href="#">F9</a></span><span class="strength">Mức bằng chứng: thấp · 1 dữ kiện, mới nhất 14/09/2026</span></div>
+              </div>
+
+              <div class="ref">
+                <h4>Thông tin tham khảo — không phải kết luận</h4>
+                <div class="hyp">
+                  <b>Tâm lý học:</b> KH có thể thiên về nhóm S (DISC) — coi trọng sự ổn định và đồng thuận trong gia đình.
+                  <div class="ev"><span>Bằng chứng: <a href="#">F9</a>, <a href="#">F13</a></span><span class="strength">Mức bằng chứng: trung bình · 2 dữ kiện, mới nhất 14/09/2026</span></div>
+                </div>
+                <div class="hyp">
+                  <b>Tử vi / huyền học:</b> KH có thể tuổi Giáp Tý, mệnh Kim (sinh khoảng 1984).
+                  <div class="ev"><span>Bằng chứng: <a href="#">F1</a></span><span class="strength">Mức bằng chứng: thấp · 1 dữ kiện, mới nhất 01/06/2026</span></div>
+                </div>
+              </div>
 
               <h4>Lịch sử phân tích</h4>
               <table class="versions">
                 <tbody class="num">
-                  <tr><td>v3 · 14/09</td><td>kyc v3</td><td class="r"><span class="badge c-ok plain">CURRENT</span></td></tr>
-                  <tr><td>v2 · 12/07</td><td>kyc v2</td><td class="r"><span class="badge plain" style="color: var(--text-3)">STALE</span></td></tr>
-                  <tr><td>v2a · 12/07</td><td class="dim">validator: có "xác suất"</td><td class="r"><span class="badge c-danger plain">REJECTED</span></td></tr>
-                  <tr><td>v1 · 01/06</td><td class="dim">Cần chăm sóc, KYC thêm thông tin khách hàng</td><td class="r"><span class="badge c-warn plain">KYC_INSUFFICIENT</span></td></tr>
+                  <tr><td>14/09 11:02</td><td>kyc v3 · analysis@1 · DeepSeek V4.1 Flash</td><td class="r"><span class="badge c-ok plain">CURRENT</span></td></tr>
+                  <tr><td>12/07 16:20</td><td>kyc v2 · discovery@1 · Kimi K3</td><td class="r"><span class="badge plain" style="color: var(--text-3)">STALE</span></td></tr>
+                  <tr><td>12/07 16:05</td><td class="dim">V3: có "xác suất"</td><td class="r"><span class="badge c-danger plain">REJECTED</span></td></tr>
                 </tbody>
               </table>
+              <p class="muted" style="margin: 6px 0 0; font-size: var(--fs-xs)">Chỉ lần gọi AI thật; cổng chặn không ghi lịch sử (P2). Đủ cột + xem từng dòng: ai.html 2j, 2k.</p>
             </section>
           </div>
-          <div class="mock-note">Mockup G3 · AI chỉ ghi vào lịch sử phân tích; mức bằng chứng tính deterministic từ số lượng/độ mới dữ kiện, không phải xác suất</div>
+          <div class="mock-note">Mockup G3 (cập nhật Phase 5, xem ai.html) · AI chỉ ghi vào lịch sử phân tích; mức bằng chứng tính deterministic từ số lượng / độ mới dữ kiện, không phải xác suất · mã dữ kiện F{seq} đúng như AI nhận</div>
         </div>
       </div>
     </div>
