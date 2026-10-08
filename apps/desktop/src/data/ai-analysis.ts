@@ -1,17 +1,19 @@
 /**
- * The app's side of an AI analysis (spec Phase 5 §3, §9.1): one runner shared by every AI button
- * (P5), the adapter and settings, and one analysis from the click to the saved row.
+ * The app's side of the AI (spec Phase 5 §3, §4, §9.1): one runner shared by every AI button (P5),
+ * Settings → AI stored in the `settings` row `ai`, the adapter of the chosen provider, and one
+ * analysis from the click to the saved row.
  */
 import {
   createAiRunner,
   createMockAdapter,
-  DEFAULT_AI_MODEL,
+  readAiSettings,
   runAnalysis,
   type AiAbortSignal,
   type AiAdapter,
   type AiErrorCode,
   type AiRunner,
   type AiSettings,
+  type StoredAiSettings,
 } from '@p2c/ai';
 import {
   DbError,
@@ -22,36 +24,68 @@ import {
   type DbErrorCode,
 } from '@p2c/db';
 import type { CalendarDate, KycGateState } from '@p2c/domain';
+import type { OpenCodeClient } from './ai-tauri';
+
+/** What one AI request runs with, read at the click. */
+export interface AiCall {
+  readonly runner: AiRunner;
+  readonly adapter: AiAdapter;
+  readonly settings: AiSettings;
+}
 
 export interface AppAi {
   /** The one runner of the app: while it is busy, every AI button is off (P5). */
   readonly runner: AiRunner;
-  readonly adapter: AiAdapter;
-  /** Settings → AI, read at each click. */
+  /** OpenCode through Rust (key, calls); `undefined` in web mode, where OpenCode is off (§4.1). */
+  readonly opencode: OpenCodeClient | undefined;
+  /** Settings → AI as stored, with why it fell back to the defaults (mockup ai.html 1g). */
+  stored(): StoredAiSettings;
+  /** The settings a request runs with: the stored ones, but always the Mock in web mode. */
   settings(): AiSettings;
+  /** Saves Settings → AI; never the key, which only Rust keeps. */
+  save(settings: AiSettings): void;
+  /** The runner, the settings and the adapter of their provider (and plan). */
+  call(): AiCall;
   /** Gets every error the AI cannot give back to a screen (a bug); the app logs it. */
   reportError(error: unknown): void;
 }
 
-/** Until Settings → AI reads the `ai` key (T-167), the starting values of spec §4.1. */
-const DEFAULT_SETTINGS: AiSettings = {
-  provider: 'MOCK',
-  model: DEFAULT_AI_MODEL,
-  reasoning: 'DEFAULT',
-};
+/** Where Settings → AI is kept: the `settings` row `ai`, which goes into the backup. */
+export interface AiSettingsStore {
+  read(): string | undefined;
+  write(settings: AiSettings): void;
+}
 
-export function createAppAi(
-  options: {
-    readonly reportError?: (error: unknown) => void;
-    /** Tests pass a stand-in; the app uses the Mock. */
-    readonly adapter?: AiAdapter;
-  } = {},
-): AppAi {
-  const { reportError = (error: unknown) => console.error(error) } = options;
+export interface AppAiOptions {
+  readonly reportError?: (error: unknown) => void;
+  /** The exe passes Rust's OpenCode commands; web mode has none. */
+  readonly opencode?: OpenCodeClient;
+  /** Tests pass a stand-in for every provider. */
+  readonly adapter?: AiAdapter;
+}
+
+export function createAppAi(store: AiSettingsStore, options: AppAiOptions = {}): AppAi {
+  const { reportError = (error: unknown) => console.error(error), opencode } = options;
+  const runner = createAiRunner(reportError);
+  const mock = createMockAdapter();
+  const stored = () => readAiSettings(store.read());
+  const settings = (): AiSettings => {
+    const { settings: chosen } = stored();
+    return opencode ? chosen : { ...chosen, provider: 'MOCK' };
+  };
   return {
-    runner: createAiRunner(reportError),
-    adapter: options.adapter ?? createMockAdapter(),
-    settings: () => DEFAULT_SETTINGS,
+    runner,
+    opencode,
+    stored,
+    settings,
+    save: (next) => store.write(next),
+    call() {
+      const chosen = settings();
+      const adapter =
+        options.adapter ??
+        (chosen.provider === 'MOCK' || !opencode ? mock : opencode.adapter(chosen.opencodePlan));
+      return { runner, adapter, settings: chosen };
+    },
     reportError,
   };
 }
@@ -101,9 +135,7 @@ export async function analyseCustomer(
     // No version means no facts confirmed yet: nothing for the gate to let through.
     if (!version) return { kind: 'blocked', state: 'KYC_INSUFFICIENT' };
     const result = await runAnalysis({
-      runner: ai.runner,
-      adapter: ai.adapter,
-      settings: ai.settings(),
+      ...ai.call(),
       customerId,
       kycVersionId: version.id,
       profile: { facts },

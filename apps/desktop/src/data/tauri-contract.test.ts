@@ -2,6 +2,7 @@
 // tested only against its own copy, and a renamed command or argument shows only in the exe.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
+import { tauriOpenCode } from './ai-tauri';
 import { ALREADY_OPEN, DISK_FULL, tauriStorage } from './tauri-storage';
 
 const rust = (file: string) =>
@@ -11,8 +12,8 @@ const storage = rust('storage.rs');
 const ai = rust('ai.rs');
 
 /**
- * The AI commands (spec Phase 5 §5.1) and the camelCase arguments the webview sends. Their client
- * comes with Settings → AI and the panel; until then this pins the names it must use.
+ * The AI commands (spec Phase 5 §5.1) and the camelCase arguments the webview sends. `open_chatgpt`
+ * gets its client with the ChatGPT web panel (T-174); until then this pins its name.
  */
 const AI_COMMANDS: Record<string, string[]> = {
   ai_complete: ['plan', 'model', 'reasoning', 'messages', 'maxTokens'],
@@ -141,7 +142,32 @@ describe('the JS ↔ Rust storage contract', () => {
   });
 });
 
+/** Every AI command the app invokes, one call per client method. */
+async function aiCalls(): Promise<{ command: string; args: unknown }[]> {
+  const invoke = vi.fn().mockResolvedValue(null);
+  const client = tauriOpenCode(invoke);
+  await client.keyStatus();
+  await client.setKey('sk-1');
+  await client.deleteKey();
+  await client
+    .adapter('GO')
+    .complete({ model: 'glm-5.3', reasoning: null, messages: [], maxTokens: 1 });
+  return invoke.mock.calls.map(([command, args]) => ({ command: command as string, args }));
+}
+
 describe('the JS ↔ Rust AI contract', () => {
+  it('invokes the AI commands under the camelCase names of their Rust parameters', async () => {
+    const calls = await aiCalls();
+    expect(calls.map(({ command }) => command).sort()).toEqual(
+      Object.keys(AI_COMMANDS)
+        .filter((command) => command !== 'open_chatgpt')
+        .sort(),
+    );
+    for (const { command, args } of calls) {
+      expect(Object.keys(args ?? {}).sort(), command).toEqual([...AI_COMMANDS[command]!].sort());
+    }
+  });
+
   it('registers each AI command with the arguments of spec §5.1', () => {
     for (const [command, args] of Object.entries(AI_COMMANDS)) {
       expect(handlers(), command).toContain(command);

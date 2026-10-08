@@ -93,3 +93,4 @@ export type {
   AiAnalysisView,
   NewAiAnalysis,
 } from './ai-analyses';
+export * from './settings';

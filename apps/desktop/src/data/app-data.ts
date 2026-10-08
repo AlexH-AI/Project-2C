@@ -6,8 +6,10 @@
 import {
   countRecords,
   exportBackup,
+  getSetting,
   importBackup,
   openDatabase,
+  putSetting,
   seedDemoData,
   type Database,
   type RecordCounts,
@@ -19,7 +21,7 @@ import {
   localFileStamp,
   type CalendarDate,
 } from '@p2c/domain';
-import { createAppAi, type AppAi } from './ai-analysis';
+import { createAppAi, type AppAi, type AppAiOptions } from './ai-analysis';
 import { createPersistQueue, type PersistQueue } from './persist-queue';
 import { readTables, type Tables } from './tables';
 
@@ -158,8 +160,8 @@ export interface OpenAppDataOptions {
   readonly snapshot?: (day: CalendarDate) => Promise<Uint8Array | undefined>;
   /** Local time for export file names and the last save; tests pin it. */
   readonly clock?: () => Date;
-  /** The AI; the Mock when left out. */
-  readonly ai?: AppAi;
+  /** The AI: the exe passes Rust's OpenCode commands; left out, only the Mock runs. */
+  readonly ai?: AppAiOptions;
 }
 
 const UNSAVED_CHANGES = 'RELOAD_UNSAVED_CHANGES';
@@ -176,6 +178,9 @@ const STARTUP_BACKUP_FAILED = 'STARTUP_BACKUP_FAILED';
  */
 export const isStartupBackupError = (error: unknown): error is Error =>
   error instanceof Error && error.message === STARTUP_BACKUP_FAILED;
+
+/** The `settings` row of Settings → AI (spec Phase 5 §4.1). */
+const AI_SETTINGS = 'ai';
 
 /** The same seed on every machine: the same day gives the same data (spec §7). */
 const DEMO_SEED = 1;
@@ -309,6 +314,12 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     return backup;
   };
 
+  const run = <T>(command: (db: Database) => T): T => {
+    const result = command(db);
+    changed();
+    return result;
+  };
+
   return {
     db: () => db,
     subscribe(listener) {
@@ -317,11 +328,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     },
     revision: () => revision,
     tables: () => (tables ??= readTables(db)),
-    run(command) {
-      const result = command(db);
-      changed();
-      return result;
-    },
+    run,
     hasFile: storage !== undefined,
     saves,
     today,
@@ -363,6 +370,12 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     },
     latestBackup: () => storage?.latestBackup() ?? Promise.resolve(undefined),
     openFolder: (kind) => storage?.openFolder(kind) ?? Promise.resolve(),
-    ai: options.ai ?? createAppAi(),
+    ai: createAppAi(
+      {
+        read: () => getSetting(db, AI_SETTINGS),
+        write: (settings) => run((d) => putSetting(d, AI_SETTINGS, settings)),
+      },
+      options.ai,
+    ),
   };
 }
