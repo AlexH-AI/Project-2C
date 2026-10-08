@@ -333,7 +333,7 @@ Khối chỉ đọc như mockup `appointments.html`: Next Best Actions + Discove
 
 Mục **AI** trong thanh mục Cài đặt (mockup `settings-data.html` đã có mục "AI"): Provider, **Gói OpenCode** (Go / Credit, chỉ hiện khi provider là OpenCode — P8), Model, Reasoning, Key (§4.3), Kiểm tra kết nối (theo gói đang chọn), dòng giải thích dữ liệu gửi đi (§6.1), và một dòng về ChatGPT web: "Phân tích bằng ChatGPT web: bạn tự dán dữ kiện KYC (không có tên, mã KH) vào tài khoản ChatGPT của mình".
 
-### 9.4 Cần mockup (G3) — Owner duyệt 08/10/2026 (bổ sung W-1 ở §9.5 còn chờ)
+### 9.4 Cần mockup (G3) — Owner duyệt 08/10/2026
 
 Mockup: `mockups/ai.html` (+ `customer.html`), PR #427; quyết định ở `ai.html#ask`. Mục §9.3 "mockup `settings-data.html`" thay bằng `ai.html` §1.
 
@@ -343,7 +343,7 @@ Mockup: `mockups/ai.html` (+ `customer.html`), PR #427; quyết định ở `ai.
 
 ### 9.5 Cần mockup bổ sung (G3, W-1)
 
-Mockup: `mockups/ai.html#s4` (4a–4i), đề xuất ở `ai.html#ask-w1` — chờ Owner duyệt.
+Mockup: `mockups/ai.html#s4` (4a–4i), quyết định ở `ai.html#ask-w1` — Owner duyệt 08/10/2026 (PR #431), gồm đổi tên provider hiện "OpenCode Go" → "OpenCode" (mã `OPENCODE_GO` không đổi).
 
 1. Panel: nút **Phân tích bằng ChatGPT web**, phiên chờ dán, lần 1 không đạt, copy lỗi (ô chỉ đọc), chip "ChatGPT web" ở kết quả và lịch sử (§9.1).
 2. Settings → AI: ô **Gói OpenCode** (Go / Credit) và dòng ChatGPT web (§9.3).
