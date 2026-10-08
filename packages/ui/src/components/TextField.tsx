@@ -18,6 +18,8 @@ interface TextFieldProps {
   autoFocus?: boolean;
   /** A multi-line box of this many rows instead of a one-line input. */
   rows?: number;
+  /** Shown in the empty field (mockup `.input.placeholder`). */
+  placeholder?: string;
 }
 
 /** Labelled text input (mockup `.field`), one line unless `rows` is set, with its error under it. */
@@ -31,6 +33,7 @@ export function TextField({
   disabled,
   autoFocus,
   rows,
+  placeholder,
 }: TextFieldProps) {
   const id = useId();
   const noteId = `${id}-note`;
@@ -49,6 +52,7 @@ export function TextField({
         id={id}
         rows={rows}
         value={value}
+        placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
         aria-required={required}
         aria-invalid={error ? true : undefined}
@@ -57,7 +61,7 @@ export function TextField({
         autoFocus={autoFocus}
         data-autofocus={autoFocus || undefined}
         autoComplete="off"
-        className={`rounded-md border bg-surface-0 px-2 py-1.5 text-fg focus-visible:outline-2 focus-visible:outline-accent ${
+        className={`rounded-md border bg-surface-0 px-2 py-1.5 text-fg placeholder:text-fg-3 focus-visible:outline-2 focus-visible:outline-accent ${
           error ? 'border-danger' : 'border-border-strong'
         }`}
       />
