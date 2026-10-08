@@ -1,6 +1,6 @@
 # Phase 5 — Prompt và guardrail AI (G5)
 
-- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417)
+- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417) · §6a `web@1` (ChatGPT web, W-1) **Owner duyệt G5 08/10/2026** (PR #430)
 - **Nền:** spec `phase-5-ai.md` (G1 / G2 duyệt 07/10/2026) §3, §6.1, §6.2, §6.4, §8; ADR-0009 (ranh giới, mục 3 validator, mục 6 pháp lý); danh mục KYC `packages/domain/src/kyc-catalog.ts`
 - **Dùng ở:** T-165 #406 (validator V3–V6 lấy **nguyên** các danh sách §6–§8), T-166 #407 (chữ prompt §2–§5 chép **nguyên văn** vào `packages/ai/src/prompts/<mode>.ts`)
 - **Đổi chữ prompt hoặc danh sách chặn sau khi duyệt** = tăng version (`analysis@2`…) + qua G5 lần nữa. Lỗi chính tả trong code so với file này là lỗi, không phải phiên bản mới.
@@ -194,6 +194,25 @@ Hãy trả lại toàn bộ kết quả dưới dạng đúng một khối JSON 
 
 Không lưu, không qua validator (spec §4.3). `system`: `Trả lời đúng một từ: OK` · `user`: `ping` · `maxTokens` 64, `reasoning` theo Settings. Thành công = lệnh Rust trả về không lỗi; không kiểm nội dung.
 
+## 6a. Tin nhắn ChatGPT web `web@1` (spec §3.1, W-1 — Owner duyệt G5 08/10/2026)
+
+ChatGPT web không có message `system`: app ghép **một** tin nhắn để người dùng dán. Chữ prompt của chế độ (§2 hoặc §3) giữ **nguyên văn** — không tạo `analysis@2`; phần bọc dưới có version riêng `web@1`, và `prompt_version` lưu dạng `analysis@1+web@1` (spec §7.1). Thay `{prompt}` bằng chữ prompt của chế độ, `{input}` bằng khối JSON đầu vào §1.1 (đúng như message `user` khi gọi OpenCode):
+
+````plaintext
+Tin nhắn này có hai phần. Phần HƯỚNG DẪN là chỉ dẫn cho toàn bộ cuộc trò chuyện; phần ĐẦU VÀO chính là khối JSON mà hướng dẫn gọi là "tin nhắn tiếp theo". Chỉ dùng thông tin trong ĐẦU VÀO: không tìm kiếm web, không dùng nguồn bên ngoài, không dùng thông tin từ các cuộc trò chuyện khác. Chỉ trả lời bằng đúng một khối JSON theo định dạng trong hướng dẫn, không thêm lời giải thích.
+
+=== HƯỚNG DẪN ===
+{prompt}
+
+=== ĐẦU VÀO ===
+{input}
+````
+
+- **Thử lại:** nút "Copy yêu cầu sửa" copy đúng message thử lại §5 (cùng `{issues}`); người dùng dán vào **cùng** cuộc chat nên không cần lặp lại prompt.
+- Câu trả lời dán vào được xử lý như `content` của model: lấy khối JSON đầu tiên, bỏ rào ```` ```json ```` (spec §6.1); V1–V6 như §7–§8. Không có `maxTokens`, `reasoning` — người dùng tự chọn model và mức suy luận trên web.
+- Khối trên dùng rào `plaintext` để `prompts.test.ts` (đang so đúng bốn khối `text` §2–§5) còn xanh cho tới task cài `web@1` (spec §13 #13); task đó so khối này với hằng số trong code.
+- Đổi chữ phần bọc = `web@2` + qua G5; đổi prompt chế độ thì `prompt_version` đổi theo (vd. `analysis@2+web@1`).
+
 ## 7. Cách so khớp chung cho V3–V6
 
 1. Chuẩn hóa: NFC → chữ thường → thay mọi chuỗi khoảng trắng bằng một dấu cách. Gọi là **bản có dấu**.
@@ -323,3 +342,4 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 - [x] Message thử lại, Kiểm tra kết nối (§5, §6)
 - [x] Cách so khớp (§7)
 - [x] Danh sách chặn V3–V6 và ca kiểm C1–C17 (§8), gồm điểm lệch spec ở "khoản <số>" (§8.4)
+- [x] Tin nhắn ChatGPT web `web@1`: phần bọc, giữ nguyên prompt chế độ, thử lại dùng §5 (§6a — W-1, 08/10/2026)
