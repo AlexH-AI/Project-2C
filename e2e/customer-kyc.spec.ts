@@ -95,7 +95,7 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it 
   await expect(dialog.getByRole('list', { name: 'Dữ kiện từ ghi chú này' })).toContainText(
     'Số con2mới',
   );
-  await expect(dialog.getByText('Sau khi lưu: KYC v2 · material')).toBeVisible();
+  await expect(dialog.getByText('Sau khi lưu: KYC v2 · thay đổi quan trọng')).toBeVisible();
   await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
   await expect(dialog).toBeHidden();
 
