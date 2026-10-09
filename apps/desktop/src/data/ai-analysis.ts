@@ -115,7 +115,7 @@ export function createAppAi(store: AiSettingsStore, options: AppAiOptions = {}):
   };
   return {
     runner,
-    jobs: createAiJobs(runner),
+    jobs: createAiJobs(runner, reportError),
     opencode,
     stored,
     settings,

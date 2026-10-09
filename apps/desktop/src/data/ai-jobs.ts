@@ -22,7 +22,11 @@ export interface AiJobs {
   cancel(key: string): void;
 }
 
-export function createAiJobs(runner: AiRunner): AiJobs {
+/**
+ * `reportError` gets a job that rejects (a bug: the app's jobs give their failures as outcomes), once,
+ * so a screen reading `done` needs no handler of its own.
+ */
+export function createAiJobs(runner: AiRunner, reportError: (error: unknown) => void): AiJobs {
   const jobs = new Map<string, AiJob & { readonly controller: AbortController }>();
   const listeners = new Set<() => void>();
   const changed = () => {
@@ -52,7 +56,10 @@ export function createAiJobs(runner: AiRunner): AiJobs {
         jobs.delete(key);
         changed();
       };
-      done.then(end, end);
+      done.then(end, (error: unknown) => {
+        reportError(error);
+        end();
+      });
       changed();
       return done;
     },

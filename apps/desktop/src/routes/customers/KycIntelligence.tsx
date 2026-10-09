@@ -2,7 +2,7 @@ import type { AiAnalysisView, KycFactRecord, KycVersionRecord } from '@p2c/db';
 import { evaluateKycGate, formatDate, formatDayMonth, KYC_INSUFFICIENT_MESSAGE } from '@p2c/domain';
 import { Button } from '@p2c/ui';
 import { useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { analyseCustomer, startChatGptWeb, type AnalysisOutcome } from '../../data/ai-analysis';
+import { analyseCustomer, startChatGptWeb } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { LINK } from '../appointments/appointments-view';
@@ -254,7 +254,7 @@ export function KycIntelligence({
   const { runner } = app.ai;
   const busy = useSyncExternalStore(runner.subscribe, () => runner.busy);
   // Kept by the app, so the profile left and shown again still has it (review of PR 439).
-  const analysis = useAiJob<AnalysisOutcome>(`analysis:${customerId}`);
+  const analysis = useAiJob('analysis', customerId);
   // This customer's ChatGPT web session: it lives in the panel only, so leaving ends it (§3.1).
   const [web, setWeb] = useState<AiPanelWeb | null>(null);
   // While the copy and the browser are on their way, both buttons are off already (§3.1 item 4).
