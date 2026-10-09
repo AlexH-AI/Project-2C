@@ -69,11 +69,18 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
   - Có thể là *Data Clumps*: cặp `customerId` + `kycVersionId` đi cùng trong `AnalysisRequest` (`run.ts:216`), `AnalysisRow` (`run.ts:225`), `WebSession` (`web.ts:47`), `WebAnalysisRequest` (`web.ts:56`). Chỉ ghi lại, sửa khi có lý do khác.
   - Phạm vi export: `takeAnalysisInput`, `checkAnalysisAnswer`, `analysisOutcome`, `ANALYSIS_PROMPTS`, `MAX_RAW_OUTPUT` (`run.ts:255–293`) export để `web.ts` dùng, nên qua `export * from './run'` (`index.ts:9`) thành API công khai của `@p2c/ai` → đưa vào module dùng chung không re-export từ `index.ts`.
 - Mã F trên dòng thời gian (#462, T-168B, không chặn): mã `F{seq}` chưa hiện trên dòng thời gian (`CustomerKyc.tsx`), trong khi ghi chú cuối mockup `ai.html` muốn mã F "ở mọi nơi: Dữ kiện KYC, bằng chứng, dòng thời gian". Issue #410 và spec §6.1 chỉ yêu cầu danh sách dữ kiện; dòng thời gian hiện tách ghi chú và phiên bản thành hai mục, khác mockup `customer.html` → **Owner quyết** có cần Issue riêng không.
+- Script eval AI `tools/eval-ai-core.mjs` + `tools/eval-ai.mjs` (#474, T-171, không chặn). Gộp vào lần chạm sau của script (vd. PR sửa sau lần chạy eval đầu của Owner):
+  - `eval-ai-core.mjs:409` (`issueLines`) và `:451` (dòng V7 bỏ): `detail` của validator chứa tới 40 ký tự chữ do model viết (V3–V6 `có "…"`, V7 `trường "…" không được phép`), nhưng được ghi thẳng vào file kết quả, không qua `plain()`. Điều này trái quy tắc ở `:365` ("no HTML gets through"): model đề xuất `field` là `</details>…` thì khối `<details>` của ghi chú bị đóng sớm (GitHub lọc script nên không phải XSS) → bọc `plain()` cho `detail` (có thể cả `path`).
+  - `eval-ai-core.mjs:180–192` / `:314–318`: `recording` chỉ ghi các câu trả lời có về, nên lần thử 2 lỗi (timeout, 5xx) không được đếm. Khi đó cột "Lần thử" ghi 1 dù đã gọi 2 lần (thời gian có thể tới ~240 s) → đếm cả lần gọi lỗi, hoặc ghi "lần 2 lỗi" trong ô kết quả.
+  - `eval-ai-core.mjs:490`: tên prompt `analysis@1`, `discovery@1`, `extraction@1` ghi cứng trong đầu file kết quả, nên G5 tăng version thì file ghi sai prompt đã dùng → đọc từ `ANALYSIS_PROMPTS[mode].version` / `row.promptVersion` (prompt trích xuất thì từ `prompts/extraction.ts`).
+  - `eval-ai.mjs:21`: hook `resolve` bỏ qua mọi specifier kết thúc bằng `.\w+`, nên một import không đuôi như `./golden/kyc.fixture` sẽ không được thử thêm `.ts`. Hiện chưa lỗi vì chỉ file test import kiểu đó, còn cây import thật nạp được → thử thêm `.ts` cho cả specifier có dấu chấm khi không trỏ tới file có thật.
+  - Có thể là *Duplicated Code* / phụ thuộc ngầm: `eval-ai-core.mjs:443` `noteDetails` tìm chữ ghi chú trong `EVAL_NOTES` toàn cục, trong khi `runEval` nhận `noteSpecs` tiêm vào. Chạy với ghi chú ngoài bộ golden thì `formatReport` ném `TypeError` → giữ `note` trong kết quả của từng ghi chú.
 
 Nhắc khi viết `docs/metrics/phase-5.md` (chỉ ghi nhận, không phải việc sửa code):
 - PR #444 (T-167 phần 2) vượt ngưỡng kích thước: mã sản phẩm ~600 dòng, tổng diff ~1.090 dòng so với ~400 / ~800 (ADR-0001 phụ lục); PR đã nêu lý do.
 - PR #462 (T-168B) vượt ngưỡng kích thước: mã sản phẩm thêm ~480 dòng, tổng diff 836 dòng (4 dòng codemap sinh tự động); PR không nêu lý do.
 - PR #469 (T-170 phần 2) vượt ngưỡng kích thước: mã sản phẩm +482 / −53, tổng ~876 dòng; PR đã nêu lý do (hộp 3f + phần tách `FactValue` / `NextVersion`), task đã tách hai PR (#468 + #469).
+- PR #474 (T-171, script `pnpm eval:ai`) vượt ngưỡng kích thước: code sản phẩm ~580 dòng (`eval-ai-core.mjs` 584, `eval-ai.mjs` 52), tổng 1.596 dòng (gồm fixture chép từ golden 314, test 645); PR đã nêu lý do (phần lớn là dựng file kết quả, tách nhỏ hơn thì một nửa script không chạy được).
 
 ## RESOLVED
 
