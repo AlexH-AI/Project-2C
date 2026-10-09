@@ -2,7 +2,7 @@ import type { AiAnalysisView, KycVersionRecord } from '@p2c/db';
 import { evaluateKycGate, formatDate, formatDayMonth, type KycFact } from '@p2c/domain';
 import { Button } from '@p2c/ui';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { analyseCustomer } from '../../data/ai-analysis';
+import { analyseCustomer, startChatGptWeb } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import { joinParts, t } from '../../i18n';
 import {
@@ -12,14 +12,17 @@ import {
   modelLabel,
   runAfter,
   shownRun,
+  webOpened,
   type AiPanelBlocked,
   type AiPanelItem,
   type AiPanelRun,
   type AiPanelSource,
   type AiPanelSubgroup,
+  type AiPanelWeb,
 } from './ai-panel-view';
 import { ALERT } from './CustomerDialogs';
 import { BADGE } from './CustomerKyc';
+import { KycWebSession, rejectedReason } from './KycWebSession';
 
 const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 const HEADING = 'm-0 text-sm font-medium text-heading';
@@ -232,8 +235,11 @@ export function KycIntelligence({
   const busy = useSyncExternalStore(runner.subscribe, () => runner.busy);
   const [run, setRun] = useState<AiPanelRun>(IDLE);
   const running = useRef<AbortController | null>(null);
+  // This customer's ChatGPT web session: it lives in the panel only, so leaving ends it (§3.1).
+  const [web, setWeb] = useState<AiPanelWeb | null>(null);
+  const starting = useRef(false);
   const gate = useMemo(() => evaluateKycGate(facts), [facts]);
-  const view = aiPanelView({ gate, analyses, busy });
+  const view = aiPanelView({ gate, analyses, busy, webOpen: web !== null });
   const shown = shownRun(run, busy);
 
   // Once the request after Hủy has ended, the panel is back: a later request elsewhere (Settings →
@@ -257,6 +263,18 @@ export function KycIntelligence({
     running.current?.abort();
     setRun({ phase: 'cancelling' });
   };
+  const startWeb = async () => {
+    if (starting.current) return;
+    starting.current = true;
+    const outcome = await startChatGptWeb(app, customerId);
+    starting.current = false;
+    if (outcome.kind === 'session') {
+      setRun(IDLE);
+      setWeb(webOpened(outcome));
+    } else if (outcome.kind === 'failed') {
+      setRun({ phase: 'error', error: 'GENERAL' });
+    }
+  };
 
   const settings = app.ai.settings();
   const faded =
@@ -273,6 +291,9 @@ export function KycIntelligence({
         <span className={`${BADGE} ${BADGE_COLORS[view.badge]}`}>{view.badge}</span>
         {view.shown && !view.blocked && <SourceBadge source={analysisSource(view.shown)} />}
         <div className="flex-1" />
+        <Button disabled={!view.button.enabled} onClick={() => void startWeb()}>
+          {t('aiPanel.web.start')}
+        </Button>
         <Button
           variant={view.button.primary ? 'primary' : 'default'}
           disabled={!view.button.enabled}
@@ -282,6 +303,17 @@ export function KycIntelligence({
         </Button>
       </div>
       {view.blocked && <BlockedNote blocked={view.blocked} />}
+      {web && <KycWebSession web={web} versions={versions} onChange={setWeb} />}
+      {view.rejected && !web && (
+        <p className={`${ALERT} border-danger text-sm`}>
+          {view.rejected.issue
+            ? t('aiPanel.rejected', {
+                date: formatDayMonth(view.rejected.date),
+                value: rejectedReason(view.rejected.issue),
+              })
+            : t('aiPanel.rejectedPlain', { date: formatDayMonth(view.rejected.date) })}
+        </p>
+      )}
       {shown.phase === 'running' && (
         <BusyLine action={<Button onClick={cancel}>{t('aiPanel.cancel')}</Button>}>
           {t('aiPanel.running')}

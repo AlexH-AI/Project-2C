@@ -159,6 +159,40 @@ export const vi = {
   'aiPanel.levelName.MEDIUM': 'trung bình',
   'aiPanel.levelName.HIGH': 'cao',
   'aiPanel.chatgptWeb': 'ChatGPT web',
+  'aiPanel.rejected': 'Lần phân tích {date} bị loại: {value}.',
+  'aiPanel.rejectedPlain': 'Lần phân tích {date} bị loại.',
+  'aiPanel.rejectedReason': '{where} {value} ({code})',
+  'aiPanel.rejectedReasonWhole': '{value} ({code})',
+  'aiPanel.issue': '{code} · {where}: {value}',
+  'aiPanel.issueWhole': '{code} · {value}',
+  'aiPanel.issuePlace': '{name} #{n}',
+  'aiPanel.issueNoJson': 'Không có khối JSON hợp lệ',
+  'aiPanel.place.personalityNotes': 'Thông tin tham khảo',
+  // ChatGPT web (spec Phase 5 §3.1, mockup ai.html 4d–4i).
+  'aiPanel.web.start': 'Phân tích bằng ChatGPT web',
+  'aiPanel.web.readyTitle': 'Đã copy tin nhắn và mở ChatGPT',
+  'aiPanel.web.ready':
+    ' — dán tin nhắn vào ChatGPT, chờ trả lời, bấm copy câu trả lời rồi dán vào đây.',
+  'aiPanel.web.chip': 'kyc v{version} · {label} · chụp {when}',
+  'aiPanel.web.attempt': 'Lần thử {n} / 2',
+  'aiPanel.web.copyFailed':
+    'Không copy được — chọn hết đoạn dưới (Ctrl+A trong ô) rồi Ctrl+C. ChatGPT đã được mở.',
+  'aiPanel.web.manual': 'Tin nhắn để copy',
+  'aiPanel.web.openFailed':
+    'Không mở được trình duyệt — mở chatgpt.com bằng tay; tin nhắn đã được copy.',
+  'aiPanel.web.paste': 'Dán kết quả',
+  'aiPanel.web.pasteRetry': 'Dán kết quả (lần thử 2 / 2)',
+  'aiPanel.web.pastePlaceholder': 'Dán câu trả lời của ChatGPT (Ctrl+V)',
+  'aiPanel.web.pasteRetryPlaceholder': 'Dán câu trả lời mới',
+  'aiPanel.web.tooLong':
+    'Câu trả lời dài quá 20.000 ký tự — kiểm tra đã copy đúng câu trả lời chưa.',
+  'aiPanel.web.copyAgain': 'Copy lại',
+  'aiPanel.web.reopen': 'Mở lại ChatGPT',
+  'aiPanel.web.save': 'Kiểm tra và lưu',
+  'aiPanel.web.retryTitle': 'Câu trả lời chưa đạt — còn 1 lần thử',
+  'aiPanel.web.copyFix': 'Copy yêu cầu sửa',
+  'aiPanel.web.copyFixHelp': 'Dán vào {where} ChatGPT, rồi dán câu trả lời mới vào khung.',
+  'aiPanel.web.sameChat': 'cùng cuộc chat',
   // AI errors (spec Phase 5 §5.3, mockup ai.html 2l and 4c): never the code, key or request.
   'aiError.AI_NO_KEY': 'Chưa có API key OpenCode — nhập ở Cài đặt → AI.',
   'aiError.AI_UNAUTHORIZED':

@@ -1,7 +1,18 @@
+import type { WebSession } from '@p2c/ai';
 import type { AiAnalysisView } from '@p2c/db';
 import { calendarDate as day, type KycGateResult, type KycGateState } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { aiPanelView, analysisContent, analysisSource, runAfter, shownRun } from './ai-panel-view';
+import {
+  aiPanelView,
+  analysisContent,
+  analysisSource,
+  issueLine,
+  runAfter,
+  shownRun,
+  webAfter,
+  webChip,
+  webOpened,
+} from './ai-panel-view';
 
 const gateOf = (state: KycGateState, extra: Partial<KycGateResult> = {}): KycGateResult => ({
   state,
@@ -89,6 +100,172 @@ describe('aiPanelView (spec Phase 5 §9.1)', () => {
 
   it('turns Phân tích off while any AI request runs (P5)', () => {
     expect(aiPanelView({ gate: OPEN, analyses: NONE, busy: true }).button.enabled).toBe(false);
+  });
+
+  it('turns both buttons off, none the main one, while this customer has a web session (4e)', () => {
+    const view = aiPanelView({ gate: OPEN, analyses: NONE, busy: false, webOpen: true });
+    expect(view.button).toEqual({ again: false, primary: false, enabled: false });
+  });
+
+  it('says the latest analysis was REJECTED, with the first issue of its last attempt (2i)', () => {
+    const issue = { code: 'V3', path: 'hypotheses[0].text', detail: 'có "xác suất"' };
+    const rejected = analysis({
+      seq: 2,
+      state: 'REJECTED',
+      status: 'REJECTED',
+      date: day(2026, 9, 26),
+      validator: [
+        { attempt: 1, errors: [{ code: 'V4', path: 'needs[1].text', detail: 'x' }] },
+        { attempt: 2, errors: [issue, { code: 'V1', path: '$', detail: 'y' }] },
+      ],
+    });
+    const accepted = analysis({ seq: 1, state: 'CURRENT' });
+
+    expect(
+      aiPanelView({ gate: OPEN, analyses: [rejected, accepted], busy: false }).rejected,
+    ).toEqual({
+      date: day(2026, 9, 26),
+      issue: { code: 'V3', place: { key: 'hypotheses', number: 1 }, detail: 'có "xác suất"' },
+    });
+    // Only while it is newer than the latest ACCEPTED one.
+    const older = { ...rejected, seq: 0 };
+    expect(aiPanelView({ gate: OPEN, analyses: [accepted, older], busy: false }).rejected).toBe(
+      null,
+    );
+  });
+
+  it('says a REJECTED analysis with no readable JSON had none (4g)', () => {
+    const rejected = analysis({
+      seq: 1,
+      state: 'REJECTED',
+      status: 'REJECTED',
+      output: null,
+      validator: [
+        { attempt: 1, errors: [{ code: 'V1', path: '$', detail: 'không có khối JSON' }] },
+      ],
+    });
+    expect(aiPanelView({ gate: OPEN, analyses: [rejected], busy: false }).rejected?.issue).toEqual({
+      code: 'V1',
+      place: null,
+      detail: null,
+    });
+  });
+});
+
+describe('issueLine (mockups 2k, 4g)', () => {
+  it('names the block and the number of the element an issue is about', () => {
+    expect(issueLine({ code: 'V2', path: 'needs[1].evidence[0]', detail: 'F21 …' }, false)).toEqual(
+      { code: 'V2', place: { key: 'needs', number: 2 }, detail: 'F21 …' },
+    );
+    expect(issueLine({ code: 'V1', path: 'personalityNotes', detail: 'sai kiểu' }, false)).toEqual({
+      code: 'V1',
+      place: { key: 'personalityNotes', number: null },
+      detail: 'sai kiểu',
+    });
+  });
+
+  it('keeps an issue of the whole output, or of a key no block has, without a place', () => {
+    expect(issueLine({ code: 'V1', path: '$', detail: 'sai kiểu' }, false)).toEqual({
+      code: 'V1',
+      place: null,
+      detail: 'sai kiểu',
+    });
+    expect(issueLine({ code: 'V1', path: 'extra', detail: 'thừa' }, false)).toEqual({
+      code: 'V1',
+      place: null,
+      detail: 'extra: thừa',
+    });
+  });
+
+  it('gives no detail for an answer with no JSON: the panel has its own sentence', () => {
+    expect(issueLine({ code: 'V1', path: '$', detail: 'không có khối JSON' }, true)).toEqual({
+      code: 'V1',
+      place: null,
+      detail: null,
+    });
+  });
+});
+
+describe('the ChatGPT web session of the panel (spec Phase 5 §3.1, mockups 4e–4h)', () => {
+  const session = {
+    customerId: 'c1',
+    kycVersionId: 'v2',
+    input: { mode: 'discovery' },
+    attempts: [],
+  } as unknown as WebSession;
+  const opened = webOpened({
+    session,
+    message: 'Tin nhắn',
+    takenAt: new Date(2026, 8, 26, 10, 40),
+    copied: true,
+    opened: true,
+  });
+
+  it('opens with the input taken, its chip and nothing to copy by hand', () => {
+    expect(opened).toMatchObject({ manual: null, openFailed: false, retry: null, tooLong: false });
+    expect(webChip(opened, [{ id: 'v1' }, { id: 'v2' }])).toEqual({
+      version: 2,
+      prompt: 'discovery@1+web@1',
+      at: '26/09 10:40',
+    });
+  });
+
+  it('shows the message to copy by hand when the copy failed, and the browser that did not open', () => {
+    const failed = webOpened({
+      session,
+      message: 'Tin nhắn',
+      takenAt: new Date(),
+      copied: false,
+      opened: false,
+    });
+    expect(failed).toMatchObject({ manual: 'Tin nhắn', openFailed: true });
+  });
+
+  it('says a paste over 20 000 characters at the box, and keeps the attempt', () => {
+    const after = webAfter(opened, { kind: 'unusable', reason: 'TOO_LONG' });
+    expect(after).toMatchObject({ session, tooLong: true, retry: null });
+  });
+
+  it('lists the issues of a first wrong paste and keeps the session they come with', () => {
+    const next = {
+      ...session,
+      attempts: [{ content: 'x', parsed: null, issues: [] }],
+    } as unknown as WebSession;
+    const after = webAfter(
+      { ...opened, tooLong: true },
+      {
+        kind: 'retry',
+        session: next,
+        issues: [{ code: 'V1', path: '$', detail: 'không có khối JSON' }],
+        retryMessage: 'Sửa',
+      },
+    );
+    expect(after).toMatchObject({
+      session: next,
+      tooLong: false,
+      retry: { issues: [{ code: 'V1', place: null, detail: null }], message: 'Sửa' },
+    });
+  });
+
+  it('keeps the session on a bug, and ends it once saved or discarded', () => {
+    expect(webAfter(opened, { kind: 'failed' })).toMatchObject({ failed: true });
+    expect(webAfter(opened, { kind: 'saved', status: 'REJECTED' })).toBeNull();
+    expect(webAfter(opened, { kind: 'discarded' })).toBeNull();
+  });
+});
+
+describe('aiPanelView, more (spec Phase 5 §9.1)', () => {
+  it('reads a validator report it does not know as no reason', () => {
+    const rejected = analysis({
+      seq: 1,
+      state: 'REJECTED',
+      status: 'REJECTED',
+      validator: [{ attempt: 1, errors: ['V1'] }],
+    });
+    expect(aiPanelView({ gate: OPEN, analyses: [rejected], busy: false }).rejected).toEqual({
+      date: rejected.date,
+      issue: null,
+    });
   });
 
   it('shows the CURRENT analysis with Phân tích lại', () => {

@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import type { Download, Page } from '@playwright/test';
+import { expect, type Download, type Page } from '@playwright/test';
 import type ExcelJS from '../apps/desktop/node_modules/exceljs';
 
 // ExcelJS is a dependency of the app only; read it from there rather than add it to the root.
@@ -136,4 +136,38 @@ declare global {
   interface Window {
     exe: Exe;
   }
+}
+
+/** A new customer born in 1984, opened on its profile. */
+export async function createKycCustomer(page: Page, name: string) {
+  await page.goto('/#/customers');
+  await page.getByRole('button', { name: '+ Khách hàng' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Khách hàng mới' });
+  await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(name);
+  await dialog.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
+  await dialog.getByRole('textbox', { name: /^Ngày sinh/ }).fill('1984');
+  await dialog.getByRole('radio', { name: 'Nữ' }).check();
+  await dialog.getByRole('button', { name: 'Lưu KH' }).click();
+  await expect(dialog).toBeHidden();
+  await page.getByRole('link', { name: new RegExp(name) }).click();
+}
+
+/** One KYC note confirming `facts` (trường label, value); `conflict` marks them as conflicts. */
+export async function addKycNote(
+  page: Page,
+  name: string,
+  facts: readonly (readonly [string, string])[],
+  conflict = false,
+) {
+  await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
+  const dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${name}` });
+  await dialog.getByRole('textbox', { name: 'Ghi chú' }).fill('Gặp KH');
+  for (const [field, value] of facts) {
+    await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: field });
+    await dialog.getByRole('textbox', { name: 'Giá trị' }).fill(value);
+    if (conflict) await dialog.getByRole('radio', { name: /Đánh dấu mâu thuẫn/ }).check();
+    await dialog.getByRole('button', { name: 'Thêm dữ kiện' }).click();
+  }
+  await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
+  await expect(dialog).toBeHidden();
 }

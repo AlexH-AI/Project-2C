@@ -4,12 +4,17 @@
  */
 import {
   AI_MODELS,
+  ANALYSIS_PROMPTS,
+  WEB_WRAPPER,
   analysisOutputSchema,
   discoveryOutputSchema,
   type AiErrorCode,
   type AnalysisInput,
   type DiscoveryOutput,
   type PERSONALITY_SYSTEMS,
+  type ValidationCode,
+  type ValidationIssue,
+  type WebSession,
 } from '@p2c/ai';
 import type { AiAnalysisReminder, AiAnalysisView } from '@p2c/db';
 import {
@@ -19,13 +24,14 @@ import {
   fromIsoDate,
   fromLocalDate,
   KYC_GATE_THRESHOLDS,
+  type CalendarDate,
   type Evidence,
   type KycCategory,
   type KycField,
   type KycGateResult,
   type KycGateState,
 } from '@p2c/domain';
-import type { AnalysisOutcome } from '../../data/ai-analysis';
+import type { AnalysisOutcome, WebAnswerOutcome } from '../../data/ai-analysis';
 
 export type AiPanelBlocked =
   /** Mockup 2b: "Giải quyết mâu thuẫn ở <trường> trước khi phân tích". */
@@ -42,7 +48,16 @@ export interface AiPanelView {
   readonly shown: AiAnalysisView | null;
   /** Mockup 2h: why the shown analysis is STALE, while the gate allows analysing again. */
   readonly reminder: AiAnalysisReminder | null;
-  /** `again`: "Phân tích lại" once there is an analysis to replace. */
+  /** Mockup 2i: the latest analysis was REJECTED, after the latest ACCEPTED one. */
+  readonly rejected: {
+    readonly date: CalendarDate;
+    /** The first issue of its last attempt; null when the report cannot be read. */
+    readonly issue: AiPanelIssue | null;
+  } | null;
+  /**
+   * `again`: "Phân tích lại" once there is an analysis to replace. Phân tích bằng ChatGPT web
+   * follows `enabled` too (mockup 4d), never as the main button.
+   */
   readonly button: {
     readonly again: boolean;
     readonly primary: boolean;
@@ -56,21 +71,69 @@ export function aiPanelView(input: {
   readonly analyses: readonly AiAnalysisView[];
   /** The app's one AI runner is busy (P5): every AI button is off. */
   readonly busy: boolean;
+  /** This customer's ChatGPT web session is open: its AI buttons are off (§3.1 item 4). */
+  readonly webOpen?: boolean;
 }): AiPanelView {
-  const { gate, analyses, busy } = input;
+  const { gate, analyses, busy, webOpen = false } = input;
   const blocked = blockedBy(gate);
   const shown = analyses.find((analysis) => analysis.status === 'ACCEPTED') ?? null;
+  const latest = analyses[0];
+  const enabled = !blocked && !busy && !webOpen;
   return {
     blocked,
     badge: shown && !blocked ? (shown.state === 'CURRENT' ? 'CURRENT' : 'STALE') : gate.state,
     shown,
     reminder: blocked ? null : (shown?.reminder ?? null),
+    rejected:
+      latest?.status === 'REJECTED' ? { date: latest.date, issue: firstIssue(latest) } : null,
     button: {
       again: shown !== null && !blocked,
-      primary: !blocked && shown?.state !== 'CURRENT',
-      enabled: !blocked && !busy,
+      primary: !blocked && !webOpen && shown?.state !== 'CURRENT',
+      enabled,
     },
   };
+}
+
+/** One validator issue as the panel lists it (mockups 2k, 4g): "V3 · Behavioral Hypotheses #1: …". */
+export interface AiPanelIssue {
+  readonly code: ValidationCode;
+  /** The block and, for an element, its number from 1; null for the whole output. */
+  readonly place: { readonly key: AiPanelIssuePlace; readonly number: number | null } | null;
+  /** The validator's words; null for an answer with no JSON, which the panel says itself. */
+  readonly detail: string | null;
+}
+
+export type AiPanelIssuePlace = AiPanelGroupKey | 'personalityNotes';
+
+const ISSUE_PLACES: readonly string[] = [
+  'hypotheses',
+  'needs',
+  'painPoints',
+  'themes',
+  'discoveryStrategy',
+  'nextBestActions',
+  'personalityNotes',
+] satisfies AiPanelIssuePlace[];
+
+/** @param noJson The answer had no JSON block: its one issue is V1 on the whole output. */
+export function issueLine(issue: ValidationIssue, noJson: boolean): AiPanelIssue {
+  const { code, path, detail } = issue;
+  if (noJson && code === 'V1' && path === '$') return { code, place: null, detail: null };
+  const [, key = '', index] = /^(\w+)(?:\[(\d+)\])?/.exec(path) ?? [];
+  if (!ISSUE_PLACES.includes(key)) {
+    return { code, place: null, detail: path === '$' ? detail : `${path}: ${detail}` };
+  }
+  const number = index === undefined ? null : Number(index) + 1;
+  return { code, place: { key: key as AiPanelIssuePlace, number }, detail };
+}
+
+/** The first issue of the last attempt of a REJECTED row, as `analysisOutcome` stores it. */
+function firstIssue(row: AiAnalysisView): AiPanelIssue | null {
+  const last: unknown = Array.isArray(row.validator) ? row.validator.at(-1) : undefined;
+  const errors = (last as { errors?: unknown } | undefined)?.errors;
+  const issue: unknown = Array.isArray(errors) ? errors[0] : undefined;
+  if (typeof issue !== 'object' || issue === null || !('path' in issue)) return null;
+  return issueLine(issue as ValidationIssue, row.output === null);
 }
 
 function blockedBy(gate: KycGateResult): AiPanelBlocked | null {
@@ -119,6 +182,72 @@ export function runAfter(outcome: AnalysisOutcome): AiPanelRun {
     default:
       return IDLE;
   }
+}
+
+/** This customer's ChatGPT web session, kept by the panel only, never stored (§3.1 item 4). */
+export interface AiPanelWeb {
+  readonly session: WebSession;
+  readonly message: string;
+  readonly takenAt: Date;
+  /** The text a copy failed on, shown read-only to copy by hand (mockup 4f). */
+  readonly manual: string | null;
+  /** `AI_OPEN_BROWSER` (4c): the session goes on. */
+  readonly openFailed: boolean;
+  /** Mockup 4g: the first paste was wrong; "Copy yêu cầu sửa" copies `message`. */
+  readonly retry: { readonly issues: readonly AiPanelIssue[]; readonly message: string } | null;
+  /** Mockup 4h: the paste is over 20 000 characters, no attempt counted. */
+  readonly tooLong: boolean;
+  /** A bug on Kiểm tra và lưu: the general message; the paste stays to try again. */
+  readonly failed: boolean;
+}
+
+/** The session opened by a click (`kind: 'session'` of `startChatGptWeb`). */
+export function webOpened(started: {
+  readonly session: WebSession;
+  readonly message: string;
+  readonly takenAt: Date;
+  readonly copied: boolean;
+  readonly opened: boolean;
+}): AiPanelWeb {
+  const { session, message, takenAt, copied, opened } = started;
+  const manual = copied ? null : message;
+  const fresh = { retry: null, tooLong: false, failed: false };
+  return { session, message, takenAt, manual, openFailed: !opened, ...fresh };
+}
+
+/** Where the session goes after Kiểm tra và lưu: null once saved or discarded, it is over. */
+export function webAfter(web: AiPanelWeb, outcome: WebAnswerOutcome): AiPanelWeb | null {
+  switch (outcome.kind) {
+    case 'unusable':
+      return { ...web, tooLong: outcome.reason === 'TOO_LONG', failed: false };
+    case 'retry': {
+      const noJson = outcome.session.attempts.at(-1)!.parsed === null;
+      return {
+        ...web,
+        session: outcome.session,
+        retry: {
+          issues: outcome.issues.map((issue) => issueLine(issue, noJson)),
+          message: outcome.retryMessage,
+        },
+        tooLong: false,
+        failed: false,
+      };
+    }
+    case 'failed':
+      return { ...web, tooLong: false, failed: true };
+    default:
+      return null;
+  }
+}
+
+/** Mockup 4e: "kyc v<n> · <mode>@<n>+web@1 · chụp dd/mm hh:mm" of the input taken. */
+export function webChip(web: AiPanelWeb, versions: readonly { readonly id: string }[]) {
+  const { mode } = web.session.input;
+  return {
+    version: versions.findIndex((version) => version.id === web.session.kycVersionId) + 1,
+    prompt: `${ANALYSIS_PROMPTS[mode].version}+${WEB_WRAPPER.version}`,
+    at: dayAndTime(web.takenAt),
+  };
 }
 
 /** "Đang hủy…" holds only while the request runs on; once the runner is free, the panel is back. */
