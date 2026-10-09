@@ -15,6 +15,7 @@
     "lint:deps": "depcruise apps packages",
     "lint:tokens": "node packages/ui/scripts/check-tokens.ts apps/desktop/src packages/ui/src/components",
     "codemap": "node tools/codemap.mjs",
+    "eval:ai": "node tools/eval-ai.mjs",
     "codemap:check": "node tools/codemap.mjs --check",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
