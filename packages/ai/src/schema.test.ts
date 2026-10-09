@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  analysisInputSchema,
   analysisOutputSchema,
   discoveryOutputSchema,
   extractionOutputSchema,
@@ -247,6 +248,59 @@ describe('extractionOutputSchema', () => {
     expect(
       errorsOf(extractionOutputSchema.safeParse({ facts: [{ ...fact, [key]: value }] })),
     ).toEqual([`facts.0.${key}`]);
+  });
+});
+
+describe('analysisInputSchema', () => {
+  const fact = (code: string, confirmedAt = '2026-09-01') => ({
+    code,
+    category: 'Gia đình',
+    field: 'Số con',
+    value: '2',
+    confirmedAt,
+    conflict: false,
+  });
+  const input = () => ({
+    analysisDate: '2026-10-07',
+    mode: 'analysis',
+    facts: [fact('F1'), fact('F2')],
+    missingCategories: [{ code: 'ASSETS', label: 'Tài sản / AUM' }],
+    conflictWarnings: ['Thu nhập năm'],
+  });
+
+  it('accepts an input as the app takes it', () => {
+    expect(analysisInputSchema.parse(input())).toEqual(input());
+    expect(analysisInputSchema.safeParse({ ...input(), mode: 'discovery' }).success).toBe(true);
+  });
+
+  it.each([
+    ['analysisDate', '07/10/2026'],
+    ['analysisDate', '2026-02-30'],
+    ['mode', 'extraction'],
+    ['facts', null],
+    ['missingCategories', [{ code: 'HOBBIES', label: 'Sở thích' }]],
+    ['conflictWarnings', undefined],
+    ['conflictWarnings', [1]],
+  ])('rejects the %s %j', (key, value) => {
+    expect(analysisInputSchema.safeParse({ ...input(), [key]: value }).success).toBe(false);
+  });
+
+  it.each([
+    ['code', 'F01'],
+    ['confirmedAt', '2026-9-1'],
+    ['confirmedAt', '2026-13-01'],
+    ['conflict', 'false'],
+    ['value', 2],
+  ])('rejects a fact whose %s is %j', (key, value) => {
+    const facts = [fact('F1'), { ...fact('F2'), [key]: value }];
+    expect(errorsOf(analysisInputSchema.safeParse({ ...input(), facts }))[0]).toMatch(
+      new RegExp(`^facts\\.1\\.${key}`),
+    );
+  });
+
+  it('rejects two facts with one code', () => {
+    const facts = [fact('F1'), fact('F1', '2026-08-01')];
+    expect(analysisInputSchema.safeParse({ ...input(), facts }).success).toBe(false);
   });
 });
 

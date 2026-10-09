@@ -6,7 +6,7 @@
  * The session is a value the panel keeps; it is never stored (item 4).
  */
 import type { CalendarDate, KycGateState } from '@p2c/domain';
-import type { AnalysisInput, AnalysisProfile } from './input';
+import type { AnalysisProfile } from './input';
 import { MAX_ATTEMPTS, nextRetry, type CheckedAnswer } from './prompts/retry';
 import {
   ANALYSIS_PROMPTS,
@@ -16,6 +16,7 @@ import {
   takeAnalysisInput,
   type AnalysisRow,
 } from './run';
+import type { AnalysisInput } from './schema';
 import type { ValidationIssue } from './validator';
 
 /**

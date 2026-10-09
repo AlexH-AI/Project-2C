@@ -12,6 +12,7 @@ Phase 5 (`docs/design/phase-5-ai.md`, ADR-0009). Kiểu dữ liệu, mã lỗi `
 ## File hay tìm
 
 - Schema output + mã `F{seq}`: `src/schema.ts` (spec §6.2, gồm khối `personalityNotes` — P6). Kiểm field / value / quote của trích xuất là V7, không ở schema.
+- Schema đầu vào analysis / discovery (`analysisInputSchema`, spec §6.1) cũng ở `src/schema.ts`; kiểu `AnalysisInput` suy từ nó (một định nghĩa). `db` kiểm `input_json` bằng schema này khi ghi và khi nhập backup (§7.3 luật 3, T-176); panel đọc `input` bằng `parse`, không ép kiểu.
 - Lấy khối JSON đầu tiên từ trả lời: `src/extract-json.ts` (spec §6.1).
 - Cấu hình Settings → AI (`settings` khóa `ai`, spec §4.1): `src/settings.ts` — `readAiSettings` đọc / chuẩn hóa (hỏng → mặc định cả khối + lý do; gói thiếu / sai → `GO`; model không nhận `reasoning_effort` theo `AI_MODELS` → `DEFAULT`), không bao giờ có key.
 - Mã lỗi: `src/errors.ts` (spec §5.3) · model: `src/models.ts` (spec §4; cờ `reasoningEffort` theo lần gọi thật 09/10/2026, T-179); danh sách provider / reasoning nằm ở `src/schema.ts` để `db` dùng chung cho `ai_analyses` (T-163): `AI_PROVIDERS` là giá trị của Settings, `AI_ANALYSIS_PROVIDERS` thêm `CHATGPT_WEB` (chỉ ghi vào `ai_analyses`, không bao giờ là giá trị Settings — spec §4.1), `WEB_PROMPT_VERSION` là đuôi `+web@<n>`.
@@ -33,7 +34,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/errors.ts` — AI_ERROR_CODES, type AiErrorCode, isAiErrorCode, AiError
 - `src/extract-json.ts` — type ExtractedJson, extractJson
 - `src/index.ts` — re-exports ./errors, ./models, ./adapter, ./extract-json, ./schema, ./mock-adapter, ./validator, ./input, ./run, ./settings, ./web
-- `src/input.ts` — KYC_CATEGORY_LABELS, KYC_FIELD_LABELS, type AnalysisFact, type AnalysisProfile, type AnalysisInputFact, type AnalysisInput, buildAnalysisInput, type ExtractionInput, buildExtractionInput
+- `src/input.ts` — KYC_CATEGORY_LABELS, KYC_FIELD_LABELS, type AnalysisFact, type AnalysisProfile, buildAnalysisInput, type ExtractionInput, buildExtractionInput
 - `src/mock-adapter.ts` — createMockAdapter
 - `src/models.ts` — type AiReasoningEffort, type AiModel, AI_MODELS, type AiModelId, DEFAULT_AI_MODEL
 - `src/prompts/analysis.ts` — analysisPrompt
@@ -42,7 +43,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/prompts/extraction.ts` — extractionPrompt
 - `src/prompts/retry.ts` — RETRY_TEMPLATE, retryMessage, MAX_ATTEMPTS, type CheckedAnswer, checkAnswer, nextRetry
 - `src/run.ts` — type AiAbortSignal, type AiRunner, createAiRunner, type AnalysisRequest, type AnalysisRow, type AnalysisResult, MAX_RAW_OUTPUT, EMPTY_RAW_OUTPUT, ANALYSIS_PROMPTS, takeAnalysisInput, checkAnalysisAnswer, type AnalysisOutcome, analysisOutcome, runAnalysis, type ExtractionRequest, type ExtractionResult, runExtraction, type ConnectionResult, checkConnection
-- `src/schema.ts` — AI_MODES, type AiMode, AI_PROVIDERS, type AiProvider, AI_ANALYSIS_PROVIDERS, type AiAnalysisProvider, WEB_PROMPT_VERSION, AI_REASONING_LEVELS, type AiReasoningLevel, FACT_CODE, factCode, PERSONALITY_SYSTEMS, analysisOutputSchema, discoveryOutputSchema, extractionOutputSchema, type AnalysisOutput, type DiscoveryOutput, type ExtractionOutput, AI_OUTPUT_SCHEMAS
+- `src/schema.ts` — AI_MODES, type AiMode, AI_PROVIDERS, type AiProvider, AI_ANALYSIS_PROVIDERS, type AiAnalysisProvider, WEB_PROMPT_VERSION, AI_REASONING_LEVELS, type AiReasoningLevel, FACT_CODE, factCode, analysisInputSchema, type AnalysisInput, PERSONALITY_SYSTEMS, analysisOutputSchema, discoveryOutputSchema, extractionOutputSchema, type AnalysisOutput, type DiscoveryOutput, type ExtractionOutput, AI_OUTPUT_SCHEMAS
 - `src/settings.ts` — AI_OPENCODE_PLANS, type AiOpencodePlan, type AiSettings, DEFAULT_AI_SETTINGS, type AiSettingsProblem, type StoredAiSettings, readAiSettings
 - `src/test-support.ts` — TODAY, fact, PRIVATE, ANALYSIS_FACTS, PROFILE
 - `src/text-match.ts` — type MatchText, type Matcher, fold, matchText, WORD_START, WORD_END, char, phrase, pattern

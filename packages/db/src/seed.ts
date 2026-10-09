@@ -5,7 +5,7 @@
  * sources — the same anchor day and seed give the same data on any machine from UTC−12 to UTC+11,
  * and the same days in any time zone (`middayOf`).
  */
-import { factCode } from '@p2c/ai/schema';
+import { factCode, type AnalysisInput } from '@p2c/ai/schema';
 import {
   calendarDate,
   evaluateKycGate,
@@ -468,7 +468,8 @@ function aiSimulation(db: Database, rng: Rng) {
 
 /**
  * The input sent (prompts §1.1): the facts in effect, each with its code `F{seq}`, in catalog order
- * then by code, with the app's Vietnamese labels, the birth year as an age, and the gate.
+ * then by code, with the app's Vietnamese labels, the birth year as an age, and the gate. Its shape
+ * is `analysisInputSchema`, which `recordAiAnalysis` checks.
  */
 function analysisInput(
   facts: readonly KycFact[],
@@ -476,7 +477,7 @@ function analysisInput(
   gate: KycGateResult,
   mode: 'analysis' | 'discovery',
   date: CalendarDate,
-) {
+): AnalysisInput {
   const order = Object.keys(KYC_FIELDS);
   const label = (field: KycField) => (field === 'birthYear' ? 'Tuổi' : KYC_FIELD_LABELS[field]);
   const sent = facts

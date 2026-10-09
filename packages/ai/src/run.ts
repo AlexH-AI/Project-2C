@@ -10,19 +10,19 @@
 import { evaluateKycGate, type CalendarDate, type KycGateState } from '@p2c/domain';
 import type { AiAdapter, AiCompleteRequest, AiMessage } from './adapter';
 import { AiError, type AiErrorCode } from './errors';
-import {
-  buildAnalysisInput,
-  buildExtractionInput,
-  type AnalysisInput,
-  type AnalysisProfile,
-} from './input';
+import { buildAnalysisInput, buildExtractionInput, type AnalysisProfile } from './input';
 import type { AiModelId } from './models';
 import { analysisPrompt } from './prompts/analysis';
 import { connectionCheck } from './prompts/connection';
 import { discoveryPrompt } from './prompts/discovery';
 import { extractionPrompt } from './prompts/extraction';
 import { checkAnswer, nextRetry, type CheckedAnswer } from './prompts/retry';
-import { AI_OUTPUT_SCHEMAS, type AiAnalysisProvider, type AiReasoningLevel } from './schema';
+import {
+  AI_OUTPUT_SCHEMAS,
+  type AiAnalysisProvider,
+  type AiReasoningLevel,
+  type AnalysisInput,
+} from './schema';
 import type { AiSettings } from './settings';
 import {
   filterExtraction,

@@ -4,7 +4,7 @@
  * new KYC version leaves an analysis STALE, and its material flag only changes the reminder (P1).
  * "Latest" is by recording order (`seq`) for both analyses and KYC versions, never by date.
  */
-import { WEB_PROMPT_VERSION } from '@p2c/ai/schema';
+import { analysisInputSchema, WEB_PROMPT_VERSION } from '@p2c/ai/schema';
 import { fromIsoDate, type CalendarDate, type KycGateState } from '@p2c/domain';
 import { asc, desc, eq, max, sql } from 'drizzle-orm';
 import { isLabel, liveCustomer, nextSeq, prepared, rowInsert, storedDate, today } from './common';
@@ -44,7 +44,7 @@ export interface NewAiAnalysis {
   readonly promptVersion: string;
   /** 1 or 2. */
   readonly attempts: number;
-  /** The facts and gate sent (§7.1); stored as JSON. */
+  /** The facts and gate sent (§7.1), as `analysisInputSchema` of the same `mode`; stored as JSON. */
   readonly input: unknown;
   /** The parsed output of the last attempt; required when accepted, null when rejected unparsed. */
   readonly output: unknown;
@@ -137,6 +137,7 @@ function toRow(a: NewAiAnalysis) {
     (a.attempts === 1 || a.attempts === 2) &&
     isLabel(a.promptVersion) &&
     (a.provider !== 'CHATGPT_WEB' || WEB_PROMPT_VERSION.test(a.promptVersion)) &&
+    analysisInputSchema.safeParse(a.input).data?.mode === a.mode &&
     (a.status === 'ACCEPTED'
       ? a.output !== null && a.output !== undefined && a.rawOutput === null
       : typeof a.rawOutput === 'string' && a.rawOutput !== '');
