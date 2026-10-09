@@ -30,6 +30,7 @@ import {
   type DbErrorCode,
 } from '@p2c/db';
 import type { CalendarDate, KycGateState } from '@p2c/domain';
+import { createAiJobs, type AiJobs } from './ai-jobs';
 import type { OpenCodeClient } from './ai-tauri';
 
 /** What one AI request runs with, read at the click. */
@@ -42,6 +43,8 @@ export interface AiCall {
 export interface AppAi {
   /** The one runner of the app: while it is busy, every AI button is off (P5). */
   readonly runner: AiRunner;
+  /** The runs the screens started, kept while the screen that started one is left. */
+  readonly jobs: AiJobs;
   /** OpenCode through Rust (key, calls); `undefined` in web mode, where OpenCode is off (§4.1). */
   readonly opencode: OpenCodeClient | undefined;
   /** Settings → AI as stored, with why it fell back to the defaults (mockup ai.html 1g). */
@@ -110,6 +113,7 @@ export function createAppAi(store: AiSettingsStore, options: AppAiOptions = {}):
   };
   return {
     runner,
+    jobs: createAiJobs(runner, reportError),
     opencode,
     stored,
     settings,

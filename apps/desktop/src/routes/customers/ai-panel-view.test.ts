@@ -9,8 +9,8 @@ import {
   historyRows,
   issueLine,
   rejectedReport,
+  panelRun,
   runAfter,
-  shownRun,
   webAfter,
   webChip,
   webOpened,
@@ -232,6 +232,16 @@ describe('aiPanelView (spec Phase 5 §9.1)', () => {
     expect(view.reminder).toBeNull();
     expect(view.button).toEqual({ again: false, primary: false, enabled: false });
   });
+
+  it('says no REJECTED line under a blocked gate, as no reminder (review of PR 459)', () => {
+    const rejected = analysis({ seq: 2, state: 'REJECTED', status: 'REJECTED' });
+    const view = aiPanelView({
+      gate: gateOf('CONFLICT_RESOLUTION', { coreConflictFields: ['childrenCount'] }),
+      analyses: [rejected],
+      busy: false,
+    });
+    expect(view.rejected).toBeNull();
+  });
 });
 
 describe('issueLine (mockups 2k, 4g)', () => {
@@ -329,6 +339,21 @@ describe('the ChatGPT web session of the panel (spec Phase 5 §3.1, mockups 4e�
     });
   });
 
+  it('drops the first message shown to copy by hand once the retry asks for another (review of PR 459)', () => {
+    const blocked = { ...opened, manual: 'Tin nhắn' };
+    const next = {
+      ...session,
+      attempts: [{ content: '{}', parsed: {}, issues: [] }],
+    } as unknown as WebSession;
+    const after = webAfter(blocked, {
+      kind: 'retry',
+      session: next,
+      issues: [],
+      retryMessage: 'Sửa',
+    });
+    expect(after).toMatchObject({ manual: null, retry: { message: 'Sửa' } });
+  });
+
   it('keeps the session on a bug, and ends it once saved or discarded', () => {
     expect(webAfter(opened, { kind: 'failed' })).toMatchObject({ failed: true });
     expect(webAfter(opened, { kind: 'saved', status: 'REJECTED' })).toBeNull();
@@ -367,13 +392,19 @@ describe('the run of the panel (spec Phase 5 §5.2, §5.3)', () => {
     });
   });
 
-  it('shows "Đang hủy…" after Hủy only while the request still runs', () => {
-    const cancelling = runAfter({ kind: 'cancelled' });
+  it('shows the job the app keeps while it runs, "Đang hủy…" after Hủy, then how it ended', () => {
+    const saved = { kind: 'saved', status: 'ACCEPTED' } as const;
+    const failed = { kind: 'failed' } as const;
 
-    expect(cancelling).toEqual({ phase: 'cancelling' });
-    expect(shownRun(cancelling, true)).toEqual({ phase: 'cancelling' });
-    expect(shownRun(cancelling, false)).toEqual({ phase: 'idle' });
-    expect(shownRun({ phase: 'running' }, true)).toEqual({ phase: 'running' });
+    expect(panelRun('running', null)).toEqual({ phase: 'running' });
+    expect(panelRun('cancelling', failed)).toEqual({ phase: 'cancelling' });
+    expect(panelRun('idle', failed)).toEqual({ phase: 'error', error: 'GENERAL' });
+    expect(panelRun('idle', saved)).toEqual({ phase: 'idle' });
+    expect(panelRun('idle', null)).toEqual({ phase: 'idle' });
+  });
+
+  it('is back as it was once the request after Hủy has ended', () => {
+    expect(runAfter({ kind: 'cancelled' })).toEqual({ phase: 'idle' });
   });
 });
 

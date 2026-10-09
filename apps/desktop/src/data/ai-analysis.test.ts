@@ -270,6 +270,23 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
     expect(log).toHaveBeenCalledWith(bug);
     log.mockRestore();
   });
+
+  it('keeps a run in the app jobs, so the profile shown again finds it (review of PR 439)', async () => {
+    const held = heldAdapter();
+    const { app, customer, ai } = await withCustomer({
+      reportError: vi.fn(),
+      adapter: held.adapter,
+    });
+
+    const done = ai.jobs.start(`analysis:${customer.id}`, (signal) =>
+      analyseCustomer(app, customer.id, signal),
+    );
+
+    expect(ai.jobs.get(`analysis:${customer.id}`)).toMatchObject({ cancelled: false });
+    await held.answerWithMock();
+    expect(await done).toEqual({ kind: 'saved', status: 'ACCEPTED' });
+    expect(ai.jobs.get(`analysis:${customer.id}`)).toBeUndefined();
+  });
 });
 
 /** A clipboard and a browser that record what they get. */

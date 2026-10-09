@@ -1,22 +1,21 @@
 import type { AiAnalysisView, KycFactRecord, KycVersionRecord } from '@p2c/db';
-import { evaluateKycGate, formatDate, formatDayMonth } from '@p2c/domain';
+import { evaluateKycGate, formatDate, formatDayMonth, KYC_INSUFFICIENT_MESSAGE } from '@p2c/domain';
 import { Button } from '@p2c/ui';
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { analyseCustomer, startChatGptWeb } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
+import { LINK } from '../appointments/appointments-view';
 import {
   aiPanelView,
   analysisContent,
   analysisSource,
   historyRows,
   modelLabel,
-  runAfter,
-  shownRun,
+  panelRun,
   webOpened,
   type AiPanelBlocked,
   type AiPanelItem,
-  type AiPanelRun,
   type AiPanelSubgroup,
   type AiPanelWeb,
 } from './ai-panel-view';
@@ -25,12 +24,10 @@ import { BADGE } from './CustomerKyc';
 import { AnalysisHistory, RejectedReportDialog, SourceBadge, sourceName } from './KycHistory';
 import { factCodeTarget } from './kyc-view';
 import { issueText, KycWebSession } from './KycWebSession';
+import { useAiJob } from './use-ai-job';
 
 const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 const HEADING = 'm-0 text-sm font-medium text-heading';
-const IDLE: AiPanelRun = { phase: 'idle' };
-const LINK =
-  'rounded-sm text-accent hover:underline focus-visible:outline-2 focus-visible:outline-accent';
 
 export const BADGE_COLORS = {
   CURRENT: 'text-ok',
@@ -67,7 +64,11 @@ function BlockedNote({ blocked }: { blocked: AiPanelBlocked }) {
   const conflict = blocked.state === 'CONFLICT_RESOLUTION';
   return (
     <p className={`${ALERT} text-sm ${conflict ? 'border-danger' : 'border-warn'}`}>
-      {withNames(t(`aiPanel.blocked.${blocked.state}`), names)}
+      {/* The gate's own sentence (ADR-0008 Q9), as the KYC facts card shows it. */}
+      {withNames(
+        t(`aiPanel.blocked.${blocked.state}`, { message: KYC_INSUFFICIENT_MESSAGE }),
+        names,
+      )}
       {conflict && (
         <>
           {' '}
@@ -252,19 +253,22 @@ export function KycIntelligence({
   const app = useAppData();
   const { runner } = app.ai;
   const busy = useSyncExternalStore(runner.subscribe, () => runner.busy);
-  const [run, setRun] = useState<AiPanelRun>(IDLE);
-  const running = useRef<AbortController | null>(null);
+  // Kept by the app, so the profile left and shown again still has it (review of PR 439).
+  const analysis = useAiJob('analysis', customerId);
   // This customer's ChatGPT web session: it lives in the panel only, so leaving ends it (§3.1).
   const [web, setWeb] = useState<AiPanelWeb | null>(null);
-  const starting = useRef(false);
   // While the copy and the browser are on their way, both buttons are off already (§3.1 item 4).
   const [startingWeb, setStartingWeb] = useState(false);
   const [webFailed, setWebFailed] = useState(false);
-  // The history row picked (mockup 2j), and the REJECTED row whose report is open (2k).
-  const [viewing, setViewing] = useState<string | null>(null);
+  // The history row picked (mockup 2j) holds until a new row is saved, from any run, so the result
+  // shows once saved (review of PR 462).
+  const latest = analyses[0]?.id ?? null;
+  const [picked, setPicked] = useState<{ readonly id: string; readonly over: string | null }>();
+  const viewing = picked?.over === latest ? picked.id : null;
+  const setViewing = (id: string | null) =>
+    setPicked(id === null ? undefined : { id, over: latest });
+  // The REJECTED row whose report is open (2k).
   const [report, setReport] = useState<AiAnalysisView | null>(null);
-  // A code cited of a fact no longer in effect (mockup 3a).
-  const [gone, setGone] = useState<string | null>(null);
   const gate = useMemo(() => evaluateKycGate(facts), [facts]);
   const view = aiPanelView({
     gate,
@@ -273,57 +277,40 @@ export function KycIntelligence({
     webOpen: web !== null || startingWeb,
     viewing,
   });
-  const shown = shownRun(run, busy);
+  const shown = panelRun(analysis.phase, analysis.ended);
   const showing = view.viewing ?? view.shown;
   // Mockup 2j: "Đang xem lần <dd/mm hh:mm> · kyc v<n> · STALE" over an older one picked.
   const banner = view.viewing && historyRows([view.viewing], versions)[0];
+  // A code cited of a fact no longer in effect (mockup 3a), said while the analysis shown and the
+  // KYC stay as they were (review of PR 462).
+  const on = `${showing?.id}|${versions.at(-1)?.id}`;
+  const [goneAt, setGoneAt] = useState<{ readonly code: string; readonly on: string }>();
+  const gone = goneAt?.on === on ? goneAt.code : null;
 
   const pick = (id: string) => {
     const row = analyses.find((analysis) => analysis.id === id);
-    setGone(null);
+    setGoneAt(undefined);
     if (row?.status === 'REJECTED') setReport(row);
     else setViewing(id);
   };
   const showFact = (code: string) => {
     const target = factCodeTarget(facts, code);
-    setGone(target.kind === 'gone' ? code : null);
+    setGoneAt(target.kind === 'gone' ? { code, on } : undefined);
     if (target.kind === 'shown') onShowFact(code);
   };
 
-  // Once the request after Hủy has ended, the panel is back: a later request elsewhere (Settings →
-  // AI) must not show "Đang hủy…" here.
-  useEffect(
-    () =>
-      runner.subscribe(() => {
-        if (!runner.busy) setRun((now) => (now.phase === 'cancelling' ? IDLE : now));
-      }),
-    [runner],
-  );
-
-  const analyse = async () => {
-    const controller = new AbortController();
-    running.current = controller;
+  const analyse = () => {
     setWebFailed(false);
-    // The result shows once saved: back to the latest from an older one picked.
-    setViewing(null);
-    setRun({ phase: 'running' });
-    const outcome = await analyseCustomer(app, customerId, controller.signal);
-    if (running.current === controller) setRun(runAfter(outcome));
-  };
-  const cancel = () => {
-    running.current?.abort();
-    setRun({ phase: 'cancelling' });
+    analysis.start((signal) => analyseCustomer(app, customerId, signal));
   };
   const startWeb = async () => {
-    if (starting.current) return;
-    starting.current = true;
     setStartingWeb(true);
     setWebFailed(false);
+    // An error of Phân tích would sit beside the session's (review of PR 459).
+    analysis.clear();
     const outcome = await startChatGptWeb(app, customerId);
-    starting.current = false;
     setStartingWeb(false);
     if (outcome.kind === 'session') {
-      setRun(IDLE);
       setViewing(null);
       setWeb(webOpened(outcome));
     } else if (outcome.kind === 'failed') {
@@ -353,7 +340,7 @@ export function KycIntelligence({
         <Button
           variant={view.button.primary ? 'primary' : 'default'}
           disabled={!view.button.enabled}
-          onClick={() => void analyse()}
+          onClick={analyse}
         >
           {t(view.button.again ? 'aiPanel.reanalyse' : 'aiPanel.analyse')}
         </Button>
@@ -382,7 +369,7 @@ export function KycIntelligence({
         </p>
       )}
       {shown.phase === 'running' && (
-        <BusyLine action={<Button onClick={cancel}>{t('aiPanel.cancel')}</Button>}>
+        <BusyLine action={<Button onClick={analysis.cancel}>{t('aiPanel.cancel')}</Button>}>
           {t('aiPanel.running')}
           {settings.provider !== 'MOCK' && (
             <span className="text-fg-3">
@@ -401,7 +388,7 @@ export function KycIntelligence({
       {shown.phase === 'error' && (
         <div role="alert" className={`${ALERT} flex items-center gap-2.5 border-danger text-sm`}>
           <span className="flex-1">{t(`aiError.${shown.error}`)}</span>
-          <Button disabled={!view.button.enabled} onClick={() => void analyse()}>
+          <Button disabled={!view.button.enabled} onClick={analyse}>
             {t('aiPanel.retry')}
           </Button>
         </div>
