@@ -26,7 +26,7 @@ async function book(page: Page, date: string, stage: string) {
   await dialog.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
   await dialog.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(detail(page).getByRole('heading')).toContainText(name);
+  await expect(detail(page).getByRole('heading', { level: 2 })).toContainText(name);
   return name;
 }
 
@@ -260,11 +260,11 @@ test('a day not yet come only reschedules or cancels; rescheduling moves it', as
   await o.dialog.getByRole('button', { name: 'Dời lịch' }).click();
 
   await expect(o.dialog).toHaveCount(0);
-  await expect(detail(page).getByRole('heading')).toHaveText(`02/10/2026 · ${name}`);
+  await expect(detail(page).getByRole('heading', { level: 2 })).toHaveText(`02/10/2026 · ${name}`);
   await expect(detail(page).getByRole('button', { name: '30/09/2026' })).toBeVisible();
 
   await detail(page).getByRole('button', { name: '30/09/2026' }).click();
-  await expect(detail(page).getByRole('heading')).toHaveText(`30/09/2026 · ${name}`);
+  await expect(detail(page).getByRole('heading', { level: 2 })).toHaveText(`30/09/2026 · ${name}`);
   await expect(detail(page).getByRole('button', { name: 'Xóa', exact: true })).toHaveCount(0);
 });
 
@@ -317,7 +317,7 @@ test('a planned appointment booked by mistake is deleted, the stage kept (D4)', 
   await confirm.getByRole('button', { name: 'Hủy' }).click();
   await expect(confirm).toHaveCount(0);
   await expect(listed).toHaveCount(1);
-  await expect(detail(page).getByRole('heading')).toContainText(name);
+  await expect(detail(page).getByRole('heading', { level: 2 })).toContainText(name);
 
   await detail(page).getByRole('button', { name: 'Xóa', exact: true }).click();
   await confirm.getByRole('button', { name: 'Xóa lịch hẹn' }).click();
