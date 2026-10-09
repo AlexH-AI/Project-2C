@@ -219,7 +219,7 @@ function Analysis({
 }
 
 /** A spinner-less busy line: the mockup's `.busy` box. */
-function BusyLine({ children, action }: { children: ReactNode; action?: ReactNode }) {
+export function BusyLine({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
     <div
       role="status"

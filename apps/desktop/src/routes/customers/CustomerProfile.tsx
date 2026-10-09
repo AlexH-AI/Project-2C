@@ -1,3 +1,4 @@
+import type { ExtractedFact } from '@p2c/ai';
 import { useCallback, useEffect, useState } from 'react';
 import {
   getCustomer,
@@ -11,6 +12,7 @@ import {
   listTeams,
   type AppointmentRecord,
   type Database,
+  type KycNoteRecord,
 } from '@p2c/db';
 import { formatDate, type KycField, type Policy } from '@p2c/domain';
 import { Button, StageBadge } from '@p2c/ui';
@@ -24,7 +26,8 @@ import { CustomerPolicies } from './CustomerPolicies';
 import { ChangeStageDialog, CustomerFormDialog } from './CustomerDialogs';
 import { KycCard, Timeline } from './CustomerKyc';
 import { KycIntelligence } from './KycIntelligence';
-import { KycNoteDialog, ResolveKycDialog } from './KycDialogs';
+import { ConfirmFactDialog, KycNoteDialog, ResolveKycDialog } from './KycDialogs';
+import { NoteEvent } from './KycExtraction';
 import { PolicyDialog, type PolicyMode } from './PolicyDialogs';
 import { ageOn, birthLabel } from './customers-view';
 import { factAnchor } from './kyc-view';
@@ -75,6 +78,12 @@ export function CustomerProfile({ id }: { id: string }) {
   const [editing, setEditing] = useState<
     'profile' | 'stage' | 'note' | { resolve: KycField } | null
   >(null);
+  // Xác nhận of an AI proposal (mockup ai.html 3f).
+  const [confirming, setConfirming] = useState<{
+    readonly note: KycNoteRecord;
+    readonly proposal: ExtractedFact;
+    readonly onSaved: () => void;
+  } | null>(null);
   const [appointing, setAppointing] = useState<{ from?: AppointmentRecord } | null>(null);
   const [policyMode, setPolicyMode] = useState<PolicyMode | null>(null);
   const onIssue = (policy: Policy) => setPolicyMode({ kind: 'issue', policy });
@@ -168,6 +177,13 @@ export function CustomerProfile({ id }: { id: string }) {
             people={appointmentData.people}
             today={today}
             onNext={next}
+            renderNote={(note) => (
+              <NoteEvent
+                note={note}
+                facts={kyc.facts}
+                onConfirm={(note, proposal, onSaved) => setConfirming({ note, proposal, onSaved })}
+              />
+            )}
           />
           <CustomerAppointments
             appointments={appointmentData.appointments}
@@ -222,6 +238,15 @@ export function CustomerProfile({ id }: { id: string }) {
           profile={kyc}
           versions={versions}
           onClose={() => setEditing(null)}
+        />
+      )}
+      {confirming && (
+        <ConfirmFactDialog
+          customer={customer}
+          profile={kyc}
+          versions={versions}
+          {...confirming}
+          onClose={() => setConfirming(null)}
         />
       )}
       {typeof editing === 'object' && editing && (

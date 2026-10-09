@@ -9,6 +9,7 @@ import {
   createMockAdapter,
   readAiSettings,
   runAnalysis,
+  runExtraction,
   startWebAnalysis,
   type AiAbortSignal,
   type AiAdapter,
@@ -16,6 +17,7 @@ import {
   type AiRunner,
   type AiSettings,
   type AnalysisRow,
+  type ExtractedFact,
   type StoredAiSettings,
   type ValidationIssue,
   type WebAnalysisRequest,
@@ -206,6 +208,35 @@ function lost(app: AnalysisApp, error: unknown) {
   if (error instanceof DbError && GONE.includes(error.code)) return { kind: 'discarded' } as const;
   app.ai.reportError(error);
   return { kind: 'failed' } as const;
+}
+
+export type ExtractionOutcome =
+  /** Proposals for the RE to confirm or drop, never saved (§8 item 4). */
+  | { readonly kind: 'facts'; readonly facts: readonly ExtractedFact[] }
+  /** V1 failed twice: "AI trả kết quả không đọc được" (§8 item 5). */
+  | { readonly kind: 'invalid' }
+  | Extract<AnalysisOutcome, { kind: 'error' | 'cancelled' | 'failed' }>;
+
+/** One click on AI trích xuất: the note as the RE wrote it goes to the AI (§6.1), nothing is saved. */
+export async function extractFromNote(
+  ai: AppAi,
+  note: string,
+  signal?: AiAbortSignal,
+): Promise<ExtractionOutcome> {
+  try {
+    const result = await runExtraction({ ...ai.call(), note, signal });
+    switch (result.kind) {
+      case 'facts':
+        return { kind: 'facts', facts: result.facts };
+      case 'error':
+        return { kind: 'error', code: result.code };
+      default:
+        return result;
+    }
+  } catch (error) {
+    ai.reportError(error);
+    return { kind: 'failed' };
+  }
 }
 
 export type WebStartOutcome =

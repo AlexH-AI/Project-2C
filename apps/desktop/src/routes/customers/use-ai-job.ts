@@ -1,12 +1,13 @@
 import type { AiAbortSignal } from '@p2c/ai';
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import type { AnalysisOutcome } from '../../data/ai-analysis';
+import type { AnalysisOutcome, ExtractionOutcome } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import type { AiJobPhase } from './ai-panel-view';
 
 /** What each kind of run ends with; the kind is the prefix of its key, `<kind>:<id>`. */
 interface AiJobOutcomes {
   readonly analysis: AnalysisOutcome;
+  readonly extraction: ExtractionOutcome;
 }
 
 /**

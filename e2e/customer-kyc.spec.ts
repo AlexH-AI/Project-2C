@@ -103,7 +103,7 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it 
   await expect(kyc).toContainText('Cổng KYC PROFILE_DISCOVERY');
   await expect(timeline.first()).toHaveText('15/09/2026Cập nhật KYC 15/09/2026kyc v2');
   await expect(timeline.filter({ hasText: /^15\/09\/2026Ghi chú KYC/ })).toHaveText(
-    '15/09/2026Ghi chú KYCĐã kết hôn, 2 con; chủ DN.',
+    '15/09/2026Ghi chú KYCAI trích xuấtĐã kết hôn, 2 con; chủ DN.',
   );
 
   // Mockup 7c: a different value on a cốt lõi trường, flagged as a conflict.
