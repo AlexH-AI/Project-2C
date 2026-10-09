@@ -10,7 +10,6 @@
 import { evaluateKycGate, type CalendarDate, type KycGateState } from '@p2c/domain';
 import type { AiAdapter, AiCompleteRequest, AiMessage } from './adapter';
 import { AiError, type AiErrorCode } from './errors';
-import { extractJson } from './extract-json';
 import {
   buildAnalysisInput,
   buildExtractionInput,
@@ -22,8 +21,8 @@ import { analysisPrompt } from './prompts/analysis';
 import { connectionCheck } from './prompts/connection';
 import { discoveryPrompt } from './prompts/discovery';
 import { extractionPrompt } from './prompts/extraction';
-import { retryMessage } from './prompts/retry';
-import { AI_OUTPUT_SCHEMAS, type AiProvider, type AiReasoningLevel } from './schema';
+import { checkAnswer, nextRetry, type CheckedAnswer } from './prompts/retry';
+import { AI_OUTPUT_SCHEMAS, type AiAnalysisProvider, type AiReasoningLevel } from './schema';
 import type { AiSettings } from './settings';
 import {
   filterExtraction,
@@ -130,11 +129,7 @@ interface AiCall {
   readonly signal?: AiAbortSignal | undefined;
 }
 
-interface Attempt {
-  readonly content: string;
-  /** The answer's first JSON block, `null` when it has none. */
-  readonly parsed: unknown;
-  readonly issues: readonly ValidationIssue[];
+interface Attempt extends CheckedAnswer {
   readonly promptTokens: number;
   readonly completionTokens: number;
 }
@@ -189,33 +184,31 @@ async function converse(
   call: AiCall,
   prompt: { readonly system: string; readonly maxTokens: number },
   input: unknown,
-  check: (parsed: unknown) => ValidationIssue[],
+  check: (content: string) => CheckedAnswer,
 ): Promise<Attempt[] | Failed | Cancelled> {
-  let messages: AiMessage[] = [
+  const asked: AiMessage[] = [
     { role: 'system', content: prompt.system },
     { role: 'user', content: JSON.stringify(input) },
   ];
+  let messages = asked;
   const sessionId = newSessionId();
   const attempts: Attempt[] = [];
-  while (attempts.length < 2) {
+  for (;;) {
     const answer = await attempt(() =>
       call.adapter.complete(completeRequest(call, sessionId, messages, prompt.maxTokens)),
     );
     // After Hủy the answer is dropped and no retry is sent.
     if (call.signal?.aborted) return CANCELLED;
     if ('kind' in answer) return answer;
-    const json = extractJson(answer.content);
-    const parsed = json.found ? json.value : null;
-    const issues = check(parsed);
-    attempts.push({ ...answer, parsed, issues });
-    if (issues.length === 0) break;
+    attempts.push({ ...answer, ...check(answer.content) });
+    const retry = nextRetry(attempts);
+    if (retry === null) return attempts;
     messages = [
-      ...messages.slice(0, 2),
+      ...asked,
       { role: 'assistant', content: answer.content },
-      { role: 'user', content: retryMessage(issues) },
+      { role: 'user', content: retry },
     ];
   }
-  return attempts;
 }
 
 // ---- analysis -----------------------------------------------------------------
@@ -235,7 +228,7 @@ export interface AnalysisRow {
   readonly mode: AnalysisInput['mode'];
   readonly gateState: 'PAIN_POINT_ANALYSIS' | 'PROFILE_DISCOVERY';
   readonly status: 'ACCEPTED' | 'REJECTED';
-  readonly provider: AiProvider;
+  readonly provider: AiAnalysisProvider;
   readonly model: AiModelId | null;
   readonly reasoning: AiReasoningLevel | null;
   readonly promptVersion: string;
@@ -258,8 +251,8 @@ export type AnalysisResult =
   | Failed
   | Cancelled;
 
-/** `raw_output` is cut to this many characters (spec §7.1). */
-const MAX_RAW_OUTPUT = 20_000;
+/** `raw_output` is cut to this many characters (spec §7.1); a longer paste is refused (§3.1). */
+export const MAX_RAW_OUTPUT = 20_000;
 
 /**
  * Stored as `raw_output` when the last wrong answer was empty: `db` takes no empty `raw_output`
@@ -267,43 +260,75 @@ const MAX_RAW_OUTPUT = 20_000;
  */
 export const EMPTY_RAW_OUTPUT = '(empty)';
 
-const ANALYSIS_PROMPTS = { analysis: analysisPrompt, discovery: discoveryPrompt } as const;
+/** The prompt of each mode that keeps a history (G5 §2, §3). */
+export const ANALYSIS_PROMPTS = { analysis: analysisPrompt, discovery: discoveryPrompt } as const;
 
-export async function runAnalysis(request: AnalysisRequest): Promise<AnalysisResult> {
-  const gate = evaluateKycGate(request.profile.facts);
-  const input = buildAnalysisInput(request.profile, gate, request.today);
-  if (input === null) return { kind: 'blocked', state: gate.state };
-  const { mode } = input;
-  const prompt = ANALYSIS_PROMPTS[mode];
+/**
+ * The input of an analysis taken from the profile now (spec §3, §6.1), or the gate state when the
+ * gate lets no AI through (P2). The AI calls and ChatGPT web (§3.1) take it the same way.
+ */
+export function takeAnalysisInput(
+  profile: AnalysisProfile,
+  today: CalendarDate,
+): AnalysisInput | { readonly kind: 'blocked'; readonly state: KycGateState } {
+  const gate = evaluateKycGate(profile.facts);
+  return buildAnalysisInput(profile, gate, today) ?? { kind: 'blocked', state: gate.state };
+}
+
+/** Checks an analysis or discovery answer against the input it was given (V1–V6). */
+export function checkAnalysisAnswer(input: AnalysisInput, content: string): CheckedAnswer {
   const checked = {
     factCodes: input.facts.map((fact) => fact.code),
     missingCategories: input.missingCategories.map((category) => category.code),
   };
+  return checkAnswer(content, (parsed) => validateOutput(input.mode, parsed, checked));
+}
+
+/** The fields of an analysis row that its input and answers decide, whoever answered (spec §7.1). */
+export type AnalysisOutcome = Pick<
+  AnalysisRow,
+  'mode' | 'gateState' | 'status' | 'attempts' | 'input' | 'output' | 'rawOutput' | 'validator'
+>;
+
+export function analysisOutcome(
+  input: AnalysisInput,
+  attempts: readonly CheckedAnswer[],
+): AnalysisOutcome {
+  const { mode } = input;
+  const last = attempts.at(-1)!;
+  const accepted = last.issues.length === 0;
+  return {
+    mode,
+    gateState: mode === 'analysis' ? 'PAIN_POINT_ANALYSIS' : 'PROFILE_DISCOVERY',
+    status: accepted ? 'ACCEPTED' : 'REJECTED',
+    attempts: attempts.length,
+    input,
+    output: accepted ? AI_OUTPUT_SCHEMAS[mode].parse(last.parsed) : last.parsed,
+    rawOutput: accepted ? null : rawOutput(last.content),
+    validator: attempts.map((done, i) => ({ attempt: i + 1, errors: done.issues })),
+  };
+}
+
+export async function runAnalysis(request: AnalysisRequest): Promise<AnalysisResult> {
+  const input = takeAnalysisInput(request.profile, request.today);
+  if ('kind' in input) return input;
+  const prompt = ANALYSIS_PROMPTS[input.mode];
   return request.runner.run(async () => {
-    const attempts = await converse(request, prompt, input, (parsed) =>
-      validateOutput(mode, parsed, checked),
+    const attempts = await converse(request, prompt, input, (content) =>
+      checkAnalysisAnswer(input, content),
     );
     if ('kind' in attempts) return attempts;
-    const last = attempts.at(-1)!;
-    const accepted = last.issues.length === 0;
     const mock = request.settings.provider === 'MOCK';
     const total = (key: 'promptTokens' | 'completionTokens') =>
       mock ? null : attempts.reduce((sum, done) => sum + done[key], 0);
     const row: AnalysisRow = {
       customerId: request.customerId,
       kycVersionId: request.kycVersionId,
-      mode,
-      gateState: mode === 'analysis' ? 'PAIN_POINT_ANALYSIS' : 'PROFILE_DISCOVERY',
-      status: accepted ? 'ACCEPTED' : 'REJECTED',
+      ...analysisOutcome(input, attempts),
       provider: request.settings.provider,
       model: mock ? null : request.settings.model,
       reasoning: mock ? null : request.settings.reasoning,
       promptVersion: prompt.version,
-      attempts: attempts.length,
-      input,
-      output: accepted ? AI_OUTPUT_SCHEMAS[mode].parse(last.parsed) : last.parsed,
-      rawOutput: accepted ? null : rawOutput(last.content),
-      validator: attempts.map((done, i) => ({ attempt: i + 1, errors: done.issues })),
       promptTokens: total('promptTokens'),
       completionTokens: total('completionTokens'),
     };
@@ -339,8 +364,8 @@ export type ExtractionResult =
 export async function runExtraction(request: ExtractionRequest): Promise<ExtractionResult> {
   const input = buildExtractionInput(request.note);
   return request.runner.run(async () => {
-    const attempts = await converse(request, extractionPrompt, input, (parsed) =>
-      validateOutput('extraction', parsed),
+    const attempts = await converse(request, extractionPrompt, input, (content) =>
+      checkAnswer(content, (parsed) => validateOutput('extraction', parsed)),
     );
     if ('kind' in attempts) return attempts;
     const last = attempts.at(-1)!;

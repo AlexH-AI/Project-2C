@@ -6,6 +6,7 @@ import * as db from './index';
 import { addKycNote, confirmKycFact, listKycVersions } from './kyc';
 import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations';
 import { seedDemoData } from './seed';
+import { createPerson, createTeam } from './team';
 import { codeOf, d, setup } from './test-support';
 import type { Database } from './database';
 import type { KycField } from '@p2c/domain';
@@ -151,6 +152,34 @@ describe('recordAiAnalysis', () => {
     expect(persist).toHaveBeenCalledTimes(3);
   });
 
+  it('records a ChatGPT web analysis, with no model, reasoning or token (spec §3.1, P7)', async () => {
+    const { db: database, customer } = await withCustomer();
+    const version = latestVersionId(database, customer.id);
+    const web = { provider: 'CHATGPT_WEB', promptVersion: 'analysis@1+web@1' } as const;
+
+    const accepted = recordAiAnalysis(database, analysis(customer.id, version, web));
+    const rejectedWeb = recordAiAnalysis(database, {
+      ...rejected(customer.id, version),
+      ...web,
+      promptVersion: 'discovery@2+web@12',
+      mode: 'discovery',
+      gateState: 'PROFILE_DISCOVERY',
+    });
+
+    expect(accepted).toMatchObject({
+      provider: 'CHATGPT_WEB',
+      model: null,
+      reasoning: null,
+      promptVersion: 'analysis@1+web@1',
+      promptTokens: null,
+      completionTokens: null,
+    });
+    expect(listAiAnalyses(database, customer.id)).toEqual([
+      { ...rejectedWeb, state: 'REJECTED', reminder: null },
+      { ...accepted, state: 'CURRENT', reminder: null },
+    ]);
+  });
+
   it('keeps at most 20 000 characters of a rejected raw output', async () => {
     const { db: database, customer } = await withCustomer();
     const raw = '😀'.repeat(20_001);
@@ -225,9 +254,20 @@ describe('recordAiAnalysis', () => {
     const { db: database, customer } = await withCustomer();
     const version = latestVersionId(database, customer.id);
     const live = { provider: 'OPENCODE_GO', model: 'glm-5.3', reasoning: 'LOW' } as const;
+    const web = { provider: 'CHATGPT_WEB', promptVersion: 'analysis@1+web@1' } as const;
 
     for (const wrong of [
       { provider: 'OTHER' },
+      // ChatGPT web: no model, reasoning or token, and a prompt version ending in `+web@<n>`.
+      { ...web, model: 'gpt-5' },
+      { ...web, reasoning: 'DEFAULT' },
+      { ...web, promptTokens: 0 },
+      { ...web, completionTokens: 0 },
+      { ...web, promptVersion: 'analysis@1' },
+      { ...web, promptVersion: 'analysis@1+web@' },
+      { ...web, promptVersion: 'analysis@1+web@0' },
+      { ...web, promptVersion: 'analysis@1+web@1 ' },
+      { ...web, promptVersion: 'analysis@1+web@1+x' },
       { model: 'glm-5.3' },
       { reasoning: 'LOW' },
       { promptTokens: 10 },
@@ -277,19 +317,41 @@ describe('recordAiAnalysis', () => {
   it('is checked by the table too, for a row the command would refuse', async () => {
     const { db: database, customer } = await withCustomer();
     const version = latestVersionId(database, customer.id);
-    const insert = (mode: string, gate: string, status = 'ACCEPTED') =>
+    const insert = (row: Record<string, string | number | null>) => {
+      const values = {
+        id: 'x',
+        customer_id: customer.id,
+        seq: 1,
+        kyc_version_id: version,
+        mode: 'analysis',
+        gate_state: 'PAIN_POINT_ANALYSIS',
+        status: 'ACCEPTED',
+        provider: 'MOCK',
+        prompt_version: 'analysis@1',
+        attempts: 1,
+        input_json: '{}',
+        output_json: '{}',
+        validator_json: '[]',
+        date: '2026-09-26',
+        created_at: 'x',
+        ...row,
+      };
+      const columns = Object.keys(values);
       database.sqlite.run(
-        `INSERT INTO ai_analyses (id, customer_id, seq, kyc_version_id, mode, gate_state, status, provider,
-           prompt_version, attempts, input_json, output_json, validator_json, date, created_at)
-         VALUES ('x', ?, 1, ?, ?, ?, ?, 'MOCK', 'analysis@1', 1, '{}', '{}', '[]', '2026-09-26', 'x')`,
-        [customer.id, version, mode, gate, status],
+        `INSERT INTO ai_analyses (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`,
+        Object.values(values),
       );
+    };
+    const web = { id: 'w', seq: 2, provider: 'CHATGPT_WEB', prompt_version: 'analysis@1+web@1' };
 
-    expect(() => insert('analysis', 'PROFILE_DISCOVERY')).toThrow(/CHECK/);
-    expect(() => insert('extraction', 'PAIN_POINT_ANALYSIS')).toThrow(/CHECK/);
-    expect(() => insert('analysis', 'PAIN_POINT_ANALYSIS', 'REJECTED')).toThrow(/CHECK/);
-    insert('analysis', 'PAIN_POINT_ANALYSIS');
-    expect(listAiAnalyses(database, customer.id)).toHaveLength(1);
+    expect(() => insert({ gate_state: 'PROFILE_DISCOVERY' })).toThrow(/CHECK/);
+    expect(() => insert({ mode: 'extraction' })).toThrow(/CHECK/);
+    expect(() => insert({ status: 'REJECTED' })).toThrow(/CHECK/);
+    expect(() => insert({ ...web, model: 'gpt-5' })).toThrow(/CHECK/);
+    expect(() => insert({ ...web, prompt_tokens: 10 })).toThrow(/CHECK/);
+    insert({});
+    insert(web);
+    expect(listAiAnalyses(database, customer.id)).toHaveLength(2);
   });
 });
 
@@ -456,4 +518,53 @@ describe('the ai_analyses migration', () => {
     },
     SLOW,
   );
+
+  it('lets ChatGPT web in on a database saved before it, keeping every analysis and the triggers', async () => {
+    const now = () => new Date(Date.UTC(2026, 8, 26, 11));
+    const before = MIGRATIONS.findIndex((m) => m.tag === '0006_ai_analyses_append_only') + 1;
+    const old = await openDatabase({ migrations: MIGRATIONS.slice(0, before), now });
+    const team = createTeam(old, { name: 'Sao Mai' });
+    const re = createPerson(old, { name: 'An', role: 'RE', teamId: team.id });
+    const customer = createCustomer(old, {
+      name: 'Lan',
+      reId: re.id,
+      stage: 'N4',
+      date: d(1, 9),
+      birthDate: { year: 1980 },
+    });
+    const version = latestVersionId(old, customer.id);
+    recordAiAnalysis(old, analysis(customer.id, version));
+    recordAiAnalysis(old, {
+      ...rejected(customer.id, version),
+      provider: 'OPENCODE_GO',
+      model: 'glm-5.3',
+      reasoning: 'DEFAULT',
+      promptTokens: 10,
+      completionTokens: 5,
+    });
+    const web = analysis(customer.id, version, {
+      provider: 'CHATGPT_WEB',
+      promptVersion: 'analysis@1+web@1',
+    });
+    // The CHECK of the old table refuses it.
+    expect(() => recordAiAnalysis(old, web)).toThrow(/CHECK/);
+    const rows = (database: Database) =>
+      database.sqlite.exec('SELECT * FROM ai_analyses ORDER BY rowid')[0]!.values;
+    const saved = rows(old);
+
+    const migrated = await openDatabase({ bytes: old.export(), now });
+
+    expect(migrated.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
+    expect(rows(migrated)).toEqual(saved);
+    expect(migrated.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
+    recordAiAnalysis(migrated, web);
+    expect(listAiAnalyses(migrated, customer.id).map((a) => [a.provider, a.state])).toEqual([
+      ['CHATGPT_WEB', 'CURRENT'],
+      ['OPENCODE_GO', 'REJECTED'],
+      ['MOCK', 'STALE'],
+    ]);
+    // The rebuilt table is still append-only.
+    expect(() => migrated.sqlite.run(`UPDATE ai_analyses SET attempts = 2`)).toThrow(/append-only/);
+    expect(() => migrated.sqlite.run('DELETE FROM ai_analyses')).toThrow(/append-only/);
+  });
 });

@@ -50,6 +50,20 @@
       "when": 1791367275330,
       "tag": "0006_ai_analyses_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1791541344630,
+      "tag": "0007_ai_analyses_chatgpt_web",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1791541364395,
+      "tag": "0008_ai_analyses_append_only_rebuilt",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@
  * new KYC version leaves an analysis STALE, and its material flag only changes the reminder (P1).
  * "Latest" is by recording order (`seq`) for both analyses and KYC versions, never by date.
  */
+import { WEB_PROMPT_VERSION } from '@p2c/ai/schema';
 import { fromIsoDate, type CalendarDate, type KycGateState } from '@p2c/domain';
 import { asc, desc, eq, max, sql } from 'drizzle-orm';
 import { isLabel, liveCustomer, nextSeq, prepared, rowInsert, storedDate, today } from './common';
@@ -12,6 +13,7 @@ import { DbError } from './errors';
 import { ulid } from './ids';
 import {
   AI_ANALYSIS_GATES,
+  AI_ANALYSIS_NO_MODEL,
   AI_ANALYSIS_PROVIDERS,
   AI_ANALYSIS_REASONING,
   AI_ANALYSIS_STATUSES,
@@ -34,11 +36,11 @@ export interface NewAiAnalysis {
   readonly gateState: KycGateState;
   readonly status: AiAnalysisStatus;
   readonly provider: AiAnalysisProvider;
-  /** Null with Mock, set otherwise. */
+  /** Null with Mock and ChatGPT web, set otherwise. */
   readonly model: string | null;
-  /** Null with Mock, set otherwise. */
+  /** Null with Mock and ChatGPT web, set otherwise. */
   readonly reasoning: AiAnalysisReasoning | null;
-  /** E.g. `analysis@1`. */
+  /** E.g. `analysis@1`; ChatGPT web adds its wrapper's, `analysis@1+web@1` (spec §3.1). */
   readonly promptVersion: string;
   /** 1 or 2. */
   readonly attempts: number;
@@ -50,7 +52,7 @@ export interface NewAiAnalysis {
   readonly rawOutput: string | null;
   /** The validator report of each attempt; stored as JSON. */
   readonly validator: unknown;
-  /** Both attempts added up; null with Mock. */
+  /** Both attempts added up; null with Mock and ChatGPT web. */
   readonly promptTokens: number | null;
   readonly completionTokens: number | null;
 }
@@ -121,19 +123,20 @@ export function recordAiAnalysis(db: Database, analysis: NewAiAnalysis): AiAnaly
 
 /** The fields of a new analysis as stored, refused when they do not fit together (§7.1). */
 function toRow(a: NewAiAnalysis) {
-  const mock = a.provider === 'MOCK';
+  const noModel = (AI_ANALYSIS_NO_MODEL as readonly string[]).includes(a.provider);
   const fits =
     Object.hasOwn(AI_ANALYSIS_GATES, a.mode) &&
     AI_ANALYSIS_GATES[a.mode] === a.gateState &&
     AI_ANALYSIS_STATUSES.includes(a.status) &&
     AI_ANALYSIS_PROVIDERS.includes(a.provider) &&
-    (mock
+    (noModel
       ? a.model === null && a.reasoning === null
       : isLabel(a.model) && AI_ANALYSIS_REASONING.includes(a.reasoning!)) &&
-    isTokenCount(a.promptTokens, mock) &&
-    isTokenCount(a.completionTokens, mock) &&
+    isTokenCount(a.promptTokens, noModel) &&
+    isTokenCount(a.completionTokens, noModel) &&
     (a.attempts === 1 || a.attempts === 2) &&
     isLabel(a.promptVersion) &&
+    (a.provider !== 'CHATGPT_WEB' || WEB_PROMPT_VERSION.test(a.promptVersion)) &&
     (a.status === 'ACCEPTED'
       ? a.output !== null && a.output !== undefined && a.rawOutput === null
       : typeof a.rawOutput === 'string' && a.rawOutput !== '');
@@ -182,8 +185,8 @@ function storedRawOutput(raw: string): string {
   return Array.from(raw.replaceAll('\0', '�')).slice(0, MAX_AI_RAW_OUTPUT).join('');
 }
 
-function isTokenCount(count: number | null, mock: boolean): boolean {
-  return count === null || (!mock && Number.isSafeInteger(count) && count >= 0);
+function isTokenCount(count: number | null, noModel: boolean): boolean {
+  return count === null || (!noModel && Number.isSafeInteger(count) && count >= 0);
 }
 
 // ---- read -------------------------------------------------------------------
