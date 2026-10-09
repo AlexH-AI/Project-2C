@@ -4,7 +4,7 @@
  * new KYC version leaves an analysis STALE, and its material flag only changes the reminder (P1).
  * "Latest" is by recording order (`seq`) for both analyses and KYC versions, never by date.
  */
-import { analysisInputSchema, WEB_PROMPT_VERSION } from '@p2c/ai/schema';
+import { analysisInputSchema, WEB_PROMPT_VERSION, type AnalysisInput } from '@p2c/ai/schema';
 import { fromIsoDate, type CalendarDate, type KycGateState } from '@p2c/domain';
 import { asc, desc, eq, max, sql } from 'drizzle-orm';
 import { isLabel, liveCustomer, nextSeq, prepared, rowInsert, storedDate, today } from './common';
@@ -44,8 +44,8 @@ export interface NewAiAnalysis {
   readonly promptVersion: string;
   /** 1 or 2. */
   readonly attempts: number;
-  /** The facts and gate sent (§7.1), as `analysisInputSchema` of the same `mode`; stored as JSON. */
-  readonly input: unknown;
+  /** The facts and gate sent (§7.1), of the same `mode`; checked again at run time, stored as JSON. */
+  readonly input: AnalysisInput;
   /** The parsed output of the last attempt; required when accepted, null when rejected unparsed. */
   readonly output: unknown;
   /** Null when accepted; the raw text of the last attempt when rejected, cut to 20 000 characters. */

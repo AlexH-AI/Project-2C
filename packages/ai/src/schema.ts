@@ -56,14 +56,15 @@ const isoDate = z.string().refine((text) => {
 /**
  * What the app sends for an analysis or discovery (spec §6.1), stored as `input_json` (§7.1): the
  * facts in effect, each with its code `F{seq}`, and the gate. `db` checks it when an analysis is
- * recorded or a backup loaded (§7.3 rule 3), so the panel reads it without trusting a cast.
+ * recorded or a backup loaded (§7.3 rule 3), so the panel reads it without trusting a cast. Strict:
+ * a key the app never sends (a name, a phone…) is refused, so `input_json` holds only what §6.1 lists.
  */
-export const analysisInputSchema = z.object({
+export const analysisInputSchema = z.strictObject({
   analysisDate: isoDate,
-  mode: z.enum(['analysis', 'discovery']),
+  mode: z.enum(AI_MODES).exclude(['extraction']),
   facts: z
     .array(
-      z.object({
+      z.strictObject({
         code: z.string().regex(FACT_CODE),
         category: z.string(),
         field: z.string(),
@@ -76,7 +77,7 @@ export const analysisInputSchema = z.object({
       (facts) => new Set(facts.map((fact) => fact.code)).size === facts.length,
       'trùng mã dữ kiện',
     ),
-  missingCategories: z.array(z.object({ code: z.enum(KYC_CATEGORIES), label: z.string() })),
+  missingCategories: z.array(z.strictObject({ code: z.enum(KYC_CATEGORIES), label: z.string() })),
   conflictWarnings: z.array(z.string()),
 });
 

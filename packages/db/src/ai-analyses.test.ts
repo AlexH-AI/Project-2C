@@ -332,10 +332,11 @@ describe('recordAiAnalysis', () => {
       { ...sentInput(), conflictWarnings: undefined },
       { ...sentInput(), analysisDate: '26/09/2026' },
       { ...sentInput(), facts: [{ ...fact, confirmedAt: '2026-9-1' }] },
+      { ...sentInput(), fullName: 'Nguyễn Văn A' },
       sentInput('discovery'),
     ]) {
       for (const base of [analysis(customer.id, version), rejected(customer.id, version)]) {
-        expect(codeOf(() => recordAiAnalysis(database, { ...base, input }))).toBe(
+        expect(codeOf(() => recordAiAnalysis(database, { ...base, input: input as never }))).toBe(
           'AI_ANALYSIS_INVALID',
         );
       }

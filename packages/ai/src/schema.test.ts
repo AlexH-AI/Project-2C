@@ -298,6 +298,15 @@ describe('analysisInputSchema', () => {
     );
   });
 
+  it('rejects a key the app never sends (§6.1)', () => {
+    const name = { fullName: 'Nguyễn Văn A' };
+    expect(analysisInputSchema.safeParse({ ...input(), ...name }).success).toBe(false);
+    const facts = [fact('F1'), { ...fact('F2'), ...name }];
+    expect(analysisInputSchema.safeParse({ ...input(), facts }).success).toBe(false);
+    const missingCategories = [{ code: 'ASSETS', label: 'Tài sản / AUM', ...name }];
+    expect(analysisInputSchema.safeParse({ ...input(), missingCategories }).success).toBe(false);
+  });
+
   it('rejects two facts with one code', () => {
     const facts = [fact('F1'), fact('F1', '2026-08-01')];
     expect(analysisInputSchema.safeParse({ ...input(), facts }).success).toBe(false);

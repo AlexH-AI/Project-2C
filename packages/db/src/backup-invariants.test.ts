@@ -3,6 +3,7 @@
  * but whose tables disagree — a stage that is not the latest transition's, an RE that is a TL, a
  * KYC fact from another customer's note — is refused like a damaged one.
  */
+import type { AnalysisInput } from '@p2c/ai/schema';
 import { calendarDate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { listAiAnalyses, recordAiAnalysis, type NewAiAnalysis } from './ai-analyses';
@@ -150,7 +151,7 @@ async function history() {
 }
 
 /** What a Mock analysis is given (prompts §1.1), as `@p2c/ai/schema` checks it. */
-const INPUT = {
+const INPUT: AnalysisInput = {
   analysisDate: TODAY,
   mode: 'analysis',
   facts: [
@@ -837,6 +838,10 @@ describe('importBackup — rules across tables', () => {
         const facts = [INPUT.facts[0], { ...INPUT.facts[1], confirmedAt: '2026-09-31' }];
         setInput(analysis(b, ids.accepted), { ...INPUT, facts });
       },
+    ],
+    [
+      '13: an input with a key the app never sends',
+      (b, ids) => setInput(analysis(b, ids.accepted), { ...INPUT, fullName: 'Nguyễn Văn A' }),
     ],
     [
       '13: an input of another mode than its analysis',
