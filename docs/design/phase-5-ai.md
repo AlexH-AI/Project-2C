@@ -109,17 +109,18 @@ Lưu ở bảng `settings`, khóa `ai`, giá trị JSON:
 
 ### 4.2 Danh sách model (P3)
 
-Hằng số trong `packages/ai`, mỗi dòng: mã model, tên hiện, có nhận `reasoning_effort` không. Đề xuất ban đầu (theo tài liệu OpenCode Go 07/10/2026, chỉ model dùng `/chat/completions`). Cả bốn model cũng có trên endpoint Credit (`/zen/v1/chat/completions`, tài liệu OpenCode Zen 08/10/2026) → **một danh sách chung cho hai gói**:
+Hằng số trong `packages/ai`, mỗi dòng: mã model, tên hiện, có nhận `reasoning_effort` không. Đề xuất ban đầu (theo tài liệu OpenCode Go 07/10/2026, chỉ model dùng `/chat/completions`). Các model này cũng có trên endpoint Credit (`/zen/v1/chat/completions`, tài liệu OpenCode Zen 08/10/2026) → **một danh sách chung cho hai gói**:
 
 | Mã | `reasoning_effort` (kiểm 09/10/2026) | Ghi chú |
 |---|---|---|
 | `glm-5.3` | không nhận: `low` / `high` đều 200 nhưng trả lời như nhau, không báo token suy luận | |
 | `kimi-k3` | **nhận**: token suy luận `low` 16 < `high` 28 | |
-| `deepseek-v4-pro` | chưa kiểm được: 403 "Model access is disabled" cả khi không gửi (T-180 #450) | |
 | `deepseek-v4.1-flash` | **nhận**: token suy luận `low` 50 < `high` 65 | **mặc định** (Owner 07/10/2026), rẻ, nhanh |
 
+- **Đã bỏ `deepseek-v4-pro`** (Owner 09/10/2026, T-180 #450): gói Credit trả 403 "Upstream request failed: Model access is disabled" ở mọi yêu cầu, kể cả khi không gửi `reasoning_effort`. Cấu hình đã lưu (hay nhập từ backup) model này → mặc định + cảnh báo một dòng (§4.1, mockup 1g). Phân tích cũ đã lưu với model này vẫn hiện mã model như đã ghi.
+
 - Model nào nhận `reasoning_effort` thì task đầu tiên gọi thật kiểm (một request mẫu, Owner chạy, §11); chưa kiểm hoặc không nhận → ô Reasoning tắt cho model đó.
-- Kết quả kiểm (T-179 #447): Owner gọi thật trên gói Credit 09/10/2026, mỗi model 3 lần (không gửi / `low` / `high`), câu hỏi rất ngắn, một mẫu mỗi ô; 12 dòng gốc ở comment của #447. Nhận = `low` và `high` đều 200 và token suy luận đổi theo mức. Một danh sách cho hai gói → áp cho cả gói Go. `medium` không kiểm riêng: nhận `low` và `high` thì coi như nhận `medium`. Mức gửi đi viết thường (`low` / `medium` / `high`).
+- Kết quả kiểm (T-179 #447): Owner gọi thật trên gói Credit 09/10/2026, mỗi model 3 lần (không gửi / `low` / `high`), câu hỏi rất ngắn, một mẫu mỗi ô; 12 dòng gốc ở comment của #447 (gồm 3 dòng 403 của `deepseek-v4-pro`). Nhận = `low` và `high` đều 200 và token suy luận đổi theo mức. Một danh sách cho hai gói → áp cho cả gói Go. `medium` không kiểm riêng: nhận `low` và `high` thì coi như nhận `medium`. Mức gửi đi viết thường (`low` / `medium` / `high`).
 - Model mặc định chỉ là giá trị ban đầu; Owner chủ động đổi model và reasoning level trong Settings (Owner 07/10/2026). Thêm / bớt model = một task nhỏ; model cần `/responses` hay `/messages` (Grok, GPT, Qwen, MiniMax) phải qua G4 vì D-1 chỉ mở `/chat/completions`.
 
 ### 4.3 Key

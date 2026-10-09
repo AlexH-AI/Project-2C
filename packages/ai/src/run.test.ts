@@ -257,7 +257,6 @@ describe('runAnalysis', () => {
     ['kimi-k3', 'HIGH'],
     ['deepseek-v4.1-flash', 'LOW'],
     ['glm-5.3', null],
-    ['deepseek-v4-pro', null],
   ] as const)(
     'sends the stored Cao / Thấp on %s only when it takes reasoning_effort (T-179)',
     async (model, sent) => {
