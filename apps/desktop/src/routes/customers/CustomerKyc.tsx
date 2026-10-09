@@ -1,4 +1,11 @@
-import type { AppointmentRecord, KycNoteRecord, KycProfileRecord, KycVersionRecord } from '@p2c/db';
+import { factCode } from '@p2c/ai';
+import type {
+  AppointmentRecord,
+  KycFactRecord,
+  KycNoteRecord,
+  KycProfileRecord,
+  KycVersionRecord,
+} from '@p2c/db';
 import {
   formatDate,
   KYC_FIELDS,
@@ -13,7 +20,7 @@ import { joinParts, t } from '../../i18n';
 import { withTime } from '../appointments/appointment-form';
 import { statusLabel } from '../appointments/appointments-view';
 import { NextButton } from './CustomerAppointments';
-import { factText, kycOverview, kycTimeline, type KycCategoryRow } from './kyc-view';
+import { factAnchor, factText, kycOverview, kycTimeline, type KycCategoryRow } from './kyc-view';
 
 const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 const HEADING = 'm-0 text-sm font-medium text-heading';
@@ -30,9 +37,11 @@ export const YES_NO = { yes: t('kyc.yes'), no: t('kyc.no') };
 
 function CategoryRow({
   row,
+  marked,
   onResolve,
 }: {
-  row: KycCategoryRow;
+  row: KycCategoryRow<KycFactRecord>;
+  marked: string | null;
   onResolve: (field: KycField) => void;
 }) {
   const conflicting = [
@@ -59,22 +68,30 @@ function CategoryRow({
             {state}
           </span>
         </span>
-        {row.facts.map((fact) => (
-          <span key={fact.id} className="flex justify-between gap-2 text-fg-2">
-            <span>
-              {t(`kycField.${fact.field}`)}: {factText(fact.value, YES_NO)}
-              {KYC_FIELDS[fact.field].fromProfile && (
-                <span className="text-xs text-fg-3">
-                  {' '}
-                  {t('sep.dot')} {t('kyc.fromProfile')}
-                </span>
-              )}
+        {row.facts.map((fact) => {
+          const code = factCode(fact.seq);
+          return (
+            <span
+              key={fact.id}
+              id={factAnchor(code)}
+              aria-current={code === marked ? 'true' : undefined}
+              className={`flex justify-between gap-2 rounded-sm text-fg-2 ${code === marked ? 'outline-2 outline-offset-2 outline-warn' : ''}`}
+            >
+              <span>
+                {t(`kycField.${fact.field}`)}: {factText(fact.value, YES_NO)}
+                {KYC_FIELDS[fact.field].fromProfile && (
+                  <span className="text-xs text-fg-3">
+                    {' '}
+                    {t('sep.dot')} {t('kyc.fromProfile')}
+                  </span>
+                )}
+              </span>
+              <span className="text-xs whitespace-nowrap text-fg-3 tabular-nums">
+                {joinParts([code, formatDate(fact.confirmedDate)])}
+              </span>
             </span>
-            <span className="text-xs whitespace-nowrap text-fg-3 tabular-nums">
-              {formatDate(fact.confirmedDate)}
-            </span>
-          </span>
-        ))}
+          );
+        })}
         {conflicting.map((field) => (
           <Button
             key={field}
@@ -94,10 +111,13 @@ function CategoryRow({
 export function KycCard({
   profile,
   versions,
+  marked,
   onResolve,
 }: {
   profile: KycProfileRecord;
   versions: readonly KycVersionRecord[];
+  /** The code of the fact a click on evidence led to, outlined for a moment (mockup ai.html 3a). */
+  marked: string | null;
   onResolve: (field: KycField) => void;
 }) {
   const { gate, rows } = kycOverview(profile.facts);
@@ -134,7 +154,7 @@ export function KycCard({
       </div>
       <ul className="m-0 list-none p-0">
         {rows.map((row) => (
-          <CategoryRow key={row.category} row={row} onResolve={onResolve} />
+          <CategoryRow key={row.category} row={row} marked={marked} onResolve={onResolve} />
         ))}
       </ul>
       {asking && (

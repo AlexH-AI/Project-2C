@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   getCustomer,
   getKycProfile,
@@ -27,6 +27,7 @@ import { KycIntelligence } from './KycIntelligence';
 import { KycNoteDialog, ResolveKycDialog } from './KycDialogs';
 import { PolicyDialog, type PolicyMode } from './PolicyDialogs';
 import { ageOn, birthLabel } from './customers-view';
+import { factAnchor } from './kyc-view';
 import { expectedCaseSize } from './policy-form';
 
 function readProfile(db: Database, id: string) {
@@ -56,6 +57,8 @@ function readProfile(db: Database, id: string) {
   };
 }
 
+const MARK_MS = 2000;
+
 const BACK = (
   <a
     href={routeToHash({ screen: 'customers' })}
@@ -77,6 +80,18 @@ export function CustomerProfile({ id }: { id: string }) {
   const onIssue = (policy: Policy) => setPolicyMode({ kind: 'issue', policy });
   const onEditPolicy = (policy: Policy) => setPolicyMode({ kind: 'edit', policy });
   const next = (from: AppointmentRecord) => setAppointing({ from });
+  // The fact a click on evidence led to, outlined about 2 seconds (mockup ai.html 3a); a new object
+  // per click, so a second click on the same code starts the time again.
+  const [marked, setMarked] = useState<{ readonly code: string } | null>(null);
+  useEffect(() => {
+    if (!marked) return;
+    const timer = setTimeout(() => setMarked(null), MARK_MS);
+    return () => clearTimeout(timer);
+  }, [marked]);
+  const showFact = (code: string) => {
+    document.getElementById(factAnchor(code))?.scrollIntoView({ block: 'center' });
+    setMarked({ code });
+  };
 
   if (!profile) {
     return (
@@ -131,6 +146,7 @@ export function CustomerProfile({ id }: { id: string }) {
           <KycCard
             profile={kyc}
             versions={versions}
+            marked={marked?.code ?? null}
             onResolve={(field) => setEditing({ resolve: field })}
           />
           <CustomerPolicies
@@ -167,6 +183,7 @@ export function CustomerProfile({ id }: { id: string }) {
             facts={kyc.facts}
             versions={versions}
             analyses={analyses}
+            onShowFact={showFact}
           />
         </div>
       </div>

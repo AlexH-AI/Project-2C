@@ -30,13 +30,15 @@ test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, 
 
   await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
   await expect(panel).toContainText('CURRENT');
-  await expect(panel.getByText('Mock', { exact: true })).toBeVisible();
+  // The head badge; the history names it too.
+  await expect(panel.getByText('Mock', { exact: true }).first()).toBeVisible();
   await expect(panel).toContainText(/kyc v2 · discovery@1 · Mock · 15\/09 \d\d:\d\d/);
   await expect(panel).toContainText('Kết quả Mock: câu mẫu cố định để thử app');
   await expect(panel.getByRole('heading', { level: 3 })).toHaveText([
     'Behavioral Hypotheses giả thuyết ban đầu',
     'Discovery Strategy',
     'Next Best Actions',
+    'Lịch sử phân tích bấm một dòng để xem',
   ]);
   // The Mock cites the first two facts: birth year and gender, both confirmed today.
   await expect(
@@ -90,6 +92,7 @@ test('analysis with the Mock: four blocks, Thông tin tham khảo, the material 
     'Discovery Strategy',
     'Next Best Actions',
     'Thông tin tham khảo — không phải kết luận',
+    'Lịch sử phân tích bấm một dòng để xem',
   ]);
   const reference = panel.getByRole('region', {
     name: 'Thông tin tham khảo — không phải kết luận',
@@ -103,4 +106,55 @@ test('analysis with the Mock: four blocks, Thông tin tham khảo, the material 
   await expect(panel).toContainText('STALE');
   await expect(panel).toContainText('KYC đã đổi ở trường cốt lõi từ 15/09 — nên phân tích lại.');
   await expect(panel.getByRole('button', { name: 'Phân tích lại' })).toBeEnabled();
+});
+
+test('the history of a seeded customer: latest first, a STALE one opened, F codes to the facts', async ({
+  page,
+}) => {
+  // Seed 1 on 15/09/2026 gives this customer three Mock analyses: one CURRENT, two STALE before it.
+  const name = 'Phan Thanh Bình';
+  await page.goto('/#/customers');
+  await page.getByRole('radio', { name: 'Bảng' }).click();
+  const link = page.getByRole('link', { name, exact: true });
+  const more = page.getByRole('button', { name: /^Hiện thêm/ });
+  while (!(await link.isVisible())) await more.click();
+  await link.click();
+
+  const panel = panelOf(page);
+  const rows = panel.getByRole('table', { name: 'Lịch sử phân tích' }).getByRole('row');
+  // Latest first by seq: the header, then CURRENT and the two STALE.
+  await expect(rows).toHaveCount(4);
+  await expect(rows.nth(1)).toContainText(/^23\/03 \d\d:\d\dv\d+analysis@1MockCURRENT$/);
+  await expect(rows.nth(2)).toContainText(/^25\/10 \d\d:\d\dv\d+discovery@1MockSTALE$/);
+  await expect(rows.nth(3)).toContainText(/^24\/09 \d\d:\d\dv\d+discovery@1MockSTALE$/);
+  await expect(rows.nth(1)).toHaveAttribute('aria-current', 'true');
+
+  // An older STALE one shows in place of the latest, faded, under "Đang xem lần …".
+  await rows
+    .nth(2)
+    .getByRole('button', { name: /^Xem lần 25\/10/ })
+    .click();
+  await expect(panel).toContainText(
+    /Đang xem lần 25\/10 \d\d:\d\d · kyc v\d+ STALE ← Về bản mới nhất/,
+  );
+  await expect(panel).toContainText(/kyc v\d+ · discovery@1 · Mock · 25\/10 \d\d:\d\d/);
+  await expect(rows.nth(2)).toHaveAttribute('aria-current', 'true');
+  await expect(panel).toContainText('CURRENT');
+  await panel.getByRole('button', { name: '← Về bản mới nhất' }).click();
+  await expect(panel).not.toContainText('Đang xem lần');
+  await expect(panel).toContainText(/kyc v\d+ · analysis@1 · Mock · 23\/03/);
+
+  // The facts list names each fact F{seq}; a code cited leads to its fact, outlined for a moment.
+  const kyc = page.getByRole('region', { name: 'Dữ kiện KYC' });
+  await expect(kyc).toContainText(/F\d+ · \d\d\/\d\d\/\d{4}/);
+  const code = panel
+    .getByRole('region', { name: 'Behavioral Hypotheses' })
+    .getByRole('button')
+    .first();
+  const cited = (await code.textContent()) ?? '';
+  await code.click();
+  const marked = kyc.locator('[aria-current="true"]');
+  await expect(marked).toContainText(`${cited} · `);
+  await expect(marked).toBeInViewport();
+  await expect(marked).toHaveCount(0, { timeout: 5000 });
 });

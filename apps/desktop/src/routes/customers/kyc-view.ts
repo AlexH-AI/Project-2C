@@ -2,9 +2,11 @@
  * KYC in the customer profile (mockup customer.html): the hạng mục with their facts and the gate,
  * and the timeline of KYC and stage changes. Pure, so the screen only lays them out.
  */
+import { factCode } from '@p2c/ai';
 import {
   normalizeKycValue,
   type AppointmentRecord,
+  type KycFactRecord,
   type KycNoteFact,
   type KycNoteRecord,
   type KycProfileRecord,
@@ -30,22 +32,25 @@ import {
   type StageTransition,
 } from '@p2c/domain';
 
-export interface KycCategoryRow {
+export interface KycCategoryRow<F extends KycFact = KycFact> {
   readonly category: KycCategory;
   /** "Đã có" by the gate's rule (trường chính). */
   readonly present: boolean;
   /** Facts in effect — active or in conflict — in recording order. */
-  readonly facts: readonly KycFact[];
+  readonly facts: readonly F[];
   /** `core` blocks the AI (`CONFLICT_RESOLUTION`), `minor` only warns; null without a conflict. */
   readonly conflict: 'core' | 'minor' | null;
 }
 
-export function kycOverview(facts: readonly KycFact[]): {
+/** Stored facts keep their `seq`, which names each one `F{seq}` on the list (spec Phase 5 §6.1). */
+export function kycOverview<F extends KycFact>(
+  facts: readonly F[],
+): {
   readonly gate: KycGateResult;
-  readonly rows: readonly KycCategoryRow[];
+  readonly rows: readonly KycCategoryRow<F>[];
 } {
   const gate = evaluateKycGate(facts);
-  const rows = KYC_CATEGORIES.map((category): KycCategoryRow => {
+  const rows = KYC_CATEGORIES.map((category): KycCategoryRow<F> => {
     const current = facts.filter((f) => f.category === category && f.status !== 'superseded');
     const conflicts = current.filter((f) => f.status === 'conflict');
     return {
@@ -61,6 +66,22 @@ export function kycOverview(facts: readonly KycFact[]): {
     };
   });
   return { gate, rows };
+}
+
+/** The element of a fact on the KYC facts list, by its code (mockup ai.html 3a). */
+export const factAnchor = (code: string) => `fact-${code}`;
+
+/**
+ * Where a code cited as evidence leads (mockup ai.html 3a, G3 `ai.html#ask` 11): its fact on the
+ * list while it is in effect. The list shows no replaced value, so a fact since replaced, or one no
+ * longer there, is "F5 không còn hiệu lực".
+ */
+export function factCodeTarget(
+  facts: readonly KycFactRecord[],
+  code: string,
+): { readonly kind: 'shown' | 'gone'; readonly code: string } {
+  const fact = facts.find((f) => factCode(f.seq) === code);
+  return { kind: fact && fact.status !== 'superseded' ? 'shown' : 'gone', code };
 }
 
 /** A fact's value as shown; yes/no answers are stored as booleans. */
