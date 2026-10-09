@@ -43,10 +43,9 @@ describe('the fields of Settings → AI', () => {
     expect(modelOptions()).toEqual([
       { value: 'glm-5.3', label: 'GLM-5.3' },
       { value: 'kimi-k3', label: 'Kimi K3' },
-      { value: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro' },
       { value: 'deepseek-v4.1-flash', label: 'DeepSeek V4.1 Flash · mặc định' },
     ]);
-    expect(modelList()).toBe('GLM-5.3 · Kimi K3 · DeepSeek V4 Pro · DeepSeek V4.1 Flash');
+    expect(modelList()).toBe('GLM-5.3 · Kimi K3 · DeepSeek V4.1 Flash');
     expect(reasoningOptions().map(({ label }) => label)).toEqual([
       'Mặc định',
       'Thấp',
@@ -59,7 +58,6 @@ describe('the fields of Settings → AI', () => {
     expect(takesReasoning('kimi-k3')).toBe(true);
     expect(takesReasoning('deepseek-v4.1-flash')).toBe(true);
     expect(takesReasoning('glm-5.3')).toBe(false);
-    expect(takesReasoning('deepseek-v4-pro')).toBe(false);
     expect(takesReasoning('gpt-6')).toBe(false);
   });
 

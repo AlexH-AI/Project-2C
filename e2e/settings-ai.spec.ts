@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 import { asExe } from './support';
 
@@ -43,6 +44,53 @@ test('web mode: only the Mock, OpenCode and the key are for the exe (1c, 4b)', a
     'Phân tích bằng ChatGPT web: bạn tự dán dữ kiện KYC (không có tên, mã KH) vào tài khoản ChatGPT của mình.',
   );
   await expect(page.locator('main')).not.toContainText('OpenCode Go');
+});
+
+test('a stored model taken off the list falls back to the defaults with one line (1g, T-180)', async ({
+  page,
+}) => {
+  // Brought by a backup: the settings row `ai` goes into it (§4.1).
+  await page.goto('/#/settings');
+  const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });
+  const download = page.waitForEvent('download');
+  await backup.getByRole('button', { name: 'Xuất backup' }).click();
+  const file = await download;
+  const data = JSON.parse(await readFile(await file.path(), 'utf8'));
+  const stored = { provider: 'OPENCODE_GO', opencodePlan: 'CREDIT', model: 'deepseek-v4-pro' };
+  data.tables.settings = [
+    ...data.tables.settings.filter((row: { key: string }) => row.key !== 'ai'),
+    {
+      key: 'ai',
+      value_json: JSON.stringify({ ...stored, reasoning: 'DEFAULT' }),
+      updated_at: '2026-10-09T08:00:00.000Z',
+    },
+  ];
+  await backup.getByLabel('Nhập backup').setInputFiles({
+    name: file.suggestedFilename(),
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(data)),
+  });
+  await page
+    .getByRole('dialog', { name: 'Thay toàn bộ dữ liệu?' })
+    .getByRole('button', { name: 'Thay dữ liệu', exact: true })
+    .click();
+  await expect(backup.getByRole('status')).toContainText('Đã nhập backup xuất lúc');
+
+  // Not `openAi`: a new page load would drop the web build's data.
+  await page
+    .getByRole('navigation', { name: 'Mục cài đặt' })
+    .getByRole('button', { name: 'AI' })
+    .click();
+  await expect(page.getByRole('note')).toHaveText(
+    'Cài đặt AI đã lưu không hợp lệ (model "deepseek-v4-pro" không còn trong danh sách) — đang dùng mặc định: Mock · DeepSeek V4.1 Flash · Mặc định. Chọn lại để lưu.',
+  );
+  await expect(provider(page).getByRole('radio', { name: 'Mock' })).toBeChecked();
+  await expect(model(page)).toHaveValue('deepseek-v4.1-flash');
+  await expect(model(page).getByRole('option')).toHaveText([
+    'GLM-5.3',
+    'Kimi K3',
+    'DeepSeek V4.1 Flash · mặc định',
+  ]);
 });
 
 test('exe: provider, gói OpenCode and model are saved at once and kept (4a, 4b)', async ({

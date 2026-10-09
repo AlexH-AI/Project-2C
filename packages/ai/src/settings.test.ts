@@ -31,12 +31,16 @@ describe('readAiSettings (spec Phase 5 §4.1, mockup ai.html 1g, 4b)', () => {
     expect(read({ ...STORED, key: 'sk-secret' }).settings).toEqual(STORED);
   });
 
-  it('falls back to the defaults as a whole when the model is no longer listed (1g)', () => {
-    expect(read({ ...STORED, model: 'gpt-6' })).toEqual({
-      settings: DEFAULT_AI_SETTINGS,
-      problem: { kind: 'model', model: 'gpt-6' },
-    });
-  });
+  it.each(['gpt-6', 'deepseek-v4-pro'])(
+    'falls back to the defaults as a whole when the model %s is no longer listed (1g)',
+    (model) => {
+      // deepseek-v4-pro: taken off the list 09/10/2026 (T-180).
+      expect(read({ ...STORED, model })).toEqual({
+        settings: DEFAULT_AI_SETTINGS,
+        problem: { kind: 'model', model },
+      });
+    },
+  );
 
   it.each([
     ['broken JSON', '{"provider": "MOCK"'],
@@ -64,16 +68,13 @@ describe('readAiSettings (spec Phase 5 §4.1, mockup ai.html 1g, 4b)', () => {
     });
   });
 
-  it.each(['glm-5.3', 'deepseek-v4-pro'])(
-    'uses Mặc định on %s, which does not take reasoning_effort, with nothing to report',
-    (model) => {
-      // Stored before, or brought by a backup: never sent to Rust (review #424).
-      expect(read({ ...STORED, model, reasoning: 'HIGH' })).toEqual({
-        settings: { ...STORED, model, reasoning: 'DEFAULT' },
-        problem: null,
-      });
-    },
-  );
+  it('uses Mặc định on glm-5.3, which does not take reasoning_effort, with nothing to report', () => {
+    // Stored before, or brought by a backup: never sent to Rust (review #424).
+    expect(read({ ...STORED, model: 'glm-5.3', reasoning: 'HIGH' })).toEqual({
+      settings: { ...STORED, model: 'glm-5.3', reasoning: 'DEFAULT' },
+      problem: null,
+    });
+  });
 
   it.each([
     ['kimi-k3', 'HIGH'],
