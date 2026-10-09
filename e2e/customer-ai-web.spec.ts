@@ -7,19 +7,26 @@ import { addKycNote, createKycCustomer } from './support';
 
 declare global {
   interface Window {
-    web: { copied: string[]; opened: unknown[][]; failCopy: boolean };
+    web: { copied: string[]; opened: unknown[][]; failCopy: boolean; breakCopy: boolean };
   }
 }
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    const web = { copied: [] as string[], opened: [] as unknown[][], failCopy: false };
+    const web = {
+      copied: [] as string[],
+      opened: [] as unknown[][],
+      failCopy: false,
+      breakCopy: false,
+    };
     Object.assign(window, { web });
     window.open = (...args: unknown[]) => {
       web.opened.push(args);
       return null;
     };
     navigator.clipboard.writeText = (text: string) => {
+      // A bug of the app, not a refusal: the click fails as a whole.
+      if (web.breakCopy) throw new TypeError('broken');
       if (web.failCopy) return Promise.reject(new DOMException('denied', 'NotAllowedError'));
       web.copied.push(text);
       return Promise.resolve();
@@ -170,4 +177,20 @@ test('Hủy and leaving the profile save nothing; a failed copy shows the messag
   await page.getByRole('link', { name: new RegExp(name) }).click();
   await expect(panelOf(page)).toContainText('Chưa có phân tích AI cho KH này.');
   await expect(panelOf(page).getByRole('textbox', { name: 'Dán kết quả' })).toBeHidden();
+});
+
+test('a failure to start the session offers Thử lại of ChatGPT web, never a call to the AI', async ({
+  page,
+}) => {
+  const panel = await discoveryCustomer(page, 'Sen Web');
+  await page.evaluate(() => (window.web.breakCopy = true));
+  await panel.getByRole('button', { name: 'Phân tích bằng ChatGPT web' }).click();
+  const alert = panel.getByRole('alert');
+  await expect(alert).toContainText('Có lỗi trong app khi gọi AI');
+
+  await page.evaluate(() => (window.web.breakCopy = false));
+  await alert.getByRole('button', { name: 'Thử lại' }).click();
+  await expect(panel).toContainText('Đã copy tin nhắn và mở ChatGPT');
+  await expect(panel).toContainText('Chưa có phân tích AI cho KH này.');
+  await expect(panel).not.toContainText('Có lỗi trong app khi gọi AI');
 });

@@ -177,6 +177,8 @@ export const vi = {
   'aiPanel.web.attempt': 'Lần thử {n} / 2',
   'aiPanel.web.copyFailed':
     'Không copy được — chọn hết đoạn dưới (Ctrl+A trong ô) rồi Ctrl+C. ChatGPT đã được mở.',
+  'aiPanel.web.bothFailed':
+    'Không copy được và không mở được trình duyệt — chọn hết đoạn dưới (Ctrl+A trong ô), Ctrl+C, rồi mở chatgpt.com bằng tay.',
   'aiPanel.web.manual': 'Tin nhắn để copy',
   'aiPanel.web.openFailed':
     'Không mở được trình duyệt — mở chatgpt.com bằng tay; tin nhắn đã được copy.',

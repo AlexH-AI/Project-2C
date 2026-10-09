@@ -22,7 +22,7 @@ import {
 } from './ai-panel-view';
 import { ALERT } from './CustomerDialogs';
 import { BADGE } from './CustomerKyc';
-import { KycWebSession, rejectedReason } from './KycWebSession';
+import { issueText, KycWebSession } from './KycWebSession';
 
 const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 const HEADING = 'm-0 text-sm font-medium text-heading';
@@ -238,8 +238,11 @@ export function KycIntelligence({
   // This customer's ChatGPT web session: it lives in the panel only, so leaving ends it (§3.1).
   const [web, setWeb] = useState<AiPanelWeb | null>(null);
   const starting = useRef(false);
+  // While the copy and the browser are on their way, both buttons are off already (§3.1 item 4).
+  const [startingWeb, setStartingWeb] = useState(false);
+  const [webFailed, setWebFailed] = useState(false);
   const gate = useMemo(() => evaluateKycGate(facts), [facts]);
-  const view = aiPanelView({ gate, analyses, busy, webOpen: web !== null });
+  const view = aiPanelView({ gate, analyses, busy, webOpen: web !== null || startingWeb });
   const shown = shownRun(run, busy);
 
   // Once the request after Hủy has ended, the panel is back: a later request elsewhere (Settings →
@@ -255,6 +258,7 @@ export function KycIntelligence({
   const analyse = async () => {
     const controller = new AbortController();
     running.current = controller;
+    setWebFailed(false);
     setRun({ phase: 'running' });
     const outcome = await analyseCustomer(app, customerId, controller.signal);
     if (running.current === controller) setRun(runAfter(outcome));
@@ -266,13 +270,17 @@ export function KycIntelligence({
   const startWeb = async () => {
     if (starting.current) return;
     starting.current = true;
+    setStartingWeb(true);
+    setWebFailed(false);
     const outcome = await startChatGptWeb(app, customerId);
     starting.current = false;
+    setStartingWeb(false);
     if (outcome.kind === 'session') {
       setRun(IDLE);
       setWeb(webOpened(outcome));
     } else if (outcome.kind === 'failed') {
-      setRun({ phase: 'error', error: 'GENERAL' });
+      // Its own message: Thử lại starts ChatGPT web again, never a call to the AI (review of PR 459).
+      setWebFailed(true);
     }
   };
 
@@ -304,12 +312,20 @@ export function KycIntelligence({
       </div>
       {view.blocked && <BlockedNote blocked={view.blocked} />}
       {web && <KycWebSession web={web} versions={versions} onChange={setWeb} />}
+      {webFailed && !web && (
+        <div role="alert" className={`${ALERT} flex items-center gap-2.5 border-danger text-sm`}>
+          <span className="flex-1">{t('aiError.GENERAL')}</span>
+          <Button disabled={!view.button.enabled} onClick={() => void startWeb()}>
+            {t('aiPanel.retry')}
+          </Button>
+        </div>
+      )}
       {view.rejected && !web && (
         <p className={`${ALERT} border-danger text-sm`}>
           {view.rejected.issue
             ? t('aiPanel.rejected', {
                 date: formatDayMonth(view.rejected.date),
-                value: rejectedReason(view.rejected.issue),
+                value: issueText(view.rejected.issue, 'reason'),
               })
             : t('aiPanel.rejectedPlain', { date: formatDayMonth(view.rejected.date) })}
         </p>

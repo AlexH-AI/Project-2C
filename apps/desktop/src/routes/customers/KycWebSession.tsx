@@ -9,20 +9,19 @@ import { ALERT } from './CustomerDialogs';
 
 const ROW = 'flex flex-wrap items-center gap-2';
 
-/** "V3 · Behavioral Hypotheses #1: có …" (mockups 2k, 4g). */
-function issueText(issue: AiPanelIssue): string {
-  const value = issue.detail ?? t('aiPanel.issueNoJson');
-  return issue.place
-    ? t('aiPanel.issue', { code: issue.code, where: placeText(issue.place), value })
-    : t('aiPanel.issueWhole', { code: issue.code, value });
-}
+const ISSUE_TEXT = {
+  /** In a list (mockups 2k, 4g): "V3 · Behavioral Hypotheses #1: có …". */
+  list: { place: 'aiPanel.issue', whole: 'aiPanel.issueWhole' },
+  /** The reason of mockup 2i: "Behavioral Hypotheses #1 có … (V3)". */
+  reason: { place: 'aiPanel.rejectedReason', whole: 'aiPanel.rejectedReasonWhole' },
+} as const;
 
-/** The reason of mockup 2i: "Behavioral Hypotheses #1 có … (V3)". */
-export function rejectedReason(issue: AiPanelIssue): string {
+export function issueText(issue: AiPanelIssue, as: keyof typeof ISSUE_TEXT): string {
+  const keys = ISSUE_TEXT[as];
   const value = issue.detail ?? t('aiPanel.issueNoJson');
   return issue.place
-    ? t('aiPanel.rejectedReason', { where: placeText(issue.place), value, code: issue.code })
-    : t('aiPanel.rejectedReasonWhole', { value, code: issue.code });
+    ? t(keys.place, { code: issue.code, where: placeText(issue.place), value })
+    : t(keys.whole, { code: issue.code, value });
 }
 
 function placeText(place: NonNullable<AiPanelIssue['place']>): string {
@@ -78,7 +77,7 @@ export function KycWebSession({
             <b>{t('aiPanel.web.retryTitle')}</b>
             <ul className="m-0 mt-1.5 pl-5">
               {web.retry.issues.map((issue, index) => (
-                <li key={index}>{issueText(issue)}</li>
+                <li key={index}>{issueText(issue, 'list')}</li>
               ))}
             </ul>
           </div>
@@ -91,8 +90,8 @@ export function KycWebSession({
         </>
       ) : (
         <div role="status" className={`${ALERT} border-border-strong`}>
-          {/* A failed copy says so below instead (mockup 4f). */}
-          {web.manual === null && (
+          {/* A failed copy or browser says so below instead (mockups 4c, 4f). */}
+          {web.manual === null && !web.openFailed && (
             <p className="m-0 mb-1.5">
               <b>{t('aiPanel.web.readyTitle')}</b>
               {t('aiPanel.web.ready')}
@@ -106,7 +105,7 @@ export function KycWebSession({
           </p>
         </div>
       )}
-      {web.openFailed && (
+      {web.openFailed && web.manual === null && (
         <p role="alert" className={`${ALERT} border-warn`}>
           {t('aiPanel.web.openFailed')}
         </p>
@@ -114,7 +113,7 @@ export function KycWebSession({
       {web.manual !== null && (
         <>
           <p role="alert" className={`${ALERT} border-warn`}>
-            {t('aiPanel.web.copyFailed')}
+            {t(web.openFailed ? 'aiPanel.web.bothFailed' : 'aiPanel.web.copyFailed')}
           </p>
           <textarea
             readOnly
@@ -136,7 +135,7 @@ export function KycWebSession({
         value={pasted}
         onChange={(value) => {
           setPasted(value);
-          if (web.tooLong) onChange({ ...web, tooLong: false });
+          if (web.tooLong) onChange((now) => now && { ...now, tooLong: false });
         }}
         placeholder={t(
           second ? 'aiPanel.web.pasteRetryPlaceholder' : 'aiPanel.web.pastePlaceholder',

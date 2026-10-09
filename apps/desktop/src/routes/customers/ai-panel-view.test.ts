@@ -150,6 +150,70 @@ describe('aiPanelView (spec Phase 5 §9.1)', () => {
       detail: null,
     });
   });
+
+  it('reads a validator report it does not know as no reason', () => {
+    const rejected = analysis({
+      seq: 1,
+      state: 'REJECTED',
+      status: 'REJECTED',
+      validator: [{ attempt: 1, errors: ['V1'] }],
+    });
+    expect(aiPanelView({ gate: OPEN, analyses: [rejected], busy: false }).rejected).toEqual({
+      date: rejected.date,
+      issue: null,
+    });
+  });
+
+  it('shows the CURRENT analysis with Phân tích lại', () => {
+    const current = analysis({ seq: 1, state: 'CURRENT' });
+    const view = aiPanelView({ gate: OPEN, analyses: [current], busy: false });
+
+    expect(view.shown).toBe(current);
+    expect(view.badge).toBe('CURRENT');
+    expect(view.reminder).toBeNull();
+    expect(view.button).toEqual({ again: true, primary: false, enabled: true });
+  });
+
+  it('shows a STALE analysis with its reminder, and Phân tích lại as the main button', () => {
+    const reminder = { material: true, since: { year: 2026, month: 9, day: 20 } };
+    const stale = analysis({ seq: 1, state: 'STALE', reminder });
+    const view = aiPanelView({ gate: OPEN, analyses: [stale], busy: false });
+
+    expect(view.badge).toBe('STALE');
+    expect(view.reminder).toBe(reminder);
+    expect(view.button).toEqual({ again: true, primary: true, enabled: true });
+  });
+
+  it('shows the latest ACCEPTED analysis under a newer REJECTED one', () => {
+    const accepted = analysis({ seq: 1, state: 'CURRENT' });
+    const view = aiPanelView({
+      gate: OPEN,
+      analyses: [analysis({ seq: 2, state: 'REJECTED', status: 'REJECTED' }), accepted],
+      busy: false,
+    });
+
+    expect(view.shown).toBe(accepted);
+  });
+
+  it('shows no analysis when every row was REJECTED', () => {
+    const rejected = analysis({ seq: 1, state: 'REJECTED', status: 'REJECTED' });
+    expect(aiPanelView({ gate: OPEN, analyses: [rejected], busy: false }).shown).toBeNull();
+  });
+
+  it('keeps an older analysis under a blocked gate, without reminder or Phân tích lại (mockup 2b)', () => {
+    const reminder = { material: true, since: { year: 2026, month: 9, day: 20 } };
+    const stale = analysis({ seq: 1, state: 'STALE', reminder });
+    const view = aiPanelView({
+      gate: gateOf('CONFLICT_RESOLUTION', { coreConflictFields: ['childrenCount'] }),
+      analyses: [stale],
+      busy: false,
+    });
+
+    expect(view.shown).toBe(stale);
+    expect(view.badge).toBe('CONFLICT_RESOLUTION');
+    expect(view.reminder).toBeNull();
+    expect(view.button).toEqual({ again: false, primary: false, enabled: false });
+  });
 });
 
 describe('issueLine (mockups 2k, 4g)', () => {
@@ -251,72 +315,6 @@ describe('the ChatGPT web session of the panel (spec Phase 5 §3.1, mockups 4e�
     expect(webAfter(opened, { kind: 'failed' })).toMatchObject({ failed: true });
     expect(webAfter(opened, { kind: 'saved', status: 'REJECTED' })).toBeNull();
     expect(webAfter(opened, { kind: 'discarded' })).toBeNull();
-  });
-});
-
-describe('aiPanelView, more (spec Phase 5 §9.1)', () => {
-  it('reads a validator report it does not know as no reason', () => {
-    const rejected = analysis({
-      seq: 1,
-      state: 'REJECTED',
-      status: 'REJECTED',
-      validator: [{ attempt: 1, errors: ['V1'] }],
-    });
-    expect(aiPanelView({ gate: OPEN, analyses: [rejected], busy: false }).rejected).toEqual({
-      date: rejected.date,
-      issue: null,
-    });
-  });
-
-  it('shows the CURRENT analysis with Phân tích lại', () => {
-    const current = analysis({ seq: 1, state: 'CURRENT' });
-    const view = aiPanelView({ gate: OPEN, analyses: [current], busy: false });
-
-    expect(view.shown).toBe(current);
-    expect(view.badge).toBe('CURRENT');
-    expect(view.reminder).toBeNull();
-    expect(view.button).toEqual({ again: true, primary: false, enabled: true });
-  });
-
-  it('shows a STALE analysis with its reminder, and Phân tích lại as the main button', () => {
-    const reminder = { material: true, since: { year: 2026, month: 9, day: 20 } };
-    const stale = analysis({ seq: 1, state: 'STALE', reminder });
-    const view = aiPanelView({ gate: OPEN, analyses: [stale], busy: false });
-
-    expect(view.badge).toBe('STALE');
-    expect(view.reminder).toBe(reminder);
-    expect(view.button).toEqual({ again: true, primary: true, enabled: true });
-  });
-
-  it('shows the latest ACCEPTED analysis under a newer REJECTED one', () => {
-    const accepted = analysis({ seq: 1, state: 'CURRENT' });
-    const view = aiPanelView({
-      gate: OPEN,
-      analyses: [analysis({ seq: 2, state: 'REJECTED', status: 'REJECTED' }), accepted],
-      busy: false,
-    });
-
-    expect(view.shown).toBe(accepted);
-  });
-
-  it('shows no analysis when every row was REJECTED', () => {
-    const rejected = analysis({ seq: 1, state: 'REJECTED', status: 'REJECTED' });
-    expect(aiPanelView({ gate: OPEN, analyses: [rejected], busy: false }).shown).toBeNull();
-  });
-
-  it('keeps an older analysis under a blocked gate, without reminder or Phân tích lại (mockup 2b)', () => {
-    const reminder = { material: true, since: { year: 2026, month: 9, day: 20 } };
-    const stale = analysis({ seq: 1, state: 'STALE', reminder });
-    const view = aiPanelView({
-      gate: gateOf('CONFLICT_RESOLUTION', { coreConflictFields: ['childrenCount'] }),
-      analyses: [stale],
-      busy: false,
-    });
-
-    expect(view.shown).toBe(stale);
-    expect(view.badge).toBe('CONFLICT_RESOLUTION');
-    expect(view.reminder).toBeNull();
-    expect(view.button).toEqual({ again: false, primary: false, enabled: false });
   });
 });
 
