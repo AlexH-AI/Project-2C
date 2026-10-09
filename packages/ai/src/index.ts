@@ -8,3 +8,4 @@ export * from './validator';
 export * from './input';
 export * from './run';
 export * from './settings';
+export * from './web';

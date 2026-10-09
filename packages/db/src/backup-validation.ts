@@ -4,7 +4,7 @@
  * then break the screens or the metrics that read it. Rows are read as they are; nothing is
  * replayed through the commands, which would change ids, `seq` and hashes.
  */
-import { AI_OUTPUT_SCHEMAS } from '@p2c/ai/schema';
+import { AI_OUTPUT_SCHEMAS, WEB_PROMPT_VERSION } from '@p2c/ai/schema';
 import {
   assertValidTransition,
   calendarDate,
@@ -369,7 +369,7 @@ function futureRule(read: (sql: string) => Row[], today: string): Rule | null {
 /**
  * Rules 11–14 (spec Phase 5 §7.3), on what the table's CHECK and UNIQUE leave to the app: the KYC
  * version analysed is the customer's own (11); a model and prompt version are labels as
- * `recordAiAnalysis` takes them (12); the JSON reads back, an accepted output passes the latest
+ * `recordAiAnalysis` takes them, a ChatGPT web one ending in `+web@<n>` (12); the JSON reads back, an accepted output passes the latest
  * schema of its mode and cites only facts of its input (13); the analysis is not dated after today
  * (14).
  */
@@ -380,7 +380,10 @@ function aiRule(read: (sql: string) => Row[], today: string): Rule | null {
   if (foreign.length > 0) return 11;
   const analyses = read('SELECT * FROM ai_analyses');
   const labelled = analyses.every(
-    (a) => isLabel(a.prompt_version) && (a.model === null || isLabel(a.model)),
+    (a) =>
+      isLabel(a.prompt_version) &&
+      (a.provider !== 'CHATGPT_WEB' || WEB_PROMPT_VERSION.test(a.prompt_version)) &&
+      (a.model === null || isLabel(a.model)),
   );
   if (!labelled) return 12;
   if (!analyses.every(readsBack)) return 13;

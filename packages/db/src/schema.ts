@@ -12,7 +12,11 @@ import {
   type KycField,
   type KycGateState,
 } from '@p2c/domain';
-import { AI_PROVIDERS, AI_REASONING_LEVELS, type AiMode } from '@p2c/ai/schema';
+import {
+  AI_ANALYSIS_PROVIDERS as PROVIDERS,
+  AI_REASONING_LEVELS,
+  type AiMode,
+} from '@p2c/ai/schema';
 import { sql } from 'drizzle-orm';
 import {
   check,
@@ -298,8 +302,13 @@ export const AI_ANALYSIS_GATES = {
 } as const satisfies Record<(typeof AI_ANALYSIS_MODES)[number], KycGateState>;
 export const AI_ANALYSIS_STATUSES = ['ACCEPTED', 'REJECTED'] as const;
 /** `@p2c/ai`'s own lists, from the one module of it `db` may import (ADR-0006 phụ lục 07/10/2026). */
-export const AI_ANALYSIS_PROVIDERS = AI_PROVIDERS;
+export const AI_ANALYSIS_PROVIDERS = PROVIDERS;
 export const AI_ANALYSIS_REASONING = AI_REASONING_LEVELS;
+/** The providers that name no model and count no token: Mock, and ChatGPT web (P7, §7.1). */
+export const AI_ANALYSIS_NO_MODEL = [
+  'MOCK',
+  'CHATGPT_WEB',
+] as const satisfies readonly (typeof AI_ANALYSIS_PROVIDERS)[number][];
 /** Characters of a rejected raw output kept (§7.1). */
 export const MAX_AI_RAW_OUTPUT = 20_000;
 
@@ -355,12 +364,12 @@ export const aiAnalyses = sqliteTable(
       sql`${t.reasoning} IS NULL OR ${t.reasoning} IN (${list(AI_ANALYSIS_REASONING)})`,
     ),
     check(
-      'ai_analyses_mock',
-      sql`${t.provider} <> 'MOCK' OR (${t.model} IS NULL AND ${t.reasoning} IS NULL AND ${t.promptTokens} IS NULL AND ${t.completionTokens} IS NULL)`,
+      'ai_analyses_no_model',
+      sql`${t.provider} NOT IN (${list(AI_ANALYSIS_NO_MODEL)}) OR (${t.model} IS NULL AND ${t.reasoning} IS NULL AND ${t.promptTokens} IS NULL AND ${t.completionTokens} IS NULL)`,
     ),
     check(
       'ai_analyses_model',
-      sql`${t.provider} = 'MOCK' OR (${t.model} IS NOT NULL AND ${t.reasoning} IS NOT NULL)`,
+      sql`${t.provider} IN (${list(AI_ANALYSIS_NO_MODEL)}) OR (${t.model} IS NOT NULL AND ${t.reasoning} IS NOT NULL)`,
     ),
     check('ai_analyses_attempts', sql`${t.attempts} IN (1, 2)`),
     check(

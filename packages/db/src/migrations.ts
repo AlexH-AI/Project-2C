@@ -9,6 +9,8 @@ import m0003 from '../migrations/0003_kyc_append_only.sql?raw';
 import m0004 from '../migrations/0004_appointment_outcome_reviewer.sql?raw';
 import m0005 from '../migrations/0005_ai_analyses.sql?raw';
 import m0006 from '../migrations/0006_ai_analyses_append_only.sql?raw';
+import m0007 from '../migrations/0007_ai_analyses_chatgpt_web.sql?raw';
+import m0008 from '../migrations/0008_ai_analyses_append_only_rebuilt.sql?raw';
 
 export interface Migration {
   /** Migration number; the database `schemaVersion` is the highest applied id. */
@@ -25,6 +27,8 @@ export const MIGRATIONS: readonly Migration[] = [
   { id: 5, tag: '0004_appointment_outcome_reviewer', sql: m0004 },
   { id: 6, tag: '0005_ai_analyses', sql: m0005 },
   { id: 7, tag: '0006_ai_analyses_append_only', sql: m0006 },
+  { id: 8, tag: '0007_ai_analyses_chatgpt_web', sql: m0007 },
+  { id: 9, tag: '0008_ai_analyses_append_only_rebuilt', sql: m0008 },
 ];
 
 /** The highest schema version a list of migrations reaches. */

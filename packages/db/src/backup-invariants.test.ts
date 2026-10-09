@@ -123,10 +123,12 @@ async function history() {
   restoreCustomer(db, minh.id);
   const kien = createCustomer(db, { name: 'Kiên', reId: re.id, stage: 'N3', date: day(4) });
   softDeleteCustomer(db, kien.id);
-  // Lan's analyses (spec Phase 5 §7): one by Mock, accepted, then one by a model, rejected.
+  // Lan's analyses (spec Phase 5 §7): one by Mock, accepted, then one by a model, rejected, then
+  // one through ChatGPT web, accepted (§3.1).
   const analysed = { customerId: lan.id, kycVersionId: listKycVersions(db, lan.id).at(-1)!.id };
   const accepted = recordAiAnalysis(db, { ...ACCEPTED, ...analysed });
   const rejected = recordAiAnalysis(db, { ...REJECTED, ...analysed });
+  const web = recordAiAnalysis(db, { ...WEB, ...analysed });
   persist.mockClear();
   return {
     db,
@@ -142,6 +144,7 @@ async function history() {
       otherRe: otherRe.id,
       accepted: accepted.id,
       rejected: rejected.id,
+      web: web.id,
     },
   };
 }
@@ -204,6 +207,13 @@ const REJECTED: Omit<NewAiAnalysis, 'customerId' | 'kycVersionId'> = {
   ],
   promptTokens: 1_200,
   completionTokens: 300,
+};
+
+/** Through ChatGPT web (spec Phase 5 §3.1): no model, reasoning or token. */
+const WEB: Omit<NewAiAnalysis, 'customerId' | 'kycVersionId'> = {
+  ...ACCEPTED,
+  provider: 'CHATGPT_WEB',
+  promptVersion: 'analysis@1+web@1',
 };
 
 type Ids = Awaited<ReturnType<typeof history>>['ids'];
@@ -746,6 +756,16 @@ describe('importBackup — rules across tables', () => {
     [
       'CHECK: a model’s analysis with no reasoning',
       (b, ids) => (analysis(b, ids.rejected).reasoning = null),
+    ],
+    ['CHECK: ChatGPT web with a model', (b, ids) => (analysis(b, ids.web).model = 'gpt-5')],
+    ['CHECK: ChatGPT web with a reasoning', (b, ids) => (analysis(b, ids.web).reasoning = 'HIGH')],
+    [
+      'CHECK: ChatGPT web with token counts',
+      (b, ids) => (analysis(b, ids.web).completion_tokens = 0),
+    ],
+    [
+      '12: ChatGPT web with a prompt version not ending in +web@<n>',
+      (b, ids) => (analysis(b, ids.web).prompt_version = 'analysis@1'),
     ],
     ['12: a blank model name', (b, ids) => (analysis(b, ids.rejected).model = '  ')],
     ['12: a blank prompt version', (b, ids) => (analysis(b, ids.accepted).prompt_version = '')],
