@@ -9,7 +9,11 @@ describe('AI_MODELS', () => {
     expect(DEFAULT_AI_MODEL).toBe('deepseek-v4.1-flash');
   });
 
-  it('has reasoning_effort unchecked on every model until a real call checks it', () => {
-    expect(AI_MODELS.filter((model) => model.reasoningEffort)).toEqual([]);
+  it('takes reasoning_effort on the models the real call of 09/10/2026 checked (T-179)', () => {
+    // glm-5.3: low and high answer alike; deepseek-v4-pro: 403 on every call, not checked (T-180).
+    expect(AI_MODELS.filter((model) => model.reasoningEffort).map((model) => model.id)).toEqual([
+      'kimi-k3',
+      'deepseek-v4.1-flash',
+    ]);
   });
 });

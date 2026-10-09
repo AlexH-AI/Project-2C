@@ -55,8 +55,11 @@ describe('the fields of Settings → AI', () => {
     ]);
   });
 
-  it('has the Reasoning field off for every model until a real call checks it', () => {
-    expect(takesReasoning('kimi-k3')).toBe(false);
+  it('has the Reasoning field on only for the models checked with reasoning_effort (T-179)', () => {
+    expect(takesReasoning('kimi-k3')).toBe(true);
+    expect(takesReasoning('deepseek-v4.1-flash')).toBe(true);
+    expect(takesReasoning('glm-5.3')).toBe(false);
+    expect(takesReasoning('deepseek-v4-pro')).toBe(false);
     expect(takesReasoning('gpt-6')).toBe(false);
   });
 

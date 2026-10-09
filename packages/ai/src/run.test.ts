@@ -13,7 +13,7 @@ import {
   type AiAbortSignal,
   type AiRunner,
 } from './run';
-import type { AiSettings } from './settings';
+import { readAiSettings, type AiSettings } from './settings';
 import { fact, PRIVATE, PROFILE, TODAY } from './test-support';
 
 const OPENCODE: AiSettings = {
@@ -252,6 +252,21 @@ describe('runAnalysis', () => {
     await runAnalysis(analysis({ ...OPENCODE, reasoning: 'DEFAULT' }, adapter));
     expect(requests[0]?.reasoning).toBeNull();
   });
+
+  it.each([
+    ['kimi-k3', 'HIGH'],
+    ['deepseek-v4.1-flash', 'LOW'],
+    ['glm-5.3', null],
+    ['deepseek-v4-pro', null],
+  ] as const)(
+    'sends the stored Cao / Thấp on %s only when it takes reasoning_effort (T-179)',
+    async (model, sent) => {
+      const stored = JSON.stringify({ ...OPENCODE, model, reasoning: sent ?? 'HIGH' });
+      const { adapter, requests } = scripted(GOOD);
+      await runAnalysis(analysis(readAiSettings(stored).settings, adapter));
+      expect(requests[0]).toMatchObject({ model, reasoning: sent });
+    },
+  );
 
   it('runs the discovery prompt when the gate is PROFILE_DISCOVERY', async () => {
     const facts = [

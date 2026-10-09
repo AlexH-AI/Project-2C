@@ -55,7 +55,8 @@ export function tauriOpenCode(invoke: Invoke): OpenCodeClient {
           sessionId,
           plan,
           model,
-          reasoning,
+          // Rust sends it as it comes; OpenCode takes low / medium / high (spec §4.1, T-179).
+          reasoning: reasoning?.toLowerCase() ?? null,
           messages: messages.map(({ role, content }) => ({ role, content })),
           maxTokens,
         })) as AiCompletion,

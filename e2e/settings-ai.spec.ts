@@ -20,6 +20,8 @@ const plan = (page: Page) => page.getByRole('radiogroup', { name: 'Gói OpenCode
 const model = (page: Page) => page.getByRole('combobox', { name: 'Model' });
 const keyCard = (page: Page) => page.getByRole('region', { name: 'API key OpenCode' });
 const checkCard = (page: Page) => page.getByRole('region', { name: 'Kiểm tra kết nối' });
+const reasoning = (page: Page) => page.getByRole('combobox', { name: 'Mức suy luận' });
+const REASONING_OFF = 'Model này chưa được kiểm với mức suy luận';
 
 async function chooseOpenCode(page: Page, planLabel: 'Gói Go' | 'Credit') {
   await provider(page).getByRole('radio', { name: 'OpenCode' }).check();
@@ -51,7 +53,6 @@ test('exe: provider, gói OpenCode and model are saved at once and kept (4a, 4b)
 
   await chooseOpenCode(page, 'Credit');
   await model(page).selectOption({ label: 'Kimi K3' });
-  await expect(page.getByRole('combobox', { name: 'Mức suy luận' })).toBeDisabled();
 
   // Left and opened again: read back from the data.
   const nav = page.getByRole('navigation', { name: 'Mục cài đặt' });
@@ -70,6 +71,38 @@ test('exe: provider, gói OpenCode and model are saved at once and kept (4a, 4b)
   await provider(page).getByRole('radio', { name: 'OpenCode' }).check();
   await expect(plan(page).getByRole('radio', { name: 'Credit' })).toBeChecked();
   await expect(page.locator('main')).not.toContainText('OpenCode Go');
+});
+
+test('exe: Mức suy luận is on only for a model checked with reasoning_effort, kept and sent (1a, T-179)', async ({
+  page,
+}) => {
+  await asExe(page);
+  await openAi(page);
+  await chooseOpenCode(page, 'Credit');
+  const card = page.getByRole('region', { name: 'Provider & model' });
+
+  await model(page).selectOption({ label: 'GLM-5.3' });
+  await expect(reasoning(page)).toBeDisabled();
+  await expect(card).toContainText(REASONING_OFF);
+
+  await model(page).selectOption({ label: 'Kimi K3' });
+  await expect(reasoning(page)).toBeEnabled();
+  await expect(card).not.toContainText(REASONING_OFF);
+  await reasoning(page).selectOption({ label: 'Cao' });
+
+  // Left and opened again: read back from the data.
+  const nav = page.getByRole('navigation', { name: 'Mục cài đặt' });
+  await nav.getByRole('button', { name: 'Dữ liệu' }).click();
+  await expect(page.getByRole('heading', { name: 'File dữ liệu' })).toBeVisible();
+  await nav.getByRole('button', { name: 'AI' }).click();
+  await expect(model(page)).toHaveValue('kimi-k3');
+  await expect(reasoning(page)).toHaveValue('HIGH');
+
+  await checkCard(page).getByRole('button', { name: 'Kiểm tra kết nối' }).click();
+  await expect(checkCard(page).getByRole('status')).toHaveText('Kết nối được · Credit · Kimi K3');
+  expect(await page.evaluate(() => window.exe.aiCalls)).toMatchObject([
+    { plan: 'CREDIT', model: 'kimi-k3', reasoning: 'high' },
+  ]);
 });
 
 test('exe: the key is checked at the field, saved trimmed, never shown, deleted after a confirmation (1d, 1e)', async ({
