@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { addKycNote, createKycCustomer } from './support';
+import { addKycNote, asExe, createKycCustomer } from './support';
 
 // playwright.config.ts pins "today" of the simulated data (VITE_DEMO_ANCHOR) to 15/09/2026. The web
 // build runs the Mock until Settings → AI exists (T-167).
@@ -157,4 +157,57 @@ test('the history of a seeded customer: latest first, a STALE one opened, F code
   await expect(marked).toContainText(`${cited} · `);
   await expect(marked).toBeInViewport();
   await expect(marked).toHaveCount(0, { timeout: 5000 });
+});
+
+/**
+ * Settings → AI on OpenCode, through the exe's stand-in, which answers "OK" (no JSON) unless held
+ * or failing; then back to the page before, without a reload that would drop the data.
+ */
+async function useOpenCode(page: Page) {
+  await page.getByRole('link', { name: 'Cài đặt' }).click();
+  await page
+    .getByRole('navigation', { name: 'Mục cài đặt' })
+    .getByRole('button', { name: 'AI' })
+    .click();
+  await page
+    .getByRole('radiogroup', { name: 'Provider' })
+    .getByRole('radio', { name: 'OpenCode' })
+    .check();
+  await page.goBack();
+}
+
+test('a run outlives the profile: left and shown again, it still shows with Hủy (review of PR 439)', async ({
+  page,
+}) => {
+  await asExe(page);
+  const name = 'Tú Chờ AI';
+  await createKycCustomer(page, name);
+  await addKycNote(page, name, [
+    ['Tình trạng hôn nhân', 'Đã kết hôn'],
+    ['Số con', '2'],
+    ['Nghề nghiệp', 'Bác sĩ'],
+  ]);
+  await useOpenCode(page);
+  const panel = panelOf(page);
+  const analyse = panel.getByRole('button', { name: 'Phân tích', exact: true });
+
+  await page.evaluate(() => window.exe.holdAi());
+  await analyse.click();
+  await expect(panel.getByRole('status')).toContainText('Đang phân tích…');
+  await page.goBack();
+  await page.goForward();
+  await expect(panel.getByRole('status')).toContainText('Đang phân tích…');
+  await expect(analyse).toBeDisabled();
+
+  // Hủy holds every AI button off until the request ends (§5.2), also on the profile shown again.
+  await panel.getByRole('button', { name: 'Hủy' }).click();
+  await expect(panel.getByRole('status')).toContainText('Đang hủy…');
+  await page.goBack();
+  await page.goForward();
+  await expect(panel.getByRole('status')).toContainText('Đang hủy…');
+  await page.evaluate(() => window.exe.releaseAi());
+  await expect(panel.getByRole('status')).toHaveCount(0);
+  await expect(analyse).toBeEnabled();
+  // Nothing was saved after Hủy.
+  await expect(panel).toContainText('Chưa có phân tích AI cho KH này.');
 });

@@ -90,8 +90,11 @@ export function aiPanelView(input: {
     shown,
     viewing: picked?.status === 'ACCEPTED' && picked !== shown ? picked : null,
     reminder: blocked ? null : (shown?.reminder ?? null),
+    // Like the reminder, never beside the sentence of a blocked gate (review of PR 459).
     rejected:
-      latest?.status === 'REJECTED' ? { date: latest.date, issue: firstIssue(latest) } : null,
+      !blocked && latest?.status === 'REJECTED'
+        ? { date: latest.date, issue: firstIssue(latest) }
+        : null,
     button: {
       again: shown !== null && !blocked,
       primary: !blocked && !webOpen && shown?.state !== 'CURRENT',
@@ -183,6 +186,9 @@ function blockedBy(gate: KycGateResult): AiPanelBlocked | null {
 /** The §5.3 message shown: an AI error code, or the general one for a bug or a bad request. */
 export type AiPanelError = Exclude<AiErrorCode, 'AI_BAD_REQUEST'> | 'GENERAL';
 
+export const panelError = (code: AiErrorCode): AiPanelError =>
+  code === 'AI_BAD_REQUEST' ? 'GENERAL' : code;
+
 /** The panel's own click on Phân tích, until it ends. */
 export type AiPanelRun =
   | { readonly phase: 'idle' }
@@ -192,24 +198,24 @@ export type AiPanelRun =
   /** Mockup 2f: the message and Thử lại; nothing was saved. */
   | { readonly phase: 'error'; readonly error: AiPanelError };
 
+/** Where a run the app keeps is (`AiJobs`): none for the key, running, or cancelled. */
+export type AiJobPhase = 'idle' | 'running' | 'cancelling';
+
 const IDLE: AiPanelRun = { phase: 'idle' };
 
 /**
  * Where the panel goes once `analyseCustomer` ends. A save goes back to idle: the panel shows what
  * `listAiAnalyses` reads again, never what the outcome says was saved, as the data may have been
  * replaced meanwhile (review of PR 437). A blocked gate is read again too, so its sentence shows.
+ * After Hủy the job says "Đang hủy…" until the request ends; then the panel is back as it was.
  */
 export function runAfter(outcome: AnalysisOutcome): AiPanelRun {
   switch (outcome.kind) {
-    case 'cancelled':
-      return { phase: 'cancelling' };
     case 'error':
-      return {
-        phase: 'error',
-        error: outcome.code === 'AI_BAD_REQUEST' ? 'GENERAL' : outcome.code,
-      };
+      return { phase: 'error', error: panelError(outcome.code) };
     case 'failed':
       return { phase: 'error', error: 'GENERAL' };
+    case 'cancelled':
     case 'saved':
     case 'blocked':
     case 'discarded':
@@ -217,6 +223,12 @@ export function runAfter(outcome: AnalysisOutcome): AiPanelRun {
     default:
       return outcome satisfies never;
   }
+}
+
+/** The job while the app keeps it, also on a profile shown again; then how it ended. */
+export function panelRun(job: AiJobPhase, ended: AnalysisOutcome | null): AiPanelRun {
+  if (job !== 'idle') return { phase: job };
+  return ended ? runAfter(ended) : IDLE;
 }
 
 /** This customer's ChatGPT web session, kept by the panel only, never stored (§3.1 item 4). */
@@ -257,9 +269,11 @@ export function webAfter(web: AiPanelWeb, outcome: WebAnswerOutcome): AiPanelWeb
       return { ...web, tooLong: outcome.reason === 'TOO_LONG', failed: false };
     case 'retry': {
       const noJson = outcome.session.attempts.at(-1)!.parsed === null;
+      // The first message left to copy by hand would be pasted into the same chat (review of PR 459).
       return {
         ...web,
         session: outcome.session,
+        manual: null,
         retry: {
           issues: outcome.issues.map((issue) => issueLine(issue, noJson)),
           message: outcome.retryMessage,
@@ -283,11 +297,6 @@ export function webChip(web: AiPanelWeb, versions: readonly { readonly id: strin
     prompt: `${ANALYSIS_PROMPTS[mode].version}+${WEB_WRAPPER.version}`,
     at: dayAndTime(web.takenAt),
   };
-}
-
-/** "Đang hủy…" holds only while the request runs on; once the runner is free, the panel is back. */
-export function shownRun(run: AiPanelRun, busy: boolean): AiPanelRun {
-  return run.phase === 'cancelling' && !busy ? IDLE : run;
 }
 
 // ---- one analysis -------------------------------------------------------------

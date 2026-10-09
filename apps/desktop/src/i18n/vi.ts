@@ -127,8 +127,9 @@ export const vi = {
   'aiPanel.mock': 'Mock',
   'aiPanel.empty': 'Chưa có phân tích AI cho KH này.',
   'aiPanel.blocked.CONFLICT_RESOLUTION': 'Giải quyết mâu thuẫn ở {fields} trước khi phân tích.',
+  // `{message}`: the gate's own sentence (ADR-0008 Q9), kept in `domain`.
   'aiPanel.blocked.KYC_INSUFFICIENT':
-    'Cần chăm sóc, KYC thêm thông tin khách hàng. Còn thiếu: {fields} — câu hỏi gợi ý ở thẻ Dữ kiện KYC.',
+    '{message}. Còn thiếu: {fields} — câu hỏi gợi ý ở thẻ Dữ kiện KYC.',
   'aiPanel.toKyc': 'Xem ở Dữ kiện KYC →',
   'aiPanel.running': 'Đang phân tích…',
   'aiPanel.runningDetail': '· {name} · tối đa 2 phút mỗi lần thử',

@@ -54,13 +54,17 @@ export function KycWebSession({
   const chip = webChip(web, versions);
   const second = web.retry !== null;
 
+  // A slow clipboard or browser answers for the session it was asked for, never a later one
+  // (review of PR 459).
+  const update = (change: Partial<AiPanelWeb>) =>
+    onChange((now) => (now && now.session === web.session ? { ...now, ...change } : now));
   const copy = async (text: string) => {
     const copied = await app.ai.web.copy(text);
-    onChange((now) => now && { ...now, manual: copied ? null : text });
+    update({ manual: copied ? null : text });
   };
   const reopen = async () => {
     const opened = await app.ai.web.openChatGpt();
-    onChange((now) => now && { ...now, openFailed: !opened });
+    update({ openFailed: !opened });
   };
   const check = () => {
     const next = webAfter(web, saveChatGptAnswer(app, web.session, pasted));
