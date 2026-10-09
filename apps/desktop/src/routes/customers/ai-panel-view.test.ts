@@ -6,7 +6,9 @@ import {
   aiPanelView,
   analysisContent,
   analysisSource,
+  historyRows,
   issueLine,
+  rejectedReport,
   runAfter,
   shownRun,
   webAfter,
@@ -198,6 +200,22 @@ describe('aiPanelView (spec Phase 5 §9.1)', () => {
   it('shows no analysis when every row was REJECTED', () => {
     const rejected = analysis({ seq: 1, state: 'REJECTED', status: 'REJECTED' });
     expect(aiPanelView({ gate: OPEN, analyses: [rejected], busy: false }).shown).toBeNull();
+  });
+
+  it('shows an older ACCEPTED analysis picked in the history in place of the latest (2j)', () => {
+    const current = analysis({ seq: 3, state: 'CURRENT' });
+    const rejected = analysis({ seq: 2, state: 'REJECTED', status: 'REJECTED' });
+    const stale = analysis({ seq: 1, state: 'STALE' });
+    const analyses = [current, rejected, stale];
+    const view = (viewing: string | null) =>
+      aiPanelView({ gate: OPEN, analyses, busy: false, viewing });
+
+    expect(view(stale.id)).toMatchObject({ shown: current, viewing: stale, badge: 'CURRENT' });
+    // The latest itself, a REJECTED row (its report opens instead) or a row gone: nothing apart.
+    expect(view(current.id).viewing).toBeNull();
+    expect(view(rejected.id).viewing).toBeNull();
+    expect(view('gone').viewing).toBeNull();
+    expect(view(null).viewing).toBeNull();
   });
 
   it('keeps an older analysis under a blocked gate, without reminder or Phân tích lại (mockup 2b)', () => {
@@ -552,5 +570,166 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
       'discoveryStrategy',
       'nextBestActions',
     ]);
+  });
+});
+
+describe('the analysis history (spec Phase 5 §7.2, §9.1, mockup ai.html 2j)', () => {
+  const versions = [{ id: 'v1' }, { id: 'v2' }, { id: 'v3' }];
+
+  it('lists every row latest first by seq, never by date, with the state worked out on reading', () => {
+    // Recorded later, but on an earlier day: the order and the states follow seq.
+    const latest = analysis({
+      seq: 3,
+      state: 'CURRENT',
+      kycVersionId: 'v3',
+      provider: 'OPENCODE_GO',
+      model: 'deepseek-v4.1-flash',
+      reasoning: 'DEFAULT',
+      createdAt: new Date(2026, 6, 12, 16, 5),
+    });
+    const rejected = analysis({
+      seq: 2,
+      state: 'REJECTED',
+      status: 'REJECTED',
+      kycVersionId: 'v3',
+      provider: 'CHATGPT_WEB',
+      promptVersion: 'analysis@1+web@1',
+      createdAt: new Date(2026, 8, 26, 10, 15),
+    });
+    const first = analysis({
+      seq: 1,
+      state: 'STALE',
+      kycVersionId: 'v2',
+      mode: 'discovery',
+      gateState: 'PROFILE_DISCOVERY',
+      promptVersion: 'discovery@1',
+      createdAt: new Date(2026, 8, 14, 11, 2),
+    });
+
+    expect(historyRows([first, latest, rejected], versions)).toEqual([
+      {
+        id: latest.id,
+        at: '12/07 16:05',
+        version: 3,
+        prompt: 'analysis@1',
+        source: { model: 'DeepSeek V4.1 Flash' },
+        state: 'CURRENT',
+      },
+      {
+        id: rejected.id,
+        at: '26/09 10:15',
+        version: 3,
+        prompt: 'analysis@1+web@1',
+        source: { badge: 'CHATGPT_WEB' },
+        state: 'REJECTED',
+      },
+      {
+        id: first.id,
+        at: '14/09 11:02',
+        version: 2,
+        prompt: 'discovery@1',
+        source: { badge: 'MOCK' },
+        state: 'STALE',
+      },
+    ]);
+  });
+
+  it('has no rows before the first analysis (P2: a blocked gate records none)', () => {
+    expect(historyRows(NONE, versions)).toEqual([]);
+  });
+});
+
+describe('rejectedReport (mockup ai.html 2k)', () => {
+  const versions = [{ id: 'v1' }, { id: 'v2' }, { id: 'v3' }];
+  const accepted = analysis({ seq: 1, state: 'CURRENT', date: day(2026, 9, 14) });
+  const rejected = analysis({
+    seq: 2,
+    state: 'REJECTED',
+    status: 'REJECTED',
+    kycVersionId: 'v3',
+    provider: 'OPENCODE_GO',
+    model: 'deepseek-v4.1-flash',
+    reasoning: 'DEFAULT',
+    attempts: 2,
+    promptTokens: 7000,
+    completionTokens: 2840,
+    output: { hypotheses: [] },
+    rawOutput: '{"hypotheses": []}',
+    createdAt: new Date(2026, 8, 26, 10, 15),
+    validator: [
+      {
+        attempt: 1,
+        errors: [
+          { code: 'V3', path: 'hypotheses[0].text', detail: 'có "xác suất"' },
+          { code: 'V4', path: 'nextBestActions[1].text', detail: 'có "gói bảo hiểm"' },
+        ],
+      },
+      { attempt: 2, errors: [{ code: 'V3', path: 'hypotheses[0].text', detail: 'có "xác suất"' }] },
+    ],
+  });
+
+  it('lists the issues of each attempt, never the raw output, with its chip and tokens', () => {
+    const report = rejectedReport(rejected, [rejected, accepted], versions);
+
+    expect(report).toEqual({
+      at: '26/09 10:15',
+      version: 3,
+      prompt: 'analysis@1',
+      source: { model: 'DeepSeek V4.1 Flash' },
+      attempts: 2,
+      tokens: 9840,
+      reports: [
+        {
+          attempt: 1,
+          issues: [
+            { code: 'V3', place: { key: 'hypotheses', number: 1 }, detail: 'có "xác suất"' },
+            {
+              code: 'V4',
+              place: { key: 'nextBestActions', number: 2 },
+              detail: 'có "gói bảo hiểm"',
+            },
+          ],
+        },
+        {
+          attempt: 2,
+          issues: [
+            { code: 'V3', place: { key: 'hypotheses', number: 1 }, detail: 'có "xác suất"' },
+          ],
+        },
+      ],
+      latest: day(2026, 9, 14),
+    });
+    expect(JSON.stringify(report)).not.toContain('{"hypotheses"');
+  });
+
+  it('keeps tokens for OpenCode only, and says when no analysis was ever accepted', () => {
+    const web = { ...rejected, provider: 'CHATGPT_WEB' as const, model: null, reasoning: null };
+    const report = rejectedReport(
+      { ...web, promptTokens: null, completionTokens: null },
+      [web],
+      versions,
+    );
+    expect(report).toMatchObject({ source: { badge: 'CHATGPT_WEB' }, tokens: null, latest: null });
+  });
+
+  it('says an attempt with no JSON had none, the last one as the row stores it', () => {
+    const noJson = { code: 'V1', path: '$', detail: 'không có khối JSON' };
+    const row = {
+      ...rejected,
+      output: null,
+      validator: [
+        { attempt: 1, errors: [noJson] },
+        { attempt: 2, errors: [noJson] },
+      ],
+    };
+    expect(rejectedReport(row, [row], versions).reports.map((r) => r.issues)).toEqual([
+      [{ code: 'V1', place: null, detail: null }],
+      [{ code: 'V1', place: null, detail: null }],
+    ]);
+  });
+
+  it('reads a validator report it does not know as no attempts listed', () => {
+    const row = { ...rejected, validator: { odd: true } };
+    expect(rejectedReport(row, [row], versions).reports).toEqual([]);
   });
 });

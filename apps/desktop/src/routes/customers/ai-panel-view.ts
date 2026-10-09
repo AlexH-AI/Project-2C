@@ -46,6 +46,8 @@ export interface AiPanelView {
   readonly badge: 'CURRENT' | 'STALE' | KycGateState;
   /** The latest ACCEPTED analysis, CURRENT or STALE; a REJECTED row is never shown as a result. */
   readonly shown: AiAnalysisView | null;
+  /** Mockup 2j: an older ACCEPTED analysis picked in the history, shown faded in place of `shown`. */
+  readonly viewing: AiAnalysisView | null;
   /** Mockup 2h: why the shown analysis is STALE, while the gate allows analysing again. */
   readonly reminder: AiAnalysisReminder | null;
   /** Mockup 2i: the latest analysis was REJECTED, after the latest ACCEPTED one. */
@@ -73,16 +75,20 @@ export function aiPanelView(input: {
   readonly busy: boolean;
   /** This customer's ChatGPT web session is open: its AI buttons are off (§3.1 item 4). */
   readonly webOpen?: boolean;
+  /** The id of the history row picked to see; only an older ACCEPTED one shows apart. */
+  readonly viewing?: string | null;
 }): AiPanelView {
   const { gate, analyses, busy, webOpen = false } = input;
   const blocked = blockedBy(gate);
   const shown = analyses.find((analysis) => analysis.status === 'ACCEPTED') ?? null;
+  const picked = analyses.find((analysis) => analysis.id === input.viewing);
   const latest = analyses[0];
   const enabled = !blocked && !busy && !webOpen;
   return {
     blocked,
     badge: shown && !blocked ? (shown.state === 'CURRENT' ? 'CURRENT' : 'STALE') : gate.state,
     shown,
+    viewing: picked?.status === 'ACCEPTED' && picked !== shown ? picked : null,
     reminder: blocked ? null : (shown?.reminder ?? null),
     rejected:
       latest?.status === 'REJECTED' ? { date: latest.date, issue: firstIssue(latest) } : null,
@@ -127,13 +133,38 @@ export function issueLine(issue: ValidationIssue, noJson: boolean): AiPanelIssue
   return { code, place: { key: key as AiPanelIssuePlace, number }, detail };
 }
 
-/** The first issue of the last attempt of a REJECTED row, as `analysisOutcome` stores it. */
+/** The first issue of the last attempt of a REJECTED row. */
 function firstIssue(row: AiAnalysisView): AiPanelIssue | null {
-  const last: unknown = Array.isArray(row.validator) ? row.validator.at(-1) : undefined;
-  const errors = (last as { errors?: unknown } | undefined)?.errors;
-  const issue: unknown = Array.isArray(errors) ? errors[0] : undefined;
-  if (typeof issue !== 'object' || issue === null || !('path' in issue)) return null;
-  return issueLine(issue as ValidationIssue, row.output === null);
+  return attemptReports(row).at(-1)?.issues[0] ?? null;
+}
+
+/** The issues of one attempt of a REJECTED row (mockup 2k). */
+export interface AiAttemptReport {
+  readonly attempt: number;
+  readonly issues: readonly AiPanelIssue[];
+}
+
+const isIssue = (issue: unknown): issue is ValidationIssue =>
+  typeof issue === 'object' && issue !== null && 'code' in issue && 'path' in issue;
+
+/**
+ * The validator report of each attempt, as `analysisOutcome` stores it; a report it cannot read
+ * lists nothing. Only the last attempt's output is kept: an earlier one had no JSON when its one
+ * issue is V1 on the whole output, the way the validator reports a missing block.
+ */
+function attemptReports(row: AiAnalysisView): AiAttemptReport[] {
+  if (!Array.isArray(row.validator)) return [];
+  const stored: unknown[] = row.validator;
+  return stored.flatMap((report, index) => {
+    const { attempt, errors } = (report ?? {}) as { attempt?: unknown; errors?: unknown };
+    if (typeof attempt !== 'number' || !Array.isArray(errors)) return [];
+    const issues = errors.filter(isIssue);
+    const noJson =
+      index === stored.length - 1
+        ? row.output === null
+        : issues.length === 1 && issues[0]!.code === 'V1' && issues[0]!.path === '$';
+    return [{ attempt, issues: issues.map((issue) => issueLine(issue, noJson)) }];
+  });
 }
 
 function blockedBy(gate: KycGateResult): AiPanelBlocked | null {
@@ -244,7 +275,7 @@ export function webAfter(web: AiPanelWeb, outcome: WebAnswerOutcome): AiPanelWeb
 export function webChip(web: AiPanelWeb, versions: readonly { readonly id: string }[]) {
   const { mode } = web.session.input;
   return {
-    version: versions.findIndex((version) => version.id === web.session.kycVersionId) + 1,
+    version: versionNumber(web.session, versions),
     prompt: `${ANALYSIS_PROMPTS[mode].version}+${WEB_WRAPPER.version}`,
     at: dayAndTime(web.takenAt),
   };
@@ -356,7 +387,7 @@ export function analysisContent(
   }
   return {
     chip: {
-      version: versions.findIndex((version) => version.id === analysis.kycVersionId) + 1,
+      version: versionNumber(analysis, versions),
       prompt: analysis.promptVersion,
       source: analysisSource(analysis),
       at: dayAndTime(analysis.createdAt),
@@ -391,6 +422,77 @@ export function analysisSource(
 /** The name Settings → AI shows for a model; an id no longer listed shows as stored. */
 export function modelLabel(id: string): string {
   return AI_MODELS.find((model) => model.id === id)?.label ?? id;
+}
+
+// ---- the history --------------------------------------------------------------
+
+/** One row of "Lịch sử phân tích" (mockup 2j): Ngày · KYC · Prompt · Provider / model · state. */
+export interface AiHistoryRow {
+  readonly id: string;
+  /** `dd/mm hh:mm` of the save. */
+  readonly at: string;
+  readonly version: number;
+  readonly prompt: string;
+  readonly source: AiPanelSource;
+  readonly state: AiAnalysisView['state'];
+}
+
+/** Every analysis, latest first by recording order (`seq`), never by date (§7.1). */
+export function historyRows(
+  analyses: readonly AiAnalysisView[],
+  versions: readonly { readonly id: string }[],
+): AiHistoryRow[] {
+  return [...analyses]
+    .sort((a, b) => b.seq - a.seq)
+    .map((analysis) => ({
+      id: analysis.id,
+      at: dayAndTime(analysis.createdAt),
+      version: versionNumber(analysis, versions),
+      prompt: analysis.promptVersion,
+      source: analysisSource(analysis),
+      state: analysis.state,
+    }));
+}
+
+/** Mockup 2k: what a REJECTED row shows — its validator report, never its output. */
+export interface AiRejectedReport {
+  readonly at: string;
+  readonly version: number;
+  readonly prompt: string;
+  readonly source: AiPanelSource;
+  readonly attempts: number;
+  /** Both attempts added up, with OpenCode only (mockup 2k). */
+  readonly tokens: number | null;
+  readonly reports: readonly AiAttemptReport[];
+  /** The day of the latest ACCEPTED analysis, which stays the one shown; null with none. */
+  readonly latest: CalendarDate | null;
+}
+
+export function rejectedReport(
+  row: AiAnalysisView,
+  analyses: readonly AiAnalysisView[],
+  versions: readonly { readonly id: string }[],
+): AiRejectedReport {
+  const { provider, promptTokens, completionTokens } = row;
+  const counted = provider === 'OPENCODE_GO' && promptTokens !== null && completionTokens !== null;
+  return {
+    at: dayAndTime(row.createdAt),
+    version: versionNumber(row, versions),
+    prompt: row.promptVersion,
+    source: analysisSource(row),
+    attempts: row.attempts,
+    tokens: counted ? promptTokens + completionTokens : null,
+    reports: attemptReports(row),
+    latest: analyses.find((analysis) => analysis.status === 'ACCEPTED')?.date ?? null,
+  };
+}
+
+/** "kyc v<n>": the version's place in the customer's versions (by `seq`). */
+function versionNumber(
+  analysis: Pick<AiAnalysisView, 'kycVersionId'>,
+  versions: readonly { readonly id: string }[],
+): number {
+  return versions.findIndex((version) => version.id === analysis.kycVersionId) + 1;
 }
 
 const isNonEmpty = <T>(list: readonly T[]): list is readonly [T, ...T[]] => list.length > 0;

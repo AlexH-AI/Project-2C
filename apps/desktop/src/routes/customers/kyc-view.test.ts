@@ -13,7 +13,14 @@ import {
   type StageTransition,
 } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { factText, kycOverview, kycTimeline, previewKycNote, resolveKycOptions } from './kyc-view';
+import {
+  factCodeTarget,
+  factText,
+  kycOverview,
+  kycTimeline,
+  previewKycNote,
+  resolveKycOptions,
+} from './kyc-view';
 
 const day = (month: number, dayOfMonth: number): CalendarDate => ({
   year: 2026,
@@ -303,5 +310,28 @@ describe('resolveKycOptions', () => {
     };
 
     expect(resolveKycOptions(profile, 'residence')).toEqual([]);
+  });
+});
+
+describe('fact codes F{seq} (spec Phase 5 §6.1, mockup ai.html 3a)', () => {
+  const record = (seq: number, status: KycFact['status']): KycFactRecord => ({
+    ...fact('residence', `R${seq}`, status),
+    seq,
+  });
+  const facts = [record(1, 'superseded'), record(2, 'active'), record(3, 'conflict')];
+
+  it('keeps the seq of each fact on the list, which names it', () => {
+    const { rows } = kycOverview(facts);
+    expect(rows[0]!.facts.map((f) => f.seq)).toEqual([2, 3]);
+  });
+
+  it('leads a code cited as evidence to its fact while the fact is in effect', () => {
+    expect(factCodeTarget(facts, 'F2')).toEqual({ kind: 'shown', code: 'F2' });
+    expect(factCodeTarget(facts, 'F3')).toEqual({ kind: 'shown', code: 'F3' });
+  });
+
+  it('says a fact since replaced, or not there at all, is no longer in effect', () => {
+    expect(factCodeTarget(facts, 'F1')).toEqual({ kind: 'gone', code: 'F1' });
+    expect(factCodeTarget(facts, 'F9')).toEqual({ kind: 'gone', code: 'F9' });
   });
 });

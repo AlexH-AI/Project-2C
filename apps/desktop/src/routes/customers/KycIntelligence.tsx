@@ -1,14 +1,15 @@
-import type { AiAnalysisView, KycVersionRecord } from '@p2c/db';
-import { evaluateKycGate, formatDate, formatDayMonth, type KycFact } from '@p2c/domain';
+import type { AiAnalysisView, KycFactRecord, KycVersionRecord } from '@p2c/db';
+import { evaluateKycGate, formatDate, formatDayMonth } from '@p2c/domain';
 import { Button } from '@p2c/ui';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { analyseCustomer, startChatGptWeb } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
-import { joinParts, t } from '../../i18n';
+import { t } from '../../i18n';
 import {
   aiPanelView,
   analysisContent,
   analysisSource,
+  historyRows,
   modelLabel,
   runAfter,
   shownRun,
@@ -16,17 +17,20 @@ import {
   type AiPanelBlocked,
   type AiPanelItem,
   type AiPanelRun,
-  type AiPanelSource,
   type AiPanelSubgroup,
   type AiPanelWeb,
 } from './ai-panel-view';
 import { ALERT } from './CustomerDialogs';
 import { BADGE } from './CustomerKyc';
+import { AnalysisHistory, RejectedReportDialog, SourceBadge, sourceName } from './KycHistory';
+import { factCodeTarget } from './kyc-view';
 import { issueText, KycWebSession } from './KycWebSession';
 
 const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 const HEADING = 'm-0 text-sm font-medium text-heading';
 const IDLE: AiPanelRun = { phase: 'idle' };
+const LINK =
+  'rounded-sm text-accent hover:underline focus-visible:outline-2 focus-visible:outline-accent';
 
 export const BADGE_COLORS = {
   CURRENT: 'text-ok',
@@ -36,19 +40,6 @@ export const BADGE_COLORS = {
   PROFILE_DISCOVERY: 'text-info',
   PAIN_POINT_ANALYSIS: 'text-info',
 } as const;
-
-/** Who answered, as the chip names it (mockups 2e, 4i). */
-function sourceName(source: AiPanelSource): string {
-  if ('model' in source) return source.model;
-  return t(source.badge === 'MOCK' ? 'aiPanel.mock' : 'aiPanel.chatgptWeb');
-}
-
-/** A provider that keeps no model has a badge: Mock in amber, ChatGPT web in blue (4i). */
-function SourceBadge({ source }: { source: AiPanelSource }) {
-  if (!('badge' in source)) return null;
-  const color = source.badge === 'MOCK' ? 'text-warn' : 'text-info';
-  return <span className={`${BADGE} ${color}`}>{sourceName(source)}</span>;
-}
 
 /** `text` with its `{fields}` slot filled by the names, in bold as the mockup shows them. */
 function withNames(text: string, names: readonly string[]): ReactNode {
@@ -96,18 +87,41 @@ function BlockedNote({ blocked }: { blocked: AiPanelBlocked }) {
   );
 }
 
-export function Item({ item }: { item: AiPanelItem }) {
+/** "Bằng chứng: F12, F13", each code a link to its fact when the screen lists the facts (3a). */
+function Codes({ codes, onCode }: { codes: readonly string[]; onCode?: (code: string) => void }) {
+  const [before, after] = t('aiPanel.evidence').split('{value}');
+  return (
+    <>
+      {before}
+      {codes.map((code, index) => (
+        <span key={code}>
+          {index > 0 && t('sep.list')}
+          {onCode ? (
+            <button type="button" className={LINK} onClick={() => onCode(code)}>
+              {code}
+            </button>
+          ) : (
+            code
+          )}
+        </span>
+      ))}
+      {after}
+    </>
+  );
+}
+
+export function Item({ item, onCode }: { item: AiPanelItem; onCode?: (code: string) => void }) {
   const { evidence } = item;
+  const missing = item.missing && t('aiPanel.missing', { label: t(`kycCategory.${item.missing}`) });
   return (
     <li className="rounded-sm border border-border bg-surface-2 px-2.5 py-2">
       {item.system && <b>{t(`aiPanel.system.${item.system}`)} </b>}
       {item.text}
       <span className="mt-1 flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-xs text-fg-3">
         <span>
-          {joinParts([
-            item.codes.length > 0 && t('aiPanel.evidence', { value: item.codes.join(', ') }),
-            item.missing && t('aiPanel.missing', { label: t(`kycCategory.${item.missing}`) }),
-          ])}
+          {item.codes.length > 0 && <Codes codes={item.codes} onCode={onCode} />}
+          {item.codes.length > 0 && missing && ` ${t('sep.dot')} `}
+          {missing}
         </span>
         {evidence && (
           <span className="whitespace-nowrap tabular-nums">
@@ -130,9 +144,11 @@ const SUBHEADING = 'mt-3 mb-1.5 text-sm font-medium text-heading';
 function Analysis({
   analysis,
   versions,
+  onCode,
 }: {
   analysis: AiAnalysisView;
   versions: readonly KycVersionRecord[];
+  onCode: (code: string) => void;
 }) {
   const content = analysisContent(analysis, versions);
   const { chip } = content;
@@ -177,7 +193,7 @@ function Analysis({
               )}
               <ul className={ITEMS}>
                 {group.items.map((item, index) => (
-                  <Item key={index} item={item} />
+                  <Item key={index} item={item} onCode={onCode} />
                 ))}
               </ul>
             </div>
@@ -192,7 +208,7 @@ function Analysis({
           <h3 className={SUBHEADING}>{t('aiPanel.reference')}</h3>
           <ul className={ITEMS}>
             {content.reference.map((item, index) => (
-              <Item key={index} item={item} />
+              <Item key={index} item={item} onCode={onCode} />
             ))}
           </ul>
         </section>
@@ -224,11 +240,14 @@ export function KycIntelligence({
   facts,
   versions,
   analyses,
+  onShowFact,
 }: {
   customerId: string;
-  facts: readonly KycFact[];
+  facts: readonly KycFactRecord[];
   versions: readonly KycVersionRecord[];
   analyses: readonly AiAnalysisView[];
+  /** A code cited as evidence, of a fact in effect: the facts list scrolls to it (mockup 3a). */
+  onShowFact: (code: string) => void;
 }) {
   const app = useAppData();
   const { runner } = app.ai;
@@ -241,9 +260,35 @@ export function KycIntelligence({
   // While the copy and the browser are on their way, both buttons are off already (§3.1 item 4).
   const [startingWeb, setStartingWeb] = useState(false);
   const [webFailed, setWebFailed] = useState(false);
+  // The history row picked (mockup 2j), and the REJECTED row whose report is open (2k).
+  const [viewing, setViewing] = useState<string | null>(null);
+  const [report, setReport] = useState<AiAnalysisView | null>(null);
+  // A code cited of a fact no longer in effect (mockup 3a).
+  const [gone, setGone] = useState<string | null>(null);
   const gate = useMemo(() => evaluateKycGate(facts), [facts]);
-  const view = aiPanelView({ gate, analyses, busy, webOpen: web !== null || startingWeb });
+  const view = aiPanelView({
+    gate,
+    analyses,
+    busy,
+    webOpen: web !== null || startingWeb,
+    viewing,
+  });
   const shown = shownRun(run, busy);
+  const showing = view.viewing ?? view.shown;
+  // Mockup 2j: "Đang xem lần <dd/mm hh:mm> · kyc v<n> · STALE" over an older one picked.
+  const banner = view.viewing && historyRows([view.viewing], versions)[0];
+
+  const pick = (id: string) => {
+    const row = analyses.find((analysis) => analysis.id === id);
+    setGone(null);
+    if (row?.status === 'REJECTED') setReport(row);
+    else setViewing(id);
+  };
+  const showFact = (code: string) => {
+    const target = factCodeTarget(facts, code);
+    setGone(target.kind === 'gone' ? code : null);
+    if (target.kind === 'shown') onShowFact(code);
+  };
 
   // Once the request after Hủy has ended, the panel is back: a later request elsewhere (Settings →
   // AI) must not show "Đang hủy…" here.
@@ -259,6 +304,8 @@ export function KycIntelligence({
     const controller = new AbortController();
     running.current = controller;
     setWebFailed(false);
+    // The result shows once saved: back to the latest from an older one picked.
+    setViewing(null);
     setRun({ phase: 'running' });
     const outcome = await analyseCustomer(app, customerId, controller.signal);
     if (running.current === controller) setRun(runAfter(outcome));
@@ -277,6 +324,7 @@ export function KycIntelligence({
     setStartingWeb(false);
     if (outcome.kind === 'session') {
       setRun(IDLE);
+      setViewing(null);
       setWeb(webOpened(outcome));
     } else if (outcome.kind === 'failed') {
       // Its own message: Thử lại starts ChatGPT web again, never a call to the AI (review of PR 459).
@@ -287,7 +335,7 @@ export function KycIntelligence({
   const settings = app.ai.settings();
   const faded =
     view.blocked !== null ||
-    view.shown?.state === 'STALE' ||
+    showing?.state === 'STALE' ||
     shown.phase === 'running' ||
     shown.phase === 'cancelling';
   return (
@@ -327,7 +375,10 @@ export function KycIntelligence({
                 date: formatDayMonth(view.rejected.date),
                 value: issueText(view.rejected.issue, 'reason'),
               })
-            : t('aiPanel.rejectedPlain', { date: formatDayMonth(view.rejected.date) })}
+            : t('aiPanel.rejectedPlain', { date: formatDayMonth(view.rejected.date) })}{' '}
+          <button type="button" className={LINK} onClick={() => setReport(analyses[0]!)}>
+            {t('aiPanel.rejectedMore')}
+          </button>
         </p>
       )}
       {shown.phase === 'running' && (
@@ -364,12 +415,43 @@ export function KycIntelligence({
           })}
         </p>
       )}
-      {view.shown ? (
+      {banner && (
+        <p className={`${ALERT} flex flex-wrap items-center gap-1.5 border-border text-sm`}>
+          <span className="tabular-nums">
+            {t('aiPanel.history.viewing')} <b>{banner.at}</b> {t('sep.dot')}{' '}
+            {t('aiPanel.history.viewingVersion', { version: banner.version })}
+          </span>{' '}
+          <span className={`${BADGE} ${BADGE_COLORS.STALE}`}>{banner.state}</span>{' '}
+          <button type="button" className={LINK} onClick={() => setViewing(null)}>
+            {t('aiPanel.history.back')}
+          </button>
+        </p>
+      )}
+      {gone && (
+        <p role="status" className={`${ALERT} border-warn text-sm`}>
+          {t('aiPanel.factGone', { code: gone })}
+        </p>
+      )}
+      {showing ? (
         <div className={faded ? 'opacity-50' : undefined}>
-          <Analysis analysis={view.shown} versions={versions} />
+          <Analysis analysis={showing} versions={versions} onCode={showFact} />
         </div>
       ) : (
         !view.blocked && <p className="m-0 text-sm text-fg-3">{t('aiPanel.empty')}</p>
+      )}
+      <AnalysisHistory
+        analyses={analyses}
+        versions={versions}
+        selected={showing?.id ?? null}
+        onPick={pick}
+      />
+      {report && (
+        <RejectedReportDialog
+          row={report}
+          analyses={analyses}
+          versions={versions}
+          onClose={() => setReport(null)}
+        />
       )}
     </section>
   );

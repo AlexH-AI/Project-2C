@@ -94,7 +94,8 @@ test('copies the message, opens chatgpt.com, saves a pasted answer as CURRENT Ch
   await box.fill(GOOD);
   await save.click();
   await expect(panel).toContainText('CURRENT');
-  await expect(panel.getByText('ChatGPT web', { exact: true })).toBeVisible();
+  // The head badge; the history names it too.
+  await expect(panel.getByText('ChatGPT web', { exact: true }).first()).toBeVisible();
   await expect(panel).toContainText(/kyc v2 · discovery@1\+web@1 · ChatGPT web · 15\/09 \d\d:\d\d/);
   await expect(panel).not.toContainText('Kết quả Mock');
   await expect(start).toBeEnabled();
@@ -130,6 +131,23 @@ test('a wrong paste then a right one is ACCEPTED; two wrong ones are REJECTED', 
   await expect(panel).toContainText(/Lần phân tích 15\/09 bị loại: .+ \(V1\)\./);
   // The ACCEPTED one stays below.
   await expect(panel).toContainText('CURRENT');
+
+  // Its report lists the issues of each attempt, never the paste (mockup 2k).
+  const rows = panel.getByRole('table', { name: 'Lịch sử phân tích' }).getByRole('row');
+  await expect(rows.nth(1)).toContainText(/discovery@1\+web@1ChatGPT webREJECTED$/);
+  await panel.getByRole('button', { name: 'Xem chi tiết' }).click();
+  const report = page.getByRole('dialog', { name: /^Lần phân tích 15\/09 \d\d:\d\d bị loại$/ });
+  await expect(report).toContainText('kyc v2 · discovery@1+web@1 · ChatGPT web · 2 lần thử');
+  await expect(report).not.toContainText('token');
+  await expect(report).toContainText(/Lần thử 1V1 · Không có khối JSON hợp lệLần thử 2V1 · /);
+  await expect(report.getByRole('listitem').first()).toHaveText('V1 · Không có khối JSON hợp lệ');
+  await expect(report).toContainText('Bản hiện hành vẫn là lần 15/09.');
+  await expect(report).not.toContainText('{"x": 1}');
+  await report.getByRole('button', { name: 'Đóng' }).click();
+  await expect(report).toBeHidden();
+  // A history row opens the same report.
+  await rows.nth(1).getByRole('button').click();
+  await expect(report).toBeVisible();
 });
 
 test('a KYC change while the session is open leaves the saved result STALE', async ({ page }) => {
