@@ -1,10 +1,14 @@
+import type { ExtractedFact } from '@p2c/ai';
 import { useState } from 'react';
 import {
+  confirmKycFact,
+  markKycConflict,
   normalizeKycValue,
   recordKycNote,
   resolveKycConflict,
   type CustomerRecord,
   type KycNoteFact,
+  type KycNoteRecord,
   type KycProfileRecord,
   type KycVersionRecord,
 } from '@p2c/db';
@@ -15,6 +19,7 @@ import {
   KYC_FIELDS,
   resolveConflict,
   type CalendarDate,
+  type KycFact,
   type KycField,
 } from '@p2c/domain';
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
@@ -22,7 +27,7 @@ import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, joinParts, t } from '../../i18n';
 import { Actions, ALERT, FailureAlert, useDateField } from './CustomerDialogs';
 import { BADGE, YES_NO } from './CustomerKyc';
-import { factText, previewKycNote, resolveKycOptions } from './kyc-view';
+import { factText, previewKycNote, resolveKycOptions, type KycNotePreview } from './kyc-view';
 
 /** Birth year and gender are set in the customer profile only (D2). */
 const NOTE_FIELDS = (Object.keys(KYC_FIELDS) as KycField[]).filter(
@@ -53,6 +58,88 @@ function Material({
   );
 }
 
+/** Mockup 7a "Sau khi lưu": the version the save records, material or not. */
+function NextVersion({
+  preview,
+  material,
+  onMaterial,
+}: {
+  preview: Extract<KycNotePreview, { kind: 'version' }>;
+  material: boolean;
+  onMaterial: (on: boolean) => void;
+}) {
+  return (
+    <div className={`${ALERT} flex flex-col gap-1 border-ok`}>
+      <b>
+        {t('kycNote.after', { number: preview.number })}
+        {preview.material && ` ${t('sep.dot')} ${t('timeline.material')}`}
+      </b>
+      <Material auto={preview.auto} value={material} onChange={onMaterial} />
+    </div>
+  );
+}
+
+type FactMode = 'update' | 'conflict';
+
+/** Mockup 7b, 7c: what the trường holds, the value, and update or conflict when it holds one. */
+function FactValue({
+  field,
+  has,
+  value,
+  onText,
+  onAnswer,
+  onMode,
+  hint,
+}: {
+  field: KycField;
+  has: readonly KycFact[];
+  value: { readonly text: string; readonly answer: 'yes' | 'no' | null; readonly mode: FactMode };
+  onText: (text: string) => void;
+  onAnswer: (answer: 'yes' | 'no') => void;
+  onMode: (mode: FactMode) => void;
+  hint?: string;
+}) {
+  return (
+    <>
+      {has.length > 0 && (
+        <p className="m-0 text-xs text-warn tabular-nums">
+          {t('kycNote.current', {
+            values: has
+              .map((fact) => `${factText(fact.value, YES_NO)} (${formatDate(fact.confirmedDate)})`)
+              .join('; '),
+          })}
+        </p>
+      )}
+      {field === 'hasProtection' ? (
+        <Choices
+          label={t('kycNote.value')}
+          value={value.answer}
+          onChange={onAnswer}
+          options={[
+            { value: 'yes', label: YES_NO.yes },
+            { value: 'no', label: YES_NO.no },
+          ]}
+          help={hint}
+        />
+      ) : (
+        <TextField label={t('kycNote.value')} value={value.text} onChange={onText} hint={hint} />
+      )}
+      {has.length > 0 && (
+        <Choices
+          label={t('kycNote.mode')}
+          value={value.mode}
+          onChange={onMode}
+          options={[
+            { value: 'update', label: t('kycNote.update') },
+            { value: 'conflict', label: t('kycNote.conflict') },
+          ]}
+          help={t('kycNote.modeHelp')}
+        />
+      )}
+    </>
+  );
+}
+
 /**
  * Mockup 7a–7c, 7e: a new KYC note and the facts confirmed from it, saved as one version. Opened
  * from a meeting's outcome (6c), it starts from the meeting's note and day.
@@ -80,7 +167,7 @@ export function KycNoteDialog({
   const [field, setField] = useState<KycField | ''>('');
   const [value, setValue] = useState('');
   const [answer, setAnswer] = useState<'yes' | 'no' | null>(null);
-  const [mode, setMode] = useState<'update' | 'conflict'>('update');
+  const [mode, setMode] = useState<FactMode>('update');
   const [material, setMaterial] = useState(false);
   const [errors, setErrors] = useState<{ text?: string; fact?: string; form?: string }>({});
 
@@ -219,41 +306,14 @@ export function KycNoteDialog({
           placeholder={t('kycNote.fieldPick')}
           onChange={(next) => pick(next as KycField | '')}
         />
-        {has.length > 0 && (
-          <p className="m-0 text-xs text-warn tabular-nums">
-            {t('kycNote.current', {
-              values: has
-                .map(
-                  (fact) => `${factText(fact.value, YES_NO)} (${formatDate(fact.confirmedDate)})`,
-                )
-                .join('; '),
-            })}
-          </p>
-        )}
-        {field &&
-          (boolean ? (
-            <Choices
-              label={t('kycNote.value')}
-              value={answer}
-              onChange={setAnswer}
-              options={[
-                { value: 'yes', label: YES_NO.yes },
-                { value: 'no', label: YES_NO.no },
-              ]}
-            />
-          ) : (
-            <TextField label={t('kycNote.value')} value={value} onChange={setValue} />
-          ))}
-        {has.length > 0 && (
-          <Choices
-            label={t('kycNote.mode')}
-            value={mode}
-            onChange={setMode}
-            options={[
-              { value: 'update', label: t('kycNote.update') },
-              { value: 'conflict', label: t('kycNote.conflict') },
-            ]}
-            help={t('kycNote.modeHelp')}
+        {field && (
+          <FactValue
+            field={field}
+            has={has}
+            value={{ text: value, answer, mode }}
+            onText={setValue}
+            onAnswer={setAnswer}
+            onMode={setMode}
           />
         )}
         {errors.fact && (
@@ -266,13 +326,7 @@ export function KycNoteDialog({
         </Button>
       </div>
       {preview.kind === 'version' ? (
-        <div className={`${ALERT} flex flex-col gap-1 border-ok`}>
-          <b>
-            {t('kycNote.after', { number: preview.number })}
-            {preview.material && ` ${t('sep.dot')} ${t('timeline.material')}`}
-          </b>
-          <Material auto={preview.auto} value={material} onChange={setMaterial} />
-        </div>
+        <NextVersion preview={preview} material={material} onMaterial={setMaterial} />
       ) : (
         <p className="m-0 text-xs text-fg-3">{t('kycNote.noVersion')}</p>
       )}
@@ -350,6 +404,86 @@ export function ResolveKycDialog({
       <Material auto={core} value={material} onChange={setMaterial} />
       {gate && (
         <p className="m-0">{t('kycResolve.after', { number: versions.length + 1, gate })}</p>
+      )}
+    </Dialog>
+  );
+}
+
+/**
+ * Mockup ai.html 3f: Xác nhận of an AI proposal (spec Phase 5 §8 item 3). The fact filled in from
+ * the proposal, its value open to change, is saved on the note it came from by the commands the RE
+ * uses: a new value, an update or a conflict (7c).
+ */
+export function ConfirmFactDialog({
+  customer,
+  profile,
+  versions,
+  note,
+  proposal,
+  onSaved,
+  onClose,
+}: {
+  customer: CustomerRecord;
+  profile: KycProfileRecord;
+  versions: readonly KycVersionRecord[];
+  note: KycNoteRecord;
+  proposal: ExtractedFact;
+  onSaved: () => void;
+  onClose: () => void;
+}) {
+  const data = useAppData();
+  const today = data.today();
+  const { field } = proposal;
+  const proposed = proposal.value;
+  const [text, setText] = useState(typeof proposed === 'boolean' ? '' : String(proposed));
+  const [answer, setAnswer] = useState<'yes' | 'no' | null>(
+    typeof proposed === 'boolean' ? (proposed ? 'yes' : 'no') : null,
+  );
+  const [mode, setMode] = useState<FactMode>('update');
+  const [material, setMaterial] = useState(false);
+  const [error, setError] = useState<string>();
+  const has = currentFacts(profile, field);
+  const value = field === 'hasProtection' ? answer === 'yes' : text;
+  const conflict = has.length > 0 && mode === 'conflict';
+  const preview = previewKycNote(profile, versions, [{ field, value, conflict }], today, material);
+
+  const save = () => {
+    if (field === 'hasProtection' ? answer === null : text.trim() === '') {
+      return setError(t('kycNote.error.value'));
+    }
+    const command = { field, value, noteId: note.id, date: today, material };
+    try {
+      data.run((db) => (conflict ? markKycConflict : confirmKycFact)(db, customer.id, command));
+      onSaved();
+      onClose();
+    } catch (failure) {
+      setError(errorMessage(failure));
+    }
+  };
+
+  return (
+    <Dialog
+      title={t('kycConfirm.title', { field: t(`kycField.${field}`) })}
+      subtitle={t('kycConfirm.sub', { date: formatDate(note.createdDate) })}
+      onClose={onClose}
+      onSubmit={save}
+      actions={<Actions onClose={onClose} save={t('kycConfirm.save')} />}
+    >
+      {error && <FailureAlert>{error}</FailureAlert>}
+      <p className={`${ALERT} border-border`}>
+        {t('kycConfirm.quote')} <b>{t('kycConfirm.quoted', { value: proposal.quote })}</b>
+      </p>
+      <FactValue
+        field={field}
+        has={has}
+        value={{ text, answer, mode }}
+        onText={setText}
+        onAnswer={setAnswer}
+        onMode={setMode}
+        hint={t('kycConfirm.valueHelp')}
+      />
+      {preview.kind === 'version' && (
+        <NextVersion preview={preview} material={material} onMaterial={setMaterial} />
       )}
     </Dialog>
   );

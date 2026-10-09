@@ -16,6 +16,7 @@ import {
   type StageTransition,
 } from '@p2c/domain';
 import { Button, StageBadge } from '@p2c/ui';
+import type { ReactNode } from 'react';
 import { joinParts, t } from '../../i18n';
 import { withTime } from '../appointments/appointment-form';
 import { statusLabel } from '../appointments/appointments-view';
@@ -190,7 +191,8 @@ function meetingText(a: AppointmentRecord): string {
 
 /**
  * Mockup customer.html "Dòng thời gian": KYC notes and versions, the stage changes and the
- * appointments; any appointment up to today offers the next one ("Hẹn tiếp", 6h).
+ * appointments; any appointment up to today offers the next one ("Hẹn tiếp", 6h). The profile
+ * lays out each note, with its AI trích xuất.
  */
 export function Timeline({
   transitions,
@@ -200,6 +202,7 @@ export function Timeline({
   people,
   today,
   onNext,
+  renderNote,
 }: {
   transitions: readonly StageTransition[];
   notes: readonly KycNoteRecord[];
@@ -208,6 +211,8 @@ export function Timeline({
   people: readonly Person[];
   today: CalendarDate;
   onNext: (from: AppointmentRecord) => void;
+  /** A KYC note with its AI trích xuất (mockup ai.html 3b). */
+  renderNote: (note: KycNoteRecord) => ReactNode;
 }) {
   const roles = (a: AppointmentRecord) =>
     a.coordinatorIds.flatMap((id) => people.find((person) => person.id === id)?.role ?? []);
@@ -262,12 +267,7 @@ export function Timeline({
                 </span>
               </span>
             )}
-            {event.kind === 'note' && (
-              <>
-                <b>{t(event.note.source === 'SYSTEM' ? 'timeline.systemNote' : 'timeline.note')}</b>
-                <span className="whitespace-pre-line text-fg-2">{event.note.text}</span>
-              </>
-            )}
+            {event.kind === 'note' && renderNote(event.note)}
             {event.kind === 'version' && (
               <span className="flex items-center gap-2">
                 <b>{event.version.summary}</b>

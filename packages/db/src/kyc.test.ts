@@ -78,8 +78,10 @@ describe('KYC notes', () => {
         .filter((name) => /Kyc/.test(name))
         .sort(),
     ).toEqual([
+      'confirmKycFact',
       'getKycProfile',
       'listKycVersions',
+      'markKycConflict',
       'normalizeKycValue',
       'recordKycNote',
       'resolveKycConflict',

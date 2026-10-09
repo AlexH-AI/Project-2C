@@ -27,6 +27,7 @@ import {
   analyseCustomer,
   CHATGPT_URL,
   createAppAi,
+  extractFromNote,
   saveChatGptAnswer,
   startChatGptWeb,
   type AiSettingsStore,
@@ -286,6 +287,81 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
     await held.answerWithMock();
     expect(await done).toEqual({ kind: 'saved', status: 'ACCEPTED' });
     expect(ai.jobs.get(`analysis:${customer.id}`)).toBeUndefined();
+  });
+});
+
+describe('extractFromNote (spec Phase 5 §8)', () => {
+  const NOTE = 'Hai vợ chồng đã kết hôn 10 năm, có 2 con đang học cấp 1.';
+
+  it('gives the proposals of the Mock and saves nothing', async () => {
+    const { app } = await withCustomer();
+    const revision = app.revision();
+
+    expect(await extractFromNote(app.ai, NOTE)).toEqual({
+      kind: 'facts',
+      facts: [
+        { field: 'maritalStatus', value: 'Đã kết hôn', quote: 'kết hôn' },
+        { field: 'childrenCount', value: 2, quote: '2 con' },
+      ],
+    });
+    expect(app.revision()).toBe(revision);
+    expect(app.ai.runner.busy).toBe(false);
+  });
+
+  it('sends the note as written, with the trường it may propose (§6.1)', async () => {
+    const complete = vi.fn(() =>
+      Promise.resolve({ content: '{"facts":[]}', promptTokens: 1, completionTokens: 1 }),
+    );
+    const ai = createAppAi(memoryStore(), { adapter: { complete } });
+
+    expect(await extractFromNote(ai, NOTE)).toEqual({ kind: 'facts', facts: [] });
+    const [request] = complete.mock.calls[0] as unknown as [AiCompleteRequest];
+    const input = JSON.parse(request.messages.find((m) => m.role === 'user')!.content) as {
+      note: string;
+    };
+    expect(input.note).toBe(NOTE);
+  });
+
+  it('says the answer cannot be read when V1 fails twice (§8 item 5)', async () => {
+    const complete = () =>
+      Promise.resolve({ content: 'không có JSON', promptTokens: 1, completionTokens: 1 });
+    const ai = createAppAi(memoryStore(), { adapter: { complete } });
+
+    expect(await extractFromNote(ai, NOTE)).toEqual({ kind: 'invalid' });
+  });
+
+  it('gives the §5.3 error of the adapter', async () => {
+    const ai = createAppAi(memoryStore(), {
+      adapter: { complete: () => Promise.reject(new AiError('AI_NO_KEY')) },
+    });
+
+    expect(await extractFromNote(ai, NOTE)).toEqual({ kind: 'error', code: 'AI_NO_KEY' });
+  });
+
+  it('gives cancelled on Hủy, the runner busy until the adapter answers (P5)', async () => {
+    const held = heldAdapter();
+    const ai = createAppAi(memoryStore(), { adapter: held.adapter });
+    const abort = new AbortController();
+
+    const running = extractFromNote(ai, NOTE, abort.signal);
+    abort.abort();
+
+    expect(await running).toEqual({ kind: 'cancelled' });
+    expect(ai.runner.busy).toBe(true);
+    await held.answerWithMock();
+    await vi.waitFor(() => expect(ai.runner.busy).toBe(false));
+  });
+
+  it('turns a bug into a failure the note can show, and reports it', async () => {
+    const reportError = vi.fn();
+    const bug = new TypeError('boom');
+    const ai = createAppAi(memoryStore(), {
+      reportError,
+      adapter: { complete: () => Promise.reject(bug) },
+    });
+
+    expect(await extractFromNote(ai, NOTE)).toEqual({ kind: 'failed' });
+    expect(reportError).toHaveBeenCalledWith(bug);
   });
 });
 

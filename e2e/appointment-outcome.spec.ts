@@ -375,7 +375,7 @@ test('a KYC note from the meeting opens over the outcome, filled from it (6c →
   await expect(page.getByRole('region', { name })).toBeVisible();
   const timeline = page.getByRole('region', { name: 'Dòng thời gian' }).getByRole('listitem');
   await expect(timeline.filter({ hasText: /^10\/09\/2026Ghi chú KYC/ })).toHaveText(
-    '10/09/2026Ghi chú KYCCó con thứ hai, tháng 8.',
+    '10/09/2026Ghi chú KYCAI trích xuấtCó con thứ hai, tháng 8.',
   );
 
   // From the profile the note still opens empty, dated today.
