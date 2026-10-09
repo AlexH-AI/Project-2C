@@ -28,6 +28,10 @@ const MAX_TOKENS: i64 = 16_000;
 /// Over the `content` of all messages, in characters.
 const MAX_MESSAGE_CHARS: usize = 200_000;
 const MAX_KEY_CHARS: usize = 512;
+const MAX_SESSION_CHARS: usize = 64;
+/// How the app names itself to OpenCode, which asks each client for its own `User-Agent` rather
+/// than an HTTP library's (ADR-0009 W-1).
+pub const USER_AGENT: &str = concat!("Project-2C/", env!("CARGO_PKG_VERSION"));
 /// The most of the server's error message an error carries, in characters.
 const MAX_SERVER_MESSAGE: usize = 200;
 const ROLES: [&str; 3] = ["system", "user", "assistant"];
@@ -76,6 +80,9 @@ pub struct Message {
 
 /// The arguments of `ai_complete`.
 pub struct Request {
+    /// One id per conversation (the attempts of one analysis or extraction, or one connection
+    /// check), sent as `x-opencode-session`: OpenCode Go routes and caches by it (ADR-0009 W-1).
+    pub session_id: String,
     /// `GO` or `CREDIT`.
     pub plan: String,
     pub model: String,
@@ -133,7 +140,12 @@ pub fn check(request: &Request) -> Result<&'static str, AiError> {
         .iter()
         .map(|message| message.content.chars().count())
         .sum();
-    let valid = !request.model.is_empty()
+    let session = &request.session_id;
+    let valid = (1..=MAX_SESSION_CHARS).contains(&session.len())
+        && session
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
+        && !request.model.is_empty()
         && !request.messages.is_empty()
         && request
             .messages
@@ -162,19 +174,28 @@ pub fn body(request: &Request) -> String {
     body.to_string()
 }
 
+/// The headers besides the key and the content type, the same for both plans.
+pub fn headers(request: &Request) -> [(&'static str, &str); 2] {
+    [
+        ("x-opencode-session", &request.session_id),
+        ("User-Agent", USER_AGENT),
+    ]
+}
+
 /// One `ai_complete`: checks the arguments, takes [`Busy`], reads the key, posts the body to the
-/// plan's URL and reads the reply. `read_key` and `post` are the Credential Manager and the HTTP
-/// call; neither runs for wrong arguments or while another request runs.
+/// plan's URL and reads the reply. `read_key` and `post` (URL, key, [`headers`], body) are the
+/// Credential Manager and the HTTP call; neither runs for wrong arguments or while another request
+/// runs.
 pub fn complete(
     request: &Request,
     busy: &Busy,
     read_key: impl FnOnce() -> Result<Option<String>, AiError>,
-    post: impl FnOnce(&str, &str, &str) -> Result<(u16, Vec<u8>), AiError>,
+    post: impl FnOnce(&str, &str, &[(&str, &str)], &str) -> Result<(u16, Vec<u8>), AiError>,
 ) -> Result<Completion, AiError> {
     let url = check(request)?;
     let _running = busy.start()?;
     let key = read_key()?.ok_or_else(|| AiError::new(AI_NO_KEY))?;
-    let (status, reply_body) = post(url, &key, &body(request))?;
+    let (status, reply_body) = post(url, &key, &headers(request), &body(request))?;
     reply(status, &reply_body, &key)
 }
 
@@ -295,7 +316,12 @@ pub fn key_entry() -> Result<Entry, AiError> {
 
 /// The HTTP call of [`complete`]: returns the status and at most [`MAX_BODY`] of the body. No
 /// redirect is followed (the URL is fixed) and only HTTPS is spoken.
-pub fn post(url: &str, key: &str, body: &str) -> Result<(u16, Vec<u8>), AiError> {
+pub fn post(
+    url: &str,
+    key: &str,
+    headers: &[(&str, &str)],
+    body: &str,
+) -> Result<(u16, Vec<u8>), AiError> {
     let agent: ureq::Agent = ureq::Agent::config_builder()
         .timeout_global(Some(TIMEOUT))
         .timeout_connect(Some(CONNECT_TIMEOUT))
@@ -304,9 +330,14 @@ pub fn post(url: &str, key: &str, body: &str) -> Result<(u16, Vec<u8>), AiError>
         .max_redirects(0)
         .build()
         .into();
-    let mut response = agent
+    // A `User-Agent` set here replaces ureq's own.
+    let mut request = agent
         .post(url)
-        .header("Authorization", &format!("Bearer {key}"))
+        .header("Authorization", &format!("Bearer {key}"));
+    for (name, value) in headers {
+        request = request.header(*name, *value);
+    }
+    let mut response = request
         .content_type("application/json")
         .send(body)
         .map_err(|e| transport_error(&e))?;
@@ -337,9 +368,11 @@ mod tests {
     use std::cell::Cell;
 
     const KEY: &str = "sk-test-SECRET-0123456789";
+    const SESSION: &str = "0f3a9c1d-77be-4e21-a0c4-5d2e8b6f9a10";
 
     fn request(plan: &str) -> Request {
         Request {
+            session_id: SESSION.into(),
             plan: plan.into(),
             model: "deepseek-v4.1-flash".into(),
             reasoning: Some("high".into()),
@@ -359,21 +392,28 @@ mod tests {
 
     const OK_REPLY: &str = r#"{"id":"x","choices":[{"index":0,"message":{"role":"assistant","content":"{\"a\":1}"}}],"usage":{"prompt_tokens":120,"completion_tokens":45,"total_tokens":165}}"#;
 
+    /// What `complete` posted: the URL, the headers besides the key's and the body.
+    type Posted = (String, Vec<(String, String)>, String);
+
     /// `complete` with a stored key and a server answering `status` / `reply`; returns what it
-    /// gave and the URL and body it posted.
+    /// gave and what it posted.
     fn run(
         request: &Request,
         status: u16,
         reply: &str,
-    ) -> (Result<Completion, AiError>, Option<(String, String)>) {
+    ) -> (Result<Completion, AiError>, Option<Posted>) {
         let posted = std::cell::RefCell::new(None);
         let result = complete(
             request,
             &Busy::new(),
             || Ok(Some(KEY.into())),
-            |url, key, body| {
+            |url, key, headers, body| {
                 assert_eq!(key, KEY);
-                *posted.borrow_mut() = Some((url.to_owned(), body.to_owned()));
+                let headers = headers
+                    .iter()
+                    .map(|(name, value)| (name.to_string(), value.to_string()))
+                    .collect();
+                *posted.borrow_mut() = Some((url.to_owned(), headers, body.to_owned()));
                 Ok((status, reply.as_bytes().to_vec()))
             },
         );
@@ -398,6 +438,23 @@ mod tests {
             run(&request("CREDIT"), 200, OK_REPLY).1.unwrap().0,
             CREDIT_URL
         );
+    }
+
+    #[test]
+    fn each_plan_sends_the_session_and_the_app_s_own_user_agent() {
+        let user_agent = format!("Project-2C/{}", env!("CARGO_PKG_VERSION"));
+        for plan in ["GO", "CREDIT"] {
+            let (_, headers, body) = run(&request(plan), 200, OK_REPLY).1.unwrap();
+            assert_eq!(
+                headers,
+                [
+                    ("x-opencode-session".to_owned(), SESSION.to_owned()),
+                    ("User-Agent".to_owned(), user_agent.clone()),
+                ],
+                "{plan}"
+            );
+            assert!(!body.contains(SESSION), "{plan}");
+        }
     }
 
     #[test]
@@ -539,7 +596,18 @@ mod tests {
             }],
             ..request("GO")
         };
+        let session = |id: &str| Request {
+            session_id: id.into(),
+            ..request("GO")
+        };
         let wrong = [
+            session(""),
+            session(&"a".repeat(65)),
+            session("a b"),
+            session("a_b"),
+            session("a.b"),
+            session("phiên"),
+            session("abc\r\nX-Other: 1"),
             request("go"),
             request("ZEN"),
             request(""),
@@ -580,13 +648,14 @@ mod tests {
                 &request,
                 &Busy::new(),
                 || panic!("read the key"),
-                |_, _, _| panic!("called the network"),
+                |_, _, _, _| panic!("called the network"),
             );
             assert_eq!(
                 result,
                 Err(AiError::new(AI_BAD_REQUEST)),
-                "{}",
-                request.plan
+                "{} {:?}",
+                request.plan,
+                request.session_id
             );
         }
     }
@@ -594,6 +663,14 @@ mod tests {
     #[test]
     fn the_limits_themselves_are_allowed() {
         for request in [
+            Request {
+                session_id: "a".into(),
+                ..request("GO")
+            },
+            Request {
+                session_id: "Az09-".repeat(12) + "Az09",
+                ..request("CREDIT")
+            },
             Request {
                 max_tokens: 1,
                 ..request("GO")
@@ -620,7 +697,7 @@ mod tests {
             &request("GO"),
             &Busy::new(),
             || Ok(None),
-            |_, _, _| panic!("called the network"),
+            |_, _, _, _| panic!("called the network"),
         );
         assert_eq!(result, Err(AiError::new(AI_NO_KEY)));
     }
@@ -633,7 +710,7 @@ mod tests {
             &request("GO"),
             &busy,
             || panic!("read the key"),
-            |_, _, _| panic!("called the network"),
+            |_, _, _, _| panic!("called the network"),
         );
         assert_eq!(result, Err(AiError::new(AI_BUSY)));
     }
@@ -653,7 +730,7 @@ mod tests {
                 &request("GO"),
                 &busy,
                 || Ok(Some(KEY.into())),
-                |_, _, _| {
+                |_, _, _, _| {
                     held.set(busy.start().is_err());
                     outcome
                 },
@@ -670,7 +747,7 @@ mod tests {
             &request("GO"),
             &busy,
             || Err(AiError::new(AI_KEYRING)),
-            |_, _, _| panic!("called the network"),
+            |_, _, _, _| panic!("called the network"),
         );
         assert!(busy.start().is_ok());
         let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -678,7 +755,7 @@ mod tests {
                 &request("GO"),
                 &busy,
                 || Ok(Some(KEY.into())),
-                |_, _, _| panic!("boom"),
+                |_, _, _, _| panic!("boom"),
             )
         }));
         assert!(panicked.is_err());

@@ -133,7 +133,7 @@ Hằng số trong `packages/ai`, mỗi dòng: mã model, tên hiện, có nhận
 
 | Lệnh | Vào | Ra |
 |---|---|---|
-| `ai_complete` | `plan` (`GO` · `CREDIT`), `model`, `reasoning` (`null` = không gửi), `messages` (`[{role, content}]`), `maxTokens` | `{ content, promptTokens, completionTokens }` |
+| `ai_complete` | `sessionId`, `plan` (`GO` · `CREDIT`), `model`, `reasoning` (`null` = không gửi), `messages` (`[{role, content}]`), `maxTokens` | `{ content, promptTokens, completionTokens }` |
 | `ai_key_set` | `key` | — |
 | `ai_key_delete` | — | — (không có key cũng Ok) |
 | `ai_key_status` | — | `bool` |
@@ -141,6 +141,7 @@ Hằng số trong `packages/ai`, mỗi dòng: mã model, tên hiện, có nhận
 
 - Hai URL cố định trong Rust, chọn theo `plan` (P8): `GO` → `https://opencode.ai/zen/go/v1/chat/completions`, `CREDIT` → `https://opencode.ai/zen/v1/chat/completions`. `plan` khác hai giá trị → `AI_BAD_REQUEST`. Webview không truyền URL. Không lệnh nào trả key.
 - Key ở Windows Credential Manager, một mục chung cho hai gói: service `Project-2C`, user `opencode-go`. T-164: Owner gọi thật một lần mỗi gói để xác nhận cùng key dùng được; Credit cần key khác → dừng, quay lại G6.
+- Header, cả hai gói (ADR-0009 W-1 mục 7, T-178): `x-opencode-session: <sessionId>` và `User-Agent: Project-2C/<phiên bản>`. `sessionId` do `packages/ai` sinh ngẫu nhiên, một mã cho mỗi cuộc hội thoại (hai lần thử của một lần phân tích / trích xuất dùng chung; mỗi lần Kiểm tra kết nối một mã); 1–64 ký tự `[A-Za-z0-9-]`, sai → `AI_BAD_REQUEST`. Không ghi vào DB, log, thông báo lỗi.
 - Body: `{ model, messages, max_tokens, reasoning_effort? }`; **không** dùng `response_format` (không phải model nào cũng nhận) — JSON lấy từ `content` (§6.1).
 - Lệnh chạy ở `spawn_blocking`, **không** dùng khóa file `DataLock` (gọi AI không chặn lưu dữ liệu).
 - `role` chỉ nhận `system` / `user` / `assistant`; `maxTokens` 1…16 000; `messages` tổng ≤ 200 000 ký tự → sai thì `AI_BAD_REQUEST`, không gọi mạng.

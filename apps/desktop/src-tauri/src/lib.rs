@@ -131,9 +131,10 @@ fn open_folder(kind: String) -> Result<(), String> {
 
 /// Sends `messages` to OpenCode under `plan` (`GO` / `CREDIT`) with the stored key and returns the
 /// answer; an error is `{ code, httpStatus?, message? }` (spec Phase 5 §5.3), `AI_BUSY` while
-/// another request runs.
+/// another request runs. `session_id` names the conversation the request belongs to.
 #[tauri::command]
 async fn ai_complete(
+    session_id: String,
     plan: String,
     model: String,
     reasoning: Option<String>,
@@ -141,6 +142,7 @@ async fn ai_complete(
     max_tokens: i64,
 ) -> Result<ai::Completion, ai::AiError> {
     let request = ai::Request {
+        session_id,
         plan,
         model,
         reasoning,

@@ -16,7 +16,7 @@ const ai = rust('ai.rs');
  * gets its client with the ChatGPT web panel (T-174); until then this pins its name.
  */
 const AI_COMMANDS: Record<string, string[]> = {
-  ai_complete: ['plan', 'model', 'reasoning', 'messages', 'maxTokens'],
+  ai_complete: ['sessionId', 'plan', 'model', 'reasoning', 'messages', 'maxTokens'],
   ai_key_set: ['key'],
   ai_key_delete: [],
   ai_key_status: [],
@@ -151,7 +151,7 @@ async function aiCalls(): Promise<{ command: string; args: unknown }[]> {
   await client.deleteKey();
   await client
     .adapter('GO')
-    .complete({ model: 'glm-5.3', reasoning: null, messages: [], maxTokens: 1 });
+    .complete({ sessionId: 's-1', model: 'glm-5.3', reasoning: null, messages: [], maxTokens: 1 });
   return invoke.mock.calls.map(([command, args]) => ({ command: command as string, args }));
 }
 

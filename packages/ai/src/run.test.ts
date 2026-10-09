@@ -561,3 +561,45 @@ describe('checkConnection', () => {
     });
   });
 });
+
+describe('sessionId (ADR-0009 W-1: x-opencode-session)', () => {
+  const SESSION_ID = /^[A-Za-z0-9-]{1,64}$/;
+  const ids = (requests: AiCompleteRequest[]) => requests.map((request) => request.sessionId);
+
+  it('is one id for both attempts of an analysis and a new one for the next analysis', async () => {
+    const first = scripted('không có JSON', GOOD);
+    await runAnalysis(analysis(OPENCODE, first.adapter));
+    const [id, retryId] = ids(first.requests);
+    expect(id).toMatch(SESSION_ID);
+    expect(retryId).toBe(id);
+
+    const second = scripted(GOOD);
+    await runAnalysis(analysis(OPENCODE, second.adapter));
+    expect(second.requests[0]!.sessionId).toMatch(SESSION_ID);
+    expect(second.requests[0]!.sessionId).not.toBe(id);
+  });
+
+  it('is one id for both attempts of an extraction', async () => {
+    const { adapter, requests } = scripted('không có JSON', '{"facts": []}');
+    await runExtraction({
+      runner: createAiRunner(vi.fn()),
+      adapter,
+      settings: OPENCODE,
+      note: 'Có 2 bé.',
+    });
+    expect(requests).toHaveLength(2);
+    expect(requests[0]!.sessionId).toMatch(SESSION_ID);
+    expect(requests[1]!.sessionId).toBe(requests[0]!.sessionId);
+  });
+
+  it('is a new id for each connection check, never one of an analysis', async () => {
+    const { adapter, requests } = scripted(GOOD, 'OK', 'OK');
+    const runner = createAiRunner(vi.fn());
+    await runAnalysis({ ...analysis(OPENCODE, adapter), runner });
+    await checkConnection({ runner, adapter, settings: OPENCODE });
+    await checkConnection({ runner, adapter, settings: OPENCODE });
+    const sent = ids(requests);
+    for (const id of sent) expect(id).toMatch(SESSION_ID);
+    expect(new Set(sent).size).toBe(3);
+  });
+});
