@@ -64,16 +64,30 @@ describe('readAiSettings (spec Phase 5 §4.1, mockup ai.html 1g, 4b)', () => {
     });
   });
 
-  it('uses Mặc định on a model not checked with reasoning_effort, with nothing to report', () => {
-    // Stored before, or brought by a backup: never sent to Rust (review #424).
-    expect(read({ ...STORED, model: 'kimi-k3', reasoning: 'HIGH' })).toEqual({
-      settings: { ...STORED, model: 'kimi-k3', reasoning: 'DEFAULT' },
+  it.each(['glm-5.3', 'deepseek-v4-pro'])(
+    'uses Mặc định on %s, which does not take reasoning_effort, with nothing to report',
+    (model) => {
+      // Stored before, or brought by a backup: never sent to Rust (review #424).
+      expect(read({ ...STORED, model, reasoning: 'HIGH' })).toEqual({
+        settings: { ...STORED, model, reasoning: 'DEFAULT' },
+        problem: null,
+      });
+    },
+  );
+
+  it.each([
+    ['kimi-k3', 'HIGH'],
+    ['deepseek-v4.1-flash', 'LOW'],
+    ['kimi-k3', 'MEDIUM'],
+  ])('keeps the reasoning level of %s, which takes reasoning_effort: %s', (model, reasoning) => {
+    expect(read({ ...STORED, model, reasoning })).toEqual({
+      settings: { ...STORED, model, reasoning },
       problem: null,
     });
   });
 
-  it('keeps the reasoning level of a model that takes reasoning_effort', () => {
-    const models = [{ id: 'kimi-k3', label: 'Kimi K3', reasoningEffort: true }];
-    expect(read({ ...STORED, reasoning: 'HIGH' }, models).settings.reasoning).toBe('HIGH');
+  it('follows the model list it is given', () => {
+    const models = [{ id: 'kimi-k3', label: 'Kimi K3', reasoningEffort: false }];
+    expect(read({ ...STORED, reasoning: 'HIGH' }, models).settings.reasoning).toBe('DEFAULT');
   });
 });

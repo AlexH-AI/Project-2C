@@ -13,8 +13,8 @@ Phase 5 (`docs/design/phase-5-ai.md`, ADR-0009). Kiểu dữ liệu, mã lỗi `
 
 - Schema output + mã `F{seq}`: `src/schema.ts` (spec §6.2, gồm khối `personalityNotes` — P6). Kiểm field / value / quote của trích xuất là V7, không ở schema.
 - Lấy khối JSON đầu tiên từ trả lời: `src/extract-json.ts` (spec §6.1).
-- Cấu hình Settings → AI (`settings` khóa `ai`, spec §4.1): `src/settings.ts` — `readAiSettings` đọc / chuẩn hóa (hỏng → mặc định cả khối + lý do; gói thiếu / sai → `GO`; model chưa kiểm `reasoning_effort` → `DEFAULT`), không bao giờ có key.
-- Mã lỗi: `src/errors.ts` (spec §5.3) · model: `src/models.ts` (spec §4); danh sách provider / reasoning nằm ở `src/schema.ts` để `db` dùng chung cho `ai_analyses` (T-163).
+- Cấu hình Settings → AI (`settings` khóa `ai`, spec §4.1): `src/settings.ts` — `readAiSettings` đọc / chuẩn hóa (hỏng → mặc định cả khối + lý do; gói thiếu / sai → `GO`; model không nhận `reasoning_effort` theo `AI_MODELS` → `DEFAULT`), không bao giờ có key.
+- Mã lỗi: `src/errors.ts` (spec §5.3) · model: `src/models.ts` (spec §4; cờ `reasoningEffort` theo lần gọi thật 09/10/2026, T-179); danh sách provider / reasoning nằm ở `src/schema.ts` để `db` dùng chung cho `ai_analyses` (T-163).
 - Adapter: `src/adapter.ts` (giao diện) · Mock: `src/mock-adapter.ts` (đọc message `user` đầu tiên theo mẫu G5 §1.1 / §4.1).
 - Validator (spec §6.4): `src/validator.ts` — `validateOutput` (V1 cả ba chế độ; V2–V6 analysis / discovery), `filterExtraction` (V7 bỏ riêng từng dữ kiện trích xuất). Danh sách chặn V3–V6 chép nguyên từ G5 §8: `src/blocklists.ts`; cách so khớp G5 §7 (bản có dấu / bỏ dấu, ranh giới từ Unicode): `src/text-match.ts`. Đổi danh sách = qua G5 lại.
 - Prompt (G5 §2–§6, nguyên văn): `src/prompts/<mode>.ts` (mỗi file một `version`, `maxTokens`), message thử lại `src/prompts/retry.ts`, Kiểm tra kết nối `src/prompts/connection.ts`. `prompts.test.ts` so chữ với `docs/design/phase-5-prompts.md`; đổi một chữ = tăng version + qua G5.

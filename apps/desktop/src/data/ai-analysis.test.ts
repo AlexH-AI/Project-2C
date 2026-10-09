@@ -327,15 +327,26 @@ describe('Settings → AI in the app (spec Phase 5 §4.1)', () => {
     expect(rows()[0]).toMatchObject({ provider: 'OPENCODE_GO', model: 'glm-5.3' });
   });
 
-  it('sends Mặc định for a level saved on a model not checked with reasoning_effort (review of PR 424)', async () => {
+  it('sends Mặc định for a level saved on a model that does not take reasoning_effort (review of PR 424)', async () => {
     const { client, complete } = fakeOpenCode();
     const { app, ai, customer, rows } = await withCustomer({ opencode: client });
-    app.run((d) => putSetting(d, 'ai', { ...CREDIT, model: 'kimi-k3', reasoning: 'HIGH' }));
+    app.run((d) => putSetting(d, 'ai', { ...CREDIT, model: 'glm-5.3', reasoning: 'HIGH' }));
 
     expect(ai.settings().reasoning).toBe('DEFAULT');
     await analyseCustomer(app, customer.id);
     expect(complete.mock.calls[0]![0].reasoning).toBeNull();
-    expect(rows()[0]).toMatchObject({ model: 'kimi-k3', reasoning: 'DEFAULT' });
+    expect(rows()[0]).toMatchObject({ model: 'glm-5.3', reasoning: 'DEFAULT' });
+  });
+
+  it('sends and records the level saved on a model that takes reasoning_effort (T-179)', async () => {
+    const { client, complete } = fakeOpenCode();
+    const { app, ai, customer, rows } = await withCustomer({ opencode: client });
+    app.run((d) => putSetting(d, 'ai', { ...CREDIT, model: 'kimi-k3', reasoning: 'HIGH' }));
+
+    expect(ai.settings().reasoning).toBe('HIGH');
+    await analyseCustomer(app, customer.id);
+    expect(complete.mock.calls[0]![0].reasoning).toBe('HIGH');
+    expect(rows()[0]).toMatchObject({ model: 'kimi-k3', reasoning: 'HIGH' });
   });
 
   it('runs the Mock in web mode, keeping the saved provider for the exe', async () => {

@@ -43,6 +43,26 @@ describe('tauriOpenCode (spec Phase 5 §5.1)', () => {
     expect(invoke).toHaveBeenCalledWith('ai_complete', { plan: 'CREDIT', ...REQUEST });
   });
 
+  it.each([
+    ['LOW', 'low'],
+    ['MEDIUM', 'medium'],
+    ['HIGH', 'high'],
+  ] as const)(
+    'sends the reasoning level %s as reasoning_effort %s (spec §4.1)',
+    async (level, sent) => {
+      const invoke = vi
+        .fn()
+        .mockResolvedValue({ content: 'OK', promptTokens: 1, completionTokens: 1 });
+      await tauriOpenCode(invoke)
+        .adapter('CREDIT')
+        .complete({ ...REQUEST, reasoning: level });
+      expect(invoke).toHaveBeenCalledWith(
+        'ai_complete',
+        expect.objectContaining({ reasoning: sent }),
+      );
+    },
+  );
+
   it('turns the error Rust sends into an AiError with its HTTP status and message', async () => {
     const invoke = vi
       .fn()
