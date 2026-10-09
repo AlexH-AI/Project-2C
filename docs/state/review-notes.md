@@ -53,6 +53,15 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
   - Lần chạy lưu REJECTED: panel không báo gì (về idle, vẫn hiện bản ACCEPTED cũ hoặc "Chưa có phân tích") → dòng 2i của T-168B #410.
   - Mùi *Duplicated Code*: `vi.ts` `aiPanel.blocked.KYC_INSUFFICIENT` chép câu `KYC_INSUFFICIENT_MESSAGE` của `domain` (ADR-0008 Q9) mà thẻ Dữ kiện KYC hiện qua `gate.message`; domain đổi câu thì hai nơi lệch.
   - Không sửa: `BADGE_COLORS` của panel không gộp với `GATE_COLORS` (`CustomerKyc.tsx`) vì mockup tô `PAIN_POINT_ANALYSIS` khác nhau (panel `c-info`, thẻ KYC `c-ok`). Chip theo `provider` đã sửa trong chính #439 (commit `6a3f242`) → comment chuyển đi trên T-174 #433 chỉ còn việc thêm tên "ChatGPT web".
+- Cài đặt → AI, `apps/desktop/src/routes/SettingsAi.tsx` (#444, T-167 phần 2, không chặn). Gộp vào PR kế tiếp chạm file (dòng ChatGPT web hợp với T-174 #433):
+  - Dòng cảnh báo 1g (cấu hình AI đã lưu hỏng, `~65`) khó xóa khi ở Mock: cả khối về mặc định Mock, ô Model / Mức suy luận tắt, bấm lại Mock không phát `onChange` (`~87`) → phải bấm OpenCode rồi Mock; bản web không lưu được gì nên cảnh báo ở lại suốt phiên. Hướng: cho bấm lại lựa chọn đang chọn cũng lưu khi có `problem`, hoặc thêm nút "Lưu mặc định" trên dòng 1g — **cần Owner chọn** nếu thêm nút (mockup 1g chỉ có một dòng chữ).
+  - Kết quả "Kết nối được" của lần kiểm trước (`~322`) còn hiện sau khi đổi gói / model / provider, trong khi meta thẻ ghi "theo gói đang chọn" (câu có tên gói đã chạy nên không sai, chỉ dễ đọc nhầm) → đưa `shown` về `idle` khi ba trường đổi (vd. `key` của `ConnectionCard` theo `provider` / `opencodePlan` / `model`).
+  - Dòng ChatGPT web ở thẻ "Dữ liệu gửi đi" (`~352`) thiếu phần đầu in đậm **"Phân tích bằng ChatGPT web:"** như mockup 4a → tách `settingsAi.sentChatgptLead` như `sentAnalysisLead` (`~345`); e2e "web mode" kiểm cả câu bằng `toContainText` nên vẫn xanh nếu giữ khoảng trắng.
+  - Dòng 1g chỉ có test hàm `problemText`, chưa có e2e trên màn → e2e `asExe` ghi `settings.ai` hỏng (vd. model `gpt-6`) trước khi mở Cài đặt → AI, kiểm `role=note` đúng chữ 1g và mất sau khi chọn lại.
+- `packages/ai/src/run.ts` (#448, T-178, không chặn): có thể là *Duplicated Code* — `newSessionId` (`run.ts:148`) giống hệt `newPage` (`apps/desktop/src/data/tauri-storage.ts:18`), cùng 128 bit ngẫu nhiên dạng hex qua `crypto.getRandomValues`. Ranh giới `ai → domain + zod` nên `ai` không import được hàm của app → nếu có id ngẫu nhiên thứ ba thì đưa hàm vào `@p2c/domain`, hai nơi dùng chung.
+
+Nhắc khi viết `docs/metrics/phase-5.md` (chỉ ghi nhận, không phải việc sửa code):
+- PR #444 (T-167 phần 2) vượt ngưỡng kích thước: mã sản phẩm ~600 dòng, tổng diff ~1.090 dòng so với ~400 / ~800 (ADR-0001 phụ lục); PR đã nêu lý do.
 
 ## RESOLVED
 
