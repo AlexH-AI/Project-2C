@@ -9,7 +9,7 @@ import type { ExtractionOutcome } from '../../data/ai-analysis';
 import { panelError, type AiPanelError } from './ai-panel-view';
 
 /** A shorter note is "Ghi chú quá ngắn" (§8 item 1, ADR-0008). */
-export const MIN_NOTE_LENGTH = 20;
+const MIN_NOTE_LENGTH = 20;
 
 /** The button of a note the RE wrote; none on a `SYSTEM` note, off below 20 characters trimmed. */
 export function extractionButton(note: KycNoteRecord): { readonly tooShort: boolean } | null {

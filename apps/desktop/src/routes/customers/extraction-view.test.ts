@@ -44,9 +44,14 @@ describe('extractionButton (spec Phase 5 §8 item 1, mockup ai.html 3b)', () => 
     expect(extractionButton(note(' 1234567890123456789 '))).toEqual({ tooShort: true });
   });
 
-  it('turns it on from 20 characters, counting a letter with its marks as one', () => {
+  it('turns it on from 20 characters', () => {
     expect(extractionButton(note('12345678901234567890'))).toEqual({ tooShort: false });
     expect(extractionButton(note('Đã kết hôn, có hai con'))).toEqual({ tooShort: false });
+  });
+
+  it('counts by code point, so a character outside the BMP counts once', () => {
+    // 19 characters, 20 UTF-16 units.
+    expect(extractionButton(note('😀123456789012345678'))).toEqual({ tooShort: true });
   });
 });
 
@@ -95,6 +100,13 @@ describe('extractionView (spec Phase 5 §8, mockup ai.html 3c–3e)', () => {
       hidden: 0,
     });
     expect(extractionView(outcome, new Set([0, 1]), [])).toEqual({ kind: 'none' });
+  });
+
+  it('shows nothing, not even the hidden count, once the RE dealt with every proposal not held', () => {
+    const outcome = { kind: 'facts', facts: [RISK, KIDS] } as const;
+    expect(extractionView(outcome, new Set([0]), [fact('childrenCount', 2)])).toEqual({
+      kind: 'none',
+    });
   });
 
   it('says it found nothing new when the AI proposed nothing, or only what is held (§8 item 6)', () => {

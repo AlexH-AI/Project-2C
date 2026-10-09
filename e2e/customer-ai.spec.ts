@@ -301,6 +301,47 @@ test('AI trích xuất with the Mock: Xác nhận saves the fact on its note, B�
   await expect(nothing.getByRole('status')).toHaveCount(0);
 });
 
+test('AI trích xuất on a trường already held: Xác nhận updates one value, marks a conflict on another', async ({
+  page,
+}) => {
+  const name = 'Hà Thay Thế';
+  await createKycCustomer(page, name);
+  await addKycNote(page, name, [
+    ['Tình trạng hôn nhân', 'Độc thân'],
+    ['Số con', '3'],
+  ]);
+  const kyc = page.getByRole('region', { name: 'Dữ kiện KYC' });
+  await writeNote(page, name, NOTE);
+  const note = noteOf(page, NOTE);
+  await note.getByRole('button', { name: 'AI trích xuất' }).click();
+  const proposals = note.getByRole('list', { name: 'Đề xuất của AI' }).getByRole('listitem');
+  // Both differ from the values held, so neither is hidden.
+  await expect(proposals).toHaveText([/Tình trạng hôn nhân: Đã kết hôn/, /Số con: 2/]);
+
+  // Cập nhật: the new value replaces the one held.
+  await proposals.filter({ hasText: 'Số con' }).getByRole('button', { name: 'Xác nhận' }).click();
+  const kids = page.getByRole('dialog', { name: '+ Dữ kiện · Số con' });
+  await expect(kids).toContainText('Đang có: 3 (15/09/2026)');
+  await expect(kids.getByRole('radio', { name: 'Cập nhật', exact: true })).toBeChecked();
+  await kids.getByRole('button', { name: 'Xác nhận dữ kiện' }).click();
+  await expect(kids).toBeHidden();
+  await expect(kyc).toContainText('Số con: 2');
+  await expect(kyc).not.toContainText('Số con: 3');
+  await expect(kyc).not.toContainText('Trường mâu thuẫn');
+
+  // Đánh dấu mâu thuẫn: both values stay, the cốt lõi trường blocks the gate until resolved.
+  await proposals.getByRole('button', { name: 'Xác nhận' }).click();
+  const married = page.getByRole('dialog', { name: '+ Dữ kiện · Tình trạng hôn nhân' });
+  await expect(married).toContainText('Đang có: Độc thân (15/09/2026)');
+  await married.getByRole('radio', { name: /Đánh dấu mâu thuẫn/ }).check();
+  await married.getByRole('button', { name: 'Xác nhận dữ kiện' }).click();
+  await expect(married).toBeHidden();
+  await expect(kyc).toContainText('Cổng KYC CONFLICT_RESOLUTION');
+  await expect(kyc).toContainText('Trường mâu thuẫn: Tình trạng hôn nhân');
+  await expect(kyc.getByRole('button', { name: 'Giải quyết · Tình trạng hôn nhân' })).toBeVisible();
+  await expect(note.getByRole('list', { name: 'Đề xuất của AI' })).toHaveCount(0);
+});
+
 test('one AI request at a time: AI trích xuất turns every AI button off, Hủy, the errors (P5)', async ({
   page,
 }) => {
