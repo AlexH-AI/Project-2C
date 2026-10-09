@@ -12,8 +12,7 @@ const storage = rust('storage.rs');
 const ai = rust('ai.rs');
 
 /**
- * The AI commands (spec Phase 5 §5.1) and the camelCase arguments the webview sends. `open_chatgpt`
- * gets its client with the ChatGPT web panel (T-174); until then this pins its name.
+ * The AI commands (spec Phase 5 §5.1, §5.4) and the camelCase arguments the webview sends.
  */
 const AI_COMMANDS: Record<string, string[]> = {
   ai_complete: ['sessionId', 'plan', 'model', 'reasoning', 'messages', 'maxTokens'],
@@ -149,6 +148,7 @@ async function aiCalls(): Promise<{ command: string; args: unknown }[]> {
   await client.keyStatus();
   await client.setKey('sk-1');
   await client.deleteKey();
+  await client.openChatGpt();
   await client
     .adapter('GO')
     .complete({ sessionId: 's-1', model: 'glm-5.3', reasoning: null, messages: [], maxTokens: 1 });
@@ -158,11 +158,7 @@ async function aiCalls(): Promise<{ command: string; args: unknown }[]> {
 describe('the JS ↔ Rust AI contract', () => {
   it('invokes the AI commands under the camelCase names of their Rust parameters', async () => {
     const calls = await aiCalls();
-    expect(calls.map(({ command }) => command).sort()).toEqual(
-      Object.keys(AI_COMMANDS)
-        .filter((command) => command !== 'open_chatgpt')
-        .sort(),
-    );
+    expect(calls.map(({ command }) => command).sort()).toEqual(Object.keys(AI_COMMANDS).sort());
     for (const { command, args } of calls) {
       expect(Object.keys(args ?? {}).sort(), command).toEqual([...AI_COMMANDS[command]!].sort());
     }
@@ -193,7 +189,7 @@ describe('the JS ↔ Rust AI contract', () => {
       expect(code).toBe(name);
       return code!;
     });
-    // `AI_OPEN_BROWSER` joins AI_ERROR_CODES with the ChatGPT web panel (T-174).
+    // `open_chatgpt` fails only with `AI_OPEN_BROWSER`: the panel shows its message for any failure.
     expect(sent.sort()).toEqual([...known, 'AI_OPEN_BROWSER'].sort());
   });
 });

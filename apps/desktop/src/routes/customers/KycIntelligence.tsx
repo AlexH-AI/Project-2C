@@ -8,12 +8,14 @@ import { joinParts, t } from '../../i18n';
 import {
   aiPanelView,
   analysisContent,
+  analysisSource,
   modelLabel,
   runAfter,
   shownRun,
   type AiPanelBlocked,
   type AiPanelItem,
   type AiPanelRun,
+  type AiPanelSource,
   type AiPanelSubgroup,
 } from './ai-panel-view';
 import { ALERT } from './CustomerDialogs';
@@ -31,6 +33,19 @@ export const BADGE_COLORS = {
   PROFILE_DISCOVERY: 'text-info',
   PAIN_POINT_ANALYSIS: 'text-info',
 } as const;
+
+/** Who answered, as the chip names it (mockups 2e, 4i). */
+function sourceName(source: AiPanelSource): string {
+  if ('model' in source) return source.model;
+  return t(source.badge === 'MOCK' ? 'aiPanel.mock' : 'aiPanel.chatgptWeb');
+}
+
+/** A provider that keeps no model has a badge: Mock in amber, ChatGPT web in blue (4i). */
+function SourceBadge({ source }: { source: AiPanelSource }) {
+  if (!('badge' in source)) return null;
+  const color = source.badge === 'MOCK' ? 'text-warn' : 'text-info';
+  return <span className={`${BADGE} ${color}`}>{sourceName(source)}</span>;
+}
 
 /** `text` with its `{fields}` slot filled by the names, in bold as the mockup shows them. */
 function withNames(text: string, names: readonly string[]): ReactNode {
@@ -126,8 +141,7 @@ function Analysis({
           {t('aiPanel.chip', {
             version: chip.version,
             label: chip.prompt,
-            // The db keeps a model on every row that is not Mock.
-            name: chip.provider === 'MOCK' ? t('aiPanel.mock') : (chip.model ?? ''),
+            name: sourceName(chip.source),
             when: chip.at,
           })}
         </span>
@@ -257,9 +271,7 @@ export function KycIntelligence({
           {t('aiPanel.title')}
         </h2>
         <span className={`${BADGE} ${BADGE_COLORS[view.badge]}`}>{view.badge}</span>
-        {view.shown?.provider === 'MOCK' && !view.blocked && (
-          <span className={`${BADGE} text-warn`}>{t('aiPanel.mock')}</span>
-        )}
+        {view.shown && !view.blocked && <SourceBadge source={analysisSource(view.shown)} />}
         <div className="flex-1" />
         <Button
           variant={view.button.primary ? 'primary' : 'default'}

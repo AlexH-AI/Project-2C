@@ -158,6 +158,7 @@ export const vi = {
   'aiPanel.levelName.LOW': 'thấp',
   'aiPanel.levelName.MEDIUM': 'trung bình',
   'aiPanel.levelName.HIGH': 'cao',
+  'aiPanel.chatgptWeb': 'ChatGPT web',
   // AI errors (spec Phase 5 §5.3, mockup ai.html 2l and 4c): never the code, key or request.
   'aiError.AI_NO_KEY': 'Chưa có API key OpenCode — nhập ở Cài đặt → AI.',
   'aiError.AI_UNAUTHORIZED':

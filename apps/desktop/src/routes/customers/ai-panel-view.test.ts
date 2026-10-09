@@ -1,7 +1,7 @@
 import type { AiAnalysisView } from '@p2c/db';
 import { calendarDate as day, type KycGateResult, type KycGateState } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { aiPanelView, analysisContent, runAfter, shownRun } from './ai-panel-view';
+import { aiPanelView, analysisContent, analysisSource, runAfter, shownRun } from './ai-panel-view';
 
 const gateOf = (state: KycGateState, extra: Partial<KycGateResult> = {}): KycGateResult => ({
   state,
@@ -239,8 +239,7 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
     expect(analysisContent(row, versions).chip).toEqual({
       version: 3,
       prompt: 'analysis@1',
-      provider: 'MOCK',
-      model: null,
+      source: { badge: 'MOCK' },
       at: '14/09 11:02',
     });
     const real = analysis({
@@ -255,8 +254,28 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
     });
     expect(analysisContent(real, versions).chip).toMatchObject({
       version: 1,
-      provider: 'OPENCODE_GO',
-      model: 'DeepSeek V4.1 Flash',
+      source: { model: 'DeepSeek V4.1 Flash' },
+    });
+  });
+
+  it('names a ChatGPT web analysis by its provider, as it keeps no model (P7, mockup 4i)', () => {
+    const web = analysis({
+      seq: 2,
+      state: 'CURRENT',
+      kycVersionId: 'v3',
+      input,
+      output,
+      provider: 'CHATGPT_WEB',
+      promptVersion: 'analysis@1+web@1',
+    });
+    expect(analysisContent(web, versions).chip).toMatchObject({
+      prompt: 'analysis@1+web@1',
+      source: { badge: 'CHATGPT_WEB' },
+    });
+    expect(analysisSource(web)).toEqual({ badge: 'CHATGPT_WEB' });
+    expect(analysisSource(row)).toEqual({ badge: 'MOCK' });
+    expect(analysisSource({ provider: 'OPENCODE_GO', model: 'kimi-k3' })).toEqual({
+      model: 'Kimi K3',
     });
   });
 

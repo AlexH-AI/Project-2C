@@ -36,6 +36,18 @@ describe('tauriOpenCode (spec Phase 5 §5.1)', () => {
     expect(await client.keyStatus()).toBe(false);
   });
 
+  it('asks Rust to open chatgpt.com, passing nothing, and reads any failure as not opened (§5.4)', async () => {
+    const invoke = vi.fn().mockResolvedValue(null);
+    const client = tauriOpenCode(invoke);
+    expect(await client.openChatGpt()).toBe(true);
+    expect(invoke.mock.calls).toEqual([['open_chatgpt']]);
+
+    invoke.mockRejectedValue({ code: 'AI_OPEN_BROWSER' });
+    expect(await client.openChatGpt()).toBe(false);
+    invoke.mockRejectedValue('command open_chatgpt not found');
+    expect(await client.openChatGpt()).toBe(false);
+  });
+
   it('calls ai_complete under the plan and gives the completion', async () => {
     const completion = { content: 'OK', promptTokens: 10, completionTokens: 1 };
     const invoke = vi.fn().mockResolvedValue(completion);
