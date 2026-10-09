@@ -24,6 +24,7 @@ import { teamRes } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
 import { ALERT } from '../customers/CustomerDialogs';
 import { PERIOD_LABELS } from '../period-labels';
+import { AppointmentAi } from './AppointmentAi';
 import { AppointmentDialog } from './AppointmentDialog';
 import { DeleteAppointmentDialog } from './DeleteAppointmentDialog';
 import { EditOutcomeDialog } from './EditOutcomeDialog';
@@ -645,6 +646,7 @@ function Detail({
           <Button onClick={() => onDelete(row)}>{t('appointments.delete')}</Button>
         )}
       </div>
+      {row.customer && <AppointmentAi customerId={a.customerId} />}
     </aside>
   );
 }

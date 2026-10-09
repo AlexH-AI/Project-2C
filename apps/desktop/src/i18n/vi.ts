@@ -437,6 +437,10 @@ export const vi = {
   'appointments.detail': 'Chi tiết lịch hẹn',
   'appointments.detailEmpty': 'Chọn một lịch hẹn để xem chi tiết.',
   'appointments.profile': 'Hồ sơ KH →',
+  // The read-only AI block of the detail (spec Phase 5 §9.2, mockup appointments.html).
+  'appointments.ai.meta': 'v{version} · {date}',
+  'appointments.ai.empty': 'Chưa có phân tích AI.',
+  'appointments.ai.toProfile': 'Mở Hồ sơ KH để phân tích →',
   'appointments.move': '{from} → {to}',
   'appointments.moveRf': '{from} → {to} · RF',
   'appointments.keep': 'Giữ {stage}',

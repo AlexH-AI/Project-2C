@@ -358,7 +358,7 @@ test('times line up in tabular figures; a customer opens the detail and its prof
 
   const name = (await row.getByRole('button').textContent()) ?? '';
   await row.getByRole('button').click();
-  await expect(detail.getByRole('heading')).toContainText(name);
+  await expect(detail.getByRole('heading', { level: 2 })).toContainText(name);
   await expect(detail).toContainText('Trigger');
 
   await detail.getByRole('link', { name: 'Hồ sơ KH →' }).click();
@@ -413,7 +413,9 @@ test('creates an appointment: the day is read back, a trigger is required, the d
       .getByRole('region', { name: reName, exact: true })
       .getByRole('button', { name }),
   ).toBeVisible();
-  await expect(detail.getByRole('heading')).toContainText(`30/09/2026 14:00 · ${name}`);
+  await expect(detail.getByRole('heading', { level: 2 })).toContainText(
+    `30/09/2026 14:00 · ${name}`,
+  );
   await expect(detail).toContainText('Hội thảo / sự kiện');
 });
 
@@ -497,19 +499,19 @@ test('rescheduling keeps the old appointment with its reason and links it to the
 
   // The new appointment is shown, pointing back to the old one.
   await expect(dialog).toHaveCount(0);
-  await expect(detail.getByRole('heading')).toHaveText(`02/10/2026 10:00 · ${name}`);
+  await expect(detail.getByRole('heading', { level: 2 })).toHaveText(`02/10/2026 10:00 · ${name}`);
   await expect(detail).toContainText('Dự kiến');
   const back = [oldDate, oldTime].filter(Boolean).join(' ');
   await detail.getByRole('button', { name: back }).click();
 
   // The old one stays, rescheduled, with the reason in its note and a link forward.
-  await expect(detail.getByRole('heading')).toHaveText(`${back} · ${name}`);
+  await expect(detail.getByRole('heading', { level: 2 })).toHaveText(`${back} · ${name}`);
   await expect(detail).toContainText('Dời lịch');
   await expect(detail).toContainText('Dời sang 02/10');
   await expect(detail).toContainText('KH đi công tác Đà Nẵng');
   await expect(detail.getByRole('button', { name: 'Dời lịch' })).toHaveCount(0);
   await detail.getByRole('button', { name: '02/10/2026 10:00' }).click();
-  await expect(detail.getByRole('heading')).toHaveText(`02/10/2026 10:00 · ${name}`);
+  await expect(detail.getByRole('heading', { level: 2 })).toHaveText(`02/10/2026 10:00 · ${name}`);
 });
 
 test('a rescheduled day already past is refused unless it back-fills a meeting held then', async ({
@@ -535,8 +537,8 @@ test('a rescheduled day already past is refused unless it back-fills a meeting h
   await expect(dialog).toContainText('Thứ Năm 10/09/2026 · đã qua 5 ngày');
   await dialog.getByRole('button', { name: 'Dời lịch' }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(detail.getByRole('heading')).toContainText(`10/09/2026`);
-  await expect(detail.getByRole('heading')).toContainText(name);
+  await expect(detail.getByRole('heading', { level: 2 })).toContainText(`10/09/2026`);
+  await expect(detail.getByRole('heading', { level: 2 })).toContainText(name);
 });
 
 /** Opens the dialog and fills a customer (its RE, or another team's), `date` and a trigger. */
@@ -566,7 +568,7 @@ test('keeping a day long past records a late appointment on that day', async ({ 
 
   await expect(f.dialog).toHaveCount(0);
   await expect(day.getByRole('heading', { level: 2 })).toHaveText('Trong ngày 05/01/2026');
-  await expect(detail.getByRole('heading')).toContainText(`05/01/2026 · ${f.name}`);
+  await expect(detail.getByRole('heading', { level: 2 })).toContainText(`05/01/2026 · ${f.name}`);
 });
 
 /** The background of a legend's dot, by its label. */
@@ -692,7 +694,7 @@ test('a coordinator filter hiding the new appointment is cleared', async ({ page
   await expect(f.dialog).toHaveCount(0);
   await expect(coordinator).toHaveValue('any');
   await expect(day.getByRole('button', { name: f.name })).toBeVisible();
-  await expect(detail.getByRole('heading')).toContainText(`30/09/2026 · ${f.name}`);
+  await expect(detail.getByRole('heading', { level: 2 })).toContainText(`30/09/2026 · ${f.name}`);
 });
 
 test('an appointment for an RE outside the scope says so; the scope stays', async ({ page }) => {
@@ -719,7 +721,7 @@ test('an appointment for an RE outside the scope says so; the scope stays', asyn
     .getByRole('radio', { name: 'Toàn bộ' })
     .click();
   await expect(notice).toHaveCount(0);
-  await expect(detail.getByRole('heading')).toContainText(`30/09/2026 · ${f.name}`);
+  await expect(detail.getByRole('heading', { level: 2 })).toContainText(`30/09/2026 · ${f.name}`);
 });
 
 const pickTeam = async (page: Page, name: string) => {
@@ -809,4 +811,91 @@ test('a rescheduled appointment reads grey in the history, not the orange of unr
   await expect(status).toBeVisible();
   // --appt-missed = --text-3 (grey), not --warn rgb(240, 160, 75): Owner G3 03/10.
   expect(await css(status, 'color')).toBe('rgb(140, 153, 172)');
+});
+
+/** A new customer of the first RE with enough KYC for the Mock discovery; its profile is open. */
+async function customerForAi(page: Page, name: string) {
+  await page.goto('/#/customers');
+  await page.getByRole('button', { name: '+ Khách hàng' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Khách hàng mới' });
+  await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(name);
+  await dialog.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
+  await dialog.getByRole('textbox', { name: /^Ngày sinh/ }).fill('1984');
+  await dialog.getByRole('radio', { name: 'Nữ' }).check();
+  await dialog.getByRole('button', { name: 'Lưu KH' }).click();
+  await expect(dialog).toBeHidden();
+  await page.getByRole('link', { name: new RegExp(name) }).click();
+  await kycNote(page, name, [
+    ['Tình trạng hôn nhân', 'Đã kết hôn'],
+    ['Số con', '2'],
+    ['Nghề nghiệp', 'Bác sĩ'],
+  ]);
+}
+
+async function kycNote(page: Page, name: string, facts: readonly (readonly [string, string])[]) {
+  await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
+  const dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${name}` });
+  await dialog.getByRole('textbox', { name: 'Ghi chú' }).fill('Gặp KH');
+  for (const [field, value] of facts) {
+    await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: field });
+    await dialog.getByRole('textbox', { name: 'Giá trị' }).fill(value);
+    await dialog.getByRole('button', { name: 'Thêm dữ kiện' }).click();
+  }
+  await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
+  await expect(dialog).toBeHidden();
+}
+
+test('the detail shows the latest accepted AI analysis read-only, or a link to analyse (spec Phase 5 §9.2)', async ({
+  page,
+}) => {
+  const name = 'Lan Lịch AI';
+  await customerForAi(page, name);
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('textbox', { name: /^Ngày/ }).fill('30/9');
+  await dialog.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
+  await dialog.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+  await expect(dialog).toHaveCount(0);
+
+  const { list, detail } = screen(page);
+  const ai = detail.getByRole('region', { name: 'KYC Intelligence' });
+  const open = async () => {
+    await page.goto('/#/appointments');
+    await list.getByRole('button', { name }).click();
+    await expect(detail.getByRole('heading', { level: 2 })).toContainText(name);
+  };
+
+  // No analysis yet: a link to the profile, where the AI is run; no AI button here.
+  await open();
+  await expect(ai).toContainText('Chưa có phân tích AI.');
+  await expect(detail.getByRole('button', { name: /Phân tích/ })).toHaveCount(0);
+  await ai.getByRole('link', { name: 'Mở Hồ sơ KH để phân tích →' }).click();
+  await expect(page.getByRole('heading', { level: 2, name })).toBeVisible();
+
+  const panel = page.getByRole('region', { name: 'KYC Intelligence' });
+  await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
+  await expect(panel).toContainText('CURRENT');
+
+  await open();
+  await expect(ai).toContainText('CURRENT');
+  await expect(ai).toContainText('PROFILE_DISCOVERY');
+  await expect(ai).toContainText('Mock');
+  await expect(ai).toContainText('v2 · 15/09');
+  await expect(ai.getByRole('heading', { level: 4 })).toHaveText([
+    'Next Best Actions',
+    'Discovery Strategy',
+  ]);
+  await expect(
+    ai.getByRole('region', { name: 'Next Best Actions' }).getByRole('listitem'),
+  ).toContainText(['Hẹn buổi gặp tiếp để tìm hiểu thêm']);
+  await expect(ai).toContainText(/Mức bằng chứng: thấp · 1 dữ kiện, mới nhất 15\/09\/2026/);
+  await expect(detail.getByRole('button', { name: /Phân tích/ })).toHaveCount(0);
+
+  // A KYC change after it makes it STALE.
+  await detail.getByRole('link', { name: 'Hồ sơ KH →' }).click();
+  await kycNote(page, name, [['Nơi sinh sống', 'Huế']]);
+  await expect(panel).toContainText('STALE');
+  await open();
+  await expect(ai).toContainText('STALE');
+  await expect(ai).not.toContainText('CURRENT');
 });

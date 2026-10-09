@@ -23,7 +23,7 @@ const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 const HEADING = 'm-0 text-sm font-medium text-heading';
 const IDLE: AiPanelRun = { phase: 'idle' };
 
-const BADGE_COLORS = {
+export const BADGE_COLORS = {
   CURRENT: 'text-ok',
   STALE: 'text-fg-3',
   CONFLICT_RESOLUTION: 'text-danger',
@@ -78,7 +78,7 @@ function BlockedNote({ blocked }: { blocked: AiPanelBlocked }) {
   );
 }
 
-function Item({ item }: { item: AiPanelItem }) {
+export function Item({ item }: { item: AiPanelItem }) {
   const { evidence } = item;
   return (
     <li className="rounded-sm border border-border bg-surface-2 px-2.5 py-2">
@@ -105,7 +105,7 @@ function Item({ item }: { item: AiPanelItem }) {
   );
 }
 
-const ITEMS = 'm-0 flex list-none flex-col gap-1.5 p-0';
+export const ITEMS = 'm-0 flex list-none flex-col gap-1.5 p-0';
 const SUBHEADING = 'mt-3 mb-1.5 text-sm font-medium text-heading';
 
 /** One ACCEPTED analysis as mockup customer.html shows it, 2g in discovery mode. */

@@ -45,7 +45,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/data/` — AppDataContext.tsx, ai-analysis.ts, ai-tauri.ts, app-data.ts, demo-snapshot.ts, persist-queue.ts, tables.ts, tauri-storage.ts, today.ts
 - `src/i18n/` — index.ts, vi.ts
 - `src/routes/` — FilterBar.tsx, Overview.tsx, Screen.tsx, Settings.tsx, SettingsAi.tsx, SettingsBackup.tsx, SettingsDataFile.tsx, applied-filter.ts, period-labels.ts, settings-ai-view.ts
-- `src/routes/appointments/` — AppointmentDialog.tsx, AppointmentsScreen.tsx, DeleteAppointmentDialog.tsx, EditOutcomeDialog.tsx, MetFields.tsx, OutcomeDialog.tsx, RescheduleDialog.tsx, RescheduleFields.tsx, YearGrid.tsx, appointment-form.ts, appointments-view.ts, outcome-form.ts
+- `src/routes/appointments/` — AppointmentAi.tsx, AppointmentDialog.tsx, AppointmentsScreen.tsx, DeleteAppointmentDialog.tsx, EditOutcomeDialog.tsx, MetFields.tsx, OutcomeDialog.tsx, RescheduleDialog.tsx, RescheduleFields.tsx, YearGrid.tsx, appointment-ai-view.ts, appointment-form.ts, appointments-view.ts, outcome-form.ts
 - `src/routes/customers/` — CustomerAppointments.tsx, CustomerDialogs.tsx, CustomerKyc.tsx, CustomerPolicies.tsx, CustomerProfile.tsx, CustomersScreen.tsx, KycDialogs.tsx, KycIntelligence.tsx, PolicyDialogs.tsx, ai-panel-view.ts, customers-view.ts, kyc-view.ts, policy-form.ts
 - `src/routes/overview/` — OverviewTiles.tsx, StageBlock.tsx, TeamCompare.tsx, overview-view.ts, stage-chart.ts, stage-view.ts, team-compare-view.ts
 - `src/routes/reports/` — ReportExport.tsx, ReportTable.tsx, ReportsScreen.tsx, report-workbook.ts, reports-view.ts
