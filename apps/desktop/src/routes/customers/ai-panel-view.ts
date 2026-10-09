@@ -155,15 +155,11 @@ export interface AiPanelSection {
 }
 
 export interface AiPanelContent {
-  /**
-   * "kyc v<n> · <prompt> · <model or Mock> · dd/mm hh:mm". The name follows `provider`, not
-   * `model`: a provider without a model (Mock, later ChatGPT web) has its own name.
-   */
+  /** "kyc v<n> · <prompt> · <model, Mock or ChatGPT web> · dd/mm hh:mm". */
   readonly chip: {
     readonly version: number;
     readonly prompt: string;
-    readonly provider: AiAnalysisView['provider'];
-    readonly model: string | null;
+    readonly source: AiPanelSource;
     readonly at: string;
   };
   /** Minor conflicts sent with the input (§6.2): the trường as sent, and its facts' codes. */
@@ -233,8 +229,7 @@ export function analysisContent(
     chip: {
       version: versions.findIndex((version) => version.id === analysis.kycVersionId) + 1,
       prompt: analysis.promptVersion,
-      provider: analysis.provider,
-      model: analysis.model === null ? null : modelLabel(analysis.model),
+      source: analysisSource(analysis),
       at: dayAndTime(analysis.createdAt),
     },
     conflicts: input.conflictWarnings.map((field) => ({
@@ -249,6 +244,19 @@ export function analysisContent(
     ],
     reference: output.personalityNotes.map(toItem),
   };
+}
+
+/**
+ * Who answered: a model by its Settings name, or a provider that keeps no model (Mock, ChatGPT web),
+ * shown by its own badge (mockups 2e, 4i). It follows `provider`, never `model === null`.
+ */
+export type AiPanelSource = { readonly badge: 'MOCK' | 'CHATGPT_WEB' } | { readonly model: string };
+
+export function analysisSource(
+  analysis: Pick<AiAnalysisView, 'provider' | 'model'>,
+): AiPanelSource {
+  const { provider, model } = analysis;
+  return provider === 'OPENCODE_GO' ? { model: modelLabel(model ?? '') } : { badge: provider };
 }
 
 /** The name Settings → AI shows for a model; an id no longer listed shows as stored. */

@@ -23,6 +23,11 @@ export interface OpenCodeClient {
   deleteKey(): Promise<void>;
   /** `ai_complete` under `plan`: Rust picks the plan's URL (P8). */
   adapter(plan: AiOpencodePlan): AiAdapter;
+  /**
+   * `open_chatgpt` (§5.4): Rust opens its fixed URL in the default browser. It fails only with
+   * `AI_OPEN_BROWSER`, so any failure reads as not opened.
+   */
+  openChatGpt(): Promise<boolean>;
 }
 
 /**
@@ -49,6 +54,11 @@ export function tauriOpenCode(invoke: Invoke): OpenCodeClient {
     keyStatus: async () => (await call('ai_key_status')) === true,
     setKey: async (key) => void (await call('ai_key_set', { key })),
     deleteKey: async () => void (await call('ai_key_delete')),
+    openChatGpt: () =>
+      invoke('open_chatgpt').then(
+        () => true,
+        () => false,
+      ),
     adapter: (plan) => ({
       complete: async ({ sessionId, model, reasoning, messages, maxTokens }) =>
         (await call('ai_complete', {

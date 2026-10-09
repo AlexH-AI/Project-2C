@@ -4,16 +4,22 @@
  * analysis from the click to the saved row.
  */
 import {
+  checkWebAnswer,
   createAiRunner,
   createMockAdapter,
   readAiSettings,
   runAnalysis,
+  startWebAnalysis,
   type AiAbortSignal,
   type AiAdapter,
   type AiErrorCode,
   type AiRunner,
   type AiSettings,
+  type AnalysisRow,
   type StoredAiSettings,
+  type ValidationIssue,
+  type WebAnalysisRequest,
+  type WebSession,
 } from '@p2c/ai';
 import {
   DbError,
@@ -48,6 +54,33 @@ export interface AppAi {
   call(): AiCall;
   /** Gets every error the AI cannot give back to a screen (a bug); the app logs it. */
   reportError(error: unknown): void;
+  /** The clipboard and the browser of ChatGPT web (§3.1). */
+  readonly web: WebTools;
+}
+
+/** The only page ChatGPT web opens (§5.4): no data in the URL, no unofficial parameter. */
+export const CHATGPT_URL = 'https://chatgpt.com/';
+
+/** What ChatGPT web does outside the webview; each says whether it worked, never throws. */
+export interface WebTools {
+  copy(text: string): Promise<boolean>;
+  openChatGpt(): Promise<boolean>;
+}
+
+function webTools(opencode: OpenCodeClient | undefined): WebTools {
+  return {
+    copy: (text) =>
+      navigator.clipboard.writeText(text).then(
+        () => true,
+        () => false,
+      ),
+    openChatGpt: () => {
+      if (opencode) return opencode.openChatGpt();
+      // `noopener` makes `open` return null whether it opened or not: nothing to read back.
+      window.open(CHATGPT_URL, '_blank', 'noopener');
+      return Promise.resolve(true);
+    },
+  };
 }
 
 /** Where Settings → AI is kept: the `settings` row `ai`, which goes into the backup. */
@@ -62,6 +95,8 @@ export interface AppAiOptions {
   readonly opencode?: OpenCodeClient;
   /** Tests pass a stand-in for every provider. */
   readonly adapter?: AiAdapter;
+  /** Tests pass a stand-in clipboard and browser. */
+  readonly web?: WebTools;
 }
 
 export function createAppAi(store: AiSettingsStore, options: AppAiOptions = {}): AppAi {
@@ -91,6 +126,7 @@ export function createAppAi(store: AiSettingsStore, options: AppAiOptions = {}):
       return { runner, adapter, settings: chosen };
     },
     reportError,
+    web: options.web ?? webTools(opencode),
   };
 }
 
@@ -131,27 +167,103 @@ export async function analyseCustomer(
   customerId: string,
   signal?: AiAbortSignal,
 ): Promise<AnalysisOutcome> {
-  const { ai } = app;
   try {
-    const db = app.db();
-    const { facts } = getKycProfile(db, customerId);
-    const version = listKycVersions(db, customerId).at(-1);
-    // No version means no facts confirmed yet: nothing for the gate to let through.
-    if (!version) return { kind: 'blocked', state: 'KYC_INSUFFICIENT' };
-    const result = await runAnalysis({
-      ...ai.call(),
-      customerId,
-      kycVersionId: version.id,
-      profile: { facts },
-      today: app.today(),
-      signal,
-    });
+    const taken = takeProfile(app, customerId);
+    if ('kind' in taken) return taken;
+    const result = await runAnalysis({ ...app.ai.call(), ...taken, signal });
     if (result.kind !== 'record') return result;
-    const saved = app.run((d) => recordAiAnalysis(d, result.row));
-    return { kind: 'saved', status: saved.status };
+    return save(app, result.row);
   } catch (error) {
-    if (error instanceof DbError && GONE.includes(error.code)) return { kind: 'discarded' };
-    ai.reportError(error);
-    return { kind: 'failed' };
+    return lost(app, error);
+  }
+}
+
+/**
+ * The input of an analysis: the latest KYC version and its facts, read together, at once. No
+ * version means no facts confirmed yet: nothing for the gate to let through.
+ */
+function takeProfile(
+  app: AnalysisApp,
+  customerId: string,
+): WebAnalysisRequest | { readonly kind: 'blocked'; readonly state: 'KYC_INSUFFICIENT' } {
+  const db = app.db();
+  const { facts } = getKycProfile(db, customerId);
+  const version = listKycVersions(db, customerId).at(-1);
+  if (!version) return { kind: 'blocked', state: 'KYC_INSUFFICIENT' };
+  return { customerId, kycVersionId: version.id, profile: { facts }, today: app.today() };
+}
+
+function save(app: AnalysisApp, row: AnalysisRow) {
+  const saved = app.run((d) => recordAiAnalysis(d, row));
+  return { kind: 'saved', status: saved.status } as const;
+}
+
+function lost(app: AnalysisApp, error: unknown) {
+  if (error instanceof DbError && GONE.includes(error.code)) return { kind: 'discarded' } as const;
+  app.ai.reportError(error);
+  return { kind: 'failed' } as const;
+}
+
+export type WebStartOutcome =
+  /**
+   * A session for the panel to keep (§3.1 item 4) and the message to paste. `copied` false: show
+   * it to copy by hand (mockup 4f); `opened` false: `AI_OPEN_BROWSER` (4c). The session goes on.
+   */
+  | {
+      readonly kind: 'session';
+      readonly session: WebSession;
+      readonly message: string;
+      /** When the input was taken, by the database's clock (mockup 4e "chụp dd/mm hh:mm"). */
+      readonly takenAt: Date;
+      readonly copied: boolean;
+      readonly opened: boolean;
+    }
+  | Extract<AnalysisOutcome, { kind: 'blocked' | 'discarded' | 'failed' }>;
+
+/**
+ * One click on Phân tích bằng ChatGPT web: the input is taken now, as for Phân tích; the message is
+ * copied, then chatgpt.com opened. No AI request is held (§3.1 item 5) and nothing is saved.
+ */
+export async function startChatGptWeb(
+  app: AnalysisApp,
+  customerId: string,
+): Promise<WebStartOutcome> {
+  try {
+    const taken = takeProfile(app, customerId);
+    if ('kind' in taken) return taken;
+    const takenAt = app.db().now();
+    const started = startWebAnalysis(taken);
+    if (started.kind !== 'session') return started;
+    const copied = await app.ai.web.copy(started.message);
+    const opened = await app.ai.web.openChatGpt();
+    return { ...started, takenAt, copied, opened };
+  } catch (error) {
+    return lost(app, error);
+  }
+}
+
+export type WebAnswerOutcome =
+  /** Not an attempt (§3.1 item 3): the error at the paste box, or the button off when blank. */
+  | { readonly kind: 'unusable'; readonly reason: 'EMPTY' | 'TOO_LONG' }
+  /** Mockup 4g: the issues, "Copy yêu cầu sửa" copies `retryMessage`; go on with `session`. */
+  | {
+      readonly kind: 'retry';
+      readonly session: WebSession;
+      readonly issues: readonly ValidationIssue[];
+      readonly retryMessage: string;
+    }
+  | Extract<AnalysisOutcome, { kind: 'saved' | 'discarded' | 'failed' }>;
+
+/** Kiểm tra và lưu: checks the pasted answer and saves the row once the session is over. */
+export function saveChatGptAnswer(
+  app: AnalysisApp,
+  session: WebSession,
+  pasted: string,
+): WebAnswerOutcome {
+  try {
+    const result = checkWebAnswer(session, pasted);
+    return result.kind === 'record' ? save(app, result.row) : result;
+  } catch (error) {
+    return lost(app, error);
   }
 }

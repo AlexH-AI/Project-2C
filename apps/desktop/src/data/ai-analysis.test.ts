@@ -6,6 +6,7 @@ import {
   type AiCompleteRequest,
   type AiCompletion,
   type AiSettings,
+  type WebSession,
 } from '@p2c/ai';
 import {
   createCustomer,
@@ -24,9 +25,13 @@ import { calendarDate, type KycField } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import {
   analyseCustomer,
+  CHATGPT_URL,
   createAppAi,
+  saveChatGptAnswer,
+  startChatGptWeb,
   type AiSettingsStore,
   type AppAiOptions,
+  type WebTools,
 } from './ai-analysis';
 import type { OpenCodeClient } from './ai-tauri';
 import { openAppData } from './app-data';
@@ -267,6 +272,204 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
   });
 });
 
+/** A clipboard and a browser that record what they get. */
+function recordingWeb(copies = true, opens = true) {
+  const copied: string[] = [];
+  let opened = 0;
+  const web: WebTools = {
+    copy: (text) => {
+      copied.push(text);
+      return Promise.resolve(copies);
+    },
+    openChatGpt: () => {
+      opened += 1;
+      return Promise.resolve(opens);
+    },
+  };
+  return { web, copied, opened: () => opened };
+}
+
+/** What the Mock answers to the session's input: an answer that passes, as ChatGPT pastes it. */
+async function goodAnswer(session: WebSession) {
+  const { content } = await createMockAdapter().complete({
+    sessionId: 's-1',
+    model: 'glm-5.3',
+    reasoning: null,
+    messages: [{ role: 'user', content: JSON.stringify(session.input) }],
+    maxTokens: 1,
+  });
+  return `Đây là kết quả:\n\`\`\`json\n${content}\n\`\`\``;
+}
+
+describe('ChatGPT web in the app (spec Phase 5 §3.1)', () => {
+  async function started(options: { copies?: boolean; opens?: boolean } = {}) {
+    const recording = recordingWeb(options.copies, options.opens);
+    const setup = await withCustomer({ reportError: vi.fn(), web: recording.web });
+    const outcome = await startChatGptWeb(setup.app, setup.customer.id);
+    if (outcome.kind !== 'session') throw new Error(`no session: ${outcome.kind}`);
+    return { ...setup, ...recording, outcome, session: outcome.session };
+  }
+
+  it('copies the web@1 message, opens chatgpt.com, holds no AI request and saves nothing', async () => {
+    const { outcome, copied, opened, ai, rows, app, customer } = await started();
+
+    expect(outcome).toMatchObject({ copied: true, opened: true });
+    expect(outcome.takenAt).toBeInstanceOf(Date);
+    expect(copied).toEqual([outcome.message]);
+    expect(outcome.message).toMatch(/^Tin nhắn này có hai phần/);
+    expect(outcome.message).toContain('"mode":"discovery"');
+    expect(opened()).toBe(1);
+    expect(outcome.session.input.mode).toBe('discovery');
+    expect(ai.runner.busy).toBe(false);
+    expect(rows()).toEqual([]);
+    // An AI request still runs meanwhile (§3.1 item 5).
+    expect(await analyseCustomer(app, customer.id)).toEqual({ kind: 'saved', status: 'ACCEPTED' });
+  });
+
+  it('keeps the session when the copy or the browser fails, and says which', async () => {
+    expect((await started({ copies: false })).outcome).toMatchObject({
+      copied: false,
+      opened: true,
+    });
+    expect((await started({ opens: false })).outcome).toMatchObject({
+      copied: true,
+      opened: false,
+    });
+  });
+
+  it('copies and opens nothing when the gate lets no AI through', async () => {
+    const recording = recordingWeb();
+    const { app, customer, confirm } = await withCustomer({ web: recording.web });
+    confirm('childrenCount', '3', true);
+
+    expect(await startChatGptWeb(app, customer.id)).toEqual({
+      kind: 'blocked',
+      state: 'CONFLICT_RESOLUTION',
+    });
+    expect(recording.copied).toEqual([]);
+    expect(recording.opened()).toBe(0);
+  });
+
+  it('saves a pasted answer that passes as CHATGPT_WEB, with no model, reasoning or tokens', async () => {
+    const { app, session, rows } = await started();
+
+    expect(saveChatGptAnswer(app, session, await goodAnswer(session))).toEqual({
+      kind: 'saved',
+      status: 'ACCEPTED',
+    });
+    expect(rows()).toMatchObject([
+      {
+        state: 'CURRENT',
+        provider: 'CHATGPT_WEB',
+        model: null,
+        reasoning: null,
+        promptTokens: null,
+        promptVersion: 'discovery@1+web@1',
+        attempts: 1,
+      },
+    ]);
+  });
+
+  it('gives the issues and the retry message on a first wrong paste, then saves the second', async () => {
+    const { app, session, rows } = await started();
+
+    const retry = saveChatGptAnswer(app, session, 'Xin lỗi, tôi không chắc.');
+    if (retry.kind !== 'retry') throw new Error(retry.kind);
+    expect(retry.issues).toMatchObject([{ code: 'V1', path: '$' }]);
+    expect(retry.retryMessage).toContain('- V1 tại $');
+    expect(rows()).toEqual([]);
+
+    expect(saveChatGptAnswer(app, retry.session, await goodAnswer(session))).toEqual({
+      kind: 'saved',
+      status: 'ACCEPTED',
+    });
+    expect(rows()).toMatchObject([{ status: 'ACCEPTED', attempts: 2 }]);
+  });
+
+  it('saves REJECTED with the last paste after two wrong ones', async () => {
+    const { app, session, rows } = await started();
+
+    const retry = saveChatGptAnswer(app, session, 'Lần 1');
+    if (retry.kind !== 'retry') throw new Error(retry.kind);
+    expect(saveChatGptAnswer(app, retry.session, 'Lần 2')).toEqual({
+      kind: 'saved',
+      status: 'REJECTED',
+    });
+    expect(rows()).toMatchObject([
+      { state: 'REJECTED', provider: 'CHATGPT_WEB', attempts: 2, rawOutput: 'Lần 2' },
+    ]);
+  });
+
+  it('counts no attempt for a blank paste or one over 20 000 characters', async () => {
+    const { app, session, rows } = await started();
+
+    expect(saveChatGptAnswer(app, session, ' \n ')).toEqual({ kind: 'unusable', reason: 'EMPTY' });
+    expect(saveChatGptAnswer(app, session, 'x'.repeat(20_001))).toEqual({
+      kind: 'unusable',
+      reason: 'TOO_LONG',
+    });
+    expect(rows()).toEqual([]);
+  });
+
+  it('ties the result to the version taken on click, so a KYC change meanwhile leaves it STALE', async () => {
+    const { app, session, rows, confirm } = await started();
+    confirm('occupation', 'Giám đốc');
+
+    saveChatGptAnswer(app, session, await goodAnswer(session));
+    expect(rows()[0]).toMatchObject({ state: 'STALE', provider: 'CHATGPT_WEB' });
+  });
+
+  it('discards the answer, without reporting a bug, once the customer is deleted', async () => {
+    const { app, session, rows, customer } = await started();
+    app.run((d) => softDeleteCustomer(d, customer.id));
+
+    expect(saveChatGptAnswer(app, session, await goodAnswer(session))).toEqual({
+      kind: 'discarded',
+    });
+    expect(app.ai.reportError).not.toHaveBeenCalled();
+    app.run((d) => restoreCustomer(d, customer.id));
+    expect(rows()).toEqual([]);
+  });
+
+  it('turns a bug into a failure the panel can show, and reports it', async () => {
+    const { app, session } = await started();
+    const done = { content: '', parsed: null, issues: [] };
+    // A session already over: `checkWebAnswer` throws.
+    const over = { ...session, attempts: [done, done] };
+
+    expect(saveChatGptAnswer(app, over, 'x')).toEqual({ kind: 'failed' });
+    expect(app.ai.reportError).toHaveBeenCalledOnce();
+  });
+
+  it('copies and opens through the webview in web mode (§3.1 item 8)', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    const open = vi.fn();
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    vi.stubGlobal('window', { open });
+    try {
+      const { web } = createAppAi(memoryStore());
+      expect(await web.copy('tin nhắn')).toBe(true);
+      expect(writeText).toHaveBeenCalledWith('tin nhắn');
+      expect(await web.openChatGpt()).toBe(true);
+      expect(open).toHaveBeenCalledWith(CHATGPT_URL, '_blank', 'noopener');
+      expect(CHATGPT_URL).toBe('https://chatgpt.com/');
+
+      writeText.mockRejectedValue(new DOMException('denied', 'NotAllowedError'));
+      expect(await web.copy('tin nhắn')).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('opens chatgpt.com through Rust in the exe', async () => {
+    const openChatGpt = vi.fn().mockResolvedValue(false);
+    const opencode = { openChatGpt } as unknown as OpenCodeClient;
+    const { web } = createAppAi(memoryStore(), { opencode });
+    expect(await web.openChatGpt()).toBe(false);
+    expect(openChatGpt).toHaveBeenCalledOnce();
+  });
+});
+
 describe('Settings → AI in the app (spec Phase 5 §4.1)', () => {
   const CREDIT: AiSettings = {
     provider: 'OPENCODE_GO',
@@ -284,6 +487,7 @@ describe('Settings → AI in the app (spec Phase 5 §4.1)', () => {
       setKey: vi.fn(() => Promise.resolve()),
       deleteKey: vi.fn(() => Promise.resolve()),
       adapter: vi.fn(() => ({ complete })),
+      openChatGpt: vi.fn(() => Promise.resolve(true)),
     };
     return { client, complete };
   }
