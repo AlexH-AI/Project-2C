@@ -15,6 +15,7 @@ const unknownModel: AiCompleteRequest['model'] = 'gpt-5';
 void unknownModel;
 
 const request = (input: unknown): AiCompleteRequest => ({
+  sessionId: 'session-1',
   model: 'deepseek-v4.1-flash',
   reasoning: null,
   maxTokens: 8000,

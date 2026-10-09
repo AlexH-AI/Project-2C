@@ -125,7 +125,13 @@ test('exe: Kiểm tra kết nối runs under the chosen plan, is off while it ru
   );
   await expect(button).toBeEnabled();
   expect(await page.evaluate(() => window.exe.aiCalls)).toMatchObject([
-    { plan: 'CREDIT', model: 'deepseek-v4.1-flash', reasoning: null, maxTokens: 64 },
+    {
+      sessionId: expect.stringMatching(/^[0-9a-f]{32}$/),
+      plan: 'CREDIT',
+      model: 'deepseek-v4.1-flash',
+      reasoning: null,
+      maxTokens: 64,
+    },
   ]);
 
   await page.evaluate(() => (window.exe.aiError = { code: 'AI_UNAUTHORIZED', httpStatus: 401 }));

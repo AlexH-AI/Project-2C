@@ -139,13 +139,28 @@ interface Attempt {
   readonly completionTokens: number;
 }
 
+/** What `newSessionId` needs of Web Crypto, which the webview and Node have (no DOM types here). */
+interface RandomSource {
+  getRandomValues(bytes: Uint8Array): Uint8Array;
+}
+
+/** 128 random bits in hex; `getRandomValues`, unlike `randomUUID`, needs no secure context. */
+function newSessionId(): string {
+  const { crypto } = globalThis as unknown as { crypto: RandomSource };
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+    byte.toString(16).padStart(2, '0'),
+  ).join('');
+}
+
 function completeRequest(
   call: AiCall,
+  sessionId: string,
   messages: readonly AiMessage[],
   maxTokens: number,
 ): AiCompleteRequest {
   const { model, reasoning } = call.settings;
-  return { model, reasoning: reasoning === 'DEFAULT' ? null : reasoning, messages, maxTokens };
+  const effort = reasoning === 'DEFAULT' ? null : reasoning;
+  return { sessionId, model, reasoning: effort, messages, maxTokens };
 }
 
 /** An `AiError` as a result; anything else is a bug and is thrown on. */
@@ -167,8 +182,8 @@ async function attempt<R>(call: () => Promise<R>): Promise<R | Failed> {
 }
 
 /**
- * Asks, and asks again once with the issues when the answer fails `check` (prompts §1, §5). An
- * error at either attempt ends it with nothing to keep (spec §3 item 3).
+ * Asks, and asks again once with the issues when the answer fails `check` (prompts §1, §5), both
+ * under one `sessionId`. An error at either attempt ends it with nothing to keep (spec §3 item 3).
  */
 async function converse(
   call: AiCall,
@@ -180,10 +195,11 @@ async function converse(
     { role: 'system', content: prompt.system },
     { role: 'user', content: JSON.stringify(input) },
   ];
+  const sessionId = newSessionId();
   const attempts: Attempt[] = [];
   while (attempts.length < 2) {
     const answer = await attempt(() =>
-      call.adapter.complete(completeRequest(call, messages, prompt.maxTokens)),
+      call.adapter.complete(completeRequest(call, sessionId, messages, prompt.maxTokens)),
     );
     // After Hủy the answer is dropped and no retry is sent.
     if (call.signal?.aborted) return CANCELLED;
@@ -345,7 +361,7 @@ export async function checkConnection(call: AiCall): Promise<ConnectionResult> {
   return call.runner.run(async () => {
     const answer = await attempt(() =>
       call.adapter.complete(
-        completeRequest(call, connectionCheck.messages, connectionCheck.maxTokens),
+        completeRequest(call, newSessionId(), connectionCheck.messages, connectionCheck.maxTokens),
       ),
     );
     return 'kind' in answer ? answer : { kind: 'ok' as const };

@@ -11,6 +11,12 @@ export interface AiMessage {
 }
 
 export interface AiCompleteRequest {
+  /**
+   * Names the conversation, sent as `x-opencode-session` (ADR-0009 W-1): one random id for both
+   * attempts of an analysis or an extraction, a new one for each run and each connection check.
+   * Never anything of the customer; 32 hex digits, as Rust takes 1–64 of `[A-Za-z0-9-]`.
+   */
+  readonly sessionId: string;
   /** One of the models of spec §4.2. */
   readonly model: AiModelId;
   /** `null` sends no `reasoning_effort` (Settings → AI "Mặc định", or a model that takes none). */

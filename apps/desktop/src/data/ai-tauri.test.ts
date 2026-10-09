@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { tauriOpenCode } from './ai-tauri';
 
 const REQUEST = {
+  sessionId: '0f3a9c1d77be4e21a0c45d2e8b6f9a10',
   model: 'kimi-k3',
   reasoning: null,
   messages: [{ role: 'user', content: 'ping' }],

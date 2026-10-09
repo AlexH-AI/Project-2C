@@ -50,8 +50,9 @@ export function tauriOpenCode(invoke: Invoke): OpenCodeClient {
     setKey: async (key) => void (await call('ai_key_set', { key })),
     deleteKey: async () => void (await call('ai_key_delete')),
     adapter: (plan) => ({
-      complete: async ({ model, reasoning, messages, maxTokens }) =>
+      complete: async ({ sessionId, model, reasoning, messages, maxTokens }) =>
         (await call('ai_complete', {
+          sessionId,
           plan,
           model,
           reasoning,
