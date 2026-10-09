@@ -5,7 +5,7 @@ import { createAiJobs } from './ai-jobs';
 /** A job through the runner that ends only when the test says so, as a request running in Rust. */
 function held() {
   const runner = createAiRunner(vi.fn());
-  const jobs = createAiJobs(runner);
+  const jobs = createAiJobs(runner, vi.fn());
   let answer!: (value: string) => void;
   const job = (signal: AiAbortSignal) =>
     runner.run(() => new Promise<string>((resolve) => (answer = resolve)), signal);
@@ -25,9 +25,21 @@ describe('createAiJobs (review of PR 439: a run outlives the screen that started
     expect(listener).toHaveBeenCalledTimes(1);
     answer('saved');
     await expect(done).resolves.toBe('saved');
-    // A screen shown again while it ran reads the same outcome.
-    await expect(jobs.get('analysis:c1')?.done ?? Promise.resolve('gone')).resolves.toBe('gone');
+    // Once ended, the job is gone.
+    expect(jobs.get('analysis:c1')).toBeUndefined();
     expect(listener).toHaveBeenCalledTimes(2);
+  });
+
+  it('reports a job that fails, once, and lets it go (review of PR 468)', async () => {
+    const reportError = vi.fn();
+    const jobs = createAiJobs(createAiRunner(vi.fn()), reportError);
+    const bug = new TypeError('boom');
+
+    const done = jobs.start('analysis:c1', () => Promise.reject(bug));
+
+    await expect(done).rejects.toBe(bug);
+    await vi.waitFor(() => expect(jobs.get('analysis:c1')).toBeUndefined());
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(bug);
   });
 
   it('gives a screen shown again the outcome of the job still running', async () => {
