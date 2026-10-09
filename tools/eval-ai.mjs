@@ -34,7 +34,9 @@ registerHooks({
 const { evalMain } = await import('./eval-ai-core.mjs');
 const { fromLocalDate } = await import('../packages/domain/src/period.ts');
 
-const desktop = JSON.parse(readFileSync(new URL('../apps/desktop/package.json', import.meta.url)));
+// Paths are from the repo root, wherever the command is run from.
+const root = new URL('../', import.meta.url);
+const desktop = JSON.parse(readFileSync(new URL('apps/desktop/package.json', root)));
 
 process.exitCode = await evalMain({
   env: process.env,
@@ -44,7 +46,7 @@ process.exitCode = await evalMain({
   day: fromLocalDate(new Date()),
   // As the app names itself to OpenCode (ADR-0009 W-1).
   userAgent: `Project-2C/${desktop.version}`,
-  exists: existsSync,
-  writeFile: (path, text) => writeFileSync(path, text),
+  exists: (path) => existsSync(new URL(path, root)),
+  writeFile: (path, text) => writeFileSync(new URL(path, root), text),
   log: (line) => process.stdout.write(`${line}\n`),
 });

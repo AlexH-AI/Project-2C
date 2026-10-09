@@ -21,6 +21,7 @@ import {
   takeAnalysisInput,
   validateOutput,
 } from '../packages/ai/src/index.ts';
+import { checkAnswer } from '../packages/ai/src/prompts/retry.ts';
 import { formatIsoDate } from '../packages/domain/src/period.ts';
 import { EVAL_NOTES, EVAL_PROFILES, EVAL_TODAY } from './fixtures/ai-eval.mjs';
 
@@ -34,6 +35,8 @@ export const PLAN_URLS = {
 const DEFAULT_REASONING = 'HIGH';
 const TIMEOUT_MS = 120_000;
 const MAX_BODY = 2 * 1024 * 1024;
+/** The most of the server's error message kept, in characters, as Rust cuts it. */
+const MAX_SERVER_MESSAGE = 200;
 /** Errors after which every later call fails the same way. */
 const FATAL = new Set(['AI_UNAUTHORIZED', 'AI_RATE_LIMITED']);
 
@@ -71,7 +74,10 @@ export function readConfig(env, argv) {
   return { key, plan, url: PLAN_URLS[plan], ...options };
 }
 
-/** The server's error message as Rust reads it: the key masked, `undefined` when empty. */
+/**
+ * The server's error message as Rust reads it: the key masked before the cut to 200 characters (by
+ * code point), `undefined` when empty.
+ */
 function serverMessage(text, key) {
   let message = text;
   try {
@@ -82,7 +88,8 @@ function serverMessage(text, key) {
     // Not JSON: the body as text.
   }
   const masked = message.trim().replaceAll(key, '***');
-  return masked === '' ? undefined : masked;
+  const cut = Array.from(masked).slice(0, MAX_SERVER_MESSAGE).join('');
+  return cut === '' ? undefined : cut;
 }
 
 function readReply(status, text, key) {
@@ -184,10 +191,11 @@ function recording(adapter) {
   };
 }
 
-const errorOf = ({ code, httpStatus, serverMessage }) => ({
+const errorOf = ({ code, httpStatus, serverMessage, message }) => ({
   code,
   ...(httpStatus !== undefined && { httpStatus }),
   ...(serverMessage !== undefined && { serverMessage }),
+  ...(message !== undefined && { message }),
 });
 
 function attemptsOf(calls, issuesOf) {
@@ -202,10 +210,8 @@ function attemptsOf(calls, issuesOf) {
   });
 }
 
-const extractionIssues = (content) => {
-  const json = extractJson(content);
-  return validateOutput('extraction', json.found ? json.value : null);
-};
+const extractionIssues = (content) =>
+  checkAnswer(content, (parsed) => validateOutput('extraction', parsed)).issues;
 
 /**
  * Whether a note's kept facts pass the script's part of ai-eval.md §5: each required line has a
@@ -234,18 +240,44 @@ export function gradeNote(spec, facts) {
 }
 
 /**
+ * A thrown error is a bug of the script or the app, not an answer of the model: it becomes the
+ * result of that one profile / note, so the run goes on and the paid answers are still written.
+ */
+async function settle(run) {
+  try {
+    return await run();
+  } catch (error) {
+    return { kind: 'error', code: 'SCRIPT', message: String(error?.message ?? error) };
+  }
+}
+
+/**
  * Runs E01–E20 then X01–X05 once each, one at a time, as the app would. An error is recorded and
  * the run goes on, except a key or limit error: every later call would fail too, so the rest is
- * `SKIPPED`. `log` gets one line per profile / note.
+ * `SKIPPED`. A profile the gate blocks is `BLOCKED`, with no call. `log` gets one line per profile /
+ * note.
  */
-export async function runEval({ adapter, settings, now, log }) {
+export async function runEval({
+  adapter,
+  settings,
+  now,
+  log,
+  profileSpecs = EVAL_PROFILES,
+  noteSpecs = EVAL_NOTES,
+}) {
   const runner = createAiRunner((error) => {
     throw error;
   });
   let stopped = false;
   const profiles = [];
-  for (const spec of EVAL_PROFILES) {
+  for (const spec of profileSpecs) {
     const input = takeAnalysisInput(spec, EVAL_TODAY);
+    if ('kind' in input) {
+      const blocked = { id: spec.id, mode: '—', expectedMode: spec.mode, input: null };
+      profiles.push({ ...blocked, status: 'BLOCKED', state: input.state, attempts: [], ms: 0 });
+      log(`${spec.id} ${statusWord(profiles.at(-1))}`);
+      continue;
+    }
     const base = { id: spec.id, mode: input.mode, expectedMode: spec.mode, input };
     if (stopped) {
       profiles.push({ ...base, status: 'SKIPPED', attempts: [], ms: 0 });
@@ -253,15 +285,17 @@ export async function runEval({ adapter, settings, now, log }) {
     }
     const record = recording(adapter);
     const start = now();
-    const result = await runAnalysis({
-      runner,
-      adapter: record.adapter,
-      settings,
-      customerId: spec.id,
-      kycVersionId: `${spec.id}-v1`,
-      profile: spec,
-      today: EVAL_TODAY,
-    });
+    const result = await settle(() =>
+      runAnalysis({
+        runner,
+        adapter: record.adapter,
+        settings,
+        customerId: spec.id,
+        kycVersionId: `${spec.id}-v1`,
+        profile: spec,
+        today: EVAL_TODAY,
+      }),
+    );
     const ms = now() - start;
     let done;
     if (result.kind === 'record') {
@@ -288,19 +322,16 @@ export async function runEval({ adapter, settings, now, log }) {
   }
 
   const notes = [];
-  for (const spec of EVAL_NOTES) {
+  for (const spec of noteSpecs) {
     if (stopped) {
       notes.push({ id: spec.id, status: 'SKIPPED', attempts: [], ms: 0 });
       continue;
     }
     const record = recording(adapter);
     const start = now();
-    const result = await runExtraction({
-      runner,
-      adapter: record.adapter,
-      settings,
-      note: spec.note,
-    });
+    const result = await settle(() =>
+      runExtraction({ runner, adapter: record.adapter, settings, note: spec.note }),
+    );
     const ms = now() - start;
     const attempts = attemptsOf(record.calls, extractionIssues);
     let done;
@@ -331,13 +362,19 @@ export async function runEval({ adapter, settings, now, log }) {
 
 const STATUS_WORDS = { SKIPPED: 'KHÔNG CHẠY', INVALID: 'KHÔNG ĐỌC ĐƯỢC' };
 
+/** Text from outside (the server, the model) as plain text in Markdown: no HTML gets through. */
+const plain = (text) =>
+  String(text).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+
 function statusWord(done) {
+  if (done.status === 'BLOCKED') return `CỔNG CHẶN (\`${done.state}\`)`;
   if (done.status !== 'ERROR') return STATUS_WORDS[done.status] ?? done.status;
-  const { code, httpStatus, serverMessage } = done.error;
+  const { code, httpStatus, serverMessage, message } = done.error;
+  if (code === 'SCRIPT') return `LỖI script: ${plain(message)}`;
   const http =
     httpStatus === undefined
       ? ''
-      : ` (HTTP ${httpStatus}${serverMessage ? `: ${serverMessage}` : ''})`;
+      : ` (HTTP ${httpStatus}${serverMessage ? `: ${plain(serverMessage)}` : ''})`;
   return `LỖI \`${code}\`${http}`;
 }
 
@@ -347,7 +384,7 @@ const cell = (text) => text.replaceAll('|', '\\|').replace(/\s*\n\s*/g, ' ');
 const sum = (attempts, key) => attempts.reduce((total, attempt) => total + attempt[key], 0);
 const tokens = (attempts) =>
   `${sum(attempts, 'promptTokens')} / ${sum(attempts, 'completionTokens')}`;
-const time = (done) => (done.status === 'SKIPPED' ? '—' : seconds(done.ms));
+const time = (done) => (['SKIPPED', 'BLOCKED'].includes(done.status) ? '—' : seconds(done.ms));
 
 function issuesCell(attempts) {
   const parts = attempts
@@ -377,6 +414,10 @@ function issueLines(attempts) {
 function profileDetails(done) {
   const { input } = done;
   const lines = [`<details><summary>${done.id} — ${done.mode} · ${done.status}</summary>`, ''];
+  if (input === null) {
+    lines.push(`${statusWord(done)}: không gọi AI.`, '', '</details>', '');
+    return lines;
+  }
   lines.push(`Đầu vào: ${factLine(input) || '—'}`, '');
   if (input.missingCategories?.length) {
     lines.push(`Hạng mục thiếu: ${input.missingCategories.map((c) => c.label).join(', ')}`, '');
@@ -404,7 +445,7 @@ function noteDetails(done) {
   ];
   if (done.status === 'OK' && kept === 0) lines.push('Không có đề xuất.');
   for (const { field, value, quote } of done.kept ?? []) {
-    lines.push(`- \`${field}\` = ${JSON.stringify(value)} — trích: "${quote}"`);
+    lines.push(`- \`${field}\` = ${plain(JSON.stringify(value))} — trích: "${plain(quote)}"`);
   }
   for (const { code, path, detail } of done.dropped ?? []) {
     lines.push(`- ${code} \`${path}\`: ${detail}`);
@@ -418,10 +459,15 @@ function noteDetails(done) {
   return lines;
 }
 
+/** The thresholds of ai-eval.md §2.1 (A1, spec §11) and §5. */
+const MIN_ACCEPTED = 18;
+const MIN_NOTES_PASSED = 4;
+
 const verdict = (pass) => (pass ? '**ĐẠT**' : '**TRƯỢT**');
 
 /** The result file `docs/metrics/ai-eval-<yyyy-mm-dd>.md`: A1–A4, the notes, the Owner's part. */
 export function formatReport({ profiles, notes }, { plan, model, reasoning, day }) {
+  const total = profiles.length;
   const accepted = profiles.filter((p) => p.status === 'ACCEPTED').length;
   const rightMode = profiles.filter((p) => p.mode === p.expectedMode).length;
   const blocks = [...profiles, ...notes].flatMap((done) =>
@@ -448,11 +494,11 @@ export function formatReport({ profiles, notes }, { plan, model, reasoning, day 
     '',
     '| Mã | Đo | Kết quả | Ngưỡng |',
     '|---|---|---|---|',
-    `| A1 | Hồ sơ ACCEPTED trong ≤ 2 lần thử | ${accepted}/20 | ≥ 18/20 — ${verdict(accepted >= 18)} |`,
-    `| A2 | Chế độ gửi đi đúng cột "Chế độ" | ${rightMode}/20 | 20/20 — ${verdict(rightMode === 20)} |`,
+    `| A1 | Hồ sơ ACCEPTED trong ≤ 2 lần thử | ${accepted}/${total} | ≥ ${MIN_ACCEPTED}/${total} — ${verdict(accepted >= MIN_ACCEPTED)} |`,
+    `| A2 | Chế độ gửi đi đúng cột "Chế độ" | ${rightMode}/${total} | ${total}/${total} — ${verdict(rightMode === total)} |`,
     `| A3 | Lần thử V1 trượt vì thiếu khóa khối | ${blocks.length === 0 ? '0' : `${blocks.length} (${blocks.join('; ')})`} | ghi nhận |`,
     `| A4 | Token vào / ra, thời gian (tổng E01–E20, X01–X05) | ${tokens(allAttempts)} · ${seconds(totalMs)} | ghi nhận |`,
-    `| X | Ghi chú đạt phần script | ${notesPassed}/5 | ≥ 4/5, cùng phần đọc tay của Owner |`,
+    `| X | Ghi chú đạt phần script | ${notesPassed}/${notes.length} | ≥ ${MIN_NOTES_PASSED}/${notes.length}, cùng phần đọc tay của Owner |`,
     '',
     '## Hồ sơ E01–E20',
     '',
@@ -525,7 +571,14 @@ export async function evalMain({ env, argv, fetch, now, day, userAgent, exists, 
   const adapter = openCodeAdapter({ url, key, userAgent, fetch });
   const settings = { provider: 'OPENCODE_GO', opencodePlan: plan, model, reasoning };
   const results = await runEval({ adapter, settings, now, log });
-  writeFile(path, formatReport(results, { plan, model, reasoning, day }));
+  const report = formatReport(results, { plan, model, reasoning, day });
+  try {
+    writeFile(path, report);
+  } catch (error) {
+    // The run is paid for: the result goes to the output rather than nowhere.
+    log(`Không ghi được ${path} (${error.message}). Kết quả:\n\n${report}`);
+    return 1;
+  }
   log(`Đã ghi ${path}.`);
   return 0;
 }

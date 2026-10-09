@@ -243,6 +243,13 @@ describe('openCodeAdapter', () => {
     expect(empty.serverMessage).toBeUndefined();
   });
 
+  it('cuts the server message to 200 characters after masking the key, as Rust', async () => {
+    const page = `<html>${KEY}${'x'.repeat(400)}</html>`;
+    const error = await fails(http(502, page)).catch((e) => e);
+    expect(Array.from(error.serverMessage)).toHaveLength(200);
+    expect(error.serverMessage.startsWith('<html>***x')).toBe(true);
+  });
+
   it('gives AI_BAD_RESPONSE for an unreadable or too long reply', async () => {
     for (const body of ['not json', '{"choices":[]}', '{"choices":[{"message":{}}]}']) {
       await expect(fails(http(200, body))).rejects.toMatchObject({ code: 'AI_BAD_RESPONSE' });
@@ -413,6 +420,48 @@ describe('runEval', () => {
     expect(notes.every((n) => n.status === 'SKIPPED')).toBe(true);
     expect(fetch).toHaveBeenCalledTimes(3);
   });
+
+  it('keeps going after a bug of the script or the app, as an error of that one item', async () => {
+    const mock = createMockAdapter();
+    let calls = 0;
+    const adapter = {
+      complete: async (request) => {
+        calls += 1;
+        if (calls === 1 || calls === 22) throw new TypeError('x is undefined');
+        return mock.complete(request);
+      },
+    };
+    const { profiles, notes } = await runEval({ adapter, settings, now: clock(), log: () => {} });
+    expect(profiles[0]).toMatchObject({
+      status: 'ERROR',
+      error: { code: 'SCRIPT', message: 'x is undefined' },
+    });
+    expect(profiles[1].status).toBe('ACCEPTED');
+    expect(notes[1]).toMatchObject({ status: 'ERROR', error: { code: 'SCRIPT' } });
+    expect(notes[2].status).toBe('OK');
+    const report = formatReport({ profiles, notes }, { ...settings, plan: 'GO', day: RUN_DAY });
+    expect(report).toContain('| E01 | discovery | LỖI script: x is undefined | 0 |');
+  });
+
+  it('calls nothing for a profile the gate blocks', async () => {
+    const adapter = { complete: vi.fn() };
+    const blocked = { id: 'B01', mode: 'analysis', facts: [] };
+    const results = await runEval({
+      adapter,
+      settings,
+      now: clock(),
+      log: () => {},
+      profileSpecs: [blocked],
+      noteSpecs: [],
+    });
+    expect(adapter.complete).not.toHaveBeenCalled();
+    expect(results.profiles[0]).toMatchObject({ status: 'BLOCKED', state: 'KYC_INSUFFICIENT' });
+    const report = formatReport(results, { ...settings, plan: 'GO', day: RUN_DAY });
+    expect(report).toContain(
+      '| B01 | — ≠ analysis | CỔNG CHẶN (`KYC_INSUFFICIENT`) | 0 | — | 0 / 0 | — |',
+    );
+    expect(report).toContain('| A2 | Chế độ gửi đi đúng cột "Chế độ" | 0/1 | 1/1 — **TRƯỢT** |');
+  });
 });
 
 describe('formatReport', () => {
@@ -474,7 +523,7 @@ describe('formatReport', () => {
     const results = {
       profiles: [
         profile('E01', 'ERROR', {
-          error: { code: 'AI_HTTP', httpStatus: 400, serverMessage: 'bad | param' },
+          error: { code: 'AI_HTTP', httpStatus: 400, serverMessage: 'bad | <b>param</b>' },
         }),
         profile('E02', 'REJECTED', {
           mode: 'discovery',
@@ -516,7 +565,7 @@ describe('formatReport', () => {
       '| A3 | Lần thử V1 trượt vì thiếu khóa khối | 1 (E02 lần 1: `needs`) | ghi nhận |',
     );
     expect(report).toContain(
-      '| E01 | analysis | LỖI `AI_HTTP` (HTTP 400: bad \\| param) | 0 | — | 0 / 0 | 2.0 s |',
+      '| E01 | analysis | LỖI `AI_HTTP` (HTTP 400: bad \\| &lt;b&gt;param&lt;/b&gt;) | 0 | — | 0 / 0 | 2.0 s |',
     );
     expect(report).toContain(
       '| E02 | discovery ≠ analysis | REJECTED | 2 | lần 1: V1 `needs` · lần 2: V3 `needs[0].text` | 20 / 10 | 2.0 s |',
@@ -529,7 +578,7 @@ describe('formatReport', () => {
     expect(report).toContain(
       '| X02 | KHÔNG ĐỌC ĐƯỢC | 2 | — | — | 0 | 20 / 10 | 1.0 s | **TRƯỢT** |',
     );
-    expect(report).toContain('Ghi chú đạt phần script | 0/5');
+    expect(report).toContain('Ghi chú đạt phần script | 0/3 | ≥ 4/3');
     expect(report).toContain('V7 `facts[1].field`: trường "birthYear" không được phép');
   });
 });
@@ -579,5 +628,18 @@ describe('evalMain', () => {
     const other = deps({ argv: ['--model', 'kimi-k3'] });
     await evalMain(other);
     expect(other.writeFile.mock.calls[0][0]).toBe('docs/metrics/ai-eval-2026-10-12-kimi-k3.md');
+  });
+
+  it('prints the result when the file cannot be written, so a paid run is not lost', async () => {
+    const d = deps({
+      writeFile: () => {
+        throw new Error('EACCES');
+      },
+    });
+    expect(await evalMain(d)).toBe(1);
+    const last = d.log.mock.calls.at(-1)[0];
+    expect(last).toContain('Không ghi được docs/metrics/ai-eval-2026-10-12.md (EACCES)');
+    expect(last).toContain('| A1 | Hồ sơ ACCEPTED trong ≤ 2 lần thử | 20/20 |');
+    expect(last).not.toContain(KEY);
   });
 });
