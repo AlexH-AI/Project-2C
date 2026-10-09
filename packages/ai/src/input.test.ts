@@ -1,6 +1,7 @@
 import { evaluateKycGate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { buildAnalysisInput, buildExtractionInput } from './input';
+import { analysisInputSchema } from './schema';
 import { ANALYSIS_FACTS, fact, PROFILE, TODAY } from './test-support';
 
 describe('buildAnalysisInput', () => {
@@ -100,6 +101,20 @@ describe('buildAnalysisInput', () => {
       ['Đã có bảo vệ', 'Có'],
     ]);
     expect(input?.conflictWarnings).toEqual([]);
+  });
+
+  it('passes the input schema that db checks input_json with (§7.3 rule 3)', () => {
+    const discovery = [
+      fact(1, 'birthYear', 1990),
+      fact(2, 'maritalStatus', 'Độc thân'),
+      fact(3, 'childrenCount', 0),
+      fact(4, 'occupation', 'Bác sĩ'),
+    ];
+    for (const facts of [ANALYSIS_FACTS, discovery]) {
+      const input = buildAnalysisInput({ facts }, evaluateKycGate(facts), TODAY);
+      expect(input).not.toBeNull();
+      expect(analysisInputSchema.parse(input)).toEqual(input);
+    }
   });
 
   it.each([

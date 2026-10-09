@@ -1,11 +1,11 @@
 /**
- * Zod schemas of the AI output (spec Phase 5 §6.2, Owner G2 07/10/2026). `packages/db` imports this
- * module alone (`@p2c/ai/schema`) to check `output_json` when a backup is loaded (§7.3 rule 3), so
+ * Zod schemas of the AI input and output (spec Phase 5 §6.1, §6.2, Owner G2 07/10/2026). `packages/db`
+ * imports this module alone (`@p2c/ai/schema`) to check `input_json` and `output_json` (§7.3 rule 3), so
  * it depends only on `zod` and `@p2c/domain`, never on another module of `packages/ai`
  * (ADR-0006, phụ lục 07/10/2026). There is one schema per mode, always the latest: a schema change
  * means reloading the simulated data (R2-02), not keeping old schemas.
  */
-import { KYC_CATEGORIES } from '@p2c/domain';
+import { fromIsoDate, KYC_CATEGORIES } from '@p2c/domain';
 import { z } from 'zod';
 
 /** The three AI modes: `analysis` (`PAIN_POINT_ANALYSIS`), `discovery` (`PROFILE_DISCOVERY`), `extraction`. */
@@ -42,6 +42,46 @@ export function factCode(seq: number): string {
   if (!Number.isSafeInteger(seq) || seq < 1) throw new RangeError(`Not a fact seq: ${seq}`);
   return `F${seq}`;
 }
+
+/** A day as the app stores it: `yyyy-mm-dd`, a real day of the calendar. */
+const isoDate = z.string().refine((text) => {
+  try {
+    fromIsoDate(text);
+    return true;
+  } catch {
+    return false;
+  }
+}, 'không phải ngày yyyy-mm-dd');
+
+/**
+ * What the app sends for an analysis or discovery (spec §6.1), stored as `input_json` (§7.1): the
+ * facts in effect, each with its code `F{seq}`, and the gate. `db` checks it when an analysis is
+ * recorded or a backup loaded (§7.3 rule 3), so the panel reads it without trusting a cast. Strict:
+ * a key the app never sends (a name, a phone…) is refused, so `input_json` holds only what §6.1 lists.
+ */
+export const analysisInputSchema = z.strictObject({
+  analysisDate: isoDate,
+  mode: z.enum(AI_MODES).exclude(['extraction']),
+  facts: z
+    .array(
+      z.strictObject({
+        code: z.string().regex(FACT_CODE),
+        category: z.string(),
+        field: z.string(),
+        value: z.string(),
+        confirmedAt: isoDate,
+        conflict: z.boolean(),
+      }),
+    )
+    .refine(
+      (facts) => new Set(facts.map((fact) => fact.code)).size === facts.length,
+      'trùng mã dữ kiện',
+    ),
+  missingCategories: z.array(z.strictObject({ code: z.enum(KYC_CATEGORIES), label: z.string() })),
+  conflictWarnings: z.array(z.string()),
+});
+
+export type AnalysisInput = z.infer<typeof analysisInputSchema>;
 
 /** Every string the AI writes: 1–300 characters once trimmed. */
 const text = z.string().trim().min(1).max(300);

@@ -378,30 +378,34 @@ describe('the run of the panel (spec Phase 5 §5.2, §5.3)', () => {
 });
 
 describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
+  const sent = (code: string, category: string, field: string, value: string) => ({
+    code,
+    category,
+    field,
+    value,
+  });
   const input = {
     analysisDate: '2026-10-07',
     mode: 'analysis',
     facts: [
-      { code: 'F1', field: 'Tuổi', value: '42', confirmedAt: '2026-06-01', conflict: false },
-      { code: 'F5', field: 'Số con', value: '2', confirmedAt: '2025-06-01', conflict: false },
       {
-        code: 'F9',
-        field: 'Mối quan tâm chính',
-        value: 'A',
+        ...sent('F1', 'Danh tính / tuổi', 'Tuổi', '42'),
+        confirmedAt: '2026-06-01',
+        conflict: false,
+      },
+      { ...sent('F5', 'Gia đình', 'Số con', '2'), confirmedAt: '2025-06-01', conflict: false },
+      {
+        ...sent('F9', 'Mối quan tâm', 'Mối quan tâm chính', 'A'),
         confirmedAt: '2026-09-01',
         conflict: true,
       },
       {
-        code: 'F12',
-        field: 'Mục tiêu chính',
-        value: 'B',
+        ...sent('F12', 'Mục tiêu & mốc thời gian', 'Mục tiêu chính', 'B'),
         confirmedAt: '2026-09-14',
         conflict: false,
       },
       {
-        code: 'F13',
-        field: 'Mối quan tâm chính',
-        value: 'C',
+        ...sent('F13', 'Mối quan tâm', 'Mối quan tâm chính', 'C'),
         confirmedAt: '2026-09-14',
         conflict: true,
       },
@@ -449,6 +453,23 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
       version: 1,
       source: { model: 'DeepSeek V4.1 Flash' },
     });
+  });
+
+  it('refuses a KYC version the customer does not have rather than show "kyc v0"', () => {
+    expect(() => analysisContent(row, [{ id: 'v1' }])).toThrow(RangeError);
+  });
+
+  it('refuses an input that is not as the app sends it rather than trust a cast', () => {
+    const { conflictWarnings, ...noWarnings } = input;
+    expect(conflictWarnings).toHaveLength(1);
+    const broken = analysis({
+      seq: 2,
+      state: 'CURRENT',
+      kycVersionId: 'v3',
+      input: noWarnings,
+      output,
+    });
+    expect(() => analysisContent(broken, versions)).toThrow(/conflictWarnings/);
   });
 
   it('names a ChatGPT web analysis by its provider, as it keeps no model (P7, mockup 4i)', () => {

@@ -13,7 +13,7 @@ import {
   type KycField,
   type KycGateResult,
 } from '@p2c/domain';
-import { factCode } from './schema';
+import { factCode, type AnalysisInput } from './schema';
 import { EXTRACTION_FIELDS } from './validator';
 
 /** The app's Vietnamese labels (i18n `kycCategory.*`), which `ai` cannot read (as `db` seed-data). */
@@ -60,24 +60,6 @@ export interface AnalysisFact extends KycFact {
 
 export interface AnalysisProfile {
   readonly facts: readonly AnalysisFact[];
-}
-
-export interface AnalysisInputFact {
-  readonly code: string;
-  readonly category: string;
-  readonly field: string;
-  readonly value: string;
-  readonly confirmedAt: string;
-  readonly conflict: boolean;
-}
-
-/** The `user` message of analysis / discovery, and the `input_json` stored with the result. */
-export interface AnalysisInput {
-  readonly analysisDate: string;
-  readonly mode: 'analysis' | 'discovery';
-  readonly facts: readonly AnalysisInputFact[];
-  readonly missingCategories: readonly { readonly code: KycCategory; readonly label: string }[];
-  readonly conflictWarnings: readonly string[];
 }
 
 const FIELD_ORDER = Object.keys(KYC_FIELDS) as KycField[];

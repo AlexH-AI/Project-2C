@@ -6,9 +6,17 @@ const input = {
   analysisDate: '2026-09-14',
   mode: 'analysis',
   facts: [
-    { code: 'F7', field: 'Số con', value: '2', confirmedAt: '2026-09-01', conflict: false },
+    {
+      code: 'F7',
+      category: 'Gia đình',
+      field: 'Số con',
+      value: '2',
+      confirmedAt: '2026-09-01',
+      conflict: false,
+    },
     {
       code: 'F12',
+      category: 'Mục tiêu & mốc thời gian',
       field: 'Mục tiêu chính',
       value: 'B',
       confirmedAt: '2026-09-14',

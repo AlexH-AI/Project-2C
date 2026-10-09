@@ -6,10 +6,10 @@ import {
   AI_MODELS,
   ANALYSIS_PROMPTS,
   WEB_WRAPPER,
+  analysisInputSchema,
   analysisOutputSchema,
   discoveryOutputSchema,
   type AiErrorCode,
-  type AnalysisInput,
   type DiscoveryOutput,
   type PERSONALITY_SYSTEMS,
   type ValidationCode,
@@ -210,8 +210,12 @@ export function runAfter(outcome: AnalysisOutcome): AiPanelRun {
       };
     case 'failed':
       return { phase: 'error', error: 'GENERAL' };
-    default:
+    case 'saved':
+    case 'blocked':
+    case 'discarded':
       return IDLE;
+    default:
+      return outcome satisfies never;
   }
 }
 
@@ -337,14 +341,14 @@ type OutputItem = {
 };
 
 /**
- * What an ACCEPTED analysis shows. Its output passed the schema of its mode when saved (and when a
- * backup was loaded), so it is read with that schema; its input gives each cited fact's day.
+ * What an ACCEPTED analysis shows. Its input and output passed their schemas when saved (and when a
+ * backup was loaded), so they are read with those schemas; its input gives each cited fact's day.
  */
 export function analysisContent(
   analysis: AiAnalysisView,
   versions: readonly { readonly id: string }[],
 ): AiPanelContent {
-  const input = analysis.input as AnalysisInput;
+  const input = analysisInputSchema.parse(analysis.input);
   const analysisDate = fromIsoDate(input.analysisDate);
   const confirmed = new Map(input.facts.map((f) => [f.code, fromIsoDate(f.confirmedAt)]));
   const toItem = (item: OutputItem): AiPanelItem => {
@@ -492,7 +496,11 @@ function versionNumber(
   analysis: Pick<AiAnalysisView, 'kycVersionId'>,
   versions: readonly { readonly id: string }[],
 ): number {
-  return versions.findIndex((version) => version.id === analysis.kycVersionId) + 1;
+  const index = versions.findIndex((version) => version.id === analysis.kycVersionId);
+  // Rule 11 of a backup and `recordAiAnalysis` keep it the customer's own: never "kyc v0".
+  if (index < 0)
+    throw new RangeError(`Not a KYC version of the customer: ${analysis.kycVersionId}`);
+  return index + 1;
 }
 
 const isNonEmpty = <T>(list: readonly T[]): list is readonly [T, ...T[]] => list.length > 0;

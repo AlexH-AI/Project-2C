@@ -45,12 +45,31 @@ function changeKyc(
 const latestVersionId = (database: Database, customerId: string) =>
   listKycVersions(database, customerId).at(-1)!.id;
 
+/** An input as the app sends it (spec §6.1), which `@p2c/ai/schema` checks. */
+const sentInput = (mode: 'analysis' | 'discovery' = 'analysis') => ({
+  analysisDate: '2026-09-26',
+  mode,
+  facts: [
+    {
+      code: 'F1',
+      category: 'Danh tính / tuổi',
+      field: 'Tuổi',
+      value: '46',
+      confirmedAt: '2026-09-01',
+      conflict: false,
+    },
+  ],
+  missingCategories: [],
+  conflictWarnings: [],
+});
+
 function analysis(
   customerId: string,
   kycVersionId: string,
   overrides: Partial<NewAiAnalysis> = {},
 ): NewAiAnalysis {
   return {
+    input: sentInput(overrides.mode === 'discovery' ? 'discovery' : 'analysis'),
     customerId,
     kycVersionId,
     mode: 'analysis',
@@ -61,7 +80,6 @@ function analysis(
     reasoning: null,
     promptVersion: 'analysis@1',
     attempts: 1,
-    input: { facts: [{ code: 'F1', field: 'birthYear', value: 1980 }] },
     output: { summary: 'Tóm tắt' },
     rawOutput: null,
     validator: [{ attempt: 1, errors: [] }],
@@ -131,7 +149,7 @@ describe('recordAiAnalysis', () => {
       reasoning: null,
       promptVersion: 'analysis@1',
       attempts: 1,
-      input: { facts: [{ code: 'F1', field: 'birthYear', value: 1980 }] },
+      input: sentInput(),
       output: { summary: 'Tóm tắt' },
       rawOutput: null,
       validator: [{ attempt: 1, errors: [] }],
@@ -163,6 +181,7 @@ describe('recordAiAnalysis', () => {
       ...web,
       promptVersion: 'discovery@2+web@12',
       mode: 'discovery',
+      input: sentInput('discovery'),
       gateState: 'PROFILE_DISCOVERY',
     });
 
@@ -301,6 +320,29 @@ describe('recordAiAnalysis', () => {
       ).toBe('AI_ANALYSIS_INVALID');
     }
     expect(listAiAnalyses(database, customer.id)).toEqual([]);
+  });
+
+  it('refuses an input that is not as the app sends it, accepted or rejected (§7.3 rule 3)', async () => {
+    const { db: database, customer, persist } = await withCustomer();
+    const version = latestVersionId(database, customer.id);
+    const fact = sentInput().facts[0]!;
+    persist.mockClear();
+
+    for (const input of [
+      { ...sentInput(), conflictWarnings: undefined },
+      { ...sentInput(), analysisDate: '26/09/2026' },
+      { ...sentInput(), facts: [{ ...fact, confirmedAt: '2026-9-1' }] },
+      { ...sentInput(), fullName: 'Nguyễn Văn A' },
+      sentInput('discovery'),
+    ]) {
+      for (const base of [analysis(customer.id, version), rejected(customer.id, version)]) {
+        expect(codeOf(() => recordAiAnalysis(database, { ...base, input: input as never }))).toBe(
+          'AI_ANALYSIS_INVALID',
+        );
+      }
+    }
+    expect(listAiAnalyses(database, customer.id)).toEqual([]);
+    expect(persist).not.toHaveBeenCalled();
   });
 
   it('can never be edited or deleted, not even with raw SQL', async () => {

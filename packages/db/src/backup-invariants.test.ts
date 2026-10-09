@@ -3,6 +3,7 @@
  * but whose tables disagree — a stage that is not the latest transition's, an RE that is a TL, a
  * KYC fact from another customer's note — is refused like a damaged one.
  */
+import type { AnalysisInput } from '@p2c/ai/schema';
 import { calendarDate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { listAiAnalyses, recordAiAnalysis, type NewAiAnalysis } from './ai-analyses';
@@ -149,16 +150,30 @@ async function history() {
   };
 }
 
-/** What a Mock analysis is given (prompts §1.1), cut to the keys the import reads. */
-const INPUT = {
+/** What a Mock analysis is given (prompts §1.1), as `@p2c/ai/schema` checks it. */
+const INPUT: AnalysisInput = {
   analysisDate: TODAY,
   mode: 'analysis',
   facts: [
-    { code: 'F1', field: 'Tuổi', value: '42', confirmedAt: '2026-09-01', conflict: false },
-    { code: 'F3', field: 'Số con', value: '2', confirmedAt: '2026-09-20', conflict: true },
+    {
+      code: 'F1',
+      category: 'Danh tính / tuổi',
+      field: 'Tuổi',
+      value: '42',
+      confirmedAt: '2026-09-01',
+      conflict: false,
+    },
+    {
+      code: 'F3',
+      category: 'Gia đình',
+      field: 'Số con',
+      value: '2',
+      confirmedAt: '2026-09-20',
+      conflict: true,
+    },
   ],
-  missingCategories: [{ code: 'RISK_APPETITE' }],
-  conflictWarnings: [],
+  missingCategories: [{ code: 'RISK_APPETITE', label: 'Khẩu vị rủi ro' }],
+  conflictWarnings: ['Số con'],
 };
 
 /** An analysis output (spec §6.2) citing the input's facts and its missing hạng mục. */
@@ -375,6 +390,7 @@ describe('importBackup — rules across tables', () => {
           mode: 'discovery',
           gate_state: 'PROFILE_DISCOVERY',
           prompt_version: 'discovery@1',
+          input_json: JSON.stringify({ ...INPUT, mode: 'discovery' }),
           output_json: JSON.stringify({
             hypotheses: [],
             discoveryStrategy: [ask, { ...ask, missingCategory: 'GOALS' }],
@@ -809,6 +825,33 @@ describe('importBackup — rules across tables', () => {
       (b, ids) => (analysis(b, ids.accepted).input_json = JSON.stringify({ facts: 'F1, F3' })),
     ],
     [
+      '13: an input with no conflict warnings',
+      (b, ids) => setInput(analysis(b, ids.accepted), { ...INPUT, conflictWarnings: undefined }),
+    ],
+    [
+      '13: an input whose analysis day is not yyyy-mm-dd',
+      (b, ids) => setInput(analysis(b, ids.accepted), { ...INPUT, analysisDate: '26/09/2026' }),
+    ],
+    [
+      '13: an input with a fact confirmed on a day that is not yyyy-mm-dd',
+      (b, ids) => {
+        const facts = [INPUT.facts[0], { ...INPUT.facts[1], confirmedAt: '2026-09-31' }];
+        setInput(analysis(b, ids.accepted), { ...INPUT, facts });
+      },
+    ],
+    [
+      '13: an input with a key the app never sends',
+      (b, ids) => setInput(analysis(b, ids.accepted), { ...INPUT, fullName: 'Nguyễn Văn A' }),
+    ],
+    [
+      '13: an input of another mode than its analysis',
+      (b, ids) => setInput(analysis(b, ids.web), { ...INPUT, mode: 'discovery' }),
+    ],
+    [
+      '13: a rejected analysis whose input is not as the app sends it',
+      (b, ids) => setInput(analysis(b, ids.rejected), { ...INPUT, missingCategories: ['GOALS'] }),
+    ],
+    [
       'CHECK: a rejected analysis with an empty raw output',
       (b, ids) => (analysis(b, ids.rejected).raw_output = ''),
     ],
@@ -1007,6 +1050,10 @@ function transition(backup: BackupJson, customerId: string, seq: number): Row {
 
 function analysis(backup: BackupJson, id: string): Row {
   return row(backup, 'ai_analyses', (a) => a.id === id);
+}
+
+function setInput(analysisRow: Row, input: object): void {
+  analysisRow.input_json = JSON.stringify(input);
 }
 
 /** The customer's first fact of the field. */
