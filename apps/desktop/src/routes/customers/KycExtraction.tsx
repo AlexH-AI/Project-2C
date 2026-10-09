@@ -3,7 +3,7 @@ import type { KycNoteRecord } from '@p2c/db';
 import type { KycFact } from '@p2c/domain';
 import { Button } from '@p2c/ui';
 import { useState, useSyncExternalStore } from 'react';
-import { extractFromNote, type ExtractionOutcome } from '../../data/ai-analysis';
+import { extractFromNote } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { ALERT } from './CustomerDialogs';
@@ -38,7 +38,7 @@ export function NoteEvent({
   const { runner } = app.ai;
   // Every AI button is off while any AI request runs (P5).
   const busy = useSyncExternalStore(runner.subscribe, () => runner.busy);
-  const job = useAiJob<ExtractionOutcome>(`extraction:${note.id}`);
+  const job = useAiJob('extraction', note.id);
   // The proposals the RE confirmed or dropped, by their place in the answer.
   const [handled, setHandled] = useState<ReadonlySet<number>>(new Set());
   const button = extractionButton(note);
