@@ -785,6 +785,46 @@ describe('importBackup — rules across tables', () => {
     ],
     ['12: a blank model name', (b, ids) => (analysis(b, ids.rejected).model = '  ')],
     ['12: a blank prompt version', (b, ids) => (analysis(b, ids.accepted).prompt_version = '')],
+    // Across the columns, as `recordAiAnalysis` takes them (DR5-16).
+    [
+      '12: a prompt version of another mode',
+      (b, ids) => (analysis(b, ids.accepted).prompt_version = 'discovery@1'),
+    ],
+    [
+      '12: a ChatGPT web prompt version of another mode',
+      (b, ids) => (analysis(b, ids.web).prompt_version = 'x+web@1'),
+    ],
+    [
+      '12: a ChatGPT web prompt version on an OpenCode analysis',
+      (b, ids) => (analysis(b, ids.rejected).prompt_version = 'analysis@1+web@1'),
+    ],
+    ['12: a model name too long', (b, ids) => (analysis(b, ids.rejected).model = 'g'.repeat(101))],
+    [
+      '12: an analysis rejected without the retry',
+      (b, ids) => {
+        const rejected = analysis(b, ids.rejected);
+        rejected.attempts = 1;
+        const reports = JSON.parse(String(rejected.validator_json)) as unknown[];
+        rejected.validator_json = JSON.stringify(reports.slice(1));
+      },
+    ],
+    [
+      '13: an analysis accepted after a last attempt with issues',
+      (b, ids) =>
+        (analysis(b, ids.accepted).validator_json = JSON.stringify([
+          { attempt: 1, errors: [{ code: 'V3', path: 'needs[0].text', detail: 'cụm cấm' }] },
+        ])),
+    ],
+    // sql.js would cut the text at a NUL (DR5-14).
+    [
+      'VALUE: a rejected raw output with a NUL',
+      (b, ids) => (analysis(b, ids.rejected).raw_output = `a\0${'b'.repeat(30_000)}`),
+    ],
+    ['VALUE: a model name with a NUL', (b, ids) => (analysis(b, ids.rejected).model = 'glm\0-5.3')],
+    [
+      'VALUE: a meeting note with a NUL',
+      (b, ids) => (row(b, 'appointments', (a) => a.id === ids.met).note = 'Gặp\0 lại'),
+    ],
     ['13: an input that is not JSON', (b, ids) => (analysis(b, ids.accepted).input_json = '{')],
     [
       '13: a validator report that is not JSON',

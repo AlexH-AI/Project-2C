@@ -29,7 +29,7 @@ Drizzle trên sql.js ở mọi nơi (ADR-0016): một DB SQLite trong bộ nhớ
 Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `pnpm verify` báo đỏ khi lệch code.
 
 <!-- codemap:start -->
-- `src/ai-analyses.ts` — type AiAnalysisMode, type AiAnalysisStatus, type AiAnalysisProvider, type AiAnalysisReasoning, type NewAiAnalysis, type AiAnalysisRecord, type AiAnalysisState, type AiAnalysisReminder, type AiAnalysisView, recordAiAnalysis, listAiAnalyses
+- `src/ai-analyses.ts` — type AiAnalysisMode, type AiAnalysisStatus, type AiAnalysisProvider, type AiAnalysisReasoning, type NewAiAnalysis, type AiAnalysisRecord, type AiAnalysisState, type AiAnalysisReminder, type AiAnalysisView, recordAiAnalysis, type AnalysisFields, analysisLabelsFit, analysisContentFits, listAiAnalyses
 - `src/appointments.ts` — type AppointmentTrigger, type AppointmentRecord, type NewAppointment, type MeetingOutcome, type NextAppointment, type AppointmentDetails, listAppointments, getAppointment, scheduleAppointment, recordMeetingOutcome, recordOutcomeWithNext, editMeetingOutcome, rescheduleAppointment, softDeleteAppointment, restoreAppointment
 - `src/backup-validation.ts` — validateBackupValues, validateBackupInvariants, dataTables
 - `src/backup.ts` — BACKUP_FORMAT, MAX_BACKUP_BYTES, type ImportedBackup, exportBackup, importBackup

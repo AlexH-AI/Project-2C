@@ -9,6 +9,7 @@ import {
   analysisInputSchema,
   analysisOutputSchema,
   discoveryOutputSchema,
+  VALIDATION_CODES,
   type AiErrorCode,
   type DiscoveryOutput,
   type PERSONALITY_SYSTEMS,
@@ -147,8 +148,16 @@ export interface AiAttemptReport {
   readonly issues: readonly AiPanelIssue[];
 }
 
-const isIssue = (issue: unknown): issue is ValidationIssue =>
-  typeof issue === 'object' && issue !== null && 'code' in issue && 'path' in issue;
+/** An issue as the validator writes it; a backup may hold anything else (DR5-35). */
+function isIssue(issue: unknown): issue is ValidationIssue {
+  if (typeof issue !== 'object' || issue === null) return false;
+  const { code, path, detail } = issue as Record<string, unknown>;
+  return (
+    (VALIDATION_CODES as readonly unknown[]).includes(code) &&
+    typeof path === 'string' &&
+    typeof detail === 'string'
+  );
+}
 
 /**
  * The validator report of each attempt, as `analysisOutcome` stores it; a report it cannot read

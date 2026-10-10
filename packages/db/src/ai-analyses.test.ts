@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { listAiAnalyses, recordAiAnalysis, type NewAiAnalysis } from './ai-analyses';
+import { exportBackup, importBackup } from './backup';
 import { createCustomer, restoreCustomer, softDeleteCustomer } from './customers';
 import { openDatabase } from './database';
 import * as db from './index';
@@ -63,13 +64,35 @@ const sentInput = (mode: 'analysis' | 'discovery' = 'analysis') => ({
   conflictWarnings: [],
 });
 
+/** An output of each mode (spec §6.2) citing the one fact of `sentInput`. */
+const ITEM = { text: 'Đặt gia đình lên trước', evidence: ['F1'] };
+const OUTPUTS = {
+  analysis: {
+    hypotheses: [ITEM],
+    needs: [ITEM],
+    painPoints: [ITEM],
+    themes: [ITEM],
+    discoveryStrategy: [ITEM],
+    nextBestActions: [ITEM],
+    personalityNotes: [],
+  },
+  discovery: {
+    hypotheses: [],
+    discoveryStrategy: [ITEM, { text: 'Hỏi về mục tiêu', evidence: [], missingCategory: 'GOALS' }],
+    nextBestActions: [ITEM],
+    personalityNotes: [],
+  },
+};
+
 function analysis(
   customerId: string,
   kycVersionId: string,
   overrides: Partial<NewAiAnalysis> = {},
 ): NewAiAnalysis {
+  const mode = overrides.mode === 'discovery' ? 'discovery' : 'analysis';
   return {
-    input: sentInput(overrides.mode === 'discovery' ? 'discovery' : 'analysis'),
+    input: sentInput(mode),
+    output: OUTPUTS[mode],
     customerId,
     kycVersionId,
     mode: 'analysis',
@@ -80,7 +103,6 @@ function analysis(
     reasoning: null,
     promptVersion: 'analysis@1',
     attempts: 1,
-    output: { summary: 'Tóm tắt' },
     rawOutput: null,
     validator: [{ attempt: 1, errors: [] }],
     promptTokens: null,
@@ -88,6 +110,12 @@ function analysis(
     ...overrides,
   };
 }
+
+/** A validator issue as `analysisOutcome` stores it. */
+const ISSUE = { code: 'V3', path: 'needs[0].text', detail: 'cụm cấm' };
+
+/** The longest model name stored (DR5-16). */
+const MAX_MODEL = 100;
 
 const rejected = (customerId: string, kycVersionId: string): NewAiAnalysis =>
   analysis(customerId, kycVersionId, {
@@ -150,7 +178,7 @@ describe('recordAiAnalysis', () => {
       promptVersion: 'analysis@1',
       attempts: 1,
       input: sentInput(),
-      output: { summary: 'Tóm tắt' },
+      output: OUTPUTS.analysis,
       rawOutput: null,
       validator: [{ attempt: 1, errors: [] }],
       promptTokens: null,
@@ -301,6 +329,35 @@ describe('recordAiAnalysis', () => {
       { attempts: 3 },
       { promptVersion: '' },
       { promptVersion: 'analysis\0@1' },
+      // The prompt of its own mode, wrapped only by ChatGPT web (DR5-16).
+      { promptVersion: 'discovery@1' },
+      { promptVersion: 'analysis' },
+      { promptVersion: 'analysis@0' },
+      { promptVersion: 'analysis@1 ' },
+      { promptVersion: 'analysis@1+web@1' },
+      { ...live, promptVersion: 'analysis@1+web@1' },
+      { ...web, promptVersion: 'discovery@1+web@1' },
+      { ...live, model: 'g'.repeat(MAX_MODEL + 1) },
+      // An accepted output passes the schema of its mode and cites only the input's facts (DR5-13).
+      { output: { summary: 'Tóm tắt' } },
+      { output: OUTPUTS.discovery },
+      { output: { ...OUTPUTS.analysis, needs: [] } },
+      { output: { ...OUTPUTS.analysis, themes: [{ text: 'Gia đình', evidence: ['F9'] }] } },
+      {
+        output: {
+          ...OUTPUTS.analysis,
+          personalityNotes: [{ system: 'PSYCHOLOGY', text: 'Cẩn trọng', evidence: ['F2'] }],
+        },
+      },
+      // Accepted after a last attempt with issues (DR5-16).
+      {
+        attempts: 2,
+        validator: [
+          { attempt: 1, errors: [] },
+          { attempt: 2, errors: [ISSUE] },
+        ],
+      },
+      { validator: [{ attempt: 1, errors: [ISSUE] }] },
       { output: null },
       { output: Number.NaN },
       { output: () => 'Tóm tắt' },
@@ -312,7 +369,13 @@ describe('recordAiAnalysis', () => {
         codeOf(() => recordAiAnalysis(database, analysis(customer.id, version, wrong as never))),
       ).toBe('AI_ANALYSIS_INVALID');
     }
-    for (const wrong of [{ rawOutput: null }, { rawOutput: '' }, { status: 'PENDING' }]) {
+    // Rejected only after the retry too (spec §3, DR5-16).
+    for (const wrong of [
+      { rawOutput: null },
+      { rawOutput: '' },
+      { status: 'PENDING' },
+      { attempts: 1 },
+    ]) {
       expect(
         codeOf(() =>
           recordAiAnalysis(database, { ...rejected(customer.id, version), ...(wrong as object) }),
@@ -320,6 +383,42 @@ describe('recordAiAnalysis', () => {
       ).toBe('AI_ANALYSIS_INVALID');
     }
     expect(listAiAnalyses(database, customer.id)).toEqual([]);
+  });
+
+  it('takes only what a backup brings back: recorded, exported, imported again (DR5-13)', async () => {
+    const { db: database, customer } = await withCustomer();
+    const version = latestVersionId(database, customer.id);
+    const live = {
+      provider: 'OPENCODE_GO',
+      model: 'g'.repeat(MAX_MODEL),
+      reasoning: 'HIGH',
+    } as const;
+    const discovery = { mode: 'discovery', gateState: 'PROFILE_DISCOVERY' } as const;
+    for (const kept of [
+      analysis(customer.id, version),
+      // Accepted on the retry: the first attempt had issues.
+      analysis(customer.id, version, {
+        ...live,
+        attempts: 2,
+        validator: [
+          { attempt: 1, errors: [ISSUE] },
+          { attempt: 2, errors: [] },
+        ],
+      }),
+      analysis(customer.id, version, { ...discovery, promptVersion: 'discovery@1' }),
+      analysis(customer.id, version, {
+        ...discovery,
+        provider: 'CHATGPT_WEB',
+        promptVersion: 'discovery@1+web@1',
+      }),
+      { ...rejected(customer.id, version), ...live, rawOutput: 'a\0b' },
+    ]) {
+      recordAiAnalysis(database, kept);
+    }
+
+    const imported = await importBackup(exportBackup(database), { now: database.now });
+
+    expect(listAiAnalyses(imported.db, customer.id)).toEqual(listAiAnalyses(database, customer.id));
   });
 
   it('refuses an input that is not as the app sends it, accepted or rejected (§7.3 rule 3)', async () => {

@@ -181,13 +181,15 @@ function columnsOf(sqlite: SqlJsDatabase, table: string): Column[] {
 }
 
 /**
- * The file's value for an insert; SQLite alone would store text in an integer column. The schema
- * has integer and text columns only (a test checks it): a new kind of column needs a case here.
+ * The file's value for an insert; SQLite alone would store text in an integer column. A text with a
+ * NUL would load whole but read back cut at it, past the CHECKs on its length (DR5-14); a text read
+ * from the database never has one, so no exported file does. The schema has integer and text
+ * columns only (a test checks it): a new kind of column needs a case here.
  */
 function valueOf(column: Column, value: unknown): SqlValue {
   if (value === null) return null;
   if (column.type === 'integer' && Number.isSafeInteger(value)) return value as number;
-  if (column.type === 'text' && typeof value === 'string') return value;
+  if (column.type === 'text' && typeof value === 'string' && !value.includes('\0')) return value;
   throw invalid();
 }
 

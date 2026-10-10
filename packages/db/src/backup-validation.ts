@@ -4,7 +4,6 @@
  * then break the screens or the metrics that read it. Rows are read as they are; nothing is
  * replayed through the commands, which would change ids, `seq` and hashes.
  */
-import { AI_OUTPUT_SCHEMAS, analysisInputSchema, WEB_PROMPT_VERSION } from '@p2c/ai/schema';
 import {
   assertValidTransition,
   calendarDate,
@@ -18,7 +17,8 @@ import {
 } from '@p2c/domain';
 import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
-import { cleanText, isFee, isLabel, optionalText, requireName, storedDate, today } from './common';
+import { analysisContentFits, analysisLabelsFit, type AnalysisFields } from './ai-analyses';
+import { cleanText, isFee, optionalText, requireName, storedDate, today } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { profileFactValue, type ProfileFields } from './kyc';
@@ -367,46 +367,38 @@ function futureRule(read: (sql: string) => Row[], today: string): Rule | null {
 
 /**
  * Rules 11–14 (spec Phase 5 §7.3), on what the table's CHECK and UNIQUE leave to the app: the KYC
- * version analysed is the customer's own (11); a model and prompt version are labels as
- * `recordAiAnalysis` takes them, a ChatGPT web one ending in `+web@<n>` (12); the JSON reads back,
- * the input passes the input schema of its mode, an accepted output passes the latest schema of its
- * mode and cites only facts of its input (13); the analysis is not dated after today (14).
+ * version analysed is the customer's own (11); the columns fit together as `recordAiAnalysis`
+ * takes them (12, 13: `analysisLabelsFit`, `analysisContentFits`), and the JSON reads back (13);
+ * the analysis is not dated after today (14).
  */
 function aiRule(read: (sql: string) => Row[], today: string): Rule | null {
   const foreign = read(
     'SELECT 1 FROM ai_analyses a JOIN kyc_versions v ON v.id = a.kyc_version_id WHERE v.customer_id <> a.customer_id',
   );
   if (foreign.length > 0) return 11;
-  const analyses = read('SELECT * FROM ai_analyses');
-  const labelled = analyses.every(
-    (a) =>
-      isLabel(a.prompt_version) &&
-      (a.provider !== 'CHATGPT_WEB' || WEB_PROMPT_VERSION.test(a.prompt_version)) &&
-      (a.model === null || isLabel(a.model)),
+  const analyses = read('SELECT * FROM ai_analyses').map(fieldsOf);
+  if (!analyses.every(analysisLabelsFit)) return 12;
+  const readable = analyses.every(
+    (a) => a.input !== undefined && a.output !== undefined && a.validator !== undefined,
   );
-  if (!labelled) return 12;
-  if (!analyses.every(readsBack)) return 13;
-  return analyses.some((a) => (a.date as string) > today) ? 14 : null;
+  if (!readable || !analyses.every(analysisContentFits)) return 13;
+  return analyses.some((a) => a.date > today) ? 14 : null;
 }
 
-/**
- * Rule 13 for one analysis: what `listAiAnalyses` parses, and what the AI was allowed to answer.
- * The input is the app's own, taken before the AI is called, so it is checked on a rejected one too.
- */
-function readsBack(analysis: Row): boolean {
-  const [output, validator] = [analysis.output_json, analysis.validator_json].map(parsed);
-  const input = analysisInputSchema.safeParse(parsed(analysis.input_json)).data;
-  if (input === undefined || input.mode !== analysis.mode) return false;
-  if (validator === undefined || output === undefined) return false;
-  if (analysis.status !== 'ACCEPTED') return true;
-  const schema = AI_OUTPUT_SCHEMAS[input.mode];
-  const result = schema.safeParse(output);
-  if (!result.success) return false;
-  const codes = new Set(input.facts.map((fact) => fact.code));
-  // Every block of an analysis or discovery output is a list of items that may cite facts.
-  return Object.values(result.data)
-    .flat()
-    .every((item) => item.evidence.every((code) => codes.has(code)));
+/** An analysis row with its JSON parsed (`undefined` when it does not parse), for rules 12–14. */
+function fieldsOf(row: Row): AnalysisFields & { readonly date: string } {
+  return {
+    mode: row.mode,
+    status: row.status,
+    provider: row.provider,
+    model: row.model,
+    promptVersion: row.prompt_version,
+    attempts: row.attempts,
+    input: parsed(row.input_json),
+    output: parsed(row.output_json),
+    validator: parsed(row.validator_json),
+    date: row.date as string,
+  };
 }
 
 /** The JSON value of a stored text; `undefined` when it does not parse, `null` for SQL NULL. */
