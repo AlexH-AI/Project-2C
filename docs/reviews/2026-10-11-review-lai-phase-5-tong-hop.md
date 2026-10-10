@@ -190,3 +190,12 @@ Không có gì chặn G7. Ba phương án:
 - Độc lập: Claude ghi không mở `codex\`; Codex ghi không đọc báo cáo vòng 2 của Claude. Không bên nào dẫn ID của bên kia.
 - 9 PR đợt sửa (Claude D đã kiểm): `REVIEW: PASS` mới nhất trùng head lúc merge 9 / 9; ba PR `risk:med` merge bằng `--owner`; CI xanh; milestone Phase 5: 0 Issue mở. Artifact exe ở `705ea7c` (run `38074144272`).
 - Phiên tổng hợp đọc đủ 8 báo cáo và kiểm mọi phát hiện trên code `705ea7c` (đọc code; không chạy lại probe — bằng chứng chạy là của reviewer, ghi 📏).
+
+## 9. Quyết định Owner (11/10/2026)
+
+1. **Phương án B.** Trước G7 (milestone Phase 5): #507 T-203 (UI: R2-01, 02, 07, 14) và #508 T-204 (Rust: R2-08, 09, 10, 11).
+2. **R2-10: chặn thêm.** Kiểm key ở Rust chặn cả dạng escape JSON / URL-encode; làm trong T-204 (không để #492 như §6 đề xuất, vì là sửa Rust và G7 đằng nào cũng build exe).
+3. **R2-04: đồng ý**, làm cùng đợt G5 #491 (kèm nửa câu spec §3.1 mục 3).
+4. **Trợ năng: một Issue riêng** — #509 T-205 (R2-05, 06, 17, 20).
+
+Phần còn lại đã ghi vào thân Issue Phase 6: #491 (R2-03, 04), #492 (R2-16, được sửa nhánh `content: null` trong `ai.rs`), #493 (R2-15, 18, 21), #494 (R2-13), #510 T-206 (R2-12, 19). Không mục nào chỉ nằm trong bản tổng hợp này.
