@@ -4,7 +4,12 @@
  */
 import type { AiAnalysisView } from '@p2c/db';
 import type { CalendarDate } from '@p2c/domain';
-import { analysisContent, type AiPanelItem, type AiPanelSource } from '../customers/ai-panel-view';
+import {
+  analysisContent,
+  type AiPanelItem,
+  type AiPanelSource,
+  type VersionRef,
+} from '../customers/ai-panel-view';
 
 export interface AppointmentAiView {
   readonly state: 'CURRENT' | 'STALE';
@@ -23,7 +28,7 @@ export interface AppointmentAiView {
 export function appointmentAiView(
   /** `listAiAnalyses`: latest first. */
   analyses: readonly AiAnalysisView[],
-  versions: readonly { readonly id: string }[],
+  versions: readonly VersionRef[],
 ): AppointmentAiView | null {
   const shown = analyses.find((analysis) => analysis.status === 'ACCEPTED');
   if (!shown) return null;

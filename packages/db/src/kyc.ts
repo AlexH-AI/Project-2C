@@ -49,6 +49,8 @@ export interface KycProfileRecord extends KycProfile {
 
 export interface KycVersionRecord extends KycVersion {
   readonly id: string;
+  /** Its number by customer, "kyc v<seq>" on screen (spec Phase 5 §9.1); a backup may leave gaps. */
+  readonly seq: number;
 }
 
 export interface KycFactCommand {
@@ -544,5 +546,6 @@ function toVersion(row: typeof kycVersions.$inferSelect): KycVersionRecord {
     summary: `Cập nhật KYC ${formatDate(date)}`,
     date,
     material: row.material,
+    seq: row.seq,
   };
 }

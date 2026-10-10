@@ -15,9 +15,11 @@ import {
 import { describe, expect, it } from 'vitest';
 import {
   factCodeTarget,
+  factInEffect,
   factText,
   kycOverview,
   kycTimeline,
+  nextVersionNumber,
   previewKycNote,
   resolveKycOptions,
 } from './kyc-view';
@@ -114,12 +116,17 @@ describe('kycTimeline', () => {
     createdDate: date,
     source: 'RE',
   });
-  const version = (id: string, date: CalendarDate): KycVersionRecord => ({
+  const version = (
+    id: string,
+    date: CalendarDate,
+    seq = Number(id.slice(1)),
+  ): KycVersionRecord => ({
     id,
     hash: id,
     summary: `Cập nhật KYC ${id}`,
     date,
     material: false,
+    seq,
   });
 
   it('puts the newest first; on one day a version, then its note, then a stage change', () => {
@@ -140,6 +147,16 @@ describe('kycTimeline', () => {
     ]);
     expect(events[0]).toMatchObject({ kind: 'version', number: 2, date: day(9, 5) });
     expect(events[4]).toMatchObject({ kind: 'version', number: 1 });
+  });
+
+  it('numbers a version by its stored seq, which a backup may leave with gaps (DR5-48)', () => {
+    const events = kycTimeline(
+      [],
+      [],
+      [version('v1', day(9, 1), 10), version('v2', day(9, 5), 20)],
+    );
+
+    expect(events.map((event) => event.kind === 'version' && event.number)).toEqual([20, 10]);
   });
 
   const meeting = (id: string, date: CalendarDate, status: AppointmentRecord['status']) =>
@@ -203,7 +220,9 @@ describe('previewKycNote', () => {
     notes: [{ id: 'n1', text: 'năm sinh', createdDate: day(9, 1) }],
     facts: [fact('birthYear', 1984), fact('residence', 'Huế')],
   };
-  const versions = [{ hash: kycHash(profile), summary: '', date: day(9, 1), material: true }];
+  const versions = [
+    { id: 'v1', seq: 1, hash: kycHash(profile), summary: '', date: day(9, 1), material: true },
+  ];
   const preview = (facts: Parameters<typeof previewKycNote>[2], manual = false) =>
     previewKycNote(profile, versions, facts, day(9, 15), manual);
 
@@ -229,6 +248,21 @@ describe('previewKycNote', () => {
       material: true,
       auto: false,
     });
+  });
+
+  it('numbers the next version one after the last stored seq, gaps included (DR5-48)', () => {
+    const numbered = [{ ...versions[0]!, seq: 20 }];
+    expect(
+      previewKycNote(
+        profile,
+        numbered,
+        [{ field: 'residence', value: 'Hà Nội' }],
+        day(9, 15),
+        false,
+      ),
+    ).toMatchObject({ kind: 'version', number: 21 });
+    expect(nextVersionNumber(numbered)).toBe(21);
+    expect(nextVersionNumber([])).toBe(1);
   });
 
   it('refuses a conflict with no value to disagree with, or with the same value', () => {
@@ -333,5 +367,36 @@ describe('fact codes F{seq} (spec Phase 5 §6.1, mockup ai.html 3a)', () => {
   it('says a fact since replaced, or not there at all, is no longer in effect', () => {
     expect(factCodeTarget(facts, 'F1')).toEqual({ kind: 'gone', code: 'F1' });
     expect(factCodeTarget(facts, 'F9')).toEqual({ kind: 'gone', code: 'F9' });
+  });
+
+  // Confirmed again with the same value: the fact is replaced, the KYC version stays (DR5-15).
+  const occupation = (seq: number, value: string, status: KycFact['status']): KycFactRecord => ({
+    ...fact('occupation', value, status, 'OCCUPATION_INCOME'),
+    seq,
+    id: `o${seq}`,
+  });
+
+  it('leads a code replaced by the same trường and value to the fact in effect now (DR5-15)', () => {
+    const again = [
+      occupation(2, 'Kỹ sư', 'superseded'),
+      occupation(6, 'Kỹ sư', 'active'),
+      record(7, 'active'),
+    ];
+    expect(factCodeTarget(again, 'F2')).toEqual({ kind: 'shown', code: 'F6' });
+    expect(factInEffect(again, 'F2')?.seq).toBe(6);
+    expect(factInEffect(again, 'F6')?.seq).toBe(6);
+  });
+
+  it('keeps a code whose value really changed no longer in effect', () => {
+    const changed = [occupation(2, 'Kỹ sư', 'superseded'), occupation(6, 'Bác sĩ', 'active')];
+    expect(factCodeTarget(changed, 'F2')).toEqual({ kind: 'gone', code: 'F2' });
+    expect(factInEffect(changed, 'F2')).toBeNull();
+    // The same value under another trường is another fact.
+    expect(
+      factInEffect(
+        [record(1, 'superseded'), { ...record(4, 'active'), value: 'R1', field: 'dependents' }],
+        'F1',
+      ),
+    ).toBeNull();
   });
 });

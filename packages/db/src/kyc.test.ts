@@ -421,8 +421,23 @@ describe('KYC versions', () => {
         summary: 'Cập nhật KYC 03/09/2026',
         date: d(3, 9, 2026),
         material: true,
+        seq: 1,
       },
     ]);
+  });
+
+  it('gives each version its stored seq, gaps included, and records the next after the last (DR5-48)', async () => {
+    const { db: database, customer, note } = await withCustomer();
+    const input = { field: 'occupation', noteId: note.id, date: d(3, 9, 2026) } as const;
+    confirmKycFact(database, customer.id, { ...input, value: 'Bác sĩ' });
+    confirmKycFact(database, customer.id, { ...input, value: 'Kỹ sư' });
+    // A backup may number the versions with gaps: its rules only ask for unique positive seqs.
+    database.sqlite.run('UPDATE kyc_versions SET seq = seq * 10');
+
+    expect(listKycVersions(database, customer.id).map((v) => v.seq)).toEqual([10, 20]);
+    const { version } = confirmKycFact(database, customer.id, { ...input, value: 'Giáo viên' });
+    expect(version?.seq).toBe(21);
+    expect(listKycVersions(database, customer.id).map((v) => v.seq)).toEqual([10, 20, 21]);
   });
 
   it('applies the material rule: core changes always, others only when switched on', async () => {

@@ -68,7 +68,11 @@ function analysis(fields: Partial<AiAnalysisView> & Pick<AiAnalysisView, 'seq' |
   return row;
 }
 
-const versions = [{ id: 'v1' }, { id: 'v2' }, { id: 'v3' }];
+const versions = [
+  { id: 'v1', seq: 1 },
+  { id: 'v2', seq: 2 },
+  { id: 'v3', seq: 3 },
+];
 
 describe('appointmentAiView (spec Phase 5 §9.2)', () => {
   it('gives the Next Best Actions and Discovery Strategy of the CURRENT analysis, with its day', () => {

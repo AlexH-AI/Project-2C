@@ -9,6 +9,7 @@ import {
   analysisInputSchema,
   analysisOutputSchema,
   discoveryOutputSchema,
+  factCode,
   VALIDATION_CODES,
   type AiOpencodePlan,
   type AiSettings,
@@ -18,7 +19,7 @@ import {
   type ValidationIssue,
   type WebSession,
 } from '@p2c/ai';
-import type { AiAnalysisReminder, AiAnalysisView } from '@p2c/db';
+import type { AiAnalysisReminder, AiAnalysisView, KycFactRecord, KycVersionRecord } from '@p2c/db';
 import {
   evidenceLevel,
   formatDayMonth,
@@ -36,6 +37,10 @@ import {
 } from '@p2c/domain';
 import type { AnalysisOutcome, WebAnswerOutcome } from '../../data/ai-analysis';
 import { aiFailure, GENERAL_FAILURE, type AiFailure } from '../ai-error-view';
+import { factInEffect } from './kyc-view';
+
+/** What naming "kyc v<seq>" needs of the customer's versions. */
+export type VersionRef = Pick<KycVersionRecord, 'id' | 'seq'>;
 
 export type AiPanelBlocked =
   /** Mockup 2b: "Giải quyết mâu thuẫn ở <trường> trước khi phân tích". */
@@ -357,7 +362,7 @@ export function webAfter(web: AiPanelWeb, outcome: WebAnswerOutcome): AiPanelWeb
 }
 
 /** Mockup 4e: "kyc v<n> · <mode>@<n>+web@1 · chụp dd/mm hh:mm" of the input taken. */
-export function webChip(web: AiPanelWeb, versions: readonly { readonly id: string }[]) {
+export function webChip(web: AiPanelWeb, versions: readonly VersionRef[]) {
   const { mode } = web.session.input;
   return {
     version: versionNumber(web.session, versions),
@@ -419,25 +424,32 @@ type OutputItem = {
 /**
  * What an ACCEPTED analysis shows. Its input and output passed their schemas when saved (and when a
  * backup was loaded), so they are read with those schemas; its input gives each cited fact's day.
+ * Given the customer's facts, a CURRENT analysis weighs a code by the fact in effect it stands for
+ * (`factInEffect`): confirmed again with the same value, it counts with its new day (DR5-15).
  */
 export function analysisContent(
   analysis: AiAnalysisView,
-  versions: readonly { readonly id: string }[],
+  versions: readonly VersionRef[],
+  facts: readonly KycFactRecord[] = [],
 ): AiPanelContent {
   const input = analysisInputSchema.parse(analysis.input);
   const analysisDate = fromIsoDate(input.analysisDate);
   const confirmed = new Map(input.facts.map((f) => [f.code, fromIsoDate(f.confirmedAt)]));
+  const now = (code: string) => {
+    const fact = analysis.state === 'CURRENT' ? factInEffect(facts, code) : null;
+    return fact && { code: factCode(fact.seq), confirmedDate: fact.confirmedDate };
+  };
   const toItem = (item: OutputItem): AiPanelItem => {
-    const facts = item.evidence.flatMap((code) => {
+    const cited = item.evidence.flatMap((code) => {
       const confirmedDate = confirmed.get(code);
-      return confirmedDate ? [{ code, confirmedDate }] : [];
+      return confirmedDate ? [now(code) ?? { code, confirmedDate }] : [];
     });
     return {
       text: item.text,
       system: item.system ?? null,
       codes: item.evidence,
       missing: item.missingCategory ?? null,
-      evidence: isNonEmpty(facts) ? evidenceLevel({ analysisDate, facts }) : null,
+      evidence: isNonEmpty(cited) ? evidenceLevel({ analysisDate, facts: cited }) : null,
     };
   };
   const group = (key: AiPanelGroupKey, items: readonly OutputItem[]) => ({
@@ -520,7 +532,7 @@ export interface AiHistoryRow {
 /** Every analysis, latest first by recording order (`seq`), never by date (§7.1). */
 export function historyRows(
   analyses: readonly AiAnalysisView[],
-  versions: readonly { readonly id: string }[],
+  versions: readonly VersionRef[],
 ): AiHistoryRow[] {
   return [...analyses]
     .sort((a, b) => b.seq - a.seq)
@@ -551,7 +563,7 @@ export interface AiRejectedReport {
 export function rejectedReport(
   row: AiAnalysisView,
   analyses: readonly AiAnalysisView[],
-  versions: readonly { readonly id: string }[],
+  versions: readonly VersionRef[],
 ): AiRejectedReport {
   const { provider, promptTokens, completionTokens } = row;
   const counted = provider === 'OPENCODE_GO' && promptTokens !== null && completionTokens !== null;
@@ -567,16 +579,15 @@ export function rejectedReport(
   };
 }
 
-/** "kyc v<n>": the version's place in the customer's versions (by `seq`). */
+/** "kyc v<seq>": the stored number of the version, which a backup may leave with gaps (DR5-48). */
 function versionNumber(
   analysis: Pick<AiAnalysisView, 'kycVersionId'>,
-  versions: readonly { readonly id: string }[],
+  versions: readonly VersionRef[],
 ): number {
-  const index = versions.findIndex((version) => version.id === analysis.kycVersionId);
+  const version = versions.find((candidate) => candidate.id === analysis.kycVersionId);
   // Rule 11 of a backup and `recordAiAnalysis` keep it the customer's own: never "kyc v0".
-  if (index < 0)
-    throw new RangeError(`Not a KYC version of the customer: ${analysis.kycVersionId}`);
-  return index + 1;
+  if (!version) throw new RangeError(`Not a KYC version of the customer: ${analysis.kycVersionId}`);
+  return version.seq;
 }
 
 const isNonEmpty = <T>(list: readonly T[]): list is readonly [T, ...T[]] => list.length > 0;

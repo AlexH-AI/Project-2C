@@ -188,6 +188,16 @@ export const isStartupBackupError = (error: unknown): error is Error =>
 /** The `settings` row of Settings → AI (spec Phase 5 §4.1). */
 const AI_SETTINGS = 'ai';
 
+/** A stored JSON value, or `undefined` when there is none or it is broken (read as the defaults). */
+function parseJson(json: string | undefined): unknown {
+  if (json === undefined) return undefined;
+  try {
+    return JSON.parse(json) as unknown;
+  } catch {
+    return undefined;
+  }
+}
+
 /** The same seed on every machine: the same day gives the same data (spec §7). */
 const DEMO_SEED = 1;
 
@@ -257,13 +267,16 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   };
 
   // Seeded apart and saved as one file: the saved file never holds a half-built database.
-  const demoData = async (anchor: CalendarDate): Promise<Uint8Array> => {
+  // `aiSettings` is the stored JSON of Settings → AI, carried over as it is.
+  const demoData = async (anchor: CalendarDate, aiSettings?: string): Promise<Uint8Array> => {
     const db = await openDatabase({ locateFile, now });
     try {
       const start = performance.now();
       seed(db, anchor);
       // Read by the e2e check of #64 (under 5 s in the browser).
       performance.measure('p2c:demo-seed', { start });
+      const carried = parseJson(aiSettings);
+      if (carried !== undefined) putSetting(db, AI_SETTINGS, carried);
       return db.export();
     } finally {
       db.sqlite.close();
@@ -275,8 +288,8 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     if (storage) saves.persist(bytes);
     return db;
   };
-  const openNew = async (anchor: CalendarDate): Promise<Database> =>
-    openFrom(await demoData(anchor));
+  const openNew = async (anchor: CalendarDate, aiSettings?: string): Promise<Database> =>
+    openFrom(await demoData(anchor, aiSettings));
 
   const stored = await storage?.load();
   let db: Database;
@@ -344,8 +357,10 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     async reloadDemoData() {
       // The day is read once the backup is done, so the data and the message name the same day
       // even when the dialog or the backup ran past midnight (DR-30).
+      // Settings → AI belong to the machine, not to the simulated data: the new data keeps them
+      // (DR5-50). An import takes the backup's instead (§4.1).
       let anchor!: CalendarDate;
-      const backup = await replace(() => openNew((anchor = today())));
+      const backup = await replace(() => openNew((anchor = today()), getSetting(db, AI_SETTINGS)));
       return { anchor, backup };
     },
     counts: () => countRecords(db),

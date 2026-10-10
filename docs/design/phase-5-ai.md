@@ -103,6 +103,7 @@ Lưu ở bảng `settings`, khóa `ai`, giá trị JSON:
 - `opencodePlan` thiếu hoặc sai (cấu hình lưu trước P8) → `GO`, như luật "giá trị sai → mặc định" dưới.
 
 - **Không có key** trong giá trị này (D-1 mục 4). Bảng `settings` đi vào backup → nhập backup ở máy kia mang theo provider / model, không mang key.
+- **Nạp lại dữ liệu giả lập giữ nguyên giá trị này** (cấu hình của máy, không phải dữ liệu giả lập — Owner chốt 10/10/2026, DR5-50, T-196): app chép dòng `ai` của DB đang mở sang DB seed mới. Dòng hỏng (JSON sai) không được chép, đọc như mặc định. Nhập backup vẫn lấy giá trị trong file backup.
 - Mock chỉ chạy khi được chọn (D-1 mục 6). Kết quả Mock luôn gắn chip **"Mock"** để không lẫn với phân tích thật.
 - Bản web (`pnpm dev:web`, e2e) không có Rust: `OPENCODE_GO` hiện nhưng tắt, ghi "Chỉ có trong app exe". Test dùng adapter giả (§12).
 - Giá trị đọc được nhưng sai (model không còn trong danh sách, JSON hỏng) → dùng mặc định, Settings hiện cảnh báo một dòng; không ném lỗi khi mở app.
@@ -189,6 +190,7 @@ Thông báo lỗi **không** chứa key, header hay thân yêu cầu; chỉ mã 
 - **Phân tích:** chỉ dữ kiện đã xác nhận còn hiệu lực (`active`, `conflict`) của phiên bản hiện tại, mỗi dữ kiện một mã **`F{seq}`** (seq của `kyc_facts`, theo KH), kèm nhãn trường tiếng Việt, giá trị, ngày xác nhận, cờ mâu thuẫn; tuổi = năm nay − năm sinh; trạng thái cổng + hạng mục còn thiếu. **Không gửi** tên, mã KH, tên RE, ghi chú KYC, lịch hẹn, HĐ.
 - **Trích xuất:** đúng một ghi chú KYC (văn bản RE đã ghi) + danh sách trường được phép. Ghi chú có thể chứa tên người: Settings → AI ghi rõ "Trích xuất gửi nguyên văn ghi chú tới OpenCode".
 - Mã `F{seq}` cũng hiện ở danh sách dữ kiện của Hồ sơ KH (như mockup "F-09") để RE bấm từ bằng chứng tới dữ kiện.
+- **Xác nhận lại cùng giá trị** (hoặc sửa ngày sinh cùng năm) thay dữ kiện bằng dữ kiện mới (mã mới) mà không tạo phiên bản KYC, nên phân tích vẫn CURRENT theo §7.2 (Owner chốt 10/10/2026 phương án (a), DR5-15, T-196). Panel ánh xạ mã cũ sang **dữ kiện còn hiệu lực cùng trường + cùng giá trị**: bấm mã tới dữ kiện đó; mức bằng chứng (§6.3) của phân tích **CURRENT** tính theo ngày xác nhận của dữ kiện hiện hành. Phân tích STALE giữ ngày trong `input_json`. Giá trị đổi thật → không ánh xạ: bấm mã ra "F<n> không còn hiệu lực", phân tích STALE theo phiên bản.
 - Trả lời: lấy khối JSON đầu tiên trong `content` (bỏ rào ```` ```json ````); không có JSON → lỗi V1.
 
 ### 6.2 Schema (zod, G2)

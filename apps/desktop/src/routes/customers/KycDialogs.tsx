@@ -27,7 +27,13 @@ import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, joinParts, t } from '../../i18n';
 import { Actions, ALERT, FailureAlert, useDateField } from './CustomerDialogs';
 import { BADGE, YES_NO } from './CustomerKyc';
-import { factText, previewKycNote, resolveKycOptions, type KycNotePreview } from './kyc-view';
+import {
+  factText,
+  nextVersionNumber,
+  previewKycNote,
+  resolveKycOptions,
+  type KycNotePreview,
+} from './kyc-view';
 
 /** Birth year and gender are set in the customer profile only (D2). */
 const NOTE_FIELDS = (Object.keys(KYC_FIELDS) as KycField[]).filter(
@@ -235,7 +241,7 @@ export function KycNoteDialog({
         last
           ? t('kycNote.sub', {
               code: customer.code,
-              version: versions.length,
+              version: last.seq,
               date: formatDate(last.date),
             })
           : t('kycNote.subNoVersion', { code: customer.code })
@@ -403,7 +409,9 @@ export function ResolveKycDialog({
       <p className={`${ALERT} border-info`}>{t('kycResolve.hint')}</p>
       <Material auto={core} value={material} onChange={setMaterial} />
       {gate && (
-        <p className="m-0">{t('kycResolve.after', { number: versions.length + 1, gate })}</p>
+        <p className="m-0">
+          {t('kycResolve.after', { number: nextVersionNumber(versions), gate })}
+        </p>
       )}
     </Dialog>
   );

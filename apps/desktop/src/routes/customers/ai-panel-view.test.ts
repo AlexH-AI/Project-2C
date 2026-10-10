@@ -1,6 +1,11 @@
 import { AI_MODELS, DEFAULT_AI_SETTINGS, type AiSettings, type WebSession } from '@p2c/ai';
-import type { AiAnalysisView } from '@p2c/db';
-import { calendarDate as day, type KycGateResult, type KycGateState } from '@p2c/domain';
+import type { AiAnalysisView, KycFactRecord } from '@p2c/db';
+import {
+  calendarDate as day,
+  type CalendarDate,
+  type KycGateResult,
+  type KycGateState,
+} from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
   aiPanelHelp,
@@ -356,7 +361,12 @@ describe('the ChatGPT web session of the panel (spec Phase 5 §3.1, mockups 4e�
 
   it('opens with the input taken, its chip and nothing to copy by hand', () => {
     expect(opened).toMatchObject({ manual: null, openFailed: false, retry: null, refused: null });
-    expect(webChip(opened, [{ id: 'v1' }, { id: 'v2' }])).toEqual({
+    expect(
+      webChip(opened, [
+        { id: 'v1', seq: 1 },
+        { id: 'v2', seq: 2 },
+      ]),
+    ).toEqual({
       version: 2,
       prompt: 'discovery@1+web@1',
       at: '26/09 10:40',
@@ -537,8 +547,21 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
       { system: 'ESOTERIC', text: 'R2', evidence: ['F1'] },
     ],
   };
-  const versions = [{ id: 'v1' }, { id: 'v2' }, { id: 'v3' }];
+  const versions = [
+    { id: 'v1', seq: 1 },
+    { id: 'v2', seq: 2 },
+    { id: 'v3', seq: 3 },
+  ];
   const row = analysis({ seq: 1, state: 'CURRENT', kycVersionId: 'v3', input, output });
+
+  it('names the version by its stored seq, not its place, when a backup left gaps (DR5-48)', () => {
+    const gaps = [
+      { id: 'v1', seq: 10 },
+      { id: 'v3', seq: 20 },
+    ];
+    expect(analysisContent(row, gaps).chip.version).toBe(20);
+    expect(historyRows([row], gaps).map((history) => history.version)).toEqual([20]);
+  });
 
   it('names the version, prompt, provider and time of the analysis in its chip', () => {
     expect(analysisContent(row, versions).chip).toEqual({
@@ -564,7 +587,7 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
   });
 
   it('refuses a KYC version the customer does not have rather than show "kyc v0"', () => {
-    expect(() => analysisContent(row, [{ id: 'v1' }])).toThrow(RangeError);
+    expect(() => analysisContent(row, [{ id: 'v1', seq: 1 }])).toThrow(RangeError);
   });
 
   it('refuses an input that is not as the app sends it rather than trust a cast', () => {
@@ -623,6 +646,77 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
     expect(sections[1]!.groups[2]!.items[0]!.evidence).toMatchObject({
       level: 'HIGH',
       factCount: 3,
+    });
+  });
+
+  describe('a fact confirmed again with the same value, which keeps the version (DR5-15)', () => {
+    const old = (code: string) => ({
+      ...input.facts.find((f) => f.code === code)!,
+      confirmedAt: '2025-06-01',
+    });
+    const dated = {
+      ...input,
+      facts: [
+        ...input.facts.filter((f) => !['F12', 'F13'].includes(f.code)),
+        old('F12'),
+        old('F13'),
+      ],
+    };
+    const record = (
+      seq: number,
+      field: KycFactRecord['field'],
+      value: string,
+      status: KycFactRecord['status'],
+      confirmedDate: CalendarDate,
+    ): KycFactRecord => ({
+      id: `f${seq}`,
+      seq,
+      category: 'GOALS',
+      field,
+      value,
+      noteId: 'n1',
+      confirmedDate,
+      status,
+    });
+    // F12 confirmed again on 01/10/2026 as F20; F13 still in effect as it was.
+    const facts = [
+      record(12, 'primaryGoal', 'B', 'superseded', day(2025, 6, 1)),
+      record(13, 'mainConcern', 'C', 'conflict', day(2025, 6, 1)),
+      record(20, 'primaryGoal', 'B', 'active', day(2026, 10, 1)),
+    ];
+    const hypothesis = (state: 'CURRENT' | 'STALE', withFacts?: readonly KycFactRecord[]) =>
+      analysisContent(
+        analysis({ seq: 1, state, kycVersionId: 'v3', input: dated, output }),
+        versions,
+        withFacts,
+      ).sections[0]!.groups[0]!.items[0]!;
+
+    it('weighs the evidence of a CURRENT analysis by the facts in effect now', () => {
+      expect(hypothesis('CURRENT').evidence).toEqual({
+        level: 'LOW',
+        factCount: 2,
+        latestConfirmedDate: day(2025, 6, 1),
+      });
+      expect(hypothesis('CURRENT', facts)).toMatchObject({
+        codes: ['F12', 'F13'],
+        evidence: { level: 'MEDIUM', factCount: 2, latestConfirmedDate: day(2026, 10, 1) },
+      });
+    });
+
+    it('keeps the evidence of a STALE analysis as it was when analysed', () => {
+      expect(hypothesis('STALE', facts).evidence).toEqual({
+        level: 'LOW',
+        factCount: 2,
+        latestConfirmedDate: day(2025, 6, 1),
+      });
+    });
+
+    it('keeps the input of a code whose value really changed', () => {
+      const changed = [...facts.slice(0, 2), { ...facts[2]!, value: 'D' }];
+      expect(hypothesis('CURRENT', changed).evidence).toMatchObject({
+        level: 'LOW',
+        latestConfirmedDate: day(2025, 6, 1),
+      });
     });
   });
 
@@ -703,7 +797,11 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
 });
 
 describe('the analysis history (spec Phase 5 §7.2, §9.1, mockup ai.html 2j)', () => {
-  const versions = [{ id: 'v1' }, { id: 'v2' }, { id: 'v3' }];
+  const versions = [
+    { id: 'v1', seq: 1 },
+    { id: 'v2', seq: 2 },
+    { id: 'v3', seq: 3 },
+  ];
 
   it('lists every row latest first by seq, never by date, with the state worked out on reading', () => {
     // Recorded later, but on an earlier day: the order and the states follow seq.
@@ -769,7 +867,11 @@ describe('the analysis history (spec Phase 5 §7.2, §9.1, mockup ai.html 2j)', 
 });
 
 describe('rejectedReport (mockup ai.html 2k)', () => {
-  const versions = [{ id: 'v1' }, { id: 'v2' }, { id: 'v3' }];
+  const versions = [
+    { id: 'v1', seq: 1 },
+    { id: 'v2', seq: 2 },
+    { id: 'v3', seq: 3 },
+  ];
   const accepted = analysis({ seq: 1, state: 'CURRENT', date: day(2026, 9, 14) });
   const rejected = analysis({
     seq: 2,

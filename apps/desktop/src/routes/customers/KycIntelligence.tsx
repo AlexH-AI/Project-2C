@@ -163,13 +163,15 @@ const SUBHEADING = 'mt-3 mb-1.5 text-sm font-medium text-heading';
 function Analysis({
   analysis,
   versions,
+  facts,
   onCode,
 }: {
   analysis: AiAnalysisView;
   versions: readonly KycVersionRecord[];
+  facts: readonly KycFactRecord[];
   onCode: (code: string) => void;
 }) {
-  const content = analysisContent(analysis, versions);
+  const content = analysisContent(analysis, versions, facts);
   const { chip } = content;
   return (
     <div className="flex flex-col text-sm">
@@ -379,7 +381,7 @@ export function KycIntelligence({
   const showFact = (code: string) => {
     const target = factCodeTarget(facts, code);
     setGoneAt(target.kind === 'gone' ? { code, on } : undefined);
-    if (target.kind === 'shown') onShowFact(code);
+    if (target.kind === 'shown') onShowFact(target.code);
   };
 
   const analyse = () => {
@@ -516,7 +518,7 @@ export function KycIntelligence({
       )}
       {showing ? (
         <div className={faded ? 'opacity-50' : undefined}>
-          <Analysis analysis={showing} versions={versions} onCode={showFact} />
+          <Analysis analysis={showing} versions={versions} facts={facts} onCode={showFact} />
         </div>
       ) : (
         !view.blocked && (

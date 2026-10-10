@@ -56,6 +56,23 @@ test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, 
   await expect(panel).toContainText('Hạng mục còn thiếu: Tài sản / AUM');
   await expect(panel).not.toContainText('Thông tin tham khảo');
 
+  // A birth date in the same year replaces F1 by a new fact, with no new version (DR5-15): still
+  // CURRENT, and F1 leads to the fact in effect now rather than "không còn hiệu lực".
+  await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
+  const edit = page.getByRole('dialog', { name: `Sửa hồ sơ · ${name}` });
+  await edit.getByRole('textbox', { name: /^Ngày sinh/ }).fill('12/3/1984');
+  await edit.getByRole('button', { name: 'Lưu', exact: true }).click();
+  await expect(edit).toBeHidden();
+  await expect(panel).toContainText(/kyc v2 · discovery@1/);
+  await expect(panel).toContainText('CURRENT');
+  await panel
+    .getByRole('region', { name: 'Behavioral Hypotheses' })
+    .getByRole('button', { name: 'F1', exact: true })
+    .click();
+  const kyc = page.getByRole('region', { name: 'Dữ kiện KYC' });
+  await expect(kyc.locator('[aria-current="true"]')).toContainText('F6 · ');
+  await expect(panel).not.toContainText('không còn hiệu lực');
+
   // P1: any new KYC version leaves it STALE; a minor trường gives the minor reminder.
   await addKycNote(page, name, [['Nơi sinh sống', 'Huế']]);
   await expect(panel).toContainText('STALE');

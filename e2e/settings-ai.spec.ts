@@ -153,6 +153,29 @@ test('exe: Mức suy luận is on only for a model checked with reasoning_effort
   ]);
 });
 
+test("exe: Nạp lại keeps Settings → AI, which are the machine's (DR5-50)", async ({ page }) => {
+  await asExe(page);
+  await openAi(page);
+  await chooseOpenCode(page, 'Credit');
+  await model(page).selectOption({ label: 'Kimi K3' });
+  await reasoning(page).selectOption({ label: 'Cao' });
+
+  const nav = page.getByRole('navigation', { name: 'Mục cài đặt' });
+  await nav.getByRole('button', { name: 'Dữ liệu' }).click();
+  const section = page.getByRole('region', { name: 'Dữ liệu giả lập' });
+  await section.getByRole('button', { name: 'Nạp lại…' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Nạp lại dữ liệu giả lập?' });
+  await dialog.getByRole('textbox').fill('NẠP LẠI');
+  await dialog.getByRole('button', { name: 'Backup rồi nạp lại' }).click();
+  await expect(section.getByRole('status')).toContainText('Đã nạp lại dữ liệu giả lập');
+
+  await nav.getByRole('button', { name: 'AI' }).click();
+  await expect(provider(page).getByRole('radio', { name: 'OpenCode' })).toBeChecked();
+  await expect(plan(page).getByRole('radio', { name: 'Credit' })).toBeChecked();
+  await expect(model(page)).toHaveValue('kimi-k3');
+  await expect(reasoning(page)).toHaveValue('HIGH');
+});
+
 test('exe: the key is checked at the field, saved trimmed, never shown, deleted after a confirmation (1d, 1e)', async ({
   page,
 }) => {
