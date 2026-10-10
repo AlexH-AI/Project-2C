@@ -28,8 +28,14 @@ export interface AiCompleteRequest {
 export interface AiCompletion {
   /** The answer as text; the output is its first JSON block (`extractJson`). */
   readonly content: string;
-  readonly promptTokens: number;
-  readonly completionTokens: number;
+  /** `null` when OpenCode gives no count: unknown, not zero. */
+  readonly promptTokens: number | null;
+  readonly completionTokens: number | null;
+  /**
+   * Why the model stopped, as OpenCode says: `length` when `maxTokens` cut the answer. Rust always
+   * sends it (`null` when OpenCode does not say); Mock has none.
+   */
+  readonly finishReason?: string | null;
 }
 
 export interface AiAdapter {

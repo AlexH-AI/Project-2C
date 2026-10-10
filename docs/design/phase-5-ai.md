@@ -126,7 +126,8 @@ Hằng số trong `packages/ai`, mỗi dòng: mã model, tên hiện, có nhận
 ### 4.3 Key
 
 - Ô nhập key **chỉ ghi**: không bao giờ hiện lại giá trị; trạng thái "Đã có key" / "Chưa có key" lấy từ lệnh `ai_key_status`.
-- Nút **Lưu key** (gọi `ai_key_set`, key cắt khoảng trắng hai đầu, rỗng hoặc > 512 ký tự → báo lỗi tại ô), **Xóa key** (hộp xác nhận → `ai_key_delete`).
+- Nút **Lưu key** (gọi `ai_key_set`, key cắt khoảng trắng hai đầu, rỗng, > 512 ký tự hoặc có ký tự ngoài ASCII in được không dấu cách → báo lỗi tại ô; Rust kiểm lại cùng luật, sai → `AI_BAD_REQUEST`), **Xóa key** (hộp xác nhận → `ai_key_delete`).
+- Key lưu kiểu **`Local`** của Credential Manager (T-194, Owner chốt 10/10/2026, D-1 mục 4): chỉ ở máy này, hồ sơ roaming không mang sang máy khác. Key lưu trước T-194 (kiểu `Enterprise`) vẫn đọc được; lưu lại một lần để đổi kiểu (không migration, R2-02).
 - **Kiểm tra kết nối**: gửi một yêu cầu rất ngắn tới model đang chọn, báo "Kết nối được" hoặc lỗi theo §5.3. Tốn rất ít token; không lưu gì.
 
 ## 5. Lệnh Rust (D-1)
@@ -135,7 +136,7 @@ Hằng số trong `packages/ai`, mỗi dòng: mã model, tên hiện, có nhận
 
 | Lệnh | Vào | Ra |
 |---|---|---|
-| `ai_complete` | `sessionId`, `plan` (`GO` · `CREDIT`), `model`, `reasoning` (`null` = không gửi), `messages` (`[{role, content}]`), `maxTokens` | `{ content, promptTokens, completionTokens }` |
+| `ai_complete` | `sessionId`, `plan` (`GO` · `CREDIT`), `model`, `reasoning` (`null` = không gửi), `messages` (`[{role, content}]`), `maxTokens` | `{ content, promptTokens, completionTokens, finishReason }` — token `null` khi OpenCode không trả `usage`; `finishReason` lấy từ `choices[0].finish_reason` (`length` = bị cắt vì `max_tokens`), `null` khi không có |
 | `ai_key_set` | `key` | — |
 | `ai_key_delete` | — | — (không có key cũng Ok) |
 | `ai_key_status` | — | `bool` |
@@ -146,12 +147,12 @@ Hằng số trong `packages/ai`, mỗi dòng: mã model, tên hiện, có nhận
 - Header, cả hai gói (ADR-0009 W-1 mục 7, T-178): `x-opencode-session: <sessionId>` và `User-Agent: Project-2C/<phiên bản>`. `sessionId` do `packages/ai` sinh ngẫu nhiên, một mã cho mỗi cuộc hội thoại (hai lần thử của một lần phân tích / trích xuất dùng chung; mỗi lần Kiểm tra kết nối một mã); 1–64 ký tự `[A-Za-z0-9-]`, sai → `AI_BAD_REQUEST`. Không ghi vào DB, log, thông báo lỗi.
 - Body: `{ model, messages, max_tokens, reasoning_effort? }`; **không** dùng `response_format` (không phải model nào cũng nhận) — JSON lấy từ `content` (§6.1).
 - Lệnh chạy ở `spawn_blocking`, **không** dùng khóa file `DataLock` (gọi AI không chặn lưu dữ liệu).
-- `role` chỉ nhận `system` / `user` / `assistant`; `maxTokens` 1…16 000; `messages` tổng ≤ 200 000 ký tự → sai thì `AI_BAD_REQUEST`, không gọi mạng.
+- `role` chỉ nhận `system` / `user` / `assistant`; `reasoning` chỉ nhận `null` / `low` / `medium` / `high`; `maxTokens` 1…16 000; `messages` tổng ≤ 200 000 ký tự → sai thì `AI_BAD_REQUEST`, không gọi mạng.
 
 ### 5.2 Timeout và Hủy
 
-- **Timeout toàn yêu cầu 120 giây** (kết nối 10 giây). Model có reasoning có thể chậm; 120 s là trần cho một lần thử, hai lần thử tối đa ~4 phút.
-- Thân trả lời đọc tối đa 2 MB; vượt → `AI_BAD_RESPONSE`.
+- **Timeout toàn yêu cầu 120 giây** (phân giải tên 10 giây, kết nối gồm bắt tay TLS 10 giây; hết hai mốc này → `AI_NETWORK`). Model có reasoning có thể chậm; 120 s là trần cho một lần thử, hai lần thử tối đa ~4 phút.
+- Thân trả lời đọc tối đa 2 MB (2 097 152 byte), đếm **sau** giải nén gzip; Rust đọc tới 2 MB + 1 byte rồi dừng. Trả lời 2xx vượt 2 MB → `AI_BAD_RESPONSE`; trả lời lỗi (không 2xx) vượt 2 MB vẫn là lỗi theo mã HTTP (§5.3). Không theo redirect: 3xx là `AI_HTTP`.
 - **Chỉ một yêu cầu AI tại một thời điểm** (P5): không bao giờ có hai yêu cầu chạy cùng lúc, kể cả sau Hủy.
   - Rust giữ một cờ "đang chạy" (`AtomicBool` trong state của app) cho cả `ai_complete`; gọi khi cờ đang bật → trả ngay `AI_BUSY`, không gọi mạng. Cờ tắt khi lệnh kết thúc theo mọi đường (xong, lỗi, timeout, panic — dùng guard `Drop`).
   - Webview cũng khóa mọi nút AI trong lúc chờ; `AI_BUSY` chỉ là chốt chặn thứ hai.
@@ -165,14 +166,14 @@ Hằng số trong `packages/ai`, mỗi dòng: mã model, tên hiện, có nhận
 | `AI_UNAUTHORIZED` | HTTP 401 / 403 | Key không hợp lệ hoặc hết hạn (gói Go hết hạn → chọn gói Credit ở Cài đặt → AI) |
 | `AI_RATE_LIMITED` | HTTP 402 / 429 | Đã chạm giới hạn gói Go hoặc hết credit OpenCode — thử lại sau, hoặc đổi gói / nạp credit |
 | `AI_TIMEOUT` | quá 120 s | AI không trả lời trong 2 phút |
-| `AI_NETWORK` | DNS / TLS / mất kết nối | Không kết nối được OpenCode |
+| `AI_NETWORK` | DNS / TLS / mất kết nối, hết 10 s phân giải tên hoặc kết nối | Không kết nối được OpenCode |
 | `AI_HTTP` | HTTP khác 2xx còn lại | OpenCode báo lỗi (mã HTTP) |
-| `AI_BAD_RESPONSE` | không phải JSON OpenAI, thiếu `choices[0].message.content`, > 2 MB | Trả lời của OpenCode không đọc được |
+| `AI_BAD_RESPONSE` | 2xx: không phải JSON OpenAI, thiếu `choices[0].message.content`, > 2 MB, hoặc `content` chứa key | Trả lời của OpenCode không đọc được |
 | `AI_BUSY` | đã có một yêu cầu AI đang chạy (§5.2) | Đang có một yêu cầu AI khác — chờ xong rồi thử lại |
 | `AI_BAD_REQUEST` | đầu vào lệnh sai (§5.1) | lỗi lập trình — hiện thông báo chung |
 | `AI_KEYRING` | Credential Manager lỗi | Không đọc / ghi được key trong Windows Credential Manager |
 
-Thông báo lỗi **không** chứa key, header hay thân yêu cầu; chỉ mã HTTP và tối đa 200 ký tự đầu của thông điệp lỗi từ server.
+Thông báo lỗi **không** chứa key, header hay thân yêu cầu; chỉ mã HTTP và tối đa 200 ký tự đầu của thông điệp lỗi từ server. Thông điệp chỉ lấy từ JSON (`error.message`, `error` hoặc `message` dạng chuỗi); thân không có các trường này → không có thông điệp, không bao giờ trả thân thô. Key và mã phiên được che (`***`) trước khi cắt 200 ký tự.
 
 - Mã HTTP thật khi gói Go hết hạn / hết credit chưa có tài liệu: T-164 ghi lại từ lần gọi thật của Owner; khác bảng trên → sửa ánh xạ trong cùng task (mã lỗi `AiError` không đổi).
 

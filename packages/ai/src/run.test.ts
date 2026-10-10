@@ -149,6 +149,19 @@ describe('runAnalysis', () => {
     expect(requests[0]!.messages[0]!.content).toMatch(/^Bạn là trợ lý phân tích hồ sơ KYC/);
   });
 
+  it('records the tokens as unknown when OpenCode gives no count for an attempt', async () => {
+    const answers: AiCompletion[] = [
+      { content: BAD, promptTokens: 10, completionTokens: null, finishReason: 'stop' },
+      { content: GOOD, promptTokens: 12, completionTokens: 6, finishReason: 'stop' },
+    ];
+    const adapter: AiAdapter = { complete: () => Promise.resolve(answers.shift()!) };
+    const result = await runAnalysis(analysis(OPENCODE, adapter));
+    expect(result).toMatchObject({
+      kind: 'record',
+      row: { attempts: 2, promptTokens: 22, completionTokens: null },
+    });
+  });
+
   it('retries once with the issues and records the second answer when it passes', async () => {
     const { adapter, requests } = scripted(BAD, GOOD);
     const result = await runAnalysis(analysis(OPENCODE, adapter));

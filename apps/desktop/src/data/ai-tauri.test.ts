@@ -48,12 +48,18 @@ describe('tauriOpenCode (spec Phase 5 §5.1)', () => {
     expect(await client.openChatGpt()).toBe(false);
   });
 
-  it('calls ai_complete under the plan and gives the completion', async () => {
-    const completion = { content: 'OK', promptTokens: 10, completionTokens: 1 };
-    const invoke = vi.fn().mockResolvedValue(completion);
-    expect(await tauriOpenCode(invoke).adapter('CREDIT').complete(REQUEST)).toEqual(completion);
-    expect(invoke).toHaveBeenCalledWith('ai_complete', { plan: 'CREDIT', ...REQUEST });
-  });
+  it.each([
+    { content: 'OK', promptTokens: 10, completionTokens: 1, finishReason: 'stop' },
+    // No `usage` and an answer cut by `max_tokens` (T-194).
+    { content: '{"hypo', promptTokens: null, completionTokens: null, finishReason: 'length' },
+  ])(
+    'calls ai_complete under the plan and gives the completion as Rust sends it',
+    async (completion) => {
+      const invoke = vi.fn().mockResolvedValue(completion);
+      expect(await tauriOpenCode(invoke).adapter('CREDIT').complete(REQUEST)).toEqual(completion);
+      expect(invoke).toHaveBeenCalledWith('ai_complete', { plan: 'CREDIT', ...REQUEST });
+    },
+  );
 
   it.each([
     ['LOW', 'low'],

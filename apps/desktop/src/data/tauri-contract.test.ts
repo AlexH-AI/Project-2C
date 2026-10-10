@@ -192,4 +192,26 @@ describe('the JS ↔ Rust AI contract', () => {
     // `open_chatgpt` fails only with `AI_OPEN_BROWSER`: the panel shows its message for any failure.
     expect(sent.sort()).toEqual([...known, 'AI_OPEN_BROWSER'].sort());
   });
+
+  it('types the answer of ai_complete as Rust sends it, null where Rust has an Option', () => {
+    const adapter = readFileSync(
+      new URL('../../../../packages/ai/src/adapter.ts', import.meta.url),
+      'utf8',
+    );
+    const rustFields = [
+      .../pub struct Completion \{([^}]*)\}/.exec(ai)![1]!.matchAll(/pub (\w+): ([^,]+),/g),
+    ].map(([, name, type]) => [camel(name!), type!.startsWith('Option<')]);
+    const tsFields = [
+      .../interface AiCompletion \{([^}]*)\}/
+        .exec(adapter)![1]!
+        .matchAll(/readonly (\w+)\??: ([^;]+);/g),
+    ].map(([, name, type]) => [name, type!.includes('| null')]);
+    expect(tsFields).toEqual(rustFields);
+    expect(rustFields).toEqual([
+      ['content', false],
+      ['promptTokens', true],
+      ['completionTokens', true],
+      ['finishReason', true],
+    ]);
+  });
 });
