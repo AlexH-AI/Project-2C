@@ -27,9 +27,16 @@ test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, 
   ]);
   await expect(panel).toContainText('PROFILE_DISCOVERY');
   await expect(panel).toContainText('Chưa có phân tích AI cho KH này.');
+  // Mockups 2a, 4d: what Phân tích sends, and where; birth year and gender are facts too.
+  await expect(panel).toContainText(
+    'Phân tích: Mock trả câu mẫu cố định từ 5 dữ kiện, không gọi AI (đổi ở Cài đặt → AI). ChatGPT web: app copy tin nhắn và mở chatgpt.com — bạn tự dán, rồi dán câu trả lời lại vào đây. Không gửi tên, mã KH, ghi chú.',
+  );
 
   await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
   await expect(panel).toContainText('CURRENT');
+  // Said to a screen reader (DR5-33); the help line goes with the first analysis.
+  await expect(panel.getByRole('status')).toHaveText('Phân tích xong: đã lưu kết quả.');
+  await expect(panel).not.toContainText('Không gửi tên');
   // The head badge; the history names it too.
   await expect(panel.getByText('Mock', { exact: true }).first()).toBeVisible();
   await expect(panel).toContainText(/kyc v2 · discovery@1 · Mock · 15\/09 \d\d:\d\d/);
@@ -152,10 +159,13 @@ test('the history of a seeded customer: latest first, a STALE one opened, F code
     .getByRole('button')
     .first();
   const cited = (await code.textContent()) ?? '';
-  await code.click();
+  // By the keyboard, the focus goes to the fact too (DR5-38).
+  await code.focus();
+  await page.keyboard.press('Enter');
   const marked = kyc.locator('[aria-current="true"]');
   await expect(marked).toContainText(`${cited} · `);
   await expect(marked).toBeInViewport();
+  await expect(marked).toBeFocused();
   await expect(marked).toHaveCount(0, { timeout: 5000 });
 });
 
@@ -190,6 +200,9 @@ test('a run outlives the profile: left and shown again, it still shows with Hủ
   await useOpenCode(page);
   const panel = panelOf(page);
   const analyse = panel.getByRole('button', { name: 'Phân tích', exact: true });
+  await expect(panel).toContainText(
+    'Phân tích: gửi 5 dữ kiện đã xác nhận tới OpenCode · Gói Go · DeepSeek V4.1 Flash (đổi ở Cài đặt → AI). ChatGPT web: app copy tin nhắn và mở chatgpt.com — bạn tự dán, rồi dán câu trả lời lại vào đây. Không gửi tên, mã KH, ghi chú.',
+  );
 
   await page.evaluate(() => window.exe.holdAi());
   await analyse.click();
@@ -210,6 +223,40 @@ test('a run outlives the profile: left and shown again, it still shows with Hủ
   await expect(analyse).toBeEnabled();
   // Nothing was saved after Hủy.
   await expect(panel).toContainText('Chưa có phân tích AI cho KH này.');
+});
+
+test('a request running elsewhere says why the buttons of another customer are off (DR5-40)', async ({
+  page,
+}) => {
+  await asExe(page);
+  const busy = 'Đang có một yêu cầu AI khác — chờ xong rồi thử lại.';
+  const first = 'Tú Chạy Trước';
+  await createKycCustomer(page, first);
+  await addKycNote(page, first, [
+    ['Tình trạng hôn nhân', 'Đã kết hôn'],
+    ['Số con', '2'],
+    ['Nghề nghiệp', 'Bác sĩ'],
+  ]);
+  await useOpenCode(page);
+  await page.evaluate(() => window.exe.holdAi());
+  await panelOf(page).getByRole('button', { name: 'Phân tích', exact: true }).click();
+  await expect(panelOf(page).getByRole('status')).toContainText('Đang phân tích…');
+  // Its own run says "Đang phân tích…" instead.
+  await expect(panelOf(page)).not.toContainText(busy);
+
+  const second = 'Lan Chờ Sau';
+  await createKycCustomer(page, second);
+  await addKycNote(page, second, [
+    ['Tình trạng hôn nhân', 'Đã kết hôn'],
+    ['Số con', '1'],
+    ['Nghề nghiệp', 'Kỹ sư'],
+  ]);
+  const panel = panelOf(page);
+  await expect(panel).toContainText('PROFILE_DISCOVERY');
+  await expect(panel.getByRole('button', { name: 'Phân tích bằng ChatGPT web' })).toBeDisabled();
+  await expect(panel).toContainText(busy);
+  await page.evaluate(() => window.exe.releaseAi());
+  await expect(panel).not.toContainText(busy);
 });
 
 // AI trích xuất (spec Phase 5 §8, mockup ai.html 3b–3f). The Mock proposes "<n> con" and "kết hôn".
@@ -250,6 +297,9 @@ test('AI trích xuất with the Mock: Xác nhận saves the fact on its note, B�
   const note = noteOf(page, NOTE);
   await note.getByRole('button', { name: 'AI trích xuất' }).click();
   const proposals = note.getByRole('list', { name: 'Đề xuất của AI' }).getByRole('listitem');
+  await expect(note.getByRole('status')).toHaveText(
+    'AI trích xuất xong: có đề xuất cần xác nhận bên dưới.',
+  );
   await expect(proposals).toHaveText([
     /^AI đề xuất: Tình trạng hôn nhân: Đã kết hôn \("kết hôn"\)/,
     /^AI đề xuất: Số con: 2 \("2 con"\)/,
@@ -299,6 +349,8 @@ test('AI trích xuất with the Mock: Xác nhận saves the fact on its note, B�
   );
   await nothing.getByRole('button', { name: 'Đóng' }).click();
   await expect(nothing.getByRole('status')).toHaveCount(0);
+  // The focus goes back to the button, not to the page (DR5-43).
+  await expect(nothing.getByRole('button', { name: 'AI trích xuất' })).toBeFocused();
 });
 
 test('AI trích xuất on a trường already held: Xác nhận updates one value, marks a conflict on another', async ({
@@ -454,7 +506,7 @@ test('the run says the model it was started with, whatever Settings → AI say m
   ]);
   await useOpenCode(page);
   const panel = panelOf(page);
-  const running = panel.getByRole('status');
+  const running = panel.getByRole('status').filter({ hasText: 'Đang phân tích…' });
 
   await page.evaluate(() => window.exe.holdAi());
   await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();

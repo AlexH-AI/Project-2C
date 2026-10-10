@@ -1,21 +1,38 @@
 import type { AiAnalysisView, KycFactRecord, KycVersionRecord } from '@p2c/db';
-import { evaluateKycGate, formatDate, formatDayMonth, KYC_INSUFFICIENT_MESSAGE } from '@p2c/domain';
+import {
+  evaluateKycGate,
+  formatCount,
+  formatDate,
+  formatDayMonth,
+  KYC_INSUFFICIENT_MESSAGE,
+} from '@p2c/domain';
 import { Button } from '@p2c/ui';
-import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { analyseCustomer, startChatGptWeb } from '../../data/ai-analysis';
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react';
+import { analyseCustomer, startChatGptWeb, type WebAnswerOutcome } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { errorParts, SETTINGS_AI_HASH, type AiFailure } from '../ai-error-view';
 import { LINK } from '../appointments/appointments-view';
 import {
+  aiPanelHelp,
   aiPanelView,
   analysisContent,
   analysisSource,
   historyRows,
   modelLabel,
+  panelDone,
   panelRun,
   webOpened,
   type AiPanelBlocked,
+  type AiPanelHelp,
   type AiPanelItem,
   type AiPanelSubgroup,
   type AiPanelWeb,
@@ -172,7 +189,7 @@ function Analysis({
       )}
       {content.conflicts.map(({ field, codes }) => (
         <p key={field} className={`${ALERT} mt-2.5 border-warn`}>
-          {t('aiPanel.conflict', { field, value: codes.join(' / ') })}
+          {t('aiPanel.conflict', { field, value: codes.join(t('sep.slash')) })}
         </p>
       ))}
       {content.sections.map((section) => (
@@ -216,6 +233,23 @@ function Analysis({
         </section>
       )}
     </div>
+  );
+}
+
+/** Mockups 2a, 4d: what Phân tích sends, and where, before the first analysis. */
+function HelpLine({ help }: { help: AiPanelHelp }) {
+  const count = formatCount(help.count);
+  return (
+    <p className="m-0 text-xs text-fg-3">
+      {help.provider === 'MOCK'
+        ? t('aiPanel.help.MOCK', { count })
+        : t('aiPanel.help.OPENCODE_GO', {
+            count,
+            plan: t(`settingsAi.plan.${help.plan}`),
+            model: help.model,
+          })}{' '}
+      {t('aiPanel.help.web')} {t('aiPanel.help.private')}
+    </p>
   );
 }
 
@@ -280,7 +314,26 @@ export function KycIntelligence({
   // While the copy and the browser are on their way, both buttons are off already (§3.1 item 4).
   const [startingWeb, setStartingWeb] = useState(false);
   const [webFailed, setWebFailed] = useState(false);
+  // How the last web session's Kiểm tra và lưu ended, said to a screen reader once saved (DR5-33).
+  const [webEnded, setWebEnded] = useState<WebAnswerOutcome | null>(null);
   const webOpen = web !== null || startingWeb;
+  // The session gone (saved, discarded or Hủy) takes the focus with it: back to the button that
+  // opened it, or the panel's heading while that is off (DR5-43).
+  const webStartId = useId();
+  const hadWeb = useRef(false);
+  useEffect(() => {
+    if (web) {
+      hadWeb.current = true;
+      return;
+    }
+    if (!hadWeb.current) return;
+    hadWeb.current = false;
+    const active = document.activeElement;
+    if (active && active !== document.body) return;
+    const button = document.getElementById(webStartId);
+    if (button instanceof HTMLButtonElement && !button.disabled) button.focus();
+    else document.getElementById('kyc-intelligence')?.focus();
+  }, [web, webStartId]);
   // AI trích xuất of this customer is off too while the session waits (ADR-0009 W-1 item 6).
   useEffect(() => {
     if (!webOpen) return;
@@ -303,7 +356,10 @@ export function KycIntelligence({
     busy,
     webOpen,
     viewing,
+    running: analysis.phase !== 'idle',
+    webMode: web?.session.input.mode ?? null,
   });
+  const done = panelDone(analysis.ended, webEnded);
   const shown = panelRun(analysis.phase, analysis.ended);
   const showing = view.viewing ?? view.shown;
   // Mockup 2j: "Đang xem lần <dd/mm hh:mm> · kyc v<n> · STALE" over an older one picked.
@@ -328,11 +384,13 @@ export function KycIntelligence({
 
   const analyse = () => {
     setWebFailed(false);
+    setWebEnded(null);
     analysis.start((signal, call) => analyseCustomer(app, customerId, signal, call));
   };
   const startWeb = async () => {
     setStartingWeb(true);
     setWebFailed(false);
+    setWebEnded(null);
     // An error of Phân tích would sit beside the session's (review of PR 459).
     analysis.clear();
     const outcome = await startChatGptWeb(app, customerId);
@@ -356,13 +414,13 @@ export function KycIntelligence({
   return (
     <section aria-labelledby="kyc-intelligence" className={`${CARD} flex flex-col gap-2.5`}>
       <div className="flex flex-wrap items-center gap-2">
-        <h2 id="kyc-intelligence" className={HEADING}>
+        <h2 id="kyc-intelligence" tabIndex={-1} className={HEADING}>
           {t('aiPanel.title')}
         </h2>
         <span className={`${BADGE} ${BADGE_COLORS[view.badge]}`}>{view.badge}</span>
-        {view.shown && !view.blocked && <SourceBadge source={analysisSource(view.shown)} />}
+        {view.shown && !view.blocked && !web && <SourceBadge source={analysisSource(view.shown)} />}
         <div className="flex-1" />
-        <Button disabled={!view.button.enabled} onClick={() => void startWeb()}>
+        <Button id={webStartId} disabled={!view.button.enabled} onClick={() => void startWeb()}>
           {t('aiPanel.web.start')}
         </Button>
         <Button
@@ -373,8 +431,15 @@ export function KycIntelligence({
           {t(view.button.again ? 'aiPanel.reanalyse' : 'aiPanel.analyse')}
         </Button>
       </div>
+      {view.busyElsewhere && <p className="m-0 text-xs text-fg-3">{t('aiError.AI_BUSY')}</p>}
+      {/* Present before it is filled, so a screen reader hears the run end (DR5-33). */}
+      <div aria-live="polite" className="sr-only">
+        {done && <p role="status">{t(`aiPanel.done.${done}`)}</p>}
+      </div>
       {view.blocked && <BlockedNote blocked={view.blocked} />}
-      {web && <KycWebSession web={web} versions={versions} onChange={setWeb} />}
+      {web && (
+        <KycWebSession web={web} versions={versions} onChange={setWeb} onChecked={setWebEnded} />
+      )}
       {webFailed && !web && (
         <div role="alert" className={`${ALERT} flex items-center gap-2.5 border-danger text-sm`}>
           <span className="flex-1">{t('aiError.GENERAL')}</span>
@@ -454,7 +519,12 @@ export function KycIntelligence({
           <Analysis analysis={showing} versions={versions} onCode={showFact} />
         </div>
       ) : (
-        !view.blocked && <p className="m-0 text-sm text-fg-3">{t('aiPanel.empty')}</p>
+        !view.blocked && (
+          <div className="flex flex-col gap-1.5">
+            <p className="m-0 text-sm text-fg-3">{t('aiPanel.empty')}</p>
+            <HelpLine help={aiPanelHelp(facts, app.ai.settings())} />
+          </div>
+        )
       )}
       <AnalysisHistory
         analyses={analyses}

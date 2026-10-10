@@ -94,6 +94,9 @@ test('copies the message, opens chatgpt.com, saves a pasted answer as CURRENT Ch
   await box.fill(GOOD);
   await save.click();
   await expect(panel).toContainText('CURRENT');
+  // Said to a screen reader (DR5-33); the focus is back on the button that opened the session.
+  await expect(panel.getByRole('status')).toHaveText('Phân tích xong: đã lưu kết quả.');
+  await expect(start).toBeFocused();
   // The head badge; the history names it too.
   await expect(panel.getByText('ChatGPT web', { exact: true }).first()).toBeVisible();
   await expect(panel).toContainText(/kyc v2 · discovery@1\+web@1 · ChatGPT web · 15\/09 \d\d:\d\d/);
@@ -216,10 +219,19 @@ test('a wrong paste then a right one is ACCEPTED; two wrong ones are REJECTED', 
 test('a KYC change while the session is open leaves the saved result STALE', async ({ page }) => {
   const name = 'Cúc Web';
   const panel = await discoveryCustomer(page, name);
+  // The badge after the heading: the state of the analysis shown, or the mode of the session.
+  const badge = panel
+    .getByRole('heading', { name: 'KYC Intelligence' })
+    .locator('xpath=following-sibling::span[1]');
+  await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
+  await expect(badge).toHaveText('CURRENT');
   await panel.getByRole('button', { name: 'Phân tích bằng ChatGPT web' }).click();
   await expect(panel).toContainText('kyc v2 · discovery@1+web@1');
+  // The mode of the input taken (§9.1, mockup 4e), whatever the saved one or the KYC become.
+  await expect(badge).toHaveText('PROFILE_DISCOVERY');
 
   await addKycNote(page, name, [['Nơi sinh sống', 'Huế']]);
+  await expect(badge).toHaveText('PROFILE_DISCOVERY');
   await panel.getByRole('textbox', { name: 'Dán kết quả' }).fill(GOOD);
   await panel.getByRole('button', { name: 'Kiểm tra và lưu' }).click();
   await expect(panel).toContainText('STALE');
@@ -251,6 +263,7 @@ test('Hủy and leaving the profile save nothing; a failed copy shows the messag
   await expect(box).toBeHidden();
   await expect(panel).toContainText('Chưa có phân tích AI cho KH này.');
   await expect(start).toBeEnabled();
+  await expect(start).toBeFocused();
 
   await page.evaluate(() => (window.web.failCopy = false));
   await start.click();

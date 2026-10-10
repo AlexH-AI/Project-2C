@@ -2,7 +2,7 @@ import type { ExtractedFact } from '@p2c/ai';
 import type { KycNoteRecord } from '@p2c/db';
 import type { KycFact } from '@p2c/domain';
 import { Button } from '@p2c/ui';
-import { useState, useSyncExternalStore } from 'react';
+import { useId, useState, useSyncExternalStore } from 'react';
 import { extractFromNote } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
@@ -49,6 +49,12 @@ export function NoteEvent({
   const button = extractionButton(note);
   const view = job.phase === 'idle' ? extractionView(job.ended, handled, facts) : null;
   const handle = (index: number) => setHandled((now) => new Set(now).add(index));
+  // Đóng takes the focus with the line it closes: back to this note's button (DR5-43).
+  const buttonId = useId();
+  const close = () => {
+    job.clear();
+    document.getElementById(buttonId)?.focus();
+  };
   const extract = () => {
     setHandled(new Set());
     job.start((signal, call) => extractFromNote(app.ai, note.text, signal, call));
@@ -60,6 +66,7 @@ export function NoteEvent({
         <b>{t(button ? 'timeline.note' : 'timeline.systemNote')}</b>
         {button && (
           <Button
+            id={buttonId}
             className="px-2 py-0.5 text-xs"
             disabled={busy || button.tooShort}
             title={button.tooShort ? t('extraction.tooShort') : undefined}
@@ -89,6 +96,10 @@ export function NoteEvent({
           <span className="text-fg-3"> {t('aiPanel.cancellingDetail')}</span>
         </BusyLine>
       )}
+      {/* Present before it is filled, so a screen reader hears the run end (DR5-33). */}
+      <div aria-live="polite" className="sr-only">
+        {view?.kind === 'proposals' && <p role="status">{t('extraction.done')}</p>}
+      </div>
       {view?.kind === 'proposals' && (
         <>
           <ul
@@ -118,7 +129,7 @@ export function NoteEvent({
       {view?.kind === 'empty' && (
         <p role="status" className={`${ROW} m-0 border-dashed border-border-strong bg-surface-2`}>
           <span className="flex-1">{t('extraction.empty')}</span>
-          <Button onClick={job.clear}>{t('extraction.close')}</Button>
+          <Button onClick={close}>{t('extraction.close')}</Button>
         </p>
       )}
       {view?.kind === 'error' && (

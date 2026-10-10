@@ -75,6 +75,8 @@ function CategoryRow({
             <span
               key={fact.id}
               id={factAnchor(code)}
+              // Focused by a click on its code cited as evidence (DR5-38).
+              tabIndex={-1}
               aria-current={code === marked ? 'true' : undefined}
               className={`flex justify-between gap-2 rounded-sm text-fg-2 ${code === marked ? 'outline-2 outline-offset-2 outline-warn' : ''}`}
             >
