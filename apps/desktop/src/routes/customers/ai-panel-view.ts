@@ -10,7 +10,6 @@ import {
   analysisOutputSchema,
   discoveryOutputSchema,
   VALIDATION_CODES,
-  type AiErrorCode,
   type DiscoveryOutput,
   type PERSONALITY_SYSTEMS,
   type ValidationCode,
@@ -33,6 +32,7 @@ import {
   type KycGateState,
 } from '@p2c/domain';
 import type { AnalysisOutcome, WebAnswerOutcome } from '../../data/ai-analysis';
+import { aiFailure, GENERAL_FAILURE, type AiFailure } from '../ai-error-view';
 
 export type AiPanelBlocked =
   /** Mockup 2b: "Giải quyết mâu thuẫn ở <trường> trước khi phân tích". */
@@ -192,20 +192,14 @@ function blockedBy(gate: KycGateResult): AiPanelBlocked | null {
   return null;
 }
 
-/** The §5.3 message shown: an AI error code, or the general one for a bug or a bad request. */
-export type AiPanelError = Exclude<AiErrorCode, 'AI_BAD_REQUEST'> | 'GENERAL';
-
-export const panelError = (code: AiErrorCode): AiPanelError =>
-  code === 'AI_BAD_REQUEST' ? 'GENERAL' : code;
-
 /** The panel's own click on Phân tích, until it ends. */
 export type AiPanelRun =
   | { readonly phase: 'idle' }
   | { readonly phase: 'running' }
   /** Hủy given while the request still runs in Rust (§5.2). */
   | { readonly phase: 'cancelling' }
-  /** Mockup 2f: the message and Thử lại; nothing was saved. */
-  | { readonly phase: 'error'; readonly error: AiPanelError };
+  /** Mockup 2f: the §5.3 message, with its HTTP status (2l), and Thử lại; nothing was saved. */
+  | { readonly phase: 'error'; readonly error: AiFailure };
 
 /** Where a run the app keeps is (`AiJobs`): none for the key, running, or cancelled. */
 export type AiJobPhase = 'idle' | 'running' | 'cancelling';
@@ -221,9 +215,9 @@ const IDLE: AiPanelRun = { phase: 'idle' };
 export function runAfter(outcome: AnalysisOutcome): AiPanelRun {
   switch (outcome.kind) {
     case 'error':
-      return { phase: 'error', error: panelError(outcome.code) };
+      return { phase: 'error', error: aiFailure(outcome) };
     case 'failed':
-      return { phase: 'error', error: 'GENERAL' };
+      return { phase: 'error', error: GENERAL_FAILURE };
     case 'cancelled':
     case 'saved':
     case 'blocked':

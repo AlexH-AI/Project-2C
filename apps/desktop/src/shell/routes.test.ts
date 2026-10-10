@@ -24,6 +24,12 @@ describe('parseHash', () => {
     expect(parseHash('#/customers/Nguy%E1%BB%85n')).toEqual({ screen: 'customer', id: 'Nguyễn' });
   });
 
+  it('reads the AI section of Cài đặt, which a link opens at once (mockup ai.html 2f)', () => {
+    expect(parseHash('#/settings/ai')).toEqual({ screen: 'settings', section: 'ai' });
+    expect(parseHash('#/settings/nope')).toBeNull();
+    expect(parseHash('#/settings/ai/x')).toBeNull();
+  });
+
   it('ignores a trailing slash', () => {
     expect(parseHash('#/customers/')).toEqual({ screen: 'customers' });
   });
@@ -41,7 +47,12 @@ describe('parseHash', () => {
 
 describe('routeToHash', () => {
   it('round-trips through parseHash', () => {
-    for (const route of [DEFAULT_ROUTE, { screen: 'customer', id: 'Nguyễn 1' }] as const) {
+    for (const route of [
+      DEFAULT_ROUTE,
+      { screen: 'customer', id: 'Nguyễn 1' },
+      { screen: 'settings' },
+      { screen: 'settings', section: 'ai' },
+    ] as const) {
       expect(parseHash(routeToHash(route))).toEqual(route);
     }
   });
@@ -51,6 +62,7 @@ describe('sectionOf', () => {
   it('keeps Customers selected on a customer profile', () => {
     expect(sectionOf({ screen: 'customer', id: 'x' })).toBe('customers');
     expect(sectionOf({ screen: 'team' })).toBe('team');
+    expect(sectionOf({ screen: 'settings', section: 'ai' })).toBe('settings');
   });
 });
 

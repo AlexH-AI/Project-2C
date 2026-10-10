@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } fr
 import { analyseCustomer, startChatGptWeb } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
+import { errorParts, SETTINGS_AI_HASH, type AiFailure } from '../ai-error-view';
 import { LINK } from '../appointments/appointments-view';
 import {
   aiPanelView,
@@ -231,6 +232,22 @@ export function BusyLine({ children, action }: { children: ReactNode; action?: R
   );
 }
 
+/** The §5.3 message of an error (2l); AI_NO_KEY links to Settings → AI (2f). */
+export function AiErrorText({ error }: { error: AiFailure }) {
+  const { before, link, after } = errorParts(error);
+  return (
+    <>
+      {before}
+      {link && (
+        <a href={SETTINGS_AI_HASH} className="text-accent hover:underline">
+          {link}
+        </a>
+      )}
+      {after}
+    </>
+  );
+}
+
 /**
  * Mockup customer.html "KYC Intelligence" (spec Phase 5 §9.1): the gate, a run of the AI with Hủy,
  * its errors, and the latest ACCEPTED analysis, CURRENT or STALE. Every AI button follows the app's
@@ -311,7 +328,7 @@ export function KycIntelligence({
 
   const analyse = () => {
     setWebFailed(false);
-    analysis.start((signal) => analyseCustomer(app, customerId, signal));
+    analysis.start((signal, call) => analyseCustomer(app, customerId, signal, call));
   };
   const startWeb = async () => {
     setStartingWeb(true);
@@ -329,7 +346,8 @@ export function KycIntelligence({
     }
   };
 
-  const settings = app.ai.settings();
+  // What runs, as taken at the click: Settings changed meanwhile do not change it (DR5-31).
+  const { settings } = analysis;
   const faded =
     view.blocked !== null ||
     showing?.state === 'STALE' ||
@@ -381,7 +399,7 @@ export function KycIntelligence({
       {shown.phase === 'running' && (
         <BusyLine action={<Button onClick={analysis.cancel}>{t('aiPanel.cancel')}</Button>}>
           {t('aiPanel.running')}
-          {settings.provider !== 'MOCK' && (
+          {settings && settings.provider !== 'MOCK' && (
             <span className="text-fg-3">
               {' '}
               {t('aiPanel.runningDetail', { name: modelLabel(settings.model) })}
@@ -397,7 +415,9 @@ export function KycIntelligence({
       )}
       {shown.phase === 'error' && (
         <div role="alert" className={`${ALERT} flex items-center gap-2.5 border-danger text-sm`}>
-          <span className="flex-1">{t(`aiError.${shown.error}`)}</span>
+          <span className="flex-1">
+            <AiErrorText error={shown.error} />
+          </span>
           <Button disabled={!view.button.enabled} onClick={analyse}>
             {t('aiPanel.retry')}
           </Button>

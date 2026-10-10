@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   checkKey,
   checkShown,
-  errorText,
   modelList,
   modelOptions,
   problemText,
@@ -101,16 +100,6 @@ describe('a connection check (mockup 1f, 2l, 4a, 4c)', () => {
     ['AI_KEYRING', 'Không đọc / ghi được key trong Windows Credential Manager.'],
   ] as const)('shows the message of %s', (code, text) => {
     expect(checkShown({ kind: 'error', code }, CREDIT)).toEqual({ phase: 'error', text });
-  });
-
-  it('adds the HTTP status Rust got, and the server message of AI_HTTP', () => {
-    expect(errorText({ code: 'AI_HTTP', httpStatus: 502, serverMessage: 'Bad gateway' })).toBe(
-      'OpenCode báo lỗi (HTTP 502): Bad gateway',
-    );
-    expect(errorText({ code: 'AI_HTTP', httpStatus: 500 })).toBe('OpenCode báo lỗi (HTTP 500).');
-    expect(errorText({ code: 'AI_UNAUTHORIZED', httpStatus: 401, serverMessage: 'expired' })).toBe(
-      'Key không hợp lệ hoặc hết hạn. Gói Go đã hết hạn → chọn gói Credit ở Cài đặt → AI. (HTTP 401)',
-    );
   });
 
   it('shows the general message for a check that failed by a bug, and nothing once cancelled', () => {

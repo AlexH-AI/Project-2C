@@ -1,4 +1,4 @@
-import { createAiRunner, type AiAbortSignal } from '@p2c/ai';
+import { createAiRunner, DEFAULT_AI_SETTINGS, type AiAbortSignal } from '@p2c/ai';
 import { describe, expect, it, vi } from 'vitest';
 import { createAiJobs } from './ai-jobs';
 
@@ -64,6 +64,19 @@ describe('createAiJobs (review of PR 439: a run outlives the screen that started
     answer('saved');
     await vi.waitFor(() => expect(jobs.get('analysis:c1')).toBeUndefined());
     expect(runner.busy).toBe(false);
+  });
+
+  it('keeps the settings taken at the click while it runs, also after Hủy (DR5-31)', () => {
+    const { jobs, job } = held();
+    const settings = { ...DEFAULT_AI_SETTINGS, provider: 'OPENCODE_GO', model: 'kimi-k3' } as const;
+
+    jobs.start('analysis:c1', job, settings);
+    expect(jobs.get('analysis:c1')).toMatchObject({ settings });
+    jobs.cancel('analysis:c1');
+    expect(jobs.get('analysis:c1')).toMatchObject({ cancelled: true, settings });
+
+    jobs.start('extraction:n1', job);
+    expect(jobs.get('extraction:n1')!.settings).toBeUndefined();
   });
 
   it('ignores Hủy of a key with no job', () => {

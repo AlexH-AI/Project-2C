@@ -9,7 +9,7 @@ import { t } from '../../i18n';
 import { ALERT } from './CustomerDialogs';
 import { YES_NO } from './CustomerKyc';
 import { extractionButton, extractionView } from './extraction-view';
-import { BusyLine } from './KycIntelligence';
+import { AiErrorText, BusyLine } from './KycIntelligence';
 import { factText } from './kyc-view';
 import { useAiJob } from './use-ai-job';
 
@@ -51,7 +51,7 @@ export function NoteEvent({
   const handle = (index: number) => setHandled((now) => new Set(now).add(index));
   const extract = () => {
     setHandled(new Set());
-    job.start((signal) => extractFromNote(app.ai, note.text, signal));
+    job.start((signal, call) => extractFromNote(app.ai, note.text, signal, call));
   };
 
   return (
@@ -124,7 +124,11 @@ export function NoteEvent({
       {view?.kind === 'error' && (
         <div role="alert" className={`${ALERT} flex items-center gap-2.5 border-danger`}>
           <span className="flex-1">
-            {view.error === 'INVALID' ? t('extraction.invalid') : t(`aiError.${view.error}`)}
+            {view.error === 'INVALID' ? (
+              t('extraction.invalid')
+            ) : (
+              <AiErrorText error={view.error} />
+            )}
           </span>
           <Button disabled={busy} onClick={extract}>
             {t('aiPanel.retry')}

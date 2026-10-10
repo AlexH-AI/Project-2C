@@ -384,3 +384,102 @@ test('one AI request at a time: AI trích xuất turns every AI button off, Hủ
   await note.getByRole('alert').getByRole('button', { name: 'Thử lại' }).click();
   await expect(note.getByRole('alert')).toContainText('Không kết nối được OpenCode.');
 });
+
+test('the errors of the panel and AI trích xuất: the HTTP status as in Settings, a link to Settings → AI (DR5-30, DR5-44)', async ({
+  page,
+}) => {
+  await asExe(page);
+  const name = 'Tú Báo Lỗi';
+  await createKycCustomer(page, name);
+  await addKycNote(page, name, [
+    ['Tình trạng hôn nhân', 'Đã kết hôn'],
+    ['Số con', '2'],
+    ['Nghề nghiệp', 'Bác sĩ'],
+  ]);
+  await writeNote(page, name, NOTE);
+  await useOpenCode(page);
+  const panel = panelOf(page);
+  const note = noteOf(page, NOTE);
+
+  await page.evaluate(
+    () => (window.exe.aiError = { code: 'AI_HTTP', httpStatus: 502, message: 'Bad gateway' }),
+  );
+  await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
+  await expect(panel.getByRole('alert')).toContainText('OpenCode báo lỗi (HTTP 502): Bad gateway');
+  await page.evaluate(
+    () => (window.exe.aiError = { code: 'AI_RATE_LIMITED', httpStatus: 429, message: 'slow' }),
+  );
+  await panel.getByRole('alert').getByRole('button', { name: 'Thử lại' }).click();
+  await expect(panel.getByRole('alert')).toContainText(
+    'Đã chạm giới hạn gói Go hoặc hết credit OpenCode — thử lại sau, hoặc đổi gói / nạp credit. (HTTP 429)',
+  );
+
+  await page.evaluate(
+    () => (window.exe.aiError = { code: 'AI_UNAUTHORIZED', httpStatus: 401, message: 'expired' }),
+  );
+  await note.getByRole('button', { name: 'AI trích xuất' }).click();
+  await expect(note.getByRole('alert')).toContainText(
+    'Key không hợp lệ hoặc hết hạn. Gói Go đã hết hạn → chọn gói Credit ở Cài đặt → AI. (HTTP 401)',
+  );
+  await page.evaluate(
+    () => (window.exe.aiError = { code: 'AI_HTTP', httpStatus: 500, message: 'Internal error' }),
+  );
+  await note.getByRole('alert').getByRole('button', { name: 'Thử lại' }).click();
+  await expect(note.getByRole('alert')).toContainText(
+    'OpenCode báo lỗi (HTTP 500): Internal error',
+  );
+
+  // Mockup 2f: AI_NO_KEY says where to enter it, and goes there.
+  await page.evaluate(() => (window.exe.aiError = { code: 'AI_NO_KEY' }));
+  await panel.getByRole('alert').getByRole('button', { name: 'Thử lại' }).click();
+  const alert = panel.getByRole('alert');
+  await expect(alert).toContainText('Chưa có API key OpenCode — nhập ở Cài đặt → AI.');
+  await alert.getByRole('link', { name: 'Cài đặt → AI' }).click();
+  await expect(page.getByRole('region', { name: 'API key OpenCode' })).toBeVisible();
+  await expect(
+    page.getByRole('navigation', { name: 'Mục cài đặt' }).getByRole('button', { name: 'AI' }),
+  ).toHaveAttribute('aria-current', 'page');
+});
+
+test('the run says the model it was started with, whatever Settings → AI say meanwhile (DR5-31)', async ({
+  page,
+}) => {
+  await asExe(page);
+  const name = 'Tú Đổi Model';
+  await createKycCustomer(page, name);
+  await addKycNote(page, name, [
+    ['Tình trạng hôn nhân', 'Đã kết hôn'],
+    ['Số con', '2'],
+    ['Nghề nghiệp', 'Bác sĩ'],
+  ]);
+  await useOpenCode(page);
+  const panel = panelOf(page);
+  const running = panel.getByRole('status');
+
+  await page.evaluate(() => window.exe.holdAi());
+  await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
+  await expect(running).toContainText('Đang phân tích… · DeepSeek V4.1 Flash');
+
+  const settings = async (change: () => Promise<void>) => {
+    await page.getByRole('link', { name: 'Cài đặt' }).click();
+    await page
+      .getByRole('navigation', { name: 'Mục cài đặt' })
+      .getByRole('button', { name: 'AI' })
+      .click();
+    await change();
+    await page.goBack();
+  };
+  await settings(async () => {
+    await page.getByRole('combobox', { name: 'Model' }).selectOption({ label: 'Kimi K3' });
+  });
+  await expect(running).toContainText('Đang phân tích… · DeepSeek V4.1 Flash');
+  await settings(() =>
+    page.getByRole('radiogroup', { name: 'Provider' }).getByRole('radio', { name: 'Mock' }).check(),
+  );
+  await expect(running).toContainText('Đang phân tích… · DeepSeek V4.1 Flash');
+  expect(await page.evaluate(() => window.exe.aiCalls)).toMatchObject([
+    { model: 'deepseek-v4.1-flash' },
+  ]);
+  await page.evaluate(() => window.exe.releaseAi());
+  await expect(running).toHaveCount(0);
+});

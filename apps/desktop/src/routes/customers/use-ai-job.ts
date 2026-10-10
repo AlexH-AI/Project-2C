@@ -1,6 +1,6 @@
 import type { AiAbortSignal } from '@p2c/ai';
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import type { AnalysisOutcome, ExtractionOutcome } from '../../data/ai-analysis';
+import type { AiCall, AnalysisOutcome, ExtractionOutcome } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import type { AiJobPhase } from './ai-panel-view';
 
@@ -18,7 +18,8 @@ interface AiJobOutcomes {
 export function useAiJob<K extends keyof AiJobOutcomes>(kind: K, id: string) {
   type Outcome = AiJobOutcomes[K];
   const key = `${kind}:${id}`;
-  const { jobs } = useAppData().ai;
+  const { ai } = useAppData();
+  const { jobs } = ai;
   const job = useSyncExternalStore(jobs.subscribe, () => jobs.get(key));
   const [ended, setEnded] = useState<Outcome | null>(null);
   useEffect(() => {
@@ -35,11 +36,15 @@ export function useAiJob<K extends keyof AiJobOutcomes>(kind: K, id: string) {
   const phase: AiJobPhase = job ? (job.cancelled ? 'cancelling' : 'running') : 'idle';
   return {
     phase,
+    /** The settings the running request was started with (DR5-31). */
+    settings: job?.settings,
     ended,
-    start(run: (signal: AiAbortSignal) => Promise<Outcome>) {
+    /** `run` gets the call taken now, so what runs is what the screen says runs. */
+    start(run: (signal: AiAbortSignal, call: AiCall) => Promise<Outcome>) {
       setEnded(null);
+      const call = ai.call();
       // `AiJobs` handles how `done` ends, a rejection too.
-      void jobs.start(key, run);
+      void jobs.start(key, (signal) => run(signal, call), call.settings);
     },
     cancel: () => jobs.cancel(key),
     /** Back to nothing shown: Đóng, or another run of the screen starting. */

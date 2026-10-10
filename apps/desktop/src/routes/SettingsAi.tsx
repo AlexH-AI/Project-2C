@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import {
   AiError,
   checkConnection,
@@ -12,10 +12,10 @@ import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import type { OpenCodeClient } from '../data/ai-tauri';
 import { t } from '../i18n';
+import { errorText } from './ai-error-view';
 import {
   checkKey,
   checkShown,
-  errorText,
   modelList,
   modelOptions,
   problemText,
@@ -148,13 +148,16 @@ function KeyCard({ client }: { client: OpenCodeClient }) {
   const [outcome, setOutcome] = useState<KeyOutcome>();
   const [working, setWorking] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  // Once a save or a delete starts, the status read at the start is out of date (DR5-37).
+  const acted = useRef(false);
 
   useEffect(() => {
     let current = true;
+    const fresh = () => current && !acted.current;
     client.keyStatus().then(
-      (value) => current && setStored(value),
+      (value) => fresh() && setStored(value),
       (error: unknown) =>
-        current && setOutcome({ kind: 'error', text: failureText(error), notSaved: false }),
+        fresh() && setOutcome({ kind: 'error', text: failureText(error), notSaved: false }),
     );
     return () => {
       current = false;
@@ -162,13 +165,15 @@ function KeyCard({ client }: { client: OpenCodeClient }) {
   }, [client]);
 
   const saveKey = async () => {
+    // The field's error never sits beside the outcome of the save before (DR5-46).
+    setOutcome(undefined);
     const checked = checkKey(text);
     if ('error' in checked) {
       setFieldError(checked.error);
       return;
     }
     setFieldError(undefined);
-    setOutcome(undefined);
+    acted.current = true;
     setWorking(true);
     try {
       await client.setKey(checked.key);
@@ -184,6 +189,7 @@ function KeyCard({ client }: { client: OpenCodeClient }) {
 
   const deleteKey = async () => {
     setOutcome(undefined);
+    acted.current = true;
     setWorking(true);
     try {
       await client.deleteKey();
@@ -221,6 +227,9 @@ function KeyCard({ client }: { client: OpenCodeClient }) {
             label={t(stored ? 'settingsAi.keyNew' : 'settingsAi.key')}
             value={text}
             onChange={setText}
+            // Hidden while pasted and after a save that failed, as it stays to try again (DR5-32).
+            type="password"
+            spellCheck={false}
             placeholder={t(stored ? 'settingsAi.keyNewPlaceholder' : 'settingsAi.keyPlaceholder')}
             error={fieldError && t(`settingsAi.keyError.${fieldError}`)}
             disabled={working}
