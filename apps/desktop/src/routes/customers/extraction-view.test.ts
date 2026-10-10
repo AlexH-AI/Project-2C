@@ -123,15 +123,20 @@ describe('extractionView (spec Phase 5 §8, mockup ai.html 3c–3e)', () => {
     });
     expect(extractionView({ kind: 'error', code: 'AI_NETWORK' }, NONE, [])).toEqual({
       kind: 'error',
-      error: 'AI_NETWORK',
+      error: { code: 'AI_NETWORK' },
+    });
+    const http = { code: 'AI_HTTP', httpStatus: 500, serverMessage: 'oops' } as const;
+    expect(extractionView({ kind: 'error', ...http }, NONE, [])).toEqual({
+      kind: 'error',
+      error: http,
     });
     expect(extractionView({ kind: 'error', code: 'AI_BAD_REQUEST' }, NONE, [])).toEqual({
       kind: 'error',
-      error: 'GENERAL',
+      error: { code: 'GENERAL' },
     });
     expect(extractionView({ kind: 'failed' }, NONE, [])).toEqual({
       kind: 'error',
-      error: 'GENERAL',
+      error: { code: 'GENERAL' },
     });
   });
 });

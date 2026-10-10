@@ -1,19 +1,20 @@
 /**
  * Settings → AI without React (spec Phase 5 §4, §5.3; mockup ai.html 1a–1g, 4a–4c): the model
- * and reasoning lists, the check of a pasted key, and the texts of a connection check.
+ * and reasoning lists, the check of a pasted key, and the texts of a connection check (its errors
+ * by the shared `errorText`).
  */
 import {
   AI_MODELS,
   AI_REASONING_LEVELS,
   DEFAULT_AI_MODEL,
   DEFAULT_AI_SETTINGS,
-  type AiErrorCode,
   type AiSettings,
   type AiSettingsProblem,
   type ConnectionResult,
 } from '@p2c/ai';
 import type { SelectOption } from '@p2c/ui';
 import { joinParts, t } from '../i18n';
+import { errorText } from './ai-error-view';
 import { modelLabel } from './customers/ai-panel-view';
 
 /** Rust takes 1–512 characters once trimmed (§4.3). */
@@ -60,27 +61,6 @@ export function problemText(problem: AiSettingsProblem): string {
   return problem.kind === 'model'
     ? t('settingsAi.invalidModel', { model: problem.model, defaults })
     : t('settingsAi.invalid', { defaults });
-}
-
-interface AiFailure {
-  readonly code: AiErrorCode;
-  readonly httpStatus?: number;
-  readonly serverMessage?: string;
-}
-
-/**
- * The §5.3 message of an error (mockup 2l, 4c). Settings also shows the HTTP status Rust got, so
- * the Owner can read the real code of an expired plan (T-164, Owner 09/10/2026).
- */
-export function errorText({ code, httpStatus, serverMessage }: AiFailure): string {
-  if (code === 'AI_BAD_REQUEST') return t('aiError.GENERAL');
-  if (httpStatus === undefined) return t(`aiError.${code}`);
-  if (code === 'AI_HTTP') {
-    return serverMessage
-      ? t('settingsAi.checkHttp', { status: httpStatus, message: serverMessage })
-      : t('settingsAi.checkHttpBare', { status: httpStatus });
-  }
-  return t('settingsAi.checkStatus', { message: t(`aiError.${code}`), status: httpStatus });
 }
 
 export type CheckShown =

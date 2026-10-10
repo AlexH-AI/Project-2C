@@ -186,6 +186,34 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
     expect(ai.runner.busy).toBe(false);
   });
 
+  it('keeps the HTTP status and the server message of a failed call (DR5-30)', async () => {
+    const failure = new AiError('AI_RATE_LIMITED', { httpStatus: 429, serverMessage: 'slow down' });
+    const { app, customer } = await withCustomer({
+      reportError: vi.fn(),
+      adapter: { complete: () => Promise.reject(failure) },
+    });
+
+    expect(await analyseCustomer(app, customer.id)).toEqual({
+      kind: 'error',
+      code: 'AI_RATE_LIMITED',
+      httpStatus: 429,
+      serverMessage: 'slow down',
+    });
+  });
+
+  it('runs with the call taken at the click, whatever Settings say by then (DR5-31)', async () => {
+    const { app, customer, rows } = await withCustomer();
+    const complete = vi.fn(createMockAdapter().complete);
+    const call = { ...app.ai.call(), adapter: { complete } };
+
+    expect(await analyseCustomer(app, customer.id, undefined, call)).toEqual({
+      kind: 'saved',
+      status: 'ACCEPTED',
+    });
+    expect(complete).toHaveBeenCalledOnce();
+    expect(rows()).toHaveLength(1);
+  });
+
   it('Hủy gives cancelled at once, keeps every AI button off until the adapter answers, saves nothing', async () => {
     const held = heldAdapter();
     const { app, customer, rows, ai } = await withCustomer({
@@ -398,6 +426,29 @@ describe('extractFromNote (spec Phase 5 §8)', () => {
     });
 
     expect(await extractFromNote(ai, NOTE)).toEqual({ kind: 'error', code: 'AI_NO_KEY' });
+  });
+
+  it('keeps the HTTP status and the server message of a failed call (DR5-30)', async () => {
+    const failure = new AiError('AI_HTTP', { httpStatus: 502, serverMessage: 'Bad gateway' });
+    const ai = createAppAi(memoryStore(), { adapter: { complete: () => Promise.reject(failure) } });
+
+    expect(await extractFromNote(ai, NOTE)).toEqual({
+      kind: 'error',
+      code: 'AI_HTTP',
+      httpStatus: 502,
+      serverMessage: 'Bad gateway',
+    });
+  });
+
+  it('runs with the call taken at the click, whatever Settings say by then (DR5-31)', async () => {
+    const complete = vi.fn(() =>
+      Promise.resolve({ content: '{"facts":[]}', promptTokens: 1, completionTokens: 1 }),
+    );
+    const ai = createAppAi(memoryStore());
+    const call = { ...ai.call(), adapter: { complete } };
+
+    expect(await extractFromNote(ai, NOTE, undefined, call)).toEqual({ kind: 'facts', facts: [] });
+    expect(complete).toHaveBeenCalledOnce();
   });
 
   it('gives cancelled on Hủy, the runner busy until the adapter answers (P5)', async () => {

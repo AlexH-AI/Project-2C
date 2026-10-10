@@ -11,7 +11,8 @@ import { TeamScreen } from './team/TeamScreen';
 export function Screen({ route }: { route: Route }) {
   if (route.screen === 'overview') return <Overview />;
   if (route.screen === 'appointments') return <AppointmentsScreen />;
-  if (route.screen === 'settings') return <Settings />;
+  // Keyed by its section, so a link to Settings → AI opens it from any section.
+  if (route.screen === 'settings') return <Settings key={route.section} section={route.section} />;
   if (route.screen === 'team') return <TeamScreen />;
   if (route.screen === 'customers') return <CustomersScreen />;
   if (route.screen === 'reports') return <ReportsScreen />;

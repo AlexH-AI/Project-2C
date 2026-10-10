@@ -4,21 +4,27 @@
  * Hủy, or "Đang hủy…" until the request in Rust ends (spec Phase 5 §5.2). One job per key: an
  * analysis by customer, an extraction by note.
  */
-import type { AiAbortSignal, AiRunner } from '@p2c/ai';
+import type { AiAbortSignal, AiRunner, AiSettings } from '@p2c/ai';
 
 export interface AiJob {
   /** Hủy was given: kept until the runner is free, as the request in Rust runs on. */
   readonly cancelled: boolean;
   /** What the job ends with; a screen shown again while it runs reads it here. */
   readonly done: Promise<unknown>;
+  /** The settings the request runs with, taken at the click: what the screen says runs (DR5-31). */
+  readonly settings: AiSettings | undefined;
 }
 
 export interface AiJobs {
   get(key: string): AiJob | undefined;
   /** Called on each change of the jobs; returns the unsubscribe function. */
   subscribe(listener: () => void): () => void;
-  /** Starts `job` under `key`; the job gets the signal of Hủy. */
-  start<T>(key: string, job: (signal: AiAbortSignal) => Promise<T>): Promise<T>;
+  /** Starts `job` under `key`, run with `settings`; the job gets the signal of Hủy. */
+  start<T>(
+    key: string,
+    job: (signal: AiAbortSignal) => Promise<T>,
+    settings?: AiSettings,
+  ): Promise<T>;
   cancel(key: string): void;
 }
 
@@ -45,10 +51,10 @@ export function createAiJobs(runner: AiRunner, reportError: (error: unknown) => 
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    start(key, job) {
+    start(key, job, settings) {
       const controller = new AbortController();
       const done = job(controller.signal);
-      const entry = { cancelled: false, done, controller };
+      const entry = { cancelled: false, done, settings, controller };
       jobs.set(key, entry);
       // Hủy replaces the entry, so a job cancelled stays until the runner is free.
       const end = () => {

@@ -387,19 +387,24 @@ describe('the run of the panel (spec Phase 5 §5.2, §5.3)', () => {
   it('shows the §5.3 message of an AI error, AI_BUSY too', () => {
     expect(runAfter({ kind: 'error', code: 'AI_RATE_LIMITED' })).toEqual({
       phase: 'error',
-      error: 'AI_RATE_LIMITED',
+      error: { code: 'AI_RATE_LIMITED' },
     });
     expect(runAfter({ kind: 'error', code: 'AI_BUSY' })).toEqual({
       phase: 'error',
-      error: 'AI_BUSY',
+      error: { code: 'AI_BUSY' },
     });
   });
 
+  it('keeps the HTTP status and the server message Rust gave (DR5-30)', () => {
+    const failed = { code: 'AI_HTTP', httpStatus: 502, serverMessage: 'Bad gateway' } as const;
+    expect(runAfter({ kind: 'error', ...failed })).toEqual({ phase: 'error', error: failed });
+  });
+
   it('shows the general message for a bug or a bad request (G3 ai.html#ask 10)', () => {
-    expect(runAfter({ kind: 'failed' })).toEqual({ phase: 'error', error: 'GENERAL' });
-    expect(runAfter({ kind: 'error', code: 'AI_BAD_REQUEST' })).toEqual({
+    expect(runAfter({ kind: 'failed' })).toEqual({ phase: 'error', error: { code: 'GENERAL' } });
+    expect(runAfter({ kind: 'error', code: 'AI_BAD_REQUEST', httpStatus: 400 })).toEqual({
       phase: 'error',
-      error: 'GENERAL',
+      error: { code: 'GENERAL' },
     });
   });
 
@@ -409,7 +414,7 @@ describe('the run of the panel (spec Phase 5 §5.2, §5.3)', () => {
 
     expect(panelRun('running', null)).toEqual({ phase: 'running' });
     expect(panelRun('cancelling', failed)).toEqual({ phase: 'cancelling' });
-    expect(panelRun('idle', failed)).toEqual({ phase: 'error', error: 'GENERAL' });
+    expect(panelRun('idle', failed)).toEqual({ phase: 'error', error: { code: 'GENERAL' } });
     expect(panelRun('idle', saved)).toEqual({ phase: 'idle' });
     expect(panelRun('idle', null)).toEqual({ phase: 'idle' });
   });

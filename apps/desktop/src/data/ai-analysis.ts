@@ -141,8 +141,13 @@ export type AnalysisOutcome =
   | { readonly kind: 'saved'; readonly status: 'ACCEPTED' | 'REJECTED' }
   /** The gate changed between showing the button and the click: its sentence, not an error. */
   | { readonly kind: 'blocked'; readonly state: KycGateState }
-  /** §5.3 message and Thử lại; `AI_BUSY` too. */
-  | { readonly kind: 'error'; readonly code: AiErrorCode }
+  /** §5.3 message and Thử lại; `AI_BUSY` too. A failed HTTP call keeps what Rust told (2l). */
+  | {
+      readonly kind: 'error';
+      readonly code: AiErrorCode;
+      readonly httpStatus?: number;
+      readonly serverMessage?: string;
+    }
   /** Hủy: the panel goes back to how it was. */
   | { readonly kind: 'cancelled' }
   /**
@@ -171,18 +176,20 @@ const GONE: readonly DbErrorCode[] = ['CUSTOMER_NOT_FOUND', 'KYC_VERSION_NOT_FOU
 /**
  * One click on Phân tích. The latest KYC version and its facts are read together, at once, so the
  * result is tied to the version the RE saw (§3 item 2); a change while it runs leaves it STALE.
- * The data replaced while it runs discards the result, whatever its IDs (DR5-36).
+ * The data replaced while it runs discards the result, whatever its IDs (DR5-36). `call`: the one
+ * taken at the click, which the panel shows while it runs (DR5-31).
  */
 export async function analyseCustomer(
   app: AnalysisApp,
   customerId: string,
   signal?: AiAbortSignal,
+  call: AiCall = app.ai.call(),
 ): Promise<AnalysisOutcome> {
   try {
     const generation = app.generation();
     const taken = takeProfile(app, customerId);
     if ('kind' in taken) return taken;
-    const result = await runAnalysis({ ...app.ai.call(), ...taken, signal });
+    const result = await runAnalysis({ ...call, ...taken, signal });
     if (result.kind !== 'record') return result;
     if (app.generation() !== generation) return { kind: 'discarded' };
     return save(app, result.row);
@@ -224,22 +231,19 @@ export type ExtractionOutcome =
   | { readonly kind: 'invalid' }
   | Extract<AnalysisOutcome, { kind: 'error' | 'cancelled' | 'failed' }>;
 
-/** One click on AI trích xuất: the note as the RE wrote it goes to the AI (§6.1), nothing is saved. */
+/**
+ * One click on AI trích xuất: the note as the RE wrote it goes to the AI (§6.1), nothing is saved.
+ * `call`: the one taken at the click, as for Phân tích.
+ */
 export async function extractFromNote(
   ai: AppAi,
   note: string,
   signal?: AiAbortSignal,
+  call: AiCall = ai.call(),
 ): Promise<ExtractionOutcome> {
   try {
-    const result = await runExtraction({ ...ai.call(), note, signal });
-    switch (result.kind) {
-      case 'facts':
-        return { kind: 'facts', facts: result.facts };
-      case 'error':
-        return { kind: 'error', code: result.code };
-      default:
-        return result;
-    }
+    const result = await runExtraction({ ...call, note, signal });
+    return result.kind === 'facts' ? { kind: 'facts', facts: result.facts } : result;
   } catch (error) {
     ai.reportError(error);
     return { kind: 'failed' };

@@ -4,6 +4,7 @@ import { Button, Dialog, TextField } from '@p2c/ui';
 import { useAppData, useToday } from '../data/AppDataContext';
 import { isUnsavedChangesError } from '../data/app-data';
 import { t } from '../i18n';
+import type { SettingsSection } from '../shell/routes';
 import { AiSection } from './SettingsAi';
 import { BackupSection } from './SettingsBackup';
 import { DataFileSection } from './SettingsDataFile';
@@ -21,10 +22,11 @@ const NAV_ITEM =
 
 /**
  * Settings, with its sections side by side (mockup settings-data, ai.html 1a). Dữ liệu: the data
- * file (T-070), backup files (T-052), then the simulated data (T-045). AI: Settings → AI (T-167).
+ * file (T-070), backup files (T-052), then the simulated data (T-045). AI: Settings → AI (T-167),
+ * also `#/settings/ai`, where "Cài đặt → AI" of an AI error goes (mockup ai.html 2f).
  */
-export function Settings() {
-  const [section, setSection] = useState<Section>('data');
+export function Settings({ section: linked }: { section?: SettingsSection }) {
+  const [section, setSection] = useState<Section>(linked ?? 'data');
   return (
     <div className="flex max-w-4xl items-start gap-4">
       <nav

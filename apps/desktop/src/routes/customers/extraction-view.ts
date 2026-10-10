@@ -6,7 +6,7 @@ import type { ExtractedFact } from '@p2c/ai';
 import type { KycNoteRecord } from '@p2c/db';
 import type { KycFact, KycValue } from '@p2c/domain';
 import type { ExtractionOutcome } from '../../data/ai-analysis';
-import { panelError, type AiPanelError } from './ai-panel-view';
+import { aiFailure, GENERAL_FAILURE, type AiFailure } from '../ai-error-view';
 
 /** A shorter note is "Ghi chú quá ngắn" (§8 item 1, ADR-0008). */
 const MIN_NOTE_LENGTH = 20;
@@ -28,8 +28,8 @@ export type ExtractionView =
     }
   /** Mockup 3e: "AI không tìm thấy dữ kiện mới trong ghi chú này" and Đóng. */
   | { readonly kind: 'empty' }
-  /** Mockup 3e: the message and Thử lại; `INVALID` is "AI trả kết quả không đọc được". */
-  | { readonly kind: 'error'; readonly error: AiPanelError | 'INVALID' };
+  /** Mockup 3e: the §5.3 message (2l) and Thử lại; `INVALID` is "AI trả kết quả không đọc được". */
+  | { readonly kind: 'error'; readonly error: AiFailure | 'INVALID' };
 
 const NONE: ExtractionView = { kind: 'none' };
 
@@ -50,9 +50,9 @@ export function extractionView(
     case 'invalid':
       return { kind: 'error', error: 'INVALID' };
     case 'error':
-      return { kind: 'error', error: panelError(outcome.code) };
+      return { kind: 'error', error: aiFailure(outcome) };
     case 'failed':
-      return { kind: 'error', error: 'GENERAL' };
+      return { kind: 'error', error: GENERAL_FAILURE };
     case 'facts':
       break;
     default:

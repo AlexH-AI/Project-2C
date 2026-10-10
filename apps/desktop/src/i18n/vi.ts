@@ -233,6 +233,11 @@ export const vi = {
   'aiError.AI_BUSY': 'Đang có một yêu cầu AI khác — chờ xong rồi thử lại.',
   'aiError.AI_KEYRING': 'Không đọc / ghi được key trong Windows Credential Manager.',
   'aiError.GENERAL': 'Có lỗi trong app khi gọi AI — thử lại; nếu lặp lại, báo cho người hỗ trợ.',
+  'aiError.http': 'OpenCode báo lỗi (HTTP {status}): {message}',
+  'aiError.httpBare': 'OpenCode báo lỗi (HTTP {status}).',
+  'aiError.status': '{message} (HTTP {status})',
+  // The part of AI_NO_KEY that links to Settings → AI (mockups 2f, 2l).
+  'aiError.settingsLink': 'Cài đặt → AI',
   // Settings → AI (spec Phase 5 §4, §9.3; mockup ai.html 1a–1g, 4a–4c).
   'settings.nav.label': 'Mục cài đặt',
   'settings.nav.data': 'Dữ liệu',
@@ -299,9 +304,6 @@ export const vi = {
   'settingsAi.checkMock': 'Mock chạy trong app, không cần kết nối.',
   'settingsAi.checkOk': 'Kết nối được',
   'settingsAi.checkOkDetail': '· {plan} · {model}',
-  'settingsAi.checkHttp': 'OpenCode báo lỗi (HTTP {status}): {message}',
-  'settingsAi.checkHttpBare': 'OpenCode báo lỗi (HTTP {status}).',
-  'settingsAi.checkStatus': '{message} (HTTP {status})',
   'settingsAi.sentTitle': 'Dữ liệu gửi đi',
   'settingsAi.sentAnalysisLead': 'Phân tích:',
   'settingsAi.sentAnalysis':

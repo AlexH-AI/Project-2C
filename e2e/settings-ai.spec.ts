@@ -163,17 +163,27 @@ test('exe: the key is checked at the field, saved trimmed, never shown, deleted 
 
   await card.getByRole('button', { name: 'Lưu key' }).click();
   await expect(card).toContainText('Chưa nhập key.');
-  await card.getByRole('textbox', { name: 'Key' }).fill('x'.repeat(513));
+  // A password field (DR5-32): no textbox role, nothing shown as typed, no spell check.
+  const field = card.getByLabel('Key', { exact: true });
+  await expect(field).toHaveAttribute('type', 'password');
+  await expect(field).toHaveAttribute('spellcheck', 'false');
+  await field.fill('x'.repeat(513));
   await card.getByRole('button', { name: 'Lưu key' }).click();
   await expect(card).toContainText('Key dài quá 512 ký tự — kiểm tra lại đoạn đã dán.');
 
-  await card.getByRole('textbox', { name: 'Key' }).fill(`  ${KEY}  `);
+  await field.fill(`  ${KEY}  `);
   await card.getByRole('button', { name: 'Lưu key' }).click();
   await expect(card.getByRole('status')).toHaveText('Đã lưu key.');
   await expect(card).toContainText('Đã có key');
-  await expect(card.getByRole('textbox', { name: 'Key mới' })).toHaveValue('');
+  await expect(card.getByLabel('Key mới')).toHaveValue('');
   expect(await page.evaluate(() => window.exe.keysSet)).toEqual([KEY]);
   expect(await page.content()).not.toContain(KEY);
+
+  // Lưu key again with the field empty: its error alone, not beside "Đã lưu key." (DR5-46).
+  await card.getByRole('button', { name: 'Lưu key' }).click();
+  await expect(card).toContainText('Chưa nhập key.');
+  await expect(card.getByRole('status')).toHaveCount(0);
+  await expect(card).not.toContainText('Đã lưu key.');
 
   await card.getByRole('button', { name: 'Xóa key…' }).click();
   const dialog = page.getByRole('dialog', { name: 'Xóa API key OpenCode?' });
@@ -230,4 +240,41 @@ test('exe: Kiểm tra kết nối runs under the chosen plan, is off while it ru
     'OpenCode báo lỗi (HTTP 502): Bad gateway',
   );
   expect((await page.evaluate(() => window.exe.aiCalls)).at(-1)).toMatchObject({ plan: 'GO' });
+});
+
+test('exe: a key status read late never overwrites the key just saved (DR5-37)', async ({
+  page,
+}) => {
+  await asExe(page);
+  // After `asExe`: holds `ai_key_status` until the test lets it answer, as a slow Rust would.
+  await page.addInitScript(() => {
+    type Invoke = (command: string, args: unknown) => Promise<unknown>;
+    const internals = (window as unknown as { __TAURI_INTERNALS__: { invoke: Invoke } })
+      .__TAURI_INTERNALS__;
+    const invoke = internals.invoke.bind(internals);
+    let release = () => {};
+    const held = new Promise<void>((resolve) => (release = resolve));
+    Object.assign(window, { releaseKeyStatus: () => release() });
+    internals.invoke = async (command: string, args: unknown) => {
+      if (command !== 'ai_key_status') return invoke(command, args);
+      // What Rust read before the save: no key yet.
+      const before = await invoke(command, args);
+      await held;
+      return before;
+    };
+  });
+  await openAi(page);
+  const card = keyCard(page);
+  await expect(card).not.toContainText('Chưa có key');
+
+  await card.getByLabel('Key', { exact: true }).fill(KEY);
+  await card.getByRole('button', { name: 'Lưu key' }).click();
+  await expect(card.getByRole('status')).toHaveText('Đã lưu key.');
+  await expect(card).toContainText('Đã có key');
+
+  await page.evaluate(() => (window as unknown as { releaseKeyStatus(): void }).releaseKeyStatus());
+  // The late answer said "no key"; give it time to land before checking it did not.
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 100)));
+  await expect(card).toContainText('Đã có key');
+  await expect(card.getByRole('button', { name: 'Xóa key…' })).toBeVisible();
 });

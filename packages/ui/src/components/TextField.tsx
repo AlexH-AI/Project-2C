@@ -20,6 +20,10 @@ interface TextFieldProps {
   rows?: number;
   /** Shown in the empty field (mockup `.input.placeholder`). */
   placeholder?: string;
+  /** `password` hides what is typed or pasted, as for a secret; one-line fields only. */
+  type?: 'text' | 'password';
+  /** Off for what is no words, such as a key. */
+  spellCheck?: boolean;
 }
 
 /** Labelled text input (mockup `.field`), one line unless `rows` is set, with its error under it. */
@@ -34,6 +38,8 @@ export function TextField({
   autoFocus,
   rows,
   placeholder,
+  type,
+  spellCheck,
 }: TextFieldProps) {
   const id = useId();
   const noteId = `${id}-note`;
@@ -51,6 +57,8 @@ export function TextField({
       <Input
         id={id}
         rows={rows}
+        type={rows ? undefined : type}
+        spellCheck={spellCheck}
         value={value}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}

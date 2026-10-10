@@ -10,7 +10,13 @@ export const SECTIONS = [
 
 export type Section = (typeof SECTIONS)[number];
 
-export type Route = { screen: Section } | { screen: 'customer'; id: string };
+/** A section of Cài đặt a link opens at once; none is Dữ liệu, the first. */
+export type SettingsSection = 'ai';
+
+export type Route =
+  | { screen: Exclude<Section, 'settings'> }
+  | { screen: 'settings'; section?: SettingsSection }
+  | { screen: 'customer'; id: string };
 
 export const DEFAULT_ROUTE: Route = { screen: 'overview' };
 
@@ -26,21 +32,22 @@ function decode(segment: string): string | null {
   }
 }
 
-/** Reads `#/<section>` or `#/customers/<id>`; anything else is null. */
+/** Reads `#/<section>`, `#/customers/<id>` or `#/settings/ai`; anything else is null. */
 export function parseHash(hash: string): Route | null {
   const parts = hash.replace(/^#\/?/, '').replace(/\/$/, '').split('/');
   const [first = '', second, ...rest] = parts;
   if (rest.length > 0) return null;
   if (second === undefined) return isSection(first) ? { screen: first } : null;
+  if (first === 'settings') return second === 'ai' ? { screen: first, section: second } : null;
   if (first !== 'customers') return null;
   const id = decode(second);
   return id ? { screen: 'customer', id } : null;
 }
 
 export function routeToHash(route: Route): string {
-  return route.screen === 'customer'
-    ? `#/customers/${encodeURIComponent(route.id)}`
-    : `#/${route.screen}`;
+  if (route.screen === 'customer') return `#/customers/${encodeURIComponent(route.id)}`;
+  if (route.screen === 'settings' && route.section) return `#/settings/${route.section}`;
+  return `#/${route.screen}`;
 }
 
 /** The sidebar item a route belongs to. */
