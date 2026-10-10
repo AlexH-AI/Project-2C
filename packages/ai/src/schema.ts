@@ -26,9 +26,6 @@ export const AI_ANALYSIS_PROVIDERS = [...AI_PROVIDERS, 'CHATGPT_WEB'] as const;
 
 export type AiAnalysisProvider = (typeof AI_ANALYSIS_PROVIDERS)[number];
 
-/** How a ChatGPT web `prompt_version` ends: the wrapper's version, as in `analysis@1+web@1` (§7.1). */
-export const WEB_PROMPT_VERSION = /\+web@[1-9]\d*$/;
-
 /** `DEFAULT` sends no `reasoning_effort`; the others are sent as low / medium / high. */
 export const AI_REASONING_LEVELS = ['DEFAULT', 'LOW', 'MEDIUM', 'HIGH'] as const;
 
