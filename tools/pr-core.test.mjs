@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { CODEMAP_PACKAGES } from './codemap-core.mjs';
 import {
   CODEMAP_DOCS,
+  CODE_DOCS,
   alreadyDone,
   ciStartedAt,
   cleanupPlan,
@@ -15,6 +16,18 @@ import {
   parseWorktrees,
   riskLevel,
 } from './pr-core.mjs';
+
+// The entries of every `paths:` list in a workflow file, one array per list.
+function pathsBlocks(yml) {
+  const blocks = [];
+  let current = null;
+  for (const line of yml.split('\n')) {
+    if (/^\s*paths:\s*$/.test(line)) blocks.push((current = []));
+    else if (current && /^\s*- '/.test(line)) current.push(line.match(/- '(.*)'/)[1]);
+    else current = null;
+  }
+  return blocks;
+}
 
 const HEAD = 'abc1234def5678abc1234def5678abc1234def56';
 const review = (verdict, sha = HEAD.slice(0, 7), level = 'risk:low') => ({
@@ -64,16 +77,31 @@ describe('isDocsOnly', () => {
     expect(CODEMAP_DOCS).toEqual(CODEMAP_PACKAGES.map((pkg) => `${pkg}/CLAUDE.md`));
   });
 
+  it('treats the G5 docs as code: unit tests compare code with them word for word (DR5-57)', () => {
+    expect(isDocsOnly(['docs/design/phase-5-prompts.md'])).toBe(false);
+    expect(isDocsOnly(['docs/golden/ai-eval.md'])).toBe(false);
+    expect(isDocsOnly(['docs/reviews/x.md'])).toBe(true);
+    expect(CODE_DOCS).toEqual(expect.arrayContaining(CODEMAP_DOCS));
+  });
+
   it('matches the paths filter of ci.yml, for PRs and for pushes to main', () => {
     const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
     expect(ci).not.toMatch(/paths-ignore/);
-    const filter = [
-      "- '**'",
-      "- '!docs/**'",
-      "- '!**/*.md'",
-      ...CODEMAP_DOCS.map((p) => `- '${p}'`),
-    ];
-    for (const line of filter) expect(ci.split(line).length - 1).toBe(2);
+    const blocks = pathsBlocks(ci);
+    expect(blocks).toHaveLength(2);
+    for (const block of blocks) {
+      expect(block.slice(0, 3)).toEqual(['**', '!docs/**', '!**/*.md']);
+      expect(block.slice(3).sort()).toEqual([...CODE_DOCS].sort());
+    }
+  });
+
+  it('pathsBlocks sees a doc missing from one block', () => {
+    const block = (docs) => ['    paths:', "      - '**'", ...docs.map((d) => `      - '${d}'`)];
+    const ci = [...block(['a.md', 'b.md']), '  push:', ...block(['a.md']), '  x:'].join('\n');
+    expect(pathsBlocks(ci)).toEqual([
+      ['**', 'a.md', 'b.md'],
+      ['**', 'a.md'],
+    ]);
   });
 
   it('is false as soon as one file is code', () => {
