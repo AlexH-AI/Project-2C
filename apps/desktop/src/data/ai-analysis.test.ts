@@ -35,7 +35,7 @@ import {
   type WebTools,
 } from './ai-analysis';
 import type { OpenCodeClient } from './ai-tauri';
-import { openAppData } from './app-data';
+import { openAppData, type StoragePort } from './app-data';
 
 const TODAY = calendarDate(2026, 9, 27);
 
@@ -68,8 +68,11 @@ function memoryStore(): AiSettingsStore {
 }
 
 /** A customer whose facts give `PROFILE_DISCOVERY`, the app and its AI. */
-async function withCustomer(options: AppAiOptions = { reportError: vi.fn() }) {
-  const app = await openAppData({ today: () => TODAY, seed: emptySeed, ai: options });
+async function withCustomer(
+  options: AppAiOptions = { reportError: vi.fn() },
+  storage?: StoragePort,
+) {
+  const app = await openAppData({ today: () => TODAY, seed: emptySeed, ai: options, storage });
   const { ai } = app;
   const reId = listPeople(app.db())[0]!.id;
   const customer = app.run((d) =>
@@ -248,6 +251,65 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
     expect(await running).toEqual({ kind: 'discarded' });
     expect(reportError).not.toHaveBeenCalled();
     expect(ai.runner.busy).toBe(false);
+  });
+
+  it('discards the result when a backup of the same data is imported while it runs, its IDs alike (DR5-36)', async () => {
+    const reportError = vi.fn();
+    const held = heldAdapter();
+    const { app, customer, rows, ai } = await withCustomer({ reportError, adapter: held.adapter });
+    const backup = await app.exportBackup();
+
+    const running = analyseCustomer(app, customer.id);
+    await app.importBackup(await app.readBackup(backup.text));
+    await held.answerWithMock();
+
+    expect(await running).toEqual({ kind: 'discarded' });
+    expect(reportError).not.toHaveBeenCalled();
+    expect(rows()).toEqual([]);
+    expect(ai.runner.busy).toBe(false);
+  });
+
+  it('never saves a row citing F5 into a restored backup that has only F1–F4 (CX-F1)', async () => {
+    const held = heldAdapter();
+    const { app, customer, confirm, rows } = await withCustomer({
+      reportError: vi.fn(),
+      adapter: held.adapter,
+    });
+    const backup = await app.exportBackup();
+    // The same value confirmed again: F4 superseded by F5, the KYC version unchanged.
+    confirm('occupation', 'Bác sĩ');
+
+    const running = analyseCustomer(app, customer.id);
+    await app.importBackup(await app.readBackup(backup.text));
+    expect(held.held[0]!.request.messages.at(-1)!.content).toContain('F5');
+    await held.answerWithMock();
+
+    expect(await running).toEqual({ kind: 'discarded' });
+    expect(rows()).toEqual([]);
+  });
+
+  it('saves the result as usual when replacing the data fails while it runs', async () => {
+    const held = heldAdapter();
+    const storage: StoragePort = {
+      load: () => Promise.resolve(undefined),
+      save: () => Promise.resolve(),
+      backup: () => Promise.reject(new Error('disk full')),
+      writeExport: (name) => Promise.resolve(name),
+      latestBackup: () => Promise.resolve(undefined),
+      openFolder: () => Promise.resolve(),
+    };
+    const { app, customer, rows } = await withCustomer(
+      { reportError: vi.fn(), adapter: held.adapter },
+      storage,
+    );
+    const backup = await app.exportBackup();
+
+    const running = analyseCustomer(app, customer.id);
+    await expect(app.importBackup(await app.readBackup(backup.text))).rejects.toThrow('disk full');
+    await held.answerWithMock();
+
+    expect(await running).toEqual({ kind: 'saved', status: 'ACCEPTED' });
+    expect(rows()).toMatchObject([{ state: 'CURRENT' }]);
   });
 
   it('turns a bug into a failure the panel can show, and reports it', async () => {
