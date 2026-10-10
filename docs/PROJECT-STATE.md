@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 5 — AI copilot (started 2026-10-07; milestone open, 13 issues #401 to #413). Phases 1 to 4 are closed; Phase 4 closed at G7 on 2026-10-07 (65 issues, #251 to #370, `docs/metrics/phase-4.md`), released exe `3e84ce8` (CI artifact, run `37576148435`). D-1, Phase 5 spec (G1 / G2) and G5 (prompts + guardrail) approved 2026-10-07; G3 mockups, G2 eval cases E01–E20 and ADR-0009 W-1 (OpenCode Go / Credit plans, manual ChatGPT web path) approved 2026-10-08; G3 supplement for W-1 (`phase-5-ai.md` §9.5) approved 2026-10-08 (PR #431); #405 / #408 / #413 updated for W-1 and #432 (T-173) / #433 (T-174) opened; next: the remaining Phase 5 tasks, starting with T-164 #405 (Go plan expires 2026-10-11). Overall progress ≈ 75% to v1.0 (see `docs/PROJECT-PLAN.md` §5).
+Phase 5 — AI copilot (started 2026-10-07; milestone has no open issue: 30 issues #401 to #477, T-160 to T-188, 51 PRs #398 to #479). Phases 1 to 4 are closed; Phase 4 closed at G7 on 2026-10-07 (65 issues, #251 to #370, `docs/metrics/phase-4.md`), released exe `3e84ce8` (CI artifact, run `37576148435`). Every Phase 5 gate (D-1, spec G1 / G2, G5, G3, G2 eval cases, ADR-0009 W-1) approved 2026-10-07 to 2026-10-08; the first real AI eval passed on 2026-10-10 (`docs/metrics/ai-eval-2026-10-10.md`). Phase 5 metrics, first pass before the close review: `docs/metrics/phase-5.md`. Next: the Phase 5 close review (Claude + Codex), then G7. Overall progress ≈ 75% to v1.0 (see `docs/PROJECT-PLAN.md` §5).
 
 ## Canonical repository
 
