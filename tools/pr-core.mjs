@@ -12,7 +12,7 @@ export const prList = (numbers) => numbers.map((n) => `#${n}`).join(', ');
 const EXE_CHECK = 'Build portable exe';
 
 // Package CLAUDE.md files hold the export map that `pnpm verify` checks (tools/codemap.mjs),
-// so a change to them is code. ci.yml lists the same files in its `paths` filter. Same order as
+// so a change to them is code (part of CODE_DOCS below). Same order as
 // CODEMAP_PACKAGES of tools/codemap-core.mjs (a test checks), not imported: merge-pr would load
 // TypeScript for it.
 export const CODEMAP_DOCS = [
@@ -23,11 +23,20 @@ export const CODEMAP_DOCS = [
   'apps/desktop/CLAUDE.md',
 ];
 
-/** True when CI skips the PR (ci.yml `paths`: docs/** and **\/*.md, but not CODEMAP_DOCS). */
+// Every .md file that CI treats as code: the package CLAUDE.md files, plus the G5 docs that unit
+// tests compare code with word for word (prompts, retry, web@1; eval profiles, DR5-57). ci.yml
+// lists exactly these files in both of its `paths` filters (a test checks).
+export const CODE_DOCS = [
+  ...CODEMAP_DOCS,
+  'docs/design/phase-5-prompts.md',
+  'docs/golden/ai-eval.md',
+];
+
+/** True when CI skips the PR (ci.yml `paths`: docs/** and **\/*.md, but not CODE_DOCS). */
 export function isDocsOnly(paths) {
   return (
     paths.length > 0 &&
-    paths.every((p) => (p.startsWith('docs/') || p.endsWith('.md')) && !CODEMAP_DOCS.includes(p))
+    paths.every((p) => (p.startsWith('docs/') || p.endsWith('.md')) && !CODE_DOCS.includes(p))
   );
 }
 

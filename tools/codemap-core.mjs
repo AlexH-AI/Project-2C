@@ -4,8 +4,9 @@
 import ts from 'typescript';
 
 /**
- * Packages whose CLAUDE.md holds a codemap block. Their CLAUDE.md is code: keep CODEMAP_DOCS in
- * tools/pr-core.mjs and the `paths` filter of .github/workflows/ci.yml in step (tests check both).
+ * Packages whose CLAUDE.md holds a codemap block. Their CLAUDE.md is code: keep CODEMAP_DOCS (part
+ * of CODE_DOCS) in tools/pr-core.mjs and the `paths` filter of .github/workflows/ci.yml in step
+ * (tests check both).
  */
 export const CODEMAP_PACKAGES = [
   'packages/domain',
