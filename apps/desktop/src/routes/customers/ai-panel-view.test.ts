@@ -1,9 +1,11 @@
-import type { WebSession } from '@p2c/ai';
+import { AI_MODELS, DEFAULT_AI_SETTINGS, type AiSettings, type WebSession } from '@p2c/ai';
 import type { AiAnalysisView } from '@p2c/db';
 import { calendarDate as day, type KycGateResult, type KycGateState } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
+  aiPanelHelp,
   aiPanelView,
+  panelDone,
   analysisContent,
   analysisSource,
   historyRows,
@@ -107,6 +109,65 @@ describe('aiPanelView (spec Phase 5 §9.1)', () => {
   it('turns both buttons off, none the main one, while this customer has a web session (4e)', () => {
     const view = aiPanelView({ gate: OPEN, analyses: NONE, busy: false, webOpen: true });
     expect(view.button).toEqual({ again: false, primary: false, enabled: false });
+  });
+
+  it('says why the buttons are off while a request runs elsewhere, never for its own run (DR5-40)', () => {
+    const view = (input: { running?: boolean; webOpen?: boolean; gate?: KycGateResult }) =>
+      aiPanelView({ gate: OPEN, analyses: NONE, busy: true, ...input });
+
+    // Another customer's run, AI trích xuất or Kiểm tra kết nối.
+    expect(view({}).busyElsewhere).toBe(true);
+    // Its own run says "Đang phân tích…" itself; a web session or a blocked gate has its own reason.
+    expect(view({ running: true }).busyElsewhere).toBe(false);
+    expect(view({ webOpen: true }).busyElsewhere).toBe(false);
+    expect(view({ gate: gateOf('KYC_INSUFFICIENT') }).busyElsewhere).toBe(false);
+    expect(aiPanelView({ gate: OPEN, analyses: NONE, busy: false }).busyElsewhere).toBe(false);
+  });
+
+  it('shows the mode of the input taken while a web session is open, not the saved one (§9.1, 4e)', () => {
+    const current = analysis({ seq: 1, state: 'CURRENT', mode: 'discovery' });
+    const view = (webMode: 'analysis' | 'discovery' | null) =>
+      aiPanelView({ gate: OPEN, analyses: [current], busy: false, webOpen: true, webMode });
+
+    expect(view('discovery').badge).toBe('PROFILE_DISCOVERY');
+    expect(view('analysis').badge).toBe('PAIN_POINT_ANALYSIS');
+    expect(view(null).badge).toBe('CURRENT');
+  });
+});
+
+describe('aiPanelHelp (mockups 2a, 4d)', () => {
+  const facts = [{ status: 'active' }, { status: 'superseded' }, { status: 'conflict' }] as const;
+
+  it('counts the facts sent and names OpenCode with its plan and model', () => {
+    const model = AI_MODELS[0]!;
+    const settings = { ...DEFAULT_AI_SETTINGS, provider: 'OPENCODE_GO', opencodePlan: 'CREDIT' };
+    expect(aiPanelHelp(facts, { ...settings, model: model.id } as AiSettings)).toEqual({
+      count: 2,
+      provider: 'OPENCODE_GO',
+      plan: 'CREDIT',
+      model: model.label,
+    });
+  });
+
+  it('names the Mock alone, which has no plan or model to show', () => {
+    expect(aiPanelHelp(facts, DEFAULT_AI_SETTINGS)).toEqual({ count: 2, provider: 'MOCK' });
+  });
+});
+
+describe('panelDone (DR5-33)', () => {
+  it('says a run or a web session saved its row, ACCEPTED or REJECTED', () => {
+    expect(panelDone({ kind: 'saved', status: 'ACCEPTED' }, null)).toBe('ACCEPTED');
+    expect(panelDone(null, { kind: 'saved', status: 'REJECTED' })).toBe('REJECTED');
+    expect(
+      panelDone({ kind: 'saved', status: 'ACCEPTED' }, { kind: 'saved', status: 'REJECTED' }),
+    ).toBe('REJECTED');
+  });
+
+  it('says nothing for what saved no row', () => {
+    expect(panelDone(null, null)).toBeNull();
+    expect(panelDone({ kind: 'error', code: 'AI_NETWORK' }, null)).toBeNull();
+    expect(panelDone({ kind: 'discarded' }, { kind: 'failed' })).toBeNull();
+    expect(panelDone(null, { kind: 'unusable', reason: 'EMPTY' })).toBeNull();
   });
 
   it('says the latest analysis was REJECTED, with the first issue of its last attempt (2i)', () => {

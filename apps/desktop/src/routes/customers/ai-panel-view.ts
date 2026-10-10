@@ -10,6 +10,8 @@ import {
   analysisOutputSchema,
   discoveryOutputSchema,
   VALIDATION_CODES,
+  type AiOpencodePlan,
+  type AiSettings,
   type DiscoveryOutput,
   type PERSONALITY_SYSTEMS,
   type ValidationCode,
@@ -27,6 +29,7 @@ import {
   type CalendarDate,
   type Evidence,
   type KycCategory,
+  type KycFact,
   type KycField,
   type KycGateResult,
   type KycGateState,
@@ -58,6 +61,11 @@ export interface AiPanelView {
     readonly issue: AiPanelIssue | null;
   } | null;
   /**
+   * The buttons are off only because an AI request runs elsewhere: another customer's, AI trích
+   * xuất or Kiểm tra kết nối. The panel says so, as Settings → AI does (DR5-40).
+   */
+  readonly busyElsewhere: boolean;
+  /**
    * `again`: "Phân tích lại" once there is an analysis to replace. Phân tích bằng ChatGPT web
    * follows `enabled` too (mockup 4d), never as the main button.
    */
@@ -78,8 +86,12 @@ export function aiPanelView(input: {
   readonly webOpen?: boolean;
   /** The id of the history row picked to see; only an older ACCEPTED one shows apart. */
   readonly viewing?: string | null;
+  /** The panel's own Phân tích runs, which says "Đang phân tích…" itself. */
+  readonly running?: boolean;
+  /** The mode of the input the open web session took: the head badge follows it (§9.1, 4e). */
+  readonly webMode?: WebSession['input']['mode'] | null;
 }): AiPanelView {
-  const { gate, analyses, busy, webOpen = false } = input;
+  const { gate, analyses, busy, webOpen = false, running = false, webMode = null } = input;
   const blocked = blockedBy(gate);
   const shown = analyses.find((analysis) => analysis.status === 'ACCEPTED') ?? null;
   const picked = analyses.find((analysis) => analysis.id === input.viewing);
@@ -87,7 +99,13 @@ export function aiPanelView(input: {
   const enabled = !blocked && !busy && !webOpen;
   return {
     blocked,
-    badge: shown && !blocked ? (shown.state === 'CURRENT' ? 'CURRENT' : 'STALE') : gate.state,
+    badge: webMode
+      ? MODE_GATES[webMode]
+      : shown && !blocked
+        ? shown.state === 'CURRENT'
+          ? 'CURRENT'
+          : 'STALE'
+        : gate.state,
     shown,
     viewing: picked?.status === 'ACCEPTED' && picked !== shown ? picked : null,
     reminder: blocked ? null : (shown?.reminder ?? null),
@@ -96,12 +114,43 @@ export function aiPanelView(input: {
       !blocked && latest?.status === 'REJECTED'
         ? { date: latest.date, issue: firstIssue(latest) }
         : null,
+    busyElsewhere: busy && !blocked && !running && !webOpen,
     button: {
       again: shown !== null && !blocked,
       primary: !blocked && !webOpen && shown?.state !== 'CURRENT',
       enabled,
     },
   };
+}
+
+const MODE_GATES = {
+  analysis: 'PAIN_POINT_ANALYSIS',
+  discovery: 'PROFILE_DISCOVERY',
+} as const satisfies Record<WebSession['input']['mode'], KycGateState>;
+
+/**
+ * The help line under "Chưa có phân tích AI" (mockups 2a, 4d): how many facts Phân tích sends and
+ * where, as Settings → AI say now.
+ */
+export type AiPanelHelp = { readonly count: number } & (
+  | { readonly provider: 'MOCK' }
+  | { readonly provider: 'OPENCODE_GO'; readonly plan: AiOpencodePlan; readonly model: string }
+);
+
+export function aiPanelHelp(
+  facts: readonly Pick<KycFact, 'status'>[],
+  settings: AiSettings,
+): AiPanelHelp {
+  // What `buildAnalysisInput` sends: every fact still in effect, a conflicting one too.
+  const count = facts.filter((fact) => fact.status !== 'superseded').length;
+  return settings.provider === 'MOCK'
+    ? { count, provider: 'MOCK' }
+    : {
+        count,
+        provider: 'OPENCODE_GO',
+        plan: settings.opencodePlan,
+        model: modelLabel(settings.model),
+      };
 }
 
 /** One validator issue as the panel lists it (mockups 2k, 4g): "V3 · Behavioral Hypotheses #1: …". */
@@ -232,6 +281,18 @@ export function runAfter(outcome: AnalysisOutcome): AiPanelRun {
 export function panelRun(job: AiJobPhase, ended: AnalysisOutcome | null): AiPanelRun {
   if (job !== 'idle') return { phase: job };
   return ended ? runAfter(ended) : IDLE;
+}
+
+/**
+ * What the panel tells a screen reader once a run or a web session ends (DR5-33): the row it saved,
+ * the web session's when both are there, as it is the later one. Null when nothing was saved.
+ */
+export function panelDone(
+  ended: AnalysisOutcome | null,
+  web: WebAnswerOutcome | null,
+): 'ACCEPTED' | 'REJECTED' | null {
+  if (web) return web.kind === 'saved' ? web.status : null;
+  return ended?.kind === 'saved' ? ended.status : null;
 }
 
 /** This customer's ChatGPT web session, kept by the panel only, never stored (§3.1 item 4). */

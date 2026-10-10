@@ -4,12 +4,13 @@
  */
 import type { AiAnalysisView } from '@p2c/db';
 import type { CalendarDate } from '@p2c/domain';
-import { analysisContent, type AiPanelItem } from '../customers/ai-panel-view';
+import { analysisContent, type AiPanelItem, type AiPanelSource } from '../customers/ai-panel-view';
 
 export interface AppointmentAiView {
   readonly state: 'CURRENT' | 'STALE';
   readonly gateState: AiAnalysisView['gateState'];
-  readonly mock: boolean;
+  /** Who answered: the Mock and ChatGPT web have a badge, as in the panel (W-1 item 4). */
+  readonly source: AiPanelSource;
   /** The KYC version analysed, "v<n>". */
   readonly version: number;
   /** The app day it was saved. */
@@ -32,7 +33,7 @@ export function appointmentAiView(
   return {
     state: shown.state === 'CURRENT' ? 'CURRENT' : 'STALE',
     gateState: shown.gateState,
-    mock: shown.provider === 'MOCK',
+    source: content.chip.source,
     version: content.chip.version,
     date: shown.date,
     nextBestActions: items('nextBestActions'),

@@ -7,6 +7,7 @@ import { routeToHash } from '../../shell/routes';
 import { BADGE } from '../customers/CustomerKyc';
 import { BADGE_COLORS, ITEMS, Item } from '../customers/KycIntelligence';
 import type { AiPanelItem } from '../customers/ai-panel-view';
+import { SourceBadge } from '../customers/KycHistory';
 import { appointmentAiView } from './appointment-ai-view';
 import { FOCUS } from './appointments-view';
 
@@ -49,7 +50,7 @@ export function AppointmentAi({ customerId }: { customerId: string }) {
         {view && (
           <>
             <span className={`${BADGE} ${BADGE_COLORS[view.state]}`}>{view.state}</span>
-            {view.mock && <span className={`${BADGE} text-warn`}>{t('aiPanel.mock')}</span>}
+            <SourceBadge source={view.source} />
             <span className="ml-auto text-xs text-fg-3 tabular-nums">
               {t('appointments.ai.meta', {
                 version: view.version,

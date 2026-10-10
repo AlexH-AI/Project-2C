@@ -99,8 +99,11 @@ export function CustomerProfile({ id }: { id: string }) {
     const timer = setTimeout(() => setMarked(null), MARK_MS);
     return () => clearTimeout(timer);
   }, [marked]);
+  // The focus goes with it, so the keyboard and a screen reader are at the fact too (DR5-38).
   const showFact = (code: string) => {
-    document.getElementById(factAnchor(code))?.scrollIntoView({ block: 'center' });
+    const fact = document.getElementById(factAnchor(code));
+    fact?.scrollIntoView({ block: 'center' });
+    fact?.focus({ preventScroll: true });
     setMarked({ code });
   };
 

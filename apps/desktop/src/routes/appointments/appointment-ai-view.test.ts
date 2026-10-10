@@ -77,7 +77,7 @@ describe('appointmentAiView (spec Phase 5 §9.2)', () => {
     expect(view).toMatchObject({
       state: 'CURRENT',
       gateState: 'PAIN_POINT_ANALYSIS',
-      mock: true,
+      source: { badge: 'MOCK' },
       version: 3,
       date: { year: 2026, month: 9, day: 14 },
     });
@@ -96,7 +96,18 @@ describe('appointmentAiView (spec Phase 5 §9.2)', () => {
       versions,
     );
 
-    expect(view).toMatchObject({ state: 'STALE', version: 1, mock: false });
+    expect(view).toMatchObject({ state: 'STALE', version: 1 });
+    // OpenCode names its model in the chip of the profile only: no badge here.
+    expect(view?.source).not.toHaveProperty('badge');
+  });
+
+  it('badges a ChatGPT web analysis as the Mock is, so it is not taken for OpenCode (W-1 item 4)', () => {
+    const view = appointmentAiView(
+      [analysis({ seq: 1, state: 'CURRENT', provider: 'CHATGPT_WEB' })],
+      versions,
+    );
+
+    expect(view?.source).toEqual({ badge: 'CHATGPT_WEB' });
   });
 
   it('skips a newer REJECTED row for the latest accepted one', () => {

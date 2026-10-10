@@ -5,6 +5,7 @@ export const vi = {
   'sep.arrow': '→',
   'sep.range': '{from} – {to}',
   'sep.list': ', ',
+  'sep.slash': ' / ',
   // Foot of a table over a hundred rows (T-150, mockup table-more.html).
   'tableMore.shown.appointments': 'Đang hiện {count} / {total} lịch',
   'tableMore.more.appointments': 'Hiện thêm {count} lịch',
@@ -126,6 +127,17 @@ export const vi = {
   'aiPanel.retry': 'Thử lại',
   'aiPanel.mock': 'Mock',
   'aiPanel.empty': 'Chưa có phân tích AI cho KH này.',
+  // The help line under it (mockups 2a, 4d): Settings → AI as they are now.
+  'aiPanel.help.OPENCODE_GO':
+    'Phân tích: gửi {count} dữ kiện đã xác nhận tới OpenCode · {plan} · {model} (đổi ở Cài đặt → AI).',
+  'aiPanel.help.MOCK':
+    'Phân tích: Mock trả câu mẫu cố định từ {count} dữ kiện, không gọi AI (đổi ở Cài đặt → AI).',
+  'aiPanel.help.web':
+    'ChatGPT web: app copy tin nhắn và mở chatgpt.com — bạn tự dán, rồi dán câu trả lời lại vào đây.',
+  'aiPanel.help.private': 'Không gửi tên, mã KH, ghi chú.',
+  // Said to a screen reader once a run or a web session saved its row (DR5-33).
+  'aiPanel.done.ACCEPTED': 'Phân tích xong: đã lưu kết quả.',
+  'aiPanel.done.REJECTED': 'Phân tích xong nhưng kết quả bị loại — xem lý do trong panel.',
   'aiPanel.blocked.CONFLICT_RESOLUTION': 'Giải quyết mâu thuẫn ở {fields} trước khi phân tích.',
   // `{message}`: the gate's own sentence (ADR-0008 Q9), kept in `domain`.
   'aiPanel.blocked.KYC_INSUFFICIENT':
@@ -380,6 +392,7 @@ export const vi = {
   'extraction.empty': 'AI không tìm thấy dữ kiện mới trong ghi chú này.',
   'extraction.close': 'Đóng',
   'extraction.invalid': 'AI trả kết quả không đọc được.',
+  'extraction.done': 'AI trích xuất xong: có đề xuất cần xác nhận bên dưới.',
   'kycConfirm.title': '+ Dữ kiện · {field}',
   'kycConfirm.sub': 'Từ ghi chú {date} · AI đề xuất',
   'kycConfirm.quote': 'AI trích từ ghi chú:',
