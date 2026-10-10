@@ -791,6 +791,26 @@ describe('rejectedReport (mockup ai.html 2k)', () => {
     ]);
   });
 
+  it('leaves out an issue of a backup’s report that is not as the validator writes it (DR5-35)', () => {
+    const good = { code: 'V3', path: 'needs[0].text', detail: 'cụm cấm' };
+    const row = {
+      ...rejected,
+      validator: [
+        // An object that cannot become text, as Codex's report has it (CX-D1).
+        { attempt: 1, errors: [{ ...good, path: { toString: null } }, good] },
+        {
+          attempt: 2,
+          errors: [{ ...good, code: 'V9' }, { ...good, detail: 3 }, { code: 'V1' }, null, good],
+        },
+      ],
+    };
+    const line = { code: 'V3', place: { key: 'needs', number: 1 }, detail: 'cụm cấm' };
+    expect(rejectedReport(row, [row], versions).reports).toEqual([
+      { attempt: 1, issues: [line] },
+      { attempt: 2, issues: [line] },
+    ]);
+  });
+
   it('reads a validator report it does not know as no attempts listed', () => {
     const row = { ...rejected, validator: { odd: true } };
     expect(rejectedReport(row, [row], versions).reports).toEqual([]);

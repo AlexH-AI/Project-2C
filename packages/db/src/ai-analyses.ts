@@ -4,7 +4,7 @@
  * new KYC version leaves an analysis STALE, and its material flag only changes the reminder (P1).
  * "Latest" is by recording order (`seq`) for both analyses and KYC versions, never by date.
  */
-import { analysisInputSchema, WEB_PROMPT_VERSION, type AnalysisInput } from '@p2c/ai/schema';
+import { AI_OUTPUT_SCHEMAS, analysisInputSchema, type AnalysisInput } from '@p2c/ai/schema';
 import { fromIsoDate, type CalendarDate, type KycGateState } from '@p2c/domain';
 import { asc, desc, eq, max, sql } from 'drizzle-orm';
 import { isLabel, liveCustomer, nextSeq, prepared, rowInsert, storedDate, today } from './common';
@@ -134,12 +134,10 @@ function toRow(a: NewAiAnalysis) {
       : isLabel(a.model) && AI_ANALYSIS_REASONING.includes(a.reasoning!)) &&
     isTokenCount(a.promptTokens, noModel) &&
     isTokenCount(a.completionTokens, noModel) &&
-    (a.attempts === 1 || a.attempts === 2) &&
-    isLabel(a.promptVersion) &&
-    (a.provider !== 'CHATGPT_WEB' || WEB_PROMPT_VERSION.test(a.promptVersion)) &&
-    analysisInputSchema.safeParse(a.input).data?.mode === a.mode &&
+    analysisLabelsFit(a) &&
+    analysisContentFits(a) &&
     (a.status === 'ACCEPTED'
-      ? a.output !== null && a.output !== undefined && a.rawOutput === null
+      ? a.rawOutput === null
       : typeof a.rawOutput === 'string' && a.rawOutput !== '');
   const inputJson = JSON.stringify(a.input) as string | undefined;
   const validatorJson = JSON.stringify(a.validator) as string | undefined;
@@ -188,6 +186,68 @@ function storedRawOutput(raw: string): string {
 
 function isTokenCount(count: number | null, noModel: boolean): boolean {
   return count === null || (!noModel && Number.isSafeInteger(count) && count >= 0);
+}
+
+// ---- what the command and the import both check (§7.3 rules 12, 13) ---------
+
+/** An analysis's columns as the command takes them, or the import reads them back. */
+export interface AnalysisFields {
+  readonly mode: unknown;
+  readonly status: unknown;
+  readonly provider: unknown;
+  readonly model: unknown;
+  readonly promptVersion: unknown;
+  readonly attempts: unknown;
+  readonly input: unknown;
+  readonly output: unknown;
+  readonly validator: unknown;
+}
+
+/** The longest model name kept (DR5-16): the app's own are far shorter. */
+const MAX_MODEL = 100;
+
+/** `<mode>@<n>`, and `+web@<n>` for ChatGPT web (§7.1). */
+const PROMPT_VERSION = /^(\w+)@[1-9]\d*(\+web@[1-9]\d*)?$/;
+
+/**
+ * Rule 12: the model and prompt version are labels as the app writes them, the prompt of the
+ * analysis's own mode, wrapped only by ChatGPT web; a rejected analysis had its retry (spec §3).
+ */
+export function analysisLabelsFit(a: AnalysisFields): boolean {
+  const version = typeof a.promptVersion === 'string' ? PROMPT_VERSION.exec(a.promptVersion) : null;
+  return (
+    version !== null &&
+    version[1] === a.mode &&
+    (version[2] !== undefined) === (a.provider === 'CHATGPT_WEB') &&
+    (a.model === null || (isLabel(a.model) && a.model.length <= MAX_MODEL)) &&
+    (a.status === 'REJECTED' ? a.attempts === 2 : a.attempts === 1 || a.attempts === 2)
+  );
+}
+
+/**
+ * Rule 13 on parsed JSON: the input passes the input schema of its mode; an accepted output passes
+ * the latest schema of its mode, cites only facts of its input, and its last attempt had no issue.
+ * The input is the app's own, taken before the AI is called, so it is checked on a rejected one too.
+ */
+export function analysisContentFits(a: AnalysisFields): boolean {
+  const input = analysisInputSchema.safeParse(a.input).data;
+  if (input === undefined || input.mode !== a.mode) return false;
+  if (a.status !== 'ACCEPTED') return true;
+  const result = AI_OUTPUT_SCHEMAS[input.mode].safeParse(a.output);
+  if (!result.success || lastIssues(a.validator) > 0) return false;
+  const codes = new Set(input.facts.map((fact) => fact.code));
+  // Every block of an analysis or discovery output is a list of items that may cite facts.
+  return Object.values(result.data)
+    .flat()
+    .every((item) => item.evidence.every((code) => codes.has(code)));
+}
+
+/** How many issues the last attempt's report lists, as `analysisOutcome` stores them. */
+function lastIssues(validator: unknown): number {
+  const last: unknown = Array.isArray(validator) ? validator.at(-1) : undefined;
+  const errors =
+    typeof last === 'object' && last !== null ? (last as { errors?: unknown }).errors : [];
+  return Array.isArray(errors) ? errors.length : 0;
 }
 
 // ---- read -------------------------------------------------------------------
