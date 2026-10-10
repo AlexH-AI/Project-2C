@@ -146,9 +146,10 @@ export type AnalysisOutcome =
   /** Hủy: the panel goes back to how it was. */
   | { readonly kind: 'cancelled' }
   /**
-   * The customer is gone: already deleted at the click (no AI called), or it or its version is
-   * gone by the answer (deleted, or the data replaced by Nạp lại / Nhập backup). Nothing is saved
-   * and the panel follows the data as it is now.
+   * What was analysed is no longer there: the customer already deleted at the click (no AI
+   * called), it or its version deleted by the answer, or the data replaced (Nạp lại / Nhập backup)
+   * meanwhile, even by a backup of the same data with the same IDs (DR5-36). Nothing is saved and
+   * the panel follows the data as it is now.
    */
   | { readonly kind: 'discarded' }
   /** A bug, or the save was refused: the panel shows the general message. */
@@ -158,6 +159,8 @@ export type AnalysisOutcome =
 export interface AnalysisApp {
   readonly ai: AppAi;
   db(): Database;
+  /** Grows each time the data is replaced: an answer from other data is never saved (DR5-36). */
+  generation(): number;
   run<T>(command: (db: Database) => T): T;
   today(): CalendarDate;
 }
@@ -168,6 +171,7 @@ const GONE: readonly DbErrorCode[] = ['CUSTOMER_NOT_FOUND', 'KYC_VERSION_NOT_FOU
 /**
  * One click on Phân tích. The latest KYC version and its facts are read together, at once, so the
  * result is tied to the version the RE saw (§3 item 2); a change while it runs leaves it STALE.
+ * The data replaced while it runs discards the result, whatever its IDs (DR5-36).
  */
 export async function analyseCustomer(
   app: AnalysisApp,
@@ -175,10 +179,12 @@ export async function analyseCustomer(
   signal?: AiAbortSignal,
 ): Promise<AnalysisOutcome> {
   try {
+    const generation = app.generation();
     const taken = takeProfile(app, customerId);
     if ('kind' in taken) return taken;
     const result = await runAnalysis({ ...app.ai.call(), ...taken, signal });
     if (result.kind !== 'record') return result;
+    if (app.generation() !== generation) return { kind: 'discarded' };
     return save(app, result.row);
   } catch (error) {
     return lost(app, error);

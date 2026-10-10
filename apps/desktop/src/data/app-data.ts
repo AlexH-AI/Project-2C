@@ -89,6 +89,12 @@ export interface AppData {
   /** Grows with every change; screens re-read the database when it does. */
   revision(): number;
   /**
+   * Grows each time the data is replaced (`reloadDemoData`, `importBackup`); a replace that fails
+   * leaves it. Work that saves after an `await` compares it to drop what it took from other data,
+   * even when the IDs are alike (DR5-36).
+   */
+  generation(): number;
+  /**
    * The tables of the current revision, shared by every screen: each is read when first asked for
    * and kept until the data changes, so moving between screens reads nothing again.
    */
@@ -290,6 +296,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   }
   const listeners = new Set<() => void>();
   let revision = 0;
+  let generation = 0;
   let tables: Tables | undefined;
   const changed = () => {
     revision++;
@@ -305,6 +312,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     const backup = await storage?.backup();
     const previous = db;
     db = await next();
+    generation++;
     changed();
     // Frees its WASM memory once the screens have re-rendered on the new database; a write to it
     // before then is never saved (`current`); after it, one throws. So callers must not keep a
@@ -327,6 +335,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
       return () => listeners.delete(listener);
     },
     revision: () => revision,
+    generation: () => generation,
     tables: () => (tables ??= readTables(db)),
     run,
     hasFile: storage !== undefined,

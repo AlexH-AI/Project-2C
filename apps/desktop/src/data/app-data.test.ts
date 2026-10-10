@@ -509,6 +509,29 @@ describe('reloadDemoData', () => {
   });
 });
 
+describe('generation', () => {
+  it('grows with each replace of the data that succeeds, not with a change or a failed replace', async () => {
+    const { storage, failSave } = memoryStorage();
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+    const start = app.generation();
+
+    app.run((d) => createTeam(d, { name: 'Sao Mai' }));
+    expect(app.generation()).toBe(start);
+
+    await app.reloadDemoData();
+    expect(app.generation()).toBe(start + 1);
+
+    await app.importBackup(await app.readBackup((await app.exportBackup()).text));
+    expect(app.generation()).toBe(start + 2);
+
+    await app.saves.idle();
+    failSave();
+    app.run((d) => createTeam(d, { name: 'Hừng Đông' }));
+    await expect(app.reloadDemoData()).rejects.toSatisfy(isUnsavedChangesError);
+    expect(app.generation()).toBe(start + 2);
+  });
+});
+
 describe('the data file card', () => {
   it('records the time and size of the last successful save, and tells subscribers', async () => {
     const { storage, saves, failSave } = memoryStorage();
