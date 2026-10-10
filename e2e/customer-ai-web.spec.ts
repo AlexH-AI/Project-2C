@@ -102,6 +102,69 @@ test('copies the message, opens chatgpt.com, saves a pasted answer as CURRENT Ch
   await expect(panel.getByRole('button', { name: 'Phân tích lại' })).toBeEnabled();
 });
 
+/** A KYC note long enough for AI trích xuất, with no fact. */
+const NOTE = 'KH muốn tìm hiểu thêm về quỹ hưu trí cho cả gia đình.';
+
+async function writeNote(page: Page, name: string) {
+  await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
+  const dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${name}` });
+  await dialog.getByRole('textbox', { name: 'Ghi chú' }).fill(NOTE);
+  await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
+  await expect(dialog).toBeHidden();
+}
+
+const extractButton = (page: Page) =>
+  page
+    .getByRole('region', { name: 'Dòng thời gian' })
+    .getByRole('listitem')
+    .filter({ hasText: NOTE })
+    .getByRole('button', { name: 'AI trích xuất' });
+
+test("the app's own message pasted back counts no attempt; AI trích xuất waits with the session", async ({
+  page,
+}) => {
+  const other = 'Quế Khác';
+  await createKycCustomer(page, other);
+  await writeNote(page, other);
+  const name = 'Hà Web';
+  const panel = await discoveryCustomer(page, name);
+  await writeNote(page, name);
+  const start = panel.getByRole('button', { name: 'Phân tích bằng ChatGPT web' });
+  const extract = extractButton(page);
+  await expect(extract).toBeEnabled();
+
+  await start.click();
+  await expect(panel).toContainText('Lần thử 1 / 2');
+  // This customer's AI buttons are all off while the session waits (ADR-0009 W-1 item 6).
+  await expect(extract).toBeDisabled();
+
+  // The message still in the clipboard, pasted back by mistake (DR5-49).
+  const [message] = (await recorded(page)).copied;
+  const box = panel.getByRole('textbox', { name: 'Dán kết quả' });
+  const save = panel.getByRole('button', { name: 'Kiểm tra và lưu' });
+  await box.fill(message!);
+  await save.click();
+  await expect(panel).toContainText('Đây là tin nhắn của app — hãy copy câu trả lời của ChatGPT.');
+  await expect(panel).toContainText('Lần thử 1 / 2');
+  await expect(panel).not.toContainText('Câu trả lời chưa đạt');
+  await expect(panel).toContainText('Chưa có phân tích AI cho KH này.');
+
+  await box.fill(GOOD);
+  await expect(panel).not.toContainText('Đây là tin nhắn của app');
+  await save.click();
+  await expect(panel).toContainText('CURRENT');
+  await expect(panel).toContainText(/kyc v2 · discovery@1\+web@1 · ChatGPT web/);
+  await expect(extract).toBeEnabled();
+
+  // Another customer's AI trích xuất does not wait for this one's session.
+  await start.click();
+  await expect(extract).toBeDisabled();
+  await page.getByRole('link', { name: 'Khách hàng' }).first().click();
+  await page.getByRole('link', { name: new RegExp(other) }).click();
+  await expect(page.getByRole('heading', { name: other })).toBeVisible();
+  await expect(extractButton(page)).toBeEnabled();
+});
+
 test('a wrong paste then a right one is ACCEPTED; two wrong ones are REJECTED', async ({
   page,
 }) => {

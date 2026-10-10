@@ -242,8 +242,11 @@ export interface AiPanelWeb {
   readonly openFailed: boolean;
   /** Mockup 4g: the first paste was wrong; "Copy yêu cầu sửa" copies `message`. */
   readonly retry: { readonly issues: readonly AiPanelIssue[]; readonly message: string } | null;
-  /** Mockup 4h: the paste is over 20 000 characters, no attempt counted. */
-  readonly tooLong: boolean;
+  /**
+   * The paste refused at the box, no attempt counted: over 20 000 characters (mockup 4h), or the
+   * app's own message pasted back (DR5-49).
+   */
+  readonly refused: 'TOO_LONG' | 'OWN_MESSAGE' | null;
   /** A bug on Kiểm tra và lưu: the general message; the paste stays to try again. */
   readonly failed: boolean;
 }
@@ -258,7 +261,7 @@ export function webOpened(started: {
 }): AiPanelWeb {
   const { session, message, takenAt, copied, opened } = started;
   const manual = copied ? null : message;
-  const fresh = { retry: null, tooLong: false, failed: false };
+  const fresh = { retry: null, refused: null, failed: false };
   return { session, message, takenAt, manual, openFailed: !opened, ...fresh };
 }
 
@@ -266,7 +269,7 @@ export function webOpened(started: {
 export function webAfter(web: AiPanelWeb, outcome: WebAnswerOutcome): AiPanelWeb | null {
   switch (outcome.kind) {
     case 'unusable':
-      return { ...web, tooLong: outcome.reason === 'TOO_LONG', failed: false };
+      return { ...web, refused: outcome.reason === 'EMPTY' ? null : outcome.reason, failed: false };
     case 'retry': {
       const noJson = outcome.session.attempts.at(-1)!.parsed === null;
       // The first message left to copy by hand would be pasted into the same chat (review of PR 459).
@@ -278,12 +281,12 @@ export function webAfter(web: AiPanelWeb, outcome: WebAnswerOutcome): AiPanelWeb
           issues: outcome.issues.map((issue) => issueLine(issue, noJson)),
           message: outcome.retryMessage,
         },
-        tooLong: false,
+        refused: null,
         failed: false,
       };
     }
     case 'failed':
-      return { ...web, tooLong: false, failed: true };
+      return { ...web, refused: null, failed: true };
     default:
       return null;
   }

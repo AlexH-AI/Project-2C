@@ -1,7 +1,7 @@
 import type { AiAnalysisView, KycFactRecord, KycVersionRecord } from '@p2c/db';
 import { evaluateKycGate, formatDate, formatDayMonth, KYC_INSUFFICIENT_MESSAGE } from '@p2c/domain';
 import { Button } from '@p2c/ui';
-import { useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { analyseCustomer, startChatGptWeb } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
@@ -242,6 +242,7 @@ export function KycIntelligence({
   versions,
   analyses,
   onShowFact,
+  onWebOpen,
 }: {
   customerId: string;
   facts: readonly KycFactRecord[];
@@ -249,6 +250,8 @@ export function KycIntelligence({
   analyses: readonly AiAnalysisView[];
   /** A code cited as evidence, of a fact in effect: the facts list scrolls to it (mockup 3a). */
   onShowFact: (code: string) => void;
+  /** Whether this customer's ChatGPT web session is open, false again once it ends or the panel goes. */
+  onWebOpen: (open: boolean) => void;
 }) {
   const app = useAppData();
   const { runner } = app.ai;
@@ -260,6 +263,13 @@ export function KycIntelligence({
   // While the copy and the browser are on their way, both buttons are off already (§3.1 item 4).
   const [startingWeb, setStartingWeb] = useState(false);
   const [webFailed, setWebFailed] = useState(false);
+  const webOpen = web !== null || startingWeb;
+  // AI trích xuất of this customer is off too while the session waits (ADR-0009 W-1 item 6).
+  useEffect(() => {
+    if (!webOpen) return;
+    onWebOpen(true);
+    return () => onWebOpen(false);
+  }, [webOpen, onWebOpen]);
   // The history row picked (mockup 2j) holds until a new row is saved, from any run, so the result
   // shows once saved (review of PR 462).
   const latest = analyses[0]?.id ?? null;
@@ -274,7 +284,7 @@ export function KycIntelligence({
     gate,
     analyses,
     busy,
-    webOpen: web !== null || startingWeb,
+    webOpen,
     viewing,
   });
   const shown = panelRun(analysis.phase, analysis.ended);

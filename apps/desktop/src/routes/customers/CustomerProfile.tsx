@@ -86,6 +86,8 @@ export function CustomerProfile({ id }: { id: string }) {
   } | null>(null);
   const [appointing, setAppointing] = useState<{ from?: AppointmentRecord } | null>(null);
   const [policyMode, setPolicyMode] = useState<PolicyMode | null>(null);
+  // The ChatGPT web session of the panel: AI trích xuất is off while it waits (§3.1 item 4).
+  const [webOpen, setWebOpen] = useState(false);
   const onIssue = (policy: Policy) => setPolicyMode({ kind: 'issue', policy });
   const onEditPolicy = (policy: Policy) => setPolicyMode({ kind: 'edit', policy });
   const next = (from: AppointmentRecord) => setAppointing({ from });
@@ -181,6 +183,7 @@ export function CustomerProfile({ id }: { id: string }) {
               <NoteEvent
                 note={note}
                 facts={kyc.facts}
+                webOpen={webOpen}
                 onConfirm={(note, proposal, onSaved) => setConfirming({ note, proposal, onSaved })}
               />
             )}
@@ -200,6 +203,7 @@ export function CustomerProfile({ id }: { id: string }) {
             versions={versions}
             analyses={analyses}
             onShowFact={showFact}
+            onWebOpen={setWebOpen}
           />
         </div>
       </div>

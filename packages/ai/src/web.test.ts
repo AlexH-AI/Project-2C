@@ -6,6 +6,7 @@ import { buildAnalysisInput, type AnalysisProfile } from './input';
 import { analysisPrompt } from './prompts/analysis';
 import { discoveryPrompt } from './prompts/discovery';
 import { retryMessage } from './prompts/retry';
+import { checkAnalysisAnswer } from './run';
 import { fact, PROFILE, TODAY } from './test-support';
 import {
   buildWebMessage,
@@ -65,6 +66,15 @@ const GOOD = {
 
 /** As ChatGPT gives it: a ```json fence after a sentence. */
 const GOOD_ANSWER = `Đây là kết quả:\n\`\`\`json\n${JSON.stringify(GOOD, null, 2)}\n\`\`\``;
+
+/** Passes V1–V6 for the input of `DISCOVERY` (facts F1 … F4, ASSETS missing). */
+const DISCOVERY_ANSWER = JSON.stringify({
+  discoveryStrategy: [
+    { text: 'Tìm hiểu tài sản', missingCategory: 'ASSETS' },
+    item('Hỏi thêm về công việc', 'F4'),
+  ],
+  nextBestActions: [item('Chuẩn bị câu hỏi', 'F4')],
+});
 
 /** Valid JSON that fails V2 (a fact not in the input). */
 const BAD = JSON.stringify(GOOD).replace('"F7"', '"F99"');
@@ -238,6 +248,67 @@ describe('checkWebAnswer', () => {
     });
   });
 
+  describe("the app's own message pasted back (DR5-49)", () => {
+    it.each([
+      ['analysis', PROFILE, GOOD_ANSWER],
+      ['discovery', DISCOVERY, DISCOVERY_ANSWER],
+    ] as const)('does not count the whole %s message', (_, profile, answer) => {
+      const { session, message } = start(profile);
+
+      expect(checkWebAnswer(session, message)).toEqual({
+        kind: 'unusable',
+        reason: 'OWN_MESSAGE',
+      });
+      // Still the first attempt: a good paste then is accepted at once.
+      expect(paste(session, answer)).toMatchObject({ row: { status: 'ACCEPTED', attempts: 1 } });
+    });
+
+    it.each([
+      [
+        'only its part from === ĐẦU VÀO === on',
+        (message: string) => message.slice(message.indexOf('=== ĐẦU VÀO ===')),
+      ],
+      [
+        'only its part up to the input',
+        (message: string) => message.slice(0, message.indexOf('=== ĐẦU VÀO ===')),
+      ],
+      ['with CRLF line breaks', (message: string) => message.replaceAll('\n', '\r\n')],
+      [
+        'with spaces around a frame line',
+        (message: string) => message.replace('=== HƯỚNG DẪN ===', '  === HƯỚNG DẪN ===\t'),
+      ],
+    ])('does not count it %s', (_, cut) => {
+      const { session, message } = start();
+
+      expect(checkWebAnswer(session, cut(message))).toEqual({
+        kind: 'unusable',
+        reason: 'OWN_MESSAGE',
+      });
+    });
+
+    it('does not count it at the second attempt either', () => {
+      const { session, message } = start();
+      const retry = checkWebAnswer(session, BAD);
+      if (retry.kind !== 'retry') throw new Error('no retry');
+
+      expect(checkWebAnswer(retry.session, message)).toEqual({
+        kind: 'unusable',
+        reason: 'OWN_MESSAGE',
+      });
+      expect(checkWebAnswer(retry.session, GOOD_ANSWER)).toMatchObject({
+        row: { status: 'ACCEPTED', attempts: 2 },
+      });
+    });
+
+    it('checks an answer that only names a frame in its text as an answer', () => {
+      const answer = `Tôi đã đọc phần === ĐẦU VÀO === của bạn.\n${GOOD_ANSWER}`;
+
+      expect(paste(start().session, answer)).toMatchObject({
+        row: { status: 'ACCEPTED', attempts: 1 },
+      });
+    });
+  });
+
   it('counts 20 000 characters by code point, as `raw_output` is cut', () => {
     const { session } = start();
     const emoji = '😀'.repeat(20_000);
@@ -247,15 +318,7 @@ describe('checkWebAnswer', () => {
   });
 
   it('records a discovery with its own prompt version', () => {
-    const answer = JSON.stringify({
-      discoveryStrategy: [
-        { text: 'Tìm hiểu tài sản', missingCategory: 'ASSETS' },
-        item('Hỏi thêm về công việc', 'F4'),
-      ],
-      nextBestActions: [item('Chuẩn bị câu hỏi', 'F4')],
-    });
-
-    expect(paste(start(DISCOVERY).session, answer)).toMatchObject({
+    expect(paste(start(DISCOVERY).session, DISCOVERY_ANSWER)).toMatchObject({
       kind: 'record',
       row: {
         mode: 'discovery',
@@ -273,6 +336,17 @@ describe('checkWebAnswer', () => {
 
     expect(session.attempts).toEqual([]);
     expect(paste(session, GOOD_ANSWER)).toMatchObject({ row: { attempts: 1 } });
+  });
+
+  // Locks today's behaviour (Owner 10/10/2026, deep review Phase 5 §8 question 2): the format
+  // example of the G5 prompt passes V1–V6 when the input has its codes. The G5 round (Phase 6)
+  // makes it fail (V1 asks for a letter, or the example cites codes no input has): change this then.
+  it('accepts the format example of the analysis@1 prompt, for an input with its codes', () => {
+    const { session } = start();
+
+    expect(checkAnalysisAnswer(session.input, analysisPrompt.system)).toMatchObject({
+      issues: [],
+    });
   });
 
   it('refuses a session that has had all its attempts', () => {

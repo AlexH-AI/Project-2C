@@ -28,16 +28,21 @@ export type ConfirmProposal = (
 export function NoteEvent({
   note,
   facts,
+  webOpen,
   onConfirm,
 }: {
   note: KycNoteRecord;
   facts: readonly KycFact[];
+  /** This customer's ChatGPT web session waits for its paste (§3.1 item 4). */
+  webOpen: boolean;
   onConfirm: ConfirmProposal;
 }) {
   const app = useAppData();
   const { runner } = app.ai;
-  // Every AI button is off while any AI request runs (P5).
-  const busy = useSyncExternalStore(runner.subscribe, () => runner.busy);
+  // Every AI button is off while any AI request runs (P5), and this customer's while its ChatGPT web
+  // session waits (ADR-0009 W-1 item 6).
+  const running = useSyncExternalStore(runner.subscribe, () => runner.busy);
+  const busy = running || webOpen;
   const job = useAiJob('extraction', note.id);
   // The proposals the RE confirmed or dropped, by their place in the answer.
   const [handled, setHandled] = useState<ReadonlySet<number>>(new Set());
