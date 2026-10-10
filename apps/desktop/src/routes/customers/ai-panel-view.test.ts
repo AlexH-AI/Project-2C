@@ -294,7 +294,7 @@ describe('the ChatGPT web session of the panel (spec Phase 5 Â§3.1, mockups 4eâ€
   });
 
   it('opens with the input taken, its chip and nothing to copy by hand', () => {
-    expect(opened).toMatchObject({ manual: null, openFailed: false, retry: null, tooLong: false });
+    expect(opened).toMatchObject({ manual: null, openFailed: false, retry: null, refused: null });
     expect(webChip(opened, [{ id: 'v1' }, { id: 'v2' }])).toEqual({
       version: 2,
       prompt: 'discovery@1+web@1',
@@ -313,9 +313,20 @@ describe('the ChatGPT web session of the panel (spec Phase 5 Â§3.1, mockups 4eâ€
     expect(failed).toMatchObject({ manual: 'Tin nháº¯n', openFailed: true });
   });
 
-  it('says a paste over 20 000 characters at the box, and keeps the attempt', () => {
-    const after = webAfter(opened, { kind: 'unusable', reason: 'TOO_LONG' });
-    expect(after).toMatchObject({ session, tooLong: true, retry: null });
+  it.each(['TOO_LONG', 'OWN_MESSAGE'] as const)(
+    'says a paste refused as %s at the box, and keeps the attempt',
+    (reason) => {
+      const after = webAfter(opened, { kind: 'unusable', reason });
+      expect(after).toMatchObject({ session, refused: reason, retry: null });
+    },
+  );
+
+  it('says nothing at the box for a blank paste', () => {
+    const after = webAfter(
+      { ...opened, refused: 'OWN_MESSAGE' },
+      { kind: 'unusable', reason: 'EMPTY' },
+    );
+    expect(after).toMatchObject({ session, refused: null });
   });
 
   it('lists the issues of a first wrong paste and keeps the session they come with', () => {
@@ -324,7 +335,7 @@ describe('the ChatGPT web session of the panel (spec Phase 5 Â§3.1, mockups 4eâ€
       attempts: [{ content: 'x', parsed: null, issues: [] }],
     } as unknown as WebSession;
     const after = webAfter(
-      { ...opened, tooLong: true },
+      { ...opened, refused: 'TOO_LONG' },
       {
         kind: 'retry',
         session: next,
@@ -334,7 +345,7 @@ describe('the ChatGPT web session of the panel (spec Phase 5 Â§3.1, mockups 4eâ€
     );
     expect(after).toMatchObject({
       session: next,
-      tooLong: false,
+      refused: null,
       retry: { issues: [{ code: 'V1', place: null, detail: null }], message: 'Sá»­a' },
     });
   });

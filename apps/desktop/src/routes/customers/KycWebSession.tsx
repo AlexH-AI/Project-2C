@@ -139,12 +139,12 @@ export function KycWebSession({
         value={pasted}
         onChange={(value) => {
           setPasted(value);
-          if (web.tooLong) onChange((now) => now && { ...now, tooLong: false });
+          if (web.refused) onChange((now) => now && { ...now, refused: null });
         }}
         placeholder={t(
           second ? 'aiPanel.web.pasteRetryPlaceholder' : 'aiPanel.web.pastePlaceholder',
         )}
-        error={web.tooLong ? t('aiPanel.web.tooLong') : undefined}
+        error={web.refused ? t(`aiPanel.web.refused.${web.refused}`) : undefined}
       />
       <div className={ROW}>
         <Button onClick={() => void copy(web.message)}>{t('aiPanel.web.copyAgain')}</Button>

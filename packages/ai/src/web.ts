@@ -78,12 +78,22 @@ export function startWebAnalysis(request: WebAnalysisRequest): WebStart {
   };
 }
 
+/**
+ * The frame lines of `web@1` (`=== HƯỚNG DẪN ===`, `=== ĐẦU VÀO ===`): a paste with one of them on
+ * a line of its own is the app's message, all or part of it, never ChatGPT's answer (DR5-49).
+ */
+const FRAME_LINES = WEB_WRAPPER.template.split('\n').filter((line) => /^=== .+ ===$/.test(line));
+
+function isOwnMessage(pasted: string): boolean {
+  return pasted.split(/\r\n?|\n/).some((line) => FRAME_LINES.includes(line.trim()));
+}
+
 export type WebAnswerResult =
   /**
-   * Not an attempt (§3.1 item 3): the paste is blank, or longer than `MAX_RAW_OUTPUT` characters
-   * (by code point, as `raw_output` is cut).
+   * Not an attempt (§3.1 item 3): the paste is blank, is the app's own message pasted back, or is
+   * longer than `MAX_RAW_OUTPUT` characters (by code point, as `raw_output` is cut).
    */
-  | { readonly kind: 'unusable'; readonly reason: 'EMPTY' | 'TOO_LONG' }
+  | { readonly kind: 'unusable'; readonly reason: 'EMPTY' | 'OWN_MESSAGE' | 'TOO_LONG' }
   /** The first paste is wrong: show the issues; "Copy yêu cầu sửa" copies `retryMessage` (G5 §5). */
   | {
       readonly kind: 'retry';
@@ -98,6 +108,7 @@ export type WebAnswerResult =
 export function checkWebAnswer(session: WebSession, pasted: string): WebAnswerResult {
   if (session.attempts.length >= MAX_ATTEMPTS) throw new RangeError('The web session is over');
   if (pasted.trim() === '') return { kind: 'unusable', reason: 'EMPTY' };
+  if (isOwnMessage(pasted)) return { kind: 'unusable', reason: 'OWN_MESSAGE' };
   if (Array.from(pasted).length > MAX_RAW_OUTPUT) return { kind: 'unusable', reason: 'TOO_LONG' };
   const attempts = [...session.attempts, checkAnalysisAnswer(session.input, pasted)];
   const retry = nextRetry(attempts);

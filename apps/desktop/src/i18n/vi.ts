@@ -210,8 +210,9 @@ export const vi = {
   'aiPanel.web.pasteRetry': 'Dán kết quả (lần thử 2 / 2)',
   'aiPanel.web.pastePlaceholder': 'Dán câu trả lời của ChatGPT (Ctrl+V)',
   'aiPanel.web.pasteRetryPlaceholder': 'Dán câu trả lời mới',
-  'aiPanel.web.tooLong':
+  'aiPanel.web.refused.TOO_LONG':
     'Câu trả lời dài quá 20.000 ký tự — kiểm tra đã copy đúng câu trả lời chưa.',
+  'aiPanel.web.refused.OWN_MESSAGE': 'Đây là tin nhắn của app — hãy copy câu trả lời của ChatGPT.',
   'aiPanel.web.copyAgain': 'Copy lại',
   'aiPanel.web.reopen': 'Mở lại ChatGPT',
   'aiPanel.web.save': 'Kiểm tra và lưu',

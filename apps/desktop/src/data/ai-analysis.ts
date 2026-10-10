@@ -21,6 +21,7 @@ import {
   type StoredAiSettings,
   type ValidationIssue,
   type WebAnalysisRequest,
+  type WebAnswerResult,
   type WebSession,
 } from '@p2c/ai';
 import {
@@ -279,7 +280,7 @@ export async function startChatGptWeb(
 
 export type WebAnswerOutcome =
   /** Not an attempt (§3.1 item 3): the error at the paste box, or the button off when blank. */
-  | { readonly kind: 'unusable'; readonly reason: 'EMPTY' | 'TOO_LONG' }
+  | Extract<WebAnswerResult, { kind: 'unusable' }>
   /** Mockup 4g: the issues, "Copy yêu cầu sửa" copies `retryMessage`; go on with `session`. */
   | {
       readonly kind: 'retry';
