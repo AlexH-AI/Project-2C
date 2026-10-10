@@ -130,8 +130,8 @@ interface AiCall {
 }
 
 interface Attempt extends CheckedAnswer {
-  readonly promptTokens: number;
-  readonly completionTokens: number;
+  readonly promptTokens: number | null;
+  readonly completionTokens: number | null;
 }
 
 /** What `newSessionId` needs of Web Crypto, which the webview and Node have (no DOM types here). */
@@ -319,8 +319,17 @@ export async function runAnalysis(request: AnalysisRequest): Promise<AnalysisRes
     );
     if ('kind' in attempts) return attempts;
     const mock = request.settings.provider === 'MOCK';
-    const total = (key: 'promptTokens' | 'completionTokens') =>
-      mock ? null : attempts.reduce((sum, done) => sum + done[key], 0);
+    // One attempt without a count makes the total unknown.
+    const total = (key: 'promptTokens' | 'completionTokens') => {
+      if (mock) return null;
+      let sum = 0;
+      for (const done of attempts) {
+        const count = done[key];
+        if (count === null) return null;
+        sum += count;
+      }
+      return sum;
+    };
     const row: AnalysisRow = {
       customerId: request.customerId,
       kycVersionId: request.kycVersionId,

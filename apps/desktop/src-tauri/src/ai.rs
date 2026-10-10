@@ -1,11 +1,13 @@
 // The AI commands (spec Phase 5 §5, ADR-0009 D-1 / W-1): OpenCode's chat endpoint called from Rust
 // with the key kept in the Windows Credential Manager, so the webview never sees the key and never
 // talks to the network (the CSP stays `'self'`). One AI request runs at a time ([`Busy`]). The
-// logic here takes the key store and the HTTP call as arguments, so tests run on sample data only.
+// logic here takes the key store and the HTTP call as arguments, so tests run on sample data and
+// a local HTTP server only.
 
 use keyring_core::{Entry, Error as KeyringError};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::io::Read;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
@@ -18,10 +20,15 @@ pub const CHATGPT_URL: &str = "https://chatgpt.com/";
 /// The Credential Manager entry of the key, one for both plans.
 pub const KEY_SERVICE: &str = "Project-2C";
 pub const KEY_USER: &str = "opencode-go";
+/// Stored `Local`: on this machine only, never carried to another one by a roaming profile, as
+/// `Enterprise` (the store's default) would be (ADR-0009 D-1 item 4: one key per machine).
+pub const KEY_MODIFIERS: [(&str, &str); 1] = [("persistence", "Local")];
 
 pub const TIMEOUT: Duration = Duration::from_secs(120);
+/// For each of finding the server's address and opening the connection (TCP and TLS).
 pub const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
-/// The most of a reply body that is read; a longer one is `AI_BAD_RESPONSE`.
+/// The most of a reply body that is read, counted once gzip is undone; a longer 2xx is
+/// `AI_BAD_RESPONSE`.
 pub const MAX_BODY: u64 = 2 * 1024 * 1024;
 
 const MAX_TOKENS: i64 = 16_000;
@@ -35,6 +42,8 @@ pub const USER_AGENT: &str = concat!("Project-2C/", env!("CARGO_PKG_VERSION"));
 /// The most of the server's error message an error carries, in characters.
 const MAX_SERVER_MESSAGE: usize = 200;
 const ROLES: [&str; 3] = ["system", "user", "assistant"];
+/// The `reasoning_effort` values OpenCode takes (spec §4.1).
+const REASONING: [&str; 3] = ["low", "medium", "high"];
 
 // The error codes of spec §5.3, which `packages/ai` (`AI_ERROR_CODES`) translates.
 pub const AI_NO_KEY: &str = "AI_NO_KEY";
@@ -50,8 +59,8 @@ pub const AI_KEYRING: &str = "AI_KEYRING";
 pub const AI_OPEN_BROWSER: &str = "AI_OPEN_BROWSER";
 
 /// What an AI command returns on failure: `{ code, httpStatus?, message? }`. `message` is only
-/// the start of the server's own error message, with the key masked; never a header or the
-/// request body.
+/// the start of the server's own error message, with the key and the session id masked; never a
+/// header or the request body.
 #[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AiError {
@@ -96,8 +105,11 @@ pub struct Request {
 #[serde(rename_all = "camelCase")]
 pub struct Completion {
     pub content: String,
-    pub prompt_tokens: u64,
-    pub completion_tokens: u64,
+    /// `null` when OpenCode gives no count: unknown, not zero.
+    pub prompt_tokens: Option<u64>,
+    pub completion_tokens: Option<u64>,
+    /// Why the model stopped, as OpenCode says (`stop`, `length` when `max_tokens` cut the answer).
+    pub finish_reason: Option<String>,
 }
 
 /// The "running" flag of P5: at most one AI request at a time.
@@ -146,6 +158,10 @@ pub fn check(request: &Request) -> Result<&'static str, AiError> {
             .bytes()
             .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
         && !request.model.is_empty()
+        && request
+            .reasoning
+            .as_deref()
+            .is_none_or(|effort| REASONING.contains(&effort))
         && !request.messages.is_empty()
         && request
             .messages
@@ -196,12 +212,12 @@ pub fn complete(
     let _running = busy.start()?;
     let key = read_key()?.ok_or_else(|| AiError::new(AI_NO_KEY))?;
     let (status, reply_body) = post(url, &key, &headers(request), &body(request))?;
-    reply(status, &reply_body, &key)
+    reply(status, &reply_body, &key, &request.session_id)
 }
 
 /// Reads an HTTP reply: a 2xx carries `choices[0].message.content`; any other status is an error
-/// with the start of the server's message, `key` masked out of it.
-pub fn reply(status: u16, body: &[u8], key: &str) -> Result<Completion, AiError> {
+/// with the start of the server's message, `key` and `session` masked out of it.
+pub fn reply(status: u16, body: &[u8], key: &str, session: &str) -> Result<Completion, AiError> {
     if !(200..300).contains(&status) {
         let code = match status {
             401 | 403 => AI_UNAUTHORIZED,
@@ -211,7 +227,7 @@ pub fn reply(status: u16, body: &[u8], key: &str) -> Result<Completion, AiError>
         return Err(AiError {
             code,
             http_status: Some(status),
-            message: server_message(body, key),
+            message: server_message(body, [key, session]),
         });
     }
     let bad = || AiError::new(AI_BAD_RESPONSE);
@@ -219,57 +235,59 @@ pub fn reply(status: u16, body: &[u8], key: &str) -> Result<Completion, AiError>
         return Err(bad());
     }
     let reply: Value = serde_json::from_slice(body).map_err(|_| bad())?;
-    let content = reply["choices"][0]["message"]["content"]
-        .as_str()
-        .ok_or_else(bad)?;
-    let tokens = |name: &str| reply["usage"][name].as_u64().unwrap_or(0);
+    let choice = &reply["choices"][0];
+    let content = choice["message"]["content"].as_str().ok_or_else(bad)?;
+    // The webview must never get the key (D-1 item 1), and an answer may be saved as it is.
+    if !key.is_empty() && content.contains(key) {
+        return Err(bad());
+    }
+    let tokens = |name: &str| reply["usage"][name].as_u64();
     Ok(Completion {
         content: content.to_owned(),
         prompt_tokens: tokens("prompt_tokens"),
         completion_tokens: tokens("completion_tokens"),
+        finish_reason: choice["finish_reason"].as_str().map(str::to_owned),
     })
 }
 
-/// The server's error message: OpenAI's `error.message`, a plain `error` or `message`, else the
-/// body as text. The key is masked before the cut, so no part of it is left at the end.
-fn server_message(body: &[u8], key: &str) -> Option<String> {
-    let text = String::from_utf8_lossy(body);
-    let json: Option<Value> = serde_json::from_str(&text).ok();
-    let message = json
-        .as_ref()
-        .and_then(|json| {
-            [&json["error"]["message"], &json["error"], &json["message"]]
-                .into_iter()
-                .find_map(Value::as_str)
-        })
-        .unwrap_or(&text)
+/// The server's error message: OpenAI's `error.message`, a plain `error` or `message`. A body
+/// without one gives none, as the rest of a body may echo the request. The secrets are masked
+/// before the cut, so no part of them is left at the end.
+fn server_message(body: &[u8], secrets: [&str; 2]) -> Option<String> {
+    let json: Value = serde_json::from_slice(body).ok()?;
+    let message = [&json["error"]["message"], &json["error"], &json["message"]]
+        .into_iter()
+        .find_map(Value::as_str)?
         .trim();
-    let masked = if key.is_empty() {
-        message.to_owned()
-    } else {
-        message.replace(key, "***")
-    };
+    let masked = secrets
+        .into_iter()
+        .filter(|secret| !secret.is_empty())
+        .fold(message.to_owned(), |text, secret| {
+            text.replace(secret, "***")
+        });
     let cut: String = masked.chars().take(MAX_SERVER_MESSAGE).collect();
     (!cut.is_empty()).then_some(cut)
 }
 
-/// A failed HTTP call; nothing of it is passed on but its code.
+/// A failed HTTP call; nothing of it is passed on but its code. Running out of the 10 s to reach
+/// the server is a network error: the model was not asked yet.
 pub fn transport_error(error: &ureq::Error) -> AiError {
     AiError::new(match error {
+        ureq::Error::Timeout(ureq::Timeout::Resolve | ureq::Timeout::Connect) => AI_NETWORK,
         ureq::Error::Timeout(_) => AI_TIMEOUT,
         ureq::Error::Io(e) if e.kind() == std::io::ErrorKind::TimedOut => AI_TIMEOUT,
-        ureq::Error::BodyExceedsLimit(_) => AI_BAD_RESPONSE,
         _ => AI_NETWORK,
     })
 }
 
-/// The key as stored: trimmed, 1–512 characters.
+/// The key as stored: trimmed, 1–512 characters of printable ASCII with no space, as Settings → AI
+/// asks: any other character would fail only on each call, in the `Authorization` header.
 pub fn clean_key(key: &str) -> Result<&str, AiError> {
     let key = key.trim();
-    if key.is_empty() || key.chars().count() > MAX_KEY_CHARS {
-        Err(AiError::new(AI_BAD_REQUEST))
-    } else {
+    if (1..=MAX_KEY_CHARS).contains(&key.len()) && key.bytes().all(|byte| byte.is_ascii_graphic()) {
         Ok(key)
+    } else {
+        Err(AiError::new(AI_BAD_REQUEST))
     }
 }
 
@@ -299,12 +317,14 @@ fn keyring_error(_: KeyringError) -> AiError {
     AiError::new(AI_KEYRING)
 }
 
-/// The key's entry in the Windows Credential Manager.
+/// The key's entry in the Windows Credential Manager. The store applies [`KEY_MODIFIERS`] when the
+/// key is saved, so a key saved before keeps its kind until it is saved again.
 #[cfg(windows)]
 pub fn key_entry() -> Result<Entry, AiError> {
     use keyring_core::api::CredentialStoreApi;
+    let modifiers = std::collections::HashMap::from(KEY_MODIFIERS);
     windows_native_keyring_store::Store::new()
-        .and_then(|store| store.build(KEY_SERVICE, KEY_USER, None))
+        .and_then(|store| store.build(KEY_SERVICE, KEY_USER, Some(&modifiers)))
         .map_err(keyring_error)
 }
 
@@ -314,22 +334,45 @@ pub fn key_entry() -> Result<Entry, AiError> {
     Err(AiError::new(AI_KEYRING))
 }
 
-/// The HTTP call of [`complete`]: returns the status and at most [`MAX_BODY`] of the body. No
-/// redirect is followed (the URL is fixed) and only HTTPS is spoken.
+/// The HTTP call of [`complete`], with the app's [`agent`].
 pub fn post(
     url: &str,
     key: &str,
     headers: &[(&str, &str)],
     body: &str,
 ) -> Result<(u16, Vec<u8>), AiError> {
-    let agent: ureq::Agent = ureq::Agent::config_builder()
-        .timeout_global(Some(TIMEOUT))
-        .timeout_connect(Some(CONNECT_TIMEOUT))
+    post_with(&agent(), url, key, headers, body)
+}
+
+/// Speaks only HTTPS and follows no redirect (the URL is fixed, and the key goes nowhere else);
+/// an HTTP error status is a reply to read, not a failed call.
+fn agent() -> ureq::Agent {
+    agent_with(TIMEOUT, CONNECT_TIMEOUT, true)
+}
+
+/// [`agent`] with other timeouts, or plain HTTP for the tests' local server.
+fn agent_with(timeout: Duration, connect_timeout: Duration, https_only: bool) -> ureq::Agent {
+    ureq::Agent::config_builder()
+        .timeout_global(Some(timeout))
+        .timeout_resolve(Some(connect_timeout))
+        .timeout_connect(Some(connect_timeout))
         .http_status_as_error(false)
-        .https_only(true)
+        .https_only(https_only)
         .max_redirects(0)
         .build()
-        .into();
+        .into()
+}
+
+/// Posts `body` and returns the status and the body, read to one byte past [`MAX_BODY`] once
+/// gzip is undone: a longer body shows as such without being held whole, though a gzip one can
+/// unpack to a thousand times its size on the wire.
+fn post_with(
+    agent: &ureq::Agent,
+    url: &str,
+    key: &str,
+    headers: &[(&str, &str)],
+    body: &str,
+) -> Result<(u16, Vec<u8>), AiError> {
     // A `User-Agent` set here replaces ureq's own.
     let mut request = agent
         .post(url)
@@ -342,12 +385,13 @@ pub fn post(
         .send(body)
         .map_err(|e| transport_error(&e))?;
     let status = response.status().as_u16();
-    let bytes = response
+    let mut bytes = Vec::new();
+    response
         .body_mut()
-        .with_config()
-        .limit(MAX_BODY)
-        .read_to_vec()
-        .map_err(|e| transport_error(&e))?;
+        .as_reader()
+        .take(MAX_BODY + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|e| transport_error(&e.into()))?;
     Ok((status, bytes))
 }
 
@@ -366,6 +410,9 @@ mod tests {
     use super::*;
     use keyring_core::api::CredentialStoreApi;
     use std::cell::Cell;
+    use std::io::{Read, Write};
+    use std::net::{TcpListener, TcpStream};
+    use std::sync::{Arc, Mutex};
 
     const KEY: &str = "sk-test-SECRET-0123456789";
     const SESSION: &str = "0f3a9c1d-77be-4e21-a0c4-5d2e8b6f9a10";
@@ -390,7 +437,7 @@ mod tests {
         }
     }
 
-    const OK_REPLY: &str = r#"{"id":"x","choices":[{"index":0,"message":{"role":"assistant","content":"{\"a\":1}"}}],"usage":{"prompt_tokens":120,"completion_tokens":45,"total_tokens":165}}"#;
+    const OK_REPLY: &str = r#"{"id":"x","choices":[{"index":0,"message":{"role":"assistant","content":"{\"a\":1}"},"finish_reason":"stop"}],"usage":{"prompt_tokens":120,"completion_tokens":45,"total_tokens":165}}"#;
 
     /// What `complete` posted: the URL, the headers besides the key's and the body.
     type Posted = (String, Vec<(String, String)>, String);
@@ -476,28 +523,58 @@ mod tests {
     }
 
     #[test]
-    fn a_reply_gives_its_content_and_token_counts() {
+    fn a_reply_gives_its_content_token_counts_and_finish_reason() {
         assert_eq!(
             run(&request("GO"), 200, OK_REPLY).0,
             Ok(Completion {
                 content: r#"{"a":1}"#.into(),
-                prompt_tokens: 120,
-                completion_tokens: 45,
+                prompt_tokens: Some(120),
+                completion_tokens: Some(45),
+                finish_reason: Some("stop".into()),
             })
         );
     }
 
     #[test]
-    fn a_reply_without_usage_counts_no_tokens() {
-        let reply = r#"{"choices":[{"message":{"content":"x"}}]}"#;
+    fn a_reply_without_usage_has_unknown_tokens_and_a_cut_one_says_length() {
+        let reply = r#"{"choices":[{"message":{"content":"{\"hypo"},"finish_reason":"length"}]}"#;
         assert_eq!(
-            super::reply(200, reply.as_bytes(), KEY),
+            super::reply(200, reply.as_bytes(), KEY, SESSION),
             Ok(Completion {
-                content: "x".into(),
-                prompt_tokens: 0,
-                completion_tokens: 0,
+                content: r#"{"hypo"#.into(),
+                prompt_tokens: None,
+                completion_tokens: None,
+                finish_reason: Some("length".into()),
             })
         );
+        let bare = r#"{"choices":[{"message":{"content":"x"}}],"usage":{"prompt_tokens":3}}"#;
+        assert_eq!(
+            super::reply(200, bare.as_bytes(), KEY, SESSION),
+            Ok(Completion {
+                content: "x".into(),
+                prompt_tokens: Some(3),
+                completion_tokens: None,
+                finish_reason: None,
+            })
+        );
+    }
+
+    #[test]
+    fn a_reply_whose_content_holds_the_key_is_bad_response() {
+        for content in [KEY.to_owned(), format!("Bearer {KEY} được gửi")] {
+            let echo = serde_json::json!({ "choices": [{ "message": { "content": content } }] });
+            assert_eq!(
+                reply(200, echo.to_string().as_bytes(), KEY, SESSION),
+                Err(AiError::new(AI_BAD_RESPONSE)),
+                "{content}"
+            );
+        }
+        // Only the whole key: the answer may well hold a piece of it by chance.
+        let fine = format!(
+            r#"{{"choices":[{{"message":{{"content":"{}"}}}}]}}"#,
+            &KEY[..10]
+        );
+        assert!(reply(200, fine.as_bytes(), KEY, SESSION).is_ok());
     }
 
     #[test]
@@ -511,19 +588,26 @@ mod tests {
             r#"{"choices":[{"message":{"content":42}}]}"#,
         ] {
             assert_eq!(
-                reply(200, body.as_bytes(), KEY),
+                reply(200, body.as_bytes(), KEY, SESSION),
                 Err(AiError::new(AI_BAD_RESPONSE)),
                 "{body}"
             );
         }
     }
 
+    /// A readable reply of exactly `size` bytes: `{"choices":…}` padded with spaces.
+    fn padded_reply(size: usize) -> Vec<u8> {
+        let mut reply = br#"{"choices":[{"message":{"content":"x"}}]}"#.to_vec();
+        reply.resize(size, b' ');
+        reply
+    }
+
     #[test]
-    fn a_reply_over_2_mb_is_bad_response() {
-        let content = "x".repeat(MAX_BODY as usize);
-        let big = format!(r#"{{"choices":[{{"message":{{"content":"{content}"}}}}]}}"#);
+    fn a_reply_of_2_mb_is_read_and_one_byte_more_is_bad_response() {
+        let limit = MAX_BODY as usize;
+        assert!(reply(200, &padded_reply(limit), KEY, SESSION).is_ok());
         assert_eq!(
-            reply(200, big.as_bytes(), KEY),
+            reply(200, &padded_reply(limit + 1), KEY, SESSION),
             Err(AiError::new(AI_BAD_RESPONSE))
         );
     }
@@ -549,7 +633,7 @@ mod tests {
             (302, AI_HTTP),
         ] {
             assert_eq!(
-                reply(status, body("Nope").as_bytes(), KEY),
+                reply(status, body("Nope").as_bytes(), KEY, SESSION),
                 Err(http_error(code, status, "Nope")),
                 "{status}"
             );
@@ -557,21 +641,29 @@ mod tests {
     }
 
     #[test]
-    fn the_server_message_is_read_from_the_usual_shapes_or_the_raw_text() {
+    fn the_server_message_is_read_from_the_usual_shapes_and_never_from_the_raw_body() {
+        let echo = format!(
+            "POST /v1/chat/completions\r\nx-opencode-session: {SESSION}\r\n\r\n{{\"messages\":[]}}"
+        );
         for (body, message) in [
             (r#"{"error":{"message":"A"}}"#, Some("A")),
             (r#"{"error":"B"}"#, Some("B")),
-            (r#"{"message":"C"}"#, Some("C")),
-            ("  plain text\n", Some("plain text")),
+            (r#"{"message":"  C \n"}"#, Some("C")),
+            (r#"{"message":"   "}"#, None),
+            ("  plain text\n", None),
+            ("<html>Bad gateway</html>", None),
+            (&echo, None),
             ("", None),
-            (r#"{"error":{"code":1}}"#, Some(r#"{"error":{"code":1}}"#)),
+            (r#"{"error":{"code":1}}"#, None),
+            (r#"{"choices":[]}"#, None),
         ] {
             assert_eq!(
-                reply(500, body.as_bytes(), KEY)
-                    .unwrap_err()
-                    .message
-                    .as_deref(),
-                message,
+                reply(500, body.as_bytes(), KEY, SESSION),
+                Err(AiError {
+                    code: AI_HTTP,
+                    http_status: Some(500),
+                    message: message.map(str::to_owned),
+                }),
                 "{body}"
             );
         }
@@ -579,8 +671,8 @@ mod tests {
 
     #[test]
     fn the_server_message_is_cut_at_200_characters() {
-        let long = "é".repeat(250);
-        let message = reply(500, long.as_bytes(), KEY)
+        let long = format!(r#"{{"message":"{}"}}"#, "é".repeat(250));
+        let message = reply(500, long.as_bytes(), KEY, SESSION)
             .unwrap_err()
             .message
             .unwrap();
@@ -600,6 +692,10 @@ mod tests {
             session_id: id.into(),
             ..request("GO")
         };
+        let reasoning = |effort: &str| Request {
+            reasoning: Some(effort.into()),
+            ..request("GO")
+        };
         let wrong = [
             session(""),
             session(&"a".repeat(65)),
@@ -617,6 +713,10 @@ mod tests {
             },
             role("tool"),
             role("System"),
+            reasoning("HIGH"),
+            reasoning("max"),
+            reasoning(""),
+            reasoning("high\r\nX-Other: 1"),
             Request {
                 messages: vec![],
                 ..request("GO")
@@ -677,6 +777,18 @@ mod tests {
             },
             Request {
                 max_tokens: 16_000,
+                ..request("CREDIT")
+            },
+            Request {
+                reasoning: None,
+                ..request("GO")
+            },
+            Request {
+                reasoning: Some("low".into()),
+                ..request("GO")
+            },
+            Request {
+                reasoning: Some("medium".into()),
                 ..request("CREDIT")
             },
             Request {
@@ -763,16 +875,18 @@ mod tests {
     }
 
     #[test]
-    fn transport_errors_map_to_timeout_network_or_bad_response() {
+    fn transport_errors_map_to_timeout_or_network() {
         use std::io;
         for (error, code) in [
             (ureq::Error::Timeout(ureq::Timeout::Global), AI_TIMEOUT),
-            (ureq::Error::Timeout(ureq::Timeout::Connect), AI_TIMEOUT),
+            (ureq::Error::Timeout(ureq::Timeout::RecvBody), AI_TIMEOUT),
             (
                 ureq::Error::Io(io::Error::new(io::ErrorKind::TimedOut, "t")),
                 AI_TIMEOUT,
             ),
-            (ureq::Error::BodyExceedsLimit(MAX_BODY), AI_BAD_RESPONSE),
+            // The 10 s to find and reach the server: nothing was asked of the model yet.
+            (ureq::Error::Timeout(ureq::Timeout::Connect), AI_NETWORK),
+            (ureq::Error::Timeout(ureq::Timeout::Resolve), AI_NETWORK),
             (ureq::Error::HostNotFound, AI_NETWORK),
             (ureq::Error::ConnectionFailed, AI_NETWORK),
             (ureq::Error::Tls("bad certificate"), AI_NETWORK),
@@ -786,29 +900,35 @@ mod tests {
     }
 
     #[test]
-    fn no_error_carries_the_key() {
-        let echo = format!(r#"{{"error":{{"message":"Invalid API key: {KEY} (Bearer {KEY})"}}}}"#);
-        let long_echo = format!("{}{KEY}", "x".repeat(190));
+    fn no_error_carries_the_key_or_the_session() {
+        let echo = format!(
+            r#"{{"error":{{"message":"Invalid API key: {KEY} (Bearer {KEY}) in session {SESSION}"}}}}"#
+        );
+        // Masked before the cut at 200 characters, so no start of the key is left at the end.
+        let long_echo = format!(r#"{{"message":"{}{KEY}"}}"#, "x".repeat(190));
         let errors = [
-            reply(401, echo.as_bytes(), KEY).unwrap_err(),
-            reply(500, echo.as_bytes(), KEY).unwrap_err(),
-            reply(429, long_echo.as_bytes(), KEY).unwrap_err(),
-            reply(200, echo.as_bytes(), KEY).unwrap_err(),
+            reply(401, echo.as_bytes(), KEY, SESSION).unwrap_err(),
+            reply(500, echo.as_bytes(), KEY, SESSION).unwrap_err(),
+            reply(429, long_echo.as_bytes(), KEY, SESSION).unwrap_err(),
+            reply(200, echo.as_bytes(), KEY, SESSION).unwrap_err(),
             run(&request("GO"), 403, &echo).0.unwrap_err(),
             run(&request("bad"), 200, OK_REPLY).0.unwrap_err(),
             clean_key(&format!("{KEY}{}", "k".repeat(MAX_KEY_CHARS))).unwrap_err(),
+            clean_key(&format!("{KEY}\n{KEY}")).unwrap_err(),
         ];
         for error in errors {
             let sent = serde_json::to_string(&error).unwrap();
-            assert!(!sent.contains(KEY), "{sent}");
-            assert!(!format!("{error:?}").contains(KEY), "{error:?}");
+            for secret in [KEY, SESSION, &KEY[..4]] {
+                assert!(!sent.contains(secret), "{sent}");
+                assert!(!format!("{error:?}").contains(secret), "{error:?}");
+            }
         }
         assert_eq!(
-            reply(401, echo.as_bytes(), KEY)
+            reply(401, echo.as_bytes(), KEY, SESSION)
                 .unwrap_err()
                 .message
                 .unwrap(),
-            "Invalid API key: *** (Bearer ***)"
+            "Invalid API key: *** (Bearer ***) in session ***"
         );
     }
 
@@ -822,14 +942,33 @@ mod tests {
             serde_json::to_value(AiError::new(AI_BUSY)).unwrap(),
             json(r#"{"code":"AI_BUSY"}"#)
         );
+    }
+
+    #[test]
+    fn a_completion_is_sent_with_null_for_what_opencode_did_not_say() {
         assert_eq!(
             serde_json::to_value(Completion {
                 content: "c".into(),
-                prompt_tokens: 1,
-                completion_tokens: 2,
+                prompt_tokens: Some(1),
+                completion_tokens: Some(2),
+                finish_reason: Some("length".into()),
             })
             .unwrap(),
-            json(r#"{"content":"c","promptTokens":1,"completionTokens":2}"#)
+            json(
+                r#"{"content":"c","promptTokens":1,"completionTokens":2,"finishReason":"length"}"#
+            )
+        );
+        assert_eq!(
+            serde_json::to_value(Completion {
+                content: "c".into(),
+                prompt_tokens: None,
+                completion_tokens: None,
+                finish_reason: None,
+            })
+            .unwrap(),
+            json(
+                r#"{"content":"c","promptTokens":null,"completionTokens":null,"finishReason":null}"#
+            )
         );
     }
 
@@ -845,16 +984,59 @@ mod tests {
     }
 
     #[test]
-    fn an_empty_or_over_512_character_key_is_bad_request_and_not_stored() {
+    fn a_key_that_is_empty_over_512_characters_or_not_printable_ascii_is_bad_request_and_not_stored(
+    ) {
         let entry = entry();
-        for key in ["", "   \t\n", &"k".repeat(MAX_KEY_CHARS + 1)] {
-            assert_eq!(set_key(&entry, key), Err(AiError::new(AI_BAD_REQUEST)));
+        for key in [
+            "",
+            "   \t\n",
+            &"k".repeat(MAX_KEY_CHARS + 1),
+            // Two keys pasted, a control character, a space, non-ASCII: each fails only on the
+            // call (the `Authorization` header), as `AI_NETWORK`.
+            &format!("{KEY}\n{KEY}"),
+            &format!("{KEY}\r{KEY}"),
+            &format!("{KEY}\0"),
+            &format!("{KEY}\u{7f}"),
+            "sk test",
+            &format!("{KEY}\u{200b}"),
+            &format!("\u{feff}{KEY}"),
+            "sk-tăng",
+        ] {
+            assert_eq!(
+                set_key(&entry, key),
+                Err(AiError::new(AI_BAD_REQUEST)),
+                "{key:?}"
+            );
             assert_eq!(read_key(&entry), Ok(None));
         }
         assert_eq!(
             clean_key(&format!(" {} ", "k".repeat(MAX_KEY_CHARS))).map(str::len),
             Ok(512)
         );
+        assert_eq!(clean_key("\t!sk-A_b.c~/+=\n"), Ok("!sk-A_b.c~/+="));
+    }
+
+    #[test]
+    fn the_urls_and_the_key_s_entry_are_the_agreed_ones() {
+        assert_eq!(GO_URL, "https://opencode.ai/zen/go/v1/chat/completions");
+        assert_eq!(CREDIT_URL, "https://opencode.ai/zen/v1/chat/completions");
+        // Renaming the entry would lose the key saved on every machine.
+        assert_eq!((KEY_SERVICE, KEY_USER), ("Project-2C", "opencode-go"));
+    }
+
+    #[test]
+    fn the_key_is_stored_local_to_this_machine() {
+        assert_eq!(KEY_MODIFIERS, [("persistence", "Local")]);
+        #[cfg(windows)]
+        {
+            let modifiers = std::collections::HashMap::from(KEY_MODIFIERS);
+            let store = windows_native_keyring_store::Store::new().unwrap();
+            assert!(store.build(KEY_SERVICE, KEY_USER, Some(&modifiers)).is_ok());
+            // The store reads the value: a wrong one would fail here rather than store `Enterprise`.
+            let wrong = std::collections::HashMap::from([("persistence", "Locale")]);
+            assert!(store.build(KEY_SERVICE, KEY_USER, Some(&wrong)).is_err());
+            assert!(key_entry().is_ok());
+        }
     }
 
     #[test]
@@ -873,6 +1055,337 @@ mod tests {
         assert_eq!(set_key(&entry, KEY), Err(AiError::new(AI_KEYRING)));
         fail(KeyringError::PlatformFailure("failed".into()));
         assert_eq!(delete_key(&entry), Err(AiError::new(AI_KEYRING)));
+    }
+
+    // ---- the HTTP call, against a local server ---------------------------------------------------
+
+    /// An HTTP/1.1 reply: `status`, more `headers` (each ending in CRLF) and `body`.
+    fn http(status: u16, headers: &str, body: &[u8]) -> Vec<u8> {
+        let mut reply = format!(
+            "HTTP/1.1 {status} X\r\nContent-Length: {}\r\nConnection: close\r\n{headers}\r\n",
+            body.len()
+        )
+        .into_bytes();
+        reply.extend_from_slice(body);
+        reply
+    }
+
+    /// Reads one request, its head and the body its `Content-Length` announces.
+    fn read_request(stream: &mut TcpStream) -> String {
+        let mut request = Vec::new();
+        let mut buffer = [0; 8192];
+        loop {
+            let read = stream.read(&mut buffer).unwrap();
+            request.extend_from_slice(&buffer[..read]);
+            let text = String::from_utf8_lossy(&request);
+            let complete = text.find("\r\n\r\n").is_some_and(|end| {
+                let length: usize = text[..end]
+                    .lines()
+                    .find_map(|line| {
+                        let line = line.to_ascii_lowercase();
+                        Some(
+                            line.strip_prefix("content-length:")?
+                                .trim()
+                                .parse()
+                                .unwrap(),
+                        )
+                    })
+                    .unwrap_or(0);
+                request.len() >= end + 4 + length
+            });
+            if complete || read == 0 {
+                return text.into_owned();
+            }
+        }
+    }
+
+    /// A local HTTP server answering each connection with the next of `replies`; gives its URL and
+    /// the requests it read.
+    fn serve(replies: Vec<Vec<u8>>) -> (String, Arc<Mutex<Vec<String>>>) {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!(
+            "http://{}/v1/chat/completions",
+            listener.local_addr().unwrap()
+        );
+        let requests = Arc::new(Mutex::new(Vec::new()));
+        let seen = Arc::clone(&requests);
+        std::thread::spawn(move || {
+            for (reply, stream) in replies.into_iter().zip(listener.incoming()) {
+                let mut stream = stream.unwrap();
+                let request = read_request(&mut stream);
+                seen.lock().unwrap().push(request);
+                // Fails when the client stops reading past `MAX_BODY` and closes.
+                let _ = stream.write_all(&reply);
+            }
+        });
+        (url, requests)
+    }
+
+    /// The app's agent but for plain HTTP, which the local server speaks.
+    fn local() -> ureq::Agent {
+        agent_with(TIMEOUT, CONNECT_TIMEOUT, false)
+    }
+
+    /// [`post_with`] of `request("GO")` with the stored key.
+    fn post_local(agent: &ureq::Agent, url: &str) -> Result<(u16, Vec<u8>), AiError> {
+        let request = request("GO");
+        post_with(agent, url, KEY, &headers(&request), &body(&request))
+    }
+
+    /// The CRC-32 of `bytes`, which gzip checks after unpacking.
+    fn crc32(bytes: impl Iterator<Item = u8>) -> u32 {
+        let table: Vec<u32> = (0..256)
+            .map(|n| {
+                (0..8).fold(n, |c, _| {
+                    if c & 1 == 1 {
+                        0xedb8_8320 ^ (c >> 1)
+                    } else {
+                        c >> 1
+                    }
+                })
+            })
+            .collect();
+        !bytes.fold(!0, |crc, byte| {
+            table[((crc ^ u32::from(byte)) & 0xff) as usize] ^ (crc >> 8)
+        })
+    }
+
+    /// `data` then `spaces` spaces, gzipped as a server would: the spaces as copies of 258 bytes
+    /// from one byte back (fixed Huffman codes, RFC 1951), so 16 MB pack into about 100 KB.
+    fn gzip(data: &[u8], spaces: usize) -> Vec<u8> {
+        struct Bits {
+            out: Vec<u8>,
+            bits: u64,
+            count: u32,
+        }
+        impl Bits {
+            /// `count` bits of `value`, least significant first.
+            fn put(&mut self, value: u32, count: u32) {
+                self.bits |= u64::from(value) << self.count;
+                self.count += count;
+                while self.count >= 8 {
+                    self.out.push(self.bits as u8);
+                    self.bits >>= 8;
+                    self.count -= 8;
+                }
+            }
+            /// A Huffman code, most significant bit first.
+            fn code(&mut self, code: u32, length: u32) {
+                self.put(code.reverse_bits() >> (32 - length), length);
+            }
+            fn literal(&mut self, byte: u8) {
+                match byte {
+                    0..=143 => self.code(0x30 + u32::from(byte), 8),
+                    _ => self.code(0x190 + u32::from(byte) - 144, 9),
+                }
+            }
+        }
+        let header = vec![0x1f, 0x8b, 8, 0, 0, 0, 0, 0, 0, 255];
+        let mut bits = Bits {
+            out: header,
+            bits: 0,
+            count: 0,
+        };
+        bits.put(1, 1); // the last block
+        bits.put(1, 2); // fixed Huffman codes
+        data.iter().for_each(|&byte| bits.literal(byte));
+        let mut left = spaces;
+        if left > 0 {
+            bits.literal(b' ');
+            left -= 1;
+        }
+        while left >= 258 {
+            bits.code(0xc5, 8); // length 258 (code 285)
+            bits.code(0, 5); // distance 1
+            left -= 258;
+        }
+        (0..left).for_each(|_| bits.literal(b' '));
+        bits.code(0, 7); // end of block
+        bits.put(0, 7); // up to the next byte
+        let mut out = bits.out;
+        let all = data
+            .iter()
+            .copied()
+            .chain(std::iter::repeat_n(b' ', spaces));
+        out.extend_from_slice(&crc32(all).to_le_bytes());
+        out.extend_from_slice(&((data.len() + spaces) as u32).to_le_bytes());
+        out
+    }
+
+    #[test]
+    fn the_call_sends_the_key_the_session_one_user_agent_and_the_body() {
+        let (url, requests) = serve(vec![http(200, "", OK_REPLY.as_bytes())]);
+        assert_eq!(
+            post_local(&local(), &url),
+            Ok((200, OK_REPLY.as_bytes().to_vec()))
+        );
+        let requests = requests.lock().unwrap();
+        let [sent] = requests.as_slice() else {
+            panic!("{requests:?}")
+        };
+        let (head, sent_body) = sent.split_once("\r\n\r\n").unwrap();
+        let mut lines = head.lines();
+        assert_eq!(lines.next(), Some("POST /v1/chat/completions HTTP/1.1"));
+        let headers: Vec<(String, &str)> = lines
+            .map(|line| {
+                let (name, value) = line.split_once(": ").unwrap();
+                (name.to_ascii_lowercase(), value)
+            })
+            .collect();
+        let values = |name: &str| -> Vec<&str> {
+            headers
+                .iter()
+                .filter(|(header, _)| header == name)
+                .map(|(_, value)| *value)
+                .collect()
+        };
+        assert_eq!(values("authorization"), [format!("Bearer {KEY}")]);
+        assert_eq!(values("x-opencode-session"), [SESSION]);
+        assert_eq!(values("user-agent"), [USER_AGENT]);
+        assert_eq!(values("content-type"), ["application/json"]);
+        assert_eq!(sent_body, body(&request("GO")));
+    }
+
+    #[test]
+    fn an_error_status_is_read_as_a_reply_and_a_redirect_is_not_followed() {
+        let error = br#"{"error":{"message":"Nope"}}"#;
+        for status in [401, 429, 500] {
+            let (url, _) = serve(vec![http(status, "", error)]);
+            assert_eq!(post_local(&local(), &url), Ok((status, error.to_vec())));
+        }
+        // Followed, the second request would get the 200.
+        let (url, requests) = serve(vec![
+            http(302, "Location: /v1/elsewhere\r\n", b""),
+            http(200, "", OK_REPLY.as_bytes()),
+        ]);
+        let (status, reply_body) = post_local(&local(), &url).unwrap();
+        assert_eq!(
+            reply(status, &reply_body, KEY, SESSION),
+            Err(AiError {
+                code: AI_HTTP,
+                http_status: Some(302),
+                message: None,
+            })
+        );
+        assert_eq!(requests.lock().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn a_body_is_read_to_2_mb_and_one_byte_more_shows_it_is_longer() {
+        let limit = MAX_BODY as usize;
+        for (size, read, readable) in [
+            (limit, limit, true),
+            (limit + 1, limit + 1, false),
+            (3 * limit, limit + 1, false),
+        ] {
+            let (url, _) = serve(vec![http(200, "", &padded_reply(size))]);
+            let (status, reply_body) = post_local(&local(), &url).unwrap();
+            assert_eq!((status, reply_body.len()), (200, read), "{size}");
+            assert_eq!(
+                reply(status, &reply_body, KEY, SESSION).is_ok(),
+                readable,
+                "{size}"
+            );
+        }
+    }
+
+    #[test]
+    fn an_error_reply_over_2_mb_keeps_its_http_status() {
+        // Its first 2 MB are still whole JSON, its message read as usual.
+        let mut huge = br#"{"error":{"message":"Bad gateway"}}"#.to_vec();
+        huge.resize(3 * MAX_BODY as usize, b' ');
+        let (url, _) = serve(vec![http(502, "", &huge)]);
+        let (status, reply_body) = post_local(&local(), &url).unwrap();
+        assert_eq!(
+            reply(status, &reply_body, KEY, SESSION),
+            Err(http_error(AI_HTTP, 502, "Bad gateway"))
+        );
+        let cut = "x".repeat(3 * MAX_BODY as usize);
+        let (url, _) = serve(vec![http(503, "", cut.as_bytes())]);
+        let (status, reply_body) = post_local(&local(), &url).unwrap();
+        assert_eq!(
+            reply(status, &reply_body, KEY, SESSION),
+            Err(AiError {
+                code: AI_HTTP,
+                http_status: Some(503),
+                message: None,
+            })
+        );
+    }
+
+    #[test]
+    fn a_gzip_reply_is_unpacked_and_read_to_2_mb_however_small_it_is_on_the_wire() {
+        let json = br#"{"choices":[{"message":{"content":"x"}}]}"#;
+        let gzipped = |packed: &[u8]| http(200, "Content-Encoding: gzip\r\n", packed);
+        let (url, _) = serve(vec![gzipped(&gzip(json, 1000))]);
+        let mut unpacked = json.to_vec();
+        unpacked.resize(json.len() + 1000, b' ');
+        assert_eq!(post_local(&local(), &url), Ok((200, unpacked)));
+        // 16 MB from about 100 KB: reading stops one byte past 2 MB, the rest is never unpacked.
+        let bomb = gzip(json, 16 << 20);
+        assert!(bomb.len() < 200_000, "{}", bomb.len());
+        let (url, _) = serve(vec![gzipped(&bomb)]);
+        let (status, reply_body) = post_local(&local(), &url).unwrap();
+        assert_eq!(reply_body.len() as u64, MAX_BODY + 1);
+        assert_eq!(
+            reply(status, &reply_body, KEY, SESSION),
+            Err(AiError::new(AI_BAD_RESPONSE))
+        );
+    }
+
+    #[test]
+    fn a_server_that_never_answers_the_tls_handshake_is_a_network_error() {
+        // Never accepted: the system completes the TCP handshake, the TLS one then waits.
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("https://{}/", listener.local_addr().unwrap());
+        let agent = agent_with(TIMEOUT, Duration::from_millis(300), true);
+        let started = std::time::Instant::now();
+        assert_eq!(
+            post_with(&agent, &url, KEY, &[], "{}"),
+            Err(AiError::new(AI_NETWORK))
+        );
+        assert!(started.elapsed() < Duration::from_secs(10));
+    }
+
+    #[test]
+    fn a_reply_that_stops_coming_is_a_timeout() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}/", listener.local_addr().unwrap());
+        std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            read_request(&mut stream);
+            // The head and the first byte of the body, then nothing.
+            stream
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\n{")
+                .unwrap();
+            std::thread::sleep(Duration::from_secs(10));
+        });
+        let agent = agent_with(Duration::from_millis(500), CONNECT_TIMEOUT, false);
+        assert_eq!(
+            post_with(&agent, &url, KEY, &[], "{}"),
+            Err(AiError::new(AI_TIMEOUT))
+        );
+    }
+
+    #[test]
+    fn the_app_s_agent_speaks_only_https_follows_no_redirect_and_has_the_spec_s_timeouts() {
+        let (url, requests) = serve(vec![http(200, "", OK_REPLY.as_bytes())]);
+        assert_eq!(post(&url, KEY, &[], "{}"), Err(AiError::new(AI_NETWORK)));
+        assert!(requests.lock().unwrap().is_empty());
+        assert_eq!(
+            (TIMEOUT, CONNECT_TIMEOUT),
+            (Duration::from_secs(120), Duration::from_secs(10))
+        );
+        let app = agent();
+        let config = app.config();
+        assert!(config.https_only());
+        assert!(!config.http_status_as_error());
+        assert_eq!(config.max_redirects(), 0);
+        let timeouts = config.timeouts();
+        assert_eq!(
+            (timeouts.global, timeouts.resolve, timeouts.connect),
+            (Some(TIMEOUT), Some(CONNECT_TIMEOUT), Some(CONNECT_TIMEOUT))
+        );
     }
 
     #[test]
