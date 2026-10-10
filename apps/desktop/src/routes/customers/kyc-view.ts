@@ -28,7 +28,6 @@ import {
   type KycGateResult,
   type KycProfile,
   type KycValue,
-  type KycVersion,
   type StageTransition,
 } from '@p2c/domain';
 
@@ -72,16 +71,32 @@ export function kycOverview<F extends KycFact>(
 export const factAnchor = (code: string) => `fact-${code}`;
 
 /**
- * Where a code cited as evidence leads (mockup ai.html 3a, G3 `ai.html#ask` 11): its fact on the
- * list while it is in effect. The list shows no replaced value, so a fact since replaced, or one no
- * longer there, is "F5 không còn hiệu lực".
+ * The fact in effect that a code cited by an analysis stands for: its own fact while in effect, else
+ * the one in effect with the same trường and value. Confirming a value again (or a birth date in the
+ * same year) replaces the fact without a new KYC version, so the analysis stays CURRENT while its
+ * codes name replaced facts (DR5-15). `null` when the value really changed or the code is unknown.
+ */
+export function factInEffect(facts: readonly KycFactRecord[], code: string): KycFactRecord | null {
+  const cited = facts.find((f) => factCode(f.seq) === code);
+  if (!cited || cited.status !== 'superseded') return cited ?? null;
+  return (
+    facts.findLast(
+      (f) => f.status !== 'superseded' && f.field === cited.field && f.value === cited.value,
+    ) ?? null
+  );
+}
+
+/**
+ * Where a code cited as evidence leads (mockup ai.html 3a, G3 `ai.html#ask` 11): the fact in effect
+ * it stands for, on the list (`factInEffect`). The list shows no replaced value, so a fact whose
+ * value has since changed, or one no longer there, is "F5 không còn hiệu lực".
  */
 export function factCodeTarget(
   facts: readonly KycFactRecord[],
   code: string,
 ): { readonly kind: 'shown' | 'gone'; readonly code: string } {
-  const fact = facts.find((f) => factCode(f.seq) === code);
-  return { kind: fact && fact.status !== 'superseded' ? 'shown' : 'gone', code };
+  const fact = factInEffect(facts, code);
+  return fact ? { kind: 'shown', code: factCode(fact.seq) } : { kind: 'gone', code };
 }
 
 /** A fact's value as shown; yes/no answers are stored as booleans. */
@@ -143,12 +158,12 @@ export function kycTimeline(
       transition,
     })),
     ...notes.map((note) => ({ kind: 'note' as const, id: note.id, date: note.createdDate, note })),
-    ...versions.map((version, index) => ({
+    ...versions.map((version) => ({
       kind: 'version' as const,
       id: version.id,
       date: version.date,
       version,
-      number: index + 1,
+      number: version.seq,
     })),
   ];
   // Reversed, the stable sort keeps the later record first among equal keys.
@@ -169,13 +184,17 @@ export type KycNotePreview =
   /** The trường cannot take the fact: nothing to disagree with, or a value it cannot hold. */
   | { readonly kind: 'refused'; readonly field: KycField };
 
+/** "KYC v<n>" of the next version: one after the last stored seq, as the commands number it. */
+export const nextVersionNumber = (versions: readonly Pick<KycVersionRecord, 'seq'>[]): number =>
+  (versions.at(-1)?.seq ?? 0) + 1;
+
 /**
  * Mockup 7a/7e "Sau khi lưu": the version `recordKycNote` would record for the facts of a new note,
  * worked out with the same domain rules on the profile as it stands.
  */
 export function previewKycNote(
   profile: KycProfile,
-  versions: readonly KycVersion[],
+  versions: readonly KycVersionRecord[],
   facts: readonly KycNoteFact[],
   date: CalendarDate,
   manualMaterial: boolean,
@@ -202,7 +221,7 @@ export function previewKycNote(
   if (!version) return { kind: 'none' };
   return {
     kind: 'version',
-    number: versions.length + 1,
+    number: nextVersionNumber(versions),
     material: version.material || manualMaterial,
     auto: version.material,
   };

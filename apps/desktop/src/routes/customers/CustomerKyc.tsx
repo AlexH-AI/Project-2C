@@ -135,7 +135,7 @@ export function KycCard({
           {t(versions.length > 0 ? 'kyc.meta' : 'kyc.metaNoVersion', {
             present: gate.presentCategories.length,
             total: rows.length,
-            version: versions.length,
+            version: versions.at(-1)?.seq ?? 0,
           })}
         </span>
       </div>

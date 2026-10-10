@@ -781,10 +781,11 @@ describe('Settings → AI in the app (spec Phase 5 §4.1)', () => {
     expect(ai.call().settings).toEqual(DEFAULT_AI_SETTINGS);
   });
 
-  it('reads the settings of the data in use after Nạp lại', async () => {
+  it('reads the settings of the data in use, which Nạp lại carries over (DR5-50)', async () => {
     const { app, ai } = await withCustomer({ opencode: fakeOpenCode().client });
     ai.save(CREDIT);
     await app.reloadDemoData();
-    expect(ai.stored().settings).toEqual(DEFAULT_AI_SETTINGS);
+    expect(ai.stored().settings).toEqual(CREDIT);
+    expect(JSON.parse(getSetting(app.db(), 'ai')!)).toEqual(CREDIT);
   });
 });

@@ -3,6 +3,7 @@ import {
   createPerson,
   createTeam,
   DbError,
+  getSetting,
   importBackup,
   LATEST_SCHEMA_VERSION,
   listTeams,
@@ -483,6 +484,48 @@ describe('reloadDemoData', () => {
       expect(db).not.toBe(app.db());
       expect(() => db.sqlite.exec('SELECT 1')).toThrow();
     }
+  });
+
+  it("keeps Settings → AI: they are the machine's, not simulated data (DR5-50)", async () => {
+    const { storage, saves } = memoryStorage();
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+    const chosen = {
+      provider: 'OPENCODE_GO',
+      opencodePlan: 'CREDIT',
+      model: 'kimi-k3',
+      reasoning: 'HIGH',
+    } as const;
+    app.ai.save(chosen);
+
+    await app.reloadDemoData();
+    await app.saves.idle();
+
+    expect(app.ai.stored()).toEqual({ settings: chosen, problem: null });
+    expect(teamNames(app.db())).toEqual(['Seed 27/09/2026']);
+    const saved = await openDatabase({ bytes: saves.at(-1) });
+    expect(JSON.parse(getSetting(saved, 'ai')!)).toEqual(chosen);
+  });
+
+  it('leaves Settings → AI at the defaults when none were saved', async () => {
+    const app = await openAppData({ today: () => TODAY, seed: fakeSeed });
+
+    await app.reloadDemoData();
+
+    expect(getSetting(app.db(), 'ai')).toBeUndefined();
+  });
+
+  it('still reloads when the stored Settings → AI are broken, which read as the defaults', async () => {
+    const app = await openAppData({ today: () => TODAY, seed: fakeSeed });
+    app
+      .db()
+      .sqlite.run(
+        "INSERT INTO settings (key, value_json, updated_at) VALUES ('ai', '{broken', '2026-09-27T00:00:00.000Z')",
+      );
+
+    await app.reloadDemoData();
+
+    expect(getSetting(app.db(), 'ai')).toBeUndefined();
+    expect(teamNames(app.db())).toEqual(['Seed 27/09/2026']);
   });
 
   it('in web mode swaps the data without a backup', async () => {
