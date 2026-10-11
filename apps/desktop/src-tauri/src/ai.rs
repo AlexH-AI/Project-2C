@@ -8,6 +8,7 @@ use keyring_core::{Entry, Error as KeyringError};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::io::Read;
+use std::ops::Range;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
@@ -41,6 +42,8 @@ const MAX_SESSION_CHARS: usize = 64;
 pub const USER_AGENT: &str = concat!("Project-2C/", env!("CARGO_PKG_VERSION"));
 /// The most of the server's error message an error carries, in characters.
 const MAX_SERVER_MESSAGE: usize = 200;
+/// The longest `finish_reason` passed on, in characters.
+const MAX_FINISH_REASON: usize = 32;
 const ROLES: [&str; 3] = ["system", "user", "assistant"];
 /// The `reasoning_effort` values OpenCode takes (spec §4.1).
 const REASONING: [&str; 3] = ["low", "medium", "high"];
@@ -108,7 +111,8 @@ pub struct Completion {
     /// `null` when OpenCode gives no count: unknown, not zero.
     pub prompt_tokens: Option<u64>,
     pub completion_tokens: Option<u64>,
-    /// Why the model stopped, as OpenCode says (`stop`, `length` when `max_tokens` cut the answer).
+    /// Why the model stopped, as OpenCode says (`stop`, `length` when `max_tokens` cut the answer);
+    /// `null` unless a short word.
     pub finish_reason: Option<String>,
 }
 
@@ -238,7 +242,7 @@ pub fn reply(status: u16, body: &[u8], key: &str, session: &str) -> Result<Compl
     let choice = &reply["choices"][0];
     let content = choice["message"]["content"].as_str().ok_or_else(bad)?;
     // The webview must never get the key (D-1 item 1), and an answer may be saved as it is.
-    if !key.is_empty() && content.contains(key) {
+    if reveals(content, key) {
         return Err(bad());
     }
     let tokens = |name: &str| reply["usage"][name].as_u64();
@@ -246,13 +250,106 @@ pub fn reply(status: u16, body: &[u8], key: &str, session: &str) -> Result<Compl
         content: content.to_owned(),
         prompt_tokens: tokens("prompt_tokens"),
         completion_tokens: tokens("completion_tokens"),
-        finish_reason: choice["finish_reason"].as_str().map(str::to_owned),
+        finish_reason: choice["finish_reason"]
+            .as_str()
+            .filter(|reason| is_finish_word(reason) && !reveals(reason, key))
+            .map(str::to_owned),
+    })
+}
+
+/// The shape of the reasons OpenCode gives (`stop`, `length`, `content_filter`…): a word of at most
+/// [`MAX_FINISH_REASON`] lowercase letters and `_`. Anything else is not passed on, so this field
+/// cannot carry the key or a long text to the webview.
+fn is_finish_word(reason: &str) -> bool {
+    (1..=MAX_FINISH_REASON).contains(&reason.len())
+        && reason
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte == b'_')
+}
+
+/// Whether `text` holds `key`, as it is or in escapes ([`unescape`]): an answer is JSON the webview
+/// parses, and `JSON.parse` turns `\u0073\u006b…` back into the key.
+fn reveals(text: &str, key: &str) -> bool {
+    if key.is_empty() {
+        return false;
+    }
+    let mut plain = String::with_capacity(text.len());
+    unescape(text, |c, _| plain.push(c));
+    text.contains(key) || plain.contains(key)
+}
+
+/// `text` with each whole `secret` replaced by `***`, whether written as it is, in JSON escapes or
+/// in a URL's `%XX`: a server may well echo the request's header that way.
+fn mask(text: &str, secret: &str) -> String {
+    let text = text.replace(secret, "***");
+    if !reveals(&text, secret) {
+        return text;
+    }
+    // Each character of `plain` with where it starts in `plain` and the bytes of `text` it came from.
+    let mut plain = String::with_capacity(text.len());
+    let mut spans = Vec::new();
+    unescape(&text, |c, span| {
+        spans.push((plain.len(), span));
+        plain.push(c);
+    });
+    let mut masked = String::with_capacity(text.len());
+    let mut copied = 0;
+    for (start, _) in plain.match_indices(secret) {
+        let Ok(first) = spans.binary_search_by_key(&start, |(at, _)| *at) else {
+            continue;
+        };
+        let last = first + secret.chars().count() - 1;
+        masked.push_str(&text[copied..spans[first].1.start]);
+        masked.push_str("***");
+        copied = spans[last].1.end;
+    }
+    masked.push_str(&text[copied..]);
+    masked
+}
+
+/// Reads `text` as a JSON string body: calls `each` with every character and the bytes of `text`
+/// it came from, JSON's escapes (`\uXXXX`, `\/`, `\"`, `\\`, `\n`…) undone and read in pairs from
+/// the left as `JSON.parse` does, and a URL's `%XX` too. Any other `\` or `%` stays as it is.
+fn unescape(text: &str, mut each: impl FnMut(char, Range<usize>)) {
+    let hex = |at: usize, digits: usize| {
+        text.get(at..at + digits)
+            .filter(|hex| hex.bytes().all(|byte| byte.is_ascii_hexdigit()))
+            .and_then(|hex| u32::from_str_radix(hex, 16).ok())
+            .map(|code| char::from_u32(code).unwrap_or(char::REPLACEMENT_CHARACTER))
+    };
+    let mut at = 0;
+    while let Some(c) = text[at..].chars().next() {
+        let escape = match (c, text.as_bytes().get(at + 1)) {
+            ('\\', Some(b'u')) => hex(at + 2, 4).map(|c| (c, 6)),
+            ('\\', Some(&next)) => json_escape(next).map(|c| (c, 2)),
+            // A byte, so `%C4%83` gives two characters rather than `ă`: the secrets are ASCII.
+            ('%', _) => hex(at + 1, 2).map(|c| (c, 3)),
+            _ => None,
+        };
+        let (c, length) = escape.unwrap_or((c, c.len_utf8()));
+        each(c, at..at + length);
+        at += length;
+    }
+}
+
+/// The character of JSON's two-character escape `\` + `byte`.
+fn json_escape(byte: u8) -> Option<char> {
+    Some(match byte {
+        b'"' => '"',
+        b'\\' => '\\',
+        b'/' => '/',
+        b'b' => '\u{8}',
+        b'f' => '\u{c}',
+        b'n' => '\n',
+        b'r' => '\r',
+        b't' => '\t',
+        _ => return None,
     })
 }
 
 /// The server's error message: OpenAI's `error.message`, a plain `error` or `message`. A body
 /// without one gives none, as the rest of a body may echo the request. The secrets are masked
-/// before the cut, so no part of them is left at the end.
+/// ([`mask`]) before the cut, so no part of them is left at the end.
 fn server_message(body: &[u8], secrets: [&str; 2]) -> Option<String> {
     let json: Value = serde_json::from_slice(body).ok()?;
     let message = [&json["error"]["message"], &json["error"], &json["message"]]
@@ -262,9 +359,7 @@ fn server_message(body: &[u8], secrets: [&str; 2]) -> Option<String> {
     let masked = secrets
         .into_iter()
         .filter(|secret| !secret.is_empty())
-        .fold(message.to_owned(), |text, secret| {
-            text.replace(secret, "***")
-        });
+        .fold(message.to_owned(), |text, secret| mask(&text, secret));
     let cut: String = masked.chars().take(MAX_SERVER_MESSAGE).collect();
     (!cut.is_empty()).then_some(cut)
 }
@@ -365,7 +460,8 @@ fn agent_with(timeout: Duration, connect_timeout: Duration, https_only: bool) ->
 
 /// Posts `body` and returns the status and the body, read to one byte past [`MAX_BODY`] once
 /// gzip is undone: a longer body shows as such without being held whole, though a gzip one can
-/// unpack to a thousand times its size on the wire.
+/// unpack to a thousand times its size on the wire. The body of an error status that cannot be
+/// read is empty.
 fn post_with(
     agent: &ureq::Agent,
     url: &str,
@@ -386,13 +482,18 @@ fn post_with(
         .map_err(|e| transport_error(&e))?;
     let status = response.status().as_u16();
     let mut bytes = Vec::new();
-    response
+    match response
         .body_mut()
         .as_reader()
         .take(MAX_BODY + 1)
         .read_to_end(&mut bytes)
-        .map_err(|e| transport_error(&e.into()))?;
-    Ok((status, bytes))
+    {
+        Ok(_) => Ok((status, bytes)),
+        // An error status is known from the head alone: kept, with no body (so no message) when
+        // the body breaks off, unpacks wrong or stops coming. A 2xx needs its whole answer.
+        Err(_) if !(200..300).contains(&status) => Ok((status, Vec::new())),
+        Err(e) => Err(transport_error(&e.into())),
+    }
 }
 
 /// Opens [`CHATGPT_URL`] in the default browser through Explorer, named by its full path like
@@ -416,6 +517,8 @@ mod tests {
 
     const KEY: &str = "sk-test-SECRET-0123456789";
     const SESSION: &str = "0f3a9c1d-77be-4e21-a0c4-5d2e8b6f9a10";
+    /// A key `clean_key` takes that reads, unescaped, as another text.
+    const ODD_KEY: &str = r"sk-a\nb%41c\/d";
 
     fn request(plan: &str) -> Request {
         Request {
@@ -560,6 +663,52 @@ mod tests {
     }
 
     #[test]
+    fn a_finish_reason_reaches_the_webview_only_as_a_short_word() {
+        let finish = |reason: &str, key: &str| {
+            let reply = serde_json::json!({
+                "choices": [{ "message": { "content": "x" }, "finish_reason": reason }]
+            });
+            super::reply(200, reply.to_string().as_bytes(), key, SESSION)
+                .unwrap()
+                .finish_reason
+        };
+        for word in [
+            "stop",
+            "length",
+            "content_filter",
+            "tool_calls",
+            &"a".repeat(32),
+        ] {
+            assert_eq!(finish(word, KEY), Some(word.to_owned()), "{word}");
+        }
+        let huge = "a".repeat(1 << 20);
+        for reason in [
+            KEY,
+            &format!("Bearer {KEY}"),
+            &format!("stop {KEY}"),
+            &huge,
+            &"a".repeat(33),
+            "",
+            "Stop",
+            "stop\n",
+            "stop-sequence",
+            "end_turn2",
+        ] {
+            assert_eq!(finish(reason, KEY), None, "{reason:.40}");
+        }
+        // A key that is itself a short word stays out too.
+        assert_eq!(finish("stop", "stop"), None);
+        let reply = serde_json::json!({
+            "choices": [{ "message": { "content": "x" }, "finish_reason": format!("Bearer {KEY}") }]
+        });
+        let sent = serde_json::to_string(
+            &super::reply(200, reply.to_string().as_bytes(), KEY, SESSION).unwrap(),
+        )
+        .unwrap();
+        assert!(!sent.contains(KEY), "{sent}");
+    }
+
+    #[test]
     fn a_reply_whose_content_holds_the_key_is_bad_response() {
         for content in [KEY.to_owned(), format!("Bearer {KEY} được gửi")] {
             let echo = serde_json::json!({ "choices": [{ "message": { "content": content } }] });
@@ -575,6 +724,60 @@ mod tests {
             &KEY[..10]
         );
         assert!(reply(200, fine.as_bytes(), KEY, SESSION).is_ok());
+    }
+
+    /// Each character of `text` as a JSON `\uXXXX` escape, upper case hex when `upper`.
+    fn escaped(text: &str, upper: bool) -> String {
+        text.chars()
+            .map(|c| match upper {
+                true => format!("\\u{:04X}", u32::from(c)),
+                false => format!("\\u{:04x}", u32::from(c)),
+            })
+            .collect()
+    }
+
+    /// A 2xx whose `content` is the JSON text `{"note":"<note>"}`, `note` written as it is.
+    fn answer(note: &str) -> Vec<u8> {
+        let content = format!(r#"{{"note":"{note}"}}"#);
+        serde_json::json!({ "choices": [{ "message": { "content": content } }] })
+            .to_string()
+            .into_bytes()
+    }
+
+    #[test]
+    fn a_reply_whose_content_holds_the_key_in_json_or_url_escapes_is_bad_response() {
+        // The webview's `JSON.parse` of the answer would turn each of these back into the key.
+        let slashed = "sk-Probe+Key/a=";
+        for (note, key) in [
+            // A key that is itself written like an escape, as it is.
+            (ODD_KEY.to_owned(), ODD_KEY),
+            // In a URL's escapes: no longer the key on screen, still the key in a backup.
+            (percent(KEY, true), KEY),
+            (escaped(KEY, false), KEY),
+            (escaped(KEY, true), KEY),
+            (
+                format!("sk-{}-0123456789", escaped("test-SECRET", false)),
+                KEY,
+            ),
+            (format!("Bearer {} sent", escaped(KEY, false)), KEY),
+            (r"sk-Probe+Key\/a=".to_owned(), slashed),
+            (format!("{}\\/a=", escaped("sk-Probe+Key", false)), slashed),
+        ] {
+            assert_eq!(
+                reply(200, &answer(&note), key, SESSION),
+                Err(AiError::new(AI_BAD_RESPONSE)),
+                "{note}"
+            );
+        }
+        // Escapes that are not the key are a normal answer, as is a piece of the key or the key
+        // behind an escaped backslash, which `JSON.parse` leaves as the text `s…`.
+        for note in [
+            format!(r#"Anh {}, \/ \"VIP\" \\ \n"#, escaped("Đức", false)),
+            escaped(&KEY[..10], false),
+            format!(r"\\{}", escaped(KEY, false).replacen(r"\u", "u", 1)),
+        ] {
+            assert!(reply(200, &answer(&note), KEY, SESSION).is_ok(), "{note}");
+        }
     }
 
     #[test]
@@ -932,6 +1135,63 @@ mod tests {
         );
     }
 
+    /// Each byte of `text` as a URL `%XX` escape.
+    fn percent(text: &str, upper: bool) -> String {
+        text.bytes()
+            .map(|byte| match upper {
+                true => format!("%{byte:02X}"),
+                false => format!("%{byte:02x}"),
+            })
+            .collect()
+    }
+
+    #[test]
+    fn the_key_and_the_session_are_masked_in_url_and_json_escapes_too() {
+        let message = |text: &str| {
+            let body = serde_json::json!({ "error": { "message": text } }).to_string();
+            reply(401, body.as_bytes(), KEY, SESSION)
+                .unwrap_err()
+                .message
+                .unwrap()
+        };
+        for (text, masked) in [
+            (format!("key={}&x=1", percent(KEY, true)), "key=***&x=1"),
+            (format!("key={}", percent(KEY, false)), "key=***"),
+            ("sk-test%2DSECRET-0123%34567%389 bad".to_owned(), "*** bad"),
+            (
+                format!("session {} gone", percent(SESSION, true)),
+                "session *** gone",
+            ),
+            (
+                format!("Bearer {} sent", escaped(KEY, false)),
+                "Bearer *** sent",
+            ),
+            (
+                format!("{}/{}", escaped(SESSION, true), percent(KEY, true)),
+                "***/***",
+            ),
+            (format!("{KEY} and {}", percent(KEY, false)), "*** and ***"),
+        ] {
+            assert_eq!(message(&text), masked, "{text}");
+        }
+        let body = serde_json::json!({ "message": format!("bad {ODD_KEY}!") }).to_string();
+        assert_eq!(
+            reply(401, body.as_bytes(), ODD_KEY, SESSION)
+                .unwrap_err()
+                .message,
+            Some("bad ***!".into())
+        );
+        // Only the whole of a secret: other escapes, and pieces of the key, stay as they are.
+        for text in [
+            "Quota%20exceeded, retry in 10%".to_owned(),
+            r"path C:\users\new \u00".to_owned(),
+            percent(&KEY[..10], true),
+            format!("sk-test-SECRET-{}", percent("012345678", true)),
+        ] {
+            assert_eq!(message(&text), text, "{text}");
+        }
+    }
+
     #[test]
     fn an_error_is_sent_as_code_http_status_and_message() {
         assert_eq!(
@@ -1035,7 +1295,14 @@ mod tests {
             // The store reads the value: a wrong one would fail here rather than store `Enterprise`.
             let wrong = std::collections::HashMap::from([("persistence", "Locale")]);
             assert!(store.build(KEY_SERVICE, KEY_USER, Some(&wrong)).is_err());
-            assert!(key_entry().is_ok());
+            // The entry the app uses, read without touching the Credential Manager: its `Debug`
+            // shows the store's own credential (`windows-native-keyring-store` 1.1.0, pinned).
+            let app = format!("{:?}", key_entry().unwrap());
+            assert!(app.contains("persistence: Local"), "{app}");
+            assert!(
+                app.contains(r#"Some(("Project-2C", "opencode-go"))"#),
+                "{app}"
+            );
         }
     }
 
@@ -1313,6 +1580,73 @@ mod tests {
         );
     }
 
+    /// A local server sending `head` then `body` on one connection, then waiting `wait` before it
+    /// closes; gives its URL.
+    fn serve_once(head: String, body: &'static [u8], wait: Duration) -> String {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}/", listener.local_addr().unwrap());
+        std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            read_request(&mut stream);
+            let _ = stream.write_all(head.as_bytes());
+            let _ = stream.write_all(body);
+            std::thread::sleep(wait);
+        });
+        url
+    }
+
+    #[test]
+    fn an_error_reply_whose_body_cannot_be_read_keeps_its_http_status_without_a_message() {
+        let error = br#"{"error":{"message":"Nope"}}"#;
+        let agent = agent_with(Duration::from_millis(500), CONNECT_TIMEOUT, false);
+        for (status, code) in [
+            (401, AI_UNAUTHORIZED),
+            (429, AI_RATE_LIMITED),
+            (502, AI_HTTP),
+        ] {
+            let short = format!("HTTP/1.1 {status} X\r\nContent-Length: 1000\r\n\r\n");
+            let gzip = format!(
+                "HTTP/1.1 {status} X\r\nContent-Encoding: gzip\r\nContent-Length: {}\r\n\r\n",
+                error.len()
+            );
+            for (head, wait, how) in [
+                // Closed before the length it gave.
+                (short.clone(), Duration::ZERO, "short"),
+                // Labelled gzip, but plain JSON.
+                (gzip, Duration::ZERO, "gzip"),
+                // The rest never comes: the 500 ms of `agent` run out.
+                (short, Duration::from_secs(5), "stuck"),
+            ] {
+                let url = serve_once(head, error, wait);
+                let request = request("GO");
+                let (status, body) = post_with(
+                    &agent,
+                    &url,
+                    KEY,
+                    &headers(&request),
+                    &super::body(&request),
+                )
+                .unwrap_or_else(|e| panic!("{status} {how}: {e:?}"));
+                assert_eq!(
+                    reply(status, &body, KEY, SESSION),
+                    Err(AiError {
+                        code,
+                        http_status: Some(status),
+                        message: None,
+                    }),
+                    "{how}"
+                );
+            }
+        }
+        // A 2xx is still an error of the call: its answer is not whole.
+        let short = "HTTP/1.1 200 OK\r\nContent-Length: 1000\r\n\r\n".to_owned();
+        let url = serve_once(short, OK_REPLY.as_bytes(), Duration::ZERO);
+        assert_eq!(
+            post_with(&agent, &url, KEY, &[], "{}"),
+            Err(AiError::new(AI_NETWORK))
+        );
+    }
+
     #[test]
     fn a_gzip_reply_is_unpacked_and_read_to_2_mb_however_small_it_is_on_the_wire() {
         let json = br#"{"choices":[{"message":{"content":"x"}}]}"#;
@@ -1365,6 +1699,27 @@ mod tests {
             post_with(&agent, &url, KEY, &[], "{}"),
             Err(AiError::new(AI_TIMEOUT))
         );
+    }
+
+    #[test]
+    fn the_app_s_call_opens_a_tls_connection_to_the_url() {
+        // No local server can pass the app's certificate check, but the first bytes it reads show
+        // `post` itself reached it and began TLS: a handshake record (22) holding a ClientHello (1).
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!(
+            "https://{}/v1/chat/completions",
+            listener.local_addr().unwrap()
+        );
+        let (sent, seen) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut start = [0; 6];
+            stream.read_exact(&mut start).unwrap();
+            sent.send(start).unwrap();
+        });
+        assert_eq!(post(&url, KEY, &[], "{}"), Err(AiError::new(AI_NETWORK)));
+        let start = seen.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert_eq!((start[0], start[5]), (22, 1), "{start:?}");
     }
 
     #[test]

@@ -154,6 +154,7 @@ Hằng số trong `packages/ai`, mỗi dòng: mã model, tên hiện, có nhận
 
 - **Timeout toàn yêu cầu 120 giây** (phân giải tên 10 giây, kết nối gồm bắt tay TLS 10 giây; hết hai mốc này → `AI_NETWORK`). Model có reasoning có thể chậm; 120 s là trần cho một lần thử, hai lần thử tối đa ~4 phút.
 - Thân trả lời đọc tối đa 2 MB (2 097 152 byte), đếm **sau** giải nén gzip; Rust đọc tới 2 MB + 1 byte rồi dừng. Trả lời 2xx vượt 2 MB → `AI_BAD_RESPONSE`; trả lời lỗi (không 2xx) vượt 2 MB vẫn là lỗi theo mã HTTP (§5.3). Không theo redirect: 3xx là `AI_HTTP`.
+- Trả lời lỗi (không 2xx) mà thân đọc hỏng (đóng sớm so với `Content-Length`, gzip hỏng, hết 120 s giữa thân) vẫn là lỗi theo mã HTTP (§5.3), kèm `httpStatus`, **không** có thông điệp (T-204, R2-08). Trả lời 2xx đọc thân hỏng là lỗi truyền tải (`AI_NETWORK` / `AI_TIMEOUT`).
 - **Chỉ một yêu cầu AI tại một thời điểm** (P5): không bao giờ có hai yêu cầu chạy cùng lúc, kể cả sau Hủy.
   - Rust giữ một cờ "đang chạy" (`AtomicBool` trong state của app) cho cả `ai_complete`; gọi khi cờ đang bật → trả ngay `AI_BUSY`, không gọi mạng. Cờ tắt khi lệnh kết thúc theo mọi đường (xong, lỗi, timeout, panic — dùng guard `Drop`).
   - Webview cũng khóa mọi nút AI trong lúc chờ; `AI_BUSY` chỉ là chốt chặn thứ hai.
@@ -169,12 +170,18 @@ Hằng số trong `packages/ai`, mỗi dòng: mã model, tên hiện, có nhận
 | `AI_TIMEOUT` | quá 120 s | AI không trả lời trong 2 phút |
 | `AI_NETWORK` | DNS / TLS / mất kết nối, hết 10 s phân giải tên hoặc kết nối | Không kết nối được OpenCode |
 | `AI_HTTP` | HTTP khác 2xx còn lại | OpenCode báo lỗi (mã HTTP) |
-| `AI_BAD_RESPONSE` | 2xx: không phải JSON OpenAI, thiếu `choices[0].message.content`, > 2 MB, hoặc `content` chứa key | Trả lời của OpenCode không đọc được |
+| `AI_BAD_RESPONSE` | 2xx: không phải JSON OpenAI, thiếu `choices[0].message.content`, > 2 MB, hoặc `content` chứa key (cả dạng escape, dưới bảng) | Trả lời của OpenCode không đọc được |
 | `AI_BUSY` | đã có một yêu cầu AI đang chạy (§5.2) | Đang có một yêu cầu AI khác — chờ xong rồi thử lại |
 | `AI_BAD_REQUEST` | đầu vào lệnh sai (§5.1) | lỗi lập trình — hiện thông báo chung |
 | `AI_KEYRING` | Credential Manager lỗi | Không đọc / ghi được key trong Windows Credential Manager |
 
 Thông báo lỗi **không** chứa key, header hay thân yêu cầu; chỉ mã HTTP và tối đa 200 ký tự đầu của thông điệp lỗi từ server. Thông điệp chỉ lấy từ JSON (`error.message`, `error` hoặc `message` dạng chuỗi); thân không có các trường này → không có thông điệp, không bao giờ trả thân thô. Key và mã phiên được che (`***`) trước khi cắt 200 ký tự.
+
+Webview không bao giờ thấy key (D-1 mục 1; T-204, R2-09 / R2-10). Rust kiểm ở ranh giới IPC:
+
+- Key / mã phiên tính cả dạng **viết bằng escape**: escape JSON (`\uXXXX` hoa / thường, `\/`, `\"`, `\\`, `\n`…, đọc từng cặp từ trái như `JSON.parse`) và `%XX` của URL. Một đoạn mà giải escape ra đúng **toàn bộ** key / mã phiên là key / mã phiên; một phần key, hay escape khác, không tính (không che tùy tiện).
+- `content` chứa key, nguyên văn hoặc viết bằng escape → `AI_BAD_RESPONSE` (`JSON.parse` của webview giải `\uXXXX` thành key, rồi phân tích có thể vào `ai_analyses` và backup). Thông điệp lỗi: mỗi đoạn như thế thành `***`.
+- `finishReason` chỉ sang webview khi là một từ ngắn: 1–32 ký tự `[a-z_]` (`stop`, `length`, `content_filter`…) và không phải key; còn lại `null`.
 
 - Mã HTTP thật khi gói Go hết hạn / hết credit chưa có tài liệu: T-164 ghi lại từ lần gọi thật của Owner; khác bảng trên → sửa ánh xạ trong cùng task (mã lỗi `AiError` không đổi).
 
