@@ -25,6 +25,8 @@ Nền: `docs/golden/kyc.md` (K01–K15, cổng), prompt `analysis@2` / `discover
 | A3 | Lỗi validator từng lần thử (mã + đường dẫn), số lần V1 trượt vì **thiếu khóa khối** tách riêng (#413) | ghi nhận |
 | A4 | Token, thời gian từng hồ sơ | ghi nhận |
 
+Cách ghi file (T-198 #488): đầu lượt, script tạo file kết quả và `<file>.partial` kiểu tạo-mới-độc-quyền; một trong hai đã có (kết quả cũ, lượt khác đang chạy, lượt bị ngắt) → dừng ngay, không gọi gì. Sau **mỗi** hồ sơ / ghi chú, các mục đã xong được ghi vào `.partial`; xong cả lượt thì `.partial` đổi tên thành file kết quả. Lượt bị ngắt (Ctrl+C, treo, máy ngủ) → phần đã chạy (đã trả tiền) còn trong `.partial`: giữ lại để đọc, rồi xóa / đổi tên cả hai file trước khi chạy lại.
+
 ### 2.2 Đọc tay (Owner, trên output ACCEPTED)
 
 | Mã | Kiểm | Ngưỡng |

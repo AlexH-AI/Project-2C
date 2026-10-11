@@ -5,9 +5,10 @@
 //
 // Needs OPENCODE_GO_KEY (the OpenCode key) and takes OPENCODE_PLAN = GO (default) or CREDIT.
 // Real calls cost money: the Owner runs it on their machine (G4), never in CI. Writes
-// docs/metrics/ai-eval-<yyyy-mm-dd>[-<model>].md; the key is never written or printed.
+// docs/metrics/ai-eval-<yyyy-mm-dd>[-<model>].md, with the items done so far in `<file>.partial`
+// while it runs; the key is never written or printed.
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { registerHooks } from 'node:module';
 import { URL } from 'node:url';
 
@@ -46,7 +47,11 @@ process.exitCode = await evalMain({
   day: fromLocalDate(new Date()),
   // As the app names itself to OpenCode (ADR-0009 W-1).
   userAgent: `Project-2C/${desktop.version}`,
-  exists: (path) => existsSync(new URL(path, root)),
-  writeFile: (path, text) => writeFileSync(new URL(path, root), text),
+  files: {
+    create: (path, text) => writeFileSync(new URL(path, root), text, { flag: 'wx' }),
+    write: (path, text) => writeFileSync(new URL(path, root), text),
+    rename: (from, to) => renameSync(new URL(from, root), new URL(to, root)),
+    remove: (path) => rmSync(new URL(path, root), { force: true }),
+  },
   log: (line) => process.stdout.write(`${line}\n`),
 });

@@ -12,6 +12,7 @@ import {
   AI_MODELS,
   AI_REASONING_LEVELS,
   AiError,
+  ANALYSIS_PROMPTS,
   checkAnalysisAnswer,
   createAiRunner,
   DEFAULT_AI_MODEL,
@@ -21,6 +22,7 @@ import {
   takeAnalysisInput,
   validateOutput,
 } from '../packages/ai/src/index.ts';
+import { extractionPrompt } from '../packages/ai/src/prompts/extraction.ts';
 import { checkAnswer } from '../packages/ai/src/prompts/retry.ts';
 import { formatIsoDate } from '../packages/domain/src/period.ts';
 import { EVAL_NOTES, EVAL_PROFILES, EVAL_TODAY } from './fixtures/ai-eval.mjs';
@@ -33,7 +35,9 @@ export const PLAN_URLS = {
 
 /** ai-eval.md §1: the Owner's reasoning level for the eval. */
 const DEFAULT_REASONING = 'HIGH';
+/** For the whole call; connecting has 10 s of its own (Node's fetch default), as in Rust. */
 const TIMEOUT_MS = 120_000;
+/** The most of a reply body taken: one byte past it is read, no more, as Rust reads it. */
 const MAX_BODY = 2 * 1024 * 1024;
 /** The most of the server's error message kept, in characters, as Rust cuts it. */
 const MAX_SERVER_MESSAGE = 200;
@@ -75,46 +79,78 @@ export function readConfig(env, argv) {
 }
 
 /**
- * The server's error message as Rust reads it: the key masked before the cut to 200 characters (by
- * code point), `undefined` when empty.
+ * The server's error message as Rust reads it (spec §5.3): only `error.message`, `error` or
+ * `message` of a JSON body, never the body as it is; the secrets masked before the cut to 200
+ * characters (by code point); `undefined` when there is none.
  */
-function serverMessage(text, key) {
-  let message = text;
+function serverMessage(text, secrets) {
+  let json;
   try {
-    const json = JSON.parse(text);
-    message =
-      [json?.error?.message, json?.error, json?.message].find((m) => typeof m === 'string') ?? text;
+    json = JSON.parse(text);
   } catch {
-    // Not JSON: the body as text.
+    return undefined;
   }
-  const masked = message.trim().replaceAll(key, '***');
+  const message = [json?.error?.message, json?.error, json?.message].find(
+    (m) => typeof m === 'string',
+  );
+  if (message === undefined) return undefined;
+  const masked = secrets
+    .filter((secret) => secret !== '')
+    .reduce((masking, secret) => masking.replaceAll(secret, '***'), message.trim());
   const cut = Array.from(masked).slice(0, MAX_SERVER_MESSAGE).join('');
   return cut === '' ? undefined : cut;
 }
 
-function readReply(status, text, key) {
-  if (Buffer.byteLength(text) > MAX_BODY) throw new AiError('AI_BAD_RESPONSE');
-  if (status < 200 || status > 299) {
+const isOk = (status) => status >= 200 && status <= 299;
+
+/** The body, read to one byte past `MAX_BODY` and no further (Rust's `take(MAX_BODY + 1)`). */
+async function readBody(response) {
+  const chunks = [];
+  let size = 0;
+  if (response.body !== null) {
+    const reader = response.body.getReader();
+    while (size <= MAX_BODY) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      size += value.byteLength;
+    }
+    if (size > MAX_BODY) await reader.cancel().catch(() => {});
+  }
+  return Buffer.concat(chunks).subarray(0, MAX_BODY + 1);
+}
+
+const transportError = (error) =>
+  new AiError(error?.name === 'TimeoutError' ? 'AI_TIMEOUT' : 'AI_NETWORK');
+
+/** A reply as Rust's `reply` reads it, the `secrets` masked out of the server's message. */
+function readReply(status, bytes, secrets) {
+  if (!isOk(status)) {
     const code =
       status === 401 || status === 403
         ? 'AI_UNAUTHORIZED'
         : status === 402 || status === 429
           ? 'AI_RATE_LIMITED'
           : 'AI_HTTP';
-    const message = serverMessage(text, key);
+    const message = serverMessage(bytes.toString('utf8'), secrets);
     throw new AiError(code, { httpStatus: status, ...(message && { serverMessage: message }) });
   }
+  if (bytes.length > MAX_BODY) throw new AiError('AI_BAD_RESPONSE');
   let content;
   let usage;
   try {
-    const reply = JSON.parse(text);
+    const reply = JSON.parse(bytes.toString('utf8'));
     content = reply?.choices?.[0]?.message?.content;
     usage = reply?.usage;
   } catch {
     throw new AiError('AI_BAD_RESPONSE');
   }
   if (typeof content !== 'string') throw new AiError('AI_BAD_RESPONSE');
-  const tokens = (name) => (Number.isInteger(usage?.[name]) ? usage[name] : 0);
+  // A count, or `null` as Rust's `as_u64` gives for anything else (missing, negative, a fraction).
+  const tokens = (name) => {
+    const count = usage?.[name];
+    return Number.isSafeInteger(count) && count >= 0 ? count : null;
+  };
   return {
     content,
     promptTokens: tokens('prompt_tokens'),
@@ -132,12 +168,12 @@ export function openCodeAdapter({ url, key, userAgent, fetch }) {
         max_tokens: maxTokens,
         ...(reasoning !== null && { reasoning_effort: reasoning.toLowerCase() }),
       };
-      let status;
-      let text;
+      let response;
       try {
-        const response = await fetch(url, {
+        response = await fetch(url, {
           method: 'POST',
-          redirect: 'error',
+          // No redirect is followed: a 3xx is a reply, `AI_HTTP` as in Rust.
+          redirect: 'manual',
           signal: AbortSignal.timeout(TIMEOUT_MS),
           headers: {
             Authorization: `Bearer ${key}`,
@@ -147,12 +183,18 @@ export function openCodeAdapter({ url, key, userAgent, fetch }) {
           },
           body: JSON.stringify(body),
         });
-        status = response.status;
-        text = await response.text();
       } catch (error) {
-        throw new AiError(error?.name === 'TimeoutError' ? 'AI_TIMEOUT' : 'AI_NETWORK');
+        throw transportError(error);
       }
-      return readReply(status, text, key);
+      let bytes;
+      try {
+        bytes = await readBody(response);
+      } catch (error) {
+        // An error status is known from the head alone: kept, with no message, as in Rust.
+        if (isOk(response.status)) throw transportError(error);
+        bytes = Buffer.alloc(0);
+      }
+      return readReply(response.status, bytes, [key, sessionId]);
     },
   };
 }
@@ -176,16 +218,24 @@ function missingBlocks(content, issues) {
     .map(({ path }) => path);
 }
 
-/** An adapter that keeps each answer of the current conversation (tokens, content). */
+/**
+ * An adapter that keeps each call of the current conversation: its answer (tokens, content), or
+ * `{ failed }` with the code of a call that failed, which counts as an attempt too.
+ */
 function recording(adapter) {
   const calls = [];
   return {
     calls,
     adapter: {
       async complete(request) {
-        const answer = await adapter.complete(request);
-        calls.push(answer);
-        return answer;
+        try {
+          const answer = await adapter.complete(request);
+          calls.push(answer);
+          return answer;
+        } catch (error) {
+          calls.push({ failed: error instanceof AiError ? error.code : 'SCRIPT' });
+          throw error;
+        }
       },
     },
   };
@@ -199,7 +249,10 @@ const errorOf = ({ code, httpStatus, serverMessage, message }) => ({
 });
 
 function attemptsOf(calls, issuesOf) {
-  return calls.map(({ content, promptTokens, completionTokens }, i) => {
+  return calls.map(({ failed, content, promptTokens, completionTokens }, i) => {
+    if (failed !== undefined) {
+      return { failed, issues: [], missingBlocks: [], promptTokens: null, completionTokens: null };
+    }
     const issues = issuesOf(content, i);
     return {
       issues,
@@ -213,17 +266,21 @@ function attemptsOf(calls, issuesOf) {
 const extractionIssues = (content) =>
   checkAnswer(content, (parsed) => validateOutput('extraction', parsed)).issues;
 
+/** Text as V7 reads a quote (NFC, white space collapsed: `validator.ts`), in lower case. */
+const fold = (text) => String(text).normalize('NFC').replace(/\s+/gu, ' ').toLowerCase();
+
 /**
  * Whether a note's kept facts pass the script's part of ai-eval.md §5: each required line has a
  * fact of its trường whose quote holds a keyword (and the exact value when given); no fact is
- * forbidden. `missing` / `forbidden` name what failed.
+ * forbidden. Quotes and keywords are compared folded (`fold`); `forbidden.test` gets each fact with
+ * a text value folded. `missing` / `forbidden` name what failed.
  */
 export function gradeNote(spec, facts) {
   const has = ({ fields, keywords, value }) =>
     facts.some(
       (fact) =>
         fields.includes(fact.field) &&
-        keywords.some((word) => fact.quote.toLowerCase().includes(word.toLowerCase())) &&
+        keywords.some((word) => fold(fact.quote).includes(fold(word))) &&
         (value === undefined || fact.value === value),
     );
   const missing = spec.required
@@ -233,8 +290,12 @@ export function gradeNote(spec, facts) {
       const words = keywords.map((word) => `"${word}"`).join(' / ');
       return `${names} — ${words}${value === undefined ? '' : ` = ${value}`}`;
     });
+  const folded = (fact) =>
+    typeof fact.value === 'string' ? { ...fact, value: fold(fact.value) } : fact;
   const forbidden = spec.forbidden
-    ? facts.filter(spec.forbidden.test).map((fact) => `\`${fact.field}\` = "${fact.value}"`)
+    ? facts
+        .filter((fact) => spec.forbidden.test(folded(fact)))
+        .map((fact) => `\`${fact.field}\` = "${plain(fact.value)}"`)
     : [];
   return { missing, forbidden, pass: missing.length === 0 && forbidden.length === 0 };
 }
@@ -255,13 +316,14 @@ async function settle(run) {
  * Runs E01–E20 then X01–X05 once each, one at a time, as the app would. An error is recorded and
  * the run goes on, except a key or limit error: every later call would fail too, so the rest is
  * `SKIPPED`. A profile the gate blocks is `BLOCKED`, with no call. `log` gets one line per profile /
- * note.
+ * note, `onItem` the results so far after each one.
  */
 export async function runEval({
   adapter,
   settings,
   now,
   log,
+  onItem = () => {},
   profileSpecs = EVAL_PROFILES,
   noteSpecs = EVAL_NOTES,
 }) {
@@ -270,17 +332,22 @@ export async function runEval({
   });
   let stopped = false;
   const profiles = [];
+  const notes = [];
+  const add = (list, item) => {
+    list.push(item);
+    onItem({ profiles, notes });
+  };
   for (const spec of profileSpecs) {
     const input = takeAnalysisInput(spec, EVAL_TODAY);
     if ('kind' in input) {
       const blocked = { id: spec.id, mode: '—', expectedMode: spec.mode, input: null };
-      profiles.push({ ...blocked, status: 'BLOCKED', state: input.state, attempts: [], ms: 0 });
+      add(profiles, { ...blocked, status: 'BLOCKED', state: input.state, attempts: [], ms: 0 });
       log(`${spec.id} ${statusWord(profiles.at(-1))}`);
       continue;
     }
     const base = { id: spec.id, mode: input.mode, expectedMode: spec.mode, input };
     if (stopped) {
-      profiles.push({ ...base, status: 'SKIPPED', attempts: [], ms: 0 });
+      add(profiles, { ...base, status: 'SKIPPED', attempts: [], ms: 0 });
       continue;
     }
     const record = recording(adapter);
@@ -317,14 +384,14 @@ export async function runEval({
       );
       done = { ...base, status: 'ERROR', error: errorOf(result), attempts, ms };
     }
-    profiles.push(done);
+    add(profiles, done);
     log(`${done.id} ${done.mode} ${statusWord(done)} · ${tries(done)} · ${seconds(ms)}`);
   }
 
-  const notes = [];
   for (const spec of noteSpecs) {
+    const base = { id: spec.id, note: spec.note };
     if (stopped) {
-      notes.push({ id: spec.id, status: 'SKIPPED', attempts: [], ms: 0 });
+      add(notes, { ...base, status: 'SKIPPED', attempts: [], ms: 0 });
       continue;
     }
     const record = recording(adapter);
@@ -338,7 +405,7 @@ export async function runEval({
     if (result.kind === 'facts') {
       const kept = result.facts;
       done = {
-        id: spec.id,
+        ...base,
         status: 'OK',
         attempts,
         ms,
@@ -347,12 +414,12 @@ export async function runEval({
         grade: gradeNote(spec, kept),
       };
     } else if (result.kind === 'invalid') {
-      done = { id: spec.id, status: 'INVALID', attempts, ms, raw: record.calls.at(-1).content };
+      done = { ...base, status: 'INVALID', attempts, ms, raw: record.calls.at(-1).content };
     } else {
       stopped = FATAL.has(result.code);
-      done = { id: spec.id, status: 'ERROR', error: errorOf(result), attempts, ms };
+      done = { ...base, status: 'ERROR', error: errorOf(result), attempts, ms };
     }
-    notes.push(done);
+    add(notes, done);
     log(`${done.id} extraction ${statusWord(done)} · ${tries(done)} · ${seconds(ms)}`);
   }
   return { profiles, notes };
@@ -365,6 +432,10 @@ const STATUS_WORDS = { SKIPPED: 'KHÔNG CHẠY', INVALID: 'KHÔNG ĐỌC ĐƯỢ
 /** Text from outside (the server, the model) as plain text in Markdown: no HTML gets through. */
 const plain = (text) =>
   String(text).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+/** A table cell: no `|` or line break of the text ends it. */
+const cell = (text) => text.replaceAll('|', '\\|').replace(/\s*\n\s*/g, ' ');
+/** Text from outside on one line of the file, in a table or not. */
+const inline = (text) => cell(plain(text));
 
 function statusWord(done) {
   if (done.status === 'BLOCKED') return `CỔNG CHẶN (\`${done.state}\`)`;
@@ -380,18 +451,24 @@ function statusWord(done) {
 
 const tries = (done) => `${done.attempts.length} lần thử`;
 const seconds = (ms) => `${(ms / 1000).toFixed(1)} s`;
-const cell = (text) => text.replaceAll('|', '\\|').replace(/\s*\n\s*/g, ' ');
-const sum = (attempts, key) => attempts.reduce((total, attempt) => total + attempt[key], 0);
+/** The counts known, `+?` after them when an attempt has none (a failed call, no `usage`). */
+function sum(attempts, key) {
+  const counts = attempts.map((attempt) => attempt[key]);
+  const known = counts.reduce((total, count) => total + (count ?? 0), 0);
+  return counts.includes(null) ? `${known}+?` : `${known}`;
+}
 const tokens = (attempts) =>
   `${sum(attempts, 'promptTokens')} / ${sum(attempts, 'completionTokens')}`;
 const time = (done) => (['SKIPPED', 'BLOCKED'].includes(done.status) ? '—' : seconds(done.ms));
 
 function issuesCell(attempts) {
   const parts = attempts
-    .map((attempt, i) => [i, attempt.issues])
-    .filter(([, issues]) => issues.length > 0)
-    .map(
-      ([i, issues]) => `lần ${i + 1}: ${issues.map((x) => `${x.code} \`${x.path}\``).join(', ')}`,
+    .map((attempt, i) => [i, attempt])
+    .filter(([, attempt]) => attempt.failed !== undefined || attempt.issues.length > 0)
+    .map(([i, { failed, issues }]) =>
+      failed === undefined
+        ? `lần ${i + 1}: ${issues.map((x) => `${x.code} \`${x.path}\``).join(', ')}`
+        : `lần ${i + 1}: lỗi`,
     );
   return parts.length === 0 ? '—' : parts.join(' · ');
 }
@@ -406,7 +483,7 @@ function fenced(text, language) {
 function issueLines(attempts) {
   return attempts.flatMap((attempt, i) =>
     attempt.issues.map(
-      ({ code, path, detail }) => `- lần ${i + 1}: ${code} \`${path}\`: ${detail}`,
+      ({ code, path, detail }) => `- lần ${i + 1}: ${code} \`${path}\`: ${inline(detail)}`,
     ),
   );
 }
@@ -429,7 +506,7 @@ function profileDetails(done) {
   if (issues.length > 0) lines.push('Lỗi validator:', '', ...issues, '');
   if (done.status === 'ACCEPTED') lines.push(fenced(JSON.stringify(done.output, null, 2), 'json'));
   if (done.status === 'REJECTED') lines.push('Trả lời cuối:', '', fenced(done.raw, 'text'));
-  if (done.status === 'ERROR') lines.push(statusWord(done));
+  if (done.status === 'ERROR') lines.push(cell(statusWord(done)));
   if (done.status === 'SKIPPED') lines.push('Không chạy (dừng sau lỗi key / giới hạn).');
   lines.push('', '</details>', '');
   return lines;
@@ -440,20 +517,20 @@ function noteDetails(done) {
   const lines = [
     `<details><summary>${done.id} — ${STATUS_WORDS[done.status] ?? done.status} · ${kept} đề xuất</summary>`,
     '',
-    `Ghi chú: ${EVAL_NOTES.find((spec) => spec.id === done.id).note}`,
+    `Ghi chú: ${done.note}`,
     '',
   ];
   if (done.status === 'OK' && kept === 0) lines.push('Không có đề xuất.');
   for (const { field, value, quote } of done.kept ?? []) {
-    lines.push(`- \`${field}\` = ${plain(JSON.stringify(value))} — trích: "${plain(quote)}"`);
+    lines.push(`- \`${field}\` = ${inline(JSON.stringify(value))} — trích: "${inline(quote)}"`);
   }
   for (const { code, path, detail } of done.dropped ?? []) {
-    lines.push(`- ${code} \`${path}\`: ${detail}`);
+    lines.push(`- ${code} \`${path}\`: ${inline(detail)}`);
   }
   const issues = issueLines(done.attempts);
   if (issues.length > 0) lines.push('', 'Lỗi validator:', '', ...issues);
   if (done.status === 'INVALID') lines.push('', 'Trả lời cuối:', '', fenced(done.raw, 'text'));
-  if (done.status === 'ERROR') lines.push(statusWord(done));
+  if (done.status === 'ERROR') lines.push(cell(statusWord(done)));
   if (done.status === 'SKIPPED') lines.push('Không chạy (dừng sau lỗi key / giới hạn).');
   lines.push('', '</details>', '');
   return lines;
@@ -465,8 +542,14 @@ const MIN_NOTES_PASSED = 4;
 
 const verdict = (pass) => (pass ? '**ĐẠT**' : '**TRƯỢT**');
 
-/** The result file `docs/metrics/ai-eval-<yyyy-mm-dd>.md`: A1–A4, the notes, the Owner's part. */
-export function formatReport({ profiles, notes }, { plan, model, reasoning, day }) {
+/**
+ * The result file `docs/metrics/ai-eval-<yyyy-mm-dd>.md`: A1–A4, the notes, the Owner's part.
+ * `partial`: the items done so far of a run going on, or stopped.
+ */
+export function formatReport(
+  { profiles, notes },
+  { plan, model, reasoning, day, partial = false },
+) {
   const total = profiles.length;
   const accepted = profiles.filter((p) => p.status === 'ACCEPTED').length;
   const rightMode = profiles.filter((p) => p.mode === p.expectedMode).length;
@@ -482,13 +565,26 @@ export function formatReport({ profiles, notes }, { plan, model, reasoning, day 
   const allAttempts = all.flatMap((done) => done.attempts);
   const totalMs = all.reduce((total, done) => total + done.ms, 0);
   const notesPassed = notes.filter((n) => n.grade?.pass).length;
+  const prompts = [ANALYSIS_PROMPTS.analysis, ANALYSIS_PROMPTS.discovery, extractionPrompt]
+    .map(({ version }) => `\`${version}\``)
+    .join(', ');
 
   const lines = [
     `# Eval AI — ${formatIsoDate(day)}`,
     '',
+    ...(partial
+      ? [
+          `- **Chưa xong:** ${all.length} mục đã chạy của một lượt đang chạy hoặc bị ngắt; các ngưỡng chưa có nghĩa.`,
+        ]
+      : []),
     `- Lệnh \`pnpm eval:ai\` · gói \`${plan}\` · model \`${model}\` · reasoning \`${reasoning}\``,
-    `- Bộ eval \`docs/golden/ai-eval.md\` (E01–E20, X01–X05) · ngày phân tích ${formatIsoDate(EVAL_TODAY)} · prompt \`analysis@1\`, \`discovery@1\`, \`extraction@1\``,
-    '- Mỗi hồ sơ / ghi chú chạy một lần, tối đa 2 lần thử như app. File do script sinh; phần "Đọc tay" Owner điền.',
+    `- Bộ eval \`docs/golden/ai-eval.md\` (E01–E20, X01–X05) · ngày phân tích ${formatIsoDate(EVAL_TODAY)} · prompt ${prompts}`,
+    '- Mỗi hồ sơ / ghi chú chạy một lần, tối đa 2 lần thử như app; một lần gọi lỗi cũng là một lần thử. Token `+?`: có lần thử không biết token. File do script sinh; phần "Đọc tay" Owner điền.',
+    ...(all.some((done) => done.error?.serverMessage)
+      ? [
+          '- Có thông điệp lỗi của server trong file (đã che key): đọc lại trước khi commit, repo public.',
+        ]
+      : []),
     '',
     '## Tổng hợp (tự động)',
     '',
@@ -550,11 +646,29 @@ export function formatReport({ profiles, notes }, { plan, model, reasoning, day 
   return `${lines.join('\n').trimEnd()}\n`;
 }
 
+/** Creates `path` only when it is not there (the flag `wx`); `false`, said, when it cannot. */
+function claim(files, path, text, log) {
+  try {
+    files.create(path, text);
+    return true;
+  } catch (error) {
+    log(
+      error?.code === 'EEXIST'
+        ? `${path} đã có — không ghi đè kết quả, lượt đang chạy hay phần đã chạy của lượt bị ngắt. Xóa hoặc đổi tên rồi chạy lại.`
+        : `Không tạo được ${path} (${error?.message}) — không gọi gì.`,
+    );
+    return false;
+  }
+}
+
 /**
- * The whole command: reads the config, refuses to overwrite a result, runs, writes the file.
- * Returns the exit code; nothing is called before the config and the file name pass.
+ * The whole command: reads the config, claims the result file and its `.partial` (neither may be
+ * there: one run per file, nothing overwritten), runs, writing the items done to `.partial` after
+ * each one so a stopped run keeps them, then renames `.partial` to the result. Returns the exit
+ * code; nothing is called before the config and both claims pass. `files`: `create` (flag `wx`),
+ * `write`, `rename`, `remove`.
  */
-export async function evalMain({ env, argv, fetch, now, day, userAgent, exists, writeFile, log }) {
+export async function evalMain({ env, argv, fetch, now, day, userAgent, files, log }) {
   const config = readConfig(env, argv);
   if (config.error) {
     log(config.error);
@@ -562,18 +676,32 @@ export async function evalMain({ env, argv, fetch, now, day, userAgent, exists, 
   }
   const suffix = config.model === DEFAULT_AI_MODEL ? '' : `-${config.model}`;
   const path = `docs/metrics/ai-eval-${formatIsoDate(day)}${suffix}.md`;
-  if (exists(path)) {
-    log(`${path} đã có — không ghi đè kết quả của một lần chạy. Xóa hoặc đổi tên rồi chạy lại.`);
+  const partial = `${path}.partial`;
+  const running = `# Eval AI — chưa xong\n\nLượt chạy đang chạy hoặc bị ngắt; phần đã chạy ở \`${partial.split('/').at(-1)}\`.\n`;
+  if (!claim(files, path, running, log)) return 1;
+  if (!claim(files, partial, '', log)) {
+    files.remove(path);
     return 1;
   }
   const { key, plan, url, model, reasoning } = config;
   log(`Eval AI: gói ${plan}, model ${model}, reasoning ${reasoning}.`);
   const adapter = openCodeAdapter({ url, key, userAgent, fetch });
   const settings = { provider: 'OPENCODE_GO', opencodePlan: plan, model, reasoning };
-  const results = await runEval({ adapter, settings, now, log });
-  const report = formatReport(results, { plan, model, reasoning, day });
+  const meta = { plan, model, reasoning, day };
+  let saveFailed = false;
+  const save = (results) => {
+    try {
+      files.write(partial, formatReport(results, { ...meta, partial: true }));
+    } catch (error) {
+      if (!saveFailed) log(`Không ghi được ${partial} (${error.message}) — chạy tiếp.`);
+      saveFailed = true;
+    }
+  };
+  const results = await runEval({ adapter, settings, now, log, onItem: save });
+  const report = formatReport(results, meta);
   try {
-    writeFile(path, report);
+    files.write(partial, report);
+    files.rename(partial, path);
   } catch (error) {
     // The run is paid for: the result goes to the output rather than nowhere.
     log(`Không ghi được ${path} (${error.message}). Kết quả:\n\n${report}`);

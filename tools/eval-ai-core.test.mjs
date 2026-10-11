@@ -1,13 +1,15 @@
-/* global AbortSignal */
+/* global AbortSignal, Buffer, ReadableStream, Response */
 import { readFileSync } from 'node:fs';
 import { URL } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 import {
   AiError,
+  ANALYSIS_PROMPTS,
   createMockAdapter,
   KYC_FIELD_LABELS,
   takeAnalysisInput,
 } from '../packages/ai/src/index.ts';
+import { extractionPrompt } from '../packages/ai/src/prompts/extraction.ts';
 import { calendarDate } from '../packages/domain/src/period.ts';
 import {
   evalMain,
@@ -31,9 +33,11 @@ const clock = () => {
   return () => (t += 1500);
 };
 
-const ok = (body) => ({ status: 200, text: async () => JSON.stringify(body) });
+const http = (status, body) => new Response(body, { status });
+const ok = (body) => http(200, JSON.stringify(body));
 const reply = (content, usage = { prompt_tokens: 100, completion_tokens: 40 }) =>
   ok({ choices: [{ message: { content } }], usage });
+const MB = 1024 * 1024;
 
 /** A fetch that answers every call as Mock would, with token counts. */
 const mockFetch = () => {
@@ -96,6 +100,64 @@ describe('the eval set (fixtures/ai-eval.mjs)', () => {
   it('copies the notes X01–X05 word for word from ai-eval.md §5', () => {
     for (const { id, note } of EVAL_NOTES) {
       expect(DOC, id).toContain(`| ${id} | ${note} |`);
+    }
+  });
+
+  /** The cells of each row of the doc's tables whose first cell is `E…` / `X…`, by code. */
+  const rows = (prefix) =>
+    new Map(
+      [...DOC.matchAll(new RegExp(`^\\| (${prefix}\\d\\d) \\|(.+)\\|$`, 'gmu'))].map(
+        ([, id, rest]) => [id, rest.split(' | ').map((cell) => cell.trim())],
+      ),
+    );
+  const CATEGORIES = {
+    'Tài sản': 'ASSETS',
+    'Mục tiêu': 'GOALS',
+    'Rủi ro': 'RISK_APPETITE',
+    'Bảo vệ': 'EXISTING_PROTECTION',
+    'Quan tâm': 'CONCERNS',
+  };
+  const list = (cell) => (cell === '—' ? [] : cell.split(', '));
+
+  it('copies the columns "Chế độ", "Hạng mục thiếu" and "Cảnh báo" of ai-eval.md §3, §4', () => {
+    const table = rows('E');
+    expect(table.size).toBe(20);
+    for (const profile of EVAL_PROFILES) {
+      // §3: Mã | Từ | Chế độ | Dữ kiện gửi | Hạng mục thiếu | Cảnh báo · §4: Mã | Chế độ | … | Cảnh báo
+      const cells = table.get(profile.id);
+      const [mode, missing, warnings] = profile.from
+        ? [cells[1], cells[3], cells[4]]
+        : cells.slice(0, 3);
+      expect(mode, profile.id).toBe(profile.mode);
+      expect(
+        list(missing).map((label) => CATEGORIES[label]),
+        profile.id,
+      ).toEqual(profile.missing);
+      expect(
+        list(warnings).map((cell) => cell.replace(/ \(F\d+ \/ F\d+\)$/u, '')),
+        profile.id,
+      ).toEqual(profile.warnings.map((field) => KYC_FIELD_LABELS[field]));
+    }
+  });
+
+  it('copies the columns "Phải có" and "Không được có" of ai-eval.md §5', () => {
+    const table = rows('X');
+    for (const { id, required, forbidden } of EVAL_NOTES) {
+      const [, must, mustNot] = table.get(id);
+      const lines = must.startsWith('—')
+        ? []
+        : must.split(' · ').map((line) => {
+            const [fields, rest] = line.split(' — ');
+            const [, words, value] = /^(.+?"): (.+)$/u.exec(rest);
+            return {
+              fields: [...fields.matchAll(/`(\w+)`/gu)].map(([, field]) => field),
+              keywords: [...words.matchAll(/"([^"]+)"/gu)].map(([, word]) => word),
+              ...(/^`(.+)`$/u.test(value) && { value: JSON.parse(value.slice(1, -1)) }),
+            };
+          });
+      expect(required, id).toEqual(lines);
+      if (forbidden === null) expect(mustNot, id).toBe('—');
+      else expect(mustNot.startsWith(forbidden.label), id).toBe(true);
     }
   });
 });
@@ -171,14 +233,17 @@ describe('openCodeAdapter', () => {
   const adapter = (fetch) =>
     openCodeAdapter({ url: PLAN_URLS.CREDIT, key: KEY, userAgent: 'Project-2C/0.1.0', fetch });
 
-  it('posts what the Rust command posts', async () => {
+  it('posts what the Rust command posts, with its 120 s for the whole call', async () => {
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
     const fetch = vi.fn(async () => reply('{"a":1}'));
     await adapter(fetch).complete(request);
     const [url, init] = fetch.mock.calls[0];
     expect(url).toBe(PLAN_URLS.CREDIT);
     expect(init.method).toBe('POST');
-    expect(init.redirect).toBe('error');
-    expect(init.signal).toBeInstanceOf(AbortSignal);
+    expect(init.redirect).toBe('manual');
+    expect(timeout).toHaveBeenCalledWith(120_000);
+    expect(init.signal).toBe(timeout.mock.results[0].value);
+    timeout.mockRestore();
     expect(init.headers).toEqual({
       Authorization: `Bearer ${KEY}`,
       'Content-Type': 'application/json',
@@ -196,24 +261,26 @@ describe('openCodeAdapter', () => {
     expect(JSON.parse(fetch.mock.calls[0][1].body)).not.toHaveProperty('reasoning_effort');
   });
 
-  it('reads the content and the tokens, 0 when not given', async () => {
+  it('reads the content and the tokens, null as Rust when not a count', async () => {
     await expect(adapter(async () => reply('x')).complete(request)).resolves.toEqual({
       content: 'x',
       promptTokens: 100,
       completionTokens: 40,
     });
-    await expect(adapter(async () => reply('y', null)).complete(request)).resolves.toEqual({
-      content: 'y',
-      promptTokens: 0,
-      completionTokens: 0,
-    });
+    for (const usage of [null, { prompt_tokens: -7, completion_tokens: 1.5 }]) {
+      await expect(adapter(async () => reply('y', usage)).complete(request)).resolves.toEqual({
+        content: 'y',
+        promptTokens: null,
+        completionTokens: null,
+      });
+    }
   });
 
   const fails = (response) => adapter(async () => response).complete(request);
-  const http = (status, body) => ({ status, text: async () => body });
 
   it('maps HTTP statuses as Rust does, with the server message and the key masked', async () => {
     const cases = [
+      [302, 'AI_HTTP'],
       [401, 'AI_UNAUTHORIZED'],
       [403, 'AI_UNAUTHORIZED'],
       [402, 'AI_RATE_LIMITED'],
@@ -232,20 +299,21 @@ describe('openCodeAdapter', () => {
     await expect(fails(http(500, '{"error":"plain"}'))).rejects.toMatchObject({
       serverMessage: 'plain',
     });
-    await expect(fails(http(500, '{"message":"top"}'))).rejects.toMatchObject({
-      serverMessage: 'top',
+    await expect(fails(http(500, '{"message":"top abc123"}'))).rejects.toMatchObject({
+      serverMessage: 'top ***',
     });
-    await expect(fails(http(502, 'Bad gateway'))).rejects.toMatchObject({
-      serverMessage: 'Bad gateway',
-    });
-    const empty = await fails(http(503, '  ')).catch((error) => error);
-    expect(empty).toBeInstanceOf(AiError);
-    expect(empty.serverMessage).toBeUndefined();
+    // Only a message from the JSON, never the body as it is (spec §5.3).
+    for (const body of ['Bad gateway', '  ', '{"error":{"code":1}}']) {
+      const error = await fails(http(502, body)).catch((e) => e);
+      expect(error).toBeInstanceOf(AiError);
+      expect(error).toMatchObject({ code: 'AI_HTTP', httpStatus: 502 });
+      expect(error.serverMessage, body).toBeUndefined();
+    }
   });
 
   it('cuts the server message to 200 characters after masking the key, as Rust', async () => {
-    const page = `<html>${KEY}${'x'.repeat(400)}</html>`;
-    const error = await fails(http(502, page)).catch((e) => e);
+    const body = JSON.stringify({ error: `<html>${KEY}${'x'.repeat(400)}</html>` });
+    const error = await fails(http(502, body)).catch((e) => e);
     expect(Array.from(error.serverMessage)).toHaveLength(200);
     expect(error.serverMessage.startsWith('<html>***x')).toBe(true);
   });
@@ -258,6 +326,46 @@ describe('openCodeAdapter', () => {
     await expect(fails(http(200, long))).rejects.toMatchObject({ code: 'AI_BAD_RESPONSE' });
   });
 
+  it('takes a reply of exactly 2 MB, as Rust', async () => {
+    const shell = JSON.stringify({ choices: [{ message: { content: '' } }] });
+    const content = 'a'.repeat(2 * MB - shell.length);
+    const body = JSON.stringify({ choices: [{ message: { content } }] });
+    expect(Buffer.byteLength(body)).toBe(2 * MB);
+    await expect(fails(http(200, body))).resolves.toMatchObject({ content });
+  });
+
+  /** A body of `chunks` MiB, counting what is pulled from it and whether it was cancelled. */
+  const bigBody = (chunks) => {
+    const seen = { pulled: 0, cancelled: false };
+    const chunk = new Uint8Array(MB).fill(0x61);
+    const stream = new ReadableStream({
+      pull(controller) {
+        if (seen.pulled === chunks) return controller.close();
+        seen.pulled += 1;
+        controller.enqueue(chunk);
+      },
+      cancel() {
+        seen.cancelled = true;
+      },
+    });
+    return { stream, seen };
+  };
+
+  it('stops reading a 32 MiB reply past 2 MB, with the code of Rust', async () => {
+    const ok = bigBody(32);
+    await expect(fails(new Response(ok.stream, { status: 200 }))).rejects.toMatchObject({
+      code: 'AI_BAD_RESPONSE',
+    });
+    expect(ok.seen.pulled).toBeLessThanOrEqual(4);
+    expect(ok.seen.cancelled).toBe(true);
+    // An error status stays an error of its status, with no message from a cut body.
+    const failed = bigBody(32);
+    const error = await fails(new Response(failed.stream, { status: 500 })).catch((e) => e);
+    expect(error).toMatchObject({ code: 'AI_HTTP', httpStatus: 500 });
+    expect(error.serverMessage).toBeUndefined();
+    expect(failed.seen.pulled).toBeLessThanOrEqual(4);
+  });
+
   it('gives AI_TIMEOUT for a timeout and AI_NETWORK for any other failure', async () => {
     const timeout = Object.assign(new Error('t'), { name: 'TimeoutError' });
     await expect(
@@ -266,8 +374,23 @@ describe('openCodeAdapter', () => {
     await expect(
       adapter(async () => Promise.reject(new TypeError('fetch failed'))).complete(request),
     ).rejects.toMatchObject({ code: 'AI_NETWORK' });
-    const slowBody = { status: 200, text: () => Promise.reject(timeout) };
-    await expect(fails(slowBody)).rejects.toMatchObject({ code: 'AI_TIMEOUT' });
+    // Node's fetch gives up connecting after 10 s, as Rust: the model was not asked yet.
+    const connect = new TypeError('fetch failed', { cause: { code: 'UND_ERR_CONNECT_TIMEOUT' } });
+    await expect(
+      adapter(async () => Promise.reject(connect)).complete(request),
+    ).rejects.toMatchObject({ code: 'AI_NETWORK' });
+    const broken = (reason, status) =>
+      new Response(new ReadableStream({ start: (controller) => controller.error(reason) }), {
+        status,
+      });
+    await expect(fails(broken(timeout, 200))).rejects.toMatchObject({ code: 'AI_TIMEOUT' });
+    await expect(fails(broken(new TypeError('terminated'), 200))).rejects.toMatchObject({
+      code: 'AI_NETWORK',
+    });
+    // An error status is known from the head alone, as Rust.
+    const error = await fails(broken(timeout, 429)).catch((e) => e);
+    expect(error).toMatchObject({ code: 'AI_RATE_LIMITED', httpStatus: 429 });
+    expect(error.serverMessage).toBeUndefined();
   });
 });
 
@@ -316,6 +439,32 @@ describe('gradeNote', () => {
     expect(gradeNote(X03, []).pass).toBe(true);
     expect(gradeNote(X03, [fact('residence', 'x', 'văn phòng')]).pass).toBe(false);
     expect(gradeNote(X04, [fact('riskProfile', 'Thận trọng', 'giữ tiền an toàn')]).pass).toBe(true);
+  });
+
+  it('reads a quote as V7 does: NFC, white space collapsed (NFD, NBSP, a line break)', () => {
+    const facts = [
+      fact('residence', 'Đà Nẵng', 'sống ở Đà Nẵng'.normalize('NFD')),
+      fact('maritalStatus', 'Đã kết hôn', 'cùng vợ'),
+      fact('childrenCount', 2, 'Hai\ncon đã đi làm'),
+      fact('otherGoals', 'Lập quỹ từ thiện', 'lập quỹ  từ\tthiện'),
+    ];
+    expect(gradeNote(X01, facts)).toEqual({ missing: [], forbidden: [], pass: true });
+  });
+
+  it('catches a forbidden value however its spaces are written, as plain text', () => {
+    const facts = [
+      fact('occupation', 'Trưởng phòng ngân hàng', 'làm trưởng phòng'),
+      fact('annualIncome', 'Khoảng 5 tỷ', 'khoảng 5 tỷ'),
+      fact('maritalStatus', 'Đã kết hôn', 'Chồng chị'),
+      fact('occupation', 'Bác\nsĩ', 'Chồng chị là bác sĩ'),
+    ];
+    expect(gradeNote(X02, facts)).toMatchObject({
+      forbidden: ['`occupation` = "Bác\nsĩ"'],
+      pass: false,
+    });
+    expect(gradeNote(X03, [fact('residence', '<!-- x', 'văn phòng')]).forbidden).toEqual([
+      '`residence` = "&lt;!-- x"',
+    ]);
   });
 });
 
@@ -381,6 +530,24 @@ describe('runEval', () => {
     expect(retry).toContain('V1 tại discoveryStrategy');
   });
 
+  it('does not count a block of the wrong type as a missing block', async () => {
+    const mock = mockFetch();
+    let calls = 0;
+    const fetch = vi.fn(async (url, init) => {
+      calls += 1;
+      const answer = await mock(url, init);
+      if (calls > 1) return answer;
+      const output = JSON.parse((await answer.json()).choices[0].message.content);
+      return reply(JSON.stringify({ ...output, nextBestActions: 'x' }));
+    });
+    const adapter = openCodeAdapter({ url: PLAN_URLS.GO, key: KEY, userAgent: 'ua', fetch });
+    const { profiles } = await runEval({ adapter, settings, now: clock(), log: () => {} });
+    expect(profiles[0].attempts[0].issues.map((i) => [i.code, i.path])).toEqual([
+      ['V1', 'nextBestActions'],
+    ]);
+    expect(profiles[0].attempts[0].missingBlocks).toEqual([]);
+  });
+
   it('keeps the last answer of a REJECTED profile and an unreadable note', async () => {
     const mock = mockFetch();
     const fetch = vi.fn(async (url, init) => {
@@ -404,8 +571,8 @@ describe('runEval', () => {
     const mock = mockFetch();
     const fetch = vi.fn(async (url, init) => {
       calls += 1;
-      if (calls === 1) return { status: 500, text: async () => 'boom' };
-      if (calls === 3) return { status: 429, text: async () => '{"error":{"message":"limit"}}' };
+      if (calls === 1) return http(500, '{"error":"boom"}');
+      if (calls === 3) return http(429, '{"error":{"message":"limit"}}');
       return mock(url, init);
     });
     const adapter = openCodeAdapter({ url: PLAN_URLS.GO, key: KEY, userAgent: 'ua', fetch });
@@ -419,6 +586,72 @@ describe('runEval', () => {
     expect(profiles.slice(3).every((p) => p.status === 'SKIPPED')).toBe(true);
     expect(notes.every((n) => n.status === 'SKIPPED')).toBe(true);
     expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('stops on a key or limit error in the notes too', async () => {
+    const fetch = vi.fn(async () => http(401, '{}'));
+    const adapter = openCodeAdapter({ url: PLAN_URLS.GO, key: KEY, userAgent: 'ua', fetch });
+    const { notes } = await runEval({
+      adapter,
+      settings,
+      now: clock(),
+      log: () => {},
+      profileSpecs: [],
+    });
+    expect(notes[0]).toMatchObject({ status: 'ERROR', error: { code: 'AI_UNAUTHORIZED' } });
+    expect(notes.slice(1).map((n) => n.status)).toEqual([
+      'SKIPPED',
+      'SKIPPED',
+      'SKIPPED',
+      'SKIPPED',
+    ]);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('counts a call that failed as an attempt, its tokens unknown', async () => {
+    const mock = mockFetch();
+    const timeout = Object.assign(new Error('t'), { name: 'TimeoutError' });
+    let calls = 0;
+    const fetch = vi.fn(async (url, init) => {
+      calls += 1;
+      if (calls === 1) return http(500, '{}');
+      if (calls === 2) return reply('không có JSON');
+      if (calls === 3) throw timeout;
+      return mock(url, init);
+    });
+    const adapter = openCodeAdapter({ url: PLAN_URLS.GO, key: KEY, userAgent: 'ua', fetch });
+    const progress = [];
+    const results = await runEval({
+      adapter,
+      settings,
+      now: clock(),
+      log: (line) => progress.push(line),
+      profileSpecs: EVAL_PROFILES.slice(0, 2),
+      noteSpecs: [],
+    });
+    const [first, second] = results.profiles;
+    expect(first.attempts).toEqual([
+      {
+        failed: 'AI_HTTP',
+        issues: [],
+        missingBlocks: [],
+        promptTokens: null,
+        completionTokens: null,
+      },
+    ]);
+    expect(second.attempts.map((a) => a.failed)).toEqual([undefined, 'AI_TIMEOUT']);
+    expect(second.attempts[0].issues[0].path).toBe('$');
+    expect(progress).toEqual([
+      'E01 discovery LỖI `AI_HTTP` (HTTP 500) · 1 lần thử · 1.5 s',
+      'E02 discovery LỖI `AI_TIMEOUT` · 2 lần thử · 1.5 s',
+    ]);
+    const report = formatReport(results, { ...settings, plan: 'GO', day: RUN_DAY });
+    expect(report).toContain(
+      '| E01 | discovery | LỖI `AI_HTTP` (HTTP 500) | 1 | lần 1: lỗi | 0+? / 0+? |',
+    );
+    expect(report).toContain(
+      '| E02 | discovery | LỖI `AI_TIMEOUT` | 2 | lần 1: V1 `$` · lần 2: lỗi | 100+? / 40+? |',
+    );
   });
 
   it('keeps going after a bug of the script or the app, as an error of that one item', async () => {
@@ -440,7 +673,21 @@ describe('runEval', () => {
     expect(notes[1]).toMatchObject({ status: 'ERROR', error: { code: 'SCRIPT' } });
     expect(notes[2].status).toBe('OK');
     const report = formatReport({ profiles, notes }, { ...settings, plan: 'GO', day: RUN_DAY });
-    expect(report).toContain('| E01 | discovery | LỖI script: x is undefined | 0 |');
+    expect(report).toContain('| E01 | discovery | LỖI script: x is undefined | 1 |');
+  });
+
+  it('formats notes beyond the golden ones, with their own text', async () => {
+    const note = { ...EVAL_NOTES[2], id: 'C01', note: 'Ghi chú riêng.' };
+    const results = await runEval({
+      adapter: createMockAdapter(),
+      settings,
+      now: clock(),
+      log: () => {},
+      profileSpecs: [],
+      noteSpecs: [note],
+    });
+    const report = formatReport(results, { ...settings, plan: 'GO', day: RUN_DAY });
+    expect(report).toContain('<summary>C01 — OK · 0 đề xuất</summary>\n\nGhi chú: Ghi chú riêng.');
   });
 
   it('calls nothing for a profile the gate blocks', async () => {
@@ -580,10 +827,94 @@ describe('formatReport', () => {
     );
     expect(report).toContain('Ghi chú đạt phần script | 0/3 | ≥ 4/3');
     expect(report).toContain('V7 `facts[1].field`: trường "birthYear" không được phép');
+    expect(report).toContain(
+      '- Có thông điệp lỗi của server trong file (đã che key): đọc lại trước khi commit',
+    );
+  });
+
+  const done = (id, status) => ({
+    id,
+    mode: 'analysis',
+    expectedMode: 'analysis',
+    status,
+    attempts: [],
+    ms: 1000,
+    input: { facts: [] },
+    output: {},
+    raw: '',
+  });
+
+  it('passes A1 at exactly 18 of 20, and names the prompts the run used', () => {
+    const profiles = Array.from({ length: 20 }, (_, i) =>
+      done(`E${i + 1}`, i < 18 ? 'ACCEPTED' : 'REJECTED'),
+    );
+    const report = formatReport({ profiles, notes: [] }, { ...config, day: RUN_DAY });
+    expect(report).toContain(
+      '| A1 | Hồ sơ ACCEPTED trong ≤ 2 lần thử | 18/20 | ≥ 18/20 — **ĐẠT** |',
+    );
+    const { analysis, discovery } = ANALYSIS_PROMPTS;
+    expect(report).toContain(
+      `prompt \`${analysis.version}\`, \`${discovery.version}\`, \`${extractionPrompt.version}\``,
+    );
+    expect(report).not.toContain('đọc lại trước khi commit');
+    expect(report).not.toContain('Chưa xong');
+  });
+
+  it('writes the words of the model as plain text: no </details> or | breaks the file', () => {
+    const attack = '</details><b>x</b> | y\n| z';
+    const attempt = {
+      issues: [{ code: 'V3', path: 'needs[0].text', detail: `"${attack}"` }],
+      missingBlocks: [],
+      promptTokens: 1,
+      completionTokens: 1,
+    };
+    const results = {
+      profiles: [{ ...done('E01', 'REJECTED'), attempts: [attempt] }],
+      notes: [
+        {
+          id: 'X03',
+          note: EVAL_NOTES[2].note,
+          status: 'OK',
+          attempts: [attempt],
+          ms: 1000,
+          kept: [{ field: 'residence', value: attack, quote: attack }],
+          dropped: [
+            { code: 'V7', path: 'facts[1].field', detail: `trường "${attack}" không được phép` },
+          ],
+          grade: gradeNote(EVAL_NOTES[2], [{ field: 'residence', value: attack, quote: 'x' }]),
+        },
+      ],
+    };
+    const report = formatReport(results, { ...config, day: RUN_DAY });
+    expect(report.match(/<\/details>/g)).toHaveLength(2);
+    expect(report).not.toContain('<b>');
+    expect(report).not.toMatch(/^\| z/m);
+    expect(report).toContain('&lt;/details&gt;&lt;b&gt;x&lt;/b&gt; \\| y \\| z');
   });
 });
 
 describe('evalMain', () => {
+  const RESULT = 'docs/metrics/ai-eval-2026-10-12.md';
+  const PARTIAL = `${RESULT}.partial`;
+
+  /** Files in memory; `create` refuses a path that is there, as the flag `wx` does. */
+  const memoryFiles = (initial = {}) => {
+    const files = new Map(Object.entries(initial));
+    return {
+      files,
+      create: vi.fn((path, text) => {
+        if (files.has(path)) throw Object.assign(new Error(`EEXIST ${path}`), { code: 'EEXIST' });
+        files.set(path, text);
+      }),
+      write: vi.fn((path, text) => files.set(path, text)),
+      rename: vi.fn((from, to) => {
+        files.set(to, files.get(from));
+        files.delete(from);
+      }),
+      remove: vi.fn((path) => files.delete(path)),
+    };
+  };
+
   const deps = (over = {}) => ({
     env: { OPENCODE_GO_KEY: KEY },
     argv: [],
@@ -591,8 +922,7 @@ describe('evalMain', () => {
     now: clock(),
     day: RUN_DAY,
     userAgent: 'Project-2C/0.1.0',
-    exists: () => false,
-    writeFile: vi.fn(),
+    files: memoryFiles(),
     log: vi.fn(),
     ...over,
   });
@@ -602,44 +932,92 @@ describe('evalMain', () => {
       const d = deps({ env });
       expect(await evalMain(d)).toBe(1);
       expect(d.fetch).not.toHaveBeenCalled();
-      expect(d.writeFile).not.toHaveBeenCalled();
+      expect(d.files.files.size).toBe(0);
       expect(d.log.mock.calls.at(-1)[0]).toMatch(/OPENCODE_(GO_KEY|PLAN)/);
     }
   });
 
-  it('never overwrites a result file, before any call', async () => {
-    const d = deps({ exists: () => true });
-    expect(await evalMain(d)).toBe(1);
-    expect(d.fetch).not.toHaveBeenCalled();
-    expect(d.log.mock.calls.at(-1)[0]).toContain('docs/metrics/ai-eval-2026-10-12.md');
+  it('never overwrites a result or the part of a stopped run, before any call', async () => {
+    for (const [path, text] of [
+      [RESULT, 'paid'],
+      [PARTIAL, 'part'],
+    ]) {
+      const d = deps({ files: memoryFiles({ [path]: text }) });
+      expect(await evalMain(d)).toBe(1);
+      expect(d.fetch).not.toHaveBeenCalled();
+      expect([...d.files.files]).toEqual([[path, text]]);
+      expect(d.log.mock.calls.at(-1)[0]).toContain(`${path} đã có`);
+    }
+  });
+
+  it('lets only one of two runs of the same file go, the other stops at once', async () => {
+    const files = memoryFiles();
+    const [first, second] = [
+      deps({ files }),
+      deps({ files, env: { ...deps().env, OPENCODE_PLAN: 'CREDIT' } }),
+    ];
+    expect(await Promise.all([evalMain(first), evalMain(second)])).toEqual([0, 1]);
+    expect(second.fetch).not.toHaveBeenCalled();
+    expect([...files.files.keys()]).toEqual([RESULT]);
+    expect(files.files.get(RESULT)).toContain('gói `GO`');
+  });
+
+  it('keeps the items done in the .partial file after each one, when the run stops at item k', async () => {
+    const k = 4;
+    const mock = mockFetch();
+    const fetch = vi.fn((url, init) =>
+      fetch.mock.calls.length === k ? new Promise(() => {}) : mock(url, init),
+    );
+    const d = deps({ fetch });
+    void evalMain(d);
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(k));
+    const part = d.files.files.get(PARTIAL);
+    expect(part.match(/^\| E\d\d \|/gm)).toHaveLength(k - 1);
+    expect(part).toContain('| E03 | discovery | ACCEPTED |');
+    expect(part).toContain('**Chưa xong:**');
+    expect(d.files.files.get(RESULT)).toContain(`${PARTIAL.split('/').at(-1)}`);
   });
 
   it('writes the result file, named by model when not the default, without the key', async () => {
     const d = deps();
     expect(await evalMain(d)).toBe(0);
-    const [path, text] = d.writeFile.mock.calls[0];
-    expect(path).toBe('docs/metrics/ai-eval-2026-10-12.md');
+    expect([...d.files.files.keys()]).toEqual([RESULT]);
+    const text = d.files.files.get(RESULT);
     expect(text).toContain('| A1 |');
+    expect(text).not.toContain('Chưa xong');
     expect(text).not.toContain(KEY);
+    expect(d.files.rename).toHaveBeenCalledWith(PARTIAL, RESULT);
     const logged = d.log.mock.calls.map(([line]) => line).join('\n');
     expect(logged).not.toContain(KEY);
-    expect(logged).toContain('docs/metrics/ai-eval-2026-10-12.md');
+    expect(logged).toContain(RESULT);
 
     const other = deps({ argv: ['--model', 'kimi-k3'] });
     await evalMain(other);
-    expect(other.writeFile.mock.calls[0][0]).toBe('docs/metrics/ai-eval-2026-10-12-kimi-k3.md');
+    expect([...other.files.files.keys()]).toEqual(['docs/metrics/ai-eval-2026-10-12-kimi-k3.md']);
   });
 
   it('prints the result when the file cannot be written, so a paid run is not lost', async () => {
-    const d = deps({
-      writeFile: () => {
-        throw new Error('EACCES');
-      },
+    const files = memoryFiles();
+    files.rename.mockImplementation(() => {
+      throw new Error('EACCES');
     });
+    const d = deps({ files });
     expect(await evalMain(d)).toBe(1);
     const last = d.log.mock.calls.at(-1)[0];
-    expect(last).toContain('Không ghi được docs/metrics/ai-eval-2026-10-12.md (EACCES)');
+    expect(last).toContain(`Không ghi được ${RESULT} (EACCES)`);
     expect(last).toContain('| A1 | Hồ sơ ACCEPTED trong ≤ 2 lần thử | 20/20 |');
     expect(last).not.toContain(KEY);
+  });
+
+  it('runs on when the .partial file cannot be written, saying so once', async () => {
+    const files = memoryFiles();
+    files.write.mockImplementation(() => {
+      throw new Error('ENOSPC');
+    });
+    const d = deps({ files });
+    expect(await evalMain(d)).toBe(1);
+    expect(d.fetch).toHaveBeenCalledTimes(25);
+    const lines = d.log.mock.calls.map(([line]) => line);
+    expect(lines.filter((line) => line.includes(`Không ghi được ${PARTIAL}`))).toHaveLength(1);
   });
 });

@@ -256,8 +256,9 @@ export const EVAL_PROFILES = [
 
 /**
  * X01–X05 (ai-eval.md §5). `required`: each needs a kept fact of one of `fields` whose quote holds
- * one of `keywords` (any case) and, when given, exactly `value`. `forbidden`: no kept fact may
- * match it. Text values are for the Owner to read.
+ * one of `keywords` (any case, white space as V7 reads it) and, when given, exactly `value`.
+ * `forbidden`: no kept fact may match it; `test` gets the fact with a text value in lower case, NFC,
+ * white space collapsed (`gradeNote`). Text values are for the Owner to read.
  */
 export const EVAL_NOTES = [
   {
@@ -281,8 +282,7 @@ export const EVAL_NOTES = [
     ],
     forbidden: {
       label: '`occupation` có giá trị chứa "bác sĩ"',
-      test: (fact) =>
-        fact.field === 'occupation' && String(fact.value).toLowerCase().includes('bác sĩ'),
+      test: (fact) => fact.field === 'occupation' && String(fact.value).includes('bác sĩ'),
     },
   },
   {
