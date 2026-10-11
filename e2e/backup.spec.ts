@@ -176,7 +176,7 @@ test('a backup whose KYC versions skip numbers shows the last seq, not how many 
   const file = JSON.parse(exported.text) as { tables: Record<string, Row[]> };
   const customer = file.tables.customers!.find((row) => row.name === name)!;
   const versions = file.tables.kyc_versions!.filter((row) => row.customer_id === customer.id);
-  expect(versions.map((row) => row.seq).sort()).toEqual([1, 2]);
+  expect(versions.map((row) => row.seq as number).sort((a, b) => a - b)).toEqual([1, 2]);
   for (const row of versions) row.seq = (row.seq as number) * 10;
 
   await chooseFile(page, exported.name, JSON.stringify(file));

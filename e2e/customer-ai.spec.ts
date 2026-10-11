@@ -620,6 +620,9 @@ test('an analysis by OpenCode, ACCEPTED at its retry: what went to ai_complete, 
   await asExe(page);
   const name = 'Tú OpenCode';
   await createKycCustomer(page, name);
+  const header = await page.getByRole('region', { name }).textContent();
+  const code = header?.match(/K-[0-9A-HJKMNP-TV-Z]{4}/)?.[0];
+  expect(code).toBeDefined();
   await addKycNote(page, name, discoveryFacts);
   await useOpenCode(page);
   const panel = panelOf(page);
@@ -658,7 +661,7 @@ test('an analysis by OpenCode, ACCEPTED at its retry: what went to ai_complete, 
   expect(first!.messages[1]!.content).toContain('"value":"42"');
   expect(sent).not.toContain(name);
   expect(sent).not.toContain('1984');
-  expect(sent).not.toMatch(/KH-\d/);
+  expect(sent).not.toContain(code);
 });
 
 test('Thử lại of an error waits for the runner; ChatGPT web clears the error (review of PR 459)', async ({
