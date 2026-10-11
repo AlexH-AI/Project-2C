@@ -45,6 +45,8 @@ export async function asExe(page: Page) {
       aiCalls: [] as Record<string, unknown>[],
       keysSet: [] as string[],
       aiError: null as Record<string, unknown> | null,
+      aiContent: 'OK',
+      exports: [] as string[],
       holdBackup() {
         backupGate = new Promise((resolve) => (releaseBackup = resolve));
       },
@@ -69,6 +71,10 @@ export async function asExe(page: Page) {
         return 'project2c-20260915-0930.db';
       },
       db_latest_backup: () => null,
+      export_write: (args) => {
+        exe.exports.push(new TextDecoder().decode(args as unknown as Uint8Array));
+        return 'C:\\Project2C-data\\exports\\export.p2cbackup';
+      },
       ai_key_status: () => key !== null,
       ai_key_set: (args) => {
         key = args.key as string;
@@ -83,7 +89,7 @@ export async function asExe(page: Page) {
         exe.aiCalls.push(args);
         await aiGate;
         if (exe.aiError) throw exe.aiError;
-        return { content: 'OK', promptTokens: 9, completionTokens: 1 };
+        return { content: exe.aiContent, promptTokens: 9, completionTokens: 1 };
       },
       'plugin:event|listen': (args) => {
         if (args.event === 'tauri://close-requested') closeHandler = args.handler as number;
@@ -123,8 +129,12 @@ interface Exe {
   aiCalls: Record<string, unknown>[];
   /** Every key `ai_key_set` got. */
   keysSet: string[];
-  /** What `ai_complete` rejects with, as Rust would; `null` answers "OK". */
+  /** What `ai_complete` rejects with, as Rust would; `null` answers `aiContent`. */
   aiError: Record<string, unknown> | null;
+  /** What `ai_complete` answers: "OK" (no JSON) unless the test sets it. */
+  aiContent: string;
+  /** The text of each file `export_write` got, as a backup exported. */
+  exports: string[];
   holdBackup(): void;
   releaseBackup(): void;
   /** Holds every `ai_complete` until `releaseAi`, as a request still running in Rust. */

@@ -1,5 +1,7 @@
-import type { AiAnalysisView } from '@p2c/db';
+import type { AiAnalysisView, KycFactRecord } from '@p2c/db';
+import { calendarDate, type CalendarDate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
+import { analysisContent } from '../customers/ai-panel-view';
 import { appointmentAiView } from './appointment-ai-view';
 
 const input = {
@@ -76,7 +78,7 @@ const versions = [
 
 describe('appointmentAiView (spec Phase 5 §9.2)', () => {
   it('gives the Next Best Actions and Discovery Strategy of the CURRENT analysis, with its day', () => {
-    const view = appointmentAiView([analysis({ seq: 1, state: 'CURRENT' })], versions);
+    const view = appointmentAiView([analysis({ seq: 1, state: 'CURRENT' })], versions, []);
 
     expect(view).toMatchObject({
       state: 'CURRENT',
@@ -94,10 +96,50 @@ describe('appointmentAiView (spec Phase 5 §9.2)', () => {
     expect(view?.discoveryStrategy.map((i) => i.text)).toEqual(['D1']);
   });
 
+  it('weighs the evidence by the facts in effect, as the profile does (DR5-15, R2-01)', () => {
+    const record = (
+      seq: number,
+      field: KycFactRecord['field'],
+      value: string,
+      status: KycFactRecord['status'],
+      confirmedDate: CalendarDate,
+    ): KycFactRecord => ({
+      id: `f${seq}`,
+      seq,
+      category: 'FAMILY',
+      field,
+      value,
+      noteId: 'n1',
+      confirmedDate,
+      status,
+    });
+    // F7 confirmed again on 01/10/2026 with the same value, as F20: the analysis stays CURRENT.
+    const facts = [
+      record(7, 'childrenCount', '2', 'superseded', calendarDate(2026, 9, 1)),
+      record(12, 'primaryGoal', 'B', 'active', calendarDate(2026, 9, 14)),
+      record(20, 'childrenCount', '2', 'active', calendarDate(2026, 10, 1)),
+    ];
+    const current = analysis({ seq: 1, state: 'CURRENT' });
+
+    const view = appointmentAiView([current], versions, facts);
+
+    expect(view?.nextBestActions[0]?.evidence).toEqual({
+      level: 'MEDIUM',
+      factCount: 2,
+      latestConfirmedDate: calendarDate(2026, 10, 1),
+    });
+    // The very items of the profile's panel, for the same analysis.
+    const panel = analysisContent(current, versions, facts).sections;
+    const items = (key: string) => panel.find((s) => s.key === key)?.groups[0]?.items;
+    expect(view?.nextBestActions).toEqual(items('nextBestActions'));
+    expect(view?.discoveryStrategy).toEqual(items('discoveryStrategy'));
+  });
+
   it('says STALE when the latest accepted analysis is', () => {
     const view = appointmentAiView(
       [analysis({ seq: 1, state: 'STALE', kycVersionId: 'v1', provider: 'OPENCODE_GO' })],
       versions,
+      [],
     );
 
     expect(view).toMatchObject({ state: 'STALE', version: 1 });
@@ -109,6 +151,7 @@ describe('appointmentAiView (spec Phase 5 §9.2)', () => {
     const view = appointmentAiView(
       [analysis({ seq: 1, state: 'CURRENT', provider: 'CHATGPT_WEB' })],
       versions,
+      [],
     );
 
     expect(view?.source).toEqual({ badge: 'CHATGPT_WEB' });
@@ -121,6 +164,7 @@ describe('appointmentAiView (spec Phase 5 §9.2)', () => {
         analysis({ seq: 1, state: 'CURRENT', date: { year: 2026, month: 9, day: 10 } }),
       ],
       versions,
+      [],
     );
 
     expect(view?.date).toEqual({ year: 2026, month: 9, day: 10 });
@@ -128,8 +172,12 @@ describe('appointmentAiView (spec Phase 5 §9.2)', () => {
 
   it('gives nothing when every row was REJECTED, or there is none', () => {
     expect(
-      appointmentAiView([analysis({ seq: 1, state: 'REJECTED', status: 'REJECTED' })], versions),
+      appointmentAiView(
+        [analysis({ seq: 1, state: 'REJECTED', status: 'REJECTED' })],
+        versions,
+        [],
+      ),
     ).toBeNull();
-    expect(appointmentAiView([], versions)).toBeNull();
+    expect(appointmentAiView([], versions, [])).toBeNull();
   });
 });

@@ -242,11 +242,13 @@ test('a run outlives the profile: left and shown again, it still shows with Hủ
   await expect(panel).toContainText('Chưa có phân tích AI cho KH này.');
 });
 
+/** Why an AI button is off while a request runs elsewhere (DR5-40). */
+const BUSY = 'Đang có một yêu cầu AI khác — chờ xong rồi thử lại.';
+
 test('a request running elsewhere says why the buttons of another customer are off (DR5-40)', async ({
   page,
 }) => {
   await asExe(page);
-  const busy = 'Đang có một yêu cầu AI khác — chờ xong rồi thử lại.';
   const first = 'Tú Chạy Trước';
   await createKycCustomer(page, first);
   await addKycNote(page, first, [
@@ -259,7 +261,7 @@ test('a request running elsewhere says why the buttons of another customer are o
   await panelOf(page).getByRole('button', { name: 'Phân tích', exact: true }).click();
   await expect(panelOf(page).getByRole('status')).toContainText('Đang phân tích…');
   // Its own run says "Đang phân tích…" instead.
-  await expect(panelOf(page)).not.toContainText(busy);
+  await expect(panelOf(page)).not.toContainText(BUSY);
 
   const second = 'Lan Chờ Sau';
   await createKycCustomer(page, second);
@@ -268,12 +270,19 @@ test('a request running elsewhere says why the buttons of another customer are o
     ['Số con', '1'],
     ['Nghề nghiệp', 'Kỹ sư'],
   ]);
+  await writeNote(page, second, NOTE);
   const panel = panelOf(page);
+  const note = noteOf(page, NOTE);
   await expect(panel).toContainText('PROFILE_DISCOVERY');
   await expect(panel.getByRole('button', { name: 'Phân tích bằng ChatGPT web' })).toBeDisabled();
-  await expect(panel).toContainText(busy);
+  await expect(panel).toContainText(BUSY);
+  // The notes say it too, by their AI trích xuất (R2-02).
+  await expect(note.getByRole('button', { name: 'AI trích xuất' })).toBeDisabled();
+  await expect(note).toContainText(BUSY);
   await page.evaluate(() => window.exe.releaseAi());
-  await expect(panel).not.toContainText(busy);
+  await expect(panel).not.toContainText(BUSY);
+  await expect(note).not.toContainText(BUSY);
+  await expect(note.getByRole('button', { name: 'AI trích xuất' })).toBeEnabled();
 });
 
 // AI trích xuất (spec Phase 5 §8, mockup ai.html 3b–3f). The Mock proposes "<n> con" and "kết hôn".
@@ -436,6 +445,9 @@ test('one AI request at a time: AI trích xuất turns every AI button off, Hủ
   await expect(note.getByRole('button', { name: 'AI trích xuất' })).toBeDisabled();
   await expect(other).toBeDisabled();
   await expect(analyse).toBeDisabled();
+  // The other note says why its button is off; this one's own run says it runs (R2-02).
+  await expect(noteOf(page, NOTHING)).toContainText(BUSY);
+  await expect(note).not.toContainText(BUSY);
 
   // Hủy: "Đang hủy…", every AI button still off until the request ends (§5.2).
   await note.getByRole('button', { name: 'Hủy' }).click();
@@ -444,6 +456,7 @@ test('one AI request at a time: AI trích xuất turns every AI button off, Hủ
   await page.evaluate(() => window.exe.releaseAi());
   await expect(note.getByRole('status')).toHaveCount(0);
   await expect(other).toBeEnabled();
+  await expect(noteOf(page, NOTHING)).not.toContainText(BUSY);
   await expect(analyse).toBeEnabled();
 
   // "OK" twice: V1 failed twice (§8 item 5); then a §5.3 error on Thử lại.
@@ -452,6 +465,61 @@ test('one AI request at a time: AI trích xuất turns every AI button off, Hủ
   await page.evaluate(() => (window.exe.aiError = { code: 'AI_NETWORK' }));
   await note.getByRole('alert').getByRole('button', { name: 'Thử lại' }).click();
   await expect(note.getByRole('alert')).toContainText('Không kết nối được OpenCode.');
+});
+
+test('AI trích xuất answering once the data was replaced, its IDs alike, proposes nothing (R2-07)', async ({
+  page,
+}) => {
+  await asExe(page);
+  const name = 'Tú Nhập Lại';
+  await createKycCustomer(page, name);
+  await writeNote(page, name, NOTE);
+  await useOpenCode(page);
+  const profile = await page.evaluate(() => location.hash);
+  const note = noteOf(page, NOTE);
+  const proposals = note.getByRole('list', { name: 'Đề xuất của AI' });
+  await page.evaluate(() => {
+    window.exe.aiContent = JSON.stringify({
+      facts: [{ field: 'childrenCount', value: 2, quote: '2 con' }],
+    });
+  });
+
+  await page.evaluate(() => window.exe.holdAi());
+  await note.getByRole('button', { name: 'AI trích xuất' }).click();
+  await expect(note.getByRole('status')).toContainText('Đang trích xuất…');
+  // A backup of this very data, imported while the request runs: the same IDs, the same note.
+  await page.getByRole('link', { name: 'Cài đặt' }).click();
+  await page
+    .getByRole('navigation', { name: 'Mục cài đặt' })
+    .getByRole('button', { name: 'Dữ liệu' })
+    .click();
+  const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });
+  await backup.getByRole('button', { name: 'Xuất backup' }).click();
+  await expect.poll(() => page.evaluate(() => window.exe.exports.length)).toBe(1);
+  const text = await page.evaluate(() => window.exe.exports[0]!);
+  await backup.getByLabel('Nhập backup').setInputFiles({
+    name: 'project2c.p2cbackup',
+    mimeType: 'application/json',
+    buffer: Buffer.from(text),
+  });
+  await page
+    .getByRole('dialog', { name: 'Thay toàn bộ dữ liệu?' })
+    .getByRole('button', { name: 'Backup rồi thay dữ liệu' })
+    .click();
+  await expect(backup.getByRole('status')).toContainText('Đã nhập backup xuất lúc');
+
+  // Back on the profile before the answer: it was for the data replaced, so the note shows none.
+  await page.evaluate((hash) => (location.hash = hash), profile);
+  await expect(note.getByRole('status')).toContainText('Đang trích xuất…');
+  await page.evaluate(() => window.exe.releaseAi());
+  await expect(note.getByRole('button', { name: 'AI trích xuất' })).toBeEnabled();
+  await expect(note.getByRole('status')).toHaveCount(0);
+  await expect(proposals).toHaveCount(0);
+  await expect(note.getByRole('alert')).toHaveCount(0);
+
+  // The same answer on the data as it is now does propose.
+  await note.getByRole('button', { name: 'AI trích xuất' }).click();
+  await expect(proposals).toContainText('Số con');
 });
 
 test('the errors of the panel and AI trích xuất: the HTTP status as in Settings, a link to Settings → AI (DR5-30, DR5-44)', async ({

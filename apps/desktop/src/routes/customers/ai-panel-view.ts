@@ -430,7 +430,7 @@ type OutputItem = {
 export function analysisContent(
   analysis: AiAnalysisView,
   versions: readonly VersionRef[],
-  facts: readonly KycFactRecord[] = [],
+  facts: readonly KycFactRecord[],
 ): AiPanelContent {
   const input = analysisInputSchema.parse(analysis.input);
   const analysisDate = fromIsoDate(input.analysisDate);

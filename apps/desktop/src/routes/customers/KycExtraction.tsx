@@ -8,7 +8,7 @@ import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { ALERT } from './CustomerDialogs';
 import { YES_NO } from './CustomerKyc';
-import { extractionButton, extractionView } from './extraction-view';
+import { busyElsewhere, extractionButton, extractionView } from './extraction-view';
 import { AiErrorText, BusyLine } from './KycIntelligence';
 import { factText } from './kyc-view';
 import { useAiJob } from './use-ai-job';
@@ -57,7 +57,7 @@ export function NoteEvent({
   };
   const extract = () => {
     setHandled(new Set());
-    job.start((signal, call) => extractFromNote(app.ai, note.text, signal, call));
+    job.start((signal, call) => extractFromNote(app, note.text, signal, call));
   };
 
   return (
@@ -85,6 +85,9 @@ export function NoteEvent({
           </span>
         )}
       </span>
+      {busyElsewhere(button, { busy: running, webOpen, phase: job.phase }) && (
+        <span className="text-xs text-fg-3">{t('aiError.AI_BUSY')}</span>
+      )}
       {job.phase === 'running' && (
         <BusyLine action={<Button onClick={job.cancel}>{t('aiPanel.cancel')}</Button>}>
           {t('extraction.running')}

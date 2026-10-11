@@ -559,12 +559,12 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
       { id: 'v1', seq: 10 },
       { id: 'v3', seq: 20 },
     ];
-    expect(analysisContent(row, gaps).chip.version).toBe(20);
+    expect(analysisContent(row, gaps, []).chip.version).toBe(20);
     expect(historyRows([row], gaps).map((history) => history.version)).toEqual([20]);
   });
 
   it('names the version, prompt, provider and time of the analysis in its chip', () => {
-    expect(analysisContent(row, versions).chip).toEqual({
+    expect(analysisContent(row, versions, []).chip).toEqual({
       version: 3,
       prompt: 'analysis@1',
       source: { badge: 'MOCK' },
@@ -580,14 +580,14 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
       model: 'deepseek-v4.1-flash',
       reasoning: 'DEFAULT',
     });
-    expect(analysisContent(real, versions).chip).toMatchObject({
+    expect(analysisContent(real, versions, []).chip).toMatchObject({
       version: 1,
       source: { model: 'DeepSeek V4.1 Flash' },
     });
   });
 
   it('refuses a KYC version the customer does not have rather than show "kyc v0"', () => {
-    expect(() => analysisContent(row, [{ id: 'v1', seq: 1 }])).toThrow(RangeError);
+    expect(() => analysisContent(row, [{ id: 'v1', seq: 1 }], [])).toThrow(RangeError);
   });
 
   it('refuses an input that is not as the app sends it rather than trust a cast', () => {
@@ -600,7 +600,7 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
       input: noWarnings,
       output,
     });
-    expect(() => analysisContent(broken, versions)).toThrow(/conflictWarnings/);
+    expect(() => analysisContent(broken, versions, [])).toThrow(/conflictWarnings/);
   });
 
   it('names a ChatGPT web analysis by its provider, as it keeps no model (P7, mockup 4i)', () => {
@@ -613,7 +613,7 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
       provider: 'CHATGPT_WEB',
       promptVersion: 'analysis@1+web@1',
     });
-    expect(analysisContent(web, versions).chip).toMatchObject({
+    expect(analysisContent(web, versions, []).chip).toMatchObject({
       prompt: 'analysis@1+web@1',
       source: { badge: 'CHATGPT_WEB' },
     });
@@ -625,7 +625,7 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
   });
 
   it('gives the four blocks of the analysis mode, each item with its evidence level', () => {
-    const { sections } = analysisContent(row, versions);
+    const { sections } = analysisContent(row, versions, []);
 
     expect(sections.map((s) => [s.key, s.groups.map((g) => g.key)])).toEqual([
       ['hypotheses', ['hypotheses']],
@@ -684,7 +684,7 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
       record(13, 'mainConcern', 'C', 'conflict', day(2025, 6, 1)),
       record(20, 'primaryGoal', 'B', 'active', day(2026, 10, 1)),
     ];
-    const hypothesis = (state: 'CURRENT' | 'STALE', withFacts?: readonly KycFactRecord[]) =>
+    const hypothesis = (state: 'CURRENT' | 'STALE', withFacts: readonly KycFactRecord[] = []) =>
       analysisContent(
         analysis({ seq: 1, state, kycVersionId: 'v3', input: dated, output }),
         versions,
@@ -721,7 +721,7 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
   });
 
   it('gives a missing hạng mục with no level when nothing is cited', () => {
-    const { sections } = analysisContent(row, versions);
+    const { sections } = analysisContent(row, versions, []);
 
     expect(sections[2]!.groups[0]!.items[1]).toEqual({
       text: 'D2',
@@ -738,7 +738,7 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
   });
 
   it('gives the personality notes apart, with their system (P6)', () => {
-    expect(analysisContent(row, versions).reference).toEqual([
+    expect(analysisContent(row, versions, []).reference).toEqual([
       {
         text: 'R1',
         system: 'PSYCHOLOGY',
@@ -757,7 +757,7 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
   });
 
   it('gives the minor conflicts of the input with the codes of their facts', () => {
-    expect(analysisContent(row, versions).conflicts).toEqual([
+    expect(analysisContent(row, versions, []).conflicts).toEqual([
       { field: 'Mối quan tâm chính', codes: ['F9', 'F13'] },
     ]);
   });
@@ -781,6 +781,7 @@ describe('analysisContent (spec Phase 5 §6.3, §9.1)', () => {
           output: out,
         }),
         versions,
+        [],
       );
 
     expect(content(discovery).sections.map((s) => s.key)).toEqual([
