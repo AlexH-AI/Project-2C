@@ -1,4 +1,4 @@
-import { evaluateKycGate } from '@p2c/domain';
+import { calendarDate, evaluateKycGate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { buildAnalysisInput, buildExtractionInput } from './input';
 import { analysisInputSchema } from './schema';
@@ -101,6 +101,22 @@ describe('buildAnalysisInput', () => {
       ['Đã có bảo vệ', 'Có'],
     ]);
     expect(input?.conflictWarnings).toEqual([]);
+  });
+
+  it('counts the age from the year of the analysis, not the year the fact was confirmed', () => {
+    const facts = [
+      fact(1, 'birthYear', 1990, 'active', calendarDate(2024, 3, 1)),
+      fact(2, 'maritalStatus', 'Độc thân'),
+      fact(3, 'childrenCount', 0),
+      fact(4, 'occupation', 'Bác sĩ'),
+      fact(5, 'hasProtection', true),
+    ];
+    const input = buildAnalysisInput({ facts }, evaluateKycGate(facts), TODAY);
+    expect(input?.facts[0]).toMatchObject({
+      field: 'Tuổi',
+      value: '36',
+      confirmedAt: '2024-03-01',
+    });
   });
 
   it('passes the input schema that db checks input_json with (§7.3 rule 3)', () => {

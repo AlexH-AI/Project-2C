@@ -108,6 +108,14 @@ describe('filterExtraction — V7', () => {
     ]);
   });
 
+  it('keeps a quote written in NFD against a note in NFC, and the other way round', () => {
+    const decomposed = 'hai vợ chồng có 2 bé'.normalize('NFD');
+    expect(filter(fact('childrenCount', '2', decomposed)).kept).toHaveLength(1);
+    const nfdNote = { note: note.normalize('NFD'), fields: EXTRACTION_FIELDS };
+    const output = extractionOutputSchema.parse({ facts: [fact('childrenCount', '2', 'có 2 bé')] });
+    expect(filterExtraction(output, nfdNote).kept).toHaveLength(1);
+  });
+
   it('runs no V3–V6: the name of a contract the KH holds is a fact', () => {
     const output = {
       facts: [

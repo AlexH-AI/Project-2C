@@ -307,6 +307,15 @@ describe('checkWebAnswer', () => {
       });
     });
 
+    it('names it as the own message before checking its length (R2-15)', () => {
+      const { session, message } = start();
+
+      expect(checkWebAnswer(session, `${message}${' '.repeat(20_000)}`)).toEqual({
+        kind: 'unusable',
+        reason: 'OWN_MESSAGE',
+      });
+    });
+
     it('does not count it at the second attempt either', () => {
       const { session, message } = start();
       const retry = checkWebAnswer(session, BAD);
