@@ -309,6 +309,16 @@ describe('runAnalysis', () => {
     expect(charsOf(requests[1]!)).toBeLessThan(RUST_LIMIT);
   });
 
+  it('retries thousands of malformed codes within the limit (review #521)', async () => {
+    const codes = Array.from({ length: 3000 }, (_, i) => `"X${i}"`).join(', ');
+    const wrong = GOOD.replace('"F7"', codes);
+    const { adapter, requests } = scripted(wrong, GOOD);
+    const result = await runAnalysis(analysis(OPENCODE, adapter));
+    expect(result).toMatchObject({ kind: 'record', row: { status: 'ACCEPTED', attempts: 2 } });
+    expect(requests[1]!.messages[3]!.content).toContain('- V1 tại $: và 2971 lỗi khác');
+    expect(Array.from(requests[1]!.messages[3]!.content).length).toBeLessThan(5_000);
+  });
+
   it('cuts a wrong answer in the retry to fit the limit, and records it as usual', async () => {
     // CX-A6: a 210 000-character answer made the retry a Rust AI_BAD_REQUEST (Owner 11/10/2026).
     const long = `${'😀'.repeat(105_000)}${'x'.repeat(105_000)}`;

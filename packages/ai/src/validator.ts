@@ -69,11 +69,26 @@ export function validateOutput<M extends AiMode>(
 ): ValidationIssue[] {
   if (parsed == null) return [NO_JSON];
   const result = AI_OUTPUT_SCHEMAS[mode].safeParse(parsed);
-  if (!result.success) return result.error.issues.map(schemaIssue);
+  if (!result.success) return capped(result.error.issues.map(schemaIssue));
   if (mode === 'extraction') return [];
   if (input === undefined) throw new TypeError(`validateOutput needs the input in ${mode} mode`);
   const items = itemsOf(result.data as AnalysisOutput | DiscoveryOutput);
-  return [...evidenceIssues(items, input), ...items.flatMap(phraseIssues)];
+  return capped([...evidenceIssues(items, input), ...items.flatMap(phraseIssues)]);
+}
+
+/** The most issues one check lists; the retry message has one line for each (prompts §5). */
+const MAX_ISSUES = 30;
+
+/**
+ * The first issues, the rest counted in the last one: thousands of wrong elements (malformed codes,
+ * one schema issue each) keep the retry message and `validator_json` small (MS-A1, review #521).
+ */
+function capped(issues: ValidationIssue[]): ValidationIssue[] {
+  if (issues.length <= MAX_ISSUES) return issues;
+  const kept = issues.slice(0, MAX_ISSUES - 1);
+  // Named by the first issue left out.
+  const { code } = issues[MAX_ISSUES - 1]!;
+  return [...kept, { code, path: '$', detail: `và ${issues.length - kept.length} lỗi khác` }];
 }
 
 /** What every element of an analysis / discovery block has in common. */

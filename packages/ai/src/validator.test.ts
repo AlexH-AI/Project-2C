@@ -128,6 +128,28 @@ describe('validateOutput — V1', () => {
     ]);
   });
 
+  it('lists 30 issues at most, the rest counted in one (review #521)', () => {
+    // Thousands of malformed codes are one V1 issue each from the schema.
+    const codes = Array.from({ length: 3000 }, (_, i) => `X${i}`);
+    const output = { ...analysis(), hypotheses: [item('KH ưu tiên con', ...codes)] };
+    const issues = validateOutput('analysis', output, input);
+    expect(issues).toHaveLength(30);
+    expect(issues[28]).toEqual({
+      code: 'V1',
+      path: 'hypotheses[0].evidence[28]',
+      detail: 'sai định dạng',
+    });
+    expect(issues[29]).toEqual({ code: 'V1', path: '$', detail: 'và 2971 lỗi khác' });
+  });
+
+  it('lists exactly 30 issues as they are', () => {
+    const codes = Array.from({ length: 30 }, (_, i) => `X${i}`);
+    const output = { ...analysis(), hypotheses: [item('KH ưu tiên con', ...codes)] };
+    const issues = validateOutput('analysis', output, input);
+    expect(issues).toHaveLength(30);
+    expect(issues[29]).toMatchObject({ path: 'hypotheses[0].evidence[29]' });
+  });
+
   it('runs no other rule on an output the schema rejects', () => {
     const output = { ...analysis(), needs: [item('Xác suất 90%', 'F99')], themes: [] };
     expect(validateOutput('analysis', output, input).map((issue) => issue.code)).toEqual(['V1']);
