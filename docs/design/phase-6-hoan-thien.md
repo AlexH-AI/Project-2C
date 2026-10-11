@@ -179,7 +179,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 
 ### 4.4 Câu hỏi G2 / G3 cho Owner (6B)
 
-Các đề xuất trên là khuyến nghị; Owner đồng ý hay đổi từng mục:
+**Owner đồng ý cả 8 đề xuất (11/10/2026)**; duyệt G2 / G3 sau khi xem mockup `trash.html`.
 
 1. **S-2:** khóa mọi lệnh ghi trong lúc thay (S2-2) thay vì cho ghi rồi chép sang DB mới; xuất không vào hàng đợi (S2-5); đóng app không phải chờ (S2-6).
 2. **TR-1:** khôi phục không dây chuyền, nêu tên bản ghi chặn; không có "khôi phục cả hai" hay "giao RE khác".
