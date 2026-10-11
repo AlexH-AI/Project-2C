@@ -74,6 +74,11 @@ export const DB_ERROR_CODES = [
   'BACKUP_INVALID',
   /** A backup file over `MAX_BACKUP_BYTES`; params `limitMb`. */
   'BACKUP_TOO_LARGE',
+  /**
+   * A write refused by the app while it replaces all the data (Nạp lại / Nhập backup, spec Phase 6
+   * S2-2); never thrown by a command here.
+   */
+  'DATA_REPLACING',
 ] as const;
 
 export type DbErrorCode = (typeof DB_ERROR_CODES)[number];

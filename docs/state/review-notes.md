@@ -8,7 +8,6 @@ Quy tắc (review đóng Phase 3, P-3): ghi chú review không chặn nằm ở 
 
 Theo task đã có chỗ trong kế hoạch:
 - **S-1 / D-1 (probe Codex Sol 02/10):** nhập backup nhận `kyc_versions.hash` sai → tính lại hoặc kiểm hash khi nhập snapshot.
-- **S-2 (Đợt 3), phần JS:** ghi muộn trong khoảng chờ backup → thay DB (#96); hai `replace` chồng nhau đóng DB cũ hai lần (#192); chưa có test cho cửa sổ `opening` (#206). Phần Rust (lệnh file chạy tuần tự dưới một khóa, `.tmp` riêng) xong ở T-142 (#376).
 
 Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - `storage.rs` (#196, #192): `explorer_arg` (`~377`) không có `#[cfg(any(windows, test))]` → build ngoài Windows báo `dead_code`; `open_lock_file` dùng `Some(32)` thay hằng `SHARING_VIOLATION`; ngoài Windows closure `map_err` thành identity.
@@ -76,6 +75,8 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 
 ## RESOLVED
 
+- **S-2 (Đợt 3), phần JS** — T-207 (#528, spec Phase 6 §4.1): `replace` chạy lần lượt theo thứ tự gọi (S2-1, hết hai `replace` chồng nhau #192); từ lúc gọi tới lúc xong / lỗi, `run` từ chối mọi lệnh ghi với `DATA_REPLACING` (S2-2, hết ghi muộn trong khoảng chờ backup #96); kết quả AI về trong lúc thay bị bỏ (S2-3). Có test cho cửa sổ `opening` (#206), thay lỗi (S2-4), xuất (S2-5) và đóng app (S2-6) ở từng bước. Kéo theo ghi chú ACCEPTED cũ về `open` (`mine === current || mine === opening` khác `mine >= current` khi hai lần mở chồng nhau): không còn hai lần mở chồng nhau. Phần Rust xong ở T-142 (#376).
+
 - Đợt G5 Phase 6 (11/10): ghi chú "G5 chặn nhầm câu thường" (#420) — PR #516 (T-197) thu hẹp "dễ chốt", "bảo minh", "khả năng ký", "chốt được", "điểm số", DISC "C-level", regex khoản–Điều (ca C20–C38 của G5 §8.5); eval lại 11/10 (`docs/metrics/ai-eval-2026-10-11.md`, `analysis@2` / `discovery@2`) A1 20/20, R1 0 vi phạm. Bốn ghi chú script eval #474 — PR #517 (T-198): `plain()` cho `detail` / trích dẫn, lần gọi lỗi tính là một lần thử, version prompt đọc từ code, ghi chú mang chữ của chính nó (không dùng `EVAL_NOTES`).
 
 - Đóng Phase 5 lần 1 (10/10): bốn ghi chú "Nhắc khi viết `docs/metrics/phase-5.md`" (PR #444, #462, #469, #474 vượt ngưỡng kích thước) đã ghi vào bảng "Kích thước PR vượt ngưỡng" của `docs/metrics/phase-5.md`. Hai ghi chú review #479 (T-171, ghi lần chạy eval đầu): body PR ghi "7/20 hồ sơ cần lần thử 2, phần lớn V1 thiếu `evidence`" — đúng là **6/20** (E01, E04, E10, E15, E16, E17; X01 là ghi chú) và lỗi V1 lần 1 phần lớn ở `nextBestActions`, chỉ E04 vì `evidence` (file kết quả đúng; `phase-5.md` dùng số đúng); bảng "Đọc tay" do Claude soạn, Owner duyệt → coi là phần đọc tay của Owner.
@@ -120,8 +121,6 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - Panel KYC Intelligence (#439): `BADGE_COLORS` của panel không gộp với `GATE_COLORS` (`CustomerKyc.tsx`) vì mockup tô `PAIN_POINT_ANALYSIS` khác nhau (panel `c-info`, thẻ KYC `c-ok`). Chip theo `provider` đã sửa trong chính #439 (commit `6a3f242`) → comment chuyển đi trên T-174 #433 chỉ còn việc thêm tên "ChatGPT web".
 
 - **DR-43 (Owner quyết 06/10, deep review §11 điểm 5):** HĐ / cuộc gặp MET mang ngày hoặc nhóm trước ngày tạo KH là **nhập bù hợp lệ** — không thêm luật ở lệnh hay khi nhập backup. Câu báo khi MET đổi nhóm bị chặn mang đúng ngày chặn (DR-64, T-144 #378).
-
-- `app-data.ts` `open` (#206, kiểm lại ở T-137 #343): `mine === current || mine === opening` **không** tương đương `mine >= current` khi hai lần mở chồng nhau (hai `replace` chồng nhau, #192): `current` = 1, mở 2 rồi mở 3 (`opening` = 3) → bản 2 không lưu migration của nó, còn `mine >= current` sẽ lưu. Giữ code; cửa sổ `opening` và `replace` chồng nhau xử lý ở S-2.
 
 - Review #334 (T-126): `apps/desktop/src/data/today.ts` `untilMidnight` tự tính `new Date(y, m, d + 1)` ngoài `packages/domain` — chỉ ra mili giây cho hẹn giờ, không parse / format; đưa vào `domain` nếu nơi khác cần. Ngày được chọn của màn Lịch hẹn không tự nhảy sang ngày mới qua nửa đêm (Issue #318 "Hệ quả thêm").
 - **Owner quyết 30/09 (#171):** lịch Dời lịch không có nút xóa (chuỗi dời, cần quy tắc riêng G1/G2); ô **Giờ** ở hộp 6f giữ; câu "Xóa mềm, khôi phục được" ở 6g giữ — màn "Thùng rác" xếp Phase 6 (xem comment Owner trên #72).

@@ -5,6 +5,7 @@
  */
 import {
   countRecords,
+  DbError,
   exportBackup,
   getSetting,
   importBackup,
@@ -95,13 +96,19 @@ export interface AppData {
    */
   generation(): number;
   /**
+   * True from the call of `reloadDemoData` / `importBackup` until the last one called ends: `run`
+   * refuses every write meanwhile (S2-2), and an AI answer that comes then is dropped (S2-3).
+   */
+  replacing(): boolean;
+  /**
    * The tables of the current revision, shared by every screen: each is read when first asked for
    * and kept until the data changes, so moving between screens reads nothing again.
    */
   tables(): Tables;
   /**
    * Runs a command of `@p2c/db` and, when it succeeds, tells the screens to re-read. Screens write
-   * only through this; a rejected command changed nothing and rethrows its `DbError`.
+   * only through this; a rejected command changed nothing and rethrows its `DbError`. While the data
+   * is replaced it runs nothing and throws `DATA_REPLACING`.
    */
   run<T>(command: (db: Database) => T): T;
   /** True in the exe (saved to a file, backed up); false in web mode (in memory only). */
@@ -134,7 +141,10 @@ export interface AppData {
    * `BACKUP_INVALID` or `SCHEMA_TOO_NEW`.
    */
   readBackup(text: string): Promise<BackupPreview>;
-  /** Replaces everything with a read backup (D5), exactly as `reloadDemoData` does. */
+  /**
+   * Replaces everything with a read backup (D5), exactly as `reloadDemoData` does. Replaces run one
+   * at a time, in the order they are called (S2-1).
+   */
   importBackup(backup: BackupPreview): Promise<string | undefined>;
   /** Settings → Data: the last successful save of this session; always `undefined` in web mode. */
   lastSave(): LastSave | undefined;
@@ -239,8 +249,9 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   });
   // Only the current database saves: one replaced by `reloadDemoData` must never save again, or a
   // late write to it would overwrite the file with the old data. `current` moves only once the
-  // new database opened, so a failed open leaves the current one saving. While `opening`, both
-  // save: the new one's migration, the current one's changes made meanwhile.
+  // new database opened, so a failed open leaves the current one saving. While `opening`, the new
+  // one saves its migration; the current one has nothing to save, as `run` refuses every write
+  // while the data is replaced (S2-2), and replaces never overlap (S2-1).
   let opens = 0;
   let current = 0;
   let opening: number | undefined;
@@ -318,8 +329,23 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   };
 
   // Settings → Data replaces everything (reload, import): save what is pending, back the file up,
-  // then swap. A failed save would leave changes out of the backup, so it refuses instead.
-  const replace = async (next: () => Promise<Database>): Promise<string | undefined> => {
+  // then swap. A failed save would leave changes out of the backup, so it refuses instead. One
+  // replace at a time, in call order (S2-1); from the call until the last one ends, writes are
+  // refused (S2-2), so the backup holds every change and the old database saves nothing after it.
+  // Exports are not queued: each reads the database once, with no `await` in between (S2-5).
+  let replacing = 0;
+  let replaces = Promise.resolve();
+  const replace = (next: () => Promise<Database>): Promise<string | undefined> => {
+    replacing++;
+    const turn = replaces.then(() => swap(next)).finally(() => replacing--);
+    replaces = turn.then(
+      () => undefined,
+      () => undefined,
+    );
+    return turn;
+  };
+
+  const swap = async (next: () => Promise<Database>): Promise<string | undefined> => {
     await saves.idle();
     if (saves.failed()) throw new Error(UNSAVED_CHANGES);
     const backup = await storage?.backup();
@@ -336,6 +362,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   };
 
   const run = <T>(command: (db: Database) => T): T => {
+    if (replacing > 0) throw new DbError('DATA_REPLACING');
     const result = command(db);
     changed();
     return result;
@@ -349,6 +376,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     },
     revision: () => revision,
     generation: () => generation,
+    replacing: () => replacing > 0,
     tables: () => (tables ??= readTables(db)),
     run,
     hasFile: storage !== undefined,
