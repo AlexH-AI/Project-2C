@@ -1,6 +1,6 @@
 # Chỉ số cuối phase
 
-Mỗi phase ghi `phase-<N>.md` theo bảng chỉ số của `docs/COMPARISON.md` (giống hệt ở hai repo, không sửa riêng ở 2C). Lấy mẫu từ file của phase trước (`phase-3.md`).
+Mỗi phase ghi `phase-<N>.md` theo bảng chỉ số của `docs/COMPARISON.md` (file đã hết hiệu lực từ 11/10/2026 vì bỏ so sánh với Project-2, nhưng bảng chỉ số vẫn dùng làm mẫu; 2C sửa được khi cần). Lấy mẫu từ file của phase trước (`phase-5.md`). Phase 6 thêm phần đánh giá cuối dự án (thay `FINAL.md`).
 
 ## Bổ sung riêng của 2C: điều hướng repo
 

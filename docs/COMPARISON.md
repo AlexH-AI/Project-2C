@@ -1,6 +1,8 @@
 # Giao thức so sánh Project-2C ↔ Project-2
 
-Status: **ACCEPTED** · Owner quyết định 2026-09-26 · File này giống hệt nhau ở cả hai repo; sửa ở repo này thì sửa y hệt ở repo kia.
+Status: **HẾT HIỆU LỰC** từ 2026-10-11 — Owner bỏ mục đích so sánh, Project-2 dừng (ADR-0002 Superseded, ADR-0001 phụ lục M3). Giữ làm lịch sử; bảng chỉ số dưới vẫn là mẫu cho `docs/metrics/phase-<N>.md`. Không còn phải giữ giống hệt ở hai repo.
+
+Status cũ: ACCEPTED · Owner quyết định 2026-09-26 · File này giống hệt nhau ở cả hai repo; sửa ở repo này thì sửa y hệt ở repo kia.
 
 ## Mục đích
 

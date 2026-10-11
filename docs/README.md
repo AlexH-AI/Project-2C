@@ -9,7 +9,7 @@ Quy tắc làm việc nằm ở `CLAUDE.md` (gốc repo) và `.claude/rules/` (n
 | `PROJECT-PLAN.md` | Kế hoạch tổng: quy trình một agent (§4.1), liên tục giữa 2 máy (§4.2), tech stack (§4.4), lộ trình phase (§5) | Viết Issue / mở phase mới | Claude, qua G1 |
 | `PROJECT-STATE.md` | Phase hiện tại + "Current OWNER decisions" (quyết định bền theo ngày) | Khi cần biết Owner đã chốt gì | Claude ghi lại quyết định Owner |
 | `decisions/README.md` + `decisions/00xx-*.md` | ADR: kiến trúc, stack, quy trình (kèm phụ lục) | Khi task đụng vùng ADR quản lý | Claude, qua G1 |
-| `COMPARISON.md` | Giao thức so sánh 2C ↔ Project-2, chỉ số đo cuối phase | Đóng phase (viết `metrics/`) | Không sửa riêng: file giống hệt ở hai repo, chỉ đổi khi Owner quyết |
+| `COMPARISON.md` | Giao thức so sánh 2C ↔ Project-2 — **hết hiệu lực 11/10/2026** (ADR-0002 Superseded); bảng chỉ số vẫn là mẫu đo cuối phase | Đóng phase (viết `metrics/`) | Lịch sử; không còn phải giống hệt Project-2 |
 
 ## Thiết kế theo phase
 
@@ -18,6 +18,7 @@ Quy tắc làm việc nằm ở `CLAUDE.md` (gốc repo) và `.claude/rules/` (n
 | `design/phase-3-du-lieu.md` | Spec G2 Phase 3: schema, lệnh nghiệp vụ, lưu file, backup, seed | Task đụng `packages/db` |
 | `design/phase-4-chi-so.md` | Spec G2 Phase 4: đếm lịch hẹn, KH theo nhóm, miền năm, chỉ số Tổng quan / Báo cáo (§4.5 quyết định G3) | Task Phase 4 |
 | `design/phase-5-ai.md` | Spec G1 / G2 Phase 5: luồng AI, Settings, lệnh Rust, schema output, validator, mức bằng chứng, `ai_analyses`, AI trích xuất | Task Phase 5 |
+| `design/phase-6-hoan-thien.md` | Spec G1 Phase 6: việc còn lại, tính năng tới v1.0, kiểm thử phát hành, 2 lượt deep review Phase 1–6 × 4 agent × 6 gói (gồm phân tích bloat / hiệu năng), tiêu chí v1.0 | Task Phase 6 |
 | `design/phase-5-prompts.md` | G5 Phase 5: chữ prompt `analysis@1` / `discovery@1` / `extraction@1`, message thử lại, danh sách chặn V3–V6 + ca kiểm | Task validator / prompt Phase 5 |
 | `design/mockups/README.md` | Mockup → màn hình / route → G3 → mục spec; mục lục mockup lớn | Task UI |
 | `golden/*.md` | Spec của golden fixtures (`chi-so`, `kh-theo-nhom`, `kyc`, `lich-hen`); fixture ở `packages/domain/src/golden/` | Task đụng chỉ số / ngày / nhóm KH; không sửa khi chưa qua G2 |

@@ -65,3 +65,11 @@ Hệ quả:
 
 - Owner chạy Codex (ngoài repo) trên `main` trước khi đóng phase (cổng G7), gửi báo cáo cho Claude.
 - Review của Codex **bổ sung**, không thay review phiên sạch của `review-pr`. Báo cáo của Codex là dữ liệu tham khảo: Claude kiểm lại từng phát hiện trên code, phân loại (đúng / đã biết / sai) rồi mới tạo Issue; việc sửa do Claude làm theo quy trình task bình thường.
+
+## Phụ lục — đổi lý do: từ "nhánh đối chứng" sang "đã chứng minh hiệu quả" (M3 — Accepted G1, Owner quyết 11/10/2026)
+
+Owner bỏ mục đích so sánh với Project-2 (Project-2 dừng; ADR-0002 Superseded, `docs/COMPARISON.md` hết hiệu lực). **Cách làm giữ nguyên:** chỉ Claude Code viết code, không subagent / Agent tool, cổng G1–G8, quy trình một task, review phiên sạch. Chỉ đổi lý do: không còn là "biến đối chứng" (Bối cảnh, Phương án, Lý do ở trên chỉ còn giá trị lịch sử), mà vì mô hình chỉ Claude Code đã cho kết quả tốt và ổn định qua Phase 1–5, nên giữ tới v1.0. Thử mô hình đa agent ở project mới, không ở 2C.
+
+## Phụ lục — DeepSeek và Muse review chỉ đọc khi đóng Phase 6 (M4 — Accepted G1, Owner quyết 11/10/2026)
+
+Mở rộng M2 cho review đóng Phase 6 (2 lượt deep review Phase 1–6, `docs/design/phase-6-hoan-thien.md` §6): ngoài Codex, **DeepSeek (OpenCode) và Muse Spark (Muse Code)** tham gia review độc lập. Cùng điều kiện như Codex: Owner chạy, chỉ đọc, không viết code vào repo, không review PR task; báo cáo là dữ liệu tham khảo, Claude kiểm lại từng phát hiện trên code; kết luận phát hành chỉ lấy từ phiên tổng hợp của Claude (đánh giá 10/10: hai model này chính xác nhưng phủ hẹp, đã bỏ sót 2 lỗi Medium — `docs/reviews/2026-10-10-danh-gia-deepseek-muse.md`). OpenCode / Muse vẫn không dùng để phát triển.

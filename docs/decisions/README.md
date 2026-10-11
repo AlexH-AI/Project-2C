@@ -20,8 +20,8 @@ File naming: `NNNN-short-slug.md`. Status: `Proposed` → `Accepted (<gate>)` �
 
 | ADR | Decision | Status | Source |
 |---|---|---|---|
-| [0001](0001-mo-hinh-thuc-hien-chi-claude-code.md) | Claude Code only, no subagents (model/effort: Owner picks per session, M1); gates G1–G8; auto-merge `risk:low` | Accepted (G1) | C1, C3, C4, C8, Q14 |
-| [0002](0002-doi-chung-va-cach-ly-voi-project-2.md) | 2C is the control build; isolation from Project-2 | Accepted (G1) | C5, C6, C7 |
+| [0001](0001-mo-hinh-thuc-hien-chi-claude-code.md) | Claude Code only, no subagents (model/effort: Owner picks per session, M1); gates G1–G8; auto-merge `risk:low`; Codex (M2) and, at the Phase 6 close, DeepSeek / Muse (M4) review read-only; kept because it proved itself, not as a control build (M3) | Accepted (G1); M3, M4 Accepted (G1, 2026-10-11) | C1, C3, C4, C8, Q14 |
+| [0002](0002-doi-chung-va-cach-ly-voi-project-2.md) | 2C is the control build; isolation from Project-2 | **Superseded** (2026-10-11: comparison dropped, Project-2 stopped) | C5, C6, C7 |
 | [0003](0003-lien-tuc-cong-viec-giua-2-may.md) | GitHub as single source of truth across 2 machines; appendix: HANDOFF in the pinned `handoff` issue, generated session status | Accepted (G1); appendix Accepted (G1, #283) | §4.2 |
 | [0004](0004-ung-dung-mot-nguoi-dung-khong-server.md) | Single-user local app, no server; roles are views | Accepted (G1) | Q1, Q2, Q16 |
 | [0005](0005-tech-stack-tauri-2.md) | Tauri 2 + React/TS + SQLite (Drizzle), pnpm | Accepted (G1) | Q15 |
@@ -29,7 +29,7 @@ File naming: `NNNN-short-slug.md`. Status: `Proposed` → `Accepted (<gate>)` �
 | [0007](0007-dinh-nghia-chi-so-va-vong-doi.md) | Metric definitions and customer/policy lifecycle | Accepted (G1); golden examples + data model Accepted (G2) | Q3–Q7 |
 | [0008](0008-kyc-du-kien-co-cau-truc-va-cong-deterministic.md) | Structured KYC facts + deterministic gate | Accepted (G1); catalog + thresholds + golden profiles Accepted (G2) | Q8, Q9 |
 | [0009](0009-ai-copilot-provider-va-guardrail.md) | AI copilot: OpenCode Go + Mock, schema + validator | Accepted (G1); network + keys Accepted (D-1, G4 / G6, 2026-10-07); prompts → G5 | Q10, Q11, C2 |
-| [0010](0010-dong-bo-du-lieu-app-backup-va-repo-data.md) | App data sync: backup file + `Project-2C-data` repo | Accepted (G1) | Q2b |
+| [0010](0010-dong-bo-du-lieu-app-backup-va-repo-data.md) | App data sync: backup file + `Project-2C-data` repo | Accepted (G1); `Project-2C-data` out of v1.0 (2026-10-11), cloud backup to be decided later | Q2b |
 | [0011](0011-bao-cao-excel-va-ngon-ngu.md) | Excel export; Vietnamese UI via i18n | Accepted (G1) | Q12, Q13 |
 | [0012](0012-plugins-superpowers-va-mattpocock-skills.md) | Plugins: Superpowers + mattpocock/skills (vendored subset); Agent tool denied | Accepted (G4) | §4.3 |
 | [0013](0013-huong-ui-dark-mode.md) | UI direction: dark tokens, champagne accent, unified period filter, sortable dates | Accepted (G3) | §4.6, C6 |

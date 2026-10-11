@@ -8,6 +8,8 @@ Nguồn: `AlexH-AI/Project-2` → `docs/PROJECT-PLAN.md` tại commit `884dba6` 
 
 **Project-2C là nhánh đối chứng**: cùng yêu cầu sản phẩm với Project-2, khác duy nhất ở cách thực hiện — **toàn bộ do Claude Code (không subagent; model và effort do Owner chọn từng phiên — ADR-0001 phụ lục M1, trước 29/09/2026 là Opus 5.5 effort medium)** làm. Quy tắc so sánh và cách ly: `docs/COMPARISON.md`.
 
+> **Cập nhật 11/10/2026 (Owner quyết):** bỏ mục đích so sánh, Project-2 dừng (ADR-0002 Superseded, `COMPARISON.md` hết hiệu lực). Cách làm chỉ Claude Code giữ nguyên tới v1.0 vì đã chứng minh hiệu quả (ADR-0001 phụ lục M3). Các chỗ nhắc "đối chứng", "so sánh công bằng", Project-2 trong file này là bối cảnh lúc lập kế hoạch.
+
 Các mục §1, §2, §4.4–§4.6, §7 giữ nguyên nội dung sản phẩm của Project-2; các mục về cách làm (§0, §3, §4.1–§4.3, §5, §6, §8) đã được viết lại cho 2C.
 
 ---
@@ -294,11 +296,11 @@ Ghi chú KYC ─► Dữ kiện có cấu trúc (RE xác nhận) ─► kyc_vers
 | **3. Nghiệp vụ & màn hình** | `packages/db`; Team/RE, Khách hàng, KYC timeline, Lịch hẹn, Kết quả cuộc gặp, Hợp đồng; seed 3 × 10 RE × ~12 tháng dữ liệu; xuất/nhập backup | Nhập liệu hoàn chỉnh · **G7** | ✅ 57/57 issue, đóng 02/10 (G7) — `docs/metrics/phase-3.md`, review đóng phase `docs/reviews/2026-09-30-phase-1-3-tong-hop.md`, `docs/reviews/2026-10-02-phase-1-3-review-2-tong-hop.md` |
 | **4. Dashboard & báo cáo** | Tổng quan (ý 9 phản hồi Owner 01/10: đếm KH theo nhóm = ảnh chụp cuối kỳ, nút Lọc), MTD, drill-down team/RE, báo cáo tuần/tháng/năm, xuất Excel. Đầu phase: Đợt 2 của review đóng Phase 3 (e2e local ổn định; validator nhập lần 3 + luật nhân sự T-j; G2 cách đếm lịch dự kiến / đã gặp + chuỗi dời, miền năm, mockup Tổng quan theo ADR-0007 — spec `docs/design/phase-4-chi-so.md`; index chỉ số + MTD; CI coverage riêng + ghim SHA Actions; dọn UI/i18n) | · **G2, G7** (milestone) | ✅ 65/65 issue (gồm 22 Issue sửa deep review Phase 1–4), đóng 07/10 (G7, phát hành exe `3e84ce8`) — `docs/metrics/phase-4.md`, review đóng phase `docs/reviews/2026-10-04-phase-4-tong-hop.md`, deep review `docs/reviews/2026-10-06-deep-review-phase-1-4-tong-hop.md` |
 | **5. AI copilot** | Adapter OpenCode Go + Mock, prompt + schema, validators, versioning/STALE, Settings, bộ eval. Gọi mạng + lưu key: D-1 đã chốt 07/10 (phụ lục ADR-0009) | · **G4, G5, G6** | ✅ 41/41 issue (gồm 11 Issue sửa deep review + review lại vòng 2), đóng 11/10 (G7, phát hành exe `3d6c7fc`) — `docs/metrics/phase-5.md`, deep review `docs/reviews/2026-10-10-deep-review-phase-5-tong-hop.md`, review lại `docs/reviews/2026-10-11-review-lai-phase-5-tong-hop.md` |
-| **6. Hoàn thiện & phát hành** | Hiệu năng, rà soát UX, màn "Thùng rác" khôi phục bản ghi xóa mềm (#72), gộp backup / phát hiện xung đột, snapshot mỗi bảng một file (S-1), tuần tự hóa thay DB / lưu / xuất / đồng bộ (S-2), đồng bộ `Project-2C-data`, hướng dẫn sử dụng tiếng Việt, GitHub Release v1.0 | · **G7** | ⬜ |
+| **6. Hoàn thiện & phát hành** | Spec `design/phase-6-hoan-thien.md` (G1): việc còn lại Phase 5, tuần tự hóa thay DB / lưu / xuất (S-2), màn "Thùng rác" (#72), hướng dẫn sử dụng tiếng Việt, kiểm thử phát hành, 2 lượt deep review Phase 1–6 × 4 agent (gồm bloat code / hiệu năng), GitHub Release v1.0. Ra khỏi v1.0 (Owner 11/10): đồng bộ `Project-2C-data`, S-1, gộp backup / xung đột — xét lại cùng phương án backup cloud | · **G7** | ⬜ |
 
 Ước lượng tổng: **~90%** khối lượng tới v1.0 khi đóng Phase 5 (~75% khi đóng Phase 4, ~60% khi đóng Phase 3; trọng số phase 0–6: 5 / 15 / 15 / 25 / 15 / 15 / 10%).
 
-Mọi phase do **Claude Code** thực hiện (model / effort do Owner chọn). Cuối mỗi phase ghi `docs/metrics/phase-<N>.md` theo `docs/COMPARISON.md`.
+Mọi phase do **Claude Code** thực hiện (model / effort do Owner chọn). Cuối mỗi phase ghi `docs/metrics/phase-<N>.md` theo `docs/metrics/README.md`.
 
 Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue, cỡ theo P1 (ADR-0001 phụ lục): ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff kể cả test.
 
@@ -379,4 +381,4 @@ Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue, cỡ theo P1 (ADR-0001 p
 
 Bước chi tiết từng phiên: HANDOFF (Issue ghim nhãn `handoff`). Thứ tự lớn (cập nhật 11/10/2026):
 
-1. Phase 6 — Hoàn thiện & phát hành (Phase 5 đóng 11/10, G7; milestone "Phase 6 — Hoàn thiện & phát hành" đã có #488, #491–#494, #509, #510): trước tiên đợt G5 #491 T-197 (`gate`, sửa prompt / danh sách chặn sau eval đầu và review Phase 5), rồi các Issue còn lại của milestone; sau đó phần việc Phase 6 ở §5 (Thùng rác, S-1, S-2, đồng bộ `Project-2C-data`, hướng dẫn sử dụng, Release v1.0).
+1. Phase 6 — Hoàn thiện & phát hành (Phase 5 đóng 11/10, G7): trước tiên duyệt G1 spec `design/phase-6-hoan-thien.md`; sau đó đợt G5 #491 T-197 và các Issue còn lại của milestone (#488, #492–#494, #509, #510), rồi theo thứ tự 6B–6E của spec (S-2, Thùng rác, hướng dẫn sử dụng → kiểm thử phát hành → 2 lượt deep review × 4 agent → G7 v1.0).

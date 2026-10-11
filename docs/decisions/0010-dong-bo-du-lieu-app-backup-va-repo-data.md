@@ -37,3 +37,7 @@ Cùng cơ chế GitHub Owner đã dùng; có lịch sử và diff; B là đườ
 
 - Cần tạo repo `Project-2C-data` (private) trước Phase 6.
 - Cần định dạng snapshot và logic phát hiện xung đột có test.
+
+## Phụ lục — phương án D ra khỏi v1.0 (Owner quyết 11/10/2026)
+
+Dữ liệu v1 là dữ liệu giả lập, nên **chưa làm đồng bộ qua `Project-2C-data`** ở v1.0 (repo này chưa tạo). Khi chuyển sang dữ liệu nhập liệu, chọn phương án backup lên cloud phù hợp hơn và ghi ADR mới (có thể thay phương án D). Kéo theo, snapshot mỗi bảng một file (S-1) và phát hiện xung đột giữa hai máy cũng xét lại khi đó. v1.0 chỉ có phương án **B** (xuất / nhập file backup thủ công).

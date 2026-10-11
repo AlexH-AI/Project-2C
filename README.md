@@ -1,8 +1,8 @@
 # Project-2C
 
-Bản đối chứng của Project-2, **làm hoàn toàn bằng Claude Code** (không subagent; model và effort do Owner chọn từng phiên).
+App desktop quản lý khách hàng, KYC, lịch hẹn, hợp đồng và chỉ số cho đội RE (kèm AI copilot), **làm hoàn toàn bằng Claude Code** (không subagent; model và effort do Owner chọn từng phiên).
 
-Project-2C có cùng yêu cầu sản phẩm với [`AlexH-AI/Project-2`](https://github.com/AlexH-AI/Project-2) và chỉ khác ở cách thực hiện. Khi cả hai xong, hai sản phẩm cuối sẽ được so sánh với nhau.
+Ban đầu Project-2C là bản đối chứng của [`AlexH-AI/Project-2`](https://github.com/AlexH-AI/Project-2) (cùng yêu cầu, khác cách làm). Từ 11/10/2026 Owner bỏ mục đích so sánh và dừng Project-2: cách làm chỉ Claude Code đã cho kết quả tốt qua Phase 1–5 (ADR-0002 Superseded).
 
 ## Status
 
@@ -10,7 +10,7 @@ Project-2C có cùng yêu cầu sản phẩm với [`AlexH-AI/Project-2`](https:
 - Canonical accepted branch: `main`
 - Local workspace: `C:\workspace\Project-2C` (trên cả Home PC và Office Laptop)
 - Đồng bộ Home PC ↔ Office Laptop: GitHub
-- Thứ tự: **làm 2C trước**, sau đó mới làm Project-2
+- Project-2 đã dừng (11/10/2026); 2C làm tới v1.0
 
 ## Bắt đầu trên một máy mới
 
@@ -37,7 +37,7 @@ Bootstrap cài/kiểm tra Git, Node 24, pnpm (corepack), Rust (theo `rust-toolch
 ## Tài liệu
 
 - `docs/PROJECT-PLAN.md` — kế hoạch triển khai của 2C
-- `docs/COMPARISON.md` — giao thức so sánh và quy tắc cách ly với Project-2
+- `docs/COMPARISON.md` — giao thức so sánh với Project-2 (hết hiệu lực 11/10/2026, giữ làm lịch sử; bảng chỉ số vẫn là mẫu cho `docs/metrics/`)
 - `docs/PROJECT-STATE.md` — phase hiện tại và quyết định Owner theo ngày
 - `docs/decisions/` — ADR
 - HANDOFF — bàn giao giữa các phiên / giữa 2 máy: Issue ghim nhãn `handoff` trên GitHub (`node tools/handoff.mjs read`)
