@@ -2,9 +2,10 @@ import { evaluateKycGate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import type { AiAdapter, AiCompleteRequest, AiCompletion } from './adapter';
 import { AiError } from './errors';
-import { buildAnalysisInput } from './input';
 import { createMockAdapter } from './mock-adapter';
+import { nextRetry } from './prompts/retry';
 import {
+  analysisOutcome,
   checkConnection,
   createAiRunner,
   EMPTY_RAW_OUTPUT,
@@ -13,6 +14,7 @@ import {
   type AiAbortSignal,
   type AiRunner,
 } from './run';
+import { buildAnalysisInput } from './schema';
 import { readAiSettings, type AiSettings } from './settings';
 import { ANALYSIS_FACTS, fact, PRIVATE, PROFILE, TODAY } from './test-support';
 import { CUT_ANSWER } from './validator';
@@ -450,6 +452,14 @@ describe('runAnalysis', () => {
   });
 });
 
+describe('analysisOutcome and nextRetry', () => {
+  it('refuse a conversation with no answer by saying so (MS-A8, #455)', () => {
+    const input = buildAnalysisInput(PROFILE, evaluateKycGate(PROFILE.facts), TODAY)!;
+    expect(() => analysisOutcome(input, [])).toThrow(/no answer/);
+    expect(() => nextRetry([])).toThrow(/no answer/);
+  });
+});
+
 describe('the shared runner', () => {
   it('is busy until the adapter answers', async () => {
     const answer = deferred();
@@ -516,6 +526,29 @@ describe('the shared runner', () => {
     await done;
     expect(await runAnalysis(shared)).toMatchObject({ kind: 'record' });
     expect(second.requests).toHaveLength(1);
+  });
+
+  it('gives a BUSY no caller can change (MS-A6)', async () => {
+    const answer = deferred();
+    const run = analysis(OPENCODE, scripted(answer.promise).adapter);
+    const pending = runAnalysis(run);
+    const busy = await runAnalysis({ ...run, adapter: scripted(GOOD).adapter });
+    expect(() => Object.assign(busy, { code: 'AI_NETWORK' })).toThrow(TypeError);
+    expect(await runAnalysis({ ...run, adapter: scripted(GOOD).adapter })).toEqual({
+      kind: 'error',
+      code: 'AI_BUSY',
+    });
+    answer.resolve(GOOD);
+    await pending;
+  });
+
+  it('gives a CANCELLED no caller can change (MS-A6)', async () => {
+    const cancel = cancelButton();
+    cancel.press();
+    const run = analysis(OPENCODE, scripted(GOOD).adapter, { signal: cancel.signal });
+    const cancelled = await runAnalysis(run);
+    expect(cancelled).toEqual({ kind: 'cancelled' });
+    expect(() => Object.assign(cancelled, { kind: 'error' })).toThrow(TypeError);
   });
 
   it('stops telling a listener once it unsubscribes', async () => {

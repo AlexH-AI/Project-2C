@@ -11,18 +11,20 @@ import { evaluateKycGate, type CalendarDate, type KycGateState } from '@p2c/doma
 import type { AiAdapter, AiCompleteRequest, AiMessage } from './adapter';
 import { codePointCount, cutCodePoints } from './code-points';
 import { AiError, type AiErrorCode } from './errors';
-import { buildAnalysisInput, buildExtractionInput, type AnalysisProfile } from './input';
+import { buildExtractionInput } from './input';
 import type { AiModelId } from './models';
 import { analysisPrompt } from './prompts/analysis';
 import { connectionCheck } from './prompts/connection';
 import { discoveryPrompt } from './prompts/discovery';
 import { extractionPrompt } from './prompts/extraction';
-import { checkAnswer, nextRetry, type CheckedAnswer } from './prompts/retry';
+import { checkAnswer, lastAnswer, nextRetry, type CheckedAnswer } from './prompts/retry';
 import {
   AI_OUTPUT_SCHEMAS,
+  buildAnalysisInput,
   type AiAnalysisProvider,
   type AiReasoningLevel,
   type AnalysisInput,
+  type AnalysisProfile,
 } from './schema';
 import type { AiSettings } from './settings';
 import {
@@ -41,8 +43,9 @@ type Failed = {
   readonly serverMessage?: string;
 };
 
-const CANCELLED: Cancelled = { kind: 'cancelled' };
-const BUSY: Failed = { kind: 'error', code: 'AI_BUSY' };
+// Shared by every call, so frozen: a caller that writes to one cannot change the next (MS-A6).
+const CANCELLED: Cancelled = Object.freeze({ kind: 'cancelled' });
+const BUSY: Failed = Object.freeze({ kind: 'error', code: 'AI_BUSY' });
 
 // ---- single flight ----------------------------------------------------------
 
@@ -317,7 +320,7 @@ export function analysisOutcome(
   attempts: readonly CheckedAnswer[],
 ): AnalysisOutcome {
   const { mode } = input;
-  const last = attempts.at(-1)!;
+  const last = lastAnswer(attempts);
   const accepted = last.issues.length === 0;
   return {
     mode,

@@ -29,8 +29,9 @@ export function requireName(name: string): string {
   return clean;
 }
 
-/** Trimmed text, or null when empty. */
+/** Trimmed text, or null when empty; a NUL is refused as by `cleanText` (R2-13). */
 export function optionalText(text: string | null | undefined): string | null {
+  if (text?.includes('\0')) throw new DbError('INVALID_TEXT');
   const trimmed = text?.trim() ?? '';
   return trimmed === '' ? null : trimmed;
 }

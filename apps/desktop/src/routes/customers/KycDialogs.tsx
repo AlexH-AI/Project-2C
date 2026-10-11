@@ -17,6 +17,7 @@ import {
   evaluateKycGate,
   formatDate,
   KYC_FIELDS,
+  kycFieldType,
   resolveConflict,
   type CalendarDate,
   type KycFact,
@@ -116,7 +117,7 @@ function FactValue({
           })}
         </p>
       )}
-      {field === 'hasProtection' ? (
+      {kycFieldType(field) === 'boolean' ? (
         <Choices
           label={t('kycNote.value')}
           value={value.answer}
@@ -180,7 +181,7 @@ export function KycNoteDialog({
   const day = date.parsed.ok ? date.parsed.date : today;
   const preview = previewKycNote(profile, versions, facts, day, material);
   const has = field ? currentFacts(profile, field) : [];
-  const boolean = field === 'hasProtection';
+  const boolean = field !== '' && kycFieldType(field) === 'boolean';
   const last = versions.at(-1);
 
   /** Picks a trường afresh: nothing typed or chosen for another one carries over (DR-21). */
@@ -451,12 +452,13 @@ export function ConfirmFactDialog({
   const [material, setMaterial] = useState(false);
   const [error, setError] = useState<string>();
   const has = currentFacts(profile, field);
-  const value = field === 'hasProtection' ? answer === 'yes' : text;
+  const boolean = kycFieldType(field) === 'boolean';
+  const value = boolean ? answer === 'yes' : text;
   const conflict = has.length > 0 && mode === 'conflict';
   const preview = previewKycNote(profile, versions, [{ field, value, conflict }], today, material);
 
   const save = () => {
-    if (field === 'hasProtection' ? answer === null : text.trim() === '') {
+    if (boolean ? answer === null : text.trim() === '') {
       return setError(t('kycNote.error.value'));
     }
     const command = { field, value, noteId: note.id, date: today, material };

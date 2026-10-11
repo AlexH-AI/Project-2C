@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { KycField } from './kyc-catalog';
-import { normalizeKycValue, type KycValue } from './kyc-fact';
+import { KYC_FIELDS, type KycField } from './kyc-catalog';
+import { kycFieldType, normalizeKycValue, type KycValue } from './kyc-fact';
 
 // Moved from `db` (spec Phase 5 §6.4): the same cases as its command tests, same results.
 describe('normalizeKycValue', () => {
@@ -35,5 +35,23 @@ describe('normalizeKycValue', () => {
   it('refuses a NUL, as stored text does', () => {
     expect(refuses('occupation', 'A\u0000B')).toThrow(RangeError);
     expect(refuses('childrenCount', '1\u0000')).toThrow(RangeError);
+  });
+});
+
+describe('kycFieldType', () => {
+  it('gives the type of value each trường holds, the one normalizeKycValue keeps (CL-F4)', () => {
+    const typed = Object.keys(KYC_FIELDS).filter(
+      (field) => kycFieldType(field as KycField) !== 'text',
+    );
+    expect(
+      Object.fromEntries(typed.map((field) => [field, kycFieldType(field as KycField)])),
+    ).toEqual({
+      birthYear: 'integer',
+      childrenCount: 'integer',
+      hasProtection: 'boolean',
+    });
+    expect(normalizeKycValue('childrenCount', '2')).toBe(2);
+    expect(normalizeKycValue('hasProtection', 'true')).toBe(true);
+    expect(normalizeKycValue('occupation', '2')).toBe('2');
   });
 });

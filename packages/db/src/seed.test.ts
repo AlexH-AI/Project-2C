@@ -1,4 +1,11 @@
 import {
+  buildAnalysisInput,
+  KYC_CATEGORY_LABELS,
+  KYC_FIELD_LABELS,
+  mockAnalysisOutput,
+  mockDiscoveryOutput,
+} from '@p2c/ai/schema';
+import {
   APPOINTMENT_STATUSES,
   calendarDate,
   evaluateKycGate,
@@ -16,7 +23,6 @@ import { getKycProfile } from './kyc';
 import { listPolicies } from './policies';
 import { APPOINTMENT_TRIGGERS } from './schema';
 import { seedDemoData } from './seed';
-import { KYC_CATEGORY_LABELS, KYC_FIELD_LABELS } from './seed-data';
 import { createTeam, listPeople, listTeams } from './team';
 import { codeOf } from './test-support';
 
@@ -223,7 +229,20 @@ describe('seedDemoData', () => {
           .flatMap((item) => item.evidence);
         expect(cited.length).toBeGreaterThan(0);
         expect(cited.every((code) => sent.includes(code))).toBe(true);
+        // The answer of the app's Mock to that input, word for word (DR5-18).
+        const mock = analysis.mode === 'analysis' ? mockAnalysisOutput : mockDiscoveryOutput;
+        const missing = input.missingCategories.map((category) => category.code);
+        expect(analysis.output).toEqual(mock(sent, missing));
+        if (analysis.state !== 'CURRENT') continue;
+        // KYC unchanged since: the input the app would send for that day (DR5-18).
+        const profile = getKycProfile(db, analysis.customerId);
+        const gate = evaluateKycGate(profile.facts);
+        expect(analysis.input).toEqual(buildAnalysisInput(profile, gate, analysis.date));
       }
+      // The demo shows the block "Thông tin tham khảo" (P6) as the app's Mock gives it (DS-B2).
+      const notes = (a: (typeof analyses)[number]) =>
+        (a.output as { personalityNotes: [] }).personalityNotes;
+      expect(analyses.some((a) => notes(a).length > 0)).toBe(true);
     });
   });
 

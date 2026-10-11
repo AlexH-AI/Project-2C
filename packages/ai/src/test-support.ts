@@ -6,7 +6,7 @@
  */
 import { calendarDate, type KycFact, type KycField, type KycValue } from '@p2c/domain';
 import { KYC_FIELDS } from '@p2c/domain';
-import type { AnalysisFact } from './input';
+import type { AnalysisFact } from './schema';
 
 export const TODAY = calendarDate(2026, 10, 7);
 

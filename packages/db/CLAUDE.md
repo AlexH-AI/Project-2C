@@ -29,7 +29,7 @@ Drizzle trên sql.js ở mọi nơi (ADR-0016): một DB SQLite trong bộ nhớ
 Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `pnpm verify` báo đỏ khi lệch code.
 
 <!-- codemap:start -->
-- `src/ai-analyses.ts` — type AiAnalysisMode, type AiAnalysisStatus, type AiAnalysisProvider, type AiAnalysisReasoning, type NewAiAnalysis, type AiAnalysisRecord, type AiAnalysisState, type AiAnalysisReminder, type AiAnalysisView, recordAiAnalysis, type AnalysisFields, analysisLabelsFit, analysisContentFits, listAiAnalyses
+- `src/ai-analyses.ts` — type NewAiAnalysis, type AiAnalysisRecord, type AiAnalysisState, type AiAnalysisReminder, type AiAnalysisView, recordAiAnalysis, type AnalysisFields, analysisLabelsFit, analysisContentFits, listAiAnalyses
 - `src/appointments.ts` — type AppointmentTrigger, type AppointmentRecord, type NewAppointment, type MeetingOutcome, type NextAppointment, type AppointmentDetails, listAppointments, getAppointment, scheduleAppointment, recordMeetingOutcome, recordOutcomeWithNext, editMeetingOutcome, rescheduleAppointment, softDeleteAppointment, restoreAppointment
 - `src/backup-validation.ts` — validateBackupValues, validateBackupInvariants, dataTables
 - `src/backup.ts` — BACKUP_FORMAT, MAX_BACKUP_BYTES, type ImportedBackup, exportBackup, importBackup
@@ -44,7 +44,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/migrations.ts` — type Migration, MIGRATIONS, latestVersion, LATEST_SCHEMA_VERSION
 - `src/policies.ts` — type NewPolicy, type PolicyChanges, listPolicies, getPolicy, submitPolicy, issuePolicy, updatePolicy, softDeletePolicy, restorePolicy
 - `src/schema.ts` — teams, people, settings, schemaMigrations, GENDERS, APPOINTMENT_TRIGGERS, customers, appointments, appointmentCoordinators, stageTransitions, policies, KYC_NOTE_SOURCES, kycNotes, kycFacts, kycVersions, AI_ANALYSIS_MODES, AI_ANALYSIS_GATES, AI_ANALYSIS_STATUSES, AI_ANALYSIS_PROVIDERS, AI_ANALYSIS_REASONING, AI_ANALYSIS_NO_MODEL, MAX_AI_RAW_OUTPUT, aiAnalyses
-- `src/seed-data.ts` — type Weighted, STARTING_STAGES, BIRTH_DATE_KINDS, OUTCOMES, MOVES, TRIGGERS, TEAM_NAMES, FAMILY_NAMES, MIDDLE_NAMES, GIVEN_NAMES, APPOINTMENT_TIMES, TRIGGER_NOTES, NEXT_STEPS, MEETING_NOTES, CASE_SIZES_MILLION, KYC_TOPICS, KYC_VALUES, KYC_CATEGORY_LABELS, KYC_FIELD_LABELS
+- `src/seed-data.ts` — type Weighted, STARTING_STAGES, BIRTH_DATE_KINDS, OUTCOMES, MOVES, TRIGGERS, TEAM_NAMES, FAMILY_NAMES, MIDDLE_NAMES, GIVEN_NAMES, APPOINTMENT_TIMES, TRIGGER_NOTES, NEXT_STEPS, MEETING_NOTES, CASE_SIZES_MILLION, KYC_TOPICS, KYC_VALUES
 - `src/seed.ts` — type SeedOptions, seedDemoData
 - `src/settings.ts` — getSetting, putSetting
 - `src/team.ts` — listTeams, getTeam, listPeople, getPerson, createTeam, renameTeam, softDeleteTeam, restoreTeam, type PersonInput, createPerson, updatePerson, softDeletePerson, restorePerson

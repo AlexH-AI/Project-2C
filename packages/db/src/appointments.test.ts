@@ -951,6 +951,37 @@ describe('rescheduleAppointment', () => {
   });
 });
 
+// R2-13: sql.js would store the text cut at the NUL without a word, as the import refuses it.
+describe('text with a NUL', () => {
+  it('is refused by every command that takes free text, which writes nothing', async () => {
+    const { db, customer, re, schedule, persist } = await withCustomer();
+    const scheduled = schedule();
+    const met = recordMeetingOutcome(db, schedule().id, MET_N2);
+    const before = db.export();
+    persist.mockClear();
+    const nul = 'Gặp\u0000ở quán';
+
+    const refused = [
+      () =>
+        scheduleAppointment(db, {
+          customerId: customer.id,
+          reId: re.id,
+          date: d(12, 1),
+          triggerType: 'REFERRAL',
+          triggerNote: nul,
+        }),
+      () => recordMeetingOutcome(db, scheduled.id, { ...MET_N2, nextStep: nul }),
+      () => recordMeetingOutcome(db, scheduled.id, { ...MET_N2, note: nul }),
+      () => editMeetingOutcome(db, met.id, MET_N2, { triggerNote: nul }),
+      () => editMeetingOutcome(db, met.id, { ...MET_N2, note: nul }, {}),
+      () => rescheduleAppointment(db, scheduled.id, { date: d(15, 1) }, nul),
+    ];
+    for (const command of refused) expect(codeOf(command)).toBe('INVALID_TEXT');
+    expect(db.export()).toEqual(before);
+    expect(persist).not.toHaveBeenCalled();
+  });
+});
+
 describe('deleting appointments', () => {
   it('withdraws the latest transition on delete and applies it again on restore', async () => {
     const { db, customer, schedule, stage } = await withCustomer();

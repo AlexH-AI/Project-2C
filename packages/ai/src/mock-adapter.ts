@@ -8,9 +8,11 @@
  * The input is the first `user` message, a JSON block: `{ mode, facts, missingCategories, … }` for
  * analysis / discovery, `{ note, fields }` for extraction (prompts §1.1, §4.1).
  *
- * The answer passes the mode's schema only for inputs the KYC gate lets through: analysis needs at
- * least one fact, discovery at least one fact and one missing hạng mục (`kyc-gate.ts`). Other inputs
- * get an answer the schema rejects, as a real model's could be.
+ * The answers themselves are `mockAnalysisOutput` / `mockDiscoveryOutput` of `schema.ts`, which the
+ * seed of `db` writes too. They pass the mode's schema for every input the KYC gate lets through
+ * (`kyc-gate.ts`): analysis needs at least one fact; discovery needs two strategy items, one per
+ * missing hạng mục and one more when a fact is known, so the gate's facts and missing hạng mục are
+ * enough. Other inputs get an answer the schema rejects, as a real model's could be.
  */
 import { KYC_CATEGORIES, type KycCategory } from '@p2c/domain';
 import type { AiAdapter, AiCompleteRequest, AiCompletion } from './adapter';
@@ -18,8 +20,8 @@ import { AiError } from './errors';
 import { extractJson } from './extract-json';
 import {
   FACT_CODE,
-  type AnalysisOutput,
-  type DiscoveryOutput,
+  mockAnalysisOutput,
+  mockDiscoveryOutput,
   type ExtractionOutput,
 } from './schema';
 
@@ -38,7 +40,7 @@ function answer(request: AiCompleteRequest): AiCompletion {
   const output =
     typeof input['note'] === 'string'
       ? extraction(input['note'], allowedFields(input['fields']))
-      : (input['mode'] === 'discovery' ? discovery : analysis)(
+      : (input['mode'] === 'discovery' ? mockDiscoveryOutput : mockAnalysisOutput)(
           factCodes(input['facts']),
           missingCategories(input['missingCategories']),
         );
@@ -62,69 +64,6 @@ function factCodes(value: unknown): string[] {
 function missingCategories(value: unknown): KycCategory[] {
   const codes = codesOf(value);
   return KYC_CATEGORIES.filter((category) => codes.includes(category));
-}
-
-/** `count` distinct codes from position `start`, wrapping round. */
-function cite(codes: readonly string[], start: number, count: number): string[] {
-  const picked = Array.from({ length: count }, (_, i) => codes[(start + i) % codes.length]);
-  return [...new Set(picked.filter((code) => code !== undefined))];
-}
-
-function askAbout(missing: readonly KycCategory[]) {
-  return missing.map((category) => ({
-    text: 'Tìm hiểu thêm hạng mục còn thiếu trong buổi gặp tới',
-    evidence: [],
-    missingCategory: category,
-  }));
-}
-
-function analysis(codes: readonly string[], missing: readonly KycCategory[]): AnalysisOutput {
-  return {
-    hypotheses: [
-      { text: 'Khách hàng đặt sự ổn định của gia đình lên trước', evidence: cite(codes, 0, 2) },
-      { text: 'Khách hàng cân nhắc kỹ trước các quyết định dài hạn', evidence: cite(codes, 2, 1) },
-    ],
-    needs: [
-      { text: 'Một kế hoạch tài chính cho các mục tiêu đã nêu', evidence: cite(codes, 1, 2) },
-    ],
-    painPoints: [
-      { text: 'Băn khoăn giữa nhu cầu hiện tại và mục tiêu xa', evidence: cite(codes, 3, 1) },
-    ],
-    themes: [{ text: 'Gia đình và sự an tâm lâu dài', evidence: cite(codes, 4, 3) }],
-    discoveryStrategy: [
-      { text: 'Làm rõ thứ tự ưu tiên giữa các mục tiêu', evidence: cite(codes, 0, 1) },
-      ...askAbout(missing),
-    ].slice(0, 6),
-    nextBestActions: [{ text: 'Hẹn buổi trao đổi về mục tiêu chính', evidence: cite(codes, 1, 1) }],
-    personalityNotes: [
-      {
-        system: 'PSYCHOLOGY',
-        text: 'KH có thể thiên về hướng nội, cần thời gian suy nghĩ trước khi quyết định',
-        evidence: cite(codes, 2, 1),
-      },
-    ],
-  };
-}
-
-function discovery(codes: readonly string[], missing: readonly KycCategory[]): DiscoveryOutput {
-  const known = codes.length > 0;
-  return {
-    hypotheses: known
-      ? [{ text: 'Khách hàng sẵn lòng chia sẻ về gia đình', evidence: cite(codes, 0, 2) }]
-      : [],
-    discoveryStrategy: [
-      ...askAbout(missing),
-      ...(known
-        ? [{ text: 'Hỏi sâu thêm về điều khách hàng đã chia sẻ', evidence: cite(codes, 1, 1) }]
-        : []),
-    ].slice(0, 6),
-    nextBestActions: [
-      known
-        ? { text: 'Hẹn buổi gặp tiếp để tìm hiểu thêm', evidence: cite(codes, 0, 1) }
-        : askAbout(missing.slice(0, 1))[0]!,
-    ],
-    personalityNotes: [],
-  };
 }
 
 const EXTRACTION_PATTERNS: readonly {

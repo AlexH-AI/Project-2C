@@ -293,7 +293,7 @@ function outcomeFields(db: Database, outcome: MeetingOutcome, note: string) {
     stageAfter,
     nextStep,
     expectedCaseSize: size === null ? null : requireAmount(size),
-    note: outcome.note?.trim() ?? note,
+    note: outcome.note === undefined ? note : (optionalText(outcome.note) ?? ''),
     outcomeReviewerId: reviewerId,
   };
 }
