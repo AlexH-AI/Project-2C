@@ -24,9 +24,9 @@ describe('prompts', () => {
 
   it('versions each prompt and gives it the maxTokens of G5 §1', () => {
     expect([analysisPrompt, discoveryPrompt, extractionPrompt]).toMatchObject([
-      { version: 'analysis@1', maxTokens: 8000 },
-      { version: 'discovery@1', maxTokens: 8000 },
-      { version: 'extraction@1', maxTokens: 4000 },
+      { version: 'analysis@2', maxTokens: 24_000 },
+      { version: 'discovery@2', maxTokens: 24_000 },
+      { version: 'extraction@1', maxTokens: 12_000 },
     ]);
   });
 
@@ -49,7 +49,7 @@ describe('prompts', () => {
         { role: 'system', content: 'Trả lời đúng một từ: OK' },
         { role: 'user', content: 'ping' },
       ],
-      maxTokens: 64,
+      maxTokens: 1_024,
     });
   });
 });

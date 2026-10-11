@@ -95,6 +95,25 @@ describe('analysisOutputSchema', () => {
     expect(analysisOutputSchema.safeParse(output).success).toBe(true);
   });
 
+  const ZWSP = String.fromCodePoint(0x200b);
+
+  // G5 §10.4 (Owner 11/10/2026): the "…" of the prompt's format example is not an answer (DR5-49 b).
+  it.each([
+    ['an ellipsis', '…'],
+    ['only signs', '— ; …'],
+    ['only format characters', `${ZWSP}${ZWSP}`],
+  ])('rejects text that is %s, with no letter', (_, text) => {
+    const output = { ...analysis(), themes: [item(text, 'F1')] };
+    expect(errorsOf(analysisOutputSchema.safeParse(output))).toEqual(['themes.0.text']);
+  });
+
+  it('counts the length in NFC: 250 characters written NFD are 250 (DR5-08)', () => {
+    const text = 'ế'.repeat(250).normalize('NFD');
+    expect(text.length).toBeGreaterThan(300);
+    const output = { ...analysis(), themes: [item(text, 'F1')] };
+    expect(analysisOutputSchema.safeParse(output).success).toBe(true);
+  });
+
   it('rejects the same evidence twice', () => {
     const output = { ...analysis(), themes: [item('Gia đình là trung tâm', 'F1', 'F2', 'F1')] };
     expect(errorsOf(analysisOutputSchema.safeParse(output))).toEqual(['themes.0.evidence']);
@@ -242,6 +261,7 @@ describe('extractionOutputSchema', () => {
     ['value', ''],
     ['value', 'a'.repeat(301)],
     ['quote', 'a'.repeat(301)],
+    ['value', String.fromCodePoint(0x200b)],
     ['value', null],
     ['value', Number.NaN],
   ])('rejects the %s %j', (key, value) => {

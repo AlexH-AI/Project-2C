@@ -244,7 +244,7 @@ test('exe: Kiểm tra kết nối runs under the chosen plan, is off while it ru
       plan: 'CREDIT',
       model: 'deepseek-v4.1-flash',
       reasoning: null,
-      maxTokens: 64,
+      maxTokens: 1_024,
     },
   ]);
 

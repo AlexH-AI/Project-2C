@@ -39,7 +39,7 @@ test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, 
   await expect(panel).not.toContainText('Không gửi tên');
   // The head badge; the history names it too.
   await expect(panel.getByText('Mock', { exact: true }).first()).toBeVisible();
-  await expect(panel).toContainText(/kyc v2 · discovery@1 · Mock · 15\/09 \d\d:\d\d/);
+  await expect(panel).toContainText(/kyc v2 · discovery@2 · Mock · 15\/09 \d\d:\d\d/);
   await expect(panel).toContainText('Kết quả Mock: câu mẫu cố định để thử app');
   await expect(panel.getByRole('heading', { level: 3 })).toHaveText([
     'Behavioral Hypotheses giả thuyết ban đầu',
@@ -63,7 +63,7 @@ test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, 
   await edit.getByRole('textbox', { name: /^Ngày sinh/ }).fill('12/3/1984');
   await edit.getByRole('button', { name: 'Lưu', exact: true }).click();
   await expect(edit).toBeHidden();
-  await expect(panel).toContainText(/kyc v2 · discovery@1/);
+  await expect(panel).toContainText(/kyc v2 · discovery@2/);
   await expect(panel).toContainText('CURRENT');
   await panel
     .getByRole('region', { name: 'Behavioral Hypotheses' })
@@ -79,7 +79,7 @@ test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, 
   await expect(panel).toContainText('KYC có thay đổi nhỏ từ 15/09.');
   await panel.getByRole('button', { name: 'Phân tích lại' }).click();
   await expect(panel).toContainText('CURRENT');
-  await expect(panel).toContainText(/kyc v3 · discovery@1/);
+  await expect(panel).toContainText(/kyc v3 · discovery@2/);
   await expect(panel).not.toContainText('KYC có thay đổi nhỏ');
 
   // A cốt lõi conflict blocks the AI again; the analysis stays below, faded.
@@ -88,7 +88,7 @@ test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, 
   await expect(panel).toContainText('Giải quyết mâu thuẫn ở Số con trước khi phân tích.');
   await expect(panel.getByRole('button', { name: 'Phân tích', exact: true })).toBeDisabled();
   await expect(panel.getByRole('button', { name: 'Phân tích bằng ChatGPT web' })).toBeDisabled();
-  await expect(panel).toContainText(/kyc v3 · discovery@1/);
+  await expect(panel).toContainText(/kyc v3 · discovery@2/);
 });
 
 test('analysis with the Mock: four blocks, Thông tin tham khảo, the material reminder', async ({
@@ -109,7 +109,7 @@ test('analysis with the Mock: four blocks, Thông tin tham khảo, the material 
 
   await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
   await expect(panel).toContainText('CURRENT');
-  await expect(panel).toContainText(/kyc v2 · analysis@1 · Mock/);
+  await expect(panel).toContainText(/kyc v2 · analysis@2 · Mock/);
   await expect(panel.getByRole('heading', { level: 3 })).toHaveText([
     'Behavioral Hypotheses giả thuyết, cần kiểm chứng',
     'Needs · Pain points · Opportunity Themes',

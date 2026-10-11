@@ -71,6 +71,18 @@ describe('validateOutput — V1', () => {
     ],
     ['an empty text', { ...analysis(), needs: [item('  ', 'F1')] }, 'needs[0].text', 'chuỗi rỗng'],
     [
+      'a text of format characters only',
+      { ...analysis(), needs: [item(String.fromCodePoint(0x200b), 'F1')] },
+      'needs[0].text',
+      'chuỗi rỗng',
+    ],
+    [
+      'a text with no letter',
+      { ...analysis(), needs: [item('…', 'F1')] },
+      'needs[0].text',
+      'không có chữ',
+    ],
+    [
       'a text over 300 characters',
       { ...analysis(), needs: [item('a'.repeat(301), 'F1')] },
       'needs[0].text',

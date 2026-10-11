@@ -66,6 +66,45 @@ describe('validateOutput — G5 §8.5 cases', () => {
     ['C17', 'nextBestActions', 'Hẹn lại từ 01/10 để làm rõ F10', []],
     ['C18', 'needs', 'Di chúc cần đúng pháp luật Việt Nam', []],
     ['C19', 'nextBestActions', 'Đề xuất PRULink cho KH', ['V4']],
+    ['C20', 'nextBestActions', 'Hẹn KH để chốt lịch gặp tiếp', []],
+    ['C21', 'hypotheses', 'KH báo mình sẽ đi công tác', []],
+    ['C22', 'hypotheses', 'KH có khả năng kỹ thuật tốt', []],
+    ['C23', 'themes', 'Điểm sơ bộ của buổi gặp đầu', []],
+    ['C24', 'hypotheses', 'KH thuộc nhóm C-level của tập đoàn', []],
+    ['C25', 'nextBestActions', 'Chốt được lịch hẹn tuần sau', []],
+    ['C26', 'discoveryStrategy', 'Hỏi KH về khoản 2 điều kiện vay', []],
+    ['C27', 'discoveryStrategy', 'Hỏi KH đã quyết định số tiền dành cho học phí chưa', []],
+    ['C28', 'hypotheses', 'KH có dấu hiệu giữ kỷ luật KH tự đặt khi chi tiêu', []],
+    ['C29', 'discoveryStrategy', 'HỎI KH ĐÃ CÓ LUẬT SƯ GIA ĐÌNH CHƯA', []],
+    ['C30', 'needs', 'Đúng pHáp luật Việt Nam', []],
+    ['C31', 'hypotheses', 'KH có thể gắn bó với đơn vị cũ do tin cậy người tư vấn', []],
+    ['C32', 'hypotheses', 'KH có thể cần thời gian suy nghĩ quyết định', []],
+    ['C33', 'hypotheses', 'KH thích nhóm màu trung tính', []],
+    ['C34', 'discoveryStrategy', 'Làm rõ điều 2 vợ chồng KH còn băn khoăn', []],
+    ['C35', 'hypotheses', 'KH có thể sẵn sàng mua nhà trong năm 2027 (F1)', []],
+    ['C36', 'painPoints', 'Con KH cần cải thiện điểm số để du học', []],
+    ['C37', 'discoveryStrategy', 'Hỏi tài khoản liên kết chung của hai vợ chồng', []],
+    ['C38', 'nextBestActions', 'RE bảo viết lại mục tiêu cho rõ', []],
+    ['C39', 'hypotheses', 'KH sẵn sàng mua bảo hiểm', ['V3']],
+    ['C40', 'hypotheses', 'Chấm điểm KH 8/10', ['V3']],
+    ['C41', 'hypotheses', 'KH có thể chốt được trong tháng này', ['V3']],
+    ['C42', 'themes', 'Theo khoản 2 điều 35', ['V6']],
+    ['C43', 'themes', 'Quyết định số 123/QĐ-BTC', ['V6']],
+    ['C44', 'themes', 'Theo Luật BHXH', ['V6']],
+    ['C44', 'themes', 'LuẬt Đất đai quy định', ['V6']],
+    ['C45', 'themes', 'Theo Điều \u0663\u0665', ['V6']],
+    ['C45', 'themes', 'Theo Điều \uff13\uff15', ['V6']],
+    ['C46', 'hypotheses', 'KH có \uff17\uff10\uff05 cơ hội đồng ý', ['V3']],
+    ['C46', 'hypotheses', 'Tỷ lệ 5\u2030', ['V3']],
+    ['C46', 'hypotheses', 'KH có 70 percent cơ hội', ['V3']],
+    ['C47', 'hypotheses', 'Xác-suất cao', ['V3']],
+    ['C47', 'hypotheses', 'xác_suất cao', ['V3']],
+    ['C48', 'hypotheses', 'KH có xác\u200bsuất đồng ý lớn', ['V3']],
+    ['C49', 'nextBestActions', 'Đề xuất P\u200brudential cho KH', ['V4']],
+    ['C49', 'nextBestActions', 'Đề xuất \uff21\uff29\uff21 cho KH', ['V4']],
+    ['C50', 'hypotheses', 'KH có mã I\u2060NTJ', ['V5']],
+    ['C50', 'needs', 'KH có mệnh\u00adKim', ['V5']],
+    ['C51', 'themes', 'Theo Lu\u200bật Kinh doanh bảo hiểm', ['V6']],
   ] as const)('%s: %s "%s" → %j', (_, block, text, codes) => {
     expect(codesOf(block, text)).toEqual(codes);
   });
@@ -79,7 +118,7 @@ describe('validateOutput — G5 §8.5 cases', () => {
 
   it('C11: the article and the law are two V6 issues', () => {
     expect(issuesOf('themes', 'Theo Điều 35 Luật Kinh doanh bảo hiểm')).toEqual([
-      { code: 'V6', path: 'themes[0].text', detail: 'có "điều 35"' },
+      { code: 'V6', path: 'themes[0].text', detail: 'có "Điều 35"' },
       { code: 'V6', path: 'themes[0].text', detail: 'có "Luật K"' },
     ]);
   });
@@ -106,9 +145,9 @@ describe('validateOutput — V3 to V6', () => {
 
   it.each([
     ['V3', 'KH thuộc nhóm khach nong'],
-    ['V4', 'Rà lại hợp đồng Bao Viet'],
+    ['V4', 'Rà lại hợp đồng Bao Long'],
     ['V5', 'KH co ve huong noi'],
-    ['V6', 'Theo dieu 35 cua luat'],
+    ['V6', 'Theo nghi dinh moi'],
     ['V6', 'Xem khoan 2 dieu 35'],
     ['V6', 'Xem diem a khoan 2'],
   ])('%s matches a text written without diacritics: "%s"', (code, text) => {
@@ -156,6 +195,50 @@ describe('validateOutput — V3 to V6', () => {
   it('V6 catches document numbers', () => {
     expect(codesOf('needs', 'Xem 08/2022/QH15')).toEqual(['V6']);
     expect(codesOf('needs', 'Theo TT-BTC mới')).toEqual(['V6']);
+  });
+
+  it.each([
+    ['V3', 'KH dễ chốt', 'KH de chot'],
+    ['V3', 'KH có khả năng ký ngay', 'KH co kha nang ky ngay'],
+    ['V3', 'KH có độ tin cậy cao', 'KH co do tin cay cao'],
+    ['V4', 'Hợp đồng Bảo Việt', 'Hop dong Bao Viet'],
+    ['V4', 'Hợp đồng Bảo Minh', 'Hop dong Bao Minh'],
+    ['V5', 'KH nhóm máu hiếm', 'KH nhom mau hiem'],
+    ['V6', 'Theo nghị quyết mới', 'Theo nghi quyet moi'],
+  ])('%s matches "%s" only with its diacritics (G5 §10.3)', (code, accented, folded) => {
+    expect(codesOf('hypotheses', accented)).toEqual([code]);
+    expect(codesOf('hypotheses', folded)).toEqual([]);
+  });
+
+  it.each([
+    ['V3', 'KH có thể chốt được hợp đồng'],
+    ['V3', 'KH sẵn sàng mua.'],
+    ['V3', 'KH sẵn sàng mua giải pháp mới'],
+    ['V3', 'Tiềm năng mua sản phẩm mới'],
+    ['V3', 'Xếp hạng KH theo mức chi tiêu'],
+    ['V3', 'Điểm số khách hàng cao'],
+    ['V5', 'KH thuộc nhóm D'],
+    ['V5', 'KH kiểu S, thích ổn định'],
+    ['V6', 'Theo công văn số 45'],
+    ['V6', 'Xem khoan 2 dieu 35 cua luat'],
+    ['V6', 'Theo Luật Hôn nhân và gia đình'],
+  ])('%s still blocks a narrowed entry: "%s"', (code, text) => {
+    expect(codesOf('hypotheses', text)).toEqual([code]);
+  });
+
+  it.each([
+    ['V3', 'KH có xácsuất cao'],
+    ['V4', 'Hợp đồng TokioMarine'],
+    ['V5', 'KH thuộc nhómD'],
+  ])('%s matches a phrase written without its inner space: "%s"', (code, text) => {
+    expect(codesOf('hypotheses', text)).toEqual([code]);
+  });
+
+  it('V6 reads "Điều <số>" with its capital only, on the original text', () => {
+    expect(issuesOf('themes', 'ĐIỀU 12 quy định')).toEqual([
+      { code: 'V6', path: 'themes[0].text', detail: 'có "ĐIỀU 12"' },
+    ]);
+    expect(codesOf('themes', 'Theo điều 35 về thừa kế')).toEqual([]);
   });
 
   it('keeps at most 40 characters of the matched phrase in the detail', () => {

@@ -5,7 +5,7 @@
  */
 export const extractionPrompt = {
   version: 'extraction@1',
-  maxTokens: 4_000,
+  maxTokens: 12_000,
   system: `Bạn giúp RE (chuyên viên quan hệ khách hàng) chuyển một ghi chú KYC thành các dữ kiện có cấu trúc. RE sẽ tự xem và xác nhận từng đề xuất; bạn chỉ đề xuất.
 
 ĐẦU VÀO
