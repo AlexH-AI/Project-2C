@@ -113,11 +113,30 @@ test("the app's own message pasted back counts no attempt; AI trích xuất wait
   const box = panel.getByRole('textbox', { name: 'Dán kết quả' });
   const save = panel.getByRole('button', { name: 'Kiểm tra và lưu' });
   await box.fill(message!);
-  await save.click();
-  await expect(panel).toContainText('Đây là tin nhắn của app — hãy copy câu trả lời của ChatGPT.');
+  // By the keyboard, the refusal is read: the focus goes to the box it describes (R2-06).
+  await save.focus();
+  await page.keyboard.press('Enter');
+  await expect(box).toBeFocused();
+  await expect(box).toHaveAccessibleDescription(
+    'Đây là tin nhắn của app — hãy copy câu trả lời của ChatGPT.',
+  );
   await expect(panel).toContainText('Lần thử 1 / 2');
   await expect(panel).not.toContainText('Câu trả lời chưa đạt');
   await expect(panel).toContainText('Chưa có phân tích AI cho KH này.');
+  // The same paste checked again is refused again, said again.
+  await save.focus();
+  await page.keyboard.press('Enter');
+  await expect(box).toBeFocused();
+
+  // Too long a paste: refused at the box too, and read the same way.
+  await box.fill('x'.repeat(20_001));
+  await save.focus();
+  await page.keyboard.press('Enter');
+  await expect(box).toBeFocused();
+  await expect(box).toHaveAccessibleDescription(
+    'Câu trả lời dài quá 20.000 ký tự — kiểm tra đã copy đúng câu trả lời chưa.',
+  );
+  await expect(panel).toContainText('Lần thử 1 / 2');
 
   await box.fill(GOOD);
   await expect(panel).not.toContainText('Đây là tin nhắn của app');
