@@ -70,6 +70,9 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - `packages/ai` độ bền đầu vào (#521, T-199, review @`4f28b3c`, không chặn):
   - `run.ts` (`converse`, lần thử lại): message `assistant` có thể rỗng — trả lời rỗng bị cắt (R2-16, Rust gửi `content: ""` + `length`) hoặc `room` = 0 khi đầu vào sát trần 200 000. Rust nhận, nhưng một số backend kiểu OpenAI từ chối `content` rỗng của `assistant` → `AI_HTTP` thay cho thử lại / REJECTED. Chưa kiểm với OpenCode thật → thử một lần ở 6C (lần gọi thật); nếu bị từ chối thì gửi một ký tự giữ chỗ (đổi G5 §1, cần Owner duyệt).
   - `web.ts` (`checkWebAnswer`): kiểm > 40 000 code unit (`TOO_LONG`) chạy trước kiểm rỗng / tin nhắn của app, nên dán lại tin nhắn `web@1` của một hồ sơ rất lớn báo "quá dài" thay cho "Đây là tin nhắn của app…". Cả hai đều không tính lần thử, spec §3.1 mục 3 không ép thứ tự; chỉ khác câu báo. Sửa nếu cần: chỉ xét tin nhắn của app trên các dòng ngắn trước khi từ chối theo độ dài.
+- Test của T-200 (#524, review @`73ba89a`, không chặn). Gộp vào lần chạm sau của cùng file:
+  - `e2e/customer-ai.spec.ts:663` (e2e OpenCode ACCEPTED ở lần thử lại): `expect(sent).not.toContain('1984')` quét cả `JSON.stringify(calls)`, trong đó có `sessionId` 32 ký tự hex ngẫu nhiên (`packages/ai/src/run.ts:143`) → khoảng 0,04% mỗi lần chạy id chứa "1984" và test đỏ dù app không lỗi. Sửa: chỉ quét `messages[*].content` (cả phép kiểm tên và mã KH).
+  - `tools/pr-core.test.mjs:102` (R2-21): regex chỉ nhận đường dẫn `.md` viết thẳng dạng `./` / `../` (import `?raw`, `new URL(…)`); test đọc docs qua `join(root, 'docs/…')` hay `'docs/…'` theo cwd thì lọt, `CODE_DOCS` có thể thiếu file mà PR docs-only bỏ qua CI. Hiện mọi test đọc docs đều dùng hai dạng trên → mở rộng regex (chuỗi bắt đầu bằng `docs/` và kết thúc `.md`) khi có test đọc docs kiểu khác.
 
 ## RESOLVED
 
