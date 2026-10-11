@@ -7,6 +7,7 @@ import type { KycNoteRecord } from '@p2c/db';
 import type { KycFact, KycValue } from '@p2c/domain';
 import type { ExtractionOutcome } from '../../data/ai-analysis';
 import { aiFailure, GENERAL_FAILURE, type AiFailure } from '../ai-error-view';
+import type { AiJobPhase } from './ai-panel-view';
 
 /** A shorter note is "Ghi chú quá ngắn" (§8 item 1, ADR-0008). */
 const MIN_NOTE_LENGTH = 20;
@@ -16,6 +17,27 @@ export function extractionButton(note: KycNoteRecord): { readonly tooShort: bool
   if (note.source === 'SYSTEM') return null;
   // By code point, so a letter with its marks (NFC) counts once.
   return { tooShort: Array.from(note.text.trim()).length < MIN_NOTE_LENGTH };
+}
+
+/**
+ * The button is off only because an AI request runs elsewhere: another customer's, another note's
+ * or Kiểm tra kết nối. The note says so, as the panel does (DR5-40, R2-02); its own run says
+ * "Đang trích xuất…" itself, and a note too short or the web session have their own reason.
+ */
+export function busyElsewhere(
+  button: { readonly tooShort: boolean } | null,
+  state: {
+    /** The app's one AI runner is busy (P5). */
+    readonly busy: boolean;
+    /** This customer's ChatGPT web session waits for its paste (§3.1 item 4). */
+    readonly webOpen: boolean;
+    /** This note's own run. */
+    readonly phase: AiJobPhase;
+  },
+): boolean {
+  return (
+    button !== null && !button.tooShort && state.busy && !state.webOpen && state.phase === 'idle'
+  );
 }
 
 export type ExtractionView =
@@ -46,6 +68,7 @@ export function extractionView(
   if (outcome === null) return NONE;
   switch (outcome.kind) {
     case 'cancelled':
+    case 'discarded':
       return NONE;
     case 'invalid':
       return { kind: 'error', error: 'INVALID' };

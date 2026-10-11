@@ -31,6 +31,7 @@ import {
   saveChatGptAnswer,
   startChatGptWeb,
   type AiSettingsStore,
+  type AppAi,
   type AppAiOptions,
   type WebTools,
 } from './ai-analysis';
@@ -382,12 +383,14 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
 
 describe('extractFromNote (spec Phase 5 §8)', () => {
   const NOTE = 'Hai vợ chồng đã kết hôn 10 năm, có 2 con đang học cấp 1.';
+  /** An `AppAi` of its own, with no data to replace. */
+  const alone = (ai: AppAi) => ({ ai, generation: () => 0 });
 
   it('gives the proposals of the Mock and saves nothing', async () => {
     const { app } = await withCustomer();
     const revision = app.revision();
 
-    expect(await extractFromNote(app.ai, NOTE)).toEqual({
+    expect(await extractFromNote(app, NOTE)).toEqual({
       kind: 'facts',
       facts: [
         { field: 'maritalStatus', value: 'Đã kết hôn', quote: 'kết hôn' },
@@ -404,7 +407,7 @@ describe('extractFromNote (spec Phase 5 §8)', () => {
     );
     const ai = createAppAi(memoryStore(), { adapter: { complete } });
 
-    expect(await extractFromNote(ai, NOTE)).toEqual({ kind: 'facts', facts: [] });
+    expect(await extractFromNote(alone(ai), NOTE)).toEqual({ kind: 'facts', facts: [] });
     const [request] = complete.mock.calls[0] as unknown as [AiCompleteRequest];
     const input = JSON.parse(request.messages.find((m) => m.role === 'user')!.content) as {
       note: string;
@@ -417,7 +420,7 @@ describe('extractFromNote (spec Phase 5 §8)', () => {
       Promise.resolve({ content: 'không có JSON', promptTokens: 1, completionTokens: 1 });
     const ai = createAppAi(memoryStore(), { adapter: { complete } });
 
-    expect(await extractFromNote(ai, NOTE)).toEqual({ kind: 'invalid' });
+    expect(await extractFromNote(alone(ai), NOTE)).toEqual({ kind: 'invalid' });
   });
 
   it('gives the §5.3 error of the adapter', async () => {
@@ -425,14 +428,14 @@ describe('extractFromNote (spec Phase 5 §8)', () => {
       adapter: { complete: () => Promise.reject(new AiError('AI_NO_KEY')) },
     });
 
-    expect(await extractFromNote(ai, NOTE)).toEqual({ kind: 'error', code: 'AI_NO_KEY' });
+    expect(await extractFromNote(alone(ai), NOTE)).toEqual({ kind: 'error', code: 'AI_NO_KEY' });
   });
 
   it('keeps the HTTP status and the server message of a failed call (DR5-30)', async () => {
     const failure = new AiError('AI_HTTP', { httpStatus: 502, serverMessage: 'Bad gateway' });
     const ai = createAppAi(memoryStore(), { adapter: { complete: () => Promise.reject(failure) } });
 
-    expect(await extractFromNote(ai, NOTE)).toEqual({
+    expect(await extractFromNote(alone(ai), NOTE)).toEqual({
       kind: 'error',
       code: 'AI_HTTP',
       httpStatus: 502,
@@ -447,7 +450,10 @@ describe('extractFromNote (spec Phase 5 §8)', () => {
     const ai = createAppAi(memoryStore());
     const call = { ...ai.call(), adapter: { complete } };
 
-    expect(await extractFromNote(ai, NOTE, undefined, call)).toEqual({ kind: 'facts', facts: [] });
+    expect(await extractFromNote(alone(ai), NOTE, undefined, call)).toEqual({
+      kind: 'facts',
+      facts: [],
+    });
     expect(complete).toHaveBeenCalledOnce();
   });
 
@@ -456,13 +462,39 @@ describe('extractFromNote (spec Phase 5 §8)', () => {
     const ai = createAppAi(memoryStore(), { adapter: held.adapter });
     const abort = new AbortController();
 
-    const running = extractFromNote(ai, NOTE, abort.signal);
+    const running = extractFromNote(alone(ai), NOTE, abort.signal);
     abort.abort();
 
     expect(await running).toEqual({ kind: 'cancelled' });
     expect(ai.runner.busy).toBe(true);
     await held.answerWithMock();
     await vi.waitFor(() => expect(ai.runner.busy).toBe(false));
+  });
+
+  it('discards the proposals when the data is replaced by Nạp lại while it runs (R2-07)', async () => {
+    const reportError = vi.fn();
+    const held = heldAdapter();
+    const { app } = await withCustomer({ reportError, adapter: held.adapter });
+
+    const running = extractFromNote(app, NOTE);
+    await app.reloadDemoData();
+    await held.answerWithMock();
+
+    expect(await running).toEqual({ kind: 'discarded' });
+    expect(reportError).not.toHaveBeenCalled();
+    expect(app.ai.runner.busy).toBe(false);
+  });
+
+  it('discards the proposals when a backup of the same data is imported while it runs (R2-07)', async () => {
+    const held = heldAdapter();
+    const { app } = await withCustomer({ reportError: vi.fn(), adapter: held.adapter });
+    const backup = await app.exportBackup();
+
+    const running = extractFromNote(app, NOTE);
+    await app.importBackup(await app.readBackup(backup.text));
+    await held.answerWithMock();
+
+    expect(await running).toEqual({ kind: 'discarded' });
   });
 
   it('turns a bug into a failure the note can show, and reports it', async () => {
@@ -473,7 +505,7 @@ describe('extractFromNote (spec Phase 5 §8)', () => {
       adapter: { complete: () => Promise.reject(bug) },
     });
 
-    expect(await extractFromNote(ai, NOTE)).toEqual({ kind: 'failed' });
+    expect(await extractFromNote(alone(ai), NOTE)).toEqual({ kind: 'failed' });
     expect(reportError).toHaveBeenCalledWith(bug);
   });
 });

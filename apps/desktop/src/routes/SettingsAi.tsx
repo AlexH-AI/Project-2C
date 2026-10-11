@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react';
 import {
   AiError,
   checkConnection,
@@ -148,21 +155,32 @@ function KeyCard({ client }: { client: OpenCodeClient }) {
   const [outcome, setOutcome] = useState<KeyOutcome>();
   const [working, setWorking] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  // Once a save or a delete starts, the status read at the start is out of date (DR5-37).
-  const acted = useRef(false);
+  // Each save or delete makes a status read before it out of date (DR5-37); one that fails changed
+  // nothing, so the status is read again (R2-14).
+  const actions = useRef(0);
+  const mounted = useRef(false);
+  const readStatus = useCallback(
+    (showError: boolean) => {
+      const at = actions.current;
+      const fresh = () => mounted.current && actions.current === at;
+      client.keyStatus().then(
+        (value) => fresh() && setStored(value),
+        (error: unknown) =>
+          fresh() &&
+          showError &&
+          setOutcome({ kind: 'error', text: failureText(error), notSaved: false }),
+      );
+    },
+    [client],
+  );
 
   useEffect(() => {
-    let current = true;
-    const fresh = () => current && !acted.current;
-    client.keyStatus().then(
-      (value) => fresh() && setStored(value),
-      (error: unknown) =>
-        fresh() && setOutcome({ kind: 'error', text: failureText(error), notSaved: false }),
-    );
+    mounted.current = true;
+    readStatus(true);
     return () => {
-      current = false;
+      mounted.current = false;
     };
-  }, [client]);
+  }, [readStatus]);
 
   const saveKey = async () => {
     // The field's error never sits beside the outcome of the save before (DR5-46).
@@ -173,7 +191,7 @@ function KeyCard({ client }: { client: OpenCodeClient }) {
       return;
     }
     setFieldError(undefined);
-    acted.current = true;
+    actions.current += 1;
     setWorking(true);
     try {
       await client.setKey(checked.key);
@@ -182,6 +200,8 @@ function KeyCard({ client }: { client: OpenCodeClient }) {
       setOutcome({ kind: 'saved' });
     } catch (error) {
       setOutcome({ kind: 'error', text: failureText(error), notSaved: true });
+      // The failure is said; a status read failing as well would add nothing.
+      readStatus(false);
     } finally {
       setWorking(false);
     }
@@ -189,13 +209,14 @@ function KeyCard({ client }: { client: OpenCodeClient }) {
 
   const deleteKey = async () => {
     setOutcome(undefined);
-    acted.current = true;
+    actions.current += 1;
     setWorking(true);
     try {
       await client.deleteKey();
       setStored(false);
     } catch (error) {
       setOutcome({ kind: 'error', text: failureText(error), notSaved: false });
+      readStatus(false);
     } finally {
       setWorking(false);
       setConfirming(false);

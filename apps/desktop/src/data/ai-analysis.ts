@@ -229,23 +229,28 @@ export type ExtractionOutcome =
   | { readonly kind: 'facts'; readonly facts: readonly ExtractedFact[] }
   /** V1 failed twice: "AI trả kết quả không đọc được" (§8 item 5). */
   | { readonly kind: 'invalid' }
-  | Extract<AnalysisOutcome, { kind: 'error' | 'cancelled' | 'failed' }>;
+  /** `discarded`: the data was replaced while it ran; the note shows nothing, not even an error. */
+  | Extract<AnalysisOutcome, { kind: 'error' | 'cancelled' | 'discarded' | 'failed' }>;
 
 /**
  * One click on AI trích xuất: the note as the RE wrote it goes to the AI (§6.1), nothing is saved.
- * `call`: the one taken at the click, as for Phân tích.
+ * The data replaced while it runs (Nạp lại / Nhập backup, even with the same IDs) discards the
+ * answer, which was for other data, as for an analysis (DR5-36, R2-07). `call`: the one taken at
+ * the click, as for Phân tích.
  */
 export async function extractFromNote(
-  ai: AppAi,
+  app: Pick<AnalysisApp, 'ai' | 'generation'>,
   note: string,
   signal?: AiAbortSignal,
-  call: AiCall = ai.call(),
+  call: AiCall = app.ai.call(),
 ): Promise<ExtractionOutcome> {
+  const generation = app.generation();
   try {
     const result = await runExtraction({ ...call, note, signal });
+    if (app.generation() !== generation) return { kind: 'discarded' };
     return result.kind === 'facts' ? { kind: 'facts', facts: result.facts } : result;
   } catch (error) {
-    ai.reportError(error);
+    app.ai.reportError(error);
     return { kind: 'failed' };
   }
 }

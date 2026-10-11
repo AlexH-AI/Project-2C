@@ -2,7 +2,7 @@ import type { ExtractedFact } from '@p2c/ai';
 import type { KycNoteRecord } from '@p2c/db';
 import { calendarDate, type KycFact } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { extractionButton, extractionView } from './extraction-view';
+import { busyElsewhere, extractionButton, extractionView } from './extraction-view';
 
 const note = (text: string, source: KycNoteRecord['source'] = 'RE'): KycNoteRecord => ({
   id: 'n1',
@@ -55,10 +55,30 @@ describe('extractionButton (spec Phase 5 §8 item 1, mockup ai.html 3b)', () => 
   });
 });
 
+describe('busyElsewhere (DR5-40, R2-02, mockup ai.html 2d)', () => {
+  const LONG = note('Đã kết hôn, có hai con');
+  const idle = { busy: true, webOpen: false, phase: 'idle' } as const;
+
+  it('says why the button is off while an AI request runs elsewhere', () => {
+    // Another customer's run, another note's or Kiểm tra kết nối.
+    expect(busyElsewhere(extractionButton(LONG), idle)).toBe(true);
+    expect(busyElsewhere(extractionButton(LONG), { ...idle, busy: false })).toBe(false);
+  });
+
+  it('leaves it to a run of its own, the web session or a note too short', () => {
+    expect(busyElsewhere(extractionButton(LONG), { ...idle, phase: 'running' })).toBe(false);
+    expect(busyElsewhere(extractionButton(LONG), { ...idle, phase: 'cancelling' })).toBe(false);
+    expect(busyElsewhere(extractionButton(LONG), { ...idle, webOpen: true })).toBe(false);
+    expect(busyElsewhere(extractionButton(note('Gọi lại sau.')), idle)).toBe(false);
+    expect(busyElsewhere(extractionButton(note('Năm sinh: 1984', 'SYSTEM')), idle)).toBe(false);
+  });
+});
+
 describe('extractionView (spec Phase 5 §8, mockup ai.html 3c–3e)', () => {
-  it('shows nothing before a run, or after Hủy', () => {
+  it('shows nothing before a run, after Hủy, or once the data was replaced meanwhile (R2-07)', () => {
     expect(extractionView(null, NONE, [])).toEqual({ kind: 'none' });
     expect(extractionView({ kind: 'cancelled' }, NONE, [])).toEqual({ kind: 'none' });
+    expect(extractionView({ kind: 'discarded' }, NONE, [])).toEqual({ kind: 'none' });
   });
 
   it('lists the proposals in the order the AI gave them', () => {

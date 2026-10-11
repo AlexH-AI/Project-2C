@@ -2,7 +2,7 @@
  * The read-only AI block of the appointment detail (spec Phase 5 §9.2, mockup appointments.html):
  * what the customer's latest ACCEPTED analysis says to do next. Pure, so the block only lays it out.
  */
-import type { AiAnalysisView } from '@p2c/db';
+import type { AiAnalysisView, KycFactRecord } from '@p2c/db';
 import type { CalendarDate } from '@p2c/domain';
 import {
   analysisContent,
@@ -29,10 +29,12 @@ export function appointmentAiView(
   /** `listAiAnalyses`: latest first. */
   analyses: readonly AiAnalysisView[],
   versions: readonly VersionRef[],
+  /** The customer's facts now: a CURRENT analysis is weighed by them, as in the profile (R2-01). */
+  facts: readonly KycFactRecord[],
 ): AppointmentAiView | null {
   const shown = analyses.find((analysis) => analysis.status === 'ACCEPTED');
   if (!shown) return null;
-  const content = analysisContent(shown, versions);
+  const content = analysisContent(shown, versions, facts);
   const items = (key: 'nextBestActions' | 'discoveryStrategy') =>
     content.sections.find((section) => section.key === key)?.groups[0]?.items ?? [];
   return {

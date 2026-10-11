@@ -301,3 +301,37 @@ test('exe: a key status read late never overwrites the key just saved (DR5-37)',
   await expect(card).toContainText('Đã có key');
   await expect(card.getByRole('button', { name: 'Xóa key…' })).toBeVisible();
 });
+
+test('exe: a save that failed keeps the key status, read late or not (R2-14)', async ({ page }) => {
+  await asExe(page);
+  // After `asExe`: a key is stored, its status held until the test lets it answer; saving fails.
+  await page.addInitScript(() => {
+    type Invoke = (command: string, args: unknown) => Promise<unknown>;
+    const internals = (window as unknown as { __TAURI_INTERNALS__: { invoke: Invoke } })
+      .__TAURI_INTERNALS__;
+    const invoke = internals.invoke.bind(internals);
+    let release = () => {};
+    const held = new Promise<void>((resolve) => (release = resolve));
+    Object.assign(window, { releaseKeyStatus: () => release() });
+    internals.invoke = async (command: string, args: unknown) => {
+      if (command === 'ai_key_set') throw { code: 'AI_KEYRING' };
+      if (command !== 'ai_key_status') return invoke(command, args);
+      await held;
+      return true;
+    };
+  });
+  await openAi(page);
+  const card = keyCard(page);
+
+  await card.getByLabel('Key', { exact: true }).fill(KEY);
+  await card.getByRole('button', { name: 'Lưu key' }).click();
+  await expect(card.getByRole('alert')).toContainText(
+    'Không đọc / ghi được key trong Windows Credential Manager.',
+  );
+
+  await page.evaluate(() => (window as unknown as { releaseKeyStatus(): void }).releaseKeyStatus());
+  await expect(card).toContainText('Đã có key');
+  await expect(card.getByRole('button', { name: 'Xóa key…' })).toBeVisible();
+  // The failure stays said.
+  await expect(card.getByRole('alert')).toContainText('Windows Credential Manager');
+});

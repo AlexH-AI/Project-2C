@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { listAiAnalyses, listKycVersions, type Database } from '@p2c/db';
+import { getKycProfile, listAiAnalyses, listKycVersions, type Database } from '@p2c/db';
 import { formatDayMonth } from '@p2c/domain';
 import { useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
@@ -34,7 +34,11 @@ export function AppointmentAi({ customerId }: { customerId: string }) {
   const view = useQuery(
     useCallback(
       (db: Database) =>
-        appointmentAiView(listAiAnalyses(db, customerId), listKycVersions(db, customerId)),
+        appointmentAiView(
+          listAiAnalyses(db, customerId),
+          listKycVersions(db, customerId),
+          getKycProfile(db, customerId).facts,
+        ),
       [customerId],
     ),
   );
