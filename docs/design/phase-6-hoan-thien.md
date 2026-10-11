@@ -131,11 +131,9 @@ ADR-0001 phụ lục **M4** (cùng PR với spec này): ở review đóng Phase 
 
 Đã chốt 11/10: #491 làm sau khi spec này qua G1; lượt 2 vừa kiểm phần đã sửa vừa tìm lỗi / edge case mới (§6.3); bỏ so sánh với Project-2 (Project-2 dừng; ADR-0002 Superseded, `COMPARISON.md` hết hiệu lực, ADR-0001 phụ lục M3); `Project-2C-data` ra khỏi v1.0 (§4).
 
-Owner đồng ý (11/10): thứ tự 6A–6E như §2, phân tích bloat / hiệu năng nằm trong lượt review 1; giữ 6 gói như §6.2.
+Owner đồng ý (11/10): thứ tự 6A–6E như §2, phân tích bloat / hiệu năng nằm trong lượt review 1; giữ 6 gói như §6.2; S-1 và gộp backup / xung đột ra khỏi v1.0 cùng `Project-2C-data` (§4), không thêm cảnh báo khi nhập backup (phương án a). Hệ quả đã biết: làm trên hai máy vẫn là "bản nhập sau thắng" — mỗi lúc làm trên một máy, xuất trước khi đổi máy.
 
-Còn hỏi:
-
-1. S-1 và gộp backup / xung đột ra khỏi v1.0 cùng `Project-2C-data` (§4)?
+Không còn câu hỏi mở; chờ Owner duyệt G1.
 
 ## 9. Tách Issue
 
