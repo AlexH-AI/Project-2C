@@ -13,6 +13,7 @@ import {
 } from '@p2c/domain';
 import type { z } from 'zod';
 import { BLOCKLISTS } from './blocklists';
+import { codePointsOver, cutCodePoints } from './code-points';
 import {
   AI_OUTPUT_SCHEMAS,
   type AiMode,
@@ -41,6 +42,19 @@ export interface OutputCheckInput {
   readonly missingCategories: readonly KycCategory[];
 }
 
+/** The answer has no JSON block (spec §6.1). */
+const NO_JSON: ValidationIssue = { code: 'V1', path: '$', detail: 'không có khối JSON' };
+
+/**
+ * The answer was cut by `maxTokens` before its JSON block ended (DR5-05): said instead of `NO_JSON`,
+ * so neither the RE nor the retry message reads it as an answer without JSON (spec §6.1).
+ */
+export const CUT_ANSWER: ValidationIssue = {
+  code: 'V1',
+  path: '$',
+  detail: 'trả lời bị cắt (hết maxTokens) trước khi khối JSON kết thúc',
+};
+
 /**
  * Issues of an output parsed from the model's answer, `null` (or `undefined`) when the answer had no
  * JSON block. Extraction is checked for V1 only here: V7 drops single facts (`filterExtraction`),
@@ -53,13 +67,28 @@ export function validateOutput<M extends AiMode>(
   parsed: unknown,
   ...[input]: [M] extends ['extraction'] ? [] : [input: OutputCheckInput]
 ): ValidationIssue[] {
-  if (parsed == null) return [{ code: 'V1', path: '$', detail: 'không có khối JSON' }];
+  if (parsed == null) return [NO_JSON];
   const result = AI_OUTPUT_SCHEMAS[mode].safeParse(parsed);
-  if (!result.success) return result.error.issues.map(schemaIssue);
+  if (!result.success) return capped(result.error.issues.map(schemaIssue));
   if (mode === 'extraction') return [];
   if (input === undefined) throw new TypeError(`validateOutput needs the input in ${mode} mode`);
   const items = itemsOf(result.data as AnalysisOutput | DiscoveryOutput);
-  return [...evidenceIssues(items, input), ...items.flatMap(phraseIssues)];
+  return capped([...evidenceIssues(items, input), ...items.flatMap(phraseIssues)]);
+}
+
+/** The most issues one check lists; the retry message has one line for each (prompts §5). */
+const MAX_ISSUES = 30;
+
+/**
+ * The first issues, the rest counted in the last one: thousands of wrong elements (malformed codes,
+ * one schema issue each) keep the retry message and `validator_json` small (MS-A1, review #521).
+ */
+function capped(issues: ValidationIssue[]): ValidationIssue[] {
+  if (issues.length <= MAX_ISSUES) return issues;
+  const kept = issues.slice(0, MAX_ISSUES - 1);
+  // Named by the first issue left out.
+  const { code } = issues[MAX_ISSUES - 1]!;
+  return [...kept, { code, path: '$', detail: `và ${issues.length - kept.length} lỗi khác` }];
 }
 
 /** What every element of an analysis / discovery block has in common. */
@@ -82,16 +111,30 @@ function itemsOf(output: AnalysisOutput | DiscoveryOutput): OutputItem[] {
   );
 }
 
-/** V2: cited facts are in the input, a named hạng mục is one the gate lists as missing. */
+/** A wrong evidence list names this many of its wrong codes and counts the rest. */
+const MAX_LISTED_CODES = 5;
+
+/**
+ * V2: cited facts are in the input, a named hạng mục is one the gate lists as missing. The wrong
+ * codes of one element make one issue, so thousands of them keep the retry message and
+ * `validator_json` small (CL-A8, MS-A1).
+ */
 function evidenceIssues(items: readonly OutputItem[], input: OutputCheckInput): ValidationIssue[] {
+  const known = new Set(input.factCodes);
   const issues: ValidationIssue[] = [];
   for (const item of items) {
-    item.evidence.forEach((code, i) => {
-      if (!input.factCodes.includes(code)) {
-        const path = `${item.path}.evidence[${i}]`;
-        issues.push({ code: 'V2', path, detail: `${code} không có trong đầu vào` });
-      }
-    });
+    const wrong = item.evidence.filter((code) => !known.has(code));
+    if (wrong.length > 0) {
+      // One wrong code keeps its own path, as before.
+      const path =
+        wrong.length === 1
+          ? `${item.path}.evidence[${item.evidence.indexOf(wrong[0]!)}]`
+          : `${item.path}.evidence`;
+      const listed = wrong.slice(0, MAX_LISTED_CODES).map(quoted).join(', ');
+      const rest = wrong.length - MAX_LISTED_CODES;
+      const codes = rest > 0 ? `${listed} và ${rest} mã khác` : listed;
+      issues.push({ code: 'V2', path, detail: `${codes} không có trong đầu vào` });
+    }
     const category = item.missingCategory;
     if (category !== undefined && !input.missingCategories.includes(category)) {
       const path = `${item.path}.missingCategory`;
@@ -170,8 +213,7 @@ function valueOf(field: KycField, value: KycValue): KycValue | null {
 const MAX_QUOTED = 40;
 
 function quoted(phrase: string): string {
-  const chars = Array.from(phrase);
-  return chars.length > MAX_QUOTED ? `${chars.slice(0, MAX_QUOTED - 1).join('')}…` : phrase;
+  return codePointsOver(phrase, MAX_QUOTED) ? `${cutCodePoints(phrase, MAX_QUOTED - 1)}…` : phrase;
 }
 
 /**

@@ -8,6 +8,7 @@ import {
   WEB_WRAPPER,
   analysisInputSchema,
   analysisOutputSchema,
+  CUT_ANSWER,
   discoveryOutputSchema,
   factCode,
   VALIDATION_CODES,
@@ -36,6 +37,7 @@ import {
   type KycGateState,
 } from '@p2c/domain';
 import type { AnalysisOutcome, WebAnswerOutcome } from '../../data/ai-analysis';
+import { t } from '../../i18n';
 import { aiFailure, GENERAL_FAILURE, type AiFailure } from '../ai-error-view';
 import { factInEffect } from './kyc-view';
 
@@ -163,7 +165,10 @@ export interface AiPanelIssue {
   readonly code: ValidationCode;
   /** The block and, for an element, its number from 1; null for the whole output. */
   readonly place: { readonly key: AiPanelIssuePlace; readonly number: number | null } | null;
-  /** The validator's words; null for an answer with no JSON, which the panel says itself. */
+  /**
+   * The validator's words; null for an answer with no JSON, which the panel says itself; the panel's
+   * own sentence for an answer cut before its JSON ended.
+   */
   readonly detail: string | null;
 }
 
@@ -179,10 +184,16 @@ const ISSUE_PLACES: readonly string[] = [
   'personalityNotes',
 ] satisfies AiPanelIssuePlace[];
 
-/** @param noJson The answer had no JSON block: its one issue is V1 on the whole output. */
+/**
+ * @param noJson The answer had no JSON block: its one issue is V1 on the whole output, or says the
+ *   answer was cut by `maxTokens` before its block ended (`CUT_ANSWER`, DR5-05).
+ */
 export function issueLine(issue: ValidationIssue, noJson: boolean): AiPanelIssue {
   const { code, path, detail } = issue;
-  if (noJson && code === 'V1' && path === '$') return { code, place: null, detail: null };
+  if (noJson && code === 'V1' && path === '$') {
+    const cut = detail === CUT_ANSWER.detail;
+    return { code, place: null, detail: cut ? t('aiPanel.issueCut') : null };
+  }
   const [, key = '', index] = /^(\w+)(?:\[(\d+)\])?/.exec(path) ?? [];
   if (!ISSUE_PLACES.includes(key)) {
     return { code, place: null, detail: path === '$' ? detail : `${path}: ${detail}` };

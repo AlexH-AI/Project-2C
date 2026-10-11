@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AI_ERROR_CODES, AiError, isAiErrorCode } from './errors';
+import { AI_ERROR_CODES, AI_LOCAL_ERROR_CODES, AiError, isAiErrorCode } from './errors';
 
 describe('AiError', () => {
   it('has the ten codes of spec §5.3', () => {
@@ -15,6 +15,11 @@ describe('AiError', () => {
       'AI_BAD_REQUEST',
       'AI_KEYRING',
     ]);
+  });
+
+  it('has AI_TOO_LARGE of its own, which Rust never sends', () => {
+    expect(AI_LOCAL_ERROR_CODES).toEqual(['AI_TOO_LARGE']);
+    expect(isAiErrorCode('AI_TOO_LARGE')).toBe(false);
   });
 
   it('carries the code, the HTTP status and the server message', () => {

@@ -13,9 +13,10 @@ Mỗi lần gọi gồm đúng hai message, cộng thêm hai message khi phải 
 |---|---|---|
 | 1 | `system` | Chữ prompt của chế độ (§2, §3 hoặc §4), cố định theo version |
 | 2 | `user` | Đầu vào dạng JSON (§1.1 hoặc §4.1), một khối, không thêm chữ |
-| 3 | `assistant` | Nội dung thô của lần trả lời sai (chỉ khi thử lại) |
+| 3 | `assistant` | Nội dung thô của lần trả lời sai (chỉ khi thử lại); cắt bớt khi cần, dưới bảng |
 | 4 | `user` | Message thử lại (§5), liệt kê lỗi validator |
 
+- Trần 200 000 ký tự của cả bốn message (spec §5.1): khi message 1 + 2 + 4 cộng nguyên câu trả lời sai vượt trần, message 3 là **phần đầu** câu trả lời đó, cắt theo code point vừa đủ để tổng = trần; câu trả lời vừa trần thì gửi nguyên văn như cũ. Message 1 + 2 + 4 đã vượt trần → không thử lại, báo `AI_TOO_LARGE` (spec §5.3). Owner duyệt G5 11/10/2026 (T-199, CX-A6); chữ prompt không đổi nên không tăng version.
 - Không gửi `response_format` (spec §5.1). Prompt yêu cầu chỉ trả một khối JSON; app lấy khối JSON đầu tiên (spec §6.1).
 - `maxTokens`: analysis / discovery **24 000**, extraction **12 000**, Kiểm tra kết nối **1 024** (Owner 11/10/2026, §10.5, §10.7; ban đầu 8 000 / 4 000 / 64). Model có reasoning tính token suy luận vào trần này; trần x3 xấp xỉ số token model viết được trong hạn 120 s của một lần gọi.
 - Ký hiệu trong prompt: "KH" = khách hàng, "RE" = chuyên viên quan hệ khách hàng (người dùng app).

@@ -128,6 +128,28 @@ describe('validateOutput — V1', () => {
     ]);
   });
 
+  it('lists 30 issues at most, the rest counted in one (review #521)', () => {
+    // Thousands of malformed codes are one V1 issue each from the schema.
+    const codes = Array.from({ length: 3000 }, (_, i) => `X${i}`);
+    const output = { ...analysis(), hypotheses: [item('KH ưu tiên con', ...codes)] };
+    const issues = validateOutput('analysis', output, input);
+    expect(issues).toHaveLength(30);
+    expect(issues[28]).toEqual({
+      code: 'V1',
+      path: 'hypotheses[0].evidence[28]',
+      detail: 'sai định dạng',
+    });
+    expect(issues[29]).toEqual({ code: 'V1', path: '$', detail: 'và 2971 lỗi khác' });
+  });
+
+  it('lists exactly 30 issues as they are', () => {
+    const codes = Array.from({ length: 30 }, (_, i) => `X${i}`);
+    const output = { ...analysis(), hypotheses: [item('KH ưu tiên con', ...codes)] };
+    const issues = validateOutput('analysis', output, input);
+    expect(issues).toHaveLength(30);
+    expect(issues[29]).toMatchObject({ path: 'hypotheses[0].evidence[29]' });
+  });
+
   it('runs no other rule on an output the schema rejects', () => {
     const output = { ...analysis(), needs: [item('Xác suất 90%', 'F99')], themes: [] };
     expect(validateOutput('analysis', output, input).map((issue) => issue.code)).toEqual(['V1']);
@@ -160,6 +182,27 @@ describe('validateOutput — V2', () => {
     ).toEqual([
       { code: 'V2', path: 'themes[0].evidence[1]', detail: 'F7 không có trong đầu vào' },
       { code: 'V2', path: 'personalityNotes[0].evidence[0]', detail: 'F9 không có trong đầu vào' },
+    ]);
+  });
+
+  it('reports the wrong fact codes of one element together', () => {
+    const output = { ...analysis(), themes: [item('Gia đình là trung tâm', 'F1', 'F7', 'F8')] };
+    expect(validateOutput('analysis', output, input)).toEqual([
+      { code: 'V2', path: 'themes[0].evidence', detail: 'F7, F8 không có trong đầu vào' },
+    ]);
+  });
+
+  it('names five wrong codes of an element and counts the rest, each cut to 40 characters', () => {
+    // CL-A8, MS-A1: thousands of wrong codes made a retry message over the Rust limit.
+    const codes = Array.from({ length: 2000 }, (_, i) => `F${i + 100}`);
+    const long = `F${'9'.repeat(500)}`;
+    const output = { ...analysis(), needs: [item('Quỹ học vấn cho con', long, ...codes)] };
+    expect(validateOutput('analysis', output, input)).toEqual([
+      {
+        code: 'V2',
+        path: 'needs[0].evidence',
+        detail: `F${'9'.repeat(38)}…, F100, F101, F102, F103 và 1996 mã khác không có trong đầu vào`,
+      },
     ]);
   });
 

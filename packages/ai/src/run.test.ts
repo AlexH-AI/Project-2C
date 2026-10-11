@@ -14,7 +14,8 @@ import {
   type AiRunner,
 } from './run';
 import { readAiSettings, type AiSettings } from './settings';
-import { fact, PRIVATE, PROFILE, TODAY } from './test-support';
+import { ANALYSIS_FACTS, fact, PRIVATE, PROFILE, TODAY } from './test-support';
+import { CUT_ANSWER } from './validator';
 
 const OPENCODE: AiSettings = {
   provider: 'OPENCODE_GO',
@@ -29,7 +30,8 @@ const MOCK: AiSettings = {
   reasoning: 'DEFAULT',
 };
 
-type Reply = string | AiError | Promise<string>;
+/** `{ cut }`: an answer that `maxTokens` cut (`finishReason` `length`). */
+type Reply = string | AiError | Promise<string> | { readonly cut: string };
 
 /** An adapter that gives the replies in turn and keeps every request; 10 + 5 tokens a reply. */
 function scripted(...replies: Reply[]) {
@@ -40,11 +42,26 @@ function scripted(...replies: Reply[]) {
       const reply = replies.shift();
       if (reply === undefined) throw new Error('no reply left');
       if (reply instanceof AiError) throw reply;
+      if (typeof reply === 'object' && 'cut' in reply) {
+        return {
+          content: reply.cut,
+          promptTokens: 10,
+          completionTokens: 5,
+          finishReason: 'length',
+        };
+      }
       return { content: await reply, promptTokens: 10, completionTokens: 5 } as AiCompletion;
     },
   };
   return { adapter, requests };
 }
+
+/** The characters of a request as Rust counts them against its limit (`ai.rs`). */
+const charsOf = (request: AiCompleteRequest) =>
+  request.messages.reduce((sum, message) => sum + Array.from(message.content).length, 0);
+
+/** Rust refuses more message characters than this with `AI_BAD_REQUEST` (spec §5.1). */
+const RUST_LIMIT = 200_000;
 
 function deferred() {
   let resolve!: (content: string) => void;
@@ -227,6 +244,100 @@ describe('runAnalysis', () => {
       row: { status: 'REJECTED', output: null, rawOutput: EMPTY_RAW_OUTPUT },
     });
     expect(EMPTY_RAW_OUTPUT).not.toBe('');
+  });
+
+  // DR5-05: the cut answer's elements close, but are not the answer.
+  const CUT = GOOD.slice(0, GOOD.indexOf('"themes"'));
+
+  it('records a rejected analysis saying the answer was cut, twice', async () => {
+    const { adapter, requests } = scripted({ cut: CUT }, { cut: CUT });
+    const result = await runAnalysis(analysis(OPENCODE, adapter));
+    expect(result).toMatchObject({
+      kind: 'record',
+      row: {
+        status: 'REJECTED',
+        attempts: 2,
+        output: null,
+        rawOutput: CUT,
+        validator: [
+          { attempt: 1, errors: [CUT_ANSWER] },
+          { attempt: 2, errors: [CUT_ANSWER] },
+        ],
+      },
+    });
+    expect(requests[1]!.messages[3]!.content).toContain(`- V1 tại $: ${CUT_ANSWER.detail}`);
+  });
+
+  it('reads a whole JSON block of an answer cut after it', async () => {
+    const { adapter } = scripted({ cut: `${GOOD}\nGiải thích: các giả thuyết trên` });
+    const result = await runAnalysis(analysis(OPENCODE, adapter));
+    expect(result).toMatchObject({ kind: 'record', row: { status: 'ACCEPTED', attempts: 1 } });
+  });
+
+  it('says an empty answer is cut when the model ran out of tokens before writing (R2-16)', async () => {
+    const { adapter } = scripted({ cut: '' }, GOOD);
+    const result = await runAnalysis(analysis(OPENCODE, adapter));
+    expect(result).toMatchObject({
+      kind: 'record',
+      row: {
+        status: 'ACCEPTED',
+        validator: [{ attempt: 1, errors: [CUT_ANSWER] }, { attempt: 2 }],
+      },
+    });
+  });
+
+  it('gives AI_TOO_LARGE without calling Rust when the input is over the limit', async () => {
+    // MS-A1: about 1 300 facts.
+    const concerns = Array.from({ length: 1300 }, (_, i) =>
+      fact(100 + i, 'otherConcerns', `Lo lắng về chi phí y tế khi về già, lần kể thứ ${i + 1}`),
+    );
+    const { adapter, requests } = scripted(GOOD);
+    const profile = { ...PROFILE, facts: [...ANALYSIS_FACTS, ...concerns] };
+    const result = await runAnalysis(analysis(OPENCODE, adapter, { profile }));
+    expect(result).toEqual({ kind: 'error', code: 'AI_TOO_LARGE' });
+    expect(requests).toEqual([]);
+  });
+
+  it('retries thousands of wrong codes within the limit (CX-A6, CL-A8)', async () => {
+    const codes = Array.from({ length: 5000 }, (_, i) => `"F${1000 + i}"`).join(', ');
+    const wrong = GOOD.replace('"F7"', codes);
+    const { adapter, requests } = scripted(wrong, GOOD);
+    const result = await runAnalysis(analysis(OPENCODE, adapter));
+    expect(result).toMatchObject({ kind: 'record', row: { status: 'ACCEPTED', attempts: 2 } });
+    expect(requests[1]!.messages[2]!.content).toBe(wrong);
+    expect(requests[1]!.messages[3]!.content).toContain('và 4995 mã khác không có trong đầu vào');
+    expect(charsOf(requests[1]!)).toBeLessThan(RUST_LIMIT);
+  });
+
+  it('retries thousands of malformed codes within the limit (review #521)', async () => {
+    const codes = Array.from({ length: 3000 }, (_, i) => `"X${i}"`).join(', ');
+    const wrong = GOOD.replace('"F7"', codes);
+    const { adapter, requests } = scripted(wrong, GOOD);
+    const result = await runAnalysis(analysis(OPENCODE, adapter));
+    expect(result).toMatchObject({ kind: 'record', row: { status: 'ACCEPTED', attempts: 2 } });
+    expect(requests[1]!.messages[3]!.content).toContain('- V1 tại $: và 2971 lỗi khác');
+    expect(Array.from(requests[1]!.messages[3]!.content).length).toBeLessThan(5_000);
+  });
+
+  it('cuts a wrong answer in the retry to fit the limit, and records it as usual', async () => {
+    // CX-A6: a 210 000-character answer made the retry a Rust AI_BAD_REQUEST (Owner 11/10/2026).
+    const long = `${'😀'.repeat(105_000)}${'x'.repeat(105_000)}`;
+    const { adapter, requests } = scripted(long, long);
+    const result = await runAnalysis(analysis(OPENCODE, adapter));
+    expect(result).toMatchObject({
+      kind: 'record',
+      row: { status: 'REJECTED', attempts: 2, rawOutput: '😀'.repeat(20_000) },
+    });
+    const sent = requests[1]!.messages[2]!.content;
+    expect(long.startsWith(sent)).toBe(true);
+    expect(charsOf(requests[1]!)).toBe(RUST_LIMIT);
+  });
+
+  it('keeps a wrong answer whole in a retry that fits', async () => {
+    const long = 'x'.repeat(150_000);
+    const { adapter, requests } = scripted(long, GOOD);
+    await runAnalysis(analysis(OPENCODE, adapter));
+    expect(requests[1]!.messages[2]!.content).toBe(long);
   });
 
   it.each([
@@ -548,6 +659,49 @@ describe('runExtraction', () => {
   it('gives the adapter error', async () => {
     const { adapter } = scripted(new AiError('AI_NO_KEY'));
     expect(await runExtraction(extraction(adapter))).toEqual({ kind: 'error', code: 'AI_NO_KEY' });
+  });
+
+  it('takes a cut answer as unreadable', async () => {
+    const cut = '{"facts": [{"field": "childrenCount", "value": "2", "quote": "có 2 bé"}, {"fi';
+    const { adapter, requests } = scripted({ cut }, { cut });
+    expect(await runExtraction(extraction(adapter))).toEqual({ kind: 'invalid' });
+    expect(requests[1]!.messages[3]!.content).toContain(CUT_ANSWER.detail);
+  });
+
+  describe('a note near the Rust limit (CL-A9)', () => {
+    /** The characters of a request besides the note: the prompt and the input around it. */
+    const around = async () => {
+      const { adapter, requests } = scripted('{"facts": []}');
+      await runExtraction({ ...extraction(adapter), note: 'x'.repeat(20) });
+      return charsOf(requests[0]!) - 20;
+    };
+
+    it('sends a note that fills the limit', async () => {
+      const note = 'x'.repeat(RUST_LIMIT - (await around()));
+      const { adapter, requests } = scripted('{"facts": []}');
+      await runExtraction({ ...extraction(adapter), note });
+      expect(charsOf(requests[0]!)).toBe(RUST_LIMIT);
+    });
+
+    it('gives AI_TOO_LARGE without calling Rust for a note one character longer', async () => {
+      const note = 'x'.repeat(RUST_LIMIT - (await around()) + 1);
+      const { adapter, requests } = scripted('{"facts": []}');
+      expect(await runExtraction({ ...extraction(adapter), note })).toEqual({
+        kind: 'error',
+        code: 'AI_TOO_LARGE',
+      });
+      expect(requests).toEqual([]);
+    });
+
+    it('gives AI_TOO_LARGE when the retry message leaves no room', async () => {
+      const note = 'x'.repeat(RUST_LIMIT - (await around()) - 50);
+      const { adapter, requests } = scripted('không có JSON', '{"facts": []}');
+      expect(await runExtraction({ ...extraction(adapter), note })).toEqual({
+        kind: 'error',
+        code: 'AI_TOO_LARGE',
+      });
+      expect(requests).toHaveLength(1);
+    });
   });
 });
 

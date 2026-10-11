@@ -9,6 +9,7 @@
  */
 import { evaluateKycGate, type CalendarDate, type KycGateState } from '@p2c/domain';
 import type { AiAdapter, AiCompleteRequest, AiMessage } from './adapter';
+import { codePointCount, cutCodePoints } from './code-points';
 import { AiError, type AiErrorCode } from './errors';
 import { buildAnalysisInput, buildExtractionInput, type AnalysisProfile } from './input';
 import type { AiModelId } from './models';
@@ -176,20 +177,32 @@ async function attempt<R>(call: () => Promise<R>): Promise<R | Failed> {
   }
 }
 
+/** Rust refuses more characters than this in the `content` of all messages (spec §5.1). */
+const MAX_MESSAGE_CHARS = 200_000;
+
+const TOO_LARGE: Failed = { kind: 'error', code: 'AI_TOO_LARGE' };
+
+const charsOf = (messages: readonly AiMessage[]) =>
+  messages.reduce((sum, message) => sum + codePointCount(message.content), 0);
+
 /**
  * Asks, and asks again once with the issues when the answer fails `check` (prompts §1, §5), both
  * under one `sessionId`. An error at either attempt ends it with nothing to keep (spec §3 item 3).
+ * Messages over the Rust limit are `AI_TOO_LARGE`, never sent (MS-A1): the input, or a retry whose
+ * prompt, input and issues leave no room. The wrong answer in a retry is cut to the room left
+ * (prompts §1, Owner 11/10/2026); one that fits goes whole.
  */
 async function converse(
   call: AiCall,
   prompt: { readonly system: string; readonly maxTokens: number },
   input: unknown,
-  check: (content: string) => CheckedAnswer,
+  check: (content: string, cut: boolean) => CheckedAnswer,
 ): Promise<Attempt[] | Failed | Cancelled> {
   const asked: AiMessage[] = [
     { role: 'system', content: prompt.system },
     { role: 'user', content: JSON.stringify(input) },
   ];
+  if (charsOf(asked) > MAX_MESSAGE_CHARS) return TOO_LARGE;
   let messages = asked;
   const sessionId = newSessionId();
   const attempts: Attempt[] = [];
@@ -200,12 +213,14 @@ async function converse(
     // After Hủy the answer is dropped and no retry is sent.
     if (call.signal?.aborted) return CANCELLED;
     if ('kind' in answer) return answer;
-    attempts.push({ ...answer, ...check(answer.content) });
+    attempts.push({ ...answer, ...check(answer.content, answer.finishReason === 'length') });
     const retry = nextRetry(attempts);
     if (retry === null) return attempts;
+    const room = MAX_MESSAGE_CHARS - charsOf(asked) - codePointCount(retry);
+    if (room < 0) return TOO_LARGE;
     messages = [
       ...asked,
-      { role: 'assistant', content: answer.content },
+      { role: 'assistant', content: cutCodePoints(answer.content, room) },
       { role: 'user', content: retry },
     ];
   }
@@ -275,13 +290,20 @@ export function takeAnalysisInput(
   return buildAnalysisInput(profile, gate, today) ?? { kind: 'blocked', state: gate.state };
 }
 
-/** Checks an analysis or discovery answer against the input it was given (V1–V6). */
-export function checkAnalysisAnswer(input: AnalysisInput, content: string): CheckedAnswer {
+/**
+ * Checks an analysis or discovery answer against the input it was given (V1–V6); `cut`: `maxTokens`
+ * cut it (never known of a ChatGPT web paste).
+ */
+export function checkAnalysisAnswer(
+  input: AnalysisInput,
+  content: string,
+  cut = false,
+): CheckedAnswer {
   const checked = {
     factCodes: input.facts.map((fact) => fact.code),
     missingCategories: input.missingCategories.map((category) => category.code),
   };
-  return checkAnswer(content, (parsed) => validateOutput(input.mode, parsed, checked));
+  return checkAnswer(content, (parsed) => validateOutput(input.mode, parsed, checked), cut);
 }
 
 /** The fields of an analysis row that its input and answers decide, whoever answered (spec §7.1). */
@@ -314,8 +336,8 @@ export async function runAnalysis(request: AnalysisRequest): Promise<AnalysisRes
   if ('kind' in input) return input;
   const prompt = ANALYSIS_PROMPTS[input.mode];
   return request.runner.run(async () => {
-    const attempts = await converse(request, prompt, input, (content) =>
-      checkAnalysisAnswer(input, content),
+    const attempts = await converse(request, prompt, input, (content, cut) =>
+      checkAnalysisAnswer(input, content, cut),
     );
     if ('kind' in attempts) return attempts;
     const mock = request.settings.provider === 'MOCK';
@@ -348,7 +370,7 @@ export async function runAnalysis(request: AnalysisRequest): Promise<AnalysisRes
 function rawOutput(content: string): string {
   if (content === '') return EMPTY_RAW_OUTPUT;
   // By code point, as `db` cuts it, so an emoji at the limit is not cut in two.
-  return Array.from(content).slice(0, MAX_RAW_OUTPUT).join('');
+  return cutCodePoints(content, MAX_RAW_OUTPUT);
 }
 
 // ---- extraction ---------------------------------------------------------------
@@ -373,8 +395,8 @@ export type ExtractionResult =
 export async function runExtraction(request: ExtractionRequest): Promise<ExtractionResult> {
   const input = buildExtractionInput(request.note);
   return request.runner.run(async () => {
-    const attempts = await converse(request, extractionPrompt, input, (content) =>
-      checkAnswer(content, (parsed) => validateOutput('extraction', parsed)),
+    const attempts = await converse(request, extractionPrompt, input, (content, cut) =>
+      checkAnswer(content, (parsed) => validateOutput('extraction', parsed), cut),
     );
     if ('kind' in attempts) return attempts;
     const last = attempts.at(-1)!;

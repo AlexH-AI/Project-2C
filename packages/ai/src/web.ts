@@ -6,6 +6,7 @@
  * The session is a value the panel keeps; it is never stored (item 4).
  */
 import type { CalendarDate, KycGateState } from '@p2c/domain';
+import { codePointsOver } from './code-points';
 import type { AnalysisProfile } from './input';
 import { MAX_ATTEMPTS, nextRetry, RETRY_TEMPLATE, type CheckedAnswer } from './prompts/retry';
 import {
@@ -122,9 +123,12 @@ export type WebAnswerResult =
 /** Checks one pasted answer; `session` is left as it was. */
 export function checkWebAnswer(session: WebSession, pasted: string): WebAnswerResult {
   if (session.attempts.length >= MAX_ATTEMPTS) throw new RangeError('The web session is over');
+  // More code units than twice the limit is too long whatever the paste holds, so a huge one is
+  // never split into lines nor normalized (DR5-09).
+  if (pasted.length > 2 * MAX_RAW_OUTPUT) return { kind: 'unusable', reason: 'TOO_LONG' };
   if (pasted.trim() === '') return { kind: 'unusable', reason: 'EMPTY' };
   if (isOwnMessage(pasted)) return { kind: 'unusable', reason: 'OWN_MESSAGE' };
-  if (Array.from(pasted).length > MAX_RAW_OUTPUT) return { kind: 'unusable', reason: 'TOO_LONG' };
+  if (codePointsOver(pasted, MAX_RAW_OUTPUT)) return { kind: 'unusable', reason: 'TOO_LONG' };
   const attempts = [...session.attempts, checkAnalysisAnswer(session.input, pasted)];
   const retry = nextRetry(attempts);
   if (retry !== null) {
