@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
+import { addKycNote, createKycCustomer } from './support';
 
 const section = (page: Page) => page.getByRole('region', { name: 'Xuất / nhập backup' });
 const nav = (page: Page, name: string) =>
@@ -161,4 +162,33 @@ test('refuses a file over 100 MB without reading it', async ({ page }) => {
   const dialog = page.getByRole('dialog', { name: 'Không nhập được file' });
   await expect(dialog.getByRole('alert')).toContainText('File lớn hơn 100 MB, app không đọc');
   expect(await page.evaluate(() => document.body.dataset.textCalls)).toBeUndefined();
+});
+
+test('a backup whose KYC versions skip numbers shows the last seq, not how many there are (R2-18)', async ({
+  page,
+}) => {
+  const name = 'Hạnh Sao Lưu';
+  await createKycCustomer(page, name);
+  await addKycNote(page, name, [['Nghề nghiệp', 'Bác sĩ']]);
+  await page.goto('/#/settings');
+  const exported = await exportFile(page);
+  type Row = Record<string, unknown>;
+  const file = JSON.parse(exported.text) as { tables: Record<string, Row[]> };
+  const customer = file.tables.customers!.find((row) => row.name === name)!;
+  const versions = file.tables.kyc_versions!.filter((row) => row.customer_id === customer.id);
+  expect(versions.map((row) => row.seq).sort()).toEqual([1, 2]);
+  for (const row of versions) row.seq = (row.seq as number) * 10;
+
+  await chooseFile(page, exported.name, JSON.stringify(file));
+  const dialog = page.getByRole('dialog', { name: 'Thay toàn bộ dữ liệu?' });
+  await dialog.getByRole('button', { name: 'Thay dữ liệu', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await nav(page, 'Khách hàng');
+  await page.getByRole('link', { name: new RegExp(name) }).click();
+
+  await expect(page.getByRole('region', { name: 'Dữ kiện KYC' })).toContainText(/hạng mục · v20/);
+  await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
+  await expect(page.getByRole('dialog', { name: `Ghi chú KYC · ${name}` })).toContainText(
+    'KYC hiện tại v20 (',
+  );
 });

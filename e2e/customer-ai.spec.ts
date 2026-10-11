@@ -1,10 +1,17 @@
 import { expect, test, type Page } from '@playwright/test';
-import { addKycNote, asExe, createKycCustomer } from './support';
+import {
+  addKycNote,
+  asExe,
+  createKycCustomer,
+  discoveryFacts,
+  discoveryOutput,
+  panelOf,
+  stubChatGptWeb,
+  useOpenCode,
+} from './support';
 
 // playwright.config.ts pins "today" of the simulated data (VITE_DEMO_ANCHOR) to 15/09/2026. The web
 // build runs the Mock until Settings → AI exists (T-167).
-
-const panelOf = (page: Page) => page.getByRole('region', { name: 'KYC Intelligence' });
 
 test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, a cốt lõi conflict', async ({
   page,
@@ -186,23 +193,6 @@ test('the history of a seeded customer: latest first, a STALE one opened, F code
   await expect(marked).toHaveCount(0, { timeout: 5000 });
 });
 
-/**
- * Settings → AI on OpenCode, through the exe's stand-in, which answers "OK" (no JSON) unless held
- * or failing; then back to the page before, without a reload that would drop the data.
- */
-async function useOpenCode(page: Page) {
-  await page.getByRole('link', { name: 'Cài đặt' }).click();
-  await page
-    .getByRole('navigation', { name: 'Mục cài đặt' })
-    .getByRole('button', { name: 'AI' })
-    .click();
-  await page
-    .getByRole('radiogroup', { name: 'Provider' })
-    .getByRole('radio', { name: 'OpenCode' })
-    .check();
-  await page.goBack();
-}
-
 test('a run outlives the profile: left and shown again, it still shows with Hủy (review of PR 439)', async ({
   page,
 }) => {
@@ -356,7 +346,10 @@ test('AI trích xuất with the Mock: Xác nhận saves the fact on its note, B�
   const kids = page.getByRole('dialog', { name: '+ Dữ kiện · Số con' });
   await kids.getByRole('textbox', { name: 'Giá trị' }).fill('3');
   await kids.getByRole('button', { name: 'Xác nhận dữ kiện' }).click();
+  await expect(kids).toBeHidden();
   await expect(kyc).toContainText('Số con: 3');
+  // Handled, so gone, though "2" is not the value now held (CX-D5).
+  await expect(note.getByRole('list', { name: 'Đề xuất của AI' })).toHaveCount(0);
 
   // Proposals are never saved: leaving the profile loses them.
   await note.getByRole('button', { name: 'AI trích xuất' }).click();
@@ -619,4 +612,88 @@ test('the run says the model it was started with, whatever Settings → AI say m
   ]);
   await page.evaluate(() => window.exe.releaseAi());
   await expect(running).toHaveCount(0);
+});
+
+test('an analysis by OpenCode, ACCEPTED at its retry: what went to ai_complete, the model shown (DR5-60)', async ({
+  page,
+}) => {
+  await asExe(page);
+  const name = 'Tú OpenCode';
+  await createKycCustomer(page, name);
+  await addKycNote(page, name, discoveryFacts);
+  await useOpenCode(page);
+  const panel = panelOf(page);
+  // No JSON at first, a passing answer at the retry.
+  await page.evaluate((good) => (window.exe.aiAnswers = ['Xin lỗi.', good]), discoveryOutput());
+
+  await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
+  await expect(panel).toContainText('CURRENT');
+  await expect(panel).toContainText(
+    /kyc v2 · discovery@2 · DeepSeek V4\.1 Flash · 15\/09 \d\d:\d\d/,
+  );
+  await expect(panel).not.toContainText('Kết quả Mock');
+  await expect(
+    panel.getByRole('region', { name: 'Behavioral Hypotheses' }).getByRole('listitem'),
+  ).toContainText(['Khách hàng sẵn lòng chia sẻ về gia đình']);
+
+  const calls = await page.evaluate(() => window.exe.aiCalls);
+  expect(calls).toHaveLength(2);
+  const [first, retry] = calls as {
+    sessionId: string;
+    maxTokens: number;
+    messages: { role: string; content: string }[];
+  }[];
+  expect(first!.maxTokens).toBe(24_000);
+  expect(retry!.sessionId).toBe(first!.sessionId);
+  expect(first!.messages.map((message) => message.role)).toEqual(['system', 'user']);
+  expect(retry!.messages.map((message) => message.role)).toEqual([
+    'system',
+    'user',
+    'assistant',
+    'user',
+  ]);
+  // The input of spec §6.1: the facts as codes and an age, never the name, code or birth year.
+  const sent = JSON.stringify(calls);
+  expect(first!.messages[1]!.content).toContain('"mode":"discovery"');
+  expect(first!.messages[1]!.content).toContain('"value":"42"');
+  expect(sent).not.toContain(name);
+  expect(sent).not.toContain('1984');
+  expect(sent).not.toMatch(/KH-\d/);
+});
+
+test('Thử lại of an error waits for the runner; ChatGPT web clears the error (review of PR 459)', async ({
+  page,
+}) => {
+  await asExe(page);
+  await stubChatGptWeb(page);
+  const name = 'Tú Thử Lại';
+  await createKycCustomer(page, name);
+  await addKycNote(page, name, discoveryFacts);
+  await writeNote(page, name, NOTE);
+  await useOpenCode(page);
+  const panel = panelOf(page);
+  await page.evaluate(() => (window.exe.aiError = { code: 'AI_NETWORK' }));
+  await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
+  const alert = panel.getByRole('alert');
+  await expect(alert).toContainText('Không kết nối được OpenCode.');
+  const retry = alert.getByRole('button', { name: 'Thử lại' });
+  await expect(retry).toBeEnabled();
+
+  // Another request runs: Thử lại would only meet AI_BUSY, so it is off until that one ends.
+  await page.evaluate(() => {
+    window.exe.aiError = null;
+    window.exe.holdAi();
+  });
+  await noteOf(page, NOTE).getByRole('button', { name: 'AI trích xuất' }).click();
+  await expect(noteOf(page, NOTE).getByRole('status')).toContainText('Đang trích xuất…');
+  await expect(retry).toBeDisabled();
+  await page.evaluate(() => window.exe.releaseAi());
+  await expect(noteOf(page, NOTE).getByRole('status')).toHaveCount(0);
+  await expect(retry).toBeEnabled();
+
+  // The error of Phân tích does not stay beside a ChatGPT web session.
+  await panel.getByRole('button', { name: 'Phân tích bằng ChatGPT web' }).click();
+  await expect(panel).toContainText('Lần thử 1 / 2');
+  await expect(panel).not.toContainText('Không kết nối được OpenCode.');
+  expect(await page.evaluate(() => window.exe.chatGptOpened)).toBe(1);
 });
