@@ -1,6 +1,7 @@
 # Docs are hand-formatted (Vietnamese tables); vendored skills are kept verbatim.
+# docs/ is skipped as a whole, like CI skips it (isDocsOnly in tools/pr-core.mjs, R2-12).
 *.md
-docs/design/
+docs/
 .claude/
 pnpm-lock.yaml
 **/src-tauri/target/
