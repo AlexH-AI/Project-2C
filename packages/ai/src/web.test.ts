@@ -79,6 +79,18 @@ const DISCOVERY_ANSWER = JSON.stringify({
 /** Valid JSON that fails V2 (a fact not in the input). */
 const BAD = JSON.stringify(GOOD).replace('"F7"', '"F99"');
 
+const NBSP = String.fromCodePoint(0xa0);
+const ZWSP = String.fromCodePoint(0x200b);
+
+/** Changes both frame lines of the `web@1` message (G5 §6a). */
+const eachFrame =
+  (change: (frame: string) => string) =>
+  (message: string): string =>
+    ['=== HƯỚNG DẪN ===', '=== ĐẦU VÀO ==='].reduce(
+      (changed, frame) => changed.replace(frame, () => change(frame)),
+      message,
+    );
+
 describe('the web@1 message', () => {
   it('wraps the approved G5 §6a text around the mode prompt and the input', () => {
     expect(WEB_WRAPPER).toEqual({ version: 'web@1', template: wrapper });
@@ -147,7 +159,7 @@ describe('checkWebAnswer', () => {
         provider: 'CHATGPT_WEB',
         model: null,
         reasoning: null,
-        promptVersion: 'analysis@1+web@1',
+        promptVersion: 'analysis@2+web@1',
         attempts: 1,
         input: session.input,
         output: { ...GOOD, personalityNotes: [] },
@@ -211,7 +223,7 @@ describe('checkWebAnswer', () => {
           { attempt: 2, errors: [{ code: 'V2' }] },
         ],
         provider: 'CHATGPT_WEB',
-        promptVersion: 'analysis@1+web@1',
+        promptVersion: 'analysis@2+web@1',
       },
     });
   });
@@ -273,9 +285,18 @@ describe('checkWebAnswer', () => {
         (message: string) => message.slice(0, message.indexOf('=== ĐẦU VÀO ===')),
       ],
       ['with CRLF line breaks', (message: string) => message.replaceAll('\n', '\r\n')],
+      // R2-03 (Owner G5 11/10/2026): both frame lines changed, so neither is matched as it is.
+      ['with spaces around the frame lines', eachFrame((frame) => `  ${frame}\t`)],
+      ['written NFD', (message: string) => message.normalize('NFD')],
       [
-        'with spaces around a frame line',
-        (message: string) => message.replace('=== HƯỚNG DẪN ===', '  === HƯỚNG DẪN ===\t'),
+        'with no-break spaces in the frame lines',
+        eachFrame((frame) => frame.replaceAll(' ', NBSP)),
+      ],
+      ['with a ZWSP before the frame lines', eachFrame((frame) => `${ZWSP}${frame}`)],
+      ['with two spaces in the frame lines', eachFrame((frame) => frame.replaceAll(' ', '  '))],
+      [
+        'quoted with "> " on every line',
+        (message: string) => message.replace(/^/gm, '> ').replace(/^> === /gm, '>> === '),
       ],
     ])('does not count it %s', (_, cut) => {
       const { session, message } = start();
@@ -295,6 +316,26 @@ describe('checkWebAnswer', () => {
         kind: 'unusable',
         reason: 'OWN_MESSAGE',
       });
+      expect(checkWebAnswer(retry.session, GOOD_ANSWER)).toMatchObject({
+        row: { status: 'ACCEPTED', attempts: 2 },
+      });
+    });
+
+    // R2-04 (Owner G5 11/10/2026): "Copy yêu cầu sửa" left in the clipboard, pasted back.
+    it.each([
+      ['as it is', (message: string) => message],
+      ['quoted', (message: string) => message.replace(/^/gm, '> ')],
+      ['only its first line', (message: string) => message.split('\n')[0]!],
+      ['only its last line', (message: string) => message.split('\n').at(-1)!],
+    ])('does not count the retry message pasted back %s', (_, cut) => {
+      const retry = checkWebAnswer(start().session, BAD);
+      if (retry.kind !== 'retry') throw new Error('no retry');
+
+      expect(checkWebAnswer(retry.session, cut(retry.retryMessage))).toEqual({
+        kind: 'unusable',
+        reason: 'OWN_MESSAGE',
+      });
+      // The session is still open, its second attempt unused.
       expect(checkWebAnswer(retry.session, GOOD_ANSWER)).toMatchObject({
         row: { status: 'ACCEPTED', attempts: 2 },
       });
@@ -324,7 +365,7 @@ describe('checkWebAnswer', () => {
         mode: 'discovery',
         gateState: 'PROFILE_DISCOVERY',
         status: 'ACCEPTED',
-        promptVersion: 'discovery@1+web@1',
+        promptVersion: 'discovery@2+web@1',
         output: { hypotheses: [], personalityNotes: [] },
       },
     });
@@ -338,14 +379,19 @@ describe('checkWebAnswer', () => {
     expect(paste(session, GOOD_ANSWER)).toMatchObject({ row: { attempts: 1 } });
   });
 
-  // Locks today's behaviour (Owner 10/10/2026, deep review Phase 5 §8 question 2): the format
-  // example of the G5 prompt passes V1–V6 when the input has its codes. The G5 round (Phase 6)
-  // makes it fail (V1 asks for a letter, or the example cites codes no input has): change this then.
-  it('accepts the format example of the analysis@1 prompt, for an input with its codes', () => {
-    const { session } = start();
+  // DR5-49 (b), Owner G5 11/10/2026: the format example of the prompt ("…" texts) fails V1, even
+  // for an input that has every code it cites; pasted alone, it is an attempt, never ACCEPTED.
+  it.each([
+    ['analysis', PROFILE, analysisPrompt],
+    ['discovery', DISCOVERY, discoveryPrompt],
+  ] as const)('does not accept the format example of the %s prompt', (_, profile, prompt) => {
+    const { session } = start(profile);
+    const { issues } = checkAnalysisAnswer(session.input, prompt.system);
 
-    expect(checkAnalysisAnswer(session.input, analysisPrompt.system)).toMatchObject({
-      issues: [],
+    expect(issues.length).toBeGreaterThan(0);
+    expect(issues.filter((issue) => issue.detail === 'không có chữ')).not.toEqual([]);
+    expect(paste(session, prompt.system, prompt.system)).toMatchObject({
+      row: { status: 'REJECTED', attempts: 2 },
     });
   });
 

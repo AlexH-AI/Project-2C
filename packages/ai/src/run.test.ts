@@ -132,7 +132,7 @@ describe('runAnalysis', () => {
         provider: 'OPENCODE_GO',
         model: 'kimi-k3',
         reasoning: 'HIGH',
-        promptVersion: 'analysis@1',
+        promptVersion: 'analysis@2',
         attempts: 1,
         input: buildAnalysisInput(PROFILE, evaluateKycGate(PROFILE.facts), TODAY),
         // `personalityNotes` left out is stored as the schema reads it: [].
@@ -144,7 +144,7 @@ describe('runAnalysis', () => {
       },
     });
     expect(requests).toHaveLength(1);
-    expect(requests[0]).toMatchObject({ model: 'kimi-k3', reasoning: 'HIGH', maxTokens: 8000 });
+    expect(requests[0]).toMatchObject({ model: 'kimi-k3', reasoning: 'HIGH', maxTokens: 24_000 });
     expect(requests[0]!.messages.map((message) => message.role)).toEqual(['system', 'user']);
     expect(requests[0]!.messages[0]!.content).toMatch(/^Bạn là trợ lý phân tích hồ sơ KYC/);
   });
@@ -303,7 +303,7 @@ describe('runAnalysis', () => {
         mode: 'discovery',
         gateState: 'PROFILE_DISCOVERY',
         status: 'ACCEPTED',
-        promptVersion: 'discovery@1',
+        promptVersion: 'discovery@2',
         output: { hypotheses: [], personalityNotes: [] },
       },
     });
@@ -515,7 +515,7 @@ describe('runExtraction', () => {
         { code: 'V7', path: 'facts[2].quote', detail: expect.any(String) },
       ],
     });
-    expect(requests[0]).toMatchObject({ maxTokens: 4000 });
+    expect(requests[0]).toMatchObject({ maxTokens: 12_000 });
     expect(requests[0]!.messages[0]!.content).toMatch(/^Bạn giúp RE/);
     expect(JSON.parse(requests[0]!.messages[1]!.content)).toMatchObject({ note: NOTE });
   });
@@ -556,7 +556,7 @@ describe('checkConnection', () => {
     const { adapter, requests } = scripted('Xin chào');
     const runner = createAiRunner(vi.fn());
     expect(await checkConnection({ runner, adapter, settings: OPENCODE })).toEqual({ kind: 'ok' });
-    expect(requests[0]).toMatchObject({ model: 'kimi-k3', reasoning: 'HIGH', maxTokens: 64 });
+    expect(requests[0]).toMatchObject({ model: 'kimi-k3', reasoning: 'HIGH', maxTokens: 1_024 });
     expect(requests[0]!.messages).toEqual([
       { role: 'system', content: 'Trả lời đúng một từ: OK' },
       { role: 'user', content: 'ping' },

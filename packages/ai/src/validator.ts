@@ -208,16 +208,15 @@ function schemaIssue(issue: z.core.$ZodIssue): ValidationIssue {
   return { code: 'V1', path: pathOf(issue.path), detail: schemaDetail(issue) };
 }
 
+/** Bounds are on blocks only: a text's length is a refinement with its own message (`schema.ts`). */
 function schemaDetail(issue: z.core.$ZodIssue): string {
   switch (issue.code) {
     case 'invalid_type':
       return `sai kiểu, cần ${issue.expected}`;
     case 'too_small':
-      return issue.origin === 'array' ? `cần ít nhất ${issue.minimum} phần tử` : 'chuỗi rỗng';
+      return `cần ít nhất ${issue.minimum} phần tử`;
     case 'too_big':
-      return issue.origin === 'array'
-        ? `quá ${issue.maximum} phần tử`
-        : `quá ${issue.maximum} ký tự`;
+      return `quá ${issue.maximum} phần tử`;
     case 'invalid_value':
       return 'giá trị không hợp lệ';
     case 'custom':

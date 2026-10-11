@@ -32,7 +32,8 @@ pub const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 /// `AI_BAD_RESPONSE`.
 pub const MAX_BODY: u64 = 2 * 1024 * 1024;
 
-const MAX_TOKENS: i64 = 16_000;
+/// Above the largest `maxTokens` of the prompts (24 000, prompts G5 §10.7, Owner 11/10/2026).
+const MAX_TOKENS: i64 = 32_000;
 /// Over the `content` of all messages, in characters.
 const MAX_MESSAGE_CHARS: usize = 200_000;
 const MAX_KEY_CHARS: usize = 512;
@@ -929,7 +930,7 @@ mod tests {
                 ..request("GO")
             },
             Request {
-                max_tokens: 16_001,
+                max_tokens: 32_001,
                 ..request("GO")
             },
             Request {
@@ -979,7 +980,7 @@ mod tests {
                 ..request("GO")
             },
             Request {
-                max_tokens: 16_000,
+                max_tokens: 32_000,
                 ..request("CREDIT")
             },
             Request {

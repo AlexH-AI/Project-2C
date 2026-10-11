@@ -80,22 +80,38 @@ export const analysisInputSchema = z.strictObject({
 
 export type AnalysisInput = z.infer<typeof analysisInputSchema>;
 
-/** Every string the AI writes: 1–300 characters once trimmed. */
-const text = z.string().trim().min(1).max(300);
-
 // Refinement messages are Vietnamese: the validator puts them in a V1 detail, which goes back to the
 // model in the retry message (prompts §5).
+
+/** Format characters (U+200B, U+00AD…) are invisible: a string of them only is empty. */
+const FORMAT_CHARS = /\p{Cf}/gu;
+
+/**
+ * Every string the AI writes: once trimmed, 1–300 characters counted in NFC (250 characters
+ * written NFD are 250), not only format characters (spec §6.2, G5 §10.4).
+ */
+const text = z
+  .string()
+  .trim()
+  .refine((s) => s.replace(FORMAT_CHARS, '').trim() !== '', { message: 'chuỗi rỗng', abort: true })
+  .refine((s) => Array.from(s.normalize('NFC')).length <= 300, 'quá 300 ký tự');
+
+/**
+ * A text of analysis / discovery also has a letter: the "…" of the prompt's format example is not
+ * an answer (DR5-49 b, Owner G5 11/10/2026). Not for extraction, whose value may be "2".
+ */
+const prose = text.refine((s) => /\p{L}/u.test(s), 'không có chữ');
 const evidence = z
   .array(z.string().regex(FACT_CODE))
   .refine((codes) => new Set(codes).size === codes.length, 'trích trùng một dữ kiện');
 
 /** Hypotheses, needs, pain points and themes: always cite at least one fact. */
-const evidencedItem = z.object({ text, evidence: evidence.min(1) });
+const evidencedItem = z.object({ text: prose, evidence: evidence.min(1) });
 
 /** Discovery strategy and next best actions: cite facts, or name a missing hạng mục, or both. */
 const actionItem = z
   .object({
-    text,
+    text: prose,
     evidence: evidence.default([]),
     missingCategory: z.enum(KYC_CATEGORIES).optional(),
   })
@@ -113,7 +129,7 @@ export const PERSONALITY_SYSTEMS = ['PSYCHOLOGY', 'ESOTERIC'] as const;
  * block out: an empty block is a right answer, not worth a retry (review #416).
  */
 const personalityNotes = z
-  .array(z.object({ system: z.enum(PERSONALITY_SYSTEMS), text, evidence: evidence.min(1) }))
+  .array(z.object({ system: z.enum(PERSONALITY_SYSTEMS), text: prose, evidence: evidence.min(1) }))
   .max(4)
   .default([]);
 

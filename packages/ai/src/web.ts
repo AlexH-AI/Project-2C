@@ -7,7 +7,7 @@
  */
 import type { CalendarDate, KycGateState } from '@p2c/domain';
 import type { AnalysisProfile } from './input';
-import { MAX_ATTEMPTS, nextRetry, type CheckedAnswer } from './prompts/retry';
+import { MAX_ATTEMPTS, nextRetry, RETRY_TEMPLATE, type CheckedAnswer } from './prompts/retry';
 import {
   ANALYSIS_PROMPTS,
   analysisOutcome,
@@ -17,6 +17,7 @@ import {
   type AnalysisRow,
 } from './run';
 import type { AnalysisInput } from './schema';
+import { cleanText } from './text-match';
 import type { ValidationIssue } from './validator';
 
 /**
@@ -79,13 +80,27 @@ export function startWebAnalysis(request: WebAnalysisRequest): WebStart {
 }
 
 /**
- * The frame lines of `web@1` (`=== HƯỚNG DẪN ===`, `=== ĐẦU VÀO ===`): a paste with one of them on
- * a line of its own is the app's message, all or part of it, never ChatGPT's answer (DR5-49).
+ * A line as it is compared (G5 §6a, R2-03): cleaned as V3–V6 read a text (NFKC, no format
+ * characters), without a quote prefix (`>`, `> >`…), each run of white space as one space.
  */
-const FRAME_LINES = WEB_WRAPPER.template.split('\n').filter((line) => /^=== .+ ===$/.test(line));
+const ownLine = (line: string) =>
+  cleanText(line)
+    .replace(/^[\s>]*>/u, '')
+    .replace(/\s+/gu, ' ')
+    .trim();
+
+/**
+ * Lines only the app writes: the frame lines of `web@1` (`=== HƯỚNG DẪN ===`, `=== ĐẦU VÀO ===`) and
+ * the first and last lines of the retry message (G5 §5). A paste with one of them on a line of its
+ * own is the app's message, all or part of it, never ChatGPT's answer (DR5-49, R2-04).
+ */
+const OWN_LINES = [
+  ...WEB_WRAPPER.template.split('\n').filter((line) => /^=== .+ ===$/.test(line)),
+  ...RETRY_TEMPLATE.split('\n').filter((line) => !line.includes('{issues}')),
+].map(ownLine);
 
 function isOwnMessage(pasted: string): boolean {
-  return pasted.split(/\r\n?|\n/).some((line) => FRAME_LINES.includes(line.trim()));
+  return pasted.split(/\r\n?|\n/).some((line) => OWN_LINES.includes(ownLine(line)));
 }
 
 export type WebAnswerResult =

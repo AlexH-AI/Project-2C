@@ -75,7 +75,7 @@ RE bấm "Phân tích bằng ChatGPT web" (cổng cho phép như nút Phân tíc
 
 1. **Không tự động hóa trang ChatGPT:** app không điền sẵn, không đọc câu trả lời, không đọc clipboard. Người dùng tự dán vào khung (Ctrl+V). Không đưa dữ kiện lên URL (lịch sử trình duyệt lưu URL); không dùng tham số không chính thức như `?q=`, `?temporary-chat=`.
 2. Copy lỗi (quyền clipboard) → hiện ô chỉ đọc chứa tin nhắn để người dùng tự chọn và copy. Nút **Copy lại** dùng được suốt phiên.
-3. Khung dán: chữ thường, không render HTML / Markdown; rỗng sau khi cắt khoảng trắng → nút tắt, không tính lần thử; quá 20 000 ký tự → báo lỗi tại khung, không tính lần thử (giới hạn `raw_output` §7.1); câu dán (sau chuẩn hóa xuống dòng) có một dòng là khung `=== HƯỚNG DẪN ===` hoặc `=== ĐẦU VÀO ===` của tin nhắn app (dán lại cả hay một phần tin nhắn) → báo "Đây là tin nhắn của app — hãy copy câu trả lời của ChatGPT." tại khung, không tính lần thử, không lưu gì (DR5-49, Owner 10/10/2026). Câu trả lời không có JSON → V1, **có** tính lần thử (như model trả sai).
+3. Khung dán: chữ thường, không render HTML / Markdown; rỗng sau khi cắt khoảng trắng → nút tắt, không tính lần thử; quá 20 000 ký tự → báo lỗi tại khung, không tính lần thử (giới hạn `raw_output` §7.1); câu dán có một dòng (sau chuẩn hóa: NFKC, bỏ ký tự định dạng, bỏ tiền tố trích dẫn `>`, gộp khoảng trắng — G5 §6a) là khung `=== HƯỚNG DẪN ===` hoặc `=== ĐẦU VÀO ===` của tin nhắn app (dán lại cả hay một phần tin nhắn), **hoặc là dòng đầu / dòng cuối của message thử lại G5 §5 (dán lại "Copy yêu cầu sửa")** → báo "Đây là tin nhắn của app — hãy copy câu trả lời của ChatGPT." tại khung, không tính lần thử, không lưu gì (DR5-49, Owner 10/10/2026; R2-03, R2-04, Owner 11/10/2026). Câu trả lời không có JSON → V1, **có** tính lần thử (như model trả sai).
 4. Mỗi KH tối đa một phiên web; phiên chỉ sống trong panel đang mở (không lưu DB, như đề xuất trích xuất §8). Trong phiên, mọi nút AI của KH đó tắt (ADR-0009 W-1 mục 6): **Phân tích** (OpenCode / Mock), ChatGPT web và **AI trích xuất** ở các ghi chú (DR5-39, Owner 10/10/2026).
 5. Phiên web không gọi mạng từ app → **không** giữ khóa "một yêu cầu AI" (P5); yêu cầu OpenCode ở KH khác vẫn chạy được. Kiểm và lưu chạy ngay trong webview.
 6. RE đổi KYC trong lúc phiên mở → kết quả vẫn lưu, gắn phiên bản đã chụp, nên hiện STALE ngay (như §3 điểm 2).
@@ -148,7 +148,7 @@ Hằng số trong `packages/ai`, mỗi dòng: mã model, tên hiện, có nhận
 - Header, cả hai gói (ADR-0009 W-1 mục 7, T-178): `x-opencode-session: <sessionId>` và `User-Agent: Project-2C/<phiên bản>`. `sessionId` do `packages/ai` sinh ngẫu nhiên, một mã cho mỗi cuộc hội thoại (hai lần thử của một lần phân tích / trích xuất dùng chung; mỗi lần Kiểm tra kết nối một mã); 1–64 ký tự `[A-Za-z0-9-]`, sai → `AI_BAD_REQUEST`. Không ghi vào DB, log, thông báo lỗi.
 - Body: `{ model, messages, max_tokens, reasoning_effort? }`; **không** dùng `response_format` (không phải model nào cũng nhận) — JSON lấy từ `content` (§6.1).
 - Lệnh chạy ở `spawn_blocking`, **không** dùng khóa file `DataLock` (gọi AI không chặn lưu dữ liệu).
-- `role` chỉ nhận `system` / `user` / `assistant`; `reasoning` chỉ nhận `null` / `low` / `medium` / `high`; `maxTokens` 1…16 000; `messages` tổng ≤ 200 000 ký tự → sai thì `AI_BAD_REQUEST`, không gọi mạng.
+- `role` chỉ nhận `system` / `user` / `assistant`; `reasoning` chỉ nhận `null` / `low` / `medium` / `high`; `maxTokens` 1…32 000 (G5 §10.7, Owner 11/10/2026); `messages` tổng ≤ 200 000 ký tự → sai thì `AI_BAD_REQUEST`, không gọi mạng.
 
 ### 5.2 Timeout và Hủy
 
@@ -202,7 +202,7 @@ Webview không bao giờ thấy key (D-1 mục 1; T-204, R2-09 / R2-10). Rust ki
 
 ### 6.2 Schema (zod, G2)
 
-Mọi chuỗi là tiếng Việt, 1–300 ký tự sau khi cắt khoảng trắng. `evidence` = mảng mã `F{seq}`, không trùng.
+Mọi chuỗi là tiếng Việt, 1–300 ký tự (đếm theo NFC) sau khi cắt khoảng trắng; chuỗi chỉ có ký tự định dạng (U+200B…) là rỗng. Chuỗi `text` của analysis / discovery phải có ít nhất một chữ cái (G5 §10.4, Owner 11/10/2026: "…" của ví dụ prompt không đạt). `evidence` = mảng mã `F{seq}`, không trùng.
 
 **Chế độ `analysis`** (`PAIN_POINT_ANALYSIS`) — 4 khối của ADR-0009:
 
@@ -245,7 +245,7 @@ Cảnh báo mâu thuẫn phụ **không** do AI viết: app sinh từ cổng lú
 
 ### 6.4 Validator (V1–V7)
 
-Chạy trên output đã parse; báo cáo = danh sách `{ code, path, detail }`. Mọi luật chữ so trên bản NFC chữ thường **và** bản bỏ dấu (bắt "xac suat").
+Chạy trên output đã parse; báo cáo = danh sách `{ code, path, detail }`. Mọi luật chữ so trên bản chuẩn hóa (NFKC, bỏ ký tự định dạng, `-` / `_` thành dấu cách — G5 §7) chữ thường **và** bản bỏ dấu (bắt "xac suat").
 
 | Mã | Luật | Áp cho |
 |---|---|---|
