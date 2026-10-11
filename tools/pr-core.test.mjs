@@ -1,5 +1,8 @@
 /* global URL */
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { ESLint } from 'eslint';
+import * as prettier from 'prettier';
 import { describe, expect, it } from 'vitest';
 import { CODEMAP_PACKAGES } from './codemap-core.mjs';
 import {
@@ -115,6 +118,29 @@ describe('isDocsOnly', () => {
   it('does not treat a docs-like name outside docs/ as docs', () => {
     expect(isDocsOnly(['apps/docs/x.ts', 'README.mdx'])).toBe(false);
   });
+
+  // A docs-only PR merges without CI, so pnpm verify must skip what CI skips, or main turns red
+  // unseen (R2-12). CODE_DOCS are Markdown: tests read them, prettier and eslint never check them.
+  // Loading eslint.config.js takes seconds when the whole suite runs in parallel.
+  it(
+    'matches what pnpm verify skips: prettier and eslint ignore every docs-only file',
+    { timeout: 60_000 },
+    async () => {
+      const root = fileURLToPath(new URL('..', import.meta.url));
+      const ignorePath = fileURLToPath(new URL('../.prettierignore', import.meta.url));
+      const eslint = new ESLint({ cwd: root });
+      const files = ['docs/reviews/raw/x/probe.mjs', 'docs/reviews/x/data.json', 'docs/a.ts'];
+      expect(isDocsOnly(files)).toBe(true);
+      for (const file of files) {
+        const info = await prettier.getFileInfo(`${root}${file}`, { ignorePath });
+        expect({ file, prettier: info.ignored }).toEqual({ file, prettier: true });
+        expect({ file, eslint: await eslint.isPathIgnored(file) }).toEqual({ file, eslint: true });
+      }
+      const code = `${root}tools/pr-core.mjs`;
+      expect((await prettier.getFileInfo(code, { ignorePath })).ignored).toBe(false);
+      expect(await eslint.isPathIgnored('tools/pr-core.mjs')).toBe(false);
+    },
+  );
 });
 
 describe('riskLevel', () => {

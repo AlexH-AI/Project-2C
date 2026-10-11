@@ -11,6 +11,8 @@ export default tseslint.config(
       '**/src-tauri/target/**',
       '**/src-tauri/gen/**',
       '.scratch/**',
+      // CI skips docs/ (isDocsOnly in tools/pr-core.mjs), so verify does too (R2-12).
+      'docs/**',
     ],
   },
   js.configs.recommended,
