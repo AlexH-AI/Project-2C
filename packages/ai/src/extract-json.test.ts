@@ -22,6 +22,25 @@ describe('extractJson', () => {
     expect(extractJson(content)).toEqual({ found: true, value: { a: 1 } });
   });
 
+  it('finds the JSON after a brace never closed and an odd quote in the text (review #521)', () => {
+    // From the unclosed brace, the quote opens a string up to the JSON's first quote.
+    expect(extractJson('Lưu ý {mẫu "x. Kết quả: {"a":1}')).toEqual({
+      found: true,
+      value: { a: 1 },
+    });
+    expect(extractJson('{ "x { "y {"a":1}')).toEqual({ found: true, value: { a: 1 } });
+    expect(extractJson('Lưu ý {mẫu "x. Kết quả: {"a":1}', { cut: true })).toEqual({
+      found: false,
+    });
+  });
+
+  it('reads again after 3 unclosed braces with an odd quote at most', () => {
+    // Each `{ \"` takes one more reading: from its brace, the escaped quote opens a string.
+    const prose = (count: number) => `${'{ \\"'.repeat(count)} {"a":1}`;
+    expect(extractJson(prose(3))).toEqual({ found: true, value: { a: 1 } });
+    expect(extractJson(prose(4))).toEqual({ found: false });
+  });
+
   it('reads nested objects', () => {
     expect(extractJson('x {"a": {"b": [1, {"c": null}]}} y')).toEqual({
       found: true,
@@ -81,6 +100,7 @@ describe('extractJson', () => {
     ['nested blocks that are not JSON', `${'{"a": '.repeat(20_000)}x${'}'.repeat(20_000)}`],
     ['many small blocks that are not JSON', '{x} '.repeat(25_000)],
     ['many small blocks that fail late', '{"a"x} '.repeat(14_000)],
+    ['unclosed braces read again', '{ \\"'.repeat(25_000)],
   ])('reads 100 000 characters of %s in one pass', (_, content) => {
     const started = Date.now();
     extractJson(content);

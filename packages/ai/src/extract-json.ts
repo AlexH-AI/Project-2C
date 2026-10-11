@@ -8,9 +8,13 @@
  * blocks inside it are tried in turn, unless the answer is known to be cut: then they are pieces of
  * the cut answer, not the answer (DR5-05).
  *
- * One pass (DR5-04): each character is read once, and the blocks given to `JSON.parse` never overlap.
- * A failed `JSON.parse` costs an exception, so after `MAX_FAILED_PARSES` of them the answer is taken
- * to hold no JSON; a real answer has one block, or a few braces of prose before it.
+ * A quote in the prose after an unclosed `{` makes what follows a string to a scan from that `{`, so
+ * the text after it is read again, as many times as there are such braces up to `MAX_RESCANS`
+ * (one is enough unless the prose is made to defeat it: each reading turns the quotes around).
+ *
+ * Linear (DR5-04): at most `MAX_RESCANS + 1` passes, and the blocks given to `JSON.parse` in a pass
+ * never overlap. A failed `JSON.parse` costs an exception, so after `MAX_FAILED_PARSES` of them the
+ * answer is taken to hold no JSON; a real answer has one block, or a few braces of prose before it.
  */
 export type ExtractedJson =
   { readonly found: true; readonly value: unknown } | { readonly found: false };
@@ -23,6 +27,7 @@ export interface ExtractOptions {
 const NONE: ExtractedJson = { found: false };
 
 const MAX_FAILED_PARSES = 100;
+const MAX_RESCANS = 3;
 
 export function extractJson(content: string, { cut = false }: ExtractOptions = {}): ExtractedJson {
   let failed = 0;
@@ -39,35 +44,41 @@ export function extractJson(content: string, { cut = false }: ExtractOptions = {
       return NONE;
     }
   };
-  /** Where each `{` still open is; quotes and `}` outside every block are prose. */
-  const open: number[] = [];
-  /** The outermost blocks closed inside the first `{` still open, in order. */
-  const closed: { readonly start: number; readonly end: number }[] = [];
-  let inString = false;
-  for (let i = 0; i < content.length; i++) {
-    const char = content[i];
-    if (inString) {
-      if (char === '\\') i++;
-      else if (char === '"') inString = false;
-    } else if (char === '{') open.push(i);
-    else if (open.length === 0) continue;
-    else if (char === '"') inString = true;
-    else if (char === '}') {
-      const start = open.pop()!;
-      // The blocks inside this one are part of it now.
-      while (closed.length > 0 && closed.at(-1)!.start > start) closed.pop();
-      if (open.length > 0) {
-        closed.push({ start, end: i });
-      } else {
-        const json = parse(start, i);
-        if (json.found || failed === MAX_FAILED_PARSES) return json;
+  for (let from = 0, rescans = 0; ; rescans++) {
+    /** Where each `{` still open is; quotes and `}` outside every block are prose. */
+    const open: number[] = [];
+    /** The outermost blocks closed inside the first `{` still open, in order. */
+    const closed: { readonly start: number; readonly end: number }[] = [];
+    let inString = false;
+    let quoted = false;
+    for (let i = from; i < content.length; i++) {
+      const char = content[i];
+      if (inString) {
+        if (char === '\\') i++;
+        else if (char === '"') inString = false;
+      } else if (char === '{') open.push(i);
+      else if (open.length === 0) continue;
+      else if (char === '"') inString = quoted = true;
+      else if (char === '}') {
+        const start = open.pop()!;
+        // The blocks inside this one are part of it now.
+        while (closed.length > 0 && closed.at(-1)!.start > start) closed.pop();
+        if (open.length > 0) {
+          closed.push({ start, end: i });
+        } else {
+          const json = parse(start, i);
+          if (json.found || failed === MAX_FAILED_PARSES) return json;
+        }
       }
     }
+    if (cut || open.length === 0) return NONE;
+    for (const { start, end } of closed) {
+      const json = parse(start, end);
+      if (json.found || failed === MAX_FAILED_PARSES) return json;
+    }
+    if (!quoted || rescans === MAX_RESCANS) return NONE;
+    // Read from the first unclosed `{` on, a quote in the prose may have taken the JSON for a
+    // string: read again from right after it, a quote there being prose (review #521).
+    from = open[0]! + 1;
   }
-  if (cut) return NONE;
-  for (const { start, end } of closed) {
-    const json = parse(start, end);
-    if (json.found || failed === MAX_FAILED_PARSES) return json;
-  }
-  return NONE;
 }

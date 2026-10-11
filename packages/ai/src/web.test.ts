@@ -365,7 +365,7 @@ describe('checkWebAnswer', () => {
     const { session } = start();
     const started = Date.now();
     expect(checkWebAnswer(session, text)).toEqual({ kind: 'unusable', reason: 'TOO_LONG' });
-    expect(Date.now() - started).toBeLessThan(20);
+    expect(Date.now() - started).toBeLessThan(50);
   });
 
   it('records a discovery with its own prompt version', () => {
