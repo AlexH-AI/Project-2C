@@ -1,0 +1,355 @@
+<!doctype html>
+<!--
+  Mockup G3 Phase 6 — Cài đặt → Thùng rác (spec docs/design/phase-6-hoan-thien.md §4.2, S-2 §4.1).
+  Mục lục:
+    #p11a  Màn Thùng rác: lọc theo loại, tìm, bảng, dòng bị chặn      (~dòng 131)
+    #p11b  Hộp khôi phục KH (TR-4, E1)                                   (~dòng 221)
+    #p11c  Hộp khôi phục cuộc hẹn Đã gặp (TR-3, E5 / E7)                 (~dòng 238)
+    #p11d  Lý do chặn — mẫu câu từng loại (TR-1…TR-5)                     (~dòng 257)
+    #p11e  Sau khi khôi phục · Thùng rác trống                             (~dòng 283)
+    #p11f  Xóa KH 5f trong app + câu ở các hộp xóa (TR-9, TR-10)          (~dòng 303)
+    #p11g  Lệnh ghi bị từ chối trong lúc thay dữ liệu (S2-2)               (~dòng 335)
+-->
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Thùng rác — Project-2C mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="mockups.css" />
+    <link rel="stylesheet" href="forms.css" />
+    <style>
+      .settings-layout {
+        display: grid;
+        grid-template-columns: 200px minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+      }
+      .subnav a {
+        display: block;
+        padding: 8px 10px;
+        border-radius: var(--radius-sm);
+        color: var(--text-2);
+        font-size: var(--fs-sm);
+      }
+      .subnav a.on {
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .kind {
+        font-size: var(--fs-xs);
+        font-weight: 700;
+        color: var(--text-3);
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+      }
+      .rec b {
+        display: block;
+        font-weight: 600;
+      }
+      .rec .more {
+        color: var(--text-3);
+        font-size: var(--fs-xs);
+      }
+      .why {
+        display: block;
+        margin-top: 3px;
+        color: var(--warn);
+        font-size: var(--fs-xs);
+      }
+      .gone {
+        color: var(--text-3);
+      }
+      .filter-bar .search {
+        flex: 1;
+        min-width: 220px;
+      }
+      .seg-n {
+        color: var(--text-3);
+        margin-left: 4px;
+        font-variant-numeric: tabular-nums;
+      }
+      .empty {
+        text-align: center;
+        padding: 28px 12px;
+        color: var(--text-2);
+        font-size: var(--fs-sm);
+      }
+      .empty b {
+        display: block;
+        color: var(--text);
+        font-size: var(--fs-md);
+        margin-bottom: 4px;
+      }
+      .path {
+        font-family: Consolas, 'Cascadia Mono', monospace;
+        font-size: var(--fs-sm);
+        color: var(--text-2);
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 2px 7px;
+      }
+    </style>
+  </head>
+  <body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none" aria-hidden="true">
+      <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" /><rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="16" width="7" height="5" rx="1.5" /></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M8 14h2M14 14h2M8 17.5h2" /></symbol>
+      <symbol id="i-customers" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.5a6.5 6.5 0 0 1 3 5.5" /></symbol>
+      <symbol id="i-reports" viewBox="0 0 24 24"><path d="M3 3v18h18" /><path d="M7.5 16.5v-4M12 16.5V8M16.5 16.5v-6.5" /></symbol>
+      <symbol id="i-team" viewBox="0 0 24 24"><rect x="9" y="2.5" width="6" height="5" rx="1" /><rect x="2.5" y="16.5" width="6" height="5" rx="1" /><rect x="15.5" y="16.5" width="6" height="5" rx="1" /><path d="M12 7.5v4M5.5 16.5v-2a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v2" /></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" /><circle cx="15" cy="6" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="18" r="2" /></symbol>
+    </svg>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">2C</span> Project-2C</div>
+        <nav class="nav">
+          <a href="overview.html"><svg class="ico" aria-hidden="true"><use href="#i-overview" /></svg>Tổng quan hôm nay</a>
+          <a href="appointments.html"><svg class="ico" aria-hidden="true"><use href="#i-calendar" /></svg>Lịch hẹn</a>
+          <a href="customers.html"><svg class="ico" aria-hidden="true"><use href="#i-customers" /></svg>Khách hàng</a>
+          <a href="reports.html"><svg class="ico" aria-hidden="true"><use href="#i-reports" /></svg>Báo cáo</a>
+          <div class="nav-label">Quản lý</div>
+          <a href="team.html"><svg class="ico" aria-hidden="true"><use href="#i-team" /></svg>Team &amp; nhân sự</a>
+          <a href="settings-data.html" class="active"><svg class="ico" aria-hidden="true"><use href="#i-settings" /></svg>Cài đặt</a>
+        </nav>
+        <div class="sidebar-foot"><span class="save-state"><span class="dot"></span>Đã lưu 16:45</span></div>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <h1>Cài đặt</h1>
+        </header>
+
+        <div class="content">
+          <!-- 11a: the trash screen -->
+          <div class="settings-layout" id="p11a">
+            <nav class="card subnav" aria-label="Mục cài đặt">
+              <a href="settings-data.html">Dữ liệu</a>
+              <a href="ai.html">AI</a>
+              <a href="#" class="on">Thùng rác</a>
+            </nav>
+
+            <section class="card" aria-label="Thùng rác">
+              <div class="card-head"><h2>Thùng rác</h2><span class="meta num">14 bản ghi</span></div>
+              <p class="help" style="margin: 0 0 12px">Bản ghi đã xóa mềm: ẩn khỏi danh sách và chỉ số. Khôi phục đưa bản ghi về như trước. Thùng rác không tự dọn, không xóa vĩnh viễn; xuất backup mang theo cả thùng rác.</p>
+              <div class="filter-bar" style="margin-bottom: 10px">
+                <div class="segmented" role="group" aria-label="Loại bản ghi">
+                  <button class="on">Tất cả<span class="seg-n">14</span></button>
+                  <button>KH<span class="seg-n">3</span></button>
+                  <button>Lịch hẹn<span class="seg-n">6</span></button>
+                  <button>HĐ<span class="seg-n">2</span></button>
+                  <button>Nhân sự<span class="seg-n">2</span></button>
+                  <button>Team<span class="seg-n">1</span></button>
+                </div>
+                <div class="search">Tìm theo tên KH, nhân sự, team…</div>
+              </div>
+              <table>
+                <thead>
+                  <tr><th>Loại</th><th>Bản ghi</th><th>Thuộc</th><th class="sort desc">Xóa lúc</th><th></th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="kind">KH</span></td>
+                    <td class="rec"><b>Trịnh Minh Anh <span class="badge st-n3">N3</span></b><span class="more num">khôi phục kèm 7 lịch hẹn · 0 HĐ · 5 ghi chú KYC</span></td>
+                    <td>RE Đỗ Khánh Linh · Sao Mai</td>
+                    <td class="num">10/10/2026 16:42</td>
+                    <td class="r"><button class="btn">Khôi phục…</button></td>
+                  </tr>
+                  <tr>
+                    <td><span class="kind">Lịch hẹn</span></td>
+                    <td class="rec"><b class="num">02/10/2026 09:30 · Đã gặp</b><span class="more">N3 → N2 · tính RF</span></td>
+                    <td>KH Phạm Gia Bảo · RE Bùi Anh Tuấn</td>
+                    <td class="num">09/10/2026 11:05</td>
+                    <td class="r"><button class="btn">Khôi phục…</button></td>
+                  </tr>
+                  <tr>
+                    <td><span class="kind">Lịch hẹn</span></td>
+                    <td class="rec"><b class="num">06/10/2026 14:00 · Dự kiến</b><span class="why">Khôi phục KH Trịnh Minh Anh trước.</span></td>
+                    <td>KH Trịnh Minh Anh <span class="gone">(đã xóa)</span> · RE Đỗ Khánh Linh</td>
+                    <td class="num">08/10/2026 10:12</td>
+                    <td class="r"><button class="btn" disabled>Khôi phục…</button></td>
+                  </tr>
+                  <tr>
+                    <td><span class="kind">Lịch hẹn</span></td>
+                    <td class="rec"><b class="num">28/09/2026 15:00 · Đã gặp</b><span class="more">N3 → N2</span><span class="why">Nhóm KH đã đổi ngày 05/10/2026, sau ngày cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10).</span></td>
+                    <td>KH Lê Hoài Nam · RE Lâm Bảo Phương</td>
+                    <td class="num">07/10/2026 09:48</td>
+                    <td class="r"><button class="btn" disabled>Khôi phục…</button></td>
+                  </tr>
+                  <tr>
+                    <td><span class="kind">HĐ</span></td>
+                    <td class="rec"><b class="num">Nộp 15/09/2026 · 24.000.000 ₫</b><span class="more"><span class="badge pol-submitted plain">Đã nộp</span></span></td>
+                    <td>KH Hoàng Ngọc Lan · RE Hoàng Nhật Minh</td>
+                    <td class="num">06/10/2026 17:20</td>
+                    <td class="r"><button class="btn">Khôi phục…</button></td>
+                  </tr>
+                  <tr>
+                    <td><span class="kind">Nhân sự</span></td>
+                    <td class="rec"><b>Vương Thị Mai</b><span class="more">RE</span><span class="why">Khôi phục team Bình Minh trước.</span></td>
+                    <td>Team Bình Minh <span class="gone">(đã xóa)</span></td>
+                    <td class="num">05/10/2026 08:31</td>
+                    <td class="r"><button class="btn" disabled>Khôi phục…</button></td>
+                  </tr>
+                  <tr>
+                    <td><span class="kind">Team</span></td>
+                    <td class="rec"><b>Bình Minh</b><span class="more">khôi phục chưa kèm thành viên — khôi phục từng người sau</span></td>
+                    <td class="muted">—</td>
+                    <td class="num">05/10/2026 08:33</td>
+                    <td class="r"><button class="btn">Khôi phục…</button></td>
+                  </tr>
+                  <tr>
+                    <td><span class="kind">Nhân sự</span></td>
+                    <td class="rec"><b>Lý Quốc Bảo</b><span class="more">TL</span><span class="why">Sao Mai đã có TL Nguyễn Thu Hà.</span></td>
+                    <td>Team Sao Mai</td>
+                    <td class="num">03/10/2026 13:02</td>
+                    <td class="r"><button class="btn" disabled>Khôi phục…</button></td>
+                  </tr>
+                  <tr><td colspan="5" class="muted" style="text-align: center">… 6 bản ghi khác</td></tr>
+                </tbody>
+              </table>
+            </section>
+          </div>
+
+          <div class="specimens">
+            <!-- 11b: restore a customer -->
+            <section class="specimen" id="p11b">
+              <p class="cap">11b · Khôi phục KH (TR-4, E1)</p>
+              <div class="dialog">
+                <div class="dialog-head"><div><h2>Khôi phục Trịnh Minh Anh?</h2><div class="sub">KH · xóa lúc 10/10/2026 16:42</div></div><span class="x">×</span></div>
+                <div class="dialog-body">
+                  <dl class="kv">
+                    <dt>Nhóm</dt><dd><span class="badge st-n3">N3</span></dd>
+                    <dt>RE</dt><dd>Đỗ Khánh Linh · Sao Mai</dd>
+                    <dt>Hiện lại cùng KH</dt><dd class="num">7 lịch hẹn (3 đã gặp · 1 lần tính RF) · 0 HĐ · 5 ghi chú KYC · 2 phân tích AI</dd>
+                  </dl>
+                  <div class="alert info">KH và các bản ghi trên vào lại danh sách và chỉ số theo đúng ngày của từng bản ghi. Lịch hẹn / HĐ đã xóa riêng trước đó vẫn ở Thùng rác (1 lịch hẹn), khôi phục riêng sau.</div>
+                </div>
+                <div class="dialog-foot"><span class="spacer"></span><button class="btn">Hủy</button><button class="btn btn-primary">Khôi phục</button></div>
+              </div>
+            </section>
+
+            <!-- 11c: restore a met appointment -->
+            <section class="specimen" id="p11c">
+              <p class="cap">11c · Khôi phục cuộc hẹn Đã gặp (TR-3) — E5 và E7</p>
+              <div class="dialog">
+                <div class="dialog-head"><div><h2>Khôi phục lịch hẹn 02/10/2026 09:30?</h2><div class="sub">KH Phạm Gia Bảo · RE Bùi Anh Tuấn</div></div><span class="x">×</span></div>
+                <div class="dialog-body">
+                  <dl class="kv">
+                    <dt>Kết quả</dt><dd>Đã gặp · nhóm sau <span class="badge st-n2">N2</span></dd>
+                    <dt>Nhóm KH hiện tại</dt><dd><span class="badge st-n3">N3</span></dd>
+                  </dl>
+                  <div class="alert info"><b>Nhóm KH: N3 → N2 từ 02/10/2026</b>Ghi lại chuyển nhóm của cuộc gặp; tính 1 RF cho Bùi Anh Tuấn trong kỳ có ngày 02/10/2026.</div>
+                  <div class="divider"></div>
+                  <span class="help">E7 — KH đã ở N2 do chuyển tay ngày 10/10/2026:</span>
+                  <div class="alert info"><b>Nhóm KH giữ N2</b>KH đã ở nhóm sau cuộc gặp nên không ghi thêm chuyển nhóm; cuộc hẹn này không tính RF.</div>
+                </div>
+                <div class="dialog-foot"><span class="spacer"></span><button class="btn">Hủy</button><button class="btn btn-primary">Khôi phục</button></div>
+              </div>
+            </section>
+
+            <!-- 11d: blocked reasons -->
+            <section class="specimen" id="p11d">
+              <p class="cap">11d · Lý do chặn — một dòng dưới bản ghi, nút Khôi phục tắt (TR-1…TR-5)</p>
+              <div class="dialog">
+                <div class="dialog-head"><div><h2>Mẫu câu</h2><div class="sub">tên in đậm = bản ghi chặn</div></div></div>
+                <div class="dialog-body" style="font-size: var(--fs-sm)">
+                  <span class="kind">KH</span>
+                  <span class="why" style="margin: 0">RE <b>Đỗ Khánh Linh</b> đã xóa — khôi phục RE trước. <span class="muted">(E2)</span></span>
+                  <span class="why" style="margin: 0"><b>Đỗ Khánh Linh</b> nay là TL, không phụ trách KH được — đổi lại vai trò RE trước. <span class="muted">(E3)</span></span>
+                  <span class="kind">Lịch hẹn</span>
+                  <span class="why" style="margin: 0">Khôi phục KH <b>Trịnh Minh Anh</b> trước. <span class="muted">(E4)</span></span>
+                  <span class="why" style="margin: 0">Nhóm KH đã đổi ngày <b>05/10/2026</b>, sau ngày cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10). <span class="muted">(E6, E8)</span></span>
+                  <span class="why" style="margin: 0">KH đang Mất cơ hội, chỉ mở lại được về N3 — không chuyển sang N2. <span class="muted">(TR-3)</span></span>
+                  <span class="why" style="margin: 0">Người phối hợp <b>Phó Đức Huy</b> đã xóa — khôi phục trước. <span class="muted">(E9)</span></span>
+                  <span class="why" style="margin: 0">Người đánh giá <b>Vũ Thanh Tâm</b> nay là RE. <span class="muted">(E10)</span></span>
+                  <span class="why" style="margin: 0">Kết quả ngày <b>14/10/2026</b> sau hôm nay. <span class="muted">(TR-5)</span></span>
+                  <span class="kind">HĐ</span>
+                  <span class="why" style="margin: 0">Ngày nộp <b>20/10/2026</b> sau hôm nay. <span class="muted">(E13)</span></span>
+                  <span class="kind">Nhân sự · Team</span>
+                  <span class="why" style="margin: 0">Khôi phục team <b>Bình Minh</b> trước. <span class="muted">(E14)</span></span>
+                  <span class="why" style="margin: 0">Sao Mai đã có TL <b>Nguyễn Thu Hà</b>. <span class="muted">(E15)</span></span>
+                  <span class="why" style="margin: 0">Đã có team <b>Bình Minh</b> — đổi tên team kia trước. <span class="muted">(E16)</span></span>
+                </div>
+              </div>
+            </section>
+
+            <!-- 11e: after restoring, empty -->
+            <section class="specimen" id="p11e">
+              <p class="cap">11e · Sau khi khôi phục · Thùng rác trống</p>
+              <div class="dialog">
+                <div class="dialog-body">
+                  <div class="toast ok" style="max-width: none; box-shadow: none">
+                    <span class="c-ok" style="font-weight: 700">✓</span>
+                    <div class="t-body"><b>Đã khôi phục KH Trịnh Minh Anh</b><span>cùng 7 lịch hẹn, 5 ghi chú KYC</span></div>
+                    <button class="btn" style="padding: 3px 9px">Mở hồ sơ</button>
+                  </div>
+                  <span class="help">Nút "Mở": KH / lịch hẹn / HĐ → hồ sơ KH; nhân sự / team → Team &amp; nhân sự. Lỗi khi bấm Khôi phục (dữ liệu vừa đổi) hiện trong hộp, hộp giữ mở.</span>
+                  <div class="divider"></div>
+                  <div class="empty">
+                    <b>Thùng rác trống</b>
+                    KH, lịch hẹn, HĐ, nhân sự và team đã xóa nằm ở đây và khôi phục được.
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 11f: customer delete 5f in the app, delete dialog lines -->
+            <section class="specimen" id="p11f">
+              <p class="cap">11f · Xóa KH (5f, nay có trong app) + câu ở các hộp xóa (TR-9, TR-10)</p>
+              <div class="dialog">
+                <div class="dialog-head">
+                  <div><h2>Xóa Trịnh Minh Anh?</h2><div class="sub">từ hộp Sửa KH → "Xóa KH…"</div></div>
+                  <span class="x">×</span>
+                </div>
+                <div class="dialog-body">
+                  <p style="margin: 0; color: var(--text-2)">KH và mọi bản ghi của KH sẽ bị ẩn khỏi danh sách và mọi chỉ số:</p>
+                  <dl class="kv">
+                    <dt>Lịch hẹn</dt><dd class="num">7 (3 đã gặp · 1 lần tính RF)</dd>
+                    <dt>Hợp đồng</dt><dd class="num">0</dd>
+                    <dt>Ghi chú KYC</dt><dd class="num">5 — giữ nguyên, không bao giờ xóa</dd>
+                  </dl>
+                  <div class="alert info">Dữ liệu vẫn còn: khôi phục ở Cài đặt → Thùng rác.</div>
+                  <div class="divider"></div>
+                  <span class="help">Câu thay ở các hộp xóa khác:</span>
+                  <dl class="kv">
+                    <dt>6g lịch hẹn</dt><dd>Xóa mềm, khôi phục được ở Cài đặt → Thùng rác.</dd>
+                    <dt>HĐ</dt><dd>Xóa mềm: HĐ vẫn nằm trong dữ liệu (D4), khôi phục ở Cài đặt → Thùng rác.</dd>
+                    <dt>Nhân sự / team</dt><dd>… được xóa mềm: ẩn khỏi danh sách, dữ liệu cũ vẫn giữ; khôi phục ở Cài đặt → Thùng rác.</dd>
+                  </dl>
+                </div>
+                <div class="dialog-foot">
+                  <span class="spacer"></span>
+                  <button class="btn">Hủy</button>
+                  <button class="btn btn-danger">Xóa KH</button>
+                </div>
+              </div>
+            </section>
+
+            <!-- 11g: write refused while the data is replaced -->
+            <section class="specimen" id="p11g">
+              <p class="cap">11g · Lệnh ghi bị từ chối trong lúc thay dữ liệu (S2-2)</p>
+              <div class="dialog">
+                <div class="dialog-head"><div><h2>Ghi kết quả cuộc gặp</h2><div class="sub">hiện ở chỗ hộp / màn vẫn báo lỗi lệnh</div></div><span class="x">×</span></div>
+                <div class="dialog-body">
+                  <div class="alert warn">
+                    <b>Đang thay toàn bộ dữ liệu (Nạp lại / Nhập backup)</b>
+                    Thay đổi này chưa được ghi — thử lại khi xong.
+                  </div>
+                  <span class="help">Gặp khi một lệnh ghi lọt vào lúc đang thay dữ liệu. Kết quả AI về đúng lúc đó bị bỏ, panel không hiện gì (như khi về sau lúc thay).</span>
+                </div>
+                <div class="dialog-foot"><span class="spacer"></span><button class="btn">Hủy</button><button class="btn btn-primary">Lưu</button></div>
+              </div>
+            </section>
+          </div>
+          <div class="mock-note">Mockup G3 Phase 6 · dữ liệu giả lập · hôm nay 11/10/2026 · ví dụ E1–E17 ở spec Phase 6 §4.2</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
