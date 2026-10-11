@@ -49,7 +49,7 @@ export {
   KYC_INSUFFICIENT_MESSAGE,
 } from './kyc-catalog';
 export type { KycCategory, KycCategorySpec, KycField, KycGateState } from './kyc-catalog';
-export { KYC_FACT_STATUSES, normalizeKycValue } from './kyc-fact';
+export { KYC_FACT_STATUSES, kycFieldType, normalizeKycValue } from './kyc-fact';
 export { EVIDENCE_LEVELS, evidenceLevel } from './evidence-level';
 export type { Evidence, EvidenceFact, EvidenceLevel } from './evidence-level';
 export {
@@ -63,7 +63,7 @@ export {
   resolveConflict,
 } from './kyc';
 export type { KycFactInput, KycNote, KycProfile, KycVersion } from './kyc';
-export type { KycFact, KycFactStatus, KycValue } from './kyc-fact';
+export type { KycFact, KycFactStatus, KycFieldType, KycValue } from './kyc-fact';
 export { evaluateKycGate } from './kyc-gate';
 export type { KycGateResult, KycSuggestedQuestions } from './kyc-gate';
 export { assertValidTransition, isRfTransition, stageOn } from './customer-lifecycle';

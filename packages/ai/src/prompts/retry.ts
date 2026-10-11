@@ -45,12 +45,19 @@ export function checkAnswer(
   return { content, parsed, issues: check(parsed) };
 }
 
+/** The last answer of a conversation; one with none is a bug of the caller, said plainly (MS-A8). */
+export function lastAnswer(attempts: readonly CheckedAnswer[]): CheckedAnswer {
+  const last = attempts.at(-1);
+  if (!last) throw new RangeError('A conversation with no answer has no outcome');
+  return last;
+}
+
 /**
  * The retry message to send after `attempts`, with the issues of the last one; `null` when the
  * conversation is over: the last answer passed, or it was the last attempt.
  */
 export function nextRetry(attempts: readonly CheckedAnswer[]): string | null {
-  const last = attempts.at(-1)!;
+  const last = lastAnswer(attempts);
   if (last.issues.length === 0 || attempts.length >= MAX_ATTEMPTS) return null;
   return retryMessage(last.issues);
 }

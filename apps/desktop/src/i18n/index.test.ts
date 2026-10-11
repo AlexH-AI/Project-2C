@@ -1,4 +1,6 @@
+import { KYC_CATEGORY_LABELS, KYC_FIELD_LABELS } from '@p2c/ai';
 import { DB_ERROR_CODES, DbError } from '@p2c/db';
+import { KYC_CATEGORIES, KYC_FIELDS, type KycField } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { COUNT_SLOTS, PLAIN_SLOTS, errorMessage, fillSlots, joinParts, t, tableMore } from '.';
 import { vi } from './vi';
@@ -49,6 +51,20 @@ describe('the save warning', () => {
   // DR-52: a SQLite tool holding the file is the usual reason a save fails.
   it('names a program holding the file as the likely cause', () => {
     expect(t('storage.saveFailed')).toContain('file có thể đang mở trong chương trình khác');
+  });
+});
+
+// The labels sent to the AI and written by the seed are the ones on screen (DR5-18).
+describe('the KYC labels of @p2c/ai', () => {
+  it('are the labels of the app, hạng mục and trường alike', () => {
+    expect(KYC_CATEGORY_LABELS).toEqual(
+      Object.fromEntries(KYC_CATEGORIES.map((code) => [code, vi[`kycCategory.${code}`]])),
+    );
+    expect(KYC_FIELD_LABELS).toEqual(
+      Object.fromEntries(
+        (Object.keys(KYC_FIELDS) as KycField[]).map((field) => [field, vi[`kycField.${field}`]]),
+      ),
+    );
   });
 });
 

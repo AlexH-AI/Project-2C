@@ -1,3 +1,4 @@
+import { evaluateKycGate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import type { AiCompleteRequest } from './adapter';
 import { AiError } from './errors';
@@ -5,10 +6,14 @@ import { extractJson } from './extract-json';
 import { createMockAdapter } from './mock-adapter';
 import {
   analysisOutputSchema,
+  buildAnalysisInput,
   discoveryOutputSchema,
   extractionOutputSchema,
+  mockAnalysisOutput,
+  mockDiscoveryOutput,
   type AnalysisOutput,
 } from './schema';
+import { PROFILE, TODAY } from './test-support';
 
 // @ts-expect-error A model outside the list of spec §4.2 is a type error.
 const unknownModel: AiCompleteRequest['model'] = 'gpt-5';
@@ -120,6 +125,29 @@ describe('createMockAdapter', () => {
     );
     expect(output.hypotheses).toEqual([]);
     expect(itemsOf(output).flatMap((item) => item.evidence)).toEqual([]);
+  });
+
+  // The seed of `db` writes `mock…Output` of the input it builds: the same answer as the adapter's.
+  it.each([
+    ['analysis', PROFILE.facts],
+    ['discovery', PROFILE.facts.filter((f) => f.category !== 'GOALS')],
+  ])(
+    'answers what buildAnalysisInput sends with mock output of its %s (DR5-18)',
+    async (mode, facts) => {
+      const input = buildAnalysisInput({ facts }, evaluateKycGate(facts), TODAY)!;
+      expect(input.mode).toBe(mode);
+      const codes = input.facts.map((sent) => sent.code);
+      const missing = input.missingCategories.map((category) => category.code);
+      const mock = mode === 'analysis' ? mockAnalysisOutput : mockDiscoveryOutput;
+      expect((await complete(input)).value).toEqual(mock(codes, missing));
+    },
+  );
+
+  it('writes no null action for a discovery with no fact and no missing hạng mục (MS-A7)', async () => {
+    const value = (await complete({ ...discoveryInput, facts: [], missingCategories: [] })).value;
+    expect(value).toMatchObject({ discoveryStrategy: [], nextBestActions: [] });
+    // Nothing to cite: an answer the schema rejects, as a real model's could be.
+    expect(discoveryOutputSchema.safeParse(value).success).toBe(false);
   });
 
   it('extracts simple patterns with quotes taken from the note', async () => {

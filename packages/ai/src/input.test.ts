@@ -1,7 +1,7 @@
 import { calendarDate, evaluateKycGate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { buildAnalysisInput, buildExtractionInput } from './input';
-import { analysisInputSchema } from './schema';
+import { buildExtractionInput } from './input';
+import { analysisInputSchema, buildAnalysisInput } from './schema';
 import { ANALYSIS_FACTS, fact, PROFILE, TODAY } from './test-support';
 
 describe('buildAnalysisInput', () => {

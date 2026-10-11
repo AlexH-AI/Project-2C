@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { requireName, today } from './common';
+import { optionalText, requireName, today } from './common';
 import { openDatabase } from './database';
 import { codeOf, d } from './test-support';
 
@@ -23,5 +23,14 @@ describe('requireName', () => {
   it('refuses an empty name, and a NUL that the database would cut the name at', () => {
     expect(codeOf(() => requireName('  '))).toBe('NAME_REQUIRED');
     expect(codeOf(() => requireName('A\u0000B'))).toBe('INVALID_TEXT');
+  });
+});
+
+describe('optionalText', () => {
+  it('trims the text, gives null when empty, and refuses a NUL as requireName does (R2-13)', () => {
+    expect(optionalText(' Gửi minh họa ')).toBe('Gửi minh họa');
+    expect(optionalText('  ')).toBeNull();
+    expect(optionalText(undefined)).toBeNull();
+    expect(codeOf(() => optionalText('A\u0000B'))).toBe('INVALID_TEXT');
   });
 });

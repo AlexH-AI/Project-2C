@@ -2,11 +2,11 @@
 import guide from '../../../docs/design/phase-5-prompts.md?raw';
 import { evaluateKycGate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { buildAnalysisInput, type AnalysisProfile } from './input';
 import { analysisPrompt } from './prompts/analysis';
 import { discoveryPrompt } from './prompts/discovery';
 import { retryMessage } from './prompts/retry';
 import { checkAnalysisAnswer } from './run';
+import { buildAnalysisInput, type AnalysisProfile } from './schema';
 import { fact, PROFILE, TODAY } from './test-support';
 import {
   buildWebMessage,

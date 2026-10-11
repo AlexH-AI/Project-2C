@@ -4,8 +4,21 @@
  * it depends only on `zod` and `@p2c/domain`, never on another module of `packages/ai`
  * (ADR-0006, phụ lục 07/10/2026). There is one schema per mode, always the latest: a schema change
  * means reloading the simulated data (R2-02), not keeping old schemas.
+ *
+ * The seed of `db` writes Mock analyses as the app does, so what makes one is here too, one copy for
+ * both (I-10): the Vietnamese labels sent, `buildAnalysisInput` and the Mock's answers.
  */
-import { fromIsoDate, KYC_CATEGORIES } from '@p2c/domain';
+import {
+  formatIsoDate,
+  fromIsoDate,
+  KYC_CATEGORIES,
+  KYC_FIELDS,
+  type CalendarDate,
+  type KycCategory,
+  type KycFact,
+  type KycField,
+  type KycGateResult,
+} from '@p2c/domain';
 import { z } from 'zod';
 
 /** The three AI modes: `analysis` (`PAIN_POINT_ANALYSIS`), `discovery` (`PROFILE_DISCOVERY`), `extraction`. */
@@ -170,3 +183,174 @@ export const AI_OUTPUT_SCHEMAS = {
   discovery: discoveryOutputSchema,
   extraction: extractionOutputSchema,
 } as const satisfies Record<AiMode, z.ZodType>;
+
+// ---- the analysis input (spec §6.1, prompts G5 §1.1) ------------------------
+
+/**
+ * The Vietnamese labels sent to the model: the app's i18n `kycCategory.*`, which `ai` cannot read
+ * (a test of the app keeps both the same).
+ */
+export const KYC_CATEGORY_LABELS: Readonly<Record<KycCategory, string>> = {
+  IDENTITY: 'Danh tính / tuổi',
+  FAMILY: 'Gia đình',
+  OCCUPATION_INCOME: 'Nghề nghiệp / nguồn thu',
+  ASSETS: 'Tài sản / AUM',
+  GOALS: 'Mục tiêu & mốc thời gian',
+  RISK_APPETITE: 'Khẩu vị rủi ro',
+  EXISTING_PROTECTION: 'Bảo vệ hiện có',
+  CONCERNS: 'Mối quan tâm',
+};
+
+/** The app's i18n `kycField.*`, as `KYC_CATEGORY_LABELS`. */
+export const KYC_FIELD_LABELS: Readonly<Record<KycField, string>> = {
+  birthYear: 'Năm sinh',
+  gender: 'Giới tính',
+  residence: 'Nơi sinh sống',
+  maritalStatus: 'Tình trạng hôn nhân',
+  childrenCount: 'Số con',
+  dependents: 'Người phụ thuộc',
+  occupation: 'Nghề nghiệp',
+  annualIncome: 'Thu nhập năm',
+  incomeSources: 'Nguồn thu',
+  totalAssets: 'Tổng tài sản',
+  assetAllocation: 'Phân bổ tài sản',
+  liabilities: 'Nợ phải trả',
+  primaryGoal: 'Mục tiêu chính',
+  goalHorizon: 'Mốc thời gian mục tiêu',
+  otherGoals: 'Mục tiêu khác',
+  riskProfile: 'Khẩu vị rủi ro',
+  investmentExperience: 'Kinh nghiệm đầu tư',
+  hasProtection: 'Đã có bảo vệ',
+  protectionDetails: 'Chi tiết bảo vệ',
+  mainConcern: 'Mối quan tâm chính',
+  otherConcerns: 'Mối quan tâm khác',
+};
+
+/** A confirmed fact with its `seq` in `kyc_facts` (by KH), which gives its code. */
+export interface AnalysisFact extends KycFact {
+  readonly seq: number;
+}
+
+export interface AnalysisProfile {
+  readonly facts: readonly AnalysisFact[];
+}
+
+const FIELD_ORDER = Object.keys(KYC_FIELDS) as KycField[];
+
+/** The birth year goes as an age (G5 §1.1). */
+const sentLabel = (field: KycField) => (field === 'birthYear' ? 'Tuổi' : KYC_FIELD_LABELS[field]);
+
+function sentValue(fact: KycFact, today: CalendarDate): string {
+  if (fact.field === 'birthYear') return String(today.year - Number(fact.value));
+  if (typeof fact.value === 'boolean') return fact.value ? 'Có' : 'Không';
+  return String(fact.value);
+}
+
+/**
+ * The input of an analysis, taken when the RE clicks (spec §6.1): only the facts in effect (`active`,
+ * `conflict`) with their code `F{seq}`, in catalog order then by seq, the birth year as an age, and
+ * the gate; never the name, codes, RE, notes, appointments or contracts of the KH. `null` when the
+ * gate lets no AI through (`CONFLICT_RESOLUTION`, `KYC_INSUFFICIENT` — P2, the panel offers no
+ * analysis then).
+ */
+export function buildAnalysisInput(
+  profile: AnalysisProfile,
+  gate: KycGateResult,
+  today: CalendarDate,
+): AnalysisInput | null {
+  if (gate.state !== 'PAIN_POINT_ANALYSIS' && gate.state !== 'PROFILE_DISCOVERY') return null;
+  const facts = profile.facts
+    .filter((fact) => fact.status !== 'superseded')
+    .sort((a, b) => FIELD_ORDER.indexOf(a.field) - FIELD_ORDER.indexOf(b.field) || a.seq - b.seq);
+  return {
+    analysisDate: formatIsoDate(today),
+    mode: gate.state === 'PAIN_POINT_ANALYSIS' ? 'analysis' : 'discovery',
+    facts: facts.map((fact) => ({
+      code: factCode(fact.seq),
+      category: KYC_CATEGORY_LABELS[fact.category],
+      field: sentLabel(fact.field),
+      value: sentValue(fact, today),
+      confirmedAt: formatIsoDate(fact.confirmedDate),
+      conflict: fact.status === 'conflict',
+    })),
+    missingCategories: gate.missingCategories.map((code) => ({
+      code,
+      label: KYC_CATEGORY_LABELS[code],
+    })),
+    conflictWarnings: gate.warningFields.map(sentLabel),
+  };
+}
+
+// ---- the Mock's answers (spec §10) -------------------------------------------
+
+/** `count` distinct codes from position `start`, wrapping round. */
+function cite(codes: readonly string[], start: number, count: number): string[] {
+  const picked = Array.from({ length: count }, (_, i) => codes[(start + i) % codes.length]);
+  return [...new Set(picked.filter((code) => code !== undefined))];
+}
+
+function askAbout(missing: readonly KycCategory[]) {
+  return missing.map((category) => ({
+    text: 'Tìm hiểu thêm hạng mục còn thiếu trong buổi gặp tới',
+    evidence: [],
+    missingCategory: category,
+  }));
+}
+
+/**
+ * The Mock's analysis of the facts `codes` with the `missing` hạng mục: fixed sentences citing only
+ * those, so the same input always gives the same answer.
+ */
+export function mockAnalysisOutput(
+  codes: readonly string[],
+  missing: readonly KycCategory[],
+): AnalysisOutput {
+  return {
+    hypotheses: [
+      { text: 'Khách hàng đặt sự ổn định của gia đình lên trước', evidence: cite(codes, 0, 2) },
+      { text: 'Khách hàng cân nhắc kỹ trước các quyết định dài hạn', evidence: cite(codes, 2, 1) },
+    ],
+    needs: [
+      { text: 'Một kế hoạch tài chính cho các mục tiêu đã nêu', evidence: cite(codes, 1, 2) },
+    ],
+    painPoints: [
+      { text: 'Băn khoăn giữa nhu cầu hiện tại và mục tiêu xa', evidence: cite(codes, 3, 1) },
+    ],
+    themes: [{ text: 'Gia đình và sự an tâm lâu dài', evidence: cite(codes, 4, 3) }],
+    discoveryStrategy: [
+      { text: 'Làm rõ thứ tự ưu tiên giữa các mục tiêu', evidence: cite(codes, 0, 1) },
+      ...askAbout(missing),
+    ].slice(0, 6),
+    nextBestActions: [{ text: 'Hẹn buổi trao đổi về mục tiêu chính', evidence: cite(codes, 1, 1) }],
+    personalityNotes: [
+      {
+        system: 'PSYCHOLOGY',
+        text: 'KH có thể thiên về hướng nội, cần thời gian suy nghĩ trước khi quyết định',
+        evidence: cite(codes, 2, 1),
+      },
+    ],
+  };
+}
+
+/** The Mock's discovery, as `mockAnalysisOutput`; with nothing to cite, no action at all (MS-A7). */
+export function mockDiscoveryOutput(
+  codes: readonly string[],
+  missing: readonly KycCategory[],
+): DiscoveryOutput {
+  const known = codes.length > 0;
+  return {
+    hypotheses: known
+      ? [{ text: 'Khách hàng sẵn lòng chia sẻ về gia đình', evidence: cite(codes, 0, 2) }]
+      : [],
+    discoveryStrategy: [
+      ...askAbout(missing),
+      ...(known
+        ? [{ text: 'Hỏi sâu thêm về điều khách hàng đã chia sẻ', evidence: cite(codes, 1, 1) }]
+        : []),
+    ].slice(0, 6),
+    nextBestActions: known
+      ? [{ text: 'Hẹn buổi gặp tiếp để tìm hiểu thêm', evidence: cite(codes, 0, 1) }]
+      : askAbout(missing.slice(0, 1)),
+    personalityNotes: [],
+  };
+}

@@ -17,9 +17,22 @@ export type KycFactStatus = (typeof KYC_FACT_STATUSES)[number];
 /** A "không / chưa có" answer is a value too (e.g. `hasProtection: false`, `childrenCount: 0`). */
 export type KycValue = string | number | boolean;
 
-/** Trường holding a whole number or a yes/no answer; every other trường holds text. */
-const NUMBER_FIELDS: ReadonlySet<KycField> = new Set(['birthYear', 'childrenCount']);
-const BOOLEAN_FIELDS: ReadonlySet<KycField> = new Set(['hasProtection']);
+/** What a trường holds: text, a whole number or a yes/no answer. */
+export type KycFieldType = 'text' | 'integer' | 'boolean';
+
+const FIELD_TYPES: Partial<Record<KycField, KycFieldType>> = {
+  birthYear: 'integer',
+  childrenCount: 'integer',
+  hasProtection: 'boolean',
+};
+
+/**
+ * The one list of typed trường (CL-F4): the value check below, the trường sent for an extraction
+ * and the KYC dialogs all read it.
+ */
+export function kycFieldType(field: KycField): KycFieldType {
+  return FIELD_TYPES[field] ?? 'text';
+}
 
 /**
  * Review #36: values are compared only after taking the type of their trường; `"2"` for a number
@@ -31,10 +44,11 @@ export function normalizeKycValue(field: KycField, value: KycValue): KycValue {
     throw new RangeError(`KYC value with a NUL for ${field}`);
   }
   const text = typeof value === 'string' ? value.normalize('NFC').trim() : null;
-  if (NUMBER_FIELDS.has(field)) {
+  const type = kycFieldType(field);
+  if (type === 'integer') {
     const number = text !== null && /^\d+$/.test(text) ? Number(text) : value;
     if (typeof number === 'number' && Number.isSafeInteger(number) && number >= 0) return number;
-  } else if (BOOLEAN_FIELDS.has(field)) {
+  } else if (type === 'boolean') {
     if (typeof value === 'boolean') return value;
     if (text === 'true' || text === 'false') return text === 'true';
   } else if (typeof value !== 'boolean') {

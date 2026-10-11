@@ -22,10 +22,10 @@ import {
   MAX_AI_RAW_OUTPUT,
 } from './schema';
 
-export type AiAnalysisMode = keyof typeof AI_ANALYSIS_GATES;
-export type AiAnalysisStatus = (typeof AI_ANALYSIS_STATUSES)[number];
-export type AiAnalysisProvider = (typeof AI_ANALYSIS_PROVIDERS)[number];
-export type AiAnalysisReasoning = (typeof AI_ANALYSIS_REASONING)[number];
+type AiAnalysisMode = keyof typeof AI_ANALYSIS_GATES;
+type AiAnalysisStatus = (typeof AI_ANALYSIS_STATUSES)[number];
+type AiAnalysisProvider = (typeof AI_ANALYSIS_PROVIDERS)[number];
+type AiAnalysisReasoning = (typeof AI_ANALYSIS_REASONING)[number];
 
 export interface NewAiAnalysis {
   readonly customerId: string;
