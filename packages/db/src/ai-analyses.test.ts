@@ -557,6 +557,20 @@ describe('listAiAnalyses: CURRENT / STALE / REJECTED', () => {
     ]);
   });
 
+  it('still reminds of a core change when a minor change comes after it', async () => {
+    const { db: database, customer } = await withCustomer();
+    recordAiAnalysis(database, analysis(customer.id, latestVersionId(database, customer.id)));
+
+    expect(changeKyc(database, customer.id, 'maritalStatus', 'Đã kết hôn', d(15, 9)).material).toBe(
+      true,
+    );
+    expect(changeKyc(database, customer.id, 'occupation', 'Bác sĩ', d(20, 9)).material).toBe(false);
+    expect(listAiAnalyses(database, customer.id)[0]!.reminder).toEqual({
+      material: true,
+      since: d(15, 9),
+    });
+  });
+
   it('reminds since the earliest day among the versions after the analysed one (G3 ask 4)', async () => {
     const { db: database, customer } = await withCustomer();
     recordAiAnalysis(database, analysis(customer.id, latestVersionId(database, customer.id)));

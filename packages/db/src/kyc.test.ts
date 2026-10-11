@@ -656,4 +656,17 @@ describe('KYC text is stored composed', () => {
       codeOf(() => addKycNote(database, customer.id, { text: 'A\u0000B', date: d(3, 9, 2026) })),
     ).toBe('INVALID_TEXT');
   });
+
+  it('refuses a fact value with a NUL as a text, not as a value the trường cannot hold', async () => {
+    const { db: database, customer } = await withCustomer();
+    const date = d(3, 9, 2026);
+    const facts = [{ field: 'occupation', value: 'Kỹ\u0000sư' }] as const;
+    expect(codeOf(() => recordKycNote(database, customer.id, { text: 'Gặp', date, facts }))).toBe(
+      'INVALID_TEXT',
+    );
+    const note = addKycNote(database, customer.id, { text: 'Gặp', date });
+    expect(
+      codeOf(() => confirmKycFact(database, customer.id, { ...facts[0], noteId: note.id, date })),
+    ).toBe('INVALID_TEXT');
+  });
 });
