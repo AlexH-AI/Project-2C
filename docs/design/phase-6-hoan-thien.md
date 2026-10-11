@@ -131,11 +131,11 @@ ADR-0001 phụ lục **M4** (cùng PR với spec này): ở review đóng Phase 
 
 Đã chốt 11/10: #491 làm sau khi spec này qua G1; lượt 2 vừa kiểm phần đã sửa vừa tìm lỗi / edge case mới (§6.3); bỏ so sánh với Project-2 (Project-2 dừng; ADR-0002 Superseded, `COMPARISON.md` hết hiệu lực, ADR-0001 phụ lục M3); `Project-2C-data` ra khỏi v1.0 (§4).
 
+Owner đồng ý (11/10): thứ tự 6A–6E như §2, phân tích bloat / hiệu năng nằm trong lượt review 1; giữ 6 gói như §6.2.
+
 Còn hỏi:
 
-1. Thứ tự 6A–6E như §2 (phân tích bloat / hiệu năng gộp vào lượt review 1)?
-2. 6 gói như §6.2, hay gộp D + E thành 5?
-3. S-1 và gộp backup / xung đột ra khỏi v1.0 cùng `Project-2C-data` (§4) — đúng ý anh?
+1. S-1 và gộp backup / xung đột ra khỏi v1.0 cùng `Project-2C-data` (§4)?
 
 ## 9. Tách Issue
 
