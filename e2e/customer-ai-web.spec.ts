@@ -1,64 +1,31 @@
 import { expect, test, type Page } from '@playwright/test';
-import { addKycNote, createKycCustomer } from './support';
+import {
+  addKycNote,
+  createKycCustomer,
+  discoveryFacts,
+  discoveryOutput,
+  panelOf,
+  stubChatGptWeb,
+} from './support';
 
 // ChatGPT web (spec Phase 5 §3.1, mockup ai.html 4d–4i) on the web build: no network. The page opens
-// chatgpt.com with `window.open` and copies with the clipboard; both are recorded here, the paste,
-// the check and the save run for real. Today is pinned to 15/09/2026 (playwright.config.ts).
-
-declare global {
-  interface Window {
-    web: { copied: string[]; opened: unknown[][]; failCopy: boolean; breakCopy: boolean };
-  }
-}
+// chatgpt.com with `window.open` and copies with the clipboard; both are recorded (`stubChatGptWeb`),
+// the paste, the check and the save run for real. Today is pinned to 15/09/2026 (playwright.config.ts).
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => {
-    const web = {
-      copied: [] as string[],
-      opened: [] as unknown[][],
-      failCopy: false,
-      breakCopy: false,
-    };
-    Object.assign(window, { web });
-    window.open = (...args: unknown[]) => {
-      web.opened.push(args);
-      return null;
-    };
-    navigator.clipboard.writeText = (text: string) => {
-      // A bug of the app, not a refusal: the click fails as a whole.
-      if (web.breakCopy) throw new TypeError('broken');
-      if (web.failCopy) return Promise.reject(new DOMException('denied', 'NotAllowedError'));
-      web.copied.push(text);
-      return Promise.resolve();
-    };
-  });
+  await stubChatGptWeb(page);
 });
 
-const panelOf = (page: Page) => page.getByRole('region', { name: 'KYC Intelligence' });
 const recorded = (page: Page) => page.evaluate(() => window.web);
 
-/** A discovery answer that passes for a customer of the facts F1–F5, as ChatGPT gives it. */
-const GOOD = `Đây là kết quả:
-\`\`\`json
-${JSON.stringify({
-  hypotheses: [{ text: 'Khách hàng sẵn lòng chia sẻ về gia đình', evidence: ['F1', 'F2'] }],
-  discoveryStrategy: [
-    { text: 'Hỏi thêm về điều khách hàng quan tâm', evidence: ['F3'] },
-    { text: 'Hỏi sâu thêm về công việc', evidence: ['F5'] },
-  ],
-  nextBestActions: [{ text: 'Hẹn buổi gặp tiếp để tìm hiểu thêm', evidence: ['F1'] }],
-  personalityNotes: [],
-})}
-\`\`\``;
+/** A discovery answer as ChatGPT gives it; `text` replaces the text of its hypothesis. */
+const answer = (text?: string) => `Đây là kết quả:\n\`\`\`json\n${discoveryOutput(text)}\n\`\`\``;
+const GOOD = answer();
 
 /** A customer the gate lets through in discovery, with the panel open on it. */
 async function discoveryCustomer(page: Page, name: string) {
   await createKycCustomer(page, name);
-  await addKycNote(page, name, [
-    ['Tình trạng hôn nhân', 'Đã kết hôn'],
-    ['Số con', '2'],
-    ['Nghề nghiệp', 'Bác sĩ'],
-  ]);
+  await addKycNote(page, name, discoveryFacts);
   const panel = panelOf(page);
   await expect(panel).toContainText('PROFILE_DISCOVERY');
   return panel;
@@ -214,6 +181,16 @@ test('a wrong paste then a right one is ACCEPTED; two wrong ones are REJECTED', 
   // A history row opens the same report.
   await rows.nth(1).getByRole('button').click();
   await expect(report).toBeVisible();
+  await report.getByRole('button', { name: 'Đóng' }).click();
+
+  // The REJECTED line gives way to a new session, and is back once it ends (review of PR 459).
+  const line = panel.getByText(/bị loại: /);
+  await expect(line).toBeVisible();
+  await start.click();
+  await expect(panel).toContainText('Lần thử 1 / 2');
+  await expect(line).toBeHidden();
+  await panel.getByRole('button', { name: 'Hủy' }).click();
+  await expect(line).toBeVisible();
 });
 
 test('a KYC change while the session is open leaves the saved result STALE', async ({ page }) => {
@@ -225,10 +202,15 @@ test('a KYC change while the session is open leaves the saved result STALE', asy
     .locator('xpath=following-sibling::span[1]');
   await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
   await expect(badge).toHaveText('CURRENT');
+  const head = panel
+    .getByRole('heading', { name: 'KYC Intelligence' })
+    .locator('xpath=following-sibling::span');
+  await expect(head).toHaveText(['CURRENT', 'Mock']);
   await panel.getByRole('button', { name: 'Phân tích bằng ChatGPT web' }).click();
   await expect(panel).toContainText('kyc v2 · discovery@2+web@1');
-  // The mode of the input taken (§9.1, mockup 4e), whatever the saved one or the KYC become.
-  await expect(badge).toHaveText('PROFILE_DISCOVERY');
+  // The mode of the input taken (§9.1, mockup 4e), whatever the saved one or the KYC become; not
+  // the source of the analysis saved before (R2-18).
+  await expect(head).toHaveText(['PROFILE_DISCOVERY']);
 
   await addKycNote(page, name, [['Nơi sinh sống', 'Huế']]);
   await expect(badge).toHaveText('PROFILE_DISCOVERY');
@@ -287,4 +269,54 @@ test('a failure to start the session offers Thử lại of ChatGPT web, never a 
   await expect(panel).toContainText('Đã copy tin nhắn và mở ChatGPT');
   await expect(panel).toContainText('Chưa có phân tích AI cho KH này.');
   await expect(panel).not.toContainText('Có lỗi trong app khi gọi AI');
+});
+
+test('a double click starts one session; a late copy of a session ended leaves the next alone', async ({
+  page,
+}) => {
+  const panel = await discoveryCustomer(page, 'Ngọc Web');
+  const start = panel.getByRole('button', { name: 'Phân tích bằng ChatGPT web' });
+
+  // The button is off as soon as it is clicked, while the copy is on its way (§3.1 item 4).
+  await page.evaluate(() => (window.web.holdCopy = true));
+  await start.dblclick();
+  await expect.poll(() => page.evaluate(() => window.web.waiting())).toBe(1);
+  await page.evaluate(() => {
+    window.web.holdCopy = false;
+    window.web.settleCopies(true);
+  });
+  await expect(panel).toContainText('Đã copy tin nhắn và mở ChatGPT');
+  expect((await recorded(page)).copied).toHaveLength(1);
+  expect((await recorded(page)).opened).toHaveLength(1);
+
+  // "Copy lại" answered by the clipboard only after Hủy and a new session: it is that
+  // session's own answer, the new one stays as it is (review of PR 459).
+  await page.evaluate(() => (window.web.holdCopy = true));
+  await panel.getByRole('button', { name: 'Copy lại', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.web.waiting())).toBe(1);
+  await page.evaluate(() => (window.web.holdCopy = false));
+  await panel.getByRole('button', { name: 'Hủy' }).click();
+  await start.click();
+  await expect(panel).toContainText('Đã copy tin nhắn và mở ChatGPT');
+  await page.evaluate(async () => {
+    window.web.settleCopies(false);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  });
+  await expect(panel).toContainText('Đã copy tin nhắn và mở ChatGPT');
+  await expect(panel).not.toContainText('Không copy được');
+});
+
+test('an answer with HTML or a link in its text shows that text, never markup of the model', async ({
+  page,
+}) => {
+  const panel = await discoveryCustomer(page, 'Vy Web');
+  await panel.getByRole('button', { name: 'Phân tích bằng ChatGPT web' }).click();
+  const html = '<b data-model="html">KH ưu tiên gia đình</b> <a href="https://example.com">xem</a>';
+  await panel.getByRole('textbox', { name: 'Dán kết quả' }).fill(answer(html));
+  await panel.getByRole('button', { name: 'Kiểm tra và lưu' }).click();
+  await expect(panel).toContainText('CURRENT');
+
+  await expect(panel.getByRole('region', { name: 'Behavioral Hypotheses' })).toContainText(html);
+  await expect(panel.locator('[data-model]')).toHaveCount(0);
+  await expect(panel.getByRole('link', { name: 'xem' })).toHaveCount(0);
 });

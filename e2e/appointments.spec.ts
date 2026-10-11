@@ -1,4 +1,12 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import {
+  addKycNote,
+  createKycCustomer,
+  discoveryFacts,
+  discoveryOutput,
+  panelOf,
+  stubChatGptWeb,
+} from './support';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
 const TODAY = '15/09/2026';
@@ -813,43 +821,13 @@ test('a rescheduled appointment reads grey in the history, not the orange of unr
   expect(await css(status, 'color')).toBe('rgb(140, 153, 172)');
 });
 
-/** A new customer of the first RE with enough KYC for the Mock discovery; its profile is open. */
-async function customerForAi(page: Page, name: string) {
-  await page.goto('/#/customers');
-  await page.getByRole('button', { name: '+ Khách hàng' }).click();
-  const dialog = page.getByRole('dialog', { name: 'Khách hàng mới' });
-  await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(name);
-  await dialog.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
-  await dialog.getByRole('textbox', { name: /^Ngày sinh/ }).fill('1984');
-  await dialog.getByRole('radio', { name: 'Nữ' }).check();
-  await dialog.getByRole('button', { name: 'Lưu KH' }).click();
-  await expect(dialog).toBeHidden();
-  await page.getByRole('link', { name: new RegExp(name) }).click();
-  await kycNote(page, name, [
-    ['Tình trạng hôn nhân', 'Đã kết hôn'],
-    ['Số con', '2'],
-    ['Nghề nghiệp', 'Bác sĩ'],
-  ]);
-}
-
-async function kycNote(page: Page, name: string, facts: readonly (readonly [string, string])[]) {
-  await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
-  const dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${name}` });
-  await dialog.getByRole('textbox', { name: 'Ghi chú' }).fill('Gặp KH');
-  for (const [field, value] of facts) {
-    await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: field });
-    await dialog.getByRole('textbox', { name: 'Giá trị' }).fill(value);
-    await dialog.getByRole('button', { name: 'Thêm dữ kiện' }).click();
-  }
-  await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
-  await expect(dialog).toBeHidden();
-}
-
 test('the detail shows the latest accepted AI analysis read-only, or a link to analyse (spec Phase 5 §9.2)', async ({
   page,
 }) => {
+  await stubChatGptWeb(page);
   const name = 'Lan Lịch AI';
-  await customerForAi(page, name);
+  await createKycCustomer(page, name);
+  await addKycNote(page, name, discoveryFacts);
   await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('textbox', { name: /^Ngày/ }).fill('30/9');
@@ -872,7 +850,7 @@ test('the detail shows the latest accepted AI analysis read-only, or a link to a
   await ai.getByRole('link', { name: 'Mở Hồ sơ KH để phân tích →' }).click();
   await expect(page.getByRole('heading', { level: 2, name })).toBeVisible();
 
-  const panel = page.getByRole('region', { name: 'KYC Intelligence' });
+  const panel = panelOf(page);
   await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
   await expect(panel).toContainText('CURRENT');
 
@@ -893,9 +871,20 @@ test('the detail shows the latest accepted AI analysis read-only, or a link to a
 
   // A KYC change after it makes it STALE.
   await detail.getByRole('link', { name: 'Hồ sơ KH →' }).click();
-  await kycNote(page, name, [['Nơi sinh sống', 'Huế']]);
+  await addKycNote(page, name, [['Nơi sinh sống', 'Huế']]);
   await expect(panel).toContainText('STALE');
   await open();
   await expect(ai).toContainText('STALE');
   await expect(ai).not.toContainText('CURRENT');
+
+  // Analysed again by ChatGPT web: its badge, not the Mock's (R2-18).
+  await detail.getByRole('link', { name: 'Hồ sơ KH →' }).click();
+  await panel.getByRole('button', { name: 'Phân tích bằng ChatGPT web' }).click();
+  await panel.getByRole('textbox', { name: 'Dán kết quả' }).fill(discoveryOutput());
+  await panel.getByRole('button', { name: 'Kiểm tra và lưu' }).click();
+  await expect(panel).toContainText('CURRENT');
+  await open();
+  await expect(ai).toContainText('CURRENT');
+  await expect(ai.getByText('ChatGPT web', { exact: true })).toBeVisible();
+  await expect(ai).not.toContainText('Mock');
 });

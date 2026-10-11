@@ -41,6 +41,13 @@ describe('extractJson', () => {
     expect(extractJson(prose(4))).toEqual({ found: false });
   });
 
+  it('reads an escaped quote inside a string, with braces after it', () => {
+    expect(extractJson('x {"t": "a \\" } { b"} y')).toEqual({
+      found: true,
+      value: { t: 'a " } { b' },
+    });
+  });
+
   it('reads nested objects', () => {
     expect(extractJson('x {"a": {"b": [1, {"c": null}]}} y')).toEqual({
       found: true,

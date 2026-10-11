@@ -1,5 +1,7 @@
 /* global URL */
-import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
 import * as prettier from 'prettier';
@@ -85,6 +87,26 @@ describe('isDocsOnly', () => {
     expect(isDocsOnly(['docs/golden/ai-eval.md'])).toBe(false);
     expect(isDocsOnly(['docs/reviews/x.md'])).toBe(true);
     expect(CODE_DOCS).toEqual(expect.arrayContaining(CODEMAP_DOCS));
+  });
+
+  it('lists every docs/**/*.md that a test reads, and only files that exist (R2-21)', () => {
+    const root = fileURLToPath(new URL('..', import.meta.url));
+    const tests = execFileSync('git', ['ls-files', '*.test.*', '*.spec.*'], { cwd: root })
+      .toString()
+      .split('\n')
+      .filter(Boolean);
+    const read = new Set();
+    for (const file of tests) {
+      const text = readFileSync(join(root, file), 'utf8');
+      // A relative path to a .md file: an `?raw` import or a `new URL(…, import.meta.url)`.
+      for (const [, ref] of text.matchAll(/['"`](\.\.?\/[^'"`\s]*?\.md)(?:\?raw)?['"`]/g)) {
+        const path = relative(root, join(dirname(join(root, file)), ref)).replaceAll('\\', '/');
+        if (path.startsWith('docs/')) read.add(path);
+      }
+    }
+    expect([...read]).toContain('docs/design/phase-5-prompts.md');
+    expect(CODE_DOCS).toEqual(expect.arrayContaining([...read]));
+    for (const path of CODE_DOCS) expect(existsSync(join(root, path)), path).toBe(true);
   });
 
   it('matches the paths filter of ci.yml, for PRs and for pushes to main', () => {
