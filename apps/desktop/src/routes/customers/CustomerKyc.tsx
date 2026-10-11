@@ -128,7 +128,7 @@ export function KycCard({
   return (
     <section aria-labelledby="kyc-facts" className={`${CARD} flex flex-col gap-3 text-sm`}>
       <div className="flex items-baseline gap-2">
-        <h2 id="kyc-facts" className={HEADING}>
+        <h2 id="kyc-facts" tabIndex={-1} className={HEADING}>
           {t('kyc.title')}
         </h2>
         <span className="text-xs text-fg-3 tabular-nums">

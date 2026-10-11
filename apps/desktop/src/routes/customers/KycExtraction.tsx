@@ -2,7 +2,7 @@ import type { ExtractedFact } from '@p2c/ai';
 import type { KycNoteRecord } from '@p2c/db';
 import type { KycFact } from '@p2c/domain';
 import { Button } from '@p2c/ui';
-import { useId, useState, useSyncExternalStore } from 'react';
+import { useEffect, useId, useState, useSyncExternalStore } from 'react';
 import { extractFromNote } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
@@ -48,12 +48,28 @@ export function NoteEvent({
   const [handled, setHandled] = useState<ReadonlySet<number>>(new Set());
   const button = extractionButton(note);
   const view = job.phase === 'idle' ? extractionView(job.ended, handled, facts) : null;
-  const handle = (index: number) => setHandled((now) => new Set(now).add(index));
   // Đóng takes the focus with the line it closes: back to this note's button (DR5-43).
   const buttonId = useId();
   const close = () => {
     job.clear();
     document.getElementById(buttonId)?.focus();
+  };
+  // A proposal confirmed or dropped takes its buttons with it: the focus goes to the next one left,
+  // else the one before, else this note's button (R2-05). A new object per proposal handled.
+  const proposalId = (index: number) => `${buttonId}-${index}`;
+  const [focusTo, setFocusTo] = useState<{ readonly id: string } | null>(null);
+  useEffect(() => {
+    if (!focusTo) return;
+    const active = document.activeElement;
+    if (active && active !== document.body) return;
+    (document.getElementById(focusTo.id) ?? document.getElementById(buttonId))?.focus();
+  }, [focusTo, buttonId]);
+  const handle = (index: number) => {
+    const left =
+      view?.kind === 'proposals' ? view.items.filter((item) => item.index !== index) : [];
+    const next = left.find((item) => item.index > index) ?? left.at(-1);
+    setHandled((now) => new Set(now).add(index));
+    setFocusTo({ id: next ? proposalId(next.index) : buttonId });
   };
   const extract = () => {
     setHandled(new Set());
@@ -102,6 +118,7 @@ export function NoteEvent({
       {/* Present before it is filled, so a screen reader hears the run end (DR5-33). */}
       <div aria-live="polite" className="sr-only">
         {view?.kind === 'proposals' && <p role="status">{t('extraction.done')}</p>}
+        {view?.kind === 'empty' && <p role="status">{t('extraction.empty')}</p>}
       </div>
       {view?.kind === 'proposals' && (
         <>
@@ -116,7 +133,10 @@ export function NoteEvent({
                   {factText(fact.value, YES_NO)}{' '}
                   <span className="text-fg-3">{t('extraction.quote', { value: fact.quote })}</span>
                 </span>
-                <Button onClick={() => onConfirm(note, fact, () => handle(index))}>
+                <Button
+                  id={proposalId(index)}
+                  onClick={() => onConfirm(note, fact, () => handle(index))}
+                >
                   {t('extraction.confirm')}
                 </Button>
                 <Button onClick={() => handle(index)}>{t('extraction.drop')}</Button>
@@ -130,8 +150,11 @@ export function NoteEvent({
         </>
       )}
       {view?.kind === 'empty' && (
-        <p role="status" className={`${ROW} m-0 border-dashed border-border-strong bg-surface-2`}>
-          <span className="flex-1">{t('extraction.empty')}</span>
+        <p className={`${ROW} m-0 border-dashed border-border-strong bg-surface-2`}>
+          {/* Read from the live region above (R2-17). */}
+          <span aria-hidden="true" className="flex-1">
+            {t('extraction.empty')}
+          </span>
           <Button onClick={close}>{t('extraction.close')}</Button>
         </p>
       )}

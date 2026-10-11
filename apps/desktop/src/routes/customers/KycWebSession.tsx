@@ -1,6 +1,6 @@
 import type { KycVersionRecord } from '@p2c/db';
 import { Button, TextField } from '@p2c/ui';
-import { useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { saveChatGptAnswer, type WebAnswerOutcome } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
@@ -56,6 +56,13 @@ export function KycWebSession({
   const [pasted, setPasted] = useState('');
   const chip = webChip(web, versions);
   const second = web.retry !== null;
+  // A paste refused at the box is said on the box (its description): the focus goes there, so a
+  // screen reader reads it at each Kiểm tra và lưu (R2-06).
+  const box = useRef<HTMLDivElement>(null);
+  const [refusals, setRefusals] = useState(0);
+  useEffect(() => {
+    if (refusals > 0) box.current?.querySelector('textarea')?.focus();
+  }, [refusals]);
 
   // A slow clipboard or browser answers for the session it was asked for, never a later one
   // (review of PR 459).
@@ -76,6 +83,7 @@ export function KycWebSession({
     // A new attempt starts on an empty box; a paste refused at the box stays to be fixed.
     if (next?.session !== web.session) setPasted('');
     onChange(next);
+    if (next?.refused) setRefusals((count) => count + 1);
   };
 
   return (
@@ -138,19 +146,21 @@ export function KycWebSession({
           {t('aiError.GENERAL')}
         </p>
       )}
-      <TextField
-        label={t(second ? 'aiPanel.web.pasteRetry' : 'aiPanel.web.paste')}
-        rows={4}
-        value={pasted}
-        onChange={(value) => {
-          setPasted(value);
-          if (web.refused) onChange((now) => now && { ...now, refused: null });
-        }}
-        placeholder={t(
-          second ? 'aiPanel.web.pasteRetryPlaceholder' : 'aiPanel.web.pastePlaceholder',
-        )}
-        error={web.refused ? t(`aiPanel.web.refused.${web.refused}`) : undefined}
-      />
+      <div ref={box} className="contents">
+        <TextField
+          label={t(second ? 'aiPanel.web.pasteRetry' : 'aiPanel.web.paste')}
+          rows={4}
+          value={pasted}
+          onChange={(value) => {
+            setPasted(value);
+            if (web.refused) onChange((now) => now && { ...now, refused: null });
+          }}
+          placeholder={t(
+            second ? 'aiPanel.web.pasteRetryPlaceholder' : 'aiPanel.web.pastePlaceholder',
+          )}
+          error={web.refused ? t(`aiPanel.web.refused.${web.refused}`) : undefined}
+        />
+      </div>
       <div className={ROW}>
         <Button onClick={() => void copy(web.message)}>{t('aiPanel.web.copyAgain')}</Button>
         <Button onClick={() => void reopen()}>{t('aiPanel.web.reopen')}</Button>

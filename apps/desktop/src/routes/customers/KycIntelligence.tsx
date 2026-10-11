@@ -95,7 +95,10 @@ function BlockedNote({ blocked }: { blocked: AiPanelBlocked }) {
             className="text-accent hover:underline"
             onClick={(event) => {
               event.preventDefault();
-              document.getElementById('kyc-facts')?.scrollIntoView({ block: 'start' });
+              // The focus goes with it, as for an F code (R2-20).
+              const heading = document.getElementById('kyc-facts');
+              heading?.scrollIntoView({ block: 'start' });
+              heading?.focus({ preventScroll: true });
             }}
           >
             {t('aiPanel.toKyc')}
@@ -104,6 +107,18 @@ function BlockedNote({ blocked }: { blocked: AiPanelBlocked }) {
       )}
     </p>
   );
+}
+
+/**
+ * A button gone with its click leaves the focus in the panel rather than on the page (DR5-43): on
+ * `buttonId` while it is on, else on the panel's heading.
+ */
+function focusPanel(buttonId: string) {
+  const active = document.activeElement;
+  if (active && active !== document.body) return;
+  const button = document.getElementById(buttonId);
+  if (button instanceof HTMLButtonElement && !button.disabled) button.focus();
+  else document.getElementById('kyc-intelligence')?.focus();
 }
 
 /** "Bằng chứng: F12, F13", each code a link to its fact when the screen lists the facts (3a). */
@@ -330,12 +345,19 @@ export function KycIntelligence({
     }
     if (!hadWeb.current) return;
     hadWeb.current = false;
-    const active = document.activeElement;
-    if (active && active !== document.body) return;
-    const button = document.getElementById(webStartId);
-    if (button instanceof HTMLButtonElement && !button.disabled) button.focus();
-    else document.getElementById('kyc-intelligence')?.focus();
+    focusPanel(webStartId);
   }, [web, webStartId]);
+  // Hủy, Thử lại and "← Về bản mới nhất" go with their click: the focus goes to Phân tích, or the
+  // heading while that is off (R2-05).
+  const analyseId = useId();
+  const [refocus, setRefocus] = useState(0);
+  useEffect(() => {
+    if (refocus > 0) focusPanel(analyseId);
+  }, [refocus, analyseId]);
+  const thenFocus = (action: () => void) => () => {
+    action();
+    setRefocus((count) => count + 1);
+  };
   // AI trích xuất of this customer is off too while the session waits (ADR-0009 W-1 item 6).
   useEffect(() => {
     if (!webOpen) return;
@@ -426,6 +448,7 @@ export function KycIntelligence({
           {t('aiPanel.web.start')}
         </Button>
         <Button
+          id={analyseId}
           variant={view.button.primary ? 'primary' : 'default'}
           disabled={!view.button.enabled}
           onClick={analyse}
@@ -445,7 +468,7 @@ export function KycIntelligence({
       {webFailed && !web && (
         <div role="alert" className={`${ALERT} flex items-center gap-2.5 border-danger text-sm`}>
           <span className="flex-1">{t('aiError.GENERAL')}</span>
-          <Button disabled={!view.button.enabled} onClick={() => void startWeb()}>
+          <Button disabled={!view.button.enabled} onClick={thenFocus(() => void startWeb())}>
             {t('aiPanel.retry')}
           </Button>
         </div>
@@ -464,7 +487,9 @@ export function KycIntelligence({
         </p>
       )}
       {shown.phase === 'running' && (
-        <BusyLine action={<Button onClick={analysis.cancel}>{t('aiPanel.cancel')}</Button>}>
+        <BusyLine
+          action={<Button onClick={thenFocus(analysis.cancel)}>{t('aiPanel.cancel')}</Button>}
+        >
           {t('aiPanel.running')}
           {settings && settings.provider !== 'MOCK' && (
             <span className="text-fg-3">
@@ -485,7 +510,7 @@ export function KycIntelligence({
           <span className="flex-1">
             <AiErrorText error={shown.error} />
           </span>
-          <Button disabled={!view.button.enabled} onClick={analyse}>
+          <Button disabled={!view.button.enabled} onClick={thenFocus(analyse)}>
             {t('aiPanel.retry')}
           </Button>
         </div>
@@ -506,7 +531,7 @@ export function KycIntelligence({
             {t('aiPanel.history.viewingVersion', { version: banner.version })}
           </span>{' '}
           <span className={`${BADGE} ${BADGE_COLORS.STALE}`}>{banner.state}</span>{' '}
-          <button type="button" className={LINK} onClick={() => setViewing(null)}>
+          <button type="button" className={LINK} onClick={thenFocus(() => setViewing(null))}>
             {t('aiPanel.history.back')}
           </button>
         </p>

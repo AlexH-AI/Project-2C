@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
   addKycNote,
   asExe,
@@ -96,6 +96,10 @@ test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, 
   await expect(panel.getByRole('button', { name: 'Phân tích', exact: true })).toBeDisabled();
   await expect(panel.getByRole('button', { name: 'Phân tích bằng ChatGPT web' })).toBeDisabled();
   await expect(panel).toContainText(/kyc v3 · discovery@2/);
+  // Its link leads to the KYC facts, the focus too (R2-20).
+  await panel.getByRole('link', { name: 'Xem ở Dữ kiện KYC →' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: 'Dữ kiện KYC' })).toBeFocused();
 });
 
 test('analysis with the Mock: four blocks, Thông tin tham khảo, the material reminder', async ({
@@ -171,8 +175,11 @@ test('the history of a seeded customer: latest first, a STALE one opened, F code
   await expect(panel).toContainText(/kyc v\d+ · discovery@1 · Mock · 25\/10 \d\d:\d\d/);
   await expect(rows.nth(2)).toHaveAttribute('aria-current', 'true');
   await expect(panel).toContainText('CURRENT');
-  await panel.getByRole('button', { name: '← Về bản mới nhất' }).click();
+  // By the keyboard, the focus goes to the main button rather than the page (R2-05).
+  await panel.getByRole('button', { name: '← Về bản mới nhất' }).focus();
+  await page.keyboard.press('Enter');
   await expect(panel).not.toContainText('Đang xem lần');
+  await expect(panel.getByRole('button', { name: 'Phân tích lại' })).toBeFocused();
   await expect(panel).toContainText(/kyc v\d+ · analysis@1 · Mock · 23\/03/);
 
   // The facts list names each fact F{seq}; a code cited leads to its fact, outlined for a moment.
@@ -364,12 +371,59 @@ test('AI trích xuất with the Mock: Xác nhận saves the fact on its note, B�
   const nothing = noteOf(page, NOTHING);
   await nothing.getByRole('button', { name: 'AI trích xuất' }).click();
   await expect(nothing.getByRole('status')).toHaveText(
-    'AI không tìm thấy dữ kiện mới trong ghi chú này.Đóng',
+    'AI không tìm thấy dữ kiện mới trong ghi chú này.',
   );
   await nothing.getByRole('button', { name: 'Đóng' }).click();
   await expect(nothing.getByRole('status')).toHaveCount(0);
   // The focus goes back to the button, not to the page (DR5-43).
   await expect(nothing.getByRole('button', { name: 'AI trích xuất' })).toBeFocused();
+});
+
+test('AI trích xuất by the keyboard: the focus stays on the proposals, then the button (R2-05, R2-17)', async ({
+  page,
+}) => {
+  const name = 'Lan Bàn Phím';
+  await createKycCustomer(page, name);
+  await writeNote(page, name, NOTE);
+  const note = noteOf(page, NOTE);
+  const extract = note.getByRole('button', { name: 'AI trích xuất' });
+  const proposals = note.getByRole('list', { name: 'Đề xuất của AI' }).getByRole('listitem');
+  const press = async (button: Locator) => {
+    await button.focus();
+    await page.keyboard.press('Enter');
+  };
+  await press(extract);
+  await expect(proposals).toHaveCount(2);
+
+  // Bỏ of the first: the next proposal takes the focus.
+  await press(proposals.first().getByRole('button', { name: 'Bỏ' }));
+  await expect(proposals).toHaveText([/Số con: 2/]);
+  await expect(proposals.getByRole('button', { name: 'Xác nhận' })).toBeFocused();
+
+  // Xác nhận of the last, saved: back to the note's button once the dialog is gone.
+  await press(proposals.getByRole('button', { name: 'Xác nhận' }));
+  const kids = page.getByRole('dialog', { name: '+ Dữ kiện · Số con' });
+  await press(kids.getByRole('button', { name: 'Xác nhận dữ kiện' }));
+  await expect(kids).toBeHidden();
+  await expect(note.getByRole('list', { name: 'Đề xuất của AI' })).toHaveCount(0);
+  await expect(extract).toBeFocused();
+
+  // Again, the value held hidden: Bỏ of the only proposal left goes back to the button too.
+  await press(extract);
+  await expect(proposals).toHaveText([/Tình trạng hôn nhân/]);
+  await press(proposals.getByRole('button', { name: 'Bỏ' }));
+  await expect(note.getByRole('list', { name: 'Đề xuất của AI' })).toHaveCount(0);
+  await expect(extract).toBeFocused();
+
+  // Nothing found: said in the live region there before the run, Đóng outside it (R2-17).
+  await writeNote(page, name, NOTHING);
+  const nothing = noteOf(page, NOTHING);
+  const live = nothing.locator('[aria-live="polite"]');
+  await expect(live).toBeEmpty();
+  await press(nothing.getByRole('button', { name: 'AI trích xuất' }));
+  await expect(live).toHaveText('AI không tìm thấy dữ kiện mới trong ghi chú này.');
+  await expect(live.getByRole('button')).toHaveCount(0);
+  await expect(nothing.getByRole('button', { name: 'Đóng' })).toBeVisible();
 });
 
 test('AI trích xuất on a trường already held: Xác nhận updates one value, marks a conflict on another', async ({
@@ -662,6 +716,40 @@ test('an analysis by OpenCode, ACCEPTED at its retry: what went to ai_complete, 
   expect(sent).not.toContain(name);
   expect(sent).not.toContain('1984');
   expect(sent).not.toContain(code);
+});
+
+test('by the keyboard, Thử lại and Hủy leave the focus in the panel (R2-05)', async ({ page }) => {
+  await asExe(page);
+  const name = 'Tú Phím Hủy';
+  await createKycCustomer(page, name);
+  await addKycNote(page, name, discoveryFacts);
+  await useOpenCode(page);
+  const panel = panelOf(page);
+  const heading = panel.getByRole('heading', { name: 'KYC Intelligence' });
+  const press = async (button: Locator) => {
+    await button.focus();
+    await page.keyboard.press('Enter');
+  };
+  await page.evaluate(() => (window.exe.aiError = { code: 'AI_NETWORK' }));
+  await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
+  await expect(panel.getByRole('alert')).toContainText('Không kết nối được OpenCode.');
+
+  // Thử lại goes with its alert; the buttons are off while it runs, so the heading has the focus.
+  await page.evaluate(() => {
+    window.exe.aiError = null;
+    window.exe.holdAi();
+  });
+  await press(panel.getByRole('alert').getByRole('button', { name: 'Thử lại' }));
+  await expect(panel.getByRole('status')).toContainText('Đang phân tích…');
+  await expect(heading).toBeFocused();
+
+  // Hủy goes once pressed: the heading again, also once the request has ended.
+  await press(panel.getByRole('button', { name: 'Hủy' }));
+  await expect(panel.getByRole('status')).toContainText('Đang hủy…');
+  await expect(heading).toBeFocused();
+  await page.evaluate(() => window.exe.releaseAi());
+  await expect(panel.getByRole('status')).toHaveCount(0);
+  await expect(heading).toBeFocused();
 });
 
 test('Thử lại of an error waits for the runner; ChatGPT web clears the error (review of PR 459)', async ({
