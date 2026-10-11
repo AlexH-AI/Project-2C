@@ -153,8 +153,9 @@ export type AnalysisOutcome =
   /**
    * What was analysed is no longer there: the customer already deleted at the click (no AI
    * called), it or its version deleted by the answer, or the data replaced (Nạp lại / Nhập backup)
-   * meanwhile, even by a backup of the same data with the same IDs (DR5-36). Nothing is saved and
-   * the panel follows the data as it is now.
+   * meanwhile, even by a backup of the same data with the same IDs (DR5-36), or still being
+   * replaced when the answer comes (S2-3). Nothing is saved and the panel follows the data as it
+   * is now.
    */
   | { readonly kind: 'discarded' }
   /** A bug, or the save was refused: the panel shows the general message. */
@@ -166,6 +167,8 @@ export interface AnalysisApp {
   db(): Database;
   /** Grows each time the data is replaced: an answer from other data is never saved (DR5-36). */
   generation(): number;
+  /** True while the data is being replaced: an answer that comes then is dropped too (S2-3). */
+  replacing(): boolean;
   run<T>(command: (db: Database) => T): T;
   today(): CalendarDate;
 }
@@ -191,12 +194,19 @@ export async function analyseCustomer(
     if ('kind' in taken) return taken;
     const result = await runAnalysis({ ...call, ...taken, signal });
     if (result.kind !== 'record') return result;
-    if (app.generation() !== generation) return { kind: 'discarded' };
+    if (replaced(app, generation)) return { kind: 'discarded' };
     return save(app, result.row);
   } catch (error) {
     return lost(app, error);
   }
 }
+
+/**
+ * The data replaced since `generation` was read, or being replaced now (S2-3): an answer taken
+ * from it is dropped, as it is for data that is gone.
+ */
+const replaced = (app: Pick<AnalysisApp, 'generation' | 'replacing'>, generation: number) =>
+  app.generation() !== generation || app.replacing();
 
 /**
  * The input of an analysis: the latest KYC version and its facts, read together, at once. No
@@ -239,7 +249,7 @@ export type ExtractionOutcome =
  * the click, as for Phân tích.
  */
 export async function extractFromNote(
-  app: Pick<AnalysisApp, 'ai' | 'generation'>,
+  app: Pick<AnalysisApp, 'ai' | 'generation' | 'replacing'>,
   note: string,
   signal?: AiAbortSignal,
   call: AiCall = app.ai.call(),
@@ -247,7 +257,7 @@ export async function extractFromNote(
   const generation = app.generation();
   try {
     const result = await runExtraction({ ...call, note, signal });
-    if (app.generation() !== generation) return { kind: 'discarded' };
+    if (replaced(app, generation)) return { kind: 'discarded' };
     return result.kind === 'facts' ? { kind: 'facts', facts: result.facts } : result;
   } catch (error) {
     app.ai.reportError(error);

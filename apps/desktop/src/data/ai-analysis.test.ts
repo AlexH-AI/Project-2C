@@ -62,6 +62,21 @@ function heldAdapter() {
   return { adapter, held, answerWithMock };
 }
 
+/** The exe's storage, its backups held until the test releases them, as a replace still running. */
+function heldBackupStorage() {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  const storage: StoragePort = {
+    load: () => Promise.resolve(undefined),
+    save: () => Promise.resolve(),
+    backup: () => gate.then(() => 'project2c-20260927-101500.db'),
+    writeExport: (name) => Promise.resolve(name),
+    latestBackup: () => Promise.resolve(undefined),
+    openFolder: () => Promise.resolve(),
+  };
+  return { storage, release };
+}
+
 /** Settings → AI kept apart from any database, for an `AppAi` of its own. */
 function memoryStore(): AiSettingsStore {
   let stored: string | undefined;
@@ -341,6 +356,27 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
     expect(rows()).toMatchObject([{ state: 'CURRENT' }]);
   });
 
+  it('discards the result, without reporting a bug, when it comes while the data is being replaced (S2-3)', async () => {
+    const reportError = vi.fn();
+    const held = heldAdapter();
+    const { storage, release } = heldBackupStorage();
+    const { app, customer, rows, ai } = await withCustomer(
+      { reportError, adapter: held.adapter },
+      storage,
+    );
+
+    const running = analyseCustomer(app, customer.id);
+    const reloading = app.reloadDemoData();
+    await held.answerWithMock();
+
+    expect(await running).toEqual({ kind: 'discarded' });
+    expect(reportError).not.toHaveBeenCalled();
+    expect(rows()).toEqual([]);
+    expect(ai.runner.busy).toBe(false);
+    release();
+    await reloading;
+  });
+
   it('turns a bug into a failure the panel can show, and reports it', async () => {
     const reportError = vi.fn();
     const bug = new TypeError('boom');
@@ -384,7 +420,7 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
 describe('extractFromNote (spec Phase 5 §8)', () => {
   const NOTE = 'Hai vợ chồng đã kết hôn 10 năm, có 2 con đang học cấp 1.';
   /** An `AppAi` of its own, with no data to replace. */
-  const alone = (ai: AppAi) => ({ ai, generation: () => 0 });
+  const alone = (ai: AppAi) => ({ ai, generation: () => 0, replacing: () => false });
 
   it('gives the proposals of the Mock and saves nothing', async () => {
     const { app } = await withCustomer();
@@ -495,6 +531,22 @@ describe('extractFromNote (spec Phase 5 §8)', () => {
     await held.answerWithMock();
 
     expect(await running).toEqual({ kind: 'discarded' });
+  });
+
+  it('discards the proposals when they come while the data is being replaced (S2-3)', async () => {
+    const reportError = vi.fn();
+    const held = heldAdapter();
+    const { storage, release } = heldBackupStorage();
+    const { app } = await withCustomer({ reportError, adapter: held.adapter }, storage);
+
+    const running = extractFromNote(app, NOTE);
+    const reloading = app.reloadDemoData();
+    await held.answerWithMock();
+
+    expect(await running).toEqual({ kind: 'discarded' });
+    expect(reportError).not.toHaveBeenCalled();
+    release();
+    await reloading;
   });
 
   it('turns a bug into a failure the note can show, and reports it', async () => {

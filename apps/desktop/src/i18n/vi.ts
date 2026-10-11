@@ -1018,6 +1018,8 @@ export const vi = {
   'error.KYC_PROFILE_FIELD_REQUIRED':
     'Ngày sinh và giới tính đã có (KYC lấy theo hồ sơ) thì không xóa hay chọn lại "Chưa rõ" được: sửa sang giá trị khác.',
   'error.unknown': 'Chưa lưu được thay đổi. Dữ liệu không bị đổi.',
+  'error.DATA_REPLACING':
+    'Đang thay toàn bộ dữ liệu (Nạp lại / Nhập backup). Thay đổi này chưa được ghi — thử lại khi xong.',
   'policies.title': 'Hợp đồng',
   'policies.count': '{count} HĐ',
   'policies.caseSize': 'case size dự kiến {amount}',

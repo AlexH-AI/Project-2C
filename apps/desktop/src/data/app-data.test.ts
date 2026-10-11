@@ -14,10 +14,14 @@ import {
 } from '@p2c/db';
 import { byName, calendarDate, formatDate, fromLocalDate, type CalendarDate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
+import { errorMessage } from '../i18n';
 import {
   isStartupBackupError,
   isUnsavedChangesError,
   openAppData,
+  type AppData,
+  type BackupPreview,
+  type ExportedBackup,
   type StoragePort,
 } from './app-data';
 
@@ -67,6 +71,43 @@ const teamNames = (db: Database) =>
   listTeams(db)
     .map((team) => team.name)
     .sort(byName);
+
+/** A promise the test settles. */
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+/**
+ * Holds the storage's backups until the test settles them; `started` resolves once a replace asks
+ * for one.
+ */
+function holdBackup(storage: StoragePort) {
+  const backup = storage.backup;
+  const gate = deferred<void>();
+  const started = deferred<void>();
+  storage.backup = async () => {
+    started.resolve();
+    await gate.promise;
+    return backup();
+  };
+  return { started: started.promise, release: () => gate.resolve() };
+}
+
+/** What `fn` threw; `undefined` when it did not. */
+function thrownBy(fn: () => unknown): unknown {
+  try {
+    fn();
+  } catch (error) {
+    return error;
+  }
+  return undefined;
+}
 
 describe('openAppData', () => {
   it('without storage (web mode) opens a migrated database with the simulated data', async () => {
@@ -572,6 +613,184 @@ describe('generation', () => {
     app.run((d) => createTeam(d, { name: 'Hừng Đông' }));
     await expect(app.reloadDemoData()).rejects.toSatisfy(isUnsavedChangesError);
     expect(app.generation()).toBe(start + 2);
+  });
+});
+
+describe('replacing the data (S-2)', () => {
+  /** The teams before Nạp lại, and those of the simulated data it brings on 01/10. */
+  const OLD = ['Sao Mai', 'Seed 27/09/2026'];
+  const NEW = ['Seed 01/10/2026'];
+  const onDisk = async (bytes: Uint8Array | undefined) => teamNames(await openDatabase({ bytes }));
+  const writeLate = (app: AppData) =>
+    thrownBy(() => app.run((db) => createTeam(db, { name: 'Late' })));
+
+  /** The exe holding a change not yet saved, its day moved on to 01/10. */
+  async function exe() {
+    const disk = memoryStorage();
+    let today = TODAY;
+    const app = await openAppData({ storage: disk.storage, today: () => today, seed: fakeSeed });
+    app.run((db) => createTeam(db, { name: 'Sao Mai' }));
+    today = calendarDate(2026, 10, 1);
+    return { app, ...disk };
+  }
+
+  /** A read backup holding only the team `name`. */
+  async function previewOf(app: AppData, name: string): Promise<BackupPreview> {
+    const source = await openAppData({ seed: (db) => createTeam(db, { name }) });
+    return app.readBackup((await source.exportBackup()).text);
+  }
+
+  it('refuses every write from the call of a replace until it ends, so the backup holds every change before it (S2-2)', async () => {
+    const { app, storage, saves } = await exe();
+    const backup = holdBackup(storage);
+    const listener = vi.fn();
+    app.subscribe(listener);
+
+    const reloading = app.reloadDemoData();
+    // Refused at once, before the pending change is even saved.
+    const refused = writeLate(app);
+    expect(refused).toBeInstanceOf(DbError);
+    expect(refused).toMatchObject({ code: 'DATA_REPLACING' });
+    expect(errorMessage(refused)).toBe(
+      'Đang thay toàn bộ dữ liệu (Nạp lại / Nhập backup). Thay đổi này chưa được ghi — thử lại khi xong.',
+    );
+    await backup.started;
+    const backedUp = saves.length;
+    expect(await onDisk(saves.at(-1))).toEqual(OLD);
+    expect(writeLate(app)).toMatchObject({ code: 'DATA_REPLACING' });
+    expect(teamNames(app.db())).toEqual(OLD);
+    expect(listener).not.toHaveBeenCalled();
+
+    backup.release();
+    await reloading;
+    await app.saves.idle();
+
+    // Nothing of the old data was saved after its backup: only the new data.
+    expect(saves.length).toBeGreaterThan(backedUp);
+    for (const bytes of saves.slice(backedUp)) expect(await onDisk(bytes)).toEqual(NEW);
+    app.run((db) => createTeam(db, { name: 'Hừng Đông' }));
+    await app.saves.idle();
+    expect(await onDisk(saves.at(-1))).toEqual(['Hừng Đông', ...NEW]);
+  });
+
+  it.each([
+    [
+      'the backup fails',
+      ({ storage }: Awaited<ReturnType<typeof exe>>) => {
+        storage.backup = () => Promise.reject(new Error('disk full'));
+      },
+      (app: AppData) => app.reloadDemoData(),
+    ],
+    [
+      'the new data cannot be opened',
+      () => undefined,
+      async (app: AppData) => {
+        const preview = await previewOf(app, 'Bình Minh');
+        return app.importBackup({ ...preview, bytes: new TextEncoder().encode('not a database') });
+      },
+    ],
+  ])(
+    'when %s, writes again and keeps saving the current data, its generation unchanged (S2-4)',
+    async (_, breakIt, replaceWith) => {
+      const setup = await exe();
+      const { app, saves } = setup;
+      await app.saves.idle();
+      breakIt(setup);
+      const generation = app.generation();
+
+      await expect(replaceWith(app)).rejects.toThrow();
+      const before = saves.length;
+      app.run((db) => createTeam(db, { name: 'Hừng Đông' }));
+      await app.saves.idle();
+
+      expect(saves).toHaveLength(before + 1);
+      expect(await onDisk(saves.at(-1))).toEqual(['Hừng Đông', ...OLD]);
+      expect(app.generation()).toBe(generation);
+    },
+  );
+
+  it('runs two replaces called together one after the other, each backed up, none failing (S2-1)', async () => {
+    const { app, storage } = await exe();
+    const preview = await previewOf(app, 'Bình Minh');
+    const seenByBackup: string[][] = [];
+    const backup = storage.backup;
+    storage.backup = () => {
+      seenByBackup.push(teamNames(app.db()));
+      return backup();
+    };
+    const closeFirst = vi.spyOn(app.db().sqlite, 'close');
+    let closeSecond: ReturnType<typeof vi.spyOn> | undefined;
+    app.subscribe(() => (closeSecond ??= vi.spyOn(app.db().sqlite, 'close')));
+
+    const done = await Promise.all([app.reloadDemoData(), app.importBackup(preview)]);
+
+    expect(done).toEqual([
+      { anchor: calendarDate(2026, 10, 1), backup: 'project2c-20260927-101500.db' },
+      'project2c-20260927-101500.db',
+    ]);
+    // The import began once the reload was done: it backed up the reloaded data.
+    expect(seenByBackup).toEqual([OLD, NEW]);
+    expect(teamNames(app.db())).toEqual(['Bình Minh']);
+    expect(closeFirst).toHaveBeenCalledTimes(1);
+    expect(closeSecond).toHaveBeenCalledTimes(1);
+  });
+
+  it('saves the migration of the new data while it opens, and nothing of the data it replaces (review of PR 206)', async () => {
+    const { app, storage, saves } = await exe();
+    // A file from before the latest migration: opening it migrates, and that saves.
+    const older = (await openDatabase({ migrations: [] })).export();
+    const backup = holdBackup(storage);
+
+    const importing = app.importBackup({ ...(await previewOf(app, 'x')), bytes: older });
+    await backup.started;
+    const backedUp = saves.length;
+    backup.release();
+    await importing;
+    await app.saves.idle();
+
+    const after = saves.slice(backedUp);
+    expect(after[0]).not.toEqual(older);
+    for (const bytes of after) expect(await onDisk(bytes)).toEqual([]);
+  });
+
+  it('exports a whole file of the old or the new data at any step of a replace (S2-5)', async () => {
+    const { app, storage } = await exe();
+    const backup = holdBackup(storage);
+    const exported: Promise<ExportedBackup>[] = [];
+    // Right after the swap, while the old database is still open.
+    app.subscribe(() => exported.push(app.exportBackup()));
+
+    const reloading = app.reloadDemoData();
+    exported.push(app.exportBackup());
+    await backup.started;
+    exported.push(app.exportBackup());
+    backup.release();
+    await reloading;
+
+    const files = await Promise.all(exported);
+    const read = await Promise.all(files.map((file) => app.readBackup(file.text)));
+    expect(read.map((preview) => preview.counts.teams)).toEqual([OLD.length, OLD.length, 1]);
+  });
+
+  it('closing the app at any step of a replace leaves a whole file of the old or the new data (S2-6)', async () => {
+    const { app, storage, saves } = await exe();
+    const backup = holdBackup(storage);
+    const lastFile = async () => {
+      await app.saves.flush();
+      return onDisk(saves.at(-1));
+    };
+    const files: Promise<string[]>[] = [];
+    app.subscribe(() => files.push(lastFile()));
+
+    const reloading = app.reloadDemoData();
+    files.push(lastFile());
+    await backup.started;
+    files.push(lastFile());
+    backup.release();
+    await reloading;
+    files.push(lastFile());
+
+    expect(await Promise.all(files)).toEqual([OLD, OLD, NEW, NEW]);
   });
 });
 
