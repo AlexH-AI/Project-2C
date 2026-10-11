@@ -170,10 +170,11 @@ Hằng số trong `packages/ai`, mỗi dòng: mã model, tên hiện, có nhận
 | `AI_TIMEOUT` | quá 120 s | AI không trả lời trong 2 phút |
 | `AI_NETWORK` | DNS / TLS / mất kết nối, hết 10 s phân giải tên hoặc kết nối | Không kết nối được OpenCode |
 | `AI_HTTP` | HTTP khác 2xx còn lại | OpenCode báo lỗi (mã HTTP) |
-| `AI_BAD_RESPONSE` | 2xx: không phải JSON OpenAI, thiếu `choices[0].message.content`, > 2 MB, hoặc `content` chứa key (cả dạng escape, dưới bảng) | Trả lời của OpenCode không đọc được |
+| `AI_BAD_RESPONSE` | 2xx: không phải JSON OpenAI, thiếu `choices[0].message.content`, > 2 MB, hoặc `content` chứa key (cả dạng escape, dưới bảng). Ngoại lệ: `content` `null` / thiếu kèm `finish_reason` = `length` (model suy luận hết `max_tokens` trước khi viết) → `content` = `""`, `finishReason` = `length`, `ai` báo "bị cắt" (§6.1; R2-16, T-199) | Trả lời của OpenCode không đọc được |
 | `AI_BUSY` | đã có một yêu cầu AI đang chạy (§5.2) | Đang có một yêu cầu AI khác — chờ xong rồi thử lại |
 | `AI_BAD_REQUEST` | đầu vào lệnh sai (§5.1) | lỗi lập trình — hiện thông báo chung |
 | `AI_KEYRING` | Credential Manager lỗi | Không đọc / ghi được key trong Windows Credential Manager |
+| `AI_TOO_LARGE` | Chỉ `packages/ai` sinh, **trước** khi gọi Rust (Rust không gửi mã này): tổng `content` của messages (đếm theo code point như Rust) sẽ vượt 200 000 ký tự (§5.1) — đầu vào quá lớn (ghi chú KYC rất dài, hàng nghìn dữ kiện), hoặc lần thử lại mà prompt + đầu vào + message thử lại đã hết chỗ. Không gọi Rust, không lưu gì (như lỗi ở §3 điểm 3). T-199, MS-A1 / CL-A9 | Dữ liệu gửi AI quá lớn (quá 200 000 ký tự) — rút gọn ghi chú hoặc dữ kiện rồi thử lại |
 
 Thông báo lỗi **không** chứa key, header hay thân yêu cầu; chỉ mã HTTP và tối đa 200 ký tự đầu của thông điệp lỗi từ server. Thông điệp chỉ lấy từ JSON (`error.message`, `error` hoặc `message` dạng chuỗi); thân không có các trường này → không có thông điệp, không bao giờ trả thân thô. Key và mã phiên được che (`***`) trước khi cắt 200 ký tự.
 
@@ -198,7 +199,11 @@ Webview không bao giờ thấy key (D-1 mục 1; T-204, R2-09 / R2-10). Rust ki
 - **Trích xuất:** đúng một ghi chú KYC (văn bản RE đã ghi) + danh sách trường được phép. Ghi chú có thể chứa tên người: Settings → AI ghi rõ "Trích xuất gửi nguyên văn ghi chú tới OpenCode".
 - Mã `F{seq}` cũng hiện ở danh sách dữ kiện của Hồ sơ KH (như mockup "F-09") để RE bấm từ bằng chứng tới dữ kiện.
 - **Xác nhận lại cùng giá trị** (hoặc sửa ngày sinh cùng năm) thay dữ kiện bằng dữ kiện mới (mã mới) mà không tạo phiên bản KYC, nên phân tích vẫn CURRENT theo §7.2 (Owner chốt 10/10/2026 phương án (a), DR5-15, T-196). Panel ánh xạ mã cũ sang **dữ kiện còn hiệu lực cùng trường + cùng giá trị**: bấm mã tới dữ kiện đó; mức bằng chứng (§6.3) của phân tích **CURRENT** tính theo ngày xác nhận của dữ kiện hiện hành. Phân tích STALE giữ ngày trong `input_json`. Giá trị đổi thật → không ánh xạ: bấm mã ra "F<n> không còn hiệu lực", phân tích STALE theo phiên bản.
-- Trả lời: lấy khối JSON đầu tiên trong `content` (bỏ rào ```` ```json ````); không có JSON → lỗi V1.
+- Trả lời: lấy khối JSON đầu tiên trong `content` (bỏ rào ```` ```json ````); không có JSON → lỗi V1. Cách đọc (T-199, DR5-04 / 05):
+  - "Khối" là khối `{…}` **ngoài cùng**: khối đầu tiên parse được thì lấy; khối không phải JSON (vd. "{theo mẫu}" trong lời văn) thì bỏ cả khối, kể cả JSON nằm trong nó. Dấu `{` không bao giờ đóng (lời văn, hoặc trả lời bị cắt) thì bỏ qua và thử các khối nằm trong nó.
+  - Đọc một lượt (O(n)); sau 100 khối parse lỗi thì coi như không có JSON (câu trả lời thật chỉ có một khối, hoặc vài dấu `{` trong lời văn trước nó).
+  - **Trả lời bị cắt**: `finishReason` = `length` (hết `maxTokens`, §5.1). Khi đó khối nằm trong dấu `{` chưa đóng là mảnh của câu trả lời cụt, không lấy; không có khối ngoài cùng đủ → lỗi V1 `$` "trả lời bị cắt (hết maxTokens) trước khi khối JSON kết thúc" (thay cho "không có khối JSON"), có tính lần thử, thử lại như V1 khác; hai lần đều cụt → lưu REJECTED với lý do đó. Panel ghi "Trả lời bị cắt vì hết giới hạn token, khối JSON chưa xong". Khối ngoài cùng đã đủ trước chỗ cắt thì vẫn đọc bình thường. ChatGPT web không có `finishReason` nên không bao giờ là "bị cắt".
+  - Lỗi V2 của một phần tử gộp thành một issue: một mã sai giữ đường dẫn `…evidence[i]`; nhiều mã sai → `…evidence`, nêu 5 mã đầu (mỗi mã tối đa 40 ký tự) + "và N mã khác" (CL-A8), để message thử lại và `validator_json` không phình theo số mã.
 
 ### 6.2 Schema (zod, G2)
 

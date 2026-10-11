@@ -7,7 +7,7 @@
  * the user drives by hand): one retry after a wrong answer, then the conversation is over.
  */
 import { extractJson } from '../extract-json';
-import type { ValidationIssue } from '../validator';
+import { CUT_ANSWER, type ValidationIssue } from '../validator';
 
 export const RETRY_TEMPLATE = `Kết quả vừa rồi chưa đạt kiểm tra tự động với các lỗi sau:
 {issues}
@@ -30,12 +30,17 @@ export interface CheckedAnswer {
   readonly issues: readonly ValidationIssue[];
 }
 
-/** Takes the first JSON block of `content` and checks it; no JSON is `null` for `check` (V1). */
+/**
+ * Takes the first JSON block of `content` and checks it; no JSON is `null` for `check` (V1). An
+ * answer `maxTokens` cut (`cut`) with no whole block is `CUT_ANSWER` instead (spec §6.1).
+ */
 export function checkAnswer(
   content: string,
   check: (parsed: unknown) => readonly ValidationIssue[],
+  cut = false,
 ): CheckedAnswer {
-  const json = extractJson(content);
+  const json = extractJson(content, { cut });
+  if (!json.found && cut) return { content, parsed: null, issues: [CUT_ANSWER] };
   const parsed = json.found ? json.value : null;
   return { content, parsed, issues: check(parsed) };
 }

@@ -144,14 +144,35 @@ describe('createMockAdapter', () => {
     expect(output.facts.map((fact) => fact.field)).toEqual(proposed);
   });
 
-  it.each(['Anh ấy chưa kết hôn.', 'Anh ấy chưa từng kết hôn.', 'Chị nói sẽ không kết hôn.'])(
-    'does not read %j as married',
-    async (note) => {
-      const fields = [{ field: 'maritalStatus' }];
-      const output = extractionOutputSchema.parse((await complete({ note, fields })).value);
-      expect(output.facts).toEqual([]);
-    },
-  );
+  it.each([
+    'Anh ấy chưa kết hôn.',
+    'Anh ấy chưa từng kết hôn.',
+    'Chị nói sẽ không kết hôn.',
+    // CX-A4
+    'KH không muốn kết hôn, đang ưu tiên công việc.',
+    'KH vừa ly hôn sau 12 năm kết hôn.',
+    'Anh ấy đã từng kết hôn.',
+  ])('does not read %j as married', async (note) => {
+    const fields = [{ field: 'maritalStatus' }];
+    const output = extractionOutputSchema.parse((await complete({ note, fields })).value);
+    expect(output.facts).toEqual([]);
+  });
+
+  it.each([
+    // CX-A4: the KH's grandchildren are not their children.
+    ['KH có 2 cháu ngoại, cả hai đang học tiểu học.', []],
+    ['Ông bà có 3 cháu nội.', []],
+    ['Nhà có 2 cháu, đều học cấp 2.', [{ field: 'childrenCount', value: '2', quote: '2 cháu' }]],
+    // Not "Đã kết hôn"; living single is said as such.
+    [
+      'KH chưa đăng ký kết hôn, hiện sống độc thân.',
+      [{ field: 'maritalStatus', value: 'Độc thân', quote: 'độc thân' }],
+    ],
+  ])('reads %j as %j', async (note, facts) => {
+    const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
+    const output = extractionOutputSchema.parse((await complete({ note, fields })).value);
+    expect(output.facts).toEqual(facts);
+  });
 
   it('extracts nothing from a note without a known pattern', async () => {
     const output = extractionOutputSchema.parse(

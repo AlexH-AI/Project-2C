@@ -358,6 +358,16 @@ describe('checkWebAnswer', () => {
     expect(checkWebAnswer(session, `${emoji}x`)).toEqual({ kind: 'unusable', reason: 'TOO_LONG' });
   });
 
+  it.each([
+    ['one line', 'x'.repeat(20_000_000)],
+    ['many lines', 'Một dòng dài của tài liệu dán nhầm.\n'.repeat(560_000)],
+  ])('refuses a 20-million-character paste on %s without reading it all (DR5-09)', (_, text) => {
+    const { session } = start();
+    const started = Date.now();
+    expect(checkWebAnswer(session, text)).toEqual({ kind: 'unusable', reason: 'TOO_LONG' });
+    expect(Date.now() - started).toBeLessThan(20);
+  });
+
   it('records a discovery with its own prompt version', () => {
     expect(paste(start(DISCOVERY).session, DISCOVERY_ANSWER)).toMatchObject({
       kind: 'record',

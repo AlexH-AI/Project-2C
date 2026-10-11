@@ -163,6 +163,27 @@ describe('validateOutput — V2', () => {
     ]);
   });
 
+  it('reports the wrong fact codes of one element together', () => {
+    const output = { ...analysis(), themes: [item('Gia đình là trung tâm', 'F1', 'F7', 'F8')] };
+    expect(validateOutput('analysis', output, input)).toEqual([
+      { code: 'V2', path: 'themes[0].evidence', detail: 'F7, F8 không có trong đầu vào' },
+    ]);
+  });
+
+  it('names five wrong codes of an element and counts the rest, each cut to 40 characters', () => {
+    // CL-A8, MS-A1: thousands of wrong codes made a retry message over the Rust limit.
+    const codes = Array.from({ length: 2000 }, (_, i) => `F${i + 100}`);
+    const long = `F${'9'.repeat(500)}`;
+    const output = { ...analysis(), needs: [item('Quỹ học vấn cho con', long, ...codes)] };
+    expect(validateOutput('analysis', output, input)).toEqual([
+      {
+        code: 'V2',
+        path: 'needs[0].evidence',
+        detail: `F${'9'.repeat(38)}…, F100, F101, F102, F103 và 1996 mã khác không có trong đầu vào`,
+      },
+    ]);
+  });
+
   it('reports a missingCategory that is not a missing hạng mục of the gate', () => {
     const output = {
       ...discovery(),

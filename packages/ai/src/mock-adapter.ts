@@ -132,14 +132,17 @@ const EXTRACTION_PATTERNS: readonly {
   readonly pattern: RegExp;
   readonly value: (match: RegExpExecArray) => string;
 }[] = [
+  // Narrow on purpose (CX-A4): what may mean something else gives no proposal.
   {
     field: 'childrenCount',
-    pattern: /(?<!\p{N})(\d{1,2})\s+(?:con|bé|cháu)(?!\p{L})/gu,
+    // Not "cháu nội / ngoại": grandchildren.
+    pattern: /(?<!\p{N})(\d{1,2})\s+(?:con|bé|cháu)(?!\p{L})(?!\s+(?:nội|ngoại)(?!\p{L}))/gu,
     value: (match) => match[1]!,
   },
   {
     field: 'maritalStatus',
-    pattern: /(?<!(?:chưa|không)(?:\s+từng)?\s+)kết hôn/giu,
+    // Only "đã kết hôn": not "chưa / không muốn / … năm kết hôn" nor "đã từng kết hôn".
+    pattern: /(?<=(?<!\p{L})đã\s+)kết hôn(?!\p{L})/giu,
     value: () => 'Đã kết hôn',
   },
   { field: 'maritalStatus', pattern: /độc thân/giu, value: () => 'Độc thân' },

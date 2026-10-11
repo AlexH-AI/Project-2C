@@ -1,4 +1,10 @@
-import { AI_MODELS, DEFAULT_AI_SETTINGS, type AiSettings, type WebSession } from '@p2c/ai';
+import {
+  AI_MODELS,
+  CUT_ANSWER,
+  DEFAULT_AI_SETTINGS,
+  type AiSettings,
+  type WebSession,
+} from '@p2c/ai';
 import type { AiAnalysisView, KycFactRecord } from '@p2c/db';
 import {
   calendarDate as day,
@@ -7,6 +13,7 @@ import {
   type KycGateState,
 } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
+import { errorText } from '../ai-error-view';
 import {
   aiPanelHelp,
   aiPanelView,
@@ -342,6 +349,14 @@ describe('issueLine (mockups 2k, 4g)', () => {
       detail: null,
     });
   });
+
+  it('says an answer cut by maxTokens was cut, not that it had no JSON (DR5-05)', () => {
+    expect(issueLine(CUT_ANSWER, true)).toEqual({
+      code: 'V1',
+      place: null,
+      detail: 'Trả lời bị cắt vì hết giới hạn token, khối JSON chưa xong',
+    });
+  });
 });
 
 describe('the ChatGPT web session of the panel (spec Phase 5 §3.1, mockups 4e–4h)', () => {
@@ -464,6 +479,15 @@ describe('the run of the panel (spec Phase 5 §5.2, §5.3)', () => {
       phase: 'error',
       error: { code: 'AI_BUSY' },
     });
+  });
+
+  it('says data over the Rust limit is too large, not a bug of the app (MS-A1, CL-A9)', () => {
+    const run = runAfter({ kind: 'error', code: 'AI_TOO_LARGE' });
+    expect(run).toEqual({ phase: 'error', error: { code: 'AI_TOO_LARGE' } });
+    if (run.phase !== 'error') throw new Error('no error');
+    expect(errorText(run.error)).toBe(
+      'Dữ liệu gửi AI quá lớn (quá 200 000 ký tự) — rút gọn ghi chú hoặc dữ kiện rồi thử lại.',
+    );
   });
 
   it('keeps the HTTP status and the server message Rust gave (DR5-30)', () => {

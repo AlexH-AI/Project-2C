@@ -241,7 +241,15 @@ pub fn reply(status: u16, body: &[u8], key: &str, session: &str) -> Result<Compl
     }
     let reply: Value = serde_json::from_slice(body).map_err(|_| bad())?;
     let choice = &reply["choices"][0];
-    let content = choice["message"]["content"].as_str().ok_or_else(bad)?;
+    // No content at all, cut by `max_tokens` (a reasoning model that spent them all): an empty
+    // answer that says `length`, which the webview reads as cut (R2-16).
+    let cut_before_content =
+        choice["message"]["content"].is_null() && choice["finish_reason"] == "length";
+    let content = if cut_before_content {
+        ""
+    } else {
+        choice["message"]["content"].as_str().ok_or_else(bad)?
+    };
     // The webview must never get the key (D-1 item 1), and an answer may be saved as it is.
     if reveals(content, key) {
         return Err(bad());
@@ -790,10 +798,33 @@ mod tests {
             r#"{"choices":[{"message":{}}]}"#,
             r#"{"choices":[{"message":{"content":null}}]}"#,
             r#"{"choices":[{"message":{"content":42}}]}"#,
+            r#"{"choices":[{"message":{"content":null},"finish_reason":"stop"}]}"#,
+            r#"{"choices":[{"message":{"content":42},"finish_reason":"length"}]}"#,
         ] {
             assert_eq!(
                 reply(200, body.as_bytes(), KEY, SESSION),
                 Err(AiError::new(AI_BAD_RESPONSE)),
+                "{body}"
+            );
+        }
+    }
+
+    /// R2-16: a reasoning model can spend all of `max_tokens` before it writes; the webview reads
+    /// the empty answer with `length` as a cut one (spec §5.3).
+    #[test]
+    fn a_reply_cut_before_any_content_is_an_empty_cut_answer() {
+        for body in [
+            r#"{"choices":[{"message":{"content":null},"finish_reason":"length"}]}"#,
+            r#"{"choices":[{"message":{},"finish_reason":"length"}]}"#,
+        ] {
+            assert_eq!(
+                reply(200, body.as_bytes(), KEY, SESSION),
+                Ok(Completion {
+                    content: String::new(),
+                    prompt_tokens: None,
+                    completion_tokens: None,
+                    finish_reason: Some("length".into()),
+                }),
                 "{body}"
             );
         }
