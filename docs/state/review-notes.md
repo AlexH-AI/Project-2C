@@ -67,6 +67,9 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - Mã F trên dòng thời gian (#462, T-168B, không chặn): mã `F{seq}` chưa hiện trên dòng thời gian (`CustomerKyc.tsx`), trong khi ghi chú cuối mockup `ai.html` muốn mã F "ở mọi nơi: Dữ kiện KYC, bằng chứng, dòng thời gian". Issue #410 và spec §6.1 chỉ yêu cầu danh sách dữ kiện; dòng thời gian hiện tách ghi chú và phiên bản thành hai mục, khác mockup `customer.html` → **Owner quyết** có cần Issue riêng không.
 - Script eval AI `tools/eval-ai.mjs` (#474, T-171, không chặn; các mục khác của #474 đã sửa ở #517, xem RESOLVED). Gộp vào lần chạm sau của script:
   - `eval-ai.mjs:21`: hook `resolve` bỏ qua mọi specifier kết thúc bằng `.\w+`, nên một import không đuôi như `./golden/kyc.fixture` sẽ không được thử thêm `.ts`. Hiện chưa lỗi vì chỉ file test import kiểu đó, còn cây import thật nạp được → thử thêm `.ts` cho cả specifier có dấu chấm khi không trỏ tới file có thật.
+- `packages/ai` độ bền đầu vào (#521, T-199, review @`4f28b3c`, không chặn):
+  - `run.ts` (`converse`, lần thử lại): message `assistant` có thể rỗng — trả lời rỗng bị cắt (R2-16, Rust gửi `content: ""` + `length`) hoặc `room` = 0 khi đầu vào sát trần 200 000. Rust nhận, nhưng một số backend kiểu OpenAI từ chối `content` rỗng của `assistant` → `AI_HTTP` thay cho thử lại / REJECTED. Chưa kiểm với OpenCode thật → thử một lần ở 6C (lần gọi thật); nếu bị từ chối thì gửi một ký tự giữ chỗ (đổi G5 §1, cần Owner duyệt).
+  - `web.ts` (`checkWebAnswer`): kiểm > 40 000 code unit (`TOO_LONG`) chạy trước kiểm rỗng / tin nhắn của app, nên dán lại tin nhắn `web@1` của một hồ sơ rất lớn báo "quá dài" thay cho "Đây là tin nhắn của app…". Cả hai đều không tính lần thử, spec §3.1 mục 3 không ép thứ tự; chỉ khác câu báo. Sửa nếu cần: chỉ xét tin nhắn của app trên các dòng ngắn trước khi từ chối theo độ dài.
 
 ## RESOLVED
 
