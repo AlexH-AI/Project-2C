@@ -343,3 +343,172 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 - [x] Cách so khớp (§7)
 - [x] Danh sách chặn V3–V6 và ca kiểm C1–C17 (§8), gồm điểm lệch spec ở "khoản <số>" (§8.4)
 - [x] Tin nhắn ChatGPT web `web@1`: phần bọc, giữ nguyên prompt chế độ, thử lại dùng §5 (§6a — W-1, 08/10/2026)
+
+## 10. Đợt sửa G5 Phase 6 (T-197 #491) — đề xuất, chờ Owner duyệt
+
+**Trạng thái:** đề xuất 11/10/2026, **chưa duyệt**. §1–§9 ở trên vẫn là bản đang chạy (`analysis@1`, `discovery@1`) cho tới khi Owner duyệt; sau khi duyệt, các thay đổi dưới được chép vào §1–§8 (và spec `phase-5-ai.md` §3.1 mục 3, §6.2, §6.4) trong cùng PR với code + test, mục này rút gọn thành nhật ký.
+
+**Nền:** deep review Phase 5 (`docs/reviews/2026-10-10-deep-review-phase-5-tong-hop.md`) DR5-01, DR5-02, DR5-08, DR5-23, DR5-49 (b); review lại vòng 2 (`docs/reviews/2026-10-11-review-lai-phase-5-tong-hop.md`) R2-03, R2-04; ghi chú review #420 (`docs/state/review-notes.md`); đọc tay eval 10/10 (`docs/metrics/ai-eval-2026-10-10.md`, R2–R7).
+
+**Đã thử trước khi đề xuất** (bản dựng thử ngoài repo, chưa phải code): luật mới ở §10.2–§10.3 cho **41 / 41** câu thường đạt (C3–C18 cũ + mọi câu chặn nhầm của DR5-02 và #420) và **47 / 47** ca phải chặn bị chặn (C1–C19 cũ + biến thể Unicode của DR5-01); chạy trên **547** chuỗi `text` thật của eval 10/10: **0** câu bị chặn.
+
+### 10.1 Version
+
+| Prompt | Đổi | Version mới |
+|---|---|---|
+| analysis | danh sách chặn (§10.3), V1 (§10.4), chữ prompt nếu Owner chọn (§10.8) | `analysis@2` |
+| discovery | như analysis | `discovery@2` |
+| extraction | không đổi chữ; không qua V3–V6; chỉ `maxTokens` nếu Owner chọn §10.7 | giữ `extraction@1` |
+| tin nhắn ChatGPT web | chữ bọc không đổi; chỉ cách nhận diện tin nhắn của app đổi (§10.6) | giữ `web@1` → lưu `analysis@2+web@1` |
+
+- Phân tích đã lưu với `@1` vẫn hiện như đã ghi. `db` chỉ kiểm dạng `<mode>@<n>` (không có danh sách version) nên không phải sửa `db`.
+- V1 chặt hơn (§10.4) cũng áp khi nhập backup (`db` dùng `@p2c/ai/schema`): theo R2-02, Owner nạp lại dữ liệu giả lập; không migration.
+
+### 10.2 Cách so khớp §7 (DR5-01)
+
+Thêm một bước **trước** mục 1 của §7, dùng chung cho bản gốc, bản có dấu và bản bỏ dấu:
+
+0. **Chuẩn hóa nền:** NFKC (gom `％`, `﹪` về `%`, chữ số / chữ cái toàn độ rộng về ASCII) → bỏ mọi ký tự định dạng `\p{Cf}` (U+200B, 200C, 200D, 2060, 00AD, FEFF…) → thay `-` và `_` bằng dấu cách. Các mục trong danh sách cũng chuẩn hóa như vậy (vd. "dai-ichi" thành "dai ichi").
+
+Sửa thêm:
+
+- Mục 1: "NFC" đổi thành "kết quả bước 0" (NFKC đã gồm NFC).
+- **Khoảng trắng trong một cụm khớp 0 hoặc 1 dấu cách**: bỏ ký tự vô hình làm hai chữ dính nhau ("xác​suất" → "xácsuất"), nên cụm "xác suất" phải khớp cả "xácsuất". Ranh giới từ hai đầu cụm giữ nguyên (§7 mục 4).
+- **Chữ số trong regex là `\p{Nd}`** (mọi chữ số thập phân Unicode) thay cho `\d`: NFKC không đổi chữ số Ả Rập ("Điều ٣٥").
+- V3 thêm ký tự `‰` (NFKC không gom về `%`) và cụm "percent" (CX-A2 "70 percent").
+
+Không xử lý chữ tương hình khác bảng (Cyrillic "А", Greek "υ"): cần bảng confusables, model không đối kháng, R1 eval = 0 (§10.10).
+
+### 10.3 Danh sách chặn §8 (DR5-02 + #420)
+
+Chỉ liệt kê mục đổi; mục khác giữ nguyên. "Bỏ dấu: không" = chỉ so bản có dấu (§7 mục 3).
+
+| Luật | Mục cũ | Đề xuất | Câu thường hết bị chặn |
+|---|---|---|---|
+| V3 | dễ chốt (bỏ dấu: có) | bỏ dấu: **không** | "Hẹn KH **để chốt** lịch gặp tiếp" |
+| V3 | khả năng ký (có) | bỏ dấu: **không** | "**khả năng kỹ** thuật", "**khả năng kỷ** luật tài chính" |
+| V3 | chốt được | chỉ chặn khi **không** theo sau bởi: lịch · ngày · giờ · buổi · thời gian · thời điểm · cuộc hẹn · hẹn · mốc · kế hoạch · mục tiêu · phương án | "**Chốt được** lịch hẹn tuần sau" (vẫn chặn "KH có thể chốt được trong tháng này") |
+| V3 | sẵn sàng mua · tiềm năng mua | chỉ chặn khi theo sau là: hết câu / dấu câu, hoặc bảo hiểm · sản phẩm · giải pháp · gói · hợp đồng · hđ | "KH có thể **sẵn sàng mua** nhà năm 2027", "**Tiềm năng mua** thêm bất động sản cho con" (cùng lý do bỏ "sẽ mua", C15) |
+| V3 | độ tin cậy · mức độ tin cậy (có) | bỏ dấu: **không** | "gắn bó với đơn vị cũ **do tin cậy** người tư vấn" |
+| V3 | chấm điểm · điểm số · xếp hạng khách | chấm điểm KH · chấm điểm khách · điểm số KH · điểm số khách · xếp hạng KH · xếp hạng khách | "Con KH cần cải thiện **điểm số**", "**chấm điểm** đầu vào đại học", "**Điểm sơ** bộ" |
+| V3 | (mới) | `‰`, "percent" (§10.2) | — |
+| V4 | bảo việt · bảo minh (có) | bỏ dấu: **không** ("baoviet", "bvnt" giữ) | "RE **bảo viết** lại mục tiêu", "KH **báo mình** sẽ đi công tác" |
+| V4 | liên kết chung | **bảo hiểm liên kết** (khớp cả "bảo hiểm liên kết chung / đơn vị") | "tài khoản **liên kết chung** của hai vợ chồng" |
+| V5 | nhóm d · nhóm i · nhóm s · nhóm c · kiểu d · kiểu i · kiểu s · kiểu c | như cũ, nhưng **không** chặn khi theo sau là "level" / "suite" | "KH thuộc **nhóm C-level** của tập đoàn" (vẫn chặn "nhóm D") |
+| V5 | nhóm máu (có) | bỏ dấu: **không** (regex `nhóm máu (a\|b\|ab\|o)` giữ) | "KH thích **nhóm màu** trung tính", "**nhóm mẫu** câu hỏi" |
+| V6 | `\bđiều\s+\d+` (cả bản bỏ dấu) | `\b(Điều\|ĐIỀU)\s+\p{Nd}+` trên **bản gốc, giữ hoa thường** | "Làm rõ **điều 2** vợ chồng KH còn băn khoăn" |
+| V6 | `\bkhoản\s+\d+[,]?\s+điều\b` | `\bkhoản\s+\p{Nd}+[,]?\s+điều\s+\p{Nd}+` (đòi số sau "điều"; cả bản bỏ dấu) | "Hỏi KH về **khoản 2 điều** kiện vay" (vẫn chặn "khoản 2 điều 35" viết thường) |
+| V6 | `(?<!(pháp\|Pháp\|PHÁP)\s+)(luật\|Luật\|LUẬT)\s+\p{Lu}` | "luật" **mọi kiểu hoa / thường**, đứng sau một từ khác "pháp", "kỷ", "quy" (so không phân biệt hoa thường), theo sau là một từ mở đầu bằng chữ hoa mà **không** phải "KH", "RE" hay "sư" (mọi kiểu chữ) | "kỷ luật KH", "quy luật Thị trường", "LUẬT SƯ", "Luật Sư", "pHáp luật Việt Nam" (vẫn chặn "Luật Kinh doanh…", "Luật BHXH", "LuẬt Đất đai") |
+| V6 | nghị quyết (có) | bỏ dấu: **không** | "cần thời gian **suy nghĩ quyết** định" |
+| V6 | quyết định số · công văn số (cụm) | regex `\b(quyết định\|công văn) số\s*\p{Nd}` (cả bản bỏ dấu) | "**quyết định số** tiền / số lượng", "**công văn số** liệu" (vẫn chặn "Quyết định số 123") |
+| V6 | `\b\d{1,4}/\d{4}/[a-zđ0-9-]+\b`, `\b(nđ-cp\|tt-btc\|qh1\d)\b` | `\d` → `\p{Nd}`; `-` trong mẫu thành dấu cách tùy chọn (bước 0 đã đổi `-` thành dấu cách) | — |
+
+### 10.4 V1: `text` phải có chữ (DR5-08, DR5-49 phần b)
+
+Ví dụ định dạng trong prompt (§2, §3) có mọi `text` là "…" và mã F12, F10, F13, F9, F3: model chép lại ví dụ, hoặc RE dán phần ví dụ, thì ACCEPTED ở KH có đủ các mã đó (39 / 767 hồ sơ seed). Issue cho hai cách:
+
+- **(A — đề xuất)** V1: mỗi `text` của analysis / discovery (kể cả `personalityNotes`), sau khi bỏ `\p{Cf}` và cắt khoảng trắng hai đầu, phải dài 1–300 ký tự **đếm theo NFC** và có **ít nhất một chữ cái** (`\p{L}`). "…", "—", chuỗi chỉ có ký tự vô hình → V1 (`detail` "không có chữ" / "chuỗi rỗng"). Đồng thời sửa phần đếm của DR5-08: 250 ký tự viết NFD không còn bị tính 302.
+- (B) Đổi mã trong ví dụ prompt thành `F0` (không bao giờ có, `FACT_CODE` từ chối) → V1 ở `evidence`. Model có thể chép "F0" vào câu trả lời thật, thêm lần thử lại.
+
+Chọn **A**, giữ nguyên ví dụ: không đổi cách model đọc mẫu, đồng thời chặn mọi `text` rỗng nghĩa từ bất kỳ nguồn nào. Trích xuất (`field`, `value`, `quote`): chuỗi chỉ có ký tự vô hình → V1 "chuỗi rỗng"; **không** đòi chữ cái (giá trị số "2" là đúng). Test khóa của T-190 ("accepts the format example…") đảo thành "không ACCEPTED".
+
+### 10.5 Kiểm tra kết nối (DR5-23)
+
+`maxTokens` **64 → 1 024**, `reasoning` vẫn theo Settings (§6). Lý do: spec §4.2 đo `deepseek-v4.1-flash` dùng 65 token suy luận ở `high` cho câu hỏi ngắn, đã quá 64 → có thể `content: null` → `AI_BAD_RESPONSE` dù kết nối được. Giữ `reasoning` để Kiểm tra kết nối vẫn thử đúng mức suy luận Owner chọn; model trả "OK" thì dừng sớm nên chi phí gần như không đổi. (Cách khác: không gửi `reasoning` — rẻ hơn chút nhưng không còn kiểm model nhận mức đó.)
+
+### 10.6 Nhận diện tin nhắn của app khi dán (R2-03, R2-04)
+
+Không đổi chữ `web@1`. Đổi cách `checkWebAnswer` nhận ra câu dán là tin nhắn của app (`OWN_MESSAGE`: báo tại khung, không tính lần thử, không lưu):
+
+1. **Chuẩn hóa từng dòng** trước khi so (R2-03), cùng bước 0 của §10.2: NFKC → bỏ `\p{Cf}` → bỏ tiền tố trích dẫn đầu dòng (một hay nhiều `>`, kèm khoảng trắng) → gộp mọi khoảng trắng (kể cả NBSP) thành một dấu cách → cắt hai đầu. Dòng khung so cũng chuẩn hóa như vậy. Hết lọt khi khung bị đổi NFD / NBSP / ZWSP đầu dòng / hai dấu cách / `> `.
+2. **Dán lại message thử lại** (R2-04): ngoài hai dòng khung `=== HƯỚNG DẪN ===`, `=== ĐẦU VÀO ===`, một dòng trùng **dòng đầu** ("Kết quả vừa rồi chưa đạt kiểm tra tự động với các lỗi sau:") hoặc **dòng cuối** ("Hãy trả lại toàn bộ kết quả…") của message thử lại §5 cũng là `OWN_MESSAGE`. Ở lần thử 2, RE dán nhầm tin nhắn "Copy yêu cầu sửa" thì phiên vẫn mở, không có dòng REJECTED. Câu báo giữ nguyên ("Đây là tin nhắn của app — hãy copy câu trả lời của ChatGPT.").
+
+Spec `phase-5-ai.md` §3.1 mục 3 (G1 nhỏ), câu về tin nhắn của app đổi thành:
+
+> câu dán có một dòng (sau chuẩn hóa: NFKC, bỏ ký tự định dạng, bỏ tiền tố trích dẫn `>`, gộp khoảng trắng) là khung `=== HƯỚNG DẪN ===` hoặc `=== ĐẦU VÀO ===` của tin nhắn app (dán lại cả hay một phần tin nhắn), **hoặc là dòng đầu / dòng cuối của message thử lại G5 §5 (dán lại "Copy yêu cầu sửa")** → báo "Đây là tin nhắn của app — hãy copy câu trả lời của ChatGPT." tại khung, không tính lần thử, không lưu gì (DR5-49, Owner 10/10/2026; R2-03, R2-04).
+
+### 10.7 `maxTokens` (tùy chọn)
+
+Đề xuất analysis / discovery **8 000 → 12 000**, extraction **4 000 → 8 000** (trần Rust 16 000). Eval 10/10, model mặc định ở `high` (token ra tính cả suy luận):
+
+- E07 dùng 7 064 token ra ở **một** lần thử, 88 % trần. Câu trả lời bị cắt thì `extractJson` đọc sai (DR5-05).
+- X01 lần 1 báo V1 "không có khối JSON", tổng hai lần 6 531 token ra: khớp với lần đầu hết 4 000 token trước khi viết xong JSON, lần 2 khoảng 2 500.
+
+Chi phí chỉ tăng khi model thật sự viết dài. `maxTokens` không phải chữ prompt nên extraction vẫn giữ `extraction@1` (đề xuất trích xuất không lưu, không cần version để phân biệt).
+
+### 10.8 Chữ prompt theo đọc tay eval 10/10 (R2–R7, Owner chọn)
+
+Áp cho cả `analysis@2` và `discovery@2` (số quy tắc ghi theo analysis / discovery). Mỗi mục độc lập, Owner chọn mục nào đưa vào:
+
+| # | Ghi nhận eval | Sửa quy tắc |
+|---|---|---|
+| P1 | E10 REJECTED vì "nhiều khả năng" ở lần thử 2 (V3 đúng: là cách nói xác suất) | 6 / 7, thêm cuối: `Không dùng cách nói mức khả năng như "nhiều khả năng", "khả năng cao"; viết "có thể".` |
+| P2 | E20 viết "giải pháp bảo vệ hiện có" khi F8 = Không | 7 / 8: `Khi cần nhắc, viết "giải pháp bảo vệ hiện có"…` → `Khi cần nhắc giải pháp bảo vệ mà dữ kiện cho thấy KH đã có, viết "giải pháp bảo vệ hiện có" và trích mã dữ kiện.` |
+| P3 | E12, E19 `needs[3]` khuyên cân đối / giảm tập trung tài sản; E16 lộ trình triển khai | 7 / 8, thêm cuối: `Không khuyên phân bổ hay cơ cấu lại tài sản (tăng / giảm một loại tài sản); nếu đáng bàn, đưa vào discoveryStrategy thành điều RE cần tìm hiểu.` |
+| P4 | E14: 51 tuổi → ghi "Mão hoặc Thìn" (đúng là Dần / Mão) | 8 / 9, thêm sau `(vd. tuổi cho con giáp)`: `Đầu vào chỉ có tuổi: năm sinh là năm phân tích trừ tuổi, hoặc trước đó một năm; khi hai năm đó khác con giáp / mệnh thì nêu cả hai.` |
+| P5 | ESOTERIC yếu căn cứ: E02, E07, E09 ("theo huyền học… chín muồi"), E20 (Hải Phòng → "sông nước"), E15 ("nhóm tuổi đầu 30") | 8 / 9, thêm cuối: `Phần tử ESOTERIC chỉ nêu con giáp hoặc mệnh ngũ hành suy từ tuổi, hoặc nhãn có sẵn trong dữ kiện; không suy cung hoàng đạo, thần số học (cần ngày sinh) và không gán ý nghĩa huyền học cho nghề nghiệp, nơi ở hay thời điểm.` |
+| P6 | E17 `painPoints[1]` đưa ý "hướng nội" sang khối khác mà không viết nhãn | 8 / 9, thêm sau `không viết ở phần nào khác.`: `Các phần khác không khái quát dữ kiện thành nét tính cách; KH tự mô tả mình thì chỉ nhắc lại điều KH nói và trích mã.` |
+
+Đề xuất đưa **cả 6** vào: mỗi câu ngắn, nhắm đúng một ghi nhận có mã hồ sơ; eval sau (Owner chạy sau merge, script đã sửa ở T-198) đo lại.
+
+### 10.9 Ca kiểm mới (thêm vào §8.5)
+
+| # | Chuỗi trong output | Kết quả |
+|---|---|---|
+| C20 | "Hẹn KH để chốt lịch gặp tiếp" | đạt |
+| C21 | "KH báo mình sẽ đi công tác" | đạt |
+| C22 | "KH có khả năng kỹ thuật tốt" | đạt |
+| C23 | "Điểm sơ bộ của buổi gặp đầu" | đạt |
+| C24 | "KH thuộc nhóm C-level của tập đoàn" | đạt |
+| C25 | "Chốt được lịch hẹn tuần sau" | đạt |
+| C26 | "Hỏi KH về khoản 2 điều kiện vay" | đạt |
+| C27 | "Hỏi KH đã quyết định số tiền dành cho học phí chưa" | đạt |
+| C28 | "KH có dấu hiệu giữ kỷ luật KH tự đặt khi chi tiêu" | đạt |
+| C29 | "HỎI KH ĐÃ CÓ LUẬT SƯ GIA ĐÌNH CHƯA" | đạt |
+| C30 | "Đúng pHáp luật Việt Nam" | đạt |
+| C31 | "KH có thể gắn bó với đơn vị cũ do tin cậy người tư vấn" | đạt |
+| C32 | "KH có thể cần thời gian suy nghĩ quyết định" | đạt |
+| C33 | "KH thích nhóm màu trung tính" | đạt |
+| C34 | "Làm rõ điều 2 vợ chồng KH còn băn khoăn" | đạt |
+| C35 | "KH có thể sẵn sàng mua nhà trong năm 2027 (F1)" | đạt |
+| C36 | "Con KH cần cải thiện điểm số để du học" | đạt |
+| C37 | "Hỏi tài khoản liên kết chung của hai vợ chồng" | đạt |
+| C38 | "RE bảo viết lại mục tiêu cho rõ" | đạt |
+| C39 | "KH sẵn sàng mua bảo hiểm" | V3 |
+| C40 | "Chấm điểm KH 8/10" | V3 |
+| C41 | "KH có thể chốt được trong tháng này" | V3 |
+| C42 | "Theo khoản 2 điều 35" | V6 |
+| C43 | "Quyết định số 123/QĐ-BTC" | V6 |
+| C44 | "Theo Luật BHXH" · "LuẬt Đất đai quy định" | V6 |
+| C45 | "Theo Điều ٣٥" · "Theo Điều ３５" | V6 |
+| C46 | "KH có ７０％ cơ hội đồng ý" · "Tỷ lệ 5‰" · "KH có 70 percent cơ hội" | V3 |
+| C47 | "Xác-suất cao" · "xác_suất cao" | V3 |
+| C48 | "xác" + U+200B + "suất" | V3 |
+| C49 | "P" + U+200B + "rudential" · "ＡＩＡ" | V4 |
+| C50 | "I" + U+2060 + "NTJ" ở `hypotheses` · "mệnh" + U+00AD + "Kim" ở `needs` | V5 |
+| C51 | "Lu" + U+200B + "ật Kinh doanh bảo hiểm" | V6 |
+| C52 | `text` "…" · `text` chỉ có U+200B | V1 |
+| C53 | `text` 250 ký tự viết NFD | đạt |
+| C54 | Ví dụ JSON của `analysis@2` / `discovery@2` dán nguyên, với đầu vào có đủ mã ví dụ | V1, không ACCEPTED |
+
+Tin nhắn ChatGPT web (§10.6), test bảng biến thể, cả hai dòng khung: tin nhắn `web@1` đổi sang NFD · NBSP trong khung · U+200B đầu dòng khung · hai dấu cách trong khung · tiền tố `> ` mọi dòng → `OWN_MESSAGE`; lần thử 2 dán đúng `retryMessage` của phiên → `OWN_MESSAGE`, phiên còn 1 lần thử đã dùng, không có `row`.
+
+### 10.10 Không làm trong đợt này
+
+- Chữ tương hình (Cyrillic, Greek): §10.2.
+- "Điều" viết hoa ở **đầu câu** ("Điều 2 vợ chồng lo nhất là…") vẫn bị chặn; "điều 35" viết thường đứng riêng không còn bị chặn. Điều luật luôn viết hoa "Điều", nên chọn hướng này.
+- "nhiều khả năng", "khả năng cao" vẫn chặn (là cách nói xác suất); P1 nói rõ trong prompt.
+- "sẵn sàng mua" / "tiềm năng mua" không kèm từ sản phẩm nhưng có chữ khác theo sau ("KH sẵn sàng mua trong quý tới") lọt; quy tắc 6 / 7 của prompt vẫn cấm.
+- `detail` ghi tên mục thay vì chữ model viết, mục trùng nhau sinh hai issue (ghi chú #420): code, không thuộc G5.
+
+### 10.11 Owner duyệt
+
+- [ ] Version: `analysis@2`, `discovery@2`; `extraction@1`, `web@1` giữ (§10.1)
+- [ ] Cách so khớp: NFKC, bỏ `\p{Cf}`, `-` / `_` thành dấu cách, khoảng trắng trong cụm tùy chọn, `\p{Nd}`, `‰`, "percent" (§10.2)
+- [ ] Danh sách chặn đổi (§10.3)
+- [ ] V1 phương án A: `text` phải có chữ, đếm theo NFC (§10.4)
+- [ ] Kiểm tra kết nối `maxTokens` 1 024, giữ `reasoning` (§10.5)
+- [ ] Nhận diện tin nhắn của app + câu spec §3.1 mục 3 (§10.6)
+- [ ] `maxTokens` analysis / discovery 12 000, extraction 8 000 (§10.7)
+- [ ] Chữ prompt P1–P6 — chọn mục (§10.8)
+- [ ] Ca kiểm C20–C54 + bảng biến thể tin nhắn web (§10.9)
