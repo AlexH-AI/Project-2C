@@ -293,10 +293,10 @@ Ghi chú KYC ─► Dữ kiện có cấu trúc (RE xác nhận) ─► kyc_vers
 | **2. Lõi domain** | State machine, stats engine + golden tests, parse ngày/tiền, mô hình KYC (notes/facts/versions), cổng KYC | Domain coverage ≥ 95% | ✅ 10/10 issue, coverage 100%, đóng 26/09 (G7) — `docs/metrics/phase-2.md` |
 | **3. Nghiệp vụ & màn hình** | `packages/db`; Team/RE, Khách hàng, KYC timeline, Lịch hẹn, Kết quả cuộc gặp, Hợp đồng; seed 3 × 10 RE × ~12 tháng dữ liệu; xuất/nhập backup | Nhập liệu hoàn chỉnh · **G7** | ✅ 57/57 issue, đóng 02/10 (G7) — `docs/metrics/phase-3.md`, review đóng phase `docs/reviews/2026-09-30-phase-1-3-tong-hop.md`, `docs/reviews/2026-10-02-phase-1-3-review-2-tong-hop.md` |
 | **4. Dashboard & báo cáo** | Tổng quan (ý 9 phản hồi Owner 01/10: đếm KH theo nhóm = ảnh chụp cuối kỳ, nút Lọc), MTD, drill-down team/RE, báo cáo tuần/tháng/năm, xuất Excel. Đầu phase: Đợt 2 của review đóng Phase 3 (e2e local ổn định; validator nhập lần 3 + luật nhân sự T-j; G2 cách đếm lịch dự kiến / đã gặp + chuỗi dời, miền năm, mockup Tổng quan theo ADR-0007 — spec `docs/design/phase-4-chi-so.md`; index chỉ số + MTD; CI coverage riêng + ghim SHA Actions; dọn UI/i18n) | · **G2, G7** (milestone) | ✅ 65/65 issue (gồm 22 Issue sửa deep review Phase 1–4), đóng 07/10 (G7, phát hành exe `3e84ce8`) — `docs/metrics/phase-4.md`, review đóng phase `docs/reviews/2026-10-04-phase-4-tong-hop.md`, deep review `docs/reviews/2026-10-06-deep-review-phase-1-4-tong-hop.md` |
-| **5. AI copilot** | Adapter OpenCode Go + Mock, prompt + schema, validators, versioning/STALE, Settings, bộ eval. Gọi mạng + lưu key: D-1 đã chốt 07/10 (phụ lục ADR-0009) | · **G4, G5, G6** | ⬜ |
+| **5. AI copilot** | Adapter OpenCode Go + Mock, prompt + schema, validators, versioning/STALE, Settings, bộ eval. Gọi mạng + lưu key: D-1 đã chốt 07/10 (phụ lục ADR-0009) | · **G4, G5, G6** | ✅ 41/41 issue (gồm 11 Issue sửa deep review + review lại vòng 2), đóng 11/10 (G7, phát hành exe `3d6c7fc`) — `docs/metrics/phase-5.md`, deep review `docs/reviews/2026-10-10-deep-review-phase-5-tong-hop.md`, review lại `docs/reviews/2026-10-11-review-lai-phase-5-tong-hop.md` |
 | **6. Hoàn thiện & phát hành** | Hiệu năng, rà soát UX, màn "Thùng rác" khôi phục bản ghi xóa mềm (#72), gộp backup / phát hiện xung đột, snapshot mỗi bảng một file (S-1), tuần tự hóa thay DB / lưu / xuất / đồng bộ (S-2), đồng bộ `Project-2C-data`, hướng dẫn sử dụng tiếng Việt, GitHub Release v1.0 | · **G7** | ⬜ |
 
-Ước lượng tổng: **~75%** khối lượng tới v1.0 khi đóng Phase 4 (~60% khi đóng Phase 3; trọng số phase 0–6: 5 / 15 / 15 / 25 / 15 / 15 / 10%).
+Ước lượng tổng: **~90%** khối lượng tới v1.0 khi đóng Phase 5 (~75% khi đóng Phase 4, ~60% khi đóng Phase 3; trọng số phase 0–6: 5 / 15 / 15 / 25 / 15 / 15 / 10%).
 
 Mọi phase do **Claude Code** thực hiện (model / effort do Owner chọn). Cuối mỗi phase ghi `docs/metrics/phase-<N>.md` theo `docs/COMPARISON.md`.
 
@@ -377,6 +377,6 @@ Mỗi phase = 1 GitHub Milestone; mỗi task = 1 Issue, cỡ theo P1 (ADR-0001 p
 
 ## 8. Bước tiếp theo ngay
 
-Bước chi tiết từng phiên: HANDOFF (Issue ghim nhãn `handoff`). Thứ tự lớn (cập nhật 08/10/2026):
+Bước chi tiết từng phiên: HANDOFF (Issue ghim nhãn `handoff`). Thứ tự lớn (cập nhật 11/10/2026):
 
-1. Phase 5 — AI copilot (bắt đầu 07/10): D-1 đã chốt (G4 / G6, phụ lục D-1 của ADR-0009); spec `design/phase-5-ai.md` duyệt G1 / G2 07/10; milestone Phase 5 mở với 13 Issue T-160…T-171. G5 duyệt 07/10 (`design/phase-5-prompts.md`); G3 duyệt 08/10 (`design/mockups/ai.html`, PR #427); G2 hồ sơ eval duyệt 08/10 (`golden/ai-eval.md`, PR #428); ADR-0009 phụ lục W-1 duyệt G1 / G5 08/10 (gói OpenCode Go / Credit + đường ChatGPT web thủ công, PR #430); xong T-160…T-163, T-165, T-166, T-172. Kế tiếp: T-168A (#409, panel theo §9.4; luồng ChatGPT web là Issue mới), T-169 (#411). Chờ W-1: mockup bổ sung G3 (`phase-5-ai.md` §9.5), sửa #405 (T-164) / #408 (T-167) / #413 và tạo 2 Issue mới (§13); chờ Owner: T-171 (#413, chạy eval thật — G4).
+1. Phase 6 — Hoàn thiện & phát hành (Phase 5 đóng 11/10, G7; milestone "Phase 6 — Hoàn thiện & phát hành" đã có #488, #491–#494, #509, #510): trước tiên đợt G5 #491 T-197 (`gate`, sửa prompt / danh sách chặn sau eval đầu và review Phase 5), rồi các Issue còn lại của milestone; sau đó phần việc Phase 6 ở §5 (Thùng rác, S-1, S-2, đồng bộ `Project-2C-data`, hướng dẫn sử dụng, Release v1.0).
