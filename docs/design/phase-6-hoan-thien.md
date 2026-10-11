@@ -1,6 +1,6 @@
 # Spec Phase 6 — Hoàn thiện & phát hành v1.0 (G1)
 
-- **Trạng thái:** Owner đã duyệt **G1** 11/10/2026 (#515). Spec chi tiết 6B (§4.1 S-2, §4.2 Thùng rác, §4.3 hướng dẫn sử dụng; mockup `trash.html`) chờ Owner duyệt **G2 / G3** (câu hỏi §4.4) trước khi tách Issue.
+- **Trạng thái:** Owner đã duyệt **G1** 11/10/2026 (#515). Spec chi tiết 6B (§4.1 S-2, §4.2 Thùng rác, §4.3 hướng dẫn sử dụng; mockup `trash.html`) Owner đã duyệt **G2 / G3** 11/10/2026 (#520); tách Issue theo §9.
 - **Soạn:** 11/10/2026, sau G7 Phase 5 (`main` `3d6c7fc`). Nguồn: `PROJECT-PLAN.md` §5 dòng Phase 6, ADR-0010 (đồng bộ), comment Owner trên #72 (Thùng rác), D-2 / S-1 / S-2 ở `docs/reviews/2026-09-30-phase-1-3-tong-hop.md`, yêu cầu Owner 11/10 (kiểm thử toàn diện; 2 lượt deep review Phase 1–6 bằng 4 agent; phân tích bloat code và hiệu năng; gộp bớt số gói review; #491 sau khi duyệt spec; bỏ so sánh với Project-2; chưa làm `Project-2C-data` ở v1.0).
 
 ## 1. Mục tiêu và tiêu chí xong
@@ -179,7 +179,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 
 ### 4.4 Câu hỏi G2 / G3 cho Owner (6B)
 
-**Owner đồng ý cả 8 đề xuất (11/10/2026)**; duyệt G2 / G3 sau khi xem mockup `trash.html`.
+**Owner đồng ý cả 8 đề xuất và duyệt G2 / G3 sau khi xem mockup `trash.html` (11/10/2026).**
 
 1. **S-2:** khóa mọi lệnh ghi trong lúc thay (S2-2) thay vì cho ghi rồi chép sang DB mới; xuất không vào hàng đợi (S2-5); đóng app không phải chờ (S2-6).
 2. **TR-1:** khôi phục không dây chuyền, nêu tên bản ghi chặn; không có "khôi phục cả hai" hay "giao RE khác".
