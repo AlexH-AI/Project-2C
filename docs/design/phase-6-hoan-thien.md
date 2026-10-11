@@ -1,11 +1,11 @@
 # Spec Phase 6 — Hoàn thiện & phát hành v1.0 (G1)
 
 - **Trạng thái:** bản nháp, chờ Owner duyệt **G1** (phạm vi, thứ tự, kế hoạch kiểm thử, kế hoạch review đóng phase). Chi tiết từng tính năng ở §4 (luật, mockup) viết và duyệt riêng (G2 / G3) trước khi tách Issue của tính năng đó.
-- **Soạn:** 11/10/2026, sau G7 Phase 5 (`main` `3d6c7fc`). Nguồn: `PROJECT-PLAN.md` §5 dòng Phase 6, ADR-0010 (đồng bộ), comment Owner trên #72 (Thùng rác), D-2 / S-1 / S-2 ở `docs/reviews/2026-09-30-phase-1-3-tong-hop.md`, yêu cầu Owner 11/10 (kiểm thử toàn diện; 2 lượt deep review Phase 1–6 bằng 4 agent; phân tích bloat code và hiệu năng; gộp bớt số gói review).
+- **Soạn:** 11/10/2026, sau G7 Phase 5 (`main` `3d6c7fc`). Nguồn: `PROJECT-PLAN.md` §5 dòng Phase 6, ADR-0010 (đồng bộ), comment Owner trên #72 (Thùng rác), D-2 / S-1 / S-2 ở `docs/reviews/2026-09-30-phase-1-3-tong-hop.md`, yêu cầu Owner 11/10 (kiểm thử toàn diện; 2 lượt deep review Phase 1–6 bằng 4 agent; phân tích bloat code và hiệu năng; gộp bớt số gói review; #491 sau khi duyệt spec; bỏ so sánh với Project-2; chưa làm `Project-2C-data` ở v1.0).
 
 ## 1. Mục tiêu và tiêu chí xong
 
-Phase 6 đưa app tới **v1.0**: dùng được hằng ngày trên hai máy, dữ liệu không mất, và là bản dùng để so sánh với Project-2 (`docs/COMPARISON.md`, `docs/metrics/FINAL.md`).
+Phase 6 đưa app tới **v1.0**: dùng được hằng ngày trên hai máy, dữ liệu không mất. Không còn so sánh với Project-2 (Owner quyết 11/10/2026, ADR-0002 Superseded): không có `docs/metrics/FINAL.md`, `docs/COMPARISON.md` hết hiệu lực.
 
 Tiêu chí phát hành v1.0 (G7 cuối):
 
@@ -19,8 +19,8 @@ Tiêu chí phát hành v1.0 (G7 cuối):
 
 | Bước | Nội dung | Cổng |
 |---|---|---|
-| **6A** | Việc còn lại từ review Phase 5 (§3), bắt đầu bằng đợt G5 #491 | G5 (#491) |
-| **6B** | Tính năng còn lại (§4): S-2, Thùng rác, S-1, gộp backup / xung đột, đồng bộ `Project-2C-data`, hướng dẫn sử dụng | G2 / G3 từng tính năng; G4 / G6 nếu cần (§4.5) |
+| **6A** | Việc còn lại từ review Phase 5 (§3), bắt đầu bằng đợt G5 #491 **sau khi spec này qua G1** | G5 (#491) |
+| **6B** | Tính năng còn lại (§4): S-2, Thùng rác, hướng dẫn sử dụng | G2 / G3 từng tính năng |
 | **6C** | Kiểm thử phát hành (§5), gồm lệnh sinh dữ liệu tải và số đo nền hiệu năng / kích thước | — |
 | **6D** | Deep review Phase 1–6, **2 lượt × 4 agent, 6 gói** (§6); **phân tích bloat code và hiệu năng nằm trong lượt 1**; sửa sau mỗi lượt | Owner chọn việc sửa sau mỗi lượt |
 | **6E** | G7: Owner nghiệm thu exe cuối, chỉ số Phase 6, phát hành v1.0 (§7) | **G7** |
@@ -41,12 +41,11 @@ Tiêu chí phát hành v1.0 (G7 cuối):
 
 Mỗi mục dưới đây có phần spec chi tiết riêng (thêm vào file này, §4.x) qua G2 / G3 trước khi tách Issue.
 
-1. **S-2 — tuần tự hóa thay DB / lưu / xuất / đồng bộ.** Một hàng đợi duy nhất cho mọi thao tác file (ghi muộn trong lúc chờ backup → thay DB #96; hai `replace` chồng nhau #192). Làm trước đồng bộ.
+1. **S-2 — tuần tự hóa thay DB / lưu / xuất.** Một hàng đợi duy nhất cho mọi thao tác file (ghi muộn trong lúc chờ backup → thay DB #96; hai `replace` chồng nhau #192). Cần cho v1.0 dù chưa có đồng bộ, vì là lỗi chạy đua của thao tác hiện có.
 2. **Thùng rác (#72).** Màn khôi phục bản ghi xóa mềm, gộp với nhóm quản lý dữ liệu ở Cài đặt; chốt một lần quy tắc khôi phục chéo (D10, người / KH đã xóa) ở G2; mockup G3.
-3. **S-1 — snapshot mỗi bảng một file** (D-2): mỗi bảng một file, một dòng một bản ghi, không có `exportedAt` trong file bảng; định danh snapshot, tombstone, chính sách xung đột. Là định dạng cho đồng bộ; `.p2cbackup` hiện tại vẫn nhập được.
-4. **Gộp backup / phát hiện xung đột** giữa hai máy: so hai snapshot, liệt kê xung đột, người dùng chọn; luật gộp ở G2.
-5. **Đồng bộ `Project-2C-data`** (ADR-0010): app dùng Git có sẵn trên máy, không lưu token GitHub trong app. Owner cần tạo repo private `Project-2C-data` trước (hiện chưa có). Kiểm lại ở G6 (đẩy dữ liệu ra GitHub) và G4 (nếu cần thêm crate / công cụ).
-6. **Hướng dẫn sử dụng tiếng Việt** (`docs/user-guide/`), theo từng màn, có ảnh chụp từ bản build; kèm vào bản phát hành.
+3. **Hướng dẫn sử dụng tiếng Việt** (`docs/user-guide/`), theo từng màn, có ảnh chụp từ bản build; kèm vào bản phát hành.
+
+**Ra khỏi v1.0 (Owner quyết 11/10/2026):** đồng bộ `Project-2C-data` (ADR-0010 phương án D). Dữ liệu v1 là dữ liệu giả lập; khi chuyển sang dữ liệu nhập liệu sẽ chọn phương án backup lên cloud phù hợp hơn (ADR mới khi đó). Kéo theo: **S-1** (snapshot mỗi bảng một file, D-2) và **gộp backup / phát hiện xung đột** giữa hai máy — cả hai chỉ phục vụ đồng bộ — cũng ra khỏi v1.0 và xét lại cùng phương án cloud. v1.0 chuyển dữ liệu giữa hai máy bằng xuất / nhập `.p2cbackup` như hiện nay.
 
 Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi sang sau v1.0).
 
@@ -54,8 +53,8 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 
 1. **Kịch bản trọn vòng tự động (e2e):** một chuỗi trên bản build web đi hết vòng nghiệp vụ — tạo team / RE → khách hàng → ghi chú KYC + xác nhận dữ kiện → lịch hẹn → kết quả cuộc gặp → hợp đồng → Tổng quan / Báo cáo khớp số → AI (Mock) → xóa mềm + khôi phục ở Thùng rác → xuất backup → nạp lại → nhập backup → số liệu như trước. Chạy trong CI như e2e hiện có.
 2. **Danh sách nghiệm thu cho Owner** `docs/testing/nghiem-thu-v1.md`: theo từng màn và từng dòng mockup, mỗi dòng có thao tác + kết quả mong đợi + ô Đạt / Lỗi; dùng ở 6C (lượt thử) và ở G7 (lượt cuối trên exe phát hành).
-3. **Exe trên máy thật:** hai máy của Owner và một máy Windows sạch (vd. Windows Sandbox, Owner chạy): lần chạy đầu, thư mục dữ liệu, không cần quyền admin; **nâng từ exe Phase 5** (`3d6c7fc`) giữ nguyên dữ liệu; backup máy này → nhập máy kia; đồng bộ hai chiều qua `Project-2C-data` có xung đột.
-4. **Độ bền dữ liệu:** tắt app giữa lúc lưu / thay DB / đồng bộ (S-2), file DB hỏng, ổ đầy hoặc không ghi được — app báo lỗi rõ, không mất bản đã lưu.
+3. **Exe trên máy thật:** hai máy của Owner và một máy Windows sạch (vd. Windows Sandbox, Owner chạy): lần chạy đầu, thư mục dữ liệu, không cần quyền admin; **nâng từ exe Phase 5** (`3d6c7fc`) giữ nguyên dữ liệu; backup máy này → nhập máy kia và ngược lại.
+4. **Độ bền dữ liệu:** tắt app giữa lúc lưu / thay DB / xuất (S-2), file DB hỏng, ổ đầy hoặc không ghi được — app báo lỗi rõ, không mất bản đã lưu.
 5. **Hiệu năng** trên dữ liệu tải theo §5.2, đo trên exe release.
 6. **Eval AI thật** sau đợt G5 (§3).
 
@@ -68,7 +67,7 @@ Lỗi tìm ra ở 6C thành Issue thường; lỗi chặn phát hành gắn `ris
 
 ### 5.2 Ngưỡng hiệu năng
 
-- Đo: mở app (lần đầu / mở lại), màn đầu sau tải lại, đổi kỳ / sắp cột / chọn dòng ở Lịch hẹn, Khách hàng, Tổng quan, Báo cáo, xuất Excel, panel AI và lịch sử phân tích, nhập / xuất backup, lưu DB, đồng bộ.
+- Đo: mở app (lần đầu / mở lại), màn đầu sau tải lại, đổi kỳ / sắp cột / chọn dòng ở Lịch hẹn, Khách hàng, Tổng quan, Báo cáo, xuất Excel, panel AI và lịch sử phân tích, nhập / xuất backup, lưu DB.
 - Giữ ngưỡng Nhóm C của deep review Phase 1–4 (thao tác màn < 200 ms trên dữ liệu tải; `docs/metrics/phase-4.md` mục "Đo đầu-cuối"), thêm ngưỡng cho màn Phase 5 / 6 sau số đo nền. Không màn nào xấu hơn số đo Phase 4.
 
 ## 6. 6D — deep review Phase 1–6: 2 lượt × 4 agent
@@ -92,7 +91,7 @@ Cỡ đo trên `3d6c7fc` (dòng sản phẩm / test; Rust có test trong cùng f
 | Gói | Phạm vi | Dòng SP / test (hiện tại) | Trọng tâm riêng |
 |---|---|---|---|
 | **A. Lõi dữ liệu** | `packages/domain` + `packages/db` (schema, migration, repository, backup, seed) | 7 400 / 9 100 | Tiền, ngày, kỳ, chỉ số; bất biến dữ liệu; nhập backup; golden không chiều theo code |
-| **B. File, Rust, đồng bộ** | `apps/desktop/src-tauri` + lớp `src/data` (adapter lưu, thay DB) + S-1 / S-2 / gộp / đồng bộ (Phase 6) | 3 100 Rust + ≈ 1 500 TS + phần Phase 6 | Ghi nguyên tử, hàng đợi S-2, xung đột, mất dữ liệu, ranh giới bảo mật (đường dẫn, key, Git) |
+| **B. File và Rust** | `apps/desktop/src-tauri` + lớp `src/data` (adapter lưu, thay DB) + S-2 (Phase 6) | 3 100 Rust + ≈ 1 500 TS + phần S-2 | Ghi nguyên tử, hàng đợi S-2, mất dữ liệu, ranh giới bảo mật (đường dẫn, key) |
 | **C. AI** | `packages/ai` + màn / view AI (panel, lịch sử, ChatGPT web, trích xuất, Cài đặt → AI) | 1 700 + ≈ 1 500 / 2 200 + test view | Guardrail G5, validator, STALE, key không sang webview |
 | **D. Màn nhập liệu** | `packages/ui`, shell, i18n, Khách hàng (phần không AI), KYC, Team | ≈ 7 000 / ≈ 4 000 | Khớp mockup / nhãn, form, trợ năng |
 | **E. Lịch hẹn, chỉ số, quản lý** | Lịch hẹn, Kết quả, Hợp đồng, Tổng quan, Báo cáo, Cài đặt, Thùng rác (Phase 6) | ≈ 6 000 / ≈ 2 000 | Đếm / lọc đúng nghĩa nhãn, số khớp giữa màn, xuất Excel |
@@ -107,7 +106,11 @@ Gói F là chỗ phân tích bloat code và hiệu năng toàn cục (yêu cầu
 - **Độc lập:** cùng SHA, mỗi bên một thư mục, cấm đọc báo cáo của nhau cho tới phiên tổng hợp; kiểm bằng log phiên như Phase 5.
 - **Muse:** cấu hình sandbox trước (thư mục kết quả ghi được, repo chỉ đọc, không chế độ không hỏi) để tránh hàng chục lần Owner duyệt tay.
 - **Lượt 1** trên SHA sau 6C → tổng hợp (gồm phần bloat / hiệu năng: số đo, phát hiện, đề xuất refactor) → Owner chọn → sửa (Issue thường, review phiên sạch; refactor giữ nguyên hành vi, test cũ xanh trước và sau, không đổi golden).
-- **Lượt 2** trên SHA sau đợt sửa lượt 1: review lại, ghi trạng thái từng vấn đề lượt 1 (đã sửa / một phần / hồi quy), kiểm các refactor không đổi hành vi và số đo không xấu hơn nền, cộng phát hiện mới → tổng hợp → Owner chọn → sửa.
+- **Lượt 2** trên SHA sau đợt sửa lượt 1, cùng 6 gói, cùng 4 bên, có hai phần ngang nhau (Owner chốt 11/10):
+  1. **Kiểm phần đã sửa:** trạng thái từng vấn đề lượt 1 (đã sửa / một phần / hồi quy); refactor bloat / hiệu năng không đổi hành vi; số đo không xấu hơn nền.
+  2. **Tìm lỗi mới và edge case mới** trên toàn bộ phạm vi gói, không chỉ quanh chỗ đã sửa: prompt lượt 2 yêu cầu mỗi bên thử những kịch bản / biên chưa có trong báo cáo lượt 1 (danh sách vấn đề lượt 1 đưa vào KNOWN để không báo lại).
+
+  → tổng hợp → Owner chọn → sửa.
 - Báo cáo gốc lưu nguyên văn ở `docs/reviews/raw/<ngày>/{claude,codex,deepseek,muse}/` qua PR docs; tổng hợp ở `docs/reviews/`.
 - Công cụ phân tích: ưu tiên thứ đã có (`dependency-cruiser`, `codemap`, script `node`). Công cụ mới (vd. `knip`, `cargo-bloat`) là **G4**.
 
@@ -115,24 +118,24 @@ Gói F là chỗ phân tích bloat code và hiệu năng toàn cục (yêu cầu
 
 6 gói × 4 bên = 24 báo cáo mỗi lượt, 48 cho hai lượt. Theo Phase 5: mỗi bên ≈ 2–3 giờ đồng hồ một lượt (Phase 1–6 lớn hơn, ước ≈ 3–4 giờ); DeepSeek ≈ 1 USD trừ vào hạn mức gói Go; Muse tốn thời gian chờ duyệt nếu chưa cấu hình sandbox.
 
-### 6.5 Thay đổi quy tắc cần duyệt cùng G1 này
+### 6.5 Quy tắc
 
-- Hiện `CLAUDE.md` và ADR-0001 M2 chỉ cho Codex review đóng phase; DeepSeek / Muse ở Phase 5 là ngoại lệ một lần. Đề xuất **ADR-0001 phụ lục M3**: ở review đóng Phase 6, DeepSeek và Muse tham gia như Codex — chỉ đọc, không viết code, báo cáo là dữ liệu tham khảo, không thay review phiên sạch; sửa dòng tương ứng ở `CLAUDE.md`. Không mở Agent tool, không cho agent ngoài viết code (phương án A của đánh giá 10/10).
-- `docs/COMPARISON.md` dòng 2C ghi "Không dùng OpenCode, Muse Code, Cursor, Codex để viết/review code" — đã lệch từ khi có Codex M2 (30/09). File phải giống hệt ở hai repo nên 2C không tự sửa; đề xuất Owner chọn: (a) ghi vào Nhật ký thay đổi của cả hai repo "2C dùng reviewer ngoài chỉ đọc khi đóng phase", hoặc (b) giữ nguyên và ghi là biến nhiễu trong `FINAL.md`.
+ADR-0001 phụ lục **M4** (cùng PR với spec này): ở review đóng Phase 6, DeepSeek và Muse tham gia như Codex — chỉ đọc, không viết code, báo cáo là dữ liệu tham khảo, không thay review phiên sạch. Không mở Agent tool, không cho agent ngoài viết code; multi-agent thử ở project mới, không ở 2C (Owner 11/10). Bỏ so sánh với Project-2 nên không còn ràng buộc từ `docs/COMPARISON.md` (ADR-0001 phụ lục M3, ADR-0002 Superseded).
 
 ## 7. 6E — G7 và phát hành v1.0
 
 - Owner nghiệm thu exe cuối theo `docs/testing/nghiem-thu-v1.md`, điền số Owner vào `docs/metrics/phase-6.md`.
 - **GitHub Release v1.0** (repo public): exe + hướng dẫn sử dụng; đăng Release là thao tác công khai nên chỉ làm khi Owner bảo ở G7.
-- `docs/metrics/FINAL.md` làm sau khi **cả hai repo** đạt v1.0 (COMPARISON.md), không thuộc Phase 6 của 2C.
+- Đánh giá cuối dự án (thay `FINAL.md` cũ): chỉ số Phase 1–6 của 2C, ghi trong `docs/metrics/phase-6.md`.
+## 8. Quyết định Owner 11/10 và câu hỏi còn lại (G1)
 
-## 8. Câu hỏi cho Owner (G1)
+Đã chốt 11/10: #491 làm sau khi spec này qua G1; lượt 2 vừa kiểm phần đã sửa vừa tìm lỗi / edge case mới (§6.3); bỏ so sánh với Project-2 (Project-2 dừng; ADR-0002 Superseded, `COMPARISON.md` hết hiệu lực, ADR-0001 phụ lục M3); `Project-2C-data` ra khỏi v1.0 (§4).
 
-1. Thứ tự 6A–6E như §2 (phân tích bloat / hiệu năng gộp vào lượt review 1)? Riêng #491 (G5) làm ngay hay sau khi duyệt spec này?
+Còn hỏi:
+
+1. Thứ tự 6A–6E như §2 (phân tích bloat / hiệu năng gộp vào lượt review 1)?
 2. 6 gói như §6.2, hay gộp D + E thành 5?
-3. Lượt 2 review lại **toàn bộ** Phase 1–6, hay chỉ phần đã sửa + vùng rủi ro?
-4. ADR-0001 M3 như §6.5? COMPARISON.md chọn (a) hay (b)?
-5. Đồng bộ `Project-2C-data`: Owner tạo repo private khi nào; có giữ trong v1.0 không (là phần lớn và rủi ro nhất của 6B)?
+3. S-1 và gộp backup / xung đột ra khỏi v1.0 cùng `Project-2C-data` (§4) — đúng ý anh?
 
 ## 9. Tách Issue
 

@@ -9,7 +9,7 @@ Quy tắc làm việc nằm ở `CLAUDE.md` (gốc repo) và `.claude/rules/` (n
 | `PROJECT-PLAN.md` | Kế hoạch tổng: quy trình một agent (§4.1), liên tục giữa 2 máy (§4.2), tech stack (§4.4), lộ trình phase (§5) | Viết Issue / mở phase mới | Claude, qua G1 |
 | `PROJECT-STATE.md` | Phase hiện tại + "Current OWNER decisions" (quyết định bền theo ngày) | Khi cần biết Owner đã chốt gì | Claude ghi lại quyết định Owner |
 | `decisions/README.md` + `decisions/00xx-*.md` | ADR: kiến trúc, stack, quy trình (kèm phụ lục) | Khi task đụng vùng ADR quản lý | Claude, qua G1 |
-| `COMPARISON.md` | Giao thức so sánh 2C ↔ Project-2, chỉ số đo cuối phase | Đóng phase (viết `metrics/`) | Không sửa riêng: file giống hệt ở hai repo, chỉ đổi khi Owner quyết |
+| `COMPARISON.md` | Giao thức so sánh 2C ↔ Project-2 — **hết hiệu lực 11/10/2026** (ADR-0002 Superseded); bảng chỉ số vẫn là mẫu đo cuối phase | Đóng phase (viết `metrics/`) | Lịch sử; không còn phải giống hệt Project-2 |
 
 ## Thiết kế theo phase
 

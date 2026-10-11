@@ -1,6 +1,6 @@
 # ADR-0002: Project-2C là nhánh đối chứng, cách ly với Project-2
 
-- **Trạng thái:** Accepted (G1)
+- **Trạng thái:** **Superseded** (Owner quyết 11/10/2026 — phụ lục cuối file). Accepted (G1) 26/09/2026.
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/COMPARISON.md`; `docs/PROJECT-PLAN.md` §7.2 (C5, C6, C7)
 - **Commit / PR:** `20e9c5e` · PR: —
@@ -31,3 +31,14 @@ So sánh công bằng cần cố định mọi thứ trừ biến đang đo.
 
 - Rủi ro đã biết: Owner và Opus có thể "học" từ 2C khi làm Project-2 — ghi nhận thẳng thắn trong đánh giá cuối.
 - Mọi thay đổi hằng số (vd. plugin, stack) phải được áp dụng/ghi nhận ở cả hai repo.
+
+## Phụ lục — bỏ so sánh, Project-2 dừng (Superseded, Owner quyết 11/10/2026)
+
+Owner bỏ mục đích so sánh với Project-2 và dừng Project-2. Lý do: mô hình chỉ Claude Code của 2C đã cho kết quả tốt qua Phase 1–5, không cần làm app thứ hai để so sánh.
+
+Hệ quả:
+
+- `docs/COMPARISON.md` hết hiệu lực (giữ làm lịch sử); không còn "hằng số / biến", không còn Nhật ký thay đổi yêu cầu dùng chung, không có `docs/metrics/FINAL.md`. 2C tự quyết yêu cầu, stack, plugin mà không phải áp dụng ở repo kia.
+- Chỉ số cuối mỗi phase (`docs/metrics/phase-<N>.md`) vẫn ghi theo mẫu ở `docs/metrics/README.md`, để theo dõi chính 2C.
+- Không mở / copy gì từ `C:\workspace\Project-2` vẫn giữ (repo đó dừng, không phải nguồn tham chiếu của 2C).
+- ADR-0001 giữ nguyên cách làm, đổi lý do (phụ lục M3). Mô hình đa agent thử ở project mới.

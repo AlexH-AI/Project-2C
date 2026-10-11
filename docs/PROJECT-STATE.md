@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 6 — polish and release (milestone "Phase 6 — Hoàn thiện & phát hành", already holding #488, #491 to #494, #509, #510; first the G5 batch #491 T-197). Phases 1 to 5 are closed; Phase 5 closed at G7 on 2026-10-11 (41 issues, #401 to #508, T-160 to T-204, 67 PRs #398 to #513, `docs/metrics/phase-5.md`), released exe `3d6c7fc` (CI artifact, run `38117986342`). Overall progress ≈ 90% to v1.0 (see `docs/PROJECT-PLAN.md` §5).
+Phase 6 — polish and release (milestone "Phase 6 — Hoàn thiện & phát hành", already holding #488, #491 to #494, #509, #510). First the G1 review of the Phase 6 spec `docs/design/phase-6-hoan-thien.md`, then the G5 batch #491 T-197. Phases 1 to 5 are closed; Phase 5 closed at G7 on 2026-10-11 (41 issues, #401 to #508, T-160 to T-204, 67 PRs #398 to #513, `docs/metrics/phase-5.md`), released exe `3d6c7fc` (CI artifact, run `38117986342`). Overall progress ≈ 90% to v1.0 (see `docs/PROJECT-PLAN.md` §5).
 
 ## Canonical repository
 
@@ -28,8 +28,8 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
 
 - 2026-09-26: Project-2C created as the Claude-only control build of Project-2 (decisions C1–C8 in `docs/PROJECT-PLAN.md` §7.2).
 - Product requirements = Project-2 decisions Q1–Q16 (inherited unchanged).
-- Project-2C is built first; Project-2 (multi-agent) follows after 2C is complete.
-- Isolation and comparison rules: `docs/COMPARISON.md`.
+- Project-2C is built first; Project-2 (multi-agent) follows after 2C is complete. (Superseded 2026-10-11: comparison dropped, Project-2 stopped — see below.)
+- Isolation and comparison rules: `docs/COMPARISON.md` (no longer in effect since 2026-10-11).
 
 - 2026-09-26: Decisions recorded as ADR-0001…0012 in `docs/decisions/`.
 - 2026-09-26: G4 approved — Superpowers 6.4.2 (project-scope plugin) + mattpocock/skills subset vendored in `.claude/skills/`; Agent tool denied in `.claude/settings.json` (ADR-0012).
@@ -63,6 +63,7 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
 - 2026-10-10: OWNER decisions on the Phase 5 deep review (synthesis §8, option C): before G7 fix batch 1 + I-6 (split in two for size) — #482 to #487, #489, #490 (T-189 to T-196, milestone Phase 5); batch G5 and the rest of batch 2 go to the new milestone "Phase 6 — Hoàn thiện & phát hành" (#488, #491 to #494; T-197 to T-201), G5 right after G7. Pasting the app's own ChatGPT web message is refused at the paste box without counting an attempt; the prompt-example part of DR5-49 waits for the G5 batch. Reconfirming a fact with the same value keeps the analysis CURRENT and the panel maps the old F code to the current fact with the same field and value (P1 unchanged). The API key is stored with Credential Manager persistence `Local` (G6). While a ChatGPT web session waits for a paste, the AI extraction button of that customer is off too (ADR-0009 W-1 item 6; spec §3.1 item 4 to follow). "Nạp lại dữ liệu giả lập" keeps Settings → AI. A disabled AI button explains a request running elsewhere (G3, new line).
 - 2026-10-11: Phase 5 round 2 review at `705ea7c` (Claude + Codex, `docs/reviews/2026-10-11-review-lai-phase-5-tong-hop.md`): 35 DR5 checked (30 fixed, 3 partly, 2 regressions), 21 new findings (11 Low, 10 Nit, none Medium or above). OWNER decisions (synthesis §7): option B — before G7 close the gaps of the 10/10 fix batch in #507 T-203 (UI: R2-01, 02, 07, 14) and #508 T-204 (Rust: R2-08 to 11); the rest goes to Phase 6 (#491, #492, #493, #494, new #509 T-205 accessibility, #510 T-206 docs-only scope of `pnpm verify`). The key check in Rust also blocks the key written with JSON escapes or URL encoding (R2-10, in T-204), though the trigger is the same as DR5-28. Pasting the app's "Copy yêu cầu sửa" message back on the second attempt is refused like the app's own message, without counting an attempt (R2-04, spec §3.1 item 3, with the G5 batch #491). Accessibility findings get one Issue of their own.
 - 2026-10-11: Phase 5 closed at G7. OWNER checked the exe `3d6c7fc` (CI artifact, run `38117986342`, after T-203 / T-204) by hand: everything works. That exe is the Phase 5 release (CI artifact). OWNER metrics in `docs/metrics/phase-5.md`. Phase 6 next, starting with the G5 batch #491.
+- 2026-10-11: OWNER decisions for Phase 6. (1) The comparison with Project-2 is dropped and Project-2 stops: the Claude-Code-only model of 2C gave good results through Phases 1–5, so a second app is not needed to compare. ADR-0002 → Superseded; `docs/COMPARISON.md` no longer in effect (its metrics table stays the template for `docs/metrics/`); no `FINAL.md`. ADR-0001 keeps the way of working (only Claude writes code, no subagents) with a new reason: proven effective and stable up to v1.0 (appendix M3). Multi-agent is tried in a new project, not in 2C. (2) The Phase 6 close review is two deep reviews of Phases 1–6 by Claude, Codex, DeepSeek and Muse, read-only (ADR-0001 appendix M4), six packages; Claude synthesizes, checks every finding and proposes fixes; round 2 checks the round 1 fixes and also hunts new bugs and edge cases. Bloat and performance analysis goes into round 1. (3) #491 waits for the G1 approval of the Phase 6 spec. (4) `Project-2C-data` is out of v1.0: the data is simulated; a cloud backup plan comes later with real entry data (ADR-0010 appendix); S-1 and backup merge / conflicts go with it.
 
 ## Next decision
 
@@ -70,5 +71,4 @@ Session-level state and the exact next step: HANDOFF, the pinned issue labelled 
 
 ## Notes
 
-- Project-2 should adopt the upstream skill renames (`to-prd` → `to-spec`, `to-issues` → `to-tickets`).
 - ADR-0003 still mentions `/resume` and branch protection; the actual practice is `/session-start` and the pre-push hook + ruleset. Left as-is (accepted ADR text); `CLAUDE.md` and the plan are current.
