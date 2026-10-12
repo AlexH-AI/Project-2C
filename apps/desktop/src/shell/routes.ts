@@ -11,7 +11,11 @@ export const SECTIONS = [
 export type Section = (typeof SECTIONS)[number];
 
 /** A section of Cài đặt a link opens at once; none is Dữ liệu, the first. */
-export type SettingsSection = 'ai';
+export type SettingsSection = 'ai' | 'trash';
+
+function isSettingsSection(value: string): value is SettingsSection {
+  return value === 'ai' || value === 'trash';
+}
 
 export type Route =
   | { screen: Exclude<Section, 'settings'> }
@@ -32,13 +36,15 @@ function decode(segment: string): string | null {
   }
 }
 
-/** Reads `#/<section>`, `#/customers/<id>` or `#/settings/ai`; anything else is null. */
+/** Reads `#/<section>`, `#/customers/<id>`, `#/settings/ai` or `#/settings/trash`; else null. */
 export function parseHash(hash: string): Route | null {
   const parts = hash.replace(/^#\/?/, '').replace(/\/$/, '').split('/');
   const [first = '', second, ...rest] = parts;
   if (rest.length > 0) return null;
   if (second === undefined) return isSection(first) ? { screen: first } : null;
-  if (first === 'settings') return second === 'ai' ? { screen: first, section: second } : null;
+  if (first === 'settings') {
+    return isSettingsSection(second) ? { screen: first, section: second } : null;
+  }
   if (first !== 'customers') return null;
   const id = decode(second);
   return id ? { screen: 'customer', id } : null;
