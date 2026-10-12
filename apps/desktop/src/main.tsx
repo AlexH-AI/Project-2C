@@ -38,6 +38,10 @@ openAppData({
   // OpenCode needs Rust; web mode runs the Mock only (spec Phase 5 §4.1).
   ai: isTauri() ? { opencode: tauriOpenCode(invoke) } : undefined,
 }).then(
-  (data) => render(<App data={data} appWindow={isTauri() ? getCurrentWindow() : undefined} />),
+  (data) => {
+    // Read by the perf probe (e2e/perf): opening the app, from the page's start to its data.
+    performance.mark('p2c:data-open');
+    render(<App data={data} appWindow={isTauri() ? getCurrentWindow() : undefined} />);
+  },
   (error: unknown) => render(<StartupError error={error} />),
 );
