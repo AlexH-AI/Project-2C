@@ -1,8 +1,16 @@
 import { useMemo, useState } from 'react';
 import { listTrash, type TrashRow } from '@p2c/db';
-import { DataTable, PolicyBadge, Segmented, StageBadge, type DataTableColumn } from '@p2c/ui';
+import {
+  Button,
+  DataTable,
+  PolicyBadge,
+  Segmented,
+  StageBadge,
+  type DataTableColumn,
+} from '@p2c/ui';
 import { useQuery } from '../data/AppDataContext';
 import { t } from '../i18n';
+import { RestoreDialog } from './RestoreDialog';
 import {
   TRASH_FILTERS,
   TRASH_MORE,
@@ -12,7 +20,9 @@ import {
   ownerParts,
   recordDetail,
   recordTitle,
+  restoredNotice,
   trashCounts,
+  type RestoredNotice,
   type TrashFilter,
 } from './trash-view';
 
@@ -52,7 +62,10 @@ function OwnerCell({ row }: { row: TrashRow }) {
   ));
 }
 
-const COLUMNS: ReadonlyArray<DataTableColumn<TrashRow>> = [
+/** The columns of mockup 11a; the last one restores a row, off while it is blocked. */
+const trashColumns = (
+  onRestore: (row: TrashRow) => void,
+): ReadonlyArray<DataTableColumn<TrashRow>> => [
   {
     id: 'kind',
     header: t('trash.col.kind'),
@@ -86,7 +99,44 @@ const COLUMNS: ReadonlyArray<DataTableColumn<TrashRow>> = [
     cell: deletedAtText,
     cellClass: () => 'whitespace-nowrap',
   },
+  {
+    id: 'actions',
+    header: '',
+    kind: 'text',
+    align: 'end',
+    sortable: false,
+    value: () => '',
+    cell: (row) => (
+      <Button disabled={row.blocked !== undefined} onClick={() => onRestore(row)}>
+        {t('trash.restore')}
+      </Button>
+    ),
+  },
 ];
+
+/** Mockup 11e: what was restored, and a link to where it is now. */
+function Restored({ notice }: { notice: RestoredNotice }) {
+  return (
+    <div
+      role="status"
+      className="mb-3 flex items-center gap-3 rounded-md border border-ok bg-surface-0 px-3 py-2 text-sm"
+    >
+      <span aria-hidden="true" className="font-bold text-ok">
+        {t('trash.restored.mark')}
+      </span>
+      <div className="min-w-0 flex-1">
+        <b className="block font-semibold">{notice.title}</b>
+        {notice.detail && <span className="text-fg-2">{notice.detail}</span>}
+      </div>
+      <a
+        href={notice.href}
+        className="rounded-md border border-border bg-surface-2 px-2.5 py-1 whitespace-nowrap text-fg no-underline hover:bg-surface-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        {notice.open}
+      </a>
+    </div>
+  );
+}
 
 /**
  * Settings → Thùng rác (spec Phase 6 §4.2, mockup trash.html 11a, 11d, 11e): every deleted record,
@@ -96,6 +146,9 @@ export function TrashSection() {
   const rows = useQuery(listTrash);
   const [filter, setFilter] = useState<TrashFilter>('all');
   const [query, setQuery] = useState('');
+  const [restoring, setRestoring] = useState<TrashRow | null>(null);
+  const [notice, setNotice] = useState<RestoredNotice | null>(null);
+  const columns = useMemo(() => trashColumns(setRestoring), []);
   const counts = useMemo(() => trashCounts(rows), [rows]);
   const shown = useMemo(() => filterTrash(rows, filter, query), [rows, filter, query]);
   const options = TRASH_FILTERS.map((kind) => ({
@@ -117,6 +170,7 @@ export function TrashSection() {
         </span>
       </div>
       <p className="m-0 mb-3 text-sm text-fg-2">{t('trash.help')}</p>
+      {notice && <Restored notice={notice} />}
       {rows.length === 0 ? (
         <p className="m-0 px-3 py-7 text-center text-sm text-fg-2">
           <b className="mb-1 block text-md text-fg">{t('trash.empty')}</b>
@@ -147,7 +201,7 @@ export function TrashSection() {
           ) : (
             <DataTable
               label={t('trash.table')}
-              columns={COLUMNS}
+              columns={columns}
               rows={shown}
               getRowId={(row) => `${row.kind}-${row.id}`}
               initialSort={{ id: 'deletedAt', desc: true }}
@@ -156,6 +210,16 @@ export function TrashSection() {
             />
           )}
         </>
+      )}
+      {restoring && (
+        <RestoreDialog
+          row={restoring}
+          onClose={() => setRestoring(null)}
+          onRestored={() => {
+            setNotice(restoredNotice(restoring));
+            setRestoring(null);
+          }}
+        />
       )}
     </section>
   );

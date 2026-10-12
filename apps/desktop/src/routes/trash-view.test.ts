@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import type { TrashBlock, TrashRow } from '@p2c/db';
+import {
+  createCustomer,
+  createPerson,
+  createTeam,
+  listCustomers,
+  listTrash,
+  softDeleteCustomer,
+  softDeletePerson,
+  type TrashBlock,
+  type TrashRow,
+} from '@p2c/db';
 import { calendarDate } from '@p2c/domain';
 import {
   TRASH_MORE,
@@ -9,8 +19,13 @@ import {
   ownerParts,
   recordDetail,
   recordTitle,
+  restoreRow,
+  restoreView,
+  restoredNotice,
   trashCounts,
 } from './trash-view';
+import { openAppData } from '../data/app-data';
+import { t } from '../i18n';
 
 const ref = (name: string, deleted = false) => ({ id: `id-${name}`, name, deleted });
 
@@ -352,5 +367,270 @@ describe('blockedReason (mockup 11d)', () => {
       'Nhân sự không còn trong dữ liệu (có thể đã bị xóa).',
     );
     expect(reason({ ...bao, owner: {} }, bao.blocked!)).toBe('Team này đã có TL: Nguyễn Thu Hà.');
+  });
+});
+
+const keptMet = {
+  ...met,
+  id: 'a4',
+  effect: { kind: 'stageKept', stage: 'N2' },
+} as TrashRow;
+
+/** E11: a planned appointment of a past day, not blocked. */
+const pastPlanned = {
+  ...planned,
+  id: 'a5',
+  date: calendarDate(2026, 9, 30),
+  time: '10:00',
+  owner: { customer: ref('Phạm Gia Bảo'), re: ref('Bùi Anh Tuấn') },
+  blocked: undefined,
+} as TrashRow;
+
+describe('restoreView (mockup 11b, 11c; TR-8)', () => {
+  it('E1: a customer, with the records that come back with it and those left in the trash', () => {
+    const view = restoreView(minhAnh);
+    expect(view.title).toBe('Khôi phục Trịnh Minh Anh?');
+    expect(view.subtitle).toBe('KH · xóa lúc 10/10/2026 16:42');
+    expect(view.facts).toEqual([
+      { term: 'Nhóm', stage: 'N3' },
+      { term: 'RE', text: 'Đỗ Khánh Linh · Sao Mai' },
+      {
+        term: 'Hiện lại cùng KH',
+        text: '7 lịch hẹn (3 đã gặp · 1 lần tính RF) · 0 HĐ · 5 ghi chú KYC · 2 phân tích AI',
+      },
+    ]);
+    expect(view.effect).toEqual({
+      body: 'KH và các bản ghi trên vào lại danh sách và chỉ số theo đúng ngày của từng bản ghi. Lịch hẹn / HĐ đã xóa riêng trước đó vẫn ở Thùng rác (1 lịch hẹn), khôi phục riêng sau.',
+    });
+  });
+
+  it('a customer with nothing deleted on its own, or policies only', () => {
+    const body = (appointmentsInTrash: number, policiesInTrash: number) =>
+      restoreView({
+        ...minhAnh,
+        effect: { ...minhAnh.effect, appointmentsInTrash, policiesInTrash },
+      } as TrashRow).effect.body;
+    expect(body(0, 0)).toBe(
+      'KH và các bản ghi trên vào lại danh sách và chỉ số theo đúng ngày của từng bản ghi.',
+    );
+    expect(body(0, 2)).toContain('vẫn ở Thùng rác (2 HĐ), khôi phục riêng sau.');
+    expect(body(1_200, 1)).toContain('vẫn ở Thùng rác (1.200 lịch hẹn · 1 HĐ)');
+  });
+
+  it('E5: a met appointment records its stage change again, with its RF', () => {
+    const view = restoreView(met);
+    expect(view.title).toBe('Khôi phục lịch hẹn 02/10/2026 09:30?');
+    expect(view.subtitle).toBe('KH Phạm Gia Bảo · RE Bùi Anh Tuấn');
+    expect(view.facts).toEqual([
+      { term: 'Kết quả', text: 'Đã gặp · nhóm sau', stage: 'N2' },
+      { term: 'Nhóm KH hiện tại', stage: 'N3' },
+    ]);
+    expect(view.effect).toEqual({
+      title: 'Nhóm KH: N3 → N2 từ 02/10/2026',
+      body: 'Ghi lại chuyển nhóm của cuộc gặp; tính 1 RF cho Bùi Anh Tuấn trong kỳ có ngày 02/10/2026.',
+    });
+  });
+
+  it('a met appointment whose change counts no RF', () => {
+    const date = calendarDate(2026, 10, 2);
+    const view = restoreView({
+      ...met,
+      stageAfter: 'N3',
+      effect: { kind: 'stageChange', from: 'N2', to: 'N3', date, rf: false },
+    } as TrashRow);
+    expect(view.effect).toEqual({
+      title: 'Nhóm KH: N2 → N3 từ 02/10/2026',
+      body: 'Ghi lại chuyển nhóm của cuộc gặp; chuyển nhóm này không tính RF.',
+    });
+  });
+
+  it('E7: a met appointment whose customer is already in its stage after', () => {
+    const view = restoreView(keptMet);
+    expect(view.facts).toEqual([
+      { term: 'Kết quả', text: 'Đã gặp · nhóm sau', stage: 'N2' },
+      { term: 'Nhóm KH hiện tại', stage: 'N2' },
+    ]);
+    expect(view.effect).toEqual({
+      title: 'Nhóm KH giữ N2',
+      body: 'KH đã ở nhóm sau cuộc gặp nên không ghi thêm chuyển nhóm; cuộc hẹn này không tính RF.',
+    });
+  });
+
+  it('E11: another appointment leaves the stage', () => {
+    const view = restoreView(pastPlanned);
+    expect(view.title).toBe('Khôi phục lịch hẹn 30/09/2026 10:00?');
+    expect(view.facts).toEqual([{ term: 'Trạng thái', text: 'Dự kiến' }]);
+    expect(view.effect).toEqual({
+      title: 'Không đổi nhóm KH',
+      body: 'Lịch hẹn vào lại danh sách Lịch hẹn và hồ sơ KH theo ngày của lịch.',
+    });
+    const noTime = restoreView({ ...pastPlanned, time: null } as TrashRow);
+    expect(noTime.title).toBe('Khôi phục lịch hẹn 30/09/2026?');
+  });
+
+  it('a policy, a person and a team', () => {
+    expect(restoreView(policy)).toEqual({
+      title: 'Khôi phục HĐ nộp 15/09/2026?',
+      subtitle: 'KH Hoàng Ngọc Lan · RE Hoàng Nhật Minh',
+      facts: [
+        { term: 'FYP nộp', text: '24.000.000 ₫' },
+        { term: 'Trạng thái', text: 'Đã nộp' },
+      ],
+      effect: { body: 'HĐ vào lại hồ sơ KH và chỉ số theo ngày nộp / phát hành.' },
+    });
+    const issued = {
+      ...policy,
+      issuedDate: calendarDate(2026, 9, 30),
+      issuedFyp: 20_000_000,
+    } as TrashRow;
+    expect(restoreView(issued).facts).toEqual([
+      { term: 'FYP nộp', text: '24.000.000 ₫' },
+      { term: 'Trạng thái', text: 'Đã phát hành 30/09/2026 · 20.000.000 ₫' },
+    ]);
+    const lan = { ...mai, owner: { team: ref('Bình Minh') }, blocked: undefined } as TrashRow;
+    expect(restoreView(lan)).toEqual({
+      title: 'Khôi phục Vương Thị Mai?',
+      subtitle: 'Nhân sự · xóa lúc 05/10/2026 08:31',
+      facts: [
+        { term: 'Vai trò', text: 'RE' },
+        { term: 'Team', text: 'Bình Minh' },
+      ],
+      effect: { body: 'Nhân sự vào lại Team & nhân sự; dữ liệu cũ của người này giữ nguyên.' },
+    });
+    expect(restoreView({ ...lan, role: 'BD', owner: {} } as TrashRow).facts).toEqual([
+      { term: 'Vai trò', text: 'BD' },
+    ]);
+    expect(restoreView(binhMinh)).toEqual({
+      title: 'Khôi phục Bình Minh?',
+      subtitle: 'Team · xóa lúc 05/10/2026 08:33',
+      facts: [],
+      effect: {
+        body: 'Team vào lại Team & nhân sự. Thành viên đã xóa chưa về kèm — khôi phục từng người sau.',
+      },
+    });
+  });
+});
+
+describe('restoredNotice (mockup 11e)', () => {
+  it('a customer: what came back with it, and its profile', () => {
+    expect(restoredNotice(minhAnh)).toEqual({
+      title: 'Đã khôi phục KH Trịnh Minh Anh',
+      detail: 'cùng 7 lịch hẹn, 5 ghi chú KYC',
+      open: 'Mở hồ sơ',
+      href: '#/customers/c1',
+    });
+    const alone = {
+      ...minhAnh,
+      effect: { ...minhAnh.effect, appointments: 0, kycNotes: 0, policies: 2 },
+    } as TrashRow;
+    expect(restoredNotice(alone).detail).toBe('cùng 2 HĐ');
+    const bare = { ...alone, effect: { ...alone.effect, policies: 0 } } as TrashRow;
+    expect(restoredNotice(bare).detail).toBeNull();
+  });
+
+  it('an appointment or a policy: the profile of its customer', () => {
+    expect(restoredNotice(met)).toEqual({
+      title: 'Đã khôi phục lịch hẹn 02/10/2026 09:30',
+      detail: 'KH Phạm Gia Bảo',
+      open: 'Mở hồ sơ',
+      href: `#/customers/${encodeURIComponent('id-Phạm Gia Bảo')}`,
+    });
+    expect(restoredNotice(policy)).toMatchObject({
+      title: 'Đã khôi phục HĐ nộp 15/09/2026',
+      detail: 'KH Hoàng Ngọc Lan',
+      href: `#/customers/${encodeURIComponent('id-Hoàng Ngọc Lan')}`,
+    });
+  });
+
+  it('a person or a team: Team & nhân sự', () => {
+    expect(restoredNotice(mai)).toEqual({
+      title: 'Đã khôi phục nhân sự Vương Thị Mai',
+      detail: null,
+      open: 'Mở Team & nhân sự',
+      href: '#/team',
+    });
+    expect(restoredNotice(binhMinh)).toMatchObject({
+      title: 'Đã khôi phục team Bình Minh',
+      href: '#/team',
+    });
+  });
+});
+
+describe('restoreRow', () => {
+  const TODAY = calendarDate(2026, 10, 11);
+
+  /** Trịnh Minh Anh deleted, her RE Đỗ Khánh Linh of Sao Mai still there. */
+  async function deletedCustomer() {
+    let reId = '';
+    const app = await openAppData({
+      today: () => TODAY,
+      seed: (db) => {
+        const team = createTeam(db, { name: 'Sao Mai' });
+        reId = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RE', teamId: team.id }).id;
+        const customer = createCustomer(db, {
+          name: 'Trịnh Minh Anh',
+          reId,
+          stage: 'N3',
+          date: TODAY,
+        });
+        softDeleteCustomer(db, customer.id);
+      },
+    });
+    const [row] = listTrash(app.db());
+    return { app, row: row!, reId };
+  }
+
+  it('runs the restore command of its kind: the record leaves the trash', async () => {
+    const { app, row } = await deletedCustomer();
+    expect(restoreRow(app, row)).toBeNull();
+    expect(listTrash(app.db())).toEqual([]);
+    expect(listCustomers(app.db()).map((c) => c.name)).toEqual(['Trịnh Minh Anh']);
+  });
+
+  it('refuses with the blocked reason when the data changed after the dialog opened', async () => {
+    const { app, row, reId } = await deletedCustomer();
+    expect(row.blocked).toBeUndefined();
+    app.run((db) => softDeletePerson(db, reId));
+
+    const failure = restoreRow(app, row);
+    expect(failure).toBe('RE Đỗ Khánh Linh đã xóa — khôi phục RE trước.');
+    const now = listTrash(app.db()).find((r) => r.id === row.id)!;
+    expect(failure).toBe(blockedReason(now, now.blocked!));
+    expect(listCustomers(app.db())).toEqual([]);
+  });
+
+  it('E17: refuses with the sentence of S2-2 while the data is replaced, changing nothing', async () => {
+    const { app, row } = await deletedCustomer();
+    const reloading = app.reloadDemoData();
+    expect(restoreRow(app, row)).toBe(
+      'Đang thay toàn bộ dữ liệu (Nạp lại / Nhập backup). Thay đổi này chưa được ghi — thử lại khi xong.',
+    );
+    expect(listTrash(app.db()).map((r) => r.id)).toEqual([row.id]);
+    expect(listCustomers(app.db())).toEqual([]);
+    await reloading;
+  });
+
+  it('a failure that is no command refusal reads as the general message', () => {
+    const app = {
+      run: () => {
+        throw new Error('boom');
+      },
+    };
+    expect(restoreRow(app, minhAnh)).toBe('Chưa lưu được thay đổi. Dữ liệu không bị đổi.');
+  });
+});
+
+describe('the delete dialogs point at Thùng rác (TR-10, mockup 11f)', () => {
+  it('6g, a policy, a person and a team', () => {
+    expect(t('appointmentDelete.soft')).toBe('Xóa mềm, khôi phục được ở Cài đặt → Thùng rác.');
+    expect(t('policyDelete.soft')).toBe(
+      'Xóa mềm: HĐ vẫn nằm trong dữ liệu (D4), khôi phục ở Cài đặt → Thùng rác.',
+    );
+    expect(t('person.deleteBody')).toBe(
+      'Nhân sự được xóa mềm: ẩn khỏi danh sách, dữ liệu cũ vẫn giữ; khôi phục ở Cài đặt → Thùng rác.',
+    );
+    expect(t('team.deleteBody')).toBe(
+      'Team được xóa mềm: ẩn khỏi danh sách, dữ liệu cũ vẫn giữ; khôi phục ở Cài đặt → Thùng rác.',
+    );
   });
 });
