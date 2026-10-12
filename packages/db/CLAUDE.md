@@ -45,7 +45,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/policies.ts` — type NewPolicy, type PolicyChanges, listPolicies, getPolicy, submitPolicy, issuePolicy, updatePolicy, softDeletePolicy, restorePolicy, checkRestorePolicy
 - `src/schema.ts` — teams, people, settings, schemaMigrations, GENDERS, APPOINTMENT_TRIGGERS, customers, appointments, appointmentCoordinators, stageTransitions, policies, KYC_NOTE_SOURCES, kycNotes, kycFacts, kycVersions, AI_ANALYSIS_MODES, AI_ANALYSIS_GATES, AI_ANALYSIS_STATUSES, AI_ANALYSIS_PROVIDERS, AI_ANALYSIS_REASONING, AI_ANALYSIS_NO_MODEL, MAX_AI_RAW_OUTPUT, aiAnalyses
 - `src/seed-data.ts` — type Weighted, STARTING_STAGES, BIRTH_DATE_KINDS, OUTCOMES, MOVES, TRIGGERS, TEAM_NAMES, FAMILY_NAMES, MIDDLE_NAMES, GIVEN_NAMES, APPOINTMENT_TIMES, TRIGGER_NOTES, NEXT_STEPS, MEETING_NOTES, CASE_SIZES_MILLION, KYC_TOPICS, KYC_VALUES
-- `src/seed.ts` — type SeedOptions, seedDemoData
+- `src/seed.ts` — type SeedOptions, type SeedScale, seedDemoData
 - `src/settings.ts` — getSetting, putSetting
 - `src/team.ts` — listTeams, getTeam, listPeople, getPerson, createTeam, renameTeam, softDeleteTeam, restoreTeam, checkRestoreTeam, type PersonInput, createPerson, updatePerson, softDeletePerson, restorePerson, checkRestorePerson
 - `src/test-support.ts` — setup, errorOf, codeOf, d
