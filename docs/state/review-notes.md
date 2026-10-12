@@ -100,6 +100,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - Hai ghi chú không chặn của review PR #552 (T-215, #551, review @`cf3f9e5`) — gộp vào lần chạm sau của file:
   - `tools/merge-pr.mjs:12-13`: comment đầu file vẫn ghi lệnh từ chối khi "the latest REVIEW is not PASS for the current head SHA" mà không nhắc ngoại lệ PR chỉ sửa sổ ghi chú → thêm một vế để header khớp `mergeBlockers` (`tools/pr-core.mjs`).
   - `tools/pr-status.mjs:94`: dòng `(review notes only: not needed)` chưa có test (`pr-status.mjs` chưa có file test). PR sổ ghi chú có REVIEW cũ lệch head sẽ in cả "NOT the head: review again before merge" lẫn "not needed" → hơi lẫn, dù verdict bên dưới vẫn đúng; bỏ dòng "NOT the head" khi `isNotesOnly`.
+- Một ghi chú không chặn của review PR #554 (T-213 PR 2/2, #534, review @`01ad1c1`). Sửa ở lần chụp lại ảnh 6D hoặc lần chạm sau của file: `docs/user-guide/07-bao-cao.md:51`, `:55` ghi ví dụ mốc "01-06/09 (T3-CN)", "14-20/09 (tới 15/09)" bằng gạch nối `-`, còn app ghép bằng `reports.mark.range` / `reports.mark.weekdays` = `'{from}–{to}'` (gạch ngang `–`) → đổi thành "01–06/09 (T3–CN)", "14–20/09 (tới 15/09)" cho trùng màn.
 
 ## RESOLVED
 
