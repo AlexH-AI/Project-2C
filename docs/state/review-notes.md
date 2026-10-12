@@ -89,6 +89,9 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
   - Có thể là *Mysterious Name*: `vi.ts` `trash.customer.with` dùng slot `{count}` cho số ghi chú KYC cạnh `{appointments}` / `{policies}` (để không sửa `COUNT_SLOTS` ngoài danh sách file) → thêm slot `kycNotes` vào `COUNT_SLOTS` khi #532 chạm `i18n/index.ts`.
   - `apps/desktop/src/routes/SettingsTrash.tsx:46`: `OwnerCell` đặt `key={owner.text}`; phần team của KH là tên team trần nên về lý thuyết có thể trùng chữ phần khác → chỉ cảnh báo key của React. Đổi sang key theo index.
   - Nhắc khi viết `docs/metrics/phase-6.md`: PR #543 ≈ 910 dòng tổng diff (≈ 430 dòng sản phẩm), vượt ngưỡng ~800 / ~400; PR đã nêu lý do không tách. Ghi vào bảng "Kích thước PR vượt ngưỡng".
+- Hai ghi chú không chặn của review PR #545 (T-211, #532, review @`a18f09b`) — gộp vào lần chạm sau của file:
+  - Có thể là *Mysterious Name*: `apps/desktop/src/routes/trash-view.ts` `restoredWith` (thông báo 11e) dùng khóa `trash.restore.leftAppointments` ("{count} lịch hẹn" của các lịch **còn lại** trong Thùng rác) để đếm lịch **đã về**. Đổi câu "còn lại" sau này sẽ đổi luôn thông báo 11e → một khóa trung tính (vd. `trash.restore.appointmentCount`) dùng cho cả hai.
+  - Nhắc khi viết `docs/metrics/phase-6.md`: PR #545 ≈ 811 dòng tổng diff (≈ 444 dòng sản phẩm, gồm doc comment), vượt ngưỡng ~800 / ~400; PR đã nêu lý do (hộp khôi phục cho đủ 5 loại), review không đòi tách. Ghi vào bảng "Kích thước PR vượt ngưỡng".
 
 ## RESOLVED
 
