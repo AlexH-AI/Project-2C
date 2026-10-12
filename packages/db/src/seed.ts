@@ -3,7 +3,8 @@
  * customers, appointments and policies up to the anchor day, and 2-4 weeks of appointments after
  * it. Everything goes through the commands (spec §4), day by day, in one transaction with seeded
  * sources — the same anchor day and seed give the same data on any machine from UTC−12 to UTC+11,
- * and the same days in any time zone (`middayOf`).
+ * and the same days in any time zone (`middayOf`). The load data of spec Phase 6 §5.1
+ * (`tools/load-data.mjs`) is the same simulation at a bigger `scale`, with Thùng rác.
  */
 import { buildAnalysisInput, mockAnalysisOutput, mockDiscoveryOutput } from '@p2c/ai/schema';
 import {
@@ -22,10 +23,19 @@ import {
   type Vnd,
 } from '@p2c/domain';
 import { recordAiAnalysis } from './ai-analyses';
-import { recordMeetingOutcome, rescheduleAppointment, scheduleAppointment } from './appointments';
+import {
+  listAppointments,
+  recordMeetingOutcome,
+  rescheduleAppointment,
+  scheduleAppointment,
+  softDeleteAppointment,
+} from './appointments';
 import {
   changeStageManually,
   createCustomer,
+  listCustomers,
+  listStageTransitions,
+  softDeleteCustomer,
   updateCustomerProfile,
   type BirthDate,
   type Gender,
@@ -41,7 +51,7 @@ import {
   markKycConflict,
   resolveKycConflict,
 } from './kyc';
-import { issuePolicy, submitPolicy } from './policies';
+import { issuePolicy, listPolicies, softDeletePolicy, submitPolicy } from './policies';
 import {
   APPOINTMENT_TIMES,
   BIRTH_DATE_KINDS,
@@ -61,19 +71,47 @@ import {
   TRIGGERS,
   type Weighted,
 } from './seed-data';
-import { createPerson, createTeam, listPeople, listTeams } from './team';
+import {
+  createPerson,
+  createTeam,
+  listPeople,
+  listTeams,
+  softDeletePerson,
+  softDeleteTeam,
+} from './team';
 
 export interface SeedOptions {
   /** The day the data leads up to: history before it, only scheduled appointments from it on. */
   readonly anchorDate: CalendarDate;
   readonly seed: number;
+  /** How much data; the demo's (`DEMO_SCALE`) when not given. */
+  readonly scale?: SeedScale;
+  /**
+   * On the anchor day, sends a share of each kind of record to Thùng rác through the delete
+   * commands (spec Phase 6 §5.1): the load data has it, the demo does not.
+   */
+  readonly trash?: boolean;
 }
+
+export interface SeedScale {
+  readonly teams: number;
+  readonly resPerTeam: number;
+  readonly customersPerRe: number;
+  /** Fewest and most days a week each RE has meetings. */
+  readonly meetingDays: readonly [number, number];
+}
+
+/** The demo: 3 teams of 10 RE with 40 customers each, meeting 3-4 days a week. */
+const DEMO_SCALE: SeedScale = {
+  teams: 3,
+  resPerTeam: 10,
+  customersPerRe: 40,
+  meetingDays: [3, 4],
+};
 
 const DAY_MS = 86_400_000;
 const HISTORY_DAYS = 365;
 const FUTURE_DAYS = 24;
-const RES_PER_TEAM = 10;
-const CUSTOMERS_PER_RE = 40;
 /** Customers each RE already has when the history starts; the rest arrive over the year. */
 const STARTING_CUSTOMERS = 10;
 const MILLION = 1_000_000;
@@ -92,6 +130,10 @@ const KYC_SETTLE_CHANCE = 0.25;
 const AI_ANALYSIS_CHANCE = 0.02;
 /** Mixed into the seed for the AI analyses' own random stream. */
 const AI_STREAM = 0x5eed_a1;
+/** Of the customers, appointments and policies, the share the load data deletes. */
+const TRASH_SHARE = 0.01;
+/** The team the load data closes, named apart from those `teamName` gives. */
+const CLOSED_TEAM = 'Ánh Dương';
 
 interface SimCustomer {
   readonly id: string;
@@ -140,8 +182,10 @@ export function seedDemoData(db: Database, options: SeedOptions): void {
       if (listTeams(db).length > 0 || listPeople(db).length > 0) {
         throw new DbError('SEED_DATABASE_NOT_EMPTY');
       }
-      const simulate = simulation(db, rng, aiRng, anchor);
-      for (; today <= end; today++) simulate(today);
+      const simulate = simulation(db, rng, aiRng, anchor, options.scale ?? DEMO_SCALE);
+      for (; today <= end; today++) simulate.day(today);
+      // The clock is back on the anchor day.
+      if (options.trash) simulate.fillTrash();
     }),
   );
 }
@@ -159,7 +203,7 @@ function simulatedDays(anchor: number): { start: number; end: number } {
   };
 }
 
-function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number): (day: number) => void {
+function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: SeedScale) {
   const { start, end } = simulatedDays(anchor);
   const coordinators = new Map<string, Person[]>();
   const customers = new Map<string, SimCustomer[]>();
@@ -183,15 +227,15 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number): (day: n
     createPerson(db, { name: staffName(), role, teamId: null }),
   );
   const res: Person[] = [];
-  for (const teamName of TEAM_NAMES) {
-    const team = createTeam(db, { name: teamName });
+  for (let t = 0; t < scale.teams; t++) {
+    const team = createTeam(db, { name: teamName(t) });
     const tl = createPerson(db, { name: staffName(), role: 'TL', teamId: team.id });
-    for (let i = 0; i < RES_PER_TEAM; i++) {
+    for (let i = 0; i < scale.resPerTeam; i++) {
       const re = createPerson(db, { name: staffName(), role: 'RE', teamId: team.id });
       res.push(re);
       coordinators.set(re.id, [tl, ...shared]);
       customers.set(re.id, []);
-      for (let c = 0; c < CUSTOMERS_PER_RE; c++) {
+      for (let c = 0; c < scale.customersPerRe; c++) {
         const late = c >= STARTING_CUSTOMERS && anchor - 7 > start;
         add(arrivals, late ? rng.int(start + 1, anchor - 7) : start, re);
       }
@@ -298,10 +342,10 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number): (day: n
     customer.stage = to;
   };
 
-  return (day) => {
+  const day = (day: number) => {
     if ((day - start) % 7 === 0) {
       for (const re of res) {
-        const weekdays = rng.shuffle([0, 1, 2, 3, 4, 5]).slice(0, rng.int(3, 4));
+        const weekdays = rng.shuffle([0, 1, 2, 3, 4, 5]).slice(0, rng.int(...scale.meetingDays));
         for (const offset of weekdays) {
           if (day + offset <= end) add(agenda, day + offset, { re });
         }
@@ -322,6 +366,55 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number): (day: n
       for (const re of res) if (rng.chance(0.01)) manualChange(re, day);
     }
   };
+
+  /**
+   * Thùng rác of the load data (spec Phase 6 §4.2), with rows of every kind that it restores and
+   * that it blocks (TR-1, TR-2): a closed team, whose TL and RE wait for it; an RE who left before
+   * taking a customer; a share of the customers, appointments and policies, where the appointments
+   * and policies deleted before their customer wait for the customer.
+   */
+  const fillTrash = () => {
+    const closed = createTeam(db, { name: CLOSED_TEAM });
+    for (const role of ['TL', 'RE'] as const) {
+      softDeletePerson(db, createPerson(db, { name: staffName(), role, teamId: closed.id }).id);
+    }
+    softDeleteTeam(db, closed.id);
+    const leaver = createPerson(db, { name: staffName(), role: 'RE', teamId: res[0]!.teamId });
+    softDeletePerson(db, leaver.id);
+
+    const share = <T>(items: T[]) =>
+      rng.shuffle(items).slice(0, Math.ceil(items.length * TRASH_SHARE));
+    const leaving = share(listCustomers(db));
+    // Half of them have an appointment and a policy deleted first.
+    const first = leaving.slice(0, Math.ceil(leaving.length / 2)).map((c) => c.id);
+    const pick = <T extends { id: string; customerId: string }>(items: T[]) => {
+      const own = first.flatMap((id) => items.find((item) => item.customerId === id) ?? []);
+      return new Set([...share(items), ...own].map((item) => item.id));
+    };
+    // What a delete takes back as it is (D7): a met appointment while its stage change is the
+    // customer's latest, never a "Dời lịch" one (#171) nor the one that replaced it.
+    const transitions = listStageTransitions(db);
+    const latest = new Map(transitions.map((t) => [t.customerId, t.appointmentId]));
+    const caused = new Set(transitions.map((t) => t.appointmentId));
+    const deletable = listAppointments(db).filter(
+      (a) =>
+        a.status !== 'RESCHEDULED' &&
+        a.rescheduledFromId === null &&
+        (!caused.has(a.id) || latest.get(a.customerId) === a.id),
+    );
+    for (const id of pick(deletable)) softDeleteAppointment(db, id);
+    for (const id of pick(listPolicies(db))) softDeletePolicy(db, id);
+    for (const { id } of leaving) softDeleteCustomer(db, id);
+  };
+
+  return { day, fillTrash };
+}
+
+/** Sao Mai, Bình Minh, Hừng Đông, then Sao Mai 2, Bình Minh 2…: unique at any scale. */
+function teamName(index: number): string {
+  const round = Math.floor(index / TEAM_NAMES.length);
+  const name = TEAM_NAMES[index % TEAM_NAMES.length]!;
+  return round === 0 ? name : `${name} ${round + 1}`;
 }
 
 /** KYC grows with the meetings (spec §7): notes, facts, conflicts and their settling. */

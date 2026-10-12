@@ -25,6 +25,7 @@ import { APPOINTMENT_TRIGGERS } from './schema';
 import { seedDemoData } from './seed';
 import { createTeam, listPeople, listTeams } from './team';
 import { codeOf } from './test-support';
+import { listTrash } from './trash';
 
 const ANCHOR = calendarDate(2026, 9, 15);
 // A seed takes ~58 s alone on the Home PC, and more when other test files run in parallel: 60 s made
@@ -46,6 +47,36 @@ async function contentHash(db: Database): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(lines.join('\n')));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
+
+/** Rows of each business table, live and deleted. */
+function rowCounts(db: Database): Record<string, number> {
+  const tables = db.sqlite.exec(
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT IN ('schema_migrations', 'sqlite_sequence') ORDER BY name",
+  );
+  return Object.fromEntries(
+    tables[0]!.values.map(([name]) => [
+      String(name),
+      Number(db.sqlite.exec(`SELECT COUNT(*) FROM "${String(name)}"`)[0]!.values[0]![0]),
+    ]),
+  );
+}
+
+/** `seedDemoData` of seed 1 on ANCHOR as it was before the scale options (T-216). */
+const DEMO_ROW_COUNTS = {
+  ai_analyses: 63,
+  appointment_coordinators: 899,
+  appointments: 6229,
+  customers: 1200,
+  kyc_facts: 10383,
+  kyc_notes: 4195,
+  kyc_versions: 9726,
+  people: 36,
+  policies: 988,
+  settings: 0,
+  stage_transitions: 3309,
+  teams: 3,
+};
+const DEMO_HASH = '868655fb2b338521c1e657cc7a4bcb80dacffff893a1e4562ef47bf2a09ee960';
 
 async function seeded(seed: number, anchorDate = ANCHOR) {
   const persist = vi.fn();
@@ -85,6 +116,10 @@ describe('seedDemoData', () => {
       const other = await seeded(2);
       expect(await contentHash(second.db)).toBe(await contentHash(first.db));
       expect(await contentHash(other.db)).not.toBe(await contentHash(first.db));
+      // The demo before the load data (T-216): no scale given, the very rows it had. A change of
+      // schema or of the demo itself moves these pins on purpose; nothing else should.
+      expect(rowCounts(first.db)).toEqual(DEMO_ROW_COUNTS);
+      expect(await contentHash(first.db)).toBe(DEMO_HASH);
       // DR-15: at UTC+14 noon UTC is already the next day, yet a profile change keeps its day.
       const east = await inTimeZone('Pacific/Kiritimati', () => seeded(1));
       expect(recordedDays(east.db)).toEqual(recordedDays(first.db));
@@ -245,6 +280,55 @@ describe('seedDemoData', () => {
       expect(analyses.some((a) => notes(a).length > 0)).toBe(true);
     });
   });
+
+  it(
+    'scales the teams, REs, customers and meetings, and fills Thùng rác on request (T-216)',
+    async () => {
+      const db = await openDatabase();
+      const scale = { teams: 4, resPerTeam: 2, customersPerRe: 5, meetingDays: [1, 1] as const };
+      seedDemoData(db, { anchorDate: ANCHOR, seed: 1, scale, trash: true });
+      expect(
+        listTeams(db)
+          .map((t) => t.name)
+          .sort(),
+      ).toEqual(['Bình Minh', 'Hừng Đông', 'Sao Mai', 'Sao Mai 2']);
+      const people = listPeople(db);
+      expect(people.filter((p) => p.role === 'TL')).toHaveLength(4);
+      expect(people.filter((p) => p.role === 'RE')).toHaveLength(8);
+      // At most one meeting booked a week for each RE (besides those moved there), most weeks one.
+      const start = Date.UTC(2025, 8, 15);
+      const booked = listAppointments(db).filter((a) => a.rescheduledFromId === null);
+      const weeks = booked.map((a) => {
+        const day = Date.UTC(a.date.year, a.date.month - 1, a.date.day);
+        return `${a.reId} ${Math.floor((day - start) / (7 * 86_400_000))}`;
+      });
+      expect(new Set(weeks).size).toBe(weeks.length);
+      expect(booked.length).toBeGreaterThan((8 * 56) / 2);
+
+      const trash = listTrash(db).map((row) => ({
+        kind: row.kind,
+        name: 'name' in row ? row.name : row.owner.customer!.name,
+        code: row.blocked?.code,
+      }));
+      const [customer] = trash.filter((row) => row.kind === 'customer');
+      expect(customer).toBeDefined();
+      expect(listCustomers(db)).toHaveLength(40 - 1);
+      // Deleted on the anchor day, the customer last, after its appointment and policy.
+      expect(trash).toEqual(
+        expect.arrayContaining([
+          { kind: 'team', name: 'Ánh Dương', code: undefined },
+          expect.objectContaining({ kind: 'person', code: 'TEAM_NOT_FOUND' }),
+          expect.objectContaining({ kind: 'person', code: undefined }),
+          { kind: 'appointment', name: customer!.name, code: 'CUSTOMER_NOT_FOUND' },
+          expect.objectContaining({ kind: 'appointment', code: undefined }),
+          expect.objectContaining({ kind: 'policy', code: undefined }),
+        ]),
+      );
+      expect(trash.filter((row) => row.kind === 'person')).toHaveLength(3);
+      expect(trash.filter((row) => row.kind === 'person' && row.code)).toHaveLength(2);
+    },
+    SLOW,
+  );
 
   it('refuses a database that already has data', async () => {
     const db = await openDatabase();
