@@ -92,6 +92,10 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - Hai ghi chú không chặn của review PR #545 (T-211, #532, review @`a18f09b`) — gộp vào lần chạm sau của file:
   - Có thể là *Mysterious Name*: `apps/desktop/src/routes/trash-view.ts` `restoredWith` (thông báo 11e) dùng khóa `trash.restore.leftAppointments` ("{count} lịch hẹn" của các lịch **còn lại** trong Thùng rác) để đếm lịch **đã về**. Đổi câu "còn lại" sau này sẽ đổi luôn thông báo 11e → một khóa trung tính (vd. `trash.restore.appointmentCount`) dùng cho cả hai.
   - Nhắc khi viết `docs/metrics/phase-6.md`: PR #545 ≈ 811 dòng tổng diff (≈ 444 dòng sản phẩm, gồm doc comment), vượt ngưỡng ~800 / ~400; PR đã nêu lý do (hộp khôi phục cho đủ 5 loại), review không đòi tách. Ghi vào bảng "Kích thước PR vượt ngưỡng".
+- Ba ghi chú không chặn của review PR #547 (T-212, #533, review @`b486030`). Gộp vào lần chụp lại ảnh ở 6D hoặc lần chạm sau của file:
+  - `e2e/guide/check.guide.ts:7`: 150 KB tính là 150 × 1024 byte. `04-khach-hang-bang.png` = 151 306 byte, chỉ qua khi hiểu KB = 1024 byte (spec §4.3 không nói đơn vị) → ghi rõ "150 KiB" trong comment / spec khi chụp lại; ảnh vượt thì chụp phần trên như `05-ho-so-kh`.
+  - `e2e/guide/links.ts:18`: chỉ bỏ code span một dấu backtick; code span mở bằng hai dấu backtick có link bên trong vẫn bị kiểm. Sửa khi #534 hoặc nội dung sau dùng dạng này.
+  - Issue #533 ghi "spec chụp ảnh không nằm trong `testDir` của `playwright.config.ts`" nhưng lại chỉ định `e2e/guide/**` (nằm dưới `testDir: 'e2e'`); PR tách bằng đuôi `*.guide.ts` ngoài `testMatch` mặc định nên `pnpm e2e` không chạy. Không cần sửa code; đổi `testMatch` của e2e sang dạng nhận cả `*.ts` sẽ kéo spec chụp ảnh vào e2e.
 
 ## RESOLVED
 
