@@ -101,6 +101,12 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
   - `tools/merge-pr.mjs:12-13`: comment đầu file vẫn ghi lệnh từ chối khi "the latest REVIEW is not PASS for the current head SHA" mà không nhắc ngoại lệ PR chỉ sửa sổ ghi chú → thêm một vế để header khớp `mergeBlockers` (`tools/pr-core.mjs`).
   - `tools/pr-status.mjs:94`: dòng `(review notes only: not needed)` chưa có test (`pr-status.mjs` chưa có file test). PR sổ ghi chú có REVIEW cũ lệch head sẽ in cả "NOT the head: review again before merge" lẫn "not needed" → hơi lẫn, dù verdict bên dưới vẫn đúng; bỏ dòng "NOT the head" khi `isNotesOnly`.
 - Một ghi chú không chặn của review PR #554 (T-213 PR 2/2, #534, review @`01ad1c1`). Sửa ở lần chụp lại ảnh 6D hoặc lần chạm sau của file: `docs/user-guide/07-bao-cao.md:51`, `:55` ghi ví dụ mốc "01-06/09 (T3-CN)", "14-20/09 (tới 15/09)" bằng gạch nối `-`, còn app ghép bằng `reports.mark.range` / `reports.mark.weekdays` = `'{from}–{to}'` (gạch ngang `–`) → đổi thành "01–06/09 (T3–CN)", "14–20/09 (tới 15/09)" cho trùng màn.
+- Bốn ghi chú không chặn của review PR #566 (T-216, #556, review @`c95ca04`) — gộp vào lần chạm sau của từng file:
+  - `tools/load-data.mjs:53`: `--out` tương đối tính từ gốc repo, không từ thư mục đang đứng (comment trong code đã ghi; đường dẫn tuyệt đối và mặc định không bị ảnh hưởng) → ghi thêm vào dòng usage / comment đầu file để người chạy từ thư mục con không tìm nhầm chỗ.
+  - `packages/db/src/seed.ts:383` (`fillTrash`): dùng `res[0]!` mà không kiểm `SeedScale`; `teams: 0` hoặc `resPerTeam: 0` kèm `trash: true` ném TypeError. Lệnh không gặp (`LOAD_SCALE` cố định) → kiểm quy mô (≥ 1 team, ≥ 1 RE, `meetingDays` tăng dần) đầu `seedDemoData` nếu có nơi gọi thứ hai.
+  - Có thể là *Duplicated Code*: hook `resolve` của `tools/load-data.mjs:19` chép từ `tools/eval-ai.mjs` (cùng lỗi "bỏ qua specifier có dấu chấm" ghi ở mục #474 trên) → tách một module nạp TypeScript dùng chung trong `tools/` (kèm hook `?raw`), sửa lỗi #474 một chỗ cho cả hai lệnh.
+  - `packages/db/src/seed-invariants.test.ts:36`: bộ tải quy mô nhỏ chỉ kiểm bất biến trên bản ghi đang dùng (`listCustomers` / `listAppointments` bỏ bản ghi đã xóa); dòng trong Thùng rác chỉ được kiểm gián tiếp qua `listTrash` và kiểm khi `importBackup`. Thêm một ca cho bản ghi đã xóa nếu `fillTrash` đổi.
+  - Nhắc khi viết `docs/metrics/phase-6.md`: PR #566 ≈ 835 dòng tổng diff (≈ 272 dòng sản phẩm), vượt ngưỡng ~800 vì thụt lề `describe.each` (`git diff -w` ≈ 560); PR đã nêu. Ghi vào bảng "Kích thước PR vượt ngưỡng".
 
 ## RESOLVED
 
