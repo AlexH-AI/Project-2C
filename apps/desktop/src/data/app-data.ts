@@ -243,7 +243,10 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   const saves = createPersistQueue(async (bytes) => {
     if (!storage) return;
     await backedUp;
+    const start = performance.now();
     await storage.save(bytes);
+    // Read by the perf probe (e2e/perf): "lưu DB" of spec Phase 6 §5.2.
+    performance.measure('p2c:db-save', { start });
     lastSave = { at: clock(), size: bytes.byteLength };
     for (const listener of lastSaveListeners) listener();
   });
