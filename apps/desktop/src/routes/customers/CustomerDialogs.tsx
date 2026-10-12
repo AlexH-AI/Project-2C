@@ -1,11 +1,13 @@
-import { useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import {
   changeStageManually,
+  countCustomerRecords,
   createCustomer,
   DbError,
   listPeople,
   listTeams,
   previewCustomerProfile,
+  softDeleteCustomer,
   updateCustomerProfile,
   type BirthDate,
   type CustomerRecord,
@@ -16,6 +18,7 @@ import {
 import {
   CLOSED_STAGES,
   PIPELINE_STAGES,
+  formatCount,
   formatDate,
   weekdayOf,
   type CalendarDate,
@@ -146,13 +149,18 @@ function KycPreview({ preview }: { preview: ProfileKycPreview }) {
   );
 }
 
-/** Mockup 5a–5c: a new customer (`customer` omitted), or the profile of one. */
+/**
+ * Mockup 5a–5c: a new customer (`customer` omitted), or the profile of one, which "Xóa KH…" deletes
+ * (5f) before `onDeleted`.
+ */
 export function CustomerFormDialog({
   customer,
   onClose,
+  onDeleted,
 }: {
   customer?: CustomerRecord;
   onClose: () => void;
+  onDeleted?: () => void;
 }) {
   const data = useAppData();
   const today = data.today();
@@ -166,6 +174,7 @@ export function CustomerFormDialog({
   const [stage, setStage] = useState<PipelineStage>('N4');
   const date = useDateField(today);
   const [errors, setErrors] = useState<Errors>({});
+  const [deleting, setDeleting] = useState(false);
   const edit =
     <T,>(field: Field, set: (value: T) => void) =>
     (value: T) => {
@@ -223,6 +232,16 @@ export function CustomerFormDialog({
     }
   };
 
+  if (deleting && customer) {
+    return (
+      <DeleteCustomerDialog
+        customer={customer}
+        onClose={() => setDeleting(false)}
+        onDeleted={onDeleted ?? onClose}
+      />
+    );
+  }
+
   return (
     <Dialog
       title={
@@ -236,10 +255,17 @@ export function CustomerFormDialog({
       onClose={onClose}
       onSubmit={save}
       actions={
-        <Actions
-          onClose={onClose}
-          save={t(customer ? 'customerForm.save' : 'customerForm.create')}
-        />
+        <>
+          {customer && (
+            <Button className="mr-auto" onClick={() => setDeleting(true)}>
+              {t('customerForm.delete')}
+            </Button>
+          )}
+          <Actions
+            onClose={onClose}
+            save={t(customer ? 'customerForm.save' : 'customerForm.create')}
+          />
+        </>
       }
     >
       {errors.form && <FailureAlert>{errors.form}</FailureAlert>}
@@ -301,6 +327,74 @@ export function CustomerFormDialog({
       )}
       {kyc && <KycPreview preview={kyc} />}
       {!customer && <p className="m-0 text-xs text-fg-3">{t('customerForm.kycNote')}</p>}
+    </Dialog>
+  );
+}
+
+/**
+ * Mockup 5f (trash.html 11f): the records the deletion hides, those of the customer not deleted on
+ * their own, which restoring it brings back (TR-4). The deletion is soft (D4).
+ */
+function DeleteCustomerDialog({
+  customer,
+  onClose,
+  onDeleted,
+}: {
+  customer: CustomerRecord;
+  onClose: () => void;
+  onDeleted: () => void;
+}) {
+  const app = useAppData();
+  const counts = useQuery(
+    useCallback((db: Database) => countCustomerRecords(db, customer.id), [customer.id]),
+  );
+  const [failure, setFailure] = useState<string>();
+  const remove = () => {
+    try {
+      app.run((db) => softDeleteCustomer(db, customer.id));
+      onDeleted();
+    } catch (error) {
+      setFailure(errorMessage(error));
+    }
+  };
+  const facts = [
+    [
+      t('customerDelete.appointments'),
+      t('customerDelete.appointmentCounts', {
+        total: counts.appointments,
+        met: counts.met,
+        n: counts.rf,
+      }),
+    ],
+    [t('customerDelete.policies'), formatCount(counts.policies)],
+    [t('customerDelete.kyc'), t('customerDelete.kycKept', { count: counts.kycNotes })],
+  ] as const;
+  return (
+    <Dialog
+      title={t('customerDelete.title', { name: customer.name })}
+      subtitle={customer.code}
+      onClose={onClose}
+      onSubmit={remove}
+      actions={
+        <>
+          <Button onClick={onClose}>{t('customerForm.cancel')}</Button>
+          <Button type="submit" variant="danger">
+            {t('customerDelete.confirm')}
+          </Button>
+        </>
+      }
+    >
+      {failure && <FailureAlert>{failure}</FailureAlert>}
+      <p className="m-0 text-fg-2">{t('customerDelete.body')}</p>
+      <dl className="m-0 flex flex-col gap-1.5 tabular-nums">
+        {facts.map(([term, value]) => (
+          <div key={term} className="flex gap-3">
+            <dt className="w-24 shrink-0 text-fg-3">{term}</dt>
+            <dd className="m-0">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className={`${ALERT} border-info`}>{t('customerDelete.soft')}</p>
     </Dialog>
   );
 }

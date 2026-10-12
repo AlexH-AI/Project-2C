@@ -234,7 +234,14 @@ export function CustomerProfile({ id }: { id: string }) {
         />
       )}
       {editing === 'profile' && (
-        <CustomerFormDialog customer={customer} onClose={() => setEditing(null)} />
+        <CustomerFormDialog
+          customer={customer}
+          onClose={() => setEditing(null)}
+          onDeleted={() => {
+            // The profile now says the customer is not found: go on to the list (TR-9).
+            window.location.hash = routeToHash({ screen: 'customers' });
+          }}
+        />
       )}
       {editing === 'stage' && (
         <ChangeStageDialog customer={customer} since={since} onClose={() => setEditing(null)} />

@@ -16,6 +16,7 @@ import {
 import { isNotNull } from 'drizzle-orm';
 import { checkRestoreAppointment, outcomeStage } from './appointments';
 import { selectRows } from './common';
+import { countCustomerRecords, type CustomerRecordCounts } from './counts';
 import { checkRestoreCustomer } from './customers';
 import type { Database } from './database';
 import { DbError, type DbErrorCode } from './errors';
@@ -41,18 +42,7 @@ export interface TrashOwner {
 export type TrashEffect =
   | { readonly kind: 'none' }
   /** A customer comes back with the records not deleted on their own (TR-4). */
-  | {
-      readonly kind: 'customer';
-      readonly appointments: number;
-      readonly met: number;
-      readonly rf: number;
-      readonly policies: number;
-      readonly kycNotes: number;
-      readonly aiAnalyses: number;
-      /** Deleted on their own: they stay in the trash. */
-      readonly appointmentsInTrash: number;
-      readonly policiesInTrash: number;
-    }
+  | ({ readonly kind: 'customer' } & CustomerRecordCounts)
   /** A met appointment records its stage change again, on the meeting day (TR-3). */
   | {
       readonly kind: 'stageChange';
@@ -260,39 +250,5 @@ function refs(db: Database) {
 
 /** The records a deleted customer brings back, and those deleted on their own (TR-4). */
 function customerEffect(db: Database, customerId: string): TrashEffect {
-  const [appointmentCount, met, appointmentsInTrash, policyCount, policiesInTrash, kycNotes, ai] =
-    selectRows(
-      db,
-      `SELECT
-        (SELECT COUNT(*) FROM appointments WHERE customer_id = ?1 AND deleted_at IS NULL),
-        (SELECT COUNT(*) FROM appointments
-          WHERE customer_id = ?1 AND deleted_at IS NULL AND status = 'MET'),
-        (SELECT COUNT(*) FROM appointments WHERE customer_id = ?1 AND deleted_at IS NOT NULL),
-        (SELECT COUNT(*) FROM policies WHERE customer_id = ?1 AND deleted_at IS NULL),
-        (SELECT COUNT(*) FROM policies WHERE customer_id = ?1 AND deleted_at IS NOT NULL),
-        (SELECT COUNT(*) FROM kyc_notes WHERE customer_id = ?1),
-        (SELECT COUNT(*) FROM ai_analyses WHERE customer_id = ?1)`,
-      [customerId],
-    )[0]!.map(Number);
-  // An RF is a met appointment whose own transition moved the customer up (`isRfAppointment`).
-  const moves = selectRows(
-    db,
-    `SELECT t.from_stage, t.to_stage FROM stage_transitions t
-     JOIN appointments a ON a.id = t.appointment_id
-     WHERE t.customer_id = ? AND t.deleted_at IS NULL AND a.deleted_at IS NULL AND a.status = 'MET'`,
-    [customerId],
-  );
-  return {
-    kind: 'customer',
-    appointments: appointmentCount!,
-    met: met!,
-    rf: moves.filter(([from, to]) =>
-      isRfTransition(from as CustomerStage | null, to as CustomerStage),
-    ).length,
-    policies: policyCount!,
-    kycNotes: kycNotes!,
-    aiAnalyses: ai!,
-    appointmentsInTrash: appointmentsInTrash!,
-    policiesInTrash: policiesInTrash!,
-  };
+  return { kind: 'customer', ...countCustomerRecords(db, customerId) };
 }

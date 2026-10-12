@@ -207,3 +207,62 @@ test('refuses a customer with wrong fields and saves nothing', async ({ page }) 
   await expect(dialog).toBeHidden();
   await expect(page.getByText(/KH đang mở/)).toHaveText(before ?? '');
 });
+
+test('deletes a customer from the profile, counting its records first (5f, TR-9)', async ({
+  page,
+}) => {
+  // "884 KH đang mở · 316 đã đóng" → 884.
+  const open = async () =>
+    Number(
+      (await page.getByText(/KH đang mở/).textContent())?.match(/^[\d.]+/)?.[0].replace(/\./g, ''),
+    );
+  const before = await open();
+  const card = column(page, 'N2').getByRole('link').first();
+  const name = (await card.locator('b').textContent()) ?? '';
+  await card.click();
+  const url = page.url();
+  const profile = page.getByRole('region', { name });
+  // "7 lịch · 3 đã gặp" above the appointments, "Đã có HĐ (1)" or "Chưa có HĐ" in the basics.
+  const [total, met] = (
+    (await page.getByText(/^\d+ lịch · \d+ đã gặp$/).textContent())?.match(/\d+/g) ?? []
+  ).map(Number);
+  const policies = Number((await profile.textContent())?.match(/Đã có HĐ \((\d+)\)/)?.[1] ?? 0);
+
+  const openDelete = async () => {
+    await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
+    await page
+      .getByRole('dialog', { name: `Sửa hồ sơ · ${name}` })
+      .getByRole('button', { name: 'Xóa KH…' })
+      .click();
+    return page.getByRole('dialog', { name: `Xóa ${name}?` });
+  };
+  let dialog = await openDelete();
+  await expect(dialog).toContainText(
+    'KH và mọi bản ghi của KH sẽ bị ẩn khỏi danh sách và mọi chỉ số:',
+  );
+  await expect(dialog).toContainText(
+    new RegExp(`Lịch hẹn${total} \\(${met} đã gặp · \\d+ lần tính RF\\)`),
+  );
+  await expect(dialog).toContainText(`Hợp đồng${policies}`);
+  await expect(dialog).toContainText(/Ghi chú KYC\d+ — giữ nguyên, không bao giờ xóa/);
+  await expect(dialog).toContainText('Dữ liệu vẫn còn: khôi phục ở Cài đặt → Thùng rác.');
+
+  // Hủy goes back to the profile form and deletes nothing.
+  await dialog.getByRole('button', { name: 'Hủy' }).click();
+  await expect(dialog).toBeHidden();
+  const edit = page.getByRole('dialog', { name: `Sửa hồ sơ · ${name}` });
+  await edit.getByRole('button', { name: 'Hủy' }).click();
+  await expect(edit).toBeHidden();
+  await expect(profile).toBeVisible();
+
+  dialog = await openDelete();
+  await dialog.getByRole('button', { name: 'Xóa KH' }).click();
+
+  await expect(page).toHaveURL(/#\/customers$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Khách hàng');
+  await expect.poll(open).toBe(before - 1);
+  // Seeded names may repeat, so the profile, not a card, shows that this customer is gone.
+  await page.goBack();
+  expect(page.url()).toBe(url);
+  await expect(page.getByText('Không tìm thấy KH này (có thể đã bị xóa).')).toBeVisible();
+});

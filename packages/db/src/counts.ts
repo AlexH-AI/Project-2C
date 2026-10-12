@@ -1,4 +1,6 @@
-/** Live records per kind, counted in SQL instead of reading every row (T-151, DR-71). */
+/** Live records counted in SQL instead of reading every row (T-151, DR-71). */
+import { isRfTransition, type CustomerStage } from '@p2c/domain';
+import { selectRows } from './common';
 import type { Database } from './database';
 
 /** Live records per kind, as the lists hold them (soft-deleted ones left out). */
@@ -31,5 +33,58 @@ export function countRecords(db: Database): RecordCounts {
     customers: customers!,
     appointments: appointments!,
     policies: policies!,
+  };
+}
+
+/**
+ * The records of a customer not deleted on their own, which deleting it hides (mockup 5f) and
+ * restoring it brings back (spec Phase 6 TR-4), and those deleted on their own. `rf`: its met
+ * appointments whose own transition moved it up, as `isRfAppointment` counts them.
+ */
+export interface CustomerRecordCounts {
+  readonly appointments: number;
+  readonly met: number;
+  readonly rf: number;
+  readonly policies: number;
+  readonly kycNotes: number;
+  readonly aiAnalyses: number;
+  /** Deleted on their own: they stay in the trash. */
+  readonly appointmentsInTrash: number;
+  readonly policiesInTrash: number;
+}
+
+export function countCustomerRecords(db: Database, customerId: string): CustomerRecordCounts {
+  const [appointments, met, appointmentsInTrash, policyCount, policiesInTrash, kycNotes, ai] =
+    selectRows(
+      db,
+      `SELECT
+        (SELECT COUNT(*) FROM appointments WHERE customer_id = ?1 AND deleted_at IS NULL),
+        (SELECT COUNT(*) FROM appointments
+          WHERE customer_id = ?1 AND deleted_at IS NULL AND status = 'MET'),
+        (SELECT COUNT(*) FROM appointments WHERE customer_id = ?1 AND deleted_at IS NOT NULL),
+        (SELECT COUNT(*) FROM policies WHERE customer_id = ?1 AND deleted_at IS NULL),
+        (SELECT COUNT(*) FROM policies WHERE customer_id = ?1 AND deleted_at IS NOT NULL),
+        (SELECT COUNT(*) FROM kyc_notes WHERE customer_id = ?1),
+        (SELECT COUNT(*) FROM ai_analyses WHERE customer_id = ?1)`,
+      [customerId],
+    )[0]!.map(Number);
+  const moves = selectRows(
+    db,
+    `SELECT t.from_stage, t.to_stage FROM stage_transitions t
+     JOIN appointments a ON a.id = t.appointment_id
+     WHERE t.customer_id = ? AND t.deleted_at IS NULL AND a.deleted_at IS NULL AND a.status = 'MET'`,
+    [customerId],
+  );
+  return {
+    appointments: appointments!,
+    met: met!,
+    rf: moves.filter(([from, to]) =>
+      isRfTransition(from as CustomerStage | null, to as CustomerStage),
+    ).length,
+    policies: policyCount!,
+    kycNotes: kycNotes!,
+    aiAnalyses: ai!,
+    appointmentsInTrash: appointmentsInTrash!,
+    policiesInTrash: policiesInTrash!,
   };
 }
