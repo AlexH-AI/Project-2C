@@ -107,6 +107,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
   - Có thể là *Duplicated Code*: hook `resolve` của `tools/load-data.mjs:19` chép từ `tools/eval-ai.mjs` (cùng lỗi "bỏ qua specifier có dấu chấm" ghi ở mục #474 trên) → tách một module nạp TypeScript dùng chung trong `tools/` (kèm hook `?raw`), sửa lỗi #474 một chỗ cho cả hai lệnh.
   - `packages/db/src/seed-invariants.test.ts:36`: bộ tải quy mô nhỏ chỉ kiểm bất biến trên bản ghi đang dùng (`listCustomers` / `listAppointments` bỏ bản ghi đã xóa); dòng trong Thùng rác chỉ được kiểm gián tiếp qua `listTrash` và kiểm khi `importBackup`. Thêm một ca cho bản ghi đã xóa nếu `fillTrash` đổi.
   - Nhắc khi viết `docs/metrics/phase-6.md`: PR #566 ≈ 835 dòng tổng diff (≈ 272 dòng sản phẩm), vượt ngưỡng ~800 vì thụt lề `describe.each` (`git diff -w` ≈ 560); PR đã nêu. Ghi vào bảng "Kích thước PR vượt ngưỡng".
+- Một ghi chú không chặn của review PR #570 (T-226, #569, review @`04fe07b`). Xem lại khi chạm `packages/ai/src/extract-json.test.ts` hoặc khi CI đổi máy: ngưỡng 500 ms của `reads 100 000 characters of %s in one pass` (`:117`) chỉ cao hơn ca bậc hai yếu nhất của bản cũ (`braces in a long text`, 1 224–1 327 ms đo trên hai máy) khoảng 2,4 lần, nên máy nhanh hơn nhiều có thể để riêng ca đó lọt. Bốn ca bậc hai còn lại (6,7–11,4 s) vẫn bắt hồi quy, nên cả bộ vẫn giữ được mục tiêu của Issue → chưa cần sửa; nếu muốn chắc thì tăng độ dài đầu vào của ca đó (thời gian bản cũ tăng theo bình phương, bản mới tăng tuyến tính).
 
 ## RESOLVED
 
