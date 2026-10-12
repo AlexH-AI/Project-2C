@@ -673,10 +673,17 @@ describe('replacing the data (S-2)', () => {
     expect(await onDisk(saves.at(-1))).toEqual(['Hừng Đông', ...NEW]);
   });
 
-  it.each([
+  /** How a replace is made to fail, then the replace itself (S2-4). */
+  type FailedReplace = [
+    string,
+    (setup: Awaited<ReturnType<typeof exe>>) => void | Promise<void>,
+    (app: AppData) => Promise<unknown>,
+  ];
+
+  it.each<FailedReplace>([
     [
       'the backup fails',
-      ({ storage }: Awaited<ReturnType<typeof exe>>) => {
+      ({ storage }) => {
         storage.backup = () => Promise.reject(new Error('disk full'));
       },
       (app: AppData) => app.reloadDemoData(),
@@ -684,27 +691,43 @@ describe('replacing the data (S-2)', () => {
     [
       'the new data cannot be opened',
       () => undefined,
-      async (app: AppData) => {
+      async (app) => {
         const preview = await previewOf(app, 'Bình Minh');
         return app.importBackup({ ...preview, bytes: new TextEncoder().encode('not a database') });
       },
     ],
+    ...(['reloadDemoData', 'importBackup'] as const).map((replace): FailedReplace => [
+      `a save before failed, refusing ${replace}`,
+      // A change whose save fails: the replace refuses at once (RELOAD_UNSAVED_CHANGES).
+      async ({ app, failSave }) => {
+        failSave();
+        app.run((db) => createTeam(db, { name: 'Lỡ' }));
+        await app.saves.idle();
+        expect(app.saves.failed()).toBe(true);
+      },
+      async (app) =>
+        replace === 'reloadDemoData'
+          ? app.reloadDemoData()
+          : app.importBackup(await previewOf(app, 'Bình Minh')),
+    ]),
   ])(
     'when %s, writes again and keeps saving the current data, its generation unchanged (S2-4)',
     async (_, breakIt, replaceWith) => {
       const setup = await exe();
       const { app, saves } = setup;
       await app.saves.idle();
-      breakIt(setup);
+      await breakIt(setup);
       const generation = app.generation();
+      const kept = teamNames(app.db());
 
       await expect(replaceWith(app)).rejects.toThrow();
+      expect(app.replacing()).toBe(false);
       const before = saves.length;
       app.run((db) => createTeam(db, { name: 'Hừng Đông' }));
       await app.saves.idle();
 
       expect(saves).toHaveLength(before + 1);
-      expect(await onDisk(saves.at(-1))).toEqual(['Hừng Đông', ...OLD]);
+      expect(await onDisk(saves.at(-1))).toEqual(['Hừng Đông', ...kept].sort(byName));
       expect(app.generation()).toBe(generation);
     },
   );

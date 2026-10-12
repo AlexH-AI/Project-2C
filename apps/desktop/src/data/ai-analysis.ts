@@ -179,8 +179,9 @@ const GONE: readonly DbErrorCode[] = ['CUSTOMER_NOT_FOUND', 'KYC_VERSION_NOT_FOU
 /**
  * One click on Phân tích. The latest KYC version and its facts are read together, at once, so the
  * result is tied to the version the RE saw (§3 item 2); a change while it runs leaves it STALE.
- * The data replaced while it runs discards the result, whatever its IDs (DR5-36). `call`: the one
- * taken at the click, which the panel shows while it runs (DR5-31).
+ * The data replaced while it runs discards whatever the AI call gives, an error or Hủy too, as for
+ * AI trích xuất (DR5-36, S2-3). `call`: the one taken at the click, which the panel shows while it
+ * runs (DR5-31).
  */
 export async function analyseCustomer(
   app: AnalysisApp,
@@ -193,9 +194,8 @@ export async function analyseCustomer(
     const taken = takeProfile(app, customerId);
     if ('kind' in taken) return taken;
     const result = await runAnalysis({ ...call, ...taken, signal });
-    if (result.kind !== 'record') return result;
     if (replaced(app, generation)) return { kind: 'discarded' };
-    return save(app, result.row);
+    return result.kind === 'record' ? save(app, result.row) : result;
   } catch (error) {
     return lost(app, error);
   }
@@ -313,6 +313,8 @@ export type WebAnswerOutcome =
       readonly issues: readonly ValidationIssue[];
       readonly retryMessage: string;
     }
+  /** The save refused while the data is replaced (S2-2): its sentence; the session and paste stay. */
+  | { readonly kind: 'replacing' }
   | Extract<AnalysisOutcome, { kind: 'saved' | 'discarded' | 'failed' }>;
 
 /** Kiểm tra và lưu: checks the pasted answer and saves the row once the session is over. */
@@ -325,6 +327,7 @@ export function saveChatGptAnswer(
     const result = checkWebAnswer(session, pasted);
     return result.kind === 'record' ? save(app, result.row) : result;
   } catch (error) {
+    if (error instanceof DbError && error.code === 'DATA_REPLACING') return { kind: 'replacing' };
     return lost(app, error);
   }
 }

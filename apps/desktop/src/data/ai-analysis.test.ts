@@ -47,9 +47,14 @@ const emptySeed = (db: Database) => {
 
 /** Answers only when the test says so, as a request still running in Rust. */
 function heldAdapter() {
-  const held: { request: AiCompleteRequest; answer: (completion: AiCompletion) => void }[] = [];
+  const held: {
+    request: AiCompleteRequest;
+    answer: (completion: AiCompletion) => void;
+    fail: (error: unknown) => void;
+  }[] = [];
   const adapter: AiAdapter = {
-    complete: (request) => new Promise((resolve) => held.push({ request, answer: resolve })),
+    complete: (request) =>
+      new Promise((resolve, reject) => held.push({ request, answer: resolve, fail: reject })),
   };
   /** Waits for the one request, then answers it as the Mock would. */
   const answerWithMock = async () => {
@@ -59,13 +64,28 @@ function heldAdapter() {
     });
     call!.answer(await createMockAdapter().complete(call!.request));
   };
-  return { adapter, held, answerWithMock };
+  /** Waits for the one request, then fails it with `error`. */
+  const failWith = async (error: unknown) => {
+    const [call] = await vi.waitFor(() => {
+      expect(held).toHaveLength(1);
+      return held;
+    });
+    call!.fail(error);
+  };
+  return { adapter, held, answerWithMock, failWith };
 }
 
-/** The exe's storage, its backups held until the test releases them, as a replace still running. */
+/**
+ * The exe's storage, its backups held until the test releases them, as a replace still running;
+ * `fail` makes the held backup fail instead.
+ */
 function heldBackupStorage() {
   let release!: () => void;
-  const gate = new Promise<void>((resolve) => (release = resolve));
+  let fail!: () => void;
+  const gate = new Promise<void>((resolve, reject) => {
+    release = resolve;
+    fail = () => reject(new Error('disk full'));
+  });
   const storage: StoragePort = {
     load: () => Promise.resolve(undefined),
     save: () => Promise.resolve(),
@@ -74,7 +94,7 @@ function heldBackupStorage() {
     latestBackup: () => Promise.resolve(undefined),
     openFolder: () => Promise.resolve(),
   };
-  return { storage, release };
+  return { storage, release, fail };
 }
 
 /** Settings → AI kept apart from any database, for an `AppAi` of its own. */
@@ -377,6 +397,57 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
     await reloading;
   });
 
+  it.each(['AI_RATE_LIMITED', 'AI_TIMEOUT'] as const)(
+    'discards %s, without reporting it, when it comes while the data is being replaced (S2-3)',
+    async (code) => {
+      const reportError = vi.fn();
+      const held = heldAdapter();
+      const { storage, release } = heldBackupStorage();
+      const { app, customer } = await withCustomer({ reportError, adapter: held.adapter }, storage);
+
+      const running = analyseCustomer(app, customer.id);
+      const reloading = app.reloadDemoData();
+      await held.failWith(new AiError(code));
+
+      expect(await running).toEqual({ kind: 'discarded' });
+      expect(reportError).not.toHaveBeenCalled();
+      release();
+      await reloading;
+    },
+  );
+
+  it('discards an AI error that comes once the data was replaced, as the extraction does', async () => {
+    const reportError = vi.fn();
+    const held = heldAdapter();
+    const { app, customer } = await withCustomer({ reportError, adapter: held.adapter });
+
+    const running = analyseCustomer(app, customer.id);
+    await app.reloadDemoData();
+    await held.failWith(new AiError('AI_HTTP', { httpStatus: 502 }));
+
+    expect(await running).toEqual({ kind: 'discarded' });
+    expect(reportError).not.toHaveBeenCalled();
+  });
+
+  it('discards Hủy while the data is being replaced, as the extraction does', async () => {
+    const held = heldAdapter();
+    const { storage, release } = heldBackupStorage();
+    const { app, customer } = await withCustomer(
+      { reportError: vi.fn(), adapter: held.adapter },
+      storage,
+    );
+    const abort = new AbortController();
+
+    const running = analyseCustomer(app, customer.id, abort.signal);
+    const reloading = app.reloadDemoData();
+    abort.abort();
+
+    expect(await running).toEqual({ kind: 'discarded' });
+    release();
+    await reloading;
+    await held.answerWithMock();
+  });
+
   it('turns a bug into a failure the panel can show, and reports it', async () => {
     const reportError = vi.fn();
     const bug = new TypeError('boom');
@@ -592,9 +663,11 @@ async function goodAnswer(session: WebSession) {
 }
 
 describe('ChatGPT web in the app (spec Phase 5 §3.1)', () => {
-  async function started(options: { copies?: boolean; opens?: boolean } = {}) {
+  async function started(
+    options: { copies?: boolean; opens?: boolean; storage?: StoragePort } = {},
+  ) {
     const recording = recordingWeb(options.copies, options.opens);
-    const setup = await withCustomer({ reportError: vi.fn(), web: recording.web });
+    const setup = await withCustomer({ reportError: vi.fn(), web: recording.web }, options.storage);
     const outcome = await startChatGptWeb(setup.app, setup.customer.id);
     if (outcome.kind !== 'session') throw new Error(`no session: ${outcome.kind}`);
     return { ...setup, ...recording, outcome, session: outcome.session };
@@ -719,6 +792,25 @@ describe('ChatGPT web in the app (spec Phase 5 §3.1)', () => {
     expect(app.ai.reportError).not.toHaveBeenCalled();
     app.run((d) => restoreCustomer(d, customer.id));
     expect(rows()).toEqual([]);
+  });
+
+  it('refuses Kiểm tra và lưu while the data is being replaced, saving nothing and reporting no bug (S2-2)', async () => {
+    const { storage, fail } = heldBackupStorage();
+    const { app, session, rows } = await started({ storage });
+    const answer = await goodAnswer(session);
+    const generation = app.generation();
+
+    const reloading = app.reloadDemoData();
+    expect(saveChatGptAnswer(app, session, answer)).toEqual({ kind: 'replacing' });
+    expect(app.ai.reportError).not.toHaveBeenCalled();
+
+    // The replace fails: the same data, so the same session saves as usual (S2-4).
+    fail();
+    await expect(reloading).rejects.toThrow('disk full');
+    expect(app.generation()).toBe(generation);
+    expect(rows()).toEqual([]);
+    expect(saveChatGptAnswer(app, session, answer)).toEqual({ kind: 'saved', status: 'ACCEPTED' });
+    expect(rows()).toMatchObject([{ provider: 'CHATGPT_WEB', attempts: 1 }]);
   });
 
   it('turns a bug into a failure the panel can show, and reports it', async () => {
