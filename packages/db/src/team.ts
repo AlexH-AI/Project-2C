@@ -103,9 +103,14 @@ export function restoreTeam(db: Database, id: string): void {
   db.transaction(() => {
     const row = findTeam(db, id);
     if (!row) throw new DbError('TEAM_NOT_FOUND');
-    assertTeamNameFree(db, row.name, id);
+    checkRestoreTeam(db, row);
     updateTeamRow(db, id, { deletedAt: null });
   });
+}
+
+/** Why the team cannot be restored, thrown as `restoreTeam` throws it (spec Phase 6 TR-2). */
+export function checkRestoreTeam(db: Database, row: TeamRow): void {
+  assertTeamNameFree(db, row.name, row.id);
 }
 
 // ---- person commands ------------------------------------------------------
@@ -173,9 +178,14 @@ export function restorePerson(db: Database, id: string): void {
   db.transaction(() => {
     const row = findPerson(db, id);
     if (!row) throw new DbError('PERSON_NOT_FOUND');
-    validatePerson(db, toPerson(row), id);
+    checkRestorePerson(db, row);
     updatePersonRow(db, id, { deletedAt: null });
   });
+}
+
+/** Why the person cannot be restored, thrown as `restorePerson` throws it (spec Phase 6 TR-2). */
+export function checkRestorePerson(db: Database, row: PersonRow): void {
+  validatePerson(db, toPerson(row), row.id);
 }
 
 // ---- helpers --------------------------------------------------------------
@@ -196,9 +206,11 @@ function findPerson(db: Database, id: string): PersonRow | undefined {
   return db.orm.select().from(people).where(eq(people.id, id)).get();
 }
 
+/** The team row, when it exists and is not deleted; the error names a deleted one. */
 function liveTeam(db: Database, id: string): TeamRow {
   const row = findTeam(db, id);
-  if (!row || row.deletedAt) throw new DbError('TEAM_NOT_FOUND');
+  if (!row) throw new DbError('TEAM_NOT_FOUND');
+  if (row.deletedAt) throw new DbError('TEAM_NOT_FOUND', { name: row.name });
   return row;
 }
 
@@ -220,7 +232,7 @@ function assertTeamNameFree(db: Database, name: string, exceptId: string | null)
       ),
     )
     .get();
-  if (clash) throw new DbError('TEAM_NAME_TAKEN');
+  if (clash) throw new DbError('TEAM_NAME_TAKEN', { name });
 }
 
 /** Whether a live customer, appointment or policy has the person as its RE (spec §3.3–3.7). */

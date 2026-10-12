@@ -3,7 +3,9 @@ export const DB_ERROR_CODES = [
   'NAME_REQUIRED',
   /** Text with a NUL character, which the database would cut it at (DR-49). */
   'INVALID_TEXT',
+  /** Params `name` when the team is deleted (spec Phase 6 TR-1). */
   'TEAM_NOT_FOUND',
+  /** Params `name`. */
   'TEAM_NAME_TAKEN',
   'TEAM_HAS_MEMBERS',
   'TEAM_REQUIRED',
@@ -11,13 +13,19 @@ export const DB_ERROR_CODES = [
   'TEAM_HAS_LEAD',
   /** An IS, BD or BDM given a team: only RE and TL belong to one. */
   'TEAM_NOT_ALLOWED',
+  /**
+   * Params when the person is deleted: `name`, and `as` — what the record needs them as: `re`,
+   * `coordinator` or `reviewer` (spec Phase 6 TR-1).
+   */
   'PERSON_NOT_FOUND',
   'PERSON_IN_USE',
+  /** Params `name` and `role`, the role the person holds instead. */
   'RE_REQUIRED',
   'INVALID_DATE',
   /**
    * A day after today for something that already happened: a customer's creation, a manual stage
-   * change, a policy's submission or issue, a KYC note, fact or version, a birth date.
+   * change, a policy's submission or issue, a KYC note, fact or version, a birth date. Params
+   * `date` (as shown), and `field` for a policy's day: `submitted` or `issued`.
    */
   'DATE_IN_FUTURE',
   'INVALID_TIME',
@@ -25,7 +33,9 @@ export const DB_ERROR_CODES = [
   'INVALID_AMOUNT',
   /** A fee (FYP, case size) over `MAX_FEE_VND`, 100 tỷ đồng (DR-23). */
   'AMOUNT_TOO_LARGE',
+  /** Params `name` when the customer is deleted (spec Phase 6 TR-1). */
   'CUSTOMER_NOT_FOUND',
+  /** Params `to`, and `from` unless the customer is being created. */
   'INVALID_TRANSITION',
   'TRANSITION_NOT_LATEST',
   /** A transition dated before the customer's latest; params `date` (that latest one's, as shown). */
@@ -36,15 +46,16 @@ export const DB_ERROR_CODES = [
   'RESCHEDULE_UNCHANGED',
   'INVALID_STATUS',
   'OUTCOME_REQUIRED',
+  /** Params `date` (the meeting's, as shown). */
   'OUTCOME_IN_FUTURE',
   'STAGE_AFTER_NOT_ALLOWED',
   'REVIEWER_NOT_ALLOWED',
-  /** An outcome reviewer who is not an IS, TL, BDM or BD (D9). */
+  /** An outcome reviewer who is not an IS, TL, BDM or BD (D9); params `name`, `role`. */
   'INVALID_REVIEWER',
   /** A reviewer of a live appointment made an RE (D9). */
   'REVIEWER_IN_USE',
   'NEXT_APPOINTMENT_PAST',
-  /** A coordinator who is not an IS, TL, BDM or BD (ADR-0007). */
+  /** A coordinator who is not an IS, TL, BDM or BD (ADR-0007); params `name`, `role`. */
   'INVALID_COORDINATOR',
   /** A coordinator of a live appointment made an RE (ADR-0007). */
   'COORDINATOR_IN_USE',

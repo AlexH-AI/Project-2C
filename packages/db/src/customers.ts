@@ -186,13 +186,19 @@ export function softDeleteCustomer(db: Database, id: string): void {
   });
 }
 
+/** Brings the customer back with every record not deleted on its own (spec Phase 6 TR-4). */
 export function restoreCustomer(db: Database, id: string): void {
   db.transaction(() => {
     const row = findCustomer(db, id);
     if (!row) throw new DbError('CUSTOMER_NOT_FOUND');
-    requireRe(db, row.reId);
+    checkRestoreCustomer(db, row);
     updateCustomerRow(db, id, { deletedAt: null });
   });
+}
+
+/** Why the customer cannot be restored, thrown as `restoreCustomer` throws it (TR-2). */
+export function checkRestoreCustomer(db: Database, row: CustomerRow): void {
+  requireRe(db, row.reId);
 }
 
 // ---- transitions, shared with the appointment commands --------------------
@@ -213,17 +219,8 @@ export function appendTransition(
   date: CalendarDate,
   appointmentId: string | null,
 ): StageTransition {
-  const latest = latestTransition(db, customerId);
   const isoDate = storedDate(date);
-  if (latest && compareDates(date, fromIsoDate(latest.date)) < 0) {
-    throw new DbError('TRANSITION_BEFORE_LATEST', { date: formatDate(fromIsoDate(latest.date)) });
-  }
-  const from = latest ? latest.toStage : null;
-  try {
-    assertValidTransition(from, to);
-  } catch {
-    throw new DbError('INVALID_TRANSITION');
-  }
+  const from = checkTransition(db, customerId, to, date);
   const lastSeq = db.orm
     .select({ seq: stageTransitions.seq })
     .from(stageTransitions)
@@ -244,6 +241,29 @@ export function appendTransition(
   prepared(db, insertTransition).run(row);
   updateCustomerRow(db, customerId, { stage: to });
   return toTransition(row);
+}
+
+/**
+ * Checks `appendTransition` without writing: the date not before the latest transition's (D10)
+ * and the change allowed (ADR-0007). Returns the stage the customer moves from.
+ */
+export function checkTransition(
+  db: Database,
+  customerId: string,
+  to: CustomerStage,
+  date: CalendarDate,
+): CustomerStage | null {
+  const latest = latestTransition(db, customerId);
+  if (latest && compareDates(date, fromIsoDate(latest.date)) < 0) {
+    throw new DbError('TRANSITION_BEFORE_LATEST', { date: formatDate(fromIsoDate(latest.date)) });
+  }
+  const from = latest ? latest.toStage : null;
+  try {
+    assertValidTransition(from, to);
+  } catch {
+    throw new DbError('INVALID_TRANSITION', from === null ? { to } : { from, to });
+  }
+  return from;
 }
 
 /**

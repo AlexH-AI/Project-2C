@@ -91,4 +91,6 @@ export type {
   AiAnalysisView,
   NewAiAnalysis,
 } from './ai-analyses';
+export { listTrash } from './trash';
+export type { TrashBlock, TrashEffect, TrashOwner, TrashRef, TrashRow } from './trash';
 export * from './settings';
