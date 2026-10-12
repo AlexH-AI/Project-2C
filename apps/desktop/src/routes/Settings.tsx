@@ -8,12 +8,13 @@ import type { SettingsSection } from '../shell/routes';
 import { AiSection } from './SettingsAi';
 import { BackupSection } from './SettingsBackup';
 import { DataFileSection } from './SettingsDataFile';
+import { TrashSection } from './SettingsTrash';
 
 type Outcome =
   | { readonly ok: true; readonly anchor: string; readonly backup: string | undefined }
   | { readonly ok: false; readonly unsaved: boolean };
 
-const SECTIONS = ['data', 'ai'] as const;
+const SECTIONS = ['data', 'ai', 'trash'] as const;
 
 type Section = (typeof SECTIONS)[number];
 
@@ -23,7 +24,8 @@ const NAV_ITEM =
 /**
  * Settings, with its sections side by side (mockup settings-data, ai.html 1a). Dữ liệu: the data
  * file (T-070), backup files (T-052), then the simulated data (T-045). AI: Settings → AI (T-167),
- * also `#/settings/ai`, where "Cài đặt → AI" of an AI error goes (mockup ai.html 2f).
+ * also `#/settings/ai`, where "Cài đặt → AI" of an AI error goes (mockup ai.html 2f). Thùng rác: the
+ * deleted records (spec Phase 6 §4.2), also `#/settings/trash`.
  */
 export function Settings({ section: linked }: { section?: SettingsSection }) {
   const [section, setSection] = useState<Section>(linked ?? 'data');
@@ -54,8 +56,10 @@ export function Settings({ section: linked }: { section?: SettingsSection }) {
             <BackupSection />
             <DemoSection />
           </>
-        ) : (
+        ) : section === 'ai' ? (
           <AiSection />
+        ) : (
+          <TrashSection />
         )}
       </div>
     </div>

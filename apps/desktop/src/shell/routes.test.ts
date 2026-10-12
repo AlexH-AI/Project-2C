@@ -27,7 +27,13 @@ describe('parseHash', () => {
   it('reads the AI section of Cài đặt, which a link opens at once (mockup ai.html 2f)', () => {
     expect(parseHash('#/settings/ai')).toEqual({ screen: 'settings', section: 'ai' });
     expect(parseHash('#/settings/nope')).toBeNull();
+    expect(parseHash('#/settings/data')).toBeNull();
     expect(parseHash('#/settings/ai/x')).toBeNull();
+  });
+
+  it('reads Thùng rác of Cài đặt (spec Phase 6 §4.2)', () => {
+    expect(parseHash('#/settings/trash')).toEqual({ screen: 'settings', section: 'trash' });
+    expect(parseHash('#/settings/trash/x')).toBeNull();
   });
 
   it('ignores a trailing slash', () => {
@@ -52,6 +58,7 @@ describe('routeToHash', () => {
       { screen: 'customer', id: 'Nguyễn 1' },
       { screen: 'settings' },
       { screen: 'settings', section: 'ai' },
+      { screen: 'settings', section: 'trash' },
     ] as const) {
       expect(parseHash(routeToHash(route))).toEqual(route);
     }
@@ -71,6 +78,8 @@ describe('usesScope', () => {
     const used = SECTIONS.filter((screen) => usesScope(screen));
     expect(used).toEqual(['overview', 'appointments', 'customers', 'reports']);
     expect(usesScope('customer')).toBe(false);
+    // Thùng rác lists every deleted record, whatever the scope (spec Phase 6 TR-7).
+    expect(usesScope('settings')).toBe(false);
   });
 });
 
