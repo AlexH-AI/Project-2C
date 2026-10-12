@@ -96,6 +96,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
   - `e2e/guide/check.guide.ts:7`: 150 KB tính là 150 × 1024 byte. `04-khach-hang-bang.png` = 151 306 byte, chỉ qua khi hiểu KB = 1024 byte (spec §4.3 không nói đơn vị) → ghi rõ "150 KiB" trong comment / spec khi chụp lại; ảnh vượt thì chụp phần trên như `05-ho-so-kh`.
   - `e2e/guide/links.ts:18`: chỉ bỏ code span một dấu backtick; code span mở bằng hai dấu backtick có link bên trong vẫn bị kiểm. Sửa khi #534 hoặc nội dung sau dùng dạng này.
   - Issue #533 ghi "spec chụp ảnh không nằm trong `testDir` của `playwright.config.ts`" nhưng lại chỉ định `e2e/guide/**` (nằm dưới `testDir: 'e2e'`); PR tách bằng đuôi `*.guide.ts` ngoài `testMatch` mặc định nên `pnpm e2e` không chạy. Không cần sửa code; đổi `testMatch` của e2e sang dạng nhận cả `*.ts` sẽ kéo spec chụp ảnh vào e2e.
+- Một ghi chú không chặn của review PR #549 (T-213 PR 1/2, #534, review @`30ed95c`). Sửa ở PR 2 của #534 hoặc lần chạm sau của spec: `docs/design/phase-6-hoan-thien.md` §4.3, dòng `01-bat-dau.md` của Mục lục, còn ghi "trạng thái lưu ở góc sidebar", nhưng app không có chỉ báo lưu ở sidebar (chỉ có dải `storage.saveFailed` ở đầu màn khi lưu lỗi và "Lưu lần cuối" ở Cài đặt → Dữ liệu). Hướng dẫn đã tả đúng app → sửa câu spec cho khớp, để lượt kiểm hướng dẫn ở G7 không đối chiếu theo câu cũ.
 
 ## RESOLVED
 
