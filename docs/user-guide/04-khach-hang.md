@@ -2,7 +2,7 @@
 
 [← Mục lục](README.md)
 
-Màn Khách hàng liệt kê KH theo nhóm. Mỗi KH do một RE phụ trách và luôn ở một nhóm: bốn nhóm mở **N4** → **N3** → **N2** → **N1** (N1 gần chốt nhất) hoặc hai nhóm đóng **Tạm hoãn**, **Mất cơ hội**. Ý nghĩa từng nhóm ở mục Thuật ngữ (`11-thuat-ngu.md`).
+Màn Khách hàng liệt kê KH theo nhóm. Mỗi KH do một RE phụ trách và luôn ở một nhóm: bốn nhóm mở **N4** → **N3** → **N2** → **N1** (N1 gần chốt nhất) hoặc hai nhóm đóng **Tạm hoãn**, **Mất cơ hội**. Ý nghĩa từng nhóm ở [11. Thuật ngữ](11-thuat-ngu.md#khách-hàng-và-nhóm).
 
 Đầu màn ghi số KH theo góc nhìn, ví dụ "884 KH đang mở · 316 đã đóng". Ô **Cách xem** chuyển giữa **Kanban** và **Bảng**.
 
@@ -49,7 +49,7 @@ Ngày sinh và giới tính được ghi thêm thành ghi chú KYC nguồn "Hệ
 2. Hộp **Xóa …?** liệt kê những gì bị ẩn cùng KH: lịch hẹn (bao nhiêu đã gặp, bao nhiêu lần tính RF), hợp đồng. Ghi chú KYC giữ nguyên, không bao giờ xóa.
 3. Bấm **Xóa KH**.
 
-KH và mọi bản ghi của KH biến khỏi danh sách và mọi chỉ số. Dữ liệu vẫn còn: khôi phục ở **Cài đặt → Thùng rác** (xem `09-cai-dat.md`).
+KH và mọi bản ghi của KH biến khỏi danh sách và mọi chỉ số. Dữ liệu vẫn còn: khôi phục ở **Cài đặt → Thùng rác** (xem [9. Cài đặt](09-cai-dat.md#cài-đặt--thùng-rác)).
 
 ## Chuyển nhóm tay
 

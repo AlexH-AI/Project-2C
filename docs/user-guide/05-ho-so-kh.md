@@ -32,7 +32,7 @@ KYC của KH gồm **ghi chú** (RE viết, chỉ thêm, không sửa / xóa) v�
   | `PAIN_POINT_ANALYSIS` | Đủ dữ kiện để phân tích nhu cầu. |
 
 - 8 hạng mục: Danh tính / tuổi, Gia đình, Nghề nghiệp / nguồn thu, Tài sản / AUM, Mục tiêu & mốc thời gian, Khẩu vị rủi ro, Bảo vệ hiện có, Mối quan tâm. Mỗi hạng mục ghi "đã có" (✓) hoặc "thiếu" (○).
-- Mỗi dữ kiện ghi trường, giá trị, **mã F** (F1, F2…) và ngày xác nhận. Mã F là tên ngắn của dữ kiện, phân tích AI dùng nó để trỏ về bằng chứng (xem `06-ai.md`).
+- Mỗi dữ kiện ghi trường, giá trị, **mã F** (F1, F2…) và ngày xác nhận. Mã F là tên ngắn của dữ kiện, phân tích AI dùng nó để trỏ về bằng chứng (xem [6. KYC Intelligence](06-ai.md#bằng-chứng-và-mức-bằng-chứng)).
 - Năm sinh và giới tính có chữ "sửa ở hồ sơ KH": hai trường này lấy từ hồ sơ, chỉ sửa bằng **Sửa hồ sơ**.
 - **Câu hỏi gợi ý**: bấm để mở các câu nên hỏi KH cho hạng mục còn thiếu.
 
@@ -50,7 +50,7 @@ KYC của KH gồm **ghi chú** (RE viết, chỉ thêm, không sửa / xóa) v�
 6. Cuối hộp cho biết kết quả: "Sau khi lưu: KYC v…" (dữ kiện đổi → phiên bản KYC mới) hoặc "Chỉ thêm ghi chú, không tạo phiên bản KYC." Đổi trường cốt lõi (năm sinh, tình trạng hôn nhân, số con, tổng tài sản, mục tiêu chính) tự đánh dấu "thay đổi quan trọng"; trường khác thì bạn tự chọn **Đánh dấu là thay đổi quan trọng — nên phân tích AI lại** khi cần.
 7. Bấm **Lưu ghi chú**.
 
-Ghi chú lưu xong hiện ở Dòng thời gian, có nút **AI trích xuất** để AI đề xuất dữ kiện từ chữ của ghi chú (xem `06-ai.md`).
+Ghi chú lưu xong hiện ở Dòng thời gian, có nút **AI trích xuất** để AI đề xuất dữ kiện từ chữ của ghi chú (xem [6. KYC Intelligence](06-ai.md#ai-trích-xuất)).
 
 Từ hộp Kết quả cuộc gặp, **+ Ghi chú KYC từ cuộc gặp này** mở hộp này với chữ và ngày của cuộc gặp điền sẵn.
 
@@ -72,7 +72,7 @@ Thẻ **Dòng thời gian** xếp mọi việc của KH, mới nhất ở trên:
 
 - **Lịch hẹn lần …**: ngày giờ và trạng thái, ghi chú cuộc gặp, việc tiếp theo; người phối hợp (vai trò) nếu có. **Hẹn tiếp →** đặt lần gặp kế tiếp (xem [3. Lịch hẹn](03-lich-hen.md#hẹn-tiếp)).
 - Chuyển nhóm: nhóm cũ → nhóm mới, ghi "tạo KH", "sau cuộc gặp" hoặc "chuyển tay · không tính RF".
-- **Ghi chú KYC** và **Ghi chú hệ thống** (ghi chú app tự ghi từ hồ sơ KH), kèm nút **AI trích xuất**.
+- **Ghi chú KYC** (kèm nút **AI trích xuất**) và **Ghi chú hệ thống** (ghi chú app tự ghi từ hồ sơ KH, không có nút AI trích xuất).
 - Phiên bản KYC mới ("kyc v…"), có nhãn "thay đổi quan trọng" khi đổi trường cốt lõi hoặc được đánh dấu.
 
 ## Hợp đồng
@@ -99,7 +99,7 @@ HĐ nộp tháng này mà phát hành tháng sau thì vẫn tính nộp vào th�
 ### Sửa, xóa HĐ
 
 - Bấm **Sửa** ở dòng HĐ. Hộp **Sửa HĐ · …** cho sửa ngày nộp, FYP nộp và, với HĐ đã phát hành, ngày phát hành, FYP phát hành (RE của HĐ không đổi được). Khi FYP phát hành đổi, khung **Ảnh hưởng chỉ số** cho biết FYP phát hành của tháng nào tăng / giảm bao nhiêu. Bấm **Lưu**.
-- Muốn xóa: trong hộp Sửa HĐ bấm **Xóa HĐ…**, rồi **Xóa HĐ**. HĐ không còn tính vào FYP nộp / phát hành của RE; nhóm của KH không đổi. Xóa mềm: khôi phục ở **Cài đặt → Thùng rác** (xem `09-cai-dat.md`).
+- Muốn xóa: trong hộp Sửa HĐ bấm **Xóa HĐ…**, rồi **Xóa HĐ**. HĐ không còn tính vào FYP nộp / phát hành của RE; nhóm của KH không đổi. Xóa mềm: khôi phục ở **Cài đặt → Thùng rác** (xem [9. Cài đặt](09-cai-dat.md#cài-đặt--thùng-rác)).
 
 ## Lịch hẹn của KH
 
@@ -107,6 +107,6 @@ Thẻ **Lịch hẹn** liệt kê mọi lịch của KH. Mỗi lịch hôm nay h
 
 ## KYC Intelligence
 
-Thẻ **KYC Intelligence** ở cuối hồ sơ chạy và hiện phân tích AI của KH. Cách dùng ở mục KYC Intelligence (`06-ai.md`).
+Thẻ **KYC Intelligence** ở cuối hồ sơ chạy và hiện phân tích AI của KH. Cách dùng ở [6. KYC Intelligence](06-ai.md).
 
-[← 4. Khách hàng](04-khach-hang.md) · Mục kế tiếp: KYC Intelligence (`06-ai.md`)
+[← 4. Khách hàng](04-khach-hang.md) · [6. KYC Intelligence →](06-ai.md)

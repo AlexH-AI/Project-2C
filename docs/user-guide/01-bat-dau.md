@@ -27,7 +27,7 @@ API key OpenCode **không** nằm trong thư mục này: key lưu trong Windows 
 
 Khi chưa có file dữ liệu, app tự tạo **dữ liệu giả lập**: 3 team × 10 RE, KH, lịch hẹn và HĐ khoảng 12 tháng tính tới hôm nay. Dữ liệu này để làm quen và thử app; tên người, số liệu đều là giả.
 
-Muốn bắt đầu lại từ dữ liệu giả lập mới: **Cài đặt → Dữ liệu → Nạp lại…** (xem mục Cài đặt, `09-cai-dat.md`).
+Muốn bắt đầu lại từ dữ liệu giả lập mới: **Cài đặt → Dữ liệu → Nạp lại…** (xem [9. Cài đặt](09-cai-dat.md#nạp-lại-dữ-liệu-giả-lập)).
 
 Bản web không có thư mục này: dữ liệu chỉ nằm trong trình duyệt, mỗi lần tải lại trang là một bộ dữ liệu giả lập mới.
 
@@ -48,7 +48,7 @@ Nếu bạn đóng app lúc còn thay đổi chưa lưu, app hiện hộp **"Ch�
 - Đóng chương trình đang giữ file rồi bấm **Thử lại**: app lưu rồi mới đóng (nếu vẫn chưa lưu được, hộp hiện lại).
 - **Đóng và bỏ thay đổi chưa lưu**: đóng app, các thay đổi chưa ghi vào file sẽ mất.
 
-Các lỗi khác lúc mở app xem ở mục Khi có lỗi (`10-su-co.md`).
+Các lỗi khác lúc mở app xem ở [10. Khi có lỗi](10-su-co.md#lỗi-lúc-mở-app-bản-exe).
 
 ## Sidebar và góc nhìn
 

@@ -48,7 +48,7 @@ Với kỳ chưa hết, 6 chỉ số tính **tới hôm nay**.
 
 Dòng nhỏ dưới mỗi số so với kỳ trước, **cùng số ngày**: ví dụ hôm nay 15/09, Tháng 09 (MTD) so với 01/08 – 15/08. ▲ là tăng, ▼ là giảm, "=" là bằng; Tỉ lệ chốt so bằng **điểm %**. Không so khi kỳ là Tùy chọn, kỳ chưa bắt đầu, hoặc kỳ trước có 0 RF (Tỉ lệ chốt).
 
-Định nghĩa đầy đủ các chỉ số ở mục Thuật ngữ (`11-thuat-ngu.md`).
+Định nghĩa đầy đủ các chỉ số ở [11. Thuật ngữ](11-thuat-ngu.md#hợp-đồng-và-chỉ-số).
 
 ## Khách hàng theo nhóm
 
