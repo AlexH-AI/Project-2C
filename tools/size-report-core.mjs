@@ -24,7 +24,7 @@ const TEST = [
   /^(?:playwright[\w.]*|vitest)\.config\.ts$/,
 ];
 // Rust keeps its tests in the same file: lines from `#[cfg(test)]` on are test lines.
-const RUST_TESTS = /^\s*#\[cfg\(test\)\]/m;
+const RUST_TESTS = /^[ \t]*#\[cfg\(test\)\]/m;
 
 const APP_SRC = 'apps/desktop/src/';
 // AI screens and views of the app, and their tests, by file name.
@@ -36,7 +36,8 @@ const isAppAiFile = (path) =>
 /**
  * The six review packages of spec Phase 6 §6.2, in match order: the first match wins, so F and C
  * take their files out of the wider folders of the others. A counted file no package matches goes
- * to the "Chưa xếp gói" row: add it here.
+ * to the "Chưa xếp gói" row: add it here. Hợp đồng is in E (§6.2) though its files sit in
+ * `routes/customers/`; the Lịch hẹn tab of the customer profile stays in D with the profile.
  */
 const PACKAGES = [
   {
@@ -65,6 +66,7 @@ const PACKAGES = [
       /^apps\/desktop\/src\/routes\/(?:appointments|overview|reports)\//,
       /^apps\/desktop\/src\/routes\/(?:Overview|Settings\w*|RestoreDialog|FilterBar)\.tsx$/,
       /^apps\/desktop\/src\/routes\/(?:trash-view|period-labels|applied-filter)(?:\.test)?\.ts$/,
+      /^apps\/desktop\/src\/routes\/customers\/(?:CustomerPolicies|PolicyDialogs|policy-form)\./,
     ],
   },
   {
@@ -156,16 +158,21 @@ export function lineReport(paths, readText) {
 /** Name of a built file without the 8-character content hash Vite adds. */
 const withoutHash = (path) => path.replace(/-[\w-]{8}(?=\.\w+$)/, '');
 
-/** JS and CSS files of the web build (`path` relative to it, `bytes` the content), raw and gzip. */
+/**
+ * JS and CSS files of the web build (`path` relative to it, `bytes` the content), raw and gzip.
+ * Chunks that share a name once the hash is gone are added up on one row (`files` of them).
+ */
 export function bundleReport(files) {
-  const bundle = files
-    .filter((f) => /\.(?:m?js|css)$/.test(f.path))
-    .map((f) => ({
-      name: withoutHash(f.path),
-      raw: f.bytes.length,
-      gzip: gzipSync(f.bytes).length,
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const byName = new Map();
+  for (const f of files.filter((f) => /\.(?:m?js|css)$/.test(f.path))) {
+    const name = withoutHash(f.path);
+    const row = byName.get(name) ?? { name, files: 0, raw: 0, gzip: 0 };
+    row.files += 1;
+    row.raw += f.bytes.length;
+    row.gzip += gzipSync(f.bytes).length;
+    byName.set(name, row);
+  }
+  const bundle = [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
   const others = files.filter((f) => !/\.(?:m?js|css)$/.test(f.path));
   return {
     files: bundle,
@@ -269,7 +276,7 @@ function bundleSection(bundle, previous, compare) {
     const now = bundle.files.find((f) => f.name === name);
     const was = old.get(name);
     return {
-      label: name,
+      label: now?.files > 1 ? `${name} (${now.files} file)` : name,
       values: [now?.raw ?? null, now?.gzip ?? null],
       before: before([was?.raw ?? null, was?.gzip ?? null]),
     };

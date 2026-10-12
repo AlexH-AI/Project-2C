@@ -43,6 +43,11 @@ describe('classifyFile', () => {
     ['apps/desktop/src/routes/overview/stage-view.test.ts', 'E', 'test'],
     ['apps/desktop/src/routes/reports/report-workbook.ts', 'E', 'product'],
     ['apps/desktop/src/routes/SettingsTrash.tsx', 'E', 'product'],
+    ['apps/desktop/src/routes/customers/CustomerPolicies.tsx', 'E', 'product'],
+    ['apps/desktop/src/routes/customers/PolicyDialogs.tsx', 'E', 'product'],
+    ['apps/desktop/src/routes/customers/policy-form.ts', 'E', 'product'],
+    ['apps/desktop/src/routes/customers/policy-form.test.ts', 'E', 'test'],
+    ['apps/desktop/src/routes/customers/CustomerAppointments.tsx', 'D', 'product'],
     ['apps/desktop/src/routes/trash-view.ts', 'E', 'product'],
     ['apps/desktop/src/routes/FilterBar.tsx', 'E', 'product'],
     ['tools/codemap-core.mjs', 'F', 'product'],
@@ -98,7 +103,8 @@ describe('lineReport', () => {
     'packages/domain/src/a.ts': lines(10),
     'packages/domain/src/a.test.ts': lines(4),
     'packages/db/migrations/0000_init.sql': lines(7),
-    'apps/desktop/src-tauri/src/lib.rs': `${lines(6)}#[cfg(test)]\nmod tests {\n${lines(3)}}\n`,
+    // The blank line before the test module stays a product line.
+    'apps/desktop/src-tauri/src/lib.rs': `${lines(6)}\n#[cfg(test)]\nmod tests {\n${lines(3)}}\n`,
     'packages/ai/src/b.ts': lines(5),
     'tools/c.test.mjs': lines(2),
     'apps/desktop/src/routes/NewScreen.tsx': lines(8),
@@ -116,7 +122,7 @@ describe('lineReport', () => {
   });
 
   it('counts a Rust test module as test lines of the same file', () => {
-    expect(row('B')).toMatchObject({ product: 6, test: 6, files: 1 });
+    expect(row('B')).toMatchObject({ product: 7, test: 6, files: 1 });
   });
 
   it('shows files outside every package on their own row', () => {
@@ -126,7 +132,7 @@ describe('lineReport', () => {
 
   it('totals every counted file, equal to the packages plus the unassigned row', () => {
     const total = row('total');
-    expect(total).toMatchObject({ product: 29, test: 12, generated: 7, files: 7 });
+    expect(total).toMatchObject({ product: 30, test: 12, generated: 7, files: 7 });
     const sum = report.rows
       .filter((r) => r.key !== 'total')
       .reduce((s, r) => s + r.product + r.test + r.generated, 0);
@@ -156,6 +162,17 @@ describe('bundleReport', () => {
     expect(index.gzip).toBeLessThan(100);
     expect(report.total.raw).toBe(1002);
     expect(report.other).toEqual({ files: 2, raw: 57 });
+  });
+
+  it('adds up the chunks that share a name once the hash is gone', () => {
+    const report = bundleReport([
+      { path: 'assets/index-Ctj3jqWM.js', bytes: Buffer.alloc(10) },
+      { path: 'assets/index-AbCd_-12.js', bytes: Buffer.alloc(5) },
+    ]);
+    expect(report.files).toEqual([
+      { name: 'assets/index.js', files: 2, raw: 15, gzip: expect.any(Number) },
+    ]);
+    expect(report.files[0].gzip).toBe(report.total.gzip);
   });
 });
 
@@ -265,5 +282,18 @@ describe('renderMarkdown', () => {
     });
     expect(text).toMatch(/\| Chưa xếp gói \| 1 \|/);
     expect(text).toMatch(/`apps\/x\/new\.ts`/);
+  });
+
+  it('says how many chunks a bundle row adds up', () => {
+    const text = renderMarkdown({
+      commit: 'abc1234',
+      lines: lineReport([], () => ''),
+      bundle: bundleReport([
+        { path: 'assets/index-Ctj3jqWM.js', bytes: Buffer.alloc(10) },
+        { path: 'assets/index-AbCd_-12.js', bytes: Buffer.alloc(5) },
+      ]),
+      exe: null,
+    });
+    expect(text).toMatch(/\| assets\/index\.js \(2 file\) \| 15 \|/);
   });
 });
