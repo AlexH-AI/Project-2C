@@ -1,6 +1,6 @@
 # Sổ ghi chú review
 
-> Tách khỏi `HANDOFF.md` ngày 03/10/2026 (#280). Phiên review đóng phase và skill `review-pr` đối chiếu sổ này trước khi ghi một phát hiện là MỚI. Ghi chú review không chặn của PR task ghi vào đây (OPEN), không ghi vào HANDOFF.
+> Tách khỏi `HANDOFF.md` ngày 03/10/2026 (#280). Phiên review đóng phase và skill `review-pr` đối chiếu sổ này trước khi ghi một phát hiện là MỚI. Ghi chú review không chặn của PR task ghi vào đây (OPEN), không ghi vào HANDOFF. PR chỉ sửa file này không cần review: `node tools/merge-pr.mjs <N>` merge ngay (Owner quyết 12/10/2026, T-215).
 
 Quy tắc (review đóng Phase 3, P-3): ghi chú review không chặn nằm ở đây, chia **OPEN** (còn phải làm), **RESOLVED** (đã sửa, ghi PR), **ACCEPTED** (Owner hoặc spec chấp nhận, không sửa). Khi đóng mỗi phase, kiểm lại từng dòng OPEN trên code và chuyển nhóm. Review sau đối chiếu sổ này trước khi ghi một phát hiện là MỚI. Đối chiếu lần này: `main` `3e84ce8`, 07/10 (đóng Phase 4, sau 22 Issue sửa deep review Phase 1–4 T-138…T-159; lần trước: `1625568`, 05/10). Mã T-d…T-i, S-1, S-2 là task Đợt 2/3 trong báo cáo tổng hợp 30/09 §4; T-j và R2-xx ở báo cáo 02/10 §4–§5.
 

@@ -10,7 +10,7 @@ argument-hint: "[mô tả ngắn việc đang làm]"
    - **Bước kế tiếp chính xác:** đủ cụ thể để một phiên mới trên máy khác làm tiếp mà không cần hỏi (file, hàm, test đang đỏ, lệnh).
    - **Chờ Owner:** cổng G1–G8 hoặc quyết định đang chờ.
 3. Không để vào HANDOFF những thứ có chỗ riêng:
-   - ghi chú review không chặn → `docs/state/review-notes.md` (OPEN / RESOLVED / ACCEPTED), đi qua PR;
+   - ghi chú review không chặn → `docs/state/review-notes.md` (OPEN / RESOLVED / ACCEPTED), đi qua PR không cần review (`merge-pr` merge ngay, T-215);
    - quy tắc / quyết định bền của Owner → `CLAUDE.md` (quy tắc làm việc), ADR (thiết kế) hoặc "Current OWNER decisions" trong `docs/PROJECT-STATE.md`;
    - ghi chú môi trường dùng lâu dài → `CLAUDE.md` § "Môi trường Windows và 2 máy";
    - danh sách phản hồi dài của Owner → `docs/reviews/<ngày>-….md` rồi trỏ tới.

@@ -204,6 +204,28 @@ describe('mergeBlockers', () => {
     ]);
   });
 
+  it('needs no REVIEW for a PR that only writes the review notes ledger (T-215)', () => {
+    const files = [{ path: 'docs/state/review-notes.md' }];
+    expect(mergeBlockers(pr({ files, comments: [], statusCheckRollup: [] }), ctx())).toEqual([]);
+    expect(mergeBlockers(pr({ files, comments: [review('CHANGES', '1111111')] }), ctx())).toEqual(
+      [],
+    );
+  });
+
+  it('still needs a REVIEW when the notes PR touches any other file', () => {
+    const files = [{ path: 'docs/state/review-notes.md' }, { path: 'docs/README.md' }];
+    expect(mergeBlockers(pr({ files, comments: [], statusCheckRollup: [] }), ctx())).toEqual([
+      expect.stringMatching(/No REVIEW comment/),
+    ]);
+  });
+
+  it('still needs risk:low (or --owner) for a notes PR', () => {
+    const files = [{ path: 'docs/state/review-notes.md' }];
+    expect(mergeBlockers(pr({ files, comments: [], labels: [] }), ctx())).toEqual([
+      expect.stringMatching(/Risk is unknown/),
+    ]);
+  });
+
   it('stops when the latest REVIEW is CHANGES, even after an older PASS', () => {
     const comments = [review('PASS'), review('CHANGES')];
     expect(mergeBlockers(pr({ comments }), ctx())).toEqual([

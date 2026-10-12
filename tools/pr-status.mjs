@@ -8,7 +8,14 @@
 
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { ciStartedAt, isDocsOnly, mergeBlockers, prList, riskLevel } from './pr-core.mjs';
+import {
+  ciStartedAt,
+  isDocsOnly,
+  isNotesOnly,
+  mergeBlockers,
+  prList,
+  riskLevel,
+} from './pr-core.mjs';
 import { checksSummary, latestReview } from './session-core.mjs';
 import { run as runIn } from './session-io.mjs';
 
@@ -82,7 +89,9 @@ export function formatStatus({ pr, stacked, baseMerged, mainSince }, { withVerdi
         : ' (NOT the head: review again before merge)';
     }
   }
-  const docsOnly = isDocsOnly(pr.files.map((f) => f.path));
+  const paths = pr.files.map((f) => f.path);
+  const docsOnly = isDocsOnly(paths);
+  if (isNotesOnly(paths)) reviewText += ' (review notes only: not needed)';
   const base =
     pr.baseRefName === 'main'
       ? 'main'

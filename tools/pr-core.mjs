@@ -40,6 +40,13 @@ export function isDocsOnly(paths) {
   );
 }
 
+// The ledger of non-blocking review notes. A PR that only writes it merges without a REVIEW
+// (Owner decision 12/10/2026, T-215): the notes come from a review that already passed.
+export const REVIEW_NOTES = 'docs/state/review-notes.md';
+
+/** True when the PR only writes the review notes ledger, so needs no REVIEW. */
+export const isNotesOnly = (paths) => paths.length > 0 && paths.every((p) => p === REVIEW_NOTES);
+
 // Files whose change needs the exe job, so the build-exe label (CLAUDE.md step 5): Rust,
 // toolchain, dependencies, build configuration.
 const EXE_PATHS = [
@@ -102,7 +109,11 @@ export function mergeBlockers(pr, { owner, mode, stacked, baseMerged, mainSince 
 
   const review = latestReview(pr.comments);
   const head = pr.headRefOid.slice(0, 7);
-  if (!review) blockers.push('No REVIEW comment yet: review it in a clean session (review-pr).');
+  const paths = pr.files.map((f) => f.path);
+  if (isNotesOnly(paths)) {
+    // The review notes ledger alone needs no REVIEW (REVIEW_NOTES).
+  } else if (!review)
+    blockers.push('No REVIEW comment yet: review it in a clean session (review-pr).');
   else if (!/^PASS\b/.test(review.verdict))
     blockers.push(`Latest REVIEW is ${review.verdict}, not PASS.`);
   else if (!review.sha) blockers.push('Latest REVIEW: PASS names no head SHA.');
@@ -111,7 +122,6 @@ export function mergeBlockers(pr, { owner, mode, stacked, baseMerged, mainSince 
       `REVIEW: PASS is for ${review.sha} but head is ${head}: review again in a clean session (P-1).`,
     );
 
-  const paths = pr.files.map((f) => f.path);
   if (!isDocsOnly(paths)) {
     const rollup = pr.statusCheckRollup ?? [];
     const { pass, fail, pending } = checkCounts(rollup);
