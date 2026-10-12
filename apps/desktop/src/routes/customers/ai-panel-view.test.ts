@@ -13,6 +13,7 @@ import {
   type KycGateState,
 } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
+import { t } from '../../i18n';
 import { errorText } from '../ai-error-view';
 import {
   aiPanelHelp,
@@ -26,6 +27,7 @@ import {
   panelRun,
   runAfter,
   webAfter,
+  webFailure,
   webChip,
   webOpened,
 } from './ai-panel-view';
@@ -451,8 +453,20 @@ describe('the ChatGPT web session of the panel (spec Phase 5 §3.1, mockups 4e�
     expect(after).toMatchObject({ manual: null, retry: { message: 'Sửa' } });
   });
 
+  it('keeps the session and the paste on a save refused while the data is replaced, with the S2-2 sentence', () => {
+    const after = webAfter({ ...opened, refused: 'TOO_LONG' }, { kind: 'replacing' });
+    expect(after).toMatchObject({ session, refused: null, failed: 'DATA_REPLACING' });
+    expect(webFailure(after!)).toEqual({
+      text: 'Đang thay toàn bộ dữ liệu (Nạp lại / Nhập backup). Thay đổi này chưa được ghi — thử lại khi xong.',
+      tone: 'warn',
+    });
+    expect(webFailure(opened)).toBeNull();
+  });
+
   it('keeps the session on a bug, and ends it once saved or discarded', () => {
-    expect(webAfter(opened, { kind: 'failed' })).toMatchObject({ failed: true });
+    const after = webAfter(opened, { kind: 'failed' });
+    expect(after).toMatchObject({ failed: 'GENERAL' });
+    expect(webFailure(after!)).toEqual({ text: t('aiError.GENERAL'), tone: 'danger' });
     expect(webAfter(opened, { kind: 'saved', status: 'REJECTED' })).toBeNull();
     expect(webAfter(opened, { kind: 'discarded' })).toBeNull();
   });

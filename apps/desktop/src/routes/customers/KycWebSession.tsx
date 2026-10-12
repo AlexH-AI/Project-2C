@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 
 import { saveChatGptAnswer, type WebAnswerOutcome } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
-import { webAfter, webChip, type AiPanelIssue, type AiPanelWeb } from './ai-panel-view';
+import { webAfter, webChip, webFailure, type AiPanelIssue, type AiPanelWeb } from './ai-panel-view';
 import { ALERT } from './CustomerDialogs';
 
 const ROW = 'flex flex-wrap items-center gap-2';
@@ -55,6 +55,7 @@ export function KycWebSession({
   const app = useAppData();
   const [pasted, setPasted] = useState('');
   const chip = webChip(web, versions);
+  const failure = webFailure(web);
   const second = web.retry !== null;
   // A paste refused at the box is said on the box (its description): the focus goes there, so a
   // screen reader reads it at each Kiểm tra và lưu (R2-06).
@@ -141,9 +142,12 @@ export function KycWebSession({
           />
         </>
       )}
-      {web.failed && (
-        <p role="alert" className={`${ALERT} border-danger`}>
-          {t('aiError.GENERAL')}
+      {failure && (
+        <p
+          role="alert"
+          className={`${ALERT} ${failure.tone === 'warn' ? 'border-warn' : 'border-danger'}`}
+        >
+          {failure.text}
         </p>
       )}
       <div ref={box} className="contents">

@@ -327,8 +327,11 @@ export interface AiPanelWeb {
    * app's own message pasted back (DR5-49).
    */
   readonly refused: 'TOO_LONG' | 'OWN_MESSAGE' | null;
-  /** A bug on Kiểm tra và lưu: the general message; the paste stays to try again. */
-  readonly failed: boolean;
+  /**
+   * Kiểm tra và lưu not saved, the paste kept to try again: a bug (the general message), or the
+   * data being replaced (the S2-2 sentence).
+   */
+  readonly failed: 'GENERAL' | 'DATA_REPLACING' | null;
 }
 
 /** The session opened by a click (`kind: 'session'` of `startChatGptWeb`). */
@@ -341,7 +344,7 @@ export function webOpened(started: {
 }): AiPanelWeb {
   const { session, message, takenAt, copied, opened } = started;
   const manual = copied ? null : message;
-  const fresh = { retry: null, refused: null, failed: false };
+  const fresh = { retry: null, refused: null, failed: null };
   return { session, message, takenAt, manual, openFailed: !opened, ...fresh };
 }
 
@@ -349,7 +352,7 @@ export function webOpened(started: {
 export function webAfter(web: AiPanelWeb, outcome: WebAnswerOutcome): AiPanelWeb | null {
   switch (outcome.kind) {
     case 'unusable':
-      return { ...web, refused: outcome.reason === 'EMPTY' ? null : outcome.reason, failed: false };
+      return { ...web, refused: outcome.reason === 'EMPTY' ? null : outcome.reason, failed: null };
     case 'retry': {
       const noJson = outcome.session.attempts.at(-1)!.parsed === null;
       // The first message left to copy by hand would be pasted into the same chat (review of PR 459).
@@ -362,14 +365,23 @@ export function webAfter(web: AiPanelWeb, outcome: WebAnswerOutcome): AiPanelWeb
           message: outcome.retryMessage,
         },
         refused: null,
-        failed: false,
+        failed: null,
       };
     }
     case 'failed':
-      return { ...web, refused: null, failed: true };
+      return { ...web, refused: null, failed: 'GENERAL' };
+    case 'replacing':
+      return { ...web, refused: null, failed: 'DATA_REPLACING' };
     default:
       return null;
   }
+}
+
+/** Why Kiểm tra và lưu saved nothing: the S2-2 sentence as a warning (mockup trash.html 11g). */
+export function webFailure({ failed }: AiPanelWeb) {
+  if (failed === 'DATA_REPLACING')
+    return { text: t('error.DATA_REPLACING'), tone: 'warn' } as const;
+  return failed ? ({ text: t('aiError.GENERAL'), tone: 'danger' } as const) : null;
 }
 
 /** Mockup 4e: "kyc v<n> · <mode>@<n>+web@1 · chụp dd/mm hh:mm" of the input taken. */
