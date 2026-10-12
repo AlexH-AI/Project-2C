@@ -1,7 +1,20 @@
-import { DbError, type TrashBlock, type TrashRef, type TrashRow } from '@p2c/db';
+import {
+  DbError,
+  restoreAppointment,
+  restoreCustomer,
+  restorePerson,
+  restorePolicy,
+  restoreTeam,
+  type Database,
+  type TrashBlock,
+  type TrashRef,
+  type TrashRow,
+} from '@p2c/db';
 import { formatDate, formatLocalDateTime, formatVnd, type CustomerStage } from '@p2c/domain';
 import type { DataTableMoreLabels } from '@p2c/ui';
+import type { AppData } from '../data/app-data';
 import { errorMessage, joinParts, t } from '../i18n';
+import { routeToHash } from '../shell/routes';
 
 /** The kinds of the filter of Thùng rác, in the order of mockup 11a. */
 export const TRASH_FILTERS = [
@@ -61,11 +74,8 @@ const stage = (value: CustomerStage) => t(`stage.${value}`);
 /** The first line of "Bản ghi" (spec Phase 6 §4.2); a customer's stage and a policy's status are badges. */
 export function recordTitle(row: TrashRow): string {
   switch (row.kind) {
-    case 'appointment': {
-      const date = formatDate(row.date);
-      const when = row.time === null ? date : t('trash.appointment.when', { date, time: row.time });
-      return joinParts([when, t(`appointmentStatus.${row.status}`)]);
-    }
+    case 'appointment':
+      return joinParts([appointmentWhen(row), t(`appointmentStatus.${row.status}`)]);
     case 'policy':
       return t('trash.policy.title', {
         date: formatDate(row.submittedDate),
@@ -74,6 +84,14 @@ export function recordTitle(row: TrashRow): string {
     default:
       return row.name;
   }
+}
+
+type AppointmentRow = Extract<TrashRow, { kind: 'appointment' }>;
+
+/** "02/10/2026 09:30", or the day alone. */
+function appointmentWhen(row: AppointmentRow): string {
+  const date = formatDate(row.date);
+  return row.time === null ? date : t('trash.appointment.when', { date, time: row.time });
 }
 
 /** The line under it: what comes back with a customer, the stage change of a met appointment. */
@@ -100,7 +118,7 @@ export function recordDetail(row: TrashRow): string | null {
   }
 }
 
-function appointmentDetail(row: Extract<TrashRow, { kind: 'appointment' }>): string | null {
+function appointmentDetail(row: AppointmentRow): string | null {
   // A blocked restore moves nothing: the change counted from today's stage would mislead.
   if (row.blocked) {
     return row.status === 'MET' && row.stageAfter !== null
@@ -188,4 +206,234 @@ function reasonSentence(row: TrashRow, { code, params = {} }: TrashBlock): strin
     return 'name' in params ? t(`trash.blocked.${code}`, params) : null;
   }
   return null;
+}
+
+/** A line of the restore dialog: a term with its text, a stage badge, or both. */
+export interface RestoreFact {
+  readonly term: string;
+  readonly text?: string;
+  readonly stage?: CustomerStage;
+}
+
+/** The restore dialog of a record (TR-8): what it is, and what restoring it does. */
+export interface RestoreView {
+  readonly title: string;
+  readonly subtitle: string;
+  readonly facts: readonly RestoreFact[];
+  /** The consequence, in the box under the facts; `title` in bold above it. */
+  readonly effect: { readonly title?: string; readonly body: string };
+}
+
+const deletedSubtitle = (row: TrashRow) =>
+  t('trash.restore.deleted', { label: t(`trash.kind.${row.kind}`), when: deletedAtText(row) });
+
+const ownerLine = (row: TrashRow) => joinParts(ownerParts(row).map((owner) => owner.text));
+
+/** Mockup 11b (a customer), 11c (a met appointment); the other kinds say what comes back. */
+export function restoreView(row: TrashRow): RestoreView {
+  switch (row.kind) {
+    case 'customer':
+      return {
+        title: t('trash.restore.title', { name: row.name }),
+        subtitle: deletedSubtitle(row),
+        facts: [
+          { term: t('trash.restore.stage'), stage: row.stage },
+          {
+            term: t('trash.restore.re'),
+            text: joinParts([row.owner.re?.name, row.owner.team?.name]),
+          },
+          ...(row.effect.kind === 'customer'
+            ? [{ term: t('trash.restore.with'), text: customerRecords(row.effect) }]
+            : []),
+        ],
+        effect: { body: customerBack(row.effect) },
+      };
+    case 'appointment':
+      return {
+        title: t('trash.restore.titleAppointment', { when: appointmentWhen(row) }),
+        subtitle: ownerLine(row),
+        ...appointmentRestore(row),
+      };
+    case 'policy':
+      return {
+        title: t('trash.restore.titlePolicy', { date: formatDate(row.submittedDate) }),
+        subtitle: ownerLine(row),
+        facts: [
+          { term: t('trash.restore.fyp'), text: formatVnd(row.submittedFyp) },
+          {
+            term: t('trash.restore.status'),
+            text:
+              row.issuedDate === null
+                ? t('policyStatus.submitted')
+                : t('trash.restore.issued', {
+                    date: formatDate(row.issuedDate),
+                    fyp: formatVnd(row.issuedFyp ?? 0),
+                  }),
+          },
+        ],
+        effect: { body: t('trash.restore.policyBody') },
+      };
+    case 'person':
+      return {
+        title: t('trash.restore.title', { name: row.name }),
+        subtitle: deletedSubtitle(row),
+        facts: [
+          { term: t('trash.restore.role'), text: row.role },
+          ...(row.owner.team ? [{ term: t('trash.restore.team'), text: row.owner.team.name }] : []),
+        ],
+        effect: { body: t('trash.restore.personBody') },
+      };
+    case 'team':
+      return {
+        title: t('trash.restore.title', { name: row.name }),
+        subtitle: deletedSubtitle(row),
+        facts: [],
+        effect: { body: t('trash.restore.teamBody') },
+      };
+  }
+}
+
+type CustomerEffect = Extract<TrashRow['effect'], { kind: 'customer' }>;
+
+/** "7 lịch hẹn (3 đã gặp · 1 lần tính RF) · 0 HĐ · 5 ghi chú KYC · 2 phân tích AI" (11b). */
+function customerRecords(effect: CustomerEffect): string {
+  return joinParts([
+    t('trash.restore.appointments', {
+      appointments: effect.appointments,
+      met: effect.met,
+      n: effect.rf,
+    }),
+    t('trash.restore.policies', { count: effect.policies }),
+    t('trash.restore.kyc', { count: effect.kycNotes }),
+    t('trash.restore.ai', { count: effect.aiAnalyses }),
+  ]);
+}
+
+/** The records come back on their own days; those deleted on their own stay in the trash (TR-4). */
+function customerBack(effect: TrashRow['effect']): string {
+  const back = t('trash.restore.customerBack');
+  if (effect.kind !== 'customer') return back;
+  const left = joinParts([
+    effect.appointmentsInTrash > 0 &&
+      t('trash.restore.leftAppointments', { count: effect.appointmentsInTrash }),
+    effect.policiesInTrash > 0 && t('trash.restore.policies', { count: effect.policiesInTrash }),
+  ]);
+  return left === '' ? back : `${back} ${t('trash.restore.customerLeft', { parts: left })}`;
+}
+
+/** A met appointment moves the stage again on its day (E5) or keeps it (E7); others do not (E11). */
+function appointmentRestore(row: AppointmentRow): Pick<RestoreView, 'facts' | 'effect'> {
+  const { effect } = row;
+  if (effect.kind !== 'stageChange' && effect.kind !== 'stageKept') {
+    return {
+      facts: [{ term: t('trash.restore.status'), text: t(`appointmentStatus.${row.status}`) }],
+      effect: { title: t('trash.restore.noChange'), body: t('trash.restore.noChangeBody') },
+    };
+  }
+  const met = t('appointmentStatus.MET');
+  const facts: RestoreFact[] = [
+    row.stageAfter === null
+      ? { term: t('trash.restore.result'), text: met }
+      : {
+          term: t('trash.restore.result'),
+          text: joinParts([met, t('trash.restore.after')]),
+          stage: row.stageAfter,
+        },
+    {
+      term: t('trash.restore.stageNow'),
+      stage: effect.kind === 'stageChange' ? effect.from : effect.stage,
+    },
+  ];
+  if (effect.kind === 'stageKept') {
+    return {
+      facts,
+      effect: {
+        title: t('trash.appointment.kept', { stage: stage(effect.stage) }),
+        body: t('trash.restore.keptBody'),
+      },
+    };
+  }
+  const date = formatDate(effect.date);
+  return {
+    facts,
+    effect: {
+      title: t('trash.restore.change', { from: stage(effect.from), to: stage(effect.to), date }),
+      body: effect.rf
+        ? t('trash.restore.changeRf', { name: row.owner.re?.name ?? '', date })
+        : t('trash.restore.changeNoRf'),
+    },
+  };
+}
+
+/** The notice once a record is restored (mockup 11e), and where its "Mở" button leads. */
+export interface RestoredNotice {
+  readonly title: string;
+  readonly detail: string | null;
+  readonly open: string;
+  readonly href: string;
+}
+
+export function restoredNotice(row: TrashRow): RestoredNotice {
+  const profile = (id: string) => ({
+    open: t('trash.restored.openProfile'),
+    href: routeToHash({ screen: 'customer', id }),
+  });
+  const team = { open: t('trash.restored.openTeam'), href: routeToHash({ screen: 'team' }) };
+  switch (row.kind) {
+    case 'customer':
+      return {
+        title: t('trash.restored.customer', { name: row.name }),
+        detail: row.effect.kind === 'customer' ? restoredWith(row.effect) : null,
+        ...profile(row.id),
+      };
+    case 'appointment':
+    case 'policy': {
+      // Both always belong to a customer, alive once they could be restored.
+      const customer = row.owner.customer!;
+      return {
+        title:
+          row.kind === 'appointment'
+            ? t('trash.restored.appointment', { when: appointmentWhen(row) })
+            : t('trash.restored.policy', { date: formatDate(row.submittedDate) }),
+        detail: t('trash.owner.customer', { name: customer.name }),
+        ...profile(customer.id),
+      };
+    }
+    case 'person':
+      return { title: t('trash.restored.person', { name: row.name }), detail: null, ...team };
+    case 'team':
+      return { title: t('trash.restored.team', { name: row.name }), detail: null, ...team };
+  }
+}
+
+/** "cùng 7 lịch hẹn, 5 ghi chú KYC": the records that came back, a kind with none left out. */
+function restoredWith(effect: CustomerEffect): string | null {
+  const parts = [
+    effect.appointments > 0 && t('trash.restore.leftAppointments', { count: effect.appointments }),
+    effect.policies > 0 && t('trash.restore.policies', { count: effect.policies }),
+    effect.kycNotes > 0 && t('trash.restore.kyc', { count: effect.kycNotes }),
+  ].filter((part) => part !== false);
+  return parts.length === 0 ? null : t('trash.restored.with', { parts: parts.join(t('sep.list')) });
+}
+
+const RESTORE: Record<TrashRow['kind'], (db: Database, id: string) => void> = {
+  team: restoreTeam,
+  person: restorePerson,
+  customer: restoreCustomer,
+  appointment: restoreAppointment,
+  policy: restorePolicy,
+};
+
+/**
+ * Restores the record with the command of its kind, which checks again (the data may have changed
+ * since the dialog opened) and is refused while the data is replaced (S2-2, E17). Null once done,
+ * else the line the dialog shows: the sentence of the reason the row would now be blocked by.
+ */
+export function restoreRow(app: Pick<AppData, 'run'>, row: TrashRow): string | null {
+  try {
+    app.run((db) => RESTORE[row.kind](db, row.id));
+    return null;
+  } catch (error) {
+    return error instanceof DbError ? blockedReason(row, error) : errorMessage(error);
+  }
 }
