@@ -97,6 +97,9 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
   - `e2e/guide/links.ts:18`: chỉ bỏ code span một dấu backtick; code span mở bằng hai dấu backtick có link bên trong vẫn bị kiểm. Sửa khi #534 hoặc nội dung sau dùng dạng này.
   - Issue #533 ghi "spec chụp ảnh không nằm trong `testDir` của `playwright.config.ts`" nhưng lại chỉ định `e2e/guide/**` (nằm dưới `testDir: 'e2e'`); PR tách bằng đuôi `*.guide.ts` ngoài `testMatch` mặc định nên `pnpm e2e` không chạy. Không cần sửa code; đổi `testMatch` của e2e sang dạng nhận cả `*.ts` sẽ kéo spec chụp ảnh vào e2e.
 - Một ghi chú không chặn của review PR #549 (T-213 PR 1/2, #534, review @`30ed95c`). Sửa ở PR 2 của #534 hoặc lần chạm sau của spec: `docs/design/phase-6-hoan-thien.md` §4.3, dòng `01-bat-dau.md` của Mục lục, còn ghi "trạng thái lưu ở góc sidebar", nhưng app không có chỉ báo lưu ở sidebar (chỉ có dải `storage.saveFailed` ở đầu màn khi lưu lỗi và "Lưu lần cuối" ở Cài đặt → Dữ liệu). Hướng dẫn đã tả đúng app → sửa câu spec cho khớp, để lượt kiểm hướng dẫn ở G7 không đối chiếu theo câu cũ.
+- Hai ghi chú không chặn của review PR #552 (T-215, #551, review @`cf3f9e5`) — gộp vào lần chạm sau của file:
+  - `tools/merge-pr.mjs:12-13`: comment đầu file vẫn ghi lệnh từ chối khi "the latest REVIEW is not PASS for the current head SHA" mà không nhắc ngoại lệ PR chỉ sửa sổ ghi chú → thêm một vế để header khớp `mergeBlockers` (`tools/pr-core.mjs`).
+  - `tools/pr-status.mjs:94`: dòng `(review notes only: not needed)` chưa có test (`pr-status.mjs` chưa có file test). PR sổ ghi chú có REVIEW cũ lệch head sẽ in cả "NOT the head: review again before merge" lẫn "not needed" → hơi lẫn, dù verdict bên dưới vẫn đúng; bỏ dòng "NOT the head" khi `isNotesOnly`.
 
 ## RESOLVED
 
