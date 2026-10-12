@@ -43,7 +43,7 @@ Bấm tên KH (trong bảng hoặc khung Trong ngày) để mở **Chi tiết l�
 
 - Thông tin lịch: RE và team, Phối hợp, Trigger, Trạng thái, Kết quả, Ghi chú. **Hồ sơ KH →** mở hồ sơ KH.
 - Nút theo trạng thái: lịch Dự kiến có **Ghi kết quả**, **Dời lịch**, **Xóa**; lịch đã có kết quả có **Sửa kết quả**; lịch hôm nay hoặc đã qua có **Tạo lịch hẹn tiếp theo**.
-- Khối **KYC Intelligence** cho xem phân tích AI mới nhất của KH (chỉ đọc). Muốn phân tích, mở Hồ sơ KH (xem mục KYC Intelligence, `06-ai.md`).
+- Khối **KYC Intelligence** cho xem phân tích AI mới nhất của KH (chỉ đọc). Muốn phân tích, mở Hồ sơ KH (xem [6. KYC Intelligence](06-ai.md)).
 
 ## Đặt lịch hẹn
 
@@ -114,6 +114,6 @@ Nếu nhóm của KH đã đổi tiếp sau cuộc gặp này, hộp khóa ba ô
 
 Hộp xóa cho biết hậu quả trước khi xóa: nhóm KH (cuộc gặp đã chuyển nhóm thì KH về nhóm cũ), RF (bớt 1 nếu cuộc gặp tính RF), ghi chú KYC (giữ nguyên). Bấm **Xóa lịch hẹn** để xóa.
 
-Xóa là **xóa mềm**: lịch biến khỏi danh sách và chỉ số nhưng vẫn còn trong dữ liệu, khôi phục được ở **Cài đặt → Thùng rác** (xem `09-cai-dat.md`). Khi nhóm KH đã đổi tiếp sau cuộc gặp, việc xóa cũng bị chặn như sửa.
+Xóa là **xóa mềm**: lịch biến khỏi danh sách và chỉ số nhưng vẫn còn trong dữ liệu, khôi phục được ở **Cài đặt → Thùng rác** (xem [9. Cài đặt](09-cai-dat.md#cài-đặt--thùng-rác)). Khi nhóm KH đã đổi tiếp sau cuộc gặp, việc xóa cũng bị chặn như sửa.
 
 [← 2. Tổng quan](02-tong-quan.md) · [4. Khách hàng →](04-khach-hang.md)
