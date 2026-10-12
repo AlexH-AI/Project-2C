@@ -34,7 +34,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/backup-validation.ts` — validateBackupValues, validateBackupInvariants, dataTables
 - `src/backup.ts` — BACKUP_FORMAT, MAX_BACKUP_BYTES, type ImportedBackup, exportBackup, importBackup
 - `src/common.ts` — cleanText, requireName, optionalText, isLabel, stampDeleted, storedDate, today, storedPastDate, nextSeq, isFee, requireAmount, requireRe, selectRows, prepared, rowInsert, liveCustomer
-- `src/counts.ts` — type RecordCounts, countRecords
+- `src/counts.ts` — type RecordCounts, countRecords, type CustomerRecordCounts, countCustomerRecords
 - `src/customers.ts` — type Gender, type BirthDate, type CustomerRecord, type CustomerProfile, type NewCustomer, listCustomers, getCustomer, listStageTransitions, createCustomer, updateCustomerProfile, previewCustomerProfile, changeStageManually, softDeleteCustomer, restoreCustomer, checkRestoreCustomer, liveCustomer, appendTransition, checkTransition, withdrawAppointmentTransition
 - `src/database.ts` — type OpenDatabaseOptions, type Sources, type Database, openDatabase, assertSupported, migrate
 - `src/errors.ts` — DB_ERROR_CODES, type DbErrorCode, DbError
