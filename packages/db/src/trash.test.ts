@@ -1,0 +1,454 @@
+import { isRfAppointment, type CalendarDate, type CustomerStage } from '@p2c/domain';
+import { describe, expect, it } from 'vitest';
+import {
+  getAppointment,
+  listAppointments,
+  recordMeetingOutcome,
+  restoreAppointment,
+  scheduleAppointment,
+  softDeleteAppointment,
+} from './appointments';
+import {
+  changeStageManually,
+  createCustomer,
+  listStageTransitions,
+  restoreCustomer,
+  softDeleteCustomer,
+} from './customers';
+import { addKycNote } from './kyc';
+import { listPolicies, restorePolicy, softDeletePolicy, submitPolicy } from './policies';
+import {
+  createPerson,
+  createTeam,
+  restorePerson,
+  restoreTeam,
+  softDeletePerson,
+  softDeleteTeam,
+  updatePerson,
+} from './team';
+import { d, errorOf, setup } from './test-support';
+import { listTrash, type TrashRow } from './trash';
+
+// Spec Phase 6 §4.2: the examples E1–E16 are dated as of 11/10/2026.
+const TODAY = d(11, 10);
+
+const RESTORE = {
+  team: restoreTeam,
+  person: restorePerson,
+  customer: restoreCustomer,
+  appointment: restoreAppointment,
+  policy: restorePolicy,
+} as const;
+
+async function trash() {
+  const base = await setup(TODAY);
+  const { db, team } = base;
+  const linh = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RE', teamId: team.id });
+  const customer = (name = 'Trịnh Minh Anh', stage: CustomerStage = 'N3') =>
+    createCustomer(db, { name, reId: linh.id, stage, date: d(1, 9) });
+  const schedule = (customerId: string, date: CalendarDate, coordinatorIds: string[] = []) =>
+    scheduleAppointment(db, {
+      customerId,
+      reId: linh.id,
+      date,
+      triggerType: 'REFERRAL',
+      coordinatorIds,
+    });
+  const met = (id: string, stageAfter: CustomerStage, outcomeReviewerId: string | null = null) =>
+    recordMeetingOutcome(db, id, {
+      status: 'MET',
+      stageAfter,
+      nextStep: 'Gửi giải pháp',
+      outcomeReviewerId,
+    });
+  const row = (id: string): TrashRow => {
+    const found = listTrash(db).find((r) => r.id === id);
+    expect(found).toBeDefined();
+    return found!;
+  };
+  /** Restores the record: what the command throws, as `blocked` holds it, or undefined. */
+  const restored = (r: TrashRow) => {
+    const error = errorOf(() => RESTORE[r.kind](db, r.id));
+    return error && { code: error.code, params: error.params };
+  };
+  return { ...base, linh, customer, schedule, met, row, restored };
+}
+
+/** E5: Phạm Gia Bảo met on `date`, moved `from → to`, then the meeting deleted (back in `from`). */
+async function deletedMeeting(
+  date = d(2, 10),
+  from: CustomerStage = 'N3',
+  to: CustomerStage = 'N2',
+) {
+  const base = await trash();
+  const bao = base.customer('Phạm Gia Bảo', from);
+  const meeting = base.schedule(bao.id, date);
+  base.met(meeting.id, to);
+  softDeleteAppointment(base.db, meeting.id);
+  return { ...base, bao, meeting };
+}
+
+describe('listTrash: customers (TR-2, TR-4)', () => {
+  it('E1: restores a customer with every record not deleted on its own', async () => {
+    const { db, customer, schedule, met, row, restored } = await trash();
+    const anh = customer();
+    const appointments = [1, 2, 3, 4, 5, 6, 7, 8].map((day) => schedule(anh.id, d(day, 10)));
+    met(appointments[0]!.id, 'N2');
+    met(appointments[1]!.id, 'N3');
+    softDeleteAppointment(db, appointments[7]!.id);
+    for (const day of [1, 2, 3, 4, 5])
+      addKycNote(db, anh.id, { text: `Ghi chú ${day}`, date: d(day, 10) });
+    softDeleteCustomer(db, anh.id);
+
+    const r = row(anh.id);
+    expect(r).toMatchObject({
+      kind: 'customer',
+      name: 'Trịnh Minh Anh',
+      stage: 'N3',
+      owner: {
+        re: { name: 'Đỗ Khánh Linh', deleted: false },
+        team: { name: 'Sao Mai', deleted: false },
+      },
+      effect: {
+        kind: 'customer',
+        appointments: 7,
+        met: 2,
+        rf: 1,
+        policies: 0,
+        kycNotes: 5,
+        aiAnalyses: 0,
+        appointmentsInTrash: 1,
+        policiesInTrash: 0,
+      },
+    });
+    expect(r.blocked).toBeUndefined();
+    expect(restored(r)).toBeUndefined();
+    expect(listAppointments(db, anh.id)).toHaveLength(7);
+    expect(listTrash(db).map((t) => t.id)).toEqual([appointments[7]!.id]);
+  });
+
+  it('E2: blocks a customer whose RE was deleted, naming the RE', async () => {
+    const { db, linh, customer, row, restored } = await trash();
+    const anh = customer();
+    softDeleteCustomer(db, anh.id);
+    softDeletePerson(db, linh.id);
+
+    const r = row(anh.id);
+    expect(r.blocked).toEqual({
+      code: 'PERSON_NOT_FOUND',
+      params: { name: 'Đỗ Khánh Linh', as: 're' },
+    });
+    expect(r.owner.re).toMatchObject({ name: 'Đỗ Khánh Linh', deleted: true });
+    expect(restored(r)).toEqual(r.blocked);
+  });
+
+  it('E3: blocks a customer whose RE is now a TL', async () => {
+    const { db, linh, tl, customer, row, restored } = await trash();
+    const anh = customer();
+    softDeleteCustomer(db, anh.id);
+    softDeletePerson(db, tl.id);
+    updatePerson(db, linh.id, { role: 'TL' });
+
+    const r = row(anh.id);
+    expect(r.blocked).toEqual({
+      code: 'RE_REQUIRED',
+      params: { name: 'Đỗ Khánh Linh', role: 'TL' },
+    });
+    expect(restored(r)).toEqual(r.blocked);
+  });
+});
+
+describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
+  it('E4: blocks an appointment of a deleted customer until the customer comes back', async () => {
+    const { db, customer, schedule, row, restored } = await trash();
+    const anh = customer();
+    const planned = schedule(anh.id, d(6, 10));
+    softDeleteAppointment(db, planned.id);
+    softDeleteCustomer(db, anh.id);
+
+    const r = row(planned.id);
+    expect(r).toMatchObject({
+      kind: 'appointment',
+      date: d(6, 10),
+      status: 'SCHEDULED',
+      owner: {
+        customer: { id: anh.id, name: 'Trịnh Minh Anh', deleted: true },
+        re: { name: 'Đỗ Khánh Linh', deleted: false },
+      },
+      blocked: { code: 'CUSTOMER_NOT_FOUND', params: { name: 'Trịnh Minh Anh' } },
+    });
+    expect(restored(r)).toEqual(r.blocked);
+
+    restoreCustomer(db, anh.id);
+    expect(row(planned.id).blocked).toBeUndefined();
+    restoreAppointment(db, planned.id);
+    expect(listTrash(db)).toEqual([]);
+  });
+
+  it('E5: restores a met appointment with its stage change on the meeting day, an RF', async () => {
+    const { db, bao, meeting, row, restored } = await deletedMeeting();
+
+    const r = row(meeting.id);
+    expect(r).toMatchObject({
+      status: 'MET',
+      stageAfter: 'N2',
+      effect: { kind: 'stageChange', from: 'N3', to: 'N2', date: d(2, 10), rf: true },
+    });
+    expect(r.blocked).toBeUndefined();
+    expect(restored(r)).toBeUndefined();
+    expect(listStageTransitions(db, bao.id).at(-1)).toMatchObject({
+      from: 'N3',
+      to: 'N2',
+      date: d(2, 10),
+      appointmentId: meeting.id,
+    });
+    expect(isRfAppointment(getAppointment(db, meeting.id)!, listStageTransitions(db))).toBe(true);
+  });
+
+  it('E6: blocks a met appointment once the stage changed after its day (D10)', async () => {
+    const { bao, meeting, schedule, met, row, restored } = await deletedMeeting();
+    met(schedule(bao.id, d(5, 10)).id, 'N1');
+
+    const r = row(meeting.id);
+    expect(r.blocked).toEqual({
+      code: 'TRANSITION_BEFORE_LATEST',
+      params: { date: '05/10/2026' },
+    });
+    expect(restored(r)).toEqual(r.blocked);
+  });
+
+  it('E7: restores a met appointment without a transition when the stage is already its own', async () => {
+    const { db, bao, meeting, row, restored } = await deletedMeeting();
+    changeStageManually(db, bao.id, { to: 'N2', date: d(10, 10) });
+    const transitions = listStageTransitions(db, bao.id);
+
+    const r = row(meeting.id);
+    expect(r.effect).toEqual({ kind: 'stageKept', stage: 'N2' });
+    expect(restored(r)).toBeUndefined();
+    expect(listStageTransitions(db, bao.id)).toEqual(transitions);
+    expect(isRfAppointment(getAppointment(db, meeting.id)!, listStageTransitions(db))).toBe(false);
+  });
+
+  it('E8: blocks a met appointment once the customer was lost after its day', async () => {
+    const { db, bao, meeting, row, restored } = await deletedMeeting(d(28, 9), 'N4', 'N3');
+    changeStageManually(db, bao.id, { to: 'LOST', date: d(1, 10) });
+
+    const r = row(meeting.id);
+    expect(r.blocked).toEqual({
+      code: 'TRANSITION_BEFORE_LATEST',
+      params: { date: '01/10/2026' },
+    });
+    expect(restored(r)).toEqual(r.blocked);
+  });
+
+  it('TR-3: blocks a met appointment whose stage after the closed customer cannot move to', async () => {
+    const { db, bao, meeting, row, restored } = await deletedMeeting(d(5, 10));
+    changeStageManually(db, bao.id, { to: 'LOST', date: d(5, 10) });
+
+    const r = row(meeting.id);
+    expect(r.blocked).toEqual({
+      code: 'INVALID_TRANSITION',
+      params: { from: 'LOST', to: 'N2' },
+    });
+    expect(restored(r)).toEqual(r.blocked);
+  });
+
+  it('E9: blocks an appointment whose coordinator was deleted', async () => {
+    const { db, customer, schedule, row, restored } = await trash();
+    const huy = createPerson(db, { name: 'Phó Đức Huy', role: 'IS', teamId: null });
+    const planned = schedule(customer().id, d(6, 10), [huy.id]);
+    softDeleteAppointment(db, planned.id);
+    softDeletePerson(db, huy.id);
+
+    const r = row(planned.id);
+    expect(r.blocked).toEqual({
+      code: 'PERSON_NOT_FOUND',
+      params: { name: 'Phó Đức Huy', as: 'coordinator' },
+    });
+    expect(restored(r)).toEqual(r.blocked);
+  });
+
+  it('E10: blocks a met appointment whose reviewer is now an RE', async () => {
+    const { db, team, customer, schedule, met, row, restored } = await trash();
+    const tam = createPerson(db, { name: 'Vũ Thanh Tâm', role: 'IS', teamId: null });
+    const meeting = schedule(customer().id, d(2, 10));
+    met(meeting.id, 'N2', tam.id);
+    softDeleteAppointment(db, meeting.id);
+    updatePerson(db, tam.id, { role: 'RE', teamId: team.id });
+
+    const r = row(meeting.id);
+    expect(r.blocked).toEqual({
+      code: 'INVALID_REVIEWER',
+      params: { name: 'Vũ Thanh Tâm', role: 'RE' },
+    });
+    expect(restored(r)).toEqual(r.blocked);
+  });
+
+  it('E11: restores a past scheduled appointment, still without an outcome, no stage change', async () => {
+    const { db, customer, schedule, row, restored } = await trash();
+    const planned = schedule(customer().id, d(30, 9));
+    softDeleteAppointment(db, planned.id);
+
+    const r = row(planned.id);
+    expect(r.effect).toEqual({ kind: 'none' });
+    expect(restored(r)).toBeUndefined();
+    expect(getAppointment(db, planned.id)?.status).toBe('SCHEDULED');
+  });
+
+  it('TR-5: blocks a met appointment dated after today in an imported file', async () => {
+    const { db, meeting, row, restored } = await deletedMeeting();
+    db.sqlite.run("UPDATE appointments SET date = '2026-10-14' WHERE id = ?", [meeting.id]);
+
+    const r = row(meeting.id);
+    expect(r.blocked).toEqual({ code: 'OUTCOME_IN_FUTURE', params: { date: '14/10/2026' } });
+    expect(restored(r)).toEqual(r.blocked);
+  });
+});
+
+describe('listTrash: policies (TR-2, TR-5)', () => {
+  const submit = (db: Parameters<typeof submitPolicy>[0], customerId: string, reId: string) =>
+    submitPolicy(db, { customerId, reId, submittedDate: d(15, 9), submittedFyp: 24_000_000 });
+
+  it('E12: restores a policy whose customer and RE are live', async () => {
+    const { db, linh, customer, row, restored } = await trash();
+    const lan = customer('Hoàng Ngọc Lan');
+    const policy = submit(db, lan.id, linh.id);
+    softDeletePolicy(db, policy.id);
+
+    const r = row(policy.id);
+    expect(r).toMatchObject({
+      kind: 'policy',
+      submittedDate: d(15, 9),
+      submittedFyp: 24_000_000,
+      issuedDate: null,
+      issuedFyp: null,
+      owner: {
+        customer: { name: 'Hoàng Ngọc Lan', deleted: false },
+        re: { name: 'Đỗ Khánh Linh', deleted: false },
+      },
+      effect: { kind: 'none' },
+    });
+    expect(restored(r)).toBeUndefined();
+    expect(listPolicies(db)).toHaveLength(1);
+  });
+
+  it('E13: blocks a policy submitted after today in an imported file', async () => {
+    const { db, linh, customer, row, restored } = await trash();
+    const policy = submit(db, customer().id, linh.id);
+    softDeletePolicy(db, policy.id);
+    db.sqlite.run("UPDATE policies SET submitted_date = '2026-10-20' WHERE id = ?", [policy.id]);
+
+    const r = row(policy.id);
+    expect(r.blocked).toEqual({
+      code: 'DATE_IN_FUTURE',
+      params: { date: '20/10/2026', field: 'submitted' },
+    });
+    expect(restored(r)).toEqual(r.blocked);
+  });
+
+  it('TR-5: blocks a policy issued after today in an imported file', async () => {
+    const { db, linh, customer, row, restored } = await trash();
+    const policy = submit(db, customer().id, linh.id);
+    softDeletePolicy(db, policy.id);
+    db.sqlite.run(
+      "UPDATE policies SET issued_date = '2026-10-12', issued_fyp = 24000000 WHERE id = ?",
+      [policy.id],
+    );
+
+    const r = row(policy.id);
+    expect(r.blocked).toEqual({
+      code: 'DATE_IN_FUTURE',
+      params: { date: '12/10/2026', field: 'issued' },
+    });
+    expect(restored(r)).toEqual(r.blocked);
+  });
+});
+
+describe('listTrash: people and teams (TR-2)', () => {
+  it('E14: blocks a person whose team was deleted until the team comes back', async () => {
+    const { db, row, restored } = await trash();
+    const binhMinh = createTeam(db, { name: 'Bình Minh' });
+    const mai = createPerson(db, { name: 'Vương Thị Mai', role: 'RE', teamId: binhMinh.id });
+    softDeletePerson(db, mai.id);
+    softDeleteTeam(db, binhMinh.id);
+
+    const r = row(mai.id);
+    expect(r).toMatchObject({
+      kind: 'person',
+      name: 'Vương Thị Mai',
+      role: 'RE',
+      owner: { team: { name: 'Bình Minh', deleted: true } },
+      blocked: { code: 'TEAM_NOT_FOUND', params: { name: 'Bình Minh' } },
+    });
+    expect(restored(r)).toEqual(r.blocked);
+
+    restoreTeam(db, binhMinh.id);
+    expect(row(mai.id).blocked).toBeUndefined();
+    restorePerson(db, mai.id);
+    expect(listTrash(db)).toEqual([]);
+  });
+
+  it('E15: blocks a TL whose team has another TL now', async () => {
+    const { db, team, tl, row, restored } = await trash();
+    softDeletePerson(db, tl.id);
+    const bao = createPerson(db, { name: 'Lý Quốc Bảo', role: 'TL', teamId: team.id });
+    softDeletePerson(db, bao.id);
+    createPerson(db, { name: 'Nguyễn Thu Hà', role: 'TL', teamId: team.id });
+
+    const r = row(bao.id);
+    expect(r.blocked).toEqual({ code: 'TEAM_HAS_LEAD', params: { name: 'Nguyễn Thu Hà' } });
+    expect(restored(r)).toEqual(r.blocked);
+  });
+
+  it('E16: blocks a team whose name another team took', async () => {
+    const { db, row, restored } = await trash();
+    const binhMinh = createTeam(db, { name: 'Bình Minh' });
+    softDeleteTeam(db, binhMinh.id);
+    createTeam(db, { name: 'Bình Minh' });
+
+    const r = row(binhMinh.id);
+    expect(r).toMatchObject({ kind: 'team', name: 'Bình Minh', effect: { kind: 'none' } });
+    expect(r.blocked).toEqual({ code: 'TEAM_NAME_TAKEN', params: { name: 'Bình Minh' } });
+    expect(restored(r)).toEqual(r.blocked);
+  });
+});
+
+describe('listTrash', () => {
+  it('lists every deleted record, newest deletion first, whatever its team or RE (TR-7)', async () => {
+    const { db, re, linh, customer, schedule } = await trash();
+    const binhMinh = createTeam(db, { name: 'Bình Minh' });
+    const mai = createPerson(db, { name: 'Vương Thị Mai', role: 'RE', teamId: binhMinh.id });
+    const anh = customer();
+    const lan = createCustomer(db, {
+      name: 'Hoàng Ngọc Lan',
+      reId: mai.id,
+      stage: 'N4',
+      date: d(1, 9),
+    });
+    const planned = schedule(anh.id, d(6, 10));
+    const policy = submitPolicy(db, {
+      customerId: anh.id,
+      reId: linh.id,
+      submittedDate: d(15, 9),
+      submittedFyp: 24_000_000,
+    });
+    const empty = createTeam(db, { name: 'Hoa Sen' });
+
+    softDeletePolicy(db, policy.id);
+    softDeleteAppointment(db, planned.id);
+    softDeleteCustomer(db, lan.id);
+    softDeletePerson(db, re.id);
+    softDeleteTeam(db, empty.id);
+
+    expect(listTrash(db).map((r) => [r.kind, r.id])).toEqual([
+      ['team', empty.id],
+      ['person', re.id],
+      ['customer', lan.id],
+      ['appointment', planned.id],
+      ['policy', policy.id],
+    ]);
+    expect(
+      listTrash(db).every((r, i, all) => i === 0 || all[i - 1]!.deletedAt >= r.deletedAt),
+    ).toBe(true);
+  });
+});

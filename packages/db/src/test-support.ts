@@ -5,9 +5,10 @@ import { openDatabase } from './database';
 import { DbError } from './errors';
 import { createPerson, createTeam } from './team';
 
-export async function setup() {
-  // DR-15: 11:00 UTC is 26/09 local from UTC−11 to UTC+12 (Auckland before its DST, 27/09).
-  let clock = Date.UTC(2026, 8, 26, 11, 0, 0);
+/** `today` is the clock's day, 26/09/2026 unless given. */
+export async function setup(today: CalendarDate = d(26, 9)) {
+  // DR-15: 11:00 UTC is that day local from UTC−11 to UTC+12 (Auckland before its DST, 27/09).
+  let clock = Date.UTC(today.year, today.month - 1, today.day, 11, 0, 0);
   const persist = vi.fn();
   const db = await openDatabase({ persist, now: () => new Date(clock++) });
   const team = createTeam(db, { name: 'Sao Mai' });

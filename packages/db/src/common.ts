@@ -1,13 +1,14 @@
 /** Helpers shared by the commands: names, soft-delete stamps, stored dates and money. */
 import {
   compareDates,
+  formatDate,
   formatIsoDate,
   fromLocalDate,
   MAX_FEE_VND,
   type CalendarDate,
   type Vnd,
 } from '@p2c/domain';
-import { and, eq, getTableColumns, isNull, sql } from 'drizzle-orm';
+import { eq, getTableColumns, sql } from 'drizzle-orm';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import type { SqlValue } from 'sql.js';
 import type { Database } from './database';
@@ -61,10 +62,15 @@ export function today(db: Database): CalendarDate {
   return fromLocalDate(db.now());
 }
 
-/** `storedDate` of the day something already happened: today or before. */
-export function storedPastDate(db: Database, date: CalendarDate): string {
+/**
+ * `storedDate` of the day something already happened: today or before. `field` names the day in
+ * the error when the record has more than one (a policy's submission or issue).
+ */
+export function storedPastDate(db: Database, date: CalendarDate, field?: string): string {
   const iso = storedDate(date);
-  if (compareDates(date, today(db)) > 0) throw new DbError('DATE_IN_FUTURE');
+  if (compareDates(date, today(db)) > 0) {
+    throw new DbError('DATE_IN_FUTURE', { date: formatDate(date), ...(field && { field }) });
+  }
   return iso;
 }
 
@@ -93,15 +99,19 @@ export function requireAmount(amount: Vnd): Vnd {
   );
 }
 
-/** The id of a live person with the RE role — the only role that owns records (G2 G). */
+/**
+ * The id of a live person with the RE role — the only role that owns records (G2 G). The error
+ * names a deleted RE, or the person and the role they hold now (spec Phase 6 TR-1).
+ */
 export function requireRe(db: Database, id: string): string {
   const row = db.orm
-    .select({ role: people.role })
+    .select({ name: people.name, role: people.role, deletedAt: people.deletedAt })
     .from(people)
-    .where(and(eq(people.id, id), isNull(people.deletedAt)))
+    .where(eq(people.id, id))
     .get();
   if (!row) throw new DbError('PERSON_NOT_FOUND');
-  if (row.role !== 'RE') throw new DbError('RE_REQUIRED');
+  if (row.deletedAt) throw new DbError('PERSON_NOT_FOUND', { name: row.name, as: 're' });
+  if (row.role !== 'RE') throw new DbError('RE_REQUIRED', { name: row.name, role: row.role });
   return id;
 }
 
@@ -146,9 +156,10 @@ const customerById = (db: Database) =>
     .where(eq(customers.id, sql.placeholder('id')))
     .prepare();
 
-/** The customer row, when it exists and is not deleted. */
+/** The customer row, when it exists and is not deleted; the error names a deleted one. */
 export function liveCustomer(db: Database, id: string): typeof customers.$inferSelect {
   const row = prepared(db, customerById).get({ id });
-  if (!row || row.deletedAt) throw new DbError('CUSTOMER_NOT_FOUND');
+  if (!row) throw new DbError('CUSTOMER_NOT_FOUND');
+  if (row.deletedAt) throw new DbError('CUSTOMER_NOT_FOUND', { name: row.name });
   return row;
 }

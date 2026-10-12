@@ -30,23 +30,24 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 
 <!-- codemap:start -->
 - `src/ai-analyses.ts` — type NewAiAnalysis, type AiAnalysisRecord, type AiAnalysisState, type AiAnalysisReminder, type AiAnalysisView, recordAiAnalysis, type AnalysisFields, analysisLabelsFit, analysisContentFits, listAiAnalyses
-- `src/appointments.ts` — type AppointmentTrigger, type AppointmentRecord, type NewAppointment, type MeetingOutcome, type NextAppointment, type AppointmentDetails, listAppointments, getAppointment, scheduleAppointment, recordMeetingOutcome, recordOutcomeWithNext, editMeetingOutcome, rescheduleAppointment, softDeleteAppointment, restoreAppointment
+- `src/appointments.ts` — type AppointmentTrigger, type AppointmentRecord, type NewAppointment, type MeetingOutcome, type NextAppointment, type AppointmentDetails, listAppointments, getAppointment, scheduleAppointment, recordMeetingOutcome, recordOutcomeWithNext, editMeetingOutcome, rescheduleAppointment, softDeleteAppointment, restoreAppointment, checkRestoreAppointment, outcomeStage
 - `src/backup-validation.ts` — validateBackupValues, validateBackupInvariants, dataTables
 - `src/backup.ts` — BACKUP_FORMAT, MAX_BACKUP_BYTES, type ImportedBackup, exportBackup, importBackup
 - `src/common.ts` — cleanText, requireName, optionalText, isLabel, stampDeleted, storedDate, today, storedPastDate, nextSeq, isFee, requireAmount, requireRe, selectRows, prepared, rowInsert, liveCustomer
 - `src/counts.ts` — type RecordCounts, countRecords
-- `src/customers.ts` — type Gender, type BirthDate, type CustomerRecord, type CustomerProfile, type NewCustomer, listCustomers, getCustomer, listStageTransitions, createCustomer, updateCustomerProfile, previewCustomerProfile, changeStageManually, softDeleteCustomer, restoreCustomer, liveCustomer, appendTransition, withdrawAppointmentTransition
+- `src/customers.ts` — type Gender, type BirthDate, type CustomerRecord, type CustomerProfile, type NewCustomer, listCustomers, getCustomer, listStageTransitions, createCustomer, updateCustomerProfile, previewCustomerProfile, changeStageManually, softDeleteCustomer, restoreCustomer, checkRestoreCustomer, liveCustomer, appendTransition, checkTransition, withdrawAppointmentTransition
 - `src/database.ts` — type OpenDatabaseOptions, type Sources, type Database, openDatabase, assertSupported, migrate
 - `src/errors.ts` — DB_ERROR_CODES, type DbErrorCode, DbError
 - `src/ids.ts` — type RandomFill, cryptoFill, ulid, encodeBase32
-- `src/index.ts` — re-exports ./database, ./migrations, ./backup, ./counts, ./errors, ./team, ./customers, ./appointments, ./policies, ./kyc, ./seed, ./schema, ./ai-analyses, ./settings
+- `src/index.ts` — re-exports ./database, ./migrations, ./backup, ./counts, ./errors, ./team, ./customers, ./appointments, ./policies, ./kyc, ./seed, ./schema, ./ai-analyses, ./trash, ./settings
 - `src/kyc.ts` — type KycSource, type KycNoteRecord, type KycFactRecord, type KycProfileRecord, type KycVersionRecord, type KycFactCommand, type KycChange, getKycProfile, listKycVersions, addKycNote, type KycNoteFact, recordKycNote, confirmKycFact, markKycConflict, resolveKycConflict, markKycVersionMaterial, type ProfileFields, recordProfileFacts, type ProfileKycPreview, previewProfileFacts, profileFactValue, normalizeKycValue
 - `src/migrations.ts` — type Migration, MIGRATIONS, latestVersion, LATEST_SCHEMA_VERSION
-- `src/policies.ts` — type NewPolicy, type PolicyChanges, listPolicies, getPolicy, submitPolicy, issuePolicy, updatePolicy, softDeletePolicy, restorePolicy
+- `src/policies.ts` — type NewPolicy, type PolicyChanges, listPolicies, getPolicy, submitPolicy, issuePolicy, updatePolicy, softDeletePolicy, restorePolicy, checkRestorePolicy
 - `src/schema.ts` — teams, people, settings, schemaMigrations, GENDERS, APPOINTMENT_TRIGGERS, customers, appointments, appointmentCoordinators, stageTransitions, policies, KYC_NOTE_SOURCES, kycNotes, kycFacts, kycVersions, AI_ANALYSIS_MODES, AI_ANALYSIS_GATES, AI_ANALYSIS_STATUSES, AI_ANALYSIS_PROVIDERS, AI_ANALYSIS_REASONING, AI_ANALYSIS_NO_MODEL, MAX_AI_RAW_OUTPUT, aiAnalyses
 - `src/seed-data.ts` — type Weighted, STARTING_STAGES, BIRTH_DATE_KINDS, OUTCOMES, MOVES, TRIGGERS, TEAM_NAMES, FAMILY_NAMES, MIDDLE_NAMES, GIVEN_NAMES, APPOINTMENT_TIMES, TRIGGER_NOTES, NEXT_STEPS, MEETING_NOTES, CASE_SIZES_MILLION, KYC_TOPICS, KYC_VALUES
 - `src/seed.ts` — type SeedOptions, seedDemoData
 - `src/settings.ts` — getSetting, putSetting
-- `src/team.ts` — listTeams, getTeam, listPeople, getPerson, createTeam, renameTeam, softDeleteTeam, restoreTeam, type PersonInput, createPerson, updatePerson, softDeletePerson, restorePerson
+- `src/team.ts` — listTeams, getTeam, listPeople, getPerson, createTeam, renameTeam, softDeleteTeam, restoreTeam, checkRestoreTeam, type PersonInput, createPerson, updatePerson, softDeletePerson, restorePerson, checkRestorePerson
 - `src/test-support.ts` — setup, errorOf, codeOf, d
+- `src/trash.ts` — type TrashRef, type TrashOwner, type TrashEffect, type TrashBlock, type TrashRow, listTrash
 <!-- codemap:end -->

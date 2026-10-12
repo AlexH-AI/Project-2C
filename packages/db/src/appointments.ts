@@ -8,6 +8,7 @@
  */
 import {
   compareDates,
+  formatDate,
   REVIEWER_ROLES,
   type Appointment,
   type CalendarDate,
@@ -26,7 +27,12 @@ import {
   today,
   storedDate,
 } from './common';
-import { appendTransition, liveCustomer, withdrawAppointmentTransition } from './customers';
+import {
+  appendTransition,
+  checkTransition,
+  liveCustomer,
+  withdrawAppointmentTransition,
+} from './customers';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { ulid } from './ids';
@@ -259,14 +265,31 @@ export function restoreAppointment(db: Database, id: string): void {
     const row = findAppointment(db, id);
     if (!row) throw new DbError('APPOINTMENT_NOT_FOUND');
     if (!row.deletedAt) return;
-    liveCustomer(db, row.customerId);
-    // The people were free to leave while the appointment was deleted.
-    requirePeople(db, row.reId, toAppointment(db, row).coordinatorIds);
-    if (row.outcomeReviewerId !== null) requireReviewer(db, row.outcomeReviewerId);
-    requireOutcomeDay(db, row.status, row.date);
+    checkRestoreAppointment(db, row);
     updateAppointmentRow(db, id, { deletedAt: null });
     applyOutcome(db, row);
   });
+}
+
+/**
+ * Why the appointment cannot be restored, thrown as `restoreAppointment` throws it (spec Phase 6
+ * TR-2, TR-3, TR-5): the stage change of a met one is checked as it would be recorded (D10).
+ */
+export function checkRestoreAppointment(db: Database, row: AppointmentRow): void {
+  const { stage } = liveCustomer(db, row.customerId);
+  // The people were free to leave while the appointment was deleted.
+  requirePeople(db, row.reId, coordinatorsOf(db, row.id));
+  if (row.outcomeReviewerId !== null) requireReviewer(db, row.outcomeReviewerId);
+  requireOutcomeDay(db, row.status, row.date);
+  const to = outcomeStage(row, stage);
+  if (to !== null) checkTransition(db, row.customerId, to, fromIsoDate(row.date));
+}
+
+/** The stage the outcome moves its customer to from `stage`, or null when it moves nothing. */
+export function outcomeStage(row: AppointmentRow, stage: CustomerStage): CustomerStage | null {
+  return row.status === 'MET' && row.stageAfter !== null && row.stageAfter !== stage
+    ? row.stageAfter
+    : null;
 }
 
 // ---- helpers --------------------------------------------------------------
@@ -333,10 +356,8 @@ function replaceCoordinators(
 }
 
 function applyOutcome(db: Database, row: AppointmentRow): void {
-  const current = liveCustomer(db, row.customerId).stage;
-  if (row.status === 'MET' && row.stageAfter !== null && row.stageAfter !== current) {
-    appendTransition(db, row.customerId, row.stageAfter, fromIsoDate(row.date), row.id);
-  }
+  const to = outcomeStage(row, liveCustomer(db, row.customerId).stage);
+  if (to !== null) appendTransition(db, row.customerId, to, fromIsoDate(row.date), row.id);
 }
 
 function insertScheduled(
@@ -387,28 +408,34 @@ function insertCoordinators(db: Database, appointmentId: string, ids: readonly s
 function requirePeople(db: Database, reId: string, coordinatorIds: readonly string[]): void {
   requireRe(db, reId);
   for (const personId of coordinatorIds) {
-    if (!REVIEWER_ROLES.includes(requirePerson(db, personId))) {
-      throw new DbError('INVALID_COORDINATOR');
-    }
+    const { name, role } = requirePerson(db, personId, 'coordinator');
+    if (!REVIEWER_ROLES.includes(role)) throw new DbError('INVALID_COORDINATOR', { name, role });
   }
 }
 
-/** A live person of any role; returns their role. */
-function requirePerson(db: Database, personId: string): PersonRole {
+/**
+ * A live person of any role, the appointment's coordinator or reviewer (`as`); the error names a
+ * deleted one (spec Phase 6 TR-1).
+ */
+function requirePerson(
+  db: Database,
+  personId: string,
+  as: 'coordinator' | 'reviewer',
+): { readonly name: string; readonly role: PersonRole } {
   const person = db.orm
-    .select({ role: people.role })
+    .select({ name: people.name, role: people.role, deletedAt: people.deletedAt })
     .from(people)
-    .where(and(eq(people.id, personId), isNull(people.deletedAt)))
+    .where(eq(people.id, personId))
     .get();
   if (!person) throw new DbError('PERSON_NOT_FOUND');
-  return person.role;
+  if (person.deletedAt) throw new DbError('PERSON_NOT_FOUND', { name: person.name, as });
+  return person;
 }
 
 /** A live IS, TL, BDM or BD, as the outcome reviewer (D9). */
 function requireReviewer(db: Database, personId: string): void {
-  if (!REVIEWER_ROLES.includes(requirePerson(db, personId))) {
-    throw new DbError('INVALID_REVIEWER');
-  }
+  const { name, role } = requirePerson(db, personId, 'reviewer');
+  if (!REVIEWER_ROLES.includes(role)) throw new DbError('INVALID_REVIEWER', { name, role });
 }
 
 function requireTime(time: string | null): string | null {
@@ -426,8 +453,9 @@ function requireTrigger(trigger: AppointmentTrigger): AppointmentTrigger {
 /** A meeting is held or missed by today at the latest; a cancellation may come ahead of it. */
 function requireOutcomeDay(db: Database, status: string, isoDate: string): void {
   const held = status === 'MET' || status === 'NO_SHOW';
-  if (held && compareDates(fromIsoDate(isoDate), today(db)) > 0) {
-    throw new DbError('OUTCOME_IN_FUTURE');
+  const date = fromIsoDate(isoDate);
+  if (held && compareDates(date, today(db)) > 0) {
+    throw new DbError('OUTCOME_IN_FUTURE', { date: formatDate(date) });
   }
 }
 

@@ -98,10 +98,15 @@ export function restorePolicy(db: Database, id: string): void {
   db.transaction(() => {
     const row = db.orm.select().from(policies).where(eq(policies.id, id)).get();
     if (!row) throw new DbError('POLICY_NOT_FOUND');
-    liveCustomer(db, row.customerId);
-    validate(db, toPolicy(row));
+    checkRestorePolicy(db, row);
     updatePolicyRow(db, id, { deletedAt: null });
   });
+}
+
+/** Why the policy cannot be restored, thrown as `restorePolicy` throws it (spec Phase 6 TR-2, TR-5). */
+export function checkRestorePolicy(db: Database, row: PolicyRow): void {
+  liveCustomer(db, row.customerId);
+  validate(db, toPolicy(row));
 }
 
 // ---- helpers --------------------------------------------------------------
@@ -114,9 +119,9 @@ function validate(db: Database, policy: Omit<Policy, 'id' | 'customerId'>) {
   }
   return {
     reId: requireRe(db, policy.reId),
-    submittedDate: storedPastDate(db, policy.submittedDate),
+    submittedDate: storedPastDate(db, policy.submittedDate, 'submitted'),
     submittedFyp: requireAmount(policy.submittedFyp),
-    issuedDate: issuedDate === null ? null : storedPastDate(db, issuedDate),
+    issuedDate: issuedDate === null ? null : storedPastDate(db, issuedDate, 'issued'),
     issuedFyp: issuedFyp === null ? null : requireAmount(issuedFyp),
   };
 }
