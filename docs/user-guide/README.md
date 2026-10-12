@@ -1,36 +1,55 @@
 # Hướng dẫn sử dụng Project-2C
 
-> Khung mục lục (T-212, #533). Nội dung chữ viết ở #534 (T-213); mỗi file dưới đây thành link khi được viết.
+Project-2C là app quản lý khách hàng (KH), lịch hẹn, hợp đồng (HĐ) và chỉ số cho đội tư vấn bảo hiểm: RE ghi lịch hẹn và kết quả cuộc gặp, ghi KYC của KH, ghi HĐ nộp / phát hành; TL và Owner xem chỉ số theo team, theo RE, theo kỳ. App có phần AI (KYC Intelligence) gợi ý hướng khám phá nhu cầu KH từ dữ kiện KYC đã xác nhận.
+
+Hướng dẫn viết theo việc cần làm. Chữ trong ngoặc kép hoặc **in đậm** là nhãn đúng như trên màn. Thuật ngữ ngành (RE, TL, KYC, FYP, RF…) giữ tiếng Anh, giải thích ở mục Thuật ngữ (`11-thuat-ngu.md`).
 
 ## Mục lục
 
-| File | Nội dung |
+| Mục | Nội dung |
 |---|---|
-| `01-bat-dau.md` | Chạy exe portable, thư mục `Project2C-data\`, lần mở đầu có dữ liệu giả lập, trạng thái lưu ở góc sidebar, góc nhìn Toàn bộ / Team / RE |
-| `02-tong-quan.md` | Tổng quan: chọn kỳ, Lọc, ô Lịch hẹn 4 nhóm, 6 KPI + so kỳ trước, KH theo nhóm, so sánh team / RE |
-| `03-lich-hen.md` | Lịch hẹn: 4 nhóm, lịch tháng / năm, đặt lịch, ghi kết quả, hẹn tiếp, dời lịch, sửa / xóa |
-| `04-khach-hang.md` | Khách hàng: Kanban / bảng, tạo / sửa / xóa KH, chuyển nhóm tay |
-| `05-ho-so-kh.md` | Hồ sơ KH: dữ kiện KYC, ghi chú + xác nhận, mâu thuẫn, dòng thời gian, hợp đồng, lịch hẹn của KH |
-| `06-ai.md` | KYC Intelligence: phân tích, discovery, lịch sử, mã F, STALE, AI trích xuất, ChatGPT web |
+| [1. Bắt đầu](01-bat-dau.md) | Chạy exe, thư mục `Project2C-data\`, dữ liệu giả lập lúc mở lần đầu, báo lỗi lưu, góc nhìn Toàn bộ / Team / RE |
+| [2. Tổng quan](02-tong-quan.md) | Chọn kỳ, Lọc, ô Lịch hẹn, 6 chỉ số + so kỳ trước, KH theo nhóm, So sánh team |
+| [3. Lịch hẹn](03-lich-hen.md) | Lịch tháng / năm, đặt lịch, ghi kết quả, hẹn tiếp, dời lịch, sửa / xóa |
+| [4. Khách hàng](04-khach-hang.md) | Kanban / Bảng, tạo / sửa / xóa KH, chuyển nhóm tay |
+| [5. Hồ sơ KH](05-ho-so-kh.md) | Dữ kiện KYC, ghi chú KYC, mâu thuẫn, dòng thời gian, hợp đồng, lịch hẹn của KH |
+| `06-ai.md` | KYC Intelligence: phân tích, lịch sử, mã F, AI trích xuất, ChatGPT web, giới hạn của AI |
 | `07-bao-cao.md` | Báo cáo: Tổng hợp / Theo team / Theo RE / Theo mốc, xuất Excel |
-| `08-team.md` | Team & nhân sự: tạo team, thêm / sửa / xóa người, vai trò |
+| `08-team.md` | Team & nhân sự: team, thêm / sửa / xóa người, vai trò |
 | `09-cai-dat.md` | Cài đặt → Dữ liệu, → AI, → Thùng rác |
 | `10-su-co.md` | Khi có lỗi |
 | `11-thuat-ngu.md` | Thuật ngữ |
 
+## Bản exe và bản web
+
+- **Bản exe** (dùng hằng ngày): một file exe chạy thẳng, không cần cài. Dữ liệu lưu vào file trong thư mục `Project2C-data\` cạnh file exe, tự backup mỗi lần mở app. Chỉ bản exe gọi được AI qua OpenCode và giữ API key. Các phần chỉ có ở bản exe ghi "(bản exe)".
+- **Bản web**: cùng giao diện, chạy trong trình duyệt để thử app. Dữ liệu chỉ nằm trong trình duyệt và **mất khi tải lại trang**; mỗi lần mở là dữ liệu giả lập mới. Không có OpenCode, không lưu key. Ảnh trong hướng dẫn chụp từ bản web, ngày 15/09/2026.
+
+## Làm trên hai máy
+
+App chưa đồng bộ giữa hai máy. Dữ liệu chuyển bằng file backup `.p2cbackup`:
+
+1. Trước khi rời máy A: **Cài đặt → Dữ liệu → Xuất backup**. File nằm trong `Project2C-data\exports\` (bản exe). Chép file sang máy B (USB, OneDrive…).
+2. Ở máy B: **Cài đặt → Dữ liệu → Nhập backup → Chọn file…**, xem hộp "Thay toàn bộ dữ liệu?" rồi bấm **Backup rồi thay dữ liệu**.
+3. Làm ở máy B. Khi quay lại máy A, làm ngược lại.
+
+**Bản nhập sau thắng.** Nhập backup *thay toàn bộ* dữ liệu, không gộp. Nếu đã sửa ở cả hai máy mà chưa xuất / nhập, phần sửa ở máy bị nhập đè sẽ mất khỏi app (bản trước khi nhập vẫn còn trong `Project2C-data\backups\`). Vì vậy mỗi lúc chỉ làm trên một máy, và luôn xuất trước khi đổi máy. Chi tiết ở mục Cài đặt (`09-cai-dat.md`).
+
+API key OpenCode không đi theo backup: mỗi máy nhập key riêng.
+
 ## Bảng đối chiếu màn / hộp ↔ mục hướng dẫn
 
-Mỗi màn ở sidebar, mỗi mục Cài đặt và mỗi hộp thoại có trong mockup đã duyệt có ít nhất một đoạn hướng dẫn (spec Phase 6 §4.3). Cột "Mục hướng dẫn" điền ở #534.
+Mỗi màn ở sidebar, mỗi mục Cài đặt và mỗi hộp thoại có trong mockup đã duyệt có ít nhất một đoạn hướng dẫn (spec Phase 6 §4.3).
 
 ### Màn hình
 
 | Màn | Mục hướng dẫn | Ảnh |
 |---|---|---|
-| Sidebar, góc nhìn Toàn bộ / Team / RE | | [01-bat-dau-sidebar](img/01-bat-dau-sidebar.png) |
-| Tổng quan | | [02-tong-quan](img/02-tong-quan.png), [02-tong-quan-so-sanh-team](img/02-tong-quan-so-sanh-team.png) |
-| Lịch hẹn | | [03-lich-hen](img/03-lich-hen.png), [03-lich-hen-thang](img/03-lich-hen-thang.png), [03-lich-hen-nam](img/03-lich-hen-nam.png), [03-chi-tiet-lich-hen](img/03-chi-tiet-lich-hen.png) |
-| Khách hàng | | [04-khach-hang](img/04-khach-hang.png), [04-khach-hang-bang](img/04-khach-hang-bang.png) |
-| Hồ sơ KH | | [05-ho-so-kh](img/05-ho-so-kh.png), [05-du-kien-kyc](img/05-du-kien-kyc.png) |
+| Sidebar, góc nhìn Toàn bộ / Team / RE | [1. Bắt đầu → Sidebar và góc nhìn](01-bat-dau.md#sidebar-và-góc-nhìn) | [01-bat-dau-sidebar](img/01-bat-dau-sidebar.png) |
+| Tổng quan | [2. Tổng quan](02-tong-quan.md) | [02-tong-quan](img/02-tong-quan.png), [02-tong-quan-so-sanh-team](img/02-tong-quan-so-sanh-team.png) |
+| Lịch hẹn | [3. Lịch hẹn](03-lich-hen.md) | [03-lich-hen](img/03-lich-hen.png), [03-lich-hen-thang](img/03-lich-hen-thang.png), [03-lich-hen-nam](img/03-lich-hen-nam.png), [03-chi-tiet-lich-hen](img/03-chi-tiet-lich-hen.png) |
+| Khách hàng | [4. Khách hàng](04-khach-hang.md) | [04-khach-hang](img/04-khach-hang.png), [04-khach-hang-bang](img/04-khach-hang-bang.png) |
+| Hồ sơ KH | [5. Hồ sơ KH](05-ho-so-kh.md) | [05-ho-so-kh](img/05-ho-so-kh.png), [05-du-kien-kyc](img/05-du-kien-kyc.png) |
 | Hồ sơ KH → KYC Intelligence | | [06-ai-phan-tich](img/06-ai-phan-tich.png) |
 | Báo cáo | | [07-bao-cao](img/07-bao-cao.png), [07-bao-cao-theo-moc](img/07-bao-cao-theo-moc.png) |
 | Team & nhân sự | | [08-team](img/08-team.png) |
@@ -42,23 +61,23 @@ Mỗi màn ở sidebar, mỗi mục Cài đặt và mỗi hộp thoại có tron
 
 | Hộp | Mockup | Mục hướng dẫn | Ảnh |
 |---|---|---|---|
-| Lịch hẹn mới | `appointment-forms.html` | | [03-dat-lich](img/03-dat-lich.png) |
-| Kết quả cuộc gặp | `appointment-forms.html` | | [03-ket-qua](img/03-ket-qua.png) |
-| Lịch hẹn tiếp theo | `appointment-forms.html` | | |
-| Sửa kết quả cuộc gặp | `appointment-forms.html` | | |
-| Dời lịch | `appointment-forms.html` | | [03-doi-lich](img/03-doi-lich.png) |
-| Xóa lịch hẹn | `appointment-forms.html`, `trash.html` 11f | | [09-xoa-lich-hen](img/09-xoa-lich-hen.png) |
-| Khách hàng mới | `customer-forms.html` | | [04-khach-hang-moi](img/04-khach-hang-moi.png) |
-| Sửa hồ sơ | `customer-forms.html` | | |
-| Xóa KH | `customer-forms.html`, `trash.html` 11f | | |
-| Chuyển nhóm | `customer.html` | | [04-chuyen-nhom](img/04-chuyen-nhom.png) |
-| Ghi chú KYC | `kyc-forms.html` | | [05-ghi-chu-kyc](img/05-ghi-chu-kyc.png) |
+| Lịch hẹn mới | `appointment-forms.html` | [3. Đặt lịch hẹn](03-lich-hen.md#đặt-lịch-hẹn) | [03-dat-lich](img/03-dat-lich.png) |
+| Kết quả cuộc gặp | `appointment-forms.html` | [3. Ghi kết quả cuộc gặp](03-lich-hen.md#ghi-kết-quả-cuộc-gặp) | [03-ket-qua](img/03-ket-qua.png) |
+| Lịch hẹn tiếp theo | `appointment-forms.html` | [3. Hẹn tiếp](03-lich-hen.md#hẹn-tiếp) | |
+| Sửa kết quả cuộc gặp | `appointment-forms.html` | [3. Sửa kết quả](03-lich-hen.md#sửa-kết-quả) | |
+| Dời lịch | `appointment-forms.html` | [3. Dời lịch](03-lich-hen.md#dời-lịch) | [03-doi-lich](img/03-doi-lich.png) |
+| Xóa lịch hẹn | `appointment-forms.html`, `trash.html` 11f | [3. Xóa lịch hẹn](03-lich-hen.md#xóa-lịch-hẹn) | [09-xoa-lich-hen](img/09-xoa-lich-hen.png) |
+| Khách hàng mới | `customer-forms.html` | [4. Tạo KH](04-khach-hang.md#tạo-kh) | [04-khach-hang-moi](img/04-khach-hang-moi.png) |
+| Sửa hồ sơ | `customer-forms.html` | [4. Sửa hồ sơ KH](04-khach-hang.md#sửa-hồ-sơ-kh) | |
+| Xóa KH | `customer-forms.html`, `trash.html` 11f | [4. Xóa KH](04-khach-hang.md#xóa-kh) | |
+| Chuyển nhóm | `customer.html` | [4. Chuyển nhóm tay](04-khach-hang.md#chuyển-nhóm-tay) | [04-chuyen-nhom](img/04-chuyen-nhom.png) |
+| Ghi chú KYC | `kyc-forms.html` | [5. Ghi chú KYC](05-ho-so-kh.md#ghi-chú-kyc) | [05-ghi-chu-kyc](img/05-ghi-chu-kyc.png) |
 | + Dữ kiện (xác nhận) | `kyc-forms.html` | | |
-| Giải quyết mâu thuẫn | `kyc-forms.html` | | |
-| Hợp đồng mới · đã nộp | `policy-forms.html` | | [05-hop-dong-moi](img/05-hop-dong-moi.png) |
-| Phát hành HĐ | `policy-forms.html` | | |
-| Sửa HĐ | `policy-forms.html` | | |
-| Xóa HĐ | `policy-forms.html` | | |
+| Giải quyết mâu thuẫn | `kyc-forms.html` | [5. Mâu thuẫn](05-ho-so-kh.md#mâu-thuẫn) | |
+| Hợp đồng mới · đã nộp | `policy-forms.html` | [5. Ghi HĐ nộp](05-ho-so-kh.md#ghi-hđ-nộp) | [05-hop-dong-moi](img/05-hop-dong-moi.png) |
+| Phát hành HĐ | `policy-forms.html` | [5. Phát hành HĐ](05-ho-so-kh.md#phát-hành-hđ) | |
+| Sửa HĐ | `policy-forms.html` | [5. Sửa, xóa HĐ](05-ho-so-kh.md#sửa-xóa-hđ) | |
+| Xóa HĐ | `policy-forms.html` | [5. Sửa, xóa HĐ](05-ho-so-kh.md#sửa-xóa-hđ) | |
 | AI trích xuất | `ai.html` §3 | | |
 | Luồng ChatGPT web | `ai.html` §4 | | |
 | Lần phân tích bị loại | `ai.html` §2 | | |
@@ -68,7 +87,7 @@ Mỗi màn ở sidebar, mỗi mục Cài đặt và mỗi hộp thoại có tron
 | Thay toàn bộ dữ liệu? | `settings-data.html` | | |
 | Không nhập được file | `settings-data.html` | | |
 | Nạp lại dữ liệu giả lập? | `settings-data.html` | | [09-nap-lai](img/09-nap-lai.png) |
-| Chưa lưu được thay đổi (bản exe) | `settings-data.html` | | |
+| Chưa lưu được thay đổi (bản exe) | `settings-data.html` | [1. Khi app chưa lưu được](01-bat-dau.md#khi-app-chưa-lưu-được-bản-exe) | |
 | Khôi phục bản ghi | `trash.html` 11b–11d | | |
 | Xuất Excel | `reports.html` 2f | | |
 
