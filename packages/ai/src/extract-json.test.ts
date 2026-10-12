@@ -99,7 +99,10 @@ describe('extractJson', () => {
     expect(extractJson(`{ ${failing(100)}`)).toEqual({ found: false });
   });
 
-  // DR5-04: one pass, however many braces never close (100 000 of them took 11.4 s).
+  // DR5-04: one pass, however many braces never close (100 000 of them took 11.4 s). One pass takes
+  // a few ms, but a CI runner once took 54 ms (#569); the quadratic reading took 1.2 s or more on
+  // each of the first five inputs. The last two were only slow by an exception per block, which the
+  // test of 100 failed blocks above already bounds.
   it.each([
     ['open braces', '{'.repeat(100_000)],
     ['open braces and strings', '{"'.repeat(50_000)],
@@ -111,6 +114,6 @@ describe('extractJson', () => {
   ])('reads 100 000 characters of %s in one pass', (_, content) => {
     const started = Date.now();
     extractJson(content);
-    expect(Date.now() - started).toBeLessThan(50);
+    expect(Date.now() - started).toBeLessThan(500);
   });
 });
