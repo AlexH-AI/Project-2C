@@ -80,6 +80,9 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
   - `packages/db/src/trash.ts:159`: hệ quả của cuộc hẹn Đã gặp tính từ nhóm **hiện tại** của KH, kể cả khi dòng bị chặn. E6 trả `stageChange` N1 → N2 trong khi mockup `trash.html` (dòng 28/09 bị chặn) hiện "N3 → N2" của chính cuộc gặp. Không sai khi chưa chặn; cần cho #531 biết: dòng `blocked` không nên hiện `effect`, hoặc hiện `stageAfter` thay vì `from → to`.
   - `packages/db/src/trash.ts:225` (`refs`): mỗi lần `listTrash` đọc toàn bộ bảng teams / people / customers, kể cả khi Thùng rác trống. Nhỏ với dữ liệu hiện tại; nếu số đo nền ở 6C thấy chậm, chỉ đọc các id mà bản ghi xóa trỏ tới.
   - Nhắc khi viết `docs/metrics/phase-6.md`: PR #539 ≈ 969 dòng tổng diff (≈ 434 dòng sản phẩm), vượt ngưỡng ~800 / ~400; PR đã nêu lý do không tách. Ghi vào bảng "Kích thước PR vượt ngưỡng".
+- Hai ghi chú không chặn của review PR #541 (T-209, #530, review @`7a48feb`) — gộp vào lần chạm sau của từng file:
+  - `e2e/customer-forms.spec.ts:245`: e2e hộp 5f chỉ kiểm số lần tính RF và số ghi chú KYC dạng `\d+`; số chính xác chỉ ghim ở `packages/db/src/counts.test.ts`. Dialog ghép nhầm slot RF / KYC thì e2e vẫn xanh → thêm unit test cho dòng hiển thị, hoặc đọc số KYC từ hồ sơ trong e2e (checklist §2).
+  - Có thể là *Primitive Obsession* nhẹ ở `packages/db/src/counts.ts:71`: `rf` đếm **chuyển nhóm** RF còn hiệu lực, còn `isRfAppointment` đếm **cuộc hẹn**; chỉ khớp nhờ bất biến "mỗi cuộc hẹn tối đa một chuyển nhóm còn hiệu lực" của các lệnh (`withdrawAppointmentTransition` trước mỗi lần ghi lại), không có ràng buộc DB. Code chuyển nguyên từ T-208 → `COUNT(DISTINCT t.appointment_id)` để khớp đúng định nghĩa.
 
 ## RESOLVED
 
