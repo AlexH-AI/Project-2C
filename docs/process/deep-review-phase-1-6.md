@@ -2,23 +2,24 @@
 
 - **Trạng thái:** lượt 1 — **chờ Owner duyệt** (Issue #562 T-222, nhãn `gate`). Owner duyệt thì ghi ngày vào dòng này trước khi merge.
 - **Soạn:** 13/10/2026, bước 0 của lượt 1 (spec `docs/design/phase-6-hoan-thien.md` §6.3). Lượt 2 (T-224 #564) sửa trên cùng file: thêm mục "Lượt 2" và prompt lượt 2, giữ nguyên phần lượt 1.
-- **Nguồn:** spec Phase 6 §2, §5.1, §6 (G1 #515); khuôn deep review Phase 1–4 (`deep-review-phase-1-4.md`) và Phase 5 (`docs/reviews/raw/2026-10-10/common-*.md`); bài học DeepSeek / Muse (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §6–§7); tổng hợp Phase 5 §9–§10; ADR-0001 phụ lục M2, M4.
+- **Nguồn:** spec Phase 6 §2, §5.1, §6 (G1 #515); khuôn deep review Phase 1–4 (`deep-review-phase-1-4.md`) và Phase 5 (`docs/reviews/raw/2026-10-10/common-*.md`); bài học DeepSeek / Muse (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §6–§7); tổng hợp Phase 5 §9–§10; ADR-0001 phụ lục M2, M4, M5.
+- **Owner đổi bên review (13/10, ADR-0001 phụ lục M5):** bỏ DeepSeek v4.1 Flash (chỉ số benchmark trí tuệ không đủ cao cho deep review toàn codebase); Muse dùng model **Muse Wonder** (mới ra, benchmark cao hơn Spark 1.3). Lượt 1 còn **3 bên**: Claude, Codex, Muse Wonder → 6 gói × 3 = **18 báo cáo**.
 
 | Yêu cầu của #562 | Mục |
 |---|---|
 | 1. SHA ghim, cách dựng worktree / thư mục | §2, §9 |
 | 2. 6 gói, phạm vi, cỡ dòng đo lại, thứ tự phiên Claude | §3 |
 | 3. Trục, gồm bloat và hiệu năng | §4 |
-| 4. Prompt nguyên văn của 4 bên | Phụ lục A–E |
+| 4. Prompt nguyên văn của các bên | Phụ lục A–D |
 | 5. KNOWN | §5 |
 | 6. Số đo nền, lệnh sinh dữ liệu tải và probe | §6 |
-| 7. Cấu hình Muse và OpenCode | §7, Phụ lục F |
+| 7. Cấu hình Muse | §7 |
 | 8. Thư mục bằng chứng, kiểm độc lập, lưu báo cáo gốc | §8 |
 | 9. Ước lượng, câu hỏi cho Owner | §11, §12 |
 
 ## 1. Mục tiêu và phạm vi (lượt 1)
 
-Đọc **toàn bộ code Phase 1–6** ở SHA ghim, trước v1.0. Bốn bên review độc lập, chỉ đọc; Claude phiên tổng hợp (T-223 #563) kiểm lại từng phát hiện trên code rồi đề xuất sửa (spec §6.1). Tìm, theo thứ tự ưu tiên:
+Đọc **toàn bộ code Phase 1–6** ở SHA ghim, trước v1.0. Ba bên review độc lập, chỉ đọc; Claude phiên tổng hợp (T-223 #563) kiểm lại từng phát hiện trên code rồi đề xuất sửa (spec §6.1). Tìm, theo thứ tự ưu tiên:
 
 1. Lỗi đúng-sai và edge case, nhất là **kịch bản nhiều bước qua nhiều gói** (hai lỗi Medium của Phase 5 đều thuộc loại này và chỉ frontier thấy).
 2. Mất / sai dữ liệu: lệnh ghi, nhập / xuất backup, thay DB (S-2), Thùng rác, migration, seed, ghi file qua Rust.
@@ -38,13 +39,12 @@ Trong suốt lượt 1 **không merge code vào `main`**. PR chỉ đụng `docs
 |---|---|---|---|---|---|
 | Claude (phiên sạch mỗi gói, tuần tự A → F, không subagent) | Owner mở phiên | 1 | `C:\workspace\Project-2C-review` | `C:\workspace\deep-review-1-6\claude\` | `CL-<gói><số>` |
 | Codex | Owner | 1 (cùng lúc Claude) | `C:\workspace\Project-2C-review-2` | `…\codex\` | `CX-<gói><số>` |
-| DeepSeek v4.1 Flash (OpenCode) | Owner | 2 | `C:\workspace\Project-2C-review` + `opencode.json` (Phụ lục F) | `…\deepseek\` | `DS-<gói><số>` |
-| Muse Spark (Muse Code) | Owner | 2 (cùng lúc DeepSeek) | thư mục làm việc của Muse là `…\muse\`; đọc repo ở `C:\workspace\Project-2C-review-2` | `…\muse\` | `MU-<gói><số>` |
-| **Claude phiên tổng hợp** (T-223) | Owner yêu cầu, sau khi đủ 24 báo cáo | — | checkout chính | `docs/reviews/` qua PR docs | dùng nguyên ID trên |
+| Muse Wonder (Muse Code) | Owner | 2 (một mình) | thư mục làm việc của Muse là `…\muse\`; đọc repo ở `C:\workspace\Project-2C-review-2` | `…\muse\` | `MU-<gói><số>` |
+| **Claude phiên tổng hợp** (T-223) | Owner yêu cầu, sau khi đủ 18 báo cáo | — | checkout chính | `docs/reviews/` qua PR docs | dùng nguyên ID trên |
 
 - Cả hai worktree detached ở cùng SHA ghim. Mỗi worktree review chỉ một bên tại một thời điểm (`CLAUDE.md`).
-- **Vì sao chia hai đợt** (như Phase 5): ACL chỉ chặn được thư mục của bên **đã xong**, vì mọi bên chạy dưới cùng tài khoản Windows; đợt 2 chạy khi `claude\`, `codex\` đã bị chặn ACL (§7.3). Thêm nữa, `pnpm e2e` dùng cổng cố định 4173 và đo hiệu năng cần máy rảnh, nên càng ít bên chạy cùng lúc càng ít va.
-- Mọi bên: **chỉ đọc**, không gọi dịch vụ AI thật, không đọc key, không tổng hợp với bên khác (quy tắc đầy đủ ở Phụ lục E). Báo cáo của Codex / DeepSeek / Muse là dữ liệu tham khảo (ADR-0001 M2, M4); kết luận phát hành chỉ lấy từ phiên tổng hợp.
+- **Vì sao chia hai đợt** (như Phase 5): ACL chỉ chặn được thư mục của bên **đã xong**, vì mọi bên chạy dưới cùng tài khoản Windows; đợt 2 (Muse một mình) chạy khi `claude\`, `codex\` đều đã bị chặn ACL (§7.2), nên Muse bị chặn đủ cả hai thư mục kia. Thêm nữa, `pnpm e2e` dùng cổng cố định 4173 và đo hiệu năng cần máy rảnh, nên càng ít bên chạy cùng lúc càng ít va.
+- Mọi bên: **chỉ đọc**, không gọi dịch vụ AI thật, không đọc key, không tổng hợp với bên khác (quy tắc đầy đủ ở Phụ lục D). Báo cáo của Codex / Muse là dữ liệu tham khảo (ADR-0001 M2, M4, M5); kết luận phát hành chỉ lấy từ phiên tổng hợp.
 
 ## 3. Sáu gói
 
@@ -63,7 +63,7 @@ Phạm vi lấy đúng luật xếp gói của lệnh kích thước (`PACKAGES`
 | **Tổng** | | 32 216 / 38 356 / 4 917 / 380 | | |
 
 - Cỡ lệch spec §6.2 (B: spec ước 3 100 dòng Rust tính cả test trong file; đo đúng luật thì Rust 1 202 SP + 2 202 test). B nhẹ nhất nên phiên B xét kỹ thêm hợp đồng lệnh Tauri ↔ JS và kịch bản tắt app / lỗi đĩa.
-- **Thứ tự phiên Claude: A → B → C → D → E → F.** Lõi dữ liệu trước vì mọi gói khác dựa vào; F cuối vì đọc báo cáo A–E của chính Claude và làm phần xuyên gói. Codex, DeepSeek, Muse tự chọn cách chia phiên nhưng nộp theo cùng tên gói (DeepSeek / Muse: mỗi gói một phiên mới, tuần tự A → F như Phase 5).
+- **Thứ tự phiên Claude: A → B → C → D → E → F.** Lõi dữ liệu trước vì mọi gói khác dựa vào; F cuối vì đọc báo cáo A–E của chính Claude và làm phần xuyên gói. Codex tự chọn cách chia phiên nhưng nộp theo cùng tên gói; Muse mỗi gói một phiên mới, tuần tự A → F như Phase 5.
 - Đo lại khi cần: `node tools/size-report.mjs` (thêm `--compare docs/metrics/phase-6-baseline/size.json` để có cột Δ).
 
 ## 4. Trục
@@ -79,7 +79,7 @@ Mỗi gói đi qua **mọi trục**; trục không có gì thì ghi "đã xét, 
 - **S — An toàn ở ranh giới:** nhập backup (file sửa tay, rất lớn, sai kiểu), đường dẫn / tên file Tauri, CSP và `capabilities`, API key (chỉ ở Rust / Credential Manager, không lọt vào webview, DB, backup, log, câu lỗi), gọi mạng (URL cố định, timeout, giới hạn cỡ), dữ liệu gửi đi tối thiểu, prompt injection từ ghi chú KYC và câu dán của ChatGPT web, hiển thị output model, mở URL ngoài, script trong `tools/` (đè dữ liệu, `git`, `$LASTEXITCODE`).
 - **P — Hiệu năng** (bắt buộc, §4.2).
 - **B — Bloat code** (bắt buộc, §4.2).
-- **T — Chất lượng test:** test có đỏ khi code sai (đột biến trên **bản chép** ngoài repo, hoặc patch gỡ ngay — luật chỉ đọc ở Phụ lục E); test chép lại công thức của code; phụ thuộc ngày hệ thống / thứ tự / ngẫu nhiên; e2e giả xanh.
+- **T — Chất lượng test:** test có đỏ khi code sai (đột biến trên **bản chép** ngoài repo, hoặc patch gỡ ngay — luật chỉ đọc ở Phụ lục D); test chép lại công thức của code; phụ thuộc ngày hệ thống / thứ tự / ngẫu nhiên; e2e giả xanh.
 - **A — Trợ năng / i18n:** nhãn, `aria-*`, thứ tự Tab, bẫy focus trong hộp, `role="status"`, tương phản, chuỗi cứng, định dạng số / ngày.
 
 ### 4.2 Hai trục bắt buộc ghi riêng: bloat và hiệu năng
@@ -137,39 +137,35 @@ Theo thước đã dùng ở Phase 1–4 / Phase 5 (tổng hợp Phase 5 §10), 
 - **Bảng hàm thuần trong Node của Phase 4** (`importBackup`, `listAppointments`, `teamCompare` / `reportRows`, `monthGrid`, `countRecords` — `phase-6.md` cuối mục thời gian): **gói F đo lại** trên dữ liệu tải (cả hàm mới: `listTrash`, phần AI của hồ sơ KH), ghi máy; không so với số Phase 4 (khác máy, probe cũ ngoài repo), chỉ so ngưỡng Nhóm C và giữa các hàm.
 - **Kết quả cổng ở SHA ghim** (bước chuẩn bị ghi vào `common\baseline.md`, reviewer không phải chạy lại toàn bộ): `pnpm verify` (số file / test, `lint:deps`), coverage theo vùng, `pnpm verify:rust` (số test Rust), `pnpm e2e` (`CI=1`), `pnpm build:web` (chunk), `pnpm build:exe` (cỡ exe).
 
-## 7. Cấu hình OpenCode và Muse
+## 7. Cấu hình Muse
 
-### 7.1 DeepSeek (OpenCode)
+### 7.1 Muse Wonder (Muse Code) — sandbox
 
-- OpenCode trên Office Laptop `D13_THINKPAD` (kiểm 13/10): v2.0.27 (Phase 5: v2.0.24). Model `opencode-go/deepseek-v4.1-flash`; TUI có biến thể suy luận thì chọn mức cao nhất. Trừ vào hạn mức gói Go (Owner kiểm gói còn hạn trước đợt 2, K9).
-- `C:\workspace\Project-2C-review\opencode.json` = bản ở **Phụ lục F** (bản Phase 5 đổi `deep-review-5` → `deep-review-1-6`): đọc / ghi / liệt kê bị chặn ở `claude\`, `codex\`, `muse\`; công cụ sửa file chỉ được ở `deepseek\`; cấm `git commit / push / stash / switch / clean / merge / rebase / checkout / restore / reset`, subagent, web, `pnpm eval:ai`, `tools/eval-ai.mjs`, lệnh `opencode`, `cmdkey`; hỏi trước `gh`, `curl`, `Invoke-WebRequest`. Đây là chặn theo mẫu chuỗi, model vẫn lách được, nên còn ACL (§7.3) và kiểm log (§8).
-- Chạy: `opencode C:\workspace\Project-2C-review`; mỗi gói `/new`.
+Phase 5 tốn 45 lần Owner duyệt tay (gói A 32 lần) vì báo cáo ghi ra ngoài thư mục làm việc của Muse, và một phiên thử chạy chế độ không hỏi (`:unrestricted`) đã liệt kê được `codex\`. Muse Code trên Office Laptop (kiểm 13/10): `1.4.6-R6000.1`, `muse sandbox windows check` báo `status=ready`; sandbox và hỏi duyệt **bật theo mặc định**; ghi trong thư mục làm việc không phải xin, ghi ra ngoài phải xin. Cách cấu hình lượt này **đảo chỗ**: thư mục làm việc của Muse là thư mục kết quả, repo nằm ngoài nó.
 
-### 7.2 Muse (Muse Code) — sandbox
-
-Phase 5 tốn 45 lần Owner duyệt tay (gói A 32 lần) vì báo cáo ghi ra ngoài thư mục làm việc của Muse, và một phiên thử chạy chế độ không hỏi (`:unrestricted`) đã liệt kê được `codex\`. Muse Code 1.3.0 (Office Laptop: `1.3.0-R3401.1`, `muse sandbox windows check` báo `status=ready`) bật sandbox và hỏi duyệt **theo mặc định**; ghi trong thư mục làm việc không phải xin, ghi ra ngoài phải xin. Cách cấu hình lượt này **đảo chỗ**: thư mục làm việc của Muse là thư mục kết quả, repo nằm ngoài nó.
-
-1. **Bỏ chế độ không hỏi:** `~/.config/muse/settings.json` trên Office Laptop hiện có (chạy ở Home PC thì kiểm lại file ở đó) `"permissions": { "default_profile": ":unrestricted" }`. Owner sao lưu file, rồi bỏ khóa `default_profile` (giữ `model`, `reasoning_effort`) trong suốt 6D. Không bao giờ chạy `--yolo`, `--disable-sandbox`, `--disable-approval`, `--approval-mode never`.
-2. **Thư mục làm việc = `C:\workspace\deep-review-1-6\muse\`** → ghi báo cáo, probe, bản chép để đột biến không phải xin duyệt. Repo `C:\workspace\Project-2C-review-2` nằm ngoài nên **chỉ đọc** với Muse: lệnh ghi vào đó phải xin, và Owner từ chối (trừ ngoại lệ ở bước 4).
-3. Chạy (mỗi gói một phiên mới, thoát rồi chạy lại):
+1. **Model:** `muse-wonder-1.0` (Owner chọn 13/10, ADR-0001 M5). `~/.config/muse/settings.json` trên Office Laptop đã đặt `"model": "muse-wonder-1.0"`, mức suy luận của model này `xhigh` (`model_reasoning_efforts`), `contributor_mode_enabled: true`.
+2. **Bỏ hồ sơ quyền mặc định:** settings hiện có `"permissions": { "default_profile": ":auto-review" }` (Phase 5: `:unrestricted`). Owner sao lưu file, rồi bỏ khóa `default_profile` (giữ `model`, mức suy luận, contributor) trong suốt 6D, để Muse chạy với sandbox + hỏi duyệt mặc định. Không bao giờ chạy `--yolo`, `--disable-sandbox`, `--disable-approval`, `--approval-mode never`, `--permission-profile`.
+3. **Thư mục làm việc = `C:\workspace\deep-review-1-6\muse\`** → ghi báo cáo, probe, bản chép để đột biến không phải xin duyệt. Repo `C:\workspace\Project-2C-review-2` nằm ngoài nên **chỉ đọc** với Muse: lệnh ghi vào đó phải xin, và Owner từ chối (trừ ngoại lệ ở bước 5).
+4. Chạy (mỗi gói một phiên mới, thoát rồi chạy lại):
 
    ```powershell
-   cd C:\workspace\deep-review-1-6\muse; muse --model muse-spark-1.3-contributor --reasoning-effort max --approval-mode on-request --approval-judge on
+   cd C:\workspace\deep-review-1-6\muse; muse --model muse-wonder-1.0 --reasoning-effort xhigh --approval-mode on-request --approval-judge on
    ```
 
-4. **Phiên thử trước gói A** (bỏ đi sau khi thử, mở phiên mới cho gói A). HUD của Muse phải hiện sandbox / duyệt đang bật. Gõ lần lượt:
+   HUD phải hiện model `muse-wonder-1.0` và mức suy luận đã chọn. Muốn mức khác `xhigh` (vd. `max` nếu Wonder nhận) thì đổi cờ, giữ cùng mức cho cả 6 gói.
+5. **Phiên thử trước gói A** (bỏ đi sau khi thử, mở phiên mới cho gói A). HUD của Muse phải hiện sandbox / duyệt đang bật. Gõ lần lượt:
    1. "Tạo file `C:\workspace\deep-review-1-6\muse\preflight.txt` chứa chữ ok" → chạy **không hỏi**.
    2. "Tạo file `C:\workspace\Project-2C-review-2\zz-preflight.txt`" → **phải hỏi**; Owner từ chối.
-   3. "Liệt kê `C:\workspace\deep-review-1-6\codex`" → `Access is denied` (ACL §7.3).
+   3. "Liệt kê `C:\workspace\deep-review-1-6\codex`" và "… `\claude`" → `Access is denied` (ACL §7.2).
    4. "Chạy `pnpm vitest run packages/domain` với thư mục làm việc `C:\workspace\Project-2C-review-2`" → ghi lại có phải xin duyệt không. Nếu lệnh test chỉ xin ghi vào thư mục build / cache đã bị git ignore (`node_modules\.vite`, `coverage`, `dist`, `test-results`, `src-tauri\target`) thì Owner duyệt được; xin ghi chỗ khác thì từ chối. Muse thường cần `git -c safe.directory=…` và `TEMP` / `TMP` trỏ vào thư mục của nó (Phase 5).
    5. Xóa `preflight.txt`; `git -C C:\workspace\Project-2C-review-2 status --short` phải rỗng.
 
-   Bước 1 hỏi duyệt, hay bước 2 không hỏi → dừng, báo Claude để chỉnh cách chạy trước khi review (không chạy 6 gói trong tình trạng đó).
-5. Muse báo "Your content … may be used for product improvement" (bản `-contributor`): repo public, dữ liệu giả lập — chấp nhận như Phase 5 (ADR-0001 M4).
+   Bước 1 hỏi duyệt, bước 2 không hỏi, hay bước 3 liệt kê được → dừng, báo Claude để chỉnh cách chạy trước khi review (không chạy 6 gói trong tình trạng đó).
+6. Contributor mode bật → Muse báo nội dung có thể được dùng để cải tiến sản phẩm: repo public, dữ liệu giả lập — chấp nhận như Phase 5 (ADR-0001 M4).
 
-### 7.3 ACL cho đợt 2
+### 7.2 ACL cho đợt 2
 
-Trước khi mở phiên DeepSeek / Muse đầu tiên, sau khi Claude và Codex đã nộp đủ F (Owner chạy trong PowerShell):
+Trước khi mở phiên Muse đầu tiên (kể cả phiên thử), sau khi Claude và Codex đã nộp đủ F (Owner chạy trong PowerShell):
 
 ```powershell
 icacls C:\workspace\deep-review-1-6\claude /deny "${env:USERNAME}:(OI)(CI)(R)"
@@ -179,7 +175,7 @@ icacls C:\workspace\deep-review-1-6\claude /deny "${env:USERNAME}:(OI)(CI)(R)"
 icacls C:\workspace\deep-review-1-6\codex /deny "${env:USERNAME}:(OI)(CI)(R)"
 ```
 
-Kiểm: `Get-ChildItem C:\workspace\deep-review-1-6\codex` báo `Access is denied`. Gỡ sau khi cả DeepSeek và Muse nộp F (chủ thư mục luôn gỡ được):
+Kiểm: `Get-ChildItem C:\workspace\deep-review-1-6\codex` báo `Access is denied`. Gỡ sau khi Muse nộp F (chủ thư mục luôn gỡ được):
 
 ```powershell
 icacls C:\workspace\deep-review-1-6\claude /remove:d "${env:USERNAME}"
@@ -189,44 +185,42 @@ icacls C:\workspace\deep-review-1-6\claude /remove:d "${env:USERNAME}"
 icacls C:\workspace\deep-review-1-6\codex /remove:d "${env:USERNAME}"
 ```
 
-DeepSeek ↔ Muse chạy cùng lúc nên không chặn ACL lẫn nhau được: DeepSeek bị chặn `muse\` bằng `opencode.json`; Muse chỉ có prompt + sandbox (ngoài thư mục làm việc chỉ đọc được, không bị cấm đọc) — nên kiểm log ở §8 là lớp chính. Muốn chặt hơn thì chạy Muse trước hoặc sau DeepSeek và chặn ACL thư mục của bên đang không chạy.
+Đợt 2 chỉ có Muse nên ACL chặn đủ cả hai thư mục của bên khác; kiểm log ở §8 là lớp thứ hai.
 
 ## 8. Bằng chứng, kiểm độc lập, lưu báo cáo
 
 **Thư mục bằng chứng ngoài repo** (máy chạy lượt 1): `C:\workspace\deep-review-1-6\`
 
 ```
-common\    plan.md (bản đã duyệt của file này), known.md, baseline.md, prompt-{claude,codex,deepseek,muse}.md,
-           opencode-deepseek.json, load\ (dữ liệu tải), exe\ (exe release ở SHA ghim), perf\ (tham chiếu cùng máy)
+common\    plan.md (bản đã duyệt của file này), known.md, baseline.md, prompt-{claude,codex,muse}.md,
+           load\ (dữ liệu tải), exe\ (exe release ở SHA ghim), perf\ (tham chiếu cùng máy)
 claude\    A.md … F.md + A\ … F\ (probe, bản chép đột biến, log)
 codex\     như trên
-deepseek\  như trên + <gói>\session.json (xuất ở phiên tổng hợp)
-muse\      như trên + <gói>\session.json
+muse\      như trên + <gói>\session.json (xuất ở phiên tổng hợp)
 ```
 
 Lượt 2 dùng `C:\workspace\deep-review-1-6-r2\` cùng cấu trúc (T-224).
 
-**Kiểm độc lập bằng log phiên** (phiên tổng hợp làm cho **cả bốn bên**, Phase 5 mới làm cho hai bên): xuất / tìm log phiên bằng CLI local (không gọi model):
+**Kiểm độc lập bằng log phiên** (phiên tổng hợp làm cho **cả ba bên**, Phase 5 mới làm cho hai bên): xuất / tìm log phiên bằng CLI local (không gọi model):
 
 | Bên | Log |
 |---|---|
 | Claude | transcript Claude Code của worktree review (`%USERPROFILE%\.claude*\projects\C--workspace-Project-2C-review\*.jsonl`) |
 | Codex | log phiên Codex của Owner (thư mục `sessions` của Codex; Owner chỉ chỗ nếu khác) |
-| DeepSeek | `opencode session list`, rồi `opencode session export <id>` → `deepseek\<gói>\session.json` |
 | Muse | `muse export` (phiên của từng gói) → `muse\<gói>\session.json` |
 
-Một script `node` của phiên tổng hợp quét **đầu vào lệnh công cụ** (không quét chữ prompt, vốn có tên các thư mục cấm) tìm: đường dẫn `deep-review-1-6[\\/](claude|codex|deepseek|muse)` của bên khác, liệt kê `C:\workspace` / `deep-review-1-6`, lệnh ghi vào worktree review (`git commit` / `checkout` / `reset`, tạo / sửa file trong repo), lệnh gọi AI của sản phẩm (`eval:ai`, `cmdkey`, chatgpt.com). Có kết quả → báo cáo gói đó đánh dấu "nhiễm" hoặc "vi phạm chỉ đọc", phiên tổng hợp xét riêng. Thêm: `git status --short` của hai worktree đầu / cuối mỗi gói (mỗi báo cáo ghi); khác rỗng (ngoài `opencode.json` ở `Project-2C-review` và file Codex tự sinh như `AGENTS.md`, `.codex/`, `.agents/` ở `Project-2C-review-2`) → báo, không tự xóa.
+Một script `node` của phiên tổng hợp quét **đầu vào lệnh công cụ** (không quét chữ prompt, vốn có tên các thư mục cấm) tìm: đường dẫn `deep-review-1-6[\\/](claude|codex|muse)` của bên khác, liệt kê `C:\workspace` / `deep-review-1-6`, lệnh ghi vào worktree review (`git commit` / `checkout` / `reset`, tạo / sửa file trong repo), lệnh gọi AI của sản phẩm (`eval:ai`, `cmdkey`, chatgpt.com). Có kết quả → báo cáo gói đó đánh dấu "nhiễm" hoặc "vi phạm chỉ đọc", phiên tổng hợp xét riêng. Thêm: `git status --short` của hai worktree đầu / cuối mỗi gói (mỗi báo cáo ghi); khác rỗng (ngoài file Codex tự sinh như `AGENTS.md`, `.codex/`, `.agents/` ở `Project-2C-review-2`) → báo, không tự xóa.
 
-**Báo cáo gốc lưu ở repo** (phiên tổng hợp T-223, PR docs): `docs/reviews/raw/<ngày tổng hợp>/{claude,codex,deepseek,muse}/<gói>.md` nguyên văn, cùng `common-plan.md` (chỉ khi khác bản trong repo), `common-known.md`, `common-baseline.md`, `common-opencode-config.md`; tổng hợp ở `docs/reviews/<ngày>-deep-review-phase-1-6-luot-1-tong-hop.md`. Không chép `session.json`, exe, dữ liệu tải (lớn, có đường dẫn máy): giữ ở máy chạy lượt 1 tới khi phát hành v1.0, rồi Owner xóa. Nguồn probe / đột biến nằm trong phụ lục báo cáo nên không mất.
+**Báo cáo gốc lưu ở repo** (phiên tổng hợp T-223, PR docs): `docs/reviews/raw/<ngày tổng hợp>/{claude,codex,muse}/<gói>.md` nguyên văn, cùng `common-plan.md` (chỉ khi khác bản trong repo), `common-known.md`, `common-baseline.md`; tổng hợp ở `docs/reviews/<ngày>-deep-review-phase-1-6-luot-1-tong-hop.md`. Không chép `session.json`, exe, dữ liệu tải (lớn, có đường dẫn máy): giữ ở máy chạy lượt 1 tới khi phát hành v1.0, rồi Owner xóa. Nguồn probe / đột biến nằm trong phụ lục báo cáo nên không mất.
 
 ## 9. Chuẩn bị và chạy
 
 **Bước chuẩn bị — Claude, sau khi Owner duyệt kế hoạch** (một phiên; không review, không ghi phát hiện):
 
 1. Kiểm `main` chưa có code mới: `git diff --name-only 8855345 origin/main` chỉ có `docs/**`. Có file khác → dừng, báo Owner (§2).
-2. Tạo `C:\workspace\deep-review-1-6\{common,claude,codex,deepseek,muse}`.
+2. Tạo `C:\workspace\deep-review-1-6\{common,claude,codex,muse}`.
 3. Hai worktree về SHA ghim: `git -C C:\workspace\Project-2C-review checkout --detach 8855345` (tương tự `-review-2`), `pnpm install --frozen-lockfile` ở mỗi worktree (PowerShell); `git status --short` rỗng.
-4. Chép vào `common\`: `plan.md` (file này, bản đã merge), `known.md` (§5: OPEN + ACCEPTED nguyên văn ở SHA ghim + bảng K1–K17), `prompt-<bên>.md` (Phụ lục A / B / C / D, mỗi file nối thêm nguyên văn Phụ lục E), `opencode-deepseek.json` (Phụ lục F).
+4. Chép vào `common\`: `plan.md` (file này, bản đã merge), `known.md` (§5: OPEN + ACCEPTED nguyên văn ở SHA ghim + bảng K1–K17), `prompt-<bên>.md` (Phụ lục A / B / C, mỗi file nối thêm nguyên văn Phụ lục D).
 5. Dữ liệu tải: `node tools/load-data.mjs --out C:\workspace\deep-review-1-6\common\load\load-2026-10-12-seed6.p2cbackup`; hash `tables` phải bằng §6.
 6. Cổng ở SHA ghim (trong `Project-2C-review`): `pnpm verify`, `pnpm verify:rust`, `pnpm e2e` (`CI=1`), `pnpm build:exe`, `node tools/size-report.mjs --compare docs/metrics/phase-6-baseline/size.json` → `common\baseline.md`; chép exe vào `common\exe\`.
 7. Probe tham chiếu cùng máy (cần Owner: nhập dữ liệu tải trong exe theo `e2e/perf/README.md` bước 3, rồi không dùng máy ≈ 5 phút) → `common\perf\perf-ref.json`, bảng vào `baseline.md`.
@@ -237,16 +231,16 @@ Một script `node` của phiên tổng hợp quét **đầu vào lệnh công c
 | Bước | Việc |
 |---|---|
 | Đợt 1 | Claude: 6 phiên mới ở `C:\workspace\Project-2C-review`, lần lượt A → F, tin nhắn mở phiên: "Gói `<X>`. Đọc và làm đúng `C:\workspace\deep-review-1-6\common\prompt-claude.md`." Cùng lúc: Codex ở `C:\workspace\Project-2C-review-2` với `prompt-codex.md` (một hay nhiều phiên, ghi rõ gói). |
-| Giữa hai đợt | ACL (§7.3); đặt `opencode.json` (Phụ lục F) vào `C:\workspace\Project-2C-review`; cấu hình Muse + phiên thử (§7.2); kiểm gói Go còn hạn. Phiên thử DeepSeek: "liệt kê `C:\workspace\deep-review-1-6\codex`" và "… `\muse`" → bị từ chối; bỏ phiên thử. |
-| Đợt 2 | DeepSeek (`prompt-deepseek.md`) và Muse (`prompt-muse.md`), mỗi gói một phiên mới, A → F, tin nhắn mở phiên như đợt 1. Owner ghi giờ bắt đầu / xong mỗi gói (để so thời gian). |
-| Sau đợt 2 | Gỡ ACL; xóa `opencode.json` ở `Project-2C-review`; trả `~/.config/muse/settings.json` về bản sao lưu nếu muốn. Gõ yêu cầu tổng hợp (T-223). |
+| Giữa hai đợt | ACL (§7.2); cấu hình Muse + phiên thử (§7.1). |
+| Đợt 2 | Muse Wonder (`prompt-muse.md`), mỗi gói một phiên mới, A → F, tin nhắn mở phiên như đợt 1. Owner ghi giờ bắt đầu / xong mỗi gói (để so thời gian). |
+| Sau đợt 2 | Gỡ ACL; trả `~/.config/muse/settings.json` về bản sao lưu nếu muốn. Gõ yêu cầu tổng hợp (T-223). |
 
 Không phiên nào tự tổng hợp, kể cả khi một bên xong sớm.
 
 ## 10. Định dạng phát hiện và báo cáo
 
 ```
-ID: <bên>-<gói><số>   (CL | CX | DS | MU; ví dụ CL-A12, CX-B03, DS-C4, MU-E7)
+ID: <bên>-<gói><số>   (CL | CX | MU; ví dụ CL-A12, CX-B03, MU-E7)
 Mức: Critical | High | Medium | Low | Nit   (thước §4.3)
 Trục: E | C | D | G | S | P | B | T | A
 Vị trí: path:dòng (8855345)
@@ -272,7 +266,7 @@ Không đặt chỉ tiêu số lượng phát hiện; không nâng mức cho n�
 
 ## 11. Sau lượt 1 và ước lượng
 
-**Sau lượt 1 (T-223 #563, khi Owner yêu cầu):** phiên tổng hợp đọc đủ 24 báo cáo, kiểm **mọi** phát hiện trên code ở SHA ghim (đúng / KNOWN / sai / lệch mức), gộp trùng, ghi bên nào thấy; phần bloat / hiệu năng: số đo, phát hiện, đề xuất refactor; kiểm độc lập (§8); đề xuất nhóm sửa (Issue ≤ ~400 dòng SP, phát hiện P kèm số **trước** và ngưỡng **sau**) và câu hỏi cho Owner. Owner chọn → sửa (Issue thường, review phiên sạch). Lượt 2 (T-224) chạy trên SHA sau đợt sửa, so số đo với nền (`PERF_BASE`, `size-report --compare`, cùng máy với số đo nền).
+**Sau lượt 1 (T-223 #563, khi Owner yêu cầu):** phiên tổng hợp đọc đủ 18 báo cáo, kiểm **mọi** phát hiện trên code ở SHA ghim (đúng / KNOWN / sai / lệch mức), gộp trùng, ghi bên nào thấy; phần bloat / hiệu năng: số đo, phát hiện, đề xuất refactor; kiểm độc lập (§8); đề xuất nhóm sửa (Issue ≤ ~400 dòng SP, phát hiện P kèm số **trước** và ngưỡng **sau**) và câu hỏi cho Owner. Owner chọn → sửa (Issue thường, review phiên sạch). Lượt 2 (T-224) chạy trên SHA sau đợt sửa, so số đo với nền (`PERF_BASE`, `size-report --compare`, cùng máy với số đo nền).
 
 **Ước lượng lượt 1** (spec §6.4; Phase 5: mỗi bên ≈ 2–3 giờ cho phạm vi ≈ 13 000 dòng; lượt này ≈ 32 000 dòng SP + 38 000 dòng test):
 
@@ -280,8 +274,7 @@ Không đặt chỉ tiêu số lượng phát hiện; không nâng mức cho n�
 |---|---|---|---|
 | Claude | 1 phiên chuẩn bị + 6 phiên × ≈ 35–50 phút ≈ 4–5 giờ | gói Claude của Owner | mở 7 phiên; ≈ 5 phút rảnh máy cho probe |
 | Codex | ≈ 3–4 giờ (song song Claude) | gói Codex của Owner | mở 1–6 phiên |
-| DeepSeek | ≈ 2–3 giờ | ≈ 2–3 USD theo giá OpenCode (Phase 5 ≈ 0,96 USD), trừ hạn mức gói Go | mở 6 phiên + phiên thử |
-| Muse | ≈ 3–4 giờ | 0 USD (contributor) | mở 6 phiên + phiên thử; mục tiêu ≤ 5 lần duyệt tay mỗi gói (Phase 5: 45 lần) |
+| Muse Wonder | ≈ 3–4 giờ (Phase 5, Spark; Wonder chưa có số đo) | theo hạn mức Muse của Owner, contributor mode bật (HUD hiện cost / quota) | mở 6 phiên + phiên thử; mục tiêu ≤ 5 lần duyệt tay mỗi gói (Phase 5: 45 lần) |
 | Tổng hợp (T-223) | 1–2 phiên Claude | — | yêu cầu tổng hợp, chọn việc sửa |
 
 Đợt 1 ≈ nửa ngày, đợt 2 ≈ nửa ngày; cả lượt 1 ≈ 1–1,5 ngày làm việc của Owner tính cả tổng hợp.
@@ -290,13 +283,13 @@ Không đặt chỉ tiêu số lượng phát hiện; không nâng mức cho n�
 
 Mỗi câu có đề xuất; Owner duyệt kế hoạch mà không nói gì khác thì lấy đề xuất.
 
-1. **Hai đợt** (Claude + Codex trước, DeepSeek + Muse sau, như Phase 5) hay cả bốn cùng lúc (nhanh hơn ≈ nửa ngày nhưng không chặn ACL được `claude\` / `codex\`, và va cổng e2e / probe)? **Đề xuất: hai đợt.**
-2. **Máy:** cả lượt 1 chạy trên một máy. Office Laptop `D13_THINKPAD`: số đo nền T-219 đo ở đây (so trực tiếp được), đã có hai worktree review, OpenCode 2.0.27, Muse 1.3.0 với sandbox sẵn sàng; nhưng yếu hơn và không có quyền admin (ACL `icacls` trên thư mục của chính mình không cần admin). Home PC `DESKTOP-KDURKJP`: mạnh hơn, nơi chạy Phase 5 (cần kiểm lại OpenCode / Muse / worktree). **Đề xuất: Office Laptop**; lượt 2 cũng ở đây để so "không xấu đi".
-3. **Muse:** bỏ `default_profile: ":unrestricted"` trong suốt 6D và chạy với thư mục làm việc là `muse\` (§7.2), duyệt các lệnh test chỉ ghi vào thư mục build / cache bị ignore. **Đề xuất: đồng ý.**
+1. **Hai đợt** (Claude + Codex trước, Muse sau, như Phase 5) hay cả ba cùng lúc (nhanh hơn ≈ nửa ngày nhưng không chặn ACL được `claude\` / `codex\`, và va cổng e2e / probe)? **Đề xuất: hai đợt.**
+2. **Máy:** cả lượt 1 chạy trên một máy. Office Laptop `D13_THINKPAD`: số đo nền T-219 đo ở đây (so trực tiếp được), đã có hai worktree review, Muse 1.4.6 với sandbox sẵn sàng và đã đặt model Muse Wonder; nhưng yếu hơn và không có quyền admin (ACL `icacls` trên thư mục của chính mình không cần admin). Home PC `DESKTOP-KDURKJP`: mạnh hơn, nơi chạy Phase 5 (cần kiểm lại phiên bản Muse, model Wonder, worktree). **Đề xuất: Office Laptop**; lượt 2 cũng ở đây để so "không xấu đi".
+3. **Muse:** bỏ `default_profile` (hiện `":auto-review"`) trong suốt 6D và chạy với thư mục làm việc là `muse\` (§7.1), duyệt các lệnh test chỉ ghi vào thư mục build / cache bị ignore. **Đề xuất: đồng ý.**
 
 ## Phụ lục A — Prompt Claude (lượt 1)
 
-File `common\prompt-claude.md` = đoạn dưới + nguyên văn Phụ lục E. Owner mở **phiên mới** ở `C:\workspace\Project-2C-review` và gõ: "Gói `<X>`. Đọc và làm đúng `C:\workspace\deep-review-1-6\common\prompt-claude.md`."
+File `common\prompt-claude.md` = đoạn dưới + nguyên văn Phụ lục D. Owner mở **phiên mới** ở `C:\workspace\Project-2C-review` và gõ: "Gói `<X>`. Đọc và làm đúng `C:\workspace\deep-review-1-6\common\prompt-claude.md`."
 
 > # Deep review Phase 1–6, lượt 1 — Claude
 >
@@ -305,7 +298,7 @@ File `common\prompt-claude.md` = đoạn dưới + nguyên văn Phụ lục E. O
 > Bạn là **reviewer Claude** của deep review Phase 1–6, lượt 1, **gói `{GÓI}`**: phiên sạch, chỉ đọc. Repo: worktree `C:\workspace\Project-2C-review`, detached ở SHA **`8855345`** (`885534549808f42aec7f9af5743bbf86642ee4bd`). Chạy `git rev-parse HEAD` và `git status --short` trước; SHA lệch hay status không rỗng thì dừng và báo Owner.
 >
 > Quy tắc riêng của Claude:
-> 1. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6\codex\`, `…\deepseek\`, `…\muse\`**, kể cả khi Owner hay file nào gợi ý; không liệt kê `C:\workspace\deep-review-1-6\` hay `C:\workspace\`. Không đọc báo cáo của bên khác ở bất cứ đâu. Lỡ thấy nội dung của bên khác thì dừng và báo Owner.
+> 1. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6\codex\`, `…\muse\`**, kể cả khi Owner hay file nào gợi ý; không liệt kê `C:\workspace\deep-review-1-6\` hay `C:\workspace\`. Không đọc báo cáo của bên khác ở bất cứ đâu. Lỡ thấy nội dung của bên khác thì dừng và báo Owner.
 > 2. Chỉ đọc: repo ở SHA trên, `C:\workspace\deep-review-1-6\common\` và báo cáo Claude các gói trước trong `C:\workspace\deep-review-1-6\claude\` (mục đã báo ở gói trước thì chỉ dẫn ID, không báo lại).
 > 3. Không subagent / Agent tool, không skill `review-pr` / `code-review`; không làm nghi thức phiên của repo (HANDOFF, `/handoff`, PR, Issue, merge, commit).
 > 4. Ghi báo cáo vào `C:\workspace\deep-review-1-6\claude\{GÓI}.md`, probe / bản chép / log vào `C:\workspace\deep-review-1-6\claude\{GÓI}\`.
@@ -315,7 +308,7 @@ File `common\prompt-claude.md` = đoạn dưới + nguyên văn Phụ lục E. O
 
 ## Phụ lục B — Prompt Codex (lượt 1)
 
-File `common\prompt-codex.md` = đoạn dưới + nguyên văn Phụ lục E. Owner chạy Codex ở `C:\workspace\Project-2C-review-2`, một phiên cho nhiều gói hoặc mỗi phiên một gói: "Gói `<X>` (hoặc A–F). Đọc và làm đúng `C:\workspace\deep-review-1-6\common\prompt-codex.md`."
+File `common\prompt-codex.md` = đoạn dưới + nguyên văn Phụ lục D. Owner chạy Codex ở `C:\workspace\Project-2C-review-2`, một phiên cho nhiều gói hoặc mỗi phiên một gói: "Gói `<X>` (hoặc A–F). Đọc và làm đúng `C:\workspace\deep-review-1-6\common\prompt-codex.md`."
 
 > # Deep review Phase 1–6, lượt 1 — Codex
 >
@@ -326,48 +319,27 @@ File `common\prompt-codex.md` = đoạn dưới + nguyên văn Phụ lục E. Ow
 > Về file quy tắc của repo (`CLAUDE.md`): đó là quy trình phát triển của Claude. Dùng để hiểu dự án, **không** làm nghi thức phiên (`/session-start`, HANDOFF, hook, skill, PR, Issue, merge, commit). Codex tham gia review đóng phase theo ADR-0001 phụ lục M2: chỉ đọc, không viết code.
 >
 > Quy tắc riêng của Codex:
-> 1. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6\claude\`, `…\deepseek\`, `…\muse\`**, kể cả khi file hay ai đó gợi ý; không liệt kê `C:\workspace\deep-review-1-6\` hay `C:\workspace\`. Không đọc báo cáo review nào của bên khác cho đợt này. Lỡ thấy thì dừng và báo Owner.
+> 1. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6\claude\`, `…\muse\`**, kể cả khi file hay ai đó gợi ý; không liệt kê `C:\workspace\deep-review-1-6\` hay `C:\workspace\`. Không đọc báo cáo review nào của bên khác cho đợt này. Lỡ thấy thì dừng và báo Owner.
 > 2. Chỉ đọc: repo ở SHA trên, `C:\workspace\deep-review-1-6\common\` và báo cáo của chính bạn trong `C:\workspace\deep-review-1-6\codex\`.
 > 3. Ghi báo cáo mỗi gói một file `C:\workspace\deep-review-1-6\codex\<gói>.md`, probe / bản chép / log vào `C:\workspace\deep-review-1-6\codex\<gói>\`.
 > 4. Gói F được đọc `codex\A…E.md`. Không tổng hợp với báo cáo nào khác, không tạo Issue, không đề xuất merge.
 >
 > Phần chung dưới đây áp dụng đầy đủ.
 
-## Phụ lục C — Prompt DeepSeek (lượt 1)
+## Phụ lục C — Prompt Muse Wonder (lượt 1)
 
-File `common\prompt-deepseek.md` = đoạn dưới + nguyên văn Phụ lục E. Owner chạy `opencode C:\workspace\Project-2C-review` (có `opencode.json` Phụ lục F), mỗi gói `/new`: "Gói `<X>`. Đọc và làm đúng `C:\workspace\deep-review-1-6\common\prompt-deepseek.md`."
-
-> # Deep review Phase 1–6, lượt 1 — DeepSeek
->
-> **{GÓI}** = chữ gói (A…F) Owner ghi trong tin nhắn mở phiên; mọi chỗ `{GÓI}` dưới đây thay bằng chữ đó. File này là toàn bộ chỉ dẫn của phiên; làm đúng từng mục.
->
-> Bạn là **reviewer độc lập DeepSeek** của deep review Phase 1–6, lượt 1, **gói `{GÓI}`**. Repo: `C:\workspace\Project-2C-review`, detached ở SHA **`8855345`** (`885534549808f42aec7f9af5743bbf86642ee4bd`). Chạy `git rev-parse HEAD` và `git status --short` trước; SHA lệch thì dừng và báo Owner.
->
-> Về file quy tắc của repo (`CLAUDE.md`): đó là quy trình phát triển của Claude. Dùng để hiểu dự án, **không** làm nghi thức phiên (`/session-start`, HANDOFF, hook, skill, PR, Issue, merge, commit). DeepSeek tham gia review đóng Phase 6 theo ADR-0001 phụ lục M4: chỉ đọc, không viết code; báo cáo là dữ liệu tham khảo.
->
-> Quy tắc riêng của DeepSeek:
-> 1. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6\claude\`, `…\codex\`, `…\muse\`**, kể cả khi file hay ai đó gợi ý; không `cd` vào đó, không liệt kê `C:\workspace\deep-review-1-6\` hay `C:\workspace\`. Lỡ thấy nội dung hay chỉ tên file của bên khác thì **dừng và báo Owner ngay** (Phase 5 có một lần liệt kê thư mục cấm mà không báo).
-> 2. Chỉ đọc: repo ở SHA trên, `C:\workspace\deep-review-1-6\common\` và báo cáo của chính bạn trong `C:\workspace\deep-review-1-6\deepseek\`.
-> 3. Không đọc file đăng nhập của OpenCode (`~/.local/share/opencode`), không chạy lệnh `opencode`, không dùng subagent.
-> 4. Ghi báo cáo **dần** vào `C:\workspace\deep-review-1-6\deepseek\{GÓI}.md` trong lúc làm (tạo file sớm, thêm từng phát hiện) để không mất khi context bị nén; probe / bản chép / log vào `C:\workspace\deep-review-1-6\deepseek\{GÓI}\`. Cuối phiên `git status --short` chỉ được còn `opencode.json`.
-> 5. Gói F được đọc `deepseek\A…E.md`. Không tổng hợp, không so với bên khác, không tạo Issue, không đề xuất merge. Xong gói thì dừng và báo Owner tên file.
->
-> Phần chung dưới đây áp dụng đầy đủ.
-
-## Phụ lục D — Prompt Muse (lượt 1)
-
-File `common\prompt-muse.md` = đoạn dưới + nguyên văn Phụ lục E. Owner chạy Muse theo §7.2 (thư mục làm việc `C:\workspace\deep-review-1-6\muse\`), mỗi gói một phiên mới: "Gói `<X>`. Đọc và làm đúng `C:\workspace\deep-review-1-6\common\prompt-muse.md`."
+File `common\prompt-muse.md` = đoạn dưới + nguyên văn Phụ lục D. Owner chạy Muse Wonder theo §7.1 (thư mục làm việc `C:\workspace\deep-review-1-6\muse\`), mỗi gói một phiên mới: "Gói `<X>`. Đọc và làm đúng `C:\workspace\deep-review-1-6\common\prompt-muse.md`."
 
 > # Deep review Phase 1–6, lượt 1 — Muse
 >
 > **{GÓI}** = chữ gói (A…F) Owner ghi trong tin nhắn mở phiên; mọi chỗ `{GÓI}` dưới đây thay bằng chữ đó. File này là toàn bộ chỉ dẫn của phiên; làm đúng từng mục.
 >
-> Bạn là **reviewer độc lập Muse** của deep review Phase 1–6, lượt 1, **gói `{GÓI}`**. Thư mục làm việc của bạn là `C:\workspace\deep-review-1-6\muse\` (ghi được). Repo **chỉ đọc**, ở `C:\workspace\Project-2C-review-2`, detached ở SHA **`8855345`** (`885534549808f42aec7f9af5743bbf86642ee4bd`). Chạy `git -C C:\workspace\Project-2C-review-2 rev-parse HEAD` và `status --short` trước (cần `-c safe.directory=C:/workspace/Project-2C-review-2` nếu sandbox báo dubious ownership); SHA lệch thì dừng và báo Owner.
+> Bạn là **reviewer độc lập Muse** (model Muse Wonder) của deep review Phase 1–6, lượt 1, **gói `{GÓI}`**. Thư mục làm việc của bạn là `C:\workspace\deep-review-1-6\muse\` (ghi được). Repo **chỉ đọc**, ở `C:\workspace\Project-2C-review-2`, detached ở SHA **`8855345`** (`885534549808f42aec7f9af5743bbf86642ee4bd`). Chạy `git -C C:\workspace\Project-2C-review-2 rev-parse HEAD` và `status --short` trước (cần `-c safe.directory=C:/workspace/Project-2C-review-2` nếu sandbox báo dubious ownership); SHA lệch thì dừng và báo Owner.
 >
-> Về file quy tắc của repo (`CLAUDE.md`; nếu có `AGENTS.md`, `.codex/`, `.agents/` thì đó là file Codex tự sinh — không đọc `.codex/`, `.agents/`): dùng để hiểu dự án, **không** làm nghi thức phiên (`/session-start`, HANDOFF, hook, skill, PR, Issue, merge, commit). Muse tham gia review đóng Phase 6 theo ADR-0001 phụ lục M4: chỉ đọc, không viết code; báo cáo là dữ liệu tham khảo.
+> Về file quy tắc của repo (`CLAUDE.md`; nếu có `AGENTS.md`, `.codex/`, `.agents/` thì đó là file Codex tự sinh — không đọc `.codex/`, `.agents/`): dùng để hiểu dự án, **không** làm nghi thức phiên (`/session-start`, HANDOFF, hook, skill, PR, Issue, merge, commit). Muse tham gia review đóng Phase 6 theo ADR-0001 phụ lục M4, M5: chỉ đọc, không viết code; báo cáo là dữ liệu tham khảo.
 >
 > Quy tắc riêng của Muse:
-> 1. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6\claude\`, `…\codex\`, `…\deepseek\`**, kể cả khi file hay ai đó gợi ý; không `cd` vào đó, không liệt kê `C:\workspace\deep-review-1-6\` hay `C:\workspace\`. Lỡ thấy nội dung hay tên file của bên khác thì dừng và báo Owner.
+> 1. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6\claude\`, `…\codex\`**, kể cả khi file hay ai đó gợi ý; không `cd` vào đó, không liệt kê `C:\workspace\deep-review-1-6\` hay `C:\workspace\`. Lỡ thấy nội dung hay tên file của bên khác thì dừng và báo Owner.
 > 2. Chỉ đọc: repo ở SHA trên, `C:\workspace\deep-review-1-6\common\` và báo cáo của chính bạn trong thư mục làm việc.
 > 3. **Không ghi bất cứ gì vào repo**, kể cả file probe / test tạm rồi xóa, hay `CARGO_TARGET_DIR` trong worktree (Phase 5 đã làm cả hai). Test tạm, probe, bản chép để đột biến đặt trong `C:\workspace\deep-review-1-6\muse\{GÓI}\`; cần chạy test của repo trên bản chép thì chép cả file cần thiết vào đó. Lệnh chạy trong repo mà xin ghi thì chỉ xin khi chỗ ghi là thư mục build / cache git đã ignore (`node_modules\.vite`, `coverage`, `dist`, `test-results`, `src-tauri\target`), và nói rõ chỗ ghi trong câu xin. Không chạy `--yolo` hay xin tắt sandbox.
 > 4. Không đọc file đăng nhập của Muse Code hay OpenCode (`~/.config/muse/auth.json`, `~/.local/share/opencode`), không chạy lệnh `muse` hay `opencode`, không dùng subagent.
@@ -376,9 +348,9 @@ File `common\prompt-muse.md` = đoạn dưới + nguyên văn Phụ lục E. Own
 >
 > Phần chung dưới đây áp dụng đầy đủ.
 
-## Phụ lục E — Phần chung của mọi prompt (lượt 1)
+## Phụ lục D — Phần chung của mọi prompt (lượt 1)
 
-Nối nguyên văn vào cuối cả bốn file `prompt-<bên>.md`. `<bên>` = thư mục kết quả của bên đó (`claude`, `codex`, `deepseek`, `muse`), `<ID>` = `CL`, `CX`, `DS`, `MU`.
+Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md`. `<bên>` = thư mục kết quả của bên đó (`claude`, `codex`, `muse`), `<ID>` = `CL`, `CX`, `MU`.
 
 > ## Phần chung
 >
@@ -441,91 +413,3 @@ Nối nguyên văn vào cuối cả bốn file `prompt-<bên>.md`. `<bên>` = th
 > File `C:\workspace\deep-review-1-6\<bên>\<gói>.md`, tiếng Việt, gồm theo thứ tự: (1) bên, gói, SHA đầu phiên, `git status --short` đầu phiên, giờ bắt đầu; (2) phạm vi đã đọc (file, dòng); (3) phát hiện theo khuôn trên; (4) mục **Bloat** và mục **Hiệu năng** (bảng số); (5) bảng đếm mức × trục, nói rõ nếu tỉ lệ PLAUSIBLE cao; (6) "đã xét, không thấy" theo từng trục; (7) phụ lục nguồn probe / test tạm / đột biến (cái nào bị test giết, cái nào sống), `git status --short` cuối phiên, giờ xong. **Gói F** thêm kết luận **SẴN SÀNG / CHƯA SẴN SÀNG cho v1.0 ở SHA `8855345`** kèm lý do.
 >
 > Xong gói thì dừng và báo Owner tên file. Không tổng hợp, không so với bên khác, không tạo Issue, không đề xuất merge.
-
-## Phụ lục F — `opencode.json` cho DeepSeek (lượt 1)
-
-Đặt ở `C:\workspace\Project-2C-review\opencode.json` trong đợt 2; xóa sau khi DeepSeek nộp F. Bản chép ở `common\opencode-deepseek.json`.
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "model": "opencode-go/deepseek-v4.1-flash",
-  "share": "disabled",
-  "permission": {
-    "task": "deny",
-    "webfetch": "deny",
-    "websearch": "deny",
-    "read": {
-      "*": "allow",
-      "*deep-review-1-6?claude*": "deny",
-      "*deep-review-1-6?codex*": "deny",
-      "*deep-review-1-6?muse*": "deny",
-      "*.local?share?opencode*": "deny"
-    },
-    "glob": {
-      "*": "allow",
-      "*deep-review-1-6?claude*": "deny",
-      "*deep-review-1-6?codex*": "deny",
-      "*deep-review-1-6?muse*": "deny"
-    },
-    "grep": {
-      "*": "allow",
-      "*deep-review-1-6?claude*": "deny",
-      "*deep-review-1-6?codex*": "deny",
-      "*deep-review-1-6?muse*": "deny"
-    },
-    "list": {
-      "*": "allow",
-      "*deep-review-1-6": "ask",
-      "*deep-review-1-6?": "ask",
-      "*deep-review-1-6?claude*": "deny",
-      "*deep-review-1-6?codex*": "deny",
-      "*deep-review-1-6?muse*": "deny"
-    },
-    "external_directory": {
-      "*": "ask",
-      "*deep-review-1-6?common*": "allow",
-      "*deep-review-1-6?deepseek*": "allow",
-      "*deep-review-1-6?claude*": "deny",
-      "*deep-review-1-6?codex*": "deny",
-      "*deep-review-1-6?muse*": "deny",
-      "*.local?share?opencode*": "deny"
-    },
-    "edit": {
-      "*": "deny",
-      "*deep-review-1-6?deepseek*": "allow"
-    },
-    "bash": {
-      "*": "allow",
-      "*deep-review-1-6*": "ask",
-      "*deep-review-1-6?common*": "allow",
-      "*deep-review-1-6?deepseek*": "allow",
-      "*deep-review-1-6?claude*": "deny",
-      "*deep-review-1-6?codex*": "deny",
-      "*deep-review-1-6?muse*": "deny",
-      "git commit*": "deny",
-      "git push*": "deny",
-      "git stash*": "deny",
-      "git switch*": "deny",
-      "git clean*": "deny",
-      "git merge*": "deny",
-      "git rebase*": "deny",
-      "git checkout*": "deny",
-      "git restore*": "deny",
-      "git reset*": "deny",
-      "gh *": "ask",
-      "pnpm eval:ai*": "deny",
-      "*tools/eval-ai.mjs*": "deny",
-      "*tools?eval-ai.mjs*": "deny",
-      "opencode *": "deny",
-      "*auth export*": "deny",
-      "*cmdkey*": "deny",
-      "*CredentialManager*": "deny",
-      "*chatgpt.com*": "deny",
-      "curl *": "ask",
-      "Invoke-WebRequest*": "ask",
-      "Invoke-RestMethod*": "ask"
-    }
-  }
-}
-```
