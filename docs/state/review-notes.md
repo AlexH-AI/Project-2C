@@ -118,6 +118,9 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
   - `:308` → `:310`: NT-TR-13 kết thúc bằng "Khôi phục RE Thử → KH Thử khôi phục được". Nếu người thử bấm khôi phục KH Thử để xác nhận, RE Thử lại sở hữu một KH đang sống và bước "Xóa RE Thử" của NT-TR-15 bị chặn (`PERSON_IN_USE`, `packages/db/src/team.ts:239-247`) → ghi rõ ở NT-TR-13 "(chỉ xem nút bật, không khôi phục KH Thử)", hoặc thêm bước xóa lại KH Thử.
   - `:288` (NT-CA-09): sau NT-CA-03 ("chọn từng model"), model đang lưu có thể không còn là `deepseek-v4.1-flash`, nên Ctrl+F theo chuỗi đó có thể không thấy → "sửa giá trị model đang lưu (vd. `deepseek-v4.1-flash`) trong dòng `"key":"ai"` của bảng `settings`", hoặc chọn lại DeepSeek trước khi xuất.
   - NIT `:341` (NT-DB-03): ghi chú "Đóng bằng X không phải chờ" khó hiểu (X có chờ ghi xong không, có hiện hộp không?) → viết rõ kết quả mong đợi khi đóng bằng X.
+- Hai ghi chú không chặn của review PR #580 (T-227, #574, review @`215d4ed`) — sửa trước lượt nghiệm thu 6D (#562) hoặc ở lần chạm sau của từng file:
+  - `docs/testing/nghiem-thu-v1.md:362` (NT-HN-01): cột cuối vẫn ghi "Mở app lần đầu: #574", nhưng #574 đã đóng (Owner chấp nhận số mới 13/10) → bỏ hoặc đổi thành ngưỡng mới ở `docs/metrics/phase-6.md`.
+  - `docs/metrics/phase-6.md:35`: ngưỡng mở lần đầu mới là "không chậm hơn exe Phase 4 đo cùng cách, cùng máy", nên muốn kiểm ở lượt 2 thì phải build lại exe `3e84ce8` → ghi thêm số tham chiếu đã đo (Home PC, gọi exe → màn đầu có số liệu (LCP), Phase 4 max 3 937 ms; xấu hơn khi quá 20 % và quá 10 ms) để lượt 2 khỏi build lại.
 
 ## RESOLVED
 
