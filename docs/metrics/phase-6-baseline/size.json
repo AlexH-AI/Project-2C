@@ -1,0 +1,137 @@
+{
+  "commit": "b139d8a",
+  "lines": {
+    "rows": [
+      {
+        "key": "A",
+        "label": "A. Lõi dữ liệu",
+        "product": 7473,
+        "test": 11847,
+        "generated": 289,
+        "files": 93
+      },
+      {
+        "key": "B",
+        "label": "B. File và Rust",
+        "product": 2001,
+        "test": 3968,
+        "generated": 0,
+        "files": 19
+      },
+      {
+        "key": "C",
+        "label": "C. AI",
+        "product": 5129,
+        "test": 5985,
+        "generated": 0,
+        "files": 60
+      },
+      {
+        "key": "D",
+        "label": "D. Màn nhập liệu",
+        "product": 6820,
+        "test": 1748,
+        "generated": 0,
+        "files": 73
+      },
+      {
+        "key": "E",
+        "label": "E. Lịch hẹn, chỉ số, quản lý",
+        "product": 7032,
+        "test": 3545,
+        "generated": 0,
+        "files": 51
+      },
+      {
+        "key": "F",
+        "label": "F. Xuyên gói / công cụ",
+        "product": 3761,
+        "test": 10898,
+        "generated": 4628,
+        "files": 83
+      },
+      {
+        "key": "?",
+        "label": "Chưa xếp gói",
+        "product": 0,
+        "test": 0,
+        "generated": 0,
+        "files": 0
+      },
+      {
+        "key": "total",
+        "label": "Tổng",
+        "product": 32216,
+        "test": 37991,
+        "generated": 4917,
+        "files": 379
+      }
+    ],
+    "unassigned": [],
+    "skipped": {
+      "files": 278,
+      "byExtension": {
+        ".md": 169,
+        ".json": 29,
+        "(không đuôi)": 6,
+        ".svg": 2,
+        ".lock": 1,
+        ".toml": 2,
+        ".png": 34,
+        ".ico": 1,
+        ".html": 16,
+        ".css": 2,
+        ".txt": 1,
+        ".woff2": 12,
+        ".jsonl": 3
+      }
+    }
+  },
+  "bundle": {
+    "dir": "apps/desktop/dist",
+    "files": [
+      {
+        "name": "assets/chart.js",
+        "files": 1,
+        "raw": 513302,
+        "gzip": 172450
+      },
+      {
+        "name": "assets/exceljs.min.js",
+        "files": 1,
+        "raw": 929569,
+        "gzip": 255572
+      },
+      {
+        "name": "assets/index.css",
+        "files": 1,
+        "raw": 28364,
+        "gzip": 6412
+      },
+      {
+        "name": "assets/index.js",
+        "files": 1,
+        "raw": 891942,
+        "gzip": 262010
+      },
+      {
+        "name": "assets/rolldown-runtime.js",
+        "files": 1,
+        "raw": 1106,
+        "gzip": 627
+      }
+    ],
+    "total": {
+      "raw": 2364283,
+      "gzip": 697071
+    },
+    "other": {
+      "files": 15,
+      "raw": 849196
+    }
+  },
+  "exe": {
+    "path": "apps/desktop/src-tauri/target/release/project2c.exe",
+    "bytes": 5414400
+  }
+}
