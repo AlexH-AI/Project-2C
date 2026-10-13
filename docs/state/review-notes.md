@@ -114,6 +114,10 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
   - `e2e/perf/probe.perf.ts:228` (`importBackup`): nếu `dataset.picked` không được đặt thì `start = NaN`, chốt 60 s không bao giờ kích hoạt và vòng chờ hộp xác nhận treo tới timeout 30 phút. Không xảy ra khi `setInputFiles` phát `change` như bình thường → trả `undefined` khi `start` không phải số.
   - `apps/desktop/src/data/app-data.ts:249`: mỗi lần lưu file DB thêm một `PerformanceMeasure` `p2c:db-save` vào timeline của app thật, không gì dọn; nhỏ nhưng tăng không giới hạn trong một phiên dài. Chấp nhận được; nếu muốn thì probe đọc rồi `performance.clearMeasures('p2c:db-save')`, hoặc app giữ tối đa N mục.
   - Nhắc khi viết `docs/metrics/phase-6.md`: PR #572 ≈ 925 dòng tổng diff (8 dòng sản phẩm, còn lại probe / test / README), vượt ngưỡng ~800; PR đã nêu lý do, review nâng lên `med`. Ghi vào bảng "Kích thước PR vượt ngưỡng".
+- Ba ghi chú không chặn của review PR #578 (T-221 phần 2, #561, review @`5d81a9e`) — sửa trước lượt nghiệm thu 6D (#562) hoặc ở lần chạm sau của `docs/testing/nghiem-thu-v1.md`:
+  - `:308` → `:310`: NT-TR-13 kết thúc bằng "Khôi phục RE Thử → KH Thử khôi phục được". Nếu người thử bấm khôi phục KH Thử để xác nhận, RE Thử lại sở hữu một KH đang sống và bước "Xóa RE Thử" của NT-TR-15 bị chặn (`PERSON_IN_USE`, `packages/db/src/team.ts:239-247`) → ghi rõ ở NT-TR-13 "(chỉ xem nút bật, không khôi phục KH Thử)", hoặc thêm bước xóa lại KH Thử.
+  - `:288` (NT-CA-09): sau NT-CA-03 ("chọn từng model"), model đang lưu có thể không còn là `deepseek-v4.1-flash`, nên Ctrl+F theo chuỗi đó có thể không thấy → "sửa giá trị model đang lưu (vd. `deepseek-v4.1-flash`) trong dòng `"key":"ai"` của bảng `settings`", hoặc chọn lại DeepSeek trước khi xuất.
+  - NIT `:341` (NT-DB-03): ghi chú "Đóng bằng X không phải chờ" khó hiểu (X có chờ ghi xong không, có hiện hộp không?) → viết rõ kết quả mong đợi khi đóng bằng X.
 
 ## RESOLVED
 
