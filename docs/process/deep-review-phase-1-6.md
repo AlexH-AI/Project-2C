@@ -264,7 +264,9 @@ Muse Wonder — phiên mới theo §7.1 bước 3:
 Gói A. Đọc và làm đúng C:\workspace\deep-review-1-6\common\prompt-muse.md
 ```
 
-**Chống sót / nhầm** (bước 0 của phần chung, Phụ lục D): đầu phiên, bên review tự kiểm chữ gói là đúng một chữ A–F, báo cáo gói đó chưa có, và báo cáo các gói trước trong thư mục của mình đã có đủ; sai một điều thì dừng và báo Owner trước khi đọc code. Cuối phiên, bên review in một dòng `XONG gói <X> → <file>. Gói kế tiếp: <Y>` (gói F: `XONG cả 6 gói`), nên Owner chỉ cần làm theo dòng đó.
+**Chống sót / nhầm** (bước 0 của phần chung, Phụ lục D): đầu phiên, bên review tự kiểm chữ gói là đúng một chữ A–F, báo cáo gói đó chưa có (hoặc còn `ĐANG LÀM` thì làm tiếp), và báo cáo các gói trước trong thư mục của mình đã có đủ, không gói nào còn dở; sai một điều thì dừng và báo Owner trước khi đọc code. Báo cáo được **ghi dần** từ đầu phiên, dòng đầu `ĐANG LÀM` tới khi xong (thêm 13/10 sau khi phiên Claude gói A bị đóng giữa chừng và mất cả báo cáo). Cuối phiên, bên review in một dòng `XONG gói <X> → <file>. Gói kế tiếp: <Y>` (gói F: `XONG cả 6 gói`), nên Owner chỉ cần làm theo dòng đó.
+
+**Chỉ coi một gói là xong khi thấy dòng `XONG gói …`.** Phiên đứng yên lâu thường là đang chờ lệnh chạy nền (fuzzer, test): không đóng / `/clear`; nghi thì hỏi "tiến độ?". Lỡ đóng thì mở phiên mới và dán lại **cùng chữ gói**: bước 0 thấy `ĐANG LÀM` và làm tiếp.
 
 Bảng đánh dấu của Owner (18 ô):
 
@@ -398,11 +400,16 @@ Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md`. `<bên>` = thư 
 > Tin nhắn mở phiên chỉ có một chữ gói (`Gói A. Đọc và làm đúng …`); Owner chỉ đổi chữ đó giữa các phiên, nên bạn tự kiểm để tránh nhầm / sót. Kiểm từng file bằng tên đầy đủ (`Test-Path` hoặc mở file), không liệt kê thư mục:
 >
 > 1. `{GÓI}` phải là **đúng một chữ** trong A, B, C, D, E, F. Không phải → dừng, hỏi Owner.
-> 2. `C:\workspace\deep-review-1-6\<bên>\{GÓI}.md` **chưa có**. Đã có → dừng, hỏi Owner (nhầm chữ hay muốn chạy lại); không ghi đè.
-> 3. Báo cáo các gói **trước** `{GÓI}` theo thứ tự A → F đã có đủ trong `C:\workspace\deep-review-1-6\<bên>\` (vd. gói D cần `A.md`, `B.md`, `C.md`; gói A không cần gì). Thiếu → dừng, báo Owner tên gói thiếu.
-> 4. Đủ cả ba thì in đúng một dòng rồi làm tiếp, không chờ Owner: `Bắt đầu gói {GÓI} (<tên gói theo bảng dưới>) → <bên>\{GÓI}.md`.
+> 2. `C:\workspace\deep-review-1-6\<bên>\{GÓI}.md`:
+>    - **chưa có** → làm mới;
+>    - có và **dòng đầu bắt đầu bằng `ĐANG LÀM`** → phiên trước bị cắt giữa chừng: **làm tiếp**, không làm lại từ đầu. Đọc hết file đó và thư mục `<bên>\{GÓI}\` (probe, log đã có), giữ nguyên mọi phát hiện đã ghi, làm nốt phần còn thiếu theo mục "Báo cáo" bên dưới; ghi rõ trong báo cáo là phiên làm tiếp và từ đâu;
+>    - có mà dòng đầu **không** bắt đầu bằng `ĐANG LÀM` → gói đã xong: dừng, hỏi Owner (nhầm chữ hay muốn chạy lại); không ghi đè.
+> 3. Báo cáo các gói **trước** `{GÓI}` theo thứ tự A → F đã có đủ trong `C:\workspace\deep-review-1-6\<bên>\` (vd. gói D cần `A.md`, `B.md`, `C.md`; gói A không cần gì) và **không** file nào còn dòng đầu `ĐANG LÀM`. Thiếu hay còn dở → dừng, báo Owner tên gói.
+> 4. Đủ cả ba thì in đúng một dòng rồi làm tiếp, không chờ Owner: `Bắt đầu gói {GÓI} (<tên gói theo bảng dưới>) → <bên>\{GÓI}.md` (làm tiếp thì thêm `— làm tiếp phiên trước`).
 >
-> Cuối phiên, sau khi ghi xong báo cáo, in đúng một dòng: `XONG gói {GÓI} → C:\workspace\deep-review-1-6\<bên>\{GÓI}.md. Gói kế tiếp: <chữ kế tiếp> (mở phiên mới).` Gói F in: `XONG cả 6 gói của <bên>. Chờ Owner yêu cầu tổng hợp.`
+> **Ghi báo cáo dần** (để phiên bị cắt — context hết, Owner đóng nhầm — không mất việc đã làm): ngay sau bước 0, tạo `<bên>\{GÓI}.md` với **dòng đầu** `ĐANG LÀM — <bên> gói {GÓI}, bắt đầu <giờ>` và phần đầu báo cáo (mục 1). Trong lúc làm, mỗi khi có phát hiện hay kết quả đo / probe thì **ghi ngay** vào file (phát hiện theo khuôn, số đo vào mục Bloat / Hiệu năng), không để dồn tới cuối. Khi chạy lệnh dài ở nền, ghi vào file đang chờ gì trước khi chờ.
+>
+> Cuối phiên, khi báo cáo đã đủ các mục: đổi dòng đầu thành `XONG — <bên> gói {GÓI}, <giờ xong>`, rồi in đúng một dòng: `XONG gói {GÓI} → C:\workspace\deep-review-1-6\<bên>\{GÓI}.md. Gói kế tiếp: <chữ kế tiếp> (mở phiên mới).` Gói F in: `XONG cả 6 gói của <bên>. Chờ Owner yêu cầu tổng hợp.`
 >
 > ### Dự án
 >
