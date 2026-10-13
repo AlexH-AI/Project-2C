@@ -87,7 +87,7 @@ Mỗi gói đi qua **mọi trục**; trục không có gì thì ghi "đã xét, 
 Mỗi báo cáo gói có **hai mục riêng** "Bloat" và "Hiệu năng" (kể cả khi không có phát hiện), mỗi mục một bảng: đã chạy / đo gì, trên dữ liệu nào, kết quả (số), phát hiện liên quan (ID). Gói A–E làm trong phạm vi của mình; **gói F làm cho toàn codebase** và tổng hợp số của chính bên đó.
 
 - **Bloat:** export không ai import (`rg` + bản đồ `pnpm codemap` trong `CLAUDE.md` của package); hàm / tham số / prop / khóa i18n / CSS không dùng (`tsc --noUnusedLocals --noUnusedParameters` chạy tạm bằng lệnh, không sửa cấu hình); nhánh không thể xảy ra; abstraction chỉ một nơi dùng; code lặp ≥ 3 nơi (và các mục *Duplicated Code* đã ghi ở sổ — §5); dependency không dùng hoặc nặng hơn việc nó làm; cấu thành bundle (`pnpm build:web`, kích thước từng chunk) và exe. Mỗi đề xuất refactor ghi: cỡ ước lượng, file đụng tới, test nào giữ hành vi (spec §6.3: refactor giữ nguyên hành vi, test cũ xanh trước và sau, không đổi golden).
-- **Hiệu năng:** **mọi phát hiện P phải có số đo** (ms / KB / MB / số lần render / số câu SQL), không suy đoán. Đo trên **dữ liệu tải** (§6). So với ngưỡng đã chốt (`docs/metrics/phase-6.md`: thao tác màn < 200 ms, các ngưỡng "Owner chốt 13/10") hoặc với số tham chiếu **cùng máy** (§6); số đo nền T-219 ở Office Laptop, không so trực tiếp với số đo ở Home PC. Ghi máy và việc gì đang chạy song song lúc đo. Chỗ cần xem: thuật toán bậc hai trên dữ liệu cỡ N, tính lại trong render, truy vấn thiếu chỉ mục / N+1, đọc cả bảng khi chỉ cần vài dòng (vd. `listTrash` — §5), mở / lưu / nhập / xuất DB, bộ nhớ, bundle nạp sớm.
+- **Hiệu năng:** **mọi phát hiện P phải có số đo** (ms / KB / MB / số lần render / số câu SQL), không suy đoán. Đo trên **dữ liệu tải** (§6). So với ngưỡng đã chốt (`docs/metrics/phase-6.md`: thao tác màn < 200 ms, các ngưỡng "Owner chốt 13/10") hoặc với số tham chiếu **cùng máy** (§6); số đo nền T-219 ở Office Laptop, chỉ so trực tiếp khi đo cùng máy đó. Ghi máy và việc gì đang chạy song song lúc đo. Chỗ cần xem: thuật toán bậc hai trên dữ liệu cỡ N, tính lại trong render, truy vấn thiếu chỉ mục / N+1, đọc cả bảng khi chỉ cần vài dòng (vd. `listTrash` — §5), mở / lưu / nhập / xuất DB, bộ nhớ, bundle nạp sớm.
 - **Công cụ:** chỉ thứ đã có trong repo hoặc đi kèm toolchain (`pnpm verify`, `pnpm lint:deps`, `pnpm test:coverage`, `pnpm e2e`, `pnpm verify:rust`, `pnpm codemap`, `tsc`, `cargo clippy`, `cargo tree`, `vite build`, `node tools/size-report.mjs`, `node tools/load-data.mjs`, probe `e2e/perf/`, script `node` tự viết, DevTools / profile V8). **Không cài công cụ mới** (`knip`, `jscpd`, `cargo-bloat`, `rollup-plugin-visualizer`… là G4, spec §6.3); thấy cần thì ghi đề xuất trong báo cáo.
 
 ### 4.3 Thước mức
@@ -132,7 +132,7 @@ Theo thước đã dùng ở Phase 1–4 / Phase 5 (tổng hợp Phase 5 §10), 
 - **Số đo nền:** `docs/metrics/phase-6.md` mục "Số đo nền" (T-219, Office Laptop `D13_THINKPAD`, code `b139d8a` = code của SHA ghim) với ngưỡng Owner chốt 13/10; JSON `docs/metrics/phase-6-baseline/perf.json` (probe) và `size.json` (kích thước). Mở lần đầu: mục "Mở app lần đầu, đo lại" (T-227, Home PC).
 - **Dữ liệu tải:** `node tools/load-data.mjs` (mốc mặc định `2026-10-12`, seed `6`) → 1 496 KH, 10 414 lịch hẹn, 54 nhân sự, 103 `ai_analyses`, có bản ghi trong Thùng rác; `tables` sha256 `1e69a97f664708d91932a1158c3a9ddd4e4d4aebb689f9c912ac3c4d0962e3fd`. Bước chuẩn bị sinh sẵn một bản ở `common\load\load-2026-10-12-seed6.p2cbackup` và kiểm hash. Dùng trong Node: `importBackup` của `@p2c/db` (xem `tools/load-data-core.mjs`); dùng trong app: Cài đặt → Dữ liệu → Nhập backup.
 - **Probe hiệu năng trên exe:** `e2e/perf/README.md` (T-218): exe release mở với cổng debug WebView2, nhập dữ liệu tải, `pnpm exec playwright test -c playwright.perf.config.ts` với `PERF_BACKUP`, `PERF_OUT`, `PERF_BASE`, `PERF_CDP`. Kích thước: `node tools/size-report.mjs --compare docs/metrics/phase-6-baseline/size.json`.
-- **Số tham chiếu cùng máy:** bước chuẩn bị chạy probe một lần trên Home PC ở SHA ghim (máy rảnh) → `common\perf\perf-homepc.json`, kèm exe release ở `common\exe\project2c.exe`. Reviewer so số mình đo ở Home PC với file này (hoặc với chính số mình đo trước / sau một thay đổi trên bản chép), không so với số Office Laptop.
+- **Số tham chiếu cùng máy:** bước chuẩn bị chạy probe một lần trên máy chạy lượt 1 ở SHA ghim (máy rảnh) → `common\perf\perf-ref.json`, kèm exe release ở `common\exe\project2c.exe`. Reviewer so số mình đo với file này (hoặc với chính số mình đo trước / sau một thay đổi trên bản chép). Chạy lượt 1 ở Office Laptop (§12 câu 2) thì so được cả với số đo nền T-219; ở máy khác thì không so với số Office Laptop.
 - **Reviewer không bắt buộc chạy lại probe.** Muốn đo trên exe thì chép `common\exe\project2c.exe` vào thư mục kết quả của mình (exe ghi `Project2C-data\` cạnh nó), dùng cổng debug khác 9222 (`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`, `PERF_CDP`) và `PERF_OUT` trong thư mục của mình. Probe cần cửa sổ exe ở trên cùng nên **không chạy khi bên khác đang đo**; ghi giờ đo.
 - **Bảng hàm thuần trong Node của Phase 4** (`importBackup`, `listAppointments`, `teamCompare` / `reportRows`, `monthGrid`, `countRecords` — `phase-6.md` cuối mục thời gian): **gói F đo lại** trên dữ liệu tải (cả hàm mới: `listTrash`, phần AI của hồ sơ KH), ghi máy; không so với số Phase 4 (khác máy, probe cũ ngoài repo), chỉ so ngưỡng Nhóm C và giữa các hàm.
 - **Kết quả cổng ở SHA ghim** (bước chuẩn bị ghi vào `common\baseline.md`, reviewer không phải chạy lại toàn bộ): `pnpm verify` (số file / test, `lint:deps`), coverage theo vùng, `pnpm verify:rust` (số test Rust), `pnpm e2e` (`CI=1`), `pnpm build:web` (chunk), `pnpm build:exe` (cỡ exe).
@@ -141,15 +141,15 @@ Theo thước đã dùng ở Phase 1–4 / Phase 5 (tổng hợp Phase 5 §10), 
 
 ### 7.1 DeepSeek (OpenCode)
 
-- OpenCode trên Home PC: v2.0.27 (Phase 5: v2.0.24). Model `opencode-go/deepseek-v4.1-flash`; TUI có biến thể suy luận thì chọn mức cao nhất. Trừ vào hạn mức gói Go (Owner kiểm gói còn hạn trước đợt 2, K9).
+- OpenCode trên Office Laptop `D13_THINKPAD` (kiểm 13/10): v2.0.27 (Phase 5: v2.0.24). Model `opencode-go/deepseek-v4.1-flash`; TUI có biến thể suy luận thì chọn mức cao nhất. Trừ vào hạn mức gói Go (Owner kiểm gói còn hạn trước đợt 2, K9).
 - `C:\workspace\Project-2C-review\opencode.json` = bản ở **Phụ lục F** (bản Phase 5 đổi `deep-review-5` → `deep-review-1-6`): đọc / ghi / liệt kê bị chặn ở `claude\`, `codex\`, `muse\`; công cụ sửa file chỉ được ở `deepseek\`; cấm `git commit / push / stash / switch / clean / merge / rebase / checkout / restore / reset`, subagent, web, `pnpm eval:ai`, `tools/eval-ai.mjs`, lệnh `opencode`, `cmdkey`; hỏi trước `gh`, `curl`, `Invoke-WebRequest`. Đây là chặn theo mẫu chuỗi, model vẫn lách được, nên còn ACL (§7.3) và kiểm log (§8).
 - Chạy: `opencode C:\workspace\Project-2C-review`; mỗi gói `/new`.
 
 ### 7.2 Muse (Muse Code) — sandbox
 
-Phase 5 tốn 45 lần Owner duyệt tay (gói A 32 lần) vì báo cáo ghi ra ngoài thư mục làm việc của Muse, và một phiên thử chạy chế độ không hỏi (`:unrestricted`) đã liệt kê được `codex\`. Muse Code 1.3.0 (Home PC: `1.3.0-R3401.1`) bật sandbox và hỏi duyệt **theo mặc định**; ghi trong thư mục làm việc không phải xin, ghi ra ngoài phải xin. Cách cấu hình lượt này **đảo chỗ**: thư mục làm việc của Muse là thư mục kết quả, repo nằm ngoài nó.
+Phase 5 tốn 45 lần Owner duyệt tay (gói A 32 lần) vì báo cáo ghi ra ngoài thư mục làm việc của Muse, và một phiên thử chạy chế độ không hỏi (`:unrestricted`) đã liệt kê được `codex\`. Muse Code 1.3.0 (Office Laptop: `1.3.0-R3401.1`, `muse sandbox windows check` báo `status=ready`) bật sandbox và hỏi duyệt **theo mặc định**; ghi trong thư mục làm việc không phải xin, ghi ra ngoài phải xin. Cách cấu hình lượt này **đảo chỗ**: thư mục làm việc của Muse là thư mục kết quả, repo nằm ngoài nó.
 
-1. **Bỏ chế độ không hỏi:** `~/.config/muse/settings.json` trên Home PC hiện có `"permissions": { "default_profile": ":unrestricted" }`. Owner sao lưu file, rồi bỏ khóa `default_profile` (giữ `model`, `reasoning_effort`) trong suốt 6D. Không bao giờ chạy `--yolo`, `--disable-sandbox`, `--disable-approval`, `--approval-mode never`.
+1. **Bỏ chế độ không hỏi:** `~/.config/muse/settings.json` trên Office Laptop hiện có (chạy ở Home PC thì kiểm lại file ở đó) `"permissions": { "default_profile": ":unrestricted" }`. Owner sao lưu file, rồi bỏ khóa `default_profile` (giữ `model`, `reasoning_effort`) trong suốt 6D. Không bao giờ chạy `--yolo`, `--disable-sandbox`, `--disable-approval`, `--approval-mode never`.
 2. **Thư mục làm việc = `C:\workspace\deep-review-1-6\muse\`** → ghi báo cáo, probe, bản chép để đột biến không phải xin duyệt. Repo `C:\workspace\Project-2C-review-2` nằm ngoài nên **chỉ đọc** với Muse: lệnh ghi vào đó phải xin, và Owner từ chối (trừ ngoại lệ ở bước 4).
 3. Chạy (mỗi gói một phiên mới, thoát rồi chạy lại):
 
@@ -193,11 +193,11 @@ DeepSeek ↔ Muse chạy cùng lúc nên không chặn ACL lẫn nhau được: 
 
 ## 8. Bằng chứng, kiểm độc lập, lưu báo cáo
 
-**Thư mục bằng chứng ngoài repo** (Home PC): `C:\workspace\deep-review-1-6\`
+**Thư mục bằng chứng ngoài repo** (máy chạy lượt 1): `C:\workspace\deep-review-1-6\`
 
 ```
 common\    plan.md (bản đã duyệt của file này), known.md, baseline.md, prompt-{claude,codex,deepseek,muse}.md,
-           opencode-deepseek.json, load\ (dữ liệu tải), exe\ (exe release ở SHA ghim), perf\ (tham chiếu Home PC)
+           opencode-deepseek.json, load\ (dữ liệu tải), exe\ (exe release ở SHA ghim), perf\ (tham chiếu cùng máy)
 claude\    A.md … F.md + A\ … F\ (probe, bản chép đột biến, log)
 codex\     như trên
 deepseek\  như trên + <gói>\session.json (xuất ở phiên tổng hợp)
@@ -217,7 +217,7 @@ Lượt 2 dùng `C:\workspace\deep-review-1-6-r2\` cùng cấu trúc (T-224).
 
 Một script `node` của phiên tổng hợp quét **đầu vào lệnh công cụ** (không quét chữ prompt, vốn có tên các thư mục cấm) tìm: đường dẫn `deep-review-1-6[\\/](claude|codex|deepseek|muse)` của bên khác, liệt kê `C:\workspace` / `deep-review-1-6`, lệnh ghi vào worktree review (`git commit` / `checkout` / `reset`, tạo / sửa file trong repo), lệnh gọi AI của sản phẩm (`eval:ai`, `cmdkey`, chatgpt.com). Có kết quả → báo cáo gói đó đánh dấu "nhiễm" hoặc "vi phạm chỉ đọc", phiên tổng hợp xét riêng. Thêm: `git status --short` của hai worktree đầu / cuối mỗi gói (mỗi báo cáo ghi); khác rỗng (ngoài `opencode.json` ở `Project-2C-review` và file Codex tự sinh như `AGENTS.md`, `.codex/`, `.agents/` ở `Project-2C-review-2`) → báo, không tự xóa.
 
-**Báo cáo gốc lưu ở repo** (phiên tổng hợp T-223, PR docs): `docs/reviews/raw/<ngày tổng hợp>/{claude,codex,deepseek,muse}/<gói>.md` nguyên văn, cùng `common-plan.md` (chỉ khi khác bản trong repo), `common-known.md`, `common-baseline.md`, `common-opencode-config.md`; tổng hợp ở `docs/reviews/<ngày>-deep-review-phase-1-6-luot-1-tong-hop.md`. Không chép `session.json`, exe, dữ liệu tải (lớn, có đường dẫn máy): giữ ở Home PC tới khi phát hành v1.0, rồi Owner xóa. Nguồn probe / đột biến nằm trong phụ lục báo cáo nên không mất.
+**Báo cáo gốc lưu ở repo** (phiên tổng hợp T-223, PR docs): `docs/reviews/raw/<ngày tổng hợp>/{claude,codex,deepseek,muse}/<gói>.md` nguyên văn, cùng `common-plan.md` (chỉ khi khác bản trong repo), `common-known.md`, `common-baseline.md`, `common-opencode-config.md`; tổng hợp ở `docs/reviews/<ngày>-deep-review-phase-1-6-luot-1-tong-hop.md`. Không chép `session.json`, exe, dữ liệu tải (lớn, có đường dẫn máy): giữ ở máy chạy lượt 1 tới khi phát hành v1.0, rồi Owner xóa. Nguồn probe / đột biến nằm trong phụ lục báo cáo nên không mất.
 
 ## 9. Chuẩn bị và chạy
 
@@ -229,7 +229,7 @@ Một script `node` của phiên tổng hợp quét **đầu vào lệnh công c
 4. Chép vào `common\`: `plan.md` (file này, bản đã merge), `known.md` (§5: OPEN + ACCEPTED nguyên văn ở SHA ghim + bảng K1–K17), `prompt-<bên>.md` (Phụ lục A / B / C / D, mỗi file nối thêm nguyên văn Phụ lục E), `opencode-deepseek.json` (Phụ lục F).
 5. Dữ liệu tải: `node tools/load-data.mjs --out C:\workspace\deep-review-1-6\common\load\load-2026-10-12-seed6.p2cbackup`; hash `tables` phải bằng §6.
 6. Cổng ở SHA ghim (trong `Project-2C-review`): `pnpm verify`, `pnpm verify:rust`, `pnpm e2e` (`CI=1`), `pnpm build:exe`, `node tools/size-report.mjs --compare docs/metrics/phase-6-baseline/size.json` → `common\baseline.md`; chép exe vào `common\exe\`.
-7. Probe tham chiếu Home PC (cần Owner: nhập dữ liệu tải trong exe theo `e2e/perf/README.md` bước 3, rồi không dùng máy ≈ 5 phút) → `common\perf\perf-homepc.json`, bảng vào `baseline.md`.
+7. Probe tham chiếu cùng máy (cần Owner: nhập dữ liệu tải trong exe theo `e2e/perf/README.md` bước 3, rồi không dùng máy ≈ 5 phút) → `common\perf\perf-ref.json`, bảng vào `baseline.md`.
 8. Báo Owner: sẵn sàng đợt 1.
 
 **Owner chạy:**
@@ -291,7 +291,7 @@ Không đặt chỉ tiêu số lượng phát hiện; không nâng mức cho n�
 Mỗi câu có đề xuất; Owner duyệt kế hoạch mà không nói gì khác thì lấy đề xuất.
 
 1. **Hai đợt** (Claude + Codex trước, DeepSeek + Muse sau, như Phase 5) hay cả bốn cùng lúc (nhanh hơn ≈ nửa ngày nhưng không chặn ACL được `claude\` / `codex\`, và va cổng e2e / probe)? **Đề xuất: hai đợt.**
-2. **Máy:** cả lượt 1 chạy ở Home PC `DESKTOP-KDURKJP` (có sẵn hai worktree review, OpenCode, Muse). **Đề xuất: Home PC**; số so với nền ở lượt 2 đo lại ở Office Laptop như T-219.
+2. **Máy:** cả lượt 1 chạy trên một máy. Office Laptop `D13_THINKPAD`: số đo nền T-219 đo ở đây (so trực tiếp được), đã có hai worktree review, OpenCode 2.0.27, Muse 1.3.0 với sandbox sẵn sàng; nhưng yếu hơn và không có quyền admin (ACL `icacls` trên thư mục của chính mình không cần admin). Home PC `DESKTOP-KDURKJP`: mạnh hơn, nơi chạy Phase 5 (cần kiểm lại OpenCode / Muse / worktree). **Đề xuất: Office Laptop**; lượt 2 cũng ở đây để so "không xấu đi".
 3. **Muse:** bỏ `default_profile: ":unrestricted"` trong suốt 6D và chạy với thư mục làm việc là `muse\` (§7.2), duyệt các lệnh test chỉ ghi vào thư mục build / cache bị ignore. **Đề xuất: đồng ý.**
 
 ## Phụ lục A — Prompt Claude (lượt 1)
@@ -415,7 +415,7 @@ Nối nguyên văn vào cuối cả bốn file `prompt-<bên>.md`. `<bên>` = th
 >
 > - Đọc sâu **từng file** trong phạm vi gói. Đi qua **mọi trục**: E edge case · C đúng hợp đồng / spec / mockup / nhãn UI theo nghĩa thường · D dữ liệu · G guardrail AI · S an toàn ở ranh giới · P hiệu năng · B bloat · T chất lượng test · A trợ năng / i18n (định nghĩa ở `plan.md` §4.1). Trục không có gì thì ghi "đã xét, không thấy" **kèm đã chạy / đọc gì**.
 > - **Chạy thử thay vì lập luận từ spec** ở mọi chỗ chạy được. Ưu tiên dựng **kịch bản nhiều bước qua nhiều gói**, vì lỗi Medium của các đợt trước đều thuộc loại này, ví dụ: kết quả AI về đúng lúc nhập lại backup cùng ID; dán lại chính tin nhắn của app vào khung dán; hai thao tác thay dữ liệu chồng nhau; khôi phục một bản ghi khi bản ghi cha vừa đổi; số trên Tổng quan ↔ Báo cáo ↔ Excel ↔ Thùng rác sau một chuỗi xóa / khôi phục. Đừng báo lại chính các ca này (đã sửa) — dùng chúng làm mẫu để nghĩ ca mới.
-> - **Bloat và Hiệu năng là hai mục riêng bắt buộc** trong báo cáo (kể cả khi không có phát hiện), mỗi mục một bảng: đã chạy / đo gì, trên dữ liệu nào, số, ID phát hiện. Bloat: `tsc --noUnusedLocals --noUnusedParameters` chạy tạm, `rg` tìm nơi import của từng export, bản đồ `pnpm codemap`, `pnpm lint:deps`, code lặp ≥ 3 nơi, dependency, chunk của `pnpm build:web`; đề xuất refactor ghi cỡ và test nào giữ hành vi. Hiệu năng: **mọi phát hiện P phải có số đo** trên dữ liệu tải `common\load\load-2026-10-12-seed6.p2cbackup` (≈ 1 500 KH, 10 400 lịch hẹn, 54 nhân sự, 103 phân tích AI, có Thùng rác; dùng trong Node qua `importBackup` của `@p2c/db`, trong app qua Cài đặt → Dữ liệu → Nhập backup); so với ngưỡng ở `docs/metrics/phase-6.md` (thao tác màn < 200 ms) hoặc số tham chiếu cùng máy `common\perf\perf-homepc.json`, không so với số Office Laptop. Ghi máy và việc gì đang chạy song song. Đo trên exe: chép `common\exe\project2c.exe` vào thư mục của mình, cổng debug khác 9222, theo `e2e/perf/README.md`; không đo khi bên khác đang đo.
+> - **Bloat và Hiệu năng là hai mục riêng bắt buộc** trong báo cáo (kể cả khi không có phát hiện), mỗi mục một bảng: đã chạy / đo gì, trên dữ liệu nào, số, ID phát hiện. Bloat: `tsc --noUnusedLocals --noUnusedParameters` chạy tạm, `rg` tìm nơi import của từng export, bản đồ `pnpm codemap`, `pnpm lint:deps`, code lặp ≥ 3 nơi, dependency, chunk của `pnpm build:web`; đề xuất refactor ghi cỡ và test nào giữ hành vi. Hiệu năng: **mọi phát hiện P phải có số đo** trên dữ liệu tải `common\load\load-2026-10-12-seed6.p2cbackup` (≈ 1 500 KH, 10 400 lịch hẹn, 54 nhân sự, 103 phân tích AI, có Thùng rác; dùng trong Node qua `importBackup` của `@p2c/db`, trong app qua Cài đặt → Dữ liệu → Nhập backup); so với ngưỡng ở `docs/metrics/phase-6.md` (thao tác màn < 200 ms) hoặc số tham chiếu cùng máy `common\perf\perf-ref.json` (so với số đo nền Office Laptop chỉ khi đo trên chính máy đó). Ghi máy và việc gì đang chạy song song. Đo trên exe: chép `common\exe\project2c.exe` vào thư mục của mình, cổng debug khác 9222, theo `e2e/perf/README.md`; không đo khi bên khác đang đo.
 > - **Không cài công cụ mới** (`knip`, `jscpd`, `cargo-bloat`, visualizer… là G4); thấy cần thì ghi đề xuất.
 > - Không bình luận phong cách / đặt tên trừ khi gây lỗi. Không đặt chỉ tiêu số lượng; không nâng mức cho nổi.
 >
