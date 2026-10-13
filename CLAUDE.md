@@ -14,7 +14,7 @@ Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh
   - **G8** task vẫn lỗi sau 2 vòng tự sửa, hoặc spec mâu thuẫn
 - **Codex chỉ review độc lập khi đóng phase** (Owner quyết 30/09/2026, ADR-0001 phụ lục M2): Owner chạy, Codex không viết code, không review PR task. Báo cáo của Codex là dữ liệu tham khảo, bổ sung chứ không thay review phiên sạch — Claude kiểm lại từng phát hiện trên code, phân loại rồi mới tạo Issue / sửa. Báo cáo gốc của mọi review đóng phase (Claude + Codex) lưu nguyên văn ở `docs/reviews/raw/<yyyy-mm-dd>/` qua PR docs, không để ngoài repo; bản tổng hợp ở `docs/reviews/`.
 - Không dùng OpenCode/Muse/Cursor/Codex để viết code, không dùng OpenCode/Muse/Cursor để review. OpenCode Go chỉ là AI runtime của sản phẩm.
-- **DeepSeek (OpenCode) và Muse Spark (Muse Code) review chỉ đọc ở review đóng Phase 6** như Codex (Owner quyết 11/10/2026, ADR-0001 phụ lục M4): Owner chạy, không viết code; Claude phiên tổng hợp kiểm từng phát hiện và là nơi duy nhất ra kết luận phát hành.
+- **Muse Wonder (Muse Code) review chỉ đọc ở review đóng Phase 6** như Codex (Owner quyết 11/10/2026, ADR-0001 phụ lục M4; 13/10 bỏ DeepSeek, Muse đổi từ Spark sang Wonder — phụ lục M5): Owner chạy, không viết code; Claude phiên tổng hợp kiểm từng phát hiện và là nơi duy nhất ra kết luận phát hành.
 - **Không còn so sánh với Project-2** (Owner quyết 11/10/2026: Project-2 dừng; ADR-0002 Superseded, `docs/COMPARISON.md` hết hiệu lực). Cách làm chỉ Claude Code giữ tới v1.0 vì đã chứng minh hiệu quả (ADR-0001 phụ lục M3); đa agent thử ở project mới. Vẫn không mở, không copy gì từ `C:\workspace\Project-2`.
 
 ## Quy tắc Owner đã chốt
