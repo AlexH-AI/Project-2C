@@ -23,7 +23,7 @@ Mốc để lượt 2 của deep review Phase 1–6 so "không xấu đi" (spec 
 - **Code:** `main` `b139d8a` (sau T-216 #566, T-217 #568, T-218 #572, T-226 #570). Exe build release tại máy (`pnpm build:exe`), chép ra thư mục riêng `C:\perf-exe\`.
 - **Dữ liệu tải:** `node tools/load-data.mjs`, mặc định mốc `2026-10-12`, seed `6` → `load-2026-10-12-seed6.p2cbackup` (15,3 MB). `tables` sha256 `1e69a97f664708d91932a1158c3a9ddd4e4d4aebb689f9c912ac3c4d0962e3fd`. Số dòng: `customers` 1 496, `appointments` 10 414, `appointment_coordinators` 1 510, `policies` 1 697, `people` 54, `teams` 5, `kyc_notes` 5 672, `kyc_versions` 13 114, `kyc_facts` 13 833, `stage_transitions` 4 941, `ai_analyses` 103, `settings` 0. Sau khi nhập, Cài đặt → Dữ liệu ghi "4 team · 51 nhân sự · 1.481 KH · 10.252 lịch hẹn · 1.674 HĐ" (không tính dòng ở Thùng rác).
 - **Cách đo:** probe T-218 (`e2e/perf/README.md`), `PERF_RUNS=5`, cửa sổ exe ở trên cùng, không dùng máy trong lúc đo (2,5 phút). Mở app lần đầu / mở lại: Owner bấm giờ, 3 lần mỗi loại. Lần đầu dùng 3 bản exe ở 3 thư mục chưa có `Project2C-data\`; mở lại dùng `C:\perf-exe\` đã có dữ liệu tải.
-- **So với Phase 4:** số Phase 4 lấy từ `docs/metrics/phase-4.md` mục "Đo đầu-cuối" (exe `3e84ce8`, cùng máy, bộ dữ liệu tải của deep review Phase 1–4 cùng cỡ: 1 496 KH, 10 434 lịch hẹn) và dòng "Thời gian khởi động". Probe Phase 4 khác probe T-218, nên chỉ so được các thao tác giống nhau. Ở đây "xấu hơn" tính theo luật nhiễu của probe (Owner chốt 13/10): trung vị lớn hơn **quá 20 % và quá 10 ms**. Với khoảng Phase 4 (min–max) thì so với max. Theo luật này, chỉ có **mở app lần đầu** xấu hơn Phase 4 → #574.
+- **So với Phase 4:** số Phase 4 lấy từ `docs/metrics/phase-4.md` mục "Đo đầu-cuối" (exe `3e84ce8`, cùng máy, bộ dữ liệu tải của deep review Phase 1–4 cùng cỡ: 1 496 KH, 10 434 lịch hẹn) và dòng "Thời gian khởi động". Probe Phase 4 khác probe T-218, nên chỉ so được các thao tác giống nhau. Ở đây "xấu hơn" tính theo luật nhiễu của probe (Owner chốt 13/10): trung vị lớn hơn **quá 20 % và quá 10 ms**. Với khoảng Phase 4 (min–max) thì so với max. Theo luật này, chỉ có **mở app lần đầu** xấu hơn Phase 4 → #574. Đo lại hai exe trên cùng máy thì không có chậm đi thật: số ≈ 2 s của Phase 4 là bấm giờ ước chừng (mục "Mở app lần đầu, đo lại" dưới).
 - **File JSON:** `docs/metrics/phase-6-baseline/perf.json` (probe), `docs/metrics/phase-6-baseline/size.json` (kích thước). Lượt 2 so bằng `PERF_BASE=docs/metrics/phase-6-baseline/perf.json` khi chạy probe, và `node tools/size-report.mjs --compare docs/metrics/phase-6-baseline/size.json`. So mỗi file với chính nó: Δ 0 ở mọi dòng (probe: 35 thao tác qua `compareRuns` của `e2e/perf/stats.ts`; kích thước: mọi cột Δ = 0).
 
 ### Thời gian thao tác
@@ -32,7 +32,7 @@ Trung vị (min–max) của 5 lần, trừ khi ghi khác. Cột Ngưỡng: `< 2
 
 | Thao tác | Tên probe | Phase 4 `3e84ce8` | Phase 6 `b139d8a` | Ngưỡng | So Phase 4 |
 |---|---|---|---|---|---|
-| Mở app lần đầu (Owner bấm giờ, 3 lần) | — | ≈ 2 s | **≈ 3 s** (3 / 3 / 3 s) | ≤ 2 s (Owner chốt 13/10) | ❌ xấu hơn → #574 |
+| Mở app lần đầu (Owner bấm giờ, 3 lần) | — | ≈ 2 s (bấm giờ ước chừng; đo lại exe này: như Phase 6) | ≈ 3 s (3 / 3 / 3 s) | Không chậm hơn exe Phase 4 đo cùng cách, cùng máy (Owner chấp nhận 13/10, #574) | ≈ (đo lại, mục dưới) |
 | Mở app lại, dữ liệu tải (Owner bấm giờ, 3 lần) | — | ≈ 1 s | ≈ 0,5 s (0,5 / 0,5 / 0,5 s) | ≤ 1 s (Owner chốt 13/10) | tốt hơn |
 | Mở app: trang bắt đầu → mở xong dữ liệu (1 lần, mở lại) | `app.open-data` | ≈ 0,5–0,6 s (mở exe, 06/10) | 251 ms | ≤ 600 ms (Owner chốt 13/10) | tốt hơn |
 | Màn đầu sau tải lại: Tổng quan | `reload.overview` | 318 ms | 338 ms (335–409) | < 500 ms (Owner chốt 13/10) | ≈ (+6 %) |
@@ -68,7 +68,25 @@ Trung vị (min–max) của 5 lần, trừ khi ghi khác. Cột Ngưỡng: `< 2
 | Tạo lịch hẹn tiếp theo, chọn ở kỳ Năm (không debugger) | `appointments.next-year` | 177–206 ms | 134 ms (120–141) | Năm không chậm hơn Tháng quá 50 ms ✅ (+18 ms); ≤ 300 ms (Owner chốt 13/10) | tốt hơn |
 | Lưu file DB (15 lần: 5 lần nhập backup + 10 lần tạo lịch hẹn) | `db.save` | — | 162 ms (157–210) | ≤ 400 ms (Owner chốt 13/10) | mới |
 
-Cách đặt ngưỡng mới: thao tác màn mới (panel AI, lịch sử phân tích, Thùng rác) dùng luôn Nhóm C (< 200 ms). Các thao tác còn lại lấy khoảng gấp đôi số đo trên Office Laptop rồi làm tròn, để lượt 2 không báo đỏ vì nhiễu. Hai ngưỡng mở app giữ bằng số Phase 4.
+Cách đặt ngưỡng mới: thao tác màn mới (panel AI, lịch sử phân tích, Thùng rác) dùng luôn Nhóm C (< 200 ms). Các thao tác còn lại lấy khoảng gấp đôi số đo trên Office Laptop rồi làm tròn, để lượt 2 không báo đỏ vì nhiễu. Hai ngưỡng mở app giữ bằng số Phase 4; ngưỡng mở lần đầu đổi sau khi đo lại (mục dưới).
+
+#### Mở app lần đầu, đo lại (T-227, 13/10/2026)
+
+Đo lại vì số Phase 6 (≈ 3 s) chậm hơn số Phase 4 (≈ 2 s) (#574). Cách đo: Home PC `DESKTOP-KDURKJP`; hai exe build release tại máy, exe Phase 4 `3e84ce8` và exe của `main` `b0f2f50` (code app giống `b139d8a`); mỗi exe 3 lần. Mỗi lần chép exe vào một thư mục mới (chưa có `Project2C-data\`, app sinh seed demo), mở với cổng debug WebView2, chờ 12 s rồi mới nối CDP đọc mốc trong trang. Nối muộn để debugger không làm chậm lúc mở. Lúc gọi exe ghi bằng `Date.now()` ngoài exe, so với `performance.timeOrigin` của trang. "Màn đầu có số liệu" là mốc vẽ nội dung lớn nhất (LCP).
+
+| Mốc (min–max của 3 lần) | Phase 4 `3e84ce8` | Phase 6 (`b0f2f50`) |
+|---|---|---|
+| Gọi exe → trang bắt đầu | 581–585 ms | 621–679 ms |
+| Sinh seed demo (`p2c:demo-seed`) | 2 960–3 072 ms | 3 016–3 046 ms |
+| Trang bắt đầu → mở xong dữ liệu (`p2c:data-open`) | (chưa có mốc) | 3 185–3 216 ms |
+| Lưu file DB lần đầu (`p2c:db-save`, chạy song song lúc vẽ màn) | (chưa có mốc) | 171–187 ms |
+| **Gọi exe → màn đầu có số liệu** | **3 822–3 937 ms** | **3 989–4 019 ms** |
+| File `project2c.db` | 9 306 112 byte | 9 580 544 byte |
+
+- **Không có chậm đi thật:** chênh ≈ 0,1 s (≈ +3 %), trong luật nhiễu (quá 20 % và quá 10 ms mới là xấu hơn). Gần hết thời gian là sinh seed, và seed Phase 4 cũng mất ≈ 3 s. Trong Node (Vitest, cùng máy), một lần seed mất ≈ 3,6 s ở cả hai mốc. Số ≈ 2 s ghi ở Phase 4 là bấm giờ ước chừng, đo lại exe Phase 4 không ra số đó.
+- **Office Laptop** (exe `b139d8a`, mục trên): `p2c:data-open` 3 140 ms, Owner bấm giờ ≈ 3 s; chưa đo riêng sinh seed / lưu file ở máy này. Code mở lần đầu giống Home PC nên phần sinh seed cũng chiếm gần hết.
+- **Seed tốn thời gian ở đâu** (profile V8 một lần seed trong Node): khoảng 40 % là drizzle dựng câu SQL ở mỗi lần gọi lệnh (riêng hàm `is()` của drizzle ≈ 0,75 s trên 4,2 s). Muốn nhanh hơn thì phải sửa các lệnh ở `packages/db` (dựng sẵn câu SQL), không sửa ở seed được vì seed phải chạy qua lệnh. Việc này không làm.
+- **Owner quyết 13/10 (#574):** chấp nhận số mới. Ngưỡng mở lần đầu là "không chậm hơn exe Phase 4 đo cùng cách, cùng máy", không phải ≤ 2 s.
 
 Không đo lại ở đây: các thao tác Phase 4 không có trong §5.2 ("Đổi tên team", "Vào Tổng quan / Báo cáo / Team" bằng sidebar khi không tải lại). Bảng hàm thuần trong Node của Phase 4 (`importBackup` ≤ 1,1 s, `listAppointments` ≤ 65 ms, `teamCompare` / `reportRows` ≤ 15 ms, `monthGrid` ≤ 2 ms, `countRecords` ≤ 15 ms) cũng không đo lại: đó là probe Vitest riêng của deep review, nằm ngoài repo, không phải thao tác trên exe. Gói F của lượt 1 (T-222) quyết định có đo lại hay không.
 
