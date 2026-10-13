@@ -159,13 +159,18 @@ declare global {
   }
 }
 
-/** A new customer born in 1984, opened on its profile. */
-export async function createKycCustomer(page: Page, name: string) {
+/**
+ * A new customer born in 1984, opened on its profile; `re` is the label of its RE in the picker,
+ * the first RE when left out.
+ */
+export async function createKycCustomer(page: Page, name: string, re?: string) {
   await page.goto('/#/customers');
   await page.getByRole('button', { name: '+ Khách hàng' }).click();
   const dialog = page.getByRole('dialog', { name: 'Khách hàng mới' });
   await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(name);
-  await dialog.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
+  await dialog
+    .getByRole('combobox', { name: 'RE phụ trách' })
+    .selectOption(re === undefined ? { index: 1 } : { label: re });
   await dialog.getByRole('textbox', { name: /^Ngày sinh/ }).fill('1984');
   await dialog.getByRole('radio', { name: 'Nữ' }).check();
   await dialog.getByRole('button', { name: 'Lưu KH' }).click();
