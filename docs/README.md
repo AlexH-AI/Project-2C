@@ -32,6 +32,7 @@ Quy tắc làm việc nằm ở `CLAUDE.md` (gốc repo) và `.claude/rules/` (n
 | `agents/issue-tracker.md` | Cách viết Issue Task (nhãn, milestone, "Tài liệu cần đọc") | Khi tạo Issue (`to-tickets`) |
 | `agents/domain.md` | Cách dùng `CONTEXT.md` (từ điển nghiệp vụ) + ADR | Khi gặp thuật ngữ nghiệp vụ |
 | `setup/office-laptop.md` | Dựng máy mới / máy không có quyền admin | Lần đầu trên máy mới |
+| `testing/nghiem-thu-v1.md` | Danh sách nghiệm thu v1.0 của Owner: từng màn / hộp theo mockup, exe trên máy thật, độ bền dữ liệu; mã dòng `NT-…` | Lượt thử 6C, G7; Issue lỗi nghiệm thu trỏ mã dòng |
 
 ## Trạng thái và lịch sử
 
