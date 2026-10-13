@@ -77,3 +77,5 @@ Mở rộng M2 cho review đóng Phase 6 (2 lượt deep review Phase 1–6, `do
 ## Phụ lục — đổi bên review đóng Phase 6: bỏ DeepSeek, Muse dùng Muse Wonder (M5 — Accepted G1, Owner quyết 13/10/2026 · Issue #562)
 
 Sửa M4. **Bỏ DeepSeek v4.1 Flash (OpenCode)** khỏi review đóng Phase 6: chỉ số benchmark trí tuệ không đủ cao cho deep review toàn codebase. **Muse dùng model Muse Wonder** (`muse-wonder-1.0`, mới ra, benchmark cao hơn Muse Spark 1.3). Review đóng Phase 6 còn ba bên — Claude, Codex, Muse Wonder — mỗi lượt 6 gói × 3 = 18 báo cáo (`docs/process/deep-review-phase-1-6.md`). Mọi điều kiện khác của M2 / M4 giữ nguyên: Owner chạy, chỉ đọc, không viết code, báo cáo là dữ liệu tham khảo, kết luận phát hành chỉ lấy từ phiên tổng hợp của Claude. OpenCode vẫn là AI runtime của sản phẩm (model mặc định của app không đổi).
+
+Muse chạy không hỏi duyệt (`--yolo`, Owner chọn 13/10): vẫn chỉ đọc theo prompt; ACL chặn thư mục báo cáo của bên khác, `git status` mỗi gói và quét log phiên thay cho sandbox (`docs/process/deep-review-phase-1-6.md` §7.1).

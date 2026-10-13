@@ -244,7 +244,7 @@ Gói F là chỗ phân tích bloat code và hiệu năng toàn cục (yêu cầu
 - **Kế hoạch chi tiết** `docs/process/deep-review-phase-1-6.md` soạn ở bước 0 của lượt 1 (SHA ghim, prompt từng bên, KNOWN, baseline lấy từ §5.1), Owner duyệt trước khi chạy.
 - **Trục:** các trục của deep review trước (đúng-sai / edge case, toàn vẹn dữ liệu, bảo mật ở ranh giới, test yếu, trợ năng / i18n, khớp spec / mockup / nhãn) **và hai trục bắt buộc ghi riêng: bloat code, hiệu năng** (đo trên dữ liệu tải §5.1).
 - **Độc lập:** cùng SHA, mỗi bên một thư mục, cấm đọc báo cáo của nhau cho tới phiên tổng hợp; kiểm bằng log phiên như Phase 5.
-- **Muse:** cấu hình sandbox trước (thư mục kết quả ghi được, repo chỉ đọc, không chế độ không hỏi) để tránh hàng chục lần Owner duyệt tay.
+- **Muse:** chạy không hỏi duyệt (`--yolo`, Owner chọn 13/10) để tránh hàng chục lần Owner duyệt tay; thư mục làm việc là thư mục kết quả, repo chỉ đọc theo prompt; ACL chặn thư mục của bên khác, `git status` mỗi gói và quét log phiên thay cho sandbox (`docs/process/deep-review-phase-1-6.md` §7.1).
 - **Lượt 1** trên SHA sau 6C → tổng hợp (gồm phần bloat / hiệu năng: số đo, phát hiện, đề xuất refactor) → Owner chọn → sửa (Issue thường, review phiên sạch; refactor giữ nguyên hành vi, test cũ xanh trước và sau, không đổi golden).
 - **Lượt 2** trên SHA sau đợt sửa lượt 1, cùng 6 gói, cùng 3 bên, có hai phần ngang nhau (Owner chốt 11/10):
   1. **Kiểm phần đã sửa:** trạng thái từng vấn đề lượt 1 (đã sửa / một phần / hồi quy); refactor bloat / hiệu năng không đổi hành vi; số đo không xấu hơn nền.
@@ -256,7 +256,7 @@ Gói F là chỗ phân tích bloat code và hiệu năng toàn cục (yêu cầu
 
 ### 6.4 Ước lượng
 
-6 gói × 3 bên = 18 báo cáo mỗi lượt, 36 cho hai lượt. Theo Phase 5: mỗi bên ≈ 2–3 giờ đồng hồ một lượt (Phase 1–6 lớn hơn, ước ≈ 3–4 giờ); Muse tốn thời gian chờ duyệt nếu chưa cấu hình sandbox.
+6 gói × 3 bên = 18 báo cáo mỗi lượt, 36 cho hai lượt. Theo Phase 5: mỗi bên ≈ 2–3 giờ đồng hồ một lượt (Phase 1–6 lớn hơn, ước ≈ 3–4 giờ); Muse chạy `--yolo` nên không tốn thời gian chờ duyệt.
 
 ### 6.5 Quy tắc
 
