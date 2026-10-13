@@ -29,6 +29,7 @@ Quy tắc làm việc nằm ở `CLAUDE.md` (gốc repo) và `.claude/rules/` (n
 |---|---|---|
 | `process/REVIEW-CHECKLIST.md` | Trục Standards của review | Phiên review (skill `review-pr`) |
 | `process/deep-review-phase-1-4.md` | Kế hoạch deep codebase review Phase 1–4 trước G7 (G1): gói, trục kiểm, định dạng phát hiện, prompt Codex | Mở / chạy / tổng hợp đợt deep review |
+| `process/deep-review-phase-1-6.md` | Kế hoạch deep review Phase 1–6 (6D, 4 bên × 6 gói, 2 lượt): SHA ghim, gói, trục (gồm bloat / hiệu năng), KNOWN, số đo nền, cấu hình OpenCode / Muse, prompt nguyên văn từng bên | Chạy / tổng hợp hai lượt deep review Phase 6 (T-222…T-225) |
 | `agents/issue-tracker.md` | Cách viết Issue Task (nhãn, milestone, "Tài liệu cần đọc") | Khi tạo Issue (`to-tickets`) |
 | `agents/domain.md` | Cách dùng `CONTEXT.md` (từ điển nghiệp vụ) + ADR | Khi gặp thuật ngữ nghiệp vụ |
 | `setup/office-laptop.md` | Dựng máy mới / máy không có quyền admin | Lần đầu trên máy mới |
