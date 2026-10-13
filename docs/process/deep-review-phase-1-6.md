@@ -235,12 +235,44 @@ Một script `node` của phiên tổng hợp quét **đầu vào lệnh công c
 
 | Bước | Việc |
 |---|---|
-| Đợt 1 | Claude: 6 phiên mới ở `C:\workspace\Project-2C-review`, lần lượt A → F, tin nhắn mở phiên: "Gói `<X>`. Đọc và làm đúng `C:\workspace\deep-review-1-6\common\prompt-claude.md`." Cùng lúc: Codex ở `C:\workspace\Project-2C-review-2` với `prompt-codex.md` (một hay nhiều phiên, ghi rõ gói). |
+| Đợt 1 | Claude: 6 phiên mới ở `C:\workspace\Project-2C-review`, lần lượt A → F. Cùng lúc: Codex ở `C:\workspace\Project-2C-review-2`, cũng 6 phiên mới, lần lượt A → F. Tin nhắn mở phiên ở §9.1. |
 | Giữa hai đợt | ACL (§7.2); cấu hình Muse + phiên thử (§7.1). |
-| Đợt 2 | Muse Wonder (`prompt-muse.md`), mỗi gói một phiên mới, A → F, tin nhắn mở phiên như đợt 1. Owner ghi giờ bắt đầu / xong mỗi gói (để so thời gian). |
+| Đợt 2 | Muse Wonder: 6 phiên mới (§7.1 bước 3), lần lượt A → F, tin nhắn mở phiên ở §9.1. Owner ghi giờ bắt đầu / xong mỗi gói (để so thời gian). |
 | Sau đợt 2 | Gỡ ACL; trả `~/.config/muse/settings.json` về bản sao lưu nếu muốn. Gõ yêu cầu tổng hợp (T-223). |
 
 Không phiên nào tự tổng hợp, kể cả khi một bên xong sớm.
+
+### 9.1 Tin nhắn mở phiên — chỉ đổi một chữ
+
+Mỗi bên có **một** tin nhắn cố định; mỗi gói mở **phiên mới** và dán tin nhắn đó, chỉ đổi chữ `A` thành `B`, `C`, `D`, `E`, `F`. Mọi khác biệt giữa các gói (phạm vi, trọng tâm, gói F đọc báo cáo A–E và ra kết luận) nằm sẵn trong file prompt.
+
+Claude — phiên mới ở `C:\workspace\Project-2C-review`:
+
+```text
+Gói A. Đọc và làm đúng C:\workspace\deep-review-1-6\common\prompt-claude.md
+```
+
+Codex — phiên mới ở `C:\workspace\Project-2C-review-2`:
+
+```text
+Gói A. Đọc và làm đúng C:\workspace\deep-review-1-6\common\prompt-codex.md
+```
+
+Muse Wonder — phiên mới theo §7.1 bước 3:
+
+```text
+Gói A. Đọc và làm đúng C:\workspace\deep-review-1-6\common\prompt-muse.md
+```
+
+**Chống sót / nhầm** (bước 0 của phần chung, Phụ lục D): đầu phiên, bên review tự kiểm chữ gói là đúng một chữ A–F, báo cáo gói đó chưa có, và báo cáo các gói trước trong thư mục của mình đã có đủ; sai một điều thì dừng và báo Owner trước khi đọc code. Cuối phiên, bên review in một dòng `XONG gói <X> → <file>. Gói kế tiếp: <Y>` (gói F: `XONG cả 6 gói`), nên Owner chỉ cần làm theo dòng đó.
+
+Bảng đánh dấu của Owner (18 ô):
+
+| Bên | A | B | C | D | E | F |
+|---|---|---|---|---|---|---|
+| Claude | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
+| Codex | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
+| Muse Wonder | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
 
 ## 10. Định dạng phát hiện và báo cáo
 
@@ -278,7 +310,7 @@ Không đặt chỉ tiêu số lượng phát hiện; không nâng mức cho n�
 | Bên | Thời gian (đồng hồ) | Chi phí | Owner can thiệp |
 |---|---|---|---|
 | Claude | 1 phiên chuẩn bị + 6 phiên × ≈ 35–50 phút ≈ 4–5 giờ | gói Claude của Owner | mở 7 phiên; ≈ 5 phút rảnh máy cho probe |
-| Codex | ≈ 3–4 giờ (song song Claude) | gói Codex của Owner | mở 1–6 phiên |
+| Codex | ≈ 3–4 giờ (song song Claude) | gói Codex của Owner | mở 6 phiên |
 | Muse Wonder | ≈ 3–4 giờ (Phase 5, Spark; Wonder chưa có số đo) | theo hạn mức Muse của Owner, contributor mode bật (HUD hiện cost / quota) | mở 6 phiên + phiên thử; không duyệt tay (`--yolo`; Phase 5: 45 lần); xem `git status` cuối mỗi gói |
 | Tổng hợp (T-223) | 1–2 phiên Claude | — | yêu cầu tổng hợp, chọn việc sửa |
 
@@ -296,7 +328,7 @@ Mỗi câu có đề xuất; Owner duyệt kế hoạch mà không nói gì khá
 
 ## Phụ lục A — Prompt Claude (lượt 1)
 
-File `common\prompt-claude.md` = đoạn dưới + nguyên văn Phụ lục D. Owner mở **phiên mới** ở `C:\workspace\Project-2C-review` và gõ: "Gói `<X>`. Đọc và làm đúng `C:\workspace\deep-review-1-6\common\prompt-claude.md`."
+File `common\prompt-claude.md` = đoạn dưới + nguyên văn Phụ lục D. Owner mở **phiên mới** ở `C:\workspace\Project-2C-review` cho mỗi gói và dán tin nhắn ở §9.1.
 
 > # Deep review Phase 1–6, lượt 1 — Claude
 >
@@ -309,17 +341,17 @@ File `common\prompt-claude.md` = đoạn dưới + nguyên văn Phụ lục D. O
 > 2. Chỉ đọc: repo ở SHA trên, `C:\workspace\deep-review-1-6\common\` và báo cáo Claude các gói trước trong `C:\workspace\deep-review-1-6\claude\` (mục đã báo ở gói trước thì chỉ dẫn ID, không báo lại).
 > 3. Không subagent / Agent tool, không skill `review-pr` / `code-review`; không làm nghi thức phiên của repo (HANDOFF, `/handoff`, PR, Issue, merge, commit).
 > 4. Ghi báo cáo vào `C:\workspace\deep-review-1-6\claude\{GÓI}.md`, probe / bản chép / log vào `C:\workspace\deep-review-1-6\claude\{GÓI}\`.
-> 5. Gói F được đọc `claude\A…E.md`. Xong gói nào thì dừng và báo Owner tên file; xong F thì **chờ Owner yêu cầu** tổng hợp, không tự tổng hợp.
+> 5. Gói F được đọc `claude\A…E.md`. Xong gói nào thì dừng và in dòng `XONG …` (bước 0 phần chung); xong F thì **chờ Owner yêu cầu** tổng hợp, không tự tổng hợp.
 >
 > Phần chung dưới đây áp dụng đầy đủ.
 
 ## Phụ lục B — Prompt Codex (lượt 1)
 
-File `common\prompt-codex.md` = đoạn dưới + nguyên văn Phụ lục D. Owner chạy Codex ở `C:\workspace\Project-2C-review-2`, một phiên cho nhiều gói hoặc mỗi phiên một gói: "Gói `<X>` (hoặc A–F). Đọc và làm đúng `C:\workspace\deep-review-1-6\common\prompt-codex.md`."
+File `common\prompt-codex.md` = đoạn dưới + nguyên văn Phụ lục D. Owner chạy Codex ở `C:\workspace\Project-2C-review-2`, **mỗi gói một phiên mới**, lần lượt A → F, dán tin nhắn ở §9.1.
 
 > # Deep review Phase 1–6, lượt 1 — Codex
 >
-> **{GÓI}** = chữ gói (một hay nhiều chữ A…F) Owner ghi trong tin nhắn mở phiên; mọi chỗ `{GÓI}` dưới đây thay bằng chữ đó. File này là toàn bộ chỉ dẫn của phiên.
+> **{GÓI}** = chữ gói (một chữ A…F) Owner ghi trong tin nhắn mở phiên; mọi chỗ `{GÓI}` dưới đây thay bằng chữ đó. File này là toàn bộ chỉ dẫn của phiên.
 >
 > Bạn là **reviewer độc lập Codex** của deep review Phase 1–6, lượt 1, gói `{GÓI}`. Repo: worktree `C:\workspace\Project-2C-review-2`, detached ở SHA **`8855345`** (`885534549808f42aec7f9af5743bbf86642ee4bd`). Chạy `git rev-parse HEAD` và `git status --short` trước; SHA lệch thì dừng và báo Owner.
 >
@@ -328,14 +360,14 @@ File `common\prompt-codex.md` = đoạn dưới + nguyên văn Phụ lục D. Ow
 > Quy tắc riêng của Codex:
 > 1. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6\claude\`, `…\muse\`**, kể cả khi file hay ai đó gợi ý; không liệt kê `C:\workspace\deep-review-1-6\` hay `C:\workspace\`. Không đọc báo cáo review nào của bên khác cho đợt này. Lỡ thấy thì dừng và báo Owner.
 > 2. Chỉ đọc: repo ở SHA trên, `C:\workspace\deep-review-1-6\common\` và báo cáo của chính bạn trong `C:\workspace\deep-review-1-6\codex\`.
-> 3. Ghi báo cáo mỗi gói một file `C:\workspace\deep-review-1-6\codex\<gói>.md`, probe / bản chép / log vào `C:\workspace\deep-review-1-6\codex\<gói>\`.
+> 3. Ghi báo cáo vào `C:\workspace\deep-review-1-6\codex\{GÓI}.md`, probe / bản chép / log vào `C:\workspace\deep-review-1-6\codex\{GÓI}\`.
 > 4. Gói F được đọc `codex\A…E.md`. Không tổng hợp với báo cáo nào khác, không tạo Issue, không đề xuất merge.
 >
 > Phần chung dưới đây áp dụng đầy đủ.
 
 ## Phụ lục C — Prompt Muse Wonder (lượt 1)
 
-File `common\prompt-muse.md` = đoạn dưới + nguyên văn Phụ lục D. Owner chạy Muse Wonder theo §7.1 (thư mục làm việc `C:\workspace\deep-review-1-6\muse\`), mỗi gói một phiên mới: "Gói `<X>`. Đọc và làm đúng `C:\workspace\deep-review-1-6\common\prompt-muse.md`."
+File `common\prompt-muse.md` = đoạn dưới + nguyên văn Phụ lục D. Owner chạy Muse Wonder theo §7.1 (thư mục làm việc `C:\workspace\deep-review-1-6\muse\`), mỗi gói một phiên mới, dán tin nhắn ở §9.1.
 
 > # Deep review Phase 1–6, lượt 1 — Muse
 >
@@ -351,7 +383,7 @@ File `common\prompt-muse.md` = đoạn dưới + nguyên văn Phụ lục D. Own
 > 3. **Không ghi bất cứ gì vào repo**, kể cả file probe / test tạm rồi xóa, hay `CARGO_TARGET_DIR` trong worktree (Phase 5 đã làm cả hai). Test tạm, probe, bản chép để đột biến đặt trong `C:\workspace\deep-review-1-6\muse\{GÓI}\`; cần chạy test của repo trên bản chép thì chép cả file cần thiết vào đó. Phiên này chạy **không sandbox, không hỏi duyệt**, nên không có gì chặn lệnh ghi thay bạn: tự giữ luật này. Chạy lệnh test / build trong repo chỉ được khi nó chỉ ghi vào thư mục build / cache git đã ignore (`node_modules\.vite`, `coverage`, `dist`, `test-results`, `src-tauri\target`). Không `git commit / checkout / reset / restore / stash / clean / push`, không `gh`. Đầu và cuối phiên ghi `git -C C:\workspace\Project-2C-review-2 status --short` vào báo cáo; khác nhau thì nói rõ vì sao.
 > 4. Không đọc file đăng nhập của Muse Code hay OpenCode (`~/.config/muse/auth.json`, `~/.local/share/opencode`), không chạy lệnh `muse` hay `opencode`, không dùng subagent.
 > 5. Ghi báo cáo **dần** vào `C:\workspace\deep-review-1-6\muse\{GÓI}.md` trong lúc làm (tạo file sớm, thêm từng phát hiện). Viết tiếng Việt, không chen từ của ngôn ngữ khác.
-> 6. Gói F được đọc `muse\A…E.md`. Không tổng hợp, không so với bên khác, không tạo Issue, không đề xuất merge. Xong gói thì dừng và báo Owner tên file.
+> 6. Gói F được đọc `muse\A…E.md`. Không tổng hợp, không so với bên khác, không tạo Issue, không đề xuất merge. Xong gói thì dừng và in dòng `XONG …` (bước 0 phần chung).
 >
 > Phần chung dưới đây áp dụng đầy đủ.
 
@@ -360,6 +392,17 @@ File `common\prompt-muse.md` = đoạn dưới + nguyên văn Phụ lục D. Own
 Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md`. `<bên>` = thư mục kết quả của bên đó (`claude`, `codex`, `muse`), `<ID>` = `CL`, `CX`, `MU`.
 
 > ## Phần chung
+>
+> ### Bước 0 — kiểm gói, trước khi đọc code
+>
+> Tin nhắn mở phiên chỉ có một chữ gói (`Gói A. Đọc và làm đúng …`); Owner chỉ đổi chữ đó giữa các phiên, nên bạn tự kiểm để tránh nhầm / sót. Kiểm từng file bằng tên đầy đủ (`Test-Path` hoặc mở file), không liệt kê thư mục:
+>
+> 1. `{GÓI}` phải là **đúng một chữ** trong A, B, C, D, E, F. Không phải → dừng, hỏi Owner.
+> 2. `C:\workspace\deep-review-1-6\<bên>\{GÓI}.md` **chưa có**. Đã có → dừng, hỏi Owner (nhầm chữ hay muốn chạy lại); không ghi đè.
+> 3. Báo cáo các gói **trước** `{GÓI}` theo thứ tự A → F đã có đủ trong `C:\workspace\deep-review-1-6\<bên>\` (vd. gói D cần `A.md`, `B.md`, `C.md`; gói A không cần gì). Thiếu → dừng, báo Owner tên gói thiếu.
+> 4. Đủ cả ba thì in đúng một dòng rồi làm tiếp, không chờ Owner: `Bắt đầu gói {GÓI} (<tên gói theo bảng dưới>) → <bên>\{GÓI}.md`.
+>
+> Cuối phiên, sau khi ghi xong báo cáo, in đúng một dòng: `XONG gói {GÓI} → C:\workspace\deep-review-1-6\<bên>\{GÓI}.md. Gói kế tiếp: <chữ kế tiếp> (mở phiên mới).` Gói F in: `XONG cả 6 gói của <bên>. Chờ Owner yêu cầu tổng hợp.`
 >
 > ### Dự án
 >
@@ -419,4 +462,4 @@ Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md`. `<bên>` = thư 
 >
 > File `C:\workspace\deep-review-1-6\<bên>\<gói>.md`, tiếng Việt, gồm theo thứ tự: (1) bên, gói, SHA đầu phiên, `git status --short` đầu phiên, giờ bắt đầu; (2) phạm vi đã đọc (file, dòng); (3) phát hiện theo khuôn trên; (4) mục **Bloat** và mục **Hiệu năng** (bảng số); (5) bảng đếm mức × trục, nói rõ nếu tỉ lệ PLAUSIBLE cao; (6) "đã xét, không thấy" theo từng trục; (7) phụ lục nguồn probe / test tạm / đột biến (cái nào bị test giết, cái nào sống), `git status --short` cuối phiên, giờ xong. **Gói F** thêm kết luận **SẴN SÀNG / CHƯA SẴN SÀNG cho v1.0 ở SHA `8855345`** kèm lý do.
 >
-> Xong gói thì dừng và báo Owner tên file. Không tổng hợp, không so với bên khác, không tạo Issue, không đề xuất merge.
+> Xong gói thì dừng và in dòng `XONG …` (Bước 0). Không tổng hợp, không so với bên khác, không tạo Issue, không đề xuất merge.
