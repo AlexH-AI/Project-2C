@@ -141,7 +141,7 @@ Theo thước đã dùng ở Phase 1–4 / Phase 5 (tổng hợp Phase 5 §10), 
 
 ### 7.1 Muse Wonder (Muse Code) — chạy không hỏi (`--yolo`)
 
-Phase 5 tốn 45 lần Owner duyệt tay (gói A 32 lần): Muse hỏi quyền đọc / chạy lệnh liên tục, rất mất công theo dõi. **Owner chọn 13/10: Muse chạy `--yolo`** (tắt hỏi duyệt và sandbox, tin workspace cho lần chạy đó). Muse Code trên Office Laptop (kiểm 13/10): `1.4.6-R6000.1`. Lượt 1 chạy ở **Home PC**, nên bước chuẩn bị (§9 bước 1) kiểm lại ở đó: phiên bản Muse và `settings.json` (model Wonder).
+Phase 5 tốn 45 lần Owner duyệt tay (gói A 32 lần): Muse hỏi quyền đọc / chạy lệnh liên tục, rất mất công theo dõi. **Owner chọn 13/10: Muse chạy `--yolo`** (tắt hỏi duyệt và sandbox, tin workspace cho lần chạy đó). Muse Code trên **Home PC** `DESKTOP-KDURKJP` — máy chạy lượt 1 (kiểm 13/10): `1.4.6-R6000.1`. Bước chuẩn bị (§9 bước 1) kiểm lại phiên bản Muse và `settings.json` (model Wonder) ngay trước khi chạy.
 
 Tắt sandbox thì Muse đọc / ghi / chạy được mọi thứ tài khoản Windows của Owner làm được. Các lớp chặn còn lại:
 
@@ -152,7 +152,7 @@ Tắt sandbox thì Muse đọc / ghi / chạy được mọi thứ tài khoản 
 | Gọi dịch vụ AI thật / mạng (`eval:ai`, chatgpt.com) | Prompt (Phụ lục D luật 2); quét log (§8) |
 | `git push`, `gh` | Prompt; `main` có ruleset + hook `pre-push`; quét log (§8) |
 
-1. **Model:** `muse-wonder-1.0` (Owner chọn 13/10, ADR-0001 M5). `~/.config/muse/settings.json` trên Office Laptop đã đặt `"model": "muse-wonder-1.0"`, mức suy luận của model này `xhigh` (`model_reasoning_efforts`), `contributor_mode_enabled: true`; Home PC đặt giống vậy (Owner, hoặc kiểm ở bước chuẩn bị). `default_profile` để nguyên: `--yolo` đè lên hồ sơ quyền.
+1. **Model:** `muse-wonder-1.0` (Owner chọn 13/10, ADR-0001 M5). `~/.config/muse/settings.json` trên Home PC đã đặt `"model": "muse-wonder-1.0"`, mức suy luận của model này `xhigh` (`model_reasoning_efforts`), `contributor_mode_enabled: true` (kiểm 13/10). `default_profile` để nguyên: `--yolo` đè lên hồ sơ quyền.
 2. **Thư mục làm việc = `C:\workspace\deep-review-1-6\muse\`**: báo cáo, probe, bản chép để đột biến ghi ở đây. Repo `C:\workspace\Project-2C-review-2` nằm ngoài, **chỉ đọc theo prompt**.
 3. Chạy (mỗi gói một phiên mới, thoát rồi chạy lại):
 
@@ -323,7 +323,7 @@ Mỗi câu có đề xuất; Owner duyệt kế hoạch mà không nói gì khá
 **Owner trả lời 13/10:** câu 1 — hai đợt; câu 2 — **Home PC** (khác đề xuất; §6, §7.1, §9, §11 đã sửa theo); câu 3 — Muse chạy **`--yolo`** (khác đề xuất; §7.1, Phụ lục C đã sửa theo).
 
 1. **Hai đợt** (Claude + Codex trước, Muse sau, như Phase 5) hay cả ba cùng lúc (nhanh hơn ≈ nửa ngày nhưng không chặn ACL được `claude\` / `codex\`, và va cổng e2e / probe)? **Đề xuất: hai đợt.**
-2. **Máy:** cả lượt 1 chạy trên một máy. Office Laptop `D13_THINKPAD`: số đo nền T-219 đo ở đây (so trực tiếp được), đã có hai worktree review, Muse 1.4.6 với sandbox sẵn sàng và đã đặt model Muse Wonder; nhưng yếu hơn và không có quyền admin (ACL `icacls` trên thư mục của chính mình không cần admin). Home PC `DESKTOP-KDURKJP`: mạnh hơn, nơi chạy Phase 5 (cần kiểm lại phiên bản Muse, model Wonder, worktree). **Đề xuất: Office Laptop**; lượt 2 cũng ở đây để so "không xấu đi".
+2. **Máy:** cả lượt 1 chạy trên một máy. Office Laptop `D13_THINKPAD`: số đo nền T-219 đo ở đây (so trực tiếp được), đã có hai worktree review, OpenCode 2.0.27, Muse 1.3.0 (kiểm 13/10 sáng); nhưng yếu hơn và không có quyền admin (ACL `icacls` trên thư mục của chính mình không cần admin). Home PC `DESKTOP-KDURKJP`: mạnh hơn, nơi chạy Phase 5; kiểm 13/10: Muse 1.4.6, đã đặt model Muse Wonder, hai worktree review có sẵn. **Đề xuất: Office Laptop**; lượt 2 cũng ở đây để so "không xấu đi".
 3. **Muse:** chạy có sandbox + hỏi duyệt (bỏ `default_profile`), hay không hỏi? → **Owner chọn `--yolo`** (13/10): hỏi duyệt quá mất công theo dõi; lớp chặn còn lại ở §7.1.
 
 ## Phụ lục A — Prompt Claude (lượt 1)
