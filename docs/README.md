@@ -18,7 +18,7 @@ Quy tắc làm việc nằm ở `CLAUDE.md` (gốc repo) và `.claude/rules/` (n
 | `design/phase-3-du-lieu.md` | Spec G2 Phase 3: schema, lệnh nghiệp vụ, lưu file, backup, seed | Task đụng `packages/db` |
 | `design/phase-4-chi-so.md` | Spec G2 Phase 4: đếm lịch hẹn, KH theo nhóm, miền năm, chỉ số Tổng quan / Báo cáo (§4.5 quyết định G3) | Task Phase 4 |
 | `design/phase-5-ai.md` | Spec G1 / G2 Phase 5: luồng AI, Settings, lệnh Rust, schema output, validator, mức bằng chứng, `ai_analyses`, AI trích xuất | Task Phase 5 |
-| `design/phase-6-hoan-thien.md` | Spec G1 Phase 6: việc còn lại, tính năng tới v1.0, kiểm thử phát hành, 2 lượt deep review Phase 1–6 × 4 agent × 6 gói (gồm phân tích bloat / hiệu năng), tiêu chí v1.0 | Task Phase 6 |
+| `design/phase-6-hoan-thien.md` | Spec G1 Phase 6: việc còn lại, tính năng tới v1.0, kiểm thử phát hành, 2 lượt deep review Phase 1–6 × 3 agent × 6 gói (gồm phân tích bloat / hiệu năng), tiêu chí v1.0 | Task Phase 6 |
 | `design/phase-5-prompts.md` | G5 Phase 5: chữ prompt `analysis@1` / `discovery@1` / `extraction@1`, message thử lại, danh sách chặn V3–V6 + ca kiểm | Task validator / prompt Phase 5 |
 | `design/mockups/README.md` | Mockup → màn hình / route → G3 → mục spec; mục lục mockup lớn | Task UI |
 | `golden/*.md` | Spec của golden fixtures (`chi-so`, `kh-theo-nhom`, `kyc`, `lich-hen`); fixture ở `packages/domain/src/golden/` | Task đụng chỉ số / ngày / nhóm KH; không sửa khi chưa qua G2 |
@@ -29,7 +29,7 @@ Quy tắc làm việc nằm ở `CLAUDE.md` (gốc repo) và `.claude/rules/` (n
 |---|---|---|
 | `process/REVIEW-CHECKLIST.md` | Trục Standards của review | Phiên review (skill `review-pr`) |
 | `process/deep-review-phase-1-4.md` | Kế hoạch deep codebase review Phase 1–4 trước G7 (G1): gói, trục kiểm, định dạng phát hiện, prompt Codex | Mở / chạy / tổng hợp đợt deep review |
-| `process/deep-review-phase-1-6.md` | Kế hoạch deep review Phase 1–6 (6D, 4 bên × 6 gói, 2 lượt): SHA ghim, gói, trục (gồm bloat / hiệu năng), KNOWN, số đo nền, cấu hình OpenCode / Muse, prompt nguyên văn từng bên | Chạy / tổng hợp hai lượt deep review Phase 6 (T-222…T-225) |
+| `process/deep-review-phase-1-6.md` | Kế hoạch deep review Phase 1–6 (6D, 3 bên × 6 gói, 2 lượt): SHA ghim, gói, trục (gồm bloat / hiệu năng), KNOWN, số đo nền, cấu hình Muse, prompt nguyên văn từng bên | Chạy / tổng hợp hai lượt deep review Phase 6 (T-222…T-225) |
 | `agents/issue-tracker.md` | Cách viết Issue Task (nhãn, milestone, "Tài liệu cần đọc") | Khi tạo Issue (`to-tickets`) |
 | `agents/domain.md` | Cách dùng `CONTEXT.md` (từ điển nghiệp vụ) + ADR | Khi gặp thuật ngữ nghiệp vụ |
 | `setup/office-laptop.md` | Dựng máy mới / máy không có quyền admin | Lần đầu trên máy mới |
