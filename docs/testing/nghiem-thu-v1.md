@@ -46,16 +46,16 @@ Mỗi lượt dùng **một thư mục mới chỉ để thử**, ví dụ `C:\n
 | `NT-KH` | [Khách hàng](#4-khách-hàng-nt-kh) | `customers.html`, `phase-3-feedback.html` B2, `customer-forms.html` 5a–5f, `trash.html` 11f |
 | `NT-HS` | [Hồ sơ KH, KYC, hợp đồng](#5-hồ-sơ-kh-kyc-hợp-đồng-nt-hs) | `customer.html`, `kyc-forms.html` 7a–7e, `policy-forms.html` 8a–8d |
 | `NT-AI` | [KYC Intelligence](#6-kyc-intelligence-nt-ai) | `ai.html` §2, §3, §4 (4d–4i), `customer.html`; spec Phase 5 §9.1, §9.2 |
-| `NT-BC` | Báo cáo (phần 2) | `reports.html` 2a–2f |
-| `NT-TM` | Team & nhân sự (phần 2) | `team.html`, `phase-3-feedback.html` B1 |
-| `NT-CD` | Cài đặt → Dữ liệu (phần 2) | `settings-data.html` |
-| `NT-CA` | Cài đặt → AI (phần 2) | `ai.html` §1, §4 (4a–4c) |
-| `NT-TR` | Cài đặt → Thùng rác (phần 2) | `trash.html` 11a–11e, 11g |
-| `NT-EX` | Exe trên máy thật (phần 2) | spec Phase 6 §5 mục 3 |
-| `NT-DB` | Độ bền dữ liệu (phần 2) | spec Phase 6 §4.1 (S-2), §5 mục 4 |
-| `NT-HN` · `NT-EV` · `NT-HD` | Hiệu năng · eval AI thật · hướng dẫn khớp exe (phần 2) | spec Phase 6 §5 mục 5–6, §4.3 |
+| `NT-BC` | [Báo cáo](#7-báo-cáo-nt-bc) | `reports.html` 2a–2f |
+| `NT-TM` | [Team & nhân sự](#8-team--nhân-sự-nt-tm) | `team.html`, `phase-3-feedback.html` B1 |
+| `NT-CD` | [Cài đặt → Dữ liệu](#9-cài-đặt--dữ-liệu-nt-cd) | `settings-data.html` |
+| `NT-CA` | [Cài đặt → AI](#10-cài-đặt--ai-nt-ca) | `ai.html` §1, §4 (4a–4c) |
+| `NT-TR` | [Cài đặt → Thùng rác](#11-cài-đặt--thùng-rác-nt-tr) | `trash.html` 11a–11e; spec Phase 6 §4.2 (E1–E17) |
+| `NT-EX` | [Exe trên máy thật](#12-exe-trên-máy-thật-nt-ex) | spec Phase 6 §5 mục 3 |
+| `NT-DB` | [Độ bền dữ liệu](#13-độ-bền-dữ-liệu-nt-db) | spec Phase 6 §4.1 (S-2), §5 mục 4 |
+| `NT-HN` · `NT-EV` · `NT-HD` | [Hiệu năng · eval AI thật · hướng dẫn khớp exe](#14-hiệu-năng-eval-ai-thật-hướng-dẫn-nt-hn-nt-ev-nt-hd) | spec Phase 6 §5 mục 5–6, §4.3 |
 
-Phần 2 (các vùng ghi "phần 2") thêm ở PR kế tiếp của T-221.
+Cuối file: [đối chiếu mockup → mã dòng](#đối-chiếu-mockup--mã-dòng).
 
 ## 1. Chung — sidebar, góc nhìn, bảng dài (`NT-CH`)
 
@@ -140,7 +140,7 @@ Mockup `appointments.html` là vòng 2 (26/09); phần lịch tháng / năm / 4 
 | NT-LH-30 | 6h · Lịch hẹn tiếp theo | Chi tiết lịch Không đến của NT-LH-26 (hoặc lịch đã qua bất kỳ) → **Tạo lịch hẹn tiếp theo**; gõ một ngày đã qua | Hộp "Lịch hẹn tiếp theo" · "Từ lịch dd/mm/yyyy hh:mm · Không đến · điền sẵn, sửa được"; KH, RE, giờ, trigger, người phối hợp điền sẵn. Ngày đã qua: "… Lịch mới phải từ hôm nay (…) trở đi." kèm gợi ý năm sau. Lịch Dự kiến tương lai không có nút này | | |
 | NT-LH-31 | 6f · Sửa kết quả | Lịch Đã gặp của NT-LH-21 (chuyển nhóm mới nhất) → **Sửa kết quả**, đổi Việc tiếp theo, **Lưu** | Hộp "Sửa kết quả cuộc gặp", không khóa ô nào; lưu được, chi tiết hiện việc mới | | |
 | NT-LH-32 | 6f · bị khóa (D7) | KH của NT-LH-21: **Chuyển nhóm** tay N1 → N2 (Hồ sơ KH); rồi Sửa kết quả lịch Đã gặp đó | Hộp ghi "Khóa 3 ô: trạng thái, ngày cuộc hẹn, nhóm sau cuộc gặp" (🔒), "Nhóm của KH đã đổi tiếp sau cuộc gặp này, ngày …", liên kết "Chuyển nhóm tay ở Hồ sơ KH", "Các ô còn lại vẫn sửa được."; nút Xóa lịch hẹn bị chặn ("Xóa cũng bị chặn"). Các ô khác lưu được | | |
-| NT-LH-33 | 6g · Xóa cuộc gặp có chuyển nhóm | Lịch Đã gặp của NT-LH-22 (chuyển nhóm mới nhất, tính RF) → Sửa kết quả → **Xóa lịch hẹn** | Hộp "Xóa lịch hẹn dd/mm/yyyy hh:mm?" · "<KH> · Đã gặp": "Cuộc gặp này đã chuyển nhóm KH. Khi xóa:" Nhóm KH "N2 → về N3 (hủy chuyển nhóm dd/mm)", RF "bớt 1 (N3 → N2 tính RF)", Ghi chú KYC "giữ nguyên"; "Xóa mềm, khôi phục được ở Cài đặt → Thùng rác." Sau khi xóa: KH về N3, Chuyển RF (Lọc lại) giảm 1, lịch không còn ở danh sách | | Lịch này dùng lại ở Thùng rác (phần 2) |
+| NT-LH-33 | 6g · Xóa cuộc gặp có chuyển nhóm | Lịch Đã gặp của NT-LH-22 (chuyển nhóm mới nhất, tính RF) → Sửa kết quả → **Xóa lịch hẹn** | Hộp "Xóa lịch hẹn dd/mm/yyyy hh:mm?" · "<KH> · Đã gặp": "Cuộc gặp này đã chuyển nhóm KH. Khi xóa:" Nhóm KH "N2 → về N3 (hủy chuyển nhóm dd/mm)", RF "bớt 1 (N3 → N2 tính RF)", Ghi chú KYC "giữ nguyên"; "Xóa mềm, khôi phục được ở Cài đặt → Thùng rác." Sau khi xóa: KH về N3, Chuyển RF (Lọc lại) giảm 1, lịch không còn ở danh sách | | Lịch này dùng lại ở NT-TR-08 |
 | NT-LH-34 | Xóa lịch Dự kiến | Chi tiết một lịch Dự kiến → **Xóa** | Hộp: "Cuộc hẹn này không đổi nhóm KH. Khi xóa:" … "không đổi"; câu xóa mềm như NT-LH-33. Xóa → lịch biến khỏi danh sách và số đếm | | |
 | NT-LH-35 | Chuỗi dời (spec Phase 4 §1.3) | Xóa lịch mới tạo ở NT-LH-28 | Lịch gốc vẫn là Dời lịch và vẫn đếm ở nhóm Dời lịch / hủy / không đến; lịch con không còn đếm | | |
 | NT-LH-36 | Khớp màn | Kỳ Năm, Toàn bộ: so lưới năm, dòng đếm với Tổng quan kỳ Năm (Lọc) | Tổng lịch, Đã gặp, Chưa ghi kết quả trùng ô Lịch hẹn của Tổng quan | | |
@@ -163,7 +163,7 @@ Mockup `appointments.html` là vòng 2 (26/09); phần lịch tháng / năm / 4 
 | NT-KH-12 | 5e · KH đã đóng | Hồ sơ một KH **Tạm hoãn** → Chuyển nhóm | Câu "KH đã đóng chỉ mở lại về N3, hoặc chuyển sang nhóm đóng còn lại. Mở lại không tính RF."; N3 ghi "mở lại"; chỉ chọn được N3 hoặc Mất cơ hội. Mở lại → KH về cột N3, RF không đổi | | |
 | NT-KH-13 | Đóng KH | Một KH N4 → Chuyển nhóm → **Mất cơ hội** | KH sang khung Mất cơ hội với ngày đóng; "m đã đóng" tăng 1; ô N4 ở Tổng quan (Lọc) giảm 1 | | |
 | NT-KH-14 | 5f / `trash.html` 11f · Xóa KH | Ghi số lịch hẹn, số đã gặp, số HĐ ở thẻ Lịch hẹn / Hợp đồng của một KH; Sửa hồ sơ → **Xóa KH…** | Hộp "Xóa <tên>?": "KH và mọi bản ghi của KH sẽ bị ẩn khỏi danh sách và mọi chỉ số:" Lịch hẹn "n (a đã gặp · b lần tính RF)", Hợp đồng, Ghi chú KYC "n — giữ nguyên, không bao giờ xóa"; "Dữ liệu vẫn còn: khôi phục ở Cài đặt → Thùng rác." Số khớp với số đã ghi | | |
-| NT-KH-15 | 5f · sau khi xóa | Tiếp NT-KH-14: **Xóa KH**; xem Khách hàng, Lịch hẹn, Tổng quan (Lọc) | Về danh sách Khách hàng, KH không còn; lịch hẹn của KH không còn ở Lịch hẹn; chỉ số giảm đúng phần của KH (Đã gặp, RF, HĐ, KH theo nhóm) | | KH này dùng lại ở Thùng rác (phần 2) |
+| NT-KH-15 | 5f · sau khi xóa | Tiếp NT-KH-14: **Xóa KH**; xem Khách hàng, Lịch hẹn, Tổng quan (Lọc) | Về danh sách Khách hàng, KH không còn; lịch hẹn của KH không còn ở Lịch hẹn; chỉ số giảm đúng phần của KH (Đã gặp, RF, HĐ, KH theo nhóm) | | KH này dùng lại ở NT-TR-05 |
 
 ## 5. Hồ sơ KH, KYC, hợp đồng (`NT-HS`)
 
@@ -186,7 +186,7 @@ Mockup `appointments.html` là vòng 2 (26/09); phần lịch tháng / năm / 4 
 | NT-HS-15 | 8b · nộp và phát hành khác tháng | Một HĐ Đã nộp của tháng trước (seed) → Phát hành ngày trong tháng này; xem Tổng quan tháng trước và tháng này | Hộp ghi "HĐ nộp tháng mm vẫn tính nộp vào tháng mm; phát hành tính vào tháng …". HĐ nộp / Case size vẫn ở tháng nộp; HĐ phát hành / Doanh số ở tháng phát hành | | |
 | NT-HS-16 | 8c · lỗi HĐ | Phát hành: ngày trước ngày nộp; FYP `0`; `-50tr`; `năm trăm`; FYP `200 tỷ`; ngày mai | Trước ngày nộp: "dd/mm/yyyy trước ngày nộp dd/mm/yyyy."; 0: "FYP phải lớn hơn 0."; âm: "Số tiền không được âm."; chữ: "Gõ số tiền như 800tr, 1,2 tỷ hoặc 500.000.000."; quá 100 tỷ: "Số tiền tối đa 100 tỷ đồng."; ngày mai: báo lỗi ngày sau hôm nay. Không lưu | | |
 | NT-HS-17 | 8d · Sửa HĐ | HĐ đã phát hành → **Sửa**: FYP phát hành giảm 14,5 tr (vd. 250tr → `235,5tr`); **Lưu** | "Sửa HĐ · <tên>" · "Đã phát hành dd/mm/yyyy"; FYP đọc "235.500.000 ₫ (235,5 tr) · khác FYP nộp −14,5 tr"; khung "Ảnh hưởng chỉ số": "FYP phát hành tháng mm/yyyy của RE … giảm 14,5 tr"; RE không đổi được. Sau khi lưu: Doanh số tháng đó giảm 14,5 tr | | |
-| NT-HS-18 | Xóa HĐ | Sửa HĐ → **Xóa HĐ…** → **Xóa HĐ** | Hộp "Xóa HĐ nộp dd/mm/yyyy" · "<tên> · FYP nộp …": "HĐ không còn tính vào FYP nộp / phát hành của RE; nhóm của KH không đổi." + "Xóa mềm: HĐ vẫn nằm trong dữ liệu (D4), khôi phục ở Cài đặt → Thùng rác." Sau khi xóa: HĐ không còn trên thẻ và chỉ số; nhóm KH giữ nguyên | | HĐ này dùng lại ở Thùng rác (phần 2) |
+| NT-HS-18 | Xóa HĐ | Sửa HĐ → **Xóa HĐ…** → **Xóa HĐ** | Hộp "Xóa HĐ nộp dd/mm/yyyy" · "<tên> · FYP nộp …": "HĐ không còn tính vào FYP nộp / phát hành của RE; nhóm của KH không đổi." + "Xóa mềm: HĐ vẫn nằm trong dữ liệu (D4), khôi phục ở Cài đặt → Thùng rác." Sau khi xóa: HĐ không còn trên thẻ và chỉ số; nhóm KH giữ nguyên | | HĐ này dùng lại ở NT-TR-16 |
 
 ## 6. KYC Intelligence (`NT-AI`)
 
@@ -220,6 +220,149 @@ Provider **Mock** trừ khi cột Ghi chú nói khác. Mock trả câu mẫu c�
 | NT-AI-24 | `customer.html` · Thông tin tham khảo | OpenCode / ChatGPT web: đọc các kết quả đạt có khối **Thông tin tham khảo — không phải kết luận** | Mỗi dòng bắt đầu "Tâm lý học:" hoặc "Tử vi / huyền học:", có bằng chứng và mức như ý khác; khối nằm cuối | | Khi kết quả có khối này |
 | NT-AI-25 | Giới hạn của AI (G5) | Đọc tay mọi kết quả đạt từ OpenCode / ChatGPT web trong lượt thử | Không có tên sản phẩm / hãng bảo hiểm, số %, "xác suất", "khả năng chốt"; nhãn tính cách (MBTI, DISC, cung hoàng đạo…) chỉ ở khối Thông tin tham khảo; không trích văn bản pháp lý (Điều, Luật, Nghị định, Thông tư) | | Lọt qua → Issue `risk:high` |
 
+## 7. Báo cáo (`NT-BC`)
+
+| Mã | Màn / mockup | Thao tác | Kết quả mong đợi | Đạt / Lỗi | Ghi chú |
+|---|---|---|---|---|---|
+| NT-BC-01 | 2a · thanh lọc | Mở Báo cáo; đổi kỳ chưa bấm Lọc; rồi bấm Lọc | Hàng kỳ + nút **Lọc** + dòng "Đang xem: …" + **Xuất Excel**. Đổi kỳ / góc nhìn chưa Lọc → nút Lọc vàng + dòng nhắc, bảng giữ số cũ (như NT-TQ-02) | | |
+| NT-BC-02 | 2a · Tổng hợp | Kỳ Tháng hiện tại, Toàn bộ | Bảng **Tổng hợp** luôn ở trên, một dòng "Toàn bộ · 30 RE"; 3 nhóm cột: **Lịch hẹn · cả kỳ** (Đã gặp · Dời – hủy – không đến · Chưa ghi kết quả · Dự kiến · Tổng), **Kết quả · tới hôm nay** (Chuyển RF · HĐ nộp · Case size · HĐ phát hành · Doanh số · Tỉ lệ chốt), **KH cuối kỳ** (N4 · N3 · N2 · N1 · Tạm hoãn · Mất cơ hội). Không có cột so kỳ trước | | |
+| NT-BC-03 | Khớp Tổng quan | So Tổng hợp với Tổng quan cùng kỳ, cùng góc nhìn (Lọc); và với Khách hàng | 5 cột Lịch hẹn = ô Lịch hẹn; 6 cột Kết quả = 6 ô KPI; N4–N1 = 4 ô KH theo nhóm. Kỳ chứa hôm nay: Tạm hoãn + Mất cơ hội = "m đã đóng" ở Khách hàng | | |
+| NT-BC-04 | 2a · Theo team | Chọn **Theo team** | "3 team · thứ tự theo tên"; dòng **Tổng** = Tổng hợp; Tỉ lệ chốt Tổng = Σ HĐ phát hành ÷ Σ RF; mỗi team trùng dòng team ở bảng So sánh team của Tổng quan cùng kỳ | | |
+| NT-BC-05 | 2b · Theo RE | Chọn **Theo RE** | "30 RE · thứ tự theo team rồi tên"; cột Team, RE; RE xếp theo team rồi tên, có vạch ngang giữa các team; RE không có số nào vẫn có dòng (số 0); không có TL / IS / BD / BDM; dòng Tổng = Tổng hợp; cộng các RE của một team = dòng team ở Theo team | | |
+| NT-BC-06 | 2c · Theo mốc, kỳ Tháng (M01) | Chọn **Theo mốc**, kỳ Tháng hiện tại | "n mốc"; mỗi mốc là một tuần Thứ Hai → Chủ nhật, cắt ở đầu / cuối tháng; mốc chứa hôm nay được đánh dấu và ghi "tới dd/mm"; mốc sau hôm nay chỉ đếm lịch hẹn (Dự kiến), Kết quả và KH cuối kỳ "—". Không có dòng Tổng; cộng cột Lịch hẹn và Kết quả của các mốc = Tổng hợp | | |
+| NT-BC-07 | 2d, 2e · Theo mốc, kỳ khác | Theo mốc với kỳ Tuần, Năm, Tùy chọn 16 ngày, Tùy chọn ≈ 2 tháng (M03, M04) | Tuần: 7 mốc = 7 ngày; Năm: 12 mốc = 12 tháng, KH của tháng này tính tới hôm nay; Tùy chọn ≤ 31 ngày: từng ngày; dài hơn: từng tháng, tháng đầu / cuối cắt theo khoảng | | |
+| NT-BC-08 | 2d · góc nhìn Team | Góc nhìn **Team**, chọn một team, Lọc | Có ô chọn team (khác Tổng quan); "Đang xem: … · Team <tên>"; Tổng hợp "Team <tên> · 10 RE"; không có lựa chọn Theo team; Theo RE = 10 RE của team; số = dòng team đó ở NT-BC-04 | | |
+| NT-BC-09 | 2e · góc nhìn RE | Góc nhìn **RE**, kỳ Năm, Lọc | Tổng hợp một dòng của RE; chỉ còn **Theo mốc** (12 mốc); số trùng Tổng quan góc nhìn RE cùng kỳ (NT-TQ-22) | | |
+| NT-BC-10 | Kỳ chưa bắt đầu | Kỳ Tháng sau, Lọc | Lịch hẹn vẫn đếm lịch Dự kiến; Kết quả và KH cuối kỳ "—" | | |
+| NT-BC-11 | Bảng rộng | Thu hẹp cửa sổ app | Bảng cuộn ngang, cột tên (Team / RE / Mốc) đứng yên | | |
+| NT-BC-12 | 2f · Xuất Excel, Toàn bộ | Kỳ Tháng hiện tại, Toàn bộ → **Xuất Excel**; **Mở thư mục**; mở file bằng Excel | Nút ghi "Đang xuất…", rồi "Đã xuất báo cáo · 4 sheet: …\Project2C-data\exports\bao-cao_<kỳ>_toan-bo_<ngày xuất>.xlsx" + **Mở thư mục** mở đúng thư mục. File có 4 sheet Tổng hợp, Theo team, Theo RE, Theo mốc; dòng đầu mỗi sheet "Báo cáo <bảng> · <kỳ> · <góc nhìn> · xuất <ngày>"; cột tiền ghi "(₫)" và ô là số đồng (tính tổng được trong Excel), Tỉ lệ chốt dạng %; số trùng màn | | |
+| NT-BC-13 | 2f · sheet theo góc nhìn | Xuất ở góc nhìn Team, rồi RE | Team: 3 sheet (không có Theo team); RE: 2 sheet (Tổng hợp, Theo mốc); tên file ghi góc nhìn | | |
+| NT-BC-14 | 2f · không ghi đè | Xuất lại ngay, cùng kỳ và góc nhìn; rồi bấm Lọc với kỳ khác | File thứ hai có hậu tố "-2", file đầu còn nguyên. Lọc kỳ khác → thông báo xuất mất | | |
+
+## 8. Team & nhân sự (`NT-TM`)
+
+Các dòng NT-TM tạo team "Thử NT", TL "TL Thử", RE "RE Thử" để dùng ở NT-TR (không có dữ liệu nghiệp vụ nên xóa được).
+
+| Mã | Màn / mockup | Thao tác | Kết quả mong đợi | Đạt / Lỗi | Ghi chú |
+|---|---|---|---|---|---|
+| NT-TM-01 | B1 · đầu màn | Mở **Team & nhân sự** | "3 team · 3 TL · 30 RE · 3 người hỗ trợ" (seed; không tính người đã xóa); nút **+ Nhân sự**, **+ Team**; không có ô Góc nhìn | | |
+| NT-TM-02 | B1 · danh sách | Xem khung **Team** và **Người hỗ trợ** | Mỗi team "TL · 10 RE" (không có số "1" trước TL), team chưa có TL "chưa có TL · n RE". **Người hỗ trợ**: IS / BD / BDM, mỗi người có **Sửa**, câu "IS / BD / BDM chỉ là người phối hợp lịch hẹn, không có chỉ số." | | |
+| NT-TM-03 | B1 · một team | Bấm một team | Đầu bảng "Team <tên> · TL <tên> · Sửa" (Sửa mở hộp Sửa nhân sự của TL), không kèm số người / số lịch; **Đổi tên team**, **Xóa team** bên phải. Bảng chỉ có RE: Họ tên, Vai trò, KH đang mở, Lịch hẹn 30 ngày, HĐ năm yyyy, Sửa; sắp được mọi cột | | |
+| NT-TM-04 | Khớp số | Với một RE: so KH đang mở với số cạnh tên RE ở Khách hàng (NT-KH-04); HĐ năm với Báo cáo → Theo RE kỳ Năm (cột HĐ phát hành); Lịch hẹn 30 ngày với Lịch hẹn kỳ Tùy chọn từ 29 ngày trước tới hôm nay, chọn RE đó | Ba cặp số trùng nhau | | |
+| NT-TM-05 | 9c · Team mới | **+ Team**: "Sao Mai" → Tạo team; rồi "Thử NT" | "Sao Mai": báo 'Đã có team "Sao Mai".', không tạo. "Thử NT": có trong danh sách "chưa có TL · 0 RE"; bên phải "chưa có TL · + Thêm TL", "Team chưa có RE." | | |
+| NT-TM-06 | B1 · + Thêm TL | Team Thử NT → **+ Thêm TL**: "TL Thử" → Thêm | Hộp Nhân sự mới chọn sẵn vai trò TL và team Thử NT. Sau khi thêm: đầu bảng "Team Thử NT · TL TL Thử · Sửa"; danh sách "TL · 0 RE" | | |
+| NT-TM-07 | 9a · Nhân sự mới | **+ Nhân sự**: "RE Thử", vai trò RE, Team "Không thuộc team" → Thêm; sửa Team = Thử NT → Thêm. Rồi thử IS có chọn team | Câu "Team bắt buộc với RE / TL; IS, BD, BDM để trống. Đổi team của RE: chỉ số cũ đi theo team hiện tại…". RE không team: "RE phải thuộc một team."; IS có team: "IS, BD và BDM không thuộc team nào: bỏ chọn team." Sau khi thêm: RE Thử có trong bảng Thử NT, trong danh sách RE của góc nhìn, hộp Lịch hẹn mới / Khách hàng mới | | |
+| NT-TM-08 | TL thứ hai | **+ Nhân sự**: "TL Thử B", vai trò TL, team Thử NT → Thêm | "Team này đã có TL: TL Thử." Không thêm | | |
+| NT-TM-09 | Đổi tên team | Thử NT → **Đổi tên team** "Thử NT X" → Lưu; xem ô chọn team ở Báo cáo, So sánh team ở Tổng quan; đổi lại "Thử NT" | Tên mới hiện ở mọi chỗ; đổi lại được. Đổi thành tên team đang có → báo trùng tên | | |
+| NT-TM-10 | 9b · Xóa người còn dữ liệu | **Sửa** một RE có KH → **Xóa nhân sự** | Hộp "Xóa <tên>?" · "RE · <team>": "Chưa xóa được — RE còn dữ liệu", số KH đang phụ trách, "a lịch hẹn, b HĐ ghi cho RE này", số lịch là người phối hợp (nếu có), câu "Chuyển KH sang RE khác trước…"; nút Xóa tắt; **Đóng** không đổi gì | | |
+| NT-TM-11 | Đổi vai trò RE có dữ liệu | Sửa một RE có KH → vai trò IS → Lưu | Báo "Nhân sự còn KH, lịch hẹn hoặc HĐ ghi cho mình, kể cả của KH đã xóa…"; không lưu | | |
+| NT-TM-12 | Xóa team còn người | Team Thử NT → **Xóa team** → Xóa | "Team còn nhân sự: chuyển hoặc xóa hết nhân sự trước khi xóa team."; team còn | | |
+| NT-TM-13 | Đổi team của RE | Sửa một RE có số (ghi tên, team cũ A) → team B → Lưu; Tổng quan kỳ Tháng trước, So sánh team (Lọc); rồi đổi lại team A | Chỉ số cũ của RE chuyển theo sang team B ở cả kỳ đã qua (v1 không lưu lịch sử chuyển team); dòng Tổng không đổi. Đổi lại → về như trước | | |
+| NT-TM-14 | Xóa người không dữ liệu | Thêm IS "IS Tạm" → Sửa → **Xóa nhân sự** → **Xóa** | Hộp ghi vai trò, team và "Nhân sự được xóa mềm: ẩn khỏi danh sách, dữ liệu cũ vẫn giữ; khôi phục ở Cài đặt → Thùng rác."; xóa xong IS Tạm biến khỏi Người hỗ trợ, có ở Thùng rác | | |
+
+## 9. Cài đặt → Dữ liệu (`NT-CD`)
+
+| Mã | Màn / mockup | Thao tác | Kết quả mong đợi | Đạt / Lỗi | Ghi chú |
+|---|---|---|---|---|---|
+| NT-CD-01 | Cài đặt | Mở **Cài đặt** | Khung trái 3 mục **Dữ liệu**, **AI**, **Thùng rác**; mở sẵn Dữ liệu; không có ô Góc nhìn | | |
+| NT-CD-02 | File dữ liệu | Xem thẻ **File dữ liệu**; tạo một thay đổi bất kỳ rồi xem lại | "schema vN"; Vị trí "Project2C-data\project2c.db (cạnh file exe)"; Lưu lần cuối "giờ · cỡ file", đổi sau mỗi lần lưu; Nội dung "a team · b nhân sự · c KH · d lịch hẹn · e HĐ" (không tính Thùng rác; c = đang mở + đã đóng ở Khách hàng); Backup tự động "Mỗi lần mở app · giữ 10 bản mới nhất ở Project2C-data\backups\ · mới nhất <file>" + **Mở thư mục** mở đúng thư mục | | |
+| NT-CD-03 | Xuất backup | **Xuất backup**; bấm lại ngay trong cùng phút | "Đang xuất…" rồi "Đã xuất backup: Project2C-data\exports\project2c-YYYYMMDD-HHMM.p2cbackup · x MB" + Mở thư mục. Lần hai: tên có hậu tố "-2", file đầu còn nguyên | | |
+| NT-CD-04 | 10a · Thay toàn bộ dữ liệu? | Sau NT-CD-03, tạo KH "Sau xuất"; **Chọn file…** → file vừa xuất; rồi **Hủy** | "Đang đọc file…" rồi hộp "Thay toàn bộ dữ liệu?" ghi tên file: Xuất lúc, Phiên bản "schema vN (bằng app)", **Trong file** và **Hiện tại** (Hiện tại hơn 1 KH), "Mọi thay đổi sau <giờ xuất> sẽ mất khỏi app", câu backup trước + "Nhập không gộp dữ liệu.". Hủy → dữ liệu không đổi, KH "Sau xuất" còn | | |
+| NT-CD-05 | 10a · nhập | Chọn lại file → **Backup rồi thay dữ liệu** | "Đang nhập…" (Escape không đóng hộp), rồi "Đã nhập backup xuất lúc …" kèm tên file backup vừa tạo; Nội dung = "Trong file"; KH "Sau xuất" không còn; `backups\` có bản mới; Thùng rác có cùng số bản ghi như lúc xuất; cài đặt AI (provider, model) theo file | | |
+| NT-CD-06 | 10b · file không dùng được | Nhập lần lượt: một file `.txt` đổi đuôi thành `.p2cbackup`; bản sao file xuất đã sửa bằng Notepad `"schemaVersion":N` thành `"schemaVersion":99` (file viết liền, không có dấu cách); một file > 100 MB (vd. chép video rồi đổi đuôi) | Hộp "Không nhập được file": "File hỏng hoặc không phải backup Project-2C" + "Chỉ nhận file .p2cbackup do Project-2C xuất…"; "File tạo từ bản app mới hơn (schema v99, app này vN)" + "Cập nhật app rồi nhập lại…"; "File lớn hơn 100 MB, app không đọc" + câu kiểm lại file. **Đóng**; mỗi lần dữ liệu hiện tại không đổi | | |
+| NT-CD-07 | 10b · dữ liệu sai trong file | Bản sao file xuất, sửa bằng Notepad một chỗ `"stage":"N3"` thành `"stage":"N9"`; nhập | "File hỏng hoặc không phải backup Project-2C"; dữ liệu hiện tại không đổi | | |
+| NT-CD-08 | 10c · Nạp lại | **Nạp lại…**; gõ sai chữ xác nhận; gõ đúng `NẠP LẠI` → **Backup rồi nạp lại** | Hộp "Nạp lại dữ liệu giả lập?": neo ở ngày hôm nay, câu backup trước + cách khôi phục. Nút tắt tới khi gõ đúng "NẠP LẠI". Rồi "Đang nạp lại…" → "Đã nạp lại dữ liệu giả lập, neo ở ngày …" + "Backup: Project2C-data\backups\…"; dữ liệu thử (KH, team Thử NT…) không còn | | Làm cuối lượt, hoặc khi cần dữ liệu sạch |
+
+## 10. Cài đặt → AI (`NT-CA`)
+
+| Mã | Màn / mockup | Thao tác | Kết quả mong đợi | Đạt / Lỗi | Ghi chú |
+|---|---|---|---|---|---|
+| NT-CA-01 | 1b, 4b · Mock | Mở **Cài đặt → AI** ở exe mới | Thẻ **Provider & model** "lưu ngay khi đổi · đi theo backup"; Provider **Mock** (và OpenCode), câu "Kết quả Mock luôn gắn nhãn Mock ở panel và lịch sử."; không có ô Gói OpenCode; Model "DeepSeek V4.1 Flash · mặc định" tắt, "Chỉ dùng khi chọn OpenCode (giá trị vẫn giữ)."; Kiểm tra kết nối không có nút, ghi "Mock chạy trong app, không cần kết nối." | | |
+| NT-CA-02 | 4a · OpenCode, Gói | Chọn **OpenCode**; chọn **Credit**; sang màn khác rồi quay lại; đóng mở lại app | Câu "OpenCode: gọi model thật qua tài khoản OpenCode. Mock: …"; ô **Gói OpenCode** (Gói Go / Credit) ngay dưới Provider kèm câu giải thích; lựa chọn giữ nguyên sau khi rời màn và mở lại app. Chọn lại Mock → ô Gói ẩn, giá trị giữ | | |
+| NT-CA-03 | 1a · Model, Mức suy luận | Mở danh sách Model; chọn từng model | "Danh sách cố định: …" trùng danh sách; model chưa kiểm với mức suy luận: ô Mức suy luận tắt + "Model này chưa được kiểm với mức suy luận — app dùng Mặc định (không gửi)…"; model hỗ trợ: chọn Mặc định / Thấp / Vừa / Cao | | |
+| NT-CA-04 | 1d · nhập key | Thẻ **API key OpenCode** "Chưa có key": Lưu key ô trống; dán chuỗi > 512 ký tự; gõ "khóa bí mật"; dán key thật | Lần lượt "Chưa nhập key."; "Key dài quá 512 ký tự — kiểm tra lại đoạn đã dán."; "Key chỉ gồm chữ, số và ký hiệu ASCII — …"; key thật: "Đã lưu key.", ô trống lại, đầu thẻ "Đã có key", ô thành **Key mới**; key không bao giờ hiện lại | | Cần key OpenCode |
+| NT-CA-05 | Key không đi theo dữ liệu | Sau NT-CA-04: Xuất backup, mở file bằng Notepad, Ctrl+F tìm vài ký tự đầu của key; mở Windows Credential Manager | Không tìm thấy key trong file backup (cũng không có trong `project2c.db`); Credential Manager → Windows Credentials có mục của app | | |
+| NT-CA-06 | 1f, 4c · Kiểm tra kết nối | Provider OpenCode: **Kiểm tra kết nối** với Gói Go, với Credit; rồi lưu một key sai và thử lại | "Đang kiểm tra…" rồi "Kết nối được · Gói Go · <model>" / "· Credit · <model>"; key sai: "Key không hợp lệ hoặc hết hạn. Gói Go đã hết hạn → chọn gói Credit ở Cài đặt → AI" | | Cần key; nhập lại key thật sau |
+| NT-CA-07 | 1e · Xóa key | **Xóa key…**; **Hủy**; lại **Xóa key…** → **Xóa key**; rồi Phân tích một KH với OpenCode | Hộp "Xóa API key OpenCode?" · "chỉ trên máy này": "Sau khi xóa, Phân tích và AI trích xuất với OpenCode báo "Chưa có API key" tới khi nhập key mới. Lịch sử phân tích không đổi."; Hủy giữ key. Xóa → "Chưa có key"; Phân tích báo chưa có key; lịch sử phân tích còn nguyên | | |
+| NT-CA-08 | 1a, 4a · Dữ liệu gửi đi | Xem thẻ **Dữ liệu gửi đi** | Bốn dòng: "Phân tích: chỉ các dữ kiện KYC đã xác nhận còn hiệu lực … Không gửi tên, mã KH, tên RE, ghi chú KYC, lịch hẹn, hợp đồng."; "AI trích xuất gửi nguyên văn ghi chú tới OpenCode — ghi chú có thể có tên người."; "Phân tích bằng ChatGPT web: bạn tự dán … App không gửi gì tới ChatGPT, chỉ copy tin nhắn và mở trang."; "Kiểm tra kết nối chỉ gửi một chữ "ping"." | | |
+| NT-CA-09 | 1g · cài đặt hỏng | Bản sao file backup: sửa model trong cài đặt AI (chuỗi `deepseek-v4.1-flash` ở bảng `settings`) thành `gpt-6`; nhập file | App mở bình thường; đầu Cài đặt → AI có dòng "Cài đặt AI đã lưu không hợp lệ (model "gpt-6" không còn trong danh sách) — đang dùng mặc định: Mock · … · Mặc định. Chọn lại để lưu." Chọn lại → dòng mất | | Dòng khó xóa khi ở Mock là ghi chú đã biết |
+
+## 11. Cài đặt → Thùng rác (`NT-TR`)
+
+Seed demo (exe mới, sau Nạp lại) **không có** bản ghi xóa: Thùng rác trống tới lần xóa đầu tiên. Các dòng dưới dùng bản ghi đã xóa ở NT-LH, NT-KH, NT-HS và người / team tạo ở NT-TM. Ví dụ chuẩn E1–E17 ở spec Phase 6 §4.2; E2 / E3 / E9 / E10 / E14–E16 tự dựng bằng bản ghi mới không có dữ liệu nghiệp vụ; E13 dựng bằng bản sao backup (NT-TR-17); E17 không gây được bằng tay (xem 11g ở [đối chiếu mockup](#đối-chiếu-mockup--mã-dòng)).
+
+| Mã | Màn / mockup | Thao tác | Kết quả mong đợi | Đạt / Lỗi | Ghi chú |
+|---|---|---|---|---|---|
+| NT-TR-01 | 11a · màn | Chọn góc nhìn RE bất kỳ; mở **Cài đặt → Thùng rác** | "n bản ghi" + câu "Bản ghi đã xóa mềm: ẩn khỏi danh sách và chỉ số. … xuất backup mang theo cả thùng rác."; ô **Loại bản ghi** Tất cả · KH · Lịch hẹn · HĐ · Nhân sự · Team có số, cộng các loại = Tất cả; bảng **Bản ghi đã xóa**: Loại · Bản ghi · Thuộc · Xóa lúc · Khôi phục…, mới xóa nhất ở trên. Hiện mọi bản ghi xóa, không theo góc nhìn RE đang chọn | | |
+| NT-TR-02 | 11a · cách ghi | Xem dòng mỗi loại | KH: tên + nhóm + "khôi phục kèm a lịch hẹn · b HĐ · c ghi chú KYC"; lịch hẹn: "dd/mm/yyyy hh:mm" + trạng thái / kết quả (vd. "Đã gặp N3 → N2 · tính RF"); HĐ: "Nộp dd/mm/yyyy · FYP" + trạng thái; nhân sự: tên + vai trò; team: tên + "khôi phục chưa kèm thành viên — khôi phục từng người sau". Thuộc: "KH … · RE …" / "Team …"; bản ghi cha đã xóa ghi "(đã xóa)" | | |
+| NT-TR-03 | 11a · lọc, tìm | Chọn loại Lịch hẹn; gõ tên KH của NT-LH-33 vào ô tìm; gõ "zzzz" | Chỉ lịch hẹn, số dòng = số của loại; ô tìm tìm lịch hẹn / HĐ theo tên KH; không khớp: "Không có bản ghi đã xóa nào khớp." | | |
+| NT-TR-04 | 11e · Thùng rác trống | Exe mới hoặc ngay sau Nạp lại, trước lần xóa đầu tiên: mở **Cài đặt → Thùng rác** | "0 bản ghi" + câu giới thiệu; giữa thẻ "Thùng rác trống" + "KH, lịch hẹn, HĐ, nhân sự và team đã xóa nằm ở đây và khôi phục được."; không có ô Loại bản ghi, ô tìm, bảng | | Làm trước NT-LH-33 (lần xóa đầu tiên) |
+| NT-TR-05 | 11b, 11e · khôi phục KH (E1) | Dòng KH của NT-KH-15 → **Khôi phục…** → **Khôi phục**; bấm **Mở hồ sơ**; Tổng quan (Lọc) | Hộp "Khôi phục <tên>?" · "KH · xóa lúc …": Nhóm, RE, **Hiện lại cùng KH** "a lịch hẹn (x đã gặp · y lần tính RF) · b HĐ · c ghi chú KYC · d phân tích AI" (trùng hộp xóa NT-KH-14), câu "KH và các bản ghi trên vào lại danh sách và chỉ số theo đúng ngày của từng bản ghi." Khôi phục: dòng biến mất, "✓ Đã khôi phục KH <tên> cùng …" + **Mở hồ sơ** mở đúng hồ sơ; chỉ số về như trước khi xóa | | |
+| NT-TR-06 | 11d · E4 | Chọn KH Z có một lịch Dự kiến; xóa lịch đó; rồi xóa KH Z; mở Thùng rác; khôi phục KH Z; rồi khôi phục lịch | Dòng lịch: Thuộc "KH Z (đã xóa) · RE …", nút tắt, "Khôi phục KH Z trước." Hộp khôi phục KH Z ghi "Lịch hẹn / HĐ đã xóa riêng trước đó vẫn ở Thùng rác (1 lịch hẹn), khôi phục riêng sau." Sau khi khôi phục KH: dòng lịch bật nút; hộp lịch "Không đổi nhóm KH" + "Lịch hẹn vào lại danh sách Lịch hẹn và hồ sơ KH theo ngày của lịch." | | |
+| NT-TR-07 | E11 · lịch đã qua chưa ghi kết quả | Xóa một lịch **Chưa ghi kết quả**; khôi phục | Hộp "Không đổi nhóm KH"; sau khi khôi phục lịch hiện lại ở nhóm **Chưa ghi kết quả** (Lịch hẹn, Tổng quan) | | |
+| NT-TR-08 | 11c · E5 | Dòng lịch Đã gặp của NT-LH-33 → Khôi phục… → Khôi phục | Hộp "Khôi phục lịch hẹn dd/mm/yyyy hh:mm?" · "KH … · RE …": Kết quả "Đã gặp · nhóm sau N2", Nhóm KH hiện tại N3, "Nhóm KH: N3 → N2 từ dd/mm/yyyy" + "Ghi lại chuyển nhóm của cuộc gặp; tính 1 RF cho <RE> trong kỳ có ngày dd/mm/yyyy." Sau khi khôi phục: KH ở N2, Chuyển RF (Lọc) tăng 1 ở kỳ chứa ngày cuộc hẹn | | |
+| NT-TR-09 | 11c · E7 | Xóa lại lịch đó (KH về N3); Hồ sơ KH → Chuyển nhóm tay N3 → N2; Thùng rác → khôi phục lịch | Hộp "Nhóm KH giữ N2" + "KH đã ở nhóm sau cuộc gặp nên không ghi thêm chuyển nhóm; cuộc hẹn này không tính RF." Sau khi khôi phục: KH vẫn N2, Chuyển RF không tăng | | |
+| NT-TR-10 | 11d · E6 / E8 | Một lịch Đã gặp đã qua có "N4 → N3" là lần đổi nhóm mới nhất của KH W: Sửa kết quả → Xóa lịch hẹn (KH về N4); Chuyển nhóm tay KH W → **Mất cơ hội**; mở Thùng rác | Dòng lịch tắt nút, "Nhóm KH đã đổi ngày <hôm nay>, sau ngày cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10)." | | |
+| NT-TR-11 | 11d · E9 | + Nhân sự IS "IS Thử"; tạo một lịch có IS Thử phối hợp; xóa lịch; xóa IS Thử; mở Thùng rác; khôi phục IS Thử rồi lịch | Xóa IS Thử được (lịch đã xóa). Dòng lịch: "Người phối hợp IS Thử đã xóa — khôi phục trước."; khôi phục người xong thì lịch khôi phục được | | |
+| NT-TR-12 | 11d · E10 | + Nhân sự IS "IS Thử 2"; Ghi kết quả Đã gặp (giữ nguyên nhóm) một lịch đã qua với Người đánh giá IS Thử 2; xóa lịch; Sửa IS Thử 2 → vai trò RE, team Thử NT; mở Thùng rác; đổi IS Thử 2 về IS | Đổi sang RE được (lịch đã xóa). Dòng lịch: "Người đánh giá IS Thử 2 nay là RE." Đổi về IS → lịch khôi phục được | | |
+| NT-TR-13 | 11d · E2, E3 | Tạo KH "KH Thử" cho RE Thử (không lịch, không HĐ); xóa KH Thử; Sửa RE Thử → vai trò IS (bỏ team); xem Thùng rác; đổi về RE, team Thử NT; xóa RE Thử; xem lại | Đổi vai trò được (KH đã xóa không có lịch / HĐ). Dòng KH Thử: "RE Thử nay là IS, không phụ trách KH được — đổi lại vai trò RE trước." Sau khi xóa RE Thử: "RE RE Thử đã xóa — khôi phục RE trước." Khôi phục RE Thử → KH Thử khôi phục được | | |
+| NT-TR-14 | 11d · E15 | Xóa TL Thử; thêm TL "TL Thử B" cho Thử NT; mở Thùng rác; xóa TL Thử B; khôi phục TL Thử | Dòng TL Thử: "Thử NT đã có TL TL Thử B."; sau khi xóa TL Thử B thì khôi phục được | | |
+| NT-TR-15 | 11d · E14, E16 | Xóa RE Thử, TL Thử, rồi team Thử NT; tạo team mới tên "Thử NT"; mở Thùng rác; đổi tên team mới "Thử NT 2"; khôi phục team, rồi RE Thử | RE Thử: "Khôi phục team Thử NT trước."; team: "Đã có team Thử NT — đổi tên team kia trước." Sau khi đổi tên: hộp team "Team vào lại Team & nhân sự. Thành viên đã xóa chưa về kèm — khôi phục từng người sau."; khôi phục xong có **Mở Team & nhân sự**; rồi khôi phục được RE Thử | | |
+| NT-TR-16 | E12 · HĐ | Dòng HĐ của NT-HS-18 → Khôi phục… → Khôi phục | Hộp "Khôi phục HĐ nộp dd/mm/yyyy?": FYP nộp, "Đã phát hành dd/mm/yyyy · FYP" nếu có, "HĐ vào lại hồ sơ KH và chỉ số theo ngày nộp / phát hành."; sau khi khôi phục HĐ có lại ở hồ sơ và chỉ số | | |
+| NT-TR-17 | 11d · E13 (từ file nhập) | Sau NT-TR-16: xóa một HĐ **Đã nộp, chưa phát hành**; Xuất backup; mở bản sao bằng Notepad, Ctrl+F `"policies"` rồi tìm tiếp `"deleted_at":"` (HĐ đã xóa duy nhất); trong cùng bản ghi (ngay trước đó) sửa `"submitted_date":"yyyy-mm-dd"` thành ngày mai; nhập file; mở Thùng rác | Nhập được (HĐ đã xóa không bị kiểm ngày lúc nhập). Dòng HĐ: nút Khôi phục… tắt, "Ngày nộp dd/mm/yyyy sau hôm nay." | | HĐ đã phát hành không dùng được: ngày nộp sau ngày phát hành làm file bị từ chối |
+
+## 12. Exe trên máy thật (`NT-EX`)
+
+Ba máy: Home PC `DESKTOP-KDURKJP`, Office Laptop `D13_THINKPAD` (không có quyền admin) và một Windows sạch — **Windows Sandbox** trên Home PC (Windows 11 Pro: bật ở *Turn Windows features on or off* → Windows Sandbox, cần quyền admin một lần và khởi động lại; mỗi lần đóng Sandbox là mất sạch). Ghi máy vào cột Ghi chú.
+
+| Mã | Màn / mockup | Thao tác | Kết quả mong đợi | Đạt / Lỗi | Ghi chú |
+|---|---|---|---|---|---|
+| NT-EX-01 | Lần chạy đầu · Home PC | Chép exe vào thư mục trống, bấm đúp | Không hỏi quyền admin (không có hộp UAC). SmartScreen có thể hỏi (exe chưa ký): *More info → Run anyway*. "Đang mở dữ liệu…" rồi Tổng quan có dữ liệu giả lập; cạnh exe có `Project2C-data\project2c.db` (+ `backups\` sau lần mở sau). Cài đặt → Dữ liệu: Vị trí, Nội dung đúng | | |
+| NT-EX-02 | Lần chạy đầu · Office Laptop | Như NT-EX-01 trên Office Laptop | Như NT-EX-01, máy không có quyền admin vẫn chạy được | | |
+| NT-EX-03 | Lần chạy đầu · Windows sạch | Mở Windows Sandbox, chép exe vào (Ctrl+C ở máy, Ctrl+V trong Sandbox), chạy; làm NT-CH-01, tạo một KH, Xuất backup | Chạy được mà không cài thêm gì (WebView2 có sẵn trong Windows 11); mọi bước như NT-EX-01; xuất backup được | | |
+| NT-EX-04 | Mở lại, backup tự động | Đóng app (X), mở lại 2 lần | Dữ liệu lần trước còn nguyên. Mỗi lần mở có thêm một bản `backups\project2c-s<số>-YYYYMMDD-HHMMSS.db` (bản trùng nội dung không lặp); Cài đặt ghi "mới nhất" đúng bản mới nhất. Giữ tối đa 10 bản | | |
+| NT-EX-05 | Exe khóa trình duyệt | Trong app bấm F5, Ctrl+R | Không tải lại trang (dữ liệu không mất, không quay về màn đầu) | | |
+| NT-EX-06 | Hai cửa sổ | Khi app đang mở, bấm đúp exe lần nữa | Cửa sổ mới báo "Project-2C đang mở ở một cửa sổ khác" + "Hãy dùng cửa sổ đó. App không đọc hay ghi gì ở cửa sổ này; đóng cửa sổ này đi."; cửa sổ đầu vẫn làm việc, dữ liệu không đổi | | |
+| NT-EX-07 | Chuyển thư mục | Đóng app; chép exe + `Project2C-data\` sang ổ / thư mục khác; mở từ chỗ mới | Mở với đúng dữ liệu cũ; Cài đặt ghi đúng vị trí mới | | |
+| NT-EX-08 | Nâng từ exe Phase 5 (`3d6c7fc`) | Thư mục mới: chạy exe Phase 5; tạo KH "Nâng cấp NT" + một lịch Đã gặp + một HĐ + một ghi chú KYC có dữ kiện + một phân tích Mock; xóa một lịch; Cài đặt → Dữ liệu ghi Nội dung; đóng app. Thay exe bằng exe v1.0 (cùng thư mục), mở | Mở không lỗi; Nội dung trùng số đã ghi; KH "Nâng cấp NT" đủ lịch, HĐ, dữ kiện, phân tích (lịch sử phân tích còn); lịch đã xóa có ở Thùng rác và khôi phục được; Tổng quan / Báo cáo tính bình thường; `backups\` có bản chép trước khi mở bằng v1.0. Key OpenCode đã lưu ở Phase 5 (nếu có) vẫn "Đã có key" | | Exe Phase 5: xem Cách dùng |
+| NT-EX-09 | Backup Phase 5 → v1.0 | Từ exe Phase 5 (NT-EX-08, trước khi thay exe) xuất backup; nhập file đó vào exe v1.0 ở thư mục khác | Hộp 10a ghi Phiên bản "schema vN (bằng app)" hoặc "… app tự nâng cấp dữ liệu sau khi nhập"; nhập được, dữ liệu như NT-EX-08 | | |
+| NT-EX-10 | Backup máy A → máy B | Home PC: làm một thay đổi dễ nhận (KH "Từ Home PC"), Xuất backup; chép file sang Office Laptop (USB / OneDrive); Office Laptop: Nhập backup | Hộp 10a "Trong file" = Nội dung ở Home PC; sau khi nhập, Office Laptop có KH "Từ Home PC", số liệu Tổng quan cùng kỳ trùng Home PC; provider / model AI theo file; key OpenCode của Office Laptop giữ nguyên (không đi theo backup) | | |
+| NT-EX-11 | Backup máy B → máy A | Office Laptop: KH "Từ Office", xuất; nhập ở Home PC | Home PC có cả "Từ Home PC" và "Từ Office", số trùng Office Laptop. Bản Home PC trước khi nhập nằm trong `backups\` | | |
+| NT-EX-12 | Hướng dẫn "bản nhập sau thắng" | Home PC: tạo KH "Chưa xuất"; nhập lại file của NT-EX-11 | Hộp 10a cảnh báo "Mọi thay đổi sau … sẽ mất khỏi app"; sau khi nhập KH "Chưa xuất" không còn (đúng luật thay toàn bộ, không gộp), lấy lại được bằng bản trong `backups\` (NT-DB-07) | | |
+
+## 13. Độ bền dữ liệu (`NT-DB`)
+
+Làm ở **thư mục thử riêng** (vd. `C:\nghiem-thu\ben\`, chép exe vào), không ở thư mục dữ liệu dùng hằng ngày. Lệnh PowerShell dưới chỉ đụng thư mục thử. Kết quả chung mong đợi: app báo lỗi rõ, không bao giờ mất bản đã lưu, không bao giờ để lại file DB đọc dở.
+
+| Mã | Màn / mockup | Thao tác (cách gây lỗi an toàn) | Kết quả mong đợi | Đạt / Lỗi | Ghi chú |
+|---|---|---|---|---|---|
+| NT-DB-01 | Tắt cứng ngay sau khi lưu | Tạo KH "Bền 1"; ngay khi hộp đóng, tắt cứng app: `taskkill /im project2c.exe /f`; mở lại. Lặp 3 lần với KH "Bền 2", "Bền 3" | Lần nào app cũng mở bình thường (không báo file hỏng); mỗi KH có đủ hoặc không có (nếu tắt trước khi lưu xong) — không có KH thiếu một phần | | |
+| NT-DB-02 | Đóng bằng X ngay sau thay đổi | Tạo KH "Bền X", bấm X ngay | App lưu xong rồi mới đóng; mở lại có "Bền X" | | |
+| NT-DB-03 | Tắt giữa lúc nhập backup (S2-6) | Nhập dữ liệu tải (15 MB) cho chậm: Chọn file → **Backup rồi thay dữ liệu**, ngay lúc "Đang nhập…" chạy `taskkill /im project2c.exe /f` (hoặc bấm X); mở lại. Lặp 2–3 lần với thời điểm khác nhau | App mở bình thường; dữ liệu là **bộ cũ đủ** (Nội dung = "Hiện tại" của hộp 10a) hoặc **bộ mới đủ** (= "Trong file"), không lẫn; Tổng quan / Thùng rác khớp bộ đó. `backups\` có thể thêm một bản | | Đóng bằng X không phải chờ |
+| NT-DB-04 | Tắt giữa lúc nạp lại | **Nạp lại…** → Backup rồi nạp lại; trong lúc "Đang nạp lại…" tắt cứng; mở lại | Dữ liệu cũ đủ hoặc dữ liệu giả lập mới đủ | | |
+| NT-DB-05 | Tắt giữa lúc xuất | Với dữ liệu tải: **Xuất backup**, trong lúc "Đang xuất…" tắt cứng; mở lại; xem `exports\`; nhập thử file có trong đó | Không có file `.p2cbackup` hỏng: hoặc có file đầy đủ (nhập được), hoặc không có file mới; file tạm còn sót được dọn ở lần mở sau; `project2c.db` không đổi | | |
+| NT-DB-06 | Kết quả AI về trong lúc thay (S2-3) | Provider OpenCode: **Phân tích** một KH; khi còn "Đang phân tích…", sang Cài đặt → Dữ liệu nhập một backup (Backup rồi thay dữ liệu) | Nhập xong bình thường; không có thông báo lỗi; kết quả phân tích không xuất hiện ở dữ liệu mới (lịch sử phân tích của KH đó theo file nhập), panel không hiện gì lạ | | OpenCode, cần key |
+| NT-DB-07 | File DB hỏng | Đóng app. PowerShell trong thư mục thử: `Get-FileHash Project2C-data\project2c.db`; ghi đè 100 byte đầu bằng số 0: `$p='Project2C-data\project2c.db'; $b=[IO.File]::ReadAllBytes($p); [Array]::Clear($b,0,100); [IO.File]::WriteAllBytes($p,$b)`; mở app; đóng; `Get-FileHash` lại | Trang lỗi "Không mở được file dữ liệu" + hướng dẫn chép bản trong `backups\` + "Chi tiết kỹ thuật:"; hash sau bằng hash ngay trước khi mở (app không ghi vào file hỏng). Làm theo hướng dẫn ([10. Khi có lỗi](../user-guide/10-su-co.md#mở-lại-từ-backup)): chép bản backup trước đó thành `project2c.db` → app mở với dữ liệu của bản đó | | |
+| NT-DB-08 | File không phải DB / file mất | (a) Đóng app, thay `project2c.db` bằng một file chữ đổi tên; mở. (b) Xóa `project2c.db` (giữ `backups\`); mở | (a) "Không mở được file dữ liệu". (b) Cũng "Không mở được file dữ liệu" — app **không** lặng lẽ tạo dữ liệu giả lập mới khi `backups\` còn bản sao | | |
+| NT-DB-09 | File bị chương trình khác giữ | Khi app đang mở: PowerShell `$f=[IO.File]::Open("$PWD\Project2C-data\project2c.db",'Open','Read','None')`; trong app tạo KH "Khóa 1" | Dải "Chưa lưu được dữ liệu vào file (file có thể đang mở trong chương trình khác). Dữ liệu vẫn còn trong app…"; KH vẫn hiện trong app; Lưu lần cuối không đổi | | Chạy PowerShell trong thư mục thử |
+| NT-DB-10 | Đang lưu lỗi: chặn thay dữ liệu | Tiếp NT-DB-09: Nhập backup; Nạp lại | Lần lượt "Chưa nhập: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Dữ liệu hiện tại không bị đổi." và "Chưa nạp lại: lần lưu gần nhất bị lỗi…" | | |
+| NT-DB-11 | Đóng khi chưa lưu được | Tiếp NT-DB-09: bấm X; **Thử lại** (file vẫn bị giữ); chạy `$f.Close()`; **Thử lại** | Hộp "Chưa lưu được thay đổi" + **Thử lại** / **Đóng và bỏ thay đổi chưa lưu**; Thử lại khi còn giữ → hộp hiện lại; sau `$f.Close()` → app lưu rồi đóng; mở lại có "Khóa 1" | | |
+| NT-DB-12 | Bỏ thay đổi chưa lưu | Giữ file lại như NT-DB-09, tạo KH "Khóa 2"; X → **Đóng và bỏ thay đổi chưa lưu**; `$f.Close()`; mở app | App đóng ngay; mở lại không có "Khóa 2", mọi dữ liệu trước đó còn | | |
+| NT-DB-13 | Lưu được lại sau lỗi | Giữ file, tạo KH "Khóa 3" (dải cảnh báo hiện); `$f.Close()`; tạo thêm một thay đổi | Dải cảnh báo tự mất; Lưu lần cuối cập nhật; đóng mở lại có cả "Khóa 3" | | |
+| NT-DB-14 | Không ghi được `exports\` | Khi app đang mở: đổi tên thư mục `Project2C-data\exports` thành `exports-cu` (chưa có thì bỏ qua) và tạo một **file** rỗng tên `exports` (`New-Item Project2C-data\exports -ItemType File`); Xuất backup; Báo cáo → Xuất Excel. Xong thì xóa file, đổi tên thư mục lại | "Chưa xuất được backup. Kiểm tra ổ đĩa và quyền ghi thư mục Project2C-data\exports\ rồi thử lại."; "Không xuất được báo cáo" + "Không ghi được vào thư mục exports\ (đầy ổ đĩa hoặc không có quyền). Dữ liệu trong app không bị ảnh hưởng."; app vẫn làm việc; trả thư mục lại → xuất được | | |
+| NT-DB-15 | Không sao lưu được lúc mở | Đóng app; đổi tên `Project2C-data\backups` thành `backups-cu`, tạo file rỗng tên `backups`; mở app. Xong thì đóng, xóa file, đổi tên lại, mở | "Không sao lưu được file dữ liệu" + "File dữ liệu không bị đổi, không cần khôi phục…"; app không vào màn chính. Trả thư mục lại → mở bình thường, dữ liệu đủ | | |
+| NT-DB-16 | Ổ đầy (USB nhỏ) | Chép exe vào một USB (thư mục riêng), chạy, nhập dữ liệu tải; chép file lớn vào USB tới khi còn < 1 MB trống; tạo một thay đổi; Xuất backup; đóng, mở lại; xóa file lớn, mở lại | Thay đổi: dải "Chưa lưu được…"; xuất: báo không xuất được; mở lại khi đầy: "Ổ đĩa đã đầy, không sao lưu được file dữ liệu" (file không đổi). Giải phóng chỗ → mở bình thường với dữ liệu của lần lưu được cuối cùng | | Cần USB nhỏ; tùy chọn |
+
+## 14. Hiệu năng, eval AI thật, hướng dẫn (`NT-HN`, `NT-EV`, `NT-HD`)
+
+Một dòng mỗi mục, không chép số: số nền và ngưỡng ở [`docs/metrics/phase-6.md`](../metrics/phase-6.md) mục "Số đo nền".
+
+| Mã | Màn / mockup | Thao tác | Kết quả mong đợi | Đạt / Lỗi | Ghi chú |
+|---|---|---|---|---|---|
+| NT-HN-01 | Hiệu năng (spec §5 mục 5, §5.2) | Trên exe release, Office Laptop, dữ liệu tải: chạy probe theo [`e2e/perf/README.md`](../../e2e/perf/README.md) với `PERF_BASE=docs/metrics/phase-6-baseline/perf.json`; bấm giờ mở app lần đầu / mở lại (3 lần mỗi loại); `node tools/size-report.mjs --compare docs/metrics/phase-6-baseline/size.json` | Mọi thao tác trong ngưỡng của bảng "Thời gian thao tác" và "Bộ nhớ webview"; không thao tác nào xấu hơn nền quá 20 % và quá 10 ms; kích thước không tăng ngoài giải thích được | | Mở app lần đầu: #574 |
+| NT-EV-01 | Eval AI thật (spec §5 mục 6, Phase 5 §11) | Máy Owner, có key: `pnpm eval:ai` theo [`docs/golden/ai-eval.md`](../golden/ai-eval.md) (gói qua `OPENCODE_PLAN`) | Đạt ngưỡng của `ai-eval.md` (phân tích và trích xuất); kết quả ghi `docs/metrics/ai-eval-<ngày>.md`; Owner đọc tay output đạt không lọt vi phạm V3–V6 | | Tốn hạn mức gói |
+| NT-HD-01 | Hướng dẫn sử dụng (spec §4.3) | Đọc [hướng dẫn sử dụng](../user-guide/README.md) song song với exe phát hành, theo bảng đối chiếu cuối `README.md` của hướng dẫn | Nhãn, nút, câu báo trong hướng dẫn trùng exe; ảnh (chụp lại sau đợt sửa cuối của 6D, bản web, ngày neo 15/09/2026) trùng bố cục exe — số liệu khác là bình thường; phần "(bản exe)" đúng với exe | | Chỉ ở G7 |
+
 ## Lệch mockup đã biết
 
 Không mở Issue mới cho các điểm dưới (đã ghi ở `docs/state/review-notes.md` hoặc đã được mockup sau thay).
@@ -228,5 +371,34 @@ Không mở Issue mới cho các điểm dưới (đã ghi ở `docs/state/revie
 - **Hộp chuyển nhóm 5d:** dòng "Sau khi lưu: N2 → N3" không có "· hạ nhóm / lên nhóm" (sổ review, Khách hàng #141).
 - **Hộp 6a / 6h:** nhóm trước → sau trong "Các lần hẹn trước" hiện bằng chữ, không bằng badge; hộp 6h có thêm "Các lần hẹn trước" (sổ review #163).
 - **Dòng thời gian:** chưa hiện mã F; không có bộ lọc Tất cả / KYC / Lịch hẹn như `customer.html` (sổ review #462).
+- **Trạng thái lưu (10d):** không có chỉ báo "Đã lưu / Đang lưu…" ở góc sidebar; lưu lỗi hiện bằng dải ở đầu màn, giờ lưu ở Cài đặt → Dữ liệu (sổ review #549).
+- **Team (`team.html`):** đầu màn, danh sách team, "Người hỗ trợ", bảng chỉ có RE theo `phase-3-feedback.html` B1 (mockup sau thay).
+- **Thùng rác 11a:** dòng lịch Đã gặp **bị chặn** ghi "nhóm sau N2" thay vì "N3 → N2" (sổ review #543).
+- **Cài đặt → AI 1g:** ở Mock, dòng "Cài đặt AI đã lưu không hợp lệ" khó xóa (bấm lại Mock không lưu) (sổ review, Cài đặt → AI).
 
-**Owner xác nhận ở lượt L1** (chưa có ghi chép quyết định): `customers.html` (vòng 2) có ô tìm "Ctrl K", bộ lọc Phạm vi / RE / KYC / "Đã có HĐ", hàng kỳ, ô Sắp xếp, dòng "Độ phủ KYC", nhãn KYC / AI và ngày hẹn trên thẻ, dòng "+n vào · lên N3 trong tháng" dưới đầu cột, lý do đóng ở khung Tạm hoãn / Mất cơ hội — app và hướng dẫn sử dụng không có các phần này. Owner chọn: ghi vào danh sách này là lệch chấp nhận, hoặc mở Issue (ghi sau v1.0).
+**Owner xác nhận ở lượt L1** (chưa có ghi chép quyết định): `customers.html` (vòng 2) có ô tìm "Ctrl K", bộ lọc Phạm vi / RE / KYC / "Đã có HĐ", hàng kỳ, ô Sắp xếp, dòng "Độ phủ KYC", nhãn KYC / AI và ngày hẹn trên thẻ, dòng "+n vào · lên N3 trong tháng" dưới đầu cột, lý do đóng ở khung Tạm hoãn / Mất cơ hội — app và hướng dẫn sử dụng không có các phần này. Owner chọn: ghi vào danh sách này là lệch chấp nhận, hoặc mở Issue (ghi sau v1.0). Cùng cách với `settings-data.html`: mục "Chung" ở khung trái Cài đặt, và hai nút "Mở từ backup tự động mới nhất" / "Mở thư mục" ở trang lỗi khởi động 10d (app ghi cách chép bản backup bằng chữ).
+
+## Đối chiếu mockup → mã dòng
+
+Mọi mockup và mọi hộp trong [`docs/design/mockups/README.md`](../design/mockups/README.md) có ít nhất một dòng. Khối không kiểm được bằng tay ghi lý do.
+
+| Mockup | Khối / hộp → mã dòng |
+|---|---|
+| `overview.html` | 1a → TQ-01, 04–08, 16–19, 23–25 · 1b → TQ-09, 20, 21 · 1c → TQ-11, 22 · 1d → TQ-02, 03, CH-04 · 1e → TQ-12–15 · §2 → TQ-05, LH-01–04, 36 |
+| `reports.html` | 2a → BC-01–04, 11 · 2b → BC-05 · 2c → BC-06 · 2d → BC-07, 08 · 2e → BC-07, 09 · 2f → BC-12–14, DB-14 |
+| `appointments.html` | Danh sách → LH-04 · Phối hợp → LH-14 · Chi tiết lịch hẹn → LH-15 · KYC Intelligence chỉ đọc → LH-16 · Trong ngày → LH-09 |
+| `customers.html` | Đầu màn, Kanban, cột đã đóng → KH-01, 02 · Bảng → KH-03 |
+| `customer.html` | Đầu hồ sơ → HS-01 · Dữ kiện KYC → HS-02, 03 · Dòng thời gian → HS-11 · Lịch hẹn → HS-12 · Hợp đồng → HS-13 · KYC Intelligence → AI-04, 24 |
+| `customer-forms.html` | 5a → KH-06 · 5b → KH-07 · 5c → KH-08, 09 · 5d → KH-10, 11 · 5e → KH-12, 13 · 5f → KH-14, 15 |
+| `appointment-forms.html` | 6a → LH-17, 18, 20 · 6b → LH-19 · 6c → LH-21–23 · 6d → LH-24, 25 · 6e → LH-27–29 · 6f → LH-31, 32 · 6g → LH-33, 34 · 6h → LH-30 · 6i → LH-26 |
+| `kyc-forms.html` | 7a → HS-04 · 7b → HS-05 · 7c → HS-06, 07 · 7d → HS-08, 09 · 7e → HS-10 |
+| `policy-forms.html` | 8a → HS-13 · 8b → HS-14, 15 · 8c → HS-16 · 8d → HS-17, 18 |
+| `team.html` | Đầu màn, danh sách → TM-01, 02 · 9a → TM-07 · 9b → TM-10 · 9c → TM-05 |
+| `settings-data.html` | File dữ liệu → CD-02 · Xuất / nhập → CD-03 · Dữ liệu giả lập → CD-08 · 10a → CD-04, 05, EX-10 · 10b → CD-06, 07 · 10c → CD-08 · 10d → DB-07–09, 11 (lưu lỗi, lỗi khởi động), EX-06 |
+| `phase-3-feedback.html` | B1 → TM-01–03, 06 · B2 → KH-04, 05 · B3 → LH-09, 12, 13 · B4 → LH-06–08 · B5 → LH-05 · B6 → LH-10, 11 |
+| `ai.html` §1 | 1a → CA-02, 03, 08 · 1b → CA-01 · 1c (bản web) → không kiểm trên exe · 1d → CA-04 · 1e → CA-07 · 1f → CA-06 · 1g → CA-09 |
+| `ai.html` §2 | 2a → AI-01 · 2b → AI-02 · 2c → AI-03 · 2d, 2e → AI-21, 22 · 2f → AI-23 · 2g → AI-04, 05 · 2h → AI-07, 08 · 2i → AI-13 · 2j → AI-09 · 2k → AI-13 · 2l → AI-23, CA-06 |
+| `ai.html` §3 | 3a → AI-06, 07 · 3b → AI-16 · 3c, 3d → AI-17 · 3e → AI-19 · 3f → AI-18 |
+| `ai.html` §4 | 4a → CA-02, 08 · 4b → CA-01 · 4c → AI-23, CA-06 · 4d → AI-01 · 4e → AI-10, 14 · 4f (không copy được do quyền clipboard) → chỉ kiểm khi gặp · 4g → AI-12 · 4h → AI-11 · 4i → AI-15 |
+| `trash.html` | 11a → TR-01–03 · 11b → TR-05, 06 · 11c → TR-08, 09 · 11d → TR-06, 10–15, 17 · 11e → TR-04 (Thùng rác trống), TR-05, 15 (khôi phục xong) · 11f → KH-14, LH-33, 34, HS-18, TM-14 · 11g (khóa ghi S-2, E17) → không gây được bằng tay vì hộp "Đang nhập…" / "Đang nạp lại…" chặn mọi thao tác; phần AI kiểm ở DB-06, phần còn lại có test `app-data.test.ts` |
+| `table-more.html` | 1–3 → CH-06, 07 · 4 → CH-08 |
