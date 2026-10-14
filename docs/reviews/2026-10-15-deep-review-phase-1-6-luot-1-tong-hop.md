@@ -340,7 +340,7 @@ Code sản phẩm ở `8855345` giống hệt `b139d8a` nên chênh lệch là n
 ### 8.1 Việc còn lại của T-223 (phiên tổng hợp)
 
 1. **PR docs báo cáo gốc** → `docs/reviews/raw/2026-10-15/`: `{claude,codex,muse}/{A…F}.md` của laptop (chính thức) + `home-pc/{claude,codex,muse}/{A…F}.md` (tham khảo, Q11); `common-known.md`, `common-baseline.md` của **laptop** (cần chép từ `C:\workspace\deep-review-1-6\common\` trên laptop — bộ `.rar` chỉ có báo cáo), `common-baseline-home-pc.md`; cập nhật `raw/README.md`. Tên user Windows trong đường dẫn (`L·CL-F`, 4 chỗ) thay bằng `<user>` như raw 2026-10-06.
-2. **Kiểm độc lập bằng log phiên** (plan §8) — **phải làm trên laptop** (log ở đó): transcript Claude (`.claude*\projects\C--workspace-Project-2C-review\`), log Codex, `muse export` 6 gói → quét đầu vào lệnh công cụ theo danh sách plan §8. Kèm: Owner xác nhận ACL §7.2 đã đặt trước phiên Muse đầu tiên và gỡ sau F — **xong 15/10** (§10).
+2. **Kiểm độc lập bằng log phiên** (plan §8) — **phải làm trên laptop** (log ở đó): transcript Claude (`.claude*\projects\C--workspace-Project-2C-review\`), log Codex, `muse export` 6 gói → quét đầu vào lệnh công cụ theo danh sách plan §8 — **xong 15/10** (§10.1: không nhiễm, không vi phạm chỉ đọc; 4 ghi nhận quy trình, trong đó Muse F phần lớn làm trong OpenCode ở mức `xhigh`). Kèm: Owner xác nhận ACL §7.2 đã đặt trước phiên Muse đầu tiên và gỡ sau F — **xong 15/10** (§10).
 3. **Owner trả lời §9** → tạo Issue sửa theo §8.2–§8.4 (mẫu Task, milestone Phase 6, ≤ ~400 / ~800 dòng), thêm vào "Bị chặn bởi" của #564 (bước 0 lượt 2). **Xong 15/10:** 16 Issue #592–#607 (§8.7).
 4. **PR riêng `docs/state/review-notes.md`:** mục hoãn / chấp nhận (§8.5) và cập nhật 5 mục KNOWN (§6).
 
@@ -434,13 +434,50 @@ Mỗi câu có đề xuất; Owner đồng ý mà không ghi gì khác thì lấ
 
 ## 10. Kiểm độc lập và tuân thủ quy trình
 
-Theo nội dung báo cáo (kiểm bằng log phiên **chưa làm** — §8.1 bước 2, cần log trên laptop):
+Theo nội dung báo cáo; kiểm lại bằng log phiên trên laptop ở §10.1 (15/10):
 
 - **SHA và `git status`:** cả 36 báo cáo ghi `8855345` đầu phiên; `git status --short` đầu / cuối phiên rỗng ở cả hai worktree (worktree `-review-2` của Home PC có sẵn `AGENTS.md`, `.codex/`, `.agents/` do Codex sinh từ 10/10 — đúng plan §8). Lệnh build / e2e chỉ ghi thư mục bị ignore: `apps/desktop/dist` của `-review-2` trên laptop còn bản dựng với mốc ngày demo (`index.js` +10 byte, ảnh dữ liệu mẫu) từ gói D (Codex dựng với `VITE_DEMO_ANCHOR`; Muse F ghi nhận và quy cho lần chạy e2e của gói D) — Muse F đọc số bundle từ thư mục này nên lệch +10 byte so số nền.
-- **Không gọi AI thật / không đọc key:** mọi probe AI dùng Mock, `fetch` giả hoặc server loopback; key trong probe là key giả. Codex / Muse không mở exe khi bên khác đo (Codex Home PC đo exe ở cổng 9337–9357, đã kiểm cổng trống trước).
+- **Không gọi AI thật / không đọc key:** mọi probe AI dùng Mock, `fetch` giả hoặc server loopback; key trong probe là key giả. Ngoại lệ duy nhất, chính báo cáo đã tự khai: Claude laptop gói C mở `https://chatgpt.com/` trong Edge headless (§10.1). Codex / Muse không mở exe khi bên khác đo (Codex Home PC đo exe ở cổng 9337–9357, đã kiểm cổng trống trước).
 - **Chỉ đọc báo cáo của mình:** không báo cáo nào nhắc nội dung của bên khác. Muse chạy `--yolo`: lớp chặn chính là ACL (§7.2) + quét log; **Owner xác nhận 15/10** (laptop, máy chính thức): ACL đã đặt trước phiên Muse đầu tiên và chỉ gỡ sau khi Muse xong (HANDOFF 14/10 tối ghi "chưa đặt" là bản cũ). Kiểm 15/10: `icacls` của `claude\`, `codex\` không còn dòng deny.
 - **Khuôn báo cáo:** Muse laptop gói D, E không dùng ID `MU-<gói><số>` và gói E không theo khuôn trường (Mức / Trục / Tình trạng nằm ở tiêu đề); Codex Home PC gói A, B không có dòng đầu `XONG` (soạn trước luật "ghi dần" 13/10). Không ảnh hưởng nội dung; đã đọc theo thứ tự.
-- **Muse Code tự cập nhật** 1.3.0 → 1.4.7 giữa chuẩn bị và đợt 2 (HANDOFF); model và effort không đổi.
+- **Muse Code tự cập nhật** 1.3.0 → 1.4.7 giữa chuẩn bị và đợt 2 (HANDOFF); model và effort không đổi ở gói A–E. Gói F laptop phần lớn làm ngoài Muse Code, với mức suy luận thấp hơn (§10.1).
+
+### 10.1 Kiểm bằng log phiên (plan §8)
+
+Làm 15/10 trên Office Laptop. Log xuất / đọc bằng CLI local, không gọi model. Script `node` quét **đầu vào lệnh công cụ** (không quét prompt hay kết quả trả về) theo danh sách plan §8, rồi xét tay từng chỗ khớp; phần lớn chỗ khớp là chữ trong báo cáo của chính bên đó. Bản xuất Muse lưu ở `C:\workspace\deep-review-1-6\muse\<gói>\session*.json` (plan §8; không vào repo).
+
+| Bên | Log | Phiên | Lệnh công cụ |
+|---|---|---|---|
+| Claude | transcript `.claude\projects\C--workspace-Project-2C-review\` (gói A, B, D) và `.claude-b\…` (C, E, F) | 6, mỗi gói một phiên | 941 |
+| Codex | `.codex\sessions\2026\10\14\rollout-*.jsonl` | 6 phiên chính + 8 phiên con `guardian` (duyệt quyền, 0 lệnh) | 338 |
+| Muse | `muse export` của 10 phiên Muse Code (1 phiên chuẩn bị trống, 1 phiên Owner hỏi về model, 1 phiên nối tiếp trống, A ×2, B–F) | 10 | 1 034 |
+| Muse (OpenCode) | `opencode session export ses_ec47738d6ffeKVrLpUi4pQGJhZ` — phần sau của gói F | 1 | 188 |
+
+**Không phát hiện nhiễm và không phát hiện vi phạm chỉ đọc:**
+
+- **Thư mục của bên khác** (`deep-review-1-6\{claude,codex,muse}` của bên kia): 0 lần ở cả bốn nguồn log. `glob` / `grep` của OpenCode đều trỏ vào worktree. Trong phiên Muse A thứ hai, Owner gõ lệnh kiểm ACL (`Get-ChildItem …\codex`, `…\claude`) vào chính Muse. Muse **từ chối** chạy hai lệnh đó (luật 1 của prompt), chỉ chạy `git status` (rỗng).
+- **Đổi quyền thư mục** (`icacls`, `takeown`, `Set-Acl`), **`git push`**, **`gh`**: 0 lần. Chỗ khớp `gh` duy nhất là chữ trong báo cáo Claude F.
+- **Ghi vào worktree:** mọi lệnh `git` đều chỉ đọc (`status`, `rev-parse`, `diff`, `log`, `ls-files`, `check-ignore`), kể cả lệnh gọi qua `spawnSync` / `execFileSync` trong script. Mọi đích của Write / Edit / `write_file` / `edit_file` / `write` / `edit` nằm trong thư mục bằng chứng của chính bên đó. Ghi tạm vào repo chỉ có ở các lượt đột biến "patch gỡ ngay" mà plan cho phép (§3 trục T): Claude trả lại nguyên byte và kiểm sha256. Codex dựng Rust với `--target-dir` là thư mục `target` bị ignore. Kiểm 15/10: `git status --short` của cả hai worktree đều rỗng.
+- **Gọi AI của sản phẩm:** không có `eval:ai`, `cmdkey`, hay lần gọi OpenCode thật. Codex F gọi `openCodeAdapter` với URL `https://invalid.local/mock-only`, key giả và `fetch` giả.
+
+**Ghi nhận quy trình** (không đổi phát hiện nào):
+
+1. **Claude gói C mở chatgpt.com** (đã tự khai ở đầu `raw/…/claude/C.md`): probe `c5-edge-ai.mjs` bấm "Phân tích bằng ChatGPT web" trên bản web, khi chưa chặn mạng. Edge headless (hồ sơ mới, không đăng nhập) mở `https://chatgpt.com/` ở hai lần chạy 11:04–11:06 14/10. Log khớp đúng lời khai: URL hằng, không mang dữ liệu; từ lần chạy thứ ba probe chặn mọi request không phải `127.0.0.1` và thay `window.open`. Số đo của hai lần đầu đã bỏ.
+2. **Liệt kê thư mục gốc** (luật 1 của prompt cấm liệt kê `deep-review-1-6\` và `C:\workspace\`):
+   - Claude gói E chạy `ls -la` trên `deep-review-1-6\` ở lệnh đầu phiên. Báo cáo E đã tự khai; lệnh chỉ in tên cấp 1.
+   - Codex gói C chạy `rg --files -g AGENTS.md 'C:\workspace'` (tìm file `AGENTS.md` trong cả `C:\workspace`, lúc chưa có ACL). Lệnh trả exit 1: không file nào khớp, không in đường dẫn nào. Báo cáo không khai.
+   - Muse, ở phiên Owner hỏi về model (22:04–22:10 14/10, trước gói A, không phải phiên gói), tự liệt kê `deep-review-1-6\` và `C:\workspace\` rồi đọc `owner-notes.md`. Lệnh chỉ in tên cấp 1. Trong phiên này Muse còn 5 lần `web_search` để trả lời câu hỏi giá của Owner.
+
+   Không lần nào thấy nội dung của bên khác.
+3. **Muse gói A chạy hai phiên.** Phiên A thứ nhất (22:10–22:29) có `--yolo`. Phiên A thứ hai (22:30–22:46) mở **không** `--yolo` (sandbox thường, Muse hỏi duyệt) và ở thư mục `deep-review-1-6\` thay vì `muse\`. Mọi file ghi vẫn nằm trong `muse\`. Các gói B–E: `--yolo`, thư mục `muse\`.
+4. **Muse gói F phần lớn làm trong OpenCode 2.0.27, không phải Muse Code.** Phiên Muse Code F (00:25–00:29 15/10) mới dựng khung `F.md` thì bị hủy tay (`cancelled`). Gói F được làm tiếp trong OpenCode từ 00:49 tới 01:03 (`XONG`), cùng prompt `prompt-muse.md`, thư mục `deep-review-1-6\`, model `opencode/muse-spark-1.3-contributor-free`, mức suy luận `xhigh`. Plan §7.1 chốt Muse Code, `muse-spark-1.3-contributor`, mức `max`, "cùng mức cho cả 6 gói". Báo cáo F chỉ ghi "phiên làm tiếp từ 00:51", không ghi đổi công cụ hay mức. Quét log của phiên OpenCode cũng sạch (không chạm bên khác, mọi file ghi trong `muse\F\`). Hệ quả: `L·MU-F` là dữ liệu tham khảo (như mọi báo cáo Muse, ADR-0001 M5) và **không so được** với Muse A–E về mức suy luận. Phiên tổng hợp đã đọc lại hoặc kiểm trên code mọi phát hiện trước khi gộp (§11), nên kết luận không đổi.
+
+**Cho lượt 2 (T-224):**
+
+- Prompt nhắc rõ hơn rằng không được tìm kiếm (`rg` / `glob`) trên `C:\workspace` hay `deep-review-1-6\`.
+- Probe trình duyệt chặn mạng ngoài `127.0.0.1` và thay `window.open` ngay từ bản đầu.
+- Mở Muse đúng lệnh ở `muse\` (`--yolo --model … --reasoning-effort max`) cho mọi phiên, kể cả phiên làm tiếp.
+- Nếu phải đổi công cụ hay model giữa chừng, báo cáo ghi rõ ở mục 1.
 
 ## 11. Ghi chú phương pháp
 
