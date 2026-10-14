@@ -340,7 +340,7 @@ Code sản phẩm ở `8855345` giống hệt `b139d8a` nên chênh lệch là n
 ### 8.1 Việc còn lại của T-223 (phiên tổng hợp)
 
 1. **PR docs báo cáo gốc** → `docs/reviews/raw/2026-10-15/`: `{claude,codex,muse}/{A…F}.md` của laptop (chính thức) + `home-pc/{claude,codex,muse}/{A…F}.md` (tham khảo, Q11); `common-known.md`, `common-baseline.md` của **laptop** (cần chép từ `C:\workspace\deep-review-1-6\common\` trên laptop — bộ `.rar` chỉ có báo cáo), `common-baseline-home-pc.md`; cập nhật `raw/README.md`. Tên user Windows trong đường dẫn (`L·CL-F`, 4 chỗ) thay bằng `<user>` như raw 2026-10-06.
-2. **Kiểm độc lập bằng log phiên** (plan §8) — **phải làm trên laptop** (log ở đó): transcript Claude (`.claude*\projects\C--workspace-Project-2C-review\`), log Codex, `muse export` 6 gói → quét đầu vào lệnh công cụ theo danh sách plan §8. Kèm: Owner xác nhận ACL §7.2 đã đặt trước phiên Muse đầu tiên và gỡ sau F (HANDOFF lúc 14/10 tối ghi "chưa đặt").
+2. **Kiểm độc lập bằng log phiên** (plan §8) — **phải làm trên laptop** (log ở đó): transcript Claude (`.claude*\projects\C--workspace-Project-2C-review\`), log Codex, `muse export` 6 gói → quét đầu vào lệnh công cụ theo danh sách plan §8. Kèm: Owner xác nhận ACL §7.2 đã đặt trước phiên Muse đầu tiên và gỡ sau F — **xong 15/10** (§10).
 3. **Owner trả lời §9** → tạo Issue sửa theo §8.2–§8.4 (mẫu Task, milestone Phase 6, ≤ ~400 / ~800 dòng), thêm vào "Bị chặn bởi" của #564 (bước 0 lượt 2). **Xong 15/10:** 16 Issue #592–#607 (§8.7).
 4. **PR riêng `docs/state/review-notes.md`:** mục hoãn / chấp nhận (§8.5) và cập nhật 5 mục KNOWN (§6).
 
@@ -438,7 +438,7 @@ Theo nội dung báo cáo (kiểm bằng log phiên **chưa làm** — §8.1 bư
 
 - **SHA và `git status`:** cả 36 báo cáo ghi `8855345` đầu phiên; `git status --short` đầu / cuối phiên rỗng ở cả hai worktree (worktree `-review-2` của Home PC có sẵn `AGENTS.md`, `.codex/`, `.agents/` do Codex sinh từ 10/10 — đúng plan §8). Lệnh build / e2e chỉ ghi thư mục bị ignore: `apps/desktop/dist` của `-review-2` trên laptop còn bản dựng với mốc ngày demo (`index.js` +10 byte, ảnh dữ liệu mẫu) từ gói D (Codex dựng với `VITE_DEMO_ANCHOR`; Muse F ghi nhận và quy cho lần chạy e2e của gói D) — Muse F đọc số bundle từ thư mục này nên lệch +10 byte so số nền.
 - **Không gọi AI thật / không đọc key:** mọi probe AI dùng Mock, `fetch` giả hoặc server loopback; key trong probe là key giả. Codex / Muse không mở exe khi bên khác đo (Codex Home PC đo exe ở cổng 9337–9357, đã kiểm cổng trống trước).
-- **Chỉ đọc báo cáo của mình:** không báo cáo nào nhắc nội dung của bên khác. Muse chạy `--yolo`: lớp chặn chính là ACL (§7.2) + quét log; **Owner xác nhận ACL đã đặt** trước phiên Muse đầu tiên trên mỗi máy (HANDOFF 14/10 tối còn ghi "chưa đặt" ở laptop).
+- **Chỉ đọc báo cáo của mình:** không báo cáo nào nhắc nội dung của bên khác. Muse chạy `--yolo`: lớp chặn chính là ACL (§7.2) + quét log; **Owner xác nhận 15/10** (laptop, máy chính thức): ACL đã đặt trước phiên Muse đầu tiên và chỉ gỡ sau khi Muse xong (HANDOFF 14/10 tối ghi "chưa đặt" là bản cũ). Kiểm 15/10: `icacls` của `claude\`, `codex\` không còn dòng deny.
 - **Khuôn báo cáo:** Muse laptop gói D, E không dùng ID `MU-<gói><số>` và gói E không theo khuôn trường (Mức / Trục / Tình trạng nằm ở tiêu đề); Codex Home PC gói A, B không có dòng đầu `XONG` (soạn trước luật "ghi dần" 13/10). Không ảnh hưởng nội dung; đã đọc theo thứ tự.
 - **Muse Code tự cập nhật** 1.3.0 → 1.4.7 giữa chuẩn bị và đợt 2 (HANDOFF); model và effort không đổi.
 
