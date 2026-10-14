@@ -341,7 +341,7 @@ Code sản phẩm ở `8855345` giống hệt `b139d8a` nên chênh lệch là n
 
 1. **PR docs báo cáo gốc** → `docs/reviews/raw/2026-10-15/`: `{claude,codex,muse}/{A…F}.md` của laptop (chính thức) + `home-pc/{claude,codex,muse}/{A…F}.md` (tham khảo, Q11); `common-known.md`, `common-baseline.md` của **laptop** (cần chép từ `C:\workspace\deep-review-1-6\common\` trên laptop — bộ `.rar` chỉ có báo cáo), `common-baseline-home-pc.md`; cập nhật `raw/README.md`. Tên user Windows trong đường dẫn (`L·CL-F`, 4 chỗ) thay bằng `<user>` như raw 2026-10-06.
 2. **Kiểm độc lập bằng log phiên** (plan §8) — **phải làm trên laptop** (log ở đó): transcript Claude (`.claude*\projects\C--workspace-Project-2C-review\`), log Codex, `muse export` 6 gói → quét đầu vào lệnh công cụ theo danh sách plan §8. Kèm: Owner xác nhận ACL §7.2 đã đặt trước phiên Muse đầu tiên và gỡ sau F (HANDOFF lúc 14/10 tối ghi "chưa đặt").
-3. **Owner trả lời §9** → tạo Issue sửa theo §8.2–§8.4 (mẫu Task, milestone Phase 6, ≤ ~400 / ~800 dòng), thêm vào "Bị chặn bởi" của #564 (bước 0 lượt 2).
+3. **Owner trả lời §9** → tạo Issue sửa theo §8.2–§8.4 (mẫu Task, milestone Phase 6, ≤ ~400 / ~800 dòng), thêm vào "Bị chặn bởi" của #564 (bước 0 lượt 2). **Xong 15/10:** 16 Issue #592–#607 (§8.7).
 4. **PR riêng `docs/state/review-notes.md`:** mục hoãn / chấp nhận (§8.5) và cập nhật 5 mục KNOWN (§6).
 
 ### 8.2 Đợt S1 — bắt buộc trước v1.0 (Medium + họ của nó)
@@ -388,9 +388,36 @@ DR6-23, 24 (G5 sau) · DR6-25 (`zod/mini`) · DR6-37 (dấu nối cứng, lần 
 | **1 — tối thiểu** | S1-A (2 Issue), S1-B, S2-E (quyết NT), S2-D phần phiên bản / key, S2-L phần key eval | ≈ 6 | ≈ 230 |
 | **2 — sửa hết trừ phần hoãn** (đề xuất, như quyết định 06/10 "sửa hết") | S1 + S2-C…M + PR docs; G5 / G3 theo Q5 / Q7 | ≈ 15 | ≈ 650 + ≈ 400 test |
 
+### 8.7 Issue sửa đã tạo (Owner chọn Phương án 2, 15/10)
+
+Milestone "Phase 6 — Hoàn thiện & phát hành"; cả 16 Issue nằm trong "Bị chặn bởi" của #564 (bước 0 lượt 2). Thứ tự chặn giữa các Issue theo file dùng chung.
+
+| Issue | Nhóm | DR6 | Rủi ro | Bị chặn bởi |
+|---|---|---|---|---|
+| #592 T-231 Khôi phục cuộc gặp Đã gặp về đúng như lúc xóa | S1-A1 | **01**, 03 | med | — |
+| #593 T-232 Ghi, sửa, xóa cuộc gặp theo nhóm tại ngày cuộc hẹn | S1-A2 | 04, 05 | med | #592 |
+| #594 T-233 Bàn giao KH chuyển cả lịch Dự kiến sang RE mới | S1-B | **02** | med | — |
+| #595 T-234 Lớp file: DB hỏng, câu lỗi, `openFrom`, `.tmp` | S2-C | 06, 07, 08, 09 (+ Rust của 60) | med, `build-exe` | — |
+| #596 T-235 Rust AI + phát hành: key hai lớp, model, 1.0.0, crate-type, quyền | S2-D | 10, 11, 12, 13, 14 (+ A14 của 60) | med, `build-exe` | — |
+| #597 T-236 Hồ sơ KH và Tổng quan khớp nghiệm thu G7 | S2-E | 27, 28, 29, 30, 46 | low | — |
+| #598 T-237 AI: phiên ChatGPT web, V1 / LAW_NAME, seed, Mock | S2-F | 15, 16, 18, 19, 22 (+ 61) | med | — |
+| #599 T-238 STALE vẫn mờ nhưng đạt AA | G3 | 21 (+ mockup của 22) | low | — |
+| #600 T-239 Hộp lịch hẹn và HĐ | S2-G | 38, 39, 40, 41, 42 | low | #593, #594 |
+| #601 T-240 Thùng rác và Cài đặt → Dữ liệu | S2-H | 43, 44, 45 | med | #592 |
+| #602 T-241 Team và Khách hàng | S2-I | 26, 31, 32, 33 | low | #597 |
+| #603 T-242 Điều hướng và trợ năng | S2-J | 20, 34, 35 | low | — |
+| #604 T-243 Chữ và nhập backup | S2-K | 49, 50, 51, 52 (+ comment của 54) | med | #593, #601 |
+| #605 T-244 Công cụ: eval, cổng merge, `retro.mjs` | S2-L | 55, 56, 57, 58 (+ 64) | med | — |
+| #606 T-245 Test giữ các luật đột biến còn sống | S2-M | 59, 62, 63, 65 (+ TS của 60) | low | #592 |
+| #607 T-246 Tài liệu: lệch mockup đã biết, NT-TQ-06, golden L-09 | docs | 29 (ô Kỳ), 36, 47, 48, 54 | low | — |
+
+Hoãn / chấp nhận (§8.5) ghi vào `docs/state/review-notes.md` bằng PR riêng.
+
 ## 9. Câu hỏi cần Owner quyết
 
 Mỗi câu có đề xuất; Owner đồng ý mà không ghi gì khác thì lấy đề xuất.
+
+**Owner trả lời 15/10/2026: đồng ý mọi đề xuất dưới, Phương án 2 (sửa hết trừ phần hoãn §8.5).** Tức là: Q1 (a), Q2 đồng ý cả gói, Q3 (a), Q4 như đề xuất, Q5 hoãn sau v1.0, Q6 đồng ý, Q7 (a), Q8 (a), Q9 làm ba cột, Q10 Phương án 2, Q11 đưa báo cáo Home PC vào repo, Q12 phiên bản 1.0.0 trong S2-D. Issue đã tạo: §8.7.
 
 1. **DR6-01 — khôi phục cuộc gặp giữ nhóm.** (a) Khôi phục "về như lúc xóa": cuộc gặp không có chuyển nhóm bị rút khi xóa thì khôi phục không ghi chuyển nhóm, không kiểm D10 (thêm E18 vào TR-3). (b) Giữ TR-3, nhưng 6g không cho xóa (hoặc nói "không khôi phục được") khi KH đã đổi nhóm sau ngày gặp. **Đề xuất: (a).**
 2. **DR6-03 / 04 / 05 — một luật "nhóm tại ngày cuộc gặp"** cho ghi / sửa / xóa / khôi phục cuộc gặp và chuyển tay lùi ngày (§8.2 S1-A (2)–(4)): đổi dòng `recordMeetingOutcome` của spec Phase 3 §4 (hiện so với nhóm hiện tại), kèm luật nhập backup (K1: nạp lại dữ liệu giả lập, hash `tables` của dữ liệu tải sẽ đổi). **Đề xuất: đồng ý cả gói, sửa cùng DR6-01.**
