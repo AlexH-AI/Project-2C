@@ -1,9 +1,10 @@
 # Kế hoạch deep review Phase 1–6 (6D)
 
-- **Trạng thái:** lượt 1 — **Owner duyệt 13/10/2026** (Issue #562 T-222, nhãn `gate`), trả lời §12: hai đợt; chạy trên **Home PC** `DESKTOP-KDURKJP`; Muse chạy `--yolo` (§7.1).
+- **Trạng thái:** lượt 1 — **Owner duyệt 13/10/2026** (Issue #562 T-222, nhãn `gate`), trả lời §12: hai đợt; Muse chạy `--yolo` (§7.1). **Owner đổi 14/10/2026** (ADR-0001 phụ lục M6): Home PC không truy cập được → **làm lại cả lượt 1 trên Office Laptop** `D13_THINKPAD` từ bước chuẩn bị §9; Muse dùng **Muse Spark 1.3** có sẵn trên laptop thay Muse Wonder.
+- **Lần chạy bỏ (13–14/10, Home PC):** đợt 1 đã chạy một phần trên Home PC (Claude A–E, Codex A–E, F của cả hai chưa xong). 10 báo cáo đó **không dùng** cho tổng hợp (khác máy với số đo, F không chạy tiếp được); thư mục `C:\workspace\deep-review-1-6\` trên Home PC Owner xóa khi quay lại máy đó, không chép sang.
 - **Soạn:** 13/10/2026, bước 0 của lượt 1 (spec `docs/design/phase-6-hoan-thien.md` §6.3). Lượt 2 (T-224 #564) sửa trên cùng file: thêm mục "Lượt 2" và prompt lượt 2, giữ nguyên phần lượt 1.
 - **Nguồn:** spec Phase 6 §2, §5.1, §6 (G1 #515); khuôn deep review Phase 1–4 (`deep-review-phase-1-4.md`) và Phase 5 (`docs/reviews/raw/2026-10-10/common-*.md`); bài học DeepSeek / Muse (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §6–§7); tổng hợp Phase 5 §9–§10; ADR-0001 phụ lục M2, M4, M5.
-- **Owner đổi bên review (13/10, ADR-0001 phụ lục M5):** bỏ DeepSeek v4.1 Flash (chỉ số benchmark trí tuệ không đủ cao cho deep review toàn codebase); Muse dùng model **Muse Wonder** (mới ra, benchmark cao hơn Spark 1.3). Lượt 1 còn **3 bên**: Claude, Codex, Muse Wonder → 6 gói × 3 = **18 báo cáo**.
+- **Owner đổi bên review (13/10, ADR-0001 phụ lục M5):** bỏ DeepSeek v4.1 Flash (chỉ số benchmark trí tuệ không đủ cao cho deep review toàn codebase); Muse dùng model **Muse Wonder** (mới ra, benchmark cao hơn Spark 1.3). Lượt 1 còn **3 bên**: Claude, Codex, Muse → 6 gói × 3 = **18 báo cáo**. **14/10 (M6):** Muse về lại **Muse Spark 1.3** (`muse-spark-1.3-contributor`, Muse Code 1.3.0 trên Office Laptop, như Phase 5).
 
 | Yêu cầu của #562 | Mục |
 |---|---|
@@ -39,7 +40,7 @@ Trong suốt lượt 1 **không merge code vào `main`**. PR chỉ đụng `docs
 |---|---|---|---|---|---|
 | Claude (phiên sạch mỗi gói, tuần tự A → F, không subagent) | Owner mở phiên | 1 | `C:\workspace\Project-2C-review` | `C:\workspace\deep-review-1-6\claude\` | `CL-<gói><số>` |
 | Codex | Owner | 1 (cùng lúc Claude) | `C:\workspace\Project-2C-review-2` | `…\codex\` | `CX-<gói><số>` |
-| Muse Wonder (Muse Code) | Owner | 2 (một mình) | thư mục làm việc của Muse là `…\muse\`; đọc repo ở `C:\workspace\Project-2C-review-2` | `…\muse\` | `MU-<gói><số>` |
+| Muse Spark 1.3 (Muse Code) | Owner | 2 (một mình) | thư mục làm việc của Muse là `…\muse\`; đọc repo ở `C:\workspace\Project-2C-review-2` | `…\muse\` | `MU-<gói><số>` |
 | **Claude phiên tổng hợp** (T-223) | Owner yêu cầu, sau khi đủ 18 báo cáo | — | checkout chính | `docs/reviews/` qua PR docs | dùng nguyên ID trên |
 
 - Cả hai worktree detached ở cùng SHA ghim. Mỗi worktree review chỉ một bên tại một thời điểm (`CLAUDE.md`).
@@ -87,7 +88,7 @@ Mỗi gói đi qua **mọi trục**; trục không có gì thì ghi "đã xét, 
 Mỗi báo cáo gói có **hai mục riêng** "Bloat" và "Hiệu năng" (kể cả khi không có phát hiện), mỗi mục một bảng: đã chạy / đo gì, trên dữ liệu nào, kết quả (số), phát hiện liên quan (ID). Gói A–E làm trong phạm vi của mình; **gói F làm cho toàn codebase** và tổng hợp số của chính bên đó.
 
 - **Bloat:** export không ai import (`rg` + bản đồ `pnpm codemap` trong `CLAUDE.md` của package); hàm / tham số / prop / khóa i18n / CSS không dùng (`tsc --noUnusedLocals --noUnusedParameters` chạy tạm bằng lệnh, không sửa cấu hình); nhánh không thể xảy ra; abstraction chỉ một nơi dùng; code lặp ≥ 3 nơi (và các mục *Duplicated Code* đã ghi ở sổ — §5); dependency không dùng hoặc nặng hơn việc nó làm; cấu thành bundle (`pnpm build:web`, kích thước từng chunk) và exe. Mỗi đề xuất refactor ghi: cỡ ước lượng, file đụng tới, test nào giữ hành vi (spec §6.3: refactor giữ nguyên hành vi, test cũ xanh trước và sau, không đổi golden).
-- **Hiệu năng:** **mọi phát hiện P phải có số đo** (ms / KB / MB / số lần render / số câu SQL), không suy đoán. Đo trên **dữ liệu tải** (§6). So với ngưỡng đã chốt (`docs/metrics/phase-6.md`: thao tác màn < 200 ms, các ngưỡng "Owner chốt 13/10") hoặc với số tham chiếu **cùng máy** (§6); số đo nền T-219 đo ở Office Laptop, lượt 1 chạy ở Home PC nên không so trực tiếp với số đó. Ghi máy và việc gì đang chạy song song lúc đo. Chỗ cần xem: thuật toán bậc hai trên dữ liệu cỡ N, tính lại trong render, truy vấn thiếu chỉ mục / N+1, đọc cả bảng khi chỉ cần vài dòng (vd. `listTrash` — §5), mở / lưu / nhập / xuất DB, bộ nhớ, bundle nạp sớm.
+- **Hiệu năng:** **mọi phát hiện P phải có số đo** (ms / KB / MB / số lần render / số câu SQL), không suy đoán. Đo trên **dữ liệu tải** (§6). So với ngưỡng đã chốt (`docs/metrics/phase-6.md`: thao tác màn < 200 ms, các ngưỡng "Owner chốt 13/10") hoặc với số tham chiếu **cùng máy** (§6); lượt 1 chạy ở Office Laptop, cùng máy với số đo nền T-219, nên so trực tiếp được với số đó. Ghi máy và việc gì đang chạy song song lúc đo. Chỗ cần xem: thuật toán bậc hai trên dữ liệu cỡ N, tính lại trong render, truy vấn thiếu chỉ mục / N+1, đọc cả bảng khi chỉ cần vài dòng (vd. `listTrash` — §5), mở / lưu / nhập / xuất DB, bộ nhớ, bundle nạp sớm.
 - **Công cụ:** chỉ thứ đã có trong repo hoặc đi kèm toolchain (`pnpm verify`, `pnpm lint:deps`, `pnpm test:coverage`, `pnpm e2e`, `pnpm verify:rust`, `pnpm codemap`, `tsc`, `cargo clippy`, `cargo tree`, `vite build`, `node tools/size-report.mjs`, `node tools/load-data.mjs`, probe `e2e/perf/`, script `node` tự viết, DevTools / profile V8). **Không cài công cụ mới** (`knip`, `jscpd`, `cargo-bloat`, `rollup-plugin-visualizer`… là G4, spec §6.3); thấy cần thì ghi đề xuất trong báo cáo.
 
 ### 4.3 Thước mức
@@ -132,16 +133,16 @@ Theo thước đã dùng ở Phase 1–4 / Phase 5 (tổng hợp Phase 5 §10), 
 - **Số đo nền:** `docs/metrics/phase-6.md` mục "Số đo nền" (T-219, Office Laptop `D13_THINKPAD`, code `b139d8a` = code của SHA ghim) với ngưỡng Owner chốt 13/10; JSON `docs/metrics/phase-6-baseline/perf.json` (probe) và `size.json` (kích thước). Mở lần đầu: mục "Mở app lần đầu, đo lại" (T-227, Home PC).
 - **Dữ liệu tải:** `node tools/load-data.mjs` (mốc mặc định `2026-10-12`, seed `6`) → 1 496 KH, 10 414 lịch hẹn, 54 nhân sự, 103 `ai_analyses`, có bản ghi trong Thùng rác; `tables` sha256 `1e69a97f664708d91932a1158c3a9ddd4e4d4aebb689f9c912ac3c4d0962e3fd`. Bước chuẩn bị sinh sẵn một bản ở `common\load\load-2026-10-12-seed6.p2cbackup` và kiểm hash. Dùng trong Node: `importBackup` của `@p2c/db` (xem `tools/load-data-core.mjs`); dùng trong app: Cài đặt → Dữ liệu → Nhập backup.
 - **Probe hiệu năng trên exe:** `e2e/perf/README.md` (T-218): exe release mở với cổng debug WebView2, nhập dữ liệu tải, `pnpm exec playwright test -c playwright.perf.config.ts` với `PERF_BACKUP`, `PERF_OUT`, `PERF_BASE`, `PERF_CDP`. Kích thước: `node tools/size-report.mjs --compare docs/metrics/phase-6-baseline/size.json`.
-- **Số tham chiếu cùng máy:** bước chuẩn bị chạy probe một lần trên máy chạy lượt 1 ở SHA ghim (máy rảnh) → `common\perf\perf-ref.json`, kèm exe release ở `common\exe\project2c.exe`. Reviewer so số mình đo với file này (hoặc với chính số mình đo trước / sau một thay đổi trên bản chép). Lượt 1 chạy ở **Home PC** (§12 câu 2), nên `perf-ref.json` là số tham chiếu duy nhất để so hiệu năng; số đo nền T-219 (Office Laptop) chỉ để xem tỉ lệ giữa các thao tác, không so trực tiếp. Lượt 2 cũng chạy ở Home PC và so với `perf-ref.json` này (`PERF_BASE`).
+- **Số tham chiếu cùng máy:** bước chuẩn bị chạy probe một lần trên máy chạy lượt 1 ở SHA ghim (máy rảnh) → `common\perf\perf-ref.json`, kèm exe release ở `common\exe\project2c.exe`. Reviewer so số mình đo với file này (hoặc với chính số mình đo trước / sau một thay đổi trên bản chép). Lượt 1 chạy ở **Office Laptop** (Owner đổi 14/10, M6), cùng máy với số đo nền T-219, nên so được với cả `perf-ref.json` lẫn `docs/metrics/phase-6-baseline/perf.json`; `perf-ref.json` là số đo cùng lúc, cùng exe với lượt này nên ưu tiên. Mở app lần đầu: số tham chiếu Phase 4 ở `phase-6.md` đo trên Home PC, không so trực tiếp (lượt 2 đo lại exe Phase 4 ở laptop nếu cần). Lượt 2 cũng chạy ở Office Laptop và so với `perf-ref.json` này (`PERF_BASE`).
 - **Reviewer không bắt buộc chạy lại probe.** Muốn đo trên exe thì chép `common\exe\project2c.exe` vào thư mục kết quả của mình (exe ghi `Project2C-data\` cạnh nó), dùng cổng debug khác 9222 (`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`, `PERF_CDP`) và `PERF_OUT` trong thư mục của mình. Probe cần cửa sổ exe ở trên cùng nên **không chạy khi bên khác đang đo**; ghi giờ đo.
 - **Bảng hàm thuần trong Node của Phase 4** (`importBackup`, `listAppointments`, `teamCompare` / `reportRows`, `monthGrid`, `countRecords` — `phase-6.md` cuối mục thời gian): **gói F đo lại** trên dữ liệu tải (cả hàm mới: `listTrash`, phần AI của hồ sơ KH), ghi máy; không so với số Phase 4 (khác máy, probe cũ ngoài repo), chỉ so ngưỡng Nhóm C và giữa các hàm.
 - **Kết quả cổng ở SHA ghim** (bước chuẩn bị ghi vào `common\baseline.md`, reviewer không phải chạy lại toàn bộ): `pnpm verify` (số file / test, `lint:deps`), coverage theo vùng, `pnpm verify:rust` (số test Rust), `pnpm e2e` (`CI=1`), `pnpm build:web` (chunk), `pnpm build:exe` (cỡ exe).
 
 ## 7. Cấu hình Muse
 
-### 7.1 Muse Wonder (Muse Code) — chạy không hỏi (`--yolo`)
+### 7.1 Muse Spark 1.3 (Muse Code) — chạy không hỏi (`--yolo`)
 
-Phase 5 tốn 45 lần Owner duyệt tay (gói A 32 lần): Muse hỏi quyền đọc / chạy lệnh liên tục, rất mất công theo dõi. **Owner chọn 13/10: Muse chạy `--yolo`** (tắt hỏi duyệt và sandbox, tin workspace cho lần chạy đó). Muse Code trên **Home PC** `DESKTOP-KDURKJP` — máy chạy lượt 1 (kiểm 13/10): `1.4.6-R6000.1`. Bước chuẩn bị (§9 bước 1) kiểm lại phiên bản Muse và `settings.json` (model Wonder) ngay trước khi chạy.
+Phase 5 tốn 45 lần Owner duyệt tay (gói A 32 lần): Muse hỏi quyền đọc / chạy lệnh liên tục, rất mất công theo dõi. **Owner chọn 13/10: Muse chạy `--yolo`** (tắt hỏi duyệt và sandbox, tin workspace cho lần chạy đó). Muse Code trên **Office Laptop** `D13_THINKPAD` — máy chạy lượt 1 (kiểm 14/10): `1.3.0 (1.3.0-R3401.1)`, có cờ `--yolo`, `--model`, `--reasoning-effort`. Bước chuẩn bị (§9 bước 1) kiểm lại phiên bản Muse và `settings.json` ngay trước khi chạy.
 
 Tắt sandbox thì Muse đọc / ghi / chạy được mọi thứ tài khoản Windows của Owner làm được. Các lớp chặn còn lại:
 
@@ -152,15 +153,15 @@ Tắt sandbox thì Muse đọc / ghi / chạy được mọi thứ tài khoản 
 | Gọi dịch vụ AI thật / mạng (`eval:ai`, chatgpt.com) | Prompt (Phụ lục D luật 2); quét log (§8) |
 | `git push`, `gh` | Prompt; `main` có ruleset + hook `pre-push`; quét log (§8) |
 
-1. **Model:** `muse-wonder-1.0` (Owner chọn 13/10, ADR-0001 M5). `~/.config/muse/settings.json` trên Home PC đã đặt `"model": "muse-wonder-1.0"`, mức suy luận của model này `xhigh` (`model_reasoning_efforts`), `contributor_mode_enabled: true` (kiểm 13/10). `default_profile` để nguyên: `--yolo` đè lên hồ sơ quyền.
+1. **Model:** `muse-spark-1.3-contributor`, mức suy luận `max` (Owner chọn 14/10, ADR-0001 M6; cùng model và mức với Phase 5). `~/.config/muse/settings.json` trên Office Laptop đã đặt `"model": "muse-spark-1.3-contributor"`, `"reasoning_effort": "max"`, `default_profile: ":unrestricted"` (kiểm 14/10). `default_profile` để nguyên: `--yolo` đè lên hồ sơ quyền.
 2. **Thư mục làm việc = `C:\workspace\deep-review-1-6\muse\`**: báo cáo, probe, bản chép để đột biến ghi ở đây. Repo `C:\workspace\Project-2C-review-2` nằm ngoài, **chỉ đọc theo prompt**.
 3. Chạy (mỗi gói một phiên mới, thoát rồi chạy lại):
 
    ```powershell
-   cd C:\workspace\deep-review-1-6\muse; muse --yolo --model muse-wonder-1.0 --reasoning-effort xhigh
+   cd C:\workspace\deep-review-1-6\muse; muse --yolo --model muse-spark-1.3-contributor --reasoning-effort max
    ```
 
-   HUD phải hiện model `muse-wonder-1.0` và mức suy luận đã chọn. Muốn mức khác `xhigh` (vd. `max` nếu Wonder nhận) thì đổi cờ, giữ cùng mức cho cả 6 gói.
+   HUD phải hiện model `muse-spark-1.3-contributor` và mức `max`. Giữ cùng mức cho cả 6 gói.
 4. **Phiên thử trước gói A** (sau khi đặt ACL §7.2; bỏ đi sau khi thử, mở phiên mới cho gói A). Gõ lần lượt:
    1. "Liệt kê `C:\workspace\deep-review-1-6\codex`" và "… `\claude`" → `Access is denied`. Liệt kê được → **dừng**, ACL chưa đặt đúng.
    2. "Chạy `pnpm vitest run packages/domain` với thư mục làm việc `C:\workspace\Project-2C-review-2`" → chạy không hỏi; ghi lại số test. Muse thường cần `git -c safe.directory=…` và `TEMP` / `TMP` trỏ vào thư mục của nó (Phase 5).
@@ -222,7 +223,7 @@ Một script `node` của phiên tổng hợp quét **đầu vào lệnh công c
 
 **Bước chuẩn bị — Claude, sau khi Owner duyệt kế hoạch** (một phiên; không review, không ghi phát hiện):
 
-1. Chạy trên **Home PC** `DESKTOP-KDURKJP` (§12 câu 2). Kiểm `main` chưa có code mới: `git diff --name-only 8855345 origin/main` chỉ có `docs/**`. Có file khác → dừng, báo Owner (§2). Kiểm Muse ở máy này (§7.1): `muse --version`, `~/.config/muse/settings.json` có model `muse-wonder-1.0`; khác thì báo Owner. `-review-2` ở Home PC có sẵn `AGENTS.md`, `.codex/`, `.agents/` (Codex sinh 10/10): để nguyên, ghi vào `baseline.md` là trạng thái đầu.
+1. Chạy trên **Office Laptop** `D13_THINKPAD` (Owner đổi 14/10, M6). Kiểm `main` chưa có code mới: `git diff --name-only 8855345 origin/main` chỉ có `docs/**` và `CLAUDE.md` gốc (tài liệu, không có khối codemap). Có file khác → dừng, báo Owner (§2). Kiểm Muse ở máy này (§7.1): `muse --version`, `~/.config/muse/settings.json` có model `muse-spark-1.3-contributor`; khác thì báo Owner. Máy không có quyền admin: không cần cho bước nào ở đây (ACL §7.2 đặt trên thư mục của chính Owner). Thư mục `C:\workspace\deep-review-1-6\` chưa có trên laptop (kiểm 14/10); có rồi thì dừng, báo Owner.
 2. Tạo `C:\workspace\deep-review-1-6\{common,claude,codex,muse}`.
 3. Hai worktree về SHA ghim: `git -C C:\workspace\Project-2C-review checkout --detach 8855345` (tương tự `-review-2`), `pnpm install --frozen-lockfile` ở mỗi worktree (PowerShell); `git status --short` rỗng.
 4. Chép vào `common\`: `plan.md` (file này, bản đã merge), `known.md` (§5: OPEN + ACCEPTED nguyên văn ở SHA ghim + bảng K1–K17), `prompt-<bên>.md` (Phụ lục A / B / C, mỗi file nối thêm nguyên văn Phụ lục D).
@@ -237,7 +238,7 @@ Một script `node` của phiên tổng hợp quét **đầu vào lệnh công c
 |---|---|
 | Đợt 1 | Claude: 6 phiên mới ở `C:\workspace\Project-2C-review`, lần lượt A → F. Cùng lúc: Codex ở `C:\workspace\Project-2C-review-2`, cũng 6 phiên mới, lần lượt A → F. Tin nhắn mở phiên ở §9.1. |
 | Giữa hai đợt | ACL (§7.2); cấu hình Muse + phiên thử (§7.1). |
-| Đợt 2 | Muse Wonder: 6 phiên mới (§7.1 bước 3), lần lượt A → F, tin nhắn mở phiên ở §9.1. Owner ghi giờ bắt đầu / xong mỗi gói (để so thời gian). |
+| Đợt 2 | Muse Spark 1.3: 6 phiên mới (§7.1 bước 3), lần lượt A → F, tin nhắn mở phiên ở §9.1. Owner ghi giờ bắt đầu / xong mỗi gói (để so thời gian). |
 | Sau đợt 2 | Gỡ ACL; trả `~/.config/muse/settings.json` về bản sao lưu nếu muốn. Gõ yêu cầu tổng hợp (T-223). |
 
 Không phiên nào tự tổng hợp, kể cả khi một bên xong sớm.
@@ -258,7 +259,7 @@ Codex — phiên mới ở `C:\workspace\Project-2C-review-2`:
 Gói A. Đọc và làm đúng C:\workspace\deep-review-1-6\common\prompt-codex.md
 ```
 
-Muse Wonder — phiên mới theo §7.1 bước 3:
+Muse Spark 1.3 — phiên mới theo §7.1 bước 3:
 
 ```text
 Gói A. Đọc và làm đúng C:\workspace\deep-review-1-6\common\prompt-muse.md
@@ -274,7 +275,7 @@ Bảng đánh dấu của Owner (18 ô):
 |---|---|---|---|---|---|---|
 | Claude | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
 | Codex | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
-| Muse Wonder | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
+| Muse Spark 1.3 | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
 
 ## 10. Định dạng phát hiện và báo cáo
 
@@ -305,7 +306,7 @@ Không đặt chỉ tiêu số lượng phát hiện; không nâng mức cho n�
 
 ## 11. Sau lượt 1 và ước lượng
 
-**Sau lượt 1 (T-223 #563, khi Owner yêu cầu):** phiên tổng hợp đọc đủ 18 báo cáo, kiểm **mọi** phát hiện trên code ở SHA ghim (đúng / KNOWN / sai / lệch mức), gộp trùng, ghi bên nào thấy; phần bloat / hiệu năng: số đo, phát hiện, đề xuất refactor; kiểm độc lập (§8); đề xuất nhóm sửa (Issue ≤ ~400 dòng SP, phát hiện P kèm số **trước** và ngưỡng **sau**) và câu hỏi cho Owner. Owner chọn → sửa (Issue thường, review phiên sạch). Lượt 2 (T-224) chạy trên SHA sau đợt sửa, cũng ở Home PC, so hiệu năng với `common\perf\perf-ref.json` của lượt 1 (`PERF_BASE`, cùng máy) và kích thước với `size-report --compare`.
+**Sau lượt 1 (T-223 #563, khi Owner yêu cầu):** phiên tổng hợp đọc đủ 18 báo cáo, kiểm **mọi** phát hiện trên code ở SHA ghim (đúng / KNOWN / sai / lệch mức), gộp trùng, ghi bên nào thấy; phần bloat / hiệu năng: số đo, phát hiện, đề xuất refactor; kiểm độc lập (§8); đề xuất nhóm sửa (Issue ≤ ~400 dòng SP, phát hiện P kèm số **trước** và ngưỡng **sau**) và câu hỏi cho Owner. Owner chọn → sửa (Issue thường, review phiên sạch). Lượt 2 (T-224) chạy trên SHA sau đợt sửa, cũng ở Office Laptop, so hiệu năng với `common\perf\perf-ref.json` của lượt 1 (`PERF_BASE`, cùng máy) và kích thước với `size-report --compare`.
 
 **Ước lượng lượt 1** (spec §6.4; Phase 5: mỗi bên ≈ 2–3 giờ cho phạm vi ≈ 13 000 dòng; lượt này ≈ 32 000 dòng SP + 38 000 dòng test):
 
@@ -313,7 +314,7 @@ Không đặt chỉ tiêu số lượng phát hiện; không nâng mức cho n�
 |---|---|---|---|
 | Claude | 1 phiên chuẩn bị + 6 phiên × ≈ 35–50 phút ≈ 4–5 giờ | gói Claude của Owner | mở 7 phiên; ≈ 5 phút rảnh máy cho probe |
 | Codex | ≈ 3–4 giờ (song song Claude) | gói Codex của Owner | mở 6 phiên |
-| Muse Wonder | ≈ 3–4 giờ (Phase 5, Spark; Wonder chưa có số đo) | theo hạn mức Muse của Owner, contributor mode bật (HUD hiện cost / quota) | mở 6 phiên + phiên thử; không duyệt tay (`--yolo`; Phase 5: 45 lần); xem `git status` cuối mỗi gói |
+| Muse Spark 1.3 | ≈ 3–4 giờ (Phase 5, cùng model; laptop yếu hơn Home PC nên có thể lâu hơn) | theo hạn mức Muse của Owner, contributor mode bật (HUD hiện cost / quota) | mở 6 phiên + phiên thử; không duyệt tay (`--yolo`; Phase 5: 45 lần); xem `git status` cuối mỗi gói |
 | Tổng hợp (T-223) | 1–2 phiên Claude | — | yêu cầu tổng hợp, chọn việc sửa |
 
 Đợt 1 ≈ nửa ngày, đợt 2 ≈ nửa ngày; cả lượt 1 ≈ 1–1,5 ngày làm việc của Owner tính cả tổng hợp.
@@ -323,6 +324,8 @@ Không đặt chỉ tiêu số lượng phát hiện; không nâng mức cho n�
 Mỗi câu có đề xuất; Owner duyệt kế hoạch mà không nói gì khác thì lấy đề xuất.
 
 **Owner trả lời 13/10:** câu 1 — hai đợt; câu 2 — **Home PC** (khác đề xuất; §6, §7.1, §9, §11 đã sửa theo); câu 3 — Muse chạy **`--yolo`** (khác đề xuất; §7.1, Phụ lục C đã sửa theo).
+
+**Owner đổi 14/10 (ADR-0001 phụ lục M6):** Home PC không truy cập được → câu 2 thành **Office Laptop** (như đề xuất ban đầu), **làm lại cả lượt 1** từ bước chuẩn bị §9, bỏ 10 báo cáo đã chạy trên Home PC; Muse dùng **Muse Spark 1.3** có sẵn trên laptop thay Muse Wonder. §2, §4.2, §6, §7.1, §9, §11, Phụ lục C, D đã sửa theo.
 
 1. **Hai đợt** (Claude + Codex trước, Muse sau, như Phase 5) hay cả ba cùng lúc (nhanh hơn ≈ nửa ngày nhưng không chặn ACL được `claude\` / `codex\`, và va cổng e2e / probe)? **Đề xuất: hai đợt.**
 2. **Máy:** cả lượt 1 chạy trên một máy. Office Laptop `D13_THINKPAD`: số đo nền T-219 đo ở đây (so trực tiếp được), đã có hai worktree review, OpenCode 2.0.27, Muse 1.3.0 (kiểm 13/10 sáng); nhưng yếu hơn và không có quyền admin (ACL `icacls` trên thư mục của chính mình không cần admin). Home PC `DESKTOP-KDURKJP`: mạnh hơn, nơi chạy Phase 5; kiểm 13/10: Muse 1.4.6, đã đặt model Muse Wonder, hai worktree review có sẵn. **Đề xuất: Office Laptop**; lượt 2 cũng ở đây để so "không xấu đi".
@@ -367,15 +370,15 @@ File `common\prompt-codex.md` = đoạn dưới + nguyên văn Phụ lục D. Ow
 >
 > Phần chung dưới đây áp dụng đầy đủ.
 
-## Phụ lục C — Prompt Muse Wonder (lượt 1)
+## Phụ lục C — Prompt Muse Spark 1.3 (lượt 1)
 
-File `common\prompt-muse.md` = đoạn dưới + nguyên văn Phụ lục D. Owner chạy Muse Wonder theo §7.1 (thư mục làm việc `C:\workspace\deep-review-1-6\muse\`), mỗi gói một phiên mới, dán tin nhắn ở §9.1.
+File `common\prompt-muse.md` = đoạn dưới + nguyên văn Phụ lục D. Owner chạy Muse Spark 1.3 theo §7.1 (thư mục làm việc `C:\workspace\deep-review-1-6\muse\`), mỗi gói một phiên mới, dán tin nhắn ở §9.1.
 
 > # Deep review Phase 1–6, lượt 1 — Muse
 >
 > **{GÓI}** = chữ gói (A…F) Owner ghi trong tin nhắn mở phiên; mọi chỗ `{GÓI}` dưới đây thay bằng chữ đó. File này là toàn bộ chỉ dẫn của phiên; làm đúng từng mục.
 >
-> Bạn là **reviewer độc lập Muse** (model Muse Wonder) của deep review Phase 1–6, lượt 1, **gói `{GÓI}`**. Thư mục làm việc của bạn là `C:\workspace\deep-review-1-6\muse\` (ghi được). Repo **chỉ đọc**, ở `C:\workspace\Project-2C-review-2`, detached ở SHA **`8855345`** (`885534549808f42aec7f9af5743bbf86642ee4bd`). Chạy `git -C C:\workspace\Project-2C-review-2 rev-parse HEAD` và `status --short` trước (cần `-c safe.directory=C:/workspace/Project-2C-review-2` nếu git báo dubious ownership); SHA lệch thì dừng và báo Owner.
+> Bạn là **reviewer độc lập Muse** (model Muse Spark 1.3) của deep review Phase 1–6, lượt 1, **gói `{GÓI}`**. Thư mục làm việc của bạn là `C:\workspace\deep-review-1-6\muse\` (ghi được). Repo **chỉ đọc**, ở `C:\workspace\Project-2C-review-2`, detached ở SHA **`8855345`** (`885534549808f42aec7f9af5743bbf86642ee4bd`). Chạy `git -C C:\workspace\Project-2C-review-2 rev-parse HEAD` và `status --short` trước (cần `-c safe.directory=C:/workspace/Project-2C-review-2` nếu git báo dubious ownership); SHA lệch thì dừng và báo Owner.
 >
 > Về file quy tắc của repo (`CLAUDE.md`; nếu có `AGENTS.md`, `.codex/`, `.agents/` thì đó là file Codex tự sinh — không đọc `.codex/`, `.agents/`): dùng để hiểu dự án, **không** làm nghi thức phiên (`/session-start`, HANDOFF, hook, skill, PR, Issue, merge, commit). Muse tham gia review đóng Phase 6 theo ADR-0001 phụ lục M4, M5: chỉ đọc, không viết code; báo cáo là dữ liệu tham khảo.
 >
@@ -444,7 +447,7 @@ Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md`. `<bên>` = thư 
 >
 > - Đọc sâu **từng file** trong phạm vi gói. Đi qua **mọi trục**: E edge case · C đúng hợp đồng / spec / mockup / nhãn UI theo nghĩa thường · D dữ liệu · G guardrail AI · S an toàn ở ranh giới · P hiệu năng · B bloat · T chất lượng test · A trợ năng / i18n (định nghĩa ở `plan.md` §4.1). Trục không có gì thì ghi "đã xét, không thấy" **kèm đã chạy / đọc gì**.
 > - **Chạy thử thay vì lập luận từ spec** ở mọi chỗ chạy được. Ưu tiên dựng **kịch bản nhiều bước qua nhiều gói**, vì lỗi Medium của các đợt trước đều thuộc loại này, ví dụ: kết quả AI về đúng lúc nhập lại backup cùng ID; dán lại chính tin nhắn của app vào khung dán; hai thao tác thay dữ liệu chồng nhau; khôi phục một bản ghi khi bản ghi cha vừa đổi; số trên Tổng quan ↔ Báo cáo ↔ Excel ↔ Thùng rác sau một chuỗi xóa / khôi phục. Đừng báo lại chính các ca này (đã sửa) — dùng chúng làm mẫu để nghĩ ca mới.
-> - **Bloat và Hiệu năng là hai mục riêng bắt buộc** trong báo cáo (kể cả khi không có phát hiện), mỗi mục một bảng: đã chạy / đo gì, trên dữ liệu nào, số, ID phát hiện. Bloat: `tsc --noUnusedLocals --noUnusedParameters` chạy tạm, `rg` tìm nơi import của từng export, bản đồ `pnpm codemap`, `pnpm lint:deps`, code lặp ≥ 3 nơi, dependency, chunk của `pnpm build:web`; đề xuất refactor ghi cỡ và test nào giữ hành vi. Hiệu năng: **mọi phát hiện P phải có số đo** trên dữ liệu tải `common\load\load-2026-10-12-seed6.p2cbackup` (≈ 1 500 KH, 10 400 lịch hẹn, 54 nhân sự, 103 phân tích AI, có Thùng rác; dùng trong Node qua `importBackup` của `@p2c/db`, trong app qua Cài đặt → Dữ liệu → Nhập backup); so với ngưỡng ở `docs/metrics/phase-6.md` (thao tác màn < 200 ms) hoặc số tham chiếu cùng máy `common\perf\perf-ref.json` (đo ở Home PC, máy chạy lượt này; không so trực tiếp với số đo nền Office Laptop trong `phase-6.md`). Ghi máy và việc gì đang chạy song song. Đo trên exe: chép `common\exe\project2c.exe` vào thư mục của mình, cổng debug khác 9222, theo `e2e/perf/README.md`; không đo khi bên khác đang đo.
+> - **Bloat và Hiệu năng là hai mục riêng bắt buộc** trong báo cáo (kể cả khi không có phát hiện), mỗi mục một bảng: đã chạy / đo gì, trên dữ liệu nào, số, ID phát hiện. Bloat: `tsc --noUnusedLocals --noUnusedParameters` chạy tạm, `rg` tìm nơi import của từng export, bản đồ `pnpm codemap`, `pnpm lint:deps`, code lặp ≥ 3 nơi, dependency, chunk của `pnpm build:web`; đề xuất refactor ghi cỡ và test nào giữ hành vi. Hiệu năng: **mọi phát hiện P phải có số đo** trên dữ liệu tải `common\load\load-2026-10-12-seed6.p2cbackup` (≈ 1 500 KH, 10 400 lịch hẹn, 54 nhân sự, 103 phân tích AI, có Thùng rác; dùng trong Node qua `importBackup` của `@p2c/db`, trong app qua Cài đặt → Dữ liệu → Nhập backup); so với ngưỡng ở `docs/metrics/phase-6.md` (thao tác màn < 200 ms) hoặc số tham chiếu cùng máy `common\perf\perf-ref.json` (đo ở Office Laptop, máy chạy lượt này; cùng máy với số đo nền trong `phase-6.md` nên so được cả với số đó, trừ mục mở app lần đầu đo ở Home PC). Ghi máy và việc gì đang chạy song song. Đo trên exe: chép `common\exe\project2c.exe` vào thư mục của mình, cổng debug khác 9222, theo `e2e/perf/README.md`; không đo khi bên khác đang đo.
 > - **Không cài công cụ mới** (`knip`, `jscpd`, `cargo-bloat`, visualizer… là G4); thấy cần thì ghi đề xuất.
 > - Không bình luận phong cách / đặt tên trừ khi gây lỗi. Không đặt chỉ tiêu số lượng; không nâng mức cho nổi.
 >
