@@ -219,7 +219,7 @@ Lỗi tìm ra ở 6C thành Issue thường; lỗi chặn phát hành gắn `ris
 |---|---|---|
 | Claude (phiên sạch mỗi gói, tuần tự, không subagent) | Owner mở phiên | Reviewer, chỉ đọc, worktree review riêng |
 | Codex | Owner | Reviewer độc lập, chỉ đọc (ADR-0001 M2) |
-| Muse Wonder (Muse Code) | Owner | Reviewer độc lập, chỉ đọc (13/10: đổi từ Muse Spark; DeepSeek v4.1 Flash bỏ — ADR-0001 M5) |
+| Muse Spark 1.3 (Muse Code) | Owner | Reviewer độc lập, chỉ đọc (13/10: DeepSeek v4.1 Flash bỏ, Muse đổi sang Wonder — ADR-0001 M5; 14/10: về lại Spark 1.3 trên Office Laptop — M6) |
 | **Claude (phiên tổng hợp)** | sau khi đủ báo cáo | **Vai chính:** đọc mọi báo cáo, kiểm lại từng phát hiện trên code (đúng / đã biết / sai), gộp trùng, chốt mức, đề xuất hướng giải quyết cho từng vấn đề (kèm phương án khi có nhiều cách), xếp việc sửa thành phương án cho Owner chọn |
 
 Báo cáo của Codex / Muse là **dữ liệu tham khảo**; kết luận "sẵn sàng phát hành" chỉ lấy từ phiên tổng hợp sau khi đã kiểm trên code (bài học Phase 5: DeepSeek / Muse kết luận SẴN SÀNG khi còn 2 lỗi Medium — `docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §7).
@@ -260,7 +260,7 @@ Gói F là chỗ phân tích bloat code và hiệu năng toàn cục (yêu cầu
 
 ### 6.5 Quy tắc
 
-ADR-0001 phụ lục **M4** (cùng PR với spec này): ở review đóng Phase 6, Muse tham gia như Codex (M5, 13/10: bỏ DeepSeek, Muse dùng Muse Wonder) — chỉ đọc, không viết code, báo cáo là dữ liệu tham khảo, không thay review phiên sạch. Không mở Agent tool, không cho agent ngoài viết code; multi-agent thử ở project mới, không ở 2C (Owner 11/10). Bỏ so sánh với Project-2 nên không còn ràng buộc từ `docs/COMPARISON.md` (ADR-0001 phụ lục M3, ADR-0002 Superseded).
+ADR-0001 phụ lục **M4** (cùng PR với spec này): ở review đóng Phase 6, Muse tham gia như Codex (M5, 13/10: bỏ DeepSeek; M6, 14/10: Muse dùng Spark 1.3) — chỉ đọc, không viết code, báo cáo là dữ liệu tham khảo, không thay review phiên sạch. Không mở Agent tool, không cho agent ngoài viết code; multi-agent thử ở project mới, không ở 2C (Owner 11/10). Bỏ so sánh với Project-2 nên không còn ràng buộc từ `docs/COMPARISON.md` (ADR-0001 phụ lục M3, ADR-0002 Superseded).
 
 ## 7. 6E — G7 và phát hành v1.0
 
