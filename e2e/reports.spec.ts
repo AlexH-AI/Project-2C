@@ -104,8 +104,8 @@ test('RE · Năm: Tổng hợp and Theo mốc of 12 months, the months after tod
   await kinds.getByRole('radio', { name: 'Năm' }).click();
   await filter.click();
 
-  await expect(viewing).toContainText('Năm 2026');
-  await expect(viewing).toContainText('· RE ');
+  // NT-TQ-22, NT-BC-09: the year in progress, then its days set off by a dot (mockup 2e).
+  await expect(viewing).toHaveText(/^Đang xem: Năm 2026 · 01\/01 – 15\/09\/2026 · RE \S/);
   await expect(summary).toBeVisible();
   await expect(tables.getByRole('radio')).toHaveText(['Theo mốc']);
   await expect(page.getByRole('table')).toHaveCount(2);

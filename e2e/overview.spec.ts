@@ -82,7 +82,7 @@ test('a new period waits for Lọc, then "Đang xem" changes', async ({ page }) 
 
   await filter.click();
   await expect(pending).toHaveCount(0);
-  await expect(viewing).toHaveText('Đang xem: Năm 2026 01/01 – 15/09/2026 · Toàn bộ');
+  await expect(viewing).toHaveText('Đang xem: Năm 2026 · 01/01 – 15/09/2026 · Toàn bộ');
   await expect(page.getByRole('region', { name: 'Lịch hẹn · cả năm' })).toBeVisible();
   await expect(
     page.getByRole('region', { name: 'Chỉ số của kỳ' }).getByRole('region', { name: 'Chuyển RF' }),

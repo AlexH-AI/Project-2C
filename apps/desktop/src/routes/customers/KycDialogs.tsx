@@ -1,4 +1,4 @@
-import type { ExtractedFact } from '@p2c/ai';
+import { factCode, type ExtractedFact } from '@p2c/ai';
 import { useState } from 'react';
 import {
   confirmKycFact,
@@ -7,6 +7,7 @@ import {
   recordKycNote,
   resolveKycConflict,
   type CustomerRecord,
+  type KycFactRecord,
   type KycNoteFact,
   type KycNoteRecord,
   type KycProfileRecord,
@@ -20,7 +21,6 @@ import {
   kycFieldType,
   resolveConflict,
   type CalendarDate,
-  type KycFact,
   type KycField,
 } from '@p2c/domain';
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
@@ -29,7 +29,9 @@ import { errorMessage, joinParts, t } from '../../i18n';
 import { Actions, ALERT, FailureAlert, useDateField } from './CustomerDialogs';
 import { BADGE, YES_NO } from './CustomerKyc';
 import {
+  currentFactRecords,
   factText,
+  kycAmountRead,
   nextVersionNumber,
   previewKycNote,
   resolveKycOptions,
@@ -88,7 +90,10 @@ function NextVersion({
 
 type FactMode = 'update' | 'conflict';
 
-/** Mockup 7b, 7c: what the trường holds, the value, and update or conflict when it holds one. */
+/**
+ * Mockup 7b, 7c: what the trường holds, each value with its code, the value typed (an amount read
+ * back), and update or conflict when the trường holds one.
+ */
 function FactValue({
   field,
   has,
@@ -99,7 +104,7 @@ function FactValue({
   hint,
 }: {
   field: KycField;
-  has: readonly KycFact[];
+  has: readonly KycFactRecord[];
   value: { readonly text: string; readonly answer: 'yes' | 'no' | null; readonly mode: FactMode };
   onText: (text: string) => void;
   onAnswer: (answer: 'yes' | 'no') => void;
@@ -112,8 +117,14 @@ function FactValue({
         <p className="m-0 text-xs text-warn tabular-nums">
           {t('kycNote.current', {
             values: has
-              .map((fact) => `${factText(fact.value, YES_NO)} (${formatDate(fact.confirmedDate)})`)
-              .join('; '),
+              .map((fact) =>
+                t('kycNote.currentValue', {
+                  value: factText(fact.value, YES_NO),
+                  code: factCode(fact.seq),
+                  date: formatDate(fact.confirmedDate),
+                }),
+              )
+              .join(t('sep.semicolon')),
           })}
         </p>
       )}
@@ -129,7 +140,12 @@ function FactValue({
           help={hint}
         />
       ) : (
-        <TextField label={t('kycNote.value')} value={value.text} onChange={onText} hint={hint} />
+        <TextField
+          label={t('kycNote.value')}
+          value={value.text}
+          onChange={onText}
+          hint={joinParts([kycAmountRead(field, value.text), hint]) || undefined}
+        />
       )}
       {has.length > 0 && (
         <Choices
@@ -180,7 +196,7 @@ export function KycNoteDialog({
 
   const day = date.parsed.ok ? date.parsed.date : today;
   const preview = previewKycNote(profile, versions, facts, day, material);
-  const has = field ? currentFacts(profile, field) : [];
+  const has = field ? currentFactRecords(profile, field) : [];
   const boolean = field !== '' && kycFieldType(field) === 'boolean';
   const last = versions.at(-1);
 
@@ -398,6 +414,7 @@ export function ResolveKycDialog({
               <b>"{factText(option.value, YES_NO)}"</b>
               <span className="text-xs text-fg-3 tabular-nums">
                 {t(option.source === 'SYSTEM' ? 'kycResolve.systemSource' : 'kycResolve.source', {
+                  code: option.code,
                   date: formatDate(option.confirmedDate),
                 })}
               </span>
@@ -451,7 +468,7 @@ export function ConfirmFactDialog({
   const [mode, setMode] = useState<FactMode>('update');
   const [material, setMaterial] = useState(false);
   const [error, setError] = useState<string>();
-  const has = currentFacts(profile, field);
+  const has = currentFactRecords(profile, field);
   const boolean = kycFieldType(field) === 'boolean';
   const value = boolean ? answer === 'yes' : text;
   const conflict = has.length > 0 && mode === 'conflict';

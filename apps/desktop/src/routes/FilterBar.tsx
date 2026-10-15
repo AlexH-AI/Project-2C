@@ -74,8 +74,10 @@ export function FilterBar({
             {t('overview.mtd')}
           </span>
         )}
-        {viewing.range && ` ${viewing.range}`} {t('sep.dot')}{' '}
-        <b className="font-semibold text-fg-2">{viewing.scope}</b>
+        {/* After MTD the range follows the badge; a year's is set off by "·" (mockup 1c, 2e). */}
+        {viewing.range &&
+          (viewing.mtd ? ` ${viewing.range}` : ` ${t('sep.dot')} ${viewing.range}`)}{' '}
+        {t('sep.dot')} <b className="font-semibold text-fg-2">{viewing.scope}</b>
       </p>
     </div>
   );

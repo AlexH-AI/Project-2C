@@ -155,7 +155,8 @@ export function CustomerProfile({ id }: { id: string }) {
         </div>
         <p className="m-0 text-sm text-fg-2 tabular-nums">{joinParts(facts)}</p>
       </section>
-      <div className="grid items-start gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+      {/* Three columns from the default 1 440 × 900 window, as the mockup (DR6-30). */}
+      <div className="grid items-start gap-4 lg:grid-cols-2 wide:grid-cols-3">
         <div className="flex flex-col gap-4">
           <KycCard
             profile={kyc}
@@ -198,7 +199,7 @@ export function CustomerProfile({ id }: { id: string }) {
             onNext={next}
           />
         </div>
-        <div className="lg:col-span-2 2xl:col-span-1">
+        <div className="lg:col-span-2 wide:col-span-1">
           <KycIntelligence
             key={customer.id}
             customerId={customer.id}
