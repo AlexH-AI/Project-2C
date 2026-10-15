@@ -50,7 +50,7 @@ Mỗi lượt dùng **một thư mục mới chỉ để thử**, ví dụ `C:\n
 | `NT-TM` | [Team & nhân sự](#8-team--nhân-sự-nt-tm) | `team.html`, `phase-3-feedback.html` B1 |
 | `NT-CD` | [Cài đặt → Dữ liệu](#9-cài-đặt--dữ-liệu-nt-cd) | `settings-data.html` |
 | `NT-CA` | [Cài đặt → AI](#10-cài-đặt--ai-nt-ca) | `ai.html` §1, §4 (4a–4c) |
-| `NT-TR` | [Cài đặt → Thùng rác](#11-cài-đặt--thùng-rác-nt-tr) | `trash.html` 11a–11e; spec Phase 6 §4.2 (E1–E17) |
+| `NT-TR` | [Cài đặt → Thùng rác](#11-cài-đặt--thùng-rác-nt-tr) | `trash.html` 11a–11e; spec Phase 6 §4.2 (E1–E20) |
 | `NT-EX` | [Exe trên máy thật](#12-exe-trên-máy-thật-nt-ex) | spec Phase 6 §5 mục 3 |
 | `NT-DB` | [Độ bền dữ liệu](#13-độ-bền-dữ-liệu-nt-db) | spec Phase 6 §4.1 (S-2), §5 mục 4 |
 | `NT-HN` · `NT-EV` · `NT-HD` | [Hiệu năng · eval AI thật · hướng dẫn khớp exe](#14-hiệu-năng-eval-ai-thật-hướng-dẫn-nt-hn-nt-ev-nt-hd) | spec Phase 6 §5 mục 5–6, §4.3 |
@@ -289,7 +289,7 @@ Các dòng NT-TM tạo team "Thử NT", TL "TL Thử", RE "RE Thử" để dùng
 
 ## 11. Cài đặt → Thùng rác (`NT-TR`)
 
-Seed demo (exe mới, sau Nạp lại) **không có** bản ghi xóa: Thùng rác trống tới lần xóa đầu tiên. Các dòng dưới dùng bản ghi đã xóa ở NT-LH, NT-KH, NT-HS và người / team tạo ở NT-TM. Ví dụ chuẩn E1–E17 ở spec Phase 6 §4.2; E2 / E3 / E9 / E10 / E14–E16 tự dựng bằng bản ghi mới không có dữ liệu nghiệp vụ; E13 dựng bằng bản sao backup (NT-TR-17); E17 không gây được bằng tay (xem 11g ở [đối chiếu mockup](#đối-chiếu-mockup--mã-dòng)).
+Seed demo (exe mới, sau Nạp lại) **không có** bản ghi xóa: Thùng rác trống tới lần xóa đầu tiên. Các dòng dưới dùng bản ghi đã xóa ở NT-LH, NT-KH, NT-HS và người / team tạo ở NT-TM. Ví dụ chuẩn E1–E20 ở spec Phase 6 §4.2; E2 / E3 / E9 / E10 / E14–E16 tự dựng bằng bản ghi mới không có dữ liệu nghiệp vụ; E13 dựng bằng bản sao backup (NT-TR-17); E17 không gây được bằng tay (xem 11g ở [đối chiếu mockup](#đối-chiếu-mockup--mã-dòng)).
 
 | Mã | Màn / mockup | Thao tác | Kết quả mong đợi | Đạt / Lỗi | Ghi chú |
 |---|---|---|---|---|---|
@@ -310,6 +310,9 @@ Seed demo (exe mới, sau Nạp lại) **không có** bản ghi xóa: Thùng rá
 | NT-TR-15 | 11d · E14, E16 | Xóa RE Thử, TL Thử, rồi team Thử NT; tạo team mới tên "Thử NT"; mở Thùng rác; đổi tên team mới "Thử NT 2"; khôi phục team, rồi RE Thử | RE Thử: "Khôi phục team Thử NT trước."; team: "Đã có team Thử NT — đổi tên team kia trước." Sau khi đổi tên: hộp team "Team vào lại Team & nhân sự. Thành viên đã xóa chưa về kèm — khôi phục từng người sau."; khôi phục xong có **Mở Team & nhân sự**; rồi khôi phục được RE Thử | | |
 | NT-TR-16 | E12 · HĐ | Dòng HĐ của NT-HS-18 → Khôi phục… → Khôi phục | Hộp "Khôi phục HĐ nộp dd/mm/yyyy?": FYP nộp, "Đã phát hành dd/mm/yyyy · FYP" nếu có, "HĐ vào lại hồ sơ KH và chỉ số theo ngày nộp / phát hành."; sau khi khôi phục HĐ có lại ở hồ sơ và chỉ số | | |
 | NT-TR-17 | 11d · E13 (từ file nhập) | Sau NT-TR-16: xóa một HĐ **Đã nộp, chưa phát hành**; Xuất backup; mở bản sao bằng Notepad, Ctrl+F `"policies"` rồi tìm tiếp `"deleted_at":"` (HĐ đã xóa duy nhất); trong cùng bản ghi (ngay trước đó) sửa `"submitted_date":"yyyy-mm-dd"` thành ngày mai; nhập file; mở Thùng rác | Nhập được (HĐ đã xóa không bị kiểm ngày lúc nhập). Dòng HĐ: nút Khôi phục… tắt, "Ngày nộp dd/mm/yyyy sau hôm nay." | | HĐ đã phát hành không dùng được: ngày nộp sau ngày phát hành làm file bị từ chối |
+| NT-TR-18 | 11c · E18 | KH V ở **N3**: tạo lịch hôm qua và lịch hôm nay (**+ Lịch hẹn**); lịch hôm qua → Ghi kết quả Đã gặp **N3 giữ nguyên**; lịch hôm nay → Ghi kết quả Đã gặp **N2**; lịch hôm qua → Sửa kết quả → **Xóa lịch hẹn**; Thùng rác → khôi phục lịch đó | Hộp xóa: "Cuộc hẹn này không đổi nhóm KH". Dòng lịch ở Thùng rác: nút Khôi phục… bật. Hộp "Khôi phục lịch hẹn …?": Kết quả "Đã gặp · nhóm sau N3", "Không đổi nhóm KH" + "Lịch hẹn vào lại danh sách Lịch hẹn và hồ sơ KH theo ngày của lịch." Sau khi khôi phục: lịch hôm qua về "Đã gặp", KH vẫn N2; ở Tổng quan (Lọc), chỉ số Đã gặp về như trước khi xóa, Chuyển RF không đổi | | Trước T-231 (#592) nút tắt với "Nhóm KH đã đổi ngày …" |
+| NT-TR-19 | 11c · E19 | KH U ở **N2**: tạo lịch hôm nay, Ghi kết quả Đã gặp **N2 giữ nguyên**; Hồ sơ KH → **Chuyển nhóm** N2 → N3, ngày mặc định (hôm nay); Sửa kết quả lịch đó → **Xóa lịch hẹn**; Thùng rác → khôi phục lịch | Hộp khôi phục: "Không đổi nhóm KH". Sau khi khôi phục: lịch về "Đã gặp", KH vẫn N3, Dòng thời gian hồ sơ KH không thêm chuyển nhóm (chỉ "N2 → N3 · chuyển tay"), Chuyển RF không đổi | | |
+| NT-TR-20 | 11d · E20 | KH T ở **N3**: tạo lịch hôm nay, Ghi kết quả Đã gặp **N2**; Sửa kết quả → **Xóa lịch hẹn** (KH về N3); Hồ sơ KH → **Chuyển nhóm** N3 → N1, ngày mặc định (hôm nay); mở Thùng rác | Dòng lịch tắt nút, "Nhóm KH đã đổi ngày <hôm nay>, sau ngày cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10)." (chuyển tay cùng ngày cuộc hẹn nhưng ghi sau lúc xóa tính như đổi nhóm ngày sau) | | |
 
 ## 12. Exe trên máy thật (`NT-EX`)
 
@@ -400,5 +403,5 @@ Mọi mockup và mọi hộp trong [`docs/design/mockups/README.md`](../design/m
 | `ai.html` §2 | 2a → AI-01 · 2b → AI-02 · 2c → AI-03 · 2d, 2e → AI-21, 22 · 2f → AI-23 · 2g → AI-04, 05 · 2h → AI-07, 08 · 2i → AI-13 · 2j → AI-09 · 2k → AI-13 · 2l → AI-23, CA-06 |
 | `ai.html` §3 | 3a → AI-06, 07 · 3b → AI-16 · 3c, 3d → AI-17 · 3e → AI-19 · 3f → AI-18 |
 | `ai.html` §4 | 4a → CA-02, 08 · 4b → CA-01 · 4c → AI-23, CA-06 · 4d → AI-01 · 4e → AI-10, 14 · 4f (không copy được do quyền clipboard) → chỉ kiểm khi gặp · 4g → AI-12 · 4h → AI-11 · 4i → AI-15 |
-| `trash.html` | 11a → TR-01–03 · 11b → TR-05, 06 · 11c → TR-08, 09 · 11d → TR-06, 10–15, 17 · 11e → TR-04 (Thùng rác trống), TR-05, 15 (khôi phục xong) · 11f → KH-14, LH-33, 34, HS-18, TM-14 · 11g (khóa ghi S-2, E17) → không gây được bằng tay vì hộp "Đang nhập…" / "Đang nạp lại…" chặn mọi thao tác; phần AI kiểm ở DB-06, phần còn lại có test `app-data.test.ts` |
+| `trash.html` | 11a → TR-01–03 · 11b → TR-05, 06 · 11c → TR-08, 09, 18, 19 · 11d → TR-06, 10–15, 17, 20 · 11e → TR-04 (Thùng rác trống), TR-05, 15 (khôi phục xong) · 11f → KH-14, LH-33, 34, HS-18, TM-14 · 11g (khóa ghi S-2, E17) → không gây được bằng tay vì hộp "Đang nhập…" / "Đang nạp lại…" chặn mọi thao tác; phần AI kiểm ở DB-06, phần còn lại có test `app-data.test.ts` |
 | `table-more.html` | 1–3 → CH-06, 07 · 4 → CH-08 |
