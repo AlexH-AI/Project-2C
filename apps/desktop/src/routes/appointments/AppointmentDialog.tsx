@@ -77,7 +77,8 @@ export function AppointmentDialog({
   const today = app.today();
   const [customer, setCustomer] = useState(fixed);
   const [query, setQuery] = useState('');
-  const [reId, setReId] = useState(from?.reId ?? fixed?.reId ?? '');
+  // The customer's RE, who may have taken over since `from` was booked (T-233).
+  const [reId, setReId] = useState(fixed?.reId ?? from?.reId ?? '');
   const [dateText, setDateText] = useState(from ? dayText(from.date, today) : '');
   const [timeText, setTimeText] = useState(from?.time ?? '');
   const [trigger, setTrigger] = useState<AppointmentTrigger | ''>(from?.triggerType ?? '');

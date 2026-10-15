@@ -1,4 +1,4 @@
-import { stageOn } from '@p2c/domain';
+import { stageOn, type CalendarDate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
   changeStageManually,
@@ -7,13 +7,23 @@ import {
   listCustomers,
   listStageTransitions,
   previewCustomerProfile,
+  previewHandover,
   restoreCustomer,
   softDeleteCustomer,
   updateCustomerProfile,
 } from './customers';
-import { recordMeetingOutcome, scheduleAppointment, softDeleteAppointment } from './appointments';
+import {
+  getAppointment,
+  listAppointments,
+  recordMeetingOutcome,
+  restoreAppointment,
+  scheduleAppointment,
+  softDeleteAppointment,
+} from './appointments';
+import { exportBackup, importBackup } from './backup';
 import { getKycProfile, listKycVersions } from './kyc';
-import { softDeletePerson, updatePerson } from './team';
+import { getPolicy, submitPolicy } from './policies';
+import { createPerson, softDeletePerson, updatePerson } from './team';
 import { codeOf, d, errorOf, setup } from './test-support';
 
 describe('customers', () => {
@@ -124,6 +134,91 @@ describe('customers', () => {
     expect(codeOf(() => updateCustomerProfile(db, 'nobody', { name: 'X' }))).toBe(
       'CUSTOMER_NOT_FOUND',
     );
+  });
+
+  // Owner 15/10/2026 (deep review round 1 §9 Q3, T-233): what has an outcome or is past, and the
+  // policies, keep counting for the RE recorded on them (ADR-0007).
+  it('hands the planned appointments over to a new RE, and nothing else (5c)', async () => {
+    const { db, re, otherRe, tl } = await setup();
+    const customer = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 1) });
+    const schedule = (date: CalendarDate) =>
+      scheduleAppointment(db, {
+        customerId: customer.id,
+        reId: re.id,
+        date,
+        triggerType: 'REFERRAL',
+        coordinatorIds: [tl.id],
+      });
+    const today = schedule(d(26, 9));
+    const nextWeek = schedule(d(3, 10));
+    const unrecorded = schedule(d(25, 9));
+    const met = recordMeetingOutcome(db, schedule(d(15, 9)).id, {
+      status: 'MET',
+      stageAfter: 'N3',
+      nextStep: 'Gọi lại',
+    });
+    const cancelled = recordMeetingOutcome(db, schedule(d(5, 10)).id, { status: 'CANCELLED' });
+    const deleted = schedule(d(10, 10));
+    softDeleteAppointment(db, deleted.id);
+    const policy = submitPolicy(db, {
+      customerId: customer.id,
+      reId: re.id,
+      submittedDate: d(16, 9),
+      submittedFyp: 1_000_000,
+    });
+
+    expect(previewHandover(db, customer.id, otherRe.id)).toBe(2);
+    expect(previewHandover(db, customer.id, re.id)).toBe(0);
+    updateCustomerProfile(db, customer.id, { reId: otherRe.id });
+
+    const reOf = new Map(listAppointments(db, customer.id).map((a) => [a.id, a.reId]));
+    expect(reOf).toEqual(
+      new Map([
+        [met.id, re.id],
+        [unrecorded.id, re.id],
+        [today.id, otherRe.id],
+        [nextWeek.id, otherRe.id],
+        [cancelled.id, re.id],
+      ]),
+    );
+    expect(getAppointment(db, today.id)?.coordinatorIds).toEqual([tl.id]);
+    expect(getPolicy(db, policy.id)?.reId).toBe(re.id);
+    expect(previewHandover(db, customer.id, otherRe.id)).toBe(0);
+    // The trash gives an appointment back as it was deleted (spec Phase 6 TR-3).
+    restoreAppointment(db, deleted.id);
+    expect(getAppointment(db, deleted.id)?.reId).toBe(re.id);
+    // Backup rule 5 holds: every live record is on a live RE.
+    await expect(importBackup(exportBackup(db), { now: db.now })).resolves.toBeDefined();
+  });
+
+  it('hands over only when the RE changes, and saves nothing when refused', async () => {
+    const { db, team, re, otherRe, tl } = await setup();
+    const third = createPerson(db, { name: 'Chi', role: 'RE', teamId: team.id });
+    const customer = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 1) });
+    // Booked for another RE than the customer's, which the dialog allows (mockups 6a, 6h).
+    const booked = scheduleAppointment(db, {
+      customerId: customer.id,
+      reId: otherRe.id,
+      date: d(30, 9),
+      triggerType: 'REFERRAL',
+    });
+
+    updateCustomerProfile(db, customer.id, { name: 'Lan Anh', birthDate: { year: 1985 } });
+    expect(getAppointment(db, booked.id)?.reId).toBe(otherRe.id);
+    expect(previewHandover(db, customer.id, otherRe.id)).toBe(0);
+    expect(previewHandover(db, customer.id, third.id)).toBe(1);
+    expect(codeOf(() => updateCustomerProfile(db, customer.id, { reId: tl.id }))).toBe(
+      'RE_REQUIRED',
+    );
+    expect(
+      codeOf(() => updateCustomerProfile(db, customer.id, { reId: third.id, name: ' ' })),
+    ).toBe('NAME_REQUIRED');
+    expect(getAppointment(db, booked.id)?.reId).toBe(otherRe.id);
+
+    updateCustomerProfile(db, customer.id, { reId: otherRe.id });
+    updateCustomerProfile(db, customer.id, { reId: re.id });
+    expect(getAppointment(db, booked.id)?.reId).toBe(re.id);
+    expect(codeOf(() => previewHandover(db, 'nobody', re.id))).toBe('CUSTOMER_NOT_FOUND');
   });
 
   it('previews the KYC note, facts and version that saving the profile records (5c)', async () => {

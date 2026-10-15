@@ -29,6 +29,7 @@ export {
   listCustomers,
   listStageTransitions,
   previewCustomerProfile,
+  previewHandover,
   restoreCustomer,
   softDeleteCustomer,
   updateCustomerProfile,

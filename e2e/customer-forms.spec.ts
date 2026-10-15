@@ -146,7 +146,7 @@ test('editing the profile says what saving records in KYC (5c)', async ({ page }
   const birth = dialog.getByRole('textbox', { name: /^Ngày sinh/ });
   const kyc = dialog.getByRole('status');
   await expect(dialog.getByRole('combobox', { name: 'RE phụ trách' })).toHaveAccessibleDescription(
-    'Đổi RE: lịch hẹn và HĐ cũ vẫn tính cho RE đã ghi trên từng bản ghi.',
+    'Đổi RE: lịch hẹn Dự kiến chuyển sang RE mới; lịch hẹn khác và HĐ vẫn tính cho RE đã ghi trên từng bản ghi.',
   );
 
   // Start from a year alone, saved, so the preview below does not depend on the seed.
@@ -174,6 +174,77 @@ test('editing the profile says what saving records in KYC (5c)', async ({ page }
   await expect(page.getByRole('region', { name: 'Dòng thời gian' })).toContainText(
     'Hồ sơ KH: ngày sinh 12/03/1984',
   );
+});
+
+// NT-KH-09 with appointments still ahead (T-233): the new RE takes them over; a past one stays.
+test('changing the RE hands the planned appointments over, not the past ones (5c, 6h)', async ({
+  page,
+}) => {
+  const name = 'Bàn Giao Thử';
+  const created = await openCreate(page);
+  await created.getByRole('textbox', { name: 'Họ tên' }).fill(name);
+  const picker = created.getByRole('combobox', { name: 'RE phụ trách' });
+  const [, oldRe = '', newRe = ''] = await picker.locator('option').allTextContents();
+  await picker.selectOption({ label: oldRe });
+  await created.getByRole('button', { name: 'Lưu KH' }).click();
+  await page.getByRole('link', { name: new RegExp(name) }).click();
+  const dialog = page.getByRole('dialog');
+  for (const [day, time] of [
+    ['14/9', ''],
+    ['20/9', '10:00'],
+  ] as const) {
+    await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+    await dialog.getByRole('textbox', { name: /^Ngày/ }).fill(day);
+    await dialog.getByRole('textbox', { name: /^Giờ/ }).fill(time);
+    await dialog.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
+    await dialog.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+    await expect(dialog).toHaveCount(0);
+  }
+
+  await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
+  const re = dialog.getByRole('combobox', { name: 'RE phụ trách' });
+  const handover = dialog.getByRole('status');
+  await expect(handover).toHaveCount(0);
+  await re.selectOption({ label: newRe });
+  await expect(handover).toHaveText('Khi lưu: 1 lịch hẹn Dự kiến chuyển sang RE mới.');
+  await re.selectOption({ label: oldRe });
+  await expect(handover).toHaveCount(0);
+  await re.selectOption({ label: newRe });
+  await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+
+  // 6h from the past appointment: the RE in charge now, not the one on it.
+  await page
+    .getByRole('region', { name: 'Lịch hẹn', exact: true })
+    .getByRole('button', { name: /^Hẹn tiếp sau lịch 14\/09/ })
+    .click();
+  await expect(dialog.getByRole('heading', { level: 2 })).toHaveText('Lịch hẹn tiếp theo');
+  await expect(
+    dialog.getByRole('combobox', { name: 'RE', exact: true }).locator('option:checked'),
+  ).toHaveText(newRe);
+  await dialog.getByRole('button', { name: 'Hủy' }).click();
+
+  await page.goto('/#/appointments');
+  await page
+    .getByRole('radiogroup', { name: 'Loại kỳ' })
+    .getByRole('radio', { name: 'Ngày' })
+    .click();
+  const row = page
+    .getByRole('table', { name: 'Danh sách lịch hẹn' })
+    .locator('tbody tr')
+    .filter({ hasText: name });
+  for (const [date, label, status] of [
+    ['20/09/2026', newRe, 'Dự kiến'],
+    ['14/09/2026', oldRe, 'Chưa ghi kết quả'],
+  ] as const) {
+    await page
+      .getByRole('region', { name: /^Lịch tháng/ })
+      .getByRole('button', { name: new RegExp(`^${date}:`) })
+      .click();
+    await expect(row).toContainText(status);
+    // The RE column holds the name alone.
+    await expect(row.locator('td:nth-child(4)')).toHaveText(label.split(' · ')[0]!);
+  }
 });
 
 test('refuses a customer with wrong fields and saves nothing', async ({ page }) => {
