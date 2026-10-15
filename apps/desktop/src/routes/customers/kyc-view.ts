@@ -17,10 +17,14 @@ import {
   compareDates,
   confirmFact,
   evaluateKycGate,
+  formatVnd,
+  formatVndCompact,
+  isRfTransition,
   KYC_CATEGORIES,
   KYC_FIELDS,
   markConflict,
   nextKycVersion,
+  parseVnd,
   type CalendarDate,
   type KycCategory,
   type KycFact,
@@ -30,6 +34,7 @@ import {
   type KycValue,
   type StageTransition,
 } from '@p2c/domain';
+import { t } from '../../i18n';
 
 export interface KycCategoryRow<F extends KycFact = KycFact> {
   readonly category: KycCategory;
@@ -105,6 +110,31 @@ export function factText(value: KycValue, words: { yes: string; no: string }): s
   return String(value);
 }
 
+/** The trường that hold an amount of money; their value is kept as typed, a text. */
+const AMOUNT_FIELDS: ReadonlySet<KycField> = new Set([
+  'annualIncome',
+  'totalAssets',
+  'liabilities',
+]);
+
+/**
+ * Mockup 7b / 7c (NT-HS-05): what a value typed for a money trường reads as, like every money
+ * input — "6.000.000.000 ₫ (6 tỷ)", the full form alone when the compact one is the same. Null for
+ * another trường, or for words `parseVnd` cannot read ("Khoảng 12 tỷ"), which are kept all the same.
+ */
+export function kycAmountRead(field: KycField, text: string): string | null {
+  if (!AMOUNT_FIELDS.has(field)) return null;
+  const parsed = parseVnd(text);
+  if (!parsed.ok) return null;
+  const amount = formatVnd(parsed.amount);
+  const compact = formatVndCompact(parsed.amount);
+  return compact === amount ? amount : t('kycNote.amountRead', { amount, compact });
+}
+
+/** `currentFacts` of a stored profile: each keeps the seq it is coded by (mockup 7c "Đang có"). */
+export const currentFactRecords = (profile: KycProfileRecord, field: KycField): KycFactRecord[] =>
+  profile.facts.filter((fact) => fact.field === field && fact.status !== 'superseded');
+
 export type TimelineEvent = { readonly id: string; readonly date: CalendarDate } & (
   | { readonly kind: 'stage'; readonly transition: StageTransition }
   | { readonly kind: 'note'; readonly note: KycNoteRecord }
@@ -116,6 +146,16 @@ export type TimelineEvent = { readonly id: string; readonly date: CalendarDate }
       readonly number: number | null;
     }
 );
+
+/**
+ * Mockup customer.html "Dòng thời gian": how a stage change came about — the customer created, a
+ * change by hand (never an RF), or a meeting's outcome, one RF when it moves N4 / N3 up to N2 / N1.
+ */
+export function stageCause(transition: StageTransition): 'created' | 'manual' | 'rf' | 'noRf' {
+  if (transition.from === null) return 'created';
+  if (transition.appointmentId === null) return 'manual';
+  return isRfTransition(transition.from, transition.to) ? 'rf' : 'noRf';
+}
 
 /**
  * Records carry a day, not a time: on one day a version comes after the note it was saved with,
@@ -229,6 +269,8 @@ export function previewKycNote(
 
 export interface KycResolveOption {
   readonly factId: string;
+  /** `F{seq}`, as on the KYC facts list (NT-HS-08). */
+  readonly code: string;
   readonly value: KycValue;
   /** `SYSTEM`: set from the hồ sơ KH; `NOTE`: confirmed from a ghi chú KYC. */
   readonly source: 'NOTE' | 'SYSTEM';
@@ -245,6 +287,7 @@ export function resolveKycOptions(profile: KycProfileRecord, field: KycField): K
       const system = profile.notes.find((note) => note.id === fact.noteId)?.source === 'SYSTEM';
       return {
         factId: fact.id,
+        code: factCode(fact.seq),
         value: fact.value,
         source: system ? 'SYSTEM' : 'NOTE',
         confirmedDate: fact.confirmedDate,

@@ -21,7 +21,14 @@ import { joinParts, t } from '../../i18n';
 import { withTime } from '../appointments/appointment-form';
 import { statusLabel } from '../appointments/appointments-view';
 import { NextButton } from './CustomerAppointments';
-import { factAnchor, factText, kycOverview, kycTimeline, type KycCategoryRow } from './kyc-view';
+import {
+  factAnchor,
+  factText,
+  kycOverview,
+  kycTimeline,
+  stageCause,
+  type KycCategoryRow,
+} from './kyc-view';
 
 const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 const HEADING = 'm-0 text-sm font-medium text-heading';
@@ -183,6 +190,25 @@ const badge = (stage: StageTransition['to']) => (
   <StageBadge stage={stage} label={t(`stage.${stage}`)} />
 );
 
+/** "tạo KH", "chuyển tay · không tính RF", or "sau cuộc gặp" and whether it counted one RF. */
+function StageCause({ transition }: { transition: StageTransition }) {
+  const cause = stageCause(transition);
+  return (
+    <span className="text-xs text-fg-3">
+      {cause === 'created' || cause === 'manual' ? (
+        t(`customer.${cause}`)
+      ) : (
+        <>
+          {t('customer.byMeeting')} {t('sep.dot')}{' '}
+          <span className={cause === 'rf' ? 'text-accent' : undefined}>
+            {t(`timeline.${cause}`)}
+          </span>
+        </>
+      )}
+    </span>
+  );
+}
+
 /** A meeting's own line: the trigger while planned, else its note and next step. */
 function meetingText(a: AppointmentRecord): string {
   if (a.status === 'SCHEDULED') {
@@ -254,26 +280,23 @@ export function Timeline({
               </>
             )}
             {event.kind === 'stage' && (
-              <span className="flex items-center gap-2">
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 {event.transition.from && badge(event.transition.from)}
                 {event.transition.from && t('sep.arrow')}
                 {badge(event.transition.to)}
-                <span className="text-xs text-fg-3">
-                  {t(
-                    event.transition.from === null
-                      ? 'customer.created'
-                      : event.transition.appointmentId
-                        ? 'customer.byMeeting'
-                        : 'customer.manual',
-                  )}
-                </span>
+                <StageCause transition={event.transition} />
               </span>
             )}
             {event.kind === 'note' && renderNote(event.note)}
             {event.kind === 'version' && (
-              <span className="flex items-center gap-2">
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <b>{event.version.summary}</b>
-                <span className="text-xs text-fg-3">
+                {event.version.material && (
+                  <span className={`${BADGE} whitespace-nowrap text-accent`}>
+                    {t('timeline.material')}
+                  </span>
+                )}
+                <span className="text-xs whitespace-nowrap text-fg-3">
                   {t('timeline.version', { number: event.number })}
                 </span>
               </span>

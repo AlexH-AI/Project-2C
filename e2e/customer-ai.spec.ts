@@ -446,7 +446,7 @@ test('AI trích xuất on a trường already held: Xác nhận updates one valu
   // Cập nhật: the new value replaces the one held.
   await proposals.filter({ hasText: 'Số con' }).getByRole('button', { name: 'Xác nhận' }).click();
   const kids = page.getByRole('dialog', { name: '+ Dữ kiện · Số con' });
-  await expect(kids).toContainText('Đang có: 3 (15/09/2026)');
+  await expect(kids).toContainText('Đang có: 3 · F4 (15/09/2026)');
   await expect(kids.getByRole('radio', { name: 'Cập nhật', exact: true })).toBeChecked();
   await kids.getByRole('button', { name: 'Xác nhận dữ kiện' }).click();
   await expect(kids).toBeHidden();
@@ -457,7 +457,7 @@ test('AI trích xuất on a trường already held: Xác nhận updates one valu
   // Đánh dấu mâu thuẫn: both values stay, the cốt lõi trường blocks the gate until resolved.
   await proposals.getByRole('button', { name: 'Xác nhận' }).click();
   const married = page.getByRole('dialog', { name: '+ Dữ kiện · Tình trạng hôn nhân' });
-  await expect(married).toContainText('Đang có: Độc thân (15/09/2026)');
+  await expect(married).toContainText('Đang có: Độc thân · F3 (15/09/2026)');
   await married.getByRole('radio', { name: /Đánh dấu mâu thuẫn/ }).check();
   await married.getByRole('button', { name: 'Xác nhận dữ kiện' }).click();
   await expect(married).toBeHidden();

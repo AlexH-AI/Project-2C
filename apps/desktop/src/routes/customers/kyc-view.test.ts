@@ -14,14 +14,17 @@ import {
 } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
+  currentFactRecords,
   factCodeTarget,
   factInEffect,
   factText,
+  kycAmountRead,
   kycOverview,
   kycTimeline,
   nextVersionNumber,
   previewKycNote,
   resolveKycOptions,
+  stageCause,
 } from './kyc-view';
 
 const day = (month: number, dayOfMonth: number): CalendarDate => ({
@@ -98,6 +101,72 @@ describe('factText', () => {
     expect(factText(false, words)).toBe('Không');
     expect(factText(1984, words)).toBe('1984');
     expect(factText('Bác sĩ', words)).toBe('Bác sĩ');
+  });
+});
+
+describe('kycAmountRead (NT-HS-05, mockup 7b / 7c)', () => {
+  it('reads an amount typed for a money trường as every money input does', () => {
+    expect(kycAmountRead('annualIncome', '6 tỷ')).toBe('6.000.000.000 ₫ (6 tỷ)');
+    expect(kycAmountRead('totalAssets', '1 tỷ 2')).toBe('1.200.000.000 ₫ (1,2 tỷ)');
+    expect(kycAmountRead('liabilities', '800tr')).toBe('800.000.000 ₫ (800 tr)');
+  });
+
+  it('gives the full form once when the compact one is the same', () => {
+    expect(kycAmountRead('liabilities', '0')).toBe('0 ₫');
+    expect(kycAmountRead('annualIncome', '500k')).toBe('500.000 ₫');
+  });
+
+  it('reads nothing the parser cannot, nor any other trường', () => {
+    expect(kycAmountRead('totalAssets', 'Khoảng 12 tỷ')).toBeNull();
+    expect(kycAmountRead('annualIncome', '1–2 tỷ')).toBeNull();
+    expect(kycAmountRead('annualIncome', '')).toBeNull();
+    expect(kycAmountRead('liabilities', '-5 tỷ')).toBeNull();
+    expect(kycAmountRead('goalHorizon', '2029')).toBeNull();
+    expect(kycAmountRead('assetAllocation', '6 tỷ')).toBeNull();
+  });
+});
+
+describe('currentFactRecords (mockup 7c "Đang có")', () => {
+  const record = (seq: number, field: KycFact['field'], status: KycFact['status']) => ({
+    ...fact(field, `V${seq}`, status),
+    seq,
+  });
+
+  it('keeps the facts in effect on the trường with their seq, in recording order', () => {
+    const profile: KycProfileRecord = {
+      notes: [],
+      facts: [
+        record(1, 'childrenCount', 'superseded'),
+        record(2, 'childrenCount', 'conflict'),
+        record(3, 'residence', 'active'),
+        record(4, 'childrenCount', 'conflict'),
+      ],
+    };
+
+    expect(currentFactRecords(profile, 'childrenCount').map((f) => f.seq)).toEqual([2, 4]);
+    expect(currentFactRecords(profile, 'residence').map((f) => f.seq)).toEqual([3]);
+    expect(currentFactRecords(profile, 'occupation')).toEqual([]);
+  });
+});
+
+describe('stageCause (mockup customer.html, Dòng thời gian)', () => {
+  const change = (
+    from: StageTransition['from'],
+    to: StageTransition['to'],
+    appointmentId: string | null,
+  ): StageTransition => ({ id: 't', customerId: 'c1', from, to, date: day(9, 1), appointmentId });
+
+  it('tells a new customer and a change by hand, never an RF', () => {
+    expect(stageCause(change(null, 'N4', null))).toBe('created');
+    expect(stageCause(change('N3', 'N2', null))).toBe('manual');
+  });
+
+  it('counts one RF for a meeting that moves N4 / N3 up to N2 / N1, no other', () => {
+    expect(stageCause(change('N3', 'N2', 'a1'))).toBe('rf');
+    expect(stageCause(change('N4', 'N1', 'a1'))).toBe('rf');
+    expect(stageCause(change('N2', 'N1', 'a1'))).toBe('noRf');
+    expect(stageCause(change('N4', 'N3', 'a1'))).toBe('noRf');
+    expect(stageCause(change('N2', 'N3', 'a1'))).toBe('noRf');
   });
 });
 
@@ -314,8 +383,22 @@ describe('resolveKycOptions', () => {
     };
 
     expect(resolveKycOptions(profile, 'childrenCount')).toEqual([
-      { factId: 'f1', value: 2, source: 'NOTE', confirmedDate: day(9, 1), disabled: false },
-      { factId: 'f2', value: 3, source: 'NOTE', confirmedDate: day(9, 10), disabled: false },
+      {
+        factId: 'f1',
+        code: 'F1',
+        value: 2,
+        source: 'NOTE',
+        confirmedDate: day(9, 1),
+        disabled: false,
+      },
+      {
+        factId: 'f2',
+        code: 'F2',
+        value: 3,
+        source: 'NOTE',
+        confirmedDate: day(9, 10),
+        disabled: false,
+      },
     ]);
   });
 
@@ -329,8 +412,22 @@ describe('resolveKycOptions', () => {
     };
 
     expect(resolveKycOptions(profile, 'birthYear')).toEqual([
-      { factId: 'f1', value: 1984, source: 'SYSTEM', confirmedDate: day(9, 1), disabled: false },
-      { factId: 'f2', value: 1985, source: 'NOTE', confirmedDate: day(9, 5), disabled: true },
+      {
+        factId: 'f1',
+        code: 'F1',
+        value: 1984,
+        source: 'SYSTEM',
+        confirmedDate: day(9, 1),
+        disabled: false,
+      },
+      {
+        factId: 'f2',
+        code: 'F2',
+        value: 1985,
+        source: 'NOTE',
+        confirmedDate: day(9, 5),
+        disabled: true,
+      },
     ]);
   });
 

@@ -101,8 +101,7 @@ test('a meeting met N3 → N2 moves the customer, the timeline says after the me
     .filter({ hasText: 'sau cuộc gặp' })
     .first();
   await expect(moved).toContainText(TODAY);
-  await expect(moved).toContainText('N3');
-  await expect(moved).toContainText('N2');
+  await expect(moved).toContainText('N3→N2sau cuộc gặp · tính 1 RF');
 });
 
 test('another status than met has no stage after; a past next day saves nothing', async ({

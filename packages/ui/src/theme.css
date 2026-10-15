@@ -59,6 +59,10 @@
   /* A part of a bar narrower than this hides its count (`@max-bar-label:`, mockup phase-3-feedback B6) */
   --container-bar-label: 22px;
 
+  /* The default window, 1 440 wide (tauri.conf.json): from it the customer profile has the three
+     columns of mockup customer.html (`wide:`, DR6-30) */
+  --breakpoint-wide: 90rem;
+
   --radius-*: initial;
   --radius-sm: var(--corner-sm);
   --radius-md: var(--corner-md);

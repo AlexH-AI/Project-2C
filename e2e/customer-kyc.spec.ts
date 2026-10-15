@@ -16,6 +16,31 @@ async function createCustomer(page: Page) {
   await page.getByRole('link', { name: new RegExp(NAME) }).click();
 }
 
+// DR6-30: three columns from the default window, as the mockup; narrower, the AI panel goes below.
+test('the profile has three columns at 1 440 × 900, two at 1 100', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await createCustomer(page);
+  const box = async (name: string) => {
+    const found = await page.getByRole('region', { name, exact: true }).boundingBox();
+    if (!found) throw new Error(`No region ${name}`);
+    return { x: Math.round(found.x), y: Math.round(found.y) };
+  };
+
+  const kyc = await box('Dữ kiện KYC');
+  const timeline = await box('Dòng thời gian');
+  const ai = await box('KYC Intelligence');
+  expect(kyc.x).toBeLessThan(timeline.x);
+  expect(timeline.x).toBeLessThan(ai.x);
+  expect([timeline.y, ai.y]).toEqual([kyc.y, kyc.y]);
+
+  await page.setViewportSize({ width: 1100, height: 900 });
+  await expect
+    .poll(async () => (await box('KYC Intelligence')).x)
+    .toBe((await box('Dữ kiện KYC')).x);
+  expect((await box('Dòng thời gian')).x).toBeGreaterThan((await box('Dữ kiện KYC')).x);
+  expect((await box('KYC Intelligence')).y).toBeGreaterThan((await box('Dòng thời gian')).y);
+});
+
 test('a new customer: birth year and gender from the profile, gate KYC_INSUFFICIENT, timeline', async ({
   page,
 }) => {
@@ -41,7 +66,8 @@ test('a new customer: birth year and gender from the profile, gate KYC_INSUFFICI
   ).toBeVisible();
 
   await expect(timeline).toHaveText([
-    '15/09/2026Cập nhật KYC 15/09/2026kyc v1',
+    // The first version is always material (ADR-0008 7), labelled so (NT-HS-11).
+    '15/09/2026Cập nhật KYC 15/09/2026thay đổi quan trọngkyc v1',
     '15/09/2026Ghi chú hệ thốngHồ sơ KH: năm sinh 1984; giới tính Nữ',
     '15/09/2026N4tạo KH',
   ]);
@@ -57,7 +83,7 @@ test('a new customer: birth year and gender from the profile, gate KYC_INSUFFICI
   await expect(kyc).toContainText('Giới tính: Nam');
   await expect(timeline).toHaveText([
     '15/09/2026Cập nhật KYC 15/09/2026kyc v2',
-    '15/09/2026Cập nhật KYC 15/09/2026kyc v1',
+    '15/09/2026Cập nhật KYC 15/09/2026thay đổi quan trọngkyc v1',
     '15/09/2026Ghi chú hệ thốngHồ sơ KH: giới tính Nam',
     '15/09/2026Ghi chú hệ thốngHồ sơ KH: năm sinh 1984; giới tính Nữ',
     '15/09/2026N4tạo KH',
@@ -76,6 +102,15 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it 
   let dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${NAME}` });
   await dialog.getByRole('textbox', { name: 'Ghi chú' }).fill('Đã kết hôn, 2 con; chủ DN.');
   await expect(dialog.getByText('Chỉ thêm ghi chú, không tạo phiên bản KYC.')).toBeVisible();
+  // NT-HS-05 (mockup 7b): an amount typed for a money trường reads back; words that are no amount
+  // read nothing and are kept as typed.
+  await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Thu nhập năm' });
+  const income = dialog.getByRole('textbox', { name: 'Giá trị' });
+  await income.fill('6 tỷ');
+  await expect(income).toHaveAccessibleDescription('6.000.000.000 ₫ (6 tỷ)');
+  await income.fill('Khoảng 12 tỷ');
+  await expect(income).toHaveAccessibleDescription('');
+  await expect(dialog).not.toContainText('₫');
   // DR-21: a value typed for one trường is not carried over to the next one picked.
   await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Nơi sinh sống' });
   await dialog.getByRole('textbox', { name: 'Giá trị' }).fill('Huế');
@@ -101,7 +136,9 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it 
 
   await expect(kyc).toContainText('3/8 hạng mục · v2');
   await expect(kyc).toContainText('Cổng KYC PROFILE_DISCOVERY');
-  await expect(timeline.first()).toHaveText('15/09/2026Cập nhật KYC 15/09/2026kyc v2');
+  await expect(timeline.first()).toHaveText(
+    '15/09/2026Cập nhật KYC 15/09/2026thay đổi quan trọngkyc v2',
+  );
   await expect(timeline.filter({ hasText: /^15\/09\/2026Ghi chú KYC/ })).toHaveText(
     '15/09/2026Ghi chú KYCAI trích xuấtĐã kết hôn, 2 con; chủ DN.',
   );
@@ -111,7 +148,8 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it 
   dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${NAME}` });
   await dialog.getByRole('textbox', { name: 'Ghi chú' }).fill('Vợ nói nhà có 3 con.');
   await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Số con' });
-  await expect(dialog.getByText('Đang có: 2 (15/09/2026)')).toBeVisible();
+  // Mockup 7c: the value in effect with its code (F1, F2 are the birth year and gender).
+  await expect(dialog.getByText('Đang có: 2 · F4 (15/09/2026)')).toBeVisible();
   await dialog.getByRole('textbox', { name: 'Giá trị' }).fill('3');
   await dialog.getByRole('radio', { name: /Đánh dấu mâu thuẫn/ }).check();
 
@@ -146,6 +184,10 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it 
   dialog = page.getByRole('dialog', { name: 'Giải quyết · Số con' });
   await dialog.getByRole('button', { name: 'Giải quyết', exact: true }).click();
   await expect(dialog.getByRole('alert')).toHaveText('Chọn giá trị đúng.');
+  // NT-HS-08: each value with its code, its ghi chú and day.
+  const values = dialog.getByRole('radiogroup', { name: 'Giá trị đúng' });
+  await expect(values).toContainText('"2"F4 · ghi chú 15/09/2026');
+  await expect(values).toContainText('"3"F6 · ghi chú 15/09/2026');
   await dialog.getByRole('radio', { name: /^"3"/ }).check();
   await expect(dialog.getByText('Sau khi lưu: KYC v4 · cổng KYC PROFILE_DISCOVERY')).toBeVisible();
   await dialog.getByRole('button', { name: 'Giải quyết', exact: true }).click();
