@@ -14,6 +14,7 @@ import {
   createTeam,
   getSetting,
   listAiAnalyses,
+  listKycVersions,
   listPeople,
   putSetting,
   recordKycNote,
@@ -36,7 +37,7 @@ import {
   type WebTools,
 } from './ai-analysis';
 import type { OpenCodeClient } from './ai-tauri';
-import { openAppData, type StoragePort } from './app-data';
+import { openAppData, type AppData, type StoragePort } from './app-data';
 
 const TODAY = calendarDate(2026, 9, 27);
 
@@ -670,13 +671,22 @@ describe('ChatGPT web in the app (spec Phase 5 §3.1)', () => {
     const setup = await withCustomer({ reportError: vi.fn(), web: recording.web }, options.storage);
     const outcome = await startChatGptWeb(setup.app, setup.customer.id);
     if (outcome.kind !== 'session') throw new Error(`no session: ${outcome.kind}`);
-    return { ...setup, ...recording, outcome, session: outcome.session };
+    const web = { session: outcome.session, generation: outcome.generation };
+    return { ...setup, ...recording, outcome, web, session: outcome.session };
   }
 
   it('copies the web@1 message, opens chatgpt.com, holds no AI request and saves nothing', async () => {
     const { outcome, copied, opened, ai, rows, app, customer } = await started();
 
-    expect(outcome).toMatchObject({ copied: true, opened: true });
+    // Tied to the data and the KYC version it was taken from (DR6-15, mockup 4e).
+    const version = listKycVersions(app.db(), customer.id).at(-1)!;
+    expect(outcome).toMatchObject({
+      copied: true,
+      opened: true,
+      generation: app.generation(),
+      kycVersion: version.seq,
+    });
+    expect(outcome.session.kycVersionId).toBe(version.id);
     expect(outcome.takenAt).toBeInstanceOf(Date);
     expect(copied).toEqual([outcome.message]);
     expect(outcome.message).toMatch(/^Tin nhắn này có hai phần/);
@@ -714,9 +724,9 @@ describe('ChatGPT web in the app (spec Phase 5 §3.1)', () => {
   });
 
   it('saves a pasted answer that passes as CHATGPT_WEB, with no model, reasoning or tokens', async () => {
-    const { app, session, rows } = await started();
+    const { app, web, session, rows } = await started();
 
-    expect(saveChatGptAnswer(app, session, await goodAnswer(session))).toEqual({
+    expect(saveChatGptAnswer(app, web, await goodAnswer(session))).toEqual({
       kind: 'saved',
       status: 'ACCEPTED',
     });
@@ -734,15 +744,17 @@ describe('ChatGPT web in the app (spec Phase 5 §3.1)', () => {
   });
 
   it('gives the issues and the retry message on a first wrong paste, then saves the second', async () => {
-    const { app, session, rows } = await started();
+    const { app, web, session, rows } = await started();
 
-    const retry = saveChatGptAnswer(app, session, 'Xin lỗi, tôi không chắc.');
+    const retry = saveChatGptAnswer(app, web, 'Xin lỗi, tôi không chắc.');
     if (retry.kind !== 'retry') throw new Error(retry.kind);
     expect(retry.issues).toMatchObject([{ code: 'V1', path: '$' }]);
     expect(retry.retryMessage).toContain('- V1 tại $');
     expect(rows()).toEqual([]);
 
-    expect(saveChatGptAnswer(app, retry.session, await goodAnswer(session))).toEqual({
+    expect(
+      saveChatGptAnswer(app, { ...web, session: retry.session }, await goodAnswer(session)),
+    ).toEqual({
       kind: 'saved',
       status: 'ACCEPTED',
     });
@@ -750,11 +762,11 @@ describe('ChatGPT web in the app (spec Phase 5 §3.1)', () => {
   });
 
   it('saves REJECTED with the last paste after two wrong ones', async () => {
-    const { app, session, rows } = await started();
+    const { app, web, rows } = await started();
 
-    const retry = saveChatGptAnswer(app, session, 'Lần 1');
+    const retry = saveChatGptAnswer(app, web, 'Lần 1');
     if (retry.kind !== 'retry') throw new Error(retry.kind);
-    expect(saveChatGptAnswer(app, retry.session, 'Lần 2')).toEqual({
+    expect(saveChatGptAnswer(app, { ...web, session: retry.session }, 'Lần 2')).toEqual({
       kind: 'saved',
       status: 'REJECTED',
     });
@@ -764,10 +776,10 @@ describe('ChatGPT web in the app (spec Phase 5 §3.1)', () => {
   });
 
   it('counts no attempt for a blank paste or one over 20 000 characters', async () => {
-    const { app, session, rows } = await started();
+    const { app, web, rows } = await started();
 
-    expect(saveChatGptAnswer(app, session, ' \n ')).toEqual({ kind: 'unusable', reason: 'EMPTY' });
-    expect(saveChatGptAnswer(app, session, 'x'.repeat(20_001))).toEqual({
+    expect(saveChatGptAnswer(app, web, ' \n ')).toEqual({ kind: 'unusable', reason: 'EMPTY' });
+    expect(saveChatGptAnswer(app, web, 'x'.repeat(20_001))).toEqual({
       kind: 'unusable',
       reason: 'TOO_LONG',
     });
@@ -775,18 +787,18 @@ describe('ChatGPT web in the app (spec Phase 5 §3.1)', () => {
   });
 
   it('ties the result to the version taken on click, so a KYC change meanwhile leaves it STALE', async () => {
-    const { app, session, rows, confirm } = await started();
+    const { app, web, session, rows, confirm } = await started();
     confirm('occupation', 'Giám đốc');
 
-    saveChatGptAnswer(app, session, await goodAnswer(session));
+    saveChatGptAnswer(app, web, await goodAnswer(session));
     expect(rows()[0]).toMatchObject({ state: 'STALE', provider: 'CHATGPT_WEB' });
   });
 
   it('discards the answer, without reporting a bug, once the customer is deleted', async () => {
-    const { app, session, rows, customer } = await started();
+    const { app, web, session, rows, customer } = await started();
     app.run((d) => softDeleteCustomer(d, customer.id));
 
-    expect(saveChatGptAnswer(app, session, await goodAnswer(session))).toEqual({
+    expect(saveChatGptAnswer(app, web, await goodAnswer(session))).toEqual({
       kind: 'discarded',
     });
     expect(app.ai.reportError).not.toHaveBeenCalled();
@@ -794,14 +806,39 @@ describe('ChatGPT web in the app (spec Phase 5 §3.1)', () => {
     expect(rows()).toEqual([]);
   });
 
+  const storedRows = (app: AppData) =>
+    app.db().sqlite.exec('SELECT COUNT(*) FROM ai_analyses')[0]!.values[0]![0];
+
+  it.each([
+    ['Nạp lại', (app: AppData) => app.reloadDemoData()],
+    [
+      'an import of a backup of the same data, its IDs alike',
+      async (app: AppData) => {
+        const backup = await app.exportBackup();
+        await app.importBackup(await app.readBackup(backup.text));
+      },
+    ],
+  ])(
+    'discards the answer once the data is replaced by %s while the session is open (DR6-15)',
+    async (_, replace) => {
+      const { app, web, session } = await started();
+      const answer = await goodAnswer(session);
+
+      await replace(app);
+      expect(saveChatGptAnswer(app, web, answer)).toEqual({ kind: 'discarded' });
+      expect(app.ai.reportError).not.toHaveBeenCalled();
+      expect(storedRows(app)).toBe(0);
+    },
+  );
+
   it('refuses Kiểm tra và lưu while the data is being replaced, saving nothing and reporting no bug (S2-2)', async () => {
     const { storage, fail } = heldBackupStorage();
-    const { app, session, rows } = await started({ storage });
+    const { app, web, session, rows } = await started({ storage });
     const answer = await goodAnswer(session);
     const generation = app.generation();
 
     const reloading = app.reloadDemoData();
-    expect(saveChatGptAnswer(app, session, answer)).toEqual({ kind: 'replacing' });
+    expect(saveChatGptAnswer(app, web, answer)).toEqual({ kind: 'replacing' });
     expect(app.ai.reportError).not.toHaveBeenCalled();
 
     // The replace fails: the same data, so the same session saves as usual (S2-4).
@@ -809,17 +846,17 @@ describe('ChatGPT web in the app (spec Phase 5 §3.1)', () => {
     await expect(reloading).rejects.toThrow('disk full');
     expect(app.generation()).toBe(generation);
     expect(rows()).toEqual([]);
-    expect(saveChatGptAnswer(app, session, answer)).toEqual({ kind: 'saved', status: 'ACCEPTED' });
+    expect(saveChatGptAnswer(app, web, answer)).toEqual({ kind: 'saved', status: 'ACCEPTED' });
     expect(rows()).toMatchObject([{ provider: 'CHATGPT_WEB', attempts: 1 }]);
   });
 
   it('turns a bug into a failure the panel can show, and reports it', async () => {
-    const { app, session } = await started();
+    const { app, web, session } = await started();
     const done = { content: '', parsed: null, issues: [] };
     // A session already over: `checkWebAnswer` throws.
     const over = { ...session, attempts: [done, done] };
 
-    expect(saveChatGptAnswer(app, over, 'x')).toEqual({ kind: 'failed' });
+    expect(saveChatGptAnswer(app, { ...web, session: over }, 'x')).toEqual({ kind: 'failed' });
     expect(app.ai.reportError).toHaveBeenCalledOnce();
   });
 

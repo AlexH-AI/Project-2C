@@ -154,12 +154,42 @@ describe('createMockAdapter', () => {
     const note = 'Chị nói hai vợ chồng đã kết hôn 10 năm, có 2 bé. Em trai chị còn độc thân.';
     const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
     const output = extractionOutputSchema.parse((await complete({ note, fields })).value);
+    // The brother's "độc thân" is not the KH's (DR6-19).
     expect(output.facts).toEqual([
       { field: 'maritalStatus', value: 'Đã kết hôn', quote: 'kết hôn' },
       { field: 'childrenCount', value: '2', quote: '2 bé' },
-      { field: 'maritalStatus', value: 'Độc thân', quote: 'độc thân' },
     ]);
     for (const fact of output.facts) expect(note).toContain(fact.quote);
+  });
+
+  it.each([
+    'KH có một con trai đang sống độc thân tại Hà Nội.',
+    'Em trai KH còn độc thân.',
+    'KH không có 2 con như người quen tưởng.',
+    'KH không còn độc thân.',
+    'KH muốn kiểm tra 9 con số về thu nhập và tài sản trước buổi gặp.',
+  ])(
+    'proposes nothing from %j: about someone else, said not to be, or no child (DR6-19)',
+    async (note) => {
+      const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
+      const output = extractionOutputSchema.parse((await complete({ note, fields })).value);
+      expect(output.facts).toEqual([]);
+    },
+  );
+
+  it('reads each sentence on its own: a relative named in one leaves the KH of another', async () => {
+    const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
+    const both = [
+      { field: 'maritalStatus', value: 'Đã kết hôn', quote: 'kết hôn' },
+      { field: 'childrenCount', value: '2', quote: '2 con' },
+    ];
+    for (const note of [
+      'KH đã kết hôn, có 2 con.',
+      'KH đã kết hôn, có 2 con. Em trai KH còn độc thân.',
+    ]) {
+      const output = extractionOutputSchema.parse((await complete({ note, fields })).value);
+      expect(output.facts).toEqual(both);
+    }
   });
 
   it.each([

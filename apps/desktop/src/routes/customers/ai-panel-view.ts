@@ -36,7 +36,12 @@ import {
   type KycGateResult,
   type KycGateState,
 } from '@p2c/domain';
-import type { AnalysisOutcome, WebAnswerOutcome } from '../../data/ai-analysis';
+import type {
+  AnalysisOutcome,
+  AppWebSession,
+  WebAnswerOutcome,
+  WebStartOutcome,
+} from '../../data/ai-analysis';
 import { t } from '../../i18n';
 import { aiFailure, GENERAL_FAILURE, type AiFailure } from '../ai-error-view';
 import { factInEffect } from './kyc-view';
@@ -311,9 +316,13 @@ export function panelDone(
   return ended?.kind === 'saved' ? ended.status : null;
 }
 
-/** This customer's ChatGPT web session, kept by the panel only, never stored (§3.1 item 4). */
-export interface AiPanelWeb {
-  readonly session: WebSession;
+/**
+ * This customer's ChatGPT web session, kept by the panel only, never stored (§3.1 item 4); the
+ * data replaced since its input was taken ends it (DR6-15).
+ */
+export interface AiPanelWeb extends AppWebSession {
+  /** "kyc v<n>" of the input taken (mockup 4e). */
+  readonly kycVersion: number;
   readonly message: string;
   readonly takenAt: Date;
   /** The text a copy failed on, shown read-only to copy by hand (mockup 4f). */
@@ -335,17 +344,14 @@ export interface AiPanelWeb {
 }
 
 /** The session opened by a click (`kind: 'session'` of `startChatGptWeb`). */
-export function webOpened(started: {
-  readonly session: WebSession;
-  readonly message: string;
-  readonly takenAt: Date;
-  readonly copied: boolean;
-  readonly opened: boolean;
-}): AiPanelWeb {
-  const { session, message, takenAt, copied, opened } = started;
+export function webOpened(
+  started: Omit<Extract<WebStartOutcome, { kind: 'session' }>, 'kind'>,
+): AiPanelWeb {
+  const { session, generation, kycVersion, message, takenAt, copied, opened } = started;
   const manual = copied ? null : message;
   const fresh = { retry: null, refused: null, failed: null };
-  return { session, message, takenAt, manual, openFailed: !opened, ...fresh };
+  const taken = { session, generation, kycVersion, message, takenAt };
+  return { ...taken, manual, openFailed: !opened, ...fresh };
 }
 
 /** Where the session goes after Kiểm tra và lưu: null once saved or discarded, it is over. */
@@ -384,11 +390,14 @@ export function webFailure({ failed }: AiPanelWeb) {
   return failed ? ({ text: t('aiError.GENERAL'), tone: 'danger' } as const) : null;
 }
 
-/** Mockup 4e: "kyc v<n> · <mode>@<n>+web@1 · chụp dd/mm hh:mm" of the input taken. */
-export function webChip(web: AiPanelWeb, versions: readonly VersionRef[]) {
+/**
+ * Mockup 4e: "kyc v<n> · <mode>@<n>+web@1 · chụp dd/mm hh:mm" of the input taken, read from it,
+ * so a version no longer there never breaks the profile (DR6-15).
+ */
+export function webChip(web: AiPanelWeb) {
   const { mode } = web.session.input;
   return {
-    version: versionNumber(web.session, versions),
+    version: web.kycVersion,
     prompt: `${ANALYSIS_PROMPTS[mode].version}+${WEB_WRAPPER.version}`,
     at: dayAndTime(web.takenAt),
   };

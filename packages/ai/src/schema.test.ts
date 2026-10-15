@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { extractionPrompt } from './prompts/extraction';
+import { ANALYSIS_PROMPTS } from './run';
 import {
   analysisInputSchema,
   analysisOutputSchema,
   discoveryOutputSchema,
   extractionOutputSchema,
   factCode,
+  PROMPT_VERSIONS,
 } from './schema';
 
 const item = (text: string, ...evidence: string[]) => ({ text, evidence });
@@ -112,6 +115,16 @@ describe('analysisOutputSchema', () => {
     expect(text.length).toBeGreaterThan(300);
     const output = { ...analysis(), themes: [item(text, 'F1')] };
     expect(analysisOutputSchema.safeParse(output).success).toBe(true);
+  });
+
+  // G5 §10.4: 1–300 characters once the format characters are dropped (DR6-16).
+  it.each([
+    ['295 letters and 10 U+200B', `${'a'.repeat(290)}${ZWSP.repeat(10)}${'a'.repeat(5)}`, []],
+    ['300 letters after a U+200B and a space', `${ZWSP} ${'a'.repeat(300)}`, []],
+    ['301 letters after a U+200B', `${ZWSP}${'a'.repeat(301)}`, ['themes.0.text']],
+  ])('counts no format character in the length: %s → %j', (_, text, errors) => {
+    const output = { ...analysis(), themes: [item(text, 'F1')] };
+    expect(errorsOf(analysisOutputSchema.safeParse(output))).toEqual(errors);
   });
 
   it('rejects the same evidence twice', () => {
@@ -330,6 +343,16 @@ describe('analysisInputSchema', () => {
   it('rejects two facts with one code', () => {
     const facts = [fact('F1'), fact('F1', '2026-08-01')];
     expect(analysisInputSchema.safeParse({ ...input(), facts }).success).toBe(false);
+  });
+});
+
+describe('PROMPT_VERSIONS', () => {
+  it('is the version of each prompt, as the seed of db writes it (DR6-18)', () => {
+    expect(PROMPT_VERSIONS).toEqual({
+      analysis: ANALYSIS_PROMPTS.analysis.version,
+      discovery: ANALYSIS_PROMPTS.discovery.version,
+      extraction: extractionPrompt.version,
+    });
   });
 });
 

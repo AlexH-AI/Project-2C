@@ -99,15 +99,18 @@ export type AnalysisInput = z.infer<typeof analysisInputSchema>;
 /** Format characters (U+200B, U+00AD…) are invisible: a string of them only is empty. */
 const FORMAT_CHARS = /\p{Cf}/gu;
 
+/** What a string shows: no format character, no white space at either end. */
+const visible = (s: string) => s.replace(FORMAT_CHARS, '').trim();
+
 /**
- * Every string the AI writes: once trimmed, 1–300 characters counted in NFC (250 characters
- * written NFD are 250), not only format characters (spec §6.2, G5 §10.4).
+ * Every string the AI writes, trimmed: what it shows is 1–300 characters counted in NFC (spec §6.2,
+ * G5 §10.4). 250 characters written NFD are 250; format characters count for nothing (DR6-16).
  */
 const text = z
   .string()
   .trim()
-  .refine((s) => s.replace(FORMAT_CHARS, '').trim() !== '', { message: 'chuỗi rỗng', abort: true })
-  .refine((s) => Array.from(s.normalize('NFC')).length <= 300, 'quá 300 ký tự');
+  .refine((s) => visible(s) !== '', { message: 'chuỗi rỗng', abort: true })
+  .refine((s) => Array.from(visible(s).normalize('NFC')).length <= 300, 'quá 300 ký tự');
 
 /**
  * A text of analysis / discovery also has a letter: the "…" of the prompt's format example is not
@@ -282,6 +285,17 @@ export function buildAnalysisInput(
 }
 
 // ---- the Mock's answers (spec §10) -------------------------------------------
+
+/**
+ * The version of each prompt (`prompts/<mode>.ts`), here too for the seed of `db`, which may import
+ * only this module: its Mock analyses carry the version the app writes (DR6-18). A test keeps both
+ * the same.
+ */
+export const PROMPT_VERSIONS = {
+  analysis: 'analysis@2',
+  discovery: 'discovery@2',
+  extraction: 'extraction@1',
+} as const satisfies Record<AiMode, string>;
 
 /** `count` distinct codes from position `start`, wrapping round. */
 function cite(codes: readonly string[], start: number, count: number): string[] {

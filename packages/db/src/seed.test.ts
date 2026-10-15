@@ -4,6 +4,7 @@ import {
   KYC_FIELD_LABELS,
   mockAnalysisOutput,
   mockDiscoveryOutput,
+  PROMPT_VERSIONS,
 } from '@p2c/ai/schema';
 import {
   APPOINTMENT_STATUSES,
@@ -76,8 +77,9 @@ const DEMO_ROW_COUNTS = {
   stage_transitions: 3309,
   teams: 3,
 };
-// T-232 moved it with one more read of the seed's ticking clock per stage change (stamps and ids).
-const DEMO_HASH = 'b93cb801ce988786f7f6cee3a85da30c5b153a93825ba8eacee7358108d4017a';
+// T-232 moved it with one more read of the seed's ticking clock per stage change (stamps and ids);
+// T-237 with the prompt version of the Mock analyses (`@2`, DR6-18).
+const DEMO_HASH = 'de61c9758e0608b948a1d771629e8608fda0751d09c15ebd57516ec3e44b7878';
 
 async function seeded(seed: number, anchorDate = ANCHOR) {
   const persist = vi.fn();
@@ -238,7 +240,8 @@ describe('seedDemoData', () => {
       expect(analyses.some((a) => a.state === 'STALE' && a.reminder !== null)).toBe(true);
       for (const analysis of analyses) {
         expect(analysis).toMatchObject({ status: 'ACCEPTED', provider: 'MOCK', attempts: 1 });
-        expect(analysis.promptVersion).toBe(`${analysis.mode}@1`);
+        // The version the app's prompt has now, as its own analyses carry it (DR6-18).
+        expect(analysis.promptVersion).toBe(PROMPT_VERSIONS[analysis.mode]);
         expect(formatIsoDate(analysis.date) < '2026-09-15').toBe(true);
         // Each code is `F{seq}` of a fact of the customer, sent under the app's label (prompts §1.1).
         const fieldOf = new Map(

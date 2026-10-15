@@ -195,6 +195,31 @@ describe('the JS ↔ Rust AI contract', () => {
     expect(sent.sort()).toEqual([...known, 'AI_OPEN_BROWSER'].sort());
   });
 
+  // A ceiling moved on one side only shows in the exe: `AI_BAD_REQUEST` for every call (DR6-61).
+  it('asks no more max_tokens than Rust takes, and counts the messages to the ceiling Rust has', () => {
+    const number = (source: string, pattern: RegExp) =>
+      Number(pattern.exec(source)![1]!.replaceAll('_', ''));
+    const prompts = new URL('../../../../packages/ai/src/prompts/', import.meta.url);
+    const maxTokens = readdirSync(prompts)
+      .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
+      .flatMap((file) => [
+        ...readFileSync(new URL(file, prompts), 'utf8').matchAll(/maxTokens: ([\d_]+),/g),
+      ])
+      .map(([, value]) => Number(value!.replaceAll('_', '')));
+    // analysis, discovery, extraction and Kiểm tra kết nối.
+    expect(maxTokens).toHaveLength(4);
+    expect(Math.max(...maxTokens)).toBeLessThanOrEqual(
+      number(ai, /const MAX_TOKENS: \w+ = ([\d_]+);/),
+    );
+    const run = readFileSync(
+      new URL('../../../../packages/ai/src/run.ts', import.meta.url),
+      'utf8',
+    );
+    expect(number(run, /const MAX_MESSAGE_CHARS = ([\d_]+);/)).toBe(
+      number(ai, /const MAX_MESSAGE_CHARS: \w+ = ([\d_]+);/),
+    );
+  });
+
   it('types the answer of ai_complete as Rust sends it, null where Rust has an Option', () => {
     const adapter = readFileSync(
       new URL('../../../../packages/ai/src/adapter.ts', import.meta.url),

@@ -192,6 +192,29 @@ describe('validateOutput — V3 to V6', () => {
     expect(codesOf('needs', 'Hỏi KH về Luật sư')).toEqual([]);
   });
 
+  // G5 §8.4: "KH", "RE" and "sư" in any case, "kỷ" and "quy" each on its own (DR6-16, DR6-61).
+  it.each([
+    'Giữ luật Kh tự đặt khi chi tiêu',
+    'Theo luật Re đặt cho buổi gặp',
+    'KH tin vào quy luật Thị trường',
+    'Giữ kỷ luật Thép của KH',
+  ])('V6 lets "luật" through before KH / RE or after kỷ / quy: "%s"', (text) => {
+    expect(codesOf('needs', text)).toEqual([]);
+  });
+
+  it('V6 still catches the name of a law that only starts like KH', () => {
+    expect(codesOf('needs', 'Theo Luật Kinh doanh bảo hiểm')).toEqual(['V6']);
+    expect(codesOf('needs', 'Theo Luật Khoa học và Công nghệ')).toEqual(['V6']);
+  });
+
+  // G5 §7 item 6: only V5 is lifted for "Thông tin tham khảo" (DR6-61).
+  it.each([
+    ['V4', 'KH có thể tuổi Tý, đã có hợp đồng Prudential'],
+    ['V6', 'KH có thể tuổi Tý, như Điều 35 nói'],
+  ])('%s still checks personalityNotes: "%s"', (code, text) => {
+    expect(codesOf('personalityNotes', text)).toEqual([code]);
+  });
+
   it('V6 catches document numbers', () => {
     expect(codesOf('needs', 'Xem 08/2022/QH15')).toEqual(['V6']);
     expect(codesOf('needs', 'Theo TT-BTC mới')).toEqual(['V6']);

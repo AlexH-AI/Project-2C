@@ -2,8 +2,8 @@
  * Mock provider (spec Phase 5 §10, D-1 item 6): for demos and e2e, only when chosen in Settings.
  * Nothing random: the answer is built from the input message alone, with fixed sentences, so the
  * same input always gives the same output. Analysis and discovery cite only the codes of the input's
- * facts list and its missing hạng mục; extraction recognises a few simple phrases, for the trường of
- * the input's `fields` list only.
+ * facts list and its missing hạng mục; extraction recognises a few simple phrases said of the KH,
+ * for the trường of the input's `fields` list only.
  *
  * The input is the first `user` message, a JSON block: `{ mode, facts, missingCategories, … }` for
  * analysis / discovery, `{ note, fields }` for extraction (prompts §1.1, §4.1).
@@ -74,8 +74,8 @@ const EXTRACTION_PATTERNS: readonly {
   // Narrow on purpose (CX-A4): what may mean something else gives no proposal.
   {
     field: 'childrenCount',
-    // Not "cháu nội / ngoại": grandchildren.
-    pattern: /(?<!\p{N})(\d{1,2})\s+(?:con|bé|cháu)(?!\p{L})(?!\s+(?:nội|ngoại)(?!\p{L}))/gu,
+    // Not "cháu nội / ngoại" (grandchildren) nor "con số" (figures, DR6-19).
+    pattern: /(?<!\p{N})(\d{1,2})\s+(?:con|bé|cháu)(?!\p{L})(?!\s+(?:nội|ngoại|số)(?!\p{L}))/gu,
     value: (match) => match[1]!,
   },
   {
@@ -95,13 +95,40 @@ function allowedFields(value: unknown): string[] {
     .filter((field): field is string => typeof field === 'string');
 }
 
+/** Someone other than the KH: named before a phrase in its sentence, the phrase is about them. */
+const SOMEONE_ELSE =
+  /(?<!\p{L})(?:con|cháu|em trai|em gái|anh trai|chị gái|bố|mẹ|cha|bạn|người quen|đồng nghiệp|người thân|họ hàng)(?!\p{L})/iu;
+
+/** Said not to be: before a phrase in its clause. */
+const NEGATION = /(?<!\p{L})(?:không|chưa|chẳng)(?!\p{L})/iu;
+
+/** Where the sentence (or clause) holding `at` starts: right after the last `ends` mark before it. */
+function startOf(note: string, at: number, ends: RegExp): number {
+  let start = at;
+  while (start > 0 && !ends.test(note[start - 1]!)) start--;
+  return start;
+}
+
+/**
+ * Whether the phrase at `at` says something of the KH (DR6-19): no one else named before it in its
+ * sentence ("Em trai KH còn độc thân", "KH có một con trai đang sống độc thân"), no negation before
+ * it in its clause ("KH không có 2 con"). Narrow, as the patterns are.
+ */
+function aboutTheKh(note: string, at: number): boolean {
+  const sentence = note.slice(startOf(note, at, /[.!?;\n]/), at);
+  const clause = note.slice(startOf(note, at, /[.!?;,\n]/), at);
+  return !SOMEONE_ELSE.test(sentence) && !NEGATION.test(clause);
+}
+
 function extraction(note: string, fields: readonly string[]): ExtractionOutput {
   const patterns = EXTRACTION_PATTERNS.filter(({ field }) => fields.includes(field));
   const found = patterns.flatMap(({ field, pattern, value }) =>
-    [...note.matchAll(pattern)].map((match) => ({
-      at: match.index,
-      fact: { field, value: value(match), quote: match[0] },
-    })),
+    [...note.matchAll(pattern)]
+      .filter((match) => aboutTheKh(note, match.index))
+      .map((match) => ({
+        at: match.index,
+        fact: { field, value: value(match), quote: match[0] },
+      })),
   );
   return {
     facts: found
