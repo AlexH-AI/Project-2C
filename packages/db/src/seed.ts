@@ -9,6 +9,7 @@
 import { buildAnalysisInput, mockAnalysisOutput, mockDiscoveryOutput } from '@p2c/ai/schema';
 import {
   calendarDate,
+  compareDates,
   evaluateKycGate,
   isPipelineStage,
   KYC_FIELDS,
@@ -20,6 +21,7 @@ import {
   type KycField,
   type KycValue,
   type Person,
+  type StageTransition,
   type Vnd,
 } from '@p2c/domain';
 import { recordAiAnalysis } from './ai-analyses';
@@ -33,6 +35,7 @@ import {
 import {
   changeStageManually,
   createCustomer,
+  isStageOfDay,
   listCustomers,
   listStageTransitions,
   softDeleteCustomer,
@@ -392,16 +395,31 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
       return new Set([...share(items), ...own].map((item) => item.id));
     };
     // What a delete takes back as it is (D7): a met appointment while its stage change is the
-    // customer's latest, never a "Dời lịch" one (#171) nor the one that replaced it.
+    // customer's latest and no later meeting kept the stage it moved to (T-232), never a "Dời
+    // lịch" one (#171) nor the one that replaced it.
     const transitions = listStageTransitions(db);
-    const latest = new Map(transitions.map((t) => [t.customerId, t.appointmentId]));
+    const latest = new Map(transitions.map((t) => [t.customerId, t]));
     const caused = new Set(transitions.map((t) => t.appointmentId));
-    const deletable = listAppointments(db).filter(
-      (a) =>
+    const appointments = listAppointments(db);
+    const keptAfter = (move: StageTransition) => {
+      const rest = transitions.filter((t) => t.customerId === move.customerId && t !== move);
+      return appointments.some(
+        (m) =>
+          m.customerId === move.customerId &&
+          m.status === 'MET' &&
+          !caused.has(m.id) &&
+          compareDates(m.date, move.date) >= 0 &&
+          !isStageOfDay(rest, m.date, m.stageAfter!),
+      );
+    };
+    const deletable = appointments.filter((a) => {
+      const move = latest.get(a.customerId)!;
+      return (
         a.status !== 'RESCHEDULED' &&
         a.rescheduledFromId === null &&
-        (!caused.has(a.id) || latest.get(a.customerId) === a.id),
-    );
+        (!caused.has(a.id) || (move.appointmentId === a.id && !keptAfter(move)))
+      );
+    });
     for (const id of pick(deletable)) softDeleteAppointment(db, id);
     for (const id of pick(listPolicies(db))) softDeletePolicy(db, id);
     for (const { id } of leaving) softDeleteCustomer(db, id);

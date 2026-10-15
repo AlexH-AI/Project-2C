@@ -40,6 +40,21 @@ export const DB_ERROR_CODES = [
   'TRANSITION_NOT_LATEST',
   /** A transition dated before the customer's latest; params `date` (that latest one's, as shown). */
   'TRANSITION_BEFORE_LATEST',
+  /**
+   * A transition dated before a met appointment of the customer, which recorded the stage of its
+   * own day (T-232); params `date` (the latest such meeting's, as shown).
+   */
+  'TRANSITION_BEFORE_MEETING',
+  /**
+   * The stage move of a meeting withdrawn while a later met appointment kept the stage it moved to
+   * (D7, T-232); params `date` (that meeting's, as shown).
+   */
+  'STAGE_KEPT_BY_MEETING',
+  /**
+   * A met appointment that moved no stage restored once the customer's stage on its day changed
+   * while it was deleted (T-232); params `date` (its day, as shown).
+   */
+  'STAGE_NOT_ON_DAY',
   'APPOINTMENT_NOT_FOUND',
   'APPOINTMENT_NOT_SCHEDULED',
   /** A reschedule to the same day and time as the old appointment (mockup 6e). */

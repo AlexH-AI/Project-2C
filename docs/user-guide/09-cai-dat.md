@@ -139,8 +139,8 @@ Thùng rác trống thì ghi "Thùng rác trống".
    - **KH**: nhóm, RE, và mục **Hiện lại cùng KH**: số lịch hẹn (đã gặp, lần tính RF), HĐ, ghi chú KYC, phân tích AI. Lịch hẹn / HĐ đã xóa riêng trước khi xóa KH vẫn ở Thùng rác, khôi phục riêng sau.
    - **Lịch hẹn** Đã gặp đã chuyển nhóm KH (lúc xóa, app hủy chuyển nhóm đó): kết quả và nhóm sau cuộc gặp, nhóm KH hiện tại, rồi một trong hai:
      - "Nhóm KH: … → … từ …": app ghi lại chuyển nhóm của cuộc gặp vào đúng ngày cuộc hẹn, và cho biết có tính RF không.
-     - "Nhóm KH giữ …": KH đã ở nhóm sau cuộc gặp nên không ghi thêm chuyển nhóm; cuộc hẹn này không tính RF.
-   - **Lịch hẹn** Đã gặp giữ nguyên nhóm (hộp xóa đã ghi "Cuộc hẹn này không đổi nhóm KH"): kết quả và nhóm sau cuộc gặp, rồi "Không đổi nhóm KH". Lịch về đúng như lúc xóa, kể cả khi nhóm KH đã đổi sau đó.
+     - "Nhóm KH giữ …": KH đã ở nhóm sau cuộc gặp ngay trong ngày cuộc hẹn nên không ghi thêm chuyển nhóm; cuộc hẹn này không tính RF. KH tới nhóm đó vào ngày sau thì lịch không khôi phục được (nhóm KH đã đổi sau ngày cuộc hẹn).
+   - **Lịch hẹn** Đã gặp giữ nguyên nhóm (hộp xóa đã ghi "Cuộc hẹn này không đổi nhóm KH"): kết quả và nhóm sau cuộc gặp, rồi "Không đổi nhóm KH". Lịch về đúng như lúc xóa, kể cả khi nhóm KH đã đổi sau đó. Chỉ bị chặn khi nhóm của chính ngày cuộc hẹn đã đổi trong lúc lịch nằm ở Thùng rác (vd. đã xóa một cuộc gặp trước đó có chuyển nhóm).
    - **Lịch hẹn** khác (Dự kiến, Hủy, Không đến…): "Không đổi nhóm KH". Lịch Dự kiến đã qua ngày hiện lại ở nhóm "Chưa ghi kết quả".
    - **HĐ**: ngày nộp, FYP nộp, ngày và FYP phát hành nếu có.
    - **Nhân sự**, **Team**: vai trò, team. Khôi phục team chưa kèm thành viên: khôi phục từng người sau.

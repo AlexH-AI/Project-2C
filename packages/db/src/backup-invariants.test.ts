@@ -354,6 +354,10 @@ describe('importBackup — rules across tables', () => {
         (row(b, 'appointments', (a) => a.id === ids.met).next_step = 'Gặp lại'.normalize('NFD')),
     ],
     [
+      'a meeting kept in the stage the customer left by hand later that day (E19)',
+      (b, ids) => keptMeeting(b, ids, '2026-09-18', 'N3'),
+    ],
+    [
       'a deleted TL next to the live TL of the team',
       (b, ids) => person(b, ids.tl, { id: 'old-tl', name: 'Cũ', deleted_at: DELETED }),
     ],
@@ -489,6 +493,10 @@ describe('importBackup — rules across tables', () => {
         Object.assign(other, { deleted_at: null, date: '2026-09-10', stage_after: 'N3' });
         transition(b, ids.lan, 2).appointment_id = other.id;
       },
+    ],
+    [
+      '4: a meeting kept in a stage the customer was not in on its day (T-232)',
+      (b, ids) => keptMeeting(b, ids, '2026-09-12', 'N2'),
     ],
     [
       '4: a live transition caused by a deleted appointment (D7)',
@@ -1102,6 +1110,12 @@ function fact(backup: BackupJson, customerId: string, field: string): Row {
 }
 
 const DELETED = '2026-09-26T08:00:00.000Z';
+
+/** Adds a met appointment of Lan's on `date` that moved no stage, kept in `stage` (T-232). */
+function keptMeeting(backup: BackupJson, ids: Ids, date: string, stage: string): void {
+  const met = row(backup, 'appointments', (a) => a.id === ids.met);
+  backup.tables.appointments!.push({ ...met, id: 'kept', date, stage_after: stage });
+}
 
 /** Adds a copy of a person's row with `changes`, and returns it. */
 function person(backup: BackupJson, copyOf: string, changes: Row): Row {

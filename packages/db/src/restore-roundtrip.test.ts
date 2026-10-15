@@ -90,8 +90,11 @@ describe('delete then restore', () => {
         restoreAppointment,
       );
       expect(appointments.changed).toEqual([]);
-      // D7: a meeting whose transition is no longer the latest stays.
-      expect(new Set(appointments.refused)).toEqual(new Set(['TRANSITION_NOT_LATEST']));
+      // D7: a meeting whose transition is no longer the latest stays, as does one whose stage a
+      // later meeting kept (T-232).
+      expect(new Set(appointments.refused)).toEqual(
+        new Set(['TRANSITION_NOT_LATEST', 'STAGE_KEPT_BY_MEETING']),
+      );
 
       const policies = roundTrips(
         db,

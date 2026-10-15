@@ -1,8 +1,9 @@
 /**
  * Appointments and meeting outcomes (spec §3.5–3.6, §4; D3, D6, D7, D9). A met appointment whose
- * stage after differs from the customer's stage moves the customer through a transition that points
- * back to it — the only transitions that can count as an RF (#44). That transition carries the
- * meeting day, so an outcome recorded or restored after a later stage change is refused (D10).
+ * stage after differs from the customer's stage on the meeting day moves the customer through a
+ * transition that points back to it — the only transitions that can count as an RF (#44). That
+ * transition carries the meeting day, so an outcome recorded or restored after a later stage change
+ * is refused (D10); one that keeps the stage records the stage of its day (T-232).
  * Once a later transition exists, only the status, the stage after and the day are locked (D7).
  * A meeting held or missed is dated today at the latest; only a cancellation may come ahead.
  */
@@ -30,8 +31,11 @@ import {
 import {
   appendTransition,
   checkTransition,
+  isStageOfDay,
+  listStageTransitions,
   liveCustomer,
   reinstateTransition,
+  stageOnDay,
   transitionWithdrawnAt,
   withdrawAppointmentTransition,
 } from './customers';
@@ -208,16 +212,14 @@ export function editMeetingOutcome(
     if (!OUTCOME_STATUSES.includes(row.status)) throw new DbError('INVALID_STATUS');
     const fields = { ...outcomeFields(db, outcome, row.note), ...detailFields(row, details) };
     requireOutcomeDay(db, fields.status, fields.date);
-    // Same rule as the two commands: an unchanged met outcome keeps its transition, which only
-    // comes back on the new day; any other outcome replaces it.
+    // Same rule as the two commands: an unchanged met outcome keeps its transition; on a new day it
+    // is recorded again there, as a new one would be (T-232); any other outcome replaces it.
     const keepsStage = keepsTransition(row, fields);
-    const withdrawn =
-      row.status === 'MET' &&
-      (!keepsStage || fields.date !== row.date) &&
-      withdrawAppointmentTransition(db, id);
+    const moved = fields.date !== row.date;
+    if (row.status === 'MET' && (!keepsStage || moved)) withdrawAppointmentTransition(db, id);
     const updated: AppointmentRow = { ...row, ...updateAppointmentRow(db, id, fields) };
     replaceCoordinators(db, row, details.coordinatorIds);
-    if (!keepsStage || withdrawn) applyOutcome(db, updated);
+    if (!keepsStage || moved) applyOutcome(db, updated);
     return toAppointment(db, updated);
   });
 }
@@ -289,8 +291,18 @@ export function checkRestoreAppointment(db: Database, row: AppointmentRow) {
   if (row.outcomeReviewerId !== null) requireReviewer(db, row.outcomeReviewerId);
   requireOutcomeDay(db, row.status, row.date);
   const move = restoreStageMove(db, row, stage);
+  const date = fromIsoDate(row.date);
   if (move?.to) {
-    checkTransition(db, row.customerId, move.to, fromIsoDate(row.date), move.withdrawn.deletedAt!);
+    checkTransition(db, row.customerId, move.to, date, move.withdrawn.deletedAt!);
+  } else if (row.status === 'MET' && row.stageAfter !== null) {
+    // Back without a transition only in a stage of its day, as the import checks (spec §6 rule 4):
+    // one reached on a later day blocks like a change after its day (E7, Owner 15/10/2026).
+    const transitions = listStageTransitions(db, row.customerId);
+    if (!isStageOfDay(transitions, date, row.stageAfter)) {
+      throw move
+        ? new DbError('TRANSITION_BEFORE_LATEST', { date: formatDate(transitions.at(-1)!.date) })
+        : new DbError('STAGE_NOT_ON_DAY', { date: formatDate(date) });
+    }
   }
   return move;
 }
@@ -306,8 +318,11 @@ export function restoreStageMove(db: Database, row: AppointmentRow, stage: Custo
   return withdrawn ? { withdrawn, to: outcomeStage(row, stage) } : null;
 }
 
-/** The stage the outcome moves its customer to from `stage`, or null when it moves nothing. */
-function outcomeStage(row: AppointmentRow, stage: CustomerStage): CustomerStage | null {
+/**
+ * The stage the outcome moves its customer to from `stage` (none before the customer's creation),
+ * or null when it moves nothing.
+ */
+function outcomeStage(row: AppointmentRow, stage: CustomerStage | null): CustomerStage | null {
   return row.status === 'MET' && row.stageAfter !== null && row.stageAfter !== stage
     ? row.stageAfter
     : null;
@@ -376,9 +391,14 @@ function replaceCoordinators(
   insertCoordinators(db, row.id, coordinatorIds);
 }
 
+/**
+ * A met outcome keeps the stage the customer was in at the end of the meeting day, and moves any
+ * other way through a transition on that day (spec §4, T-232), which D10 refuses before a later one.
+ */
 function applyOutcome(db: Database, row: AppointmentRow): void {
-  const to = outcomeStage(row, liveCustomer(db, row.customerId).stage);
-  if (to !== null) appendTransition(db, row.customerId, to, fromIsoDate(row.date), row.id);
+  const date = fromIsoDate(row.date);
+  const to = outcomeStage(row, stageOnDay(db, row.customerId, date));
+  if (to !== null) appendTransition(db, row.customerId, to, date, row.id);
 }
 
 function insertScheduled(

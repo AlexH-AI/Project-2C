@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { AppointmentRecord } from '@p2c/db';
 import {
   formatDate,
@@ -38,7 +39,8 @@ export const metDraftOf = (a: AppointmentRecord): MetDraft => ({
 
 /**
  * Stage after, reviewer (D9), next step and case size of a met meeting. `from` is the stage the
- * meeting started at; `stageLocked` shows the stage after without letting it change (D7).
+ * meeting started at; `stageLocked` shows the stage after without letting it change (D7, or held at
+ * the stage of the meeting day, T-232), with `lockNote` under it.
  */
 export function MetFields({
   draft,
@@ -48,6 +50,7 @@ export function MetFields({
   people,
   errors,
   stageLocked = false,
+  lockNote,
 }: {
   draft: MetDraft;
   /** The new draft and the field that changed, so its error can go. */
@@ -57,6 +60,7 @@ export function MetFields({
   people: readonly Person[];
   errors: readonly OutcomeError[];
   stageLocked?: boolean;
+  lockNote?: ReactNode;
 }) {
   const set =
     <K extends keyof MetDraft>(field: K) =>
@@ -72,6 +76,7 @@ export function MetFields({
           <p className={LOCKED}>
             {badge(stageAfter)} {t('outcomeEdit.lockMark')}
           </p>
+          {lockNote}
         </div>
       ) : (
         <>

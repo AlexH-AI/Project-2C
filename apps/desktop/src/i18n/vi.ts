@@ -595,6 +595,12 @@ export const vi = {
   'error.DATE_IN_FUTURE': 'Ngày này sau hôm nay: chỉ ghi việc đã xảy ra, từ hôm nay trở về trước.',
   'error.INVALID_TRANSITION': 'Không chuyển được sang nhóm này: KH đã đóng chỉ mở lại về N3.',
   'error.TRANSITION_BEFORE_LATEST': 'Ngày chuyển trước lần đổi nhóm gần nhất ({date}).',
+  'error.TRANSITION_BEFORE_MEETING':
+    'Đã ghi cuộc gặp Đã gặp ngày {date}, cuộc gặp đó ghi nhóm của KH ngày ấy: không đổi nhóm vào ngày trước {date}.',
+  'error.STAGE_KEPT_BY_MEETING':
+    'Cuộc gặp ngày {date} ghi KH giữ nhóm mà cuộc gặp này chuyển tới: không đổi được trạng thái, ngày, nhóm sau cuộc gặp, cũng không xóa được.',
+  'error.STAGE_NOT_ON_DAY':
+    'Nhóm của KH ngày {date} đã đổi khi lịch nằm trong Thùng rác, không còn là nhóm sau cuộc gặp ghi trên lịch.',
   'period.title': 'Kỳ thống kê',
   'period.kinds': 'Loại kỳ',
   'period.day': 'Ngày',
@@ -775,6 +781,11 @@ export const vi = {
   'outcome.rf': 'tính RF',
   'outcome.noRf': 'không tính RF — RF chỉ khi N4 / N3 lên N2 / N1',
   'outcome.keepRead': 'Giữ nhóm hiện tại, không tạo chuyển nhóm.',
+  // T-232: the stage after held at the customer's stage on the meeting day (D10).
+  'outcome.dayLockTitle': 'Nhóm sau cuộc gặp khóa ở nhóm của KH ngày {date}',
+  'outcome.dayLockChange': 'Nhóm của KH đã đổi tiếp sau cuộc gặp này, ngày {date}:',
+  'outcome.dayLockMeeting': 'Đã ghi cuộc gặp Đã gặp ngày {date}, sau cuộc gặp này.',
+  'outcome.dayLockHelp': 'Đổi nhóm không được lùi ngày (D10). Muốn chỉnh nhóm hiện tại, dùng',
   'outcome.reviewer': 'Người đánh giá kết quả (không bắt buộc)',
   'outcome.reviewerHelp': 'Người quyết định nhóm sau cuộc gặp: IS, TL, BDM hoặc BD.',
   'outcome.reviewerNone': '—',
@@ -804,6 +815,7 @@ export const vi = {
   'outcomeEdit.date': 'Ngày cuộc hẹn',
   'outcomeEdit.lockTitle': 'Khóa 3 ô: trạng thái, ngày cuộc hẹn, nhóm sau cuộc gặp',
   'outcomeEdit.lockBody': 'Nhóm của KH đã đổi tiếp sau cuộc gặp này, ngày {date}:',
+  'outcomeEdit.lockKept': 'Cuộc gặp ngày {date} sau đó ghi KH giữ nhóm',
   'outcomeEdit.lockHelp': 'Muốn chỉnh nhóm hiện tại, dùng',
   'outcomeEdit.lockLink': 'Chuyển nhóm tay ở Hồ sơ KH',
   'outcomeEdit.lockRest': 'Các ô còn lại vẫn sửa được.',

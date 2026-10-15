@@ -5,19 +5,22 @@ import {
   type AppointmentTrigger,
   type CustomerRecord,
 } from '@p2c/db';
-import { formatDate, type Person, type StageTransition } from '@p2c/domain';
+import { compareDates, formatDate, type Person, type StageTransition } from '@p2c/domain';
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
-import { useAppData } from '../../data/AppDataContext';
+import { useAppData, useTables } from '../../data/AppDataContext';
 import { errorMessage, joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { Actions, ALERT, FailureAlert, useSaveFailure } from '../customers/CustomerDialogs';
 import { CoordinatorsField, dateFieldError, dateReading, liveIds } from './AppointmentDialog';
 import { DeleteAppointmentDialog } from './DeleteAppointmentDialog';
 import { badge, MetFields, metDraftOf, EMPTY_MET } from './MetFields';
+import { DayLockNote } from './OutcomeDialog';
 import { whenText } from './RescheduleFields';
 import { dayText, isPastOrToday, parseTime, readScheduleDate } from './appointment-form';
 import { LINK, LOCKED, outcomeText, type AppointmentRow } from './appointments-view';
 import {
+  heldStage,
+  meetingDay,
   outcomeChoices,
   outcomeLock,
   readOutcome,
@@ -30,8 +33,10 @@ type EditStatus = Exclude<OutcomeChoice, 'RESCHEDULED'>;
 
 /**
  * Mockup 6f: the outcome of a met, cancelled or missed appointment, and its day, trigger and
- * coordinators. Once the customer moved on after the meeting, its status, day and stage after are
- * locked and it cannot be deleted (D7); the rest stays open.
+ * coordinators. Once the customer moved on after the meeting, or a later meeting kept the stage it
+ * moved to, its status, day and stage after are locked and it cannot be deleted (D7); the rest
+ * stays open. Otherwise the stage after is held at the stage of the day once something came after
+ * it (T-232).
  */
 export function EditOutcomeDialog({
   row,
@@ -45,10 +50,12 @@ export function EditOutcomeDialog({
   onClose: () => void;
 }) {
   const app = useAppData();
+  const { appointments } = useTables();
   const today = app.today();
   const a = row.appointment;
   const customer = row.customer;
-  const { caused, later } = outcomeLock(transitions, a);
+  const { caused, later, keptBy } = outcomeLock(transitions, appointments, a);
+  const locked = later !== undefined || keptBy !== undefined;
   const [status, setStatus] = useState(a.status as EditStatus);
   const [metDraft, setMetDraft] = useState(a.status === 'MET' ? metDraftOf(a) : EMPTY_MET);
   const [note, setNote] = useState(a.note);
@@ -74,17 +81,23 @@ export function EditOutcomeDialog({
   const choices = outcomeChoices({ status: a.status, date: day }, today).filter(
     (choice): choice is { value: EditStatus; disabled: boolean } => choice.value !== 'RESCHEDULED',
   );
-  // The meeting's own move starts from the stage before it; otherwise from where the customer is.
-  const from = caused?.from ?? customer.stage;
+  // The stage of the day, without the meeting's own move; a meeting kept on its day starts from the
+  // stage it kept (T-232).
+  const kept =
+    !caused && a.status === 'MET' && compareDates(day, a.date) === 0 ? a.stageAfter : null;
+  const onDay = meetingDay(transitions, appointments, a, day, kept);
+  const from = onDay.from ?? customer.stage;
+  const holding = locked ? undefined : heldStage(onDay);
+  const draft = holding ? { ...metDraft, stageAfter: holding } : metDraft;
 
   const save = () => {
-    const read = readOutcome({ status, ...metDraft, note, next: null });
+    const read = readOutcome({ status, ...draft, note, next: null });
     setErrors(read.ok ? [] : read.errors);
-    if (!read.ok || (!later && (!date.ok || dateError)) || !time.ok) return;
+    if (!read.ok || (!locked && (!date.ok || dateError)) || !time.ok) return;
     try {
       app.run((db) =>
         editMeetingOutcome(db, a.id, read.outcome, {
-          date: later || !date.ok ? undefined : date.date,
+          date: locked || !date.ok ? undefined : date.date,
           time: time.time,
           triggerType: trigger,
           triggerNote,
@@ -122,23 +135,34 @@ export function EditOutcomeDialog({
       onSubmit={save}
       actions={
         <>
-          <Button onClick={() => setDeleting(true)} disabled={later !== undefined}>
+          <Button onClick={() => setDeleting(true)} disabled={locked}>
             {t('outcomeEdit.delete')}
           </Button>
           <span className="mr-auto self-center text-xs text-fg-3">
-            {later && t('outcomeEdit.deleteBlocked')}
+            {locked && t('outcomeEdit.deleteBlocked')}
           </span>
           <Actions onClose={onClose} save={t('outcomeEdit.save')} />
         </>
       }
     >
       {failure && <FailureAlert>{failure}</FailureAlert>}
-      {later && (
+      {locked && (
         <div role="note" className={`${ALERT} flex flex-col gap-1 border-warn`}>
           <b>{t('outcomeEdit.lockTitle')}</b>
           <span className="flex flex-wrap items-center gap-1 tabular-nums">
-            {t('outcomeEdit.lockBody', { date: formatDate(later.date) })}
-            {later.from && badge(later.from)} {t('sep.arrow')} {badge(later.to)}
+            {later ? (
+              <>
+                {t('outcomeEdit.lockBody', { date: formatDate(later.date) })}
+                {later.from && badge(later.from)} {t('sep.arrow')} {badge(later.to)}
+              </>
+            ) : (
+              keptBy && (
+                <>
+                  {t('outcomeEdit.lockKept', { date: formatDate(keptBy.date) })}
+                  {keptBy.stageAfter && badge(keptBy.stageAfter)}
+                </>
+              )
+            )}
           </span>
           <span>
             {t('outcomeEdit.lockHelp')}{' '}
@@ -149,7 +173,7 @@ export function EditOutcomeDialog({
           </span>
         </div>
       )}
-      {later ? (
+      {locked ? (
         <Locked label={t('outcome.status')}>{t(`appointmentStatus.${a.status}`)}</Locked>
       ) : (
         <Choices
@@ -168,7 +192,7 @@ export function EditOutcomeDialog({
         />
       )}
       <div className="grid grid-cols-2 gap-3">
-        {later ? (
+        {locked ? (
           <Locked label={t('outcomeEdit.date')}>{formatDate(a.date)}</Locked>
         ) : (
           <TextField
@@ -189,9 +213,9 @@ export function EditOutcomeDialog({
       </div>
       {status === 'MET' && (
         <MetFields
-          draft={metDraft}
-          onChange={(draft, field) => {
-            setMetDraft(draft);
+          draft={draft}
+          onChange={(changed, field) => {
+            setMetDraft(changed);
             setFailure(undefined);
             setErrors(withoutError(errors, field));
           }}
@@ -199,7 +223,8 @@ export function EditOutcomeDialog({
           date={day}
           people={people}
           errors={errors}
-          stageLocked={later !== undefined}
+          stageLocked={locked || holding !== undefined}
+          lockNote={holding && <DayLockNote day={day} held={onDay} customerId={customer.id} />}
         />
       )}
       <TextField

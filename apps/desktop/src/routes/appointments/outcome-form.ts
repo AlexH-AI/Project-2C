@@ -1,8 +1,15 @@
-import type { AppointmentRecord, MeetingOutcome, NextAppointment } from '@p2c/db';
+import {
+  isStageOfDay,
+  type AppointmentRecord,
+  type MeetingOutcome,
+  type NextAppointment,
+} from '@p2c/db';
 import {
   CLOSED_STAGES,
+  compareDates,
   PIPELINE_STAGES,
   parseVnd,
+  stageOn,
   type CalendarDate,
   type CustomerStage,
   type StageTransition,
@@ -49,18 +56,81 @@ export function outcomeChoices(
   }));
 }
 
+type MetRecord = Pick<AppointmentRecord, 'id' | 'customerId' | 'date' | 'status' | 'stageAfter'>;
+
 /**
- * D7: the stage move the appointment made, and the customer's later move that now locks its
- * status, day and stage after (and its deletion). `transitions` come in the order they were made.
+ * D7: the stage move the appointment made, and what now locks its status, day and stage after (and
+ * its deletion): the customer's later move, or a later meeting that kept the stage it moved to
+ * (T-232), as the db refuses them. `transitions` come in the order they were made; `appointments`
+ * by day.
  */
 export function outcomeLock(
   transitions: readonly StageTransition[],
+  appointments: readonly MetRecord[],
   appointment: Pick<AppointmentRecord, 'id' | 'customerId'>,
-): { readonly caused?: StageTransition; readonly later?: StageTransition } {
+): {
+  readonly caused?: StageTransition;
+  readonly later?: StageTransition;
+  readonly keptBy?: MetRecord;
+} {
   const caused = transitions.find((tr) => tr.appointmentId === appointment.id);
   if (!caused) return {};
-  const latest = transitions.findLast((tr) => tr.customerId === appointment.customerId);
-  return latest === caused ? { caused } : { caused, later: latest };
+  const own = transitions.filter((tr) => tr.customerId === appointment.customerId);
+  if (own.at(-1) !== caused) return { caused, later: own.at(-1) };
+  const rest = own.filter((tr) => tr !== caused);
+  const keptBy = appointments.find(
+    (m) =>
+      m.customerId === appointment.customerId &&
+      m.id !== appointment.id &&
+      m.status === 'MET' &&
+      compareDates(m.date, caused.date) >= 0 &&
+      !own.some((tr) => tr.appointmentId === m.id) &&
+      !isStageOfDay(rest, m.date, m.stageAfter!),
+  );
+  return keptBy ? { caused, keptBy } : { caused };
+}
+
+/**
+ * "Nhóm sau cuộc gặp" of a meeting on `day` (T-232): the stage it starts `from`, that of the
+ * customer at the end of the day, and what holds its stage after there, since no stage change may
+ * go before them (D10): the latest `change` after the day, or else the latest met `meeting` after
+ * it, which recorded the stage of its own day. A meeting met on that day keeping the stage `kept`
+ * starts from it, and is held by a change later that day too (E19). The appointment and its own
+ * move do not count.
+ */
+export function meetingDay(
+  transitions: readonly StageTransition[],
+  appointments: readonly MetRecord[],
+  appointment: Pick<AppointmentRecord, 'id' | 'customerId'>,
+  day: CalendarDate,
+  kept?: CustomerStage | null,
+): {
+  readonly from: CustomerStage | null;
+  readonly change?: StageTransition;
+  readonly meeting?: MetRecord;
+} {
+  const { id, customerId } = appointment;
+  const own = transitions.filter((tr) => tr.customerId === customerId && tr.appointmentId !== id);
+  const ended = stageOn(own, customerId, day);
+  const change = own.findLast((tr) => {
+    const order = compareDates(tr.date, day);
+    return order > 0 || (order === 0 && kept != null && kept !== ended);
+  });
+  const from = kept ?? ended;
+  if (change) return { from, change };
+  const meeting = appointments.findLast(
+    (m) =>
+      m.customerId === customerId &&
+      m.id !== id &&
+      m.status === 'MET' &&
+      compareDates(m.date, day) > 0,
+  );
+  return meeting ? { from, meeting } : { from };
+}
+
+/** The stage `meetingDay` holds the stage after at, when something holds it. */
+export function heldStage(day: ReturnType<typeof meetingDay>): CustomerStage | undefined {
+  return day.change || day.meeting ? (day.from ?? undefined) : undefined;
 }
 
 /** "Nhóm sau cuộc gặp": the current stage (kept) and the ones a transition reaches (ADR-0007). */
