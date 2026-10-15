@@ -16,6 +16,7 @@ import { byName, calendarDate, formatDate, fromLocalDate, type CalendarDate } fr
 import { describe, expect, it, vi } from 'vitest';
 import { errorMessage } from '../i18n';
 import {
+  isDamagedDataError,
   isStartupBackupError,
   isUnsavedChangesError,
   openAppData,
@@ -97,6 +98,19 @@ function holdBackup(storage: StoragePort) {
     return backup();
   };
   return { started: started.promise, release: () => gate.resolve() };
+}
+
+/**
+ * The schema version of a saved file, read without migrating it: with no migration known, a file
+ * of any version above 0 is refused as too new, and the refusal names its version.
+ */
+async function storedVersion(bytes: Uint8Array): Promise<number | string | undefined> {
+  try {
+    return (await openDatabase({ bytes, migrations: [] })).schemaVersion();
+  } catch (error) {
+    if (error instanceof DbError && error.code === 'SCHEMA_TOO_NEW') return error.params?.version;
+    throw error;
+  }
 }
 
 /** What `fn` threw; `undefined` when it did not. */
@@ -232,6 +246,24 @@ describe('openAppData', () => {
     const error = await openAppData({ storage }).catch((e: unknown) => e);
     expect(isStartupBackupError(error)).toBe(true);
     expect((error as Error).cause).toEqual(new Error('disk full'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(events).toEqual([]);
+  });
+
+  it('refuses a file damaged inside that still opens: no backup, nothing saved (DR6-06)', async () => {
+    // A real file with data, one page near its end (rows of `teams`) overwritten.
+    const original = await openDatabase();
+    for (let n = 0; n < 100; n++) createTeam(original, { name: `Team ${n} ${'x'.repeat(100)}` });
+    const damaged = original.export();
+    const pageSize = (damaged[16]! << 8) | damaged[17]!;
+    const page = damaged.length / pageSize - 2;
+    damaged.fill(0xff, page * pageSize, (page + 1) * pageSize);
+    const { storage, events } = memoryStorage(damaged);
+
+    const error = await openAppData({ storage }).catch((e: unknown) => e);
+
+    expect(isDamagedDataError(error)).toBe(true);
+    expect((error as Error).cause).toEqual(expect.any(String));
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(events).toEqual([]);
   });
@@ -760,8 +792,10 @@ describe('replacing the data (S-2)', () => {
 
   it('saves the migration of the new data while it opens, and nothing of the data it replaces (review of PR 206)', async () => {
     const { app, storage, saves } = await exe();
-    // A file from before the latest migration: opening it migrates, and that saves.
-    const older = (await openDatabase({ migrations: [] })).export();
+    // A file from before the first migration, with data: opening it migrates, and that saves.
+    const old = await openDatabase({ migrations: [] });
+    old.sqlite.exec("CREATE TABLE notes (text TEXT); INSERT INTO notes VALUES ('kept')");
+    const older = old.export();
     const backup = holdBackup(storage);
 
     const importing = app.importBackup({ ...(await previewOf(app, 'x')), bytes: older });
@@ -774,6 +808,10 @@ describe('replacing the data (S-2)', () => {
     const after = saves.slice(backedUp);
     expect(after[0]).not.toEqual(older);
     for (const bytes of after) expect(await onDisk(bytes)).toEqual([]);
+    // The file left on disk is the migrated one, not the bytes it opened (DR6-08).
+    expect(await storedVersion(saves.at(-1)!)).toBe(LATEST_SCHEMA_VERSION);
+    const last = await openDatabase({ bytes: saves.at(-1) });
+    expect(last.sqlite.exec('SELECT text FROM notes')[0]?.values).toEqual([['kept']]);
   });
 
   it('exports a whole file of the old or the new data at any step of a replace (S2-5)', async () => {
@@ -844,6 +882,37 @@ describe('the data file card', () => {
     await app.saves.flush();
     expect(app.lastSave()).toEqual({ at: now, size: saves[1]!.byteLength });
     expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps why the last save failed until a save succeeds, and tells subscribers (DR6-07)', async () => {
+    const { storage, saves } = memoryStorage();
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+    await app.saves.idle();
+    expect(app.saveError()).toBeUndefined();
+    const listener = vi.fn();
+    app.subscribeSaveError(listener);
+    const save = storage.save;
+    // What Rust answers a save that found the disk full.
+    storage.save = () => Promise.reject('DISK_FULL');
+
+    createTeam(app.db(), { name: 'Sao Mai' });
+    await app.saves.idle();
+    expect(app.saves.failed()).toBe(true);
+    expect(app.saveError()).toBe('DISK_FULL');
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    // Failing again for another reason while still unsaved: the warning must follow.
+    storage.save = () => Promise.reject('Access is denied. (os error 5)');
+    await app.saves.flush().catch(() => undefined);
+    expect(app.saveError()).toBe('Access is denied. (os error 5)');
+    expect(listener).toHaveBeenCalledTimes(2);
+
+    storage.save = save;
+    await app.saves.flush();
+    expect(app.saves.failed()).toBe(false);
+    expect(app.saveError()).toBeUndefined();
+    expect(listener).toHaveBeenCalledTimes(3);
+    expect(saves).toHaveLength(2);
   });
 
   it('has no last save in web mode', async () => {

@@ -11,8 +11,18 @@ const PAGE_HEADER = 'x-p2c-page';
 
 /** `db_open`'s error when another exe already has the data folder open (`storage::ALREADY_OPEN`). */
 export const ALREADY_OPEN = 'ALREADY_OPEN';
-/** `db_backup`'s error when the disk is full (`storage::DISK_FULL`). */
+/** `db_backup`'s and `db_save`'s error when the disk is full (`storage::DISK_FULL`). */
 export const DISK_FULL = 'DISK_FULL';
+/**
+ * `db_open`'s error when another program holds the database file without sharing: the file is
+ * whole (`storage::FILE_IN_USE`).
+ */
+export const FILE_IN_USE = 'FILE_IN_USE';
+/**
+ * `db_open`'s error when Windows refuses the app the data folder: the file is whole
+ * (`storage::ACCESS_DENIED`).
+ */
+export const ACCESS_DENIED = 'ACCESS_DENIED';
 
 /** 128 random bits in hex; `getRandomValues`, unlike `randomUUID`, needs no secure context. */
 const newPage = () =>

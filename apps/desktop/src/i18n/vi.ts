@@ -963,6 +963,13 @@ export const vi = {
   'storage.diskFull': 'Ổ đĩa đã đầy, không sao lưu được file dữ liệu',
   'storage.diskFullHelp':
     'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở nhưng ổ đĩa chứa thư mục app không còn đủ chỗ trống. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports) rồi mở lại app.',
+  'storage.damaged': 'File dữ liệu bị hỏng',
+  'storage.fileInUse': 'File dữ liệu đang bị chương trình khác giữ',
+  'storage.fileInUseHelp':
+    'File dữ liệu không hỏng, không cần khôi phục. Một chương trình khác (phần mềm sao lưu, đồng bộ, diệt virus hay công cụ mở file SQLite) đang mở file trong thư mục Project2C-data: hãy đóng chương trình đó rồi mở lại app.',
+  'storage.accessDenied': 'App không có quyền ghi vào thư mục dữ liệu',
+  'storage.accessDeniedHelp':
+    'File dữ liệu không hỏng, không cần khôi phục. Hãy kiểm tra thư mục Project2C-data cạnh file exe và các file trong đó không chỉ đọc, tài khoản Windows đang dùng được quyền ghi vào đó (app chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như Program Files thì chép cả thư mục app sang chỗ khác), rồi mở lại app.',
   'storage.technicalDetail': 'Chi tiết kỹ thuật:',
   'storage.alreadyOpen': 'Project-2C đang mở ở một cửa sổ khác',
   'storage.alreadyOpenHelp':
@@ -1063,6 +1070,8 @@ export const vi = {
     'Chưa nạp lại: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Dữ liệu hiện tại không bị đổi.',
   'storage.saveFailed':
     'Chưa lưu được dữ liệu vào file (file có thể đang mở trong chương trình khác). Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
+  'storage.saveDiskFull':
+    'Chưa lưu được dữ liệu vào file: ổ đĩa chứa thư mục app đã đầy. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports). Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
   'close.unsavedTitle': 'Chưa lưu được thay đổi',
   'close.unsavedBody':
     'Các thay đổi gần nhất chưa ghi được vào file (file có thể đang bị chương trình khác mở). Đóng chương trình đó rồi chọn Thử lại, hoặc đóng app và bỏ các thay đổi chưa lưu.',
