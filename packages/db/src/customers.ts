@@ -245,17 +245,24 @@ export function appendTransition(
 
 /**
  * Checks `appendTransition` without writing: the date not before the latest transition's (D10)
- * and the change allowed (ADR-0007). Returns the stage the customer moves from.
+ * and the change allowed (ADR-0007). Returns the stage the customer moves from. A transition
+ * recorded after the instant `recordedAfter` counts as later even on the same day: a restored
+ * meeting goes before what was recorded since its deletion (spec Phase 6 E20).
  */
 export function checkTransition(
   db: Database,
   customerId: string,
   to: CustomerStage,
   date: CalendarDate,
+  recordedAfter?: string,
 ): CustomerStage | null {
   const latest = latestTransition(db, customerId);
-  if (latest && compareDates(date, fromIsoDate(latest.date)) < 0) {
-    throw new DbError('TRANSITION_BEFORE_LATEST', { date: formatDate(fromIsoDate(latest.date)) });
+  if (latest) {
+    const order = compareDates(date, fromIsoDate(latest.date));
+    const sameDayLater = recordedAfter !== undefined && latest.createdAt > recordedAfter;
+    if (order < 0 || (order === 0 && sameDayLater)) {
+      throw new DbError('TRANSITION_BEFORE_LATEST', { date: formatDate(fromIsoDate(latest.date)) });
+    }
   }
   const from = latest ? latest.toStage : null;
   try {
@@ -269,8 +276,13 @@ export function checkTransition(
 /**
  * Withdraws the live transition caused by the appointment, if any (D7): allowed only while it is
  * the customer's latest, and the customer goes back to its `from` stage. Tells whether there was one.
+ * A deletion stamps the transition with its own instant `at`, which tells later what it withdrew.
  */
-export function withdrawAppointmentTransition(db: Database, appointmentId: string): boolean {
+export function withdrawAppointmentTransition(
+  db: Database,
+  appointmentId: string,
+  at = db.now().toISOString(),
+): boolean {
   const caused = db.orm
     .select()
     .from(stageTransitions)
@@ -286,11 +298,56 @@ export function withdrawAppointmentTransition(db: Database, appointmentId: strin
   }
   db.orm
     .update(stageTransitions)
-    .set({ deletedAt: db.now().toISOString() })
+    .set({ deletedAt: at })
     .where(eq(stageTransitions.id, caused.id))
     .run();
   updateCustomerRow(db, caused.customerId, { stage: caused.fromStage });
   return true;
+}
+
+/** The transition of the appointment withdrawn at the instant `at`, that of its deletion. */
+export function transitionWithdrawnAt(
+  db: Database,
+  appointmentId: string,
+  at: string,
+): TransitionRow | undefined {
+  return db.orm
+    .select()
+    .from(stageTransitions)
+    .where(
+      and(eq(stageTransitions.appointmentId, appointmentId), eq(stageTransitions.deletedAt, at)),
+    )
+    .get();
+}
+
+/**
+ * Records the stage change of a restored appointment again, on its day (spec Phase 6 TR-3): the very
+ * transition its deletion withdrew while it still follows the latest one, so restoring undoes the
+ * deletion; a new one when the stage moved since. The caller checked the change (`checkTransition`).
+ */
+export function reinstateTransition(
+  db: Database,
+  withdrawn: TransitionRow,
+  to: CustomerStage,
+  date: CalendarDate,
+): void {
+  const latest = latestTransition(db, withdrawn.customerId);
+  const follows =
+    latest !== undefined &&
+    latest.seq < withdrawn.seq &&
+    latest.toStage === withdrawn.fromStage &&
+    withdrawn.toStage === to &&
+    withdrawn.date === storedDate(date);
+  if (!follows) {
+    appendTransition(db, withdrawn.customerId, to, date, withdrawn.appointmentId);
+    return;
+  }
+  db.orm
+    .update(stageTransitions)
+    .set({ deletedAt: null })
+    .where(eq(stageTransitions.id, withdrawn.id))
+    .run();
+  updateCustomerRow(db, withdrawn.customerId, { stage: to });
 }
 
 // ---- helpers --------------------------------------------------------------
