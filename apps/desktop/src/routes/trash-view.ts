@@ -155,6 +155,27 @@ export function ownerParts(row: TrashRow): OwnerPart[] {
   return parts;
 }
 
+/**
+ * The name of a row's restore button, every "Khôi phục…" alike on screen (DR6-43): the record, and
+ * for an appointment or a policy whose customer.
+ */
+export function restoreLabel(row: TrashRow): string {
+  switch (row.kind) {
+    case 'appointment':
+      return t('trash.restoreLabel.appointment', {
+        when: appointmentWhen(row),
+        name: row.owner.customer?.name ?? '',
+      });
+    case 'policy':
+      return t('trash.restoreLabel.policy', {
+        date: formatDate(row.submittedDate),
+        name: row.owner.customer?.name ?? '',
+      });
+    default:
+      return t(`trash.restoreLabel.${row.kind}`, { name: row.name });
+  }
+}
+
 export function deletedAtText(row: TrashRow): string {
   return formatLocalDateTime(new Date(row.deletedAt));
 }

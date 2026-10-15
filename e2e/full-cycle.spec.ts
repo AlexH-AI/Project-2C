@@ -298,7 +298,9 @@ test('the whole round: team → customer → KYC → meeting → policy → figu
     await expect(ofKind('KH')).toContainText(CUSTOMER);
     await expect(ofKind('Lịch hẹn')).toContainText('25/09/2026');
     await expect(ofKind('Lịch hẹn')).toContainText(`Khôi phục KH ${CUSTOMER} trước.`);
-    await ofKind('KH').getByRole('button', { name: 'Khôi phục…' }).click();
+    await ofKind('KH')
+      .getByRole('button', { name: `Khôi phục KH ${CUSTOMER}` })
+      .click();
     const dialog = page.getByRole('dialog', { name: `Khôi phục ${CUSTOMER}?` });
     await expect(dialog).toContainText('Hiện lại cùng KH2 lịch hẹn (');
     await dialog.getByRole('button', { name: 'Khôi phục', exact: true }).click();

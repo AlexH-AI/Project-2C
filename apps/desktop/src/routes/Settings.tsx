@@ -6,7 +6,7 @@ import { isUnsavedChangesError } from '../data/app-data';
 import { t } from '../i18n';
 import type { SettingsSection } from '../shell/routes';
 import { AiSection } from './SettingsAi';
-import { BackupSection } from './SettingsBackup';
+import { BackupSection, type DataNoticeProps } from './SettingsBackup';
 import { DataFileSection } from './SettingsDataFile';
 import { TrashSection } from './SettingsTrash';
 
@@ -51,11 +51,7 @@ export function Settings({ section: linked }: { section?: SettingsSection }) {
       </nav>
       <div className="flex min-w-0 max-w-3xl flex-1 flex-col gap-4">
         {section === 'data' ? (
-          <>
-            <DataFileSection />
-            <BackupSection />
-            <DemoSection />
-          </>
+          <DataSections />
         ) : section === 'ai' ? (
           <AiSection />
         ) : (
@@ -66,9 +62,28 @@ export function Settings({ section: linked }: { section?: SettingsSection }) {
   );
 }
 
-function DemoSection() {
+/**
+ * Dữ liệu has one notice, that of the last backup or reload: a notice about data replaced since
+ * never stays beside it (DR6-45).
+ */
+function DataSections() {
+  const [noticeFrom, setNoticeFrom] = useState<'backup' | 'demo' | null>(null);
+  return (
+    <>
+      <DataFileSection />
+      <BackupSection
+        showsNotice={noticeFrom === 'backup'}
+        onNotice={() => setNoticeFrom('backup')}
+      />
+      <DemoSection showsNotice={noticeFrom === 'demo'} onNotice={() => setNoticeFrom('demo')} />
+    </>
+  );
+}
+
+function DemoSection({ showsNotice, onNotice }: DataNoticeProps) {
   const [confirming, setConfirming] = useState(false);
-  const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [last, setOutcome] = useState<Outcome | null>(null);
+  const outcome = showsNotice ? last : null;
   const { hasFile } = useAppData();
 
   return (
@@ -103,7 +118,9 @@ function DemoSection() {
         <ReloadDialog
           onClose={(result) => {
             setConfirming(false);
-            if (result) setOutcome(result);
+            if (!result) return;
+            setOutcome(result);
+            onNotice();
           }}
         />
       )}

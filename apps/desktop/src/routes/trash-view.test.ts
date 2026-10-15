@@ -19,6 +19,7 @@ import {
   ownerParts,
   recordDetail,
   recordTitle,
+  restoreLabel,
   restoreRow,
   restoreView,
   restoredNotice,
@@ -261,6 +262,26 @@ describe('ownerParts (spec Phase 6 §4.2 "Thuộc")', () => {
     expect(ownerParts(mai)).toEqual([{ text: 'Team Bình Minh', deleted: true }]);
     expect(ownerParts(binhMinh)).toEqual([]);
     expect(ownerParts({ ...bao, owner: {} })).toEqual([]);
+  });
+});
+
+describe('restoreLabel (DR6-43)', () => {
+  it('names the customer, person or team the button restores', () => {
+    expect(restoreLabel(minhAnh)).toBe('Khôi phục KH Trịnh Minh Anh');
+    expect(restoreLabel(mai)).toBe('Khôi phục nhân sự Vương Thị Mai');
+    expect(restoreLabel(binhMinh)).toBe('Khôi phục team Bình Minh');
+  });
+
+  it('names an appointment or a policy by its day and its customer', () => {
+    expect(restoreLabel(met)).toBe('Khôi phục lịch hẹn 02/10/2026 09:30 của KH Phạm Gia Bảo');
+    expect(restoreLabel({ ...planned, time: null })).toBe(
+      'Khôi phục lịch hẹn 06/10/2026 của KH Trịnh Minh Anh',
+    );
+    expect(restoreLabel(policy)).toBe('Khôi phục HĐ nộp 15/09/2026 của KH Hoàng Ngọc Lan');
+  });
+
+  it('tells apart the buttons of a whole trash', () => {
+    expect(new Set(ROWS.map(restoreLabel)).size).toBe(ROWS.length);
   });
 });
 

@@ -17,6 +17,8 @@ import { SHOW_MORE_STEP, showMore } from './show-more';
 interface ColumnBase<Row extends RowData> {
   id: string;
   header: string;
+  /** A column that does not sort: its header for screen readers only, e.g. over a column of buttons. */
+  headerHidden?: boolean;
   /** Custom cell content; by default the value itself, dates as dd/mm/yyyy. */
   cell?: (row: Row) => ReactNode;
   align?: 'start' | 'end';
@@ -161,6 +163,8 @@ export function DataTable<Row extends RowData>({
                         {sorted ? ARROW[sorted] : '↕'}
                       </span>
                     </button>
+                  ) : column.headerHidden ? (
+                    <span className="sr-only">{column.header}</span>
                   ) : (
                     column.header
                   )}

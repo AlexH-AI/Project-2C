@@ -20,6 +20,7 @@ import {
 import { sql } from 'drizzle-orm';
 import {
   check,
+  index,
   integer,
   primaryKey,
   sqliteTable,
@@ -137,6 +138,8 @@ export const appointments = sqliteTable(
     outcomeReviewerId: text('outcome_reviewer_id').references(() => people.id),
   },
   (t) => [
+    // Thùng rác, the profile and 5f count a customer's records (DR6-44).
+    index('appointments_customer').on(t.customerId),
     check('appointments_status', sql`${t.status} IN (${list(APPOINTMENT_STATUSES)})`),
     check('appointments_trigger', sql`${t.triggerType} IN (${list(APPOINTMENT_TRIGGERS)})`),
     check(
@@ -189,6 +192,8 @@ export const stageTransitions = sqliteTable(
   },
   (t) => [
     uniqueIndex('stage_transitions_customer_seq').on(t.customerId, t.seq),
+    // The transition of an appointment: withdrawn by its deletion, back with its restore (DR6-44).
+    index('stage_transitions_appointment').on(t.appointmentId),
     check('stage_transitions_from', sql`${t.fromStage} IN (${list(CUSTOMER_STAGES)})`),
     check('stage_transitions_to', sql`${t.toStage} IN (${list(CUSTOMER_STAGES)})`),
   ],
@@ -211,6 +216,7 @@ export const policies = sqliteTable(
     ...timestamps,
   },
   (t) => [
+    index('policies_customer').on(t.customerId),
     check('policies_submitted_fyp', sql`${t.submittedFyp} > 0`),
     check('policies_issued_pair', sql`(${t.issuedDate} IS NULL) = (${t.issuedFyp} IS NULL)`),
     check(

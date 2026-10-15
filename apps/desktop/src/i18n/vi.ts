@@ -279,6 +279,8 @@ export const vi = {
   'trash.col.record': 'Bản ghi',
   'trash.col.owner': 'Thuộc',
   'trash.col.deletedAt': 'Xóa lúc',
+  // The column of the restore buttons: no header on screen (mockup 11a), one for screen readers.
+  'trash.col.actions': 'Thao tác',
   'trash.owner.customer': 'KH {name}',
   'trash.owner.re': 'RE {name}',
   'trash.owner.team': 'Team {name}',
@@ -318,6 +320,11 @@ export const vi = {
   'trash.blocked.TEAM_NAME_TAKEN': 'Đã có team {name} — đổi tên team kia trước.',
   // The restore dialog, which always asks first (TR-8; mockup 11b, 11c), and what follows (11e).
   'trash.restore': 'Khôi phục…',
+  'trash.restoreLabel.customer': 'Khôi phục KH {name}',
+  'trash.restoreLabel.person': 'Khôi phục nhân sự {name}',
+  'trash.restoreLabel.team': 'Khôi phục team {name}',
+  'trash.restoreLabel.appointment': 'Khôi phục lịch hẹn {when} của KH {name}',
+  'trash.restoreLabel.policy': 'Khôi phục HĐ nộp {date} của KH {name}',
   'trash.restore.confirm': 'Khôi phục',
   'trash.restore.title': 'Khôi phục {name}?',
   'trash.restore.titleAppointment': 'Khôi phục lịch hẹn {when}?',
