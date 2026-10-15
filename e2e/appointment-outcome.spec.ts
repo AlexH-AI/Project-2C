@@ -224,6 +224,47 @@ test('once the customer moved on, status, day and stage after are locked and del
   await expect(detail(page)).toContainText('N3 → N2 · RF');
 });
 
+test('a meeting recorded late keeps the stage of its day once the customer moved on (T-232)', async ({
+  page,
+}) => {
+  // Booked yesterday; the seed records nothing on the anchor day, so N3 is the stage of 14/09.
+  const name = await book(page, '14/9', 'N3');
+  await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).click();
+  await page.getByRole('button', { name: 'Chuyển nhóm' }).click();
+  const change = page.getByRole('dialog', { name: /^Chuyển nhóm · / });
+  await change.getByRole('radio', { name: 'N2', exact: true }).check();
+  await change.getByRole('button', { name: 'Chuyển nhóm' }).click();
+  await expect(change).toBeHidden();
+
+  await page.goto('/#/appointments');
+  await page
+    .getByRole('region', { name: /^Lịch tháng/ })
+    .getByRole('button', { name: /^14\/09\/2026:/ })
+    .click();
+  await page
+    .getByRole('region', { name: /^Trong ngày/ })
+    .getByRole('button', { name })
+    .click();
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
+  const o = outcome(page);
+
+  // N2 now, N3 on 14/09: no choice the save would refuse, no move that would not happen (DR6-04).
+  await expect(o.stageAfter).toHaveCount(0);
+  await expect(o.dialog).toContainText('Nhóm sau cuộc gặp khóa ở nhóm của KH ngày 14/09/2026');
+  await expect(o.dialog).toContainText(`Nhóm của KH đã đổi tiếp sau cuộc gặp này, ngày ${TODAY}:`);
+  await expect(o.dialog.getByRole('link', { name: 'Chuyển nhóm tay ở Hồ sơ KH' })).toBeVisible();
+  await o.nextStep.fill('Gửi bảng minh họa');
+  await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
+
+  await expect(o.dialog).toHaveCount(0);
+  await expect(detail(page)).toContainText('Đã gặp');
+  await expect(detail(page)).toContainText('Giữ N3');
+  await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).click();
+  await expect(
+    page.getByRole('region', { name }).getByText('N2', { exact: true }).first(),
+  ).toBeVisible();
+});
+
 test('deleting the meeting that moved the customer takes the move back (6g)', async ({ page }) => {
   const name = await metToN2(page);
   const profile = await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).getAttribute('href');

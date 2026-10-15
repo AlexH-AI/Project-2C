@@ -11,16 +11,19 @@ import {
 } from '@p2c/db';
 import { formatDate, weekdayOf, type CalendarDate, type Person } from '@p2c/domain';
 import { Choices, Dialog, TextField } from '@p2c/ui';
-import { useAppData, useQuery } from '../../data/AppDataContext';
+import { useAppData, useQuery, useTables } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
+import { routeToHash } from '../../shell/routes';
 import { Actions, ALERT, FailureAlert, useSaveFailure } from '../customers/CustomerDialogs';
 import { KycNoteDialog } from '../customers/KycDialogs';
 import { dateFieldError, dateReading } from './AppointmentDialog';
-import { EMPTY_MET, MetFields } from './MetFields';
+import { badge, EMPTY_MET, MetFields } from './MetFields';
 import { RescheduleFields, useRescheduleForm, whenText } from './RescheduleFields';
 import { parseTime, readScheduleDate } from './appointment-form';
 import { LINK, type AppointmentRow } from './appointments-view';
 import {
+  heldStage,
+  meetingDay,
   outcomeChoices,
   readOutcome,
   withoutError,
@@ -45,10 +48,14 @@ export function OutcomeDialog({
   onMoved: (appointment: AppointmentRecord) => void;
 }) {
   const app = useAppData();
+  const { transitions, appointments } = useTables();
   const today = app.today();
   const a = row.appointment;
   const customer = row.customer;
   const choices = outcomeChoices(a, today);
+  // A meeting recorded late starts from the stage of its day, held there once the customer moved
+  // on after it (T-232).
+  const onDay = meetingDay(transitions, appointments, a, a.date);
   const [status, setStatus] = useState<OutcomeChoice | null>(
     choices.find((choice) => !choice.disabled && choice.value === 'MET') ? 'MET' : null,
   );
@@ -65,6 +72,8 @@ export function OutcomeDialog({
   const moving = useRescheduleForm(a, today);
 
   const met = status === 'MET';
+  const held = heldStage(onDay);
+  const draft = held ? { ...metDraft, stageAfter: held } : metDraft;
   const nextDate = readScheduleDate(nextDateText, today, 'fromToday');
   const nextTime = parseTime(nextTimeText);
   const has = (error: OutcomeError) => errors.includes(error);
@@ -82,7 +91,7 @@ export function OutcomeDialog({
       } else {
         const read = readOutcome({
           status,
-          ...metDraft,
+          ...draft,
           note,
           next: booking ? { date: nextDate, time: nextTime } : null,
         });
@@ -154,16 +163,18 @@ export function OutcomeDialog({
         )}
         {met && (
           <MetFields
-            draft={metDraft}
-            onChange={(draft, field) => {
-              setMetDraft(draft);
+            draft={draft}
+            onChange={(changed, field) => {
+              setMetDraft(changed);
               setFailure(undefined);
               setErrors(withoutError(errors, field));
             }}
-            from={customer.stage}
+            from={onDay.from ?? customer.stage}
             date={a.date}
             people={people}
             errors={errors}
+            stageLocked={held !== undefined}
+            lockNote={held && <DayLockNote day={a.date} held={onDay} customerId={customer.id} />}
           />
         )}
         {status !== null && status !== 'RESCHEDULED' && (
@@ -252,6 +263,45 @@ export function OutcomeDialog({
         />
       )}
     </>
+  );
+}
+
+/**
+ * Under a stage after held at the stage of the meeting day (6c, 6f; T-232), as the D7 lock of 6f
+ * explains its own: what came after the meeting, and where to change the stage instead.
+ */
+export function DayLockNote({
+  day,
+  held,
+  customerId,
+}: {
+  day: CalendarDate;
+  held: ReturnType<typeof meetingDay>;
+  customerId: string;
+}) {
+  const { change, meeting } = held;
+  return (
+    <div role="note" className={`${ALERT} flex flex-col gap-1 border-warn`}>
+      <b>{t('outcome.dayLockTitle', { date: formatDate(day) })}</b>
+      {change && (
+        <span className="flex flex-wrap items-center gap-1 tabular-nums">
+          {t('outcome.dayLockChange', { date: formatDate(change.date) })}
+          {change.from && badge(change.from)} {t('sep.arrow')} {badge(change.to)}
+        </span>
+      )}
+      {!change && meeting && (
+        <span className="tabular-nums">
+          {t('outcome.dayLockMeeting', { date: formatDate(meeting.date) })}
+        </span>
+      )}
+      <span>
+        {t('outcome.dayLockHelp')}{' '}
+        <a href={routeToHash({ screen: 'customer', id: customerId })} className={LINK}>
+          {t('outcomeEdit.lockLink')}
+        </a>
+        .
+      </span>
+    </div>
   );
 }
 

@@ -264,6 +264,19 @@ export function checkTransition(
       throw new DbError('TRANSITION_BEFORE_LATEST', { date: formatDate(fromIsoDate(latest.date)) });
     }
   }
+  // A met appointment recorded the stage of its own day, which no change may come before (T-232);
+  // it is dated today at the latest, so only a change dated back has one after it.
+  if (compareDates(date, today(db)) < 0) {
+    const [[meeting]] = selectRows(
+      db,
+      `SELECT MAX(date) FROM appointments
+       WHERE customer_id = ? AND status = 'MET' AND deleted_at IS NULL AND date > ?`,
+      [customerId, storedDate(date)],
+    ) as [[string | null]];
+    if (meeting) {
+      throw new DbError('TRANSITION_BEFORE_MEETING', { date: formatDate(fromIsoDate(meeting)) });
+    }
+  }
   const from = latest ? latest.toStage : null;
   try {
     assertValidTransition(from, to);
@@ -271,6 +284,44 @@ export function checkTransition(
     throw new DbError('INVALID_TRANSITION', from === null ? { to } : { from, to });
   }
   return from;
+}
+
+/**
+ * The customer's stage at the end of `date`, as `stageOn` of domain reads it — the latest live
+ * transition by `seq` dated that day or before, since dates follow `seq` (D10); null before the
+ * customer's creation.
+ */
+export function stageOnDay(
+  db: Database,
+  customerId: string,
+  date: CalendarDate,
+): CustomerStage | null {
+  const [row] = selectRows(
+    db,
+    `SELECT to_stage FROM stage_transitions
+     WHERE customer_id = ? AND deleted_at IS NULL AND date <= ? ORDER BY seq DESC LIMIT 1`,
+    [customerId, storedDate(date)],
+  );
+  return (row?.[0] as CustomerStage | undefined) ?? null;
+}
+
+/**
+ * Whether the customer is in `stage` at some point of `date`: at its start, or after a change that
+ * day. A met appointment that moved no stage records such a stage as its stage after (spec §6 rule
+ * 4, T-232). `transitions` are one customer's live ones, in recording order.
+ */
+export function isStageOfDay(
+  transitions: readonly Pick<StageTransition, 'date' | 'to'>[],
+  date: CalendarDate,
+  stage: CustomerStage,
+): boolean {
+  let start: CustomerStage | undefined;
+  for (const t of transitions) {
+    const order = compareDates(t.date, date);
+    if (order < 0) start = t.to;
+    else if (order === 0 && t.to === stage) return true;
+  }
+  return start === stage;
 }
 
 /**
@@ -302,7 +353,28 @@ export function withdrawAppointmentTransition(
     .where(eq(stageTransitions.id, caused.id))
     .run();
   updateCustomerRow(db, caused.customerId, { stage: caused.fromStage });
+  // D7 holds the move too while a later meeting kept the stage it moved to (T-232); the caller's
+  // transaction rolls the withdrawal back.
+  const transitions = listStageTransitions(db, caused.customerId);
+  const left = keptMeetings(db, caused.customerId, appointmentId, caused.date).find(
+    (m) => !isStageOfDay(transitions, m.date, m.stage),
+  );
+  if (left) throw new DbError('STAGE_KEPT_BY_MEETING', { date: formatDate(left.date) });
   return true;
+}
+
+/** The customer's live met appointments from `isoDate` on that moved no stage, `except` one. */
+function keptMeetings(db: Database, customerId: string, except: string, isoDate: string) {
+  const rows = selectRows(
+    db,
+    `SELECT a.date, a.stage_after FROM appointments a
+     WHERE a.customer_id = ? AND a.id <> ? AND a.status = 'MET' AND a.deleted_at IS NULL
+       AND a.date >= ? AND NOT EXISTS (SELECT 1 FROM stage_transitions t
+         WHERE t.appointment_id = a.id AND t.deleted_at IS NULL)
+     ORDER BY a.date`,
+    [customerId, except, isoDate],
+  ) as [string, CustomerStage][];
+  return rows.map(([date, stage]) => ({ date: fromIsoDate(date), stage }));
 }
 
 /** The transition of the appointment withdrawn at the instant `at`, that of its deletion. */

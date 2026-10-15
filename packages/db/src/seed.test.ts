@@ -76,7 +76,8 @@ const DEMO_ROW_COUNTS = {
   stage_transitions: 3309,
   teams: 3,
 };
-const DEMO_HASH = '868655fb2b338521c1e657cc7a4bcb80dacffff893a1e4562ef47bf2a09ee960';
+// T-232 moved it with one more read of the seed's ticking clock per stage change (stamps and ids).
+const DEMO_HASH = 'b93cb801ce988786f7f6cee3a85da30c5b153a93825ba8eacee7358108d4017a';
 
 async function seeded(seed: number, anchorDate = ANCHOR) {
   const persist = vi.fn();
