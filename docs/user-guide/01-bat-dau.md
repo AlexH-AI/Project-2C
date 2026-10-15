@@ -41,11 +41,15 @@ Nếu file dữ liệu đang bị chương trình khác giữ (phần mềm di�
 
 > Chưa lưu được dữ liệu vào file (file có thể đang mở trong chương trình khác). Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.
 
+Nếu ổ đĩa chứa thư mục app đã đầy, dải cảnh báo ghi:
+
+> Chưa lưu được dữ liệu vào file: ổ đĩa chứa thư mục app đã đầy. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\exports). Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.
+
 Bạn vẫn làm tiếp được; app thử lưu lại ở lần thay đổi sau và dải cảnh báo tự mất khi lưu được.
 
 Nếu bạn đóng app lúc còn thay đổi chưa lưu, app hiện hộp **"Chưa lưu được thay đổi"**:
 
-- Đóng chương trình đang giữ file rồi bấm **Thử lại**: app lưu rồi mới đóng (nếu vẫn chưa lưu được, hộp hiện lại).
+- Đóng chương trình đang giữ file (ổ đầy thì xóa bớt file trên ổ đó) rồi bấm **Thử lại**: app lưu rồi mới đóng (nếu vẫn chưa lưu được, hộp hiện lại).
 - **Đóng và bỏ thay đổi chưa lưu**: đóng app, các thay đổi chưa ghi vào file sẽ mất.
 
 Các lỗi khác lúc mở app xem ở [10. Khi có lỗi](10-su-co.md#lỗi-lúc-mở-app-bản-exe).
