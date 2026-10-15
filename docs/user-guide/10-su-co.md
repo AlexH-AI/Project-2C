@@ -6,15 +6,18 @@ Mục này gom các thông báo lỗi và cách xử lý. Phần lớn lỗi v�
 
 ## Lỗi lúc mở app (bản exe)
 
-Lúc mở, app sao lưu file dữ liệu vào `Project2C-data\backups\` rồi mới đọc. Gặp lỗi, app không vào màn chính mà hiện một trang báo lỗi:
+Lúc mở, app đọc file dữ liệu, kiểm tra file không hỏng, rồi sao lưu vào `Project2C-data\backups\` trước khi ghi gì vào file. Gặp lỗi, app không vào màn chính mà hiện một trang báo lỗi:
 
 | Tiêu đề trên màn | Nghĩa | Làm gì |
 |---|---|---|
 | **Project-2C đang mở ở một cửa sổ khác** | Thư mục dữ liệu này đang được một cửa sổ app khác dùng | Dùng cửa sổ đó, đóng cửa sổ này. App không đọc, không ghi gì ở cửa sổ này |
+| **File dữ liệu đang bị chương trình khác giữ** | Một chương trình khác (phần mềm sao lưu, đồng bộ, diệt virus hay công cụ mở file SQLite) đang mở file trong `Project2C-data`. File dữ liệu không hỏng | Đóng chương trình đó rồi mở lại app. **Không** chép backup đè lên file: file đang dùng được, bản backup thiếu các thay đổi gần nhất |
+| **App không có quyền ghi vào thư mục dữ liệu** | Windows không cho app ghi vào `Project2C-data` cạnh file exe: thư mục hay file trong đó chỉ đọc, tài khoản Windows đang dùng không có quyền ghi, hoặc app chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như `Program Files`. File dữ liệu không hỏng | Bỏ chỉ đọc ở thư mục `Project2C-data` và các file trong đó, kiểm quyền ghi của tài khoản đang dùng; app chạy từ ổ chỉ đọc hay `Program Files` thì chép cả thư mục app (exe cùng `Project2C-data`) sang chỗ khác. Rồi mở lại app. **Không** chép backup đè lên file |
 | **Không sao lưu được file dữ liệu** | App không chép được bản sao lưu trước khi mở. File dữ liệu không bị đổi | Kiểm tra ổ đĩa còn chỗ trống, thư mục `backups\` không chỉ đọc hay bị chương trình khác giữ, rồi mở lại app |
 | **Ổ đĩa đã đầy, không sao lưu được file dữ liệu** | Ổ chứa thư mục app hết chỗ. File dữ liệu không bị đổi | Xóa bớt file trên ổ đó (ví dụ file cũ trong `Project2C-data\exports\`), rồi mở lại app |
 | **File dữ liệu do bản app mới hơn tạo** | File đã được bản app mới hơn mở và nâng cấp | Dùng bản app mới hơn. App này không đổi gì trong file |
-| **Không mở được file dữ liệu** | File dữ liệu hỏng, không phải file của app, hoặc bị mất trong khi `backups\` vẫn còn bản sao | [Mở lại từ backup](#mở-lại-từ-backup). App chưa ghi gì vào file |
+| **File dữ liệu bị hỏng** | File mở được nhưng hỏng bên trong (lúc mở app kiểm tra toàn bộ file). App không chép file hỏng vào `backups\` | [Mở lại từ backup](#mở-lại-từ-backup); bản mới nhất vẫn báo lỗi thì chép bản liền trước. App chưa ghi gì vào file |
+| **Không mở được file dữ liệu** | File dữ liệu rỗng hoặc hỏng tới mức không mở được, không phải file của app, hoặc bị mất trong khi `backups\` vẫn còn bản sao | [Mở lại từ backup](#mở-lại-từ-backup). App chưa ghi gì vào file |
 
 ### Mở lại từ backup
 
@@ -25,7 +28,7 @@ App giữ 10 bản sao lưu mới nhất trong `Project2C-data\backups\`, tên d
 3. Chép bản đó ra `Project2C-data\`, đổi tên thành `project2c.db` (thay file đang lỗi; nếu muốn giữ file lỗi để gửi người hỗ trợ, đổi tên nó trước).
 4. Mở app.
 
-Bản mới nhất có thể chính là file đang lỗi (app chép file vào `backups\` mỗi lần mở). Khi đó lặp lại với bản liền trước, rồi các bản cũ hơn. Mỗi bản cũ hơn thiếu các thay đổi làm sau lúc nó được chép.
+Lúc mở, app chỉ chép file vào `backups\` khi đã đọc được và kiểm tra không hỏng, nên bản mới nhất thường dùng được. Bản đó vẫn báo lỗi thì lặp lại với bản liền trước, rồi các bản cũ hơn. Mỗi bản thiếu các thay đổi làm sau lúc nó được chép.
 
 Cùng cách này dùng để lấy lại dữ liệu trước một lần **Nhập backup** hay **Nạp lại** dữ liệu giả lập.
 
