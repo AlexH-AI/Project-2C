@@ -84,8 +84,9 @@ async function deletedMeeting(
   const bao = base.customer('Phạm Gia Bảo', from);
   const meeting = base.schedule(bao.id, date);
   base.met(meeting.id, to);
+  const transitions = listStageTransitions(base.db, bao.id);
   softDeleteAppointment(base.db, meeting.id);
-  return { ...base, bao, meeting };
+  return { ...base, bao, meeting, transitions };
 }
 
 describe('listTrash: customers (TR-2, TR-4)', () => {
@@ -186,7 +187,7 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
   });
 
   it('E5: restores a met appointment with its stage change on the meeting day, an RF', async () => {
-    const { db, bao, meeting, row, restored } = await deletedMeeting();
+    const { db, bao, meeting, transitions, row, restored } = await deletedMeeting();
 
     const r = row(meeting.id);
     expect(r).toMatchObject({
@@ -196,13 +197,34 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
     });
     expect(r.blocked).toBeUndefined();
     expect(restored(r)).toBeUndefined();
-    expect(listStageTransitions(db, bao.id).at(-1)).toMatchObject({
+    // The very transition the deletion withdrew comes back: restoring undoes the deletion.
+    expect(listStageTransitions(db, bao.id)).toEqual(transitions);
+    expect(transitions.at(-1)).toMatchObject({
       from: 'N3',
       to: 'N2',
       date: d(2, 10),
       appointmentId: meeting.id,
     });
     expect(isRfAppointment(getAppointment(db, meeting.id)!, listStageTransitions(db))).toBe(true);
+  });
+
+  it('E5: records the stage change anew once the stage moved on an earlier day after deletion', async () => {
+    const { db, bao, meeting, row, restored } = await deletedMeeting(d(5, 10));
+    changeStageManually(db, bao.id, { to: 'N4', date: d(3, 10) });
+
+    const r = row(meeting.id);
+    expect(r.effect).toEqual({
+      kind: 'stageChange',
+      from: 'N4',
+      to: 'N2',
+      date: d(5, 10),
+      rf: true,
+    });
+    expect(restored(r)).toBeUndefined();
+    expect(listStageTransitions(db, bao.id).slice(1)).toMatchObject([
+      { from: 'N3', to: 'N4', date: d(3, 10), appointmentId: null },
+      { from: 'N4', to: 'N2', date: d(5, 10), appointmentId: meeting.id },
+    ]);
   });
 
   it('E6: blocks a met appointment once the stage changed after its day (D10)', async () => {
@@ -241,9 +263,71 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
     expect(restored(r)).toEqual(r.blocked);
   });
 
+  it('E18: restores a met appointment that kept the stage, though the stage changed after its day', async () => {
+    const { db, customer, schedule, met, row, restored } = await trash();
+    const bao = customer('Phạm Gia Bảo');
+    const kept = schedule(bao.id, d(2, 10));
+    met(kept.id, 'N3');
+    met(schedule(bao.id, d(5, 10)).id, 'N2');
+    const transitions = listStageTransitions(db, bao.id);
+    softDeleteAppointment(db, kept.id);
+
+    const r = row(kept.id);
+    expect(r).toMatchObject({ status: 'MET', stageAfter: 'N3', effect: { kind: 'none' } });
+    expect(r.blocked).toBeUndefined();
+    expect(restored(r)).toBeUndefined();
+    expect(listStageTransitions(db, bao.id)).toEqual(transitions);
+    expect(getAppointment(db, kept.id)?.status).toBe('MET');
+  });
+
+  it('E19: restores a met appointment that kept the stage, though moved by hand on its day', async () => {
+    const { db, customer, schedule, met, row, restored } = await trash();
+    const bao = customer('Phạm Gia Bảo', 'N2');
+    const kept = schedule(bao.id, d(10, 10));
+    met(kept.id, 'N2');
+    changeStageManually(db, bao.id, { to: 'N3', date: d(10, 10) });
+    softDeleteAppointment(db, kept.id);
+    const transitions = listStageTransitions(db, bao.id);
+
+    const r = row(kept.id);
+    expect(r.effect).toEqual({ kind: 'none' });
+    expect(restored(r)).toBeUndefined();
+    expect(listStageTransitions(db, bao.id)).toEqual(transitions);
+    expect(transitions.at(-1)).toMatchObject({ from: 'N2', to: 'N3', appointmentId: null });
+    expect(isRfAppointment(getAppointment(db, kept.id)!, listStageTransitions(db))).toBe(false);
+  });
+
+  it('E20: blocks a met appointment once the stage was moved on its day after the deletion', async () => {
+    const { db, bao, meeting, row, restored } = await deletedMeeting();
+    changeStageManually(db, bao.id, { to: 'N1', date: d(2, 10) });
+
+    const r = row(meeting.id);
+    expect(r.blocked).toEqual({
+      code: 'TRANSITION_BEFORE_LATEST',
+      params: { date: '02/10/2026' },
+    });
+    expect(restored(r)).toEqual(r.blocked);
+  });
+
+  it('E20: a change on the meeting day recorded before the deletion does not block', async () => {
+    const { db, customer, schedule, met, row, restored } = await trash();
+    const bao = customer('Phạm Gia Bảo');
+    changeStageManually(db, bao.id, { to: 'N4', date: d(2, 10) });
+    const meeting = schedule(bao.id, d(2, 10));
+    met(meeting.id, 'N2');
+    const transitions = listStageTransitions(db, bao.id);
+    softDeleteAppointment(db, meeting.id);
+
+    const r = row(meeting.id);
+    expect(r.effect).toMatchObject({ kind: 'stageChange', from: 'N4', to: 'N2' });
+    expect(restored(r)).toBeUndefined();
+    expect(listStageTransitions(db, bao.id)).toEqual(transitions);
+  });
+
   it('TR-3: blocks a met appointment whose stage after the closed customer cannot move to', async () => {
     const { db, bao, meeting, row, restored } = await deletedMeeting(d(5, 10));
-    changeStageManually(db, bao.id, { to: 'LOST', date: d(5, 10) });
+    // Closed the day before the meeting: on its day or after would be E20 or E8.
+    changeStageManually(db, bao.id, { to: 'LOST', date: d(4, 10) });
 
     const r = row(meeting.id);
     expect(r.blocked).toEqual({

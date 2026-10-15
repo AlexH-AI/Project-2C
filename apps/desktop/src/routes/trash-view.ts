@@ -321,24 +321,24 @@ function customerBack(effect: TrashRow['effect']): string {
   return left === '' ? back : `${back} ${t('trash.restore.customerLeft', { parts: left })}`;
 }
 
-/** A met appointment moves the stage again on its day (E5) or keeps it (E7); others do not (E11). */
+/**
+ * A met appointment moves the stage again on its day (E5) or keeps it (E7); one that kept the stage
+ * when deleted (E18, E19) and the others (E11) do not.
+ */
 function appointmentRestore(row: AppointmentRow): Pick<RestoreView, 'facts' | 'effect'> {
   const { effect } = row;
   if (effect.kind !== 'stageChange' && effect.kind !== 'stageKept') {
     return {
-      facts: [{ term: t('trash.restore.status'), text: t(`appointmentStatus.${row.status}`) }],
+      facts: [
+        row.status === 'MET'
+          ? metResult(row)
+          : { term: t('trash.restore.status'), text: t(`appointmentStatus.${row.status}`) },
+      ],
       effect: { title: t('trash.restore.noChange'), body: t('trash.restore.noChangeBody') },
     };
   }
-  const met = t('appointmentStatus.MET');
   const facts: RestoreFact[] = [
-    row.stageAfter === null
-      ? { term: t('trash.restore.result'), text: met }
-      : {
-          term: t('trash.restore.result'),
-          text: joinParts([met, t('trash.restore.after')]),
-          stage: row.stageAfter,
-        },
+    metResult(row),
     {
       term: t('trash.restore.stageNow'),
       stage: effect.kind === 'stageChange' ? effect.from : effect.stage,
@@ -363,6 +363,18 @@ function appointmentRestore(row: AppointmentRow): Pick<RestoreView, 'facts' | 'e
         : t('trash.restore.changeNoRf'),
     },
   };
+}
+
+/** "Kết quả: Đã gặp · nhóm sau N2" of a met appointment. */
+function metResult(row: AppointmentRow): RestoreFact {
+  const met = t('appointmentStatus.MET');
+  return row.stageAfter === null
+    ? { term: t('trash.restore.result'), text: met }
+    : {
+        term: t('trash.restore.result'),
+        text: joinParts([met, t('trash.restore.after')]),
+        stage: row.stageAfter,
+      };
 }
 
 /** The notice once a record is restored (mockup 11e), and where its "Mở" button leads. */

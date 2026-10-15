@@ -181,7 +181,10 @@ export const stageTransitions = sqliteTable(
     date: text('date').notNull(),
     appointmentId: text('appointment_id').references(() => appointments.id),
     createdAt: text('created_at').notNull(),
-    /** Set only when an appointment's outcome is withdrawn (D7); transitions are never edited. */
+    /**
+     * Set only when an appointment's outcome is withdrawn (D7), cleared only when restoring the
+     * appointment gives back what its deletion withdrew (spec Phase 6 TR-3); nothing else changes.
+     */
     deletedAt: text('deleted_at'),
   },
   (t) => [

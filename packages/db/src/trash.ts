@@ -14,7 +14,7 @@ import {
   type Vnd,
 } from '@p2c/domain';
 import { isNotNull } from 'drizzle-orm';
-import { checkRestoreAppointment, outcomeStage } from './appointments';
+import { checkRestoreAppointment, restoreStageMove } from './appointments';
 import { selectRows } from './common';
 import { countCustomerRecords, type CustomerRecordCounts } from './counts';
 import { checkRestoreCustomer } from './customers';
@@ -43,7 +43,7 @@ export type TrashEffect =
   | { readonly kind: 'none' }
   /** A customer comes back with the records not deleted on their own (TR-4). */
   | ({ readonly kind: 'customer' } & CustomerRecordCounts)
-  /** A met appointment records its stage change again, on the meeting day (TR-3). */
+  /** A met appointment records the stage change its deletion withdrew again, on its day (TR-3). */
   | {
       readonly kind: 'stageChange';
       readonly from: CustomerStage;
@@ -137,7 +137,7 @@ export function listTrash(db: Database): TrashRow[] {
     .where(isNotNull(appointments.deletedAt))
     .all()) {
     const stage = ref.stageOf(row.customerId);
-    const to = outcomeStage(row, stage);
+    const move = restoreStageMove(db, row, stage);
     rows.push(
       entry(row, () => checkRestoreAppointment(db, row), {
         kind: 'appointment',
@@ -147,16 +147,16 @@ export function listTrash(db: Database): TrashRow[] {
         stageAfter: row.stageAfter,
         owner: { customer: ref.customer(row.customerId), re: ref.person(row.reId) },
         effect:
-          row.status !== 'MET'
+          move === null
             ? NONE
-            : to === null
+            : move.to === null
               ? { kind: 'stageKept', stage }
               : {
                   kind: 'stageChange',
                   from: stage,
-                  to,
+                  to: move.to,
                   date: fromIsoDate(row.date),
-                  rf: isRfTransition(stage, to),
+                  rf: isRfTransition(stage, move.to),
                 },
       }),
     );

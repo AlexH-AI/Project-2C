@@ -17,27 +17,46 @@ async function openTrash(page: Page) {
   await expect(trash(page)).toBeVisible();
 }
 
+/** Books an appointment on `date` for the customer named `name`, or the first N3 one. */
+async function book(page: Page, date: string, name?: string) {
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('textbox', { name: /^Khách hàng/ }).fill(name ?? 'K-');
+  await dialog
+    .getByRole('list', { name: 'KH khớp' })
+    .getByRole('button')
+    .filter({ hasText: name ?? /N3$/ })
+    .first()
+    .click();
+  const booked = (await dialog.locator('b').first().textContent()) ?? '';
+  await dialog.getByRole('textbox', { name: /^Ngày/ }).fill(date);
+  await dialog.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
+  await dialog.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(detail(page).getByRole('heading', { level: 2 })).toContainText(booked);
+  return booked;
+}
+
+/** Records the open appointment as met, with `stage` as its stage after. */
+async function recordMet(page: Page, stage: string) {
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Kết quả cuộc gặp' });
+  await dialog
+    .getByRole('radiogroup', { name: 'Nhóm sau cuộc gặp' })
+    .getByRole('radio', { name: stage, exact: true })
+    .check();
+  await dialog.getByRole('textbox', { name: /^Việc tiếp theo/ }).fill('Gửi bảng minh họa');
+  await dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
+  await expect(dialog).toHaveCount(0);
+}
+
 /**
  * Books an appointment on 15/09 for the first N3 customer, then deletes it; returns the customer's
  * name and the link to its profile.
  */
 async function bookAndDelete(page: Page) {
   await page.goto('/#/appointments');
-  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
-  const dialog = page.getByRole('dialog');
-  await dialog.getByRole('textbox', { name: /^Khách hàng/ }).fill('K-');
-  await dialog
-    .getByRole('list', { name: 'KH khớp' })
-    .getByRole('button')
-    .filter({ hasText: /N3$/ })
-    .first()
-    .click();
-  const name = (await dialog.locator('b').first().textContent()) ?? '';
-  await dialog.getByRole('textbox', { name: /^Ngày/ }).fill('15/9');
-  await dialog.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
-  await dialog.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
-  await expect(dialog).toHaveCount(0);
-
+  const name = await book(page, '15/9');
   const profile =
     (await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).getAttribute('href')) ?? '';
   await detail(page).getByRole('button', { name: 'Xóa', exact: true }).click();
@@ -196,5 +215,70 @@ test('restores a deleted customer, then its appointment deleted on its own (TR-1
   await expect(page).toHaveURL(new RegExp(`${profile.replace(/[/#]/g, '\\$&')}$`));
   await expect(page.getByRole('region', { name })).toBeVisible();
   await expect.poll(total).toBe(before + 1);
+  expect(errors).toEqual([]);
+});
+
+test('restores a meeting that kept the stage though the stage changed after it (E18, DR6-01)', async ({
+  page,
+}) => {
+  const errors = trackConsoleErrors(page);
+  await page.goto('/#/appointments');
+  // Met on 14/09 keeping N3, then moved to N2 by the meeting of 15/09.
+  const name = await book(page, '14/9');
+  await recordMet(page, 'N3 giữ nguyên');
+  await book(page, '15/9', name);
+  await recordMet(page, 'N2');
+
+  // Yesterday's day alone lists the meeting of 14/09 (T-150).
+  const yesterday = async () => {
+    await page
+      .getByRole('radiogroup', { name: 'Loại kỳ' })
+      .getByRole('radio', { name: 'Ngày' })
+      .click();
+    await page.getByRole('button', { name: 'Kỳ trước' }).click();
+  };
+  const kept = page
+    .getByRole('table', { name: 'Danh sách lịch hẹn' })
+    .locator('tbody tr')
+    .filter({ hasText: name });
+  await yesterday();
+  await kept.getByRole('button', { name }).click();
+  await expect(detail(page).getByRole('heading', { level: 2 })).toHaveText(`14/09/2026 · ${name}`);
+  const profile =
+    (await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).getAttribute('href')) ?? '';
+  // A met appointment is deleted from its edit dialog (6f → 6g); keeping the stage, it moves none.
+  await detail(page).getByRole('button', { name: 'Sửa kết quả' }).click();
+  await page
+    .getByRole('dialog', { name: 'Sửa kết quả cuộc gặp' })
+    .getByRole('button', { name: 'Xóa lịch hẹn' })
+    .click();
+  const confirm = page.getByRole('dialog', { name: 'Xóa lịch hẹn 14/09/2026?' });
+  await expect(confirm).toContainText('Cuộc hẹn này không đổi nhóm KH');
+  await confirm.getByRole('button', { name: 'Xóa lịch hẹn' }).click();
+  await expect(confirm).toHaveCount(0);
+  await expect(kept).toHaveCount(0);
+
+  await openTrash(page);
+  const row = table(page).getByRole('row').nth(1);
+  await expect(row).toContainText('14/09/2026');
+  await expect(row).toContainText('Đã gặp');
+  await row.getByRole('button', { name: 'Khôi phục…' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Khôi phục lịch hẹn 14/09/2026?' });
+  await expect(dialog).toContainText('Kết quảĐã gặp · nhóm sau');
+  await expect(dialog).toContainText('Không đổi nhóm KH');
+  await dialog.getByRole('button', { name: 'Khôi phục', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(trash(page).getByRole('status')).toContainText('Đã khôi phục lịch hẹn 14/09/2026');
+  await expect(trash(page)).toContainText('Thùng rác trống');
+
+  // Back as it was: met on 14/09, the customer still in N2.
+  await sidebar(page).getByRole('link', { name: 'Lịch hẹn' }).click();
+  await yesterday();
+  await expect(kept).toHaveCount(1);
+  await expect(kept).toContainText('Đã gặp');
+  await page.goto(`/${profile}`);
+  await expect(
+    page.getByRole('region', { name }).getByText('N2', { exact: true }).first(),
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });

@@ -456,6 +456,15 @@ describe('restoreView (mockup 11b, 11c; TR-8)', () => {
     });
   });
 
+  it('E18: a met appointment that kept the stage when deleted leaves the stage', () => {
+    const view = restoreView({ ...met, stageAfter: 'N3', effect: { kind: 'none' } } as TrashRow);
+    expect(view.facts).toEqual([{ term: 'Kết quả', text: 'Đã gặp · nhóm sau', stage: 'N3' }]);
+    expect(view.effect).toEqual({
+      title: 'Không đổi nhóm KH',
+      body: 'Lịch hẹn vào lại danh sách Lịch hẹn và hồ sơ KH theo ngày của lịch.',
+    });
+  });
+
   it('E11: another appointment leaves the stage', () => {
     const view = restoreView(pastPlanned);
     expect(view.title).toBe('Khôi phục lịch hẹn 30/09/2026 10:00?');

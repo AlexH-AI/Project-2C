@@ -31,6 +31,8 @@ import {
   appendTransition,
   checkTransition,
   liveCustomer,
+  reinstateTransition,
+  transitionWithdrawnAt,
   withdrawAppointmentTransition,
 } from './customers';
 import type { Database } from './database';
@@ -247,46 +249,65 @@ export function rescheduleAppointment(
   });
 }
 
-/** A deleted appointment takes its transition with it, under the D7 rule. */
+/**
+ * A deleted appointment takes its transition with it, under the D7 rule, stamped with the instant
+ * of the deletion: restoring it gives back what the deletion withdrew, and nothing else.
+ */
 export function softDeleteAppointment(db: Database, id: string): void {
   db.transaction(() => {
     liveAppointment(db, id);
-    withdrawAppointmentTransition(db, id);
-    updateAppointmentRow(db, id, stampDeleted(db));
+    const deleted = stampDeleted(db);
+    withdrawAppointmentTransition(db, id, deleted.deletedAt);
+    updateAppointmentRow(db, id, deleted);
   });
 }
 
 /**
- * Restoring a met appointment applies its stage after again. A deleted meeting may lie ahead in an
- * imported file (spec §6 rule 10), so its day is checked again (DR-25).
+ * Restoring an appointment gives back what its deletion withdrew (spec Phase 6 TR-3). A deleted
+ * meeting may lie ahead in an imported file (spec §6 rule 10), so its day is checked again (DR-25).
  */
 export function restoreAppointment(db: Database, id: string): void {
   db.transaction(() => {
     const row = findAppointment(db, id);
     if (!row) throw new DbError('APPOINTMENT_NOT_FOUND');
     if (!row.deletedAt) return;
-    checkRestoreAppointment(db, row);
+    const move = checkRestoreAppointment(db, row);
     updateAppointmentRow(db, id, { deletedAt: null });
-    applyOutcome(db, row);
+    if (move?.to) reinstateTransition(db, move.withdrawn, move.to, fromIsoDate(row.date));
   });
 }
 
 /**
  * Why the appointment cannot be restored, thrown as `restoreAppointment` throws it (spec Phase 6
- * TR-2, TR-3, TR-5): the stage change of a met one is checked as it would be recorded (D10).
+ * TR-2, TR-3, TR-5): the stage change of a met one is checked as it would be recorded (D10), after
+ * whatever was recorded since the deletion, even on the meeting day (E20). Returns the stage move.
  */
-export function checkRestoreAppointment(db: Database, row: AppointmentRow): void {
+export function checkRestoreAppointment(db: Database, row: AppointmentRow) {
   const { stage } = liveCustomer(db, row.customerId);
   // The people were free to leave while the appointment was deleted.
   requirePeople(db, row.reId, coordinatorsOf(db, row.id));
   if (row.outcomeReviewerId !== null) requireReviewer(db, row.outcomeReviewerId);
   requireOutcomeDay(db, row.status, row.date);
-  const to = outcomeStage(row, stage);
-  if (to !== null) checkTransition(db, row.customerId, to, fromIsoDate(row.date));
+  const move = restoreStageMove(db, row, stage);
+  if (move?.to) {
+    checkTransition(db, row.customerId, move.to, fromIsoDate(row.date), move.withdrawn.deletedAt!);
+  }
+  return move;
+}
+
+/**
+ * What restoring the deleted appointment does to its customer, now in `stage` (spec Phase 6 TR-3):
+ * null when its deletion withdrew no transition — not met, or met keeping the stage, which comes
+ * back as it was whatever the stage did since (E18, E19). Otherwise that transition, and the stage
+ * to record again, null when the customer is in it already (E7).
+ */
+export function restoreStageMove(db: Database, row: AppointmentRow, stage: CustomerStage) {
+  const withdrawn = row.deletedAt && transitionWithdrawnAt(db, row.id, row.deletedAt);
+  return withdrawn ? { withdrawn, to: outcomeStage(row, stage) } : null;
 }
 
 /** The stage the outcome moves its customer to from `stage`, or null when it moves nothing. */
-export function outcomeStage(row: AppointmentRow, stage: CustomerStage): CustomerStage | null {
+function outcomeStage(row: AppointmentRow, stage: CustomerStage): CustomerStage | null {
   return row.status === 'MET' && row.stageAfter !== null && row.stageAfter !== stage
     ? row.stageAfter
     : null;
