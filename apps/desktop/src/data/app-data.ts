@@ -150,6 +150,13 @@ export interface AppData {
   lastSave(): LastSave | undefined;
   /** Called whenever `lastSave` changes; returns the unsubscribe function. */
   subscribeLastSave(listener: () => void): () => void;
+  /**
+   * Why the last save failed, for the save warning: the storage's error (`DISK_FULL` for a full
+   * disk). `undefined` until a save fails and once one succeeds; always in web mode.
+   */
+  saveError(): unknown;
+  /** Called whenever `saveError` changes; returns the unsubscribe function. */
+  subscribeSaveError(listener: () => void): () => void;
   /** The newest automatic backup's file name; `undefined` in web mode or when there is none. */
   latestBackup(): Promise<string | undefined>;
   /** Shows a data folder in Explorer; does nothing in web mode. */
@@ -195,6 +202,15 @@ const STARTUP_BACKUP_FAILED = 'STARTUP_BACKUP_FAILED';
 export const isStartupBackupError = (error: unknown): error is Error =>
   error instanceof Error && error.message === STARTUP_BACKUP_FAILED;
 
+const DATA_DAMAGED = 'DATA_DAMAGED';
+
+/**
+ * The refusal to start when the stored file opened but `PRAGMA quick_check` finds it damaged inside
+ * (DR6-06): nothing was backed up or saved. The first damage found is the `cause`.
+ */
+export const isDamagedDataError = (error: unknown): error is Error =>
+  error instanceof Error && error.message === DATA_DAMAGED;
+
 /** The `settings` row of Settings → AI (spec Phase 5 §4.1). */
 const AI_SETTINGS = 'ai';
 
@@ -236,15 +252,29 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     : clock;
   let lastSave: LastSave | undefined;
   const lastSaveListeners = new Set<() => void>();
-  // The stored file is backed up only once it opened (a file damaged inside never becomes the
-  // newest backup, DR-51); saves wait for that copy, so the migration's save never lands first,
-  // and nothing is saved when the copy fails (the app then does not start).
+  let saveError: unknown;
+  const saveErrorListeners = new Set<() => void>();
+  const setSaveError = (error: unknown) => {
+    if (Object.is(error, saveError)) return;
+    saveError = error;
+    for (const listener of saveErrorListeners) listener();
+  };
+  // The stored file is backed up only once it opened and passed its check (a file damaged inside
+  // never becomes the newest backup, DR-51, DR6-06); saves wait for that copy, so the migration's
+  // save never lands first, and nothing is saved when the check or the copy fails (the app then
+  // does not start).
   let backedUp = Promise.resolve();
   const saves = createPersistQueue(async (bytes) => {
     if (!storage) return;
     await backedUp;
     const start = performance.now();
-    await storage.save(bytes);
+    try {
+      await storage.save(bytes);
+    } catch (error) {
+      setSaveError(error);
+      throw error;
+    }
+    setSaveError(undefined);
     // Read by the perf probe (e2e/perf): "lưu DB" of spec Phase 6 §5.2.
     performance.measure('p2c:db-save', { start });
     lastSave = { at: clock(), size: bytes.byteLength };
@@ -297,9 +327,10 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     }
   };
 
+  // Saves the database as it opened, migrated: never the bytes it was opened from (DR6-08).
   const openFrom = async (bytes: Uint8Array): Promise<Database> => {
     const db = await open(bytes);
-    if (storage) saves.persist(bytes);
+    if (storage) saves.persist(db.export());
     return db;
   };
   const openNew = async (anchor: CalendarDate, aiSettings?: string): Promise<Database> =>
@@ -311,6 +342,10 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     let release!: () => void;
     backedUp = new Promise<void>((resolve) => (release = resolve));
     db = await open(stored);
+    // `quick_check` reads the whole file (≈ 80 ms on the load data): a damaged page may well
+    // leave every table the app reads at startup readable.
+    const [damage] = db.quickCheck();
+    if (damage !== undefined) throw new Error(DATA_DAMAGED, { cause: damage });
     try {
       await storage.backup();
     } catch (cause) {
@@ -422,6 +457,11 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     subscribeLastSave(listener) {
       lastSaveListeners.add(listener);
       return () => lastSaveListeners.delete(listener);
+    },
+    saveError: () => saveError,
+    subscribeSaveError(listener) {
+      saveErrorListeners.add(listener);
+      return () => saveErrorListeners.delete(listener);
     },
     latestBackup: () => storage?.latestBackup() ?? Promise.resolve(undefined),
     openFolder: (kind) => storage?.openFolder(kind) ?? Promise.resolve(),

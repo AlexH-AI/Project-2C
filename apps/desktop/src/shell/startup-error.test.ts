@@ -39,11 +39,44 @@ describe('startupMessage', () => {
     expect(help).toContain('chép bản liền trước nó');
   });
 
+  it('says the file is damaged when its check fails, and how to go back to a backup (DR6-06)', () => {
+    const cause = 'Tree 31 page 2463: btreeInitPage() returns error code 11';
+    const message = startupMessage(new Error('DATA_DAMAGED', { cause }));
+    expect(message).toEqual({
+      title: 'File dữ liệu bị hỏng',
+      help: startupMessage('database disk image is malformed').help,
+      detail: cause,
+    });
+    expect(message.help).toContain('chép bản liền trước nó');
+  });
+
+  // Copying a backup over a file that is whole would lose the changes since that backup.
+  it.each([
+    [
+      'FILE_IN_USE',
+      {
+        title: 'File dữ liệu đang bị chương trình khác giữ',
+        help: 'File dữ liệu không hỏng, không cần khôi phục. Một chương trình khác (phần mềm sao lưu, đồng bộ, diệt virus hay công cụ mở file SQLite) đang mở file trong thư mục Project2C-data: hãy đóng chương trình đó rồi mở lại app.',
+      },
+    ],
+    [
+      'ACCESS_DENIED',
+      {
+        title: 'App không có quyền ghi vào thư mục dữ liệu',
+        help: 'File dữ liệu không hỏng, không cần khôi phục. Hãy kiểm tra thư mục Project2C-data cạnh file exe và các file trong đó không chỉ đọc, tài khoản Windows đang dùng được quyền ghi vào đó (app chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như Program Files thì chép cả thư mục app sang chỗ khác), rồi mở lại app.',
+      },
+    ],
+  ])('says the file is whole when it is out of reach (%s, DR6-07)', (error, expected) => {
+    const message = startupMessage(error);
+    expect(message).toEqual(expected);
+    expect(message.help).not.toContain('chép bản mới nhất');
+  });
+
   it('keeps the open-failed message and the detail for any other error', () => {
-    expect(startupMessage('Access is denied. (os error 5)')).toEqual({
+    expect(startupMessage('The system cannot find the path specified. (os error 3)')).toEqual({
       title: 'Không mở được file dữ liệu',
       help: expect.stringContaining('Project2C-data\\backups') as string,
-      detail: 'Access is denied. (os error 5)',
+      detail: 'The system cannot find the path specified. (os error 3)',
     });
     expect(startupMessage(new Error('ALREADY_OPEN elsewhere'))).toMatchObject({
       title: 'Không mở được file dữ liệu',

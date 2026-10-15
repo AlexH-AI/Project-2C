@@ -171,6 +171,34 @@ describe('openDatabase', () => {
   });
 });
 
+describe('quickCheck', () => {
+  it('finds nothing in a whole database, new or saved', async () => {
+    const db = await openDatabase();
+    expect(db.quickCheck()).toEqual([]);
+    createTeam(db, { name: 'Sao Mai' });
+    expect((await openDatabase({ bytes: db.export() })).quickCheck()).toEqual([]);
+  });
+
+  it('finds any damaged page of a file that still opens, also one that stops the check (DR6-06)', async () => {
+    const db = await openDatabase();
+    for (let n = 0; n < 100; n++) createTeam(db, { name: `Team ${n} ${'x'.repeat(100)}` });
+    const bytes = db.export();
+    const pageSize = (bytes[16]! << 8) | bytes[17]!;
+    const found: string[][] = [];
+    // Page 1 holds the header and the schema: damaged, the file does not open at all.
+    for (let page = 1; page < bytes.length / pageSize; page++) {
+      const damaged = bytes.slice();
+      damaged.fill(0xff, page * pageSize, (page + 1) * pageSize);
+      const opened = await openDatabase({ bytes: damaged }).catch(() => undefined);
+      if (opened?.schemaVersion() === LATEST_SCHEMA_VERSION) found.push(opened.quickCheck());
+    }
+
+    expect(found.length).toBeGreaterThan(10);
+    expect(found.filter((problems) => problems.length === 0)).toEqual([]);
+    expect(found).toContainEqual(['database disk image is malformed']);
+  });
+});
+
 describe('schema constraints', () => {
   const insertPerson = (role: string, teamId: string | null) =>
     `INSERT INTO people (id, name, role, team_id, created_at, updated_at) VALUES ('p', 'A', '${role}', ${teamId === null ? 'NULL' : `'${teamId}'`}, 'x', 'x')`;

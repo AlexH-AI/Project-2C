@@ -1,6 +1,6 @@
 import { DbError } from '@p2c/db';
-import { isStartupBackupError } from '../data/app-data';
-import { ALREADY_OPEN, DISK_FULL } from '../data/tauri-storage';
+import { isDamagedDataError, isStartupBackupError } from '../data/app-data';
+import { ACCESS_DENIED, ALREADY_OPEN, DISK_FULL, FILE_IN_USE } from '../data/tauri-storage';
 import { t } from '../i18n';
 
 export interface StartupMessage {
@@ -15,6 +15,13 @@ export function startupMessage(error: unknown): StartupMessage {
   if (error === ALREADY_OPEN) {
     return { title: t('storage.alreadyOpen'), help: t('storage.alreadyOpenHelp') };
   }
+  // The file is whole: copying a backup over it would lose the changes since (DR6-07).
+  if (error === FILE_IN_USE) {
+    return { title: t('storage.fileInUse'), help: t('storage.fileInUseHelp') };
+  }
+  if (error === ACCESS_DENIED) {
+    return { title: t('storage.accessDenied'), help: t('storage.accessDeniedHelp') };
+  }
   if (isStartupBackupError(error)) {
     if (error.cause === DISK_FULL) {
       return { title: t('storage.diskFull'), help: t('storage.diskFullHelp') };
@@ -22,6 +29,13 @@ export function startupMessage(error: unknown): StartupMessage {
     return {
       title: t('storage.backupFailed'),
       help: t('storage.backupFailedHelp'),
+      detail: String(error.cause),
+    };
+  }
+  if (isDamagedDataError(error)) {
+    return {
+      title: t('storage.damaged'),
+      help: t('storage.openFailedHelp'),
       detail: String(error.cause),
     };
   }

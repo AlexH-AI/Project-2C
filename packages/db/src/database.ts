@@ -45,6 +45,11 @@ export interface Database {
   /** Runs `fn` with other sources, e.g. the seeded ones of the simulated data. */
   withSources<T>(sources: Sources, fn: () => T): T;
   export(): Uint8Array;
+  /**
+   * What `PRAGMA quick_check` finds damaged in the file (a page, an index out of step), empty when
+   * nothing: a file damaged inside may still open (DR6-06).
+   */
+  quickCheck(): string[];
 }
 
 export async function openDatabase(options: OpenDatabaseOptions = {}): Promise<Database> {
@@ -111,6 +116,17 @@ export async function openDatabase(options: OpenDatabaseOptions = {}): Promise<D
       }
     },
     export: exportBytes,
+    quickCheck() {
+      try {
+        const found = (sqlite.exec('PRAGMA quick_check')[0]?.values ?? []).map(([row]) =>
+          String(row),
+        );
+        return found.length === 1 && found[0] === 'ok' ? [] : found;
+      } catch (error) {
+        // Damage that stops the check itself.
+        return [error instanceof Error ? error.message : String(error)];
+      }
+    },
   };
 
   try {

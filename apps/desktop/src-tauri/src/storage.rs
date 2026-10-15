@@ -13,8 +13,14 @@ pub const DATA_DIR: &str = "Project2C-data";
 pub const ALREADY_OPEN: &str = "ALREADY_OPEN";
 /// Error message of a save from a page that a webview reload replaced.
 pub const STALE_PAGE: &str = "STALE_PAGE";
-/// Error message of a backup that found the disk full; the app matches it exactly.
+/// Error message of a backup or a save that found the disk full; the app matches it exactly.
 pub const DISK_FULL: &str = "DISK_FULL";
+/// Error message when another program holds the database file (or its `.tmp`) without sharing:
+/// the file is whole, only out of reach for now. The app matches it exactly.
+pub const FILE_IN_USE: &str = "FILE_IN_USE";
+/// Error message when Windows refuses the app the data folder (read-only, no rights): the file is
+/// whole. The app matches it exactly.
+pub const ACCESS_DENIED: &str = "ACCESS_DENIED";
 const DB_FILE: &str = "project2c.db";
 const LOCK_FILE: &str = "project2c.lock";
 const BACKUP_DIR: &str = "backups";
@@ -89,21 +95,23 @@ fn open_lock_file(path: &Path) -> io::Result<fs::File> {
 /// from the same process (a webview reload) open again under the lock it holds. Another process
 /// holding it → `ResourceBusy` with the message [`ALREADY_OPEN`]. A missing file with backups
 /// left is an error, so the app never starts over them. A file that is empty or not SQLite is an
-/// error, never a first start: the app would otherwise write a new database over it. Nothing is
-/// backed up here: the app calls [`backup`] once it opened the file, before saving anything, so a
-/// file damaged inside never becomes the newest backup (DR-51).
+/// error, never a first start: the app would otherwise write a new database over it. A file that
+/// is whole but out of reach → [`FILE_IN_USE`] or [`ACCESS_DENIED`] (see [`out_of_reach`]).
+/// Nothing is backed up here: the app calls [`backup`] once it opened and checked the file, before
+/// saving anything, so a file damaged inside never becomes the newest backup (DR-51).
 pub fn open(dir: &Path, page: &str, lock: &DataLock) -> io::Result<Option<Vec<u8>>> {
     let mut held = lock.hold();
-    fs::create_dir_all(dir)?;
+    fs::create_dir_all(dir).map_err(out_of_reach)?;
     if held.file.is_none() {
-        held.file = Some(open_lock_file(&dir.join(LOCK_FILE))?);
+        held.file = Some(open_lock_file(&dir.join(LOCK_FILE)).map_err(out_of_reach)?);
         // What a crash left, cleaned by the first open of the process only: a reload's open must
         // keep an export still running, and never finds a save of the old page half done (it
         // waited for the lock). Cleaned before anything below can fail, since a retry holds the
         // lock already and skips this.
         remove_interrupted_exports(&dir.join(EXPORT_DIR));
+        remove_interrupted_backups(&dir.join(BACKUP_DIR));
         // A crash between writing and renaming; the database file itself is whole.
-        remove_if_exists(&dir.join(tmp_name(DB_FILE)))?;
+        remove_if_exists(&dir.join(tmp_name(DB_FILE))).map_err(out_of_reach)?;
     }
     held.page = Some(page.to_owned());
     let backups = dir.join(BACKUP_DIR);
@@ -117,7 +125,7 @@ pub fn open(dir: &Path, page: &str, lock: &DataLock) -> io::Result<Option<Vec<u8
             ));
         }
         Err(error) if error.kind() == ErrorKind::NotFound => return Ok(None),
-        Err(error) => return Err(error),
+        Err(error) => return Err(out_of_reach(error)),
     };
     if !bytes.starts_with(SQLITE_HEADER) {
         return Err(io::Error::new(
@@ -146,6 +154,23 @@ fn disk_full(error: io::Error) -> io::Error {
     }
 }
 
+/// Gives a database file that is whole but out of reach the messages the app tells apart, so it
+/// never tells to copy a backup over a good file (DR6-07): another program holds the file or its
+/// `.tmp` ([`FILE_IN_USE`]), or Windows refuses the app the data folder ([`ACCESS_DENIED`]). Any
+/// other error stays as it is.
+fn out_of_reach(error: io::Error) -> io::Error {
+    // Windows `ERROR_SHARING_VIOLATION`, `ERROR_LOCK_VIOLATION`.
+    #[cfg(windows)]
+    if matches!(error.raw_os_error(), Some(32 | 33)) {
+        return io::Error::new(ErrorKind::ResourceBusy, FILE_IN_USE);
+    }
+    if error.kind() == ErrorKind::PermissionDenied {
+        io::Error::new(ErrorKind::PermissionDenied, ACCESS_DENIED)
+    } else {
+        error
+    }
+}
+
 /// Writes `bytes` as the next backup, keeping the ten last written; returns the name of the copy.
 /// Starts on a file that did not change must not push the older backups out, so an identical copy
 /// is reused instead of written twice, and the backups are pruned again then: a prune another
@@ -164,13 +189,25 @@ fn copy_to_backups(backups: &Path, bytes: &[u8], stamp: &str) -> io::Result<Stri
 
 /// Replaces the database file atomically. A save from another page than the last [`open`]'s (one
 /// still on its way from before a webview reload) is refused with [`STALE_PAGE`]: the new page
-/// read the file without it, and its next save would write over it unseen.
+/// read the file without it, and its next save would write over it unseen. A full disk →
+/// `StorageFull` with the message [`DISK_FULL`].
 pub fn save(dir: &Path, bytes: &[u8], page: &str, lock: &DataLock) -> io::Result<()> {
+    save_with(dir, bytes, page, lock, fs::File::sync_all)
+}
+
+/// [`save`] with the flush to the disk passed in, which the tests make fail.
+fn save_with(
+    dir: &Path,
+    bytes: &[u8],
+    page: &str,
+    lock: &DataLock,
+    flush: impl FnOnce(&fs::File) -> io::Result<()>,
+) -> io::Result<()> {
     let held = lock.hold();
     if held.page.as_deref().is_some_and(|opened| opened != page) {
         return Err(io::Error::other(STALE_PAGE));
     }
-    write_atomic(dir, DB_FILE, bytes)
+    write_atomic_with(dir, DB_FILE, bytes, flush).map_err(disk_full)
 }
 
 /// Writes an export file into `exports\` and returns its path. An earlier export is never
@@ -253,6 +290,20 @@ fn remove_interrupted_exports(exports: &Path) {
     }
 }
 
+/// Removes the `.tmp` of a backup cut short by a crash from `backups\`: as big as the database,
+/// and never pruned, since it is not named like a backup (DR6-09). Runs with
+/// [`remove_interrupted_exports`], under the data lock that every backup holds, so no backup is
+/// running. Best effort, like it.
+fn remove_interrupted_backups(backups: &Path) {
+    for entry in fs::read_dir(backups).into_iter().flatten().flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        let left = name.strip_suffix(".tmp").and_then(backup_seq).is_some();
+        if left && entry.file_type().is_ok_and(|kind| kind.is_file()) {
+            let _ = fs::remove_file(entry.path());
+        }
+    }
+}
+
 /// Formats seconds since 1970 (already shifted to local time) as `YYYYMMDD-HHMMSS`.
 pub fn stamp(local_secs: i64) -> String {
     let days = local_secs.div_euclid(86_400);
@@ -286,12 +337,22 @@ fn tmp_name(name: &str) -> String {
 
 /// Writes `name.tmp`, flushes it to disk, then renames it over `name`: never a half-written file.
 fn write_atomic(dir: &Path, name: &str, bytes: &[u8]) -> io::Result<()> {
+    write_atomic_with(dir, name, bytes, fs::File::sync_all)
+}
+
+/// [`write_atomic`] with the flush to the disk passed in.
+fn write_atomic_with(
+    dir: &Path,
+    name: &str,
+    bytes: &[u8],
+    flush: impl FnOnce(&fs::File) -> io::Result<()>,
+) -> io::Result<()> {
     fs::create_dir_all(dir)?;
     let tmp = dir.join(tmp_name(name));
     let result = (|| {
         let mut file = fs::File::create(&tmp)?;
         file.write_all(bytes)?;
-        file.sync_all()?;
+        flush(&file)?;
         drop(file);
         fs::rename(&tmp, dir.join(name))
     })();
@@ -474,12 +535,36 @@ mod tests {
     use super::*;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
-    fn temp_dir() -> PathBuf {
+    /// A folder of its own under the system's temp folder, removed with all it holds once the test
+    /// ends, also when it fails (DR6-09).
+    struct TempDir(PathBuf);
+
+    impl std::ops::Deref for TempDir {
+        type Target = Path;
+
+        fn deref(&self) -> &Path {
+            &self.0
+        }
+    }
+
+    impl AsRef<Path> for TempDir {
+        fn as_ref(&self) -> &Path {
+            &self.0
+        }
+    }
+
+    impl Drop for TempDir {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    fn temp_dir() -> TempDir {
         static NEXT: AtomicUsize = AtomicUsize::new(0);
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
         let dir = std::env::temp_dir().join(format!("p2c-storage-{}-{n}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);
-        dir
+        TempDir(dir)
     }
 
     fn names(dir: &Path) -> Vec<String> {
@@ -498,6 +583,15 @@ mod tests {
 
     fn save(dir: &Path, bytes: &[u8]) -> io::Result<()> {
         super::save(dir, bytes, PAGE, &DataLock::new())
+    }
+
+    /// `save` whose flush to the disk does `flush` instead.
+    fn save_flushing(
+        dir: &Path,
+        bytes: &[u8],
+        flush: impl FnOnce(&fs::File) -> io::Result<()>,
+    ) -> io::Result<()> {
+        save_with(dir, bytes, PAGE, &DataLock::new(), flush)
     }
 
     fn backup(dir: &Path, stamp: &str) -> io::Result<String> {
@@ -727,6 +821,65 @@ mod tests {
     }
 
     #[test]
+    fn a_save_that_finds_the_disk_full_is_reported_as_disk_full() {
+        // The save warning then tells to free some room, not to look for a program (DR6-07).
+        let dir = temp_dir();
+        save(&dir, &db("old")).unwrap();
+        let error =
+            save_flushing(&dir, &db("new"), |_| Err(ErrorKind::StorageFull.into())).unwrap_err();
+        assert_eq!(error.kind(), ErrorKind::StorageFull);
+        assert_eq!(error.to_string(), DISK_FULL);
+        assert_eq!(fs::read(dir.join(DB_FILE)).unwrap(), db("old"));
+    }
+
+    #[test]
+    fn a_save_flushes_the_written_file_to_the_disk_before_it_replaces_the_old_one() {
+        let dir = temp_dir();
+        save(&dir, &db("old")).unwrap();
+        // A flush that fails: the save fails, the old file stays, no `.tmp` is left.
+        let error = save_flushing(&dir, &db("new"), |_| Err(io::Error::other("flush failed")));
+        assert_eq!(error.unwrap_err().to_string(), "flush failed");
+        assert_eq!(fs::read(dir.join(DB_FILE)).unwrap(), db("old"));
+        assert_eq!(names(&dir), vec![DB_FILE]);
+
+        // The flush runs on the whole new file while the old one is still in place.
+        let mut flushed = false;
+        save_flushing(&dir, &db("new"), |file| {
+            assert_eq!(file.metadata()?.len(), db("new").len() as u64);
+            assert_eq!(fs::read(dir.join(DB_FILE))?, db("old"));
+            flushed = true;
+            Ok(())
+        })
+        .unwrap();
+        assert!(flushed);
+        assert_eq!(fs::read(dir.join(DB_FILE)).unwrap(), db("new"));
+    }
+
+    #[test]
+    fn a_whole_file_out_of_reach_is_reported_by_its_cause() {
+        // Windows `ERROR_SHARING_VIOLATION`, `ERROR_LOCK_VIOLATION`: another program holds it.
+        #[cfg(windows)]
+        for code in [32, 33] {
+            let held = out_of_reach(io::Error::from_raw_os_error(code));
+            assert_eq!(held.to_string(), FILE_IN_USE, "os error {code}");
+        }
+        // Windows `ERROR_ACCESS_DENIED` among others: the app may not write the data folder.
+        let denied = out_of_reach(io::Error::from(ErrorKind::PermissionDenied));
+        assert_eq!(denied.kind(), ErrorKind::PermissionDenied);
+        assert_eq!(denied.to_string(), ACCESS_DENIED);
+        // A file that is missing, damaged or another process's keeps its own error.
+        for kind in [
+            ErrorKind::NotFound,
+            ErrorKind::InvalidData,
+            ErrorKind::StorageFull,
+        ] {
+            assert_eq!(out_of_reach(io::Error::from(kind)).kind(), kind);
+        }
+        let open = out_of_reach(io::Error::new(ErrorKind::ResourceBusy, ALREADY_OPEN));
+        assert_eq!(open.to_string(), ALREADY_OPEN);
+    }
+
+    #[test]
     fn backup_of_a_file_of_the_same_size_that_differs_only_at_the_end_writes_a_copy() {
         // Compared block by block (DR-53): a partial last block and a late difference still count.
         let dir = temp_dir();
@@ -738,6 +891,21 @@ mod tests {
         let second = backup(&dir, "20261006-080001").unwrap();
         assert_ne!(second, first);
         assert_eq!(fs::read(dir.join(BACKUP_DIR).join(second)).unwrap(), bytes);
+    }
+
+    #[test]
+    fn backup_of_a_file_a_longer_backup_starts_with_writes_a_copy() {
+        // Only a copy with exactly the same bytes is reused, not one that goes on after them.
+        let dir = temp_dir();
+        save(&dir, &db("data and more")).unwrap();
+        let longer = backup(&dir, "20261006-080000").unwrap();
+        save(&dir, &db("data")).unwrap();
+        let copy = backup(&dir, "20261006-080001").unwrap();
+        assert_ne!(copy, longer);
+        assert_eq!(
+            fs::read(dir.join(BACKUP_DIR).join(copy)).unwrap(),
+            db("data")
+        );
     }
 
     #[test]
@@ -1053,6 +1221,68 @@ mod tests {
         assert!(!dir.join("project2c.db.tmp").exists());
     }
 
+    /// Opens `path` as another program does that lets no one else in (a sync or backup tool, an
+    /// antivirus scan, a SQLite browser).
+    #[cfg(windows)]
+    fn hold(path: &Path) -> fs::File {
+        use std::os::windows::fs::OpenOptionsExt;
+        fs::OpenOptions::new()
+            .read(true)
+            .share_mode(0)
+            .open(path)
+            .unwrap()
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn open_reports_a_database_file_another_program_holds_as_in_use() {
+        // The file is whole: the app must not tell to copy a backup over it (DR6-07).
+        let dir = temp_dir();
+        save(&dir, &db("data")).unwrap();
+        let holder = hold(&dir.join(DB_FILE));
+        let error = open(&dir).unwrap_err();
+        assert_eq!(error.kind(), ErrorKind::ResourceBusy);
+        assert_eq!(error.to_string(), FILE_IN_USE);
+
+        drop(holder);
+        assert_eq!(open(&dir).unwrap(), Some(db("data")));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn open_reports_a_db_tmp_another_program_holds_as_in_use() {
+        let dir = temp_dir();
+        save(&dir, &db("data")).unwrap();
+        fs::write(dir.join("project2c.db.tmp"), b"half").unwrap();
+        let holder = hold(&dir.join("project2c.db.tmp"));
+        assert_eq!(open(&dir).unwrap_err().to_string(), FILE_IN_USE);
+
+        drop(holder);
+        assert_eq!(open(&dir).unwrap(), Some(db("data")));
+        assert!(!dir.join("project2c.db.tmp").exists());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn open_reports_a_data_folder_it_may_not_write_as_access_denied() {
+        // A read-only lock file, as in a folder copied from a read-only place: the database file
+        // is whole (DR6-07).
+        let dir = temp_dir();
+        save(&dir, &db("data")).unwrap();
+        let lock_file = dir.join(LOCK_FILE);
+        fs::write(&lock_file, b"").unwrap();
+        let writable = fs::metadata(&lock_file).unwrap().permissions();
+        let mut read_only = writable.clone();
+        read_only.set_readonly(true);
+        fs::set_permissions(&lock_file, read_only).unwrap();
+        let error = open(&dir).unwrap_err();
+        fs::set_permissions(&lock_file, writable).unwrap();
+        assert_eq!(error.kind(), ErrorKind::PermissionDenied);
+        assert_eq!(error.to_string(), ACCESS_DENIED);
+
+        assert_eq!(open(&dir).unwrap(), Some(db("data")));
+    }
+
     #[cfg(windows)]
     #[test]
     fn open_keeps_the_lock_and_does_not_lock_itself_out() {
@@ -1075,6 +1305,33 @@ mod tests {
         fs::write(dir.join("project2c.db.tmp"), b"half").unwrap();
         assert_eq!(open(&dir).unwrap(), Some(db("data")));
         assert!(!dir.join("project2c.db.tmp").exists());
+    }
+
+    #[test]
+    fn open_removes_the_tmp_of_a_backup_cut_short_and_keeps_everything_else() {
+        // A crash while copying leaves a `.tmp` as big as the database, never pruned (DR6-09).
+        let dir = temp_dir();
+        save(&dir, &db("data")).unwrap();
+        let kept = backup(&dir, "20261015-080000").unwrap();
+        let backups = dir.join(BACKUP_DIR);
+        fs::write(
+            backups.join(tmp_name(&backup_name(2, "20261015-090000"))),
+            b"half",
+        )
+        .unwrap();
+        let folder = tmp_name(&backup_name(3, "20261015-090000"));
+        fs::create_dir_all(backups.join(&folder)).unwrap();
+        let foreign = ["notes.tmp", "project2c-notes.db.tmp"];
+        for name in foreign {
+            fs::write(backups.join(name), b"not ours").unwrap();
+        }
+
+        open(&dir).unwrap();
+
+        let mut expected = vec![kept, folder];
+        expected.extend(foreign.map(String::from));
+        expected.sort();
+        assert_eq!(names(&backups), expected);
     }
 
     #[cfg(windows)]
@@ -1168,6 +1425,8 @@ mod tests {
             r"x\..\..\evil.p2cbackup",
             "a/b.p2cbackup",
             ".p2cbackup",
+            // Long enough, and only allowed characters: only the rule on a leading dot stops it.
+            "..p2cbackup",
             "a.db",
         ] {
             let error = write_export(&dir, name, b"x").unwrap_err();
@@ -1210,7 +1469,7 @@ mod tests {
             exports.join("bao-cao_2026-10_toan-bo_2026-10-15-2.xlsx")
         );
         assert_eq!(fs::read(&first).unwrap(), b"first");
-        for name in [".xlsx", "a.xls", "a.xlsx.exe", "a b.xlsx"] {
+        for name in [".xlsx", ".a.xlsx", "a.xls", "a.xlsx.exe", "a b.xlsx"] {
             let error = write_export(&dir, name, b"x").unwrap_err();
             assert_eq!(error.kind(), ErrorKind::InvalidInput, "{name}");
         }

@@ -3,7 +3,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { tauriOpenCode } from './ai-tauri';
-import { ALREADY_OPEN, DISK_FULL, tauriStorage } from './tauri-storage';
+import { ACCESS_DENIED, ALREADY_OPEN, DISK_FULL, FILE_IN_USE, tauriStorage } from './tauri-storage';
 
 const rust = (file: string) =>
   readFileSync(new URL(`../../src-tauri/src/${file}`, import.meta.url), 'utf8');
@@ -134,6 +134,8 @@ describe('the JS ↔ Rust storage contract', () => {
   it('matches the error messages Rust sends', () => {
     expect(rustString(storage, 'ALREADY_OPEN')).toBe(ALREADY_OPEN);
     expect(rustString(storage, 'DISK_FULL')).toBe(DISK_FULL);
+    expect(rustString(storage, 'FILE_IN_USE')).toBe(FILE_IN_USE);
+    expect(rustString(storage, 'ACCESS_DENIED')).toBe(ACCESS_DENIED);
   });
 
   it('reads an empty reply of db_open as a first start, which Rust sends for no file', () => {
