@@ -241,7 +241,7 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
 
   it('E7: restores a met appointment without a transition when the stage is already its own', async () => {
     const { db, bao, meeting, row, restored } = await deletedMeeting();
-    changeStageManually(db, bao.id, { to: 'N2', date: d(10, 10) });
+    changeStageManually(db, bao.id, { to: 'N2', date: d(2, 10) });
     const transitions = listStageTransitions(db, bao.id);
 
     const r = row(meeting.id);
@@ -249,6 +249,19 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
     expect(restored(r)).toBeUndefined();
     expect(listStageTransitions(db, bao.id)).toEqual(transitions);
     expect(isRfAppointment(getAppointment(db, meeting.id)!, listStageTransitions(db))).toBe(false);
+  });
+
+  it('E7: blocks it like E6 once the customer reached that stage after its day (Owner 15/10/2026)', async () => {
+    const { db, bao, meeting, row, restored } = await deletedMeeting();
+    changeStageManually(db, bao.id, { to: 'N2', date: d(10, 10) });
+
+    const r = row(meeting.id);
+    // Kept in N2 on 02/10 while the customer was in N3 that day: the import would refuse it.
+    expect(r.blocked).toEqual({
+      code: 'TRANSITION_BEFORE_LATEST',
+      params: { date: '10/10/2026' },
+    });
+    expect(restored(r)).toEqual(r.blocked);
   });
 
   it('E8: blocks a met appointment once the customer was lost after its day', async () => {

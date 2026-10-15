@@ -19,6 +19,7 @@ import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
 import { analysisContentFits, analysisLabelsFit, type AnalysisFields } from './ai-analyses';
 import { cleanText, isFee, optionalText, requireName, storedDate, today } from './common';
+import { isStageOfDay } from './customers';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { profileFactValue, type ProfileFields } from './kyc';
@@ -203,11 +204,27 @@ function follows(previous: Row, next: Row): boolean {
 
 /**
  * Rule 4: a live transition caused by a meeting carries its customer, day and stage after, and the
- * meeting is live too: deleting an appointment withdraws its transition (D7).
+ * meeting is live too: deleting an appointment withdraws its transition (D7). A live meeting that
+ * moved no stage kept one the customer was in that day (`isStageOfDay`, T-232).
  */
 function meetingRule(appointments: Map<unknown, Row>, transitions: Row[]): Rule | null {
-  const caused = transitions.filter((t) => t.deleted_at === null && t.appointment_id !== null);
-  const once = new Set(caused.map((t) => t.appointment_id)).size === caused.length;
+  const live = transitions.filter((t) => t.deleted_at === null);
+  const caused = live.filter((t) => t.appointment_id !== null);
+  const moved = new Set(caused.map((t) => t.appointment_id));
+  const days = new Map(
+    [...groupBy(live, 'customer_id')].map(([id, rows]) => [
+      id,
+      rows.map((t) => ({ date: fromIsoDate(t.date as string), to: t.to_stage as CustomerStage })),
+    ]),
+  );
+  for (const a of appointments.values()) {
+    if (a.deleted_at !== null || a.status !== 'MET' || moved.has(a.id)) continue;
+    const stage = a.stage_after as CustomerStage;
+    if (!isStageOfDay(days.get(a.customer_id) ?? [], fromIsoDate(a.date as string), stage)) {
+      return 4;
+    }
+  }
+  const once = moved.size === caused.length;
   const matching = caused.every((t) => {
     const a = appointments.get(t.appointment_id)!;
     return (

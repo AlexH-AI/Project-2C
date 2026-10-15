@@ -775,7 +775,7 @@ describe('editMeetingOutcome', () => {
 
   it.each([
     ['a no-show', { status: 'NO_SHOW' } as const],
-    ['a meeting that moves no one', MET_N2],
+    ['a meeting that keeps the stage of that day', { ...MET_N2, stageAfter: 'N3' } as const],
   ])('moves a meeting to a day before an earlier change once it becomes %s', async (_, outcome) => {
     const { db, customer, schedule, stage } = await withCustomer();
     changeStageManually(db, customer.id, { to: 'N2', date: d(5, 1) });
@@ -859,10 +859,14 @@ describe('recording an outcome late', () => {
     expect(listStageTransitions(db, customer.id)).toHaveLength(2);
   });
 
-  it('records an outcome that makes no transition: the current stage, cancelled or no-show', async () => {
+  it('records an outcome that makes no transition: the stage of its day, cancelled or no-show', async () => {
     const { db, customer, id, stage } = await changedAfterMeeting();
 
-    expect(recordMeetingOutcome(db, id, { ...MET_N2, stageAfter: 'N4' }).status).toBe('MET');
+    // H·CL-E4: the current stage is not the one the customer was in on the meeting day.
+    expect(codeOf(() => recordMeetingOutcome(db, id, { ...MET_N2, stageAfter: 'N4' }))).toBe(
+      'TRANSITION_BEFORE_LATEST',
+    );
+    expect(recordMeetingOutcome(db, id, { ...MET_N2, stageAfter: 'N3' }).status).toBe('MET');
     expect(recordMeetingOutcome(db, id, { status: 'CANCELLED' }).status).toBe('CANCELLED');
     expect(recordMeetingOutcome(db, id, { status: 'NO_SHOW' }).status).toBe('NO_SHOW');
     expect(stage()).toBe('N4');
@@ -880,6 +884,141 @@ describe('recording an outcome late', () => {
     expect(transitions.at(-1)).toMatchObject({ from: 'N4', to: 'N1', date: d(5, 1) });
     expect(stageOn(transitions.slice(0, -1), customer.id, d(5, 1))).toBe('N4');
     expect(stageOn(transitions, customer.id, d(31, 1))).toBe(stage());
+  });
+});
+
+// T-232 (DR6-04, DR6-05): a meeting that moved no stage records the customer's stage on its day,
+// and nothing recorded later may change that day's stage from under it (spec §4, D7, D10).
+describe('the stage on the meeting day', () => {
+  const KEPT_N3 = { ...MET_N2, stageAfter: 'N3' } as const;
+  const steps = (db: Awaited<ReturnType<typeof setup>>['db'], customerId: string) =>
+    listStageTransitions(db, customerId).map((t) => [t.to, t.date, t.appointmentId]);
+
+  it('H·CL-E4: records a late meeting as kept only in the stage of its day', async () => {
+    const { db, customer, schedule, stage } = await withCustomer();
+    const { id } = schedule(5);
+    changeStageManually(db, customer.id, { to: 'N2', date: d(15, 1) });
+
+    // N2 is the current stage, not the one of 05/01: it would move the customer back to 05/01.
+    expect(errorOf(() => recordMeetingOutcome(db, id, MET_N2))).toMatchObject({
+      code: 'TRANSITION_BEFORE_LATEST',
+      params: { date: '15/01/2026' },
+    });
+    recordMeetingOutcome(db, id, KEPT_N3);
+
+    expect(getAppointment(db, id)).toMatchObject({ status: 'MET', stageAfter: 'N3' });
+    expect(steps(db, customer.id)).toEqual([
+      ['N3', d(1, 1), null],
+      ['N2', d(15, 1), null],
+    ]);
+    expect(stage()).toBe('N2');
+  });
+
+  it('H·CL-A2: moves a kept meeting past a manual change as if recorded on the new day', async () => {
+    const { db, customer, schedule, stage } = await withCustomer();
+    const { id } = schedule(5);
+    recordMeetingOutcome(db, id, KEPT_N3);
+    changeStageManually(db, customer.id, { to: 'N2', date: d(15, 1) });
+
+    editMeetingOutcome(db, id, KEPT_N3, { date: d(20, 1) });
+
+    expect(steps(db, customer.id)).toEqual([
+      ['N3', d(1, 1), null],
+      ['N2', d(15, 1), null],
+      ['N3', d(20, 1), id],
+    ]);
+    expect(stage()).toBe('N3');
+  });
+
+  it('H·CL-A2: refuses moving a kept meeting before the change that took the customer there', async () => {
+    const { db, customer, schedule } = await withCustomer();
+    changeStageManually(db, customer.id, { to: 'N2', date: d(5, 1) });
+    const { id } = schedule(10);
+    recordMeetingOutcome(db, id, MET_N2);
+    const before = getAppointment(db, id);
+
+    expect(errorOf(() => editMeetingOutcome(db, id, MET_N2, { date: d(3, 1) }))).toMatchObject({
+      code: 'TRANSITION_BEFORE_LATEST',
+      params: { date: '05/01/2026' },
+    });
+    expect(getAppointment(db, id)).toEqual(before);
+    // On the day of the change it still kept N2, the stage the customer reached that day.
+    editMeetingOutcome(db, id, MET_N2, { date: d(5, 1) });
+    expect(steps(db, customer.id)).toHaveLength(2);
+  });
+
+  it('H·CL-F3: keeps the move of a meeting while a later meeting kept the stage it moved to (D7)', async () => {
+    const { db, schedule, stage } = await withCustomer();
+    const moved = schedule(5);
+    recordMeetingOutcome(db, moved.id, MET_N2);
+    const kept = schedule(12);
+    recordMeetingOutcome(db, kept.id, MET_N2);
+
+    const blocked = { code: 'STAGE_KEPT_BY_MEETING', params: { date: '12/01/2026' } };
+    expect(errorOf(() => softDeleteAppointment(db, moved.id))).toMatchObject(blocked);
+    const change = { ...MET_N2, stageAfter: 'N1' } as const;
+    expect(errorOf(() => editMeetingOutcome(db, moved.id, change, {}))).toMatchObject(blocked);
+    expect(
+      errorOf(() => recordMeetingOutcome(db, moved.id, { status: 'CANCELLED' })),
+    ).toMatchObject(blocked);
+    expect(stage()).toBe('N2');
+
+    // Its other fields stay open, and the later meeting going takes the lock with it.
+    editMeetingOutcome(db, moved.id, { ...MET_N2, note: 'Đã gửi minh họa' }, {});
+    softDeleteAppointment(db, kept.id);
+    softDeleteAppointment(db, moved.id);
+    expect(stage()).toBe('N3');
+  });
+
+  it('H·CL-F3: a meeting kept that day in a stage the customer is still in does not lock', async () => {
+    const { db, customer, schedule, stage } = await withCustomer();
+    changeStageManually(db, customer.id, { to: 'N2', date: d(5, 1) });
+    const kept = schedule(5);
+    recordMeetingOutcome(db, kept.id, MET_N2);
+    const moved = schedule(5);
+    recordMeetingOutcome(db, moved.id, { ...MET_N2, stageAfter: 'N1' });
+
+    softDeleteAppointment(db, moved.id);
+    expect(stage()).toBe('N2');
+  });
+
+  it('refuses a stage change dated before a met appointment already recorded (5d)', async () => {
+    const { db, customer, schedule, stage } = await withCustomer();
+    const kept = schedule(12);
+    recordMeetingOutcome(db, kept.id, KEPT_N3);
+    const late = schedule(8);
+
+    const blocked = { code: 'TRANSITION_BEFORE_MEETING', params: { date: '12/01/2026' } };
+    expect(
+      errorOf(() => changeStageManually(db, customer.id, { to: 'N2', date: d(11, 1) })),
+    ).toMatchObject(blocked);
+    expect(errorOf(() => recordMeetingOutcome(db, late.id, MET_N2))).toMatchObject(blocked);
+    expect(stage()).toBe('N3');
+
+    // From the meeting day on, as D10 allows: the meeting kept N3, the stage it started that day.
+    changeStageManually(db, customer.id, { to: 'N2', date: d(12, 1) });
+    expect(stage()).toBe('N2');
+  });
+
+  it('restores a kept meeting only while the stage of its day is still the one it kept', async () => {
+    const { db, customer, schedule } = await withCustomer();
+    const moved = schedule(5);
+    recordMeetingOutcome(db, moved.id, MET_N2);
+    const kept = schedule(12);
+    recordMeetingOutcome(db, kept.id, MET_N2);
+    softDeleteAppointment(db, kept.id);
+    softDeleteAppointment(db, moved.id);
+
+    expect(errorOf(() => restoreAppointment(db, kept.id))).toMatchObject({
+      code: 'STAGE_NOT_ON_DAY',
+      params: { date: '12/01/2026' },
+    });
+    restoreAppointment(db, moved.id);
+    restoreAppointment(db, kept.id);
+    expect(steps(db, customer.id)).toEqual([
+      ['N3', d(1, 1), null],
+      ['N2', d(5, 1), moved.id],
+    ]);
   });
 });
 

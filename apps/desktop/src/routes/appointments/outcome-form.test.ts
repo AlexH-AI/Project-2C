@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { calendarDate, formatDate, type CustomerStage, type StageTransition } from '@p2c/domain';
+import {
+  calendarDate,
+  formatDate,
+  type CalendarDate,
+  type CustomerStage,
+  type StageTransition,
+} from '@p2c/domain';
 import { parseTime, readScheduleDate } from './appointment-form';
 import {
+  heldStage,
+  meetingDay,
   OUTCOME_CHOICES,
   outcomeChoices,
   outcomeLock,
@@ -135,30 +143,94 @@ describe('outcomeChoices', () => {
   });
 });
 
-describe('outcomeLock', () => {
-  const move = (
-    id: string,
-    customerId: string,
-    from: CustomerStage,
-    to: CustomerStage,
-    appointmentId: string | null = null,
-  ): StageTransition => ({ id, customerId, from, to, date: TODAY, appointmentId });
-  const a = { id: 'a1', customerId: 'c1' };
+const move = (
+  id: string,
+  customerId: string,
+  from: CustomerStage | null,
+  to: CustomerStage,
+  appointmentId: string | null = null,
+  date = TODAY,
+): StageTransition => ({ id, customerId, from, to, date, appointmentId });
+/** A met appointment of `date` whose stage after is `stage`. */
+const metOn = (id: string, customerId: string, date: CalendarDate, stage: CustomerStage) => ({
+  id,
+  customerId,
+  date,
+  status: 'MET' as const,
+  stageAfter: stage,
+});
+const a = { id: 'a1', customerId: 'c1' };
 
+describe('outcomeLock', () => {
   it('finds nothing to lock when the appointment moved no one', () => {
-    expect(outcomeLock([move('t1', 'c1', 'N3', 'N2')], a)).toEqual({});
+    expect(outcomeLock([move('t1', 'c1', 'N3', 'N2')], [], a)).toEqual({});
   });
 
   it('holds the move the appointment made while it is the latest (D7)', () => {
     const caused = move('t1', 'c1', 'N3', 'N2', 'a1');
     const elsewhere = move('t2', 'c2', 'N2', 'N1');
-    expect(outcomeLock([caused, elsewhere], a)).toEqual({ caused });
+    expect(outcomeLock([caused, elsewhere], [], a)).toEqual({ caused });
   });
 
   it('is locked by a later move of the same customer', () => {
     const caused = move('t1', 'c1', 'N3', 'N2', 'a1');
     const later = move('t2', 'c1', 'N2', 'N1');
-    expect(outcomeLock([caused, later], a)).toEqual({ caused, later });
+    expect(outcomeLock([caused, later], [], a)).toEqual({ caused, later });
+  });
+
+  it('is locked by a later meeting that kept the stage it moved to (D7, H·CL-F3)', () => {
+    const created = move('t0', 'c1', null, 'N3', null, d(1, 9, 2026));
+    const caused = move('t1', 'c1', 'N3', 'N2', 'a1', d(5, 9, 2026));
+    const kept = metOn('m2', 'c1', d(12, 9, 2026), 'N2');
+    const other = metOn('m3', 'c2', d(12, 9, 2026), 'N2');
+    expect(outcomeLock([created, caused], [other, kept], a)).toEqual({ caused, keptBy: kept });
+    // Kept that day in the stage it started from, which stays when the move goes.
+    const before = metOn('m4', 'c1', d(5, 9, 2026), 'N3');
+    expect(outcomeLock([created, caused], [before], a)).toEqual({ caused });
+  });
+});
+
+describe('meetingDay', () => {
+  const history = [
+    move('t0', 'c1', null, 'N3', null, d(1, 9, 2026)),
+    move('t1', 'c1', 'N3', 'N2', null, d(15, 9, 2026)),
+  ];
+
+  it('starts a late meeting from the stage of its day, held there by a later change (H·CL-E4)', () => {
+    const day = meetingDay(history, [], a, d(5, 9, 2026));
+    expect(day).toEqual({ from: 'N3', change: history[1] });
+    expect(heldStage(day)).toBe('N3');
+    expect(heldStage(meetingDay(history, [], a, d(20, 9, 2026)))).toBeUndefined();
+  });
+
+  it('starts from the current stage when nothing came after its day', () => {
+    expect(meetingDay(history, [], a, d(15, 9, 2026))).toEqual({ from: 'N2' });
+    expect(meetingDay(history, [], a, d(20, 9, 2026))).toEqual({ from: 'N2' });
+  });
+
+  it('is held by a later met appointment, which recorded the stage of its own day', () => {
+    const kept = metOn('m2', 'c1', d(20, 9, 2026), 'N2');
+    const elsewhere = metOn('m3', 'c2', d(25, 9, 2026), 'N1');
+    expect(meetingDay(history, [kept, elsewhere], a, d(18, 9, 2026))).toEqual({
+      from: 'N2',
+      meeting: kept,
+    });
+    expect(meetingDay(history, [kept], a, d(20, 9, 2026))).toEqual({ from: 'N2' });
+  });
+
+  it('leaves out the appointment itself and its own move', () => {
+    const own = move('t2', 'c1', 'N2', 'N1', 'a1', d(20, 9, 2026));
+    const self = metOn('a1', 'c1', d(20, 9, 2026), 'N1');
+    expect(meetingDay([...history, own], [self], a, d(18, 9, 2026))).toEqual({ from: 'N2' });
+  });
+
+  it('starts a meeting kept on its day from that stage, held by a change later that day (E19)', () => {
+    const later = move('t2', 'c1', 'N2', 'N3', null, d(20, 9, 2026));
+    expect(meetingDay([...history, later], [], a, d(20, 9, 2026), 'N2')).toEqual({
+      from: 'N2',
+      change: later,
+    });
+    expect(meetingDay(history, [], a, d(20, 9, 2026), 'N2')).toEqual({ from: 'N2' });
   });
 });
 

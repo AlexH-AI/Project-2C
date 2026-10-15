@@ -25,6 +25,7 @@ export {
   changeStageManually,
   createCustomer,
   getCustomer,
+  isStageOfDay,
   listCustomers,
   listStageTransitions,
   previewCustomerProfile,
