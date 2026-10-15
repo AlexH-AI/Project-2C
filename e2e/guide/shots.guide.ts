@@ -25,6 +25,9 @@ async function shot(page: Page, name: string, part?: Locator | Clip) {
     path: join(IMG, `${name}.png`),
     animations: 'disabled',
     caret: 'hide',
+    // A part taller than the window makes Playwright scroll to it, and the sticky header of the
+    // app would then cover its top lines.
+    style: 'header.sticky { position: static !important; }',
   } as const;
   if (part && 'screenshot' in part) await part.screenshot(options);
   else await page.screenshot({ ...options, clip: part });
