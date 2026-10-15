@@ -7,6 +7,7 @@
 use keyring_core::{Entry, Error as KeyringError};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::VecDeque;
 use std::io::Read;
 use std::ops::Range;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -38,6 +39,8 @@ const MAX_TOKENS: i64 = 32_000;
 const MAX_MESSAGE_CHARS: usize = 200_000;
 const MAX_KEY_CHARS: usize = 512;
 const MAX_SESSION_CHARS: usize = 64;
+/// A model id is ASCII letters, digits and `-._:/`, as OpenCode's are (`deepseek-v4.1-flash`).
+const MAX_MODEL_CHARS: usize = 128;
 /// How the app names itself to OpenCode, which asks each client for its own `User-Agent` rather
 /// than an HTTP library's (ADR-0009 W-1).
 pub const USER_AGENT: &str = concat!("Project-2C/", env!("CARGO_PKG_VERSION"));
@@ -162,7 +165,11 @@ pub fn check(request: &Request) -> Result<&'static str, AiError> {
         && session
             .bytes()
             .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
-        && !request.model.is_empty()
+        && (1..=MAX_MODEL_CHARS).contains(&request.model.len())
+        && request
+            .model
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || b"-._:/".contains(&byte))
         && request
             .reasoning
             .as_deref()
@@ -276,82 +283,125 @@ fn is_finish_word(reason: &str) -> bool {
             .all(|byte| byte.is_ascii_lowercase() || byte == b'_')
 }
 
-/// Whether `text` holds `key`, as it is or in escapes ([`unescape`]): an answer is JSON the webview
+/// Whether `text` holds `key` in one of its [`readings`]: an answer is JSON the webview
 /// parses, and `JSON.parse` turns `\u0073\u006b…` back into the key.
 fn reveals(text: &str, key: &str) -> bool {
-    if key.is_empty() {
-        return false;
-    }
-    let mut plain = String::with_capacity(text.len());
-    unescape(text, |c, _| plain.push(c));
-    text.contains(key) || plain.contains(key)
+    !key.is_empty()
+        && readings(text)
+            .into_iter()
+            .any(|reading| reading.map(|(c, _)| c).collect::<String>().contains(key))
 }
 
-/// `text` with each whole `secret` replaced by `***`, whether written as it is, in JSON escapes or
-/// in a URL's `%XX`: a server may well echo the request's header that way.
+/// `text` with each whole `secret` replaced by `***`, in any of its [`readings`]: a server may well
+/// echo the request's header in a URL's `%XX` or in JSON escapes.
 fn mask(text: &str, secret: &str) -> String {
-    let text = text.replace(secret, "***");
-    if !reveals(&text, secret) {
-        return text;
+    // The bytes of `text` each reading of `secret` came from.
+    let mut found = Vec::new();
+    for reading in readings(text) {
+        // Each character of `plain` with where it starts in `plain` and the bytes of `text` it
+        // came from.
+        let mut plain = String::with_capacity(text.len());
+        let mut spans = Vec::new();
+        for (c, span) in reading {
+            spans.push((plain.len(), span));
+            plain.push(c);
+        }
+        for (start, _) in plain.match_indices(secret) {
+            let Ok(first) = spans.binary_search_by_key(&start, |(at, _)| *at) else {
+                continue;
+            };
+            let last = first + secret.chars().count() - 1;
+            found.push(spans[first].1.start..spans[last].1.end);
+        }
     }
-    // Each character of `plain` with where it starts in `plain` and the bytes of `text` it came from.
-    let mut plain = String::with_capacity(text.len());
-    let mut spans = Vec::new();
-    unescape(&text, |c, span| {
-        spans.push((plain.len(), span));
-        plain.push(c);
-    });
+    found.sort_by_key(|span| span.start);
     let mut masked = String::with_capacity(text.len());
     let mut copied = 0;
-    for (start, _) in plain.match_indices(secret) {
-        let Ok(first) = spans.binary_search_by_key(&start, |(at, _)| *at) else {
-            continue;
-        };
-        let last = first + secret.chars().count() - 1;
-        masked.push_str(&text[copied..spans[first].1.start]);
-        masked.push_str("***");
-        copied = spans[last].1.end;
+    for span in found {
+        // One that overlaps the last one masked (another reading of it) is masked with it.
+        if span.start >= copied {
+            masked.push_str(&text[copied..span.start]);
+            masked.push_str("***");
+        }
+        copied = copied.max(span.end);
     }
     masked.push_str(&text[copied..]);
     masked
 }
 
-/// Reads `text` as a JSON string body: calls `each` with every character and the bytes of `text`
-/// it came from, JSON's escapes (`\uXXXX`, `\/`, `\"`, `\\`, `\n`…) undone and read in pairs from
-/// the left as `JSON.parse` does, and a URL's `%XX` too. Any other `\` or `%` stays as it is.
-fn unescape(text: &str, mut each: impl FnMut(char, Range<usize>)) {
-    let hex = |at: usize, digits: usize| {
-        text.get(at..at + digits)
-            .filter(|hex| hex.bytes().all(|byte| byte.is_ascii_hexdigit()))
-            .and_then(|hex| u32::from_str_radix(hex, 16).ok())
-            .map(|code| char::from_u32(code).unwrap_or(char::REPLACEMENT_CHARACTER))
+/// A character of a text being read, with the bytes of the text it came from.
+type Spanned = (char, Range<usize>);
+
+/// The ways `text` may give the key away (DR6-10): as it is; with JSON's escapes and a URL's `%XX`
+/// undone in one pass; and in two passes, JSON's then the URL's or the reverse, as a URL-encoded
+/// key written in JSON is. Never two passes of JSON: the webview parses an answer once.
+fn readings(text: &str) -> [Box<dyn Iterator<Item = Spanned> + '_>; 4] {
+    let chars = || {
+        text.char_indices()
+            .map(|(at, c)| (c, at..at + c.len_utf8()))
     };
-    let mut at = 0;
-    while let Some(c) = text[at..].chars().next() {
-        let escape = match (c, text.as_bytes().get(at + 1)) {
-            ('\\', Some(b'u')) => hex(at + 2, 4).map(|c| (c, 6)),
-            ('\\', Some(&next)) => json_escape(next).map(|c| (c, 2)),
-            // A byte, so `%C4%83` gives two characters rather than `ă`: the secrets are ASCII.
-            ('%', _) => hex(at + 1, 2).map(|c| (c, 3)),
-            _ => None,
-        };
-        let (c, length) = escape.unwrap_or((c, c.len_utf8()));
-        each(c, at..at + length);
-        at += length;
-    }
+    [
+        Box::new(chars()),
+        Box::new(unescape(chars(), Escapes::Both)),
+        Box::new(unescape(unescape(chars(), Escapes::Json), Escapes::Url)),
+        Box::new(unescape(unescape(chars(), Escapes::Url), Escapes::Json)),
+    ]
 }
 
-/// The character of JSON's two-character escape `\` + `byte`.
-fn json_escape(byte: u8) -> Option<char> {
-    Some(match byte {
-        b'"' => '"',
-        b'\\' => '\\',
-        b'/' => '/',
-        b'b' => '\u{8}',
-        b'f' => '\u{c}',
-        b'n' => '\n',
-        b'r' => '\r',
-        b't' => '\t',
+/// What one pass of [`unescape`] undoes.
+#[derive(Clone, Copy, PartialEq)]
+enum Escapes {
+    Json,
+    Url,
+    Both,
+}
+
+/// One pass over `chars`, read from the left as `JSON.parse` does: each of JSON's escapes
+/// (`\uXXXX`, `\/`, `\"`, `\\`, `\n`…) or a URL's `%XX`, as `escapes` says, gives the character it
+/// stands for, which comes from the bytes of the whole escape. Any other `\` or `%` stays as it is.
+fn unescape(
+    mut chars: impl Iterator<Item = Spanned>,
+    escapes: Escapes,
+) -> impl Iterator<Item = Spanned> {
+    let (json, url) = (escapes != Escapes::Url, escapes != Escapes::Json);
+    let mut ahead = VecDeque::new();
+    std::iter::from_fn(move || {
+        // `\uXXXX`, the longest escape, is 6 characters.
+        ahead.extend(chars.by_ref().take(6 - ahead.len()));
+        let at = |i: usize| ahead.get(i).map(|(c, _): &Spanned| *c);
+        let hex = |from: usize, digits: usize| {
+            let hex: Option<String> = (from..from + digits)
+                .map(|i| at(i).filter(char::is_ascii_hexdigit))
+                .collect();
+            let code = u32::from_str_radix(&hex?, 16).ok()?;
+            Some(char::from_u32(code).unwrap_or(char::REPLACEMENT_CHARACTER))
+        };
+        let first = at(0)?;
+        let escape = match (first, at(1)) {
+            ('\\', Some('u')) if json => hex(2, 4).map(|c| (c, 6)),
+            ('\\', Some(next)) if json => json_escape(next).map(|c| (c, 2)),
+            // A byte, so `%C4%83` gives two characters rather than `ă`: the secrets are ASCII.
+            ('%', _) if url => hex(1, 2).map(|c| (c, 3)),
+            _ => None,
+        };
+        let (c, length) = escape.unwrap_or((first, 1));
+        let span = ahead[0].1.start..ahead[length - 1].1.end;
+        ahead.drain(..length);
+        Some((c, span))
+    })
+}
+
+/// The character of JSON's two-character escape `\` + `c`.
+fn json_escape(c: char) -> Option<char> {
+    Some(match c {
+        '"' => '"',
+        '\\' => '\\',
+        '/' => '/',
+        'b' => '\u{8}',
+        'f' => '\u{c}',
+        'n' => '\n',
+        'r' => '\r',
+        't' => '\t',
         _ => return None,
     })
 }
@@ -931,6 +981,10 @@ mod tests {
             reasoning: Some(effort.into()),
             ..request("GO")
         };
+        let model = |name: &str| Request {
+            model: name.into(),
+            ..request("GO")
+        };
         let wrong = [
             session(""),
             session(&"a".repeat(65)),
@@ -942,10 +996,12 @@ mod tests {
             request("go"),
             request("ZEN"),
             request(""),
-            Request {
-                model: String::new(),
-                ..request("GO")
-            },
+            model(""),
+            model(&"a".repeat(129)),
+            model("glm 5.3"),
+            model("glm-5.3\r\nX-Other: 1"),
+            model(r#"glm-5.3","max_tokens":1"#),
+            model("mô-hình"),
             role("tool"),
             role("System"),
             reasoning("HIGH"),
@@ -1027,6 +1083,14 @@ mod tests {
                 ..request("CREDIT")
             },
             Request {
+                model: "a".repeat(128),
+                ..request("GO")
+            },
+            Request {
+                model: "Org_1/GLM-5.3:free".into(),
+                ..request("CREDIT")
+            },
+            Request {
                 messages: vec![Message {
                     role: "assistant".into(),
                     content: "é".repeat(200_000),
@@ -1060,6 +1124,22 @@ mod tests {
             |_, _, _, _| panic!("called the network"),
         );
         assert_eq!(result, Err(AiError::new(AI_BUSY)));
+    }
+
+    #[test]
+    fn wrong_arguments_while_a_request_runs_are_bad_request_and_leave_its_flag_alone() {
+        let busy = Busy::new();
+        let running = busy.start().unwrap();
+        let result = complete(
+            &request("ZEN"),
+            &busy,
+            || panic!("read the key"),
+            |_, _, _, _| panic!("called the network"),
+        );
+        assert_eq!(result, Err(AiError::new(AI_BAD_REQUEST)));
+        assert_eq!(busy.start().err(), Some(AiError::new(AI_BUSY)));
+        drop(running);
+        assert!(busy.start().is_ok());
     }
 
     #[test]
@@ -1221,6 +1301,52 @@ mod tests {
             format!("sk-test-SECRET-{}", percent("012345678", true)),
         ] {
             assert_eq!(message(&text), text, "{text}");
+        }
+    }
+
+    /// `secret` in two layers of escapes (DR6-10): URL-encoded with each `%` then written as a JSON
+    /// escape, or in JSON escapes with each `\` then written as a URL's `%5C`.
+    fn two_layers(secret: &str) -> [String; 2] {
+        [
+            percent(secret, true).replace('%', "\\u0025"),
+            escaped(secret, false).replace('\\', "%5C"),
+        ]
+    }
+
+    #[test]
+    fn the_key_in_two_layers_of_escapes_is_bad_response_and_masked() {
+        for text in two_layers(KEY) {
+            assert_eq!(
+                reply(200, &answer(&text), KEY, SESSION),
+                Err(AiError::new(AI_BAD_RESPONSE)),
+                "{text}"
+            );
+            let error = serde_json::json!({ "error": { "message": format!("bad {text}!") } });
+            assert_eq!(
+                reply(401, error.to_string().as_bytes(), KEY, SESSION)
+                    .unwrap_err()
+                    .message,
+                Some("bad ***!".into()),
+                "{text}"
+            );
+        }
+        let [session, _] = two_layers(SESSION);
+        let [_, key] = two_layers(KEY);
+        let error = serde_json::json!({ "message": format!("{session}/{key} {KEY}") });
+        assert_eq!(
+            reply(429, error.to_string().as_bytes(), KEY, SESSION)
+                .unwrap_err()
+                .message,
+            Some("***/*** ***".into())
+        );
+        // A backslash that JSON escapes is only a backslash: `JSON.parse` gives the text of the
+        // escapes, which no URL decoding turns into the key, nor does a second pass of JSON.
+        for text in [
+            percent(KEY, true).replace('%', "\\\\u0025"),
+            escaped(KEY, false).replace('\\', "\\\\"),
+            escaped(KEY, false).replace('\\', "\\u005C"),
+        ] {
+            assert!(reply(200, &answer(&text), KEY, SESSION).is_ok(), "{text}");
         }
     }
 

@@ -1,6 +1,6 @@
 [package]
 name = "project2c"
-version = "0.1.0"
+version = "1.0.0"
 description = "Project-2C desktop app"
 edition = "2021"
 rust-version = "1.98"
@@ -8,7 +8,9 @@ publish = false
 
 [lib]
 name = "project2c_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
+# Only what the exe links: Tauri's template adds `staticlib` / `cdylib` for mobile builds, which
+# cost each release build time and disk and which the app has none of (DR6-13).
+crate-type = ["rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

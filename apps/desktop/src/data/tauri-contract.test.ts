@@ -1,6 +1,6 @@
 // The contract between `tauri-storage.ts` and the Rust commands (DR-55): each side is otherwise
 // tested only against its own copy, and a renamed command or argument shows only in the exe.
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { tauriOpenCode } from './ai-tauri';
 import { ALREADY_OPEN, DISK_FULL, tauriStorage } from './tauri-storage';
@@ -213,5 +213,78 @@ describe('the JS ↔ Rust AI contract', () => {
       ['completionTokens', true],
       ['finishReason', true],
     ]);
+  });
+});
+
+const desktop = (file: string) => readFileSync(new URL(`../../${file}`, import.meta.url), 'utf8');
+const tauriConf = () =>
+  JSON.parse(desktop('src-tauri/tauri.conf.json')) as {
+    version: string;
+    app: { security: { csp: string } };
+  };
+
+/** Every value the webview imports from `@tauri-apps/api`, as `module: name`, type imports aside. */
+function tauriImports(): string[] {
+  const src = new URL('../', import.meta.url);
+  const files = readdirSync(src, { recursive: true, encoding: 'utf8' }).filter(
+    (file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file),
+  );
+  return files.flatMap((file) =>
+    [
+      ...readFileSync(new URL(file.replaceAll('\\', '/'), src), 'utf8').matchAll(
+        /^import \{([^}]*)\} from '@tauri-apps\/api\/(\w+)';/gm,
+      ),
+    ].flatMap(([, names, module]) =>
+      names!
+        .split(',')
+        .map((name) => name.trim())
+        .filter((name) => name && !name.startsWith('type '))
+        .map((name) => `${module}: ${name}`),
+    ),
+  );
+}
+
+describe('the release configuration (DR6-12…14)', () => {
+  it('gives package.json, tauri.conf.json and Cargo.toml one version', () => {
+    const { version } = JSON.parse(desktop('package.json')) as { version: string };
+    const cargo = /^\[package\][^[]*^version = "([^"]+)"$/m.exec(desktop('src-tauri/Cargo.toml'));
+    expect([tauriConf().version, cargo?.[1]]).toEqual([version, version]);
+  });
+
+  it('builds the Rust library only as the rlib the exe links', () => {
+    expect(desktop('src-tauri/Cargo.toml')).toMatch(/^crate-type = \["rlib"\]$/m);
+  });
+
+  it('allows the webview only the Tauri commands it uses', () => {
+    // A new import may need a new permission in capabilities/default.json.
+    expect([...new Set(tauriImports())].sort()).toEqual([
+      'core: invoke',
+      'core: isTauri',
+      'window: getCurrentWindow',
+    ]);
+    const capability = JSON.parse(desktop('src-tauri/capabilities/default.json')) as {
+      permissions: string[];
+    };
+    // CloseGuard: `onCloseRequested` listens (and stops) for the close event, then `destroy`.
+    // The app's own commands need none.
+    expect(capability.permissions).toEqual([
+      'core:event:allow-listen',
+      'core:event:allow-unlisten',
+      'core:window:allow-destroy',
+    ]);
+  });
+
+  it('keeps the CSP closed: no other host, no base URL, no form posted anywhere', () => {
+    const directives = tauriConf()
+      .app.security.csp.split(';')
+      .map((directive) => directive.trim());
+    expect(directives).toEqual(
+      expect.arrayContaining([
+        "default-src 'self'",
+        "connect-src 'self' ipc: http://ipc.localhost",
+        "base-uri 'none'",
+        "form-action 'none'",
+      ]),
+    );
   });
 });
