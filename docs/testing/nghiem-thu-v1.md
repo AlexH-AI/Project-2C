@@ -81,7 +81,7 @@ Cuối file: [đối chiếu mockup → mã dòng](#đối-chiếu-mockup--mã-d
 | NT-TQ-03 | 1d · Lọc | Đổi góc nhìn ở thanh đầu trang sang Team, chưa bấm Lọc | Như NT-TQ-02: nút Lọc vàng + dòng nhắc, số giữ nguyên tới khi bấm Lọc | | |
 | NT-TQ-04 | 1a · ô Lịch hẹn | Kỳ Tháng hiện tại, Toàn bộ | Tiêu đề "Lịch hẹn · cả tháng"; số lớn "đã gặp / tổng lịch"; 4 dòng theo thứ tự **Đã gặp · Dời lịch / hủy / không đến · Chưa ghi kết quả · Dự kiến**, cộng 4 dòng = tổng lịch. Đếm cả lịch sau hôm nay (Dự kiến) | | |
 | NT-TQ-05 | 1a · ô Lịch hẹn ↔ Lịch hẹn | Sang Lịch hẹn, cùng kỳ Tháng, Toàn bộ, Phối hợp **Bất kỳ** | Dòng đếm "N lịch · M đã gặp · K chưa ghi kết quả" trùng ô Lịch hẹn của Tổng quan (N = tổng, M = Đã gặp, K = Chưa ghi kết quả) | | |
-| NT-TQ-06 | 1a · 6 ô KPI | Kỳ Tháng hiện tại | 6 ô **Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt**. Tiền dạng gọn (tr / tỷ). Tỉ lệ chốt có dòng "a HĐ phát hành ÷ b RF" và bằng a ÷ b (một chữ số thập phân, dấu phẩy) | | |
+| NT-TQ-06 | 1a · 6 ô KPI | Kỳ Tháng hiện tại | 6 ô **Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt**. Tiền dạng gọn (tr / tỷ). Tỉ lệ chốt có dòng "a HĐ phát hành ÷ b RF" và bằng a ÷ b: một chữ số thập phân sau dấu phẩy khi không tròn ("66,7%"), tròn thì không có ",0" ("60%", "100%") như golden `chi-so.md` | | File Excel (NT-BC-12) luôn một chữ số thập phân (định dạng `0.0%`), kể cả khi tròn. Mockup 1a viết "60,0%": lệch đã biết (cuối file) |
 | NT-TQ-07 | 1a · so kỳ trước (C01, C02) | Kỳ Tháng hiện tại | Dưới mỗi ô KPI: "▲ x / ▼ x / = so với 01/(tháng trước) – dd/(tháng trước)" — **cùng số ngày** với MTD (hôm nay 20/10 → so 01/09 – 20/09; tháng trước ngắn hơn thì cắt ở ngày cuối của nó). Tỉ lệ chốt chênh bằng "điểm %" | | |
 | NT-TQ-08 | C03 | Bấm **Kỳ trước** (tháng đã hết), Lọc | So với **cả** tháng liền trước (01 → ngày cuối). Không có nhãn MTD | | |
 | NT-TQ-09 | 1b · C04 | Kỳ **Tuần** chứa hôm nay, Lọc | "Đang xem: dd/mm – dd/mm/yyyy" từ Thứ Hai tới Chủ nhật; so với Thứ Hai → cùng thứ của hôm nay ở tuần trước | | |
@@ -368,7 +368,7 @@ Một dòng mỗi mục, không chép số: số nền và ngưỡng ở [`docs/
 
 ## Lệch mockup đã biết
 
-Không mở Issue mới cho các điểm dưới (đã ghi ở `docs/state/review-notes.md` hoặc đã được mockup sau thay).
+Không mở Issue mới cho các điểm dưới (đã ghi ở `docs/state/review-notes.md`, đã được mockup sau thay, hoặc Owner chọn không sửa).
 
 - **Mockup vòng 2 được mockup sau thay:** trạng thái "Hoãn" của `appointments.html` / `table-more.html` nay là "Dời lịch"; lịch tháng 3 màu thành 4 nhóm (`overview.html` §2); bộ chọn góc nhìn thay cây Team → RE ở cột trái và khối tóm tắt tháng / trigger / chuyển nhóm của `appointments.html` (sổ review, mục Lịch hẹn #156 / #158).
 - **Hộp chuyển nhóm 5d:** dòng "Sau khi lưu: N2 → N3" không có "· hạ nhóm / lên nhóm" (sổ review, Khách hàng #141).
@@ -378,6 +378,21 @@ Không mở Issue mới cho các điểm dưới (đã ghi ở `docs/state/revie
 - **Team (`team.html`):** đầu màn, danh sách team, "Người hỗ trợ", bảng chỉ có RE theo `phase-3-feedback.html` B1 (mockup sau thay).
 - **Thùng rác 11a:** dòng lịch Đã gặp **bị chặn** ghi "nhóm sau N2" thay vì "N3 → N2" (sổ review #543).
 - **Cài đặt → AI 1g:** ở Mock, dòng "Cài đặt AI đã lưu không hợp lệ" khó xóa (bấm lại Mock không lưu) (sổ review, Cài đặt → AI).
+
+**Owner chọn không sửa** (15/10/2026, deep review Phase 1–6 lượt 1, `docs/reviews/2026-10-15-deep-review-phase-1-6-luot-1-tong-hop.md` §8.4, §9 Q4):
+
+- **Hồ sơ KH (`customer.html`), thẻ Lịch hẹn:** không có ô chọn "Kỳ Tất cả ▾"; thẻ luôn hiện mọi lịch của KH (NT-HS-12) (DR6-29).
+- **Hộp 5c Sửa KH:** chú thích ô Ngày sinh không ghi giá trị cũ ("trước: 1984"), giữ "năm hoặc đủ ngày" (DR6-36).
+- **Hộp 7c, "Đánh dấu mâu thuẫn" ở trường cốt lõi:** không có khung cảnh báo trước rằng cổng sẽ thành `CONFLICT_RESOLUTION` (nút Phân tích tắt); hậu quả chỉ hiện sau khi lưu ("Có mâu thuẫn ở trường cốt lõi: cần làm rõ trước khi phân tích.") (DR6-36).
+- **Hộp 7a:** dữ kiện đã thêm chỉ ghi tên trường, không có nhãn hạng mục + "cốt lõi" (DR6-36).
+- **Nút tạo KH:** `customers.html` ghi "+ Khách hàng", `phase-3-feedback.html` B2 ghi "+ KH mới" (hai mockup tự lệch); app theo `customers.html` (NT-KH-01) (DR6-36).
+- **Hộp 6c Kết quả cuộc gặp:** dòng dưới tiêu đề không có "· lần n" ("… 10:00 · lần 3 · hiện N2" trong mockup); NT-LH-21 ghi theo app (DR6-48).
+- **Tổng quan 1a, 1c, ô Lịch hẹn:** nhóm ghi "Dời lịch / hủy / không đến", mockup ghi "Dời – hủy – không đến" (NT-TQ-04 ghi theo app) (DR6-48).
+- **Tổng quan, ô Tỉ lệ chốt:** app luôn ghi đủ "a HĐ phát hành ÷ b RF"; mockup tự lệch: 1a dạng đủ ("7 HĐ phát hành ÷ 16 RF"), 1c, 1e dạng gọn ("6 ÷ 14 RF", "2 ÷ 3 RF") (DR6-48).
+- **Tổng quan 1a, cách viết tỉ lệ chốt:** tỉ lệ tròn ghi "60%", "100%", "0%" theo golden `chi-so.md`; bảng So sánh team của mockup 1a ghi "60,0%", "100,0%", "0,0%". Không tròn vẫn một chữ số ("66,7%"). File Excel luôn một chữ số (`0.0%`) (NT-TQ-06, DR6-47).
+- **Báo cáo 2b, 2c:** dòng meta cạnh tiêu đề bảng ghi "n RE · thứ tự theo team rồi tên" / "n mốc" (NT-BC-05, 06), mockup ghi "30 RE · Tháng 10/2026 (MTD) · Toàn bộ" / "5 mốc · Tháng 10/2026 (MTD) · Toàn bộ" (kỳ và góc nhìn đã có ở dòng "Đang xem") (DR6-48).
+- **Cài đặt → Dữ liệu, thẻ File dữ liệu:** dòng Nội dung không có số ghi chú KYC ("· 3.470 ghi chú KYC" trong mockup); mockup tự lệch với hộp 10a cùng file (5 mục, như app) (NT-CD-02) (DR6-48).
+- **Lịch hẹn B4 (4b, 4c, 4d), lịch tháng:** chú giải dưới lịch không có mẫu "Trong kỳ" cho dải tô của kỳ Tuần / Tùy chọn; chỉ có 4 nhóm lịch (NT-LH-07, 08) (DR6-48).
 
 **Owner xác nhận ở lượt L1** (chưa có ghi chép quyết định): `customers.html` (vòng 2) có ô tìm "Ctrl K", bộ lọc Phạm vi / RE / KYC / "Đã có HĐ", hàng kỳ, ô Sắp xếp, dòng "Độ phủ KYC", nhãn KYC / AI và ngày hẹn trên thẻ, dòng "+n vào · lên N3 trong tháng" dưới đầu cột, lý do đóng ở khung Tạm hoãn / Mất cơ hội — app và hướng dẫn sử dụng không có các phần này. Owner chọn: ghi vào danh sách này là lệch chấp nhận, hoặc mở Issue (ghi sau v1.0). Cùng cách với `settings-data.html`: mục "Chung" ở khung trái Cài đặt, và hai nút "Mở từ backup tự động mới nhất" / "Mở thư mục" ở trang lỗi khởi động 10d (app ghi cách chép bản backup bằng chữ).
 

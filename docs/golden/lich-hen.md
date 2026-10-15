@@ -58,6 +58,7 @@ Cột: **Gặp** = Đã gặp · **DHK** = Dời – hủy – không đến · 
 - **A03** — Gặp: `L-01`, `L-09`. DHK: `L-02`, `L-03`, `L-04`, `L-10`, `L-11`. Chưa: `L-06`. DK: `L-05`, `L-07`. Không tính: `L-12`, `L-13` (xóa), `L-14` (KH xóa), `L-08` (tháng 12).
 - **Chuỗi dời** `L-03` (07/01) → `L-04` (12/01) → `L-05` (20/01): ba bản ghi, ba lần tính, mỗi lần ở kỳ của ngày mình. Tuần 04–10/01 thấy `L-03`, tuần 11–17/01 thấy `L-04`, tuần 18–24/01 thấy `L-05`. Khớp lịch tháng và lưới năm của màn Lịch hẹn.
 - **Ô "Lịch hẹn" của Tổng quan** ghi `Gặp / Tổng` — A03: **2 / 10**, kèm số của 3 nhóm còn lại.
+- **`L-09` / A09 — RE Dũng phối hợp là dữ liệu trước DR-47.** Bảng này duyệt 03/10/2026; từ 06/10/2026 (DR-47, `docs/design/phase-3-du-lieu.md` §3.6) người phối hợp chỉ là TL / IS / BD / BDM, lệnh và luật nhập backup đều từ chối RE, nên app không còn tạo được `L-09` như ghi ở mục 1. Bảng số và fixture giữ nguyên (G2, DR6-54): A09 vẫn kiểm "người phối hợp không tính" — đếm theo RE ghi trên cuộc hẹn, người phối hợp là ai cũng không làm đổi số. Người phối hợp hợp lệ theo DR-47: `L-01` (TL Hà, A07).
 
 ## 3. Owner duyệt — đã duyệt G2 03/10/2026 (PR #265)
 
