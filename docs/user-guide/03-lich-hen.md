@@ -81,7 +81,7 @@ Hủy và Không đến không có nhóm sau cuộc gặp, việc tiếp theo ha
 
 ## Hẹn tiếp
 
-Có hai cách đặt lần gặp kế tiếp, cùng KH, RE, người phối hợp và trigger:
+Có hai cách đặt lần gặp kế tiếp, cùng KH, người phối hợp và trigger, với RE là RE đang phụ trách KH (khác RE của lịch cũ khi KH đã đổi RE sau lịch đó):
 
 - Lúc ghi kết quả: đánh dấu **Hẹn lần tiếp theo**, điền **Ngày hẹn tiếp (dd/mm)** và **Giờ hẹn tiếp**, rồi bấm **Lưu kết quả + tạo lịch**. Một lần bấm ghi kết quả và tạo lịch mới.
 - Sau đó: bấm **Tạo lịch hẹn tiếp theo** ở chi tiết lịch, hoặc **Hẹn tiếp** / **Hẹn tiếp →** ở Hồ sơ KH. Hộp **Lịch hẹn tiếp theo** điền sẵn từ lịch cũ, sửa được; ngày phải từ hôm nay trở đi. Bấm **Tạo lịch hẹn**.

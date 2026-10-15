@@ -14,7 +14,7 @@ import {
   type StageTransition,
   fromIsoDate,
 } from '@p2c/domain';
-import { and, asc, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, isNull, ne } from 'drizzle-orm';
 import {
   liveCustomer,
   nextSeq,
@@ -32,7 +32,7 @@ import type { Database } from './database';
 import { DbError } from './errors';
 import { encodeBase32, ulid } from './ids';
 import { previewProfileFacts, recordProfileFacts, type ProfileKycPreview } from './kyc';
-import { customers, GENDERS, stageTransitions } from './schema';
+import { appointments, customers, GENDERS, stageTransitions } from './schema';
 
 type CustomerRow = typeof customers.$inferSelect;
 type TransitionRow = typeof stageTransitions.$inferSelect;
@@ -142,9 +142,31 @@ export function updateCustomerProfile(
       gender: changes.gender === undefined ? current.gender : changes.gender,
     });
     updateCustomerRow(db, id, profile);
+    // The new RE takes over what is still planned (Owner 15/10/2026, T-233); what has an outcome or
+    // is past, and the policies, count for the RE recorded on them (ADR-0007).
+    if (profile.reId !== row.reId) {
+      db.orm
+        .update(appointments)
+        .set({ reId: profile.reId, updatedAt: db.now().toISOString() })
+        .where(plannedOff(db, id, profile.reId))
+        .run();
+    }
     recordProfileFacts(db, id, row, profile, today(db));
     return toCustomer(liveCustomer(db, id));
   });
+}
+
+/**
+ * Mockup 5c: how many planned appointments `updateCustomerProfile` hands over to the RE `reId`;
+ * none when the customer is theirs already.
+ */
+export function previewHandover(db: Database, id: string, reId: string): number {
+  if (liveCustomer(db, id).reId === reId) return 0;
+  return db.orm
+    .select({ n: count() })
+    .from(appointments)
+    .where(plannedOff(db, id, reId))
+    .get()!.n;
 }
 
 /**
@@ -431,6 +453,17 @@ function latestTransition(db: Database, customerId: string): TransitionRow | und
     .where(and(eq(stageTransitions.customerId, customerId), isNull(stageTransitions.deletedAt)))
     .orderBy(desc(stageTransitions.seq))
     .get();
+}
+
+/** The customer's planned appointments (scheduled, today or later: spec Phase 4 §1) not on `reId`. */
+function plannedOff(db: Database, customerId: string, reId: string) {
+  return and(
+    eq(appointments.customerId, customerId),
+    eq(appointments.status, 'SCHEDULED'),
+    isNull(appointments.deletedAt),
+    gte(appointments.date, storedDate(today(db))),
+    ne(appointments.reId, reId),
+  );
 }
 
 function findCustomer(db: Database, id: string): CustomerRow | undefined {

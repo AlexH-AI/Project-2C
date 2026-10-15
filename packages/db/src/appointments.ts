@@ -173,8 +173,9 @@ export function recordMeetingOutcome(
 
 /**
  * Records the first outcome of a scheduled appointment and books the next one in one go (mockups
- * 6c, 6i): same customer, RE, coordinators and trigger, today or later, and not linked to this one.
- * Editing an outcome (6f) books nothing.
+ * 6c, 6i): same customer, coordinators and trigger, today or later, and not linked to this one.
+ * The RE is the customer's, who may have taken over since this one was booked (T-233). Editing an
+ * outcome (6f) books nothing.
  */
 export function recordOutcomeWithNext(
   db: Database,
@@ -188,7 +189,12 @@ export function recordOutcomeWithNext(
       throw new DbError('NEXT_APPOINTMENT_PAST');
     }
     const recorded = recordMeetingOutcome(db, id, outcome);
-    const booked = insertScheduled(db, { ...recorded, date: next.date, time: next.time }, null);
+    const { reId } = liveCustomer(db, recorded.customerId);
+    const booked = insertScheduled(
+      db,
+      { ...recorded, reId, date: next.date, time: next.time },
+      null,
+    );
     return { recorded, next: booked };
   });
 }

@@ -41,7 +41,7 @@ Ngày sinh và giới tính được ghi thêm thành ghi chú KYC nguồn "Hệ
 3. Khung **Khi lưu, app tự ghi vào KYC** cho biết app có tạo phiên bản KYC mới không (khi ngày sinh / giới tính đổi).
 4. Bấm **Lưu**.
 
-Đổi RE phụ trách: lịch hẹn và HĐ cũ vẫn tính cho RE đã ghi trên từng bản ghi; từ nay KH thuộc RE mới.
+Đổi RE phụ trách: từ nay KH thuộc RE mới, và khi lưu, mọi lịch hẹn **Dự kiến** (từ hôm nay trở đi, chưa ghi kết quả) chuyển sang RE mới — hộp báo trước "Khi lưu: n lịch hẹn Dự kiến chuyển sang RE mới.". Lịch hẹn khác (đã có kết quả, hoặc đã qua mà chưa ghi kết quả) và HĐ vẫn tính cho RE đã ghi trên từng bản ghi.
 
 ## Xóa KH
 

@@ -1,4 +1,11 @@
-import { calendarDate, MAX_FEE_VND, stageOn, type CalendarDate } from '@p2c/domain';
+import {
+  calendarDate,
+  MAX_FEE_VND,
+  periodMetricsByScope,
+  periodOf,
+  stageOn,
+  type CalendarDate,
+} from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import {
   editMeetingOutcome,
@@ -17,8 +24,10 @@ import {
   getCustomer,
   listStageTransitions,
   softDeleteCustomer,
+  updateCustomerProfile,
 } from './customers';
-import { createPerson, softDeletePerson, updatePerson } from './team';
+import { listPolicies } from './policies';
+import { createPerson, listPeople, softDeletePerson, updatePerson } from './team';
 import { codeOf, errorOf, setup } from './test-support';
 
 // The test clock reads 26/09/2026: a meeting is held or missed by then, the next one booked after.
@@ -544,6 +553,43 @@ describe('recordOutcomeWithNext', () => {
     expect(recordOutcomeWithNext(db, id, MET_N2, { date: d(26, 9, 2026) }).next.date).toEqual(
       d(26, 9, 2026),
     );
+  });
+
+  // T-233 (DR6-02): the RF goes to the RE on the meeting (ADR-0007), the RE who held it.
+  it('books the next appointment for the RE now in charge of the customer', async () => {
+    const { db, re, otherRe, customer } = await withCustomer();
+    const book = (date: CalendarDate) =>
+      scheduleAppointment(db, {
+        customerId: customer.id,
+        reId: re.id,
+        date,
+        triggerType: 'REFERRAL',
+      });
+    const unrecorded = book(d(25, 9));
+    const planned = book(d(26, 9));
+    updateCustomerProfile(db, customer.id, { reId: otherRe.id });
+
+    const missed = recordOutcomeWithNext(
+      db,
+      unrecorded.id,
+      { status: 'NO_SHOW' },
+      { date: d(1, 10) },
+    );
+    const met = recordOutcomeWithNext(db, planned.id, MET_N2, { date: d(20, 10) });
+
+    expect([missed.recorded.reId, missed.next.reId]).toEqual([re.id, otherRe.id]);
+    expect([met.recorded.reId, met.next.reId]).toEqual([otherRe.id, otherRe.id]);
+    const metrics = periodMetricsByScope(
+      {
+        people: listPeople(db),
+        policies: listPolicies(db),
+        appointments: listAppointments(db),
+        transitions: listStageTransitions(db),
+      },
+      periodOf('month', d(26, 9)),
+    );
+    expect(metrics({ kind: 're', reId: otherRe.id }).rfCount).toBe(1);
+    expect(metrics({ kind: 're', reId: re.id }).rfCount).toBe(0);
   });
 
   it('books nothing for an appointment whose outcome is already recorded', async () => {

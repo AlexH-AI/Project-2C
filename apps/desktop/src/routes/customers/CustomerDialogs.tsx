@@ -7,6 +7,7 @@ import {
   listPeople,
   listTeams,
   previewCustomerProfile,
+  previewHandover,
   softDeleteCustomer,
   updateCustomerProfile,
   type BirthDate,
@@ -132,6 +133,19 @@ function useKycPreview(
   }
 }
 
+/** Mockup 5c: how many planned appointments saving hands over to the RE picked (T-233). */
+function useHandover(customer: CustomerRecord | undefined, reId: string): number {
+  const db = useDatabase();
+  if (!customer || !reId) return 0;
+  try {
+    return previewHandover(db, customer.id, reId);
+  } catch (error) {
+    // The customer deleted from this dialog (5f) is read once more before it closes.
+    if (error instanceof DbError) return 0;
+    throw error;
+  }
+}
+
 function KycPreview({ preview }: { preview: ProfileKycPreview }) {
   const chip = 'rounded border border-border px-1 font-mono text-xs';
   return (
@@ -185,6 +199,7 @@ export function CustomerFormDialog({
   const birth = parseBirthDate(birthText, today);
   const profileGender = gender === 'UNKNOWN' ? null : gender;
   const kyc = useKycPreview(customer, birth.ok ? birth.birth : undefined, profileGender);
+  const handover = useHandover(customer, reId);
   const invalid = (['name', 're', 'birth', 'date'] as const).filter((f) => errors[f]).length;
   const birthHint =
     birth.ok && birth.birth
@@ -288,6 +303,11 @@ export function CustomerFormDialog({
         help={customer ? t('customerForm.reHelp') : undefined}
         required
       />
+      {handover > 0 && (
+        <p role="status" className={`${ALERT} border-info`}>
+          {t('customerForm.handover', { count: formatCount(handover) })}
+        </p>
+      )}
       <TextField
         label={t('customerForm.birth')}
         value={birthText}

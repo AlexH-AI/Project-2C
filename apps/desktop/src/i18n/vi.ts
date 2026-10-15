@@ -541,7 +541,9 @@ export const vi = {
     'KH mới chỉ vào nhóm mở N4–N1. Tạm hoãn / Mất cơ hội chọn sau bằng "Chuyển nhóm".',
   'customerForm.date': 'Ngày ghi nhận KH',
   'customerForm.kycNote': 'Ngày sinh, giới tính được ghi thêm thành ghi chú KYC nguồn "Hệ thống".',
-  'customerForm.reHelp': 'Đổi RE: lịch hẹn và HĐ cũ vẫn tính cho RE đã ghi trên từng bản ghi.',
+  'customerForm.reHelp':
+    'Đổi RE: lịch hẹn Dự kiến chuyển sang RE mới; lịch hẹn khác và HĐ vẫn tính cho RE đã ghi trên từng bản ghi.',
+  'customerForm.handover': 'Khi lưu: {count} lịch hẹn Dự kiến chuyển sang RE mới.',
   'customerForm.kycTitle': 'Khi lưu, app tự ghi vào KYC',
   'customerForm.kycSource': 'Ghi chú KYC nguồn',
   'customerForm.kycSystem': 'Hệ thống',
@@ -801,7 +803,8 @@ export const vi = {
   'outcome.missing': 'Đã gặp thì cần nhóm sau cuộc gặp và việc tiếp theo',
   'outcome.missingHelp': 'Case size được để trống.',
   'outcome.next': 'Hẹn lần tiếp theo',
-  'outcome.nextHelp': 'tùy chọn · cùng KH, RE, người phối hợp, trigger — sửa ở lịch mới',
+  'outcome.nextHelp':
+    'tùy chọn · cùng KH, người phối hợp, trigger, RE phụ trách KH — sửa ở lịch mới',
   'outcome.nextDate': 'Ngày hẹn tiếp (dd/mm)',
   'outcome.nextTime': 'Giờ hẹn tiếp',
   'outcome.onSave': 'Khi lưu (một lần bấm)',
