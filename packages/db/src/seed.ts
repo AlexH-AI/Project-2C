@@ -6,7 +6,12 @@
  * and the same days in any time zone (`middayOf`). The load data of spec Phase 6 §5.1
  * (`tools/load-data.mjs`) is the same simulation at a bigger `scale`, with Thùng rác.
  */
-import { buildAnalysisInput, mockAnalysisOutput, mockDiscoveryOutput } from '@p2c/ai/schema';
+import {
+  buildAnalysisInput,
+  mockAnalysisOutput,
+  mockDiscoveryOutput,
+  PROMPT_VERSIONS,
+} from '@p2c/ai/schema';
 import {
   calendarDate,
   compareDates,
@@ -534,7 +539,8 @@ function aiSimulation(db: Database, rng: Rng) {
     const profile = getKycProfile(db, customer.id);
     const gate = evaluateKycGate(profile.facts);
     const version = listKycVersions(db, customer.id).at(-1);
-    // What the app sends and what its Mock answers, from `@p2c/ai/schema` (DR5-18).
+    // What the app sends, what its Mock answers and the prompt's version, from `@p2c/ai/schema`
+    // (DR5-18, DR6-18).
     const input = buildAnalysisInput(profile, gate, toDate(day));
     if (!input || !version) return;
     const { mode } = input;
@@ -550,7 +556,7 @@ function aiSimulation(db: Database, rng: Rng) {
         provider: 'MOCK',
         model: null,
         reasoning: null,
-        promptVersion: `${mode}@1`,
+        promptVersion: PROMPT_VERSIONS[mode],
         attempts: 1,
         input,
         output: (mode === 'analysis' ? mockAnalysisOutput : mockDiscoveryOutput)(codes, missing),

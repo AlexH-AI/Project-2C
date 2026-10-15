@@ -88,9 +88,10 @@ const V5: readonly Matcher[] = [
 
 /**
  * "luật <Tên>" (G5 §8.4): "luật" in any case, not after "pháp" (Owner Q6), "kỷ" or "quy", before a
- * word starting with a capital that is not "KH", "RE" or "sư" (the prompt's own words, a lawyer).
+ * word starting with a capital that is not "KH", "RE" or "sư" in any case (the prompt's own words,
+ * a lawyer; DR6-16).
  */
-const LAW_NAME = String.raw`(?<!${B}(${ci('pháp')}|${ci('kỷ')}|${ci('quy')})\s+)${B}${ci('luật')}\s+(?!(KH|RE|${ci('sư')})${E})\p{Lu}`;
+const LAW_NAME = String.raw`(?<!${B}(${ci('pháp')}|${ci('kỷ')}|${ci('quy')})\s+)${B}${ci('luật')}\s+(?!(${ci('kh')}|${ci('re')}|${ci('sư')})${E})\p{Lu}`;
 
 /** V6 — citing legal texts (G5 §8.4; "khoản <số>" alone is money, Owner Q4). */
 const V6: readonly Matcher[] = [

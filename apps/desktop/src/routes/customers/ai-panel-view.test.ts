@@ -370,6 +370,8 @@ describe('the ChatGPT web session of the panel (spec Phase 5 §3.1, mockups 4e�
   } as unknown as WebSession;
   const opened = webOpened({
     session,
+    generation: 3,
+    kycVersion: 2,
     message: 'Tin nhắn',
     takenAt: new Date(2026, 8, 26, 10, 40),
     copied: true,
@@ -377,22 +379,32 @@ describe('the ChatGPT web session of the panel (spec Phase 5 §3.1, mockups 4e�
   });
 
   it('opens with the input taken, its chip and nothing to copy by hand', () => {
-    expect(opened).toMatchObject({ manual: null, openFailed: false, retry: null, refused: null });
-    expect(
-      webChip(opened, [
-        { id: 'v1', seq: 1 },
-        { id: 'v2', seq: 2 },
-      ]),
-    ).toEqual({
+    expect(opened).toMatchObject({
+      session,
+      generation: 3,
+      manual: null,
+      openFailed: false,
+      retry: null,
+      refused: null,
+    });
+    expect(webChip(opened)).toEqual({
       version: 2,
       prompt: 'discovery@2+web@1',
       at: '26/09 10:40',
     });
   });
 
+  // Its version gone with the data replaced, the chip still reads (DR6-15): no RangeError.
+  it('takes kyc v<n> of its chip from the input taken, not from the versions there now', () => {
+    expect(() => webChip(opened)).not.toThrow();
+    expect(webChip({ ...opened, session: { ...session, kycVersionId: 'gone' } }).version).toBe(2);
+  });
+
   it('shows the message to copy by hand when the copy failed, and the browser that did not open', () => {
     const failed = webOpened({
       session,
+      generation: 3,
+      kycVersion: 2,
       message: 'Tin nhắn',
       takenAt: new Date(),
       copied: false,
@@ -500,7 +512,7 @@ describe('the run of the panel (spec Phase 5 §5.2, §5.3)', () => {
     expect(run).toEqual({ phase: 'error', error: { code: 'AI_TOO_LARGE' } });
     if (run.phase !== 'error') throw new Error('no error');
     expect(errorText(run.error)).toBe(
-      'Dữ liệu gửi AI quá lớn (quá 200 000 ký tự) — rút gọn ghi chú hoặc dữ kiện rồi thử lại.',
+      'Dữ liệu gửi AI quá lớn (quá 200.000 ký tự) — rút gọn ghi chú hoặc dữ kiện rồi thử lại.',
     );
   });
 

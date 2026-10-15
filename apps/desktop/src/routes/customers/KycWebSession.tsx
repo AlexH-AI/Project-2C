@@ -1,4 +1,3 @@
-import type { KycVersionRecord } from '@p2c/db';
 import { Button, TextField } from '@p2c/ui';
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { saveChatGptAnswer, type WebAnswerOutcome } from '../../data/ai-analysis';
@@ -41,12 +40,10 @@ function placeText(place: NonNullable<AiPanelIssue['place']>): string {
  */
 export function KycWebSession({
   web,
-  versions,
   onChange,
   onChecked,
 }: {
   web: AiPanelWeb;
-  versions: readonly KycVersionRecord[];
   /** The session as it goes on; null once it is over (saved, discarded or Hủy). */
   onChange: Dispatch<SetStateAction<AiPanelWeb | null>>;
   /** How each Kiểm tra và lưu ended, so the panel can say a row was saved (DR5-33). */
@@ -54,7 +51,7 @@ export function KycWebSession({
 }) {
   const app = useAppData();
   const [pasted, setPasted] = useState('');
-  const chip = webChip(web, versions);
+  const chip = webChip(web);
   const failure = webFailure(web);
   const second = web.retry !== null;
   // A paste refused at the box is said on the box (its description): the focus goes there, so a
@@ -78,7 +75,7 @@ export function KycWebSession({
     update({ openFailed: !opened });
   };
   const check = () => {
-    const outcome = saveChatGptAnswer(app, web.session, pasted);
+    const outcome = saveChatGptAnswer(app, web, pasted);
     onChecked(outcome);
     const next = webAfter(web, outcome);
     // A new attempt starts on an empty box; a paste refused at the box stays to be fixed.

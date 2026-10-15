@@ -306,7 +306,8 @@ function KeyCard({ client }: { client: OpenCodeClient }) {
 
 /**
  * Kiểm tra kết nối (1b, 1f, 4a): through the app's one runner (P5), so it is off while any AI
- * request runs; no Hủy, the request is 64 tokens at most. The Mock needs no connection.
+ * request runs; no Hủy, the request is 1 024 tokens at most (G5 §10.5) and stops at "OK". The Mock
+ * needs no connection.
  */
 function ConnectionCard({ mock }: { mock: boolean }) {
   const { ai } = useAppData();

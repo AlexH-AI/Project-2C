@@ -326,8 +326,11 @@ export function KycIntelligence({
   const busy = useSyncExternalStore(runner.subscribe, () => runner.busy);
   // Kept by the app, so the profile left and shown again still has it (review of PR 439).
   const analysis = useAiJob('analysis', customerId);
-  // This customer's ChatGPT web session: it lives in the panel only, so leaving ends it (§3.1).
-  const [web, setWeb] = useState<AiPanelWeb | null>(null);
+  // This customer's ChatGPT web session: it lives in the panel only, so leaving ends it (§3.1); the
+  // data replaced meanwhile ends it too, its input taken from other data (DR6-15).
+  const [opened, setWeb] = useState<AiPanelWeb | null>(null);
+  const generation = useSyncExternalStore(app.subscribe, app.generation);
+  const web = opened?.generation === generation ? opened : null;
   // While the copy and the browser are on their way, both buttons are off already (§3.1 item 4).
   const [startingWeb, setStartingWeb] = useState(false);
   const [webFailed, setWebFailed] = useState(false);
@@ -462,9 +465,7 @@ export function KycIntelligence({
         {done && <p role="status">{t(`aiPanel.done.${done}`)}</p>}
       </div>
       {view.blocked && <BlockedNote blocked={view.blocked} />}
-      {web && (
-        <KycWebSession web={web} versions={versions} onChange={setWeb} onChecked={setWebEnded} />
-      )}
+      {web && <KycWebSession web={web} onChange={setWeb} onChecked={setWebEnded} />}
       {webFailed && !web && (
         <div role="alert" className={`${ALERT} flex items-center gap-2.5 border-danger text-sm`}>
           <span className="flex-1">{t('aiError.GENERAL')}</span>

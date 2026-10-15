@@ -159,9 +159,10 @@ test('the history of a seeded customer: latest first, a STALE one opened, F code
   const rows = panel.getByRole('table', { name: 'Lịch sử phân tích' }).getByRole('row');
   // Latest first by seq: the header, then CURRENT and the two STALE.
   await expect(rows).toHaveCount(4);
-  await expect(rows.nth(1)).toContainText(/^23\/03 \d\d:\d\dv\d+analysis@1MockCURRENT$/);
-  await expect(rows.nth(2)).toContainText(/^25\/10 \d\d:\d\dv\d+discovery@1MockSTALE$/);
-  await expect(rows.nth(3)).toContainText(/^24\/09 \d\d:\d\dv\d+discovery@1MockSTALE$/);
+  // The seed writes the version of the app's prompts (DR6-18).
+  await expect(rows.nth(1)).toContainText(/^23\/03 \d\d:\d\dv\d+analysis@2MockCURRENT$/);
+  await expect(rows.nth(2)).toContainText(/^25\/10 \d\d:\d\dv\d+discovery@2MockSTALE$/);
+  await expect(rows.nth(3)).toContainText(/^24\/09 \d\d:\d\dv\d+discovery@2MockSTALE$/);
   await expect(rows.nth(1)).toHaveAttribute('aria-current', 'true');
 
   // An older STALE one shows in place of the latest, faded, under "Đang xem lần …".
@@ -172,7 +173,7 @@ test('the history of a seeded customer: latest first, a STALE one opened, F code
   await expect(panel).toContainText(
     /Đang xem lần 25\/10 \d\d:\d\d · kyc v\d+ STALE ← Về bản mới nhất/,
   );
-  await expect(panel).toContainText(/kyc v\d+ · discovery@1 · Mock · 25\/10 \d\d:\d\d/);
+  await expect(panel).toContainText(/kyc v\d+ · discovery@2 · Mock · 25\/10 \d\d:\d\d/);
   await expect(rows.nth(2)).toHaveAttribute('aria-current', 'true');
   await expect(panel).toContainText('CURRENT');
   // By the keyboard, the focus goes to the main button rather than the page (R2-05).
@@ -180,7 +181,7 @@ test('the history of a seeded customer: latest first, a STALE one opened, F code
   await page.keyboard.press('Enter');
   await expect(panel).not.toContainText('Đang xem lần');
   await expect(panel.getByRole('button', { name: 'Phân tích lại' })).toBeFocused();
-  await expect(panel).toContainText(/kyc v\d+ · analysis@1 · Mock · 23\/03/);
+  await expect(panel).toContainText(/kyc v\d+ · analysis@2 · Mock · 23\/03/);
 
   // The facts list names each fact F{seq}; a code cited leads to its fact, outlined for a moment.
   const kyc = page.getByRole('region', { name: 'Dữ kiện KYC' });

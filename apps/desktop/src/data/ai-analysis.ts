@@ -193,7 +193,7 @@ export async function analyseCustomer(
     const generation = app.generation();
     const taken = takeProfile(app, customerId);
     if ('kind' in taken) return taken;
-    const result = await runAnalysis({ ...call, ...taken, signal });
+    const result = await runAnalysis({ ...call, ...taken.request, signal });
     if (replaced(app, generation)) return { kind: 'discarded' };
     return result.kind === 'record' ? save(app, result.row) : result;
   } catch (error) {
@@ -209,18 +209,21 @@ const replaced = (app: Pick<AnalysisApp, 'generation' | 'replacing'>, generation
   app.generation() !== generation || app.replacing();
 
 /**
- * The input of an analysis: the latest KYC version and its facts, read together, at once. No
- * version means no facts confirmed yet: nothing for the gate to let through.
+ * The input of an analysis: the latest KYC version and its facts, read together, at once, and the
+ * version's `seq`. No version means no facts confirmed yet: nothing for the gate to let through.
  */
 function takeProfile(
   app: AnalysisApp,
   customerId: string,
-): WebAnalysisRequest | { readonly kind: 'blocked'; readonly state: 'KYC_INSUFFICIENT' } {
+):
+  | { readonly request: WebAnalysisRequest; readonly kycVersion: number }
+  | { readonly kind: 'blocked'; readonly state: 'KYC_INSUFFICIENT' } {
   const db = app.db();
   const { facts } = getKycProfile(db, customerId);
   const version = listKycVersions(db, customerId).at(-1);
   if (!version) return { kind: 'blocked', state: 'KYC_INSUFFICIENT' };
-  return { customerId, kycVersionId: version.id, profile: { facts }, today: app.today() };
+  const request = { customerId, kycVersionId: version.id, profile: { facts }, today: app.today() };
+  return { request, kycVersion: version.seq };
 }
 
 function save(app: AnalysisApp, row: AnalysisRow) {
@@ -265,39 +268,52 @@ export async function extractFromNote(
   }
 }
 
+/**
+ * A ChatGPT web session as the app keeps it: tied to the data its input was taken from, so an
+ * answer for other data is never saved, even with the same IDs (DR5-36, DR6-15).
+ */
+export interface AppWebSession {
+  readonly session: WebSession;
+  /** `generation()` when the input was taken. */
+  readonly generation: number;
+}
+
 export type WebStartOutcome =
   /**
    * A session for the panel to keep (§3.1 item 4) and the message to paste. `copied` false: show
    * it to copy by hand (mockup 4f); `opened` false: `AI_OPEN_BROWSER` (4c). The session goes on.
    */
-  | {
+  | (AppWebSession & {
       readonly kind: 'session';
-      readonly session: WebSession;
+      /** `seq` of the KYC version the input was taken from: "kyc v<n>" of mockup 4e. */
+      readonly kycVersion: number;
       readonly message: string;
       /** When the input was taken, by the database's clock (mockup 4e "chụp dd/mm hh:mm"). */
       readonly takenAt: Date;
       readonly copied: boolean;
       readonly opened: boolean;
-    }
+    })
   | Extract<AnalysisOutcome, { kind: 'blocked' | 'discarded' | 'failed' }>;
 
 /**
- * One click on Phân tích bằng ChatGPT web: the input is taken now, as for Phân tích; the message is
- * copied, then chatgpt.com opened. No AI request is held (§3.1 item 5) and nothing is saved.
+ * One click on Phân tích bằng ChatGPT web: the input is taken now, as for Phân tích, with the
+ * generation of the data it comes from; the message is copied, then chatgpt.com opened. No AI
+ * request is held (§3.1 item 5) and nothing is saved.
  */
 export async function startChatGptWeb(
   app: AnalysisApp,
   customerId: string,
 ): Promise<WebStartOutcome> {
   try {
+    const generation = app.generation();
     const taken = takeProfile(app, customerId);
     if ('kind' in taken) return taken;
     const takenAt = app.db().now();
-    const started = startWebAnalysis(taken);
+    const started = startWebAnalysis(taken.request);
     if (started.kind !== 'session') return started;
     const copied = await app.ai.web.copy(started.message);
     const opened = await app.ai.web.openChatGpt();
-    return { ...started, takenAt, copied, opened };
+    return { ...started, generation, kycVersion: taken.kycVersion, takenAt, copied, opened };
   } catch (error) {
     return lost(app, error);
   }
@@ -317,12 +333,18 @@ export type WebAnswerOutcome =
   | { readonly kind: 'replacing' }
   | Extract<AnalysisOutcome, { kind: 'saved' | 'discarded' | 'failed' }>;
 
-/** Kiểm tra và lưu: checks the pasted answer and saves the row once the session is over. */
+/**
+ * Kiểm tra và lưu: checks the pasted answer and saves the row once the session is over. The data
+ * replaced since the input was taken (Nạp lại / Nhập backup, even with the same IDs) ends the
+ * session, nothing checked nor saved (DR6-15). While it is being replaced the save is refused and
+ * the session kept instead (S2-2): the replace may still fail, the data then the same (S2-4).
+ */
 export function saveChatGptAnswer(
   app: AnalysisApp,
-  session: WebSession,
+  { session, generation }: AppWebSession,
   pasted: string,
 ): WebAnswerOutcome {
+  if (app.generation() !== generation) return { kind: 'discarded' };
   try {
     const result = checkWebAnswer(session, pasted);
     return result.kind === 'record' ? save(app, result.row) : result;
