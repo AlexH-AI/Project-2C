@@ -6,6 +6,8 @@ Hồ sơ KH gom mọi thứ về một KH: KYC, dòng thời gian, hợp đồng
 
 ![Hồ sơ KH](img/05-ho-so-kh.png)
 
+Cửa sổ rộng từ 1 440 px (cỡ mặc định của app) chia hồ sơ ba cột: **Dữ kiện KYC** và **Hợp đồng** · **Dòng thời gian** và **Lịch hẹn** · **KYC Intelligence**. Cửa sổ hẹp hơn còn hai cột, KYC Intelligence xuống cuối hồ sơ.
+
 Đầu hồ sơ: họ tên, nhóm hiện tại và ngày vào nhóm; dòng dưới là mã KH, giới tính, ngày sinh (tuổi), RE, team, "Đã có HĐ (…)" hoặc "Chưa có HĐ". Các nút:
 
 | Nút | Làm gì | Xem |
@@ -71,9 +73,9 @@ Không giá trị nào đúng? Thêm ghi chú KYC mới với giá trị đúng 
 Thẻ **Dòng thời gian** xếp mọi việc của KH, mới nhất ở trên:
 
 - **Lịch hẹn lần …**: ngày giờ và trạng thái, ghi chú cuộc gặp, việc tiếp theo; người phối hợp (vai trò) nếu có. **Hẹn tiếp →** đặt lần gặp kế tiếp (xem [3. Lịch hẹn](03-lich-hen.md#hẹn-tiếp)).
-- Chuyển nhóm: nhóm cũ → nhóm mới, ghi "tạo KH", "sau cuộc gặp" hoặc "chuyển tay · không tính RF".
+- Chuyển nhóm: nhóm cũ → nhóm mới, ghi "tạo KH", "chuyển tay · không tính RF", "sau cuộc gặp · tính 1 RF" (cuộc gặp đưa KH từ N4 / N3 lên N2 / N1) hoặc "sau cuộc gặp · không tính RF" (các lần chuyển khác sau cuộc gặp, ví dụ N4 → N3, N2 → N1).
 - **Ghi chú KYC** (kèm nút **AI trích xuất**) và **Ghi chú hệ thống** (ghi chú app tự ghi từ hồ sơ KH, không có nút AI trích xuất).
-- Phiên bản KYC mới ("kyc v…"), có nhãn "thay đổi quan trọng" khi đổi trường cốt lõi hoặc được đánh dấu.
+- Phiên bản KYC mới ("kyc v…"). Phiên bản có thay đổi quan trọng (đổi trường cốt lõi hoặc được đánh dấu) có nhãn "thay đổi quan trọng"; kyc v1 luôn có nhãn này.
 
 ## Hợp đồng
 
@@ -107,6 +109,6 @@ Thẻ **Lịch hẹn** liệt kê mọi lịch của KH. Mỗi lịch hôm nay h
 
 ## KYC Intelligence
 
-Thẻ **KYC Intelligence** ở cuối hồ sơ chạy và hiện phân tích AI của KH. Cách dùng ở [6. KYC Intelligence](06-ai.md).
+Thẻ **KYC Intelligence** (cột phải; cửa sổ hẹp hơn 1 440 px thì ở cuối hồ sơ) chạy và hiện phân tích AI của KH. Cách dùng ở [6. KYC Intelligence](06-ai.md).
 
 [← 4. Khách hàng](04-khach-hang.md) · [6. KYC Intelligence →](06-ai.md)

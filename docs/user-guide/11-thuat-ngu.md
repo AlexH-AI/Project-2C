@@ -28,7 +28,7 @@ Thuật ngữ ngành giữ tiếng Anh như trên màn. Bảng dưới giải th
 | **Tạm hoãn**, **Mất cơ hội** | Hai nhóm đóng. KH mới không tạo thẳng vào nhóm đóng. KH đã đóng mở lại luôn về N3 |
 | **Nhóm mở** | N4, N3, N2, N1 |
 | **Đã có HĐ** | Nhãn của KH đã có HĐ nộp. KH vẫn giữ nhóm của mình |
-| **Chuyển nhóm** | Mỗi lần KH đổi nhóm, có ngày; ghi "tạo KH", "sau cuộc gặp" hoặc "chuyển tay · không tính RF" |
+| **Chuyển nhóm** | Mỗi lần KH đổi nhóm, có ngày; ghi "tạo KH", "chuyển tay · không tính RF", "sau cuộc gặp · tính 1 RF" (N4 / N3 lên N2 / N1) hoặc "sau cuộc gặp · không tính RF" |
 | **Chuyển tay** | Đổi nhóm ngoài cuộc gặp, bằng nút **Chuyển nhóm** ở hồ sơ KH (ví dụ KH được gửi giải pháp qua điện thoại). Không bao giờ tính RF |
 
 ## Lịch hẹn
@@ -79,13 +79,13 @@ Thuật ngữ ngành giữ tiếng Anh như trên màn. Bảng dưới giải th
 | **Mâu thuẫn** | Hai dữ kiện đã xác nhận cùng trường, khác giá trị, đều còn hiệu lực. **Mâu thuẫn cốt lõi** (ở trường cốt lõi) chặn phân tích AI; **mâu thuẫn phụ** chỉ cảnh báo |
 | **Cổng KYC** | Trạng thái cho biết KH đủ thông tin để phân tích AI chưa, theo thứ tự ưu tiên: `CONFLICT_RESOLUTION` (có mâu thuẫn cốt lõi) > `KYC_INSUFFICIENT` (thiếu thông tin) > `PROFILE_DISCOVERY` (đủ tối thiểu, nên khám phá thêm) > `PAIN_POINT_ANALYSIS` (đủ để phân tích nhu cầu). Chỉ hai trạng thái cuối gọi AI được |
 | **Phiên bản KYC** (`kyc v…`) | Tạo mới mỗi khi tập dữ kiện còn hiệu lực đổi |
-| **Thay đổi quan trọng** | Phiên bản KYC có đổi ở trường cốt lõi (app tự đánh dấu) hoặc được RE đánh dấu. Nhắc nên phân tích AI lại |
+| **Thay đổi quan trọng** | Phiên bản KYC có đổi ở trường cốt lõi (app tự đánh dấu) hoặc được RE đánh dấu; kyc v1 luôn là thay đổi quan trọng. Dòng thời gian ghi nhãn "thay đổi quan trọng". Nhắc nên phân tích AI lại |
 
 ## AI
 
 | Thuật ngữ | Nghĩa |
 |---|---|
-| **KYC Intelligence** | Phần AI của app, ở cuối hồ sơ KH |
+| **KYC Intelligence** | Phần AI của app, ở cột phải hồ sơ KH (cửa sổ hẹp hơn 1 440 px: ở cuối hồ sơ) |
 | **Mock** | Câu mẫu cố định, không gọi AI, để thử app |
 | **OpenCode** | Dịch vụ app gọi để chạy model AI thật (bản exe). **Gói Go**: trả theo tháng; **Credit**: trừ số dư |
 | **ChatGPT web** | Phân tích làm tay qua tài khoản ChatGPT của bạn |
