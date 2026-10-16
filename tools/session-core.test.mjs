@@ -118,6 +118,12 @@ describe('fitOutput', () => {
     expect(HOOK_LIMIT).toBeLessThan(10000);
     expect(out).toMatch(/\[cut here/);
   });
+
+  it('cuts to the room left after a long header (DR6-64 S9)', () => {
+    const out = fitOutput(`${'h'.repeat(199)}\n`, 'x'.repeat(9400));
+    expect(out.length).toBeLessThanOrEqual(HOOK_LIMIT);
+    expect(out).toMatch(/\[cut here/);
+  });
 });
 
 describe('latestReview', () => {
@@ -142,6 +148,12 @@ describe('latestReview', () => {
       sha: null,
       level: null,
     });
+  });
+
+  it('takes no SHA of fewer than 7 hex characters: it would match many heads (DR6-64 S3)', () => {
+    for (const sha of ['a', 'b37132', 'b37132G']) {
+      expect(latestReview([comment(`REVIEW: PASS\nPR #5, head \`${sha}\`.`)]).sha, sha).toBeNull();
+    }
   });
 
   it('reads a level written as risk:<level>', () => {

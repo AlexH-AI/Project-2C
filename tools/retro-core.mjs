@@ -1,6 +1,8 @@
 // Pure helpers for tools/retro.mjs (#289): navigation metrics from Claude Code transcripts
-// (~/.claude/projects/<repo folder>/*.jsonl). No I/O here, so they are unit-tested in
+// (<config folder>/projects/<repo folder>/*.jsonl). No I/O here, so they are unit-tested in
 // retro-core.test.mjs. Only counts leave this module, never message text.
+
+import { join, resolve } from 'node:path';
 
 const EDIT_TOOLS = new Set(['Edit', 'Write', 'NotebookEdit']);
 const PROBE_TOOLS = new Set(['Read', 'Grep', 'Glob', 'LS']);
@@ -189,6 +191,15 @@ export function projectDirName(path) {
 /** The repo's folder plus its review worktrees and Claude worktrees (name + "-…"). */
 export function transcriptDirs(names, repoDir) {
   return names.filter((n) => n === repoDir || n.startsWith(`${repoDir}-`));
+}
+
+/**
+ * The `projects` folders Claude Code writes transcripts to on this machine, once each: the config
+ * folder in use (`CLAUDE_CONFIG_DIR`, e.g. `.claude-b`) and the default `~/.claude` (DR6-58).
+ */
+export function projectRoots(env, home) {
+  const configs = [env.CLAUDE_CONFIG_DIR, join(home, '.claude')].filter(Boolean);
+  return [...new Set(configs.map((dir) => resolve(dir, 'projects')))];
 }
 
 const num = (v) => (v === null ? '—' : String(Math.round(v * 10) / 10));

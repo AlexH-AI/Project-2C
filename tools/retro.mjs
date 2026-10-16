@@ -3,16 +3,18 @@
 //
 //   node tools/retro.mjs [--last N]      (default and max: 30 newest sessions)
 //
-// Reads ~/.claude/projects/<repo folder>*/*.jsonl (main checkout, review worktrees,
-// Claude worktrees) and prints counts only: never message text.
+// Reads <config folder>/projects/<repo folder>*/*.jsonl (main checkout, review worktrees,
+// Claude worktrees) of the config folder in use (CLAUDE_CONFIG_DIR) and of ~/.claude, says which
+// folders it read, and prints counts only: never message text.
 
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { homedir, hostname } from 'node:os';
 import { dirname, join } from 'node:path';
 import {
   formatReport,
   parseTranscript,
   projectDirName,
+  projectRoots,
   sessionStats,
   transcriptDirs,
 } from './retro-core.mjs';
@@ -33,12 +35,15 @@ try {
   // The main checkout, even when run from a worktree: its folder names the transcript folders.
   const gitDir = run('git', ['rev-parse', '--path-format=absolute', '--git-common-dir']).trim();
   const repoDir = projectDirName(dirname(gitDir));
-  const root = join(homedir(), '.claude', 'projects');
+  const roots = projectRoots(process.env, homedir()).filter((root) => existsSync(root));
+  if (roots.length === 0) throw new Error('no Claude Code projects folder on this machine');
 
-  const files = transcriptDirs(readdirSync(root), repoDir).flatMap((dir) =>
-    readdirSync(join(root, dir))
-      .filter((f) => f.endsWith('.jsonl'))
-      .map((f) => join(root, dir, f)),
+  const files = roots.flatMap((root) =>
+    transcriptDirs(readdirSync(root), repoDir).flatMap((dir) =>
+      readdirSync(join(root, dir))
+        .filter((f) => f.endsWith('.jsonl'))
+        .map((f) => join(root, dir, f)),
+    ),
   );
   files.sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs);
 
@@ -49,6 +54,7 @@ try {
     if (s) stats.push(s);
   }
   stats.sort((a, b) => b.start.localeCompare(a.start));
+  process.stdout.write(`Transcripts read from: ${roots.join(', ')}\n\n`);
   process.stdout.write(formatReport(stats, hostname()));
 } catch (error) {
   process.stderr.write(`retro: ${error.message}\n`);

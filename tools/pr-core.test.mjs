@@ -10,16 +10,20 @@ import { CODEMAP_PACKAGES } from './codemap-core.mjs';
 import {
   CODEMAP_DOCS,
   CODE_DOCS,
+  TESTED_BASE,
+  VERIFY_CHECK,
   alreadyDone,
-  ciStartedAt,
   cleanupPlan,
   isDocsOnly,
+  isNotesOnly,
   needsExe,
   isReviewWorktree,
   mergeBlockers,
   mergeSteps,
   parseWorktrees,
   riskLevel,
+  testedBaseOf,
+  verifyRunId,
 } from './pr-core.mjs';
 
 // The entries of every `paths:` list in a workflow file, one array per list.
@@ -47,7 +51,10 @@ const exe = (over = {}) => ({
   ...over,
 });
 
-const pr = (over = {}) => ({
+// The main that CI merged the head with, as the Verify job notes it (DR6-57).
+const TESTED = 'feed0000feed0000feed0000feed0000feed0000';
+
+const pr = ({ files = [{ path: 'tools/a.mjs' }], ...over } = {}) => ({
   number: 9,
   state: 'OPEN',
   isDraft: false,
@@ -57,7 +64,8 @@ const pr = (over = {}) => ({
   labels: [{ name: 'type:task' }, { name: 'risk:low' }],
   comments: [review('PASS')],
   statusCheckRollup: green,
-  files: [{ path: 'tools/a.mjs' }],
+  files,
+  changedFiles: files.length,
   ...over,
 });
 const ctx = (over = {}) => ({
@@ -65,6 +73,7 @@ const ctx = (over = {}) => ({
   mode: 'squash',
   stacked: [],
   baseMerged: null,
+  testedBase: TESTED,
   ...over,
 });
 
@@ -219,6 +228,14 @@ describe('mergeBlockers', () => {
     ]);
   });
 
+  it('still needs a REVIEW for another file under docs/state/ (DR6-64 P3)', () => {
+    const files = [{ path: 'docs/state/review-notes.md' }, { path: 'docs/state/other.md' }];
+    expect(isNotesOnly(files.map((f) => f.path))).toBe(false);
+    expect(mergeBlockers(pr({ files, comments: [], statusCheckRollup: [] }), ctx())).toEqual([
+      expect.stringMatching(/No REVIEW comment/),
+    ]);
+  });
+
   it('still needs risk:low (or --owner) for a notes PR', () => {
     const files = [{ path: 'docs/state/review-notes.md' }];
     expect(mergeBlockers(pr({ files, comments: [], labels: [] }), ctx())).toEqual([
@@ -231,6 +248,21 @@ describe('mergeBlockers', () => {
     expect(mergeBlockers(pr({ comments }), ctx())).toEqual([
       expect.stringMatching(/Latest REVIEW is CHANGES/),
     ]);
+  });
+
+  it('stops on a verdict that only says PASS further on (DR6-64 P5)', () => {
+    const comments = [review('CHANGES — sửa 2 mục rồi mới PASS')];
+    expect(mergeBlockers(pr({ comments }), ctx())).toEqual([
+      'Latest REVIEW is CHANGES — sửa 2 mục rồi mới PASS, not PASS.',
+    ]);
+  });
+
+  it('takes no SHA of fewer than 7 characters from a PASS (DR6-64 S3)', () => {
+    for (const sha of [HEAD.slice(0, 6), 'a']) {
+      expect(mergeBlockers(pr({ comments: [review('PASS', sha)] }), ctx()), sha).toEqual([
+        expect.stringMatching(/names no head SHA/),
+      ]);
+    }
   });
 
   it('stops when the PASS names another SHA than the head (P-1)', () => {
@@ -309,27 +341,55 @@ describe('mergeBlockers', () => {
     expect(mergeBlockers(pr({ files, labels, statusCheckRollup: built }), ctx())).toEqual([]);
   });
 
-  it('stops a code PR when main got code after its CI started (DR-80)', () => {
-    const rollup = [
-      { ...green[0], startedAt: '2026-10-06T10:00:00Z' },
-      exe({ conclusion: 'SKIPPED', startedAt: '2026-10-06T10:09:00Z' }),
-    ];
-    const commit = (sha, date, ...files) => ({ sha, date, files });
-    const mainSince = [
-      commit('1111111aaaa', '2026-10-06T09:00:00Z', 'tools/old.mjs'),
-      commit('2222222bbbb', '2026-10-06T11:00:00Z', 'docs/x.md'),
-    ];
-    const at = () => mergeBlockers(pr({ statusCheckRollup: rollup }), ctx({ mainSince }));
+  it('stops a code PR when main got code since the main its CI tested (DR-80)', () => {
+    const commit = (sha, ...files) => ({ sha, files });
+    const mainSince = [commit('2222222bbbb', 'docs/x.md')];
+    const at = () => mergeBlockers(pr(), ctx({ mainSince }));
     expect(at()).toEqual([]);
 
-    mainSince.push(commit('3333333cccc', '2026-10-06T10:05:00Z', 'docs/y.md', 'apps/x.ts'));
+    mainSince.push(commit('3333333cccc', 'docs/y.md', 'apps/x.ts'));
     expect(at()).toEqual([
-      'main got code after CI started on head abc1234 (3333333): gh pr update-branch 9, wait for CI, then review the new head again (P-1).',
+      'main got code since feed000, the main CI tested on head abc1234 (3333333): gh pr update-branch 9, wait for CI, then review the new head again (P-1).',
     ]);
     const docs = [{ path: 'docs/z.md' }];
-    expect(mergeBlockers(pr({ files: docs, statusCheckRollup: [] }), ctx({ mainSince }))).toEqual(
-      [],
-    );
+    const docsOnly = ctx({ mainSince, testedBase: null });
+    expect(mergeBlockers(pr({ files: docs, statusCheckRollup: [] }), docsOnly)).toEqual([]);
+  });
+
+  it('goes by the main CI tested, not the time it ran: a re-run keeps its old merge (DR6-57)', () => {
+    // Pushed at 10:00, main got code at 10:05, CI re-run at 10:30 on the merge made at 10:00.
+    const rollup = [{ ...green[0], startedAt: '2026-10-06T10:30:00Z' }];
+    const mainSince = [{ sha: '3333333cccc', date: '2026-10-06T10:05:00Z', files: ['apps/x.ts'] }];
+    expect(mergeBlockers(pr({ statusCheckRollup: rollup }), ctx({ mainSince }))).toEqual([
+      expect.stringMatching(/^main got code since feed000, .* \(3333333\)/),
+    ]);
+  });
+
+  it('stops a green code PR whose CI noted no tested main (a run from before DR6-57)', () => {
+    expect(mergeBlockers(pr(), ctx({ testedBase: null }))).toEqual([
+      'CI on head abc1234 noted no tested main ("Tested base" of the Verify job): gh pr close 9 + gh pr reopen 9 so CI runs again.',
+    ]);
+    // Not green yet: that alone is said.
+    const pending = [{ ...green[0], status: 'IN_PROGRESS', conclusion: '' }];
+    expect(mergeBlockers(pr({ statusCheckRollup: pending }), ctx({ testedBase: null }))).toEqual([
+      expect.stringMatching(/1 pending/),
+    ]);
+  });
+
+  it('takes a PR it could not read every file of as code (DR6-57)', () => {
+    // `gh pr view --json files` stops at 100: here the 101st file would be code.
+    const files = Array.from({ length: 100 }, (_, i) => ({ path: `docs/img/${i}.png` }));
+    expect(mergeBlockers(pr({ files, changedFiles: 101, statusCheckRollup: [] }), ctx())).toEqual([
+      'Read 100 of the 101 files of the PR: check them by hand.',
+      'Code PR with no CI check on head abc1234.',
+    ]);
+    const notes = [{ path: 'docs/state/review-notes.md' }];
+    const notesPr = pr({ files: notes, changedFiles: 2, comments: [], statusCheckRollup: [] });
+    expect(mergeBlockers(notesPr, ctx())).toEqual([
+      expect.stringMatching(/Read 1 of the 2 files/),
+      expect.stringMatching(/No REVIEW comment/),
+      expect.stringMatching(/no CI check/),
+    ]);
   });
 
   it('stops a med PR unless the Owner said to merge', () => {
@@ -408,17 +468,39 @@ describe('needsExe', () => {
   });
 });
 
-describe('ciStartedAt', () => {
-  it('is the earliest start among the checks, null when none started', () => {
-    expect(
-      ciStartedAt([
-        { startedAt: '2026-10-06T10:05:00Z' },
-        { startedAt: '2026-10-06T10:00:00Z' },
-        { name: 'status context' },
-      ]),
-    ).toBe('2026-10-06T10:00:00Z');
-    expect(ciStartedAt([{ name: 'x' }])).toBeNull();
-    expect(ciStartedAt([])).toBeNull();
+describe('the main CI tested (DR6-57)', () => {
+  it('is noted by the Verify job of ci.yml under the title the merge rules read', () => {
+    const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+    expect(ci).toContain(`    name: ${VERIFY_CHECK}\n`);
+    expect(ci).toContain(`::notice title=${TESTED_BASE}::`);
+  });
+
+  it('is read from the notice of the Verify run, null without a whole SHA', () => {
+    const notice = (message, title = TESTED_BASE) => ({
+      annotation_level: 'notice',
+      title,
+      message,
+    });
+    expect(testedBaseOf([notice('x', 'Other'), notice(`${TESTED}\n`)])).toBe(TESTED);
+    for (const annotations of [
+      [],
+      [notice(TESTED, 'Other')],
+      [notice(TESTED.slice(0, 39))],
+      [notice(`${TESTED} x`)],
+      [notice(TESTED.toUpperCase())],
+    ]) {
+      expect(testedBaseOf(annotations)).toBeNull();
+    }
+  });
+
+  it('comes from the Verify check of the head, by the job id in its link', () => {
+    const verify = {
+      name: VERIFY_CHECK,
+      detailsUrl: 'https://github.com/o/r/actions/runs/38919487089/job/117035397422',
+    };
+    expect(verifyRunId([exe({ detailsUrl: 'https://x/job/1' }), verify])).toBe('117035397422');
+    expect(verifyRunId([exe()])).toBeNull();
+    expect(verifyRunId([{ name: VERIFY_CHECK }])).toBeNull();
   });
 });
 
