@@ -147,7 +147,7 @@ function Codes({ codes, onCode }: { codes: readonly string[]; onCode?: (code: st
 /**
  * An analysis shown faded (STALE, or under a run or a gate; mockup ai.html 2h): the block at 85 %
  * and its items hollow, so every text stays at WCAG AA on the card (DR6-21). The lowest pair,
- * `text-fg-3` on `--bg-1`, is 4,81:1; on `bg-surface-2` it would be 4,44:1.
+ * `text-fg-3` on `--bg-1`, is 4.81:1; on `bg-surface-2` it would be 4.44:1.
  */
 export const FADED = 'opacity-85';
 
