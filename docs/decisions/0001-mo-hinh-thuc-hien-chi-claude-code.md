@@ -83,3 +83,9 @@ Muse chạy không hỏi duyệt (`--yolo`, Owner chọn 13/10): vẫn chỉ đ�
 ## Phụ lục — Muse dùng lại Muse Spark 1.3 (M6 — Accepted G1, Owner quyết 14/10/2026)
 
 Sửa M5 phần model. Home PC (máy có Muse Code 1.4.6 và Muse Wonder) không truy cập được, nên deep review Phase 1–6 chạy trên Office Laptop với **Muse Spark 1.3** có sẵn (`muse-spark-1.3-contributor`, Muse Code 1.3.0, mức `max`, như Phase 5). Review vẫn ba bên — Claude, Codex, Muse — 18 báo cáo mỗi lượt; mọi điều kiện khác của M2 / M4 / M5 giữ nguyên (bỏ DeepSeek, `--yolo`, chỉ đọc, kết luận phát hành chỉ từ phiên tổng hợp của Claude).
+
+## Phụ lục — lượt 2 review đóng Phase 6 bỏ Muse, máy chạy tùy (M7 — Accepted G1, Owner quyết 17/10/2026 · PR #647)
+
+Sửa M4–M6 cho **lượt 2** của deep review Phase 1–6 (T-224 #564). **Bỏ Muse**: lượt 2 chỉ còn hai bên — Claude, Codex — 6 gói × 2 = 12 báo cáo, chạy một đợt (hai bên song song; không ACL, không đợt Muse riêng). **Máy chạy tùy** (Office Laptop hay Home PC), miễn đủ số lượt; số đo hiệu năng chỉ so với mốc đo trên **cùng máy** (laptop: số đo nền T-219 và số lượt 1 của laptop; Home PC: số lượt 1 của Home PC và ngưỡng `docs/metrics/phase-6.md`) — chi tiết ở `docs/process/deep-review-phase-1-6.md` §L2.1, §L2.6, §L2.11. Mọi điều kiện khác của M2 giữ nguyên với Codex: Owner chạy, chỉ đọc, không viết code, báo cáo là dữ liệu tham khảo, kết luận phát hành chỉ lấy từ phiên tổng hợp của Claude.
+
+M4–M6 giữ làm lịch sử: lượt 1 (14–15/10/2026) đã chạy ba bên Claude, Codex, Muse Spark 1.3 trên hai máy. Muse Code / OpenCode vẫn không dùng để phát triển; OpenCode vẫn là AI runtime của sản phẩm.
