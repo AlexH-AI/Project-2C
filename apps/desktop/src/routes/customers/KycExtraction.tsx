@@ -55,15 +55,25 @@ export function NoteEvent({
     document.getElementById(buttonId)?.focus();
   };
   // A proposal confirmed or dropped takes its buttons with it: the focus goes to the next one left,
-  // else the one before, else this note's button (R2-05). A new object per proposal handled.
+  // else the one before, else this note's button (R2-05); Hủy and Thử lại take their line with them,
+  // to this note's button (DR6-20). While the button is off for a request, the note's text has the
+  // focus. A new object each time.
   const proposalId = (index: number) => `${buttonId}-${index}`;
+  const textId = `${buttonId}-text`;
   const [focusTo, setFocusTo] = useState<{ readonly id: string } | null>(null);
   useEffect(() => {
     if (!focusTo) return;
     const active = document.activeElement;
     if (active && active !== document.body) return;
-    (document.getElementById(focusTo.id) ?? document.getElementById(buttonId))?.focus();
-  }, [focusTo, buttonId]);
+    [focusTo.id, buttonId, textId]
+      .map((id) => document.getElementById(id))
+      .find((node) => node && !(node instanceof HTMLButtonElement && node.disabled))
+      ?.focus();
+  }, [focusTo, buttonId, textId]);
+  const thenFocus = (action: () => void) => () => {
+    action();
+    setFocusTo({ id: buttonId });
+  };
   const handle = (index: number) => {
     const left =
       view?.kind === 'proposals' ? view.items.filter((item) => item.index !== index) : [];
@@ -92,7 +102,7 @@ export function NoteEvent({
           </Button>
         )}
       </span>
-      <span className="whitespace-pre-line text-fg-2">
+      <span id={textId} tabIndex={-1} className="whitespace-pre-line text-fg-2">
         {note.text}
         {button?.tooShort && (
           <span className="text-xs text-fg-3">
@@ -105,7 +115,7 @@ export function NoteEvent({
         <span className="text-xs text-fg-3">{t('aiError.AI_BUSY')}</span>
       )}
       {job.phase === 'running' && (
-        <BusyLine action={<Button onClick={job.cancel}>{t('aiPanel.cancel')}</Button>}>
+        <BusyLine action={<Button onClick={thenFocus(job.cancel)}>{t('aiPanel.cancel')}</Button>}>
           {t('extraction.running')}
         </BusyLine>
       )}
@@ -167,7 +177,7 @@ export function NoteEvent({
               <AiErrorText error={view.error} />
             )}
           </span>
-          <Button disabled={busy} onClick={extract}>
+          <Button disabled={busy} onClick={thenFocus(extract)}>
             {t('aiPanel.retry')}
           </Button>
         </div>

@@ -810,6 +810,46 @@ test('by the keyboard, Thử lại and Hủy leave the focus in the panel (R2-05
   await expect(heading).toBeFocused();
 });
 
+test('by the keyboard, Hủy and Thử lại of AI trích xuất leave the focus on the note (DR6-20)', async ({
+  page,
+}) => {
+  await asExe(page);
+  const name = 'Tú Phím Trích';
+  await createKycCustomer(page, name);
+  await writeNote(page, name, NOTE);
+  await useOpenCode(page);
+  const note = noteOf(page, NOTE);
+  const text = note.getByText(NOTE, { exact: true });
+  const press = async (button: Locator) => {
+    await button.focus();
+    await page.keyboard.press('Enter');
+  };
+
+  // Hủy goes once pressed, and the buttons are off until the request ends: the note's text.
+  await page.evaluate(() => window.exe.holdAi());
+  await press(note.getByRole('button', { name: 'AI trích xuất' }));
+  await expect(note.getByRole('status')).toContainText('Đang trích xuất…');
+  await press(note.getByRole('button', { name: 'Hủy' }));
+  await expect(note.getByRole('status')).toContainText('Đang hủy…');
+  await expect(text).toBeFocused();
+  await page.evaluate(() => window.exe.releaseAi());
+  await expect(note.getByRole('status')).toHaveCount(0);
+  await expect(text).toBeFocused();
+
+  // Thử lại goes with its alert: the note's text again while the retry runs.
+  await page.evaluate(() => (window.exe.aiError = { code: 'AI_NETWORK' }));
+  await press(note.getByRole('button', { name: 'AI trích xuất' }));
+  await expect(note.getByRole('alert')).toContainText('Không kết nối được OpenCode.');
+  await page.evaluate(() => {
+    window.exe.aiError = null;
+    window.exe.holdAi();
+  });
+  await press(note.getByRole('alert').getByRole('button', { name: 'Thử lại' }));
+  await expect(note.getByRole('status')).toContainText('Đang trích xuất…');
+  await expect(text).toBeFocused();
+  await page.evaluate(() => window.exe.releaseAi());
+});
+
 test('Thử lại of an error waits for the runner; ChatGPT web clears the error (review of PR 459)', async ({
   page,
 }) => {

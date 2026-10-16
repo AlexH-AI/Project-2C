@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
 import {
   createSortedRowModel,
   rowSortingFeature,
@@ -58,6 +58,8 @@ interface DataTableProps<Row extends RowData> {
   moreLabels: DataTableMoreLabels;
   /** Back to the first hundred rows when this changes (period, filters); a sort keeps the count. */
   resetKey?: string;
+  /** The table, then focusable from code: for the focus of a button gone as it opened the table. */
+  ref?: Ref<HTMLTableElement>;
 }
 
 const features = tableFeatures({
@@ -104,6 +106,7 @@ export function DataTable<Row extends RowData>({
   initialSort,
   moreLabels,
   resetKey,
+  ref,
 }: DataTableProps<Row>) {
   const [limit, setLimit] = useState(SHOW_MORE_STEP);
   const [limitKey, setLimitKey] = useState(resetKey);
@@ -111,6 +114,13 @@ export function DataTable<Row extends RowData>({
     setLimitKey(resetKey);
     setLimit(SHOW_MORE_STEP);
   }
+  // The last "Hiện thêm" takes its button away: the focus goes to the line saying all are shown
+  // (DR6-35). A count, so each last click moves it.
+  const footLine = useRef<HTMLSpanElement>(null);
+  const [allShown, setAllShown] = useState(0);
+  useEffect(() => {
+    if (allShown > 0) footLine.current?.focus();
+  }, [allShown]);
   const columnDefs = useMemo(() => columns.map(toColumnDef), [columns]);
   const table = useTable({
     features,
@@ -133,7 +143,12 @@ export function DataTable<Row extends RowData>({
 
   return (
     <>
-      <table aria-label={label} className="w-full border-collapse text-sm">
+      <table
+        ref={ref}
+        aria-label={label}
+        tabIndex={ref ? -1 : undefined}
+        className="w-full border-collapse text-sm"
+      >
         <thead>
           <tr>
             {columns.map((column) => {
@@ -192,13 +207,19 @@ export function DataTable<Row extends RowData>({
       </table>
       {foot.kind !== 'none' && (
         <div className="flex items-center gap-3 px-2.5 pt-3 pb-1 text-sm text-fg-2 tabular-nums">
-          <span>
+          <span ref={footLine} tabIndex={-1}>
             {foot.kind === 'more'
               ? moreLabels.shown(foot.shown, foot.total)
               : moreLabels.all(foot.total)}
           </span>
           {foot.kind === 'more' && (
-            <Button className="ml-auto" onClick={() => setLimit(limit + SHOW_MORE_STEP)}>
+            <Button
+              className="ml-auto"
+              onClick={() => {
+                setLimit(limit + SHOW_MORE_STEP);
+                if (foot.shown + foot.next >= foot.total) setAllShown((count) => count + 1);
+              }}
+            >
               {moreLabels.more(foot.next)}
             </Button>
           )}

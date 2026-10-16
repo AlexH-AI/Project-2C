@@ -36,7 +36,42 @@ function menuBlocked(editable: boolean): boolean {
   return event.defaultPrevented;
 }
 
+/** Presses the mouse's `button` (3 Back, 4 Forward) on a page that blocks reloading. */
+function buttonBlocked(button: number): boolean {
+  const page = new EventTarget();
+  blockReload(page);
+  const event = Object.assign(new Event('mouseup', { cancelable: true }), { button });
+  page.dispatchEvent(event);
+  return event.defaultPrevented;
+}
+
 describe('blockReload', () => {
+  it('listens in the capture phase, so no screen can stop an event before it', () => {
+    const listened: [string, unknown][] = [];
+    blockReload({
+      addEventListener: (type: string, _listener: unknown, options: unknown) =>
+        listened.push([type, options]),
+    } as unknown as EventTarget);
+    expect(listened.map(([type]) => type).sort()).toEqual(['contextmenu', 'keydown', 'mouseup']);
+    for (const [, options] of listened) expect(options).toEqual({ capture: true });
+  });
+
+  it('keeps Back and Forward from leaving the screen, by the keyboard (DR6-34)', () => {
+    expect(blocked({ key: 'BrowserBack' })).toBe(true);
+    expect(blocked({ key: 'BrowserForward' })).toBe(true);
+    expect(blocked({ key: 'ArrowLeft', altKey: true })).toBe(true);
+    expect(blocked({ key: 'ArrowRight', altKey: true })).toBe(true);
+    expect(blocked({ key: 'ArrowLeft', altKey: true, shiftKey: true })).toBe(true);
+  });
+
+  it("keeps the mouse's own Back and Forward buttons from leaving the screen (DR6-34)", () => {
+    expect(buttonBlocked(3)).toBe(true);
+    expect(buttonBlocked(4)).toBe(true);
+    expect(buttonBlocked(0)).toBe(false);
+    expect(buttonBlocked(1)).toBe(false);
+    expect(buttonBlocked(2)).toBe(false);
+  });
+
   it("keeps the webview's own menu, and its Refresh, away from the page", () => {
     expect(menuBlocked(false)).toBe(true);
   });
@@ -62,5 +97,10 @@ describe('blockReload', () => {
     expect(blocked({ key: 'F4' })).toBe(false);
     expect(blocked({ key: 'c', ctrlKey: true })).toBe(false);
     expect(blocked({ key: 'Escape' })).toBe(false);
+    // The arrows move the caret, a word at a time with Ctrl; Ctrl+Alt is AltGr.
+    expect(blocked({ key: 'ArrowLeft' })).toBe(false);
+    expect(blocked({ key: 'ArrowRight', shiftKey: true })).toBe(false);
+    expect(blocked({ key: 'ArrowLeft', ctrlKey: true })).toBe(false);
+    expect(blocked({ key: 'ArrowLeft', ctrlKey: true, altKey: true })).toBe(false);
   });
 });

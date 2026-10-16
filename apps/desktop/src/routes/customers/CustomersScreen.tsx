@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CustomerRecord } from '@p2c/db';
 import {
   CLOSED_STAGES,
@@ -112,6 +112,17 @@ export function CustomersScreen() {
     [board],
   );
   const [view, setView] = useState<View>('kanban');
+  // "+ n KH" goes with the kanban it is on: the focus goes to the table it opens (DR6-35). A count,
+  // so each click moves it.
+  const table = useRef<HTMLTableElement>(null);
+  const [toTable, setToTable] = useState(0);
+  useEffect(() => {
+    if (toTable > 0) table.current?.focus();
+  }, [toTable]);
+  const showTable = () => {
+    setView('table');
+    setToTable((count) => count + 1);
+  };
   const [creating, setCreating] = useState(false);
   const scopeKey = JSON.stringify(scope);
   // The customer just made for an RE outside the scope, while the scope it was made in stays.
@@ -176,6 +187,7 @@ export function CustomersScreen() {
       )}
       {view === 'table' ? (
         <DataTable
+          ref={table}
           label={t('screen.customers')}
           columns={COLUMNS}
           rows={rows}
@@ -200,7 +212,7 @@ export function CustomersScreen() {
                 {board.open[stage].length > COLUMN_LIMIT && (
                   <button
                     type="button"
-                    onClick={() => setView('table')}
+                    onClick={showTable}
                     className={`cursor-pointer text-xs text-accent hover:underline ${LINK}`}
                   >
                     {t('customers.more', { count: board.open[stage].length - COLUMN_LIMIT })}
