@@ -9,6 +9,7 @@ paths:
   - `CLAUDE.md` của các package có khối codemap (`CODEMAP_PACKAGES` trong `tools/codemap-core.mjs`; khối codemap do `pnpm verify` kiểm).
   - Hai tài liệu G5 mà unit test so nguyên văn với code (DR5-57): `docs/design/phase-5-prompts.md`, `docs/golden/ai-eval.md`. PR sửa G5 chạy CI như PR code.
 - PR code (mở, push thêm, mở lại): Verify (`pnpm verify`) + e2e. Build exe chỉ khi PR có nhãn `build-exe`; `merge-pr` chặn PR đụng file cần build exe (`EXE_PATHS` trong `tools/pr-core.mjs`) mà thiếu nhãn.
+- Bước "Note the tested base" của job Verify ghi notice `Tested base` (`TESTED_BASE` trong `tools/pr-core.mjs`): SHA cha thứ nhất của commit gộp mà run test, tức bản `main` đã test cùng PR; Re-run giữ nguyên commit gộp của lần chạy đầu (DR6-57). `merge-pr` chặn khi `main` có commit code sau SHA đó (`gh pr update-branch <N>` → CI → review lại), và khi run xanh mà không có notice (`gh pr close <N>` + `gh pr reopen <N>`). Danh sách file của PR đọc bằng REST có phân trang; đọc thiếu thì chặn.
 - Job Verify đọc nhãn hiện tại của PR qua API ở cuối job (T-063). Gắn `build-exe` sau khi Verify đã qua bước đó thì CI không chạy lại (không nghe sự kiện `labeled`): push thêm hoặc `gh pr close` + `gh pr reopen`.
 - Push lên `main` (sau merge): bỏ Verify, chỉ build exe → artifact `Project-2C-<sha>`.
 - Chạy tay (`workflow_dispatch`): Verify + build exe.
