@@ -29,7 +29,7 @@ import { KycIntelligence } from './KycIntelligence';
 import { ConfirmFactDialog, KycNoteDialog, ResolveKycDialog } from './KycDialogs';
 import { NoteEvent } from './KycExtraction';
 import { PolicyDialog, type PolicyMode } from './PolicyDialogs';
-import { ageOn, birthLabel } from './customers-view';
+import { ageOn, birthLabel, stageSince } from './customers-view';
 import { factAnchor } from './kyc-view';
 import { expectedCaseSize } from './policy-form';
 
@@ -119,7 +119,7 @@ export function CustomerProfile({ id }: { id: string }) {
   const { customer, re, team, policies, transitions, kyc, versions, analyses, appointmentData } =
     profile;
   // Every customer has its first transition (spec §3.4).
-  const since = transitions.at(-1)!.date;
+  const since = stageSince(transitions).get(customer.id)!;
   const birth = customer.birthDate;
   const caseSize = expectedCaseSize(appointmentData.appointments);
   const facts = [

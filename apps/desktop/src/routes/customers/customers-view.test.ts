@@ -13,8 +13,11 @@ import {
   birthLabel,
   birthSortKey,
   customerBoard,
+  kanbanColumn,
   parseBirthDate,
   parseRecordDate,
+  stageSince,
+  type CustomerCard,
 } from './customers-view';
 
 const day = (month: number, dayOfMonth: number): CalendarDate => ({
@@ -56,28 +59,28 @@ const policy = (customerId: string): Policy => ({
   issuedFyp: null,
 });
 
-describe('customerBoard', () => {
-  const data = {
-    customers: [
-      customer('an', 'N4'),
-      customer('binh', 'N4'),
-      customer('chi', 'N2'),
-      customer('dung', 'ON_HOLD'),
-      customer('em', 'N4', 're2'),
-    ],
-    people,
-    transitions: [
-      move('an', null, 'N4', day(9, 1)),
-      move('binh', null, 'N3', day(8, 1)),
-      move('binh', 'N3', 'N4', day(9, 10)),
-      move('chi', null, 'N2', day(7, 5)),
-      move('dung', null, 'N3', day(6, 1)),
-      move('dung', 'N3', 'ON_HOLD', day(6, 20)),
-      move('em', null, 'N4', day(9, 12)),
-    ],
-    policies: [policy('chi'), policy('chi')],
-  };
+const data = {
+  customers: [
+    customer('an', 'N4'),
+    customer('binh', 'N4'),
+    customer('chi', 'N2'),
+    customer('dung', 'ON_HOLD'),
+    customer('em', 'N4', 're2'),
+  ],
+  people,
+  transitions: [
+    move('an', null, 'N4', day(9, 1)),
+    move('binh', null, 'N3', day(8, 1)),
+    move('binh', 'N3', 'N4', day(9, 10)),
+    move('chi', null, 'N2', day(7, 5)),
+    move('dung', null, 'N3', day(6, 1)),
+    move('dung', 'N3', 'ON_HOLD', day(6, 20)),
+    move('em', null, 'N4', day(9, 12)),
+  ],
+  policies: [policy('chi'), policy('chi')],
+};
 
+describe('customerBoard', () => {
   it('puts each customer in the column of its stage, latest change first', () => {
     const board = customerBoard(data, { kind: 'all' });
 
@@ -137,6 +140,52 @@ describe('customerBoard', () => {
     expect(customerBoard(data, { kind: 'team', teamId: 't2' }).openByRe).toEqual(
       new Map([['re2', 1]]),
     );
+  });
+
+  // One rule for the kanban card, the profile's "từ …" and the 5d dialog (DR6-62).
+  it('dates each card by stageSince', () => {
+    const since = stageSince(data.transitions);
+    const board = customerBoard(data, { kind: 'all' });
+    const cards = [...Object.values(board.open), ...Object.values(board.closed)].flat();
+
+    expect(cards).toHaveLength(data.customers.length);
+    for (const card of cards) expect(card.since).toEqual(since.get(card.customer.id));
+  });
+});
+
+describe('stageSince', () => {
+  it('gives each customer the day of its latest transition: the day it entered its stage', () => {
+    expect(stageSince(data.transitions)).toEqual(
+      new Map([
+        ['an', day(9, 1)],
+        ['binh', day(9, 10)],
+        ['chi', day(7, 5)],
+        ['dung', day(6, 20)],
+        ['em', day(9, 12)],
+      ]),
+    );
+    expect(stageSince([])).toEqual(new Map());
+  });
+});
+
+describe('kanbanColumn', () => {
+  const cards = (count: number): CustomerCard[] =>
+    Array.from({ length: count }, (_, i) => ({
+      customer: customer(`c${i}`, 'N4'),
+      re: people[0],
+      since: day(9, 1),
+      policies: 0,
+    }));
+
+  it('shows the first six cards and counts the others in "+ n KH" (mockup customers.html)', () => {
+    const eight = cards(8);
+    expect(kanbanColumn(eight)).toEqual({ shown: eight.slice(0, 6), more: 2 });
+  });
+
+  it('counts none more when the column holds six cards or fewer', () => {
+    const six = cards(6);
+    expect(kanbanColumn(six)).toEqual({ shown: six, more: 0 });
+    expect(kanbanColumn([])).toEqual({ shown: [], more: 0 });
   });
 });
 
@@ -198,6 +247,8 @@ describe('parseBirthDate', () => {
       ok: true,
       birth: { year: 2026, month: 9, day: 26 },
     });
+    // This year alone is no birth after today (DR6-62).
+    expect(parseBirthDate('2026', today)).toEqual({ ok: true, birth: { year: 2026 } });
   });
 
   it('refuses a day that does not exist, a short year or a birth after today', () => {

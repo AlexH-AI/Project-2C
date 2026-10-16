@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { KYC_GOLDEN_PROFILES } from './golden/kyc.fixture';
 import * as kyc from './kyc';
 import {
   addNote,
@@ -276,6 +277,16 @@ describe('KYC versions', () => {
       confirmedDate: LATER,
     });
     expect(kycHash(wider)).not.toBe(kycHash(conflict));
+  });
+
+  // The hash is stored in kyc_versions and in every backup file, then compared at each later KYC
+  // change: computing it another way changes the file format (DR6-59).
+  it.each([
+    ['K10', '150004cacdd0f0'],
+    ['K14', '002c4621be503a'],
+  ])('keeps the stored hash of golden profile %s', (id, hash) => {
+    const golden = KYC_GOLDEN_PROFILES.find((profile) => profile.id === id)!;
+    expect(kycHash({ notes: [], facts: [...golden.facts] })).toBe(hash);
   });
 
   it('creates the first version with the dated summary', () => {

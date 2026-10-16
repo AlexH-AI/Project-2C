@@ -768,7 +768,10 @@ test('an analysis by OpenCode, ACCEPTED at its retry: what went to ai_complete, 
     'user',
   ]);
   // The input of spec §6.1: the facts as codes and an age, never the name, code or birth year.
-  const sent = JSON.stringify(calls);
+  // Only what the model reads: the random hex of the session id may hold "1984" (#524).
+  const sent = [first!, retry!]
+    .flatMap((call) => call.messages.map((message) => message.content))
+    .join('\n');
   expect(first!.messages[1]!.content).toContain('"mode":"discovery"');
   expect(first!.messages[1]!.content).toContain('"value":"42"');
   expect(sent).not.toContain(name);

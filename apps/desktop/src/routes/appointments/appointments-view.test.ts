@@ -600,6 +600,15 @@ describe('dayLabel / monthLabel', () => {
     expect(dayLabel({ ...cell, met: 0, unrecorded: 0 })).toBe('04/10/2026: 0 lịch hẹn');
   });
 
+  // A day has either unrecorded or planned ones; planned come last, so they never hide the met
+  // or missed ones of today (mockup overview.html part 2, DR6-63).
+  it('names the planned ones of a day last, like its dots', () => {
+    const today = { date: day(10, 11), met: 1, missed: 1, unrecorded: 0, planned: 9 };
+    expect(dayLabel(today)).toBe(
+      '11/10/2026: 11 lịch hẹn — Dời lịch / hủy / không đến 1, Đã gặp 1, Dự kiến 9',
+    );
+  });
+
   it('names a month with its total, then each group it has in the order of its bar', () => {
     const cell = { month: 9, met: 1566, missed: 151, unrecorded: 0, planned: 3 };
     expect(monthLabel(cell, 2026)).toBe(

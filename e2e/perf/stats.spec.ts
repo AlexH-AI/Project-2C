@@ -116,6 +116,21 @@ test('markdownTable against a base run adds the base median and the change', () 
   );
 });
 
+test('markdownTable gives no percent against a base median of 0 (#572)', () => {
+  const base = run({
+    a: { unit: 'ms', runs: 5, median: 0, min: 0, max: 0.4 },
+    b: { unit: 'ms', runs: 5, median: 0, min: 0, max: 0.4 },
+  });
+  const next = run({
+    a: { unit: 'ms', runs: 5, median: 8, min: 7, max: 10 },
+    b: { unit: 'ms', runs: 5, median: 0, min: 0, max: 0.4 },
+  });
+  expect(markdownTable(next, base).split('\n').slice(2)).toEqual([
+    '| `a` | 5 | 8 ms | 7 ms | 10 ms | — | 0 ms | +8 ms (—) |',
+    '| `b` | 5 | 0 ms | 0 ms | 0 ms | — | 0 ms | +0 ms (—) |',
+  ]);
+});
+
 test('loadDataError passes the load data and names what the exe holds otherwise', () => {
   const content = (customers: string, appointments: string) =>
     `4 team · 51 nhân sự · ${customers} KH · ${appointments} lịch hẹn · 1.674 HĐ`;

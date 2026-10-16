@@ -1,6 +1,7 @@
 import { isRfAppointment } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
+  editMeetingOutcome,
   listAppointments,
   recordMeetingOutcome,
   scheduleAppointment,
@@ -79,6 +80,30 @@ describe('countCustomerRecords (mockup 5f, spec Phase 6 TR-4, TR-9)', () => {
     expect(
       listAppointments(db, anh.id).filter((a) => isRfAppointment(a, transitions)),
     ).toHaveLength(counts.rf);
+  });
+
+  // Moving a met meeting's day (6f) withdraws its transition and records it again on the new day:
+  // the withdrawn one still points at the live appointment (DR6-59).
+  it('counts one RF for a met meeting moved to another day', async () => {
+    const { db, re } = await setup(d(11, 10));
+    const anh = createCustomer(db, {
+      name: 'Trịnh Minh Anh',
+      reId: re.id,
+      stage: 'N3',
+      date: d(1, 9),
+    });
+    const meeting = scheduleAppointment(db, {
+      customerId: anh.id,
+      reId: re.id,
+      date: d(1, 10),
+      triggerType: 'REFERRAL',
+      coordinatorIds: [],
+    });
+    const outcome = { status: 'MET', stageAfter: 'N2', nextStep: 'Gửi giải pháp' } as const;
+    recordMeetingOutcome(db, meeting.id, outcome);
+    editMeetingOutcome(db, meeting.id, outcome, { date: d(2, 10) });
+
+    expect(countCustomerRecords(db, anh.id)).toMatchObject({ met: 1, rf: 1 });
   });
 
   it('counts nothing for a customer without records', async () => {

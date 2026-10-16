@@ -150,11 +150,12 @@ export function markdownTable(run: PerfRun, base?: PerfRun): string {
     if (change) {
       if (change.base === undefined || change.delta === undefined) cells.push('—', '—');
       else {
+        // No percent of a base median rounded to 0.
         const percent = Math.round((change.delta / change.base) * 100);
+        const ratio = change.base === 0 ? '—' : `${percent >= 0 ? '+' : '−'}${Math.abs(percent)}%`;
         cells.push(
           format(change.base, op.unit),
-          `${signed(change.delta, op.unit)} (${percent >= 0 ? '+' : '−'}${Math.abs(percent)}%)` +
-            (change.worse ? ' ⚠️' : ''),
+          `${signed(change.delta, op.unit)} (${ratio})` + (change.worse ? ' ⚠️' : ''),
         );
       }
     }

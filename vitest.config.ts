@@ -20,6 +20,8 @@ export default defineConfig({
         'apps/desktop/src/routes/applied-filter.ts',
         'apps/desktop/src/routes/reports/report-workbook.ts',
         'apps/desktop/src/routes/**/stage-chart.ts',
+        'apps/desktop/src/i18n/index.ts',
+        'packages/ui/src/**/*.ts',
       ],
       exclude: ['**/*.test.ts', '**/*.d.ts'],
       // One threshold per area, so a drop in one is not hidden by the others (T-101).
@@ -63,6 +65,20 @@ export default defineConfig({
           branches: 94,
           functions: 99,
           lines: 99,
+        },
+        // The message lookup; the catalogue `vi.ts` is data.
+        'apps/desktop/src/i18n/index.ts': {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
+        // The .ts helpers of the UI kit (DR6-62); its components (.tsx) are covered by e2e.
+        'packages/ui/src/**': {
+          statements: 100,
+          branches: 92,
+          functions: 100,
+          lines: 100,
         },
       },
     },

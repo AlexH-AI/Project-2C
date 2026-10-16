@@ -5,8 +5,13 @@ import {
   createTeam,
   listCustomers,
   listTrash,
+  scheduleAppointment,
+  softDeleteAppointment,
   softDeleteCustomer,
   softDeletePerson,
+  softDeletePolicy,
+  softDeleteTeam,
+  submitPolicy,
   type TrashBlock,
   type TrashRow,
 } from '@p2c/db';
@@ -616,6 +621,59 @@ describe('restoreRow', () => {
     expect(listTrash(app.db())).toEqual([]);
     expect(listCustomers(app.db()).map((c) => c.name)).toEqual(['Trịnh Minh Anh']);
   });
+
+  /** One deleted record of each kind, none of them blocked. */
+  async function oneOfEach() {
+    const app = await openAppData({
+      today: () => TODAY,
+      seed: (db) => {
+        const team = createTeam(db, { name: 'Sao Mai' });
+        const reId = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RE', teamId: team.id }).id;
+        softDeleteTeam(db, createTeam(db, { name: 'Bình Minh' }).id);
+        const ha = createPerson(db, { name: 'Lê Thu Hà', role: 'RE', teamId: team.id });
+        softDeletePerson(db, ha.id);
+        const customer = (name: string) =>
+          createCustomer(db, { name, reId, stage: 'N3', date: TODAY });
+        softDeleteCustomer(db, customer('Phạm Gia Bảo').id);
+        const anh = customer('Trịnh Minh Anh');
+        const meeting = scheduleAppointment(db, {
+          customerId: anh.id,
+          reId,
+          date: TODAY,
+          triggerType: 'REFERRAL',
+        });
+        softDeleteAppointment(db, meeting.id);
+        const policy = submitPolicy(db, {
+          customerId: anh.id,
+          reId,
+          submittedDate: TODAY,
+          submittedFyp: 24_000_000,
+        });
+        softDeletePolicy(db, policy.id);
+      },
+    });
+    return { app, rows: listTrash(app.db()) };
+  }
+
+  // Another kind's command refuses the id, or restores another record (DR6-63).
+  it.each(['team', 'person', 'customer', 'appointment', 'policy'] as const)(
+    'restores a %s with the command of its kind, the other records left in the trash',
+    async (kind) => {
+      const { app, rows } = await oneOfEach();
+      expect(rows.map((r) => r.kind).sort()).toEqual([
+        'appointment',
+        'customer',
+        'person',
+        'policy',
+        'team',
+      ]);
+      const row = rows.find((r) => r.kind === kind)!;
+      expect(row.blocked).toBeUndefined();
+
+      expect(restoreRow(app, row)).toBeNull();
+      expect(listTrash(app.db())).toEqual(rows.filter((r) => r !== row));
+    },
+  );
 
   it('refuses with the blocked reason when the data changed after the dialog opened', async () => {
     const { app, row, reId } = await deletedCustomer();

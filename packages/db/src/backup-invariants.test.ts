@@ -848,6 +848,15 @@ describe('importBackup — rules across tables', () => {
       (b, ids) => (analysis(b, ids.rejected).raw_output = `a\0${'b'.repeat(30_000)}`),
     ],
     ['VALUE: a model name with a NUL', (b, ids) => (analysis(b, ids.rejected).model = 'glm\0-5.3')],
+    // Only the value check holds the token counts: their CHECK takes any number ≥ 0 (DR6-59).
+    [
+      'VALUE: a fraction of a prompt token',
+      (b, ids) => (analysis(b, ids.rejected).prompt_tokens = 1.5),
+    ],
+    [
+      'VALUE: a fraction of a completion token',
+      (b, ids) => (analysis(b, ids.rejected).completion_tokens = 300.5),
+    ],
     [
       'VALUE: a meeting note with a NUL',
       (b, ids) => (row(b, 'appointments', (a) => a.id === ids.met).note = 'Gặp\0 lại'),
