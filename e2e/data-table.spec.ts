@@ -164,7 +164,24 @@ test('another period goes back to a hundred rows; the last click shows the rest'
   }
   await expect(rows).toHaveCount(month);
   await expect(more).toHaveCount(0);
-  await expect(page.getByText(`Đã hiện hết ${grouped(month)} lịch`)).toBeVisible();
+  const all = page.getByText(`Đã hiện hết ${grouped(month)} lịch`);
+  await expect(all).toBeVisible();
+  // The last click takes its button away: the focus goes to the line saying all are shown (DR6-35).
+  await expect(all).toBeFocused();
+});
+
+test('"+ n KH" of the kanban goes with it: the table it opens takes the focus (DR6-35)', async ({
+  page,
+}) => {
+  await page.goto('/#/customers');
+  const more = page.getByRole('button', { name: /^\+ [\d.]+ KH · xem dạng bảng$/ }).first();
+  await more.focus();
+  await page.keyboard.press('Enter');
+
+  await expect(
+    page.getByRole('radiogroup', { name: 'Cách xem' }).getByRole('radio', { checked: true }),
+  ).toHaveText('Bảng');
+  await expect(page.getByRole('table', { name: 'Khách hàng' })).toBeFocused();
 });
 
 test('a table of a hundred rows or fewer has no foot', async ({ page }) => {
