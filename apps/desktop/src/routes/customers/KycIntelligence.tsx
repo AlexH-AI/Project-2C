@@ -144,11 +144,27 @@ function Codes({ codes, onCode }: { codes: readonly string[]; onCode?: (code: st
   );
 }
 
-export function Item({ item, onCode }: { item: AiPanelItem; onCode?: (code: string) => void }) {
+/**
+ * An analysis shown faded (STALE, or under a run or a gate; mockup ai.html 2h): the block at 85 %
+ * and its items hollow, so every text stays at WCAG AA on the card (DR6-21). The lowest pair,
+ * `text-fg-3` on `--bg-1`, is 4.81:1; on `bg-surface-2` it would be 4.44:1.
+ */
+export const FADED = 'opacity-85';
+
+export function Item({
+  item,
+  onCode,
+  faded = false,
+}: {
+  item: AiPanelItem;
+  onCode?: (code: string) => void;
+  faded?: boolean;
+}) {
   const { evidence } = item;
   const missing = item.missing && t('aiPanel.missing', { label: t(`kycCategory.${item.missing}`) });
+  const box = faded ? 'border-dashed border-border-strong' : 'border-border bg-surface-2';
   return (
-    <li className="rounded-sm border border-border bg-surface-2 px-2.5 py-2">
+    <li className={`rounded-sm border ${box} px-2.5 py-2`}>
       {item.system && <b>{t(`aiPanel.system.${item.system}`)} </b>}
       {item.text}
       <span className="mt-1 flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-xs text-fg-3">
@@ -180,16 +196,18 @@ function Analysis({
   versions,
   facts,
   onCode,
+  faded,
 }: {
   analysis: AiAnalysisView;
   versions: readonly KycVersionRecord[];
   facts: readonly KycFactRecord[];
   onCode: (code: string) => void;
+  faded: boolean;
 }) {
   const content = analysisContent(analysis, versions, facts);
   const { chip } = content;
   return (
-    <div className="flex flex-col text-sm">
+    <div className={`flex flex-col text-sm ${faded ? FADED : ''}`}>
       <p className="m-0 flex flex-wrap items-center gap-1.5">
         <span className={`${BADGE} ${BADGE_COLORS[analysis.gateState]}`}>{analysis.gateState}</span>
         <span className="rounded-sm bg-surface-2 px-2 py-0.5 text-xs text-fg-2 tabular-nums">
@@ -229,7 +247,7 @@ function Analysis({
               )}
               <ul className={ITEMS}>
                 {group.items.map((item, index) => (
-                  <Item key={index} item={item} onCode={onCode} />
+                  <Item key={index} item={item} onCode={onCode} faded={faded} />
                 ))}
               </ul>
             </div>
@@ -244,7 +262,7 @@ function Analysis({
           <h3 className={SUBHEADING}>{t('aiPanel.reference')}</h3>
           <ul className={ITEMS}>
             {content.reference.map((item, index) => (
-              <Item key={index} item={item} onCode={onCode} />
+              <Item key={index} item={item} onCode={onCode} faded={faded} />
             ))}
           </ul>
         </section>
@@ -543,9 +561,13 @@ export function KycIntelligence({
         </p>
       )}
       {showing ? (
-        <div className={faded ? 'opacity-50' : undefined}>
-          <Analysis analysis={showing} versions={versions} facts={facts} onCode={showFact} />
-        </div>
+        <Analysis
+          analysis={showing}
+          versions={versions}
+          facts={facts}
+          onCode={showFact}
+          faded={faded}
+        />
       ) : (
         !view.blocked && (
           <div className="flex flex-col gap-1.5">

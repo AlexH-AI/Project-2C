@@ -5,20 +5,28 @@ import { useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { BADGE } from '../customers/CustomerKyc';
-import { BADGE_COLORS, ITEMS, Item } from '../customers/KycIntelligence';
+import { BADGE_COLORS, FADED, ITEMS, Item } from '../customers/KycIntelligence';
 import type { AiPanelItem } from '../customers/ai-panel-view';
 import { SourceBadge } from '../customers/KycHistory';
 import { appointmentAiView } from './appointment-ai-view';
 import { FOCUS } from './appointments-view';
 
-function Block({ title, items }: { title: string; items: readonly AiPanelItem[] }) {
+function Block({
+  title,
+  items,
+  faded,
+}: {
+  title: string;
+  items: readonly AiPanelItem[];
+  faded: boolean;
+}) {
   return (
     items.length > 0 && (
       <section aria-label={title}>
         <h4 className="mt-2 mb-1.5 text-sm font-medium text-heading">{title}</h4>
         <ul className={ITEMS}>
           {items.map((item, index) => (
-            <Item key={index} item={item} />
+            <Item key={index} item={item} faded={faded} />
           ))}
         </ul>
       </section>
@@ -42,6 +50,7 @@ export function AppointmentAi({ customerId }: { customerId: string }) {
       [customerId],
     ),
   );
+  const stale = view?.state === 'STALE';
   return (
     <section
       aria-labelledby="appointment-ai"
@@ -65,10 +74,18 @@ export function AppointmentAi({ customerId }: { customerId: string }) {
         )}
       </div>
       {view ? (
-        <div className={view.state === 'STALE' ? 'opacity-50' : undefined}>
+        <div className={stale ? FADED : undefined}>
           <span className={`${BADGE} ${BADGE_COLORS[view.gateState]}`}>{view.gateState}</span>
-          <Block title={t('aiPanel.section.nextBestActions')} items={view.nextBestActions} />
-          <Block title={t('aiPanel.section.discoveryStrategy')} items={view.discoveryStrategy} />
+          <Block
+            title={t('aiPanel.section.nextBestActions')}
+            items={view.nextBestActions}
+            faded={stale}
+          />
+          <Block
+            title={t('aiPanel.section.discoveryStrategy')}
+            items={view.discoveryStrategy}
+            faded={stale}
+          />
         </div>
       ) : (
         <p className="m-0 text-fg-3">

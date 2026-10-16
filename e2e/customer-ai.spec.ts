@@ -13,6 +13,60 @@ import {
 // playwright.config.ts pins "today" of the simulated data (VITE_DEMO_ANCHOR) to 15/09/2026. The web
 // build runs the Mock until Settings → AI exists (T-167).
 
+/**
+ * The lowest WCAG contrast of the text shown in `area`, each against what is painted behind it,
+ * through the opacity of every block on the way (ADR-0013: at least 4,5:1; DR6-21). Disabled
+ * controls are left out, as in WCAG.
+ */
+function lowestContrast(area: Locator): Promise<number> {
+  return area.evaluate((root) => {
+    const rgba = (value: string) => {
+      const [r = 0, g = 0, b = 0, a = 1] = value.match(/[\d.]+/g)!.map(Number);
+      return { rgb: [r, g, b], a };
+    };
+    const mix = (top: number[], under: number[], alpha: number) =>
+      top.map((value, index) => value * alpha + under[index]! * (1 - alpha));
+    // What the blocks of `chain` paint from `from` on, the text last; null where they paint nothing.
+    const paint = (chain: Element[], from: number, text: boolean): number[] | null => {
+      let color: number[] | null = null;
+      for (let index = from; index < chain.length; index++) {
+        const style = getComputedStyle(chain[index]!);
+        const opacity = Number(style.opacity);
+        if (index > from && opacity < 1) {
+          const group = paint(chain, index, text);
+          return group && color ? mix(group, color, opacity) : (group ?? color);
+        }
+        const background = rgba(style.backgroundColor);
+        if (background.a > 0) {
+          color = color ? mix(background.rgb, color, background.a) : background.rgb;
+        }
+      }
+      return text ? rgba(getComputedStyle(chain.at(-1)!).color).rgb : color;
+    };
+    const luminance = (rgb: number[]) => {
+      const [r = 0, g = 0, b = 0] = rgb.map((value) => {
+        const c = value / 255;
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    let lowest = Infinity;
+    for (const element of [root, ...root.querySelectorAll('*')]) {
+      const text = [...element.childNodes].some(
+        (node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim(),
+      );
+      if (!text || !element.checkVisibility() || element.closest(':disabled')) continue;
+      const chain: Element[] = [];
+      for (let node: Element | null = element; node; node = node.parentElement) chain.unshift(node);
+      const [light, dark] = [paint(chain, 0, true)!, paint(chain, 0, false) ?? [255, 255, 255]]
+        .map(luminance)
+        .sort((a, b) => b - a);
+      lowest = Math.min(lowest, (light! + 0.05) / (dark! + 0.05));
+    }
+    return lowest;
+  });
+}
+
 test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, a cốt lõi conflict', async ({
   page,
 }) => {
@@ -84,6 +138,8 @@ test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, 
   await addKycNote(page, name, [['Nơi sinh sống', 'Huế']]);
   await expect(panel).toContainText('STALE');
   await expect(panel).toContainText('KYC có thay đổi nhỏ từ 15/09.');
+  // Faded, yet every text of it reads at WCAG AA (DR6-21).
+  expect(await lowestContrast(panel)).toBeGreaterThanOrEqual(4.5);
   await panel.getByRole('button', { name: 'Phân tích lại' }).click();
   await expect(panel).toContainText('CURRENT');
   await expect(panel).toContainText(/kyc v3 · discovery@2/);
@@ -96,6 +152,7 @@ test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, 
   await expect(panel.getByRole('button', { name: 'Phân tích', exact: true })).toBeDisabled();
   await expect(panel.getByRole('button', { name: 'Phân tích bằng ChatGPT web' })).toBeDisabled();
   await expect(panel).toContainText(/kyc v3 · discovery@2/);
+  expect(await lowestContrast(panel)).toBeGreaterThanOrEqual(4.5);
   // Its link leads to the KYC facts, the focus too (R2-20).
   await panel.getByRole('link', { name: 'Xem ở Dữ kiện KYC →' }).focus();
   await page.keyboard.press('Enter');
