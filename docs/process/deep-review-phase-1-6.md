@@ -3,7 +3,7 @@
 - **Trạng thái:** lượt 1 — **Owner duyệt 13/10/2026** (Issue #562 T-222, nhãn `gate`), trả lời §12: hai đợt; Muse chạy `--yolo` (§7.1). **Owner đổi 14/10/2026** (ADR-0001 phụ lục M6): Home PC không truy cập được → **làm lại cả lượt 1 trên Office Laptop** `D13_THINKPAD` từ bước chuẩn bị §9; Muse dùng **Muse Spark 1.3** có sẵn trên laptop thay Muse Wonder.
 - **Lần chạy bỏ (13–14/10, Home PC):** đợt 1 đã chạy một phần trên Home PC (Claude A–E, Codex A–E, F của cả hai chưa xong). 10 báo cáo đó **không dùng** cho tổng hợp (khác máy với số đo, F không chạy tiếp được); thư mục `C:\workspace\deep-review-1-6\` trên Home PC Owner xóa khi quay lại máy đó, không chép sang.
 - **Soạn:** 13/10/2026, bước 0 của lượt 1 (spec `docs/design/phase-6-hoan-thien.md` §6.3). Lượt 2 (T-224 #564) sửa trên cùng file: thêm mục "Lượt 2" và prompt lượt 2, giữ nguyên phần lượt 1.
-- **Lượt 2:** soạn 17/10/2026 (T-224 #564) — **chờ Owner duyệt** (nhãn `gate`). Toàn bộ ở phần **Lượt 2** cuối file: §L2.1–§L2.11, prompt Phụ lục E–H. Phần lượt 1 (§1–§12, Phụ lục A–D) giữ nguyên, lượt 2 chỉ dẫn tới khi dùng lại.
+- **Lượt 2:** soạn 17/10/2026 (T-224 #564) — **chờ Owner duyệt** (nhãn `gate`). **Owner trả lời §L2.11 ngày 17/10/2026** (ADR-0001 phụ lục M7): bỏ Muse, lượt 2 chỉ **Claude và Codex**, chạy **một đợt**; chạy trên máy nào cũng được, số đo so với mốc cùng máy; các câu còn lại theo đề xuất. Toàn bộ ở phần **Lượt 2** cuối file: §L2.1–§L2.11, prompt Phụ lục E, F, H (không có Phụ lục G). Phần lượt 1 (§1–§12, Phụ lục A–D) giữ nguyên, lượt 2 chỉ dẫn tới khi dùng lại.
 - **Nguồn:** spec Phase 6 §2, §5.1, §6 (G1 #515); khuôn deep review Phase 1–4 (`deep-review-phase-1-4.md`) và Phase 5 (`docs/reviews/raw/2026-10-10/common-*.md`); bài học DeepSeek / Muse (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §6–§7); tổng hợp Phase 5 §9–§10; ADR-0001 phụ lục M2, M4, M5.
 - **Owner đổi bên review (13/10, ADR-0001 phụ lục M5):** bỏ DeepSeek v4.1 Flash (chỉ số benchmark trí tuệ không đủ cao cho deep review toàn codebase); Muse dùng model **Muse Wonder** (mới ra, benchmark cao hơn Spark 1.3). Lượt 1 còn **3 bên**: Claude, Codex, Muse → 6 gói × 3 = **18 báo cáo**. **14/10 (M6):** Muse về lại **Muse Spark 1.3** (`muse-spark-1.3-contributor`, Muse Code 1.3.0 trên Office Laptop, như Phase 5).
 
@@ -479,25 +479,25 @@ Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md`. `<bên>` = thư 
 
 # Lượt 2
 
-Kế hoạch lượt 2 (T-224 #564), soạn 17/10/2026 trên Home PC. Mục nào không nói khác thì giữ như lượt 1 (§1–§12, Phụ lục A–D).
+Kế hoạch lượt 2 (T-224 #564), soạn 17/10/2026 trên Home PC; sửa cùng ngày theo trả lời của Owner (§L2.11). Mục nào không nói khác thì giữ như lượt 1 (§1–§12, Phụ lục A–D).
 
 | Yêu cầu của #564 | Mục |
 |---|---|
 | 1. SHA ghim lượt 2 = `main` sau khi mọi Issue sửa lượt 1 đóng | §L2.2 |
-| 2. Prompt hai phần ngang nhau: kiểm phần đã sửa + tìm lỗi / edge case mới | §L2.4, Phụ lục E–H |
+| 2. Prompt hai phần ngang nhau: kiểm phần đã sửa + tìm lỗi / edge case mới | §L2.4, Phụ lục E, F, H |
 | 3. KNOWN lượt 2 = KNOWN lượt 1 + mọi vấn đề lượt 1, kèm quyết định Owner | §L2.5 |
-| 4. Cỡ dòng từng gói đo lại; cấu hình Muse / OpenCode theo chỗ vướng ở lượt 1 | §L2.3, §L2.7 |
+| 4. Cỡ dòng từng gói đo lại; cấu hình Muse / OpenCode theo chỗ vướng ở lượt 1 (lượt 2 bỏ Muse, M7: chỉ giữ bài học áp dụng cho Claude / Codex) | §L2.3, §L2.7 |
 | Lệnh so số đo với baseline | §L2.6 |
 | Báo cáo có bảng trạng thái theo ID `DR6-*`, rồi phát hiện mới với ID mới theo bên | §L2.8 |
 
 ## L2.1 Mục tiêu, bên review
 
-Spec Phase 6 §6.3: lượt 2 chạy trên SHA sau đợt sửa lượt 1, **cùng 6 gói, cùng 3 bên**, có **hai phần ngang nhau** (Owner chốt 11/10):
+Spec Phase 6 §6.3: lượt 2 chạy trên SHA sau đợt sửa lượt 1, **cùng 6 gói**, bên review theo ADR-0001 phụ lục M7 (dưới), có **hai phần ngang nhau** (Owner chốt 11/10):
 
 1. **Kiểm phần đã sửa (trục R):** trạng thái từng vấn đề `DR6-*` của lượt 1 (đã sửa / một phần / chưa sửa / hồi quy); refactor và sửa hiệu năng không đổi hành vi; số đo không xấu hơn nền (§L2.6).
 2. **Tìm lỗi mới và edge case mới** trên **toàn bộ** phạm vi gói, không chỉ quanh chỗ đã sửa: mỗi bên thử kịch bản / biên chưa có trong báo cáo lượt 1, ghi lại từng kịch bản đã thử (§L2.4).
 
-**Ba bên:** Claude, Codex, Muse Spark 1.3. Issue #564 viết "4 bên" (soạn trước 13/10); ADR-0001 phụ lục M5 đã bỏ DeepSeek, nên lượt 2 là 6 gói × 3 bên = **18 báo cáo**, như lượt 1. Không chạy lại bản tham khảo trên Home PC (câu hỏi 1, §L2.11).
+**Hai bên:** Claude, Codex → 6 gói × 2 bên = **12 báo cáo**, chạy **một đợt** (hai bên song song). Issue #564 viết "4 bên" (soạn trước 13/10); ADR-0001 phụ lục M5 đã bỏ DeepSeek, và **Owner bỏ Muse ngày 17/10/2026** (phụ lục M7, §L2.11). Chạy **một bộ** trên một máy, máy nào cũng được (laptop hay Home PC); số đo so với mốc **cùng máy** (§L2.6). Không chạy thêm bản tham khảo trên máy thứ hai như lượt 1.
 
 Kết luận lượt 2 chỉ lấy từ phiên tổng hợp T-225 #565 (spec §6.1). Sau tổng hợp: Owner chọn → sửa (Issue thường) → G7 (spec §7).
 
@@ -505,7 +505,7 @@ Kết luận lượt 2 chỉ lấy từ phiên tổng hợp T-225 #565 (spec §6
 
 **SHA ghim lượt 2: `4217ed4`** (`4217ed4cd3300af1d63aa61db9eb13902fe75f16`, `main` 16/10/2026 sau #646). Mọi Issue sửa lượt 1 đã đóng: #592–#607 (16 Issue, T-231…T-246) và #625 (T-247, chụp lại ảnh hướng dẫn); #563 (tổng hợp lượt 1) đã đóng. Từ `83e0515` (#644, PR sửa cuối) tới SHA ghim chỉ có tài liệu: `docs/**`, `CLAUDE.md` gốc và `.claude/rules/ci.md` (#646: tả cổng merge "tested base").
 
-**Đợt sửa = diff `8855345..4217ed4`:** ngoài `docs/**` và `*.md` có 137 file, +8 262 / −837 dòng; hai migration mới `0009_lookup_indexes`, `0010_people_team_none`.
+**Đợt sửa = diff `8855345..4217ed4`:** ngoài `docs/**` và mọi file `*.md` có 136 file, +8 260 / −835 dòng (`git diff --numstat 8855345 4217ed4`; tính cả `CLAUDE.md` gốc thì 137 file, +8 262 / −837); hai migration mới `0009_lookup_indexes`, `0010_people_team_none`.
 
 | Issue | Việc | DR6 | PR | Commit |
 |---|---|---|---|---|
@@ -529,14 +529,15 @@ Kết luận lượt 2 chỉ lấy từ phiên tổng hợp T-225 #565 (spec §6
 
 Trong suốt lượt 2 **không merge code vào `main`** (như §2). PR docs merge được, không đổi SHA ghim.
 
-| Bên | Ai chạy | Đợt | Làm ở | Thư mục kết quả | ID |
-|---|---|---|---|---|---|
-| Claude (phiên sạch mỗi gói, tuần tự A → F, không subagent) | Owner mở phiên | 1 | `C:\workspace\Project-2C-review` | `C:\workspace\deep-review-1-6-r2\claude\` | `CL2-<gói><số>` |
-| Codex | Owner | 1 (cùng lúc Claude) | `C:\workspace\Project-2C-review-2` | `…-r2\codex\` | `CX2-<gói><số>` |
-| Muse Spark 1.3 (Muse Code) | Owner | 2 (một mình) | thư mục làm việc `…-r2\muse\`; đọc repo ở `C:\workspace\Project-2C-review-2` | `…-r2\muse\` | `MU2-<gói><số>` |
-| **Claude phiên tổng hợp** (T-225 #565) | Owner yêu cầu, sau khi đủ 18 báo cáo | — | checkout chính | `docs/reviews/` qua PR docs | dùng nguyên ID trên |
+| Bên | Ai chạy | Làm ở | Thư mục kết quả | ID |
+|---|---|---|---|---|
+| Claude (phiên sạch mỗi gói, tuần tự A → F, không subagent) | Owner mở phiên | `C:\workspace\Project-2C-review` | `C:\workspace\deep-review-1-6-r2\claude\` | `CL2-<gói><số>` |
+| Codex (cùng lúc Claude) | Owner | `C:\workspace\Project-2C-review-2` | `…-r2\codex\` | `CX2-<gói><số>` |
+| **Claude phiên tổng hợp** (T-225 #565) | Owner yêu cầu, sau khi đủ 12 báo cáo | checkout chính | `docs/reviews/` qua PR docs | dùng nguyên ID trên |
 
-Máy: **Office Laptop** `D13_THINKPAD`, như lượt 1 (cùng máy với số đo nền T-219 và `perf-ref.json` của lượt 1). Hai đợt như lượt 1 (§2 "Vì sao chia hai đợt").
+**Máy:** Office Laptop `D13_THINKPAD` hoặc Home PC `DESKTOP-KDURKJP`, máy nào cũng được (Owner 17/10, §L2.11 câu 1); bước chuẩn bị, cả hai bên và mọi số đo trên **cùng một máy**, và số đo chỉ so với mốc của máy đó (§L2.6). Thư mục lượt 1 `C:\workspace\deep-review-1-6\` có trên cả hai máy (HANDOFF: giữ tới v1.0): trên laptop là bộ chính thức, trên Home PC là bộ tham khảo của lượt 1. Mỗi bên dùng lại probe lượt 1 của chính mình ở máy đang chạy; probe của bộ máy kia lấy ở phụ lục nguồn trong báo cáo gốc (`docs/reviews/raw/2026-10-15/`, `…/home-pc/`).
+
+**Một đợt:** lượt 1 chia hai đợt để Muse chạy một mình khi thư mục `claude\`, `codex\` đã bị chặn ACL (§2 "Vì sao chia hai đợt", §7.2). Lượt 2 không có Muse: Claude và Codex chạy song song như đợt 1 của lượt 1, không ACL (§7 không dùng). Va cổng e2e 4173 và đo trên exe giữ luật của Phụ lục H (quy tắc chung 3, mục Hiệu năng).
 
 ## L2.3 Sáu gói, cỡ đo lại, diff sửa theo gói
 
@@ -551,11 +552,11 @@ Phạm vi từng gói **giữ đúng §3** (luật `PACKAGES` của `tools/size-
 | C. AI | 5 250 (+121) | 6 110 (+125) | 0 | 60 (0) | +196 / −75 · 10 file | +157 / −32 · 5 file | 15, 16, 18–22, 61 |
 | D. Màn nhập liệu | 7 196 (+376) | 2 023 (+275) | 0 | 74 (+1) | +492 / −116 · 18 file | +308 / −33 · 6 file | 02, 26–36, 62 |
 | E. Lịch hẹn, chỉ số, quản lý | 7 374 (+342) | 3 843 (+298) | 0 | 51 (0) | +493 / −151 · 14 file | +341 / −43 · 5 file | 01, 02, 04, 38–48, 63 |
-| F. Xuyên gói, bloat / hiệu năng, công cụ | 3 939 (+178) | 12 417 (+1 519) | 4 628 (0) | 84 (+1) | +265 / −87 · 7 file | +1 229 / −75 · 21 file | 55–58, 64, 65; **bảng R gộp đủ 59 DR6** |
+| F. Xuyên gói, bloat / hiệu năng, công cụ | 3 939 (+178) | 12 417 (+1 519) | 4 628 (0) | 84 (+1) | +265 / −87 · 7 file | +1 229 / −75 · 21 file | 44 (đo), 55–58, 64, 65; **bảng R gộp đủ 59 DR6** |
 | **Tổng** | 33 788 (+1 572) | 41 633 (+3 642) | 4 939 (+22) | 386 (+7) | | | |
 
 - Một DR6 có thể thuộc hai, ba gói (vd. DR6-02: lệnh ở A, hộp 5c ở D, "Hẹn tiếp" 6h ở E): mỗi gói kiểm phần của mình; gói F gộp.
-- Bước chuẩn bị (§L2.9 bước 6) đo lại trên laptop bằng cùng lệnh, kèm bundle và exe; số dòng phải trùng bảng trên.
+- Bước chuẩn bị (§L2.9 bước 6) đo lại trên máy chạy lượt 2 bằng cùng lệnh, kèm bundle và exe; số dòng phải trùng bảng trên.
 
 ## L2.4 Hai phần của mỗi gói
 
@@ -565,7 +566,7 @@ Mỗi gói làm **cả hai phần**, ghi riêng trong báo cáo. Phần 2 không
 
 Với **mỗi DR6 mà gói kiểm** (cột "Gói kiểm" §L2.5), một dòng bảng R có bằng chứng:
 
-1. **Chạy lại tái hiện của lượt 1** (probe / ca trong báo cáo gốc `docs/reviews/raw/2026-10-15/`, phụ lục nguồn probe; tổng hợp lượt 1 §3–§5) trên SHA ghim: còn ra kết quả sai không.
+1. **Chạy lại tái hiện của lượt 1** (probe / ca trong báo cáo gốc `docs/reviews/raw/2026-10-15/` của cả hai máy, phụ lục nguồn probe; tổng hợp lượt 1 §3–§5) trên SHA ghim: còn ra kết quả sai không.
 2. **Gỡ tạm phần sửa** (trên bản chép, hoặc patch gỡ ngay — luật chỉ đọc ở Phụ lục H): test của PR sửa có đỏ không. Không đỏ → test hở, ghi phát hiện trục T.
 3. **Biến thể gần** của cùng lỗi mà phần sửa bỏ sót (cùng hàm khác đường vào, cùng luật ở lệnh khác / ở nhập backup / ở màn khác).
 4. Với mục Owner chọn **ghi lệch đã biết** thay vì sửa code (DR6-29 ô Kỳ, 36, 47, 48, 54): dòng ghi trong `docs/testing/nghiem-thu-v1.md` / golden có, và khớp app.
@@ -579,7 +580,7 @@ Kết luận mỗi DR6 (thước của tổng hợp review lại Phase 5, `docs/
 
 Ba kết luận sau kèm một phát hiện theo khuôn (§L2.8), trường "Liên quan: DR6-xx".
 
-**Refactor / hiệu năng không đổi hành vi:** đợt sửa chỉ có hai việc thuần hiệu năng / build — DR6-44 (chỉ mục `customer_id`, migration `0009`) và DR6-13 (`crate-type`). Kiểm hai điều: số đo tốt lên như PR nói (lượt 1: `listTrash` 75 KH đã xóa → 197 ms, 150 → 368 ms trên laptop; build release +11,5 s), và hành vi không đổi (test cũ xanh, `listTrash` trả cùng dòng trước / sau trên dữ liệu tải). Refactor bloat (DR6-25, 66, 67) đã hoãn sau v1.0, nên không có gì khác để kiểm ở mục này.
+**Refactor / hiệu năng không đổi hành vi:** đợt sửa chỉ có hai việc thuần hiệu năng / build — DR6-44 (chỉ mục `customer_id`, migration `0009`) và DR6-13 (`crate-type`). Kiểm hai điều: số đo tốt lên như PR nói, so với số lượt 1 **cùng máy** (tổng hợp lượt 1 §7.1: laptop `listTrash` 75 KH đã xóa → 197 ms, 150 → 368 ms, build release +11,5 s; Home PC `listTrash` 100 KH → 211 ms, 400 → 815 ms, chưa có số build lượt 1 — chạy trên Home PC thì kiểm DR6-13 bằng `Cargo.toml` và cỡ `target`, thời gian build chỉ ghi lại), và hành vi không đổi (test cũ xanh, `listTrash` trả cùng dòng trước / sau trên dữ liệu tải). Refactor bloat (DR6-25, 66, 67) đã hoãn sau v1.0, nên không có gì khác để kiểm ở mục này.
 
 ### Phần 2 — lỗi mới và edge case mới
 
@@ -683,9 +684,16 @@ Mức: M = Medium, L = Low, N = Nit. "Gói kiểm": gói ghi bảng R cho DR6 đ
 ## L2.6 Số đo: so với nền và với lượt 1
 
 - **Dữ liệu tải sinh lại ở SHA ghim** (luật nhập backup đổi ở #616, #640 nên hash đổi; file lượt 1 `deep-review-1-6\common\load\…` **không dùng**): `node tools/load-data.mjs` (mốc `2026-10-12`, seed `6`) → số dòng như lượt 1 (1 496 KH, 10 414 lịch hẹn, 54 nhân sự, 103 `ai_analyses`…), **`tables` sha256 `1c306cfb8203409337a5fa33c48306694581cb70355eb5526e4cf4f543589591`** (đo 16/10 ở `4217ed4`; lệnh tất định nên mọi máy ra cùng hash). Cỡ file 15,3 MB.
-- **Hai mốc để so:**
-  - **Nền chính thức** (spec §5.1): `docs/metrics/phase-6-baseline/perf.json` (T-219, laptop, `b139d8a`) và `size.json`. Ngưỡng ở `docs/metrics/phase-6.md`.
-  - **Lượt 1 cùng máy:** `C:\workspace\deep-review-1-6\common\perf\perf-ref.json` (laptop, exe `8855345`, 14/10; HANDOFF: giữ thư mục này tới v1.0). Bước chuẩn bị chép thành `…-r2\common\perf\perf-ref-r1.json`.
+- **Máy và mốc so** (Owner 17/10, §L2.11 câu 1): chạy trên máy nào thì chỉ so với số **cùng máy**. Ngưỡng tuyệt đối ở `docs/metrics/phase-6.md` áp dụng trên cả hai máy. Mọi bảng số ghi tên máy.
+
+  | Mốc | Office Laptop `D13_THINKPAD` | Home PC `DESKTOP-KDURKJP` |
+  |---|---|---|
+  | Probe trên exe: nền | `docs/metrics/phase-6-baseline/perf.json` (T-219, `b139d8a`; spec §5.1) | không có nền T-219 (đo ở laptop): **không so**, chỉ so ngưỡng `phase-6.md` |
+  | Probe trên exe: lượt 1 cùng máy | `C:\workspace\deep-review-1-6\common\perf\perf-ref.json` của laptop (exe `8855345`, 14/10) | `C:\workspace\deep-review-1-6\common\perf\perf-ref.json` của Home PC (exe `8855345` release, 13/10, ghi chú `DESKTOP-KDURKJP (Home PC), exe 8855345 release, 6D round 1 reference`; đã kiểm có 17/10) |
+  | Mở app lần đầu | `p2c:data-open` lần đầu của T-219 (3 140 ms) | T-227 (`phase-6.md` mục "Mở app lần đầu, đo lại"): LCP, exe Phase 4 max 3 937 ms |
+  | Bảng hàm thuần (Node) | cột Laptop của tổng hợp lượt 1 §7.1 | cột Home PC của tổng hợp lượt 1 §7.1 |
+
+  Thư mục `C:\workspace\deep-review-1-6\` giữ trên cả hai máy tới v1.0 (HANDOFF). Bước chuẩn bị chép `perf-ref.json` lượt 1 của máy đang chạy thành `…-r2\common\perf\perf-ref-r1.json`.
 - **"Xấu hơn"** theo luật nhiễu của probe (Owner chốt 13/10): trung vị lớn hơn mốc **quá 20 % và quá 10 ms** (bộ nhớ: quá 5 MB), cột ⚠️ của bảng.
 - **Lệnh** (bước chuẩn bị chạy một lần, reviewer dùng lại kết quả trong `common\baseline.md`):
 
@@ -693,29 +701,34 @@ Mức: M = Medium, L = Low, N = Nit. "Gói kiểm": gói ghi bảng R cho DR6 đ
   node tools/size-report.mjs --compare docs/metrics/phase-6-baseline/size.json
   ```
 
+  Probe, **laptop** (cột Nền = T-219):
+
   ```powershell
   $env:PERF_BASE = 'docs\metrics\phase-6-baseline\perf.json'; $env:PERF_BACKUP = 'C:\workspace\deep-review-1-6-r2\common\load\load-2026-10-12-seed6.p2cbackup'; $env:PERF_OUT = 'C:\workspace\deep-review-1-6-r2\common\perf\perf-ref.json'; $env:PERF_NOTE = 'D13_THINKPAD, exe 4217ed4, deep review luot 2'; pnpm exec playwright test -c playwright.perf.config.ts
   ```
 
-  So với lượt 1: script `node` trong `common\perf\` gọi `parseRun` rồi `markdownTable(r2, r1)` của `e2e/perf/stats.ts` trên `perf-ref.json` và `perf-ref-r1.json` (cùng bảng, cột Nền = lượt 1).
-- **Mở app lần đầu:** đo trên laptop theo cách T-227 (`phase-6.md` mục "Mở app lần đầu, đo lại": exe ở thư mục mới chưa có `Project2C-data\`, nối CDP sau 12 s, đọc `p2c:demo-seed`, `p2c:data-open`, LCP), 3 lần. So với `p2c:data-open` lần đầu của T-219 trên laptop (3 140 ms): xấu hơn khi trung vị > 3 768 ms. Không build lại exe Phase 4 (câu hỏi 3, §L2.11).
-- **Cờ `app.open-data`** (review-notes, Codex F Home PC lượt 1: +48 %): probe của bước chuẩn bị là lần đo lại trên laptop; lượt 1 laptop 272,5 ms, nền 251 ms, ngưỡng ≤ 600 ms.
-- **Bảng hàm thuần trong Node** (gói F đo lại, như §6): `importBackup`, `listAppointments`, `teamCompare` / `reportRows` (tháng / năm), `monthGrid`, `countRecords`, `listTrash` (dữ liệu tải; và Thùng rác 75 / 150 / 300 KH đã xóa), một lệnh ghi + đọc lại đủ bảng, phần AI của hồ sơ KH. Lượt này **so được với số laptop của lượt 1** (tổng hợp lượt 1 §7.1, cùng máy) theo luật nhiễu trên, ngoài ngưỡng Phase 4.
+  Probe, **Home PC** (cột Nền = lượt 1 Home PC):
+
+  ```powershell
+  $env:PERF_BASE = 'C:\workspace\deep-review-1-6-r2\common\perf\perf-ref-r1.json'; $env:PERF_BACKUP = 'C:\workspace\deep-review-1-6-r2\common\load\load-2026-10-12-seed6.p2cbackup'; $env:PERF_OUT = 'C:\workspace\deep-review-1-6-r2\common\perf\perf-ref.json'; $env:PERF_NOTE = 'DESKTOP-KDURKJP, exe 4217ed4, deep review luot 2'; pnpm exec playwright test -c playwright.perf.config.ts
+  ```
+
+  Trên laptop thêm bảng so lượt 1: script `node` trong `common\perf\` gọi `parseRun` rồi `markdownTable(r2, r1)` của `e2e/perf/stats.ts` trên `perf-ref.json` và `perf-ref-r1.json` (cùng bảng, cột Nền = lượt 1). Trên Home PC bảng của probe đã là bảng so lượt 1.
+- **Mở app lần đầu:** đo theo cách T-227 (`phase-6.md` mục "Mở app lần đầu, đo lại": exe ở thư mục mới chưa có `Project2C-data\`, nối CDP sau 12 s, đọc `p2c:demo-seed`, `p2c:data-open`, LCP), 3 lần. **Laptop:** so `p2c:data-open` với 3 140 ms của T-219, xấu hơn khi trung vị > 3 768 ms. **Home PC:** so LCP ("gọi exe → màn đầu có số liệu") với exe Phase 4 max 3 937 ms của T-227, xấu hơn khi trung vị > 4 724 ms (số tham chiếu cho lượt 2 ghi sẵn ở `phase-6.md`). Không build lại exe Phase 4 (câu 3, §L2.11).
+- **Cờ `app.open-data`** (review-notes, Codex F Home PC lượt 1: 279 ms so 188,5 ms, +48 %): probe của bước chuẩn bị là lần đo lại. Home PC: so thẳng với 188,5 ms của `perf-ref` lượt 1 Home PC (cùng máy với cờ). Laptop: lượt 1 272,5 ms, nền 251 ms. Ngưỡng ≤ 600 ms.
+- **Bảng hàm thuần trong Node** (gói F đo lại, như §6): `importBackup`, `listAppointments`, `teamCompare` / `reportRows` (tháng / năm), `monthGrid`, `countRecords`, `listTrash` (dữ liệu tải; và Thùng rác 75 / 150 / 300 KH đã xóa), một lệnh ghi + đọc lại đủ bảng, phần AI của hồ sơ KH. **So với số lượt 1 cùng máy** (tổng hợp lượt 1 §7.1 có cột laptop và cột Home PC) theo luật nhiễu trên, ngoài ngưỡng Phase 4.
 - Reviewer muốn đo lại trên exe: như §6 (chép `common\exe\project2c.exe` vào thư mục của mình, cổng debug khác 9222, không đo khi bên khác đang đo).
 
-## L2.7 Cấu hình Muse, Codex và bài học từ lượt 1
+## L2.7 Cấu hình Codex và bài học từ lượt 1
 
-Giữ §7.1 (Muse Spark 1.3, Muse Code, `--yolo`, mức `max`) và §7.2 (ACL), chỉ đổi thư mục sang `deep-review-1-6-r2`. Sửa theo kiểm log lượt 1 (tổng hợp lượt 1 §10.1 "Cho lượt 2", §11):
+Lượt 2 không có Muse (ADR-0001 phụ lục M7), nên §7 (cấu hình Muse, ACL) và các bài học riêng của Muse ở tổng hợp lượt 1 §10.1 không dùng. Giữ những bài học áp dụng cho Claude / Codex (tổng hợp lượt 1 §10.1 "Cho lượt 2", §11):
 
 | Lượt 1 vướng | Lượt 2 làm |
 |---|---|
-| Muse gói F phần lớn làm trong **OpenCode** (`muse-spark-1.3-contributor-free`, `xhigh`), không phải Muse Code `max`; báo cáo không ghi | Mọi phiên Muse, **kể cả phiên làm tiếp**, mở bằng đúng một lệnh: `cd C:\workspace\deep-review-1-6-r2\muse; muse --yolo --model muse-spark-1.3-contributor --reasoning-effort max`. Không chuyển sang OpenCode hay công cụ khác; Muse Code không chạy được thì dừng, Owner báo Claude (câu hỏi 4). Báo cáo mục 1 ghi công cụ, model, mức suy luận; đổi giữa chừng thì ghi rõ |
-| Muse A phiên thứ hai mở **không** `--yolo`, ở `deep-review-1-6\` thay cho `muse\` | Bước 0 của Muse kiểm thư mục làm việc (`Get-Location`) là `C:\workspace\deep-review-1-6-r2\muse`; khác thì dừng. HUD phải hiện model và mức |
-| Muse Code tự cập nhật 1.3.0 → 1.4.7 giữa chuẩn bị và đợt 2 | Bước chuẩn bị ghi `muse --version`; Owner ghi lại phiên bản ở phiên thử (§7.1 bước 4). Đổi phiên bản mà model / mức giữ nguyên thì chấp nhận, chỉ ghi lại |
 | Liệt kê / tìm kiếm trên `C:\workspace` (Codex C: `rg --files -g AGENTS.md 'C:\workspace'`), `ls -la` trên `deep-review-1-6\` (Claude E) | Prompt cấm rõ: không liệt kê **và không tìm kiếm** (`rg`, `glob`, `find`, `Get-ChildItem -Recurse`, `dir /s`) trên `C:\workspace`, `deep-review-1-6\`, `deep-review-1-6-r2\`; bước 0 chỉ dùng `Test-Path` với tên file đầy đủ |
 | Probe trình duyệt mở `https://chatgpt.com/` (Claude C, 2 lần chạy đầu) | Mọi probe trình duyệt **chặn mạng ngoài `127.0.0.1` và thay `window.open` ngay từ bản đầu** |
-| 3 phát hiện sai của Muse Home PC: probe gọi thẳng lệnh `db` / chèn SQL thô thay vì đi qua lớp dữ liệu của app | Kết luận về màn phải dựng probe qua `apps/desktop/src/data` (`openAppData`, `tables`, `useTables` đã sắp theo tên) hoặc chạy trên bản build; probe `db` thô chỉ để kết luận về lệnh |
-| `apps/desktop/dist` của `-review-2` còn bản dựng của Codex gói D (`VITE_DEMO_ANCHOR`); Muse F đọc số bundle từ đó (+10 byte) | Số bundle lấy ở `common\baseline.md`; ai tự `pnpm build:web` thì dựng không biến môi trường riêng, hoặc ghi rõ biến đã dùng. Bước chuẩn bị xóa `apps/desktop/dist` (thư mục build bị ignore) ở cả hai worktree trước khi chạy cổng |
+| 3 phát hiện sai (đều Muse Home PC): probe gọi thẳng lệnh `db` / chèn SQL thô thay vì đi qua lớp dữ liệu của app; luật đúng cho mọi bên | Kết luận về màn phải dựng probe qua `apps/desktop/src/data` (`openAppData`, `tables`, `useTables` đã sắp theo tên) hoặc chạy trên bản build; probe `db` thô chỉ để kết luận về lệnh |
+| `apps/desktop/dist` của `-review-2` còn bản dựng của Codex gói D (`VITE_DEMO_ANCHOR`); phiên sau đọc số bundle từ đó (+10 byte) | Số bundle lấy ở `common\baseline.md`; ai tự `pnpm build:web` thì dựng không biến môi trường riêng, hoặc ghi rõ biến đã dùng. Bước chuẩn bị xóa `apps/desktop/dist` (thư mục build bị ignore) ở cả hai worktree trước khi chạy cổng |
 
 Codex: như lượt 1 (Owner chạy, mỗi gói một phiên mới); báo cáo ghi phiên bản Codex ở mục 1.
 
@@ -724,7 +737,7 @@ Codex: như lượt 1 (Owner chạy, mỗi gói một phiên mới); báo cáo g
 Khuôn phát hiện như §10, thêm hai trường và trục R:
 
 ```
-ID: <bên>2-<gói><số>   (CL2 | CX2 | MU2; ví dụ CL2-A3, CX2-E1, MU2-C2)
+ID: <bên>2-<gói><số>   (CL2 | CX2; ví dụ CL2-A3, CX2-E1)
 Mức: Critical | High | Medium | Low | Nit   (thước §4.3)
 Trục: R | E | C | D | G | S | P | B | T | A
 Vị trí: path:dòng (4217ed4)
@@ -736,7 +749,7 @@ Mô tả / Tái hiện / Ảnh hưởng / Đề xuất: như §10
 
 Mỗi báo cáo gói (`<bên>\<gói>.md`, tiếng Việt), theo thứ tự:
 
-1. Đầu: bên, gói, SHA đầu phiên, `git status --short` đầu phiên, giờ bắt đầu; **công cụ, model, mức suy luận** (Muse: phiên bản Muse Code; Codex: phiên bản Codex).
+1. Đầu: bên, gói, SHA đầu phiên, `git status --short` đầu phiên, giờ bắt đầu; **máy; công cụ, model, mức suy luận** (Codex: phiên bản Codex).
 2. **Bảng R** — mọi DR6 mà gói kiểm (§L2.5):
 
    ```
@@ -745,7 +758,7 @@ Mỗi báo cáo gói (`<bên>\<gói>.md`, tiếng Việt), theo thứ tự:
 3. Phạm vi đã đọc (file, dòng; phần diff sửa `8855345..4217ed4` của gói).
 4. **Kịch bản mới đã thử** (§L2.4 phần 2): bảng `| # | Kịch bản (các bước, dữ liệu) | Kết quả | ID |`.
 5. **Phát hiện mới** theo khuôn trên.
-6. **Bloat** và **Hiệu năng** — hai mục riêng (§4.2); hiệu năng có cột so với nền T-219 và với lượt 1 (§L2.6).
+6. **Bloat** và **Hiệu năng** — hai mục riêng (§4.2); hiệu năng có cột so với mốc cùng máy (§L2.6: nền T-219 khi chạy trên laptop; lượt 1 cùng máy) và ngưỡng `phase-6.md`.
 7. Bảng đếm mức × trục (gồm R); tỉ lệ PLAUSIBLE nếu cao thì nói rõ.
 8. Đã xét, không thấy — theo từng trục, kèm đã chạy / đọc gì.
 9. Phụ lục: nguồn probe / test tạm / đột biến; `git status --short` cuối phiên; giờ xong.
@@ -753,42 +766,24 @@ Mỗi báo cáo gói (`<bên>\<gói>.md`, tiếng Việt), theo thứ tự:
 
 ## L2.9 Chuẩn bị và chạy
 
-**Bước chuẩn bị — Claude, sau khi Owner duyệt kế hoạch lượt 2** (một phiên trên Office Laptop; không review, không ghi phát hiện):
+**Bước chuẩn bị — Claude, sau khi Owner duyệt kế hoạch lượt 2** (một phiên trên **máy Owner chọn chạy lượt 2**, laptop hoặc Home PC; không review, không ghi phát hiện):
 
-1. Kiểm `main` chưa có code mới: `git diff --name-only 4217ed4 origin/main` chỉ có `docs/**` và `CLAUDE.md` gốc; có file khác → dừng, báo Owner (§2). Kiểm Muse (§L2.7): `muse --version`, `~/.config/muse/settings.json` có model `muse-spark-1.3-contributor`, mức `max`. Kiểm `C:\workspace\deep-review-1-6-r2\` chưa có (có rồi → dừng, báo Owner) và `C:\workspace\deep-review-1-6\common\perf\perf-ref.json` có.
-2. Tạo `C:\workspace\deep-review-1-6-r2\{common,claude,codex,muse}`.
+1. Ghi tên máy (`hostname`) vào `common\baseline.md`; mọi bước dưới và cả hai bên chạy trên máy này. Kiểm `main` chưa có code mới: `git diff --name-only 4217ed4 origin/main` chỉ có `docs/**` và `CLAUDE.md` gốc; có file khác → dừng, báo Owner (§2). Kiểm `C:\workspace\deep-review-1-6-r2\` chưa có (có rồi → dừng, báo Owner) và `C:\workspace\deep-review-1-6\common\perf\perf-ref.json` có, trường `note` đúng máy này (§L2.6).
+2. Tạo `C:\workspace\deep-review-1-6-r2\{common,claude,codex}`.
 3. Hai worktree về SHA ghim: `git -C C:\workspace\Project-2C-review checkout --detach 4217ed4` (tương tự `-review-2`), xóa `apps\desktop\dist` ở mỗi worktree, `pnpm install --frozen-lockfile` (PowerShell); `git status --short` rỗng (ngoài file Codex tự sinh ở `-review-2`, §8).
 4. Chép vào `common\`:
    - `plan.md` (file này, bản đã merge);
    - `known.md` (§L2.5: OPEN + ACCEPTED nguyên văn ở SHA ghim, K1–K21, bảng 67 DR6);
-   - `fixes.md`: thân 17 Issue #592–#607, #625 (mục tiêu, test chấp nhận) và thân PR sửa (§L2.2: mục "Lệch so với Issue", "Chưa làm") bằng `gh issue view` / `gh pr view --json body`, để mọi bên (cả Muse, không dùng `gh`) có cùng thông tin;
-   - `prompt-<bên>.md` = Phụ lục E / F / G, mỗi file nối thêm nguyên văn Phụ lục H.
+   - `fixes.md`: thân 17 Issue #592–#607, #625 (mục tiêu, test chấp nhận) và thân PR sửa (§L2.2: mục "Lệch so với Issue", "Chưa làm") bằng `gh issue view` / `gh pr view --json body`, để hai bên có cùng thông tin mà không chạy `gh` (prompt cấm);
+   - `prompt-<bên>.md` = Phụ lục E / F, mỗi file nối thêm nguyên văn Phụ lục H.
 5. Dữ liệu tải: `node tools/load-data.mjs --out C:\workspace\deep-review-1-6-r2\common\load\load-2026-10-12-seed6.p2cbackup`; hash `tables` phải bằng §L2.6.
-6. Cổng ở SHA ghim (trong `Project-2C-review`): `pnpm verify`, `pnpm verify:rust`, `pnpm e2e` (`CI=1`), `pnpm build:exe`, `node tools/size-report.mjs --compare docs/metrics/phase-6-baseline/size.json` (số dòng phải trùng §L2.3) → `common\baseline.md`; chép exe vào `common\exe\`. Ghi thêm thời gian build release (so DR6-13).
-7. Probe (cần Owner: nhập dữ liệu tải trong exe theo `e2e/perf/README.md` bước 3, rồi không dùng máy ≈ 5 phút): lệnh §L2.6 → `common\perf\perf-ref.json`; chép `perf-ref-r1.json`; hai bảng (so nền, so lượt 1) vào `baseline.md`. Mở lần đầu 3 lần (§L2.6) → `baseline.md`.
-8. Báo Owner: sẵn sàng đợt 1.
+6. Cổng ở SHA ghim (trong `Project-2C-review`): `pnpm verify`, `pnpm verify:rust`, `pnpm e2e` (`CI=1`), `pnpm build:exe`, `node tools/size-report.mjs --compare docs/metrics/phase-6-baseline/size.json` (số dòng phải trùng §L2.3) → `common\baseline.md`; chép exe vào `common\exe\`. Ghi thêm thời gian build release (so DR6-13 khi chạy trên laptop, §L2.4).
+7. Probe (cần Owner: nhập dữ liệu tải trong exe theo `e2e/perf/README.md` bước 3, rồi không dùng máy ≈ 5 phút): chép `perf-ref.json` lượt 1 của máy này thành `common\perf\perf-ref-r1.json`, rồi chạy lệnh probe **đúng máy** ở §L2.6 → `common\perf\perf-ref.json`. Vào `baseline.md`: laptop — hai bảng (so nền T-219, so lượt 1 laptop); Home PC — bảng so lượt 1 Home PC (không so T-219). Cả hai máy ghi thêm cột ngưỡng `phase-6.md`. Mở lần đầu 3 lần, so mốc đúng máy (§L2.6: laptop — T-219; Home PC — T-227) → `baseline.md`.
+8. Báo Owner: sẵn sàng chạy lượt 2 (tên máy).
 
-**Owner chạy:** như bảng §9, với thư mục `deep-review-1-6-r2` và file prompt lượt 2. ACL giữa hai đợt (§7.2, đổi đường dẫn):
+**Owner chạy:** như bảng §9 phần đợt 1 (Claude và Codex cùng lúc), với thư mục `deep-review-1-6-r2` và file prompt lượt 2. Không có đợt 2, không ACL, không phiên thử Muse.
 
-```powershell
-icacls C:\workspace\deep-review-1-6-r2\claude /deny "${env:USERNAME}:(OI)(CI)(R)"
-```
-
-```powershell
-icacls C:\workspace\deep-review-1-6-r2\codex /deny "${env:USERNAME}:(OI)(CI)(R)"
-```
-
-Kiểm sau mỗi gói Muse: `Get-ChildItem C:\workspace\deep-review-1-6-r2\codex` (và `\claude`) báo `Access is denied`. Gỡ sau khi Muse nộp F:
-
-```powershell
-icacls C:\workspace\deep-review-1-6-r2\claude /remove:d "${env:USERNAME}"
-```
-
-```powershell
-icacls C:\workspace\deep-review-1-6-r2\codex /remove:d "${env:USERNAME}"
-```
-
-Thư mục lượt 1 `C:\workspace\deep-review-1-6\` không cần ACL: báo cáo trong đó đã công khai ở `docs/reviews/raw/2026-10-15/`. Prompt chỉ cho mỗi bên mở thư mục lượt 1 của **chính mình** (dùng lại probe).
+Thư mục kết quả lượt 2 của bên kia: prompt cấm mở (quy tắc riêng 1 ở Phụ lục E, F), kiểm lại bằng log phiên (§L2.10). Thư mục lượt 1 `C:\workspace\deep-review-1-6\`: báo cáo trong đó đã công khai ở `docs/reviews/raw/2026-10-15/` (cả `home-pc/`). Prompt chỉ cho mỗi bên mở thư mục lượt 1 của **chính mình** (dùng lại probe).
 
 **Tin nhắn mở phiên** — như §9.1, chỉ đổi chữ gói:
 
@@ -800,37 +795,32 @@ Gói A. Đọc và làm đúng C:\workspace\deep-review-1-6-r2\common\prompt-cla
 Gói A. Đọc và làm đúng C:\workspace\deep-review-1-6-r2\common\prompt-codex.md
 ```
 
-```text
-Gói A. Đọc và làm đúng C:\workspace\deep-review-1-6-r2\common\prompt-muse.md
-```
-
-Bảng đánh dấu của Owner (18 ô):
+Bảng đánh dấu của Owner (12 ô):
 
 | Bên | A | B | C | D | E | F |
 |---|---|---|---|---|---|---|
 | Claude | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
 | Codex | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
-| Muse Spark 1.3 | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
 
 ## L2.10 Sau lượt 2, kiểm độc lập, ước lượng
 
-**Tổng hợp (T-225 #565, khi Owner yêu cầu):** đọc đủ 18 báo cáo; **gộp ba bảng R thành một bảng đủ 59 DR6**, kiểm trên code ở SHA ghim từng kết luận khác ĐÃ SỬA và mọi chỗ các bên chấm khác nhau; kiểm mọi phát hiện mới (đúng / KNOWN / sai / lệch mức), gộp trùng (đề xuất đánh số tiếp `DR6-68…`); so số đo với nền và lượt 1; đề xuất nhóm sửa và câu hỏi cho Owner; kết luận SẴN SÀNG / CHƯA SẴN SÀNG cho G7.
+**Tổng hợp (T-225 #565, khi Owner yêu cầu):** đọc đủ 12 báo cáo; **gộp hai bảng R thành một bảng đủ 59 DR6**, kiểm trên code ở SHA ghim từng kết luận khác ĐÃ SỬA và mọi chỗ các bên chấm khác nhau; kiểm mọi phát hiện mới (đúng / KNOWN / sai / lệch mức), gộp trùng (đề xuất đánh số tiếp `DR6-68…`); so số đo với mốc cùng máy (§L2.6); đề xuất nhóm sửa và câu hỏi cho Owner; kết luận SẴN SÀNG / CHƯA SẴN SÀNG cho G7.
 
-**Kiểm độc lập bằng log phiên** như §8, cho cả ba bên, thêm vào danh sách quét: đường dẫn `deep-review-1-6-r2[\\/](claude|codex|muse)` của bên khác; `deep-review-1-6[\\/](claude|codex|muse)` của bên khác; liệt kê **hoặc tìm kiếm** (`rg`, `glob`, `find`, `Get-ChildItem -Recurse`) trên `C:\workspace`, `deep-review-1-6\`, `deep-review-1-6-r2\`; với Muse: mọi phiên `muse export`, và mọi phiên OpenCode nếu có (có là ghi nhận quy trình).
+**Kiểm độc lập bằng log phiên** như §8, cho cả hai bên, thêm vào danh sách quét: đường dẫn `deep-review-1-6-r2[\\/](claude|codex)` của bên kia; `deep-review-1-6[\\/](claude|codex|muse)` không phải của chính bên đó; liệt kê **hoặc tìm kiếm** (`rg`, `glob`, `find`, `Get-ChildItem -Recurse`) trên `C:\workspace`, `deep-review-1-6\`, `deep-review-1-6-r2\`. Lượt 2 không có ACL nên đây là lớp kiểm chính cho việc đọc chéo; có kết quả thì xử như §8 (đánh dấu "nhiễm", phiên tổng hợp xét riêng).
 
-**Báo cáo gốc lưu ở repo** (PR docs của T-225): `docs/reviews/raw/<ngày tổng hợp>/{claude,codex,muse}/<gói>.md` nguyên văn, `common-plan.md` (chỉ khi khác bản trong repo), `common-known.md`, `common-baseline.md`, `common-fixes.md`; tổng hợp `docs/reviews/<ngày>-deep-review-phase-1-6-luot-2-tong-hop.md`. Thư mục bằng chứng `deep-review-1-6-r2\` giữ trên laptop tới v1.0.
+**Báo cáo gốc lưu ở repo** (PR docs của T-225): `docs/reviews/raw/<ngày tổng hợp>/{claude,codex}/<gói>.md` nguyên văn, `common-plan.md` (chỉ khi khác bản trong repo), `common-known.md`, `common-baseline.md`, `common-fixes.md`; tổng hợp `docs/reviews/<ngày>-deep-review-phase-1-6-luot-2-tong-hop.md`. Thư mục bằng chứng `deep-review-1-6-r2\` giữ trên máy chạy lượt 2 tới v1.0.
 
-**Ước lượng** (lượt 1 trên laptop: Claude 09:43 → 19:41, Codex 09:50 → 21:47 song song; Muse 22:12 → 01:03): cùng phạm vi cộng bảng R ≈ 59 dòng và mục kịch bản mới, nên mỗi bên ≈ như lượt 1 hoặc dài hơn ≈ 10–20 %. Đợt 1 ≈ một ngày làm việc, đợt 2 ≈ 3 giờ; cả lượt 2 ≈ 1,5 ngày tính cả chuẩn bị và tổng hợp. Owner can thiệp như §11 (mở 19 phiên + phiên thử Muse, ≈ 5 phút rảnh máy cho probe, ACL, xem `git status` cuối mỗi gói Muse).
+**Ước lượng** (lượt 1 trên laptop: Claude 09:43 → 19:41, Codex 09:50 → 21:47 song song): cùng phạm vi cộng bảng R ≈ 59 dòng và mục kịch bản mới, nên mỗi bên ≈ như lượt 1 hoặc dài hơn ≈ 10–20 %. Một đợt ≈ một ngày làm việc (≈ 10–14 giờ, Codex là bên dài hơn); tổng hợp đọc 12 báo cáo thay vì 18 nên ngắn hơn lượt 1. Cả lượt 2 ≈ 1–1,5 ngày tính cả chuẩn bị và tổng hợp (bản soạn đầu với Muse: ≈ 1,5 ngày). Home PC mạnh hơn laptop nên có thể nhanh hơn; thời gian bộ tham khảo Home PC của lượt 1 không lấy làm ước lượng (A–E và F chạy ở hai tối khác nhau). Owner can thiệp: mở 12 phiên (6 Claude, 6 Codex), ≈ 5 phút rảnh máy cho probe, ghi giờ bắt đầu / xong mỗi gói.
 
-## L2.11 Câu hỏi cho Owner
+## L2.11 Quyết định của Owner (17/10/2026)
 
-Mỗi câu có đề xuất; Owner duyệt kế hoạch mà không nói gì khác thì lấy đề xuất.
+Bản soạn đầu có 5 câu hỏi (máy; hai đợt; mốc mở app lần đầu; Muse Code trục trặc; đọc báo cáo lượt 1). Owner trả lời 17/10/2026 (PR #647); các mục trên đã sửa theo, ghi ở ADR-0001 phụ lục M7 và `docs/PROJECT-STATE.md`:
 
-1. **Máy:** chỉ chạy bộ chính thức trên Office Laptop, không chạy bản tham khảo Home PC như lượt 1? **Đề xuất: chỉ laptop** (cùng máy với nền và lượt 1; bản Home PC lượt 1 là do sự cố máy, không phải kế hoạch).
-2. **Hai đợt** như lượt 1 (Claude + Codex, rồi Muse)? **Đề xuất: hai đợt.**
-3. **Mở app lần đầu:** so với `p2c:data-open` lần đầu của T-219 trên laptop (3 140 ms), không build lại exe Phase 4 ở laptop? **Đề xuất: đồng ý** (T-227 đã cho thấy hai exe ngang nhau; mốc T-219 cùng máy, cùng cách đọc).
-4. **Muse Code trục trặc giữa gói:** mở lại Muse Code đúng lệnh, không chuyển sang OpenCode; không chạy được thì dừng chờ Owner? **Đề xuất: đồng ý.**
-5. **Đọc báo cáo lượt 1:** mọi bên được đọc tổng hợp lượt 1 và báo cáo gốc lượt 1 của **cả ba bên** trong repo (`docs/reviews/raw/2026-10-15/`, đã công khai), để biết lượt 1 đã thử gì và chọn kịch bản mới; cấm đọc báo cáo **lượt 2** của bên khác? **Đề xuất: đồng ý** (như review lại Phase 5).
+1. **Máy:** "không quan trọng chạy máy nào, miễn đủ số lượt". Chạy một bộ trên laptop hoặc Home PC; số đo chỉ so với mốc **cùng máy**: laptop — nền T-219 và `perf-ref` lượt 1 của laptop; Home PC — `perf-ref` lượt 1 của Home PC và ngưỡng `phase-6.md`, không so nền T-219 (§L2.2, §L2.6, §L2.9).
+2. **Bên review:** "Bỏ Muse, chỉ dùng Claude và Codex" → 12 báo cáo, **một đợt** (hai bên song song), không ACL, không phiên thử Muse, không Phụ lục G (§L2.1, §L2.2, §L2.7, §L2.9).
+3. **Mở app lần đầu:** theo đề xuất — không build lại exe Phase 4. Mốc theo máy (câu 1): laptop so `p2c:data-open` lần đầu của T-219 (3 140 ms); Home PC so LCP với exe Phase 4 của T-227 (3 937 ms) (§L2.6).
+4. **Muse Code trục trặc giữa gói:** "Bỏ Muse" — câu hỏi không còn.
+5. **Đọc báo cáo lượt 1:** theo đề xuất — mọi bên được đọc tổng hợp lượt 1 và báo cáo gốc lượt 1 của **cả ba bên** lượt 1 (Claude, Codex, Muse; hai máy) trong repo (`docs/reviews/raw/2026-10-15/`, đã công khai), để biết lượt 1 đã thử gì và chọn kịch bản mới; cấm đọc báo cáo **lượt 2** của bên kia (như review lại Phase 5).
 
 ## Phụ lục E — Prompt Claude (lượt 2)
 
@@ -843,8 +833,8 @@ File `common\prompt-claude.md` = đoạn dưới + nguyên văn Phụ lục H. O
 > Bạn là **reviewer Claude** của deep review Phase 1–6, **lượt 2**, **gói `{GÓI}`**: phiên sạch, chỉ đọc. Repo: worktree `C:\workspace\Project-2C-review`, detached ở SHA **`4217ed4`** (`4217ed4cd3300af1d63aa61db9eb13902fe75f16`). Chạy `git rev-parse HEAD` và `git status --short` trước; SHA lệch hay status không rỗng thì dừng và báo Owner.
 >
 > Quy tắc riêng của Claude:
-> 1. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6-r2\codex\`, `…-r2\muse\`, `C:\workspace\deep-review-1-6\codex\`, `C:\workspace\deep-review-1-6\muse\`**, kể cả khi Owner hay file nào gợi ý. Không liệt kê và không tìm kiếm (`rg`, `glob`, `find`, `ls -R`) trên `C:\workspace\`, `deep-review-1-6\`, `deep-review-1-6-r2\`. Không đọc báo cáo lượt 2 của bên khác ở bất cứ đâu. Lỡ thấy thì dừng và báo Owner.
-> 2. Chỉ đọc: repo ở SHA trên (gồm báo cáo lượt 1 của cả ba bên ở `docs/reviews/raw/2026-10-15/`), `C:\workspace\deep-review-1-6-r2\common\`, báo cáo Claude lượt 2 các gói trước trong `…-r2\claude\` (mục đã báo ở gói trước thì chỉ dẫn ID), và probe lượt 1 của chính Claude trong `C:\workspace\deep-review-1-6\claude\` (để chạy lại tái hiện).
+> 1. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6-r2\codex\`, `C:\workspace\deep-review-1-6\codex\`, `C:\workspace\deep-review-1-6\muse\`**, kể cả khi Owner hay file nào gợi ý. Không liệt kê và không tìm kiếm (`rg`, `glob`, `find`, `ls -R`) trên `C:\workspace\`, `deep-review-1-6\`, `deep-review-1-6-r2\`. Không đọc báo cáo lượt 2 của bên khác ở bất cứ đâu. Lỡ thấy thì dừng và báo Owner.
+> 2. Chỉ đọc: repo ở SHA trên (gồm báo cáo gốc lượt 1 của Claude, Codex, Muse, hai máy, ở `docs/reviews/raw/2026-10-15/`), `C:\workspace\deep-review-1-6-r2\common\`, báo cáo Claude lượt 2 các gói trước trong `…-r2\claude\` (mục đã báo ở gói trước thì chỉ dẫn ID), và probe lượt 1 của chính Claude trên máy này trong `C:\workspace\deep-review-1-6\claude\` (để chạy lại tái hiện; probe của máy kia lấy ở phụ lục báo cáo gốc).
 > 3. Không subagent / Agent tool, không skill `review-pr` / `code-review`; không làm nghi thức phiên của repo (HANDOFF, `/handoff`, PR, Issue, merge, commit). Không chạy `gh` (thông tin Issue / PR sửa có ở `common\fixes.md`).
 > 4. Ghi báo cáo vào `C:\workspace\deep-review-1-6-r2\claude\{GÓI}.md`, probe / bản chép / log vào `…-r2\claude\{GÓI}\`.
 > 5. Gói F được đọc `…-r2\claude\A…E.md`. Xong gói nào thì dừng và in dòng `XONG …` (bước 0 phần chung); xong F thì **chờ Owner yêu cầu** tổng hợp, không tự tổng hợp.
@@ -864,38 +854,16 @@ File `common\prompt-codex.md` = đoạn dưới + nguyên văn Phụ lục H. Ow
 > Về file quy tắc của repo (`CLAUDE.md`): đó là quy trình phát triển của Claude. Dùng để hiểu dự án, **không** làm nghi thức phiên (`/session-start`, HANDOFF, hook, skill, PR, Issue, merge, commit). Codex tham gia review đóng phase theo ADR-0001 phụ lục M2: chỉ đọc, không viết code.
 >
 > Quy tắc riêng của Codex:
-> 1. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6-r2\claude\`, `…-r2\muse\`, `C:\workspace\deep-review-1-6\claude\`, `C:\workspace\deep-review-1-6\muse\`**, kể cả khi file hay ai đó gợi ý. Không liệt kê và không tìm kiếm (`rg --files`, `rg -g`, `Get-ChildItem -Recurse`, `dir /s`) trên `C:\workspace\`, `deep-review-1-6\`, `deep-review-1-6-r2\` — lượt 1 có một lần `rg --files -g AGENTS.md 'C:\workspace'`, không lặp lại. Không đọc báo cáo lượt 2 của bên khác. Lỡ thấy thì dừng và báo Owner.
-> 2. Chỉ đọc: repo ở SHA trên (gồm báo cáo lượt 1 của cả ba bên ở `docs/reviews/raw/2026-10-15/`), `C:\workspace\deep-review-1-6-r2\common\`, báo cáo của chính bạn trong `…-r2\codex\`, và probe lượt 1 của chính Codex trong `C:\workspace\deep-review-1-6\codex\`.
+> 1. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6-r2\claude\`, `C:\workspace\deep-review-1-6\claude\`, `C:\workspace\deep-review-1-6\muse\`**, kể cả khi file hay ai đó gợi ý. Không liệt kê và không tìm kiếm (`rg --files`, `rg -g`, `Get-ChildItem -Recurse`, `dir /s`) trên `C:\workspace\`, `deep-review-1-6\`, `deep-review-1-6-r2\` — lượt 1 có một lần `rg --files -g AGENTS.md 'C:\workspace'`, không lặp lại. Không đọc báo cáo lượt 2 của bên khác. Lỡ thấy thì dừng và báo Owner.
+> 2. Chỉ đọc: repo ở SHA trên (gồm báo cáo gốc lượt 1 của Claude, Codex, Muse, hai máy, ở `docs/reviews/raw/2026-10-15/`), `C:\workspace\deep-review-1-6-r2\common\`, báo cáo của chính bạn trong `…-r2\codex\`, và probe lượt 1 của chính Codex trên máy này trong `C:\workspace\deep-review-1-6\codex\` (probe của máy kia lấy ở phụ lục báo cáo gốc).
 > 3. Ghi báo cáo vào `C:\workspace\deep-review-1-6-r2\codex\{GÓI}.md`, probe / bản chép / log vào `…-r2\codex\{GÓI}\`.
 > 4. Gói F được đọc `…-r2\codex\A…E.md`. Không tổng hợp với báo cáo nào khác, không tạo Issue, không đề xuất merge, không chạy `gh` (thông tin Issue / PR sửa có ở `common\fixes.md`).
 >
 > Phần chung dưới đây áp dụng đầy đủ.
 
-## Phụ lục G — Prompt Muse Spark 1.3 (lượt 2)
-
-File `common\prompt-muse.md` = đoạn dưới + nguyên văn Phụ lục H. Owner chạy Muse theo §L2.7 (lệnh duy nhất, thư mục `C:\workspace\deep-review-1-6-r2\muse\`), mỗi gói một phiên mới.
-
-> # Deep review Phase 1–6, lượt 2 — Muse
->
-> **{GÓI}** = chữ gói (A…F) Owner ghi trong tin nhắn mở phiên; mọi chỗ `{GÓI}` dưới đây thay bằng chữ đó. File này là toàn bộ chỉ dẫn của phiên; làm đúng từng mục.
->
-> Bạn là **reviewer độc lập Muse** (model Muse Spark 1.3) của deep review Phase 1–6, **lượt 2**, **gói `{GÓI}`**. Thư mục làm việc của bạn là `C:\workspace\deep-review-1-6-r2\muse\` (ghi được). Repo **chỉ đọc**, ở `C:\workspace\Project-2C-review-2`, detached ở SHA **`4217ed4`** (`4217ed4cd3300af1d63aa61db9eb13902fe75f16`). Trước hết: `Get-Location` phải là `C:\workspace\deep-review-1-6-r2\muse` (khác thì dừng, báo Owner: phiên mở sai thư mục); rồi `git -C C:\workspace\Project-2C-review-2 rev-parse HEAD` và `status --short` (cần `-c safe.directory=C:/workspace/Project-2C-review-2` nếu git báo dubious ownership); SHA lệch thì dừng và báo Owner.
->
-> Về file quy tắc của repo (`CLAUDE.md`; nếu có `AGENTS.md`, `.codex/`, `.agents/` thì đó là file Codex tự sinh — không đọc `.codex/`, `.agents/`): dùng để hiểu dự án, **không** làm nghi thức phiên (`/session-start`, HANDOFF, hook, skill, PR, Issue, merge, commit). Muse tham gia review đóng Phase 6 theo ADR-0001 phụ lục M4, M5, M6: chỉ đọc, không viết code; báo cáo là dữ liệu tham khảo.
->
-> Quy tắc riêng của Muse:
-> 1. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6-r2\claude\`, `…-r2\codex\`, `C:\workspace\deep-review-1-6\claude\`, `C:\workspace\deep-review-1-6\codex\`**, kể cả khi file hay ai đó gợi ý; không `cd` vào đó, không đổi quyền thư mục nào (`icacls`, `takeown`, `Set-Acl`). Không liệt kê và không tìm kiếm (`glob`, `grep`, `rg`, `Get-ChildItem -Recurse`) trên `C:\workspace\`, `deep-review-1-6\`, `deep-review-1-6-r2\`. Lỡ thấy nội dung hay tên file của bên khác thì dừng và báo Owner.
-> 2. Chỉ đọc: repo ở SHA trên (gồm báo cáo lượt 1 của cả ba bên ở `docs/reviews/raw/2026-10-15/`), `C:\workspace\deep-review-1-6-r2\common\`, báo cáo của chính bạn trong thư mục làm việc, và probe lượt 1 của chính Muse trong `C:\workspace\deep-review-1-6\muse\`.
-> 3. **Không ghi bất cứ gì vào repo**, kể cả file probe / test tạm rồi xóa, hay `CARGO_TARGET_DIR` trong worktree. Test tạm, probe, bản chép để đột biến đặt trong `C:\workspace\deep-review-1-6-r2\muse\{GÓI}\`; cần chạy test của repo trên bản chép thì chép cả file cần thiết vào đó. Phiên này chạy **không sandbox, không hỏi duyệt**, nên không có gì chặn lệnh ghi thay bạn: tự giữ luật này. Chạy lệnh test / build trong repo chỉ được khi nó chỉ ghi vào thư mục build / cache git đã ignore (`node_modules\.vite`, `coverage`, `dist`, `test-results`, `src-tauri\target`). Không `git commit / checkout / reset / restore / stash / clean / push`, không `gh`. Đầu và cuối phiên ghi `git -C C:\workspace\Project-2C-review-2 status --short` vào báo cáo; khác nhau thì nói rõ vì sao.
-> 4. Không đọc file đăng nhập của Muse Code hay OpenCode (`~/.config/muse/auth.json`, `~/.local/share/opencode`), không chạy lệnh `muse` hay `opencode`, không dùng subagent. Báo cáo mục 1 ghi công cụ (Muse Code), model, mức suy luận như HUD hiện.
-> 5. Ghi báo cáo **dần** vào `C:\workspace\deep-review-1-6-r2\muse\{GÓI}.md` trong lúc làm (tạo file sớm, thêm từng phát hiện). Viết tiếng Việt, không chen từ của ngôn ngữ khác. Dùng đúng khuôn ID `MU2-{GÓI}<số>` và các trường của khuôn phát hiện (lượt 1 có gói không theo khuôn).
-> 6. Gói F được đọc `muse\A…E.md` của lượt 2. Không tổng hợp, không so với bên khác, không tạo Issue, không đề xuất merge. Xong gói thì dừng và in dòng `XONG …` (bước 0 phần chung).
->
-> Phần chung dưới đây áp dụng đầy đủ.
-
 ## Phụ lục H — Phần chung của mọi prompt (lượt 2)
 
-Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md` của lượt 2. `<bên>` = thư mục kết quả của bên đó (`claude`, `codex`, `muse`), `<ID>` = `CL2`, `CX2`, `MU2`.
+Nối nguyên văn vào cuối cả hai file `prompt-<bên>.md` của lượt 2. `<bên>` = thư mục kết quả của bên đó (`claude`, `codex`), `<ID>` = `CL2`, `CX2`. (Lượt 2 không có Phụ lục G: prompt Muse bỏ theo ADR-0001 phụ lục M7; chữ H giữ để khỏi đổi tham chiếu.)
 
 > ## Phần chung
 >
@@ -918,7 +886,7 @@ Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md` của lượt 2. 
 >
 > **Lượt 1** (SHA `8855345`, 14–15/10) tìm 67 vấn đề `DR6-01…67` (2 Medium, 48 Low, 17 Nit), kết luận CHƯA SẴN SÀNG. Owner chọn sửa hết trừ phần hoãn; 16 Issue sửa đã merge (diff `8855345..4217ed4`). **Lượt 2 có hai phần ngang nhau, cả hai bắt buộc:**
 >
-> 1. **Kiểm phần đã sửa (trục R):** mỗi DR6 mà gói kiểm (`common\known.md` phần 3, cột "Gói kiểm") một dòng bảng R: chạy lại tái hiện của lượt 1; gỡ tạm phần sửa (trên bản chép, hoặc patch gỡ ngay) xem test của PR sửa có đỏ; thử biến thể gần. Kết luận: **ĐÃ SỬA** (đường lỗi lượt 1 đã hết, có test đỏ khi gỡ sửa; biến thể còn hở ghi thành phát hiện riêng) · **SỬA MỘT PHẦN** (một phần của mô tả DR6, Issue sửa hay quyết định Owner chưa làm) · **CHƯA SỬA** · **HỒI QUY** (phần sửa làm hỏng chỗ trước đó đúng). Ba kết luận sau kèm phát hiện có trường "Liên quan: DR6-xx". Mục Owner chọn ghi lệch đã biết (DR6-29 ô Kỳ, 36, 47, 48, 54): kiểm dòng ghi có và khớp app. Thêm: số đo không xấu hơn nền và lượt 1 (`common\baseline.md`), DR6-44 / DR6-13 nhanh hơn như PR nói mà hành vi không đổi.
+> 1. **Kiểm phần đã sửa (trục R):** mỗi DR6 mà gói kiểm (`common\known.md` phần 3, cột "Gói kiểm") một dòng bảng R: chạy lại tái hiện của lượt 1; gỡ tạm phần sửa (trên bản chép, hoặc patch gỡ ngay) xem test của PR sửa có đỏ; thử biến thể gần. Kết luận: **ĐÃ SỬA** (đường lỗi lượt 1 đã hết, có test đỏ khi gỡ sửa; biến thể còn hở ghi thành phát hiện riêng) · **SỬA MỘT PHẦN** (một phần của mô tả DR6, Issue sửa hay quyết định Owner chưa làm) · **CHƯA SỬA** · **HỒI QUY** (phần sửa làm hỏng chỗ trước đó đúng). Ba kết luận sau kèm phát hiện có trường "Liên quan: DR6-xx". Mục Owner chọn ghi lệch đã biết (DR6-29 ô Kỳ, 36, 47, 48, 54): kiểm dòng ghi có và khớp app. Thêm: số đo không xấu hơn mốc cùng máy (`common\baseline.md`), DR6-44 / DR6-13 nhanh hơn như PR nói mà hành vi không đổi.
 > 2. **Tìm lỗi mới và edge case mới** trên **toàn bộ** phạm vi gói, không chỉ quanh chỗ đã sửa. Ưu tiên lỗi do chính đợt sửa gây ra, rồi kịch bản / biên **chưa có trong báo cáo lượt 1** (đọc `docs/reviews/raw/2026-10-15/` và tổng hợp lượt 1 để biết lượt 1 đã thử gì). Báo cáo có mục **"Kịch bản mới đã thử"**: mỗi kịch bản một dòng, kể cả khi không thấy lỗi; mỗi gói nên có ít nhất 5, gói F ít nhất 5 chuỗi nhiều bước qua nhiều gói. Chỗ lượt 1 ghi "đã xét, không thấy" vẫn đáng xét lại.
 >
 > Thông tin từng Issue / PR sửa (mục tiêu, test chấp nhận, phần PR ghi lệch / chưa làm): `common\fixes.md`; diff một PR: `git show <commit>` (bảng commit ở `plan.md` §L2.2).
@@ -934,7 +902,7 @@ Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md` của lượt 2. 
 > | C. AI | `packages/ai/**`; file AI của app (`ai-*`, `*-ai-*`, `*Ai.tsx`, `KycExtraction`, `KycIntelligence`, `KycWebSession`, `KycHistory`, `extraction-view`) | 5 250 / 6 110 | 15, 16, 18–22, 61 | Phiên ChatGPT web theo `generation` (mở trước / sau / trong lúc thay dữ liệu, `webChip`); V1 đếm sau khi bỏ `\p{Cf}` và `LAW_NAME` mọi kiểu chữ so chữ G5; version prompt của seed; Mock trích xuất (chủ thể, phủ định, câu ghép); STALE ≥ AA ở mọi khối mờ; focus sau Hủy / Thử lại |
 > | D. Màn nhập liệu | `packages/ui/**` (trừ `scripts/`), `apps/desktop/src/{shell,i18n}/**`, `routes/customers/**` (trừ file AI và Hợp đồng), `routes/team/**`, `routes/Screen.tsx`, `apps/desktop/src/*`, `apps/desktop/index.html` | 7 196 / 2 023 | 02, 26–36, 62 | Đọc lại tiền KYC (`parseVnd` hiểu / không hiểu), mã F ở 7d / 7c, dòng thời gian RF / thay đổi quan trọng, 3 cột ở 1 440 và 1 100; hộp 5c nói số lịch Dự kiến chuyển; 9b người đánh giá; KH ngoài góc nhìn; focus `h1` + `document.title` khi đổi màn; chặn Back / Forward (phím, chuột 4 / 5) trên exe |
 > | E. Lịch hẹn, chỉ số, quản lý | `routes/{appointments,overview,reports}/**`, `routes/{Overview,Settings*,RestoreDialog,FilterBar}.tsx` (trừ `SettingsAi.tsx`), `routes/{trash-view,period-labels,applied-filter}.ts`, Hợp đồng (`routes/customers/{CustomerPolicies,PolicyDialogs,policy-form}.*`) | 7 374 / 3 843 | 01, 02, 04, 38–48, 63 | 6c / 6f lấy nhóm tại ngày gặp, khóa ô nhóm; "Hẹn tiếp" theo RE hiện tại; ngày điền sẵn qua giao thừa / nửa đêm; case size; FYP và ảnh hưởng hai tháng; Thùng rác (sắp, `aria-*`, sang ngày, khôi phục E18–E20 trên màn); một thông báo ở Cài đặt → Dữ liệu; số Tổng quan ↔ Báo cáo ↔ Excel theo RE sau bàn giao |
-> | F. Xuyên gói, bloat / hiệu năng, công cụ | `tools/**`, `e2e/**`, `.github/**`, `.githooks/**`, `.claude/**`, `packages/ui/scripts/`, `apps/desktop/vite.config.ts`, file gốc repo; **luồng xuyên gói; toàn codebase cho bloat và hiệu năng** | 3 939 / 12 417 | 55–58, 64, 65; **bảng R gộp đủ 59 DR6** | Cổng merge "tested base" (`pr-core.mjs`, `pr-status.mjs`, `merge-pr.mjs`), file PR qua REST phân trang; script eval (key, `finish_reason`); `retro.mjs`; chuỗi nhiều bước mới qua nhiều gói (vd. bàn giao → ghi kết quả → xóa / khôi phục → xuất / nhập backup → chỉ số theo RE; mở `Project2C-data\` do exe lượt 1 tạo bằng exe lượt 2); bảng hàm thuần đo lại so lượt 1; bloat / bundle / exe so nền; kết luận SẴN SÀNG / CHƯA SẴN SÀNG |
+> | F. Xuyên gói, bloat / hiệu năng, công cụ | `tools/**`, `e2e/**`, `.github/**`, `.githooks/**`, `.claude/**`, `packages/ui/scripts/`, `apps/desktop/vite.config.ts`, file gốc repo; **luồng xuyên gói; toàn codebase cho bloat và hiệu năng** | 3 939 / 12 417 | 44 (đo), 55–58, 64, 65; **bảng R gộp đủ 59 DR6** | Cổng merge "tested base" (`pr-core.mjs`, `pr-status.mjs`, `merge-pr.mjs`), file PR qua REST phân trang; script eval (key, `finish_reason`); `retro.mjs`; chuỗi nhiều bước mới qua nhiều gói (vd. bàn giao → ghi kết quả → xóa / khôi phục → xuất / nhập backup → chỉ số theo RE; mở `Project2C-data\` do exe lượt 1 tạo bằng exe lượt 2); bảng hàm thuần đo lại so lượt 1; bloat / bundle / exe so nền; kết luận SẴN SÀNG / CHƯA SẴN SÀNG |
 >
 > ### Đọc trước
 >
@@ -953,7 +921,7 @@ Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md` của lượt 2. 
 >
 > - Đọc sâu **từng file** trong phạm vi gói (phần diff sửa đọc kỹ nhất). Đi qua **mọi trục**: R kiểm phần đã sửa · E edge case · C đúng hợp đồng / spec / mockup / nhãn UI theo nghĩa thường · D dữ liệu · G guardrail AI · S an toàn ở ranh giới · P hiệu năng · B bloat · T chất lượng test · A trợ năng / i18n (định nghĩa ở `plan.md` §4.1, §L2.4). Trục không có gì thì ghi "đã xét, không thấy" **kèm đã chạy / đọc gì**.
 > - **Chạy thử thay vì lập luận từ spec** ở mọi chỗ chạy được. Ưu tiên **kịch bản nhiều bước qua nhiều gói**: hai lỗi Medium của lượt 1 (khôi phục cuộc gặp giữ nhóm sau khi KH đổi nhóm; bàn giao KH để lịch ở RE cũ) đều chỉ lộ khi dựng chuỗi xóa → đổi → khôi phục, bàn giao → ghi kết quả → hẹn tiếp → chỉ số. Đừng báo lại chính các ca đó (đã sửa, nằm ở bảng R) — dùng chúng làm mẫu để nghĩ ca mới.
-> - **Bloat và Hiệu năng là hai mục riêng bắt buộc** (kể cả khi không có phát hiện), mỗi mục một bảng: đã chạy / đo gì, trên dữ liệu nào, số, ID phát hiện. Công cụ như lượt 1 (`tsc --noUnusedLocals --noUnusedParameters`, `rg`, `pnpm codemap`, `pnpm lint:deps`, `pnpm build:web`…). Hiệu năng: **mọi phát hiện P phải có số đo** trên dữ liệu tải `common\load\load-2026-10-12-seed6.p2cbackup` (sinh lại ở SHA lượt 2; hash ở `plan.md` §L2.6; dùng trong Node qua `importBackup` của `@p2c/db`, trong app qua Cài đặt → Dữ liệu → Nhập backup); so với ngưỡng `docs/metrics/phase-6.md`, với nền T-219 và với lượt 1 cùng máy (`common\perf\perf-ref.json`, `perf-ref-r1.json`; luật nhiễu: quá 20 % **và** quá 10 ms). Ghi máy và việc gì đang chạy song song. Đo trên exe: chép `common\exe\project2c.exe` vào thư mục của mình, cổng debug khác 9222, theo `e2e/perf/README.md`; không đo khi bên khác đang đo.
+> - **Bloat và Hiệu năng là hai mục riêng bắt buộc** (kể cả khi không có phát hiện), mỗi mục một bảng: đã chạy / đo gì, trên dữ liệu nào, số, ID phát hiện. Công cụ như lượt 1 (`tsc --noUnusedLocals --noUnusedParameters`, `rg`, `pnpm codemap`, `pnpm lint:deps`, `pnpm build:web`…). Hiệu năng: **mọi phát hiện P phải có số đo** trên dữ liệu tải `common\load\load-2026-10-12-seed6.p2cbackup` (sinh lại ở SHA lượt 2; hash ở `plan.md` §L2.6; dùng trong Node qua `importBackup` của `@p2c/db`, trong app qua Cài đặt → Dữ liệu → Nhập backup); so với ngưỡng `docs/metrics/phase-6.md` và với mốc **cùng máy** (`plan.md` §L2.6: lượt 1 cùng máy `common\perf\perf-ref-r1.json` và số lượt 1 ở tổng hợp lượt 1 §7.1; nền T-219 chỉ khi chạy trên laptop; luật nhiễu: quá 20 % **và** quá 10 ms). Máy chạy ghi ở `common\baseline.md`. Ghi máy và việc gì đang chạy song song. Đo trên exe: chép `common\exe\project2c.exe` vào thư mục của mình, cổng debug khác 9222, theo `e2e/perf/README.md`; không đo khi bên khác đang đo.
 > - **Không cài công cụ mới** (`knip`, `jscpd`, `cargo-bloat`, visualizer… là G4); thấy cần thì ghi đề xuất.
 > - Không bình luận phong cách / đặt tên trừ khi gây lỗi. Không đặt chỉ tiêu số lượng phát hiện; không nâng mức cho nổi.
 >
