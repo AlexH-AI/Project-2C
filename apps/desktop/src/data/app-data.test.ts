@@ -1029,6 +1029,27 @@ describe('backup files', () => {
     expect(events).toEqual([]);
   });
 
+  // Like the one it seeds in: an open sql.js database keeps its memory, ≈ 13 MB for the load
+  // data, at each file picked (DR6-60).
+  it('closes the databases it reads the file in', async () => {
+    const text = await backupOf(['Sao Mai']);
+    const app = await openAppData({ today: () => TODAY, seed: fakeSeed });
+    const current = app.db().sqlite;
+    // Every database runs `PRAGMA foreign_keys = ON` as it opens.
+    const run = vi.spyOn(Object.getPrototypeOf(current) as Database['sqlite'], 'run');
+    const opened = new Set<unknown>();
+    try {
+      await app.readBackup(text);
+      for (const db of run.mock.contexts) if (db !== current) opened.add(db);
+    } finally {
+      run.mockRestore();
+    }
+
+    expect(opened.size).toBeGreaterThan(0);
+    for (const db of opened) expect(() => (db as Database['sqlite']).exec('SELECT 1')).toThrow();
+    expect(() => current.exec('SELECT 1')).not.toThrow();
+  });
+
   it('rejects a damaged file with its code, changing nothing', async () => {
     const app = await openAppData({ today: () => TODAY, seed: fakeSeed });
     const listener = vi.fn();

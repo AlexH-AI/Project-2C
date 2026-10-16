@@ -48,10 +48,21 @@ export interface CustomerData {
   readonly policies: readonly Policy[];
 }
 
+/**
+ * The day each customer entered its current stage: its latest transition's, of `transitions` in
+ * recording order. The kanban card, the profile and the 5d dialog all show this one.
+ */
+export function stageSince(
+  transitions: readonly StageTransition[],
+): ReadonlyMap<string, CalendarDate> {
+  const since = new Map<string, CalendarDate>();
+  for (const transition of transitions) since.set(transition.customerId, transition.date);
+  return since;
+}
+
 /** The customers in scope, by stage (mockup customers.html). */
 export function customerBoard(data: CustomerData, scope: Scope): CustomerBoard {
-  const since = new Map<string, CalendarDate>();
-  for (const transition of data.transitions) since.set(transition.customerId, transition.date);
+  const since = stageSince(data.transitions);
   const policies = new Map<string, number>();
   for (const policy of data.policies) {
     policies.set(policy.customerId, (policies.get(policy.customerId) ?? 0) + 1);
@@ -78,6 +89,16 @@ export function customerBoard(data: CustomerData, scope: Scope): CustomerBoard {
     openByRe.set(customer.reId, (openByRe.get(customer.reId) ?? 0) + 1);
   }
   return { open, closed, openCount: cards.length - closedCount, closedCount, openByRe };
+}
+
+const COLUMN_LIMIT = 6;
+
+/** The cards a kanban column shows, and how many more its "+ n KH" link counts. */
+export function kanbanColumn(cards: readonly CustomerCard[]): {
+  readonly shown: readonly CustomerCard[];
+  readonly more: number;
+} {
+  return { shown: cards.slice(0, COLUMN_LIMIT), more: Math.max(0, cards.length - COLUMN_LIMIT) };
 }
 
 function byStage<S extends CustomerRecord['stage']>(

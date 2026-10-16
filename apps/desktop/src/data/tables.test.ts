@@ -11,7 +11,8 @@ const BY_NAME = ['An', 'Đông', 'đức', 'Zeta'];
 // DR-48: SQLite orders names byte by byte, which puts "Đ…" and "đ…" after "Z".
 describe('readTables orders names as the screens show them', () => {
   async function database() {
-    const db = await openDatabase({ now: () => new Date(Date.UTC(2026, 9, 7, 5)) });
+    // The clock of `setup()` in @p2c/db: 11:00 UTC is TODAY local from UTC−11 to UTC+12 (DR-15).
+    const db = await openDatabase({ now: () => new Date(Date.UTC(2026, 9, 7, 11)) });
     for (const name of ['Zeta', 'đức', 'Đông', 'An']) {
       const team = createTeam(db, { name });
       const re = createPerson(db, { name, role: 'RE', teamId: team.id });

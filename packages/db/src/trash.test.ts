@@ -208,6 +208,21 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
     expect(isRfAppointment(getAppointment(db, meeting.id)!, listStageTransitions(db))).toBe(true);
   });
 
+  it('E5: restores a met appointment whose stage change is no RF, and says so (DR6-59)', async () => {
+    const { db, meeting, row, restored } = await deletedMeeting(d(2, 10), 'N4', 'N3');
+
+    const r = row(meeting.id);
+    expect(r.effect).toEqual({
+      kind: 'stageChange',
+      from: 'N4',
+      to: 'N3',
+      date: d(2, 10),
+      rf: false,
+    });
+    expect(restored(r)).toBeUndefined();
+    expect(isRfAppointment(getAppointment(db, meeting.id)!, listStageTransitions(db))).toBe(false);
+  });
+
   it('E5: records the stage change anew once the stage moved on an earlier day after deletion', async () => {
     const { db, bao, meeting, row, restored } = await deletedMeeting(d(5, 10));
     changeStageManually(db, bao.id, { to: 'N4', date: d(3, 10) });

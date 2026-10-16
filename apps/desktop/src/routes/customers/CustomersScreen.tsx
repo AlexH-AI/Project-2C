@@ -17,7 +17,13 @@ import { RePicker } from '../../shell/RePicker';
 import { teamRes } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
 import { ALERT, CustomerFormDialog } from './CustomerDialogs';
-import { birthLabel, birthSortKey, customerBoard, type CustomerCard } from './customers-view';
+import {
+  birthLabel,
+  birthSortKey,
+  customerBoard,
+  kanbanColumn,
+  type CustomerCard,
+} from './customers-view';
 
 type View = 'kanban' | 'table';
 
@@ -26,8 +32,7 @@ const VIEWS = [
   { value: 'table', label: t('customers.table') },
 ] as const;
 
-/** Cards per kanban column and names per closed list; the table shows everyone. */
-const COLUMN_LIMIT = 6;
+/** Names per closed list (cards per kanban column: `kanbanColumn`); the table shows everyone. */
 const CLOSED_LIMIT = 5;
 
 const CARD = 'rounded-lg border border-border bg-surface-1 p-3';
@@ -199,27 +204,34 @@ export function CustomersScreen() {
       ) : (
         <div className="flex items-start gap-3.5">
           <div className="grid min-w-0 flex-1 grid-cols-4 gap-3">
-            {PIPELINE_STAGES.map((stage) => (
-              <section
-                key={stage}
-                aria-label={t(`stage.${stage}`)}
-                className={`${CARD} flex flex-col gap-2`}
-              >
-                <StageHead stage={stage} count={board.open[stage].length} className="gap-2 pb-2" />
-                {board.open[stage].slice(0, COLUMN_LIMIT).map((card) => (
-                  <Card key={card.customer.id} card={card} />
-                ))}
-                {board.open[stage].length > COLUMN_LIMIT && (
-                  <button
-                    type="button"
-                    onClick={showTable}
-                    className={`cursor-pointer text-xs text-accent hover:underline ${LINK}`}
-                  >
-                    {t('customers.more', { count: board.open[stage].length - COLUMN_LIMIT })}
-                  </button>
-                )}
-              </section>
-            ))}
+            {PIPELINE_STAGES.map((stage) => {
+              const { shown, more } = kanbanColumn(board.open[stage]);
+              return (
+                <section
+                  key={stage}
+                  aria-label={t(`stage.${stage}`)}
+                  className={`${CARD} flex flex-col gap-2`}
+                >
+                  <StageHead
+                    stage={stage}
+                    count={board.open[stage].length}
+                    className="gap-2 pb-2"
+                  />
+                  {shown.map((card) => (
+                    <Card key={card.customer.id} card={card} />
+                  ))}
+                  {more > 0 && (
+                    <button
+                      type="button"
+                      onClick={showTable}
+                      className={`cursor-pointer text-xs text-accent hover:underline ${LINK}`}
+                    >
+                      {t('customers.more', { count: more })}
+                    </button>
+                  )}
+                </section>
+              );
+            })}
           </div>
           <div className="flex w-64 shrink-0 flex-col gap-3">
             {CLOSED_STAGES.map((stage) => (
