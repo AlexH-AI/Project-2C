@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
+import type { CustomerRecord } from '@p2c/db';
 import {
   CLOSED_STAGES,
   PIPELINE_STAGES,
   formatCount,
   formatDate,
+  inScope,
   type ClosedStage,
   type CustomerStage,
 } from '@p2c/domain';
@@ -14,7 +16,7 @@ import { routeToHash } from '../../shell/routes';
 import { RePicker } from '../../shell/RePicker';
 import { teamRes } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
-import { CustomerFormDialog } from './CustomerDialogs';
+import { ALERT, CustomerFormDialog } from './CustomerDialogs';
 import { birthLabel, birthSortKey, customerBoard, type CustomerCard } from './customers-view';
 
 type View = 'kanban' | 'table';
@@ -111,6 +113,15 @@ export function CustomersScreen() {
   );
   const [view, setView] = useState<View>('kanban');
   const [creating, setCreating] = useState(false);
+  const scopeKey = JSON.stringify(scope);
+  // The customer just made for an RE outside the scope, while the scope it was made in stays.
+  const [created, setCreated] = useState<{ customer: CustomerRecord; scopeKey: string } | null>(
+    null,
+  );
+  const outside =
+    created?.scopeKey === scopeKey && !inScope(data.people, created.customer.reId, scope)
+      ? created.customer
+      : null;
 
   return (
     <>
@@ -142,7 +153,27 @@ export function CustomersScreen() {
           {t('customers.add')}
         </Button>
       </div>
-      {creating && <CustomerFormDialog onClose={() => setCreating(false)} />}
+      {creating && (
+        <CustomerFormDialog
+          defaultReId={scope.kind === 're' ? scope.reId : undefined}
+          onCreated={(customer) => setCreated({ customer, scopeKey })}
+          onClose={() => setCreating(false)}
+        />
+      )}
+      {outside && (
+        <p role="status" className={`${ALERT} border-info text-sm`}>
+          {t('customers.createdOutside', {
+            name: outside.name,
+            re: data.people.find((person) => person.id === outside.reId)?.name ?? '',
+          })}{' '}
+          <a
+            href={routeToHash({ screen: 'customer', id: outside.id })}
+            className={`text-accent hover:underline ${LINK}`}
+          >
+            {t('customers.createdProfile')}
+          </a>
+        </p>
+      )}
       {view === 'table' ? (
         <DataTable
           label={t('screen.customers')}
@@ -151,7 +182,7 @@ export function CustomersScreen() {
           getRowId={(c) => c.customer.id}
           initialSort={{ id: 'since', desc: true }}
           moreLabels={tableMore('customers')}
-          resetKey={JSON.stringify(scope)}
+          resetKey={scopeKey}
         />
       ) : (
         <div className="flex items-start gap-3.5">

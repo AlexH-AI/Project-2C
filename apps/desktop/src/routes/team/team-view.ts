@@ -1,10 +1,10 @@
+import { DbError, type AppointmentRecord } from '@p2c/db';
 import {
   addDays,
   customPeriod,
   isInPeriod,
   isPipelineStage,
   periodOf,
-  type Appointment,
   type CalendarDate,
   type Customer,
   type Period,
@@ -45,7 +45,9 @@ export function groupByTeam(teams: readonly Team[], people: readonly Person[]): 
 /** The live records the member columns and the delete check are counted from. */
 export interface StaffRecords {
   readonly customers: ReadonlyArray<Pick<Customer, 'reId' | 'stage'>>;
-  readonly appointments: ReadonlyArray<Pick<Appointment, 'reId' | 'coordinatorIds' | 'date'>>;
+  readonly appointments: ReadonlyArray<
+    Pick<AppointmentRecord, 'reId' | 'coordinatorIds' | 'date' | 'outcomeReviewerId'>
+  >;
   readonly policies: ReadonlyArray<Pick<Policy, 'reId' | 'issuedDate'>>;
 }
 
@@ -106,6 +108,8 @@ export interface PersonUsage {
   readonly appointments: number;
   readonly policies: number;
   readonly coordinating: number;
+  /** Meetings the person reviews the outcome of (D9). */
+  readonly reviewing: number;
 }
 
 export function personUsage(personId: string, records: StaffRecords): PersonUsage {
@@ -115,5 +119,14 @@ export function personUsage(personId: string, records: StaffRecords): PersonUsag
     appointments: count(records.appointments),
     policies: count(records.policies),
     coordinating: records.appointments.filter((a) => a.coordinatorIds.includes(personId)).length,
+    reviewing: records.appointments.filter((a) => a.outcomeReviewerId === personId).length,
   };
+}
+
+/**
+ * Whether the delete dialogs of a team or person leave Xóa on after a refusal: only the write lock
+ * of a data replace (spec Phase 6 S2-2) says to try again; the data refusing it stays as it is.
+ */
+export function retriesDelete(failure: unknown): boolean {
+  return failure instanceof DbError && failure.code === 'DATA_REPLACING';
 }

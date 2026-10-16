@@ -90,6 +90,34 @@ test('a new customer: birth year and gender from the profile, gate KYC_INSUFFICI
   ]);
 });
 
+test('the day of a KYC note is checked on Lưu, not while it is typed (7a, DR6-33)', async ({
+  page,
+}) => {
+  await createCustomer(page);
+  await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
+  const dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${NAME}` });
+  await dialog.getByRole('textbox', { name: 'Ghi chú' }).fill('Gặp KH');
+  const day = dialog.getByRole('textbox', { name: 'Ngày ghi nhận' });
+
+  // Half typed: nothing red yet, as in the customer dialogs (5b).
+  await day.fill('3');
+  await expect(day).not.toHaveAttribute('aria-invalid', 'true');
+  await day.fill('');
+  await expect(day).not.toHaveAttribute('aria-invalid', 'true');
+
+  await day.fill('3');
+  await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
+  await expect(day).toHaveAttribute('aria-invalid', 'true');
+  await expect(day).toHaveAccessibleDescription('Gõ dd/mm hoặc dd/mm/yyyy.');
+
+  // Typing again clears it until the next Lưu.
+  await day.fill('14/9');
+  await expect(day).not.toHaveAttribute('aria-invalid', 'true');
+  await expect(day).toHaveAccessibleDescription('Thứ Hai 14/09/2026');
+  await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
+  await expect(dialog).toBeHidden();
+});
+
 test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it is resolved', async ({
   page,
 }) => {

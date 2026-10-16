@@ -164,23 +164,27 @@ function KycPreview({ preview }: { preview: ProfileKycPreview }) {
 }
 
 /**
- * Mockup 5a–5c: a new customer (`customer` omitted), or the profile of one, which "Xóa KH…" deletes
- * (5f) before `onDeleted`.
+ * Mockup 5a–5c: a new customer (`customer` omitted), starting on `defaultReId` and given to
+ * `onCreated` once saved, or the profile of one, which "Xóa KH…" deletes (5f) before `onDeleted`.
  */
 export function CustomerFormDialog({
   customer,
+  defaultReId,
   onClose,
+  onCreated,
   onDeleted,
 }: {
   customer?: CustomerRecord;
+  defaultReId?: string;
   onClose: () => void;
+  onCreated?: (created: CustomerRecord) => void;
   onDeleted?: () => void;
 }) {
   const data = useAppData();
   const today = data.today();
   const res = useQuery(readRes);
   const [name, setName] = useState(customer?.name ?? '');
-  const [reId, setReId] = useState(customer?.reId ?? '');
+  const [reId, setReId] = useState(customer?.reId ?? defaultReId ?? '');
   const [birthText, setBirthText] = useState(
     customer?.birthDate ? birthLabel(customer.birthDate) : '',
   );
@@ -232,15 +236,11 @@ export function CustomerFormDialog({
       gender: profileGender,
     };
     try {
-      data.run((db) =>
-        customer
-          ? updateCustomerProfile(db, customer.id, profile)
-          : createCustomer(db, {
-              ...profile,
-              stage,
-              date: date.parsed.ok ? date.parsed.date : today,
-            }),
-      );
+      if (customer) data.run((db) => updateCustomerProfile(db, customer.id, profile));
+      else {
+        const record = { ...profile, stage, date: date.parsed.ok ? date.parsed.date : today };
+        onCreated?.(data.run((db) => createCustomer(db, record)));
+      }
       onClose();
     } catch (failure) {
       setErrors({ form: errorMessage(failure) });
@@ -318,7 +318,7 @@ export function CustomerFormDialog({
       <Choices
         label={t('customerForm.gender')}
         value={gender}
-        onChange={setGender}
+        onChange={edit('form', setGender)}
         options={[
           { value: 'MALE', label: t('gender.MALE') },
           { value: 'FEMALE', label: t('gender.FEMALE') },

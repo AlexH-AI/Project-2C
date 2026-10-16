@@ -308,6 +308,7 @@ function Members({
             getRowId={(person) => person.id}
             initialSort={{ id: 'name', desc: false }}
             moreLabels={tableMore('people')}
+            resetKey={entry.team.id}
           />
         </div>
       )}

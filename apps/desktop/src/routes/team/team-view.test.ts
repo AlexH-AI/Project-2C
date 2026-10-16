@@ -1,6 +1,7 @@
+import { DbError } from '@p2c/db';
 import type { Person, Team } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { groupByTeam, personUsage, staffMetrics } from './team-view';
+import { groupByTeam, personUsage, retriesDelete, staffMetrics } from './team-view';
 
 const SAO_MAI: Team = { id: 't1', name: 'Sao Mai' };
 const BINH_MINH: Team = { id: 't2', name: 'Bình Minh' };
@@ -69,11 +70,11 @@ const records = {
   ],
   appointments: [
     // 30 days back from 28/09 start on 30/08; later dates are still to come.
-    { reId: 're1', coordinatorIds: ['tl1'], date: day(8, 30) },
-    { reId: 're1', coordinatorIds: [], date: day(9, 28) },
-    { reId: 're1', coordinatorIds: ['tl1', 'is'], date: day(8, 29) },
-    { reId: 're1', coordinatorIds: [], date: day(9, 29) },
-    { reId: 're2', coordinatorIds: ['re1'], date: day(9, 1) },
+    { reId: 're1', coordinatorIds: ['tl1'], date: day(8, 30), outcomeReviewerId: null },
+    { reId: 're1', coordinatorIds: [], date: day(9, 28), outcomeReviewerId: null },
+    { reId: 're1', coordinatorIds: ['tl1', 'is'], date: day(8, 29), outcomeReviewerId: null },
+    { reId: 're1', coordinatorIds: [], date: day(9, 29), outcomeReviewerId: null },
+    { reId: 're2', coordinatorIds: ['re1'], date: day(9, 1), outcomeReviewerId: null },
   ],
   policies: [
     { reId: 're1', issuedDate: day(1, 1) },
@@ -112,18 +113,51 @@ describe('personUsage', () => {
       appointments: 4,
       policies: 3,
       coordinating: 1,
+      reviewing: 0,
     });
     expect(personUsage('tl1', records)).toEqual({
       customers: 0,
       appointments: 0,
       policies: 0,
       coordinating: 2,
+      reviewing: 0,
     });
     expect(personUsage('nobody', records)).toEqual({
       customers: 0,
       appointments: 0,
       policies: 0,
       coordinating: 0,
+      reviewing: 0,
     });
+  });
+
+  it('counts the meetings the person reviews the outcome of, which also keep them (DR6-26)', () => {
+    const reviewed = {
+      ...records,
+      appointments: [
+        { reId: 're1', coordinatorIds: [], date: day(9, 1), outcomeReviewerId: 'is' },
+        { reId: 're2', coordinatorIds: ['tl1'], date: day(9, 2), outcomeReviewerId: 'is' },
+        { reId: 're1', coordinatorIds: [], date: day(9, 3), outcomeReviewerId: 'tl1' },
+      ],
+    };
+
+    // An IS who only reviews: nothing else points to them.
+    expect(personUsage('is', reviewed)).toEqual({
+      customers: 0,
+      appointments: 0,
+      policies: 0,
+      coordinating: 0,
+      reviewing: 2,
+    });
+    expect(personUsage('tl1', reviewed)).toMatchObject({ coordinating: 1, reviewing: 1 });
+  });
+});
+
+describe('retriesDelete', () => {
+  it('lets a delete refused while the data is replaced be tried again, and no other (DR6-33)', () => {
+    expect(retriesDelete(new DbError('DATA_REPLACING'))).toBe(true);
+    expect(retriesDelete(new DbError('TEAM_HAS_MEMBERS'))).toBe(false);
+    expect(retriesDelete(new DbError('PERSON_IN_USE'))).toBe(false);
+    expect(retriesDelete(new Error('bug'))).toBe(false);
   });
 });
