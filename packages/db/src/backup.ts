@@ -3,6 +3,7 @@
  * table sorted by its primary key, soft-deleted rows included. Importing builds a new database and
  * never touches the open one (D5: the app replaces it afterwards).
  */
+import { isStorableText } from '@p2c/domain';
 import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
 import { dataTables, validateBackupInvariants, validateBackupValues } from './backup-validation';
@@ -182,14 +183,16 @@ function columnsOf(sqlite: SqlJsDatabase, table: string): Column[] {
 
 /**
  * The file's value for an insert; SQLite alone would store text in an integer column. A text with a
- * NUL would load whole but read back cut at it, past the CHECKs on its length (DR5-14); a text read
- * from the database never has one, so no exported file does. The schema has integer and text
- * columns only (a test checks it): a new kind of column needs a case here.
+ * NUL would load whole but read back cut at it, past the CHECKs on its length (DR5-14), and a lone
+ * surrogate half would read back as U+FFFD, which the value checks could not tell from typed text
+ * (DR6-49): `isStorableText`, as the commands. A text read from the database never has either,
+ * so no exported file does. The schema has integer and text columns only (a test checks it): a
+ * new kind of column needs a case here.
  */
 function valueOf(column: Column, value: unknown): SqlValue {
   if (value === null) return null;
   if (column.type === 'integer' && Number.isSafeInteger(value)) return value as number;
-  if (column.type === 'text' && typeof value === 'string' && !value.includes('\0')) return value;
+  if (column.type === 'text' && typeof value === 'string' && isStorableText(value)) return value;
   throw invalid();
 }
 

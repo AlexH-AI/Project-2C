@@ -62,7 +62,9 @@ export const people = sqliteTable(
   },
   (t) => [
     check('people_role', sql`${t.role} IN (${list(PERSON_ROLES)})`),
+    // RE and TL belong to a team; IS, BD and BDM never do (spec §3.2, #252, DR6-52).
     check('people_team_required', sql`${t.role} NOT IN ('RE', 'TL') OR ${t.teamId} IS NOT NULL`),
+    check('people_team_none', sql`${t.role} IN ('RE', 'TL') OR ${t.teamId} IS NULL`),
   ],
 );
 
@@ -79,7 +81,7 @@ export const schemaMigrations = sqliteTable('schema_migrations', {
 
 // ---- customers, stage transitions, appointments, policies (spec §3.3–3.7) ----
 
-const CUSTOMER_STAGES = [...PIPELINE_STAGES, ...CLOSED_STAGES] as const;
+export const CUSTOMER_STAGES = [...PIPELINE_STAGES, ...CLOSED_STAGES] as const;
 export const GENDERS = ['MALE', 'FEMALE'] as const;
 /** Appointment triggers from the G3 mockup (spec §3.5). */
 export const APPOINTMENT_TRIGGERS = [

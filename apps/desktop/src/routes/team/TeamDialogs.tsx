@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createTeam, renameTeam, softDeleteTeam } from '@p2c/db';
-import type { Team } from '@p2c/domain';
+import { normalizeText, type Team } from '@p2c/domain';
 import { Button, Dialog, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
@@ -24,7 +24,7 @@ export function TeamNameDialog({
     try {
       onSaved(data.run((db) => (team ? renameTeam(db, team.id, name) : createTeam(db, { name }))));
     } catch (failure) {
-      setError(errorMessage(failure, { name: name.trim() }));
+      setError(errorMessage(failure, { name: normalizeText(name) }));
     }
   };
 

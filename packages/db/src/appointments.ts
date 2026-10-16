@@ -35,6 +35,7 @@ import {
   listStageTransitions,
   liveCustomer,
   reinstateTransition,
+  requireStage,
   stageOnDay,
   transitionWithdrawnAt,
   withdrawAppointmentTransition,
@@ -339,7 +340,7 @@ function outcomeStage(row: AppointmentRow, stage: CustomerStage | null): Custome
 /** The outcome columns of an appointment, checked (spec §4, D9); the note stays when not given. */
 function outcomeFields(db: Database, outcome: MeetingOutcome, note: string) {
   if (!OUTCOME_STATUSES.includes(outcome.status)) throw new DbError('INVALID_STATUS');
-  const stageAfter = outcome.stageAfter ?? null;
+  const stageAfter = outcome.stageAfter == null ? null : requireStage(outcome.stageAfter);
   const nextStep = optionalText(outcome.nextStep);
   if (outcome.status === 'MET' && (stageAfter === null || nextStep === null)) {
     throw new DbError('OUTCOME_REQUIRED');

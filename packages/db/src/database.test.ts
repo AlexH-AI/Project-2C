@@ -212,6 +212,21 @@ describe('schema constraints', () => {
     db.sqlite.run(insertPerson('BDM', null));
   });
 
+  // DR6-52: the other half of spec §3.2 — an IS, BD or BDM never belongs to a team (#252).
+  it('rejects an IS, BD or BDM with a team', async () => {
+    const db = await openDatabase();
+    db.sqlite.run(
+      `INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'A', 'x', 'x')`,
+    );
+
+    for (const role of ['IS', 'BD', 'BDM']) {
+      expect(() => db.sqlite.run(insertPerson(role, 't'))).toThrow(
+        /CHECK constraint failed: people_team_none/,
+      );
+    }
+    db.sqlite.run(insertPerson('TL', 't'));
+  });
+
   it('keeps team names unique among teams that are not deleted', async () => {
     const db = await openDatabase();
     const insertTeam = (id: string, deletedAt: string | null) =>
@@ -452,6 +467,50 @@ describe('migrating a saved database', () => {
     expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
   });
 
+  /** A database file saved before an IS, BD or BDM had to be without team (version 10), with data. */
+  async function savedAtVersion10() {
+    const db = await openDatabase({ migrations: MIGRATIONS.filter((m) => m.id <= 10) });
+    db.sqlite.exec(`
+      INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x');
+      INSERT INTO people (id, name, role, team_id, created_at, updated_at, deleted_at) VALUES
+        ('re', 'An', 'RE', 't', 'x', 'x', NULL), ('tl', 'Hà', 'TL', 't', 'x', 'x', NULL),
+        ('is', 'Bình', 'IS', NULL, 'x', 'x', NULL), ('bd', 'Chi', 'BD', NULL, 'x', 'x', 'y'),
+        ('bdm', 'Dũng', 'BDM', NULL, 'x', 'x', NULL);
+      INSERT INTO customers (id, code, name, re_id, stage, created_at, updated_at)
+        VALUES ('c', 'K-0001', 'Lan', 're', 'N2', 'x', 'x');
+      INSERT INTO appointments (id, customer_id, re_id, date, status, trigger_type, stage_after,
+          next_step, note, outcome_reviewer_id, created_at, updated_at)
+        VALUES ('a1', 'c', 're', '2026-09-10', 'MET', 'OTHER', 'N2', 'Gửi minh họa', '', 'bdm',
+          'x', 'x');
+      INSERT INTO appointment_coordinators (appointment_id, person_id) VALUES ('a1', 'is');
+      INSERT INTO stage_transitions (id, customer_id, seq, from_stage, to_stage, date, appointment_id,
+          created_at) VALUES
+        ('s1', 'c', 1, NULL, 'N3', '2026-09-01', NULL, 'x'),
+        ('s2', 'c', 2, 'N3', 'N2', '2026-09-10', 'a1', 'x');
+    `);
+    return db;
+  }
+
+  it('checks that an IS, BD or BDM has no team on a database with data (DR6-52)', async () => {
+    const old = await savedAtVersion10();
+    const tables = ['people', 'customers', 'appointments', 'appointment_coordinators'];
+    const before = tables.map((table) => rowsOf(old.sqlite, table));
+
+    const db = await openDatabase({ bytes: old.export() });
+
+    expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
+    expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(before);
+    expect(foreignKeys(db, 'people')).toContain('team_id->teams.id');
+    expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
+    expect(() => db.sqlite.run("UPDATE people SET team_id = 't' WHERE id = 'is'")).toThrow(
+      /CHECK constraint failed: people_team_none/,
+    );
+    expect(() => db.sqlite.run("UPDATE people SET role = 'RE' WHERE id = 'bdm'")).toThrow(
+      /CHECK constraint failed: people_team_required/,
+    );
+    db.sqlite.run("UPDATE people SET role = 'IS', team_id = NULL WHERE id = 'tl'");
+  });
+
   /** A database at the latest version where a team is referenced by a person, who has a customer. */
   async function savedWithReferences() {
     const db = await openDatabase();
@@ -654,7 +713,9 @@ describe('sources', () => {
   });
 
   it('keeps queries working across an export, when statements are reused', async () => {
-    const db = await openDatabase({ persist: () => undefined });
+    // A clock that moves: two teams of one millisecond would list in the order of their random ids.
+    let clock = Date.UTC(2026, 8, 26);
+    const db = await openDatabase({ persist: () => undefined, now: () => new Date(clock++) });
     createTeam(db, { name: 'A' });
     createTeam(db, { name: 'B' });
     expect(listTeams(db).map((t) => t.name)).toEqual(['A', 'B']);

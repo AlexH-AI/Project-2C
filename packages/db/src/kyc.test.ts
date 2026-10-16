@@ -1,3 +1,4 @@
+import { evaluateKycGate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { createCustomer, softDeleteCustomer, updateCustomerProfile } from './customers';
 import * as db from './index';
@@ -668,5 +669,68 @@ describe('KYC text is stored composed', () => {
     expect(
       codeOf(() => confirmKycFact(database, customer.id, { ...facts[0], noteId: note.id, date })),
     ).toBe('INVALID_TEXT');
+  });
+});
+
+// DR6-49: a value or a note with nothing to see says nothing; white space reads as shown on screen.
+describe('KYC text is stored as the screens show it', () => {
+  it('refuses a value of invisible characters only: no fact, no version, the gate unchanged', async () => {
+    const { db: database, customer, note, persist } = await withCustomer();
+    const date = d(3, 9, 2026);
+    const gate = () => evaluateKycGate(getKycProfile(database, customer.id).facts);
+    const before = { export: database.export(), gate: gate() };
+    persist.mockClear();
+
+    for (const value of ['​', '⁠ ', '​​​']) {
+      const facts = [{ field: 'riskProfile', value }] as const;
+      expect(codeOf(() => recordKycNote(database, customer.id, { text: 'Gặp', date, facts }))).toBe(
+        'INVALID_KYC_VALUE',
+      );
+      const command = { field: 'mainConcern', value, noteId: note.id, date } as const;
+      expect(codeOf(() => confirmKycFact(database, customer.id, command))).toBe(
+        'INVALID_KYC_VALUE',
+      );
+    }
+    expect(gate()).toEqual(before.gate);
+    expect(database.export()).toEqual(before.export);
+    expect(listKycVersions(database, customer.id)).toEqual([]);
+    expect(persist).not.toHaveBeenCalled();
+  });
+
+  it('takes a value with other white space as the same value, not a conflict', async () => {
+    const { db: database, customer, note } = await withCustomer();
+    const date = d(3, 9, 2026);
+    const input = { field: 'riskProfile', noteId: note.id, date } as const;
+    confirmKycFact(database, customer.id, { ...input, value: 'Thận trọng' });
+
+    expect(
+      codeOf(() => markKycConflict(database, customer.id, { ...input, value: 'Thận  trọng​' })),
+    ).toBe('KYC_NO_CONFLICT');
+    const { fact } = confirmKycFact(database, customer.id, {
+      ...input,
+      field: 'occupation',
+      value: ' Bác\tsĩ  nội⁠ trú ',
+    });
+    expect(fact.value).toBe('Bác sĩ nội trú');
+  });
+
+  it('keeps the line breaks of a note and refuses one with nothing to see (Owner 16/10/2026)', async () => {
+    const { db: database, customer } = await withCustomer();
+    const date = d(3, 9, 2026);
+
+    const { note } = recordKycNote(database, customer.id, {
+      text: ' Đã kết hôn,  2 con​ \r\n\nBác sĩ  ',
+      date,
+      facts: [],
+    });
+    expect(note.text).toBe('Đã kết hôn, 2 con\n\nBác sĩ');
+    for (const text of ['​', '\n⁠\n  ']) {
+      expect(codeOf(() => addKycNote(database, customer.id, { text, date }))).toBe(
+        'KYC_NOTE_EMPTY',
+      );
+    }
+    expect(codeOf(() => addKycNote(database, customer.id, { text: 'A\uD800', date }))).toBe(
+      'INVALID_TEXT',
+    );
   });
 });

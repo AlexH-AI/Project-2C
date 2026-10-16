@@ -91,6 +91,26 @@ describe('customers', () => {
     expect(listCustomers(db)).toEqual([]);
   });
 
+  // DR6-51: a value outside its list has a code the UI can show, not the raw CHECK error.
+  it('refuses a gender or a stage outside their lists with a code', async () => {
+    const { db, re, persist } = await setup();
+    const base = { name: 'Lan', reId: re.id, stage: 'N3' as const, date: d(1, 1) };
+    const lan = createCustomer(db, base);
+    const before = db.export();
+    persist.mockClear();
+    const gender = 'X' as 'MALE';
+    const stage = 'N9' as 'N2';
+
+    expect(codeOf(() => createCustomer(db, { ...base, gender }))).toBe('INVALID_CHOICE');
+    expect(codeOf(() => updateCustomerProfile(db, lan.id, { gender }))).toBe('INVALID_CHOICE');
+    expect(codeOf(() => createCustomer(db, { ...base, stage }))).toBe('INVALID_TRANSITION');
+    expect(codeOf(() => changeStageManually(db, lan.id, { to: stage, date: d(2, 1) }))).toBe(
+      'INVALID_TRANSITION',
+    );
+    expect(db.export()).toEqual(before);
+    expect(persist).not.toHaveBeenCalled();
+  });
+
   it('stores a full birth date or none, and lists customers in creation order', async () => {
     const { db, re } = await setup();
     const mai = createCustomer(db, {

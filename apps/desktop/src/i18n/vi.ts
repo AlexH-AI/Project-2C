@@ -1157,7 +1157,9 @@ export const vi = {
   'error.PERSON_IN_USE':
     'Nhân sự còn KH, lịch hẹn hoặc HĐ ghi cho mình, kể cả của KH đã xóa (khôi phục KH cần RE này). Giữ vai trò RE, hoặc giữ lại thay vì xóa.',
   'error.NAME_REQUIRED': 'Chưa nhập tên.',
-  'error.INVALID_TEXT': 'Chữ có ký tự không lưu được (ký tự NUL): xóa ký tự đó rồi lưu lại.',
+  'error.INVALID_TEXT':
+    'Chữ có ký tự không lưu được (ký tự NUL hoặc ký tự hỏng khi dán): xóa ký tự đó rồi lưu lại.',
+  'error.INVALID_CHOICE': 'Giá trị không có trong danh sách: chọn lại.',
   'error.SEQ_LIMIT': 'Không ghi thêm được cho KH này: số thứ tự thao tác đã tới giới hạn.',
   'error.AI_ANALYSIS_INVALID':
     'Kết quả AI không lưu được vì thiếu hoặc sai thông tin: phân tích lại.',

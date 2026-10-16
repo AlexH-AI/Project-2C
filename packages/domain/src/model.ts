@@ -73,7 +73,7 @@ export interface Appointment {
   readonly customerId: string;
   /** The RE in charge of the appointment. */
   readonly reId: string;
-  /** TL/IS/BD/BDM (or other RE) joining the meeting; they get no metrics from it. */
+  /** TL/IS/BD/BDM joining the meeting, never an RE (DR-47); they get no metrics from it. */
   readonly coordinatorIds: readonly string[];
   /** The meeting day; an RF counts on this day (G2 C). */
   readonly date: CalendarDate;

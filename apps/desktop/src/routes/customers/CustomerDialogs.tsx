@@ -21,6 +21,7 @@ import {
   PIPELINE_STAGES,
   formatCount,
   formatDate,
+  normalizeText,
   weekdayOf,
   type CalendarDate,
   type CustomerStage,
@@ -220,8 +221,8 @@ export function CustomerFormDialog({
       : undefined;
 
   const save = () => {
-    // The command stores the name composed (NFC) and trimmed (DR-49).
-    const clean = name.trim();
+    // Empty as the command reads it: invisible characters and white space alone (DR-49, DR6-49).
+    const clean = normalizeText(name);
     const found: Errors = {};
     if (!clean) found.name = t('error.NAME_REQUIRED');
     if (!reId) found.re = t('error.RE_REQUIRED');

@@ -19,6 +19,7 @@ import {
   liveCustomer,
   nextSeq,
   prepared,
+  requireChoice,
   requireName,
   requireRe,
   rowInsert,
@@ -32,7 +33,7 @@ import type { Database } from './database';
 import { DbError } from './errors';
 import { encodeBase32, ulid } from './ids';
 import { previewProfileFacts, recordProfileFacts, type ProfileKycPreview } from './kyc';
-import { appointments, customers, GENDERS, stageTransitions } from './schema';
+import { appointments, CUSTOMER_STAGES, customers, GENDERS, stageTransitions } from './schema';
 
 type CustomerRow = typeof customers.$inferSelect;
 type TransitionRow = typeof stageTransitions.$inferSelect;
@@ -115,7 +116,7 @@ export function createCustomer(db: Database, input: NewCustomer): CustomerRecord
         id,
         code: freeCode(db),
         ...profile,
-        stage: input.stage,
+        stage: requireStage(input.stage),
         createdAt: at,
         updatedAt: at,
         deletedAt: null,
@@ -278,6 +279,7 @@ export function checkTransition(
   date: CalendarDate,
   recordedAfter?: string,
 ): CustomerStage | null {
+  requireStage(to);
   const latest = latestTransition(db, customerId);
   if (latest) {
     const order = compareDates(date, fromIsoDate(latest.date));
@@ -306,6 +308,12 @@ export function checkTransition(
     throw new DbError('INVALID_TRANSITION', from === null ? { to } : { from, to });
   }
   return from;
+}
+
+/** `stage` when it is a stage; else `INVALID_TRANSITION`, not the raw CHECK error (DR6-51). */
+export function requireStage(stage: CustomerStage): CustomerStage {
+  if (!CUSTOMER_STAGES.includes(stage)) throw new DbError('INVALID_TRANSITION', { to: stage });
+  return stage;
 }
 
 /**
@@ -475,7 +483,7 @@ function validateProfile(db: Database, input: CustomerProfile) {
     name: requireName(input.name),
     reId: requireRe(db, input.reId),
     birthDate: input.birthDate ? birthDateText(db, input.birthDate) : null,
-    gender: input.gender ?? null,
+    gender: input.gender == null ? null : requireChoice(GENDERS, input.gender),
   };
 }
 

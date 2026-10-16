@@ -19,6 +19,8 @@ import {
   formatDate,
   KYC_FIELDS,
   kycFieldType,
+  normalizeNote,
+  normalizeText,
   resolveConflict,
   type CalendarDate,
   type KycField,
@@ -217,7 +219,8 @@ export function KycNoteDialog({
 
   const add = () => {
     if (!field) return setErrors({ fact: t('kycNote.error.field') });
-    if (boolean ? answer === null : value.trim() === '') {
+    // Empty as the command reads it: invisible characters and white space alone (DR6-49).
+    if (boolean ? answer === null : normalizeText(value) === '') {
       return setErrors({ fact: t('kycNote.error.value') });
     }
     const raw = boolean ? answer === 'yes' : value;
@@ -241,7 +244,7 @@ export function KycNoteDialog({
   };
 
   const save = () => {
-    const clean = text.trim();
+    const clean = normalizeNote(text);
     // A fact picked but not added yet would be lost: the note cannot be edited after saving.
     const pending = field ? t('kycNote.error.pending') : undefined;
     if (!clean || !date.parsed.ok || pending) {
@@ -489,7 +492,7 @@ export function ConfirmFactDialog({
   const preview = previewKycNote(profile, versions, [{ field, value, conflict }], today, material);
 
   const save = () => {
-    if (boolean ? answer === null : text.trim() === '') {
+    if (boolean ? answer === null : normalizeText(text) === '') {
       return setError(t('kycNote.error.value'));
     }
     const command = { field, value, noteId: note.id, date: today, material };

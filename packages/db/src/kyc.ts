@@ -25,7 +25,15 @@ import {
   fromIsoDate,
 } from '@p2c/domain';
 import { asc, desc, eq, max, sql } from 'drizzle-orm';
-import { cleanText, liveCustomer, nextSeq, prepared, rowInsert, storedPastDate } from './common';
+import {
+  cleanNote,
+  cleanText,
+  liveCustomer,
+  nextSeq,
+  prepared,
+  rowInsert,
+  storedPastDate,
+} from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { ulid } from './ids';
@@ -105,7 +113,7 @@ export function addKycNote(
 ): KycNoteRecord {
   return db.transaction(() => {
     liveCustomer(db, customerId);
-    const text = cleanText(note.text);
+    const text = cleanNote(note.text);
     if (text === '') throw new DbError('KYC_NOTE_EMPTY');
     return insertNote(db, customerId, text, note.date, 'RE');
   });
@@ -374,7 +382,8 @@ function requireField(field: string): KycField {
 
 /**
  * The `domain` rules (spec Phase 5 §6.4), refusing as a `DbError` the UI can show: `INVALID_TEXT`
- * for a NUL, as for any stored text, and `INVALID_KYC_VALUE` for a value the trường cannot hold.
+ * for text the database cannot store, as for any stored text, and `INVALID_KYC_VALUE` for a value
+ * the trường cannot hold — a text one of invisible characters only among them (DR6-49).
  */
 export function normalizeKycValue(field: KycField, value: KycValue): KycValue {
   if (typeof value === 'string') cleanText(value);

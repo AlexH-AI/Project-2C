@@ -75,6 +75,30 @@ describe('teams', () => {
     expect(renameTeam(db, team.id, decomposed)).toEqual(team);
   });
 
+  // DR6-49: a name the screens show the same is the same name, and an invisible one is empty.
+  it('takes white space as one space and drops invisible characters before comparing names', async () => {
+    const { db } = await setup();
+    const team = createTeam(db, { name: 'Bình Minh' });
+    createTeam(db, { name: 'Sao Mai' });
+
+    for (const name of ['Bình  Minh', 'Bình Minh', '\tBình ⁠Minh\n', 'Sao Mai​']) {
+      expect(codeOf(() => createTeam(db, { name }))).toBe('TEAM_NAME_TAKEN');
+    }
+    expect(codeOf(() => createTeam(db, { name: '​' }))).toBe('NAME_REQUIRED');
+    expect(codeOf(() => createTeam(db, { name: ' ⁠ ﻿' }))).toBe('NAME_REQUIRED');
+    expect(renameTeam(db, team.id, 'Bình　 Minh')).toEqual(team);
+    expect(createTeam(db, { name: 'Hừng​  Đông' }).name).toBe('Hừng Đông');
+  });
+
+  // DR6-49: a lone surrogate half would be stored as U+FFFD, so the name would not read back.
+  it('refuses a name that is not whole UTF-16', async () => {
+    const { db } = await setup();
+
+    expect(codeOf(() => createTeam(db, { name: 'A\uD800' }))).toBe('INVALID_TEXT');
+    expect(codeOf(() => createTeam(db, { name: '\uDC00B' }))).toBe('INVALID_TEXT');
+    expect(createTeam(db, { name: 'Sao 🌟' }).name).toBe('Sao 🌟');
+  });
+
   it('renames a team', async () => {
     const { db } = await setup();
     const team = createTeam(db, { name: 'Sao Mai' });
@@ -150,7 +174,24 @@ describe('people', () => {
     }
   });
 
-  it('refuses a team for IS, BD and BDM, also when the role changes or the person is restored', async () => {
+  // DR6-51: a role outside the list has a code the UI can show, not the raw CHECK error.
+  it('refuses a role outside the list with a code, with a team or without', async () => {
+    const { db } = await setup();
+    const team = createTeam(db, { name: 'Sao Mai' });
+    const is = createPerson(db, { name: 'Bình', role: 'IS', teamId: null });
+    const role = 'ADMIN' as 'IS';
+
+    expect(codeOf(() => createPerson(db, { name: 'An', role, teamId: null }))).toBe(
+      'INVALID_CHOICE',
+    );
+    expect(codeOf(() => createPerson(db, { name: 'An', role, teamId: team.id }))).toBe(
+      'INVALID_CHOICE',
+    );
+    expect(codeOf(() => updatePerson(db, is.id, { role }))).toBe('INVALID_CHOICE');
+    expect(listPeople(db)).toEqual([is]);
+  });
+
+  it('refuses a team for IS, BD and BDM, also when the role changes', async () => {
     const { db } = await setup();
     const team = createTeam(db, { name: 'Sao Mai' });
     const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
@@ -167,10 +208,12 @@ describe('people', () => {
       role: 'BD',
       teamId: null,
     });
-    // A deleted IS from a file written before the rule cannot come back with a team.
+    // Not even a deleted one holds a team, so none comes back with one: the schema refuses it
+    // (DR6-52).
     softDeletePerson(db, bd.id);
-    db.sqlite.run('UPDATE people SET team_id = ? WHERE id = ?', [team.id, bd.id]);
-    expect(codeOf(() => restorePerson(db, bd.id))).toBe('TEAM_NOT_ALLOWED');
+    expect(() =>
+      db.sqlite.run('UPDATE people SET team_id = ? WHERE id = ?', [team.id, bd.id]),
+    ).toThrow(/CHECK constraint failed: people_team_none/);
   });
 
   it('rejects an empty name or a team that does not exist', async () => {

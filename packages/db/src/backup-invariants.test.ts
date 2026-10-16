@@ -365,6 +365,11 @@ describe('importBackup — rules across tables', () => {
       'a birth year in conflict between the profile and the RE’s note',
       (b, ids) => birthYearConflict(b, ids, '1984'),
     ],
+    ['a conflict of three different values', (b, ids) => thirdChildrenCount(b, ids, '4')],
+    [
+      'a KYC note on two lines, as `recordKycNote` keeps its line breaks (Owner 16/10/2026)',
+      (b, ids) => (kycNote(b, ids).text = 'Du học 2029\n\nCon thứ hai'),
+    ],
     [
       'a stage change and a policy dated today, the day of the import',
       (b, ids) => {
@@ -619,6 +624,19 @@ describe('importBackup — rules across tables', () => {
       '7: a field with a single fact in conflict',
       (b, ids) => (fact(b, ids.lan, 'childrenCount').status = 'superseded'),
     ],
+    // DR6-50: `markConflict` takes only a value that differs from every one in effect.
+    [
+      '7: a conflict of two facts with the same value',
+      (b, ids) => (childrenCounts(b, ids)[1]!.value_json = '2'),
+    ],
+    [
+      '7: a conflict of the same value written two ways',
+      (b, ids) => (childrenCounts(b, ids)[1]!.value_json = '2.0'),
+    ],
+    [
+      '7: a conflict of three facts, two with the same value',
+      (b, ids) => thirdChildrenCount(b, ids, '3'),
+    ],
     [
       '8: a birth year other than the profile’s (D2)',
       (b, ids) => (fact(b, ids.lan, 'birthYear').value_json = '1985'),
@@ -677,9 +695,10 @@ describe('importBackup — rules across tables', () => {
       },
     ],
     ['9: live people in a deleted team', (b) => (b.tables.teams![0]!.deleted_at = DELETED)],
-    ['9: an IS in a team', (b, ids) => person(b, ids.tl, { id: 'is', role: 'IS' })],
+    // DR6-52: the schema itself keeps an IS, BD or BDM out of every team, deleted or not.
+    ['CHECK: an IS in a team', (b, ids) => person(b, ids.tl, { id: 'is', role: 'IS' })],
     [
-      '9: a deleted BDM in a team',
+      'CHECK: a deleted BDM in a team',
       (b, ids) => person(b, ids.tl, { id: 'bdm', role: 'BDM', deleted_at: DELETED }),
     ],
     [
@@ -832,6 +851,33 @@ describe('importBackup — rules across tables', () => {
     [
       'VALUE: a meeting note with a NUL',
       (b, ids) => (row(b, 'appointments', (a) => a.id === ids.met).note = 'Gặp\0 lại'),
+    ],
+    // DR6-49: names and KYC text as the commands store them, white space and invisible characters
+    // included.
+    ['VALUE: a team name ending in U+200B', (b) => (b.tables.teams![0]!.name += '​')],
+    [
+      'VALUE: a team name with a lone surrogate half',
+      (b) => (b.tables.teams![0]!.name += '\uD800'),
+    ],
+    [
+      'VALUE: a customer name with two spaces in a row',
+      (b, ids) => (row(b, 'customers', (c) => c.id === ids.lan).name = 'Nguyễn  Lan'),
+    ],
+    [
+      'VALUE: a KYC note with a line of spaces kept',
+      (b, ids) => (kycNote(b, ids).text = 'Du học 2029 \nCon thứ hai'),
+    ],
+    [
+      'VALUE: a KYC text value of invisible characters only',
+      (b, ids) =>
+        b.tables.kyc_facts!.push({
+          ...childrenCounts(b, ids)[0]!,
+          id: 'blank-residence',
+          seq: 999,
+          field: 'residence',
+          value_json: '"\\u200b"',
+          status: 'active',
+        }),
     ],
     ['13: an input that is not JSON', (b, ids) => (analysis(b, ids.accepted).input_json = '{')],
     [
@@ -1107,6 +1153,30 @@ function setInput(analysisRow: Row, input: object): void {
 /** The customer's first fact of the field. */
 function fact(backup: BackupJson, customerId: string, field: string): Row {
   return row(backup, 'kyc_facts', (f) => f.customer_id === customerId && f.field === field);
+}
+
+/** Lan's note "Hai con", from the RE. */
+function kycNote(backup: BackupJson, ids: Ids): Row {
+  return row(backup, 'kyc_notes', (n) => n.customer_id === ids.lan && n.text === 'Hai con');
+}
+
+/** Lan's two children counts in conflict, 2 then 3. */
+function childrenCounts(backup: BackupJson, ids: Ids): Row[] {
+  const facts = backup.tables.kyc_facts!.filter(
+    (f) => f.customer_id === ids.lan && f.field === 'childrenCount',
+  );
+  expect(facts.map((f) => [f.value_json, f.status])).toEqual([
+    ['2', 'conflict'],
+    ['3', 'conflict'],
+  ]);
+  return facts;
+}
+
+/** A third children count of Lan's joining the conflict, with `valueJson`. */
+function thirdChildrenCount(backup: BackupJson, ids: Ids, valueJson: string): void {
+  const second = childrenCounts(backup, ids)[1]!;
+  const seq = Math.max(...backup.tables.kyc_facts!.map((f) => f.seq as number)) + 1;
+  backup.tables.kyc_facts!.push({ ...second, id: 'third-count', seq, value_json: valueJson });
 }
 
 const DELETED = '2026-09-26T08:00:00.000Z';

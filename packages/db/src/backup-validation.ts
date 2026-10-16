@@ -18,7 +18,7 @@ import {
 import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
 import { analysisContentFits, analysisLabelsFit, type AnalysisFields } from './ai-analyses';
-import { cleanText, isFee, optionalText, requireName, storedDate, today } from './common';
+import { cleanNote, isFee, optionalText, requireName, storedDate, today } from './common';
 import { isStageOfDay } from './customers';
 import type { Database } from './database';
 import { DbError } from './errors';
@@ -40,7 +40,7 @@ export function validateBackupValues(db: Database): void {
       if (table === 'kyc_facts' && !validKycValue(String(row.field), String(row.value_json))) {
         throw new DbError('BACKUP_INVALID');
       }
-      if (table === 'kyc_notes' && !storedAs(requireText, row.text)) {
+      if (table === 'kyc_notes' && !storedAs(requireNote, row.text)) {
         throw new DbError('BACKUP_INVALID');
       }
       if (NAMED.has(table) && !storedAs(requireName, row.name)) throw new DbError('BACKUP_INVALID');
@@ -71,9 +71,9 @@ function validValue(column: string, value: SqlValue): boolean {
 const FEES = new Set(['expected_case_size', 'submitted_fyp', 'issued_fyp']);
 const NAMED = new Set(['teams', 'people', 'customers']);
 
-/** `cleanText` that is not empty, as a KYC note's text (DR-05). */
-function requireText(text: string): string {
-  const clean = cleanText(text);
+/** A KYC note's text as `addKycNote` stores it: `cleanNote`, not empty (DR-05). */
+function requireNote(text: string): string {
+  const clean = cleanNote(text);
   if (clean === '') throw new DbError('BACKUP_INVALID');
   return clean;
 }
@@ -294,29 +294,31 @@ function chained(appointments: Map<unknown, Row>): boolean {
 
 /**
  * Rules 6–8 (ADR-0008, D2): a fact comes from a note of its own customer; each field has either one
- * active fact or at least two in conflict; the birth year and gender in effect are the profile's,
- * from a `SYSTEM` note, and one in conflict from a `SYSTEM` note is the profile's too, which
- * resolving the conflict would confirm; a `SYSTEM` note holds nothing else. A birth date or gender
- * in the profile has such a fact, active or in conflict, as saving it records one (DR-07).
+ * active fact or at least two in conflict, of different values; the birth year and gender in effect
+ * are the profile's, from a `SYSTEM` note, and one in conflict from a `SYSTEM` note is the profile's
+ * too, which resolving the conflict would confirm; a `SYSTEM` note holds nothing else. A birth date
+ * or gender in the profile has such a fact, active or in conflict, as saving it records one (DR-07).
  */
 function kycRule(read: (sql: string) => Row[], customers: Row[]): Rule | null {
   const facts = read(
     'SELECT f.*, n.customer_id AS note_customer_id, n.source FROM kyc_facts f JOIN kyc_notes n ON n.id = f.note_id',
   );
   const byCustomer = new Map(customers.map((c) => [c.id, c]));
-  const counts = new Map<string, { active: number; conflict: number }>();
+  const counts = new Map<string, { active: number; conflict: unknown[] }>();
   const fromProfile = new Set<string>();
   for (const fact of facts) {
     if (fact.note_customer_id !== fact.customer_id) return 6;
     const key = `${String(fact.customer_id)}\n${String(fact.field)}`;
-    const count = counts.get(key) ?? { active: 0, conflict: 0 };
+    const count = counts.get(key) ?? { active: 0, conflict: [] };
     counts.set(key, count);
     const system = fact.source === 'SYSTEM';
     const profileField = fact.field === 'birthYear' || fact.field === 'gender';
     // A `SYSTEM` note holds only the profile's birth year and gender, whatever their status.
     if (system && !profileField) return 8;
     if (fact.status === 'superseded') continue;
-    count[fact.status as 'active' | 'conflict']++;
+    if (fact.status === 'active') count.active++;
+    // The value read, not its JSON text: `2.0` is 2 (the value checks found it normalised).
+    else count.conflict.push(JSON.parse(String(fact.value_json)));
     if (profileField && (fact.status === 'active' || system)) {
       const customer = byCustomer.get(fact.customer_id)!;
       const field = fact.field as 'birthYear' | 'gender';
@@ -333,8 +335,11 @@ function kycRule(read: (sql: string) => Row[], customers: Row[]): Rule | null {
     ),
   );
   if (missing) return 8;
+  // In conflict, each value differs from the others, as `markConflict` takes it (DR6-50).
   const settled = [...counts.values()].every(
-    ({ active, conflict }) => (active === 1 && conflict === 0) || (active === 0 && conflict >= 2),
+    ({ active, conflict }) =>
+      (active === 1 && conflict.length === 0) ||
+      (active === 0 && conflict.length >= 2 && new Set(conflict).size === conflict.length),
   );
   return settled ? null : 7;
 }
@@ -344,14 +349,13 @@ function profileOf(customer: Row): ProfileFields {
 }
 
 /**
- * Rule 9 (staff): only RE and TL belong to a team, deleted or not; a live person's team is live;
- * a team has at most one live TL (#223). A live TL of a deleted team breaks the second part, so
- * the third is counted over every team.
+ * Rule 9 (staff): a live person's team is live; a team has at most one live TL (#223). A live TL
+ * of a deleted team breaks the first part, so the second is counted over every team. That only RE
+ * and TL belong to a team, deleted or not, is a CHECK of the schema (DR6-52).
  */
 function staffRule(read: (sql: string) => Row[]): Rule | null {
   const broken = read(
     [
-      "SELECT 1 FROM people WHERE role NOT IN ('RE', 'TL') AND team_id IS NOT NULL",
       'SELECT 1 FROM people p JOIN teams t ON t.id = p.team_id WHERE p.deleted_at IS NULL AND t.deleted_at IS NOT NULL',
       "SELECT 1 FROM people WHERE role = 'TL' AND deleted_at IS NULL GROUP BY team_id HAVING COUNT(*) > 1",
     ].join(' UNION ALL '),
