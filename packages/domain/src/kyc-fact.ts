@@ -4,6 +4,7 @@
  */
 import type { KycCategory, KycField } from './kyc-catalog';
 import type { CalendarDate } from './period';
+import { isStorableText, normalizeText } from './text';
 
 /**
  * `active`: the latest confirmed value. `superseded`: replaced by a newer fact on the same trường,
@@ -36,14 +37,15 @@ export function kycFieldType(field: KycField): KycFieldType {
 
 /**
  * Review #36: values are compared only after taking the type of their trường; `"2"` for a number
- * trường is `2`. Text is composed (NFC) and trimmed. Throws a RangeError for a value the trường
- * cannot hold, and for text with a NUL, which is never stored.
+ * trường is `2`. Text is read as `normalizeText` stores it, so a value of invisible characters only
+ * is empty (DR6-49). Throws a RangeError for a value the trường cannot hold, and for text the
+ * database cannot store (`isStorableText`).
  */
 export function normalizeKycValue(field: KycField, value: KycValue): KycValue {
-  if (typeof value === 'string' && value.includes('\0')) {
-    throw new RangeError(`KYC value with a NUL for ${field}`);
+  if (typeof value === 'string' && !isStorableText(value)) {
+    throw new RangeError(`KYC value that cannot be stored for ${field}`);
   }
-  const text = typeof value === 'string' ? value.normalize('NFC').trim() : null;
+  const text = typeof value === 'string' ? normalizeText(value) : null;
   const type = kycFieldType(field);
   if (type === 'integer') {
     const number = text !== null && /^\d+$/.test(text) ? Number(text) : value;

@@ -4,7 +4,10 @@ import {
   formatDate,
   formatIsoDate,
   fromLocalDate,
+  isStorableText,
   MAX_FEE_VND,
+  normalizeNote,
+  normalizeText,
   type CalendarDate,
   type Vnd,
 } from '@p2c/domain';
@@ -16,12 +19,31 @@ import { DbError } from './errors';
 import { customers, people } from './schema';
 
 /**
- * Typed text as stored: composed (NFC), since typed Vietnamese may arrive decomposed and a name is
- * compared byte by byte, and trimmed. A NUL would cut the text where the database stores it (DR-49).
+ * One line of typed text as stored, `normalizeText` of domain: a name is compared as stored, so
+ * what the screens show the same is the same name (DR-49, DR6-49). Text the database could not
+ * store as it is — a NUL, a lone surrogate half — is `INVALID_TEXT`.
  */
 export function cleanText(text: string): string {
-  if (text.includes('\0')) throw new DbError('INVALID_TEXT');
-  return text.normalize('NFC').trim();
+  return normalizeText(storable(text));
+}
+
+/** A KYC note as stored: as `cleanText`, line by line, the line breaks kept (`normalizeNote`). */
+export function cleanNote(text: string): string {
+  return normalizeNote(storable(text));
+}
+
+function storable(text: string): string {
+  if (!isStorableText(text)) throw new DbError('INVALID_TEXT');
+  return text;
+}
+
+/**
+ * `value` when `list` holds it; else `INVALID_CHOICE`, not the raw CHECK error of the table
+ * (DR6-51).
+ */
+export function requireChoice<T extends string>(list: readonly T[], value: T): T {
+  if (!list.includes(value)) throw new DbError('INVALID_CHOICE');
+  return value;
 }
 
 export function requireName(name: string): string {

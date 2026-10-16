@@ -32,7 +32,7 @@ export type AppointmentCounts = Readonly<Record<AppointmentGroup | 'total', numb
 /**
  * Appointments of the period and scope by group (§1). Each appointment counts once, in the period
  * holding its own day, so every link of a reschedule chain counts on its own. The scope follows the
- * RE on the appointment; coordinators, even RE, never count.
+ * RE on the appointment; coordinators never count.
  *
  * `appointments` must be the live ones only, as the repository lists them: a deleted appointment
  * or one of a deleted customer is left out by the caller, never passed here.

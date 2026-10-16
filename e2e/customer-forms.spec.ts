@@ -312,6 +312,8 @@ test('refuses a customer with wrong fields and saves nothing', async ({ page }) 
   const dialog = await openCreate(page);
   const birth = dialog.getByRole('textbox', { name: /^Ngày sinh/ });
 
+  // DR6-49: a name of invisible characters only is empty, as the command reads it.
+  await dialog.getByRole('textbox', { name: 'Họ tên' }).fill('​ ⁠');
   await birth.fill('31/02/1984');
   await dialog.getByRole('button', { name: 'Lưu KH' }).click();
   await expect(dialog.getByRole('textbox', { name: 'Họ tên' })).toHaveAccessibleDescription(

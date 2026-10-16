@@ -250,6 +250,10 @@ describe('recordMeetingOutcome', () => {
     expect(
       codeOf(() => recordMeetingOutcome(db, id, { status: 'RESCHEDULED' as 'MET', ...{} })),
     ).toBe('INVALID_STATUS');
+    // DR6-51: a stage outside the list has a code, not the raw CHECK error of the table.
+    expect(
+      codeOf(() => recordMeetingOutcome(db, id, { ...MET_N2, stageAfter: 'N9' as 'N2' })),
+    ).toBe('INVALID_TRANSITION');
     expect(codeOf(() => recordMeetingOutcome(db, id, { ...MET_N2, expectedCaseSize: -1 }))).toBe(
       'INVALID_AMOUNT',
     );

@@ -2,9 +2,9 @@
  * Commands and reads for teams and people (spec §3.1–3.2, §4). Every command runs in one
  * transaction; a rejected command throws `DbError` and leaves the database untouched.
  */
-import { REVIEWER_ROLES, type Person, type PersonRole, type Team } from '@p2c/domain';
+import { PERSON_ROLES, REVIEWER_ROLES, type Person, type PersonRole, type Team } from '@p2c/domain';
 import { and, asc, eq, isNotNull, isNull, ne } from 'drizzle-orm';
-import { requireName, stampDeleted } from './common';
+import { requireChoice, requireName, stampDeleted } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { ulid } from './ids';
@@ -275,15 +275,16 @@ function reviewsLiveAppointment(db: Database, id: string): boolean {
 /** Checks a person's fields; `selfId` is the person being changed or restored, else null. */
 function validatePerson(db: Database, input: PersonInput, selfId: string | null): PersonInput {
   const name = requireName(input.name);
+  const role = requireChoice(PERSON_ROLES, input.role);
   if (input.teamId === null) {
-    if (ROLES_WITH_TEAM.includes(input.role)) throw new DbError('TEAM_REQUIRED');
-  } else if (!ROLES_WITH_TEAM.includes(input.role)) {
+    if (ROLES_WITH_TEAM.includes(role)) throw new DbError('TEAM_REQUIRED');
+  } else if (!ROLES_WITH_TEAM.includes(role)) {
     throw new DbError('TEAM_NOT_ALLOWED');
   } else {
     liveTeam(db, input.teamId);
-    if (input.role === 'TL') assertNoOtherLead(db, input.teamId, selfId);
+    if (role === 'TL') assertNoOtherLead(db, input.teamId, selfId);
   }
-  return { name, role: input.role, teamId: input.teamId };
+  return { name, role, teamId: input.teamId };
 }
 
 /** A team has at most one live TL (Owner, G3 01/10/2026). */

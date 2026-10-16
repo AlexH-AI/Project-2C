@@ -118,6 +118,36 @@ test('the day of a KYC note is checked on Lưu, not while it is typed (7a, DR6-3
   await expect(dialog).toBeHidden();
 });
 
+// DR6-49: a note or a value of invisible characters only is empty, said at its field as the
+// command reads it; the note keeps its line breaks (Owner 16/10/2026).
+test('a KYC note or value of invisible characters only is empty (7a)', async ({ page }) => {
+  await createCustomer(page);
+  await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
+  const dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${NAME}` });
+  const note = dialog.getByRole('textbox', { name: 'Ghi chú' });
+
+  await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Nơi sinh sống' });
+  await dialog.getByRole('textbox', { name: 'Giá trị' }).fill('​⁠');
+  await dialog.getByRole('button', { name: 'Thêm dữ kiện' }).click();
+  await expect(dialog.getByRole('alert')).toHaveText('Nhập giá trị.');
+  await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Chọn trường' });
+
+  await note.fill('​\n ');
+  await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
+  await expect(note).toHaveAccessibleDescription(
+    'Mỗi dữ kiện phải gắn với một ghi chú có nội dung: nhập ghi chú.',
+  );
+
+  await note.fill('Đã kết hôn,  2 con\nChủ DN');
+  await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
+  await expect(dialog).toBeHidden();
+  const saved = page
+    .getByRole('region', { name: 'Dòng thời gian' })
+    .getByRole('listitem')
+    .filter({ hasText: /Ghi chú KYC/ });
+  expect(await saved.innerText()).toContain('Đã kết hôn, 2 con\nChủ DN');
+});
+
 test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it is resolved', async ({
   page,
 }) => {

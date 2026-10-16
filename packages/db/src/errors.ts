@@ -1,8 +1,13 @@
 /** Errors a command rejects with; the UI maps each code to an i18n message (spec §4). */
 export const DB_ERROR_CODES = [
   'NAME_REQUIRED',
-  /** Text with a NUL character, which the database would cut it at (DR-49). */
+  /**
+   * Text the database cannot store as it is: a NUL, which it would cut the text at (DR-49), or a
+   * lone surrogate half, which it would store as U+FFFD (DR6-49).
+   */
   'INVALID_TEXT',
+  /** A gender or a role outside its list: a bug of the caller, the screens offer only the list. */
+  'INVALID_CHOICE',
   /** Params `name` when the team is deleted (spec Phase 6 TR-1). */
   'TEAM_NOT_FOUND',
   /** Params `name`. */

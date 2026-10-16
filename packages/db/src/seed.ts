@@ -596,7 +596,6 @@ function personName(rng: Rng): string {
   return `${rng.pick(FAMILY_NAMES)} ${rng.pick(MIDDLE_NAMES)} ${rng.pick(GIVEN_NAMES)}`;
 }
 
-/** Most customers gave a full birth date, some only the year, a few nothing yet (spec §3.3). */
 /**
  * A customer's birth year: 26 to 66 years before the anchor's year (1960–2000 for 2026); null
  * when it would fall before 1900, as near the app's first day (DR-35).
@@ -608,6 +607,7 @@ function birthYears(rng: Rng, anchorYear: number): () => number | null {
   };
 }
 
+/** Most customers gave a full birth date, some only the year, a few nothing yet (spec §3.3). */
 function profile(
   rng: Rng,
   born: () => number | null,
