@@ -172,7 +172,7 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 
 ## RESOLVED
 
-- Ghi chú review #642 (T-244) `CLAUDE.md:49` và `.claude/rules/ci.md` tả cổng merge cũ (theo lúc CI bắt đầu) — PR docs sau #645: hai chỗ tả cổng `Tested base` (notice của job Verify, Re-run giữ nguyên; chặn khi `main` có code sau SHA đó, hoặc khi run không có notice).
+- Ghi chú review #642 (T-244) `CLAUDE.md:49` và `.claude/rules/ci.md` tả cổng merge cũ (theo lúc CI bắt đầu) — PR #646: hai chỗ tả cổng `Tested base` (notice của job Verify, Re-run giữ nguyên; chặn khi `main` có code sau SHA đó, hoặc khi run không có notice).
 - Ba ghi chú test — T-245 (#644, review @`393ad72`): e2e OpenCode ACCEPTED ở lần thử lại chỉ quét `messages[*].content` (cả tên và mã KH), hết đỏ ngẫu nhiên khi `sessionId` chứa "1984" (#524, `e2e/customer-ai.spec.ts`); comment DR-15 ở `packages/db/src/test-support.ts` ghi đúng khoảng bảo đảm UTC−11…+12 (#539; ca TR-5 xem ACCEPTED); bảng so sánh probe in `(—)` khi nền bằng 0 (#572, `e2e/perf/stats.ts`).
 - NIT #87 (DR6-09) — T-234 (#620): lần mở đầu xóa `backups\project2c-s*.db.tmp` sót (cùng chỗ dọn `exports\`); `temp_dir()` của test Rust trả `TempDir` tự xóa khi `Drop`.
 - Năm ghi chú "sửa trước lượt nghiệm thu 6D" — T-228 (#585): ba ghi chú review PR #578 (T-221) ở `docs/testing/nghiem-thu-v1.md`: NT-TR-13 chỉ xem nút Khôi phục… của KH Thử, không khôi phục (để NT-TR-15 xóa được RE Thử); NT-CA-09 sửa model đang lưu trong dòng `"key":"ai"`; NT-DB-03 ghi rõ bấm X lúc "Đang nhập…" đóng ngay, không chờ (S2-6). Hai ghi chú review PR #580 (T-227): NT-HN-01 bỏ "#574", trỏ tới ngưỡng mới; `docs/metrics/phase-6.md` mục "Mở app lần đầu, đo lại" ghi số tham chiếu cho lượt 2 (Home PC, LCP, Phase 4 max 3 937 ms → xấu hơn khi > 4 724 ms).
