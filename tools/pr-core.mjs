@@ -10,6 +10,10 @@ const LEVELS = ['low', 'med', 'high'];
 export const prList = (numbers) => numbers.map((n) => `#${n}`).join(', ');
 // Job name in .github/workflows/ci.yml, run only for PRs labelled build-exe.
 const EXE_CHECK = 'Build portable exe';
+// The Verify job of ci.yml and the title of the notice it writes with the base it tested: the
+// first parent of the PR's merge commit, which a re-run keeps from its first run (DR6-57).
+export const VERIFY_CHECK = 'Verify (lint, typecheck, unit, boundaries)';
+export const TESTED_BASE = 'Tested base';
 
 // Package CLAUDE.md files hold the export map that `pnpm verify` checks (tools/codemap.mjs),
 // so a change to them is code (part of CODE_DOCS below). Same order as
@@ -47,6 +51,21 @@ export const REVIEW_NOTES = 'docs/state/review-notes.md';
 /** True when the PR only writes the review notes ledger, so needs no REVIEW. */
 export const isNotesOnly = (paths) => paths.length > 0 && paths.every((p) => p === REVIEW_NOTES);
 
+/**
+ * The PR's file paths, whether all `changedFiles` were read, and docs-only / notes-only: never
+ * when some were not, as a file not read may be code (DR6-57).
+ */
+export function prFiles(pr) {
+  const paths = pr.files.map((f) => f.path);
+  const complete = paths.length === pr.changedFiles;
+  return {
+    paths,
+    complete,
+    docsOnly: complete && isDocsOnly(paths),
+    notesOnly: complete && isNotesOnly(paths),
+  };
+}
+
 // Files whose change needs the exe job, so the build-exe label (CLAUDE.md step 5): Rust,
 // toolchain, dependencies, build configuration.
 const EXE_PATHS = [
@@ -62,10 +81,16 @@ const EXE_PATHS = [
 /** True when a change to `path` must go through the exe job (label build-exe). */
 export const needsExe = (path) => EXE_PATHS.some((re) => re.test(path));
 
-/** When the PR's CI started: the earliest `startedAt` among its checks, null when none has one. */
-export function ciStartedAt(rollup) {
-  const starts = rollup.map((c) => c.startedAt).filter(Boolean);
-  return starts.length ? starts.reduce((a, b) => (Date.parse(b) < Date.parse(a) ? b : a)) : null;
+/** The check run id of the head's Verify job, from its link (`…/job/<id>`); null when none. */
+export function verifyRunId(rollup) {
+  const verify = rollup.find((c) => c.name === VERIFY_CHECK);
+  return verify?.detailsUrl?.match(/\/job\/(\d+)/)?.[1] ?? null;
+}
+
+/** The SHA of the TESTED_BASE notice among a check run's annotations; null when none is whole. */
+export function testedBaseOf(annotations) {
+  const sha = annotations.find((a) => a.title === TESTED_BASE)?.message?.trim();
+  return /^[0-9a-f]{40}$/.test(sha ?? '') ? sha : null;
 }
 
 /** The higher of the PR's risk:* label and the level the REVIEW ran at (a review only raises it). */
@@ -98,19 +123,27 @@ export function mergeSteps(pr, { owner, mode }) {
 
 /**
  * Every reason merge-pr must not merge the PR; empty means it may.
- * `pr` is `gh pr view --json` output; `ctx` is { owner, mode: 'squash'|'merge',
- * stacked: numbers of open PRs based on this branch, baseMerged: when base is not main,
- * mainSince: the base's commits not in the head, as [{ sha, date, files }] }.
+ * `pr` is `gh pr view --json` output with `files` read in full (REST); `ctx` is { owner,
+ * mode: 'squash'|'merge', stacked: numbers of open PRs based on this branch, baseMerged: when
+ * base is not main, testedBase: the SHA of the base CI tested (TESTED_BASE), null when unknown,
+ * mainSince: the base's commits since testedBase, as [{ sha, files }] }.
  */
-export function mergeBlockers(pr, { owner, mode, stacked, baseMerged, mainSince = [] }) {
+export function mergeBlockers(
+  pr,
+  { owner, mode, stacked, baseMerged, testedBase, mainSince = [] },
+) {
   const blockers = [];
   if (pr.state !== 'OPEN') blockers.push(`PR is ${pr.state}, not open.`);
   if (pr.isDraft) blockers.push('PR is a draft.');
 
   const review = latestReview(pr.comments);
   const head = pr.headRefOid.slice(0, 7);
-  const paths = pr.files.map((f) => f.path);
-  if (isNotesOnly(paths)) {
+  const { paths, complete, docsOnly, notesOnly } = prFiles(pr);
+  if (!complete)
+    blockers.push(
+      `Read ${paths.length} of the ${pr.changedFiles} files of the PR: check them by hand.`,
+    );
+  if (notesOnly) {
     // The review notes ledger alone needs no REVIEW (REVIEW_NOTES).
   } else if (!review)
     blockers.push('No REVIEW comment yet: review it in a clean session (review-pr).');
@@ -122,23 +155,26 @@ export function mergeBlockers(pr, { owner, mode, stacked, baseMerged, mainSince 
       `REVIEW: PASS is for ${review.sha} but head is ${head}: review again in a clean session (P-1).`,
     );
 
-  if (!isDocsOnly(paths)) {
+  if (!docsOnly) {
     const rollup = pr.statusCheckRollup ?? [];
     const { pass, fail, pending } = checkCounts(rollup);
+    const base = pr.baseRefName;
     if (pass + fail + pending === 0) blockers.push(`Code PR with no CI check on head ${head}.`);
     else if (fail || pending)
       blockers.push(`CI not green on head ${head}: ${fail} failed, ${pending} pending.`);
+    else if (!testedBase)
+      blockers.push(
+        `CI on head ${head} noted no tested ${base} ("${TESTED_BASE}" of the Verify job): gh pr close ${pr.number} + gh pr reopen ${pr.number} so CI runs again.`,
+      );
 
-    // CI tested the head merged with the base as it was then; code merged since was never
+    // CI tested the head merged with the base at testedBase, not with the base as it was when the
+    // run started: a re-run keeps the merge of its first run (DR6-57). Code merged since was never
     // tested with this PR, and a push to main only builds the exe (DR-80).
-    const started = ciStartedAt(rollup);
-    const untested = mainSince.filter(
-      (c) => started && Date.parse(c.date) > Date.parse(started) && !isDocsOnly(c.files),
-    );
+    const untested = mainSince.filter((c) => !isDocsOnly(c.files));
     if (untested.length) {
       const shas = untested.map((c) => c.sha.slice(0, 7)).join(', ');
       blockers.push(
-        `main got code after CI started on head ${head} (${shas}): gh pr update-branch ${pr.number}, wait for CI, then review the new head again (P-1).`,
+        `${base} got code since ${testedBase.slice(0, 7)}, the ${base} CI tested on head ${head} (${shas}): gh pr update-branch ${pr.number}, wait for CI, then review the new head again (P-1).`,
       );
     }
 

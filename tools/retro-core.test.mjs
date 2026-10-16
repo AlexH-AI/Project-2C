@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { join, resolve, sep } from 'node:path';
 import { URL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
@@ -7,6 +8,7 @@ import {
   median,
   parseTranscript,
   projectDirName,
+  projectRoots,
   sessionStats,
   transcriptDirs,
 } from './retro-core.mjs';
@@ -152,6 +154,18 @@ describe('project directories', () => {
       'C--workspace-Project-2CX',
     ];
     expect(transcriptDirs(names, 'C--workspace-Project-2C')).toEqual(names.slice(0, 4));
+  });
+
+  it('reads the config folder in use (CLAUDE_CONFIG_DIR) and ~/.claude, once each (DR6-58)', () => {
+    const home = resolve('/Users/a');
+    const claude = join(home, '.claude', 'projects');
+    expect(projectRoots({ CLAUDE_CONFIG_DIR: join(home, '.claude-b') }, home)).toEqual([
+      join(home, '.claude-b', 'projects'),
+      claude,
+    ]);
+    for (const dir of [undefined, '', join(home, '.claude') + sep]) {
+      expect(projectRoots({ CLAUDE_CONFIG_DIR: dir }, home), String(dir)).toEqual([claude]);
+    }
   });
 });
 

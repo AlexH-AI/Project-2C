@@ -10,6 +10,7 @@ import {
   takeAnalysisInput,
 } from '../packages/ai/src/index.ts';
 import { extractionPrompt } from '../packages/ai/src/prompts/extraction.ts';
+import { CUT_ANSWER } from '../packages/ai/src/validator.ts';
 import { calendarDate } from '../packages/domain/src/period.ts';
 import {
   evalMain,
@@ -37,7 +38,31 @@ const http = (status, body) => new Response(body, { status });
 const ok = (body) => http(200, JSON.stringify(body));
 const reply = (content, usage = { prompt_tokens: 100, completion_tokens: 40 }) =>
   ok({ choices: [{ message: { content } }], usage });
+/** A 2xx with no content, `max_tokens` spent before the model wrote (R2-16). */
+const cutBeforeContent = () =>
+  ok({ choices: [{ message: { content: null }, finish_reason: 'length' }] });
 const MB = 1024 * 1024;
+
+/** The ways a secret is written as Rust's tests write them (`ai.rs`): each byte as a URL `%XX`. */
+const percent = (text, upper = true) => {
+  const hex = [...Buffer.from(text)].map((byte) => `%${byte.toString(16).padStart(2, '0')}`);
+  return (upper ? hex.map((byte) => byte.toUpperCase()) : hex).join('');
+};
+/** Each character as a JSON `\uXXXX` escape. */
+const escaped = (text, upper = false) =>
+  [...text]
+    .map((c) => {
+      const hex = c.charCodeAt(0).toString(16).padStart(4, '0');
+      return `\\u${upper ? hex.toUpperCase() : hex}`;
+    })
+    .join('');
+/** URL-encoded with each `%` then written as a JSON escape, or the reverse (DR6-10). */
+const twoLayers = (secret) => [
+  percent(secret).replaceAll('%', '\\u0025'),
+  escaped(secret).replaceAll('\\', '%5C'),
+];
+/** A 2xx whose content is the JSON text `{"note":"<note>"}`, `note` written as it is. */
+const answer = (note) => reply(`{"note":"${note}"}`);
 
 /** A fetch that answers every call as Mock would, with token counts. */
 const mockFetch = () => {
@@ -266,17 +291,99 @@ describe('openCodeAdapter', () => {
       content: 'x',
       promptTokens: 100,
       completionTokens: 40,
+      finishReason: null,
     });
     for (const usage of [null, { prompt_tokens: -7, completion_tokens: 1.5 }]) {
       await expect(adapter(async () => reply('y', usage)).complete(request)).resolves.toEqual({
         content: 'y',
         promptTokens: null,
         completionTokens: null,
+        finishReason: null,
       });
     }
   });
 
   const fails = (response) => adapter(async () => response).complete(request);
+
+  it('passes finish_reason on as Rust: only a short word, never the key (DR6-56)', async () => {
+    const finish = (reason, key = KEY) =>
+      openCodeAdapter({
+        url: PLAN_URLS.GO,
+        key,
+        userAgent: 'ua',
+        fetch: async () => ok({ choices: [{ message: { content: 'x' }, finish_reason: reason }] }),
+      })
+        .complete(request)
+        .then((completion) => completion.finishReason);
+    for (const word of ['stop', 'length', 'content_filter', 'a'.repeat(32)]) {
+      expect(await finish(word), word).toBe(word);
+    }
+    for (const reason of [
+      KEY,
+      `stop ${KEY}`,
+      'a'.repeat(33),
+      '',
+      'Stop',
+      'stop\n',
+      'end_turn2',
+      7,
+    ]) {
+      expect(await finish(reason), String(reason)).toBeNull();
+    }
+    // A key that is itself a short word stays out too.
+    expect(await finish('stop', 'stop')).toBeNull();
+  });
+
+  it('reads an answer cut before any content as an empty cut one, as Rust (R2-16)', async () => {
+    const cut = { content: '', promptTokens: null, completionTokens: null, finishReason: 'length' };
+    await expect(fails(cutBeforeContent())).resolves.toEqual(cut);
+    const bare = ok({ choices: [{ message: {}, finish_reason: 'length' }] });
+    await expect(fails(bare)).resolves.toEqual(cut);
+    for (const choice of [
+      { message: { content: null }, finish_reason: 'stop' },
+      { message: { content: null } },
+      { message: { content: 42 }, finish_reason: 'length' },
+    ]) {
+      await expect(fails(ok({ choices: [choice] }))).rejects.toMatchObject({
+        code: 'AI_BAD_RESPONSE',
+      });
+    }
+  });
+
+  it('refuses an answer that holds the key, as it is or escaped, as Rust (DR6-55)', async () => {
+    const slashed = 'sk-Probe+Key/a=';
+    const odd = String.raw`sk-a\nb%41c\/d`;
+    for (const [note, key] of [
+      [KEY, KEY],
+      [`Bearer ${KEY} được gửi`, KEY],
+      [odd, odd],
+      [percent(KEY), KEY],
+      [percent(KEY, false), KEY],
+      [escaped(KEY), KEY],
+      [escaped(KEY, true), KEY],
+      [`sk-${escaped('test')}-0123456789abcdef`, KEY],
+      [String.raw`sk-Probe+Key\/a=`, slashed],
+      ...twoLayers(KEY).map((text) => [text, KEY]),
+    ]) {
+      const call = openCodeAdapter({
+        url: PLAN_URLS.GO,
+        key,
+        userAgent: 'ua',
+        fetch: async () => answer(note),
+      }).complete(request);
+      await expect(call, note).rejects.toMatchObject({ code: 'AI_BAD_RESPONSE' });
+    }
+    // Other escapes are a normal answer, as is a piece of the key or the key behind an escaped
+    // backslash, which `JSON.parse` leaves as text.
+    for (const note of [
+      String.raw`Anh ${escaped('Đức')}, \/ \"VIP\" \\ \n`,
+      escaped(KEY.slice(0, 10)),
+      `\\\\${escaped(KEY).replace('\\u', 'u')}`,
+      percent(KEY).replaceAll('%', '\\\\u0025'),
+    ]) {
+      await expect(fails(answer(note)), note).resolves.toMatchObject({ finishReason: null });
+    }
+  });
 
   it('maps HTTP statuses as Rust does, with the server message and the key masked', async () => {
     const cases = [
@@ -316,6 +423,42 @@ describe('openCodeAdapter', () => {
     const error = await fails(http(502, body)).catch((e) => e);
     expect(Array.from(error.serverMessage)).toHaveLength(200);
     expect(error.serverMessage.startsWith('<html>***x')).toBe(true);
+  });
+
+  it('masks the key and the session in URL and JSON escapes too, as Rust (DR6-55)', async () => {
+    const message = async (text, key = KEY) => {
+      const body = JSON.stringify({ error: { message: text } });
+      const call = openCodeAdapter({
+        url: PLAN_URLS.GO,
+        key,
+        userAgent: 'ua',
+        fetch: async () => http(401, body),
+      }).complete(request);
+      return (await call.catch((error) => error)).serverMessage;
+    };
+    const [jsonOfUrl, urlOfJson] = twoLayers(KEY);
+    for (const [text, masked] of [
+      [`key=${percent(KEY)}&x=1`, 'key=***&x=1'],
+      [`key=${percent(KEY, false)}`, 'key=***'],
+      [`session ${percent('abc123')} gone`, 'session *** gone'],
+      [`Bearer ${escaped(KEY)} sent`, 'Bearer *** sent'],
+      [`${escaped('abc123', true)}/${percent(KEY)}`, '***/***'],
+      [`${KEY} and ${percent(KEY, false)}`, '*** and ***'],
+      [`bad ${jsonOfUrl}!`, 'bad ***!'],
+      [`bad ${urlOfJson}!`, 'bad ***!'],
+    ]) {
+      expect(await message(text), text).toBe(masked);
+    }
+    const odd = String.raw`sk-a\nb%41c\/d`;
+    expect(await message(`bad ${odd}!`, odd)).toBe('bad ***!');
+    // Only the whole of a secret: other escapes, and pieces of the key, stay as they are.
+    for (const text of [
+      'Quota%20exceeded, retry in 10%',
+      String.raw`path C:\users\new \u00`,
+      percent(KEY.slice(0, 10)),
+    ]) {
+      expect(await message(text), text).toBe(text);
+    }
   });
 
   it('gives AI_BAD_RESPONSE for an unreadable or too long reply', async () => {
@@ -528,6 +671,33 @@ describe('runEval', () => {
     ]);
     const retry = JSON.parse(fetch.mock.calls[1][1].body).messages.at(-1).content;
     expect(retry).toContain('V1 tại discoveryStrategy');
+  });
+
+  it('retries an answer cut before any content as the app does, then accepts (DR6-56)', async () => {
+    const mock = mockFetch();
+    let calls = 0;
+    const fetch = vi.fn(async (url, init) => {
+      calls += 1;
+      return calls === 1 || calls === 3 ? cutBeforeContent() : mock(url, init);
+    });
+    const adapter = openCodeAdapter({ url: PLAN_URLS.GO, key: KEY, userAgent: 'ua', fetch });
+    const { profiles, notes } = await runEval({
+      adapter,
+      settings,
+      now: clock(),
+      log: () => {},
+      profileSpecs: EVAL_PROFILES.slice(0, 1),
+      noteSpecs: EVAL_NOTES.slice(0, 1),
+    });
+    for (const done of [profiles[0], notes[0]]) {
+      expect(done.status, done.id).toMatch(/^(ACCEPTED|OK)$/);
+      expect(
+        done.attempts.map((a) => a.issues),
+        done.id,
+      ).toEqual([[CUT_ANSWER], []]);
+      expect(done.attempts[0]).toMatchObject({ missingBlocks: [], completionTokens: null });
+    }
+    expect(fetch).toHaveBeenCalledTimes(4);
   });
 
   it('does not count a block of the wrong type as a missing block', async () => {
@@ -994,6 +1164,21 @@ describe('evalMain', () => {
     const other = deps({ argv: ['--model', 'kimi-k3'] });
     await evalMain(other);
     expect([...other.files.files.keys()]).toEqual(['docs/metrics/ai-eval-2026-10-12-kimi-k3.md']);
+  });
+
+  it('writes no answer that holds the key, in any form, to a file or the output (DR6-55)', async () => {
+    const forms = [KEY, escaped(KEY), percent(KEY), ...twoLayers(KEY)];
+    const fetch = vi.fn(async () => answer(forms[fetch.mock.calls.length % forms.length]));
+    const d = deps({ fetch });
+    expect(await evalMain(d)).toBe(0);
+    const results = d.files.files.get(RESULT);
+    expect(results).toContain('| E01 | discovery | LỖI `AI_BAD_RESPONSE` | 1 |');
+    expect(results).toContain('| A1 | Hồ sơ ACCEPTED trong ≤ 2 lần thử | 0/20 |');
+    const written = [...d.files.write.mock.calls.map(([, text]) => text), results];
+    const logged = d.log.mock.calls.map(([line]) => line);
+    for (const text of [...written, ...logged]) {
+      for (const form of forms) expect(text).not.toContain(form);
+    }
   });
 
   it('prints the result when the file cannot be written, so a paid run is not lost', async () => {

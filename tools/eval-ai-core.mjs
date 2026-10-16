@@ -1,9 +1,11 @@
 /* global AbortSignal, Buffer */
 // The AI eval of docs/golden/ai-eval.md (T-171 #413, spec Phase 5 §11), run by
 // tools/eval-ai.mjs. Calls OpenCode as the Rust command `ai_complete` does (same URLs, headers,
-// body, status codes) and the app's own flow from @p2c/ai (gate → prompt → validator → one
-// retry). The key is only ever sent in the Authorization header: it is masked out of server
-// messages and never written to the output or the result file.
+// body, status codes, reading of the reply) and the app's own flow from @p2c/ai (gate → prompt →
+// validator → one retry). The key is only ever sent in the Authorization header. As in Rust, a
+// reply that holds it (as it is, in JSON escapes or a URL's `%XX`) is `AI_BAD_RESPONSE`, and it is
+// masked out of server messages in any of those forms, so it never reaches the output, the
+// `.partial` file or the result file (DR6-55).
 //
 // Everything here takes its I/O as arguments (fetch, clock, file system), so it is unit-tested in
 // eval-ai-core.test.mjs without the network.
@@ -41,6 +43,8 @@ const TIMEOUT_MS = 120_000;
 const MAX_BODY = 2 * 1024 * 1024;
 /** The most of the server's error message kept, in characters, as Rust cuts it. */
 const MAX_SERVER_MESSAGE = 200;
+/** A `finish_reason` passed on: a word of lowercase letters and `_`, as Rust's `is_finish_word`. */
+const FINISH_WORD = /^[a-z_]{1,32}$/;
 /** Errors after which every later call fails the same way. */
 const FATAL = new Set(['AI_UNAUTHORIZED', 'AI_RATE_LIMITED']);
 
@@ -78,6 +82,87 @@ export function readConfig(env, argv) {
   return { key, plan, url: PLAN_URLS[plan], ...options };
 }
 
+// ---- the key in a reply, read as Rust's `reveals` and `mask` read it (DR6-10, DR6-55) ----------
+
+/** JSON's escapes (`\uXXXX`, `\"`, `\\`, `\/`, `\n`…), a URL's `%XX`, or both, as Rust's `Escapes`. */
+const ESCAPES = {
+  json: /\\u[0-9a-fA-F]{4}|\\["\\/bfnrt]/g,
+  url: /%[0-9a-fA-F]{2}/g,
+  both: /\\u[0-9a-fA-F]{4}|\\["\\/bfnrt]|%[0-9a-fA-F]{2}/g,
+};
+
+/** The character of an escape; a `%XX` is a byte, so `%C4%83` gives two (the secrets are ASCII). */
+const decode = (escape) =>
+  escape[0] === '%'
+    ? String.fromCharCode(Number.parseInt(escape.slice(1), 16))
+    : JSON.parse(`"${escape}"`);
+
+/**
+ * One pass over a reading, from the left as `JSON.parse` reads: each escape `pattern` finds gives
+ * the character it stands for, which comes from the whole escape; the rest is kept (Rust's
+ * `unescape`). A reading is a `text` and, for each of its UTF-16 units, the `start` and `end` of
+ * the part of the first text it came from.
+ */
+function unescape(reading, pattern) {
+  const out = { text: '', start: [], end: [] };
+  let kept = 0;
+  const keep = (to) => {
+    out.text += reading.text.slice(kept, to);
+    for (let i = kept; i < to; i += 1) {
+      out.start.push(reading.start[i]);
+      out.end.push(reading.end[i]);
+    }
+  };
+  for (const { 0: escape, index } of reading.text.matchAll(pattern)) {
+    keep(index);
+    out.text += decode(escape);
+    out.start.push(reading.start[index]);
+    out.end.push(reading.end[index + escape.length - 1]);
+    kept = index + escape.length;
+  }
+  keep(reading.text.length);
+  return out;
+}
+
+/**
+ * The ways `text` may give a secret away, as Rust's `readings`: as it is; with JSON's escapes and
+ * a URL's `%XX` undone in one pass; and in two passes, JSON's then the URL's or the reverse. Never
+ * two passes of JSON: the app parses an answer once.
+ */
+function readings(text) {
+  const units = Array.from({ length: text.length }, (_, i) => i);
+  const plain = { text, start: units, end: units.map((i) => i + 1) };
+  return [
+    plain,
+    unescape(plain, ESCAPES.both),
+    unescape(unescape(plain, ESCAPES.json), ESCAPES.url),
+    unescape(unescape(plain, ESCAPES.url), ESCAPES.json),
+  ];
+}
+
+/** Whether `text` holds `key` in one of its readings. */
+const reveals = (text, key) =>
+  key !== '' && readings(text).some((reading) => reading.text.includes(key));
+
+/** `text` with each whole `secret` replaced by `***`, in any of its readings, as Rust's `mask`. */
+function mask(text, secret) {
+  const found = [];
+  for (const { text: read, start, end } of readings(text)) {
+    for (let at = read.indexOf(secret); at !== -1; at = read.indexOf(secret, at + secret.length)) {
+      found.push([start[at], end[at + secret.length - 1]]);
+    }
+  }
+  found.sort(([a], [b]) => a - b);
+  let masked = '';
+  let copied = 0;
+  for (const [from, to] of found) {
+    // One that overlaps the last one masked (another reading of it) is masked with it.
+    if (from >= copied) masked += `${text.slice(copied, from)}***`;
+    copied = Math.max(copied, to);
+  }
+  return masked + text.slice(copied);
+}
+
 /**
  * The server's error message as Rust reads it (spec §5.3): only `error.message`, `error` or
  * `message` of a JSON body, never the body as it is; the secrets masked before the cut to 200
@@ -96,7 +181,7 @@ function serverMessage(text, secrets) {
   if (message === undefined) return undefined;
   const masked = secrets
     .filter((secret) => secret !== '')
-    .reduce((masking, secret) => masking.replaceAll(secret, '***'), message.trim());
+    .reduce((masking, secret) => mask(masking, secret), message.trim());
   const cut = Array.from(masked).slice(0, MAX_SERVER_MESSAGE).join('');
   return cut === '' ? undefined : cut;
 }
@@ -123,8 +208,8 @@ async function readBody(response) {
 const transportError = (error) =>
   new AiError(error?.name === 'TimeoutError' ? 'AI_TIMEOUT' : 'AI_NETWORK');
 
-/** A reply as Rust's `reply` reads it, the `secrets` masked out of the server's message. */
-function readReply(status, bytes, secrets) {
+/** A reply as Rust's `reply` reads it, `key` and `session` masked out of the server's message. */
+function readReply(status, bytes, key, session) {
   if (!isOk(status)) {
     const code =
       status === 401 || status === 403
@@ -132,29 +217,36 @@ function readReply(status, bytes, secrets) {
         : status === 402 || status === 429
           ? 'AI_RATE_LIMITED'
           : 'AI_HTTP';
-    const message = serverMessage(bytes.toString('utf8'), secrets);
+    const message = serverMessage(bytes.toString('utf8'), [key, session]);
     throw new AiError(code, { httpStatus: status, ...(message && { serverMessage: message }) });
   }
   if (bytes.length > MAX_BODY) throw new AiError('AI_BAD_RESPONSE');
-  let content;
-  let usage;
+  let reply;
   try {
-    const reply = JSON.parse(bytes.toString('utf8'));
-    content = reply?.choices?.[0]?.message?.content;
-    usage = reply?.usage;
+    reply = JSON.parse(bytes.toString('utf8'));
   } catch {
     throw new AiError('AI_BAD_RESPONSE');
   }
-  if (typeof content !== 'string') throw new AiError('AI_BAD_RESPONSE');
+  const choice = reply?.choices?.[0];
+  const reason = choice?.finish_reason;
+  // No content at all, cut by `max_tokens` (a reasoning model that spent them all): an empty
+  // answer that says `length`, which the app reads as cut (R2-16, DR6-56).
+  const content = choice?.message?.content ?? (reason === 'length' ? '' : undefined);
+  // The key never reaches the app, nor here the output or the result file (DR6-55).
+  if (typeof content !== 'string' || reveals(content, key)) throw new AiError('AI_BAD_RESPONSE');
   // A count, or `null` as Rust's `as_u64` gives for anything else (missing, negative, a fraction).
   const tokens = (name) => {
-    const count = usage?.[name];
+    const count = reply?.usage?.[name];
     return Number.isSafeInteger(count) && count >= 0 ? count : null;
   };
   return {
     content,
     promptTokens: tokens('prompt_tokens'),
     completionTokens: tokens('completion_tokens'),
+    finishReason:
+      typeof reason === 'string' && FINISH_WORD.test(reason) && !reveals(reason, key)
+        ? reason
+        : null,
   };
 }
 
@@ -194,7 +286,7 @@ export function openCodeAdapter({ url, key, userAgent, fetch }) {
         if (isOk(response.status)) throw transportError(error);
         bytes = Buffer.alloc(0);
       }
-      return readReply(response.status, bytes, [key, sessionId]);
+      return readReply(response.status, bytes, key, sessionId);
     },
   };
 }
@@ -209,8 +301,8 @@ export function factLine(input) {
 }
 
 /** Top-level blocks the answer left out that V1 asked for (#413: apart from other V1 issues). */
-function missingBlocks(content, issues) {
-  const json = extractJson(content);
+function missingBlocks(content, cut, issues) {
+  const json = extractJson(content, { cut });
   const parsed = json.found ? json.value : null;
   if (parsed === null || typeof parsed !== 'object') return [];
   return issues
@@ -219,8 +311,8 @@ function missingBlocks(content, issues) {
 }
 
 /**
- * An adapter that keeps each call of the current conversation: its answer (tokens, content), or
- * `{ failed }` with the code of a call that failed, which counts as an attempt too.
+ * An adapter that keeps each call of the current conversation: its answer (content, tokens, finish
+ * reason), or `{ failed }` with the code of a call that failed, which counts as an attempt too.
  */
 function recording(adapter) {
   const calls = [];
@@ -248,23 +340,25 @@ const errorOf = ({ code, httpStatus, serverMessage, message }) => ({
   ...(message !== undefined && { message }),
 });
 
+/** Each call as an attempt; `issuesOf(content, cut, i)`, `cut` when `maxTokens` cut it, as the app. */
 function attemptsOf(calls, issuesOf) {
-  return calls.map(({ failed, content, promptTokens, completionTokens }, i) => {
+  return calls.map(({ failed, content, finishReason, promptTokens, completionTokens }, i) => {
     if (failed !== undefined) {
       return { failed, issues: [], missingBlocks: [], promptTokens: null, completionTokens: null };
     }
-    const issues = issuesOf(content, i);
+    const cut = finishReason === 'length';
+    const issues = issuesOf(content, cut, i);
     return {
       issues,
-      missingBlocks: missingBlocks(content, issues),
+      missingBlocks: missingBlocks(content, cut, issues),
       promptTokens,
       completionTokens,
     };
   });
 }
 
-const extractionIssues = (content) =>
-  checkAnswer(content, (parsed) => validateOutput('extraction', parsed)).issues;
+const extractionIssues = (content, cut) =>
+  checkAnswer(content, (parsed) => validateOutput('extraction', parsed), cut).issues;
 
 /** Text as V7 reads a quote (NFC, white space collapsed: `validator.ts`), in lower case. */
 const fold = (text) => String(text).normalize('NFC').replace(/\s+/gu, ' ').toLowerCase();
@@ -367,7 +461,7 @@ export async function runEval({
     let done;
     if (result.kind === 'record') {
       const { row } = result;
-      const attempts = attemptsOf(record.calls, (_, i) => row.validator[i].errors);
+      const attempts = attemptsOf(record.calls, (_, __, i) => row.validator[i].errors);
       done = {
         ...base,
         status: row.status,
@@ -380,7 +474,7 @@ export async function runEval({
       // An answer before the error was checked as the app does it, but `row` is gone.
       const attempts = attemptsOf(
         record.calls,
-        (content) => checkAnalysisAnswer(input, content).issues,
+        (content, cut) => checkAnalysisAnswer(input, content, cut).issues,
       );
       done = { ...base, status: 'ERROR', error: errorOf(result), attempts, ms };
     }

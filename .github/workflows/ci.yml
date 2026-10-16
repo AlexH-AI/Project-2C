@@ -58,6 +58,15 @@ jobs:
       build-exe: ${{ steps.labels.outputs.build-exe }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # The base this run tests: the first parent of the PR's merge commit, which a re-run of the
+      # run keeps. merge-pr reads this notice (TESTED_BASE of tools/pr-core.mjs), not the time CI
+      # ran (DR6-57). `cat-file`: the clone is shallow, so `HEAD^1` is not there.
+      - name: Note the tested base
+        if: github.event_name == 'pull_request'
+        run: |
+          $parents = @(git cat-file -p HEAD | Select-String '^parent ([0-9a-f]{40})$')
+          if ($LASTEXITCODE -ne 0 -or $parents.Count -ne 2) { throw "HEAD is not the PR's merge commit" }
+          "::notice title=Tested base::$($parents[0].Matches[0].Groups[1].Value)"
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
