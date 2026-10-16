@@ -144,8 +144,15 @@
         letter-spacing: 0.05em;
         margin: 8px 0 4px;
       }
+      /* Faded (STALE, under a run or a gate) yet every text at AA (ADR-0013, DR6-21): 85 % and hollow
+         items, lowest pair --text-3 on --bg-1 at 4.81:1 (on --bg-2 it would be 4.44:1) */
       .faded {
-        opacity: 0.5;
+        opacity: 0.85;
+      }
+      .faded .hyp {
+        background: none;
+        border-style: dashed;
+        border-color: var(--border-strong);
       }
       .busy {
         display: flex;
@@ -455,7 +462,7 @@
             <div class="row" style="gap: 12px"><button class="btn">Kiểm tra kết nối</button><span class="read err">OpenCode Go báo lỗi (HTTP 502): Bad gateway</span></div>
             <div class="row" style="gap: 12px"><button class="btn" disabled>Kiểm tra kết nối</button><span class="help">Đang có một yêu cầu AI khác — chờ xong rồi thử lại.</span></div>
           </div>
-          <p class="help" style="margin-top: 6px">Thông báo lỗi theo bảng 2l. Không có Hủy: yêu cầu tối đa 64 token.</p>
+          <p class="help" style="margin-top: 6px">Thông báo lỗi theo bảng 2l. Không có Hủy: yêu cầu tối đa 1 024 token.</p>
         </section>
 
         <section class="specimen">
@@ -583,6 +590,7 @@
             </div>
           </div>
           <p class="help" style="margin-top: 6px">Hai lời nhắc là hai trường hợp, không hiện cùng lúc. "Từ dd/mm" = ngày ghi nhận sớm nhất trong các phiên bản KYC sau bản đã phân tích (material: chỉ xét phiên bản material) — #ask 4.</p>
+          <p class="help" style="margin-top: 6px">Mờ = cả khối 85 % + thẻ phần tử viền đứt, không nền: mọi chữ vẫn ≥ 4,5:1 (thấp nhất 4,81:1, Owner 15/10, DR6-21). Dùng chung cho 2b, 2d, 2j và khối AI ở chi tiết lịch hẹn.</p>
         </section>
 
         <section class="specimen">
