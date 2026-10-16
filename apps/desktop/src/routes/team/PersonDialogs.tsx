@@ -4,7 +4,7 @@ import { PERSON_ROLES, type Person, type PersonRole, type Team } from '@p2c/doma
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
-import type { PersonUsage } from './team-view';
+import { retriesDelete, type PersonUsage } from './team-view';
 
 const ALERT = 'm-0 rounded-md border border-danger px-3 py-2 text-danger';
 const ROLE_CHOICES = PERSON_ROLES.map((role) => ({ value: role, label: role }));
@@ -140,6 +140,7 @@ export function DeletePersonDialog({
 }) {
   const data = useAppData();
   const [error, setError] = useState<string>();
+  const [final, setFinal] = useState(false);
   const inUse = Object.values(usage).some((count) => count > 0);
 
   const remove = () => {
@@ -148,6 +149,7 @@ export function DeletePersonDialog({
       onClose();
     } catch (failure) {
       setError(errorMessage(failure));
+      setFinal(!retriesDelete(failure));
     }
   };
 
@@ -160,7 +162,7 @@ export function DeletePersonDialog({
       actions={
         <>
           <Button onClick={onClose}>{t('team.close')}</Button>
-          <Button type="submit" variant="danger" disabled={inUse || error !== undefined}>
+          <Button type="submit" variant="danger" disabled={inUse || final}>
             {t('team.deleteConfirm')}
           </Button>
         </>
@@ -185,9 +187,17 @@ export function DeletePersonDialog({
               {usage.coordinating > 0 && (
                 <li>{t('person.inUseCoordinating', { count: usage.coordinating })}</li>
               )}
+              {usage.reviewing > 0 && (
+                <li>{t('person.inUseReviewing', { count: usage.reviewing })}</li>
+              )}
             </ul>
           </div>
-          <span className="text-xs text-fg-3">{t('person.inUseHelp')}</span>
+          {usage.customers + usage.appointments + usage.policies > 0 && (
+            <span className="text-xs text-fg-3">{t('person.inUseHelp')}</span>
+          )}
+          {usage.coordinating + usage.reviewing > 0 && (
+            <span className="text-xs text-fg-3">{t('person.inUseSupportHelp')}</span>
+          )}
         </>
       ) : (
         <p className="m-0">{t('person.deleteBody')}</p>

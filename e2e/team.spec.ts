@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 import { ANCHOR_YEAR } from './anchor';
 
@@ -134,8 +135,56 @@ test('refuses to delete a team that still has people', async ({ page }) => {
   await expect(dialog.getByRole('alert')).toHaveText(
     'Team còn nhân sự: chuyển hoặc xóa hết nhân sự trước khi xóa team.',
   );
+  // Trying again would be refused the same: only the write lock of a data replace says to (S2-2).
+  await expect(dialog.getByRole('button', { name: 'Xóa', exact: true })).toBeDisabled();
   await dialog.getByRole('button', { name: 'Đóng' }).click();
   await expect(teamButton(page, 'Bình Minh')).toBeVisible();
+});
+
+test('another team shows its first 100 RE again after "Hiện thêm" (table-more.html, DR6-32)', async ({
+  page,
+}) => {
+  await page.goto('/#/settings');
+  const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });
+  const download = page.waitForEvent('download');
+  await backup.getByRole('button', { name: 'Xuất backup' }).click();
+  const file = await download;
+  type Row = Record<string, unknown>;
+  const data = JSON.parse(await readFile(await file.path(), 'utf8')) as {
+    tables: { teams: Row[]; people: Row[] };
+  };
+  // 101 more RE in two teams: 111 each, over the 100 rows a table shows at first.
+  const { teams, people } = data.tables;
+  for (const [index, name] of ['Bình Minh', 'Sao Mai'].entries()) {
+    const team = teams.find((row) => row.name === name)!;
+    const re = people.find((row) => row.team_id === team.id && row.role === 'RE')!;
+    for (let n = 1; n <= 101; n++) {
+      const suffix = `${index}-${String(n).padStart(3, '0')}`;
+      people.push({ ...re, id: `E2E-RE-${suffix}`, name: `RE Thêm ${suffix}` });
+    }
+  }
+  await backup.getByLabel('Nhập backup').setInputFiles({
+    name: file.suggestedFilename(),
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(data)),
+  });
+  const replace = page.getByRole('dialog', { name: 'Thay toàn bộ dữ liệu?' });
+  await replace.getByRole('button', { name: 'Thay dữ liệu', exact: true }).click();
+  await expect(replace).toBeHidden();
+
+  await page.getByRole('navigation').getByRole('link', { name: 'Team & nhân sự' }).click();
+  const rows = (team: string) =>
+    members(page, team)
+      .getByRole('row')
+      .filter({ has: page.getByRole('cell') });
+  await teamButton(page, 'Bình Minh').click();
+  await expect(rows('Bình Minh')).toHaveCount(100);
+  await members(page, 'Bình Minh').getByRole('button', { name: 'Hiện thêm 11 người' }).click();
+  await expect(rows('Bình Minh')).toHaveCount(111);
+
+  await teamButton(page, 'Sao Mai').click();
+  await expect(rows('Sao Mai')).toHaveCount(100);
+  await expect(members(page, 'Sao Mai')).toContainText('Đang hiện 100 / 111 người');
 });
 
 async function openPersonDialog(page: Page) {
@@ -274,6 +323,11 @@ test('an RE changed to BDM leaves their team; a team picked for them is refused 
   await expect(page.getByRole('region', { name: 'Người hỗ trợ' })).toContainText('Trần Hải Yến');
 });
 
+/** How the person gets out of what still points to them (mockup 9b): as an RE, as a supporter. */
+const RE_HELP = 'Chuyển KH sang RE khác trước (Sửa hồ sơ KH).';
+const SUPPORT_HELP =
+  'Bỏ nhân sự này khỏi người phối hợp và người đánh giá kết quả của các lịch đó trước, hoặc giữ lại thay vì xóa.';
+
 test('refuses to delete an RE who still has records, and says how many (9b)', async ({ page }) => {
   await teamButton(page, 'Sao Mai').click();
   const row = members(page, 'Sao Mai')
@@ -294,6 +348,8 @@ test('refuses to delete an RE who still has records, and says how many (9b)', as
   await expect(alert).toContainText('Chưa xóa được — RE còn dữ liệu');
   await expect(alert).toContainText(/\d+ KH đang phụ trách/);
   await expect(alert).toContainText(/\d+ lịch hẹn, \d+ HĐ ghi cho RE này/);
+  await expect(dialog).toContainText(RE_HELP);
+  await expect(dialog).not.toContainText(SUPPORT_HELP);
   await expect(dialog.getByRole('button', { name: 'Xóa', exact: true })).toBeDisabled();
   await dialog.getByRole('button', { name: 'Đóng' }).click();
   await expect(members(page, 'Sao Mai').getByRole('row', { name: new RegExp(name) })).toBeVisible();
@@ -313,9 +369,73 @@ test('refuses to delete the IS who still joins appointments, and says how many (
     .getByRole('button', { name: 'Xóa nhân sự' })
     .click();
 
-  const alert = page.getByRole('dialog', { name: `Xóa ${name}?` }).getByRole('alert');
+  const dialog = page.getByRole('dialog', { name: `Xóa ${name}?` });
+  const alert = dialog.getByRole('alert');
   await expect(alert).toContainText('Chưa xóa được — IS còn dữ liệu');
   await expect(alert).toContainText(/[1-9][\d.]* lịch hẹn là người phối hợp/);
+  // The way out of an IS, not of an RE (DR6-26).
+  await expect(dialog).toContainText(SUPPORT_HELP);
+  await expect(dialog).not.toContainText(RE_HELP);
+});
+
+test('refuses to delete an IS who only reviews a meeting, and says so (9b, DR6-26)', async ({
+  page,
+}) => {
+  const add = await openPersonDialog(page);
+  await add.getByRole('textbox', { name: 'Họ tên' }).fill('Lê Thu Hà');
+  await add.getByRole('radio', { name: 'IS', exact: true }).check();
+  await add.getByRole('button', { name: 'Thêm' }).click();
+  await expect(add).toBeHidden();
+
+  // A meeting met today that the new IS reviews; links keep the data, a reload seeds afresh.
+  await page.getByRole('link', { name: 'Lịch hẹn' }).click();
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const booking = page.getByRole('dialog');
+  await booking.getByRole('textbox', { name: /^Khách hàng/ }).fill('K-');
+  await booking
+    .getByRole('list', { name: 'KH khớp' })
+    .getByRole('button')
+    .filter({ hasText: /N3$/ })
+    .first()
+    .click();
+  await booking.getByRole('textbox', { name: /^Ngày/ }).fill('15/9');
+  await booking.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
+  await booking.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+  await expect(booking).toHaveCount(0);
+  await page
+    .getByRole('complementary', { name: 'Chi tiết lịch hẹn' })
+    .getByRole('button', { name: 'Ghi kết quả' })
+    .click();
+  const outcome = page.getByRole('dialog', { name: 'Kết quả cuộc gặp' });
+  await outcome
+    .getByRole('radiogroup', { name: 'Nhóm sau cuộc gặp' })
+    .getByRole('radio', { name: 'N3 giữ nguyên' })
+    .check();
+  await outcome
+    .getByRole('combobox', { name: /^Người đánh giá/ })
+    .selectOption({ label: 'IS Lê Thu Hà' });
+  await outcome.getByRole('textbox', { name: /^Việc tiếp theo/ }).fill('Gửi bảng minh họa');
+  await outcome.getByRole('button', { name: 'Lưu kết quả' }).click();
+  await expect(outcome).toHaveCount(0);
+
+  await page.getByRole('link', { name: 'Team & nhân sự' }).click();
+  await page
+    .getByRole('region', { name: 'Người hỗ trợ' })
+    .getByRole('button', { name: 'Sửa Lê Thu Hà' })
+    .click();
+  await page
+    .getByRole('dialog', { name: 'Sửa nhân sự' })
+    .getByRole('button', { name: 'Xóa nhân sự' })
+    .click();
+
+  const dialog = page.getByRole('dialog', { name: 'Xóa Lê Thu Hà?' });
+  const alert = dialog.getByRole('alert');
+  await expect(alert).toContainText('Chưa xóa được — IS còn dữ liệu');
+  await expect(alert).toContainText('1 lịch hẹn là người đánh giá kết quả');
+  await expect(alert).not.toContainText('người phối hợp');
+  await expect(dialog).toContainText(SUPPORT_HELP);
+  await expect(dialog).not.toContainText(RE_HELP);
+  await expect(dialog.getByRole('button', { name: 'Xóa', exact: true })).toBeDisabled();
 });
 
 test('member columns: an RE open customers match the Customers screen', async ({ page }) => {

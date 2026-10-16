@@ -192,7 +192,12 @@ export function KycNoteDialog({
   const [answer, setAnswer] = useState<'yes' | 'no' | null>(null);
   const [mode, setMode] = useState<FactMode>('update');
   const [material, setMaterial] = useState(false);
-  const [errors, setErrors] = useState<{ text?: string; fact?: string; form?: string }>({});
+  const [errors, setErrors] = useState<{
+    text?: string;
+    date?: string;
+    fact?: string;
+    form?: string;
+  }>({});
 
   const day = date.parsed.ok ? date.parsed.date : today;
   const preview = previewKycNote(profile, versions, facts, day, material);
@@ -206,7 +211,8 @@ export function KycNoteDialog({
     setValue('');
     setAnswer(null);
     setMode('update');
-    setErrors({});
+    // The note's own fields keep theirs until they change.
+    setErrors((prev) => ({ text: prev.text, date: prev.date }));
   };
 
   const add = () => {
@@ -239,7 +245,11 @@ export function KycNoteDialog({
     // A fact picked but not added yet would be lost: the note cannot be edited after saving.
     const pending = field ? t('kycNote.error.pending') : undefined;
     if (!clean || !date.parsed.ok || pending) {
-      setErrors({ text: clean ? undefined : t('error.KYC_NOTE_EMPTY'), fact: pending });
+      setErrors({
+        text: clean ? undefined : t('error.KYC_NOTE_EMPTY'),
+        date: date.error,
+        fact: pending,
+      });
       return;
     }
     const command = { text: clean, date: date.parsed.date, facts, material };
@@ -273,7 +283,7 @@ export function KycNoteDialog({
         value={text}
         onChange={(next) => {
           setText(next);
-          setErrors((prev) => ({ ...prev, text: undefined }));
+          setErrors((prev) => ({ ...prev, text: undefined, form: undefined }));
         }}
         error={errors.text}
         hint={t('kycNote.textHelp')}
@@ -281,11 +291,15 @@ export function KycNoteDialog({
         required
         autoFocus
       />
+      {/* Checked on Lưu, as the customer dialogs do (5b). */}
       <TextField
         label={t('kycNote.date')}
         value={date.text}
-        onChange={date.setText}
-        error={date.error}
+        onChange={(next) => {
+          date.setText(next);
+          setErrors((prev) => ({ ...prev, date: undefined, form: undefined }));
+        }}
+        error={errors.date}
         hint={date.hint}
         required
       />

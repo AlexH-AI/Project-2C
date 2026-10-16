@@ -536,6 +536,10 @@ export const vi = {
   'kycResolve.after': 'Sau khi lưu: KYC v{number} · cổng KYC {gate}',
   'kycResolve.save': 'Giải quyết',
   'customers.add': '+ Khách hàng',
+  // As appointments.createdOutside (NT-LH-20): the scope is shared by every screen, so it stays.
+  'customers.createdOutside':
+    'Đã tạo KH {name} cho {re}. RE này nằm ngoài góc nhìn hiện tại nên KH không hiện ở đây; đổi góc nhìn để xem.',
+  'customers.createdProfile': 'Hồ sơ KH →',
   'customerForm.newTitle': 'Khách hàng mới',
   'customerForm.newSub': 'Mã KH (vd. K-9A1C) sinh khi lưu',
   'customerForm.editTitle': 'Sửa hồ sơ · {name}',
@@ -1143,8 +1147,11 @@ export const vi = {
   'person.inUseCustomers': '{count} KH đang phụ trách',
   'person.inUseRecords': '{appointments} lịch hẹn, {policies} HĐ ghi cho RE này',
   'person.inUseCoordinating': '{count} lịch hẹn là người phối hợp',
+  'person.inUseReviewing': '{count} lịch hẹn là người đánh giá kết quả',
   'person.inUseHelp':
     'Chuyển KH sang RE khác trước (Sửa hồ sơ KH). Lịch hẹn và HĐ cũ giữ theo RE đã ghi nên RE vẫn còn trong dữ liệu — cân nhắc giữ lại thay vì xóa.',
+  'person.inUseSupportHelp':
+    'Bỏ nhân sự này khỏi người phối hợp và người đánh giá kết quả của các lịch đó trước, hoặc giữ lại thay vì xóa.',
   'error.TEAM_REQUIRED': '{role} phải thuộc một team.',
   // Also raised by records of deleted customers, which the screens no longer show (review R1).
   'error.PERSON_IN_USE':

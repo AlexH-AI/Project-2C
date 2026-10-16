@@ -4,6 +4,7 @@ import type { Team } from '@p2c/domain';
 import { Button, Dialog, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
+import { retriesDelete } from './team-view';
 
 /** Mockup 9c: a new team (`team` omitted) or a new name; a refused name stays in the dialog. */
 export function TeamNameDialog({
@@ -56,10 +57,14 @@ export function TeamNameDialog({
   );
 }
 
-/** Soft-deletes a team; one that still has people is refused with the reason. */
+/**
+ * Soft-deletes a team; one that still has people is refused with the reason, and Xóa stays off
+ * unless the refusal says to try again.
+ */
 export function DeleteTeamDialog({ team, onClose }: { team: Team; onClose: () => void }) {
   const data = useAppData();
   const [error, setError] = useState<string>();
+  const [final, setFinal] = useState(false);
 
   const remove = () => {
     try {
@@ -67,6 +72,7 @@ export function DeleteTeamDialog({ team, onClose }: { team: Team; onClose: () =>
       onClose();
     } catch (failure) {
       setError(errorMessage(failure));
+      setFinal(!retriesDelete(failure));
     }
   };
 
@@ -78,7 +84,7 @@ export function DeleteTeamDialog({ team, onClose }: { team: Team; onClose: () =>
       actions={
         <>
           <Button onClick={onClose}>{t('team.close')}</Button>
-          <Button type="submit" variant="danger" disabled={error !== undefined}>
+          <Button type="submit" variant="danger" disabled={final}>
             {t('team.deleteConfirm')}
           </Button>
         </>

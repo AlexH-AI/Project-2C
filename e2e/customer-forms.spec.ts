@@ -50,7 +50,9 @@ test('creates a customer in N4 on the kanban, then moves it to N2 by hand', asyn
   await expect(dialog.getByRole('radio', { name: 'Mất cơ hội' })).toHaveCount(0);
 
   await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(NAME);
-  await dialog.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ label: re ?? '' });
+  await expect(
+    dialog.getByRole('combobox', { name: 'RE phụ trách' }).locator('option:checked'),
+  ).toHaveText(re ?? '');
   await dialog.getByRole('textbox', { name: /^Ngày sinh/ }).fill('1984');
   // Screen readers hear what the app understood, not only sighted users.
   await expect(dialog.getByRole('textbox', { name: /^Ngày sinh/ })).toHaveAccessibleDescription(
@@ -61,6 +63,8 @@ test('creates a customer in N4 on the kanban, then moves it to N2 by hand', asyn
   await dialog.getByRole('button', { name: 'Lưu KH' }).click();
 
   await expect(dialog).toBeHidden();
+  // In the scope: the card shows, no line says otherwise.
+  await expect(page.getByText(/ngoài góc nhìn/)).toHaveCount(0);
   await column(page, 'N4')
     .getByRole('link', { name: new RegExp(NAME) })
     .click();
@@ -72,6 +76,40 @@ test('creates a customer in N4 on the kanban, then moves it to N2 by hand', asyn
   await expect(profile).toContainText('N2');
   // A manual change points to no appointment, so it never counts as an RF (#44).
   await expect(history(page).first()).toHaveText('15/09/2026N4→N2chuyển tay · không tính RF');
+});
+
+test('a customer made for an RE outside the scope is said to be, with a link to it (DR6-31)', async ({
+  page,
+}) => {
+  await page
+    .getByRole('radiogroup', { name: 'Góc nhìn' })
+    .getByRole('radio', { name: 'RE' })
+    .click();
+  const scopeRe = await page
+    .getByRole('combobox', { name: 'RE của góc nhìn' })
+    .locator('option:checked')
+    .textContent();
+  const summary = page.getByText(/KH đang mở/);
+  const before = await summary.textContent();
+
+  const dialog = await openCreate(page);
+  const re = dialog.getByRole('combobox', { name: 'RE phụ trách' });
+  // The scope's RE to begin with, as the new customer most likely is theirs.
+  await expect(re.locator('option:checked')).toHaveText(scopeRe ?? '');
+  await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(NAME);
+  const other = (await re.locator('option').nth(2).textContent()) ?? '';
+  expect(other).not.toBe(scopeRe);
+  await re.selectOption({ label: other });
+  await dialog.getByRole('button', { name: 'Lưu KH' }).click();
+
+  await expect(dialog).toBeHidden();
+  const created = page.getByRole('status').filter({ hasText: 'ngoài góc nhìn' });
+  await expect(created).toContainText(
+    `Đã tạo KH ${NAME} cho ${other.split(' · ')[0]}. RE này nằm ngoài góc nhìn hiện tại nên KH không hiện ở đây; đổi góc nhìn để xem.`,
+  );
+  await expect(summary).toHaveText(before ?? '');
+  await created.getByRole('link', { name: 'Hồ sơ KH →' }).click();
+  await expect(page.getByRole('region', { name: NAME })).toBeVisible();
 });
 
 test('edits the profile, showing the customer code and the birth date as understood', async ({
@@ -245,6 +283,28 @@ test('changing the RE hands the planned appointments over, not the past ones (5c
     // The RE column holds the name alone.
     await expect(row.locator('td:nth-child(4)')).toHaveText(label.split(' · ')[0]!);
   }
+});
+
+test('picking the gender again clears the failure of the last save (5c, DR6-33)', async ({
+  page,
+}) => {
+  const dialog = await openCreate(page);
+  await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(NAME);
+  await dialog.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
+  await dialog.getByRole('radio', { name: 'Nữ' }).check();
+  await dialog.getByRole('button', { name: 'Lưu KH' }).click();
+  await expect(dialog).toBeHidden();
+  await page.getByRole('link', { name: new RegExp(NAME) }).click();
+
+  await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
+  const edit = page.getByRole('dialog', { name: `Sửa hồ sơ · ${NAME}` });
+  await edit.getByRole('radio', { name: 'Chưa rõ' }).check();
+  await edit.getByRole('button', { name: 'Lưu', exact: true }).click();
+  const failure = edit.getByRole('alert');
+  await expect(failure).toContainText('không xóa hay chọn lại "Chưa rõ" được');
+
+  await edit.getByRole('radio', { name: 'Nữ' }).check();
+  await expect(failure).toHaveCount(0);
 });
 
 test('refuses a customer with wrong fields and saves nothing', async ({ page }) => {
