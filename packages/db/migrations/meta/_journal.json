@@ -64,6 +64,13 @@
       "when": 1791541364395,
       "tag": "0008_ai_analyses_append_only_rebuilt",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1792080379462,
+      "tag": "0009_lookup_indexes",
+      "breakpoints": true
     }
   ]
 }

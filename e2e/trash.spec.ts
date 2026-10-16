@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 import { trackConsoleErrors } from './support';
 
@@ -111,6 +112,16 @@ test('a deleted appointment shows in Thùng rác, whatever the scope (TR-7)', as
   await expect(row.getByRole('cell').nth(1)).toContainText('Dự kiến');
   await expect(row.getByRole('cell').nth(2)).toContainText(`KH ${name}`);
   await expect(row.getByRole('cell').nth(3)).toHaveText(/^\d\d\/\d\d\/\d{4} \d\d:\d\d$/);
+  // DR6-43: "Bản ghi" holds names and dd/mm/yyyy days alike, so it does not sort; the column of
+  // the buttons has a header for screen readers only.
+  const record = table(page).getByRole('columnheader', { name: 'Bản ghi' });
+  await expect(record).not.toHaveAttribute('aria-sort');
+  await expect(record.getByRole('button')).toHaveCount(0);
+  await expect(table(page).getByRole('columnheader', { name: 'Xóa lúc' })).toHaveAttribute(
+    'aria-sort',
+    'descending',
+  );
+  await expect(table(page).getByRole('columnheader', { name: 'Thao tác' })).toHaveCount(1);
   const re = /RE (.+)$/.exec((await row.getByRole('cell').nth(2).textContent()) ?? '')?.[1] ?? '';
   expect(re).not.toBe('');
 
@@ -170,11 +181,19 @@ test('restores a deleted customer, then its appointment deleted on its own (TR-1
   const rows = table(page).getByRole('row');
   const ofKind = (kind: string) =>
     rows.filter({ has: page.getByRole('cell', { name: kind, exact: true }) });
-  const restoreButton = (kind: string) => ofKind(kind).getByRole('button', { name: 'Khôi phục…' });
+  // DR6-43: each button is named by the record it restores.
+  const restoreButton = (kind: string) =>
+    ofKind(kind).getByRole('button', {
+      name: kind === 'KH' ? `Khôi phục KH ${name}` : `Khôi phục lịch hẹn 15/09/2026 của KH ${name}`,
+      exact: true,
+    });
   await expect(rows).toHaveCount(3);
-  // TR-1: the appointment waits for its customer, named on the row.
+  // TR-1: the appointment waits for its customer, named on the row and read with its button.
   await expect(ofKind('Lịch hẹn')).toContainText(`Khôi phục KH ${name} trước.`);
   await expect(restoreButton('Lịch hẹn')).toBeDisabled();
+  await expect(restoreButton('Lịch hẹn')).toHaveAccessibleDescription(
+    `Khôi phục KH ${name} trước.`,
+  );
 
   // 11b: the dialog says what comes back; Hủy changes nothing.
   await restoreButton('KH').click();
@@ -262,7 +281,7 @@ test('restores a meeting that kept the stage though the stage changed after it (
   const row = table(page).getByRole('row').nth(1);
   await expect(row).toContainText('14/09/2026');
   await expect(row).toContainText('Đã gặp');
-  await row.getByRole('button', { name: 'Khôi phục…' }).click();
+  await row.getByRole('button', { name: `Khôi phục lịch hẹn 14/09/2026 của KH ${name}` }).click();
   const dialog = page.getByRole('dialog', { name: 'Khôi phục lịch hẹn 14/09/2026?' });
   await expect(dialog).toContainText('Kết quảĐã gặp · nhóm sau');
   await expect(dialog).toContainText('Không đổi nhóm KH');
@@ -280,5 +299,65 @@ test('restores a meeting that kept the stage though the stage changed after it (
   await expect(
     page.getByRole('region', { name }).getByText('N2', { exact: true }).first(),
   ).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+interface BackupRow {
+  readonly id: string;
+  readonly name: string;
+  readonly re_id: string;
+  readonly deleted_at: string | null;
+}
+
+// TR-5, DR6-43: a record dated after today waits for its day, and the trash sees the day come
+// without another write. Only a file brings such a record in (spec Phase 3 §6 rule 10).
+test('a deleted policy submitted tomorrow can be restored once its day comes (TR-5)', async ({
+  page,
+}) => {
+  const errors = trackConsoleErrors(page);
+  await page.clock.install({ time: new Date(2026, 8, 15, 23, 50) });
+  await page.goto('/#/settings');
+  const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });
+  const download = page.waitForEvent('download');
+  await backup.getByRole('button', { name: 'Xuất backup' }).click();
+  const file = JSON.parse(await readFile(await (await download).path(), 'utf8')) as {
+    tables: Record<string, unknown[]>;
+  };
+  const customer = (file.tables.customers as BackupRow[]).find((c) => c.deleted_at === null)!;
+  const deletedAt = new Date(2026, 8, 15, 9, 0).toISOString();
+  file.tables.policies!.push({
+    id: 'tr5-policy',
+    customer_id: customer.id,
+    re_id: customer.re_id,
+    submitted_date: '2026-09-16',
+    submitted_fyp: 24_000_000,
+    issued_date: null,
+    issued_fyp: null,
+    created_at: deletedAt,
+    updated_at: deletedAt,
+    deleted_at: deletedAt,
+  });
+  await backup.getByLabel('Nhập backup').setInputFiles({
+    name: 'tr5.p2cbackup',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(file)),
+  });
+  await page
+    .getByRole('dialog', { name: 'Thay toàn bộ dữ liệu?' })
+    .getByRole('button', { name: 'Thay dữ liệu', exact: true })
+    .click();
+  await expect(backup.getByRole('status')).toContainText('Đã nhập backup');
+
+  await settingsNav(page).getByRole('button', { name: 'Thùng rác' }).click();
+  const restore = table(page).getByRole('button', {
+    name: `Khôi phục HĐ nộp 16/09/2026 của KH ${customer.name}`,
+  });
+  await expect(restore).toBeDisabled();
+  await expect(restore).toHaveAccessibleDescription('Ngày nộp 16/09/2026 sau hôm nay.');
+
+  // Past midnight, 16/09 is today: the policy can come back.
+  await page.clock.fastForward(15 * 60_000);
+  await expect(restore).toBeEnabled();
+  await expect(trash(page)).not.toContainText('sau hôm nay');
   expect(errors).toEqual([]);
 });

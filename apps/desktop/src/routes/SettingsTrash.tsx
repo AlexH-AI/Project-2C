@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { listTrash, type TrashRow } from '@p2c/db';
+import { useCallback, useMemo, useState } from 'react';
+import { listTrash, type Database, type TrashRow } from '@p2c/db';
 import {
   Button,
   DataTable,
@@ -8,7 +8,7 @@ import {
   StageBadge,
   type DataTableColumn,
 } from '@p2c/ui';
-import { useQuery } from '../data/AppDataContext';
+import { useQuery, useToday } from '../data/AppDataContext';
 import { t } from '../i18n';
 import { RestoreDialog } from './RestoreDialog';
 import {
@@ -20,11 +20,15 @@ import {
   ownerParts,
   recordDetail,
   recordTitle,
+  restoreLabel,
   restoredNotice,
   trashCounts,
   type RestoredNotice,
   type TrashFilter,
 } from './trash-view';
+
+/** The line saying why a row is blocked, which its restore button is described by (DR6-43). */
+const reasonId = (row: TrashRow) => `trash-blocked-${row.kind}-${row.id}`;
 
 function RecordCell({ row }: { row: TrashRow }) {
   const detail = recordDetail(row);
@@ -44,7 +48,9 @@ function RecordCell({ row }: { row: TrashRow }) {
       )}
       {detail && <span className="block text-xs text-fg-3">{detail}</span>}
       {row.blocked && (
-        <span className="mt-1 block text-xs text-warn">{blockedReason(row, row.blocked)}</span>
+        <span id={reasonId(row)} className="mt-1 block text-xs text-warn">
+          {blockedReason(row, row.blocked)}
+        </span>
       )}
     </>
   );
@@ -62,7 +68,10 @@ function OwnerCell({ row }: { row: TrashRow }) {
   ));
 }
 
-/** The columns of mockup 11a; the last one restores a row, off while it is blocked. */
+/**
+ * The columns of mockup 11a; the last one restores a row, off while it is blocked. "Bản ghi" holds
+ * names and dd/mm/yyyy days alike, which no order sorts together: it does not sort (DR6-43).
+ */
 const trashColumns = (
   onRestore: (row: TrashRow) => void,
 ): ReadonlyArray<DataTableColumn<TrashRow>> => [
@@ -81,6 +90,7 @@ const trashColumns = (
     id: 'record',
     header: t('trash.col.record'),
     kind: 'text',
+    sortable: false,
     value: recordTitle,
     cell: (row) => <RecordCell row={row} />,
   },
@@ -101,13 +111,19 @@ const trashColumns = (
   },
   {
     id: 'actions',
-    header: '',
+    header: t('trash.col.actions'),
+    headerHidden: true,
     kind: 'text',
     align: 'end',
     sortable: false,
     value: () => '',
     cell: (row) => (
-      <Button disabled={row.blocked !== undefined} onClick={() => onRestore(row)}>
+      <Button
+        disabled={row.blocked !== undefined}
+        aria-label={restoreLabel(row)}
+        aria-describedby={row.blocked && reasonId(row)}
+        onClick={() => onRestore(row)}
+      >
         {t('trash.restore')}
       </Button>
     ),
@@ -143,7 +159,11 @@ function Restored({ notice }: { notice: RestoredNotice }) {
  * newest deletion first, whatever the scope of the top bar (TR-7), with why it cannot come back.
  */
 export function TrashSection() {
-  const rows = useQuery(listTrash);
+  const today = useToday();
+  // `today` is the point: `listTrash` reads the day from the database's clock, so a new day is a new
+  // read, and a record dated after today (TR-5) can come back on its day without a write (DR6-43).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const rows = useQuery(useCallback((db: Database) => listTrash(db), [today]));
   const [filter, setFilter] = useState<TrashFilter>('all');
   const [query, setQuery] = useState('');
   const [restoring, setRestoring] = useState<TrashRow | null>(null);

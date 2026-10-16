@@ -56,6 +56,30 @@ test('exports, then imports the file back after confirming: later changes are go
   await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
+// DR6-45: Dữ liệu has one notice; the data replaced again leaves only the notice of the last time.
+test('a reload then an import leave only the notice of the import', async ({ page }) => {
+  await page.goto('/#/settings');
+  const exported = await exportFile(page);
+  const notices = page.getByRole('status');
+  await page
+    .getByRole('region', { name: 'Dữ liệu giả lập' })
+    .getByRole('button', { name: 'Nạp lại…' })
+    .click();
+  const reload = page.getByRole('dialog', { name: 'Nạp lại dữ liệu giả lập?' });
+  await reload.getByRole('textbox').fill('NẠP LẠI');
+  await reload.getByRole('button', { name: 'Nạp lại', exact: true }).click();
+  await expect(notices).toHaveText(['Đã nạp lại dữ liệu giả lập, neo ở ngày 15/09/2026.']);
+
+  await chooseFile(page, exported.name, exported.text);
+  await page
+    .getByRole('dialog', { name: 'Thay toàn bộ dữ liệu?' })
+    .getByRole('button', { name: 'Thay dữ liệu', exact: true })
+    .click();
+
+  await expect(notices).toHaveText([/^Đã nhập backup xuất lúc /]);
+  await expect(section(page).getByRole('status')).toHaveCount(1);
+});
+
 test('the data file card shows what the simulated data holds, and that web mode keeps no file', async ({
   page,
 }) => {

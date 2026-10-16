@@ -32,14 +32,28 @@ interface Refused {
 
 const ALERT = 'm-0 flex flex-col gap-1 rounded-md border px-3 py-2';
 
+/**
+ * A section of Settings → Data with a notice, which Data shows one of (DR6-45): this one's while
+ * `showsNotice`; `onNotice` once it has a new one.
+ */
+export interface DataNoticeProps {
+  readonly showsNotice: boolean;
+  readonly onNotice: () => void;
+}
+
 /** Settings → Data, "Xuất / nhập backup" (mockup settings-data, 10a, 10b; spec §6). */
-export function BackupSection() {
+export function BackupSection({ showsNotice, onNotice }: DataNoticeProps) {
   const data = useAppData();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<'export' | 'read' | null>(null);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [last, setNotice] = useState<Notice | null>(null);
+  const notice = showsNotice ? last : null;
   const [chosen, setChosen] = useState<Chosen | null>(null);
   const [refused, setRefused] = useState<Refused | null>(null);
+  const show = (next: Notice) => {
+    setNotice(next);
+    onNotice();
+  };
 
   const exportFile = async () => {
     setBusy('export');
@@ -47,14 +61,14 @@ export function BackupSection() {
     try {
       const exported = await data.exportBackup();
       if (exported.path === undefined) download(exported.name, exported.text);
-      setNotice({
+      show({
         kind: 'exported',
         where: exported.path ?? exported.name,
         size: exported.size,
         inFolder: exported.path !== undefined,
       });
     } catch {
-      setNotice({ kind: 'failed', message: t('settings.backup.exportFailed') });
+      show({ kind: 'failed', message: t('settings.backup.exportFailed') });
     } finally {
       setBusy(null);
     }
@@ -75,7 +89,7 @@ export function BackupSection() {
     } catch (error) {
       // Only the file's own faults are refused (10b); a failing engine or read is not the file's.
       if (error instanceof DbError) setRefused({ name: file.name, error });
-      else setNotice({ kind: 'failed', message: t('settings.backup.failed') });
+      else show({ kind: 'failed', message: t('settings.backup.failed') });
     } finally {
       setBusy(null);
     }
@@ -156,7 +170,7 @@ export function BackupSection() {
           chosen={chosen}
           onClose={(result) => {
             setChosen(null);
-            if (result) setNotice(result);
+            if (result) show(result);
           }}
         />
       )}

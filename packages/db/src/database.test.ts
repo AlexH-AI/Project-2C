@@ -402,6 +402,56 @@ describe('migrating a saved database', () => {
     expect(() => setReviewer('a1', 'nobody')).toThrow(/FOREIGN KEY/);
   });
 
+  /** A database file saved before the lookup indexes (schema version 9), with data. */
+  async function savedAtVersion9() {
+    const db = await openDatabase({ migrations: MIGRATIONS.filter((m) => m.id <= 9) });
+    db.sqlite.exec(`
+      INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x');
+      INSERT INTO people (id, name, role, team_id, created_at, updated_at)
+        VALUES ('re', 'An', 'RE', 't', 'x', 'x');
+      INSERT INTO customers (id, code, name, re_id, stage, created_at, updated_at, deleted_at)
+        VALUES ('c', 'K-0001', 'Lan', 're', 'N2', 'x', 'x', 'y');
+      INSERT INTO appointments (id, customer_id, re_id, date, status, trigger_type, stage_after,
+          next_step, note, created_at, updated_at, deleted_at)
+        VALUES ('a1', 'c', 're', '2026-09-10', 'MET', 'OTHER', 'N2', 'Gửi minh họa', '', 'x', 'x',
+          'y');
+      INSERT INTO stage_transitions (id, customer_id, seq, from_stage, to_stage, date, appointment_id,
+          created_at, deleted_at) VALUES
+        ('s1', 'c', 1, NULL, 'N3', '2026-09-01', NULL, 'x', NULL),
+        ('s2', 'c', 2, 'N3', 'N2', '2026-09-10', 'a1', 'x', 'y');
+      INSERT INTO policies (id, customer_id, re_id, submitted_date, submitted_fyp, created_at,
+          updated_at) VALUES ('p', 'c', 're', '2026-09-12', 24000000, 'x', 'x');
+    `);
+    return db;
+  }
+
+  it('adds the lookups of a customer and an appointment to a database with data (DR6-44)', async () => {
+    const old = await savedAtVersion9();
+    const tables = ['customers', 'appointments', 'stage_transitions', 'policies'];
+    const before = tables.map((table) => rowsOf(old.sqlite, table));
+
+    const db = await openDatabase({ bytes: old.export() });
+
+    expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
+    expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(before);
+    // Thùng rác, the profile and 5f look these up per record: an index, no scan of the table.
+    const plan = (query: string) =>
+      db.sqlite
+        .exec(`EXPLAIN QUERY PLAN ${query}`)[0]!
+        .values.map((row) => String(row.at(-1)))
+        .join('\n');
+    expect(plan("SELECT COUNT(*) FROM appointments WHERE customer_id = 'c'")).toMatch(
+      /INDEX appointments_customer\b/,
+    );
+    expect(plan("SELECT COUNT(*) FROM policies WHERE customer_id = 'c'")).toMatch(
+      /INDEX policies_customer\b/,
+    );
+    expect(plan("SELECT * FROM stage_transitions WHERE appointment_id = 'a1'")).toMatch(
+      /INDEX stage_transitions_appointment\b/,
+    );
+    expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
+  });
+
   /** A database at the latest version where a team is referenced by a person, who has a customer. */
   async function savedWithReferences() {
     const db = await openDatabase();

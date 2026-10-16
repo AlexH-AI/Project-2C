@@ -648,10 +648,13 @@ describe('the ai_analyses migration', () => {
       const old = await openDatabase();
       seedDemoData(old, { anchorDate: d(15, 9), seed: 7 });
       const added = MIGRATIONS.filter((m) => m.tag.includes('ai_analyses')).map((m) => m.id);
+      const first = Math.min(...added);
+      // The later lookup indexes (DR6-44) come off too: the migrations add them again.
       old.sqlite.run(
-        `DROP TABLE ai_analyses; DELETE FROM schema_migrations WHERE id IN (${added.join(', ')})`,
+        `DROP TABLE ai_analyses; DROP INDEX appointments_customer; DROP INDEX policies_customer;
+         DROP INDEX stage_transitions_appointment; DELETE FROM schema_migrations WHERE id >= ${first}`,
       );
-      expect(old.schemaVersion()).toBe(Math.min(...added) - 1);
+      expect(old.schemaVersion()).toBe(first - 1);
       const tables = ['customers', 'kyc_versions', 'kyc_facts', 'appointments', 'policies'];
       const rows = (database: Database, table: string) =>
         database.sqlite.exec(`SELECT * FROM ${table} ORDER BY rowid`)[0]?.values ?? [];
