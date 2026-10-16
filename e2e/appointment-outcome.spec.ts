@@ -127,7 +127,9 @@ test('another status than met has no stage after; a past next day saves nothing'
   await expect(detail(page)).toContainText('Dự kiến');
 });
 
-test('no-show with a next appointment records both in one go', async ({ page }) => {
+test('no-show with a next appointment records both in one go, then shows the next one', async ({
+  page,
+}) => {
   const name = await book(page, '15/9', 'N2');
   await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
   const o = outcome(page);
@@ -140,15 +142,25 @@ test('no-show with a next appointment records both in one go', async ({ page }) 
   await expect(o.dialog).toContainText('Tạo lịch hẹn mới 01/10/2026 09:00 · Dự kiến');
   await o.dialog.getByRole('button', { name: 'Lưu kết quả + tạo lịch' }).click();
 
+  // The screen moves to the new appointment in the next month, as every other way of booking one
+  // does (DR6-42).
   await expect(o.dialog).toHaveCount(0);
+  const calendar = page.getByRole('region', { name: /^Lịch tháng/ });
+  const day = page.getByRole('region', { name: /^Trong ngày/ });
+  await expect(calendar.getByRole('heading')).toHaveText('Lịch tháng 10/2026');
+  await expect(day.getByRole('heading', { level: 2 })).toHaveText('Trong ngày 01/10/2026');
+  await expect(detail(page).getByRole('heading', { level: 2 })).toHaveText(
+    `01/10/2026 09:00 · ${name}`,
+  );
+  await expect(detail(page)).toContainText('Dự kiến');
+
+  // The old one has its outcome.
+  await page.getByRole('button', { name: 'Kỳ trước' }).click();
+  await calendar.getByRole('button', { name: /^15\/09\/2026:/ }).click();
+  const old = day.getByRole('listitem').filter({ hasText: name }).filter({ hasText: 'Không đến' });
+  await old.getByRole('button', { name }).click();
   await expect(detail(page)).toContainText('Không đến');
   await expect(detail(page)).toContainText('Gọi lại không nghe máy');
-  await page.getByRole('button', { name: 'Kỳ sau' }).click();
-  await page
-    .getByRole('region', { name: /^Lịch tháng/ })
-    .getByRole('button', { name: /^01\/10\/2026:/ })
-    .click();
-  await expect(page.getByRole('region', { name: /^Trong ngày/ })).toContainText(name);
 });
 
 /** Books a meeting today for an N3 customer and records it met, N3 → N2; returns the name. */

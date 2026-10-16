@@ -6,6 +6,7 @@ import {
   dayText,
   isPastOrToday,
   parseTime,
+  prefill,
   priorMeetings,
   readScheduleDate,
   searchCustomers,
@@ -79,6 +80,45 @@ describe('readScheduleDate (from today)', () => {
 
     const leapDay = readScheduleDate(dayText(d(29, 2, 2024), TODAY), TODAY, 'fromToday');
     expect(leapDay).toMatchObject({ ok: false, error: 'past', suggestion: null });
+  });
+});
+
+// DR6-38: a dialog opened on 31/12 and saved after midnight.
+describe('readScheduleDate (a prefilled day across New Year)', () => {
+  const OPENED = d(31, 12, 2026);
+  const NEXT_YEAR = d(1, 1, 2027);
+
+  it('reads the day left as filled in as the saved one, not the same day next year (6f)', () => {
+    const filled = prefill(d(20, 12, 2026), OPENED);
+    expect(filled.text).toBe('20/12');
+    const read = ok(readScheduleDate(filled.text, NEXT_YEAR, 'any', filled));
+    expect(read.date).toEqual(d(20, 12, 2026));
+    expect(read.daysFromToday).toBe(-12);
+    expect(read.suggestion).toBeNull();
+  });
+
+  it('refuses the filled-in day of a next appointment once it has passed (6h)', () => {
+    const filled = prefill(OPENED, OPENED);
+    expect(ok(readScheduleDate(filled.text, OPENED, 'fromToday', filled)).daysFromToday).toBe(0);
+    expect(readScheduleDate(filled.text, NEXT_YEAR, 'fromToday', filled)).toMatchObject({
+      ok: false,
+      error: 'past',
+      date: OPENED,
+      suggestion: null,
+    });
+  });
+
+  it('still offers next year for a filled-in day long past, as when the dialog opened (6h)', () => {
+    const filled = prefill(d(20, 6, 2026), OPENED);
+    const read = readScheduleDate(filled.text, NEXT_YEAR, 'fromToday', filled);
+    expect(read).toMatchObject({ ok: false, error: 'past', date: d(20, 6, 2026) });
+    expect('suggestion' in read && read.suggestion).toEqual(d(20, 6, 2027));
+  });
+
+  it('reads a day typed over the filled-in one against today', () => {
+    const filled = prefill(d(20, 12, 2026), OPENED);
+    expect(ok(readScheduleDate('5/1', NEXT_YEAR, 'any', filled)).date).toEqual(d(5, 1, 2027));
+    expect(ok(readScheduleDate('20/12', NEXT_YEAR, 'any')).date).toEqual(d(20, 12, 2027));
   });
 });
 

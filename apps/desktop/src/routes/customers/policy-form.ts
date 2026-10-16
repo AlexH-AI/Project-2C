@@ -4,6 +4,7 @@ import {
   compareDates,
   daysBetween,
   formatPeriodValue,
+  formatVnd,
   formatVndCompact,
   parseVnd,
   periodOf,
@@ -13,6 +14,7 @@ import {
   type VndParseError,
 } from '@p2c/domain';
 import { t } from '../../i18n';
+import { dayText } from '../appointments/appointment-form';
 import { parseRecordDate, type RecordDateResult } from './customers-view';
 
 export type FypResult =
@@ -36,6 +38,10 @@ export type IssuedDateResult =
   | { readonly ok: false; readonly error: 'beforeSubmitted'; readonly date: CalendarDate }
   | Extract<RecordDateResult, { ok: false }>;
 
+/** `new` submits a policy (8a), `issue` issues it (8b, 8c), `edit` changes or deletes it (8d). */
+export type PolicyMode =
+  { readonly kind: 'new' } | { readonly kind: 'issue' | 'edit'; readonly policy: Policy };
+
 /** What a policy dialog holds; `issued` is null until the policy is issued (mockups 8a–8d). */
 export interface PolicyDraft {
   readonly submittedDate: string;
@@ -43,16 +49,57 @@ export interface PolicyDraft {
   readonly issued: { readonly date: string; readonly fyp: string } | null;
 }
 
+/** The draft a dialog opens with, and the day it opened on. */
+export interface OpenedDraft {
+  readonly draft: PolicyDraft;
+  readonly on: CalendarDate;
+}
+
+export function openDraft(mode: PolicyMode, today: CalendarDate): OpenedDraft {
+  if (mode.kind === 'new') {
+    return {
+      draft: { submittedDate: dayText(today, today), submittedFyp: '', issued: null },
+      on: today,
+    };
+  }
+  const { policy } = mode;
+  const draft = {
+    submittedDate: dayText(policy.submittedDate, today),
+    submittedFyp: formatVnd(policy.submittedFyp),
+    issued:
+      mode.kind === 'issue'
+        ? // The issued FYP starts as the submitted one (G2 D).
+          { date: dayText(today, today), fyp: formatVnd(policy.issuedFyp ?? policy.submittedFyp) }
+        : policy.issuedDate && policy.issuedFyp !== null
+          ? { date: dayText(policy.issuedDate, today), fyp: formatVnd(policy.issuedFyp) }
+          : null,
+  };
+  return { draft, on: today };
+}
+
 export type PolicyValues = Omit<Policy, 'id' | 'customerId' | 'reId'>;
 
 /**
  * Reads every field of the draft, and the policy when all of them are right. Days are today or
- * earlier; the issue comes on the submission day or later (spec §3.7).
+ * earlier; the issue comes on the submission day or later (spec §3.7). A day left as the dialog
+ * `opened` with reads in the year it opened in, so one left open across New Year keeps the day it
+ * showed (DR6-38).
  */
-export function readPolicy(draft: PolicyDraft, today: CalendarDate) {
-  const submittedDate = parseRecordDate(draft.submittedDate, today);
+export function readPolicy(draft: PolicyDraft, today: CalendarDate, opened?: OpenedDraft) {
+  const on = (text: string, filled: string | undefined) =>
+    opened && text === filled ? opened.on : today;
+  const submittedDate = parseRecordDate(
+    draft.submittedDate,
+    on(draft.submittedDate, opened?.draft.submittedDate),
+  );
   const submittedFyp = readFyp(draft.submittedFyp);
-  const issuedDate = draft.issued && readIssuedDate(draft.issued.date, today, submittedDate);
+  const issuedDate =
+    draft.issued &&
+    readIssuedDate(
+      draft.issued.date,
+      on(draft.issued.date, opened?.draft.issued?.date),
+      submittedDate,
+    );
   const issuedFyp = draft.issued && readFyp(draft.issued.fyp);
   const policy: PolicyValues | null =
     submittedDate.ok && submittedFyp.ok && (issuedDate?.ok ?? true) && (issuedFyp?.ok ?? true)
@@ -65,6 +112,8 @@ export function readPolicy(draft: PolicyDraft, today: CalendarDate) {
       : null;
   return { submittedDate, submittedFyp, issuedDate, issuedFyp, policy };
 }
+
+export type PolicyRead = ReturnType<typeof readPolicy>;
 
 function readIssuedDate(
   text: string,
@@ -79,56 +128,108 @@ function readIssuedDate(
     : { ok: true, date: parsed.date, daysAfter };
 }
 
+/** What an edit does to one month: the FYP the policy's RE submitted or issued that month. */
+export interface Effect {
+  readonly metric: 'submitted' | 'issued';
+  readonly year: number;
+  readonly month: number;
+  readonly diff: Vnd;
+}
+
 /**
- * Mockup 8d: how far the issued FYP is from the submitted one, and what the edit does to the
- * issued FYP of the saved issue month (null when the FYP stays or the issue month moves).
+ * Mockup 8d as the edit stands: how far the issued FYP is from the submitted one, both as typed
+ * (DR6-40; null until both read), and "Ảnh hưởng chỉ số": what saving does to the FYP submitted
+ * and issued of each month, from the saved policy (none while a field is wrong).
  */
-export function issuedChange(
-  saved: Policy,
-  next: { readonly issuedDate: CalendarDate; readonly issuedFyp: Vnd },
-) {
-  const before = saved.issuedDate;
-  const sameMonth =
-    before !== null &&
-    before.year === next.issuedDate.year &&
-    before.month === next.issuedDate.month;
-  const diff = next.issuedFyp - (saved.issuedFyp ?? 0);
+export function policyChange(saved: Policy, read: PolicyRead) {
+  const submitted = read.submittedFyp.ok ? read.submittedFyp.amount : null;
+  const issued = read.issuedFyp?.ok ? read.issuedFyp.amount : null;
+  const next = read.policy;
+  const effects = next
+    ? [
+        ...monthEffects(
+          'submitted',
+          { date: saved.submittedDate, fyp: saved.submittedFyp },
+          { date: next.submittedDate, fyp: next.submittedFyp },
+        ),
+        ...monthEffects(
+          'issued',
+          booked(saved.issuedDate, saved.issuedFyp),
+          booked(next.issuedDate, next.issuedFyp),
+        ),
+      ]
+    : [];
   return {
-    fromSubmitted: next.issuedFyp - saved.submittedFyp,
-    metric: sameMonth && diff !== 0 ? { year: before.year, month: before.month, diff } : null,
+    fromSubmitted: submitted !== null && issued !== null ? issued - submitted : null,
+    effects,
   };
+}
+
+interface Booked {
+  readonly date: CalendarDate;
+  readonly fyp: Vnd;
+}
+
+const booked = (date: CalendarDate | null, fyp: Vnd | null): Booked | null =>
+  date && fyp !== null ? { date, fyp } : null;
+
+/**
+ * One metric's months: an FYP that moves to another month leaves the old one, then comes into the
+ * new one (DR6-41); within one month only the difference counts.
+ */
+function monthEffects(
+  metric: Effect['metric'],
+  before: Booked | null,
+  after: Booked | null,
+): Effect[] {
+  const effect = ({ date }: Booked, diff: Vnd): Effect => ({
+    metric,
+    year: date.year,
+    month: date.month,
+    diff,
+  });
+  const effects =
+    before &&
+    after &&
+    before.date.year === after.date.year &&
+    before.date.month === after.date.month
+      ? [effect(after, after.fyp - before.fyp)]
+      : [
+          ...(before ? [effect(before, -before.fyp)] : []),
+          ...(after ? [effect(after, after.fyp)] : []),
+        ];
+  return effects.filter((e) => e.diff !== 0);
 }
 
 export const monthOf = (date: CalendarDate) => formatPeriodValue(periodOf('month', date));
 
 /**
- * "Ảnh hưởng chỉ số" (8d) for the `metric` of `issuedChange`. Without the RE's name (an RE no
- * longer listed, e.g. deleted), the sentence leaves the RE out rather than show an empty name.
+ * A line of "Ảnh hưởng chỉ số" (8d). Without the RE's name (an RE no longer listed, e.g.
+ * deleted), the sentence leaves the RE out rather than show an empty name.
  */
-export function effectText(
-  metric: { readonly year: number; readonly month: number; readonly diff: Vnd },
-  reName: string | undefined,
-): string {
+export function effectText(effect: Effect, reName: string | undefined): string {
   const params = {
-    month: monthOf(calendarDate(metric.year, metric.month, 1)),
+    label: t(`policyForm.metric.${effect.metric}`),
+    month: monthOf(calendarDate(effect.year, effect.month, 1)),
     re: reName?.trim() ?? '',
-    amount: formatVndCompact(Math.abs(metric.diff)),
+    amount: formatVndCompact(Math.abs(effect.diff)),
   };
-  const key = metric.diff < 0 ? 'Down' : 'Up';
+  const key = effect.diff < 0 ? 'Down' : 'Up';
   return t(params.re ? `policyForm.effect${key}` : `policyForm.effect${key}NoRe`, params);
 }
 
 /**
- * "Case size dự kiến": the one of the latest met meeting that has it, for reference only (8a).
- * Latest by day, then hour (an untimed meeting first); a tie goes to the one listed last, as
- * `listAppointments` lists them in the order made.
+ * "Case size dự kiến ở cuộc gặp gần nhất" (8a), for reference only: the one of the latest met
+ * meeting, none when that one has none (§9 Q8, DR6-39). Latest by day, then hour (an untimed
+ * meeting first); a tie goes to the one listed last, as `listAppointments` lists them in the
+ * order made.
  */
 export function expectedCaseSize(
   appointments: readonly Pick<AppointmentRecord, 'date' | 'time' | 'status' | 'expectedCaseSize'>[],
 ): Vnd | null {
   let latest: (typeof appointments)[number] | undefined;
   for (const a of appointments) {
-    if (a.status !== 'MET' || a.expectedCaseSize === null) continue;
+    if (a.status !== 'MET') continue;
     const order = latest
       ? compareDates(a.date, latest.date) || (a.time ?? '').localeCompare(latest.time ?? '')
       : 1;

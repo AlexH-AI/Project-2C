@@ -3,9 +3,11 @@ import { calendarDate, type Appointment, type Policy } from '@p2c/domain';
 import {
   effectText,
   expectedCaseSize,
-  issuedChange,
+  openDraft,
+  policyChange,
   readFyp,
   readPolicy,
+  type Effect,
   type PolicyDraft,
 } from './policy-form';
 
@@ -14,13 +16,14 @@ const TODAY = d(26, 9);
 const MILLION = 1_000_000;
 
 describe('effectText', () => {
-  const down = { year: 2026, month: 9, diff: -14_500_000 };
+  const down: Effect = { metric: 'issued', year: 2026, month: 9, diff: -14_500_000 };
 
-  it('names the RE of the policy', () => {
-    expect(effectText(down, 'Đỗ Khánh Linh')).toMatch(
-      /^FYP phát hành tháng \S+ của RE Đỗ Khánh Linh giảm 14,5 tr$/,
+  it('names the metric, the month and the RE of the policy', () => {
+    expect(effectText(down, 'Đỗ Khánh Linh')).toBe(
+      'FYP phát hành tháng 09/2026 của RE Đỗ Khánh Linh giảm 14,5 tr',
     );
     expect(effectText({ ...down, diff: 2 * MILLION }, 'Linh')).toMatch(/của RE Linh tăng 2 tr$/);
+    expect(effectText({ ...down, metric: 'submitted' }, 'Linh')).toMatch(/^FYP nộp tháng 09\/2026/);
   });
 
   it('never shows an empty RE name, e.g. when the RE was deleted', () => {
@@ -103,7 +106,63 @@ describe('readPolicy', () => {
   });
 });
 
-describe('issuedChange', () => {
+// DR6-38: a dialog opened on 31/12 and saved after midnight.
+describe('openDraft and readPolicy across New Year', () => {
+  const OPENED = d(31, 12);
+  const NEXT_YEAR = d(1, 1, 2027);
+  const policy: Policy = {
+    id: 'p',
+    customerId: 'c',
+    reId: 're',
+    submittedDate: d(20, 12),
+    submittedFyp: 400 * MILLION,
+    issuedDate: null,
+    issuedFyp: null,
+  };
+
+  it('issues on the day filled in and keeps the submission day it does not show (8b)', () => {
+    const opened = openDraft({ kind: 'issue', policy }, OPENED);
+    expect(opened.draft).toMatchObject({ submittedDate: '20/12', issued: { date: '31/12' } });
+    const read = readPolicy(opened.draft, NEXT_YEAR, opened);
+    expect(read.submittedDate).toEqual({ ok: true, date: d(20, 12) });
+    expect(read.policy).toEqual({
+      submittedDate: d(20, 12),
+      submittedFyp: 400 * MILLION,
+      issuedDate: d(31, 12),
+      issuedFyp: 400 * MILLION,
+    });
+  });
+
+  it('keeps the saved days of an edit (8d) and the day of a new one (8a)', () => {
+    const saved = { ...policy, issuedDate: d(28, 12), issuedFyp: 380 * MILLION };
+    const edit = openDraft({ kind: 'edit', policy: saved }, OPENED);
+    expect(readPolicy(edit.draft, NEXT_YEAR, edit).policy).toEqual({
+      submittedDate: d(20, 12),
+      submittedFyp: 400 * MILLION,
+      issuedDate: d(28, 12),
+      issuedFyp: 380 * MILLION,
+    });
+    const fresh = openDraft({ kind: 'new' }, OPENED);
+    const draft = { ...fresh.draft, submittedFyp: '1tr' };
+    expect(readPolicy(draft, NEXT_YEAR, fresh).submittedDate).toEqual({ ok: true, date: OPENED });
+  });
+
+  it('reads a day typed over the filled-in one against today', () => {
+    const opened = openDraft({ kind: 'issue', policy }, OPENED);
+    const draft = { ...opened.draft, issued: { date: '1/1', fyp: '400tr' } };
+    expect(readPolicy(draft, NEXT_YEAR, opened).issuedDate).toEqual({
+      ok: true,
+      date: NEXT_YEAR,
+      daysAfter: 12,
+    });
+    expect(readPolicy(opened.draft, NEXT_YEAR).submittedDate).toEqual({
+      ok: false,
+      error: 'future',
+    });
+  });
+});
+
+describe('policyChange', () => {
   const policy: Policy = {
     id: 'p',
     customerId: 'c',
@@ -113,35 +172,63 @@ describe('issuedChange', () => {
     issuedDate: d(18, 9),
     issuedFyp: 400 * MILLION,
   };
+  const change = (
+    issued: { date: string; fyp: string },
+    submitted: Partial<PolicyDraft> = {},
+    saved = policy,
+  ) =>
+    policyChange(
+      saved,
+      readPolicy({ submittedDate: '20/8', submittedFyp: '400tr', issued, ...submitted }, TODAY),
+    );
 
-  it('tells how far the issued FYP now is from the submitted one and from the saved one', () => {
-    expect(issuedChange(policy, { issuedDate: d(18, 9), issuedFyp: 385_500_000 })).toEqual({
-      fromSubmitted: -14_500_000,
-      metric: { year: 2026, month: 9, diff: -14_500_000 },
-    });
+  it('tells how far the issued FYP is from the submitted one, both as typed (DR6-40)', () => {
+    expect(change({ date: '18/9', fyp: '385,5tr' }).fromSubmitted).toBe(-14_500_000);
+    expect(change({ date: '18/9', fyp: '385,5tr' }, { submittedFyp: '390tr' }).fromSubmitted).toBe(
+      -4_500_000,
+    );
+    expect(change({ date: '18/9', fyp: '400tr' }).fromSubmitted).toBe(0);
+    expect(change({ date: '18/9', fyp: 'x' }).fromSubmitted).toBeNull();
+    expect(change({ date: '18/9', fyp: '400tr' }, { submittedFyp: '' }).fromSubmitted).toBeNull();
   });
 
-  it('measures the effect on the month from the saved issued FYP, not the submitted one', () => {
+  it('measures the effect on the month from the saved issued FYP (mockup 8d)', () => {
+    expect(change({ date: '18/9', fyp: '385,5tr' }).effects).toEqual([
+      { metric: 'issued', year: 2026, month: 9, diff: -14_500_000 },
+    ]);
     const saved = { ...policy, issuedFyp: 390 * MILLION };
-    expect(issuedChange(saved, { issuedDate: d(18, 9), issuedFyp: 385_500_000 })).toEqual({
-      fromSubmitted: -14_500_000,
-      metric: { year: 2026, month: 9, diff: -4_500_000 },
-    });
+    expect(change({ date: '18/9', fyp: '385,5tr' }, {}, saved).effects).toEqual([
+      { metric: 'issued', year: 2026, month: 9, diff: -4_500_000 },
+    ]);
   });
 
-  it('leaves out the effect on the month when the FYP stays or the issue month moves', () => {
-    expect(issuedChange(policy, { issuedDate: d(19, 9), issuedFyp: 400 * MILLION })).toEqual({
-      fromSubmitted: 0,
-      metric: null,
-    });
-    expect(issuedChange(policy, { issuedDate: d(1, 10), issuedFyp: 410 * MILLION })).toEqual({
-      fromSubmitted: 10 * MILLION,
-      metric: null,
-    });
+  it('has no effect when no month gains or loses, or while a field is wrong', () => {
+    expect(change({ date: '19/9', fyp: '400tr' }, { submittedDate: '21/8' }).effects).toEqual([]);
+    expect(change({ date: '18/9', fyp: '0' }).effects).toEqual([]);
+  });
+
+  it('takes the FYP out of the old month and puts it in the new one (DR6-41)', () => {
+    expect(change({ date: '25/8', fyp: '410tr' }).effects).toEqual([
+      { metric: 'issued', year: 2026, month: 9, diff: -400 * MILLION },
+      { metric: 'issued', year: 2026, month: 8, diff: 410 * MILLION },
+    ]);
+    expect(change({ date: '18/9', fyp: '400tr' }, { submittedDate: '2/9' }).effects).toEqual([
+      { metric: 'submitted', year: 2026, month: 8, diff: -400 * MILLION },
+      { metric: 'submitted', year: 2026, month: 9, diff: 400 * MILLION },
+    ]);
     // The same month of another year is another month.
-    expect(issuedChange(policy, { issuedDate: d(18, 9, 2025), issuedFyp: 410 * MILLION })).toEqual({
-      fromSubmitted: 10 * MILLION,
-      metric: null,
+    expect(change({ date: '18/9', fyp: '400tr' }, { submittedDate: '20/8/2025' }).effects).toEqual([
+      { metric: 'submitted', year: 2026, month: 8, diff: -400 * MILLION },
+      { metric: 'submitted', year: 2025, month: 8, diff: 400 * MILLION },
+    ]);
+  });
+
+  it('counts only the submitted FYP of a policy not issued', () => {
+    const notIssued = { ...policy, issuedDate: null, issuedFyp: null };
+    const read = readPolicy({ submittedDate: '20/8', submittedFyp: '450tr', issued: null }, TODAY);
+    expect(policyChange(notIssued, read)).toEqual({
+      fromSubmitted: null,
+      effects: [{ metric: 'submitted', year: 2026, month: 8, diff: 50 * MILLION }],
     });
   });
 });
@@ -154,9 +241,11 @@ describe('expectedCaseSize', () => {
     expectedCaseSize: size,
   });
 
-  it('takes the case size of the latest met meeting that has one', () => {
-    const list = [met(10, 600 * MILLION), met(1, 800 * MILLION), met(12, null)];
+  // §9 Q8 (a): the label says the latest meeting, so an older estimate never stands in for it.
+  it('takes the case size of the latest met meeting, none when that one has none', () => {
+    const list = [met(10, 600 * MILLION), met(1, 800 * MILLION), met(12, null, 'CANCELLED')];
     expect(expectedCaseSize(list)).toBe(600 * MILLION);
+    expect(expectedCaseSize([...list, met(11, null)])).toBeNull();
     expect(expectedCaseSize([])).toBeNull();
   });
 

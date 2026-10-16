@@ -17,6 +17,7 @@ import {
   dayText,
   MAX_HISTORY,
   parseTime,
+  prefill,
   priorMeetings,
   readScheduleDate,
   searchCustomers,
@@ -79,7 +80,8 @@ export function AppointmentDialog({
   const [query, setQuery] = useState('');
   // The customer's RE, who may have taken over since `from` was booked (T-233).
   const [reId, setReId] = useState(fixed?.reId ?? from?.reId ?? '');
-  const [dateText, setDateText] = useState(from ? dayText(from.date, today) : '');
+  const [filled] = useState(() => from && prefill(from.date, today));
+  const [dateText, setDateText] = useState(filled?.text ?? '');
   const [timeText, setTimeText] = useState(from?.time ?? '');
   const [trigger, setTrigger] = useState<AppointmentTrigger | ''>(from?.triggerType ?? '');
   const [triggerNote, setTriggerNote] = useState(from?.triggerNote ?? '');
@@ -94,7 +96,7 @@ export function AppointmentDialog({
     () => (customer ? priorMeetings(data, customer.id, today) : undefined),
     [data, customer, today],
   );
-  const date = readScheduleDate(dateText, today, from ? 'fromToday' : 'any');
+  const date = readScheduleDate(dateText, today, from ? 'fromToday' : 'any', filled);
   const time = parseTime(timeText);
   const pending = dateText.trim() === '' && !attempted;
 

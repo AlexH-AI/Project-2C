@@ -34,18 +34,19 @@ import {
 /**
  * Mockups 6c, 6d, 6e, 6i: the outcome of a scheduled appointment. Met moves the customer to the
  * stage after (a transition tied to the appointment, ADR-0007); "Dời lịch" moves it to a new day
- * (D3); a next appointment can be booked with the outcome, in one go.
+ * (D3); a next appointment can be booked with the outcome, in one go. `onShow` gets the
+ * appointment the reschedule or the booking made, as every other way of making one (DR6-42).
  */
 export function OutcomeDialog({
   row,
   people,
   onClose,
-  onMoved,
+  onShow,
 }: {
   row: AppointmentRow & { customer: NonNullable<AppointmentRow['customer']> };
   people: readonly Person[];
   onClose: () => void;
-  onMoved: (appointment: AppointmentRecord) => void;
+  onShow: (appointment: AppointmentRecord) => void;
 }) {
   const app = useAppData();
   const { transitions, appointments } = useTables();
@@ -87,7 +88,7 @@ export function OutcomeDialog({
       if (status === 'RESCHEDULED') {
         const when = moving.submit();
         if (!when) return;
-        onMoved(app.run((db) => rescheduleAppointment(db, a.id, when, moving.reason)));
+        onShow(app.run((db) => rescheduleAppointment(db, a.id, when, moving.reason)));
       } else {
         const read = readOutcome({
           status,
@@ -98,11 +99,8 @@ export function OutcomeDialog({
         setErrors(read.ok ? [] : read.errors);
         if (!read.ok) return;
         const { outcome, next } = read;
-        app.run((db) =>
-          next
-            ? recordOutcomeWithNext(db, a.id, outcome, next)
-            : recordMeetingOutcome(db, a.id, outcome),
-        );
+        if (next) onShow(app.run((db) => recordOutcomeWithNext(db, a.id, outcome, next)).next);
+        else app.run((db) => recordMeetingOutcome(db, a.id, outcome));
       }
       onClose();
     } catch (error) {

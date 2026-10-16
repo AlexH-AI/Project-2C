@@ -16,7 +16,7 @@ import { DeleteAppointmentDialog } from './DeleteAppointmentDialog';
 import { badge, MetFields, metDraftOf, EMPTY_MET } from './MetFields';
 import { DayLockNote } from './OutcomeDialog';
 import { whenText } from './RescheduleFields';
-import { dayText, isPastOrToday, parseTime, readScheduleDate } from './appointment-form';
+import { isPastOrToday, parseTime, prefill, readScheduleDate } from './appointment-form';
 import { LINK, LOCKED, outcomeText, type AppointmentRow } from './appointments-view';
 import {
   heldStage,
@@ -59,7 +59,8 @@ export function EditOutcomeDialog({
   const [status, setStatus] = useState(a.status as EditStatus);
   const [metDraft, setMetDraft] = useState(a.status === 'MET' ? metDraftOf(a) : EMPTY_MET);
   const [note, setNote] = useState(a.note);
-  const [dateText, setDateText] = useState(dayText(a.date, today));
+  const [filled] = useState(() => prefill(a.date, today));
+  const [dateText, setDateText] = useState(filled.text);
   const [timeText, setTimeText] = useState(a.time ?? '');
   const [trigger, setTrigger] = useState<AppointmentTrigger>(a.triggerType);
   const [triggerNote, setTriggerNote] = useState(a.triggerNote ?? '');
@@ -68,7 +69,7 @@ export function EditOutcomeDialog({
   const { failure, setFailure, edit } = useSaveFailure();
   const [deleting, setDeleting] = useState(false);
 
-  const date = readScheduleDate(dateText, today, 'any');
+  const date = readScheduleDate(dateText, today, 'any', filled);
   const day = date.ok ? date.date : a.date;
   const time = parseTime(timeText);
   // Met and no-show only by today (Owner 29/09/2026), whatever day is typed.

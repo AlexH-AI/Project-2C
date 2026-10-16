@@ -21,44 +21,26 @@ import { Button, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
-import { dayText } from '../appointments/appointment-form';
 import { Actions, ALERT, dayRead, FailureAlert, InvalidAlert } from './CustomerDialogs';
 import {
   effectText,
-  issuedChange,
   monthOf,
+  openDraft,
+  policyChange,
   readPolicy,
   type FypResult,
   type IssuedDateResult,
   type PolicyDraft,
+  type PolicyMode,
 } from './policy-form';
 
-/** `new` submits a policy (8a), `issue` issues it (8b, 8c), `edit` changes or deletes it (8d). */
-export type PolicyMode =
-  { readonly kind: 'new' } | { readonly kind: 'issue' | 'edit'; readonly policy: Policy };
+export type { PolicyMode } from './policy-form';
 
 const fypRead = (amount: Vnd) =>
   t('policyForm.fypRead', { amount: formatVnd(amount), compact: formatVndCompact(amount) });
 
 const fypError = (read: FypResult) =>
   read.ok ? undefined : t(read.error === 'zero' ? 'policyForm.zero' : `money.error.${read.error}`);
-
-function draftOf(mode: PolicyMode, today: CalendarDate): PolicyDraft {
-  if (mode.kind === 'new')
-    return { submittedDate: dayText(today, today), submittedFyp: '', issued: null };
-  const { policy } = mode;
-  return {
-    submittedDate: dayText(policy.submittedDate, today),
-    submittedFyp: formatVnd(policy.submittedFyp),
-    issued:
-      mode.kind === 'issue'
-        ? // The issued FYP starts as the submitted one (G2 D).
-          { date: dayText(today, today), fyp: formatVnd(policy.issuedFyp ?? policy.submittedFyp) }
-        : policy.issuedDate && policy.issuedFyp !== null
-          ? { date: dayText(policy.issuedDate, today), fyp: formatVnd(policy.issuedFyp) }
-          : null,
-  };
-}
 
 /** Mockups 8a–8d: the policy block of the customer profile opens this. */
 export function PolicyDialog({
@@ -80,12 +62,13 @@ export function PolicyDialog({
   const app = useAppData();
   const today = app.today();
   const saved = mode.kind === 'new' ? null : mode.policy;
-  const [draft, setDraft] = useState(() => draftOf(mode, today));
+  const [opened] = useState(() => openDraft(mode, today));
+  const [draft, setDraft] = useState(opened.draft);
   const [reId, setReId] = useState(customer.reId);
   const [attempted, setAttempted] = useState(false);
   const [failure, setFailure] = useState<string>();
   const [deleting, setDeleting] = useState(false);
-  const read = readPolicy(draft, today);
+  const read = readPolicy(draft, today, opened);
 
   const edit = (changes: Partial<PolicyDraft>) => {
     setDraft({ ...draft, ...changes });
@@ -154,10 +137,7 @@ export function PolicyDialog({
 
   const issuedRead = read.issuedDate?.ok ? read.issuedDate : null;
   const issuedFyp = read.issuedFyp?.ok ? read.issuedFyp.amount : null;
-  const change =
-    mode.kind === 'edit' && issuedRead && issuedFyp !== null
-      ? issuedChange(mode.policy, { issuedDate: issuedRead.date, issuedFyp })
-      : null;
+  const change = mode.kind === 'edit' ? policyChange(mode.policy, read) : null;
   const re = people.find((person) => person.id === saved?.reId);
 
   return (
@@ -258,7 +238,7 @@ export function PolicyDialog({
             hint={
               issuedFyp === null
                 ? undefined
-                : change && change.fromSubmitted !== 0
+                : change?.fromSubmitted
                   ? t('policyForm.fromSubmitted', {
                       read: fypRead(issuedFyp),
                       diff: formatVndDelta(change.fromSubmitted),
@@ -277,10 +257,16 @@ export function PolicyDialog({
           })}
         </p>
       )}
-      {change?.metric && (
+      {change && change.effects.length > 0 && (
         <dl className="m-0 flex gap-3 tabular-nums">
           <dt className="shrink-0 text-fg-3">{t('policyForm.effect')}</dt>
-          <dd className="m-0">{effectText(change.metric, re?.name)}</dd>
+          <dd className="m-0 flex flex-col gap-0.5">
+            {change.effects.map((effect) => (
+              <span key={`${effect.metric}-${effect.year}-${effect.month}`}>
+                {effectText(effect, re?.name)}
+              </span>
+            ))}
+          </dd>
         </dl>
       )}
     </Dialog>
