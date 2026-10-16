@@ -312,7 +312,7 @@ export function AppointmentsScreen() {
           row={{ ...recording, customer: recording.customer }}
           people={data.people}
           onClose={() => setRecording(null)}
-          onMoved={show}
+          onShow={show}
         />
       )}
       {editing?.customer && (

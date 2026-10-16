@@ -35,13 +35,29 @@ export type ScheduleDate =
   | { readonly ok: false; readonly error: 'invalid-date'; readonly suggestion: CalendarDate }
   | { readonly ok: false; readonly error: QuickDateError };
 
-/** Reads the day typed into the form: `dd/mm` or `dd/mm/yyyy`, checked against `today`. */
+/** A day the dialog filled in (`dayText`), and the day it opened on. */
+export interface Prefill {
+  readonly text: string;
+  readonly on: CalendarDate;
+}
+
+export const prefill = (date: CalendarDate, today: CalendarDate): Prefill => ({
+  text: dayText(date, today),
+  on: today,
+});
+
+/**
+ * Reads the day typed into the form: `dd/mm` or `dd/mm/yyyy`, checked against `today`. Left as
+ * `filled` wrote it, a `dd/mm` reads in the year the dialog opened in, so one left open across
+ * New Year keeps the day it showed (DR6-38).
+ */
 export function readScheduleDate(
   text: string,
   today: CalendarDate,
   mode: ScheduleMode,
+  filled?: Prefill,
 ): ScheduleDate {
-  const parsed = parseQuickDate(text, today);
+  const parsed = parseQuickDate(text, filled && text === filled.text ? filled.on : today);
   if (!parsed.ok) {
     const { error, nextYearSuggestion } = parsed;
     return nextYearSuggestion
@@ -59,7 +75,8 @@ export function readScheduleDate(
 
 /**
  * A day as the form writes it: `dd/mm` this year, `dd/mm/yyyy` otherwise. `readScheduleDate`
- * reads it back as the same day, so an earlier year's day never turns into this year's.
+ * reads it back as the same day, so an earlier year's day never turns into this year's; past New
+ * Year it needs the `Prefill` it came from.
  */
 export const dayText = (date: CalendarDate, today: CalendarDate) =>
   date.year === today.year ? formatDayMonth(date) : formatDate(date);
