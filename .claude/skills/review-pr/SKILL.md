@@ -5,7 +5,7 @@ description: Review a Project-2C pull request by number, choosing the review tie
 
 # Review PR theo mức risk (ADR-0017)
 
-Đầu vào: số PR. Kết quả: **một** comment `REVIEW: PASS` / `REVIEW: CHANGES` trên PR, rồi merge hoặc báo Owner theo CLAUDE.md. Mọi việc làm inline trong phiên này. **Không subagent.**
+Đầu vào: số PR. Kết quả: **một** comment `REVIEW: PASS` / `REVIEW: CHANGES` trên PR, rồi merge hoặc báo Owner theo CLAUDE.md. Mặc định làm inline trong phiên này; dùng subagent / Workflow khi Owner bật (`ultracode`, ADR-0001 phụ lục M8). Subagent chỉ đọc, kết quả của chúng là giả thuyết: phiên này tự xác nhận từng mục trên code rồi mới ghi vào comment.
 
 ## 0. Điều kiện phiên
 
@@ -100,7 +100,7 @@ Mỗi mùi ghi là "có thể là <mùi>", kèm hunk và cách sửa gợi ý. Q
 - **med / high:** gọi Skill `code-review` với args `medium <N>` hoặc `high <N>`.
   - **Không** dùng `--comment`, `--fix`, `ultra`. Kết quả chỉ để đọc; việc đăng comment và sửa code do quy trình 2C làm (ADR-0017 §3).
   - Coi kết quả là **giả thuyết**: đọc code để xác nhận từng mục trước khi đưa vào comment, bỏ mục không tái hiện được bằng lập luận hoặc test.
-  - Nếu skill lỗi hoặc cần tool bị chặn (`Agent`) → rà Correctness inline theo cùng mức, ghi "code-review không chạy được: <lý do>" vào comment.
+  - Nếu skill lỗi, hoặc cần subagent khi Owner chưa bật (ADR-0001 phụ lục M8) → rà Correctness inline theo cùng mức, ghi "code-review không chạy được: <lý do>" vào comment.
 - **high:** khi một phát hiện cần bằng chứng, tái hiện bằng test ở thư mục tạm hoặc worktree riêng. Không đổi nhánh của checkout chung (có thể có phiên khác đang dùng).
 
 ## 4. Kết luận và comment

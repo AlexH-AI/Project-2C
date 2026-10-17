@@ -1,6 +1,6 @@
 # Project-2C
 
-App desktop quản lý khách hàng, KYC, lịch hẹn, hợp đồng và chỉ số cho đội RE (kèm AI copilot), **làm hoàn toàn bằng Claude Code** (không subagent; model và effort do Owner chọn từng phiên).
+App desktop quản lý khách hàng, KYC, lịch hẹn, hợp đồng và chỉ số cho đội RE (kèm AI copilot), **làm hoàn toàn bằng Claude Code** (model và effort do Owner chọn từng phiên; từ 17/10/2026 Claude được dùng subagent / Workflow — ADR-0001 phụ lục M8).
 
 Ban đầu Project-2C là bản đối chứng của [`AlexH-AI/Project-2`](https://github.com/AlexH-AI/Project-2) (cùng yêu cầu, khác cách làm). Từ 11/10/2026 Owner bỏ mục đích so sánh và dừng Project-2: cách làm chỉ Claude Code đã cho kết quả tốt qua Phase 1–5 (ADR-0002 Superseded).
 

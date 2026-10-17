@@ -11,6 +11,8 @@ export default tseslint.config(
       '**/src-tauri/target/**',
       '**/src-tauri/gen/**',
       '.scratch/**',
+      // Agent worktrees (Workflow isolation: 'worktree', ADR-0001 M8) are other checkouts.
+      '.claude/worktrees/**',
       // CI skips docs/ (isDocsOnly in tools/pr-core.mjs), so verify does too (R2-12).
       'docs/**',
     ],

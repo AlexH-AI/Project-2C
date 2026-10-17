@@ -5,7 +5,7 @@ Vendored from [`mattpocock/skills`](https://github.com/mattpocock/skills) at com
 | Skill | Upstream path | Notes |
 |---|---|---|
 | `grill-me` | `skills/productivity/grill-me` | Delegates to `grilling` |
-| `grilling` | `skills/productivity/grilling` | Upstream says "dispatch a sub-agent" for fact lookups — in 2C the Agent tool is denied, so look facts up inline |
+| `grilling` | `skills/productivity/grilling` | Upstream says "dispatch a sub-agent" for fact lookups — allowed when the Owner turns on subagents (ADR-0001 M8, 2026-10-17); otherwise look facts up inline |
 | `to-spec` | `skills/engineering/to-spec` | Replaces `to-prd` named in the plan |
 | `to-tickets` | `skills/engineering/to-tickets` | Replaces `to-issues` named in the plan |
 | `tdd` | `skills/engineering/tdd` | Unmodified; how it combines with `superpowers:test-driven-development` is set in `CLAUDE.md` (task workflow, step 3) |
@@ -17,7 +17,7 @@ Not vendored: `review-pr` is 2C's own skill (ADR-0017).
 
 | Skill | Referenced by | Why not installed | Read it as |
 |---|---|---|---|
-| `codebase-design` | `tdd` | Its `DESIGN-IT-TWICE.md` needs parallel sub-agents (Agent tool denied); in 2C the seams are already fixed by the issue's acceptance tests | Skip |
+| `codebase-design` | `tdd` | Its `DESIGN-IT-TWICE.md` needs parallel sub-agents (denied until 2026-10-17, ADR-0001 M8); in 2C the seams are already fixed by the issue's acceptance tests | Skip |
 | `code-review` (Matt's) | `tdd` | Runs two sub-agents; replaced by `review-pr` (ADR-0017) | `review-pr` |
 
 ## Sửa cục bộ (local edits)

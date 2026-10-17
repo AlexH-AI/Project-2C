@@ -265,7 +265,7 @@ Gói F là chỗ phân tích bloat code và hiệu năng toàn cục (yêu cầu
 
 ### 6.5 Quy tắc
 
-ADR-0001 phụ lục **M4** (cùng PR với spec này): ở review đóng Phase 6, Muse tham gia như Codex (M5, 13/10: bỏ DeepSeek; M6, 14/10: Muse dùng Spark 1.3; M7, 17/10: lượt 2 bỏ Muse) — chỉ đọc, không viết code, báo cáo là dữ liệu tham khảo, không thay review phiên sạch. Không mở Agent tool, không cho agent ngoài viết code; multi-agent thử ở project mới, không ở 2C (Owner 11/10). Bỏ so sánh với Project-2 nên không còn ràng buộc từ `docs/COMPARISON.md` (ADR-0001 phụ lục M3, ADR-0002 Superseded).
+ADR-0001 phụ lục **M4** (cùng PR với spec này): ở review đóng Phase 6, Muse tham gia như Codex (M5, 13/10: bỏ DeepSeek; M6, 14/10: Muse dùng Spark 1.3; M7, 17/10: lượt 2 bỏ Muse) — chỉ đọc, không viết code, báo cáo là dữ liệu tham khảo, không thay review phiên sạch. Không mở Agent tool, không cho agent ngoài viết code; multi-agent thử ở project mới, không ở 2C (Owner 11/10). *Sửa 17/10/2026 (ADR-0001 phụ lục M8):* Claude được dùng subagent / Workflow khi Owner bật (`ultracode`); agent ngoài Claude vẫn không viết code. Câu "không mở Agent tool" chỉ còn áp cho 2 lượt deep review 6D đã chạy. Bỏ so sánh với Project-2 nên không còn ràng buộc từ `docs/COMPARISON.md` (ADR-0001 phụ lục M3, ADR-0002 Superseded).
 
 ## 7. 6E — G7 và phát hành v1.0
 

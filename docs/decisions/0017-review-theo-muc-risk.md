@@ -35,7 +35,8 @@
    - `--fix` để người review tự sửa rồi tự chấm, bỏ qua test đỏ trước khi sửa (TDD), chiếm vòng sửa (tối đa 2, sau đó G8) mà Owner chưa duyệt hướng, và ghi thẳng vào checkout có thể đang dùng chung.
    - `ultra` chạy trên cloud và tính tiền riêng (G4).
    - Kết quả của `code-review` là giả thuyết; phiên review phải xác nhận từng mục trước khi ghi.
-5. **Không bật lại subagent.** `Agent` vẫn bị chặn (ADR-0001 giữ nguyên). Nếu `code-review` cần subagent mà không chạy được → rà Correctness inline, ghi rõ trong comment.
+5. ~~**Không bật lại subagent.**~~ (lịch sử, xem dòng sửa ngay dưới) `Agent` vẫn bị chặn (ADR-0001 giữ nguyên). Nếu `code-review` cần subagent mà không chạy được → rà Correctness inline, ghi rõ trong comment.
+   - *Sửa 17/10/2026 (ADR-0001 phụ lục M8):* `Agent` không còn bị chặn. Như mọi việc khác, subagent chỉ chạy khi Owner bật (`ultracode`, hoặc bảo rõ): khi đó `code-review` được dùng subagent của nó và phiên review được dùng Workflow; chưa bật thì `code-review` chạy các góc rà lần lượt trong phiên chính như ở #96 (phụ lục mục 1). Mọi phát hiện vẫn là giả thuyết, phiên review xác nhận trước khi ghi; vẫn **một** comment `REVIEW:`, phiên review vẫn không commit.
 6. **Định dạng kết luận giữ nguyên** `REVIEW: PASS/CHANGES`, chia các mục Spec / Standards / Correctness. Mỗi mục gắn [chặn] hoặc [không chặn]. Chỉ mục chặn mới làm kết luận thành CHANGES. Quy tắc merge của ADR-0001 không đổi: `risk:low` + PASS + CI xanh → Claude merge; còn lại chờ Owner.
 
 ## Phương án đã cân nhắc
