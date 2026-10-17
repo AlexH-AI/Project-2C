@@ -1,4 +1,4 @@
-import { DbError, type AppointmentRecord } from '@p2c/db';
+import { DbError, type AppointmentRecord, type PersonUsage } from '@p2c/db';
 import {
   addDays,
   customPeriod,
@@ -12,6 +12,7 @@ import {
   type Policy,
   type Team,
 } from '@p2c/domain';
+import { t } from '../../i18n';
 
 export interface TeamEntry {
   readonly team: Team;
@@ -42,12 +43,10 @@ export function groupByTeam(teams: readonly Team[], people: readonly Person[]): 
   };
 }
 
-/** The live records the member columns and the delete check are counted from. */
+/** The live records the member columns are counted from. */
 export interface StaffRecords {
   readonly customers: ReadonlyArray<Pick<Customer, 'reId' | 'stage'>>;
-  readonly appointments: ReadonlyArray<
-    Pick<AppointmentRecord, 'reId' | 'coordinatorIds' | 'date' | 'outcomeReviewerId'>
-  >;
+  readonly appointments: ReadonlyArray<Pick<AppointmentRecord, 'reId' | 'date'>>;
   readonly policies: ReadonlyArray<Pick<Policy, 'reId' | 'issuedDate'>>;
 }
 
@@ -102,25 +101,37 @@ export function staffMetrics(
   );
 }
 
-/** What still points to a person and blocks deleting them (mockup 9b). */
-export interface PersonUsage {
-  readonly customers: number;
-  readonly appointments: number;
-  readonly policies: number;
-  readonly coordinating: number;
-  /** Meetings the person reviews the outcome of (D9). */
-  readonly reviewing: number;
-}
+/** At most this many customers of the trash are named in mockup 9b; the others are counted. */
+const NAMED_IN_TRASH = 3;
 
-export function personUsage(personId: string, records: StaffRecords): PersonUsage {
-  const count = (list: ReadonlyArray<{ readonly reId: string }>) => ownedBy(list, personId).length;
-  return {
-    customers: count(records.customers),
-    appointments: count(records.appointments),
-    policies: count(records.policies),
-    coordinating: records.appointments.filter((a) => a.coordinatorIds.includes(personId)).length,
-    reviewing: records.appointments.filter((a) => a.outcomeReviewerId === personId).length,
-  };
+/**
+ * How a person gets out of what keeps them (mockup 9b): one sentence for their role — the RE's
+ * whenever they own records, as the mockup shows for an RE who also coordinates (review of PR 636) —
+ * then, when some of it belongs to customers in the trash, which ones, and that those come back
+ * first (T-250).
+ */
+export function inUseHelp(usage: PersonUsage): string[] {
+  const owns = usage.customers + usage.appointments + usage.policies > 0;
+  const reviews = usage.reviewing > 0;
+  const coordinates = usage.coordinating > 0;
+  const role = owns
+    ? t('person.inUseHelp')
+    : reviews && coordinates
+      ? t('person.inUseSupportHelp')
+      : reviews
+        ? t('person.inUseReviewerHelp')
+        : coordinates
+          ? t('person.inUseCoordinatorHelp')
+          : null;
+  const named = usage.inTrash.slice(0, NAMED_IN_TRASH).join(t('sep.list'));
+  const others = usage.inTrash.length - NAMED_IN_TRASH;
+  const customer =
+    others > 0 ? t('person.inUseTrashMore', { customer: named, count: others }) : named;
+  const trash =
+    usage.inTrash.length > 0
+      ? t(owns ? 'person.inUseTrash' : 'person.inUseSupportTrash', { customer })
+      : null;
+  return [role, trash].filter((line) => line !== null);
 }
 
 /**

@@ -14,7 +14,8 @@ import { useRoute } from './useRoute';
 /**
  * A new screen says so (DR6-35): the window takes its name, and the focus, gone with the screen
  * before, goes to its heading; back on Customers from a profile, to the card or row of that customer
- * when shown. Opening the app leaves the focus alone.
+ * when shown. Opening the app leaves the focus alone. The screens share one page, which keeps the
+ * scroll of the screen before: a new one opens at its top (DR6-81), the card just seen in view.
  */
 function useScreenFocus(route: Route) {
   const heading = useRef<HTMLHeadingElement>(null);
@@ -36,7 +37,10 @@ function useScreenFocus(route: Route) {
         )
       : undefined;
     if (seen) seen.focus();
-    else heading.current?.focus({ preventScroll: true });
+    else {
+      window.scrollTo(0, 0);
+      heading.current?.focus({ preventScroll: true });
+    }
   }, [hash, onCustomers]);
   return { heading, main };
 }

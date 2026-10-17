@@ -69,7 +69,7 @@ function CategoryRow({
       <span aria-hidden="true" className={`w-4 shrink-0 text-center font-bold ${color}`}>
         {mark}
       </span>
-      <div className="flex flex-1 flex-col gap-1">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="font-semibold">
           {t(`kycCategory.${row.category}`)}{' '}
           <span className={`text-xs font-normal ${row.conflict ? color : 'text-fg-3'}`}>
@@ -87,7 +87,7 @@ function CategoryRow({
               aria-current={code === marked ? 'true' : undefined}
               className={`flex justify-between gap-2 rounded-sm text-fg-2 ${code === marked ? 'outline-2 outline-offset-2 outline-warn' : ''}`}
             >
-              <span>
+              <span className="min-w-0 wrap-anywhere">
                 {t(`kycField.${fact.field}`)}: {factText(fact.value, YES_NO)}
                 {KYC_FIELDS[fact.field].fromProfile && (
                   <span className="text-xs text-fg-3">
@@ -271,7 +271,7 @@ export function Timeline({
                       t('timeline.coordinators', { roles: roles(event.appointment).join(', ') }),
                   ])}
                 </b>
-                <span className="flex flex-wrap items-baseline gap-x-2 text-fg-2">
+                <span className="flex flex-wrap items-baseline gap-x-2 wrap-anywhere text-fg-2">
                   {meetingText(event.appointment)}
                   <NextButton appointment={event.appointment} today={today} onNext={onNext}>
                     {t('timeline.next')}

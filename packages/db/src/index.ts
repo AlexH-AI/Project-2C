@@ -11,8 +11,10 @@ export type { DbErrorCode } from './errors';
 export {
   createPerson,
   createTeam,
+  isPersonInUse,
   listPeople,
   listTeams,
+  personUsage,
   renameTeam,
   restorePerson,
   restoreTeam,
@@ -20,7 +22,7 @@ export {
   softDeleteTeam,
   updatePerson,
 } from './team';
-export type { PersonInput } from './team';
+export type { PersonInput, PersonUsage } from './team';
 export {
   changeStageManually,
   createCustomer,

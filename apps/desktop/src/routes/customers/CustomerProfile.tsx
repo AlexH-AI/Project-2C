@@ -155,9 +155,10 @@ export function CustomerProfile({ id }: { id: string }) {
         </div>
         <p className="m-0 text-sm text-fg-2 tabular-nums">{joinParts(facts)}</p>
       </section>
-      {/* Three columns from the default 1 440 × 900 window, as the mockup (DR6-30). */}
+      {/* Three columns from the default 1 440 × 900 window, as the mockup (DR6-30); a column does
+          not grow past its share for a long link, the text breaks instead (DR6-82). */}
       <div className="grid items-start gap-4 lg:grid-cols-2 wide:grid-cols-3">
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
           <KycCard
             profile={kyc}
             versions={versions}
@@ -174,7 +175,7 @@ export function CustomerProfile({ id }: { id: string }) {
             onEdit={onEditPolicy}
           />
         </div>
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
           <Timeline
             transitions={transitions}
             notes={kyc.notes}
@@ -199,7 +200,7 @@ export function CustomerProfile({ id }: { id: string }) {
             onNext={next}
           />
         </div>
-        <div className="lg:col-span-2 wide:col-span-1">
+        <div className="min-w-0 lg:col-span-2 wide:col-span-1">
           <KycIntelligence
             key={customer.id}
             customerId={customer.id}

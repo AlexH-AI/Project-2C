@@ -98,6 +98,59 @@ test('a new screen takes the focus on its heading and names the window; back on 
   await expect(page).toHaveTitle('Báo cáo · Project-2C');
 });
 
+test('a screen opened from one scrolled down shows from its top; back on Customers, the row just seen (DR6-81)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/#/customers');
+  const scrollY = () => page.evaluate(() => window.scrollY);
+  const lastCustomer = async () => {
+    const last = page.locator('main a[href^="#/customers/"]').last();
+    await last.scrollIntoViewIfNeeded();
+    expect(await scrollY()).toBeGreaterThan(0);
+    return last;
+  };
+  const profileName = page.locator('#customer-name');
+
+  // From the bottom of the table to a profile taller than the window: its top, not the middle.
+  await page.getByRole('radio', { name: 'Bảng' }).click();
+  await (await lastCustomer()).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hồ sơ khách hàng');
+  await expect(profileName).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight + 200),
+  ).toBe(true);
+  await expect.poll(scrollY).toBe(0);
+  await expect(profileName).toBeInViewport();
+
+  // From the bottom of that profile to another screen by the sidebar.
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await expect.poll(scrollY).toBeGreaterThan(0);
+  await page
+    .getByRole('navigation', { name: 'Điều hướng chính' })
+    .getByRole('link', { name: 'Lịch hẹn' })
+    .click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Lịch hẹn');
+  await expect.poll(scrollY).toBe(0);
+
+  // Back on Customers (Kanban again) from the profile of its last card: that card, in view. The
+  // board fits a 900 px window; a lower one scrolls it.
+  await page.setViewportSize({ width: 1440, height: 500 });
+  await page
+    .getByRole('navigation', { name: 'Điều hướng chính' })
+    .getByRole('link', { name: 'Khách hàng' })
+    .click();
+  const card = await lastCustomer();
+  const href = (await card.getAttribute('href')) ?? '';
+  await card.click();
+  await expect(profileName).toBeVisible();
+  await expect.poll(scrollY).toBe(0);
+  await page.getByRole('link', { name: '← Khách hàng' }).click();
+  await expect(page.locator(`main a[href="${href}"]`)).toBeFocused();
+  await expect(page.locator(`main a[href="${href}"]`)).toBeInViewport();
+  expect(await scrollY()).toBeGreaterThan(0);
+});
+
 /** Resolves, in the page, to whether the screen changed within a second from now. */
 const screenChange = (page: Page) =>
   page.evaluateHandle(() => ({

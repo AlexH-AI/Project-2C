@@ -6,13 +6,7 @@ import type { Tables } from '../../data/tables';
 import { t, tableMore } from '../../i18n';
 import { DeletePersonDialog, PersonDialog } from './PersonDialogs';
 import { DeleteTeamDialog, TeamNameDialog } from './TeamDialogs';
-import {
-  groupByTeam,
-  personUsage,
-  staffMetrics,
-  type StaffMetrics,
-  type TeamEntry,
-} from './team-view';
+import { groupByTeam, staffMetrics, type StaffMetrics, type TeamEntry } from './team-view';
 
 type Editing =
   | { readonly kind: 'create' }
@@ -214,7 +208,6 @@ export function TeamScreen() {
           teamName={
             teams.find((team) => team.id === editing.person.teamId)?.name ?? t('team.shared')
           }
-          usage={personUsage(editing.person.id, view.records)}
           onClose={close}
         />
       )}

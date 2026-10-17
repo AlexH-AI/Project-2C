@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { ANCHOR_YEAR } from './anchor';
+import { asExe } from './support';
 
 // The simulated data (spec §7, D8): 3 teams of 1 TL + 10 RE, and a shared IS, BD and BDM.
 const SEEDED = ['Bình Minh', 'Hừng Đông', 'Sao Mai'];
@@ -323,10 +324,14 @@ test('an RE changed to BDM leaves their team; a team picked for them is refused 
   await expect(page.getByRole('region', { name: 'Người hỗ trợ' })).toContainText('Trần Hải Yến');
 });
 
-/** How the person gets out of what still points to them (mockup 9b): as an RE, as a supporter. */
+/**
+ * How the person gets out of what still points to them (mockup 9b): as an RE; as a reviewer, taken
+ * off in Sửa kết quả; as a coordinator, who stays (DR6-80, Q5 a).
+ */
 const RE_HELP = 'Chuyển KH sang RE khác trước (Sửa hồ sơ KH).';
-const SUPPORT_HELP =
-  'Bỏ nhân sự này khỏi người phối hợp và người đánh giá kết quả của các lịch đó trước, hoặc giữ lại thay vì xóa.';
+const REVIEWER_HELP = 'Bỏ nhân sự này khỏi người đánh giá kết quả của các lịch đó (ở Sửa kết quả)';
+const COORDINATOR_HELP =
+  /người phối hợp của lịch Dời lịch \/ Dự kiến không đổi được — giữ lại thay vì xóa\./i;
 
 test('refuses to delete an RE who still has records, and says how many (9b)', async ({ page }) => {
   await teamButton(page, 'Sao Mai').click();
@@ -349,7 +354,8 @@ test('refuses to delete an RE who still has records, and says how many (9b)', as
   await expect(alert).toContainText(/\d+ KH đang phụ trách/);
   await expect(alert).toContainText(/\d+ lịch hẹn, \d+ HĐ ghi cho RE này/);
   await expect(dialog).toContainText(RE_HELP);
-  await expect(dialog).not.toContainText(SUPPORT_HELP);
+  await expect(dialog).not.toContainText(REVIEWER_HELP);
+  await expect(dialog).not.toContainText(COORDINATOR_HELP);
   await expect(dialog.getByRole('button', { name: 'Xóa', exact: true })).toBeDisabled();
   await dialog.getByRole('button', { name: 'Đóng' }).click();
   await expect(members(page, 'Sao Mai').getByRole('row', { name: new RegExp(name) })).toBeVisible();
@@ -373,69 +379,162 @@ test('refuses to delete the IS who still joins appointments, and says how many (
   const alert = dialog.getByRole('alert');
   await expect(alert).toContainText('Chưa xóa được — IS còn dữ liệu');
   await expect(alert).toContainText(/[1-9][\d.]* lịch hẹn là người phối hợp/);
-  // The way out of an IS, not of an RE (DR6-26).
-  await expect(dialog).toContainText(SUPPORT_HELP);
+  // The way out of an IS, not of an RE (DR6-26); no way to take a coordinator off (DR6-80).
+  await expect(dialog).toContainText(COORDINATOR_HELP);
+  await expect(dialog).not.toContainText('khỏi người phối hợp');
   await expect(dialog).not.toContainText(RE_HELP);
 });
 
-test('refuses to delete an IS who only reviews a meeting, and says so (9b, DR6-26)', async ({
-  page,
-}) => {
-  const add = await openPersonDialog(page);
-  await add.getByRole('textbox', { name: 'Họ tên' }).fill('Lê Thu Hà');
-  await add.getByRole('radio', { name: 'IS', exact: true }).check();
-  await add.getByRole('button', { name: 'Thêm' }).click();
-  await expect(add).toBeHidden();
+const shared = (page: Page) => page.getByRole('region', { name: 'Người hỗ trợ' });
+const detail = (page: Page) => page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' });
+const goTo = (page: Page, screen: string) =>
+  page.getByRole('link', { name: screen, exact: true }).click();
 
-  // A meeting met today that the new IS reviews; links keep the data, a reload seeds afresh.
-  await page.getByRole('link', { name: 'Lịch hẹn' }).click();
+/** Adds an IS or a BD: shared by every team, with no team of their own. */
+async function addSupport(page: Page, name: string, role: 'IS' | 'BD') {
+  const dialog = await openPersonDialog(page);
+  await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(name);
+  await dialog.getByRole('radio', { name: role, exact: true }).check();
+  await dialog.getByRole('button', { name: 'Thêm' }).click();
+  await expect(dialog).toHaveCount(0);
+}
+
+/**
+ * A meeting met today, its stage kept, that the IS named `reviewer` reviews, for the first customer
+ * matching `customer`. Links keep the data, a reload seeds afresh.
+ */
+async function meetReviewedBy(page: Page, customer: RegExp | string, reviewer: string) {
+  await goTo(page, 'Lịch hẹn');
   await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
   const booking = page.getByRole('dialog');
-  await booking.getByRole('textbox', { name: /^Khách hàng/ }).fill('K-');
-  await booking
-    .getByRole('list', { name: 'KH khớp' })
-    .getByRole('button')
-    .filter({ hasText: /N3$/ })
-    .first()
-    .click();
+  const query = typeof customer === 'string' ? customer : 'K-';
+  await booking.getByRole('textbox', { name: /^Khách hàng/ }).fill(query);
+  const match = booking.getByRole('list', { name: 'KH khớp' }).getByRole('button');
+  await match.filter({ hasText: customer }).first().click();
   await booking.getByRole('textbox', { name: /^Ngày/ }).fill('15/9');
   await booking.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
   await booking.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
   await expect(booking).toHaveCount(0);
-  await page
-    .getByRole('complementary', { name: 'Chi tiết lịch hẹn' })
-    .getByRole('button', { name: 'Ghi kết quả' })
-    .click();
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
   const outcome = page.getByRole('dialog', { name: 'Kết quả cuộc gặp' });
-  await outcome
-    .getByRole('radiogroup', { name: 'Nhóm sau cuộc gặp' })
-    .getByRole('radio', { name: 'N3 giữ nguyên' })
-    .check();
-  await outcome
-    .getByRole('combobox', { name: /^Người đánh giá/ })
-    .selectOption({ label: 'IS Lê Thu Hà' });
+  await outcome.getByRole('radio', { name: /giữ nguyên$/ }).check();
+  const reviewers = outcome.getByRole('combobox', { name: /^Người đánh giá/ });
+  await reviewers.selectOption({ label: `IS ${reviewer}` });
   await outcome.getByRole('textbox', { name: /^Việc tiếp theo/ }).fill('Gửi bảng minh họa');
   await outcome.getByRole('button', { name: 'Lưu kết quả' }).click();
   await expect(outcome).toHaveCount(0);
+}
 
-  await page.getByRole('link', { name: 'Team & nhân sự' }).click();
-  await page
-    .getByRole('region', { name: 'Người hỗ trợ' })
-    .getByRole('button', { name: 'Sửa Lê Thu Hà' })
-    .click();
-  await page
-    .getByRole('dialog', { name: 'Sửa nhân sự' })
-    .getByRole('button', { name: 'Xóa nhân sự' })
-    .click();
+/** Opens 9b of the person named `name`, from their Sửa button in `where`. */
+async function openDelete(page: Page, where: Locator, name: string) {
+  await where.getByRole('button', { name: `Sửa ${name}` }).click();
+  await page.getByRole('button', { name: 'Xóa nhân sự' }).click();
+  return page.getByRole('dialog', { name: `Xóa ${name}?` });
+}
 
-  const dialog = page.getByRole('dialog', { name: 'Xóa Lê Thu Hà?' });
+test('refuses to delete an IS who only reviews a meeting, and says so (9b, DR6-26)', async ({
+  page,
+}) => {
+  await addSupport(page, 'Lê Thu Hà', 'IS');
+  await meetReviewedBy(page, /N3$/, 'Lê Thu Hà');
+  await goTo(page, 'Team & nhân sự');
+
+  const dialog = await openDelete(page, shared(page), 'Lê Thu Hà');
   const alert = dialog.getByRole('alert');
   await expect(alert).toContainText('Chưa xóa được — IS còn dữ liệu');
   await expect(alert).toContainText('1 lịch hẹn là người đánh giá kết quả');
   await expect(alert).not.toContainText('người phối hợp');
-  await expect(dialog).toContainText(SUPPORT_HELP);
+  await expect(dialog).toContainText(`${REVIEWER_HELP} trước, hoặc giữ lại thay vì xóa.`);
+  await expect(dialog).not.toContainText(COORDINATOR_HELP);
   await expect(dialog).not.toContainText(RE_HELP);
   await expect(dialog.getByRole('button', { name: 'Xóa', exact: true })).toBeDisabled();
+});
+
+test('an RE and an IS kept only by a customer in the trash: 9b counts it as the delete does and names it (T-250)', async ({
+  page,
+}) => {
+  // A new RE with one customer, met today with a new IS reviewing.
+  await addRe(page, 'Phan Thị Mới', 'Sao Mai');
+  await addSupport(page, 'Lê Thu Hà', 'IS');
+  const customer = 'Khách Trong Thùng';
+  await goTo(page, 'Khách hàng');
+  await page.getByRole('button', { name: '+ Khách hàng' }).click();
+  const create = page.getByRole('dialog', { name: 'Khách hàng mới' });
+  await create.getByRole('textbox', { name: 'Họ tên' }).fill(customer);
+  const re = create.getByRole('combobox', { name: 'RE phụ trách' });
+  await re.selectOption({ label: 'Phan Thị Mới · Sao Mai' });
+  await create.getByRole('button', { name: 'Lưu KH' }).click();
+  await expect(create).toHaveCount(0);
+  await meetReviewedBy(page, customer, 'Lê Thu Hà');
+
+  // 5f: the customer goes to the trash; its meeting is only hidden with it.
+  await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).click();
+  await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
+  await page.getByRole('button', { name: 'Xóa KH…' }).click();
+  await page.getByRole('button', { name: 'Xóa KH', exact: true }).click();
+  await expect(page).toHaveURL(/#\/customers$/);
+
+  await goTo(page, 'Team & nhân sự');
+  await teamButton(page, 'Sao Mai').click();
+  let dialog = await openDelete(page, members(page, 'Sao Mai'), 'Phan Thị Mới');
+  await expect(dialog.getByRole('alert')).toContainText('1 lịch hẹn, 0 HĐ ghi cho RE này');
+  await expect(dialog.getByRole('alert')).not.toContainText('KH đang phụ trách');
+  await expect(dialog).toContainText(RE_HELP);
+  await expect(dialog).toContainText(
+    `Có cả dữ liệu của KH đã xóa: ${customer}. Khôi phục KH ở Cài đặt → Thùng rác rồi chuyển sang RE khác.`,
+  );
+  await expect(dialog.getByRole('button', { name: 'Xóa', exact: true })).toBeDisabled();
+  await dialog.getByRole('button', { name: 'Đóng' }).click();
+
+  dialog = await openDelete(page, shared(page), 'Lê Thu Hà');
+  await expect(dialog.getByRole('alert')).toContainText('1 lịch hẹn là người đánh giá kết quả');
+  await expect(dialog).toContainText(REVIEWER_HELP);
+  await expect(dialog).toContainText(
+    `Có cả lịch hẹn của KH đã xóa: ${customer}. Khôi phục KH ở Cài đặt → Thùng rác thì mới sửa được các lịch đó.`,
+  );
+  await expect(dialog.getByRole('button', { name: 'Xóa', exact: true })).toBeDisabled();
+  await dialog.getByRole('button', { name: 'Đóng' }).click();
+
+  // The customer still comes back, its RE live (TR-2).
+  await goTo(page, 'Cài đặt');
+  await page.getByRole('button', { name: 'Thùng rác', exact: true }).click();
+  await page.getByRole('button', { name: `Khôi phục KH ${customer}`, exact: true }).click();
+  await page.getByRole('button', { name: 'Khôi phục', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText(`Đã khôi phục KH ${customer}`);
+});
+
+test('both delete dialogs leave Xóa on when refused while the data is replaced (DR6-33, S2-2)', async ({
+  page,
+}) => {
+  await asExe(page);
+  await page.reload();
+  // An empty team and a person nothing points to: deleting them waits only for the replace.
+  await createTeam(page, 'Tạm Thời');
+  await addSupport(page, 'Người Mới', 'BD');
+
+  // A reload of the simulated data held at its backup, the Team screen opened meanwhile.
+  await goTo(page, 'Cài đặt');
+  await page.evaluate(() => window.exe.holdBackup());
+  await page.getByRole('button', { name: 'Nạp lại…' }).click();
+  await page.getByRole('textbox', { name: /^Gõ NẠP LẠI/ }).fill('NẠP LẠI');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('button', { name: 'Đang nạp lại…' })).toBeVisible();
+  await page.evaluate(() => (window.location.hash = '#/team'));
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Team & nhân sự');
+
+  const tryDelete = async (dialog: Locator) => {
+    await dialog.getByRole('button', { name: 'Xóa', exact: true }).click();
+    await expect(dialog.getByRole('alert')).toHaveText(
+      'Đang thay toàn bộ dữ liệu (Nạp lại / Nhập backup). Thay đổi này chưa được ghi — thử lại khi xong.',
+    );
+    await expect(dialog.getByRole('button', { name: 'Xóa', exact: true })).toBeEnabled();
+    await dialog.getByRole('button', { name: 'Đóng' }).click();
+  };
+  await teamButton(page, 'Tạm Thời').click();
+  await members(page, 'Tạm Thời').getByRole('button', { name: 'Xóa team' }).click();
+  await tryDelete(page.getByRole('dialog', { name: 'Xóa team Tạm Thời?' }));
+  await tryDelete(await openDelete(page, shared(page), 'Người Mới'));
+  await page.evaluate(() => window.exe.releaseBackup());
 });
 
 test('member columns: an RE open customers match the Customers screen', async ({ page }) => {

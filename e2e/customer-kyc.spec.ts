@@ -41,6 +41,53 @@ test('the profile has three columns at 1 440 × 900, two at 1 100', async ({ pag
   expect((await box('KYC Intelligence')).y).toBeGreaterThan((await box('Dòng thời gian')).y);
 });
 
+// DR6-82: a link pasted into a KYC note, or a long value of a fact, breaks inside its column; the
+// column does not grow over the next one.
+test('a link of 108 characters in a KYC note or a fact stays in its column at 1 440 and 1 100', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await createCustomer(page);
+  const link =
+    'https://www.facebook.com/profile.php?id=100089123456789&mibextid=ZbWKwL_nguyen_van_khach_hang_rat_dai_tp_hcm';
+  expect(link).toHaveLength(108);
+  await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
+  const dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${NAME}` });
+  await dialog.getByRole('textbox', { name: 'Ghi chú' }).fill(`Khách gửi link ${link} để xem thêm`);
+  await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Nơi sinh sống' });
+  await dialog.getByRole('textbox', { name: 'Giá trị' }).fill(link);
+  await dialog.getByRole('button', { name: 'Thêm dữ kiện' }).click();
+  await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
+  await expect(dialog).toBeHidden();
+
+  /** How far the text holding the link reaches past the right edge of its column's card. */
+  const past = (region: string) =>
+    page.getByRole('region', { name: region, exact: true }).evaluate((card, link) => {
+      const right = card.getBoundingClientRect().right;
+      const walker = document.createTreeWalker(card, NodeFilter.SHOW_TEXT);
+      const reach: number[] = [];
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        if (!node.textContent?.includes(link)) continue;
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        reach.push(Math.max(...[...range.getClientRects()].map((rect) => rect.right - right)));
+      }
+      return reach;
+    }, link);
+  const sideways = () =>
+    page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+
+  for (const width of [1440, 1100]) {
+    await page.setViewportSize({ width, height: 900 });
+    // Found once in each card, inside it.
+    await expect.poll(() => past('Dòng thời gian')).toEqual([expect.any(Number)]);
+    expect((await past('Dòng thời gian'))[0], `timeline at ${width}`).toBeLessThanOrEqual(0);
+    expect(await past('Dữ kiện KYC')).toHaveLength(1);
+    expect((await past('Dữ kiện KYC'))[0], `KYC at ${width}`).toBeLessThanOrEqual(0);
+    expect(await sideways(), `page at ${width}`).toBe(false);
+  }
+});
+
 test('a new customer: birth year and gender from the profile, gate KYC_INSUFFICIENT, timeline', async ({
   page,
 }) => {
@@ -116,6 +163,71 @@ test('the day of a KYC note is checked on Lưu, not while it is typed (7a, DR6-3
   await expect(day).toHaveAccessibleDescription('Thứ Hai 14/09/2026');
   await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
   await expect(dialog).toBeHidden();
+});
+
+test("a fact's error leaves those of the note and its day shown (7a, review #636)", async ({
+  page,
+}) => {
+  await createCustomer(page);
+  await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
+  const dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${NAME}` });
+  const note = dialog.getByRole('textbox', { name: 'Ghi chú' });
+  const day = dialog.getByRole('textbox', { name: 'Ngày ghi nhận' });
+  const value = dialog.getByRole('textbox', { name: 'Giá trị' });
+  await day.fill('3');
+  await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
+  await expect(note).toHaveAttribute('aria-invalid', 'true');
+  await expect(day).toHaveAttribute('aria-invalid', 'true');
+
+  // "Thêm dữ kiện" with no trường, then with no value: the fact's errors only.
+  await dialog.getByRole('button', { name: 'Thêm dữ kiện' }).click();
+  await expect(dialog.getByRole('alert')).toHaveText('Chọn trường.');
+  await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Nơi sinh sống' });
+  await dialog.getByRole('button', { name: 'Thêm dữ kiện' }).click();
+  await expect(dialog.getByRole('alert')).toHaveText('Nhập giá trị.');
+  await expect(note).toHaveAttribute('aria-invalid', 'true');
+  await expect(day).toHaveAttribute('aria-invalid', 'true');
+  await expect(day).toHaveAccessibleDescription('Gõ dd/mm hoặc dd/mm/yyyy.');
+
+  await value.fill('Thủ Đức');
+  await dialog.getByRole('button', { name: 'Thêm dữ kiện' }).click();
+  await expect(dialog.getByRole('alert')).toHaveCount(0);
+  await expect(note).toHaveAttribute('aria-invalid', 'true');
+  await expect(day).toHaveAttribute('aria-invalid', 'true');
+});
+
+// DR6-33: the refusal of Lưu, a frame over the fields, goes once the RE types again. A character
+// broken in a paste passes the dialog's empty check and is refused by the command (INVALID_TEXT).
+test('the frame of a refused save goes as soon as the note or its day is typed again (7a, DR6-33)', async ({
+  page,
+}) => {
+  await createCustomer(page);
+  await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
+  const dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${NAME}` });
+  const note = dialog.getByRole('textbox', { name: 'Ghi chú' });
+  const day = dialog.getByRole('textbox', { name: 'Ngày ghi nhận' });
+  const pasteBroken = () =>
+    note.evaluate((field: HTMLTextAreaElement) => {
+      // A lone surrogate half, set as a paste would, past the keyboard.
+      const set = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
+      set.call(field, 'Gặp KH \uD83D');
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  const refusal = dialog.getByRole('alert').filter({ hasText: 'Chữ có ký tự không lưu được' });
+
+  await pasteBroken();
+  await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
+  await expect(refusal).toBeVisible();
+  await note.press('End');
+  await note.press('Backspace');
+  await expect(refusal).toHaveCount(0);
+
+  await pasteBroken();
+  await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
+  await expect(refusal).toBeVisible();
+  await day.fill('14/9');
+  await expect(refusal).toHaveCount(0);
+  await expect(dialog).toBeVisible();
 });
 
 // DR6-49: a note or a value of invisible characters only is empty, said at its field as the
