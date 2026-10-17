@@ -171,12 +171,35 @@ describe('openDatabase', () => {
   });
 });
 
-describe('quickCheck', () => {
+describe('integrityCheck', () => {
   it('finds nothing in a whole database, new or saved', async () => {
     const db = await openDatabase();
-    expect(db.quickCheck()).toEqual([]);
+    expect(db.integrityCheck()).toEqual([]);
     createTeam(db, { name: 'Sao Mai' });
-    expect((await openDatabase({ bytes: db.export() })).quickCheck()).toEqual([]);
+    expect((await openDatabase({ bytes: db.export() })).integrityCheck()).toEqual([]);
+  });
+
+  // One byte off in a key of an index leaves every page whole: `quick_check` says ok, while
+  // lookups through the index miss the row (DR6-73).
+  it('finds an index whose key no longer matches its row', async () => {
+    const db = await openDatabase();
+    createTeam(db, { name: 'Sao Mai' });
+    const [[root]] = db.sqlite.exec(
+      "SELECT rootpage FROM sqlite_master WHERE name = 'teams_active_name'",
+    )[0]!.values as [[number]];
+    const bytes = db.export();
+    const pageSize = (bytes[16]! << 8) | bytes[17]!;
+    const page = bytes.subarray((root - 1) * pageSize, root * pageSize);
+    const key = new TextEncoder().encode('Sao Mai');
+    const at = page.findIndex((_, i) => key.every((byte, j) => page[i + j] === byte));
+    page[at + key.length - 1]! ^= 1;
+
+    const opened = await openDatabase({ bytes });
+
+    expect(opened.sqlite.exec('PRAGMA quick_check')[0]!.values).toEqual([['ok']]);
+    expect(opened.integrityCheck()).toEqual([
+      expect.stringContaining('missing from index teams_active_name'),
+    ]);
   });
 
   it('finds any damaged page of a file that still opens, also one that stops the check (DR6-06)', async () => {
@@ -190,7 +213,7 @@ describe('quickCheck', () => {
       const damaged = bytes.slice();
       damaged.fill(0xff, page * pageSize, (page + 1) * pageSize);
       const opened = await openDatabase({ bytes: damaged }).catch(() => undefined);
-      if (opened?.schemaVersion() === LATEST_SCHEMA_VERSION) found.push(opened.quickCheck());
+      if (opened?.schemaVersion() === LATEST_SCHEMA_VERSION) found.push(opened.integrityCheck());
     }
 
     expect(found.length).toBeGreaterThan(10);

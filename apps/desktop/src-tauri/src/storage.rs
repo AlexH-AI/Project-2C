@@ -96,12 +96,23 @@ fn open_lock_file(path: &Path) -> io::Result<fs::File> {
 /// holding it → `ResourceBusy` with the message [`ALREADY_OPEN`]. A missing file with backups
 /// left is an error, so the app never starts over them. A file that is empty or not SQLite is an
 /// error, never a first start: the app would otherwise write a new database over it. A file that
-/// is whole but out of reach → [`FILE_IN_USE`] or [`ACCESS_DENIED`] (see [`out_of_reach`]).
+/// is whole but out of reach → [`FILE_IN_USE`] or [`ACCESS_DENIED`] (see [`out_of_reach`]), and a
+/// read-only one → [`ACCESS_DENIED`]: the app would open it, then fail every save.
 /// Nothing is backed up here: the app calls [`backup`] once it opened and checked the file, before
 /// saving anything, so a file damaged inside never becomes the newest backup (DR-51).
 pub fn open(dir: &Path, page: &str, lock: &DataLock) -> io::Result<Option<Vec<u8>>> {
+    open_with(dir, page, lock, |dir| fs::create_dir_all(dir))
+}
+
+/// [`open`] with the creation of the data folder passed in, which the tests make fail.
+fn open_with(
+    dir: &Path,
+    page: &str,
+    lock: &DataLock,
+    create_dir: impl FnOnce(&Path) -> io::Result<()>,
+) -> io::Result<Option<Vec<u8>>> {
     let mut held = lock.hold();
-    fs::create_dir_all(dir).map_err(out_of_reach)?;
+    create_dir(dir).map_err(out_of_reach)?;
     if held.file.is_none() {
         held.file = Some(open_lock_file(&dir.join(LOCK_FILE)).map_err(out_of_reach)?);
         // What a crash left, cleaned by the first open of the process only: a reload's open must
@@ -132,6 +143,14 @@ pub fn open(dir: &Path, page: &str, lock: &DataLock) -> io::Result<Option<Vec<u8
             ErrorKind::InvalidData,
             format!("{DB_FILE} is not a SQLite database"),
         ));
+    }
+    // A read-only file reads fine, but no save could replace it (DR6-74).
+    if fs::metadata(dir.join(DB_FILE))
+        .map_err(out_of_reach)?
+        .permissions()
+        .readonly()
+    {
+        return Err(io::Error::new(ErrorKind::PermissionDenied, ACCESS_DENIED));
     }
     Ok(Some(bytes))
 }
@@ -1281,6 +1300,49 @@ mod tests {
         assert_eq!(error.to_string(), ACCESS_DENIED);
 
         assert_eq!(open(&dir).unwrap(), Some(db("data")));
+    }
+
+    #[test]
+    fn open_reports_a_data_folder_it_may_not_create_as_access_denied() {
+        // The exe in Program Files or on a read-only drive: Windows refuses to create the data
+        // folder (DR6-07).
+        let dir = temp_dir();
+        let error = open_with(&dir, PAGE, &DataLock::new(), |_| {
+            Err(io::Error::from(ErrorKind::PermissionDenied))
+        })
+        .unwrap_err();
+        assert_eq!(error.kind(), ErrorKind::PermissionDenied);
+        assert_eq!(error.to_string(), ACCESS_DENIED);
+        assert!(!dir.exists());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn open_reports_a_read_only_database_file_as_access_denied() {
+        // It reads fine, but no save could replace it (DR6-74); the file is whole.
+        let dir = temp_dir();
+        save(&dir, &db("data")).unwrap();
+        let file = dir.join(DB_FILE);
+        let writable = fs::metadata(&file).unwrap().permissions();
+        let mut read_only = writable.clone();
+        read_only.set_readonly(true);
+        fs::set_permissions(&file, read_only).unwrap();
+        let error = open(&dir).unwrap_err();
+        fs::set_permissions(&file, writable).unwrap();
+        assert_eq!(error.kind(), ErrorKind::PermissionDenied);
+        assert_eq!(error.to_string(), ACCESS_DENIED);
+        assert_eq!(fs::read(&file).unwrap(), db("data"));
+
+        assert_eq!(open(&dir).unwrap(), Some(db("data")));
+    }
+
+    #[test]
+    fn a_temp_dir_goes_with_all_it_holds_once_dropped() {
+        let dir = temp_dir();
+        save(&dir, &db("data")).unwrap();
+        let path = dir.to_path_buf();
+        drop(dir);
+        assert!(!path.exists());
     }
 
     #[cfg(windows)]
