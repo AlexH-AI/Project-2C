@@ -203,11 +203,18 @@ function follows(previous: Row, next: Row): boolean {
 }
 
 /**
- * Rule 4: a live transition caused by a meeting carries its customer, day and stage after, and the
- * meeting is live too: deleting an appointment withdraws its transition (D7). A live meeting that
- * moved no stage kept one the customer was in that day (`isStageOfDay`, T-232).
+ * Rule 4: a transition caused by a meeting carries its customer, even withdrawn, since restoring
+ * the meeting gives it back (DR6-71); a live one carries its day and stage after too, and the
+ * meeting is live: deleting an appointment withdraws its transition (D7). A live meeting that moved
+ * no stage kept one the customer was in that day (`isStageOfDay`, T-232).
  */
 function meetingRule(appointments: Map<unknown, Row>, transitions: Row[]): Rule | null {
+  const elsewhere = transitions.some(
+    (t) =>
+      t.appointment_id !== null &&
+      appointments.get(t.appointment_id)?.customer_id !== t.customer_id,
+  );
+  if (elsewhere) return 4;
   const live = transitions.filter((t) => t.deleted_at === null);
   const caused = live.filter((t) => t.appointment_id !== null);
   const moved = new Set(caused.map((t) => t.appointment_id));
@@ -229,7 +236,6 @@ function meetingRule(appointments: Map<unknown, Row>, transitions: Row[]): Rule 
     const a = appointments.get(t.appointment_id)!;
     return (
       a.deleted_at === null &&
-      a.customer_id === t.customer_id &&
       a.status === 'MET' &&
       a.stage_after === t.to_stage &&
       a.date === t.date

@@ -276,6 +276,48 @@ test('a meeting recorded late keeps the stage of its day once the customer moved
   ).toBeVisible();
 });
 
+test('a meeting held before the customer was entered keeps the stage it was created in (DR-43)', async ({
+  page,
+}) => {
+  const name = 'Gặp Trước Khi Nhập';
+  await page.goto('/#/customers');
+  await page.getByRole('button', { name: '+ Khách hàng' }).click();
+  const create = page.getByRole('dialog', { name: 'Khách hàng mới' });
+  await create.getByRole('textbox', { name: 'Họ tên' }).fill(name);
+  await create.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
+  await create
+    .getByRole('radiogroup', { name: 'Nhóm ban đầu' })
+    .getByRole('radio', { name: 'N3', exact: true })
+    .check();
+  await create.getByRole('button', { name: 'Lưu KH' }).click();
+  await expect(create).toBeHidden();
+
+  // Created today, met on 10/09 and recorded now.
+  await page.goto('/#/appointments');
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const booking = page.getByRole('dialog');
+  await booking.getByRole('textbox', { name: /^Khách hàng/ }).fill(name);
+  await booking.getByRole('list', { name: 'KH khớp' }).getByRole('button').first().click();
+  await booking.getByRole('textbox', { name: /^Ngày/ }).fill('10/9');
+  await booking.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
+  await booking.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+  await expect(booking).toHaveCount(0);
+  await expect(detail(page).getByRole('heading', { level: 2 })).toContainText(name);
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
+  const o = outcome(page);
+
+  // N3 on 10/09 too; a move would come before the creation (D10), so none is offered.
+  await expect(o.stageAfter).toHaveCount(0);
+  await expect(o.dialog).toContainText('Nhóm sau cuộc gặp khóa ở nhóm của KH ngày 10/09/2026');
+  await expect(o.dialog).not.toContainText('đã đổi tiếp sau cuộc gặp này');
+  await o.nextStep.fill('Gửi bảng minh họa');
+  await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
+
+  await expect(o.dialog).toHaveCount(0);
+  await expect(detail(page)).toContainText('Đã gặp');
+  await expect(detail(page)).toContainText('Giữ N3');
+});
+
 test('deleting the meeting that moved the customer takes the move back (6g)', async ({ page }) => {
   const name = await metToN2(page);
   const profile = await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).getAttribute('href');

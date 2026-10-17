@@ -225,6 +225,8 @@ describe('customers', () => {
 
     updateCustomerProfile(db, customer.id, { name: 'Lan Anh', birthDate: { year: 1985 } });
     expect(getAppointment(db, booked.id)?.reId).toBe(otherRe.id);
+    // Theirs already: nothing to hand over, the appointment booked for another RE included (R16).
+    expect(previewHandover(db, customer.id, re.id)).toBe(0);
     expect(previewHandover(db, customer.id, otherRe.id)).toBe(0);
     expect(previewHandover(db, customer.id, third.id)).toBe(1);
     expect(codeOf(() => updateCustomerProfile(db, customer.id, { reId: tl.id }))).toBe(

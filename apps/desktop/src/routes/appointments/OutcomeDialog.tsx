@@ -266,7 +266,8 @@ export function OutcomeDialog({
 
 /**
  * Under a stage after held at the stage of the meeting day (6c, 6f; T-232), as the D7 lock of 6f
- * explains its own: what came after the meeting, and where to change the stage instead.
+ * explains its own: what came after the meeting, and where to change the stage instead. The
+ * customer's creation, which holds a meeting before it (DR-43), is no stage change to tell.
  */
 export function DayLockNote({
   day,
@@ -281,10 +282,10 @@ export function DayLockNote({
   return (
     <div role="note" className={`${ALERT} flex flex-col gap-1 border-warn`}>
       <b>{t('outcome.dayLockTitle', { date: formatDate(day) })}</b>
-      {change && (
+      {change?.from && (
         <span className="flex flex-wrap items-center gap-1 tabular-nums">
           {t('outcome.dayLockChange', { date: formatDate(change.date) })}
-          {change.from && badge(change.from)} {t('sep.arrow')} {badge(change.to)}
+          {badge(change.from)} {t('sep.arrow')} {badge(change.to)}
         </span>
       )}
       {!change && meeting && (

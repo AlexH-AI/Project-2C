@@ -358,6 +358,10 @@ describe('importBackup — rules across tables', () => {
       (b, ids) => keptMeeting(b, ids, '2026-09-18', 'N3'),
     ],
     [
+      'a meeting kept before the customer was created, in the stage it was created in (DR-43)',
+      (b, ids) => keptMeeting(b, ids, '2026-08-25', 'N4'),
+    ],
+    [
       'a deleted TL next to the live TL of the team',
       (b, ids) => person(b, ids.tl, { id: 'old-tl', name: 'Cũ', deleted_at: DELETED }),
     ],
@@ -502,6 +506,14 @@ describe('importBackup — rules across tables', () => {
     [
       '4: a meeting kept in a stage the customer was not in on its day (T-232)',
       (b, ids) => keptMeeting(b, ids, '2026-09-12', 'N2'),
+    ],
+    [
+      '4: a meeting kept before the customer was created, in another stage than its first',
+      (b, ids) => keptMeeting(b, ids, '2026-08-25', 'N3'),
+    ],
+    [
+      '4: a withdrawn transition caused by another customer’s appointment (DR6-71)',
+      (b, ids) => (transition(b, ids.hoa, 2).appointment_id = ids.met),
     ],
     [
       '4: a live transition caused by a deleted appointment (D7)',
