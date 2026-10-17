@@ -268,6 +268,29 @@ describe('openAppData', () => {
     expect(events).toEqual([]);
   });
 
+  it('refuses a file whose index lost step with its table, with every page whole (DR6-73)', async () => {
+    // One byte off in the key of the team's name index: lookups by name would miss the team.
+    const original = await openDatabase();
+    createTeam(original, { name: 'Sao Mai' });
+    const [[root]] = original.sqlite.exec(
+      "SELECT rootpage FROM sqlite_master WHERE name = 'teams_active_name'",
+    )[0]!.values as [[number]];
+    const damaged = original.export();
+    const pageSize = (damaged[16]! << 8) | damaged[17]!;
+    const page = damaged.subarray((root - 1) * pageSize, root * pageSize);
+    const key = new TextEncoder().encode('Sao Mai');
+    const at = page.findIndex((_, i) => key.every((byte, j) => page[i + j] === byte));
+    page[at + key.length - 1]! ^= 1;
+    const { storage, events } = memoryStorage(damaged);
+
+    const error = await openAppData({ storage }).catch((e: unknown) => e);
+
+    expect(isDamagedDataError(error)).toBe(true);
+    expect((error as Error).cause).toEqual(expect.stringContaining('teams_active_name'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(events).toEqual([]);
+  });
+
   it('never backs up a file it cannot open, so a damaged file is never the newest backup', async () => {
     const header = new TextEncoder().encode('SQLite format 3\0');
     const damaged = new Uint8Array(4096);

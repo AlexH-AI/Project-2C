@@ -205,8 +205,8 @@ export const isStartupBackupError = (error: unknown): error is Error =>
 const DATA_DAMAGED = 'DATA_DAMAGED';
 
 /**
- * The refusal to start when the stored file opened but `PRAGMA quick_check` finds it damaged inside
- * (DR6-06): nothing was backed up or saved. The first damage found is the `cause`.
+ * The refusal to start when the stored file opened but `PRAGMA integrity_check` finds it damaged
+ * inside (DR6-06, DR6-73): nothing was backed up or saved. The first damage found is the `cause`.
  */
 export const isDamagedDataError = (error: unknown): error is Error =>
   error instanceof Error && error.message === DATA_DAMAGED;
@@ -342,9 +342,10 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     let release!: () => void;
     backedUp = new Promise<void>((resolve) => (release = resolve));
     db = await open(stored);
-    // `quick_check` reads the whole file (≈ 80 ms on the load data): a damaged page may well
-    // leave every table the app reads at startup readable.
-    const [damage] = db.quickCheck();
+    // `integrity_check` reads the whole file (≈ 90 ms on the load data): a damaged page, or an
+    // index out of step with its table, may well leave every table the app reads at startup
+    // readable.
+    const [damage] = db.integrityCheck();
     if (damage !== undefined) throw new Error(DATA_DAMAGED, { cause: damage });
     try {
       await storage.backup();
@@ -391,9 +392,12 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     db = await next();
     generation++;
     changed();
-    // Frees its WASM memory once the screens have re-rendered on the new database; a write to it
-    // before then is never saved (`current`); after it, one throws. So callers must not keep a
-    // `db` across an `await`: read it again through `db()` / `run` instead.
+    // Frees its WASM memory only after the subscribers heard of the new database (`changed()`
+    // above: the order the tests hold), and one task later so a render they scheduled has run.
+    // That task is a margin no test holds: a render reads `db()`, already the new one (J5,
+    // accepted). A write to the old database is never saved (`current`); once it is closed, one
+    // throws. So callers must not keep a `db` across an `await`: read it again through `db()` /
+    // `run` instead.
     await new Promise((resolve) => setTimeout(resolve, 0));
     previous.sqlite.close();
     return backup;

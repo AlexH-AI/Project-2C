@@ -6,14 +6,14 @@ describe('startupMessage', () => {
   it('tells the user to use the window already open, without technical detail', () => {
     expect(startupMessage('ALREADY_OPEN')).toEqual({
       title: 'Project-2C đang mở ở một cửa sổ khác',
-      help: 'Hãy dùng cửa sổ đó. App không đọc hay ghi gì ở cửa sổ này; đóng cửa sổ này đi.',
+      help: 'Hãy dùng cửa sổ đó. App không đọc hay ghi gì ở cửa sổ này; đóng cửa sổ này đi. Nếu cửa sổ đó đang báo lỗi mở dữ liệu, hãy đóng cả hai cửa sổ rồi mở lại app.',
     });
   });
 
   it('asks for a newer app when the file comes from one, naming both schema versions', () => {
     expect(startupMessage(new DbError('SCHEMA_TOO_NEW', { version: 7, supported: 5 }))).toEqual({
       title: 'File dữ liệu do bản app mới hơn tạo',
-      help: 'File dùng schema v7, app này chỉ đọc tới v5. Hãy dùng bản app mới hơn. App không thay đổi gì trong file.',
+      help: 'File dùng schema v7, app này chỉ đọc tới v5. App không thay đổi gì trong file. Hãy đóng cửa sổ này rồi dùng bản app mới hơn.',
     });
   });
 
@@ -21,7 +21,7 @@ describe('startupMessage', () => {
     const cause = 'There is not enough space on the disk. (os error 112)';
     expect(startupMessage(new Error('STARTUP_BACKUP_FAILED', { cause }))).toEqual({
       title: 'Không sao lưu được file dữ liệu',
-      help: 'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở: hãy kiểm tra ổ đĩa còn chỗ trống và thư mục đó không chỉ đọc hay bị chương trình khác giữ, rồi mở lại app.',
+      help: 'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở: hãy kiểm tra ổ đĩa còn chỗ trống và thư mục đó không chỉ đọc hay bị chương trình khác giữ, rồi đóng cửa sổ này và mở lại app.',
       detail: 'There is not enough space on the disk. (os error 112)',
     });
   });
@@ -29,7 +29,7 @@ describe('startupMessage', () => {
   it('says the disk is full when the startup backup found no room (DR-57)', () => {
     expect(startupMessage(new Error('STARTUP_BACKUP_FAILED', { cause: 'DISK_FULL' }))).toEqual({
       title: 'Ổ đĩa đã đầy, không sao lưu được file dữ liệu',
-      help: 'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở nhưng ổ đĩa chứa thư mục app không còn đủ chỗ trống. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports) rồi mở lại app.',
+      help: 'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở nhưng ổ đĩa chứa thư mục app không còn đủ chỗ trống. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports), rồi đóng cửa sổ này và mở lại app.',
     });
   });
 
@@ -56,20 +56,40 @@ describe('startupMessage', () => {
       'FILE_IN_USE',
       {
         title: 'File dữ liệu đang bị chương trình khác giữ',
-        help: 'File dữ liệu không hỏng, không cần khôi phục. Một chương trình khác (phần mềm sao lưu, đồng bộ, diệt virus hay công cụ mở file SQLite) đang mở file trong thư mục Project2C-data: hãy đóng chương trình đó rồi mở lại app.',
+        help: 'File dữ liệu không hỏng, không cần khôi phục. Một chương trình khác (phần mềm sao lưu, đồng bộ, diệt virus hay công cụ mở file SQLite) đang mở file trong thư mục Project2C-data: hãy đóng chương trình đó, rồi đóng cửa sổ này và mở lại app.',
       },
     ],
     [
       'ACCESS_DENIED',
       {
         title: 'App không có quyền ghi vào thư mục dữ liệu',
-        help: 'File dữ liệu không hỏng, không cần khôi phục. Hãy kiểm tra thư mục Project2C-data cạnh file exe và các file trong đó không chỉ đọc, tài khoản Windows đang dùng được quyền ghi vào đó (app chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như Program Files thì chép cả thư mục app sang chỗ khác), rồi mở lại app.',
+        help: 'File dữ liệu không hỏng, không cần khôi phục. Hãy kiểm tra thư mục Project2C-data cạnh file exe và các file trong đó không chỉ đọc, tài khoản Windows đang dùng được quyền ghi vào đó (app chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như Program Files thì chép cả thư mục app sang chỗ khác), rồi đóng cửa sổ này và mở lại app.',
       },
     ],
   ])('says the file is whole when it is out of reach (%s, DR6-07)', (error, expected) => {
     const message = startupMessage(error);
     expect(message).toEqual(expected);
     expect(message.help).not.toContain('chép bản mới nhất');
+  });
+
+  // The page keeps the data folder locked until its window closes: an app opened again beside it
+  // only says "use that window" (DR6-75).
+  it.each([
+    ['file in use', 'FILE_IN_USE'],
+    ['access denied', 'ACCESS_DENIED'],
+    ['backup failed', new Error('STARTUP_BACKUP_FAILED', { cause: 'os error 5' })],
+    ['disk full', new Error('STARTUP_BACKUP_FAILED', { cause: 'DISK_FULL' })],
+    ['damaged', new Error('DATA_DAMAGED', { cause: 'row 1 missing from index teams_active_name' })],
+    ['too new', new DbError('SCHEMA_TOO_NEW', { version: 7, supported: 5 })],
+    ['open failed', 'database disk image is malformed'],
+  ])('tells to close this window before the app is opened again (%s)', (_, error) => {
+    expect(startupMessage(error).help).toContain('đóng cửa sổ này');
+  });
+
+  it('tells to close both windows when the one already open shows a startup error (DR6-75)', () => {
+    expect(startupMessage('ALREADY_OPEN').help).toContain(
+      'Nếu cửa sổ đó đang báo lỗi mở dữ liệu, hãy đóng cả hai cửa sổ rồi mở lại app.',
+    );
   });
 
   it('keeps the open-failed message and the detail for any other error', () => {

@@ -1,6 +1,7 @@
 // The contract between `tauri-storage.ts` and the Rust commands (DR-55): each side is otherwise
 // tested only against its own copy, and a renamed command or argument shows only in the exe.
 import { readdirSync, readFileSync } from 'node:fs';
+import { AI_MODELS } from '@p2c/ai';
 import { describe, expect, it, vi } from 'vitest';
 import { tauriOpenCode } from './ai-tauri';
 import { ACCESS_DENIED, ALREADY_OPEN, DISK_FULL, FILE_IN_USE, tauriStorage } from './tauri-storage';
@@ -220,6 +221,19 @@ describe('the JS ↔ Rust AI contract', () => {
     );
   });
 
+  // A model Rust refuses by name fails every call in the exe only: `AI_BAD_REQUEST` (DR6-88).
+  it('names every model of Settings → AI as Rust takes it', () => {
+    // `check` in ai.rs: 1 to MAX_MODEL_CHARS ASCII letters, digits and the bytes of one `b"…"`.
+    const max = /const MAX_MODEL_CHARS: \w+ = ([\d_]+);/.exec(ai)![1]!.replaceAll('_', '');
+    const modelBytes =
+      /\.model\s*\.bytes\(\)\s*\.all\(\|byte\| byte\.is_ascii_alphanumeric\(\) \|\| b"([^"]*)"/;
+    const others = modelBytes.exec(ai)![1]!.replace(/[\\\]^-]/g, '\\$&');
+    const rule = new RegExp(`^[A-Za-z0-9${others}]{1,${max}}$`);
+    expect(AI_MODELS.length).toBeGreaterThan(0);
+    for (const { id } of AI_MODELS) expect(id, id).toMatch(rule);
+    expect('qwen3.5+').not.toMatch(rule);
+  });
+
   it('types the answer of ai_complete as Rust sends it, null where Rust has an Option', () => {
     const adapter = readFileSync(
       new URL('../../../../packages/ai/src/adapter.ts', import.meta.url),
@@ -272,10 +286,12 @@ function tauriImports(): string[] {
 }
 
 describe('the release configuration (DR6-12…14)', () => {
-  it('gives package.json, tauri.conf.json and Cargo.toml one version', () => {
+  it('gives package.json, tauri.conf.json and Cargo.toml one version, 1.0.0 or later', () => {
     const { version } = JSON.parse(desktop('package.json')) as { version: string };
     const cargo = /^\[package\][^[]*^version = "([^"]+)"$/m.exec(desktop('src-tauri/Cargo.toml'));
     expect([tauriConf().version, cargo?.[1]]).toEqual([version, version]);
+    // All three back at the 0.1.0 of the template would still agree (DR6-12, DR6-88).
+    expect(version).toMatch(/^[1-9]\d*\.\d+\.\d+$/);
   });
 
   it('builds the Rust library only as the rlib the exe links', () => {

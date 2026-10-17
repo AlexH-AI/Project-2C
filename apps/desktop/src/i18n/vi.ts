@@ -976,27 +976,27 @@ export const vi = {
   'reports.excel.fileRange': '{from}-den-{to}',
   'storage.openFailed': 'Không mở được file dữ liệu',
   'storage.openFailedHelp':
-    'App chưa ghi gì vào file. Các bản sao lưu tự động nằm trong thư mục Project2C-data\\backups: chép bản mới nhất thành Project2C-data\\project2c.db để khôi phục. Bản mới nhất có thể chính là file đang lỗi: khi đó chép bản liền trước nó, rồi tới các bản cũ hơn.',
+    'App chưa ghi gì vào file. Các bản sao lưu tự động nằm trong thư mục Project2C-data\\backups: chép bản mới nhất thành Project2C-data\\project2c.db để khôi phục, rồi đóng cửa sổ này và mở lại app. Bản mới nhất có thể chính là file đang lỗi: khi đó chép bản liền trước nó, rồi tới các bản cũ hơn.',
   'storage.backupFailed': 'Không sao lưu được file dữ liệu',
   'storage.backupFailedHelp':
-    'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở: hãy kiểm tra ổ đĩa còn chỗ trống và thư mục đó không chỉ đọc hay bị chương trình khác giữ, rồi mở lại app.',
+    'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở: hãy kiểm tra ổ đĩa còn chỗ trống và thư mục đó không chỉ đọc hay bị chương trình khác giữ, rồi đóng cửa sổ này và mở lại app.',
   'storage.diskFull': 'Ổ đĩa đã đầy, không sao lưu được file dữ liệu',
   'storage.diskFullHelp':
-    'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở nhưng ổ đĩa chứa thư mục app không còn đủ chỗ trống. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports) rồi mở lại app.',
+    'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở nhưng ổ đĩa chứa thư mục app không còn đủ chỗ trống. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports), rồi đóng cửa sổ này và mở lại app.',
   'storage.damaged': 'File dữ liệu bị hỏng',
   'storage.fileInUse': 'File dữ liệu đang bị chương trình khác giữ',
   'storage.fileInUseHelp':
-    'File dữ liệu không hỏng, không cần khôi phục. Một chương trình khác (phần mềm sao lưu, đồng bộ, diệt virus hay công cụ mở file SQLite) đang mở file trong thư mục Project2C-data: hãy đóng chương trình đó rồi mở lại app.',
+    'File dữ liệu không hỏng, không cần khôi phục. Một chương trình khác (phần mềm sao lưu, đồng bộ, diệt virus hay công cụ mở file SQLite) đang mở file trong thư mục Project2C-data: hãy đóng chương trình đó, rồi đóng cửa sổ này và mở lại app.',
   'storage.accessDenied': 'App không có quyền ghi vào thư mục dữ liệu',
   'storage.accessDeniedHelp':
-    'File dữ liệu không hỏng, không cần khôi phục. Hãy kiểm tra thư mục Project2C-data cạnh file exe và các file trong đó không chỉ đọc, tài khoản Windows đang dùng được quyền ghi vào đó (app chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như Program Files thì chép cả thư mục app sang chỗ khác), rồi mở lại app.',
+    'File dữ liệu không hỏng, không cần khôi phục. Hãy kiểm tra thư mục Project2C-data cạnh file exe và các file trong đó không chỉ đọc, tài khoản Windows đang dùng được quyền ghi vào đó (app chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như Program Files thì chép cả thư mục app sang chỗ khác), rồi đóng cửa sổ này và mở lại app.',
   'storage.technicalDetail': 'Chi tiết kỹ thuật:',
   'storage.alreadyOpen': 'Project-2C đang mở ở một cửa sổ khác',
   'storage.alreadyOpenHelp':
-    'Hãy dùng cửa sổ đó. App không đọc hay ghi gì ở cửa sổ này; đóng cửa sổ này đi.',
+    'Hãy dùng cửa sổ đó. App không đọc hay ghi gì ở cửa sổ này; đóng cửa sổ này đi. Nếu cửa sổ đó đang báo lỗi mở dữ liệu, hãy đóng cả hai cửa sổ rồi mở lại app.',
   'storage.tooNew': 'File dữ liệu do bản app mới hơn tạo',
   'storage.tooNewHelp':
-    'File dùng schema v{version}, app này chỉ đọc tới v{supported}. Hãy dùng bản app mới hơn. App không thay đổi gì trong file.',
+    'File dùng schema v{version}, app này chỉ đọc tới v{supported}. App không thay đổi gì trong file. Hãy đóng cửa sổ này rồi dùng bản app mới hơn.',
   'startup.loading': 'Đang mở dữ liệu…',
   'screenError.title': 'Màn này gặp lỗi và không hiển thị được',
   'screenError.help':

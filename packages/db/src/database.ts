@@ -46,10 +46,12 @@ export interface Database {
   withSources<T>(sources: Sources, fn: () => T): T;
   export(): Uint8Array;
   /**
-   * What `PRAGMA quick_check` finds damaged in the file (a page, an index out of step), empty when
-   * nothing: a file damaged inside may still open (DR6-06).
+   * What `PRAGMA integrity_check` finds damaged in the file (a page, an index whose entries differ
+   * from its table's rows), empty when nothing: a file damaged inside may still open (DR6-06).
+   * Unlike `quick_check`, it compares each index with its table, so a key off by one byte that
+   * leaves the pages whole still shows (DR6-73).
    */
-  quickCheck(): string[];
+  integrityCheck(): string[];
 }
 
 export async function openDatabase(options: OpenDatabaseOptions = {}): Promise<Database> {
@@ -116,9 +118,9 @@ export async function openDatabase(options: OpenDatabaseOptions = {}): Promise<D
       }
     },
     export: exportBytes,
-    quickCheck() {
+    integrityCheck() {
       try {
-        const found = (sqlite.exec('PRAGMA quick_check')[0]?.values ?? []).map(([row]) =>
+        const found = (sqlite.exec('PRAGMA integrity_check')[0]?.values ?? []).map(([row]) =>
           String(row),
         );
         return found.length === 1 && found[0] === 'ok' ? [] : found;
