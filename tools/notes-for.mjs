@@ -42,11 +42,11 @@ const CHECK =
   'review-pr (Spec): mục "Trùng file" không có dòng trong "Ghi chú OPEN liên quan" của thân PR → chặn; ghi "đã sửa" mà diff không sửa → chặn.';
 
 /** The files to look for, how the first output line names them, and the hint to end with. */
-function targetsOf(argv, root) {
+function targetsOf(argv, root, files) {
   const [mode, ...rest] = argv;
   if (isNumber(mode)) {
     const body = gh(['issue', 'view', mode, '--json', 'body', '--jq', '.body']);
-    const targets = allowedPatterns(body);
+    const targets = allowedPatterns(body, files);
     return { targets, source: `Issue #${mode} (${targets.length} đường dẫn / glob)`, hint: PLAN };
   }
   if (mode === '--pr' && isNumber(rest[0])) {
@@ -69,7 +69,7 @@ function targetsOf(argv, root) {
     };
   }
   if (mode === '--files' && rest.length) {
-    const targets = targetPatterns(rest);
+    const targets = targetPatterns(rest, files);
     return { targets, source: `--files (${targets.length} đường dẫn / glob)`, hint: PLAN };
   }
   return null;
@@ -77,15 +77,13 @@ function targetsOf(argv, root) {
 
 function main() {
   const root = git(['rev-parse', '--show-toplevel']).trim();
-  const asked = targetsOf(process.argv.slice(2), root);
+  const files = lines(git(['ls-files'], root));
+  const asked = targetsOf(process.argv.slice(2), root, files);
   if (!asked) {
     process.stderr.write(`${USAGE}\n`);
     process.exit(2);
   }
-  const notes = openNotes(
-    readFileSync(join(root, REVIEW_NOTES), 'utf8'),
-    lines(git(['ls-files'], root)),
-  );
+  const notes = openNotes(readFileSync(join(root, REVIEW_NOTES), 'utf8'), files);
   const commit = git(['rev-parse', '--short', 'HEAD'], root).trim();
   const head = `Ghi chú OPEN của ${REVIEW_NOTES} @ ${commit}, theo ${asked.source}.`;
   process.stdout.write(`${formatRelated(relatedNotes(notes, asked.targets), head, asked.hint)}\n`);

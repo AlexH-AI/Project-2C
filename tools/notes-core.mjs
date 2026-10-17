@@ -28,23 +28,46 @@ const FILES_FIELD = 'File / thư mục được phép sửa';
  * The paths and globs an Issue may change: the code spans of its "File / thư mục được phép sửa"
  * field (`.github/ISSUE_TEMPLATE/task.yml`), read by `targetPatterns`.
  * @param {string} body the Issue body
+ * @param {readonly string[]} repoFiles `git ls-files`
  * @returns {string[]}
  */
-export function allowedPatterns(body) {
+export function allowedPatterns(body, repoFiles) {
   const field = body.split(/^### /m).find((part) => part.startsWith(FILES_FIELD));
-  return field ? targetPatterns(codeSpans(field.slice(FILES_FIELD.length))) : [];
+  return field ? targetPatterns(codeSpans(field.slice(FILES_FIELD.length)), repoFiles) : [];
+}
+
+/**
+ * The repo paths a listed path with a `/` names, as for a note; a folder too wide to name
+ * anything in particular (`tools/`) is dropped, a path the repo does not have yet (a file the task
+ * adds) is kept.
+ */
+function listedPaths(name, files) {
+  if (isGlob(name)) return [name];
+  const named = pathsNamed(name, files);
+  if (named.length) return named;
+  const folder = `${name.replace(/\/$/, '')}/`;
+  return files.some((f) => f.startsWith(folder)) ? [] : [name];
 }
 
 /**
  * Paths and globs as an Issue lists them: braces expanded, anything that is not a path dropped,
- * and each source file with the test file next to it, as the field's "+ test" says.
+ * short names and paths found in the repo as a note's are (`backup.ts` next to a full path of
+ * `packages/db`), and each source file with the test file next to it, as the field's "+ test" says.
  * @param {readonly string[]} listed
+ * @param {readonly string[]} repoFiles `git ls-files`
  * @returns {string[]}
  */
-export function targetPatterns(listed) {
-  const paths = listed
+export function targetPatterns(listed, repoFiles) {
+  const names = listed
     .flatMap(expandBraces)
-    .filter((path) => !/\s/.test(path) && /[/.]/.test(path));
+    .filter((name) => !/\s/.test(name) && /[/.]/.test(name));
+  // The packages a bare name is looked for in first: those the listed paths are in.
+  const packages = new Set(
+    names.filter((name) => name.includes('/') && !isGlob(name)).map(packageOf),
+  );
+  const paths = names.flatMap((name) =>
+    name.includes('/') ? listedPaths(name, repoFiles) : filesNamed(name, repoFiles, packages),
+  );
   const withTests = paths.flatMap((path) => {
     const source = path.match(/^([^*]+)\.(tsx?|mjs|js)$/);
     return source && !source[1].endsWith('.test')

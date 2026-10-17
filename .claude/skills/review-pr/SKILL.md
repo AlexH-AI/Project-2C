@@ -89,6 +89,8 @@ PR chỉ sửa docs (`docs/**`, `*.md`) → chạy mức `low`, bỏ trục Corr
 - ghi "đã sửa" mà diff không sửa → **chặn**, loại (c);
 - lý do "để lại" yếu (mục nhỏ, đúng file, vừa phạm vi) → không chặn, ghi gợi ý.
 
+Head chưa có `tools/notes-for.mjs` (nhánh cắt trước khi T-261 merge) → vẫn đứng trong worktree review, chạy bản của checkout chính: `node C:\workspace\Project-2C\tools\notes-for.mjs --pr <N>`. Lệnh đọc sổ và danh sách file của thư mục đang đứng, tức của head.
+
 ### B. Trục Standards
 
 Đi hết `docs/process/REVIEW-CHECKLIST.md`. Quy chuẩn repo luôn thắng. Không review lại những gì tooling đã kiểm (`pnpm verify`: lint, typecheck, `lint:deps`, coverage) khi CI xanh.

@@ -169,7 +169,7 @@ const ISSUE_656 = [
 
 describe('allowedPatterns', () => {
   it('reads the paths and globs of the field, with the test file next to each source file', () => {
-    expect(allowedPatterns(ISSUE_656)).toEqual([
+    expect(allowedPatterns(ISSUE_656, FILES)).toEqual([
       'packages/db/src/database.ts',
       'packages/db/src/database.test.ts',
       'apps/desktop/src/data/app-data.ts',
@@ -182,7 +182,7 @@ describe('allowedPatterns', () => {
   });
 
   it('is empty for a body without the field', () => {
-    expect(allowedPatterns('### Mục tiêu\n\n- `packages/db/src/database.ts`')).toEqual([]);
+    expect(allowedPatterns('### Mục tiêu\n\n- `packages/db/src/database.ts`', FILES)).toEqual([]);
   });
 });
 
@@ -290,13 +290,41 @@ describe('formatRelated', () => {
 
 describe('targetPatterns', () => {
   it('reads paths given on the command line as the Issue field does', () => {
-    expect(targetPatterns(['tools/{notes-core,notes-for}.mjs', 'e2e/**', 'docs/x.md'])).toEqual([
+    expect(
+      targetPatterns(['tools/{notes-core,notes-for}.mjs', 'e2e/**', 'docs/x.md'], FILES),
+    ).toEqual([
       'tools/notes-core.mjs',
       'tools/notes-core.test.mjs',
       'tools/notes-for.mjs',
       'tools/notes-for.test.mjs',
       'e2e/**',
       'docs/x.md',
+    ]);
+  });
+
+  it('finds a short name or path in the repo as a note does, and drops a one-level folder', () => {
+    expect(
+      targetPatterns(
+        [
+          'packages/ai/src/run.ts',
+          'index.ts',
+          'appointments/appointment-form.ts',
+          'tools/',
+          'e2e/perf',
+          'tools/new-tool.mjs',
+        ],
+        FILES,
+      ),
+    ).toEqual([
+      'packages/ai/src/run.ts',
+      'packages/ai/src/run.test.ts',
+      'packages/ai/src/index.ts',
+      'packages/ai/src/index.test.ts',
+      'apps/desktop/src/routes/appointments/appointment-form.ts',
+      'apps/desktop/src/routes/appointments/appointment-form.test.ts',
+      'e2e/perf/',
+      'tools/new-tool.mjs',
+      'tools/new-tool.test.mjs',
     ]);
   });
 });
