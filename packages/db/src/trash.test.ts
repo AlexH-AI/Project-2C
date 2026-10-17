@@ -15,6 +15,7 @@ import {
   restoreCustomer,
   softDeleteCustomer,
 } from './customers';
+import type { Database } from './database';
 import { addKycNote } from './kyc';
 import { listPolicies, restorePolicy, softDeletePolicy, submitPolicy } from './policies';
 import {
@@ -349,6 +350,60 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
     const r = row(meeting.id);
     expect(r.effect).toMatchObject({ kind: 'stageChange', from: 'N4', to: 'N2' });
     expect(restored(r)).toBeUndefined();
+    expect(listStageTransitions(db, bao.id)).toEqual(transitions);
+  });
+
+  // DR6-69: "after the deletion" is the order of recording (`seq`), not a clock, which may differ
+  // between the machines of an export and an import, stand still or go back.
+  const minute = (at: string, by: number) => new Date(Date.parse(at) + by * 60_000).toISOString();
+  /** Stamps the customer's transition `seq` as recorded at `at` of the deletion's instant. */
+  const stamp = (
+    db: Database,
+    customerId: string,
+    seq: number,
+    at: (deleted: string) => string,
+  ) => {
+    const [[deleted]] = db.sqlite.exec(
+      'SELECT deleted_at FROM stage_transitions WHERE customer_id = ? AND deleted_at IS NOT NULL',
+      [customerId],
+    )[0]!.values as [[string]];
+    db.sqlite.run('UPDATE stage_transitions SET created_at = ? WHERE customer_id = ? AND seq = ?', [
+      at(deleted),
+      customerId,
+      seq,
+    ]);
+  };
+
+  it.each([
+    ['earlier than the deletion', (at: string) => minute(at, -1)],
+    ['at the instant of the deletion', (at: string) => at],
+  ])('E20: blocks a change recorded after the deletion, stamped %s', async (_label, at) => {
+    const { db, bao, meeting, row, restored } = await deletedMeeting();
+    changeStageManually(db, bao.id, { to: 'N1', date: d(2, 10) });
+    stamp(db, bao.id, 3, at);
+
+    const r = row(meeting.id);
+    expect(r.blocked).toEqual({
+      code: 'TRANSITION_BEFORE_LATEST',
+      params: { date: '02/10/2026' },
+    });
+    expect(restored(r)).toEqual(r.blocked);
+  });
+
+  it.each([
+    ['later than the deletion', (at: string) => minute(at, 1)],
+    ['without milliseconds', (at: string) => at.replace(/\.\d+Z$/, 'Z')],
+  ])('E20: a change recorded before the deletion does not block, stamped %s', async (_l, at) => {
+    const { db, customer, schedule, met, row, restored } = await trash();
+    const bao = customer('Phạm Gia Bảo');
+    changeStageManually(db, bao.id, { to: 'N4', date: d(2, 10) });
+    const meeting = schedule(bao.id, d(2, 10));
+    met(meeting.id, 'N2');
+    const transitions = listStageTransitions(db, bao.id);
+    softDeleteAppointment(db, meeting.id);
+    stamp(db, bao.id, 2, at);
+
+    expect(restored(row(meeting.id))).toBeUndefined();
     expect(listStageTransitions(db, bao.id)).toEqual(transitions);
   });
 

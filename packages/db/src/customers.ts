@@ -269,21 +269,23 @@ export function appendTransition(
 /**
  * Checks `appendTransition` without writing: the date not before the latest transition's (D10)
  * and the change allowed (ADR-0007). Returns the stage the customer moves from. A transition
- * recorded after the instant `recordedAfter` counts as later even on the same day: a restored
- * meeting goes before what was recorded since its deletion (spec Phase 6 E20).
+ * recorded after the one numbered `afterSeq` counts as later even on the same day: a restored
+ * meeting goes before what was recorded since its deletion (spec Phase 6 E20). The order of
+ * recording tells it, not a clock, which may differ between the machines of an export and an import
+ * (DR6-69).
  */
 export function checkTransition(
   db: Database,
   customerId: string,
   to: CustomerStage,
   date: CalendarDate,
-  recordedAfter?: string,
+  afterSeq?: number,
 ): CustomerStage | null {
   requireStage(to);
   const latest = latestTransition(db, customerId);
   if (latest) {
     const order = compareDates(date, fromIsoDate(latest.date));
-    const sameDayLater = recordedAfter !== undefined && latest.createdAt > recordedAfter;
+    const sameDayLater = afterSeq !== undefined && latest.seq > afterSeq;
     if (order < 0 || (order === 0 && sameDayLater)) {
       throw new DbError('TRANSITION_BEFORE_LATEST', { date: formatDate(fromIsoDate(latest.date)) });
     }
@@ -318,8 +320,9 @@ export function requireStage(stage: CustomerStage): CustomerStage {
 
 /**
  * The customer's stage at the end of `date`, as `stageOn` of domain reads it — the latest live
- * transition by `seq` dated that day or before, since dates follow `seq` (D10); null before the
- * customer's creation.
+ * transition by `seq` dated that day or before, since dates follow `seq` (D10). Before the
+ * customer's creation, the stage it was created in: a meeting held before the customer was entered
+ * is a backfill (DR-43, Owner 17/10/2026).
  */
 export function stageOnDay(
   db: Database,
@@ -328,24 +331,28 @@ export function stageOnDay(
 ): CustomerStage | null {
   const [row] = selectRows(
     db,
-    `SELECT to_stage FROM stage_transitions
-     WHERE customer_id = ? AND deleted_at IS NULL AND date <= ? ORDER BY seq DESC LIMIT 1`,
-    [customerId, storedDate(date)],
+    `SELECT COALESCE(
+       (SELECT to_stage FROM stage_transitions
+        WHERE customer_id = ? AND deleted_at IS NULL AND date <= ? ORDER BY seq DESC LIMIT 1),
+       (SELECT to_stage FROM stage_transitions
+        WHERE customer_id = ? AND deleted_at IS NULL ORDER BY seq LIMIT 1))`,
+    [customerId, storedDate(date), customerId],
   );
-  return (row?.[0] as CustomerStage | undefined) ?? null;
+  return (row?.[0] as CustomerStage | null | undefined) ?? null;
 }
 
 /**
  * Whether the customer is in `stage` at some point of `date`: at its start, or after a change that
- * day. A met appointment that moved no stage records such a stage as its stage after (spec §6 rule
- * 4, T-232). `transitions` are one customer's live ones, in recording order.
+ * day; before the creation, in the stage it was created in (`stageOnDay`). A met appointment that
+ * moved no stage records such a stage as its stage after (spec §6 rule 4, T-232). `transitions` are
+ * one customer's live ones, in recording order.
  */
 export function isStageOfDay(
   transitions: readonly Pick<StageTransition, 'date' | 'to'>[],
   date: CalendarDate,
   stage: CustomerStage,
 ): boolean {
-  let start: CustomerStage | undefined;
+  let start = transitions[0]?.to;
   for (const t of transitions) {
     const order = compareDates(t.date, date);
     if (order < 0) start = t.to;
@@ -407,17 +414,24 @@ function keptMeetings(db: Database, customerId: string, except: string, isoDate:
   return rows.map(([date, stage]) => ({ date: fromIsoDate(date), stage }));
 }
 
-/** The transition of the appointment withdrawn at the instant `at`, that of its deletion. */
+/**
+ * The transition of the appointment withdrawn at the instant `at`, that of its deletion: one of its
+ * own customer's, so restoring never moves another customer (DR6-71).
+ */
 export function transitionWithdrawnAt(
   db: Database,
-  appointmentId: string,
+  appointment: { readonly id: string; readonly customerId: string },
   at: string,
 ): TransitionRow | undefined {
   return db.orm
     .select()
     .from(stageTransitions)
     .where(
-      and(eq(stageTransitions.appointmentId, appointmentId), eq(stageTransitions.deletedAt, at)),
+      and(
+        eq(stageTransitions.appointmentId, appointment.id),
+        eq(stageTransitions.customerId, appointment.customerId),
+        eq(stageTransitions.deletedAt, at),
+      ),
     )
     .get();
 }

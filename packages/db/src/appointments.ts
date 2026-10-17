@@ -300,7 +300,7 @@ export function checkRestoreAppointment(db: Database, row: AppointmentRow) {
   const move = restoreStageMove(db, row, stage);
   const date = fromIsoDate(row.date);
   if (move?.to) {
-    checkTransition(db, row.customerId, move.to, date, move.withdrawn.deletedAt!);
+    checkTransition(db, row.customerId, move.to, date, move.withdrawn.seq);
   } else if (row.status === 'MET' && row.stageAfter !== null) {
     // Back without a transition only in a stage of its day, as the import checks (spec §6 rule 4):
     // one reached on a later day blocks like a change after its day (E7, Owner 15/10/2026).
@@ -321,14 +321,11 @@ export function checkRestoreAppointment(db: Database, row: AppointmentRow) {
  * to record again, null when the customer is in it already (E7).
  */
 export function restoreStageMove(db: Database, row: AppointmentRow, stage: CustomerStage) {
-  const withdrawn = row.deletedAt && transitionWithdrawnAt(db, row.id, row.deletedAt);
+  const withdrawn = row.deletedAt && transitionWithdrawnAt(db, row, row.deletedAt);
   return withdrawn ? { withdrawn, to: outcomeStage(row, stage) } : null;
 }
 
-/**
- * The stage the outcome moves its customer to from `stage` (none before the customer's creation),
- * or null when it moves nothing.
- */
+/** The stage the outcome moves its customer to from `stage`, or null when it moves nothing. */
 function outcomeStage(row: AppointmentRow, stage: CustomerStage | null): CustomerStage | null {
   return row.status === 'MET' && row.stageAfter !== null && row.stageAfter !== stage
     ? row.stageAfter
@@ -399,8 +396,9 @@ function replaceCoordinators(
 }
 
 /**
- * A met outcome keeps the stage the customer was in at the end of the meeting day, and moves any
- * other way through a transition on that day (spec §4, T-232), which D10 refuses before a later one.
+ * A met outcome keeps the stage the customer was in at the end of the meeting day — before the
+ * customer's creation, the stage it was created in (DR-43) — and moves any other way through a
+ * transition on that day (spec §4, T-232), which D10 refuses before a later one.
  */
 function applyOutcome(db: Database, row: AppointmentRow): void {
   const date = fromIsoDate(row.date);

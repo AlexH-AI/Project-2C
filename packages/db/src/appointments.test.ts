@@ -18,6 +18,7 @@ import {
   scheduleAppointment,
   softDeleteAppointment,
 } from './appointments';
+import { exportBackup, importBackup } from './backup';
 import {
   changeStageManually,
   createCustomer,
@@ -1050,6 +1051,32 @@ describe('the stage on the meeting day', () => {
     expect(stage()).toBe('N2');
   });
 
+  // DR6-68: met first, entered in the app later — a backfill (DR-43, Owner 06/10 and 17/10/2026).
+  it('keeps a meeting met before the customer was created in the stage it was created in', async () => {
+    const { db, re } = await setup();
+    const customer = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(10, 9) });
+    const { id } = scheduleAppointment(db, {
+      customerId: customer.id,
+      reId: re.id,
+      date: d(5, 9),
+      triggerType: 'REFERRAL',
+    });
+
+    // Moving the stage on 05/09 still comes before the creation (D10).
+    expect(errorOf(() => recordMeetingOutcome(db, id, MET_N2))).toMatchObject({
+      code: 'TRANSITION_BEFORE_LATEST',
+      params: { date: '10/09/2026' },
+    });
+    recordMeetingOutcome(db, id, KEPT_N3);
+    expect(getAppointment(db, id)).toMatchObject({ status: 'MET', stageAfter: 'N3' });
+    softDeleteAppointment(db, id);
+    restoreAppointment(db, id);
+
+    expect(getAppointment(db, id)).toMatchObject({ status: 'MET', stageAfter: 'N3' });
+    expect(steps(db, customer.id)).toEqual([['N3', d(10, 9), null]]);
+    await expect(importBackup(exportBackup(db), { now: db.now })).resolves.toBeDefined();
+  });
+
   it('restores a kept meeting only while the stage of its day is still the one it kept', async () => {
     const { db, customer, schedule } = await withCustomer();
     const moved = schedule(5);
@@ -1202,6 +1229,24 @@ describe('deleting appointments', () => {
     expect(codeOf(() => restoreAppointment(db, id))).toBe('TRANSITION_BEFORE_LATEST');
     expect(getAppointment(db, id)).toBeUndefined();
     expect(stage()).toBe('N4');
+  });
+
+  it('DR6-71: gives back no withdrawn transition of another customer’s', async () => {
+    const { db, re, schedule, stage } = await withCustomer();
+    const other = createCustomer(db, { name: 'Hoa', reId: re.id, stage: 'N3', date: d(1, 1) });
+    const { id } = schedule();
+    recordMeetingOutcome(db, id, MET_N2);
+    softDeleteAppointment(db, id);
+    // As a hand-edited file would have it, which the import refuses (spec §6 rule 4).
+    db.sqlite.run('UPDATE stage_transitions SET customer_id = ? WHERE appointment_id = ?', [
+      other.id,
+      id,
+    ]);
+
+    expect(codeOf(() => restoreAppointment(db, id))).toBe('STAGE_NOT_ON_DAY');
+    expect(stage()).toBe('N3');
+    expect(getCustomer(db, other.id)?.stage).toBe('N3');
+    expect(listStageTransitions(db, other.id)).toHaveLength(1);
   });
 
   it('restores no appointment whose RE or coordinator left while it was deleted', async () => {

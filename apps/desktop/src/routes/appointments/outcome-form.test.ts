@@ -203,6 +203,15 @@ describe('meetingDay', () => {
     expect(heldStage(meetingDay(history, [], a, d(20, 9, 2026)))).toBeUndefined();
   });
 
+  it('starts a meeting before the customer was created from its first stage, held there (DR-43)', () => {
+    const created = history[0]!;
+    const day = meetingDay([created], [], a, d(25, 8, 2026));
+    // The creation comes after the meeting, as D10 tells: the stage after stays the first one.
+    expect(day).toEqual({ from: 'N3', change: created });
+    expect(heldStage(day)).toBe('N3');
+    expect(meetingDay(history, [], a, d(25, 8, 2026))).toEqual({ from: 'N3', change: history[1] });
+  });
+
   it('starts from the current stage when nothing came after its day', () => {
     expect(meetingDay(history, [], a, d(15, 9, 2026))).toEqual({ from: 'N2' });
     expect(meetingDay(history, [], a, d(20, 9, 2026))).toEqual({ from: 'N2' });
