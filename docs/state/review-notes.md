@@ -7,7 +7,7 @@ Quy tắc (review đóng Phase 3, P-3): ghi chú review không chặn nằm ở 
 ## OPEN
 
 Theo task đã có chỗ trong kế hoạch:
-- **S-1 / D-1 (probe Codex Sol 02/10):** nhập backup nhận `kyc_versions.hash` sai → tính lại hoặc kiểm hash khi nhập snapshot.
+- **S-1 / D-1 (probe Codex Sol 02/10):** nhập backup nhận `kyc_versions.hash` sai → tính lại hoặc kiểm hash khi nhập snapshot (`packages/db/src/backup-validation.ts`).
 
 Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - `storage.rs` (#196, #192): `explorer_arg` (`~377`) không có `#[cfg(any(windows, test))]` → build ngoài Windows báo `dead_code`; `open_lock_file` dùng `Some(32)` thay hằng `SHARING_VIOLATION`; ngoài Windows closure `map_err` thành identity.
@@ -16,26 +16,26 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 - Đọc bảng dùng chung (#386, T-151, không chặn):
   - `backup.ts` `load`: statement `prepare` của mỗi bảng không `free()`. Hiện không rò vì DB tạm được `export()` rồi `close()` (sql.js giải phóng mọi statement còn mở, kể cả khi `throw invalid()` giữa chừng) → `try { … } finally { insert.free(); }`.
   - `apps/desktop/src/data/tables.ts`: getter lười đọc từ `db` lúc tạo, nên một `Tables` giữ qua `replace` (nạp lại / nhập) rồi mới hỏi bảng chưa đọc sẽ đọc DB cũ đã `close()`. Chưa có đường nào như vậy (màn nhận snapshot mới khi re-render, trước khi DB cũ đóng) → ghi cảnh báo "không giữ qua `await`" vào JSDoc `Tables` / `useTables`.
-- Lịch hẹn, ô ngoài tháng / ngoài khoảng là `aria-hidden` nên trình đọc màn hình không đọc số lịch ngày đó (#156).
+- Lịch hẹn (`apps/desktop/src/routes/appointments/AppointmentsScreen.tsx`), ô ngoài tháng / ngoài khoảng là `aria-hidden` nên trình đọc màn hình không đọc số lịch ngày đó (#156).
 - Lịch hẹn (#162–#168):
-  - #165: mockup tô "RF" màu accent và đưa năm khác xuống dòng giờ, code viết chuỗi phẳng.
-  - #163: nhóm trước → sau trong 6a hiện bằng chữ (mockup: badge); hộp 6h hiện thêm "Các lần hẹn trước"; e2e chưa kiểm link "Xem tất cả (n)" khi > 5 lịch.
+  - #165 (`apps/desktop/src/routes/customers/CustomerAppointments.tsx`): mockup tô "RF" màu accent và đưa năm khác xuống dòng giờ, code viết chuỗi phẳng.
+  - #163 (`apps/desktop/src/routes/appointments/AppointmentDialog.tsx`, `e2e/appointments.spec.ts`): nhóm trước → sau trong 6a hiện bằng chữ (mockup: badge); hộp 6h hiện thêm "Các lần hẹn trước"; e2e chưa kiểm link "Xem tất cả (n)" khi > 5 lịch.
 - Team & nhân sự (#144): `role === 'RE' || role === 'TL'` lặp ở `PersonDialogs.tsx`; "Xóa nhân sự" trong hộp Sửa bỏ thay đổi chưa lưu mà không báo.
 - Khách hàng (#141): dòng "Sau khi lưu: N2 → N3" thiếu "· hạ nhóm / lên nhóm" như mockup 5d; khối cảnh báo "Chuyển tay không bao giờ tính RF" hiện cả khi KH đã đóng; `error.INVALID_TRANSITION` chỉ nói "KH đã đóng" dù cũng bắn khi trùng nhóm hiện tại; `CustomerDialogs.tsx:~300` lặp `CLOSED_STAGES.includes` (dùng `!isPipelineStage`); `CustomerProfile.tsx:110` dựng `StageBadge` tay; 3 helper `badge` riêng (`MetFields.tsx:16`, `CustomerDialogs.tsx:42`, `CustomerKyc.tsx:155`) → *Duplicated Code*, T-h.
 - `CloseGuard.tsx` (#125): bấm X lúc đang seed "Nạp lại" thì app đóng trước khi lưu bản mới (không mất dữ liệu); không có dấu hiệu "đang lưu" khi chờ `flush()`.
-- Cài đặt (#96, #87): sau một lần lưu lỗi, "Nạp lại" bị từ chối mà không có cách thử lưu lại; hộp 10c thiếu số lượng dữ liệu sắp thay; `backups\` không đọc được thì app coi như lần đầu. NIT (#87): listener ném lỗi (`.tmp` sót và thư mục tạm của test Rust: đã sửa ở #620, xem RESOLVED).
+- Cài đặt (#96, #87; `apps/desktop/src/routes/Settings.tsx`): sau một lần lưu lỗi, "Nạp lại" bị từ chối mà không có cách thử lưu lại; hộp 10c thiếu số lượng dữ liệu sắp thay; `backups\` không đọc được thì app coi như lần đầu (`apps/desktop/src-tauri/src/storage.rs` `backup_names`). NIT (#87): listener ném lỗi (`.tmp` sót và thư mục tạm của test Rust: đã sửa ở #620, xem RESOLVED).
 - `PeriodPicker.tsx` (R4): ô ngày Tùy chọn báo đỏ sớm khi Tab (áp dụng ở `onBlur` từng ô).
 - Review đóng Phase 4 (04/10, P8 / T2):
   - Chart N4–N1 (`packages/ui/src/components/Chart.tsx` `role="img"`, `StageBlock.tsx`) không có số liệu cho trình đọc màn hình → bảng ẩn `sr-only` sinh từ `StageChart.columns` (`aria-describedby`), hoặc ghi chú mockup rằng Báo cáo → Theo mốc là bản dạng bảng.
 - Theo mốc một lượt (#332, T-131, không chặn):
   - Mùi *Duplicated Code*: `reports-view.ts` (`reportRows`, Theo mốc) và `stage-view.ts` (`stageBlock`) cùng dựa vào bất biến "mốc sau hôm nay luôn ở cuối" để ghép kết quả với mốc theo chỉ số (`flatMap(… ?? [])` rồi `[index]`). Đúng hiện nay (`countedWindow` / `snapshotDate` chỉ null khi `today < mark.start`), test tương đương trên seed báo đỏ nếu lệch → làm helper khi có nơi thứ ba.
 - `public/favicon.svg` (#128) là bản sao `app-icon.svg` → đổi icon phải sửa cả hai.
-- `DataTable` (Phase 1): chưa có test `sortable: false` và bảng rỗng; kiểm lại cột Giờ có `tabular-nums` (cột không phải `text` đã có). `cellClass` (#240) chỉ có e2e phủ — repo chưa có công cụ test component (thêm là G4).
+- `DataTable` (Phase 1, `packages/ui/src/components/DataTable.tsx`): chưa có test `sortable: false` và bảng rỗng; kiểm lại cột Giờ có `tabular-nums` (cột không phải `text` đã có). `cellClass` (#240) chỉ có e2e phủ — repo chưa có công cụ test component (thêm là G4).
 - Lưới năm (#247, không chặn):
   - `token-guard.ts:26` regex miễn trừ nhận mọi `style={{ flex: <định danh hoặc số> }}`, kể cả hằng `flex: 1`; doc comment `token-guard.ts:3` dài (NIT);
 - `AppointmentsScreen.tsx` (#239, không chặn): nhánh `!pickable` vẫn có thể gắn `bg-period-band` về lý thuyết; `inPeriod` ⇒ `pickable` nên không xảy ra.
-- Domain (R3): API `nextKycVersion`; ngày nhanh đầu năm (gợi ý năm trước?).
-- Token G3 (R4, Owner cân nhắc): viền ô nhập / mũi tên sắp xếp dưới 3:1.
+- Domain (R3): API `nextKycVersion` (`packages/domain/src/kyc.ts`); ngày nhanh đầu năm (gợi ý năm trước?, `parseQuickDate` ở `packages/domain/src/period.ts`).
+- Token G3 (R4, Owner cân nhắc; `packages/ui/src/tokens.css`): viền ô nhập / mũi tên sắp xếp dưới 3:1.
 - Còn lại từ ghi chú chặn nhầm #420 (code, không cần G5; phần G5 đã xử lý ở #516, xem RESOLVED): `text-match.ts` `phrase()` ghi tên mục có dấu vào `detail` thay vì đoạn model đã viết (lần thử lại model có thể không tìm thấy cụm; `pattern()` đã trả `regex.exec(...)[0]`); `validator.ts` mục trùng phần nhau sinh hai issue cho một chỗ ("PRUDENTIAL" → `prudential` + `prud`).
 - Hàm ngày còn thiếu trong `packages/domain` `period.ts` (không chặn). Gộp vào task đầu tiên được sửa `packages/domain`:
   - `apps/desktop/src/routes/customers/ai-panel-view.ts:509` `dayAndTime` (#438, T-168A phần 2a) lấy giờ bằng cách tách chuỗi của `formatLocalDateTime` (phụ thuộc dạng chuỗi) → thêm hàm `dd/mm HH:MM` vào `period.ts`.
