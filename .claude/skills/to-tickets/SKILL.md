@@ -83,7 +83,7 @@ Do NOT close or modify any parent issue.
 
 <issue-template>
 
-Fill every field of the project's Task template, `.github/ISSUE_TEMPLATE/task.yml` (conventions in `docs/agents/issue-tracker.md`). Do not keep a second list of sections here: `task.yml` is the only definition. Reference a parent issue, if any, in "Bối cảnh"; put blocking issues in "Bị chặn bởi".
+Fill every field of the project's Task template, `.github/ISSUE_TEMPLATE/task.yml` (conventions in `docs/agents/issue-tracker.md`). Do not keep a second list of sections here: `task.yml` is the only definition. Reference a parent issue, if any, in "Bối cảnh"; put blocking issues in "Bị chặn bởi". Fill "Ghi chú OPEN liên quan" from `node tools/notes-for.mjs --files <the paths of "File / thư mục được phép sửa">`, and count the notes the ticket folds in toward its size.
 
 </issue-template>
 
