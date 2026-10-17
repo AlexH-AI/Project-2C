@@ -22,19 +22,56 @@ function blocked(press: Press): boolean {
   return event.defaultPrevented;
 }
 
+/** An element of a page without a DOM: its tag, attributes and parent. */
+interface Node {
+  readonly tag: string;
+  readonly attributes?: Readonly<Record<string, string>>;
+  readonly parent?: Node;
+}
+
+/** `list` split at its commas, not those inside `:not(…)` (one level deep, as the page's). */
+const split = (list: string) => list.match(/(?:[^,(]|\([^)]*\))+/g)!.map((part) => part.trim());
+
 /**
- * Right-clicks a page that blocks reloading; true when the page kept its own menu (which has
- * "Refresh") from opening. `editable` says whether the click is inside a text field.
+ * Whether `node` matches `list`, for the selectors the page passes to `closest`: a tag, `[name]`,
+ * `[name="value"]`, and `:not(…)` of those. Anything else fails the test, so no selector passes
+ * unread (BR3, DR6-62).
  */
-function menuBlocked(editable: boolean): boolean {
-  const page = Object.assign(new EventTarget(), {
-    closest: (selector: string) => (editable && selector.includes('textarea') ? {} : null),
+function matches(node: Node, list: string): boolean {
+  return split(list).some((selector) => {
+    const [, tag, parts] = /^([a-z]*)(.*)$/.exec(selector)!;
+    if (tag && tag !== node.tag) return false;
+    return [...parts!.matchAll(/:not\(([^)]*)\)|\[([\w-]+)(?:="([^"]*)")?\]|(.)/g)].every(
+      ([, not, name, value, other]) => {
+        if (other !== undefined) throw new Error(`Selector not understood: ${selector}`);
+        if (not !== undefined) return !matches(node, not);
+        const has = node.attributes?.[name!];
+        return has !== undefined && (value === undefined || has === value);
+      },
+    );
   });
+}
+
+/**
+ * Right-clicks `node` on a page that blocks reloading; true when the page kept its own menu (which
+ * has "Refresh") from opening. The page reads the click's target with `closest`, as in a browser.
+ */
+function menuBlocked(node: Node): boolean {
+  const page = new EventTarget();
   blockReload(page);
+  const target = {
+    closest: (list: string) => {
+      for (let at: Node | undefined = node; at; at = at.parent) if (matches(at, list)) return at;
+      return null;
+    },
+  };
   const event = new Event('contextmenu', { cancelable: true });
+  Object.defineProperty(event, 'target', { value: target });
   page.dispatchEvent(event);
   return event.defaultPrevented;
 }
+
+const input = (type?: string): Node => ({ tag: 'input', attributes: type ? { type } : {} });
 
 /** Presses the mouse's `button` (3 Back, 4 Forward) on a page that blocks reloading. */
 function buttonBlocked(button: number): boolean {
@@ -73,11 +110,33 @@ describe('blockReload', () => {
   });
 
   it("keeps the webview's own menu, and its Refresh, away from the page", () => {
-    expect(menuBlocked(false)).toBe(true);
+    expect(menuBlocked({ tag: 'div' })).toBe(true);
+    expect(menuBlocked({ tag: 'span', parent: { tag: 'button' } })).toBe(true);
+    // A checkbox ("Đánh dấu là thay đổi quan trọng", 7a), a radio (`Choices`) or a button is no
+    // text field.
+    for (const type of [
+      'checkbox',
+      'radio',
+      'button',
+      'submit',
+      'reset',
+      'file',
+      'range',
+      'color',
+    ]) {
+      expect(menuBlocked(input(type)), type).toBe(true);
+    }
+    expect(menuBlocked({ tag: 'div', attributes: { contenteditable: 'false' } })).toBe(true);
   });
 
   it('keeps the menu of a text field for cut, copy and paste: it has no Refresh', () => {
-    expect(menuBlocked(true)).toBe(false);
+    expect(menuBlocked({ tag: 'textarea' })).toBe(false);
+    for (const type of [undefined, 'text', 'search', 'email', 'number', 'tel', 'url']) {
+      expect(menuBlocked(input(type)), type).toBe(false);
+    }
+    const editable: Node = { tag: 'div', attributes: { contenteditable: '' } };
+    expect(menuBlocked(editable)).toBe(false);
+    expect(menuBlocked({ tag: 'b', parent: editable })).toBe(false);
   });
 
   it('keeps F5, Ctrl+R and Ctrl+Shift+R from reloading the exe (DR-60)', () => {

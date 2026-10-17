@@ -1,7 +1,7 @@
-import { DbError } from '@p2c/db';
+import { DbError, type PersonUsage } from '@p2c/db';
 import type { Person, Team } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { groupByTeam, personUsage, retriesDelete, staffMetrics } from './team-view';
+import { groupByTeam, inUseHelp, retriesDelete, staffMetrics } from './team-view';
 
 const SAO_MAI: Team = { id: 't1', name: 'Sao Mai' };
 const BINH_MINH: Team = { id: 't2', name: 'Bình Minh' };
@@ -106,50 +106,68 @@ describe('staffMetrics', () => {
   });
 });
 
-describe('personUsage', () => {
-  it('counts the records still written for the person, as RE and as coordinator', () => {
-    expect(personUsage('re1', records)).toEqual({
-      customers: 3,
-      appointments: 4,
-      policies: 3,
-      coordinating: 1,
-      reviewing: 0,
-    });
-    expect(personUsage('tl1', records)).toEqual({
-      customers: 0,
-      appointments: 0,
-      policies: 0,
-      coordinating: 2,
-      reviewing: 0,
-    });
-    expect(personUsage('nobody', records)).toEqual({
-      customers: 0,
-      appointments: 0,
-      policies: 0,
-      coordinating: 0,
-      reviewing: 0,
-    });
+describe('inUseHelp (mockup 9b)', () => {
+  const usage = (counts: Partial<PersonUsage>): PersonUsage => ({
+    customers: 0,
+    appointments: 0,
+    policies: 0,
+    coordinating: 0,
+    reviewing: 0,
+    inTrash: [],
+    ...counts,
+  });
+  const RE = 'Chuyển KH sang RE khác trước (Sửa hồ sơ KH).';
+  const REVIEWER = 'Bỏ nhân sự này khỏi người đánh giá kết quả của các lịch đó (ở Sửa kết quả)';
+  // DR6-80, Q5 (a): a coordinator is changed in 6f only, never on a moved or planned appointment.
+  const COORDINATOR = 'người phối hợp của lịch Dời lịch / Dự kiến không đổi được';
+
+  it('gives an RE the way of the mockup only, a coordinator too (review of PR 636)', () => {
+    const [help, ...more] = inUseHelp(usage({ customers: 38, appointments: 212, coordinating: 5 }));
+    expect(help).toContain(RE);
+    expect(more).toEqual([]);
+    expect(inUseHelp(usage({ policies: 1 }))).toEqual([help]);
   });
 
-  it('counts the meetings the person reviews the outcome of, which also keep them (DR6-26)', () => {
-    const reviewed = {
-      ...records,
-      appointments: [
-        { reId: 're1', coordinatorIds: [], date: day(9, 1), outcomeReviewerId: 'is' },
-        { reId: 're2', coordinatorIds: ['tl1'], date: day(9, 2), outcomeReviewerId: 'is' },
-        { reId: 're1', coordinatorIds: [], date: day(9, 3), outcomeReviewerId: 'tl1' },
-      ],
-    };
+  it('tells a reviewer to take them off in Sửa kết quả, a coordinator to keep them (DR6-80)', () => {
+    const [reviewer, ...noMore] = inUseHelp(usage({ reviewing: 2 }));
+    expect(reviewer).toContain(REVIEWER);
+    expect(reviewer).toContain('hoặc giữ lại thay vì xóa');
+    expect(reviewer).not.toMatch(/người phối hợp/i);
+    expect(noMore).toEqual([]);
 
-    // An IS who only reviews: nothing else points to them.
-    expect(personUsage('is', reviewed)).toEqual({
-      customers: 0,
-      appointments: 0,
-      policies: 0,
-      coordinating: 0,
-      reviewing: 2,
-    });
-    expect(personUsage('tl1', reviewed)).toMatchObject({ coordinating: 1, reviewing: 1 });
+    expect(inUseHelp(usage({ coordinating: 7 }))).toEqual([
+      'Người phối hợp của lịch Dời lịch / Dự kiến không đổi được — giữ lại thay vì xóa.',
+    ]);
+
+    const [both] = inUseHelp(usage({ coordinating: 7, reviewing: 2 }));
+    expect(both).toContain(REVIEWER);
+    expect(both).toContain(COORDINATOR);
+    expect(both).not.toContain(RE);
+  });
+
+  it('names the customers in the trash the records belong to, and how they come back (T-250)', () => {
+    expect(inUseHelp(usage({ appointments: 1, inTrash: ['Lan'] }))).toEqual([
+      expect.stringContaining(RE),
+      'Có cả dữ liệu của KH đã xóa: Lan. Khôi phục KH ở Cài đặt → Thùng rác rồi chuyển sang RE khác.',
+    ]);
+    expect(inUseHelp(usage({ reviewing: 1, inTrash: ['Lan', 'Ánh Hồng'] }))).toEqual([
+      expect.stringContaining(REVIEWER),
+      'Có cả lịch hẹn của KH đã xóa: Lan, Ánh Hồng. Khôi phục KH ở Cài đặt → Thùng rác thì mới sửa được các lịch đó.',
+    ]);
+  });
+
+  it('names three customers of the trash, and counts the others', () => {
+    const inTrash = ['An', 'Bảo', 'Cúc', 'Dung', 'Đức'];
+    expect(inUseHelp(usage({ coordinating: 9, inTrash })).at(-1)).toContain(
+      'KH đã xóa: An, Bảo, Cúc và 2 KH khác.',
+    );
+    expect(inUseHelp(usage({ coordinating: 9, inTrash: inTrash.slice(0, 3) })).at(-1)).toContain(
+      'KH đã xóa: An, Bảo, Cúc.',
+    );
+  });
+
+  it('says nothing for a person nothing keeps', () => {
+    expect(inUseHelp(usage({}))).toEqual([]);
   });
 });
 

@@ -2,20 +2,20 @@
  * Commands and reads for teams and people (spec §3.1–3.2, §4). Every command runs in one
  * transaction; a rejected command throws `DbError` and leaves the database untouched.
  */
-import { PERSON_ROLES, REVIEWER_ROLES, type Person, type PersonRole, type Team } from '@p2c/domain';
+import {
+  byName,
+  PERSON_ROLES,
+  REVIEWER_ROLES,
+  type Person,
+  type PersonRole,
+  type Team,
+} from '@p2c/domain';
 import { and, asc, eq, isNotNull, isNull, ne } from 'drizzle-orm';
-import { requireChoice, requireName, stampDeleted } from './common';
+import { requireChoice, requireName, selectRows, stampDeleted } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { ulid } from './ids';
-import {
-  appointmentCoordinators,
-  appointments,
-  customers,
-  people,
-  policies,
-  teams,
-} from './schema';
+import { people, teams } from './schema';
 
 type TeamRow = typeof teams.$inferSelect;
 type PersonRow = typeof people.$inferSelect;
@@ -55,6 +55,63 @@ export function listPeople(db: Database): Person[] {
 export function getPerson(db: Database, id: string): Person | undefined {
   const row = findPerson(db, id);
   return row && !row.deletedAt ? toPerson(row) : undefined;
+}
+
+/**
+ * The live records that point to a person and keep them from deletion (spec §4, D9; mockup 9b).
+ * Appointments and policies of a deleted customer count too: deleting it only hides them (TR-4),
+ * and restoring it needs them as they were.
+ */
+export interface PersonUsage {
+  /** Live customers in their charge. */
+  readonly customers: number;
+  /** Appointments and policies written for them as RE. */
+  readonly appointments: number;
+  readonly policies: number;
+  readonly coordinating: number;
+  /** Meetings they review the outcome of (D9). */
+  readonly reviewing: number;
+  /** The customers in the trash some of those records belong to, by name in screen order. */
+  readonly inTrash: readonly string[];
+}
+
+const USAGE = `SELECT
+  (SELECT COUNT(*) FROM customers WHERE re_id = ?1 AND deleted_at IS NULL),
+  (SELECT COUNT(*) FROM appointments WHERE re_id = ?1 AND deleted_at IS NULL),
+  (SELECT COUNT(*) FROM policies WHERE re_id = ?1 AND deleted_at IS NULL),
+  (SELECT COUNT(*) FROM appointment_coordinators ac JOIN appointments a ON a.id = ac.appointment_id
+    WHERE ac.person_id = ?1 AND a.deleted_at IS NULL),
+  (SELECT COUNT(*) FROM appointments WHERE outcome_reviewer_id = ?1 AND deleted_at IS NULL)`;
+
+const IN_TRASH = `SELECT c.name FROM customers c WHERE c.deleted_at IS NOT NULL AND (
+  EXISTS (SELECT 1 FROM appointments a WHERE a.customer_id = c.id AND a.deleted_at IS NULL
+    AND (a.re_id = ?1 OR a.outcome_reviewer_id = ?1 OR EXISTS (SELECT 1
+      FROM appointment_coordinators ac WHERE ac.appointment_id = a.id AND ac.person_id = ?1)))
+  OR EXISTS (SELECT 1 FROM policies p WHERE p.customer_id = c.id AND p.deleted_at IS NULL
+    AND p.re_id = ?1))`;
+
+/** What `softDeletePerson` counts before it refuses; the delete dialog shows the same (T-250). */
+export function personUsage(db: Database, id: string): PersonUsage {
+  const [customers, appointments, policies, coordinating, reviewing] = selectRows(db, USAGE, [
+    id,
+  ])[0]!.map(Number);
+  return {
+    customers: customers!,
+    appointments: appointments!,
+    policies: policies!,
+    coordinating: coordinating!,
+    reviewing: reviewing!,
+    inTrash: selectRows(db, IN_TRASH, [id])
+      .map(([name]) => String(name))
+      .sort(byName),
+  };
+}
+
+/** Whether anything in `usage` keeps the person from deletion. */
+export function isPersonInUse(usage: PersonUsage): boolean {
+  return (
+    usage.customers + usage.appointments + usage.policies + usage.coordinating + usage.reviewing > 0
+  );
 }
 
 // ---- team commands --------------------------------------------------------
@@ -143,14 +200,18 @@ export function updatePerson(db: Database, id: string, changes: Partial<PersonIn
     // `undefined` keeps the current value; `teamId: null` clears the team.
     const role = changes.role ?? current.role;
     // Records keep pointing to their RE, who therefore has to stay an RE (spec §3.3).
-    if (current.role === 'RE' && role !== 'RE' && ownsLiveRecords(db, id)) {
-      throw new DbError('PERSON_IN_USE');
+    if (current.role === 'RE' && role !== 'RE') {
+      const usage = personUsage(db, id);
+      if (usage.customers + usage.appointments + usage.policies > 0) {
+        throw new DbError('PERSON_IN_USE');
+      }
     }
     // A reviewer or coordinator of a live meeting stays one of the roles that may support it (D9,
     // ADR-0007).
     if (REVIEWER_ROLES.includes(current.role) && !REVIEWER_ROLES.includes(role)) {
-      if (reviewsLiveAppointment(db, id)) throw new DbError('REVIEWER_IN_USE');
-      if (coordinatesLiveAppointment(db, id)) throw new DbError('COORDINATOR_IN_USE');
+      const usage = personUsage(db, id);
+      if (usage.reviewing > 0) throw new DbError('REVIEWER_IN_USE');
+      if (usage.coordinating > 0) throw new DbError('COORDINATOR_IN_USE');
     }
     const valid = validatePerson(
       db,
@@ -169,7 +230,7 @@ export function updatePerson(db: Database, id: string, changes: Partial<PersonIn
 export function softDeletePerson(db: Database, id: string): void {
   db.transaction(() => {
     livePerson(db, id);
-    if (isPersonInUse(db, id)) throw new DbError('PERSON_IN_USE');
+    if (isPersonInUse(personUsage(db, id))) throw new DbError('PERSON_IN_USE');
     updatePersonRow(db, id, stampDeleted(db));
   });
 }
@@ -233,43 +294,6 @@ function assertTeamNameFree(db: Database, name: string, exceptId: string | null)
     )
     .get();
   if (clash) throw new DbError('TEAM_NAME_TAKEN', { name });
-}
-
-/** Whether a live customer, appointment or policy has the person as its RE (spec §3.3–3.7). */
-function ownsLiveRecords(db: Database, id: string): boolean {
-  const live = (table: typeof customers | typeof appointments | typeof policies) =>
-    db.orm
-      .select({ id: table.id })
-      .from(table)
-      .where(and(eq(table.reId, id), isNull(table.deletedAt)))
-      .get();
-  return [live(customers), live(appointments), live(policies)].some(Boolean);
-}
-
-/** Whether a live record still points to the person, as RE, coordinator or reviewer (spec §4, D9). */
-function isPersonInUse(db: Database, id: string): boolean {
-  return (
-    ownsLiveRecords(db, id) || coordinatesLiveAppointment(db, id) || reviewsLiveAppointment(db, id)
-  );
-}
-
-function coordinatesLiveAppointment(db: Database, id: string): boolean {
-  const coordinating = db.orm
-    .select({ id: appointments.id })
-    .from(appointmentCoordinators)
-    .innerJoin(appointments, eq(appointments.id, appointmentCoordinators.appointmentId))
-    .where(and(eq(appointmentCoordinators.personId, id), isNull(appointments.deletedAt)))
-    .get();
-  return coordinating !== undefined;
-}
-
-function reviewsLiveAppointment(db: Database, id: string): boolean {
-  const reviewing = db.orm
-    .select({ id: appointments.id })
-    .from(appointments)
-    .where(and(eq(appointments.outcomeReviewerId, id), isNull(appointments.deletedAt)))
-    .get();
-  return reviewing !== undefined;
 }
 
 /** Checks a person's fields; `selfId` is the person being changed or restored, else null. */

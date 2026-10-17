@@ -102,7 +102,7 @@ export function NoteEvent({
           </Button>
         )}
       </span>
-      <span id={textId} tabIndex={-1} className="whitespace-pre-line text-fg-2">
+      <span id={textId} tabIndex={-1} className="whitespace-pre-line wrap-anywhere text-fg-2">
         {note.text}
         {button?.tooShort && (
           <span className="text-xs text-fg-3">
@@ -138,7 +138,7 @@ export function NoteEvent({
           >
             {view.items.map(({ index, fact }) => (
               <li key={index} className={`${ROW} border-dashed border-border-strong bg-surface-2`}>
-                <span className="flex-1">
+                <span className="min-w-0 flex-1 wrap-anywhere">
                   {t('extraction.proposed')} <b>{t(`kycField.${fact.field}`)}</b>:{' '}
                   {factText(fact.value, YES_NO)}{' '}
                   <span className="text-fg-3">{t('extraction.quote', { value: fact.quote })}</span>

@@ -207,21 +207,24 @@ export function KycNoteDialog({
   const boolean = field !== '' && kycFieldType(field) === 'boolean';
   const last = versions.at(-1);
 
+  /** The fact's error, or none; the note's own fields keep theirs until they change. */
+  const setFactError = (fact?: string) =>
+    setErrors((prev) => ({ text: prev.text, date: prev.date, fact }));
+
   /** Picks a trường afresh: nothing typed or chosen for another one carries over (DR-21). */
   const pick = (next: KycField | '') => {
     setField(next);
     setValue('');
     setAnswer(null);
     setMode('update');
-    // The note's own fields keep theirs until they change.
-    setErrors((prev) => ({ text: prev.text, date: prev.date }));
+    setFactError();
   };
 
   const add = () => {
-    if (!field) return setErrors({ fact: t('kycNote.error.field') });
+    if (!field) return setFactError(t('kycNote.error.field'));
     // Empty as the command reads it: invisible characters and white space alone (DR6-49).
     if (boolean ? answer === null : normalizeText(value) === '') {
-      return setErrors({ fact: t('kycNote.error.value') });
+      return setFactError(t('kycNote.error.value'));
     }
     const raw = boolean ? answer === 'yes' : value;
     let fact: KycNoteFact;
@@ -232,12 +235,12 @@ export function KycNoteDialog({
         conflict: has.length > 0 && mode === 'conflict',
       };
     } catch (failure) {
-      return setErrors({ fact: errorMessage(failure) });
+      return setFactError(errorMessage(failure));
     }
     // A second fact on one trường replaces the first.
     const next = [...facts.filter((f) => f.field !== field), fact];
     if (previewKycNote(profile, versions, next, day, false).kind === 'refused') {
-      return setErrors({ fact: t('kycNote.error.refused', { field: t(`kycField.${field}`) }) });
+      return setFactError(t('kycNote.error.refused', { field: t(`kycField.${field}`) }));
     }
     setFacts(next);
     pick('');

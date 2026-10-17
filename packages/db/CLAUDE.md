@@ -47,7 +47,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/seed-data.ts` — type Weighted, STARTING_STAGES, BIRTH_DATE_KINDS, OUTCOMES, MOVES, TRIGGERS, TEAM_NAMES, FAMILY_NAMES, MIDDLE_NAMES, GIVEN_NAMES, APPOINTMENT_TIMES, TRIGGER_NOTES, NEXT_STEPS, MEETING_NOTES, CASE_SIZES_MILLION, KYC_TOPICS, KYC_VALUES
 - `src/seed.ts` — type SeedOptions, type SeedScale, seedDemoData
 - `src/settings.ts` — getSetting, putSetting
-- `src/team.ts` — listTeams, getTeam, listPeople, getPerson, createTeam, renameTeam, softDeleteTeam, restoreTeam, checkRestoreTeam, type PersonInput, createPerson, updatePerson, softDeletePerson, restorePerson, checkRestorePerson
+- `src/team.ts` — listTeams, getTeam, listPeople, getPerson, type PersonUsage, personUsage, isPersonInUse, createTeam, renameTeam, softDeleteTeam, restoreTeam, checkRestoreTeam, type PersonInput, createPerson, updatePerson, softDeletePerson, restorePerson, checkRestorePerson
 - `src/test-support.ts` — setup, errorOf, codeOf, d
 - `src/trash.ts` — type TrashRef, type TrashOwner, type TrashEffect, type TrashBlock, type TrashRow, listTrash
 <!-- codemap:end -->

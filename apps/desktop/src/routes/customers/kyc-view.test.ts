@@ -116,6 +116,12 @@ describe('kycAmountRead (NT-HS-05, mockup 7b / 7c)', () => {
     expect(kycAmountRead('annualIncome', '500k')).toBe('500.000 ₫');
   });
 
+  it('reads the text as the command stores it, invisible characters dropped (K20, DR6-101)', () => {
+    // Saved as "6tỷ", which reads as 6 tỷ.
+    expect(kycAmountRead('annualIncome', '6​tỷ')).toBe('6.000.000.000 ₫ (6 tỷ)');
+    expect(kycAmountRead('totalAssets', '﻿1 tỷ⁠ 2')).toBe('1.200.000.000 ₫ (1,2 tỷ)');
+  });
+
   it('reads nothing the parser cannot, nor any other trường', () => {
     expect(kycAmountRead('totalAssets', 'Khoảng 12 tỷ')).toBeNull();
     expect(kycAmountRead('annualIncome', '1–2 tỷ')).toBeNull();

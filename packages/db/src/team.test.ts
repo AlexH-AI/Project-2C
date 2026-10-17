@@ -1,13 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
+import { recordMeetingOutcome, scheduleAppointment, softDeleteAppointment } from './appointments';
+import { createCustomer, restoreCustomer, softDeleteCustomer } from './customers';
 import { openDatabase } from './database';
 import { DbError } from './errors';
+import { softDeletePolicy, submitPolicy } from './policies';
 import {
   createPerson,
   createTeam,
   getPerson,
   getTeam,
+  isPersonInUse,
   listPeople,
   listTeams,
+  personUsage,
   renameTeam,
   restorePerson,
   restoreTeam,
@@ -15,6 +20,7 @@ import {
   softDeleteTeam,
   updatePerson,
 } from './team';
+import { d, setup as withStaff } from './test-support';
 
 async function setup() {
   let clock = Date.UTC(2026, 8, 26, 8, 0, 0);
@@ -370,5 +376,97 @@ describe('commands and the save port', () => {
     expect(created).toMatch(/^2026-09-26T08:00:00\.\d{3}Z$/);
     expect(created! < updated!).toBe(true);
     expect(updated! <= deleted!).toBe(true);
+  });
+});
+
+describe('personUsage: what keeps a person from deletion (mockup 9b, spec §4, T-250)', () => {
+  const NONE = { customers: 0, appointments: 0, policies: 0, coordinating: 0, reviewing: 0 };
+
+  /** Customers of the RE, each met on `day` with the TL joining and the IS reviewing. */
+  async function withRecords() {
+    const ctx = await withStaff();
+    const { db, re, tl } = ctx;
+    const is = createPerson(db, { name: 'Quang', role: 'IS', teamId: null });
+    const customer = (name: string) =>
+      createCustomer(db, { name, reId: re.id, stage: 'N3', date: d(1, 1) });
+    const meet = (customerId: string, day: number) => {
+      const { id } = scheduleAppointment(db, {
+        customerId,
+        reId: re.id,
+        date: d(day, 1),
+        triggerType: 'REFERRAL',
+        coordinatorIds: [tl.id],
+      });
+      recordMeetingOutcome(db, id, {
+        status: 'MET',
+        stageAfter: 'N3',
+        nextStep: 'Gửi minh họa',
+        outcomeReviewerId: is.id,
+      });
+      return id;
+    };
+    const submit = (customerId: string) =>
+      submitPolicy(db, { customerId, reId: re.id, submittedDate: d(31, 1), submittedFyp: 1e6 }).id;
+    return { ...ctx, is, customer, meet, submit };
+  }
+
+  it('counts the records pointing to the person, those of a customer in the trash named; the delete refuses them as before', async () => {
+    const { db, re, otherRe, tl, is, customer, meet, submit } = await withRecords();
+    const lan = customer('Lan');
+    meet(lan.id, 10);
+    submit(lan.id);
+    const usage = { ...NONE, customers: 1, appointments: 1, policies: 1, inTrash: [] };
+    expect(personUsage(db, re.id)).toEqual(usage);
+    expect(personUsage(db, tl.id)).toEqual({ ...NONE, coordinating: 1, inTrash: [] });
+    expect([is, otherRe].map((p) => isPersonInUse(personUsage(db, p.id)))).toEqual([true, false]);
+    softDeletePerson(db, otherRe.id);
+    softDeleteCustomer(db, lan.id);
+
+    // Deleting a customer only hides its appointments and policies (TR-4).
+    expect(personUsage(db, re.id)).toEqual({
+      ...NONE,
+      appointments: 1,
+      policies: 1,
+      inTrash: ['Lan'],
+    });
+    expect(personUsage(db, tl.id)).toEqual({ ...NONE, coordinating: 1, inTrash: ['Lan'] });
+    expect(personUsage(db, is.id)).toEqual({ ...NONE, reviewing: 1, inTrash: ['Lan'] });
+    for (const person of [re, tl, is]) {
+      expect(codeOf(() => softDeletePerson(db, person.id))).toBe('PERSON_IN_USE');
+    }
+
+    // The customer still comes back, its RE and supporters with it.
+    restoreCustomer(db, lan.id);
+    expect(personUsage(db, re.id)).toMatchObject({ customers: 1, inTrash: [] });
+    expect(personUsage(db, is.id)).toMatchObject({ reviewing: 1, inTrash: [] });
+  });
+
+  it('leaves out what was deleted on its own, and names each customer in the trash once, by name', async () => {
+    const { db, re, is, customer, meet, submit } = await withRecords();
+    const bao = customer('Bảo');
+    meet(bao.id, 10);
+    meet(bao.id, 12);
+    const anh = customer('Ánh');
+    submit(anh.id);
+    const cuc = customer('Cúc');
+    softDeleteAppointment(db, meet(cuc.id, 14));
+    softDeletePolicy(db, submit(cuc.id));
+    const live = customer('Dung');
+    for (const { id } of [bao, anh, cuc]) softDeleteCustomer(db, id);
+
+    // "Ánh" before "Bảo" as the screens order names (DR-48); Cúc holds nothing live any more.
+    expect(personUsage(db, re.id)).toEqual({
+      ...NONE,
+      customers: 1,
+      appointments: 2,
+      policies: 1,
+      inTrash: ['Ánh', 'Bảo'],
+    });
+    expect(personUsage(db, is.id)).toEqual({ ...NONE, reviewing: 2, inTrash: ['Bảo'] });
+
+    // A customer in the trash with nothing left pointing to the RE is not named.
+    softDeleteCustomer(db, live.id);
+    for (const { id } of [bao, anh]) restoreCustomer(db, id);
+    expect(personUsage(db, re.id)).toMatchObject({ customers: 2, inTrash: [] });
   });
 });

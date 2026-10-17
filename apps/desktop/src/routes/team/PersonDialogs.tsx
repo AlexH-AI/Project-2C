@@ -1,10 +1,18 @@
-import { useState } from 'react';
-import { createPerson, DbError, softDeletePerson, updatePerson } from '@p2c/db';
+import { useCallback, useState } from 'react';
+import {
+  createPerson,
+  DbError,
+  isPersonInUse,
+  personUsage,
+  softDeletePerson,
+  updatePerson,
+  type Database,
+} from '@p2c/db';
 import { PERSON_ROLES, type Person, type PersonRole, type Team } from '@p2c/domain';
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
-import { useAppData } from '../../data/AppDataContext';
+import { useAppData, useQuery } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
-import { retriesDelete, type PersonUsage } from './team-view';
+import { inUseHelp, retriesDelete } from './team-view';
 
 const ALERT = 'm-0 rounded-md border border-danger px-3 py-2 text-danger';
 const ROLE_CHOICES = PERSON_ROLES.map((role) => ({ value: role, label: role }));
@@ -124,24 +132,23 @@ export function PersonDialog({
 }
 
 /**
- * Mockup 9b: soft-deletes a person. One the screens still show records for is refused up front
- * with the counts; records of deleted customers only show up as the command's refusal (review R1).
+ * Mockup 9b: soft-deletes a person. One still in use is refused up front with the counts the
+ * command refuses by, those of customers in the trash included (T-250).
  */
 export function DeletePersonDialog({
   person,
   teamName,
-  usage,
   onClose,
 }: {
   person: Person;
   teamName: string;
-  usage: PersonUsage;
   onClose: () => void;
 }) {
   const data = useAppData();
+  const usage = useQuery(useCallback((db: Database) => personUsage(db, person.id), [person.id]));
   const [error, setError] = useState<string>();
   const [final, setFinal] = useState(false);
-  const inUse = Object.values(usage).some((count) => count > 0);
+  const inUse = isPersonInUse(usage);
 
   const remove = () => {
     try {
@@ -192,12 +199,11 @@ export function DeletePersonDialog({
               )}
             </ul>
           </div>
-          {usage.customers + usage.appointments + usage.policies > 0 && (
-            <span className="text-xs text-fg-3">{t('person.inUseHelp')}</span>
-          )}
-          {usage.coordinating + usage.reviewing > 0 && (
-            <span className="text-xs text-fg-3">{t('person.inUseSupportHelp')}</span>
-          )}
+          {inUseHelp(usage).map((help) => (
+            <span key={help} className="text-xs text-fg-3">
+              {help}
+            </span>
+          ))}
         </>
       ) : (
         <p className="m-0">{t('person.deleteBody')}</p>

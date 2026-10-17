@@ -1154,12 +1154,24 @@ export const vi = {
   'person.inUseReviewing': '{count} lịch hẹn là người đánh giá kết quả',
   'person.inUseHelp':
     'Chuyển KH sang RE khác trước (Sửa hồ sơ KH). Lịch hẹn và HĐ cũ giữ theo RE đã ghi nên RE vẫn còn trong dữ liệu — cân nhắc giữ lại thay vì xóa.',
+  // The way out of a supporter (DR6-80, Q5 a): a coordinator is changed in Sửa kết quả (6f) only,
+  // which a moved or planned appointment has not.
+  'person.inUseReviewerHelp':
+    'Bỏ nhân sự này khỏi người đánh giá kết quả của các lịch đó (ở Sửa kết quả) trước, hoặc giữ lại thay vì xóa.',
+  'person.inUseCoordinatorHelp':
+    'Người phối hợp của lịch Dời lịch / Dự kiến không đổi được — giữ lại thay vì xóa.',
   'person.inUseSupportHelp':
-    'Bỏ nhân sự này khỏi người phối hợp và người đánh giá kết quả của các lịch đó trước, hoặc giữ lại thay vì xóa.',
+    'Bỏ nhân sự này khỏi người đánh giá kết quả của các lịch đó (ở Sửa kết quả); người phối hợp của lịch Dời lịch / Dự kiến không đổi được — giữ lại thay vì xóa.',
+  // Records of deleted customers keep the person too: deleting a customer only hides them (T-250).
+  'person.inUseTrash':
+    'Có cả dữ liệu của KH đã xóa: {customer}. Khôi phục KH ở Cài đặt → Thùng rác rồi chuyển sang RE khác.',
+  'person.inUseSupportTrash':
+    'Có cả lịch hẹn của KH đã xóa: {customer}. Khôi phục KH ở Cài đặt → Thùng rác thì mới sửa được các lịch đó.',
+  'person.inUseTrashMore': '{customer} và {count} KH khác',
   'error.TEAM_REQUIRED': '{role} phải thuộc một team.',
-  // Also raised by records of deleted customers, which the screens no longer show (review R1).
+  // An RE with records who leaves the role, or a person deleted while still in use: both by role.
   'error.PERSON_IN_USE':
-    'Nhân sự còn KH, lịch hẹn hoặc HĐ ghi cho mình, kể cả của KH đã xóa (khôi phục KH cần RE này). Giữ vai trò RE, hoặc giữ lại thay vì xóa.',
+    'Nhân sự còn dữ liệu trỏ tới mình, kể cả của KH đã xóa (ở Cài đặt → Thùng rác): là RE của KH, lịch hẹn, HĐ, hoặc là người phối hợp / người đánh giá kết quả của lịch hẹn. RE còn dữ liệu thì giữ vai trò RE; nhân sự không dùng nữa thì giữ lại thay vì xóa.',
   'error.NAME_REQUIRED': 'Chưa nhập tên.',
   'error.INVALID_TEXT':
     'Chữ có ký tự không lưu được (ký tự NUL hoặc ký tự hỏng khi dán): xóa ký tự đó rồi lưu lại.',

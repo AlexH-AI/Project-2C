@@ -24,6 +24,7 @@ import {
   KYC_FIELDS,
   markConflict,
   nextKycVersion,
+  normalizeText,
   parseVnd,
   type CalendarDate,
   type KycCategory,
@@ -121,10 +122,11 @@ const AMOUNT_FIELDS: ReadonlySet<KycField> = new Set([
  * Mockup 7b / 7c (NT-HS-05): what a value typed for a money trường reads as, like every money
  * input — "6.000.000.000 ₫ (6 tỷ)", the full form alone when the compact one is the same. Null for
  * another trường, or for words `parseVnd` cannot read ("Khoảng 12 tỷ"), which are kept all the same.
+ * Read from the text as the command stores it (K20, DR6-101).
  */
 export function kycAmountRead(field: KycField, text: string): string | null {
   if (!AMOUNT_FIELDS.has(field)) return null;
-  const parsed = parseVnd(text);
+  const parsed = parseVnd(normalizeText(text));
   if (!parsed.ok) return null;
   const amount = formatVnd(parsed.amount);
   const compact = formatVndCompact(parsed.amount);
