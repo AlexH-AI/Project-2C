@@ -51,8 +51,9 @@ function listedPaths(name, files) {
 
 /**
  * Paths and globs as an Issue lists them: braces expanded, anything that is not a path dropped,
- * short names and paths found in the repo as a note's are (`backup.ts` next to a full path of
- * `packages/db`), and each source file with the test file next to it, as the field's "+ test" says.
+ * a path from the repo root taken as it is (`CLAUDE.md`), other short names and paths found in the
+ * repo as a note's are (`backup.ts` next to a full path of `packages/db`), and each source file
+ * with the test file next to it, as the field's "+ test" says.
  * @param {readonly string[]} listed
  * @param {readonly string[]} repoFiles `git ls-files`
  * @returns {string[]}
@@ -65,9 +66,12 @@ export function targetPatterns(listed, repoFiles) {
   const packages = new Set(
     names.filter((name) => name.includes('/') && !isGlob(name)).map(packageOf),
   );
-  const paths = names.flatMap((name) =>
-    name.includes('/') ? listedPaths(name, repoFiles) : filesNamed(name, repoFiles, packages),
-  );
+  const paths = names.flatMap((name) => {
+    if (repoFiles.includes(name)) return [name];
+    return name.includes('/')
+      ? listedPaths(name, repoFiles)
+      : filesNamed(name, repoFiles, packages);
+  });
   const withTests = paths.flatMap((path) => {
     const source = path.match(/^([^*]+)\.(tsx?|mjs|js)$/);
     return source && !source[1].endsWith('.test')
@@ -93,23 +97,28 @@ const nameIn = (span) => span.replace(/:[~\d].*$/, '');
 
 /**
  * The repo paths a span with a `/` names: the file, the files it ends (`appointments/x.ts`), or
- * the folder (two levels or more: `e2e/perf/`, `packages/db`) with a trailing `/`.
+ * the folder (two levels or more: `e2e/perf/`, `packages/db`) with a trailing `/`. A file path the
+ * repo does not have stays as written: the change at hand may delete or rename that file.
  */
 function pathsNamed(name, files) {
   if (files.includes(name)) return [name];
   const ends = files.filter((f) => f.endsWith(`/${name}`));
   if (ends.length) return ends;
   const folder = `${name.replace(/\/$/, '')}/`;
-  const deep = folder.split('/').length > 2;
-  return deep && files.some((f) => f.startsWith(folder)) ? [folder] : [];
+  if (files.some((f) => f.startsWith(folder))) return folder.split('/').length > 2 ? [folder] : [];
+  return !isGlob(name) && /\.\w+$/.test(baseName(name)) ? [name] : [];
 }
 
-/** The repo files a bare file name names, narrowed to `packages` when it is in several places. */
+/**
+ * The repo files a bare file name names, narrowed to `packages` when it is in several places;
+ * failing that, the file of that name at the repo root (`CLAUDE.md`, `package.json`).
+ */
 function filesNamed(name, files, packages) {
   const all = files.filter((f) => baseName(f) === name);
   if (all.length < 2) return all;
   const near = all.filter((f) => packages.has(packageOf(f)));
   if (near.length) return near;
+  if (files.includes(name)) return [name];
   return all.length > MAX_PLACES ? [] : all;
 }
 

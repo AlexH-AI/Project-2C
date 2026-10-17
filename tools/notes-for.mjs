@@ -50,15 +50,18 @@ function targetsOf(argv, root, files) {
     return { targets, source: `Issue #${mode} (${targets.length} đường dẫn / glob)`, hint: PLAN };
   }
   if (mode === '--pr' && isNumber(rest[0])) {
+    // A renamed file counts under its old name too: a note may name it so.
     const path = `repos/{owner}/{repo}/pulls/${rest[0]}/files?per_page=100`;
-    const targets = lines(gh(['api', '--paginate', path, '--jq', '.[].filename']));
+    const jq = '.[] | .filename, (.previous_filename // empty)';
+    const targets = [...new Set(lines(gh(['api', '--paginate', path, '--jq', jq])))];
     return { targets, source: `PR #${rest[0]} (${targets.length} file)`, hint: CHECK };
   }
   if (mode === '--diff' && (rest.length === 0 || (rest[0] === '--base' && rest.length === 2))) {
     const base = rest[1] ?? 'origin/main';
+    // --no-renames: a renamed file is listed under its old name as well as its new one.
     const changed = [
-      ...lines(git(['diff', '--name-only', `${base}...HEAD`], root)),
-      ...lines(git(['diff', '--name-only', 'HEAD'], root)),
+      ...lines(git(['diff', '--name-only', '--no-renames', `${base}...HEAD`], root)),
+      ...lines(git(['diff', '--name-only', '--no-renames', 'HEAD'], root)),
       ...lines(git(['ls-files', '--others', '--exclude-standard'], root)),
     ];
     const targets = [...new Set(changed)];

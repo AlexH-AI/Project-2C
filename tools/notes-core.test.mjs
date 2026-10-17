@@ -24,6 +24,9 @@ const FILES = [
   'e2e/perf/stats.ts',
   'apps/desktop/src/routes/appointments/appointment-form.ts',
   'docs/README.md',
+  'CLAUDE.md',
+  'packages/ai/CLAUDE.md',
+  'packages/db/CLAUDE.md',
 ];
 
 const pathsOf = (...open) => openNotes(ledger(...open), FILES).map((note) => note.paths);
@@ -100,6 +103,25 @@ describe('openNotes', () => {
       ['packages/domain/src/stats.ts', 'e2e/perf/stats.ts'],
       [],
     ]);
+  });
+
+  it('keeps a file path the repo no longer has, so a PR that deletes or renames it meets the note', () => {
+    const notes = openNotes(
+      ledger('- `tools/gone.mjs:12`: comment.', '- `gone.mjs` trần, `tools/load-*.mjs` glob.'),
+      FILES,
+    );
+    expect(notes.map((note) => note.paths)).toEqual([['tools/gone.mjs'], []]);
+    expect(relatedNotes(notes, ['tools/gone.mjs']).exact.map((note) => note.line)).toEqual([5]);
+  });
+
+  it('takes a bare name that is a file at the repo root as that file, unless a package narrows it', () => {
+    expect(
+      pathsOf(
+        '- `CLAUDE.md:42` (Quy trình): bước.',
+        '- `packages/db` (#1):',
+        '  - `CLAUDE.md` codemap.',
+      ),
+    ).toEqual([['CLAUDE.md'], ['packages/db/CLAUDE.md']]);
   });
 
   it('reads a folder of two levels or more, and a path given from a folder down', () => {
@@ -325,6 +347,14 @@ describe('targetPatterns', () => {
       'e2e/perf/',
       'tools/new-tool.mjs',
       'tools/new-tool.test.mjs',
+    ]);
+  });
+
+  it('reads a listed path from the repo root first', () => {
+    expect(targetPatterns(['packages/db/src/x.ts', 'CLAUDE.md'], FILES)).toEqual([
+      'packages/db/src/x.ts',
+      'packages/db/src/x.test.ts',
+      'CLAUDE.md',
     ]);
   });
 });
