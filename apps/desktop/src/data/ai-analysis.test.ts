@@ -831,6 +831,27 @@ describe('ChatGPT web in the app (spec Phase 5 §3.1)', () => {
     },
   );
 
+  it('ties the session to the data its input was taken from, though replaced while it copies (DR6-15)', async () => {
+    let copied!: (done: boolean) => void;
+    const web: WebTools = {
+      copy: () => new Promise((resolve) => (copied = resolve)),
+      openChatGpt: () => Promise.resolve(true),
+    };
+    const { app, customer } = await withCustomer({ reportError: vi.fn(), web });
+
+    const starting = startChatGptWeb(app, customer.id);
+    // The same data, its IDs alike: only the generation tells it apart.
+    const backup = await app.exportBackup();
+    await app.importBackup(await app.readBackup(backup.text));
+    copied(true);
+    const outcome = await starting;
+    if (outcome.kind !== 'session') throw new Error(`no session: ${outcome.kind}`);
+
+    const answer = await goodAnswer(outcome.session);
+    expect(saveChatGptAnswer(app, outcome, answer)).toEqual({ kind: 'discarded' });
+    expect(storedRows(app)).toBe(0);
+  });
+
   it('refuses Kiểm tra và lưu while the data is being replaced, saving nothing and reporting no bug (S2-2)', async () => {
     const { storage, fail } = heldBackupStorage();
     const { app, web, session, rows } = await started({ storage });

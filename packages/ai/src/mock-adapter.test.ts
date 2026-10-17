@@ -177,6 +177,31 @@ describe('createMockAdapter', () => {
     },
   );
 
+  it.each([
+    // Someone else, whoever is named (DR6-78).
+    'Ông nội KH có 9 con.',
+    'Bà ngoại KH có 7 con, KH là cháu đích tôn.',
+    'Sếp của KH có 3 con.',
+    'Ba của KH có 5 con.',
+    'Em KH vẫn còn độc thân.',
+    'Cô của KH độc thân cả đời.',
+    'Anh họ KH đã kết hôn năm ngoái.',
+    'Hàng xóm KH đã kết hôn tuần trước.',
+    'Anh rể KH đã kết hôn, có 3 con.',
+    'Vợ cũ của KH có 2 con riêng với chồng mới.',
+    'Chồng của KH có 2 con riêng.',
+    // "con" of animals and things.
+    'KH nuôi 2 con chó Phú Quốc.',
+    'Nhà KH có 3 con mèo.',
+    'KH sở hữu 10 con bò sữa ở trang trại.',
+    // A supposition.
+    'KH hỏi nếu đã kết hôn, có 2 con thì nên chuẩn bị gì.',
+  ])('proposes nothing from %j: someone else, animals or a supposition (DR6-78)', async (note) => {
+    const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
+    const output = extractionOutputSchema.parse((await complete({ note, fields })).value);
+    expect(output.facts).toEqual([]);
+  });
+
   it('reads each sentence on its own: a relative named in one leaves the KH of another', async () => {
     const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
     const both = [
@@ -186,10 +211,36 @@ describe('createMockAdapter', () => {
     for (const note of [
       'KH đã kết hôn, có 2 con.',
       'KH đã kết hôn, có 2 con. Em trai KH còn độc thân.',
+      'Ông nội KH mất sớm. KH đã kết hôn, có 2 con.',
+      'Nếu cần, KH sẽ gọi lại. KH đã kết hôn, có 2 con. Nhà nuôi 3 con chó.',
     ]) {
       const output = extractionOutputSchema.parse((await complete({ note, fields })).value);
       expect(output.facts).toEqual(both);
     }
+  });
+
+  it.each(['!', '?', ';', '\n'])('ends a sentence at %j too (N19d)', async (end) => {
+    const note = `Em trai KH còn độc thân${end} Nếu cần, gọi lại${end} KH có 2 con.`;
+    const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
+    const output = extractionOutputSchema.parse((await complete({ note, fields })).value);
+    expect(output.facts).toEqual([{ field: 'childrenCount', value: '2', quote: '2 con' }]);
+  });
+
+  // DR6-79: each sentence and clause read once. Reading back from every phrase took 2 s on the
+  // first note; the best of three runs keeps a busy CI runner from failing it.
+  it.each([
+    ['"độc thân"', `KH ${'độc thân '.repeat(4000)}`],
+    ['"<n> con"', `KH ${'có 2 con và '.repeat(3000)}`],
+  ])('reads a one-line note of 36 000 characters full of %s in under 50 ms', async (_, note) => {
+    const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
+    const times: number[] = [];
+    for (let run = 0; run < 3; run++) {
+      const started = Date.now();
+      extractionOutputSchema.parse((await complete({ note, fields })).value);
+      times.push(Date.now() - started);
+    }
+    expect(note.length).toBe(36_003);
+    expect(Math.min(...times)).toBeLessThan(50);
   });
 
   it.each([
