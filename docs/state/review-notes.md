@@ -162,6 +162,16 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
   - `apps/desktop/src/routes/customers/CustomerProfile.tsx:122`, `:248`: việc hồ sơ KH dùng `stageSince` (dòng "từ …" và hộp 5d) chỉ giữ bằng đọc code và e2e; vitest chưa có DOM (thêm là G4), như `cellClass` của `DataTable` ở trên.
 - Hai ghi chú không chặn của review lại PR #647 (T-224, #564, review @`560f650`, mức low; ghi chú thứ ba, cờ `app.open-data` chỉ nói Office Laptop, đã sửa ngay ở mục cờ bên dưới; mục `docs/metrics/phase-6.md:90` đã chuyển sang RESOLVED) — gộp vào lần chạm sau của từng file:
   - NIT `docs/design/phase-6-hoan-thien.md:252`: gạch "**Muse:** chạy không hỏi duyệt… ACL…" ở §6.3 chưa ghi "lượt 1". §6.1, §6.4 và dòng lượt 2 ngay dưới đã nói rõ nên không gây hiểu nhầm → thêm "(lượt 1)".
+- Bốn ghi chú không chặn của review PR #667 (T-249, #653, review @`2b7e559`, mức med; quyết định Owner về khung "Khi lưu" ghi ở ACCEPTED). Gộp vào lần chạm sau của từng file:
+  - `e2e/appointment-outcome.spec.ts:400` (`toNewYearsEve`) và `e2e/customer-policies.spec.ts:142-146`: cùng một vòng `page.clock.fastForward` 20 ngày tới 23:58 31/12, viết hai lần (*Duplicated Code*). Vòng chia 20 ngày vì một lần tua quá 2³² ms bị quay vòng → đưa hàm vào `e2e/anchor.ts` khi được sửa file đó.
+  - `apps/desktop/src/routes/trash-view.ts:220-228` (`reasonSentence`): màn nhận ra E20 bằng cách so chuỗi `params.date` với `formatDate(row.date)` (*Primitive Obsession*).
+    - Hiện cho kết quả đúng: chỉ ca "ghi sau lúc xóa" ra `TRANSITION_BEFORE_LATEST` có ngày bằng ngày lịch (`checkTransition` theo `seq`). Ca E7 luôn mang ngày sau, vì chuyển nhóm cuối cùng ngày tới đúng nhóm sau thì `isStageOfDay` đúng.
+    - Luật đổi thì thêm cờ cùng ngày vào params, như Issue #653 cho phép.
+  - `packages/db/src/customers.ts:438` (`liveAppointmentsOf`): mỗi lần rút chuyển nhóm, lệnh đọc mọi lịch sống của KH rồi để `meetingKeepingMove` lọc. SQL cũ đã lọc `MET`, ngày ≥ ngày chuyển nhóm và lịch không có chuyển nhóm. Mỗi KH ít lịch nên chi phí nhỏ → chỉ ghi lại.
+  - `e2e/appointment-outcome.spec.ts:322` (ca CL2-E1, DR6-70): sau khi Lưu, test kiểm nhóm KH (`Giữ N4`, hồ sơ N3, không còn "N3 → N2") nhưng chưa kiểm RF bớt 1 như khung đã nói. RF suy từ chuyển nhóm có `appointmentId`, và test đã kiểm chuyển nhóm đó bị rút → thêm một kiểm RF khi chạm file.
+  - Chỉ ghi lại: PR sửa bốn file ngoài danh sách của Issue (`packages/db/src/customers.ts` + test, `packages/db/src/index.ts`, `apps/desktop/src/routes/appointments/DeleteAppointmentDialog.tsx`), có nêu lý do trong thân PR nhưng không có mục "Ngoài danh sách file" riêng (checklist §1, P-2). Lý do:
+    - Luật D7 của lệnh nằm ở `withdrawAppointmentTransition` (`customers.ts`), không ở `appointments.ts` như Issue ghi.
+    - Khung "Khi lưu" của 6f dùng chung phần chữ với 6g.
 - Deep review Phase 1–6 lượt 1 (T-223 #563, tổng hợp `docs/reviews/2026-10-15-deep-review-phase-1-6-luot-1-tong-hop.md` §8.5), **hoãn sau v1.0** (Owner 15/10, §9 Q5, Q10). Các DR6 khác có Issue sửa #592–#607 (§8.7). **Owner 17/10 (lượt 2, Phương án 3 "sửa hết"):** DR6-17, 23, 24 không hoãn nữa, làm trước v1.0 trong đợt G5 #661 (T-257); các mục còn lại vẫn hoãn:
   - **DR6-17 (cần G5) → #661:** ký tự vô hình làm lọt V3–V6. `cleanText` của `packages/ai/src/text-match.ts` chạy NFKC **trước** khi bỏ `\p{Cf}`, nên chữ NFD có U+200B chen trước dấu tổ hợp còn NFD sau khi lọc → lọt các mục không so bản bỏ dấu ("KH dễ chốt", "Bảo Việt", "tuổi Tý", "Điều 35"), kể cả nhận diện tin nhắn của app ở `checkWebAnswer` (L·CX-C1). Mẫu V6 `Điều\s+…`, `Luật\s+…`, `khoản\s+… điều` (`blocklists.ts:93-98`) không khớp khi giữa chỉ có U+200B / U+2060 (H·CL-C1). Cần một đợt G5: chuẩn hóa lại sau khi bỏ `\p{Cf}`, khoảng trắng của ba mẫu khớp cả chỗ có ký tự vô hình.
   - **DR6-23 (G5) → #661:** bản bỏ dấu khớp nhầm câu thường: "định hướng nơi ở / chuyển hướng nói" → "hướng nội", "định hướng ngoài giờ" → "hướng ngoại", "suy nghĩ định hướng / nghĩ định cư" → "nghị định", "khách nông thôn" → "khách nóng", "sẵn sàng kỹ" → "sẵn sàng ký" (L·CL-C5; 0 / 1 101 câu eval thật). Đợt G5 sau: xét chuyển "hướng nội / hướng ngoại", "nghị định" sang "Bỏ dấu: không" như "nghị quyết".
@@ -226,6 +236,11 @@ Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 
 ## ACCEPTED
 
+- **Owner quyết 17/10 (PR #667, T-249, DR6-70):** khung "Khi lưu" của hộp 6f hiện ở mọi ca Lưu rút chuyển nhóm của chính cuộc gặp mà không ghi chuyển nhóm nào thay. Như vậy là rộng hơn câu chữ của Issue #653, vốn chỉ nói ca dời ngày.
+  - Ba ca này: dời ngày qua một lần đổi nhóm khác; đổi Đã gặp → Hủy / Không đến; tự chọn nhóm sau "giữ nguyên".
+  - Luật chung là `undoneMove` (`outcome-form.ts`), khớp `editMeetingOutcome`: lệnh rút khi `!keepsStage || moved`, và `applyOutcome` không ghi gì khi nhóm sau = nhóm cuối ngày.
+  - Chọn nhóm sau khác (ghi chuyển nhóm mới thay) thì không hiện khung: dòng đọc lại có sẵn đã nêu chuyển nhóm mới và RF.
+  - Trước đây quyết định này chỉ ghi ở thân PR.
 - Ghi chú review #539, ca "TR-5: blocks a policy issued after today" (`packages/db/src/trash.test.ts`, HĐ phát hành 12/10) đỏ khi `TZ=Pacific/Auckland`: Issue #606 (DR6-65) chốt đồng hồ `setup()` chỉ bảo đảm múi giờ UTC−11…+12, Auckland giờ mùa hè (UTC+13) nằm ngoài. PR #644 giữ nguyên ca này, comment DR-15 nêu khoảng bảo đảm. CI và hai máy ở UTC+7.
 - Panel KYC Intelligence (#439): `BADGE_COLORS` của panel không gộp với `GATE_COLORS` (`CustomerKyc.tsx`) vì mockup tô `PAIN_POINT_ANALYSIS` khác nhau (panel `c-info`, thẻ KYC `c-ok`). Chip theo `provider` đã sửa trong chính #439 (commit `6a3f242`) → comment chuyển đi trên T-174 #433 chỉ còn việc thêm tên "ChatGPT web".
 
