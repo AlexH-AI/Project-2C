@@ -167,6 +167,7 @@ describe('createMockAdapter', () => {
     'Em trai KH còn độc thân.',
     'KH không có 2 con như người quen tưởng.',
     'KH không còn độc thân.',
+    'KH khôngđộc thân.',
     'KH muốn kiểm tra 9 con số về thu nhập và tài sản trước buổi gặp.',
   ])(
     'proposes nothing from %j: about someone else, said not to be, or no child (DR6-19)',
@@ -183,6 +184,7 @@ describe('createMockAdapter', () => {
     'Bà ngoại KH có 7 con, KH là cháu đích tôn.',
     'Sếp của KH có 3 con.',
     'Ba của KH có 5 con.',
+    'Ba chị ấy có 5 con.',
     'Em KH vẫn còn độc thân.',
     'Cô của KH độc thân cả đời.',
     'Anh họ KH đã kết hôn năm ngoái.',
@@ -190,16 +192,41 @@ describe('createMockAdapter', () => {
     'Anh rể KH đã kết hôn, có 3 con.',
     'Vợ cũ của KH có 2 con riêng với chồng mới.',
     'Chồng của KH có 2 con riêng.',
+    'Mợ của KH có 2 con.',
+    'Anh của KH đã kết hôn.',
     // "con" of animals and things.
     'KH nuôi 2 con chó Phú Quốc.',
     'Nhà KH có 3 con mèo.',
     'KH sở hữu 10 con bò sữa ở trang trại.',
-    // A supposition.
+    'Nhà KH nuôi 5 con Gà.',
+    // A supposition, a wish or a plan.
     'KH hỏi nếu đã kết hôn, có 2 con thì nên chuẩn bị gì.',
-  ])('proposes nothing from %j: someone else, animals or a supposition (DR6-78)', async (note) => {
+    'Trường hợp KH đã kết hôn, cần thêm giấy đăng ký.',
+    'KH muốn có 2 con.',
+    'Hai vợ chồng dự định có 3 con.',
+  ])(
+    'proposes nothing from %j: someone else, animals, a supposition or a wish (DR6-78)',
+    async (note) => {
+      const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
+      const output = extractionOutputSchema.parse((await complete({ note, fields })).value);
+      expect(output.facts).toEqual([]);
+    },
+  );
+
+  it.each([
+    'KH là bác sĩ, đã kết hôn, có 2 con.',
+    'KH là cô giáo, đã kết hôn, có 2 con.',
+    'Chú ý: KH đã kết hôn, có 2 con.',
+    'KH đã kết hôn ba năm, có 2 con.',
+    'KH và vợ đã kết hôn, có 2 con.',
+    'KH và chồng đã kết hôn, có 2 con.',
+  ])('reads the KH in %j: a word holding a kin word may name no one else', async (note) => {
     const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
     const output = extractionOutputSchema.parse((await complete({ note, fields })).value);
-    expect(output.facts).toEqual([]);
+    expect(output.facts).toEqual([
+      { field: 'maritalStatus', value: 'Đã kết hôn', quote: 'kết hôn' },
+      { field: 'childrenCount', value: '2', quote: '2 con' },
+    ]);
   });
 
   it('reads each sentence on its own: a relative named in one leaves the KH of another', async () => {
@@ -220,7 +247,7 @@ describe('createMockAdapter', () => {
   });
 
   it.each(['!', '?', ';', '\n'])('ends a sentence at %j too (N19d)', async (end) => {
-    const note = `Em trai KH còn độc thân${end} Nếu cần, gọi lại${end} KH có 2 con.`;
+    const note = `Em trai KH còn độc thân${end} Nếu cần, gọi lại${end} KH không hút thuốc${end} KH có 2 con.`;
     const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
     const output = extractionOutputSchema.parse((await complete({ note, fields })).value);
     expect(output.facts).toEqual([{ field: 'childrenCount', value: '2', quote: '2 con' }]);
@@ -275,6 +302,10 @@ describe('createMockAdapter', () => {
     // Not "Đã kết hôn"; living single is said as such.
     [
       'KH chưa đăng ký kết hôn, hiện sống độc thân.',
+      [{ field: 'maritalStatus', value: 'Độc thân', quote: 'độc thân' }],
+    ],
+    [
+      'KH sống cô đơn, vẫn độc thân.',
       [{ field: 'maritalStatus', value: 'Độc thân', quote: 'độc thân' }],
     ],
   ])('reads %j as %j', async (note, facts) => {
