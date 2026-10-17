@@ -56,11 +56,92 @@ const escaped = (text, upper = false) =>
       return `\\u${upper ? hex.toUpperCase() : hex}`;
     })
     .join('');
-/** URL-encoded with each `%` then written as a JSON escape, or the reverse (DR6-10). */
+/**
+ * In two layers of escapes (DR6-10, DR6-76), as Rust's `two_layers`: URL-encoded with each `%` then
+ * written as a JSON escape; in JSON escapes with each `\` then written as a URL's `%5C`, as JSON's
+ * `\\` or as JSON's `\u005C`; URL-encoded with each `%` then URL-encoded again.
+ */
 const twoLayers = (secret) => [
   percent(secret).replaceAll('%', '\\u0025'),
   escaped(secret).replaceAll('\\', '%5C'),
+  escaped(secret).replaceAll('\\', '\\\\'),
+  escaped(secret).replaceAll('\\', '\\u005C'),
+  percent(secret).replaceAll('%', '%25'),
 ];
+/**
+ * In two layers, the characters in turn the two ways of CX2-B3 (Rust's `alternating`): URL-encoded
+ * then the `%` as JSON's `\u0025`, and in JSON's `\u00XX` then the `\` as a URL's `%5C`.
+ */
+const alternating = (secret) =>
+  [...Buffer.from(secret)]
+    .map((byte, i) => {
+      const hex = byte.toString(16).padStart(2, '0');
+      return i % 2 === 0 ? `\\u0025${hex.toUpperCase()}` : `%5Cu00${hex}`;
+    })
+    .join('');
+
+/** The key of Rust's tests (`ai.rs`), for the cases both run (`sharedCases`). */
+const SHARED_KEY = 'sk-test-SECRET-0123456789';
+/**
+ * The ways `layeredKeys` writes each part of a key, as Rust's `LAYERINGS`: as it is, or in one or
+ * two layers of escapes, the inner one first. `J`: each character as JSON's `\uXXXX`; `U`: each
+ * byte as a URL's `%XX`; `j`: as `JSON.stringify` writes it; `u`: as `encodeURIComponent` does.
+ */
+const LAYERINGS = ['', 'J', 'U', 'JJ', 'Jj', 'JU', 'Ju', 'UJ', 'Uj', 'UU', 'Uu'];
+const LAYER = {
+  J: (text) => escaped(text),
+  U: (text) => percent(text),
+  j: (text) => JSON.stringify(text).slice(1, -1),
+  u: (text) => encodeURIComponent(text),
+};
+/**
+ * `key` cut into 2, 3 and 4 parts of about the same length, each part written one of the
+ * `LAYERINGS` ways: every combination, the first part changing slowest (Rust's `layered_keys`).
+ */
+const layeredKeys = (key) => {
+  const texts = [];
+  for (let parts = 2; parts <= 4; parts += 1) {
+    const cut = (part) => Math.floor((part * key.length) / parts);
+    for (let n = 0; n < LAYERINGS.length ** parts; n += 1) {
+      let text = '';
+      for (let part = 0; part < parts; part += 1) {
+        const place = LAYERINGS.length ** (parts - 1 - part);
+        const layering = LAYERINGS[Math.floor(n / place) % LAYERINGS.length];
+        text += [...layering].reduce(
+          (t, kind) => LAYER[kind](t),
+          key.slice(cut(part), cut(part + 1)),
+        );
+      }
+      texts.push(text);
+    }
+  }
+  return texts;
+};
+/**
+ * The cases of Rust's `shared_cases`, word for word and with its key: the key in up to two layers
+ * of escapes, which no reply passes on and no message keeps (DR6-76), and texts that are no such
+ * thing.
+ */
+const sharedCases = () => ({
+  refused: [...twoLayers(SHARED_KEY), alternating(SHARED_KEY), ...layeredKeys(SHARED_KEY)],
+  fine: [
+    // Three layers are out of reach (ADR-0009 D-1): JSON's twice over a URL's.
+    percent(SHARED_KEY).replaceAll('%', '\\\\u0025'),
+    'Quota%20exceeded, retry in 10%',
+    String.raw`path C:\users\new \u00`,
+    String.raw`Anh ${escaped('Đức')}, \/ \"VIP\" \\ \n`,
+    escaped(SHARED_KEY.slice(0, 10)),
+    percent(SHARED_KEY.slice(0, 10)),
+  ],
+});
+/** FNV-1a of `texts`, each followed by a line break: Rust's `fingerprint` of its copy is the same. */
+const fingerprint = (texts) => {
+  let hash = 0x811c9dc5;
+  for (const byte of Buffer.from(texts.map((text) => `${text}\n`).join(''))) {
+    hash = Math.imul(hash ^ byte, 0x01000193) >>> 0;
+  }
+  return hash;
+};
 /** A 2xx whose content is the JSON text `{"note":"<note>"}`, `note` written as it is. */
 const answer = (note) => reply(`{"note":"${note}"}`);
 
@@ -357,6 +438,8 @@ describe('openCodeAdapter', () => {
       [KEY, KEY],
       [`Bearer ${KEY} được gửi`, KEY],
       [odd, odd],
+      // In one layer, which a second pass would undo further.
+      [escaped(odd), odd],
       [percent(KEY), KEY],
       [percent(KEY, false), KEY],
       [escaped(KEY), KEY],
@@ -364,6 +447,9 @@ describe('openCodeAdapter', () => {
       [`sk-${escaped('test')}-0123456789abcdef`, KEY],
       [String.raw`sk-Probe+Key\/a=`, slashed],
       ...twoLayers(KEY).map((text) => [text, KEY]),
+      // Behind an escaped backslash, `JSON.parse` leaves the escape of `s` as text: a second pass
+      // gives the key.
+      [`\\\\${escaped(KEY).replace('\\u', 'u')}`, KEY],
     ]) {
       const call = openCodeAdapter({
         url: PLAN_URLS.GO,
@@ -373,12 +459,10 @@ describe('openCodeAdapter', () => {
       }).complete(request);
       await expect(call, note).rejects.toMatchObject({ code: 'AI_BAD_RESPONSE' });
     }
-    // Other escapes are a normal answer, as is a piece of the key or the key behind an escaped
-    // backslash, which `JSON.parse` leaves as text.
+    // Other escapes are a normal answer, as is a piece of the key or the key in three layers.
     for (const note of [
       String.raw`Anh ${escaped('Đức')}, \/ \"VIP\" \\ \n`,
       escaped(KEY.slice(0, 10)),
-      `\\\\${escaped(KEY).replace('\\u', 'u')}`,
       percent(KEY).replaceAll('%', '\\\\u0025'),
     ]) {
       await expect(fails(answer(note)), note).resolves.toMatchObject({ finishReason: null });
@@ -460,6 +544,38 @@ describe('openCodeAdapter', () => {
       expect(await message(text), text).toBe(text);
     }
   });
+
+  // 16 105 cases, two calls each: over a second alone, more when the whole suite runs in parallel.
+  it(
+    'refuses and masks the key in up to two layers of escapes part by part, as Rust (DR6-76)',
+    { timeout: 60_000 },
+    async () => {
+      const { refused, fine } = sharedCases();
+      expect([refused.length, fine.length, fingerprint([...refused, ...fine])]).toEqual([
+        16_099, 6, 0x834ac61c,
+      ]);
+      const call = (response) =>
+        openCodeAdapter({
+          url: PLAN_URLS.GO,
+          key: SHARED_KEY,
+          userAgent: 'ua',
+          fetch: async () => response,
+        }).complete(request);
+      const message = async (status, text) => {
+        const body = JSON.stringify({ error: { message: `bad ${text}!` } });
+        return (await call(http(status, body)).catch((error) => error)).serverMessage;
+      };
+      for (const [i, text] of refused.entries()) {
+        await expect(call(answer(text)), text).rejects.toMatchObject({ code: 'AI_BAD_RESPONSE' });
+        expect(await message([401, 429][i % 2], text), text).toBe('bad ***!');
+      }
+      for (const text of fine) {
+        await expect(call(answer(text)), text).resolves.toMatchObject({ finishReason: null });
+        const unchanged = Array.from(`bad ${text}!`).slice(0, 200).join('');
+        expect(await message(401, text), text).toBe(unchanged);
+      }
+    },
+  );
 
   it('gives AI_BAD_RESPONSE for an unreadable or too long reply', async () => {
     for (const body of ['not json', '{"choices":[]}', '{"choices":[{"message":{}}]}']) {
@@ -1167,7 +1283,7 @@ describe('evalMain', () => {
   });
 
   it('writes no answer that holds the key, in any form, to a file or the output (DR6-55)', async () => {
-    const forms = [KEY, escaped(KEY), percent(KEY), ...twoLayers(KEY)];
+    const forms = [KEY, escaped(KEY), percent(KEY), ...twoLayers(KEY), alternating(KEY)];
     const fetch = vi.fn(async () => answer(forms[fetch.mock.calls.length % forms.length]));
     const d = deps({ fetch });
     expect(await evalMain(d)).toBe(0);

@@ -332,38 +332,29 @@ fn mask(text: &str, secret: &str) -> String {
 /// A character of a text being read, with the bytes of the text it came from.
 type Spanned = (char, Range<usize>);
 
-/// The ways `text` may give the key away (DR6-10): as it is; with JSON's escapes and a URL's `%XX`
-/// undone in one pass; and in two passes, JSON's then the URL's or the reverse, as a URL-encoded
-/// key written in JSON is. Never two passes of JSON: the webview parses an answer once.
-fn readings(text: &str) -> [Box<dyn Iterator<Item = Spanned> + '_>; 4] {
+/// The ways `text` may give the key away (DR6-10, DR6-76): as it is, and with every escape undone
+/// once and twice ([`unescape`]). A pass undoes the outer layer of each part of the text, so a key
+/// whose parts are each in up to two layers, of the same kind or not, in either order and each
+/// its own way, shows in the last reading: a URL-encoded key written in JSON, or JSON's escapes
+/// with their `\` escaped again, which the webview's `JSON.parse` gives back as escapes. Three
+/// layers are out of reach (ADR-0009 D-1). The tests prove it for secrets with no `\` or `%` of
+/// their own, as OpenCode's keys and the session id are: a pass may undo those too.
+fn readings(text: &str) -> [Box<dyn Iterator<Item = Spanned> + '_>; 3] {
     let chars = || {
         text.char_indices()
             .map(|(at, c)| (c, at..at + c.len_utf8()))
     };
     [
         Box::new(chars()),
-        Box::new(unescape(chars(), Escapes::Both)),
-        Box::new(unescape(unescape(chars(), Escapes::Json), Escapes::Url)),
-        Box::new(unescape(unescape(chars(), Escapes::Url), Escapes::Json)),
+        Box::new(unescape(chars())),
+        Box::new(unescape(unescape(chars()))),
     ]
 }
 
-/// What one pass of [`unescape`] undoes.
-#[derive(Clone, Copy, PartialEq)]
-enum Escapes {
-    Json,
-    Url,
-    Both,
-}
-
 /// One pass over `chars`, read from the left as `JSON.parse` does: each of JSON's escapes
-/// (`\uXXXX`, `\/`, `\"`, `\\`, `\n`…) or a URL's `%XX`, as `escapes` says, gives the character it
-/// stands for, which comes from the bytes of the whole escape. Any other `\` or `%` stays as it is.
-fn unescape(
-    mut chars: impl Iterator<Item = Spanned>,
-    escapes: Escapes,
-) -> impl Iterator<Item = Spanned> {
-    let (json, url) = (escapes != Escapes::Url, escapes != Escapes::Json);
+/// (`\uXXXX`, `\/`, `\"`, `\\`, `\n`…) and each URL `%XX` gives the character it stands for, which
+/// comes from the bytes of the whole escape. Any other `\` or `%` stays as it is.
+fn unescape(mut chars: impl Iterator<Item = Spanned>) -> impl Iterator<Item = Spanned> {
     let mut ahead = VecDeque::new();
     std::iter::from_fn(move || {
         // `\uXXXX`, the longest escape, is 6 characters.
@@ -378,10 +369,10 @@ fn unescape(
         };
         let first = at(0)?;
         let escape = match (first, at(1)) {
-            ('\\', Some('u')) if json => hex(2, 4).map(|c| (c, 6)),
-            ('\\', Some(next)) if json => json_escape(next).map(|c| (c, 2)),
+            ('\\', Some('u')) => hex(2, 4).map(|c| (c, 6)),
+            ('\\', Some(next)) => json_escape(next).map(|c| (c, 2)),
             // A byte, so `%C4%83` gives two characters rather than `ă`: the secrets are ASCII.
-            ('%', _) if url => hex(1, 2).map(|c| (c, 3)),
+            ('%', _) => hex(1, 2).map(|c| (c, 3)),
             _ => None,
         };
         let (c, length) = escape.unwrap_or((first, 1));
@@ -808,8 +799,10 @@ mod tests {
         // The webview's `JSON.parse` of the answer would turn each of these back into the key.
         let slashed = "sk-Probe+Key/a=";
         for (note, key) in [
-            // A key that is itself written like an escape, as it is.
+            // A key that is itself written like an escape, as it is and in one layer, which a
+            // second pass would undo further.
             (ODD_KEY.to_owned(), ODD_KEY),
+            (escaped(ODD_KEY, false), ODD_KEY),
             // In a URL's escapes: no longer the key on screen, still the key in a backup.
             (percent(KEY, true), KEY),
             (escaped(KEY, false), KEY),
@@ -821,6 +814,12 @@ mod tests {
             (format!("Bearer {} sent", escaped(KEY, false)), KEY),
             (r"sk-Probe+Key\/a=".to_owned(), slashed),
             (format!("{}\\/a=", escaped("sk-Probe+Key", false)), slashed),
+            // Behind an escaped backslash, `JSON.parse` leaves the escape of `s` as text: a second
+            // pass gives the key.
+            (
+                format!(r"\\{}", escaped(KEY, false).replacen(r"\u", "u", 1)),
+                KEY,
+            ),
         ] {
             assert_eq!(
                 reply(200, &answer(&note), key, SESSION),
@@ -828,12 +827,10 @@ mod tests {
                 "{note}"
             );
         }
-        // Escapes that are not the key are a normal answer, as is a piece of the key or the key
-        // behind an escaped backslash, which `JSON.parse` leaves as the text `s…`.
+        // Escapes that are not the key are a normal answer, as is a piece of the key.
         for note in [
             format!(r#"Anh {}, \/ \"VIP\" \\ \n"#, escaped("Đức", false)),
             escaped(&KEY[..10], false),
-            format!(r"\\{}", escaped(KEY, false).replacen(r"\u", "u", 1)),
         ] {
             assert!(reply(200, &answer(&note), KEY, SESSION).is_ok(), "{note}");
         }
@@ -1304,34 +1301,147 @@ mod tests {
         }
     }
 
-    /// `secret` in two layers of escapes (DR6-10): URL-encoded with each `%` then written as a JSON
-    /// escape, or in JSON escapes with each `\` then written as a URL's `%5C`.
-    fn two_layers(secret: &str) -> [String; 2] {
+    /// `secret` in two layers of escapes (DR6-10, DR6-76): URL-encoded with each `%` then written as
+    /// a JSON escape; in JSON escapes with each `\` then written as a URL's `%5C`, as JSON's `\\` or
+    /// as JSON's `\u005C`; URL-encoded with each `%` then URL-encoded again.
+    fn two_layers(secret: &str) -> [String; 5] {
         [
             percent(secret, true).replace('%', "\\u0025"),
             escaped(secret, false).replace('\\', "%5C"),
+            escaped(secret, false).replace('\\', "\\\\"),
+            escaped(secret, false).replace('\\', "\\u005C"),
+            percent(secret, true).replace('%', "%25"),
         ]
     }
 
+    /// `secret` in two layers, its characters in turn the two ways of CX2-B3: URL-encoded then the
+    /// `%` as JSON's `\u0025`, and in JSON's `\u00XX` then the `\` as a URL's `%5C`.
+    fn alternating(secret: &str) -> String {
+        secret
+            .bytes()
+            .enumerate()
+            .map(|(i, byte)| match i % 2 {
+                0 => format!("\\u0025{byte:02X}"),
+                _ => format!("%5Cu00{byte:02x}"),
+            })
+            .collect()
+    }
+
+    /// The ways [`layered_keys`] writes each part of `KEY`: as it is, or in one or two layers of
+    /// escapes, the inner one first. `J`: each character as JSON's `\uXXXX`; `U`: each byte as a
+    /// URL's `%XX`; `j`: as `JSON.stringify` writes it; `u`: as `encodeURIComponent` does.
+    const LAYERINGS: [&str; 11] = ["", "J", "U", "JJ", "Jj", "JU", "Ju", "UJ", "Uj", "UU", "Uu"];
+
+    /// `text` in one more layer of escapes, of the `kind` of [`LAYERINGS`].
+    fn layer(text: &str, kind: char) -> String {
+        match kind {
+            'J' => escaped(text, false),
+            'U' => percent(text, true),
+            'j' => text.replace('\\', "\\\\").replace('"', "\\\""),
+            'u' => text
+                .bytes()
+                .map(|byte| match byte {
+                    b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' => char::from(byte).to_string(),
+                    b'-' | b'_' | b'.' | b'!' | b'~' | b'*' | b'\'' | b'(' | b')' => {
+                        char::from(byte).to_string()
+                    }
+                    _ => format!("%{byte:02X}"),
+                })
+                .collect(),
+            _ => unreachable!("{kind}"),
+        }
+    }
+
+    /// `KEY` cut into 2, 3 and 4 parts of about the same length, each part written one of the
+    /// [`LAYERINGS`] ways: every combination, the first part changing slowest.
+    fn layered_keys() -> Vec<String> {
+        let mut texts = Vec::new();
+        for parts in 2..=4 {
+            let cut = |part: usize| part * KEY.len() / parts;
+            for n in 0..LAYERINGS.len().pow(parts as u32) {
+                let text = (0..parts)
+                    .map(|part| {
+                        let place = LAYERINGS.len().pow((parts - 1 - part) as u32);
+                        LAYERINGS[n / place % LAYERINGS.len()]
+                            .chars()
+                            .fold(KEY[cut(part)..cut(part + 1)].to_owned(), |text, kind| {
+                                layer(&text, kind)
+                            })
+                    })
+                    .collect();
+                texts.push(text);
+            }
+        }
+        texts
+    }
+
+    /// The cases `tools/eval-ai-core.test.mjs` runs too, word for word and with the same key:
+    /// `KEY` in up to two layers of escapes, which no reply passes on and no message keeps
+    /// (DR6-76), and texts that are no such thing.
+    fn shared_cases() -> (Vec<String>, Vec<String>) {
+        let mut refused = two_layers(KEY).to_vec();
+        refused.push(alternating(KEY));
+        refused.extend(layered_keys());
+        let fine = vec![
+            // Three layers are out of reach (ADR-0009 D-1): JSON's twice over a URL's.
+            percent(KEY, true).replace('%', "\\\\u0025"),
+            "Quota%20exceeded, retry in 10%".to_owned(),
+            r"path C:\users\new \u00".to_owned(),
+            format!(r#"Anh {}, \/ \"VIP\" \\ \n"#, escaped("Đức", false)),
+            escaped(&KEY[..10], false),
+            percent(&KEY[..10], true),
+        ];
+        (refused, fine)
+    }
+
+    /// FNV-1a of `texts`, each followed by a line break: `tools/eval-ai-core.test.mjs` finds the
+    /// same number for its copy of [`shared_cases`].
+    fn fingerprint(texts: &[String]) -> u32 {
+        texts
+            .iter()
+            .flat_map(|text| text.bytes().chain(std::iter::once(b'\n')))
+            .fold(0x811c_9dc5, |hash, byte| {
+                (hash ^ u32::from(byte)).wrapping_mul(0x0100_0193)
+            })
+    }
+
     #[test]
-    fn the_key_in_two_layers_of_escapes_is_bad_response_and_masked() {
-        for text in two_layers(KEY) {
+    fn the_key_in_up_to_two_layers_of_escapes_part_by_part_is_bad_response_and_masked() {
+        let (refused, fine) = shared_cases();
+        assert_eq!(
+            (
+                refused.len(),
+                fine.len(),
+                fingerprint(&[&refused[..], &fine[..]].concat())
+            ),
+            (16_099, 6, 0x834a_c61c)
+        );
+        let message = |status: u16, text: &str| {
+            let error = serde_json::json!({ "error": { "message": format!("bad {text}!") } });
+            reply(status, error.to_string().as_bytes(), KEY, SESSION)
+                .unwrap_err()
+                .message
+                .unwrap()
+        };
+        for (i, text) in refused.iter().enumerate() {
             assert_eq!(
-                reply(200, &answer(&text), KEY, SESSION),
+                reply(200, &answer(text), KEY, SESSION),
                 Err(AiError::new(AI_BAD_RESPONSE)),
                 "{text}"
             );
-            let error = serde_json::json!({ "error": { "message": format!("bad {text}!") } });
-            assert_eq!(
-                reply(401, error.to_string().as_bytes(), KEY, SESSION)
-                    .unwrap_err()
-                    .message,
-                Some("bad ***!".into()),
-                "{text}"
-            );
+            assert_eq!(message([401, 429][i % 2], text), "bad ***!", "{text}");
         }
-        let [session, _] = two_layers(SESSION);
-        let [_, key] = two_layers(KEY);
+        for text in &fine {
+            assert!(reply(200, &answer(text), KEY, SESSION).is_ok(), "{text}");
+            let unchanged: String = format!("bad {text}!")
+                .chars()
+                .take(MAX_SERVER_MESSAGE)
+                .collect();
+            assert_eq!(message(401, text), unchanged, "{text}");
+        }
+        // Two secrets in one message, each in two layers.
+        let [session, ..] = two_layers(SESSION);
+        let [_, key, ..] = two_layers(KEY);
         let error = serde_json::json!({ "message": format!("{session}/{key} {KEY}") });
         assert_eq!(
             reply(429, error.to_string().as_bytes(), KEY, SESSION)
@@ -1339,15 +1449,6 @@ mod tests {
                 .message,
             Some("***/*** ***".into())
         );
-        // A backslash that JSON escapes is only a backslash: `JSON.parse` gives the text of the
-        // escapes, which no URL decoding turns into the key, nor does a second pass of JSON.
-        for text in [
-            percent(KEY, true).replace('%', "\\\\u0025"),
-            escaped(KEY, false).replace('\\', "\\\\"),
-            escaped(KEY, false).replace('\\', "\\u005C"),
-        ] {
-            assert!(reply(200, &answer(&text), KEY, SESSION).is_ok(), "{text}");
-        }
     }
 
     #[test]

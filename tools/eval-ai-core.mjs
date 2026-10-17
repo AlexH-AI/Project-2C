@@ -84,12 +84,8 @@ export function readConfig(env, argv) {
 
 // ---- the key in a reply, read as Rust's `reveals` and `mask` read it (DR6-10, DR6-55) ----------
 
-/** JSON's escapes (`\uXXXX`, `\"`, `\\`, `\/`, `\n`…), a URL's `%XX`, or both, as Rust's `Escapes`. */
-const ESCAPES = {
-  json: /\\u[0-9a-fA-F]{4}|\\["\\/bfnrt]/g,
-  url: /%[0-9a-fA-F]{2}/g,
-  both: /\\u[0-9a-fA-F]{4}|\\["\\/bfnrt]|%[0-9a-fA-F]{2}/g,
-};
+/** JSON's escapes (`\uXXXX`, `\"`, `\\`, `\/`, `\n`…) and a URL's `%XX`. */
+const ESCAPE = /\\u[0-9a-fA-F]{4}|\\["\\/bfnrt]|%[0-9a-fA-F]{2}/g;
 
 /** The character of an escape; a `%XX` is a byte, so `%C4%83` gives two (the secrets are ASCII). */
 const decode = (escape) =>
@@ -98,12 +94,12 @@ const decode = (escape) =>
     : JSON.parse(`"${escape}"`);
 
 /**
- * One pass over a reading, from the left as `JSON.parse` reads: each escape `pattern` finds gives
- * the character it stands for, which comes from the whole escape; the rest is kept (Rust's
- * `unescape`). A reading is a `text` and, for each of its UTF-16 units, the `start` and `end` of
- * the part of the first text it came from.
+ * One pass over a reading, from the left as `JSON.parse` reads: each escape gives the character it
+ * stands for, which comes from the whole escape; the rest is kept (Rust's `unescape`). A reading is
+ * a `text` and, for each of its UTF-16 units, the `start` and `end` of the part of the first text
+ * it came from.
  */
-function unescape(reading, pattern) {
+function unescape(reading) {
   const out = { text: '', start: [], end: [] };
   let kept = 0;
   const keep = (to) => {
@@ -113,7 +109,7 @@ function unescape(reading, pattern) {
       out.end.push(reading.end[i]);
     }
   };
-  for (const { 0: escape, index } of reading.text.matchAll(pattern)) {
+  for (const { 0: escape, index } of reading.text.matchAll(ESCAPE)) {
     keep(index);
     out.text += decode(escape);
     out.start.push(reading.start[index]);
@@ -125,19 +121,18 @@ function unescape(reading, pattern) {
 }
 
 /**
- * The ways `text` may give a secret away, as Rust's `readings`: as it is; with JSON's escapes and
- * a URL's `%XX` undone in one pass; and in two passes, JSON's then the URL's or the reverse. Never
- * two passes of JSON: the app parses an answer once.
+ * The ways `text` may give a secret away, as Rust's `readings` (DR6-10, DR6-76): as it is, and with
+ * every escape undone once and twice. A pass undoes the outer layer of each part of the text, so a
+ * secret whose parts are each in up to two layers, of the same kind or not, in either order and
+ * each its own way, shows in the last reading. Three layers are out of reach (ADR-0009 D-1). The
+ * tests prove it for secrets with no `\` or `%` of their own, as OpenCode's keys and the session
+ * id are: a pass may undo those too.
  */
 function readings(text) {
   const units = Array.from({ length: text.length }, (_, i) => i);
   const plain = { text, start: units, end: units.map((i) => i + 1) };
-  return [
-    plain,
-    unescape(plain, ESCAPES.both),
-    unescape(unescape(plain, ESCAPES.json), ESCAPES.url),
-    unescape(unescape(plain, ESCAPES.url), ESCAPES.json),
-  ];
+  const once = unescape(plain);
+  return [plain, once, unescape(once)];
 }
 
 /** Whether `text` holds `key` in one of its readings. */
