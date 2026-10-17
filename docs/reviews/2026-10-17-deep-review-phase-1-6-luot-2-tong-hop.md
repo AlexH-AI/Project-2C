@@ -34,7 +34,7 @@
 - **Kiểm log phiên (§10):** không đọc chéo, không lệnh ghi ngoài phạm vi cho phép, không gọi AI của sản phẩm.
 - **Còn trước G7:**
   - Sửa ba hồi quy (DR6-68 Medium, DR6-79, DR6-82) và các nhóm Owner chọn (§8).
-  - Owner quyết 35 mục Low / Nit còn lại (§9).
+  - Owner quyết 35 mục Low / Nit còn lại (§9) — **xong 17/10:** Phương án 3 (sửa hết), 12 Issue #652–#663 (§8.6), không còn mục hoãn của lượt 2.
   - Các tiêu chí ngoài review của spec §1: mục 2 (nghiệm thu của Owner, exe trên máy sạch và nâng từ exe Phase 5) và mục 4 (cổng trên SHA phát hành, eval AI thật).
 
 ## 2. Số liệu
@@ -252,7 +252,7 @@ Mức: M = Medium, L = Low, N = Nit. "Ai thấy" ghi mức gốc. Nhóm sửa: �
 
 | DR6 | Vấn đề | Ai thấy | Mức | Kiểm | Nhóm |
 |---|---|---|---|---|---|
-| 77 | Sau DR6-16, V1 đếm 300 trên chữ đã bỏ `\p{Cf}` nhưng lưu chữ gốc và không còn trần nào cho chuỗi gốc: 300 chữ + 650 000 × U+200B được nhận, ≈ 2 MB vô hình vào `ai_analyses` (chỉ thêm, không xóa) và mọi backup. Cần G5 | CL2-C1 (L) | L | ✅ 📏 | hoãn (G5) |
+| 77 | Sau DR6-16, V1 đếm 300 trên chữ đã bỏ `\p{Cf}` nhưng lưu chữ gốc và không còn trần nào cho chuỗi gốc: 300 chữ + 650 000 × U+200B được nhận, ≈ 2 MB vô hình vào `ai_analyses` (chỉ thêm, không xóa) và mọi backup. Cần G5 | CL2-C1 (L) | L | ✅ 📏 | L2-I (G5) |
 | 78 | Mock trích xuất vẫn đề xuất cho KH điều nói về người khác (ông nội, bà ngoại, em, anh họ, anh rể, vợ cũ, cô, ba, sếp, hàng xóm), "con" là loại từ (2 con chó, 3 con mèo, 10 con bò) và câu giả định ("nếu đã kết hôn, có 2 con"); không ca test nào cho dấu "!", "?", ";" hay xuống dòng làm ranh giới câu (N19d sống) | CL2-C2 (L), CX2-C1 (L) | L | 🔁 ✅ | L2-E |
 | 79 | Hồi quy hiệu năng của DR6-19: `aboutTheKh` quét ngược từng ký tự cho mỗi cụm, trước khi cắt 20 → ghi chú một dòng dài bậc hai. 🔁: 18 003 ký tự 518 ms, 36 003 ký tự 2 042 ms (Claude: Edge 512 ms, 2 298 ms, trang đứng); ghi chú thật 4 640 ký tự 0,5 ms | CL2-C4 (L) | L | 🔁 📏 | L2-E |
 
@@ -264,7 +264,7 @@ Mức: M = Medium, L = Low, N = Nit. "Ai thấy" ghi mức gốc. Nhóm sửa: �
 | 81 | Đổi màn giữ vị trí cuộn của màn trước: mở hồ sơ từ bảng Khách hàng đã cuộn → hồ sơ hiện từ giữa (tên KH, Sửa hồ sơ ở trên khung nhìn); focus đã ở `h1` (`preventScroll`) nhưng khung nhìn không theo | CL2-D3 (L) | L | ✅ 📏 | L2-F |
 | 82 | Hồi quy của DR6-30: hồ sơ 3 cột ở cửa sổ mặc định, chuỗi liền dài (link Facebook / Zalo dán vào ghi chú KYC) tràn 128 px sang cột KYC Intelligence; không chỗ nào đặt `overflow-wrap`, cột không `min-w-0`. Ở 1 100 cả trang cuộn ngang (có từ trước) | CL2-D7 (L) | L | ✅ 📏 | L2-F |
 | 83 | Focus rơi về `body` khi nút mở hộp / nút bấm tự gỡ: Lưu ở 6c, 6g, 6h, 8a (ô trống), 8b, Khôi phục ở Thùng rác (`Dialog` chỉ trả focus khi nút mở còn trong trang, `Dialog.tsx:37-41`); Bỏ một dữ kiện đang soạn ở 7a (`KycDialogs.tsx:334`). Cùng loại DR6-35, chỗ khác | CL2-E8 (L), CX2-D1 (L) | L | ✅ 📏 | L2-B2 |
-| 84 | Thùng rác (TR-6 không tự dọn) mở chậm tuyến tính theo số dòng (3–4,5 câu SQL mỗi dòng). Exe không DevTools: 31,6 / 48,3 / 87,6 / 138,3 ms ở 113 / 263 / 713 / 1 313 dòng → 200 ms ở ≈ 2 000 dòng; probe (gắn DevTools) vượt 200 ms từ ≈ 510 dòng (§5.3) | CL2-E7 (L) + số CL2-F7 | L | ✅ 📏 | hoãn (Q8) |
+| 84 | Thùng rác (TR-6 không tự dọn) mở chậm tuyến tính theo số dòng (3–4,5 câu SQL mỗi dòng). Exe không DevTools: 31,6 / 48,3 / 87,6 / 138,3 ms ở 113 / 263 / 713 / 1 313 dòng → 200 ms ở ≈ 2 000 dòng; probe (gắn DevTools) vượt 200 ms từ ≈ 510 dòng (§5.3) | CL2-E7 (L) + số CL2-F7 | L | ✅ 📏 | L2-J |
 
 ### 6.5 Công cụ (gói F)
 
@@ -290,15 +290,15 @@ Mức: M = Medium, L = Low, N = Nit. "Ai thấy" ghi mức gốc. Nhóm sửa: �
 | 92 | `backup-invariants.test.ts:1078` đặt đồng hồ 10:00 UTC → đỏ ở UTC−11 (Pago Pago), trong khoảng UTC−11…+12 mà comment DR-15 (#644) bảo đảm | CL2-F5 | N | 📏 ✅ | L2-H |
 | 93 | Dòng Thùng rác của cuộc gặp giữ nhóm không nói "Không đổi nhóm KH" hay nhóm đã ghi, như TR-3 và mục tiêu Issue #592 viết; dòng bị chặn của cùng loại thì có "nhóm sau N3" (§3.1) | CX2-E1 (L) | N | ✅ 📄 | L2-B1 (Q7) |
 | 94 | Câu chặn E20 "Nhóm KH đã đổi ngày 15/09/2026, **sau** ngày cuộc hẹn này" cho lịch 15/09/2026 — sai theo nghĩa thường; spec E20 (`phase-6-hoan-thien.md:139`) ghi đúng câu này | CL2-E2 | N | ✅ 📄 | L2-B1 (Q7) |
-| 95 | Mockup 11c (`trash.html:249-250`) còn ví dụ E7 cũ: chuyển tay ngày 10/10 → "Nhóm KH giữ N2"; E7 đã thu hẹp (Owner 15/10): ngày sau → chặn như E6. "Lệch mockup đã biết" chưa ghi | CX2-E2 | N | 📄 | docs |
+| 95 | Mockup 11c (`trash.html:249-250`) còn ví dụ E7 cũ: chuyển tay ngày 10/10 → "Nhóm KH giữ N2"; E7 đã thu hẹp (Owner 15/10): ngày sau → chặn như E6. "Lệch mockup đã biết" chưa ghi | CX2-E2 | N | 📄 | L2-B1 |
 | 96 | Danh mục nghiệm thu chưa có hành vi mới của đợt sửa: exe chặn Back / Forward (NT-EX-05 chỉ F5, Ctrl+R; ghi chú review #638 dặn thêm), dòng báo KH tạo ngoài góc nhìn (PR #636 để lượt 2 cân nhắc), hộp 9b của người hỗ trợ / người đánh giá (NT-TM-10 chỉ ca RE) | CL2-D6 | N | 📄 | docs |
 | 97 | `docs/user-guide/10-su-co.md:82` còn chép "(quá 200 000 ký tự)", app nay "200.000" (DR6-22) | CL2-C6 | N | ✅ | docs |
-| 98 | `docs/metrics/phase-6.md` chưa có mốc Home PC lượt 2 (`reload.*`, `app.open-data` đã gồm `quick_check`) nên lần đo sau / G7 sẽ còn báo ⚠️; probe `e2e/perf` đo `trash.open` khi còn gắn DevTools (×2,4–3,3) mà README chỉ nói debugger làm chậm lệnh ghi | CL2-B7, CL2-F7 | N | 📏 | docs (+ `probe.perf.ts` nếu Owner muốn) |
+| 98 | `docs/metrics/phase-6.md` chưa có mốc Home PC lượt 2 (`reload.*`, `app.open-data` đã gồm `quick_check`) nên lần đo sau / G7 sẽ còn báo ⚠️; probe `e2e/perf` đo `trash.open` khi còn gắn DevTools (×2,4–3,3) mà README chỉ nói debugger làm chậm lệnh ghi | CL2-B7, CL2-F7 | N | 📏 | docs (T-225) + L2-H |
 | 99 | Tên nút "Khôi phục HĐ nộp {ngày} của KH {tên}" trùng nhau khi hai HĐ cùng KH nộp cùng ngày (thiếu FYP như dòng "Bản ghi") | CL2-E3 | N | ✅ 📏 | L2-B1 |
 | 100 | Cột nút của thẻ Lịch hẹn trong hồ sơ và bảng thành viên team có tiêu đề cột rỗng; `DataTable` đã có `headerHidden` (DR6-43 dùng ở Thùng rác) | CL2-D8 | N | ✅ 📏 | L2-B2 |
 | 101 | Dòng đọc lại tiền KYC (7b / 7c / 3f) gọi `parseVnd` trên chữ chưa chuẩn hóa: "6" + U+200B + "tỷ" không có dòng nhưng lưu thành "6tỷ" (K20 "cùng một hàm ở UI") | CL2-D4 | N | ✅ 📏 | L2-F |
-| 102 | `LAW_NAME` chỉ miễn "kỷ", "quy" (chính tả y, đúng chữ G5 §8.4): "kỉ luật Thép", "qui luật Thị trường" bị V6 chặn nhầm; 0 lần trong eval thật | CL2-C3 | N | ✅ 📏 | hoãn (G5) |
-| 103 | Luật D7 mở rộng (cuộc gặp giữ nhóm sau giữ chuyển nhóm) viết ba nơi: lệnh, `fillTrash` của seed, `outcomeLock` của màn. Không đo được chi phí; cùng loại DR6-67 | CL2-A6 | N | ✅ | hoãn |
+| 102 | `LAW_NAME` chỉ miễn "kỷ", "quy" (chính tả y, đúng chữ G5 §8.4): "kỉ luật Thép", "qui luật Thị trường" bị V6 chặn nhầm; 0 lần trong eval thật | CL2-C3 | N | ✅ 📏 | L2-I (G5) |
+| 103 | Luật D7 mở rộng (cuộc gặp giữ nhóm sau giữ chuyển nhóm) viết ba nơi: lệnh, `fillTrash` của seed, `outcomeLock` của màn. Không đo được chi phí; cùng loại DR6-67 | CL2-A6 | N | ✅ | L2-B1 |
 
 ## 7. Bloat và hiệu năng
 
@@ -389,13 +389,22 @@ Hai bên áp lại đột biến sống của lượt 1 và "gỡ tạm" phần 
 
 1. **PR docs báo cáo gốc** → `docs/reviews/raw/2026-10-17/` (PR riêng, mở cùng lúc với PR này).
 2. **Kiểm độc lập bằng log phiên** — xong (§10).
-3. **Owner trả lời §9** → tạo Issue sửa theo §8.2 (mẫu Task, milestone Phase 6, ≤ ~400 / ~800 dòng, "Bị chặn bởi" theo file dùng chung).
+3. **Owner trả lời §9** → tạo Issue sửa theo §8.2 (mẫu Task, milestone Phase 6, ≤ ~400 / ~800 dòng, "Bị chặn bởi" theo file dùng chung). **Xong 17/10:** 12 Issue #652–#663 (§8.6).
 4. **PR riêng sau khi Owner quyết:**
-   - `docs/state/review-notes.md`: mục hoãn / chấp nhận (§8.4), cập nhật KNOWN #642 (8.3 / nhiều thư mục cấu hình).
-   - `docs/metrics/phase-6.md`: số liệu deep review lượt 2 và mốc Home PC (DR6-98).
+   - `docs/state/review-notes.md`: mục hoãn / chấp nhận (§8.4), cập nhật KNOWN #642 (8.3 / nhiều thư mục cấu hình). **Xong 17/10:** #664.
+   - `docs/metrics/phase-6.md`: số liệu deep review lượt 2 và mốc Home PC (DR6-98). **Xong 17/10:** PR ghi câu trả lời §9 (cùng bản này).
 5. Sau đợt sửa: G7. Spec §6.3 không có lượt 3; mỗi PR sửa review phiên sạch như thường.
 
 ### 8.2 Nhóm sửa (Phương án 2, §8.5)
+
+**Owner chọn Phương án 3 (17/10).** Bảng dưới là Phương án 2 lúc đề xuất. Issue đã tạo (§8.6) khác bảng ở các điểm sau:
+
+- Thêm **L2-I** (đợt G5: DR6-17, 23, 24, 77, 102) và **L2-J** (Dọn sạch Thùng rác: DR6-84, Q8 (c)).
+- L2-D làm cả dạng trộn theo từng đoạn.
+- L2-B1 thêm DR6-95 (mockup 11c) và DR6-103 (luật D7 một nơi).
+- L2-F thêm lỗi xóa nhân sự khi KH của họ nằm trong Thùng rác (ghi chú review #636, Owner 17/10), cùng hai ghi chú #636 khác của cùng file.
+- L2-H thêm phần probe của DR6-98 và các ghi chú review #642 cùng file.
+- PR docs của §8.3 thành Issue riêng (DR6-96, 97); DR6-98 phần `phase-6.md` do T-225 ghi.
 
 | Nhóm | DR6 | Việc | Cỡ ước lượng | File chính | Test chấp nhận | Rủi ro / nhãn | Bị chặn bởi |
 |---|---|---|---|---|---|---|---|
@@ -417,6 +426,8 @@ DR6-95 (ghi lệch mockup 11c E7 vào "Lệch mockup đã biết"), DR6-96 (NT-E
 
 ### 8.4 Hoãn sau v1.0 / chấp nhận (ghi `review-notes.md`)
 
+**Owner chọn Phương án 3 (17/10) nên không còn mục hoãn của lượt 2.** DR6-77, 102 vào L2-I cùng DR6-17, 23, 24 của lượt 1. DR6-103 vào L2-B1. DR6-84 theo Q8 (c) vào L2-J. DR6-76 dạng trộn vào L2-D. Chỉ J5 của DR6-60 được chấp nhận (Q10). Đã ghi ở `review-notes.md` (#664). Danh sách dưới là đề xuất lúc chưa quyết:
+
 - **Hoãn cùng đợt G5 sau** (cùng DR6-17, 23, 24): DR6-77 (trần chuỗi gốc của V1), DR6-102 ("kỉ" / "qui").
 - **Hoãn, dọn khi chạm file** (cùng DR6-67): DR6-103.
 - **Hoãn, theo dõi** (Q8 a): DR6-84 — dòng theo dõi `trash.open` theo cỡ Thùng rác, ghi cả số không DevTools.
@@ -429,7 +440,7 @@ DR6-95 (ghi lệch mockup 11c E7 vào "Lệch mockup đã biết"), DR6-96 (NT-E
 |---|---|---|---|
 | **1 — tối thiểu** (đủ điều kiện G7) | DR6-68 + hai hồi quy còn lại (DR6-79, DR6-82) + PR docs; mọi Low / Nit khác vào `review-notes.md` (hoãn / chấp nhận) | 3 + docs | ≈ 30–50 |
 | **2 — đề xuất** (như lượt 1: "sửa hết trừ phần hoãn") | §8.2 L2-A…H + §8.3; hoãn / chấp nhận theo §8.4 | 9 + docs | ≈ 160–230 + ≈ 750 test |
-| **3 — sửa hết** | Như 2 + một đợt G5 (DR6-17, 23, 24, 77, 102) + DR6-76 dạng trộn (≈ 80–180 SP mỗi nơi) + DR6-84 (gộp truy vấn) | ≈ 12 + G5 | ≈ 400–700 |
+| **3 — sửa hết** (**Owner chọn 17/10**) | Như 2 + một đợt G5 (DR6-17, 23, 24, 77, 102) + DR6-76 dạng trộn (≈ 80–180 SP mỗi nơi) + DR6-84 (gộp truy vấn; Owner thay bằng Q8 (c): Dọn sạch Thùng rác) | ≈ 12 + G5 | ≈ 400–700 |
 
 Thứ tự đề xuất:
 
@@ -443,9 +454,50 @@ Thứ tự đề xuất:
 
 Mỗi Issue một phiên, review phiên sạch như thường.
 
+### 8.6 Issue sửa đã tạo (Owner chọn Phương án 3, 17/10)
+
+Milestone "Phase 6 — Hoàn thiện & phát hành". Thứ tự chặn giữa các Issue theo file dùng chung, có cả quan hệ "blocked by" của GitHub.
+
+| Issue | Nhóm | DR6 | Rủi ro | Bị chặn bởi |
+|---|---|---|---|---|
+| #652 T-248 Cuộc gặp trước ngày tạo KH, E20 theo thứ tự ghi, khôi phục chuyển nhóm đúng KH | L2-A | **68**, 69, 71, 87 | med | — |
+| #653 T-249 Hộp 6f nêu hậu quả, chữ Thùng rác, luật D7 một nơi | L2-B1 | 70, 91, 93, 94, 95, 99, 103 | med | #652 |
+| #654 T-250 Màn nhập liệu: link dài, hộp 9b đếm như lệnh, cuộn về đầu, tiền KYC | L2-F | **82**, 80, 81, 90, 101 (+ ghi chú #636) | low | — |
+| #655 T-251 Focus không rơi về `body`, tên cột nút | L2-B2 | 83, 100 | low | #654 |
+| #656 T-252 Lớp file: `integrity_check`, file chỉ đọc, màn lỗi khởi động, test hở | L2-C | 73, 74, 75, 88 (+ J5 comment) | med, `build-exe` | — |
+| #657 T-253 Key qua mọi tổ hợp hai lớp escape, Rust và script eval | L2-D | 76 (cả dạng trộn) | med, `build-exe` | — (làm liền sau #656) |
+| #658 T-254 AI Mock: trích xuất không chậm, bớt đề xuất sai, test panel | L2-E | **79**, 78, 89 | low | — |
+| #659 T-255 K20 mở rộng: khoảng trắng và ký tự vô hình Unicode | L2-G | 72 | med | — |
+| #660 T-256 Công cụ: cổng tested base, `retro.mjs`, múi giờ, probe Thùng rác | L2-H | 85, 86, 92, 98 (probe) (+ ghi chú #642) | low | — |
+| #661 T-257 Đợt G5: ký tự vô hình V3–V6, bỏ dấu khớp nhầm, chi tiết V1, trần chuỗi gốc, kỉ / qui | L2-I | 17, 23, 24 (lượt 1), 77, 102 | med, `gate` (G5) | #659 |
+| #662 T-258 Dọn sạch Thùng rác | L2-J | 84 (Q8 (c)) | high, `gate` (G1 / G2 / G3) | #652, #653, #655 |
+| #663 T-259 Tài liệu: nghiệm thu hành vi mới, hướng dẫn "200.000" | docs | 96, 97 | low | #654 |
+
+Thứ tự gợi ý:
+
+1. #652 (Medium duy nhất), song song theo file: #654, #656 → #657, #658, #659, #660.
+2. Sau đó: #653, #655, #661 (dừng ở G5), #663.
+3. Cuối: #662 (PR docs G1 / G2 / G3 trước, PR code sau).
+4. Đo lại mốc Home PC (`phase-6.md`) sau #656, rồi G7.
+
 ## 9. Câu hỏi cần Owner quyết
 
 Mỗi câu có đề xuất; Owner đồng ý mà không ghi gì khác thì lấy đề xuất.
+
+**Owner trả lời 17/10/2026:**
+
+- **Q9: Phương án 3 — sửa hết.**
+- **Q8: phương án (c) mới**, thay đề xuất (a). Thêm nút "Dọn sạch Thùng rác…" dọn tất cả.
+  - Hộp xác nhận đếm theo loại; app tự backup trước khi dọn.
+  - Bản ghi còn được dùng thì giữ lại, kèm lý do.
+  - Nhắc dọn khi Thùng rác quá 1 000 dòng.
+  - Đổi TR-6; Issue riêng làm sau L2-A.
+  - Owner đã cân nhắc rồi bỏ hướng tự xóa bản cũ nhất khi vượt trần 1 800–1 900 dòng.
+- **Các câu còn lại theo đề xuất:** Q1 (a), Q3 (a), Q4 đồng ý, Q5 (a), Q6 (a), Q7 (a), Q10 đồng ý.
+- **Q2 (a)**, và theo Q9 làm luôn dạng trộn mà (a) định hoãn (#657).
+- **Thêm sau khi làm rõ luật xóa / Thùng rác:** xóa KH xong, RE / người phối hợp / người đánh giá của KH đó vẫn bị lệnh từ chối `PERSON_IN_USE`, trong khi hộp 9b để nút Xóa bật (ghi chú review #636). Lỗi này vào L2-F: hộp 9b đếm như lệnh, câu nêu KH trong Thùng rác.
+
+Issue đã tạo: §8.6.
 
 1. **DR6-68 — cuộc gặp trước ngày tạo KH (Medium).** (a) Giữ K2 / DR-43: trước ngày tạo, nhóm của ngày = nhóm tạo KH. Cuộc gặp giữ nhóm ghi / khôi phục / nhập được; đổi nhóm trước ngày tạo vẫn bị D10 như trước; hộp 6c đi từ nhóm tạo KH. (b) Bỏ K2 cho cuộc gặp Đã gặp: lịch trước ngày tạo chỉ ghi được Không đến / Hủy; sửa ACCEPTED DR-43 + spec Phase 3 §4; hộp 6c khóa, nói "trước ngày tạo KH". **Đề xuất: (a).**
 2. **DR6-76 — key qua nhiều lớp escape (Rust + script eval).** (a) Thêm hai cách đọc cùng loại (JSON→JSON, URL→URL) ở cả hai nơi; dạng trộn thứ tự theo từng đoạn hoãn sau v1.0. (b) Làm cả dạng trộn (thuật toán theo từng đoạn, ≈ 80–180 SP mỗi nơi). (c) Chấp nhận cả họ, ghi vào ADR-0009 D-1: chỉ chặn một lớp và hai lớp khác loại; server cố ý mã hóa key nằm ngoài mô hình đe dọa. **Đề xuất: (a).**
@@ -454,8 +506,8 @@ Mỗi câu có đề xuất; Owner đồng ý mà không ghi gì khác thì lấ
 5. **DR6-80 — câu hộp 9b cho người hỗ trợ.** (a) Đổi chữ: vế "bỏ khỏi người đánh giá kết quả (ở Sửa kết quả)" chỉ hiện khi có lịch người đó đánh giá; người phối hợp → "Người phối hợp của lịch Dời lịch / Dự kiến không đổi được — giữ lại thay vì xóa". (b) Cho đổi người phối hợp của lịch Dự kiến / Dời lịch (tính năng mới, G1 / G3). **Đề xuất: (a).**
 6. **DR6-70 — 6f dời ngày cuộc gặp có chuyển nhóm qua một lần đổi nhóm khác.** (a) Hộp nêu hậu quả như 6g ("Khi lưu: Nhóm KH N2 → về N3 (hủy chuyển nhóm 15/09) · RF bớt 1"). (b) Khóa ô Ngày như D7 khi ngày mới đi qua một lần đổi nhóm khác. **Đề xuất: (a)** — vẫn sửa được ngày nhập nhầm, hậu quả nói trước như hộp Xóa.
 7. **DR6-93, 94 — chữ Thùng rác (spec G2 / G3).** (a) Dòng Thùng rác của cuộc gặp giữ nhóm ghi "nhóm sau N3 · không đổi nhóm KH"; câu chặn khi ngày đổi nhóm = ngày cuộc hẹn đổi thành "Nhóm KH đã đổi ngày 15/09/2026, ghi sau lúc xóa cuộc hẹn này — …"; sửa TR-3 / E20 của spec theo. (b) Giữ màn, chỉ sửa chữ spec: TR-3 ghi "dòng không có chuyển nhóm, như lịch không Đã gặp"; E20 cùng ngày ghi vào "Lệch đã biết". **Đề xuất: (a).**
-8. **DR6-84 — Thùng rác chậm dần theo số dòng.** (a) Hoãn sau v1.0, thêm dòng theo dõi `trash.open` theo cỡ Thùng rác ở `phase-6.md` (người dùng chạm 200 ms ở ≈ 2 000 dòng). (b) Sửa trước v1.0 (đọc trong một transaction không lưu file, hoặc gộp truy vấn). **Đề xuất: (a).**
-9. **Phạm vi đợt sửa:** Phương án 1, 2 hay 3 (§8.5)? **Đề xuất: Phương án 2.**
+8. **DR6-84 — Thùng rác chậm dần theo số dòng.** (a) Hoãn sau v1.0, thêm dòng theo dõi `trash.open` theo cỡ Thùng rác ở `phase-6.md` (người dùng chạm 200 ms ở ≈ 2 000 dòng). (b) Sửa trước v1.0 (đọc trong một transaction không lưu file, hoặc gộp truy vấn). **Đề xuất: (a).** **Owner chọn (c) (17/10):** nút "Dọn sạch Thùng rác…" như ghi ở đầu mục này → #662.
+9. **Phạm vi đợt sửa:** Phương án 1, 2 hay 3 (§8.5)? **Đề xuất: Phương án 2.** **Owner chọn Phương án 3 (17/10).**
 10. **DR6-60 phần J5:** chấp nhận (đột biến gần tương đương ở React 19; lượt 1 đã đề xuất "không cần sửa"), sửa comment `app-data.ts:394-396` cho khớp điều test kiểm, ghi ACCEPTED. **Đề xuất: đồng ý.**
 
 ## 10. Kiểm độc lập và tuân thủ quy trình
