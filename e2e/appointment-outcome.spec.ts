@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { ANCHOR_MORNING } from './anchor';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
 const TODAY = '15/09/2026';
@@ -318,6 +319,56 @@ test('a meeting held before the customer was entered keeps the stage it was crea
   await expect(detail(page)).toContainText('Giữ N3');
 });
 
+test('a meeting moved to a day before another change says its move goes, then takes it back (DR6-70)', async ({
+  page,
+}) => {
+  // An N4 customer moved to N3 by hand today, then met today N3 → N2.
+  const name = await book(page, '15/9', 'N4');
+  const profile = await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).getAttribute('href');
+  await page.goto(`/${profile}`);
+  await page.getByRole('button', { name: 'Chuyển nhóm' }).click();
+  const change = page.getByRole('dialog', { name: /^Chuyển nhóm · / });
+  await change.getByRole('radio', { name: 'N3', exact: true }).check();
+  await change.getByRole('button', { name: 'Chuyển nhóm' }).click();
+  await expect(change).toBeHidden();
+  await page.goto('/#/appointments');
+  await page
+    .getByRole('region', { name: /^Trong ngày/ })
+    .getByRole('button', { name })
+    .click();
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
+  const o = outcome(page);
+  await o.stageAfter.getByRole('radio', { name: 'N2', exact: true }).check();
+  await o.nextStep.fill('Gửi bảng minh họa');
+  await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
+  await expect(o.dialog).toHaveCount(0);
+  await expect(detail(page)).toContainText('N3 → N2 · RF');
+
+  // Typed in on the wrong day: 14/09 comes before the change by hand, so the stage after holds at
+  // N4 and the meeting's own move goes — said before the save, as the delete dialog says it (6g).
+  await detail(page).getByRole('button', { name: 'Sửa kết quả' }).click();
+  const dialog = editDialog(page);
+  const onSave = dialog.getByRole('note').filter({ hasText: 'Khi lưu' });
+  await expect(onSave).toHaveCount(0);
+  await dialog.getByRole('textbox', { name: /^Ngày cuộc hẹn/ }).fill('14/9');
+  await expect(dialog).toContainText('Nhóm sau cuộc gặp khóa ở nhóm của KH ngày 14/09/2026');
+  await expect(onSave).toContainText('N2 → về N3 (hủy chuyển nhóm 15/09)');
+  await expect(onSave).toContainText('bớt 1 (N3 → N2 tính RF)');
+  await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+
+  // As said: met on 14/09 keeping N4, no move of its own left, the customer back in N3.
+  await expect(detail(page).getByRole('heading', { level: 2 })).toHaveText(`14/09/2026 · ${name}`);
+  await expect(detail(page)).toContainText('Giữ N4');
+  await detail(page).getByRole('button', { name: 'Sửa kết quả' }).click();
+  await expect(dialog).not.toContainText('N3 → N2');
+  await expect(onSave).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Hủy', exact: true }).last().click();
+  await page.goto(`/${profile}`);
+  const region = page.getByRole('region', { name });
+  await expect(region.getByText('N3', { exact: true }).first()).toBeVisible();
+});
+
 test('deleting the meeting that moved the customer takes the move back (6g)', async ({ page }) => {
   const name = await metToN2(page);
   const profile = await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).getAttribute('href');
@@ -337,6 +388,66 @@ test('deleting the meeting that moved the customer takes the move back (6g)', as
   await page.goto(`/${profile}`);
   const region = page.getByRole('region', { name });
   await expect(region.getByText('N3', { exact: true }).first()).toBeVisible();
+});
+
+const MINUTE = 60_000;
+const DAY = 24 * 60 * MINUTE;
+
+/**
+ * 23:58 on 31/12/2026 by the app's clock, from the anchor morning: the e2e day starts on the anchor
+ * and the clock moves it on (T-126). One fast-forward wraps past 2³² ms, so it goes 20 days a time.
+ */
+async function toNewYearsEve(page: Page) {
+  const ms = new Date(2026, 11, 31, 23, 58).getTime() - ANCHOR_MORNING.getTime();
+  for (let left = ms; left > 0; left -= 20 * DAY) {
+    await page.clock.fastForward(Math.min(left, 20 * DAY));
+  }
+}
+
+/** Books a 31/12 appointment for an N3 customer, cancelled ahead of its day; then 23:58 that day. */
+async function cancelledOnNewYearsEve(page: Page) {
+  await page.clock.install({ time: ANCHOR_MORNING });
+  await page.reload();
+  const name = await book(page, '31/12', 'N3');
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
+  const o = outcome(page);
+  await o.status.getByRole('radio', { name: 'Hủy', exact: true }).check();
+  await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
+  await expect(o.dialog).toHaveCount(0);
+  await toNewYearsEve(page);
+  return name;
+}
+
+// DR6-38: a day the dialog filled in as dd/mm reads in the year it opened in (R38c, R38d).
+test('an outcome edited across New Year keeps the day it showed (6f)', async ({ page }) => {
+  const name = await cancelledOnNewYearsEve(page);
+  await detail(page).getByRole('button', { name: 'Sửa kết quả' }).click();
+  const dialog = editDialog(page);
+  await expect(dialog.getByRole('textbox', { name: /^Ngày cuộc hẹn/ })).toHaveValue('31/12');
+
+  await page.clock.fastForward(3 * MINUTE);
+  await dialog.getByRole('textbox', { name: 'Ghi chú' }).fill('KH đón giao thừa ở quê');
+  await expect(dialog).toContainText('31/12/2026 · đã qua 1 ngày');
+  await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(detail(page).getByRole('heading', { level: 2 })).toHaveText(`31/12/2026 · ${name}`);
+});
+
+test('the next appointment filled in on 31/12 is past once New Year comes (6h)', async ({
+  page,
+}) => {
+  await cancelledOnNewYearsEve(page);
+  await detail(page).getByRole('button', { name: 'Tạo lịch hẹn tiếp theo' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Lịch hẹn tiếp theo' });
+  await expect(dialog.getByRole('textbox', { name: /^Ngày/ })).toHaveValue('31/12');
+  await expect(dialog).toContainText('31/12/2026 · hôm nay');
+
+  await page.clock.fastForward(3 * MINUTE);
+  await dialog.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+  await expect(dialog).toContainText(
+    '31/12/2026 đã qua. Lịch mới phải từ hôm nay (01/01/2027) trở đi.',
+  );
+  await expect(dialog).toBeVisible();
 });
 
 test('a day not yet come only reschedules or cancels; rescheduling moves it', async ({ page }) => {

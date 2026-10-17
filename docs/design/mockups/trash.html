@@ -3,12 +3,12 @@
   Mockup G3 Phase 6 — Cài đặt → Thùng rác (spec docs/design/phase-6-hoan-thien.md §4.2, S-2 §4.1).
   Mục lục:
     #p11a  Màn Thùng rác: lọc theo loại, tìm, bảng, dòng bị chặn      (~dòng 131)
-    #p11b  Hộp khôi phục KH (TR-4, E1)                                   (~dòng 221)
-    #p11c  Hộp khôi phục cuộc hẹn Đã gặp (TR-3, E5 / E7)                 (~dòng 238)
-    #p11d  Lý do chặn — mẫu câu từng loại (TR-1…TR-5)                     (~dòng 257)
-    #p11e  Sau khi khôi phục · Thùng rác trống                             (~dòng 283)
-    #p11f  Xóa KH 5f trong app + câu ở các hộp xóa (TR-9, TR-10)          (~dòng 303)
-    #p11g  Lệnh ghi bị từ chối trong lúc thay dữ liệu (S2-2)               (~dòng 335)
+    #p11b  Hộp khôi phục KH (TR-4, E1)                                   (~dòng 228)
+    #p11c  Hộp khôi phục cuộc hẹn Đã gặp (TR-3, E5 / E7)                 (~dòng 245)
+    #p11d  Lý do chặn — mẫu câu từng loại (TR-1…TR-5)                     (~dòng 264)
+    #p11e  Sau khi khôi phục · Thùng rác trống                             (~dòng 291)
+    #p11f  Xóa KH 5f trong app + câu ở các hộp xóa (TR-9, TR-10)          (~dòng 311)
+    #p11g  Lệnh ghi bị từ chối trong lúc thay dữ liệu (S2-2)               (~dòng 343)
 -->
 <html lang="vi">
   <head>
@@ -177,6 +177,13 @@
                   </tr>
                   <tr>
                     <td><span class="kind">Lịch hẹn</span></td>
+                    <td class="rec"><b class="num">01/10/2026 16:00 · Đã gặp</b><span class="more">nhóm sau N3 · không đổi nhóm KH</span></td>
+                    <td>KH Đinh Thảo Vy · RE Bùi Anh Tuấn</td>
+                    <td class="num">07/10/2026 15:10</td>
+                    <td class="r"><button class="btn">Khôi phục…</button></td>
+                  </tr>
+                  <tr>
+                    <td><span class="kind">Lịch hẹn</span></td>
                     <td class="rec"><b class="num">28/09/2026 15:00 · Đã gặp</b><span class="more">N3 → N2</span><span class="why">Nhóm KH đã đổi ngày 05/10/2026, sau ngày cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10).</span></td>
                     <td>KH Lê Hoài Nam · RE Lâm Bảo Phương</td>
                     <td class="num">07/10/2026 09:48</td>
@@ -210,7 +217,7 @@
                     <td class="num">03/10/2026 13:02</td>
                     <td class="r"><button class="btn" disabled>Khôi phục…</button></td>
                   </tr>
-                  <tr><td colspan="5" class="muted" style="text-align: center">… 6 bản ghi khác</td></tr>
+                  <tr><td colspan="5" class="muted" style="text-align: center">… 5 bản ghi khác</td></tr>
                 </tbody>
               </table>
             </section>
@@ -246,7 +253,7 @@
                   </dl>
                   <div class="alert info"><b>Nhóm KH: N3 → N2 từ 02/10/2026</b>Ghi lại chuyển nhóm của cuộc gặp; tính 1 RF cho Bùi Anh Tuấn trong kỳ có ngày 02/10/2026.</div>
                   <div class="divider"></div>
-                  <span class="help">E7 — KH đã ở N2 do chuyển tay ngày 10/10/2026:</span>
+                  <span class="help">E7 — KH đã ở N2 do chuyển tay ngày 02/10/2026, ghi sau khi xóa (chuyển tay ngày sau thì chặn như E6):</span>
                   <div class="alert info"><b>Nhóm KH giữ N2</b>KH đã ở nhóm sau cuộc gặp nên không ghi thêm chuyển nhóm; cuộc hẹn này không tính RF.</div>
                 </div>
                 <div class="dialog-foot"><span class="spacer"></span><button class="btn">Hủy</button><button class="btn btn-primary">Khôi phục</button></div>
@@ -264,7 +271,8 @@
                   <span class="why" style="margin: 0"><b>Đỗ Khánh Linh</b> nay là TL, không phụ trách KH được — đổi lại vai trò RE trước. <span class="muted">(E3)</span></span>
                   <span class="kind">Lịch hẹn</span>
                   <span class="why" style="margin: 0">Khôi phục KH <b>Trịnh Minh Anh</b> trước. <span class="muted">(E4)</span></span>
-                  <span class="why" style="margin: 0">Nhóm KH đã đổi ngày <b>05/10/2026</b>, sau ngày cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10). <span class="muted">(E6, E8)</span></span>
+                  <span class="why" style="margin: 0">Nhóm KH đã đổi ngày <b>05/10/2026</b>, sau ngày cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10). <span class="muted">(E6, E7, E8)</span></span>
+                  <span class="why" style="margin: 0">Nhóm KH đã đổi ngày <b>02/10/2026</b>, ghi sau lúc xóa cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10). <span class="muted">(E20)</span></span>
                   <span class="why" style="margin: 0">KH đang Mất cơ hội, chỉ mở lại được về N3 — không chuyển sang N2. <span class="muted">(TR-3)</span></span>
                   <span class="why" style="margin: 0">Người phối hợp <b>Phó Đức Huy</b> đã xóa — khôi phục trước. <span class="muted">(E9)</span></span>
                   <span class="why" style="margin: 0">Người đánh giá <b>Vũ Thanh Tâm</b> nay là RE. <span class="muted">(E10)</span></span>

@@ -291,6 +291,7 @@ export const vi = {
   'trash.appointment.rf': 'tính RF',
   'trash.appointment.kept': 'Nhóm KH giữ {stage}',
   'trash.appointment.stageAfter': 'nhóm sau {stage}',
+  'trash.appointment.noChange': 'không đổi nhóm KH',
   'trash.policy.title': 'Nộp {date} · {fyp}',
   'trash.team.members': 'khôi phục chưa kèm thành viên — khôi phục từng người sau',
   'trash.empty': 'Thùng rác trống',
@@ -308,6 +309,8 @@ export const vi = {
   'trash.blocked.CUSTOMER_NOT_FOUND': 'Khôi phục KH {name} trước.',
   'trash.blocked.TRANSITION_BEFORE_LATEST':
     'Nhóm KH đã đổi ngày {date}, sau ngày cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10).',
+  'trash.blocked.recordedAfter':
+    'Nhóm KH đã đổi ngày {date}, ghi sau lúc xóa cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10).',
   'trash.blocked.INVALID_TRANSITION':
     'KH đang {from}, chỉ mở lại được về N3 — không chuyển sang {to}.',
   'trash.blocked.INVALID_REVIEWER': 'Người đánh giá {name} nay là {role}.',
@@ -324,7 +327,7 @@ export const vi = {
   'trash.restoreLabel.person': 'Khôi phục nhân sự {name}',
   'trash.restoreLabel.team': 'Khôi phục team {name}',
   'trash.restoreLabel.appointment': 'Khôi phục lịch hẹn {when} của KH {name}',
-  'trash.restoreLabel.policy': 'Khôi phục HĐ nộp {date} của KH {name}',
+  'trash.restoreLabel.policy': 'Khôi phục HĐ nộp {date} · {fyp} của KH {name}',
   'trash.restore.confirm': 'Khôi phục',
   'trash.restore.title': 'Khôi phục {name}?',
   'trash.restore.titleAppointment': 'Khôi phục lịch hẹn {when}?',
@@ -839,6 +842,7 @@ export const vi = {
   'outcomeEdit.lockLink': 'Chuyển nhóm tay ở Hồ sơ KH',
   'outcomeEdit.lockRest': 'Các ô còn lại vẫn sửa được.',
   'outcomeEdit.lockMark': '🔒',
+  'outcomeEdit.onSave': 'Khi lưu',
   'outcomeEdit.delete': 'Xóa lịch hẹn',
   'outcomeEdit.deleteBlocked': 'Xóa cũng bị chặn',
   'outcomeEdit.save': 'Lưu',

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  changeStageManually,
   createCustomer,
   createPerson,
   createTeam,
   listCustomers,
   listTrash,
+  recordMeetingOutcome,
   scheduleAppointment,
   softDeleteAppointment,
   softDeleteCustomer,
@@ -225,6 +227,11 @@ describe('recordTitle and recordDetail (spec Phase 6 §4.2 "Bản ghi")', () => 
     expect(recordDetail(blockedMet)).toBe('nhóm sau N2');
   });
 
+  it('a met appointment that kept the stage when deleted (E18, E19): its stage after, no change', () => {
+    const kept = { ...met, stageAfter: 'N3', effect: { kind: 'none' } } as TrashRow;
+    expect(recordDetail(kept)).toBe('nhóm sau N3 · không đổi nhóm KH');
+  });
+
   it('an appointment without a time, or of another outcome', () => {
     const lost = { ...planned, time: null, status: 'NO_SHOW' } as TrashRow;
     expect(recordTitle(lost)).toBe('06/10/2026 · Không đến');
@@ -282,11 +289,21 @@ describe('restoreLabel (DR6-43)', () => {
     expect(restoreLabel({ ...planned, time: null })).toBe(
       'Khôi phục lịch hẹn 06/10/2026 của KH Trịnh Minh Anh',
     );
-    expect(restoreLabel(policy)).toBe('Khôi phục HĐ nộp 15/09/2026 của KH Hoàng Ngọc Lan');
+    expect(restoreLabel(policy)).toBe(
+      'Khôi phục HĐ nộp 15/09/2026 · 24.000.000 ₫ của KH Hoàng Ngọc Lan',
+    );
   });
 
   it('tells apart the buttons of a whole trash', () => {
     expect(new Set(ROWS.map(restoreLabel)).size).toBe(ROWS.length);
+  });
+
+  it('tells apart two policies of a customer submitted the same day by their FYP (DR6-99)', () => {
+    const other = { ...policy, id: 'p2', submittedFyp: 100_000_000 } as TrashRow;
+    expect(restoreLabel(other)).toBe(
+      'Khôi phục HĐ nộp 15/09/2026 · 100.000.000 ₫ của KH Hoàng Ngọc Lan',
+    );
+    expect(restoreLabel(other)).not.toBe(restoreLabel(policy));
   });
 });
 
@@ -326,6 +343,39 @@ describe('blockedReason (mockup 11d)', () => {
   it('E6, E8: the stage changed after the meeting (D10)', () => {
     expect(reason(blockedMet, blockedMet.blocked!)).toBe(
       'Nhóm KH đã đổi ngày 05/10/2026, sau ngày cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10).',
+    );
+  });
+
+  it('E20: the stage changed on the day of the meeting, recorded after the deletion (DR6-94)', () => {
+    const sameDay = { code: 'TRANSITION_BEFORE_LATEST', params: { date: '28/09/2026' } } as const;
+    expect(reason(blockedMet, sameDay)).toBe(
+      'Nhóm KH đã đổi ngày 28/09/2026, ghi sau lúc xóa cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10).',
+    );
+  });
+
+  it('E20 as the trash finds it: a change by hand on the meeting day after the deletion', async () => {
+    const day = calendarDate(2026, 10, 2);
+    const app = await openAppData({
+      today: () => calendarDate(2026, 10, 11),
+      seed: (db) => {
+        const team = createTeam(db, { name: 'Sao Mai' });
+        const reId = createPerson(db, { name: 'Bùi Anh Tuấn', role: 'RE', teamId: team.id }).id;
+        const customer = createCustomer(db, { name: 'Phạm Gia Bảo', reId, stage: 'N3', date: day });
+        const meeting = scheduleAppointment(db, {
+          customerId: customer.id,
+          reId,
+          date: day,
+          triggerType: 'REFERRAL',
+        });
+        const met = { status: 'MET', stageAfter: 'N2', nextStep: 'Gửi minh họa' } as const;
+        recordMeetingOutcome(db, meeting.id, met);
+        softDeleteAppointment(db, meeting.id);
+        changeStageManually(db, customer.id, { to: 'N1', date: day });
+      },
+    });
+    const [row] = listTrash(app.db());
+    expect(blockedReason(row!, row!.blocked!)).toBe(
+      'Nhóm KH đã đổi ngày 02/10/2026, ghi sau lúc xóa cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10).',
     );
   });
 

@@ -392,26 +392,63 @@ export function withdrawAppointmentTransition(
   updateCustomerRow(db, caused.customerId, { stage: caused.fromStage });
   // D7 holds the move too while a later meeting kept the stage it moved to (T-232); the caller's
   // transaction rolls the withdrawal back.
-  const transitions = listStageTransitions(db, caused.customerId);
-  const left = keptMeetings(db, caused.customerId, appointmentId, caused.date).find(
-    (m) => !isStageOfDay(transitions, m.date, m.stage),
+  const left = meetingKeepingMove(
+    listStageTransitions(db, caused.customerId),
+    liveAppointmentsOf(db, caused.customerId),
+    toTransition(caused),
   );
   if (left) throw new DbError('STAGE_KEPT_BY_MEETING', { date: formatDate(left.date) });
   return true;
 }
 
-/** The customer's live met appointments from `isoDate` on that moved no stage, `except` one. */
-function keptMeetings(db: Database, customerId: string, except: string, isoDate: string) {
+/**
+ * D7 also holds a stage change while a meeting of its customer, met from its day on, moved no stage
+ * and kept one the customer is not in on that day without the change (T-232): withdrawing it would
+ * leave that meeting a stage the customer never had then. The first such meeting, the one rule the
+ * command, the seed and the screen read (DR6-103). `transitions` are live ones in recording order,
+ * `appointments` live ones by day; either may hold other customers'.
+ */
+export function meetingKeepingMove<
+  A extends {
+    readonly id: string;
+    readonly customerId: string;
+    readonly date: CalendarDate;
+    readonly status: string;
+    readonly stageAfter: CustomerStage | null;
+  },
+>(
+  transitions: readonly StageTransition[],
+  appointments: readonly A[],
+  move: Pick<StageTransition, 'id' | 'customerId' | 'date' | 'appointmentId'>,
+): A | undefined {
+  const own = transitions.filter((t) => t.customerId === move.customerId);
+  const rest = own.filter((t) => t.id !== move.id);
+  return appointments.find(
+    (m) =>
+      m.customerId === move.customerId &&
+      m.id !== move.appointmentId &&
+      m.status === 'MET' &&
+      compareDates(m.date, move.date) >= 0 &&
+      !own.some((t) => t.appointmentId === m.id) &&
+      !isStageOfDay(rest, m.date, m.stageAfter!),
+  );
+}
+
+/** The customer's live appointments by day, as `meetingKeepingMove` reads them. */
+function liveAppointmentsOf(db: Database, customerId: string) {
   const rows = selectRows(
     db,
-    `SELECT a.date, a.stage_after FROM appointments a
-     WHERE a.customer_id = ? AND a.id <> ? AND a.status = 'MET' AND a.deleted_at IS NULL
-       AND a.date >= ? AND NOT EXISTS (SELECT 1 FROM stage_transitions t
-         WHERE t.appointment_id = a.id AND t.deleted_at IS NULL)
-     ORDER BY a.date`,
-    [customerId, except, isoDate],
-  ) as [string, CustomerStage][];
-  return rows.map(([date, stage]) => ({ date: fromIsoDate(date), stage }));
+    `SELECT id, date, status, stage_after FROM appointments
+     WHERE customer_id = ? AND deleted_at IS NULL ORDER BY date`,
+    [customerId],
+  ) as [string, string, string, CustomerStage | null][];
+  return rows.map(([id, date, status, stageAfter]) => ({
+    id,
+    customerId,
+    date: fromIsoDate(date),
+    status,
+    stageAfter,
+  }));
 }
 
 /**

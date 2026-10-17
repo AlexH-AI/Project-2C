@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { ANCHOR_YEAR } from './anchor';
+import { ANCHOR_MORNING, ANCHOR_YEAR } from './anchor';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
 
@@ -122,6 +122,35 @@ test('refuses a zero, negative or unreadable FYP', async ({ page }) => {
   const row = card.getByRole('listitem').filter({ hasText: 'Nộp 14/09 · 1,2 tỷ' });
   await expect(row).toContainText('Đã nộp');
   expect(await policyCount(page)).toBe(before + 1);
+});
+
+// DR6-38 (R38e): the day 8b filled in as dd/mm reads in the year the dialog opened in.
+test('a policy issued across New Year keeps the day the dialog showed (8b)', async ({ page }) => {
+  // The e2e day starts on the anchor; the clock moves it on from there (T-126).
+  await page.clock.install({ time: ANCHOR_MORNING });
+  await openProfile(page);
+  const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
+  await card.getByRole('button', { name: '+ Hợp đồng' }).first().click();
+  let dialog = page.getByRole('dialog', { name: 'Hợp đồng mới · đã nộp' });
+  await dialog.getByRole('textbox', { name: /^Ngày nộp/ }).fill('10/9');
+  await dialog.getByRole('textbox', { name: /^FYP nộp/ }).fill('317tr');
+  await dialog.getByRole('button', { name: 'Lưu HĐ' }).click();
+  await expect(dialog).toBeHidden();
+  const row = card.getByRole('listitem').filter({ hasText: '317 tr' });
+
+  // Opened at 23:58 on 31/12/2026, saved past midnight. One fast-forward wraps past 2³² ms.
+  const day = 24 * 60 * 60_000;
+  const ms = new Date(2026, 11, 31, 23, 58).getTime() - ANCHOR_MORNING.getTime();
+  for (let left = ms; left > 0; left -= 20 * day) {
+    await page.clock.fastForward(Math.min(left, 20 * day));
+  }
+  await row.getByRole('button', { name: 'Phát hành HĐ nộp 10/09/2026' }).click();
+  dialog = page.getByRole('dialog', { name: 'Phát hành HĐ' });
+  await expect(dialog.getByRole('textbox', { name: /^Ngày phát hành/ })).toHaveValue('31/12');
+  await page.clock.fastForward(3 * 60_000);
+  await dialog.getByRole('button', { name: 'Phát hành', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(row).toContainText('Phát hành 31/12/2026 · 317 tr');
 });
 
 test('edits the issued FYP (8d), then deletes the policy softly', async ({ page }) => {

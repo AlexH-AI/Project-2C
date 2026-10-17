@@ -121,7 +121,10 @@ test('a deleted appointment shows in Thùng rác, whatever the scope (TR-7)', as
     'aria-sort',
     'descending',
   );
-  await expect(table(page).getByRole('columnheader', { name: 'Thao tác' })).toHaveCount(1);
+  const actions = table(page).getByRole('columnheader', { name: 'Thao tác' });
+  await expect(actions).toHaveCount(1);
+  // An empty header on screen as in mockup 11a: the name is a pixel wide (R43e, DR6-91).
+  expect((await actions.getByText('Thao tác').boundingBox())?.width).toBeLessThanOrEqual(1);
   const re = /RE (.+)$/.exec((await row.getByRole('cell').nth(2).textContent()) ?? '')?.[1] ?? '';
   expect(re).not.toBe('');
 
@@ -281,6 +284,8 @@ test('restores a meeting that kept the stage though the stage changed after it (
   const row = table(page).getByRole('row').nth(1);
   await expect(row).toContainText('14/09/2026');
   await expect(row).toContainText('Đã gặp');
+  // TR-3, DR6-93: the stage it recorded, and that restoring it changes none.
+  await expect(row).toContainText('nhóm sau N3 · không đổi nhóm KH');
   await row.getByRole('button', { name: `Khôi phục lịch hẹn 14/09/2026 của KH ${name}` }).click();
   const dialog = page.getByRole('dialog', { name: 'Khôi phục lịch hẹn 14/09/2026?' });
   await expect(dialog).toContainText('Kết quảĐã gặp · nhóm sau');
@@ -350,7 +355,7 @@ test('a deleted policy submitted tomorrow can be restored once its day comes (TR
 
   await settingsNav(page).getByRole('button', { name: 'Thùng rác' }).click();
   const restore = table(page).getByRole('button', {
-    name: `Khôi phục HĐ nộp 16/09/2026 của KH ${customer.name}`,
+    name: `Khôi phục HĐ nộp 16/09/2026 · 24.000.000 ₫ của KH ${customer.name}`,
   });
   await expect(restore).toBeDisabled();
   await expect(restore).toHaveAccessibleDescription('Ngày nộp 16/09/2026 sau hôm nay.');
