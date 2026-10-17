@@ -16,9 +16,9 @@ Kiểm tra repo nguồn ngày 2026-09-26:
 
 ## Quyết định
 
-1. **Superpowers v6.4.2** — plugin `superpowers@superpowers-marketplace`, **cấp project**. `.claude/settings.json` khai báo `extraKnownMarketplaces` (`obra/superpowers-marketplace`) + `enabledPlugins` → máy kia nhận khi mở phiên (có thể phải xác nhận tin cậy marketplace lần đầu). Được dùng: brainstorming, writing-plans, executing-plans (chế độ inline), test-driven-development, systematic-debugging, verification-before-completion. Không dùng: subagent-driven-development, dispatching-parallel-agents, requesting-code-review.
+1. **Superpowers v6.4.2** — plugin `superpowers@superpowers-marketplace`, **cấp project**. `.claude/settings.json` khai báo `extraKnownMarketplaces` (`obra/superpowers-marketplace`) + `enabledPlugins` → máy kia nhận khi mở phiên (có thể phải xác nhận tin cậy marketplace lần đầu). Được dùng: brainstorming, writing-plans, executing-plans (chế độ inline), test-driven-development, systematic-debugging, verification-before-completion. Không dùng: subagent-driven-development, dispatching-parallel-agents, requesting-code-review (từ 17/10/2026 hai skill đầu dùng được khi Owner bật subagent — phụ lục cuối, ADR-0001 M8).
 2. **mattpocock/skills** — **chép chọn lọc, không sửa** vào `.claude/skills/`, ghim commit `c55ee46` (v1.2.3), MIT: `grill-me` + `grilling`, `to-spec`, `to-tickets`, `tdd`, và `setup-matt-pocock-skills` (cấu hình một lần mà `to-spec`/`to-tickets` cần). Nguồn gốc ghi ở `.claude/skills/README.md`. Luồng Phase 0: `grill-me` → `to-spec` (thay `to-prd`) → `to-tickets` (thay `to-issues`).
-3. **Agent tool bị chặn cứng** bằng `permissions.deny: ["Agent"]` trong `.claude/settings.json` (đưa lên sớm từ Phase 1) → Superpowers rơi về nhánh inline; `grilling` tra cứu dữ kiện trong phiên thay vì dispatch sub-agent. `CLAUDE.md` (Phase 1) liệt kê skill được phép.
+3. **Agent tool bị chặn cứng** (bỏ từ 17/10/2026 — ADR-0001 phụ lục M8, xem phụ lục cuối) bằng `permissions.deny: ["Agent"]` trong `.claude/settings.json` (đưa lên sớm từ Phase 1) → Superpowers rơi về nhánh inline; `grilling` tra cứu dữ kiện trong phiên thay vì dispatch sub-agent. `CLAUDE.md` (Phase 1) liệt kê skill được phép.
 
 ## Phương án đã cân nhắc
 
@@ -40,3 +40,7 @@ Lý do: prompt audit 03/10 thấy thân ADR lệch thực tế. Quyết định 
 - **Phân vai TDD:** `tdd` là chuẩn, seam = test chấp nhận của Issue (không hỏi lại). `superpowers:test-driven-development` bổ sung kỷ luật đỏ → xanh. **Refactor ngay trong vòng khi test còn xanh** (theo superpowers), thay cho dòng "Refactoring is not part of the loop" của `tdd`.
 - **Skill upstream được nhắc nhưng không cài:** `codebase-design` (`DESIGN-IT-TWICE.md` cần sub-agent song song; seam ở 2C đã chốt trong Issue) → bỏ qua. `code-review` của mattpocock (chạy hai sub-agent) → đọc là `review-pr` (ADR-0017).
 - **Đính chính Bối cảnh:** `grilling` có nhắc sub-agent ("dispatch a sub-agent" khi tra dữ kiện). Quyết định 3 đã xử lý: Agent tool bị chặn nên tra cứu trong phiên.
+
+## Phụ lục — bỏ chặn Agent tool (Accepted G1, Owner quyết 17/10/2026 · Issue #671)
+
+Theo ADR-0001 phụ lục M8: bỏ `permissions.deny: ["Agent"]` khỏi `.claude/settings.json` (sửa quyết định 3). Khi Owner bật subagent (`ultracode` hoặc bảo rõ), được dùng thêm `subagent-driven-development`, `dispatching-parallel-agents` của Superpowers, `grilling` được dispatch sub-agent tra dữ kiện như upstream; chưa bật thì vẫn làm inline như trước. `requesting-code-review` vẫn không dùng (review qua `review-pr`, ADR-0017); `using-git-worktrees` vẫn không dùng (worktree theo quy ước của `CLAUDE.md`). `codebase-design` vẫn không cài.

@@ -1,4 +1,4 @@
-# ADR-0001: Mô hình thực hiện — chỉ Claude Code, không subagent
+# ADR-0001: Mô hình thực hiện — chỉ Claude Code, không subagent (bỏ "không subagent" từ 17/10/2026 — phụ lục M8)
 
 - **Trạng thái:** Accepted (G1)
 - **Ngày:** 2026-09-26
@@ -11,8 +11,8 @@ Project-2C là nhánh đối chứng của Project-2: cùng yêu cầu sản ph�
 
 ## Quyết định
 
-1. Mọi việc (spec, code, test, review, tài liệu) do **Claude Code** làm, trong phiên chính (C1, C3). Model và effort do Owner chọn cho từng phiên (phụ lục M1; trước 29/09/2026: Opus 5.5, effort medium).
-2. **Không subagent / Agent tool**, không agent ngoài Claude viết code. OpenCode, Muse Code, Cursor, Codex không dùng cho phát triển. Ngoại lệ duy nhất: **Codex review độc lập khi đóng phase** (phụ lục M2, từ 30/09/2026).
+1. Mọi việc (spec, code, test, review, tài liệu) do **Claude Code** làm, trong phiên chính (C1, C3; từ 17/10/2026 thêm subagent / Workflow khi Owner bật — phụ lục M8). Model và effort do Owner chọn cho từng phiên (phụ lục M1; trước 29/09/2026: Opus 5.5, effort medium).
+2. **Không subagent / Agent tool** (bỏ từ 17/10/2026 — phụ lục M8), không agent ngoài Claude viết code. OpenCode, Muse Code, Cursor, Codex không dùng cho phát triển. Ngoại lệ duy nhất: **Codex review độc lập khi đóng phase** (phụ lục M2, từ 30/09/2026).
 3. Claude làm tự động trong mọi task, **chỉ dừng ở cổng Owner G1–G8** (C4):
 
    | Cổng | Khi nào |
@@ -89,3 +89,12 @@ Sửa M5 phần model. Home PC (máy có Muse Code 1.4.6 và Muse Wonder) không
 Sửa M4–M6 cho **lượt 2** của deep review Phase 1–6 (T-224 #564). **Bỏ Muse**: lượt 2 chỉ còn hai bên — Claude, Codex — 6 gói × 2 = 12 báo cáo, chạy một đợt (hai bên song song; không ACL, không đợt Muse riêng). **Máy chạy tùy** (Office Laptop hay Home PC), miễn đủ số lượt; số đo hiệu năng chỉ so với mốc đo trên **cùng máy** (laptop: số đo nền T-219 và số lượt 1 của laptop; Home PC: số lượt 1 của Home PC và ngưỡng `docs/metrics/phase-6.md`) — chi tiết ở `docs/process/deep-review-phase-1-6.md` §L2.1, §L2.6, §L2.11. Mọi điều kiện khác của M2 giữ nguyên với Codex: Owner chạy, chỉ đọc, không viết code, báo cáo là dữ liệu tham khảo, kết luận phát hành chỉ lấy từ phiên tổng hợp của Claude.
 
 M4–M6 giữ làm lịch sử: lượt 1 (14–15/10/2026) đã chạy ba bên Claude, Codex, Muse Spark 1.3 trên hai máy. Muse Code / OpenCode vẫn không dùng để phát triển; OpenCode vẫn là AI runtime của sản phẩm.
+
+## Phụ lục — cho phép subagent / Workflow (M8 — Accepted G1, Owner quyết 17/10/2026 · Issue #671)
+
+Sửa mục 1, mục 2 và phần "không subagent / Agent tool" của M1–M3. **Claude được dùng subagent (Agent tool) và Workflow nhiều agent** (chế độ `ultracode` của Claude Code). Bỏ `permissions.deny: ["Agent"]` trong `.claude/settings.json`. Lý do: Owner muốn dùng ultracode cho việc cần phủ rộng hoặc kiểm chéo (review, rà soát, sửa hàng loạt); subagent cũng là Claude nên mô hình "chỉ Claude Code viết code" không đổi.
+
+- **Mặc định vẫn làm trong phiên chính.** Workflow / subagent chạy khi Owner bật (từ khóa `ultracode`, hoặc bảo rõ) — Owner tự cân đối hạn mức (C8).
+- **Giữ nguyên:** agent ngoài Claude (Codex, Muse Code, OpenCode, Cursor) không viết code; Codex review khi đóng phase theo M2 / M7; cổng G1–G8; quy trình một task (mục 5, P1); review phiên sạch bằng `review-pr` (ADR-0017); merge qua `tools/merge-pr.mjs`.
+- Subagent ghi file song song: mỗi agent một worktree (`isolation: "worktree"`, nằm ở `.claude/worktrees/`); thư mục này được `eslint` và `.gitignore` bỏ qua nên `pnpm verify` của checkout chính không quét bản sao (khác worktree review của ADR-0017 phụ lục mục 2, vẫn đặt ngoài repo). Commit theo pathspec như phiên song song.
+- Chỉ phần "không subagent / Agent tool" của mục 1, mục 2 và M1–M3, "Phương án đã cân nhắc" (Claude + subagent) và Hệ quả "chặn cứng Agent tool" còn giá trị lịch sử; phần còn lại của các mục đó giữ nguyên. ADR-0012 quyết định 1, 3 và ADR-0017 mục 5 sửa theo phụ lục này.

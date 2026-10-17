@@ -6,7 +6,7 @@ Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh
 
 ## Mô hình thực hiện (ADR-0001)
 
-- Chỉ Claude Code (Claude làm 100%: spec, code, test, review, tài liệu); **model và effort do Owner chọn từng phiên** (ADR-0001 phụ lục M1) — không ghim trong repo. **Không subagent / Agent tool** (bị chặn trong `.claude/settings.json`). Mọi việc làm trong phiên chính.
+- Chỉ Claude Code (Claude làm 100%: spec, code, test, review, tài liệu); **model và effort do Owner chọn từng phiên** (ADR-0001 phụ lục M1) — không ghim trong repo. **Subagent / Agent tool / Workflow được phép** (Owner quyết 17/10/2026, ADR-0001 phụ lục M8; trước đó bị chặn): subagent là Claude nên vẫn "chỉ Claude Code". Mặc định làm trong phiên chính; chạy Workflow / subagent khi Owner bật (`ultracode`, hoặc bảo rõ). Cổng G1–G8, quy trình một task, review phiên sạch giữ nguyên.
 - Tự động trong mọi task; **dừng và hỏi Owner** ở các cổng:
   - **G1** kế hoạch/ADR · **G2** golden examples + mô hình dữ liệu · **G3** mockup UI
   - **G4** dependency lớn / công cụ / dịch vụ mới / bất cứ thứ gì tốn tiền
@@ -15,7 +15,7 @@ Owner (AlexH-AI) là nam — trả lời bằng tiếng Việt, gọi là **"anh
 - **Codex chỉ review độc lập khi đóng phase** (Owner quyết 30/09/2026, ADR-0001 phụ lục M2): Owner chạy, Codex không viết code, không review PR task. Báo cáo của Codex là dữ liệu tham khảo, bổ sung chứ không thay review phiên sạch — Claude kiểm lại từng phát hiện trên code, phân loại rồi mới tạo Issue / sửa. Báo cáo gốc của mọi review đóng phase (Claude + Codex) lưu nguyên văn ở `docs/reviews/raw/<yyyy-mm-dd>/` qua PR docs, không để ngoài repo; bản tổng hợp ở `docs/reviews/`.
 - Không dùng OpenCode/Muse/Cursor/Codex để viết code, không dùng OpenCode/Muse/Cursor để review. OpenCode Go chỉ là AI runtime của sản phẩm.
 - **Muse (Muse Code) review chỉ đọc ở review đóng Phase 6** như Codex (Owner quyết 11/10/2026, ADR-0001 phụ lục M4; 13/10 bỏ DeepSeek — phụ lục M5; 14/10 Muse dùng Spark 1.3, chạy trên Office Laptop — phụ lục M6): Owner chạy, không viết code; Claude phiên tổng hợp kiểm từng phát hiện và là nơi duy nhất ra kết luận phát hành. Chỉ lượt 1: **lượt 2 bỏ Muse**, chỉ Claude + Codex, máy chạy tùy, số đo so với mốc cùng máy (Owner quyết 17/10/2026, phụ lục M7).
-- **Không còn so sánh với Project-2** (Owner quyết 11/10/2026: Project-2 dừng; ADR-0002 Superseded, `docs/COMPARISON.md` hết hiệu lực). Cách làm chỉ Claude Code giữ tới v1.0 vì đã chứng minh hiệu quả (ADR-0001 phụ lục M3); đa agent thử ở project mới. Vẫn không mở, không copy gì từ `C:\workspace\Project-2`.
+- **Không còn so sánh với Project-2** (Owner quyết 11/10/2026: Project-2 dừng; ADR-0002 Superseded, `docs/COMPARISON.md` hết hiệu lực). Cách làm chỉ Claude Code giữ tới v1.0 vì đã chứng minh hiệu quả (ADR-0001 phụ lục M3); từ 17/10/2026 Claude được dùng subagent / Workflow (M8), agent ngoài Claude vẫn không viết code. Vẫn không mở, không copy gì từ `C:\workspace\Project-2`.
 
 ## Quy tắc Owner đã chốt
 
@@ -53,7 +53,8 @@ Memory của Claude chỉ nằm trên từng máy, nên quy tắc dùng chung ch
 ## Skills được phép (ADR-0012)
 
 - Superpowers: `brainstorming`, `writing-plans`, `executing-plans` (inline), `test-driven-development`, `systematic-debugging`, `verification-before-completion`.
-- Không dùng: `subagent-driven-development`, `dispatching-parallel-agents`, `requesting-code-review`, `using-git-worktrees`. Khi skill gợi ý subagent → làm inline.
+- Khi Owner bật subagent (ADR-0001 phụ lục M8): thêm `subagent-driven-development`, `dispatching-parallel-agents`; chưa bật thì skill gợi ý subagent → làm inline.
+- Không dùng: `requesting-code-review` (review qua `review-pr`), `using-git-worktrees` (worktree theo quy ước ở mục Quy trình).
 - Project skills (`.claude/skills/`): `grill-me`/`grilling`, `to-spec`, `to-tickets`, `tdd`, `setup-matt-pocock-skills`, `review-pr` (2C tự viết, ADR-0017).
 - `code-review` có sẵn của Claude Code: chỉ gọi từ trong `review-pr` (mức med/high).
 
