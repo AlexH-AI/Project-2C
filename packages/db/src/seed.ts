@@ -14,7 +14,6 @@ import {
 } from '@p2c/ai/schema';
 import {
   calendarDate,
-  compareDates,
   evaluateKycGate,
   isPipelineStage,
   KYC_FIELDS,
@@ -26,7 +25,6 @@ import {
   type KycField,
   type KycValue,
   type Person,
-  type StageTransition,
   type Vnd,
 } from '@p2c/domain';
 import { recordAiAnalysis } from './ai-analyses';
@@ -40,9 +38,9 @@ import {
 import {
   changeStageManually,
   createCustomer,
-  isStageOfDay,
   listCustomers,
   listStageTransitions,
+  meetingKeepingMove,
   softDeleteCustomer,
   updateCustomerProfile,
   type BirthDate,
@@ -406,23 +404,13 @@ function simulation(db: Database, rng: Rng, aiRng: Rng, anchor: number, scale: S
     const latest = new Map(transitions.map((t) => [t.customerId, t]));
     const caused = new Set(transitions.map((t) => t.appointmentId));
     const appointments = listAppointments(db);
-    const keptAfter = (move: StageTransition) => {
-      const rest = transitions.filter((t) => t.customerId === move.customerId && t !== move);
-      return appointments.some(
-        (m) =>
-          m.customerId === move.customerId &&
-          m.status === 'MET' &&
-          !caused.has(m.id) &&
-          compareDates(m.date, move.date) >= 0 &&
-          !isStageOfDay(rest, m.date, m.stageAfter!),
-      );
-    };
     const deletable = appointments.filter((a) => {
       const move = latest.get(a.customerId)!;
       return (
         a.status !== 'RESCHEDULED' &&
         a.rescheduledFromId === null &&
-        (!caused.has(a.id) || (move.appointmentId === a.id && !keptAfter(move)))
+        (!caused.has(a.id) ||
+          (move.appointmentId === a.id && !meetingKeepingMove(transitions, appointments, move)))
       );
     });
     for (const id of pick(deletable)) softDeleteAppointment(db, id);

@@ -119,17 +119,20 @@ export function recordDetail(row: TrashRow): string | null {
 }
 
 function appointmentDetail(row: AppointmentRow): string | null {
-  // A blocked restore moves nothing: the change counted from today's stage would mislead.
-  if (row.blocked) {
-    return row.status === 'MET' && row.stageAfter !== null
+  const after =
+    row.status === 'MET' && row.stageAfter !== null
       ? t('trash.appointment.stageAfter', { stage: stage(row.stageAfter) })
       : null;
-  }
+  // A blocked restore moves nothing: the change counted from today's stage would mislead.
+  if (row.blocked) return after;
   const { effect } = row;
   if (effect.kind === 'stageKept') {
     return t('trash.appointment.kept', { stage: stage(effect.stage) });
   }
-  if (effect.kind !== 'stageChange') return null;
+  // A meeting that kept the stage when deleted comes back without a change (TR-3, E18, E19).
+  if (effect.kind !== 'stageChange') {
+    return after && joinParts([after, t('trash.appointment.noChange')]);
+  }
   return joinParts([
     joinParts([stage(effect.from), stage(effect.to)], 'arrow'),
     effect.rf && t('trash.appointment.rf'),
@@ -169,6 +172,7 @@ export function restoreLabel(row: TrashRow): string {
     case 'policy':
       return t('trash.restoreLabel.policy', {
         date: formatDate(row.submittedDate),
+        fyp: formatVnd(row.submittedFyp),
         name: row.owner.customer?.name ?? '',
       });
     default:
@@ -212,6 +216,14 @@ function reasonSentence(row: TrashRow, { code, params = {} }: TrashBlock): strin
     return team && 'name' in params
       ? t('trash.blocked.TEAM_HAS_LEAD', { ...params, team: team.name })
       : null;
+  }
+  // On the meeting's own day the change counts as later for being recorded after the deletion (E20).
+  if (
+    code === 'TRANSITION_BEFORE_LATEST' &&
+    row.kind === 'appointment' &&
+    params.date === formatDate(row.date)
+  ) {
+    return t('trash.blocked.recordedAfter', params);
   }
   if (code === 'TRANSITION_BEFORE_LATEST' || code === 'OUTCOME_IN_FUTURE') {
     return 'date' in params ? t(`trash.blocked.${code}`, params) : null;

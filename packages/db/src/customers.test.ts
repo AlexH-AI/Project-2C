@@ -1,4 +1,4 @@
-import { stageOn, type CalendarDate } from '@p2c/domain';
+import { stageOn, type CalendarDate, type CustomerStage, type StageTransition } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
   changeStageManually,
@@ -6,6 +6,7 @@ import {
   getCustomer,
   listCustomers,
   listStageTransitions,
+  meetingKeepingMove,
   previewCustomerProfile,
   previewHandover,
   restoreCustomer,
@@ -473,5 +474,57 @@ describe('customers', () => {
     expect(codeOf(() => softDeleteAppointment(db, met.id))).toBe('INVALID_TRANSITION');
     expect(getCustomer(db, customer.id)?.stage).toBe('N3');
     expect(listStageTransitions(db, customer.id)).toHaveLength(1);
+  });
+});
+
+describe('meetingKeepingMove (D7, T-232; DR6-103)', () => {
+  const step = (
+    id: string,
+    from: CustomerStage | null,
+    to: CustomerStage,
+    date: CalendarDate,
+    appointmentId: string | null = null,
+    customerId = 'c1',
+  ): StageTransition => ({ id, customerId, from, to, date, appointmentId });
+  const meeting = (
+    id: string,
+    date: CalendarDate,
+    stageAfter: CustomerStage | null,
+    status = 'MET',
+    customerId = 'c1',
+  ) => ({ id, customerId, date, status, stageAfter });
+  const created = step('t0', null, 'N3', d(1, 9));
+  const moved = step('t1', 'N3', 'N2', d(5, 9), 'a1');
+
+  it('finds the first meeting from its day on that kept the stage the move reached', () => {
+    const kept = meeting('m2', d(12, 9), 'N2');
+    const later = meeting('m3', d(14, 9), 'N2');
+    expect(meetingKeepingMove([created, moved], [kept, later], moved)).toBe(kept);
+    // The same day, after the move.
+    const sameDay = meeting('m4', d(5, 9), 'N2');
+    expect(meetingKeepingMove([created, moved], [sameDay, kept], moved)).toBe(sameDay);
+  });
+
+  it('leaves out the meeting itself, other customers, other statuses and earlier days', () => {
+    const others = [
+      meeting('a1', d(5, 9), 'N2'),
+      meeting('m2', d(12, 9), 'N2', 'MET', 'c2'),
+      meeting('m3', d(12, 9), null, 'CANCELLED'),
+      meeting('m4', d(4, 9), 'N2'),
+    ];
+    const elsewhere = step('t2', 'N3', 'N1', d(2, 9), null, 'c2');
+    expect(meetingKeepingMove([created, elsewhere, moved], others, moved)).toBeUndefined();
+    // As the command asks, the move already withdrawn.
+    expect(meetingKeepingMove([created, elsewhere], others, moved)).toBeUndefined();
+  });
+
+  it('does not hold the move for a stage the customer is in that day without it', () => {
+    // Kept N3, the stage the day started in; kept N1, reached by a later change that day.
+    const startOfDay = meeting('m2', d(5, 9), 'N3');
+    const change = step('t2', 'N2', 'N1', d(12, 9));
+    const afterChange = meeting('m3', d(12, 9), 'N1');
+    expect(
+      meetingKeepingMove([created, moved, change], [startOfDay, afterChange], moved),
+    ).toBeUndefined();
   });
 });

@@ -1,5 +1,5 @@
 import {
-  isStageOfDay,
+  meetingKeepingMove,
   type AppointmentRecord,
   type MeetingOutcome,
   type NextAppointment,
@@ -61,8 +61,8 @@ type MetRecord = Pick<AppointmentRecord, 'id' | 'customerId' | 'date' | 'status'
 /**
  * D7: the stage move the appointment made, and what now locks its status, day and stage after (and
  * its deletion): the customer's later move, or a later meeting that kept the stage it moved to
- * (T-232), as the db refuses them. `transitions` come in the order they were made; `appointments`
- * by day.
+ * (T-232), by the very rule the db refuses them with. `transitions` come in the order they were
+ * made; `appointments` by day.
  */
 export function outcomeLock(
   transitions: readonly StageTransition[],
@@ -77,16 +77,7 @@ export function outcomeLock(
   if (!caused) return {};
   const own = transitions.filter((tr) => tr.customerId === appointment.customerId);
   if (own.at(-1) !== caused) return { caused, later: own.at(-1) };
-  const rest = own.filter((tr) => tr !== caused);
-  const keptBy = appointments.find(
-    (m) =>
-      m.customerId === appointment.customerId &&
-      m.id !== appointment.id &&
-      m.status === 'MET' &&
-      compareDates(m.date, caused.date) >= 0 &&
-      !own.some((tr) => tr.appointmentId === m.id) &&
-      !isStageOfDay(rest, m.date, m.stageAfter!),
-  );
+  const keptBy = meetingKeepingMove(transitions, appointments, caused);
   return keptBy ? { caused, keptBy } : { caused };
 }
 
@@ -132,6 +123,42 @@ export function meetingDay(
 /** The stage `meetingDay` holds the stage after at, when something holds it. */
 export function heldStage(day: ReturnType<typeof meetingDay>): CustomerStage | undefined {
   return day.change || day.meeting ? (day.from ?? undefined) : undefined;
+}
+
+/**
+ * `meetingDay` of the edit dialog (6f) on `day`: a meeting that kept its stage, edited on its own
+ * day, starts from the stage it kept (E19) rather than the stage a change later that day ended in;
+ * one that moved the stage, or moved to another day, starts from the stage of that day.
+ */
+export function editedDay(
+  transitions: readonly StageTransition[],
+  appointments: readonly MetRecord[],
+  appointment: MetRecord,
+  day: CalendarDate,
+): ReturnType<typeof meetingDay> {
+  const moved = transitions.some((tr) => tr.appointmentId === appointment.id);
+  const kept =
+    !moved && appointment.status === 'MET' && compareDates(day, appointment.date) === 0
+      ? appointment.stageAfter
+      : null;
+  return meetingDay(transitions, appointments, appointment, day, kept);
+}
+
+/**
+ * The stage move of the meeting that saving 6f withdraws with nothing in its place, for the dialog to
+ * say so first as 6g does (DR6-70): the outcome no longer moves the customer — another status, or a
+ * stage after that is the stage its day starts `from`, picked or held there by a new day. A locked
+ * move stays (D7).
+ */
+export function undoneMove(
+  lock: ReturnType<typeof outcomeLock>,
+  status: OutcomeDraft['status'],
+  stageAfter: CustomerStage | null,
+  from: CustomerStage,
+): StageTransition | undefined {
+  const { caused, later, keptBy } = lock;
+  if (!caused || later || keptBy) return undefined;
+  return status !== 'MET' || stageAfter === from ? caused : undefined;
 }
 
 /** "Nhóm sau cuộc gặp": the current stage (kept) and the ones a transition reaches (ADR-0007). */

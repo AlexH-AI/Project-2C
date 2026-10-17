@@ -5,25 +5,26 @@ import {
   type AppointmentTrigger,
   type CustomerRecord,
 } from '@p2c/db';
-import { compareDates, formatDate, type Person, type StageTransition } from '@p2c/domain';
+import { formatDate, type Person, type StageTransition } from '@p2c/domain';
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData, useTables } from '../../data/AppDataContext';
 import { errorMessage, joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { Actions, ALERT, FailureAlert, useSaveFailure } from '../customers/CustomerDialogs';
 import { CoordinatorsField, dateFieldError, dateReading, liveIds } from './AppointmentDialog';
-import { DeleteAppointmentDialog } from './DeleteAppointmentDialog';
+import { DeleteAppointmentDialog, UndoneMoveNote } from './DeleteAppointmentDialog';
 import { badge, MetFields, metDraftOf, EMPTY_MET } from './MetFields';
 import { DayLockNote } from './OutcomeDialog';
 import { whenText } from './RescheduleFields';
 import { isPastOrToday, parseTime, prefill, readScheduleDate } from './appointment-form';
 import { LINK, LOCKED, outcomeText, type AppointmentRow } from './appointments-view';
 import {
+  editedDay,
   heldStage,
-  meetingDay,
   outcomeChoices,
   outcomeLock,
   readOutcome,
+  undoneMove,
   withoutError,
   type OutcomeChoice,
   type OutcomeError,
@@ -36,7 +37,7 @@ type EditStatus = Exclude<OutcomeChoice, 'RESCHEDULED'>;
  * coordinators. Once the customer moved on after the meeting, or a later meeting kept the stage it
  * moved to, its status, day and stage after are locked and it cannot be deleted (D7); the rest
  * stays open. Otherwise the stage after is held at the stage of the day once something came after
- * it (T-232).
+ * it (T-232), and a save that takes back the stage move the meeting made says so first (DR6-70).
  */
 export function EditOutcomeDialog({
   row,
@@ -54,7 +55,8 @@ export function EditOutcomeDialog({
   const today = app.today();
   const a = row.appointment;
   const customer = row.customer;
-  const { caused, later, keptBy } = outcomeLock(transitions, appointments, a);
+  const lock = outcomeLock(transitions, appointments, a);
+  const { caused, later, keptBy } = lock;
   const locked = later !== undefined || keptBy !== undefined;
   const [status, setStatus] = useState(a.status as EditStatus);
   const [metDraft, setMetDraft] = useState(a.status === 'MET' ? metDraftOf(a) : EMPTY_MET);
@@ -82,14 +84,12 @@ export function EditOutcomeDialog({
   const choices = outcomeChoices({ status: a.status, date: day }, today).filter(
     (choice): choice is { value: EditStatus; disabled: boolean } => choice.value !== 'RESCHEDULED',
   );
-  // The stage of the day, without the meeting's own move; a meeting kept on its day starts from the
-  // stage it kept (T-232).
-  const kept =
-    !caused && a.status === 'MET' && compareDates(day, a.date) === 0 ? a.stageAfter : null;
-  const onDay = meetingDay(transitions, appointments, a, day, kept);
+  // The stage of the day, without the meeting's own move (T-232).
+  const onDay = editedDay(transitions, appointments, a, day);
   const from = onDay.from ?? customer.stage;
   const holding = locked ? undefined : heldStage(onDay);
   const draft = holding ? { ...metDraft, stageAfter: holding } : metDraft;
+  const undone = undoneMove(lock, status, draft.stageAfter, from);
 
   const save = () => {
     const read = readOutcome({ status, ...draft, note, next: null });
@@ -228,6 +228,7 @@ export function EditOutcomeDialog({
           lockNote={holding && <DayLockNote day={day} held={onDay} customerId={customer.id} />}
         />
       )}
+      {undone && <UndoneMoveNote caused={undone} />}
       <TextField
         label={t(status === 'MET' ? 'outcome.note' : 'outcome.noteOther')}
         value={note}
