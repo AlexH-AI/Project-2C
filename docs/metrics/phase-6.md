@@ -1,6 +1,6 @@
 # Chỉ số Phase 6 — Hoàn thiện & phát hành v1.0
 
-Theo bảng chỉ số của `docs/COMPARISON.md` (mẫu từ `phase-5.md`), thêm phần đánh giá cuối dự án (thay `FINAL.md`, `docs/metrics/README.md`). Tới cuối phase file này mới chỉ có mục **Số đo nền** (T-219, spec Phase 6 §5.1), ghi trước lượt review 1 của 6D. Các mục khác để trống tới khi đóng phase.
+Theo bảng chỉ số của `docs/COMPARISON.md` (mẫu từ `phase-5.md`), thêm phần đánh giá cuối dự án (thay `FINAL.md`, `docs/metrics/README.md`). Tới cuối phase file này mới có mục **Số đo nền** (T-219, spec Phase 6 §5.1, ghi trước lượt review 1 của 6D), mốc Home PC sau lượt 2 (T-225) và số liệu hai lượt review đóng phase. Các mục khác để trống tới khi đóng phase.
 
 - **Milestone:** "Phase 6 — Hoàn thiện & phát hành" — _điền cuối phase_
 - **Bắt đầu:** 2026-10-11 (spec G1 #515) · **Task code cuối merge:** _cuối phase_ · **Đóng milestone:** _G7_
@@ -87,7 +87,7 @@ Cách đặt ngưỡng mới: thao tác màn mới (panel AI, lịch sử phân 
 - **Office Laptop** (exe `b139d8a`, mục trên): `p2c:data-open` 3 140 ms, Owner bấm giờ ≈ 3 s; chưa đo riêng sinh seed / lưu file ở máy này. Code mở lần đầu giống Home PC nên phần sinh seed cũng chiếm gần hết.
 - **Seed tốn thời gian ở đâu** (profile V8 một lần seed trong Node): khoảng 40 % là drizzle dựng câu SQL ở mỗi lần gọi lệnh (riêng hàm `is()` của drizzle ≈ 0,75 s trên 4,2 s). Muốn nhanh hơn thì phải sửa các lệnh ở `packages/db` (dựng sẵn câu SQL), không sửa ở seed được vì seed phải chạy qua lệnh. Việc này không làm.
 - **Owner quyết 13/10 (#574):** chấp nhận số mới. Ngưỡng mở lần đầu là "không chậm hơn exe Phase 4 đo cùng cách, cùng máy", không phải ≤ 2 s.
-- **Số tham chiếu cho lượt 2** (khỏi build lại exe `3e84ce8`): đo trên Home PC theo cách trên, mốc "gọi exe → màn đầu có số liệu" (LCP), Phase 4 max **3 937 ms**. Lượt 2 đo exe mới cùng cách, cùng máy, 3 lần; xấu hơn khi trung vị quá 3 937 ms thêm **quá 20 % và quá 10 ms** (tức > 4 724 ms). Đo ở máy khác thì phải đo lại exe Phase 4 ở máy đó.
+- **Số tham chiếu cho lượt 2** (khỏi build lại exe `3e84ce8`): đo trên Home PC theo cách trên, mốc "gọi exe → màn đầu có số liệu" (LCP), Phase 4 max **3 937 ms**. Lượt 2 đo exe mới cùng cách, cùng máy, 3 lần; xấu hơn khi trung vị quá 3 937 ms thêm **quá 20 % và quá 10 ms** (tức > 4 724 ms). Owner quyết 17/10 (ADR-0001 phụ lục M7): đo trên Home PC thì so với số này; đo trên Office Laptop thì so với số T-219 ở trên, không build lại exe Phase 4. Lượt 2 đo ở Home PC: 3 526 ms, không xấu hơn (mục "Mốc Home PC sau deep review lượt 2" dưới).
 
 Không đo lại ở đây: các thao tác Phase 4 không có trong §5.2 ("Đổi tên team", "Vào Tổng quan / Báo cáo / Team" bằng sidebar khi không tải lại). Bảng hàm thuần trong Node của Phase 4 (`importBackup` ≤ 1,1 s, `listAppointments` ≤ 65 ms, `teamCompare` / `reportRows` ≤ 15 ms, `monthGrid` ≤ 2 ms, `countRecords` ≤ 15 ms) cũng không đo lại: đó là probe Vitest riêng của deep review, nằm ngoài repo, không phải thao tác trên exe. Gói F của lượt 1 (T-222) quyết định có đo lại hay không.
 
@@ -133,6 +133,34 @@ Dòng code theo gói review (spec §6.2; file git theo dõi; test gồm `*.test.
 
 Không đếm 278 file tài liệu / dữ liệu / ảnh / font / lockfile (`.md` 169, `.png` 34, `.json` 29…; danh sách đủ trong output của lệnh).
 
+### Mốc Home PC sau deep review lượt 2 (T-225, 17/10/2026)
+
+Mốc để G7 và mọi lần đo sau trên Home PC so "không xấu đi", thay `perf-ref` lượt 1 Home PC (DR6-98). Từ #620 (DR6-06), mỗi lần mở dữ liệu có file chạy `quick_check`, nên so với số cũ thì `app.open-data` và `reload.*` luôn báo ⚠️.
+
+- **Máy:** Home PC `DESKTOP-KDURKJP`.
+- **Code:** `4217ed4`. Exe release build tại máy: 5 404 672 byte (Δ −9 728 so `b139d8a`: phiên bản, `crate-type`).
+- **Dữ liệu tải:** `load-2026-10-12-seed6.p2cbackup` sinh ở SHA đó, `tables` sha256 `1c306cfb8203409337a5fa33c48306694581cb70355eb5526e4cf4f543589591`. Sau khi nhập, `project2c.db` 14 069 760 byte (+4,6 %, ba chỉ mục 0009).
+- **Cách đo:** probe T-218, `PERF_RUNS=5`, gắn DevTools như mọi lần. Mở lại exe trên dữ liệu tải rồi nối probe ngay. Lần chạy ngay sau mở lần đầu bị bỏ, vì khi đó `app.open-data` đo lúc sinh seed (3 070 ms).
+- **File JSON:** `docs/metrics/phase-6-baseline/perf-home-pc-luot-2.json` → so bằng `PERF_BASE=docs/metrics/phase-6-baseline/perf-home-pc-luot-2.json`.
+- **Bảng đủ 35 thao tác:** `docs/reviews/raw/2026-10-17/common-baseline.md`. Phân tích: tổng hợp lượt 2 §7.
+
+| Thao tác | Lượt 1 Home PC `8855345` | Lượt 2 `4217ed4` | Ngưỡng |
+|---|---|---|---|
+| `app.open-data` | 189 ms | 301 ms ⚠️ | ≤ 600 ms ✅ |
+| `reload.*` (6 màn) | 180–293 ms | 247–355 ms ⚠️ (+62…+67 ms) | < 500 ms ✅ |
+| `trash.open` | 80 ms | 73 ms | < 200 ms ✅ |
+| Các thao tác màn còn lại | 6–22 ms | 5–22 ms | < 200 ms ✅ |
+| `backup.read` / `backup.import` / `backup.export` | 794 / 49 / 424 ms | 814 / 43 / 422 ms | ≤ 2 000 / 500 / 1 000 ms ✅ |
+| `reports.export-excel` | 24 ms | 27 ms | ≤ 500 ms ✅ |
+| `appointments.next-month` / `next-year` | 102 / 106 ms | 99 / 106 ms | ≤ 300 ms; Năm − Tháng ≤ 50 ms ✅ |
+| `db.save` | 140 ms | 147 ms | ≤ 400 ms ✅ |
+| `memory.js-heap` | 16,4 MB | 16,5 MB | ≤ 21 MB ✅ |
+| Gọi exe → màn đầu có số liệu (LCP, 3 lần, cách T-227) | — | 3 526 ms (3 505–3 597) | xấu hơn khi > 4 724 ms ✅ |
+
+- **Bảy dòng ⚠️ là chi phí có chủ ý.** `quick_check` lúc mở tốn 60–68 ms, hai bên đo độc lập. Cộng thêm file lớn hơn 4,6 %. Riêng `app.open-data` (1 mẫu) còn phụ thuộc trạng thái profile WebView2: profile mới ≈ 406 ms, mở lại 301 ms.
+- **`trash.open` khi gắn DevTools chậm ×2,4–3,3**, vì thao tác chạy nhiều câu SQL. Exe không gắn DevTools: 31,6 / 48,3 / 87,6 / 138,3 ms ở 113 / 263 / 713 / 1 313 dòng, tức ≈ 0,09 ms / dòng, chạm 200 ms ở ≈ 2 000 dòng (DR6-84). Probe sẽ đo `trash.open` khi không gắn DevTools ở #660 (T-256). Thùng rác lớn được xử lý bằng chức năng "Dọn sạch Thùng rác" ở #662 (T-258).
+- **Mốc này phải đo lại trước G7.** #656 (T-252) đổi `quick_check` → `integrity_check`, thêm ≈ 30 ms mỗi lần mở (ước `app.open-data` ≈ 330 ms). Sau khi merge, đo lại `app.open-data` / `reload.*` trên Home PC, ghi số mới vào đây.
+
 ## Kiểm tra trên `main`
 
 _Điền cuối phase._
@@ -143,7 +171,22 @@ _Điền cuối phase._
 
 ## Review đóng phase
 
-_Điền cuối phase (deep review Phase 1–6, hai lượt — 6D)._
+Deep review Phase 1–6 (6D, kế hoạch `docs/process/deep-review-phase-1-6.md`), gói A–F; báo cáo gốc ở `docs/reviews/raw/<ngày>/`.
+
+- **Lượt 1 (15/10, `8855345`):**
+  - Reviewer: Claude, Codex, Muse Spark 1.3. Office Laptop chính thức, Home PC tham khảo.
+  - Tổng hợp: `docs/reviews/2026-10-15-deep-review-phase-1-6-luot-1-tong-hop.md`.
+  - **67** vấn đề DR6-01…67: **2 Medium**, 48 Low, 17 Nit. Hai Medium: khôi phục cuộc gặp giữ nhóm; bàn giao KH.
+  - Owner chọn Phương án 2: 16 Issue #592–#607.
+- **Lượt 2 (17/10, `4217ed4`):**
+  - Reviewer: Claude, Codex; một đợt trên Home PC (ADR-0001 M7).
+  - Tổng hợp: `docs/reviews/2026-10-17-deep-review-phase-1-6-luot-2-tong-hop.md`.
+  - 59 DR6 có Issue: 52 đã sửa, 4 sửa một phần, 3 hồi quy.
+  - 57 phát hiện mới → **36** vấn đề DR6-68…103: **1 Medium** (DR6-68, hồi quy do #616), 23 Low, 12 Nit. 0 bị bác.
+  - Kết luận: chưa sẵn sàng ở `4217ed4`.
+  - Owner chọn Phương án 3 (sửa hết): 12 Issue #652–#663. Không có lượt 3.
+
+_Còn điền: kết quả đợt sửa lượt 2, kiểm lại trước G7._
 
 ## Điều hướng (riêng 2C, `docs/metrics/README.md`)
 
