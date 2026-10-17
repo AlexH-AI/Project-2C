@@ -29,6 +29,7 @@ Every edit to a vendored file is listed here. A PR that changes a file under `.c
 | `to-tickets/SKILL.md` | Thêm mục "Tài liệu cần đọc" vào issue template | Phiên làm task chỉ đọc danh sách này (`/session-start <issue>`) | #283 (T-116), thay bởi dòng T-122 ngay dưới |
 | `to-tickets/SKILL.md` | Issue template trỏ sang `.github/ISSUE_TEMPLATE/task.yml` thay vì chép danh sách mục; câu "avoid specific file paths" nêu hai ngoại lệ ("Tài liệu cần đọc", "File / thư mục được phép sửa") | Mẫu Issue chỉ định nghĩa một nơi; gỡ mâu thuẫn quy tắc đường dẫn (audit F3) | #296 (T-122) |
 | `to-spec/SKILL.md` | Bỏ "A LONG" / "extremely extensive" ở mục User Stories, giữ yêu cầu đủ mọi actor, mọi hành vi đổi | Giọng nhấn viết cho model cũ làm danh sách phình (audit F4) | #296 (T-122) |
+| `to-tickets/SKILL.md` | Issue template: điền ô "Ghi chú OPEN liên quan" từ `node tools/notes-for.mjs --files <đường dẫn của "File / thư mục được phép sửa">`, tính các mục gộp vào cỡ ticket | Ghi chú review OPEN ở file task sẽ sửa phải được tính khi viết Issue (Owner duyệt G1 17/10/2026) | #676 (T-261) |
 
 ## To update
 

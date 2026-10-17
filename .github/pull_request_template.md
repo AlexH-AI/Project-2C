@@ -8,6 +8,12 @@ Closes #
 
 - [ ]
 
+## Ghi chú OPEN liên quan
+
+<!-- `node tools/notes-for.mjs --diff`: mỗi mục "Trùng file" một dòng, `L<dòng>` + đầu mục → đã sửa, hoặc để lại + lý do (ngoài phạm vi, vượt cỡ, cần cổng G…, chỉ ghi lại). Không có mục nào: ghi "Không có". Thiếu dòng là mục chặn của review; mục đã sửa chuyển sang RESOLVED ở PR sổ sau review (T-261). -->
+
+-
+
 ## Kiểm tra
 
 - [ ] `pnpm verify` xanh ở local

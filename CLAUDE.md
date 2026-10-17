@@ -36,10 +36,11 @@ Memory của Claude chỉ nằm trên từng máy, nên quy tắc dùng chung ch
 ## Quy trình một task (ADR-0001)
 
 1. Mỗi task = 1 GitHub Issue (spec + test chấp nhận + file được phép sửa + nhãn `risk:low|med|high`), ≤ ~400 dòng code sản phẩm và ≤ ~800 dòng tổng diff kể cả test (không tính file sinh tự động — ADR-0001 phụ lục).
-2. Nhánh `task/T-xxx-slug` từ `main` (hoặc từ nhánh phase đang mở).
+2. Nhánh `task/T-xxx-slug` từ `main` (hoặc từ nhánh phase đang mở). Đầu task chạy `node tools/notes-for.mjs <issue>`: ghi chú OPEN của `docs/state/review-notes.md` ở các file Issue cho sửa; gộp vào task những mục còn vừa phạm vi và cỡ (T-261).
 3. TDD: test đỏ → code → test xanh. Chạy `pnpm verify` trước khi commit. Test chấp nhận trong Issue là seam đã thống nhất với Owner — không cần hỏi lại seam (skill `tdd`); chỉ hỏi khi cần seam ngoài Issue.
    - Phân vai hai skill TDD (ADR-0012 phụ lục 03/10): `tdd` là chuẩn (seam = test chấp nhận của Issue); `superpowers:test-driven-development` bổ sung kỷ luật đỏ → xanh. Refactor ngay trong vòng khi test còn xanh (Owner quyết 03/10, khác dòng "Refactoring is not part of the loop" của `tdd`). `tdd` nhắc `codebase-design` → bỏ qua (không cài); nhắc `code-review` → đọc là `review-pr`.
 4. PR → CI Windows xanh → **review ở phiên mới, context sạch** bằng skill `review-pr` (ADR-0017): Owner gõ "review PR #N" → skill đọc nhãn `risk:*`, chọn mức (low: Spec + checklist · med: + `code-review medium` · high: + `code-review high`). Không gọi `code-review` trực tiếp; không dùng `--comment`/`--fix`/`ultra`.
+   - Thân PR có mục **"Ghi chú OPEN liên quan"** (mẫu PR) theo `node tools/notes-for.mjs --diff`: mỗi mục "Trùng file" một dòng — đã sửa, hoặc để lại + lý do. Thiếu dòng là mục chặn của review (Owner quyết 17/10/2026, T-261). PR code không chuyển mục của sổ: PR sổ sau review (không cần review) ghi ghi chú mới và chuyển các mục "đã sửa" sang RESOLVED.
    - Review chạy trong worktree cố định `C:\workspace\Project-2C-review`, ngoài checkout chính (detached HEAD ở đúng SHA đang review, chỉ đọc, không commit). Code chỉ làm ở checkout chính hoặc worktree của task. Review hai PR song song → phiên thứ hai dùng `C:\workspace\Project-2C-review-2` (mỗi worktree review chỉ một phiên tại một thời điểm). Chi tiết: skill `review-pr` §0.
 5. `risk:low` + CI xanh + review đạt → Claude tự merge (squash; `--merge` khi có PR khác xếp chồng lên nhánh này, để giữ lịch sử commit). Ngược lại chờ Owner. Sửa tối đa 2 vòng, sau đó G8.
    - **Merge luôn bằng `node tools/merge-pr.mjs <N>`** (`--merge` khi xếp chồng, `--owner` khi Owner bảo merge PR `risk:med`/`high`, `--dry-run` để xem trước): lệnh kiểm mọi điều kiện dưới, merge, rồi dọn nhánh. Xem nhanh trạng thái một PR: `node tools/pr-status.mjs <N>`.
@@ -76,7 +77,7 @@ packages/domain/   TS thuần — không import package nào khác
 packages/db/       Drizzle schema, migrations, repositories; adapter Tauri SQLite + sql.js; seed
 packages/ui/       design tokens + components
 packages/ai/       zod schema output, adapter (Mock, OpenCode Go), prompt có version, validator — chỉ phụ thuộc domain + zod
-tools/             bootstrap, session-start/end, status.mjs, handoff.mjs (+ unit test)
+tools/             bootstrap, session-start/end, status.mjs, handoff.mjs, notes-for.mjs (+ unit test)
 e2e/               Playwright (chạy trên bản build web)
 ```
 

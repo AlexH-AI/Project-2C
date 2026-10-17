@@ -83,6 +83,14 @@ PR chỉ sửa docs (`docs/**`, `*.md`) → chạy mức `low`, bỏ trục Corr
 - (b) làm ngoài phạm vi, hoặc sửa file không được phép;
 - (c) có làm nhưng làm sai.
 
+**Ghi chú OPEN liên quan** (Owner quyết 17/10/2026, T-261): trong worktree review (đã ở head, sổ là bản của PR) chạy `node tools/notes-for.mjs --pr <N>`. Mỗi mục "Trùng file" phải có một dòng trong mục "Ghi chú OPEN liên quan" của thân PR (khớp theo `L<dòng>` hoặc đầu mục):
+
+- thiếu dòng, kể cả khi thân PR không có mục này → **chặn**, loại (a);
+- ghi "đã sửa" mà diff không sửa → **chặn**, loại (c);
+- lý do "để lại" yếu (mục nhỏ, đúng file, vừa phạm vi) → không chặn, ghi gợi ý.
+
+Head chưa có `tools/notes-for.mjs` (nhánh cắt trước khi T-261 merge) → vẫn đứng trong worktree review, chạy bản của checkout chính: `node C:/workspace/Project-2C/tools/notes-for.mjs --pr <N>` (dấu `/` chạy được cả trong Bash lẫn PowerShell). Lệnh đọc sổ và danh sách file của thư mục đang đứng, tức của head.
+
 ### B. Trục Standards
 
 Đi hết `docs/process/REVIEW-CHECKLIST.md`. Quy chuẩn repo luôn thắng. Không review lại những gì tooling đã kiểm (`pnpm verify`: lint, typecheck, `lint:deps`, coverage) khi CI xanh.
@@ -100,12 +108,13 @@ Mỗi mùi ghi là "có thể là <mùi>", kèm hunk và cách sửa gợi ý. Q
 - **med / high:** gọi Skill `code-review` với args `medium <N>` hoặc `high <N>`.
   - **Không** dùng `--comment`, `--fix`, `ultra`. Kết quả chỉ để đọc; việc đăng comment và sửa code do quy trình 2C làm (ADR-0017 §3).
   - Coi kết quả là **giả thuyết**: đọc code để xác nhận từng mục trước khi đưa vào comment, bỏ mục không tái hiện được bằng lập luận hoặc test.
-  - Nếu skill lỗi, hoặc cần subagent khi Owner chưa bật (ADR-0001 phụ lục M8) → rà Correctness inline theo cùng mức, ghi "code-review không chạy được: <lý do>" vào comment.
+  - Owner chưa bật subagent (ADR-0001 phụ lục M8) → vẫn chạy `code-review`, nó rà inline trong phiên này. Chỉ khi skill lỗi, hoặc đòi subagent mà không có đường inline → rà Correctness inline theo cùng mức, ghi "code-review không chạy được: <lý do>" vào comment.
 - **high:** khi một phát hiện cần bằng chứng, tái hiện bằng test ở thư mục tạm hoặc worktree riêng. Không đổi nhánh của checkout chung (có thể có phiên khác đang dùng).
 
 ## 4. Kết luận và comment
 
 - **Chặn** = sai spec (A), vi phạm checklist (B), bug được xác nhận (C). **Không chặn** = mùi code, NIT, gợi ý.
+- Mục không chặn sẽ được PR sổ ghi vào `docs/state/review-notes.md`: đối chiếu sổ (OPEN / ACCEPTED) trước khi ghi một mục là MỚI, và mỗi mục nêu ít nhất một đường dẫn file trong backtick để `notes-for` khớp nó với task sau.
 - Có ít nhất một mục chặn → `REVIEW: CHANGES`. Ngược lại → `REVIEW: PASS` (có thể "kèm ghi chú").
 - Không gộp và không xếp hạng lẫn nhau giữa các trục.
 
