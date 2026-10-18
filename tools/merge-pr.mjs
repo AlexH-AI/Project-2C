@@ -10,11 +10,12 @@
 //   --dry-run  print the checks and the clean-up plan, change nothing
 //
 // It refuses to merge (exit 1) when the PR is not open or is a draft, not every file of it was
-// read, the latest REVIEW is not PASS for the current head SHA (P-1), a code PR's CI is not all
-// green or did not note the base it tested, its files need the exe build without the build-exe
-// label, the base got code since the base its CI tested (a re-run tests the old one, DR6-57),
-// the risk is not low without --owner, the base is not main, or a PR is stacked on it without
-// --merge. The merge itself pins the head (`gh pr merge --match-head-commit`).
+// read, the latest REVIEW is not PASS for the current head SHA (P-1; a PR that only writes the
+// review notes ledger needs none, T-215), a code PR's CI is not all green or did not note the
+// base it tested, its files need the exe build without the build-exe label, the base got code
+// since the base its CI tested (a re-run tests the old one, DR6-57) or not every commit it got
+// since was read (DR6-85), the risk is not low without --owner, the base is not main, or a PR is
+// stacked on it without --merge. The merge itself pins the head (`gh pr merge --match-head-commit`).
 //
 // Clean-up, right after the merge (Owner decision 28/09/2026):
 //   1. git fetch origin --prune
@@ -124,10 +125,10 @@ try {
   process.stderr.write(`${error.message}\n`);
   process.exit(1);
 }
-const { pr, stacked, baseMerged, testedBase, mainSince } = loaded;
+const { pr, stacked } = loaded;
 out(formatStatus(loaded, { withVerdict: false }));
 
-const blockers = mergeBlockers(pr, { ...opts, stacked, baseMerged, testedBase, mainSince });
+const blockers = mergeBlockers(pr, { ...loaded, ...opts });
 out(`\nChecks (${opts.mode}${opts.owner ? ', Owner said merge' : ''}):`);
 out(blockers.length ? blockers.map((b) => `  x ${b}`).join('\n') : '  ok');
 

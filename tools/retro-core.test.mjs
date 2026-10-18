@@ -156,16 +156,46 @@ describe('project directories', () => {
     expect(transcriptDirs(names, 'C--workspace-Project-2C')).toEqual(names.slice(0, 4));
   });
 
-  it('reads the config folder in use (CLAUDE_CONFIG_DIR) and ~/.claude, once each (DR6-58)', () => {
+  describe('the projects folders read (DR6-58, DR6-86)', () => {
     const home = resolve('/Users/a');
-    const claude = join(home, '.claude', 'projects');
-    expect(projectRoots({ CLAUDE_CONFIG_DIR: join(home, '.claude-b') }, home)).toEqual([
-      join(home, '.claude-b', 'projects'),
-      claude,
-    ]);
-    for (const dir of [undefined, '', join(home, '.claude') + sep]) {
-      expect(projectRoots({ CLAUDE_CONFIG_DIR: dir }, home), String(dir)).toEqual([claude]);
-    }
+    const projects = (dir) => join(home, dir, 'projects');
+    const [claude, b, c] = ['.claude', '.claude-b', '.claude-c'].map(projects);
+    // realpathSync.native on Windows: a folder's real path, whatever spelling leads to it.
+    const real = new Map(
+      [claude, b, c]
+        .map((p) => [p, p])
+        .concat([
+          [join(resolve('/Users/A'), '.CLAUDE', 'projects'), claude],
+          [join(resolve('/USERS~1/A'), 'CLAUDE~1', 'projects'), claude],
+          [resolve('/elsewhere/claude-x/projects'), resolve('/elsewhere/claude-x/projects')],
+        ]),
+    );
+    const realpath = (path) => real.get(path) ?? null;
+    const names = ['.claude', '.claude-b', '.claude-c', '.claude-old', '.claude.json', 'Documents'];
+    const roots = (dir) => projectRoots({ CLAUDE_CONFIG_DIR: dir }, home, names, realpath);
+
+    it('reads every ~/.claude* config folder with a projects folder, whichever is in use', () => {
+      for (const dir of [undefined, '', join(home, '.claude-c')]) {
+        expect(roots(dir), String(dir)).toEqual(dir ? [c, claude, b] : [claude, b, c]);
+      }
+      const elsewhere = resolve('/elsewhere/claude-x/projects');
+      expect(roots(resolve('/elsewhere/claude-x'))).toEqual([elsewhere, claude, b, c]);
+    });
+
+    it('reads a folder once, whatever its spelling: other case, 8.3 name, trailing separator', () => {
+      for (const dir of [
+        join(resolve('/Users/A'), '.CLAUDE'),
+        join(resolve('/USERS~1/A'), 'CLAUDE~1'),
+        join(home, '.claude-b') + sep,
+      ]) {
+        expect(roots(dir), dir).toHaveLength(3);
+        expect(new Set(roots(dir)), dir).toEqual(new Set([claude, b, c]));
+      }
+    });
+
+    it('reads none when no config folder has a projects folder', () => {
+      expect(projectRoots({}, home, ['.claude.json', '.claude-old'], realpath)).toEqual([]);
+    });
   });
 });
 

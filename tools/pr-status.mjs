@@ -49,14 +49,25 @@ function loadTestedBase(pr) {
   return testedBaseOf(gh(['api', '--paginate', '--slurp', annotations]).flat());
 }
 
-/** The base's commits since the one CI tested, with their files (DR-80, DR6-57). */
+/**
+ * The base's commits since the one CI tested, with their files, and how many GitHub counts
+ * (DR-80, DR6-57). Paged: without it GitHub lists the newest 250 commits only (DR6-85).
+ */
 function loadMainSince(pr, tested) {
-  if (pr.state !== 'OPEN' || tested === null) return [];
-  const compare = `repos/{owner}/{repo}/compare/${tested}...${pr.baseRefName}`;
-  return gh(['api', compare, '--jq', '[.commits[].sha]']).map((sha) => ({
-    sha,
-    files: ghLines(`repos/{owner}/{repo}/commits/${sha}`, '.files[].filename'),
-  }));
+  if (pr.state !== 'OPEN' || tested === null) return { mainSince: [], mainTotal: 0 };
+  const compare = `repos/{owner}/{repo}/compare/${tested}...${pr.baseRefName}?per_page=100`;
+  const pages = ghLines(compare, '{total: .total_commits, shas: [.commits[].sha]}').map((page) =>
+    JSON.parse(page),
+  );
+  return {
+    mainSince: pages
+      .flatMap((page) => page.shas)
+      .map((sha) => ({
+        sha,
+        files: ghLines(`repos/{owner}/{repo}/commits/${sha}`, '.files[].filename'),
+      })),
+    mainTotal: pages[0]?.total ?? null,
+  };
 }
 
 /**
@@ -65,6 +76,7 @@ function loadMainSince(pr, tested) {
  */
 export function loadPr(number) {
   const pr = gh(['pr', 'view', String(number), '--json', FIELDS]);
+  // Two reads: a push between them shows as "Read n of the m files" and blocks; run again (#642).
   pr.files = ghLines(`repos/{owner}/{repo}/pulls/${number}/files?per_page=100`, '.[].filename').map(
     (path) => ({ path }),
   );
@@ -86,44 +98,39 @@ export function loadPr(number) {
       : gh(['pr', 'list', '--state', 'merged', '--head', pr.baseRefName, '--json', 'number'])
           .length > 0;
   const testedBase = loadTestedBase(pr);
-  return { pr, stacked, baseMerged, testedBase, mainSince: loadMainSince(pr, testedBase) };
+  return { pr, stacked, baseMerged, testedBase, ...loadMainSince(pr, testedBase) };
 }
 
-/** Status lines; `withVerdict` adds what merge-pr would say under risk:low rules. */
-export function formatStatus(
-  { pr, stacked, baseMerged, testedBase, mainSince },
-  { withVerdict = true } = {},
-) {
+/**
+ * Status lines of loadPr's result; `withVerdict` adds what merge-pr would say under risk:low
+ * rules.
+ */
+export function formatStatus(loaded, { withVerdict = true } = {}) {
+  const { pr, stacked, baseMerged, testedBase, mainSince, mainTotal } = loaded;
   const head = pr.headRefOid.slice(0, 7);
   const review = latestReview(pr.comments);
+  const { paths, docsOnly, notesOnly } = prFiles(pr);
   let reviewText = 'none yet';
   if (review) {
     reviewText = `${review.verdict}${review.sha ? ` @${review.sha}` : ' (no SHA)'}`;
     if (review.level) reviewText += `, level ${review.level}`;
-    if (review.sha) {
+    if (review.sha && !notesOnly) {
       reviewText += pr.headRefOid.startsWith(review.sha)
         ? ' (= head)'
         : ' (NOT the head: review again before merge)';
     }
   }
-  const { paths, docsOnly, notesOnly } = prFiles(pr);
   if (notesOnly) reviewText += ' (review notes only: not needed)';
   const base =
     pr.baseRefName === 'main'
       ? 'main'
       : `${pr.baseRefName} (stacked; base ${baseMerged ? 'merged: retarget to main' : 'not merged yet'})`;
   const labels = pr.labels.map((l) => l.name).join(', ') || '(none)';
+  const read = mainSince.length === mainTotal ? '' : `, only ${mainSince.length} read`;
   const tested = testedBase
-    ? `${pr.baseRefName} ${testedBase.slice(0, 7)}, ${mainSince.length} commit(s) on it since`
+    ? `${pr.baseRefName} ${testedBase.slice(0, 7)}, ${mainTotal ?? '?'} commit(s) on it since${read}`
     : 'not noted';
-  const blockers = mergeBlockers(pr, {
-    owner: false,
-    mode: 'squash',
-    stacked,
-    baseMerged,
-    testedBase,
-    mainSince,
-  });
+  const blockers = mergeBlockers(pr, { ...loaded, owner: false, mode: 'squash' });
   const verdict = blockers.length
     ? `blocked (risk:low rules, --squash):\n${blockers.map((b) => `    - ${b}`).join('\n')}`
     : 'ready: node tools/merge-pr.mjs ' + pr.number;

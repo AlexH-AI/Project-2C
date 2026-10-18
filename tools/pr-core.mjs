@@ -126,11 +126,12 @@ export function mergeSteps(pr, { owner, mode }) {
  * `pr` is `gh pr view --json` output with `files` read in full (REST); `ctx` is { owner,
  * mode: 'squash'|'merge', stacked: numbers of open PRs based on this branch, baseMerged: when
  * base is not main, testedBase: the SHA of the base CI tested (TESTED_BASE), null when unknown,
- * mainSince: the base's commits since testedBase, as [{ sha, files }] }.
+ * mainSince: the base's commits since testedBase read, as [{ sha, files }], mainTotal: how many
+ * GitHub counts, null when it gave none }.
  */
 export function mergeBlockers(
   pr,
-  { owner, mode, stacked, baseMerged, testedBase, mainSince = [] },
+  { owner, mode, stacked, baseMerged, testedBase, mainSince = [], mainTotal },
 ) {
   const blockers = [];
   if (pr.state !== 'OPEN') blockers.push(`PR is ${pr.state}, not open.`);
@@ -162,20 +163,27 @@ export function mergeBlockers(
     if (pass + fail + pending === 0) blockers.push(`Code PR with no CI check on head ${head}.`);
     else if (fail || pending)
       blockers.push(`CI not green on head ${head}: ${fail} failed, ${pending} pending.`);
-    else if (!testedBase)
+    else if (!testedBase && pr.state === 'OPEN')
       blockers.push(
         `CI on head ${head} noted no tested ${base} ("${TESTED_BASE}" of the Verify job): gh pr close ${pr.number} + gh pr reopen ${pr.number} so CI runs again.`,
       );
 
     // CI tested the head merged with the base at testedBase, not with the base as it was when the
     // run started: a re-run keeps the merge of its first run (DR6-57). Code merged since was never
-    // tested with this PR, and a push to main only builds the exe (DR-80).
-    const untested = mainSince.filter((c) => !isDocsOnly(c.files));
-    if (untested.length) {
-      const shas = untested.map((c) => c.sha.slice(0, 7)).join(', ');
-      blockers.push(
-        `${base} got code since ${testedBase.slice(0, 7)}, the ${base} CI tested on head ${head} (${shas}): gh pr update-branch ${pr.number}, wait for CI, then review the new head again (P-1).`,
-      );
+    // tested with this PR, and a push to main only builds the exe (DR-80). A commit not read may be
+    // code: GitHub lists the newest 250 of a comparison unless paged (DR6-85).
+    if (testedBase) {
+      const since = `since ${testedBase.slice(0, 7)}, the ${base} CI tested on head ${head}`;
+      const again = `gh pr update-branch ${pr.number}, wait for CI, then review the new head again (P-1).`;
+      if (!Number.isInteger(mainTotal) || mainSince.length < mainTotal)
+        blockers.push(
+          `Read ${mainSince.length} of the ${mainTotal ?? '?'} commits ${base} got ${since}: ${again}`,
+        );
+      const untested = mainSince.filter((c) => !isDocsOnly(c.files));
+      if (untested.length) {
+        const shas = untested.map((c) => c.sha.slice(0, 7)).join(', ');
+        blockers.push(`${base} got code ${since} (${shas}): ${again}`);
+      }
     }
 
     const labelled = pr.labels.some((l) => l.name === 'build-exe');
