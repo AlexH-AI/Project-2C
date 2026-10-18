@@ -105,7 +105,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 - Lịch **Dời lịch** vẫn không xóa được (Owner 30/09, #171): ngoài phạm vi.
 - Khóa ghi S2-2 áp cả cho khôi phục (khôi phục là một lệnh ghi).
 
-**Dọn sạch Thùng rác (TR-6; đề xuất G2, #662).** Owner chốt hướng ngày 17/10/2026; chi tiết dưới chờ duyệt G2 / G3 (câu hỏi cuối mục).
+**Dọn sạch Thùng rác (TR-6, #662).** Owner chốt hướng ngày 17/10/2026; chi tiết dưới Owner duyệt G2 / G3 ngày 19/10/2026 (cả 6 đề xuất cuối mục, PR #707).
 
 - **TR-11 Dọn tất cả: hỏi trước, backup trước, một transaction.**
   - **Nút "Dọn sạch Thùng rác…"** ở đầu màn, có khi Thùng rác có bản ghi; tắt khi mọi bản ghi đều được giữ lại (TR-12). Dọn mọi bản ghi, không theo loại / ô tìm đang chọn.
@@ -195,7 +195,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 
 **Ước lượng:** db `listTrash` + params lỗi ≈ 200 SP / 400 test (`risk:med`); Xóa KH 5f ≈ 100 SP + e2e (`risk:med`); màn Thùng rác + hộp khôi phục + câu hộp xóa ≈ 300 SP + e2e (`risk:med`, tách đôi danh sách / hộp nếu vượt P1). Dọn sạch (#662, `risk:high`: đường xóa hẳn dữ liệu duy nhất của app): PR docs này; PR code ≈ 120–200 SP + migration + ≈ 250–300 dòng test.
 
-**Câu hỏi G1 / G2 / G3 cho Owner (#662).** Mỗi câu có đề xuất; Owner đồng ý mà không ghi gì khác thì lấy đề xuất.
+**Câu hỏi G1 / G2 / G3 cho Owner (#662).** Mỗi câu có đề xuất; Owner đồng ý mà không ghi gì khác thì lấy đề xuất. **Owner đồng ý cả 6 đề xuất, duyệt G1 / G2 / G3 (19/10/2026, PR #707).**
 
 1. **G1 — phụ lục ADR-0008:** append-only của ghi chú KYC, dữ kiện, phân tích AI có một ngoại lệ là dọn dữ liệu của KH đã xóa mềm; trigger chỉ nới cho đúng ca đó. **Đề xuất: đồng ý.**
 2. **G2 — TR-6, TR-11…TR-13 và ví dụ D1–D13.** **Đề xuất: đồng ý.**

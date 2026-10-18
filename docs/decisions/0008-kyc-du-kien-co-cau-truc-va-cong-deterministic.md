@@ -1,6 +1,6 @@
 # ADR-0008: KYC có cấu trúc và cổng chất lượng deterministic
 
-- **Trạng thái:** Accepted (G1); danh mục, ngưỡng cổng, hồ sơ mẫu: Accepted (G2, 26/09/2026); cờ material: Accepted (Owner, 26/09/2026)
+- **Trạng thái:** Accepted (G1); danh mục, ngưỡng cổng, hồ sơ mẫu: Accepted (G2, 26/09/2026); cờ material: Accepted (Owner, 26/09/2026); dọn sạch Thùng rác xóa dữ liệu KYC của KH đã xóa ở phụ lục (Accepted G1, Owner duyệt 19/10/2026, PR #707)
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §2.2 (W2), §4.5 (Q8, Q9)
 - **Commit / PR:** `20e9c5e` · G2: #30
@@ -49,7 +49,7 @@ Cổng deterministic thật, test được, và `KYC_INSUFFICIENT` không tốn 
 - Hồ sơ mẫu `packages/domain/src/golden/kyc.fixture.ts` (bảng đối chiếu `docs/golden/kyc.md`) là test bắt buộc của cổng; không sửa để "cho xanh". Là nền cho bộ eval AI ở Phase 5.
 - UI hồ sơ KH cần timeline KYC và luồng xác nhận dữ kiện.
 
-## Phụ lục — dọn sạch Thùng rác xóa dữ liệu KYC của KH đã xóa (đề xuất G1, chờ Owner duyệt · Issue #662)
+## Phụ lục — dọn sạch Thùng rác xóa dữ liệu KYC của KH đã xóa (Accepted G1, Owner duyệt 19/10/2026 · Issue #662, PR #707)
 
 Bối cảnh: deep review lượt 2 thấy Thùng rác mở chậm dần theo số bản ghi (DR6-84). Owner chọn thêm nút "Dọn sạch Thùng rác…" (17/10/2026, tổng hợp lượt 2 §9 Q8 (c)). Dọn một KH đã xóa mềm là xóa hẳn KH cùng mọi dữ liệu con, trong đó có ghi chú KYC, dữ kiện và lịch sử phân tích AI. Ba bảng này đang chỉ thêm, có trigger chặn mọi lần xóa: ghi chú, dữ kiện theo Quyết định 1 (migration `0003`); phân tích AI theo spec Phase 5 §7.1 (migration `0006`, dựng lại ở `0008`).
 
