@@ -16,7 +16,8 @@ async function openProfile(page: Page): Promise<string> {
   const name = (await met.getByRole('button').textContent()) ?? '';
   await met.getByRole('button').click();
   await page.getByRole('link', { name: 'Hồ sơ KH →' }).click();
-  await expect(page.getByRole('heading', { level: 2, name })).toBeVisible();
+  // Exact: the detail's heading "date · name" is still up until the profile renders (T-262).
+  await expect(page.getByRole('heading', { level: 2, name, exact: true })).toBeVisible();
   return name;
 }
 

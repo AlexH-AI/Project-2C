@@ -848,7 +848,8 @@ test('the detail shows the latest accepted AI analysis read-only, or a link to a
   await expect(ai).toContainText('Chưa có phân tích AI.');
   await expect(detail.getByRole('button', { name: /Phân tích/ })).toHaveCount(0);
   await ai.getByRole('link', { name: 'Mở Hồ sơ KH để phân tích →' }).click();
-  await expect(page.getByRole('heading', { level: 2, name })).toBeVisible();
+  // Exact: the detail's heading "date · name" is still up until the profile renders (T-262).
+  await expect(page.getByRole('heading', { level: 2, name, exact: true })).toBeVisible();
 
   const panel = panelOf(page);
   await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
