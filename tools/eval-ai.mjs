@@ -9,28 +9,9 @@
 // while it runs; the key is never written or printed.
 
 import { readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
-import { registerHooks } from 'node:module';
 import { URL } from 'node:url';
-
-// @p2c/ai and @p2c/domain are TypeScript with extensionless relative imports, as Vite reads them.
-// Node strips the types; this lets it find `./x` as `./x.ts` or `./x/index.ts`.
-registerHooks({
-  resolve(specifier, context, nextResolve) {
-    try {
-      return nextResolve(specifier, context);
-    } catch (error) {
-      if (!specifier.startsWith('.') || /\.\w+$/.test(specifier)) throw error;
-      for (const suffix of ['.ts', '/index.ts']) {
-        try {
-          return nextResolve(specifier + suffix, context);
-        } catch {
-          // Try the next one.
-        }
-      }
-      throw error;
-    }
-  },
-});
+// @p2c/ai and @p2c/domain are TypeScript with extensionless imports, imported below.
+import './ts-hooks.mjs';
 
 const { evalMain } = await import('./eval-ai-core.mjs');
 const { fromLocalDate } = await import('../packages/domain/src/period.ts');
