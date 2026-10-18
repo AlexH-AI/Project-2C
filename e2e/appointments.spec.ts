@@ -745,6 +745,32 @@ const pickTeam = async (page: Page, name: string) => {
 const chipCount = async (chip: ReturnType<Page['getByRole']>) =>
   Number(await chip.locator('span').last().textContent());
 
+// DR6-83: 6h for an RE outside the scope takes the detail away, its button with it; the focus goes
+// to the line saying where the appointment went, not to the page.
+test('by the keyboard, a next appointment made out of sight leaves the focus on the line saying so (DR6-83)', async ({
+  page,
+}) => {
+  const { rows, detail } = screen(page);
+  await pickTeam(page, 'Sao Mai');
+  await showDay(page, '14/09/2026');
+  await rows.first().getByRole('button').click();
+  const next = detail.getByRole('button', { name: 'Tạo lịch hẹn tiếp theo' });
+  await next.press('Enter');
+  const f = form(page);
+  const re = f.dialog.getByRole('combobox', { name: /^RE/ });
+  const options = await re.locator('option').allTextContents();
+  const other = options.find((option) => option.includes(' · ') && !option.endsWith('Sao Mai'));
+  await re.selectOption({ label: other ?? '' });
+  await f.date.fill('16/9');
+  await f.create.press('Enter');
+
+  await expect(f.dialog).toHaveCount(0);
+  const notice = page.getByRole('status').filter({ hasText: 'Đã tạo lịch hẹn' });
+  await expect(notice).toContainText('RE này nằm ngoài góc nhìn hiện tại');
+  await expect(next).toHaveCount(0);
+  await expect(notice).toBeFocused();
+});
+
 test('an RE picked in the strip narrows the appointments to it, until picked again', async ({
   page,
 }) => {

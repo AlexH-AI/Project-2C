@@ -10,8 +10,9 @@ const takesFocus = (node: unknown): node is Focusable =>
 /**
  * Gives the focus back as a dialog goes: to what had it when the dialog opened, without scrolling,
  * since a dialog may have just moved the page on purpose ("Xem tất cả"). Once that has left the
- * page, e.g. a button the save took away, to the fallback its screen chose, brought into view;
- * never to the page itself (DR6-83).
+ * page, e.g. a button the save took away, to the fallback its screen chose, scrolled to when off
+ * screen, rather than to the page (DR6-83). With no fallback, or one finding nothing, the focus is
+ * left alone.
  */
 export function focusBack(
   opener: Element | null,

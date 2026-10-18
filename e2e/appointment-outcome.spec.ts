@@ -429,13 +429,19 @@ test('by the keyboard, saving 6c, 6h and 6g leaves the focus on the detail (DR6-
   await expect(next).toHaveCount(0);
   await expect(heading).toBeFocused();
 
-  // 6g: the appointment leaves the detail, which says to pick one.
+  // 6g: the appointment leaves the detail, which says to pick one. Scrolled down to the lists, the
+  // page stays put: the emptied detail keeps its place under the top bar.
+  await page.evaluate(() => window.scrollTo(0, 300));
+  const scrolled = await page.evaluate(() => window.scrollY);
+  expect(scrolled).toBeGreaterThan(0);
   await detail(page).getByRole('button', { name: 'Xóa', exact: true }).press('Enter');
   const confirm = page.getByRole('dialog', { name: 'Xóa lịch hẹn 16/09/2026?' });
   await confirm.getByRole('button', { name: 'Xóa lịch hẹn' }).press('Enter');
   await expect(confirm).toHaveCount(0);
   await expect(detail(page)).toContainText('Chọn một lịch hẹn');
   await expect(detail(page)).toBeFocused();
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrolled);
+  await expect(detail(page)).toBeInViewport();
 });
 
 // DR6-83: 6g opened from 6f swaps one dialog for the other; the met appointment leaves the detail.

@@ -271,15 +271,18 @@ export function CustomerProfile({ id }: { id: string }) {
           onClose={() => setConfirming(null)}
         />
       )}
-      {typeof editing === 'object' && editing && (
-        <ResolveKycDialog
-          customer={customer}
-          profile={kyc}
-          versions={versions}
-          field={editing.resolve}
-          onClose={() => setEditing(null)}
-        />
-      )}
+      {/* Resolved, the trường's "Giải quyết" goes: the focus goes to the top of the KYC card. */}
+      <DialogFocusFallback value={() => document.getElementById('kyc-facts')}>
+        {typeof editing === 'object' && editing && (
+          <ResolveKycDialog
+            customer={customer}
+            profile={kyc}
+            versions={versions}
+            field={editing.resolve}
+            onClose={() => setEditing(null)}
+          />
+        )}
+      </DialogFocusFallback>
     </>
   );
 }

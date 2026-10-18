@@ -378,8 +378,9 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it 
   await expect(kyc).toContainText('Cổng KYC CONFLICT_RESOLUTION');
   await expect(kyc).toContainText('Trường mâu thuẫn: Số con');
 
-  // Mockup 7d: keep one value; the other becomes history.
-  await kyc.getByRole('button', { name: 'Giải quyết · Số con' }).click();
+  // Mockup 7d: keep one value; the other becomes history. By the keyboard: the button goes with the
+  // conflict, and the focus to the top of the card, not to the page (DR6-83).
+  await kyc.getByRole('button', { name: 'Giải quyết · Số con' }).press('Enter');
   dialog = page.getByRole('dialog', { name: 'Giải quyết · Số con' });
   await dialog.getByRole('button', { name: 'Giải quyết', exact: true }).click();
   await expect(dialog.getByRole('alert')).toHaveText('Chọn giá trị đúng.');
@@ -389,8 +390,9 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it 
   await expect(values).toContainText('"3"F6 · ghi chú 15/09/2026');
   await dialog.getByRole('radio', { name: /^"3"/ }).check();
   await expect(dialog.getByText('Sau khi lưu: KYC v4 · cổng KYC PROFILE_DISCOVERY')).toBeVisible();
-  await dialog.getByRole('button', { name: 'Giải quyết', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Giải quyết', exact: true }).press('Enter');
   await expect(dialog).toBeHidden();
+  await expect(kyc.getByRole('heading', { name: 'Dữ kiện KYC' })).toBeFocused();
 
   await expect(kyc).toContainText('Cổng KYC PROFILE_DISCOVERY');
   await expect(kyc).not.toContainText('Trường mâu thuẫn');

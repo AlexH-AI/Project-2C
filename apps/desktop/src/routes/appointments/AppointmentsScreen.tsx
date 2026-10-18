@@ -602,11 +602,12 @@ function Detail({
 }) {
   if (!row) {
     return (
+      // Sticky as with an appointment shown: emptied by a delete, it keeps its place and the focus.
       <aside
         ref={panel}
         tabIndex={-1}
         aria-label={t('appointments.detail')}
-        className={`${CARD} w-full lg:w-84 lg:shrink-0`}
+        className={`${CARD} w-full lg:sticky lg:top-20 lg:w-84 lg:shrink-0`}
       >
         <p className="m-0 text-sm text-fg-3">{t('appointments.detailEmpty')}</p>
       </aside>
