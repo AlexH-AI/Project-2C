@@ -250,7 +250,7 @@ Cảnh báo mâu thuẫn phụ **không** do AI viết: app sinh từ cổng lú
 
 ### 6.4 Validator (V1–V7)
 
-Chạy trên output đã parse; báo cáo = danh sách `{ code, path, detail }`. Mọi luật chữ so trên bản chuẩn hóa (bỏ ký tự vô hình theo tập K20, gộp khoảng trắng, NFKC, `-` / `_` thành dấu cách — G5 §7), chữ thường; mục "Bỏ dấu: có" cũng khớp chữ viết không dấu, xét theo từng chữ (bắt "xac suat", "Xác suat"; không bắt "nghĩ định" thay cho "nghị định" — G5 §11.3).
+Chạy trên output đã parse; báo cáo = danh sách `{ code, path, detail }`. Mọi luật chữ so trên bản chuẩn hóa (bỏ ký tự vô hình theo tập K20, gộp khoảng trắng, NFKC, `-` / `_` thành dấu cách — G5 §7), chữ thường (trừ mẫu ghi "trên bản gốc", giữ hoa thường); mục "Bỏ dấu: có" cũng khớp chữ viết không dấu, xét theo từng chữ (bắt "xac suat", "Xác suat"; không bắt "nghĩ định" thay cho "nghị định" — G5 §11.3).
 
 | Mã | Luật | Áp cho |
 |---|---|---|

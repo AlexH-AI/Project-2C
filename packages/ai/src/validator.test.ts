@@ -3,6 +3,7 @@ import type { AiMode } from './schema';
 import { validateOutput, type OutputCheckInput } from './validator';
 
 const item = (text: string, ...evidence: string[]) => ({ text, evidence });
+const ZWSP = String.fromCodePoint(0x200b);
 
 const input: OutputCheckInput = {
   factCodes: ['F1', 'F2', 'F3', 'F4'],
@@ -204,6 +205,36 @@ describe('validateOutput — V1', () => {
     ]);
     expect(validateOutput('analysis', {}, input).map((issue) => issue.detail)).toEqual(
       Array(6).fill('thiếu, cần array'),
+    );
+    const note = { text: 'KH có thể thuộc nhóm INTJ', evidence: ['F1'] };
+    expect(validateOutput('analysis', { ...analysis(), personalityNotes: [note] }, input)).toEqual([
+      {
+        code: 'V1',
+        path: 'personalityNotes[0].system',
+        detail: 'thiếu, cần một trong: PSYCHOLOGY, ESOTERIC',
+      },
+    ]);
+  });
+
+  it.each([
+    ['empty', '', 'chuỗi rỗng'],
+    ['of invisible characters only', ZWSP.repeat(3), 'chuỗi rỗng'],
+    ['over 1 000 characters as written', 'a'.repeat(1001), 'quá 1 000 ký tự kể cả ký tự vô hình'],
+  ])('tells an extraction value that is a string %s the rule it breaks', (_, value, detail) => {
+    const facts = [{ field: 'occupation', value, quote: 'Ý' }];
+    expect(validateOutput('extraction', { facts })).toEqual([
+      { code: 'V1', path: 'facts[0].value', detail },
+    ]);
+  });
+
+  // G5 §11.5: the cap is checked first and alone, so a huge string costs nothing more.
+  it.each([
+    ['letters', 'a'.repeat(1001)],
+    ['invisible characters', ZWSP.repeat(1001)],
+    ['an ellipsis and invisible characters', `…${ZWSP.repeat(1000)}`],
+  ])('reports only the cap for a text of 1 001 %s', (_, text) => {
+    expect(validateOutput('analysis', { ...analysis(), needs: [item(text, 'F1')] }, input)).toEqual(
+      [{ code: 'V1', path: 'needs[0].text', detail: 'quá 1 000 ký tự kể cả ký tự vô hình' }],
     );
   });
 });

@@ -190,7 +190,7 @@ Hãy trả lại toàn bộ kết quả dưới dạng đúng một khối JSON 
 ````
 
 - `detail` do validator viết, tiếng Việt, **không** lặp lại nguyên cụm từ bị chặn quá 40 ký tự; với V3–V6 ghi luật bị vi phạm và cụm từ khớp (vd. `V3 tại hypotheses[0].text: có "xác suất"`).
-- Lỗi V1 nêu dạng đúng (Owner 18/10/2026, §11.6): khóa thiếu "thiếu, cần array"; mã dữ kiện sai dạng "sai định dạng, cần mã dữ kiện dạng F12"; giá trị ngoài danh sách "giá trị không hợp lệ, cần một trong: PSYCHOLOGY, ESOTERIC" (danh sách lấy từ schema); `value` trích xuất sai kiểu "sai kiểu, cần string, number hoặc boolean".
+- Lỗi V1 nêu dạng đúng (Owner 18/10/2026, §11.6): khóa thiếu "thiếu, cần array" (khóa enum thiếu: "thiếu, cần một trong: …"); mã dữ kiện sai dạng "sai định dạng, cần mã dữ kiện dạng F12"; giá trị ngoài danh sách "giá trị không hợp lệ, cần một trong: PSYCHOLOGY, ESOTERIC" (danh sách lấy từ schema); `value` trích xuất sai kiểu "sai kiểu, cần string, number hoặc boolean" (`value` là chuỗi sai luật của chuỗi thì nhận lỗi của luật đó, vd. "chuỗi rỗng").
 
 ## 6. Message Kiểm tra kết nối
 
@@ -374,7 +374,7 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 | C57 | "khoản 2" + U+200B + "Điều" + U+200B + "35" · "khoản" + U+2060 + "2 điều 35" · "điểm" + U+200B + "a" + U+200B + "khoản 2" | V6 |
 | C58 | "Hỏi KH đã có Luật" + U+200B + "Sư gia đình chưa" · "Di chúc cần đúng pháp" + U+200B + "luật Việt Nam" | đạt |
 | C59 | "xác" + U+3164 + "suất" · "xác" + U+0085 + "suất" | V3 |
-| C60 | "Bảo" + U+034F + "Việt" | V4 |
+| C60 | "Bảo" + U+034F + "Minh" | V4 |
 | C61 | `text` chỉ U+3164 · U+3164 + "…" | V1 |
 | C62 | "Định hướng nơi ở sau khi nghỉ hưu" · "Định hướng ngoài giờ làm việc" · "Định hướng nối nghiệp cho con" ở `needs` · "RE chuyển hướng nói sang mục tiêu học phí" ở `nextBestActions` | đạt |
 | C63 | "KH cần suy nghĩ định hướng đầu tư" · "KH nghĩ định cư ở Úc" · "KH nghỉ định kỳ hằng năm" | đạt |
@@ -562,7 +562,7 @@ Tin nhắn ChatGPT web (§10.6), test bảng biến thể, cả hai dòng khung:
 
 **Đã thử trước khi đề xuất** (bản dựng thử ngoài repo, chưa phải code):
 
-- **58** chuỗi kiểm mới (ca C55–C72 của §11.7): luật hiện tại sai **40**, luật đề xuất đúng cả **58**. Mọi ca C1–C54 cũ (64 chuỗi) giữ nguyên kết quả.
+- **58** chuỗi kiểm mới (ca C55–C72 của §11.7): luật hiện tại sai **41**, luật đề xuất đúng cả **58**. Mọi ca C1–C54 cũ (64 chuỗi) giữ nguyên kết quả.
 - **1 085** chuỗi `text` thật của eval 10/10 và 11/10 (`docs/metrics/ai-eval-2026-10-1{0,1}.md`, mỗi chuỗi ở đúng khối của nó): **0** chuỗi bị chặn, trước và sau khi đổi.
 - Quét toàn bộ Unicode: NFKC không biến ký tự thấy được nào thành ký tự vô hình. Vậy bỏ ký tự vô hình một lần, trước NFKC, là đủ (§11.2).
 - Với DR6-23, đã thử cả hai hướng ở §11.3. Hướng "Bỏ dấu: không" cho từng mục (như Issue gợi ý) còn sai 6 câu thường mới tìm thấy. Hướng so theo từng chữ (đề xuất) đúng cả, và vẫn bắt chữ viết không dấu.
@@ -587,7 +587,7 @@ Tin nhắn ChatGPT web (§10.6), test bảng biến thể, cả hai dòng khung:
 - Tin nhắn `web@1` dán lại, có dòng khung viết như vậy: app tính là một lần thử (V1) thay vì báo `OWN_MESSAGE`.
 - Ở lần thử 2, dán lại message thử lại viết như vậy: app lưu dòng REJECTED. R2-04 (§10.6) lọt.
 
-Ngoài ra, ký tự vô hình không thuộc `\p{Cf}` cũng lọt: "xác" + U+3164 (Hangul filler) + "suất", "Bảo" + U+034F + "Việt". U+0085 giữa hai chữ cũng lọt ("xác" + U+0085 + "suất"): `\s` của JavaScript không gồm U+0085, nên hai chữ không được tách.
+Ngoài ra, ký tự vô hình không thuộc `\p{Cf}` cũng lọt: "xác" + U+3164 (Hangul filler) + "suất", "Bảo" + U+034F + "Minh" (review trước PR: ví dụ cũ "Bảo" + U+034F + "Việt" không lọt vì bản bỏ dấu cũ dính thành "baoviet", mục V4 có sẵn). U+0085 giữa hai chữ cũng lọt ("xác" + U+0085 + "suất"): `\s` của JavaScript không gồm U+0085, nên hai chữ không được tách.
 
 **Đề xuất — bước 0 mới:**
 
@@ -659,7 +659,7 @@ Câu thường không đổi kết quả: "Hỏi KH đã có Luật" + U+200B + 
    - Rỗng → "chuỗi rỗng"; dài 1–300 ký tự.
    - `text` của analysis / discovery phải có chữ cái **trong phần thấy được**.
    - Thay đổi nhỏ kèm theo: khoảng trắng liền nhau ở giữa chuỗi nay đếm là 1, như tên / KYC theo K20.
-3. Giá trị lưu vẫn là chuỗi model viết, chỉ cắt khoảng trắng hai đầu như nay. Nhập backup dùng cùng schema, nên 2 MB vô hình bị từ chối ở cả lệnh lẫn nhập backup. Không phải sửa code `db`, chỉ thêm test.
+3. Giá trị lưu vẫn là chuỗi model viết, chỉ cắt khoảng trắng hai đầu như nay. Nhập backup dùng cùng schema, nên 2 MB vô hình **trong chuỗi** bị từ chối ở cả lệnh lẫn nhập backup. Không phải sửa code `db`, chỉ thêm test.
 
 **(B) Lưu phần thấy được** (schema biến `text` thành `normalizeText(text)`). `output_json` sẽ không còn ký tự vô hình, nhưng có hai nhược điểm, nên **không chọn**:
 
@@ -673,11 +673,13 @@ Câu thường không đổi kết quả: "Hỏi KH đã có Luật" + U+200B + 
 | Lỗi | Ví dụ `path` | `detail` hiện tại | `detail` mới |
 |---|---|---|---|
 | Thiếu khóa (khối, `text`…) | `themes` | sai kiểu, cần array | **thiếu**, cần array |
+| Thiếu khóa enum | `personalityNotes[0].system` | giá trị không hợp lệ | **thiếu**, cần một trong: PSYCHOLOGY, ESOTERIC |
 | Sai kiểu | `painPoints[0].text` | sai kiểu, cần string | giữ nguyên |
 | Mã dữ kiện sai dạng | `hypotheses[0].evidence[0]` | sai định dạng | sai định dạng, cần mã dữ kiện dạng F12 |
 | Giá trị ngoài danh sách | `personalityNotes[0].system` | giá trị không hợp lệ | giá trị không hợp lệ, cần một trong: PSYCHOLOGY, ESOTERIC |
 | (như trên) | `discoveryStrategy[0].missingCategory` | giá trị không hợp lệ | giá trị không hợp lệ, cần một trong: IDENTITY, FAMILY, OCCUPATION_INCOME, ASSETS, GOALS, RISK_APPETITE, EXISTING_PROTECTION, CONCERNS |
 | `value` trích xuất sai kiểu | `facts[0].value` | sai định dạng | sai kiểu, cần string, number hoặc boolean |
+| `value` trích xuất là chuỗi rỗng / quá 1 000 ký tự | `facts[0].value` | sai định dạng | lỗi của chuỗi: "chuỗi rỗng" / "quá 1 000 ký tự kể cả ký tự vô hình" |
 
 - Danh sách giá trị lấy từ schema (`PERSONALITY_SYSTEMS`, `KYC_CATEGORIES`). V2 vẫn kiểm `missingCategory` có trong `missingCategories` của đầu vào.
 - Các `detail` khác giữ nguyên: "cần ít nhất N phần tử", "quá N phần tử", "chuỗi rỗng", "quá 300 ký tự", "không có chữ", "trích trùng một dữ kiện", "cần evidence hoặc missingCategory", "không có khối JSON", "trả lời bị cắt…", "và K lỗi khác". Thêm một `detail` mới: "quá 1 000 ký tự kể cả ký tự vô hình" (§11.5).
@@ -698,6 +700,8 @@ Ngoài bảng:
 - Chữ tương hình (Cyrillic, Greek), như §10.10.
 - **REJECTED vẫn có thể lưu output lớn.** `output_json` của dòng REJECTED là output đã parse của lần thử cuối, không qua V1 (spec §7.1). Nên một output suy biến, lặp lại ở cả hai lần thử, vẫn lưu được tới cỡ thân trả lời (≤ 2 MB với OpenCode, ≤ 20 000 ký tự với ChatGPT web). Chuyện này có từ Phase 5 với mọi output suy biến; DR6-77 chỉ nói dòng ACCEPTED. Muốn sửa thì phải đổi spec §7.1 (G2), vì panel dùng `output_json` = `null` để nhận ra "không có khối JSON". Đề xuất: ghi `review-notes.md`, không làm ở đây.
 - `detail` của V2 giữ nguyên ("F99 không có trong đầu vào", "ASSETS không phải hạng mục đang thiếu"): model đọc được mã đúng trong đầu vào.
+- (Review trước PR.) Ký tự trống có bề rộng (U+2800, U+3164) đặt làm dấu cách giữa hai chữ: bỏ đi theo bước 0 thì hai chữ dính nhau, cụm phía sau mất ranh giới từ ở đầu ("KH" + U+2800 + "xác suất"), nên không bị chặn. Model không đối kháng (§10.10); khi đứng **giữa** cụm thì vẫn bị chặn (C59).
+- (Review trước PR.) Nhập backup kiểm `output_json` bằng schema nhưng lưu nguyên chuỗi của backup, nên backup sửa tay vẫn mang được chuỗi lớn ở chỗ schema bỏ qua: khóa lạ, khoảng trắng hai đầu mà `trim` cắt (gồm U+FEFF). App không bao giờ viết như vậy (lệnh lưu kết quả đã parse). Có từ Phase 5, ngoài DR6-77; muốn chặn thì nhập backup phải so `output_json` với dạng đã parse (luật nhập mới, G2).
 
 ### 11.9 Owner duyệt
 

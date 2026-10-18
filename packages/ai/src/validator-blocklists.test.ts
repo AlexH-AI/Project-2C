@@ -125,7 +125,7 @@ describe('validateOutput — G5 §8.5 cases', () => {
     ['C58', 'needs', 'Di chúc cần đúng pháp\u200bluật Việt Nam', []],
     ['C59', 'hypotheses', 'xác\u3164suất', ['V3']],
     ['C59', 'hypotheses', 'xác\u0085suất', ['V3']],
-    ['C60', 'nextBestActions', 'Bảo\u034fViệt', ['V4']],
+    ['C60', 'nextBestActions', 'Bảo\u034fMinh', ['V4']],
     ['C61', 'needs', '\u3164', ['V1']],
     ['C61', 'needs', '\u3164…', ['V1']],
     ['C62', 'needs', 'Định hướng nơi ở sau khi nghỉ hưu', []],
@@ -195,6 +195,11 @@ describe('validateOutput — G5 §8.5 cases', () => {
   ] as const)('%s: %s', (_, __, text, codes) => {
     expect(codesOf('needs', text)).toEqual(codes);
   });
+  // G5 §7 item 0: the blank Braille pattern is in the K20 set too.
+  it('drops U+2800 between the words of a phrase', () => {
+    expect(codesOf('hypotheses', 'xác' + String.fromCodePoint(0x2800) + 'suất')).toEqual(['V3']);
+  });
+
   it('C71: says the string as written is too long', () => {
     const text = `${'a'.repeat(150)}${'\u200b'.repeat(701)}${'a'.repeat(150)}`;
     expect(issuesOf('needs', text)).toEqual([

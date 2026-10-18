@@ -272,15 +272,20 @@ function schemaDetail(issue: z.core.$ZodIssue, missing: boolean): string {
   switch (issue.code) {
     case 'invalid_type':
       return `${lead}, cần ${issue.expected}`;
-    case 'invalid_union':
-      // The one union of the outputs: an extraction value.
-      return `${lead}, cần string, number hoặc boolean`;
+    case 'invalid_union': {
+      // The one union of the outputs: an extraction value. A string that breaks a rule of strings
+      // (too long, empty) is told that rule, not that it is of the wrong type.
+      const asText = issue.errors[0]?.[0];
+      return asText?.code === 'custom'
+        ? asText.message
+        : `${lead}, cần string, number hoặc boolean`;
+    }
     case 'too_small':
       return `cần ít nhất ${issue.minimum} phần tử`;
     case 'too_big':
       return `quá ${issue.maximum} phần tử`;
     case 'invalid_value':
-      return `giá trị không hợp lệ, cần một trong: ${issue.values.map(String).join(', ')}`;
+      return `${missing ? 'thiếu' : 'giá trị không hợp lệ'}, cần một trong: ${issue.values.map(String).join(', ')}`;
     case 'custom':
       return issue.message;
     default:
