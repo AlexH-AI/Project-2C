@@ -1,5 +1,5 @@
 import { factCode, type ExtractedFact } from '@p2c/ai';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   confirmKycFact,
   markKycConflict,
@@ -189,6 +189,8 @@ export function KycNoteDialog({
   const [text, setText] = useState(initialText);
   const date = useDateField(today, initialDate);
   const [facts, setFacts] = useState<KycNoteFact[]>([]);
+  // Its one select is Trường: where "Bỏ" hands the focus on before its row goes (DR6-83).
+  const factsBox = useRef<HTMLDivElement>(null);
   const [field, setField] = useState<KycField | ''>('');
   const [value, setValue] = useState('');
   const [answer, setAnswer] = useState<'yes' | 'no' | null>(null);
@@ -309,7 +311,7 @@ export function KycNoteDialog({
         hint={date.hint}
         required
       />
-      <div className="flex flex-col gap-2 border-t border-border pt-3">
+      <div ref={factsBox} className="flex flex-col gap-2 border-t border-border pt-3">
         <span id="kyc-note-facts" className="font-medium">
           {t('kycNote.facts')}
         </span>
@@ -334,7 +336,10 @@ export function KycNoteDialog({
                 </span>
                 <Button
                   aria-label={t('kycNote.removeLabel', { field: t(`kycField.${fact.field}`) })}
-                  onClick={() => setFacts(facts.filter((f) => f.field !== fact.field))}
+                  onClick={() => {
+                    factsBox.current?.querySelector('select')?.focus();
+                    setFacts(facts.filter((f) => f.field !== fact.field));
+                  }}
                 >
                   {t('kycNote.remove')}
                 </Button>
@@ -431,7 +436,7 @@ export function ResolveKycDialog({
           disabled: option.disabled,
           label: (
             <span className="flex flex-col">
-              <b>"{factText(option.value, YES_NO)}"</b>
+              <b>{t('kycResolve.value', { value: factText(option.value, YES_NO) })}</b>
               <span className="text-xs text-fg-3 tabular-nums">
                 {t(option.source === 'SYSTEM' ? 'kycResolve.systemSource' : 'kycResolve.source', {
                   code: option.code,

@@ -1,8 +1,9 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState, type Ref } from 'react';
 import { listTrash, type Database, type TrashRow } from '@p2c/db';
 import {
   Button,
   DataTable,
+  DialogFocusFallback,
   PolicyBadge,
   Segmented,
   StageBadge,
@@ -58,9 +59,10 @@ function RecordCell({ row }: { row: TrashRow }) {
 
 function OwnerCell({ row }: { row: TrashRow }) {
   const parts = ownerParts(row);
-  if (parts.length === 0) return <span className="text-fg-3">—</span>;
+  if (parts.length === 0) return <span className="text-fg-3">{t('trash.owner.none')}</span>;
+  // By place: a team's bare name could read as another part.
   return parts.map((owner, index) => (
-    <span key={owner.text}>
+    <span key={index}>
       {index > 0 && ` ${t('sep.dot')} `}
       {owner.text}
       {owner.deleted && <span className="text-fg-3"> {t('trash.gone')}</span>}
@@ -130,10 +132,15 @@ const trashColumns = (
   },
 ];
 
-/** Mockup 11e: what was restored, and a link to where it is now. */
-function Restored({ notice }: { notice: RestoredNotice }) {
+/**
+ * Mockup 11e: what was restored, and a link to where it is now. It takes the focus after a restore,
+ * whose row went with its button (DR6-83).
+ */
+function Restored({ notice, ref }: { notice: RestoredNotice; ref: Ref<HTMLDivElement> }) {
   return (
     <div
+      ref={ref}
+      tabIndex={-1}
       role="status"
       className="mb-3 flex items-center gap-3 rounded-md border border-ok bg-surface-0 px-3 py-2 text-sm"
     >
@@ -168,6 +175,7 @@ export function TrashSection() {
   const [query, setQuery] = useState('');
   const [restoring, setRestoring] = useState<TrashRow | null>(null);
   const [notice, setNotice] = useState<RestoredNotice | null>(null);
+  const restored = useRef<HTMLDivElement>(null);
   const columns = useMemo(() => trashColumns(setRestoring), []);
   const counts = useMemo(() => trashCounts(rows), [rows]);
   const shown = useMemo(() => filterTrash(rows, filter, query), [rows, filter, query]);
@@ -190,7 +198,7 @@ export function TrashSection() {
         </span>
       </div>
       <p className="m-0 mb-3 text-sm text-fg-2">{t('trash.help')}</p>
-      {notice && <Restored notice={notice} />}
+      {notice && <Restored ref={restored} notice={notice} />}
       {rows.length === 0 ? (
         <p className="m-0 px-3 py-7 text-center text-sm text-fg-2">
           <b className="mb-1 block text-md text-fg">{t('trash.empty')}</b>
@@ -231,16 +239,18 @@ export function TrashSection() {
           )}
         </>
       )}
-      {restoring && (
-        <RestoreDialog
-          row={restoring}
-          onClose={() => setRestoring(null)}
-          onRestored={() => {
-            setNotice(restoredNotice(restoring));
-            setRestoring(null);
-          }}
-        />
-      )}
+      <DialogFocusFallback value={() => restored.current}>
+        {restoring && (
+          <RestoreDialog
+            row={restoring}
+            onClose={() => setRestoring(null)}
+            onRestored={() => {
+              setNotice(restoredNotice(restoring));
+              setRestoring(null);
+            }}
+          />
+        )}
+      </DialogFocusFallback>
     </section>
   );
 }

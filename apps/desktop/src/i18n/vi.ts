@@ -284,6 +284,7 @@ export const vi = {
   'trash.owner.customer': 'KH {name}',
   'trash.owner.re': 'RE {name}',
   'trash.owner.team': 'Team {name}',
+  'trash.owner.none': '—',
   'trash.gone': '(đã xóa)',
   'trash.customer.with':
     'khôi phục kèm {appointments} lịch hẹn · {policies} HĐ · {count} ghi chú KYC',
@@ -467,6 +468,9 @@ export const vi = {
     '"Hẹn tiếp" = Tạo lịch hẹn tiếp theo (có trên mọi lịch đã qua) · ghi chú dài cắt 1 dòng · người phối hợp xem ở dòng thời gian',
   'customer.next': 'Hẹn tiếp',
   'customer.nextLabel': 'Hẹn tiếp sau lịch {date}',
+  // The column of the "Hẹn tiếp" buttons: no header on screen (mockup customer.html), one for
+  // screen readers (DR6-100).
+  'customer.colActions': 'Thao tác',
   'kycNote.open': '+ Ghi chú KYC',
   'kycNote.title': 'Ghi chú KYC · {name}',
   'kycNote.sub': '{code} · KYC hiện tại v{version} ({date})',
@@ -531,6 +535,7 @@ export const vi = {
   'kycResolve.body': 'Chọn giá trị đúng; giá trị còn lại thành cũ. Ghi chú gốc giữ nguyên.',
   'kycResolve.values': 'Giá trị đúng',
   'kycResolve.pick': 'Chọn giá trị đúng.',
+  'kycResolve.value': '"{value}"',
   'kycResolve.source': '{code} · ghi chú {date}',
   'kycResolve.systemSource': '{code} · hồ sơ KH {date}',
   'kycResolve.profileOnly': 'Năm sinh / giới tính chỉ giữ được giá trị của hồ sơ KH.',
@@ -681,6 +686,7 @@ export const vi = {
   'appointments.note': 'Ghi chú',
   'appointments.detail': 'Chi tiết lịch hẹn',
   'appointments.detailEmpty': 'Chọn một lịch hẹn để xem chi tiết.',
+  'appointments.none': '—',
   'appointments.profile': 'Hồ sơ KH →',
   // The read-only AI block of the detail (spec Phase 5 §9.2, mockup appointments.html).
   'appointments.ai.meta': 'v{version} · {date}',
@@ -1129,6 +1135,9 @@ export const vi = {
   'team.colOpen': 'KH đang mở',
   'team.colAppointments': 'Lịch hẹn 30 ngày',
   'team.colIssued': 'HĐ năm {year}',
+  // The column of the "Sửa" buttons: no header on screen (mockup team.html), one for screen readers
+  // (DR6-100).
+  'team.colActions': 'Thao tác',
   'person.add': '+ Nhân sự',
   'person.new': 'Nhân sự mới',
   'person.edit': 'Sửa nhân sự',

@@ -43,6 +43,11 @@ test('lists the seeded teams, their members and the shared support staff', async
   await expect(table.getByRole('row')).toHaveCount(1 + 10);
   await expect(table.getByRole('cell', { name: 'TL', exact: true })).toHaveCount(0);
   await expect(table.getByRole('cell', { name: 'RE', exact: true })).toHaveCount(10);
+  // DR6-100: the column of the "Sửa" buttons has a header for screen readers only, empty on screen
+  // as in the mockup: the name is a pixel wide.
+  const actions = table.getByRole('columnheader', { name: 'Thao tác' });
+  await expect(actions).toHaveCount(1);
+  expect((await actions.getByText('Thao tác').boundingBox())?.width).toBeLessThanOrEqual(1);
 });
 
 test('the TL sits in the table header with an Edit button (B1)', async ({ page }) => {

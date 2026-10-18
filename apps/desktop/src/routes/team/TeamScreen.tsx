@@ -82,7 +82,8 @@ function memberColumns(
     metricColumn('issued', t('team.colIssued', { year }), (m) => m.issuedThisYear, metrics),
     {
       id: 'actions',
-      header: '',
+      header: t('team.colActions'),
+      headerHidden: true,
       kind: 'text',
       align: 'end',
       sortable: false,

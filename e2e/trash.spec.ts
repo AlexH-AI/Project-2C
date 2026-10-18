@@ -240,6 +240,32 @@ test('restores a deleted customer, then its appointment deleted on its own (TR-1
   expect(errors).toEqual([]);
 });
 
+// DR6-83: the row and its button go with the restore, the last one with the whole table; the focus
+// lands on the line saying what came back (11e), not on the page. Escape keeps the row and the focus.
+test('by the keyboard, Khôi phục leaves the focus on the line of what came back (DR6-83)', async ({
+  page,
+}) => {
+  const { name } = await bookAndDelete(page);
+  await openTrash(page);
+  const restore = table(page).getByRole('button', {
+    name: `Khôi phục lịch hẹn 15/09/2026 của KH ${name}`,
+    exact: true,
+  });
+  const dialog = page.getByRole('dialog', { name: 'Khôi phục lịch hẹn 15/09/2026?' });
+  await restore.press('Enter');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(restore).toBeFocused();
+
+  await restore.press('Enter');
+  await dialog.getByRole('button', { name: 'Khôi phục', exact: true }).press('Enter');
+  await expect(dialog).toBeHidden();
+  await expect(trash(page)).toContainText('Thùng rác trống');
+  const notice = trash(page).getByRole('status');
+  await expect(notice).toContainText('Đã khôi phục lịch hẹn 15/09/2026');
+  await expect(notice).toBeFocused();
+});
+
 test('restores a meeting that kept the stage though the stage changed after it (E18, DR6-01)', async ({
   page,
 }) => {

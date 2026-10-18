@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { ANCHOR_MORNING } from './anchor';
+import { ANCHOR_MORNING, toNewYearsEve } from './anchor';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
 const TODAY = '15/09/2026';
@@ -367,6 +367,10 @@ test('a meeting moved to a day before another change says its move goes, then ta
   await page.goto(`/${profile}`);
   const region = page.getByRole('region', { name });
   await expect(region.getByText('N3', { exact: true }).first()).toBeVisible();
+  // RF "bớt 1", as the dialog said: the move by hand counts none, and the meeting's is gone.
+  const timeline = page.getByRole('region', { name: 'Dòng thời gian' });
+  await expect(timeline).toContainText('chuyển tay · không tính RF');
+  await expect(timeline).not.toContainText('tính 1 RF');
 });
 
 test('deleting the meeting that moved the customer takes the move back (6g)', async ({ page }) => {
@@ -390,19 +394,71 @@ test('deleting the meeting that moved the customer takes the move back (6g)', as
   await expect(region.getByText('N3', { exact: true }).first()).toBeVisible();
 });
 
-const MINUTE = 60_000;
-const DAY = 24 * 60 * MINUTE;
+// DR6-83: the button that opened the dialog goes with the save; the focus lands on the detail, not
+// on the page. Escape keeps the button, and the focus goes back to it as before.
+test('by the keyboard, saving 6c, 6h and 6g leaves the focus on the detail (DR6-83)', async ({
+  page,
+}) => {
+  const name = await book(page, '15/9', 'N3');
+  const heading = detail(page).getByRole('heading', { level: 2 });
+  const record = detail(page).getByRole('button', { name: 'Ghi kết quả' });
+  const o = outcome(page);
+  await record.press('Enter');
+  await page.keyboard.press('Escape');
+  await expect(o.dialog).toHaveCount(0);
+  await expect(record).toBeFocused();
 
-/**
- * 23:58 on 31/12/2026 by the app's clock, from the anchor morning: the e2e day starts on the anchor
- * and the clock moves it on (T-126). One fast-forward wraps past 2³² ms, so it goes 20 days a time.
- */
-async function toNewYearsEve(page: Page) {
-  const ms = new Date(2026, 11, 31, 23, 58).getTime() - ANCHOR_MORNING.getTime();
-  for (let left = ms; left > 0; left -= 20 * DAY) {
-    await page.clock.fastForward(Math.min(left, 20 * DAY));
-  }
-}
+  // 6c: met, so "Ghi kết quả" goes.
+  await record.press('Enter');
+  await o.stageAfter.getByRole('radio', { name: 'N2', exact: true }).check();
+  await o.nextStep.fill('Gửi bảng minh họa');
+  await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).press('Enter');
+  await expect(o.dialog).toHaveCount(0);
+  await expect(record).toHaveCount(0);
+  await expect(heading).toContainText(name);
+  await expect(heading).toBeFocused();
+
+  // 6h: the next one is tomorrow, which offers no next of its own yet.
+  const next = detail(page).getByRole('button', { name: 'Tạo lịch hẹn tiếp theo' });
+  await next.press('Enter');
+  const form = page.getByRole('dialog', { name: 'Lịch hẹn tiếp theo' });
+  await form.getByRole('textbox', { name: /^Ngày/ }).fill('16/9');
+  await form.getByRole('button', { name: 'Tạo lịch hẹn' }).press('Enter');
+  await expect(form).toHaveCount(0);
+  await expect(heading).toContainText(`16/09/2026 · ${name}`);
+  await expect(next).toHaveCount(0);
+  await expect(heading).toBeFocused();
+
+  // 6g: the appointment leaves the detail, which says to pick one. Scrolled down to the lists, the
+  // page stays put: the emptied detail keeps its place under the top bar.
+  await page.evaluate(() => window.scrollTo(0, 300));
+  const scrolled = await page.evaluate(() => window.scrollY);
+  expect(scrolled).toBeGreaterThan(0);
+  await detail(page).getByRole('button', { name: 'Xóa', exact: true }).press('Enter');
+  const confirm = page.getByRole('dialog', { name: 'Xóa lịch hẹn 16/09/2026?' });
+  await confirm.getByRole('button', { name: 'Xóa lịch hẹn' }).press('Enter');
+  await expect(confirm).toHaveCount(0);
+  await expect(detail(page)).toContainText('Chọn một lịch hẹn');
+  await expect(detail(page)).toBeFocused();
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrolled);
+  await expect(detail(page)).toBeInViewport();
+});
+
+// DR6-83: 6g opened from 6f swaps one dialog for the other; the met appointment leaves the detail.
+test('by the keyboard, deleting from 6f leaves the focus on the detail (DR6-83)', async ({
+  page,
+}) => {
+  await metToN2(page);
+  await detail(page).getByRole('button', { name: 'Sửa kết quả' }).press('Enter');
+  await editDialog(page).getByRole('button', { name: 'Xóa lịch hẹn' }).press('Enter');
+  const confirm = page.getByRole('dialog', { name: `Xóa lịch hẹn ${TODAY}?` });
+  await confirm.getByRole('button', { name: 'Xóa lịch hẹn' }).press('Enter');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(detail(page)).toContainText('Chọn một lịch hẹn');
+  await expect(detail(page)).toBeFocused();
+});
+
+const MINUTE = 60_000;
 
 /** Books a 31/12 appointment for an N3 customer, cancelled ahead of its day; then 23:58 that day. */
 async function cancelledOnNewYearsEve(page: Page) {

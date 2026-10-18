@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
 import type { AppointmentRecord } from '@p2c/db';
 import {
   appointmentGroup,
@@ -15,7 +15,14 @@ import {
   type CalendarDate,
   type Period,
 } from '@p2c/domain';
-import { Button, DataTable, PeriodPicker, SelectField, type DataTableColumn } from '@p2c/ui';
+import {
+  Button,
+  DataTable,
+  DialogFocusFallback,
+  PeriodPicker,
+  SelectField,
+  type DataTableColumn,
+} from '@p2c/ui';
 import { useTables, useToday } from '../../data/AppDataContext';
 import { joinParts, t, tableMore } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
@@ -64,7 +71,7 @@ const triggerText = ({ appointment: a }: AppointmentRow) =>
   a.triggerNote ?? t(`trigger.${a.triggerType}`);
 
 const coordinatorText = (row: AppointmentRow) =>
-  row.coordinators.map((person) => person.role).join(', ') || '—';
+  row.coordinators.map((person) => person.role).join(t('sep.list')) || t('appointments.none');
 
 /** The day shown when the period changes: today if it is in the period, else its first day. */
 const dayIn = (period: Period, today: CalendarDate) =>
@@ -86,6 +93,12 @@ export function AppointmentsScreen() {
   const [deleting, setDeleting] = useState<AppointmentRow | null>(null);
   // The appointment just made for an RE outside the scope, while it is the one selected.
   const [hiddenCreated, setHiddenCreated] = useState<AppointmentRecord | null>(null);
+  // Where the focus goes when a dialog's button went with its save (DR6-83): the detail's heading,
+  // the line about an appointment made out of sight, or the detail itself once it shows none.
+  const detailHeading = useRef<HTMLHeadingElement>(null);
+  const outsideLine = useRef<HTMLParagraphElement>(null);
+  const detailPanel = useRef<HTMLElement>(null);
+  const toDetail = () => detailHeading.current ?? outsideLine.current ?? detailPanel.current;
 
   const pickedRows = useMemo(
     () => appointmentRows(data, picked, coordinator),
@@ -246,7 +259,7 @@ export function AppointmentsScreen() {
         </Button>
       </div>
       {outside && (
-        <p role="status" className={`${ALERT} border-info text-sm`}>
+        <p ref={outsideLine} tabIndex={-1} role="status" className={`${ALERT} border-info text-sm`}>
           {t('appointments.createdOutside', {
             date: formatDate(outside.date),
             re: data.people.find((person) => person.id === outside.reId)?.name ?? '',
@@ -275,6 +288,8 @@ export function AppointmentsScreen() {
           row={selected}
           links={selected && rescheduleLinks(data.appointments, selected.appointment)}
           today={today}
+          heading={detailHeading}
+          panel={detailPanel}
           onNext={(from) => setCreating({ from })}
           onReschedule={setMoving}
           onRecord={setRecording}
@@ -297,40 +312,42 @@ export function AppointmentsScreen() {
           resetKey={JSON.stringify([period, scope, coordinator])}
         />
       </section>
-      {creating && (
-        <AppointmentDialog
-          data={data}
-          customer={creating.from?.customer}
-          from={creating.from?.appointment}
-          onClose={() => setCreating(null)}
-          onCreated={show}
-        />
-      )}
-      {moving && <RescheduleDialog row={moving} onClose={() => setMoving(null)} onMoved={show} />}
-      {recording?.customer && (
-        <OutcomeDialog
-          row={{ ...recording, customer: recording.customer }}
-          people={data.people}
-          onClose={() => setRecording(null)}
-          onShow={show}
-        />
-      )}
-      {editing?.customer && (
-        <EditOutcomeDialog
-          row={{ ...editing, customer: editing.customer }}
-          people={data.people}
-          transitions={data.transitions}
-          onClose={() => setEditing(null)}
-        />
-      )}
-      {deleting?.customer && (
-        <DeleteAppointmentDialog
-          appointment={deleting.appointment}
-          customer={deleting.customer}
-          onClose={() => setDeleting(null)}
-          onDeleted={() => setDeleting(null)}
-        />
-      )}
+      <DialogFocusFallback value={toDetail}>
+        {creating && (
+          <AppointmentDialog
+            data={data}
+            customer={creating.from?.customer}
+            from={creating.from?.appointment}
+            onClose={() => setCreating(null)}
+            onCreated={show}
+          />
+        )}
+        {moving && <RescheduleDialog row={moving} onClose={() => setMoving(null)} onMoved={show} />}
+        {recording?.customer && (
+          <OutcomeDialog
+            row={{ ...recording, customer: recording.customer }}
+            people={data.people}
+            onClose={() => setRecording(null)}
+            onShow={show}
+          />
+        )}
+        {editing?.customer && (
+          <EditOutcomeDialog
+            row={{ ...editing, customer: editing.customer }}
+            people={data.people}
+            transitions={data.transitions}
+            onClose={() => setEditing(null)}
+          />
+        )}
+        {deleting?.customer && (
+          <DeleteAppointmentDialog
+            appointment={deleting.appointment}
+            customer={deleting.customer}
+            onClose={() => setDeleting(null)}
+            onDeleted={() => setDeleting(null)}
+          />
+        )}
+      </DialogFocusFallback>
     </>
   );
 }
@@ -560,6 +577,8 @@ function Detail({
   row,
   links,
   today,
+  heading,
+  panel,
   onNext,
   onReschedule,
   onRecord,
@@ -570,6 +589,9 @@ function Detail({
   row: AppointmentRow | undefined;
   links: ReturnType<typeof rescheduleLinks> | undefined;
   today: CalendarDate;
+  /** The heading of an appointment shown, and the panel showing none: focus targets (DR6-83). */
+  heading: Ref<HTMLHeadingElement>;
+  panel: Ref<HTMLElement>;
   onNext: (from: AppointmentRow) => void;
   onReschedule: (row: AppointmentRow) => void;
   onRecord: (row: AppointmentRow) => void;
@@ -580,7 +602,13 @@ function Detail({
 }) {
   if (!row) {
     return (
-      <aside aria-label={t('appointments.detail')} className={`${CARD} w-full lg:w-84 lg:shrink-0`}>
+      // Sticky as with an appointment shown: emptied by a delete, it keeps its place and the focus.
+      <aside
+        ref={panel}
+        tabIndex={-1}
+        aria-label={t('appointments.detail')}
+        className={`${CARD} w-full lg:sticky lg:top-20 lg:w-84 lg:shrink-0`}
+      >
         <p className="m-0 text-sm text-fg-3">{t('appointments.detailEmpty')}</p>
       </aside>
     );
@@ -597,11 +625,14 @@ function Detail({
   );
   const facts: [string, ReactNode][] = [
     [t('appointments.re'), joinParts([row.re?.name, row.team?.name])],
-    [t('appointments.coordinators'), row.coordinators.map(personLabel).join(', ') || '—'],
+    [
+      t('appointments.coordinators'),
+      row.coordinators.map(personLabel).join(t('sep.list')) || t('appointments.none'),
+    ],
     [t('appointments.trigger'), joinParts([t(`trigger.${a.triggerType}`), a.triggerNote])],
     [t('appointments.status'), <Status label={statusLabel(a, today)} />],
-    [t('appointments.outcome'), outcomeText(row.outcome) || '—'],
-    [t('appointments.note'), a.note || '—'],
+    [t('appointments.outcome'), outcomeText(row.outcome) || t('appointments.none')],
+    [t('appointments.note'), a.note || t('appointments.none')],
   ];
   if (links?.from) facts.push([t('appointments.rescheduledFrom'), link(links.from)]);
   if (links?.to) facts.push([t('appointments.rescheduledToLink'), link(links.to)]);
@@ -610,7 +641,7 @@ function Detail({
       aria-label={t('appointments.detail')}
       className={`${CARD} flex w-full flex-col gap-3 lg:sticky lg:top-20 lg:w-84 lg:shrink-0`}
     >
-      <h2 className="m-0 text-base font-semibold tabular-nums">
+      <h2 ref={heading} tabIndex={-1} className="m-0 text-base font-semibold tabular-nums">
         {joinParts([dateTime(a), row.customer?.name])}
       </h2>
       <dl className="m-0 flex flex-col gap-1.5 text-sm">

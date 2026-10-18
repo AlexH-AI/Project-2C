@@ -1,5 +1,5 @@
 import type { ExtractedFact } from '@p2c/ai';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   getCustomer,
   getKycProfile,
@@ -15,7 +15,7 @@ import {
   type KycNoteRecord,
 } from '@p2c/db';
 import { formatDate, type KycField, type Policy } from '@p2c/domain';
-import { Button, StageBadge } from '@p2c/ui';
+import { Button, DialogFocusFallback, StageBadge } from '@p2c/ui';
 import { useQuery, useToday } from '../../data/AppDataContext';
 import { sortedByName } from '../../data/tables';
 import { joinParts, t } from '../../i18n';
@@ -86,6 +86,7 @@ export function CustomerProfile({ id }: { id: string }) {
   } | null>(null);
   const [appointing, setAppointing] = useState<{ from?: AppointmentRecord } | null>(null);
   const [policyMode, setPolicyMode] = useState<PolicyMode | null>(null);
+  const policiesHeading = useRef<HTMLHeadingElement>(null);
   // The ChatGPT web session of the panel: AI trích xuất is off while it waits (§3.1 item 4).
   const [webOpen, setWebOpen] = useState(false);
   const onIssue = (policy: Policy) => setPolicyMode({ kind: 'issue', policy });
@@ -170,6 +171,7 @@ export function CustomerProfile({ id }: { id: string }) {
             people={appointmentData.people}
             caseSize={caseSize}
             today={today}
+            heading={policiesHeading}
             onNew={() => setPolicyMode({ kind: 'new' })}
             onIssue={onIssue}
             onEdit={onEditPolicy}
@@ -225,16 +227,20 @@ export function CustomerProfile({ id }: { id: string }) {
           }}
         />
       )}
-      {policyMode && (
-        <PolicyDialog
-          customer={customer}
-          mode={policyMode}
-          people={appointmentData.people}
-          teams={appointmentData.teams}
-          caseSize={caseSize}
-          onClose={() => setPolicyMode(null)}
-        />
-      )}
+      {/* The empty card's "+ Hợp đồng", a row's "Phát hành", a deleted row: gone with the save, so
+          the focus goes to the top of the card (DR6-83). */}
+      <DialogFocusFallback value={() => policiesHeading.current}>
+        {policyMode && (
+          <PolicyDialog
+            customer={customer}
+            mode={policyMode}
+            people={appointmentData.people}
+            teams={appointmentData.teams}
+            caseSize={caseSize}
+            onClose={() => setPolicyMode(null)}
+          />
+        )}
+      </DialogFocusFallback>
       {editing === 'profile' && (
         <CustomerFormDialog
           customer={customer}
@@ -265,15 +271,18 @@ export function CustomerProfile({ id }: { id: string }) {
           onClose={() => setConfirming(null)}
         />
       )}
-      {typeof editing === 'object' && editing && (
-        <ResolveKycDialog
-          customer={customer}
-          profile={kyc}
-          versions={versions}
-          field={editing.resolve}
-          onClose={() => setEditing(null)}
-        />
-      )}
+      {/* Resolved, the trường's "Giải quyết" goes: the focus goes to the top of the KYC card. */}
+      <DialogFocusFallback value={() => document.getElementById('kyc-facts')}>
+        {typeof editing === 'object' && editing && (
+          <ResolveKycDialog
+            customer={customer}
+            profile={kyc}
+            versions={versions}
+            field={editing.resolve}
+            onClose={() => setEditing(null)}
+          />
+        )}
+      </DialogFocusFallback>
     </>
   );
 }
