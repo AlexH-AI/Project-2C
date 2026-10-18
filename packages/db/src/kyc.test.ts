@@ -697,6 +697,35 @@ describe('KYC text is stored as the screens show it', () => {
     expect(persist).not.toHaveBeenCalled();
   });
 
+  // DR6-72: one hạng mục short of PAIN_POINT_ANALYSIS, a value the screens show as nothing (the
+  // Hangul filler, blank Braille, a variation selector, U+0085) does not reach it.
+  it('refuses a value of the other invisible characters, the gate one hạng mục short unchanged', async () => {
+    const { db: database, customer, note } = await withCustomer({ birthDate: { year: 1984 } });
+    const date = d(3, 9, 2026);
+    recordKycNote(database, customer.id, {
+      text: 'Gặp lần hai',
+      date,
+      facts: [
+        { field: 'maritalStatus', value: 'Đã kết hôn' },
+        { field: 'childrenCount', value: 2 },
+        { field: 'occupation', value: 'Bác sĩ' },
+        { field: 'totalAssets', value: '5 tỷ' },
+        { field: 'primaryGoal', value: 'Học phí cho con' },
+      ],
+    });
+    const gate = () => evaluateKycGate(getKycProfile(database, customer.id).facts).state;
+    const concern = (value: string) =>
+      confirmKycFact(database, customer.id, { field: 'mainConcern', value, noteId: note.id, date });
+    expect(gate()).toBe('PROFILE_DISCOVERY');
+
+    for (const value of ['\u{3164}', '\u{2800}\u{2800}', '\u{FE0F}\u{85}']) {
+      expect(codeOf(() => concern(value))).toBe('INVALID_KYC_VALUE');
+    }
+    expect(gate()).toBe('PROFILE_DISCOVERY');
+    concern('Chi phí học');
+    expect(gate()).toBe('PAIN_POINT_ANALYSIS');
+  });
+
   it('takes a value with other white space as the same value, not a conflict', async () => {
     const { db: database, customer, note } = await withCustomer();
     const date = d(3, 9, 2026);
