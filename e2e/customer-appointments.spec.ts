@@ -43,6 +43,11 @@ test('the profile lists its appointments newest first; "Hẹn tiếp" fills in t
   const { card, rows } = appointments(page);
   const count = await rows.count();
   expect(count).toBeGreaterThan(0);
+  // DR6-100: the column of the "Hẹn tiếp" buttons has a header for screen readers only, empty on
+  // screen as in the mockup: the name is a pixel wide.
+  const actions = card.getByRole('columnheader', { name: 'Thao tác' });
+  await expect(actions).toHaveCount(1);
+  expect((await actions.getByText('Thao tác').boundingBox())?.width).toBeLessThanOrEqual(1);
   // The timeline marks each meeting held "· đã gặp".
   const met = await page
     .getByRole('region', { name: 'Dòng thời gian' })

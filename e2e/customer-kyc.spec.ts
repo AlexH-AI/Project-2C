@@ -196,6 +196,35 @@ test("a fact's error leaves those of the note and its day shown (7a, review #636
   await expect(day).toHaveAttribute('aria-invalid', 'true');
 });
 
+// DR6-83: "Bỏ" takes its row with it, the last one the whole list; the focus moves on to Trường, not
+// to the page, and the dialog stays with nothing saved.
+test('by the keyboard, Bỏ a fact being drafted leaves the focus on Trường (7a, DR6-83)', async ({
+  page,
+}) => {
+  await createCustomer(page);
+  await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
+  const dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${NAME}` });
+  const field = dialog.getByRole('combobox', { name: 'Trường' });
+  const facts = dialog.getByRole('list', { name: 'Dữ kiện từ ghi chú này' });
+  for (const [label, value] of [
+    ['Nơi sinh sống', 'Huế'],
+    ['Nghề nghiệp', 'Kỹ sư'],
+  ] as const) {
+    await field.selectOption({ label });
+    await dialog.getByRole('textbox', { name: 'Giá trị' }).fill(value);
+    await dialog.getByRole('button', { name: 'Thêm dữ kiện' }).click();
+  }
+  await expect(facts.getByRole('listitem')).toHaveCount(2);
+
+  await dialog.getByRole('button', { name: 'Bỏ dữ kiện Nơi sinh sống' }).press('Enter');
+  await expect(facts.getByRole('listitem')).toHaveText([/^Nghề nghiệp/]);
+  await expect(field).toBeFocused();
+  await dialog.getByRole('button', { name: 'Bỏ dữ kiện Nghề nghiệp' }).press('Enter');
+  await expect(facts).toHaveCount(0);
+  await expect(field).toBeFocused();
+  await expect(dialog).toBeVisible();
+});
+
 // DR6-33: the refusal of Lưu, a frame over the fields, goes once the RE types again. A character
 // broken in a paste passes the dialog's empty check and is refused by the command (INVALID_TEXT).
 test('the frame of a refused save goes as soon as the note or its day is typed again (7a, DR6-33)', async ({

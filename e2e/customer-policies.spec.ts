@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { ANCHOR_MORNING, ANCHOR_YEAR } from './anchor';
+import { ANCHOR_MORNING, ANCHOR_YEAR, toNewYearsEve } from './anchor';
+import { createKycCustomer } from './support';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
 
@@ -139,12 +140,8 @@ test('a policy issued across New Year keeps the day the dialog showed (8b)', asy
   await expect(dialog).toBeHidden();
   const row = card.getByRole('listitem').filter({ hasText: '317 tr' });
 
-  // Opened at 23:58 on 31/12/2026, saved past midnight. One fast-forward wraps past 2³² ms.
-  const day = 24 * 60 * 60_000;
-  const ms = new Date(2026, 11, 31, 23, 58).getTime() - ANCHOR_MORNING.getTime();
-  for (let left = ms; left > 0; left -= 20 * day) {
-    await page.clock.fastForward(Math.min(left, 20 * day));
-  }
+  // Opened at 23:58 on 31/12/2026, saved past midnight.
+  await toNewYearsEve(page);
   await row.getByRole('button', { name: 'Phát hành HĐ nộp 10/09/2026' }).click();
   dialog = page.getByRole('dialog', { name: 'Phát hành HĐ' });
   await expect(dialog.getByRole('textbox', { name: /^Ngày phát hành/ })).toHaveValue('31/12');
@@ -205,4 +202,40 @@ test('edits the issued FYP (8d), then deletes the policy softly', async ({ page 
   await expect(row).toHaveCount(0);
   expect(await policyCount(page)).toBe(before);
   await expect(header.locator('span.rounded-full').first()).toHaveText(stage ?? '');
+});
+
+// DR6-83: the button that opened the dialog goes with the save (the empty card's "+ Hợp đồng", a
+// row's "Phát hành", the row itself); the focus lands on the top of the card, not on the page.
+test('by the keyboard, Lưu HĐ from the empty card, Phát hành and Xóa HĐ leave the focus on the card (DR6-83)', async ({
+  page,
+}) => {
+  await createKycCustomer(page, 'Hà Tiêu Điểm');
+  const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
+  const heading = card.getByRole('heading', { name: 'Hợp đồng', exact: true });
+  await expect(card).toContainText('Chưa có HĐ.');
+  await card.getByRole('button', { name: '+ Hợp đồng' }).press('Enter');
+  let dialog = page.getByRole('dialog', { name: 'Hợp đồng mới · đã nộp' });
+  await dialog.getByRole('textbox', { name: /^Ngày nộp/ }).fill('10/9');
+  await dialog.getByRole('textbox', { name: /^FYP nộp/ }).fill('500tr');
+  await dialog.getByRole('button', { name: 'Lưu HĐ' }).press('Enter');
+  await expect(dialog).toBeHidden();
+  await expect(card).not.toContainText('Chưa có HĐ.');
+  await expect(heading).toBeFocused();
+
+  const issue = card.getByRole('button', { name: 'Phát hành HĐ nộp 10/09/2026' });
+  await issue.press('Enter');
+  dialog = page.getByRole('dialog', { name: 'Phát hành HĐ' });
+  await dialog.getByRole('button', { name: 'Phát hành', exact: true }).press('Enter');
+  await expect(dialog).toBeHidden();
+  await expect(issue).toHaveCount(0);
+  await expect(heading).toBeFocused();
+
+  // 8d: the edit dialog gives way to the delete one, whose policy leaves the card.
+  await card.getByRole('button', { name: 'Sửa HĐ nộp 10/09/2026' }).press('Enter');
+  await page.getByRole('button', { name: 'Xóa HĐ…' }).press('Enter');
+  const confirm = page.getByRole('dialog', { name: 'Xóa HĐ nộp 10/09/2026' });
+  await confirm.getByRole('button', { name: 'Xóa HĐ' }).press('Enter');
+  await expect(confirm).toBeHidden();
+  await expect(card).toContainText('Chưa có HĐ.');
+  await expect(heading).toBeFocused();
 });

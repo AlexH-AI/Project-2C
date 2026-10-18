@@ -77,48 +77,47 @@ export function CustomerAppointments({
       .reverse();
   }, [appointments, transitions]);
 
-  const columns = useMemo<ReadonlyArray<DataTableColumn<Row>>>(
-    () => [
-      {
-        id: 'date',
-        header: t('appointments.date'),
-        kind: 'date',
-        value: (r) => r.appointment.date,
-        thenBy: (r) => r.appointment.time ?? '',
-        cell: ({ appointment: a }) => withTime(dayText(a.date, today), a.time),
+  // Built each render: `onNext` is a new function each time the profile renders (DR6-66).
+  const columns: ReadonlyArray<DataTableColumn<Row>> = [
+    {
+      id: 'date',
+      header: t('appointments.date'),
+      kind: 'date',
+      value: (r) => r.appointment.date,
+      thenBy: (r) => r.appointment.time ?? '',
+      cell: ({ appointment: a }) => withTime(dayText(a.date, today), a.time),
+    },
+    {
+      id: 'result',
+      header: t('appointments.outcome'),
+      kind: 'text',
+      value: (r) => result(r, today).text,
+      cell: (r) => {
+        const { text, tone } = result(r, today);
+        return <span className={tone}>{text}</span>;
       },
-      {
-        id: 'result',
-        header: t('appointments.outcome'),
-        kind: 'text',
-        value: (r) => result(r, today).text,
-        cell: (r) => {
-          const { text, tone } = result(r, today);
-          return <span className={tone}>{text}</span>;
-        },
-      },
-      {
-        id: 'note',
-        header: t('appointments.note'),
-        kind: 'text',
-        value: (r) => r.appointment.note,
-        cell: (r) => <span className="line-clamp-1 text-fg-2">{r.appointment.note}</span>,
-      },
-      {
-        id: 'next',
-        header: '',
-        kind: 'text',
-        sortable: false,
-        value: () => '',
-        cell: ({ appointment }) => (
-          <NextButton appointment={appointment} today={today} onNext={onNext}>
-            {t('customer.next')}
-          </NextButton>
-        ),
-      },
-    ],
-    [today, onNext],
-  );
+    },
+    {
+      id: 'note',
+      header: t('appointments.note'),
+      kind: 'text',
+      value: (r) => r.appointment.note,
+      cell: (r) => <span className="line-clamp-1 text-fg-2">{r.appointment.note}</span>,
+    },
+    {
+      id: 'next',
+      header: t('customer.colActions'),
+      headerHidden: true,
+      kind: 'text',
+      sortable: false,
+      value: () => '',
+      cell: ({ appointment }) => (
+        <NextButton appointment={appointment} today={today} onNext={onNext}>
+          {t('customer.next')}
+        </NextButton>
+      ),
+    },
+  ];
 
   return (
     <section

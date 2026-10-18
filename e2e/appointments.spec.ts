@@ -655,7 +655,8 @@ test('an appointment of yesterday still scheduled reads unrecorded everywhere it
   await expect(next.dialog).toHaveCount(0);
 
   await detail.getByRole('link', { name: 'Hồ sơ KH →' }).click();
-  const appointments = page.getByRole('table', { name: 'Lịch hẹn' });
+  // Exact: "Danh sách lịch hẹn" of the screen left behind holds the same row (review #683).
+  const appointments = page.getByRole('table', { name: 'Lịch hẹn', exact: true });
   await expect(appointments.locator('tbody tr', { hasText: '14/09' })).toContainText(
     'Chưa ghi kết quả',
   );

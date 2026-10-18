@@ -1,4 +1,13 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, type ReactNode } from 'react';
+import { focusBack } from './dialog-focus';
+
+/**
+ * Where a dialog inside gives the focus back when what opened it is gone too (DR6-83), e.g. a
+ * button the save took away with its row: set by the screen around its dialogs, such as the heading
+ * of the panel they change. Asked once the dialog is gone, so it can name what came with the change
+ * (a `role="status"` line); read refs in it.
+ */
+export const DialogFocusFallback = createContext<(() => HTMLElement | null) | undefined>(undefined);
 
 interface DialogProps {
   title: string;
@@ -21,25 +30,28 @@ function open(node: HTMLDialogElement) {
 /**
  * Modal dialog (mockup `.dialog`): opens on mount; the caller unmounts it to close. Focus goes to
  * the field or button marked `[data-autofocus]` (`Button` / `TextField` with `autoFocus`), and
- * back to whatever had it before once the dialog is gone.
+ * back to whatever had it before once the dialog is gone, or to `DialogFocusFallback` when that
+ * went too.
  */
 export function Dialog({ title, subtitle, onClose, onSubmit, actions, children }: DialogProps) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   // Kept from the first run: StrictMode runs the effect again once focus is inside the dialog.
   const opener = useRef<Element | null>(null);
+  // The latest, for the effect below, which runs once.
+  const fallbackFocus = useContext(DialogFocusFallback);
+  const fallback = useRef(fallbackFocus);
+  useEffect(() => {
+    fallback.current = fallbackFocus;
+  });
 
   useEffect(() => {
     const node = dialog.current;
     if (!node) return;
     opener.current ??= document.activeElement;
     open(node);
-    return () => {
-      // Unmounting skips the browser's own focus return, which only close() does. No scrolling:
-      // a dialog may have just moved the page on purpose ("Xem tất cả").
-      const back = opener.current;
-      if (back instanceof HTMLElement && back.isConnected) back.focus({ preventScroll: true });
-    };
+    // Unmounting skips the browser's own focus return, which only close() does.
+    return () => focusBack(opener.current, fallback.current);
   }, []);
 
   return (

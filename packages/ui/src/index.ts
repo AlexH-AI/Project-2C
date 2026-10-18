@@ -9,7 +9,7 @@ export {
 } from './components/DataTable';
 export { Chart, encodeHtml, type ChartOption } from './components/Chart';
 export { Button, type ButtonVariant } from './components/Button';
-export { Dialog } from './components/Dialog';
+export { Dialog, DialogFocusFallback } from './components/Dialog';
 export { TextField } from './components/TextField';
 export { SelectField, type SelectOption } from './components/SelectField';
 export { StageBadge } from './components/StageBadge';

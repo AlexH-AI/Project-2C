@@ -7,6 +7,7 @@ import {
   type Policy,
   type Vnd,
 } from '@p2c/domain';
+import type { Ref } from 'react';
 import { Button, PolicyBadge } from '@p2c/ui';
 import { joinParts, t } from '../../i18n';
 import { dayText } from '../appointments/appointment-form';
@@ -22,6 +23,7 @@ export function CustomerPolicies({
   people,
   caseSize,
   today,
+  heading,
   onNew,
   onIssue,
   onEdit,
@@ -30,6 +32,8 @@ export function CustomerPolicies({
   people: readonly Person[];
   caseSize: Vnd | null;
   today: CalendarDate;
+  /** The card's heading: the focus lands there when a policy dialog's button went (DR6-83). */
+  heading: Ref<HTMLHeadingElement>;
   onNew: () => void;
   onIssue: (policy: Policy) => void;
   onEdit: (policy: Policy) => void;
@@ -47,7 +51,12 @@ export function CustomerPolicies({
       className="rounded-lg border border-border bg-surface-1 p-4"
     >
       <div className="mb-2 flex items-baseline gap-2">
-        <h2 id="customer-policies" className="m-0 shrink-0 text-sm font-medium text-heading">
+        <h2
+          ref={heading}
+          id="customer-policies"
+          tabIndex={-1}
+          className="m-0 shrink-0 text-sm font-medium text-heading"
+        >
           {t('policies.title')}
         </h2>
         <span className="text-xs text-fg-3 tabular-nums">{joinParts(meta)}</span>
