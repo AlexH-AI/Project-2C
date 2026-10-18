@@ -197,7 +197,7 @@ export function transcriptDirs(names, repoDir) {
  * The `projects` folders Claude Code writes transcripts to on this machine, once each: the config
  * folder in use (`CLAUDE_CONFIG_DIR`) and every `~/.claude*` one, e.g. `.claude-b` (DR6-58,
  * DR6-86). `names` are the entries of the home folder; `realpath` gives a folder's real path, null
- * when it does not exist, so an 8.3 or other-case spelling of a folder counts once.
+ * when there is no such folder, so an 8.3 or other-case spelling of a folder counts once.
  */
 export function projectRoots(env, home, names, realpath) {
   const configs = names

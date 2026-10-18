@@ -23,10 +23,10 @@ import { run } from './session-io.mjs';
 
 const MAX = 30;
 
-/** The real path, long names in their case on Windows (not plain realpathSync); null if none. */
+/** A folder's real path, long names in their case on Windows (not plain realpathSync); else null. */
 function realpath(path) {
   try {
-    return realpathSync.native(path);
+    return statSync(path).isDirectory() ? realpathSync.native(path) : null;
   } catch {
     return null;
   }

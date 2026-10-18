@@ -72,11 +72,12 @@ function loadMainSince(pr, tested) {
 
 /**
  * The PR with all its files, plus what the merge rules need from elsewhere: stacked PRs, merged
- * base, the base CI tested and the base's commits since.
+ * base, the base CI tested, the base's commits since and how many GitHub counts.
  */
 export function loadPr(number) {
   const pr = gh(['pr', 'view', String(number), '--json', FIELDS]);
-  // Two reads: a push between them shows as "Read n of the m files" and blocks; run again (#642).
+  // Two reads (#642): a push between them that changes the number of files shows as "Read n of the
+  // m files" and blocks (run again); any other push is caught by the merge, pinned to this head.
   pr.files = ghLines(`repos/{owner}/{repo}/pulls/${number}/files?per_page=100`, '.[].filename').map(
     (path) => ({ path }),
   );
@@ -100,6 +101,10 @@ export function loadPr(number) {
   const testedBase = loadTestedBase(pr);
   return { pr, stacked, baseMerged, testedBase, ...loadMainSince(pr, testedBase) };
 }
+
+/** mergeBlockers of loadPr's result, so pr-status and merge-pr pass it everything it read. */
+export const loadedBlockers = (loaded, { owner, mode }) =>
+  mergeBlockers(loaded.pr, { ...loaded, owner, mode });
 
 /**
  * Status lines of loadPr's result; `withVerdict` adds what merge-pr would say under risk:low
@@ -130,7 +135,7 @@ export function formatStatus(loaded, { withVerdict = true } = {}) {
   const tested = testedBase
     ? `${pr.baseRefName} ${testedBase.slice(0, 7)}, ${mainTotal ?? '?'} commit(s) on it since${read}`
     : 'not noted';
-  const blockers = mergeBlockers(pr, { ...loaded, owner: false, mode: 'squash' });
+  const blockers = loadedBlockers(loaded, { owner: false, mode: 'squash' });
   const verdict = blockers.length
     ? `blocked (risk:low rules, --squash):\n${blockers.map((b) => `    - ${b}`).join('\n')}`
     : 'ready: node tools/merge-pr.mjs ' + pr.number;

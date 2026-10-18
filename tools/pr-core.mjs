@@ -126,7 +126,7 @@ export function mergeSteps(pr, { owner, mode }) {
  * `pr` is `gh pr view --json` output with `files` read in full (REST); `ctx` is { owner,
  * mode: 'squash'|'merge', stacked: numbers of open PRs based on this branch, baseMerged: when
  * base is not main, testedBase: the SHA of the base CI tested (TESTED_BASE), null when unknown,
- * mainSince: the base's commits since testedBase read, as [{ sha, files }], mainTotal: how many
+ * mainSince: the base's commits read since testedBase, as [{ sha, files }], mainTotal: how many
  * GitHub counts, null when it gave none }.
  */
 export function mergeBlockers(

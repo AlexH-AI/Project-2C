@@ -34,8 +34,8 @@
 // are printed so the rest can be finished by hand.
 
 import { spawnSync } from 'node:child_process';
-import { alreadyDone, cleanupPlan, mergeBlockers, mergeSteps, parseWorktrees } from './pr-core.mjs';
-import { formatStatus, loadPr } from './pr-status.mjs';
+import { alreadyDone, cleanupPlan, mergeSteps, parseWorktrees } from './pr-core.mjs';
+import { formatStatus, loadedBlockers, loadPr } from './pr-status.mjs';
 import { run } from './session-io.mjs';
 
 const out = (text = '') => process.stdout.write(`${text}\n`);
@@ -128,7 +128,7 @@ try {
 const { pr, stacked } = loaded;
 out(formatStatus(loaded, { withVerdict: false }));
 
-const blockers = mergeBlockers(pr, { ...loaded, ...opts });
+const blockers = loadedBlockers(loaded, opts);
 out(`\nChecks (${opts.mode}${opts.owner ? ', Owner said merge' : ''}):`);
 out(blockers.length ? blockers.map((b) => `  x ${b}`).join('\n') : '  ok');
 

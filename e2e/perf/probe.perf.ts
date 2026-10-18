@@ -350,13 +350,13 @@ async function filters() {
   await tables.getByRole('radio', { name: 'Theo team' }).click();
 }
 
-/** Thùng rác: opening it reads many rows by SQL, timed detached (README, DR6-98); then a filter. */
+const trashButton = () =>
+  page.getByRole('navigation', { name: 'Mục cài đặt' }).getByRole('button', { name: 'Thùng rác' });
+
+/** Thùng rác: a filter, on the rows already read; opening it is timed apart (trashOpen). */
 async function trash() {
   await go('#/settings');
-  const sections = page.getByRole('navigation', { name: 'Mục cài đặt' });
-  const open = sections.getByRole('button', { name: 'Thùng rác' });
-  const table = { selector: 'table[aria-label="Bản ghi đã xóa"]' };
-  await detached('trash.open', open, table, false, SCREEN_LIMIT);
+  await trashButton().click();
   await expect(page.getByRole('table', { name: 'Bản ghi đã xóa' })).toBeVisible();
   const records = page.getByRole('radiogroup', { name: 'Loại bản ghi' });
   await click('trash.kind-appointments', records.getByRole('radio', { name: /^Lịch hẹn/ }));
@@ -370,6 +370,18 @@ async function memory() {
   const { usedSize } = await cdp.send('Runtime.getHeapUsage');
   add('memory.js-heap', 'MB', usedSize / 1024 / 1024);
   await cdp.detach();
+}
+
+/**
+ * Opening Thùng rác reads many rows by SQL, which DevTools slows (README, DR6-98): timed detached,
+ * from Cài đặt opened afresh. Only after memory(): each reconnect leaves the probe's script in the
+ * heap until the next reload.
+ */
+async function trashOpen() {
+  await go('#/overview');
+  await go('#/settings');
+  const table = { selector: 'table[aria-label="Bản ghi đã xóa"]' };
+  await detached('trash.open', trashButton(), table, false, SCREEN_LIMIT);
 }
 
 /** Xuất Excel and Xuất backup, each from its screen opened afresh: no notice of the run before. */
@@ -455,6 +467,7 @@ test('perf of spec Phase 6 §5.2 on the exe release with the load data', async (
     await trash();
   }
   await memory();
+  for (let i = 0; i < RUNS; i++) await trashOpen();
   for (let i = 0; i < RUNS; i++) await exports();
   for (let i = 0; i < RUNS; i++) {
     await nextAppointment(i, 'month');

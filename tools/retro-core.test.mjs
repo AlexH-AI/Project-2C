@@ -160,9 +160,10 @@ describe('project directories', () => {
     const home = resolve('/Users/a');
     const projects = (dir) => join(home, dir, 'projects');
     const [claude, b, c] = ['.claude', '.claude-b', '.claude-c'].map(projects);
-    // realpathSync.native on Windows: a folder's real path, whatever spelling leads to it.
+    // realpathSync.native on Windows: a folder's real path, whatever spelling leads to it. Not a
+    // config folder, though it has a projects folder: ~/Documents.
     const real = new Map(
-      [claude, b, c]
+      [claude, b, c, projects('Documents')]
         .map((p) => [p, p])
         .concat([
           [join(resolve('/Users/A'), '.CLAUDE', 'projects'), claude],

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TESTED_BASE, VERIFY_CHECK } from './pr-core.mjs';
-import { formatStatus, loadPr } from './pr-status.mjs';
+import { formatStatus, loadedBlockers, loadPr } from './pr-status.mjs';
 import { run } from './session-io.mjs';
 
 vi.mock('./session-io.mjs', () => ({ run: vi.fn() }));
@@ -45,12 +45,14 @@ const JQ = {
 /**
  * `gh` on a GitHub holding PR 9 (`pr` over PR) and the commits main got since TESTED, oldest
  * first. A comparison pages as its REST docs say: with `per_page`, every commit in order; without,
- * the newest 250 only. `listed` caps what GitHub lists below what it counts.
+ * the newest 250 only (stricter than gh, whose --paginate adds per_page itself). `listed` caps what
+ * GitHub lists, `total` is what it counts.
  */
-function fakeGh({ pr = {}, since = [], listed = since.length }) {
+function fakeGh({ pr = {}, since = [], listed = since.length, total = since.length }) {
+  // An empty list is still one page.
   const pages = (path, all) => {
     const size = Number(path.match(/[?&]per_page=(\d+)/)?.[1] ?? 30);
-    return Array.from({ length: Math.ceil(all.length / size) }, (_, i) =>
+    return Array.from({ length: Math.max(1, Math.ceil(all.length / size)) }, (_, i) =>
       all.slice(i * size, (i + 1) * size),
     );
   };
@@ -61,7 +63,7 @@ function fakeGh({ pr = {}, since = [], listed = since.length }) {
       return [{ files: since.find((c) => c.sha === commit).files.map((f) => ({ filename: f })) }];
     if (path.includes(`/compare/${TESTED}...main`)) {
       const shown = since.slice(since.length - listed).map(({ sha }) => ({ sha }));
-      const comparison = (commits) => ({ total_commits: since.length, commits });
+      const comparison = (commits) => ({ total_commits: total, commits });
       if (!/[?&](per_page|page)=/.test(path)) return [comparison(shown.slice(-250))];
       return pages(path, shown).map(comparison);
     }
@@ -118,6 +120,25 @@ describe('loadPr: the commits main got since the main CI tested (DR6-85)', () =>
       '    - Read 250 of the 251 commits main got since feed000, the main CI tested on head abc1234: ',
     );
     expect(text).not.toContain('main got code');
+    // merge-pr's flags change nothing of what was read.
+    const opts = { number: '9', mode: 'merge', owner: true, dryRun: true };
+    expect(loadedBlockers(loadPr('9'), opts)).toEqual([
+      expect.stringMatching(/^Read 250 of the 251 commits main got since feed000, /),
+    ]);
+  });
+
+  it('stops when GitHub gives no count of the commits', () => {
+    vi.mocked(run).mockImplementation(fakeGh({ since, total: null }));
+    const text = formatStatus(loadPr('9'));
+    expect(text).toContain('  tested   main feed000, ? commit(s) on it since, only 251 read\n');
+    expect(text).toContain('    - Read 251 of the ? commits main got since feed000, ');
+  });
+
+  it('lets a PR through when main got nothing since the main its CI tested', () => {
+    vi.mocked(run).mockImplementation(fakeGh({}));
+    const text = formatStatus(loadPr('9'));
+    expect(text).toContain('  tested   main feed000, 0 commit(s) on it since\n');
+    expect(text).toContain('  merge    ready: node tools/merge-pr.mjs 9');
   });
 });
 

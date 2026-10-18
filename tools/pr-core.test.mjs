@@ -384,6 +384,12 @@ describe('mergeBlockers', () => {
     expect(mergeBlockers(pr(), newest)).toEqual([
       'Read 250 of the 251 commits main got since feed000, the main CI tested on head abc1234: gh pr update-branch 9, wait for CI, then review the new head again (P-1).',
     ]);
+    // Both said at once: commits not read, and code among those read.
+    const oldest = ctx({ mainSince: mainSince.slice(0, 250), mainTotal: 251 });
+    expect(mergeBlockers(pr(), oldest)).toEqual([
+      expect.stringMatching(/^Read 250 of the 251 commits main got since feed000, /),
+      expect.stringMatching(/^main got code since feed000, .* \(0000000\): /),
+    ]);
     // No count from GitHub is not taken as every commit read.
     for (const mainTotal of [null, undefined]) {
       expect(mergeBlockers(pr(), ctx({ mainTotal })), String(mainTotal)).toEqual([
