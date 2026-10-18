@@ -97,19 +97,44 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
   - Không có ngoại lệ "khôi phục mà bỏ chuyển nhóm": như thế RF và nhóm KH lệch với kết quả cuộc gặp.
 - **TR-4 Khôi phục KH** đưa KH về cùng mọi bản ghi con **chưa xóa riêng**: lịch hẹn, HĐ, ghi chú KYC, phân tích AI (vốn chỉ bị ẩn theo KH). Bản ghi con đã xóa riêng trước đó vẫn ở Thùng rác, khôi phục riêng sau khi KH về.
 - **TR-5 Ngày trong tương lai** (bản ghi xóa đến từ file nhập, spec Phase 3 §6 luật 10): kết quả Đã gặp / Không đến sau hôm nay, HĐ nộp / phát hành sau hôm nay → từ chối như lệnh ghi. Lịch Dự kiến ngày đã qua khôi phục được và hiện ở "chưa ghi kết quả".
-- **TR-6 Không xóa vĩnh viễn, không tự dọn.** Thùng rác giữ bản ghi tới khi khôi phục (D4). Xuất backup mang theo cả Thùng rác (như hiện nay); nhập / nạp lại thay cả Thùng rác.
+- **TR-6 Không tự dọn; người dùng dọn sạch được (hỏi trước, backup trước).** Thùng rác giữ bản ghi tới khi khôi phục (D4), hoặc tới khi người dùng dọn sạch (TR-11). App không tự xóa bản ghi nào, kể cả khi Thùng rác lớn: TR-13 chỉ nhắc. Không có xóa vĩnh viễn từng dòng. Xuất backup mang theo cả Thùng rác (như hiện nay); nhập / nạp lại thay cả Thùng rác. Owner chốt 17/10/2026 (tổng hợp deep review lượt 2 §9 Q8 (c), DR6-84), thay luật "không xóa vĩnh viễn" duyệt 11/10; Owner đã cân nhắc rồi bỏ hướng tự xóa bản cũ nhất khi vượt trần.
 - **TR-7 Thùng rác không theo góc nhìn** (Toàn bộ / Team / RE ở thanh trên): là việc quản lý dữ liệu như Cài đặt → Dữ liệu, hiện mọi bản ghi xóa.
 - **TR-8 Luôn hỏi trước khi khôi phục**, hộp xác nhận nêu hệ quả: số bản ghi con hiện lại (KH), nhóm KH đổi và RF (cuộc hẹn Đã gặp), "không đổi nhóm KH" (lịch khác). Lý do: khôi phục đổi chỉ số đã báo cáo; một hộp đơn giản rẻ hơn một lần bấm nhầm.
-- **TR-9 Xóa KH (5f)** làm theo mockup đã duyệt: hộp Sửa KH có "Xóa KH…" → hộp 5f đếm lịch hẹn (đã gặp, lần tính RF), HĐ, ghi chú KYC; câu cuối đổi thành "Dữ liệu vẫn còn: khôi phục ở Cài đặt → Thùng rác." Xóa xong về danh sách Khách hàng. Lần chạy AI của KH đó đang chạy → kết quả bị bỏ (`CUSTOMER_NOT_FOUND` đã nằm trong nhóm `discarded`).
+- **TR-9 Xóa KH (5f)** làm theo mockup đã duyệt: hộp Sửa KH có "Xóa KH…" → hộp 5f đếm lịch hẹn (đã gặp, lần tính RF), HĐ, ghi chú KYC; câu cuối đổi thành "Dữ liệu vẫn còn: khôi phục ở Cài đặt → Thùng rác." Xóa xong về danh sách Khách hàng. Lần chạy AI của KH đó đang chạy → kết quả bị bỏ (`CUSTOMER_NOT_FOUND` đã nằm trong nhóm `discarded`). Dòng Ghi chú KYC chỉ ghi số, bỏ "— giữ nguyên, không bao giờ xóa": dọn sạch Thùng rác xóa hẳn cả ghi chú của KH đã xóa (TR-11; mockup 11f).
 - **TR-10 Câu ở các hộp xóa** trỏ về chỗ khôi phục: 6g "Xóa mềm, khôi phục được ở Cài đặt → Thùng rác.", xóa HĐ / nhân sự / team thêm cùng câu đó.
 - Lịch **Dời lịch** vẫn không xóa được (Owner 30/09, #171): ngoài phạm vi.
 - Khóa ghi S2-2 áp cả cho khôi phục (khôi phục là một lệnh ghi).
 
+**Dọn sạch Thùng rác (TR-6, #662).** Owner chốt hướng ngày 17/10/2026; chi tiết dưới Owner duyệt G2 / G3 ngày 19/10/2026 (cả 6 đề xuất cuối mục, PR #707).
+
+- **TR-11 Dọn tất cả: hỏi trước, backup trước, một transaction.**
+  - **Nút "Dọn sạch Thùng rác…"** ở đầu màn, có khi Thùng rác có bản ghi; tắt khi mọi bản ghi đều được giữ lại (TR-12). Dọn mọi bản ghi, không theo loại / ô tìm đang chọn.
+  - **Hộp xác nhận** (11i) đếm theo loại những gì bị xóa hẳn: KH, kèm lịch hẹn, HĐ, ghi chú KYC, phân tích AI của các KH đó (phần chưa xóa riêng, như 11b; phần đã xóa riêng đếm ở loại của nó); lịch hẹn; HĐ; nhân sự; team. Hộp nói rõ ba điều: không hoàn tác được; dữ liệu đang dùng và chỉ số không đổi; app backup file dữ liệu trước, lấy lại bằng cách chép bản backup như sau Nạp lại (10c). Có bản ghi giữ lại (TR-12) thì nêu số. Gõ **DỌN SẠCH** để xác nhận, như Nạp lại (câu hỏi 4).
+  - **Đường chạy:** cùng hàng đợi thay dữ liệu của Nạp lại / Nhập backup (§4.1, `replace` của `app-data`).
+    - Chờ lưu xong; lần lưu trước lỗi → từ chối như Nạp lại.
+    - Chép file vào `backups\`; lỗi → không dọn.
+    - Khóa mọi lệnh ghi tới khi xong (S2-2); kết quả AI về lúc đó bị bỏ (S2-3). Trong lúc dọn hộp ở lại với "Đang dọn…", không đóng được, nên không thao tác nào gặp câu báo S2-2.
+    - Bản web không có file, không backup: hộp ghi như Nạp lại ("Bản web không lưu file…"), nút "Dọn sạch".
+  - **Một transaction, theo thứ tự khóa ngoại.** Lỗi giữa chừng → không đổi gì. Dọn xong thu gọn file (`VACUUM`, câu hỏi 3).
+    - Dòng KH: KH cùng mọi dữ liệu con — lịch hẹn (cả lịch đã xóa riêng), người phối hợp, chuyển nhóm (cả chuyển nhóm đã rút), HĐ (cả HĐ đã xóa riêng), ghi chú / dữ kiện / phiên bản KYC, phân tích AI.
+    - Dòng lịch hẹn: lịch, người phối hợp, chuyển nhóm đã rút theo nó.
+    - Dòng HĐ, nhân sự, team: chính bản ghi đó.
+  - **Sau khi dọn** (11j): hộp đóng; đầu thẻ báo "Đã dọn sạch Thùng rác", số đã xóa hẳn theo loại, tên file backup (bản exe), số bản ghi giữ lại nếu có; focus về thông báo (như 11e). Không dọn được → câu lỗi ở cùng chỗ, dữ liệu không đổi.
+  - **Dữ liệu đang dùng không đổi.** Bản ghi đã xóa vốn không vào danh sách và chỉ số: chỉ số mọi kỳ / góc nhìn và phần chưa xóa của file xuất giống hệt trước / sau. Lần chạy AI của KH chưa xóa về sau lúc dọn vẫn lưu. Nhân sự chỉ còn dữ liệu của KH đã dọn thì xóa được; câu "KH trong Thùng rác" của hộp 9b (T-250, `person.inUseTrash`, `person.inUseSupportTrash`) thêm vế "hoặc dọn sạch Thùng rác". Luật nhập backup không đổi.
+- **TR-12 Giữ bản ghi còn được dùng.** Bản ghi trong Thùng rác mà dữ liệu còn lại sau khi dọn (kể cả bản ghi được giữ) vẫn dùng tới thì giữ lại, cùng dữ liệu con của nó. Dòng của nó có lý do một dòng nêu bản ghi dùng tới nó, như dòng bị chặn (TR-1), hiện cả trước khi dọn. Nút Khôi phục vẫn theo TR-1…TR-5.
+  - Lịch hẹn: "Giữ lại khi dọn: lịch 15/10/2026 10:00 dời từ lịch này."
+  - Nhân sự là RE / người phối hợp / người đánh giá của bản ghi được giữ: "Giữ lại khi dọn: lịch 08/10/2026 10:00 còn ghi người này."
+  - Team của nhân sự được giữ: "Giữ lại khi dọn: nhân sự Vương Thị Mai còn thuộc team này."
+  - Dữ liệu tạo trong app không có ca nào. KH đã xóa chỉ được dữ liệu của chính nó dùng tới, dọn cùng nó. Nhân sự / team đã xóa chỉ còn được bản ghi đã xóa dùng tới, vì lệnh xóa từ chối khi còn (`PERSON_IN_USE`, `TEAM_HAS_MEMBERS`; luật nhập 5, 9).
+  - Ca đã biết chỉ đến từ file nhập: lịch **Dời lịch** đã xóa mà lịch mới dời từ nó vẫn còn. App không cho xóa lịch Dời lịch, nhưng luật nhập 5 nhận chuỗi dời lịch có lịch đã xóa. Giữ lịch đó, cùng RE / người phối hợp đã xóa của nó và team đã xóa của họ.
+- **TR-13 Nhắc khi Thùng rác lớn.** Từ **1 000** bản ghi (số ở đầu màn), dưới câu giới thiệu có câu nhắc (11h): "Thùng rác có 1.313 bản ghi nên mở chậm dần. Nên dọn sạch khi không cần khôi phục các bản ghi này nữa." 999 bản ghi → không có. Màn mở chậm tuyến tính theo số bản ghi (DR6-84: exe 138 ms ở 1 313 bản ghi, chạm 200 ms ở ≈ 2 000).
+
 **Màn (G3, mockup `docs/design/mockups/trash.html`):** Cài đặt có thêm mục **Thùng rác** sau Dữ liệu và AI (`#/settings/trash`).
 
-- Đầu: số bản ghi, câu ngắn về TR-6. Thanh lọc: **Loại** (Tất cả · KH · Lịch hẹn · HĐ · Nhân sự · Team, có số đếm) và ô tìm theo tên (KH, nhân sự, team; lịch hẹn / HĐ tìm theo tên KH).
+- Đầu: số bản ghi, nút **Dọn sạch Thùng rác…** (TR-11), câu ngắn về TR-6; từ 1 000 bản ghi thêm câu nhắc (TR-13, 11h). Thanh lọc: **Loại** (Tất cả · KH · Lịch hẹn · HĐ · Nhân sự · Team, có số đếm) và ô tìm theo tên (KH, nhân sự, team; lịch hẹn / HĐ tìm theo tên KH).
 - Bảng (`DataTable`, "Hiện thêm" 100 dòng như DR-03): **Loại · Bản ghi · Thuộc · Xóa lúc · thao tác**, mới xóa nhất ở trên. "Bản ghi" theo loại: KH = tên + nhóm, kèm số bản ghi con sẽ hiện lại; lịch hẹn = ngày giờ + trạng thái / kết quả; HĐ = ngày nộp + FYP + trạng thái; nhân sự = tên + vai trò; team = tên. "Thuộc": KH + RE + team; bản ghi cha đã xóa ghi thêm "(đã xóa)".
 - Dòng bị chặn: nút Khôi phục tắt, lý do một dòng dưới bản ghi (TR-1…TR-5). Màn tính lý do trước khi bấm; lệnh khôi phục vẫn kiểm lại (dữ liệu có thể vừa đổi) và lỗi hiện trong hộp.
+- Dòng giữ lại khi dọn: lý do một dòng dưới bản ghi (TR-12), cùng chỗ với lý do chặn. Hộp dọn sạch: 11i; sau khi dọn: 11j.
 - Khôi phục xong: dòng biến mất, thông báo "Đã khôi phục …" kèm nút **Mở** (KH / lịch hẹn / HĐ → hồ sơ KH; nhân sự / team → Team & nhân sự).
 - Trống: "Thùng rác trống" + câu một dòng về loại bản ghi nằm ở đây.
 
@@ -138,9 +163,49 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 | E19 | Lịch Đã gặp 10/10 của KH N2, nhóm sau N2 (giữ nhóm), xóa | Chuyển tay N2 → N3 ngày 10/10 | Khôi phục được, không thêm chuyển nhóm; KH giữ N3 |
 | E20 | Như E5 | Chuyển tay N3 → N1 ngày 02/10, sau khi xóa | Chặn như E6, câu riêng: "Nhóm KH đã đổi ngày 02/10/2026, ghi sau lúc xóa cuộc hẹn này (D10)". Chuyển tay cùng ngày ghi **trước** khi xóa thì không chặn |
 
-**Mô hình dữ liệu:** không đổi schema, không migration. Thêm hàm đọc ở `packages/db` (vd. `listTrash`): mỗi bản ghi xóa kèm thông tin hiện, hệ quả khôi phục và lý do chặn. Lý do chặn dùng **chung hàm kiểm** với các lệnh `restore…`, không viết luật lần hai; test bảo đảm lý do của màn và lỗi của lệnh trùng nhau ở E1–E16, E18–E20. Lỗi của lệnh cần nêu tên bản ghi chặn → thêm params (`name`, `date`) cho các mã đã có (`PERSON_NOT_FOUND`, `RE_REQUIRED`, `TEAM_NOT_FOUND`, `TRANSITION_BEFORE_LATEST`…), không thêm mã mới ngoài lỗi khóa ghi của S2-2.
+**Ví dụ chuẩn dọn sạch (G2, #662) — mỗi dòng là một test chấp nhận**, hôm nay 11/10/2026. Thùng rác có 14 bản ghi như mockup 11a: 3 KH (kèm 12 lịch hẹn, 1 HĐ, 9 ghi chú KYC, 2 phân tích AI), 6 lịch hẹn, 2 HĐ, 2 nhân sự, 1 team.
 
-**Ước lượng:** db `listTrash` + params lỗi ≈ 200 SP / 400 test (`risk:med`); Xóa KH 5f ≈ 100 SP + e2e (`risk:med`); màn Thùng rác + hộp khôi phục + câu hộp xóa ≈ 300 SP + e2e (`risk:med`, tách đôi danh sách / hộp nếu vượt P1).
+| # | Tình huống | Kết quả |
+|---|---|---|
+| D1 | Mở hộp dọn sạch | "KH 3 — kèm 12 lịch hẹn · 1 HĐ · 9 ghi chú KYC · 2 phân tích AI", "Lịch hẹn 6", "HĐ 2", "Nhân sự 2", "Team 1"; không có dòng giữ lại; nút xác nhận tắt tới khi gõ đúng DỌN SẠCH (câu hỏi 4) |
+| D2 | Dọn | Thùng rác trống. Không còn dòng nào của 3 KH ở mọi bảng. Lịch 02/10 của KH Phạm Gia Bảo đi cùng chuyển nhóm đã rút của nó; KH vẫn N3. `PRAGMA foreign_key_check` rỗng. Thông báo "Đã dọn sạch Thùng rác" + số theo loại + tên file backup |
+| D3 | Như D2, so trước / sau | Chỉ số Tổng quan / Báo cáo mọi kỳ, mọi góc nhìn giống hệt; xuất backup phần chưa xóa giống hệt; file mới trong `backups\` mở lại được và có đủ 14 bản ghi đã xóa |
+| D4 | RE Vũ Minh Khoa chỉ còn là RE của lịch hẹn của một KH trong Thùng rác (hộp 9b: "Có cả dữ liệu của KH đã xóa: …") | Sau dọn: hộp 9b hết câu đó, xóa được RE Vũ Minh Khoa |
+| D5 | Thêm lịch **Dời lịch** 08/10/2026 10:00 của KH Phạm Gia Bảo, đã xóa (từ file nhập); lịch 15/10/2026 10:00 dời từ nó chưa xóa | Dòng lịch 08/10: "Giữ lại khi dọn: lịch 15/10/2026 10:00 dời từ lịch này."; hộp: "Giữ lại 1 bản ghi còn được dùng". Sau dọn Thùng rác chỉ còn lịch 08/10; lịch 15/10 không đổi |
+| D6 | Như D5; RE ghi trên lịch 08/10 (KH đã bàn giao cho RE khác) đã xóa, team của người đó cũng đã xóa | Giữ cả ba. RE: "Giữ lại khi dọn: lịch 08/10/2026 10:00 còn ghi người này."; team: "Giữ lại khi dọn: nhân sự <tên RE> còn thuộc team này." |
+| D7 | Lần lưu gần nhất lỗi | Từ chối, không backup: "Chưa dọn: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Dữ liệu không bị đổi." |
+| D8 | Backup lỗi (vd. ổ đĩa đầy) | Không dọn: "Chưa dọn được Thùng rác. Dữ liệu không bị đổi." |
+| D9 | Lỗi giữa chừng (một câu xóa bị từ chối) | Như D8: không đổi gì, kể cả các dòng đã xóa trước câu lỗi |
+| D10 | Lệnh ghi / kết quả AI tới trong lúc dọn | Lệnh ghi bị từ chối (S2-2); kết quả AI bị bỏ (S2-3) |
+| D11 | Câu SQL sửa / xóa ghi chú, dữ kiện, phân tích AI | KH chưa xóa: sửa và xóa đều bị trigger chặn như trước. KH đã xóa mềm: xóa qua; sửa vẫn bị chặn (dữ kiện vẫn chỉ đổi được trạng thái) |
+| D12 | Thùng rác 1 000 bản ghi / 999 bản ghi | Có câu nhắc TR-13 / không có |
+| D13 | Bản web | Hộp ghi "Bản web không lưu file: dữ liệu chỉ nằm trong trình duyệt.", nút "Dọn sạch"; dọn như D2, thông báo không có tên file backup |
+
+**Mô hình dữ liệu:** khôi phục không đổi schema, không migration. Thêm hàm đọc ở `packages/db` (vd. `listTrash`): mỗi bản ghi xóa kèm thông tin hiện, hệ quả khôi phục và lý do chặn. Lý do chặn dùng **chung hàm kiểm** với các lệnh `restore…`, không viết luật lần hai; test bảo đảm lý do của màn và lỗi của lệnh trùng nhau ở E1–E16, E18–E20. Lỗi của lệnh cần nêu tên bản ghi chặn → thêm params (`name`, `date`) cho các mã đã có (`PERSON_NOT_FOUND`, `RE_REQUIRED`, `TEAM_NOT_FOUND`, `TRANSITION_BEFORE_LATEST`…), không thêm mã mới ngoài lỗi khóa ghi của S2-2.
+
+**Mô hình dữ liệu của dọn sạch (#662):**
+
+- Không đổi bảng, cột. Một migration tự viết mới nới ba trigger chặn xóa (`kyc_notes_no_delete`, `kyc_facts_no_delete`, `ai_analyses_no_delete`): chỉ cho xóa dòng của KH đã xóa mềm. Trigger chặn sửa và mọi xóa khác giữ nguyên (phụ lục ADR-0008). `LATEST_SCHEMA_VERSION` tăng 1; DB cũ có dữ liệu mở được.
+- `@p2c/db`: một hàm xem trước cho hộp 11i (số sẽ xóa hẳn theo loại, bản ghi giữ lại kèm lý do) và lệnh dọn trả số đã dọn theo loại. Tập giữ lại (TR-12) tính ở **một hàm** dùng chung cho hàm xem trước, lệnh dọn và `listTrash` (lý do giữ lại của từng dòng), như lý do chặn dùng chung hàm kiểm của `restore…`.
+- `AppData`: dọn qua hàng đợi thay dữ liệu (backup trước, khóa ghi), trả tên file backup. Dọn không thay DB, nên `generation` không đổi.
+- Không thêm mã lỗi: lỗi của dọn là lỗi lưu / backup / lệnh như Nạp lại.
+- Tài liệu sửa ở PR code:
+  - `docs/user-guide/09-cai-dat.md`: câu TR-6, mục mới "Dọn sạch Thùng rác"; `04-khach-hang.md`: câu hộp 5f.
+  - `docs/testing/nghiem-thu-v1.md`: NT-TR-01 (câu TR-6), NT-KH-14 (5f); dòng mới cho 11h–11j, đặt sau NT-TM-16 vì dọn xóa hẳn "KH Thùng rác" của dòng đó và "RE Thùng rác" thành xóa được (ghi chú review PR #700 trong sổ); bỏ dòng 11a khỏi "Lệch mockup đã biết"; thêm 11h–11j vào bảng đối chiếu mockup.
+
+**Ước lượng:** db `listTrash` + params lỗi ≈ 200 SP / 400 test (`risk:med`); Xóa KH 5f ≈ 100 SP + e2e (`risk:med`); màn Thùng rác + hộp khôi phục + câu hộp xóa ≈ 300 SP + e2e (`risk:med`, tách đôi danh sách / hộp nếu vượt P1). Dọn sạch (#662, `risk:high`: đường xóa hẳn dữ liệu duy nhất của app): PR docs này; PR code ≈ 120–200 SP + migration + ≈ 250–300 dòng test.
+
+**Câu hỏi G1 / G2 / G3 cho Owner (#662).** Mỗi câu có đề xuất; Owner đồng ý mà không ghi gì khác thì lấy đề xuất. **Owner đồng ý cả 6 đề xuất, duyệt G1 / G2 / G3 (19/10/2026, PR #707).**
+
+1. **G1 — phụ lục ADR-0008:** append-only của ghi chú KYC, dữ kiện, phân tích AI có một ngoại lệ là dọn dữ liệu của KH đã xóa mềm; trigger chỉ nới cho đúng ca đó. **Đề xuất: đồng ý.**
+2. **G2 — TR-6, TR-11…TR-13 và ví dụ D1–D13.** **Đề xuất: đồng ý.**
+3. **G2 — thu gọn file sau khi dọn (`VACUUM`).** SQLite xóa dòng mà không trả chỗ: file giữ nguyên cỡ, chỗ trống chỉ được dùng lại cho dữ liệu ghi sau, và phần đã dọn có thể còn sót trong chỗ trống đó. Mỗi lần lưu ghi lại cả file (ADR-0016).
+   - (a) Thu gọn ngay sau khi dọn: file nhỏ lại (≈ 9–10 KB mỗi KH đã dọn), mỗi lần lưu sau ghi ít hơn, phần đã dọn không còn trong file. Lúc dọn lâu thêm; PR code đo và ghi số.
+   - (b) Không thu gọn.
+   - **Đề xuất: (a).**
+4. **G3 — gõ DỌN SẠCH để xác nhận**, như Nạp lại (10c): đây là thao tác xóa hẳn duy nhất của app. **Đề xuất: có.**
+5. **G3 — mockup `trash.html`:** 11a (nút, câu TR-6), 11f (bỏ "giữ nguyên, không bao giờ xóa"), 11h–11j mới. Trong 11a, dòng lịch Đã gặp bị chặn ghi "nhóm sau N2" như app: đây là lệch mockup đã biết (sổ review #543, `nghiem-thu-v1.md` "Lệch mockup đã biết"), vì khi bị chặn app không tính nhóm trước cuộc gặp. **Đề xuất: duyệt.**
+6. **Phạm vi PR code:** thêm vào file được sửa `docs/user-guide/04-khach-hang.md` (câu hộp 5f). Thêm cả `e2e/team.spec.ts` và `apps/desktop/src/routes/team/team-view.test.ts`, theo comment của Owner ở #662 (câu 9b mới). **Đề xuất: đồng ý.**
 
 ### 4.3 Hướng dẫn sử dụng (G2)
 
