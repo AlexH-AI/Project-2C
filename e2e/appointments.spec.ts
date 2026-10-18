@@ -4,6 +4,7 @@ import {
   createKycCustomer,
   discoveryFacts,
   discoveryOutput,
+  lowestContrast,
   panelOf,
   stubChatGptWeb,
 } from './support';
@@ -877,6 +878,8 @@ test('the detail shows the latest accepted AI analysis read-only, or a link to a
   await open();
   await expect(ai).toContainText('STALE');
   await expect(ai).not.toContainText('CURRENT');
+  // Faded as the panel is, its text still reads at WCAG AA (DR6-21).
+  expect(await lowestContrast(ai)).toBeGreaterThanOrEqual(4.5);
 
   // Analysed again by ChatGPT web: its badge, not the Mock's (R2-18).
   await detail.getByRole('link', { name: 'Hồ sơ KH →' }).click();

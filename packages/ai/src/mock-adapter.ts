@@ -66,6 +66,16 @@ function missingCategories(value: unknown): KycCategory[] {
   return KYC_CATEGORIES.filter((category) => codes.includes(category));
 }
 
+/**
+ * After "<n> con / bé / cháu", what makes them not children: grandchildren ("cháu nội / ngoại"),
+ * figures ("con số", DR6-19), animals and things ("2 con chó", "10 con bò", DR6-78).
+ */
+const NOT_CHILDREN = [
+  'nội|ngoại|số',
+  'chó|mèo|bò|bê|trâu|lợn|heo|gà|vịt|ngan|ngỗng|cá|tôm|cua|chim|chuột|ngựa|dê|cừu|thỏ|ong',
+  'xe|tàu|thuyền|dao',
+].join('|');
+
 const EXTRACTION_PATTERNS: readonly {
   readonly field: string;
   readonly pattern: RegExp;
@@ -74,8 +84,10 @@ const EXTRACTION_PATTERNS: readonly {
   // Narrow on purpose (CX-A4): what may mean something else gives no proposal.
   {
     field: 'childrenCount',
-    // Not "cháu nội / ngoại" (grandchildren) nor "con số" (figures, DR6-19).
-    pattern: /(?<!\p{N})(\d{1,2})\s+(?:con|bé|cháu)(?!\p{L})(?!\s+(?:nội|ngoại|số)(?!\p{L}))/gu,
+    pattern: new RegExp(
+      String.raw`(?<!\p{N})(\d{1,2})\s+(?:con|bé|cháu)(?!\p{L})(?!\s+(?:${NOT_CHILDREN})(?!\p{L}))`,
+      'giu',
+    ),
     value: (match) => match[1]!,
   },
   {
@@ -84,7 +96,8 @@ const EXTRACTION_PATTERNS: readonly {
     pattern: /(?<=(?<!\p{L})đã\s+)kết hôn(?!\p{L})/giu,
     value: () => 'Đã kết hôn',
   },
-  { field: 'maritalStatus', pattern: /độc thân/giu, value: () => 'Độc thân' },
+  // A word of its own: "khôngđộc thân" (no space) is no more single than "không độc thân".
+  { field: 'maritalStatus', pattern: /(?<!\p{L})độc thân(?!\p{L})/giu, value: () => 'Độc thân' },
 ];
 
 /** Trường of the input's `fields` list (prompts §4.1), so that V7 keeps what the Mock proposes. */
@@ -95,45 +108,78 @@ function allowedFields(value: unknown): string[] {
     .filter((field): field is string => typeof field === 'string');
 }
 
-/** Someone other than the KH: named before a phrase in its sentence, the phrase is about them. */
-const SOMEONE_ELSE =
-  /(?<!\p{L})(?:con|cháu|em trai|em gái|anh trai|chị gái|bố|mẹ|cha|bạn|người quen|đồng nghiệp|người thân|họ hàng)(?!\p{L})/iu;
+/**
+ * Someone other than the KH: named before a phrase in its sentence, the phrase is about them
+ * (DR6-19, DR6-78). A word that may also name the KH ("cô", "ông"…) gives no proposal rather than
+ * a wrong one. Not "vợ chồng" nor "KH và vợ / chồng": the couple, the KH one of them. Not the
+ * words that hold a kin word but name no one: "bác sĩ", "cô giáo", "chú ý"…; "ba" only as a parent.
+ */
+const SOMEONE_ELSE = new RegExp(
+  String.raw`(?<!\p{L})(?:${[
+    'con|cháu|em|anh trai|anh họ|anh rể|anh ruột|anh của|chị gái|chị họ|chị dâu|chị ruột|chị của',
+    'ông|bà|cô(?! giáo| đơn)|chú(?! ý| trọng)|bác(?! sĩ)|dì|cậu|mợ|thím|dượng|bố|mẹ|cha|má',
+    String.raw`ba(?= (?:của|kh|má|mẹ|anh|chị|em|ấy)(?!\p{L}))|(?<!và )vợ(?! chồng)|(?<!vợ |và )chồng`,
+    'bạn|sếp|hàng xóm|người quen|đồng nghiệp|người thân|họ hàng',
+  ].join('|')})(?!\p{L})`,
+  'iu',
+);
 
-/** Said not to be: before a phrase in its clause. */
-const NEGATION = /(?<!\p{L})(?:không|chưa|chẳng)(?!\p{L})/iu;
+/** Said as a supposition, before a phrase in its sentence: "nếu đã kết hôn, có 2 con" (DR6-78). */
+const SUPPOSED =
+  /(?<!\p{L})(?:nếu|giả sử|giả như|giả định|giá mà|giá như|lỡ như|nhỡ như|trường hợp)(?!\p{L})/iu;
 
-/** Where the sentence (or clause) holding `at` starts: right after the last `ends` mark before it. */
-function startOf(note: string, at: number, ends: RegExp): number {
-  let start = at;
-  while (start > 0 && !ends.test(note[start - 1]!)) start--;
-  return start;
+/** Said not to be, or only wished or planned: before a phrase in its clause ("KH muốn có 2 con"). */
+const NOT_SO = /(?<!\p{L})(?:không|chưa|chẳng|muốn|mong|dự định|hy vọng|hi vọng)(?!\p{L})/iu;
+
+/**
+ * Asked of the phrases of `note` in order: whether `word` comes before the phrase at `at` in its
+ * part, the parts ending after each mark of `ends`. Each part is searched once, so all the phrases
+ * take one pass over the note, however long its parts (DR6-79).
+ */
+function wordBefore(note: string, ends: RegExp, word: RegExp): (at: number) => boolean {
+  const starts = [0, ...[...note.matchAll(ends)].map((mark) => mark.index + 1)];
+  let part = -1;
+  /** Where `word` first ends in `part`. */
+  let found = Infinity;
+  return (at) => {
+    let next = Math.max(part, 0);
+    while (next + 1 < starts.length && starts[next + 1]! <= at) next++;
+    if (next !== part) {
+      part = next;
+      const start = starts[part]!;
+      const first = word.exec(note.slice(start, starts[part + 1]));
+      found = first ? start + first.index + first[0].length : Infinity;
+    }
+    return found <= at;
+  };
 }
 
 /**
- * Whether the phrase at `at` says something of the KH (DR6-19): no one else named before it in its
- * sentence ("Em trai KH còn độc thân", "KH có một con trai đang sống độc thân"), no negation before
- * it in its clause ("KH không có 2 con"). Narrow, as the patterns are.
+ * Whether a phrase says something of the KH (DR6-19), asked of the phrases in order: no one else
+ * named and no supposition before it in its sentence ("Em trai KH còn độc thân", "KH có một con
+ * trai đang sống độc thân"), no negation or wish before it in its clause ("KH không có 2 con").
+ * Narrow, as the patterns are.
  */
-function aboutTheKh(note: string, at: number): boolean {
-  const sentence = note.slice(startOf(note, at, /[.!?;\n]/), at);
-  const clause = note.slice(startOf(note, at, /[.!?;,\n]/), at);
-  return !SOMEONE_ELSE.test(sentence) && !NEGATION.test(clause);
+function aboutTheKh(note: string): (at: number) => boolean {
+  const before = [
+    wordBefore(note, /[.!?;\n]/g, SOMEONE_ELSE),
+    wordBefore(note, /[.!?;\n]/g, SUPPOSED),
+    wordBefore(note, /[.!?;,\n]/g, NOT_SO),
+  ];
+  return (at) => !before.some((found) => found(at));
 }
 
 function extraction(note: string, fields: readonly string[]): ExtractionOutput {
-  const patterns = EXTRACTION_PATTERNS.filter(({ field }) => fields.includes(field));
-  const found = patterns.flatMap(({ field, pattern, value }) =>
-    [...note.matchAll(pattern)]
-      .filter((match) => aboutTheKh(note, match.index))
-      .map((match) => ({
+  const ofTheKh = aboutTheKh(note);
+  const facts = EXTRACTION_PATTERNS.filter(({ field }) => fields.includes(field))
+    .flatMap(({ field, pattern, value }) =>
+      [...note.matchAll(pattern)].map((match) => ({
         at: match.index,
         fact: { field, value: value(match), quote: match[0] },
       })),
-  );
-  return {
-    facts: found
-      .sort((a, b) => a.at - b.at)
-      .map(({ fact }) => fact)
-      .slice(0, 20),
-  };
+    )
+    .sort((a, b) => a.at - b.at)
+    .filter(({ at }) => ofTheKh(at))
+    .map(({ fact }) => fact);
+  return { facts: facts.slice(0, 20) };
 }
