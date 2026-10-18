@@ -1,15 +1,15 @@
-import { calendarDate, MAX_FEE_VND } from '@p2c/domain';
+import { calendarDate, MAX_FEE_VND, normalizeNote, normalizeText } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import { recordMeetingOutcome, scheduleAppointment } from './appointments';
 import { BACKUP_FORMAT, exportBackup, importBackup, MAX_BACKUP_BYTES } from './backup';
 import { createCustomer, listCustomers, softDeleteCustomer } from './customers';
 import { openDatabase } from './database';
 import { DbError } from './errors';
-import { recordKycNote } from './kyc';
+import { addKycNote, recordKycNote } from './kyc';
 import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations';
 import { submitPolicy } from './policies';
 import { seedDemoData } from './seed';
-import { createPerson, createTeam, listTeams } from './team';
+import { createPerson, createTeam, listTeams, renameTeam } from './team';
 import { d, setup } from './test-support';
 
 const SLOW = 60_000;
@@ -486,6 +486,72 @@ describe('importBackup', () => {
     expect(await codeOfImport('')).toBe('BACKUP_INVALID');
   });
 });
+
+// DR6-72: the import reads a name and a KYC note with the commands' functions, so a file holds the
+// text a command could have stored, and only that.
+describe('importBackup — text as the commands store it', () => {
+  it(
+    'takes a name or a KYC note exactly when the command stores it as it is (random text)',
+    async () => {
+      const db = await small();
+      const backup = JSON.parse(exportBackup(db)) as BackupJson;
+      const team = String(backup.tables.teams![0]!.id);
+      const customer = String(backup.tables.kyc_notes![0]!.customer_id);
+      const next = randomText(72);
+      const outcomes = new Set<boolean>();
+
+      for (let i = 0; i < 30; i++) {
+        const typed = next();
+        for (const text of new Set([typed, normalizeText(typed), normalizeNote(typed)])) {
+          const name = stored(() => renameTeam(db, team, text).name);
+          const note = stored(() => addKycNote(db, customer, { text, date: d(1, 9) }).text);
+          const taken = [
+            await imports(withRow(backup, 'teams', (r) => ({ ...r, name: text }))),
+            await imports(withRow(backup, 'kyc_notes', (r) => ({ ...r, text }))),
+          ];
+          expect(taken).toEqual([name === text, note === text]);
+          taken.forEach((take) => outcomes.add(take));
+        }
+      }
+      // Some text taken and some refused, so the run checks both ways.
+      expect([...outcomes].sort()).toEqual([false, true]);
+    },
+    SLOW,
+  );
+});
+
+/** What the command stored, or undefined when it refused the text. */
+function stored(command: () => string): string | undefined {
+  try {
+    return command();
+  } catch (error) {
+    if (error instanceof DbError) return undefined;
+    throw error;
+  }
+}
+
+async function imports(backup: BackupJson): Promise<boolean> {
+  return importBackup(JSON.stringify(backup), { now: exportClock }).then(
+    () => true,
+    (error: unknown) => {
+      if (error instanceof DbError) return false;
+      throw error;
+    },
+  );
+}
+
+/**
+ * Text of up to 12 characters as typed or pasted: letters, a tone mark, white space and line
+ * breaks, invisible characters, a NUL and a lone surrogate half; the same run for the same seed.
+ */
+function randomText(seed: number): () => string {
+  const pool = [0x61, 0x111, 0x301, 0x20, 0xa, 0xd, 0x85, 0xa0, 0x2028, 0x3000, 0x200b, 0x3164]
+    .concat([0xfe0f, 0x2800, 0x0, 0xd800])
+    .map((code) => String.fromCodePoint(code));
+  let state = seed;
+  const below = (n: number) => (state = (state * 48_271) % 0x7fff_ffff) % n;
+  return () => Array.from({ length: below(13) }, () => pool[below(pool.length)]).join('');
+}
 
 /** Replaces the first row of `table` (tests keep at least one row in it). */
 function withRow(

@@ -52,10 +52,12 @@ export function requireName(name: string): string {
   return clean;
 }
 
-/** Trimmed text, or null when empty; a NUL is refused as by `cleanText` (R2-13). */
+/**
+ * Trimmed text, or null when empty; a NUL or a lone surrogate half, which the database could not
+ * store as it is, is `INVALID_TEXT` as in `cleanText` (R2-13).
+ */
 export function optionalText(text: string | null | undefined): string | null {
-  if (text?.includes('\0')) throw new DbError('INVALID_TEXT');
-  const trimmed = text?.trim() ?? '';
+  const trimmed = storable(text ?? '').trim();
   return trimmed === '' ? null : trimmed;
 }
 

@@ -96,6 +96,24 @@ describe('teams', () => {
     expect(createTeam(db, { name: 'Hừng​  Đông' }).name).toBe('Hừng Đông');
   });
 
+  // DR6-72: the invisible characters outside `\p{Cf}` and U+2800 are dropped, U+0085 is white space.
+  it('takes a name of the other invisible characters as empty, and as the same name', async () => {
+    const { db } = await setup();
+    const team = createTeam(db, { name: 'Sao Mai' });
+    const taken = ['Sao Mai\u{3164}', 'Sao\u{85}Mai', '\u{115F}Sao\u{34F} Mai\u{FE0F}\u{FFA0}'];
+
+    for (const name of taken) {
+      expect(codeOf(() => createTeam(db, { name }))).toBe('TEAM_NAME_TAKEN');
+    }
+    for (const name of ['\u{3164}', '\u{2800}', '\u{85}', '\u{115F}\u{FFA0}\u{34F}\u{FE00}']) {
+      expect(codeOf(() => createTeam(db, { name }))).toBe('NAME_REQUIRED');
+      expect(codeOf(() => createPerson(db, { name, role: 'RE', teamId: team.id }))).toBe(
+        'NAME_REQUIRED',
+      );
+    }
+    expect(renameTeam(db, team.id, 'Sao Mai\u{2800}')).toEqual(team);
+  });
+
   // DR6-49: a lone surrogate half would be stored as U+FFFD, so the name would not read back.
   it('refuses a name that is not whole UTF-16', async () => {
     const { db } = await setup();

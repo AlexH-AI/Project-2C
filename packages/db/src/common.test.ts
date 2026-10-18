@@ -33,4 +33,10 @@ describe('optionalText', () => {
     expect(optionalText(undefined)).toBeNull();
     expect(codeOf(() => optionalText('A\u0000B'))).toBe('INVALID_TEXT');
   });
+
+  it('refuses a lone surrogate half, which the database would store as U+FFFD', () => {
+    expect(codeOf(() => optionalText('Gặp lại\u{D800}'))).toBe('INVALID_TEXT');
+    expect(codeOf(() => optionalText('\u{DC00}'))).toBe('INVALID_TEXT');
+    expect(optionalText('Gửi 🌟')).toBe('Gửi 🌟');
+  });
 });

@@ -74,6 +74,8 @@ describe('customers', () => {
     expect(codeOf(() => createCustomer(db, { ...base, reId: 'nobody' }))).toBe('PERSON_NOT_FOUND');
     expect(codeOf(() => createCustomer(db, { ...base, reId: tl.id }))).toBe('RE_REQUIRED');
     expect(codeOf(() => createCustomer(db, { ...base, name: ' ' }))).toBe('NAME_REQUIRED');
+    // DR6-72: the blank Braille pattern shows nothing.
+    expect(codeOf(() => createCustomer(db, { ...base, name: '\u{2800}' }))).toBe('NAME_REQUIRED');
     expect(codeOf(() => createCustomer(db, { ...base, birthDate: { year: 1800 } }))).toBe(
       'INVALID_DATE',
     );
