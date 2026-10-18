@@ -1,6 +1,6 @@
 # Phase 5 — Prompt và guardrail AI (G5)
 
-- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417) · §6a `web@1` (ChatGPT web, W-1) **Owner duyệt G5 08/10/2026** (PR #430) · Đợt Phase 6 `analysis@2` / `discovery@2` **Owner duyệt G5 11/10/2026** (T-197 #491, §10)
+- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417) · §6a `web@1` (ChatGPT web, W-1) **Owner duyệt G5 08/10/2026** (PR #430) · Đợt Phase 6 `analysis@2` / `discovery@2` **Owner duyệt G5 11/10/2026** (T-197 #491, §10) · Đợt lượt 2 `analysis@3` / `discovery@3` (T-257 #661, §11): **đề xuất, chờ Owner duyệt G5**
 - **Nền:** spec `phase-5-ai.md` (G1 / G2 duyệt 07/10/2026) §3, §6.1, §6.2, §6.4, §8; ADR-0009 (ranh giới, mục 3 validator, mục 6 pháp lý); danh mục KYC `packages/domain/src/kyc-catalog.ts`
 - **Dùng ở:** T-165 #406 (validator V3–V6 lấy **nguyên** các danh sách §6–§8), T-166 #407 (chữ prompt §2–§5 chép **nguyên văn** vào `packages/ai/src/prompts/<mode>.ts`)
 - **Đổi chữ prompt hoặc danh sách chặn sau khi duyệt** = tăng version (`analysis@2`…) + qua G5 lần nữa. Lỗi chính tả trong code so với file này là lỗi, không phải phiên bản mới.
@@ -534,3 +534,178 @@ Tin nhắn ChatGPT web (§10.6), test bảng biến thể, cả hai dòng khung:
 - [x] `maxTokens` x3: analysis / discovery 24 000, extraction 12 000; Rust `MAX_TOKENS` 32 000 (§10.7)
 - [x] Chữ prompt: cả P1–P6 (§10.8 — Owner 11/10/2026)
 - [x] Ca kiểm C20–C54 + bảng biến thể tin nhắn web (§10.9)
+
+## 11. Đợt sửa G5 Phase 6 lượt 2 (T-257 #661) — đề xuất, chờ Owner duyệt
+
+**Trạng thái:** **đề xuất, chờ Owner duyệt G5.** Chưa chép vào §1–§8. Sau khi duyệt, các thay đổi chép vào §5, §6a, §7, §8 (và spec `phase-5-ai.md` §6.2, §6.4) như §10; mục này giữ lý do và số đo.
+
+**Nền:** deep review Phase 1–6 lượt 1 (`docs/reviews/2026-10-15-deep-review-phase-1-6-luot-1-tong-hop.md` §5.3) DR6-17, DR6-23, DR6-24; lượt 2 (`docs/reviews/2026-10-17-deep-review-phase-1-6-luot-2-tong-hop.md` §6.3, §6.7) DR6-77, DR6-102. Owner 17/10/2026 chọn Phương án 3 (sửa hết, §9 của bản tổng hợp lượt 2). Tập ký tự vô hình lấy theo K20 mở rộng (T-255 #659: `normalizeText` của `packages/domain/src/text.ts`).
+
+**Đã thử trước khi đề xuất** (bản dựng thử ngoài repo, chưa phải code):
+
+- **58** chuỗi kiểm mới (ca C55–C72 của §11.7): luật hiện tại sai **40**, luật đề xuất đúng cả **58**. Mọi ca C1–C54 cũ (64 chuỗi) giữ nguyên kết quả.
+- **1 085** chuỗi `text` thật của eval 10/10 và 11/10 (`docs/metrics/ai-eval-2026-10-1{0,1}.md`, mỗi chuỗi ở đúng khối của nó): **0** chuỗi bị chặn, trước và sau khi đổi.
+- Quét toàn bộ Unicode: NFKC không biến ký tự thấy được nào thành ký tự vô hình. Vậy bỏ ký tự vô hình một lần, trước NFKC, là đủ (§11.2).
+- Với DR6-23, đã thử cả hai hướng ở §11.3. Hướng "Bỏ dấu: không" cho từng mục (như Issue gợi ý) còn sai 6 câu thường mới tìm thấy. Hướng so theo từng chữ (đề xuất) đúng cả, và vẫn bắt chữ viết không dấu.
+
+### 11.1 Version
+
+| Prompt | Đổi | Version mới |
+|---|---|---|
+| analysis | cách so khớp (§11.2, §11.3), danh sách chặn (§11.2 mẫu V6, §11.4), V1 (§11.5, §11.6); **chữ prompt không đổi** | `analysis@3` |
+| discovery | như analysis | `discovery@3` |
+| extraction | chữ không đổi, không qua V3–V6; V1 (§11.5, §11.6) cũng áp nhưng đề xuất trích xuất không lưu | giữ `extraction@1` |
+| tin nhắn ChatGPT web | chữ bọc không đổi; dòng dán chuẩn hóa theo bước 0 mới (§11.2) | giữ `web@1` → lưu `analysis@3+web@1` |
+
+- Đầu file ghi: đổi danh sách chặn = tăng version. Đợt này chỉ đổi luật kiểm, nên tăng version để phân tích lưu sau đợt được phân biệt với bản `@2`. Phân tích đã lưu với `@2` vẫn hiện như đã ghi; `db` chỉ kiểm dạng `<mode>@<n>`. Seed lấy version từ `PROMPT_VERSIONS` nên tự theo.
+- V1 chặt hơn (§11.5) cũng áp khi nhập backup (`db` dùng `@p2c/ai/schema`). Theo R2-02, Owner nạp lại dữ liệu giả lập; không viết migration.
+- Version mới làm đổi test app và e2e đang ghim `@2`. Issue đã cho sửa `e2e/customer-ai*.spec.ts` và hai test app. **Xin thêm `e2e/full-cycle.spec.ts`** vào file được phép: dòng 275 ghim `discovery@2`.
+
+### 11.2 Cách so khớp §7 bước 0 và mẫu V6 (DR6-17)
+
+**Lỗi hiện tại:** bước 0 chạy NFKC **trước**, rồi mới bỏ `\p{Cf}`. Khi chữ viết NFD có U+200B chen trước dấu tổ hợp, NFKC không ghép được dấu vào chữ. Bỏ U+200B xong, chữ vẫn ở dạng NFD. Mọi mục chỉ so bản có dấu hay bản gốc vì thế lọt. Đã thử 5 / 5 ca lọt: "KH dễ chốt", "Bảo Việt", "KH tuổi Tý" (ở `needs`), "Theo Điều 35", "Nghị quyết 12". Nhận diện tin nhắn của app (§6a) cũng lọt:
+
+- Tin nhắn `web@1` dán lại, có dòng khung viết như vậy: app tính là một lần thử (V1) thay vì báo `OWN_MESSAGE`.
+- Ở lần thử 2, dán lại message thử lại viết như vậy: app lưu dòng REJECTED. R2-04 (§10.6) lọt.
+
+Ngoài ra, ký tự vô hình không thuộc `\p{Cf}` cũng lọt: "xác" + U+3164 (Hangul filler) + "suất", "Bảo" + U+034F + "Việt". U+0085 giữa hai chữ cũng lọt ("xác" + U+0085 + "suất"): `\s` của JavaScript không gồm U+0085, nên hai chữ không được tách.
+
+**Đề xuất — bước 0 mới:**
+
+> 0. **Chuẩn hóa nền:** bỏ ký tự vô hình theo **đúng tập của K20** (`\p{Cf}`, mọi `\p{Default_Ignorable_Code_Point}` như U+3164, U+034F, bộ chọn biến thể, và U+2800), gộp mọi khoảng trắng Unicode (kể cả NBSP, U+0085) thành một dấu cách, cắt hai đầu, **rồi** NFKC (gom `％`, `﹪` về `%`, chữ số / chữ cái toàn độ rộng về ASCII) → thay `-` và `_` bằng dấu cách. Gọi là **bản gốc** (giữ hoa thường). Mục trong danh sách cũng chuẩn hóa như vậy.
+
+- Code: `normalizeText` của `domain` (hàm K20 dùng cho tên, giá trị KYC) rồi NFKC. Cả app dùng một tập ký tự vô hình; đổi tập ở K20 thì V3–V6 đổi theo.
+- Bỏ ký tự vô hình trước thì dấu tổ hợp ghép lại được vào chữ khi NFKC. NFKC không sinh thêm ký tự vô hình (đã quét), nên không phải bỏ lần hai.
+- Câu dán ChatGPT web (§6a) dùng chung bước 0 mới. Các bước sau đó (bỏ tiền tố `>`, gộp khoảng trắng, cắt hai đầu) giữ nguyên.
+
+**Mẫu V6 có `\s+`** (DR6-17, H·CL-C1): bỏ ký tự vô hình làm hai chữ dính nhau ("Điều" + U+200B + "35" thành "Điều35"). Cụm từ và dấu cách viết trong mẫu đã khớp 0 hoặc 1 dấu cách (§7 mục 4, 5), nhưng `\s+` thì đòi ít nhất một khoảng trắng. Đề xuất đổi `\s+` → `\s*` ở bốn mẫu của §8.4:
+
+| Mẫu | Mới |
+|---|---|
+| "Điều <số>" | `\b(Điều\|ĐIỀU)\s*\p{Nd}+` |
+| "khoản <số> điều <số>" | `\bkhoản\s*\p{Nd}+[,]?\s*điều\s*\p{Nd}+` |
+| "điểm <chữ> khoản" (cùng loại, Issue không nêu) | `\bđiểm\s*[a-zđ]\s*khoản\b` |
+| "luật <Tên>" | khoảng trắng **sau** "luật" có thể không có. Khoảng trắng giữa "pháp / kỷ / quy" và "luật" giữ như cũ: hai chữ dính liền thì "luật" không còn ranh giới từ ở đầu, nên không khớp |
+
+Câu thường không đổi kết quả: "Hỏi KH đã có Luật" + U+200B + "Sư gia đình chưa" và "Di chúc cần đúng pháp" + U+200B + "luật Việt Nam" vẫn đạt. Văn bản thường không có "Điều35", "khoản2điều35" hay "luậtKinh" viết dính.
+
+### 11.3 Bản bỏ dấu khớp nhầm câu thường (DR6-23)
+
+**Lỗi hiện tại:** §7 mục 2 bỏ dấu **cả câu** rồi so với mục đã bỏ dấu. Hai chữ có dấu khác nhau mà bỏ dấu giống nhau thì khớp nhầm. Đây là lỗi của cả cách so, không riêng vài mục. Câu thường hôm nay bị chặn:
+
+| Mục ("Bỏ dấu: có") | Câu thường bị chặn | Nguồn |
+|---|---|---|
+| hướng nội · hướng ngoại (V5) | "Định **hướng nơi** ở", "RE chuyển **hướng nói** sang…", "Định **hướng ngoài** giờ", "Định **hướng nối** nghiệp cho con" | DR6-23; "nối nghiệp" thấy khi thử |
+| nghị định (V6) | "suy **nghĩ định** hướng", "**nghĩ định** cư", "**nghỉ định** kỳ hằng năm" | DR6-23; "nghỉ định kỳ" thấy khi thử |
+| khách nóng · khách lạnh (V3) | "**khách nông** thôn", "nhóm **khách lãnh** đạo cấp cao" | DR6-23; "lãnh đạo" thấy khi thử |
+| sẵn sàng ký · chắc chắn ký (V3) | "**sẵn sàng kỹ** lưỡng", "**chắc chắn kỳ** hạn gửi tiền" | DR6-23; "kỳ hạn" thấy khi thử |
+| cung mệnh (V5) | "hai hợp đồng **cùng mệnh** giá" | thấy khi thử |
+| bộ luật (V6) | "KH **bỏ luật** sư cũ" | thấy khi thử |
+| bảo hiểm tử kỳ · gói bảo hiểm (V4) | "phí **bảo hiểm từ kỳ** tới", "KH thường **gọi bảo hiểm** khi xe gặp sự cố" | thấy khi thử |
+| khả năng mua (V3) | "**Khả năng múa** của con KH", "**khả năng mưa** gió" | thấy khi thử |
+| xếp hạng khách (V3) | "Ngân hàng **xếp hàng khách** ưu tiên riêng" | thấy khi thử |
+
+**Đề xuất (A — so theo từng chữ).** Viết lại §7 mục 2–3:
+
+> 2. **Bỏ dấu:** mục "Bỏ dấu: có" khớp khi **mỗi chữ** (âm tiết) của mục trong câu được viết **đúng như mục**, hoặc viết **không dấu** (không dấu thanh, không dấu phụ, `đ` viết `d`). Trong một cụm, các chữ có thể lẫn hai cách ("Xác suat", "bảo hiem tron doi"). Chữ có dấu **khác** mục thì không khớp: "nghỉ", "nghĩ" không phải "nghị"; "nông" không phải "nóng". Mẫu `regex` "cả bản bỏ dấu" theo cùng luật: mỗi chữ trong mẫu (ngoài lớp ký tự `[…]`) cũng được viết không dấu.
+> 3. Mục "Bỏ dấu: không": chỉ khớp chữ viết đúng như mục. Vẫn cần cho mục mà dạng không dấu của nó là chữ thường có thật, vd. "do tin cậy" (vì tin cậy) trùng dạng không dấu của "độ tin cậy".
+
+- Mọi câu thường ở bảng trên hết bị chặn, mà chữ viết không dấu vẫn bị chặn: "KH la nguoi huong noi", "Theo nghi dinh moi", "KH la khach nong", "KH san sang ky ngay", "Nghi định 46 về thuế", "Xác suat cao".
+- Không đổi danh sách chặn: không mục nào phải chuyển cột "Bỏ dấu".
+- Code: bỏ "bản bỏ dấu" của cả câu. Mỗi mục / mẫu "có" được dựng thành một regex chạy trên bản có dấu, trong đó mỗi chữ là "chữ đúng dấu hoặc chữ không dấu". Phần đổi nằm trong `text-match.ts`, khoảng 25 dòng.
+- **Mất** (model không đối kháng, §10.10): chữ viết **sai dấu** ("xạc suất", "khả nắng mua"); chữ giữ `đ` nhưng bỏ dấu thanh ("Nghi đinh"); chữ có hai dấu thanh chồng nhau. Hai lượt eval thật không có chữ nào như vậy (R1 = 0).
+
+**(B) "Bỏ dấu: không" cho từng mục** (như Issue gợi ý, như "nghị quyết" ở §10.3). Chuyển 5 nhóm: khách nóng / lạnh / ấm, sẵn sàng ký / chắc chắn ký, bốn mục hướng nội / ngoại, cung mệnh, nghị định. Hướng này **không chọn**, vì:
+
+- Còn sai 6 câu thường ở bảng trên ("bỏ luật sư", "bảo hiểm từ kỳ", "gọi bảo hiểm", "khả năng múa / mưa", "xếp hàng khách"). Muốn hết thì phải chuyển thêm cả "bộ luật", "khả năng mua", "gói bảo hiểm"…
+- Mỗi mục chuyển sang "không" là mất luôn việc bắt chữ viết không dấu ("khach nong", "nghi dinh", "kha nang mua").
+
+### 11.4 V6 "luật <Tên>": chính tả i (DR6-102)
+
+"luật" không đứng sau "pháp", "kỷ", **"kỉ"**, "quy", **"qui"** (mọi kiểu chữ) + khoảng trắng. "Kỉ luật", "qui luật" là cách viết i hợp chuẩn, cùng nghĩa với "kỷ", "quy". Hôm nay "Giữ kỉ luật Thép của KH" và "KH tin vào qui luật Thị trường" bị chặn nhầm (0 lần trong eval thật). Sau khi sửa, các câu này đạt, cả khi viết hoa toàn bộ ("KỈ LUẬT", "QUI LUẬT"). "Theo Luật Kinh doanh bảo hiểm" vẫn bị chặn.
+
+### 11.5 V1: tập ký tự vô hình của K20, trần chuỗi gốc (DR6-77, DR6-17)
+
+**Hiện tại** (`schema.ts`, DR6-16): V1 bỏ `\p{Cf}`, rồi đếm 1–300 ký tự NFC trên phần còn lại; kiểm có chữ cái trên **chuỗi gốc**; chuỗi gốc không có trần. Hệ quả:
+
+- **DR6-77:** `text` = 300 chữ + 650 000 × U+200B đạt V1, lưu thành ACCEPTED với `output_json` 1 951 125 B ≈ 2 MB vô hình. Dòng nằm trong `ai_analyses` (chỉ thêm, không xóa được) và trong mọi backup sau đó. Nhập backup cũng nhận vì dùng cùng schema (CL2-C1).
+- **Tập ký tự hẹp hơn K20:** `text` chỉ có U+3164 (Hangul filler) đạt V1. U+3164 là chữ cái (`\p{Lo}`) nhưng vô hình, và không thuộc `\p{Cf}`. Cũng vậy với U+3164 + "…".
+
+**Đề xuất (A — trần chuỗi gốc).** Áp cho mọi chuỗi AI viết: `text` của analysis / discovery; `field`, `value`, `quote` của trích xuất.
+
+1. **Chuỗi gốc** (sau khi cắt khoảng trắng hai đầu, như nay) dài tối đa **1 000** ký tự, tính cả ký tự vô hình và dấu viết rời. Đếm theo `length` của JavaScript (emoji tính 2), không cấp phát theo cỡ chuỗi. Quá trần → V1 "quá 1 000 ký tự kể cả ký tự vô hình", kiểm trước mọi luật khác của chuỗi.
+   - **Vì sao 1 000:** một chữ tiếng Việt viết NFD dài nhất 3 ký tự ("ệ" = e + 2 dấu). Vậy mọi chuỗi 300 ký tự viết NFD (≤ 900) vẫn đạt.
+   - Một phân tích (≤ 35 chuỗi) chở tối đa ≈ 35 000 ký tự, thay vì không giới hạn như nay.
+2. **Phần thấy được** = chuỗi sau `normalizeText` (K20: bỏ ký tự vô hình, gộp khoảng trắng, NFC, cắt hai đầu).
+   - Rỗng → "chuỗi rỗng"; dài 1–300 ký tự.
+   - `text` của analysis / discovery phải có chữ cái **trong phần thấy được**.
+   - Thay đổi nhỏ kèm theo: khoảng trắng liền nhau ở giữa chuỗi nay đếm là 1, như tên / KYC theo K20.
+3. Giá trị lưu vẫn là chuỗi model viết, chỉ cắt khoảng trắng hai đầu như nay. Nhập backup dùng cùng schema, nên 2 MB vô hình bị từ chối ở cả lệnh lẫn nhập backup. Không phải sửa code `db`, chỉ thêm test.
+
+**(B) Lưu phần thấy được** (schema biến `text` thành `normalizeText(text)`). `output_json` sẽ không còn ký tự vô hình, nhưng có hai nhược điểm, nên **không chọn**:
+
+- Nhập backup chỉ kiểm "schema parse được", mà phép biến đổi luôn parse được. Backup sửa tay vẫn mang 2 MB vô hình vào được, trừ khi `db` thêm phép so "output đã ở dạng chuẩn".
+- Chữ lưu khác chữ model viết.
+
+### 11.6 V1: `detail` nêu dạng đúng (DR6-24)
+
+`detail` đi vào message thử lại (§5). Hiện nó chỉ nói "sai", không nói đúng là gì, nên lần thử 2 dễ trượt tiếp thành REJECTED (L·MU-C2). Đề xuất:
+
+| Lỗi | Ví dụ `path` | `detail` hiện tại | `detail` mới |
+|---|---|---|---|
+| Thiếu khóa (khối, `text`…) | `themes` | sai kiểu, cần array | **thiếu**, cần array |
+| Sai kiểu | `painPoints[0].text` | sai kiểu, cần string | giữ nguyên |
+| Mã dữ kiện sai dạng | `hypotheses[0].evidence[0]` | sai định dạng | sai định dạng, cần mã dữ kiện dạng F12 |
+| Giá trị ngoài danh sách | `personalityNotes[0].system` | giá trị không hợp lệ | giá trị không hợp lệ, cần một trong: PSYCHOLOGY, ESOTERIC |
+| (như trên) | `discoveryStrategy[0].missingCategory` | giá trị không hợp lệ | giá trị không hợp lệ, cần một trong: IDENTITY, FAMILY, OCCUPATION_INCOME, ASSETS, GOALS, RISK_APPETITE, EXISTING_PROTECTION, CONCERNS |
+| `value` trích xuất sai kiểu | `facts[0].value` | sai định dạng | sai kiểu, cần string, number hoặc boolean |
+
+- Danh sách giá trị lấy từ schema (`PERSONALITY_SYSTEMS`, `KYC_CATEGORIES`). V2 vẫn kiểm `missingCategory` có trong `missingCategories` của đầu vào.
+- Các `detail` khác giữ nguyên: "cần ít nhất N phần tử", "quá N phần tử", "chuỗi rỗng", "quá 300 ký tự", "không có chữ", "trích trùng một dữ kiện", "cần evidence hoặc missingCategory", "không có khối JSON", "trả lời bị cắt…", "và K lỗi khác". Thêm một `detail` mới: "quá 1 000 ký tự kể cả ký tự vô hình" (§11.5).
+- Chữ message thử lại §5 không đổi.
+
+### 11.7 Ca kiểm mới (thêm vào §8.5)
+
+| # | Chuỗi trong output | Kết quả |
+|---|---|---|
+| C55 | Viết NFD, U+200B trước mỗi dấu tổ hợp: "KH dễ chốt" · "Bảo Việt" · "KH tuổi Tý" ở `needs` · "Theo Điều 35" · "Nghị quyết 12" | V3 · V4 · V5 · V6 · V6 |
+| C56 | "Theo Điều" + U+200B + "35" · "Theo Điều" + U+2060 + "35" · "Luật" + U+200B + "Kinh doanh bảo hiểm" · "Luật" + U+2060 + "BHXH" | V6 |
+| C57 | "khoản 2" + U+200B + "Điều" + U+200B + "35" · "khoản" + U+2060 + "2 điều 35" · "điểm" + U+200B + "a" + U+200B + "khoản 2" | V6 |
+| C58 | "Hỏi KH đã có Luật" + U+200B + "Sư gia đình chưa" · "Di chúc cần đúng pháp" + U+200B + "luật Việt Nam" | đạt |
+| C59 | "xác" + U+3164 + "suất" · "xác" + U+0085 + "suất" | V3 |
+| C60 | "Bảo" + U+034F + "Việt" | V4 |
+| C61 | `text` chỉ U+3164 · U+3164 + "…" | V1 |
+| C62 | "Định hướng nơi ở sau khi nghỉ hưu" · "Định hướng ngoài giờ làm việc" · "Định hướng nối nghiệp cho con" ở `needs` · "RE chuyển hướng nói sang mục tiêu học phí" ở `nextBestActions` | đạt |
+| C63 | "KH cần suy nghĩ định hướng đầu tư" · "KH nghĩ định cư ở Úc" · "KH nghỉ định kỳ hằng năm" | đạt |
+| C64 | "Phần lớn là khách nông thôn" · "KH thuộc nhóm khách lãnh đạo cấp cao" · "Ngân hàng xếp hàng khách ưu tiên riêng" | đạt |
+| C65 | "KH sẵn sàng kỹ lưỡng xem xét" · "KH muốn chắc chắn kỳ hạn gửi tiền" · "Khả năng múa của con KH" · "KH có khả năng mưa gió vẫn đến" | đạt |
+| C66 | "Hai hợp đồng cùng mệnh giá" ở `needs` · "KH bỏ luật sư cũ" · "KH lo phí bảo hiểm từ kỳ tới sẽ tăng" · "KH thường gọi bảo hiểm khi xe gặp sự cố" | đạt |
+| C67 | "KH là người hướng nội" · "KH cung mệnh Kim" · "KH la nguoi huong noi" · "KH huong nội" ở `needs` | V5 |
+| C68 | "Theo nghị định mới" · "Theo nghi dinh moi" · "Nghi định 46 về thuế" | V6 |
+| C69 | "KH là khách nóng" · "KH la khach nong" · "KH là khach nóng" · "KH sẵn sàng ký ngay" · "KH san sang ky ngay" · "Xác suat cao" | V3 |
+| C70 | "Giữ kỉ luật Thép của KH" · "KH tin vào qui luật Thị trường" · "Giữ KỈ LUẬT Thép" · "KH tin vào QUI LUẬT Thị trường" | đạt |
+| C71 | `text` 150 "a" + 650 000 × U+200B + 150 "a" · 150 "a" + 701 × U+200B + 150 "a" | V1 ("quá 1 000 ký tự kể cả ký tự vô hình") |
+| C72 | `text` 150 "a" + 700 × U+200B + 150 "a" (đúng 1 000) · 300 × "ệ" viết NFD (900) + 100 × U+200B | đạt |
+
+Ngoài bảng:
+
+- **Tin nhắn ChatGPT web:** tin nhắn `web@1` có hai dòng khung viết NFD + U+200B trước dấu → `OWN_MESSAGE`. Ở lần thử 2, dán lại message thử lại của phiên viết như vậy → `OWN_MESSAGE`, phiên còn mở, không có `row`.
+- **Message thử lại:** lần thử 1 có lỗi mã `"f12"`, `system` `"MBTI"`, thiếu khối `themes` → message lần 2 có đủ `detail` mới của §11.6.
+- **`db`:** `recordAiAnalysis` và nhập backup từ chối dòng ACCEPTED có `text` của C71.
+
+### 11.8 Không làm trong đợt này
+
+- Chữ tương hình (Cyrillic, Greek), như §10.10.
+- **REJECTED vẫn có thể lưu output lớn.** `output_json` của dòng REJECTED là output đã parse của lần thử cuối, không qua V1 (spec §7.1). Nên một output suy biến, lặp lại ở cả hai lần thử, vẫn lưu được tới cỡ thân trả lời (≤ 2 MB với OpenCode, ≤ 20 000 ký tự với ChatGPT web). Chuyện này có từ Phase 5 với mọi output suy biến; DR6-77 chỉ nói dòng ACCEPTED. Muốn sửa thì phải đổi spec §7.1 (G2), vì panel dùng `output_json` = `null` để nhận ra "không có khối JSON". Đề xuất: ghi `review-notes.md`, không làm ở đây.
+- `detail` của V2 giữ nguyên ("F99 không có trong đầu vào", "ASSETS không phải hạng mục đang thiếu"): model đọc được mã đúng trong đầu vào.
+
+### 11.9 Owner duyệt
+
+- [ ] Version `analysis@3`, `discovery@3`; `extraction@1`, `web@1` giữ; thêm `e2e/full-cycle.spec.ts` vào file được phép (§11.1)
+- [ ] Bước 0: bỏ ký tự vô hình theo tập K20 trước, rồi NFKC; `\s+` → `\s*` ở bốn mẫu V6 (§11.2)
+- [ ] Bản bỏ dấu phương án A: so theo từng chữ (đúng dấu hoặc không dấu), không đổi cột "Bỏ dấu" của mục nào (§11.3)
+- [ ] "kỉ", "qui" vào ngoại lệ của "luật <Tên>" (§11.4)
+- [ ] V1 phương án A: trần chuỗi gốc 1 000, phần thấy được theo K20 (§11.5)
+- [ ] `detail` V1 nêu dạng đúng (§11.6)
+- [ ] Ca kiểm C55–C72 và các ca ngoài bảng (§11.7)
+- [ ] REJECTED lưu output lớn: ghi `review-notes.md`, không làm ở đây (§11.8)
