@@ -10,12 +10,12 @@ Lúc mở, app đọc file dữ liệu, kiểm tra file không hỏng, rồi sao
 
 | Tiêu đề trên màn | Nghĩa | Làm gì |
 |---|---|---|
-| **Project-2C đang mở ở một cửa sổ khác** | Thư mục dữ liệu này đang được một cửa sổ app khác dùng | Dùng cửa sổ đó, đóng cửa sổ này. App không đọc, không ghi gì ở cửa sổ này |
-| **File dữ liệu đang bị chương trình khác giữ** | Một chương trình khác (phần mềm sao lưu, đồng bộ, diệt virus hay công cụ mở file SQLite) đang mở file trong `Project2C-data`. File dữ liệu không hỏng | Đóng chương trình đó rồi mở lại app. **Không** chép backup đè lên file: file đang dùng được, bản backup thiếu các thay đổi gần nhất |
-| **App không có quyền ghi vào thư mục dữ liệu** | Windows không cho app ghi vào `Project2C-data` cạnh file exe: thư mục hay file trong đó chỉ đọc, tài khoản Windows đang dùng không có quyền ghi, hoặc app chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như `Program Files`. File dữ liệu không hỏng | Bỏ chỉ đọc ở thư mục `Project2C-data` và các file trong đó, kiểm quyền ghi của tài khoản đang dùng; app chạy từ ổ chỉ đọc hay `Program Files` thì chép cả thư mục app (exe cùng `Project2C-data`) sang chỗ khác. Rồi mở lại app. **Không** chép backup đè lên file |
-| **Không sao lưu được file dữ liệu** | App không chép được bản sao lưu trước khi mở. File dữ liệu không bị đổi | Kiểm tra ổ đĩa còn chỗ trống, thư mục `backups\` không chỉ đọc hay bị chương trình khác giữ, rồi mở lại app |
-| **Ổ đĩa đã đầy, không sao lưu được file dữ liệu** | Ổ chứa thư mục app hết chỗ. File dữ liệu không bị đổi | Xóa bớt file trên ổ đó (ví dụ file cũ trong `Project2C-data\exports\`), rồi mở lại app |
-| **File dữ liệu do bản app mới hơn tạo** | File đã được bản app mới hơn mở và nâng cấp | Dùng bản app mới hơn. App này không đổi gì trong file |
+| **Project-2C đang mở ở một cửa sổ khác** | Thư mục dữ liệu này đang được một cửa sổ app khác dùng | Dùng cửa sổ đó, đóng cửa sổ này. App không đọc, không ghi gì ở cửa sổ này. Cửa sổ đó đang báo lỗi mở dữ liệu thì đóng cả hai cửa sổ rồi mở lại app |
+| **File dữ liệu đang bị chương trình khác giữ** | Một chương trình khác (phần mềm sao lưu, đồng bộ, diệt virus hay công cụ mở file SQLite) đang mở file trong `Project2C-data`. File dữ liệu không hỏng | Đóng chương trình đó, rồi đóng cửa sổ báo lỗi và mở lại app. **Không** chép backup đè lên file: file đang dùng được, bản backup thiếu các thay đổi gần nhất |
+| **App không có quyền ghi vào thư mục dữ liệu** | Windows không cho app ghi vào `Project2C-data` cạnh file exe: thư mục hay file trong đó (kể cả chính `project2c.db`) chỉ đọc, tài khoản Windows đang dùng không có quyền ghi, hoặc app chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như `Program Files`. File dữ liệu không hỏng | Bỏ chỉ đọc ở thư mục `Project2C-data` và các file trong đó, kiểm quyền ghi của tài khoản đang dùng; app chạy từ ổ chỉ đọc hay `Program Files` thì chép cả thư mục app (exe cùng `Project2C-data`) sang chỗ khác. Rồi đóng cửa sổ báo lỗi và mở lại app. **Không** chép backup đè lên file |
+| **Không sao lưu được file dữ liệu** | App không chép được bản sao lưu trước khi mở. File dữ liệu không bị đổi | Kiểm tra ổ đĩa còn chỗ trống, thư mục `backups\` không chỉ đọc hay bị chương trình khác giữ, rồi đóng cửa sổ báo lỗi và mở lại app |
+| **Ổ đĩa đã đầy, không sao lưu được file dữ liệu** | Ổ chứa thư mục app hết chỗ. File dữ liệu không bị đổi | Xóa bớt file trên ổ đó (ví dụ file cũ trong `Project2C-data\exports\`), rồi đóng cửa sổ báo lỗi và mở lại app |
+| **File dữ liệu do bản app mới hơn tạo** | File đã được bản app mới hơn mở và nâng cấp | Đóng cửa sổ báo lỗi rồi dùng bản app mới hơn. App này không đổi gì trong file |
 | **File dữ liệu bị hỏng** | File mở được nhưng hỏng bên trong (lúc mở app kiểm tra toàn bộ file). App không chép file hỏng vào `backups\` | [Mở lại từ backup](#mở-lại-từ-backup); bản mới nhất vẫn báo lỗi thì chép bản liền trước. App chưa ghi gì vào file |
 | **Không mở được file dữ liệu** | File dữ liệu rỗng hoặc hỏng tới mức không mở được, không phải file của app, hoặc bị mất trong khi `backups\` vẫn còn bản sao | [Mở lại từ backup](#mở-lại-từ-backup). App chưa ghi gì vào file |
 
@@ -79,7 +79,7 @@ Lỗi khi gọi AI hiện trong thẻ KYC Intelligence (hoặc dưới ghi chú 
 | "Trả lời của OpenCode không đọc được." | Thử lại |
 | "Đang có một yêu cầu AI khác — chờ xong rồi thử lại." | Mỗi lúc chỉ một yêu cầu AI; chờ yêu cầu đang chạy (có thể ở KH khác) |
 | "Không đọc / ghi được key trong Windows Credential Manager." | Mở lại app; vẫn lỗi thì kiểm tra Credential Manager của Windows |
-| "Dữ liệu gửi AI quá lớn (quá 200 000 ký tự) — rút gọn ghi chú hoặc dữ kiện rồi thử lại." | Thường gặp ở AI trích xuất với ghi chú rất dài |
+| "Dữ liệu gửi AI quá lớn (quá 200.000 ký tự) — rút gọn ghi chú hoặc dữ kiện rồi thử lại." | Thường gặp ở AI trích xuất với ghi chú rất dài |
 | "Có lỗi trong app khi gọi AI — thử lại; nếu lặp lại, báo cho người hỗ trợ." | Thử lại; lặp lại thì báo người hỗ trợ |
 
 Lần phân tích **bị loại** (AI trả lời nhưng không đạt kiểm tra) không phải lỗi kết nối: xem [6. KYC Intelligence → Lần phân tích bị loại](06-ai.md#lần-phân-tích-bị-loại).
