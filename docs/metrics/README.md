@@ -21,7 +21,7 @@ Ngoài bảng của `COMPARISON.md`, từ **Phase 4** `phase-<N>.md` thêm một
 node tools/retro.mjs [--last N]
 ```
 
-- Đọc transcript Claude Code **của máy đang chạy** (`~/.claude/projects/<thư mục repo>*/*.jsonl`: checkout chính, worktree review `Project-2C-review*`, worktree của Claude). Transcript không đồng bộ giữa hai máy → chạy ở cả Home PC và Office Laptop, ghi tên máy (dòng đầu output) cạnh số liệu.
+- Đọc transcript Claude Code **của máy đang chạy**: `<thư mục cấu hình>/projects/<thư mục repo>*/*.jsonl` (checkout chính, worktree review `Project-2C-review*`, worktree của Claude) của mọi thư mục cấu hình `~/.claude*` có `projects/` (vd. `.claude`, `.claude-b`, `.claude-c`) và của thư mục `CLAUDE_CONFIG_DIR`. Mỗi thư mục đọc một lần theo đường dẫn thật, kể cả khi viết dạng 8.3 hay khác hoa / thường. Dòng đầu output ghi các thư mục đã đọc. Transcript không đồng bộ giữa hai máy → chạy ở cả Home PC và Office Laptop, ghi tên máy (dòng `Navigation metrics — machine …` của output) cạnh số liệu.
 - In tối đa 30 phiên gần nhất (`--last N` để ít hơn) + dòng trung vị theo loại phiên. Chỉ in số đếm, 8 ký tự đầu của id phiên và ngày, không in nội dung hội thoại.
 - Phân loại: phiên **review** khi chạy trong `Project-2C-review*` hoặc mở bằng "review PR"; còn lại là **task**. Chỉ tiêu "dò ≤ 5" xét trung vị phiên task.
 - Cách đếm (heuristic, logic ở `tools/retro-core.mjs`):

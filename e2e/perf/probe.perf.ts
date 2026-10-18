@@ -158,8 +158,15 @@ async function click(name: string, target: Locator, ready?: Ready, limit = SCREE
 /**
  * A write: the debugger slows the file commands through IPC (Phase 4), so the click runs in the
  * page after the probe has disconnected, and the probe reads the time once it connects again.
+ * Also for a screen of many SQL reads, which DevTools slows as well (DR6-98).
  */
-async function detached(name: string, target: Locator, ready: Ready, saves = false) {
+async function detached(
+  name: string,
+  target: Locator,
+  ready: Ready,
+  saves = false,
+  limit?: number,
+) {
   await mark(target);
   const timing: Timing = { action: 'click', ready, saves, delay: DETACH_DELAY };
   await page.evaluate(timeInPage, timing);
@@ -172,7 +179,7 @@ async function detached(name: string, target: Locator, ready: Ready, saves = fal
   });
   const result = (await handle.jsonValue()) as Timed;
   if (result.error || result.ms === undefined) throw new Error(`${name}: ${result.error}`);
-  add(name, 'ms', result.ms);
+  add(name, 'ms', result.ms, limit);
   if (result.save !== undefined) add('db.save', 'ms', result.save);
 }
 
@@ -226,14 +233,16 @@ async function importBackup() {
   await input.setInputFiles(BACKUP);
   const read = await input.evaluate(async (el) => {
     const start = Number(el.dataset.picked);
+    // No change event: no start to time from, and the wait below would never end.
+    if (Number.isNaN(start)) return 'no file picked';
     while (!document.querySelector('dialog[open]')) {
-      if (performance.now() - start > 60_000) return undefined;
+      if (performance.now() - start > 60_000) return 'no confirmation after 60 s';
       await new Promise((resolve) => requestAnimationFrame(resolve));
     }
     await new Promise((resolve) => setTimeout(resolve));
     return performance.now() - start;
   });
-  if (read === undefined) throw new Error(`backup.read: no confirmation for ${BACKUP}`);
+  if (typeof read === 'string') throw new Error(`backup.read: ${read} for ${BACKUP}`);
   add('backup.read', 'ms', read);
   const confirm = page.getByRole('dialog').getByRole('button', { name: 'Backup rồi thay dữ liệu' });
   await detached('backup.import', confirm, status('Đã nhập backup'), true);
@@ -341,10 +350,13 @@ async function filters() {
   await tables.getByRole('radio', { name: 'Theo team' }).click();
 }
 
+const trashButton = () =>
+  page.getByRole('navigation', { name: 'Mục cài đặt' }).getByRole('button', { name: 'Thùng rác' });
+
+/** Thùng rác: a filter, on the rows already read; opening it is timed apart (trashOpen). */
 async function trash() {
   await go('#/settings');
-  const sections = page.getByRole('navigation', { name: 'Mục cài đặt' });
-  await click('trash.open', sections.getByRole('button', { name: 'Thùng rác' }));
+  await trashButton().click();
   await expect(page.getByRole('table', { name: 'Bản ghi đã xóa' })).toBeVisible();
   const records = page.getByRole('radiogroup', { name: 'Loại bản ghi' });
   await click('trash.kind-appointments', records.getByRole('radio', { name: /^Lịch hẹn/ }));
@@ -358,6 +370,18 @@ async function memory() {
   const { usedSize } = await cdp.send('Runtime.getHeapUsage');
   add('memory.js-heap', 'MB', usedSize / 1024 / 1024);
   await cdp.detach();
+}
+
+/**
+ * Opening Thùng rác reads many rows by SQL, which DevTools slows (README, DR6-98): timed detached,
+ * from Cài đặt opened afresh. Only after memory(): each reconnect leaves the probe's script in the
+ * heap until the next reload.
+ */
+async function trashOpen() {
+  await go('#/overview');
+  await go('#/settings');
+  const table = { selector: 'table[aria-label="Bản ghi đã xóa"]' };
+  await detached('trash.open', trashButton(), table, false, SCREEN_LIMIT);
 }
 
 /** Xuất Excel and Xuất backup, each from its screen opened afresh: no notice of the run before. */
@@ -410,6 +434,12 @@ async function nextAppointment(i: number, period: 'month' | 'year') {
 }
 
 test('perf of spec Phase 6 §5.2 on the exe release with the load data', async () => {
+  // Not a whole number ≥ 1: every loop would be skipped and a near-empty run written as valid.
+  if (!Number.isInteger(RUNS) || RUNS < 1) {
+    throw new Error(
+      `PERF_RUNS is ${process.env.PERF_RUNS}: give a whole number of runs, at least 1.`,
+    );
+  }
   if (!existsSync(BACKUP)) {
     throw new Error(
       `No load data file at ${BACKUP}: write it with node tools/load-data.mjs ` +
@@ -437,6 +467,7 @@ test('perf of spec Phase 6 §5.2 on the exe release with the load data', async (
     await trash();
   }
   await memory();
+  for (let i = 0; i < RUNS; i++) await trashOpen();
   for (let i = 0; i < RUNS; i++) await exports();
   for (let i = 0; i < RUNS; i++) {
     await nextAppointment(i, 'month');

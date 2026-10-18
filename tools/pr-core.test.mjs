@@ -68,14 +68,19 @@ const pr = ({ files = [{ path: 'tools/a.mjs' }], ...over } = {}) => ({
   changedFiles: files.length,
   ...over,
 });
-const ctx = (over = {}) => ({
-  owner: false,
-  mode: 'squash',
-  stacked: [],
-  baseMerged: null,
-  testedBase: TESTED,
-  ...over,
-});
+const ctx = (over = {}) => {
+  const given = {
+    owner: false,
+    mode: 'squash',
+    stacked: [],
+    baseMerged: null,
+    testedBase: TESTED,
+    mainSince: [],
+    ...over,
+  };
+  // Every commit main got since the tested base was read, unless the test says otherwise.
+  return { mainTotal: given.mainSince.length, ...given };
+};
 
 describe('isDocsOnly', () => {
   it('is true when every file is under docs/ or a Markdown file', () => {
@@ -362,6 +367,47 @@ describe('mergeBlockers', () => {
     const mainSince = [{ sha: '3333333cccc', date: '2026-10-06T10:05:00Z', files: ['apps/x.ts'] }];
     expect(mergeBlockers(pr({ statusCheckRollup: rollup }), ctx({ mainSince }))).toEqual([
       expect.stringMatching(/^main got code since feed000, .* \(3333333\)/),
+    ]);
+  });
+
+  it('stops a code PR until it read every commit main got since the tested main (DR6-85)', () => {
+    // 251 commits: the oldest changes code, the 250 after it only the review notes ledger.
+    const mainSince = Array.from({ length: 251 }, (_, i) => ({
+      sha: `${String(i).padStart(7, '0')}cccc`,
+      files: [i === 0 ? 'apps/x.ts' : 'docs/state/review-notes.md'],
+    }));
+    expect(mergeBlockers(pr(), ctx({ mainSince }))).toEqual([
+      'main got code since feed000, the main CI tested on head abc1234 (0000000): gh pr update-branch 9, wait for CI, then review the new head again (P-1).',
+    ]);
+    // Without paging, GitHub lists the newest 250 commits of a comparison only.
+    const newest = ctx({ mainSince: mainSince.slice(1), mainTotal: 251 });
+    expect(mergeBlockers(pr(), newest)).toEqual([
+      'Read 250 of the 251 commits main got since feed000, the main CI tested on head abc1234: gh pr update-branch 9, wait for CI, then review the new head again (P-1).',
+    ]);
+    // Both said at once: commits not read, and code among those read.
+    const oldest = ctx({ mainSince: mainSince.slice(0, 250), mainTotal: 251 });
+    expect(mergeBlockers(pr(), oldest)).toEqual([
+      expect.stringMatching(/^Read 250 of the 251 commits main got since feed000, /),
+      expect.stringMatching(/^main got code since feed000, .* \(0000000\): /),
+    ]);
+    // No count from GitHub is not taken as every commit read.
+    for (const mainTotal of [null, undefined]) {
+      expect(mergeBlockers(pr(), ctx({ mainTotal })), String(mainTotal)).toEqual([
+        expect.stringMatching(/^Read 0 of the \? commits main got since feed000, /),
+      ]);
+    }
+    const docs = [{ path: 'docs/z.md' }];
+    expect(mergeBlockers(pr({ files: docs, statusCheckRollup: [] }), newest)).toEqual([]);
+  });
+
+  it('reads no tested main as unknown, and says so of an open PR only (#642)', () => {
+    const mainSince = [{ sha: '3333333cccc', files: ['apps/x.ts'] }];
+    expect(mergeBlockers(pr(), ctx({ testedBase: null, mainSince }))).toEqual([
+      'CI on head abc1234 noted no tested main ("Tested base" of the Verify job): gh pr close 9 + gh pr reopen 9 so CI runs again.',
+    ]);
+    // pr-status reads no tested main for a PR that is no longer open: its state says it all.
+    expect(mergeBlockers(pr({ state: 'MERGED' }), ctx({ testedBase: null }))).toEqual([
+      'PR is MERGED, not open.',
     ]);
   });
 

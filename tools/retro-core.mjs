@@ -195,11 +195,18 @@ export function transcriptDirs(names, repoDir) {
 
 /**
  * The `projects` folders Claude Code writes transcripts to on this machine, once each: the config
- * folder in use (`CLAUDE_CONFIG_DIR`, e.g. `.claude-b`) and the default `~/.claude` (DR6-58).
+ * folder in use (`CLAUDE_CONFIG_DIR`) and every `~/.claude*` one, e.g. `.claude-b` (DR6-58,
+ * DR6-86). `names` are the entries of the home folder; `realpath` gives a folder's real path, null
+ * when there is no such folder, so an 8.3 or other-case spelling of a folder counts once.
  */
-export function projectRoots(env, home) {
-  const configs = [env.CLAUDE_CONFIG_DIR, join(home, '.claude')].filter(Boolean);
-  return [...new Set(configs.map((dir) => resolve(dir, 'projects')))];
+export function projectRoots(env, home, names, realpath) {
+  const configs = names
+    .filter((name) => name.startsWith('.claude'))
+    .map((name) => join(home, name));
+  const found = [env.CLAUDE_CONFIG_DIR, ...configs]
+    .filter(Boolean)
+    .map((dir) => realpath(resolve(dir, 'projects')));
+  return [...new Set(found.filter(Boolean))];
 }
 
 const num = (v) => (v === null ? '—' : String(Math.round(v * 10) / 10));

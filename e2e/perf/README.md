@@ -57,7 +57,7 @@ Thời gian tính **từ thao tác tới khung hình kế tiếp sau khi màn hi
 | Khách hàng: sang Bảng, sắp Họ tên | `customers.view-table`, `customers.sort-name` |
 | Hồ sơ KH có panel AI; bấm một lần trong Lịch sử phân tích | `customer.open-ai`, `customer.ai-history` |
 | Tổng quan / Báo cáo: bấm Lọc ở kỳ Năm và Tháng; Báo cáo Theo RE | `overview.filter-year`, `-month`, `reports.filter-year`, `-month`, `reports.table-re` |
-| Thùng rác: mở, lọc Lịch hẹn | `trash.open`, `trash.kind-appointments` |
+| Thùng rác: mở (đo khi đã ngắt debugger), lọc Lịch hẹn | `trash.open`, `trash.kind-appointments` |
 | Bộ nhớ JS heap của webview sau khi đi hết các màn (sau GC; không gồm bộ nhớ WebAssembly của sql.js, nơi giữ DB) | `memory.js-heap` (MB) |
 | Nhập backup: từ lúc chọn file tới hộp xác nhận; bấm xác nhận tới khi báo đã nhập | `backup.read`, `backup.import` |
 | Xuất Excel, Xuất backup (ghi vào `Project2C-data\exports\`, không có hộp chọn file) | `reports.export-excel`, `backup.export` |
@@ -66,7 +66,9 @@ Thời gian tính **từ thao tác tới khung hình kế tiếp sau khi màn hi
 
 Ngưỡng: thao tác màn (đổi kỳ, sắp, chọn, Lọc, mở hồ sơ, Thùng rác) **< 200 ms** theo trung vị — Nhóm C của deep review Phase 1–4 (`docs/process/deep-review-phase-1-4.md` §8, spec Phase 6 §5.2). Ngưỡng cho màn Phase 5 / 6 và cho phần còn lại đặt sau số đo nền (T-219).
 
-**Debugger làm chậm lệnh ghi qua IPC** (bài học Phase 4): khi probe nối CDP, mỗi lần lưu file DB (≈ 13 MB) qua IPC chậm hẳn. Vì vậy Nhập backup (bước xác nhận), Xuất Excel, Xuất backup và Tạo lịch hẹn tiếp theo chạy **khi đã ngắt debugger**: probe đánh dấu nút, hẹn trong trang bấm sau 1 s, ngắt CDP, chờ, nối lại rồi đọc thời gian trang đã ghi. Các thao tác khác đo khi đang nối (chỉ đọc, không qua IPC).
+**Debugger làm chậm lệnh ghi qua IPC** (bài học Phase 4): khi probe nối CDP, mỗi lần lưu file DB (≈ 13 MB) qua IPC chậm hẳn. Vì vậy Nhập backup (bước xác nhận), Xuất Excel, Xuất backup và Tạo lịch hẹn tiếp theo chạy **khi đã ngắt debugger**: probe đánh dấu nút, hẹn trong trang bấm sau 1 s, ngắt CDP, chờ, nối lại rồi đọc thời gian trang đã ghi. Các thao tác khác đo khi đang nối (chỉ đọc, không qua IPC), trừ `trash.open` ở đoạn dưới.
+
+**DevTools cũng làm chậm thao tác chạy nhiều câu SQL** (deep review Phase 1–6 lượt 2, DR6-98). Đo trên exe, mở Thùng rác khi gắn DevTools chậm ×2,4–3,3 so với khi đã ngắt, lệch tăng theo số dòng Thùng rác. Vì vậy `trash.open` cũng đo khi đã ngắt, như lệnh ghi (từ T-256; số `trash.open` đo trước đó là số khi gắn, nên cao hơn). Probe đo nó sau `memory.js-heap`, vì mỗi lần nối lại để lại script của Playwright trong heap (≈ 0,5 MB) tới lần tải lại kế. Thao tác màn không chạy câu SQL mới chỉ lệch ±1 ms; mở dữ liệu khi tải lại màn (`reload.*`) chậm hơn ≈ 7 % khi gắn.
 
 **Đo tay:**
 

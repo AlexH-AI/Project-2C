@@ -885,7 +885,7 @@ describe('importBackup — rules across tables', () => {
       (b, ids) => (row(b, 'customers', (c) => c.id === ids.lan).name = 'Nguyễn  Lan'),
     ],
     [
-      'VALUE: a KYC note with a line of spaces kept',
+      'VALUE: a KYC note with a space at the end of a line',
       (b, ids) => (kycNote(b, ids).text = 'Du học 2029 \nCon thứ hai'),
     ],
     [
@@ -936,7 +936,7 @@ describe('importBackup — rules across tables', () => {
       },
     ],
     [
-      '13: evidence when the input has no facts list',
+      '13: an input that is not an analysis input',
       (b, ids) => (analysis(b, ids.accepted).input_json = JSON.stringify({ facts: 'F1, F3' })),
     ],
     [
@@ -1087,7 +1087,8 @@ describe('seq stays a safe integer', () => {
 
 describe('importBackup — a file the app wrote from an imported one', () => {
   it('imports again after each main command ran on the imported demo data', async () => {
-    const now = () => new Date(Date.UTC(2026, 8, 15, 10, 0, 0));
+    // 11:00 UTC as `setup()`: 15/09 local from UTC−11 to UTC+12 (DR-15, DR6-92).
+    const now = () => new Date(Date.UTC(2026, 8, 15, 11, 0, 0));
     const seeded = await openDatabase({ now });
     seedDemoData(seeded, { anchorDate: day(15), seed: 2 });
     const { db } = await importBackup(exportBackup(seeded), { now });
