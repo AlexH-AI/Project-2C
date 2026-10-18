@@ -1,6 +1,6 @@
 # Chỉ số Phase 6 — Hoàn thiện & phát hành v1.0
 
-Theo bảng chỉ số của `docs/COMPARISON.md` (mẫu từ `phase-5.md`), thêm phần đánh giá cuối dự án (thay `FINAL.md`, `docs/metrics/README.md`). Tới cuối phase file này mới có mục **Số đo nền** (T-219, spec Phase 6 §5.1, ghi trước lượt review 1 của 6D), mốc Home PC sau lượt 2 (T-225) và số liệu hai lượt review đóng phase. Các mục khác để trống tới khi đóng phase.
+Theo bảng chỉ số của `docs/COMPARISON.md` (mẫu từ `phase-5.md`), thêm phần đánh giá cuối dự án (thay `FINAL.md`, `docs/metrics/README.md`). Tới cuối phase file này mới có mục **Số đo nền** (T-219, spec Phase 6 §5.1, ghi trước lượt review 1 của 6D), mốc Home PC sau lượt 2 (T-225), mốc Home PC sau #656 (T-264) và số liệu hai lượt review đóng phase. Các mục khác để trống tới khi đóng phase.
 
 - **Milestone:** "Phase 6 — Hoàn thiện & phát hành" — _điền cuối phase_
 - **Bắt đầu:** 2026-10-11 (spec G1 #515) · **Task code cuối merge:** _cuối phase_ · **Đóng milestone:** _G7_
@@ -135,7 +135,7 @@ Không đếm 278 file tài liệu / dữ liệu / ảnh / font / lockfile (`.md
 
 ### Mốc Home PC sau deep review lượt 2 (T-225, 17/10/2026)
 
-Mốc để G7 và mọi lần đo sau trên Home PC so "không xấu đi", thay `perf-ref` lượt 1 Home PC (DR6-98). Từ #620 (DR6-06), mỗi lần mở dữ liệu có file chạy `quick_check`, nên so với số cũ thì `app.open-data` và `reload.*` luôn báo ⚠️.
+Mốc Home PC ở `4217ed4`, thay `perf-ref` lượt 1 Home PC (DR6-98). G7 so với mốc sau #656 (mục dưới). Từ #620 (DR6-06), mỗi lần mở dữ liệu có file chạy `quick_check`, nên so với số cũ thì `app.open-data` và `reload.*` luôn báo ⚠️.
 
 - **Máy:** Home PC `DESKTOP-KDURKJP`.
 - **Code:** `4217ed4`. Exe release build tại máy: 5 404 672 byte (Δ −9 728 so `b139d8a`: phiên bản, `crate-type`).
@@ -159,7 +159,53 @@ Mốc để G7 và mọi lần đo sau trên Home PC so "không xấu đi", thay
 
 - **Bảy dòng ⚠️ là chi phí có chủ ý.** `quick_check` lúc mở tốn 60–68 ms, hai bên đo độc lập. Cộng thêm file lớn hơn 4,6 %. Riêng `app.open-data` (1 mẫu) còn phụ thuộc trạng thái profile WebView2: profile mới ≈ 406 ms, mở lại 301 ms.
 - **`trash.open` khi gắn DevTools chậm ×2,4–3,3**, vì thao tác chạy nhiều câu SQL. Exe không gắn DevTools: 31,6 / 48,3 / 87,6 / 138,3 ms ở 113 / 263 / 713 / 1 313 dòng, tức ≈ 0,09 ms / dòng, chạm 200 ms ở ≈ 2 000 dòng (DR6-84). Probe sẽ đo `trash.open` khi không gắn DevTools ở #660 (T-256). Thùng rác lớn được xử lý bằng chức năng "Dọn sạch Thùng rác" ở #662 (T-258).
-- **Mốc này phải đo lại trước G7.** #656 (T-252) đổi `quick_check` → `integrity_check`, thêm ≈ 30 ms mỗi lần mở (ước `app.open-data` ≈ 330 ms). Sau khi merge, đo lại `app.open-data` / `reload.*` trên Home PC, ghi số mới vào đây.
+- **Đã đo lại sau #656** (T-252 đổi `quick_check` → `integrity_check`): mục dưới, mốc cho G7.
+
+### Mốc Home PC sau #656 (T-264, 18/10/2026)
+
+Mốc để G7 và mọi lần đo sau trên Home PC so "không xấu đi", thay mốc lượt 2 ở trên. Từ #656 (T-252, DR6-73), mỗi lần mở dữ liệu có file chạy `integrity_check` thay `quick_check`.
+
+- **Máy:** Home PC `DESKTOP-KDURKJP`.
+- **Code:** `main` `dae9df3` (#694). Exe release build tại máy: 5 408 768 byte (Δ +4 096 so `4217ed4`).
+- **Dữ liệu tải:** sinh lại ở `dae9df3`, `tables` sha256 `1c306cfb…589591`, bằng lượt 2. Sau khi nhập, `project2c.db` 14 069 760 byte (bằng lượt 2); Cài đặt → Dữ liệu ghi "4 team · 51 nhân sự · 1.481 KH · 10.255 lịch hẹn · 1.674 HĐ".
+- **Cách đo:** như mốc lượt 2. Probe T-218, `PERF_RUNS=5`, gắn DevTools. Nhập dữ liệu tải, đóng exe, mở lại cùng thư mục rồi nối probe ngay. Mở lần đầu: cách T-227, 3 lần.
+- **Đối chứng cùng ngày:** chạy lại cùng probe, cùng dữ liệu trên exe lượt 2 (`4217ed4`, sha256 `E2C421…4504`) ngay sau đó, để tách phần do code khỏi phần do máy hôm nay. Thêm `app.open-data` 5 lần mỗi exe, mở xen kẽ: script đọc mốc `p2c:data-open` như probe, cùng profile WebView2.
+- **File JSON:** `docs/metrics/phase-6-baseline/perf-home-pc-sau-656.json` → so bằng `PERF_BASE=docs/metrics/phase-6-baseline/perf-home-pc-sau-656.json`.
+
+Trung vị (min–max của 5 lần ở cột mốc mới). ⚠️ = xấu hơn lượt 2 theo luật nhiễu (quá 20 % và quá 10 ms).
+
+| Thao tác | Lượt 2 `4217ed4` (17/10) | `4217ed4` đo lại (18/10) | **`dae9df3`, mốc mới** | Ngưỡng |
+|---|---|---|---|---|
+| `app.open-data` (probe, 1 mẫu) | 301 ms | 321 ms | 387 ms ⚠️ | ≤ 600 ms ✅ |
+| `app.open-data` (5 lần mở xen kẽ) | — | 308 ms (301–317) | 351 ms (335–354) | ≤ 600 ms ✅ |
+| `reload.overview` | 355 ms | 368 ms | 398 ms (394–462) | < 500 ms ✅ |
+| `reload.appointments` | 349 ms | 355 ms | 391 ms (384–410) | < 500 ms ✅ |
+| `reload.customers` | 272 ms | 281 ms | 336 ms (318–342) ⚠️ | < 500 ms ✅ |
+| `reload.reports` | 328 ms | 341 ms | 376 ms (371–391) | < 500 ms ✅ |
+| `reload.team` | 311 ms | 325 ms | 355 ms (348–376) | < 500 ms ✅ |
+| `reload.settings` | 247 ms | 256 ms | 283 ms (277–308) | < 500 ms ✅ |
+| `trash.open` | 73 ms (gắn DevTools) | 34 ms | 34 ms (33–37) | < 200 ms ✅ |
+| Các thao tác màn còn lại (19) | 2–22 ms | 2–24 ms | 2–23 ms | < 200 ms ✅ |
+| `backup.read` / `backup.import` / `backup.export` | 814 / 43 / 422 ms | 836 / 42 / 425 ms | 835 / 43 / 438 ms | ≤ 2 000 / 500 / 1 000 ms ✅ |
+| `reports.export-excel` | 27 ms | 28 ms | 20 ms | ≤ 500 ms ✅ |
+| `appointments.next-month` / `next-year` | 99 / 106 ms | 100 / 108 ms | 101 / 107 ms | ≤ 300 ms; Năm − Tháng ≤ 50 ms ✅ (+7 ms) |
+| `db.save` | 147 ms | 149 ms | 151 ms | ≤ 400 ms ✅ |
+| `memory.js-heap` | 16,5 MB | 16,5 MB | 16,5 MB | ≤ 21 MB ✅ |
+| Gọi exe → màn đầu có số liệu (LCP, 3 lần, cách T-227) | 3 526 ms (3 505–3 597) | — | 3 663 ms (3 656–3 746) | xấu hơn khi > 4 724 ms ✅ |
+
+- **Máy hôm nay gần như hôm đo lượt 2.** Cùng exe `4217ed4`, không dòng nào ⚠️; `app.open-data` và `reload.*` lệch +6…+20 ms (≤ 7 %).
+- **Phần do code** (`dae9df3` trừ `4217ed4`, cùng ngày):
+  - Năm màn `reload.*` tăng +27…+35 ms, khớp chi phí `integrity_check` (PR #674: +31 ms trong Node, +34 ms trên exe).
+  - `app.open-data` 5 lần mở xen kẽ: +43 ms. Số 387 ms của probe chỉ là 1 mẫu, cao hơn cả 5 lần mở (335–354 ms). Như ghi ở mốc lượt 2, số này phụ thuộc trạng thái profile WebView2.
+- **Hai dòng ⚠️:**
+  - `app.open-data` là chi phí có chủ ý (DR6-73, Q3 (a), Owner 17/10).
+  - `reload.customers` tăng +55 ms, hơn chi phí `integrity_check` ≈ 20 ms. Phần dư này chưa rõ nguyên nhân: từ `4217ed4`, màn danh sách Khách hàng (`CustomersScreen.tsx`, `customers-view.ts`) không đổi. Màn vẫn còn cách ngưỡng 164 ms.
+- **`trash.open`** đo khi đã ngắt DevTools từ T-256 (#660): 34 ms ở cả hai exe. Số 73 ms của lượt 2 đo khi gắn DevTools nên không so được.
+- **Mở lần đầu:** LCP +137 ms (+4 %) so lượt 2, trong luật nhiễu. Lần mở đầu chưa có file nên không chạy `integrity_check`. Các mốc khác:
+  - sinh seed 3 060 ms (3 038–3 090);
+  - `p2c:data-open` 3 240 ms (3 239–3 275);
+  - `p2c:db-save` 119 ms;
+  - `project2c.db` 9 949 184 byte, bằng lượt 2.
 
 ## Kiểm tra trên `main`
 
