@@ -127,6 +127,40 @@ describe('analysisOutputSchema', () => {
     expect(errorsOf(analysisOutputSchema.safeParse(output))).toEqual(errors);
   });
 
+  // G5 §11.5 (Owner 18/10/2026): at most 1 000 characters as written (DR6-77), and what the text
+  // shows is read as K20 reads a name, so a default-ignorable character is invisible too.
+  it.each([
+    ['300 letters and 700 U+200B', `${'a'.repeat(150)}${ZWSP.repeat(700)}${'a'.repeat(150)}`, []],
+    [
+      '300 letters written NFD and 100 U+200B',
+      `${'ệ'.normalize('NFD').repeat(300)}${ZWSP.repeat(100)}`,
+      [],
+    ],
+    ['300 letters with a run of spaces', `${'a'.repeat(150)}     ${'a'.repeat(149)}`, []],
+    ['letters around U+3164 and U+0085', 'Quỹ\u3164học\u0085vấn', []],
+    [
+      '300 letters and 701 U+200B',
+      `${'a'.repeat(150)}${ZWSP.repeat(701)}${'a'.repeat(150)}`,
+      ['themes.0.text'],
+    ],
+    [
+      '300 letters and 650 000 U+200B',
+      `${'a'.repeat(150)}${ZWSP.repeat(650_000)}${'a'.repeat(150)}`,
+      ['themes.0.text'],
+    ],
+    ['only U+3164', '\u3164', ['themes.0.text']],
+    ['U+3164 and an ellipsis', '\u3164…', ['themes.0.text']],
+  ])('reads a text as written and as it shows: %s', (_, text, errors) => {
+    const output = { ...analysis(), themes: [item(text, 'F1')] };
+    expect(errorsOf(analysisOutputSchema.safeParse(output))).toEqual(errors);
+  });
+
+  it('stores the text as written, only trimmed', () => {
+    const text = ` Quỹ${ZWSP}học vấn `;
+    const output = { ...analysis(), themes: [item(text, 'F1')] };
+    expect(analysisOutputSchema.parse(output).themes[0]!.text).toBe(`Quỹ${ZWSP}học vấn`);
+  });
+
   it('rejects the same evidence twice', () => {
     const output = { ...analysis(), themes: [item('Gia đình là trung tâm', 'F1', 'F2', 'F1')] };
     expect(errorsOf(analysisOutputSchema.safeParse(output))).toEqual(['themes.0.evidence']);
@@ -275,6 +309,8 @@ describe('extractionOutputSchema', () => {
     ['value', 'a'.repeat(301)],
     ['quote', 'a'.repeat(301)],
     ['value', String.fromCodePoint(0x200b)],
+    ['quote', '\u3164'],
+    ['value', `2${String.fromCodePoint(0x200b).repeat(1000)}`],
     ['value', null],
     ['value', Number.NaN],
   ])('rejects the %s %j', (key, value) => {

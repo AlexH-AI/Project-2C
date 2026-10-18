@@ -1,6 +1,6 @@
 /**
- * Blocklists of V3–V6, taken as they are from prompts G5 §8 (Owner G5 07/10/2026, Phase 6 round
- * 11/10/2026): one `row` per table row, its entries separated by " · " as in the file. Changing an
+ * Blocklists of V3–V6, taken as they are from prompts G5 §8 (Owner G5 07/10/2026, Phase 6 rounds
+ * 11/10 and 18/10/2026): one `row` per table row, its entries separated by " · " as in the file. Changing an
  * entry means a new prompt version and G5 again; a typo against that file is a bug.
  */
 import { char, pattern, phrase, WORD_END as E, WORD_START as B, type Matcher } from './text-match';
@@ -87,17 +87,21 @@ const V5: readonly Matcher[] = [
 ];
 
 /**
- * "luật <Tên>" (G5 §8.4): "luật" in any case, not after "pháp" (Owner Q6), "kỷ" or "quy", before a
- * word starting with a capital that is not "KH", "RE" or "sư" in any case (the prompt's own words,
- * a lawyer; DR6-16).
+ * "luật <Tên>" (G5 §8.4): "luật" in any case, not after "pháp" (Owner Q6), "kỷ", "kỉ", "quy" or
+ * "qui" (DR6-102), before a word starting with a capital that is not "KH", "RE" or "sư" in any case
+ * (the prompt's own words, a lawyer; DR6-16). The two may touch: an invisible character between
+ * them is dropped (DR6-17).
  */
-const LAW_NAME = String.raw`(?<!${B}(${ci('pháp')}|${ci('kỷ')}|${ci('quy')})\s+)${B}${ci('luật')}\s+(?!(${ci('kh')}|${ci('re')}|${ci('sư')})${E})\p{Lu}`;
+const LAW_NAME = String.raw`(?<!${B}(${ci('pháp')}|${ci('kỷ')}|${ci('kỉ')}|${ci('quy')}|${ci('qui')})\s+)${B}${ci('luật')}\s*(?!(${ci('kh')}|${ci('re')}|${ci('sư')})${E})\p{Lu}`;
 
-/** V6 — citing legal texts (G5 §8.4; "khoản <số>" alone is money, Owner Q4). */
+/**
+ * V6 — citing legal texts (G5 §8.4; "khoản <số>" alone is money, Owner Q4). `\s*`: the parts may
+ * touch once an invisible character between them is dropped (DR6-17).
+ */
 const V6: readonly Matcher[] = [
-  pattern(String.raw`${B}(Điều|ĐIỀU)\s+${D}+`, 'original'),
-  pattern(String.raw`${B}khoản\s+${D}+[,]?\s+điều\s+${D}+`, 'both'),
-  pattern(String.raw`${B}điểm\s+[a-zđ]\s+khoản${E}`, 'both'),
+  pattern(String.raw`${B}(Điều|ĐIỀU)\s*${D}+`, 'original'),
+  pattern(String.raw`${B}khoản\s*${D}+[,]?\s*điều\s*${D}+`, 'both'),
+  pattern(String.raw`${B}điểm\s*[a-zđ]\s*khoản${E}`, 'both'),
   pattern(LAW_NAME, 'original'),
   ...row(true, 'bộ luật · nghị định · thông tư · văn bản hợp nhất'),
   ...row(false, 'nghị quyết'),

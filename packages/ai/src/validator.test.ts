@@ -3,6 +3,7 @@ import type { AiMode } from './schema';
 import { validateOutput, type OutputCheckInput } from './validator';
 
 const item = (text: string, ...evidence: string[]) => ({ text, evidence });
+const ZWSP = String.fromCodePoint(0x200b);
 
 const input: OutputCheckInput = {
   factCodes: ['F1', 'F2', 'F3', 'F4'],
@@ -61,7 +62,14 @@ describe('validateOutput — V1', () => {
 
   it.each([
     ['a value of the wrong type', { ...analysis(), needs: 'x' }, 'needs', 'sai kiểu, cần array'],
-    ['a missing block', { ...analysis(), themes: undefined }, 'themes', 'sai kiểu, cần array'],
+    ['a missing block', { ...analysis(), themes: undefined }, 'themes', 'thiếu, cần array'],
+    ['a block that is null', { ...analysis(), themes: null }, 'themes', 'sai kiểu, cần array'],
+    [
+      'a missing text',
+      { ...analysis(), needs: [{ evidence: ['F1'] }] },
+      'needs[0].text',
+      'thiếu, cần string',
+    ],
     ['an empty block', { ...analysis(), themes: [] }, 'themes', 'cần ít nhất 1 phần tử'],
     [
       'too many elements',
@@ -89,16 +97,37 @@ describe('validateOutput — V1', () => {
       'quá 300 ký tự',
     ],
     [
+      'a text over 1 000 characters as written (DR6-77)',
+      { ...analysis(), needs: [item(`Ý${'\u200b'.repeat(1000)}`, 'F1')] },
+      'needs[0].text',
+      'quá 1 000 ký tự kể cả ký tự vô hình',
+    ],
+    [
+      'a text of default-ignorable characters only',
+      { ...analysis(), needs: [item('\u3164\u034f', 'F1')] },
+      'needs[0].text',
+      'chuỗi rỗng',
+    ],
+    [
       'a malformed fact code',
       { ...analysis(), needs: [item('Ý', 'F01')] },
       'needs[0].evidence[0]',
-      'sai định dạng',
+      'sai định dạng, cần mã dữ kiện dạng F12',
     ],
     [
       'an unknown hạng mục',
       { ...analysis(), discoveryStrategy: [{ text: 'Ý', missingCategory: 'HOBBIES' }] },
       'discoveryStrategy[0].missingCategory',
-      'giá trị không hợp lệ',
+      'giá trị không hợp lệ, cần một trong: IDENTITY, FAMILY, OCCUPATION_INCOME, ASSETS, GOALS, RISK_APPETITE, EXISTING_PROTECTION, CONCERNS',
+    ],
+    [
+      'an unknown personality system',
+      {
+        ...analysis(),
+        personalityNotes: [{ system: 'MBTI', text: 'KH có thể thuộc nhóm INTJ', evidence: ['F1'] }],
+      },
+      'personalityNotes[0].system',
+      'giá trị không hợp lệ, cần một trong: PSYCHOLOGY, ESOTERIC',
     ],
     [
       'the same fact twice',
@@ -137,7 +166,7 @@ describe('validateOutput — V1', () => {
     expect(issues[28]).toEqual({
       code: 'V1',
       path: 'hypotheses[0].evidence[28]',
-      detail: 'sai định dạng',
+      detail: 'sai định dạng, cần mã dữ kiện dạng F12',
     });
     expect(issues[29]).toEqual({ code: 'V1', path: '$', detail: 'và 2971 lỗi khác' });
   });
@@ -161,7 +190,52 @@ describe('validateOutput — V1', () => {
     ]);
     expect(
       validateOutput('extraction', { facts: [{ field: 'occupation', value: null, quote: 'Ý' }] }),
-    ).toEqual([{ code: 'V1', path: 'facts[0].value', detail: 'sai định dạng' }]);
+    ).toEqual([
+      { code: 'V1', path: 'facts[0].value', detail: 'sai kiểu, cần string, number hoặc boolean' },
+    ]);
+  });
+
+  // G5 §11.6 (Owner 18/10/2026, DR6-24): a key left out is said to be missing.
+  it('says which keys are missing, in an extraction and at the root of an analysis', () => {
+    expect(validateOutput('extraction', {})).toEqual([
+      { code: 'V1', path: 'facts', detail: 'thiếu, cần array' },
+    ]);
+    expect(validateOutput('extraction', { facts: [{ field: 'occupation', quote: 'Ý' }] })).toEqual([
+      { code: 'V1', path: 'facts[0].value', detail: 'thiếu, cần string, number hoặc boolean' },
+    ]);
+    expect(validateOutput('analysis', {}, input).map((issue) => issue.detail)).toEqual(
+      Array(6).fill('thiếu, cần array'),
+    );
+    const note = { text: 'KH có thể thuộc nhóm INTJ', evidence: ['F1'] };
+    expect(validateOutput('analysis', { ...analysis(), personalityNotes: [note] }, input)).toEqual([
+      {
+        code: 'V1',
+        path: 'personalityNotes[0].system',
+        detail: 'thiếu, cần một trong: PSYCHOLOGY, ESOTERIC',
+      },
+    ]);
+  });
+
+  it.each([
+    ['empty', '', 'chuỗi rỗng'],
+    ['of invisible characters only', ZWSP.repeat(3), 'chuỗi rỗng'],
+    ['over 1 000 characters as written', 'a'.repeat(1001), 'quá 1 000 ký tự kể cả ký tự vô hình'],
+  ])('tells an extraction value that is a string %s the rule it breaks', (_, value, detail) => {
+    const facts = [{ field: 'occupation', value, quote: 'Ý' }];
+    expect(validateOutput('extraction', { facts })).toEqual([
+      { code: 'V1', path: 'facts[0].value', detail },
+    ]);
+  });
+
+  // G5 §11.5: the cap is checked first and alone, so a huge string costs nothing more.
+  it.each([
+    ['letters', 'a'.repeat(1001)],
+    ['invisible characters', ZWSP.repeat(1001)],
+    ['an ellipsis and invisible characters', `…${ZWSP.repeat(1000)}`],
+  ])('reports only the cap for a text of 1 001 %s', (_, text) => {
+    expect(validateOutput('analysis', { ...analysis(), needs: [item(text, 'F1')] }, input)).toEqual(
+      [{ code: 'V1', path: 'needs[0].text', detail: 'quá 1 000 ký tự kể cả ký tự vô hình' }],
+    );
   });
 });
 

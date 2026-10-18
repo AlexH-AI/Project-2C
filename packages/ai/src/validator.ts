@@ -69,7 +69,9 @@ export function validateOutput<M extends AiMode>(
 ): ValidationIssue[] {
   if (parsed == null) return [NO_JSON];
   const result = AI_OUTPUT_SCHEMAS[mode].safeParse(parsed);
-  if (!result.success) return capped(result.error.issues.map(schemaIssue));
+  if (!result.success) {
+    return capped(result.error.issues.map((issue) => schemaIssue(issue, parsed)));
+  }
   if (mode === 'extraction') return [];
   if (input === undefined) throw new TypeError(`validateOutput needs the input in ${mode} mode`);
   const items = itemsOf(result.data as AnalysisOutput | DiscoveryOutput);
@@ -246,24 +248,48 @@ function pathOf(segments: readonly PropertyKey[]): string {
   return path === '' ? '$' : path;
 }
 
-function schemaIssue(issue: z.core.$ZodIssue): ValidationIssue {
-  return { code: 'V1', path: pathOf(issue.path), detail: schemaDetail(issue) };
+function schemaIssue(issue: z.core.$ZodIssue, parsed: unknown): ValidationIssue {
+  const missing = !isAt(parsed, issue.path);
+  return { code: 'V1', path: pathOf(issue.path), detail: schemaDetail(issue, missing) };
 }
 
-/** Bounds are on blocks only: a text's length is a refinement with its own message (`schema.ts`). */
-function schemaDetail(issue: z.core.$ZodIssue): string {
+/** Whether the parsed output has a value at `path`; `undefined` (never in JSON) is none. */
+function isAt(root: unknown, path: readonly PropertyKey[]): boolean {
+  let value = root;
+  for (const key of path) {
+    if (typeof value !== 'object' || value === null || !Object.hasOwn(value, key)) return false;
+    value = (value as Record<PropertyKey, unknown>)[key];
+  }
+  return value !== undefined;
+}
+
+/**
+ * The right form, so the retry can fix it (G5 §5, §11.6, DR6-24). Bounds are on blocks only: a
+ * text's length is a refinement with its own message (`schema.ts`).
+ */
+function schemaDetail(issue: z.core.$ZodIssue, missing: boolean): string {
+  const lead = missing ? 'thiếu' : 'sai kiểu';
   switch (issue.code) {
     case 'invalid_type':
-      return `sai kiểu, cần ${issue.expected}`;
+      return `${lead}, cần ${issue.expected}`;
+    case 'invalid_union': {
+      // The one union of the outputs: an extraction value. A string that breaks a rule of strings
+      // (too long, empty) is told that rule, not that it is of the wrong type.
+      const asText = issue.errors[0]?.[0];
+      return asText?.code === 'custom'
+        ? asText.message
+        : `${lead}, cần string, number hoặc boolean`;
+    }
     case 'too_small':
       return `cần ít nhất ${issue.minimum} phần tử`;
     case 'too_big':
       return `quá ${issue.maximum} phần tử`;
     case 'invalid_value':
-      return 'giá trị không hợp lệ';
+      return `${missing ? 'thiếu' : 'giá trị không hợp lệ'}, cần một trong: ${issue.values.map(String).join(', ')}`;
     case 'custom':
       return issue.message;
     default:
-      return 'sai định dạng';
+      // `invalid_format`: the one pattern of the outputs is the fact code (`FACT_CODE`).
+      return 'sai định dạng, cần mã dữ kiện dạng F12';
   }
 }

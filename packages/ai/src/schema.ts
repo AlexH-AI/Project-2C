@@ -13,6 +13,7 @@ import {
   fromIsoDate,
   KYC_CATEGORIES,
   KYC_FIELDS,
+  normalizeText,
   type CalendarDate,
   type KycCategory,
   type KycFact,
@@ -96,27 +97,41 @@ export type AnalysisInput = z.infer<typeof analysisInputSchema>;
 // Refinement messages are Vietnamese: the validator puts them in a V1 detail, which goes back to the
 // model in the retry message (prompts §5).
 
-/** Format characters (U+200B, U+00AD…) are invisible: a string of them only is empty. */
-const FORMAT_CHARS = /\p{Cf}/gu;
-
-/** What a string shows: no format character, no white space at either end. */
-const visible = (s: string) => s.replace(FORMAT_CHARS, '').trim();
+/**
+ * What a string shows, read as K20 reads a name (`normalizeText`): no invisible character (format,
+ * default-ignorable such as U+3164, U+2800), each run of white space one space, NFC, trimmed
+ * (G5 §11.5). A string of invisible characters only is empty.
+ */
+const visible = (s: string) => normalizeText(s);
 
 /**
- * Every string the AI writes, trimmed: what it shows is 1–300 characters counted in NFC (spec §6.2,
- * G5 §10.4). 250 characters written NFD are 250; format characters count for nothing (DR6-16).
+ * The longest string as written, invisible characters and loose marks included (G5 §11.5, DR6-77):
+ * 300 characters written NFD are 900 at most. Counted as JavaScript does, so a huge string costs
+ * nothing to refuse (DR5-09).
+ */
+const MAX_WRITTEN = 1_000;
+
+/**
+ * Every string the AI writes, trimmed: at most 1 000 characters as written, so invisible ones cannot
+ * fill the history (DR6-77); what it shows is 1–300 characters (spec §6.2, G5 §10.4, §11.5).
+ * The string is stored as written.
  */
 const text = z
   .string()
   .trim()
+  .refine((s) => s.length <= MAX_WRITTEN, {
+    message: 'quá 1 000 ký tự kể cả ký tự vô hình',
+    abort: true,
+  })
   .refine((s) => visible(s) !== '', { message: 'chuỗi rỗng', abort: true })
-  .refine((s) => Array.from(visible(s).normalize('NFC')).length <= 300, 'quá 300 ký tự');
+  .refine((s) => Array.from(visible(s)).length <= 300, 'quá 300 ký tự');
 
 /**
- * A text of analysis / discovery also has a letter: the "…" of the prompt's format example is not
- * an answer (DR5-49 b, Owner G5 11/10/2026). Not for extraction, whose value may be "2".
+ * A text of analysis / discovery also has a letter it shows: the "…" of the prompt's format example
+ * is not an answer (DR5-49 b, Owner G5 11/10/2026), nor is U+3164, a letter no one sees. Not for
+ * extraction, whose value may be "2".
  */
-const prose = text.refine((s) => /\p{L}/u.test(s), 'không có chữ');
+const prose = text.refine((s) => /\p{L}/u.test(visible(s)), 'không có chữ');
 const evidence = z
   .array(z.string().regex(FACT_CODE))
   .refine((codes) => new Set(codes).size === codes.length, 'trích trùng một dữ kiện');
@@ -292,8 +307,8 @@ export function buildAnalysisInput(
  * the same.
  */
 export const PROMPT_VERSIONS = {
-  analysis: 'analysis@2',
-  discovery: 'discovery@2',
+  analysis: 'analysis@3',
+  discovery: 'discovery@3',
   extraction: 'extraction@1',
 } as const satisfies Record<AiMode, string>;
 

@@ -80,8 +80,8 @@ export function startWebAnalysis(request: WebAnalysisRequest): WebStart {
 }
 
 /**
- * A line as it is compared (G5 §6a, R2-03): cleaned as V3–V6 read a text (NFKC, no format
- * characters), without a quote prefix (`>`, `> >`…), each run of white space as one space.
+ * A line as it is compared (G5 §6a, R2-03): cleaned as V3–V6 read a text (no invisible character,
+ * then NFKC: DR6-17), without a quote prefix (`>`, `> >`…), each run of white space as one space.
  */
 const ownLine = (line: string) =>
   cleanText(line)
