@@ -81,6 +81,11 @@ const BAD = JSON.stringify(GOOD).replace('"F7"', '"F99"');
 
 const NBSP = String.fromCodePoint(0xa0);
 const ZWSP = String.fromCodePoint(0x200b);
+/** U+3164: invisible, default-ignorable, but not a format character. */
+const FILLER = String.fromCodePoint(0x3164);
+
+/** `text` written NFD with a ZWSP before each combining mark (DR6-17). */
+const nfdZw = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, (mark) => ZWSP + mark);
 
 /** Changes both frame lines of the `web@1` message (G5 §6a). */
 const eachFrame =
@@ -159,7 +164,7 @@ describe('checkWebAnswer', () => {
         provider: 'CHATGPT_WEB',
         model: null,
         reasoning: null,
-        promptVersion: 'analysis@2+web@1',
+        promptVersion: 'analysis@3+web@1',
         attempts: 1,
         input: session.input,
         output: { ...GOOD, personalityNotes: [] },
@@ -223,7 +228,7 @@ describe('checkWebAnswer', () => {
           { attempt: 2, errors: [{ code: 'V2' }] },
         ],
         provider: 'CHATGPT_WEB',
-        promptVersion: 'analysis@2+web@1',
+        promptVersion: 'analysis@3+web@1',
       },
     });
   });
@@ -293,6 +298,9 @@ describe('checkWebAnswer', () => {
         eachFrame((frame) => frame.replaceAll(' ', NBSP)),
       ],
       ['with a ZWSP before the frame lines', eachFrame((frame) => `${ZWSP}${frame}`)],
+      // DR6-17 (Owner G5 18/10/2026): the invisible characters go before NFKC composes the marks.
+      ['written NFD with a ZWSP before each mark', eachFrame(nfdZw)],
+      ['with a Hangul filler before the frame lines', eachFrame((frame) => `${FILLER}${frame}`)],
       ['with two spaces in the frame lines', eachFrame((frame) => frame.replaceAll(' ', '  '))],
       [
         'quoted with "> " on every line',
@@ -336,6 +344,7 @@ describe('checkWebAnswer', () => {
       ['quoted', (message: string) => message.replace(/^/gm, '> ')],
       ['only its first line', (message: string) => message.split('\n')[0]!],
       ['only its last line', (message: string) => message.split('\n').at(-1)!],
+      ['written NFD with a ZWSP before each mark (DR6-17)', nfdZw],
     ])('does not count the retry message pasted back %s', (_, cut) => {
       const retry = checkWebAnswer(start().session, BAD);
       if (retry.kind !== 'retry') throw new Error('no retry');
@@ -384,7 +393,7 @@ describe('checkWebAnswer', () => {
         mode: 'discovery',
         gateState: 'PROFILE_DISCOVERY',
         status: 'ACCEPTED',
-        promptVersion: 'discovery@2+web@1',
+        promptVersion: 'discovery@3+web@1',
         output: { hypotheses: [], personalityNotes: [] },
       },
     });

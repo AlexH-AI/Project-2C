@@ -272,7 +272,7 @@ test('the whole round: team → customer → KYC → meeting → policy → figu
     await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
     await expect(panel.getByRole('status')).toHaveText('Phân tích xong: đã lưu kết quả.');
     await expect(panel).toContainText('CURRENT');
-    await expect(panel).toContainText(/kyc v2 · discovery@2 · Mock · 15\/09 \d\d:\d\d/);
+    await expect(panel).toContainText(/kyc v2 · discovery@3 · Mock · 15\/09 \d\d:\d\d/);
   });
 
   await test.step('the customer deleted, found in Thùng rác, restored to its list', async () => {

@@ -207,7 +207,7 @@ Webview không bao giờ thấy key (D-1 mục 1; T-204, R2-09 / R2-10). Rust ki
 
 ### 6.2 Schema (zod, G2)
 
-Mọi chuỗi là tiếng Việt, 1–300 ký tự (đếm theo NFC) sau khi cắt khoảng trắng; chuỗi chỉ có ký tự định dạng (U+200B…) là rỗng. Chuỗi `text` của analysis / discovery phải có ít nhất một chữ cái (G5 §10.4, Owner 11/10/2026: "…" của ví dụ prompt không đạt). `evidence` = mảng mã `F{seq}`, không trùng.
+Mọi chuỗi là tiếng Việt. Chuỗi gốc (sau khi cắt khoảng trắng hai đầu) tối đa 1 000 ký tự, tính cả ký tự vô hình và dấu viết rời; phần thấy được (bỏ ký tự vô hình theo tập K20, gộp khoảng trắng, NFC) 1–300 ký tự; chuỗi chỉ có ký tự vô hình (U+200B, U+3164…) là rỗng (G5 §11.5, Owner 18/10/2026). Chuỗi `text` của analysis / discovery phải có ít nhất một chữ cái trong phần thấy được (G5 §10.4, Owner 11/10/2026: "…" của ví dụ prompt không đạt). `evidence` = mảng mã `F{seq}`, không trùng.
 
 **Chế độ `analysis`** (`PAIN_POINT_ANALYSIS`) — 4 khối của ADR-0009:
 
@@ -250,7 +250,7 @@ Cảnh báo mâu thuẫn phụ **không** do AI viết: app sinh từ cổng lú
 
 ### 6.4 Validator (V1–V7)
 
-Chạy trên output đã parse; báo cáo = danh sách `{ code, path, detail }`. Mọi luật chữ so trên bản chuẩn hóa (NFKC, bỏ ký tự định dạng, `-` / `_` thành dấu cách — G5 §7) chữ thường **và** bản bỏ dấu (bắt "xac suat").
+Chạy trên output đã parse; báo cáo = danh sách `{ code, path, detail }`. Mọi luật chữ so trên bản chuẩn hóa (bỏ ký tự vô hình theo tập K20, gộp khoảng trắng, NFKC, `-` / `_` thành dấu cách — G5 §7), chữ thường; mục "Bỏ dấu: có" cũng khớp chữ viết không dấu, xét theo từng chữ (bắt "xac suat", "Xác suat"; không bắt "nghĩ định" thay cho "nghị định" — G5 §11.3).
 
 | Mã | Luật | Áp cho |
 |---|---|---|

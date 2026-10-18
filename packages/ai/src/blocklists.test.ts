@@ -33,6 +33,9 @@ function rowsOf(heading: string): string[][] {
 
 const item = (text: string) => [{ text, evidence: ['F1'] }];
 
+/** Alone between two parts of a pattern, it is dropped and the parts touch (G5 §11.2, DR6-17). */
+const ZWSP = String.fromCodePoint(0x200b);
+
 /** The `detail` of every V3–V6 issue of a hypothesis reading `text`; every other text is neutral. */
 const detailsOf = (code: Code, text: string) =>
   validateOutput(
@@ -85,16 +88,26 @@ const SAMPLES: Record<string, readonly (readonly [string, string])[]> = {
     ['KH kiểu s', 'kiểu s'],
   ],
   '`\\bnhóm máu (a\\|b\\|ab\\|o)\\b`': [['KH nhóm máu O', 'nhóm máu o']],
-  '`\\b(Điều\\|ĐIỀU)\\s+\\p{Nd}+` trên **bản gốc, giữ hoa thường** (vd. "Điều 35"; "điều 2 vợ chồng" không khớp)':
+  '`\\b(Điều\\|ĐIỀU)\\s*\\p{Nd}+` trên **bản gốc, giữ hoa thường** (vd. "Điều 35", "Điều" + U+200B + "35"; "điều 2 vợ chồng" không khớp)':
     [
       ['Theo Điều 35', 'Điều 35'],
       ['Theo ĐIỀU 7', 'ĐIỀU 7'],
+      [`Theo Điều${ZWSP}35`, 'Điều35'],
     ],
-  '`\\bkhoản\\s+\\p{Nd}+[,]?\\s+điều\\s+\\p{Nd}+` (vd. "khoản 2 Điều 35"; "khoản 2 điều kiện" không khớp)':
-    [['Xem khoản 2, điều 35', 'khoản 2, điều 35']],
-  '`\\bđiểm\\s+[a-zđ]\\s+khoản\\b`': [['Xem điểm đ khoản', 'điểm đ khoản']],
-  '"luật" ở **mọi kiểu hoa / thường**, có ranh giới từ trước, không đứng sau từ "pháp", "kỷ", "quy" (mọi kiểu chữ) + khoảng trắng; theo sau là khoảng trắng + một từ mở đầu bằng chữ hoa (`\\p{Lu}`) mà **không** phải "KH", "RE" hay "sư" (mọi kiểu chữ). Chạy trên **bản gốc**. Vd. khớp "Luật Kinh doanh bảo hiểm", "Luật BHXH", "LuẬt Đất đai"; không khớp "Luật sư", "LUẬT SƯ", "pháp luật Việt Nam", "pHáp luật Việt Nam", "kỷ luật KH", "quy luật Thị trường"':
-    [['Theo luật Đất đai', 'luật Đ']],
+  '`\\bkhoản\\s*\\p{Nd}+[,]?\\s*điều\\s*\\p{Nd}+` (vd. "khoản 2 Điều 35"; "khoản 2 điều kiện" không khớp)':
+    [
+      ['Xem khoản 2, điều 35', 'khoản 2, điều 35'],
+      [`Xem khoản${ZWSP}2${ZWSP}điều${ZWSP}35`, 'khoản2điều35'],
+    ],
+  '`\\bđiểm\\s*[a-zđ]\\s*khoản\\b`': [
+    ['Xem điểm đ khoản', 'điểm đ khoản'],
+    [`Xem điểm${ZWSP}a${ZWSP}khoản`, 'điểmakhoản'],
+  ],
+  '"luật" ở **mọi kiểu hoa / thường**, có ranh giới từ trước, không đứng sau từ "pháp", "kỷ", "kỉ", "quy", "qui" (mọi kiểu chữ) + khoảng trắng; theo sau là khoảng trắng (có thể không có) + một từ mở đầu bằng chữ hoa (`\\p{Lu}`) mà **không** phải "KH", "RE" hay "sư" (mọi kiểu chữ). Chạy trên **bản gốc**. Vd. khớp "Luật Kinh doanh bảo hiểm", "Luật BHXH", "LuẬt Đất đai", "Luật" + U+200B + "BHXH"; không khớp "Luật sư", "LUẬT SƯ", "pháp luật Việt Nam", "pHáp luật Việt Nam", "kỷ luật KH", "quy luật Thị trường", "kỉ luật Thép", "qui luật Thị trường"':
+    [
+      ['Theo luật Đất đai', 'luật Đ'],
+      [`Theo Luật${ZWSP}BHXH`, 'LuậtB'],
+    ],
   '`\\b(quyết định\\|công văn) số\\s*\\p{Nd}` (vd. "Quyết định số 123"; "quyết định số tiền" không khớp)':
     [
       ['Quyết định số 123', 'quyết định số 1'],

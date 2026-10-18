@@ -919,6 +919,16 @@ describe('importBackup — rules across tables', () => {
         (analysis(b, ids.accepted).output_json = JSON.stringify({ ...OUTPUT, needs: [] })),
     ],
     [
+      '13: an accepted output whose text hides 650 000 invisible characters (G5 §11.5, DR6-77)',
+      (b, ids) => {
+        const invisible = String.fromCodePoint(0x200b).repeat(650_000);
+        const themes = [
+          { text: `${'a'.repeat(150)}${invisible}${'a'.repeat(150)}`, evidence: ['F3'] },
+        ];
+        analysis(b, ids.accepted).output_json = JSON.stringify({ ...OUTPUT, themes });
+      },
+    ],
+    [
       '13: evidence of a fact the input does not have',
       (b, ids) => {
         const themes = [{ text: 'Gia đình', evidence: ['F2'] }];

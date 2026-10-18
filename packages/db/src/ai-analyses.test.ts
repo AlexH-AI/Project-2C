@@ -66,6 +66,8 @@ const sentInput = (mode: 'analysis' | 'discovery' = 'analysis') => ({
 
 /** An output of each mode (spec §6.2) citing the one fact of `sentInput`. */
 const ITEM = { text: 'Đặt gia đình lên trước', evidence: ['F1'] };
+/** What one degenerate answer hid in a text: ≈ 2 MB stored once V1 counted it for nothing. */
+const INVISIBLE = String.fromCodePoint(0x200b).repeat(650_000);
 const OUTPUTS = {
   analysis: {
     hypotheses: [ITEM],
@@ -343,6 +345,13 @@ describe('recordAiAnalysis', () => {
       { output: OUTPUTS.discovery },
       { output: { ...OUTPUTS.analysis, needs: [] } },
       { output: { ...OUTPUTS.analysis, themes: [{ text: 'Gia đình', evidence: ['F9'] }] } },
+      // At most 1 000 characters as written, invisible ones too (G5 §11.5, DR6-77).
+      {
+        output: {
+          ...OUTPUTS.analysis,
+          themes: [{ ...ITEM, text: `${'a'.repeat(150)}${INVISIBLE}${'a'.repeat(150)}` }],
+        },
+      },
       {
         output: {
           ...OUTPUTS.analysis,

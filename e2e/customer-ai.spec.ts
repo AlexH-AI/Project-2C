@@ -47,7 +47,7 @@ test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, 
   await expect(panel).not.toContainText('Không gửi tên');
   // The head badge; the history names it too.
   await expect(panel.getByText('Mock', { exact: true }).first()).toBeVisible();
-  await expect(panel).toContainText(/kyc v2 · discovery@2 · Mock · 15\/09 \d\d:\d\d/);
+  await expect(panel).toContainText(/kyc v2 · discovery@3 · Mock · 15\/09 \d\d:\d\d/);
   await expect(panel).toContainText('Kết quả Mock: câu mẫu cố định để thử app');
   await expect(panel.getByRole('heading', { level: 3 })).toHaveText([
     'Behavioral Hypotheses giả thuyết ban đầu',
@@ -71,7 +71,7 @@ test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, 
   await edit.getByRole('textbox', { name: /^Ngày sinh/ }).fill('12/3/1984');
   await edit.getByRole('button', { name: 'Lưu', exact: true }).click();
   await expect(edit).toBeHidden();
-  await expect(panel).toContainText(/kyc v2 · discovery@2/);
+  await expect(panel).toContainText(/kyc v2 · discovery@3/);
   await expect(panel).toContainText('CURRENT');
   await panel
     .getByRole('region', { name: 'Behavioral Hypotheses' })
@@ -89,7 +89,7 @@ test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, 
   expect(await lowestContrast(panel)).toBeGreaterThanOrEqual(4.5);
   await panel.getByRole('button', { name: 'Phân tích lại' }).click();
   await expect(panel).toContainText('CURRENT');
-  await expect(panel).toContainText(/kyc v3 · discovery@2/);
+  await expect(panel).toContainText(/kyc v3 · discovery@3/);
   await expect(panel).not.toContainText('KYC có thay đổi nhỏ');
 
   // A cốt lõi conflict blocks the AI again; the analysis stays below, faded.
@@ -98,7 +98,7 @@ test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, 
   await expect(panel).toContainText('Giải quyết mâu thuẫn ở Số con trước khi phân tích.');
   await expect(panel.getByRole('button', { name: 'Phân tích', exact: true })).toBeDisabled();
   await expect(panel.getByRole('button', { name: 'Phân tích bằng ChatGPT web' })).toBeDisabled();
-  await expect(panel).toContainText(/kyc v3 · discovery@2/);
+  await expect(panel).toContainText(/kyc v3 · discovery@3/);
   expect(await lowestContrast(panel)).toBeGreaterThanOrEqual(4.5);
   // Its link leads to the KYC facts, the focus too (R2-20).
   await panel.getByRole('link', { name: 'Xem ở Dữ kiện KYC →' }).focus();
@@ -124,7 +124,7 @@ test('analysis with the Mock: four blocks, Thông tin tham khảo, the material 
 
   await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
   await expect(panel).toContainText('CURRENT');
-  await expect(panel).toContainText(/kyc v2 · analysis@2 · Mock/);
+  await expect(panel).toContainText(/kyc v2 · analysis@3 · Mock/);
   await expect(panel.getByRole('heading', { level: 3 })).toHaveText([
     'Behavioral Hypotheses giả thuyết, cần kiểm chứng',
     'Needs · Pain points · Opportunity Themes',
@@ -164,9 +164,9 @@ test('the history of a seeded customer: latest first, a STALE one opened, F code
   // Latest first by seq: the header, then CURRENT and the two STALE.
   await expect(rows).toHaveCount(4);
   // The seed writes the version of the app's prompts (DR6-18).
-  await expect(rows.nth(1)).toContainText(/^23\/03 \d\d:\d\dv\d+analysis@2MockCURRENT$/);
-  await expect(rows.nth(2)).toContainText(/^25\/10 \d\d:\d\dv\d+discovery@2MockSTALE$/);
-  await expect(rows.nth(3)).toContainText(/^24\/09 \d\d:\d\dv\d+discovery@2MockSTALE$/);
+  await expect(rows.nth(1)).toContainText(/^23\/03 \d\d:\d\dv\d+analysis@3MockCURRENT$/);
+  await expect(rows.nth(2)).toContainText(/^25\/10 \d\d:\d\dv\d+discovery@3MockSTALE$/);
+  await expect(rows.nth(3)).toContainText(/^24\/09 \d\d:\d\dv\d+discovery@3MockSTALE$/);
   await expect(rows.nth(1)).toHaveAttribute('aria-current', 'true');
 
   // An older STALE one shows in place of the latest, faded, under "Đang xem lần …".
@@ -177,7 +177,7 @@ test('the history of a seeded customer: latest first, a STALE one opened, F code
   await expect(panel).toContainText(
     /Đang xem lần 25\/10 \d\d:\d\d · kyc v\d+ STALE ← Về bản mới nhất/,
   );
-  await expect(panel).toContainText(/kyc v\d+ · discovery@2 · Mock · 25\/10 \d\d:\d\d/);
+  await expect(panel).toContainText(/kyc v\d+ · discovery@3 · Mock · 25\/10 \d\d:\d\d/);
   await expect(rows.nth(2)).toHaveAttribute('aria-current', 'true');
   await expect(panel).toContainText('CURRENT');
   // By the keyboard, the focus goes to the main button rather than the page (R2-05).
@@ -185,7 +185,7 @@ test('the history of a seeded customer: latest first, a STALE one opened, F code
   await page.keyboard.press('Enter');
   await expect(panel).not.toContainText('Đang xem lần');
   await expect(panel.getByRole('button', { name: 'Phân tích lại' })).toBeFocused();
-  await expect(panel).toContainText(/kyc v\d+ · analysis@2 · Mock · 23\/03/);
+  await expect(panel).toContainText(/kyc v\d+ · analysis@3 · Mock · 23\/03/);
 
   // The facts list names each fact F{seq}; a code cited leads to its fact, outlined for a moment.
   const kyc = page.getByRole('region', { name: 'Dữ kiện KYC' });
@@ -691,7 +691,7 @@ test('an analysis by OpenCode, ACCEPTED at its retry: what went to ai_complete, 
   await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
   await expect(panel).toContainText('CURRENT');
   await expect(panel).toContainText(
-    /kyc v2 · discovery@2 · DeepSeek V4\.1 Flash · 15\/09 \d\d:\d\d/,
+    /kyc v2 · discovery@3 · DeepSeek V4\.1 Flash · 15\/09 \d\d:\d\d/,
   );
   await expect(panel).not.toContainText('Kết quả Mock');
   await expect(

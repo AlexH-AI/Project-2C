@@ -151,7 +151,7 @@ describe('runAnalysis', () => {
         provider: 'OPENCODE_GO',
         model: 'kimi-k3',
         reasoning: 'HIGH',
-        promptVersion: 'analysis@2',
+        promptVersion: 'analysis@3',
         attempts: 1,
         input: buildAnalysisInput(PROFILE, evaluateKycGate(PROFILE.facts), TODAY),
         // `personalityNotes` left out is stored as the schema reads it: [].
@@ -311,6 +311,24 @@ describe('runAnalysis', () => {
     expect(charsOf(requests[1]!)).toBeLessThan(RUST_LIMIT);
   });
 
+  it('names the right form of each V1 issue in the retry (DR6-24, G5 §11.6)', async () => {
+    const wrong = JSON.parse(GOOD) as Record<string, unknown>;
+    delete wrong.themes;
+    wrong.painPoints = [item('Chưa có giải pháp bảo vệ', 'f7')];
+    wrong.personalityNotes = [{ system: 'MBTI', text: 'KH có thể hướng nội', evidence: ['F12'] }];
+    const { adapter, requests } = scripted(JSON.stringify(wrong), GOOD);
+    const result = await runAnalysis(analysis(OPENCODE, adapter));
+    expect(result).toMatchObject({ kind: 'record', row: { status: 'ACCEPTED', attempts: 2 } });
+    const retry = requests[1]!.messages[3]!.content;
+    expect(retry).toContain(
+      '- V1 tại painPoints[0].evidence[0]: sai định dạng, cần mã dữ kiện dạng F12',
+    );
+    expect(retry).toContain('- V1 tại themes: thiếu, cần array');
+    expect(retry).toContain(
+      '- V1 tại personalityNotes[0].system: giá trị không hợp lệ, cần một trong: PSYCHOLOGY, ESOTERIC',
+    );
+  });
+
   it('retries thousands of malformed codes within the limit (review #521)', async () => {
     const codes = Array.from({ length: 3000 }, (_, i) => `"X${i}"`).join(', ');
     const wrong = GOOD.replace('"F7"', codes);
@@ -416,7 +434,7 @@ describe('runAnalysis', () => {
         mode: 'discovery',
         gateState: 'PROFILE_DISCOVERY',
         status: 'ACCEPTED',
-        promptVersion: 'discovery@2',
+        promptVersion: 'discovery@3',
         output: { hypotheses: [], personalityNotes: [] },
       },
     });

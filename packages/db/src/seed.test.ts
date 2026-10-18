@@ -78,8 +78,8 @@ const DEMO_ROW_COUNTS = {
   teams: 3,
 };
 // T-232 moved it with one more read of the seed's ticking clock per stage change (stamps and ids);
-// T-237 with the prompt version of the Mock analyses (`@2`, DR6-18).
-const DEMO_HASH = 'de61c9758e0608b948a1d771629e8608fda0751d09c15ebd57516ec3e44b7878';
+// T-237 with the prompt version of the Mock analyses (`@2`, DR6-18); T-257 with `@3` (G5 18/10/2026).
+const DEMO_HASH = 'a66327bfc10f124579c5d8ff514e4133cf6ee353587f2f66835a08eda711e4b7';
 
 async function seeded(seed: number, anchorDate = ANCHOR) {
   const persist = vi.fn();

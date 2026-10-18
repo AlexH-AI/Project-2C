@@ -42,6 +42,9 @@ const codesOf = (block: Block, text: string) => [
   ...new Set(issuesOf(block, text).map((issue) => issue.code)),
 ];
 
+/** `text` written NFD with a U+200B before each combining mark (DR6-17). */
+const nfdZw = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, (mark) => `\u200b${mark}`);
+
 describe('validateOutput — G5 §8.5 cases', () => {
   it.each([
     ['C1', 'hypotheses', 'KH có 70% khả năng tham gia', ['V3']],
@@ -105,8 +108,98 @@ describe('validateOutput — G5 §8.5 cases', () => {
     ['C50', 'hypotheses', 'KH có mã I\u2060NTJ', ['V5']],
     ['C50', 'needs', 'KH có mệnh\u00adKim', ['V5']],
     ['C51', 'themes', 'Theo Lu\u200bật Kinh doanh bảo hiểm', ['V6']],
+    // T-257 (Owner G5 18/10/2026).
+    ['C55', 'hypotheses', nfdZw('KH dễ chốt'), ['V3']],
+    ['C55', 'nextBestActions', nfdZw('Bảo Việt'), ['V4']],
+    ['C55', 'needs', nfdZw('KH tuổi Tý'), ['V5']],
+    ['C55', 'themes', nfdZw('Theo Điều 35'), ['V6']],
+    ['C55', 'themes', nfdZw('Nghị quyết 12'), ['V6']],
+    ['C56', 'themes', 'Theo Điều\u200b35', ['V6']],
+    ['C56', 'themes', 'Theo Điều\u206035', ['V6']],
+    ['C56', 'themes', 'Luật\u200bKinh doanh bảo hiểm', ['V6']],
+    ['C56', 'themes', 'Luật\u2060BHXH', ['V6']],
+    ['C57', 'themes', 'khoản 2\u200bĐiều\u200b35', ['V6']],
+    ['C57', 'themes', 'khoản\u20602 điều 35', ['V6']],
+    ['C57', 'themes', 'điểm\u200ba\u200bkhoản 2', ['V6']],
+    ['C58', 'discoveryStrategy', 'Hỏi KH đã có Luật\u200bSư gia đình chưa', []],
+    ['C58', 'needs', 'Di chúc cần đúng pháp\u200bluật Việt Nam', []],
+    ['C59', 'hypotheses', 'xác\u3164suất', ['V3']],
+    ['C59', 'hypotheses', 'xác\u0085suất', ['V3']],
+    ['C60', 'nextBestActions', 'Bảo\u034fViệt', ['V4']],
+    ['C61', 'needs', '\u3164', ['V1']],
+    ['C61', 'needs', '\u3164…', ['V1']],
+    ['C62', 'needs', 'Định hướng nơi ở sau khi nghỉ hưu', []],
+    ['C62', 'needs', 'Định hướng ngoài giờ làm việc', []],
+    ['C62', 'needs', 'Định hướng nối nghiệp cho con', []],
+    ['C62', 'nextBestActions', 'RE chuyển hướng nói sang mục tiêu học phí', []],
+    ['C63', 'hypotheses', 'KH cần suy nghĩ định hướng đầu tư', []],
+    ['C63', 'hypotheses', 'KH nghĩ định cư ở Úc', []],
+    ['C63', 'hypotheses', 'KH nghỉ định kỳ hằng năm', []],
+    ['C64', 'hypotheses', 'Phần lớn là khách nông thôn', []],
+    ['C64', 'hypotheses', 'KH thuộc nhóm khách lãnh đạo cấp cao', []],
+    ['C64', 'hypotheses', 'Ngân hàng xếp hàng khách ưu tiên riêng', []],
+    ['C65', 'hypotheses', 'KH sẵn sàng kỹ lưỡng xem xét', []],
+    ['C65', 'hypotheses', 'KH muốn chắc chắn kỳ hạn gửi tiền', []],
+    ['C65', 'hypotheses', 'Khả năng múa của con KH', []],
+    ['C65', 'hypotheses', 'KH có khả năng mưa gió vẫn đến', []],
+    ['C66', 'needs', 'Hai hợp đồng cùng mệnh giá', []],
+    ['C66', 'hypotheses', 'KH bỏ luật sư cũ', []],
+    ['C66', 'painPoints', 'KH lo phí bảo hiểm từ kỳ tới sẽ tăng', []],
+    ['C66', 'hypotheses', 'KH thường gọi bảo hiểm khi xe gặp sự cố', []],
+    ['C67', 'needs', 'KH là người hướng nội', ['V5']],
+    ['C67', 'needs', 'KH cung mệnh Kim', ['V5']],
+    ['C67', 'needs', 'KH la nguoi huong noi', ['V5']],
+    ['C67', 'needs', 'KH huong nội', ['V5']],
+    ['C68', 'themes', 'Theo nghị định mới', ['V6']],
+    ['C68', 'themes', 'Theo nghi dinh moi', ['V6']],
+    ['C68', 'themes', 'Nghi định 46 về thuế', ['V6']],
+    ['C69', 'hypotheses', 'KH là khách nóng', ['V3']],
+    ['C69', 'hypotheses', 'KH la khach nong', ['V3']],
+    ['C69', 'hypotheses', 'KH là khach nóng', ['V3']],
+    ['C69', 'hypotheses', 'KH sẵn sàng ký ngay', ['V3']],
+    ['C69', 'hypotheses', 'KH san sang ky ngay', ['V3']],
+    ['C69', 'hypotheses', 'Xác suat cao', ['V3']],
+    ['C70', 'needs', 'Giữ kỉ luật Thép của KH', []],
+    ['C70', 'needs', 'KH tin vào qui luật Thị trường', []],
+    ['C70', 'needs', 'Giữ KỈ LUẬT Thép', []],
+    ['C70', 'needs', 'KH tin vào QUI LUẬT Thị trường', []],
   ] as const)('%s: %s "%s" → %j', (_, block, text, codes) => {
     expect(codesOf(block, text)).toEqual(codes);
+  });
+
+  it.each([
+    [
+      'C71',
+      '300 letters and 650 000 U+200B',
+      `${'a'.repeat(150)}${'\u200b'.repeat(650_000)}${'a'.repeat(150)}`,
+      ['V1'],
+    ],
+    [
+      'C71',
+      '300 letters and 701 U+200B',
+      `${'a'.repeat(150)}${'\u200b'.repeat(701)}${'a'.repeat(150)}`,
+      ['V1'],
+    ],
+    [
+      'C72',
+      '300 letters and 700 U+200B',
+      `${'a'.repeat(150)}${'\u200b'.repeat(700)}${'a'.repeat(150)}`,
+      [],
+    ],
+    [
+      'C72',
+      '300 letters written NFD and 100 U+200B',
+      `${'ệ'.normalize('NFD').repeat(300)}${'\u200b'.repeat(100)}`,
+      [],
+    ],
+  ] as const)('%s: %s', (_, __, text, codes) => {
+    expect(codesOf('needs', text)).toEqual(codes);
+  });
+  it('C71: says the string as written is too long', () => {
+    const text = `${'a'.repeat(150)}${'\u200b'.repeat(701)}${'a'.repeat(150)}`;
+    expect(issuesOf('needs', text)).toEqual([
+      { code: 'V1', path: 'needs[0].text', detail: 'quá 1 000 ký tự kể cả ký tự vô hình' },
+    ]);
   });
 
   it('C1: one issue for "%" and one for "khả năng tham gia", at the text', () => {
@@ -192,13 +285,16 @@ describe('validateOutput — V3 to V6', () => {
     expect(codesOf('needs', 'Hỏi KH về Luật sư')).toEqual([]);
   });
 
-  // G5 §8.4: "KH", "RE" and "sư" in any case, "kỷ" and "quy" each on its own (DR6-16, DR6-61).
+  // G5 §8.4: "KH", "RE" and "sư" in any case, "kỷ", "kỉ", "quy" and "qui" each on its own (DR6-16,
+  // DR6-61, DR6-102).
   it.each([
     'Giữ luật Kh tự đặt khi chi tiêu',
     'Theo luật Re đặt cho buổi gặp',
     'KH tin vào quy luật Thị trường',
     'Giữ kỷ luật Thép của KH',
-  ])('V6 lets "luật" through before KH / RE or after kỷ / quy: "%s"', (text) => {
+    'KH tin vào Qui luật Thị trường',
+    'Giữ Kỉ luật Thép của KH',
+  ])('V6 lets "luật" through before KH / RE or after kỷ / kỉ / quy / qui: "%s"', (text) => {
     expect(codesOf('needs', text)).toEqual([]);
   });
 
