@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
   addKycNote,
+  asExe,
   createKycCustomer,
   discoveryFacts,
   discoveryOutput,
@@ -238,6 +239,38 @@ test('a KYC change while the session is open leaves the saved result STALE', asy
   await expect(panel).toContainText('STALE');
   await expect(panel).toContainText('KYC có thay đổi nhỏ từ 15/09.');
   await expect(panel).toContainText(/kyc v2 · discovery@2\+web@1 · ChatGPT web/);
+});
+
+test('the session leaves the panel once the data is replaced under it (DR6-15)', async ({
+  page,
+}) => {
+  await asExe(page);
+  // A seeded customer the gate lets through: Nạp lại of the same day gives it the same ID (DR5-36).
+  await page.goto('/#/customers');
+  await page.getByRole('radio', { name: 'Bảng' }).click();
+  const link = page.getByRole('link', { name: 'Phan Thanh Bình', exact: true });
+  const more = page.getByRole('button', { name: /^Hiện thêm/ });
+  while (!(await link.isVisible())) await more.click();
+  const profile = (await link.getAttribute('href'))!;
+
+  // Nạp lại held at its backup, as Rust copying the file; the profile opened meanwhile.
+  await page.goto('/#/settings');
+  await page.evaluate(() => window.exe.holdBackup());
+  await page.getByRole('button', { name: 'Nạp lại…' }).click();
+  await page.getByRole('textbox', { name: /^Gõ NẠP LẠI/ }).fill('NẠP LẠI');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('button', { name: 'Đang nạp lại…' })).toBeVisible();
+  await page.evaluate((hash) => (window.location.hash = hash), profile);
+  const panel = panelOf(page);
+  const start = panel.getByRole('button', { name: 'Phân tích bằng ChatGPT web' });
+  await start.click();
+  const box = panel.getByRole('textbox', { name: 'Dán kết quả' });
+  await expect(box).toBeVisible();
+
+  // An answer now could only be for the data gone: the session ends, nothing left to paste.
+  await page.evaluate(() => window.exe.releaseBackup());
+  await expect(box).toBeHidden();
+  await expect(start).toBeEnabled();
 });
 
 test('Hủy and leaving the profile save nothing; a failed copy shows the message to copy', async ({
