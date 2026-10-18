@@ -2,7 +2,8 @@
 // The load data of spec Phase 6 §5.1 (T-216), run by tools/load-data.mjs: the simulated data of
 // `seedDemoData` at a bigger scale and with Thùng rác, as a backup file the app imports
 // (Cài đặt → Nhập backup) and `importBackup` reads. The same anchor day and seed give the same
-// rows on any machine; the hash of `tables` lets two machines compare at a glance.
+// rows on any machine from UTC−12 to UTC+11 (`seedDemoData`); the hash of `tables` lets two
+// machines compare at a glance.
 //
 // Everything here takes its I/O as arguments, so it is unit-tested in load-data-core.test.mjs.
 

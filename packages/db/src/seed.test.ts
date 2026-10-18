@@ -79,6 +79,9 @@ const DEMO_ROW_COUNTS = {
 };
 // T-232 moved it with one more read of the seed's ticking clock per stage change (stamps and ids);
 // T-237 with the prompt version of the Mock analyses (`@2`, DR6-18); T-257 with `@3` (G5 18/10/2026).
+// The hash of the data seeded at UTC. From UTC+12 noon UTC is already the next day, so `middayOf`
+// takes local noon and every stamp and the time of every id move back 12–14 hours (DR-15); from
+// UTC−12 to UTC+11 the data is the very data of UTC.
 const DEMO_HASH = 'a66327bfc10f124579c5d8ff514e4133cf6ee353587f2f66835a08eda711e4b7';
 
 async function seeded(seed: number, anchorDate = ANCHOR) {
@@ -119,10 +122,12 @@ describe('seedDemoData', () => {
       const other = await seeded(2);
       expect(await contentHash(second.db)).toBe(await contentHash(first.db));
       expect(await contentHash(other.db)).not.toBe(await contentHash(first.db));
-      // The demo before the load data (T-216): no scale given, the very rows it had. A change of
-      // schema or of the demo itself moves these pins on purpose; nothing else should.
-      expect(rowCounts(first.db)).toEqual(DEMO_ROW_COUNTS);
-      expect(await contentHash(first.db)).toBe(DEMO_HASH);
+      // The demo before the load data (T-216): no scale given, the very rows it had, seeded at UTC
+      // as DEMO_HASH is. A change of schema or of the demo itself moves these pins on purpose;
+      // nothing else should.
+      const utc = await inTimeZone('UTC', () => seeded(1));
+      expect(rowCounts(utc.db)).toEqual(DEMO_ROW_COUNTS);
+      expect(await contentHash(utc.db)).toBe(DEMO_HASH);
       // DR-15: at UTC+14 noon UTC is already the next day, yet a profile change keeps its day.
       const east = await inTimeZone('Pacific/Kiritimati', () => seeded(1));
       expect(recordedDays(east.db)).toEqual(recordedDays(first.db));

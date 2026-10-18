@@ -5,8 +5,9 @@
 //   node tools/load-data.mjs [--out <file>] [--anchor yyyy-mm-dd] [--seed <n>]
 //
 // Defaults: anchor 2026-10-12, seed 6, out .local/load-data/load-<anchor>-seed<n>.p2cbackup (not
-// committed: tens of MB). Prints the rows of each table and the hash of `tables`: the same on any
-// machine for the same anchor and seed.
+// committed: tens of MB); a relative --out is from the repo root, wherever the command is run from.
+// Prints the rows of each table and the hash of `tables`: the same on any machine from UTC−12 to
+// UTC+11 for the same anchor and seed, as the data of `seedDemoData` is.
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { registerHooks } from 'node:module';
