@@ -2,13 +2,16 @@
 <!--
   Mockup G3 Phase 6 — Cài đặt → Thùng rác (spec docs/design/phase-6-hoan-thien.md §4.2, S-2 §4.1).
   Mục lục:
-    #p11a  Màn Thùng rác: lọc theo loại, tìm, bảng, dòng bị chặn      (~dòng 131)
-    #p11b  Hộp khôi phục KH (TR-4, E1)                                   (~dòng 228)
-    #p11c  Hộp khôi phục cuộc hẹn Đã gặp (TR-3, E5 / E7)                 (~dòng 245)
-    #p11d  Lý do chặn — mẫu câu từng loại (TR-1…TR-5)                     (~dòng 264)
-    #p11e  Sau khi khôi phục · Thùng rác trống                             (~dòng 291)
-    #p11f  Xóa KH 5f trong app + câu ở các hộp xóa (TR-9, TR-10)          (~dòng 311)
-    #p11g  Lệnh ghi bị từ chối trong lúc thay dữ liệu (S2-2)               (~dòng 343)
+    #p11a  Màn Thùng rác: nút dọn sạch, lọc theo loại, tìm, bảng, dòng bị chặn  (~dòng 143)
+    #p11b  Hộp khôi phục KH (TR-4, E1)                                   (~dòng 240)
+    #p11c  Hộp khôi phục cuộc hẹn Đã gặp (TR-3, E5 / E7)                 (~dòng 257)
+    #p11d  Lý do chặn — mẫu câu từng loại (TR-1…TR-5)                     (~dòng 276)
+    #p11e  Sau khi khôi phục · Thùng rác trống                             (~dòng 303)
+    #p11f  Xóa KH 5f trong app + câu ở các hộp xóa (TR-9, TR-10)          (~dòng 323)
+    #p11g  Lệnh ghi bị từ chối trong lúc thay dữ liệu (S2-2)               (~dòng 355)
+    #p11h  Nhắc dọn khi Thùng rác từ 1 000 bản ghi (TR-13)                 (~dòng 371)
+    #p11i  Hộp dọn sạch Thùng rác (TR-11)                                  (~dòng 382)
+    #p11j  Sau khi dọn · dòng giữ lại · không dọn được (TR-11, TR-12)      (~dòng 411)
 -->
 <html lang="vi">
   <head>
@@ -61,6 +64,15 @@
         margin-top: 3px;
         color: var(--warn);
         font-size: var(--fs-xs);
+      }
+      .keep {
+        display: block;
+        margin-top: 3px;
+        color: var(--info);
+        font-size: var(--fs-xs);
+      }
+      .specimen.full {
+        grid-column: 1 / -1;
       }
       .gone {
         color: var(--text-3);
@@ -136,8 +148,8 @@
             </nav>
 
             <section class="card" aria-label="Thùng rác">
-              <div class="card-head"><h2>Thùng rác</h2><span class="meta num">14 bản ghi</span></div>
-              <p class="help" style="margin: 0 0 12px">Bản ghi đã xóa mềm: ẩn khỏi danh sách và chỉ số. Khôi phục đưa bản ghi về như trước. Thùng rác không tự dọn, không xóa vĩnh viễn; xuất backup mang theo cả thùng rác.</p>
+              <div class="card-head"><h2>Thùng rác</h2><span class="meta num">14 bản ghi</span><div class="actions"><button class="btn btn-danger">Dọn sạch Thùng rác…</button></div></div>
+              <p class="help" style="margin: 0 0 12px">Bản ghi đã xóa mềm: ẩn khỏi danh sách và chỉ số. Khôi phục đưa bản ghi về như trước. Thùng rác không tự dọn; "Dọn sạch Thùng rác…" xóa hẳn mọi bản ghi ở đây, app backup trước. Xuất backup mang theo cả thùng rác.</p>
               <div class="filter-bar" style="margin-bottom: 10px">
                 <div class="segmented" role="group" aria-label="Loại bản ghi">
                   <button class="on">Tất cả<span class="seg-n">14</span></button>
@@ -184,7 +196,7 @@
                   </tr>
                   <tr>
                     <td><span class="kind">Lịch hẹn</span></td>
-                    <td class="rec"><b class="num">28/09/2026 15:00 · Đã gặp</b><span class="more">N3 → N2</span><span class="why">Nhóm KH đã đổi ngày 05/10/2026, sau ngày cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10).</span></td>
+                    <td class="rec"><b class="num">28/09/2026 15:00 · Đã gặp</b><span class="more">nhóm sau N2</span><span class="why">Nhóm KH đã đổi ngày 05/10/2026, sau ngày cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10).</span></td>
                     <td>KH Lê Hoài Nam · RE Lâm Bảo Phương</td>
                     <td class="num">07/10/2026 09:48</td>
                     <td class="r"><button class="btn" disabled>Khôi phục…</button></td>
@@ -320,7 +332,7 @@
                   <dl class="kv">
                     <dt>Lịch hẹn</dt><dd class="num">7 (3 đã gặp · 1 lần tính RF)</dd>
                     <dt>Hợp đồng</dt><dd class="num">0</dd>
-                    <dt>Ghi chú KYC</dt><dd class="num">5 — giữ nguyên, không bao giờ xóa</dd>
+                    <dt>Ghi chú KYC</dt><dd class="num">5</dd>
                   </dl>
                   <div class="alert info">Dữ liệu vẫn còn: khôi phục ở Cài đặt → Thùng rác.</div>
                   <div class="divider"></div>
@@ -354,8 +366,80 @@
                 <div class="dialog-foot"><span class="spacer"></span><button class="btn">Hủy</button><button class="btn btn-primary">Lưu</button></div>
               </div>
             </section>
+
+            <!-- 11h: reminder from 1 000 records -->
+            <section class="specimen" id="p11h">
+              <p class="cap">11h · Nhắc dọn khi Thùng rác từ 1 000 bản ghi (TR-13, D12)</p>
+              <section class="card" aria-label="Thùng rác">
+                <div class="card-head"><h2>Thùng rác</h2><span class="meta num">1.313 bản ghi</span><div class="actions"><button class="btn btn-danger">Dọn sạch Thùng rác…</button></div></div>
+                <p class="help" style="margin: 0 0 10px">Bản ghi đã xóa mềm: ẩn khỏi danh sách và chỉ số. … (câu của 11a)</p>
+                <div class="alert info">Thùng rác có 1.313 bản ghi nên mở chậm dần. Nên dọn sạch khi không cần khôi phục các bản ghi này nữa.</div>
+                <p class="help" style="margin: 10px 0 0">999 bản ghi trở xuống: không có câu nhắc. Nút "Dọn sạch Thùng rác…" có khi Thùng rác có bản ghi, tắt khi mọi bản ghi đều được giữ lại (TR-12); Thùng rác trống thì không có nút (11e).</p>
+              </section>
+            </section>
+
+            <!-- 11i: the purge dialog -->
+            <section class="specimen" id="p11i">
+              <p class="cap">11i · Hộp dọn sạch Thùng rác (TR-11, D1)</p>
+              <div class="dialog">
+                <div class="dialog-head"><div><h2>Dọn sạch Thùng rác?</h2><div class="sub">14 bản ghi · mọi loại, không theo bộ lọc</div></div><span class="x">×</span></div>
+                <div class="dialog-body">
+                  <p style="margin: 0; color: var(--text-2)">Các bản ghi sau bị xóa hẳn khỏi dữ liệu:</p>
+                  <dl class="kv">
+                    <dt>KH</dt><dd class="num">3 — kèm 12 lịch hẹn · 1 HĐ · 9 ghi chú KYC · 2 phân tích AI</dd>
+                    <dt>Lịch hẹn</dt><dd class="num">6</dd>
+                    <dt>HĐ</dt><dd class="num">2</dd>
+                    <dt>Nhân sự</dt><dd class="num">2</dd>
+                    <dt>Team</dt><dd class="num">1</dd>
+                  </dl>
+                  <div class="alert warn"><b>Không hoàn tác được</b>Bản ghi đã dọn không còn trong Thùng rác, không khôi phục được trong app. Dữ liệu đang dùng và chỉ số không đổi.</div>
+                  <div class="alert info">App backup file dữ liệu trước vào <span class="path">Project2C-data\backups\</span>. Muốn lấy lại dữ liệu như trước lúc dọn: chép bản backup thành <span class="path">Project2C-data\project2c.db</span> khi app đã đóng (mất các thay đổi sau lúc dọn).</div>
+                  <div class="field">
+                    <label>Gõ <b style="color: var(--text)">DỌN SẠCH</b> để xác nhận</label>
+                    <div class="input focus">DỌN SẠCH</div>
+                  </div>
+                  <div class="divider"></div>
+                  <span class="help">Có bản ghi giữ lại (TR-12, D5): thêm dưới danh sách; số theo loại ở trên không tính chúng.</span>
+                  <div class="alert info"><b>Giữ lại 1 bản ghi còn được dùng</b>Lý do ghi ở dòng của nó trong Thùng rác.</div>
+                  <span class="help">Bản web (D13): câu backup thay bằng "Bản web không lưu file: dữ liệu chỉ nằm trong trình duyệt.", nút "Dọn sạch". Đang dọn: nút "Đang dọn…", hộp không đóng được (như Nạp lại).</span>
+                </div>
+                <div class="dialog-foot"><span class="spacer"></span><button class="btn">Hủy</button><button class="btn btn-danger">Backup rồi dọn sạch</button></div>
+              </div>
+            </section>
+
+            <!-- 11j: after the purge, a kept row, a purge refused -->
+            <section class="specimen full" id="p11j">
+              <p class="cap">11j · Sau khi dọn · dòng giữ lại · không dọn được (TR-11, TR-12)</p>
+              <div class="dialog">
+                <div class="dialog-body">
+                  <div class="toast ok" style="max-width: none; box-shadow: none">
+                    <span class="c-ok" style="font-weight: 700">✓</span>
+                    <div class="t-body"><b>Đã dọn sạch Thùng rác</b><span class="num">Xóa hẳn 3 KH (kèm 12 lịch hẹn · 1 HĐ · 9 ghi chú KYC · 2 phân tích AI) · 6 lịch hẹn · 2 HĐ · 2 nhân sự · 1 team. Backup: Project2C-data\backups\project2c-s00000013-20261011-164512.db</span></div>
+                  </div>
+                  <span class="help">Hộp đóng, focus về thông báo; Thùng rác trống thì dưới là "Thùng rác trống" (11e). Bản web: không có phần "Backup: …".</span>
+                  <div class="divider"></div>
+                  <span class="help">Có bản ghi giữ lại (D5): thông báo thêm "Giữ lại 1 bản ghi còn được dùng.", bảng chỉ còn các dòng đó, lý do ngay dưới bản ghi (hiện cả trước khi dọn):</span>
+                  <table>
+                    <tbody>
+                      <tr>
+                        <td><span class="kind">Lịch hẹn</span></td>
+                        <td class="rec"><b class="num">08/10/2026 10:00 · Dời lịch</b><span class="keep">Giữ lại khi dọn: lịch 15/10/2026 10:00 dời từ lịch này.</span></td>
+                        <td>KH Phạm Gia Bảo · RE Bùi Anh Tuấn</td>
+                        <td class="num">10/10/2026 18:05</td>
+                        <td class="r"><button class="btn">Khôi phục…</button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <span class="help">Lý do khác (D6): nhân sự "Giữ lại khi dọn: lịch 08/10/2026 10:00 còn ghi người này." · team "Giữ lại khi dọn: nhân sự Vương Thị Mai còn thuộc team này."</span>
+                  <div class="divider"></div>
+                  <span class="help">Không dọn được: cùng chỗ thông báo, dữ liệu không đổi.</span>
+                  <div class="alert"><b>Chưa dọn: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó.</b><span class="dim">Dữ liệu không bị đổi. (D7)</span></div>
+                  <div class="alert"><b>Chưa dọn được Thùng rác.</b><span class="dim">Dữ liệu không bị đổi. (D8 backup lỗi, D9 lỗi giữa chừng)</span></div>
+                </div>
+              </div>
+            </section>
           </div>
-          <div class="mock-note">Mockup G3 Phase 6 · dữ liệu giả lập · hôm nay 11/10/2026 · ví dụ E1–E17 ở spec Phase 6 §4.2</div>
+          <div class="mock-note">Mockup G3 Phase 6 · dữ liệu giả lập · hôm nay 11/10/2026 · ví dụ E1–E20, D1–D13 ở spec Phase 6 §4.2</div>
         </div>
       </div>
     </div>

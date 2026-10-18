@@ -48,3 +48,12 @@ Cổng deterministic thật, test được, và `KYC_INSUFFICIENT` không tốn 
 
 - Hồ sơ mẫu `packages/domain/src/golden/kyc.fixture.ts` (bảng đối chiếu `docs/golden/kyc.md`) là test bắt buộc của cổng; không sửa để "cho xanh". Là nền cho bộ eval AI ở Phase 5.
 - UI hồ sơ KH cần timeline KYC và luồng xác nhận dữ kiện.
+
+## Phụ lục — dọn sạch Thùng rác xóa dữ liệu KYC của KH đã xóa (đề xuất G1, chờ Owner duyệt · Issue #662)
+
+Bối cảnh: deep review lượt 2 thấy Thùng rác mở chậm dần theo số bản ghi (DR6-84). Owner chọn thêm nút "Dọn sạch Thùng rác…" (17/10/2026, tổng hợp lượt 2 §9 Q8 (c)). Dọn một KH đã xóa mềm là xóa hẳn KH cùng mọi dữ liệu con, trong đó có ghi chú KYC, dữ kiện và lịch sử phân tích AI. Ba bảng này đang chỉ thêm, có trigger chặn mọi lần xóa: ghi chú, dữ kiện theo Quyết định 1 (migration `0003`); phân tích AI theo spec Phase 5 §7.1 (migration `0006`, dựng lại ở `0008`).
+
+- **Ngoại lệ duy nhất của append-only:** lệnh dọn sạch Thùng rác (spec Phase 6 §4.2 TR-6, TR-11) xóa hẳn `kyc_notes`, `kyc_facts` (và `kyc_versions`, vốn không có trigger) cùng `ai_analyses` của KH **đã xóa mềm**. Không có thao tác nào khác xóa các dòng này. Với KH chưa xóa, mọi thứ vẫn bất biến như trước.
+- **Trigger:** migration tự viết mới tạo lại `kyc_notes_no_delete`, `kyc_facts_no_delete`, `ai_analyses_no_delete`, chỉ cho xóa khi dòng thuộc KH có `deleted_at`; xóa dòng của KH chưa xóa vẫn bị chặn. Trigger chặn sửa (`kyc_notes_no_update`, `kyc_facts_status_only`, `ai_analyses_no_update`) không đổi: dòng của KH đã xóa cũng không sửa được.
+- **Lý do:** KH đã xóa không vào danh sách và chỉ số, nên xóa hẳn dữ liệu của nó không đổi cổng KYC, phiên bản hay phân tích nào của KH khác. Giữ mãi dữ liệu con của KH đã xóa làm Thùng rác chậm dần và file chỉ lớn lên (≈ 9–10 KB mỗi KH). Dọn có hỏi trước và tự backup trước, nên phần đã dọn còn trong bản backup đó và trong các backup / file xuất cũ hơn.
+- **Phương án loại:** tắt trigger trong lúc dọn (xóa trigger rồi tạo lại trong cùng transaction). SQLite hoàn tác được cả hai, nhưng trong lúc đó mọi dòng của mọi KH đều xóa được, và DDL nằm trong code của app thay vì migration.
