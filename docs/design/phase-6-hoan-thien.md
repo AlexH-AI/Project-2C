@@ -11,7 +11,7 @@ Tiêu chí phát hành v1.0 (G7 cuối):
 
 1. Milestone Phase 6 đóng hết Issue.
 2. Kiểm thử phát hành (§5) đạt: kịch bản trọn vòng e2e xanh, danh sách nghiệm thu của Owner đạt, đo hiệu năng trên dữ liệu tải đạt ngưỡng §5.2, exe chạy được trên hai máy và trên một máy Windows sạch, nâng từ exe Phase 5 không mất dữ liệu.
-3. Hai lượt deep review Phase 1–6 (§6) xong; mọi phát hiện từ Medium trở lên đã sửa, phần còn lại Owner đã quyết (sửa / hoãn sau v1.0 / chấp nhận).
+3. Các lượt deep review Phase 1–6 (§6: hai lượt theo kế hoạch, thêm lượt 3 theo quyết định Owner 19/10/2026) xong; mọi phát hiện từ Medium trở lên đã sửa, phần còn lại Owner đã quyết (sửa / hoãn sau v1.0 / chấp nhận).
 4. `pnpm verify`, `pnpm verify:rust`, `pnpm e2e` xanh trên SHA phát hành; eval AI thật đạt ngưỡng spec Phase 5 §11 sau đợt G5.
 5. Hướng dẫn sử dụng tiếng Việt có trong repo và trong bản phát hành.
 
@@ -22,7 +22,7 @@ Tiêu chí phát hành v1.0 (G7 cuối):
 | **6A** | Việc còn lại từ review Phase 5 (§3), bắt đầu bằng đợt G5 #491 **sau khi spec này qua G1** | G5 (#491) |
 | **6B** | Tính năng còn lại (§4): S-2, Thùng rác, hướng dẫn sử dụng | G2 / G3 từng tính năng |
 | **6C** | Kiểm thử phát hành (§5), gồm lệnh sinh dữ liệu tải và số đo nền hiệu năng / kích thước | — |
-| **6D** | Deep review Phase 1–6, **2 lượt × 3 agent, 6 gói** (§6; 4 → 3 agent: ADR-0001 M5, 13/10; lượt 2 còn 2 agent: M7, 17/10); **phân tích bloat code và hiệu năng nằm trong lượt 1**; sửa sau mỗi lượt | Owner chọn việc sửa sau mỗi lượt |
+| **6D** | Deep review Phase 1–6, **2 lượt × 3 agent, 6 gói** (§6; 4 → 3 agent: ADR-0001 M5, 13/10; lượt 2 còn 2 agent: M7, 17/10; lượt 3 Claude + Codex, phần Claude chạy bằng Workflow: M9, 19/10); **phân tích bloat code và hiệu năng nằm trong lượt 1**; sửa sau mỗi lượt | Owner chọn việc sửa sau mỗi lượt |
 | **6E** | G7: Owner nghiệm thu exe cuối, chỉ số Phase 6, phát hành v1.0 (§7) | **G7** |
 
 6A và 6B có thể xen nhau (khác file). Phần tự động của 6C chạy lại sau mỗi đợt sửa của 6D.
@@ -218,7 +218,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 | File | Nội dung |
 |---|---|
 | `README.md` | Mục lục; app làm gì; bản exe và bản web; làm trên hai máy (xuất trước khi đổi máy, nhập ở máy kia, "bản nhập sau thắng" — §8) |
-| `01-bat-dau.md` | Chạy exe portable, thư mục `Project2C-data\` (file DB, `backups\`, `exports\`), lần mở đầu có dữ liệu giả lập, trạng thái lưu ở góc sidebar, góc nhìn Toàn bộ / Team / RE |
+| `01-bat-dau.md` | Chạy exe portable, thư mục `Project2C-data\` (file DB, `backups\`, `exports\`), lần mở đầu có dữ liệu giả lập, báo lỗi lưu (dải ở đầu màn; "Lưu lần cuối" ở Cài đặt → Dữ liệu), góc nhìn Toàn bộ / Team / RE |
 | `02-tong-quan.md` | Tổng quan: chọn kỳ, Lọc, ô Lịch hẹn 4 nhóm, 6 KPI + so kỳ trước, KH theo nhóm, so sánh team / RE |
 | `03-lich-hen.md` | Lịch hẹn: 4 nhóm, lịch tháng / năm, đặt lịch, ghi kết quả (Đã gặp / Hủy / Không đến), hẹn tiếp, dời lịch, sửa / xóa |
 | `04-khach-hang.md` | Khách hàng: Kanban / bảng, tạo / sửa / xóa KH, chuyển nhóm tay |
@@ -314,23 +314,24 @@ Gói F là chỗ phân tích bloat code và hiệu năng toàn cục (yêu cầu
 - **Kế hoạch chi tiết** `docs/process/deep-review-phase-1-6.md` soạn ở bước 0 của lượt 1 (SHA ghim, prompt từng bên, KNOWN, baseline lấy từ §5.1), Owner duyệt trước khi chạy.
 - **Trục:** các trục của deep review trước (đúng-sai / edge case, toàn vẹn dữ liệu, bảo mật ở ranh giới, test yếu, trợ năng / i18n, khớp spec / mockup / nhãn) **và hai trục bắt buộc ghi riêng: bloat code, hiệu năng** (đo trên dữ liệu tải §5.1).
 - **Độc lập:** cùng SHA, mỗi bên một thư mục, cấm đọc báo cáo của nhau cho tới phiên tổng hợp; kiểm bằng log phiên như Phase 5.
-- **Muse:** chạy không hỏi duyệt (`--yolo`, Owner chọn 13/10) để tránh hàng chục lần Owner duyệt tay; thư mục làm việc là thư mục kết quả, repo chỉ đọc theo prompt; ACL chặn thư mục của bên khác, `git status` mỗi gói và quét log phiên thay cho sandbox (`docs/process/deep-review-phase-1-6.md` §7.1).
+- **Muse (lượt 1):** chạy không hỏi duyệt (`--yolo`, Owner chọn 13/10) để tránh hàng chục lần Owner duyệt tay; thư mục làm việc là thư mục kết quả, repo chỉ đọc theo prompt; ACL chặn thư mục của bên khác, `git status` mỗi gói và quét log phiên thay cho sandbox (`docs/process/deep-review-phase-1-6.md` §7.1).
 - **Lượt 1** trên SHA sau 6C → tổng hợp (gồm phần bloat / hiệu năng: số đo, phát hiện, đề xuất refactor) → Owner chọn → sửa (Issue thường, review phiên sạch; refactor giữ nguyên hành vi, test cũ xanh trước và sau, không đổi golden).
 - **Lượt 2** trên SHA sau đợt sửa lượt 1, cùng 6 gói, **hai bên Claude và Codex** (Owner 17/10 bỏ Muse, máy chạy tùy và số đo so với mốc cùng máy — ADR-0001 phụ lục M7; kế hoạch `docs/process/deep-review-phase-1-6.md` §L2), có hai phần ngang nhau (Owner chốt 11/10):
   1. **Kiểm phần đã sửa:** trạng thái từng vấn đề lượt 1 (đã sửa / một phần / hồi quy); refactor bloat / hiệu năng không đổi hành vi; số đo không xấu hơn nền.
   2. **Tìm lỗi mới và edge case mới** trên toàn bộ phạm vi gói, không chỉ quanh chỗ đã sửa: prompt lượt 2 yêu cầu mỗi bên thử những kịch bản / biên chưa có trong báo cáo lượt 1 (danh sách vấn đề lượt 1 đưa vào KNOWN để không báo lại).
 
   → tổng hợp → Owner chọn → sửa.
+- **Lượt 3** (Owner thêm 19/10/2026, trước G7; ADR-0001 phụ lục M9; kế hoạch `docs/process/deep-review-phase-1-6.md` §L3): trên SHA sau đợt sửa lượt 2, cùng 6 gói, hai bên Claude và Codex, cùng hai phần như lượt 2 (kiểm phần đã sửa sau lượt 2; lỗi / edge case mới trên toàn bộ phạm vi gói). Phần Claude chạy bằng **Workflow**: mỗi gói một subagent context sạch, tuần tự A → F, trong một phiên Owner mở. Sau tổng hợp: **sửa hết** (Owner chốt 19/10), rồi G7.
 - Báo cáo gốc lưu nguyên văn ở `docs/reviews/raw/<ngày>/{claude,codex,muse}/` qua PR docs; tổng hợp ở `docs/reviews/`.
 - Công cụ phân tích: ưu tiên thứ đã có (`dependency-cruiser`, `codemap`, script `node`). Công cụ mới (vd. `knip`, `cargo-bloat`) là **G4**.
 
 ### 6.4 Ước lượng
 
-6 gói × 3 bên = 18 báo cáo ở lượt 1; lượt 2 bỏ Muse (M7) nên 6 gói × 2 bên = 12 báo cáo, 30 cho hai lượt. Theo Phase 5: mỗi bên ≈ 2–3 giờ đồng hồ một lượt (Phase 1–6 lớn hơn, ước ≈ 3–4 giờ); Muse chạy `--yolo` nên không tốn thời gian chờ duyệt.
+6 gói × 3 bên = 18 báo cáo ở lượt 1; lượt 2 bỏ Muse (M7) nên 6 gói × 2 bên = 12 báo cáo, 30 cho hai lượt; lượt 3 (M9) thêm 12 báo cáo, 42 cho ba lượt. Theo Phase 5: mỗi bên ≈ 2–3 giờ đồng hồ một lượt (Phase 1–6 lớn hơn, ước ≈ 3–4 giờ); Muse chạy `--yolo` nên không tốn thời gian chờ duyệt.
 
 ### 6.5 Quy tắc
 
-ADR-0001 phụ lục **M4** (cùng PR với spec này): ở review đóng Phase 6, Muse tham gia như Codex (M5, 13/10: bỏ DeepSeek; M6, 14/10: Muse dùng Spark 1.3; M7, 17/10: lượt 2 bỏ Muse) — chỉ đọc, không viết code, báo cáo là dữ liệu tham khảo, không thay review phiên sạch. Không mở Agent tool, không cho agent ngoài viết code; multi-agent thử ở project mới, không ở 2C (Owner 11/10). *Sửa 17/10/2026 (ADR-0001 phụ lục M8):* Claude được dùng subagent / Workflow khi Owner bật (`ultracode`); agent ngoài Claude vẫn không viết code. Câu "không mở Agent tool" chỉ còn áp cho 2 lượt deep review 6D đã chạy. Bỏ so sánh với Project-2 nên không còn ràng buộc từ `docs/COMPARISON.md` (ADR-0001 phụ lục M3, ADR-0002 Superseded).
+ADR-0001 phụ lục **M4** (cùng PR với spec này): ở review đóng Phase 6, Muse tham gia như Codex (M5, 13/10: bỏ DeepSeek; M6, 14/10: Muse dùng Spark 1.3; M7, 17/10: lượt 2 bỏ Muse) — chỉ đọc, không viết code, báo cáo là dữ liệu tham khảo, không thay review phiên sạch. Không mở Agent tool, không cho agent ngoài viết code; multi-agent thử ở project mới, không ở 2C (Owner 11/10). *Sửa 17/10/2026 (ADR-0001 phụ lục M8):* Claude được dùng subagent / Workflow khi Owner bật (`ultracode`); agent ngoài Claude vẫn không viết code. Câu "không mở Agent tool" chỉ còn áp cho 2 lượt deep review 6D đã chạy; lượt 3 chạy phần Claude bằng Workflow (M9, 19/10). Bỏ so sánh với Project-2 nên không còn ràng buộc từ `docs/COMPARISON.md` (ADR-0001 phụ lục M3, ADR-0002 Superseded).
 
 ## 7. 6E — G7 và phát hành v1.0
 
