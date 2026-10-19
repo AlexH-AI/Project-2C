@@ -2,7 +2,8 @@
  * Thùng rác (spec Phase 6 §4.2): every soft-deleted team, person, customer, appointment and policy,
  * newest deletion first, with what restoring it does and, when it cannot be restored, why. The
  * reason comes from the very check the `restore…` command runs (TR-1…TR-5), so the screen and the
- * command never disagree on the same data. Not filtered by the view (TR-7).
+ * command never disagree on the same data; why the purge keeps a record comes from the purge's own
+ * `keptRecords` (TR-12). Not filtered by the view (TR-7).
  */
 import {
   fromIsoDate,
@@ -21,6 +22,7 @@ import { checkRestoreCustomer } from './customers';
 import type { Database } from './database';
 import { DbError, type DbErrorCode } from './errors';
 import { checkRestorePolicy } from './policies';
+import { keptRecords, type KeptBy } from './purge';
 import { appointments, customers, people, policies, teams } from './schema';
 import { checkRestorePerson, checkRestoreTeam } from './team';
 
@@ -67,6 +69,8 @@ interface TrashBase {
   readonly owner: TrashOwner;
   readonly effect: TrashEffect;
   readonly blocked?: TrashBlock;
+  /** Why "Dọn sạch Thùng rác" keeps it (TR-12), shown before the purge too. */
+  readonly keptBy?: KeptBy;
 }
 
 export type TrashRow =
@@ -174,15 +178,21 @@ export function listTrash(db: Database): TrashRow[] {
       }),
     );
   }
-  return rows.sort((a, b) =>
-    a.deletedAt === b.deletedAt ? (a.id < b.id ? 1 : -1) : a.deletedAt < b.deletedAt ? 1 : -1,
-  );
+  const kept = new Map(keptRecords(db).map((record) => [`${record.kind}:${record.id}`, record.by]));
+  return rows
+    .map((row) => {
+      const keptBy = kept.get(`${row.kind}:${row.id}`);
+      return keptBy ? { ...row, keptBy } : row;
+    })
+    .sort((a, b) =>
+      a.deletedAt === b.deletedAt ? (a.id < b.id ? 1 : -1) : a.deletedAt < b.deletedAt ? 1 : -1,
+    );
 }
 
-/** A trash row without what `entry` adds, kind by kind. */
+/** A trash row without what `entry` and `listTrash` add, kind by kind. */
 type Fields = TrashRow extends infer R
   ? R extends TrashRow
-    ? Omit<R, 'id' | 'deletedAt' | 'blocked'>
+    ? Omit<R, 'id' | 'deletedAt' | 'blocked' | 'keptBy'>
     : never
   : never;
 
