@@ -22,7 +22,7 @@ Tiêu chí phát hành v1.0 (G7 cuối):
 | **6A** | Việc còn lại từ review Phase 5 (§3), bắt đầu bằng đợt G5 #491 **sau khi spec này qua G1** | G5 (#491) |
 | **6B** | Tính năng còn lại (§4): S-2, Thùng rác, hướng dẫn sử dụng | G2 / G3 từng tính năng |
 | **6C** | Kiểm thử phát hành (§5), gồm lệnh sinh dữ liệu tải và số đo nền hiệu năng / kích thước | — |
-| **6D** | Deep review Phase 1–6, **2 lượt × 3 agent, 6 gói** (§6; 4 → 3 agent: ADR-0001 M5, 13/10; lượt 2 còn 2 agent: M7, 17/10; lượt 3 Claude + Codex, phần Claude chạy bằng Workflow: M9, 19/10); **phân tích bloat code và hiệu năng nằm trong lượt 1**; sửa sau mỗi lượt | Owner chọn việc sửa sau mỗi lượt |
+| **6D** | Deep review Phase 1–6, **3 lượt, 6 gói** (§6; lượt 1: 3 agent, 4 → 3 theo ADR-0001 M5, 13/10; lượt 2 còn 2 agent: M7, 17/10; lượt 3 Claude + Codex, phần Claude chạy bằng Workflow: M9, 19/10); **phân tích bloat code và hiệu năng nằm trong lượt 1**; sửa sau mỗi lượt | Owner chọn việc sửa sau mỗi lượt |
 | **6E** | G7: Owner nghiệm thu exe cuối, chỉ số Phase 6, phát hành v1.0 (§7) | **G7** |
 
 6A và 6B có thể xen nhau (khác file). Phần tự động của 6C chạy lại sau mỗi đợt sửa của 6D.
@@ -281,13 +281,13 @@ Lỗi tìm ra ở 6C thành Issue thường; lỗi chặn phát hành gắn `ris
 - Đo: mở app (lần đầu / mở lại), màn đầu sau tải lại, đổi kỳ / sắp cột / chọn dòng ở Lịch hẹn, Khách hàng, Tổng quan, Báo cáo, xuất Excel, panel AI và lịch sử phân tích, nhập / xuất backup, lưu DB.
 - Giữ ngưỡng Nhóm C của deep review Phase 1–4 (thao tác màn < 200 ms trên dữ liệu tải; `docs/metrics/phase-4.md` mục "Đo đầu-cuối"), thêm ngưỡng cho màn Phase 5 / 6 sau số đo nền. Không màn nào xấu hơn số đo Phase 4.
 
-## 6. 6D — deep review Phase 1–6: 2 lượt × 3 agent
+## 6. 6D — deep review Phase 1–6: 3 lượt, 6 gói
 
 ### 6.1 Vai trò
 
 | Bên | Ai chạy | Việc |
 |---|---|---|
-| Claude (phiên sạch mỗi gói, tuần tự, không subagent) | Owner mở phiên | Reviewer, chỉ đọc, worktree review riêng |
+| Claude (context sạch mỗi gói, tuần tự; lượt 1–2: mỗi gói một phiên sạch, không subagent; lượt 3: mỗi gói một subagent context sạch của Workflow — ADR-0001 M9) | Owner mở phiên (lượt 3: một phiên điều phối) | Reviewer, chỉ đọc, worktree review riêng |
 | Codex | Owner | Reviewer độc lập, chỉ đọc (ADR-0001 M2) |
 | Muse Spark 1.3 (Muse Code) | Owner | Reviewer độc lập, chỉ đọc (13/10: DeepSeek v4.1 Flash bỏ, Muse đổi sang Wonder — ADR-0001 M5; 14/10: về lại Spark 1.3 trên Office Laptop — M6). Chỉ lượt 1; lượt 2 bỏ Muse (17/10 — M7) |
 | **Claude (phiên tổng hợp)** | sau khi đủ báo cáo | **Vai chính:** đọc mọi báo cáo, kiểm lại từng phát hiện trên code (đúng / đã biết / sai), gộp trùng, chốt mức, đề xuất hướng giải quyết cho từng vấn đề (kèm phương án khi có nhiều cách), xếp việc sửa thành phương án cho Owner chọn |

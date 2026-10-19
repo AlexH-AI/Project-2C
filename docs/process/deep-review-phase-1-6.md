@@ -1063,7 +1063,12 @@ Thước kết luận như §L2.4. Bảy DR6 của lượt 1 mà lượt 2 chấ
 `common\known.md` (bước chuẩn bị §L3.9 bước 4) gồm **ba phần**:
 
 1. **Nguyên văn mục OPEN và ACCEPTED** của `docs/state/review-notes.md` ở SHA ghim. So với lượt 2 có thêm: quyết định lượt 2 ghi ở #664, và ghi chú không chặn của các PR sửa #666–#710 (sổ #668…#712).
-2. **Quyết định Owner còn hiệu lực:** K1–K21 (§5, §L2.5) giữ nguyên chữ, cộng:
+2. **Quyết định Owner còn hiệu lực:** K1–K21 (§5, §L2.5) giữ nguyên chữ, **trừ K14 và K17**, ghi vào `known.md` theo chữ đã sửa dưới đây (chữ cũ trái với quyết định sau):
+
+   - **K14 (sửa theo K27, TR-6 mới):** Thùng rác: không khôi phục dây chuyền, không tự dọn (chỉ dọn tay mọi bản ghi theo K27, không xóa từng dòng), không theo góc nhìn, luôn hỏi trước khi khôi phục (TR-1…TR-13). Bỏ vế "không xóa vĩnh viễn" duyệt 11/10 (spec §4.2 TR-6).
+   - **K17 (sửa theo M8, M9):** Không phải phát hiện: PR vượt ngưỡng kích thước (ghi ở `docs/metrics/`); cách làm "chỉ Claude viết code" (ADR-0001), kể cả việc phần Claude của lượt 3 chạy bằng Workflow subagent (M9); việc dùng công cụ mới (G4).
+
+   Cộng thêm:
 
 | # | Quyết định | Nguồn |
 |---|---|---|
@@ -1169,7 +1174,9 @@ Mức: M = Medium, L = Low, N = Nit. "Gói kiểm": gói ghi bảng R cho DR6 đ
   - F đọc báo cáo A–E;
   - các gói dùng chung worktree, cổng e2e 4173, thư mục `apps/desktop/dist` và máy đo.
 - **Kết quả có khuôn.** Mỗi subagent trả `{pkg, status: XONG | DỪNG, report, note}` thay cho dòng in `XONG …` (Phụ lục I quy tắc riêng 6). Trả `DỪNG` (bước 0 không qua, SHA lệch, lỡ thấy thư mục cấm…) thì script dừng và báo lý do. Owner xử lý xong thì chạy lại từ gói đó (`args: {"from": "<gói>"}`).
-- **Bị cắt giữa chừng** (phiên đóng, máy tắt, lỗi API): chạy lại Workflow với `resumeFromRunId`. Gói đã xong trả lại kết quả đã lưu; gói dở chạy lại, và bước 0 thấy `ĐANG LÀM` nên làm tiếp. Hoặc chạy mới với `from` = gói dở.
+- **Bị cắt giữa chừng:**
+  - **Phiên điều phối còn mở** (Workflow bị dừng, lỗi API): dừng hẳn lần chạy cũ (TaskStop), rồi chạy lại trong **chính phiên đó** với `resumeFromRunId`. Resume chỉ dùng được trong cùng phiên. Gói đã xong trả lại kết quả đã lưu; gói dở chạy lại, và bước 0 thấy `ĐANG LÀM` nên làm tiếp.
+  - **Phiên điều phối đã đóng** (đóng cửa sổ, máy tắt): mở phiên điều phối mới và chạy mới với `args {"from": "<gói dở>"}`. Bước 0 của gói dở thấy `ĐANG LÀM` nên làm tiếp; các gói trước đã `XONG` không chạy lại.
 - **Không lồng:** subagent không gọi Agent tool / Workflow. Các quy tắc riêng khác của Claude (Phụ lục I) giữ như Phụ lục E.
 
 **Codex:** như §L2.7. Owner chạy mỗi gói một phiên mới; báo cáo ghi phiên bản Codex ở mục 1.
@@ -1209,7 +1216,7 @@ Khuôn như §L2.8, đổi:
    - `git status --short` rỗng (ngoài file Codex tự sinh ở `-review-2`, §8).
 4. Chép vào `common\`:
    - `plan.md` (file này, bản đã merge);
-   - `known.md` (§L3.5: OPEN + ACCEPTED nguyên văn ở SHA ghim, K1–K29, bảng 39 DR6 và danh sách KNOWN);
+   - `known.md` (§L3.5: OPEN + ACCEPTED nguyên văn ở SHA ghim, K1–K29 với K14, K17 theo chữ đã sửa ở §L3.5, bảng 39 DR6 và danh sách KNOWN);
    - `fixes.md`: thân 18 Issue của §L3.2 và thân PR sửa (mục "Lệch so với Issue", "Chưa làm", "Ghi chú OPEN liên quan"), lấy bằng `gh issue view` / `gh pr view --json body`;
    - `prompt-claude.md` = đoạn prompt của Phụ lục I + nguyên văn Phụ lục K; `prompt-codex.md` = Phụ lục J + nguyên văn Phụ lục K;
    - `workflow-claude.mjs` = script của Phụ lục I, nguyên văn.
@@ -1237,7 +1244,7 @@ Khuôn như §L2.8, đổi:
   ultracode. Chạy công cụ Workflow với scriptPath C:\workspace\deep-review-1-6-r3\common\workflow-claude.mjs và args {"from": "A"}. Phiên này chỉ điều phối: không tự review, không đọc báo cáo, không mở thư mục codex\. Ghi runId, thư mục transcript Workflow trả về, model và mức suy luận của phiên này vào C:\workspace\deep-review-1-6-r3\common\workflow-run.md. Khi Workflow xong hoặc dừng, in nguyên kết quả nó trả về.
   ```
 
-  Workflow dừng ở một gói → Owner xem lý do (`note`), xử lý, rồi bảo phiên điều phối chạy lại với `args {"from": "<gói>"}`. Phiên bị cắt → chạy lại với `resumeFromRunId` (§L3.7).
+  Workflow dừng ở một gói → Owner xem lý do (`note`), xử lý, rồi bảo phiên điều phối chạy lại với `args {"from": "<gói>"}`. Bị cắt giữa chừng: phiên điều phối còn mở thì resume trong chính phiên đó (`resumeFromRunId`); phiên đã đóng thì mở phiên mới, chạy với `from` = gói dở (§L3.7).
 
 Bảng đánh dấu của Owner (12 ô):
 
