@@ -112,7 +112,7 @@ Thẻ cuối ghi rõ app gửi gì khi Phân tích, AI trích xuất, ChatGPT we
 
 ![Cài đặt → Thùng rác với một lịch hẹn đã xóa](img/09-cai-dat-thung-rac.png)
 
-KH, lịch hẹn, HĐ, nhân sự và team khi xóa là **xóa mềm**: ẩn khỏi danh sách và chỉ số nhưng vẫn còn trong dữ liệu. Thùng rác liệt kê các bản ghi đó để khôi phục. Thùng rác không tự dọn và không xóa vĩnh viễn; xuất backup mang theo cả Thùng rác, nhập backup / nạp lại thay cả Thùng rác. Ghi chú KYC không xóa được nên không nằm ở đây.
+KH, lịch hẹn, HĐ, nhân sự và team khi xóa là **xóa mềm**: ẩn khỏi danh sách và chỉ số nhưng vẫn còn trong dữ liệu. Thùng rác liệt kê các bản ghi đó để khôi phục. Thùng rác không tự dọn; nút **Dọn sạch Thùng rác…** xóa hẳn mọi bản ghi ở đây (xem [Dọn sạch Thùng rác](#dọn-sạch-thùng-rác)). Xuất backup mang theo cả Thùng rác, nhập backup / nạp lại thay cả Thùng rác. Ghi chú KYC không xóa riêng được nên không nằm ở đây; dọn sạch xóa hẳn cả ghi chú KYC của KH đã xóa.
 
 Thùng rác không theo góc nhìn: luôn hiện mọi bản ghi đã xóa.
 
@@ -168,6 +168,40 @@ Khi bản ghi cần một bản ghi khác đã xóa hoặc đã đổi, nút **K
 | "Ngày nộp … sau hôm nay." / "Kết quả ngày … sau hôm nay." | Bản ghi đến từ file nhập có ngày tương lai: chờ tới ngày đó |
 
 Lý do được tính trước khi bấm; nếu dữ liệu vừa đổi, hộp khôi phục báo lỗi và không đổi gì.
+
+### Dọn sạch Thùng rác
+
+Nút **Dọn sạch Thùng rác…** ở đầu thẻ xóa hẳn mọi bản ghi trong Thùng rác, không theo loại hay ô tìm đang chọn. App không có xóa hẳn từng dòng và không bao giờ tự dọn. Thùng rác từ 1.000 bản ghi trở lên mở chậm dần, nên dưới câu giới thiệu có câu nhắc dọn.
+
+1. Bấm **Dọn sạch Thùng rác…**.
+2. Hộp **Dọn sạch Thùng rác?** đếm những gì sẽ bị xóa hẳn:
+   - KH, kèm lịch hẹn, HĐ, ghi chú KYC, phân tích AI của các KH đó;
+   - lịch hẹn, HĐ đã xóa riêng;
+   - nhân sự, team.
+
+   Hộp nói rõ việc này không hoàn tác được, còn dữ liệu đang dùng và chỉ số không đổi.
+3. Gõ **DỌN SẠCH** vào ô xác nhận, rồi bấm **Backup rồi dọn sạch** (bản exe) hoặc **Dọn sạch** (bản web). Trong lúc dọn, nút ghi "Đang dọn…" và hộp không đóng được.
+
+Dọn xong, app báo "Đã dọn sạch Thùng rác", kèm số bản ghi đã xóa hẳn theo loại và tên file backup (bản exe).
+
+- **Backup trước (bản exe):** app chờ lưu xong, rồi chép file dữ liệu vào `Project2C-data\backups\` trước khi dọn. Muốn lấy lại dữ liệu như trước lúc dọn: đóng app, chép bản backup đó thành `Project2C-data\project2c.db`; các thay đổi sau lúc dọn sẽ mất. Bản web không lưu file nên không có backup.
+- **Không dọn được:** có ba trường hợp, và cả ba đều để dữ liệu không đổi:
+  - lần lưu gần nhất bị lỗi: app báo "Chưa dọn: lần lưu gần nhất bị lỗi…";
+  - backup lỗi;
+  - lỗi giữa chừng.
+
+  Hai trường hợp sau báo "Chưa dọn được Thùng rác.".
+- **File nhỏ lại:** dọn xong, app thu gọn file dữ liệu. Nếu riêng bước thu gọn bị lỗi, dữ liệu vẫn đã được dọn và app vẫn báo dọn xong; file chỉ chưa nhỏ lại, chờ tới lần dọn sau.
+- **Bản ghi được giữ lại:** bản ghi mà dữ liệu còn lại vẫn dùng tới thì không bị dọn. Dòng của nó ghi lý do, hiện cả trước khi dọn:
+
+  | Lý do trên màn | Nghĩa |
+  |---|---|
+  | "Giữ lại khi dọn: lịch … dời từ lịch này." | Lịch Dời lịch đã xóa (chỉ có khi nhập từ file) mà lịch mới dời từ nó vẫn còn |
+  | "Giữ lại khi dọn: lịch … còn ghi người này." | Nhân sự đã xóa, là RE, người phối hợp hoặc người đánh giá của một lịch được giữ |
+  | "Giữ lại khi dọn: nhân sự … còn thuộc team này." | Team đã xóa của một nhân sự được giữ |
+
+  Khi có bản ghi được giữ, hộp dọn sạch ghi "Giữ lại … bản ghi còn được dùng". Nếu mọi bản ghi còn lại đều được giữ thì nút **Dọn sạch Thùng rác…** tắt.
+- Nhân sự chỉ còn dữ liệu của KH đã bị dọn thì xóa được (xem [8. Team & nhân sự](08-team.md#xóa-người)).
 
 ### Mở hộp xóa từ đâu
 

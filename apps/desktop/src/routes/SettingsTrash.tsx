@@ -1,29 +1,39 @@
-import { useCallback, useMemo, useRef, useState, type Ref } from 'react';
-import { listTrash, type Database, type TrashRow } from '@p2c/db';
+import { useCallback, useEffect, useMemo, useRef, useState, type Ref } from 'react';
+import { listTrash, previewPurge, type Database, type TrashRow } from '@p2c/db';
 import {
   Button,
   DataTable,
+  Dialog,
   DialogFocusFallback,
   PolicyBadge,
   Segmented,
   StageBadge,
+  TextField,
   type DataTableColumn,
 } from '@p2c/ui';
-import { useQuery, useToday } from '../data/AppDataContext';
+import { useAppData, useQuery, useToday } from '../data/AppDataContext';
 import { t } from '../i18n';
+import { ALERT } from './customers/CustomerDialogs';
 import { RestoreDialog } from './RestoreDialog';
 import {
   TRASH_FILTERS,
   TRASH_MORE,
   blockedReason,
+  canPurge,
   deletedAtText,
   filterTrash,
+  keptReason,
   ownerParts,
+  purgedNotice,
+  purgeFailure,
+  purgeReminder,
+  purgeView,
   recordDetail,
   recordTitle,
   restoreLabel,
   restoredNotice,
   trashCounts,
+  type PurgeNotice,
   type RestoredNotice,
   type TrashFilter,
 } from './trash-view';
@@ -53,6 +63,7 @@ function RecordCell({ row }: { row: TrashRow }) {
           {blockedReason(row, row.blocked)}
         </span>
       )}
+      {row.keptBy && <span className="mt-1 block text-xs text-info">{keptReason(row.keptBy)}</span>}
     </>
   );
 }
@@ -132,11 +143,16 @@ const trashColumns = (
   },
 ];
 
+/** The line at the head of the card: what was restored (11e) or purged (11j), or a purge refused. */
+type Notice =
+  | { readonly kind: 'restored'; readonly view: RestoredNotice }
+  | { readonly kind: 'purged' | 'refused'; readonly view: PurgeNotice };
+
 /**
- * Mockup 11e: what was restored, and a link to where it is now. It takes the focus after a restore,
- * whose row went with its button (DR6-83).
+ * Mockups 11e, 11j: what was restored, with a link to where it is now, or what was purged. It takes
+ * the focus once its dialog closes, the button that opened it gone or off (DR6-83).
  */
-function Restored({ notice, ref }: { notice: RestoredNotice; ref: Ref<HTMLDivElement> }) {
+function Done({ notice, ref }: { notice: RestoredNotice | PurgeNotice; ref: Ref<HTMLDivElement> }) {
   return (
     <div
       ref={ref}
@@ -145,27 +161,117 @@ function Restored({ notice, ref }: { notice: RestoredNotice; ref: Ref<HTMLDivEle
       className="mb-3 flex items-center gap-3 rounded-md border border-ok bg-surface-0 px-3 py-2 text-sm"
     >
       <span aria-hidden="true" className="font-bold text-ok">
-        {t('trash.restored.mark')}
+        {t('trash.done.mark')}
       </span>
       <div className="min-w-0 flex-1">
         <b className="block font-semibold">{notice.title}</b>
         {notice.detail && <span className="text-fg-2">{notice.detail}</span>}
       </div>
-      <a
-        href={notice.href}
-        className="rounded-md border border-border bg-surface-2 px-2.5 py-1 whitespace-nowrap text-fg no-underline hover:bg-surface-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-      >
-        {notice.open}
-      </a>
+      {'href' in notice && (
+        <a
+          href={notice.href}
+          className="rounded-md border border-border bg-surface-2 px-2.5 py-1 whitespace-nowrap text-fg no-underline hover:bg-surface-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          {notice.open}
+        </a>
+      )}
     </div>
   );
 }
 
+/** Mockup 11j: a purge refused, at the same place; nothing changed (D7, D8, D9). */
+function Refused({ notice }: { notice: PurgeNotice }) {
+  return (
+    <p role="alert" className={`${ALERT} mb-3 border-danger text-sm`}>
+      <b className="block text-danger">{notice.title}</b>
+      <span className="text-fg-2">{notice.detail}</span>
+    </p>
+  );
+}
+
 /**
- * Settings → Thùng rác (spec Phase 6 §4.2, mockup trash.html 11a, 11d, 11e): every deleted record,
- * newest deletion first, whatever the scope of the top bar (TR-7), with why it cannot come back.
+ * Mockup 11i: what the purge deletes for good, kind by kind, and what it keeps (TR-11, TR-12).
+ * Typing the word confirms, as for Nạp lại (10c); then the exe backs the file up and purges. While
+ * it runs, the dialog stays and nothing closes it. Closes with the notice of what came of it.
+ */
+function PurgeDialog({ onClose }: { onClose: (notice?: Notice) => void }) {
+  const data = useAppData();
+  const view = purgeView(useQuery(previewPurge));
+  const [word, setWord] = useState('');
+  const [running, setRunning] = useState(false);
+  const confirmWord = t('trash.purge.word');
+  // An IME may type the word decomposed (review R4).
+  const confirmed = word.normalize('NFC') === confirmWord;
+
+  const purge = async () => {
+    setRunning(true);
+    try {
+      onClose({ kind: 'purged', view: purgedNotice(await data.purgeTrash()) });
+    } catch (error) {
+      onClose({ kind: 'refused', view: purgeFailure(error) });
+    }
+  };
+
+  return (
+    <Dialog
+      title={t('trash.purge.title')}
+      subtitle={view.subtitle}
+      onClose={running ? undefined : () => onClose()}
+      onSubmit={() => {
+        if (confirmed && !running) void purge();
+      }}
+      actions={
+        <>
+          <Button disabled={running} onClick={() => onClose()}>
+            {t('settings.demo.cancel')}
+          </Button>
+          <Button type="submit" variant="danger" disabled={!confirmed || running}>
+            {running
+              ? t('trash.purge.running')
+              : t(data.hasFile ? 'trash.purge.confirmWithBackup' : 'trash.purge.confirm')}
+          </Button>
+        </>
+      }
+    >
+      <p className="m-0 text-fg-2">{t('trash.purge.intro')}</p>
+      <dl className="m-0 flex flex-col gap-1.5 tabular-nums">
+        {view.facts.map((fact) => (
+          <div key={fact.term} className="flex gap-3">
+            <dt className="w-20 shrink-0 text-fg-3">{fact.term}</dt>
+            <dd className="m-0">{fact.text}</dd>
+          </div>
+        ))}
+      </dl>
+      {view.kept && (
+        <p className={`${ALERT} border-info`}>
+          <b className="block">{view.kept}</b>
+          {t('trash.purge.keptHelp')}
+        </p>
+      )}
+      <p className={`${ALERT} border-warn`}>
+        <b className="block">{t('trash.purge.final')}</b>
+        {t('trash.purge.finalHelp')}
+      </p>
+      <p className={`${ALERT} border-info`}>
+        {t(data.hasFile ? 'trash.purge.backup' : 'settings.demo.confirmWeb')}
+      </p>
+      <TextField
+        label={t('settings.demo.confirmWordLabel', { word: confirmWord })}
+        value={word}
+        disabled={running}
+        onChange={setWord}
+      />
+    </Dialog>
+  );
+}
+
+/**
+ * Settings → Thùng rác (spec Phase 6 §4.2, mockup trash.html 11a, 11d, 11e, 11h–11j): every deleted
+ * record, newest deletion first, whatever the scope of the top bar (TR-7), with why it cannot come
+ * back or why a purge keeps it; and the purge of them all.
  */
 export function TrashSection() {
+  const { hasFile } = useAppData();
   const today = useToday();
   // `today` is the point: `listTrash` reads the day from the database's clock, so a new day is a new
   // read, and a record dated after today (TR-5) can come back on its day without a write (DR6-43).
@@ -174,15 +280,22 @@ export function TrashSection() {
   const [filter, setFilter] = useState<TrashFilter>('all');
   const [query, setQuery] = useState('');
   const [restoring, setRestoring] = useState<TrashRow | null>(null);
-  const [notice, setNotice] = useState<RestoredNotice | null>(null);
-  const restored = useRef<HTMLDivElement>(null);
+  const [purging, setPurging] = useState(false);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const done = useRef<HTMLDivElement>(null);
   const columns = useMemo(() => trashColumns(setRestoring), []);
   const counts = useMemo(() => trashCounts(rows), [rows]);
   const shown = useMemo(() => filterTrash(rows, filter, query), [rows, filter, query]);
+  const reminder = purgeReminder(rows.length);
   const options = TRASH_FILTERS.map((kind) => ({
     value: kind,
     label: t('trash.kindCount', { label: t(`trash.kind.${kind}`), count: counts[kind] }),
   }));
+  // A purge that kept records leaves its button, off, which takes the focus back as its dialog
+  // goes: the notice takes it after that, as when the button went with the records (11j).
+  useEffect(() => {
+    if (notice?.kind === 'purged') done.current?.focus();
+  }, [notice]);
 
   return (
     <section
@@ -196,9 +309,24 @@ export function TrashSection() {
         <span className="text-xs text-fg-3 tabular-nums">
           {t('trash.count', { count: rows.length })}
         </span>
+        {rows.length > 0 && (
+          <Button
+            variant="danger"
+            className="ml-auto"
+            disabled={!canPurge(rows)}
+            onClick={() => setPurging(true)}
+          >
+            {t('trash.purge.open')}
+          </Button>
+        )}
       </div>
-      <p className="m-0 mb-3 text-sm text-fg-2">{t('trash.help')}</p>
-      {notice && <Restored ref={restored} notice={notice} />}
+      <p className="m-0 mb-3 text-sm text-fg-2">{t(hasFile ? 'trash.helpFile' : 'trash.help')}</p>
+      {reminder && <p className={`${ALERT} mb-3 border-info text-sm`}>{reminder}</p>}
+      {notice?.kind === 'refused' ? (
+        <Refused notice={notice.view} />
+      ) : (
+        notice && <Done ref={done} notice={notice.view} />
+      )}
       {rows.length === 0 ? (
         <p className="m-0 px-3 py-7 text-center text-sm text-fg-2">
           <b className="mb-1 block text-md text-fg">{t('trash.empty')}</b>
@@ -239,14 +367,22 @@ export function TrashSection() {
           )}
         </>
       )}
-      <DialogFocusFallback value={() => restored.current}>
+      <DialogFocusFallback value={() => done.current}>
         {restoring && (
           <RestoreDialog
             row={restoring}
             onClose={() => setRestoring(null)}
             onRestored={() => {
-              setNotice(restoredNotice(restoring));
+              setNotice({ kind: 'restored', view: restoredNotice(restoring) });
               setRestoring(null);
+            }}
+          />
+        )}
+        {purging && (
+          <PurgeDialog
+            onClose={(outcome) => {
+              setPurging(false);
+              if (outcome) setNotice(outcome);
             }}
           />
         )}

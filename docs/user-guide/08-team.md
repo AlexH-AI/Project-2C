@@ -73,7 +73,7 @@ Bấm **Sửa** cạnh người đó. Hộp **Sửa nhân sự** sửa được 
 2. Hộp **Xóa …?** ghi vai trò và team.
 3. Người không còn dữ liệu: hộp ghi "Nhân sự được xóa mềm: ẩn khỏi danh sách, dữ liệu cũ vẫn giữ; khôi phục ở Cài đặt → Thùng rác." Bấm **Xóa**.
 
-Người còn dữ liệu thì nút Xóa tắt và hộp ghi "Chưa xóa được — … còn dữ liệu", kèm số KH đang phụ trách, số lịch hẹn và HĐ ghi cho RE này, số lịch hẹn là người phối hợp. RE đã có lịch hẹn hay HĐ thì không bao giờ xóa được, vì các bản ghi đó giữ tên RE; cân nhắc giữ lại thay vì xóa.
+Người còn dữ liệu thì nút Xóa tắt và hộp ghi "Chưa xóa được — … còn dữ liệu", kèm số KH đang phụ trách, số lịch hẹn và HĐ ghi cho RE này, số lịch hẹn là người phối hợp. RE đã có lịch hẹn hay HĐ thì không xóa được, vì các bản ghi đó giữ tên RE; cân nhắc giữ lại thay vì xóa. Chỉ khi mọi bản ghi đó thuộc KH đã xóa, hộp ghi thêm tên các KH đó, và người này xóa được sau khi dọn sạch Thùng rác (xem [9. Cài đặt → Dọn sạch Thùng rác](09-cai-dat.md#dọn-sạch-thùng-rác)).
 
 Người và team đã xóa khôi phục ở [Cài đặt → Thùng rác](09-cai-dat.md#cài-đặt--thùng-rác).
 

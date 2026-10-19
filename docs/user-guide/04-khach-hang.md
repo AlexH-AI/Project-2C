@@ -46,10 +46,10 @@ Ngày sinh và giới tính được ghi thêm thành ghi chú KYC nguồn "Hệ
 ## Xóa KH
 
 1. Mở hồ sơ KH, bấm **Sửa hồ sơ**, rồi **Xóa KH…**.
-2. Hộp **Xóa …?** liệt kê những gì bị ẩn cùng KH: lịch hẹn (bao nhiêu đã gặp, bao nhiêu lần tính RF), hợp đồng. Ghi chú KYC giữ nguyên, không bao giờ xóa.
+2. Hộp **Xóa …?** liệt kê những gì bị ẩn cùng KH: lịch hẹn (bao nhiêu đã gặp, bao nhiêu lần tính RF), hợp đồng, ghi chú KYC.
 3. Bấm **Xóa KH**.
 
-KH và mọi bản ghi của KH biến khỏi danh sách và mọi chỉ số. Dữ liệu vẫn còn: khôi phục ở **Cài đặt → Thùng rác** (xem [9. Cài đặt](09-cai-dat.md#cài-đặt--thùng-rác)).
+KH và mọi bản ghi của KH biến khỏi danh sách và mọi chỉ số. Dữ liệu vẫn còn: khôi phục ở **Cài đặt → Thùng rác** (xem [9. Cài đặt](09-cai-dat.md#cài-đặt--thùng-rác)). Dọn sạch Thùng rác thì KH bị xóa hẳn cùng mọi bản ghi của KH, kể cả ghi chú KYC (xem [Dọn sạch Thùng rác](09-cai-dat.md#dọn-sạch-thùng-rác)).
 
 ## Chuyển nhóm tay
 

@@ -486,7 +486,7 @@ test('an RE and an IS kept only by a customer in the trash: 9b counts it as the 
   await expect(dialog.getByRole('alert')).not.toContainText('KH đang phụ trách');
   await expect(dialog).toContainText(RE_HELP);
   await expect(dialog).toContainText(
-    `Có cả dữ liệu của KH đã xóa: ${customer}. Khôi phục KH ở Cài đặt → Thùng rác rồi chuyển sang RE khác.`,
+    `Có cả dữ liệu của KH đã xóa: ${customer}. Khôi phục KH ở Cài đặt → Thùng rác rồi chuyển sang RE khác, hoặc dọn sạch Thùng rác.`,
   );
   await expect(dialog.getByRole('button', { name: 'Xóa', exact: true })).toBeDisabled();
   await dialog.getByRole('button', { name: 'Đóng' }).click();
@@ -495,7 +495,7 @@ test('an RE and an IS kept only by a customer in the trash: 9b counts it as the 
   await expect(dialog.getByRole('alert')).toContainText('1 lịch hẹn là người đánh giá kết quả');
   await expect(dialog).toContainText(REVIEWER_HELP);
   await expect(dialog).toContainText(
-    `Có cả lịch hẹn của KH đã xóa: ${customer}. Khôi phục KH ở Cài đặt → Thùng rác thì mới sửa được các lịch đó.`,
+    `Có cả lịch hẹn của KH đã xóa: ${customer}. Khôi phục KH ở Cài đặt → Thùng rác thì mới sửa được các lịch đó, hoặc dọn sạch Thùng rác.`,
   );
   await expect(dialog.getByRole('button', { name: 'Xóa', exact: true })).toBeDisabled();
   await dialog.getByRole('button', { name: 'Đóng' }).click();

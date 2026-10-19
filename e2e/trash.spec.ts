@@ -11,6 +11,22 @@ const trash = (page: Page) => page.getByRole('region', { name: 'Thùng rác' });
 const kinds = (page: Page) => page.getByRole('radiogroup', { name: 'Loại bản ghi' });
 const table = (page: Page) => page.getByRole('table', { name: 'Bản ghi đã xóa' });
 const detail = (page: Page) => page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' });
+const purgeButton = (page: Page) =>
+  trash(page).getByRole('button', { name: 'Dọn sạch Thùng rác…' });
+const purgeDialog = (page: Page) => page.getByRole('dialog', { name: 'Dọn sạch Thùng rác?' });
+
+/** Types the word of 11i and purges: "Dọn sạch" in web mode, no backup (D13). */
+async function confirmPurge(page: Page) {
+  const dialog = purgeDialog(page);
+  const confirm = dialog.getByRole('button', { name: 'Dọn sạch', exact: true });
+  const word = dialog.getByRole('textbox', { name: 'Gõ DỌN SẠCH để xác nhận' });
+  await expect(confirm).toBeDisabled();
+  await word.fill('DỌN');
+  await expect(confirm).toBeDisabled();
+  await word.fill('DỌN SẠCH');
+  await confirm.click();
+  await expect(dialog).toBeHidden();
+}
 
 async function openTrash(page: Page) {
   await sidebar(page).getByRole('link', { name: 'Cài đặt' }).click();
@@ -82,7 +98,11 @@ test('Thùng rác comes after Dữ liệu and AI, at #/settings/trash, empty at 
   );
   await expect(trash(page).getByRole('heading', { name: 'Thùng rác' })).toBeVisible();
   await expect(trash(page)).toContainText('0 bản ghi');
-  await expect(trash(page)).toContainText('không tự dọn, không xóa vĩnh viễn');
+  // Web mode has no file to back up before a purge (review of PR 707).
+  await expect(trash(page)).toContainText(
+    'Thùng rác không tự dọn; "Dọn sạch Thùng rác…" xóa hẳn mọi bản ghi ở đây. Xuất backup mang theo cả thùng rác.',
+  );
+  await expect(purgeButton(page)).toHaveCount(0);
   await expect(trash(page)).toContainText('Thùng rác trống');
   await expect(trash(page)).toContainText(
     'KH, lịch hẹn, HĐ, nhân sự và team đã xóa nằm ở đây và khôi phục được.',
@@ -340,36 +360,31 @@ interface BackupRow {
   readonly deleted_at: string | null;
 }
 
-// TR-5, DR6-43: a record dated after today waits for its day, and the trash sees the day come
-// without another write. Only a file brings such a record in (spec Phase 3 §6 rule 10).
-test('a deleted policy submitted tomorrow can be restored once its day comes (TR-5)', async ({
-  page,
-}) => {
-  const errors = trackConsoleErrors(page);
-  await page.clock.install({ time: new Date(2026, 8, 15, 23, 50) });
+interface BackupAppointment {
+  readonly id: string;
+  readonly date: string;
+  readonly time: string | null;
+  readonly rescheduled_from_id: string | null;
+  deleted_at: string | null;
+}
+
+type Tables = Record<string, unknown[]>;
+
+/**
+ * Exports a backup, lets `change` edit its tables, then imports it (Settings → Dữ liệu): only a file
+ * brings in some records (spec Phase 3 §6).
+ */
+async function importChanged(page: Page, change: (tables: Tables) => void) {
   await page.goto('/#/settings');
   const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });
   const download = page.waitForEvent('download');
   await backup.getByRole('button', { name: 'Xuất backup' }).click();
   const file = JSON.parse(await readFile(await (await download).path(), 'utf8')) as {
-    tables: Record<string, unknown[]>;
+    tables: Tables;
   };
-  const customer = (file.tables.customers as BackupRow[]).find((c) => c.deleted_at === null)!;
-  const deletedAt = new Date(2026, 8, 15, 9, 0).toISOString();
-  file.tables.policies!.push({
-    id: 'tr5-policy',
-    customer_id: customer.id,
-    re_id: customer.re_id,
-    submitted_date: '2026-09-16',
-    submitted_fyp: 24_000_000,
-    issued_date: null,
-    issued_fyp: null,
-    created_at: deletedAt,
-    updated_at: deletedAt,
-    deleted_at: deletedAt,
-  });
+  change(file.tables);
   await backup.getByLabel('Nhập backup').setInputFiles({
-    name: 'tr5.p2cbackup',
+    name: 'changed.p2cbackup',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(file)),
   });
@@ -378,6 +393,38 @@ test('a deleted policy submitted tomorrow can be restored once its day comes (TR
     .getByRole('button', { name: 'Thay dữ liệu', exact: true })
     .click();
   await expect(backup.getByRole('status')).toContainText('Đã nhập backup');
+}
+
+/** A deleted policy of `customer`, submitted on `submitted` (yyyy-mm-dd). */
+const deletedPolicy = (id: string, customer: BackupRow, submitted: string, deletedAt: string) => ({
+  id,
+  customer_id: customer.id,
+  re_id: customer.re_id,
+  submitted_date: submitted,
+  submitted_fyp: 24_000_000,
+  issued_date: null,
+  issued_fyp: null,
+  created_at: deletedAt,
+  updated_at: deletedAt,
+  deleted_at: deletedAt,
+});
+
+const liveCustomer = (tables: Tables) =>
+  (tables.customers as BackupRow[]).find((c) => c.deleted_at === null)!;
+
+// TR-5, DR6-43: a record dated after today waits for its day, and the trash sees the day come
+// without another write. Only a file brings such a record in (spec Phase 3 §6 rule 10).
+test('a deleted policy submitted tomorrow can be restored once its day comes (TR-5)', async ({
+  page,
+}) => {
+  const errors = trackConsoleErrors(page);
+  await page.clock.install({ time: new Date(2026, 8, 15, 23, 50) });
+  let customer!: BackupRow;
+  await importChanged(page, (tables) => {
+    customer = liveCustomer(tables);
+    const deletedAt = new Date(2026, 8, 15, 9, 0).toISOString();
+    tables.policies!.push(deletedPolicy('tr5-policy', customer, '2026-09-16', deletedAt));
+  });
 
   await settingsNav(page).getByRole('button', { name: 'Thùng rác' }).click();
   const restore = table(page).getByRole('button', {
@@ -390,5 +437,113 @@ test('a deleted policy submitted tomorrow can be restored once its day comes (TR
   await page.clock.fastForward(15 * 60_000);
   await expect(restore).toBeEnabled();
   await expect(trash(page)).not.toContainText('sau hôm nay');
+  expect(errors).toEqual([]);
+});
+
+test('purges the trash for good once DỌN SẠCH is typed, in web mode without a backup (TR-11; 11i, 11j, D13)', async ({
+  page,
+}) => {
+  const errors = trackConsoleErrors(page);
+  const { name, profile } = await bookAndDelete(page);
+  // Then its customer (5f): the appointment, deleted on its own before, counts as one.
+  await page.goto(`/${profile}`);
+  await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
+  await page
+    .getByRole('dialog', { name: `Sửa hồ sơ · ${name}` })
+    .getByRole('button', { name: 'Xóa KH…' })
+    .click();
+  await page
+    .getByRole('dialog', { name: `Xóa ${name}?` })
+    .getByRole('button', { name: 'Xóa KH' })
+    .click();
+  await expect(page).toHaveURL(/#\/customers$/);
+  await openTrash(page);
+  await expect(purgeButton(page)).toBeEnabled();
+
+  // Hủy changes nothing.
+  await purgeButton(page).click();
+  const dialog = purgeDialog(page);
+  await expect(dialog).toContainText('2 bản ghi · mọi loại, không theo bộ lọc');
+  await expect(dialog).toContainText('Các bản ghi sau bị xóa hẳn khỏi dữ liệu:');
+  await expect(dialog).toContainText(
+    /KH1 — kèm \d+ lịch hẹn · \d+ HĐ · \d+ ghi chú KYC · \d+ phân tích AI/,
+  );
+  await expect(dialog).toContainText('Lịch hẹn1HĐ0Nhân sự0Team0');
+  await expect(dialog).toContainText('Không hoàn tác được');
+  await expect(dialog).toContainText('Bản web không lưu file: dữ liệu chỉ nằm trong trình duyệt.');
+  await expect(dialog).not.toContainText('Giữ lại');
+  await dialog.getByRole('button', { name: 'Hủy' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(table(page).getByRole('row')).toHaveCount(3);
+
+  await purgeButton(page).click();
+  await confirmPurge(page);
+
+  const notice = trash(page).getByRole('status');
+  await expect(notice).toContainText('Đã dọn sạch Thùng rác');
+  await expect(notice).toContainText(/Xóa hẳn 1 KH( \(kèm [^)]+\))? · 1 lịch hẹn\.$/);
+  await expect(notice).not.toContainText('Backup');
+  await expect(notice).toBeFocused();
+  await expect(trash(page).getByText('0 bản ghi', { exact: true })).toBeVisible();
+  await expect(trash(page)).toContainText('Thùng rác trống');
+  await expect(purgeButton(page)).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+// TR-12, TR-13 (D5, D12): a file brings a Dời lịch deleted while its new appointment is live, which
+// the app never deletes (#171), and 999 deleted policies: 1 000 records.
+test('reminds from 1 000 records, and keeps a record still pointed to, saying why (TR-12, TR-13; 11h, 11j)', async ({
+  page,
+}) => {
+  const errors = trackConsoleErrors(page);
+  let next!: BackupAppointment;
+  await importChanged(page, (tables) => {
+    const appointments = tables.appointments as BackupAppointment[];
+    next = appointments.find((a) => a.rescheduled_from_id !== null && a.deleted_at === null)!;
+    appointments.find((a) => a.id === next.rescheduled_from_id)!.deleted_at = new Date(
+      2026,
+      8,
+      15,
+      9,
+      30,
+    ).toISOString();
+    const customer = liveCustomer(tables);
+    const deletedAt = new Date(2026, 8, 14, 9, 0).toISOString();
+    for (let i = 0; i < 999; i++) {
+      tables.policies!.push(deletedPolicy(`d12-${i}`, customer, '2026-09-01', deletedAt));
+    }
+  });
+  const [year, month, day] = next.date.split('-');
+  const when = `${day}/${month}/${year}${next.time === null ? '' : ` ${next.time}`}`;
+  const kept = `Giữ lại khi dọn: lịch ${when} dời từ lịch này.`;
+
+  await settingsNav(page).getByRole('button', { name: 'Thùng rác' }).click();
+  await expect(trash(page)).toContainText('1.000 bản ghi');
+  await expect(trash(page)).toContainText(
+    'Thùng rác có 1.000 bản ghi nên mở chậm dần. Nên dọn sạch khi không cần khôi phục các bản ghi này nữa.',
+  );
+  // Deleted last, the Dời lịch heads the table, its reason shown before the purge.
+  const rows = table(page).getByRole('row');
+  await expect(rows.nth(1)).toContainText('Dời lịch');
+  await expect(rows.nth(1)).toContainText(kept);
+
+  await purgeButton(page).click();
+  const dialog = purgeDialog(page);
+  await expect(dialog).toContainText('1.000 bản ghi · mọi loại, không theo bộ lọc');
+  await expect(dialog).toContainText('KH0Lịch hẹn0HĐ999Nhân sự0Team0');
+  await expect(dialog).toContainText(
+    'Giữ lại 1 bản ghi còn được dùngLý do ghi ở dòng của nó trong Thùng rác.',
+  );
+  await confirmPurge(page);
+
+  const notice = trash(page).getByRole('status');
+  await expect(notice).toContainText('Xóa hẳn 999 HĐ. Giữ lại 1 bản ghi còn được dùng.');
+  // The button stays, off, as every record left is kept: the notice has the focus all the same.
+  await expect(notice).toBeFocused();
+  await expect(purgeButton(page)).toBeDisabled();
+  await expect(trash(page).getByText('1 bản ghi', { exact: true })).toBeVisible();
+  await expect(trash(page)).not.toContainText('mở chậm dần');
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(1)).toContainText(kept);
   expect(errors).toEqual([]);
 });

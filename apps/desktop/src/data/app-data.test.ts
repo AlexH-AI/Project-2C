@@ -7,8 +7,10 @@ import {
   importBackup,
   LATEST_SCHEMA_VERSION,
   listTeams,
+  listTrash,
   openDatabase,
   scheduleAppointment,
+  softDeleteCustomer,
   softDeleteTeam,
   type Database,
 } from '@p2c/db';
@@ -122,6 +124,10 @@ function thrownBy(fn: () => unknown): unknown {
   }
   return undefined;
 }
+
+/** An error with exactly this message. */
+const withMessage = (message: string) => (error: unknown) =>
+  error instanceof Error && error.message === message;
 
 describe('openAppData', () => {
   it('without storage (web mode) opens a migrated database with the simulated data', async () => {
@@ -280,6 +286,8 @@ describe('openAppData', () => {
     const page = damaged.subarray((root - 1) * pageSize, root * pageSize);
     const key = new TextEncoder().encode('Sao Mai');
     const at = page.findIndex((_, i) => key.every((byte, j) => page[i + j] === byte));
+    // A seed or schema that moves the key off the root page would flip a byte of its header instead.
+    expect(at).toBeGreaterThan(-1);
     page[at + key.length - 1]! ^= 1;
     const { storage, events } = memoryStorage(damaged);
 
@@ -728,11 +736,12 @@ describe('replacing the data (S-2)', () => {
     expect(await onDisk(saves.at(-1))).toEqual(['Hừng Đông', ...NEW]);
   });
 
-  /** How a replace is made to fail, then the replace itself (S2-4). */
+  /** How a replace is made to fail, the replace itself, and its refusal (S2-4). */
   type FailedReplace = [
     string,
     (setup: Awaited<ReturnType<typeof exe>>) => void | Promise<void>,
     (app: AppData) => Promise<unknown>,
+    (error: unknown) => boolean,
   ];
 
   it.each<FailedReplace>([
@@ -742,6 +751,7 @@ describe('replacing the data (S-2)', () => {
         storage.backup = () => Promise.reject(new Error('disk full'));
       },
       (app: AppData) => app.reloadDemoData(),
+      withMessage('disk full'),
     ],
     [
       'the new data cannot be opened',
@@ -750,6 +760,7 @@ describe('replacing the data (S-2)', () => {
         const preview = await previewOf(app, 'Bình Minh');
         return app.importBackup({ ...preview, bytes: new TextEncoder().encode('not a database') });
       },
+      withMessage('file is not a database'),
     ],
     ...(['reloadDemoData', 'importBackup'] as const).map((replace): FailedReplace => [
       `a save before failed, refusing ${replace}`,
@@ -764,10 +775,11 @@ describe('replacing the data (S-2)', () => {
         replace === 'reloadDemoData'
           ? app.reloadDemoData()
           : app.importBackup(await previewOf(app, 'Bình Minh')),
+      isUnsavedChangesError,
     ]),
   ])(
     'when %s, writes again and keeps saving the current data, its generation unchanged (S2-4)',
-    async (_, breakIt, replaceWith) => {
+    async (_, breakIt, replaceWith, refusal) => {
       const setup = await exe();
       const { app, saves } = setup;
       await app.saves.idle();
@@ -775,7 +787,7 @@ describe('replacing the data (S-2)', () => {
       const generation = app.generation();
       const kept = teamNames(app.db());
 
-      await expect(replaceWith(app)).rejects.toThrow();
+      await expect(replaceWith(app)).rejects.toSatisfy(refusal);
       expect(app.replacing()).toBe(false);
       const before = saves.length;
       app.run((db) => createTeam(db, { name: 'Hừng Đông' }));
@@ -875,6 +887,178 @@ describe('replacing the data (S-2)', () => {
     files.push(lastFile());
 
     expect(await Promise.all(files)).toEqual([OLD, OLD, NEW, NEW]);
+  });
+});
+
+describe('purgeTrash (spec Phase 6 TR-11)', () => {
+  /** The trash of a file: what `bytes` hold deleted, by kind. */
+  const trashOf = async (bytes: Uint8Array | undefined) =>
+    listTrash(await openDatabase({ bytes })).map((row) => row.kind);
+  const writeLate = (app: AppData) =>
+    thrownBy(() => app.run((db) => createTeam(db, { name: 'Late' })));
+
+  /** The exe (or web mode) holding in its trash a customer with its appointment, and a team. */
+  async function withTrash(storage?: StoragePort) {
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+    app.run((db) => {
+      const team = createTeam(db, { name: 'Sao Mai' });
+      const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+      const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N4', date: TODAY });
+      scheduleAppointment(db, {
+        customerId: lan.id,
+        reId: re.id,
+        date: TODAY,
+        triggerType: 'OTHER',
+      });
+      softDeleteCustomer(db, lan.id);
+      softDeleteTeam(db, createTeam(db, { name: 'Hoa Sen' }).id);
+    });
+    await app.saves.idle();
+    return app;
+  }
+
+  async function exeWithTrash() {
+    const disk = memoryStorage();
+    return { app: await withTrash(disk.storage), ...disk };
+  }
+
+  it('saves what is pending, backs the file up, then purges the same database (D2, D3)', async () => {
+    const { app, storage, saves, events } = await exeWithTrash();
+    let backedUp: Uint8Array | undefined;
+    const backup = storage.backup;
+    storage.backup = () => {
+      backedUp = saves.at(-1);
+      return backup();
+    };
+    app.run((db) => createTeam(db, { name: 'Bình Minh' }));
+    const db = app.db();
+    const generation = app.generation();
+    const tables = app.tables();
+    const listener = vi.fn();
+    app.subscribe(listener);
+    events.length = 0;
+
+    const purged = await app.purgeTrash();
+
+    expect(purged).toEqual({
+      counts: {
+        customers: 1,
+        customerRecords: { appointments: 1, policies: 0, kycNotes: 0, aiAnalyses: 0 },
+        appointments: 0,
+        policies: 0,
+        people: 0,
+        teams: 1,
+      },
+      kept: [],
+      backup: 'project2c-20260927-101500.db',
+    });
+    // The pending change was saved, then backed up with the trash; the purge saved after it.
+    expect(events.slice(0, 2)).toEqual(['save', 'backup']);
+    expect(await trashOf(backedUp)).toEqual(['team', 'customer']);
+    expect(teamNames(await openDatabase({ bytes: backedUp }))).toContain('Bình Minh');
+    await app.saves.idle();
+    expect(await trashOf(saves.at(-1))).toEqual([]);
+    // The data in use is as it was: the same database, its tables, so every metric (D3).
+    expect(app.db()).toBe(db);
+    expect(app.generation()).toBe(generation);
+    expect(app.tables()).toEqual(tables);
+    expect(listTrash(app.db())).toEqual([]);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(app.replacing()).toBe(false);
+  });
+
+  it('refuses every write while it backs up and purges, as a replace does (D10, S2-2)', async () => {
+    const { app, storage } = await exeWithTrash();
+    const backup = holdBackup(storage);
+
+    const purging = app.purgeTrash();
+    expect(app.replacing()).toBe(true);
+    expect(writeLate(app)).toMatchObject({ code: 'DATA_REPLACING' });
+    await backup.started;
+    expect(writeLate(app)).toMatchObject({ code: 'DATA_REPLACING' });
+    backup.release();
+    await purging;
+
+    expect(app.replacing()).toBe(false);
+    expect(writeLate(app)).toBeUndefined();
+  });
+
+  it('waits for a replace called before it, then purges the data that replace brought (S2-1)', async () => {
+    const { app, events } = await exeWithTrash();
+    events.length = 0;
+
+    const [, purged] = await Promise.all([app.reloadDemoData(), app.purgeTrash()]);
+
+    // The simulated data of the reload has nothing deleted.
+    expect(purged.counts).toMatchObject({ customers: 0, teams: 0 });
+    expect(events.filter((event) => event === 'backup')).toHaveLength(2);
+    expect(listTrash(app.db())).toEqual([]);
+  });
+
+  /** How a purge is made to fail (D7, D8, D9), and the error it rejects with. */
+  it.each<
+    [
+      string,
+      (setup: Awaited<ReturnType<typeof exeWithTrash>>) => void | Promise<void>,
+      (error: unknown) => boolean,
+    ]
+  >([
+    [
+      'the last save failed (D7)',
+      async ({ app, failSave }) => {
+        failSave();
+        app.run((db) => createTeam(db, { name: 'Lỡ' }));
+        await app.saves.idle();
+        expect(app.saves.failed()).toBe(true);
+      },
+      isUnsavedChangesError,
+    ],
+    [
+      'the backup fails (D8)',
+      ({ storage }) => {
+        storage.backup = () => Promise.reject(new Error('disk full'));
+      },
+      withMessage('disk full'),
+    ],
+    [
+      'a delete is refused half way (D9)',
+      ({ app }) => {
+        app
+          .db()
+          .sqlite.run(
+            "CREATE TEMP TRIGGER refuse BEFORE DELETE ON teams BEGIN SELECT RAISE(ABORT, 'refused'); END",
+          );
+      },
+      withMessage('refused'),
+    ],
+  ])('when %s, purges nothing and writes again', async (_, breakIt, refusal) => {
+    const setup = await exeWithTrash();
+    const { app, saves } = setup;
+    await breakIt(setup);
+    const generation = app.generation();
+    const trash = listTrash(app.db());
+    const saved = saves.length;
+
+    await expect(app.purgeTrash()).rejects.toSatisfy(refusal);
+
+    expect(listTrash(app.db())).toEqual(trash);
+    expect(app.generation()).toBe(generation);
+    expect(app.replacing()).toBe(false);
+    await app.saves.idle();
+    expect(saves).toHaveLength(saved);
+    app.run((db) => createTeam(db, { name: 'Hừng Đông' }));
+    await app.saves.idle();
+    expect(saves).toHaveLength(saved + 1);
+  });
+
+  it('in web mode purges without a backup (D13)', async () => {
+    const app = await withTrash();
+
+    const purged = await app.purgeTrash();
+
+    expect(purged.backup).toBeUndefined();
+    expect(purged.counts.customers).toBe(1);
+    expect(listTrash(app.db())).toEqual([]);
   });
 });
 

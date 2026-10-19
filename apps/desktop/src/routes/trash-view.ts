@@ -6,13 +6,23 @@ import {
   restorePolicy,
   restoreTeam,
   type Database,
+  type KeptBy,
+  type PurgeCounts,
+  type PurgePlan,
   type TrashBlock,
   type TrashRef,
   type TrashRow,
 } from '@p2c/db';
-import { formatDate, formatLocalDateTime, formatVnd, type CustomerStage } from '@p2c/domain';
+import {
+  formatCount,
+  formatDate,
+  formatLocalDateTime,
+  formatVnd,
+  type CalendarDate,
+  type CustomerStage,
+} from '@p2c/domain';
 import type { DataTableMoreLabels } from '@p2c/ui';
-import type { AppData } from '../data/app-data';
+import { isUnsavedChangesError, type AppData, type PurgedTrash } from '../data/app-data';
 import { errorMessage, joinParts, t } from '../i18n';
 import { routeToHash } from '../shell/routes';
 
@@ -89,9 +99,9 @@ export function recordTitle(row: TrashRow): string {
 type AppointmentRow = Extract<TrashRow, { kind: 'appointment' }>;
 
 /** "02/10/2026 09:30", or the day alone. */
-function appointmentWhen(row: AppointmentRow): string {
-  const date = formatDate(row.date);
-  return row.time === null ? date : t('trash.appointment.when', { date, time: row.time });
+function appointmentWhen(at: { readonly date: CalendarDate; readonly time: string | null }) {
+  const date = formatDate(at.date);
+  return at.time === null ? date : t('trash.appointment.when', { date, time: at.time });
 }
 
 /** The line under it: what comes back with a customer, the stage change of a met appointment. */
@@ -336,9 +346,9 @@ function customerRecords(effect: CustomerEffect): string {
       met: effect.met,
       n: effect.rf,
     }),
-    t('trash.restore.policies', { count: effect.policies }),
-    t('trash.restore.kyc', { count: effect.kycNotes }),
-    t('trash.restore.ai', { count: effect.aiAnalyses }),
+    t('trash.records.policies', { count: effect.policies }),
+    t('trash.records.kycNotes', { count: effect.kycNotes }),
+    t('trash.records.aiAnalyses', { count: effect.aiAnalyses }),
   ]);
 }
 
@@ -348,8 +358,8 @@ function customerBack(effect: TrashRow['effect']): string {
   if (effect.kind !== 'customer') return back;
   const left = joinParts([
     effect.appointmentsInTrash > 0 &&
-      t('trash.restore.leftAppointments', { count: effect.appointmentsInTrash }),
-    effect.policiesInTrash > 0 && t('trash.restore.policies', { count: effect.policiesInTrash }),
+      t('trash.records.appointments', { count: effect.appointmentsInTrash }),
+    effect.policiesInTrash > 0 && t('trash.records.policies', { count: effect.policiesInTrash }),
   ]);
   return left === '' ? back : `${back} ${t('trash.restore.customerLeft', { parts: left })}`;
 }
@@ -454,9 +464,9 @@ export function restoredNotice(row: TrashRow): RestoredNotice {
 /** "cùng 7 lịch hẹn, 5 ghi chú KYC": the records that came back, a kind with none left out. */
 function restoredWith(effect: CustomerEffect): string | null {
   const parts = [
-    effect.appointments > 0 && t('trash.restore.leftAppointments', { count: effect.appointments }),
-    effect.policies > 0 && t('trash.restore.policies', { count: effect.policies }),
-    effect.kycNotes > 0 && t('trash.restore.kyc', { count: effect.kycNotes }),
+    effect.appointments > 0 && t('trash.records.appointments', { count: effect.appointments }),
+    effect.policies > 0 && t('trash.records.policies', { count: effect.policies }),
+    effect.kycNotes > 0 && t('trash.records.kycNotes', { count: effect.kycNotes }),
   ].filter((part) => part !== false);
   return parts.length === 0 ? null : t('trash.restored.with', { parts: parts.join(t('sep.list')) });
 }
@@ -481,4 +491,121 @@ export function restoreRow(app: Pick<AppData, 'run'>, row: TrashRow): string | n
   } catch (error) {
     return error instanceof DbError ? blockedReason(row, error) : errorMessage(error);
   }
+}
+
+// ---- Dọn sạch Thùng rác (spec Phase 6 TR-11…TR-13; mockups 11h–11j) ----
+
+/** From this many records the trash reminds to purge it: it opens slower as it grows (DR6-84). */
+export const PURGE_REMINDER = 1_000;
+
+/** Mockup 11h: the reminder under the intro (TR-13), or null below `PURGE_REMINDER` records. */
+export function purgeReminder(count: number): string | null {
+  return count >= PURGE_REMINDER ? t('trash.reminder', { count }) : null;
+}
+
+/** "Dọn sạch Thùng rác…" is on while some record would go, off once each one is kept (TR-11). */
+export const canPurge = (rows: readonly TrashRow[]): boolean => rows.some((row) => !row.keptBy);
+
+/** Why the purge keeps a record (TR-12): one line under it, as a blocked one says why it waits. */
+export function keptReason(by: KeptBy): string {
+  switch (by.kind) {
+    case 'rescheduled':
+      return t('trash.kept.rescheduled', { when: appointmentWhen(by) });
+    case 'appointment':
+      return t('trash.kept.appointment', { when: appointmentWhen(by) });
+    case 'member':
+      return t('trash.kept.member', { name: by.name });
+  }
+}
+
+/** "12 lịch hẹn · 1 HĐ · 9 ghi chú KYC · 2 phân tích AI" of the purged customers. */
+const customerRecordParts = (records: PurgeCounts['customerRecords']) => [
+  {
+    count: records.appointments,
+    text: t('trash.records.appointments', { count: records.appointments }),
+  },
+  { count: records.policies, text: t('trash.records.policies', { count: records.policies }) },
+  { count: records.kycNotes, text: t('trash.records.kycNotes', { count: records.kycNotes }) },
+  { count: records.aiAnalyses, text: t('trash.records.aiAnalyses', { count: records.aiAnalyses }) },
+];
+
+/** The purge dialog (mockup 11i): what goes for good, and what stays. */
+export interface PurgeView {
+  readonly subtitle: string;
+  /** Kind by kind, a customer with its records not deleted on their own ("kèm …"). */
+  readonly facts: readonly { readonly term: string; readonly text: string }[];
+  /** "Giữ lại n bản ghi còn được dùng" (TR-12), null when nothing is kept. */
+  readonly kept: string | null;
+}
+
+export function purgeView({ counts, kept }: PurgePlan): PurgeView {
+  const { customers, appointments, policies, people, teams } = counts;
+  const fact = (kind: TrashRow['kind'], text: string) => ({
+    term: t(`trash.kind.${kind}`),
+    text,
+  });
+  return {
+    subtitle: t('trash.purge.subtitle', {
+      count: customers + appointments + policies + people + teams + kept.length,
+    }),
+    facts: [
+      fact(
+        'customer',
+        customers === 0
+          ? formatCount(0)
+          : t('trash.purge.customers', {
+              count: customers,
+              parts: joinParts(customerRecordParts(counts.customerRecords).map((p) => p.text)),
+            }),
+      ),
+      fact('appointment', formatCount(appointments)),
+      fact('policy', formatCount(policies)),
+      fact('person', formatCount(people)),
+      fact('team', formatCount(teams)),
+    ],
+    kept: kept.length === 0 ? null : t('trash.purge.kept', { count: kept.length }),
+  };
+}
+
+/** The line at the head of the card once the trash is purged (mockup 11j), or refused. */
+export interface PurgeNotice {
+  readonly title: string;
+  readonly detail: string;
+}
+
+/** What went for good, a kind with none left out; what was kept; the backup of the exe. */
+export function purgedNotice({ counts, kept, backup }: PurgedTrash): PurgeNotice {
+  const records = customerRecordParts(counts.customerRecords).filter((part) => part.count > 0);
+  const customers = (count: number) =>
+    records.length === 0
+      ? t('trash.records.customers', { count })
+      : t('trash.purged.customersWith', {
+          count,
+          parts: joinParts(records.map((part) => part.text)),
+        });
+  const deleted = joinParts([
+    counts.customers > 0 && customers(counts.customers),
+    counts.appointments > 0 && t('trash.records.appointments', { count: counts.appointments }),
+    counts.policies > 0 && t('trash.records.policies', { count: counts.policies }),
+    counts.people > 0 && t('trash.records.people', { count: counts.people }),
+    counts.teams > 0 && t('trash.records.teams', { count: counts.teams }),
+  ]);
+  return {
+    title: t('trash.purged.title'),
+    detail: [
+      deleted && t('trash.purged.deleted', { parts: deleted }),
+      kept.length > 0 && t('trash.purged.kept', { count: kept.length }),
+      backup && t('settings.demo.doneBackup', { file: backup }),
+    ]
+      .filter(Boolean)
+      .join(' '),
+  };
+}
+
+/** A purge refused: why, and that the data did not change (mockup 11j; D7, D8, D9). */
+export function purgeFailure(error: unknown): PurgeNotice {
+  return {
+    title: t(isUnsavedChangesError(error) ? 'trash.purge.failedUnsaved' : 'trash.purge.failed'),
+    detail: t('trash.purge.unchanged'),
+  };
 }
