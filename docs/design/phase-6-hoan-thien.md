@@ -115,7 +115,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
     - Chép file vào `backups\`; lỗi → không dọn.
     - Khóa mọi lệnh ghi tới khi xong (S2-2); kết quả AI về lúc đó bị bỏ (S2-3). Trong lúc dọn hộp ở lại với "Đang dọn…", không đóng được, nên không thao tác nào gặp câu báo S2-2.
     - Bản web không có file, không backup: hộp ghi như Nạp lại ("Bản web không lưu file…"), nút "Dọn sạch".
-  - **Một transaction, theo thứ tự khóa ngoại.** Lỗi giữa chừng → không đổi gì. Dọn xong thu gọn file (`VACUUM`, câu hỏi 3).
+  - **Một transaction, theo thứ tự khóa ngoại.** Lỗi giữa chừng → không đổi gì. Dọn xong thu gọn file (`VACUUM`, câu hỏi 3). Thu gọn chạy sau transaction (SQLite không cho chạy trong transaction): nếu riêng bước này lỗi, dữ liệu đã được dọn, app vẫn báo như 11j, file chỉ chưa nhỏ lại tới lần dọn sau (PR code #662).
     - Dòng KH: KH cùng mọi dữ liệu con — lịch hẹn (cả lịch đã xóa riêng), người phối hợp, chuyển nhóm (cả chuyển nhóm đã rút), HĐ (cả HĐ đã xóa riêng), ghi chú / dữ kiện / phiên bản KYC, phân tích AI.
     - Dòng lịch hẹn: lịch, người phối hợp, chuyển nhóm đã rút theo nó.
     - Dòng HĐ, nhân sự, team: chính bản ghi đó.
@@ -169,7 +169,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 |---|---|---|
 | D1 | Mở hộp dọn sạch | "KH 3 — kèm 12 lịch hẹn · 1 HĐ · 9 ghi chú KYC · 2 phân tích AI", "Lịch hẹn 6", "HĐ 2", "Nhân sự 2", "Team 1"; không có dòng giữ lại; nút xác nhận tắt tới khi gõ đúng DỌN SẠCH (câu hỏi 4) |
 | D2 | Dọn | Thùng rác trống. Không còn dòng nào của 3 KH ở mọi bảng. Lịch 02/10 của KH Phạm Gia Bảo đi cùng chuyển nhóm đã rút của nó; KH vẫn N3. `PRAGMA foreign_key_check` rỗng. Thông báo "Đã dọn sạch Thùng rác" + số theo loại + tên file backup |
-| D3 | Như D2, so trước / sau | Chỉ số Tổng quan / Báo cáo mọi kỳ, mọi góc nhìn giống hệt; xuất backup phần chưa xóa giống hệt; file mới trong `backups\` mở lại được và có đủ 14 bản ghi đã xóa |
+| D3 | Như D2, so trước / sau | Chỉ số Tổng quan / Báo cáo mọi kỳ, mọi góc nhìn giống hệt; xuất backup phần chưa xóa giống hệt; file mang tên ở thông báo, trong `backups\`, mở lại được và có đủ 14 bản ghi đã xóa (app có thể dùng lại một bản backup giống hệt đã có thay vì chép bản mới) |
 | D4 | RE Vũ Minh Khoa chỉ còn là RE của lịch hẹn của một KH trong Thùng rác (hộp 9b: "Có cả dữ liệu của KH đã xóa: …") | Sau dọn: hộp 9b hết câu đó, xóa được RE Vũ Minh Khoa |
 | D5 | Thêm lịch **Dời lịch** 08/10/2026 10:00 của KH Phạm Gia Bảo, đã xóa (từ file nhập); lịch 15/10/2026 10:00 dời từ nó chưa xóa | Dòng lịch 08/10: "Giữ lại khi dọn: lịch 15/10/2026 10:00 dời từ lịch này."; hộp: "Giữ lại 1 bản ghi còn được dùng". Sau dọn Thùng rác chỉ còn lịch 08/10; lịch 15/10 không đổi |
 | D6 | Như D5; RE ghi trên lịch 08/10 (KH đã bàn giao cho RE khác) đã xóa, team của người đó cũng đã xóa | Giữ cả ba. RE: "Giữ lại khi dọn: lịch 08/10/2026 10:00 còn ghi người này."; team: "Giữ lại khi dọn: nhân sự <tên RE> còn thuộc team này." |
@@ -186,7 +186,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 **Mô hình dữ liệu của dọn sạch (#662):**
 
 - Không đổi bảng, cột. Một migration tự viết mới nới ba trigger chặn xóa (`kyc_notes_no_delete`, `kyc_facts_no_delete`, `ai_analyses_no_delete`): chỉ cho xóa dòng của KH đã xóa mềm. Trigger chặn sửa và mọi xóa khác giữ nguyên (phụ lục ADR-0008). `LATEST_SCHEMA_VERSION` tăng 1; DB cũ có dữ liệu mở được.
-- `@p2c/db`: một hàm xem trước cho hộp 11i (số sẽ xóa hẳn theo loại, bản ghi giữ lại kèm lý do) và lệnh dọn trả số đã dọn theo loại. Tập giữ lại (TR-12) tính ở **một hàm** dùng chung cho hàm xem trước, lệnh dọn và `listTrash` (lý do giữ lại của từng dòng), như lý do chặn dùng chung hàm kiểm của `restore…`.
+- `@p2c/db`: một hàm xem trước cho hộp 11i (số sẽ xóa hẳn theo loại, bản ghi giữ lại kèm lý do) và lệnh dọn trả số đã dọn theo loại cùng tập giữ lại (11j nêu số bản ghi giữ lại). Tập giữ lại (TR-12) tính ở **một hàm** dùng chung cho hàm xem trước, lệnh dọn và `listTrash` (lý do giữ lại của từng dòng), như lý do chặn dùng chung hàm kiểm của `restore…`.
 - `AppData`: dọn qua hàng đợi thay dữ liệu (backup trước, khóa ghi), trả tên file backup. Dọn không thay DB, nên `generation` không đổi.
 - Không thêm mã lỗi: lỗi của dọn là lỗi lưu / backup / lệnh như Nạp lại.
 - Tài liệu sửa ở PR code:

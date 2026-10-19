@@ -68,7 +68,7 @@ Thuật ngữ ngành giữ tiếng Anh như trên màn. Bảng dưới giải th
 | Thuật ngữ | Nghĩa |
 |---|---|
 | **KYC** | Know your customer: thông tin RE biết về KH |
-| **Ghi chú KYC** | Văn bản RE ghi về KH. Chỉ thêm, không sửa, không xóa |
+| **Ghi chú KYC** | Văn bản RE ghi về KH. Chỉ thêm, không sửa, không xóa; chỉ mất khi dọn sạch Thùng rác xóa hẳn KH đã xóa |
 | **Ghi chú hệ thống** | Ghi chú app tự ghi khi tạo / sửa hồ sơ KH (ngày sinh, giới tính) |
 | **Dữ kiện KYC** | Một giá trị có cấu trúc RE đã xác nhận (ví dụ Số con: 2), trỏ về ghi chú nguồn. Còn hiệu lực, đã thay thế (cũ) hoặc mâu thuẫn |
 | **Mã F** | Tên ngắn của một dữ kiện (F1, F2…). Phân tích AI dùng mã F làm bằng chứng |

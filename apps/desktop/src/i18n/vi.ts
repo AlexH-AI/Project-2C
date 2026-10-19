@@ -259,11 +259,24 @@ export const vi = {
   'settings.nav.data': 'Dữ liệu',
   'settings.nav.ai': 'AI',
   'settings.nav.trash': 'Thùng rác',
-  // Settings → Thùng rác (spec Phase 6 §4.2; mockup trash.html 11a, 11d, 11e).
+  // Settings → Thùng rác (spec Phase 6 §4.2; mockup trash.html 11a, 11d, 11e, 11h–11j).
   'trash.title': 'Thùng rác',
   'trash.count': '{count} bản ghi',
+  // Web mode has no file to back up first (review of PR 707): the exe's sentence says so.
   'trash.help':
-    'Bản ghi đã xóa mềm: ẩn khỏi danh sách và chỉ số. Khôi phục đưa bản ghi về như trước. Thùng rác không tự dọn, không xóa vĩnh viễn; xuất backup mang theo cả thùng rác.',
+    'Bản ghi đã xóa mềm: ẩn khỏi danh sách và chỉ số. Khôi phục đưa bản ghi về như trước. Thùng rác không tự dọn; "Dọn sạch Thùng rác…" xóa hẳn mọi bản ghi ở đây. Xuất backup mang theo cả thùng rác.',
+  'trash.helpFile':
+    'Bản ghi đã xóa mềm: ẩn khỏi danh sách và chỉ số. Khôi phục đưa bản ghi về như trước. Thùng rác không tự dọn; "Dọn sạch Thùng rác…" xóa hẳn mọi bản ghi ở đây, app backup trước. Xuất backup mang theo cả thùng rác.',
+  'trash.reminder':
+    'Thùng rác có {count} bản ghi nên mở chậm dần. Nên dọn sạch khi không cần khôi phục các bản ghi này nữa.',
+  // Records counted by kind, in the restore dialog and notice and in those of the purge.
+  'trash.records.customers': '{count} KH',
+  'trash.records.appointments': '{count} lịch hẹn',
+  'trash.records.policies': '{count} HĐ',
+  'trash.records.kycNotes': '{count} ghi chú KYC',
+  'trash.records.aiAnalyses': '{count} phân tích AI',
+  'trash.records.people': '{count} nhân sự',
+  'trash.records.teams': '{count} team',
   'trash.kinds': 'Loại bản ghi',
   'trash.kindCount': '{label} {count}',
   'trash.kind.all': 'Tất cả',
@@ -322,6 +335,35 @@ export const vi = {
   'trash.blocked.TEAM_NOT_FOUND': 'Khôi phục team {name} trước.',
   'trash.blocked.TEAM_HAS_LEAD': '{team} đã có TL {name}.',
   'trash.blocked.TEAM_NAME_TAKEN': 'Đã có team {name} — đổi tên team kia trước.',
+  // Why the purge keeps a record (TR-12; mockup 11j): what still points to it.
+  'trash.kept.rescheduled': 'Giữ lại khi dọn: lịch {when} dời từ lịch này.',
+  'trash.kept.appointment': 'Giữ lại khi dọn: lịch {when} còn ghi người này.',
+  'trash.kept.member': 'Giữ lại khi dọn: nhân sự {name} còn thuộc team này.',
+  // Dọn sạch Thùng rác (TR-11; mockups 11i, 11j).
+  'trash.purge.open': 'Dọn sạch Thùng rác…',
+  'trash.purge.title': 'Dọn sạch Thùng rác?',
+  'trash.purge.subtitle': '{count} bản ghi · mọi loại, không theo bộ lọc',
+  'trash.purge.intro': 'Các bản ghi sau bị xóa hẳn khỏi dữ liệu:',
+  'trash.purge.customers': '{count} — kèm {parts}',
+  'trash.purge.kept': 'Giữ lại {count} bản ghi còn được dùng',
+  'trash.purge.keptHelp': 'Lý do ghi ở dòng của nó trong Thùng rác.',
+  'trash.purge.final': 'Không hoàn tác được',
+  'trash.purge.finalHelp':
+    'Bản ghi đã dọn không còn trong Thùng rác, không khôi phục được trong app. Dữ liệu đang dùng và chỉ số không đổi.',
+  'trash.purge.backup':
+    'App backup file dữ liệu trước vào Project2C-data\\backups\\. Muốn lấy lại dữ liệu như trước lúc dọn: chép bản backup thành Project2C-data\\project2c.db khi app đã đóng (mất các thay đổi sau lúc dọn).',
+  'trash.purge.word': 'DỌN SẠCH',
+  'trash.purge.confirm': 'Dọn sạch',
+  'trash.purge.confirmWithBackup': 'Backup rồi dọn sạch',
+  'trash.purge.running': 'Đang dọn…',
+  'trash.purge.failed': 'Chưa dọn được Thùng rác.',
+  'trash.purge.failedUnsaved':
+    'Chưa dọn: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó.',
+  'trash.purge.unchanged': 'Dữ liệu không bị đổi.',
+  'trash.purged.title': 'Đã dọn sạch Thùng rác',
+  'trash.purged.deleted': 'Xóa hẳn {parts}.',
+  'trash.purged.customersWith': '{count} KH (kèm {parts})',
+  'trash.purged.kept': 'Giữ lại {count} bản ghi còn được dùng.',
   // The restore dialog, which always asks first (TR-8; mockup 11b, 11c), and what follows (11e).
   'trash.restore': 'Khôi phục…',
   'trash.restoreLabel.customer': 'Khôi phục KH {name}',
@@ -338,14 +380,10 @@ export const vi = {
   'trash.restore.re': 'RE',
   'trash.restore.with': 'Hiện lại cùng KH',
   'trash.restore.appointments': '{appointments} lịch hẹn ({met} đã gặp · {n} lần tính RF)',
-  'trash.restore.policies': '{count} HĐ',
-  'trash.restore.kyc': '{count} ghi chú KYC',
-  'trash.restore.ai': '{count} phân tích AI',
   'trash.restore.customerBack':
     'KH và các bản ghi trên vào lại danh sách và chỉ số theo đúng ngày của từng bản ghi.',
   'trash.restore.customerLeft':
     'Lịch hẹn / HĐ đã xóa riêng trước đó vẫn ở Thùng rác ({parts}), khôi phục riêng sau.',
-  'trash.restore.leftAppointments': '{count} lịch hẹn',
   'trash.restore.result': 'Kết quả',
   'trash.restore.status': 'Trạng thái',
   'trash.restore.after': 'nhóm sau',
@@ -374,7 +412,7 @@ export const vi = {
   'trash.restored.person': 'Đã khôi phục nhân sự {name}',
   'trash.restored.team': 'Đã khôi phục team {name}',
   'trash.restored.with': 'cùng {parts}',
-  'trash.restored.mark': '✓',
+  'trash.done.mark': '✓',
   'trash.restored.openProfile': 'Mở hồ sơ',
   'trash.restored.openTeam': 'Mở Team & nhân sự',
   'settingsAi.invalid':
@@ -587,7 +625,6 @@ export const vi = {
   'customerDelete.appointmentCounts': '{total} ({met} đã gặp · {n} lần tính RF)',
   'customerDelete.policies': 'Hợp đồng',
   'customerDelete.kyc': 'Ghi chú KYC',
-  'customerDelete.kycKept': '{count} — giữ nguyên, không bao giờ xóa',
   'customerDelete.soft': 'Dữ liệu vẫn còn: khôi phục ở Cài đặt → Thùng rác.',
   'customerDelete.confirm': 'Xóa KH',
   'stageForm.title': 'Chuyển nhóm · {name}',
@@ -1171,11 +1208,12 @@ export const vi = {
     'Người phối hợp của lịch Dời lịch / Dự kiến không đổi được — giữ lại thay vì xóa.',
   'person.inUseSupportHelp':
     'Bỏ nhân sự này khỏi người đánh giá kết quả của các lịch đó (ở Sửa kết quả); người phối hợp của lịch Dời lịch / Dự kiến không đổi được — giữ lại thay vì xóa.',
-  // Records of deleted customers keep the person too: deleting a customer only hides them (T-250).
+  // Records of deleted customers keep the person too: deleting a customer only hides them (T-250),
+  // purging it deletes them (TR-11).
   'person.inUseTrash':
-    'Có cả dữ liệu của KH đã xóa: {customer}. Khôi phục KH ở Cài đặt → Thùng rác rồi chuyển sang RE khác.',
+    'Có cả dữ liệu của KH đã xóa: {customer}. Khôi phục KH ở Cài đặt → Thùng rác rồi chuyển sang RE khác, hoặc dọn sạch Thùng rác.',
   'person.inUseSupportTrash':
-    'Có cả lịch hẹn của KH đã xóa: {customer}. Khôi phục KH ở Cài đặt → Thùng rác thì mới sửa được các lịch đó.',
+    'Có cả lịch hẹn của KH đã xóa: {customer}. Khôi phục KH ở Cài đặt → Thùng rác thì mới sửa được các lịch đó, hoặc dọn sạch Thùng rác.',
   'person.inUseTrashMore': '{customer} và {count} KH khác',
   'error.TEAM_REQUIRED': '{role} phải thuộc một team.',
   // An RE with records who leaves the role, or a person deleted while still in use: both by role.

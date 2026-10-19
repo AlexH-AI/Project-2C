@@ -388,7 +388,8 @@ function DeleteCustomerDialog({
       }),
     ],
     [t('customerDelete.policies'), formatCount(counts.policies)],
-    [t('customerDelete.kyc'), t('customerDelete.kycKept', { count: counts.kycNotes })],
+    // A number only: a purge of the trash deletes them for good (TR-9, TR-11; mockup 11f).
+    [t('customerDelete.kyc'), formatCount(counts.kycNotes)],
   ] as const;
   return (
     <Dialog

@@ -145,14 +145,14 @@ describe('inUseHelp (mockup 9b)', () => {
     expect(both).not.toContain(RE);
   });
 
-  it('names the customers in the trash the records belong to, and how they come back (T-250)', () => {
+  it('names the customers in the trash the records belong to, how they come back or go (T-250, TR-11)', () => {
     expect(inUseHelp(usage({ appointments: 1, inTrash: ['Lan'] }))).toEqual([
       expect.stringContaining(RE),
-      'Có cả dữ liệu của KH đã xóa: Lan. Khôi phục KH ở Cài đặt → Thùng rác rồi chuyển sang RE khác.',
+      'Có cả dữ liệu của KH đã xóa: Lan. Khôi phục KH ở Cài đặt → Thùng rác rồi chuyển sang RE khác, hoặc dọn sạch Thùng rác.',
     ]);
     expect(inUseHelp(usage({ reviewing: 1, inTrash: ['Lan', 'Ánh Hồng'] }))).toEqual([
       expect.stringContaining(REVIEWER),
-      'Có cả lịch hẹn của KH đã xóa: Lan, Ánh Hồng. Khôi phục KH ở Cài đặt → Thùng rác thì mới sửa được các lịch đó.',
+      'Có cả lịch hẹn của KH đã xóa: Lan, Ánh Hồng. Khôi phục KH ở Cài đặt → Thùng rác thì mới sửa được các lịch đó, hoặc dọn sạch Thùng rác.',
     ]);
   });
 

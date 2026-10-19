@@ -14,6 +14,8 @@ import {
   softDeletePolicy,
   softDeleteTeam,
   submitPolicy,
+  type KeptRecord,
+  type PurgePlan,
   type TrashBlock,
   type TrashRow,
 } from '@p2c/db';
@@ -21,9 +23,15 @@ import { calendarDate } from '@p2c/domain';
 import {
   TRASH_MORE,
   blockedReason,
+  canPurge,
   deletedAtText,
   filterTrash,
+  keptReason,
   ownerParts,
+  purgedNotice,
+  purgeFailure,
+  purgeReminder,
+  purgeView,
   recordDetail,
   recordTitle,
   restoreLabel,
@@ -755,6 +763,124 @@ describe('restoreRow', () => {
       },
     };
     expect(restoreRow(app, minhAnh)).toBe('Chưa lưu được thay đổi. Dữ liệu không bị đổi.');
+  });
+});
+
+describe('Dọn sạch Thùng rác (TR-11…TR-13; mockup 11h–11j)', () => {
+  /** D1: the trash of mockup 11a. */
+  const D1: PurgePlan = {
+    counts: {
+      customers: 3,
+      customerRecords: { appointments: 12, policies: 1, kycNotes: 9, aiAnalyses: 2 },
+      appointments: 6,
+      policies: 2,
+      people: 2,
+      teams: 1,
+    },
+    kept: [],
+  };
+  /** D5: the Dời lịch of 08/10, which the appointment of 15/10 was rescheduled from. */
+  const moved: KeptRecord = {
+    kind: 'appointment',
+    id: 'a9',
+    by: { kind: 'rescheduled', date: calendarDate(2026, 10, 15), time: '10:00' },
+  };
+
+  it('D12: reminds to purge from 1 000 records, not under', () => {
+    expect(purgeReminder(1_000)).toBe(
+      'Thùng rác có 1.000 bản ghi nên mở chậm dần. Nên dọn sạch khi không cần khôi phục các bản ghi này nữa.',
+    );
+    expect(purgeReminder(1_313)).toContain('Thùng rác có 1.313 bản ghi');
+    expect(purgeReminder(999)).toBeNull();
+    expect(purgeReminder(0)).toBeNull();
+  });
+
+  it('D5, D6: says why the purge keeps a record, as a blocked one says why it waits', () => {
+    expect(keptReason(moved.by)).toBe('Giữ lại khi dọn: lịch 15/10/2026 10:00 dời từ lịch này.');
+    expect(
+      keptReason({ kind: 'appointment', date: calendarDate(2026, 10, 8), time: '10:00' }),
+    ).toBe('Giữ lại khi dọn: lịch 08/10/2026 10:00 còn ghi người này.');
+    expect(keptReason({ kind: 'appointment', date: calendarDate(2026, 10, 8), time: null })).toBe(
+      'Giữ lại khi dọn: lịch 08/10/2026 còn ghi người này.',
+    );
+    expect(keptReason({ kind: 'member', name: 'Vương Thị Mai' })).toBe(
+      'Giữ lại khi dọn: nhân sự Vương Thị Mai còn thuộc team này.',
+    );
+  });
+
+  it('offers the purge while some record would go, not once every one is kept (TR-11)', () => {
+    expect(canPurge([])).toBe(false);
+    expect(canPurge([met, planned])).toBe(true);
+    const kept = { ...planned, keptBy: moved.by } as TrashRow;
+    expect(canPurge([kept])).toBe(false);
+    expect(canPurge([kept, met])).toBe(true);
+  });
+
+  it('D1: the dialog counts what goes for good, kind by kind, the customers with their records', () => {
+    expect(purgeView(D1)).toEqual({
+      subtitle: '14 bản ghi · mọi loại, không theo bộ lọc',
+      facts: [
+        { term: 'KH', text: '3 — kèm 12 lịch hẹn · 1 HĐ · 9 ghi chú KYC · 2 phân tích AI' },
+        { term: 'Lịch hẹn', text: '6' },
+        { term: 'HĐ', text: '2' },
+        { term: 'Nhân sự', text: '2' },
+        { term: 'Team', text: '1' },
+      ],
+      kept: null,
+    });
+  });
+
+  it('D5: the dialog leaves what is kept out of the counts, and says how much it keeps', () => {
+    const view = purgeView({ ...D1, kept: [moved] });
+    expect(view.subtitle).toBe('15 bản ghi · mọi loại, không theo bộ lọc');
+    expect(view.facts[1]).toEqual({ term: 'Lịch hẹn', text: '6' });
+    expect(view.kept).toBe('Giữ lại 1 bản ghi còn được dùng');
+    const none = purgeView({
+      counts: { ...D1.counts, customers: 0, people: 0 },
+      kept: [moved],
+    });
+    expect(none.facts[0]).toEqual({ term: 'KH', text: '0' });
+  });
+
+  it('D2, D13: the notice says what went for good, and the backup in the exe (11j)', () => {
+    expect(purgedNotice({ ...D1, backup: 'project2c-s00000013-20261011-164512.db' })).toEqual({
+      title: 'Đã dọn sạch Thùng rác',
+      detail:
+        'Xóa hẳn 3 KH (kèm 12 lịch hẹn · 1 HĐ · 9 ghi chú KYC · 2 phân tích AI) · 6 lịch hẹn · 2 HĐ · 2 nhân sự · 1 team. Backup: Project2C-data\\backups\\project2c-s00000013-20261011-164512.db',
+    });
+    expect(purgedNotice({ ...D1, backup: undefined }).detail).toBe(
+      'Xóa hẳn 3 KH (kèm 12 lịch hẹn · 1 HĐ · 9 ghi chú KYC · 2 phân tích AI) · 6 lịch hẹn · 2 HĐ · 2 nhân sự · 1 team.',
+    );
+  });
+
+  it('D5: the notice leaves a kind with none out, and counts what it kept', () => {
+    const counts = {
+      ...D1.counts,
+      customers: 1,
+      customerRecords: { appointments: 0, policies: 0, kycNotes: 4, aiAnalyses: 0 },
+      appointments: 0,
+      people: 0,
+    };
+    expect(purgedNotice({ counts, kept: [moved], backup: undefined }).detail).toBe(
+      'Xóa hẳn 1 KH (kèm 4 ghi chú KYC) · 2 HĐ · 1 team. Giữ lại 1 bản ghi còn được dùng.',
+    );
+    const bare = { ...counts, customerRecords: { ...counts.customerRecords, kycNotes: 0 } };
+    expect(purgedNotice({ counts: bare, kept: [], backup: undefined }).detail).toBe(
+      'Xóa hẳn 1 KH · 2 HĐ · 1 team.',
+    );
+  });
+
+  it('D7, D8, D9: a purge refused says why, and that nothing changed', () => {
+    expect(purgeFailure(new Error('RELOAD_UNSAVED_CHANGES'))).toEqual({
+      title: 'Chưa dọn: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó.',
+      detail: 'Dữ liệu không bị đổi.',
+    });
+    for (const error of [new Error('disk full'), new Error('refused')]) {
+      expect(purgeFailure(error)).toEqual({
+        title: 'Chưa dọn được Thùng rác.',
+        detail: 'Dữ liệu không bị đổi.',
+      });
+    }
   });
 });
 

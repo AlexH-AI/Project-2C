@@ -10,9 +10,11 @@ import {
   getSetting,
   importBackup,
   openDatabase,
+  purgeTrash,
   putSetting,
   seedDemoData,
   type Database,
+  type PurgePlan,
   type RecordCounts,
 } from '@p2c/db';
 import {
@@ -82,10 +84,19 @@ export interface BackupPreview {
   readonly bytes: Uint8Array;
 }
 
+/** What Dọn sạch Thùng rác deleted and kept (mockup 11j), and the backup made before. */
+export interface PurgedTrash extends PurgePlan {
+  /** The backup's file name; `undefined` in web mode. */
+  readonly backup: string | undefined;
+}
+
 export interface AppData {
   /** The open database; `reloadDemoData` replaces it, see `subscribe`. */
   db(): Database;
-  /** Called whenever the data changes (`run`, `reloadDemoData`); returns the unsubscribe function. */
+  /**
+   * Called whenever the data changes (`run`, `reloadDemoData`, `importBackup`, `purgeTrash`);
+   * returns the unsubscribe function.
+   */
   subscribe(listener: () => void): () => void;
   /** Grows with every change; screens re-read the database when it does. */
   revision(): number;
@@ -96,8 +107,9 @@ export interface AppData {
    */
   generation(): number;
   /**
-   * True from the call of `reloadDemoData` / `importBackup` until the last one called ends: `run`
-   * refuses every write meanwhile (S2-2), and an AI answer that comes then is dropped (S2-3).
+   * True from the call of `reloadDemoData` / `importBackup` / `purgeTrash` until the last one called
+   * ends: `run` refuses every write meanwhile (S2-2), and an AI answer that comes then is dropped
+   * (S2-3).
    */
   replacing(): boolean;
   /**
@@ -146,6 +158,13 @@ export interface AppData {
    * at a time, in the order they are called (S2-1).
    */
   importBackup(backup: BackupPreview): Promise<string | undefined>;
+  /**
+   * Thùng rác → Dọn sạch (spec Phase 6 TR-11): in turn with the replaces, saves what is pending and
+   * backs the file up, as they do, then purges the trash of the same database (`generation` stays,
+   * so an AI answer for a live customer still saves). Rejects with `RELOAD_UNSAVED_CHANGES` while
+   * the last save failed, else with the backup's or the purge's error, the data unchanged.
+   */
+  purgeTrash(): Promise<PurgedTrash>;
   /** Settings → Data: the last successful save of this session; always `undefined` in web mode. */
   lastSave(): LastSave | undefined;
   /** Called whenever `lastSave` changes; returns the unsubscribe function. */
@@ -189,7 +208,7 @@ export interface OpenAppDataOptions {
 
 const UNSAVED_CHANGES = 'RELOAD_UNSAVED_CHANGES';
 
-/** The refusal of `reloadDemoData` / `importBackup` while the last save failed. */
+/** The refusal of `reloadDemoData` / `importBackup` / `purgeTrash` while the last save failed. */
 export const isUnsavedChangesError = (error: unknown): boolean =>
   error instanceof Error && error.message === UNSAVED_CHANGES;
 
@@ -367,16 +386,17 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     for (const listener of listeners) listener();
   };
 
-  // Settings → Data replaces everything (reload, import): save what is pending, back the file up,
-  // then swap. A failed save would leave changes out of the backup, so it refuses instead. One
-  // replace at a time, in call order (S2-1); from the call until the last one ends, writes are
-  // refused (S2-2), so the backup holds every change and the old database saves nothing after it.
-  // Exports are not queued: each reads the database once, with no `await` in between (S2-5).
+  // Settings → Data replaces everything (reload, import), Thùng rác purges (TR-11): save what is
+  // pending, back the file up, then change the data. A failed save would leave changes out of the
+  // backup, so it refuses instead. One at a time, in call order (S2-1); from the call until the
+  // last one ends, writes are refused (S2-2), so the backup holds every change and the old
+  // database saves nothing after it. Exports are not queued: each reads the database once, with no
+  // `await` in between (S2-5).
   let replacing = 0;
   let replaces = Promise.resolve();
-  const replace = (next: () => Promise<Database>): Promise<string | undefined> => {
+  const inTurn = <T>(change: (backup: string | undefined) => T | Promise<T>): Promise<T> => {
     replacing++;
-    const turn = replaces.then(() => swap(next)).finally(() => replacing--);
+    const turn = replaces.then(async () => change(await backUp())).finally(() => replacing--);
     replaces = turn.then(
       () => undefined,
       () => undefined,
@@ -384,24 +404,28 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     return turn;
   };
 
-  const swap = async (next: () => Promise<Database>): Promise<string | undefined> => {
+  const backUp = async (): Promise<string | undefined> => {
     await saves.idle();
     if (saves.failed()) throw new Error(UNSAVED_CHANGES);
-    const backup = await storage?.backup();
-    const previous = db;
-    db = await next();
-    generation++;
-    changed();
-    // Frees its WASM memory only after the subscribers heard of the new database (`changed()`
-    // above: the order the tests hold), and one task later so a render they scheduled has run.
-    // That task is a margin no test holds: a render reads `db()`, already the new one (J5,
-    // accepted). A write to the old database is never saved (`current`); once it is closed, one
-    // throws. So callers must not keep a `db` across an `await`: read it again through `db()` /
-    // `run` instead.
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    previous.sqlite.close();
-    return backup;
+    return storage?.backup();
   };
+
+  const replace = (next: () => Promise<Database>): Promise<string | undefined> =>
+    inTurn(async (backup) => {
+      const previous = db;
+      db = await next();
+      generation++;
+      changed();
+      // Frees its WASM memory only after the subscribers heard of the new database (`changed()`
+      // above: the order the tests hold), and one task later so a render they scheduled has run.
+      // That task is a margin no test holds: a render reads `db()`, already the new one (J5,
+      // accepted). A write to the old database is never saved (`current`); once it is closed, one
+      // throws. So callers must not keep a `db` across an `await`: read it again through `db()` /
+      // `run` instead.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      previous.sqlite.close();
+      return backup;
+    });
 
   const run = <T>(command: (db: Database) => T): T => {
     if (replacing > 0) throw new DbError('DATA_REPLACING');
@@ -457,6 +481,13 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
       }
     },
     importBackup: (backup) => replace(() => openFrom(backup.bytes)),
+    // The same database, purged in one transaction: a refused purge throws having changed nothing.
+    purgeTrash: () =>
+      inTurn((backup) => {
+        const purged = purgeTrash(db);
+        changed();
+        return { ...purged, backup };
+      }),
     lastSave: () => lastSave,
     subscribeLastSave(listener) {
       lastSaveListeners.add(listener);

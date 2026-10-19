@@ -377,7 +377,8 @@ test('deletes a customer from the profile, counting its records first (5f, TR-9)
     new RegExp(`Lịch hẹn${total} \\(${met} đã gặp · \\d+ lần tính RF\\)`),
   );
   await expect(dialog).toContainText(`Hợp đồng${policies}`);
-  await expect(dialog).toContainText(/Ghi chú KYC\d+ — giữ nguyên, không bao giờ xóa/);
+  // A number only: the purge of the trash deletes them too (TR-9; mockup 11f).
+  await expect(dialog).toContainText(/Ghi chú KYC\d+Dữ liệu vẫn còn/);
   await expect(dialog).toContainText('Dữ liệu vẫn còn: khôi phục ở Cài đặt → Thùng rác.');
 
   // Hủy goes back to the profile form and deletes nothing.

@@ -90,6 +90,7 @@ Mỗi màn ở sidebar, mỗi mục Cài đặt và mỗi hộp thoại có tron
 | Chưa lưu được thay đổi (bản exe) | `settings-data.html` | [1. Khi app chưa lưu được](01-bat-dau.md#khi-app-chưa-lưu-được-bản-exe) | |
 | Trạng thái lưu, không mở được file lúc khởi động (bản exe) | `settings-data.html` | [1. App tự lưu](01-bat-dau.md#app-tự-lưu), [10. Lỗi lúc mở app](10-su-co.md#lỗi-lúc-mở-app-bản-exe) | |
 | Khôi phục bản ghi | `trash.html` 11b–11d | [9. Khôi phục](09-cai-dat.md#khôi-phục), [Khi không khôi phục được](09-cai-dat.md#khi-không-khôi-phục-được) | |
+| Dọn sạch Thùng rác? | `trash.html` 11i | [9. Dọn sạch Thùng rác](09-cai-dat.md#dọn-sạch-thùng-rác) | |
 | Xuất Excel | `reports.html` 2f | [7. Xuất Excel](07-bao-cao.md#xuất-excel) | |
 
 ---
