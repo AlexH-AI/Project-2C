@@ -97,4 +97,6 @@ export type {
 } from './ai-analyses';
 export { listTrash } from './trash';
 export type { TrashBlock, TrashEffect, TrashOwner, TrashRef, TrashRow } from './trash';
+export { previewPurge, purgeTrash } from './purge';
+export type { KeptBy, KeptRecord, PurgeCounts, PurgePlan } from './purge';
 export * from './settings';
