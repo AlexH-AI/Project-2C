@@ -933,7 +933,8 @@ describe('purgeTrash (spec Phase 6 TR-11)', () => {
     app.run((db) => createTeam(db, { name: 'Bình Minh' }));
     const db = app.db();
     const generation = app.generation();
-    const tables = app.tables();
+    // Every table read now: `tables()` reads each one only when first asked for.
+    const tables = { ...app.tables() };
     const listener = vi.fn();
     app.subscribe(listener);
     events.length = 0;
@@ -961,7 +962,7 @@ describe('purgeTrash (spec Phase 6 TR-11)', () => {
     // The data in use is as it was: the same database, its tables, so every metric (D3).
     expect(app.db()).toBe(db);
     expect(app.generation()).toBe(generation);
-    expect(app.tables()).toEqual(tables);
+    expect({ ...app.tables() }).toEqual(tables);
     expect(listTrash(app.db())).toEqual([]);
     expect(listener).toHaveBeenCalledTimes(1);
     expect(app.replacing()).toBe(false);

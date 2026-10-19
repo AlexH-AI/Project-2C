@@ -93,7 +93,10 @@ export interface PurgedTrash extends PurgePlan {
 export interface AppData {
   /** The open database; `reloadDemoData` replaces it, see `subscribe`. */
   db(): Database;
-  /** Called whenever the data changes (`run`, `reloadDemoData`); returns the unsubscribe function. */
+  /**
+   * Called whenever the data changes (`run`, `reloadDemoData`, `importBackup`, `purgeTrash`);
+   * returns the unsubscribe function.
+   */
   subscribe(listener: () => void): () => void;
   /** Grows with every change; screens re-read the database when it does. */
   revision(): number;
@@ -205,7 +208,7 @@ export interface OpenAppDataOptions {
 
 const UNSAVED_CHANGES = 'RELOAD_UNSAVED_CHANGES';
 
-/** The refusal of `reloadDemoData` / `importBackup` while the last save failed. */
+/** The refusal of `reloadDemoData` / `importBackup` / `purgeTrash` while the last save failed. */
 export const isUnsavedChangesError = (error: unknown): boolean =>
   error instanceof Error && error.message === UNSAVED_CHANGES;
 
