@@ -1,6 +1,6 @@
 # ADR-0017: Review PR theo mức risk — skill `review-pr`
 
-- **Trạng thái:** Accepted (G1, Owner duyệt 27/09/2026)
+- **Trạng thái:** Accepted (G1, Owner duyệt 27/09/2026); nâng mức `code-review` ở phụ lục (Accepted G1, Owner quyết 21/10/2026, Issue #730)
 - **Ngày:** 2026-09-27
 - **Nguồn:** ADR-0001 (quy trình task, review phiên sạch), ADR-0012 (skill được phép), `docs/process/REVIEW-CHECKLIST.md`
 - **Commit / PR:** nhánh `docs/review-by-risk`
@@ -11,7 +11,7 @@
 - Skill `code-review` của mattpocock/skills (commit `c55ee46`) không được vendor ở ADR-0012. Lõi của nó là 2 subagent song song (Spec / Standards), trái ADR-0001. Mục đích chính của subagent là context sạch, nhưng 2C đã có context sạch vì review chạy ở phiên mới.
 - Claude Code có skill `code-review` sẵn (săn lỗi correctness theo mức effort, có `--comment`/`--fix`/`ultra`). Nó trùng tên với skill của mattpocock.
 - `.claude/skills/tdd/SKILL.md` (vendored) nhắc tới skill `code-review` mà repo không có.
-- Owner ưu tiên chi phí thấp đến trung bình cho `risk:low`/`risk:med`; `risk:high` không cần tối ưu chi phí.
+- Owner ưu tiên chi phí thấp đến trung bình cho `risk:low`/`risk:med`; `risk:high` không cần tối ưu chi phí. *(Ngày 21/10/2026 Owner nâng mức `code-review` ở cả ba mức — phụ lục nâng mức `code-review`.)*
 
 ## Quyết định
 
@@ -27,7 +27,8 @@
    | Spec (lấy từ mattpocock: thiếu / ngoài phạm vi / sai, trích dòng spec) | ✓ | ✓ | ✓ |
    | Standards = `REVIEW-CHECKLIST.md` | ✓ | ✓ | ✓ |
    | Mùi code Fowler, **không chặn** | — | 4 mùi | 12 mùi |
-   | Correctness | tự rà inline | `code-review medium` | `code-review high` |
+   | Correctness (đến 20/10/2026, lịch sử) | ~~tự rà inline~~ | ~~`code-review medium`~~ | ~~`code-review high`~~ |
+   | Correctness từ 21/10/2026 (phụ lục nâng mức `code-review`) | `code-review high` | `code-review max` | `code-review max --max-findings all` |
 
    Mức lấy từ nhãn Issue (hoặc nhãn PR). Thiếu nhãn hoặc hai nhãn khác nhau → hỏi Owner. **Chỉ nâng, không hạ** khi diff chạm migration/schema, `src-tauri`, `packages/ai`, golden (→ high), hoặc script/CI/hook/settings hay vượt ngưỡng dòng (→ med).
 4. **`code-review` chỉ để báo cáo:** không `--comment`, không `--fix`, không `ultra`.
@@ -44,11 +45,11 @@
 - **Vendor nguyên `code-review` của mattpocock:** bị trùng tên với skill có sẵn, phải sửa bản vendored (trái ADR-0012), và cần subagent. Loại.
 - **Bật lại subagent cho 2 trục:** tốn khoảng 2–3 lần token mà chỉ thêm việc tách trục khỏi nhau, vì phiên review đã sạch. Loại theo ưu tiên chi phí.
 - **Chỉ ghi quy tắc vào CLAUDE.md:** rẻ nhất nhưng không bắt buộc được gì; chính là tình trạng trước ADR này. Loại.
-- **Chạy `code-review` cho mọi mức:** tốn thêm ở `risk:low` mà ít lợi. Loại.
+- **Chạy `code-review` cho mọi mức:** tốn thêm ở `risk:low` mà ít lợi. ~~Loại.~~ Owner chọn từ 21/10/2026 (phụ lục nâng mức `code-review`).
 
 ## Hệ quả
 
-- Review `risk:med`/`risk:high` tốn thêm một lượt `code-review` (medium/high). `risk:low` gần như không đổi.
+- ~~Review `risk:med`/`risk:high` tốn thêm một lượt `code-review` (medium/high). `risk:low` gần như không đổi.~~ Từ 21/10/2026, review PR code ở mọi mức tốn thêm một lượt `code-review` (high / max / max kèm mọi phát hiện), kể cả `risk:low`; PR chỉ sửa docs vẫn không gọi (phụ lục nâng mức `code-review`).
 - Chưa kiểm chứng việc `code-review` chạy ở mức `high` khi `Agent` bị chặn. Skill đã có đường lùi inline; lần review `risk:high` đầu tiên phải ghi kết quả thực tế vào PR comment.
 - Hook cần Node (đã có trong toolchain). Hook in ra rỗng khi câu không khớp, nên không ảnh hưởng các yêu cầu khác.
 - Tham chiếu `code-review` trong skill `tdd` (vendored) được hiểu là skill `review-pr` (ghi ở `.claude/skills/README.md`).
@@ -72,3 +73,22 @@
    - Sự cố: #174 và #175 được review gần như cùng lúc, cả hai trong `Project-2C-review`. Phiên #175 `git checkout` head của nó, đè lên worktree mà phiên #174 đang đọc. Phiên #174 suýt kết luận sai khi đọc file e2e của #175.
    - Quyết định: mỗi worktree review chỉ phục vụ một phiên review tại một thời điểm. Phiên review song song thứ hai dùng `C:\workspace\Project-2C-review-2`, quy tắc y như mục 2. Mỗi máy tạo worktree này một lần: `git worktree add --detach ../Project-2C-review-2 origin/main`.
    - Chốt chặn: trước khi đăng comment, phiên review so `git rev-parse HEAD` với `headRefOid`. Nếu khác, đọc lại bằng chứng qua `git show <headRefOid>:<path>`.
+
+## Phụ lục — nâng mức `code-review` (Accepted G1, Owner quyết 21/10/2026 · Issue #730)
+
+Owner quyết trong chat ngày 21/10/2026, sau bản tổng hợp deep review Phase 1–6 lượt 3 (#714) và trước đợt sửa #719–#729. Nguyên văn: "nâng mức của skill /review-pr lên max cho med, max-findings cho high risk, với low thì high". Phụ lục này sửa dòng Correctness của mục 3, và chọn phương án "Chạy `code-review` cho mọi mức" từng bị loại.
+
+| | low | med | high |
+|---|---|---|---|
+| Correctness | `code-review high` | `code-review max` | `code-review max --max-findings all` |
+
+1. **Mọi mức gọi `code-review`;** `risk:low` không còn tự rà inline. "max-findings cho high risk" hiểu là `max` kèm `--max-findings all` (báo mọi phát hiện), vì `risk:high` không thấp hơn `risk:med`.
+2. **`--max-findings`:** theo mô tả của `code-review`, lựa chọn này được giữ cho tới khi truyền `--max-findings default`. Vì vậy `risk:low` / `risk:med` luôn truyền `--max-findings default`, để review low / med chạy sau một review high không kế thừa `all`. Mức effort cũng luôn truyền rõ, vì thiếu thì skill dùng lại mức gõ lần trước. Args cụ thể ở skill `review-pr` §C.
+3. **Giữ nguyên:**
+   - trục Spec, Standards; mùi code (low không có, med 4, high 12); bảng nâng mức theo file;
+   - PR chỉ sửa docs (`docs/**`, `*.md`, trừ `CODE_DOCS`) vẫn bỏ trục Correctness;
+   - mục 4 (không `--comment` / `--fix` / `ultra`; kết quả là giả thuyết), mục 5 (subagent khi Owner bật), mục 6 và quy tắc merge.
+4. **Hệ quả:**
+   - Review PR code tốn thêm ở mọi mức, nhiều nhất ở `risk:low` (trước đây không gọi skill).
+   - Ở `max`, nhất là khi kèm `--max-findings all`, `code-review` báo cả những mục chưa chắc. Bước xác nhận từng mục trên code trước khi ghi (mục 4) vì vậy càng quan trọng.
+   - Áp dụng cho các review chạy sau khi PR của Issue #730 merge, gồm PR của đợt sửa #719–#729.
