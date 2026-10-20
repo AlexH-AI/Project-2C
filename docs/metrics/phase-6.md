@@ -1,6 +1,6 @@
 # Chỉ số Phase 6 — Hoàn thiện & phát hành v1.0
 
-Theo bảng chỉ số của `docs/COMPARISON.md` (mẫu từ `phase-5.md`), thêm phần đánh giá cuối dự án (thay `FINAL.md`, `docs/metrics/README.md`). Tới cuối phase file này mới có mục **Số đo nền** (T-219, spec Phase 6 §5.1, ghi trước lượt review 1 của 6D), mốc Home PC sau lượt 2 (T-225), mốc Home PC sau #656 (T-264) và số liệu hai lượt review đóng phase. Các mục khác để trống tới khi đóng phase.
+Theo bảng chỉ số của `docs/COMPARISON.md` (mẫu từ `phase-5.md`), thêm phần đánh giá cuối dự án (thay `FINAL.md`, `docs/metrics/README.md`). Tới cuối phase file này mới có mục **Số đo nền** (T-219, spec Phase 6 §5.1, ghi trước lượt review 1 của 6D), mốc Home PC sau lượt 2 (T-225), mốc Home PC sau #656 (T-264), số đo deep review lượt 3 (T-267) và số liệu ba lượt review đóng phase. Các mục khác để trống tới khi đóng phase.
 
 - **Milestone:** "Phase 6 — Hoàn thiện & phát hành" — _điền cuối phase_
 - **Bắt đầu:** 2026-10-11 (spec G1 #515) · **Task code cuối merge:** _cuối phase_ · **Đóng milestone:** _G7_
@@ -28,7 +28,7 @@ Mốc để lượt 2 của deep review Phase 1–6 so "không xấu đi" (spec 
 
 ### Thời gian thao tác
 
-Trung vị (min–max) của 5 lần, trừ khi ghi khác. Cột Ngưỡng: `< 200 ms` là Nhóm C của deep review Phase 1–4 (thao tác màn), probe đã kiểm; ngưỡng ghi "Owner chốt 13/10" là ngưỡng mới T-219 đề xuất, Owner chốt trên PR #575.
+Trung vị (min–max) của 5 lần, trừ khi ghi khác. Cột Ngưỡng: `< 200 ms` là Nhóm C của deep review Phase 1–4 (thao tác màn), probe đã kiểm; ngưỡng ghi "Owner chốt 13/10" là ngưỡng mới T-219 đề xuất, Owner chốt trên PR #575. Ngưỡng Dọn sạch Thùng rác (dòng cuối) Owner chốt 21/10 (tổng hợp lượt 3 §9 Q6 (a)).
 
 | Thao tác | Tên probe | Phase 4 `3e84ce8` | Phase 6 `b139d8a` | Ngưỡng | So Phase 4 |
 |---|---|---|---|---|---|
@@ -67,6 +67,7 @@ Trung vị (min–max) của 5 lần, trừ khi ghi khác. Cột Ngưỡng: `< 2
 | Tạo lịch hẹn tiếp theo, chọn ở kỳ Tháng (không debugger) | `appointments.next-month` | 211–217 ms | 116 ms (113–118) | ≤ 300 ms (Owner chốt 13/10) | tốt hơn |
 | Tạo lịch hẹn tiếp theo, chọn ở kỳ Năm (không debugger) | `appointments.next-year` | 177–206 ms | 134 ms (120–141) | Năm không chậm hơn Tháng quá 50 ms ✅ (+18 ms); ≤ 300 ms (Owner chốt 13/10) | tốt hơn |
 | Lưu file DB (15 lần: 5 lần nhập backup + 10 lần tạo lịch hẹn) | `db.save` | — | 162 ms (157–210) | ≤ 400 ms (Owner chốt 13/10) | mới |
+| Dọn sạch Thùng rác: bấm "Backup rồi dọn sạch" → thông báo 11j (exe, dữ liệu tải, đo tay) | — | — | — (chưa có ở `b139d8a`; lượt 3 Home PC ≈ 150 ms, mục "Số đo deep review lượt 3") | ≤ 500 ms (Owner chốt 21/10) | mới |
 
 Cách đặt ngưỡng mới: thao tác màn mới (panel AI, lịch sử phân tích, Thùng rác) dùng luôn Nhóm C (< 200 ms). Các thao tác còn lại lấy khoảng gấp đôi số đo trên Office Laptop rồi làm tròn, để lượt 2 không báo đỏ vì nhiễu. Hai ngưỡng mở app giữ bằng số Phase 4; ngưỡng mở lần đầu đổi sau khi đo lại (mục dưới).
 
@@ -149,7 +150,7 @@ Mốc Home PC ở `4217ed4`, thay `perf-ref` lượt 1 Home PC (DR6-98). G7 so v
 | `app.open-data` | 189 ms | 301 ms ⚠️ | ≤ 600 ms ✅ |
 | `reload.*` (6 màn) | 180–293 ms | 247–355 ms ⚠️ (+62…+67 ms) | < 500 ms ✅ |
 | `trash.open` | 80 ms | 73 ms | < 200 ms ✅ |
-| Các thao tác màn còn lại | 6–22 ms | 5–22 ms | < 200 ms ✅ |
+| Các thao tác màn còn lại (trừ `customer.ai-history`) | 6–22 ms | 5–22 ms | < 200 ms ✅ |
 | `backup.read` / `backup.import` / `backup.export` | 794 / 49 / 424 ms | 814 / 43 / 422 ms | ≤ 2 000 / 500 / 1 000 ms ✅ |
 | `reports.export-excel` | 24 ms | 27 ms | ≤ 500 ms ✅ |
 | `appointments.next-month` / `next-year` | 102 / 106 ms | 99 / 106 ms | ≤ 300 ms; Năm − Tháng ≤ 50 ms ✅ |
@@ -185,7 +186,7 @@ Trung vị (min–max của 5 lần ở cột mốc mới). ⚠️ = xấu hơn 
 | `reload.team` | 311 ms | 325 ms | 355 ms (348–376) | < 500 ms ✅ |
 | `reload.settings` | 247 ms | 256 ms | 283 ms (277–308) | < 500 ms ✅ |
 | `trash.open` | 73 ms (gắn DevTools) | 34 ms | 34 ms (33–37) | < 200 ms ✅ |
-| Các thao tác màn còn lại (19) | 2–22 ms | 2–24 ms | 2–23 ms | < 200 ms ✅ |
+| Các thao tác màn còn lại (19, gồm `customer.ai-history`) | 2–22 ms | 2–24 ms | 2–23 ms | < 200 ms ✅ |
 | `backup.read` / `backup.import` / `backup.export` | 814 / 43 / 422 ms | 836 / 42 / 425 ms | 835 / 43 / 438 ms | ≤ 2 000 / 500 / 1 000 ms ✅ |
 | `reports.export-excel` | 27 ms | 28 ms | 20 ms | ≤ 500 ms ✅ |
 | `appointments.next-month` / `next-year` | 99 / 106 ms | 100 / 108 ms | 101 / 107 ms | ≤ 300 ms; Năm − Tháng ≤ 50 ms ✅ (+7 ms) |
@@ -206,6 +207,23 @@ Trung vị (min–max của 5 lần ở cột mốc mới). ⚠️ = xấu hơn 
   - `p2c:data-open` 3 240 ms (3 239–3 275);
   - `p2c:db-save` 119 ms;
   - `project2c.db` 9 949 184 byte, bằng lượt 2.
+
+### Số đo deep review lượt 3 (T-267, 20–21/10/2026)
+
+Không thay mốc sau #656: G7 vẫn so với mốc đó. Phân tích: tổng hợp lượt 3 §7; bảng đủ: `docs/reviews/raw/2026-10-21/common-baseline.md`.
+
+- **Máy:** Home PC `DESKTOP-KDURKJP`. **Code:** `119e2e4`, exe release 5 408 768 byte (bằng exe mốc sau #656).
+- **Dữ liệu tải:** sinh ở `119e2e4`, `tables` sha256 `1c0a43fb…746d003f` (khác `1c306cfb…589591` của mốc sau #656, cùng số dòng). Script nạp vào exe qua cổng debug, đúng thao tác `e2e/perf/README.md` bước 3 (Owner cho phép 20/10); Cài đặt → Dữ liệu ghi như mốc sau #656.
+- **So mốc sau #656: không dòng nào ⚠️**, mọi thao tác trong ngưỡng:
+  - `app.open-data` 373 ms (mốc 387); `reload.*` 280–392 ms; `trash.open` 38 ms; 19 thao tác màn còn lại (gồm `customer.ai-history`) 2–22 ms;
+  - `backup.read` / `backup.import` / `backup.export` 827 / 47 / 425 ms; `db.save` 146 ms; JS heap 16,6 MB;
+  - mở lần đầu (LCP, 3 lần) 3 614 ms (mốc 3 663).
+- **Dọn sạch Thùng rác** (mới, đo lần đầu):
+  - exe, bấm "Backup rồi dọn sạch" → khung hình đầu có thông báo 11j: **151,8 ms** ở dữ liệu tải (113 dòng Thùng rác), 148–154 ms ở Thùng rác 1 313 dòng. Ngưỡng ≤ 500 ms (Owner chốt 21/10, ≈ 3× số đo); G7 đo tay như lượt này;
+  - `trash.open` trên exe trước → sau khi dọn: 38,9 → 9,6 ms (113 dòng), 151,9 → 3,7 ms (1 313 dòng);
+  - Node `purgeTrash` cả `VACUUM`: 93,8 ms (113 dòng), 109,8 ms (1 313 dòng); cỡ file −4,7 % / −89,5 %.
+- **`integrity_check` theo cỡ file:** ≈ 7,5 ms / MB. Trên exe, `p2c:data-open` 366 / 453 / 546 ms ở 1× / 2× / 3× dữ liệu tải, nên chạm 600 ms ở ≈ 2× cỡ dữ liệu tải. Ngưỡng `app.open-data` ≤ 600 ms chỉ áp cho dữ liệu tải.
+- **Hàm thuần trong Node:** không hàm nào xấu hơn lượt 2 cùng máy theo luật nhiễu. `listTrash` +4–6 ms là bước gốc của `KEPT_APPOINTMENTS` trong `keptRecords` mới (KNOWN #709, CL3-A29).
 
 ## Kiểm tra trên `main`
 
@@ -230,9 +248,16 @@ Deep review Phase 1–6 (6D, kế hoạch `docs/process/deep-review-phase-1-6.md
   - 59 DR6 có Issue: 52 đã sửa, 4 sửa một phần, 3 hồi quy.
   - 57 phát hiện mới → **36** vấn đề DR6-68…103: **1 Medium** (DR6-68, hồi quy do #616), 23 Low, 12 Nit. 0 bị bác.
   - Kết luận: chưa sẵn sàng ở `4217ed4`.
-  - Owner chọn Phương án 3 (sửa hết): 12 Issue #652–#663. Không có lượt 3.
+  - Owner chọn Phương án 3 (sửa hết): 12 Issue #652–#663. Lúc đó Owner quyết không có lượt 3; 19/10 đổi, thêm lượt 3 trước G7 (ADR-0001 M9).
+- **Lượt 3 (20–21/10, `119e2e4`):**
+  - Reviewer: Claude, Codex; một đợt trên Home PC. Phía Claude mỗi gói một phiên sạch như lượt 2 (Owner đổi 20/10, thay Workflow).
+  - Tổng hợp: `docs/reviews/2026-10-21-deep-review-phase-1-6-luot-3-tong-hop.md`.
+  - Kết quả đợt sửa lượt 2, 39 DR6: 38 đã sửa, 1 sửa một phần (DR6-69), 0 hồi quy.
+  - 54 phát hiện mới → **31** vấn đề DR6-104…134: **0 Medium**, 21 Low, 10 Nit; thêm 3 mục KNOWN có bằng chứng mới. 0 bị bác.
+  - Kết luận: chưa sẵn sàng ở `119e2e4`, chỉ vì Owner đã quyết sửa hết trước G7.
+  - Owner 21/10 đồng ý cả 6 đề xuất của §9: 11 Issue #719–#729.
 
-_Còn điền: kết quả đợt sửa lượt 2, kiểm lại trước G7._
+_Còn điền: kết quả đợt sửa lượt 3, kiểm lại trước G7._
 
 ## Điều hướng (riêng 2C, `docs/metrics/README.md`)
 

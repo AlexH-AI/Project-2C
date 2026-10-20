@@ -8,7 +8,7 @@
   - Claude Opus 5.5, **mỗi gói một phiên sạch như lượt 2** (Owner quyết 20/10, thay cách chạy Workflow của plan §L3.7, Phụ lục I; `common\prompt-claude.md` sửa theo). Gói A phiên đầu `xhigh`, Owner bật ultracode: phiên chính chạy 2 Workflow (10 rồi 69 lượt subagent, kiểm đối kháng từng phát hiện). Gói A phiên làm tiếp và B–F: `max`, không subagent.
   - Codex (Owner chạy; Codex desktop, model "GPT-6" theo hệ thống, công cụ không cho biết mức suy luận).
 - **ID:** phát hiện `CL3-<gói><số>` (Claude), `CX3-<gói><số>` (Codex); vấn đề đã gộp đánh số tiếp lượt 2: **`DR6-104…134`**.
-- **Báo cáo gốc:** PR docs riêng → `docs/reviews/raw/2026-10-21/{claude,codex}/{A…F}.md` + `common-known.md`, `common-baseline.md`, `common-fixes.md`, `common-prompt-claude.md` (bản đã dùng, sửa 20/10, khác Phụ lục I). `common\plan.md` trùng bản trong repo ở `98d0016` nên không chép. Không có `common\workflow-run.md` vì không có phiên điều phối. Bằng chứng (probe, đột biến, log, ảnh) ở `C:\workspace\deep-review-1-6-r3\<bên>\<gói>\` trên Home PC, giữ tới phát hành v1.0.
+- **Báo cáo gốc:** PR docs riêng #718 → `docs/reviews/raw/2026-10-21/{claude,codex}/{A…F}.md` + `common-known.md`, `common-baseline.md`, `common-fixes.md`, `common-prompt-claude.md` (bản đã dùng, sửa 20/10, khác Phụ lục I). `common\plan.md` trùng bản trong repo ở `98d0016` nên không chép. Không có `common\workflow-run.md` vì không có phiên điều phối. Bằng chứng (probe, đột biến, log, ảnh) ở `C:\workspace\deep-review-1-6-r3\<bên>\<gói>\` trên Home PC, giữ tới phát hành v1.0.
 
 **Cách kiểm (ADR-0001 M2):** phiên tổng hợp đọc đủ 12 báo cáo, gộp hai bảng R thành một bảng 39 DR6, rồi đối chiếu trên code ở checkout chính (`main` `98d0016`: từ `119e2e4` chỉ đổi `docs/**` + `CLAUDE.md` gốc, code giống hệt) các kết luận khác ĐÃ SỬA, mọi chỗ hai bên chấm khác nhau và **mọi** phát hiện mới. 54 phát hiện gộp thành 31 vấn đề, thêm 3 mục KNOWN có bằng chứng mới. Cột "Kiểm":
 
@@ -47,9 +47,9 @@ Mức trong bảng là **mức chốt** theo thước plan §4.3, không theo m�
 - **Kiểm log phiên (§10):** không nhiễm. Hai lệch đã tự khai:
   - Claude A lỡ liệt kê tên / cỡ file trong `codex\` (01:34, trước khi đọc quy tắc 1; không đọc nội dung, phiên dừng báo Owner).
   - Codex C chạy `pnpm exec` trong bản chép, làm 8 junction `@p2c` trỏ sang bản chép (tự khôi phục) — lặp bài học lượt 2.
+- **Owner trả lời §9 (21/10):** đồng ý cả 6 đề xuất, đều là chọn cách sửa khi có nhiều phương án.
 - **Còn trước G7:**
-  - Owner trả lời §9: 6 câu, đều là chọn cách sửa khi có nhiều phương án.
-  - Đợt sửa lượt 3: 11 Issue, ≈ 110–245 dòng SP + ≈ 1 000 dòng test (§8). Nên làm DR6-129 (e2e qua nửa đêm) trước, vì mọi PR sau và cổng của SHA phát hành chạy e2e.
+  - Đợt sửa lượt 3: 11 Issue #719…#729 (T-268…T-278, §8.5), ≈ 110–245 dòng SP + ≈ 1 000 dòng test (§8). Làm #719 (DR6-129, e2e qua nửa đêm) trước, vì mọi PR sau và cổng của SHA phát hành chạy e2e.
   - Các điều kiện ngoài review (spec §1 mục 2, 4): nghiệm thu trên exe phát hành (gồm NT-EX-08 / 09 trên exe Phase 5), eval AI thật với version prompt sau đợt sửa, chụp lại ảnh hướng dẫn, cổng trên SHA phát hành.
 
 ## 2. Số liệu
@@ -325,13 +325,13 @@ So mốc sau #656: **không dòng nào ⚠️**. So lượt 2 cùng máy chỉ `
 
 - Số Node của `baseline.md` (5 lần) trùng trong nhiễu với số của Claude A, Codex A / B / E / F đo lại.
 - So thao tác cùng đường hàng đợi thay thế, cùng máy: `backup.import` 47 ms, `backup.export` 425 ms, `backup.read` 827 ms, `db.save` 146 ms. Dọn sạch ≈ 150 ms, cùng cỡ một lần lưu.
-- Spec không đặt ngưỡng (plan §L3.6) → đề xuất ở Q6.
+- Spec không đặt ngưỡng (plan §L3.6) → đề xuất ở Q6. Owner 21/10 chọn (a): ≤ 500 ms, đã ghi vào `phase-6.md`.
 
 ### 7.4 Phát hiện P
 
 Không có phát hiện P vượt ngưỡng hay xấu hơn mốc cùng máy. Chỉ có CL3-A29 (KNOWN #709, §8.4). Ghi để theo dõi, không phải phát hiện:
 
-- `integrity_check` tăng tuyến tính theo cỡ file, ≈ 7,5 ms / MB (Claude B). Trên exe, `p2c:data-open` 366 / 453 / 546 ms ở 1× / 2× / 3× dữ liệu tải, nên chạm 600 ms ở ≈ 2× cỡ dữ liệu tải. Ngưỡng ≤ 600 ms chỉ áp cho dữ liệu tải → ghi vào `phase-6.md`.
+- `integrity_check` tăng tuyến tính theo cỡ file, ≈ 7,5 ms / MB (Claude B). Trên exe, `p2c:data-open` 366 / 453 / 546 ms ở 1× / 2× / 3× dữ liệu tải, nên chạm 600 ms ở ≈ 2× cỡ dữ liệu tải. Ngưỡng ≤ 600 ms chỉ áp cho dữ liệu tải → đã ghi vào `phase-6.md`.
 - Thùng rác 1 313 dòng mở 449 ms trên bản web khi gắn DevTools; trên exe 152 ms. Đúng triệu chứng DR6-84 mà Owner chọn chữa bằng Dọn sạch (Q8 c); dọn xong còn 3–10 ms.
 
 ### 7.5 Bloat — không có code chết chạy được có chi phí đo được
@@ -362,38 +362,40 @@ Không có phát hiện P vượt ngưỡng hay xấu hơn mốc cùng máy. Ch�
 
 ### 8.1 Việc còn lại của T-267
 
-1. **PR docs báo cáo gốc** → `docs/reviews/raw/2026-10-21/` (PR riêng, mở cùng lúc với PR này).
+1. **PR docs báo cáo gốc** → `docs/reviews/raw/2026-10-21/` (#718, mở cùng lúc với PR này).
 2. **Kiểm độc lập bằng log phiên** — xong (§10).
-3. **Owner trả lời §9** → tạo 11 Issue theo §8.2: mẫu Task, milestone Phase 6, ≤ ~400 / ~800 dòng, "Bị chặn bởi" theo file dùng chung, kèm ghi chú OPEN cùng file (`notes-for`).
-4. **PR riêng sau khi Owner quyết:**
-   - `docs/state/review-notes.md`: sửa ghi chú #709 theo CL3-A29; thêm đường vào Dọn sạch cho mục OPEN #96; các quyết định §9.
-   - `docs/metrics/phase-6.md`: số liệu deep review lượt 3, số Dọn sạch (§7.3), ngưỡng nếu Owner chọn (Q6), ghi chú `integrity_check` theo cỡ file (§7.4).
+3. **Owner trả lời §9** — xong 21/10, đồng ý cả 6 đề xuất. **Đã tạo 11 Issue #719…#729** (§8.5) theo §8.2: mẫu Task, milestone Phase 6, ≤ ~400 / ~800 dòng, "Bị chặn bởi" theo file dùng chung, kèm ghi chú OPEN cùng file (`notes-for --files`, sổ @ `98d0016`).
+4. **Sau khi Owner quyết:**
+   - `docs/metrics/phase-6.md` (trong PR này): số liệu deep review lượt 3, số Dọn sạch (§7.3), ngưỡng Q6 (a), ghi chú `integrity_check` theo cỡ file (§7.4).
+   - PR sổ `docs/state/review-notes.md` (không cần review, sau khi PR này merge): sửa ghi chú #709 theo CL3-A29; thêm đường vào Dọn sạch cho mục OPEN #96 (Q5 a); chuyển sang RESOLVED các mục PR này đã sửa.
 5. **Sau đợt sửa:** G7 — chạy lại cổng và probe trên SHA phát hành, chụp lại ảnh hướng dẫn, nghiệm thu, eval AI thật.
 
 ### 8.2 Nhóm sửa (sửa hết, Owner 19/10)
 
 | Nhóm | DR6 | Việc | Cỡ ước lượng | File chính | Test chấp nhận | Rủi ro / nhãn | Bị chặn bởi |
 |---|---|---|---|---|---|---|---|
-| **L3-A** Khôi phục, mốc thời gian, nhóm của ngày | 104, 105, 106 (Q1), 134, 126 (a, b, d) | Nhánh E7 của khôi phục: chuyển nhóm sống mới nhất mang ngày sau ngày cuộc hẹn → `TRANSITION_BEFORE_LATEST`. Luật nhập chỉ nhận mốc dạng app ghi (`precision: 3`), đóng luôn thứ tự Thùng rác. Theo Q1: câu TR-3 + test ghim hai thứ tự khôi phục. Một hàm thuần "nhóm của ngày" cho lệnh / luật nhập / 6c–6f. Test: KH đổi nhóm sau ngày tạo, `reinstateTransition` seq, `ORDER BY date` | ≈ 15–30 SP + ≈ 150 test | `packages/db/src/{appointments,customers,backup-validation,trash}.ts` (+ test), `apps/desktop/src/routes/appointments/outcome-form.ts`, spec Phase 6 TR-3 | Ca A / B của CL3-A2 bị chặn, E7 cùng ngày vẫn qua; file có hai mốc khác dạng → `BACKUP_INVALID`; đột biến V68e, S05, `la-no-order` bị giết | med, `gate` (G2: TR-3) | — |
-| **L3-B** Chữ, tiền, nhập backup | 107, 108, 109, 110, 111 (Q2), 112, 126 (e, f) | `valueOf` từ chối chuỗi bắt đầu bằng U+FEFF; `storedRawOutput` thay `\p{Cs}` bằng U+FFFD; 5a / 5c / 7a gửi chữ gốc; `parseVnd` / `parseQuickDate` / `parseBirthDate` đọc trên `normalizeText`; theo Q2 xử lý `\p{Cc}`; `byName` phân xử hòa bằng so mã. Dữ liệu giả lập nạp lại (K1) | ≈ 15–30 SP + ≈ 120 test | `packages/domain/src/{text,money,period,name-order}.ts` (+ test), `packages/db/src/{backup,ai-analyses,common}.ts` (+ test), `apps/desktop/src/routes/customers/{CustomerDialogs,KycDialogs}.tsx`, `customers-view.ts` | Các chuỗi của DR6-107…112 ra đúng ở lệnh, nhập backup, màn; đột biến `nn-no-cr`, `x-nfkc`, T7 / T8, MO8, KF3 bị giết | med, `gate` (G2: K25) | — |
-| **L3-C** Dọn sạch: lưới an toàn và test | 113, 114, 125, 126 (c), 132 (b + chú thích `schema.ts`) | `PRAGMA recursive_triggers = ON` cạnh `foreign_keys` (+ ca `INSERT OR REPLACE` ở D11); một danh sách cột trỏ tới nhân sự dùng chung, bỏ nhánh người đánh giá; test tập giữ lại nhiều tầng, D3 với chuyển nhóm đã rút của cuộc gặp còn dùng, D11 khi Thùng rác có KH, đếm ghi chú SYSTEM, `updatePerson`; câu `packages/db/CLAUDE.md` về trigger đọc `customers`. Gộp ghi chú OPEN #709 cùng file (nhánh `VACUUM` lỗi, lần lưu sau `VACUUM`, `rowsOf`) | ≈ 10–30 SP + ≈ 200 test | `packages/db/src/{database,purge,team,counts,schema}.ts` (+ test), `packages/db/CLAUDE.md` | Mọi đột biến sống của DR6-125 bị giết; REPLACE trên dòng của KH đang dùng bị trigger chặn | med | — |
-| **L3-D** Câu 9b, focus màn Team | 115 (Q3), 116 | Câu Thùng rác của 9b theo Q3; `DialogFocusFallback` cho các hộp của `TeamScreen`, `Members` khóa theo team | ≈ 10–30 SP + ≈ 60 test / e2e | `apps/desktop/src/i18n/vi.ts`, `routes/team/{team-view.ts,TeamScreen.tsx}` (+ test), `e2e/team.spec.ts`, NT-TM-16, `docs/user-guide/08-team.md` | Câu 9b đúng ở các ca C1–C8 của CL3-A3 và ca NT-TM-16; e2e bàn phím: sau 9a / 9b / 9c / thêm TL, `activeElement` ≠ `BODY`, không nằm trên nút của team khác | low | L3-C (nếu Q3 b: `team.ts`) |
-| **L3-E** Chuỗi liền dài, panel AI | 117, 118, 127 | `min-w-0 wrap-anywhere` cho ô Ghi chú thẻ Lịch hẹn, giá trị 7a / 7c / 7d, tên KH, `Item` của panel AI; bảng lịch sử cho ô Prompt xuống dòng, badge không co | ≈ 10–20 SP + ≈ 60 e2e | `routes/customers/{CustomerAppointments,KycDialogs,CustomerProfile,KycHistory,KycIntelligence}.tsx`, e2e `customer-kyc`, `customer-ai-web` | Link 108 ký tự ở ghi chú cuộc gặp, 7a, tên KH và chữ AI không tràn ở 1 440 / 1 100; badge CURRENT trong khung ở 1 440; R82e bị giết | low | L3-B (cùng `KycDialogs.tsx`) |
-| **L3-F** Tên nút, test màn Dọn sạch và 6f | 119, 128 | FYP trong `policies.issueLabel` / `editLabel`; trạng thái trong tên nút khôi phục; e2e hộp dọn: bộ lọc + ô tìm, chữ xác nhận (thường, dấu cách, NFD), đang dọn (Escape ×3, Hủy tắt); e2e 6f ca E19 | ≈ 5–10 SP + ≈ 120 e2e | `routes/customers/CustomerPolicies.tsx`, `routes/trash-view.ts` (+ test), `vi.ts`, e2e `trash`, `customer-policies`, `appointment-outcome` | Hai HĐ cùng ngày khác tên nút; R84e–j, R04g-tsx bị giết | low | L3-D (cùng `vi.ts`) |
-| **L3-G** Lưu file: quyền ghi | 120 | Lúc mở thử quyền ghi + xóa của `project2c.db` (ACL lẫn thuộc tính) → `ACCESS_DENIED`; lúc lưu, đổi tên lỗi mà file chỉ đọc / không có quyền xóa → mã riêng + câu dải lưu riêng | ≈ 20–40 SP (Rust) + ≈ 60 test | `apps/desktop/src-tauri/src/storage.rs` (+ test), `apps/desktop/src/data/tauri-storage.ts`, `shell/SaveWarning.tsx`, `vi.ts` | ACL cấm ghi / xóa → từ chối mở; chỉ đọc bật giữa phiên → câu riêng, không "chương trình khác" | med, `build-exe` | L3-F (cùng `vi.ts`) |
+| **L3-A** Khôi phục, mốc thời gian, nhóm của ngày | 104, 105, 106 (Q1), 134, 126 (a, b, d) | Nhánh E7 của khôi phục: chuyển nhóm sống mới nhất mang ngày sau ngày cuộc hẹn → `TRANSITION_BEFORE_LATEST`. Luật nhập chỉ nhận mốc dạng app ghi (`precision: 3`), đóng luôn thứ tự Thùng rác. Theo Q1: câu TR-3 + test ghim hai thứ tự khôi phục. Một hàm thuần "nhóm của ngày" cho lệnh / luật nhập / 6c–6f. Test: KH đổi nhóm sau ngày tạo, `reinstateTransition` seq, `ORDER BY date` | ≈ 15–30 SP + ≈ 150 test | `packages/db/src/{appointments,customers,backup-validation,trash}.ts` (+ test), `apps/desktop/src/routes/appointments/outcome-form.ts`, spec Phase 6 TR-3 | Ca A / B của CL3-A2 bị chặn, E7 cùng ngày vẫn qua; file có hai mốc khác dạng → `BACKUP_INVALID`; đột biến V68e, S05, `la-no-order` bị giết | med (G2: câu TR-3 Owner duyệt 21/10, Q1 a) | — |
+| **L3-B** Chữ, tiền, nhập backup | 107, 108, 109, 110, 111 (Q2), 112, 126 (e, f) | `valueOf` từ chối chuỗi bắt đầu bằng U+FEFF; `storedRawOutput` thay `\p{Cs}` bằng U+FFFD; 5a / 5c / 7a gửi chữ gốc; `parseVnd` / `parseQuickDate` / `parseBirthDate` đọc trên `normalizeText`; theo Q2 (a) `normalizeText` bỏ `\p{Cc}`; `byName` phân xử hòa bằng so mã. Dữ liệu giả lập nạp lại (K1) | ≈ 15–30 SP + ≈ 120 test | `packages/domain/src/{text,money,period,name-order}.ts` (+ test), `packages/db/src/{backup,ai-analyses,common}.ts` (+ test), `apps/desktop/src/routes/customers/{CustomerDialogs,KycDialogs}.tsx`, `customers-view.ts` | Các chuỗi của DR6-107…112 ra đúng ở lệnh, nhập backup, màn; đột biến `nn-no-cr`, `x-nfkc`, T7 / T8, MO8, KF3 bị giết | med (G2: K25 mở rộng, Owner duyệt 21/10, Q2 a) | L3-J (e2e) |
+| **L3-C** Dọn sạch: lưới an toàn và test | 113, 114, 125, 126 (c), 132 (b + chú thích `schema.ts`) | `PRAGMA recursive_triggers = ON` cạnh `foreign_keys` (+ ca `INSERT OR REPLACE` ở D11); một danh sách cột trỏ tới nhân sự dùng chung, bỏ nhánh người đánh giá; test tập giữ lại nhiều tầng, D3 với chuyển nhóm đã rút của cuộc gặp còn dùng, D11 khi Thùng rác có KH, đếm ghi chú SYSTEM, `updatePerson`; câu `packages/db/CLAUDE.md` về trigger đọc `customers`. Gộp ghi chú OPEN #709 cùng file (nhánh `VACUUM` lỗi, lần lưu sau `VACUUM`, `rowsOf`) | ≈ 10–30 SP + ≈ 200 test | `packages/db/src/{database,purge,team,counts,schema}.ts` (+ test), `packages/db/CLAUDE.md` | Mọi đột biến sống của DR6-125 bị giết; REPLACE trên dòng của KH đang dùng bị trigger chặn | med | L3-A (cùng `backup-validation.ts`, spec Phase 6) |
+| **L3-D** Câu 9b, focus màn Team | 115 (Q3), 116 | Câu Thùng rác của 9b theo Q3; `DialogFocusFallback` cho các hộp của `TeamScreen`, `Members` khóa theo team | ≈ 10–30 SP + ≈ 60 test / e2e | `apps/desktop/src/i18n/vi.ts`, `routes/team/{team-view.ts,TeamScreen.tsx}` (+ test), `e2e/team.spec.ts`, NT-TM-16, `docs/user-guide/08-team.md` | Câu 9b đúng ở các ca C1–C8 của CL3-A3 và ca NT-TM-16; e2e bàn phím: sau 9a / 9b / 9c / thêm TL, `activeElement` ≠ `BODY`, không nằm trên nút của team khác | low | L3-J (e2e) |
+| **L3-E** Chuỗi liền dài, panel AI | 117, 118, 127 | `min-w-0 wrap-anywhere` cho ô Ghi chú thẻ Lịch hẹn, giá trị 7a / 7c / 7d, tên KH, `Item` của panel AI; bảng lịch sử cho ô Prompt xuống dòng, badge không co | ≈ 10–20 SP + ≈ 60 e2e | `routes/customers/{CustomerAppointments,KycDialogs,CustomerProfile,KycHistory,KycIntelligence}.tsx`, e2e `customer-kyc`, `customer-ai-web` | Link 108 ký tự ở ghi chú cuộc gặp, 7a, tên KH và chữ AI không tràn ở 1 440 / 1 100; badge CURRENT trong khung ở 1 440; R82e bị giết | low | L3-J (e2e), L3-B (cùng `KycDialogs.tsx`) |
+| **L3-F** Tên nút, test màn Dọn sạch và 6f | 119, 128 | FYP trong `policies.issueLabel` / `editLabel`; trạng thái trong tên nút khôi phục; e2e hộp dọn: bộ lọc + ô tìm, chữ xác nhận (thường, dấu cách, NFD), đang dọn (Escape ×3, Hủy tắt); e2e 6f ca E19 | ≈ 5–10 SP + ≈ 120 e2e | `routes/customers/CustomerPolicies.tsx`, `routes/trash-view.ts` (+ test), `vi.ts`, e2e `trash`, `customer-policies`, `appointment-outcome` | Hai HĐ cùng ngày khác tên nút; R84e–j, R04g-tsx bị giết | low | L3-J (e2e) |
+| **L3-G** Lưu file: quyền ghi | 120 | Lúc mở thử quyền ghi + xóa của `project2c.db` (ACL lẫn thuộc tính) → `ACCESS_DENIED`; lúc lưu, đổi tên lỗi mà file chỉ đọc / không có quyền xóa → mã riêng + câu dải lưu riêng | ≈ 20–40 SP (Rust) + ≈ 60 test | `apps/desktop/src-tauri/src/storage.rs` (+ test), `apps/desktop/src/data/tauri-storage.ts`, `shell/SaveWarning.tsx`, `vi.ts` | ACL cấm ghi / xóa → từ chối mở; chỉ đọc bật giữa phiên → câu riêng, không "chương trình khác" | med, `build-exe` | — |
 | **L3-H** AI Mock trích xuất | 121 | Bỏ cụm khi trong câu có (sau cụm) "chưa / không" của câu hỏi hay "?", từ phỏng đoán, "của <người khác>" sau "<n> con / cháu", "ly hôn" sau "kết hôn", "người" trước "đã kết hôn / độc thân", "con" + đồ vật. Gộp ghi chú OPEN #682 cùng file ("chỉ ghi lại" + test hở) | ≈ 15–30 SP + ≈ 60 test | `packages/ai/src/mock-adapter.ts` (+ test) | Các câu của CL3-C2 và của ghi chú #682 → 0 đề xuất; ghi chú thật cho đề xuất như cũ (0 / 3 551 khác) | low | — |
-| **L3-I** Đợt G5 lượt 3 | 122, 123, 124 (Q4) | PR docs G5 trước (§12 mới của `phase-5-prompts.md`), rồi code: bước 0 bỏ dấu tổ hợp không đứng sau chữ cái; nhận diện tin nhắn của app tách dòng ở U+0085 / U+2028 / U+2029; chữ có dạng không dấu là âm tiết thật chỉ khớp không dấu khi cả cụm không dấu; miễn "định", "giới" trước "luật". Version prompt theo G5 | ≈ 10–20 SP + ≈ 80 test | `docs/design/phase-5-prompts.md`, `packages/ai/src/{text-match,blocklists,web}.ts` (+ test) | Các câu của DR6-122…124 ra đúng; 1 085 chuỗi eval và `vi.ts` không đổi kết quả | med, `gate` (G5) | — |
+| **L3-I** Đợt G5 lượt 3 | 122, 123, 124 (Q4) | PR docs G5 trước (§12 mới của `phase-5-prompts.md`), rồi code: bước 0 bỏ dấu tổ hợp không đứng sau chữ cái; nhận diện tin nhắn của app tách dòng ở U+0085 / U+2028 / U+2029; chữ có dạng không dấu là âm tiết thật chỉ khớp không dấu khi cả cụm không dấu; miễn "định", "giới" trước "luật". Version prompt theo G5 | ≈ 10–20 SP + ≈ 80 test | `docs/design/phase-5-prompts.md`, `packages/ai/src/{text-match,blocklists,web}.ts` (+ test) | Các câu của DR6-122…124 ra đúng; 1 085 chuỗi eval và `vi.ts` không đổi kết quả | med, `gate` (G5) | L3-J (nếu PR code chạm e2e) |
 | **L3-J** Đồng hồ e2e, công cụ | 129, 130 | Mọi test e2e ghim đồng hồ trang lúc mở (fixture chung, `page.clock.install` ở giữa buổi sáng ngày neo); test cần qua nửa đêm tự `fastForward`; sửa comment `anchor.ts`. Hai ca test `notes-core` | ≈ 0–5 SP + ≈ 40–80 test | `e2e/{support,anchor}.ts`, các spec dùng fixture, `tools/notes-core.test.mjs` | `full-cycle.spec.ts` xanh khi bắt đầu 23:59:50 (`timezoneId`); T61f, T61k bị giết | low | — (**làm trước**) |
-| **L3-K** Tài liệu | 131, 132 (a), 133 | Mockup 6d (câu help) + NT-LH-25 theo quyết định Owner 27/09; vế "trừ Dọn sạch Thùng rác (TR-11, phụ lục ADR-0008)" ở `CONTEXT.md` và spec / hướng dẫn / mockup của DR6-132; `06-ai.md` `discovery@3`. Gộp ghi chú OPEN tài liệu cùng file (spec Phase 3 dòng 175 còn luật K20 cũ, `phase-5-ai.md:78`, `docs/README.md:22`, `mockups/index.html:150`) | tài liệu | `docs/design/mockups/{appointment-forms,kyc-forms}.html`, `docs/testing/nghiem-thu-v1.md`, `CONTEXT.md`, `docs/design/phase-{3-du-lieu,5-ai}.md`, `docs/user-guide/{05-ho-so-kh,06-ai}.md` | Mỗi dòng của DR6-131…133 khớp app | low | — |
+| **L3-K** Tài liệu | 131, 132 (a), 133 | Mockup 6d (câu help) + NT-LH-25 theo quyết định Owner 27/09; vế "trừ Dọn sạch Thùng rác (TR-11, phụ lục ADR-0008)" ở `CONTEXT.md` và spec / hướng dẫn / mockup của DR6-132; `06-ai.md` `discovery@3`. Gộp ghi chú OPEN tài liệu cùng file (`phase-5-ai.md:78`, `mockups/index.html:150`; `docs/README.md:22` đã sửa ở PR này; spec Phase 3 dòng 175 còn luật K20 cũ làm ở L3-B, cùng code K25) | tài liệu | `docs/design/mockups/{appointment-forms,kyc-forms}.html`, `docs/testing/nghiem-thu-v1.md`, `CONTEXT.md`, `docs/design/phase-{3-du-lieu,5-ai}.md`, `docs/user-guide/{05-ho-so-kh,06-ai}.md` | Mỗi dòng của DR6-131…133 khớp app | low | — |
 
-Tổng: **11 Issue**, ≈ 110–245 dòng SP + ≈ 1 000 dòng test, phần lớn là test. Một nhóm `build-exe` (L3-G); ba nhóm có cổng (L3-A G2, L3-B G2, L3-I G5).
+Tổng: **11 Issue**, ≈ 110–245 dòng SP + ≈ 1 000 dòng test, phần lớn là test. Một nhóm `build-exe` (L3-G). Cổng: G2 của L3-A, L3-B Owner đã duyệt 21/10 (Q1, Q2); còn G5 của L3-I (nhãn `gate`, PR docs §12 trước PR code).
+
+L3-D, L3-F, L3-G cùng sửa `vi.ts` nhưng khác khóa (`person.*`; `policies.*`, `trash.restoreLabel.*`; `storage.*`, `close.*`), nên không chặn nhau. PR nào merge sau thì `gh pr update-branch` như thường.
 
 ### 8.3 Thứ tự, ước lượng
 
-1. Owner trả lời §9 (một lượt).
-2. **L3-J trước** (đồng hồ e2e), vì mọi PR sau và cổng SHA phát hành đều chạy e2e.
-3. Song song theo file: L3-A, L3-B, L3-C, L3-H; L3-I (PR docs G5 trước, Owner duyệt, rồi PR code).
-4. Sau đó, theo file dùng chung: L3-E sau L3-B (`KycDialogs.tsx`); L3-D → L3-F → L3-G (`vi.ts`; L3-G build exe một lần); L3-K bất kỳ lúc nào.
+1. Owner trả lời §9: xong 21/10 (đồng ý cả 6 đề xuất).
+2. **L3-J trước** (#719, đồng hồ e2e), vì mọi PR sau và cổng SHA phát hành đều chạy e2e. Cùng lúc làm được các nhóm không chạm e2e: L3-A, L3-G, L3-H, L3-K và PR docs G5 của L3-I.
+3. Sau L3-J: L3-B, L3-D, L3-F, PR code của L3-I (sau khi Owner duyệt §12). Sau L3-A: L3-C (`backup-validation.ts`, spec Phase 6).
+4. Sau L3-B: L3-E (`KycDialogs.tsx`).
 5. G7: chạy lại cổng và probe trên SHA phát hành (so mốc sau #656), chụp lại ảnh hướng dẫn, nghiệm thu, eval AI thật với version prompt cuối.
 
 Mỗi Issue một phiên, review phiên sạch như thường. Ước ≈ 2–3 ngày làm, tùy số PR `risk:med` Owner phải merge (L3-A, B, C, G, I).
@@ -403,11 +405,31 @@ Mỗi Issue một phiên, review phiên sạch như thường. Ước ≈ 2–3 
 | Phát hiện | KNOWN | Bằng chứng mới | Đề xuất |
 |---|---|---|---|
 | CL3-A29 (N, P) | Sổ OPEN #709 `purge.ts:185` ("`KEPT_PEOPLE` quét cả bảng `appointments` ba lần") | Query plan: SQLite đẩy `json_each` vào từng nhánh, `KEPT_PEOPLE` / `KEPT_TEAMS` chỉ 0,05 / 0,02 ms; phần tốn là bước gốc của `KEPT_APPOINTMENTS` (`SCAN a`, ≈ 4,5 ms mỗi lần `listTrash`, kể cả khi Thùng rác trống) | Sửa chữ ghi chú sổ theo số đo (PR sổ của T-267). Tối ưu khi chạm file (L3-C có thể bỏ qua CTE khi không có lịch đã xóa); +4–6 ms nằm trong nhiễu |
-| CL3-B2 (N, C) | Sổ OPEN #96 / #87: sau một lần lưu lỗi, "Nạp lại" bị từ chối mà không có cách thử lưu lại | Đường vào mới do #710: Dọn sạch dùng chung `backUp`, câu 11j D7 chép mẫu của Nạp lại / Nhập | Q5 |
-| CL3-C7 (L, D) | K1 + quy tắc R2-02 | File dữ liệu lượt 2 có dòng AI mà V1 cũ cho qua: panel AI và chi tiết lịch hẹn của KH đó ném `ZodError` khi render (không chỉ nhập backup bị từ chối) | Q5 |
+| CL3-B2 (N, C) | Sổ OPEN #96 / #87: sau một lần lưu lỗi, "Nạp lại" bị từ chối mà không có cách thử lưu lại | Đường vào mới do #710: Dọn sạch dùng chung `backUp`, câu 11j D7 chép mẫu của Nạp lại / Nhập | Q5 (a), Owner 21/10: giữ mục OPEN, thêm đường vào Dọn sạch vào ghi chú sổ |
+| CL3-C7 (L, D) | K1 + quy tắc R2-02 | File dữ liệu lượt 2 có dòng AI mà V1 cũ cho qua: panel AI và chi tiết lịch hẹn của KH đó ném `ZodError` khi render (không chỉ nhập backup bị từ chối) | Q5 (a), Owner 21/10: giữ K1 + R2-02 |
 | Claude F K2 (không ghi phát hiện) | K1 | Dữ liệu tải của code lượt 1 mở được, nhưng bản xuất của nó không qua luật nhập 4 mới (K18 / K22) | Không làm (dữ liệu giả lập nạp lại) |
 
+### 8.5 Issue sửa đã tạo (21/10)
+
+| Nhóm | Issue | Task | Rủi ro / nhãn | Bị chặn bởi |
+|---|---|---|---|---|
+| L3-J | #719 | T-268 Đồng hồ e2e cố định, test công cụ notes-core | low | — (làm trước) |
+| L3-A | #720 | T-269 Khôi phục theo E7, mốc thời gian dạng app ghi, một hàm nhóm của ngày | med | — |
+| L3-B | #721 | T-270 Chữ và tiền: U+FEFF, nửa surrogate, hộp gửi chữ gốc, ký tự điều khiển | med | #719 |
+| L3-C | #722 | T-271 Dọn sạch: REPLACE không lách trigger, cột trỏ tới nhân sự một nơi, test tập giữ lại | med | #720 |
+| L3-D | #723 | T-272 Câu Thùng rác của hộp 9b, focus màn Team & nhân sự | low | #719 |
+| L3-E | #724 | T-273 Chuỗi liền dài không tràn khung, panel AI vừa khung | low | #719, #721 |
+| L3-F | #725 | T-274 Tên nút Hợp đồng / Thùng rác phân biệt được, e2e hộp Dọn sạch và 6f | low | #719 |
+| L3-G | #726 | T-275 Lưu file: nhận ra mất quyền ghi lúc mở, câu lỗi file chỉ đọc | med (PR cần `build-exe`) | — |
+| L3-H | #727 | T-276 Mock trích xuất bớt đề xuất sai, gộp ghi chú OPEN của Mock | low | — |
+| L3-I | #728 | T-277 Đợt G5 lượt 3: dấu viết rời, nhận diện tin nhắn của app, chặn nhầm câu thường | med, `gate` (G5) | #719 |
+| L3-K | #729 | T-278 Tài liệu: tiền gõ dấu phẩy, ngoại lệ Dọn sạch, ví dụ chip prompt | low | — |
+
+Mọi Issue có `type:task`, `ready-for-agent`, milestone Phase 6. Cột cuối cũng là quan hệ "Blocked by" của GitHub. Mục "Ghi chú OPEN liên quan" của từng Issue lấy theo `notes-for --files` (sổ @ `98d0016`) và ghi mục nào gộp, mục nào để lại kèm lý do.
+
 ## 9. Câu hỏi cần Owner quyết
+
+**Owner trả lời 21/10: đồng ý cả 6 đề xuất**: Q1 (a), Q2 (a), Q3 (a), Q4 (a), Q5 (a) cả hai mục, Q6 (a). Ghi ở `docs/PROJECT-STATE.md` (2026-10-21); Issue theo §8.5.
 
 Mỗi câu có đề xuất; Owner đồng ý mà không ghi gì khác thì lấy đề xuất. Mọi câu chỉ là **chọn cách sửa** (Owner đã chốt sửa hết).
 
