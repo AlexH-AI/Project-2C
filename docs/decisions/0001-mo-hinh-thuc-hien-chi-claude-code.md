@@ -104,3 +104,9 @@ Sửa mục 1, mục 2 và phần "không subagent / Agent tool" của M1–M3. 
 Thêm **lượt 3** của deep review Phase 1–6 trước G7 (spec Phase 6 §6 cũ chỉ có hai lượt; tổng hợp lượt 2 §8.1 và `PROJECT-STATE` 17/10 ghi "không có lượt 3"). Owner chốt 19/10/2026: hai bên **Claude và Codex** như M7 (6 gói × 2 = 12 báo cáo, một đợt); **phạm vi đủ 6 gói** như lượt 2 (kiểm phần đã sửa sau lượt 2 + lỗi / edge case mới trên toàn bộ phạm vi gói); sau tổng hợp **sửa hết**, rồi G7.
 
 **Phần Claude chạy bằng Workflow** (M8): Owner mở một phiên ở worktree review và chạy script của kế hoạch; mỗi gói là **một subagent context sạch**, chạy tuần tự A → F với cùng prompt như một phiên sạch của lượt 1–2, nên Owner không phải mở 6 phiên. Subagent cũng là Claude và bắt đầu với context trống, nên điều kiện "context sạch mỗi gói" vẫn giữ (spec §6.1, hàng Claude: lượt 1–2 mỗi gói một phiên sạch, lượt 3 mỗi gói một subagent). Kiểm độc lập bằng log quét thêm transcript của từng subagent (`docs/process/deep-review-phase-1-6.md` §L3). Codex vẫn theo M2 / M7: Owner chạy, chỉ đọc, không viết code. Kết luận phát hành chỉ lấy từ phiên tổng hợp của Claude (#714).
+
+*Sửa 20/10/2026 (Owner, trước khi chạy):* phần Claude chạy **như lượt 2**, mỗi gói một phiên sạch Owner mở với tin nhắn một dòng, thay cho một phiên điều phối chạy Workflow A → F. Lý do: Owner không muốn subagent chạy liền A → F trong một lần, context dài và có thể bị nén.
+
+- Mức suy luận và ultracode do Owner chọn từng phiên (M1, M8). Phiên bật ultracode được dùng subagent / Workflow cho việc của chính gói đó; chỉ phiên chính ghi báo cáo. Lượt 3: chỉ gói A bật.
+- Kiểm độc lập bằng log quét transcript của các phiên gói và của subagent (tổng hợp lượt 3 `docs/reviews/2026-10-21-deep-review-phase-1-6-luot-3-tong-hop.md` §10).
+- Hàng Claude của spec §6.1 sửa theo.
