@@ -159,7 +159,7 @@ Ngoài các cổng trên, Owner **trao quyền tự động** cho Claude (C4): t
 
 - `CLAUDE.md` là nguồn quy tắc duy nhất (không cần `AGENTS.md` vì chỉ có Claude).
 - Ghi rõ trong `CLAUDE.md`: ~~**không dùng subagent / Agent tool**~~ (bỏ 17/10/2026, ADR-0001 M8: subagent / Workflow khi Owner bật; đã gỡ `permissions.deny`); model và effort do Owner chọn từng phiên (ADR-0001 M1; ban đầu Opus 5.5, effort medium). Phase 1 kiểm tra khả năng chặn cứng Agent tool bằng `permissions.deny` trong `.claude/settings.json`.
-- Không cần `dispatch.ps1`, không cần worktree song song: làm tuần tự từng task trên nhánh riêng.
+- Không cần `dispatch.ps1`, không cần worktree song song: làm tuần tự từng task trên nhánh riêng (mặc định; subagent ghi file song song dùng worktree riêng — ADR-0001 M8).
 
 ### 4.2 Liên tục công việc giữa 2 máy (tiêu chí bắt buộc)
 
