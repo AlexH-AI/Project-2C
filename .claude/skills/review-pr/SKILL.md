@@ -63,7 +63,7 @@ git diff --stat origin/<baseRefName>...<headRefOid>
 | `*.ps1`, `.githooks/**`, `.github/workflows/**`, `.claude/settings.json`, `.claude/hooks/**` | med |
 | Vượt ngưỡng ~400 dòng code sản phẩm / ~800 dòng tổng diff (không tính file sinh tự động PR đã liệt kê) | med |
 
-PR chỉ sửa docs (`docs/**`, `*.md`) → chạy mức `low`, bỏ trục Correctness. Ngoại lệ: file trong `CODE_DOCS` (`tools/pr-core.mjs`: `CLAUDE.md` của package, `docs/design/phase-5-prompts.md`, `docs/golden/ai-eval.md`) tính là code — review như PR code, theo nhãn `risk:*` và bảng nâng mức trên.
+PR chỉ sửa docs (`docs/**`, `*.md`) → chạy mức `low`, bỏ trục Correctness (không gọi `code-review`). Ngoại lệ: file trong `CODE_DOCS` (`tools/pr-core.mjs`: `CLAUDE.md` của package, `docs/design/phase-5-prompts.md`, `docs/golden/ai-eval.md`) tính là code — review như PR code, theo nhãn `risk:*` và bảng nâng mức trên.
 
 ## 3. Chạy theo mức
 
@@ -72,7 +72,7 @@ PR chỉ sửa docs (`docs/**`, `*.md`) → chạy mức `low`, bỏ trục Corr
 | A. Spec | ✓ | ✓ | ✓ |
 | B. Standards — `docs/process/REVIEW-CHECKLIST.md` | ✓ | ✓ | ✓ |
 | B'. Mùi code (không chặn) | — | 4 mùi | 12 mùi |
-| C. Correctness | tự rà nhanh | `code-review` **medium** | `code-review` **high** |
+| C. Correctness: `code-review`, args ở §C | **high** | **max** | **max**, `--max-findings all` |
 | CI xanh trên đúng SHA head | ✓ | ✓ | ✓ |
 
 ### A. Trục Spec (từ mattpocock `code-review`)
@@ -104,11 +104,18 @@ Mỗi mùi ghi là "có thể là <mùi>", kèm hunk và cách sửa gợi ý. Q
 
 ### C. Trục Correctness
 
-- **low:** tự rà ca biên, nhánh lỗi, null/rỗng, off-by-one, async/thứ tự ghi trong diff. Không gọi skill.
-- **med / high:** gọi Skill `code-review` với args `medium <N>` hoặc `high <N>`.
-  - **Không** dùng `--comment`, `--fix`, `ultra`. Kết quả chỉ để đọc; việc đăng comment và sửa code do quy trình 2C làm (ADR-0017 §3).
-  - Coi kết quả là **giả thuyết**: đọc code để xác nhận từng mục trước khi đưa vào comment, bỏ mục không tái hiện được bằng lập luận hoặc test.
-  - Owner chưa bật subagent (ADR-0001 phụ lục M8) → vẫn chạy `code-review`, nó rà inline trong phiên này. Chỉ khi skill lỗi, hoặc đòi subagent mà không có đường inline → rà Correctness inline theo cùng mức, ghi "code-review không chạy được: <lý do>" vào comment.
+Mọi mức gọi Skill `code-review` (Owner quyết 21/10/2026, ADR-0017 phụ lục nâng mức `code-review`), với args:
+
+| Mức review | args |
+|---|---|
+| low | `high <N> --max-findings default` |
+| med | `max <N> --max-findings default` |
+| high | `max <N> --max-findings all` |
+
+- Luôn truyền cả mức effort lẫn `--max-findings`. Theo mô tả của `code-review`, lựa chọn `--max-findings` được giữ cho tới khi truyền `--max-findings default`, còn khi thiếu mức effort thì skill dùng lại mức gõ lần trước. Review mức low / med truyền `default` để không kế thừa `all` của một review mức high chạy trước đó.
+- **Không** dùng `--comment`, `--fix`, `ultra`. Kết quả chỉ để đọc; việc đăng comment và sửa code do quy trình 2C làm (ADR-0017 mục 4).
+- Coi kết quả là **giả thuyết**: đọc code để xác nhận từng mục trước khi đưa vào comment, bỏ mục không tái hiện được bằng lập luận hoặc test. Ở mức `max`, nhất là khi kèm `--max-findings all`, `code-review` báo cả những mục chưa chắc.
+- Owner chưa bật subagent (ADR-0001 phụ lục M8) → vẫn chạy `code-review`, nó rà inline trong phiên này. Chỉ khi skill lỗi, hoặc đòi subagent mà không có đường inline → rà Correctness inline theo cùng mức, ghi "code-review không chạy được: <lý do>" vào comment.
 - **high:** khi một phát hiện cần bằng chứng, tái hiện bằng test ở thư mục tạm hoặc worktree riêng. Không đổi nhánh của checkout chung (có thể có phiên khác đang dùng).
 
 ## 4. Kết luận và comment
@@ -123,7 +130,7 @@ Mẫu comment (`gh pr comment <N> --body-file <file tạm>`):
 ```
 REVIEW: PASS | CHANGES
 
-PR #<N>, head `<sha7>`, mức `<risk>` (nâng từ `<nhãn>` vì …, nếu có). Đầu vào: Issue #<i>, diff `<base>...<sha7>`, <tài liệu đã đọc>. Correctness: <inline | code-review medium/high | không chạy được: …>.
+PR #<N>, head `<sha7>`, mức `<risk>` (nâng từ `<nhãn>` vì …, nếu có). Đầu vào: Issue #<i>, diff `<base>...<sha7>`, <tài liệu đã đọc>. Correctness: <code-review <args đã truyền> | bỏ: PR chỉ sửa docs | code-review không chạy được: …, rà inline>.
 
 ## Spec
 - [chặn] `file:line`: … (spec: "…")

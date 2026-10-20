@@ -39,7 +39,7 @@ Memory của Claude chỉ nằm trên từng máy, nên quy tắc dùng chung ch
 2. Nhánh `task/T-xxx-slug` từ `main` (hoặc từ nhánh phase đang mở). Đầu task chạy `node tools/notes-for.mjs <issue>`: ghi chú OPEN của `docs/state/review-notes.md` ở các file Issue cho sửa; gộp vào task những mục còn vừa phạm vi và cỡ (T-261).
 3. TDD: test đỏ → code → test xanh. Chạy `pnpm verify` trước khi commit. Test chấp nhận trong Issue là seam đã thống nhất với Owner — không cần hỏi lại seam (skill `tdd`); chỉ hỏi khi cần seam ngoài Issue.
    - Phân vai hai skill TDD (ADR-0012 phụ lục 03/10): `tdd` là chuẩn (seam = test chấp nhận của Issue); `superpowers:test-driven-development` bổ sung kỷ luật đỏ → xanh. Refactor ngay trong vòng khi test còn xanh (Owner quyết 03/10, khác dòng "Refactoring is not part of the loop" của `tdd`). `tdd` nhắc `codebase-design` → bỏ qua (không cài); nhắc `code-review` → đọc là `review-pr`.
-4. PR → CI Windows xanh → **review ở phiên mới, context sạch** bằng skill `review-pr` (ADR-0017): Owner gõ "review PR #N" → skill đọc nhãn `risk:*`, chọn mức (low: Spec + checklist · med: + `code-review medium` · high: + `code-review high`). Không gọi `code-review` trực tiếp; không dùng `--comment`/`--fix`/`ultra`.
+4. PR → CI Windows xanh → **review ở phiên mới, context sạch** bằng skill `review-pr` (ADR-0017): Owner gõ "review PR #N" → skill đọc nhãn `risk:*`, chọn mức: Spec + checklist + `code-review` (low: `high` · med: `max` · high: `max --max-findings all`; Owner quyết 21/10/2026; PR chỉ sửa docs không gọi `code-review`). Không gọi `code-review` trực tiếp; không dùng `--comment`/`--fix`/`ultra`.
    - Thân PR có mục **"Ghi chú OPEN liên quan"** (mẫu PR) theo `node tools/notes-for.mjs --diff`: mỗi mục "Trùng file" một dòng — đã sửa, hoặc để lại + lý do. Thiếu dòng là mục chặn của review (Owner quyết 17/10/2026, T-261). PR code không chuyển mục của sổ: PR sổ sau review (không cần review) ghi ghi chú mới và chuyển các mục "đã sửa" sang RESOLVED.
    - Review chạy trong worktree cố định `C:\workspace\Project-2C-review`, ngoài checkout chính (detached HEAD ở đúng SHA đang review, chỉ đọc, không commit). Code chỉ làm ở checkout chính hoặc worktree của task. Review hai PR song song → phiên thứ hai dùng `C:\workspace\Project-2C-review-2` (mỗi worktree review chỉ một phiên tại một thời điểm). Chi tiết: skill `review-pr` §0.
 5. `risk:low` + CI xanh + review đạt → Claude tự merge (squash; `--merge` khi có PR khác xếp chồng lên nhánh này, để giữ lịch sử commit). Ngược lại chờ Owner. Sửa tối đa 2 vòng, sau đó G8.
@@ -57,7 +57,7 @@ Memory của Claude chỉ nằm trên từng máy, nên quy tắc dùng chung ch
 - Khi Owner bật subagent (ADR-0001 phụ lục M8): thêm `subagent-driven-development`, `dispatching-parallel-agents`; chưa bật thì skill gợi ý subagent → làm inline.
 - Không dùng: `requesting-code-review` (review qua `review-pr`), `using-git-worktrees` (worktree theo quy ước ở mục Quy trình).
 - Project skills (`.claude/skills/`): `grill-me`/`grilling`, `to-spec`, `to-tickets`, `tdd`, `setup-matt-pocock-skills`, `review-pr` (2C tự viết, ADR-0017).
-- `code-review` có sẵn của Claude Code: chỉ gọi từ trong `review-pr` (mức med/high).
+- `code-review` có sẵn của Claude Code: chỉ gọi từ trong `review-pr` (mọi mức, trừ PR chỉ sửa docs).
 
 ## Agent skills
 
