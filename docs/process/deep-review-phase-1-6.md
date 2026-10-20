@@ -970,6 +970,12 @@ Owner chốt 19/10/2026 (§L3.11):
 - **Hai bên Claude, Codex** → 6 gói × 2 bên = **12 báo cáo**, một đợt (hai bên song song), như lượt 2.
 - **Hai phần ngang nhau** như lượt 2: (1) **kiểm phần đã sửa** (trục R) — 39 DR6 sửa ở đợt sửa lượt 2 (§L3.5); (2) **tìm lỗi mới và edge case mới** trên **toàn bộ** phạm vi gói.
 - **Phần Claude chạy bằng Workflow** (ADR-0001 M8, M9). Owner mở một phiên ở `C:\workspace\Project-2C-review` và chạy script ở Phụ lục I. Script gọi 6 subagent tuần tự A → F, mỗi gói một context sạch. Mỗi subagent nhận cùng tin nhắn giao việc như một phiên sạch của lượt 2 (đổi thư mục), nên mỗi gói vẫn là một lần review độc lập.
+- **Sửa 20/10/2026 (Owner, trước khi chạy): phần Claude chạy như lượt 2.**
+  - Owner mở **mỗi gói một phiên sạch** ở `C:\workspace\Project-2C-review`, tin nhắn một dòng `Gói X. Đọc và làm đúng C:\workspace\deep-review-1-6-r3\common\prompt-claude.md`.
+  - Mức suy luận và ultracode do Owner chọn từng phiên. Bật ultracode thì phiên chính được dùng subagent / Workflow cho việc của gói, chỉ phiên chính làm bước 0 và ghi `{GÓI}.md`. Lượt 3 chỉ gói A bật.
+  - Không có phiên điều phối, không chạy `workflow-claude.mjs`.
+  - `prompt-claude.md` sửa theo. Bản đã dùng ở `docs/reviews/raw/2026-10-21/common-prompt-claude.md`.
+  - Phần về phiên điều phối ở §L3.7, §L3.9, §L3.10 và Phụ lục I giữ chữ của bản duyệt 19/10 nhưng không áp dụng. Kết quả: tổng hợp lượt 3 `docs/reviews/2026-10-21-deep-review-phase-1-6-luot-3-tong-hop.md` §10.
 - **Sau tổng hợp** (T-267 #714): **sửa hết** (Owner chốt trước), rồi G7.
 
 **Vì sao cần lượt 3:** đợt sửa lượt 2 lớn: 119 file code, +7 742 / −1 050 dòng (gồm test), 17 commit code. Trong đó có tính năng `risk:high` "Dọn sạch Thùng rác" (#662: migration `0011`, xóa hẳn dữ liệu) và đợt G5 `@3`, chưa lượt deep review nào đọc. Lượt 2 cho thấy đợt sửa có thể sinh lỗi mới: 3 hồi quy, trong đó có Medium duy nhất của lượt 2 (DR6-68, do #616).
@@ -1063,7 +1069,7 @@ Thước kết luận như §L2.4. Bảy DR6 của lượt 1 mà lượt 2 chấ
 `common\known.md` (bước chuẩn bị §L3.9 bước 4) gồm **ba phần**:
 
 1. **Nguyên văn mục OPEN và ACCEPTED** của `docs/state/review-notes.md` ở SHA ghim. So với lượt 2 có thêm: quyết định lượt 2 ghi ở #664, và ghi chú không chặn của các PR sửa #666–#710 (sổ #668…#712).
-2. **Quyết định Owner còn hiệu lực:** K1–K21 (§5, §L2.5) giữ nguyên chữ, **trừ K14 và K17**, ghi vào `known.md` theo chữ đã sửa dưới đây (chữ cũ trái với quyết định sau):
+2. **Quyết định Owner còn hiệu lực:** K1–K21 (§5, §L2.5) giữ nguyên chữ, **trừ K14 và K17**, ghi vào `known.md` theo chữ đã sửa dưới đây (chữ cũ trái với quyết định sau). K21 thêm chỉ dẫn "(Q6 lượt 1; đợt G5 lượt 2: K28)" sau vế "V1 / `LAW_NAME` sửa đúng chữ G5, không G5 mới", vì đợt G5 lượt 2 đã có (ghi chú review PR #715; `known.md` của bước chuẩn bị đã ghi vậy):
 
    - **K14 (sửa theo K27, TR-6 mới):** Thùng rác: không khôi phục dây chuyền, không tự dọn (chỉ dọn tay mọi bản ghi theo K27, không xóa từng dòng), không theo góc nhìn, luôn hỏi trước khi khôi phục (TR-1…TR-13). Bỏ vế "không xóa vĩnh viễn" duyệt 11/10 (spec §4.2 TR-6).
    - **K17 (sửa theo M8, M9):** Không phải phát hiện: PR vượt ngưỡng kích thước (ghi ở `docs/metrics/`); cách làm "chỉ Claude viết code" (ADR-0001), kể cả việc phần Claude của lượt 3 chạy bằng Workflow subagent (M9); việc dùng công cụ mới (G4).
@@ -1140,7 +1146,7 @@ Mức: M = Medium, L = Low, N = Nit. "Gói kiểm": gói ghi bảng R cho DR6 đ
   | Mốc | Nguồn |
   |---|---|
   | Probe trên exe: mốc chính | `docs/metrics/phase-6-baseline/perf-home-pc-sau-656.json` (exe `dae9df3`, 18/10, T-264; `phase-6.md` mục "Mốc Home PC sau #656"). Mốc này đã gồm `integrity_check`, nên `app.open-data` / `reload.*` không còn ngoại lệ ⚠️ như khi so với `perf.json` |
-  | Probe trên exe: lượt 2 cùng máy (tham khảo) | `C:\workspace\deep-review-1-6-r2\common\perf\perf-ref.json` (exe `4217ed4`, 17/10) |
+  | Probe trên exe: lượt 2 cùng máy (tham khảo) | `docs/metrics/phase-6-baseline/perf-home-pc-luot-2.json` (exe `4217ed4`, 17/10), trùng byte `C:\workspace\deep-review-1-6-r2\common\perf\perf-ref.json` (sha256 `85E82FEA…C44348`, so 19/10 trên Home PC). Bước chuẩn bị §L3.9 (bước 1, 7) dùng bản ngoài repo; lần sau dùng bản trong repo |
   | Mở app lần đầu (LCP, cách T-227, 3 lần) | Mốc sau #656: 3 663 ms (3 656–3 746). Xấu hơn theo luật nhiễu khi trung vị > 4 396 ms; ngưỡng "không chậm hơn exe Phase 4" là > 4 724 ms |
   | Hàm thuần trong Node | Số lượt 2 Home PC, tổng hợp lượt 2 §7.2 |
 
@@ -1166,7 +1172,7 @@ Mức: M = Medium, L = Low, N = Nit. "Gói kiểm": gói ghi bảng R cho DR6 đ
 
 ## L3.7 Workflow cho phần Claude, Codex, bài học từ lượt 2
 
-**Workflow** (ADR-0001 M8, M9; script ở Phụ lục I):
+**Workflow** (ADR-0001 M8, M9; script ở Phụ lục I). *Không áp dụng từ 20/10 (§L3.1): phần Claude chạy mỗi gói một phiên như lượt 2; bảng bài học cuối mục vẫn áp dụng.*
 
 - **Phiên điều phối.** Owner mở một phiên Claude Code mới ở `C:\workspace\Project-2C-review`, chọn model / mức suy luận (M1; subagent dùng cùng model và mức của phiên) và chế độ quyền như các phiên Claude lượt 2, rồi dán tin nhắn ở §L3.9. Phiên điều phối chỉ gọi công cụ Workflow với `scriptPath` = `C:\workspace\deep-review-1-6-r3\common\workflow-claude.mjs`. Nó không tự review, không đọc báo cáo, không mở `codex\`. Nó ghi vào `common\workflow-run.md`: `runId`, thư mục transcript mà Workflow trả về, model và mức suy luận của phiên.
 - **Mỗi gói một subagent context sạch.** Subagent nạp `CLAUDE.md` của worktree như một phiên mới và nhận đúng tin nhắn giao việc của lượt 2 (`Gói X. Đọc và làm đúng …\prompt-claude.md`, thư mục `-r3`).
@@ -1246,6 +1252,8 @@ Khuôn như §L2.8, đổi:
 
   Workflow dừng ở một gói → Owner xem lý do (`note`), xử lý, rồi bảo phiên điều phối chạy lại với `args {"from": "<gói>"}`. Bị cắt giữa chừng: phiên điều phối còn mở thì resume trong chính phiên đó (`resumeFromRunId`); phiên đã đóng thì mở phiên mới, chạy với `from` = gói dở (§L3.7).
 
+  *Sửa 20/10 (§L3.1):* thay tin nhắn trên, mỗi gói một phiên mới, lần lượt A → F, như lượt 2: `Gói A. Đọc và làm đúng C:\workspace\deep-review-1-6-r3\common\prompt-claude.md`. Phiên bị cắt (dòng đầu vẫn `ĐANG LÀM`) thì mở phiên mới với đúng tin nhắn của gói đó; bước 0 tự làm tiếp. Bước chuẩn bị 7: Owner đồng ý 20/10 để script nhập dữ liệu tải vào exe qua cổng debug (`perf\import-load.mjs`) thay Owner bấm tay.
+
 Bảng đánh dấu của Owner (12 ô):
 
 | Bên | A | B | C | D | E | F |
@@ -1268,7 +1276,7 @@ Phiên tổng hợp được dùng Workflow để kiểm từng phát hiện khi
 
 **Kiểm độc lập bằng log phiên:** như §8, §L2.10, cho cả hai bên.
 
-- **Log Claude:** transcript của phiên điều phối và của từng subagent: mọi `*.jsonl` dưới thư mục transcript ghi ở `common\workflow-run.md`, và dưới `%USERPROFILE%\.claude*\projects\C--workspace-Project-2C-review\` từ giờ bắt đầu lượt 3.
+- **Log Claude:** transcript của phiên điều phối và của từng subagent: mọi `*.jsonl` dưới thư mục transcript ghi ở `common\workflow-run.md`, và dưới `%USERPROFILE%\.claude*\projects\C--workspace-Project-2C-review\` từ giờ bắt đầu lượt 3. *Sửa 20/10 (§L3.1):* không có phiên điều phối nên không có `workflow-run.md`; log là transcript của các phiên gói và của subagent ở phiên nào Owner bật ultracode, cùng thư mục trên.
 - **Danh sách quét thêm:**
   - `deep-review-1-6-r3[\\/](claude|codex)` của bên kia;
   - `deep-review-1-6-r2[\\/]…` và `deep-review-1-6[\\/]…` không phải của chính bên đó;
@@ -1303,6 +1311,8 @@ Ngay sau khi #662 đóng và cổng trên `119e2e4` xanh, Owner: "anh muốn là
 Phần còn lại của kế hoạch (máy Home PC, SHA ghim `119e2e4`, mốc so §L3.6, script Phụ lục I) Owner duyệt ở PR của #713 (G1).
 
 ## Phụ lục I — Workflow và prompt Claude (lượt 3)
+
+*Không dùng (Owner 20/10, §L3.1). `prompt-claude.md` đã dùng có quy tắc riêng sửa theo cách chạy lượt 2 (mỗi gói một phiên; subagent / Workflow chỉ khi Owner bật ultracode, chỉ phiên chính ghi báo cáo): `docs/reviews/raw/2026-10-21/common-prompt-claude.md`.*
 
 Hai file trong `common\`:
 

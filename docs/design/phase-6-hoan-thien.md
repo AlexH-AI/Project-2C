@@ -22,7 +22,7 @@ Tiêu chí phát hành v1.0 (G7 cuối):
 | **6A** | Việc còn lại từ review Phase 5 (§3), bắt đầu bằng đợt G5 #491 **sau khi spec này qua G1** | G5 (#491) |
 | **6B** | Tính năng còn lại (§4): S-2, Thùng rác, hướng dẫn sử dụng | G2 / G3 từng tính năng |
 | **6C** | Kiểm thử phát hành (§5), gồm lệnh sinh dữ liệu tải và số đo nền hiệu năng / kích thước | — |
-| **6D** | Deep review Phase 1–6, **3 lượt, 6 gói** (§6; lượt 1: 3 agent, 4 → 3 theo ADR-0001 M5, 13/10; lượt 2 còn 2 agent: M7, 17/10; lượt 3 Claude + Codex, phần Claude chạy bằng Workflow: M9, 19/10); **phân tích bloat code và hiệu năng nằm trong lượt 1**; sửa sau mỗi lượt | Owner chọn việc sửa sau mỗi lượt |
+| **6D** | Deep review Phase 1–6, **3 lượt, 6 gói** (§6; lượt 1: 3 agent, 4 → 3 theo ADR-0001 M5, 13/10; lượt 2 còn 2 agent: M7, 17/10; lượt 3 Claude + Codex: M9, 19/10, phần Claude mỗi gói một phiên như lượt 2: Owner 20/10); **phân tích bloat code và hiệu năng nằm trong lượt 1**; sửa sau mỗi lượt | Owner chọn việc sửa sau mỗi lượt |
 | **6E** | G7: Owner nghiệm thu exe cuối, chỉ số Phase 6, phát hành v1.0 (§7) | **G7** |
 
 6A và 6B có thể xen nhau (khác file). Phần tự động của 6C chạy lại sau mỗi đợt sửa của 6D.
@@ -287,7 +287,7 @@ Lỗi tìm ra ở 6C thành Issue thường; lỗi chặn phát hành gắn `ris
 
 | Bên | Ai chạy | Việc |
 |---|---|---|
-| Claude (context sạch mỗi gói, tuần tự; lượt 1–2: mỗi gói một phiên sạch, không subagent; lượt 3: mỗi gói một subagent context sạch của Workflow — ADR-0001 M9) | Owner mở phiên (lượt 3: một phiên điều phối) | Reviewer, chỉ đọc, worktree review riêng |
+| Claude (context sạch mỗi gói, tuần tự; lượt 1–2: mỗi gói một phiên sạch, không subagent; lượt 3: mỗi gói một phiên sạch như lượt 2, subagent / Workflow chỉ khi Owner bật ultracode cho phiên đó — ADR-0001 M9, sửa 20/10) | Owner mở phiên | Reviewer, chỉ đọc, worktree review riêng |
 | Codex | Owner | Reviewer độc lập, chỉ đọc (ADR-0001 M2) |
 | Muse Spark 1.3 (Muse Code) | Owner | Reviewer độc lập, chỉ đọc (13/10: DeepSeek v4.1 Flash bỏ, Muse đổi sang Wonder — ADR-0001 M5; 14/10: về lại Spark 1.3 trên Office Laptop — M6). Chỉ lượt 1; lượt 2 bỏ Muse (17/10 — M7) |
 | **Claude (phiên tổng hợp)** | sau khi đủ báo cáo | **Vai chính:** đọc mọi báo cáo, kiểm lại từng phát hiện trên code (đúng / đã biết / sai), gộp trùng, chốt mức, đề xuất hướng giải quyết cho từng vấn đề (kèm phương án khi có nhiều cách), xếp việc sửa thành phương án cho Owner chọn |
@@ -321,7 +321,7 @@ Gói F là chỗ phân tích bloat code và hiệu năng toàn cục (yêu cầu
   2. **Tìm lỗi mới và edge case mới** trên toàn bộ phạm vi gói, không chỉ quanh chỗ đã sửa: prompt lượt 2 yêu cầu mỗi bên thử những kịch bản / biên chưa có trong báo cáo lượt 1 (danh sách vấn đề lượt 1 đưa vào KNOWN để không báo lại).
 
   → tổng hợp → Owner chọn → sửa.
-- **Lượt 3** (Owner thêm 19/10/2026, trước G7; ADR-0001 phụ lục M9; kế hoạch `docs/process/deep-review-phase-1-6.md` §L3): trên SHA sau đợt sửa lượt 2, cùng 6 gói, hai bên Claude và Codex, cùng hai phần như lượt 2 (kiểm phần đã sửa sau lượt 2; lỗi / edge case mới trên toàn bộ phạm vi gói). Phần Claude chạy bằng **Workflow**: mỗi gói một subagent context sạch, tuần tự A → F, trong một phiên Owner mở. Sau tổng hợp: **sửa hết** (Owner chốt 19/10), rồi G7.
+- **Lượt 3** (Owner thêm 19/10/2026, trước G7; ADR-0001 phụ lục M9; kế hoạch `docs/process/deep-review-phase-1-6.md` §L3): trên SHA sau đợt sửa lượt 2, cùng 6 gói, hai bên Claude và Codex, cùng hai phần như lượt 2 (kiểm phần đã sửa sau lượt 2; lỗi / edge case mới trên toàn bộ phạm vi gói). Phần Claude chạy bằng **Workflow**: mỗi gói một subagent context sạch, tuần tự A → F, trong một phiên Owner mở. *Sửa 20/10/2026 (Owner, trước khi chạy):* phần Claude chạy như lượt 2, mỗi gói một phiên sạch Owner mở; mức suy luận, ultracode do Owner chọn từng phiên. Sau tổng hợp: **sửa hết** (Owner chốt 19/10), rồi G7.
 - Báo cáo gốc lưu nguyên văn ở `docs/reviews/raw/<ngày>/{claude,codex,muse}/` qua PR docs; tổng hợp ở `docs/reviews/`.
 - Công cụ phân tích: ưu tiên thứ đã có (`dependency-cruiser`, `codemap`, script `node`). Công cụ mới (vd. `knip`, `cargo-bloat`) là **G4**.
 
@@ -331,7 +331,7 @@ Gói F là chỗ phân tích bloat code và hiệu năng toàn cục (yêu cầu
 
 ### 6.5 Quy tắc
 
-ADR-0001 phụ lục **M4** (cùng PR với spec này): ở review đóng Phase 6, Muse tham gia như Codex (M5, 13/10: bỏ DeepSeek; M6, 14/10: Muse dùng Spark 1.3; M7, 17/10: lượt 2 bỏ Muse) — chỉ đọc, không viết code, báo cáo là dữ liệu tham khảo, không thay review phiên sạch. Không mở Agent tool, không cho agent ngoài viết code; multi-agent thử ở project mới, không ở 2C (Owner 11/10). *Sửa 17/10/2026 (ADR-0001 phụ lục M8):* Claude được dùng subagent / Workflow khi Owner bật (`ultracode`); agent ngoài Claude vẫn không viết code. Câu "không mở Agent tool" chỉ còn áp cho 2 lượt deep review 6D đã chạy; lượt 3 chạy phần Claude bằng Workflow (M9, 19/10). Bỏ so sánh với Project-2 nên không còn ràng buộc từ `docs/COMPARISON.md` (ADR-0001 phụ lục M3, ADR-0002 Superseded).
+ADR-0001 phụ lục **M4** (cùng PR với spec này): ở review đóng Phase 6, Muse tham gia như Codex (M5, 13/10: bỏ DeepSeek; M6, 14/10: Muse dùng Spark 1.3; M7, 17/10: lượt 2 bỏ Muse) — chỉ đọc, không viết code, báo cáo là dữ liệu tham khảo, không thay review phiên sạch. Không mở Agent tool, không cho agent ngoài viết code; multi-agent thử ở project mới, không ở 2C (Owner 11/10). *Sửa 17/10/2026 (ADR-0001 phụ lục M8):* Claude được dùng subagent / Workflow khi Owner bật (`ultracode`); agent ngoài Claude vẫn không viết code. Câu "không mở Agent tool" chỉ còn áp cho 2 lượt deep review 6D đã chạy; lượt 3 định chạy phần Claude bằng Workflow (M9, 19/10), rồi Owner đổi 20/10: mỗi gói một phiên như lượt 2, subagent / Workflow chỉ ở phiên Owner bật ultracode. Bỏ so sánh với Project-2 nên không còn ràng buộc từ `docs/COMPARISON.md` (ADR-0001 phụ lục M3, ADR-0002 Superseded).
 
 ## 7. 6E — G7 và phát hành v1.0
 
