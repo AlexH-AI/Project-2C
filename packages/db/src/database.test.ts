@@ -169,6 +169,18 @@ describe('openDatabase', () => {
       ),
     ).toThrow(/FOREIGN KEY/);
   });
+
+  // Without it REPLACE removes a row without running its delete trigger, which the append-only
+  // tables rely on (DR6-113); the purge test of D11 shows the effect.
+  it('runs the triggers of the rows REPLACE removes, also after the database was exported', async () => {
+    const db = await openDatabase();
+    const recursive = () => db.sqlite.exec('PRAGMA recursive_triggers')[0]!.values;
+    expect(recursive()).toEqual([[1]]);
+
+    db.export();
+
+    expect(recursive()).toEqual([[1]]);
+  });
 });
 
 describe('integrityCheck', () => {
@@ -192,6 +204,8 @@ describe('integrityCheck', () => {
     const page = bytes.subarray((root - 1) * pageSize, root * pageSize);
     const key = new TextEncoder().encode('Sao Mai');
     const at = page.findIndex((_, i) => key.every((byte, j) => page[i + j] === byte));
+    // Not found would damage the page header instead of the key.
+    expect(at).toBeGreaterThan(-1);
     page[at + key.length - 1]! ^= 1;
 
     const opened = await openDatabase({ bytes });

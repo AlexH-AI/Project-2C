@@ -23,6 +23,7 @@ import { stagesOfDay } from './customers';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { profileFactValue, type ProfileFields } from './kyc';
+import { PERSON_REFERENCES } from './schema';
 
 const YEAR = /^\d{4}$/;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -254,23 +255,22 @@ function meetingRule(appointments: Map<unknown, Row>, transitions: Row[]): Rule 
  * (ADR-0007) or reviews a live meeting (D9), and is not deleted while it does (DR-04); an
  * appointment is rescheduled from one of the same customer (D3), which has no other new one and is
  * not rescheduled, at any remove, from it: deleted appointments too, as the chain keeps them (DR-06).
+ * What points to a person is read from `PERSON_REFERENCES`, the one list of those columns.
  */
 function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>): Rule | null {
+  const references = `(${PERSON_REFERENCES})`;
+  // The people some live reference of a kind points to, to be one of those that fail.
+  const pointedTo = (kinds: string) =>
+    `p.id IN (SELECT person_id FROM ${references} WHERE live AND kind IN (${kinds}))`;
   const notRe = read(
-    ['customers', 'appointments', 'policies']
-      .map(
-        (table) =>
-          `SELECT 1 FROM ${table} r JOIN people p ON p.id = r.re_id WHERE r.deleted_at IS NULL AND (p.role <> 'RE' OR p.deleted_at IS NOT NULL)`,
-      )
-      .join(' UNION ALL '),
+    `SELECT 1 FROM people p WHERE (p.role <> 'RE' OR p.deleted_at IS NOT NULL) AND ${pointedTo("'customer', 'appointment', 'policy'")}`,
   );
   // A coordinator or reviewer may have become an RE once their appointment was deleted.
   const supporting = `(${REVIEWER_ROLES.map((role) => `'${role}'`).join(', ')})`;
   const misplaced = read(
     [
-      'SELECT 1 FROM appointment_coordinators c JOIN appointments a ON a.id = c.appointment_id WHERE c.person_id = a.re_id',
-      `SELECT 1 FROM appointment_coordinators c JOIN appointments a ON a.id = c.appointment_id JOIN people p ON p.id = c.person_id WHERE a.deleted_at IS NULL AND (p.role NOT IN ${supporting} OR p.deleted_at IS NOT NULL)`,
-      `SELECT 1 FROM appointments a JOIN people p ON p.id = a.outcome_reviewer_id WHERE a.deleted_at IS NULL AND (p.role NOT IN ${supporting} OR p.deleted_at IS NOT NULL)`,
+      `SELECT 1 FROM ${references} c JOIN ${references} a ON a.appointment_id = c.appointment_id AND a.person_id = c.person_id WHERE c.kind = 'coordinator' AND a.kind = 'appointment'`,
+      `SELECT 1 FROM people p WHERE (p.role NOT IN ${supporting} OR p.deleted_at IS NOT NULL) AND ${pointedTo("'coordinator', 'reviewer'")}`,
     ].join(' UNION ALL '),
   );
   const rescheduled = [...appointments.values()].every((a) => {

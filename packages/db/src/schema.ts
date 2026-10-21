@@ -51,6 +51,7 @@ export const teams = sqliteTable(
   ],
 );
 
+/** The columns that point to a person are all listed in `PERSON_REFERENCES`, below the policies. */
 export const people = sqliteTable(
   'people',
   {
@@ -228,13 +229,38 @@ export const policies = sqliteTable(
   ],
 );
 
+/**
+ * Every reference to a person, one row each (spec §3.3, ADR-0007, D9): `kind` is the column it is,
+ * the RE of a customer, an appointment or a policy, or a coordinator or the reviewer of an
+ * appointment; `appointment_id` the appointment it is on (none for a customer or a policy);
+ * `customer_id` the customer it belongs to (the customer itself, for its RE); `live` whether that
+ * record is not deleted (for a coordinator or the reviewer, its appointment).
+ *
+ * What keeps a person from deletion, the customers in the trash it is about, what the purge keeps
+ * of them and import rule 5 all read it, so a column that points to a person is added here and
+ * nowhere else: a test lists the columns of this schema that do.
+ */
+export const PERSON_REFERENCES = `
+  SELECT 'customer' AS kind, re_id AS person_id, NULL AS appointment_id, id AS customer_id,
+    deleted_at IS NULL AS live FROM customers
+  UNION ALL SELECT 'appointment', re_id, id, customer_id, deleted_at IS NULL FROM appointments
+  UNION ALL SELECT 'policy', re_id, NULL, customer_id, deleted_at IS NULL FROM policies
+  UNION ALL SELECT 'coordinator', c.person_id, a.id, a.customer_id, a.deleted_at IS NULL
+    FROM appointment_coordinators c JOIN appointments a ON a.id = c.appointment_id
+  UNION ALL SELECT 'reviewer', outcome_reviewer_id, id, customer_id, deleted_at IS NULL
+    FROM appointments WHERE outcome_reviewer_id IS NOT NULL`;
+
 // ---- KYC notes, facts and versions (spec §3.8–3.10, ADR-0008) ----
 
 /** `SYSTEM` notes carry the birth year and gender written from the customer profile (D2). */
 export const KYC_NOTE_SOURCES = ['RE', 'SYSTEM'] as const;
 const KYC_FIELD_KEYS = Object.keys(KYC_FIELDS) as [KycField, ...KycField[]];
 
-/** Append-only: no `updated_at` / `deleted_at`, and a trigger refuses any update or delete. */
+/**
+ * Append-only: no `updated_at` / `deleted_at`, and a trigger refuses any update and any delete but
+ * the purge of the Thùng rác, which takes the rows of a deleted customer (spec Phase 6 TR-11,
+ * ADR-0008 phụ lục).
+ */
 export const kycNotes = sqliteTable(
   'kyc_notes',
   {
@@ -254,7 +280,10 @@ export const kycNotes = sqliteTable(
   ],
 );
 
-/** Never deleted; `status` (and `updated_at`) is the only column that changes. */
+/**
+ * Deleted only by the purge of the Thùng rác, with its deleted customer (TR-11); `status` (and
+ * `updated_at`) is the only column that changes.
+ */
 export const kycFacts = sqliteTable(
   'kyc_facts',
   {
@@ -323,7 +352,10 @@ export const AI_ANALYSIS_NO_MODEL = [
 /** Characters of a rejected raw output kept (§7.1). */
 export const MAX_AI_RAW_OUTPUT = 20_000;
 
-/** Append-only: no `updated_at` / `deleted_at`, and a trigger refuses any update or delete. */
+/**
+ * Append-only: no `updated_at` / `deleted_at`, and a trigger refuses any update and any delete but
+ * the purge of the Thùng rác, which takes the rows of a deleted customer (TR-11, ADR-0008 phụ lục).
+ */
 export const aiAnalyses = sqliteTable(
   'ai_analyses',
   {

@@ -15,7 +15,7 @@ import { requireChoice, requireName, selectRows, stampDeleted } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { ulid } from './ids';
-import { people, teams } from './schema';
+import { PERSON_REFERENCES, people, teams } from './schema';
 
 type TeamRow = typeof teams.$inferSelect;
 type PersonRow = typeof people.$inferSelect;
@@ -75,43 +75,50 @@ export interface PersonUsage {
   readonly inTrash: readonly string[];
 }
 
-const USAGE = `SELECT
-  (SELECT COUNT(*) FROM customers WHERE re_id = ?1 AND deleted_at IS NULL),
-  (SELECT COUNT(*) FROM appointments WHERE re_id = ?1 AND deleted_at IS NULL),
-  (SELECT COUNT(*) FROM policies WHERE re_id = ?1 AND deleted_at IS NULL),
-  (SELECT COUNT(*) FROM appointment_coordinators ac JOIN appointments a ON a.id = ac.appointment_id
-    WHERE ac.person_id = ?1 AND a.deleted_at IS NULL),
-  (SELECT COUNT(*) FROM appointments WHERE outcome_reviewer_id = ?1 AND deleted_at IS NULL)`;
+/** `PersonUsage` without the customers in the trash, which the commands have no use for. */
+type PersonCounts = Omit<PersonUsage, 'inTrash'>;
 
-const IN_TRASH = `SELECT c.name FROM customers c WHERE c.deleted_at IS NOT NULL AND (
-  EXISTS (SELECT 1 FROM appointments a WHERE a.customer_id = c.id AND a.deleted_at IS NULL
-    AND (a.re_id = ?1 OR a.outcome_reviewer_id = ?1 OR EXISTS (SELECT 1
-      FROM appointment_coordinators ac WHERE ac.appointment_id = a.id AND ac.person_id = ?1)))
-  OR EXISTS (SELECT 1 FROM policies p WHERE p.customer_id = c.id AND p.deleted_at IS NULL
-    AND p.re_id = ?1))`;
+// The references to the person that are live, by `kind` (the column they are).
+const USAGE = `SELECT kind, COUNT(*) FROM (${PERSON_REFERENCES})
+  WHERE person_id = ? AND live GROUP BY kind`;
+
+// A customer in the trash is never `live` itself: only its records pointing to the person count.
+const IN_TRASH = `SELECT c.name FROM customers c WHERE c.deleted_at IS NOT NULL AND c.id IN (
+  SELECT customer_id FROM (${PERSON_REFERENCES}) WHERE person_id = ? AND live)`;
+
+function usageCounts(db: Database, id: string): PersonCounts {
+  const counts = new Map(selectRows(db, USAGE, [id]).map(([kind, count]) => [kind, Number(count)]));
+  const of = (kind: string) => counts.get(kind) ?? 0;
+  return {
+    customers: of('customer'),
+    appointments: of('appointment'),
+    policies: of('policy'),
+    coordinating: of('coordinator'),
+    reviewing: of('reviewer'),
+  };
+}
 
 /** What `softDeletePerson` counts before it refuses; the delete dialog shows the same (T-250). */
 export function personUsage(db: Database, id: string): PersonUsage {
-  const [customers, appointments, policies, coordinating, reviewing] = selectRows(db, USAGE, [
-    id,
-  ])[0]!.map(Number);
   return {
-    customers: customers!,
-    appointments: appointments!,
-    policies: policies!,
-    coordinating: coordinating!,
-    reviewing: reviewing!,
+    ...usageCounts(db, id),
     inTrash: selectRows(db, IN_TRASH, [id])
       .map(([name]) => String(name))
       .sort(byName),
   };
 }
 
+/**
+ * Whether the person is the RE of anything live, which keeps them an RE: the records keep pointing
+ * to their RE (spec §3.3).
+ */
+export function ownsRecords(usage: PersonCounts): boolean {
+  return usage.customers + usage.appointments + usage.policies > 0;
+}
+
 /** Whether anything in `usage` keeps the person from deletion. */
-export function isPersonInUse(usage: PersonUsage): boolean {
-  return (
-    usage.customers + usage.appointments + usage.policies + usage.coordinating + usage.reviewing > 0
-  );
+export function isPersonInUse(usage: PersonCounts): boolean {
+  return ownsRecords(usage) || usage.coordinating + usage.reviewing > 0;
 }
 
 // ---- team commands --------------------------------------------------------
@@ -200,16 +207,13 @@ export function updatePerson(db: Database, id: string, changes: Partial<PersonIn
     // `undefined` keeps the current value; `teamId: null` clears the team.
     const role = changes.role ?? current.role;
     // Records keep pointing to their RE, who therefore has to stay an RE (spec §3.3).
-    if (current.role === 'RE' && role !== 'RE') {
-      const usage = personUsage(db, id);
-      if (usage.customers + usage.appointments + usage.policies > 0) {
-        throw new DbError('PERSON_IN_USE');
-      }
+    if (current.role === 'RE' && role !== 'RE' && ownsRecords(usageCounts(db, id))) {
+      throw new DbError('PERSON_IN_USE');
     }
     // A reviewer or coordinator of a live meeting stays one of the roles that may support it (D9,
     // ADR-0007).
     if (REVIEWER_ROLES.includes(current.role) && !REVIEWER_ROLES.includes(role)) {
-      const usage = personUsage(db, id);
+      const usage = usageCounts(db, id);
       if (usage.reviewing > 0) throw new DbError('REVIEWER_IN_USE');
       if (usage.coordinating > 0) throw new DbError('COORDINATOR_IN_USE');
     }
@@ -230,7 +234,7 @@ export function updatePerson(db: Database, id: string, changes: Partial<PersonIn
 export function softDeletePerson(db: Database, id: string): void {
   db.transaction(() => {
     livePerson(db, id);
-    if (isPersonInUse(personUsage(db, id))) throw new DbError('PERSON_IN_USE');
+    if (isPersonInUse(usageCounts(db, id))) throw new DbError('PERSON_IN_USE');
     updatePersonRow(db, id, stampDeleted(db));
   });
 }

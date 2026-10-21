@@ -38,7 +38,8 @@ export interface Database {
   random: RandomFill;
   schemaVersion(): number;
   /**
-   * Runs `fn` atomically; persists only when it returns without throwing. A nested call runs in a
+   * Runs `fn` atomically; persists only when it returns without throwing, even when `fn` changed
+   * nothing: `purgeTrash` saves the file this way once VACUUM has shrunk it. A nested call runs in a
    * savepoint of the outer transaction, which alone persists.
    */
   transaction<T>(fn: () => T): T;
@@ -70,14 +71,14 @@ export async function openDatabase(options: OpenDatabaseOptions = {}): Promise<D
   };
   const persist = options.persist;
   let depth = 0;
-  enableForeignKeys(sqlite);
+  enableConnectionPragmas(sqlite);
   const statements = cacheStatements(sqlite);
 
   const exportBytes = (): Uint8Array => {
     statements.clear();
     const bytes = sqlite.export();
     // sql.js reopens the database on export, which resets connection pragmas.
-    enableForeignKeys(sqlite);
+    enableConnectionPragmas(sqlite);
     return bytes;
   };
 
@@ -193,8 +194,15 @@ function commit(sqlite: SqlJsDatabase): void {
   }
 }
 
-function enableForeignKeys(sqlite: SqlJsDatabase): void {
+/**
+ * The pragmas a connection starts without: foreign keys, and recursive triggers, so that REPLACE
+ * runs the delete triggers of the rows it removes. The append-only tables (0003, 0006, 0008, 0011)
+ * refuse every edit and delete by trigger; without them `INSERT OR REPLACE` would edit a note or an
+ * analysis of a customer in use (DR6-113). No trigger changes a table, so none recurses.
+ */
+function enableConnectionPragmas(sqlite: SqlJsDatabase): void {
   sqlite.run('PRAGMA foreign_keys = ON');
+  sqlite.run('PRAGMA recursive_triggers = ON');
 }
 
 function hasMigrationTable(sqlite: SqlJsDatabase): boolean {
@@ -233,7 +241,7 @@ export function migrate(db: Database, migrations: readonly Migration[]): void {
       }
     });
   } finally {
-    enableForeignKeys(db.sqlite);
+    enableConnectionPragmas(db.sqlite);
   }
 }
 

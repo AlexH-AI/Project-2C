@@ -13,7 +13,7 @@ import {
 } from '@p2c/domain';
 import { eq, getTableColumns, sql } from 'drizzle-orm';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
-import type { SqlValue } from 'sql.js';
+import type { BindParams, SqlValue } from 'sql.js';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { customers, people } from './schema';
@@ -143,7 +143,7 @@ export function requireRe(db: Database, id: string): string {
  * The rows of a SELECT as sql.js returns them, one array of column values each. For the big reads
  * the screens share (T-151): drizzle maps every row into a nested object first, a third of the time.
  */
-export function selectRows(db: Database, query: string, params: SqlValue[] = []): SqlValue[][] {
+export function selectRows(db: Database, query: string, params: BindParams = []): SqlValue[][] {
   return db.sqlite.exec(query, params)[0]?.values ?? [];
 }
 

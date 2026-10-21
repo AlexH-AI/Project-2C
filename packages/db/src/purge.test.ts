@@ -1,7 +1,8 @@
 import type { CalendarDate, CustomerStage, PersonRole } from '@p2c/domain';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { recordAiAnalysis, type NewAiAnalysis } from './ai-analyses';
 import {
+  editMeetingOutcome,
   recordMeetingOutcome,
   rescheduleAppointment,
   scheduleAppointment,
@@ -20,7 +21,7 @@ import * as entry from './index';
 import { addKycNote, confirmKycFact } from './kyc';
 import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations';
 import { softDeletePolicy, submitPolicy } from './policies';
-import { previewPurge, purgeTrash, type KeptBy, type PurgeCounts } from './purge';
+import { previewPurge, purgeTrash, type KeptBy, type KeptRecord, type PurgeCounts } from './purge';
 import { createPerson, createTeam, personUsage, softDeletePerson, softDeleteTeam } from './team';
 import { codeOf, d, setup } from './test-support';
 import { listTrash } from './trash';
@@ -57,7 +58,11 @@ const countOf = (db: Database, sql: string, params: string[] = []) =>
 
 type BackupRow = Record<string, unknown>;
 
-/** What a backup holds of the data in use: no deleted record, nothing of a deleted customer. */
+/**
+ * What a backup holds of the data in use: no deleted record, nothing of a deleted customer. A
+ * transition withdrawn from a live appointment (the edit of 6f) is data in use too: only a deleted
+ * appointment's goes with it.
+ */
 function livePart(db: Database) {
   const { tables } = JSON.parse(exportBackup(db)) as { tables: Record<string, BackupRow[]> };
   const live = (table: string) => tables[table]!.filter((row) => row.deleted_at === null);
@@ -73,7 +78,9 @@ function livePart(db: Database) {
     coordinators: tables.appointment_coordinators!.filter((row) =>
       appointmentIds.has(row.appointment_id),
     ),
-    transitions: ofLive('stage_transitions').filter((row) => row.deleted_at === null),
+    transitions: ofLive('stage_transitions').filter(
+      (row) => row.deleted_at === null || appointmentIds.has(row.appointment_id),
+    ),
     policies: ofLive('policies').filter((row) => row.deleted_at === null),
     kycNotes: ofLive('kyc_notes'),
     kycFacts: ofLive('kyc_facts'),
@@ -137,6 +144,16 @@ const D1: PurgeCounts = {
   policies: 2,
   people: 2,
   teams: 1,
+};
+
+/** What the purge deletes when the trash holds nothing it deletes. */
+const NOTHING: PurgeCounts = {
+  customers: 0,
+  customerRecords: { appointments: 0, policies: 0, kycNotes: 0, aiAnalyses: 0 },
+  appointments: 0,
+  policies: 0,
+  people: 0,
+  teams: 0,
 };
 
 /** A KYC note whose text the purge must not leave anywhere in the file. */
@@ -232,6 +249,17 @@ async function trash11a() {
   met(lost.id, 'N3');
   softDeleteAppointment(db, lost.id);
   softDeletePolicy(db, submit(customer('Hoàng Ngọc Lan', linh.id).id, linh.id).id);
+  // Võ Quỳnh Như's meeting was edited in 6f, moved to another day: the transition that withdrew
+  // points to an appointment in use, which nothing of the purge may take (D3).
+  const nhu = customer('Võ Quỳnh Như', linh.id, 'N4');
+  const edited = schedule(nhu.id, linh.id, d(3, 10));
+  met(edited.id, 'N3');
+  editMeetingOutcome(
+    db,
+    edited.id,
+    { status: 'MET', stageAfter: 'N3', nextStep: 'Gửi giải pháp' },
+    { date: d(4, 10) },
+  );
   softDeletePerson(db, huy.id);
   softDeletePerson(db, mai.id);
   softDeleteTeam(db, binhMinh.id);
@@ -275,17 +303,7 @@ describe('previewPurge', () => {
   it('counts nothing in an empty trash', async () => {
     const { db } = await setup(TODAY);
 
-    expect(previewPurge(db)).toEqual({
-      counts: {
-        customers: 0,
-        customerRecords: { appointments: 0, policies: 0, kycNotes: 0, aiAnalyses: 0 },
-        appointments: 0,
-        policies: 0,
-        people: 0,
-        teams: 0,
-      },
-      kept: [],
-    });
+    expect(previewPurge(db)).toEqual({ counts: NOTHING, kept: [] });
   });
 });
 
@@ -478,9 +496,235 @@ describe('purgeTrash', () => {
     expect(countRecords(reopened)).toEqual(countRecords(db));
   });
 
+  // The Owner's decision (question 3 of #662): the purge is done once its transaction commits, so a
+  // VACUUM that fails only leaves the file at its size until the next purge.
+  it('still purges, saves and tells what it purged when only the VACUUM after it fails', async () => {
+    const { db, persist } = await trash11a();
+    const run = db.sqlite.run.bind(db.sqlite);
+    vi.spyOn(db.sqlite, 'run').mockImplementation((sql, params) => {
+      if (sql === 'VACUUM') throw new Error('disk full');
+      return run(sql, params);
+    });
+    persist.mockClear();
+
+    expect(purgeTrash(db)).toEqual({ counts: D1, kept: [] });
+
+    expect(listTrash(db)).toEqual([]);
+    expect(persist).toHaveBeenCalledTimes(1);
+    expect(countOf(db, 'PRAGMA foreign_keys')).toBe(1);
+  });
+
   it('is public through the package entry', () => {
     expect(entry.purgeTrash).toBe(purgeTrash);
     expect(entry.previewPurge).toBe(previewPurge);
+  });
+});
+
+describe('the count of a customer in the trash (mockups 11b, 11i; spec Phase 6 TR-9, TR-11)', () => {
+  // The notes of the profile (birth year, gender) are KYC notes of the customer too: the trash row
+  // and 5f, and the box of the purge, are two queries asking for one number (DR6-125).
+  it('counts the KYC notes of the profile with the others, in the trash row and in the purge alike', async () => {
+    const { db, re } = await setup(TODAY);
+    const lan = createCustomer(db, {
+      name: 'Lan',
+      reId: re.id,
+      stage: 'N3',
+      date: d(1, 9),
+      birthDate: { year: 1985 },
+      gender: 'FEMALE',
+    });
+    addKycNote(db, lan.id, { text: 'Làm luật sư', date: d(2, 9) });
+    const written = countOf(db, 'SELECT COUNT(*) FROM kyc_notes WHERE customer_id = ?', [lan.id]);
+    expect(countOf(db, "SELECT COUNT(*) FROM kyc_notes WHERE source = 'SYSTEM'")).toBeGreaterThan(
+      0,
+    );
+    softDeleteCustomer(db, lan.id);
+
+    expect(listTrash(db)).toEqual([
+      expect.objectContaining({ effect: expect.objectContaining({ kycNotes: written }) }),
+    ]);
+    expect(previewPurge(db).counts.customerRecords.kycNotes).toBe(written);
+  });
+
+  it('adds up, over the customers of the trash, to what the box of the purge counts', async () => {
+    const { db } = await trash11a();
+
+    const rows = listTrash(db).flatMap((row) =>
+      row.effect.kind === 'customer' ? [row.effect] : [],
+    );
+
+    const total = (field: 'appointments' | 'policies' | 'kycNotes' | 'aiAnalyses') =>
+      rows.reduce((sum, effect) => sum + effect[field], 0);
+    expect(previewPurge(db).counts.customerRecords).toEqual({
+      appointments: total('appointments'),
+      policies: total('policies'),
+      kycNotes: total('kycNotes'),
+      aiAnalyses: total('aiAnalyses'),
+    });
+  });
+});
+
+/** `days` as a chain of Dời lịch of a customer, each booked from the one before it (D3). */
+function chainOf(db: Database, customerId: string, reId: string, days: CalendarDate[]): string[] {
+  const { schedule } = records(db);
+  const ids = [schedule(customerId, reId, days[0]!, '10:00').id];
+  for (const day of days.slice(1)) {
+    ids.push(rescheduleAppointment(db, ids.at(-1)!, { date: day, time: '10:00' }).id);
+  }
+  return ids;
+}
+
+/** Deleted in a file: the app never deletes a Dời lịch (#171), and import rule 5 takes one. */
+function deleteInFile(db: Database, ...ids: string[]) {
+  for (const id of ids) {
+    db.sqlite.run('UPDATE appointments SET deleted_at = ? WHERE id = ?', [
+      '2026-10-10T11:05:00.000Z',
+      id,
+    ]);
+  }
+}
+
+describe('the records the purge keeps (TR-12): chains of Dời lịch, and what points to them', () => {
+  /** A deleted Dời lịch that the appointment of `date` was booked from. */
+  const rescheduledBy = (id: string, date: CalendarDate): KeptRecord => ({
+    kind: 'appointment',
+    id,
+    by: { kind: 'rescheduled', date, time: '10:00' },
+  });
+
+  async function withCustomer() {
+    const base = await setup(TODAY);
+    return { ...base, lan: records(base.db).customer('Lan', base.re.id) };
+  }
+
+  it('keeps each deleted Dời lịch of a chain that ends in an appointment in use, with the one booked from it', async () => {
+    const { db, re, lan } = await withCustomer();
+    const [x, y, z] = chainOf(db, lan.id, re.id, [d(20, 10), d(22, 10), d(24, 10)]);
+    deleteInFile(db, x!, y!);
+    const kept = [rescheduledBy(x!, d(22, 10)), rescheduledBy(y!, d(24, 10))];
+
+    expect(previewPurge(db)).toEqual({ counts: NOTHING, kept });
+    expect(purgeTrash(db)).toEqual({ counts: NOTHING, kept });
+
+    expect(listTrash(db).map((row) => row.id)).toEqual(expect.arrayContaining([x, y]));
+    expect(listTrash(db)).toHaveLength(2);
+    expect(rowsOf(db, 'SELECT id FROM appointments WHERE id = ?', [z!])).toHaveLength(1);
+    expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
+  });
+
+  it('keeps only deleted ones: an appointment in use is not kept, in the middle of the chain or at its end', async () => {
+    const { db, re, lan } = await withCustomer();
+    // p, r and s in use; q, deleted, is the one thing something in use was booked from.
+    const [, q] = chainOf(db, lan.id, re.id, [d(20, 10), d(22, 10), d(24, 10), d(26, 10)]);
+    deleteInFile(db, q!);
+
+    expect(previewPurge(db)).toEqual({ counts: NOTHING, kept: [rescheduledBy(q!, d(24, 10))] });
+  });
+
+  it('keeps nothing of a chain that is wholly in the trash: the purge takes all of it', async () => {
+    const { db, re, lan } = await withCustomer();
+    const [x, y] = chainOf(db, lan.id, re.id, [d(20, 10), d(22, 10)]);
+    deleteInFile(db, x!, y!);
+
+    expect(purgeTrash(db)).toEqual({ counts: { ...NOTHING, appointments: 2 }, kept: [] });
+
+    expect(listTrash(db)).toEqual([]);
+  });
+
+  it('keeps nothing for a deleted customer, whose own appointments go with it', async () => {
+    const { db, re, lan } = await withCustomer();
+    const [x] = chainOf(db, lan.id, re.id, [d(20, 10), d(22, 10)]);
+    deleteInFile(db, x!);
+    softDeleteCustomer(db, lan.id);
+    const plan = {
+      counts: {
+        ...NOTHING,
+        customers: 1,
+        customerRecords: { ...NOTHING.customerRecords, appointments: 1 },
+        appointments: 1,
+      },
+      kept: [],
+    };
+
+    expect(previewPurge(db)).toEqual(plan);
+    expect(purgeTrash(db)).toEqual(plan);
+
+    expect(listTrash(db)).toEqual([]);
+    expect(countOf(db, 'SELECT COUNT(*) FROM appointments')).toBe(0);
+  });
+
+  it('names a kept person once, by the earliest kept appointment, and their deleted team by its first kept member', async () => {
+    const { db, team: saoMai, re, lan } = await withCustomer();
+    const { person } = records(db);
+    const binhMinh = createTeam(db, { name: 'Bình Minh' });
+    const phuongNam = createTeam(db, { name: 'Phương Nam' });
+    // Their ids sort in this order: Giang and Huy of Bình Minh have Mai of Phương Nam between them.
+    const giang = person('Giang', 'RE', binhMinh.id);
+    const mai = person('Mai', 'RE', phuongNam.id);
+    const huy = person('Huy', 'RE', binhMinh.id);
+    // Quang is deleted but Sao Mai, their team, is in use: the person is kept, the team is not.
+    const quang = person('Quang', 'RE', saoMai.id);
+    for (const gone of [giang, mai, huy, quang]) softDeletePerson(db, gone.id);
+    softDeleteTeam(db, binhMinh.id);
+    softDeleteTeam(db, phuongNam.id);
+    const [x, y, z] = chainOf(db, lan.id, re.id, [d(20, 10), d(22, 10), d(24, 10)]);
+    deleteInFile(db, x!, y!);
+    // From the file: whom the two kept appointments were written for, and who coordinated them.
+    const reOf = (appointment: string, who: { id: string }) =>
+      db.sqlite.run('UPDATE appointments SET re_id = ? WHERE id = ?', [who.id, appointment]);
+    const coordinate = (appointment: string, ...who: { id: string }[]) => {
+      for (const { id } of who) {
+        db.sqlite.run(
+          'INSERT INTO appointment_coordinators (appointment_id, person_id) VALUES (?, ?)',
+          [appointment, id],
+        );
+      }
+    };
+    reOf(x!, giang);
+    coordinate(x!, huy);
+    reOf(y!, huy);
+    coordinate(y!, mai, quang, giang);
+    const on = (date: CalendarDate): KeptBy => ({ kind: 'appointment', date, time: '10:00' });
+    const kept: KeptRecord[] = [
+      rescheduledBy(x!, d(22, 10)),
+      rescheduledBy(y!, d(24, 10)),
+      // Giang and Huy are on both appointments, in the two roles, and named by the earlier one.
+      { kind: 'person', id: giang.id, by: on(d(20, 10)) },
+      { kind: 'person', id: mai.id, by: on(d(22, 10)) },
+      { kind: 'person', id: huy.id, by: on(d(20, 10)) },
+      { kind: 'person', id: quang.id, by: on(d(22, 10)) },
+      { kind: 'team', id: binhMinh.id, by: { kind: 'member', name: 'Giang' } },
+      { kind: 'team', id: phuongNam.id, by: { kind: 'member', name: 'Mai' } },
+    ];
+
+    expect(previewPurge(db)).toEqual({ counts: NOTHING, kept });
+    expect(purgeTrash(db)).toEqual({ counts: NOTHING, kept });
+
+    expect(
+      listTrash(db)
+        .filter((row) => row.keptBy)
+        .map((row) => [row.kind, row.id, row.keptBy])
+        .sort(),
+    ).toEqual(kept.map((k) => [k.kind, k.id, k.by]).sort());
+    expect(rowsOf(db, 'SELECT id FROM appointments WHERE id = ?', [z!])).toHaveLength(1);
+    expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
+  });
+
+  it('looks for nothing to keep while no appointment is deleted', async () => {
+    const { db, re, lan } = await withCustomer();
+    chainOf(db, lan.id, re.id, [d(20, 10), d(22, 10)]);
+    softDeletePolicy(db, records(db).submit(lan.id, re.id).id);
+    const exec = vi.spyOn(db.sqlite, 'exec');
+    const searches = () => exec.mock.calls.filter(([sql]) => sql.includes('WITH RECURSIVE'));
+
+    expect(listTrash(db)).toHaveLength(1);
+    expect(previewPurge(db)).toEqual({ counts: { ...NOTHING, policies: 1 }, kept: [] });
+    expect(searches()).toEqual([]);
+
+    // Once one is deleted the search runs again: the spy sees it.
+    deleteInFile(db, chainOf(db, lan.id, re.id, [d(26, 10), d(28, 10)])[0]!);
+    previewPurge(db);
+    expect(searches()).not.toEqual([]);
   });
 });
 
@@ -502,6 +746,30 @@ function withKyc(db: Database, reId: string, name: string) {
 const statement = (db: Database, customerId: string) => (sql: string) => () =>
   db.sqlite.run(`${sql} WHERE customer_id = ?`, [customerId]);
 
+/** The tables of the customer's history, each with a column the REPLACE below changes. */
+const HISTORY = [
+  ['kyc_notes', 'text'],
+  ['kyc_facts', 'value_json'],
+  ['ai_analyses', 'prompt_version'],
+] as const;
+
+/**
+ * The one row of `table` of the customer written again with `column` changed, as a REPLACE does it:
+ * SQLite deletes the row that has the same id, then inserts this one.
+ */
+const replaceRow =
+  (db: Database, customerId: string, [table, column]: (typeof HISTORY)[number], form: string) =>
+  () => {
+    const { columns, values } = db.sqlite.exec(`SELECT * FROM ${table} WHERE customer_id = ?`, [
+      customerId,
+    ])[0]!;
+    const row = values[0]!.map((value, i) => (columns[i] === column ? 'sửa' : value));
+    db.sqlite.run(
+      `${form} ${table} (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`,
+      row,
+    );
+  };
+
 describe('the triggers of KYC notes, facts and AI analyses (D11, ADR-0008 phụ lục)', () => {
   it('refuse to edit or delete those of a live customer, as before', async () => {
     const { db, re } = await setup(TODAY);
@@ -513,6 +781,26 @@ describe('the triggers of KYC notes, facts and AI analyses (D11, ADR-0008 phụ 
     expect(run('DELETE FROM kyc_facts')).toThrow(/append-only/);
     expect(run('UPDATE ai_analyses SET attempts = 2')).toThrow(/append-only/);
     expect(run('DELETE FROM ai_analyses')).toThrow(/append-only/);
+  });
+
+  // REPLACE deletes the row it replaces without running the delete trigger unless recursive
+  // triggers are on (DR6-113): a note, a fact or an analysis was editable with it.
+  it('refuse to replace those of a live customer, as the file is opened and after it was exported', async () => {
+    const { db, re } = await setup(TODAY);
+    const live = withKyc(db, re.id, 'Lan');
+    const before = dump(db);
+
+    for (const exported of [false, true]) {
+      // sql.js reopens the database on export: the pragmas of the connection start over.
+      if (exported) db.export();
+      for (const history of HISTORY) {
+        for (const form of ['INSERT OR REPLACE INTO', 'REPLACE INTO']) {
+          expect(replaceRow(db, live.id, history, form)).toThrow(/append-only/);
+        }
+      }
+    }
+
+    expect(dump(db)).toEqual(before);
   });
 
   it('let those of a deleted customer go, and only those, still never edited', async () => {
@@ -530,8 +818,12 @@ describe('the triggers of KYC notes, facts and AI analyses (D11, ADR-0008 phụ 
     expect(run('UPDATE kyc_facts SET value_json = \'"Bác sĩ"\'')).toThrow(/append-only/);
     expect(run("UPDATE kyc_facts SET status = 'superseded', updated_at = 'x'")).not.toThrow();
     expect(run('UPDATE ai_analyses SET attempts = 2')).toThrow(/append-only/);
-    // One statement over both customers deletes nothing.
-    expect(() => db.sqlite.run('DELETE FROM ai_analyses')).toThrow(/append-only/);
+    // A customer in the trash frees nothing of a live one's: one statement over both customers
+    // deletes nothing, in any of the three tables.
+    for (const [table] of HISTORY) {
+      expect(() => db.sqlite.run(`DELETE FROM ${table}`)).toThrow(/append-only/);
+      expect(statement(db, live.id)(`DELETE FROM ${table}`)).toThrow(/append-only/);
+    }
     expect(kyc(gone.id)).toEqual([1, 1, 1]);
     expect(run('DELETE FROM ai_analyses')).not.toThrow();
     expect(run('DELETE FROM kyc_facts')).not.toThrow();

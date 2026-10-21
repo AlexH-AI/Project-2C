@@ -14,13 +14,16 @@
  * changes nothing.
  */
 import { fromIsoDate, type CalendarDate } from '@p2c/domain';
+import type { SqlValue } from 'sql.js';
+import { selectRows } from './common';
 import type { Database } from './database';
+import { PERSON_REFERENCES } from './schema';
 
 /** What keeps a deleted record from the purge (TR-12): the record still pointing to it. */
 export type KeptBy =
   /** An appointment, live or kept, rescheduled from this one. */
   | { readonly kind: 'rescheduled'; readonly date: CalendarDate; readonly time: string | null }
-  /** A kept appointment of this person: its RE, a coordinator or its reviewer. */
+  /** A kept appointment of this person: its RE or a coordinator. */
   | { readonly kind: 'appointment'; readonly date: CalendarDate; readonly time: string | null }
   /** A kept person of this team. */
   | { readonly kind: 'member'; readonly name: string };
@@ -82,14 +85,17 @@ const KEPT_APPOINTMENTS = `WITH RECURSIVE kept(id, by_id) AS (
   )
   SELECT k.id, b.date, b.time FROM kept k JOIN appointments b ON b.id = k.by_id ORDER BY k.id`;
 
-/** Deleted people of the kept appointments `$appointments`, each with one of those, the earliest. */
-const KEPT_PEOPLE = `SELECT p.id, a.date, a.time FROM people p JOIN (
-    SELECT id, re_id AS person_id, date, time FROM appointments
-    UNION ALL SELECT id, outcome_reviewer_id, date, time FROM appointments
-    UNION ALL SELECT a.id, c.person_id, a.date, a.time
-      FROM appointment_coordinators c JOIN appointments a ON a.id = c.appointment_id
-  ) a ON a.person_id = p.id
-  WHERE p.deleted_at IS NOT NULL AND a.id IN (SELECT value FROM json_each($appointments))
+/**
+ * Deleted people any reference of the kept appointments `$appointments` points to, each with one of
+ * those appointments, the earliest. A kept appointment is one that was rescheduled, which has no
+ * reviewer (the CHECK `appointments_outcome_reviewer` gives one to a met appointment only): the RE
+ * and the coordinators are what points to a person.
+ */
+const KEPT_PEOPLE = `SELECT p.id, a.date, a.time FROM people p
+  JOIN (${PERSON_REFERENCES}) r ON r.person_id = p.id
+  JOIN appointments a ON a.id = r.appointment_id
+  WHERE p.deleted_at IS NOT NULL
+    AND r.appointment_id IN (SELECT value FROM json_each($appointments))
   ORDER BY p.id, a.date, a.time, a.id`;
 
 /** Deleted teams of the kept people `$people`, each with one of those, the first recorded. */
@@ -148,16 +154,16 @@ export function previewPurge(db: Database): PurgePlan {
  */
 export function purgeTrash(db: Database): PurgePlan {
   db.sqlite.run('PRAGMA foreign_keys = OFF');
-  let plan: PurgePlan;
+  let purged: PurgePlan;
   try {
-    plan = db.transaction(() => {
-      const now = previewPurge(db);
-      const ids = keptIds(now.kept);
+    purged = db.transaction(() => {
+      const plan = previewPurge(db);
+      const ids = keptIds(plan.kept);
       for (const statement of PURGE) db.sqlite.run(statement, ids);
-      if (rowsOf(db, 'PRAGMA foreign_key_check').length > 0) {
+      if (selectRows(db, 'PRAGMA foreign_key_check').length > 0) {
         throw new Error('Purging the trash would leave references pointing nowhere');
       }
-      return now;
+      return plan;
     });
   } finally {
     db.sqlite.run('PRAGMA foreign_keys = ON');
@@ -165,11 +171,12 @@ export function purgeTrash(db: Database): PurgePlan {
   try {
     db.sqlite.run('VACUUM');
   } catch {
-    return plan;
+    return purged;
   }
-  // The transaction saved the file before VACUUM; one more, empty, saves it as it is now.
+  // The transaction saved the file before VACUUM; one more, empty, saves it as it is now (an empty
+  // transaction persists, see `Database.transaction`).
   db.transaction(() => undefined);
-  return plan;
+  return purged;
 }
 
 /**
@@ -177,19 +184,27 @@ export function purgeTrash(db: Database): PurgePlan {
  * would not let go once the rest is gone. `listTrash` gives each row its reason from here.
  */
 export function keptRecords(db: Database): KeptRecord[] {
-  const appointments = rowsOf(db, KEPT_APPOINTMENTS).map(([id, date, time]): KeptRecord => ({
+  // Everything kept follows from a deleted appointment that something was booked from, so with no
+  // deleted appointment there is nothing to look for. `listTrash` asks even when the trash is empty,
+  // and the search over every appointment costs ≈ 4.5 ms (CL3-A29).
+  if (
+    selectRows(db, 'SELECT 1 FROM appointments WHERE deleted_at IS NOT NULL LIMIT 1').length === 0
+  ) {
+    return [];
+  }
+  const appointments = selectRows(db, KEPT_APPOINTMENTS).map(([id, date, time]): KeptRecord => ({
     kind: 'appointment',
     id: String(id),
     by: { kind: 'rescheduled', date: fromIsoDate(String(date)), time: time as string | null },
   }));
-  const people = firstOfEach(rowsOf(db, KEPT_PEOPLE, { $appointments: idsOf(appointments) })).map(
-    ([id, date, time]): KeptRecord => ({
-      kind: 'person',
-      id: String(id),
-      by: { kind: 'appointment', date: fromIsoDate(String(date)), time: time as string | null },
-    }),
-  );
-  const teams = firstOfEach(rowsOf(db, KEPT_TEAMS, { $people: idsOf(people) })).map(
+  const people = firstOfEach(
+    selectRows(db, KEPT_PEOPLE, { $appointments: idsOf(appointments) }),
+  ).map(([id, date, time]): KeptRecord => ({
+    kind: 'person',
+    id: String(id),
+    by: { kind: 'appointment', date: fromIsoDate(String(date)), time: time as string | null },
+  }));
+  const teams = firstOfEach(selectRows(db, KEPT_TEAMS, { $people: idsOf(people) })).map(
     ([id, name]): KeptRecord => ({
       kind: 'team',
       id: String(id),
@@ -199,13 +214,9 @@ export function keptRecords(db: Database): KeptRecord[] {
   return [...appointments, ...people, ...teams];
 }
 
-type Row = unknown[];
-
-const rowsOf = (db: Database, sql: string, params?: Record<string, string>): Row[] =>
-  db.sqlite.exec(sql, params)[0]?.values ?? [];
-
 /** The first row of each id (rows ordered by id). */
-const firstOfEach = (rows: Row[]): Row[] => rows.filter((row, i) => row[0] !== rows[i - 1]?.[0]);
+const firstOfEach = (rows: SqlValue[][]): SqlValue[][] =>
+  rows.filter((row, i) => row[0] !== rows[i - 1]?.[0]);
 
 const idsOf = (records: readonly KeptRecord[]) => JSON.stringify(records.map((r) => r.id));
 
@@ -216,7 +227,7 @@ function keptIds(kept: readonly KeptRecord[]): KeptIds {
 
 function countsOf(db: Database, kept: KeptIds): PurgeCounts {
   const [customers, appointments, policies, kycNotes, aiAnalyses, own, ownPolicies, people, teams] =
-    rowsOf(db, COUNTS, kept)[0]!.map(Number);
+    selectRows(db, COUNTS, kept)[0]!.map(Number);
   return {
     customers: customers!,
     customerRecords: {

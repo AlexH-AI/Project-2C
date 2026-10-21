@@ -550,6 +550,17 @@ describe('importBackup — rules across tables', () => {
       '5: the RE of an appointment also coordinating it',
       (b, ids) => (b.tables.appointment_coordinators![0]!.person_id = ids.re),
     ],
+    // A deleted appointment is asked no role of its coordinators, but never its own RE.
+    [
+      '5: the RE of a deleted appointment also coordinating it',
+      (b, ids) => {
+        const deleted = row(b, 'appointments', (a) => a.customer_id === ids.hoa);
+        b.tables.appointment_coordinators!.push({
+          appointment_id: deleted.id,
+          person_id: deleted.re_id,
+        });
+      },
+    ],
     [
       '5: a live appointment coordinated by another RE (ADR-0007)',
       (b, ids) => (b.tables.appointment_coordinators![0]!.person_id = ids.otherRe),

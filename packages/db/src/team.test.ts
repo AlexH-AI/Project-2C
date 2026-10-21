@@ -1,9 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import { recordMeetingOutcome, scheduleAppointment, softDeleteAppointment } from './appointments';
-import { createCustomer, restoreCustomer, softDeleteCustomer } from './customers';
+import {
+  createCustomer,
+  restoreCustomer,
+  softDeleteCustomer,
+  updateCustomerProfile,
+} from './customers';
 import { openDatabase } from './database';
 import { DbError } from './errors';
 import { softDeletePolicy, submitPolicy } from './policies';
+import { PERSON_REFERENCES } from './schema';
 import {
   createPerson,
   createTeam,
@@ -12,6 +18,7 @@ import {
   isPersonInUse,
   listPeople,
   listTeams,
+  ownsRecords,
   personUsage,
   renameTeam,
   restorePerson,
@@ -500,5 +507,58 @@ describe('personUsage: what keeps a person from deletion (mockup 9b, spec §4, T
     softDeleteCustomer(db, live.id);
     for (const { id } of [bao, anh]) restoreCustomer(db, id);
     expect(personUsage(db, re.id)).toMatchObject({ customers: 2, inTrash: [] });
+  });
+
+  // What the three SQL statements and the import rule 5 ask is one question, from one list.
+  it('has a reference for each column of the schema that points to a person', async () => {
+    const { db, re, tl, is, customer, meet, submit } = await withRecords();
+    const lan = customer('Lan');
+    meet(lan.id, 10);
+    submit(lan.id);
+    const column = (sql: string, params: string[] = []) =>
+      db.sqlite.exec(sql, params)[0]!.values.map(([value]) => String(value));
+
+    const columns = column(
+      `SELECT m.name || '.' || f."from" FROM sqlite_master m, pragma_foreign_key_list(m.name) f
+       WHERE m.type = 'table' AND f."table" = 'people' ORDER BY 1`,
+    );
+    const kinds = column(
+      `SELECT DISTINCT kind FROM (${PERSON_REFERENCES}) WHERE person_id IN (?, ?, ?) ORDER BY 1`,
+      [re.id, tl.id, is.id],
+    );
+
+    expect(columns).toEqual([
+      'appointment_coordinators.person_id',
+      'appointments.outcome_reviewer_id',
+      'appointments.re_id',
+      'customers.re_id',
+      'policies.re_id',
+    ]);
+    expect(kinds).toEqual(['appointment', 'coordinator', 'customer', 'policy', 'reviewer']);
+  });
+
+  it('is the RE of records only through customers, appointments and policies', () => {
+    expect(ownsRecords({ ...NONE, customers: 1 })).toBe(true);
+    expect(ownsRecords({ ...NONE, appointments: 1 })).toBe(true);
+    expect(ownsRecords({ ...NONE, policies: 1 })).toBe(true);
+    expect(ownsRecords({ ...NONE, coordinating: 1, reviewing: 1 })).toBe(false);
+    expect(isPersonInUse({ ...NONE, reviewing: 1 })).toBe(true);
+    expect(isPersonInUse(NONE)).toBe(false);
+  });
+
+  // The past appointments of a customer stay with their RE after a handover (T-233), who is no
+  // longer the customer's RE nor the RE of a policy, and still may not leave the role (DR6-126).
+  it('keeps an RE left only with appointments from before a handover in the role', async () => {
+    const { db, re, otherRe, customer, meet } = await withRecords();
+    const lan = customer('Lan');
+    meet(lan.id, 10);
+    updateCustomerProfile(db, lan.id, { reId: otherRe.id });
+    expect(personUsage(db, re.id)).toMatchObject({ customers: 0, appointments: 1, policies: 0 });
+
+    expect(codeOf(() => updatePerson(db, re.id, { role: 'IS', teamId: null }))).toBe(
+      'PERSON_IN_USE',
+    );
+
+    expect(getPerson(db, re.id)?.role).toBe('RE');
   });
 });
