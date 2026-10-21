@@ -325,11 +325,9 @@ export function KycNoteDialog({
                 key={fact.field}
                 className="flex items-center gap-2 rounded-md border border-border bg-surface-2 px-2 py-1"
               >
-                <b className="min-w-0 flex-1 wrap-anywhere">{t(`kycField.${fact.field}`)}</b>
+                <b className="flex-1">{t(`kycField.${fact.field}`)}</b>
                 <span className="min-w-0 flex-1 wrap-anywhere">{factText(fact.value, YES_NO)}</span>
-                <span
-                  className={`${BADGE} whitespace-nowrap ${fact.conflict ? 'text-danger' : 'text-info'}`}
-                >
+                <span className={`${BADGE} ${fact.conflict ? 'text-danger' : 'text-info'}`}>
                   {t(
                     fact.conflict
                       ? 'kycNote.badge.conflict'
