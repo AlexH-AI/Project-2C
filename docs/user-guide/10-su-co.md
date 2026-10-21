@@ -38,7 +38,7 @@ Dải cảnh báo "Chưa lưu được dữ liệu vào file…" ở đầu màn
 
 | Câu ghi | Nghĩa | Làm gì |
 |---|---|---|
-| "…(file có thể đang mở trong chương trình khác)…" | Một chương trình khác (diệt virus, đồng bộ đám mây, công cụ mở file SQLite) đang giữ `project2c.db` | Đóng chương trình đó |
+| "…chương trình khác…" | Một chương trình khác (diệt virus, đồng bộ đám mây, công cụ mở file SQLite) đang giữ `project2c.db` | Đóng chương trình đó |
 | "…ổ đĩa chứa thư mục app đã đầy…" | Ổ chứa thư mục app hết chỗ | Xóa bớt file trên ổ đó (ví dụ file cũ trong `Project2C-data\exports\`) |
 | "…file Project2C-data\project2c.db đang ở chế độ chỉ đọc, hoặc tài khoản Windows đang dùng không có quyền ghi / xóa file đó…" | File chuyển sang chỉ đọc lúc app chạy, hoặc quyền của tài khoản bị rút | Chuột phải file → Properties → bỏ chọn Read-only, hoặc nhờ người quản trị máy cấp lại quyền |
 
