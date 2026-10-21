@@ -139,7 +139,7 @@ export function CustomerProfile({ id }: { id: string }) {
       {BACK}
       <section aria-labelledby="customer-name" className="flex flex-col gap-1">
         <div className="flex items-center gap-2.5">
-          <h2 id="customer-name" className="m-0 text-lg font-semibold">
+          <h2 id="customer-name" className="m-0 min-w-0 text-lg font-semibold wrap-anywhere">
             {customer.name}
           </h2>
           <StageBadge stage={customer.stage} label={t(`stage.${customer.stage}`)} />

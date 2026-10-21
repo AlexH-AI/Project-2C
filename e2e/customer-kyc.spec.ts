@@ -1,7 +1,41 @@
-import { expect, test, type Page } from './fixtures';
+import { expect, test, type Locator, type Page } from './fixtures';
 
 // playwright.config.ts pins "today" of the simulated data (VITE_DEMO_ANCHOR) to 15/09/2026.
 const NAME = 'Bình Kiểm KYC';
+
+// A link the way a customer sends it: no space, nowhere to break (DR6-82, DR6-117).
+const LINK =
+  'https://www.facebook.com/profile.php?id=100089123456789&mibextid=ZbWKwL_nguyen_van_khach_hang_rat_dai_tp_hcm';
+
+/**
+ * How far the text holding `link` reaches past the right edge of `box`: one number per text it is
+ * in, 0 or less when that text ends inside.
+ */
+const past = (box: Locator, link: string) =>
+  box.evaluate((node, link) => {
+    const right = node.getBoundingClientRect().right;
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    const reach: number[] = [];
+    for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+      if (!text.textContent?.includes(link)) continue;
+      const range = document.createRange();
+      range.selectNodeContents(text);
+      reach.push(Math.max(...[...range.getClientRects()].map((rect) => rect.right - right)));
+    }
+    return reach;
+  }, link);
+
+/** `box` holds `link` in `texts` texts, each ending inside it. */
+async function expectInside(box: Locator, link: string, texts: number, what: string) {
+  await expect.poll(() => past(box, link), { message: what }).toHaveLength(texts);
+  expect(Math.max(...(await past(box, link))), what).toBeLessThanOrEqual(0);
+}
+
+const card = (page: Page, name: string) => page.getByRole('region', { name, exact: true });
+const right = (box: Locator) => box.evaluate((node) => node.getBoundingClientRect().right);
+const scrolls = (box: Locator) => box.evaluate((node) => node.scrollWidth > node.clientWidth);
+const sideways = (page: Page) =>
+  page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
 
 async function createCustomer(page: Page) {
   await page.goto('/#/customers');
@@ -41,50 +75,145 @@ test('the profile has three columns at 1 440 × 900, two at 1 100', async ({ pag
   expect((await box('KYC Intelligence')).y).toBeGreaterThan((await box('Dòng thời gian')).y);
 });
 
+/**
+ * A meeting today, met, whose note and next step are `text` (6a, 6c), recorded where the meetings
+ * are; then back on the profile of the customer.
+ */
+async function meetWith(page: Page, text: string) {
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const booking = page.getByRole('dialog');
+  await booking.getByRole('textbox', { name: /^Ngày/ }).fill('15/9');
+  await booking.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
+  await booking.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+  await expect(booking).toHaveCount(0);
+
+  await page.goto('/#/appointments');
+  // Today alone: the month has more rows than the list shows at first (T-150).
+  await page
+    .getByRole('radiogroup', { name: 'Loại kỳ' })
+    .getByRole('radio', { name: 'Ngày' })
+    .click();
+  await page
+    .getByRole('table', { name: 'Danh sách lịch hẹn' })
+    .getByRole('button', { name: NAME })
+    .click();
+  const detail = page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' });
+  await detail.getByRole('button', { name: 'Ghi kết quả' }).click();
+  const outcome = page.getByRole('dialog', { name: 'Kết quả cuộc gặp' });
+  await outcome
+    .getByRole('radiogroup', { name: 'Nhóm sau cuộc gặp' })
+    .getByRole('radio', { name: 'N4 giữ nguyên' })
+    .check();
+  await outcome.getByRole('textbox', { name: /^Việc tiếp theo/ }).fill(text);
+  await outcome.getByRole('textbox', { name: 'Ghi chú cuộc gặp' }).fill(text);
+  await outcome.getByRole('button', { name: 'Lưu kết quả' }).click();
+  await expect(outcome).toHaveCount(0);
+  await detail.getByRole('link', { name: 'Hồ sơ KH →' }).click();
+  await expect(page.getByRole('heading', { level: 2, name: NAME, exact: true })).toBeVisible();
+}
+
 // DR6-82: a link pasted into a KYC note, or a long value of a fact, breaks inside its column; the
-// column does not grow over the next one.
-test('a link of 108 characters in a KYC note or a fact stays in its column at 1 440 and 1 100', async ({
+// column does not grow over the next one. DR6-117, DR6-127: also the note and the next step of a
+// meeting, in the timeline and in the appointments card.
+test('a link of 108 characters in a KYC note, a fact or a meeting stays in its column at 1 440 and 1 100', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await createCustomer(page);
-  const link =
-    'https://www.facebook.com/profile.php?id=100089123456789&mibextid=ZbWKwL_nguyen_van_khach_hang_rat_dai_tp_hcm';
-  expect(link).toHaveLength(108);
+  expect(LINK).toHaveLength(108);
   await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
   const dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${NAME}` });
-  await dialog.getByRole('textbox', { name: 'Ghi chú' }).fill(`Khách gửi link ${link} để xem thêm`);
+  await dialog.getByRole('textbox', { name: 'Ghi chú' }).fill(`Khách gửi link ${LINK} để xem thêm`);
   await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Nơi sinh sống' });
-  await dialog.getByRole('textbox', { name: 'Giá trị' }).fill(link);
+  await dialog.getByRole('textbox', { name: 'Giá trị' }).fill(LINK);
   await dialog.getByRole('button', { name: 'Thêm dữ kiện' }).click();
   await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
   await expect(dialog).toBeHidden();
-
-  /** How far the text holding the link reaches past the right edge of its column's card. */
-  const past = (region: string) =>
-    page.getByRole('region', { name: region, exact: true }).evaluate((card, link) => {
-      const right = card.getBoundingClientRect().right;
-      const walker = document.createTreeWalker(card, NodeFilter.SHOW_TEXT);
-      const reach: number[] = [];
-      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-        if (!node.textContent?.includes(link)) continue;
-        const range = document.createRange();
-        range.selectNodeContents(node);
-        reach.push(Math.max(...[...range.getClientRects()].map((rect) => rect.right - right)));
-      }
-      return reach;
-    }, link);
-  const sideways = () =>
-    page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  await meetWith(page, LINK);
 
   for (const width of [1440, 1100]) {
     await page.setViewportSize({ width, height: 900 });
-    // Found once in each card, inside it.
-    await expect.poll(() => past('Dòng thời gian')).toEqual([expect.any(Number)]);
-    expect((await past('Dòng thời gian'))[0], `timeline at ${width}`).toBeLessThanOrEqual(0);
-    expect(await past('Dữ kiện KYC')).toHaveLength(1);
-    expect((await past('Dữ kiện KYC'))[0], `KYC at ${width}`).toBeLessThanOrEqual(0);
-    expect(await sideways(), `page at ${width}`).toBe(false);
+    // The timeline has it twice: the KYC note, and the meeting's line (its note, its next step).
+    await expectInside(card(page, 'Dòng thời gian'), LINK, 2, `timeline at ${width}`);
+    await expectInside(card(page, 'Dữ kiện KYC'), LINK, 1, `KYC at ${width}`);
+    await expectInside(card(page, 'Lịch hẹn'), LINK, 1, `appointments at ${width}`);
+    expect(await sideways(page), `page at ${width}`).toBe(false);
+  }
+});
+
+// DR6-117: the same link as the value of a fact stays inside the box where the fact is drafted
+// (7a), shown as held (7c) and picked (7d), its badge and Bỏ with it.
+test('a link of 108 characters as a fact stays inside the dialogs 7a, 7c and 7d', async ({
+  page,
+}) => {
+  await createCustomer(page);
+  const other = LINK.replace('100089123456789', '100089987654321');
+  await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
+  let dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${NAME}` });
+  const inside = async (what: string, link: string, texts: number) => {
+    await expectInside(dialog, link, texts, what);
+    expect(await scrolls(dialog), `${what} scrolls sideways`).toBe(false);
+  };
+  const drafted = (field: string) =>
+    dialog.getByRole('list', { name: 'Dữ kiện từ ghi chú này' }).getByRole('listitem').filter({
+      hasText: field,
+    });
+
+  // 7a: the fact drafted, with its badge and Bỏ.
+  await dialog.getByRole('textbox', { name: 'Ghi chú' }).fill('Khách gửi link');
+  await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Nơi sinh sống' });
+  await dialog.getByRole('textbox', { name: 'Giá trị' }).fill(LINK);
+  await dialog.getByRole('button', { name: 'Thêm dữ kiện' }).click();
+  await inside('7a', LINK, 1);
+  const row = drafted('Nơi sinh sống');
+  for (const part of [row.getByText('mới'), row.getByRole('button', { name: /^Bỏ dữ kiện/ })]) {
+    expect(await right(part), '7a badge and Bỏ').toBeLessThanOrEqual(await right(dialog));
+  }
+  await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
+  await expect(dialog).toBeHidden();
+
+  // 7c: the value the trường holds, then a different one flagged as a conflict.
+  await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
+  dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${NAME}` });
+  await dialog.getByRole('textbox', { name: 'Ghi chú' }).fill('Khách gửi link khác');
+  await dialog.getByRole('combobox', { name: 'Trường' }).selectOption({ label: 'Nơi sinh sống' });
+  await inside('7c', LINK, 1);
+  await dialog.getByRole('textbox', { name: 'Giá trị' }).fill(other);
+  await dialog.getByRole('radio', { name: /Đánh dấu mâu thuẫn/ }).check();
+  await dialog.getByRole('button', { name: 'Thêm dữ kiện' }).click();
+  await inside('7a conflict', other, 1);
+  await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
+  await expect(dialog).toBeHidden();
+
+  // 7d: both values to choose from.
+  await card(page, 'Dữ kiện KYC')
+    .getByRole('button', { name: 'Giải quyết · Nơi sinh sống' })
+    .click();
+  dialog = page.getByRole('dialog', { name: 'Giải quyết · Nơi sinh sống' });
+  await inside('7d', 'https://www.facebook.com/', 2);
+});
+
+// DR6-117: a name with no space breaks inside the heading; the four buttons beside it stay in the
+// window.
+test('a customer name of 81 letters with no space leaves the buttons of the profile in the window', async ({
+  page,
+}) => {
+  await createCustomer(page);
+  await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
+  const dialog = page.getByRole('dialog', { name: `Sửa hồ sơ · ${NAME}` });
+  const name = `D${'x'.repeat(80)}`;
+  await dialog.getByRole('textbox', { name: 'Họ tên' }).fill(name);
+  await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('heading', { level: 2, name, exact: true })).toBeVisible();
+
+  for (const width of [1100, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const label of ['Sửa hồ sơ', 'Chuyển nhóm', '+ Lịch hẹn', '+ Ghi chú KYC']) {
+      const button = page.getByRole('button', { name: label, exact: true });
+      expect(await right(button), `${label} at ${width}`).toBeLessThanOrEqual(width);
+    }
+    expect(await sideways(page), `page at ${width}`).toBe(false);
   }
 });
 
