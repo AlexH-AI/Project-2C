@@ -292,13 +292,15 @@ describe('restoreLabel (DR6-43)', () => {
     expect(restoreLabel(binhMinh)).toBe('Khôi phục team Bình Minh');
   });
 
-  it('names an appointment or a policy by its day and its customer', () => {
-    expect(restoreLabel(met)).toBe('Khôi phục lịch hẹn 02/10/2026 09:30 của KH Phạm Gia Bảo');
+  it('names an appointment or a policy by its day, its status and its customer', () => {
+    expect(restoreLabel(met)).toBe(
+      'Khôi phục lịch hẹn 02/10/2026 09:30 · Đã gặp của KH Phạm Gia Bảo',
+    );
     expect(restoreLabel({ ...planned, time: null })).toBe(
-      'Khôi phục lịch hẹn 06/10/2026 của KH Trịnh Minh Anh',
+      'Khôi phục lịch hẹn 06/10/2026 · Dự kiến của KH Trịnh Minh Anh',
     );
     expect(restoreLabel(policy)).toBe(
-      'Khôi phục HĐ nộp 15/09/2026 · 24.000.000 ₫ của KH Hoàng Ngọc Lan',
+      'Khôi phục HĐ nộp 15/09/2026 · 24.000.000 ₫ · Đã nộp của KH Hoàng Ngọc Lan',
     );
   });
 
@@ -309,9 +311,43 @@ describe('restoreLabel (DR6-43)', () => {
   it('tells apart two policies of a customer submitted the same day by their FYP (DR6-99)', () => {
     const other = { ...policy, id: 'p2', submittedFyp: 100_000_000 } as TrashRow;
     expect(restoreLabel(other)).toBe(
-      'Khôi phục HĐ nộp 15/09/2026 · 100.000.000 ₫ của KH Hoàng Ngọc Lan',
+      'Khôi phục HĐ nộp 15/09/2026 · 100.000.000 ₫ · Đã nộp của KH Hoàng Ngọc Lan',
     );
     expect(restoreLabel(other)).not.toBe(restoreLabel(policy));
+  });
+
+  // DR6-119: the "Bản ghi" cell of such rows differs by the status, and so must the button's name.
+  it('tells apart two appointments of a customer at the same time by their status (DR6-119)', () => {
+    const noShow = { ...met, id: 'a4', status: 'NO_SHOW', stageAfter: null } as TrashRow;
+    const cancelled = { ...noShow, id: 'a5', status: 'CANCELLED' } as TrashRow;
+    expect(restoreLabel(noShow)).toBe(
+      'Khôi phục lịch hẹn 02/10/2026 09:30 · Không đến của KH Phạm Gia Bảo',
+    );
+    expect(restoreLabel(cancelled)).toBe(
+      'Khôi phục lịch hẹn 02/10/2026 09:30 · Hủy của KH Phạm Gia Bảo',
+    );
+  });
+
+  it('tells apart a policy submitted and one issued, the same day, the same FYP (DR6-119)', () => {
+    const issued = {
+      ...policy,
+      id: 'p3',
+      issuedDate: calendarDate(2026, 9, 20),
+      issuedFyp: 24_000_000,
+    } as TrashRow;
+    expect(restoreLabel(issued)).toBe(
+      'Khôi phục HĐ nộp 15/09/2026 · 24.000.000 ₫ · Đã phát hành của KH Hoàng Ngọc Lan',
+    );
+    expect(restoreLabel(issued)).not.toBe(restoreLabel(policy));
+  });
+
+  it('leaves "của KH" out for a row with no customer, which the foreign key keeps from existing', () => {
+    expect(restoreLabel({ ...met, owner: { re: ref('Bùi Anh Tuấn') } } as TrashRow)).toBe(
+      'Khôi phục lịch hẹn 02/10/2026 09:30 · Đã gặp',
+    );
+    expect(restoreLabel({ ...policy, owner: {} } as TrashRow)).toBe(
+      'Khôi phục HĐ nộp 15/09/2026 · 24.000.000 ₫ · Đã nộp',
+    );
   });
 });
 

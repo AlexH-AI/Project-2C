@@ -373,6 +373,55 @@ test('a meeting moved to a day before another change says its move goes, then ta
   await expect(timeline).not.toContainText('tính 1 RF');
 });
 
+// DR6-91, E19: a meeting that kept the stage, then a change by hand the same day. 6f starts from the
+// stage the meeting kept, so no move of its own is made up out of the stage the change ended in
+// (DR6-128: the call of `editedDay` by the dialog, which its unit test does not reach).
+test('a meeting that kept the stage, then a change by hand the same day: 6f holds the stage kept (E19)', async ({
+  page,
+}) => {
+  const name = await book(page, '15/9', 'N3');
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
+  const o = outcome(page);
+  await o.stageAfter.getByRole('radio', { name: 'N3 giữ nguyên', exact: true }).check();
+  await o.nextStep.fill('Gửi bảng minh họa');
+  await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
+  await expect(o.dialog).toHaveCount(0);
+  await expect(detail(page)).toContainText('Giữ N3');
+
+  const profile = await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).getAttribute('href');
+  await page.goto(`/${profile}`);
+  await page.getByRole('button', { name: 'Chuyển nhóm' }).click();
+  const change = page.getByRole('dialog', { name: /^Chuyển nhóm · / });
+  await change.getByRole('radio', { name: 'N2', exact: true }).check();
+  await change.getByRole('button', { name: 'Chuyển nhóm' }).click();
+  await expect(change).toBeHidden();
+
+  await page.goto('/#/appointments');
+  await page
+    .getByRole('region', { name: /^Trong ngày/ })
+    .getByRole('button', { name })
+    .click();
+  await detail(page).getByRole('button', { name: 'Sửa kết quả' }).click();
+  const dialog = editDialog(page);
+
+  // The stage after stays N3, locked, and the change by hand is named under it...
+  await expect(dialog).toContainText(`Nhóm sau cuộc gặp khóa ở nhóm của KH ngày ${TODAY}`);
+  await expect(dialog).toContainText(`Nhóm của KH đã đổi tiếp sau cuộc gặp này, ngày ${TODAY}:`);
+  await expect(dialog.getByRole('radiogroup', { name: 'Nhóm sau cuộc gặp' })).toHaveCount(0);
+  // ... and there is no move from the N2 the day ended in to the N3 the meeting kept.
+  await expect(dialog).not.toContainText('không tính RF');
+  await expect(dialog.getByRole('note').filter({ hasText: 'Khi lưu' })).toHaveCount(0);
+
+  // Saved as it is, nothing changes: met keeping N3, the customer still in N2.
+  await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(detail(page)).toContainText('Giữ N3');
+  await page.goto(`/${profile}`);
+  await expect(
+    page.getByRole('region', { name }).getByText('N2', { exact: true }).first(),
+  ).toBeVisible();
+});
+
 test('deleting the meeting that moved the customer takes the move back (6g)', async ({ page }) => {
   const name = await metToN2(page);
   const profile = await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).getAttribute('href');
