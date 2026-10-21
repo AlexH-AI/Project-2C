@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 import { asExe } from './support';
 
 // Keyboard paths of the shared dialog and segmented control (DR-58, 59, 02, 76). The e2e build pins

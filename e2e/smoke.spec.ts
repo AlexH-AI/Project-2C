@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test('app shell shows the brand and the overview with its KPI', async ({ page }) => {
   await page.goto('/');

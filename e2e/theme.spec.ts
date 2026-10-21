@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 // ADR-0013 tokens: --bg-0 #0B1017, --text #E8EDF4.
 const BG_0 = 'rgb(11, 16, 23)';

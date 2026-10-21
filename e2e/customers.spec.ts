@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 
 const OPEN = ['N4', 'N3', 'N2', 'N1'];
 const CLOSED = ['Tạm hoãn', 'Mất cơ hội'];

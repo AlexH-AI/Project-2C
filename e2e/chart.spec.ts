@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { trackConsoleErrors } from './support';
 
 const CHART = 'Diễn biến khách hàng theo nhóm';

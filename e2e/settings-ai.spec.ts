@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 import { asExe } from './support';
 
 // Cài đặt → AI (spec Phase 5 §4, §9.3; mockup ai.html 1a–1g, 4a–4c). The web build has no Rust,

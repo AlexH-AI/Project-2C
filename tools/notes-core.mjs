@@ -89,7 +89,8 @@ function packageOf(path) {
   return ['packages', 'apps'].includes(parts[0]) ? parts.slice(0, 2).join('/') : parts[0];
 }
 
-// A bare name in more places than this, with nothing to narrow it, names nothing in particular.
+// A bare name or short path in more places than this, with nothing to narrow it, names nothing in
+// particular.
 const MAX_PLACES = 3;
 
 /** A code span without the location after the name (`:249`, `:12-13`, `:~300`, `:84, :153`). */
@@ -110,16 +111,24 @@ function pathsNamed(name, files) {
 }
 
 /**
+ * Of the repo files a short name or path fits, those in `packages` when it fits several; failing
+ * that, all of them unless they are too many to name anything in particular.
+ */
+function narrow(all, packages) {
+  if (all.length < 2) return all;
+  const near = all.filter((f) => packages.has(packageOf(f)));
+  if (near.length) return near;
+  return all.length > MAX_PLACES ? [] : all;
+}
+
+/**
  * The repo files a bare file name names, narrowed to `packages` when it is in several places;
  * failing that, the file of that name at the repo root (`CLAUDE.md`, `package.json`).
  */
 function filesNamed(name, files, packages) {
   const all = files.filter((f) => baseName(f) === name);
-  if (all.length < 2) return all;
-  const near = all.filter((f) => packages.has(packageOf(f)));
-  if (near.length) return near;
-  if (files.includes(name)) return [name];
-  return all.length > MAX_PLACES ? [] : all;
+  const atRoot = all.includes(name) && !all.some((f) => packages.has(packageOf(f)));
+  return atRoot ? [name] : narrow(all, packages);
 }
 
 /**
@@ -132,7 +141,8 @@ export function openNotes(markdown, repoFiles) {
   const items = [];
   const parents = [];
   for (const { text, line } of openLines(markdown)) {
-    const bullet = text.match(/^( *)- (.*)$/);
+    // `s`: an item may hold U+2028 / U+2029 as they are, which `.` alone does not match.
+    const bullet = text.match(/^( *)- (.*)$/s);
     if (!bullet) continue;
     const indent = bullet[1].length;
     while (parents.length && parents.at(-1).indent >= indent) parents.pop();
@@ -143,13 +153,17 @@ export function openNotes(markdown, repoFiles) {
       .filter((name) => !/\s/.test(name));
     const withPath = names
       .filter((name) => name.includes('/'))
-      .flatMap((n) => pathsNamed(n, repoFiles));
-    // The packages a bare name is looked for in first: those this item and its headings name.
-    const packages = new Set([...(parent?.packages ?? []), ...withPath.map(packageOf)]);
+      .map((n) => pathsNamed(n, repoFiles));
+    // The packages a bare name, or a short path that ends several files, is looked for in first:
+    // those this item and its headings name by a path to one file or folder.
+    const packages = new Set([
+      ...(parent?.packages ?? []),
+      ...withPath.filter((paths) => paths.length === 1).map(([path]) => packageOf(path)),
+    ]);
     const bare = names
       .filter((name) => !name.includes('/'))
       .flatMap((n) => filesNamed(n, repoFiles, packages));
-    const own = [...new Set([...withPath, ...bare])];
+    const own = [...new Set([...withPath.flatMap((paths) => narrow(paths, packages)), ...bare])];
     // A sub-item that names no file is about the files of its heading.
     const paths = own.length ? own : (parent?.paths ?? []);
     const item = { indent, line, text: bullet[2], paths, packages, heading: false };

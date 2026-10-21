@@ -1,7 +1,11 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 import { seedDuration, seedOnLoad } from './seeded-snapshot';
+
+// `seedDuration` reads a `performance` entry, which the page clock does not keep; the day the
+// pages open on changes nothing here.
+test.use({ machineClock: true });
 
 interface Backup {
   readonly format: string;

@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { ANCHOR_MORNING, ANCHOR_YEAR, toNewYearsEve } from './anchor';
+import { expect, test, type Page } from './fixtures';
+import { ANCHOR_YEAR, toNewYearsEve } from './anchor';
 import { createKycCustomer } from './support';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
@@ -128,8 +128,6 @@ test('refuses a zero, negative or unreadable FYP', async ({ page }) => {
 
 // DR6-38 (R38e): the day 8b filled in as dd/mm reads in the year the dialog opened in.
 test('a policy issued across New Year keeps the day the dialog showed (8b)', async ({ page }) => {
-  // The e2e day starts on the anchor; the clock moves it on from there (T-126).
-  await page.clock.install({ time: ANCHOR_MORNING });
   await openProfile(page);
   const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
   await card.getByRole('button', { name: '+ Hợp đồng' }).first().click();
