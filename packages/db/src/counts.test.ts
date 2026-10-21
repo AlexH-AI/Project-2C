@@ -106,6 +106,24 @@ describe('countCustomerRecords (mockup 5f, spec Phase 6 TR-4, TR-9)', () => {
     expect(countCustomerRecords(db, anh.id)).toMatchObject({ met: 1, rf: 1 });
   });
 
+  // The birth year and gender of the profile are written as notes of the system (spec Phase 3 D2):
+  // 5f and the trash row count them as the box of the purge does (DR6-125, mockup 11i).
+  it('counts the notes the system wrote from the profile with the others', async () => {
+    const { db, re } = await setup(d(11, 10));
+    const lan = createCustomer(db, {
+      name: 'Lan',
+      reId: re.id,
+      stage: 'N3',
+      date: d(1, 9),
+      birthDate: { year: 1985 },
+      gender: 'FEMALE',
+    });
+    addKycNote(db, lan.id, { text: 'Làm luật sư', date: d(2, 9) });
+
+    // One note of the system holds both fields, and the RE wrote the other.
+    expect(countCustomerRecords(db, lan.id).kycNotes).toBe(2);
+  });
+
   it('counts nothing for a customer without records', async () => {
     const { db, re } = await setup();
     const anh = createCustomer(db, {

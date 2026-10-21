@@ -14,6 +14,7 @@ export {
   isPersonInUse,
   listPeople,
   listTeams,
+  ownsRecords,
   personUsage,
   renameTeam,
   restorePerson,
