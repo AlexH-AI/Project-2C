@@ -145,15 +145,44 @@ describe('inUseHelp (mockup 9b)', () => {
     expect(both).not.toContain(RE);
   });
 
-  it('names the customers in the trash the records belong to, how they come back or go (T-250, TR-11)', () => {
+  // DR6-115, Q3 (a): purging comes first and always works; what restoring does is narrower than it
+  // sounds. Moving a restored customer to another RE (5c) hands over the planned appointments only
+  // (K19), and a coordinator is changed in Sửa kết quả (6f) only, which a planned or moved
+  // appointment has not.
+  const reTrash = (customers: string) =>
+    `Có cả dữ liệu của KH đã xóa: ${customers}. Dọn sạch Thùng rác (Cài đặt → Thùng rác) xóa hẳn dữ liệu đó; khôi phục KH rồi chuyển sang RE khác chỉ chuyển được lịch Dự kiến.`;
+  const supportTrash = (customers: string) =>
+    `Có cả lịch hẹn của KH đã xóa: ${customers}. Dọn sạch Thùng rác (Cài đặt → Thùng rác) xóa hẳn các lịch đó; khôi phục KH thì sửa được lịch đã có kết quả (Sửa kết quả), còn lịch Dự kiến / Dời lịch chỉ dọn sạch mới gỡ.`;
+
+  it('names the customers in the trash the records belong to, how they go or come back (T-250, TR-11, DR6-115)', () => {
     expect(inUseHelp(usage({ appointments: 1, inTrash: ['Lan'] }))).toEqual([
       expect.stringContaining(RE),
-      'Có cả dữ liệu của KH đã xóa: Lan. Khôi phục KH ở Cài đặt → Thùng rác rồi chuyển sang RE khác, hoặc dọn sạch Thùng rác.',
+      reTrash('Lan'),
     ]);
     expect(inUseHelp(usage({ reviewing: 1, inTrash: ['Lan', 'Ánh Hồng'] }))).toEqual([
       expect.stringContaining(REVIEWER),
-      'Có cả lịch hẹn của KH đã xóa: Lan, Ánh Hồng. Khôi phục KH ở Cài đặt → Thùng rác thì mới sửa được các lịch đó, hoặc dọn sạch Thùng rác.',
+      supportTrash('Lan, Ánh Hồng'),
     ]);
+  });
+
+  it('says the same about the trash whichever records keep the person, never that restoring clears them (DR6-115)', () => {
+    // An RE: planned appointments only, a met meeting, a policy, both, and a coordinator too (C1–C4).
+    for (const counts of [
+      { appointments: 2 },
+      { appointments: 1, policies: 1 },
+      { policies: 1 },
+      { appointments: 1, coordinating: 1 },
+    ]) {
+      expect(inUseHelp(usage({ ...counts, inTrash: ['Lan'] })).at(-1)).toBe(reTrash('Lan'));
+    }
+    // A supporter: a coordinator of the planned appointment of NT-TM-16, a reviewer, both.
+    for (const counts of [
+      { coordinating: 2 },
+      { reviewing: 1 },
+      { coordinating: 2, reviewing: 1 },
+    ]) {
+      expect(inUseHelp(usage({ ...counts, inTrash: ['Lan'] })).at(-1)).toBe(supportTrash('Lan'));
+    }
   });
 
   it('names three customers of the trash, and counts the others', () => {

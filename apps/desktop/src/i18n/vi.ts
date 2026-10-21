@@ -1209,11 +1209,13 @@ export const vi = {
   'person.inUseSupportHelp':
     'Bỏ nhân sự này khỏi người đánh giá kết quả của các lịch đó (ở Sửa kết quả); người phối hợp của lịch Dời lịch / Dự kiến không đổi được — giữ lại thay vì xóa.',
   // Records of deleted customers keep the person too: deleting a customer only hides them (T-250),
-  // purging it deletes them (TR-11).
+  // purging it deletes them (TR-11). Purging always works; restoring is narrower than it sounds:
+  // moving a restored customer to another RE hands over its planned appointments only (K19), and
+  // a coordinator is changed in Sửa kết quả only (DR6-115, Q3 a).
   'person.inUseTrash':
-    'Có cả dữ liệu của KH đã xóa: {customer}. Khôi phục KH ở Cài đặt → Thùng rác rồi chuyển sang RE khác, hoặc dọn sạch Thùng rác.',
+    'Có cả dữ liệu của KH đã xóa: {customer}. Dọn sạch Thùng rác (Cài đặt → Thùng rác) xóa hẳn dữ liệu đó; khôi phục KH rồi chuyển sang RE khác chỉ chuyển được lịch Dự kiến.',
   'person.inUseSupportTrash':
-    'Có cả lịch hẹn của KH đã xóa: {customer}. Khôi phục KH ở Cài đặt → Thùng rác thì mới sửa được các lịch đó, hoặc dọn sạch Thùng rác.',
+    'Có cả lịch hẹn của KH đã xóa: {customer}. Dọn sạch Thùng rác (Cài đặt → Thùng rác) xóa hẳn các lịch đó; khôi phục KH thì sửa được lịch đã có kết quả (Sửa kết quả), còn lịch Dự kiến / Dời lịch chỉ dọn sạch mới gỡ.',
   'person.inUseTrashMore': '{customer} và {count} KH khác',
   'error.TEAM_REQUIRED': '{role} phải thuộc một team.',
   // An RE with records who leaves the role, or a person deleted while still in use: both by role.

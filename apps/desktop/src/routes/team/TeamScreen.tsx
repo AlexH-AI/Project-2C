@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Person, PersonRole, Team } from '@p2c/domain';
-import { Button, DataTable, type DataTableColumn } from '@p2c/ui';
+import { Button, DataTable, DialogFocusFallback, type DataTableColumn } from '@p2c/ui';
 import { useTables, useToday } from '../../data/AppDataContext';
 import type { Tables } from '../../data/tables';
 import { t, tableMore } from '../../i18n';
@@ -21,6 +21,27 @@ const teamsView = ({ teams, people, customers, appointments, policies }: Tables)
   people,
   records: { customers, appointments, policies },
 });
+
+const LIST_TITLE = 'team-list-title';
+const MEMBERS_TITLE = 'team-members-title';
+const SHARED_TITLE = 'team-shared-title';
+
+/**
+ * The heading of the card a dialog's change leaves: where the focus goes once the button that opened
+ * the dialog went with the change, e.g. the row of a person deleted or made another role, "+ Thêm
+ * TL", the "Xóa team" of a team gone (DR6-116).
+ */
+function cardTitleOf(editing: Editing | null): string {
+  switch (editing?.kind) {
+    case 'delete':
+      return LIST_TITLE;
+    case 'editPerson':
+    case 'deletePerson':
+      return editing.person.teamId === null ? SHARED_TITLE : MEMBERS_TITLE;
+    default:
+      return MEMBERS_TITLE;
+  }
+}
 
 const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 const CARD_TITLE = 'm-0 text-sm font-medium text-heading';
@@ -132,8 +153,8 @@ export function TeamScreen() {
       </div>
       <div className="flex items-start gap-4">
         <div className="flex w-64 shrink-0 flex-col gap-4">
-          <section aria-labelledby="team-list-title" className={CARD}>
-            <h2 id="team-list-title" className={`${CARD_TITLE} mb-2`}>
+          <section aria-labelledby={LIST_TITLE} className={CARD}>
+            <h2 id={LIST_TITLE} tabIndex={-1} className={`${CARD_TITLE} mb-2`}>
               {t('team.list')}
             </h2>
             {view.teams.length === 0 && <p className="m-0 text-sm text-fg-3">{t('team.none')}</p>}
@@ -161,6 +182,9 @@ export function TeamScreen() {
         </div>
         {selected && (
           <Members
+            // One card per team: reused, it would keep the "Xóa team" of a team just deleted for
+            // the team shown next, and the focus on it (DR6-116).
+            key={selected.team.id}
             entry={selected}
             columns={columns}
             onEditLead={editPerson}
@@ -172,46 +196,48 @@ export function TeamScreen() {
           />
         )}
       </div>
-      {editing?.kind === 'create' && (
-        <TeamNameDialog
-          onClose={close}
-          onSaved={(team) => {
-            setSelectedId(team.id);
-            close();
-          }}
-        />
-      )}
-      {editing?.kind === 'rename' && (
-        <TeamNameDialog team={editing.team} onClose={close} onSaved={close} />
-      )}
-      {editing?.kind === 'delete' && <DeleteTeamDialog team={editing.team} onClose={close} />}
-      {(editing?.kind === 'addPerson' || editing?.kind === 'editPerson') && (
-        <PersonDialog
-          person={editing.kind === 'editPerson' ? editing.person : undefined}
-          teams={teams}
-          defaultTeamId={editing.kind === 'addPerson' ? editing.teamId : undefined}
-          defaultRole={editing.kind === 'addPerson' ? editing.role : undefined}
-          onClose={close}
-          onSaved={(person) => {
-            if (person.teamId) setSelectedId(person.teamId);
-            close();
-          }}
-          onDelete={
-            editing.kind === 'editPerson'
-              ? () => setEditing({ kind: 'deletePerson', person: editing.person })
-              : undefined
-          }
-        />
-      )}
-      {editing?.kind === 'deletePerson' && (
-        <DeletePersonDialog
-          person={editing.person}
-          teamName={
-            teams.find((team) => team.id === editing.person.teamId)?.name ?? t('team.shared')
-          }
-          onClose={close}
-        />
-      )}
+      <DialogFocusFallback value={() => document.getElementById(cardTitleOf(editing))}>
+        {editing?.kind === 'create' && (
+          <TeamNameDialog
+            onClose={close}
+            onSaved={(team) => {
+              setSelectedId(team.id);
+              close();
+            }}
+          />
+        )}
+        {editing?.kind === 'rename' && (
+          <TeamNameDialog team={editing.team} onClose={close} onSaved={close} />
+        )}
+        {editing?.kind === 'delete' && <DeleteTeamDialog team={editing.team} onClose={close} />}
+        {(editing?.kind === 'addPerson' || editing?.kind === 'editPerson') && (
+          <PersonDialog
+            person={editing.kind === 'editPerson' ? editing.person : undefined}
+            teams={teams}
+            defaultTeamId={editing.kind === 'addPerson' ? editing.teamId : undefined}
+            defaultRole={editing.kind === 'addPerson' ? editing.role : undefined}
+            onClose={close}
+            onSaved={(person) => {
+              if (person.teamId) setSelectedId(person.teamId);
+              close();
+            }}
+            onDelete={
+              editing.kind === 'editPerson'
+                ? () => setEditing({ kind: 'deletePerson', person: editing.person })
+                : undefined
+            }
+          />
+        )}
+        {editing?.kind === 'deletePerson' && (
+          <DeletePersonDialog
+            person={editing.person}
+            teamName={
+              teams.find((team) => team.id === editing.person.teamId)?.name ?? t('team.shared')
+            }
+            onClose={close}
+          />
+        )}
+      </DialogFocusFallback>
     </>
   );
 }
@@ -224,8 +250,8 @@ function SharedSupport({
   onEdit: (person: Person) => void;
 }) {
   return (
-    <section aria-labelledby="team-shared-title" className={CARD}>
-      <h2 id="team-shared-title" className={`${CARD_TITLE} mb-2`}>
+    <section aria-labelledby={SHARED_TITLE} className={CARD}>
+      <h2 id={SHARED_TITLE} tabIndex={-1} className={`${CARD_TITLE} mb-2`}>
         {t('team.shared')}
       </h2>
       {people.length === 0 ? (
@@ -267,7 +293,9 @@ function Members({
       className={`${CARD} min-w-0 flex-1`}
     >
       <div className="mb-2 flex items-center gap-2">
-        <h2 className={CARD_TITLE}>{t('team.heading', { name: entry.team.name })}</h2>
+        <h2 id={MEMBERS_TITLE} tabIndex={-1} className={CARD_TITLE}>
+          {t('team.heading', { name: entry.team.name })}
+        </h2>
         <span className="text-fg-3">{t('sep.dot')}</span>
         {entry.lead ? (
           <>

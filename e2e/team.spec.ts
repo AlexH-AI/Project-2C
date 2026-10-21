@@ -486,7 +486,7 @@ test('an RE and an IS kept only by a customer in the trash: 9b counts it as the 
   await expect(dialog.getByRole('alert')).not.toContainText('KH đang phụ trách');
   await expect(dialog).toContainText(RE_HELP);
   await expect(dialog).toContainText(
-    `Có cả dữ liệu của KH đã xóa: ${customer}. Khôi phục KH ở Cài đặt → Thùng rác rồi chuyển sang RE khác, hoặc dọn sạch Thùng rác.`,
+    `Có cả dữ liệu của KH đã xóa: ${customer}. Dọn sạch Thùng rác (Cài đặt → Thùng rác) xóa hẳn dữ liệu đó; khôi phục KH rồi chuyển sang RE khác chỉ chuyển được lịch Dự kiến.`,
   );
   await expect(dialog.getByRole('button', { name: 'Xóa', exact: true })).toBeDisabled();
   await dialog.getByRole('button', { name: 'Đóng' }).click();
@@ -495,7 +495,7 @@ test('an RE and an IS kept only by a customer in the trash: 9b counts it as the 
   await expect(dialog.getByRole('alert')).toContainText('1 lịch hẹn là người đánh giá kết quả');
   await expect(dialog).toContainText(REVIEWER_HELP);
   await expect(dialog).toContainText(
-    `Có cả lịch hẹn của KH đã xóa: ${customer}. Khôi phục KH ở Cài đặt → Thùng rác thì mới sửa được các lịch đó, hoặc dọn sạch Thùng rác.`,
+    `Có cả lịch hẹn của KH đã xóa: ${customer}. Dọn sạch Thùng rác (Cài đặt → Thùng rác) xóa hẳn các lịch đó; khôi phục KH thì sửa được lịch đã có kết quả (Sửa kết quả), còn lịch Dự kiến / Dời lịch chỉ dọn sạch mới gỡ.`,
   );
   await expect(dialog.getByRole('button', { name: 'Xóa', exact: true })).toBeDisabled();
   await dialog.getByRole('button', { name: 'Đóng' }).click();
@@ -601,4 +601,92 @@ test('deletes an empty team', async ({ page }) => {
   await expect(dialog).toBeHidden();
   await expect(teamButton(page, 'Thiên Hà')).toHaveCount(0);
   await expect(teamList(page).getByRole('button')).toHaveCount(SEEDED.length);
+});
+
+// DR6-116: the button that opened a dialog goes with its change (the person's row leaves, the TL is
+// added or deleted, the team is gone); by the keyboard the focus lands on the top of the card the
+// change was made in, not on the page, nor on the "Xóa team" of the team shown next.
+const cardTop = (card: Locator, name: string) => card.getByRole('heading', { name, exact: true });
+
+/** Enter on a person's Sửa, on Xóa nhân sự, then on Xóa of 9b, which must say yes. */
+async function deleteByKeyboard(page: Page, where: Locator, name: string) {
+  await where.getByRole('button', { name: `Sửa ${name}` }).press('Enter');
+  await page
+    .getByRole('dialog', { name: 'Sửa nhân sự' })
+    .getByRole('button', { name: 'Xóa nhân sự' })
+    .press('Enter');
+  const confirm = page.getByRole('dialog', { name: `Xóa ${name}?` });
+  await confirm.getByRole('button', { name: 'Xóa', exact: true }).press('Enter');
+  await expect(confirm).toBeHidden();
+}
+
+test('by the keyboard, deleting a person or changing their role leaves the focus on the card they left (DR6-116)', async ({
+  page,
+}) => {
+  await addRe(page, 'Trần Hải Yến', 'Hừng Đông');
+  const card = members(page, 'Hừng Đông');
+  const table = card.getByRole('table');
+
+  // 9b of an RE of the table.
+  await deleteByKeyboard(page, table, 'Trần Hải Yến');
+  await expect(table.getByRole('row', { name: /Trần Hải Yến/ })).toHaveCount(0);
+  await expect(cardTop(card, 'Team Hừng Đông')).toBeFocused();
+
+  // 9a: an RE made IS leaves the table, an IS made RE leaves "Người hỗ trợ".
+  await addRe(page, 'Lê Thu Hà', 'Hừng Đông');
+  await table.getByRole('button', { name: 'Sửa Lê Thu Hà' }).press('Enter');
+  const edit = page.getByRole('dialog', { name: 'Sửa nhân sự' });
+  await edit.getByRole('radio', { name: 'IS', exact: true }).check();
+  await edit.getByRole('button', { name: 'Lưu' }).press('Enter');
+  await expect(edit).toBeHidden();
+  await expect(table.getByRole('row', { name: /Lê Thu Hà/ })).toHaveCount(0);
+  await expect(cardTop(card, 'Team Hừng Đông')).toBeFocused();
+
+  const support = shared(page);
+  await support.getByRole('button', { name: 'Sửa Lê Thu Hà' }).press('Enter');
+  await edit.getByRole('radio', { name: 'RE', exact: true }).check();
+  await edit.getByRole('combobox', { name: 'Team' }).selectOption({ label: 'Hừng Đông' });
+  await edit.getByRole('button', { name: 'Lưu' }).press('Enter');
+  await expect(edit).toBeHidden();
+  await expect(support).not.toContainText('Lê Thu Hà');
+  await expect(cardTop(support, 'Người hỗ trợ')).toBeFocused();
+
+  // 9b of a person of "Người hỗ trợ".
+  await addSupport(page, 'Phạm Minh Tú', 'BD');
+  await deleteByKeyboard(page, support, 'Phạm Minh Tú');
+  await expect(support).not.toContainText('Phạm Minh Tú');
+  await expect(cardTop(support, 'Người hỗ trợ')).toBeFocused();
+});
+
+test('by the keyboard, + Thêm TL and the delete of a TL leave the focus on the top of the team card (DR6-116)', async ({
+  page,
+}) => {
+  await createTeam(page, 'Thiên Hà');
+  const card = members(page, 'Thiên Hà');
+
+  await card.getByRole('button', { name: '+ Thêm TL' }).press('Enter');
+  const add = page.getByRole('dialog', { name: 'Nhân sự mới' });
+  await add.getByRole('textbox', { name: 'Họ tên' }).fill('Đỗ Gia Bảo');
+  await add.getByRole('button', { name: 'Thêm' }).press('Enter');
+  await expect(add).toBeHidden();
+  await expect(card.getByRole('button', { name: '+ Thêm TL' })).toHaveCount(0);
+  await expect(cardTop(card, 'Team Thiên Hà')).toBeFocused();
+
+  await deleteByKeyboard(page, card, 'Đỗ Gia Bảo');
+  await expect(card).toContainText('chưa có TL');
+  await expect(cardTop(card, 'Team Thiên Hà')).toBeFocused();
+});
+
+test('by the keyboard, Xóa team leaves the focus on the list of teams, not on the button of the team shown next (DR6-116)', async ({
+  page,
+}) => {
+  await createTeam(page, 'Thiên Hà');
+  await members(page, 'Thiên Hà').getByRole('button', { name: 'Xóa team' }).press('Enter');
+  const dialog = page.getByRole('dialog', { name: 'Xóa team Thiên Hà?' });
+  await dialog.getByRole('button', { name: 'Xóa', exact: true }).press('Enter');
+  await expect(dialog).toBeHidden();
+  await expect(teamButton(page, 'Thiên Hà')).toHaveCount(0);
+
+  // The first team shows next, with a "Xóa team" of its own: React would keep the deleted team's.
+  await expect(cardTop(teamList(page), 'Team')).toBeFocused();
 });
