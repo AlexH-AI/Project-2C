@@ -169,25 +169,38 @@ export function ownerParts(row: TrashRow): OwnerPart[] {
 }
 
 /**
- * The name of a row's restore button, every "Khôi phục…" alike on screen (DR6-43): the record, and
- * for an appointment or a policy whose customer.
+ * The name of a row's restore button, every "Khôi phục…" alike on screen (DR6-43): the record, with
+ * what tells two of a customer apart in "Bản ghi" — an appointment's status, a policy's FYP and
+ * status (DR6-99, DR6-119) — and for an appointment or a policy whose customer.
  */
 export function restoreLabel(row: TrashRow): string {
   switch (row.kind) {
     case 'appointment':
-      return t('trash.restoreLabel.appointment', {
-        when: appointmentWhen(row),
-        name: row.owner.customer?.name ?? '',
-      });
+      return ofCustomer(
+        row,
+        t('trash.restoreLabel.appointment', {
+          when: appointmentWhen(row),
+          status: t(`appointmentStatus.${row.status}`),
+        }),
+      );
     case 'policy':
-      return t('trash.restoreLabel.policy', {
-        date: formatDate(row.submittedDate),
-        fyp: formatVnd(row.submittedFyp),
-        name: row.owner.customer?.name ?? '',
-      });
+      return ofCustomer(
+        row,
+        t('trash.restoreLabel.policy', {
+          date: formatDate(row.submittedDate),
+          fyp: formatVnd(row.submittedFyp),
+          status: t(row.issuedDate === null ? 'policyStatus.submitted' : 'policyStatus.issued'),
+        }),
+      );
     default:
       return t(`trash.restoreLabel.${row.kind}`, { name: row.name });
   }
+}
+
+/** "… của KH Name"; a row with no customer, which the foreign key allows none, has the label alone. */
+function ofCustomer(row: TrashRow, label: string): string {
+  const customer = row.owner.customer;
+  return customer ? t('trash.restoreLabel.ofCustomer', { label, name: customer.name }) : label;
 }
 
 export function deletedAtText(row: TrashRow): string {

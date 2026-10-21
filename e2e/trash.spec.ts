@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from './fixtures';
-import { trackConsoleErrors } from './support';
+import { asExe, trackConsoleErrors } from './support';
 
 // Cài đặt → Thùng rác (spec Phase 6 §4.2; mockup trash.html 11a, 11e). The seed deletes nothing,
 // and the e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
@@ -14,15 +14,27 @@ const detail = (page: Page) => page.getByRole('complementary', { name: 'Chi ti�
 const purgeButton = (page: Page) =>
   trash(page).getByRole('button', { name: 'Dọn sạch Thùng rác…' });
 const purgeDialog = (page: Page) => page.getByRole('dialog', { name: 'Dọn sạch Thùng rác?' });
+const purgeWord = (page: Page) =>
+  purgeDialog(page).getByRole('textbox', { name: 'Gõ DỌN SẠCH để xác nhận' });
 
-/** Types the word of 11i and purges: "Dọn sạch" in web mode, no backup (D13). */
+/**
+ * Types the word of 11i and purges: "Dọn sạch" in web mode, no backup (D13). Only the word itself
+ * turns the button on (D1): not a part of it, another case, spaces around it or inside; what an IME
+ * types, the letters decomposed, does (review R4).
+ */
 async function confirmPurge(page: Page) {
   const dialog = purgeDialog(page);
   const confirm = dialog.getByRole('button', { name: 'Dọn sạch', exact: true });
-  const word = dialog.getByRole('textbox', { name: 'Gõ DỌN SẠCH để xác nhận' });
+  const word = purgeWord(page);
   await expect(confirm).toBeDisabled();
-  await word.fill('DỌN');
-  await expect(confirm).toBeDisabled();
+  for (const typed of ['DỌN', 'dọn sạch', 'DỌN SẠCH ', ' DỌN SẠCH', 'DỌN  SẠCH']) {
+    await word.fill(typed);
+    await expect(confirm).toBeDisabled();
+  }
+  const decomposed = 'DỌN SẠCH'.normalize('NFD');
+  expect(decomposed).not.toBe('DỌN SẠCH');
+  await word.fill(decomposed);
+  await expect(confirm).toBeEnabled();
   await word.fill('DỌN SẠCH');
   await confirm.click();
   await expect(dialog).toBeHidden();
@@ -69,10 +81,11 @@ async function recordMet(page: Page, stage: string) {
 
 /**
  * Books an appointment on 15/09 for the first N3 customer, then deletes it; returns the customer's
- * name and the link to its profile.
+ * name and the link to its profile. `afterLoad` runs once the page is up, before the booking.
  */
-async function bookAndDelete(page: Page) {
+async function bookAndDelete(page: Page, afterLoad?: () => Promise<unknown>) {
   await page.goto('/#/appointments');
+  await afterLoad?.();
   const name = await book(page, '15/9');
   const profile =
     (await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).getAttribute('href')) ?? '';
@@ -204,10 +217,13 @@ test('restores a deleted customer, then its appointment deleted on its own (TR-1
   const rows = table(page).getByRole('row');
   const ofKind = (kind: string) =>
     rows.filter({ has: page.getByRole('cell', { name: kind, exact: true }) });
-  // DR6-43: each button is named by the record it restores.
+  // DR6-43, DR6-119: each button is named by the record it restores, its status too.
   const restoreButton = (kind: string) =>
     ofKind(kind).getByRole('button', {
-      name: kind === 'KH' ? `Khôi phục KH ${name}` : `Khôi phục lịch hẹn 15/09/2026 của KH ${name}`,
+      name:
+        kind === 'KH'
+          ? `Khôi phục KH ${name}`
+          : `Khôi phục lịch hẹn 15/09/2026 · Dự kiến của KH ${name}`,
       exact: true,
     });
   await expect(rows).toHaveCount(3);
@@ -268,7 +284,7 @@ test('by the keyboard, Khôi phục leaves the focus on the line of what came ba
   const { name } = await bookAndDelete(page);
   await openTrash(page);
   const restore = table(page).getByRole('button', {
-    name: `Khôi phục lịch hẹn 15/09/2026 của KH ${name}`,
+    name: `Khôi phục lịch hẹn 15/09/2026 · Dự kiến của KH ${name}`,
     exact: true,
   });
   const dialog = page.getByRole('dialog', { name: 'Khôi phục lịch hẹn 15/09/2026?' });
@@ -332,7 +348,9 @@ test('restores a meeting that kept the stage though the stage changed after it (
   await expect(row).toContainText('Đã gặp');
   // TR-3, DR6-93: the stage it recorded, and that restoring it changes none.
   await expect(row).toContainText('nhóm sau N3 · không đổi nhóm KH');
-  await row.getByRole('button', { name: `Khôi phục lịch hẹn 14/09/2026 của KH ${name}` }).click();
+  await row
+    .getByRole('button', { name: `Khôi phục lịch hẹn 14/09/2026 · Đã gặp của KH ${name}` })
+    .click();
   const dialog = page.getByRole('dialog', { name: 'Khôi phục lịch hẹn 14/09/2026?' });
   await expect(dialog).toContainText('Kết quảĐã gặp · nhóm sau');
   await expect(dialog).toContainText('Không đổi nhóm KH');
@@ -428,7 +446,7 @@ test('a deleted policy submitted tomorrow can be restored once its day comes (TR
 
   await settingsNav(page).getByRole('button', { name: 'Thùng rác' }).click();
   const restore = table(page).getByRole('button', {
-    name: `Khôi phục HĐ nộp 16/09/2026 · 24.000.000 ₫ của KH ${customer.name}`,
+    name: `Khôi phục HĐ nộp 16/09/2026 · 24.000.000 ₫ · Đã nộp của KH ${customer.name}`,
   });
   await expect(restore).toBeDisabled();
   await expect(restore).toHaveAccessibleDescription('Ngày nộp 16/09/2026 sau hôm nay.');
@@ -519,13 +537,24 @@ test('reminds from 1 000 records, and keeps a record still pointed to, saying wh
 
   await settingsNav(page).getByRole('button', { name: 'Thùng rác' }).click();
   await expect(trash(page)).toContainText('1.000 bản ghi');
-  await expect(trash(page)).toContainText(
-    'Thùng rác có 1.000 bản ghi nên mở chậm dần. Nên dọn sạch khi không cần khôi phục các bản ghi này nữa.',
-  );
+  const reminder =
+    'Thùng rác có 1.000 bản ghi nên mở chậm dần. Nên dọn sạch khi không cần khôi phục các bản ghi này nữa.';
+  await expect(trash(page)).toContainText(reminder);
   // Deleted last, the Dời lịch heads the table, its reason shown before the purge.
   const rows = table(page).getByRole('row');
   await expect(rows.nth(1)).toContainText('Dời lịch');
   await expect(rows.nth(1)).toContainText(kept);
+
+  // TR-11, TR-13: the reminder and the purge go by every record, not by the kind or the name asked
+  // for: with no row shown, the reminder stays and the button is on (DR6-128).
+  await kinds(page)
+    .getByRole('radio', { name: /^Lịch hẹn/ })
+    .click();
+  const search = trash(page).getByRole('searchbox', { name: 'Tìm theo tên' });
+  await search.fill('không có ai tên này');
+  await expect(trash(page)).toContainText('Không có bản ghi đã xóa nào khớp.');
+  await expect(trash(page)).toContainText(reminder);
+  await expect(purgeButton(page)).toBeEnabled();
 
   await purgeButton(page).click();
   const dialog = purgeDialog(page);
@@ -543,7 +572,75 @@ test('reminds from 1 000 records, and keeps a record still pointed to, saying wh
   await expect(purgeButton(page)).toBeDisabled();
   await expect(trash(page).getByText('1 bản ghi', { exact: true })).toBeVisible();
   await expect(trash(page)).not.toContainText('mở chậm dần');
+  // The 999 policies went though the kind and the name shown matched none of them.
+  await search.fill('');
+  await kinds(page)
+    .getByRole('radio', { name: /^Tất cả/ })
+    .click();
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(1)).toContainText(kept);
   expect(errors).toEqual([]);
+});
+
+// TR-11, 11i: while the purge runs the dialog stays, so nothing writes to the data it is replacing.
+// The exe's backup is held, as a slow disk would (DR6-128).
+test('the dialog of a purge that runs stays: Escape does not close it, Hủy is off (TR-11; 11i)', async ({
+  page,
+}) => {
+  await asExe(page);
+  await bookAndDelete(page);
+  await openTrash(page);
+
+  await purgeButton(page).click();
+  const dialog = purgeDialog(page);
+  await purgeWord(page).fill('DỌN SẠCH');
+  await page.evaluate(() => window.exe.holdBackup());
+  await dialog.getByRole('button', { name: 'Backup rồi dọn sạch' }).click();
+  await expect(dialog.getByRole('button', { name: 'Đang dọn…' })).toBeDisabled();
+  await expect(dialog.getByRole('button', { name: 'Hủy' })).toBeDisabled();
+  await expect(purgeWord(page)).toBeDisabled();
+
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeVisible();
+  // Still modal: the page behind cannot be used while it purges. A second Escape closes the dialog
+  // for a moment and it opens again (DR-58), so the check waits for that.
+  await expect.poll(() => dialog.evaluate((node) => node.matches(':modal'))).toBe(true);
+
+  await page.evaluate(() => window.exe.releaseBackup());
+  await expect(dialog).toHaveCount(0);
+  const notice = trash(page).getByRole('status');
+  await expect(notice).toContainText('Đã dọn sạch Thùng rác');
+  await expect(notice).toContainText('Backup: ');
+  await expect(notice).toBeFocused();
+});
+
+// D7, 11j: the last save failed, so a backup would miss what changed since: the purge is refused, in
+// the place its notice would be, and nothing changes (L191 of the notes of review).
+test('a purge refused because the last save failed says so and changes nothing (D7; 11j)', async ({
+  page,
+}) => {
+  await asExe(page);
+  await bookAndDelete(page, () => page.evaluate(() => (window.exe.failSaves = true)));
+  await openTrash(page);
+  await expect(table(page).getByRole('row')).toHaveCount(2);
+
+  await purgeButton(page).click();
+  const dialog = purgeDialog(page);
+  await purgeWord(page).fill('DỌN SẠCH');
+  await dialog.getByRole('button', { name: 'Backup rồi dọn sạch' }).click();
+  await expect(dialog).toHaveCount(0);
+
+  // The shell's own alert says the save failed; this one is the card's.
+  const refused = trash(page).getByRole('alert');
+  await expect(refused).toContainText(
+    'Chưa dọn: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó.',
+  );
+  await expect(refused).toContainText('Dữ liệu không bị đổi.');
+  await expect(trash(page).getByRole('status')).toHaveCount(0);
+  await expect(table(page).getByRole('row')).toHaveCount(2);
+  await expect(trash(page)).toContainText('1 bản ghi');
+  await expect(purgeButton(page)).toBeEnabled();
+  await expect(purgeButton(page)).toBeFocused();
 });

@@ -1,6 +1,7 @@
 import {
   compareDates,
   formatDate,
+  formatVnd,
   formatVndCompact,
   type CalendarDate,
   type Person,
@@ -74,7 +75,8 @@ export function CustomerPolicies({
             .sort((a, b) => compareDates(b.submittedDate, a.submittedDate))
             .map((p) => {
               const re = people.find((person) => person.id === p.reId);
-              const submitted = formatDate(p.submittedDate);
+              // The buttons' names say the FYP too, to tell two policies of one day apart (DR6-119).
+              const named = { date: formatDate(p.submittedDate), fyp: formatVnd(p.submittedFyp) };
               return (
                 <li
                   key={p.id}
@@ -93,7 +95,7 @@ export function CustomerPolicies({
                   {!p.issuedDate && (
                     <button
                       type="button"
-                      aria-label={t('policies.issueLabel', { date: submitted })}
+                      aria-label={t('policies.issueLabel', named)}
                       onClick={() => onIssue(p)}
                       className={LINK}
                     >
@@ -102,7 +104,7 @@ export function CustomerPolicies({
                   )}
                   <button
                     type="button"
-                    aria-label={t('policies.editLabel', { date: submitted })}
+                    aria-label={t('policies.editLabel', named)}
                     onClick={() => onEdit(p)}
                     className={LINK}
                   >

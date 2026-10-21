@@ -202,6 +202,34 @@ test('edits the issued FYP (8d), then deletes the policy softly', async ({ page 
   await expect(header.locator('span.rounded-full').first()).toHaveText(stage ?? '');
 });
 
+// DR6-119: two policies of a customer submitted the same day read alike to a screen reader unless
+// each button is named by its FYP too, as the line beside it shows.
+test('two policies submitted the same day have four buttons of four different names (DR6-119)', async ({
+  page,
+}) => {
+  await createKycCustomer(page, 'Hà Hai Hợp Đồng');
+  const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
+  for (const fyp of ['24tr', '48tr']) {
+    await card.getByRole('button', { name: '+ Hợp đồng' }).first().click();
+    const dialog = page.getByRole('dialog', { name: 'Hợp đồng mới · đã nộp' });
+    await dialog.getByRole('textbox', { name: /^Ngày nộp/ }).fill('10/9');
+    await dialog.getByRole('textbox', { name: /^FYP nộp/ }).fill(fyp);
+    await dialog.getByRole('button', { name: 'Lưu HĐ' }).click();
+    await expect(dialog).toBeHidden();
+  }
+  await expect(card.getByRole('listitem')).toHaveCount(2);
+
+  for (const verb of ['Phát hành', 'Sửa']) {
+    for (const fyp of ['24.000.000 ₫', '48.000.000 ₫']) {
+      const button = card.getByRole('button', {
+        name: `${verb} HĐ nộp 10/09/2026 · ${fyp}`,
+        exact: true,
+      });
+      await expect(button).toHaveCount(1);
+    }
+  }
+});
+
 // DR6-83: the button that opened the dialog goes with the save (the empty card's "+ Hợp đồng", a
 // row's "Phát hành", the row itself); the focus lands on the top of the card, not on the page.
 test('by the keyboard, Lưu HĐ from the empty card, Phát hành and Xóa HĐ leave the focus on the card (DR6-83)', async ({
