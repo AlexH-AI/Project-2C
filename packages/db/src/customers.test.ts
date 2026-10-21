@@ -11,6 +11,7 @@ import {
   previewHandover,
   restoreCustomer,
   softDeleteCustomer,
+  stagesOfDay,
   updateCustomerProfile,
 } from './customers';
 import {
@@ -479,15 +480,44 @@ describe('customers', () => {
   });
 });
 
+const step = (
+  id: string,
+  from: CustomerStage | null,
+  to: CustomerStage,
+  date: CalendarDate,
+  appointmentId: string | null = null,
+  customerId = 'c1',
+): StageTransition => ({ id, customerId, from, to, date, appointmentId });
+
+describe('stagesOfDay (T-232, DR-43; DR6-134)', () => {
+  const created = step('t0', null, 'N3', d(10, 9));
+  const moved = step('t1', 'N3', 'N2', d(12, 9));
+  const back = step('t2', 'N2', 'N3', d(12, 9));
+  const later = step('t3', 'N3', 'N1', d(20, 9));
+  const history = [created, moved, back, later];
+
+  it('starts the day in the stage the day before ended in, then each change of the day', () => {
+    expect(stagesOfDay(history, d(12, 9))).toEqual(['N3', 'N2', 'N3']);
+    expect(stagesOfDay(history, d(15, 9))).toEqual(['N3']);
+    expect(stagesOfDay(history, d(20, 9))).toEqual(['N3', 'N1']);
+    expect(stagesOfDay(history, d(25, 9))).toEqual(['N1']);
+  });
+
+  it('starts the day of the creation, and any day before it, in the stage it was created in', () => {
+    expect(stagesOfDay(history, d(10, 9))).toEqual(['N3']);
+    expect(stagesOfDay(history, d(5, 9))).toEqual(['N3']);
+    expect(stagesOfDay([created, step('t1', 'N3', 'N2', d(10, 9))], d(10, 9))).toEqual([
+      'N3',
+      'N2',
+    ]);
+  });
+
+  it('has none without a transition', () => {
+    expect(stagesOfDay([], d(5, 9))).toEqual([]);
+  });
+});
+
 describe('meetingKeepingMove (D7, T-232; DR6-103)', () => {
-  const step = (
-    id: string,
-    from: CustomerStage | null,
-    to: CustomerStage,
-    date: CalendarDate,
-    appointmentId: string | null = null,
-    customerId = 'c1',
-  ): StageTransition => ({ id, customerId, from, to, date, appointmentId });
   const meeting = (
     id: string,
     date: CalendarDate,

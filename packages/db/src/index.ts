@@ -34,6 +34,7 @@ export {
   previewHandover,
   restoreCustomer,
   softDeleteCustomer,
+  stagesOfDay,
   updateCustomerProfile,
 } from './customers';
 export type { BirthDate, CustomerProfile, CustomerRecord, Gender, NewCustomer } from './customers';

@@ -319,46 +319,28 @@ export function requireStage(stage: CustomerStage): CustomerStage {
 }
 
 /**
- * The customer's stage at the end of `date`, as `stageOn` of domain reads it — the latest live
- * transition by `seq` dated that day or before, since dates follow `seq` (D10). Before the
- * customer's creation, the stage it was created in: a meeting held before the customer was entered
- * is a backfill (DR-43, Owner 17/10/2026).
+ * The stages the customer is in on `date`, in order: the one it starts the day in, then the one
+ * each change that day moves it to; the last is its stage at the end of the day, as `stageOn` of
+ * domain reads it. Up to the day of its creation, it starts in the stage it was created in: a
+ * meeting held before the customer was entered is a backfill (DR-43, Owner 17/10/2026). A met
+ * appointment that moved no stage records one of these as its stage after (spec §6 rule 4, T-232).
+ * The one rule the commands, the import and the outcome dialogs read (DR6-134). `transitions` are
+ * one customer's live ones, in recording order, which their days follow (D10).
  */
-export function stageOnDay(
-  db: Database,
-  customerId: string,
-  date: CalendarDate,
-): CustomerStage | null {
-  const [row] = selectRows(
-    db,
-    `SELECT COALESCE(
-       (SELECT to_stage FROM stage_transitions
-        WHERE customer_id = ? AND deleted_at IS NULL AND date <= ? ORDER BY seq DESC LIMIT 1),
-       (SELECT to_stage FROM stage_transitions
-        WHERE customer_id = ? AND deleted_at IS NULL ORDER BY seq LIMIT 1))`,
-    [customerId, storedDate(date), customerId],
-  );
-  return (row?.[0] as CustomerStage | null | undefined) ?? null;
-}
-
-/**
- * Whether the customer is in `stage` at some point of `date`: at its start, or after a change that
- * day; before the creation, in the stage it was created in (`stageOnDay`). A met appointment that
- * moved no stage records such a stage as its stage after (spec §6 rule 4, T-232). `transitions` are
- * one customer's live ones, in recording order.
- */
-export function isStageOfDay(
+export function stagesOfDay(
   transitions: readonly Pick<StageTransition, 'date' | 'to'>[],
   date: CalendarDate,
-  stage: CustomerStage,
-): boolean {
-  let start = transitions[0]?.to;
-  for (const t of transitions) {
+): CustomerStage[] {
+  const [created, ...changes] = transitions;
+  if (!created) return [];
+  let start = created.to;
+  const during: CustomerStage[] = [];
+  for (const t of changes) {
     const order = compareDates(t.date, date);
     if (order < 0) start = t.to;
-    else if (order === 0 && t.to === stage) return true;
+    else if (order === 0) during.push(t.to);
   }
-  return start === stage;
+  return [start, ...during];
 }
 
 /**
@@ -430,7 +412,7 @@ export function meetingKeepingMove<
       m.status === 'MET' &&
       compareDates(m.date, move.date) >= 0 &&
       !own.some((t) => t.appointmentId === m.id) &&
-      !isStageOfDay(rest, m.date, m.stageAfter!),
+      !stagesOfDay(rest, m.date).includes(m.stageAfter!),
   );
 }
 
@@ -453,7 +435,8 @@ function liveAppointmentsOf(db: Database, customerId: string) {
 
 /**
  * The transition of the appointment withdrawn at the instant `at`, that of its deletion: one of its
- * own customer's, so restoring never moves another customer (DR6-71).
+ * own customer's, so restoring never moves another customer (DR6-71). One instant is one text: the
+ * app stamps with `toISOString()`, and the import takes no other form (spec §6, DR6-105).
  */
 export function transitionWithdrawnAt(
   db: Database,

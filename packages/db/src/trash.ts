@@ -179,6 +179,8 @@ export function listTrash(db: Database): TrashRow[] {
     );
   }
   const kept = new Map(keptRecords(db).map((record) => [`${record.kind}:${record.id}`, record.by]));
+  // Newest deletion first: stamps sort as text in the order of time, as the app writes them all
+  // alike and the import takes no other form (spec §6, DR6-105).
   return rows
     .map((row) => {
       const keptBy = kept.get(`${row.kind}:${row.id}`);

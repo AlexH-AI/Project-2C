@@ -5,6 +5,7 @@ import {
   periodOf,
   stageOn,
   type CalendarDate,
+  type CustomerStage,
 } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -1033,6 +1034,23 @@ describe('the stage on the meeting day', () => {
     expect(stage()).toBe('N2');
   });
 
+  // DR6-126 (d): the meetings by day, whatever order they were booked and recorded in (a backfill),
+  // so the command names the day the dialog 6f does (DR6-103).
+  it('H·CL-F3: names the earliest meeting that kept the stage, though recorded last', async () => {
+    const { db, schedule } = await withCustomer();
+    const moved = schedule(5);
+    recordMeetingOutcome(db, moved.id, MET_N2);
+    const later = schedule(14);
+    recordMeetingOutcome(db, later.id, MET_N2);
+    const earlier = schedule(12);
+    recordMeetingOutcome(db, earlier.id, MET_N2);
+
+    expect(errorOf(() => softDeleteAppointment(db, moved.id))).toMatchObject({
+      code: 'STAGE_KEPT_BY_MEETING',
+      params: { date: '12/01/2026' },
+    });
+  });
+
   it('refuses a stage change dated before a met appointment already recorded (5d)', async () => {
     const { db, customer, schedule, stage } = await withCustomer();
     const kept = schedule(12);
@@ -1051,31 +1069,47 @@ describe('the stage on the meeting day', () => {
     expect(stage()).toBe('N2');
   });
 
-  // DR6-68: met first, entered in the app later — a backfill (DR-43, Owner 06/10 and 17/10/2026).
-  it('keeps a meeting met before the customer was created in the stage it was created in', async () => {
-    const { db, re } = await setup();
-    const customer = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(10, 9) });
-    const { id } = scheduleAppointment(db, {
-      customerId: customer.id,
-      reId: re.id,
-      date: d(5, 9),
-      triggerType: 'REFERRAL',
-    });
+  // DR6-68: met first, entered in the app later — a backfill (DR-43, Owner 06/10 and 17/10/2026);
+  // the stage it was created in, not the one it moved to since (DR6-126 a).
+  it.each<[string, { to: CustomerStage; date: CalendarDate }[], string]>([
+    ['', [], '10/09/2026'],
+    [', though it moved after', [{ to: 'N2', date: d(12, 9) }], '12/09/2026'],
+  ])(
+    'keeps a meeting met before the customer was created in the stage it was created in%s',
+    async (_label, changes, latest) => {
+      const { db, re } = await setup();
+      const customer = createCustomer(db, {
+        name: 'Lan',
+        reId: re.id,
+        stage: 'N3',
+        date: d(10, 9),
+      });
+      for (const change of changes) changeStageManually(db, customer.id, change);
+      const { id } = scheduleAppointment(db, {
+        customerId: customer.id,
+        reId: re.id,
+        date: d(5, 9),
+        triggerType: 'REFERRAL',
+      });
 
-    // Moving the stage on 05/09 still comes before the creation (D10).
-    expect(errorOf(() => recordMeetingOutcome(db, id, MET_N2))).toMatchObject({
-      code: 'TRANSITION_BEFORE_LATEST',
-      params: { date: '10/09/2026' },
-    });
-    recordMeetingOutcome(db, id, KEPT_N3);
-    expect(getAppointment(db, id)).toMatchObject({ status: 'MET', stageAfter: 'N3' });
-    softDeleteAppointment(db, id);
-    restoreAppointment(db, id);
+      // Moving the stage on 05/09 still comes before the creation and what followed it (D10).
+      expect(errorOf(() => recordMeetingOutcome(db, id, MET_N2))).toMatchObject({
+        code: 'TRANSITION_BEFORE_LATEST',
+        params: { date: latest },
+      });
+      recordMeetingOutcome(db, id, KEPT_N3);
+      expect(getAppointment(db, id)).toMatchObject({ status: 'MET', stageAfter: 'N3' });
+      softDeleteAppointment(db, id);
+      restoreAppointment(db, id);
 
-    expect(getAppointment(db, id)).toMatchObject({ status: 'MET', stageAfter: 'N3' });
-    expect(steps(db, customer.id)).toEqual([['N3', d(10, 9), null]]);
-    await expect(importBackup(exportBackup(db), { now: db.now })).resolves.toBeDefined();
-  });
+      expect(getAppointment(db, id)).toMatchObject({ status: 'MET', stageAfter: 'N3' });
+      expect(steps(db, customer.id)).toEqual([
+        ['N3', d(10, 9), null],
+        ...changes.map((change) => [change.to, change.date, null]),
+      ]);
+      await expect(importBackup(exportBackup(db), { now: db.now })).resolves.toBeDefined();
+    },
+  );
 
   it('restores a kept meeting only while the stage of its day is still the one it kept', async () => {
     const { db, customer, schedule } = await withCustomer();

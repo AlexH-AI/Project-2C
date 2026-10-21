@@ -19,7 +19,7 @@ import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
 import { analysisContentFits, analysisLabelsFit, type AnalysisFields } from './ai-analyses';
 import { cleanNote, isFee, optionalText, requireName, storedDate, today } from './common';
-import { isStageOfDay } from './customers';
+import { stagesOfDay } from './customers';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { profileFactValue, type ProfileFields } from './kyc';
@@ -27,7 +27,12 @@ import { profileFactValue, type ProfileFields } from './kyc';
 const YEAR = /^\d{4}$/;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const TIMESTAMPS = new Set(['created_at', 'updated_at', 'deleted_at']);
-const timestamp = z.iso.datetime();
+/**
+ * A stamp as `toISOString()` writes it, milliseconds and `Z`: one instant is then one text, which
+ * the app compares as such — a deletion and the transition it withdrew, the order of Thùng rác
+ * (DR6-105).
+ */
+const timestamp = z.iso.datetime({ precision: 3 });
 const OPEN_STAGES: readonly unknown[] = PIPELINE_STAGES;
 
 /** Throws `BACKUP_INVALID` at the first value the app could not read back. */
@@ -206,7 +211,7 @@ function follows(previous: Row, next: Row): boolean {
  * Rule 4: a transition caused by a meeting carries its customer, even withdrawn, since restoring
  * the meeting gives it back (DR6-71); a live one carries its day and stage after too, and the
  * meeting is live: deleting an appointment withdraws its transition (D7). A live meeting that moved
- * no stage kept one the customer was in that day (`isStageOfDay`, T-232).
+ * no stage kept one the customer was in that day (`stagesOfDay`, T-232).
  */
 function meetingRule(appointments: Map<unknown, Row>, transitions: Row[]): Rule | null {
   const elsewhere = transitions.some(
@@ -226,10 +231,8 @@ function meetingRule(appointments: Map<unknown, Row>, transitions: Row[]): Rule 
   );
   for (const a of appointments.values()) {
     if (a.deleted_at !== null || a.status !== 'MET' || moved.has(a.id)) continue;
-    const stage = a.stage_after as CustomerStage;
-    if (!isStageOfDay(days.get(a.customer_id) ?? [], fromIsoDate(a.date as string), stage)) {
-      return 4;
-    }
+    const stages = stagesOfDay(days.get(a.customer_id) ?? [], fromIsoDate(a.date as string));
+    if (!stages.includes(a.stage_after as CustomerStage)) return 4;
   }
   const once = moved.size === caused.length;
   const matching = caused.every((t) => {
