@@ -7,6 +7,14 @@ import type { Page } from '@playwright/test';
 export const seedOnLoad = (page: Page) =>
   page.route('**/demo-*.sqlite', (route) => route.fulfill({ status: 404 }));
 
-/** The duration of the seed in this page load; `undefined` when it opened the seeded file. */
+/**
+ * The duration of the seed in this page load; `undefined` when it opened the seeded file. A page on
+ * the page clock keeps no `performance` entry at all, so it fails there rather than read "no seed"
+ * (`machineClock` of fixtures.ts).
+ */
 export const seedDuration = (page: Page) =>
-  page.evaluate(() => performance.getEntriesByName('p2c:demo-seed', 'measure')[0]?.duration);
+  page.evaluate(() => {
+    if (!performance.getEntriesByType('navigation').length)
+      throw new Error('This page keeps no performance entries: run it on the machine clock.');
+    return performance.getEntriesByName('p2c:demo-seed', 'measure')[0]?.duration;
+  });

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 
 /** dd/mm/yyyy → yyyy-mm-dd, which sorts as text in date order. */
 const iso = (date: string) => date.split('/').reverse().join('-');

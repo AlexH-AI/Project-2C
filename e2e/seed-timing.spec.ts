@@ -1,9 +1,13 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { seedDuration, seedOnLoad } from './seeded-snapshot';
 
 // #64: under 5 s on the Owner's machines. GitHub's Windows runner is ~2.5× slower (6.6–7.4 s),
 // so CI records the time and only fails on a large regression (Owner decision, 27/09/2026).
 const LIMIT_MS = process.env.CI ? 15_000 : 5_000;
+
+// The seed's time is a `performance` entry, which the page clock does not keep; the day the page
+// opens on changes nothing here.
+test.use({ machineClock: true });
 
 // Its own Playwright project, run before the others and alone (playwright.config.ts).
 test('web mode seeds the simulated data in time (#64)', async ({ page }) => {

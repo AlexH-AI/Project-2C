@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 // playwright.config.ts pins the anchor day of the simulated data (VITE_DEMO_ANCHOR).
 const ANCHOR = '15/09/2026';

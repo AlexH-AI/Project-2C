@@ -105,6 +105,21 @@ describe('openNotes', () => {
     ]);
   });
 
+  it('narrows a short path that ends files in many places as it does a name', () => {
+    expect(
+      pathsOf(
+        '- `packages/ai/src/run.ts` re-export từ `src/index.ts`.',
+        '- `packages/db` (#455):',
+        '  - re-export từ `src/index.ts`.',
+        '- `src/index.ts` lặp.',
+      ),
+    ).toEqual([
+      ['packages/ai/src/run.ts', 'packages/ai/src/index.ts'],
+      ['packages/db/src/index.ts'],
+      [],
+    ]);
+  });
+
   it('keeps a file path the repo no longer has, so a PR that deletes or renames it meets the note', () => {
     const notes = openNotes(
       ledger('- `tools/gone.mjs:12`: comment.', '- `gone.mjs` trần, `tools/load-*.mjs` glob.'),
@@ -160,6 +175,13 @@ describe('openNotes', () => {
       { line: 6, paths: ['apps/desktop/src/data/app-data.ts'] },
       { line: 7, paths: ['apps/desktop/src-tauri/src/storage.rs'] },
       { line: 10, paths: ['apps/desktop/src/data/app-data.ts'] },
+    ]);
+  });
+
+  it('reads an item that holds a line or paragraph separator as it is', () => {
+    const text = '`tools/merge-pr.mjs`: tách dòng ở \u2028 và \u2029.';
+    expect(openNotes(ledger(`- ${text}`), FILES)).toEqual([
+      { line: 5, text, paths: ['tools/merge-pr.mjs'] },
     ]);
   });
 
@@ -244,6 +266,12 @@ describe('relatedNotes', () => {
     expect(lines(relatedNotes(NOTES, ['e2e/*.ts']).area)).toEqual([]);
     expect(lines(relatedNotes(NOTES, ['e2e/guide/*.ts']).area)).toEqual([11]);
     expect(lines(relatedNotes(NOTES, ['apps/**/app-data.ts']).area)).toEqual([10, 13]);
+  });
+
+  it('puts a note naming the very folder a target names in area', () => {
+    const { exact, area } = relatedNotes(NOTES, ['e2e/perf/']);
+    expect(exact).toEqual([]);
+    expect(lines(area)).toEqual([12]);
   });
 
   it('reads every other character of a glob as itself', () => {
@@ -347,6 +375,19 @@ describe('targetPatterns', () => {
       'e2e/perf/',
       'tools/new-tool.mjs',
       'tools/new-tool.test.mjs',
+    ]);
+  });
+
+  it('expands every brace group of a path', () => {
+    expect(targetPatterns(['packages/{db,domain}/src/{a,b}.ts'], FILES)).toEqual([
+      'packages/db/src/a.ts',
+      'packages/db/src/a.test.ts',
+      'packages/db/src/b.ts',
+      'packages/db/src/b.test.ts',
+      'packages/domain/src/a.ts',
+      'packages/domain/src/a.test.ts',
+      'packages/domain/src/b.ts',
+      'packages/domain/src/b.test.ts',
     ]);
   });
 

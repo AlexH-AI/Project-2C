@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 import { trackConsoleErrors } from './support';
 
 // The e2e build pins today to Tuesday 15/09/2026 (playwright.config.ts): September is in progress.

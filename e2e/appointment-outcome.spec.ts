@@ -1,5 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
-import { ANCHOR_MORNING, toNewYearsEve } from './anchor';
+import { expect, test, type Locator, type Page } from './fixtures';
+import { toNewYearsEve } from './anchor';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
 const TODAY = '15/09/2026';
@@ -462,8 +462,6 @@ const MINUTE = 60_000;
 
 /** Books a 31/12 appointment for an N3 customer, cancelled ahead of its day; then 23:58 that day. */
 async function cancelledOnNewYearsEve(page: Page) {
-  await page.clock.install({ time: ANCHOR_MORNING });
-  await page.reload();
   const name = await book(page, '31/12', 'N3');
   await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
   const o = outcome(page);

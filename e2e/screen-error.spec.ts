@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 
 const FAILED = 'Màn này gặp lỗi và không hiển thị được';
 
