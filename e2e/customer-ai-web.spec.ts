@@ -1,4 +1,4 @@
-import { expect, test, type Page } from './fixtures';
+import { expect, test, type Locator, type Page } from './fixtures';
 import {
   addKycNote,
   asExe,
@@ -371,4 +371,99 @@ test('an answer with HTML or a link in its text shows that text, never markup of
   await expect(panel.getByRole('region', { name: 'Behavioral Hypotheses' })).toContainText(html);
   await expect(panel.locator('[data-model]')).toHaveCount(0);
   await expect(panel.getByRole('link', { name: 'xem' })).toHaveCount(0);
+});
+
+/** `box` scrolls sideways: something of it is past its edge, text included. */
+const scrolls = (box: Locator) => box.evaluate((node) => node.scrollWidth > node.clientWidth);
+const sideways = (page: Page) =>
+  page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+
+const right = (box: Locator) => box.evaluate((node) => node.getBoundingClientRect().right);
+
+/** The right edge of the content of `box`, inside its border and padding. */
+const contentRight = (box: Locator) =>
+  box.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return (
+      node.getBoundingClientRect().right -
+      parseFloat(style.paddingRight) -
+      parseFloat(style.borderRightWidth)
+    );
+  });
+
+/** How far the farthest element in `box` reaches past the right edge of its content. */
+const overhang = async (box: Locator) => {
+  const edge = await contentRight(box);
+  return box.evaluate(
+    (node, edge) =>
+      Math.max(
+        ...[...node.querySelectorAll('*')].map(
+          (child) => child.getBoundingClientRect().right - edge,
+        ),
+      ),
+    edge,
+  );
+};
+
+// DR6-118: the default window gives the panel 376 px (three columns, DR6-30). After an answer of
+// ChatGPT web its history keeps its badges inside the panel; a word of the AI with no place to break,
+// a list of codes or an email, breaks inside the panel and inside the AI block of the appointment's
+// detail, and the page does not scroll sideways.
+test('the history and a long word of the AI stay in the panel and in the appointment detail at 1 440 × 900', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const name = 'Tú Dài Web';
+  const codes = Array.from({ length: 20 }, (_, index) => `F${index + 1}`).join('/');
+  const email = 'nguyen.van.khach.hang.rat.dai.ten.khong.the.ngat.dong.a@vidu.congty.vn';
+  expect([codes.length, email.length]).toEqual([70, 70]);
+  const panel = await discoveryCustomer(page, name);
+  await panel.getByRole('button', { name: 'Phân tích bằng ChatGPT web' }).click();
+  const output = JSON.stringify({
+    hypotheses: [{ text: `Hỏi lại các dữ kiện ${codes}`, evidence: ['F1', 'F2'] }],
+    discoveryStrategy: [
+      { text: `Gửi tài liệu tới ${email}`, evidence: ['F3'] },
+      { text: 'Hỏi sâu thêm về công việc', evidence: ['F5'] },
+    ],
+    nextBestActions: [{ text: `Xác nhận lại ${codes} với KH`, evidence: ['F1'] }],
+    personalityNotes: [],
+  });
+  await panel
+    .getByRole('textbox', { name: 'Dán kết quả' })
+    .fill(`Đây là kết quả:\n\`\`\`json\n${output}\n\`\`\``);
+  await panel.getByRole('button', { name: 'Kiểm tra và lưu' }).click();
+  await expect(panel).toContainText('CURRENT');
+  await expect(panel).toContainText(email);
+
+  // Rounding: a pixel at most.
+  const history = panel.getByRole('table', { name: 'Lịch sử phân tích' });
+  const badge = history.getByText('CURRENT');
+  expect(await right(badge), 'CURRENT badge').toBeLessThanOrEqual((await contentRight(panel)) + 1);
+  // The badge of ChatGPT web stays on one line, as the state's does.
+  const height = (box: Locator) => box.evaluate((node) => node.getBoundingClientRect().height);
+  expect(await height(history.getByText('ChatGPT web', { exact: true }))).toBe(await height(badge));
+  expect(await overhang(panel), 'panel').toBeLessThanOrEqual(1);
+  expect(await scrolls(panel), 'panel scrolls sideways').toBe(false);
+  expect(await sideways(page), 'page with the panel').toBe(false);
+
+  // The same lists in the detail of an appointment, read-only.
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const booking = page.getByRole('dialog');
+  await booking.getByRole('textbox', { name: /^Ngày/ }).fill('30/9');
+  await booking.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
+  await booking.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+  await expect(booking).toHaveCount(0);
+  await page.goto('/#/appointments');
+  await page
+    .getByRole('table', { name: 'Danh sách lịch hẹn' })
+    .getByRole('button', { name })
+    .click();
+  const ai = page
+    .getByRole('complementary', { name: 'Chi tiết lịch hẹn' })
+    .getByRole('region', { name: 'KYC Intelligence' });
+  await expect(ai).toContainText(email);
+  await expect(ai).toContainText(codes);
+  expect(await overhang(ai), 'AI block').toBeLessThanOrEqual(1);
+  expect(await scrolls(ai), 'AI block scrolls sideways').toBe(false);
+  expect(await sideways(page), 'page with the AI block').toBe(false);
 });

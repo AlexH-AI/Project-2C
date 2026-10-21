@@ -17,7 +17,7 @@ export function sourceName(source: AiPanelSource): string {
 export function SourceBadge({ source }: { source: AiPanelSource }) {
   if (!('badge' in source)) return null;
   const color = source.badge === 'MOCK' ? 'text-warn' : 'text-info';
-  return <span className={`${BADGE} ${color}`}>{sourceName(source)}</span>;
+  return <span className={`${BADGE} whitespace-nowrap ${color}`}>{sourceName(source)}</span>;
 }
 
 const STATE_COLORS = { CURRENT: 'text-ok', STALE: 'text-fg-3', REJECTED: 'text-danger' } as const;
@@ -83,7 +83,7 @@ export function AnalysisHistory({
                 </button>
               </td>
               <td className={CELL}>{t('aiPanel.history.version', { version: row.version })}</td>
-              <td className={CELL}>{row.prompt}</td>
+              <td className={`${CELL} wrap-anywhere`}>{row.prompt}</td>
               <td className={CELL}>
                 {'badge' in row.source ? (
                   <SourceBadge source={row.source} />

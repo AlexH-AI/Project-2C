@@ -164,7 +164,7 @@ export function Item({
   const missing = item.missing && t('aiPanel.missing', { label: t(`kycCategory.${item.missing}`) });
   const box = faded ? 'border-dashed border-border-strong' : 'border-border bg-surface-2';
   return (
-    <li className={`rounded-sm border ${box} px-2.5 py-2`}>
+    <li className={`min-w-0 rounded-sm border ${box} px-2.5 py-2 wrap-anywhere`}>
       {item.system && <b>{t(`aiPanel.system.${item.system}`)} </b>}
       {item.text}
       <span className="mt-1 flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-xs text-fg-3">
@@ -174,7 +174,7 @@ export function Item({
           {missing}
         </span>
         {evidence && (
-          <span className="whitespace-nowrap tabular-nums">
+          <span className="tabular-nums">
             {t('aiPanel.level', {
               label: t(`aiPanel.levelName.${evidence.level}`),
               count: evidence.factCount,
@@ -207,7 +207,7 @@ function Analysis({
   const content = analysisContent(analysis, versions, facts);
   const { chip } = content;
   return (
-    <div className={`flex flex-col text-sm ${faded ? FADED : ''}`}>
+    <div className={faded ? `flex flex-col text-sm ${FADED}` : 'flex flex-col text-sm'}>
       <p className="m-0 flex flex-wrap items-center gap-1.5">
         <span className={`${BADGE} ${BADGE_COLORS[analysis.gateState]}`}>{analysis.gateState}</span>
         <span className="rounded-sm bg-surface-2 px-2 py-0.5 text-xs text-fg-2 tabular-nums">

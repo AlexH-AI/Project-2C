@@ -102,7 +102,10 @@ export function CustomerAppointments({
       header: t('appointments.note'),
       kind: 'text',
       value: (r) => r.appointment.note,
-      cell: (r) => <span className="line-clamp-1 text-fg-2">{r.appointment.note}</span>,
+      // A link with nowhere to break would stretch the column over the next card (DR6-117).
+      cell: (r) => (
+        <span className="line-clamp-1 wrap-anywhere text-fg-2">{r.appointment.note}</span>
+      ),
     },
     {
       id: 'next',

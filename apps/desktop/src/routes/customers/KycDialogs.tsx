@@ -116,7 +116,7 @@ function FactValue({
   return (
     <>
       {has.length > 0 && (
-        <p className="m-0 text-xs text-warn tabular-nums">
+        <p className="m-0 text-xs wrap-anywhere text-warn tabular-nums">
           {t('kycNote.current', {
             values: has
               .map((fact) =>
@@ -325,9 +325,11 @@ export function KycNoteDialog({
                 key={fact.field}
                 className="flex items-center gap-2 rounded-md border border-border bg-surface-2 px-2 py-1"
               >
-                <b className="flex-1">{t(`kycField.${fact.field}`)}</b>
-                <span className="flex-1">{factText(fact.value, YES_NO)}</span>
-                <span className={`${BADGE} ${fact.conflict ? 'text-danger' : 'text-info'}`}>
+                <b className="min-w-0 flex-1 wrap-anywhere">{t(`kycField.${fact.field}`)}</b>
+                <span className="min-w-0 flex-1 wrap-anywhere">{factText(fact.value, YES_NO)}</span>
+                <span
+                  className={`${BADGE} whitespace-nowrap ${fact.conflict ? 'text-danger' : 'text-info'}`}
+                >
                   {t(
                     fact.conflict
                       ? 'kycNote.badge.conflict'
@@ -437,7 +439,7 @@ export function ResolveKycDialog({
           value: option.factId,
           disabled: option.disabled,
           label: (
-            <span className="flex flex-col">
+            <span className="flex min-w-0 flex-col wrap-anywhere">
               <b>{t('kycResolve.value', { value: factText(option.value, YES_NO) })}</b>
               <span className="text-xs text-fg-3 tabular-nums">
                 {t(option.source === 'SYSTEM' ? 'kycResolve.systemSource' : 'kycResolve.source', {
