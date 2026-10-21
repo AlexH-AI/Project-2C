@@ -176,12 +176,16 @@ function toRow(a: NewAiAnalysis) {
 }
 
 /**
- * A rejected raw output as stored. It is untrusted text kept to find out what went wrong, so a NUL
- * (which SQLite would cut the text at, DR-49) is replaced rather than refused. Cut by code point, as
- * SQLite counts the characters of the CHECK, never inside a pair.
+ * A rejected raw output as stored. It is untrusted text kept to find out what went wrong, so what
+ * the database would not read back as it is goes rather than the whole text: a NUL (which SQLite
+ * would cut the text at, DR-49) and a lone surrogate half (stored as U+FFFD, cutting the text after
+ * it, DR6-108) are replaced with U+FFFD, and the U+FEFF the text starts with (dropped on reading,
+ * DR6-107) is dropped; nothing else left is one U+FFFD, a rejected output never being empty. Cut by
+ * code point, as SQLite counts the characters of the CHECK, never inside a pair.
  */
 function storedRawOutput(raw: string): string {
-  return Array.from(raw.replaceAll('\0', '�')).slice(0, MAX_AI_RAW_OUTPUT).join('');
+  const kept = raw.replace(/^\u{FEFF}+/u, '').replace(/[\0\p{Cs}]/gu, '�') || '�';
+  return Array.from(kept).slice(0, MAX_AI_RAW_OUTPUT).join('');
 }
 
 function isTokenCount(count: number | null, noModel: boolean): boolean {

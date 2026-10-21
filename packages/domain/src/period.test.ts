@@ -530,10 +530,29 @@ describe('parseQuickDate', () => {
     expect(parseQuickDate('05/01/2027', today)).toMatchObject({ ok: true, date: d(5, 1, 2027) });
   });
 
+  // DR6-110: the text as normalizeText keeps it, as the money fields read theirs.
+  it('reads a day pasted with an invisible character, or with U+0085 around it', () => {
+    const today = d(26, 9, 2026);
+    for (const text of [
+      '12/10\u{200B}',
+      '12/10\u{85}',
+      '\u{2060}1\u{200B}2/10',
+      '\u{FEFF}12/10\u{7}',
+    ]) {
+      expect(parseQuickDate(text, today)).toMatchObject({ ok: true, date: d(12, 10, 2026) });
+    }
+    expect(parseQuickDate('12/10/2027\u{2800}', today)).toMatchObject({
+      ok: true,
+      date: d(12, 10, 2027),
+      yearInferred: false,
+    });
+  });
+
   it('reports empty text and text that is not dd/mm[/yyyy]', () => {
     const today = d(26, 9, 2026);
     expect(parseQuickDate('', today)).toEqual({ ok: false, error: 'empty' });
     expect(parseQuickDate('   ', today)).toEqual({ ok: false, error: 'empty' });
+    expect(parseQuickDate('\u{200B}\u{85}', today)).toEqual({ ok: false, error: 'empty' });
     for (const text of ['abc', 'mai', '05-01', '05/01/27', '2027-01-05', '5', '05/01/2027/1']) {
       expect(parseQuickDate(text, today)).toEqual({ ok: false, error: 'format' });
     }

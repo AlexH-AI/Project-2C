@@ -255,6 +255,49 @@ describe('recordAiAnalysis', () => {
     expect(listAiAnalyses(database, customer.id).map((a) => a.rawOutput)).toEqual(kept.reverse());
   });
 
+  // DR6-108: SQLite would store a lone half as U+FFFD and lose the rest of the text, past the
+  // CHECK on its length, so no backup of it would import again.
+  it('keeps a rejected raw output with lone surrogate halves whole, each half replaced', async () => {
+    const { db: database, customer } = await withCustomer();
+    const version = latestVersionId(database, customer.id);
+    const near = 'x'.repeat(19_999);
+
+    const kept = [
+      '\uD800ếz',
+      'ếz\uDC00',
+      'a\uD83D\u{200B}\uDE00b',
+      `${near}\uDBFF`,
+      `${near}\uD83Dtail`,
+    ].map(
+      (raw) =>
+        recordAiAnalysis(database, { ...rejected(customer.id, version), rawOutput: raw }).rawOutput,
+    );
+
+    expect(kept).toEqual(['�ếz', 'ếz�', 'a�\u{200B}�b', `${near}�`, `${near}�`]);
+    const latestFirst = [...kept].reverse();
+    expect(listAiAnalyses(database, customer.id).map((a) => a.rawOutput)).toEqual(latestFirst);
+    const { db: imported } = await importBackup(exportBackup(database));
+    expect(listAiAnalyses(imported, customer.id).map((a) => a.rawOutput)).toEqual(latestFirst);
+  });
+
+  // DR6-107: reading drops a U+FEFF that starts a text, so it is not stored; a rejected raw output
+  // is never empty.
+  it('drops the U+FEFF a rejected raw output starts with, keeping one anywhere else', async () => {
+    const { db: database, customer } = await withCustomer();
+    const version = latestVersionId(database, customer.id);
+
+    const kept = ['\u{FEFF}{"a":1}', '\u{FEFF}\u{FEFF}x', '\u{FEFF}', 'a\u{FEFF}b'].map(
+      (raw) =>
+        recordAiAnalysis(database, { ...rejected(customer.id, version), rawOutput: raw }).rawOutput,
+    );
+
+    expect(kept).toEqual(['{"a":1}', 'x', '�', 'a\u{FEFF}b']);
+    const latestFirst = [...kept].reverse();
+    expect(listAiAnalyses(database, customer.id).map((a) => a.rawOutput)).toEqual(latestFirst);
+    const { db: imported } = await importBackup(exportBackup(database));
+    expect(listAiAnalyses(imported, customer.id).map((a) => a.rawOutput)).toEqual(latestFirst);
+  });
+
   it('refuses a deleted customer, a KYC version of another customer and a mode that is not its gate', async () => {
     const { db: database, customer, re, persist } = await withCustomer();
     const other = createCustomer(database, {

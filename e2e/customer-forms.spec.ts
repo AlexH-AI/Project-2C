@@ -341,6 +341,32 @@ test('refuses a customer with wrong fields and saves nothing', async ({ page }) 
   await expect(page.getByText(/KH đang mở/)).toHaveText(before ?? '');
 });
 
+// DR6-109: the dialog sends the name as typed, as the team dialogs do. The command checks it can be
+// stored before dropping U+200B, so the halves of an emoji around it are refused, never joined.
+test('refuses a name broken in a paste as the command does, then saves one as typed (5a)', async ({
+  page,
+}) => {
+  const dialog = await openCreate(page);
+  const name = dialog.getByRole('textbox', { name: 'Họ tên' });
+  await dialog.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
+  await name.evaluate((field: HTMLInputElement) => {
+    // Set as a paste would, past the keyboard.
+    const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    set.call(field, '\uD83D\u{200B}\uDE00 Lan');
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await dialog.getByRole('button', { name: 'Lưu KH' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Chữ có ký tự không lưu được');
+  await expect(dialog).toBeVisible();
+
+  // Sent with its extra spaces and U+200B, stored as the screens show it.
+  await name.fill(` ${NAME.replace(' ', '  ')}\u{200B}`);
+  await dialog.getByRole('button', { name: 'Lưu KH' }).click();
+  await expect(dialog).toBeHidden();
+  await page.getByRole('link', { name: new RegExp(NAME) }).click();
+  await expect(page.getByRole('region', { name: NAME })).toBeVisible();
+});
+
 test('deletes a customer from the profile, counting its records first (5f, TR-9)', async ({
   page,
 }) => {

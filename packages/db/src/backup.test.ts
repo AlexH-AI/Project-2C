@@ -345,6 +345,9 @@ describe('importBackup', () => {
     ['kyc_notes', 'text', 'Hai con '],
     ['kyc_notes', 'text', ''],
     ['kyc_notes', 'text', 'Hà Nội'.normalize('NFD')],
+    // DR6-111: a control character the commands drop (Q2 a).
+    ['teams', 'name', 'Sao Mai\u{7}'],
+    ['kyc_notes', 'text', 'Hai con\u{1}'],
     ['teams', 'created_at', 'x'],
     ['customers', 'deleted_at', '2026-09-30'],
     ['kyc_versions', 'date', '2026-9-1'],
@@ -487,6 +490,43 @@ describe('importBackup', () => {
   });
 });
 
+// DR6-107: sql.js reads a text back without the U+FEFF it starts with, while SQLite keeps it: the
+// value checks would see text that no command stores, the unique indexes and SQL text that differs.
+describe('importBackup — a text that starts with U+FEFF', () => {
+  it.each([
+    ['teams', 'name'],
+    ['kyc_notes', 'text'],
+    ['appointments', 'date'],
+    ['customers', 'created_at'],
+  ])('refuses %s.%s that starts with it', async (table, column) => {
+    const backup = await smallBackup();
+    const row = backup.tables[table]![0]!;
+    backup.tables[table]![0] = { ...row, [column]: `\u{FEFF}${String(row[column])}` };
+
+    expect(await codeOfImport(JSON.stringify(backup))).toBe('BACKUP_INVALID');
+  });
+
+  it('refuses an id that starts with it, in every row pointing to it too', async () => {
+    const backup = await smallBackup();
+    const id = String(backup.tables.customers!.find((c) => c.name === 'Lan')!.id);
+    const text = JSON.stringify(backup).replaceAll(`"${id}"`, `"\u{FEFF}${id}"`);
+    // The customer and the rows of its transition, appointment, policy, KYC note…
+    expect(text.split('\u{FEFF}').length).toBeGreaterThan(3);
+
+    expect(await codeOfImport(text)).toBe('BACKUP_INVALID');
+  });
+
+  it('takes it inside or at the end of a text, which reads back whole, as before', async () => {
+    const backup = await smallBackup();
+    backup.tables.appointments![0]!.note = 'Gặp\u{FEFF} lại\u{FEFF}';
+
+    const { db } = await importBackup(JSON.stringify(backup));
+
+    const { tables } = JSON.parse(exportBackup(db)) as BackupJson;
+    expect(tables.appointments![0]!.note).toBe('Gặp\u{FEFF} lại\u{FEFF}');
+  });
+});
+
 // DR6-72: the import reads a name and a KYC note with the commands' functions, so a file holds the
 // text a command could have stored, and only that.
 describe('importBackup — text as the commands store it', () => {
@@ -542,11 +582,12 @@ async function imports(backup: BackupJson): Promise<boolean> {
 
 /**
  * Text of up to 12 characters as typed or pasted: letters, a tone mark, white space and line
- * breaks, invisible characters, a NUL and a lone surrogate half; the same run for the same seed.
+ * breaks, invisible characters, U+FEFF, a control character, a NUL and both halves of a surrogate
+ * pair; the same run for the same seed.
  */
 function randomText(seed: number): () => string {
   const pool = [0x61, 0x111, 0x301, 0x20, 0xa, 0xd, 0x85, 0xa0, 0x2028, 0x3000, 0x200b, 0x3164]
-    .concat([0xfe0f, 0x2800, 0x0, 0xd800])
+    .concat([0xfe0f, 0x2800, 0xfeff, 0x7, 0x0, 0xd800, 0xdc00])
     .map((code) => String.fromCodePoint(code));
   let state = seed;
   const below = (n: number) => (state = (state * 48_271) % 0x7fff_ffff) % n;

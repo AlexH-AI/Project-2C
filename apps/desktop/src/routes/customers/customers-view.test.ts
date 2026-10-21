@@ -251,6 +251,20 @@ describe('parseBirthDate', () => {
     expect(parseBirthDate('2026', today)).toEqual({ ok: true, birth: { year: 2026 } });
   });
 
+  // DR6-110: as the other day fields, the text as normalizeText keeps it.
+  it('reads a year or a date pasted with an invisible character; nothing to see is none', () => {
+    expect(parseBirthDate('1984\u{200B}', today)).toEqual({ ok: true, birth: { year: 1984 } });
+    expect(parseBirthDate('\u{2060}1984\u{85}', today)).toEqual({
+      ok: true,
+      birth: { year: 1984 },
+    });
+    expect(parseBirthDate('\u{FEFF}12/3/1984\u{7}', today)).toEqual({
+      ok: true,
+      birth: { year: 1984, month: 3, day: 12 },
+    });
+    expect(parseBirthDate('\u{200B}\u{85}', today)).toEqual({ ok: true, birth: null });
+  });
+
   it('refuses a day that does not exist, a short year or a birth after today', () => {
     expect(parseBirthDate('31/02/1984', today)).toEqual({ ok: false, error: 'invalid-date' });
     expect(parseBirthDate('12/3/84', today)).toEqual({ ok: false, error: 'format' });
@@ -278,6 +292,7 @@ describe('parseRecordDate', () => {
 
   it('reads a quick date up to today', () => {
     expect(parseRecordDate('26/9', today)).toEqual({ ok: true, date: today });
+    expect(parseRecordDate('26/9\u{200B}', today)).toEqual({ ok: true, date: today });
     expect(parseRecordDate('01/01/2025', today)).toEqual({
       ok: true,
       date: { year: 2025, month: 1, day: 1 },

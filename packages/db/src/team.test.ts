@@ -114,6 +114,20 @@ describe('teams', () => {
     expect(renameTeam(db, team.id, 'Sao Mai\u{2800}')).toEqual(team);
   });
 
+  // DR6-111 (Q2 a): a control character shows nothing, and the report's Excel file drops it.
+  it('takes a name with a control character as the same name, and one of them alone as empty', async () => {
+    const { db } = await setup();
+    const team = createTeam(db, { name: 'Sao Mai' });
+
+    for (const name of ['Sao Mai\u{7}', '\u{1B}Sao\u{9F} Mai']) {
+      expect(codeOf(() => createTeam(db, { name }))).toBe('TEAM_NAME_TAKEN');
+    }
+    expect(codeOf(() => createTeam(db, { name: '\u{1}' }))).toBe('NAME_REQUIRED');
+    expect(
+      codeOf(() => createPerson(db, { name: '\u{7}\u{7F}', role: 'RE', teamId: team.id })),
+    ).toBe('NAME_REQUIRED');
+  });
+
   // DR6-49: a lone surrogate half would be stored as U+FFFD, so the name would not read back.
   it('refuses a name that is not whole UTF-16', async () => {
     const { db } = await setup();
