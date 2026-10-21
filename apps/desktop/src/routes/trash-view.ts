@@ -169,9 +169,9 @@ export function ownerParts(row: TrashRow): OwnerPart[] {
 }
 
 /**
- * The name of a row's restore button, every "Khôi phục…" alike on screen (DR6-43): the record, with
- * what tells two of a customer apart in "Bản ghi" — an appointment's status, a policy's FYP and
- * status (DR6-99, DR6-119) — and for an appointment or a policy whose customer.
+ * The name of a row's restore button, every "Khôi phục…" alike on screen (DR6-43): the record, what
+ * tells two like it apart in "Bản ghi" (an appointment's status, a policy's FYP and status; DR6-99,
+ * DR6-119), and for an appointment or a policy whose customer.
  */
 export function restoreLabel(row: TrashRow): string {
   switch (row.kind) {
@@ -197,7 +197,10 @@ export function restoreLabel(row: TrashRow): string {
   }
 }
 
-/** "… của KH Name"; a row with no customer, which the foreign key allows none, has the label alone. */
+/**
+ * "… của KH Name" after a label; a row with no customer, which the foreign key rules out, keeps the
+ * label alone rather than end in "của KH".
+ */
 function ofCustomer(row: TrashRow, label: string): string {
   const customer = row.owner.customer;
   return customer ? t('trash.restoreLabel.ofCustomer', { label, name: customer.name }) : label;

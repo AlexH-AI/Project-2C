@@ -76,7 +76,10 @@ export function CustomerPolicies({
             .map((p) => {
               const re = people.find((person) => person.id === p.reId);
               // The buttons' names say the FYP too, to tell two policies of one day apart (DR6-119).
-              const named = { date: formatDate(p.submittedDate), fyp: formatVnd(p.submittedFyp) };
+              const nameParams = {
+                date: formatDate(p.submittedDate),
+                fyp: formatVnd(p.submittedFyp),
+              };
               return (
                 <li
                   key={p.id}
@@ -95,7 +98,7 @@ export function CustomerPolicies({
                   {!p.issuedDate && (
                     <button
                       type="button"
-                      aria-label={t('policies.issueLabel', named)}
+                      aria-label={t('policies.issueLabel', nameParams)}
                       onClick={() => onIssue(p)}
                       className={LINK}
                     >
@@ -104,7 +107,7 @@ export function CustomerPolicies({
                   )}
                   <button
                     type="button"
-                    aria-label={t('policies.editLabel', named)}
+                    aria-label={t('policies.editLabel', nameParams)}
                     onClick={() => onEdit(p)}
                     className={LINK}
                   >
