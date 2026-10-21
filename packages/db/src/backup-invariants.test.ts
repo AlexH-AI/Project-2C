@@ -900,6 +900,15 @@ describe('importBackup — rules across tables', () => {
           status: 'active',
         }),
     ],
+    // DR6-105: the instant of the deletion, written otherwise than the app writes it; the restore
+    // and Thùng rác would not find the transition the meeting withdrew (CL3-A28).
+    [
+      'VALUE: a transition withdrawn at its meeting’s deletion, the instant with six decimals',
+      (b, ids) => {
+        const withdrawn = transition(b, ids.hoa, 2);
+        withdrawn.deleted_at = String(withdrawn.deleted_at).replace('Z', '000Z');
+      },
+    ],
     ['13: an input that is not JSON', (b, ids) => (analysis(b, ids.accepted).input_json = '{')],
     [
       '13: a validator report that is not JSON',

@@ -31,12 +31,11 @@ import {
 import {
   appendTransition,
   checkTransition,
-  isStageOfDay,
   listStageTransitions,
   liveCustomer,
   reinstateTransition,
   requireStage,
-  stageOnDay,
+  stagesOfDay,
   transitionWithdrawnAt,
   withdrawAppointmentTransition,
 } from './customers';
@@ -302,13 +301,16 @@ export function checkRestoreAppointment(db: Database, row: AppointmentRow) {
   if (move?.to) {
     checkTransition(db, row.customerId, move.to, date, move.withdrawn.seq);
   } else if (row.status === 'MET' && row.stageAfter !== null) {
-    // Back without a transition only in a stage of its day, as the import checks (spec §6 rule 4):
-    // one reached on a later day blocks like a change after its day (E7, Owner 15/10/2026).
+    // Back without a transition only in a stage of its day, as the import checks (spec §6 rule 4).
+    // Already in the stage it moved to (E7), the customer reached it on its day at the latest: a
+    // change on a later day blocks it like E6, even back to a stage it had that day (DR6-104).
     const transitions = listStageTransitions(db, row.customerId);
-    if (!isStageOfDay(transitions, date, row.stageAfter)) {
-      throw move
-        ? new DbError('TRANSITION_BEFORE_LATEST', { date: formatDate(transitions.at(-1)!.date) })
-        : new DbError('STAGE_NOT_ON_DAY', { date: formatDate(date) });
+    const latest = transitions.at(-1)!;
+    if (move && compareDates(latest.date, date) > 0) {
+      throw new DbError('TRANSITION_BEFORE_LATEST', { date: formatDate(latest.date) });
+    }
+    if (!stagesOfDay(transitions, date).includes(row.stageAfter)) {
+      throw new DbError('STAGE_NOT_ON_DAY', { date: formatDate(date) });
     }
   }
   return move;
@@ -402,7 +404,8 @@ function replaceCoordinators(
  */
 function applyOutcome(db: Database, row: AppointmentRow): void {
   const date = fromIsoDate(row.date);
-  const to = outcomeStage(row, stageOnDay(db, row.customerId, date));
+  const ended = stagesOfDay(listStageTransitions(db, row.customerId), date).at(-1) ?? null;
+  const to = outcomeStage(row, ended);
   if (to !== null) appendTransition(db, row.customerId, to, date, row.id);
 }
 

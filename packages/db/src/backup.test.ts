@@ -527,6 +527,24 @@ describe('importBackup — a text that starts with U+FEFF', () => {
   });
 });
 
+// DR6-105: the app stamps every record with `toISOString()` and the import takes no other form, so
+// one instant is one text where the app compares stamps: a deletion and what it withdrew, Thùng rác.
+describe('importBackup — stamps as the app writes them', () => {
+  it.each([
+    ['without milliseconds', '2026-09-30T07:45:00Z'],
+    ['with tenths of a second', '2026-09-30T07:45:00.5Z'],
+    ['with microseconds', '2026-09-30T07:45:00.000000Z'],
+    ['with an offset', '2026-09-30T14:45:00.000+07:00'],
+  ])('refuses a stamp %s, in any of the three columns', async (_label, stamp) => {
+    for (const column of ['created_at', 'updated_at', 'deleted_at']) {
+      const backup = await smallBackup();
+      backup.tables.customers!.find((c) => c.deleted_at !== null)![column] = stamp;
+
+      expect(await codeOfImport(JSON.stringify(backup))).toBe('BACKUP_INVALID');
+    }
+  });
+});
+
 // DR6-72: the import reads a name and a KYC note with the commands' functions, so a file holds the
 // text a command could have stored, and only that.
 describe('importBackup — text as the commands store it', () => {

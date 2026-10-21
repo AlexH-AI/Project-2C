@@ -1,5 +1,6 @@
 import {
   meetingKeepingMove,
+  stagesOfDay,
   type AppointmentRecord,
   type MeetingOutcome,
   type NextAppointment,
@@ -9,7 +10,6 @@ import {
   compareDates,
   PIPELINE_STAGES,
   parseVnd,
-  stageOn,
   type CalendarDate,
   type CustomerStage,
   type StageTransition,
@@ -83,12 +83,12 @@ export function outcomeLock(
 
 /**
  * "Nhóm sau cuộc gặp" of a meeting on `day` (T-232): the stage it starts `from`, that of the
- * customer at the end of the day (before the creation, the stage it was created in, as the db reads
- * it: DR-43), and what holds its stage after there, since no stage change may go before them (D10):
- * the latest `change` after the day — the creation itself before it —, or else the latest met
- * `meeting` after it, which recorded the stage of its own day. A meeting met on that day keeping the
- * stage `kept` starts from it, and is held by a change later that day too (E19). The appointment
- * and its own move do not count.
+ * customer at the end of the day (before the creation, the stage it was created in, by the db's
+ * rule: `stagesOfDay`, DR-43), and what holds its stage after there, since no stage change may go
+ * before them (D10): the latest `change` after the day — the creation itself before it —, or else
+ * the latest met `meeting` after it, which recorded the stage of its own day. A meeting met on that
+ * day keeping the stage `kept` starts from it, and is held by a change later that day too (E19).
+ * The appointment and its own move do not count.
  */
 export function meetingDay(
   transitions: readonly StageTransition[],
@@ -103,7 +103,7 @@ export function meetingDay(
 } {
   const { id, customerId } = appointment;
   const own = transitions.filter((tr) => tr.customerId === customerId && tr.appointmentId !== id);
-  const ended = stageOn(own, customerId, day) ?? own[0]?.to ?? null;
+  const ended = stagesOfDay(own, day).at(-1) ?? null;
   const change = own.findLast((tr) => {
     const order = compareDates(tr.date, day);
     return order > 0 || (order === 0 && kept != null && kept !== ended);
