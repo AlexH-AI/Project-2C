@@ -164,7 +164,7 @@ export function Item({
   const missing = item.missing && t('aiPanel.missing', { label: t(`kycCategory.${item.missing}`) });
   const box = faded ? 'border-dashed border-border-strong' : 'border-border bg-surface-2';
   return (
-    <li className={`min-w-0 rounded-sm border ${box} px-2.5 py-2 wrap-anywhere`}>
+    <li className={`rounded-sm border ${box} px-2.5 py-2 wrap-anywhere`}>
       {item.system && <b>{t(`aiPanel.system.${item.system}`)} </b>}
       {item.text}
       <span className="mt-1 flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-xs text-fg-3">
