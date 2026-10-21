@@ -63,7 +63,7 @@ describe('startupMessage', () => {
       'ACCESS_DENIED',
       {
         title: 'App không có quyền ghi vào thư mục dữ liệu',
-        help: 'File dữ liệu không hỏng, không cần khôi phục. Hãy kiểm tra thư mục Project2C-data cạnh file exe và các file trong đó không chỉ đọc, tài khoản Windows đang dùng được quyền ghi vào đó (app chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như Program Files thì chép cả thư mục app sang chỗ khác), rồi đóng cửa sổ này và mở lại app.',
+        help: 'File dữ liệu không hỏng, không cần khôi phục. Hãy kiểm tra thư mục Project2C-data cạnh file exe và các file trong đó không chỉ đọc, tài khoản Windows đang dùng được quyền ghi và xóa file trong đó (app chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như Program Files thì chép cả thư mục app sang chỗ khác), rồi đóng cửa sổ này và mở lại app.',
       },
     ],
   ])('says the file is whole when it is out of reach (%s, DR6-07)', (error, expected) => {

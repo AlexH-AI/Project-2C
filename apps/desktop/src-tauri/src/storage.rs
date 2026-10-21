@@ -18,9 +18,13 @@ pub const DISK_FULL: &str = "DISK_FULL";
 /// Error message when another program holds the database file (or its `.tmp`) without sharing:
 /// the file is whole, only out of reach for now. The app matches it exactly.
 pub const FILE_IN_USE: &str = "FILE_IN_USE";
-/// Error message when Windows refuses the app the data folder (read-only, no rights): the file is
-/// whole. The app matches it exactly.
+/// Error message when Windows refuses the app the data folder (read-only, no rights), or the right
+/// to replace the database file: the file is whole. The app matches it exactly.
 pub const ACCESS_DENIED: &str = "ACCESS_DENIED";
+/// Error message of a save Windows refused because the database file can no longer be replaced
+/// (read-only, or no right to delete it): not another program holding it. The app matches it
+/// exactly.
+pub const READ_ONLY: &str = "READ_ONLY";
 const DB_FILE: &str = "project2c.db";
 const LOCK_FILE: &str = "project2c.lock";
 const BACKUP_DIR: &str = "backups";
@@ -96,8 +100,10 @@ fn open_lock_file(path: &Path) -> io::Result<fs::File> {
 /// holding it → `ResourceBusy` with the message [`ALREADY_OPEN`]. A missing file with backups
 /// left is an error, so the app never starts over them. A file that is empty or not SQLite is an
 /// error, never a first start: the app would otherwise write a new database over it. A file that
-/// is whole but out of reach → [`FILE_IN_USE`] or [`ACCESS_DENIED`] (see [`out_of_reach`]), and a
-/// read-only one → [`ACCESS_DENIED`]: the app would open it, then fail every save.
+/// is whole but out of reach → [`FILE_IN_USE`] or [`ACCESS_DENIED`] (see [`out_of_reach`]), and one
+/// the app may not replace → [`ACCESS_DENIED`] (see [`replace_refused`]): the app would open it,
+/// then fail every save. A program holding the file without sharing delete may let go, so it does
+/// not stop the start: its saves fail with Windows' own error until it does.
 /// Nothing is backed up here: the app calls [`backup`] once it opened and checked the file, before
 /// saving anything, so a file damaged inside never becomes the newest backup (DR-51).
 pub fn open(dir: &Path, page: &str, lock: &DataLock) -> io::Result<Option<Vec<u8>>> {
@@ -144,15 +150,41 @@ fn open_with(
             format!("{DB_FILE} is not a SQLite database"),
         ));
     }
-    // A read-only file reads fine, but no save could replace it (DR6-74).
-    if fs::metadata(dir.join(DB_FILE))
-        .map_err(out_of_reach)?
-        .permissions()
-        .readonly()
-    {
+    // Such a file reads fine, but no save could replace it (DR6-74, DR6-120).
+    if replace_refused(&dir.join(DB_FILE)) {
         return Err(io::Error::new(ErrorKind::PermissionDenied, ACCESS_DENIED));
     }
     Ok(Some(bytes))
+}
+
+/// Whether the app may no longer replace the database file, which is what every save does: it
+/// carries the read-only attribute, or Windows refuses the app the right to delete it, which
+/// renaming a new file over it asks (DR6-74, DR6-120). Only what a save asks is asked: refusing
+/// the right to write into the file does not stop the rename, so it does not count. A program
+/// holding the file is no refusal either (see [`open`]).
+fn replace_refused(path: &Path) -> bool {
+    fs::metadata(path).is_ok_and(|meta| meta.permissions().readonly()) || delete_refused(path)
+}
+
+/// Opens `path` with the `DELETE` right alone, which changes nothing, and tells a refusal from a
+/// program that holds the file: that one fails with a sharing violation, not with
+/// `PermissionDenied`. A folder that lets the app delete in it stands in for the file's own right,
+/// as it does for a save, so the answer is the one a save would get.
+#[cfg(windows)]
+fn delete_refused(path: &Path) -> bool {
+    use std::os::windows::fs::OpenOptionsExt;
+    // Windows `DELETE`.
+    const DELETE: u32 = 0x0001_0000;
+    fs::OpenOptions::new()
+        .access_mode(DELETE)
+        .open(path)
+        .is_err_and(|error| error.kind() == ErrorKind::PermissionDenied)
+}
+
+/// The app ships for Windows only (ADR-0006): elsewhere a save asks no right of the file itself.
+#[cfg(not(windows))]
+fn delete_refused(_path: &Path) -> bool {
+    false
 }
 
 /// Copies the saved database file into `backups\` (at startup once the app opened it, and before
@@ -190,6 +222,17 @@ fn out_of_reach(error: io::Error) -> io::Error {
     }
 }
 
+/// Gives a save Windows refused because the database file can no longer be replaced the message
+/// the app tells apart, so it never sends the user looking for a program that is not there
+/// (DR6-120). Any other error stays as it is, a file another program holds included.
+fn read_only(error: io::Error, db: &Path) -> io::Error {
+    if error.kind() == ErrorKind::PermissionDenied && replace_refused(db) {
+        io::Error::new(ErrorKind::PermissionDenied, READ_ONLY)
+    } else {
+        error
+    }
+}
+
 /// Writes `bytes` as the next backup, keeping the ten last written; returns the name of the copy.
 /// Starts on a file that did not change must not push the older backups out, so an identical copy
 /// is reused instead of written twice, and the backups are pruned again then: a prune another
@@ -209,7 +252,8 @@ fn copy_to_backups(backups: &Path, bytes: &[u8], stamp: &str) -> io::Result<Stri
 /// Replaces the database file atomically. A save from another page than the last [`open`]'s (one
 /// still on its way from before a webview reload) is refused with [`STALE_PAGE`]: the new page
 /// read the file without it, and its next save would write over it unseen. A full disk →
-/// `StorageFull` with the message [`DISK_FULL`].
+/// `StorageFull` with the message [`DISK_FULL`]; a file the app may no longer replace (it turned
+/// read-only, or its access list changed) → `PermissionDenied` with the message [`READ_ONLY`].
 pub fn save(dir: &Path, bytes: &[u8], page: &str, lock: &DataLock) -> io::Result<()> {
     save_with(dir, bytes, page, lock, fs::File::sync_all)
 }
@@ -226,7 +270,9 @@ fn save_with(
     if held.page.as_deref().is_some_and(|opened| opened != page) {
         return Err(io::Error::other(STALE_PAGE));
     }
-    write_atomic_with(dir, DB_FILE, bytes, flush).map_err(disk_full)
+    write_atomic_with(dir, DB_FILE, bytes, flush)
+        .map_err(disk_full)
+        .map_err(|error| read_only(error, &dir.join(DB_FILE)))
 }
 
 /// Writes an export file into `exports\` and returns its path. An earlier export is never
@@ -469,6 +515,7 @@ pub fn folder(dir: &Path, kind: &str) -> io::Result<PathBuf> {
 /// `std` quotes an argument only when it has a space or tab, and Explorer splits an unquoted one
 /// at commas (`/select,…`), so `D:\Apps\P2C,v2\…` opened Documents instead. A Windows path
 /// never contains `"`, so nothing inside needs escaping.
+#[cfg(any(windows, test))]
 pub fn explorer_arg(path: &Path) -> OsString {
     let mut arg = OsString::from("\"");
     arg.push(path);
@@ -1334,6 +1381,173 @@ mod tests {
         assert_eq!(fs::read(&file).unwrap(), db("data"));
 
         assert_eq!(open(&dir).unwrap(), Some(db("data")));
+    }
+
+    /// Everyone is refused `rights` (`icacls` letters) on `path` until this drops, so a test that
+    /// fails still leaves the file or folder as it was. By SID, not by name: no account is looked
+    /// up, and the refusal reaches whoever runs the test, an administrator included.
+    #[cfg(windows)]
+    struct Denied<'a>(&'a Path);
+
+    #[cfg(windows)]
+    impl<'a> Denied<'a> {
+        fn new(path: &'a Path, rights: &str) -> Self {
+            let output = std::process::Command::new("icacls")
+                .arg(path)
+                .args(["/deny", &format!("*S-1-1-0:{rights}")])
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "icacls: {output:?}");
+            Self(path)
+        }
+    }
+
+    #[cfg(windows)]
+    impl Drop for Denied<'_> {
+        fn drop(&mut self) {
+            // Never panics: a test that already failed would abort instead of reporting.
+            let _ = std::process::Command::new("icacls")
+                .arg(self.0)
+                .args(["/remove:d", "*S-1-1-0"])
+                .output();
+        }
+    }
+
+    /// A database file that reads fine and is not read-only, yet that nothing can replace: its
+    /// access list refuses the right to write into it and to delete it, and the folder's refuses
+    /// the right to delete in it (which stands in for the file's own).
+    #[cfg(windows)]
+    fn refuse_replacing<'a>(dir: &'a Path, file: &'a Path) -> [Denied<'a>; 2] {
+        [
+            Denied::new(dir, "(DC)"),
+            Denied::new(file, "(WD,AD,WA,WEA,DE)"),
+        ]
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn open_reports_a_database_file_its_access_list_does_not_let_the_app_replace_as_access_denied()
+    {
+        // It reads fine and its attribute is not read-only, yet no save could replace it: a file
+        // moved over from another account (DR6-120).
+        let dir = temp_dir();
+        let file = dir.join(DB_FILE);
+        save(&dir, &db("data")).unwrap();
+        let denied = refuse_replacing(&dir, &file);
+        assert!(!fs::metadata(&file).unwrap().permissions().readonly());
+        assert_eq!(fs::read(&file).unwrap(), db("data"));
+        let refused = save(&dir, &db("new")).unwrap_err();
+        assert_eq!(refused.kind(), ErrorKind::PermissionDenied);
+        let error = open(&dir).unwrap_err();
+        drop(denied);
+        assert_eq!(error.kind(), ErrorKind::PermissionDenied);
+        assert_eq!(error.to_string(), ACCESS_DENIED);
+        assert_eq!(fs::read(&file).unwrap(), db("data"));
+        assert_eq!(names(&dir), vec![DB_FILE, LOCK_FILE]);
+
+        assert_eq!(open(&dir).unwrap(), Some(db("data")));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_save_the_access_list_refuses_is_reported_as_read_only() {
+        // The access list changed after the app opened the file: the warning must not send the
+        // user looking for a program that holds it (DR6-120).
+        let dir = temp_dir();
+        let file = dir.join(DB_FILE);
+        save(&dir, &db("old")).unwrap();
+        let denied = refuse_replacing(&dir, &file);
+        let error = save(&dir, &db("new")).unwrap_err();
+        drop(denied);
+        assert_eq!(error.kind(), ErrorKind::PermissionDenied);
+        assert_eq!(error.to_string(), READ_ONLY);
+        assert_eq!(fs::read(&file).unwrap(), db("old"));
+        assert_eq!(names(&dir), vec![DB_FILE]);
+
+        save(&dir, &db("new")).unwrap();
+        assert_eq!(fs::read(&file).unwrap(), db("new"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_save_after_the_file_turned_read_only_is_reported_as_read_only() {
+        // The attribute set while the app runs (a tool, the user): `open` saw a writable file.
+        let dir = temp_dir();
+        let lock = DataLock::new();
+        let file = dir.join(DB_FILE);
+        super::save(&dir, &db("old"), PAGE, &lock).unwrap();
+        assert_eq!(super::open(&dir, PAGE, &lock).unwrap(), Some(db("old")));
+        let writable = fs::metadata(&file).unwrap().permissions();
+        let mut read_only = writable.clone();
+        read_only.set_readonly(true);
+        fs::set_permissions(&file, read_only).unwrap();
+        let error = super::save(&dir, &db("new"), PAGE, &lock).unwrap_err();
+        fs::set_permissions(&file, writable).unwrap();
+        assert_eq!(error.kind(), ErrorKind::PermissionDenied);
+        assert_eq!(error.to_string(), READ_ONLY);
+        assert_eq!(fs::read(&file).unwrap(), db("old"));
+        assert_eq!(names(&dir), vec![DB_FILE, LOCK_FILE]);
+
+        super::save(&dir, &db("new"), PAGE, &lock).unwrap();
+        assert_eq!(fs::read(&file).unwrap(), db("new"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_save_a_program_holding_the_file_refuses_keeps_the_error_of_windows() {
+        // Neither read-only nor refused by the access list: the program is there, and may let go.
+        use std::os::windows::fs::OpenOptionsExt;
+        let dir = temp_dir();
+        let file = dir.join(DB_FILE);
+        save(&dir, &db("old")).unwrap();
+        // No sharing at all (NT-DB-09), and the sharing of a SQLite browser: read and write, no
+        // delete (K14 of the third deep review).
+        for share in [0, 1 | 2] {
+            let holder = fs::OpenOptions::new()
+                .read(true)
+                .share_mode(share)
+                .open(&file)
+                .unwrap();
+            let error = save(&dir, &db("new")).unwrap_err();
+            drop(holder);
+            assert_ne!(error.to_string(), READ_ONLY, "share {share}");
+            assert!(error.raw_os_error().is_some(), "share {share}: {error}");
+            assert_eq!(fs::read(&file).unwrap(), db("old"));
+            assert_eq!(names(&dir), vec![DB_FILE]);
+        }
+        save(&dir, &db("new")).unwrap();
+        assert_eq!(fs::read(&file).unwrap(), db("new"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn open_opens_a_file_another_program_holds_without_sharing_delete() {
+        // The program may let go, and the next save retries: only what stays refused is refused at
+        // startup (DR6-120, K14 of the third deep review).
+        use std::os::windows::fs::OpenOptionsExt;
+        let dir = temp_dir();
+        save(&dir, &db("data")).unwrap();
+        let _holder = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(1 | 2)
+            .open(dir.join(DB_FILE))
+            .unwrap();
+        assert_eq!(open(&dir).unwrap(), Some(db("data")));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn an_access_list_that_only_refuses_writing_into_the_file_does_not_stop_the_app() {
+        // A save writes a new file and renames it over the old one: the right to write into the
+        // old one is never asked, so refusing it is no reason to refuse the file (DR6-120).
+        let dir = temp_dir();
+        let file = dir.join(DB_FILE);
+        save(&dir, &db("old")).unwrap();
+        let _folder = Denied::new(&dir, "(DC)");
+        let _file = Denied::new(&file, "(WD,AD,WA,WEA)");
+        assert_eq!(open(&dir).unwrap(), Some(db("old")));
+        save(&dir, &db("new")).unwrap();
+        assert_eq!(fs::read(&file).unwrap(), db("new"));
     }
 
     #[test]
