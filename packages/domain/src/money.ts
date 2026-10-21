@@ -5,6 +5,7 @@
  * for either role, told apart by the digits that follow (`parseVnd`).
  */
 import { groupThousands } from './number';
+import { normalizeText } from './text';
 
 export type Vnd = number;
 
@@ -44,8 +45,8 @@ const UNIT_EXPONENTS: Readonly<Record<string, number>> = {
 };
 
 /*
- * Matched after every run of spaces became one space, so each optional space is a single
- * character and the pattern never backtracks over a long run of them (DR-38).
+ * Matched on `normalizeText`, where every run of white space is one space, so each optional space
+ * is a single character and the pattern never backtracks over a long run of them (DR-38).
  */
 const AMOUNT_PATTERN =
   /^([\d.,]+(?: \d+)*)(?: ?(tỷ|tỉ|ty|ti|triệu|trieu|tr|nghìn|nghin|ngàn|ngan|k)(?: ?(\d+))?)? ?(?:₫|đồng|dong|đ|vnđ|vnd)?$/;
@@ -59,15 +60,16 @@ const SPACE_GROUPED = /^[1-9]\d{0,2}(?: \d{3})+$/;
  * `splitNumber`), so `500,000` is 500 000 đồng and `1,500 tỷ` is 1 500 tỷ; `1,5 tỷ` is 1,5 tỷ.
  * Digits after the unit are said as the next group of three below it (see `spokenTail`): `1tr5` is
  * 1 triệu 500 nghìn, `1tr50` is 1 triệu 50 nghìn, `1 tỷ 2` is 1 tỷ 200 triệu. One unit per amount.
- * Anything below 1 đồng is an error, never rounded away.
+ * Anything below 1 đồng is an error, never rounded away. The text is read as `normalizeText` keeps
+ * it, so an amount pasted with an invisible character reads as on screen (DR6-110).
  */
 export function parseVnd(text: string): VndParseResult {
-  let body = text.normalize('NFC').trim().toLowerCase();
+  let body = normalizeText(text).toLowerCase();
   if (body === '') return { ok: false, error: 'empty' };
   // The sign is read once (DR-32): `--500` is malformed, not a negative of a negative.
   const negative = body.startsWith('-') || body.startsWith('−');
   if (negative) body = body.slice(1).trimStart();
-  const magnitude = parseMagnitude(body.replace(/\s+/g, ' '));
+  const magnitude = parseMagnitude(body);
   return negative && magnitude.ok ? { ok: false, error: 'negative' } : magnitude;
 }
 

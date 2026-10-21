@@ -222,16 +222,16 @@ export function CustomerFormDialog({
 
   const save = () => {
     // Empty as the command reads it: invisible characters and white space alone (DR-49, DR6-49).
-    const clean = normalizeText(name);
+    // The command gets the name as typed: it checks it can be stored first (DR6-109).
     const found: Errors = {};
-    if (!clean) found.name = t('error.NAME_REQUIRED');
+    if (!normalizeText(name)) found.name = t('error.NAME_REQUIRED');
     if (!reId) found.re = t('error.RE_REQUIRED');
     if (!birth.ok) found.birth = t(`birth.error.${birth.error}`);
     if (!customer && !date.parsed.ok) found.date = date.error;
     setErrors(found);
     if (Object.keys(found).length > 0 || !birth.ok) return;
     const profile = {
-      name: clean,
+      name,
       reId,
       birthDate: birth.birth,
       gender: profileGender,

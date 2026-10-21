@@ -249,18 +249,20 @@ export function KycNoteDialog({
   };
 
   const save = () => {
-    const clean = normalizeNote(text);
+    // Empty as the command reads it; the command gets the note as typed, which it checks can be
+    // stored first (DR6-109).
+    const empty = !normalizeNote(text);
     // A fact picked but not added yet would be lost: the note cannot be edited after saving.
     const pending = field ? t('kycNote.error.pending') : undefined;
-    if (!clean || !date.parsed.ok || pending) {
+    if (empty || !date.parsed.ok || pending) {
       setErrors({
-        text: clean ? undefined : t('error.KYC_NOTE_EMPTY'),
+        text: empty ? t('error.KYC_NOTE_EMPTY') : undefined,
         date: date.error,
         fact: pending,
       });
       return;
     }
-    const command = { text: clean, date: date.parsed.date, facts, material };
+    const command = { text, date: date.parsed.date, facts, material };
     try {
       data.run((db) => recordKycNote(db, customer.id, command));
       onClose();

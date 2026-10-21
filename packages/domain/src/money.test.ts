@@ -7,6 +7,7 @@ import {
   parseVnd,
   type VndParseResult,
 } from './money';
+import { normalizeText } from './text';
 
 describe('formatVndDelta', () => {
   it('signs a difference with − or +, in the compact form', () => {
@@ -178,6 +179,34 @@ describe('parseVnd', () => {
     ])('%j → error %s', (text, error) => {
       expect(parseVnd(text)).toEqual({ ok: false, error });
     });
+  });
+
+  // DR-38: a run of white space of any kind, as pasted from a spreadsheet, is one space.
+  it.each([
+    ['500\u{A0}000\u{A0}000', 500_000_000],
+    ['500\u{202F}000\u{202F}000', 500_000_000],
+    ['1  500 000', 1_500_000],
+    ['1 tr  5', 1_500_000],
+    ['1 tỷ\t2', 1_200_000_000],
+  ])('%j → %d đồng', (text, amount) => {
+    expect(amountOf(parseVnd(text))).toBe(amount);
+  });
+
+  // DR6-110: the text as normalizeText keeps it, as the KYC money line reads it (DR6-101).
+  it.each([
+    ['500tr\u{200B}', 500_000_000],
+    ['500\u{85}000\u{85}000', 500_000_000],
+    ['5\u{2800}tr', 5_000_000],
+    ['1tr\u{2060}5', 1_500_000],
+    ['\u{FEFF}750k', 750_000],
+    ['2\u{7} triệu', 2_000_000],
+  ])('%j with an invisible character → %d đồng', (text, amount) => {
+    expect(amountOf(parseVnd(text))).toBe(amount);
+    expect(parseVnd(text)).toEqual(parseVnd(normalizeText(text)));
+  });
+
+  it('reads text of invisible characters only as empty', () => {
+    expect(parseVnd('\u{200B} \u{2060}')).toEqual({ ok: false, error: 'empty' });
   });
 
   describe('at the edges of what a number holds', () => {

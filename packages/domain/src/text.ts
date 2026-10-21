@@ -14,16 +14,23 @@ export function isStorableText(text: string): boolean {
 }
 
 /**
- * One line of typed text — a name, a KYC value — as stored: invisible characters dropped (format
- * characters such as U+200B, U+2060, U+FEFF; the other default-ignorable ones such as the Hangul
- * fillers, U+034F and the variation selectors; the blank Braille pattern U+2800), each run of
- * Unicode white space (NBSP, tab, line break, U+0085…) one space, composed (NFC: typed Vietnamese
- * may arrive decomposed) and trimmed (DR6-72). Invisible characters go first, so one between a
- * letter and its tone mark does not keep them apart.
+ * What shows nothing: format characters such as U+200B, U+2060, U+FEFF; the other default-ignorable
+ * ones such as the Hangul fillers, U+034F and the variation selectors; the blank Braille pattern
+ * U+2800 (DR6-72); the control characters that are not white space (DR6-111). Not NUL, which
+ * `isStorableText` refuses: a screen then says what the command does.
+ */
+const INVISIBLE =
+  /[\p{Cf}\p{Default_Ignorable_Code_Point}\u{2800}]|(?![\0\p{White_Space}])\p{Cc}/gu;
+
+/**
+ * One line of typed text — a name, a KYC value — as stored: invisible characters dropped, each run
+ * of Unicode white space (NBSP, tab, line break, U+0085…) one space, composed (NFC, not NFKC: typed
+ * Vietnamese may arrive decomposed, and "m²" stays as typed) and trimmed. Invisible characters go
+ * first, so one between a letter and its tone mark does not keep them apart.
  */
 export function normalizeText(text: string): string {
   return text
-    .replace(/[\p{Cf}\p{Default_Ignorable_Code_Point}\u{2800}]/gu, '')
+    .replace(INVISIBLE, '')
     .replace(/\p{White_Space}+/gu, ' ')
     .normalize('NFC')
     .trim();

@@ -2,6 +2,8 @@
  * Reporting periods (ADR-0007, ADR-0013): day, week (Monday → Sunday), month, year or a custom
  * range. Dates are calendar days with no time or time zone, so arithmetic never drifts by a day.
  */
+import { normalizeText } from './text';
+
 export interface CalendarDate {
   readonly year: number;
   readonly month: number; // 1–12
@@ -184,11 +186,12 @@ const NEXT_YEAR_SUGGESTION_DAYS = 60;
  * at year end the RE often means early next year. A day this year lacks (29/02) is an
  * `invalid-date` that still suggests next year's, once the end of its month passed more than 60
  * days ago (DR-39). The caller shows the result and lets the RE choose — nothing is guessed silently.
+ * The text is read as `normalizeText` keeps it, as `parseVnd` reads an amount (DR6-110).
  */
 export function parseQuickDate(text: string, today: CalendarDate): QuickDateResult {
-  const trimmed = text.trim();
-  if (trimmed === '') return { ok: false, error: 'empty' };
-  const match = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/.exec(trimmed);
+  const clean = normalizeText(text);
+  if (clean === '') return { ok: false, error: 'empty' };
+  const match = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/.exec(clean);
   if (!match) return { ok: false, error: 'format' };
   const day = Number(match[1]);
   const month = Number(match[2]);

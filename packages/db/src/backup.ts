@@ -147,15 +147,19 @@ function load(db: Database, tables: Record<string, Record<string, unknown>[]>): 
       const insert = db.sqlite.prepare(
         `INSERT INTO ${quote(table)} (${columnList(columns)}) VALUES (${columns.map(() => '?').join(', ')})`,
       );
-      for (const row of tables[table]!) {
-        if (
-          !sameSet(
-            Object.keys(row),
-            columns.map((c) => c.name),
+      try {
+        for (const row of tables[table]!) {
+          if (
+            !sameSet(
+              Object.keys(row),
+              columns.map((c) => c.name),
+            )
           )
-        )
-          throw invalid();
-        insert.run(columns.map((c) => valueOf(c, row[c.name])));
+            throw invalid();
+          insert.run(columns.map((c) => valueOf(c, row[c.name])));
+        }
+      } finally {
+        insert.free();
       }
     }
     if (db.sqlite.exec('PRAGMA foreign_key_check').length > 0) throw invalid();
@@ -185,14 +189,22 @@ function columnsOf(sqlite: SqlJsDatabase, table: string): Column[] {
  * The file's value for an insert; SQLite alone would store text in an integer column. A text with a
  * NUL would load whole but read back cut at it, past the CHECKs on its length (DR5-14), and a lone
  * surrogate half would read back as U+FFFD, which the value checks could not tell from typed text
- * (DR6-49): `isStorableText`, as the commands. A text read from the database never has either,
- * so no exported file does. The schema has integer and text columns only (a test checks it): a
- * new kind of column needs a case here.
+ * (DR6-49): `isStorableText`, as the commands. A text that starts with U+FEFF would read back
+ * without it while SQLite keeps it for its unique indexes and comparisons (DR6-107); the commands
+ * drop it. A text read from the database has none of them, so no exported file does. The schema
+ * has integer and text columns only (a test checks it): a new kind of column needs a case here.
  */
 function valueOf(column: Column, value: unknown): SqlValue {
   if (value === null) return null;
   if (column.type === 'integer' && Number.isSafeInteger(value)) return value as number;
-  if (column.type === 'text' && typeof value === 'string' && isStorableText(value)) return value;
+  if (
+    column.type === 'text' &&
+    typeof value === 'string' &&
+    isStorableText(value) &&
+    !value.startsWith('\u{FEFF}')
+  ) {
+    return value;
+  }
   throw invalid();
 }
 

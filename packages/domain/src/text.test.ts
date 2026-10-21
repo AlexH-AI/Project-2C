@@ -7,13 +7,15 @@ const INVISIBLE = [0x3164, 0x115f, 0xffa0, 0x34f, ...range(0xfe00, 0xfe0f), 0x28
 );
 
 /**
- * What typed or pasted text may hold: letters, tone marks, an emoji, characters NFC changes, every
- * kind of white space and invisible character the rules name, a lone surrogate half.
+ * What typed or pasted text may hold: letters, tone marks, an emoji, characters NFC changes and one
+ * NFKC would, every kind of white space, invisible and control character the rules name, both
+ * halves of a surrogate pair.
  */
 const POOL = [
-  ...[0x61, 0x42, 0x111, 0x1b0, 0x1f31f, 0x301, 0x323, 0x340, 0x2126, 0x20, 0x9, 0xa, 0xd],
+  ...[0x61, 0x42, 0x111, 0x1b0, 0x1f31f, 0x301, 0x323, 0x340, 0x2126, 0xb2, 0x20, 0x9, 0xa, 0xd],
   ...[0x85, 0xa0, 0x1680, 0x2000, 0x2028, 0x2029, 0x202f, 0x3000, 0xad, 0x200b, 0x200d, 0x2060],
-  ...[0xfeff, 0x600, 0x1160, 0xe0100, 0xd800, ...INVISIBLE.map((char) => char.codePointAt(0)!)],
+  ...[0xfeff, 0x600, 0x1160, 0xe0100, 0x7, 0x9f, 0xd800, 0xdc00],
+  ...INVISIBLE.map((char) => char.codePointAt(0)!),
 ].map((code) => String.fromCodePoint(code));
 
 /** Text of up to 12 characters of `POOL`, the same run for the same seed (Lehmer, MINSTD). */
@@ -65,13 +67,32 @@ describe('normalizeText', () => {
     expect(normalizeText('\u{600}Sao Mai\u{110BD}')).toBe('Sao Mai');
   });
 
+  // DR6-111 (Q2 a, Owner 21/10/2026): the C0 / C1 controls that are not white space show nothing.
+  it('drops the control characters that are not white space, so text of them alone is empty', () => {
+    expect(normalizeText('Sao Mai\u{7}')).toBe('Sao Mai');
+    expect(normalizeText('Sao\u{1B} Mai\u{9F}')).toBe('Sao Mai');
+    expect(normalizeText('\u{1}\u{8}\u{E}\u{1F}\u{7F}\u{80}\u{84}\u{86}\u{9F}')).toBe('');
+    // "à" typed as "a" + U+0007 + combining grave accent.
+    expect(normalizeText('Ba\u{7}\u{300}')).toBe('Bà');
+  });
+
+  it('keeps NUL, which isStorableText refuses, so a screen says what the command does', () => {
+    expect(normalizeText('A\u{0}B')).toBe('A\u{0}B');
+    expect(normalizeText('\u{0}')).toBe('\u{0}');
+  });
+
+  it('composes as NFC, not NFKC: a compatibility character stays as typed', () => {
+    expect(normalizeText('Nhà 120 m²')).toBe('Nhà 120 m²');
+    expect(normalizeText('Ｌａｎ ﬁ tầng ５')).toBe('Ｌａｎ ﬁ tầng ５');
+  });
+
   it('gives text it keeps as it is: nothing invisible, single spaces inside (random text)', () => {
     const next = randomText(72);
     for (let i = 0; i < 2000; i++) {
       const once = normalizeText(next());
       expect(normalizeText(once)).toBe(once);
       expect(once.replaceAll(' ', '')).not.toMatch(
-        /[\p{White_Space}\p{Default_Ignorable_Code_Point}\p{Cf}\u{2800}]/u,
+        /[\p{White_Space}\p{Default_Ignorable_Code_Point}\p{Cf}\p{Cc}\u{2800}]/u,
       );
       expect(once).not.toMatch(/^ | $| {2}/);
     }
@@ -96,6 +117,12 @@ describe('normalizeNote', () => {
     );
   });
 
+  it('breaks the line at a CR alone as at CRLF, and drops a control character', () => {
+    expect(normalizeNote('Du học 2029\rCon thứ hai\r\nBác sĩ\u{7}')).toBe(
+      'Du học 2029\nCon thứ hai\nBác sĩ',
+    );
+  });
+
   it('gives a note it keeps as it is (random text)', () => {
     const next = randomText(2029);
     for (let i = 0; i < 2000; i++) {
@@ -111,5 +138,10 @@ describe('isStorableText', () => {
     expect(isStorableText('A\u0000B')).toBe(false);
     expect(isStorableText('A\uD800')).toBe(false);
     expect(isStorableText('\uDC00B')).toBe(false);
+  });
+
+  // DR6-107: the commands drop a U+FEFF that starts the text; only the backup import refuses one.
+  it('takes a text that starts with U+FEFF', () => {
+    expect(isStorableText('\u{FEFF}Sao Mai')).toBe(true);
   });
 });

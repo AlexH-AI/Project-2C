@@ -259,6 +259,26 @@ test('the frame of a refused save goes as soon as the note or its day is typed a
   await expect(dialog).toBeVisible();
 });
 
+// DR6-109: the dialog sends the note as typed. The command checks it can be stored before dropping
+// U+200B, so the halves of an emoji around it are refused, never joined into the emoji and saved.
+test('refuses a note broken in a paste as the command does (7a, DR6-109)', async ({ page }) => {
+  await createCustomer(page);
+  await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
+  const dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${NAME}` });
+  await dialog.getByRole('textbox', { name: 'Ghi chú' }).evaluate((field: HTMLTextAreaElement) => {
+    // Set as a paste would, past the keyboard.
+    const set = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
+    set.call(field, '\uD83D\u{200B}\uDE00 Lan');
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
+
+  await expect(
+    dialog.getByRole('alert').filter({ hasText: 'Chữ có ký tự không lưu được' }),
+  ).toBeVisible();
+  await expect(dialog).toBeVisible();
+});
+
 // DR6-49: a note or a value of invisible characters only is empty, said at its field as the
 // command reads it; the note keeps its line breaks (Owner 16/10/2026).
 test('a KYC note or value of invisible characters only is empty (7a)', async ({ page }) => {

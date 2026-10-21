@@ -27,4 +27,20 @@ describe('byName', () => {
     expect(byName('Lan', 'Lan')).toBe(0);
     expect(byName('an', 'An')).not.toBe(0);
   });
+
+  // DR6-112: the collator ties numbers of one value written apart; their order is still one.
+  it('orders two names of one number written apart, whatever order they come in', () => {
+    const pairs = [
+      ['Team 01', 'Team 1'],
+      ['KH 007', 'KH 7'],
+      ['Team ２', 'Team 2'],
+    ] as const;
+    for (const [a, b] of pairs) {
+      expect(byName(a, b)).not.toBe(0);
+      expect(Math.sign(byName(a, b))).toBe(-Math.sign(byName(b, a)));
+    }
+    const names = pairs.flat();
+    expect(sorted(names)).toEqual(sorted([...names].reverse()));
+    expect(sorted(['Team 10', 'Team 01', 'Team 2'])).toEqual(['Team 01', 'Team 2', 'Team 10']);
+  });
 });

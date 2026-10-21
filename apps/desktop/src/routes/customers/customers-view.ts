@@ -7,6 +7,7 @@ import {
   compareDates,
   formatDate,
   formatIsoDate,
+  normalizeText,
   parseQuickDate,
   scopeMatcher,
   type CalendarDate,
@@ -133,12 +134,13 @@ export type BirthDateResult =
 /**
  * Reads a birth date typed as a year (`1984`) or a full `dd/mm/yyyy`; empty means none (a N4
  * customer may be unknown). A year must be written in full: `12/3/84` or `12/3` is a format error.
+ * The text is read as `normalizeText` keeps it, as `parseQuickDate` reads a day (DR6-110).
  */
 export function parseBirthDate(text: string, today: CalendarDate): BirthDateResult {
-  const trimmed = text.trim();
-  if (trimmed === '') return { ok: true, birth: null };
-  const year = /^\d{4}$/.test(trimmed) ? Number(trimmed) : null;
-  const parsed = parseQuickDate(year === null ? trimmed : `1/1/${year}`, today);
+  const clean = normalizeText(text);
+  if (clean === '') return { ok: true, birth: null };
+  const year = /^\d{4}$/.test(clean) ? Number(clean) : null;
+  const parsed = parseQuickDate(year === null ? clean : `1/1/${year}`, today);
   if (!parsed.ok) return parsed;
   if (parsed.yearInferred) return { ok: false, error: 'format' };
   const birth = year === null ? parsed.date : { year };

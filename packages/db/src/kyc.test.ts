@@ -175,6 +175,10 @@ describe('KYC facts', () => {
     expect(confirm('childrenCount', 'hai')).toBe('INVALID_KYC_VALUE');
     expect(confirm('childrenCount', 1.5)).toBe('INVALID_KYC_VALUE');
     expect(confirm('childrenCount', -1)).toBe('INVALID_KYC_VALUE');
+    // CL3-A17: a number trường takes digits only, not text that Number() would read.
+    for (const text of ['2.0', '1e1', '0x10', '+2']) {
+      expect(confirm('childrenCount', text)).toBe('INVALID_KYC_VALUE');
+    }
     expect(confirm('hasProtection', 'có lẽ')).toBe('INVALID_KYC_VALUE');
     expect(confirm('hasProtection', 1)).toBe('INVALID_KYC_VALUE');
     expect(confirm('occupation', '   ')).toBe('INVALID_KYC_VALUE');
@@ -718,7 +722,8 @@ describe('KYC text is stored as the screens show it', () => {
       confirmKycFact(database, customer.id, { field: 'mainConcern', value, noteId: note.id, date });
     expect(gate()).toBe('PROFILE_DISCOVERY');
 
-    for (const value of ['\u{3164}', '\u{2800}\u{2800}', '\u{FE0F}\u{85}']) {
+    // DR6-111 (Q2 a): control characters alone too.
+    for (const value of ['\u{3164}', '\u{2800}\u{2800}', '\u{FE0F}\u{85}', '\u{7}\u{9F}']) {
       expect(codeOf(() => concern(value))).toBe('INVALID_KYC_VALUE');
     }
     expect(gate()).toBe('PROFILE_DISCOVERY');
