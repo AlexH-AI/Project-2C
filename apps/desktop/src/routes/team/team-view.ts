@@ -1,4 +1,4 @@
-import { DbError, type AppointmentRecord, type PersonUsage } from '@p2c/db';
+import { DbError, ownsRecords, type AppointmentRecord, type PersonUsage } from '@p2c/db';
 import {
   addDays,
   customPeriod,
@@ -111,7 +111,7 @@ const NAMED_IN_TRASH = 3;
  * first (T-250).
  */
 export function inUseHelp(usage: PersonUsage): string[] {
-  const owns = usage.customers + usage.appointments + usage.policies > 0;
+  const owns = ownsRecords(usage);
   const reviews = usage.reviewing > 0;
   const coordinates = usage.coordinating > 0;
   const role = owns

@@ -73,7 +73,10 @@ Bấm **Sửa** cạnh người đó. Hộp **Sửa nhân sự** sửa được 
 2. Hộp **Xóa …?** ghi vai trò và team.
 3. Người không còn dữ liệu: hộp ghi "Nhân sự được xóa mềm: ẩn khỏi danh sách, dữ liệu cũ vẫn giữ; khôi phục ở Cài đặt → Thùng rác." Bấm **Xóa**.
 
-Người còn dữ liệu thì nút Xóa tắt và hộp ghi "Chưa xóa được — … còn dữ liệu", kèm số KH đang phụ trách, số lịch hẹn và HĐ ghi cho RE này, số lịch hẹn là người phối hợp, số lịch hẹn là người đánh giá kết quả. RE đã có lịch hẹn hay HĐ thì không xóa được, vì các bản ghi đó giữ tên RE; cân nhắc giữ lại thay vì xóa. Khi có bản ghi trong số đó thuộc KH đã xóa, hộp ghi thêm tên các KH đó, dù người này còn bản ghi khác hay không. Nếu mọi bản ghi đều thuộc KH đã xóa, người này xóa được sau khi dọn sạch Thùng rác (xem [9. Cài đặt → Dọn sạch Thùng rác](09-cai-dat.md#dọn-sạch-thùng-rác)).
+Người còn dữ liệu thì nút Xóa tắt và hộp ghi "Chưa xóa được — … còn dữ liệu", kèm số KH đang phụ trách, số lịch hẹn và HĐ ghi cho RE này, số lịch hẹn là người phối hợp, số lịch hẹn là người đánh giá kết quả. RE đã có lịch hẹn hay HĐ thì không xóa được, vì các bản ghi đó giữ tên RE; cân nhắc giữ lại thay vì xóa. Khi có bản ghi trong số đó thuộc KH đã xóa, hộp ghi thêm tên các KH đó, dù người này còn bản ghi khác hay không, và hai cách gỡ:
+
+- **Dọn sạch Thùng rác** xóa hẳn các bản ghi đó (xem [9. Cài đặt → Dọn sạch Thùng rác](09-cai-dat.md#dọn-sạch-thùng-rác)). Nếu mọi bản ghi của người này đều thuộc KH đã xóa, họ xóa được sau khi dọn.
+- **Khôi phục KH** (ở Cài đặt → Thùng rác) chỉ gỡ được một phần. RE: đổi RE phụ trách của KH vừa khôi phục chỉ chuyển lịch hẹn **Dự kiến** (xem [4. Khách hàng](04-khach-hang.md#sửa-hồ-sơ-kh)); cuộc gặp đã có kết quả, lịch đã qua chưa ghi kết quả và HĐ vẫn giữ RE đã ghi. Người hỗ trợ: sửa được lịch đã có kết quả ở **Sửa kết quả**; người phối hợp của lịch Dự kiến / Dời lịch không đổi được, chỉ dọn sạch mới gỡ.
 
 Người và team đã xóa khôi phục ở [Cài đặt → Thùng rác](09-cai-dat.md#cài-đặt--thùng-rác).
 
