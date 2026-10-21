@@ -617,7 +617,8 @@ test('the dialog of a purge that runs stays: Escape does not close it, Hủy is 
 });
 
 // D7, 11j: the last save failed, so a backup would miss what changed since: the purge is refused, in
-// the place its notice would be, and nothing changes (L191 of the notes of review).
+// the place its notice would be, and nothing changes. The notice that D8 and D9 show is this branch
+// of the screen with another title; the exe's stand-in cannot make the backup fail.
 test('a purge refused because the last save failed says so and changes nothing (D7; 11j)', async ({
   page,
 }) => {
