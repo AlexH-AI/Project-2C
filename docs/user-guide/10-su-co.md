@@ -12,7 +12,7 @@ Lúc mở, app đọc file dữ liệu, kiểm tra file không hỏng, rồi sao
 |---|---|---|
 | **Project-2C đang mở ở một cửa sổ khác** | Thư mục dữ liệu này đang được một cửa sổ app khác dùng | Dùng cửa sổ đó, đóng cửa sổ này. App không đọc, không ghi gì ở cửa sổ này. Cửa sổ đó đang báo lỗi mở dữ liệu thì đóng cả hai cửa sổ rồi mở lại app |
 | **File dữ liệu đang bị chương trình khác giữ** | Một chương trình khác (phần mềm sao lưu, đồng bộ, diệt virus hay công cụ mở file SQLite) đang mở file trong `Project2C-data`. File dữ liệu không hỏng | Đóng chương trình đó, rồi đóng cửa sổ báo lỗi và mở lại app. **Không** chép backup đè lên file: file đang dùng được, bản backup thiếu các thay đổi gần nhất |
-| **App không có quyền ghi vào thư mục dữ liệu** | Windows không cho app ghi vào `Project2C-data` cạnh file exe: thư mục hay file trong đó (kể cả chính `project2c.db`) chỉ đọc, tài khoản Windows đang dùng không có quyền ghi, hoặc app chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như `Program Files`. File dữ liệu không hỏng | Bỏ chỉ đọc ở thư mục `Project2C-data` và các file trong đó, kiểm quyền ghi của tài khoản đang dùng; app chạy từ ổ chỉ đọc hay `Program Files` thì chép cả thư mục app (exe cùng `Project2C-data`) sang chỗ khác. Rồi đóng cửa sổ báo lỗi và mở lại app. **Không** chép backup đè lên file |
+| **App không có quyền ghi vào thư mục dữ liệu** | Windows không cho app ghi vào `Project2C-data` cạnh file exe: thư mục hay file trong đó (kể cả chính `project2c.db`) chỉ đọc, tài khoản Windows đang dùng không có quyền ghi hay xóa file trong đó, hoặc app chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như `Program Files`. File dữ liệu không hỏng | Bỏ chỉ đọc ở thư mục `Project2C-data` và các file trong đó, kiểm quyền ghi của tài khoản đang dùng; app chạy từ ổ chỉ đọc hay `Program Files` thì chép cả thư mục app (exe cùng `Project2C-data`) sang chỗ khác. Rồi đóng cửa sổ báo lỗi và mở lại app. **Không** chép backup đè lên file |
 | **Không sao lưu được file dữ liệu** | App không chép được bản sao lưu trước khi mở. File dữ liệu không bị đổi | Kiểm tra ổ đĩa còn chỗ trống, thư mục `backups\` không chỉ đọc hay bị chương trình khác giữ, rồi đóng cửa sổ báo lỗi và mở lại app |
 | **Ổ đĩa đã đầy, không sao lưu được file dữ liệu** | Ổ chứa thư mục app hết chỗ. File dữ liệu không bị đổi | Xóa bớt file trên ổ đó (ví dụ file cũ trong `Project2C-data\exports\`), rồi đóng cửa sổ báo lỗi và mở lại app |
 | **File dữ liệu do bản app mới hơn tạo** | File đã được bản app mới hơn mở và nâng cấp | Đóng cửa sổ báo lỗi rồi dùng bản app mới hơn. App này không đổi gì trong file |
@@ -34,7 +34,15 @@ Cùng cách này dùng để lấy lại dữ liệu trước một lần **Nh�
 
 ## Chưa lưu được vào file (bản exe)
 
-Dải cảnh báo "Chưa lưu được dữ liệu vào file…" ở đầu màn và hộp **Chưa lưu được thay đổi** khi đóng app: xem [1. Bắt đầu → Khi app chưa lưu được](01-bat-dau.md#khi-app-chưa-lưu-được-bản-exe).
+Dải cảnh báo "Chưa lưu được dữ liệu vào file…" ở đầu màn và hộp **Chưa lưu được thay đổi** khi đóng app: xem [1. Bắt đầu → Khi app chưa lưu được](01-bat-dau.md#khi-app-chưa-lưu-được-bản-exe). Câu trên dải và trong hộp cho biết nguyên nhân:
+
+| Câu ghi | Nghĩa | Làm gì |
+|---|---|---|
+| "…(file có thể đang mở trong chương trình khác)…" | Một chương trình khác (diệt virus, đồng bộ đám mây, công cụ mở file SQLite) đang giữ `project2c.db` | Đóng chương trình đó |
+| "…ổ đĩa chứa thư mục app đã đầy…" | Ổ chứa thư mục app hết chỗ | Xóa bớt file trên ổ đó (ví dụ file cũ trong `Project2C-data\exports\`) |
+| "…file Project2C-data\project2c.db đang ở chế độ chỉ đọc, hoặc tài khoản Windows đang dùng không có quyền ghi / xóa file đó…" | File chuyển sang chỉ đọc lúc app chạy, hoặc quyền của tài khoản bị rút | Chuột phải file → Properties → bỏ chọn Read-only, hoặc nhờ người quản trị máy cấp lại quyền |
+
+Cả ba trường hợp: dữ liệu vẫn còn trong app, dải cảnh báo tự mất khi lưu được. Nếu file đã chỉ đọc hay bị rút quyền từ trước khi mở app, app không vào màn chính mà hiện trang "App không có quyền ghi vào thư mục dữ liệu" (xem [Lỗi lúc mở app](#lỗi-lúc-mở-app-bản-exe)).
 
 ## Một màn không hiện được
 

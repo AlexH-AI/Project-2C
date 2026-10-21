@@ -23,6 +23,22 @@ export const FILE_IN_USE = 'FILE_IN_USE';
  * (`storage::ACCESS_DENIED`).
  */
 export const ACCESS_DENIED = 'ACCESS_DENIED';
+/**
+ * `db_save`'s error when Windows refuses the app the right to replace the database file after it
+ * opened it: the file turned read-only, or its access list changed (`storage::READ_ONLY`). A file
+ * another program holds keeps Windows' own message.
+ */
+export const READ_ONLY = 'READ_ONLY';
+
+/** The causes of a failed save that the warning and the close question tell apart. */
+export type SaveFailure = 'diskFull' | 'readOnly' | 'other';
+
+/** What a save's error says about why it failed; anything but the two codes reads as `other`. */
+export function saveFailure(error: unknown): SaveFailure {
+  if (error === DISK_FULL) return 'diskFull';
+  if (error === READ_ONLY) return 'readOnly';
+  return 'other';
+}
 
 /** 128 random bits in hex; `getRandomValues`, unlike `randomUUID`, needs no secure context. */
 const newPage = () =>

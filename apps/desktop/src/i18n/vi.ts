@@ -1033,7 +1033,7 @@ export const vi = {
     'File dữ liệu không hỏng, không cần khôi phục. Một chương trình khác (phần mềm sao lưu, đồng bộ, diệt virus hay công cụ mở file SQLite) đang mở file trong thư mục Project2C-data: hãy đóng chương trình đó, rồi đóng cửa sổ này và mở lại app.',
   'storage.accessDenied': 'App không có quyền ghi vào thư mục dữ liệu',
   'storage.accessDeniedHelp':
-    'File dữ liệu không hỏng, không cần khôi phục. Hãy kiểm tra thư mục Project2C-data cạnh file exe và các file trong đó không chỉ đọc, tài khoản Windows đang dùng được quyền ghi vào đó (app chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như Program Files thì chép cả thư mục app sang chỗ khác), rồi đóng cửa sổ này và mở lại app.',
+    'File dữ liệu không hỏng, không cần khôi phục. Hãy kiểm tra thư mục Project2C-data cạnh file exe và các file trong đó không chỉ đọc, tài khoản Windows đang dùng được quyền ghi và xóa file trong đó (app chạy từ ổ chỉ đọc hay thư mục cần quyền quản trị như Program Files thì chép cả thư mục app sang chỗ khác), rồi đóng cửa sổ này và mở lại app.',
   'storage.technicalDetail': 'Chi tiết kỹ thuật:',
   'storage.alreadyOpen': 'Project-2C đang mở ở một cửa sổ khác',
   'storage.alreadyOpenHelp':
@@ -1136,9 +1136,15 @@ export const vi = {
     'Chưa lưu được dữ liệu vào file (file có thể đang mở trong chương trình khác). Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
   'storage.saveDiskFull':
     'Chưa lưu được dữ liệu vào file: ổ đĩa chứa thư mục app đã đầy. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports). Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
+  'storage.saveReadOnly':
+    'Chưa lưu được dữ liệu vào file: file Project2C-data\\project2c.db đang ở chế độ chỉ đọc, hoặc tài khoản Windows đang dùng không có quyền ghi / xóa file đó. Hãy bỏ chế độ chỉ đọc (chuột phải file → Properties → bỏ chọn Read-only) hoặc nhờ người quản trị máy cấp lại quyền. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
   'close.unsavedTitle': 'Chưa lưu được thay đổi',
   'close.unsavedBody':
     'Các thay đổi gần nhất chưa ghi được vào file (file có thể đang bị chương trình khác mở). Đóng chương trình đó rồi chọn Thử lại, hoặc đóng app và bỏ các thay đổi chưa lưu.',
+  'close.unsavedBodyDiskFull':
+    'Các thay đổi gần nhất chưa ghi được vào file vì ổ đĩa chứa thư mục app đã đầy. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports) rồi chọn Thử lại, hoặc đóng app và bỏ các thay đổi chưa lưu.',
+  'close.unsavedBodyReadOnly':
+    'Các thay đổi gần nhất chưa ghi được vào file vì file Project2C-data\\project2c.db đang ở chế độ chỉ đọc, hoặc tài khoản Windows đang dùng không có quyền ghi / xóa file đó. Hãy bỏ chế độ chỉ đọc (chuột phải file → Properties → bỏ chọn Read-only) hoặc nhờ người quản trị máy cấp lại quyền, rồi chọn Thử lại. Hoặc đóng app và bỏ các thay đổi chưa lưu.',
   'close.retry': 'Thử lại',
   'close.discard': 'Đóng và bỏ thay đổi chưa lưu',
   'team.summary': '{teams} team · {tl} TL · {re} RE · {shared} người hỗ trợ',

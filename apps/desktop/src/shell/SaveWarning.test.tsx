@@ -17,4 +17,13 @@ describe('SaveFailed', () => {
     );
     expect(html).not.toContain('chương trình khác');
   });
+
+  it('tells to lift the read-only state or the refusal when the file can no longer be replaced, not to look for a program (DR6-120)', () => {
+    const html = renderToStaticMarkup(<SaveFailed error="READ_ONLY" />);
+    expect(html).toContain('role="alert"');
+    expect(html).toContain(
+      'Chưa lưu được dữ liệu vào file: file Project2C-data\\project2c.db đang ở chế độ chỉ đọc, hoặc tài khoản Windows đang dùng không có quyền ghi / xóa file đó. Hãy bỏ chế độ chỉ đọc (chuột phải file → Properties → bỏ chọn Read-only) hoặc nhờ người quản trị máy cấp lại quyền. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
+    );
+    expect(html).not.toContain('chương trình khác');
+  });
 });

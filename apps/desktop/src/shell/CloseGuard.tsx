@@ -1,8 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
+import { saveFailure } from '../data/tauri-storage';
 import { t } from '../i18n';
 import { closeAfterSaving, type CloseChoice } from './close-guard';
+
+const UNSAVED_BODY = {
+  diskFull: 'close.unsavedBodyDiskFull',
+  readOnly: 'close.unsavedBodyReadOnly',
+  other: 'close.unsavedBody',
+} as const;
 
 /** The exe window as far as closing goes; Tauri's `Window` fits it. */
 export interface AppWindow {
@@ -17,7 +24,8 @@ export interface AppWindow {
  * dropping changes the last save could not write.
  */
 export function CloseGuard({ appWindow }: { appWindow: AppWindow }) {
-  const { saves } = useAppData();
+  const { saves, saveError, subscribeSaveError } = useAppData();
+  const error = useSyncExternalStore(subscribeSaveError, saveError);
   const [answer, setAnswer] = useState<((choice: CloseChoice) => void) | null>(null);
 
   useEffect(() => {
@@ -56,10 +64,20 @@ export function CloseGuard({ appWindow }: { appWindow: AppWindow }) {
     setAnswer(null);
     answer(choice);
   };
-  return <CloseDialog onChoose={choose} />;
+  return <CloseDialog error={error} onChoose={choose} />;
 }
 
-function CloseDialog({ onChoose }: { onChoose: (choice: CloseChoice) => void }) {
+/**
+ * The question for the storage's `error` of the last failed save: like the save warning, it says
+ * what to do about a full disk and a file that can no longer be replaced, not to close a program.
+ */
+export function CloseDialog({
+  error,
+  onChoose,
+}: {
+  error: unknown;
+  onChoose: (choice: CloseChoice) => void;
+}) {
   // Escape leaves the question unanswered: the window stays open and the next close asks again.
   return (
     <Dialog
@@ -76,7 +94,7 @@ function CloseDialog({ onChoose }: { onChoose: (choice: CloseChoice) => void }) 
         </>
       }
     >
-      <p className="m-0">{t('close.unsavedBody')}</p>
+      <p className="m-0">{t(UNSAVED_BODY[saveFailure(error)])}</p>
     </Dialog>
   );
 }

@@ -45,11 +45,15 @@ Nếu ổ đĩa chứa thư mục app đã đầy, dải cảnh báo ghi:
 
 > Chưa lưu được dữ liệu vào file: ổ đĩa chứa thư mục app đã đầy. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\exports). Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.
 
+Nếu file `project2c.db` chuyển sang chỉ đọc lúc app đang chạy, hoặc tài khoản Windows đang dùng không còn quyền ghi / xóa file đó, dải cảnh báo ghi:
+
+> Chưa lưu được dữ liệu vào file: file Project2C-data\project2c.db đang ở chế độ chỉ đọc, hoặc tài khoản Windows đang dùng không có quyền ghi / xóa file đó. Hãy bỏ chế độ chỉ đọc (chuột phải file → Properties → bỏ chọn Read-only) hoặc nhờ người quản trị máy cấp lại quyền. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.
+
 Bạn vẫn làm tiếp được; app thử lưu lại ở lần thay đổi sau và dải cảnh báo tự mất khi lưu được.
 
-Nếu bạn đóng app lúc còn thay đổi chưa lưu, app hiện hộp **"Chưa lưu được thay đổi"**:
+Nếu bạn đóng app lúc còn thay đổi chưa lưu, app hiện hộp **"Chưa lưu được thay đổi"**, với câu theo nguyên nhân như ở dải cảnh báo:
 
-- Đóng chương trình đang giữ file (ổ đầy thì xóa bớt file trên ổ đó) rồi bấm **Thử lại**: app lưu rồi mới đóng (nếu vẫn chưa lưu được, hộp hiện lại).
+- Xử lý nguyên nhân rồi bấm **Thử lại**: đóng chương trình đang giữ file, hoặc xóa bớt file trên ổ đầy, hoặc bỏ chế độ chỉ đọc / cấp lại quyền cho file. App lưu rồi mới đóng (nếu vẫn chưa lưu được, hộp hiện lại).
 - **Đóng và bỏ thay đổi chưa lưu**: đóng app, các thay đổi chưa ghi vào file sẽ mất.
 
 Các lỗi khác lúc mở app xem ở [10. Khi có lỗi](10-su-co.md#lỗi-lúc-mở-app-bản-exe).
