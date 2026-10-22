@@ -363,6 +363,15 @@ describe('createMockAdapter', () => {
     // The other way round, a word that names someone else stops it.
     ['KH nói chuyện với bạn đã kết hôn, có 2 con.', []],
     ['Vợ KH có 2 con.', []],
+    // At a wedding the KH goes to, the friend is the one marrying (the review of PR #753, round 2).
+    ['KH đi đám cưới bạn đã có 2 con.', []],
+    ['KH đi ăn cưới đồng nghiệp đã có 2 con.', []],
+    ['KH dự tiệc cưới đồng nghiệp đã có 2 con.', []],
+    ['KH nhận thiệp cưới bạn đã có 2 con.', []],
+    ['KH dự lễ cưới bạn đã có 2 con.', []],
+    ['KH đi mừng cưới đồng nghiệp đã có 2 con.', []],
+    ['KH đi cưới bạn đã có 2 con.', []],
+    ['KH đi đám cưới chồng cũ đã có 2 con.', []],
   ])('reads %j as %j (the notes of PR #628 and #682)', async (note, facts) => {
     expect(await extracted(note)).toEqual(facts);
   });
@@ -400,6 +409,13 @@ describe('createMockAdapter', () => {
     'Ba KH có 5 con.',
     'Ba anh ấy có 5 con.',
     'Ba ấy có 5 con.',
+    // A kin word before "em bé" names the baby's own people, and "em béo" is no baby (the review
+    // of PR #753, round 2).
+    'Ba em bé đã kết hôn.',
+    'KH có em bé, ba em bé đã có 2 con riêng.',
+    'Anh em bé đã kết hôn.',
+    'Chị em bé đã có 2 con.',
+    'Em béo của KH đã kết hôn.',
     // More negations.
     'KH chẳng có 2 con.',
     // More suppositions.
