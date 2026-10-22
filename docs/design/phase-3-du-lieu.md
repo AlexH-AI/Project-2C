@@ -38,7 +38,7 @@ Phase 3 cho phép **nhập liệu hoàn chỉnh** trong app: Team/nhân sự, KH
 - **Enum**: text có `CHECK`, giá trị = hằng số trong `domain` (`PERSON_ROLES`, `APPOINTMENT_STATUSES`, `CustomerStage`, `KYC_FACT_STATUSES`, `KYC_FIELDS`).
 - **Thứ tự thao tác**: cột `seq` (số nguyên tăng dần theo từng KH) ở `stage_transitions`, `kyc_notes`, `kyc_facts`, `kyc_versions`. "Mới nhất" = `seq` lớn nhất, **không** theo ngày (ghi chú review #36).
 - **Xóa mềm**: bảng sửa được có `created_at`, `updated_at`, `deleted_at`. Mọi truy vấn đọc và mọi chỉ số bỏ qua bản ghi có `deleted_at`. Bản ghi con của KH đã xóa bị ẩn theo KH.
-- Khóa ngoại bật (`PRAGMA foreign_keys = ON`); không xóa cứng nên không dùng `ON DELETE CASCADE`. Ngoại lệ duy nhất là dọn sạch Thùng rác (spec Phase 6 TR-11): xóa hẳn từng bảng theo thứ tự khóa ngoại, trong một transaction, vẫn không dùng `ON DELETE CASCADE`.
+- Khóa ngoại bật (`PRAGMA foreign_keys = ON`); không xóa cứng nên không dùng `ON DELETE CASCADE`. Ngoại lệ duy nhất với bản ghi nghiệp vụ là dọn sạch Thùng rác (spec Phase 6 TR-11): xóa hẳn từng bảng theo thứ tự khóa ngoại, trong một transaction, vẫn không dùng `ON DELETE CASCADE`. Bảng nối `appointment_coordinators` (§3.6) không có `deleted_at`: sửa người phối hợp của lịch hẹn xóa cứng các dòng cũ của lịch đó rồi ghi tập mới, không qua dọn sạch; bảng này không có bảng con nên không liên quan `ON DELETE CASCADE`.
 
 ## 3. Schema
 

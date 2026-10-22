@@ -44,3 +44,9 @@ Từ điển thuật ngữ dùng thống nhất trong issue, tài liệu và cod
 - **Mâu thuẫn** — hai dữ kiện đã xác nhận cùng trường, khác giá trị, đều chưa bị thay thế.
 - **Cổng KYC** (`evaluateKycGate` → `KycGateResult`) — hàm thuần, chỉ đọc dữ kiện còn hiệu lực (`active` / `conflict`), không gọi AI. Trạng thái (`KycGateState`) theo ưu tiên `CONFLICT_RESOLUTION` > `KYC_INSUFFICIENT` > `PROFILE_DISCOVERY` > `PAIN_POINT_ANALYSIS`; ngưỡng ở ADR-0008 và `docs/golden/kyc.md`. Kết quả kèm hạng mục đã có / còn thiếu, trường mâu thuẫn cốt lõi / cảnh báo, câu hỏi gợi ý cho hạng mục thiếu, cờ **được gọi AI** (`aiAllowed`, chỉ ở hai trạng thái cuối) và thông điệp **"Cần chăm sóc, KYC thêm thông tin khách hàng"** khi `KYC_INSUFFICIENT`.
 - **Phiên bản KYC** (`KycVersion`) — tạo khi tập dữ kiện còn hiệu lực đổi (so bằng hash). Cờ **material**: phiên bản đầu luôn bật; sau đó bật khi trường cốt lõi đổi, hoặc RE bật tay (không tắt được khi luật đã bật) (ADR-0008 §7).
+
+## Dữ liệu
+
+- **Xóa mềm** (`deleted_at`) — KH, cuộc hẹn, HĐ, nhân sự, team khi xóa chỉ bị ẩn khỏi danh sách và chỉ số, khôi phục được ở Thùng rác (spec Phase 3 D4).
+- **Thùng rác** — Cài đặt → Thùng rác: liệt kê mọi bản ghi xóa mềm để khôi phục; không theo góc nhìn, không tự dọn (spec Phase 6 §4.2).
+- **Dọn sạch Thùng rác** — nút xóa hẳn mọi bản ghi trong Thùng rác (trừ bản ghi còn được dữ liệu khác dùng tới, TR-12); hỏi trước, backup trước (bản exe), một transaction. Là cách duy nhất xóa hẳn bản ghi nghiệp vụ, kể cả ghi chú KYC, dữ kiện và phân tích AI của KH đã xóa (spec Phase 6 TR-11, phụ lục ADR-0008).
