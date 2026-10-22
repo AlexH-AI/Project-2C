@@ -21,7 +21,7 @@ Cửa sổ rộng từ 1 440 px (cỡ mặc định của app) chia hồ sơ ba 
 
 ![Thẻ Dữ kiện KYC](img/05-du-kien-kyc.png)
 
-KYC của KH gồm **ghi chú** (RE viết, chỉ thêm, không sửa / xóa) và **dữ kiện** (giá trị có cấu trúc RE đã xác nhận, trỏ về ghi chú nguồn). Thẻ **Dữ kiện KYC** hiện các dữ kiện còn hiệu lực:
+KYC của KH gồm **ghi chú** (RE viết, chỉ thêm, không sửa / xóa; chỉ mất khi [dọn sạch Thùng rác](09-cai-dat.md#dọn-sạch-thùng-rác) xóa hẳn KH đã xóa) và **dữ kiện** (giá trị có cấu trúc RE đã xác nhận, trỏ về ghi chú nguồn). Thẻ **Dữ kiện KYC** hiện các dữ kiện còn hiệu lực:
 
 - Dòng đầu: số hạng mục đã có trên 8 và phiên bản KYC hiện tại (ví dụ "8/8 hạng mục · v15").
 - **Cổng KYC**: trạng thái cho biết KH đã đủ thông tin để phân tích AI chưa, kèm một câu giải thích:
