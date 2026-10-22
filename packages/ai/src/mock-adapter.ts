@@ -78,14 +78,33 @@ const NOT_CHILDREN = [
 ].join('|');
 
 /**
- * Right before a phrase, a wish or a plan for it: a wish word, up to two words, and "có" / "sinh"
- * ("KH muốn có 2 con", "mong rất sớm sinh 2 con", "dự định sống độc thân"). A wish for something
- * else is none for the phrase: "KH muốn đầu tư cho 2 con".
+ * "sắp" / "sẽ" and up to two words, right before a phrase: "KH sắp có 2 con", "KH sẽ sống độc
+ * thân". Only that close: either word is common in a note ("KH sẽ cân nhắc vì đã kết hôn"), and
+ * the first Mock did not read them. The other wish words reach the whole clause (`WISHED`). One
+ * space between the words, as in `PEOPLE`.
  */
-const WISHED = String.raw`(?<!(?<!\p{L})(?:muốn|mong|dự định|hy vọng|hi vọng|sắp|sẽ)(?:\s+\p{L}+){0,2}\s+(?:(?:có|sinh)\s+(?:thêm\s+)?)?)`;
+const PLANNING = String.raw`(?<!\p{L})(?:[Ss]ắp|[Ss]ẽ)(?: \p{L}+){0,2} `;
 
-/** "người" right before a phrase says it of anyone: "gói cho người đã kết hôn" (DR6-121). */
-const ANYONE = String.raw`(?<!(?<!\p{L})người\s+)`;
+/** Not planned: nothing of `PLANNING` right before the phrase. */
+const NOT_PLANNED = String.raw`(?<!${PLANNING})`;
+
+/**
+ * Not planned, for children: what is planned is having them ("sẽ có thêm 2 con", "sắp sinh 2
+ * con", "sẽ nhận nuôi 2 con"), not "KH sẽ cho 2 con đi học thêm".
+ */
+const NOT_PLANNED_CHILDREN = String.raw`(?<!${PLANNING}(?:có|sinh|đẻ|nhận nuôi) (?:thêm |được )?)`;
+
+/**
+ * Not of anyone: "người" right before a phrase says it of anyone ("gói cho người đã kết hôn",
+ * DR6-121).
+ */
+const NOT_OF_ANYONE = String.raw`(?<!(?<!\p{L})người )`;
+
+/**
+ * A "cho" right before a phrase: what a wish earlier in its clause is for, not the wish itself
+ * ("KH muốn đầu tư cho 2 con" wishes the investing; the children are there already).
+ */
+const AFTER_CHO = /(?<=cho )/y;
 
 /**
  * What makes a wife or a husband the KH's own, not someone else's: "có vợ", "sống cùng vợ",
@@ -96,20 +115,23 @@ const OWN_SPOUSE = 'và|có|cùng|với|lấy|cưới';
 /**
  * Someone other than the KH: named before a phrase in its sentence, the phrase is about them
  * (DR6-19, DR6-78). A word that may also name the KH ("cô", "ông"…) gives no proposal rather than
- * a wrong one; so does the KH's own child named first ("KH có 2 con, đã kết hôn." may be about the
- * children). Not "vợ chồng" nor a wife or a husband of the KH ("KH và vợ", "đã có vợ", "lấy chồng"),
- * nor a friend the KH marries ("kết hôn với bạn"): the couple, the KH one of them. Not the words
- * that hold a kin word but name no one: "bác sĩ", "cô giáo", "chú ý", "ghi chú", "đàn ông",
- * "anh em", "em bé"…; "ba" only as a parent, not "ba anh em".
+ * a wrong one; so do the KH's own children and brothers and sisters named first ("KH có 2 con, đã
+ * kết hôn." may be about the children, "Anh chị em của KH đều đã kết hôn." is about them). Not
+ * "vợ chồng" nor a wife or a husband of the KH ("KH và vợ", "đã có vợ", "lấy chồng"), nor a friend
+ * the KH marries ("kết hôn với bạn"): the couple, the KH one of them. Not the words that hold a kin
+ * word but name no one: "bác sĩ", "cô giáo", "chú ý", "ghi chú", "đàn ông", "em bé"…; "ba" only
+ * as a parent. One space between the words, as a note is stored and as "anh trai" is read, not
+ * `\s+`: `SOMEONE_ELSE` tries each lookbehind at every place of a sentence, so one reading a run of
+ * spaces back took a second for 36 000 of them (in a note that also had a phrase to read).
  */
 const PEOPLE = [
   'con|cháu|anh trai|anh họ|anh rể|anh ruột|anh của|chị gái|chị họ|chị dâu|chị ruột|chị của',
-  String.raw`(?<!(?:anh|chị)\s+)em(?!\s+bé)|(?<!đàn\s+)ông|bà|cô(?!\s+(?:giáo|đơn|dâu))`,
-  String.raw`(?<!ghi\s+)chú(?!\s+(?:ý|trọng|thích))|bác(?!\s+(?:sĩ|bỏ))|dì|cậu|mợ|thím|dượng`,
+  'em(?! bé)|(?<!đàn )ông|bà|cô(?! (?:giáo|đơn|dâu))',
+  '(?<!ghi )chú(?! (?:ý|trọng|thích))|bác(?! (?:sĩ|bỏ))|dì|cậu|mợ|thím|dượng',
   'bố|mẹ|cha|má',
-  String.raw`ba(?=\s+(?:của|kh|anh|chị|ấy|ruột|nuôi)(?!\p{L}))(?!\s+(?:anh|chị)(?:\s+chị)?\s+em)`,
-  String.raw`(?<!(?:${OWN_SPOUSE})\s+)vợ(?!\s+chồng)|(?<!(?:vợ|${OWN_SPOUSE})\s+)chồng`,
-  String.raw`(?<!(?:kết\s+hôn\s+với|lấy|cưới)\s+)(?:bạn|sếp|hàng xóm|người quen|đồng nghiệp|người thân|họ hàng)`,
+  String.raw`ba(?= (?:của|kh|anh|chị|ấy|ruột|nuôi)(?!\p{L}))`,
+  `(?<!(?:${OWN_SPOUSE}) )vợ(?! chồng)|(?<!(?:vợ|${OWN_SPOUSE}) )chồng`,
+  '(?<!(?:kết hôn với|lấy|cưới) )(?:bạn|sếp|hàng xóm|người quen|đồng nghiệp|người thân|họ hàng)',
 ].join('|');
 
 /** The words of `PEOPLE`, in any case. */
@@ -121,13 +143,15 @@ const EXTRACTION_PATTERNS: readonly {
   readonly value: (match: RegExpExecArray) => string;
   /** Said later in its sentence, it ends what the phrase says: "đã kết hôn … ly hôn". */
   readonly endedBy?: RegExp;
+  /** Matching right at the phrase, it is no wish of a wish word earlier in its clause. */
+  readonly unwishedAt?: RegExp;
 }[] = [
   // Narrow on purpose (CX-A4): what may mean something else gives no proposal.
   {
     field: 'childrenCount',
     pattern: new RegExp(
       [
-        WISHED,
+        NOT_PLANNED_CHILDREN,
         String.raw`(?<!\p{N})(\d{1,2})\s+(?:con|bé|cháu)(?!\p{L})`,
         // A capital is a name or a brand, "của <someone else>" is theirs.
         String.raw`(?!\p{Zs}+\p{Lu})(?!\s+(?:${NOT_CHILDREN})(?!\p{L}))`,
@@ -136,18 +160,22 @@ const EXTRACTION_PATTERNS: readonly {
       'gu',
     ),
     value: (match) => match[1]!,
+    unwishedAt: AFTER_CHO,
   },
   {
     field: 'maritalStatus',
     // Only "đã kết hôn": not "chưa / không muốn / … năm kết hôn" nor "đã từng kết hôn".
-    pattern: new RegExp(String.raw`(?<=${ANYONE}(?<!\p{L})đã\s+)kết hôn(?!\p{L})`, 'giu'),
+    pattern: new RegExp(String.raw`(?<=${NOT_OF_ANYONE}(?<!\p{L})đã\s+)kết hôn(?!\p{L})`, 'giu'),
     value: () => 'Đã kết hôn',
     endedBy: /(?<!\p{L})ly hôn(?!\p{L})/giu,
   },
   // A word of its own: "khôngđộc thân" (no space) is no more single than "không độc thân".
   {
     field: 'maritalStatus',
-    pattern: new RegExp(String.raw`${WISHED}${ANYONE}(?<!\p{L})độc thân(?!\p{L})`, 'giu'),
+    pattern: new RegExp(
+      String.raw`${NOT_PLANNED}${NOT_OF_ANYONE}(?<!\p{L})độc thân(?!\p{L})`,
+      'giu',
+    ),
     value: () => 'Độc thân',
   },
 ];
@@ -163,6 +191,13 @@ function allowedFields(value: unknown): string[] {
 /** Said as a supposition, before a phrase in its sentence: "nếu đã kết hôn, có 2 con" (DR6-78). */
 const SUPPOSED =
   /(?<!\p{L})(?:nếu|giả sử|giả thử|giả như|giả định|giá mà|giá như|lỡ như|nhỡ như|trường hợp)(?!\p{L})/iu;
+
+/**
+ * Said as a wish or a plan, before a phrase in its clause: "KH muốn có 2 con", "dự định sống độc
+ * thân", "muốn đợi đến khi đã kết hôn". Anywhere before it, as the first Mock read it: how far a
+ * wish reaches cannot be told by counting words ("dự định 2 năm nữa sinh thêm 1 con").
+ */
+const WISHED = /(?<!\p{L})(?:muốn|mong|dự định|hy vọng|hi vọng)(?!\p{L})/iu;
 
 /** Said not to be: before a phrase in its clause ("KH không có 2 con"). */
 const NEGATED = /(?<!\p{L})(?:không|chưa|chẳng)(?!\p{L})/iu;
@@ -236,28 +271,44 @@ function readSentence(part: string, start: number) {
 
 /** What a clause says around its phrases, as positions in the note. */
 function readClause(part: string, start: number) {
-  return { negated: firstEnd(NEGATED, part, start), asked: ASKED.test(part) };
+  return {
+    negated: firstEnd(NEGATED, part, start),
+    wished: firstEnd(WISHED, part, start),
+    asked: ASKED.test(part),
+  };
+}
+
+/** Whether `sticky`, a zero-width regex with the `y` flag, matches at position `at` of `note`. */
+function matchesAt(sticky: RegExp, note: string, at: number): boolean {
+  sticky.lastIndex = at;
+  return sticky.test(note);
 }
 
 /**
  * Whether the phrase starting at `at` says something of the KH (DR6-19), asked of the phrases in
  * order: no one else named and no supposition before it in its sentence ("Em trai KH còn độc
  * thân", "KH có một con trai đang sống độc thân"), no guess or "khi … thì" around it there, no
- * negation before it in its clause ("KH không có 2 con") and no question ("KH đã kết hôn chưa.").
- * Narrow, as the patterns are.
+ * negation or wish before it in its clause ("KH không có 2 con", "KH muốn có 2 con") and no
+ * question ("KH đã kết hôn chưa."). Narrow, as the patterns are. `unwished`: what the wish is for,
+ * not the wish.
  */
-function aboutTheKh(sentence: Reader, clause: Reader): (phrase: { at: number }) => boolean {
+function aboutTheKh(
+  sentence: Reader,
+  clause: Reader,
+): (phrase: { at: number; unwished: boolean }) => boolean {
   const ofSentence = sentence(readSentence);
   const ofClause = clause(readClause);
-  return ({ at }) => {
-    const [s, c] = [ofSentence(at), ofClause(at)];
+  return ({ at, unwished }) => {
+    const inSentence = ofSentence(at);
+    const inClause = ofClause(at);
     return !(
-      s.guessed ||
-      c.asked ||
-      s.someoneElse <= at ||
-      s.supposed <= at ||
-      (s.whenEnd <= at && at < s.thenStart) ||
-      c.negated <= at
+      inSentence.guessed ||
+      inClause.asked ||
+      inSentence.someoneElse <= at ||
+      inSentence.supposed <= at ||
+      (inSentence.whenEnd <= at && at < inSentence.thenStart) ||
+      inClause.negated <= at ||
+      (inClause.wished <= at && !unwished)
     );
   };
 }
@@ -266,11 +317,12 @@ function extraction(note: string, fields: readonly string[]): ExtractionOutput {
   const sentence = readerOf(note, SENTENCE_END);
   const ofTheKh = aboutTheKh(sentence, readerOf(note, CLAUSE_END));
   const facts = EXTRACTION_PATTERNS.filter(({ field }) => fields.includes(field))
-    .flatMap(({ field, pattern, value, endedBy }) => {
+    .flatMap(({ field, pattern, value, endedBy, unwishedAt }) => {
       const ended = endedBy && sentence((part, start) => lastStart(endedBy, part, start));
       return [...note.matchAll(pattern)]
         .map((match) => ({
           at: match.index,
+          unwished: !!unwishedAt && matchesAt(unwishedAt, note, match.index),
           fact: { field, value: value(match), quote: match[0] },
         }))
         .filter(({ at }) => !ended || ended(at) < at);
