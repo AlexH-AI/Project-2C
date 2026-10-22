@@ -1,2 +1,15 @@
 @import 'tailwindcss';
 @import '@p2c/ui/theme.css';
+
+/* The topbar stays at the top of the page as it scrolls (AppShell). What the focus or
+   `scrollIntoView` brings into view in a screen stops below it (WCAG 2.4.11), at `top-20`, where
+   the appointments detail sticks: past the tallest bar (16, with the scope picker), and a profile
+   card brought to the top by its heading shows its own top edge too. More, and the stuck detail
+   taking the focus would scroll the page (DR6-83, appointment-outcome.spec.ts). A margin on the
+   screen, not a padding on the page: the bar is in the page, and focus on its own controls would
+   scroll the page. Dialogs are above the bar. */
+@layer base {
+  main :not(dialog, dialog *) {
+    scroll-margin-top: --spacing(20);
+  }
+}
