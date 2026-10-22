@@ -61,6 +61,16 @@ async function complete(input: unknown) {
 type Item = { readonly evidence: readonly string[]; readonly missingCategory?: string };
 const itemsOf = (output: Partial<AnalysisOutput>): Item[] => Object.values(output).flat();
 
+const FIELDS = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
+/** A first sentence long enough that a position counted from the start of the second falls in it. */
+const LONG = 'Hôm qua gặp KH tại văn phòng ở quận 1 lúc 9 giờ sáng.';
+const MARRIED = { field: 'maritalStatus', value: 'Đã kết hôn', quote: 'kết hôn' };
+const SINGLE = { field: 'maritalStatus', value: 'Độc thân', quote: 'độc thân' };
+const TWO = { field: 'childrenCount', value: '2', quote: '2 con' };
+/** What the Mock extracts of `note` for the two trường it knows. */
+const extracted = async (note: string) =>
+  extractionOutputSchema.parse((await complete({ note, fields: FIELDS })).value).facts;
+
 describe('createMockAdapter', () => {
   it('answers the same input with the same output and no token', async () => {
     const first = await complete(analysisInput);
@@ -168,7 +178,7 @@ describe('createMockAdapter', () => {
     'KH không có 2 con như người quen tưởng.',
     'KH không còn độc thân.',
     'KH khôngđộc thân.',
-    'KH muốn kiểm tra 9 con số về thu nhập và tài sản trước buổi gặp.',
+    'KH cần kiểm tra 9 con số về thu nhập và tài sản trước buổi gặp.',
   ])(
     'proposes nothing from %j: about someone else, said not to be, or no child (DR6-19)',
     async (note) => {
@@ -194,6 +204,17 @@ describe('createMockAdapter', () => {
     'Chồng của KH có 2 con riêng.',
     'Mợ của KH có 2 con.',
     'Anh của KH đã kết hôn.',
+    // The KH's brothers and sisters are other people too (the review of PR #753).
+    'Anh chị em của KH đều đã kết hôn.',
+    'Hai anh em KH đều đã kết hôn.',
+    'Ba anh em KH đều đã kết hôn.',
+    'Chị em gái của KH đã kết hôn.',
+    'KH có ba anh em, cả ba đã kết hôn.',
+    'KH có hai chị em, cả hai đã kết hôn.',
+    'Anh em KH đều có 2 con.',
+    // A name ending in "anh" or "chị" before "em" is no exception: "em" is someone else.
+    'Chị Thanh em KH đã kết hôn.',
+    'Quỳnh Anh em gái KH đã kết hôn.',
     // "con" of animals and things.
     'KH nuôi 2 con chó Phú Quốc.',
     'Nhà KH có 3 con mèo.',
@@ -204,6 +225,24 @@ describe('createMockAdapter', () => {
     'Trường hợp KH đã kết hôn, cần thêm giấy đăng ký.',
     'KH muốn có 2 con.',
     'Hai vợ chồng dự định có 3 con.',
+    // A wish reaches the whole clause, however many words stand between it and the phrase.
+    'KH dự định 2 năm nữa sinh thêm 1 con.',
+    'KH muốn sau khi cưới có 2 con.',
+    'KH muốn trong 5 năm tới có 2 con.',
+    'KH muốn đợi đến khi có 2 con mới mua bảo hiểm.',
+    'KH hy vọng trong tương lai gần có 2 con.',
+    'KH dự định trong vài năm tới có 2 con.',
+    'KH mong muốn sớm có được 2 con.',
+    'KH muốn năm sau nữa có 2 con.',
+    'KH muốn nhận nuôi 2 con.',
+    'KH muốn trong vài năm tới vẫn sống độc thân.',
+    'KH muốn đợi đến khi đã kết hôn rồi mới mua bảo hiểm.',
+    'KH dự định mua nhà sau khi đã kết hôn.',
+    'KH muốn trước 30 tuổi đã kết hôn.',
+    'KH hy vọng đến năm 30 tuổi đã kết hôn.',
+    // A wish word opening the note, with a capital.
+    'Muốn có thêm 2 con.',
+    'Dự định sống độc thân.',
   ])(
     'proposes nothing from %j: someone else, animals, a supposition or a wish (DR6-78)',
     async (note) => {
@@ -227,6 +266,234 @@ describe('createMockAdapter', () => {
       { field: 'maritalStatus', value: 'Đã kết hôn', quote: 'kết hôn' },
       { field: 'childrenCount', value: '2', quote: '2 con' },
     ]);
+  });
+
+  // DR6-121: what stands after a phrase, or right before it, makes it no fact about the KH either.
+  it.each([
+    // A question: "chưa" / "không" ending its clause, or a "?" in its sentence.
+    'Lần gặp sau hỏi KH đã kết hôn chưa.',
+    'Cần hỏi lại KH có 2 con không.',
+    'KH đã kết hôn?',
+    // A guess, before the phrase or after it.
+    'Có lẽ KH đã kết hôn.',
+    'Hình như KH có 2 con.',
+    'Nghe nói KH đã kết hôn.',
+    'KH chắc là độc thân.',
+    'KH có 2 con, hình như.',
+    // Children of someone else, named after the count.
+    'KH đang nuôi 2 con của anh trai đã mất.',
+    'KH chăm 3 cháu của chị gái.',
+    // Married, then divorced, in the same sentence.
+    'KH đã kết hôn nhưng đã ly hôn năm 2020.',
+    'KH đã kết hôn năm 2010, ly hôn năm 2020.',
+    // Said of anyone: "người" right before the phrase.
+    'KH hỏi về gói cho người đã kết hôn.',
+    'Gói này dành cho người độc thân.',
+    // "con" of a name, a brand or a thing outside the list.
+    'KH sở hữu 3 con Lexus.',
+    'KH mua 2 con robot hút bụi.',
+    // A condition: "khi … thì".
+    'Khi KH đã kết hôn thì cần thêm giấy đăng ký.',
+    'Khi KH có 2 con thì nên lập quỹ giáo dục.',
+    // Left alone before CL3-C2 too.
+    'Chưa rõ KH đã kết hôn.',
+    'Không biết KH đã kết hôn chưa.',
+    // In a later sentence: the positions are the note's, not the sentence's.
+    `${LONG} Khi KH đã kết hôn thì cần giấy đăng ký.`,
+    `${LONG} KH đã kết hôn nhưng đã ly hôn năm 2020.`,
+  ])('proposes nothing from %j (DR6-121)', async (note) => {
+    expect(await extracted(note)).toEqual([]);
+  });
+
+  it.each([
+    // A "chưa" / "không" that does not end its clause asks nothing.
+    ['KH đã kết hôn, có 2 con, bảo hiểm thì chưa.', [MARRIED, TWO]],
+    // Divorced first, married again.
+    ['KH đã ly hôn, đã kết hôn lại, có 2 con.', [MARRIED, TWO]],
+    // "người" only right before the phrase.
+    ['KH là người miền Nam, độc thân.', [SINGLE]],
+    // "của" no more than a name that is not a kin word.
+    ['KH có 2 con của anh ấy.', [TWO]],
+    // "khi" and "thì" both around the phrase, and in that order.
+    ['Gặp KH lần đầu khi KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH đã kết hôn, vợ thì làm giáo viên.', [MARRIED]],
+    ['KH đã kết hôn khi 25 tuổi, nay thì đã có 2 con.', [MARRIED, TWO]],
+    // A negation after the phrase, in a later clause, stops nothing.
+    ['KH đã kết hôn, có 2 con không đi nhà trẻ.', [MARRIED, TWO]],
+    // A "chưa" ending a line asks, and a capital on the next line is no name after "con".
+    ['KH đã kết hôn chưa\nKH có 2 con.', [TWO]],
+    ['KH có 2 con\nEm trai KH độc thân.', [TWO]],
+    // A supposition or a "khi" after the phrase, in a later sentence, stops nothing.
+    [`${LONG} KH đã kết hôn, nếu cần KH sẽ gọi lại.`, [MARRIED]],
+    [`${LONG} KH đã kết hôn khi 25 tuổi, sau đó thì sinh con.`, [MARRIED]],
+    // A question or a guess in another sentence leaves this one alone.
+    ['Bảo hiểm thế nào? KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['Có lẽ KH ngại. KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    // A wish after the phrase, in an earlier clause or in an earlier sentence, stops nothing.
+    ['KH đã kết hôn và muốn mua bảo hiểm.', [MARRIED]],
+    ['KH muốn mua bảo hiểm, đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH muốn mua bảo hiểm. KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    // "sắp" / "sẽ" reach only the words right before having children or "độc thân".
+    ['KH sẽ cho 2 con đi học thêm.', [TWO]],
+    ['KH sẽ cân nhắc vì còn độc thân.', [SINGLE]],
+    ['KH sẽ cân nhắc vì có 2 con.', [TWO]],
+    ['KH sẽ cân nhắc gói cho gia đình vì có 2 con.', [TWO]],
+  ])('keeps what %j says of the KH (DR6-121)', async (note, facts) => {
+    expect(await extracted(note)).toEqual(facts);
+  });
+
+  it.each([
+    // A wife, a husband or a friend named as the KH's own (the review of PR #682).
+    ['KH đã có vợ và 2 con.', [TWO]],
+    ['KH sống cùng vợ và 2 con.', [TWO]],
+    ['KH sống với chồng, có 2 con.', [TWO]],
+    ['KH đã lấy chồng, có 2 con.', [TWO]],
+    ['KH cưới vợ năm 2015, có 2 con.', [TWO]],
+    ['KH đã kết hôn với bạn học cũ, có 2 con.', [MARRIED, TWO]],
+    ['KH lấy đồng nghiệp, có 2 con.', [TWO]],
+    ['KH cưới người quen năm 2015, có 2 con.', [TWO]],
+    // A word that holds a kin word and names no one.
+    ['Ghi chú: KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['Chú thích: KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH chú trọng đầu tư, đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH là đàn ông, đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH bác bỏ gói cũ, đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH là cô dâu mới, đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH có em bé, đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    // The other way round, a word that names someone else stops it.
+    ['KH nói chuyện với bạn đã kết hôn, có 2 con.', []],
+    ['Vợ KH có 2 con.', []],
+    // At a wedding the KH goes to, the friend is the one marrying (the review of PR #753, round 2).
+    ['KH đi đám cưới bạn đã có 2 con.', []],
+    ['KH đi ăn cưới đồng nghiệp đã có 2 con.', []],
+    ['KH dự tiệc cưới đồng nghiệp đã có 2 con.', []],
+    ['KH nhận thiệp cưới bạn đã có 2 con.', []],
+    ['KH dự lễ cưới bạn đã có 2 con.', []],
+    ['KH đi mừng cưới đồng nghiệp đã có 2 con.', []],
+    ['KH đi cưới bạn đã có 2 con.', []],
+    ['KH đi đám cưới chồng cũ đã có 2 con.', []],
+  ])('reads %j as %j (the notes of PR #628 and #682)', async (note, facts) => {
+    expect(await extracted(note)).toEqual(facts);
+  });
+
+  // Narrow on purpose (CX-A4): the children named first stand for the people after them in the
+  // sentence, so "KH có 2 con, đã kết hôn." cannot be told from "KH có 2 con, cả hai đã kết hôn.".
+  it.each([
+    'KH có 2 con, đã kết hôn.',
+    'KH có 2 con, cả hai đã kết hôn.',
+    'KH có 2 con đã kết hôn.',
+  ])('proposes only the children from %j: they may be the ones married', async (note) => {
+    expect(await extracted(note)).toEqual([TWO]);
+  });
+
+  // Likewise the KH's brothers and sisters: "anh em / chị em" are other people, and what is said of
+  // them after "KH có ba anh em, đã kết hôn." cannot be told from "…, cả ba đã kết hôn.".
+  it.each([
+    'KH sống cùng anh em, đã kết hôn, có 2 con.',
+    'KH sống cùng chị em, đã kết hôn, có 2 con.',
+    'KH sống cùng anh chị em, đã kết hôn, có 2 con.',
+    'KH có ba anh em, đã kết hôn, có 2 con.',
+    'KH có ba chị em, đã kết hôn, có 2 con.',
+    'KH có ba anh chị em, đã kết hôn, có 2 con.',
+  ])('proposes nothing from %j: they may be the ones married', async (note) => {
+    expect(await extracted(note)).toEqual([]);
+  });
+
+  it.each([
+    // More people than the KH.
+    'Má KH có 4 con.',
+    'Thím KH đã kết hôn.',
+    'Dượng KH có 3 con.',
+    'Ba ruột của KH có 5 con.',
+    'Ba nuôi của KH có 5 con.',
+    'Ba KH có 5 con.',
+    'Ba anh ấy có 5 con.',
+    'Ba ấy có 5 con.',
+    // A kin word before "em bé" names the baby's own people, and "em béo" is no baby (the review
+    // of PR #753, round 2).
+    'Ba em bé đã kết hôn.',
+    'KH có em bé, ba em bé đã có 2 con riêng.',
+    'Anh em bé đã kết hôn.',
+    'Chị em bé đã có 2 con.',
+    'Em béo của KH đã kết hôn.',
+    // More negations.
+    'KH chẳng có 2 con.',
+    // More suppositions.
+    'Giả sử KH đã kết hôn, cần giấy tờ gì.',
+    'Giả như KH đã kết hôn, cần giấy tờ gì.',
+    'Giả định KH đã kết hôn, cần giấy tờ gì.',
+    'Giả thử KH đã kết hôn, cần giấy tờ gì.',
+    'Giá mà KH đã kết hôn thì tốt.',
+    'Giá như KH đã kết hôn, cần giấy tờ gì.',
+    'Lỡ như KH đã kết hôn, cần giấy tờ gì.',
+    'Nhỡ như KH đã kết hôn, cần giấy tờ gì.',
+    // A wish word before the phrase in its clause.
+    'KH muốn sớm có thêm 2 con.',
+    'KH mong rất sớm có 2 con.',
+    'KH mong rất sớm sinh 2 con.',
+    'KH hy vọng có 2 con.',
+    'KH hi vọng có 2 con.',
+    'KH muốn sống độc thân đến già.',
+    // "sắp" / "sẽ", up to two words before having children or "độc thân".
+    'KH sắp có 2 con.',
+    'KH sẽ có 2 con.',
+    'Sắp có 2 con.',
+    'Sẽ có 2 con.',
+    'KH sẽ có thêm 2 con.',
+    'KH sẽ rất sớm có được 2 con.',
+    'KH sắp sinh 2 con.',
+    'KH sắp đẻ 2 con.',
+    'KH sẽ nhận nuôi 2 con.',
+    'KH sắp độc thân.',
+    'KH sẽ rất sớm độc thân.',
+    // "<n> con" of animals and things outside the first lists; a capital is a name.
+    'KH nuôi 2 con vẹt.',
+    'KH nuôi 3 con cún.',
+    'KH có 2 con thú cưng.',
+    'KH có 3 con vật nuôi.',
+    'KH có 2 con xe.',
+    'KH có 3 con tàu.',
+    'KH có 2 con thuyền.',
+    'KH có 4 con dao.',
+    'KH có 2 Con.',
+    'Họp ngày 15 Con trai KH đến.',
+  ])(
+    'proposes nothing from %j: someone else, a plan or a thing that earlier lists left out',
+    async (note) => {
+      expect(await extracted(note)).toEqual([]);
+    },
+  );
+
+  it.each([
+    ...['bê', 'trâu', 'lợn', 'heo', 'gà', 'vịt', 'ngan', 'ngỗng', 'cá', 'tôm', 'cua'],
+    ...['chim', 'chuột', 'ngựa', 'dê', 'cừu', 'thỏ', 'ong'],
+  ])('does not read "3 con %s" as children (DR6-78)', async (animal) => {
+    expect(await extracted(`KH có 3 con ${animal}.`)).toEqual([]);
+  });
+
+  // A wish earlier in the clause is for what stands after "cho", which is there already.
+  it.each([
+    'KH muốn đầu tư cho 2 con.',
+    'Hai vợ chồng dự định mua bảo hiểm cho 2 con.',
+    'KH mong lo cho 2 con ăn học.',
+    'Muốn lo cho 2 con.',
+  ])('proposes what a wish is for, not the wish: %j', async (note) => {
+    expect(await extracted(note)).toEqual([TWO]);
+  });
+
+  it.each([
+    // "cho" spares the count only right before it.
+    'KH muốn có cho đủ 2 con.',
+    'KH muốn sinh cho mình 2 con.',
+    // And only against a wish: what a negation denies stays denied.
+    'KH không muốn đầu tư cho 2 con.',
+  ])('proposes nothing from %j: "cho" spares only a wish, right before the count', async (note) => {
+    expect(await extracted(note)).toEqual([]);
+  });
+
+  it('proposes at most 20 phrases, counted among those about the KH', async () => {
+    expect(await extracted(`${'Em trai KH độc thân. '.repeat(25)}KH có 2 con.`)).toEqual([TWO]);
+    expect(await extracted('KH độc thân. '.repeat(25))).toHaveLength(20);
   });
 
   it('reads each sentence on its own: a relative named in one leaves the KH of another', async () => {
@@ -258,6 +525,13 @@ describe('createMockAdapter', () => {
   it.each([
     ['"độc thân"', `KH ${'độc thân '.repeat(4000)}`],
     ['"<n> con"', `KH ${'có 2 con và '.repeat(3000)}`],
+    // What stands after a phrase is read once for all of them too (DR6-121).
+    ['"đã kết hôn"', `KH ${'đã kết hôn '.repeat(3273)}`],
+    // A phrase after a run of spaces: the lookbehinds of the words for someone else, each tried at
+    // every place of the run, took a second when they read it back with `\s+` (PR #753 review).
+    ['spaces, then "độc thân"', `KH${' '.repeat(36_000)}độc thân`],
+    ['spaces, then "em đã kết hôn"', `KH${' '.repeat(36_000)}em đã kết hôn`],
+    ['spaces inside "có … vợ và 2 con"', `KH có${' '.repeat(36_000)}vợ và 2 con`],
   ])('reads a one-line note of 36 000 characters full of %s in under 50 ms', async (_, note) => {
     const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
     const times: number[] = [];
@@ -266,7 +540,7 @@ describe('createMockAdapter', () => {
       extractionOutputSchema.parse((await complete({ note, fields })).value);
       times.push(Date.now() - started);
     }
-    expect(note.length).toBe(36_003);
+    expect(note.length).toBeGreaterThanOrEqual(36_000);
     expect(Math.min(...times)).toBeLessThan(50);
   });
 
@@ -297,7 +571,7 @@ describe('createMockAdapter', () => {
   it.each([
     // CX-A4: the KH's grandchildren are not their children.
     ['KH có 2 cháu ngoại, cả hai đang học tiểu học.', []],
-    ['Ông bà có 3 cháu nội.', []],
+    ['KH có 3 cháu nội.', []],
     ['Nhà có 2 cháu, đều học cấp 2.', [{ field: 'childrenCount', value: '2', quote: '2 cháu' }]],
     // Not "Đã kết hôn"; living single is said as such.
     [
