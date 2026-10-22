@@ -1,6 +1,6 @@
 # Phase 5 — Prompt và guardrail AI (G5)
 
-- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417) · §6a `web@1` (ChatGPT web, W-1) **Owner duyệt G5 08/10/2026** (PR #430) · Đợt Phase 6 `analysis@2` / `discovery@2` **Owner duyệt G5 11/10/2026** (T-197 #491, §10) · Đợt lượt 2 `analysis@3` / `discovery@3` **Owner duyệt G5 18/10/2026** (T-257 #661, §11)
+- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417) · §6a `web@1` (ChatGPT web, W-1) **Owner duyệt G5 08/10/2026** (PR #430) · Đợt Phase 6 `analysis@2` / `discovery@2` **Owner duyệt G5 11/10/2026** (T-197 #491, §10) · Đợt lượt 2 `analysis@3` / `discovery@3` **Owner duyệt G5 18/10/2026** (T-257 #661, §11) · Đợt lượt 3 `analysis@4` / `discovery@4` **Owner duyệt G5 23/10/2026** (T-277 #728, §12; PR code chép vào §1–§8)
 - **Nền:** spec `phase-5-ai.md` (G1 / G2 duyệt 07/10/2026) §3, §6.1, §6.2, §6.4, §8; ADR-0009 (ranh giới, mục 3 validator, mục 6 pháp lý); danh mục KYC `packages/domain/src/kyc-catalog.ts`
 - **Dùng ở:** T-165 #406 (validator V3–V6 lấy **nguyên** các danh sách §6–§8), T-166 #407 (chữ prompt §2–§5 chép **nguyên văn** vào `packages/ai/src/prompts/<mode>.ts`)
 - **Đổi chữ prompt hoặc danh sách chặn sau khi duyệt** = tăng version (`analysis@2`…) + qua G5 lần nữa. Lỗi chính tả trong code so với file này là lỗi, không phải phiên bản mới.
@@ -714,11 +714,11 @@ Ngoài bảng:
 - [x] Ca kiểm C55–C72 và các ca ngoài bảng (§11.7)
 - [x] REJECTED lưu output lớn: ghi `review-notes.md`, không làm ở đây (§11.8)
 
-## 12. Đợt sửa G5 Phase 6 lượt 3 (T-277 #728) — đề xuất, chờ Owner duyệt
+## 12. Đợt sửa G5 Phase 6 lượt 3 (T-277 #728) — Owner duyệt 23/10/2026
 
-**Trạng thái:** đề xuất, **chờ Owner duyệt G5**. Theo Q4 (a) (Owner 21/10/2026), PR docs này đi trước, PR code đi sau. Khi Owner đã duyệt, PR code chép các thay đổi vào §2, §3 (version), §6a, §7, §8.4, §8.5 và spec `phase-5-ai.md` §3.1 mục 3, §6.4. Mục này giữ lý do và số đo. Riêng §7 bước 0 có thêm nhóm ký tự điều khiển ngay ở PR này: chữ theo code đã merge, không đổi luật (§12.6).
+**Trạng thái:** đề xuất và **Owner duyệt G5 23/10/2026** ("duyệt hết": bước 0 hướng C, "luật" hướng b2, `@4`, ba file thêm cho PR code). Theo Q4 (a) (Owner 21/10/2026), PR docs này đi trước, PR code đi sau. PR code chép các thay đổi vào §2, §3 (version), §6a, §7, §8.4, §8.5 và spec `phase-5-ai.md` §3.1 mục 3, §6.4. Mục này giữ lý do và số đo. Riêng §7 bước 0 có thêm nhóm ký tự điều khiển ngay ở PR này: chữ theo code đã merge, không đổi luật (§12.6).
 
-**Nền:** deep review Phase 1–6 lượt 3 (`docs/reviews/2026-10-21-deep-review-phase-1-6-luot-3-tong-hop.md` §6.6, §8.2 L3-I, §9 Q4): DR6-122, DR6-123, DR6-124. Báo cáo gốc: CL3-C3, CL3-C4, CL3-C5 (`docs/reviews/raw/2026-10-21/claude/C.md`), CX3-C1 (`docs/reviews/raw/2026-10-21/codex/C.md`). Owner 21/10/2026 đồng ý Q4 (a): sửa cả ba trong một đợt G5. Có hai chỗ đề xuất khác chữ Q4, vì số đo cho thấy chữ đó hụt (§12.2, §12.5). Hướng đúng chữ Q4 vẫn ghi kèm để Owner chọn.
+**Nền:** deep review Phase 1–6 lượt 3 (`docs/reviews/2026-10-21-deep-review-phase-1-6-luot-3-tong-hop.md` §6.6, §8.2 L3-I, §9 Q4): DR6-122, DR6-123, DR6-124. Báo cáo gốc: CL3-C3, CL3-C4, CL3-C5 (`docs/reviews/raw/2026-10-21/claude/C.md`), CX3-C1 (`docs/reviews/raw/2026-10-21/codex/C.md`). Owner 21/10/2026 đồng ý Q4 (a): sửa cả ba trong một đợt G5. Có hai chỗ đề xuất khác chữ Q4, vì số đo cho thấy chữ đó hụt (§12.2, §12.5). Hướng đúng chữ Q4 ghi kèm để Owner chọn; Owner 23/10 chọn hai hướng đề xuất (C, b2).
 
 **Đã thử trước khi đề xuất** (bản chép `packages/ai` ngoài repo, chưa phải code):
 
@@ -851,9 +851,9 @@ Ngoài bảng:
 
 ### 12.9 Owner duyệt
 
-- [ ] Version `analysis@4`, `discovery@4`; `extraction@1`, `web@1` giữ; thêm `docs/design/phase-5-prompts.md`, `docs/README.md`, `docs/user-guide/11-thuat-ngu.md` vào file được phép của PR code (§12.1)
-- [ ] Bước 0 hướng C: dấu tổ hợp lạc đọc như một dấu cách (§12.2)
-- [ ] Tin nhắn của app: tách dòng ở CR, LF, U+0085, U+2028, U+2029 (§12.3)
-- [ ] Danh sách đóng "ấm", "lạnh", "nội", "ít": chỉ khớp không dấu khi cả cụm không dấu (§12.4)
-- [ ] "luật <Tên>" hướng b2: miễn "giới", và "định" trừ khi "định" đứng sau "quy" / "qui"; chữ mới của mục §8.4 (§12.5)
-- [ ] Ca kiểm C73–C79 và các ca ngoài bảng (§12.7)
+- [x] Version `analysis@4`, `discovery@4`; `extraction@1`, `web@1` giữ; thêm `docs/design/phase-5-prompts.md`, `docs/README.md`, `docs/user-guide/11-thuat-ngu.md` vào file được phép của PR code (§12.1)
+- [x] Bước 0 hướng C: dấu tổ hợp lạc đọc như một dấu cách (§12.2)
+- [x] Tin nhắn của app: tách dòng ở CR, LF, U+0085, U+2028, U+2029 (§12.3)
+- [x] Danh sách đóng "ấm", "lạnh", "nội", "ít": chỉ khớp không dấu khi cả cụm không dấu (§12.4)
+- [x] "luật <Tên>" hướng b2: miễn "giới", và "định" trừ khi "định" đứng sau "quy" / "qui"; chữ mới của mục §8.4 (§12.5)
+- [x] Ca kiểm C73–C79 và các ca ngoài bảng (§12.7)
