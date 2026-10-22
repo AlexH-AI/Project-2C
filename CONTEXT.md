@@ -35,7 +35,7 @@ Từ điển thuật ngữ dùng thống nhất trong issue, tài liệu và cod
 
 ## KYC
 
-- **Ghi chú KYC** (`KycNote`) — văn bản RE ghi, chỉ thêm, không sửa/xóa (ADR-0008).
+- **Ghi chú KYC** (`KycNote`) — văn bản RE ghi, chỉ thêm, không sửa/xóa (ADR-0008), trừ khi dọn sạch Thùng rác xóa hẳn KH đã xóa (spec Phase 6 TR-11, phụ lục ADR-0008).
 - **Dữ kiện KYC** (`KycFact`) — một giá trị có cấu trúc, **RE đã xác nhận**, trỏ về ghi chú nguồn. Trạng thái: còn hiệu lực (`active`) / đã bị thay thế (`superseded`) / mâu thuẫn (`conflict`).
 - **Hạng mục KYC** (`KycCategory`) — 8 hạng mục lớn: Danh tính/tuổi, Gia đình, Nghề nghiệp/nguồn thu, Tài sản/AUM, Mục tiêu & mốc thời gian, Khẩu vị rủi ro, Bảo vệ hiện có, Mối quan tâm. (Trước gọi là "chiều" — không dùng nữa.)
 - **Trường** (`KycField`) — mục nhỏ trong hạng mục (vd. năm sinh, số con).

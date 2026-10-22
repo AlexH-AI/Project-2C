@@ -16,7 +16,7 @@ Phase 3 cho phép **nhập liệu hoàn chỉnh** trong app: Team/nhân sự, KH
 | D1 | Kiến trúc lưu trữ | **sql.js ở mọi nơi**, exe ghi file qua lệnh Rust mỏng — ADR-0016 |
 | D2 | Ngày sinh / giới tính | **Hồ sơ KH là gốc.** Chỉ sửa ở form KH; mỗi lần lưu app tự ghi một ghi chú KYC nguồn `SYSTEM` kèm dữ kiện `birthYear` / `gender` để cổng KYC đọc được. Form dữ kiện KYC khóa hai trường này → không lệch, không mâu thuẫn |
 | D3 | Dời lịch | **Tạo cuộc hẹn mới** ở ngày mới, trỏ `rescheduled_from_id` về cuộc hẹn cũ; cuộc hẹn cũ giữ trạng thái Dời lịch |
-| D4 | Xóa dữ liệu nhập nhầm | **Xóa mềm** (`deleted_at`), khôi phục được. Ghi chú KYC không bao giờ xóa (ADR-0008) |
+| D4 | Xóa dữ liệu nhập nhầm | **Xóa mềm** (`deleted_at`), khôi phục được. Ghi chú KYC không bao giờ xóa (ADR-0008), trừ khi dọn sạch Thùng rác xóa hẳn KH đã xóa (Owner, 19/10/2026, #662 — spec Phase 6 TR-11, phụ lục ADR-0008) |
 | D5 | Nhập file backup | **Thay toàn bộ** dữ liệu (hỏi xác nhận, tự backup trước). Gộp thông minh để Phase 6 |
 | D6 | Kết quả cuộc gặp Đã gặp | Bắt buộc `stage_after` + `next_step`; `expected_case_size` **được để trống** (= chưa ước lượng) |
 | D7 | Sửa/xóa cuộc hẹn đã sinh transition | Chỉ khi transition đó còn là **transition mới nhất** của KH; nếu không → chặn, hướng dẫn sửa nhóm tay. Khi bị chặn chỉ **khóa 3 ô**: trạng thái, ngày cuộc hẹn, `stage_after`; các ô khác (việc tiếp theo, case size, ghi chú, trigger, người phối hợp, người đánh giá kết quả) vẫn sửa được; xóa vẫn bị chặn (Owner, G3 vòng 1, 27/09/2026 — mockup 6f). Chặn như vậy cả khi sau cuộc hẹn có một cuộc gặp Đã gặp **giữ nhóm** ghi "nhóm sau" là nhóm mà cuộc hẹn này chuyển tới — rút transition sẽ làm cuộc gặp đó ghi một nhóm KH không có trong ngày ấy (`STAGE_KEPT_BY_MEETING`, câu báo nêu ngày cuộc gặp đó; Owner 15/10/2026, T-232) |
@@ -38,7 +38,7 @@ Phase 3 cho phép **nhập liệu hoàn chỉnh** trong app: Team/nhân sự, KH
 - **Enum**: text có `CHECK`, giá trị = hằng số trong `domain` (`PERSON_ROLES`, `APPOINTMENT_STATUSES`, `CustomerStage`, `KYC_FACT_STATUSES`, `KYC_FIELDS`).
 - **Thứ tự thao tác**: cột `seq` (số nguyên tăng dần theo từng KH) ở `stage_transitions`, `kyc_notes`, `kyc_facts`, `kyc_versions`. "Mới nhất" = `seq` lớn nhất, **không** theo ngày (ghi chú review #36).
 - **Xóa mềm**: bảng sửa được có `created_at`, `updated_at`, `deleted_at`. Mọi truy vấn đọc và mọi chỉ số bỏ qua bản ghi có `deleted_at`. Bản ghi con của KH đã xóa bị ẩn theo KH.
-- Khóa ngoại bật (`PRAGMA foreign_keys = ON`); không xóa cứng nên không dùng `ON DELETE CASCADE`.
+- Khóa ngoại bật (`PRAGMA foreign_keys = ON`); không xóa cứng nên không dùng `ON DELETE CASCADE`. Ngoại lệ duy nhất là dọn sạch Thùng rác (spec Phase 6 TR-11): xóa hẳn từng bảng theo thứ tự khóa ngoại, trong một transaction, vẫn không dùng `ON DELETE CASCADE`.
 
 ## 3. Schema
 
@@ -137,7 +137,7 @@ Không lưu: ngày tạo KH (= ngày của transition đầu tiên), nhãn "Đã
 | `text` | text | not null |
 | `created_date` | text | |
 | `source` | text | `RE` / `SYSTEM` (D2) |
-| `created_at` | text | **không có** `updated_at` / `deleted_at`: không sửa, không xóa |
+| `created_at` | text | **không có** `updated_at` / `deleted_at`: không sửa, không xóa (trừ dọn sạch Thùng rác xóa hẳn dòng của KH đã xóa — spec Phase 6 TR-11, phụ lục ADR-0008) |
 
 ### 3.9 `kyc_facts`
 
@@ -151,7 +151,7 @@ Không lưu: ngày tạo KH (= ngày của transition đầu tiên), nhãn "Đã
 | `note_id` | text | FK `kyc_notes`, cùng KH |
 | `confirmed_date` | text | |
 | `status` | text | `active` / `superseded` / `conflict` — cột duy nhất được đổi |
-| `created_at` / `updated_at` | text | không xóa |
+| `created_at` / `updated_at` | text | không xóa (trừ dọn sạch Thùng rác, như §3.8) |
 
 ### 3.10 `kyc_versions`
 
