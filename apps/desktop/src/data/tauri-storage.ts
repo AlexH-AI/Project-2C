@@ -29,14 +29,20 @@ export const ACCESS_DENIED = 'ACCESS_DENIED';
  * another program holds keeps Windows' own message.
  */
 export const READ_ONLY = 'READ_ONLY';
+/**
+ * `db_save`'s error when the data folder no longer lets the app add a file, which every save does
+ * first (`storage::FOLDER_READ_ONLY`): neither another program nor the file itself is the cause.
+ */
+export const FOLDER_READ_ONLY = 'FOLDER_READ_ONLY';
 
 /** The causes of a failed save that the warning and the close question tell apart. */
-export type SaveFailure = 'diskFull' | 'readOnly' | 'other';
+export type SaveFailure = 'diskFull' | 'readOnly' | 'folderReadOnly' | 'other';
 
-/** What a save's error says about why it failed; anything but the two codes reads as `other`. */
+/** What a save's error says about why it failed; anything but the codes below reads as `other`. */
 export function saveFailure(error: unknown): SaveFailure {
   if (error === DISK_FULL) return 'diskFull';
   if (error === READ_ONLY) return 'readOnly';
+  if (error === FOLDER_READ_ONLY) return 'folderReadOnly';
   return 'other';
 }
 

@@ -25,6 +25,10 @@ pub const ACCESS_DENIED: &str = "ACCESS_DENIED";
 /// (read-only, or no right to delete it): not another program holding it. The app matches it
 /// exactly.
 pub const READ_ONLY: &str = "READ_ONLY";
+/// Error message of a save Windows refused because the data folder no longer lets the app add a
+/// file, which every save does first (its `.tmp`): neither another program nor the database file
+/// itself is the cause. The app matches it exactly.
+pub const FOLDER_READ_ONLY: &str = "FOLDER_READ_ONLY";
 const DB_FILE: &str = "project2c.db";
 const LOCK_FILE: &str = "project2c.lock";
 const BACKUP_DIR: &str = "backups";
@@ -101,9 +105,10 @@ fn open_lock_file(path: &Path) -> io::Result<fs::File> {
 /// left is an error, so the app never starts over them. A file that is empty or not SQLite is an
 /// error, never a first start: the app would otherwise write a new database over it. A file that
 /// is whole but out of reach → [`FILE_IN_USE`] or [`ACCESS_DENIED`] (see [`out_of_reach`]), and one
-/// the app may not replace → [`ACCESS_DENIED`] (see [`replace_refused`]): the app would open it,
-/// then fail every save. A program holding the file without sharing delete may let go, so it does
-/// not stop the start: its saves fail with Windows' own error until it does.
+/// the app may not replace → [`ACCESS_DENIED`] (see [`replace_refused`]), as is a data folder that
+/// lets no new file in (see [`add_refused`]): the app would open it, then fail every save. A
+/// program holding the file without sharing delete may let go, so it does not stop the start: its
+/// saves fail with Windows' own error until it does.
 /// Nothing is backed up here: the app calls [`backup`] once it opened and checked the file, before
 /// saving anything, so a file damaged inside never becomes the newest backup (DR-51).
 pub fn open(dir: &Path, page: &str, lock: &DataLock) -> io::Result<Option<Vec<u8>>> {
@@ -131,6 +136,11 @@ fn open_with(
         remove_if_exists(&dir.join(tmp_name(DB_FILE))).map_err(out_of_reach)?;
     }
     held.page = Some(page.to_owned());
+    // A folder that lets no new file in still lets the app read the file, but no save could write
+    // its `.tmp` there (DR6-120).
+    if add_refused(dir) {
+        return Err(io::Error::new(ErrorKind::PermissionDenied, ACCESS_DENIED));
+    }
     let backups = dir.join(BACKUP_DIR);
     let bytes = match fs::read(dir.join(DB_FILE)) {
         Ok(bytes) => bytes,
@@ -187,6 +197,28 @@ fn delete_refused(_path: &Path) -> bool {
     false
 }
 
+/// Whether Windows refuses the app the right to add a file in the folder `dir`, which every save
+/// asks first to write its `.tmp`. Opens the folder with that right alone, which changes nothing,
+/// so no file is made that a crash could leave behind.
+#[cfg(windows)]
+fn add_refused(dir: &Path) -> bool {
+    use std::os::windows::fs::OpenOptionsExt;
+    // Windows `FILE_ADD_FILE`, and `FILE_FLAG_BACKUP_SEMANTICS`, without which no folder opens.
+    const FILE_ADD_FILE: u32 = 0x0002;
+    const FILE_FLAG_BACKUP_SEMANTICS: u32 = 0x0200_0000;
+    fs::OpenOptions::new()
+        .access_mode(FILE_ADD_FILE)
+        .custom_flags(FILE_FLAG_BACKUP_SEMANTICS)
+        .open(dir)
+        .is_err_and(|error| error.kind() == ErrorKind::PermissionDenied)
+}
+
+/// The app ships for Windows only (ADR-0006): elsewhere nothing is asked of the folder.
+#[cfg(not(windows))]
+fn add_refused(_dir: &Path) -> bool {
+    false
+}
+
 /// Copies the saved database file into `backups\` (at startup once the app opened it, and before
 /// replacing the data) and returns the backup's file name — an identical copy already there is
 /// reused. A full disk → `StorageFull` with the message [`DISK_FULL`].
@@ -222,11 +254,17 @@ fn out_of_reach(error: io::Error) -> io::Error {
     }
 }
 
-/// Gives a save Windows refused because the database file can no longer be replaced the message
-/// the app tells apart, so it never sends the user looking for a program that is not there
-/// (DR6-120). Any other error stays as it is, a file another program holds included.
-fn read_only(error: io::Error, db: &Path) -> io::Error {
-    if error.kind() == ErrorKind::PermissionDenied && replace_refused(db) {
+/// Gives a save Windows refused because the data folder no longer lets the app add a file
+/// ([`FOLDER_READ_ONLY`]) or the database file can no longer be replaced ([`READ_ONLY`]) the
+/// message the app tells apart, so it never sends the user looking for a program that is not
+/// there (DR6-120). The folder is asked first, as a save writes its `.tmp` before it replaces the
+/// file. Any other error stays as it is, a file another program holds included.
+fn refused(error: io::Error, dir: &Path) -> io::Error {
+    if error.kind() != ErrorKind::PermissionDenied {
+        error
+    } else if add_refused(dir) {
+        io::Error::new(ErrorKind::PermissionDenied, FOLDER_READ_ONLY)
+    } else if replace_refused(&dir.join(DB_FILE)) {
         io::Error::new(ErrorKind::PermissionDenied, READ_ONLY)
     } else {
         error
@@ -253,7 +291,8 @@ fn copy_to_backups(backups: &Path, bytes: &[u8], stamp: &str) -> io::Result<Stri
 /// still on its way from before a webview reload) is refused with [`STALE_PAGE`]: the new page
 /// read the file without it, and its next save would write over it unseen. A full disk →
 /// `StorageFull` with the message [`DISK_FULL`]; a file the app may no longer replace (it turned
-/// read-only, or its access list changed) → `PermissionDenied` with the message [`READ_ONLY`].
+/// read-only, or its access list changed) → `PermissionDenied` with the message [`READ_ONLY`], and
+/// a data folder that no longer lets the app add a file → [`FOLDER_READ_ONLY`] (see [`refused`]).
 pub fn save(dir: &Path, bytes: &[u8], page: &str, lock: &DataLock) -> io::Result<()> {
     save_with(dir, bytes, page, lock, fs::File::sync_all)
 }
@@ -272,7 +311,7 @@ fn save_with(
     }
     write_atomic_with(dir, DB_FILE, bytes, flush)
         .map_err(disk_full)
-        .map_err(|error| read_only(error, &dir.join(DB_FILE)))
+        .map_err(|error| refused(error, dir))
 }
 
 /// Writes an export file into `exports\` and returns its path. An earlier export is never
@@ -1547,6 +1586,51 @@ mod tests {
         let _file = Denied::new(&file, "(WD,AD,WA,WEA)");
         assert_eq!(open(&dir).unwrap(), Some(db("old")));
         save(&dir, &db("new")).unwrap();
+        assert_eq!(fs::read(&file).unwrap(), db("new"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn open_reports_a_data_folder_that_lets_no_new_file_in_as_access_denied() {
+        // The lock file is left from an earlier start, so opening creates nothing, and the file
+        // reads fine and may be replaced; yet every save first writes its `.tmp` in the folder.
+        let dir = temp_dir();
+        let file = dir.join(DB_FILE);
+        save(&dir, &db("data")).unwrap();
+        fs::write(dir.join(LOCK_FILE), b"").unwrap();
+        let denied = Denied::new(&dir, "(WD)");
+        assert_eq!(fs::read(&file).unwrap(), db("data"));
+        let refused = save(&dir, &db("new")).unwrap_err();
+        assert_eq!(refused.kind(), ErrorKind::PermissionDenied);
+        let error = open(&dir).unwrap_err();
+        drop(denied);
+        assert_eq!(error.kind(), ErrorKind::PermissionDenied);
+        assert_eq!(error.to_string(), ACCESS_DENIED);
+        assert_eq!(fs::read(&file).unwrap(), db("data"));
+        assert_eq!(names(&dir), vec![DB_FILE, LOCK_FILE]);
+
+        assert_eq!(open(&dir).unwrap(), Some(db("data")));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_save_the_data_folder_refuses_is_reported_as_folder_read_only() {
+        // The access list of the folder changed after the app opened the file: the warning must
+        // send the user neither looking for a program nor to the file, which is fine.
+        let dir = temp_dir();
+        let lock = DataLock::new();
+        let file = dir.join(DB_FILE);
+        super::save(&dir, &db("old"), PAGE, &lock).unwrap();
+        assert_eq!(super::open(&dir, PAGE, &lock).unwrap(), Some(db("old")));
+        let denied = Denied::new(&dir, "(WD)");
+        let error = super::save(&dir, &db("new"), PAGE, &lock).unwrap_err();
+        drop(denied);
+        assert_eq!(error.kind(), ErrorKind::PermissionDenied);
+        assert_eq!(error.to_string(), FOLDER_READ_ONLY);
+        assert_eq!(fs::read(&file).unwrap(), db("old"));
+        assert_eq!(names(&dir), vec![DB_FILE, LOCK_FILE]);
+
+        super::save(&dir, &db("new"), PAGE, &lock).unwrap();
         assert_eq!(fs::read(&file).unwrap(), db("new"));
     }
 

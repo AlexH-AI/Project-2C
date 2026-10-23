@@ -9,6 +9,7 @@ import {
   ALREADY_OPEN,
   DISK_FULL,
   FILE_IN_USE,
+  FOLDER_READ_ONLY,
   READ_ONLY,
   tauriStorage,
 } from './tauri-storage';
@@ -145,6 +146,7 @@ describe('the JS ↔ Rust storage contract', () => {
     expect(rustString(storage, 'FILE_IN_USE')).toBe(FILE_IN_USE);
     expect(rustString(storage, 'ACCESS_DENIED')).toBe(ACCESS_DENIED);
     expect(rustString(storage, 'READ_ONLY')).toBe(READ_ONLY);
+    expect(rustString(storage, 'FOLDER_READ_ONLY')).toBe(FOLDER_READ_ONLY);
   });
 
   it('reads an empty reply of db_open as a first start, which Rust sends for no file', () => {

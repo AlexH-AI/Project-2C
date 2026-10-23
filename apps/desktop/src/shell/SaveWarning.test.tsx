@@ -26,4 +26,14 @@ describe('SaveFailed', () => {
     );
     expect(html).not.toContain('chương trình khác');
   });
+
+  it('tells to have the right to write in the data folder given back when it lets no new file in, not to look for a program nor at the file (DR6-120)', () => {
+    const html = renderToStaticMarkup(<SaveFailed error="FOLDER_READ_ONLY" />);
+    expect(html).toContain('role="alert"');
+    expect(html).toContain(
+      'Chưa lưu được dữ liệu vào file: thư mục Project2C-data không cho tài khoản Windows đang dùng tạo file mới trong đó. Hãy nhờ người quản trị máy cấp lại quyền ghi vào thư mục đó. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
+    );
+    expect(html).not.toContain('chương trình khác');
+    expect(html).not.toContain('chỉ đọc');
+  });
 });

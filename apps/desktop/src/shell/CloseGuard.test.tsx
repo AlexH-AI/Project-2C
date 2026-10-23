@@ -31,8 +31,17 @@ describe('CloseDialog', () => {
     expect(html).not.toContain('chương trình khác');
   });
 
+  it('tells to have the right to write in the data folder given back when it lets no new file in, not to close a program nor to look at the file (DR6-120)', () => {
+    const html = body('FOLDER_READ_ONLY');
+    expect(html).toContain(
+      'Các thay đổi gần nhất chưa ghi được vào file vì thư mục Project2C-data không cho tài khoản Windows đang dùng tạo file mới trong đó. Hãy nhờ người quản trị máy cấp lại quyền ghi vào thư mục đó rồi chọn Thử lại. Hoặc đóng app và bỏ các thay đổi chưa lưu.',
+    );
+    expect(html).not.toContain('chương trình khác');
+    expect(html).not.toContain('chỉ đọc');
+  });
+
   it('keeps both ways out whatever the cause', () => {
-    for (const error of [undefined, 'DISK_FULL', 'READ_ONLY']) {
+    for (const error of [undefined, 'DISK_FULL', 'READ_ONLY', 'FOLDER_READ_ONLY']) {
       const html = body(error);
       expect(html, String(error)).toContain('Thử lại');
       expect(html, String(error)).toContain('Đóng và bỏ thay đổi chưa lưu');

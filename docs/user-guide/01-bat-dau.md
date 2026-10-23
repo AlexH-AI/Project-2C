@@ -49,11 +49,15 @@ Nếu file `project2c.db` chuyển sang chỉ đọc lúc app đang chạy, ho�
 
 > Chưa lưu được dữ liệu vào file: file Project2C-data\project2c.db đang ở chế độ chỉ đọc, hoặc tài khoản Windows đang dùng không có quyền ghi / xóa file đó. Hãy bỏ chế độ chỉ đọc (chuột phải file → Properties → bỏ chọn Read-only) hoặc nhờ người quản trị máy cấp lại quyền. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.
 
+Nếu thư mục `Project2C-data` không còn cho tài khoản Windows đang dùng tạo file mới trong đó (mỗi lần lưu, app ghi một file mới rồi mới thay file cũ), dải cảnh báo ghi:
+
+> Chưa lưu được dữ liệu vào file: thư mục Project2C-data không cho tài khoản Windows đang dùng tạo file mới trong đó. Hãy nhờ người quản trị máy cấp lại quyền ghi vào thư mục đó. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.
+
 Bạn vẫn làm tiếp được; app thử lưu lại ở lần thay đổi sau và dải cảnh báo tự mất khi lưu được.
 
 Nếu bạn đóng app lúc còn thay đổi chưa lưu, app hiện hộp **"Chưa lưu được thay đổi"**, với câu theo nguyên nhân như ở dải cảnh báo:
 
-- Xử lý nguyên nhân rồi bấm **Thử lại**: đóng chương trình đang giữ file, hoặc xóa bớt file trên ổ đầy, hoặc bỏ chế độ chỉ đọc / cấp lại quyền cho file. App lưu rồi mới đóng (nếu vẫn chưa lưu được, hộp hiện lại).
+- Xử lý nguyên nhân rồi bấm **Thử lại**: đóng chương trình đang giữ file, hoặc xóa bớt file trên ổ đầy, hoặc bỏ chế độ chỉ đọc / cấp lại quyền cho file hay thư mục. App lưu rồi mới đóng (nếu vẫn chưa lưu được, hộp hiện lại).
 - **Đóng và bỏ thay đổi chưa lưu**: đóng app, các thay đổi chưa ghi vào file sẽ mất.
 
 Các lỗi khác lúc mở app xem ở [10. Khi có lỗi](10-su-co.md#lỗi-lúc-mở-app-bản-exe).

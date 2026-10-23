@@ -186,3 +186,34 @@ test('closing the exe over a failed save: Escape leaves the window open, and clo
   await page.keyboard.press('Enter');
   await expect.poll(destroyed).toBe(true);
 });
+
+test('the save warning and the close question name the cause of a failed save that Rust sends (DR6-07, DR6-120)', async ({
+  page,
+}) => {
+  await asExe(page);
+  await page.goto('/#/team');
+  await page.evaluate(() => (window.exe.failSaves = true));
+  await page.getByRole('button', { name: '+ Team' }).click();
+  const create = page.getByRole('dialog', { name: 'Team mới' });
+  await create.getByRole('textbox', { name: 'Tên team' }).fill('Bình Minh 2');
+  await create.getByRole('button', { name: 'Tạo team' }).click();
+
+  const warning = page.getByRole('alert');
+  const ask = page.getByRole('dialog', { name: 'Chưa lưu được thay đổi' });
+  await expect(warning).toContainText('chương trình khác');
+  // Each close saves again first, and that save fails with the cause set here.
+  for (const [error, cause] of [
+    ['DISK_FULL', 'ổ đĩa chứa thư mục app đã đầy'],
+    ['READ_ONLY', 'đang ở chế độ chỉ đọc'],
+    ['FOLDER_READ_ONLY', 'không cho tài khoản Windows đang dùng tạo file mới'],
+    [true, 'chương trình khác'],
+  ] as const) {
+    await page.evaluate((error) => (window.exe.failSaves = error), error);
+    await page.evaluate(() => window.exe.requestClose());
+    await expect(ask, String(error)).toContainText(cause);
+    await page.keyboard.press('Escape');
+    await expect(ask).toHaveCount(0);
+    await expect(warning, String(error)).toContainText(cause);
+  }
+  expect(await page.evaluate(() => window.exe.destroyed)).toBe(false);
+});

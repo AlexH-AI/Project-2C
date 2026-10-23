@@ -4,12 +4,7 @@ import { useAppData } from '../data/AppDataContext';
 import { saveFailure } from '../data/tauri-storage';
 import { t } from '../i18n';
 import { closeAfterSaving, type CloseChoice } from './close-guard';
-
-const UNSAVED_BODY = {
-  diskFull: 'close.unsavedBodyDiskFull',
-  readOnly: 'close.unsavedBodyReadOnly',
-  other: 'close.unsavedBody',
-} as const;
+import { SAVE_FAILED } from './SaveWarning';
 
 /** The exe window as far as closing goes; Tauri's `Window` fits it. */
 export interface AppWindow {
@@ -68,8 +63,8 @@ export function CloseGuard({ appWindow }: { appWindow: AppWindow }) {
 }
 
 /**
- * The question for the storage's `error` of the last failed save: like the save warning, it says
- * what to do about a full disk and a file that can no longer be replaced, not to close a program.
+ * The question for the storage's `error` of the last failed save, by its cause like the save
+ * warning (see `SAVE_FAILED`).
  */
 export function CloseDialog({
   error,
@@ -94,7 +89,7 @@ export function CloseDialog({
         </>
       }
     >
-      <p className="m-0">{t(UNSAVED_BODY[saveFailure(error)])}</p>
+      <p className="m-0">{t(SAVE_FAILED[saveFailure(error)].close)}</p>
     </Dialog>
   );
 }
