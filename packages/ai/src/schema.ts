@@ -99,10 +99,11 @@ export type AnalysisInput = z.infer<typeof analysisInputSchema>;
 
 /**
  * What a string shows, read as K20 reads a name (`normalizeText`): no invisible character (format,
- * default-ignorable such as U+3164, U+2800), each run of white space one space, NFC, trimmed
- * (G5 §11.5). A string of invisible characters only is empty.
+ * default-ignorable such as U+3164, U+2800, a control character that is not white space nor NUL:
+ * K25, DR6-111), each run of white space one space, NFC, trimmed (G5 §11.5). A string of invisible
+ * characters only is empty.
  */
-const visible = (s: string) => normalizeText(s);
+const visible = normalizeText;
 
 /**
  * The longest string as written, invisible characters and loose marks included (G5 §11.5, DR6-77):
@@ -307,8 +308,8 @@ export function buildAnalysisInput(
  * the same.
  */
 export const PROMPT_VERSIONS = {
-  analysis: 'analysis@3',
-  discovery: 'discovery@3',
+  analysis: 'analysis@4',
+  discovery: 'discovery@4',
   extraction: 'extraction@1',
 } as const satisfies Record<AiMode, string>;
 

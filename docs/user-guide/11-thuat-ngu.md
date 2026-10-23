@@ -90,7 +90,7 @@ Thuật ngữ ngành giữ tiếng Anh như trên màn. Bảng dưới giải th
 | **OpenCode** | Dịch vụ app gọi để chạy model AI thật (bản exe). **Gói Go**: trả theo tháng; **Credit**: trừ số dư |
 | **ChatGPT web** | Phân tích làm tay qua tài khoản ChatGPT của bạn |
 | `analysis`, `discovery` | Hai chế độ phân tích, theo cổng KYC: `PAIN_POINT_ANALYSIS` → analysis, `PROFILE_DISCOVERY` → discovery |
-| **Prompt** | Câu lệnh app gửi AI, có phiên bản (ví dụ `analysis@3`, `discovery@3`) |
+| **Prompt** | Câu lệnh app gửi AI, có phiên bản (ví dụ `analysis@4`, `discovery@4`) |
 | `CURRENT` | Phân tích mới nhất, làm trên phiên bản KYC hiện tại |
 | `STALE` | Phân tích cũ: KYC đã đổi sau đó, hoặc đã có lần phân tích mới hơn |
 | `REJECTED` | Lần phân tích bị loại vì câu trả lời của AI không đạt kiểm tra; không dùng làm kết quả |

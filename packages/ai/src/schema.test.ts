@@ -9,6 +9,7 @@ import {
   factCode,
   PROMPT_VERSIONS,
 } from './schema';
+import { lettersAround, ZWSP } from './test-support';
 
 const item = (text: string, ...evidence: string[]) => ({ text, evidence });
 const items = (count: number) => Array.from({ length: count }, (_, i) => item(`Ý ${i + 1}`, 'F1'));
@@ -98,8 +99,6 @@ describe('analysisOutputSchema', () => {
     expect(analysisOutputSchema.safeParse(output).success).toBe(true);
   });
 
-  const ZWSP = String.fromCodePoint(0x200b);
-
   // G5 §10.4 (Owner 11/10/2026): the "…" of the prompt's format example is not an answer (DR5-49 b).
   it.each([
     ['an ellipsis', '…'],
@@ -130,7 +129,7 @@ describe('analysisOutputSchema', () => {
   // G5 §11.5 (Owner 18/10/2026): at most 1 000 characters as written (DR6-77), and what the text
   // shows is read as K20 reads a name, so a default-ignorable character is invisible too.
   it.each([
-    ['300 letters and 700 U+200B', `${'a'.repeat(150)}${ZWSP.repeat(700)}${'a'.repeat(150)}`, []],
+    ['300 letters and 700 U+200B', lettersAround(700), []],
     [
       '300 letters written NFD and 100 U+200B',
       `${'ệ'.normalize('NFD').repeat(300)}${ZWSP.repeat(100)}`,
@@ -138,16 +137,8 @@ describe('analysisOutputSchema', () => {
     ],
     ['300 letters with a run of spaces', `${'a'.repeat(150)}     ${'a'.repeat(149)}`, []],
     ['letters around U+3164 and U+0085', 'Quỹ\u3164học\u0085vấn', []],
-    [
-      '300 letters and 701 U+200B',
-      `${'a'.repeat(150)}${ZWSP.repeat(701)}${'a'.repeat(150)}`,
-      ['themes.0.text'],
-    ],
-    [
-      '300 letters and 650 000 U+200B',
-      `${'a'.repeat(150)}${ZWSP.repeat(650_000)}${'a'.repeat(150)}`,
-      ['themes.0.text'],
-    ],
+    ['300 letters and 701 U+200B', lettersAround(701), ['themes.0.text']],
+    ['300 letters and 650 000 U+200B', lettersAround(650_000), ['themes.0.text']],
     ['only U+3164', '\u3164', ['themes.0.text']],
     ['U+3164 and an ellipsis', '\u3164…', ['themes.0.text']],
   ])('reads a text as written and as it shows: %s', (_, text, errors) => {

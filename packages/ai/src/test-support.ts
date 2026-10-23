@@ -2,11 +2,22 @@
  * A KYC profile for the tests of the input and the orchestration: six hạng mục "đã có" with
  * GOALS and EXISTING_PROTECTION, so `PAIN_POINT_ANALYSIS`; a superseded fact; a conflict on a
  * trường that is not cốt lõi (a warning only). Notes and the extra fields hold what must never
- * reach the model.
+ * reach the model. Also the invisible texts the tests of V1 and V3–V6 share.
  */
 import { calendarDate, type KycFact, type KycField, type KycValue } from '@p2c/domain';
 import { KYC_FIELDS } from '@p2c/domain';
 import type { AnalysisFact } from './schema';
+
+/** U+200B: dropped wherever it stands (K20, G5 §7 item 0). */
+export const ZWSP = String.fromCodePoint(0x200b);
+
+/** `text` written NFD with a ZWSP before each combining mark (DR6-17). */
+export const nfdZw = (text: string) =>
+  text.normalize('NFD').replace(/\p{M}/gu, (mark) => ZWSP + mark);
+
+/** 150 letters, `count` U+200B, 150 letters: around the 1 000 cap of a written text (C71, C72). */
+export const lettersAround = (count: number) =>
+  `${'a'.repeat(150)}${ZWSP.repeat(count)}${'a'.repeat(150)}`;
 
 export const TODAY = calendarDate(2026, 10, 7);
 

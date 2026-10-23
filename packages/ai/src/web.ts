@@ -81,7 +81,8 @@ export function startWebAnalysis(request: WebAnalysisRequest): WebStart {
 
 /**
  * A line as it is compared (G5 §6a, R2-03): cleaned as V3–V6 read a text (no invisible character,
- * then NFKC: DR6-17), without a quote prefix (`>`, `> >`…), each run of white space as one space.
+ * then NFKC: DR6-17; a stray mark as a space: DR6-122), without a quote prefix (`>`, `> >`…), each
+ * run of white space as one space.
  */
 const ownLine = (line: string) =>
   cleanText(line)
@@ -99,8 +100,28 @@ const OWN_LINES = [
   ...RETRY_TEMPLATE.split('\n').filter((line) => !line.includes('{issues}')),
 ].map(ownLine);
 
+/**
+ * Where a line of a paste ends: CR LF, CR, LF and the Unicode line separators U+0085, U+2028,
+ * U+2029, as a KYC note's lines (`normalizeNote`, K25; G5 §6a, §12.3, DR6-123). A copy here, not
+ * the note's: changing it goes through G5.
+ */
+const LINE_BREAK = /\r\n?|[\n\u{85}\u{2028}\u{2029}]/u;
+
+/**
+ * More code units than twice the limit is too long whatever the paste holds (a code point is at
+ * most two), so a paste is read on this many of its code units at most (DR5-09).
+ */
+const MAX_READ = 2 * MAX_RAW_OUTPUT;
+
+/**
+ * Whether a line of the paste is one of the app's own. Only the first `MAX_READ` code units are
+ * read, so a huge paste is never split nor normalized whole (DR5-09), and the app's message pasted
+ * back is named for what it is however long (review #521); a line they cut is left out.
+ */
 function isOwnMessage(pasted: string): boolean {
-  return pasted.split(/\r\n?|\n/).some((line) => OWN_LINES.includes(ownLine(line)));
+  const lines = pasted.slice(0, MAX_READ).split(LINE_BREAK);
+  if (pasted.length > MAX_READ) lines.pop();
+  return lines.some((line) => OWN_LINES.includes(ownLine(line)));
 }
 
 export type WebAnswerResult =
@@ -122,11 +143,10 @@ export type WebAnswerResult =
 /** Checks one pasted answer; `session` is left as it was. */
 export function checkWebAnswer(session: WebSession, pasted: string): WebAnswerResult {
   if (session.attempts.length >= MAX_ATTEMPTS) throw new RangeError('The web session is over');
-  // More code units than twice the limit is too long whatever the paste holds, so a huge one is
-  // never split into lines nor normalized (DR5-09).
-  if (pasted.length > 2 * MAX_RAW_OUTPUT) return { kind: 'unusable', reason: 'TOO_LONG' };
-  if (pasted.trim() === '') return { kind: 'unusable', reason: 'EMPTY' };
   if (isOwnMessage(pasted)) return { kind: 'unusable', reason: 'OWN_MESSAGE' };
+  // A huge paste is never trimmed nor counted whole either (DR5-09).
+  if (pasted.length > MAX_READ) return { kind: 'unusable', reason: 'TOO_LONG' };
+  if (pasted.trim() === '') return { kind: 'unusable', reason: 'EMPTY' };
   if (codePointsOver(pasted, MAX_RAW_OUTPUT)) return { kind: 'unusable', reason: 'TOO_LONG' };
   const attempts = [...session.attempts, checkAnalysisAnswer(session.input, pasted)];
   const retry = nextRetry(attempts);

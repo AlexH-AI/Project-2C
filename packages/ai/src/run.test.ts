@@ -151,7 +151,7 @@ describe('runAnalysis', () => {
         provider: 'OPENCODE_GO',
         model: 'kimi-k3',
         reasoning: 'HIGH',
-        promptVersion: 'analysis@3',
+        promptVersion: 'analysis@4',
         attempts: 1,
         input: buildAnalysisInput(PROFILE, evaluateKycGate(PROFILE.facts), TODAY),
         // `personalityNotes` left out is stored as the schema reads it: [].
@@ -434,7 +434,7 @@ describe('runAnalysis', () => {
         mode: 'discovery',
         gateState: 'PROFILE_DISCOVERY',
         status: 'ACCEPTED',
-        promptVersion: 'discovery@3',
+        promptVersion: 'discovery@4',
         output: { hypotheses: [], personalityNotes: [] },
       },
     });
