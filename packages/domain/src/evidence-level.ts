@@ -2,7 +2,7 @@
  * Mức bằng chứng of one AI output element (spec Phase 5 §6.3, Owner G2 07/10/2026): worked out
  * from the facts the element cites, never written by the AI. No percentage, no "độ tin cậy".
  */
-import { compareDates, type CalendarDate } from './period';
+import { compareDates, sameDayYearBefore, type CalendarDate } from './period';
 
 export const EVIDENCE_LEVELS = ['LOW', 'MEDIUM', 'HIGH'] as const;
 
@@ -38,15 +38,10 @@ export function evidenceLevel(input: {
     .reduce((a, b) => (compareDates(b, a) > 0 ? b : a));
   const factCount = new Set(facts.map((fact) => fact.code)).size;
   const rank = Math.min(factCount, EVIDENCE_LEVELS.length) - 1;
-  const recent = compareDates(latest, yearBefore(analysisDate)) >= 0;
+  const recent = compareDates(latest, sameDayYearBefore(analysisDate)) >= 0;
   return {
     level: EVIDENCE_LEVELS[recent ? rank : Math.max(rank - 1, 0)]!,
     factCount,
     latestConfirmedDate: latest,
   };
-}
-
-/** The same day a year before; 29/02 has none, so 28/02. */
-function yearBefore({ year, month, day }: CalendarDate): CalendarDate {
-  return { year: year - 1, month, day: month === 2 && day === 29 ? 28 : day };
 }

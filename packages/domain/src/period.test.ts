@@ -14,11 +14,13 @@ import {
   formatDayOfMonth,
   formatIsoDate,
   formatLocalDateTime,
+  formatLocalDayMonthTime,
   formatPeriodValue,
   fromIsoDate,
   fromLocalDate,
   localFileStamp,
   isInPeriod,
+  isIsoDate,
   MAX_YEAR,
   MIN_YEAR,
   monthToDate,
@@ -26,6 +28,7 @@ import {
   parseQuickDate,
   periodOf,
   reportMarks,
+  sameDayYearBefore,
   shift,
   switchKind,
   todayPeriod,
@@ -84,6 +87,12 @@ describe('local date and time', () => {
     expect(formatLocalDateTime(at, { seconds: true })).toBe('05/09/2026 07:04:59');
   });
 
+  it('formats as dd/mm HH:MM when the year is clear from context', () => {
+    expect(formatLocalDayMonthTime(at)).toBe('05/09 07:04');
+    expect(formatLocalDayMonthTime(new Date(2026, 0, 1, 0, 0))).toBe('01/01 00:00');
+    expect(formatLocalDayMonthTime(new Date(2026, 11, 31, 23, 59, 59))).toBe('31/12 23:59');
+  });
+
   it('stamps file names as YYYYMMDD-HHMM', () => {
     expect(localFileStamp(at)).toBe('20260905-0704');
   });
@@ -117,6 +126,30 @@ describe('fromIsoDate', () => {
     '1899-12-31',
     '',
   ])('refuses %j', (text) => {
+    expect(() => fromIsoDate(text)).toThrow(RangeError);
+  });
+});
+
+describe('isIsoDate', () => {
+  it('takes a stored day of 1900–2100, 29/02 of a leap year too', () => {
+    expect(isIsoDate('2026-09-05')).toBe(true);
+    expect(isIsoDate('1900-01-01')).toBe(true);
+    expect(isIsoDate('2100-12-31')).toBe(true);
+    expect(isIsoDate('2028-02-29')).toBe(true);
+  });
+
+  it.each([
+    '2026-02-29',
+    '1899-12-31',
+    '2101-01-01',
+    '2026-04-31',
+    '2026-9-05',
+    ' 2026-09-05',
+    '2026-09-05T00:00',
+    '05/09/2026',
+    '',
+  ])('refuses %j, as fromIsoDate does', (text) => {
+    expect(isIsoDate(text)).toBe(false);
     expect(() => fromIsoDate(text)).toThrow(RangeError);
   });
 });
@@ -414,6 +447,17 @@ describe('parseDate', () => {
     expect(parseDate('04/01/27')).toBeNull();
     expect(parseDate('30/02/2027')).toBeNull();
   });
+
+  // Review #738: the Từ / Đến boxes read a pasted date as the appointment date box does.
+  it.each([
+    ['U+200B after', '12/10/2026\u{200B}'],
+    ['U+2060 before', '\u{2060}12/10/2026'],
+    ['U+0085 after', '12/10/2026\u{85}'],
+    ['U+0007 after', '12/10/2026\u{7}'],
+  ])('reads a date with %s, as parseQuickDate does', (_, text) => {
+    expect(parseDate(text)).toEqual(d(12, 10, 2026));
+    expect(parseQuickDate(text, d(1, 10, 2026))).toMatchObject({ ok: true, date: d(12, 10, 2026) });
+  });
 });
 
 describe('calendarDate before 1900', () => {
@@ -669,6 +713,19 @@ describe('daysBetween', () => {
     expect(daysBetween(d(28, 9, 2026), d(26, 9, 2026))).toBe(-2);
     expect(daysBetween(d(28, 9, 2026), d(28, 9, 2026))).toBe(0);
     expect(daysBetween(d(31, 12, 2026), d(1, 1, 2027))).toBe(1);
+  });
+});
+
+describe('sameDayYearBefore', () => {
+  it('gives the same day and month a year earlier, 28/02 for 29/02', () => {
+    expect(sameDayYearBefore(d(15, 9, 2026))).toEqual(d(15, 9, 2025));
+    expect(sameDayYearBefore(d(29, 2, 2028))).toEqual(d(28, 2, 2027));
+    expect(sameDayYearBefore(d(1, 3, 2028))).toEqual(d(1, 3, 2027));
+    expect(sameDayYearBefore(d(31, 12, 2100))).toEqual(d(31, 12, 2099));
+  });
+
+  it('gives a day of 1899 for one of 1900 rather than throw: it is only compared', () => {
+    expect(sameDayYearBefore(d(15, 6, 1900))).toEqual({ year: 1899, month: 6, day: 15 });
   });
 });
 

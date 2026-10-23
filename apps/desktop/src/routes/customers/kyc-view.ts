@@ -258,8 +258,8 @@ export function previewKycNote(
       return { kind: 'refused', field: fact.field };
     }
   }
-  const previous = versions.at(-1) ?? null;
-  const version = nextKycVersion(previous, previous && profile, after, date, false);
+  const latest = versions.at(-1);
+  const version = nextKycVersion(latest ? { version: latest, profile } : null, after, date, false);
   if (!version) return { kind: 'none' };
   return {
     kind: 'version',

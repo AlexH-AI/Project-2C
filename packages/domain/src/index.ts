@@ -18,11 +18,13 @@ export {
   formatDayOfMonth,
   formatIsoDate,
   formatLocalDateTime,
+  formatLocalDayMonthTime,
   formatPeriodValue,
   fromIsoDate,
   fromLocalDate,
   localFileStamp,
   isInPeriod,
+  isIsoDate,
   parseDate,
   parseQuickDate,
   periodOf,
@@ -97,7 +99,14 @@ export {
 } from './stage-snapshot';
 export type { StageCounts } from './stage-snapshot';
 export { byName } from './name-order';
-export { isStorableText, normalizeNote, normalizeText } from './text';
+export {
+  collapseSpaces,
+  isStorableText,
+  normalizeNote,
+  normalizeText,
+  stripDiacritics,
+  toHex,
+} from './text';
 export { formatVnd, formatVndCompact, formatVndDelta, MAX_FEE_VND, parseVnd } from './money';
 export { formatCount, formatFileSize, formatPercent } from './number';
 export type { Vnd, VndParseError, VndParseResult } from './money';

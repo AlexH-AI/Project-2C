@@ -7,7 +7,7 @@
  * định" (G5 §7 item 2, DR6-23); a word whose bare form is a word too, only in a phrase all bare
  * ("khach am" is "khách ấm", "khách am hiểu" is not: DR6-124).
  */
-import { normalizeText } from '@p2c/domain';
+import { normalizeText, stripDiacritics } from '@p2c/domain';
 
 export interface MatchText {
   readonly original: string;
@@ -39,11 +39,6 @@ export function cleanText(text: string): string {
     .normalize('NFC')
     .replace(/\p{White_Space}+/gu, ' ')
     .trim();
-}
-
-/** A word as written bare: no tone mark, no diacritic, `đ` → `d` (G5 §7 item 2). */
-export function fold(accented: string): string {
-  return accented.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd');
 }
 
 export function matchText(text: string): MatchText {
@@ -91,7 +86,7 @@ const BARE_IS_A_WORD: readonly string[] = ['ấm', 'lạnh', 'nội', 'ít'];
 function bareOrNot(parts: readonly string[]): string {
   const listed = (part: string) => BARE_IS_A_WORD.includes(part);
   const mixed = parts.map((part) => (listed(part) ? part : bareToo(part))).join(' ');
-  return parts.some(listed) ? `(?:${mixed}|${parts.map(fold).join(' ')})` : mixed;
+  return parts.some(listed) ? `(?:${mixed}|${parts.map(stripDiacritics).join(' ')})` : mixed;
 }
 
 /**
@@ -116,7 +111,7 @@ const TOKEN = /\\(?:[pP]\{[^}]*\}|.)|\[(?:\\(?:[pP]\{[^}]*\}|.)|[^\]\\])*\]|\p{L
 function bareToo(source: string): string {
   return source.replace(TOKEN, (token) => {
     if (!/^\p{L}/u.test(token)) return token;
-    const bare = fold(token);
+    const bare = stripDiacritics(token);
     return bare === token ? token : `(?:${token}|${bare})`;
   });
 }

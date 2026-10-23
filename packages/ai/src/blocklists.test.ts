@@ -3,10 +3,10 @@
  * `blocklists.ts`, or changing its "Bỏ dấu" column, turns a case red; so does a word of an entry
  * that `text-match.ts` lists closed (§7 item 2, §12.4) and the file does not, or the other way.
  */
+import { stripDiacritics } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import guide from '../../../docs/design/phase-5-prompts.md?raw';
 import { ZWSP } from './test-support';
-import { fold } from './text-match';
 import { validateOutput } from './validator';
 
 type Code = 'V3' | 'V4' | 'V5' | 'V6';
@@ -147,7 +147,7 @@ describe('BLOCKLISTS — every phrase of G5 §8', () => {
 
   it.each(PHRASES)('$code catches "$entry" (Bỏ dấu: $folded)', ({ code, entry, folded }) => {
     expect(detailsOf(code, `Ghi chú ${entry} ở đây`)).toContain(`có "${entry}"`);
-    const without = fold(entry.toLowerCase());
+    const without = stripDiacritics(entry.toLowerCase());
     if (without === entry.toLowerCase()) return;
     const caught = detailsOf(code, `Ghi chú ${without} ở đây`).includes(`có "${entry}"`);
     expect(caught).toBe(folded);
@@ -164,7 +164,7 @@ describe('BLOCKLISTS — every phrase of G5 §8', () => {
     ({ code, entry }) => {
       const words = entry.toLowerCase().split(' ');
       words.forEach((word, i) => {
-        const bare = fold(word);
+        const bare = stripDiacritics(word);
         if (bare === word) return;
         const text = words.map((other, j) => (j === i ? bare : other)).join(' ');
         const caught = detailsOf(code, `Ghi chú ${text} ở đây`).includes(`có "${entry}"`);
@@ -184,9 +184,11 @@ describe('BLOCKLISTS — every other row of G5 §8', () => {
     for (const [text, match] of SAMPLES[item]!) {
       expect(detailsOf(code, text)).toContain(`có "${match}"`);
       // "cả bản bỏ dấu": the text without diacritics is caught too, by the folded pattern.
-      const without = fold(text.toLowerCase());
+      const without = stripDiacritics(text.toLowerCase());
       if (without === text.toLowerCase()) continue;
-      const caught = detailsOf(code, without).includes(`có "${fold(match.toLowerCase())}"`);
+      const caught = detailsOf(code, without).includes(
+        `có "${stripDiacritics(match.toLowerCase())}"`,
+      );
       expect(caught).toBe(kind.includes('bỏ dấu'));
     }
   });

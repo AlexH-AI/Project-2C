@@ -18,6 +18,7 @@ import {
   formatDate,
   formatLocalDateTime,
   formatVnd,
+  stripDiacritics,
   type CalendarDate,
   type CustomerStage,
 } from '@p2c/domain';
@@ -55,9 +56,6 @@ export const TRASH_MORE: DataTableMoreLabels = {
   all: (total) => t('trash.more.all', { total }),
 };
 
-const plain = (text: string) =>
-  text.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd');
-
 /** The name the search box looks in: its own, or its customer's for an appointment or a policy. */
 function searchedName(row: TrashRow): string {
   return row.kind === 'appointment' || row.kind === 'policy'
@@ -71,11 +69,11 @@ export function filterTrash(
   filter: TrashFilter,
   query: string,
 ): readonly TrashRow[] {
-  const needle = plain(query.trim());
+  const needle = stripDiacritics(query.trim().toLowerCase());
   return rows.filter(
     (row) =>
       (filter === 'all' || row.kind === filter) &&
-      (needle === '' || plain(searchedName(row)).includes(needle)),
+      (needle === '' || stripDiacritics(searchedName(row).toLowerCase()).includes(needle)),
   );
 }
 

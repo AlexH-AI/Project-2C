@@ -8,6 +8,7 @@ import {
   assertValidTransition,
   calendarDate,
   fromIsoDate,
+  isIsoDate,
   normalizeKycValue,
   PIPELINE_STAGES,
   REVIEWER_ROLES,
@@ -101,13 +102,7 @@ function storedAs(clean: (text: string) => string, value: SqlValue | undefined):
 
 /** A stored day, as `fromIsoDate` reads it back. */
 function validDate(value: SqlValue): boolean {
-  if (typeof value !== 'string') return false;
-  try {
-    fromIsoDate(value);
-    return true;
-  } catch {
-    return false;
-  }
+  return typeof value === 'string' && isIsoDate(value);
 }
 
 /** A birth year alone, from the year `calendarDate` accepts. */

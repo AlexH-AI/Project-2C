@@ -4,7 +4,7 @@
  */
 import type { ExtractedFact } from '@p2c/ai';
 import type { KycNoteRecord } from '@p2c/db';
-import type { KycFact, KycValue } from '@p2c/domain';
+import { collapseSpaces, type KycFact, type KycValue } from '@p2c/domain';
 import type { ExtractionOutcome } from '../../data/ai-analysis';
 import { aiFailure, GENERAL_FAILURE, type AiFailure } from '../ai-error-view';
 import type { AiJobPhase } from './ai-panel-view';
@@ -101,6 +101,4 @@ function held(proposal: ExtractedFact, facts: readonly KycFact[]): boolean {
 
 /** A value as the RE reads it: the same words, whatever their case or spacing. */
 const comparable = (value: KycValue) =>
-  typeof value === 'string'
-    ? value.normalize('NFC').trim().replace(/\s+/gu, ' ').toLocaleLowerCase('vi')
-    : value;
+  typeof value === 'string' ? collapseSpaces(value).trim().toLocaleLowerCase('vi') : value;

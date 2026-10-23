@@ -1,11 +1,11 @@
 import type { Vnd } from './money';
 import {
   addDays,
-  calendarDate,
   canShift,
   compareDates,
   customPeriod,
   daysBetween,
+  sameDayYearBefore,
   shift,
   type CalendarDate,
   type Period,
@@ -13,12 +13,6 @@ import {
 import { closeRatePercent, type PeriodMetrics } from './stats';
 
 const earlier = (a: CalendarDate, b: CalendarDate) => (compareDates(a, b) <= 0 ? a : b);
-
-/** The same day and month a year earlier; 29/02 becomes 28/02. */
-function sameDayYearBefore({ year, month, day }: CalendarDate): CalendarDate {
-  const leapDay = month === 2 && day === 29;
-  return calendarDate(year - 1, month, leapDay ? 28 : day);
-}
 
 /** The days a KPI is counted over and the days it is compared with (spec Phase 4 §4.2). */
 export interface ComparisonWindows {

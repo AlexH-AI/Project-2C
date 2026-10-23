@@ -5,6 +5,7 @@ import {
   formatDate,
   formatDayMonth,
   parseQuickDate,
+  stripDiacritics,
   weekdayOf,
   type CalendarDate,
   type QuickDateError,
@@ -125,18 +126,14 @@ export function priorMeetings(
   };
 }
 
-const plain = (text: string) =>
-  text.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd');
-
 /** The customers whose name or code contains the text (accents and case ignored), by name. */
 export function searchCustomers(
   customers: readonly CustomerRecord[],
   query: string,
   limit: number,
 ): CustomerRecord[] {
-  const needle = plain(query.trim());
+  const needle = stripDiacritics(query.trim().toLowerCase());
   if (needle === '') return [];
-  return customers
-    .filter((c) => plain(c.name).includes(needle) || plain(c.code).includes(needle))
-    .slice(0, limit);
+  const found = (text: string) => stripDiacritics(text.toLowerCase()).includes(needle);
+  return customers.filter((c) => found(c.name) || found(c.code)).slice(0, limit);
 }

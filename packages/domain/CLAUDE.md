@@ -45,9 +45,9 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/money.ts` — type Vnd, MAX_FEE_VND, addVnd, type VndParseError, type VndParseResult, parseVnd, formatVnd, formatVndCompact, formatVndDelta
 - `src/name-order.ts` — byName
 - `src/number.ts` — groupThousands, formatCount, formatPercent, formatFileSize
-- `src/period.ts` — type CalendarDate, PERIOD_KINDS, type PeriodKind, type Period, MIN_YEAR, MAX_YEAR, calendarDate, addDays, fromLocalDate, formatDate, formatLocalDateTime, formatIsoDate, fromIsoDate, localFileStamp, formatDayMonth, formatDayOfMonth, type Weekday, weekdayOf, daysBetween, compareDates, isInPeriod, parseDate, type QuickDateError, type QuickDateResult, parseQuickDate, periodOf, customPeriod, customRangeMaxEnd, customRangeAllowed, monthToDate, shift, canShift, switchKind, todayPeriod, formatPeriodValue, chartMarks, reportMarks
+- `src/period.ts` — type CalendarDate, PERIOD_KINDS, type PeriodKind, type Period, MIN_YEAR, MAX_YEAR, calendarDate, addDays, fromLocalDate, formatDate, formatLocalDateTime, formatLocalDayMonthTime, formatIsoDate, fromIsoDate, isIsoDate, localFileStamp, formatDayMonth, formatDayOfMonth, type Weekday, weekdayOf, daysBetween, sameDayYearBefore, compareDates, isInPeriod, parseDate, type QuickDateError, type QuickDateResult, parseQuickDate, periodOf, customPeriod, customRangeMaxEnd, customRangeAllowed, monthToDate, shift, canShift, switchKind, todayPeriod, formatPeriodValue, chartMarks, reportMarks
 - `src/pipeline-stage.ts` — PIPELINE_STAGES, type PipelineStage, isPipelineStage
 - `src/stage-snapshot.ts` — snapshotDate, type StageCounts, stageSnapshot, stageSnapshotByScope, stageSnapshotSeries
 - `src/stats.ts` — type PolicyMetrics, scopeMatcher, markIndexer, inScope, policyMetrics, isRfAppointment, rfCount, type CloseRate, closeRate, closeRatePercent, type PeriodMetrics, type MetricsData, periodMetrics, periodMetricsByMark, periodMetricsByScope
-- `src/text.ts` — isStorableText, normalizeText, normalizeNote
+- `src/text.ts` — isStorableText, normalizeText, normalizeNote, stripDiacritics, collapseSpaces, toHex
 <!-- codemap:end -->

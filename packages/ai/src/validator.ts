@@ -5,6 +5,7 @@
  * retry message (prompts §5) and is stored in `validator_json`.
  */
 import {
+  collapseSpaces,
   KYC_FIELDS,
   normalizeKycValue,
   type KycCategory,
@@ -162,8 +163,6 @@ export interface ExtractedFact {
   readonly value: KycValue;
   readonly quote: string;
 }
-
-const collapseSpaces = (text: string) => text.normalize('NFC').replace(/\s+/gu, ' ');
 
 /**
  * V7 on an extraction that passed V1: drops each fact whose trường is not allowed (never
