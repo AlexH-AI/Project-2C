@@ -1,6 +1,6 @@
 # Phase 5 — Prompt và guardrail AI (G5)
 
-- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417) · §6a `web@1` (ChatGPT web, W-1) **Owner duyệt G5 08/10/2026** (PR #430) · Đợt Phase 6 `analysis@2` / `discovery@2` **Owner duyệt G5 11/10/2026** (T-197 #491, §10) · Đợt lượt 2 `analysis@3` / `discovery@3` **Owner duyệt G5 18/10/2026** (T-257 #661, §11)
+- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417) · §6a `web@1` (ChatGPT web, W-1) **Owner duyệt G5 08/10/2026** (PR #430) · Đợt Phase 6 `analysis@2` / `discovery@2` **Owner duyệt G5 11/10/2026** (T-197 #491, §10) · Đợt lượt 2 `analysis@3` / `discovery@3` **Owner duyệt G5 18/10/2026** (T-257 #661, §11) · Đợt lượt 3 `analysis@4` / `discovery@4` **Owner duyệt G5 23/10/2026** (T-277 #728, §12; PR code chép vào §1–§8)
 - **Nền:** spec `phase-5-ai.md` (G1 / G2 duyệt 07/10/2026) §3, §6.1, §6.2, §6.4, §8; ADR-0009 (ranh giới, mục 3 validator, mục 6 pháp lý); danh mục KYC `packages/domain/src/kyc-catalog.ts`
 - **Dùng ở:** T-165 #406 (validator V3–V6 lấy **nguyên** các danh sách §6–§8), T-166 #407 (chữ prompt §2–§5 chép **nguyên văn** vào `packages/ai/src/prompts/<mode>.ts`)
 - **Đổi chữ prompt hoặc danh sách chặn sau khi duyệt** = tăng version (`analysis@2`…) + qua G5 lần nữa. Lỗi chính tả trong code so với file này là lỗi, không phải phiên bản mới.
@@ -218,7 +218,7 @@ Tin nhắn này có hai phần. Phần HƯỚNG DẪN là chỉ dẫn cho toàn 
 
 ## 7. Cách so khớp chung cho V3–V6
 
-0. **Chuẩn hóa nền** (Owner 11/10/2026, §10.2; thứ tự và tập ký tự Owner 18/10/2026, §11.2): bỏ ký tự vô hình theo **tập của K20** (`\p{Cf}` như U+200B, 200C, 200D, 2060, 00AD, FEFF; mọi `\p{Default_Ignorable_Code_Point}` như U+3164, U+034F, bộ chọn biến thể; U+2800), gộp mọi khoảng trắng Unicode (kể cả NBSP, U+0085) thành một dấu cách, cắt hai đầu, **rồi** NFKC (gom `％`, `﹪` về `%`, chữ số / chữ cái toàn độ rộng về ASCII; dấu tổ hợp viết rời ghép lại vào chữ) → thay `-` và `_` bằng dấu cách. Gọi là **bản gốc** (giữ hoa thường). Mục trong danh sách cũng chuẩn hóa như vậy (vd. "dai-ichi" khớp "dai ichi").
+0. **Chuẩn hóa nền** (Owner 11/10/2026, §10.2; thứ tự và tập ký tự Owner 18/10/2026, §11.2): bỏ ký tự vô hình theo **tập của K20** (`\p{Cf}` như U+200B, 200C, 200D, 2060, 00AD, FEFF; mọi `\p{Default_Ignorable_Code_Point}` như U+3164, U+034F, bộ chọn biến thể; U+2800; ký tự điều khiển C0 / C1 không phải khoảng trắng — DR6-111, Owner 21/10/2026), gộp mọi khoảng trắng Unicode (kể cả NBSP, U+0085) thành một dấu cách, cắt hai đầu, **rồi** NFKC (gom `％`, `﹪` về `%`, chữ số / chữ cái toàn độ rộng về ASCII; dấu tổ hợp viết rời ghép lại vào chữ) → thay `-` và `_` bằng dấu cách. Gọi là **bản gốc** (giữ hoa thường). Mục trong danh sách cũng chuẩn hóa như vậy (vd. "dai-ichi" khớp "dai ichi").
 1. Từ bản gốc: chữ thường → thay mọi chuỗi khoảng trắng bằng một dấu cách. Gọi là **bản có dấu**.
 2. **Bản bỏ dấu** (Owner 18/10/2026, §11.3): mục "Bỏ dấu: có" khớp khi **mỗi chữ** (âm tiết) của mục trong bản có dấu được viết **đúng như mục**, hoặc viết **không dấu** (không dấu thanh, không dấu phụ, `đ` viết `d`). Trong một cụm, các chữ có thể lẫn hai cách ("Xác suat", "bảo hiem tron doi"). Chữ có dấu **khác** mục thì không khớp: "nghỉ", "nghĩ" không phải "nghị"; "nông" không phải "nóng". Mẫu `regex` "cả bản bỏ dấu" theo cùng luật: mỗi chữ trong mẫu (ngoài lớp ký tự `[…]`) cũng được viết không dấu.
 3. Mục "Bỏ dấu: không": chỉ khớp chữ viết đúng như mục. Dùng cho mục mà dạng không dấu của nó là chữ thường có thật, vd. "do tin cậy" (vì tin cậy) trùng dạng không dấu của "độ tin cậy".
@@ -713,3 +713,147 @@ Ngoài bảng:
 - [x] `detail` V1 nêu dạng đúng (§11.6)
 - [x] Ca kiểm C55–C72 và các ca ngoài bảng (§11.7)
 - [x] REJECTED lưu output lớn: ghi `review-notes.md`, không làm ở đây (§11.8)
+
+## 12. Đợt sửa G5 Phase 6 lượt 3 (T-277 #728) — Owner duyệt 23/10/2026
+
+**Trạng thái:** đề xuất và **Owner duyệt G5 23/10/2026** ("duyệt hết": bước 0 hướng C, "luật" hướng b2, `@4`, ba file thêm cho PR code). Theo Q4 (a) (Owner 21/10/2026), PR docs này đi trước, PR code đi sau. PR code chép các thay đổi vào §2, §3 (version), §6a, §7, §8.4, §8.5 và spec `phase-5-ai.md` §3.1 mục 3, §6.4. Mục này giữ lý do và số đo. Riêng §7 bước 0 có thêm nhóm ký tự điều khiển ngay ở PR này: chữ theo code đã merge, không đổi luật (§12.6).
+
+**Nền:** deep review Phase 1–6 lượt 3 (`docs/reviews/2026-10-21-deep-review-phase-1-6-luot-3-tong-hop.md` §6.6, §8.2 L3-I, §9 Q4): DR6-122, DR6-123, DR6-124. Báo cáo gốc: CL3-C3, CL3-C4, CL3-C5 (`docs/reviews/raw/2026-10-21/claude/C.md`), CX3-C1 (`docs/reviews/raw/2026-10-21/codex/C.md`). Owner 21/10/2026 đồng ý Q4 (a): sửa cả ba trong một đợt G5. Có hai chỗ đề xuất khác chữ Q4, vì số đo cho thấy chữ đó hụt (§12.2, §12.5). Hướng đúng chữ Q4 ghi kèm để Owner chọn; Owner 23/10 chọn hai hướng đề xuất (C, b2).
+
+**Đã thử trước khi đề xuất** (bản chép `packages/ai` ngoài repo, chưa phải code):
+
+- **921** test hiện có của `packages/ai`, gồm C1–C72 và test đọc bảng §8: xanh với đề xuất. Hướng B của §12.2 làm đỏ 1 test (review #420).
+- **59** chuỗi kiểm cho DR6-122, DR6-124 và **12** ca dán ChatGPT web cho DR6-123: kết quả ghi ở từng mục.
+- **1 085** chuỗi `text` thật của eval 10/10 và 11/10, mỗi chuỗi ở đúng khối của nó: 0 chuỗi bị chặn, trước và sau, ở mọi hướng.
+- **2 636** chuỗi trong code (`vi.ts` 2 305, `schema.ts` 64, seed 267): không chuỗi nào đổi kết quả. 6 chuỗi bị chặn như nhau trước và sau; đều là nhãn hay chú thích như "Tỉ lệ chốt", "Tử vi / huyền học", không phải output AI.
+- **118 744** đoạn chữ của `docs/**/*.md`: 7 đoạn đổi kết quả. Cả 7 ở bản tổng hợp / báo cáo gốc lượt 3, chỗ trích chính các câu của DR6-122, DR6-124.
+
+### 12.1 Version
+
+| Prompt | Đổi | Version mới |
+|---|---|---|
+| analysis | cách so khớp (§12.2, §12.4), danh sách chặn (§12.5: mục "luật <Tên>" của §8.4); **chữ prompt không đổi** | `analysis@4` |
+| discovery | như analysis | `discovery@4` |
+| extraction | chữ không đổi, không qua V3–V6 | giữ `extraction@1` |
+| tin nhắn ChatGPT web | chữ bọc không đổi; dòng dán theo bước 0 mới (§12.2) và cách tách dòng mới (§12.3) | giữ `web@1` → lưu `analysis@4+web@1` |
+
+- Đầu file ghi: đổi danh sách chặn = tăng version. §12.5 đổi một mục của §8.4, nên `@4` là mặc định, như §11.1. Giữ `@3` nghĩa là Owner miễn luật đầu file cho đợt này: ít file phải đổi hơn, nhưng phân tích lưu trước và sau đợt mang cùng version mà luật kiểm khác nhau.
+- Hệ quả của `@4`, như #698: test app và e2e đang ghim `@3` đổi theo; mốc hash seed (`seed.test.ts`) đổi; seed lấy version từ `PROMPT_VERSIONS` nên tự theo. Phân tích đã lưu với `@3` vẫn hiện như đã ghi; `db` chỉ kiểm dạng `<mode>@<n>`. Eval AI thật ở G7 (NT-EV-01) chạy với `@4`.
+- **File được phép của PR code** (Issue #728) thêm ba file, vì chúng ghi version hay chép chữ của file này:
+  - `docs/design/phase-5-prompts.md`: chép §12 vào §2, §3, §6a, §7, §8.4, §8.5; đổi trạng thái §12;
+  - `docs/README.md`: dòng ghi version prompt;
+  - `docs/user-guide/11-thuat-ngu.md`: dòng Prompt, ví dụ `analysis@3`.
+
+### 12.2 Bước 0: dấu tổ hợp lạc (DR6-122)
+
+**Lỗi hiện tại:** #698 bỏ "bản bỏ dấu của cả câu" (§11.3). Bản đó cũng là chỗ duy nhất bỏ được một dấu tổ hợp không thuộc chữ nào. Nay dấu như vậy làm cụm không khớp, nên câu lọt V3–V6. Bản trước #698 (`4217ed4`) chặn cả bốn câu đầu (CL3-C3):
+
+- "KH có xác" + U+0301 + " suất đồng ý cao": dấu sắc thừa trên "c" ("xáć").
+- "KH có xác " + U+0301 + "suất đồng ý cao": dấu đứng sau dấu cách.
+- "KH có xác" + U+00B4 + "suất đồng ý cao", "KH có xác" + U+00A8 + "suất đồng ý cao": NFKC viết `´`, `¨` thành dấu cách + dấu.
+- Cùng loại, cũng lọt hôm nay: "KH có thể chốt" + U+0301 + " được", "KH dễ " + U+0301 + "chốt", "Đề xuất Bảo" + U+00B4 + "Việt", "KH tuổi" + U+00B4 + "Tý" ở `needs`, "Theo Điều" + U+00B4 + "35", "Theo Luật " + U+0301 + "Kinh doanh bảo hiểm".
+
+§11.3 đã ghi phần "Mất": chữ sai dấu, chữ giữ `đ` bỏ dấu thanh, hai dấu thanh chồng nhau. Dạng này chưa có trong đó. Eval thật không có câu nào như vậy: chỉ gặp ở output suy biến hay câu dán.
+
+**Ba hướng**, đều đã đo trên bản chép:
+
+| Hướng | Luật | "xáć suất" | Dấu sau dấu cách, `´`, `¨` | "chốt" + U+0301 + " được" | 921 test hiện có |
+|---|---|---|---|---|---|
+| A (chữ Q4 21/10) | Sau NFKC, bỏ dấu tổ hợp không đứng sau chữ cái | lọt | chặn | lọt | xanh |
+| B | Ở dạng tách dấu (NFKD), bỏ dấu tổ hợp không đứng sau nguyên âm, rồi ghép lại (NFC) | chặn | chặn | chặn | đỏ 1 |
+| **C (đề xuất)** | Như B, nhưng dấu đó **đọc như một dấu cách**, rồi gộp lại khoảng trắng | chặn | chặn | chặn | xanh |
+
+- A không đạt chính ca kiểm của Issue: NFKC ghép "c" + U+0301 thành chữ cái "ć" (U+0107), nên không còn dấu tổ hợp nào để bỏ.
+- B làm "Ý x" + U+0301 + "xác suất" hết bị chặn: bỏ dấu thì "x" dính vào "xác". Ca này có test từ review #420 (dấu đứng một mình là ranh giới từ).
+- C giữ đúng cách đó: dấu lạc vẫn là ranh giới từ. Tiếng Việt viết đúng không có dấu trên phụ âm hay chữ số, nên dấu lạc chỉ đến từ gõ hay chép hỏng. Dấu gõ sau phụ âm cuối cũng không còn làm chữ thành chữ khác: "KH có xac" + U+0301 + " suat cao" đọc là "xac suat", vẫn V3.
+
+**Đề xuất — §7 bước 0 thêm một bước sau NFKC:**
+
+> … **rồi** NFKC (…); **dấu tổ hợp lạc** đọc như một dấu cách: xét ở dạng tách dấu, đó là mọi dấu tổ hợp không đứng sau nguyên âm (a, e, i, o, u, y, hoa hay thường, kể cả nguyên âm đã mang dấu khác), vd. dấu đứng sau phụ âm, chữ số, dấu cách, dấu câu hay ở đầu chuỗi; rồi gộp lại khoảng trắng và cắt hai đầu → thay `-` và `_` bằng dấu cách. …
+
+- Code: `cleanText` = `normalizeText` → NFKD → thay dấu lạc bằng dấu cách → NFC → gộp khoảng trắng, cắt hai đầu. Không có dấu lạc thì kết quả đúng bằng NFKC như nay: mọi kho chữ ở đầu mục không đổi.
+- Áp cho bản gốc, bản có dấu của V3–V6 và cho dòng dán ChatGPT web (§6a), như bước 0 hiện nay. Không áp cho V1 (V1 dùng `normalizeText`, §11.5); chữ lưu không đổi.
+- `detail` vẫn một dấu cách giữa hai phần: "Điều 35", "Luật K".
+- **Mất** (thêm vào phần "Mất" của §11.3): dấu lạc **giữa một chữ**, sau phụ âm. "KH là khách n" + U+0301 + "óng" đọc thành "khách n óng", không khớp "khách nóng". Hôm nay câu này cũng lọt. B bắt được ca này nhưng làm hỏng ca #420.
+
+### 12.3 Tin nhắn của app: tách dòng (DR6-123)
+
+**Lỗi hiện tại:** §6a so "mỗi dòng" của câu dán, nhưng `web.ts` chỉ tách dòng ở CR / LF. Có thể dấu xuống dòng của tin nhắn đã thành U+0085, U+2028 hay U+2029 khi qua một ứng dụng trung gian. Khi đó tin nhắn của app dán lại bị đọc thành một dòng dài, không ai nhận ra dòng mốc. Lần 1 tính là một lần thử; lần 2 dán lại message thử lại thì lưu dòng REJECTED. CX3-C1 tái hiện được qua giao diện trên Edge. Ghi chú KYC (`normalizeNote`, K25) đã tách dòng ở cả ba ký tự này.
+
+**Đề xuất:** một dòng của câu dán kết thúc ở CR LF, CR, LF, U+0085, U+2028 hoặc U+2029, như ghi chú KYC. §6a ghi: "mỗi dòng (tách ở CR, LF, U+0085, U+2028, U+2029) của câu dán…".
+
+- Đã thử: tin nhắn `web@1` ở lần 1 và message thử lại của phiên ở lần 2, mỗi cái với LF, CRLF, U+0085, U+2028, U+2029 thay mọi dấu xuống dòng. Cả 10 ca ra `OWN_MESSAGE`; hôm nay 6 / 10 lọt. Câu trả lời nhắc dòng mốc ở **giữa** một `text` vẫn là câu trả lời.
+- **Chấp nhận:** nếu một chuỗi JSON của câu trả lời có U+2028 ngay trước và ngay sau dòng mốc, dòng mốc thành một dòng riêng. Câu dán đó bị coi là tin nhắn của app: báo tại khung, không tính lần thử. Chỉ app viết dòng mốc.
+
+### 12.4 Chữ có dạng không dấu trùng một chữ khác (DR6-124 a)
+
+**Lỗi hiện tại:** §7 mục 2 cho mỗi chữ của mục "Bỏ dấu: có" viết đúng như mục **hoặc** viết không dấu, lẫn trong một cụm. Có chữ mà dạng không dấu cũng là một chữ viết đúng khác. Câu viết đúng chính tả có chữ đó, đứng cạnh các chữ còn lại của mục, bị coi là bản không dấu của mục:
+
+| Câu thường bị chặn | Mục | Chữ |
+|---|---|---|
+| "KH là khách **am** hiểu tài chính", "Nhóm khách **am** tường thị trường chứng khoán" | khách ấm (V3) | "ấm" → "am" |
+| "KH là khách **lanh** lợi, quyết nhanh" | khách lạnh (V3) | "lạnh" → "lanh" |
+| "Hỏi KH về định hướng **noi** theo của gia đình" | hướng nội (V5) | "nội" → "noi" |
+| "KH làm **IT** khả năng tăng thu nhập cao" | ít khả năng (V3) | "ít" → "it" |
+
+**Đề xuất:** §7 mục 2 thêm một danh sách **đóng**: **"ấm", "lạnh", "nội", "ít"**. Chữ trong danh sách chỉ khớp dạng không dấu khi **mọi** chữ của cụm cũng viết không dấu.
+
+- Vẫn chặn: "KH la khach am", "KH la khach lanh", "KH huong noi" ở `needs` (cả cụm không dấu); "KH là khach ấm", "KH có ít kha nang", "KH huong nội" (C67) (chữ trong danh sách viết đúng dấu).
+- Hết chặn: bốn câu ở bảng; "KH là khách am", "KH thiên về hướng noi" (cụm lẫn, chữ trong danh sách viết không dấu). "Phòng IT khả năng cao sẽ đổi" chỉ còn bị chặn vì "khả năng cao".
+- **Vì sao danh sách đóng**, không phải "mọi chữ có dạng không dấu là một chữ khác": nhiều chữ khác cũng vậy ("nghị" → "nghi", "bảo" → "bao", "số" → "so"…). Đưa hết vào thì mất phần đã duyệt 18/10: C68 "Nghi định 46 về thuế" chỉ bị V6 chặn nhờ "nghi" viết không dấu trong một cụm lẫn. Danh sách chỉ có chữ đã gặp trong câu thường (bảng trên). Thêm chữ = qua G5.
+- Không mẫu `regex` nào của §8 có chữ trong danh sách.
+- Code: `phrase` của `text-match.ts`. Mục có chữ trong danh sách khớp khi mỗi chữ viết đúng hay không dấu, trừ chữ trong danh sách phải viết đúng; **hoặc** khi cả cụm viết không dấu.
+
+### 12.5 V6 "luật <Tên>": "định", "giới" (DR6-124 b)
+
+**Lỗi hiện tại:** "KH chi tiêu theo định luật Pareto", "KH tin vào định luật Murphy", "Định luật Pareto đúng với chi tiêu của KH", "KH giữ giới luật Phật giáo" bị V6 chặn, vì "luật" chỉ được miễn sau "pháp", "kỷ", "kỉ", "quy", "qui".
+
+| Hướng | Thêm vào danh sách miễn | "định luật Pareto", "giới luật Phật giáo" | "Theo quy định Luật Kinh doanh bảo hiểm" | "Cần xác định Luật Đất đai có áp dụng không" |
+|---|---|---|---|---|
+| b1 (chữ Q4 21/10) | "định", "giới" | đạt | **lọt** | lọt |
+| **b2 (đề xuất)** | "giới"; "định" **trừ** khi chính "định" đứng sau "quy" / "qui" | đạt | V6 | lọt |
+
+- "theo quy định Luật …" là cách dẫn văn bản luật hay gặp nhất. Với b1, câu này lọt ở mọi kiểu viết đã thử: "quy định Luật …", "quy định luật Đất đai", "qui định Luật Đất đai", "QUY ĐỊNH LUẬT Đất đai". b2 vẫn chặn cả bốn.
+- b2 chỉ để lọt "Luật <Tên>" sau "định" của từ ghép khác ("xác định", "chỉ định"…): hiếm, ghi vào "Mất".
+- "Theo Luật Kinh doanh bảo hiểm", "Theo đạo luật Doanh nghiệp" vẫn V6 ở cả hai hướng; "KH tin vào quy luật Pareto" vẫn đạt.
+
+Mục "luật" của §8.4 sau khi sửa; PR code chép nguyên chữ dưới (so với hiện nay: thêm "giới", "định" và các ví dụ cuối):
+
+> "luật" ở **mọi kiểu hoa / thường**, có ranh giới từ trước, không đứng sau từ "pháp", "kỷ", "kỉ", "quy", "qui", "giới", hay "định" mà trước nó không phải "quy" / "qui" (mọi kiểu chữ) + khoảng trắng; theo sau là khoảng trắng (có thể không có) + một từ mở đầu bằng chữ hoa (`\p{Lu}`) mà **không** phải "KH", "RE" hay "sư" (mọi kiểu chữ). Chạy trên **bản gốc**. Vd. khớp "Luật Kinh doanh bảo hiểm", "Luật BHXH", "LuẬt Đất đai", "Luật" + U+200B + "BHXH", "quy định Luật Kinh doanh bảo hiểm"; không khớp "Luật sư", "LUẬT SƯ", "pháp luật Việt Nam", "pHáp luật Việt Nam", "kỷ luật KH", "quy luật Thị trường", "kỉ luật Thép", "qui luật Thị trường", "định luật Pareto", "giới luật Phật giáo"
+
+### 12.6 §7 bước 0: ký tự điều khiển (ghi chú review #738)
+
+Từ 21/10, `normalizeText` bỏ cả ký tự điều khiển C0 / C1 không phải khoảng trắng (DR6-111, PR #738). Owner 21/10/2026 (Q2 (a) lượt 3) chốt V3–V6 của G5 theo luật đó. Chữ §7 bước 0 liệt kê tập của K20 nhưng thiếu nhóm này (ghi chú sổ của review #738). PR này thêm nhóm đó vào §7 bước 0 cho khớp code: không đổi luật, không đổi version. §11.2 giữ nguyên, làm bản ghi đề xuất 18/10.
+
+### 12.7 Ca kiểm mới (PR code chép vào §8.5)
+
+| # | Chuỗi trong output | Kết quả |
+|---|---|---|
+| C73 | "KH có xác" + U+0301 + " suất đồng ý cao" · "KH có xá" + U+0107 + " suất đồng ý cao" · "KH có xác " + U+0301 + "suất đồng ý cao" · "KH có xác" + U+00B4 + "suất đồng ý cao" · "KH có xác" + U+00A8 + "suất đồng ý cao" | V3 |
+| C74 | "KH dễ " + U+0301 + "chốt" · "Đề xuất Bảo" + U+00B4 + "Việt" · "KH tuổi" + U+00B4 + "Tý" ở `needs` · "Theo Điều" + U+00B4 + "35" · "Theo Luật " + U+0301 + "Kinh doanh bảo hiểm" | V3 · V4 · V5 · V6 · V6 |
+| C75 | "KH có thể chốt" + U+0301 + " được" · "KH có xac" + U+0301 + " suat cao" · "Ý x" + U+0301 + "xác suất" | V3 |
+| C76 | "KH là khách am hiểu tài chính" · "Nhóm khách am tường thị trường chứng khoán" · "KH là khách lanh lợi, quyết nhanh" · "Hỏi KH về định hướng noi theo của gia đình" · "KH làm IT khả năng tăng thu nhập cao" | đạt |
+| C77 | "KH la khach am" · "KH la khach lanh" · "KH huong noi" ở `needs` · "KH là khach ấm" · "KH có ít kha nang" | V3 · V3 · V5 · V3 · V3 |
+| C78 | "KH chi tiêu theo định luật Pareto" · "Định luật Pareto đúng với chi tiêu của KH" · "KH giữ giới luật Phật giáo" · "KH giữ GIỚI LUẬT Phật giáo" | đạt |
+| C79 | "Theo quy định Luật Kinh doanh bảo hiểm" · "Theo qui định Luật Đất đai" · "Theo đạo luật Doanh nghiệp" | V6 |
+
+Ngoài bảng:
+
+- **Tin nhắn ChatGPT web:** tin nhắn `web@1` có U+0085, U+2028 hay U+2029 thay mọi dấu xuống dòng → `OWN_MESSAGE` ở lần 1. Ở lần 2, message thử lại của phiên viết như vậy → `OWN_MESSAGE`, phiên còn mở, không có `row`. Câu trả lời có "=== HƯỚNG DẪN ===" ở giữa một `text` vẫn là câu trả lời.
+- **Kho chữ:** 1 085 chuỗi eval thật và mọi chuỗi của `vi.ts` ra như trước.
+
+### 12.8 Không làm trong đợt này
+
+- Chữ tương hình (Cyrillic, Greek), như §10.10, §11.8.
+- Dấu lạc giữa một chữ sau phụ âm (§12.2); chữ sai dấu, chữ giữ `đ` bỏ dấu thanh, hai dấu chồng nhau (§11.3).
+- Chữ có dạng không dấu trùng một chữ khác mà chưa có trong danh sách §12.4 (vd. "nghi" của C68): thêm khi gặp câu thường, qua G5.
+- "Luật <Tên>" sau "định" của từ ghép khác "quy định" (§12.5).
+
+### 12.9 Owner duyệt
+
+- [x] Version `analysis@4`, `discovery@4`; `extraction@1`, `web@1` giữ; thêm `docs/design/phase-5-prompts.md`, `docs/README.md`, `docs/user-guide/11-thuat-ngu.md` vào file được phép của PR code (§12.1)
+- [x] Bước 0 hướng C: dấu tổ hợp lạc đọc như một dấu cách (§12.2)
+- [x] Tin nhắn của app: tách dòng ở CR, LF, U+0085, U+2028, U+2029 (§12.3)
+- [x] Danh sách đóng "ấm", "lạnh", "nội", "ít": chỉ khớp không dấu khi cả cụm không dấu (§12.4)
+- [x] "luật <Tên>" hướng b2: miễn "giới", và "định" trừ khi "định" đứng sau "quy" / "qui"; chữ mới của mục §8.4 (§12.5)
+- [x] Ca kiểm C73–C79 và các ca ngoài bảng (§12.7)
