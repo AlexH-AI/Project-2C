@@ -81,6 +81,30 @@ export function lowestContrast(area: Locator): Promise<number> {
   });
 }
 
+/** Where the right edge of `box` is in the window. */
+export const right = (box: Locator) => box.evaluate((node) => node.getBoundingClientRect().right);
+
+/** `box` scrolls sideways: something of it is past its edge, text included. */
+export const scrolls = (box: Locator) =>
+  box.evaluate((node) => node.scrollWidth > node.clientWidth);
+
+/** The page scrolls sideways. */
+export const sideways = (page: Page) =>
+  page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+
+/**
+ * The link to the seeded customer `name` in the table of Khách hàng, "Hiện thêm" clicked until it
+ * shows.
+ */
+export async function seededCustomer(page: Page, name: string): Promise<Locator> {
+  await page.goto('/#/customers');
+  await page.getByRole('radio', { name: 'Bảng' }).click();
+  const link = page.getByRole('link', { name, exact: true });
+  const more = page.getByRole('button', { name: /^Hiện thêm/ });
+  while (!(await link.isVisible())) await more.click();
+  return link;
+}
+
 /** Collects console errors and uncaught page errors; the returned array fills as they happen. */
 export function trackConsoleErrors(page: Page): string[] {
   const errors: string[] = [];

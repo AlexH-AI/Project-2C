@@ -14,4 +14,4 @@ paths:
 - DB trong test: `setup()` ở `packages/db/src/test-support.ts` (DB trong bộ nhớ, đồng hồ ghim, sẵn một team + RE + TL) và `codeOf()` để bắt mã `DbError`; không tự dựng schema.
 - `packages/domain` giữ coverage ≥ 95% (`pnpm test:coverage` nằm trong `pnpm verify`).
 - E2E: Playwright chạy trên bản build web (`pnpm e2e`, Microsoft Edge có sẵn), dữ liệu từ seed giả lập. Chọn phần tử theo role / nhãn i18n, không theo class CSS.
-- `tools/*.mjs`: logic thuần tách ra file `*-core.mjs` có test; phần I/O (`gh`, `git`) không unit test.
+- `tools/*.mjs`: logic thuần tách ra file `*-core.mjs` có test; phần I/O (`gh`, `git`) không bắt buộc unit test. Khi cần (phân trang REST, cách đọc kết quả `gh`…) thì giả `run` của `tools/session-io.mjs` bằng `vi.mock`, như `tools/pr-status.test.mjs`.

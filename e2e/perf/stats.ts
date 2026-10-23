@@ -128,6 +128,13 @@ function signed(value: number, unit: Unit): string {
   return `${value >= 0 ? '+' : ''}${format(value, unit)}`;
 }
 
+/** The change in percent of the base median; none of a base median rounded to 0. */
+function ratio(delta: number, base: number): string {
+  if (base === 0) return '—';
+  const percent = Math.round((delta / base) * 100);
+  return `${percent >= 0 ? '+' : '−'}${Math.abs(percent)}%`;
+}
+
 /** The run as a Markdown table; against `base`, with the base median and the change. */
 export function markdownTable(run: PerfRun, base?: PerfRun): string {
   const head = ['Thao tác', 'Lần', 'Trung vị', 'Min', 'Max', 'Ngưỡng'];
@@ -150,12 +157,10 @@ export function markdownTable(run: PerfRun, base?: PerfRun): string {
     if (change) {
       if (change.base === undefined || change.delta === undefined) cells.push('—', '—');
       else {
-        // No percent of a base median rounded to 0.
-        const percent = Math.round((change.delta / change.base) * 100);
-        const ratio = change.base === 0 ? '—' : `${percent >= 0 ? '+' : '−'}${Math.abs(percent)}%`;
         cells.push(
           format(change.base, op.unit),
-          `${signed(change.delta, op.unit)} (${ratio})` + (change.worse ? ' ⚠️' : ''),
+          `${signed(change.delta, op.unit)} (${ratio(change.delta, change.base)})` +
+            (change.worse ? ' ⚠️' : ''),
         );
       }
     }

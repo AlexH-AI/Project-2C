@@ -7,6 +7,7 @@ import {
   discoveryOutput,
   lowestContrast,
   panelOf,
+  seededCustomer,
   stubChatGptWeb,
   useOpenCode,
 } from './support';
@@ -151,13 +152,7 @@ test('the history of a seeded customer: latest first, a STALE one opened, F code
   page,
 }) => {
   // Seed 1 on 15/09/2026 gives this customer three Mock analyses: one CURRENT, two STALE before it.
-  const name = 'Phan Thanh Bình';
-  await page.goto('/#/customers');
-  await page.getByRole('radio', { name: 'Bảng' }).click();
-  const link = page.getByRole('link', { name, exact: true });
-  const more = page.getByRole('button', { name: /^Hiện thêm/ });
-  while (!(await link.isVisible())) await more.click();
-  await link.click();
+  await (await seededCustomer(page, 'Phan Thanh Bình')).click();
 
   const panel = panelOf(page);
   const rows = panel.getByRole('table', { name: 'Lịch sử phân tích' }).getByRole('row');

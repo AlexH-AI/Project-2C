@@ -10,12 +10,14 @@ export const IMG = join(GUIDE, 'img');
 const INLINE = /!?\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)/g;
 const REFERENCE = /^\s{0,3}\[[^\]]+\]:\s*<?(\S+?)>?(?:\s+"[^"]*")?\s*$/gm;
 const SRC = /<img\b[^>]*\bsrc="([^"]+)"/g;
+// A code span: a run of backticks, then text up to a run of the same length (CommonMark).
+const CODE_SPAN = /(?<!`)(`+)(?!`)[^\n]*?(?<!`)\1(?!`)/g;
 
 /** The targets a Markdown text points at, outside code. */
 export function linkTargets(markdown: string): string[] {
   const text = markdown
     .replace(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1[^\n]*$/gm, '')
-    .replace(/`[^`\n]*`/g, '');
+    .replace(CODE_SPAN, '');
   return [INLINE, REFERENCE, SRC].flatMap((pattern) =>
     [...text.matchAll(pattern)].map((match) => match[1] as string),
   );

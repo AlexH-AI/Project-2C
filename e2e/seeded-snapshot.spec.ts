@@ -1,11 +1,8 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { DEMO_ANCHOR } from './anchor';
 import { expect, test, type Page } from './fixtures';
 import { seedDuration, seedOnLoad } from './seeded-snapshot';
-
-// `seedDuration` reads a `performance` entry, which the page clock does not keep; the day the
-// pages open on changes nothing here.
-test.use({ machineClock: true });
 
 interface Backup {
   readonly format: string;
@@ -39,22 +36,38 @@ const contents = ({ format, schemaVersion, tables }: Backup) => ({
   ),
 });
 
-test('a page load opens the data seeded beforehand instead of seeding (DR-79)', async ({
-  page,
-}) => {
-  await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan');
-  expect(await seedDuration(page)).toBeUndefined();
+test.describe('on the machine clock', () => {
+  // `seedDuration` reads a `performance` entry, which the page clock does not keep.
+  test.use({ machineClock: true });
+
+  test('a page load opens the data seeded beforehand instead of seeding (DR-79)', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan');
+    expect(await seedDuration(page)).toBeUndefined();
+  });
 });
 
-test('the data seeded beforehand is exactly the data a page load seeds', async ({ browser }) => {
-  const ready = await browser.newPage();
-  const seeded = await browser.newPage();
+// Both pages on the page clock (fixtures.ts), so both ask for the file of the anchor day, whatever
+// the machine's time: the app fetches it by its day's name. One context holds both pages, as the
+// web build keeps its data in the memory of each page.
+test('the data seeded beforehand is exactly the data a page load seeds', async ({
+  context,
+  page,
+}) => {
+  const seeded = await context.newPage();
   await seedOnLoad(seeded);
+  // That file refused is what makes the page seed; the page clock keeps no entry for seedDuration.
+  const [day, month, year] = DEMO_ANCHOR.split('/');
+  const refused = seeded.waitForResponse(
+    (response) =>
+      response.url().endsWith(`/demo-${year}-${month}-${day}.sqlite`) && response.status() === 404,
+  );
 
-  const fromFile = contents(await exportBackup(ready));
+  const fromFile = contents(await exportBackup(page));
   const fromSeed = contents(await exportBackup(seeded));
-  expect(await seedDuration(seeded)).toBeGreaterThan(0);
+  await refused;
   expect(Object.keys(fromSeed.tables).length).toBeGreaterThan(5);
   expect(fromFile).toEqual(fromSeed);
 });

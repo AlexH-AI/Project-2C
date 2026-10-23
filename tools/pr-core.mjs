@@ -52,12 +52,13 @@ export const REVIEW_NOTES = 'docs/state/review-notes.md';
 export const isNotesOnly = (paths) => paths.length > 0 && paths.every((p) => p === REVIEW_NOTES);
 
 /**
- * The PR's file paths, whether all `changedFiles` were read, and docs-only / notes-only: never
- * when some were not, as a file not read may be code (DR6-57).
+ * The PR's file paths, a renamed file under its old path too (code renamed to docs/ is code),
+ * whether all `changedFiles` were read (one per file, renamed or not), and docs-only / notes-only:
+ * never when some were not, as a file not read may be code (DR6-57).
  */
 export function prFiles(pr) {
-  const paths = pr.files.map((f) => f.path);
-  const complete = paths.length === pr.changedFiles;
+  const paths = pr.files.flatMap((f) => (f.previousPath ? [f.path, f.previousPath] : [f.path]));
+  const complete = pr.files.length === pr.changedFiles;
   return {
     paths,
     complete,
@@ -123,7 +124,8 @@ export function mergeSteps(pr, { owner, mode }) {
 
 /**
  * Every reason merge-pr must not merge the PR; empty means it may.
- * `pr` is `gh pr view --json` output with `files` read in full (REST); `ctx` is { owner,
+ * `pr` is `gh pr view --json` output with `files` read in full (REST) as [{ path, previousPath }],
+ * previousPath null unless renamed; `ctx` is { owner,
  * mode: 'squash'|'merge', stacked: numbers of open PRs based on this branch, baseMerged: when
  * base is not main, testedBase: the SHA of the base CI tested (TESTED_BASE), null when unknown,
  * mainSince: the base's commits read since testedBase, as [{ sha, files }], mainTotal: how many
@@ -142,7 +144,7 @@ export function mergeBlockers(
   const { paths, complete, docsOnly, notesOnly } = prFiles(pr);
   if (!complete)
     blockers.push(
-      `Read ${paths.length} of the ${pr.changedFiles} files of the PR: check them by hand.`,
+      `Read ${pr.files.length} of the ${pr.changedFiles} files of the PR: check them by hand.`,
     );
   if (notesOnly) {
     // The review notes ledger alone needs no REVIEW (REVIEW_NOTES).
