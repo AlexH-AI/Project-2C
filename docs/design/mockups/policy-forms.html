@@ -134,7 +134,7 @@
         </section>
 
         <!-- 8d: edit issued FYP -->
-        <section class="specimen">
+        <section class="specimen" id="p8d">
           <p class="cap">8d · Sửa HĐ đã phát hành — FYP phát hành khác FYP nộp</p>
           <div class="dialog">
             <div class="dialog-head">
@@ -175,6 +175,60 @@
               <button class="btn btn-primary">Lưu</button>
             </div>
           </div>
+        </section>
+
+        <!-- 8d, a day moved to another month: the policy count line (G3 T-284) -->
+        <section class="specimen" id="p8d-month">
+          <p class="cap">8d · Sửa HĐ — dời ngày nộp sang tháng khác <span class="tag">T-284, duyệt 23/10/2026</span></p>
+          <div class="dialog">
+            <div class="dialog-head">
+              <div><h2>Sửa HĐ · Phạm Gia Long</h2><div class="sub"><span class="badge pol-issued">Đã phát hành</span> 18/09/2026</div></div>
+              <span class="x">×</span>
+            </div>
+            <div class="dialog-body">
+              <div class="fields-2">
+                <div class="field">
+                  <label>Ngày nộp</label>
+                  <div class="input focus">1/9</div>
+                  <div class="read"><b>Thứ Ba 01/09/2026</b></div>
+                </div>
+                <div class="field">
+                  <label>FYP nộp</label>
+                  <div class="input">400tr</div>
+                  <div class="read"><b>400.000.000 ₫</b></div>
+                </div>
+              </div>
+              <div class="fields-2">
+                <div class="field">
+                  <label>Ngày phát hành</label>
+                  <div class="input">18/09/2026</div>
+                  <div class="read"><b>Thứ Sáu 18/09/2026</b> · 17 ngày sau khi nộp</div>
+                </div>
+                <div class="field">
+                  <label>FYP phát hành</label>
+                  <div class="input">400tr</div>
+                  <div class="read"><b>400.000.000 ₫</b></div>
+                </div>
+              </div>
+              <dl class="kv">
+                <dt>Ảnh hưởng chỉ số</dt>
+                <dd>
+                  <div>FYP nộp tháng 08/2026 của RE Đỗ Khánh Linh giảm <b>400 tr</b></div>
+                  <div>FYP nộp tháng 09/2026 của RE Đỗ Khánh Linh tăng <b>400 tr</b></div>
+                  <div>tháng 08/2026: <b>−1</b> HĐ nộp · tháng 09/2026: <b>+1</b> HĐ nộp</div>
+                </dd>
+              </dl>
+            </div>
+            <div class="dialog-foot">
+              <button class="btn">Xóa HĐ…</button>
+              <span class="spacer"></span>
+              <button class="btn">Hủy</button>
+              <button class="btn btn-primary">Lưu</button>
+            </div>
+          </div>
+          <p class="help" style="margin: 6px 0 0">
+            HĐ đã lưu: nộp 20/08/2026, phát hành 18/09/2026, FYP 400 tr. Ngày nộp hay ngày phát hành sang tháng khác thì HĐ chuyển giữa hai tháng trong số "HĐ nộp" / "HĐ phát hành" → mỗi chỉ số đổi tháng có một dòng "tháng &lt;cũ&gt;: −1 HĐ nộp · tháng &lt;mới&gt;: +1 HĐ nộp" ("HĐ phát hành" với ngày phát hành), ngay sau các dòng FYP của chỉ số đó; tháng kèm năm như dòng FYP. Dời cả hai ngày: hai dòng số HĐ. Dời trong cùng tháng hay chỉ sửa FYP: không có dòng số HĐ (8d ở trên).
+          </p>
         </section>
       </div>
 

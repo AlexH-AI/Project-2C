@@ -69,6 +69,63 @@
       ol.q b {
         color: var(--text);
       }
+      /* T-284: the same controls before / after --border-control */
+      .ba {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 14px;
+      }
+      .ba-col {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .ba .surface {
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .ba .s0 {
+        background: var(--bg-0);
+      }
+      .ba .s1 {
+        background: var(--bg-1);
+      }
+      .ba .lbl {
+        font-size: var(--fs-xs);
+        color: var(--text-3);
+      }
+      .ba .in {
+        border: 1px solid var(--ctl);
+        border-radius: var(--radius-sm);
+        background: var(--bg-0);
+        padding: 6px 10px;
+        font-size: var(--fs-sm);
+        white-space: nowrap;
+      }
+      .ba .in.ph {
+        color: var(--text-3);
+      }
+      .ba .in.date {
+        width: 112px;
+        background: var(--bg-2);
+        border-color: var(--ctl-date);
+      }
+      .before {
+        --ctl: var(--border-strong);
+        --ctl-date: var(--border);
+      }
+      .after {
+        --ctl: var(--border-control);
+        --ctl-date: var(--border-control);
+      }
+      .before th.sort:not(.asc):not(.desc)::after {
+        color: var(--border-strong);
+      }
     </style>
   </head>
   <body>
@@ -150,6 +207,17 @@
           <a href="trash.html"><b>11 · Cài đặt → Thùng rác</b><span>Lọc theo loại, lý do chặn khôi phục, hộp khôi phục KH / cuộc hẹn Đã gặp, Xóa KH 5f trong app, câu khóa ghi khi thay dữ liệu (S-2), dọn sạch Thùng rác (11h–11j: nhắc từ 1 000 bản ghi, hộp xác nhận, kết quả)</span></a>
         </nav>
       </section>
+
+      <section class="card" id="t284">
+        <div class="card-head"><h2>Phase 6 · Đợt sửa trước v1.0 — quyết định G3 của Owner: bốn chỗ đổi hình thức (T-284 #773)</h2><span class="meta num">duyệt 23/10/2026 · PR #795 · cả 5 đề xuất</span></div>
+        <ol class="q">
+          <li><b>Token <code>--border-control</code> #687890</b> cho viền ô nhập và mũi tên sắp xếp chưa chọn: ≥ 3:1 trên mọi nền <code>--bg-0</code>…<code>--bg-3</code> (ô nhập, mũi tên trước đó chỉ 1,25–1,88). Giữ nguyên <code>--border</code>, <code>--border-strong</code>: khung, đường kẻ bảng, trục chart, viền đứt không cần 3:1. App chỉ có theme tối (ADR-0013), nên "cả hai theme" của T-284 / T-300 là theme tối. Số đo và hình: <a class="c-accent" href="#contrast">Tương phản viền ô nhập</a>. Code ở T-300 (#789).</li>
+          <li><b>Phạm vi T-300:</b> thêm hai ô nhập tự viết class ngoài <code>packages/ui</code>, mỗi file đổi một class viền: ô tìm của Thùng rác (<code>SettingsTrash.tsx</code>) và ô tin nhắn ChatGPT web (<code>KycWebSession.tsx</code>).</li>
+          <li><b>Hộp 8d — dòng số HĐ:</b> dời ngày nộp / phát hành sang tháng khác thì "Ảnh hưởng chỉ số" thêm một dòng số HĐ của chỉ số đó, ngay sau các dòng FYP của nó: <a class="c-accent" href="policy-forms.html#p8d-month">policy-forms.html · 8d dời tháng</a>. Code ở T-296 (#785).</li>
+          <li><b>Panel KYC Intelligence mờ — khối Thông tin tham khảo:</b> khung đổi sang viền liền <code>--border</code>, thẻ bên trong giữ viền đứt như mọi thẻ mờ (DR6-21), nên chỉ còn một lớp viền đứt: <a class="c-accent" href="ai.html#p2h">ai.html 2h</a>. Không chọn phương án giữ khung viền đứt, thẻ trong khung bỏ viền. Code ở T-297 (#786).</li>
+          <li><b>1a / 4a:</b> bỏ "DeepSeek V4 Pro" khỏi dòng help mẫu (Owner bỏ model này 09/10/2026; app sinh dòng help từ <code>AI_MODELS</code>). Xong ở PR này, không cần code.</li>
+        </ol>
+      </section>
       <section class="card">
         <div class="card-head"><h2>Nguyên tắc</h2></div>
         <ul style="margin: 0; padding-left: 18px; color: var(--text-2)">
@@ -162,7 +230,7 @@
       </section>
 
       <section class="card">
-        <div class="card-head"><h2>Tokens màu</h2><span class="meta">tỉ lệ tương phản WCAG trên nền --bg-1 / --bg-3 (AA chữ thường ≥ 4,5)</span></div>
+        <div class="card-head"><h2>Tokens màu</h2><span class="meta">tỉ lệ tương phản WCAG trên nền --bg-1 / --bg-3 (AA chữ thường ≥ 4,5; viền ô nhập, biểu tượng ≥ 3)</span></div>
         <table>
           <thead>
             <tr><th></th><th>Token</th><th>Giá trị</th><th>Dùng cho</th><th class="r">trên bg-1</th><th class="r">trên bg-3</th></tr>
@@ -172,6 +240,9 @@
             <tr><td><span class="sw" style="background: var(--bg-1)"></span></td><td>--bg-1</td><td>#111822</td><td>Panel, sidebar</td><td class="r muted">—</td><td class="r muted">—</td></tr>
             <tr><td><span class="sw" style="background: var(--bg-2)"></span></td><td>--bg-2</td><td>#18212D</td><td>Thẻ, khối nổi</td><td class="r muted">—</td><td class="r muted">—</td></tr>
             <tr><td><span class="sw" style="background: var(--bg-3)"></span></td><td>--bg-3</td><td>#212C3A</td><td>Input, hover</td><td class="r muted">—</td><td class="r muted">—</td></tr>
+            <tr><td><span class="sw" style="background: var(--border)"></span></td><td>--border</td><td>#263241</td><td>Viền thẻ, đường kẻ bảng (trang trí, không cần 3:1)</td><td class="r muted">1,37</td><td class="r muted">1,09</td></tr>
+            <tr><td><span class="sw" style="background: var(--border-strong)"></span></td><td>--border-strong</td><td>#34425A</td><td>Khung, viền đứt, trục chart (trang trí, không cần 3:1)</td><td class="r muted">1,76</td><td class="r muted">1,39</td></tr>
+            <tr><td><span class="sw" style="background: var(--border-control)"></span></td><td>--border-control</td><td>#687890</td><td>Viền ô nhập, mũi tên sắp xếp chưa chọn (≥ 3:1, WCAG 1.4.11) — <a class="c-accent" href="#contrast">T-284, duyệt 23/10/2026</a></td><td class="r">3,97</td><td class="r">3,15</td></tr>
             <tr><td><span class="sw" style="background: var(--text)"></span></td><td>--text</td><td>#E8EDF4</td><td>Chữ chính</td><td class="r">15,16</td><td class="r">12,01</td></tr>
             <tr><td><span class="sw" style="background: var(--text-2)"></span></td><td>--text-2</td><td>#AEB9C8</td><td>Chữ phụ</td><td class="r">8,98</td><td class="r">7,12</td></tr>
             <tr><td><span class="sw" style="background: var(--text-3)"></span></td><td>--text-3</td><td>#8C99AC</td><td>Nhãn, meta</td><td class="r">6,17</td><td class="r">4,89</td></tr>
@@ -187,6 +258,57 @@
             <tr><td><span class="sw" style="background: var(--warn)"></span></td><td>--warn</td><td>#F0A04B</td><td>Cảnh báo, cần chăm sóc KYC</td><td class="r">8,35</td><td class="r">6,62</td></tr>
           </tbody>
         </table>
+      </section>
+
+      <section class="card" id="contrast">
+        <div class="card-head"><h2>Tương phản viền ô nhập và mũi tên sắp xếp (T-284)</h2><span class="meta">WCAG 1.4.11: ≥ 3:1 với màu kề bên · app chỉ có theme tối (ADR-0013)</span></div>
+        <table>
+          <thead>
+            <tr><th>Thành phần</th><th>Trong app</th><th>Nền kề</th><th class="r">Trước</th><th class="r">Sau</th></tr>
+          </thead>
+          <tbody class="num">
+            <tr><td>Viền ô nhập</td><td><code>TextField</code>, <code>SelectField</code>: hộp thoại, Cài đặt → AI, chọn team / RE trên thanh trên cùng</td><td>ruột ô bg-0 · hộp thoại, thẻ bg-1</td><td class="r">--border-strong 1,88 · 1,76</td><td class="r">4,25 · 3,97</td></tr>
+            <tr><td>Viền ô ngày Tùy chọn</td><td><code>PeriodPicker</code></td><td>ruột ô bg-2 · màn bg-0</td><td class="r">--border 1,25 · 1,47</td><td class="r">3,61 · 4,25</td></tr>
+            <tr><td>Viền ô tìm, ô tin nhắn ChatGPT web</td><td><code>SettingsTrash.tsx</code>, <code>KycWebSession.tsx</code></td><td>ruột ô bg-0 · thẻ bg-1</td><td class="r">--border-strong 1,88 · 1,76</td><td class="r">4,25 · 3,97</td></tr>
+            <tr><td>Mũi tên sắp xếp chưa chọn ↕</td><td><code>DataTable</code></td><td>thẻ bg-1</td><td class="r">--border-strong 1,76</td><td class="r">3,97</td></tr>
+            <tr><td>Mũi tên đã chọn ↑ ↓</td><td><code>DataTable</code></td><td>thẻ bg-1</td><td class="r">--accent 8,94</td><td class="r">giữ</td></tr>
+          </tbody>
+        </table>
+        <p class="lead" style="font-size: var(--fs-sm)">
+          <code>--border-control</code> trên <code>--bg-0</code> / <code>-1</code> / <code>-2</code> / <code>-3</code>: 4,25 · 3,97 · 3,61 · 3,15 (thấp nhất: ruột bg-3 của <code>.input</code> trong mockup). Mockup dùng token mới ở <code>.input</code>, <code>.select</code>, <code>.search</code> và mũi tên <code>th.sort</code>. Ngoài phạm vi: nút, ô chọn, Segmented có chữ nên viền không bắt buộc 3:1; ô tick là checkbox gốc do trình duyệt vẽ.
+        </p>
+        <div class="ba">
+          <div class="ba-col before">
+            <b>Trước</b>
+            <div class="surface s1">
+              <span class="lbl">Hộp thoại, thẻ (bg-1)</span>
+              <div class="in">Đỗ Khánh Linh · Sao Mai ▾</div>
+              <div class="in ph">Tìm theo tên KH, nhân sự, team…</div>
+              <table>
+                <thead><tr><th class="sort">Khách hàng</th><th class="sort asc">Ngày</th><th class="sort">RE</th></tr></thead>
+              </table>
+            </div>
+            <div class="surface s0">
+              <span class="lbl">Màn, thanh trên cùng (bg-0) · ô ngày Tùy chọn</span>
+              <div class="row"><div class="in">Team Sao Mai ▾</div><div class="in date">01/09/2026</div><div class="in date ph">dd/mm/yyyy</div></div>
+            </div>
+          </div>
+          <div class="ba-col after">
+            <b>Sau · <code>--border-control</code></b>
+            <div class="surface s1">
+              <span class="lbl">Hộp thoại, thẻ (bg-1)</span>
+              <div class="in">Đỗ Khánh Linh · Sao Mai ▾</div>
+              <div class="in ph">Tìm theo tên KH, nhân sự, team…</div>
+              <table>
+                <thead><tr><th class="sort">Khách hàng</th><th class="sort asc">Ngày</th><th class="sort">RE</th></tr></thead>
+              </table>
+            </div>
+            <div class="surface s0">
+              <span class="lbl">Màn, thanh trên cùng (bg-0) · ô ngày Tùy chọn</span>
+              <div class="row"><div class="in">Team Sao Mai ▾</div><div class="in date">01/09/2026</div><div class="in date ph">dd/mm/yyyy</div></div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section class="card">
