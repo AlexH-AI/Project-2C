@@ -1,4 +1,9 @@
-import { stageOn, type CalendarDate, type CustomerStage, type StageTransition } from '@p2c/domain';
+import {
+  PIPELINE_STAGES,
+  type CalendarDate,
+  type CustomerStage,
+  type StageTransition,
+} from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
   changeStageManually,
@@ -15,7 +20,6 @@ import {
   updateCustomerProfile,
 } from './customers';
 import {
-  getAppointment,
   listAppointments,
   recordMeetingOutcome,
   restoreAppointment,
@@ -24,9 +28,9 @@ import {
 } from './appointments';
 import { exportBackup, importBackup } from './backup';
 import { getKycProfile, listKycVersions } from './kyc';
-import { getPolicy, submitPolicy } from './policies';
+import { listPolicies, submitPolicy } from './policies';
 import { createPerson, softDeletePerson, updatePerson } from './team';
-import { codeOf, d, errorOf, setup } from './test-support';
+import { byId, codeOf, d, errorOf, setup, snapshotStage } from './test-support';
 
 describe('customers', () => {
   it('creates a customer in an open stage with its first transition', async () => {
@@ -113,6 +117,29 @@ describe('customers', () => {
     );
     expect(db.export()).toEqual(before);
     expect(persist).not.toHaveBeenCalled();
+  });
+
+  // Review #640: the stage is checked once, before the row is written, with the codes as they were.
+  it('checks the stage of a new customer once, writing only its first transition', async () => {
+    const { db, re, persist } = await setup();
+    const base = { name: 'Lan', reId: re.id, date: d(1, 1) };
+    const before = db.export();
+    persist.mockClear();
+
+    for (const stage of ['ON_HOLD', 'LOST', 'N9'] as CustomerStage[]) {
+      const error = errorOf(() => createCustomer(db, { ...base, stage }));
+      expect([error?.code, error?.params]).toEqual(['INVALID_TRANSITION', { to: stage }]);
+    }
+    expect(db.export()).toEqual(before);
+    expect(persist).not.toHaveBeenCalled();
+
+    for (const stage of PIPELINE_STAGES) {
+      const customer = createCustomer(db, { ...base, stage });
+      expect(customer.stage).toBe(stage);
+      expect(listStageTransitions(db, customer.id).map((t) => [t.from, t.to, t.date])).toEqual([
+        [null, stage, d(1, 1)],
+      ]);
+    }
   });
 
   it('stores a full birth date or none, and lists customers in creation order', async () => {
@@ -205,12 +232,12 @@ describe('customers', () => {
         [cancelled.id, re.id],
       ]),
     );
-    expect(getAppointment(db, today.id)?.coordinatorIds).toEqual([tl.id]);
-    expect(getPolicy(db, policy.id)?.reId).toBe(re.id);
+    expect(byId(listAppointments(db), today.id)?.coordinatorIds).toEqual([tl.id]);
+    expect(byId(listPolicies(db), policy.id)?.reId).toBe(re.id);
     expect(previewHandover(db, customer.id, otherRe.id)).toBe(0);
     // The trash gives an appointment back as it was deleted (spec Phase 6 TR-3).
     restoreAppointment(db, deleted.id);
-    expect(getAppointment(db, deleted.id)?.reId).toBe(re.id);
+    expect(byId(listAppointments(db), deleted.id)?.reId).toBe(re.id);
     // Backup rule 5 holds: every live record is on a live RE.
     await expect(importBackup(exportBackup(db), { now: db.now })).resolves.toBeDefined();
   });
@@ -228,7 +255,7 @@ describe('customers', () => {
     });
 
     updateCustomerProfile(db, customer.id, { name: 'Lan Anh', birthDate: { year: 1985 } });
-    expect(getAppointment(db, booked.id)?.reId).toBe(otherRe.id);
+    expect(byId(listAppointments(db), booked.id)?.reId).toBe(otherRe.id);
     // Theirs already: nothing to hand over, the appointment booked for another RE included (R16).
     expect(previewHandover(db, customer.id, re.id)).toBe(0);
     expect(previewHandover(db, customer.id, otherRe.id)).toBe(0);
@@ -239,11 +266,11 @@ describe('customers', () => {
     expect(
       codeOf(() => updateCustomerProfile(db, customer.id, { reId: third.id, name: ' ' })),
     ).toBe('NAME_REQUIRED');
-    expect(getAppointment(db, booked.id)?.reId).toBe(otherRe.id);
+    expect(byId(listAppointments(db), booked.id)?.reId).toBe(otherRe.id);
 
     updateCustomerProfile(db, customer.id, { reId: otherRe.id });
     updateCustomerProfile(db, customer.id, { reId: re.id });
-    expect(getAppointment(db, booked.id)?.reId).toBe(re.id);
+    expect(byId(listAppointments(db), booked.id)?.reId).toBe(re.id);
     expect(codeOf(() => previewHandover(db, 'nobody', re.id))).toBe('CUSTOMER_NOT_FOUND');
   });
 
@@ -323,8 +350,9 @@ describe('customers', () => {
     );
   });
 
-  // D10: a transition dated before the customer's latest would make `stageOn` disagree with
-  // `customers.stage`, so it is refused; the same day is fine and counts in recording order.
+  // D10: a transition dated before the customer's latest would make the stage snapshot, which
+  // reads them by day, disagree with `customers.stage`, so it is refused; the same day is fine
+  // and counts in recording order.
   it('refuses a stage change dated before the latest transition, even before creation', async () => {
     const { db, re, persist } = await setup();
     const customer = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(10, 1) });
@@ -351,8 +379,8 @@ describe('customers', () => {
     );
   });
 
-  // F-11: `stageOn(today)` equals `customers.stage` only while no transition, the creation's
-  // included, is dated after today.
+  // F-11: the stage snapshot of today equals `customers.stage` only while no transition, the
+  // creation's included, is dated after today.
   it('refuses a creation or stage change dated after today, and takes today itself', async () => {
     const { db, re, persist } = await setup();
     const input = { name: 'Lan', reId: re.id, stage: 'N3', birthDate: { year: 1984 } } as const;
@@ -372,7 +400,7 @@ describe('customers', () => {
     expect(persist).not.toHaveBeenCalled();
 
     changeStageManually(db, customer.id, { to: 'N2', date: d(26, 9) });
-    expect(stageOn(listStageTransitions(db), customer.id, d(26, 9))).toBe('N2');
+    expect(snapshotStage(customer, listStageTransitions(db), d(26, 9))).toBe('N2');
   });
 
   // DR-42: a birth date has already happened too; a year alone is after today only from next year.
@@ -407,7 +435,7 @@ describe('customers', () => {
 
     const stage = getCustomer(db, customer.id)?.stage;
     expect(stage).toBe('N1');
-    expect(stageOn(listStageTransitions(db), customer.id, d(10, 1))).toBe(stage);
+    expect(snapshotStage(customer, listStageTransitions(db), d(10, 1))).toBe(stage);
   });
 
   it('hides a soft-deleted customer and its transitions until restored', async () => {

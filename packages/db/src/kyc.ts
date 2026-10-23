@@ -24,14 +24,15 @@ import {
   type KycVersion,
   fromIsoDate,
 } from '@p2c/domain';
-import { asc, desc, eq, max, sql } from 'drizzle-orm';
+import { asc, desc, eq, sql } from 'drizzle-orm';
 import {
   cleanNote,
-  cleanText,
+  lastSeq,
   liveCustomer,
   nextSeq,
   prepared,
   rowInsert,
+  storable,
   storedPastDate,
 } from './common';
 import type { Database } from './database';
@@ -198,17 +199,6 @@ export function resolveKycConflict(
     const after = resolveConflict(before, chosen.id);
     const version = save(db, customerId, before, after, command.date, command.material ?? false);
     return { fact: after.facts.find((fact) => fact.id === chosen.id)!, version };
-  });
-}
-
-/** The RE switches a version to material; there is no way to switch it off (ADR-0008 7). */
-export function markKycVersionMaterial(db: Database, versionId: string): KycVersionRecord {
-  return db.transaction(() => {
-    const row = db.orm.select().from(kycVersions).where(eq(kycVersions.id, versionId)).get();
-    if (!row) throw new DbError('KYC_VERSION_NOT_FOUND');
-    liveCustomer(db, row.customerId);
-    db.orm.update(kycVersions).set({ material: true }).where(eq(kycVersions.id, versionId)).run();
-    return toVersion({ ...row, material: true });
   });
 }
 
@@ -386,7 +376,7 @@ function requireField(field: string): KycField {
  * the trường cannot hold — a text one of invisible characters only among them (DR6-49).
  */
 export function normalizeKycValue(field: KycField, value: KycValue): KycValue {
-  if (typeof value === 'string') cleanText(value);
+  if (typeof value === 'string') storable(value);
   try {
     return normalizeDomainKycValue(field, value);
   } catch {
@@ -408,7 +398,7 @@ function save(
 ): KycVersionRecord | null {
   const at = db.now().toISOString();
   const statusBefore = new Map(before.facts.map((fact) => [fact.id, fact.status]));
-  let last = prepared(db, lastFactSeq).get({ customerId })?.seq;
+  let last = lastSeq(db, kycFacts, customerId);
   for (const fact of after.facts) {
     const status = statusBefore.get(fact.id);
     if (status === undefined) {
@@ -460,7 +450,7 @@ function insertNote(
   const row = {
     id: ulid(db.now(), db.random),
     customerId,
-    seq: nextSeq(prepared(db, lastNoteSeq).get({ customerId })?.seq),
+    seq: nextSeq(lastSeq(db, kycNotes, customerId)),
     text,
     createdDate: storedPastDate(db, date),
     source,
@@ -482,14 +472,6 @@ const latestVersion = (db: Database) =>
     .orderBy(desc(kycVersions.seq))
     .limit(1)
     .prepare();
-const lastSeq = (table: typeof kycNotes | typeof kycFacts) => (db: Database) =>
-  db.orm
-    .select({ seq: max(table.seq) })
-    .from(table)
-    .where(eq(table.customerId, byCustomer))
-    .prepare();
-const lastNoteSeq = lastSeq(kycNotes);
-const lastFactSeq = lastSeq(kycFacts);
 const notesOf = (db: Database) =>
   db.orm
     .select()

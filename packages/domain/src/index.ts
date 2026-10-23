@@ -68,7 +68,7 @@ export type { KycFactInput, KycNote, KycProfile, KycVersion } from './kyc';
 export type { KycFact, KycFactStatus, KycFieldType, KycValue } from './kyc-fact';
 export { evaluateKycGate } from './kyc-gate';
 export type { KycGateResult, KycSuggestedQuestions } from './kyc-gate';
-export { assertValidTransition, isRfTransition, stageOn } from './customer-lifecycle';
+export { assertValidTransition, isRfTransition } from './customer-lifecycle';
 export {
   closeRate,
   closeRatePercent,

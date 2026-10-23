@@ -13,8 +13,6 @@ import { PERSON_REFERENCES } from './schema';
 import {
   createPerson,
   createTeam,
-  getPerson,
-  getTeam,
   isPersonInUse,
   listPeople,
   listTeams,
@@ -27,7 +25,7 @@ import {
   softDeleteTeam,
   updatePerson,
 } from './team';
-import { d, setup as withStaff } from './test-support';
+import { byId, d, setup as withStaff } from './test-support';
 
 async function setup() {
   let clock = Date.UTC(2026, 8, 26, 8, 0, 0);
@@ -54,7 +52,7 @@ describe('teams', () => {
     const team = createTeam(db, { name: '  Sao Mai ' });
 
     expect(team).toEqual({ id: expect.stringMatching(/^[0-9A-Z]{26}$/), name: 'Sao Mai' });
-    expect(getTeam(db, team.id)).toEqual(team);
+    expect(byId(listTeams(db), team.id)).toEqual(team);
     expect(listTeams(db)).toEqual([team]);
   });
 
@@ -149,7 +147,7 @@ describe('teams', () => {
     const team = createTeam(db, { name: 'Sao Mai' });
 
     expect(renameTeam(db, team.id, 'Hừng Đông')).toEqual({ id: team.id, name: 'Hừng Đông' });
-    expect(getTeam(db, team.id)?.name).toBe('Hừng Đông');
+    expect(byId(listTeams(db), team.id)?.name).toBe('Hừng Đông');
   });
 
   it('reports an unknown team', async () => {
@@ -158,7 +156,7 @@ describe('teams', () => {
     expect(codeOf(() => renameTeam(db, 'nope', 'X'))).toBe('TEAM_NOT_FOUND');
     expect(codeOf(() => softDeleteTeam(db, 'nope'))).toBe('TEAM_NOT_FOUND');
     expect(codeOf(() => restoreTeam(db, 'nope'))).toBe('TEAM_NOT_FOUND');
-    expect(getTeam(db, 'nope')).toBeUndefined();
+    expect(byId(listTeams(db), 'nope')).toBeUndefined();
   });
 
   it('hides a soft-deleted team and brings it back on restore', async () => {
@@ -167,7 +165,7 @@ describe('teams', () => {
 
     softDeleteTeam(db, team.id);
     expect(listTeams(db)).toEqual([]);
-    expect(getTeam(db, team.id)).toBeUndefined();
+    expect(byId(listTeams(db), team.id)).toBeUndefined();
     expect(codeOf(() => renameTeam(db, team.id, 'X'))).toBe('TEAM_NOT_FOUND');
     // The name is free again while the team is deleted.
     const reused = createTeam(db, { name: 'Sao Mai' });
@@ -201,7 +199,7 @@ describe('people', () => {
 
     expect(re).toEqual({ id: expect.any(String), name: 'An', role: 'RE', teamId: team.id });
     expect(is.teamId).toBeNull();
-    expect(getPerson(db, re.id)).toEqual(re);
+    expect(byId(listPeople(db), re.id)).toEqual(re);
     expect(listPeople(db)).toEqual([re, is]);
   });
 
@@ -314,7 +312,7 @@ describe('people', () => {
 
     softDeletePerson(db, person.id);
     expect(listPeople(db)).toEqual([]);
-    expect(getPerson(db, person.id)).toBeUndefined();
+    expect(byId(listPeople(db), person.id)).toBeUndefined();
     expect(codeOf(() => updatePerson(db, person.id, { name: 'X' }))).toBe('PERSON_NOT_FOUND');
     expect(codeOf(() => softDeletePerson(db, person.id))).toBe('PERSON_NOT_FOUND');
 
@@ -364,7 +362,7 @@ describe('one TL per team (B1b)', () => {
     const binh = createPerson(db, { name: 'Bình', role: 'RE', teamId: binhMinh.id });
 
     expect(codeOf(() => updatePerson(db, an.id, { role: 'TL' }))).toBe('TEAM_HAS_LEAD');
-    expect(getPerson(db, an.id)?.role).toBe('RE');
+    expect(byId(listPeople(db), an.id)?.role).toBe('RE');
     expect(updatePerson(db, binh.id, { role: 'TL' }).role).toBe('TL');
   });
 
@@ -559,6 +557,6 @@ describe('personUsage: what keeps a person from deletion (mockup 9b, spec §4, T
       'PERSON_IN_USE',
     );
 
-    expect(getPerson(db, re.id)?.role).toBe('RE');
+    expect(byId(listPeople(db), re.id)?.role).toBe('RE');
   });
 });

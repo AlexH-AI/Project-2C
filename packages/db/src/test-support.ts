@@ -1,5 +1,15 @@
-/** Test helpers: a fresh in-memory database with a pinned clock, and DbError catchers. */
-import { calendarDate, type CalendarDate } from '@p2c/domain';
+/**
+ * Test helpers: a fresh in-memory database with a pinned clock, DbError catchers, and reads of what
+ * the commands wrote.
+ */
+import {
+  calendarDate,
+  stageSnapshot,
+  type CalendarDate,
+  type Customer,
+  type CustomerStage,
+  type StageTransition,
+} from '@p2c/domain';
 import { vi } from 'vitest';
 import { openDatabase } from './database';
 import { DbError } from './errors';
@@ -38,3 +48,20 @@ export function codeOf(fn: () => unknown): string | undefined {
 /** A day; the default year is the test clock's (26/09/2026), by which past records are dated. */
 export const d = (day: number, month: number, year = 2026): CalendarDate =>
   calendarDate(year, month, day);
+
+/** The record `id` among `rows`: a test reads a record back through the `list*` read of its kind. */
+export const byId = <T extends { readonly id: string }>(rows: readonly T[], id: string) =>
+  rows.find((row) => row.id === id);
+
+/**
+ * The stage the customer ends `date` in as the screens count it: `stageSnapshot` of domain, which
+ * reads the transitions by day, not by `seq`. Null before its first transition.
+ */
+export function snapshotStage(
+  customer: Customer,
+  transitions: readonly StageTransition[],
+  date: CalendarDate,
+): CustomerStage | null {
+  const counts = stageSnapshot([customer], transitions, date, { kind: 'all' }, []);
+  return (Object.keys(counts) as CustomerStage[]).find((stage) => counts[stage] > 0) ?? null;
+}

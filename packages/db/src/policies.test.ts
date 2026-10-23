@@ -2,7 +2,6 @@ import { MAX_FEE_VND } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { createCustomer, softDeleteCustomer, updateCustomerProfile } from './customers';
 import {
-  getPolicy,
   issuePolicy,
   listPolicies,
   restorePolicy,
@@ -11,7 +10,7 @@ import {
   updatePolicy,
 } from './policies';
 import { restorePerson, softDeletePerson, updatePerson } from './team';
-import { codeOf, d, setup } from './test-support';
+import { byId, codeOf, d, setup } from './test-support';
 
 const MILLION = 1_000_000;
 
@@ -54,7 +53,7 @@ describe('policies', () => {
       ...issued,
       issuedFyp: 280 * MILLION,
     });
-    expect(getPolicy(db, policy.id)?.issuedFyp).toBe(280 * MILLION);
+    expect(byId(listPolicies(db), policy.id)?.issuedFyp).toBe(280 * MILLION);
     // Re-issuing with a new date keeps the hand-edited FYP.
     expect(issuePolicy(db, policy.id, { issuedDate: d(5, 2) })).toMatchObject({
       issuedDate: d(5, 2),
@@ -158,7 +157,7 @@ describe('policies', () => {
     const { id } = submitPolicy(db, { ...base, submittedDate: today });
     expect(codeOf(() => issuePolicy(db, id, { issuedDate: tomorrow }))).toBe('DATE_IN_FUTURE');
     expect(codeOf(() => updatePolicy(db, id, { submittedDate: tomorrow }))).toBe('DATE_IN_FUTURE');
-    expect(getPolicy(db, id)).toMatchObject({ submittedDate: today, issuedDate: null });
+    expect(byId(listPolicies(db), id)).toMatchObject({ submittedDate: today, issuedDate: null });
     expect(issuePolicy(db, id, { issuedDate: today }).issuedDate).toEqual(today);
   });
 
@@ -169,16 +168,16 @@ describe('policies', () => {
 
     softDeletePolicy(db, id);
     expect(listPolicies(db).map((p) => p.id)).toEqual([kept.id]);
-    expect(getPolicy(db, id)).toBeUndefined();
+    expect(byId(listPolicies(db), id)).toBeUndefined();
     expect(codeOf(() => softDeletePolicy(db, id))).toBe('POLICY_NOT_FOUND');
 
     restorePolicy(db, id);
-    expect(getPolicy(db, id)?.id).toBe(id);
+    expect(byId(listPolicies(db), id)?.id).toBe(id);
     expect(codeOf(() => restorePolicy(db, 'x'))).toBe('POLICY_NOT_FOUND');
 
     softDeleteCustomer(db, customer.id);
     expect(listPolicies(db)).toEqual([]);
-    expect(getPolicy(db, id)).toBeUndefined();
+    expect(byId(listPolicies(db), id)).toBeUndefined();
     expect(codeOf(() => restorePolicy(db, id))).toBe('CUSTOMER_NOT_FOUND');
   });
 
@@ -208,7 +207,7 @@ describe('policies', () => {
     restorePerson(db, re.id);
     updatePerson(db, re.id, { role: 'IS', teamId: null });
     expect(codeOf(() => restorePolicy(db, id))).toBe('RE_REQUIRED');
-    expect(getPolicy(db, id)).toBeUndefined();
+    expect(byId(listPolicies(db), id)).toBeUndefined();
     expect(persist).toHaveBeenCalledTimes(2);
   });
 });

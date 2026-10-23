@@ -2,14 +2,12 @@ import { evaluateKycGate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { createCustomer, softDeleteCustomer, updateCustomerProfile } from './customers';
 import * as db from './index';
-import * as kycCommands from './kyc';
 import {
   addKycNote,
   confirmKycFact,
   getKycProfile,
   listKycVersions,
   markKycConflict,
-  markKycVersionMaterial,
   recordKycNote,
   resolveKycConflict,
 } from './kyc';
@@ -470,44 +468,6 @@ describe('KYC versions', () => {
 
     expect([minor, manual, core].map((c) => c.version?.material)).toEqual([false, true, true]);
   });
-
-  it('lets the RE switch material on for a version, never off', async () => {
-    const { db: database, customer, note } = await withCustomer();
-    const input = { noteId: note.id, date: d(3, 9, 2026) };
-    confirmKycFact(database, customer.id, { ...input, field: 'occupation', value: 'Bác sĩ' });
-    const { version } = confirmKycFact(database, customer.id, {
-      ...input,
-      field: 'residence',
-      value: 'Huế',
-    });
-
-    const switched = markKycVersionMaterial(database, version!.id);
-    const again = markKycVersionMaterial(database, version!.id);
-
-    expect([switched.material, again.material]).toEqual([true, true]);
-    expect(listKycVersions(database, customer.id).map((v) => v.material)).toEqual([true, true]);
-    expect(Object.keys(kycCommands).filter((name) => /Material/.test(name))).toEqual([
-      'markKycVersionMaterial',
-    ]);
-    expect(codeOf(() => markKycVersionMaterial(database, 'missing'))).toBe('KYC_VERSION_NOT_FOUND');
-  });
-
-  it('switches no version of a deleted customer', async () => {
-    const { db: database, customer, note, persist } = await withCustomer();
-    const input = { noteId: note.id, date: d(3, 9, 2026) };
-    confirmKycFact(database, customer.id, { ...input, field: 'occupation', value: 'Bác sĩ' });
-    const { version } = confirmKycFact(database, customer.id, {
-      ...input,
-      field: 'residence',
-      value: 'Huế',
-    });
-    softDeleteCustomer(database, customer.id);
-    persist.mockClear();
-
-    expect(version?.material).toBe(false);
-    expect(codeOf(() => markKycVersionMaterial(database, version!.id))).toBe('CUSTOMER_NOT_FOUND');
-    expect(persist).not.toHaveBeenCalled();
-  });
 });
 
 describe('a note with its facts, recorded at once (mockup 7a)', () => {
@@ -673,6 +633,16 @@ describe('KYC text is stored composed', () => {
     expect(
       codeOf(() => confirmKycFact(database, customer.id, { ...facts[0], noteId: note.id, date })),
     ).toBe('INVALID_TEXT');
+  });
+
+  // Review #640: checked as stored text first, then by the rules of the trường.
+  it('normalizes a value the database can store, and refuses one it cannot as a text', () => {
+    for (const value of ['Kỹ\u0000sư', 'A\uD800', '\uDC00B', '​\uD800']) {
+      expect(codeOf(() => db.normalizeKycValue('occupation', value))).toBe('INVALID_TEXT');
+    }
+    expect(codeOf(() => db.normalizeKycValue('childrenCount', '2\u0000'))).toBe('INVALID_TEXT');
+    expect(codeOf(() => db.normalizeKycValue('occupation', '​'))).toBe('INVALID_KYC_VALUE');
+    expect(db.normalizeKycValue('occupation', ' Bác\tsĩ ')).toBe('Bác sĩ');
   });
 });
 

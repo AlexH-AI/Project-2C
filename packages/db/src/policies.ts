@@ -1,8 +1,16 @@
 /** Policies (spec §3.7, §4): submitted, then issued with the submitted FYP unless changed (G2 D). */
 import { compareDates, fromIsoDate, type CalendarDate, type Policy, type Vnd } from '@p2c/domain';
 import { and, asc, eq, isNull } from 'drizzle-orm';
-import { requireAmount, requireRe, stampDeleted, storedPastDate } from './common';
-import { liveCustomer } from './customers';
+import {
+  findRow,
+  liveCustomer,
+  liveRow,
+  requireAmount,
+  requireRe,
+  stampDeleted,
+  storedPastDate,
+  updateRow,
+} from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { ulid } from './ids';
@@ -25,17 +33,6 @@ export function listPolicies(db: Database): Policy[] {
     .orderBy(asc(policies.submittedDate), asc(policies.id))
     .all()
     .map(({ p }) => toPolicy(p));
-}
-
-/** The policy, when it and its customer are live. */
-export function getPolicy(db: Database, id: string): Policy | undefined {
-  const row = db.orm
-    .select({ p: policies })
-    .from(policies)
-    .innerJoin(customers, eq(customers.id, policies.customerId))
-    .where(and(eq(policies.id, id), isNull(policies.deletedAt), isNull(customers.deletedAt)))
-    .get();
-  return row && toPolicy(row.p);
 }
 
 // ---- commands -------------------------------------------------------------
@@ -81,7 +78,7 @@ export function updatePolicy(db: Database, id: string, changes: PolicyChanges): 
     for (const [key, value] of Object.entries(changes)) {
       if (value !== undefined) Object.assign(merged, { [key]: value });
     }
-    updatePolicyRow(db, id, validate(db, merged));
+    updateRow(db, policies, id, validate(db, merged));
     return toPolicy(livePolicy(db, id));
   });
 }
@@ -89,17 +86,17 @@ export function updatePolicy(db: Database, id: string, changes: PolicyChanges): 
 export function softDeletePolicy(db: Database, id: string): void {
   db.transaction(() => {
     livePolicy(db, id);
-    updatePolicyRow(db, id, stampDeleted(db));
+    updateRow(db, policies, id, stampDeleted(db));
   });
 }
 
 /** A deleted policy may be dated ahead in an imported file (spec §6 rule 10): checked again (DR-25). */
 export function restorePolicy(db: Database, id: string): void {
   db.transaction(() => {
-    const row = db.orm.select().from(policies).where(eq(policies.id, id)).get();
+    const row = findRow(db, policies, id);
     if (!row) throw new DbError('POLICY_NOT_FOUND');
     checkRestorePolicy(db, row);
-    updatePolicyRow(db, id, { deletedAt: null });
+    updateRow(db, policies, id, { deletedAt: null });
   });
 }
 
@@ -127,18 +124,9 @@ function validate(db: Database, policy: Omit<Policy, 'id' | 'customerId'>) {
 }
 
 function livePolicy(db: Database, id: string): PolicyRow {
-  const row = db.orm.select().from(policies).where(eq(policies.id, id)).get();
-  if (!row || row.deletedAt) throw new DbError('POLICY_NOT_FOUND');
+  const row = liveRow(db, policies, id, 'POLICY_NOT_FOUND');
   liveCustomer(db, row.customerId);
   return row;
-}
-
-function updatePolicyRow(db: Database, id: string, changes: Partial<PolicyRow>): void {
-  db.orm
-    .update(policies)
-    .set({ updatedAt: db.now().toISOString(), ...changes })
-    .where(eq(policies.id, id))
-    .run();
 }
 
 function toPolicy(row: PolicyRow): Policy {

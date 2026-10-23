@@ -3,14 +3,12 @@ import {
   MAX_FEE_VND,
   periodMetricsByScope,
   periodOf,
-  stageOn,
   type CalendarDate,
   type CustomerStage,
 } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import {
   editMeetingOutcome,
-  getAppointment,
   listAppointments,
   recordMeetingOutcome,
   recordOutcomeWithNext,
@@ -30,7 +28,7 @@ import {
 } from './customers';
 import { listPolicies } from './policies';
 import { createPerson, listPeople, softDeletePerson, updatePerson } from './team';
-import { codeOf, errorOf, setup } from './test-support';
+import { byId, codeOf, errorOf, setup, snapshotStage } from './test-support';
 
 // The test clock reads 26/09/2026: a meeting is held or missed by then, the next one booked after.
 const d = (day: number, month: number, year = 2026): CalendarDate => calendarDate(year, month, day);
@@ -88,7 +86,7 @@ describe('scheduleAppointment', () => {
       rescheduledFromId: null,
       outcomeReviewerId: null,
     });
-    expect(getAppointment(db, appointment.id)).toEqual(appointment);
+    expect(byId(listAppointments(db), appointment.id)).toEqual(appointment);
     expect(listAppointments(db)).toEqual([appointment]);
   });
 
@@ -274,7 +272,7 @@ describe('recordMeetingOutcome', () => {
     for (const size of [MAX_FEE_VND + 1, Number.MAX_SAFE_INTEGER]) {
       expect(codeOf(() => recordMeetingOutcome(db, id, sized(size)))).toBe('AMOUNT_TOO_LARGE');
     }
-    expect(getAppointment(db, id)?.status).toBe('SCHEDULED');
+    expect(byId(listAppointments(db), id)?.status).toBe('SCHEDULED');
     expect(recordMeetingOutcome(db, id, sized(MAX_FEE_VND)).expectedCaseSize).toBe(100_000_000_000);
     expect(codeOf(() => editMeetingOutcome(db, id, sized(MAX_FEE_VND + 1), {}))).toBe(
       'AMOUNT_TOO_LARGE',
@@ -309,7 +307,7 @@ describe('recordMeetingOutcome', () => {
     );
     expect(codeOf(() => softDeleteAppointment(db, id))).toBe('TRANSITION_NOT_LATEST');
     expect(stage()).toBe('N1');
-    expect(getAppointment(db, id)?.status).toBe('MET');
+    expect(byId(listAppointments(db), id)?.status).toBe('MET');
   });
 
   it('edits the other fields once the transition is no longer the latest, keeping it (D7)', async () => {
@@ -376,7 +374,7 @@ describe('recordMeetingOutcome', () => {
     expect(codeOf(() => recordMeetingOutcome(db, tomorrow, { status: 'NO_SHOW' }))).toBe(
       'OUTCOME_IN_FUTURE',
     );
-    expect(getAppointment(db, tomorrow)?.status).toBe('SCHEDULED');
+    expect(byId(listAppointments(db), tomorrow)?.status).toBe('SCHEDULED');
     expect(listStageTransitions(db, customer.id)).toHaveLength(1);
     expect(recordMeetingOutcome(db, tomorrow, { status: 'CANCELLED' }).status).toBe('CANCELLED');
     expect(recordMeetingOutcome(db, book(d(26, 9)), MET_N2).status).toBe('MET');
@@ -397,7 +395,7 @@ describe('outcome reviewer', () => {
     expect(recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: is.id })).toMatchObject({
       outcomeReviewerId: is.id,
     });
-    expect(getAppointment(db, id)?.outcomeReviewerId).toBe(is.id);
+    expect(byId(listAppointments(db), id)?.outcomeReviewerId).toBe(is.id);
     for (const reviewer of [tl, bdm, bd]) {
       const outcome = { ...MET_N2, outcomeReviewerId: reviewer.id };
       expect(recordMeetingOutcome(db, id, outcome).outcomeReviewerId).toBe(reviewer.id);
@@ -414,7 +412,7 @@ describe('outcome reviewer', () => {
         codeOf(() => recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: reviewer.id })),
       ).toBe('INVALID_REVIEWER');
     }
-    expect(getAppointment(db, id)?.status).toBe('SCHEDULED');
+    expect(byId(listAppointments(db), id)?.status).toBe('SCHEDULED');
   });
 
   it('keeps a reviewer of a live appointment from becoming an RE; others change role freely', async () => {
@@ -463,7 +461,7 @@ describe('outcome reviewer', () => {
     expect(codeOf(() => recordMeetingOutcome(db, id, { ...MET_N2, outcomeReviewerId: 'x' }))).toBe(
       'PERSON_NOT_FOUND',
     );
-    expect(getAppointment(db, id)?.status).toBe('SCHEDULED');
+    expect(byId(listAppointments(db), id)?.status).toBe('SCHEDULED');
   });
 
   it('clears the reviewer when a met appointment becomes cancelled', async () => {
@@ -607,7 +605,7 @@ describe('recordOutcomeWithNext', () => {
     expect(
       codeOf(() => recordOutcomeWithNext(db, id, { status: 'NO_SHOW' }, { date: d(1, 10) })),
     ).toBe('INVALID_STATUS');
-    expect(getAppointment(db, id)).toEqual(met);
+    expect(byId(listAppointments(db), id)).toEqual(met);
     expect(listStageTransitions(db, customer.id)).toEqual(transitions);
     expect(stage()).toBe('N2');
     expect(listAppointments(db)).toHaveLength(1);
@@ -638,7 +636,7 @@ describe('editMeetingOutcome — the details', () => {
       triggerNote: 'Sinh nhật',
       coordinatorIds: [bd.id],
     });
-    expect(getAppointment(db, id)).toEqual(edited);
+    expect(byId(listAppointments(db), id)).toEqual(edited);
     expect(editMeetingOutcome(db, id, CANCELLED, { triggerNote: null, time: null })).toMatchObject({
       time: null,
       triggerType: 'OCCASION',
@@ -669,7 +667,7 @@ describe('editMeetingOutcome — the details', () => {
     expect(codeOf(() => editMeetingOutcome(db, deleted, CANCELLED, {}))).toBe(
       'APPOINTMENT_NOT_FOUND',
     );
-    expect(getAppointment(db, id)).toMatchObject({
+    expect(byId(listAppointments(db), id)).toMatchObject({
       triggerType: 'REFERRAL',
       coordinatorIds: [tl.id],
     });
@@ -688,8 +686,11 @@ describe('editMeetingOutcome — the details', () => {
     expect(codeOf(() => editMeetingOutcome(db, old.id, CANCELLED, { date: d(20, 10) }))).toBe(
       'INVALID_STATUS',
     );
-    expect(getAppointment(db, scheduled.id)).toEqual(scheduled);
-    expect(getAppointment(db, old.id)).toMatchObject({ status: 'RESCHEDULED', date: d(12, 1) });
+    expect(byId(listAppointments(db), scheduled.id)).toEqual(scheduled);
+    expect(byId(listAppointments(db), old.id)).toMatchObject({
+      status: 'RESCHEDULED',
+      date: d(12, 1),
+    });
   });
 
   it('edits a cancelled or no-show appointment, its day even into the future when cancelled', async () => {
@@ -719,8 +720,8 @@ describe('editMeetingOutcome — the details', () => {
     expect(codeOf(() => editMeetingOutcome(db, missed, NO_SHOW, { date: d(27, 9) }))).toBe(
       'OUTCOME_IN_FUTURE',
     );
-    expect(getAppointment(db, met)?.date).toEqual(d(10, 1));
-    expect(getAppointment(db, missed)?.date).toEqual(d(11, 1));
+    expect(byId(listAppointments(db), met)?.date).toEqual(d(10, 1));
+    expect(byId(listAppointments(db), missed)?.date).toEqual(d(11, 1));
     expect(listStageTransitions(db, customer.id)).toEqual(transitions);
     expect(stage()).toBe('N2');
     expect(editMeetingOutcome(db, met, MET_N2, { date: d(26, 9) }).date).toEqual(d(26, 9));
@@ -733,7 +734,7 @@ describe('editMeetingOutcome — the details', () => {
 
     editMeetingOutcome(db, id, MET_N2, { date: d(14, 1) });
 
-    expect(getAppointment(db, id)?.date).toEqual(d(14, 1));
+    expect(byId(listAppointments(db), id)?.date).toEqual(d(14, 1));
     expect(
       listStageTransitions(db, customer.id).map((t) => [t.to, t.date, t.appointmentId]),
     ).toEqual([
@@ -749,7 +750,7 @@ describe('editMeetingOutcome — the details', () => {
       code: 'TRANSITION_BEFORE_LATEST',
       params: { date: '01/01/2026' },
     });
-    expect(getAppointment(db, id)?.date).toEqual(d(14, 1));
+    expect(byId(listAppointments(db), id)?.date).toEqual(d(14, 1));
   });
 
   it('makes no transition when the day of a met appointment that moved no one changes', async () => {
@@ -785,7 +786,7 @@ describe('editMeetingOutcome', () => {
       triggerType: 'EVENT',
       coordinatorIds: [tl.id],
     });
-    expect(getAppointment(db, id)).toEqual(edited);
+    expect(byId(listAppointments(db), id)).toEqual(edited);
     expect(listStageTransitions(db, customer.id).map((t) => [t.to, t.date])).toEqual([
       ['N3', d(1, 1)],
       ['N1', d(14, 1)],
@@ -805,7 +806,7 @@ describe('editMeetingOutcome', () => {
 
     editMeetingOutcome(db, id, MET_N2, { date: d(20, 9) });
 
-    expect(getAppointment(db, id)).toMatchObject({ status: 'MET', date: d(20, 9) });
+    expect(byId(listAppointments(db), id)).toMatchObject({ status: 'MET', date: d(20, 9) });
     expect(stage()).toBe('N2');
   });
 
@@ -836,7 +837,7 @@ describe('editMeetingOutcome', () => {
 
     editMeetingOutcome(db, id, outcome, { date: d(3, 1) });
 
-    expect(getAppointment(db, id)).toMatchObject({ status: outcome.status, date: d(3, 1) });
+    expect(byId(listAppointments(db), id)).toMatchObject({ status: outcome.status, date: d(3, 1) });
     expect(listStageTransitions(db, customer.id).map((t) => [t.to, t.date])).toEqual([
       ['N3', d(1, 1)],
       ['N2', d(5, 1)],
@@ -851,7 +852,7 @@ describe('editMeetingOutcome', () => {
 
     editMeetingOutcome(db, id, { ...MET_N2, note: 'Dời ngày' }, { date: d(14, 1) });
 
-    expect(getAppointment(db, id)).toMatchObject({ note: 'Dời ngày', date: d(14, 1) });
+    expect(byId(listAppointments(db), id)).toMatchObject({ note: 'Dời ngày', date: d(14, 1) });
     expect(listStageTransitions(db, customer.id).map((t) => [t.to, t.date])).toEqual([
       ['N3', d(1, 1)],
       ['N2', d(14, 1)],
@@ -866,7 +867,7 @@ describe('editMeetingOutcome', () => {
 
     editMeetingOutcome(db, id, { status: 'CANCELLED' }, { date: d(30, 9) });
 
-    expect(getAppointment(db, id)).toMatchObject({ status: 'CANCELLED', date: d(30, 9) });
+    expect(byId(listAppointments(db), id)).toMatchObject({ status: 'CANCELLED', date: d(30, 9) });
     expect(stage()).toBe('N3');
   });
 
@@ -874,12 +875,12 @@ describe('editMeetingOutcome', () => {
     const { db, schedule } = await withCustomer();
     const { id } = schedule();
     recordMeetingOutcome(db, id, MET_N2);
-    const before = getAppointment(db, id);
+    const before = byId(listAppointments(db), id);
 
     expect(
       codeOf(() => editMeetingOutcome(db, id, { ...MET_N2, note: 'Mới' }, { time: '7h' })),
     ).toBe('INVALID_TIME');
-    expect(getAppointment(db, id)).toEqual(before);
+    expect(byId(listAppointments(db), id)).toEqual(before);
   });
 
   it('edits only an appointment with an outcome', async () => {
@@ -887,7 +888,7 @@ describe('editMeetingOutcome', () => {
     const { id } = schedule();
 
     expect(codeOf(() => editMeetingOutcome(db, id, MET_N2, {}))).toBe('INVALID_STATUS');
-    expect(getAppointment(db, id)?.status).toBe('SCHEDULED');
+    expect(byId(listAppointments(db), id)?.status).toBe('SCHEDULED');
   });
 });
 
@@ -906,7 +907,7 @@ describe('recording an outcome late', () => {
     expect(codeOf(() => recordMeetingOutcome(db, id, { ...MET_N2, stageAfter: 'N1' }))).toBe(
       'TRANSITION_BEFORE_LATEST',
     );
-    expect(getAppointment(db, id)?.status).toBe('SCHEDULED');
+    expect(byId(listAppointments(db), id)?.status).toBe('SCHEDULED');
     expect(stage()).toBe('N4');
     expect(listStageTransitions(db, customer.id)).toHaveLength(2);
   });
@@ -934,8 +935,8 @@ describe('recording an outcome late', () => {
 
     const transitions = listStageTransitions(db, customer.id);
     expect(transitions.at(-1)).toMatchObject({ from: 'N4', to: 'N1', date: d(5, 1) });
-    expect(stageOn(transitions.slice(0, -1), customer.id, d(5, 1))).toBe('N4');
-    expect(stageOn(transitions, customer.id, d(31, 1))).toBe(stage());
+    expect(snapshotStage(customer, transitions.slice(0, -1), d(5, 1))).toBe('N4');
+    expect(snapshotStage(customer, transitions, d(31, 1))).toBe(stage());
   });
 });
 
@@ -958,7 +959,7 @@ describe('the stage on the meeting day', () => {
     });
     recordMeetingOutcome(db, id, KEPT_N3);
 
-    expect(getAppointment(db, id)).toMatchObject({ status: 'MET', stageAfter: 'N3' });
+    expect(byId(listAppointments(db), id)).toMatchObject({ status: 'MET', stageAfter: 'N3' });
     expect(steps(db, customer.id)).toEqual([
       ['N3', d(1, 1), null],
       ['N2', d(15, 1), null],
@@ -987,13 +988,13 @@ describe('the stage on the meeting day', () => {
     changeStageManually(db, customer.id, { to: 'N2', date: d(5, 1) });
     const { id } = schedule(10);
     recordMeetingOutcome(db, id, MET_N2);
-    const before = getAppointment(db, id);
+    const before = byId(listAppointments(db), id);
 
     expect(errorOf(() => editMeetingOutcome(db, id, MET_N2, { date: d(3, 1) }))).toMatchObject({
       code: 'TRANSITION_BEFORE_LATEST',
       params: { date: '05/01/2026' },
     });
-    expect(getAppointment(db, id)).toEqual(before);
+    expect(byId(listAppointments(db), id)).toEqual(before);
     // On the day of the change it still kept N2, the stage the customer reached that day.
     editMeetingOutcome(db, id, MET_N2, { date: d(5, 1) });
     expect(steps(db, customer.id)).toHaveLength(2);
@@ -1098,11 +1099,11 @@ describe('the stage on the meeting day', () => {
         params: { date: latest },
       });
       recordMeetingOutcome(db, id, KEPT_N3);
-      expect(getAppointment(db, id)).toMatchObject({ status: 'MET', stageAfter: 'N3' });
+      expect(byId(listAppointments(db), id)).toMatchObject({ status: 'MET', stageAfter: 'N3' });
       softDeleteAppointment(db, id);
       restoreAppointment(db, id);
 
-      expect(getAppointment(db, id)).toMatchObject({ status: 'MET', stageAfter: 'N3' });
+      expect(byId(listAppointments(db), id)).toMatchObject({ status: 'MET', stageAfter: 'N3' });
       expect(steps(db, customer.id)).toEqual([
         ['N3', d(10, 9), null],
         ...changes.map((change) => [change.to, change.date, null]),
@@ -1146,7 +1147,7 @@ describe('rescheduleAppointment', () => {
 
     const moved = rescheduleAppointment(db, old.id, { date: d(15, 1), time: '14:00' });
 
-    expect(getAppointment(db, old.id)?.status).toBe('RESCHEDULED');
+    expect(byId(listAppointments(db), old.id)?.status).toBe('RESCHEDULED');
     expect(moved).toMatchObject({
       date: d(15, 1),
       time: '14:00',
@@ -1169,8 +1170,8 @@ describe('rescheduleAppointment', () => {
     rescheduleAppointment(db, plain.id, { date: d(15, 1) }, '  ');
     const moved = rescheduleAppointment(db, noted.id, { date: d(15, 1) }, ' KH đi công tác ');
 
-    expect(getAppointment(db, plain.id)?.note).toBe('');
-    expect(getAppointment(db, noted.id)?.note).toBe('KH đi công tác');
+    expect(byId(listAppointments(db), plain.id)?.note).toBe('');
+    expect(byId(listAppointments(db), noted.id)?.note).toBe('KH đi công tác');
     expect(moved.note).toBe('');
   });
 
@@ -1240,7 +1241,7 @@ describe('deleting appointments', () => {
 
     softDeleteAppointment(db, id);
     expect(stage()).toBe('N3');
-    expect(getAppointment(db, id)).toBeUndefined();
+    expect(byId(listAppointments(db), id)).toBeUndefined();
     expect(listAppointments(db)).toEqual([]);
     expect(codeOf(() => softDeleteAppointment(db, id))).toBe('APPOINTMENT_NOT_FOUND');
 
@@ -1261,7 +1262,7 @@ describe('deleting appointments', () => {
     changeStageManually(db, customer.id, { to: 'N4', date: d(15, 1) });
 
     expect(codeOf(() => restoreAppointment(db, id))).toBe('TRANSITION_BEFORE_LATEST');
-    expect(getAppointment(db, id)).toBeUndefined();
+    expect(byId(listAppointments(db), id)).toBeUndefined();
     expect(stage()).toBe('N4');
   });
 
@@ -1346,7 +1347,7 @@ describe('deleting appointments', () => {
     softDeleteCustomer(db, customer.id);
 
     expect(listAppointments(db)).toEqual([]);
-    expect(getAppointment(db, live.id)).toBeUndefined();
+    expect(byId(listAppointments(db), live.id)).toBeUndefined();
     expect(codeOf(() => restoreAppointment(db, id))).toBe('CUSTOMER_NOT_FOUND');
   });
 });

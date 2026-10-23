@@ -1,7 +1,6 @@
 import { isRfAppointment, type CalendarDate, type CustomerStage } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import {
-  getAppointment,
   listAppointments,
   recordMeetingOutcome,
   restoreAppointment,
@@ -28,7 +27,7 @@ import {
   softDeleteTeam,
   updatePerson,
 } from './team';
-import { d, errorOf, setup } from './test-support';
+import { byId, d, errorOf, setup } from './test-support';
 import { listTrash, type TrashRow } from './trash';
 
 // Spec Phase 6 §4.2: the examples E1–E16 are dated as of 11/10/2026.
@@ -41,6 +40,10 @@ const RESTORE = {
   appointment: restoreAppointment,
   policy: restorePolicy,
 } as const;
+
+/** Whether the appointment, read back as the stats read it, counts as an RF. */
+const isRf = (db: Database, id: string) =>
+  isRfAppointment(byId(listAppointments(db), id)!, listStageTransitions(db));
 
 async function trash() {
   const base = await setup(TODAY);
@@ -207,7 +210,7 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
       date: d(2, 10),
       appointmentId: meeting.id,
     });
-    expect(isRfAppointment(getAppointment(db, meeting.id)!, listStageTransitions(db))).toBe(true);
+    expect(isRf(db, meeting.id)).toBe(true);
   });
 
   it('E5: restores a met appointment whose stage change is no RF, and says so (DR6-59)', async () => {
@@ -222,7 +225,7 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
       rf: false,
     });
     expect(restored(r)).toBeUndefined();
-    expect(isRfAppointment(getAppointment(db, meeting.id)!, listStageTransitions(db))).toBe(false);
+    expect(isRf(db, meeting.id)).toBe(false);
   });
 
   it('E5: records the stage change anew once the stage moved on an earlier day after deletion', async () => {
@@ -283,7 +286,7 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
     expect(r.effect).toEqual({ kind: 'stageKept', stage: 'N2' });
     expect(restored(r)).toBeUndefined();
     expect(listStageTransitions(db, bao.id)).toEqual(transitions);
-    expect(isRfAppointment(getAppointment(db, meeting.id)!, listStageTransitions(db))).toBe(false);
+    expect(isRf(db, meeting.id)).toBe(false);
   });
 
   it('E7: blocks it like E6 once the customer reached that stage after its day (Owner 15/10/2026)', async () => {
@@ -349,7 +352,7 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
     expect(r.blocked).toBeUndefined();
     expect(restored(r)).toBeUndefined();
     expect(listStageTransitions(db, bao.id)).toEqual(transitions);
-    expect(getAppointment(db, kept.id)?.status).toBe('MET');
+    expect(byId(listAppointments(db), kept.id)?.status).toBe('MET');
   });
 
   it('E19: restores a met appointment that kept the stage, though moved by hand on its day', async () => {
@@ -366,7 +369,7 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
     expect(restored(r)).toBeUndefined();
     expect(listStageTransitions(db, bao.id)).toEqual(transitions);
     expect(transitions.at(-1)).toMatchObject({ from: 'N2', to: 'N3', appointmentId: null });
-    expect(isRfAppointment(getAppointment(db, kept.id)!, listStageTransitions(db))).toBe(false);
+    expect(isRf(db, kept.id)).toBe(false);
   });
 
   it('E20: blocks a met appointment once the stage was moved on its day after the deletion', async () => {
@@ -541,7 +544,7 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
     const r = row(planned.id);
     expect(r.effect).toEqual({ kind: 'none' });
     expect(restored(r)).toBeUndefined();
-    expect(getAppointment(db, planned.id)?.status).toBe('SCHEDULED');
+    expect(byId(listAppointments(db), planned.id)?.status).toBe('SCHEDULED');
   });
 
   it('TR-5: blocks a met appointment dated after today in an imported file', async () => {

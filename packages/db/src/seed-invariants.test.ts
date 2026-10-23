@@ -8,7 +8,6 @@ import {
   isPipelineStage,
   KYC_FIELDS,
   kycHash,
-  stageOn,
   type KycField,
 } from '@p2c/domain';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -18,6 +17,7 @@ import { openDatabase, type Database } from './database';
 import { getKycProfile, listKycVersions, type KycProfileRecord } from './kyc';
 import { listPolicies } from './policies';
 import { seedDemoData, type SeedOptions } from './seed';
+import { snapshotStage } from './test-support';
 
 const SLOW = 60_000;
 const ANCHOR = calendarDate(2026, 9, 15);
@@ -71,7 +71,7 @@ describe.each(DATA_SETS)('on %s', (_, options) => {
       }
     });
 
-    it('dates each customer’s transitions in recording order, so stageOn agrees with the stage (D10)', () => {
+    it('dates each customer’s transitions in recording order, so the stage snapshot agrees with the stage (D10)', () => {
       const transitions = listStageTransitions(db);
       for (const own of groupBy(transitions, (t) => t.customerId).values()) {
         for (let i = 1; i < own.length; i++) {
@@ -79,7 +79,7 @@ describe.each(DATA_SETS)('on %s', (_, options) => {
         }
       }
       for (const customer of customers) {
-        expect(stageOn(transitions, customer.id, ANCHOR)).toBe(customer.stage);
+        expect(snapshotStage(customer, transitions, ANCHOR)).toBe(customer.stage);
       }
     });
 
