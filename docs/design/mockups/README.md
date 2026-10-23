@@ -1,6 +1,6 @@
 # Mockup UI — bản đồ
 
-Mockup HTML tĩnh, dữ liệu giả lập, mở trực tiếp trong trình duyệt (tốt nhất 1440×900). `index.html` là trang mục lục kèm nguyên tắc, token màu và quyết định G3 vòng 1–2; thẻ `#t284` gom đề xuất G3 của T-284 (#773, chờ duyệt): token `--border-control` (số đo trước / sau ở `#contrast`), 8d dời tháng, 2h, 1a / 4a. Quy ước sửa mockup: `.claude/rules/mockups.md`.
+Mockup HTML tĩnh, dữ liệu giả lập, mở trực tiếp trong trình duyệt (tốt nhất 1440×900). `index.html` là trang mục lục kèm nguyên tắc, token màu và quyết định G3 vòng 1–2; thẻ `#t284` ghi quyết định G3 của T-284 (#773, duyệt 23/10/2026, PR #795): token `--border-control` (số đo trước / sau ở `#contrast`), 8d dời tháng, 2h, 1a / 4a. Quy ước sửa mockup: `.claude/rules/mockups.md`.
 
 Mockup lớn có **mục lục ở comment đầu file** (khối → neo `#id` → dòng): đọc đúng khối cần xem, không đọc cả file.
 
@@ -16,11 +16,11 @@ Mockup lớn có **mục lục ở comment đầu file** (khối → neo `#id` �
 | `customer-forms.html` | `customers/CustomerDialogs.tsx` | #59, vòng 2 | `docs/design/phase-3-du-lieu.md` §3.3, §4 |
 | `appointment-forms.html` | `appointments/AppointmentDialog.tsx`, `OutcomeDialog.tsx`, `EditOutcomeDialog.tsx`, `RescheduleDialog.tsx`, `DeleteAppointmentDialog.tsx` | #59, vòng 2 | `phase-3-du-lieu.md` §3.5, §4 |
 | `kyc-forms.html` | `customers/KycDialogs.tsx` (+ `kyc-view.ts`) | #59, vòng 2 | `phase-3-du-lieu.md` §3.8–3.10, §4; ADR-0008 |
-| `policy-forms.html` | `customers/PolicyDialogs.tsx` (+ `policy-form.ts`) | #59, vòng 2; 8d dời tháng (dòng số HĐ, `#p8d-month`): T-284 #773, chờ duyệt | `phase-3-du-lieu.md` §3.7, §4 |
+| `policy-forms.html` | `customers/PolicyDialogs.tsx` (+ `policy-form.ts`) | #59, vòng 2; 8d dời tháng (dòng số HĐ, `#p8d-month`): T-284 #773, duyệt 23/10/2026 (PR #795) | `phase-3-du-lieu.md` §3.7, §4 |
 | `team.html` | `team/TeamScreen.tsx`, `TeamDialogs.tsx`, `PersonDialogs.tsx` | #59, vòng 2 | `phase-3-du-lieu.md` §3.1, §3.2 |
 | `settings-data.html` | `Settings.tsx`, `SettingsDataFile.tsx`, `SettingsBackup.tsx` | #59, vòng 2 | `phase-3-du-lieu.md` §5–§7; ADR-0010, ADR-0016 |
 | `phase-3-feedback.html` (lớn, B1–B6) | B1 → `team/`; B2 → `CustomersScreen.tsx`; B3, B5 → `AppointmentsScreen.tsx`; B4 → `MonthCalendar` trong `AppointmentsScreen.tsx`; B6 → `appointments/YearGrid.tsx` | #217, duyệt 01/10/2026 (B5 = phương án A) | `docs/reviews/2026-10-01-phan-hoi-owner-kiem-exe.md` |
-| `ai.html` (§1 Cài đặt → AI, §2 panel, §3 mã F + trích xuất) | Chưa có route: `SettingsAi.tsx` (#408 T-167); panel trong `customers/` (#409 T-168A, #410 T-168B); trích xuất ở Dòng thời gian `CustomerKyc.tsx` (#412 T-170) | #427, duyệt 08/10/2026 (đề xuất `#ask` 1–12); bổ sung W-1 (ô Gói OpenCode, dòng / luồng ChatGPT web, `phase-5-ai.md` §9.5) #431, duyệt 08/10/2026 (`#ask-w1` 1–7); 2h khối Thông tin tham khảo mờ (`#p2h`), bỏ DeepSeek V4 Pro ở 1a / 4a: T-284 #773, chờ duyệt | `docs/design/phase-5-ai.md` §4, §5.2–5.3, §7.2, §8, §9 |
+| `ai.html` (§1 Cài đặt → AI, §2 panel, §3 mã F + trích xuất) | Chưa có route: `SettingsAi.tsx` (#408 T-167); panel trong `customers/` (#409 T-168A, #410 T-168B); trích xuất ở Dòng thời gian `CustomerKyc.tsx` (#412 T-170) | #427, duyệt 08/10/2026 (đề xuất `#ask` 1–12); bổ sung W-1 (ô Gói OpenCode, dòng / luồng ChatGPT web, `phase-5-ai.md` §9.5) #431, duyệt 08/10/2026 (`#ask-w1` 1–7); 2h khối Thông tin tham khảo mờ (`#p2h`), bỏ DeepSeek V4 Pro ở 1a / 4a: T-284 #773, duyệt 23/10/2026 (PR #795) | `docs/design/phase-5-ai.md` §4, §5.2–5.3, §7.2, §8, §9 |
 | `trash.html` (11a–11j) | Cài đặt → Thùng rác (`#/settings/trash`): `SettingsTrash.tsx` (+ `trash-view.ts`, `RestoreDialog.tsx`); 11f → hộp Xóa KH trong `customers/CustomerDialogs.tsx`; 11g → câu lỗi khóa ghi khi thay dữ liệu; 11h–11j → dọn sạch Thùng rác (#662) | #520, duyệt 11/10/2026; dọn sạch (11h–11j, sửa 11a, 11f): #662, duyệt 19/10/2026 (PR #707) | `docs/design/phase-6-hoan-thien.md` §4.1, §4.2 |
 | `table-more.html` | Bảng lớn của `packages/ui` `DataTable` (Lịch hẹn, Khách hàng, hồ sơ KH, Team) | Chờ duyệt (T-150) | `docs/reviews/2026-10-06-deep-review-phase-1-4-tong-hop.md` DR-03, §11.3 |
 
