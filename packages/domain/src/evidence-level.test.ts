@@ -118,4 +118,8 @@ describe('evidenceLevel', () => {
   it('refuses an empty list: a missing hạng mục has no level', () => {
     expect(() => level(d(7, 10, 2026), [])).toThrow(RangeError);
   });
+
+  it('takes every fact as recent on an analysis of 1900, whose mark falls in 1899', () => {
+    expect(level(d(15, 6, 1900), facts(['F1', 'F2'], d(1, 1, 1900))).level).toBe('MEDIUM');
+  });
 });

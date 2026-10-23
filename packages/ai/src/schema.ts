@@ -10,7 +10,7 @@
  */
 import {
   formatIsoDate,
-  fromIsoDate,
+  isIsoDate,
   KYC_CATEGORIES,
   KYC_FIELDS,
   normalizeText,
@@ -55,14 +55,7 @@ export function factCode(seq: number): string {
 }
 
 /** A day as the app stores it: `yyyy-mm-dd`, a real day of the calendar. */
-const isoDate = z.string().refine((text) => {
-  try {
-    fromIsoDate(text);
-    return true;
-  } catch {
-    return false;
-  }
-}, 'không phải ngày yyyy-mm-dd');
+const isoDate = z.string().refine(isIsoDate, 'không phải ngày yyyy-mm-dd');
 
 /**
  * What the app sends for an analysis or discovery (spec §6.1), stored as `input_json` (§7.1): the

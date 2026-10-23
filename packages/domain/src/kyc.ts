@@ -146,19 +146,19 @@ export function isMaterialChange(before: KycProfile | null, after: KycProfile): 
 }
 
 /**
- * The version to record after a change, or null when the facts in effect are the same as at
- * `previous`. `before` is the profile at `previous` (null for the first version). The RE may switch
- * `material` on for a non-core change, but cannot switch it off when the rule sets it.
+ * The version to record after a change, or null when the facts in effect are the same as at the
+ * previous version. `previous` is the latest version with the profile it was recorded for, null
+ * before the first version. The RE may switch `material` on for a non-core change, but cannot
+ * switch it off when the rule sets it.
  */
 export function nextKycVersion(
-  previous: KycVersion | null,
-  before: KycProfile | null,
+  previous: { readonly version: KycVersion; readonly profile: KycProfile } | null,
   after: KycProfile,
   date: CalendarDate,
   manualMaterial: boolean,
 ): KycVersion | null {
   const hash = kycHash(after);
-  if (previous?.hash === hash) return null;
-  const material = isMaterialChange(before, after) || manualMaterial;
+  if (previous?.version.hash === hash) return null;
+  const material = isMaterialChange(previous?.profile ?? null, after) || manualMaterial;
   return { hash, summary: `Cập nhật KYC ${formatDate(date)}`, date, material };
 }

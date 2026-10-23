@@ -13,7 +13,9 @@ import {
   PROMPT_VERSIONS,
 } from '@p2c/ai/schema';
 import {
+  addDays,
   calendarDate,
+  daysBetween,
   evaluateKycGate,
   isPipelineStage,
   KYC_FIELDS,
@@ -115,7 +117,6 @@ const DEMO_SCALE: SeedScale = {
   meetingDays: [3, 4],
 };
 
-const DAY_MS = 86_400_000;
 const HISTORY_DAYS = 365;
 const FUTURE_DAYS = 24;
 /** Customers each RE already has when the history starts; the rest arrive over the year. */
@@ -615,8 +616,15 @@ function profile(
 
 // ---- days and randomness ----------------------------------------------------
 
+/** Day 0 of the simulation's day numbers. */
+const EPOCH = calendarDate(1970, 1, 1);
+
 function dayNumber(date: CalendarDate): number {
-  return Date.UTC(date.year, date.month - 1, date.day) / DAY_MS;
+  return daysBetween(EPOCH, date);
+}
+
+function toDate(day: number): CalendarDate {
+  return addDays(EPOCH, day);
 }
 
 /**
@@ -625,14 +633,10 @@ function dayNumber(date: CalendarDate): number {
  * further east, local noon.
  */
 function middayOf(day: number): number {
-  const noon = new Date((day + 0.5) * DAY_MS);
+  const { year, month, day: dayOfMonth } = toDate(day);
+  const noon = new Date(Date.UTC(year, month - 1, dayOfMonth, 12));
   if (noon.getDate() === noon.getUTCDate()) return noon.getTime();
-  return new Date(noon.getUTCFullYear(), noon.getUTCMonth(), noon.getUTCDate(), 12).getTime();
-}
-
-function toDate(day: number): CalendarDate {
-  const at = new Date(day * DAY_MS);
-  return calendarDate(at.getUTCFullYear(), at.getUTCMonth() + 1, at.getUTCDate());
+  return new Date(year, month - 1, dayOfMonth, 12).getTime();
 }
 
 interface Rng {

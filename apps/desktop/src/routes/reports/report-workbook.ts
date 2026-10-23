@@ -1,5 +1,11 @@
 import type ExcelJS from 'exceljs';
-import { formatDate, formatIsoDate, type CalendarDate, type Period } from '@p2c/domain';
+import {
+  formatDate,
+  formatIsoDate,
+  stripDiacritics,
+  type CalendarDate,
+  type Period,
+} from '@p2c/domain';
 import { t } from '../../i18n';
 import type { ViewingText } from '../overview/overview-view';
 import { REPORT_STAGES, type ReportFigures, type ReportRow, type ReportRows } from './reports-view';
@@ -222,11 +228,7 @@ const SCOPE_SLUG_MAX = 60;
 
 /** Lower-case ASCII letters and digits joined by `-`: `Team Đông Á` → `team-dong-a`. */
 const slug = (text: string) =>
-  text
-    .toLowerCase()
-    .replace(/đ/g, 'd')
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
+  stripDiacritics(text.toLowerCase())
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-/, '')
     .slice(0, SCOPE_SLUG_MAX)

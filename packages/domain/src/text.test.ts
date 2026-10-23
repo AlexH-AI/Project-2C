@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { isStorableText, normalizeNote, normalizeText } from './text';
+import {
+  collapseSpaces,
+  isStorableText,
+  normalizeNote,
+  normalizeText,
+  stripDiacritics,
+  toHex,
+} from './text';
 
 /** The invisible characters of DR6-72 outside `\p{Cf}`: Hangul fillers, CGJ, variation selectors… */
 const INVISIBLE = [0x3164, 0x115f, 0xffa0, 0x34f, ...range(0xfe00, 0xfe0f), 0x2800].map((code) =>
@@ -143,5 +150,42 @@ describe('isStorableText', () => {
   // DR6-107: the commands drop a U+FEFF that starts the text; only the backup import refuses one.
   it('takes a text that starts with U+FEFF', () => {
     expect(isStorableText('\u{FEFF}Sao Mai')).toBe(true);
+  });
+});
+
+describe('stripDiacritics', () => {
+  it('writes the text bare: no tone mark, no diacritic, đ as d, the case kept', () => {
+    expect(stripDiacritics('Hừng Đông đẹp')).toBe('Hung Dong dep');
+    expect(stripDiacritics('NGUYỄN Thị Ánh, ơ ư â ă ê ô')).toBe('NGUYEN Thi Anh, o u a a e o');
+  });
+
+  it('reads decomposed (NFD) text as composed text', () => {
+    expect(stripDiacritics('Hừng Đông đẹp'.normalize('NFD'))).toBe('Hung Dong dep');
+    // "à" typed as "a" + combining grave accent.
+    expect(stripDiacritics('Ba\u{300}')).toBe('Ba');
+  });
+
+  it('leaves text without marks as it is', () => {
+    expect(stripDiacritics('Team 2 - A_b')).toBe('Team 2 - A_b');
+    expect(stripDiacritics('')).toBe('');
+  });
+});
+
+describe('collapseSpaces', () => {
+  it('makes each run of white space one space, the ends and the case kept', () => {
+    expect(collapseSpaces('  Hai   vợ\tchồng\r\n\u{A0}có 2 Bé ')).toBe(' Hai vợ chồng có 2 Bé ');
+  });
+
+  it('composes (NFC), so text typed decomposed compares equal', () => {
+    expect(collapseSpaces('vợ chồng'.normalize('NFD'))).toBe('vợ chồng'.normalize('NFC'));
+  });
+});
+
+describe('toHex', () => {
+  it('writes each byte as two lower-case hex digits: 16 bytes are 32 characters', () => {
+    const bytes = Uint8Array.from({ length: 16 }, (_, i) => i * 0x11);
+    expect(toHex(bytes)).toBe('00112233445566778899aabbccddeeff');
+    expect(toHex(new Uint8Array([0, 1, 0xfe, 0xff]))).toBe('0001feff');
+    expect(toHex(new Uint8Array())).toBe('');
   });
 });

@@ -1,4 +1,5 @@
 /** Storage port backed by the Rust file commands in `src-tauri` (ADR-0016). */
+import { toHex } from '@p2c/domain';
 import type { InvokeArgs, InvokeOptions } from '@tauri-apps/api/core';
 import type { StoragePort } from './app-data';
 
@@ -47,10 +48,7 @@ export function saveFailure(error: unknown): SaveFailure {
 }
 
 /** 128 random bits in hex; `getRandomValues`, unlike `randomUUID`, needs no secure context. */
-const newPage = () =>
-  Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
-    byte.toString(16).padStart(2, '0'),
-  ).join('');
+const newPage = () => toHex(crypto.getRandomValues(new Uint8Array(16)));
 
 /**
  * @param invoke Tauri's `invoke`.

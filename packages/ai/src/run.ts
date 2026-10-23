@@ -7,7 +7,7 @@
  * One request at a time in the whole app (P5): every call goes through the app's single
  * `AiRunner`, which stays busy until the adapter has really answered, also after Hủy.
  */
-import { evaluateKycGate, type CalendarDate, type KycGateState } from '@p2c/domain';
+import { evaluateKycGate, toHex, type CalendarDate, type KycGateState } from '@p2c/domain';
 import type { AiAdapter, AiCompleteRequest, AiMessage } from './adapter';
 import { codePointCount, cutCodePoints } from './code-points';
 import { AiError, type AiErrorCode } from './errors';
@@ -146,9 +146,7 @@ interface RandomSource {
 /** 128 random bits in hex; `getRandomValues`, unlike `randomUUID`, needs no secure context. */
 function newSessionId(): string {
   const { crypto } = globalThis as unknown as { crypto: RandomSource };
-  return Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
-    byte.toString(16).padStart(2, '0'),
-  ).join('');
+  return toHex(crypto.getRandomValues(new Uint8Array(16)));
 }
 
 function completeRequest(

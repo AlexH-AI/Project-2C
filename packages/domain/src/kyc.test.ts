@@ -11,11 +11,17 @@ import {
   nextKycVersion,
   resolveConflict,
 } from './kyc';
-import type { KycProfile } from './kyc';
+import type { KycProfile, KycVersion } from './kyc';
 import { calendarDate } from './period';
 
 const DAY = calendarDate(2025, 12, 1);
 const LATER = calendarDate(2026, 1, 5);
+
+/** A version, here never null, with the profile it was recorded for. */
+const recorded = (version: KycVersion | null, profile: KycProfile) => ({
+  version: version!,
+  profile,
+});
 
 const note = (id: string, text = 'Gặp KH tại văn phòng') => ({ id, text, createdDate: DAY });
 
@@ -291,7 +297,7 @@ describe('KYC versions', () => {
 
   it('creates the first version with the dated summary', () => {
     const profile = profileOf([['f1', 'birthYear', 1972]]);
-    expect(nextKycVersion(null, null, profile, DAY, false)).toEqual({
+    expect(nextKycVersion(null, profile, DAY, false)).toEqual({
       hash: kycHash(profile),
       summary: 'Cập nhật KYC 01/12/2025',
       date: DAY,
@@ -301,8 +307,8 @@ describe('KYC versions', () => {
 
   it('creates no new version when the facts did not change', () => {
     const profile = profileOf([['f1', 'birthYear', 1972]]);
-    const first = nextKycVersion(null, null, profile, DAY, false);
-    expect(nextKycVersion(first, profile, addNote(profile, note('n2')), LATER, true)).toBeNull();
+    const first = recorded(nextKycVersion(null, profile, DAY, false), profile);
+    expect(nextKycVersion(first, addNote(profile, note('n2')), LATER, true)).toBeNull();
     const changed = confirmFact(profile, {
       id: 'f2',
       field: 'birthYear',
@@ -310,9 +316,7 @@ describe('KYC versions', () => {
       noteId: 'n1',
       confirmedDate: LATER,
     });
-    expect(nextKycVersion(first, profile, changed, LATER, false)?.summary).toBe(
-      'Cập nhật KYC 05/01/2026',
-    );
+    expect(nextKycVersion(first, changed, LATER, false)?.summary).toBe('Cập nhật KYC 05/01/2026');
   });
 });
 
@@ -327,14 +331,14 @@ describe('KYC material flag', () => {
     ['f1', 'birthYear', 1972],
     ['f2', 'gender', 'Nam'],
   ]);
-  const baseVersion = nextKycVersion(null, null, base, DAY, false);
+  const baseVersion = nextKycVersion(null, base, DAY, false);
   const next = (after: KycProfile, manualMaterial = false) =>
-    nextKycVersion(baseVersion, base, after, LATER, manualMaterial);
+    nextKycVersion(recorded(baseVersion, base), after, LATER, manualMaterial);
 
   it('always flags the first version, even with only non-core trường', () => {
     const genderOnly = confirmAll(withNotes('n1'), [['f1', 'gender', 'Nữ']]);
     expect(isMaterialChange(null, genderOnly)).toBe(true);
-    expect(nextKycVersion(null, null, genderOnly, DAY, false)?.material).toBe(true);
+    expect(nextKycVersion(null, genderOnly, DAY, false)?.material).toBe(true);
   });
 
   it('flags a changed core value', () => {
@@ -371,11 +375,13 @@ describe('KYC material flag', () => {
     const entered = markConflict(base, input('f3', 'birthYear', 1974));
     const widened = markConflict(entered, input('f4', 'birthYear', 1973));
     const resolved = resolveConflict(widened, 'f4');
-    expect(nextKycVersion(baseVersion, base, entered, LATER, false)?.material).toBe(true);
-    const enteredVersion = nextKycVersion(baseVersion, base, entered, LATER, false);
-    const widenedVersion = nextKycVersion(enteredVersion, entered, widened, LATER, false);
+    expect(nextKycVersion(recorded(baseVersion, base), entered, LATER, false)?.material).toBe(true);
+    const enteredVersion = nextKycVersion(recorded(baseVersion, base), entered, LATER, false);
+    const widenedVersion = nextKycVersion(recorded(enteredVersion, entered), widened, LATER, false);
     expect(widenedVersion?.material).toBe(true);
-    expect(nextKycVersion(widenedVersion, widened, resolved, LATER, false)?.material).toBe(true);
+    expect(
+      nextKycVersion(recorded(widenedVersion, widened), resolved, LATER, false)?.material,
+    ).toBe(true);
   });
 
   it('does not flag a conflict on non-core trường only', () => {

@@ -264,8 +264,8 @@ export function previewProfileFacts(
   let count = 0;
   const after = withProfileFacts(before, note, change, date, () => `preview-${count++}`);
   const latest = prepared(db, latestVersion).get({ customerId });
-  const previous = latest ? toVersion(latest) : null;
-  const version = nextKycVersion(previous, previous && before, after, date, false);
+  const previous = latest ? { version: toVersion(latest), profile: before } : null;
+  const version = nextKycVersion(previous, after, date, false);
   return { ...change, newVersion: version !== null };
 }
 
@@ -434,8 +434,8 @@ function save(
   }
 
   const latest = prepared(db, latestVersion).get({ customerId });
-  const previous = latest ? toVersion(latest) : null;
-  const version = nextKycVersion(previous, previous && before, after, date, manualMaterial);
+  const previous = latest ? { version: toVersion(latest), profile: before } : null;
+  const version = nextKycVersion(previous, after, date, manualMaterial);
   if (!version) return null;
   const row = {
     id: ulid(db.now(), db.random),

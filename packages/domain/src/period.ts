@@ -86,14 +86,23 @@ export function formatDate(date: CalendarDate): string {
   return `${pad(date.day)}/${pad(date.month)}/${date.year}`;
 }
 
+/** `HH:MM` of a moment in the local time zone; `HH:MM:SS` with `seconds`. */
+function localTime(at: Date, seconds = false): string {
+  const time = `${pad(at.getHours())}:${pad(at.getMinutes())}`;
+  return seconds ? `${time}:${pad(at.getSeconds())}` : time;
+}
+
 /**
  * `dd/mm/yyyy HH:MM` of a moment in the local time zone (e.g. when a file was written);
  * `dd/mm/yyyy HH:MM:SS` with `seconds`.
  */
 export function formatLocalDateTime(at: Date, options: { seconds?: boolean } = {}): string {
-  const time = `${pad(at.getHours())}:${pad(at.getMinutes())}`;
-  const full = options.seconds ? `${time}:${pad(at.getSeconds())}` : time;
-  return `${formatDate(fromLocalDate(at))} ${full}`;
+  return `${formatDate(fromLocalDate(at))} ${localTime(at, options.seconds)}`;
+}
+
+/** `dd/mm HH:MM` of a moment in the local time zone whose year is clear from context. */
+export function formatLocalDayMonthTime(at: Date): string {
+  return `${formatDayMonth(fromLocalDate(at))} ${localTime(at)}`;
 }
 
 /**
@@ -110,6 +119,16 @@ export function fromIsoDate(text: string): CalendarDate {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
   if (!match) throw new RangeError(`Not a YYYY-MM-DD date: ${text}`);
   return calendarDate(Number(match[1]), Number(match[2]), Number(match[3]));
+}
+
+/** Whether `text` is a stored day: one `fromIsoDate` reads (the AI schema, the backup import). */
+export function isIsoDate(text: string): boolean {
+  try {
+    fromIsoDate(text);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** `YYYYMMDD-HHMM` in the local time zone, for file names that sort by time. */
@@ -141,6 +160,15 @@ export function daysBetween(from: CalendarDate, to: CalendarDate): number {
   return toDayNumber(to) - toDayNumber(from);
 }
 
+/**
+ * The same day and month a year earlier; 29/02 becomes 28/02. Not checked against 1900–2100: a day
+ * of 1900 gives one of 1899, which is only compared (`evidenceLevel`). Shared by `compare.ts` and
+ * `evidence-level.ts`, not exported from the package.
+ */
+export function sameDayYearBefore({ year, month, day }: CalendarDate): CalendarDate {
+  return { year: year - 1, month, day: month === 2 && day === 29 ? 28 : day };
+}
+
 /** Negative when `a` is earlier, positive when later, 0 on the same day — for `Array.sort`. */
 export function compareDates(a: CalendarDate, b: CalendarDate): number {
   return toDayNumber(a) - toDayNumber(b);
@@ -152,9 +180,12 @@ export function isInPeriod(date: CalendarDate, period: Period): boolean {
   return toDayNumber(period.start) <= day && day <= toDayNumber(period.end);
 }
 
-/** Reads `dd/mm/yyyy` (leading zeros optional); null when it is not a real date. */
+/**
+ * Reads `dd/mm/yyyy` (leading zeros optional); null when it is not a real date. The text is read as
+ * `normalizeText` keeps it, as `parseQuickDate` reads it.
+ */
 export function parseDate(text: string): CalendarDate | null {
-  const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text.trim());
+  const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(normalizeText(text));
   if (!match) return null;
   return tryCalendarDate(Number(match[3]), Number(match[2]), Number(match[1]));
 }

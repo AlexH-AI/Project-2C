@@ -23,10 +23,8 @@ import {
 import type { AiAnalysisReminder, AiAnalysisView, KycFactRecord, KycVersionRecord } from '@p2c/db';
 import {
   evidenceLevel,
-  formatDayMonth,
-  formatLocalDateTime,
+  formatLocalDayMonthTime,
   fromIsoDate,
-  fromLocalDate,
   KYC_GATE_THRESHOLDS,
   type CalendarDate,
   type Evidence,
@@ -399,7 +397,7 @@ export function webChip(web: AiPanelWeb) {
   return {
     version: web.kycVersion,
     prompt: `${ANALYSIS_PROMPTS[mode].version}+${WEB_WRAPPER.version}`,
-    at: dayAndTime(web.takenAt),
+    at: formatLocalDayMonthTime(web.takenAt),
   };
 }
 
@@ -514,7 +512,7 @@ export function analysisContent(
       version: versionNumber(analysis, versions),
       prompt: analysis.promptVersion,
       source: analysisSource(analysis),
-      at: dayAndTime(analysis.createdAt),
+      at: formatLocalDayMonthTime(analysis.createdAt),
     },
     conflicts: input.conflictWarnings.map((field) => ({
       field,
@@ -570,7 +568,7 @@ export function historyRows(
     .sort((a, b) => b.seq - a.seq)
     .map((analysis) => ({
       id: analysis.id,
-      at: dayAndTime(analysis.createdAt),
+      at: formatLocalDayMonthTime(analysis.createdAt),
       version: versionNumber(analysis, versions),
       prompt: analysis.promptVersion,
       source: analysisSource(analysis),
@@ -600,7 +598,7 @@ export function rejectedReport(
   const { provider, promptTokens, completionTokens } = row;
   const counted = provider === 'OPENCODE_GO' && promptTokens !== null && completionTokens !== null;
   return {
-    at: dayAndTime(row.createdAt),
+    at: formatLocalDayMonthTime(row.createdAt),
     version: versionNumber(row, versions),
     prompt: row.promptVersion,
     source: analysisSource(row),
@@ -623,9 +621,3 @@ function versionNumber(
 }
 
 const isNonEmpty = <T>(list: readonly T[]): list is readonly [T, ...T[]] => list.length > 0;
-
-/** `dd/mm HH:MM` of a moment in the local time zone. */
-function dayAndTime(at: Date): string {
-  const [, time] = formatLocalDateTime(at).split(' ');
-  return `${formatDayMonth(fromLocalDate(at))} ${time}`;
-}
