@@ -3,7 +3,8 @@
   Mục lục (Phase 5 · G3, spec docs/design/phase-5-ai.md §9.4):
   #s1  Cài đặt → AI ............................ 1a trang chính · 1b Mock · 1c bản web · 1d key · 1e xóa key · 1f kiểm tra kết nối · 1g cài đặt hỏng
   #s2  Panel KYC Intelligence ................... 2a chưa phân tích · 2b CONFLICT_RESOLUTION · 2c KYC_INSUFFICIENT · 2d đang chạy · 2e đang hủy
-                                                  2f lỗi · 2g discovery + Mock · 2h STALE · 2i REJECTED gần nhất · 2j lịch sử · 2k xem dòng REJECTED · 2l thông báo lỗi
+                                                  2f lỗi · 2g discovery + Mock · 2h STALE (+ Thông tin tham khảo mờ, T-284) · 2i REJECTED gần nhất · 2j lịch sử
+                                                  2k xem dòng REJECTED · 2l thông báo lỗi
   #s3  Mã F và AI trích xuất .................... 3a mã F + bấm bằng chứng · 3b nút trên ghi chú · 3c đang chạy · 3d đề xuất · 3e 0 đề xuất / lỗi · 3f Xác nhận
   #s4  Bổ sung W-1 (§9.5) ...................... 4a Cài đặt: Gói OpenCode + dòng ChatGPT web · 4b ẩn gói · 4c lỗi đổi theo W-1 · 4d nút ChatGPT web
                                                   4e phiên chờ dán · 4f copy lỗi · 4g lần 1 không đạt · 4h lỗi khung dán · 4i chip + lịch sử
@@ -181,6 +182,11 @@
       .ref h4 {
         margin-top: 0;
       }
+      /* Faded: the frame turns solid so only the hollow items stay dashed (one dashed layer, G3 T-284) */
+      .faded .ref {
+        border-style: solid;
+        border-color: var(--border);
+      }
       .versions td {
         padding: 6px 8px;
         white-space: nowrap;
@@ -331,7 +337,7 @@
                   <span class="k">Model</span>
                   <span class="v">
                     <span class="input wide">DeepSeek V4.1 Flash <span class="muted">· mặc định</span><span class="caret">▾</span></span>
-                    <span class="help">Danh sách cố định: GLM-5.3 · Kimi K3 · DeepSeek V4 Pro · DeepSeek V4.1 Flash</span>
+                    <span class="help">Danh sách cố định: GLM-5.3 · Kimi K3 · DeepSeek V4.1 Flash</span>
                   </span>
                 </div>
                 <div class="set-row">
@@ -571,7 +577,7 @@
           <p class="help" style="margin-top: 6px">Không có khối Needs · Pain points · Themes. "Thông tin tham khảo" chỉ hiện khi có phần tử (customer.html).</p>
         </section>
 
-        <section class="specimen">
+        <section class="specimen" id="p2h">
           <p class="cap">2h · Bản mới nhất STALE — lời nhắc material / không material</p>
           <div class="panel">
             <div class="card-head"><h2>KYC Intelligence</h2><span class="badge plain" style="color: var(--text-3)">STALE</span><span class="actions"><button class="btn btn-primary" style="padding: 4px 10px">Phân tích lại</button></span></div>
@@ -586,11 +592,21 @@
               <div class="hyp">KH có thể ưu tiên sự chắc chắn cho mục tiêu giáo dục hơn là tăng trưởng tài sản.
                 <div class="ev"><span>Bằng chứng: <a href="#">F12</a>, <a href="#">F13</a></span><span>Mức bằng chứng: trung bình · 2 dữ kiện, mới nhất 14/09/2026</span></div>
               </div>
-              <p class="muted" style="margin: 0; font-size: var(--fs-xs)">… các khối còn lại như bản CURRENT</p>
+              <p class="muted" style="margin: 0; font-size: var(--fs-xs)">… ba khối còn lại như bản CURRENT</p>
+              <div class="ref">
+                <h4>Thông tin tham khảo — không phải kết luận</h4>
+                <div class="hyp"><b>Tâm lý học:</b> KH có thể thiên về nhóm S (DISC) — coi trọng sự ổn định và đồng thuận trong gia đình.
+                  <div class="ev"><span>Bằng chứng: <a href="#">F9</a>, <a href="#">F13</a></span><span>Mức bằng chứng: trung bình · 2 dữ kiện, mới nhất 14/09/2026</span></div>
+                </div>
+                <div class="hyp"><b>Tử vi / huyền học:</b> KH có thể tuổi Giáp Tý, mệnh Kim (sinh khoảng 1984).
+                  <div class="ev"><span>Bằng chứng: <a href="#">F1</a></span><span>Mức bằng chứng: thấp · 1 dữ kiện, mới nhất 01/06/2026</span></div>
+                </div>
+              </div>
             </div>
           </div>
           <p class="help" style="margin-top: 6px">Hai lời nhắc là hai trường hợp, không hiện cùng lúc. "Từ dd/mm" = ngày ghi nhận sớm nhất trong các phiên bản KYC sau bản đã phân tích (material: chỉ xét phiên bản material) — #ask 4.</p>
           <p class="help" style="margin-top: 6px">Mờ = cả khối 85 % + thẻ phần tử viền đứt, không nền: mọi chữ vẫn ≥ 4,5:1 (thấp nhất 4,81:1, Owner 15/10, DR6-21). Dùng chung cho 2b, 2d, 2j và khối AI ở chi tiết lịch hẹn.</p>
+          <p class="help" style="margin-top: 6px">Khối Thông tin tham khảo khi mờ (T-284, chờ duyệt): khung viền liền <code>--border</code> thay viền đứt, thẻ bên trong viền đứt như mọi thẻ mờ, nên chỉ một lớp viền đứt. Khi không mờ, khung vẫn viền đứt như customer.html.</p>
         </section>
 
         <section class="specimen">
@@ -806,7 +822,7 @@
                   <span class="k">Model</span>
                   <span class="v">
                     <span class="input wide">DeepSeek V4.1 Flash <span class="muted">· mặc định</span><span class="caret">▾</span></span>
-                    <span class="help">Danh sách cố định: GLM-5.3 · Kimi K3 · DeepSeek V4 Pro · DeepSeek V4.1 Flash</span>
+                    <span class="help">Danh sách cố định: GLM-5.3 · Kimi K3 · DeepSeek V4.1 Flash</span>
                   </span>
                 </div>
                 <div class="set-row">

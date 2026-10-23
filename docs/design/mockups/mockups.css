@@ -8,6 +8,8 @@
   --bg-3: #212c3a; /* inputs, hover */
   --border: #263241;
   --border-strong: #34425a;
+  /* Input borders and the unsorted sort arrow: at least 3:1 on --bg-0…--bg-3 (WCAG 1.4.11, G3 T-284) */
+  --border-control: #687890;
 
   /* Text */
   --text: #e8edf4;
@@ -233,7 +235,7 @@ a {
   align-items: center;
   gap: 8px;
   background: var(--bg-2);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-sm);
   padding: 6px 10px;
   color: var(--text-3);
@@ -633,7 +635,7 @@ th.sort {
 
 th.sort::after {
   content: ' ↕';
-  color: var(--border-strong);
+  color: var(--border-control);
 }
 
 th.sort.asc::after {
@@ -660,7 +662,7 @@ th.sort.desc {
 
 .select {
   background: var(--bg-2);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-sm);
   padding: 6px 10px;
   font-size: var(--fs-sm);

@@ -163,7 +163,7 @@
 
 .input {
   background: var(--bg-3);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-sm);
   padding: 7px 10px;
   font-size: var(--fs-md);
