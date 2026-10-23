@@ -7,7 +7,7 @@ import { discoveryPrompt } from './prompts/discovery';
 import { retryMessage } from './prompts/retry';
 import { checkAnalysisAnswer } from './run';
 import { buildAnalysisInput, type AnalysisProfile } from './schema';
-import { fact, PROFILE, TODAY } from './test-support';
+import { fact, nfdZw, PROFILE, TODAY, ZWSP } from './test-support';
 import {
   buildWebMessage,
   checkWebAnswer,
@@ -80,12 +80,23 @@ const DISCOVERY_ANSWER = JSON.stringify({
 const BAD = JSON.stringify(GOOD).replace('"F7"', '"F99"');
 
 const NBSP = String.fromCodePoint(0xa0);
-const ZWSP = String.fromCodePoint(0x200b);
 /** U+3164: invisible, default-ignorable, but not a format character. */
 const FILLER = String.fromCodePoint(0x3164);
+/** A combining acute accent; on no vowel, it reads as a space (G5 §7 item 0, §12.2). */
+const ACUTE = String.fromCodePoint(0x301);
 
-/** `text` written NFD with a ZWSP before each combining mark (DR6-17). */
-const nfdZw = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, (mark) => ZWSP + mark);
+/** The Unicode line separators: a line of a paste ends there too, as a KYC note's (G5 §12.3). */
+const SEPARATORS = [
+  ['U+0085', String.fromCodePoint(0x85)],
+  ['U+2028', String.fromCodePoint(0x2028)],
+  ['U+2029', String.fromCodePoint(0x2029)],
+] as const;
+
+/** `it.each` rows: each line break of a message as one of the separators (DR6-123). */
+const SEPARATED = SEPARATORS.map(([name, separator]): [string, (message: string) => string] => [
+  `with ${name} line breaks`,
+  (message) => message.replaceAll('\n', separator),
+]);
 
 /** Changes both frame lines of the `web@1` message (G5 §6a). */
 const eachFrame =
@@ -164,7 +175,7 @@ describe('checkWebAnswer', () => {
         provider: 'CHATGPT_WEB',
         model: null,
         reasoning: null,
-        promptVersion: 'analysis@3+web@1',
+        promptVersion: 'analysis@4+web@1',
         attempts: 1,
         input: session.input,
         output: { ...GOOD, personalityNotes: [] },
@@ -228,7 +239,7 @@ describe('checkWebAnswer', () => {
           { attempt: 2, errors: [{ code: 'V2' }] },
         ],
         provider: 'CHATGPT_WEB',
-        promptVersion: 'analysis@3+web@1',
+        promptVersion: 'analysis@4+web@1',
       },
     });
   });
@@ -306,6 +317,12 @@ describe('checkWebAnswer', () => {
         'quoted with "> " on every line',
         (message: string) => message.replace(/^/gm, '> ').replace(/^> === /gm, '>> === '),
       ],
+      // DR6-122, DR6-123 (Owner G5 23/10/2026).
+      ...SEPARATED,
+      [
+        'with a stray mark before and after the frame lines',
+        eachFrame((frame) => `${ACUTE}${frame}\u00b4`),
+      ],
     ])('does not count it %s', (_, cut) => {
       const { session, message } = start();
 
@@ -322,6 +339,24 @@ describe('checkWebAnswer', () => {
         kind: 'unusable',
         reason: 'OWN_MESSAGE',
       });
+      // Past 40 000 code units too: its head is read (review #521).
+      expect(checkWebAnswer(session, `${message}${'x'.repeat(40_000)}`)).toEqual({
+        kind: 'unusable',
+        reason: 'OWN_MESSAGE',
+      });
+    });
+
+    it('reads no line that the head of a paste past 40 000 code units cuts', () => {
+      const frame = '=== ĐẦU VÀO ===';
+      const head = `${'x'.repeat(40_000 - frame.length - 1)}\n${frame}`;
+      const { session } = start();
+
+      expect(checkWebAnswer(session, `${head} của bạn\n${'y'.repeat(100)}`)).toEqual({
+        kind: 'unusable',
+        reason: 'TOO_LONG',
+      });
+      // 40 000 code units are all read, the last line too.
+      expect(checkWebAnswer(session, head)).toEqual({ kind: 'unusable', reason: 'OWN_MESSAGE' });
     });
 
     it('does not count it at the second attempt either', () => {
@@ -345,6 +380,7 @@ describe('checkWebAnswer', () => {
       ['only its first line', (message: string) => message.split('\n')[0]!],
       ['only its last line', (message: string) => message.split('\n').at(-1)!],
       ['written NFD with a ZWSP before each mark (DR6-17)', nfdZw],
+      ...SEPARATED,
     ])('does not count the retry message pasted back %s', (_, cut) => {
       const retry = checkWebAnswer(start().session, BAD);
       if (retry.kind !== 'retry') throw new Error('no retry');
@@ -366,6 +402,29 @@ describe('checkWebAnswer', () => {
         row: { status: 'ACCEPTED', attempts: 1 },
       });
     });
+
+    /** `GOOD` with its theme reading `text`, as one JSON line. */
+    const themed = (text: string) => JSON.stringify({ ...GOOD, themes: [item(text, 'F9')] });
+
+    it('checks an answer with a frame in the middle of a JSON text as an answer (G5 §12.3)', () => {
+      expect(
+        paste(start().session, themed('Gia đình === HƯỚNG DẪN === là trung tâm')),
+      ).toMatchObject({ row: { status: 'ACCEPTED', attempts: 1 } });
+    });
+
+    // G5 §12.3, accepted: only the app writes a frame line, so one a JSON text holds between two
+    // separators is a line of its own, and the paste the app's message.
+    it.each(SEPARATORS)(
+      'names a frame between two %s in a JSON text the own message',
+      (_, line) => {
+        const answer = themed(`Gia đình${line}=== HƯỚNG DẪN ===${line}là trung tâm`);
+
+        expect(checkWebAnswer(start().session, answer)).toEqual({
+          kind: 'unusable',
+          reason: 'OWN_MESSAGE',
+        });
+      },
+    );
   });
 
   it('counts 20 000 characters by code point, as `raw_output` is cut', () => {
@@ -393,7 +452,7 @@ describe('checkWebAnswer', () => {
         mode: 'discovery',
         gateState: 'PROFILE_DISCOVERY',
         status: 'ACCEPTED',
-        promptVersion: 'discovery@3+web@1',
+        promptVersion: 'discovery@4+web@1',
         output: { hypotheses: [], personalityNotes: [] },
       },
     });

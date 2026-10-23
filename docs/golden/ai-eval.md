@@ -2,7 +2,7 @@
 
 Hồ sơ cho lần đo AI thật đầu tiên (spec `docs/design/phase-5-ai.md` §11, chạy bằng `pnpm eval:ai` ở T-171 #413). Owner duyệt (G2) trước khi chạy; chạy tốn tiền → Owner bấm (G4). Sau khi duyệt, **không sửa hồ sơ để "cho xanh"** — muốn đổi phải qua Owner. Fixture của script do T-171 chép **1–1** từ file này (cùng mã `E…`, `X…`).
 
-Nền: `docs/golden/kyc.md` (K01–K15, cổng), prompt `analysis@3` / `discovery@3` / `extraction@1` (đợt G5 Phase 6 lượt 2, Owner duyệt 18/10/2026; eval 10/10 chạy với `@1`, 11/10 với `@2`) và danh sách chặn V3–V6 (`docs/design/phase-5-prompts.md`, G5).
+Nền: `docs/golden/kyc.md` (K01–K15, cổng), prompt `analysis@4` / `discovery@4` / `extraction@1` (đợt G5 Phase 6 lượt 3, Owner duyệt 23/10/2026; eval 10/10 chạy với `@1`, 11/10 với `@2`) và danh sách chặn V3–V6 (`docs/design/phase-5-prompts.md`, G5).
 
 ## 1. Quy ước chung
 

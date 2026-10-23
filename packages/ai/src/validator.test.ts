@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { AiMode } from './schema';
+import { ZWSP } from './test-support';
 import { validateOutput, type OutputCheckInput } from './validator';
 
 const item = (text: string, ...evidence: string[]) => ({ text, evidence });
-const ZWSP = String.fromCodePoint(0x200b);
 
 const input: OutputCheckInput = {
   factCodes: ['F1', 'F2', 'F3', 'F4'],
@@ -98,7 +98,7 @@ describe('validateOutput — V1', () => {
     ],
     [
       'a text over 1 000 characters as written (DR6-77)',
-      { ...analysis(), needs: [item(`Ý${'\u200b'.repeat(1000)}`, 'F1')] },
+      { ...analysis(), needs: [item(`Ý${ZWSP.repeat(1000)}`, 'F1')] },
       'needs[0].text',
       'quá 1 000 ký tự kể cả ký tự vô hình',
     ],

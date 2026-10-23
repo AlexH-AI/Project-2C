@@ -1,5 +1,7 @@
 /** V3–V6 (prompts G5 §7, §8): blocked phrases in the texts of analysis / discovery. */
 import { describe, expect, it } from 'vitest';
+import { lettersAround, nfdZw } from './test-support';
+import { cleanText } from './text-match';
 import { validateOutput, type OutputCheckInput } from './validator';
 
 const input: OutputCheckInput = { factCodes: ['F1'], missingCategories: ['ASSETS'] };
@@ -41,9 +43,6 @@ const issuesOf = (block: Block, text: string) =>
 const codesOf = (block: Block, text: string) => [
   ...new Set(issuesOf(block, text).map((issue) => issue.code)),
 ];
-
-/** `text` written NFD with a U+200B before each combining mark (DR6-17). */
-const nfdZw = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, (mark) => `\u200b${mark}`);
 
 describe('validateOutput — G5 §8.5 cases', () => {
   it.each([
@@ -163,29 +162,45 @@ describe('validateOutput — G5 §8.5 cases', () => {
     ['C70', 'needs', 'KH tin vào qui luật Thị trường', []],
     ['C70', 'needs', 'Giữ KỈ LUẬT Thép', []],
     ['C70', 'needs', 'KH tin vào QUI LUẬT Thị trường', []],
+    // T-277 (Owner G5 23/10/2026).
+    ['C73', 'hypotheses', 'KH có xác\u0301 suất đồng ý cao', ['V3']],
+    ['C73', 'hypotheses', 'KH có xá\u0107 suất đồng ý cao', ['V3']],
+    ['C73', 'hypotheses', 'KH có xác \u0301suất đồng ý cao', ['V3']],
+    ['C73', 'hypotheses', 'KH có xác\u00b4suất đồng ý cao', ['V3']],
+    ['C73', 'hypotheses', 'KH có xác\u00a8suất đồng ý cao', ['V3']],
+    ['C74', 'hypotheses', 'KH dễ \u0301chốt', ['V3']],
+    ['C74', 'nextBestActions', 'Đề xuất Bảo\u00b4Việt', ['V4']],
+    ['C74', 'needs', 'KH tuổi\u00b4Tý', ['V5']],
+    ['C74', 'themes', 'Theo Điều\u00b435', ['V6']],
+    ['C74', 'themes', 'Theo Luật \u0301Kinh doanh bảo hiểm', ['V6']],
+    ['C75', 'hypotheses', 'KH có thể chốt\u0301 được', ['V3']],
+    ['C75', 'hypotheses', 'KH có xac\u0301 suat cao', ['V3']],
+    ['C75', 'hypotheses', 'Ý x\u0301xác suất', ['V3']],
+    ['C76', 'hypotheses', 'KH là khách am hiểu tài chính', []],
+    ['C76', 'hypotheses', 'Nhóm khách am tường thị trường chứng khoán', []],
+    ['C76', 'hypotheses', 'KH là khách lanh lợi, quyết nhanh', []],
+    ['C76', 'needs', 'Hỏi KH về định hướng noi theo của gia đình', []],
+    ['C76', 'hypotheses', 'KH làm IT khả năng tăng thu nhập cao', []],
+    ['C77', 'hypotheses', 'KH la khach am', ['V3']],
+    ['C77', 'hypotheses', 'KH la khach lanh', ['V3']],
+    ['C77', 'needs', 'KH huong noi', ['V5']],
+    ['C77', 'hypotheses', 'KH là khach ấm', ['V3']],
+    ['C77', 'hypotheses', 'KH có ít kha nang', ['V3']],
+    ['C78', 'needs', 'KH chi tiêu theo định luật Pareto', []],
+    ['C78', 'needs', 'Định luật Pareto đúng với chi tiêu của KH', []],
+    ['C78', 'needs', 'KH giữ giới luật Phật giáo', []],
+    ['C78', 'needs', 'KH giữ GIỚI LUẬT Phật giáo', []],
+    ['C79', 'themes', 'Theo quy định Luật Kinh doanh bảo hiểm', ['V6']],
+    ['C79', 'themes', 'Theo qui định Luật Đất đai', ['V6']],
+    ['C79', 'themes', 'Theo đạo luật Doanh nghiệp', ['V6']],
   ] as const)('%s: %s "%s" → %j', (_, block, text, codes) => {
     expect(codesOf(block, text)).toEqual(codes);
   });
 
   it.each([
-    [
-      'C71',
-      '300 letters and 650 000 U+200B',
-      `${'a'.repeat(150)}${'\u200b'.repeat(650_000)}${'a'.repeat(150)}`,
-      ['V1'],
-    ],
-    [
-      'C71',
-      '300 letters and 701 U+200B',
-      `${'a'.repeat(150)}${'\u200b'.repeat(701)}${'a'.repeat(150)}`,
-      ['V1'],
-    ],
-    [
-      'C72',
-      '300 letters and 700 U+200B',
-      `${'a'.repeat(150)}${'\u200b'.repeat(700)}${'a'.repeat(150)}`,
-      [],
-    ],
+    ['C71', '300 letters and 650 000 U+200B', lettersAround(650_000), ['V1']],
+    ['C71', '300 letters and 701 U+200B', lettersAround(701), ['V1']],
+    ['C72', '300 letters and 700 U+200B', lettersAround(700), []],
     [
       'C72',
       '300 letters written NFD and 100 U+200B',
@@ -201,8 +216,7 @@ describe('validateOutput — G5 §8.5 cases', () => {
   });
 
   it('C71: says the string as written is too long', () => {
-    const text = `${'a'.repeat(150)}${'\u200b'.repeat(701)}${'a'.repeat(150)}`;
-    expect(issuesOf('needs', text)).toEqual([
+    expect(issuesOf('needs', lettersAround(701))).toEqual([
       { code: 'V1', path: 'needs[0].text', detail: 'quá 1 000 ký tự kể cả ký tự vô hình' },
     ]);
   });
@@ -306,6 +320,40 @@ describe('validateOutput — V3 to V6', () => {
   it('V6 still catches the name of a law that only starts like KH', () => {
     expect(codesOf('needs', 'Theo Luật Kinh doanh bảo hiểm')).toEqual(['V6']);
     expect(codesOf('needs', 'Theo Luật Khoa học và Công nghệ')).toEqual(['V6']);
+  });
+
+  // G5 §8.4 (§12.5, DR6-124 b): "định" is let through, but not the "định" of "quy định".
+  it.each([
+    ['KH tin vào định luật Murphy', []],
+    ['KH tin vào ĐỊNH LUẬT Murphy', []],
+    ['Theo quy định luật Đất đai', ['V6']],
+    ['THEO QUY ĐỊNH LUẬT Đất đai', ['V6']],
+    ['Theo Qui Định Luật Đất đai', ['V6']],
+  ])('V6 reads "luật" after "định" by the word before it: "%s" → %j', (text, codes) => {
+    expect(codesOf('needs', text)).toEqual(codes);
+  });
+
+  // G5 §7 item 2 (§12.4, DR6-124 a): "ấm", "lạnh", "nội", "ít" match bare in a bare phrase only.
+  it.each([
+    ['KH là khách am', []],
+    ['KH thiên về hướng noi', []],
+    ['Phòng IT khả năng cao sẽ đổi', ['có "khả năng cao"']],
+  ])('lets a word of the closed list through bare in a mixed phrase: "%s"', (text, details) => {
+    expect(issuesOf('needs', text).map((issue) => issue.detail)).toEqual(details);
+  });
+
+  // G5 §7 item 0 (§12.2, DR6-122): a combining mark on no vowel reads as a space, and the detail
+  // keeps one space between the parts.
+  it.each([
+    ['hypotheses', 'KH có xác\u00b4suất đồng ý cao', 'V3', 'có "xác suất"'],
+    ['themes', 'Theo Điều\u00b435', 'V6', 'có "Điều 35"'],
+    ['themes', 'Theo Luật \u0301Kinh doanh bảo hiểm', 'V6', 'có "Luật K"'],
+  ] as const)('C73, C74: finds what a stray mark cut in two: "%s"', (block, text, code, detail) => {
+    expect(issuesOf(block, text)).toEqual([{ code, path: `${block}[0].text`, detail }]);
+  });
+
+  it('reads a stray mark as a space, then one space between words and none at the ends', () => {
+    expect(cleanText('\u00b4KH  xác\u00b4suất\u0301 cao\u00a8')).toBe('KH xác suất cao');
   });
 
   // G5 §7 item 6: only V5 is lifted for "Thông tin tham khảo" (DR6-61).

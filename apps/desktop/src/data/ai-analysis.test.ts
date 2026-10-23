@@ -149,7 +149,7 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
       mode: 'discovery',
       provider: 'MOCK',
       model: null,
-      promptVersion: 'discovery@3',
+      promptVersion: 'discovery@4',
     });
     // The facts are sent with their stored code F{seq}: birth year (F1), then those confirmed.
     expect((row!.input as { facts: { code: string }[] }).facts.map((f) => f.code)).toEqual([
@@ -737,7 +737,7 @@ describe('ChatGPT web in the app (spec Phase 5 §3.1)', () => {
         model: null,
         reasoning: null,
         promptTokens: null,
-        promptVersion: 'discovery@3+web@1',
+        promptVersion: 'discovery@4+web@1',
         attempts: 1,
       },
     ]);

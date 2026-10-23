@@ -1,9 +1,11 @@
 /**
  * Text matching for V3–V6 (prompts G5 §7). A text is first cleaned (`cleanText`: no invisible
- * character, NFKC), then `-` / `_` read as spaces. It is compared in two forms: the original (case
- * kept) and the accented form (lower case, each run of white space as one space). An entry whose
- * "Bỏ dấu" column says "có" also matches its words written bare (no tone mark, no diacritic, `đ` as
- * `d`), word by word: "Xác suat" is caught, "nghĩ định" is not "nghị định" (G5 §7 item 2, DR6-23).
+ * character, NFKC, a stray mark as a space), then `-` / `_` read as spaces. It is compared in two
+ * forms: the original (case kept) and the accented form (lower case, each run of white space as one
+ * space). An entry whose "Bỏ dấu" column says "có" also matches its words written bare (no tone
+ * mark, no diacritic, `đ` as `d`), word by word: "Xác suat" is caught, "nghĩ định" is not "nghị
+ * định" (G5 §7 item 2, DR6-23); a word whose bare form is a word too, only in a phrase all bare
+ * ("khach am" is "khách ấm", "khách am hiểu" is not: DR6-124).
  */
 import { normalizeText } from '@p2c/domain';
 
@@ -15,15 +17,28 @@ export interface MatchText {
 /** A blocklist entry: the matched phrase, for the issue detail, or `null`. */
 export type Matcher = (text: MatchText) => string | null;
 
+/** The letters a Vietnamese mark sits on (G5 §7 item 0). */
+const VOWEL = /[aeiouyAEIOUY]/;
+
 /**
- * G5 §7 item 0: the invisible characters K20 drops (format and default-ignorable characters, the
- * blank Braille pattern) and each run of white space as one space (`normalizeText`), then NFKC
- * (`％` → `%`, full-width digits and letters → ASCII). Invisible characters go first, so a mark
- * written after one still composes with its letter (DR6-17). Also how a pasted line is read before
- * it is compared with the app's own message (G5 §6a).
+ * G5 §7 item 0: the invisible characters K20 drops (format, default-ignorable and control
+ * characters but NUL, the blank Braille pattern) and each run of white space as one space
+ * (`normalizeText`), then NFKC (`％` → `%`, full-width digits and letters → ASCII). Invisible
+ * characters go first, so a mark written after one still composes with its letter (DR6-17). A
+ * combining mark on no vowel, decomposed (after a consonant, a digit, a space, a sign or at the
+ * start), reads as a space: it was typed or copied wrong, and the words around it are found as
+ * they are (§12.2, DR6-122). Also how a pasted line is read before it is compared with the app's
+ * own message (G5 §6a).
  */
 export function cleanText(text: string): string {
-  return normalizeText(text).normalize('NFKC');
+  return normalizeText(text)
+    .normalize('NFKD')
+    .replace(/\p{M}+/gu, (marks, at: number, all: string) =>
+      VOWEL.test(all.charAt(at - 1)) ? marks : ' ',
+    )
+    .normalize('NFC')
+    .replace(/\p{White_Space}+/gu, ' ')
+    .trim();
 }
 
 /** A word as written bare: no tone mark, no diacritic, `đ` → `d` (G5 §7 item 2). */
@@ -57,9 +72,26 @@ export function char(c: string): Matcher {
  * space or none (G5 §7 item 4).
  */
 export function phrase(words: string, folded: boolean): Matcher {
-  const source = matchText(words).accented.split(' ').map(escape).join(' ');
-  const found = pattern(`${WORD_START}${source}${WORD_END}`, folded ? 'both' : 'accented');
+  const parts = matchText(words).accented.split(' ').map(escape);
+  const source = folded ? bareOrNot(parts) : parts.join(' ');
+  const found = pattern(`${WORD_START}${source}${WORD_END}`, 'accented');
   return (text) => (found(text) === null ? null : words);
+}
+
+/**
+ * The closed list of G5 §7 item 2 (§12.4, DR6-124): words whose bare form is a word written right
+ * too ("am", "lanh", "noi", "it"). Adding one goes through G5.
+ */
+const BARE_IS_A_WORD: readonly string[] = ['ấm', 'lạnh', 'nội', 'ít'];
+
+/**
+ * The words of a "Bỏ dấu: có" phrase, each as it is or bare (G5 §7 item 2); a word of the closed
+ * list as it is only, unless the whole phrase is bare: "khách am hiểu" is not "khách ấm".
+ */
+function bareOrNot(parts: readonly string[]): string {
+  const listed = (part: string) => BARE_IS_A_WORD.includes(part);
+  const mixed = parts.map((part) => (listed(part) ? part : bareToo(part))).join(' ');
+  return parts.some(listed) ? `(?:${mixed}|${parts.map(fold).join(' ')})` : mixed;
 }
 
 /**

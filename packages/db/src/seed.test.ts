@@ -29,8 +29,8 @@ import { codeOf } from './test-support';
 import { listTrash } from './trash';
 
 const ANCHOR = calendarDate(2026, 9, 15);
-// A seed takes ~58 s alone on the Home PC, and more when other test files run in parallel: 60 s made
-// `pnpm verify` flaky (T-095). Only the timeout moved, no assertion changed.
+// A seed is slow, the more so when other test files run in parallel: 60 s made `pnpm verify` flaky
+// (T-095). Only the timeout moved, no assertion changed.
 const SLOW = 180_000;
 
 /** SHA-256 of every business row, in insertion order — equal hashes mean the same data. */
@@ -78,11 +78,12 @@ const DEMO_ROW_COUNTS = {
   teams: 3,
 };
 // T-232 moved it with one more read of the seed's ticking clock per stage change (stamps and ids);
-// T-237 with the prompt version of the Mock analyses (`@2`, DR6-18); T-257 with `@3` (G5 18/10/2026).
+// T-237 with the prompt version of the Mock analyses (`@2`, DR6-18); T-257 with `@3` (G5 18/10/2026);
+// T-277 with `@4` (G5 23/10/2026).
 // The hash of the data seeded at UTC. From UTC+12 noon UTC is already the next day, so `middayOf`
 // takes local noon and every stamp and the time of every id move back 12–14 hours (DR-15); from
 // UTC−12 to UTC+11 the data is the very data of UTC.
-const DEMO_HASH = 'a66327bfc10f124579c5d8ff514e4133cf6ee353587f2f66835a08eda711e4b7';
+const DEMO_HASH = '01f23ca69de96c6f949972e3fdd9b623299828ef9ce9efefbdd617a24b0687d1';
 
 async function seeded(seed: number, anchorDate = ANCHOR) {
   const persist = vi.fn();

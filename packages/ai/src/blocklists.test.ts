@@ -1,9 +1,11 @@
 /**
  * Every entry of the G5 §8 tables, read from the approved file (DR5-03): dropping an entry from
- * `blocklists.ts`, or changing its "Bỏ dấu" column, turns a case red.
+ * `blocklists.ts`, or changing its "Bỏ dấu" column, turns a case red; so does a word of an entry
+ * that `text-match.ts` lists closed (§7 item 2, §12.4) and the file does not, or the other way.
  */
 import { describe, expect, it } from 'vitest';
 import guide from '../../../docs/design/phase-5-prompts.md?raw';
+import { ZWSP } from './test-support';
 import { fold } from './text-match';
 import { validateOutput } from './validator';
 
@@ -32,9 +34,6 @@ function rowsOf(heading: string): string[][] {
 }
 
 const item = (text: string) => [{ text, evidence: ['F1'] }];
-
-/** Alone between two parts of a pattern, it is dropped and the parts touch (G5 §11.2, DR6-17). */
-const ZWSP = String.fromCodePoint(0x200b);
 
 /** The `detail` of every V3–V6 issue of a hypothesis reading `text`; every other text is neutral. */
 const detailsOf = (code: Code, text: string) =>
@@ -103,10 +102,11 @@ const SAMPLES: Record<string, readonly (readonly [string, string])[]> = {
     ['Xem điểm đ khoản', 'điểm đ khoản'],
     [`Xem điểm${ZWSP}a${ZWSP}khoản`, 'điểmakhoản'],
   ],
-  '"luật" ở **mọi kiểu hoa / thường**, có ranh giới từ trước, không đứng sau từ "pháp", "kỷ", "kỉ", "quy", "qui" (mọi kiểu chữ) + khoảng trắng; theo sau là khoảng trắng (có thể không có) + một từ mở đầu bằng chữ hoa (`\\p{Lu}`) mà **không** phải "KH", "RE" hay "sư" (mọi kiểu chữ). Chạy trên **bản gốc**. Vd. khớp "Luật Kinh doanh bảo hiểm", "Luật BHXH", "LuẬt Đất đai", "Luật" + U+200B + "BHXH"; không khớp "Luật sư", "LUẬT SƯ", "pháp luật Việt Nam", "pHáp luật Việt Nam", "kỷ luật KH", "quy luật Thị trường", "kỉ luật Thép", "qui luật Thị trường"':
+  '"luật" ở **mọi kiểu hoa / thường**, có ranh giới từ trước, không đứng sau từ "pháp", "kỷ", "kỉ", "quy", "qui", "giới", hay "định" mà trước nó không phải "quy" / "qui" (mọi kiểu chữ) + khoảng trắng; theo sau là khoảng trắng (có thể không có) + một từ mở đầu bằng chữ hoa (`\\p{Lu}`) mà **không** phải "KH", "RE" hay "sư" (mọi kiểu chữ). Chạy trên **bản gốc**. Vd. khớp "Luật Kinh doanh bảo hiểm", "Luật BHXH", "LuẬt Đất đai", "Luật" + U+200B + "BHXH", "quy định Luật Kinh doanh bảo hiểm"; không khớp "Luật sư", "LUẬT SƯ", "pháp luật Việt Nam", "pHáp luật Việt Nam", "kỷ luật KH", "quy luật Thị trường", "kỉ luật Thép", "qui luật Thị trường", "định luật Pareto", "giới luật Phật giáo"':
     [
       ['Theo luật Đất đai', 'luật Đ'],
       [`Theo Luật${ZWSP}BHXH`, 'LuậtB'],
+      ['Theo quy định Luật Kinh doanh bảo hiểm', 'Luật K'],
     ],
   '`\\b(quyết định\\|công văn) số\\s*\\p{Nd}` (vd. "Quyết định số 123"; "quyết định số tiền" không khớp)':
     [
@@ -122,6 +122,13 @@ const SAMPLES: Record<string, readonly (readonly [string, string])[]> = {
     ['Khóa QH15', 'qh15'],
   ],
 };
+
+/** The closed list of G5 §7 item 2 (§12.4): words that match bare in a phrase all bare only. */
+const CLOSED = [
+  ...(/\*\*Danh sách đóng\*\* \([^)]*\): ((?:"[^"]+"(?:, )?)+)\./.exec(guide)?.[1] ?? '').matchAll(
+    /"([^"]+)"/g,
+  ),
+].map((match) => match[1]!);
 
 /** G5 §8.2 b) is a regex in the prose, not a table row. */
 const PRU_PREFIX = 'regex `\\bpru ?[a-zà-ỹđ]` trên bản có dấu và bản bỏ dấu';
@@ -145,6 +152,26 @@ describe('BLOCKLISTS — every phrase of G5 §8', () => {
     const caught = detailsOf(code, `Ghi chú ${without} ở đây`).includes(`có "${entry}"`);
     expect(caught).toBe(folded);
   });
+
+  it('reads the closed list of §7 item 2', () => {
+    expect(CLOSED).toContain('ấm');
+  });
+
+  // §7 item 2 (DR6-23, DR6-124): one word bare, the others as they are, is caught unless the word
+  // is in the closed list.
+  it.each(PHRASES.filter(({ folded }) => folded))(
+    '$code reads each word of "$entry" bare alone',
+    ({ code, entry }) => {
+      const words = entry.toLowerCase().split(' ');
+      words.forEach((word, i) => {
+        const bare = fold(word);
+        if (bare === word) return;
+        const text = words.map((other, j) => (j === i ? bare : other)).join(' ');
+        const caught = detailsOf(code, `Ghi chú ${text} ở đây`).includes(`có "${entry}"`);
+        expect(caught, text).toBe(!CLOSED.includes(word));
+      });
+    },
+  );
 });
 
 describe('BLOCKLISTS — every other row of G5 §8', () => {
