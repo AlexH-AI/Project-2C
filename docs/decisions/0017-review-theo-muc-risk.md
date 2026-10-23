@@ -50,7 +50,7 @@
 ## Hệ quả
 
 - ~~Review `risk:med`/`risk:high` tốn thêm một lượt `code-review` (medium/high). `risk:low` gần như không đổi.~~ Từ 21/10/2026, review PR code ở mọi mức tốn thêm một lượt `code-review` (high / max / max kèm mọi phát hiện), kể cả `risk:low`; PR chỉ sửa docs vẫn không gọi (phụ lục nâng mức `code-review`).
-- Chưa kiểm chứng việc `code-review` chạy ở mức `high` khi `Agent` bị chặn. Skill đã có đường lùi inline; lần review `risk:high` đầu tiên phải ghi kết quả thực tế vào PR comment.
+- ~~Chưa kiểm chứng việc `code-review` chạy ở mức `high` khi `Agent` bị chặn. Skill đã có đường lùi inline; lần review `risk:high` đầu tiên phải ghi kết quả thực tế vào PR comment.~~ Đã kiểm: mức `high` ở PR #96 (phụ lục 27/09 mục 1). Mức `max` (từ 21/10/2026) cũng rà inline trong phiên chính khi Owner chưa bật subagent; comment review của PR #738 (`max`) và #742 (`max --max-findings all`) ghi rõ.
 - Hook cần Node (đã có trong toolchain). Hook in ra rỗng khi câu không khớp, nên không ảnh hưởng các yêu cầu khác.
 - Tham chiếu `code-review` trong skill `tdd` (vendored) được hiểu là skill `review-pr` (ghi ở `.claude/skills/README.md`).
 

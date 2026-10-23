@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from './fixtures';
+import { expect, pasteAsIs, test, type Locator, type Page } from './fixtures';
+import { right, scrolls, sideways } from './support';
 
 // playwright.config.ts pins "today" of the simulated data (VITE_DEMO_ANCHOR) to 15/09/2026.
 const NAME = 'Bình Kiểm KYC';
@@ -13,14 +14,14 @@ const LINK =
  */
 const past = (box: Locator, link: string) =>
   box.evaluate((node, link) => {
-    const right = node.getBoundingClientRect().right;
+    const edge = node.getBoundingClientRect().right;
     const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
     const reach: number[] = [];
     for (let text = walker.nextNode(); text; text = walker.nextNode()) {
       if (!text.textContent?.includes(link)) continue;
       const range = document.createRange();
       range.selectNodeContents(text);
-      reach.push(Math.max(...[...range.getClientRects()].map((rect) => rect.right - right)));
+      reach.push(Math.max(...[...range.getClientRects()].map((rect) => rect.right - edge)));
     }
     return reach;
   }, link);
@@ -32,10 +33,6 @@ async function expectInside(box: Locator, link: string, texts: number, what: str
 }
 
 const card = (page: Page, name: string) => page.getByRole('region', { name, exact: true });
-const right = (box: Locator) => box.evaluate((node) => node.getBoundingClientRect().right);
-const scrolls = (box: Locator) => box.evaluate((node) => node.scrollWidth > node.clientWidth);
-const sideways = (page: Page) =>
-  page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
 
 async function createCustomer(page: Page) {
   await page.goto('/#/customers');
@@ -364,13 +361,8 @@ test('the frame of a refused save goes as soon as the note or its day is typed a
   const dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${NAME}` });
   const note = dialog.getByRole('textbox', { name: 'Ghi chú' });
   const day = dialog.getByRole('textbox', { name: 'Ngày ghi nhận' });
-  const pasteBroken = () =>
-    note.evaluate((field: HTMLTextAreaElement) => {
-      // A lone surrogate half, set as a paste would, past the keyboard.
-      const set = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
-      set.call(field, 'Gặp KH \uD83D');
-      field.dispatchEvent(new Event('input', { bubbles: true }));
-    });
+  // A lone surrogate half.
+  const pasteBroken = () => pasteAsIs(note, 'Gặp KH \uD83D');
   const refusal = dialog.getByRole('alert').filter({ hasText: 'Chữ có ký tự không lưu được' });
 
   await pasteBroken();
@@ -394,12 +386,7 @@ test('refuses a note broken in a paste as the command does (7a, DR6-109)', async
   await createCustomer(page);
   await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
   const dialog = page.getByRole('dialog', { name: `Ghi chú KYC · ${NAME}` });
-  await dialog.getByRole('textbox', { name: 'Ghi chú' }).evaluate((field: HTMLTextAreaElement) => {
-    // Set as a paste would, past the keyboard.
-    const set = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
-    set.call(field, '\uD83D\u{200B}\uDE00 Lan');
-    field.dispatchEvent(new Event('input', { bubbles: true }));
-  });
+  await pasteAsIs(dialog.getByRole('textbox', { name: 'Ghi chú' }), '\uD83D\u{200B}\uDE00 Lan');
   await dialog.getByRole('button', { name: 'Lưu ghi chú' }).click();
 
   await expect(

@@ -404,7 +404,10 @@ Không mở Issue mới cho các điểm dưới (đã ghi ở `docs/state/revie
 - **Cài đặt → Dữ liệu, thẻ File dữ liệu:** dòng Nội dung không có số ghi chú KYC ("· 3.470 ghi chú KYC" trong mockup); mockup tự lệch với hộp 10a cùng file (5 mục, như app) (NT-CD-02) (DR6-48).
 - **Lịch hẹn B4 (4b, 4c, 4d), lịch tháng:** chú giải dưới lịch không có mẫu "Trong kỳ" cho dải tô của kỳ Tuần / Tùy chọn; chỉ có 4 nhóm lịch (NT-LH-07, 08) (DR6-48).
 
-**Owner xác nhận ở lượt L1** (chưa có ghi chép quyết định): `customers.html` (vòng 2) có ô tìm "Ctrl K", bộ lọc Phạm vi / RE / KYC / "Đã có HĐ", hàng kỳ, ô Sắp xếp, dòng "Độ phủ KYC", nhãn KYC / AI và ngày hẹn trên thẻ, dòng "+n vào · lên N3 trong tháng" dưới đầu cột, lý do đóng ở khung Tạm hoãn / Mất cơ hội — app và hướng dẫn sử dụng không có các phần này. Owner chọn: ghi vào danh sách này là lệch chấp nhận, hoặc mở Issue (ghi sau v1.0). Cùng cách với `settings-data.html`: mục "Chung" ở khung trái Cài đặt, và hai nút "Mở từ backup tự động mới nhất" / "Mở thư mục" ở trang lỗi khởi động 10d (app ghi cách chép bản backup bằng chữ).
+**Owner chọn ghi là lệch chấp nhận** (23/10/2026, thay câu hỏi để lại cho lượt L1; `docs/PROJECT-STATE.md`):
+
+- **Danh sách KH (`customers.html`, vòng 2):** ô tìm "Ctrl K", bộ lọc Phạm vi / RE / KYC / "Đã có HĐ", hàng kỳ, ô Sắp xếp, dòng "Độ phủ KYC", nhãn KYC / AI và ngày hẹn trên thẻ, dòng "+n vào · lên N3 trong tháng" dưới đầu cột, lý do đóng ở khung Tạm hoãn / Mất cơ hội: app và hướng dẫn sử dụng không có các phần này.
+- **Cài đặt (`settings-data.html`):** khung trái Cài đặt không có mục "Chung"; trang lỗi khởi động 10d không có hai nút "Mở từ backup tự động mới nhất" / "Mở thư mục" (app ghi cách chép bản backup bằng chữ).
 
 ## Đối chiếu mockup → mã dòng
 

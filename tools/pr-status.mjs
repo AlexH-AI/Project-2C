@@ -24,6 +24,8 @@ const gh = (args) => JSON.parse(ghText(args));
 /** Every page of a REST list, one value per line as `jq` prints it. */
 const ghLines = (path, jq) =>
   ghText(['api', '--paginate', path, '--jq', jq]).split(/\r?\n/).filter(Boolean);
+// A renamed file under its old path too, as notes-for reads it: code renamed to docs/ is code.
+const NAMES = '.filename, (.previous_filename // empty)';
 
 // `files` comes from REST instead: `gh pr view --json files` gives the first 100 only (DR6-57).
 const FIELDS = [
@@ -64,7 +66,7 @@ function loadMainSince(pr, tested) {
       .flatMap((page) => page.shas)
       .map((sha) => ({
         sha,
-        files: ghLines(`repos/{owner}/{repo}/commits/${sha}`, '.files[].filename'),
+        files: ghLines(`repos/{owner}/{repo}/commits/${sha}`, `.files[] | ${NAMES}`),
       })),
     mainTotal: pages[0]?.total ?? null,
   };
@@ -78,9 +80,11 @@ export function loadPr(number) {
   const pr = gh(['pr', 'view', String(number), '--json', FIELDS]);
   // Two reads (#642): a push between them that changes the number of files shows as "Read n of the
   // m files" and blocks (run again); any other push is caught by the merge, pinned to this head.
-  pr.files = ghLines(`repos/{owner}/{repo}/pulls/${number}/files?per_page=100`, '.[].filename').map(
-    (path) => ({ path }),
-  );
+  // One entry per file, as `changedFiles` counts them, a renamed one with its old path.
+  pr.files = ghLines(
+    `repos/{owner}/{repo}/pulls/${number}/files?per_page=100`,
+    '.[] | {path: .filename, previousPath: .previous_filename}',
+  ).map((line) => JSON.parse(line));
   const stacked = gh([
     'pr',
     'list',
@@ -114,7 +118,7 @@ export function formatStatus(loaded, { withVerdict = true } = {}) {
   const { pr, stacked, baseMerged, testedBase, mainSince, mainTotal } = loaded;
   const head = pr.headRefOid.slice(0, 7);
   const review = latestReview(pr.comments);
-  const { paths, docsOnly, notesOnly } = prFiles(pr);
+  const { docsOnly, notesOnly } = prFiles(pr);
   let reviewText = 'none yet';
   if (review) {
     reviewText = `${review.verdict}${review.sha ? ` @${review.sha}` : ' (no SHA)'}`;
@@ -131,7 +135,9 @@ export function formatStatus(loaded, { withVerdict = true } = {}) {
       ? 'main'
       : `${pr.baseRefName} (stacked; base ${baseMerged ? 'merged: retarget to main' : 'not merged yet'})`;
   const labels = pr.labels.map((l) => l.name).join(', ') || '(none)';
-  const read = mainSince.length === mainTotal ? '' : `, only ${mainSince.length} read`;
+  // As mergeBlockers reads it: a page listing a commit main got after the first page is no gap.
+  const short = !Number.isInteger(mainTotal) || mainSince.length < mainTotal;
+  const read = short ? `, only ${mainSince.length} read` : '';
   const tested = testedBase
     ? `${pr.baseRefName} ${testedBase.slice(0, 7)}, ${mainTotal ?? '?'} commit(s) on it since${read}`
     : 'not noted';
@@ -148,7 +154,7 @@ export function formatStatus(loaded, { withVerdict = true } = {}) {
     `  review   ${reviewText}`,
     `  ci       ${checksSummary(pr.statusCheckRollup ?? [])}${docsOnly ? ' (docs-only: CI not needed)' : ''}`,
     `  tested   ${tested}`,
-    `  files    ${pr.changedFiles} changed, ${paths.length} read · docs-only ${docsOnly ? 'yes' : 'no'}`,
+    `  files    ${pr.changedFiles} changed, ${pr.files.length} read · docs-only ${docsOnly ? 'yes' : 'no'}`,
     `  stacked  ${stacked.length ? prList(stacked) + ' based on this branch' : 'none on this branch'}`,
     ...(withVerdict ? [`  merge    ${verdict}`] : []),
   ].join('\n');

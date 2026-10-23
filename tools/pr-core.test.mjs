@@ -38,6 +38,24 @@ function pathsBlocks(yml) {
   return blocks;
 }
 
+// A docs/ path of a .md file among the arguments of `join`, `resolve` or `readFile(Sync)`: read from
+// the root of the repo, where the tests run.
+const FROM_ROOT =
+  /\b(?:join|resolve|readFileSync|readFile)\((?:[^()'"`]|'[^']*'|"[^"]*"|\([^()]*\))*?['"`](docs\/[^'"`\s]*?\.md)['"`]/g;
+
+/**
+ * The docs/**\/*.md files the test `file` reads (R2-21): by a path relative to it (an `?raw`
+ * import, a `new URL(…, import.meta.url)`), or by a path from the root (FROM_ROOT). Any other
+ * docs/….md string is data, such as the files of a PR in the tests of tools/.
+ */
+function docsRead(root, file, text) {
+  const fromTest = [...text.matchAll(/['"`](\.\.?\/[^'"`\s]*?\.md)(?:\?raw)?['"`]/g)].map(
+    ([, ref]) => relative(root, join(dirname(join(root, file)), ref)).replaceAll('\\', '/'),
+  );
+  const fromRoot = [...text.matchAll(FROM_ROOT)].map(([, path]) => path);
+  return [...fromTest, ...fromRoot].filter((path) => path.startsWith('docs/'));
+}
+
 const HEAD = 'abc1234def5678abc1234def5678abc1234def56';
 const review = (verdict, sha = HEAD.slice(0, 7), level = 'risk:low') => ({
   authorAssociation: 'OWNER',
@@ -109,18 +127,37 @@ describe('isDocsOnly', () => {
       .toString()
       .split('\n')
       .filter(Boolean);
-    const read = new Set();
-    for (const file of tests) {
-      const text = readFileSync(join(root, file), 'utf8');
-      // A relative path to a .md file: an `?raw` import or a `new URL(…, import.meta.url)`.
-      for (const [, ref] of text.matchAll(/['"`](\.\.?\/[^'"`\s]*?\.md)(?:\?raw)?['"`]/g)) {
-        const path = relative(root, join(dirname(join(root, file)), ref)).replaceAll('\\', '/');
-        if (path.startsWith('docs/')) read.add(path);
-      }
-    }
+    const read = new Set(
+      tests.flatMap((file) => docsRead(root, file, readFileSync(join(root, file), 'utf8'))),
+    );
     expect([...read]).toContain('docs/design/phase-5-prompts.md');
     expect(CODE_DOCS).toEqual(expect.arrayContaining([...read]));
     for (const path of CODE_DOCS) expect(existsSync(join(root, path)), path).toBe(true);
+  });
+
+  it('sees a docs file read by a path from the test or from the root, not a path given as data', () => {
+    const root = fileURLToPath(new URL('..', import.meta.url));
+    const read = (text) => docsRead(root, 'tools/x.test.mjs', text);
+    expect(read("import prompts from '../docs/design/phase-5-prompts.md?raw';")).toEqual([
+      'docs/design/phase-5-prompts.md',
+    ]);
+    expect(read("readFileSync(new URL('../docs/golden/ai-eval.md', import.meta.url))")).toEqual([
+      'docs/golden/ai-eval.md',
+    ]);
+    // From the root of the repo, where the tests run.
+    expect(read("readFileSync(join(root, 'docs/golden/ai-eval.md'), 'utf8')")).toEqual([
+      'docs/golden/ai-eval.md',
+    ]);
+    expect(read("await readFile(resolve(dirname(here), 'docs/golden/ai-eval.md'))")).toEqual([
+      'docs/golden/ai-eval.md',
+    ]);
+    expect(read("readFileSync('docs/golden/ai-eval.md', 'utf8')")).toEqual([
+      'docs/golden/ai-eval.md',
+    ]);
+    // The files of a PR or of a commit, as tools/ tests give them.
+    expect(read("isDocsOnly(['docs/reviews/x.md']); const path = 'docs/metrics/x.md';")).toEqual(
+      [],
+    );
   });
 
   it('matches the paths filter of ci.yml, for PRs and for pushes to main', () => {
@@ -436,6 +473,22 @@ describe('mergeBlockers', () => {
       expect.stringMatching(/No REVIEW comment/),
       expect.stringMatching(/no CI check/),
     ]);
+  });
+
+  it('takes a file the PR renamed under both its names, as one file the PR changed', () => {
+    // Code renamed to docs/ is still code; Rust renamed away still needs the exe build.
+    const rust = [{ path: 'docs/x.md', previousPath: 'apps/desktop/src-tauri/src/x.rs' }];
+    expect(mergeBlockers(pr({ files: rust, statusCheckRollup: [] }), ctx())).toEqual([
+      'Code PR with no CI check on head abc1234.',
+      'apps/desktop/src-tauri/src/x.rs need the build-exe label: gh pr edit 9 --add-label build-exe, then gh pr close 9 + gh pr reopen 9 so CI builds it.',
+    ]);
+    const docs = [{ path: 'docs/b.md', previousPath: 'docs/a.md' }];
+    expect(mergeBlockers(pr({ files: docs, statusCheckRollup: [] }), ctx())).toEqual([]);
+    // Another file of docs/state/ renamed to the ledger: the PR writes more than the ledger.
+    const notes = [{ path: 'docs/state/review-notes.md', previousPath: 'docs/state/old.md' }];
+    expect(mergeBlockers(pr({ files: notes, comments: [], statusCheckRollup: [] }), ctx())).toEqual(
+      ['No REVIEW comment yet: review it in a clean session (review-pr).'],
+    );
   });
 
   it('stops a med PR unless the Owner said to merge', () => {

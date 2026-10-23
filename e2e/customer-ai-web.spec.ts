@@ -6,6 +6,10 @@ import {
   discoveryFacts,
   discoveryOutput,
   panelOf,
+  right,
+  scrolls,
+  seededCustomer,
+  sideways,
   stubChatGptWeb,
 } from './support';
 
@@ -246,12 +250,7 @@ test('the session leaves the panel once the data is replaced under it (DR6-15)',
 }) => {
   await asExe(page);
   // A seeded customer the gate lets through: Nạp lại of the same day gives it the same ID (DR5-36).
-  await page.goto('/#/customers');
-  await page.getByRole('radio', { name: 'Bảng' }).click();
-  const link = page.getByRole('link', { name: 'Phan Thanh Bình', exact: true });
-  const more = page.getByRole('button', { name: /^Hiện thêm/ });
-  while (!(await link.isVisible())) await more.click();
-  const profile = (await link.getAttribute('href'))!;
+  const profile = (await (await seededCustomer(page, 'Phan Thanh Bình')).getAttribute('href'))!;
 
   // Nạp lại held at its backup, as Rust copying the file; the profile opened meanwhile.
   await page.goto('/#/settings');
@@ -372,13 +371,6 @@ test('an answer with HTML or a link in its text shows that text, never markup of
   await expect(panel.locator('[data-model]')).toHaveCount(0);
   await expect(panel.getByRole('link', { name: 'xem' })).toHaveCount(0);
 });
-
-/** `box` scrolls sideways: something of it is past its edge, text included. */
-const scrolls = (box: Locator) => box.evaluate((node) => node.scrollWidth > node.clientWidth);
-const sideways = (page: Page) =>
-  page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
-
-const right = (box: Locator) => box.evaluate((node) => node.getBoundingClientRect().right);
 
 /** The right edge of the content of `box`, inside its border and padding. */
 const contentRight = (box: Locator) =>

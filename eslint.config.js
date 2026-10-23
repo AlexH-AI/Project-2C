@@ -47,4 +47,27 @@ export default tseslint.config(
     languageOptions: { sourceType: 'commonjs' },
     rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
+  {
+    // Playwright's own `test` runs the pages on the machine's day (DR6-129): every e2e file takes
+    // the `test` of e2e/fixtures.ts, a helper too, so none hands Playwright's on to a spec. The
+    // user guide and the perf probe run on configs of their own (playwright.*.config.ts).
+    files: ['e2e/**/*.ts'],
+    ignores: ['e2e/fixtures.ts', 'e2e/**/*.guide.ts', 'e2e/**/*.perf.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@playwright/test',
+              // Its default export is `test` too.
+              importNames: ['test', 'default'],
+              message:
+                "Take `test` from e2e/fixtures.ts: Playwright's own reads the machine's day.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 );

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from './fixtures';
+import { expect, pasteAsIs, test, type Page } from './fixtures';
 
 // playwright.config.ts pins "today" of the simulated data (VITE_DEMO_ANCHOR) to 15/09/2026.
 const NAME = 'An Thử Nghiệm';
@@ -349,12 +349,7 @@ test('refuses a name broken in a paste as the command does, then saves one as ty
   const dialog = await openCreate(page);
   const name = dialog.getByRole('textbox', { name: 'Họ tên' });
   await dialog.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
-  await name.evaluate((field: HTMLInputElement) => {
-    // Set as a paste would, past the keyboard.
-    const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
-    set.call(field, '\uD83D\u{200B}\uDE00 Lan');
-    field.dispatchEvent(new Event('input', { bubbles: true }));
-  });
+  await pasteAsIs(name, '\uD83D\u{200B}\uDE00 Lan');
   await dialog.getByRole('button', { name: 'Lưu KH' }).click();
   await expect(dialog.getByRole('alert')).toContainText('Chữ có ký tự không lưu được');
   await expect(dialog).toBeVisible();
@@ -386,6 +381,16 @@ test('deletes a customer from the profile, counting its records first (5f, TR-9)
     (await page.getByText(/^\d+ lịch · \d+ đã gặp$/).textContent())?.match(/\d+/g) ?? []
   ).map(Number);
   const policies = Number((await profile.textContent())?.match(/Đã có HĐ \((\d+)\)/)?.[1] ?? 0);
+  // The timeline: "tính 1 RF" on each stage change that counted an RF, and every KYC note, those
+  // the app writes too.
+  const timeline = page.getByRole('region', { name: 'Dòng thời gian' }).getByRole('listitem');
+  await expect(timeline.first()).toBeVisible();
+  const rf = await timeline.filter({ hasText: 'sau cuộc gặp · tính 1 RF' }).count();
+  const kyc = await timeline
+    .filter({ hasText: /^\d\d\/\d\d\/\d{4}Ghi chú (KYC|hệ thống)/ })
+    .count();
+  // Two different numbers, so a dialog showing one in place of the other fails.
+  expect(rf).not.toBe(kyc);
 
   const openDelete = async () => {
     await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
@@ -399,12 +404,10 @@ test('deletes a customer from the profile, counting its records first (5f, TR-9)
   await expect(dialog).toContainText(
     'KH và mọi bản ghi của KH sẽ bị ẩn khỏi danh sách và mọi chỉ số:',
   );
-  await expect(dialog).toContainText(
-    new RegExp(`Lịch hẹn${total} \\(${met} đã gặp · \\d+ lần tính RF\\)`),
-  );
+  await expect(dialog).toContainText(`Lịch hẹn${total} (${met} đã gặp · ${rf} lần tính RF)`);
   await expect(dialog).toContainText(`Hợp đồng${policies}`);
   // A number only: the purge of the trash deletes them too (TR-9; mockup 11f).
-  await expect(dialog).toContainText(/Ghi chú KYC\d+Dữ liệu vẫn còn/);
+  await expect(dialog).toContainText(`Ghi chú KYC${kyc}Dữ liệu vẫn còn`);
   await expect(dialog).toContainText('Dữ liệu vẫn còn: khôi phục ở Cài đặt → Thùng rác.');
 
   // Hủy goes back to the profile form and deletes nothing.

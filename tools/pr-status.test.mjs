@@ -35,20 +35,34 @@ const PR = {
 
 // `gh --jq` of the expressions pr-status uses, on one page of a REST answer.
 const JQ = {
-  '.[].filename': (files) => files.map((f) => f.filename),
-  '.files[].filename': (commit) => commit.files.map((f) => f.filename),
+  '.[] | {path: .filename, previousPath: .previous_filename}': (files) =>
+    files.map((f) => ({ path: f.filename, previousPath: f.previous_filename ?? null })),
+  '.files[] | .filename, (.previous_filename // empty)': (commit) =>
+    commit.files.flatMap((f) => [
+      f.filename,
+      ...(f.previous_filename ? [f.previous_filename] : []),
+    ]),
   '{total: .total_commits, shas: [.commits[].sha]}': (comparison) => [
     { total: comparison.total_commits, shas: comparison.commits.map((c) => c.sha) },
   ],
 };
 
+// A file of the PR, or of a commit, as REST lists it: a path, or a renamed file with its old path.
+const file = (path) => (typeof path === 'string' ? { filename: path } : path);
+
 /**
- * `gh` on a GitHub holding PR 9 (`pr` over PR) and the commits main got since TESTED, oldest
- * first. A comparison pages as its REST docs say: with `per_page`, every commit in order; without,
- * the newest 250 only (stricter than gh, whose --paginate adds per_page itself). `listed` caps what
- * GitHub lists, `total` is what it counts.
+ * `gh` on a GitHub holding PR 9 (`pr` over PR, with `files`) and the commits main got since TESTED,
+ * oldest first. A comparison pages as its REST docs say: with `per_page`, every commit in order;
+ * without, the newest 250 only (stricter than gh, whose --paginate adds per_page itself). `listed`
+ * caps what GitHub lists, `total` is what it counts.
  */
-function fakeGh({ pr = {}, since = [], listed = since.length, total = since.length }) {
+function fakeGh({
+  pr = {},
+  files = ['tools/a.mjs'],
+  since = [],
+  listed = since.length,
+  total = since.length,
+}) {
   // An empty list is still one page.
   const pages = (path, all) => {
     const size = Number(path.match(/[?&]per_page=(\d+)/)?.[1] ?? 30);
@@ -57,10 +71,9 @@ function fakeGh({ pr = {}, since = [], listed = since.length, total = since.leng
     );
   };
   const answer = (path) => {
-    if (/\/pulls\/9\/files\b/.test(path)) return pages(path, [{ filename: 'tools/a.mjs' }]);
+    if (/\/pulls\/9\/files\b/.test(path)) return pages(path, files.map(file));
     const commit = path.match(/\/commits\/(\w+)$/)?.[1];
-    if (commit)
-      return [{ files: since.find((c) => c.sha === commit).files.map((f) => ({ filename: f })) }];
+    if (commit) return [{ files: since.find((c) => c.sha === commit).files.map(file) }];
     if (path.includes(`/compare/${TESTED}...main`)) {
       const shown = since.slice(since.length - listed).map(({ sha }) => ({ sha }));
       const comparison = (commits) => ({ total_commits: total, commits });
@@ -139,6 +152,43 @@ describe('loadPr: the commits main got since the main CI tested (DR6-85)', () =>
     const text = formatStatus(loadPr('9'));
     expect(text).toContain('  tested   main feed000, 0 commit(s) on it since\n');
     expect(text).toContain('  merge    ready: node tools/merge-pr.mjs 9');
+  });
+
+  // --paginate asks for each page on its own: main may get a commit in between, so the pages list
+  // one more than the first one counted.
+  it('says nothing of a short read when the pages list more commits than GitHub counted', () => {
+    vi.mocked(run).mockImplementation(fakeGh({ since, total: 250 }));
+    const text = formatStatus(loadPr('9'));
+    expect(text).toContain('  tested   main feed000, 250 commit(s) on it since\n');
+    expect(text).not.toContain(', only');
+    expect(text).not.toContain('Read 251');
+  });
+
+  it('counts a file a commit of main renamed under its old name too: code renamed to docs is code', () => {
+    const renamed = [
+      { sha: '1111111cccc', files: [{ filename: 'docs/x.md', previous_filename: 'apps/x.ts' }] },
+    ];
+    vi.mocked(run).mockImplementation(fakeGh({ since: renamed }));
+    expect(formatStatus(loadPr('9'))).toContain(
+      '    - main got code since feed000, the main CI tested on head abc1234 (1111111): ',
+    );
+  });
+});
+
+describe('loadPr: the files of the PR', () => {
+  it('reads a file the PR renamed under both its names, as one of the files it changed', () => {
+    const renamed = [{ filename: 'docs/x.md', previous_filename: 'tools/a.mjs' }];
+    vi.mocked(run).mockImplementation(fakeGh({ files: renamed }));
+    const text = formatStatus(loadPr('9'));
+    expect(text).toContain('  files    1 changed, 1 read · docs-only no\n');
+    expect(text).toContain('  merge    ready: node tools/merge-pr.mjs 9');
+  });
+
+  it('still stops when GitHub lists fewer files than the PR changed', () => {
+    vi.mocked(run).mockImplementation(fakeGh({ pr: { changedFiles: 2 } }));
+    const text = formatStatus(loadPr('9'));
+    expect(text).toContain('  files    2 changed, 1 read · docs-only no\n');
+    expect(text).toContain('    - Read 1 of the 2 files of the PR: check them by hand.');
   });
 });
 

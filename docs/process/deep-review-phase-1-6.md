@@ -1287,7 +1287,7 @@ Phiên tổng hợp được dùng Workflow để kiểm từng phát hiện khi
 **Báo cáo gốc lưu ở repo** (PR docs của T-267):
 
 - `docs/reviews/raw/<ngày tổng hợp>/{claude,codex}/<gói>.md` nguyên văn;
-- `common-known.md`, `common-baseline.md`, `common-fixes.md`, `common-workflow-run.md`; `common-plan.md` chỉ khi khác bản trong repo;
+- `common-known.md`, `common-baseline.md`, `common-fixes.md`, `common-workflow-run.md`; `common-plan.md` chỉ khi khác bản trong repo (*sửa 20/10, §L3.1:* không có `common-workflow-run.md` vì không có phiên điều phối; thêm `common-prompt-claude.md`, bản đã dùng);
 - bản tổng hợp `docs/reviews/<ngày>-deep-review-phase-1-6-luot-3-tong-hop.md`.
 
 Thư mục bằng chứng `deep-review-1-6-r3\` giữ trên Home PC tới v1.0.
