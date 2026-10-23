@@ -23,12 +23,14 @@ export async function readWorkbook(download: Download): Promise<ExcelJS.Workbook
 export function lowestContrast(area: Locator): Promise<number> {
   return area.evaluate((root) => {
     type Paint = { rgb: number[]; a: number };
-    const canvas = document.createElement('canvas').getContext('2d', { willReadFrequently: true })!;
+    const context = document
+      .createElement('canvas')
+      .getContext('2d', { willReadFrequently: true })!;
     const read = (color: string): Paint => {
-      canvas.clearRect(0, 0, 1, 1);
-      canvas.fillStyle = color;
-      canvas.fillRect(0, 0, 1, 1);
-      const [r = 0, g = 0, b = 0, a = 0] = canvas.getImageData(0, 0, 1, 1).data;
+      context.clearRect(0, 0, 1, 1);
+      context.fillStyle = color;
+      context.fillRect(0, 0, 1, 1);
+      const [r = 0, g = 0, b = 0, a = 0] = context.getImageData(0, 0, 1, 1).data;
       return { rgb: [r, g, b], a: a / 255 };
     };
     // `top` painted over `under`; either may let what is below show through.
@@ -105,7 +107,7 @@ export async function asExe(page: Page) {
     let releaseAi = () => {};
     let key: string | null = null;
     const exe = {
-      failSaves: false,
+      failSaves: false as boolean | string,
       destroyed: false,
       aiCalls: [] as Record<string, unknown>[],
       keysSet: [] as string[],
@@ -130,7 +132,9 @@ export async function asExe(page: Page) {
     const commands: Record<string, (args: Record<string, unknown>) => unknown> = {
       db_open: () => new ArrayBuffer(0),
       db_save: () => {
-        if (exe.failSaves) throw new Error('file locked');
+        // Rust rejects with the message of the error: a code it tells apart, or Windows' own.
+        if (exe.failSaves === true) throw 'Access is denied. (os error 5)';
+        if (exe.failSaves) throw exe.failSaves;
         return null;
       },
       db_backup: async () => {
@@ -195,7 +199,12 @@ export async function asExe(page: Page) {
 }
 
 interface Exe {
-  failSaves: boolean;
+  /**
+   * While set, `db_save` fails with what Rust sends: a code of `storage.rs` (`'DISK_FULL'`,
+   * `'READ_ONLY'`, `'FOLDER_READ_ONLY'`), or Windows' own message for `true`, as when another
+   * program holds the file.
+   */
+  failSaves: boolean | string;
   destroyed: boolean;
   /** The arguments of each `ai_complete`. */
   aiCalls: Record<string, unknown>[];

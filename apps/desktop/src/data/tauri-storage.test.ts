@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DISK_FULL, READ_ONLY, saveFailure, tauriStorage } from './tauri-storage';
+import { DISK_FULL, FOLDER_READ_ONLY, READ_ONLY, saveFailure, tauriStorage } from './tauri-storage';
 
 describe('tauriStorage', () => {
   it('loads the file bytes for this page; the app backs them up afterwards with db_backup', async () => {
@@ -75,9 +75,10 @@ describe('tauriStorage', () => {
 });
 
 describe('saveFailure', () => {
-  it('tells a full disk and a file that can no longer be replaced from any other failure', () => {
+  it('tells a full disk, a file that can no longer be replaced and a folder that lets no new file in from any other failure', () => {
     expect(saveFailure(DISK_FULL)).toBe('diskFull');
     expect(saveFailure(READ_ONLY)).toBe('readOnly');
+    expect(saveFailure(FOLDER_READ_ONLY)).toBe('folderReadOnly');
   });
 
   it('reads anything else as another program holding the file, Windows’ own message included (DR6-120)', () => {
@@ -85,6 +86,7 @@ describe('saveFailure', () => {
       'Access is denied. (os error 5)',
       'STALE_PAGE',
       new Error(READ_ONLY),
+      new Error(FOLDER_READ_ONLY),
       { message: DISK_FULL },
       undefined,
     ]) {

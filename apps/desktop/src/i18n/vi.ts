@@ -1138,6 +1138,8 @@ export const vi = {
     'Chưa lưu được dữ liệu vào file: ổ đĩa chứa thư mục app đã đầy. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports). Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
   'storage.saveReadOnly':
     'Chưa lưu được dữ liệu vào file: file Project2C-data\\project2c.db đang ở chế độ chỉ đọc, hoặc tài khoản Windows đang dùng không có quyền ghi / xóa file đó. Hãy bỏ chế độ chỉ đọc (chuột phải file → Properties → bỏ chọn Read-only) hoặc nhờ người quản trị máy cấp lại quyền. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
+  'storage.saveFolderReadOnly':
+    'Chưa lưu được dữ liệu vào file: thư mục Project2C-data không cho tài khoản Windows đang dùng tạo file mới trong đó. Hãy nhờ người quản trị máy cấp lại quyền ghi vào thư mục đó. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
   'close.unsavedTitle': 'Chưa lưu được thay đổi',
   'close.unsavedBody':
     'Các thay đổi gần nhất chưa ghi được vào file (file có thể đang bị chương trình khác mở). Đóng chương trình đó rồi chọn Thử lại, hoặc đóng app và bỏ các thay đổi chưa lưu.',
@@ -1145,6 +1147,8 @@ export const vi = {
     'Các thay đổi gần nhất chưa ghi được vào file vì ổ đĩa chứa thư mục app đã đầy. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports) rồi chọn Thử lại, hoặc đóng app và bỏ các thay đổi chưa lưu.',
   'close.unsavedBodyReadOnly':
     'Các thay đổi gần nhất chưa ghi được vào file vì file Project2C-data\\project2c.db đang ở chế độ chỉ đọc, hoặc tài khoản Windows đang dùng không có quyền ghi / xóa file đó. Hãy bỏ chế độ chỉ đọc (chuột phải file → Properties → bỏ chọn Read-only) hoặc nhờ người quản trị máy cấp lại quyền, rồi chọn Thử lại. Hoặc đóng app và bỏ các thay đổi chưa lưu.',
+  'close.unsavedBodyFolderReadOnly':
+    'Các thay đổi gần nhất chưa ghi được vào file vì thư mục Project2C-data không cho tài khoản Windows đang dùng tạo file mới trong đó. Hãy nhờ người quản trị máy cấp lại quyền ghi vào thư mục đó rồi chọn Thử lại. Hoặc đóng app và bỏ các thay đổi chưa lưu.',
   'close.retry': 'Thử lại',
   'close.discard': 'Đóng và bỏ thay đổi chưa lưu',
   'team.summary': '{teams} team · {tl} TL · {re} RE · {shared} người hỗ trợ',
