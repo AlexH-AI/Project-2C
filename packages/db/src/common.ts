@@ -1,4 +1,7 @@
-/** Helpers shared by the commands: names, soft-delete stamps, stored dates and money. */
+/**
+ * Helpers shared by the commands: names, soft-delete stamps, stored dates and money, and the reads
+ * and writes of a row by its id or its customer's `seq`.
+ */
 import {
   compareDates,
   formatDate,
@@ -11,12 +14,22 @@ import {
   type CalendarDate,
   type Vnd,
 } from '@p2c/domain';
-import { eq, getTableColumns, sql } from 'drizzle-orm';
-import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
+import { eq, getTableColumns, max, sql } from 'drizzle-orm';
+import type { SQLiteTable, SQLiteUpdateSetSource } from 'drizzle-orm/sqlite-core';
 import type { BindParams, SqlValue } from 'sql.js';
 import type { Database } from './database';
-import { DbError } from './errors';
-import { customers, people } from './schema';
+import { DbError, type DbErrorCode } from './errors';
+import {
+  aiAnalyses,
+  appointments,
+  customers,
+  kycFacts,
+  kycNotes,
+  people,
+  policies,
+  stageTransitions,
+  teams,
+} from './schema';
 
 /**
  * One line of typed text as stored, `normalizeText` of domain: a name is compared as stored, so
@@ -32,7 +45,8 @@ export function cleanNote(text: string): string {
   return normalizeNote(storable(text));
 }
 
-function storable(text: string): string {
+/** `text` when the database can store it as it is; else `INVALID_TEXT`, as in `cleanText`. */
+export function storable(text: string): string {
   if (!isStorableText(text)) throw new DbError('INVALID_TEXT');
   return text;
 }
@@ -173,17 +187,88 @@ export function rowInsert<T extends SQLiteTable>(table: T) {
       .prepare();
 }
 
-const customerById = (db: Database) =>
+/** `make(table)`, made once per table: `prepared` knows a query by the function that builds it. */
+function perTable<T extends SQLiteTable, V>(make: (table: T) => V): (table: T) => V {
+  const made = new WeakMap<T, V>();
+  return (table) => {
+    if (!made.has(table)) made.set(table, make(table));
+    return made.get(table)!;
+  };
+}
+
+/** The tables of the records a command changes in place and deletes softly, by `id`. */
+type Tracked =
+  typeof teams | typeof people | typeof customers | typeof appointments | typeof policies;
+type Row<T extends Tracked> = T['$inferSelect'];
+
+const rowById = perTable(
+  (table: Tracked) => (db: Database) =>
+    db.orm
+      .select()
+      .from(table)
+      .where(eq(table.id, sql.placeholder('id')))
+      .prepare(),
+);
+
+/** The row `id` of `table`, deleted or not. */
+export function findRow<T extends Tracked>(db: Database, table: T, id: string): Row<T> | undefined {
+  return prepared(db, rowById(table)).get({ id }) as Row<T> | undefined;
+}
+
+/**
+ * The row `id` of `table` when it exists and is not deleted, else `code`; `params` are those of a
+ * deleted row, when its error names it (spec Phase 6 TR-1).
+ */
+export function liveRow<T extends Tracked>(
+  db: Database,
+  table: T,
+  id: string,
+  code: DbErrorCode,
+  params?: (row: Row<T>) => DbError['params'],
+): Row<T> {
+  const row = findRow(db, table, id);
+  if (!row) throw new DbError(code);
+  if (row.deletedAt) throw new DbError(code, params?.(row));
+  return row;
+}
+
+/** Writes `changes` to the row `id` of `table` with a new `updatedAt`, and returns what it wrote. */
+export function updateRow<T extends Tracked>(
+  db: Database,
+  table: T,
+  id: string,
+  changes: Partial<Row<T>>,
+): Partial<Row<T>> {
+  const stamped = { updatedAt: db.now().toISOString(), ...changes };
   db.orm
-    .select()
-    .from(customers)
-    .where(eq(customers.id, sql.placeholder('id')))
-    .prepare();
+    .update(table)
+    .set(stamped as SQLiteUpdateSetSource<T>)
+    .where(eq(table.id, id))
+    .run();
+  return stamped;
+}
 
 /** The customer row, when it exists and is not deleted; the error names a deleted one. */
 export function liveCustomer(db: Database, id: string): typeof customers.$inferSelect {
-  const row = prepared(db, customerById).get({ id });
-  if (!row) throw new DbError('CUSTOMER_NOT_FOUND');
-  if (row.deletedAt) throw new DbError('CUSTOMER_NOT_FOUND', { name: row.name });
-  return row;
+  return liveRow(db, customers, id, 'CUSTOMER_NOT_FOUND', ({ name }) => ({ name }));
+}
+
+/** The tables numbering each customer's rows by `seq`, in recording order (spec §2). */
+type Sequenced = typeof stageTransitions | typeof kycNotes | typeof kycFacts | typeof aiAnalyses;
+
+const lastSeqOf = perTable(
+  (table: Sequenced) => (db: Database) =>
+    db.orm
+      .select({ seq: max(table.seq) })
+      .from(table)
+      .where(eq(table.customerId, sql.placeholder('customerId')))
+      .prepare(),
+);
+
+/**
+ * The customer's highest `seq` in `table`, null when it has none; a deleted row keeps its own, so
+ * `nextSeq` never gives one twice.
+ */
+export function lastSeq(db: Database, table: Sequenced, customerId: string): number | null {
+  return prepared(db, lastSeqOf(table)).get({ customerId })?.seq ?? null;
 }

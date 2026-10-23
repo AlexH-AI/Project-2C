@@ -319,11 +319,6 @@ export function customRangeAllowed(start: CalendarDate, end: CalendarDate): bool
   return compareDates(start, end) <= 0 && compareDates(end, customRangeMaxEnd(start)) <= 0;
 }
 
-/** MTD (ADR-0007): from the 1st of the month to the viewing `date`, both days in full. */
-export function monthToDate(date: CalendarDate): Period {
-  return customPeriod({ year: date.year, month: date.month, day: 1 }, date);
-}
-
 /**
  * The next (+1) or previous (−1) period of the same kind; a custom range moves by its length.
  * Throws a RangeError when that period is not in 1900–2100 (a custom range: not wholly in it), or

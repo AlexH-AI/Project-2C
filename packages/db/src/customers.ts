@@ -16,6 +16,8 @@ import {
 } from '@p2c/domain';
 import { and, asc, count, desc, eq, gte, isNull, ne } from 'drizzle-orm';
 import {
+  findRow,
+  lastSeq,
   liveCustomer,
   nextSeq,
   prepared,
@@ -28,6 +30,7 @@ import {
   today,
   storedDate,
   storedPastDate,
+  updateRow,
 } from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
@@ -77,7 +80,7 @@ export function listCustomers(db: Database): CustomerRecord[] {
 }
 
 export function getCustomer(db: Database, id: string): CustomerRecord | undefined {
-  const row = findCustomer(db, id);
+  const row = findRow(db, customers, id);
   return row && !row.deletedAt ? toCustomer(row) : undefined;
 }
 
@@ -107,22 +110,25 @@ export function listStageTransitions(db: Database, customerId?: string): StageTr
 export function createCustomer(db: Database, input: NewCustomer): CustomerRecord {
   return db.transaction(() => {
     const profile = validateProfile(db, input);
-    storedPastDate(db, input.date);
+    const isoDate = storedPastDate(db, input.date);
     const at = db.now().toISOString();
     const id = ulid(db.now(), db.random);
+    // The first transition, checked once before the customer row is written: a stage outside the
+    // list is refused with a code, not the CHECK error of the table (DR6-51).
+    const from = checkTransition(db, id, input.stage, input.date);
     db.orm
       .insert(customers)
       .values({
         id,
         code: freeCode(db),
         ...profile,
-        stage: requireStage(input.stage),
+        stage: input.stage,
         createdAt: at,
         updatedAt: at,
         deletedAt: null,
       })
       .run();
-    appendTransition(db, id, input.stage, input.date, null);
+    writeTransition(db, id, from, input.stage, isoDate, null);
     recordProfileFacts(db, id, { birthDate: null, gender: null }, profile, input.date);
     return toCustomer(liveCustomer(db, id));
   });
@@ -142,7 +148,7 @@ export function updateCustomerProfile(
       birthDate: changes.birthDate === undefined ? current.birthDate : changes.birthDate,
       gender: changes.gender === undefined ? current.gender : changes.gender,
     });
-    updateCustomerRow(db, id, profile);
+    updateRow(db, customers, id, profile);
     // The new RE takes over what is still planned (Owner 15/10/2026, T-233); what has an outcome or
     // is past, and the policies, count for the RE recorded on them (ADR-0007).
     if (profile.reId !== row.reId) {
@@ -205,17 +211,17 @@ export function changeStageManually(
 export function softDeleteCustomer(db: Database, id: string): void {
   db.transaction(() => {
     liveCustomer(db, id);
-    updateCustomerRow(db, id, stampDeleted(db));
+    updateRow(db, customers, id, stampDeleted(db));
   });
 }
 
 /** Brings the customer back with every record not deleted on its own (spec Phase 6 TR-4). */
 export function restoreCustomer(db: Database, id: string): void {
   db.transaction(() => {
-    const row = findCustomer(db, id);
+    const row = findRow(db, customers, id);
     if (!row) throw new DbError('CUSTOMER_NOT_FOUND');
     checkRestoreCustomer(db, row);
-    updateCustomerRow(db, id, { deletedAt: null });
+    updateRow(db, customers, id, { deletedAt: null });
   });
 }
 
@@ -226,14 +232,13 @@ export function checkRestoreCustomer(db: Database, row: CustomerRow): void {
 
 // ---- transitions, shared with the appointment commands --------------------
 
-export { liveCustomer };
-
 const insertTransition = rowInsert(stageTransitions);
 
 /**
  * Records `current stage → to` and moves the customer, in the caller's transaction. The date may
- * not be before the latest transition's (D10), so dates follow `seq` and `stageOn` agrees with
- * `customers.stage`; the first transition carries the creation day, so nothing goes before it.
+ * not be before the latest transition's (D10), so dates follow `seq` and the stage snapshot of
+ * domain, which reads them by day, agrees with `customers.stage`; the first transition carries the
+ * creation day, so nothing goes before it.
  */
 export function appendTransition(
   db: Database,
@@ -244,16 +249,25 @@ export function appendTransition(
 ): StageTransition {
   const isoDate = storedDate(date);
   const from = checkTransition(db, customerId, to, date);
-  const lastSeq = db.orm
-    .select({ seq: stageTransitions.seq })
-    .from(stageTransitions)
-    .where(eq(stageTransitions.customerId, customerId))
-    .orderBy(desc(stageTransitions.seq))
-    .get();
+  return writeTransition(db, customerId, from, to, isoDate, appointmentId);
+}
+
+/**
+ * Writes the transition from `from` that `checkTransition` allowed, on the stored day `isoDate`,
+ * and moves the customer to `to`.
+ */
+function writeTransition(
+  db: Database,
+  customerId: string,
+  from: CustomerStage | null,
+  to: CustomerStage,
+  isoDate: string,
+  appointmentId: string | null,
+): StageTransition {
   const row: TransitionRow = {
     id: ulid(db.now(), db.random),
     customerId,
-    seq: nextSeq(lastSeq?.seq),
+    seq: nextSeq(lastSeq(db, stageTransitions, customerId)),
     fromStage: from,
     toStage: to,
     date: isoDate,
@@ -262,7 +276,7 @@ export function appendTransition(
     deletedAt: null,
   };
   prepared(db, insertTransition).run(row);
-  updateCustomerRow(db, customerId, { stage: to });
+  updateRow(db, customers, customerId, { stage: to });
   return toTransition(row);
 }
 
@@ -320,8 +334,8 @@ export function requireStage(stage: CustomerStage): CustomerStage {
 
 /**
  * The stages the customer is in on `date`, in order: the one it starts the day in, then the one
- * each change that day moves it to; the last is its stage at the end of the day, as `stageOn` of
- * domain reads it. Up to the day of its creation, it starts in the stage it was created in: a
+ * each change that day moves it to; the last is its stage at the end of the day, as the domain
+ * snapshot reads it. Up to the day of its creation, it starts in the stage it was created in: a
  * meeting held before the customer was entered is a backfill (DR-43, Owner 17/10/2026). A met
  * appointment that moved no stage records one of these as its stage after (spec §6 rule 4, T-232).
  * The one rule the commands, the import and the outcome dialogs read (DR6-134). `transitions` are
@@ -371,7 +385,7 @@ export function withdrawAppointmentTransition(
     .set({ deletedAt: at })
     .where(eq(stageTransitions.id, caused.id))
     .run();
-  updateCustomerRow(db, caused.customerId, { stage: caused.fromStage });
+  updateRow(db, customers, caused.customerId, { stage: caused.fromStage });
   // D7 holds the move too while a later meeting kept the stage it moved to (T-232); the caller's
   // transaction rolls the withdrawal back.
   const left = meetingKeepingMove(
@@ -483,7 +497,7 @@ export function reinstateTransition(
     .set({ deletedAt: null })
     .where(eq(stageTransitions.id, withdrawn.id))
     .run();
-  updateCustomerRow(db, withdrawn.customerId, { stage: to });
+  updateRow(db, customers, withdrawn.customerId, { stage: to });
 }
 
 // ---- helpers --------------------------------------------------------------
@@ -506,10 +520,6 @@ function plannedOff(db: Database, customerId: string, reId: string) {
     gte(appointments.date, storedDate(today(db))),
     ne(appointments.reId, reId),
   );
-}
-
-function findCustomer(db: Database, id: string): CustomerRow | undefined {
-  return db.orm.select().from(customers).where(eq(customers.id, id)).get();
 }
 
 function validateProfile(db: Database, input: CustomerProfile) {
@@ -538,14 +548,6 @@ function freeCode(db: Database): string {
       .get();
     if (!taken) return code;
   }
-}
-
-function updateCustomerRow(db: Database, id: string, changes: Partial<CustomerRow>): void {
-  db.orm
-    .update(customers)
-    .set({ updatedAt: db.now().toISOString(), ...changes })
-    .where(eq(customers.id, id))
-    .run();
 }
 
 function toCustomer(row: CustomerRow): CustomerRecord {

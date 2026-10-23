@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { assertValidTransition, isRfTransition, stageOn } from './customer-lifecycle';
+import {
+  assertValidTransition,
+  isRfTransition,
+  sortedByDate,
+  stageAtEndOf,
+} from './customer-lifecycle';
 import type { CustomerStage, StageTransition } from './model';
 import { calendarDate } from './period';
 
@@ -85,47 +90,47 @@ describe('RF transitions', () => {
   });
 });
 
-describe('stage on a day', () => {
+describe('stage at the end of a day', () => {
   const move = (
     id: string,
-    customerId: string,
     from: CustomerStage | null,
     to: CustomerStage,
     day: number,
   ): StageTransition => ({
     id,
-    customerId,
+    customerId: 'c1',
     from,
     to,
     date: calendarDate(2025, 12, day),
     appointmentId: null,
   });
 
+  // One customer's transitions in recording order, two of them on the 10th.
   const history = [
-    move('t1', 'c1', null, 'N4', 3),
-    move('t2', 'c2', null, 'N1', 4),
-    move('t3', 'c1', 'N4', 'N3', 10),
-    move('t4', 'c1', 'N3', 'N2', 10),
-    move('t5', 'c1', 'N2', 'LOST', 20),
+    move('t1', null, 'N4', 3),
+    move('t2', 'N4', 'N3', 10),
+    move('t3', 'N3', 'N2', 10),
+    move('t4', 'N2', 'LOST', 20),
   ];
+  const stageAt = (transitions: readonly StageTransition[], day: number) =>
+    stageAtEndOf(sortedByDate(transitions), calendarDate(2025, 12, day));
 
   it('has no stage before the first transition', () => {
-    expect(stageOn(history, 'c1', calendarDate(2025, 12, 2))).toBeNull();
-    expect(stageOn(history, 'unknown', calendarDate(2025, 12, 31))).toBeNull();
+    expect(stageAt(history, 2)).toBeNull();
+    expect(stageAt([], 31)).toBeNull();
   });
 
   it('takes the latest transition up to and including the day', () => {
-    expect(stageOn(history, 'c1', calendarDate(2025, 12, 3))).toBe('N4');
-    expect(stageOn(history, 'c1', calendarDate(2025, 12, 9))).toBe('N4');
-    expect(stageOn(history, 'c1', calendarDate(2025, 12, 25))).toBe('LOST');
-    expect(stageOn(history, 'c2', calendarDate(2025, 12, 25))).toBe('N1');
+    expect(stageAt(history, 3)).toBe('N4');
+    expect(stageAt(history, 9)).toBe('N4');
+    expect(stageAt(history, 25)).toBe('LOST');
   });
 
   it('takes the last recorded of several transitions on the same day', () => {
-    expect(stageOn(history, 'c1', calendarDate(2025, 12, 10))).toBe('N2');
+    expect(stageAt(history, 10)).toBe('N2');
   });
 
   it('does not depend on the order of transitions on different days', () => {
-    expect(stageOn([...history].reverse(), 'c1', calendarDate(2025, 12, 25))).toBe('LOST');
+    expect(stageAt([...history].reverse(), 25)).toBe('LOST');
   });
 });

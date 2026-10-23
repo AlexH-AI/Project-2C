@@ -6,8 +6,17 @@
  */
 import { AI_OUTPUT_SCHEMAS, analysisInputSchema, type AnalysisInput } from '@p2c/ai/schema';
 import { fromIsoDate, type CalendarDate, type KycGateState } from '@p2c/domain';
-import { asc, desc, eq, max, sql } from 'drizzle-orm';
-import { isLabel, liveCustomer, nextSeq, prepared, rowInsert, storedDate, today } from './common';
+import { asc, desc, eq, sql } from 'drizzle-orm';
+import {
+  isLabel,
+  lastSeq,
+  liveCustomer,
+  nextSeq,
+  prepared,
+  rowInsert,
+  storedDate,
+  today,
+} from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { ulid } from './ids';
@@ -112,7 +121,7 @@ export function recordAiAnalysis(db: Database, analysis: NewAiAnalysis): AiAnaly
     const stored = {
       ...row,
       id: ulid(db.now(), db.random),
-      seq: nextSeq(prepared(db, lastSeq).get({ customerId: analysis.customerId })?.seq),
+      seq: nextSeq(lastSeq(db, aiAnalyses, analysis.customerId)),
       date: storedDate(today(db)),
       createdAt: db.now().toISOString(),
     };
@@ -332,10 +341,4 @@ const analysesOf = (db: Database) =>
     .from(aiAnalyses)
     .where(eq(aiAnalyses.customerId, byCustomer))
     .orderBy(desc(aiAnalyses.seq))
-    .prepare();
-const lastSeq = (db: Database) =>
-  db.orm
-    .select({ seq: max(aiAnalyses.seq) })
-    .from(aiAnalyses)
-    .where(eq(aiAnalyses.customerId, byCustomer))
     .prepare();

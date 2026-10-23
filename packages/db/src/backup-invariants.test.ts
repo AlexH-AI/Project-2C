@@ -8,7 +8,7 @@ import { calendarDate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { listAiAnalyses, recordAiAnalysis, type NewAiAnalysis } from './ai-analyses';
 import {
-  getAppointment,
+  listAppointments,
   recordMeetingOutcome,
   rescheduleAppointment,
   restoreAppointment,
@@ -36,7 +36,7 @@ import {
 import { restorePolicy, softDeletePolicy, submitPolicy } from './policies';
 import { seedDemoData } from './seed';
 import { createPerson, restorePerson, softDeletePerson, updatePerson } from './team';
-import { codeOf, setup } from './test-support';
+import { byId, codeOf, setup } from './test-support';
 
 type Row = Record<string, unknown>;
 interface BackupJson {
@@ -1063,7 +1063,7 @@ describe('restoring a deleted record dated after today', () => {
     const { db, ids } = await imported(met(TODAY));
     const id = row(b(db), 'appointments', (a) => a.customer_id === ids.hoa).id as string;
     restoreAppointment(db, id);
-    expect(getAppointment(db, id)?.date).toEqual(day(26));
+    expect(byId(listAppointments(db), id)?.date).toEqual(day(26));
   });
 
   it('refuses a policy submitted or issued after today', async () => {

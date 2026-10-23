@@ -18,8 +18,11 @@ import {
   type Vnd,
   fromIsoDate,
 } from '@p2c/domain';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import {
+  findRow,
+  liveCustomer,
+  liveRow,
   optionalText,
   requireAmount,
   requireRe,
@@ -27,12 +30,12 @@ import {
   stampDeleted,
   today,
   storedDate,
+  updateRow,
 } from './common';
 import {
   appendTransition,
   checkTransition,
   listStageTransitions,
-  liveCustomer,
   reinstateTransition,
   requireStage,
   stagesOfDay,
@@ -42,13 +45,7 @@ import {
 import type { Database } from './database';
 import { DbError } from './errors';
 import { ulid } from './ids';
-import {
-  APPOINTMENT_TRIGGERS,
-  appointmentCoordinators,
-  appointments,
-  customers,
-  people,
-} from './schema';
+import { APPOINTMENT_TRIGGERS, appointmentCoordinators, appointments, people } from './schema';
 
 type AppointmentRow = typeof appointments.$inferSelect;
 
@@ -139,12 +136,6 @@ export function listAppointments(db: Database, customerId?: string): Appointment
   });
 }
 
-export function getAppointment(db: Database, id: string): AppointmentRecord | undefined {
-  const row = findAppointment(db, id);
-  if (!row || row.deletedAt || !isCustomerLive(db, row.customerId)) return undefined;
-  return toAppointment(db, row);
-}
-
 // ---- commands -------------------------------------------------------------
 
 export function scheduleAppointment(db: Database, input: NewAppointment): AppointmentRecord {
@@ -165,7 +156,7 @@ export function recordMeetingOutcome(
     // exists (D7). Otherwise only a met appointment can have moved the customer.
     const keepsStage = keepsTransition(row, fields);
     if (row.status === 'MET' && !keepsStage) withdrawAppointmentTransition(db, id);
-    const updated: AppointmentRow = { ...row, ...updateAppointmentRow(db, id, fields) };
+    const updated: AppointmentRow = { ...row, ...updateRow(db, appointments, id, fields) };
     if (!keepsStage) applyOutcome(db, updated);
     return toAppointment(db, updated);
   });
@@ -223,7 +214,7 @@ export function editMeetingOutcome(
     const keepsStage = keepsTransition(row, fields);
     const moved = fields.date !== row.date;
     if (row.status === 'MET' && (!keepsStage || moved)) withdrawAppointmentTransition(db, id);
-    const updated: AppointmentRow = { ...row, ...updateAppointmentRow(db, id, fields) };
+    const updated: AppointmentRow = { ...row, ...updateRow(db, appointments, id, fields) };
     replaceCoordinators(db, row, details.coordinatorIds);
     if (!keepsStage || moved) applyOutcome(db, updated);
     return toAppointment(db, updated);
@@ -249,7 +240,7 @@ export function rescheduleAppointment(
     }
     // A note already there stays, the reason goes under it.
     const reason = optionalText(note);
-    updateAppointmentRow(db, id, {
+    updateRow(db, appointments, id, {
       status: 'RESCHEDULED',
       note: [old.note, reason].filter(Boolean).join('\n'),
     });
@@ -266,7 +257,7 @@ export function softDeleteAppointment(db: Database, id: string): void {
     liveAppointment(db, id);
     const deleted = stampDeleted(db);
     withdrawAppointmentTransition(db, id, deleted.deletedAt);
-    updateAppointmentRow(db, id, deleted);
+    updateRow(db, appointments, id, deleted);
   });
 }
 
@@ -276,11 +267,11 @@ export function softDeleteAppointment(db: Database, id: string): void {
  */
 export function restoreAppointment(db: Database, id: string): void {
   db.transaction(() => {
-    const row = findAppointment(db, id);
+    const row = findRow(db, appointments, id);
     if (!row) throw new DbError('APPOINTMENT_NOT_FOUND');
     if (!row.deletedAt) return;
     const move = checkRestoreAppointment(db, row);
-    updateAppointmentRow(db, id, { deletedAt: null });
+    updateRow(db, appointments, id, { deletedAt: null });
     if (move?.to) reinstateTransition(db, move.withdrawn, move.to, fromIsoDate(row.date));
   });
 }
@@ -508,35 +499,10 @@ function requireOutcomeDay(db: Database, status: string, isoDate: string): void 
   }
 }
 
-function findAppointment(db: Database, id: string): AppointmentRow | undefined {
-  return db.orm.select().from(appointments).where(eq(appointments.id, id)).get();
-}
-
-function isCustomerLive(db: Database, customerId: string): boolean {
-  const row = db.orm
-    .select({ id: customers.id })
-    .from(customers)
-    .where(and(eq(customers.id, customerId), isNull(customers.deletedAt)))
-    .get();
-  return row !== undefined;
-}
-
 function liveAppointment(db: Database, id: string): AppointmentRow {
-  const row = findAppointment(db, id);
-  if (!row || row.deletedAt) throw new DbError('APPOINTMENT_NOT_FOUND');
+  const row = liveRow(db, appointments, id, 'APPOINTMENT_NOT_FOUND');
   liveCustomer(db, row.customerId);
   return row;
-}
-
-/** Writes the changes and returns them with the new `updatedAt`. */
-function updateAppointmentRow(
-  db: Database,
-  id: string,
-  changes: Partial<AppointmentRow>,
-): Partial<AppointmentRow> {
-  const stamped = { updatedAt: db.now().toISOString(), ...changes };
-  db.orm.update(appointments).set(stamped).where(eq(appointments.id, id)).run();
-  return stamped;
 }
 
 function coordinatorsOf(db: Database, appointmentId: string): string[] {

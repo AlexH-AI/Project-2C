@@ -11,7 +11,15 @@ import {
   type Team,
 } from '@p2c/domain';
 import { and, asc, eq, isNotNull, isNull, ne } from 'drizzle-orm';
-import { requireChoice, requireName, selectRows, stampDeleted } from './common';
+import {
+  findRow,
+  liveRow,
+  requireChoice,
+  requireName,
+  selectRows,
+  stampDeleted,
+  updateRow,
+} from './common';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { ulid } from './ids';
@@ -37,11 +45,6 @@ export function listTeams(db: Database): Team[] {
     .map(toTeam);
 }
 
-export function getTeam(db: Database, id: string): Team | undefined {
-  const row = findTeam(db, id);
-  return row && !row.deletedAt ? toTeam(row) : undefined;
-}
-
 export function listPeople(db: Database): Person[] {
   return db.orm
     .select()
@@ -50,11 +53,6 @@ export function listPeople(db: Database): Person[] {
     .orderBy(asc(people.id))
     .all()
     .map(toPerson);
-}
-
-export function getPerson(db: Database, id: string): Person | undefined {
-  const row = findPerson(db, id);
-  return row && !row.deletedAt ? toPerson(row) : undefined;
 }
 
 /**
@@ -145,7 +143,7 @@ export function renameTeam(db: Database, id: string, newName: string): Team {
     liveTeam(db, id);
     const name = requireName(newName);
     assertTeamNameFree(db, name, id);
-    updateTeamRow(db, id, { name });
+    updateRow(db, teams, id, { name });
     return toTeam(liveTeam(db, id));
   });
 }
@@ -159,16 +157,16 @@ export function softDeleteTeam(db: Database, id: string): void {
       .where(and(eq(people.teamId, id), isNull(people.deletedAt)))
       .get();
     if (member) throw new DbError('TEAM_HAS_MEMBERS');
-    updateTeamRow(db, id, stampDeleted(db));
+    updateRow(db, teams, id, stampDeleted(db));
   });
 }
 
 export function restoreTeam(db: Database, id: string): void {
   db.transaction(() => {
-    const row = findTeam(db, id);
+    const row = findRow(db, teams, id);
     if (!row) throw new DbError('TEAM_NOT_FOUND');
     checkRestoreTeam(db, row);
-    updateTeamRow(db, id, { deletedAt: null });
+    updateRow(db, teams, id, { deletedAt: null });
   });
 }
 
@@ -226,7 +224,7 @@ export function updatePerson(db: Database, id: string, changes: Partial<PersonIn
       },
       id,
     );
-    updatePersonRow(db, id, valid);
+    updateRow(db, people, id, valid);
     return toPerson(livePerson(db, id));
   });
 }
@@ -235,16 +233,16 @@ export function softDeletePerson(db: Database, id: string): void {
   db.transaction(() => {
     livePerson(db, id);
     if (isPersonInUse(usageCounts(db, id))) throw new DbError('PERSON_IN_USE');
-    updatePersonRow(db, id, stampDeleted(db));
+    updateRow(db, people, id, stampDeleted(db));
   });
 }
 
 export function restorePerson(db: Database, id: string): void {
   db.transaction(() => {
-    const row = findPerson(db, id);
+    const row = findRow(db, people, id);
     if (!row) throw new DbError('PERSON_NOT_FOUND');
     checkRestorePerson(db, row);
-    updatePersonRow(db, id, { deletedAt: null });
+    updateRow(db, people, id, { deletedAt: null });
   });
 }
 
@@ -263,26 +261,13 @@ function toPerson(row: PersonRow): Person {
   return { id: row.id, name: row.name, role: row.role, teamId: row.teamId };
 }
 
-function findTeam(db: Database, id: string): TeamRow | undefined {
-  return db.orm.select().from(teams).where(eq(teams.id, id)).get();
-}
-
-function findPerson(db: Database, id: string): PersonRow | undefined {
-  return db.orm.select().from(people).where(eq(people.id, id)).get();
-}
-
 /** The team row, when it exists and is not deleted; the error names a deleted one. */
 function liveTeam(db: Database, id: string): TeamRow {
-  const row = findTeam(db, id);
-  if (!row) throw new DbError('TEAM_NOT_FOUND');
-  if (row.deletedAt) throw new DbError('TEAM_NOT_FOUND', { name: row.name });
-  return row;
+  return liveRow(db, teams, id, 'TEAM_NOT_FOUND', ({ name }) => ({ name }));
 }
 
 function livePerson(db: Database, id: string): PersonRow {
-  const row = findPerson(db, id);
-  if (!row || row.deletedAt) throw new DbError('PERSON_NOT_FOUND');
-  return row;
+  return liveRow(db, people, id, 'PERSON_NOT_FOUND');
 }
 
 function assertTeamNameFree(db: Database, name: string, exceptId: string | null): void {
@@ -330,20 +315,4 @@ function assertNoOtherLead(db: Database, teamId: string, selfId: string | null):
     )
     .get();
   if (lead) throw new DbError('TEAM_HAS_LEAD', { name: lead.name });
-}
-
-function updateTeamRow(db: Database, id: string, changes: Partial<TeamRow>): void {
-  db.orm
-    .update(teams)
-    .set({ updatedAt: db.now().toISOString(), ...changes })
-    .where(eq(teams.id, id))
-    .run();
-}
-
-function updatePersonRow(db: Database, id: string, changes: Partial<PersonRow>): void {
-  db.orm
-    .update(people)
-    .set({ updatedAt: db.now().toISOString(), ...changes })
-    .where(eq(people.id, id))
-    .run();
 }

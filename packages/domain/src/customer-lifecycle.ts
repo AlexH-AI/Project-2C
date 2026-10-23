@@ -35,20 +35,8 @@ export function isRfTransition(from: CustomerStage | null, to: CustomerStage): b
 }
 
 /**
- * The customer's stage at the end of `date`, or null before their first transition. Transitions on
- * the same day count in the order they were recorded (their order in `transitions`).
- */
-export function stageOn(
-  transitions: readonly StageTransition[],
-  customerId: string,
-  date: CalendarDate,
-): CustomerStage | null {
-  return stageAtEndOf(sortedByDate(transitions.filter((t) => t.customerId === customerId)), date);
-}
-
-/**
  * One customer's transitions by day; a stable sort, so transitions of the same day keep the order
- * they were recorded in. Shared with `stage-snapshot.ts`, which sorts each customer once.
+ * they were recorded in. `stage-snapshot.ts` sorts each customer once with it.
  */
 export function sortedByDate(transitions: readonly StageTransition[]): StageTransition[] {
   return [...transitions].sort((a, b) => compareDates(a.date, b.date));
