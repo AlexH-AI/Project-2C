@@ -226,19 +226,19 @@ const THEN = /(?<!\p{L})thì(?!\p{L})/giu;
 const SENTENCE_END = /[.!?;\n]/g;
 const CLAUSE_END = /[.!?;,\n]/g;
 
-/**
- * Where `word` first ends in `part`, which starts at `start` of the note; never when it is not
- * there.
- */
-function firstEnd(word: RegExp, part: string, start: number): number {
-  const first = word.exec(part);
-  return first ? start + first.index + first[0].length : Infinity;
+/** A sentence or a clause of the note, with where it starts in the note. */
+type Part = { readonly text: string; readonly start: number };
+
+/** Where `word` first ends in `part`, as a position in the note; never when it is not there. */
+function firstEnd(word: RegExp, part: Part): number {
+  const first = word.exec(part.text);
+  return first ? part.start + first.index + first[0].length : Infinity;
 }
 
 /** Where `word`, a regex with the `g` flag, last starts in `part`; never when it is not there. */
-function lastStart(word: RegExp, part: string, start: number): number {
+function lastStart(word: RegExp, part: Part): number {
   let last = -Infinity;
-  for (const found of part.matchAll(word)) last = start + found.index;
+  for (const found of part.text.matchAll(word)) last = part.start + found.index;
   return last;
 }
 
@@ -249,15 +249,16 @@ function lastStart(word: RegExp, part: string, start: number): number {
  */
 function readerOf(note: string, ends: RegExp) {
   const starts = [0, ...[...note.matchAll(ends)].map((mark) => mark.index + 1)];
-  return <T>(read: (part: string, start: number) => T): ((at: number) => T) => {
-    let part = -1;
+  return <T>(read: (part: Part) => T): ((at: number) => T) => {
+    let index = -1;
     let seen: T | undefined;
     return (at) => {
-      let next = Math.max(part, 0);
+      let next = Math.max(index, 0);
       while (next + 1 < starts.length && starts[next + 1]! <= at) next++;
-      if (next !== part) {
-        part = next;
-        seen = read(note.slice(starts[part], starts[part + 1]), starts[part]!);
+      if (next !== index) {
+        index = next;
+        const start = starts[index]!;
+        seen = read({ text: note.slice(start, starts[index + 1]), start });
       }
       return seen as T;
     };
@@ -267,22 +268,22 @@ function readerOf(note: string, ends: RegExp) {
 type Reader = ReturnType<typeof readerOf>;
 
 /** What a sentence says around its phrases, as positions in the note. */
-function readSentence(part: string, start: number) {
+function readSentence(sentence: Part) {
   return {
-    someoneElse: firstEnd(SOMEONE_ELSE, part, start),
-    supposed: firstEnd(SUPPOSED, part, start),
-    whenEnd: firstEnd(WHEN, part, start),
-    thenStart: lastStart(THEN, part, start),
-    guessed: GUESSED.test(part),
+    someoneElse: firstEnd(SOMEONE_ELSE, sentence),
+    supposed: firstEnd(SUPPOSED, sentence),
+    whenEnd: firstEnd(WHEN, sentence),
+    thenStart: lastStart(THEN, sentence),
+    guessed: GUESSED.test(sentence.text),
   };
 }
 
 /** What a clause says around its phrases, as positions in the note. */
-function readClause(part: string, start: number) {
+function readClause(clause: Part) {
   return {
-    negated: firstEnd(NEGATED, part, start),
-    wished: firstEnd(WISHED, part, start),
-    asked: ASKED.test(part),
+    negated: firstEnd(NEGATED, clause),
+    wished: firstEnd(WISHED, clause),
+    asked: ASKED.test(clause.text),
   };
 }
 
@@ -320,7 +321,7 @@ function extraction(note: string, fields: readonly string[]): ExtractionOutput {
   const ofTheKh = aboutTheKh(sentence, readerOf(note, CLAUSE_END));
   const facts = EXTRACTION_PATTERNS.filter(({ field }) => fields.includes(field))
     .flatMap(({ field, pattern, value, endedBy, unwishedAfter }) => {
-      const ended = endedBy && sentence((part, start) => lastStart(endedBy, part, start));
+      const ended = endedBy && sentence((part) => lastStart(endedBy, part));
       return [...note.matchAll(pattern)]
         .map((match) => ({
           at: match.index,
