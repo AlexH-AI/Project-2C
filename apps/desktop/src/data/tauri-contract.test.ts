@@ -319,11 +319,12 @@ describe('the release configuration (DR6-12…14)', () => {
       permissions: string[];
     };
     // CloseGuard: `onCloseRequested` listens (and stops) for the close event, then `destroy`.
-    // The app's own commands need none.
+    // AppShell: `setTitle` names the window after the screen. The app's own commands need none.
     expect(capability.permissions).toEqual([
       'core:event:allow-listen',
       'core:event:allow-unlisten',
       'core:window:allow-destroy',
+      'core:window:allow-set-title',
     ]);
   });
 

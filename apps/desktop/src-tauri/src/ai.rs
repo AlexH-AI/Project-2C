@@ -10,6 +10,7 @@ use serde_json::Value;
 use std::collections::VecDeque;
 use std::io::Read;
 use std::ops::Range;
+use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
@@ -332,29 +333,48 @@ fn mask(text: &str, secret: &str) -> String {
 /// A character of a text being read, with the bytes of the text it came from.
 type Spanned = (char, Range<usize>);
 
-/// The ways `text` may give the key away (DR6-10, DR6-76): as it is, and with every escape undone
-/// once and twice ([`unescape`]). A pass undoes the outer layer of each part of the text, so a key
-/// whose parts are each in up to two layers, of the same kind or not, in either order and each
-/// its own way, shows in the last reading: a URL-encoded key written in JSON, or JSON's escapes
-/// with their `\` escaped again, which the webview's `JSON.parse` gives back as escapes. Three
-/// layers are out of reach (ADR-0009 D-1). The tests prove it for secrets with no `\` or `%` of
-/// their own, as OpenCode's keys and the session id are: a pass may undo those too.
-fn readings(text: &str) -> [Box<dyn Iterator<Item = Spanned> + '_>; 3] {
+/// The ways `text` may give the key away (DR6-10, DR6-76): as it is, with every escape undone once
+/// and twice ([`unescape`]), and with JSON's alone undone once. A pass undoes the outer layer of
+/// each part of the text, so a key whose parts are each in up to two layers, of the same kind or
+/// not, in either order and each its own way, shows in the third reading: a URL-encoded key
+/// written in JSON, or JSON's escapes with their `\` escaped again, which the webview's
+/// `JSON.parse` gives back as escapes. Three layers are out of reach (ADR-0009 D-1). The tests
+/// prove it for secrets with no `\` or `%` of their own, as OpenCode's keys and the session id
+/// are: a pass may undo those too. Such a secret still shows as it is and in one layer of each
+/// kind: `JSON.stringify` leaves its `%XX` as they are, and so does the last reading.
+fn readings(text: &str) -> [Box<dyn Iterator<Item = Spanned> + '_>; 4] {
     let chars = || {
         text.char_indices()
             .map(|(at, c)| (c, at..at + c.len_utf8()))
     };
+    // The first pass, read as it is and once more by the second, rather than done twice.
+    let once = Rc::new(unescape(chars(), Escapes::All).collect::<Vec<_>>());
+    let read = |pass: &Rc<Vec<Spanned>>| {
+        let pass = Rc::clone(pass);
+        (0..pass.len()).map(move |i| pass[i].clone())
+    };
     [
         Box::new(chars()),
-        Box::new(unescape(chars())),
-        Box::new(unescape(unescape(chars()))),
+        Box::new(read(&once)),
+        Box::new(unescape(read(&once), Escapes::All)),
+        Box::new(unescape(chars(), Escapes::Json)),
     ]
 }
 
+/// The escapes a pass of [`unescape`] undoes: JSON's and a URL's `%XX`, or JSON's alone.
+enum Escapes {
+    All,
+    Json,
+}
+
 /// One pass over `chars`, read from the left as `JSON.parse` does: each of JSON's escapes
-/// (`\uXXXX`, `\/`, `\"`, `\\`, `\n`…) and each URL `%XX` gives the character it stands for, which
-/// comes from the bytes of the whole escape. Any other `\` or `%` stays as it is.
-fn unescape(mut chars: impl Iterator<Item = Spanned>) -> impl Iterator<Item = Spanned> {
+/// (`\uXXXX`, `\/`, `\"`, `\\`, `\n`…) and, with [`Escapes::All`], each URL `%XX` gives the
+/// character it stands for, which comes from the bytes of the whole escape. Any other `\` or `%`
+/// stays as it is.
+fn unescape(
+    mut chars: impl Iterator<Item = Spanned>,
+    escapes: Escapes,
+) -> impl Iterator<Item = Spanned> {
     let mut ahead = VecDeque::new();
     std::iter::from_fn(move || {
         // `\uXXXX`, the longest escape, is 6 characters.
@@ -372,7 +392,7 @@ fn unescape(mut chars: impl Iterator<Item = Spanned>) -> impl Iterator<Item = Sp
             ('\\', Some('u')) => hex(2, 4).map(|c| (c, 6)),
             ('\\', Some(next)) => json_escape(next).map(|c| (c, 2)),
             // A byte, so `%C4%83` gives two characters rather than `ă`: the secrets are ASCII.
-            ('%', _) => hex(1, 2).map(|c| (c, 3)),
+            ('%', _) if matches!(escapes, Escapes::All) => hex(1, 2).map(|c| (c, 3)),
             _ => None,
         };
         let (c, length) = escape.unwrap_or((first, 1));
@@ -797,12 +817,15 @@ mod tests {
     #[test]
     fn a_reply_whose_content_holds_the_key_in_json_or_url_escapes_is_bad_response() {
         // The webview's `JSON.parse` of the answer would turn each of these back into the key.
+        for note in odd_keys() {
+            assert_eq!(
+                reply(200, &answer(&note), ODD_KEY, SESSION),
+                Err(AiError::new(AI_BAD_RESPONSE)),
+                "{note}"
+            );
+        }
         let slashed = "sk-Probe+Key/a=";
         for (note, key) in [
-            // A key that is itself written like an escape, as it is and in one layer, which a
-            // second pass would undo further.
-            (ODD_KEY.to_owned(), ODD_KEY),
-            (escaped(ODD_KEY, false), ODD_KEY),
             // In a URL's escapes: no longer the key on screen, still the key in a backup.
             (percent(KEY, true), KEY),
             (escaped(KEY, false), KEY),
@@ -1283,13 +1306,16 @@ mod tests {
         ] {
             assert_eq!(message(&text), masked, "{text}");
         }
-        let body = serde_json::json!({ "message": format!("bad {ODD_KEY}!") }).to_string();
-        assert_eq!(
-            reply(401, body.as_bytes(), ODD_KEY, SESSION)
-                .unwrap_err()
-                .message,
-            Some("bad ***!".into())
-        );
+        for odd in odd_keys() {
+            let body = serde_json::json!({ "message": format!("bad {odd}!") }).to_string();
+            assert_eq!(
+                reply(401, body.as_bytes(), ODD_KEY, SESSION)
+                    .unwrap_err()
+                    .message,
+                Some("bad ***!".into()),
+                "{odd}"
+            );
+        }
         // Only the whole of a secret: other escapes, and pieces of the key, stay as they are.
         for text in [
             "Quota%20exceeded, retry in 10%".to_owned(),
@@ -1340,16 +1366,26 @@ mod tests {
             'j' => text.replace('\\', "\\\\").replace('"', "\\\""),
             'u' => text
                 .bytes()
-                .map(|byte| match byte {
-                    b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' => char::from(byte).to_string(),
-                    b'-' | b'_' | b'.' | b'!' | b'~' | b'*' | b'\'' | b'(' | b')' => {
+                .map(|byte| {
+                    if byte.is_ascii_alphanumeric() || b"-_.!~*'()".contains(&byte) {
                         char::from(byte).to_string()
+                    } else {
+                        format!("%{byte:02X}")
                     }
-                    _ => format!("%{byte:02X}"),
                 })
                 .collect(),
             _ => unreachable!("{kind}"),
         }
+    }
+
+    /// [`ODD_KEY`], a key itself written like escapes, as it is and in one layer of each kind of
+    /// [`layer`], which a second pass would undo further. A pass of every escape undoes the key's
+    /// own `%41` too, so the layer of `JSON.stringify`, which leaves it as it is, shows the key only
+    /// where JSON's escapes alone are undone.
+    fn odd_keys() -> Vec<String> {
+        std::iter::once(ODD_KEY.to_owned())
+            .chain("JUju".chars().map(|kind| layer(ODD_KEY, kind)))
+            .collect()
     }
 
     /// `KEY` cut into 2, 3 and 4 parts of about the same length, each part written one of the

@@ -44,6 +44,12 @@ const SEQ_WIDTH: usize = 8;
 const SQLITE_HEADER: &[u8] = b"SQLite format 3\0";
 /// How much of a backup [`find_copy`] reads at a time.
 const COMPARE_BLOCK: usize = 64 * 1024;
+/// Windows `ERROR_SHARING_VIOLATION`: another process holds the file without sharing.
+#[cfg(windows)]
+const SHARING_VIOLATION: i32 = 32;
+/// Windows `ERROR_LOCK_VIOLATION`: another process locked a part of the file.
+#[cfg(windows)]
+const LOCK_VIOLATION: i32 = 33;
 
 /// Keeps the data folder to one process, and the file commands of this process to one at a time.
 /// The first [`open`] holds `project2c.lock` open without sharing until the process ends; Windows
@@ -78,37 +84,49 @@ impl DataLock {
     }
 }
 
-/// Opens the lock file without sharing. The app ships for Windows only (ADR-0006): elsewhere the
-/// file is opened but locks nothing.
+/// Opens the lock file without sharing; another process holding it → `ResourceBusy` with the
+/// message [`ALREADY_OPEN`].
+#[cfg(windows)]
 fn open_lock_file(path: &Path) -> io::Result<fs::File> {
+    use std::os::windows::fs::OpenOptionsExt;
+    lock_file_options()
+        .share_mode(0)
+        .open(path)
+        .map_err(|error| {
+            if error.raw_os_error() == Some(SHARING_VIOLATION) {
+                io::Error::new(ErrorKind::ResourceBusy, ALREADY_OPEN)
+            } else {
+                error
+            }
+        })
+}
+
+/// The app ships for Windows only (ADR-0006): elsewhere the file is opened but locks nothing.
+#[cfg(not(windows))]
+fn open_lock_file(path: &Path) -> io::Result<fs::File> {
+    lock_file_options().open(path)
+}
+
+/// The lock file is made by the first start and never cut.
+fn lock_file_options() -> fs::OpenOptions {
     let mut options = fs::OpenOptions::new();
     options.read(true).write(true).create(true).truncate(false);
-    #[cfg(windows)]
-    {
-        use std::os::windows::fs::OpenOptionsExt;
-        options.share_mode(0);
-    }
-    options.open(path).map_err(|error| {
-        // Windows `ERROR_SHARING_VIOLATION`.
-        #[cfg(windows)]
-        if error.raw_os_error() == Some(32) {
-            return io::Error::new(ErrorKind::ResourceBusy, ALREADY_OPEN);
-        }
-        error
-    })
+    options
 }
 
 /// Reads the database at startup; `None` on a first start (no file and no backups). The data
 /// folder is locked first, so a second process touches nothing (see [`DataLock`]); later calls
 /// from the same process (a webview reload) open again under the lock it holds. Another process
 /// holding it → `ResourceBusy` with the message [`ALREADY_OPEN`]. A missing file with backups
-/// left is an error, so the app never starts over them. A file that is empty or not SQLite is an
-/// error, never a first start: the app would otherwise write a new database over it. A file that
-/// is whole but out of reach → [`FILE_IN_USE`] or [`ACCESS_DENIED`] (see [`out_of_reach`]), and one
-/// the app may not replace → [`ACCESS_DENIED`] (see [`replace_refused`]), as is a data folder that
-/// lets no new file in (see [`add_refused`]): the app would open it, then fail every save. A
-/// program holding the file without sharing delete may let go, so it does not stop the start: its
-/// saves fail with Windows' own error until it does.
+/// left, or with a `backups\` the app cannot list, is an error, so the app never starts over them.
+/// A file that is empty or not SQLite is an error, never a first start: the app would otherwise
+/// write a new database over it. A file that is whole but out of reach → [`FILE_IN_USE`] or
+/// [`ACCESS_DENIED`] (see [`out_of_reach`]), and one the app may not replace → [`ACCESS_DENIED`]
+/// (see [`replace_refused`]), as is a data folder that lets no new file in (see [`add_refused`]),
+/// on a first start too: the app would open it, then fail every save. A damaged or lost file keeps
+/// its own error in such a folder, since the page for [`ACCESS_DENIED`] says the file needs no
+/// restoring. A program holding the file without sharing delete may let go, so it does not stop
+/// the start: its saves fail with Windows' own error until it does.
 /// Nothing is backed up here: the app calls [`backup`] once it opened and checked the file, before
 /// saving anything, so a file damaged inside never becomes the newest backup (DR-51).
 pub fn open(dir: &Path, page: &str, lock: &DataLock) -> io::Result<Option<Vec<u8>>> {
@@ -130,28 +148,15 @@ fn open_with(
         // keep an export still running, and never finds a save of the old page half done (it
         // waited for the lock). Cleaned before anything below can fail, since a retry holds the
         // lock already and skips this.
-        remove_interrupted_exports(&dir.join(EXPORT_DIR));
-        remove_interrupted_backups(&dir.join(BACKUP_DIR));
+        remove_interrupted(&dir.join(EXPORT_DIR), is_interrupted_export);
+        remove_interrupted(&dir.join(BACKUP_DIR), is_interrupted_backup);
         // A crash between writing and renaming; the database file itself is whole.
         remove_if_exists(&dir.join(tmp_name(DB_FILE))).map_err(out_of_reach)?;
     }
     held.page = Some(page.to_owned());
-    // A folder that lets no new file in still lets the app read the file, but no save could write
-    // its `.tmp` there (DR6-120).
-    if add_refused(dir) {
-        return Err(io::Error::new(ErrorKind::PermissionDenied, ACCESS_DENIED));
-    }
-    let backups = dir.join(BACKUP_DIR);
     let bytes = match fs::read(dir.join(DB_FILE)) {
         Ok(bytes) => bytes,
-        // Backups but no file: the file was lost, and a new database would push them out.
-        Err(error) if error.kind() == ErrorKind::NotFound && !backup_names(&backups).is_empty() => {
-            return Err(io::Error::new(
-                ErrorKind::NotFound,
-                format!("{DB_FILE} is missing but {BACKUP_DIR} has copies"),
-            ));
-        }
-        Err(error) if error.kind() == ErrorKind::NotFound => return Ok(None),
+        Err(error) if error.kind() == ErrorKind::NotFound => return without_file(dir),
         Err(error) => return Err(out_of_reach(error)),
     };
     if !bytes.starts_with(SQLITE_HEADER) {
@@ -160,11 +165,34 @@ fn open_with(
             format!("{DB_FILE} is not a SQLite database"),
         ));
     }
-    // Such a file reads fine, but no save could replace it (DR6-74, DR6-120).
-    if replace_refused(&dir.join(DB_FILE)) {
+    // Such a file reads fine, but no save could write its `.tmp` in the folder (DR6-120) or
+    // replace it (DR6-74, DR6-120).
+    if add_refused(dir) || replace_refused(&dir.join(DB_FILE)) {
         return Err(io::Error::new(ErrorKind::PermissionDenied, ACCESS_DENIED));
     }
     Ok(Some(bytes))
+}
+
+/// [`open`] without a database file: a first start, unless `backups\` holds copies (the file was
+/// lost, and a new database would push them out) or may hold some (the app cannot list it), or the
+/// data folder lets no new file in (no save could write the data the app would make up, DR6-120).
+fn without_file(dir: &Path) -> io::Result<Option<Vec<u8>>> {
+    let copies = backup_names(&dir.join(BACKUP_DIR)).map_err(|error| {
+        io::Error::new(
+            error.kind(),
+            format!("{DB_FILE} is missing and {BACKUP_DIR} cannot be read: {error}"),
+        )
+    })?;
+    if !copies.is_empty() {
+        return Err(io::Error::new(
+            ErrorKind::NotFound,
+            format!("{DB_FILE} is missing but {BACKUP_DIR} has copies"),
+        ));
+    }
+    if add_refused(dir) {
+        return Err(io::Error::new(ErrorKind::PermissionDenied, ACCESS_DENIED));
+    }
+    Ok(None)
 }
 
 /// Whether the app may no longer replace the database file, which is what every save does: it
@@ -176,52 +204,48 @@ fn replace_refused(path: &Path) -> bool {
     fs::metadata(path).is_ok_and(|meta| meta.permissions().readonly()) || delete_refused(path)
 }
 
-/// Opens `path` with the `DELETE` right alone, which changes nothing, and tells a refusal from a
-/// program that holds the file: that one fails with a sharing violation, not with
-/// `PermissionDenied`. A folder that lets the app delete in it stands in for the file's own right,
-/// as it does for a save, so the answer is the one a save would get.
-#[cfg(windows)]
+/// Whether Windows refuses the app the right to delete the file at `path`. A folder that lets the
+/// app delete in it stands in for the file's own right, as it does for a save, so the answer is
+/// the one a save would get.
 fn delete_refused(path: &Path) -> bool {
-    use std::os::windows::fs::OpenOptionsExt;
     // Windows `DELETE`.
     const DELETE: u32 = 0x0001_0000;
+    refuses(path, DELETE, 0)
+}
+
+/// Whether Windows refuses the app the right to add a file in the folder `dir`, which every save
+/// asks first to write its `.tmp`. Asking makes no file that a crash could leave behind.
+fn add_refused(dir: &Path) -> bool {
+    // Windows `FILE_ADD_FILE`, and `FILE_FLAG_BACKUP_SEMANTICS`, without which no folder opens.
+    const FILE_ADD_FILE: u32 = 0x0002;
+    const FILE_FLAG_BACKUP_SEMANTICS: u32 = 0x0200_0000;
+    refuses(dir, FILE_ADD_FILE, FILE_FLAG_BACKUP_SEMANTICS)
+}
+
+/// Opens `path` with the right `access` alone (and the `flags` of the open), which changes
+/// nothing, and tells a refusal from a program that holds the file: that one fails with a sharing
+/// violation, not with `PermissionDenied`.
+#[cfg(windows)]
+fn refuses(path: &Path, access: u32, flags: u32) -> bool {
+    use std::os::windows::fs::OpenOptionsExt;
     fs::OpenOptions::new()
-        .access_mode(DELETE)
+        .access_mode(access)
+        .custom_flags(flags)
         .open(path)
         .is_err_and(|error| error.kind() == ErrorKind::PermissionDenied)
 }
 
-/// The app ships for Windows only (ADR-0006): elsewhere a save asks no right of the file itself.
+/// The app ships for Windows only (ADR-0006): elsewhere a save asks no right of the file or the
+/// folder.
 #[cfg(not(windows))]
-fn delete_refused(_path: &Path) -> bool {
-    false
-}
-
-/// Whether Windows refuses the app the right to add a file in the folder `dir`, which every save
-/// asks first to write its `.tmp`. Opens the folder with that right alone, which changes nothing,
-/// so no file is made that a crash could leave behind.
-#[cfg(windows)]
-fn add_refused(dir: &Path) -> bool {
-    use std::os::windows::fs::OpenOptionsExt;
-    // Windows `FILE_ADD_FILE`, and `FILE_FLAG_BACKUP_SEMANTICS`, without which no folder opens.
-    const FILE_ADD_FILE: u32 = 0x0002;
-    const FILE_FLAG_BACKUP_SEMANTICS: u32 = 0x0200_0000;
-    fs::OpenOptions::new()
-        .access_mode(FILE_ADD_FILE)
-        .custom_flags(FILE_FLAG_BACKUP_SEMANTICS)
-        .open(dir)
-        .is_err_and(|error| error.kind() == ErrorKind::PermissionDenied)
-}
-
-/// The app ships for Windows only (ADR-0006): elsewhere nothing is asked of the folder.
-#[cfg(not(windows))]
-fn add_refused(_dir: &Path) -> bool {
+fn refuses(_path: &Path, _access: u32, _flags: u32) -> bool {
     false
 }
 
 /// Copies the saved database file into `backups\` (at startup once the app opened it, and before
 /// replacing the data) and returns the backup's file name — an identical copy already there is
-/// reused. A full disk → `StorageFull` with the message [`DISK_FULL`].
+/// reused. A full disk → `StorageFull` with the message [`DISK_FULL`]. A `backups\` the app cannot
+/// list is an error: the copy could not be numbered after the others (see [`next_seq`]).
 pub fn backup(dir: &Path, stamp: &str, lock: &DataLock) -> io::Result<String> {
     let _held = lock.hold();
     let bytes = fs::read(dir.join(DB_FILE))?;
@@ -242,9 +266,11 @@ fn disk_full(error: io::Error) -> io::Error {
 /// `.tmp` ([`FILE_IN_USE`]), or Windows refuses the app the data folder ([`ACCESS_DENIED`]). Any
 /// other error stays as it is.
 fn out_of_reach(error: io::Error) -> io::Error {
-    // Windows `ERROR_SHARING_VIOLATION`, `ERROR_LOCK_VIOLATION`.
     #[cfg(windows)]
-    if matches!(error.raw_os_error(), Some(32 | 33)) {
+    if matches!(
+        error.raw_os_error(),
+        Some(SHARING_VIOLATION | LOCK_VIOLATION)
+    ) {
         return io::Error::new(ErrorKind::ResourceBusy, FILE_IN_USE);
     }
     if error.kind() == ErrorKind::PermissionDenied {
@@ -282,7 +308,7 @@ fn copy_to_backups(backups: &Path, bytes: &[u8], stamp: &str) -> io::Result<Stri
         return Ok(name);
     }
     prune_backups(backups, KEEP_BACKUPS - 1, None);
-    let name = backup_name(next_seq(backups), stamp);
+    let name = backup_name(next_seq(backups)?, stamp);
     write_atomic(backups, &name, bytes)?;
     Ok(name)
 }
@@ -317,7 +343,7 @@ fn save_with(
 /// Writes an export file into `exports\` and returns its path. An earlier export is never
 /// overwritten: a taken name gets `-2`, `-3`… before its extension (spec §6). The final name
 /// appears only with the whole file in it; an interrupted export leaves just its `.claim` and
-/// `.tmp`, which the next app start removes (see [`remove_interrupted_exports`]).
+/// `.tmp`, which the next app start removes (see [`remove_interrupted`]).
 pub fn write_export(dir: &Path, name: &str, bytes: &[u8]) -> io::Result<PathBuf> {
     if !is_export_name(name) {
         return Err(io::Error::new(
@@ -375,37 +401,32 @@ fn claim_name(name: &str) -> String {
     format!("{name}.claim")
 }
 
-/// Removes what an export cut short by a crash left in `exports\`: claims and `.tmp` files. Runs
-/// only when [`open`] takes the data lock for this process, before any
-/// export of this process can start and while no other app instance can export. A webview reload
-/// opens again under the lock already held and skips this, so an export still running keeps its
-/// claim and `.tmp`. Best effort: a file another program holds stays until a later start.
-fn remove_interrupted_exports(exports: &Path) {
-    for entry in fs::read_dir(exports).into_iter().flatten().flatten() {
-        let Ok(meta) = entry.metadata() else { continue };
+/// Removes the files of `folder` that a crash `left`, told by their name. Runs only when [`open`]
+/// takes the data lock for this process, before any export of this process can start and while no
+/// other app instance can export; every backup holds that lock, so none is running either. A
+/// webview reload opens again under the lock already held and skips this, so an export still
+/// running keeps its claim and `.tmp`. Best effort: a file another program holds stays until a
+/// later start, and a folder the app cannot list is left as it is.
+fn remove_interrupted(folder: &Path, left: impl Fn(&str) -> bool) {
+    for entry in entries(folder).unwrap_or_default() {
         let name = entry.file_name().to_string_lossy().into_owned();
-        let left = EXPORT_EXTENSIONS.iter().any(|extension| {
-            name.ends_with(&format!("{extension}.claim"))
-                || name.ends_with(&format!("{extension}.tmp"))
-        });
-        if left && meta.is_file() {
+        if left(&name) && entry.file_type().is_ok_and(|kind| kind.is_file()) {
             let _ = fs::remove_file(entry.path());
         }
     }
 }
 
-/// Removes the `.tmp` of a backup cut short by a crash from `backups\`: as big as the database,
-/// and never pruned, since it is not named like a backup (DR6-09). Runs with
-/// [`remove_interrupted_exports`], under the data lock that every backup holds, so no backup is
-/// running. Best effort, like it.
-fn remove_interrupted_backups(backups: &Path) {
-    for entry in fs::read_dir(backups).into_iter().flatten().flatten() {
-        let name = entry.file_name().to_string_lossy().into_owned();
-        let left = name.strip_suffix(".tmp").and_then(backup_seq).is_some();
-        if left && entry.file_type().is_ok_and(|kind| kind.is_file()) {
-            let _ = fs::remove_file(entry.path());
-        }
-    }
+/// What an export cut short by a crash leaves in `exports\`: its claim and its `.tmp`.
+fn is_interrupted_export(name: &str) -> bool {
+    EXPORT_EXTENSIONS.iter().any(|extension| {
+        name.ends_with(&format!("{extension}.claim")) || name.ends_with(&format!("{extension}.tmp"))
+    })
+}
+
+/// What a backup cut short by a crash leaves in `backups\`: its `.tmp`, as big as the database,
+/// and never pruned, since it is not named like a backup (DR6-09).
+fn is_interrupted_backup(name: &str) -> bool {
+    name.strip_suffix(".tmp").and_then(backup_seq).is_some()
 }
 
 /// Formats seconds since 1970 (already shifted to local time) as `YYYYMMDD-HHMMSS`.
@@ -497,39 +518,46 @@ fn is_stamp(s: &str) -> bool {
 }
 
 /// The next write order: one past the highest numbered name in the folder (any entry, so a
-/// folder squatting on a name is never overwritten); 1 when there is none.
-fn next_seq(backups: &Path) -> u64 {
-    fs::read_dir(backups)
-        .into_iter()
-        .flatten()
-        .flatten()
+/// folder squatting on a name is never overwritten); 1 when there is none. A folder the app cannot
+/// list is an error: a copy numbered from 1 again would read as the oldest.
+fn next_seq(backups: &Path) -> io::Result<u64> {
+    Ok(entries(backups)?
+        .iter()
         .filter_map(|entry| backup_seq(&entry.file_name().to_string_lossy()))
         .max()
-        .map_or(1, |seq| seq.saturating_add(1))
+        .map_or(1, |seq| seq.saturating_add(1)))
 }
 
 fn all_digits(s: &str) -> bool {
     !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit())
 }
 
+/// What `folder` holds; nothing when there is no such folder. A folder the app cannot list is an
+/// error, never an empty one: `backups\` may hold copies.
+fn entries(folder: &Path) -> io::Result<Vec<fs::DirEntry>> {
+    match fs::read_dir(folder) {
+        Err(error) if error.kind() == ErrorKind::NotFound => Ok(Vec::new()),
+        listing => listing?.collect(),
+    }
+}
+
 /// Our backups, oldest written first. Only files named like our backups count; anything else in
-/// the folder is left alone, and an unreadable folder counts as empty.
-fn backup_names(backups: &Path) -> Vec<String> {
-    let mut names: Vec<String> = fs::read_dir(backups)
+/// the folder is left alone. A folder the app cannot list is an error (see [`entries`]).
+fn backup_names(backups: &Path) -> io::Result<Vec<String>> {
+    let mut names: Vec<String> = entries(backups)?
         .into_iter()
-        .flatten()
-        .flatten()
         .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_file()))
         .map(|entry| entry.file_name().to_string_lossy().into_owned())
         .filter(|name| backup_seq(name).is_some())
         .collect();
     names.sort_by_key(|name| backup_seq(name));
-    names
+    Ok(names)
 }
 
-/// The name of the last written backup (Settings → Data); `None` when there is none.
+/// The name of the last written backup (Settings → Data); `None` when there is none, or when the
+/// app cannot list the folder.
 pub fn latest_backup(dir: &Path) -> Option<String> {
-    backup_names(&dir.join(BACKUP_DIR)).pop()
+    backup_names(&dir.join(BACKUP_DIR)).ok()?.pop()
 }
 
 /// The folder Settings → Data opens, created if missing. Only `exports` and `backups`: the
@@ -579,9 +607,11 @@ pub fn explorer(system_root: Option<OsString>) -> io::Result<PathBuf> {
 
 /// The newest backup with the same bytes. An unchanged file matches the newest, so it is tried
 /// first; each one is read a block at a time and left at its first difference, since backups of
-/// the same size usually differ in the header already (DR-53).
+/// the same size usually differ in the header already (DR-53). A folder the app cannot list has
+/// none to reuse, and gets no new copy either (see [`next_seq`]).
 fn find_copy(backups: &Path, bytes: &[u8]) -> Option<String> {
     backup_names(backups)
+        .unwrap_or_default()
         .into_iter()
         .rev()
         .find(|name| has_same_bytes(&backups.join(name), bytes).unwrap_or(false))
@@ -608,7 +638,7 @@ fn has_same_bytes(path: &Path, bytes: &[u8]) -> io::Result<bool> {
 /// Best effort, so it never blocks startup: a backup another program holds open stays, and a
 /// later start tries again.
 fn prune_backups(backups: &Path, count: usize, keep: Option<&str>) {
-    let names = backup_names(backups);
+    let names = backup_names(backups).unwrap_or_default();
     let mut excess = names.len().saturating_sub(count);
     for name in names.iter().filter(|name| Some(name.as_str()) != keep) {
         if excess == 0 {
@@ -869,7 +899,7 @@ mod tests {
         fs::write(backups.join(&eleventh), db("latest")).unwrap();
         save(&dir, &db("latest")).unwrap();
         assert_eq!(backup(&dir, "20260927-090000").unwrap(), eleventh);
-        let kept = backup_names(&backups);
+        let kept = backup_names(&backups).unwrap();
         assert_eq!(kept.len(), 10);
         assert_eq!(kept[0], "project2c-s00000002-20260911-080000.db");
     }
@@ -887,7 +917,7 @@ mod tests {
         save(&dir, &db("day 10")).unwrap();
         let oldest = "project2c-s00000001-20260910-080000.db";
         assert_eq!(backup(&dir, "20260927-090000").unwrap(), oldest);
-        let kept = backup_names(&backups);
+        let kept = backup_names(&backups).unwrap();
         assert_eq!(kept.len(), 10);
         assert_eq!(kept[0], oldest);
         assert_eq!(kept[1], "project2c-s00000003-20260912-080000.db");
@@ -904,7 +934,7 @@ mod tests {
         fs::create_dir_all(backups.join(&tmp)).unwrap();
         save(&dir, &db("latest")).unwrap();
         assert!(backup(&dir, "20260927-080000").is_err());
-        let kept = backup_names(&backups);
+        let kept = backup_names(&backups).unwrap();
         assert_eq!(kept.len(), 9);
         assert_eq!(kept[0], "project2c-s00000002-20260911-080000.db");
     }
@@ -962,9 +992,9 @@ mod tests {
 
     #[test]
     fn a_whole_file_out_of_reach_is_reported_by_its_cause() {
-        // Windows `ERROR_SHARING_VIOLATION`, `ERROR_LOCK_VIOLATION`: another program holds it.
+        // Another program holds it.
         #[cfg(windows)]
-        for code in [32, 33] {
+        for code in [SHARING_VIOLATION, LOCK_VIOLATION] {
             let held = out_of_reach(io::Error::from_raw_os_error(code));
             assert_eq!(held.to_string(), FILE_IN_USE, "os error {code}");
         }
@@ -1175,6 +1205,18 @@ mod tests {
     }
 
     #[test]
+    fn a_missing_file_with_a_backups_folder_it_cannot_list_is_an_error_not_a_first_start() {
+        // A file under the folder's name cannot be listed on any platform, like a folder whose
+        // access list refuses it: the folder may hold copies of the lost file.
+        let dir = temp_dir();
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join(BACKUP_DIR), b"not a folder").unwrap();
+        let error = open(&dir).unwrap_err();
+        assert!(error.to_string().contains("cannot be read"), "{error}");
+        assert_eq!(names(&dir), vec![BACKUP_DIR, LOCK_FILE]);
+    }
+
+    #[test]
     fn a_backup_made_with_the_clock_set_back_is_kept() {
         let dir = temp_dir();
         ten_backups(&dir);
@@ -1217,7 +1259,7 @@ mod tests {
             .skip(stamps.len() - KEEP_BACKUPS)
             .map(|(seq, stamp)| backup_name(seq, stamp))
             .collect();
-        assert_eq!(backup_names(&dir.join(BACKUP_DIR)), expected);
+        assert_eq!(backup_names(&dir.join(BACKUP_DIR)).unwrap(), expected);
         // Zero-padded write order also lists the folder in order.
         assert_eq!(names(&dir.join(BACKUP_DIR)), expected);
     }
@@ -1225,18 +1267,18 @@ mod tests {
     #[test]
     fn next_seq_is_one_past_the_highest_numbered_backup() {
         let dir = temp_dir();
-        assert_eq!(next_seq(&dir), 1);
+        assert_eq!(next_seq(&dir).unwrap(), 1);
         fs::create_dir_all(&dir).unwrap();
-        assert_eq!(next_seq(&dir), 1);
+        assert_eq!(next_seq(&dir).unwrap(), 1);
         fs::write(dir.join("project2c-s00000077-2026.db"), b"foreign").unwrap();
-        assert_eq!(next_seq(&dir), 1);
+        assert_eq!(next_seq(&dir).unwrap(), 1);
         // Lower numbers already pruned: counting goes on from the highest left.
         fs::write(dir.join(backup_name(5, "20260927-080000")), b"x").unwrap();
         fs::write(dir.join(backup_name(9, "20000101-000000")), b"x").unwrap();
-        assert_eq!(next_seq(&dir), 10);
+        assert_eq!(next_seq(&dir).unwrap(), 10);
         // A folder squatting on a numbered name is never written over.
         fs::create_dir_all(dir.join(backup_name(12, "20000101-000000"))).unwrap();
-        assert_eq!(next_seq(&dir), 13);
+        assert_eq!(next_seq(&dir).unwrap(), 13);
     }
 
     #[cfg(windows)]
@@ -1610,6 +1652,69 @@ mod tests {
         assert_eq!(names(&dir), vec![DB_FILE, LOCK_FILE]);
 
         assert_eq!(open(&dir).unwrap(), Some(db("data")));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_first_start_in_a_data_folder_that_lets_no_new_file_in_is_access_denied() {
+        // No database file yet, and the lock file left from an earlier start, so opening creates
+        // nothing: the app would make up data that no save could write (PR #764).
+        let dir = temp_dir();
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join(LOCK_FILE), b"").unwrap();
+        let denied = Denied::new(&dir, "(WD)");
+        let refused = save(&dir, &db("new")).unwrap_err();
+        assert_eq!(refused.kind(), ErrorKind::PermissionDenied);
+        let error = open(&dir).unwrap_err();
+        drop(denied);
+        assert_eq!(error.kind(), ErrorKind::PermissionDenied);
+        assert_eq!(error.to_string(), ACCESS_DENIED);
+        assert_eq!(names(&dir), vec![LOCK_FILE]);
+
+        assert_eq!(open(&dir).unwrap(), None);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_damaged_or_lost_file_in_a_data_folder_that_lets_no_new_file_in_keeps_its_own_error() {
+        // Their pages tell to put a backup in place, which the page of `ACCESS_DENIED` says is not
+        // needed (`storage.accessDeniedHelp`): what is wrong with the file comes first.
+        let dir = temp_dir();
+        ten_backups(&dir);
+        let before = names(&dir.join(BACKUP_DIR));
+        fs::write(dir.join(LOCK_FILE), b"").unwrap();
+        save(&dir, b"not a database").unwrap();
+        let denied = Denied::new(&dir, "(WD)");
+        let damaged = open(&dir).unwrap_err();
+        fs::remove_file(dir.join(DB_FILE)).unwrap();
+        let lost = open(&dir).unwrap_err();
+        drop(denied);
+        assert_eq!(damaged.kind(), ErrorKind::InvalidData);
+        assert_eq!(lost.kind(), ErrorKind::NotFound);
+        assert_eq!(names(&dir.join(BACKUP_DIR)), before);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_backups_folder_the_app_cannot_list_is_an_error_never_an_empty_one() {
+        let dir = temp_dir();
+        let backups = dir.join(BACKUP_DIR);
+        save(&dir, &db("old")).unwrap();
+        backup(&dir, "20261024-080000").unwrap();
+        save(&dir, &db("new")).unwrap();
+        let before = names(&backups);
+        let denied = Denied::new(&backups, "(RD)");
+        assert!(fs::read_dir(&backups).is_err());
+        // A copy numbered from 1 again would read as the oldest, and go first when pruned.
+        let refused = backup(&dir, "20261024-090000").unwrap_err();
+        // The lost file's copies may be there: a first start would push them out.
+        fs::remove_file(dir.join(DB_FILE)).unwrap();
+        let lost = open(&dir).unwrap_err();
+        drop(denied);
+        assert_eq!(refused.kind(), ErrorKind::PermissionDenied);
+        assert!(lost.to_string().contains("cannot be read"), "{lost}");
+        assert_eq!(names(&backups), before);
+        assert_eq!(names(&dir), vec![BACKUP_DIR, LOCK_FILE]);
     }
 
     #[cfg(windows)]

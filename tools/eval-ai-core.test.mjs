@@ -94,6 +94,14 @@ const LAYER = {
   j: (text) => JSON.stringify(text).slice(1, -1),
   u: (text) => encodeURIComponent(text),
 };
+/** Rust's `ODD_KEY`: a key itself written like escapes. */
+const ODD_KEY = String.raw`sk-a\nb%41c\/d`;
+/**
+ * `ODD_KEY` as it is and in one layer of each kind of `LAYER`, as Rust's `odd_keys`. A pass of
+ * every escape undoes the key's own `%41` too, so the layer of `JSON.stringify`, which leaves it as
+ * it is, shows the key only where JSON's escapes alone are undone.
+ */
+const oddKeys = () => [ODD_KEY, ...Object.values(LAYER).map((layer) => layer(ODD_KEY))];
 /**
  * `key` cut into 2, 3 and 4 parts of about the same length, each part written one of the
  * `LAYERINGS` ways: every combination, the first part changing slowest (Rust's `layered_keys`).
@@ -433,13 +441,10 @@ describe('openCodeAdapter', () => {
 
   it('refuses an answer that holds the key, as it is or escaped, as Rust (DR6-55)', async () => {
     const slashed = 'sk-Probe+Key/a=';
-    const odd = String.raw`sk-a\nb%41c\/d`;
     for (const [note, key] of [
       [KEY, KEY],
       [`Bearer ${KEY} được gửi`, KEY],
-      [odd, odd],
-      // In one layer, which a second pass would undo further.
-      [escaped(odd), odd],
+      ...oddKeys().map((note) => [note, ODD_KEY]),
       [percent(KEY), KEY],
       [percent(KEY, false), KEY],
       [escaped(KEY), KEY],
@@ -533,8 +538,9 @@ describe('openCodeAdapter', () => {
     ]) {
       expect(await message(text), text).toBe(masked);
     }
-    const odd = String.raw`sk-a\nb%41c\/d`;
-    expect(await message(`bad ${odd}!`, odd)).toBe('bad ***!');
+    for (const odd of oddKeys()) {
+      expect(await message(`bad ${odd}!`, ODD_KEY), odd).toBe('bad ***!');
+    }
     // Only the whole of a secret: other escapes, and pieces of the key, stay as they are.
     for (const text of [
       'Quota%20exceeded, retry in 10%',

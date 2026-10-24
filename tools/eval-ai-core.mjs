@@ -27,6 +27,7 @@ import {
 import { extractionPrompt } from '../packages/ai/src/prompts/extraction.ts';
 import { checkAnswer } from '../packages/ai/src/prompts/retry.ts';
 import { formatIsoDate } from '../packages/domain/src/period.ts';
+import { collapseSpaces } from '../packages/domain/src/text.ts';
 import { EVAL_NOTES, EVAL_PROFILES, EVAL_TODAY } from './fixtures/ai-eval.mjs';
 
 /** The two fixed URLs of the Rust command (spec §5.1, P8). */
@@ -86,6 +87,8 @@ export function readConfig(env, argv) {
 
 /** JSON's escapes (`\uXXXX`, `\"`, `\\`, `\/`, `\n`…) and a URL's `%XX`. */
 const ESCAPE = /\\u[0-9a-fA-F]{4}|\\["\\/bfnrt]|%[0-9a-fA-F]{2}/g;
+/** JSON's escapes alone. */
+const JSON_ESCAPE = /\\u[0-9a-fA-F]{4}|\\["\\/bfnrt]/g;
 
 /** The character of an escape; a `%XX` is a byte, so `%C4%83` gives two (the secrets are ASCII). */
 const decode = (escape) =>
@@ -94,12 +97,12 @@ const decode = (escape) =>
     : JSON.parse(`"${escape}"`);
 
 /**
- * One pass over a reading, from the left as `JSON.parse` reads: each escape gives the character it
- * stands for, which comes from the whole escape; the rest is kept (Rust's `unescape`). A reading is
- * a `text` and, for each of its UTF-16 units, the `start` and `end` of the part of the first text
- * it came from.
+ * One pass over a reading, from the left as `JSON.parse` reads: each `escape` (all of `ESCAPE`, or
+ * `JSON_ESCAPE`) gives the character it stands for, which comes from the whole escape; the rest is
+ * kept (Rust's `unescape`). A reading is a `text` and, for each of its UTF-16 units, the `start` and
+ * `end` of the part of the first text it came from.
  */
-function unescape(reading) {
+function unescape(reading, escape = ESCAPE) {
   const out = { text: '', start: [], end: [] };
   let kept = 0;
   const keep = (to) => {
@@ -109,30 +112,32 @@ function unescape(reading) {
       out.end.push(reading.end[i]);
     }
   };
-  for (const { 0: escape, index } of reading.text.matchAll(ESCAPE)) {
+  for (const { 0: found, index } of reading.text.matchAll(escape)) {
     keep(index);
-    out.text += decode(escape);
+    out.text += decode(found);
     out.start.push(reading.start[index]);
-    out.end.push(reading.end[index + escape.length - 1]);
-    kept = index + escape.length;
+    out.end.push(reading.end[index + found.length - 1]);
+    kept = index + found.length;
   }
   keep(reading.text.length);
   return out;
 }
 
 /**
- * The ways `text` may give a secret away, as Rust's `readings` (DR6-10, DR6-76): as it is, and with
- * every escape undone once and twice. A pass undoes the outer layer of each part of the text, so a
- * secret whose parts are each in up to two layers, of the same kind or not, in either order and
- * each its own way, shows in the last reading. Three layers are out of reach (ADR-0009 D-1). The
- * tests prove it for secrets with no `\` or `%` of their own, as OpenCode's keys and the session
- * id are: a pass may undo those too.
+ * The ways `text` may give a secret away, as Rust's `readings` (DR6-10, DR6-76): as it is, with
+ * every escape undone once and twice, and with JSON's alone undone once. A pass undoes the outer
+ * layer of each part of the text, so a secret whose parts are each in up to two layers, of the same
+ * kind or not, in either order and each its own way, shows in the third reading. Three layers are
+ * out of reach (ADR-0009 D-1). The tests prove it for secrets with no `\` or `%` of their own, as
+ * OpenCode's keys and the session id are: a pass may undo those too. Such a secret still shows as
+ * it is and in one layer of each kind: `JSON.stringify` leaves its `%XX` as they are, and so does
+ * the last reading.
  */
 function readings(text) {
   const units = Array.from({ length: text.length }, (_, i) => i);
   const plain = { text, start: units, end: units.map((i) => i + 1) };
   const once = unescape(plain);
-  return [plain, once, unescape(once)];
+  return [plain, once, unescape(once), unescape(plain, JSON_ESCAPE)];
 }
 
 /** Whether `text` holds `key` in one of its readings. */
@@ -355,8 +360,8 @@ function attemptsOf(calls, issuesOf) {
 const extractionIssues = (content, cut) =>
   checkAnswer(content, (parsed) => validateOutput('extraction', parsed), cut).issues;
 
-/** Text as V7 reads a quote (NFC, white space collapsed: `validator.ts`), in lower case. */
-const fold = (text) => String(text).normalize('NFC').replace(/\s+/gu, ' ').toLowerCase();
+/** Text as V7 reads a quote (`collapseSpaces`, as `validator.ts` does), in lower case. */
+const fold = (text) => collapseSpaces(String(text)).toLowerCase();
 
 /**
  * Whether a note's kept facts pass the script's part of ai-eval.md §5: each required line has a
