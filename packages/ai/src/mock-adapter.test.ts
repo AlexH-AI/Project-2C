@@ -518,7 +518,7 @@ describe('createMockAdapter', () => {
     'Người yêu của KH là đàn ông, đã kết hôn.',
     // A couple someone lives with or has is not the KH's own, whether "KH" opens the clause or not.
     'KH sống cùng vợ chồng anh Nam, đã kết hôn.',
-    'Hiện KH đang có vợ chồng anh Nam, có 2 con.',
+    'Năm 2015 KH cùng vợ chồng anh Nam, đã kết hôn.',
     'Khách mới ở với vợ chồng anh Nam, có 2 con.',
   ])(
     'proposes nothing from %j: said not to be, or of someone else (the review of PR #809)',
