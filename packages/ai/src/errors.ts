@@ -22,9 +22,36 @@ export const AI_ERROR_CODES = [
  * Codes `packages/ai` gives before calling Rust, which never sends them: `AI_TOO_LARGE`, the
  * messages would be over the Rust limit of 200 000 characters (§5.1), from the data sent, not a bug.
  */
-export const AI_LOCAL_ERROR_CODES = ['AI_TOO_LARGE'] as const;
+type AiLocalErrorCode = 'AI_TOO_LARGE';
 
-export type AiErrorCode = (typeof AI_ERROR_CODES)[number] | (typeof AI_LOCAL_ERROR_CODES)[number];
+export type AiErrorCode = (typeof AI_ERROR_CODES)[number] | AiLocalErrorCode;
+
+/** What Rust told of a failed HTTP call, already made safe there; Settings → AI shows it (T-164). */
+export interface AiErrorDetails {
+  readonly httpStatus?: number;
+  /** The first 200 characters of the server's error message, when it sent one. */
+  readonly serverMessage?: string;
+}
+
+/** An AI error as a value: what a run gives back and a screen shows. */
+export interface AiFailed extends AiErrorDetails {
+  readonly code: AiErrorCode;
+}
+
+/**
+ * The details `source` holds, with no key for one it lacks. Read, not trusted, so it takes what
+ * Rust sent too: a status that is no number, or a message that is no string, is none.
+ */
+export function errorDetails(source: {
+  readonly httpStatus?: unknown;
+  readonly serverMessage?: unknown;
+}): AiErrorDetails {
+  const { httpStatus, serverMessage } = source;
+  return {
+    ...(typeof httpStatus === 'number' && { httpStatus }),
+    ...(typeof serverMessage === 'string' && { serverMessage }),
+  };
+}
 
 /** At most this many characters of the server's error message are kept. */
 const MAX_SERVER_MESSAGE = 200;
@@ -34,17 +61,13 @@ export function isAiErrorCode(value: unknown): value is AiErrorCode {
   return (AI_ERROR_CODES as readonly unknown[]).includes(value);
 }
 
-export class AiError extends Error {
+export class AiError extends Error implements AiFailed {
   override readonly name = 'AiError';
   readonly code: AiErrorCode;
   readonly httpStatus?: number;
-  /** The first 200 characters of the server's error message, when it sent one. */
   readonly serverMessage?: string;
 
-  constructor(
-    code: AiErrorCode,
-    details: { readonly httpStatus?: number; readonly serverMessage?: string } = {},
-  ) {
+  constructor(code: AiErrorCode, details: AiErrorDetails = {}) {
     super(code);
     this.code = code;
     if (details.httpStatus !== undefined) this.httpStatus = details.httpStatus;

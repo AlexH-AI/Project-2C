@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AI_ERROR_CODES, AI_LOCAL_ERROR_CODES, AiError, isAiErrorCode } from './errors';
+import { AI_ERROR_CODES, AiError, errorDetails, isAiErrorCode } from './errors';
 
 describe('AiError', () => {
   it('has the ten codes of spec §5.3', () => {
@@ -18,7 +18,7 @@ describe('AiError', () => {
   });
 
   it('has AI_TOO_LARGE of its own, which Rust never sends', () => {
-    expect(AI_LOCAL_ERROR_CODES).toEqual(['AI_TOO_LARGE']);
+    expect(new AiError('AI_TOO_LARGE').code).toBe('AI_TOO_LARGE');
     expect(isAiErrorCode('AI_TOO_LARGE')).toBe(false);
   });
 
@@ -47,6 +47,22 @@ describe('AiError', () => {
   it('does not cut a character in two at the 200th', () => {
     const error = new AiError('AI_HTTP', { serverMessage: `${'x'.repeat(199)}😀😀` });
     expect(error.serverMessage).toBe(`${'x'.repeat(199)}😀`);
+  });
+
+  it('gives the HTTP status and server message a value holds, with no key for a missing one', () => {
+    const error = new AiError('AI_HTTP', { httpStatus: 502, serverMessage: 'Bad gateway' });
+    expect(errorDetails(error)).toStrictEqual({ httpStatus: 502, serverMessage: 'Bad gateway' });
+    expect(errorDetails(new AiError('AI_HTTP', { httpStatus: 500 }))).toStrictEqual({
+      httpStatus: 500,
+    });
+    expect(errorDetails(new AiError('AI_TIMEOUT'))).toStrictEqual({});
+  });
+
+  it('reads what Rust sent: a status that is no number or a message that is no string is none', () => {
+    expect(errorDetails({ httpStatus: '502', serverMessage: 42 })).toStrictEqual({});
+    expect(errorDetails({ httpStatus: null, serverMessage: '' })).toStrictEqual({
+      serverMessage: '',
+    });
   });
 
   it('tells the codes apart from other values', () => {

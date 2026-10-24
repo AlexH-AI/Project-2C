@@ -263,8 +263,9 @@ function isAt(root: unknown, path: readonly PropertyKey[]): boolean {
 }
 
 /**
- * The right form, so the retry can fix it (G5 §5, §11.6, DR6-24). Bounds are on blocks only: a
- * text's length is a refinement with its own message (`schema.ts`).
+ * The right form, so the retry can fix it (G5 §5, §11.6, DR6-24). A refinement, a pattern and a
+ * union say it in their own message (`schema.ts`). Bounds are on blocks only: a text's length is a
+ * refinement.
  */
 function schemaDetail(issue: z.core.$ZodIssue, missing: boolean): string {
   const lead = missing ? 'thiếu' : 'sai kiểu';
@@ -272,12 +273,10 @@ function schemaDetail(issue: z.core.$ZodIssue, missing: boolean): string {
     case 'invalid_type':
       return `${lead}, cần ${issue.expected}`;
     case 'invalid_union': {
-      // The one union of the outputs: an extraction value. A string that breaks a rule of strings
-      // (too long, empty) is told that rule, not that it is of the wrong type.
-      const asText = issue.errors[0]?.[0];
-      return asText?.code === 'custom'
-        ? asText.message
-        : `${lead}, cần string, number hoặc boolean`;
+      // A value of the type of an option that breaks a rule of it (a string too long, empty) is
+      // told that rule, not that it is of no allowed type.
+      const broken = issue.errors.find((option) => option[0]?.code !== 'invalid_type')?.[0];
+      return broken ? schemaDetail(broken, missing) : `${lead}, ${issue.message}`;
     }
     case 'too_small':
       return `cần ít nhất ${issue.minimum} phần tử`;
@@ -285,10 +284,7 @@ function schemaDetail(issue: z.core.$ZodIssue, missing: boolean): string {
       return `quá ${issue.maximum} phần tử`;
     case 'invalid_value':
       return `${missing ? 'thiếu' : 'giá trị không hợp lệ'}, cần một trong: ${issue.values.map(String).join(', ')}`;
-    case 'custom':
-      return issue.message;
     default:
-      // `invalid_format`: the one pattern of the outputs is the fact code (`FACT_CODE`).
-      return 'sai định dạng, cần mã dữ kiện dạng F12';
+      return issue.message;
   }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { ANALYSIS_PROMPTS } from './analysis-steps';
 import { extractionPrompt } from './prompts/extraction';
-import { ANALYSIS_PROMPTS } from './run';
 import {
   analysisInputSchema,
   analysisOutputSchema,
@@ -299,9 +299,9 @@ describe('extractionOutputSchema', () => {
     ['value', ''],
     ['value', 'a'.repeat(301)],
     ['quote', 'a'.repeat(301)],
-    ['value', String.fromCodePoint(0x200b)],
+    ['value', ZWSP],
     ['quote', '\u3164'],
-    ['value', `2${String.fromCodePoint(0x200b).repeat(1000)}`],
+    ['value', `2${ZWSP.repeat(1000)}`],
     ['value', null],
     ['value', Number.NaN],
   ])('rejects the %s %j', (key, value) => {

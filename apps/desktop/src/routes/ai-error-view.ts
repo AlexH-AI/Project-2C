@@ -3,39 +3,27 @@
  * → AI (spec Phase 5 §5.3; mockup ai.html 2l "dùng chung panel, trích xuất, Cài đặt", 4c). It shows
  * the HTTP status Rust got, so the Owner can read the real code of an expired plan (T-164).
  */
-import type { AiErrorCode } from '@p2c/ai';
+import { errorDetails, type AiErrorCode, type AiErrorDetails, type AiFailed } from '@p2c/ai';
 import { t } from '../i18n';
 
 /** The code shown: an AI error, or the general one for a bug or a bad request (#ask "lỗi khác"). */
 export type AiShownCode = Exclude<AiErrorCode, 'AI_BAD_REQUEST'> | 'GENERAL';
 
 /** An error to show, with what Rust told of a failed HTTP call (already made safe there, §5.3). */
-export interface AiFailure {
+export interface AiFailure extends AiErrorDetails {
   readonly code: AiShownCode;
-  readonly httpStatus?: number;
-  readonly serverMessage?: string;
-}
-
-/** What a run or an `AiError` gives of an error. */
-interface Failed {
-  readonly code: AiErrorCode;
-  readonly httpStatus?: number;
-  readonly serverMessage?: string;
 }
 
 export const GENERAL_FAILURE: AiFailure = { code: 'GENERAL' };
 
 /** An error as shown: a bad request is a bug of the app, the general message. */
-export function aiFailure({ code, httpStatus, serverMessage }: Failed): AiFailure {
+export function aiFailure(failed: AiFailed): AiFailure {
+  const { code } = failed;
   if (code === 'AI_BAD_REQUEST') return GENERAL_FAILURE;
-  return {
-    code,
-    ...(httpStatus !== undefined && { httpStatus }),
-    ...(serverMessage !== undefined && { serverMessage }),
-  };
+  return { code, ...errorDetails(failed) };
 }
 
-export function errorText({ code, httpStatus, serverMessage }: AiFailure | Failed): string {
+export function errorText({ code, httpStatus, serverMessage }: AiFailure | AiFailed): string {
   if (code === 'AI_BAD_REQUEST' || code === 'GENERAL') return t('aiError.GENERAL');
   if (httpStatus === undefined) return t(`aiError.${code}`);
   if (code === 'AI_HTTP') {

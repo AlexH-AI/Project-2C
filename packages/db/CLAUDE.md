@@ -48,7 +48,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/person-references.ts` — PERSON_REFERENCE_KINDS, type PersonReferenceKind, quotedKinds, PERSON_REFERENCES
 - `src/policies.ts` — type NewPolicy, type PolicyChanges, listPolicies, submitPolicy, issuePolicy, updatePolicy, softDeletePolicy, restorePolicy, checkRestorePolicy
 - `src/purge.ts` — type KeptBy, type KeptRecord, type PurgeCounts, type PurgePlan, previewPurge, purgeTrash, keptRecords
-- `src/schema.ts` — teams, people, settings, schemaMigrations, CUSTOMER_STAGES, GENDERS, APPOINTMENT_TRIGGERS, customers, appointments, appointmentCoordinators, stageTransitions, policies, KYC_NOTE_SOURCES, kycNotes, kycFacts, kycVersions, AI_ANALYSIS_MODES, AI_ANALYSIS_GATES, AI_ANALYSIS_STATUSES, AI_ANALYSIS_PROVIDERS, AI_ANALYSIS_REASONING, AI_ANALYSIS_NO_MODEL, MAX_AI_RAW_OUTPUT, aiAnalyses
+- `src/schema.ts` — teams, people, settings, schemaMigrations, CUSTOMER_STAGES, GENDERS, APPOINTMENT_TRIGGERS, customers, appointments, appointmentCoordinators, stageTransitions, policies, KYC_NOTE_SOURCES, kycNotes, kycFacts, kycVersions, AI_ANALYSIS_MODES, AI_ANALYSIS_GATES, AI_ANALYSIS_STATUSES, AI_ANALYSIS_PROVIDERS, AI_ANALYSIS_REASONING, aiAnalyses
 - `src/seed-data.ts` — type Weighted, STARTING_STAGES, BIRTH_DATE_KINDS, OUTCOMES, MOVES, TRIGGERS, TEAM_NAMES, FAMILY_NAMES, MIDDLE_NAMES, GIVEN_NAMES, APPOINTMENT_TIMES, TRIGGER_NOTES, NEXT_STEPS, MEETING_NOTES, CASE_SIZES_MILLION, KYC_TOPICS, KYC_VALUES
 - `src/seed.ts` — type SeedOptions, type SeedScale, seedDemoData
 - `src/settings.ts` — getSetting, putSetting

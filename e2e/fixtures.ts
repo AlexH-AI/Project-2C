@@ -1,7 +1,27 @@
 import { test as base, type Locator } from '@playwright/test';
+import { PROMPT_VERSIONS } from '../packages/ai/src/schema';
 import { anchorMorning } from './anchor';
 
 export { expect, type Locator, type Page } from '@playwright/test';
+
+/**
+ * The prompt versions the app writes, read from the code (`@p2c/ai/schema`), so a G5 round that
+ * moves one changes no spec (T-288). ChatGPT web adds the version of its wrapper (G5 §6a).
+ */
+export const PROMPT = {
+  analysis: PROMPT_VERSIONS.analysis,
+  discovery: PROMPT_VERSIONS.discovery,
+  webDiscovery: `${PROMPT_VERSIONS.discovery}+web@1`,
+} as const;
+
+/**
+ * A regular expression written as a template: the text is the pattern as written (`\d`, `\/`),
+ * each value put in is matched as it is (the "+" of a ChatGPT web version).
+ */
+export function pattern(text: TemplateStringsArray, ...values: string[]): RegExp {
+  const literal = values.map((value) => value.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&'));
+  return new RegExp(String.raw({ raw: text.raw }, ...literal));
+}
 
 /**
  * The `test` of every spec: the pages of a test run on a clock that starts on the anchor morning

@@ -4,14 +4,13 @@
  */
 import {
   AI_MODELS,
-  ANALYSIS_PROMPTS,
-  WEB_WRAPPER,
   analysisInputSchema,
   analysisOutputSchema,
   CUT_ANSWER,
   discoveryOutputSchema,
   factCode,
   VALIDATION_CODES,
+  webPromptVersion,
   type AiOpencodePlan,
   type AiSettings,
   type DiscoveryOutput,
@@ -393,10 +392,9 @@ export function webFailure({ failed }: AiPanelWeb) {
  * so a version no longer there never breaks the profile (DR6-15).
  */
 export function webChip(web: AiPanelWeb) {
-  const { mode } = web.session.input;
   return {
     version: web.kycVersion,
-    prompt: `${ANALYSIS_PROMPTS[mode].version}+${WEB_WRAPPER.version}`,
+    prompt: webPromptVersion(web.session.input.mode),
     at: formatLocalDayMonthTime(web.takenAt),
   };
 }

@@ -2,6 +2,8 @@ import {
   AiError,
   createMockAdapter,
   DEFAULT_AI_SETTINGS,
+  PROMPT_VERSIONS,
+  WEB_WRAPPER,
   type AiAdapter,
   type AiCompleteRequest,
   type AiCompletion,
@@ -149,7 +151,7 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
       mode: 'discovery',
       provider: 'MOCK',
       model: null,
-      promptVersion: 'discovery@4',
+      promptVersion: PROMPT_VERSIONS.discovery,
     });
     // The facts are sent with their stored code F{seq}: birth year (F1), then those confirmed.
     expect((row!.input as { facts: { code: string }[] }).facts.map((f) => f.code)).toEqual([
@@ -737,7 +739,7 @@ describe('ChatGPT web in the app (spec Phase 5 §3.1)', () => {
         model: null,
         reasoning: null,
         promptTokens: null,
-        promptVersion: 'discovery@4+web@1',
+        promptVersion: `${PROMPT_VERSIONS.discovery}+${WEB_WRAPPER.version}`,
         attempts: 1,
       },
     ]);

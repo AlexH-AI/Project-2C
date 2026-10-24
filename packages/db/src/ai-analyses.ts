@@ -4,7 +4,13 @@
  * new KYC version leaves an analysis STALE, and its material flag only changes the reminder (P1).
  * "Latest" is by recording order (`seq`) for both analyses and KYC versions, never by date.
  */
-import { AI_OUTPUT_SCHEMAS, analysisInputSchema, type AnalysisInput } from '@p2c/ai/schema';
+import {
+  AI_ANALYSIS_NO_MODEL,
+  AI_OUTPUT_SCHEMAS,
+  analysisInputSchema,
+  MAX_AI_RAW_OUTPUT,
+  type AnalysisInput,
+} from '@p2c/ai/schema';
 import { fromIsoDate, type CalendarDate, type KycGateState } from '@p2c/domain';
 import { asc, desc, eq, sql } from 'drizzle-orm';
 import {
@@ -22,13 +28,11 @@ import { DbError } from './errors';
 import { ulid } from './ids';
 import {
   AI_ANALYSIS_GATES,
-  AI_ANALYSIS_NO_MODEL,
   AI_ANALYSIS_PROVIDERS,
   AI_ANALYSIS_REASONING,
   AI_ANALYSIS_STATUSES,
   aiAnalyses,
   kycVersions,
-  MAX_AI_RAW_OUTPUT,
 } from './schema';
 
 type AiAnalysisMode = keyof typeof AI_ANALYSIS_GATES;
@@ -132,7 +136,7 @@ export function recordAiAnalysis(db: Database, analysis: NewAiAnalysis): AiAnaly
 
 /** The fields of a new analysis as stored, refused when they do not fit together (§7.1). */
 function toRow(a: NewAiAnalysis) {
-  const noModel = (AI_ANALYSIS_NO_MODEL as readonly string[]).includes(a.provider);
+  const noModel = AI_ANALYSIS_NO_MODEL.includes(a.provider);
   const fits =
     Object.hasOwn(AI_ANALYSIS_GATES, a.mode) &&
     AI_ANALYSIS_GATES[a.mode] === a.gateState &&

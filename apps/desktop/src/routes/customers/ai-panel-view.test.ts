@@ -2,6 +2,8 @@ import {
   AI_MODELS,
   CUT_ANSWER,
   DEFAULT_AI_SETTINGS,
+  PROMPT_VERSIONS,
+  WEB_WRAPPER,
   type AiSettings,
   type WebSession,
 } from '@p2c/ai';
@@ -389,7 +391,7 @@ describe('the ChatGPT web session of the panel (spec Phase 5 Â§3.1, mockups 4eâ€
     });
     expect(webChip(opened)).toEqual({
       version: 2,
-      prompt: 'discovery@4+web@1',
+      prompt: `${PROMPT_VERSIONS.discovery}+${WEB_WRAPPER.version}`,
       at: '26/09 10:40',
     });
   });

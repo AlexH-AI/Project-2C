@@ -80,7 +80,7 @@ describe('validateOutput — V1', () => {
     ['an empty text', { ...analysis(), needs: [item('  ', 'F1')] }, 'needs[0].text', 'chuỗi rỗng'],
     [
       'a text of format characters only',
-      { ...analysis(), needs: [item(String.fromCodePoint(0x200b), 'F1')] },
+      { ...analysis(), needs: [item(ZWSP, 'F1')] },
       'needs[0].text',
       'chuỗi rỗng',
     ],

@@ -2,11 +2,11 @@
 import guide from '../../../docs/design/phase-5-prompts.md?raw';
 import { evaluateKycGate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
+import { checkAnalysisAnswer } from './analysis-steps';
 import { analysisPrompt } from './prompts/analysis';
 import { discoveryPrompt } from './prompts/discovery';
 import { retryMessage } from './prompts/retry';
-import { checkAnalysisAnswer } from './run';
-import { buildAnalysisInput, type AnalysisProfile } from './schema';
+import { buildAnalysisInput, PROMPT_VERSIONS, type AnalysisProfile } from './schema';
 import { fact, nfdZw, PROFILE, TODAY, ZWSP } from './test-support';
 import {
   buildWebMessage,
@@ -175,7 +175,7 @@ describe('checkWebAnswer', () => {
         provider: 'CHATGPT_WEB',
         model: null,
         reasoning: null,
-        promptVersion: 'analysis@4+web@1',
+        promptVersion: `${PROMPT_VERSIONS.analysis}+${WEB_WRAPPER.version}`,
         attempts: 1,
         input: session.input,
         output: { ...GOOD, personalityNotes: [] },
@@ -239,7 +239,7 @@ describe('checkWebAnswer', () => {
           { attempt: 2, errors: [{ code: 'V2' }] },
         ],
         provider: 'CHATGPT_WEB',
-        promptVersion: 'analysis@4+web@1',
+        promptVersion: `${PROMPT_VERSIONS.analysis}+${WEB_WRAPPER.version}`,
       },
     });
   });
@@ -452,7 +452,7 @@ describe('checkWebAnswer', () => {
         mode: 'discovery',
         gateState: 'PROFILE_DISCOVERY',
         status: 'ACCEPTED',
-        promptVersion: 'discovery@4+web@1',
+        promptVersion: `${PROMPT_VERSIONS.discovery}+${WEB_WRAPPER.version}`,
         output: { hypotheses: [], personalityNotes: [] },
       },
     });

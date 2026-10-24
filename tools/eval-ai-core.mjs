@@ -11,21 +11,23 @@
 // eval-ai-core.test.mjs without the network.
 
 import {
+  ANALYSIS_PROMPTS,
+  checkAnalysisAnswer,
+  takeAnalysisInput,
+} from '../packages/ai/src/analysis-steps.ts';
+import { checkAnswer } from '../packages/ai/src/attempts.ts';
+import {
   AI_MODELS,
   AI_REASONING_LEVELS,
   AiError,
-  ANALYSIS_PROMPTS,
-  checkAnalysisAnswer,
   createAiRunner,
   DEFAULT_AI_MODEL,
   extractJson,
   runAnalysis,
   runExtraction,
-  takeAnalysisInput,
   validateOutput,
 } from '../packages/ai/src/index.ts';
 import { extractionPrompt } from '../packages/ai/src/prompts/extraction.ts';
-import { checkAnswer } from '../packages/ai/src/prompts/retry.ts';
 import { formatIsoDate } from '../packages/domain/src/period.ts';
 import { collapseSpaces } from '../packages/domain/src/text.ts';
 import { EVAL_NOTES, EVAL_PROFILES, EVAL_TODAY } from './fixtures/ai-eval.mjs';
