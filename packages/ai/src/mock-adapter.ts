@@ -81,7 +81,7 @@ const NOT_CHILDREN = [
  * "sắp" / "sẽ" and up to two words, right before a phrase: "KH sắp có 2 con", "KH sẽ sống độc
  * thân". Only that close: either word is common in a note ("KH sẽ cân nhắc vì đã kết hôn"), and
  * the first Mock did not read them. The other wish words reach the whole clause (`WISHED`). One
- * space between the words, as in `PEOPLE`.
+ * space between the words, as in `KH_SUBJECT`.
  */
 const PLANNING = String.raw`(?<!\p{L})(?:[Ss]ắp|[Ss]ẽ)(?: \p{L}+){0,2} `;
 
@@ -95,55 +95,119 @@ const NOT_PLANNED = String.raw`(?<!${PLANNING})`;
 const NOT_PLANNED_CHILDREN = String.raw`(?<!${PLANNING}(?:có|sinh|đẻ|nhận nuôi) (?:thêm |được )?)`;
 
 /**
+ * "KH" opening its clause, maybe after "Hiện / Hiện tại / Hiện nay", and up to two of "đã / đang /
+ * hiện / vừa / mới / sống / ở": the KH the subject of what follows ("KH đã", "KH đang sống", "Hiện
+ * KH có", "Theo chị Lan, KH là", "- KH có"), not someone's nor an object ("Người yêu của KH đã
+ * có", "Người giới thiệu KH là", the review of PR #809). Its clause ends at a mark of `CLAUSE_END`
+ * or at ":". Up to two, and one space between the words as a note is stored and as "anh trai" is
+ * read, not `\s+`: these lookbehinds are tried at every place of a sentence, and one reading a run
+ * of spaces back took a second for 36 000 of them (the review of PR #753). The look back for the
+ * start of the clause is tried only where "KH" stands, and lazy: it stops at the first letter.
+ */
+const KH_SUBJECT = String.raw`(?<!\p{L}[^.!?;,:\n]*?)(?:[Hh]iện(?: tại| nay)? )?KH(?: (?:đã|đang|hiện|vừa|mới|sống|ở)){0,2}`;
+
+/**
  * Not of anyone: "người" right before a phrase says it of anyone ("gói cho người đã kết hôn",
- * DR6-121).
+ * DR6-121), but in the KH's own "KH là người độc thân" (T-289).
  */
-const NOT_OF_ANYONE = String.raw`(?<!(?<!\p{L})người )`;
+const NOT_OF_ANYONE = String.raw`(?<!(?<!${KH_SUBJECT} là )(?<!\p{L})người )`;
 
 /**
- * A "cho" right before a phrase: what a wish earlier in its clause is for, not the wish itself
- * ("KH muốn đầu tư cho 2 con" wishes the investing; the children are there already).
+ * "thì" or ":" right before "chưa / không": an answer, saying that what stands before it is not so
+ * ("KH độc thân thì không", "Đã kết hôn: chưa", "nợ: không"), not a question (the review of PR
+ * #809).
  */
-const AFTER_CHO = 'cho ';
+const ANSWERED = String.raw`(?:(?<!\p{L})thì |: ?)`;
 
 /**
- * "cưới" of the KH marrying, not of a wedding the KH goes to: in "đám / ăn / tiệc / thiệp / lễ /
- * mừng cưới bạn", "đi cưới bạn" and "đám cưới chồng cũ" the one after it is the one marrying.
+ * Not asked nor said not to be: no "chưa", "không" or "hay" right after the phrase, however its
+ * clause goes on ("KH đã kết hôn chưa nhé", "có 2 con không nhỉ", "đã kết hôn hay còn độc thân",
+ * T-289), nor an answer ("KH đã kết hôn thì không đúng", "Đã kết hôn: chưa rõ").
  */
-const MARRYING = '(?<!(?:đám|ăn|tiệc|thiệp|lễ|mừng|đi) )cưới';
+const NOT_ASKED = String.raw`(?!(?:\s*${ANSWERED}|\s+)(?:chưa|không)(?!\p{L})|\s+hay(?!\p{L}))`;
 
-/**
- * What makes a wife or a husband the KH's own, not someone else's: "có vợ", "sống cùng vợ",
- * "lấy chồng", "và vợ", "cưới vợ".
- */
-const OWN_SPOUSE = `và|có|cùng|với|lấy|${MARRYING}`;
+/** A wife or a husband, and people the KH knows. */
+const SPOUSE = 'vợ|chồng';
+const KNOWN = 'bạn|sếp|hàng xóm|người quen|đồng nghiệp|người thân|họ hàng';
+
+/** What makes the wife or husband after it someone's own: "có vợ", "sống cùng chồng", "cưới vợ". */
+const WITH_PARTNER = 'có|cùng|với|lấy|cưới|kết hôn với';
 
 /**
  * Someone other than the KH: named before a phrase in its sentence, the phrase is about them
  * (DR6-19, DR6-78). A word that may also name the KH ("cô", "ông"…) gives no proposal rather than
  * a wrong one; so do the KH's own children and brothers and sisters named first ("KH có 2 con, đã
- * kết hôn." may be about the children, "Anh chị em của KH đều đã kết hôn." is about them). Not
- * "vợ chồng" nor a wife or a husband of the KH ("KH và vợ", "đã có vợ", "lấy chồng"), nor a friend
- * the KH marries ("kết hôn với bạn", "cưới bạn"): the couple, the KH one of them. Not the words
- * that hold a kin word but name no one: "bác sĩ", "cô giáo", "chú ý", "ghi chú", "đàn ông",
- * "em bé"…, though a kin word before "em bé" names the baby's own ("ba / anh / chị em bé"); "ba"
- * only as a parent. One space between the words, as a note is stored and as "anh trai" is read,
- * not `\s+`: `SOMEONE_ELSE` tries each lookbehind at every place of a sentence, so one reading a
- * run of spaces back took a second for 36 000 of them (in a note that also had a phrase to read).
+ * kết hôn." may be about the children, "Anh chị em của KH đều đã kết hôn." is about them). "anh"
+ * or "chị" alone may be the KH. Where some of these words name no one else: `NAMES_NO_ONE`,
+ * `SAID_OF_THE_KH`.
  */
 const PEOPLE = [
   'con|cháu|anh em|anh trai|anh họ|anh rể|anh ruột|anh của',
   'chị em|chị gái|chị họ|chị dâu|chị ruột|chị của',
-  String.raw`em(?! bé(?!\p{L}))|(?<!đàn )ông|bà|cô(?! (?:giáo|đơn|dâu))`,
-  '(?<!ghi )chú(?! (?:ý|trọng|thích))|bác(?! (?:sĩ|bỏ))|dì|cậu|mợ|thím|dượng',
-  'bố|mẹ|cha|má',
-  String.raw`ba(?= (?:của|kh|anh|chị|em|ấy|ruột|nuôi)(?!\p{L}))`,
-  `(?<!(?:${OWN_SPOUSE}) )vợ(?! chồng)|(?<!(?:vợ|${OWN_SPOUSE}) )chồng`,
-  `(?<!(?:kết hôn với|lấy|${MARRYING}) )(?:bạn|sếp|hàng xóm|người quen|đồng nghiệp|người thân|họ hàng)`,
+  'em|ông|bà|cô|chú|bác|dì|cậu|mợ|thím|dượng|bố|mẹ|cha|má',
+  SPOUSE,
+  KNOWN,
 ].join('|');
 
-/** The words of `PEOPLE`, in any case. */
-const SOMEONE_ELSE = new RegExp(String.raw`(?<!\p{L})(?:${PEOPLE})(?!\p{L})`, 'iu');
+/** The words of `PEOPLE`, in any case, and "ba" as a parent, not as a number ("ba năm"). */
+const SOMEONE_ELSE = new RegExp(
+  String.raw`(?<!\p{L})(?:${PEOPLE}|ba(?= (?:của|kh|anh|chị|em|ấy|ruột|nuôi)(?!\p{L})))(?!\p{L})`,
+  'iu',
+);
+
+/**
+ * Words of `PEOPLE` that name no one else, anywhere and in any case: inside a word that holds a kin
+ * word ("bác sĩ", "cô giáo", "cô đơn", "chú ý", "chú trọng", "ghi chú"), in the heading "Chú
+ * thích:" and in the couple, the KH one of them ("vợ chồng", "KH và vợ"). Not a couple someone
+ * lives with or has (`WITH_PARTNER`): "KH sống cùng vợ chồng anh Nam" names them (the review of PR
+ * #809). So none of these words is one of `OWN_PARTNER`, and which is read first does not matter.
+ */
+const NAMES_NO_ONE = new RegExp(
+  String.raw`(?<!\p{L})(?:bác sĩ|cô giáo|cô đơn|chú ý|chú trọng|ghi chú|chú thích(?=:)|(?<!(?:${WITH_PARTNER}) )vợ chồng|(?<=và )(?:${SPOUSE}))(?!\p{L})`,
+  'giu',
+);
+
+/**
+ * The KH's own wife or husband ("KH đã có vợ", "KH sống cùng chồng", "KH cưới vợ"), not someone
+ * else's ("vợ của anh Nam"), and a friend the KH marries ("KH kết hôn với bạn", "KH lấy đồng
+ * nghiệp"). Only right after the KH (T-289): "Khách mới có vợ…", "KH giới thiệu anh Nam, có vợ…",
+ * "KH đi dự cưới bạn…", "Người yêu của KH đã có vợ…" say it of someone else.
+ */
+const OWN_PARTNER = [
+  String.raw`(?<=${KH_SUBJECT} (?:${WITH_PARTNER}) )(?:${SPOUSE})(?! của(?!\p{L}))`,
+  String.raw`(?<=${KH_SUBJECT} (?:lấy|cưới|kết hôn với) )(?:${KNOWN})`,
+].join('|');
+
+/**
+ * Words of `PEOPLE` that name no one else right after the KH: words holding a kin word that the KH
+ * is or does ("KH là đàn ông / cô dâu", "KH có em bé", "KH bác bỏ") and the KH's partner
+ * (`OWN_PARTNER`). Elsewhere, as before PR #753, they may name who a phrase is about: "Cô dâu đã có
+ * 2 con riêng.", "Bác bỏ thuốc lá…" (the uncle quit), "KH có em bé nhất / hơn…" (the youngest, a
+ * younger one), "KH có em Bé" (a name) (T-289).
+ */
+const SAID_OF_THE_KH = new RegExp(
+  String.raw`(?:${[
+    String.raw`(?<=${KH_SUBJECT} là )(?:đàn ông|cô dâu)`,
+    String.raw`(?<=${KH_SUBJECT} có )em bé(?! (?:nhất|hơn)(?!\p{L}))`,
+    String.raw`(?<=${KH_SUBJECT} )bác bỏ`,
+    OWN_PARTNER,
+  ].join('|')})(?!\p{L})`,
+  'gu',
+);
+
+/**
+ * The KH's partner named before a phrase in its clause is who the phrase is about ("KH lấy chồng
+ * đã có 2 con riêng"), unless "và" joins them ("KH đã có vợ và 2 con") (T-289).
+ */
+const PARTNER_FIRST = new RegExp(String.raw`(?:${OWN_PARTNER})(?!\p{L})(?! và(?!\p{L}))`, 'u');
+
+/**
+ * "của" and someone else right after "<n> con / bé / cháu": their children ("2 con của anh trai",
+ * DR6-121). Any word of `PEOPLE`, in any case and none spared ("2 con của cô giáo", "của vợ chồng
+ * anh Nam"), and "ba" as anyone ("của ba người bạn") (T-289). Sticky, tried where the count ends:
+ * the count's own pattern tells case ("2 con Lexus"), which this list cannot share.
+ */
+const OF_SOMEONE_ELSE = new RegExp(String.raw`\s+của\s+(?:${PEOPLE}|ba)(?!\p{L})`, 'iuy');
 
 const EXTRACTION_PATTERNS: readonly {
   readonly field: string;
@@ -151,8 +215,10 @@ const EXTRACTION_PATTERNS: readonly {
   readonly value: (match: RegExpExecArray) => string;
   /** Said later in its sentence, it ends what the phrase says: "đã kết hôn … ly hôn". */
   readonly endedBy?: RegExp;
-  /** Right before the phrase, it makes the phrase no wish of a wish word earlier in its clause. */
-  readonly unwishedAfter?: string;
+  /** Right after the phrase (a sticky regex), it makes the phrase someone else's. */
+  readonly ownerAfter?: RegExp;
+  /** Whether the phrase at `at`, up to `end`, is no wish of a wish word earlier in its clause. */
+  readonly unwished?: (note: string, at: number, end: number) => boolean;
 }[] = [
   // Narrow on purpose (CX-A4): what may mean something else gives no proposal.
   {
@@ -161,19 +227,23 @@ const EXTRACTION_PATTERNS: readonly {
       [
         NOT_PLANNED_CHILDREN,
         String.raw`(?<!\p{N})(\d{1,2})\s+(?:con|bé|cháu)(?!\p{L})`,
-        // A capital is a name or a brand, "của <someone else>" is theirs.
+        // A capital is a name or a brand.
         String.raw`(?!\p{Zs}+\p{Lu})(?!\s+(?:${NOT_CHILDREN})(?!\p{L}))`,
-        String.raw`(?!\s+của\s+(?:${PEOPLE})(?!\p{L}))`,
+        NOT_ASKED,
       ].join(''),
       'gu',
     ),
     value: (match) => match[1]!,
-    unwishedAfter: AFTER_CHO,
+    ownerAfter: OF_SOMEONE_ELSE,
+    unwished: forTheChildren,
   },
   {
     field: 'maritalStatus',
     // Only "đã kết hôn": not "chưa / không muốn / … năm kết hôn" nor "đã từng kết hôn".
-    pattern: new RegExp(String.raw`(?<=${NOT_OF_ANYONE}(?<!\p{L})đã\s+)kết hôn(?!\p{L})`, 'giu'),
+    pattern: new RegExp(
+      String.raw`(?<=${NOT_OF_ANYONE}(?<!\p{L})đã\s+)kết hôn(?!\p{L})${NOT_ASKED}`,
+      'giu',
+    ),
     value: () => 'Đã kết hôn',
     endedBy: /(?<!\p{L})ly hôn(?!\p{L})/giu,
   },
@@ -181,7 +251,7 @@ const EXTRACTION_PATTERNS: readonly {
   {
     field: 'maritalStatus',
     pattern: new RegExp(
-      String.raw`${NOT_PLANNED}${NOT_OF_ANYONE}(?<!\p{L})độc thân(?!\p{L})`,
+      String.raw`${NOT_PLANNED}${NOT_OF_ANYONE}(?<!\p{L})độc thân(?!\p{L})${NOT_ASKED}`,
       'giu',
     ),
     value: () => 'Độc thân',
@@ -196,9 +266,13 @@ function allowedFields(value: unknown): string[] {
     .filter((field): field is string => typeof field === 'string');
 }
 
-/** Said as a supposition, before a phrase in its sentence: "nếu đã kết hôn, có 2 con" (DR6-78). */
+/**
+ * Said as a supposition or as what may be, before a phrase in its sentence: "nếu đã kết hôn, có 2
+ * con" (DR6-78), "Có thể KH đã kết hôn." (T-289). Only before it: after it, "có thể" says what can
+ * be ("KH đã kết hôn, có thể đóng phí năm").
+ */
 const SUPPOSED =
-  /(?<!\p{L})(?:nếu|giả sử|giả thử|giả như|giả định|giá mà|giá như|lỡ như|nhỡ như|trường hợp)(?!\p{L})/iu;
+  /(?<!\p{L})(?:nếu|giả sử|giả thử|giả như|giả định|giá mà|giá như|lỡ như|nhỡ như|trường hợp|có thể)(?!\p{L})/iu;
 
 /**
  * Said as a wish or a plan, before a phrase in its clause: "KH muốn có 2 con", "dự định sống độc
@@ -212,12 +286,34 @@ const NEGATED = /(?<!\p{L})(?:không|chưa|chẳng)(?!\p{L})/iu;
 
 /**
  * A guess or a question mark, anywhere in the sentence of a phrase, before it or after it:
- * "Có lẽ KH đã kết hôn.", "KH có 2 con, hình như.", "KH đã kết hôn?" (DR6-121).
+ * "Có lẽ KH đã kết hôn.", "KH có 2 con, hình như.", "KH đã kết hôn?" (DR6-121), "Có vẻ KH đã kết
+ * hôn.", "KH đã kết hôn, dường như vậy." (T-289).
  */
-const GUESSED = /(?<!\p{L})(?:có lẽ|hình như|nghe nói|chắc là)(?!\p{L})|\?/iu;
+const GUESSED = /(?<!\p{L})(?:có lẽ|hình như|nghe nói|chắc là|có vẻ|dường như)(?!\p{L})|\?/iu;
 
-/** A clause ending in "chưa" or "không" asks ("KH đã kết hôn chưa."); inside a clause they do not. */
-const ASKED = /(?<!\p{L})(?:chưa|không)(?!\p{L})[\p{P}\s]*$/iu;
+/** "chưa" or "không", maybe with "nhé / nhỉ / ạ" after it, ending its clause. */
+const NOT_YET = String.raw`(?:chưa|không)(?:\s+(?:nhé|nhỉ|ạ))?(?=[^\p{L}\p{N}]*?(?:,|$))`;
+
+/**
+ * A clause ending in `NOT_YET` asks what stands before it in its sentence: "KH đã kết hôn chưa.",
+ * "Cần hỏi KH đã kết hôn, có con chưa." (T-289). Not an answer, which says so of its topic only
+ * (`DENIED`).
+ */
+const ASKED = new RegExp(String.raw`(?<!\p{L})(?<!${ANSWERED})${NOT_YET}`, 'giu');
+
+/**
+ * A clause ending in an answer says that its topic is not so: what stands before the answer in the
+ * clause, from after a "nhưng / mà / còn" there (`BUT`). "KH đã kết hôn chính thức thì chưa." and
+ * "KH có 2 con riêng: không." say it of the phrase; "KH có 2 con nhưng bảo hiểm thì chưa." and "KH
+ * độc thân, nợ: không." of something else (the review of PR #809).
+ */
+const DENIED = new RegExp(`${ANSWERED}${NOT_YET}`, 'giu');
+
+/** What starts another topic in a clause, the one an answer at its end speaks of. */
+const BUT = /(?<!\p{L})(?:nhưng|mà|còn)(?!\p{L})/giu;
+
+/** "hay" before a phrase in its clause: the other way it may be ("đã kết hôn hay còn độc thân"). */
+const EITHER = /(?<!\p{L})hay(?!\p{L})/iu;
 
 /** "Khi … thì": what stands between them is a condition, not a fact (DR6-121). */
 const WHEN = /(?<!\p{L})khi(?!\p{L})/iu;
@@ -226,19 +322,41 @@ const THEN = /(?<!\p{L})thì(?!\p{L})/giu;
 const SENTENCE_END = /[.!?;\n]/g;
 const CLAUSE_END = /[.!?;,\n]/g;
 
+/** After a count, what lets "cho" spare it from a wish: the end of its clause, or "ăn học". */
+const NOTHING_MORE = new RegExp(String.raw`(?:\s+ăn học)?(?:${CLAUSE_END.source}|$)`, 'uy');
+
 /**
- * Where `word` first ends in `part`, which starts at `start` of the note; never when it is not
- * there.
+ * Whether the count at `at`, up to `end`, is what a wish earlier in its clause is for, not the
+ * wish: "cho" right before it and nothing more said of the children after it ("KH muốn đầu tư cho 2
+ * con" wishes the investing; the children are there already). More may say they are not there
+ * yet: "cho 2 con sắp sinh / tương lai" (T-289).
  */
-function firstEnd(word: RegExp, part: string, start: number): number {
-  const first = word.exec(part);
-  return first ? start + first.index + first[0].length : Infinity;
+function forTheChildren(note: string, at: number, end: number): boolean {
+  return note.endsWith('cho ', at) && startsAt(NOTHING_MORE, note, end);
+}
+
+/**
+ * Whether `word`, a sticky regex, matches `note` right at `at`: for what a phrase's own pattern
+ * cannot hold, as a list in any case after a pattern that tells case.
+ */
+function startsAt(word: RegExp, note: string, at: number): boolean {
+  word.lastIndex = at;
+  return word.test(note);
+}
+
+/** A sentence or a clause of the note, with where it starts in the note. */
+type Part = { readonly text: string; readonly start: number };
+
+/** Where `word` first ends in `part`, as a position in the note; never when it is not there. */
+function firstEnd(word: RegExp, part: Part): number {
+  const first = word.exec(part.text);
+  return first ? part.start + first.index + first[0].length : Infinity;
 }
 
 /** Where `word`, a regex with the `g` flag, last starts in `part`; never when it is not there. */
-function lastStart(word: RegExp, part: string, start: number): number {
+function lastStart(word: RegExp, part: Part): number {
   let last = -Infinity;
-  for (const found of part.matchAll(word)) last = start + found.index;
+  for (const found of part.text.matchAll(word)) last = part.start + found.index;
   return last;
 }
 
@@ -249,15 +367,16 @@ function lastStart(word: RegExp, part: string, start: number): number {
  */
 function readerOf(note: string, ends: RegExp) {
   const starts = [0, ...[...note.matchAll(ends)].map((mark) => mark.index + 1)];
-  return <T>(read: (part: string, start: number) => T): ((at: number) => T) => {
-    let part = -1;
+  return <T>(read: (part: Part) => T): ((at: number) => T) => {
+    let index = -1;
     let seen: T | undefined;
     return (at) => {
-      let next = Math.max(part, 0);
+      let next = Math.max(index, 0);
       while (next + 1 < starts.length && starts[next + 1]! <= at) next++;
-      if (next !== part) {
-        part = next;
-        seen = read(note.slice(starts[part], starts[part + 1]), starts[part]!);
+      if (next !== index) {
+        index = next;
+        const start = starts[index]!;
+        seen = read({ text: note.slice(start, starts[index + 1]), start });
       }
       return seen as T;
     };
@@ -266,33 +385,44 @@ function readerOf(note: string, ends: RegExp) {
 
 type Reader = ReturnType<typeof readerOf>;
 
+/** `text` with the words of `PEOPLE` that name no one else there read as spaces, in their places. */
+function namingPeople(text: string): string {
+  const blank = (word: string) => ' '.repeat(word.length);
+  return text.replace(SAID_OF_THE_KH, blank).replace(NAMES_NO_ONE, blank);
+}
+
 /** What a sentence says around its phrases, as positions in the note. */
-function readSentence(part: string, start: number) {
+function readSentence(sentence: Part) {
   return {
-    someoneElse: firstEnd(SOMEONE_ELSE, part, start),
-    supposed: firstEnd(SUPPOSED, part, start),
-    whenEnd: firstEnd(WHEN, part, start),
-    thenStart: lastStart(THEN, part, start),
-    guessed: GUESSED.test(part),
+    someoneElse: firstEnd(SOMEONE_ELSE, { ...sentence, text: namingPeople(sentence.text) }),
+    supposed: firstEnd(SUPPOSED, sentence),
+    whenEnd: firstEnd(WHEN, sentence),
+    thenStart: lastStart(THEN, sentence),
+    askedUntil: lastStart(ASKED, sentence),
+    guessed: GUESSED.test(sentence.text),
   };
 }
 
 /** What a clause says around its phrases, as positions in the note. */
-function readClause(part: string, start: number) {
+function readClause(clause: Part) {
   return {
-    negated: firstEnd(NEGATED, part, start),
-    wished: firstEnd(WISHED, part, start),
-    asked: ASKED.test(part),
+    negated: firstEnd(NEGATED, clause),
+    either: firstEnd(EITHER, clause),
+    partner: firstEnd(PARTNER_FIRST, clause),
+    wished: firstEnd(WISHED, clause),
+    topicAfter: lastStart(BUT, clause),
+    deniedUntil: lastStart(DENIED, clause),
   };
 }
 
 /**
  * Whether the phrase starting at `at` says something of the KH (DR6-19), asked of the phrases in
  * order: no one else named and no supposition before it in its sentence ("Em trai KH còn độc
- * thân", "KH có một con trai đang sống độc thân"), no guess or "khi … thì" around it there, no
- * negation or wish before it in its clause ("KH không có 2 con", "KH muốn có 2 con") and no
- * question ("KH đã kết hôn chưa."). Narrow, as the patterns are. `unwished`: what the wish is for,
- * not the wish.
+ * thân", "KH có một con trai đang sống độc thân"), no guess or "khi … thì" around it there and no
+ * question after it ("KH đã kết hôn chưa."), no negation, other way, partner or wish before it in
+ * its clause ("KH không có 2 con", "KH lấy chồng đã có 2 con riêng", "KH muốn có 2 con") and not
+ * in the topic of an answer ending it ("KH có 2 con riêng thì chưa."). Narrow, as the patterns
+ * are. `unwished`: what the wish is for, not the wish.
  */
 function aboutTheKh(
   sentence: Reader,
@@ -305,11 +435,14 @@ function aboutTheKh(
     const inClause = ofClause(at);
     return !(
       inSentence.guessed ||
-      inClause.asked ||
+      at < inSentence.askedUntil ||
       inSentence.someoneElse <= at ||
       inSentence.supposed <= at ||
       (inSentence.whenEnd <= at && at < inSentence.thenStart) ||
       inClause.negated <= at ||
+      inClause.either <= at ||
+      inClause.partner <= at ||
+      (inClause.topicAfter < at && at < inClause.deniedUntil) ||
       (inClause.wished <= at && !unwished)
     );
   };
@@ -319,15 +452,20 @@ function extraction(note: string, fields: readonly string[]): ExtractionOutput {
   const sentence = readerOf(note, SENTENCE_END);
   const ofTheKh = aboutTheKh(sentence, readerOf(note, CLAUSE_END));
   const facts = EXTRACTION_PATTERNS.filter(({ field }) => fields.includes(field))
-    .flatMap(({ field, pattern, value, endedBy, unwishedAfter }) => {
-      const ended = endedBy && sentence((part, start) => lastStart(endedBy, part, start));
+    .flatMap(({ field, pattern, value, endedBy, ownerAfter, unwished }) => {
+      const ended = endedBy && sentence((part) => lastStart(endedBy, part));
       return [...note.matchAll(pattern)]
-        .map((match) => ({
-          at: match.index,
-          unwished: !!unwishedAfter && note.endsWith(unwishedAfter, match.index),
-          fact: { field, value: value(match), quote: match[0] },
-        }))
-        .filter(({ at }) => !ended || ended(at) < at);
+        .map((match) => {
+          const at = match.index;
+          const end = at + match[0].length;
+          return {
+            at,
+            theirs: !!ownerAfter && startsAt(ownerAfter, note, end),
+            unwished: !!unwished && unwished(note, at, end),
+            fact: { field, value: value(match), quote: match[0] },
+          };
+        })
+        .filter(({ at, theirs }) => !theirs && (!ended || ended(at) < at));
     })
     .sort((a, b) => a.at - b.at)
     .filter(ofTheKh)
