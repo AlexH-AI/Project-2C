@@ -1,7 +1,7 @@
 /* global URL */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join, posix, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
 import * as prettier from 'prettier';
@@ -38,21 +38,36 @@ function pathsBlocks(yml) {
   return blocks;
 }
 
-// A docs/ path of a .md file among the arguments of `join`, `resolve` or `readFile(Sync)`: read from
-// the root of the repo, where the tests run.
-const FROM_ROOT =
-  /\b(?:join|resolve|readFileSync|readFile)\((?:[^()'"`]|'[^']*'|"[^"]*"|\([^()]*\))*?['"`](docs\/[^'"`\s]*?\.md)['"`]/g;
+// A docs/ path of a .md file, in one string or split into string arguments: 'docs', 'a', 'b.md'.
+const DOCS_PATH = /['"`](docs(?:\/[^'"`\s]*)?(?:['"`]\s*,\s*['"`][^'"`\s]*)*?\.md)['"`]/g;
+
+// The calls that take a path from the root of the repo, where the tests run.
+const FROM_ROOT = new Set(['join', 'resolve', 'readFileSync', 'readFile']);
+
+/** The name of the call whose arguments hold `index` of `text`, past the calls nested before it. */
+function callAround(text, index) {
+  let depth = 0;
+  for (let i = index - 1; i >= 0; i -= 1) {
+    if (text[i] === ')') depth += 1;
+    else if (text[i] === '(' && depth > 0) depth -= 1;
+    else if (text[i] === '(') return /\w+$/.exec(text.slice(0, i))?.[0];
+  }
+  return undefined;
+}
 
 /**
  * The docs/**\/*.md files the test `file` reads (R2-21): by a path relative to it (an `?raw`
- * import, a `new URL(…, import.meta.url)`), or by a path from the root (FROM_ROOT). Any other
- * docs/….md string is data, such as the files of a PR in the tests of tools/.
+ * import, a `new URL(…, import.meta.url)`), or by a path from the root (DOCS_PATH) among the
+ * arguments of a FROM_ROOT call. Any other docs/….md string is data, such as the files of a PR in
+ * the tests of tools/.
  */
 function docsRead(root, file, text) {
   const fromTest = [...text.matchAll(/['"`](\.\.?\/[^'"`\s]*?\.md)(?:\?raw)?['"`]/g)].map(
     ([, ref]) => relative(root, join(dirname(join(root, file)), ref)).replaceAll('\\', '/'),
   );
-  const fromRoot = [...text.matchAll(FROM_ROOT)].map(([, path]) => path);
+  const fromRoot = [...text.matchAll(DOCS_PATH)]
+    .filter(({ index }) => FROM_ROOT.has(callAround(text, index)))
+    .map(([, path]) => posix.join(...path.split(/['"`]\s*,\s*['"`]/)));
   return [...fromTest, ...fromRoot].filter((path) => path.startsWith('docs/'));
 }
 
@@ -154,10 +169,20 @@ describe('isDocsOnly', () => {
     expect(read("readFileSync('docs/golden/ai-eval.md', 'utf8')")).toEqual([
       'docs/golden/ai-eval.md',
     ]);
-    // The files of a PR or of a commit, as tools/ tests give them.
+    // After calls nested in the arguments, and split into segments.
+    expect(
+      read(
+        "readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'docs/golden/ai-eval.md'))",
+      ),
+    ).toEqual(['docs/golden/ai-eval.md']);
+    expect(read("readFileSync(join(root, 'docs', 'golden', 'ai-eval.md'), 'utf8')")).toEqual([
+      'docs/golden/ai-eval.md',
+    ]);
+    // The files of a PR or of a commit, as tools/ tests give them, even after a join(…) closed.
     expect(read("isDocsOnly(['docs/reviews/x.md']); const path = 'docs/metrics/x.md';")).toEqual(
       [],
     );
+    expect(read("const dir = join(root, 'docs'); const path = 'docs/metrics/x.md';")).toEqual([]);
   });
 
   it('matches the paths filter of ci.yml, for PRs and for pushes to main', () => {
@@ -214,6 +239,17 @@ describe('isDocsOnly', () => {
       expect(await eslint.isPathIgnored('tools/pr-core.mjs')).toBe(false);
     },
   );
+});
+
+describe('pnpm verify', () => {
+  // ESLint reads no .gitignore. An e2e report left in the checkout (CI writes one, and so does
+  // unpacking an e2e-report-* artifact) would fail the lint with its bundled files.
+  it('lints none of the folders Playwright writes its report to', { timeout: 60_000 }, async () => {
+    const eslint = new ESLint({ cwd: fileURLToPath(new URL('..', import.meta.url)) });
+    for (const file of ['playwright-report/trace/assets/index.js', 'test-results/e2e/x.js']) {
+      expect({ file, eslint: await eslint.isPathIgnored(file) }).toEqual({ file, eslint: true });
+    }
+  });
 });
 
 describe('riskLevel', () => {
