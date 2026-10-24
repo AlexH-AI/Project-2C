@@ -44,10 +44,13 @@ test.describe('a browser in a time zone of its own (use.timezoneId)', () => {
 test("lint refuses Playwright's own test to every e2e file but fixtures.ts", async () => {
   test.setTimeout(60_000);
   const eslint = new ESLint({ cwd: fileURLToPath(new URL('..', import.meta.url)) });
-  const refusals = async (code: string, filePath = 'e2e/probe.spec.ts') =>
-    (await eslint.lintText(code, { filePath }))[0]!.messages.filter(
-      (message) => message.ruleId === 'no-restricted-imports',
-    ).length;
+  // What no-restricted-imports and no-restricted-syntax report, in code that parses.
+  const refusals = async (code: string, filePath = 'e2e/probe.spec.ts') => {
+    const { messages } = (await eslint.lintText(code, { filePath }))[0]!;
+    const unparsed = messages.filter((message) => message.fatal);
+    expect(unparsed, code).toEqual([]);
+    return messages.filter((message) => message.ruleId?.startsWith('no-restricted-')).length;
+  };
 
   for (const code of [
     "import { expect, test } from '@playwright/test';",
@@ -56,12 +59,27 @@ test("lint refuses Playwright's own test to every e2e file but fixtures.ts", asy
     // Its default export is `test` too.
     "import playwright from '@playwright/test';",
     "export { test } from '@playwright/test';",
+    "export * from '@playwright/test';",
   ]) {
     expect(await refusals(code), code).toBe(1);
   }
   expect(await refusals("export { test } from '@playwright/test';", 'e2e/helper.ts')).toBe(1);
+  // A dynamic import, whatever it takes: lint cannot tell its names.
+  for (const code of [
+    "const { test } = await import('@playwright/test');",
+    "export const ready = import('@playwright/test').then(({ test }) => test);",
+    'const { test } = await import(`@playwright/test`);',
+  ]) {
+    expect(await refusals(code), code).toBe(1);
+    expect(await refusals(code, 'e2e/helper.ts'), code).toBe(1);
+  }
   expect(await refusals("import { expect, type Page } from '@playwright/test';")).toBe(0);
   expect(await refusals("import { expect, test } from './fixtures';")).toBe(0);
+  expect(await refusals("const { test } = await import('./fixtures');")).toBe(0);
+  expect(await refusals("const { readFileSync } = await import('node:fs');")).toBe(0);
+  // A type, as e2e/navigation.spec.ts takes Locator: a TS import type, no import when it runs.
+  const type = "export const size = (box: import('@playwright/test').Locator) => box.count();";
+  expect(await refusals(type)).toBe(0);
   const fixtures = readFileSync(new URL('./fixtures.ts', import.meta.url), 'utf8');
   expect(await refusals(fixtures, 'e2e/fixtures.ts')).toBe(0);
 });

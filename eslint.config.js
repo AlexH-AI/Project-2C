@@ -15,6 +15,10 @@ export default tseslint.config(
       '.claude/worktrees/**',
       // CI skips docs/ (isDocsOnly in tools/pr-core.mjs), so verify does too (R2-12).
       'docs/**',
+      // The e2e report (CI writes it, an e2e-report-* artifact holds it): git ignores it, and
+      // ESLint reads no .gitignore.
+      'playwright-report/**',
+      'test-results/**',
     ],
   },
   js.configs.recommended,
@@ -66,6 +70,18 @@ export default tseslint.config(
                 "Take `test` from e2e/fixtures.ts: Playwright's own reads the machine's day.",
             },
           ],
+        },
+      ],
+      // Nor a dynamic import of it, in quotes or in backticks, whatever it takes:
+      // no-restricted-imports only reads `import` and `export … from`. A type taken by
+      // import('@playwright/test') is a TS import type, no import when the code runs.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "ImportExpression[source.value='@playwright/test'], ImportExpression[source.quasis.0.value.cooked='@playwright/test']",
+          message:
+            'Take `test` from e2e/fixtures.ts, any other name by a static import: lint cannot tell what a dynamic import takes.',
         },
       ],
     },
