@@ -2,7 +2,7 @@
 
 Bảng đối chiếu, **Owner duyệt G2 03/10/2026** (#253, PR #265). Định nghĩa: `docs/design/phase-4-chi-so.md` §2. Sau khi Owner duyệt, task cài đặt chép bảng này thành fixture `packages/domain/src/golden/*.fixture.ts` (cùng mã `K-…`, `S…`); **không sửa để "cho xanh"** — muốn đổi phải qua Owner.
 
-Mỗi KH tính **một lần**, ở nhóm của KH **tại cuối ngày mốc** (`stageOn`, ADR-0007): mốc = ngày cuối kỳ; kỳ chưa hết → hôm nay. KH chưa có lần chuyển nhóm nào tới ngày mốc (tạo sau mốc) không tính. KH đã xóa (xóa mềm) không tính ở mọi kỳ. Góc nhìn: RE **hiện tại** của KH; team = team hiện tại của RE (ADR-0007 G2 E). Tổng quan hiện 4 ô N4–N1; báo cáo thêm Tạm hoãn và Mất cơ hội.
+Mỗi KH tính **một lần**, ở nhóm của KH **tại cuối ngày mốc** (`stageSnapshot`, ADR-0007): mốc = ngày cuối kỳ; kỳ chưa hết → hôm nay. KH chưa có lần chuyển nhóm nào tới ngày mốc (tạo sau mốc) không tính. KH đã xóa (xóa mềm) không tính ở mọi kỳ. Góc nhìn: RE **hiện tại** của KH; team = team hiện tại của RE (ADR-0007 G2 E). Tổng quan hiện 4 ô N4–N1; báo cáo thêm Tạm hoãn và Mất cơ hội.
 
 ## 1. Dữ liệu kịch bản
 

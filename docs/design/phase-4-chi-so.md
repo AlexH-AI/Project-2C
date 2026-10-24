@@ -41,7 +41,7 @@ Golden: `docs/golden/lich-hen.md` A01–A13 (dời sang tuần / năm sau, xóa 
 **Quyết định Owner 01/10/2026 (ý 9), chi tiết 03/10/2026.**
 
 1. **Mốc** = ngày cuối kỳ; kỳ chưa hết → hôm nay. Kỳ chưa bắt đầu (toàn bộ sau hôm nay) → không có số ("—").
-2. Mỗi KH tính **một lần**, ở nhóm tại **cuối ngày mốc** = `stageOn(transitions, kh, mốc)` (`packages/domain/src/customer-lifecycle.ts`; nhiều lần chuyển cùng ngày lấy lần ghi sau cùng).
+2. Mỗi KH tính **một lần**, ở nhóm tại **cuối ngày mốc** = `stageAtEndOf(sortedByDate(transitions của KH), mốc)` (`packages/domain/src/customer-lifecycle.ts`; nhiều lần chuyển cùng ngày lấy lần ghi sau cùng; đếm bằng `stageSnapshot` của `packages/domain/src/stage-snapshot.ts`).
 3. KH tạo **sau** mốc (chưa có lần chuyển nhóm nào tới mốc) → không tính. KH tạo trong kỳ → tính.
 4. KH đóng (Tạm hoãn / Mất cơ hội) hay mở lại trong kỳ → tính theo nhóm ở mốc.
 5. KH đã xóa → không tính ở mọi kỳ.
