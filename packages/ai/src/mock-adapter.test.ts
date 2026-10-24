@@ -492,6 +492,69 @@ describe('createMockAdapter', () => {
     expect(await extracted(note)).toEqual(facts);
   });
 
+  it.each([
+    // "thì / :" and "chưa / không" right after a phrase say it is not so, however the clause goes on.
+    'KH đã kết hôn thì chưa, mới có người yêu.',
+    'Đã kết hôn thì chưa, KH mới đính hôn.',
+    'KH độc thân thì không.',
+    'Độc thân thì không, KH đã có vợ.',
+    'Có 2 con thì chưa, KH mới có 1 con.',
+    'KH có 2 con thì không, chỉ có 1 con.',
+    'KH đã kết hôn thì không đúng.',
+    'Đã kết hôn: chưa rõ.',
+    // Ending a clause, they say so of its topic, which holds the phrase.
+    'KH đã kết hôn chính thức thì chưa.',
+    'KH độc thân thật thì không.',
+    'KH có 2 con riêng thì chưa nhé.',
+    'KH đã kết hôn chính thức: chưa.',
+    // "màu" is not "mà": no other topic starts there.
+    'KH có 2 con riêng màu da khác thì không.',
+    // "KH" not opening its clause is someone's, or an object, not the subject.
+    'Người thụ hưởng của KH là người đã kết hôn.',
+    'Đối tác của KH là người độc thân.',
+    'Người yêu của KH là người độc thân.',
+    'Người giới thiệu KH là người độc thân.',
+    'Người yêu của KH đã có vợ và 2 con.',
+    'Người yêu của KH là đàn ông, đã kết hôn.',
+    // A couple someone lives with or has is not the KH's own, whether "KH" opens the clause or not.
+    'KH sống cùng vợ chồng anh Nam, đã kết hôn.',
+    'Hiện KH đang có vợ chồng anh Nam, có 2 con.',
+    'Khách mới ở với vợ chồng anh Nam, có 2 con.',
+  ])(
+    'proposes nothing from %j: said not to be, or of someone else (the review of PR #809)',
+    async (note) => {
+      expect(await extracted(note)).toEqual([]);
+    },
+  );
+
+  it.each([
+    // An answer ending a clause says nothing of what stands before its topic.
+    ['KH đã kết hôn mà bảo hiểm thì chưa.', [MARRIED]],
+    ['KH có 2 con còn bảo hiểm thì chưa.', [TWO]],
+    ['KH đã kết hôn, có 2 con, bệnh nền: không.', [MARRIED, TWO]],
+    ['KH độc thân, nợ: không.', [SINGLE]],
+    ['KH độc thân, nợ:không.', [SINGLE]],
+    // Inside a clause, "thì không" after more words is no answer.
+    ['KH đã kết hôn hai năm thì không có con.', [MARRIED]],
+    // The KH opening its clause after a bullet, a number or "Hiện…", or with a word before "là".
+    ['- KH đã có vợ và 2 con.', [TWO]],
+    ['1) KH đã có vợ và 2 con.', [TWO]],
+    ['Hiện KH đã có vợ và 2 con.', [TWO]],
+    ['Theo chị Lan, hiện KH đã có vợ và 2 con.', [TWO]],
+    ['Hiện tại KH là đàn ông, đã kết hôn.', [MARRIED]],
+    ['Hiện nay KH là người độc thân.', [SINGLE]],
+    ['KH hiện là người độc thân.', [SINGLE]],
+  ])('reads %j as %j (the review of PR #809)', async (note, facts) => {
+    expect(await extracted(note)).toEqual(facts);
+  });
+
+  it.each(['.', '!', '?', ';', ',', ':', '\n'])(
+    'reads the KH opening a clause after %j as its subject (the review of PR #809)',
+    async (mark) => {
+      expect(await extracted(`Gặp KH${mark} KH là người độc thân.`)).toEqual([SINGLE]);
+    },
+  );
+
   // Narrow on purpose (CX-A4): the children named first stand for the people after them in the
   // sentence, so "KH có 2 con, đã kết hôn." cannot be told from "KH có 2 con, cả hai đã kết hôn.".
   it.each([
@@ -652,6 +715,8 @@ describe('createMockAdapter', () => {
     ['"KH có vợ và", then "độc thân"', `${'KH có vợ và '.repeat(3000)}độc thân`],
     ['"đã" between "KH" and "có vợ"', `KH${' đã'.repeat(12_000)} có vợ và 2 con`],
     ['"chưa" and spaces', `KH đã kết hôn chưa${' '.repeat(36_000)}, có 2 con`],
+    // The look back for the start of a clause, from "KH" over a long bullet (the review of PR #809).
+    ['"- ", then "KH là người độc thân"', `${'- '.repeat(18_000)}KH là người độc thân`],
   ])('reads a one-line note of 36 000 characters full of %s in under 50 ms', async (_, note) => {
     const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
     const times: number[] = [];

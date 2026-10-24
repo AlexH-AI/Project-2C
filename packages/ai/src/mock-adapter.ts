@@ -95,20 +95,43 @@ const NOT_PLANNED = String.raw`(?<!${PLANNING})`;
 const NOT_PLANNED_CHILDREN = String.raw`(?<!${PLANNING}(?:có|sinh|đẻ|nhận nuôi) (?:thêm |được )?)`;
 
 /**
+ * "KH" opening its clause, maybe after "Hiện / Hiện tại / Hiện nay", and up to two of "đã / đang /
+ * hiện / vừa / mới / sống / ở": the KH the subject of what follows ("KH đã", "KH đang sống", "Hiện
+ * KH có", "Theo chị Lan, KH là", "- KH có"), not someone's nor an object ("Người yêu của KH đã
+ * có", "Người giới thiệu KH là", the review of PR #809). Its clause ends at a mark of `CLAUSE_END`
+ * or at ":". Up to two, and one space between the words as a note is stored and as "anh trai" is
+ * read, not `\s+`: these lookbehinds are tried at every place of a sentence, and one reading a run
+ * of spaces back took a second for 36 000 of them (the review of PR #753). The look back for the
+ * start of the clause is tried only where "KH" stands, and lazy: it stops at the first letter.
+ */
+const KH_SUBJECT = String.raw`(?<!\p{L}[^.!?;,:\n]*?)(?:[Hh]iện(?: tại| nay)? )?KH(?: (?:đã|đang|hiện|vừa|mới|sống|ở)){0,2}`;
+
+/**
  * Not of anyone: "người" right before a phrase says it of anyone ("gói cho người đã kết hôn",
  * DR6-121), but in the KH's own "KH là người độc thân" (T-289).
  */
-const NOT_OF_ANYONE = String.raw`(?<!(?<!(?<!\p{L})KH là )(?<!\p{L})người )`;
+const NOT_OF_ANYONE = String.raw`(?<!(?<!${KH_SUBJECT} là )(?<!\p{L})người )`;
 
 /**
- * Not asked: no "chưa", "không" or "hay" right after the phrase, however its clause goes on ("KH đã
- * kết hôn chưa nhé", "có 2 con không nhỉ", "đã kết hôn hay còn độc thân", T-289).
+ * "thì" or ":" right before "chưa / không": an answer, saying that what stands before it is not so
+ * ("KH độc thân thì không", "Đã kết hôn: chưa", "nợ: không"), not a question (the review of PR
+ * #809).
  */
-const NOT_ASKED = String.raw`(?!\s+(?:chưa|không|hay)(?!\p{L}))`;
+const ANSWERED = String.raw`(?:(?<!\p{L})thì |: ?)`;
+
+/**
+ * Not asked nor said not to be: no "chưa", "không" or "hay" right after the phrase, however its
+ * clause goes on ("KH đã kết hôn chưa nhé", "có 2 con không nhỉ", "đã kết hôn hay còn độc thân",
+ * T-289), nor an answer ("KH đã kết hôn thì không đúng", "Đã kết hôn: chưa rõ").
+ */
+const NOT_ASKED = String.raw`(?!(?:\s*${ANSWERED}|\s+)(?:chưa|không)(?!\p{L})|\s+hay(?!\p{L}))`;
 
 /** A wife or a husband, and people the KH knows. */
 const SPOUSE = 'vợ|chồng';
 const KNOWN = 'bạn|sếp|hàng xóm|người quen|đồng nghiệp|người thân|họ hàng';
+
+/** What makes the wife or husband after it someone's own: "có vợ", "sống cùng chồng", "cưới vợ". */
+const WITH_PARTNER = 'có|cùng|với|lấy|cưới|kết hôn với';
 
 /**
  * Someone other than the KH: named before a phrase in its sentence, the phrase is about them
@@ -135,29 +158,23 @@ const SOMEONE_ELSE = new RegExp(
 /**
  * Words of `PEOPLE` that name no one else, anywhere and in any case: inside a word that holds a kin
  * word ("bác sĩ", "cô giáo", "cô đơn", "chú ý", "chú trọng", "ghi chú"), in the heading "Chú
- * thích:" and in the couple, the KH one of them ("vợ chồng", "KH và vợ").
+ * thích:" and in the couple, the KH one of them ("vợ chồng", "KH và vợ"). Not a couple someone
+ * lives with or has (`WITH_PARTNER`): "KH sống cùng vợ chồng anh Nam" names them (the review of PR
+ * #809). So none of these words is one of `OWN_PARTNER`, and which is read first does not matter.
  */
 const NAMES_NO_ONE = new RegExp(
-  String.raw`(?<!\p{L})(?:bác sĩ|cô giáo|cô đơn|chú ý|chú trọng|ghi chú|chú thích(?=:)|vợ chồng|(?<=và )(?:${SPOUSE}))(?!\p{L})`,
+  String.raw`(?<!\p{L})(?:bác sĩ|cô giáo|cô đơn|chú ý|chú trọng|ghi chú|chú thích(?=:)|(?<!(?:${WITH_PARTNER}) )vợ chồng|(?<=và )(?:${SPOUSE}))(?!\p{L})`,
   'giu',
 );
-
-/**
- * "KH" and up to two of "đã / đang / hiện / vừa / mới / sống / ở": the KH the subject of what
- * follows ("KH đã", "KH đang sống"). Up to two, and one space between the words as a note is stored
- * and as "anh trai" is read, not `\s+`: these lookbehinds are tried at every place of a sentence,
- * and one reading a run of spaces back took a second for 36 000 of them (the review of PR #753).
- */
-const KH_SUBJECT = String.raw`(?<!\p{L})KH(?: (?:đã|đang|hiện|vừa|mới|sống|ở)){0,2}`;
 
 /**
  * The KH's own wife or husband ("KH đã có vợ", "KH sống cùng chồng", "KH cưới vợ"), not someone
  * else's ("vợ của anh Nam"), and a friend the KH marries ("KH kết hôn với bạn", "KH lấy đồng
  * nghiệp"). Only right after the KH (T-289): "Khách mới có vợ…", "KH giới thiệu anh Nam, có vợ…",
- * "KH đi dự cưới bạn…" say it of someone else.
+ * "KH đi dự cưới bạn…", "Người yêu của KH đã có vợ…" say it of someone else.
  */
 const OWN_PARTNER = [
-  String.raw`(?<=${KH_SUBJECT} (?:có|cùng|với|lấy|cưới|kết hôn với) )(?:${SPOUSE})(?! của(?!\p{L}))`,
+  String.raw`(?<=${KH_SUBJECT} (?:${WITH_PARTNER}) )(?:${SPOUSE})(?! của(?!\p{L}))`,
   String.raw`(?<=${KH_SUBJECT} (?:lấy|cưới|kết hôn với) )(?:${KNOWN})`,
 ].join('|');
 
@@ -274,13 +291,26 @@ const NEGATED = /(?<!\p{L})(?:không|chưa|chẳng)(?!\p{L})/iu;
  */
 const GUESSED = /(?<!\p{L})(?:có lẽ|hình như|nghe nói|chắc là|có vẻ|dường như)(?!\p{L})|\?/iu;
 
+/** "chưa" or "không", maybe with "nhé / nhỉ / ạ" after it, ending its clause. */
+const NOT_YET = String.raw`(?:chưa|không)(?:\s+(?:nhé|nhỉ|ạ))?(?=[^\p{L}\p{N}]*?(?:,|$))`;
+
 /**
- * A clause ending in "chưa" or "không", maybe with "nhé / nhỉ / ạ" after it, asks what stands before
- * it in its sentence: "KH đã kết hôn chưa.", "Cần hỏi KH đã kết hôn, có con chưa." (T-289). Not
- * after "thì", which says what is not done yet: "KH có 2 con nhưng bảo hiểm thì chưa.".
+ * A clause ending in `NOT_YET` asks what stands before it in its sentence: "KH đã kết hôn chưa.",
+ * "Cần hỏi KH đã kết hôn, có con chưa." (T-289). Not an answer, which says so of its topic only
+ * (`DENIED`).
  */
-const ASKED =
-  /(?<!\p{L})(?<!(?<!\p{L})thì )(?:chưa|không)(?:\s+(?:nhé|nhỉ|ạ))?(?=[^\p{L}\p{N}]*?(?:,|$))/giu;
+const ASKED = new RegExp(String.raw`(?<!\p{L})(?<!${ANSWERED})${NOT_YET}`, 'giu');
+
+/**
+ * A clause ending in an answer says that its topic is not so: what stands before the answer in the
+ * clause, from after a "nhưng / mà / còn" there (`BUT`). "KH đã kết hôn chính thức thì chưa." and
+ * "KH có 2 con riêng: không." say it of the phrase; "KH có 2 con nhưng bảo hiểm thì chưa." and "KH
+ * độc thân, nợ: không." of something else (the review of PR #809).
+ */
+const DENIED = new RegExp(`${ANSWERED}${NOT_YET}`, 'giu');
+
+/** What starts another topic in a clause, the one an answer at its end speaks of. */
+const BUT = /(?<!\p{L})(?:nhưng|mà|còn)(?!\p{L})/giu;
 
 /** "hay" before a phrase in its clause: the other way it may be ("đã kết hôn hay còn độc thân"). */
 const EITHER = /(?<!\p{L})hay(?!\p{L})/iu;
@@ -380,6 +410,8 @@ function readClause(clause: Part) {
     either: firstEnd(EITHER, clause),
     partner: firstEnd(PARTNER_FIRST, clause),
     wished: firstEnd(WISHED, clause),
+    topicAfter: lastStart(BUT, clause),
+    deniedUntil: lastStart(DENIED, clause),
   };
 }
 
@@ -388,8 +420,9 @@ function readClause(clause: Part) {
  * order: no one else named and no supposition before it in its sentence ("Em trai KH còn độc
  * thân", "KH có một con trai đang sống độc thân"), no guess or "khi … thì" around it there and no
  * question after it ("KH đã kết hôn chưa."), no negation, other way, partner or wish before it in
- * its clause ("KH không có 2 con", "KH lấy chồng đã có 2 con riêng", "KH muốn có 2 con"). Narrow,
- * as the patterns are. `unwished`: what the wish is for, not the wish.
+ * its clause ("KH không có 2 con", "KH lấy chồng đã có 2 con riêng", "KH muốn có 2 con") and not
+ * in the topic of an answer ending it ("KH có 2 con riêng thì chưa."). Narrow, as the patterns
+ * are. `unwished`: what the wish is for, not the wish.
  */
 function aboutTheKh(
   sentence: Reader,
@@ -409,6 +442,7 @@ function aboutTheKh(
       inClause.negated <= at ||
       inClause.either <= at ||
       inClause.partner <= at ||
+      (inClause.topicAfter < at && at < inClause.deniedUntil) ||
       (inClause.wished <= at && !unwished)
     );
   };
