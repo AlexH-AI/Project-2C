@@ -14,7 +14,7 @@ Mockup lớn có **mục lục ở comment đầu file** (khối → neo `#id` �
 | `customers.html` | `customers/CustomersScreen.tsx` (+ `customers-view.ts`) | Vòng 2, 26/09/2026 | ADR-0007; `docs/golden/kh-theo-nhom.md` |
 | `customer.html` | `customers/CustomerProfile.tsx`, `CustomerKyc.tsx`, `CustomerPolicies.tsx`, `CustomerAppointments.tsx` | Vòng 2, 26/09/2026; panel KYC Intelligence, mã F, nút trích xuất cập nhật ở Phase 5 (#427, duyệt 08/10/2026) | ADR-0008; `docs/golden/kyc.md`; `phase-5-ai.md` §9.1 |
 | `customer-forms.html` | `customers/CustomerDialogs.tsx` | #59, vòng 2 | `docs/design/phase-3-du-lieu.md` §3.3, §4 |
-| `appointment-forms.html` | `appointments/AppointmentDialog.tsx`, `OutcomeDialog.tsx`, `EditOutcomeDialog.tsx`, `RescheduleDialog.tsx`, `DeleteAppointmentDialog.tsx` | #59, vòng 2 | `phase-3-du-lieu.md` §3.5, §4 |
+| `appointment-forms.html` | `appointments/AppointmentDialog.tsx`, `OutcomeDialog.tsx`, `EditOutcomeDialog.tsx`, `RescheduleDialog.tsx`, `DeleteAppointmentDialog.tsx` | #59, vòng 2; ô khóa 6f giữ viền đứt `--border-strong`, ngoài phạm vi `--border-control` (câu ngoài phạm vi ở `index.html#contrast`): T-303 #797, duyệt 24/10/2026 (PR #811) | `phase-3-du-lieu.md` §3.5, §4 |
 | `kyc-forms.html` | `customers/KycDialogs.tsx` (+ `kyc-view.ts`) | #59, vòng 2 | `phase-3-du-lieu.md` §3.8–3.10, §4; ADR-0008 |
 | `policy-forms.html` | `customers/PolicyDialogs.tsx` (+ `policy-form.ts`) | #59, vòng 2; 8d dời tháng (dòng số HĐ, `#p8d-month`): T-284 #773, duyệt 23/10/2026 (PR #795) | `phase-3-du-lieu.md` §3.7, §4 |
 | `team.html` | `team/TeamScreen.tsx`, `TeamDialogs.tsx`, `PersonDialogs.tsx` | #59, vòng 2 | `phase-3-du-lieu.md` §3.1, §3.2 |
@@ -24,7 +24,7 @@ Mockup lớn có **mục lục ở comment đầu file** (khối → neo `#id` �
 | `trash.html` (11a–11j) | Cài đặt → Thùng rác (`#/settings/trash`): `SettingsTrash.tsx` (+ `trash-view.ts`, `RestoreDialog.tsx`); 11f → hộp Xóa KH trong `customers/CustomerDialogs.tsx`; 11g → câu lỗi khóa ghi khi thay dữ liệu; 11h–11j → dọn sạch Thùng rác (#662) | #520, duyệt 11/10/2026; dọn sạch (11h–11j, sửa 11a, 11f): #662, duyệt 19/10/2026 (PR #707) | `docs/design/phase-6-hoan-thien.md` §4.1, §4.2 |
 | `table-more.html` | Bảng lớn của `packages/ui` `DataTable` (Lịch hẹn, Khách hàng, hồ sơ KH, Team) | Chờ duyệt (T-150) | `docs/reviews/2026-10-06-deep-review-phase-1-4-tong-hop.md` DR-03, §11.3 |
 
-`mockups.css` dùng chung cho mọi mockup; `forms.css` thêm cho các mockup hộp thoại (`*-forms.html`, `team.html`, `settings-data.html`). Viền ô nhập (`.input`, `.select`, `.search`) và mũi tên sắp xếp chưa chọn (`th.sort`) dùng token `--border-control` (T-284).
+`mockups.css` dùng chung cho mọi mockup; `forms.css` thêm cho các mockup hộp thoại (`*-forms.html`, `team.html`, `settings-data.html`). Viền ô nhập (`.input`, `.select`, `.search`) và mũi tên sắp xếp chưa chọn (`th.sort`) dùng token `--border-control` (T-284); ô khóa `.input.locked` giữ viền đứt `--border-strong` (T-303).
 
 ## Khối của mockup lớn
 

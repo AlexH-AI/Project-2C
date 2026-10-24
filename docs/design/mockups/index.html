@@ -275,7 +275,7 @@
           </tbody>
         </table>
         <p class="lead" style="font-size: var(--fs-sm)">
-          <code>--border-control</code> trên <code>--bg-0</code> / <code>-1</code> / <code>-2</code> / <code>-3</code>: 4,25 · 3,97 · 3,61 · 3,15 (thấp nhất: ruột bg-3 của <code>.input</code> trong mockup). Mockup dùng token mới ở <code>.input</code>, <code>.select</code>, <code>.search</code> và mũi tên <code>th.sort</code>. Ngoài phạm vi: nút, ô chọn, Segmented có chữ nên viền không bắt buộc 3:1; ô tick là checkbox gốc do trình duyệt vẽ.
+          <code>--border-control</code> trên <code>--bg-0</code> / <code>-1</code> / <code>-2</code> / <code>-3</code>: 4,25 · 3,97 · 3,61 · 3,15 (thấp nhất: ruột bg-3 của <code>.input</code> trong mockup). Mockup dùng token mới ở <code>.input</code>, <code>.select</code>, <code>.search</code> và mũi tên <code>th.sort</code>. Ngoài phạm vi: nút, <code>Choices</code>, <code>Segmented</code> có chữ nên viền không bắt buộc 3:1; ô tick là checkbox gốc do trình duyệt vẽ; ô khóa (<code>.input.locked</code>, hộp 6f) không thao tác được nên WCAG 1.4.11 không đòi 3:1, giữ viền đứt <code>--border-strong</code> như bảng token ghi cho viền đứt (T-303 #797, duyệt 24/10/2026, PR #811).
         </p>
         <div class="ba">
           <div class="ba-col before">
