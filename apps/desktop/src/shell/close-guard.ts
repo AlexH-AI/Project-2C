@@ -15,7 +15,8 @@ export interface ClosePort {
 
 /**
  * Runs when the user closes the exe window (T-057): saves what is still waiting or failed
- * first, and never closes over unsaved changes without asking.
+ * first, the new data of a replace still running too (review of PR 125), and never closes over
+ * unsaved changes without asking.
  */
 export async function closeAfterSaving(
   saves: Pick<PersistQueue, 'flush'>,

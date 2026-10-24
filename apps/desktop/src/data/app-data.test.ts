@@ -869,7 +869,7 @@ describe('replacing the data (S-2)', () => {
     expect(read.map((preview) => preview.counts.teams)).toEqual([OLD.length, OLD.length, 1]);
   });
 
-  it('closing the app at any step of a replace leaves a whole file of the old or the new data (S2-6)', async () => {
+  it('closing the app at any step of a replace waits for it, leaving the new data whole (S2-6, review of PR 125)', async () => {
     const { app, storage, saves } = await exe();
     const backup = holdBackup(storage);
     const lastFile = async () => {
@@ -887,7 +887,7 @@ describe('replacing the data (S-2)', () => {
     await reloading;
     files.push(lastFile());
 
-    expect(await Promise.all(files)).toEqual([OLD, OLD, NEW, NEW]);
+    expect(await Promise.all(files)).toEqual([NEW, NEW, NEW, NEW]);
   });
 });
 
@@ -1086,42 +1086,62 @@ describe('the data file card', () => {
     await app.saves.idle();
     expect(app.saves.failed()).toBe(true);
     expect(app.lastSave()).toBe(first);
-    expect(listener).not.toHaveBeenCalled();
 
     await app.saves.flush();
     expect(app.lastSave()).toEqual({ at: now, size: saves[1]!.byteLength });
-    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalled();
   });
 
-  it('keeps why the last save failed until a save succeeds, and tells subscribers (DR6-07)', async () => {
+  it('keeps why the last save failed, as the storage said it, until a save succeeds (DR6-07)', async () => {
     const { storage, saves } = memoryStorage();
     const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
     await app.saves.idle();
-    expect(app.saveError()).toBeUndefined();
-    const listener = vi.fn();
-    app.subscribeSaveError(listener);
+    expect(app.saves.status().error).toBeUndefined();
     const save = storage.save;
     // What Rust answers a save that found the disk full.
     storage.save = () => Promise.reject('DISK_FULL');
 
     createTeam(app.db(), { name: 'Sao Mai' });
     await app.saves.idle();
-    expect(app.saves.failed()).toBe(true);
-    expect(app.saveError()).toBe('DISK_FULL');
-    expect(listener).toHaveBeenCalledTimes(1);
-
-    // Failing again for another reason while still unsaved: the warning must follow.
-    storage.save = () => Promise.reject('Access is denied. (os error 5)');
-    await app.saves.flush().catch(() => undefined);
-    expect(app.saveError()).toBe('Access is denied. (os error 5)');
-    expect(listener).toHaveBeenCalledTimes(2);
+    expect(app.saves.status()).toMatchObject({ failed: true, error: 'DISK_FULL' });
 
     storage.save = save;
     await app.saves.flush();
-    expect(app.saves.failed()).toBe(false);
-    expect(app.saveError()).toBeUndefined();
-    expect(listener).toHaveBeenCalledTimes(3);
+    expect(app.saves.status()).toMatchObject({ failed: false, error: undefined });
     expect(saves).toHaveLength(2);
+  });
+
+  it('counts a replace as saving until the new data is saved, so a flush waits for it (review of PR 125)', async () => {
+    const { storage, saves } = memoryStorage();
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+    app.run((db) => createTeam(db, { name: 'Hừng Đông' }));
+    await app.saves.idle();
+    const held = holdBackup(storage);
+
+    // As closing the window does while Nạp lại still backs up, then seeds.
+    const reloading = app.reloadDemoData();
+    expect(app.saves.status().saving).toBe(true);
+    const flushed = app.saves.flush();
+    await held.started;
+    expect(app.saves.status().saving).toBe(true);
+    held.release();
+    await flushed;
+
+    expect(teamNames(await openDatabase({ bytes: saves.at(-1) }))).toEqual(['Seed 27/09/2026']);
+    await reloading;
+    expect(app.saves.status().saving).toBe(false);
+  });
+
+  it('stops counting a refused replace as saving', async () => {
+    const { storage, failSave } = memoryStorage();
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+    await app.saves.idle();
+    failSave();
+    app.run((db) => createTeam(db, { name: 'Hừng Đông' }));
+    await app.saves.idle();
+
+    await expect(app.purgeTrash()).rejects.toSatisfy(isUnsavedChangesError);
+    expect(app.saves.status()).toMatchObject({ saving: false, failed: true });
   });
 
   it('has no last save in web mode', async () => {

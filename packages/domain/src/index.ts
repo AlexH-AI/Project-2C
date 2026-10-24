@@ -19,6 +19,7 @@ export {
   formatIsoDate,
   formatLocalDateTime,
   formatLocalDayMonthTime,
+  formatLocalTime,
   formatPeriodValue,
   fromIsoDate,
   fromLocalDate,

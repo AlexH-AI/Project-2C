@@ -15,12 +15,13 @@ export interface AppWindow {
 }
 
 /**
- * Exe only (T-057): closing the window first saves what is still waiting, and asks before
+ * Exe only (T-057): closing the window first saves what is still waiting, a replace of the data
+ * included (`flush`, review of PR 125), while the sidebar says "Đang lưu…"; and asks before
  * dropping changes the last save could not write.
  */
 export function CloseGuard({ appWindow }: { appWindow: AppWindow }) {
-  const { saves, saveError, subscribeSaveError } = useAppData();
-  const error = useSyncExternalStore(subscribeSaveError, saveError);
+  const { saves } = useAppData();
+  const { error } = useSyncExternalStore(saves.subscribe, saves.status);
   const [answer, setAnswer] = useState<((choice: CloseChoice) => void) | null>(null);
 
   useEffect(() => {

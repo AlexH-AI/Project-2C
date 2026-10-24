@@ -127,12 +127,15 @@ export async function asExe(page: Page) {
     let closeHandler: number | undefined;
     let backupGate: Promise<void> | undefined;
     let releaseBackup = () => {};
+    let saveGate: Promise<void> | undefined;
+    let releaseSaves = () => {};
     let aiGate: Promise<void> | undefined;
     let releaseAi = () => {};
     let key: string | null = null;
     const exe = {
       failSaves: false as boolean | string,
       destroyed: false,
+      events: [] as string[],
       title: null as string | null,
       aiCalls: [] as Record<string, unknown>[],
       keysSet: [] as string[],
@@ -145,6 +148,10 @@ export async function asExe(page: Page) {
         backupGate = new Promise((resolve) => (releaseBackup = resolve));
       },
       releaseBackup: () => releaseBackup(),
+      holdSaves() {
+        saveGate = new Promise((resolve) => (releaseSaves = resolve));
+      },
+      releaseSaves: () => releaseSaves(),
       holdAi() {
         aiGate = new Promise((resolve) => (releaseAi = resolve));
       },
@@ -156,14 +163,17 @@ export async function asExe(page: Page) {
     };
     const commands: Record<string, (args: Record<string, unknown>) => unknown> = {
       db_open: () => new ArrayBuffer(0),
-      db_save: () => {
+      db_save: async () => {
+        await saveGate;
         // Rust rejects with the message of the error: a code it tells apart, or Windows' own.
         if (exe.failSaves === true) throw 'Access is denied. (os error 5)';
         if (exe.failSaves) throw exe.failSaves;
+        exe.events.push('save');
         return null;
       },
       db_backup: async () => {
         await backupGate;
+        exe.events.push('backup');
         return 'project2c-20260915-0930.db';
       },
       db_latest_backup: () => null,
@@ -199,6 +209,7 @@ export async function asExe(page: Page) {
       'plugin:event|unlisten': () => null,
       'plugin:window|destroy': () => {
         exe.destroyed = true;
+        exe.events.push('destroy');
         return null;
       },
       'plugin:window|set_title': (args) => {
@@ -235,6 +246,8 @@ interface Exe {
    */
   failSaves: boolean | string;
   destroyed: boolean;
+  /** In order: each `save` and `backup` that succeeded, and the `destroy` of the window. */
+  events: string[];
   /** The title bar, as the last `setTitle` named the window; `null` until then. */
   title: string | null;
   /** The arguments of each `ai_complete`. */
@@ -253,6 +266,9 @@ interface Exe {
   chatGptOpened: number;
   holdBackup(): void;
   releaseBackup(): void;
+  /** Holds every `db_save` until `releaseSaves`, as a slow disk would; `failSaves` is read then. */
+  holdSaves(): void;
+  releaseSaves(): void;
   /** Holds every `ai_complete` until `releaseAi`, as a request still running in Rust. */
   holdAi(): void;
   releaseAi(): void;

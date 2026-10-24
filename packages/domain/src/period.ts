@@ -105,6 +105,11 @@ export function formatLocalDayMonthTime(at: Date): string {
   return `${formatDayMonth(fromLocalDate(at))} ${localTime(at)}`;
 }
 
+/** `HH:MM` of a moment in the local time zone whose day is clear from context (the last save). */
+export function formatLocalTime(at: Date): string {
+  return localTime(at);
+}
+
 /**
  * `YYYY-MM-DD`: how a day is stored (spec Phase 3 §2), and file names that sort by day. Throws a
  * RangeError for a day `calendarDate` refuses.

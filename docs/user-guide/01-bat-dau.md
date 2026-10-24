@@ -33,7 +33,19 @@ Bản web không có thư mục này: dữ liệu chỉ nằm trong trình duy�
 
 ## App tự lưu
 
-Không có nút Lưu chung. Mỗi lần bạn bấm lưu trong một hộp (Lưu KH, Lưu kết quả, Lưu HĐ…), thay đổi được ghi ngay vào file dữ liệu. Thời điểm lưu gần nhất hiện ở **Cài đặt → Dữ liệu**, dòng "Lưu lần cuối".
+Không có nút Lưu chung. Mỗi lần bạn bấm lưu trong một hộp (Lưu KH, Lưu kết quả, Lưu HĐ…), thay đổi được ghi ngay vào file dữ liệu.
+
+Chân sidebar, ở mọi màn, cho biết trạng thái lưu (bản exe):
+
+| Chỉ báo | Nghĩa |
+|---|---|
+| **Đã lưu 07:42** (chấm xanh) | Mọi thay đổi đã nằm trong file; giờ là lần lưu gần nhất. Mới mở app, chưa thay đổi gì thì chỉ ghi **Đã lưu**: file đúng là dữ liệu đang hiện |
+| **Đang lưu…** (chấm xám) | App đang ghi vào file, hoặc đang nạp lại dữ liệu giả lập, nhập backup hay dọn sạch Thùng rác |
+| **Chưa lưu được vào file** (chữ đỏ) | Lần lưu gần nhất bị lỗi, xem [Khi app chưa lưu được](#khi-app-chưa-lưu-được-bản-exe) |
+
+Bản web ghi "Bản web — dữ liệu chỉ trong trình duyệt, mất khi tải lại trang". Giờ và cỡ file của lần lưu gần nhất cũng hiện ở **Cài đặt → Dữ liệu**, dòng "Lưu lần cuối".
+
+Đóng app lúc sidebar ghi "Đang lưu…" thì app chờ lưu xong rồi mới đóng, kể cả khi đang nạp lại, nhập backup hay dọn sạch Thùng rác: dữ liệu mới vào file đủ.
 
 ### Khi app chưa lưu được (bản exe)
 
@@ -53,9 +65,11 @@ Nếu thư mục `Project2C-data` không còn cho tài khoản Windows đang dù
 
 > Chưa lưu được dữ liệu vào file: thư mục Project2C-data không cho tài khoản Windows đang dùng tạo file mới trong đó. Hãy nhờ người quản trị máy cấp lại quyền ghi vào thư mục đó. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.
 
-Bạn vẫn làm tiếp được; app thử lưu lại ở lần thay đổi sau và dải cảnh báo tự mất khi lưu được.
+Bạn vẫn làm tiếp được; app thử lưu lại ở lần thay đổi sau và dải cảnh báo tự mất khi lưu được. Xử lý xong nguyên nhân thì bấm **Thử lại** ở cuối dải để lưu ngay: lưu được thì dải mất và sidebar ghi "Đã lưu …"; vẫn lỗi thì dải ở lại, câu theo nguyên nhân của lần thử này.
 
-Nếu bạn đóng app lúc còn thay đổi chưa lưu, app hiện hộp **"Chưa lưu được thay đổi"**, với câu theo nguyên nhân như ở dải cảnh báo:
+Trong lúc lần lưu gần nhất còn lỗi, app không nhập backup, không nạp lại dữ liệu giả lập và không dọn sạch Thùng rác, vì bản backup làm trước đó sẽ thiếu các thay đổi chưa lưu. Câu báo chỉ tới nút **Thử lại**: lưu được rồi thì làm lại.
+
+Nếu bạn đóng app lúc còn thay đổi chưa lưu được, app hiện hộp **"Chưa lưu được thay đổi"**, với câu theo nguyên nhân như ở dải cảnh báo:
 
 - Xử lý nguyên nhân rồi bấm **Thử lại**: đóng chương trình đang giữ file, hoặc xóa bớt file trên ổ đầy, hoặc bỏ chế độ chỉ đọc / cấp lại quyền cho file hay thư mục. App lưu rồi mới đóng (nếu vẫn chưa lưu được, hộp hiện lại).
 - **Đóng và bỏ thay đổi chưa lưu**: đóng app, các thay đổi chưa ghi vào file sẽ mất.

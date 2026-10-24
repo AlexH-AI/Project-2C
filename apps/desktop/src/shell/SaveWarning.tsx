@@ -1,4 +1,5 @@
-import { useSyncExternalStore } from 'react';
+import { useSyncExternalStore, type RefObject } from 'react';
+import { Button } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import { saveFailure, type SaveFailure } from '../data/tauri-storage';
 import { t, type MessageKey } from '../i18n';
@@ -18,19 +19,46 @@ export const SAVE_FAILED = {
   other: { banner: 'storage.saveFailed', close: 'close.unsavedBody' },
 } as const satisfies Record<SaveFailure, { banner: MessageKey; close: MessageKey }>;
 
-/** Shown while the last save to the database file failed; the next save retries (spec §5). */
-export function SaveWarning() {
-  const { saves, saveError, subscribeSaveError } = useAppData();
-  const failed = useSyncExternalStore(saves.subscribe, saves.failed);
-  const error = useSyncExternalStore(subscribeSaveError, saveError);
-  return failed ? <SaveFailed error={error} /> : null;
+/**
+ * Shown while the last save to the database file failed; the next save retries (spec §5), and
+ * "Thử lại" writes what the app holds at once (mockup settings-data). A retry that saves takes the
+ * warning away with its button: the focus goes to the screen's heading, the next thing on the page,
+ * unless it moved on meanwhile.
+ */
+export function SaveWarning({ heading }: { heading: RefObject<HTMLElement | null> }) {
+  const { saves } = useAppData();
+  const { failed, error } = useSyncExternalStore(saves.subscribe, saves.status);
+  if (!failed) return null;
+  const retry = (button: HTMLButtonElement) => {
+    saves.flush().then(
+      () => {
+        const focused = document.activeElement;
+        if (focused === button || focused === document.body) heading.current?.focus();
+      },
+      // Failed again: the warning stays, saying the cause of this try.
+      () => undefined,
+    );
+  };
+  return <SaveFailed error={error} onRetry={retry} />;
 }
 
-/** The warning for the storage's `error`, by its cause (see `SAVE_FAILED`). */
-export function SaveFailed({ error }: { error: unknown }) {
+/** The warning for the storage's `error`, by its cause (see `SAVE_FAILED`), with "Thử lại". */
+export function SaveFailed({
+  error,
+  onRetry,
+}: {
+  error: unknown;
+  onRetry: (button: HTMLButtonElement) => void;
+}) {
   return (
-    <div role="alert" className="border-b border-warn bg-surface-0 px-6 py-2.5 text-sm text-warn">
-      {t(SAVE_FAILED[saveFailure(error)].banner)}
+    <div
+      role="alert"
+      className="flex items-center gap-3 border-b border-warn bg-surface-0 px-6 py-2.5 text-sm text-warn"
+    >
+      <span className="min-w-0 flex-1">{t(SAVE_FAILED[saveFailure(error)].banner)}</span>
+      <Button className="px-2 py-0.5" onClick={(event) => onRetry(event.currentTarget)}>
+        {t('storage.saveRetry')}
+      </Button>
     </div>
   );
 }

@@ -908,7 +908,8 @@ describe('Dọn sạch Thùng rác (TR-11…TR-13; mockup 11h–11j)', () => {
 
   it('D7, D8, D9: a purge refused says why, and that nothing changed', () => {
     expect(purgeFailure(new Error('RELOAD_UNSAVED_CHANGES'))).toEqual({
-      title: 'Chưa dọn: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó.',
+      title:
+        'Chưa dọn: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Bấm "Thử lại" ở dải cảnh báo đầu màn, lưu được rồi thì dọn lại.',
       detail: 'Dữ liệu không bị đổi.',
     });
     for (const error of [new Error('disk full'), new Error('refused')]) {

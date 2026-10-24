@@ -15,6 +15,7 @@ import {
   formatIsoDate,
   formatLocalDateTime,
   formatLocalDayMonthTime,
+  formatLocalTime,
   formatPeriodValue,
   fromIsoDate,
   fromLocalDate,
@@ -90,6 +91,12 @@ describe('local date and time', () => {
     expect(formatLocalDayMonthTime(at)).toBe('05/09 07:04');
     expect(formatLocalDayMonthTime(new Date(2026, 0, 1, 0, 0))).toBe('01/01 00:00');
     expect(formatLocalDayMonthTime(new Date(2026, 11, 31, 23, 59, 59))).toBe('31/12 23:59');
+  });
+
+  it('formats as HH:MM when the day is clear from context, seconds dropped', () => {
+    expect(formatLocalTime(at)).toBe('07:04');
+    expect(formatLocalTime(new Date(2026, 0, 1, 0, 0))).toBe('00:00');
+    expect(formatLocalTime(new Date(2026, 11, 31, 23, 59, 59))).toBe('23:59');
   });
 
   it('stamps file names as YYYYMMDD-HHMM', () => {

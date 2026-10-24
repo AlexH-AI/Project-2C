@@ -1,5 +1,8 @@
-import { Fragment } from 'react';
+import { Fragment, useSyncExternalStore } from 'react';
+import { formatLocalTime } from '@p2c/domain';
 import { NavIcon, type NavIconName } from '@p2c/ui';
+import { useAppData } from '../data/AppDataContext';
+import type { SaveStatus } from '../data/persist-queue';
 import { t } from '../i18n';
 import { SECTIONS, routeToHash, type Section } from './routes';
 
@@ -53,6 +56,43 @@ export function Sidebar({ current }: { current: Section }) {
           );
         })}
       </nav>
+      <SaveState />
     </aside>
   );
+}
+
+/** The save state of the exe; web mode saves nothing. */
+function SaveState() {
+  const { saves, hasFile } = useAppData();
+  const status = useSyncExternalStore(saves.subscribe, saves.status);
+  return <SaveStateLine status={hasFile ? status : undefined} />;
+}
+
+/**
+ * Mockup settings-data 10d: the save state at the foot of the sidebar, on every screen, kept in
+ * view while a long screen scrolls; `undefined` is web mode. Not a live region: a failed save is
+ * told by the warning's alert, and reading out every save would talk after each change.
+ */
+export function SaveStateLine({ status }: { status: SaveStatus | undefined }) {
+  const { dot, tone, text } = saveState(status);
+  return (
+    <p
+      className={`sticky bottom-0 m-0 mt-auto flex items-center gap-1.5 bg-surface-1 px-2.5 py-2 text-xs tabular-nums ${tone}`}
+    >
+      <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${dot}`} />
+      {text}
+    </p>
+  );
+}
+
+/** A write running outshows a failed one: "Thử lại" or the next change may be saving it. */
+function saveState(status: SaveStatus | undefined): { dot: string; tone: string; text: string } {
+  if (!status) return { dot: 'bg-info', tone: 'text-fg-2', text: t('settings.file.web') };
+  if (status.saving) return { dot: 'bg-fg-3', tone: 'text-fg-2', text: t('saveState.saving') };
+  if (status.failed) return { dot: 'bg-danger', tone: 'text-danger', text: t('saveState.failed') };
+  // Nothing saved yet in this session: the file holds what the app shows, opened as it is.
+  const text = status.lastSave
+    ? t('saveState.savedAt', { time: formatLocalTime(status.lastSave.at) })
+    : t('saveState.saved');
+  return { dot: 'bg-ok', tone: 'text-fg-3', text };
 }

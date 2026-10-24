@@ -358,7 +358,7 @@ export const vi = {
   'trash.purge.running': 'Đang dọn…',
   'trash.purge.failed': 'Chưa dọn được Thùng rác.',
   'trash.purge.failedUnsaved':
-    'Chưa dọn: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó.',
+    'Chưa dọn: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Bấm "Thử lại" ở dải cảnh báo đầu màn, lưu được rồi thì dọn lại.',
   'trash.purge.unchanged': 'Dữ liệu không bị đổi.',
   'trash.purged.title': 'Đã dọn sạch Thùng rác',
   'trash.purged.deleted': 'Xóa hẳn {parts}.',
@@ -1020,10 +1020,10 @@ export const vi = {
   'reports.excel.fileRange': '{from}-den-{to}',
   'storage.openFailed': 'Không mở được file dữ liệu',
   'storage.openFailedHelp':
-    'App chưa ghi gì vào file. Các bản sao lưu tự động nằm trong thư mục Project2C-data\\backups: chép bản mới nhất thành Project2C-data\\project2c.db để khôi phục, rồi đóng cửa sổ này và mở lại app. Bản mới nhất có thể chính là file đang lỗi: khi đó chép bản liền trước nó, rồi tới các bản cũ hơn.',
+    'App chưa ghi gì vào file. Các bản sao lưu tự động nằm trong thư mục Project2C-data\\backups: chép bản mới nhất thành Project2C-data\\project2c.db để khôi phục, rồi đóng cửa sổ này và mở lại app. Không mở được thư mục backups thì nhờ người quản trị máy cấp lại quyền đọc thư mục đó trước. Bản mới nhất có thể chính là file đang lỗi: khi đó chép bản liền trước nó, rồi tới các bản cũ hơn.',
   'storage.backupFailed': 'Không sao lưu được file dữ liệu',
   'storage.backupFailedHelp':
-    'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở: hãy kiểm tra ổ đĩa còn chỗ trống và thư mục đó không chỉ đọc hay bị chương trình khác giữ, rồi đóng cửa sổ này và mở lại app.',
+    'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở: hãy kiểm tra ổ đĩa còn chỗ trống, thư mục đó không chỉ đọc hay bị chương trình khác giữ và tài khoản Windows đang dùng được quyền đọc, ghi thư mục đó, rồi đóng cửa sổ này và mở lại app.',
   'storage.diskFull': 'Ổ đĩa đã đầy, không sao lưu được file dữ liệu',
   'storage.diskFullHelp':
     'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở nhưng ổ đĩa chứa thư mục app không còn đủ chỗ trống. Hãy xóa bớt file trên ổ đó (ví dụ các file cũ trong Project2C-data\\exports), rồi đóng cửa sổ này và mở lại app.',
@@ -1098,7 +1098,7 @@ export const vi = {
   'settings.backup.done': 'Đã nhập backup xuất lúc {date}.',
   'settings.backup.failed': 'Chưa nhập được backup. Dữ liệu hiện tại không bị đổi.',
   'settings.backup.failedUnsaved':
-    'Chưa nhập: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Dữ liệu hiện tại không bị đổi.',
+    'Chưa nhập: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Bấm "Thử lại" ở dải cảnh báo đầu màn, lưu được rồi thì nhập lại. Dữ liệu hiện tại không bị đổi.',
   'settings.backup.refusedTitle': 'Không nhập được file',
   'settings.backup.tooNew': 'File tạo từ bản app mới hơn (schema v{version}, app này v{supported})',
   'settings.backup.tooNewHelp': 'Cập nhật app rồi nhập lại. Dữ liệu hiện tại không bị đổi.',
@@ -1131,7 +1131,7 @@ export const vi = {
   'settings.demo.doneBackup': 'Backup: Project2C-data\\backups\\{file}',
   'settings.demo.failed': 'Chưa nạp lại được dữ liệu giả lập. Dữ liệu hiện tại không bị đổi.',
   'settings.demo.failedUnsaved':
-    'Chưa nạp lại: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Dữ liệu hiện tại không bị đổi.',
+    'Chưa nạp lại: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Bấm "Thử lại" ở dải cảnh báo đầu màn, lưu được rồi thì nạp lại. Dữ liệu hiện tại không bị đổi.',
   'storage.saveFailed':
     'Chưa lưu được dữ liệu vào file (file có thể đang mở trong chương trình khác). Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
   'storage.saveDiskFull':
@@ -1140,6 +1140,13 @@ export const vi = {
     'Chưa lưu được dữ liệu vào file: file Project2C-data\\project2c.db đang ở chế độ chỉ đọc, hoặc tài khoản Windows đang dùng không có quyền ghi / xóa file đó. Hãy bỏ chế độ chỉ đọc (chuột phải file → Properties → bỏ chọn Read-only) hoặc nhờ người quản trị máy cấp lại quyền. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
   'storage.saveFolderReadOnly':
     'Chưa lưu được dữ liệu vào file: thư mục Project2C-data không cho tài khoản Windows đang dùng tạo file mới trong đó. Hãy nhờ người quản trị máy cấp lại quyền ghi vào thư mục đó. Dữ liệu vẫn còn trong app và sẽ được lưu lại ở lần thay đổi tiếp theo.',
+  'storage.saveRetry': 'Thử lại',
+  // The save state at the foot of the sidebar, on every screen (mockup settings-data 10d); web mode
+  // says `settings.file.web` there.
+  'saveState.saving': 'Đang lưu…',
+  'saveState.failed': 'Chưa lưu được vào file',
+  'saveState.saved': 'Đã lưu',
+  'saveState.savedAt': 'Đã lưu {time}',
   'close.unsavedTitle': 'Chưa lưu được thay đổi',
   'close.unsavedBody':
     'Các thay đổi gần nhất chưa ghi được vào file (file có thể đang bị chương trình khác mở). Đóng chương trình đó rồi chọn Thử lại, hoặc đóng app và bỏ các thay đổi chưa lưu.',
