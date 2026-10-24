@@ -20,12 +20,12 @@ import {
 } from '@p2c/domain';
 import { asc, eq } from 'drizzle-orm';
 import {
-  findRow,
   liveCustomer,
   liveRow,
   optionalText,
   requireAmount,
   requireRe,
+  requireRow,
   selectRows,
   stampDeleted,
   today,
@@ -267,8 +267,7 @@ export function softDeleteAppointment(db: Database, id: string): void {
  */
 export function restoreAppointment(db: Database, id: string): void {
   db.transaction(() => {
-    const row = findRow(db, appointments, id);
-    if (!row) throw new DbError('APPOINTMENT_NOT_FOUND');
+    const row = requireRow(db, appointments, id, 'APPOINTMENT_NOT_FOUND');
     if (!row.deletedAt) return;
     const move = checkRestoreAppointment(db, row);
     updateRow(db, appointments, id, { deletedAt: null });

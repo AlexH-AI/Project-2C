@@ -24,6 +24,7 @@ import {
   requireChoice,
   requireName,
   requireRe,
+  requireRow,
   rowInsert,
   selectRows,
   stampDeleted,
@@ -218,8 +219,7 @@ export function softDeleteCustomer(db: Database, id: string): void {
 /** Brings the customer back with every record not deleted on its own (spec Phase 6 TR-4). */
 export function restoreCustomer(db: Database, id: string): void {
   db.transaction(() => {
-    const row = findRow(db, customers, id);
-    if (!row) throw new DbError('CUSTOMER_NOT_FOUND');
+    const row = requireRow(db, customers, id, 'CUSTOMER_NOT_FOUND');
     checkRestoreCustomer(db, row);
     updateRow(db, customers, id, { deletedAt: null });
   });
@@ -390,7 +390,7 @@ export function withdrawAppointmentTransition(
   // transaction rolls the withdrawal back.
   const left = meetingKeepingMove(
     listStageTransitions(db, caused.customerId),
-    liveAppointmentsOf(db, caused.customerId),
+    unmovedMeetingsFrom(db, caused.customerId, caused.date, appointmentId),
     toTransition(caused),
   );
   if (left) throw new DbError('STAGE_KEPT_BY_MEETING', { date: formatDate(left.date) });
@@ -430,13 +430,19 @@ export function meetingKeepingMove<
   );
 }
 
-/** The customer's live appointments by day, as `meetingKeepingMove` reads them. */
-function liveAppointmentsOf(db: Database, customerId: string) {
+/**
+ * The customer's live meetings that moved no stage, from the stored day `isoDate` on, by day, all
+ * but the appointment `exceptId`: those `meetingKeepingMove` may find, read as it reads them (#667).
+ */
+function unmovedMeetingsFrom(db: Database, customerId: string, isoDate: string, exceptId: string) {
   const rows = selectRows(
     db,
-    `SELECT id, date, status, stage_after FROM appointments
-     WHERE customer_id = ? AND deleted_at IS NULL ORDER BY date`,
-    [customerId],
+    `SELECT id, date, status, stage_after FROM appointments a
+     WHERE customer_id = ? AND deleted_at IS NULL AND status = 'MET' AND date >= ? AND id <> ?
+       AND NOT EXISTS (
+         SELECT 1 FROM stage_transitions t WHERE t.appointment_id = a.id AND t.deleted_at IS NULL)
+     ORDER BY date`,
+    [customerId, isoDate, exceptId],
   ) as [string, string, string, CustomerStage | null][];
   return rows.map(([id, date, status, stageAfter]) => ({
     id,

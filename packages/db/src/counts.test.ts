@@ -106,6 +106,44 @@ describe('countCustomerRecords (mockup 5f, spec Phase 6 TR-4, TR-9)', () => {
     expect(countCustomerRecords(db, anh.id)).toMatchObject({ met: 1, rf: 1 });
   });
 
+  // An appointment holds one live transition only as the commands write it (rule 4): the count is
+  // of appointments, as `isRfAppointment` counts them, not of transitions (review of PR 541).
+  it('counts one RF for a meeting with two RF transitions, made by hand', async () => {
+    const { db, re } = await setup(d(11, 10));
+    const anh = createCustomer(db, {
+      name: 'Trịnh Minh Anh',
+      reId: re.id,
+      stage: 'N3',
+      date: d(1, 9),
+    });
+    const meeting = scheduleAppointment(db, {
+      customerId: anh.id,
+      reId: re.id,
+      date: d(1, 10),
+      triggerType: 'REFERRAL',
+      coordinatorIds: [],
+    });
+    recordMeetingOutcome(db, meeting.id, {
+      status: 'MET',
+      stageAfter: 'N2',
+      nextStep: 'Gửi giải pháp',
+    });
+    db.sqlite.run(
+      `INSERT INTO stage_transitions
+         (id, customer_id, seq, from_stage, to_stage, date, appointment_id, created_at)
+       SELECT 'again', customer_id, seq + 1, from_stage, to_stage, date, appointment_id, created_at
+       FROM stage_transitions WHERE appointment_id = ?`,
+      [meeting.id],
+    );
+    const transitions = listStageTransitions(db, anh.id);
+    expect(transitions.filter((t) => t.appointmentId === meeting.id)).toHaveLength(2);
+
+    expect(countCustomerRecords(db, anh.id)).toMatchObject({ met: 1, rf: 1 });
+    expect(
+      listAppointments(db, anh.id).filter((a) => isRfAppointment(a, transitions)),
+    ).toHaveLength(1);
+  });
+
   // The birth year and gender of the profile are written as notes of the system (spec Phase 3 D2):
   // 5f and the trash row count them as the box of the purge does (DR6-125, mockup 11i).
   it('counts the notes the system wrote from the profile with the others', async () => {

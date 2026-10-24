@@ -61,10 +61,17 @@ export async function openDatabase(options: OpenDatabaseOptions = {}): Promise<D
   const migrations = options.migrations ?? MIGRATIONS;
   try {
     assertSupported(schemaVersion(sqlite), migrations);
+    const db = connect(sqlite, options);
+    migrate(db, migrations);
+    return db;
   } catch (error) {
     sqlite.close();
     throw error;
   }
+}
+
+/** The `Database` of the opened file: its sources, transactions and save port. */
+function connect(sqlite: SqlJsDatabase, options: OpenDatabaseOptions): Database {
   let sources: Sources = {
     now: options.now ?? (() => new Date()),
     random: options.random ?? cryptoFill,
@@ -82,7 +89,7 @@ export async function openDatabase(options: OpenDatabaseOptions = {}): Promise<D
     return bytes;
   };
 
-  const db: Database = {
+  return {
     orm: drizzle(sqlite, { schema }),
     sqlite,
     now: () => sources.now(),
@@ -131,14 +138,6 @@ export async function openDatabase(options: OpenDatabaseOptions = {}): Promise<D
       }
     },
   };
-
-  try {
-    migrate(db, migrations);
-  } catch (error) {
-    sqlite.close();
-    throw error;
-  }
-  return db;
 }
 
 /** A newer app wrote this schema version: opening it could lose what this app does not know. */
@@ -197,8 +196,9 @@ function commit(sqlite: SqlJsDatabase): void {
 /**
  * The pragmas a connection starts without: foreign keys, and recursive triggers, so that REPLACE
  * runs the delete triggers of the rows it removes. The append-only tables (0003, 0006, 0008, 0011)
- * refuse every edit and delete by trigger; without them `INSERT OR REPLACE` would edit a note or an
- * analysis of a customer in use (DR6-113). No trigger changes a table, so none recurses.
+ * refuse every edit and every delete but those TR-11 and D11 allow (the purge takes the rows of a
+ * deleted customer; a fact changes its status); without them `INSERT OR REPLACE` would edit a note
+ * or an analysis of a customer in use (DR6-113). No trigger changes a table, so none recurses.
  */
 function enableConnectionPragmas(sqlite: SqlJsDatabase): void {
   sqlite.run('PRAGMA foreign_keys = ON');

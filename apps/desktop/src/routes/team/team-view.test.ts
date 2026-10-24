@@ -116,6 +116,9 @@ describe('inUseHelp (mockup 9b)', () => {
     inTrash: [],
     ...counts,
   });
+  /** Customers in the trash of these names, each with a code of its own. */
+  const trash = (...names: string[]) =>
+    names.map((name, i) => ({ name, code: `K-${String(i).padStart(4, '0')}` }));
   const RE = 'Chuyển KH sang RE khác trước (Sửa hồ sơ KH).';
   const REVIEWER = 'Bỏ nhân sự này khỏi người đánh giá kết quả của các lịch đó (ở Sửa kết quả)';
   // DR6-80, Q5 (a): a coordinator is changed in 6f only, never on a moved or planned appointment.
@@ -155,11 +158,11 @@ describe('inUseHelp (mockup 9b)', () => {
     `Có cả lịch hẹn của KH đã xóa: ${customers}. Dọn sạch Thùng rác (Cài đặt → Thùng rác) xóa hẳn các lịch đó; khôi phục KH thì sửa được lịch đã có kết quả (Sửa kết quả), còn lịch Dự kiến / Dời lịch chỉ dọn sạch mới gỡ.`;
 
   it('names the customers in the trash the records belong to, how they go or come back (T-250, TR-11, DR6-115)', () => {
-    expect(inUseHelp(usage({ appointments: 1, inTrash: ['Lan'] }))).toEqual([
+    expect(inUseHelp(usage({ appointments: 1, inTrash: trash('Lan') }))).toEqual([
       expect.stringContaining(RE),
       reTrash('Lan'),
     ]);
-    expect(inUseHelp(usage({ reviewing: 1, inTrash: ['Lan', 'Ánh Hồng'] }))).toEqual([
+    expect(inUseHelp(usage({ reviewing: 1, inTrash: trash('Lan', 'Ánh Hồng') }))).toEqual([
       expect.stringContaining(REVIEWER),
       supportTrash('Lan, Ánh Hồng'),
     ]);
@@ -173,7 +176,7 @@ describe('inUseHelp (mockup 9b)', () => {
       { policies: 1 },
       { appointments: 1, coordinating: 1 },
     ]) {
-      expect(inUseHelp(usage({ ...counts, inTrash: ['Lan'] })).at(-1)).toBe(reTrash('Lan'));
+      expect(inUseHelp(usage({ ...counts, inTrash: trash('Lan') })).at(-1)).toBe(reTrash('Lan'));
     }
     // A supporter: a coordinator of the planned appointment of NT-TM-16, a reviewer, both.
     for (const counts of [
@@ -181,18 +184,30 @@ describe('inUseHelp (mockup 9b)', () => {
       { reviewing: 1 },
       { coordinating: 2, reviewing: 1 },
     ]) {
-      expect(inUseHelp(usage({ ...counts, inTrash: ['Lan'] })).at(-1)).toBe(supportTrash('Lan'));
+      expect(inUseHelp(usage({ ...counts, inTrash: trash('Lan') })).at(-1)).toBe(
+        supportTrash('Lan'),
+      );
     }
   });
 
   it('names three customers of the trash, and counts the others', () => {
-    const inTrash = ['An', 'Bảo', 'Cúc', 'Dung', 'Đức'];
+    const inTrash = trash('An', 'Bảo', 'Cúc', 'Dung', 'Đức');
     expect(inUseHelp(usage({ coordinating: 9, inTrash })).at(-1)).toContain(
       'KH đã xóa: An, Bảo, Cúc và 2 KH khác.',
     );
     expect(inUseHelp(usage({ coordinating: 9, inTrash: inTrash.slice(0, 3) })).at(-1)).toContain(
       'KH đã xóa: An, Bảo, Cúc.',
     );
+  });
+
+  // Review of PR 669: by name alone, two customers of one name read "Lan, Lan".
+  it('tells two customers of one name apart by their codes, also one of them only counted', () => {
+    expect(inUseHelp(usage({ policies: 2, inTrash: trash('Lan', 'Lan', 'Mai') })).at(-1)).toBe(
+      reTrash('Lan (K-0000), Lan (K-0001), Mai'),
+    );
+    expect(
+      inUseHelp(usage({ coordinating: 4, inTrash: trash('An', 'Bảo', 'Lan', 'Lan') })).at(-1),
+    ).toContain('KH đã xóa: An, Bảo, Lan (K-0002) và 1 KH khác.');
   });
 
   it('says nothing for a person nothing keeps', () => {

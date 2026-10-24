@@ -1,5 +1,5 @@
 import { isRfAppointment, type CalendarDate, type CustomerStage } from '@p2c/domain';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   listAppointments,
   recordMeetingOutcome,
@@ -287,6 +287,20 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
     expect(restored(r)).toBeUndefined();
     expect(listStageTransitions(db, bao.id)).toEqual(transitions);
     expect(isRf(db, meeting.id)).toBe(false);
+  });
+
+  // The other side of the day check (review of PR 740): reached before the meeting day, the stage
+  // is still the customer's on it.
+  it('E7: restores it the same once the customer reached that stage before its day', async () => {
+    const { db, bao, meeting, row, restored } = await deletedMeeting(d(5, 10));
+    changeStageManually(db, bao.id, { to: 'N2', date: d(3, 10) });
+    const transitions = listStageTransitions(db, bao.id);
+
+    const r = row(meeting.id);
+    expect(r.effect).toEqual({ kind: 'stageKept', stage: 'N2' });
+    expect(r.blocked).toBeUndefined();
+    expect(restored(r)).toBeUndefined();
+    expect(listStageTransitions(db, bao.id)).toEqual(transitions);
   });
 
   it('E7: blocks it like E6 once the customer reached that stage after its day (Owner 15/10/2026)', async () => {
@@ -702,5 +716,38 @@ describe('listTrash', () => {
     expect(
       listTrash(db).every((r, i, all) => i === 0 || all[i - 1]!.deletedAt >= r.deletedAt),
     ).toBe(true);
+  });
+
+  it('has each restore command refuse a record that is not there, by the code of its kind', async () => {
+    const { db } = await trash();
+
+    const refused = Object.entries(RESTORE).map(([kind, restore]) => {
+      const error = errorOf(() => restore(db, 'nowhere'));
+      return [kind, error?.code, error?.params];
+    });
+
+    expect(refused).toEqual([
+      ['team', 'TEAM_NOT_FOUND', undefined],
+      ['person', 'PERSON_NOT_FOUND', undefined],
+      ['customer', 'CUSTOMER_NOT_FOUND', undefined],
+      ['appointment', 'APPOINTMENT_NOT_FOUND', undefined],
+      ['policy', 'POLICY_NOT_FOUND', undefined],
+    ]);
+  });
+
+  // #539: what a deleted record points to is read by its id, so an empty trash reads no name.
+  it('reads the teams, people and customers only for their deleted rows while the trash is empty', async () => {
+    const { db, customer, schedule } = await trash();
+    schedule(customer().id, d(6, 10));
+    const exec = vi.spyOn(db.sqlite, 'exec');
+    const prepare = vi.spyOn(db.sqlite, 'prepare');
+
+    expect(listTrash(db)).toEqual([]);
+
+    const reads = [...exec.mock.calls, ...prepare.mock.calls]
+      .map(([sql]) => sql)
+      .filter((sql) => /\b(teams|people|customers)\b/.test(sql));
+    expect(reads).not.toEqual([]);
+    expect(reads.filter((sql) => !/deleted_at"? is not null/i.test(sql))).toEqual([]);
   });
 });

@@ -24,7 +24,12 @@ import { stagesOfDay } from './customers';
 import type { Database } from './database';
 import { DbError } from './errors';
 import { profileFactValue, type ProfileFields } from './kyc';
-import { PERSON_REFERENCES } from './schema';
+import {
+  PERSON_REFERENCE_KINDS,
+  PERSON_REFERENCES,
+  quotedKinds,
+  type PersonReferenceKind,
+} from './person-references';
 
 const YEAR = /^\d{4}$/;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -243,6 +248,15 @@ function meetingRule(appointments: Map<unknown, Row>, transitions: Row[]): Rule 
   return once && matching ? null : 4;
 }
 
+/** Whom each kind of reference points to, by rule 5: the RE of the record, or one supporting it. */
+const POINTS_TO: Record<PersonReferenceKind, 're' | 'supporting'> = {
+  customer: 're',
+  appointment: 're',
+  policy: 're',
+  coordinator: 'supporting',
+  reviewer: 'supporting',
+};
+
 /**
  * Rule 5: a live customer, appointment or policy belongs to a live RE (who may stop being one, or
  * be deleted, only once their records are deleted); the RE never coordinates their own
@@ -254,18 +268,21 @@ function meetingRule(appointments: Map<unknown, Row>, transitions: Row[]): Rule 
  */
 function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>): Rule | null {
   const references = `(${PERSON_REFERENCES})`;
-  // The people some live reference of a kind points to, to be one of those that fail.
-  const pointedTo = (kinds: string) =>
-    `p.id IN (SELECT person_id FROM ${references} WHERE live AND kind IN (${kinds}))`;
+  // The people some live reference of those kinds points to, to be one of those that fail.
+  const pointedTo = (kinds: readonly PersonReferenceKind[]) =>
+    `p.id IN (SELECT person_id FROM ${references} WHERE live AND kind IN (${quotedKinds(kinds)}))`;
+  const reKinds = PERSON_REFERENCE_KINDS.filter((kind) => POINTS_TO[kind] === 're');
+  // A kind POINTS_TO says nothing of is checked as one supporting the record, never left out.
+  const supportingKinds = PERSON_REFERENCE_KINDS.filter((kind) => POINTS_TO[kind] !== 're');
   const notRe = read(
-    `SELECT 1 FROM people p WHERE (p.role <> 'RE' OR p.deleted_at IS NOT NULL) AND ${pointedTo("'customer', 'appointment', 'policy'")}`,
+    `SELECT 1 FROM people p WHERE (p.role <> 'RE' OR p.deleted_at IS NOT NULL) AND ${pointedTo(reKinds)}`,
   );
   // A coordinator or reviewer may have become an RE once their appointment was deleted.
-  const supporting = `(${REVIEWER_ROLES.map((role) => `'${role}'`).join(', ')})`;
+  const supportingRoles = `(${REVIEWER_ROLES.map((role) => `'${role}'`).join(', ')})`;
   const misplaced = read(
     [
-      `SELECT 1 FROM ${references} c JOIN ${references} a ON a.appointment_id = c.appointment_id AND a.person_id = c.person_id WHERE c.kind = 'coordinator' AND a.kind = 'appointment'`,
-      `SELECT 1 FROM people p WHERE (p.role NOT IN ${supporting} OR p.deleted_at IS NOT NULL) AND ${pointedTo("'coordinator', 'reviewer'")}`,
+      `SELECT 1 FROM ${references} c JOIN ${references} a ON a.appointment_id = c.appointment_id AND a.person_id = c.person_id WHERE c.kind IN (${quotedKinds(['coordinator'])}) AND a.kind IN (${quotedKinds(['appointment'])})`,
+      `SELECT 1 FROM people p WHERE (p.role NOT IN ${supportingRoles} OR p.deleted_at IS NOT NULL) AND ${pointedTo(supportingKinds)}`,
     ].join(' UNION ALL '),
   );
   const rescheduled = [...appointments.values()].every((a) => {

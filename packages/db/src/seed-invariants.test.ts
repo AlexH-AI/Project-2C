@@ -12,12 +12,13 @@ import {
 } from '@p2c/domain';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { listAppointments, type AppointmentRecord } from './appointments';
+import { validateBackupInvariants, validateBackupValues } from './backup-validation';
 import { listCustomers, listStageTransitions, type CustomerRecord } from './customers';
 import { openDatabase, type Database } from './database';
 import { getKycProfile, listKycVersions, type KycProfileRecord } from './kyc';
 import { listPolicies } from './policies';
 import { seedDemoData, type SeedOptions } from './seed';
-import { snapshotStage } from './test-support';
+import { stageAtEndOfDay } from './test-support';
 
 const SLOW = 60_000;
 const ANCHOR = calendarDate(2026, 9, 15);
@@ -79,7 +80,7 @@ describe.each(DATA_SETS)('on %s', (_, options) => {
         }
       }
       for (const customer of customers) {
-        expect(snapshotStage(customer, transitions, ANCHOR)).toBe(customer.stage);
+        expect(stageAtEndOfDay(customer, transitions, ANCHOR)).toBe(customer.stage);
       }
     });
 
@@ -204,6 +205,29 @@ describe.each(DATA_SETS)('on %s', (_, options) => {
         }
         expect(versions.at(-1)!.hash).toBe(kycHash(profile));
       }
+    });
+  });
+
+  // The lists above leave the deleted records out; Thùng rác of the load data holds them (#566).
+  describe('the deleted records', () => {
+    it('withdrew the stage change of each deleted meeting, at the instant of its deletion (D7)', () => {
+      const withdrawn =
+        db.sqlite.exec(
+          `SELECT t.customer_id, t.date, t.to_stage, t.deleted_at,
+             a.customer_id, a.date, a.stage_after, a.deleted_at, a.status
+           FROM stage_transitions t JOIN appointments a ON a.id = t.appointment_id
+           WHERE t.deleted_at IS NOT NULL`,
+        )[0]?.values ?? [];
+
+      expect(withdrawn.length > 0).toBe(options.trash === true);
+      for (const [customer, date, stage, at, ...meeting] of withdrawn) {
+        expect(meeting).toEqual([customer, date, stage, at, 'MET']);
+      }
+    });
+
+    it('passes every rule of a backup import, on the deleted records too (spec §6)', () => {
+      expect(() => validateBackupValues(db)).not.toThrow();
+      expect(() => validateBackupInvariants(db)).not.toThrow();
     });
   });
 });

@@ -14,9 +14,8 @@ import {
   type PersonRole,
   type Vnd,
 } from '@p2c/domain';
-import { isNotNull } from 'drizzle-orm';
+import { isNotNull, sql } from 'drizzle-orm';
 import { checkRestoreAppointment, restoreStageMove } from './appointments';
-import { selectRows } from './common';
 import { countCustomerRecords, type CustomerRecordCounts } from './counts';
 import { checkRestoreCustomer } from './customers';
 import type { Database } from './database';
@@ -99,9 +98,10 @@ export type TrashRow =
 const NONE: TrashEffect = { kind: 'none' };
 
 export function listTrash(db: Database): TrashRow[] {
-  const ref = refs(db);
+  const deleted = deletedRows(db);
+  const ref = refs(db, deleted);
   const rows: TrashRow[] = [];
-  for (const row of db.orm.select().from(teams).where(isNotNull(teams.deletedAt)).all()) {
+  for (const row of deleted.teams) {
     rows.push(
       entry(row, () => checkRestoreTeam(db, row), {
         kind: 'team',
@@ -111,7 +111,7 @@ export function listTrash(db: Database): TrashRow[] {
       }),
     );
   }
-  for (const row of db.orm.select().from(people).where(isNotNull(people.deletedAt)).all()) {
+  for (const row of deleted.people) {
     rows.push(
       entry(row, () => checkRestorePerson(db, row), {
         kind: 'person',
@@ -122,7 +122,7 @@ export function listTrash(db: Database): TrashRow[] {
       }),
     );
   }
-  for (const row of db.orm.select().from(customers).where(isNotNull(customers.deletedAt)).all()) {
+  for (const row of deleted.customers) {
     const re = ref.person(row.reId);
     const teamId = ref.teamOf(row.reId);
     rows.push(
@@ -135,11 +135,7 @@ export function listTrash(db: Database): TrashRow[] {
       }),
     );
   }
-  for (const row of db.orm
-    .select()
-    .from(appointments)
-    .where(isNotNull(appointments.deletedAt))
-    .all()) {
+  for (const row of deleted.appointments) {
     const stage = ref.stageOf(row.customerId);
     const move = restoreStageMove(db, row, stage);
     rows.push(
@@ -165,7 +161,7 @@ export function listTrash(db: Database): TrashRow[] {
       }),
     );
   }
-  for (const row of db.orm.select().from(policies).where(isNotNull(policies.deletedAt)).all()) {
+  for (const row of deleted.policies) {
     rows.push(
       entry(row, () => checkRestorePolicy(db, row), {
         kind: 'policy',
@@ -223,28 +219,37 @@ function blockOf(check: () => void): TrashBlock | undefined {
   }
 }
 
-/** Names of the teams, people and customers deleted records point to, read once. */
-function refs(db: Database) {
-  const teamRows = new Map(
-    db.orm
-      .select()
-      .from(teams)
-      .all()
-      .map((t) => [t.id, t]),
+/** The deleted rows of each table Thùng rác lists. */
+function deletedRows(db: Database) {
+  return {
+    teams: db.orm.select().from(teams).where(isNotNull(teams.deletedAt)).all(),
+    people: db.orm.select().from(people).where(isNotNull(people.deletedAt)).all(),
+    customers: db.orm.select().from(customers).where(isNotNull(customers.deletedAt)).all(),
+    appointments: db.orm.select().from(appointments).where(isNotNull(appointments.deletedAt)).all(),
+    policies: db.orm.select().from(policies).where(isNotNull(policies.deletedAt)).all(),
+  };
+}
+
+/**
+ * The teams, people and customers the deleted records point to, and only those, each read once
+ * (#539): the REs read first give the teams of the deleted customers.
+ */
+function refs(db: Database, deleted: ReturnType<typeof deletedRows>) {
+  const records = [...deleted.appointments, ...deleted.policies];
+  const customerRows = rowsById(
+    db,
+    customers,
+    records.map((row) => row.customerId),
   );
-  const peopleRows = new Map(
-    db.orm
-      .select()
-      .from(people)
-      .all()
-      .map((p) => [p.id, p]),
+  const peopleRows = rowsById(
+    db,
+    people,
+    [...deleted.customers, ...records].map((row) => row.reId),
   );
-  const customerRows = new Map(
-    selectRows(db, 'SELECT id, name, stage, deleted_at FROM customers').map((c) => [
-      c[0] as string,
-      { name: c[1] as string, stage: c[2] as CustomerStage, deletedAt: c[3] as string | null },
-    ]),
-  );
+  const teamRows = rowsById(db, teams, [
+    ...deleted.people.map((person) => person.teamId),
+    ...deleted.customers.map((customer) => peopleRows.get(customer.reId)!.teamId),
+  ]);
   const toRef = (id: string, row: { name: string; deletedAt: string | null }): TrashRef => ({
     id,
     name: row.name,
@@ -258,6 +263,22 @@ function refs(db: Database) {
     customer: (id: string) => toRef(id, customerRows.get(id)!),
     stageOf: (customerId: string) => customerRows.get(customerId)!.stage,
   };
+}
+
+/** The rows of `table` whose id is among `ids`, by id, in one read; none when no id is given. */
+function rowsById<T extends typeof teams | typeof people | typeof customers>(
+  db: Database,
+  table: T,
+  ids: readonly (string | null)[],
+): Map<string, T['$inferSelect']> {
+  const wanted = [...new Set(ids.filter((id): id is string => id !== null))];
+  if (wanted.length === 0) return new Map();
+  const rows = db.orm
+    .select()
+    .from(table)
+    .where(sql`${table.id} IN (SELECT value FROM json_each(${JSON.stringify(wanted)}))`)
+    .all() as T['$inferSelect'][];
+  return new Map(rows.map((row) => [row.id, row]));
 }
 
 /** The records a deleted customer brings back, and those deleted on their own (TR-4). */

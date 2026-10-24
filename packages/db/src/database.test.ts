@@ -2,9 +2,10 @@ import { getTableConfig } from 'drizzle-orm/sqlite-core';
 import initSqlJs, { type Database as SqlJsDatabase } from 'sql.js';
 import { describe, expect, it, vi } from 'vitest';
 import journal from '../migrations/meta/_journal.json';
-import { openDatabase } from './database';
+import { openDatabase, type Database } from './database';
 import { DbError } from './errors';
 import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations';
+import { previewPurge } from './purge';
 import {
   aiAnalyses,
   appointmentCoordinators,
@@ -169,18 +170,6 @@ describe('openDatabase', () => {
       ),
     ).toThrow(/FOREIGN KEY/);
   });
-
-  // Without it REPLACE removes a row without running its delete trigger, which the append-only
-  // tables rely on (DR6-113); the purge test of D11 shows the effect.
-  it('runs the triggers of the rows REPLACE removes, also after the database was exported', async () => {
-    const db = await openDatabase();
-    const recursive = () => db.sqlite.exec('PRAGMA recursive_triggers')[0]!.values;
-    expect(recursive()).toEqual([[1]]);
-
-    db.export();
-
-    expect(recursive()).toEqual([[1]]);
-  });
 });
 
 describe('integrityCheck', () => {
@@ -192,7 +181,8 @@ describe('integrityCheck', () => {
   });
 
   // One byte off in a key of an index leaves every page whole: `quick_check` says ok, while
-  // lookups through the index miss the row (DR6-73).
+  // lookups through the index miss the row (DR6-73). The test of app-data (apps/desktop) damages a
+  // file the same way, its own copy: a package exports no test code (review of PR 674).
   it('finds an index whose key no longer matches its row', async () => {
     const db = await openDatabase();
     createTeam(db, { name: 'Sao Mai' });
@@ -388,6 +378,12 @@ describe('schema constraints', () => {
 describe('migrating a saved database', () => {
   const rowsOf = (sqlite: SqlJsDatabase, table: string) =>
     sqlite.exec(`SELECT * FROM ${table} ORDER BY rowid`)[0]?.values ?? [];
+  /** How SQLite runs `query`, one step a line. */
+  const queryPlan = (db: Database, query: string) =>
+    db.sqlite
+      .exec(`EXPLAIN QUERY PLAN ${query}`)[0]!
+      .values.map((row) => String(row.at(-1)))
+      .join('\n');
 
   /** A database file saved by the app before the outcome reviewer (schema version 4), with data. */
   async function savedAtVersion4() {
@@ -487,11 +483,7 @@ describe('migrating a saved database', () => {
     expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
     expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(before);
     // Thùng rác, the profile and 5f look these up per record: an index, no scan of the table.
-    const plan = (query: string) =>
-      db.sqlite
-        .exec(`EXPLAIN QUERY PLAN ${query}`)[0]!
-        .values.map((row) => String(row.at(-1)))
-        .join('\n');
+    const plan = (query: string) => queryPlan(db, query);
     expect(plan("SELECT COUNT(*) FROM appointments WHERE customer_id = 'c'")).toMatch(
       /INDEX appointments_customer\b/,
     );
@@ -501,6 +493,55 @@ describe('migrating a saved database', () => {
     expect(plan("SELECT * FROM stage_transitions WHERE appointment_id = 'a1'")).toMatch(
       /INDEX stage_transitions_appointment\b/,
     );
+    expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
+  });
+
+  /**
+   * A database file saved before the lookups of Thùng rác (schema version 12), with data: a deleted
+   * Dời lịch and the appointment booked from it, which keeps it from the purge (TR-12).
+   */
+  async function savedAtVersion12() {
+    const db = await openDatabase({ migrations: MIGRATIONS.filter((m) => m.id <= 12) });
+    db.sqlite.exec(`
+      INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x');
+      INSERT INTO people (id, name, role, team_id, created_at, updated_at)
+        VALUES ('re', 'An', 'RE', 't', 'x', 'x');
+      INSERT INTO customers (id, code, name, re_id, stage, created_at, updated_at)
+        VALUES ('c', 'K-0001', 'Lan', 're', 'N3', 'x', 'x');
+      INSERT INTO stage_transitions (id, customer_id, seq, from_stage, to_stage, date, created_at)
+        VALUES ('s1', 'c', 1, NULL, 'N3', '2026-09-01', 'x');
+      INSERT INTO appointments (id, customer_id, re_id, date, time, status, trigger_type, note,
+          rescheduled_from_id, created_at, updated_at, deleted_at) VALUES
+        ('a1', 'c', 're', '2026-10-08', '10:00', 'RESCHEDULED', 'OTHER', '', NULL, 'x', 'x',
+          '2026-10-10T11:05:00.000Z'),
+        ('a2', 'c', 're', '2026-10-15', '10:00', 'SCHEDULED', 'OTHER', '', 'a1', 'x', 'x', NULL);
+    `);
+    return db;
+  }
+
+  it('adds the lookups of Thùng rác to a database with data, which the purge starts from (CL3-A29)', async () => {
+    const old = await savedAtVersion12();
+    const tables = ['customers', 'appointments', 'stage_transitions'];
+    const before = tables.map((table) => rowsOf(old.sqlite, table));
+    const purge = previewPurge(old);
+
+    const db = await openDatabase({ bytes: old.export() });
+
+    expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
+    expect(tables.map((table) => rowsOf(db.sqlite, table))).toEqual(before);
+    expect(purge.kept).toEqual([expect.objectContaining({ kind: 'appointment', id: 'a1' })]);
+    // What the purge keeps is looked for from the deleted appointments, then what was booked from
+    // each: two lookups by index, no scan of the appointments.
+    const exec = vi.spyOn(db.sqlite, 'exec');
+    expect(previewPurge(db)).toEqual(purge);
+    const kept = exec.mock.calls.map(([sql]) => sql).find((sql) => sql.includes('WITH RECURSIVE'));
+    exec.mockRestore();
+    const plan = queryPlan(db, kept!);
+    expect(plan).toMatch(/SEARCH f USING INDEX appointments_deleted\b/);
+    expect(plan).toMatch(
+      /SEARCH a USING INDEX appointments_rescheduled_from \(rescheduled_from_id=\?\)/,
+    );
+    expect(plan).not.toMatch(/SCAN [af]\b/);
     expect(db.sqlite.exec('PRAGMA foreign_key_check')).toEqual([]);
   });
 

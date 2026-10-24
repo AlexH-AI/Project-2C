@@ -17,7 +17,7 @@ import { fromIsoDate, type CalendarDate } from '@p2c/domain';
 import type { SqlValue } from 'sql.js';
 import { selectRows } from './common';
 import type { Database } from './database';
-import { PERSON_REFERENCES } from './schema';
+import { PERSON_REFERENCES } from './person-references';
 
 /** What keeps a deleted record from the purge (TR-12): the record still pointing to it. */
 export type KeptBy =
@@ -70,13 +70,15 @@ const GONE_APPOINTMENT = `(${OF_DELETED_CUSTOMER} OR (deleted_at IS NOT NULL AND
 
 /**
  * The appointments kept: deleted ones that a live appointment of a live customer, or a kept one, was
- * rescheduled from; each with that one.
+ * rescheduled from; each with that one. The `CROSS JOIN` has SQLite start from the deleted
+ * appointments, through their own index, and look up what was booked from each: left to choose, it
+ * reads every appointment booked from another (CL3-A29).
  */
 const KEPT_APPOINTMENTS = `WITH RECURSIVE kept(id, by_id) AS (
-    SELECT f.id, a.id FROM appointments a
+    SELECT f.id, a.id FROM appointments f
+    CROSS JOIN appointments a ON a.rescheduled_from_id = f.id
     JOIN customers c ON c.id = a.customer_id
-    JOIN appointments f ON f.id = a.rescheduled_from_id
-    WHERE a.deleted_at IS NULL AND c.deleted_at IS NULL AND f.deleted_at IS NOT NULL
+    WHERE f.deleted_at IS NOT NULL AND a.deleted_at IS NULL AND c.deleted_at IS NULL
   UNION
     SELECT f.id, a.id FROM kept k
     JOIN appointments a ON a.id = k.id
@@ -148,9 +150,9 @@ export function previewPurge(db: Database): PurgePlan {
  * size until the next purge.
  *
  * With foreign keys on, each deleted row looks for rows pointing to it, even through a column
- * without an index (`rescheduled_from_id`, `kyc_facts.note_id`): 3.5 s for the 1 313 trash rows of
- * the load data, 0.1 s without. So, as `migrate()` does, they are off while it deletes, and every
- * reference is checked once before COMMIT instead.
+ * without an index (`kyc_facts.note_id`; `rescheduled_from_id` until 0012): 3.5 s for the 1 313
+ * trash rows of the load data, 0.1 s without. So, as `migrate()` does, they are off while it
+ * deletes, and every reference is checked once before COMMIT instead.
  */
 export function purgeTrash(db: Database): PurgePlan {
   db.sqlite.run('PRAGMA foreign_keys = OFF');
@@ -185,8 +187,7 @@ export function purgeTrash(db: Database): PurgePlan {
  */
 export function keptRecords(db: Database): KeptRecord[] {
   // Everything kept follows from a deleted appointment that something was booked from, so with no
-  // deleted appointment there is nothing to look for. `listTrash` asks even when the trash is empty,
-  // and the search over every appointment costs ≈ 4.5 ms (CL3-A29).
+  // deleted appointment there is nothing to look for; `listTrash` asks even when the trash is empty.
   if (
     selectRows(db, 'SELECT 1 FROM appointments WHERE deleted_at IS NOT NULL LIMIT 1').length === 0
   ) {

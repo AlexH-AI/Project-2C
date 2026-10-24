@@ -196,13 +196,16 @@ function perTable<T extends SQLiteTable, V>(make: (table: T) => V): (table: T) =
   };
 }
 
-/** The tables of the records a command changes in place and deletes softly, by `id`. */
-type Tracked =
+/**
+ * The tables of the records a command changes in place (`updated_at`) and deletes softly
+ * (`deleted_at`), by `id`: the kinds of Thùng rác.
+ */
+type SoftDeletable =
   typeof teams | typeof people | typeof customers | typeof appointments | typeof policies;
-type Row<T extends Tracked> = T['$inferSelect'];
+type Row<T extends SoftDeletable> = T['$inferSelect'];
 
 const rowById = perTable(
-  (table: Tracked) => (db: Database) =>
+  (table: SoftDeletable) => (db: Database) =>
     db.orm
       .select()
       .from(table)
@@ -211,29 +214,44 @@ const rowById = perTable(
 );
 
 /** The row `id` of `table`, deleted or not. */
-export function findRow<T extends Tracked>(db: Database, table: T, id: string): Row<T> | undefined {
+export function findRow<T extends SoftDeletable>(
+  db: Database,
+  table: T,
+  id: string,
+): Row<T> | undefined {
   return prepared(db, rowById(table)).get({ id }) as Row<T> | undefined;
+}
+
+/** The row `id` of `table`, deleted or not, else `code`: what a `restore…` command restores. */
+export function requireRow<T extends SoftDeletable>(
+  db: Database,
+  table: T,
+  id: string,
+  code: DbErrorCode,
+): Row<T> {
+  const row = findRow(db, table, id);
+  if (!row) throw new DbError(code);
+  return row;
 }
 
 /**
  * The row `id` of `table` when it exists and is not deleted, else `code`; `params` are those of a
  * deleted row, when its error names it (spec Phase 6 TR-1).
  */
-export function liveRow<T extends Tracked>(
+export function liveRow<T extends SoftDeletable>(
   db: Database,
   table: T,
   id: string,
   code: DbErrorCode,
   params?: (row: Row<T>) => DbError['params'],
 ): Row<T> {
-  const row = findRow(db, table, id);
-  if (!row) throw new DbError(code);
+  const row = requireRow(db, table, id, code);
   if (row.deletedAt) throw new DbError(code, params?.(row));
   return row;
 }
 
 /** Writes `changes` to the row `id` of `table` with a new `updatedAt`, and returns what it wrote. */
-export function updateRow<T extends Tracked>(
+export function updateRow<T extends SoftDeletable>(
   db: Database,
   table: T,
   id: string,
@@ -266,8 +284,9 @@ const lastSeqOf = perTable(
 );
 
 /**
- * The customer's highest `seq` in `table`, null when it has none; a deleted row keeps its own, so
- * `nextSeq` never gives one twice.
+ * The customer's highest `seq` in `table`, null when it has none. A withdrawn transition keeps its
+ * own, so no two rows of the customer share a `seq`; the purge deletes one for good when it purges
+ * its appointment, and the `seq` may be given again (TR-11).
  */
 export function lastSeq(db: Database, table: Sequenced, customerId: string): number | null {
   return prepared(db, lastSeqOf(table)).get({ customerId })?.seq ?? null;
