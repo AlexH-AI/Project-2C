@@ -38,7 +38,7 @@ export interface SaveStatus {
   readonly saving: boolean;
   /** True from a failed write until the next successful one. */
   readonly failed: boolean;
-  /** What the failed write threw: the storage's error (`DISK_FULL`…); `undefined` once one succeeds. */
+  /** What the failed write threw: the storage's error (`DISK_FULL`…); `undefined` if not failed. */
   readonly error: unknown;
   /** The last write that succeeded in this session; `undefined` before the first. */
   readonly lastSave: LastSave | undefined;

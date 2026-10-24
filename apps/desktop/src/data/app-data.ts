@@ -166,7 +166,9 @@ export interface AppData {
    * `undefined` in web mode.
    */
   lastSave(): LastSave | undefined;
-  /** Called whenever the save state changes (`saves.subscribe`); returns the unsubscribe function. */
+  /**
+   * Called whenever the save state changes (`saves.subscribe`); returns the unsubscribe function.
+   */
   subscribeLastSave(listener: () => void): () => void;
   /** The newest automatic backup's file name; `undefined` in web mode or when there is none. */
   latestBackup(): Promise<string | undefined>;
