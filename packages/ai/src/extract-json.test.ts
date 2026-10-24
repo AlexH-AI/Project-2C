@@ -77,9 +77,14 @@ describe('extractJson', () => {
     });
   });
 
-  // A `{` still open that opens an object (a quote after it) may be the cut answer itself.
+  // A `{` still open that opens an object (a quote after it, past white space) may be the cut
+  // answer itself, printed with indents too, as the format of the prompts (the review of PR #820).
   it.each([
     ['the answer', CUT],
+    [
+      'the answer printed with indents',
+      CUT.replace('{"hypotheses": [', '{\n  "hypotheses": [\n    '),
+    ],
     ['the answer after a brace of the prose', `Ghi chú { chưa đóng. ${CUT}`],
     ['the answer after a brace and an odd quote of the prose', `Lưu ý {mẫu "x. ${CUT}`],
     ['a brace of the prose with a quote after it', 'Lưu ý {"mẫu" chưa đóng. {"a":1} rồi'],
