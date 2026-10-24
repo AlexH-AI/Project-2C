@@ -18,6 +18,10 @@ import { byName, type Person, type Policy, type StageTransition, type Team } fro
 /**
  * Every live record of each kind, as the `list*` reads of `@p2c/db` give them; teams, people and
  * customers by name (`byName`), the order every picker, chart and list shows. Never mutate.
+ *
+ * Each table is read from the database of its revision when first asked for. So never keep one
+ * across an `await`: a change of the data leaves it out of date, and once a reload or an import
+ * has closed that database, a table not read yet throws. Take it again instead (`useTables`).
  */
 export interface Tables {
   readonly teams: readonly Team[];

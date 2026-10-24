@@ -833,26 +833,30 @@ describe('ChatGPT web in the app (spec Phase 5 §3.1)', () => {
     },
   );
 
-  it('ties the session to the data its input was taken from, though replaced while it copies (DR6-15)', async () => {
-    let copied!: (done: boolean) => void;
-    const web: WebTools = {
-      copy: () => new Promise((resolve) => (copied = resolve)),
-      openChatGpt: () => Promise.resolve(true),
-    };
-    const { app, customer } = await withCustomer({ reportError: vi.fn(), web });
+  it.each(['copies the message', 'opens chatgpt.com'])(
+    'discards the session when the data is replaced while it %s: nothing opened after, no message left to copy (DR6-15)',
+    async (step) => {
+      // The copy fails, so a session would leave the message of the old data to copy by hand (4f).
+      let done!: (worked: boolean) => void;
+      const held = () => new Promise<boolean>((resolve) => (done = resolve));
+      const openChatGpt = vi.fn(step === 'opens chatgpt.com' ? held : () => Promise.resolve(true));
+      const web: WebTools = {
+        copy: step === 'copies the message' ? held : () => Promise.resolve(false),
+        openChatGpt,
+      };
+      const { app, customer } = await withCustomer({ reportError: vi.fn(), web });
 
-    const starting = startChatGptWeb(app, customer.id);
-    // The same data, its IDs alike: only the generation tells it apart.
-    const backup = await app.exportBackup();
-    await app.importBackup(await app.readBackup(backup.text));
-    copied(true);
-    const outcome = await starting;
-    if (outcome.kind !== 'session') throw new Error(`no session: ${outcome.kind}`);
+      const starting = startChatGptWeb(app, customer.id);
+      // The same data, its IDs alike: only the generation tells it apart.
+      const backup = await app.exportBackup();
+      await app.importBackup(await app.readBackup(backup.text));
+      done(true);
 
-    const answer = await goodAnswer(outcome.session);
-    expect(saveChatGptAnswer(app, outcome, answer)).toEqual({ kind: 'discarded' });
-    expect(storedRows(app)).toBe(0);
-  });
+      expect(await starting).toEqual({ kind: 'discarded' });
+      expect(openChatGpt).toHaveBeenCalledTimes(step === 'opens chatgpt.com' ? 1 : 0);
+      expect(app.ai.reportError).not.toHaveBeenCalled();
+    },
+  );
 
   it('refuses Kiểm tra và lưu while the data is being replaced, saving nothing and reporting no bug (S2-2)', async () => {
     const { storage, fail } = heldBackupStorage();

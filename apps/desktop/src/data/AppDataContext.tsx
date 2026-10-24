@@ -35,6 +35,8 @@ export function useQuery<T>(read: (db: Database) => T): T {
 /**
  * The tables of the current revision (`AppData.tables`), shared by every screen; screens re-render
  * when the data changes. Destructure only the tables a screen shows: each is read when first used.
+ * Read them while rendering, never after an `await` (a reload or an import may have closed their
+ * database by then, see `Tables`).
  */
 export function useTables(): Tables {
   const data = useAppData();

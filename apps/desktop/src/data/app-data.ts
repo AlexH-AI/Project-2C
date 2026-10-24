@@ -135,7 +135,7 @@ export interface AppData {
    * while the last save failed.
    */
   reloadDemoData(): Promise<{ anchor: CalendarDate; backup: string | undefined }>;
-  /** The current live records, for the import confirmation. */
+  /** The current live records, for the import and reload confirmations (10a, 10c). */
   counts(): RecordCounts;
   /** Settings → Data: everything as a `.p2cbackup` file; the exe writes it into `exports\`. */
   exportBackup(): Promise<ExportedBackup>;
@@ -224,6 +224,18 @@ const DATA_DAMAGED = 'DATA_DAMAGED';
 export const isDamagedDataError = (error: unknown): error is Error =>
   error instanceof Error && error.message === DATA_DAMAGED;
 
+/**
+ * Refuses the stored file damaged inside, checked as it was stored, before any migration: one that
+ * rebuilds a table would drop the damage of the old one from a later check, and the damaged file
+ * would still become the newest backup (DR-51). `integrity_check` reads the whole file (≈ 90 ms on
+ * the load data): a damaged page, or an index out of step with its table, may well leave every
+ * table the app reads at startup readable.
+ */
+function refuseDamaged(db: Database): void {
+  const [damage] = db.integrityCheck();
+  if (damage !== undefined) throw new Error(DATA_DAMAGED, { cause: damage });
+}
+
 /** The `settings` row of Settings → AI (spec Phase 5 §4.1). */
 const AI_SETTINGS = 'ai';
 
@@ -239,6 +251,10 @@ function parseJson(json: string | undefined): unknown {
 
 /** The same seed on every machine: the same day gives the same data (spec §7). */
 const DEMO_SEED = 1;
+
+/** The measure of each file save, and how many the app's timeline keeps at most. */
+const SAVE_MEASURE = 'p2c:db-save';
+const SAVE_MEASURES = 50;
 
 export const seedDemo = (db: Database, anchorDate: CalendarDate): void =>
   seedDemoData(db, { anchorDate, seed: DEMO_SEED });
@@ -263,18 +279,24 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
         return at;
       }
     : clock;
-  // The stored file is backed up only once it opened and passed its check (a file damaged inside
-  // never becomes the newest backup, DR-51, DR6-06); saves wait for that copy, so the migration's
-  // save never lands first, and nothing is saved when the check or the copy fails (the app then
-  // does not start). A failed save keeps the storage's error as it came (DR6-07).
+  // The stored file is backed up only once it opened and passed its check, before any migration
+  // (a file damaged inside never becomes the newest backup, DR-51, DR6-06); saves wait for that
+  // copy, so the migration's save never lands first, and nothing is saved when the check or the
+  // copy fails (the app then does not start). A failed save keeps the storage's error as it came
+  // (DR6-07).
   let backedUp = Promise.resolve();
   const saves = createPersistQueue(async (bytes) => {
     if (!storage) return;
     await backedUp;
     const start = performance.now();
     await storage.save(bytes);
-    // Read by the perf probe (e2e/perf): "lưu DB" of spec Phase 6 §5.2.
-    performance.measure('p2c:db-save', { start });
+    // Read by the perf probe (e2e/perf): "lưu DB" of spec Phase 6 §5.2. Cleared once there are
+    // SAVE_MEASURES, so a long session does not pile them up (review of PR 572) and their count
+    // still changes with every save, which the probe waits for.
+    if (performance.getEntriesByName(SAVE_MEASURE, 'measure').length >= SAVE_MEASURES) {
+      performance.clearMeasures(SAVE_MEASURE);
+    }
+    performance.measure(SAVE_MEASURE, { start });
   }, clock);
   // Only the current database saves: one replaced by `reloadDemoData` must never save again, or a
   // late write to it would overwrite the file with the old data. `current` moves only once the
@@ -284,23 +306,27 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   let opens = 0;
   let current = 0;
   let opening: number | undefined;
-  const open = async (bytes: Uint8Array) => {
+  // `migrated`: the migration saved it while it opened, the only save then.
+  const open = async (bytes: Uint8Array, check?: (db: Database) => void) => {
     const mine = ++opens;
     opening = mine;
+    let migrated = false;
     try {
       const db = await openDatabase({
         bytes,
         // Web mode skips exporting the file after every transaction: nothing would keep it.
         persist: storage
           ? (snapshot) => {
+              if (mine === opening) migrated = true;
               if (mine === current || mine === opening) saves.persist(snapshot);
             }
           : undefined,
         locateFile,
         now,
+        check,
       });
       current = mine;
-      return db;
+      return { db, migrated };
     } finally {
       if (opening === mine) opening = undefined;
     }
@@ -323,10 +349,11 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     }
   };
 
-  // Saves the database as it opened, migrated: never the bytes it was opened from (DR6-08).
+  // Saves the database as it opened, migrated: never the bytes it was opened from (DR6-08), and
+  // once, as a migration saved it already (review of PR 620).
   const openFrom = async (bytes: Uint8Array): Promise<Database> => {
-    const db = await open(bytes);
-    if (storage) saves.persist(db.export());
+    const { db, migrated } = await open(bytes);
+    if (storage && !migrated) saves.persist(db.export());
     return db;
   };
   const openNew = async (anchor: CalendarDate, aiSettings?: string): Promise<Database> =>
@@ -337,12 +364,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   if (stored && storage) {
     let release!: () => void;
     backedUp = new Promise<void>((resolve) => (release = resolve));
-    db = await open(stored);
-    // `integrity_check` reads the whole file (≈ 90 ms on the load data): a damaged page, or an
-    // index out of step with its table, may well leave every table the app reads at startup
-    // readable.
-    const [damage] = db.integrityCheck();
-    if (damage !== undefined) throw new Error(DATA_DAMAGED, { cause: damage });
+    ({ db } = await open(stored, refuseDamaged));
     try {
       await storage.backup();
     } catch (cause) {
