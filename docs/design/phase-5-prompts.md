@@ -1,6 +1,6 @@
 # Phase 5 — Prompt và guardrail AI (G5)
 
-- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417) · §6a `web@1` (ChatGPT web, W-1) **Owner duyệt G5 08/10/2026** (PR #430) · Đợt Phase 6 `analysis@2` / `discovery@2` **Owner duyệt G5 11/10/2026** (T-197 #491, §10) · Đợt lượt 2 `analysis@3` / `discovery@3` **Owner duyệt G5 18/10/2026** (T-257 #661, §11) · Đợt lượt 3 `analysis@4` / `discovery@4` **Owner duyệt G5 23/10/2026** (T-277 #728, §12)
+- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417) · §6a `web@1` (ChatGPT web, W-1) **Owner duyệt G5 08/10/2026** (PR #430) · Đợt Phase 6 `analysis@2` / `discovery@2` **Owner duyệt G5 11/10/2026** (T-197 #491, §10) · Đợt lượt 2 `analysis@3` / `discovery@3` **Owner duyệt G5 18/10/2026** (T-257 #661, §11) · Đợt lượt 3 `analysis@4` / `discovery@4` **Owner duyệt G5 23/10/2026** (T-277 #728, §12) · Luật T-291 (tách dòng VT / FF ở §6a, hai mục của §11.8; không đổi version) **Owner duyệt 23/10/2026** (T-291 #780, §13)
 - **Nền:** spec `phase-5-ai.md` (G1 / G2 duyệt 07/10/2026) §3, §6.1, §6.2, §6.4, §8; ADR-0009 (ranh giới, mục 3 validator, mục 6 pháp lý); danh mục KYC `packages/domain/src/kyc-catalog.ts`
 - **Dùng ở:** T-165 #406 (validator V3–V6 lấy **nguyên** các danh sách §6–§8), T-166 #407 (chữ prompt §2–§5 chép **nguyên văn** vào `packages/ai/src/prompts/<mode>.ts`)
 - **Đổi chữ prompt hoặc danh sách chặn sau khi duyệt** = tăng version (`analysis@2`…) + qua G5 lần nữa. Lỗi chính tả trong code so với file này là lỗi, không phải phiên bản mới.
@@ -211,7 +211,7 @@ Tin nhắn này có hai phần. Phần HƯỚNG DẪN là chỉ dẫn cho toàn 
 ````
 
 - **Thử lại:** nút "Copy yêu cầu sửa" copy đúng message thử lại §5 (cùng `{issues}`); người dùng dán vào **cùng** cuộc chat nên không cần lặp lại prompt.
-- **Câu dán là tin nhắn của app** (spec §3.1 mục 3; R2-03, R2-04 — Owner 11/10/2026, §10.6; tách dòng Owner 23/10/2026, §12.3): mỗi dòng (tách ở CR, LF, U+0085, U+2028, U+2029, như ghi chú KYC — K25) của câu dán và các dòng mốc chuẩn hóa như bước 0 của §7 (bỏ ký tự vô hình theo tập K20, gộp khoảng trắng, NFKC — §11.2; dấu tổ hợp lạc đọc như một dấu cách — §12.2), rồi bỏ tiền tố trích dẫn đầu dòng (một hay nhiều `>`, kèm khoảng trắng), gộp mọi khoảng trắng thành một dấu cách, cắt hai đầu. Một dòng trùng dòng mốc → `OWN_MESSAGE`: báo tại khung, không tính lần thử, không lưu. Dòng mốc: hai dòng khung `=== HƯỚNG DẪN ===`, `=== ĐẦU VÀO ===`, và dòng đầu, dòng cuối của message thử lại §5. Chỉ app viết dòng mốc, nên chấp nhận (§12.3): một chuỗi JSON của câu trả lời có U+0085, U+2028 hay U+2029 ngay trước và ngay sau dòng mốc thì dòng mốc thành một dòng riêng, và câu dán bị coi là tin nhắn của app.
+- **Câu dán là tin nhắn của app** (spec §3.1 mục 3; R2-03, R2-04 — Owner 11/10/2026, §10.6; tách dòng Owner 23/10/2026, §12.3, §13.4): mỗi dòng (tách ở CR, LF, VT, FF, U+0085, U+2028, U+2029, như ghi chú KYC — K25) của câu dán và các dòng mốc chuẩn hóa như bước 0 của §7 (bỏ ký tự vô hình theo tập K20, gộp khoảng trắng, NFKC — §11.2; dấu tổ hợp lạc đọc như một dấu cách — §12.2), rồi bỏ tiền tố trích dẫn đầu dòng (một hay nhiều `>`, kèm khoảng trắng), gộp mọi khoảng trắng thành một dấu cách, cắt hai đầu. Một dòng trùng dòng mốc → `OWN_MESSAGE`: báo tại khung, không tính lần thử, không lưu. Dòng mốc: hai dòng khung `=== HƯỚNG DẪN ===`, `=== ĐẦU VÀO ===`, và dòng đầu, dòng cuối của message thử lại §5. Chỉ app viết dòng mốc, nên chấp nhận (§12.3): một chuỗi JSON của câu trả lời có U+0085, U+2028 hay U+2029 ngay trước và ngay sau dòng mốc thì dòng mốc thành một dòng riêng, và câu dán bị coi là tin nhắn của app.
 - Câu trả lời dán vào được xử lý như `content` của model: lấy khối JSON đầu tiên, bỏ rào ```` ```json ```` (spec §6.1); V1–V6 như §7–§8. Không có `maxTokens`, `reasoning` — người dùng tự chọn model và mức suy luận trên web.
 - Khối trên dùng rào `plaintext` để `prompts.test.ts` (đang so đúng bốn khối `text` §2–§5) còn xanh cho tới task cài `web@1` (spec §13 #13); task đó so khối này với hằng số trong code.
 - Đổi chữ phần bọc = `web@2` + qua G5; đổi prompt chế độ thì `prompt_version` đổi theo (vd. `analysis@4+web@1`).
@@ -705,10 +705,10 @@ Ngoài bảng:
 ### 11.8 Không làm trong đợt này
 
 - Chữ tương hình (Cyrillic, Greek), như §10.10.
-- **REJECTED vẫn có thể lưu output lớn.** `output_json` của dòng REJECTED là output đã parse của lần thử cuối, không qua V1 (spec §7.1). Nên một output suy biến, lặp lại ở cả hai lần thử, vẫn lưu được tới cỡ thân trả lời (≤ 2 MB với OpenCode, ≤ 20 000 ký tự với ChatGPT web). Chuyện này có từ Phase 5 với mọi output suy biến; DR6-77 chỉ nói dòng ACCEPTED. Muốn sửa thì phải đổi spec §7.1 (G2), vì panel dùng `output_json` = `null` để nhận ra "không có khối JSON". Đề xuất: ghi `review-notes.md`, không làm ở đây.
+- **REJECTED vẫn có thể lưu output lớn.** `output_json` của dòng REJECTED là output đã parse của lần thử cuối, không qua V1 (spec §7.1). Nên một output suy biến, lặp lại ở cả hai lần thử, vẫn lưu được tới cỡ thân trả lời (≤ 2 MB với OpenCode, ≤ 20 000 ký tự với ChatGPT web). Chuyện này có từ Phase 5 với mọi output suy biến; DR6-77 chỉ nói dòng ACCEPTED. Muốn sửa thì phải đổi spec §7.1 (G2), vì panel dùng `output_json` = `null` để nhận ra "không có khối JSON". Đề xuất: ghi `review-notes.md`, không làm ở đây. → T-291 làm (Owner duyệt luật 23/10/2026, §13.2).
 - `detail` của V2 giữ nguyên ("F99 không có trong đầu vào", "ASSETS không phải hạng mục đang thiếu"): model đọc được mã đúng trong đầu vào.
 - (Review trước PR.) Ký tự trống có bề rộng (U+2800, U+3164) đặt làm dấu cách giữa hai chữ: bỏ đi theo bước 0 thì hai chữ dính nhau, cụm phía sau mất ranh giới từ ở đầu ("KH" + U+2800 + "xác suất"), nên không bị chặn. Model không đối kháng (§10.10); khi đứng **giữa** cụm thì vẫn bị chặn (C59).
-- (Review trước PR.) Nhập backup kiểm `output_json` bằng schema nhưng lưu nguyên chuỗi của backup, nên backup sửa tay vẫn mang được chuỗi lớn ở chỗ schema bỏ qua: khóa lạ, khoảng trắng hai đầu mà `trim` cắt (gồm U+FEFF). App không bao giờ viết như vậy (lệnh lưu kết quả đã parse). Có từ Phase 5, ngoài DR6-77; muốn chặn thì nhập backup phải so `output_json` với dạng đã parse (luật nhập mới, G2).
+- (Review trước PR.) Nhập backup kiểm `output_json` bằng schema nhưng lưu nguyên chuỗi của backup, nên backup sửa tay vẫn mang được chuỗi lớn ở chỗ schema bỏ qua: khóa lạ, khoảng trắng hai đầu mà `trim` cắt (gồm U+FEFF). App không bao giờ viết như vậy (lệnh lưu kết quả đã parse). Có từ Phase 5, ngoài DR6-77; muốn chặn thì nhập backup phải so `output_json` với dạng đã parse (luật nhập mới, G2). → T-291 làm (Owner duyệt luật 23/10/2026, §13.3).
 
 ### 11.9 Owner duyệt
 
@@ -858,3 +858,41 @@ Ngoài bảng:
 - [x] Danh sách đóng "ấm", "lạnh", "nội", "ít": chỉ khớp không dấu khi cả cụm không dấu (§12.4)
 - [x] "luật <Tên>" hướng b2: miễn "giới", và "định" trừ khi "định" đứng sau "quy" / "qui"; chữ mới của mục §8.4 (§12.5)
 - [x] Ca kiểm C73–C79 và các ca ngoài bảng (§12.7)
+
+## 13. Luật T-291 (#780) — Owner duyệt 23/10/2026
+
+**Trạng thái:** Owner duyệt bảy luật của T-291 ngày 23/10/2026, cùng kế hoạch đợt sửa sổ OPEN trước v1.0 (G2 / G5; `docs/PROJECT-STATE.md` 23/10/2026). Ba luật chạm file này (§13.2–§13.4); bốn luật còn lại ở spec `phase-3-du-lieu.md` §4, §6 và ADR-0007. Chữ dưới đây vào spec ở PR docs, Owner duyệt chữ khi merge; PR code làm sau.
+
+### 13.1 Version
+
+Không đổi: `analysis@4`, `discovery@4`, `extraction@1`, `web@1`. Chữ prompt, chữ bọc `web@1`, danh sách chặn và V1–V6 không đổi: §13.2, §13.3 là luật lưu / nhập `ai_analyses` (spec §7); §13.4 chỉ đổi cách tách dòng khi nhận ra tin nhắn của app, như §12.3 (giữ `web@1`).
+
+### 13.2 REJECTED: output lớn không lưu (§11.8)
+
+Luật đã duyệt: "Dòng REJECTED có output trên 20 000 ký tự thì không lưu output; panel báo 'output quá lớn'."
+
+- Đo trên dạng lưu của `output_json` (chuỗi `JSON.stringify` của khối JSON đã parse ở lần thử cuối), đếm theo code point như `raw_output`. Quá 20 000 → `output_json` = `null`; `raw_output` lưu như nay (cắt ở 20 000). Spec §7.1.
+- Panel nhận ra trường hợp này từ báo cáo validator: lần thử cuối có khối JSON (báo cáo của nó không phải một lỗi V1 duy nhất trên cả output) mà `output_json` null. Lỗi của lần đó hiện như thường, thêm dòng "Output quá lớn (trên 20 000 ký tự), app không lưu." Spec §9.1.
+- `recordAiAnalysis` và nhập backup từ chối dòng REJECTED có `output_json` dài hơn (§13.3), nên dòng nào lệnh nhận thì nhập lại được.
+
+### 13.3 Nhập backup: `output_json` đúng dạng app ghi (§11.8)
+
+Luật đã duyệt: "Khi nhập backup, chỉ nhận `output_json` đúng dạng app ghi."
+
+- `ACCEPTED`: đúng chuỗi `JSON.stringify` của output mà schema của `mode` đọc ra: khóa theo thứ tự của schema, không khóa lạ, chuỗi đã cắt khoảng trắng hai đầu, giá trị mặc định đã điền. App lưu đúng chuỗi này (`analysisOutcome` lưu kết quả schema đọc ra).
+- `REJECTED`: `null`, hoặc một object JSON đúng chuỗi `JSON.stringify` viết lại nó (không khoảng trắng ngoài chuỗi, không khóa trùng), dài tối đa 20 000 ký tự (§13.2).
+- Hết đường mang chuỗi lớn vào dòng `ACCEPTED` qua khóa lạ hay khoảng trắng hai đầu mà `trim` cắt (gồm U+FEFF). Spec §7.3 luật 3; sai → `BACKUP_INVALID`.
+- Đã thử trên dữ liệu giả lập (hạt giống 1; hạt giống 6 có Thùng rác) và dữ liệu tải (`LOAD_SCALE`, neo 12/10/2026, hạt giống 6): cả 217 dòng `ACCEPTED` đúng dạng.
+
+### 13.4 Tin nhắn của app: VT / FF (§6a)
+
+Luật đã duyệt: "Ký tự VT / FF trong ghi chú cũng tính là xuống dòng." Kèm điều kiện: "Nếu cách ChatGPT web nhận ra tin nhắn của app tách dòng theo cùng tập ký tự (G5 §6a), giữ hai nơi khớp."
+
+- §6a tách dòng theo đúng tập của ghi chú KYC (K25), nên thêm VT (U+000B) và FF (U+000C): một dòng của câu dán kết thúc ở CR LF, CR, LF, VT, FF, U+0085, U+2028 hoặc U+2029.
+- JSON không cho VT, FF đứng trần trong chuỗi. Nên khác U+0085, U+2028, U+2029 (phần "chấp nhận" của §12.3), hai ký tự này không tách được dòng mốc ra khỏi một chuỗi JSON hợp lệ của câu trả lời.
+
+### 13.5 Ca kiểm (PR code)
+
+- §13.2: hai lần thử đều trả output có dạng lưu trên 20 000 ký tự → dòng REJECTED có `output_json` null, panel hiện dòng "Output quá lớn…"; đúng 20 000 → lưu như nay.
+- §13.3: backup sửa tay `output_json` (thêm khoảng trắng, khóa lạ, U+FEFF hai đầu một chuỗi, đổi thứ tự khóa) → `BACKUP_INVALID`; backup do app xuất → nhập được.
+- §13.4: tin nhắn `web@1` có VT hay FF thay mọi dấu xuống dòng → `OWN_MESSAGE` ở lần 1; ở lần 2, message thử lại của phiên viết như vậy → `OWN_MESSAGE`, phiên còn mở.

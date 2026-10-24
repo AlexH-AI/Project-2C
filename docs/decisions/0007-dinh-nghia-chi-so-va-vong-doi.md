@@ -50,7 +50,7 @@ Chỉ số mơ hồ → hai người đọc ra hai con số khác nhau. Pipeline
 **Nhập liệu:**
 
 - Kết quả cuộc gặp = văn bản + **trường có cấu trúc bắt buộc** (trạng thái, nhóm sau cuộc gặp, case size dự kiến, việc tiếp theo) (W3).
-- Ngày `dd/mm` mặc định năm hiện tại; luôn hiện ngày đầy đủ đã diễn giải; nếu đã qua > 60 ngày → gợi ý năm sau (W8).
+- Ngày `dd/mm` mặc định năm hiện tại; luôn hiện ngày đầy đủ đã diễn giải; nếu đã qua > 60 ngày → gợi ý năm sau (W8). Đầu năm, ngày chưa tới mà cùng ngày năm trước mới qua ≤ 60 ngày → gợi ý năm trước (phụ lục 23/10/2026).
 
 ## Phương án đã cân nhắc
 
@@ -77,3 +77,13 @@ Chi tiết + golden: `docs/design/phase-4-chi-so.md`, `docs/golden/lich-hen.md` 
 - **KH theo nhóm:** ảnh chụp ở mốc (cuối kỳ; kỳ chưa hết → hôm nay), theo RE hiện tại của KH; KH đã xóa không tính. Tổng quan 4 ô N4–N1 + chart diễn biến; báo cáo thêm Tạm hoãn, Mất cơ hội.
 - **Miền năm:** 1900–2100 (`MAX_YEAR = 2100`); kỳ luôn nằm trong miền, `PeriodPicker` tắt nút ở biên.
 - **Tổng quan / Báo cáo:** kỳ chưa hết tính tới hôm nay (tháng = MTD); 6 ô KPI so với kỳ trước cùng số ngày; bảng So sánh team bấm xổ RE; báo cáo có bảng Theo mốc; dòng Tổng tính tỉ lệ chốt từ tổng (Σ PH ÷ Σ RF).
+
+## Phụ lục — Ngày nhanh đầu năm (Owner duyệt 23/10/2026, T-291 #780)
+
+Luật đã duyệt: "Gõ ngày nhanh đầu năm: nếu ngày đó năm nay chưa tới, mà năm trước mới qua không quá 60 ngày, thì gợi ý năm trước." Đối xứng với gợi ý năm sau của W8 (mục Nhập liệu ở trên) và của DR-39 (29/02 năm không nhuận).
+
+- Chỉ khi gõ `dd/mm` không năm. "Chưa tới": sau hôm nay. "Không quá 60 ngày": từ cùng ngày năm trước tới hôm nay. Như gợi ý năm sau, app không tự đổi năm: hiện ngày đã hiểu kèm gợi ý, RE chọn.
+- Câu gợi ý, đối xứng câu năm sau của mockup 6b ("<ngày> đã qua <n> ngày. Ý anh là <ngày năm sau>?"): "<dd/mm/yyyy> còn <n> ngày nữa. Ý anh là <dd/mm/yyyy năm trước>?", nút "Dùng <dd/mm/yyyy năm trước>". Ô nào có dòng hướng dẫn dưới gợi ý thì dòng đó là "App không tự đổi năm. Giữ nguyên là lịch hẹn năm nay."
+- Ô có gợi ý: ô ngày đang có gợi ý năm sau, khi ô đó nhận ngày đã qua (lịch hẹn mới 6b, dời lịch nhập bù 6e). Ô chỉ nhận ngày từ hôm nay (hẹn tiếp 6h, dời lịch thường) không gợi ý ngày năm trước, vì ngày đó đã qua. Ô chỉ nhận ngày đã qua (ngày tạo KH, chuyển nhóm tay, ngày nộp / phát hành HĐ) giữ như nay: ngày sau hôm nay báo lỗi và nhắc gõ đủ năm, nên không lưu nhầm năm.
+- Vd. hôm nay 02/01/2027: "28/12" → 28/12/2027, gợi ý 28/12/2026; "15/03" → 15/03/2027, không gợi ý; "28/12/2026" (có năm) → không gợi ý. Hai gợi ý không bao giờ cùng lúc: gợi ý năm sau cần ngày đã qua, gợi ý năm trước cần ngày chưa tới. "29/02" không có gợi ý năm trước: ngày đó cách đầu năm sau hơn 300 ngày.
+- Luật chỉ thêm gợi ý: ngày đã hiểu, lỗi và gợi ý năm sau giữ như nay (các ca DR-39 giữ nguyên). Đã thử mọi chuỗi `d/m` (d 0–32, m 0–13) với mọi hôm nay từ 01/01/2026 tới 31/12/2029 (674 982 lần đọc): 7 320 lần có gợi ý năm trước, không lần nào cùng gợi ý năm sau, muộn nhất hôm nay 01/03 năm không nhuận (gõ "31/12").
