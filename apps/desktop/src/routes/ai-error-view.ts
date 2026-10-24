@@ -3,7 +3,7 @@
  * → AI (spec Phase 5 §5.3; mockup ai.html 2l "dùng chung panel, trích xuất, Cài đặt", 4c). It shows
  * the HTTP status Rust got, so the Owner can read the real code of an expired plan (T-164).
  */
-import { errorDetails, type AiErrorCode, type AiErrorDetails, type AiFailed } from '@p2c/ai';
+import { errorDetails, type AiErrorCode, type AiErrorDetails, type AiErrorResult } from '@p2c/ai';
 import { t } from '../i18n';
 
 /** The code shown: an AI error, or the general one for a bug or a bad request (#ask "lỗi khác"). */
@@ -17,13 +17,13 @@ export interface AiFailure extends AiErrorDetails {
 export const GENERAL_FAILURE: AiFailure = { code: 'GENERAL' };
 
 /** An error as shown: a bad request is a bug of the app, the general message. */
-export function aiFailure(failed: AiFailed): AiFailure {
+export function aiFailure(failed: AiErrorResult): AiFailure {
   const { code } = failed;
   if (code === 'AI_BAD_REQUEST') return GENERAL_FAILURE;
   return { code, ...errorDetails(failed) };
 }
 
-export function errorText({ code, httpStatus, serverMessage }: AiFailure | AiFailed): string {
+export function errorText({ code, httpStatus, serverMessage }: AiFailure | AiErrorResult): string {
   if (code === 'AI_BAD_REQUEST' || code === 'GENERAL') return t('aiError.GENERAL');
   if (httpStatus === undefined) return t(`aiError.${code}`);
   if (code === 'AI_HTTP') {

@@ -21,7 +21,7 @@ import {
 } from './analysis-steps';
 import { checkAnswer, nextRetry, type CheckedAnswer } from './attempts';
 import { codePointCount, cutCodePoints } from './code-points';
-import { AiError, errorDetails, type AiFailed } from './errors';
+import { AiError, errorDetails, type AiErrorResult } from './errors';
 import { buildExtractionInput } from './input';
 import type { AiModelId } from './models';
 import { connectionCheck } from './prompts/connection';
@@ -43,7 +43,7 @@ import {
 
 type Cancelled = { readonly kind: 'cancelled' };
 /** An `AiError` as a result. */
-type Failed = AiFailed & { readonly kind: 'error' };
+type Failed = AiErrorResult & { readonly kind: 'error' };
 
 // Shared by every call, so frozen: a caller that writes to one cannot change the next (MS-A6).
 const CANCELLED: Cancelled = Object.freeze({ kind: 'cancelled' });

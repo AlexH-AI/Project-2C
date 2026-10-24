@@ -560,9 +560,12 @@ describe('createMockAdapter', () => {
     'KH độc thân à.',
     'KH là người độc thân à.',
     'KH đã kết hôn hả.',
-    // More guesses.
+    // More guesses, and doubts: "chắc" said unsure.
     'Chắc KH đã kết hôn rồi.',
     'KH độc thân thì phải.',
+    'KH đã kết hôn, hỏi lại cho chắc.',
+    'KH đã kết hôn, nhưng không chắc chắn.',
+    'KH đã có 2 con, nhưng chưa biết chắc.',
     // "của" and a count or "người": someone else's children.
     'KH nuôi 2 con của hai người bạn.',
     'KH nuôi 2 con của một người bạn.',
@@ -580,9 +583,14 @@ describe('createMockAdapter', () => {
     ['KH độc thân\nChưa có con.', [SINGLE]],
     ['KH đã kết hôn\nHay đi công tác.', [MARRIED]],
     ['KH có 2 con\nchưa mua bảo hiểm.', [TWO]],
-    // Sure is no guess, nor is "ạ" a question.
+    // Sure or firm is no guess (the review of PR #812 too), nor is "ạ" a question.
     ['KH chắc chắn đã kết hôn.', [MARRIED]],
     ['KH có tài chính vững chắc, đã kết hôn.', [MARRIED]],
+    ['KH có thân hình săn chắc, đã kết hôn.', [MARRIED]],
+    ['KH có cơ bắp rắn chắc, đã kết hôn.', [MARRIED]],
+    ['KH biết chắc mình muốn mua bảo hiểm, đã kết hôn.', [MARRIED]],
+    ['KH nắm chắc tài chính gia đình, đã có 2 con.', [TWO]],
+    ['KH có 2 con, chắc ăn nên mua gói gia đình.', [TWO]],
     ['KH đã kết hôn ạ.', [MARRIED]],
     ['KH có 2 con của mình.', [TWO]],
   ])('reads %j as %j (the review of PR #809, T-288)', async (note, facts) => {

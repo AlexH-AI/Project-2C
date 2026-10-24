@@ -13,7 +13,7 @@ import {
   startWebAnalysis,
   type AiAbortSignal,
   type AiAdapter,
-  type AiFailed,
+  type AiErrorResult,
   type AiRunner,
   type AiSettings,
   type AnalysisRow,
@@ -142,7 +142,7 @@ export type AnalysisOutcome =
   /** The gate changed between showing the button and the click: its sentence, not an error. */
   | { readonly kind: 'blocked'; readonly state: KycGateState }
   /** §5.3 message and Thử lại; `AI_BUSY` too. A failed HTTP call keeps what Rust told (2l). */
-  | (AiFailed & { readonly kind: 'error' })
+  | (AiErrorResult & { readonly kind: 'error' })
   /** Hủy: the panel goes back to how it was. */
   | { readonly kind: 'cancelled' }
   /**

@@ -305,15 +305,21 @@ const WISHED = /(?<!\p{L})(?:muốn|mong|dự định|hy vọng|hi vọng)(?!\p{
 const NEGATED = /(?<!\p{L})(?:không|chưa|chẳng|bác bỏ|phủ nhận)(?!\p{L})/iu;
 
 /**
+ * "chắc" said unsure, as a guess ("chắc là", "hỏi lại cho chắc": to be made sure of) or a doubt
+ * ("không chắc chắn", "chưa biết chắc"); not "chắc" of a word that is sure or firm: "chắc chắn",
+ * "chắc ăn", "biết / nắm chắc", "vững / săn / rắn chắc" (T-288).
+ */
+const UNSURE = String.raw`(?<!(?:vững|săn|rắn|biết|nắm) )chắc(?! (?:chắn|ăn))|(?:không|chưa|chẳng)(?: (?:biết|nắm))? chắc`;
+
+/**
  * A guess, a question mark or a question ending the sentence, anywhere in the sentence of a phrase,
  * before it or after it: "Có lẽ KH đã kết hôn.", "KH có 2 con, hình như.", "KH đã kết hôn?"
  * (DR6-121), "Có vẻ KH đã kết hôn.", "KH đã kết hôn, dường như vậy." (T-289), "Chắc KH đã kết hôn
- * rồi.", "KH độc thân thì phải.", "KH độc thân à." (T-288). Not "chắc chắn" (sure) nor "vững
- * chắc" (firm).
+ * rồi.", "KH độc thân thì phải.", "KH độc thân à." (T-288), "chắc" said unsure (`UNSURE`).
  */
 const GUESSED = new RegExp(
   [
-    String.raw`(?<!\p{L})(?:có lẽ|hình như|nghe nói|có vẻ|dường như|(?<!vững )chắc(?! chắn))(?!\p{L})`,
+    String.raw`(?<!\p{L})(?:có lẽ|hình như|nghe nói|có vẻ|dường như|${UNSURE})(?!\p{L})`,
     String.raw`(?<!\p{L})(?:thì phải|à|hả)(?=[^\p{L}\p{N}]*$)`,
     String.raw`\?`,
   ].join('|'),

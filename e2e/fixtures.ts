@@ -1,17 +1,18 @@
 import { test as base, type Locator } from '@playwright/test';
 import { PROMPT_VERSIONS } from '../packages/ai/src/schema';
+import { WEB_WRAPPER } from '../packages/ai/src/web';
 import { anchorMorning } from './anchor';
 
 export { expect, type Locator, type Page } from '@playwright/test';
 
 /**
- * The prompt versions the app writes, read from the code (`@p2c/ai/schema`), so a G5 round that
- * moves one changes no spec (T-288). ChatGPT web adds the version of its wrapper (G5 §6a).
+ * The prompt versions the app writes, read from the code (`@p2c/ai`), so a G5 round that moves one
+ * changes no spec (T-288). ChatGPT web adds the version of its wrapper (G5 §6a).
  */
 export const PROMPT = {
   analysis: PROMPT_VERSIONS.analysis,
   discovery: PROMPT_VERSIONS.discovery,
-  webDiscovery: `${PROMPT_VERSIONS.discovery}+web@1`,
+  webDiscovery: `${PROMPT_VERSIONS.discovery}+${WEB_WRAPPER.version}`,
 } as const;
 
 /**

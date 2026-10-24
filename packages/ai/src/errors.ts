@@ -33,8 +33,8 @@ export interface AiErrorDetails {
   readonly serverMessage?: string;
 }
 
-/** An AI error as a value: what a run gives back and a screen shows. */
-export interface AiFailed extends AiErrorDetails {
+/** An AI error as a result: what a run gives back, with the code `ai` or Rust gave. */
+export interface AiErrorResult extends AiErrorDetails {
   readonly code: AiErrorCode;
 }
 
@@ -61,7 +61,7 @@ export function isAiErrorCode(value: unknown): value is AiErrorCode {
   return (AI_ERROR_CODES as readonly unknown[]).includes(value);
 }
 
-export class AiError extends Error implements AiFailed {
+export class AiError extends Error implements AiErrorResult {
   override readonly name = 'AiError';
   readonly code: AiErrorCode;
   readonly httpStatus?: number;

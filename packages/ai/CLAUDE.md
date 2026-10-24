@@ -34,7 +34,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/attempts.ts` — MAX_ATTEMPTS, type CheckedAnswer, checkAnswer, lastAnswer, nextRetry
 - `src/blocklists.ts` — BLOCKLISTS
 - `src/code-points.ts` — codePointCount, codePointsOver, cutCodePoints
-- `src/errors.ts` — AI_ERROR_CODES, type AiErrorCode, type AiErrorDetails, type AiFailed, errorDetails, isAiErrorCode, AiError
+- `src/errors.ts` — AI_ERROR_CODES, type AiErrorCode, type AiErrorDetails, type AiErrorResult, errorDetails, isAiErrorCode, AiError
 - `src/extract-json.ts` — type ExtractedJson, type ExtractOptions, extractJson
 - `src/index.ts` — re-exports ./errors, ./models, ./adapter, ./extract-json, ./schema, ./mock-adapter, ./validator, ./input, ./run, ./settings, ./web
 - `src/input.ts` — type ExtractionInput, buildExtractionInput
