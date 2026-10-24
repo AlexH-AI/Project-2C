@@ -21,7 +21,7 @@ describe('startupMessage', () => {
     const cause = 'There is not enough space on the disk. (os error 112)';
     expect(startupMessage(new Error('STARTUP_BACKUP_FAILED', { cause }))).toEqual({
       title: 'Không sao lưu được file dữ liệu',
-      help: 'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở: hãy kiểm tra ổ đĩa còn chỗ trống và thư mục đó không chỉ đọc hay bị chương trình khác giữ, rồi đóng cửa sổ này và mở lại app.',
+      help: 'File dữ liệu không bị đổi, không cần khôi phục. App chép một bản vào Project2C-data\\backups trước khi mở: hãy kiểm tra ổ đĩa còn chỗ trống, thư mục đó không chỉ đọc hay bị chương trình khác giữ và tài khoản Windows đang dùng được quyền đọc, ghi thư mục đó, rồi đóng cửa sổ này và mở lại app.',
       detail: 'There is not enough space on the disk. (os error 112)',
     });
   });

@@ -71,7 +71,7 @@ export function AppShell() {
     <div className="flex min-h-screen">
       <Sidebar current={sectionOf(route)} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <SaveWarning />
+        <SaveWarning heading={heading} />
         <header className="sticky top-0 z-10 flex items-center gap-3.5 border-b border-border bg-surface-0 px-6 py-3.5">
           <h1 ref={heading} tabIndex={-1} className="m-0 text-xl font-semibold whitespace-nowrap">
             {t(`screen.${route.screen}`)}

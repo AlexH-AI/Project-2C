@@ -71,7 +71,7 @@ Xóa dữ liệu hiện tại và tạo lại dữ liệu giả lập: 3 team ×
 
 Muốn lấy lại dữ liệu trước khi nạp lại (bản exe): đóng app, chép bản backup trong `Project2C-data\backups\` thành `Project2C-data\project2c.db`.
 
-Lần lưu gần nhất bị lỗi thì app không nhập backup, không nạp lại ("…backup sẽ thiếu các thay đổi đó"). Xử lý lỗi lưu trước (xem [1. Bắt đầu](01-bat-dau.md#khi-app-chưa-lưu-được-bản-exe)).
+Lần lưu gần nhất bị lỗi thì app không nhập backup, không nạp lại ("…backup sẽ thiếu các thay đổi đó. Bấm "Thử lại" ở dải cảnh báo đầu màn…"). Xử lý lỗi lưu, bấm **Thử lại** ở dải cảnh báo, lưu được rồi thì làm lại (xem [1. Bắt đầu](01-bat-dau.md#khi-app-chưa-lưu-được-bản-exe)).
 
 ## Cài đặt → AI
 
@@ -186,7 +186,7 @@ Dọn xong, app báo "Đã dọn sạch Thùng rác", kèm số bản ghi đã x
 
 - **Backup trước (bản exe):** app chờ lưu xong, rồi chép file dữ liệu vào `Project2C-data\backups\` trước khi dọn. Muốn lấy lại dữ liệu như trước lúc dọn: đóng app, chép bản backup đó thành `Project2C-data\project2c.db`; các thay đổi sau lúc dọn sẽ mất. Bản web không lưu file nên không có backup.
 - **Không dọn được:** có ba trường hợp, và cả ba đều để dữ liệu không đổi:
-  - lần lưu gần nhất bị lỗi: app báo "Chưa dọn: lần lưu gần nhất bị lỗi…";
+  - lần lưu gần nhất bị lỗi: app báo "Chưa dọn: lần lưu gần nhất bị lỗi…" kèm cách làm: bấm **Thử lại** ở dải cảnh báo đầu màn, lưu được rồi thì dọn lại;
   - backup lỗi;
   - lỗi giữa chừng.
 

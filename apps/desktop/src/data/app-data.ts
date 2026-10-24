@@ -25,7 +25,7 @@ import {
   type CalendarDate,
 } from '@p2c/domain';
 import { createAppAi, type AppAi, type AppAiOptions } from './ai-analysis';
-import { createPersistQueue, type PersistQueue } from './persist-queue';
+import { createPersistQueue, type LastSave, type PersistQueue } from './persist-queue';
 import { readTables, type Tables } from './tables';
 
 export { countRecords, type RecordCounts };
@@ -53,14 +53,6 @@ export interface StoragePort {
 
 /** The folders of `Project2C-data\` that Settings → Data opens. */
 export type DataFolder = 'exports' | 'backups';
-
-/** The last write of the database file that succeeded in this session. */
-export interface LastSave {
-  /** Local time the write finished. */
-  readonly at: Date;
-  /** Bytes written. */
-  readonly size: number;
-}
 
 export interface ExportedBackup {
   /** `project2c-YYYYMMDD-HHMM.p2cbackup`, local time. */
@@ -125,7 +117,11 @@ export interface AppData {
   run<T>(command: (db: Database) => T): T;
   /** True in the exe (saved to a file, backed up); false in web mode (in memory only). */
   readonly hasFile: boolean;
-  /** Save status for the UI warning; never fails in web mode. */
+  /**
+   * The saves of the database file, and the one store of the save state (`status()`). A replace
+   * counts as saving from its call until it ends, the new data saved or the replace refused. Web
+   * mode saves nothing, so it never fails.
+   */
   readonly saves: PersistQueue;
   /**
    * The app's day ("hôm nay"), also the anchor day of new simulated data. Screens read it through
@@ -165,17 +161,13 @@ export interface AppData {
    * the last save failed, else with the backup's or the purge's error, the data unchanged.
    */
   purgeTrash(): Promise<PurgedTrash>;
-  /** Settings → Data: the last successful save of this session; always `undefined` in web mode. */
-  lastSave(): LastSave | undefined;
-  /** Called whenever `lastSave` changes; returns the unsubscribe function. */
-  subscribeLastSave(listener: () => void): () => void;
   /**
-   * Why the last save failed, for the save warning: the storage's error (`DISK_FULL` for a full
-   * disk). `undefined` until a save fails and once one succeeds; always in web mode.
+   * Settings → Data: the last successful save of this session (`saves.status().lastSave`); always
+   * `undefined` in web mode.
    */
-  saveError(): unknown;
-  /** Called whenever `saveError` changes; returns the unsubscribe function. */
-  subscribeSaveError(listener: () => void): () => void;
+  lastSave(): LastSave | undefined;
+  /** Called whenever the save state changes (`saves.subscribe`); returns the unsubscribe function. */
+  subscribeLastSave(listener: () => void): () => void;
   /** The newest automatic backup's file name; `undefined` in web mode or when there is none. */
   latestBackup(): Promise<string | undefined>;
   /** Shows a data folder in Explorer; does nothing in web mode. */
@@ -269,36 +261,19 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
         return at;
       }
     : clock;
-  let lastSave: LastSave | undefined;
-  const lastSaveListeners = new Set<() => void>();
-  let saveError: unknown;
-  const saveErrorListeners = new Set<() => void>();
-  const setSaveError = (error: unknown) => {
-    if (Object.is(error, saveError)) return;
-    saveError = error;
-    for (const listener of saveErrorListeners) listener();
-  };
   // The stored file is backed up only once it opened and passed its check (a file damaged inside
   // never becomes the newest backup, DR-51, DR6-06); saves wait for that copy, so the migration's
   // save never lands first, and nothing is saved when the check or the copy fails (the app then
-  // does not start).
+  // does not start). A failed save keeps the storage's error as it came (DR6-07).
   let backedUp = Promise.resolve();
   const saves = createPersistQueue(async (bytes) => {
     if (!storage) return;
     await backedUp;
     const start = performance.now();
-    try {
-      await storage.save(bytes);
-    } catch (error) {
-      setSaveError(error);
-      throw error;
-    }
-    setSaveError(undefined);
+    await storage.save(bytes);
     // Read by the perf probe (e2e/perf): "lưu DB" of spec Phase 6 §5.2.
     performance.measure('p2c:db-save', { start });
-    lastSave = { at: clock(), size: bytes.byteLength };
-    for (const listener of lastSaveListeners) listener();
-  });
+  }, clock);
   // Only the current database saves: one replaced by `reloadDemoData` must never save again, or a
   // late write to it would overwrite the file with the old data. `current` moves only once the
   // new database opened, so a failed open leaves the current one saving. While `opening`, the new
@@ -391,7 +366,8 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   // backup, so it refuses instead. One at a time, in call order (S2-1); from the call until the
   // last one ends, writes are refused (S2-2), so the backup holds every change and the old
   // database saves nothing after it. Exports are not queued: each reads the database once, with no
-  // `await` in between (S2-5).
+  // `await` in between (S2-5). Each counts as saving until it ends: the new data is saved by then,
+  // so closing the window waits for it (S2-6, review of PR 125).
   let replacing = 0;
   let replaces = Promise.resolve();
   const inTurn = <T>(change: (backup: string | undefined) => T | Promise<T>): Promise<T> => {
@@ -401,6 +377,7 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
       () => undefined,
       () => undefined,
     );
+    saves.track(turn);
     return turn;
   };
 
@@ -488,16 +465,8 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
         changed();
         return { ...purged, backup };
       }),
-    lastSave: () => lastSave,
-    subscribeLastSave(listener) {
-      lastSaveListeners.add(listener);
-      return () => lastSaveListeners.delete(listener);
-    },
-    saveError: () => saveError,
-    subscribeSaveError(listener) {
-      saveErrorListeners.add(listener);
-      return () => saveErrorListeners.delete(listener);
-    },
+    lastSave: () => saves.status().lastSave,
+    subscribeLastSave: saves.subscribe,
     latestBackup: () => storage?.latestBackup() ?? Promise.resolve(undefined),
     openFolder: (kind) => storage?.openFolder(kind) ?? Promise.resolve(),
     ai: createAppAi(

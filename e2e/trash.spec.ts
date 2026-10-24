@@ -617,9 +617,10 @@ test('the dialog of a purge that runs stays: Escape does not close it, Hủy is 
 });
 
 // D7, 11j: the last save failed, so a backup would miss what changed since: the purge is refused, in
-// the place its notice would be, and nothing changes. The notice that D8 and D9 show is this branch
-// of the screen with another title; the exe's stand-in cannot make the backup fail.
-test('a purge refused because the last save failed says so and changes nothing (D7; 11j)', async ({
+// the place its notice would be, and nothing changes; "Thử lại" on the save warning saves, and the
+// purge then runs (T-294). The notice that D8 and D9 show is this branch of the screen with another
+// title; the exe's stand-in cannot make the backup fail.
+test('a purge refused because the last save failed says so and changes nothing, then runs after "Thử lại" (D7; 11j)', async ({
   page,
 }) => {
   await asExe(page);
@@ -636,7 +637,7 @@ test('a purge refused because the last save failed says so and changes nothing (
   // The shell's own alert says the save failed; this one is the card's.
   const refused = trash(page).getByRole('alert');
   await expect(refused).toContainText(
-    'Chưa dọn: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó.',
+    'Chưa dọn: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Bấm "Thử lại" ở dải cảnh báo đầu màn, lưu được rồi thì dọn lại.',
   );
   await expect(refused).toContainText('Dữ liệu không bị đổi.');
   await expect(trash(page).getByRole('status')).toHaveCount(0);
@@ -644,4 +645,14 @@ test('a purge refused because the last save failed says so and changes nothing (
   await expect(trash(page)).toContainText('1 bản ghi');
   await expect(purgeButton(page)).toBeEnabled();
   await expect(purgeButton(page)).toBeFocused();
+
+  await page.evaluate(() => (window.exe.failSaves = false));
+  const warning = page.getByRole('alert').filter({ hasText: 'Chưa lưu được dữ liệu vào file' });
+  await warning.getByRole('button', { name: 'Thử lại' }).click();
+  await expect(warning).toHaveCount(0);
+  await purgeButton(page).click();
+  await purgeWord(page).fill('DỌN SẠCH');
+  await purgeDialog(page).getByRole('button', { name: 'Backup rồi dọn sạch' }).click();
+  await expect(trash(page).getByRole('status')).toContainText('Đã dọn sạch Thùng rác');
+  await expect(trash(page)).toContainText('Thùng rác trống');
 });

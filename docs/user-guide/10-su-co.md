@@ -34,7 +34,7 @@ Cùng cách này dùng để lấy lại dữ liệu trước một lần **Nh�
 
 ## Chưa lưu được vào file (bản exe)
 
-Dải cảnh báo "Chưa lưu được dữ liệu vào file…" ở đầu màn và hộp **Chưa lưu được thay đổi** khi đóng app: xem [1. Bắt đầu → Khi app chưa lưu được](01-bat-dau.md#khi-app-chưa-lưu-được-bản-exe). Câu trên dải và trong hộp cho biết nguyên nhân:
+Dải cảnh báo "Chưa lưu được dữ liệu vào file…" ở đầu màn (chân sidebar ghi "Chưa lưu được vào file") và hộp **Chưa lưu được thay đổi** khi đóng app: xem [1. Bắt đầu → Khi app chưa lưu được](01-bat-dau.md#khi-app-chưa-lưu-được-bản-exe). Câu trên dải và trong hộp cho biết nguyên nhân:
 
 | Câu ghi | Nghĩa | Làm gì |
 |---|---|---|
@@ -43,7 +43,7 @@ Dải cảnh báo "Chưa lưu được dữ liệu vào file…" ở đầu màn
 | "…file Project2C-data\project2c.db đang ở chế độ chỉ đọc, hoặc tài khoản Windows đang dùng không có quyền ghi / xóa file đó…" | File chuyển sang chỉ đọc lúc app chạy, hoặc quyền của tài khoản bị rút | Chuột phải file → Properties → bỏ chọn Read-only, hoặc nhờ người quản trị máy cấp lại quyền |
 | "…thư mục Project2C-data không cho tài khoản Windows đang dùng tạo file mới trong đó…" | Quyền của tài khoản trên thư mục bị rút lúc app chạy. Mỗi lần lưu, app ghi một file mới rồi mới thay file cũ, nên không lưu được dù `project2c.db` không chỉ đọc | Nhờ người quản trị máy cấp lại quyền ghi vào thư mục `Project2C-data` |
 
-Cả bốn trường hợp: dữ liệu vẫn còn trong app, dải cảnh báo tự mất khi lưu được. Nếu file đã chỉ đọc, hay file hoặc thư mục đã bị rút quyền từ trước khi mở app, app không vào màn chính mà hiện trang "App không có quyền ghi vào thư mục dữ liệu" (xem [Lỗi lúc mở app](#lỗi-lúc-mở-app-bản-exe)).
+Cả bốn trường hợp: dữ liệu vẫn còn trong app, dải cảnh báo tự mất khi lưu được. Xử lý xong thì bấm **Thử lại** ở cuối dải để lưu ngay. Nếu file đã chỉ đọc, hay file hoặc thư mục đã bị rút quyền từ trước khi mở app, app không vào màn chính mà hiện trang "App không có quyền ghi vào thư mục dữ liệu" (xem [Lỗi lúc mở app](#lỗi-lúc-mở-app-bản-exe)).
 
 ## Một màn không hiện được
 

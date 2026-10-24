@@ -64,7 +64,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 - **S2-3 Kết quả AI về trong lúc thay** bị bỏ như khi về sau lúc thay (`discarded`, panel không hiện gì, không báo lỗi), giống DR5-36.
 - **S2-4 Thay lỗi** (lưu trước đó lỗi → từ chối như cũ; backup lỗi; mở DB mới lỗi): mở khóa ghi, DB cũ dùng và lưu tiếp như trước, `generation` không đổi.
 - **S2-5 Xuất không vào hàng đợi.** Xuất backup / Xuất Excel đọc DB trong bộ nhớ một lần, đồng bộ (không có `await` giữa lúc đọc và lúc có bytes), rồi ghi vào `exports\` bằng tên mới, nguyên tử, không đụng `project2c.db`. Xuất trong lúc thay cho ra file đủ của dữ liệu cũ hoặc của dữ liệu mới, không lẫn. Chặn xuất không thêm gì về an toàn mà làm người dùng chờ tới ~7 s.
-- **S2-6 Đóng app trong lúc thay** không phải chờ. File sau đó là dữ liệu cũ đủ (đóng trước lúc đổi DB; backup có thể đã có thêm một bản) hoặc dữ liệu mới đủ (đóng sau lúc đổi: `flush` chờ lần lưu dữ liệu mới), không bao giờ lẫn.
+- **S2-6 Đóng app trong lúc thay** (Nạp lại, Nhập backup, Dọn sạch Thùng rác) chờ lần thay xong và dữ liệu mới lưu xong rồi mới đóng (lần thay bị từ chối thì chờ tới lúc từ chối); trong lúc chờ, chỉ báo lưu ở sidebar ghi "Đang lưu…" (mockup `settings-data.html` 10d). File sau đó là dữ liệu mới đủ. Owner 25/10/2026 (T-294, #783, sổ review #125) thay câu cũ "không phải chờ": khi đó đóng giữa lúc seed thì app đóng ngay, file còn dữ liệu cũ đủ và lần Nạp lại mất.
 
 **G3:** không có màn mới. Câu báo S2-2 có mẫu ở mockup `trash.html` khối 11g.
 
@@ -173,7 +173,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 | D4 | RE Vũ Minh Khoa chỉ còn là RE của lịch hẹn của một KH trong Thùng rác (hộp 9b: "Có cả dữ liệu của KH đã xóa: …") | Sau dọn: hộp 9b hết câu đó, xóa được RE Vũ Minh Khoa |
 | D5 | Thêm lịch **Dời lịch** 08/10/2026 10:00 của KH Phạm Gia Bảo, đã xóa (từ file nhập); lịch 15/10/2026 10:00 dời từ nó chưa xóa | Dòng lịch 08/10: "Giữ lại khi dọn: lịch 15/10/2026 10:00 dời từ lịch này."; hộp: "Giữ lại 1 bản ghi còn được dùng". Sau dọn Thùng rác chỉ còn lịch 08/10; lịch 15/10 không đổi |
 | D6 | Như D5; RE ghi trên lịch 08/10 (KH đã bàn giao cho RE khác) đã xóa, team của người đó cũng đã xóa | Giữ cả ba. RE: "Giữ lại khi dọn: lịch 08/10/2026 10:00 còn ghi người này."; team: "Giữ lại khi dọn: nhân sự <tên RE> còn thuộc team này." |
-| D7 | Lần lưu gần nhất lỗi | Từ chối, không backup: "Chưa dọn: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Dữ liệu không bị đổi." |
+| D7 | Lần lưu gần nhất lỗi | Từ chối, không backup: "Chưa dọn: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Bấm "Thử lại" ở dải cảnh báo đầu màn, lưu được rồi thì dọn lại. Dữ liệu không bị đổi." (vế "Bấm "Thử lại"…" từ T-294; mockup 11j chưa có) |
 | D8 | Backup lỗi (vd. ổ đĩa đầy) | Không dọn: "Chưa dọn được Thùng rác. Dữ liệu không bị đổi." |
 | D9 | Lỗi giữa chừng (một câu xóa bị từ chối) | Như D8: không đổi gì, kể cả các dòng đã xóa trước câu lỗi |
 | D10 | Lệnh ghi / kết quả AI tới trong lúc dọn | Lệnh ghi bị từ chối (S2-2); kết quả AI bị bỏ (S2-3) |
@@ -218,7 +218,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 | File | Nội dung |
 |---|---|
 | `README.md` | Mục lục; app làm gì; bản exe và bản web; làm trên hai máy (xuất trước khi đổi máy, nhập ở máy kia, "bản nhập sau thắng" — §8) |
-| `01-bat-dau.md` | Chạy exe portable, thư mục `Project2C-data\` (file DB, `backups\`, `exports\`), lần mở đầu có dữ liệu giả lập, báo lỗi lưu (dải ở đầu màn; "Lưu lần cuối" ở Cài đặt → Dữ liệu), góc nhìn Toàn bộ / Team / RE |
+| `01-bat-dau.md` | Chạy exe portable, thư mục `Project2C-data\` (file DB, `backups\`, `exports\`), lần mở đầu có dữ liệu giả lập, trạng thái lưu (chỉ báo ở chân sidebar: "Đã lưu HH:MM" / "Đang lưu…" / "Chưa lưu được vào file", bản web ghi dữ liệu chỉ trong trình duyệt; "Lưu lần cuối" ở Cài đặt → Dữ liệu), báo lỗi lưu (dải ở đầu màn, nút **Thử lại**), góc nhìn Toàn bộ / Team / RE |
 | `02-tong-quan.md` | Tổng quan: chọn kỳ, Lọc, ô Lịch hẹn 4 nhóm, 6 KPI + so kỳ trước, KH theo nhóm, so sánh team / RE |
 | `03-lich-hen.md` | Lịch hẹn: 4 nhóm, lịch tháng / năm, đặt lịch, ghi kết quả (Đã gặp / Hủy / Không đến), hẹn tiếp, dời lịch, sửa / xóa |
 | `04-khach-hang.md` | Khách hàng: Kanban / bảng, tạo / sửa / xóa KH, chuyển nhóm tay |

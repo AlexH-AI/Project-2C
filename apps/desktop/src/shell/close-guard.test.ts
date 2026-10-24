@@ -66,6 +66,29 @@ describe('closeAfterSaving', () => {
     expect(win.events).toEqual(['close']);
   });
 
+  it('waits for a replace of the data still running, and for its new data to be saved (review of PR 125)', async () => {
+    const disk = fakeDisk();
+    const saves = createPersistQueue(disk.write);
+    const win = fakeWindow();
+    let seeded!: () => void;
+    // Nạp lại, still seeding: it ends by persisting the new data.
+    saves.track(new Promise<void>((resolve) => (seeded = resolve)));
+
+    const closing = closeAfterSaving(saves, win.port);
+    await tick();
+    expect(win.port.close).not.toHaveBeenCalled();
+    expect(saves.status().saving).toBe(true);
+
+    saves.persist(bytes('new data'));
+    seeded();
+    await tick();
+    expect(win.port.close).not.toHaveBeenCalled();
+    disk.next().finish();
+    await closing;
+    expect(disk.onDisk).toEqual(['new data']);
+    expect(win.events).toEqual(['close']);
+  });
+
   it('asks instead of closing when the save fails, and closes after a successful retry', async () => {
     const disk = fakeDisk();
     const saves = createPersistQueue(disk.write);
