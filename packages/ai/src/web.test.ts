@@ -6,7 +6,12 @@ import { checkAnalysisAnswer } from './analysis-steps';
 import { analysisPrompt } from './prompts/analysis';
 import { discoveryPrompt } from './prompts/discovery';
 import { retryMessage } from './prompts/retry';
-import { buildAnalysisInput, PROMPT_VERSIONS, type AnalysisProfile } from './schema';
+import {
+  buildAnalysisInput,
+  MAX_AI_RAW_OUTPUT,
+  PROMPT_VERSIONS,
+  type AnalysisProfile,
+} from './schema';
 import { fact, nfdZw, PROFILE, TODAY, ZWSP } from './test-support';
 import {
   buildWebMessage,
@@ -435,14 +440,26 @@ describe('checkWebAnswer', () => {
     expect(checkWebAnswer(session, `${emoji}x`)).toEqual({ kind: 'unusable', reason: 'TOO_LONG' });
   });
 
+  // DR5-09, checked by what is read rather than by time (review #766): a whole paste on one line is
+  // read in about 0.1 s, too close to any time bound a busy machine always meets.
   it.each([
     ['one line', 'x'.repeat(20_000_000)],
     ['many lines', 'Một dòng dài của tài liệu dán nhầm.\n'.repeat(560_000)],
-  ])('refuses a 20-million-character paste on %s without reading it all (DR5-09)', (_, text) => {
+  ])('refuses a 20-million-character paste on %s, reading its start only (DR5-09)', (_, text) => {
     const { session } = start();
-    const started = Date.now();
-    expect(checkWebAnswer(session, text)).toEqual({ kind: 'unusable', reason: 'TOO_LONG' });
-    expect(Date.now() - started).toBeLessThan(50);
+    // The start of a paste that is read: twice the limit, in code units (`MAX_READ` of web.ts).
+    const read = 2 * MAX_AI_RAW_OUTPUT;
+    const frame = '\n=== ĐẦU VÀO ===\n';
+    const framedAt = (at: number) => `${text.slice(0, at)}${frame}${text.slice(at)}`;
+
+    expect(checkWebAnswer(session, framedAt(read - frame.length))).toEqual({
+      kind: 'unusable',
+      reason: 'OWN_MESSAGE',
+    });
+    expect(checkWebAnswer(session, framedAt(read))).toEqual({
+      kind: 'unusable',
+      reason: 'TOO_LONG',
+    });
   });
 
   it('records a discovery with its own prompt version', () => {

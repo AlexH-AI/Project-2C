@@ -566,6 +566,14 @@ describe('createMockAdapter', () => {
     'KH đã kết hôn, hỏi lại cho chắc.',
     'KH đã kết hôn, nhưng không chắc chắn.',
     'KH đã có 2 con, nhưng chưa biết chắc.',
+    // To be made sure of, or a doubt, even before "chắn"; "chắc" before what it guesses (the
+    // review of PR #812).
+    'KH đã kết hôn, hỏi lại cho chắc chắn.',
+    'KH đã kết hôn, cần hỏi lại để chắc chắn.',
+    'KH đã kết hôn, nhưng không hoàn toàn chắc chắn.',
+    'KH chắc đã kết hôn.',
+    // A word that only ends like one of those that are sure: "căn" is not "ăn".
+    'KH đã kết hôn, mua căn chắc là ở quận 7.',
     // "của" and a count or "người": someone else's children.
     'KH nuôi 2 con của hai người bạn.',
     'KH nuôi 2 con của một người bạn.',
@@ -591,6 +599,9 @@ describe('createMockAdapter', () => {
     ['KH biết chắc mình muốn mua bảo hiểm, đã kết hôn.', [MARRIED]],
     ['KH nắm chắc tài chính gia đình, đã có 2 con.', [TWO]],
     ['KH có 2 con, chắc ăn nên mua gói gia đình.', [TWO]],
+    ['KH khẳng định chắc nịch đã kết hôn.', [MARRIED]],
+    ['KH ăn chắc mặc bền, đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH thích nhà cửa bền chắc, đã có 2 con.', [TWO]],
     ['KH đã kết hôn ạ.', [MARRIED]],
     ['KH có 2 con của mình.', [TWO]],
   ])('reads %j as %j (the review of PR #809, T-288)', async (note, facts) => {

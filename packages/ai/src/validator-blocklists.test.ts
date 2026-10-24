@@ -291,10 +291,7 @@ describe('validateOutput — V3 to V6', () => {
 
   it('V5 catches MBTI codes and blood groups by pattern', () => {
     expect(codesOf('needs', 'KH kiểu ENFP-A')).toEqual(['V5']);
-    expect(issuesOf('needs', 'KH nhóm máu AB')).toEqual([
-      { code: 'V5', path: 'needs[0].text', detail: 'có "nhóm máu"' },
-      { code: 'V5', path: 'needs[0].text', detail: 'có "nhóm máu ab"' },
-    ]);
+    expect(codesOf('needs', 'KH nhóm máu O')).toEqual(['V5']);
   });
 
   it('V6 catches "luật <Tên>" case-sensitively, not after "pháp"', () => {
@@ -417,6 +414,39 @@ describe('validateOutput — V3 to V6', () => {
     const number = `12/2023/${'a'.repeat(60)}`;
     expect(issuesOf('needs', `Xem ${number}`)).toEqual([
       { code: 'V6', path: 'needs[0].text', detail: `có "${number.slice(0, 39)}…"` },
+    ]);
+  });
+
+  // Review #420: the detail quotes the phrase as the model wrote it, not the entry, so the retry
+  // finds it in its own text.
+  it.each([
+    ['with its marks', 'KH có Xác Suất cao', 'V3', 'Xác Suất'],
+    ['bare', 'Xac suat KH dong y cao', 'V3', 'Xac suat'],
+    ['bare in part', 'KH có xác suat cao', 'V3', 'xác suat'],
+    ['with a hyphen', 'Hợp đồng Dai-ichi cũ', 'V4', 'Dai-ichi'],
+    ['with a dash between its words', 'KH có xác - suất cao', 'V3', 'xác - suất'],
+    ['after a dash between spaces', 'Xem hợp đồng - Prudential', 'V4', 'Prudential'],
+    // Lower case writes "İ" as two code units.
+    ['after a letter that lower case makes two', 'İnci có hợp đồng Prudential', 'V4', 'Prudential'],
+    ['ending in such a letter', 'Hợp đồng DAIICHİ cũ', 'V4', 'DAIICHİ'],
+    ['by a pattern, in its case', 'Theo QUYẾT ĐỊNH SỐ 12', 'V6', 'QUYẾT ĐỊNH SỐ 1'],
+  ])('quotes the phrase as written: %s', (_, text, code, written) => {
+    expect(issuesOf('themes', text)).toEqual([
+      { code, path: 'themes[0].text', detail: `có "${written}"` },
+    ]);
+  });
+
+  // Review #420: entries of one rule found at overlapping places are one issue, naming the whole
+  // place; separate places stay separate issues (C1, C11).
+  it.each([
+    ['PRUDENTIAL', 'V4', 'PRUDENTIAL'],
+    ['KH nhóm máu AB', 'V5', 'nhóm máu AB'],
+    ['Theo khoản 2 Điều 35', 'V6', 'khoản 2 Điều 35'],
+    ['Theo Bộ luật Dân sự', 'V6', 'Bộ luật D'],
+    ['Gói bảo hiểm liên kết đơn vị', 'V4', 'Gói bảo hiểm liên kết đơn vị'],
+  ])('names one place once: "%s"', (text, code, written) => {
+    expect(issuesOf('needs', text)).toEqual([
+      { code, path: 'needs[0].text', detail: `có "${written}"` },
     ]);
   });
 });
