@@ -5,17 +5,27 @@
  * space). An entry whose "Bỏ dấu" column says "có" also matches its words written bare (no tone
  * mark, no diacritic, `đ` as `d`), word by word: "Xác suat" is caught, "nghĩ định" is not "nghị
  * định" (G5 §7 item 2, DR6-23); a word whose bare form is a word too, only in a phrase all bare
- * ("khach am" is "khách ấm", "khách am hiểu" is not: DR6-124).
+ * ("khach am" is "khách ấm", "khách am hiểu" is not: DR6-124). What an entry finds is a span of the
+ * text as written, which the issue quotes (review #420).
  */
 import { normalizeText, stripDiacritics } from '@p2c/domain';
 
 export interface MatchText {
+  /** The text cleaned (`cleanText`): what an issue quotes. */
+  readonly written: string;
+  /** `written` with `-` and `_` as spaces, its indexes the same: the "bản gốc" of G5 §7 item 0. */
   readonly original: string;
   readonly accented: string;
 }
 
-/** A blocklist entry: the matched phrase, for the issue detail, or `null`. */
-export type Matcher = (text: MatchText) => string | null;
+/** Where a blocklist entry is found: `[start, end)` of `written`, and of `original`. */
+export interface Span {
+  readonly start: number;
+  readonly end: number;
+}
+
+/** A blocklist entry: where it is first found in a text, or `null`. */
+export type Matcher = (text: MatchText) => Span | null;
 
 /** The letters a Vietnamese mark sits on (G5 §7 item 0). */
 const VOWEL = /[aeiouyAEIOUY]/;
@@ -42,8 +52,9 @@ export function cleanText(text: string): string {
 }
 
 export function matchText(text: string): MatchText {
-  const original = cleanText(text).replace(/[-_]/g, ' ');
-  return { original, accented: original.toLowerCase().replace(/\s+/gu, ' ') };
+  const written = cleanText(text);
+  const original = written.replace(/[-_]/g, ' ');
+  return { written, original, accented: original.toLowerCase().replace(/\s+/gu, ' ') };
 }
 
 /**
@@ -57,7 +68,10 @@ const escape = (phrase: string) => phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 /** A character anywhere in the text. */
 export function char(c: string): Matcher {
-  return (text) => (text.original.includes(c) ? c : null);
+  return ({ original }) => {
+    const start = original.indexOf(c);
+    return start === -1 ? null : { start, end: start + c.length };
+  };
 }
 
 /**
@@ -69,8 +83,7 @@ export function char(c: string): Matcher {
 export function phrase(words: string, folded: boolean): Matcher {
   const parts = matchText(words).accented.split(' ').map(escape);
   const source = folded ? bareOrNot(parts) : parts.join(' ');
-  const found = pattern(`${WORD_START}${source}${WORD_END}`, 'accented');
-  return (text) => (found(text) === null ? null : words);
+  return pattern(`${WORD_START}${source}${WORD_END}`, 'accented');
 }
 
 /**
@@ -97,7 +110,31 @@ function bareOrNot(parts: readonly string[]): string {
 export function pattern(source: string, on: 'accented' | 'both' | 'original'): Matcher {
   const spaced = source.replaceAll(' ', ' ?');
   const regex = new RegExp(on === 'both' ? bareToo(spaced) : spaced, 'u');
-  return (text) => regex.exec(on === 'original' ? text.original : text.accented)?.[0] ?? null;
+  return ({ original, accented }) => {
+    const found = regex.exec(on === 'original' ? original : accented);
+    if (found === null) return null;
+    const span = { start: found.index, end: found.index + found[0].length };
+    return on === 'original' ? span : inOriginal(original, span);
+  };
+}
+
+/**
+ * Where `span` of the accented form is in the original: lower case writes "İ" as two code units,
+ * and a run of spaces is one space there, so the indexes of the two may part. A letter partly in
+ * `span` counts whole.
+ */
+function inOriginal(original: string, { start, end }: Span): Span {
+  const found = { start: 0, end: 0 };
+  // Where the code points read so far end in the accented form.
+  let accented = 0;
+  for (let at = 0; at < original.length && accented < end;) {
+    const c = String.fromCodePoint(original.codePointAt(at)!);
+    accented += c === ' ' && original[at - 1] === ' ' ? 0 : c.toLowerCase().length;
+    at += c.length;
+    if (accented <= start) found.start = at;
+    found.end = at;
+  }
+  return found;
 }
 
 /** An escape (`\p{Nd}`, `\s`…) or a class (`[a-zđ]`, `[\p{L}\p{N}]`), kept whole; or a word. */

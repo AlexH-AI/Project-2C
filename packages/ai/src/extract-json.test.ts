@@ -29,9 +29,6 @@ describe('extractJson', () => {
       value: { a: 1 },
     });
     expect(extractJson('{ "x { "y {"a":1}')).toEqual({ found: true, value: { a: 1 } });
-    expect(extractJson('Lưu ý {mẫu "x. Kết quả: {"a":1}', { cut: true })).toEqual({
-      found: false,
-    });
   });
 
   it('reads again after 3 unclosed braces with an odd quote at most', () => {
@@ -39,6 +36,9 @@ describe('extractJson', () => {
     const prose = (count: number) => `${'{ \\"'.repeat(count)} {"a":1}`;
     expect(extractJson(prose(3))).toEqual({ found: true, value: { a: 1 } });
     expect(extractJson(prose(4))).toEqual({ found: false });
+    // The braces of the prose of a cut answer are read again as many times (Owner 23/10/2026).
+    expect(extractJson(prose(3), { cut: true })).toEqual({ found: true, value: { a: 1 } });
+    expect(extractJson(prose(4), { cut: true })).toEqual({ found: false });
   });
 
   it('reads an escaped quote inside a string, with braces after it', () => {
@@ -77,11 +77,25 @@ describe('extractJson', () => {
     });
   });
 
-  it('takes no block inside an unclosed brace of an answer known to be cut', () => {
-    expect(extractJson(CUT, { cut: true })).toEqual({ found: false });
-    expect(extractJson(`Ghi chú { chưa đóng. JSON: {"a": 1}`, { cut: true })).toEqual({
-      found: false,
-    });
+  // A `{` still open that opens an object (a quote after it) may be the cut answer itself.
+  it.each([
+    ['the answer', CUT],
+    ['the answer after a brace of the prose', `Ghi chú { chưa đóng. ${CUT}`],
+    ['the answer after a brace and an odd quote of the prose', `Lưu ý {mẫu "x. ${CUT}`],
+    ['a brace of the prose with a quote after it', 'Lưu ý {"mẫu" chưa đóng. {"a":1} rồi'],
+  ])('takes no block inside a brace opening an object, in a cut answer: %s', (_, content) => {
+    expect(extractJson(content, { cut: true })).toEqual({ found: false });
+  });
+
+  // Owner 23/10/2026 (spec §6.1): a brace of the prose is read as in an answer that is not cut, so
+  // a whole block after it is taken, wherever after the block the answer was cut.
+  it.each([
+    ['cut in the prose after the block', 'Ghi chú { chưa đóng. {"a":1} rồi lời văn'],
+    ['cut right after the block', 'Ghi chú { chưa đóng. JSON: {"a": 1}'],
+    ['two braces of the prose before the block', 'Ghi chú { một { hai. {"a":1} rồi'],
+    ['a brace and an odd quote of the prose before it', 'Lưu ý {mẫu "x. Kết quả: {"a":1} rồi'],
+  ])('reads a whole block after a brace of the prose, in a cut answer: %s', (_, content) => {
+    expect(extractJson(content, { cut: true })).toEqual({ found: true, value: { a: 1 } });
   });
 
   it('reads a whole block of an answer cut after it', () => {
@@ -102,16 +116,20 @@ describe('extractJson', () => {
   // DR5-04: one pass, however many braces never close (100 000 of them took 11.4 s). One pass takes
   // a few ms, but a CI runner once took 54 ms (#569); the quadratic reading took 1.2 s or more on
   // each input but the two "many small blocks". Those two were only slow by an exception per block,
-  // which the test of 100 failed blocks above already bounds.
+  // which the test of 100 failed blocks above already bounds. Braces in a long text took 1.2–1.8 s
+  // on 100 000 characters, too near the bound: three times as long, 12–17 s (review #570).
   it.each([
-    ['open braces', '{'.repeat(100_000)],
-    ['open braces and strings', '{"'.repeat(50_000)],
-    ['braces in a long text', `${'Ghi chú { '.repeat(10_000)}{"a": 1}`],
-    ['nested blocks that are not JSON', `${'{"a": '.repeat(20_000)}x${'}'.repeat(20_000)}`],
-    ['many small blocks that are not JSON', '{x} '.repeat(25_000)],
-    ['many small blocks that fail late', '{"a"x} '.repeat(14_000)],
-    ['unclosed braces read again', '{ \\"'.repeat(25_000)],
-  ])('reads 100 000 characters of %s in one pass', (_, content) => {
+    ['100 000 characters of open braces', '{'.repeat(100_000)],
+    ['100 000 characters of open braces and strings', '{"'.repeat(50_000)],
+    ['300 000 characters of braces in a long text', `${'Ghi chú { '.repeat(30_000)}{"a": 1}`],
+    [
+      '100 000 characters of nested blocks that are not JSON',
+      `${'{"a": '.repeat(20_000)}x${'}'.repeat(20_000)}`,
+    ],
+    ['100 000 characters of many small blocks that are not JSON', '{x} '.repeat(25_000)],
+    ['100 000 characters of many small blocks that fail late', '{"a"x} '.repeat(14_000)],
+    ['100 000 characters of unclosed braces read again', '{ \\"'.repeat(25_000)],
+  ])('reads %s in one pass', (_, content) => {
     const started = Date.now();
     extractJson(content);
     expect(Date.now() - started).toBeLessThan(500);

@@ -6,8 +6,9 @@
 import { stripDiacritics } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import guide from '../../../docs/design/phase-5-prompts.md?raw';
+import { BLOCKLISTS } from './blocklists';
 import { ZWSP } from './test-support';
-import { validateOutput } from './validator';
+import { matchText } from './text-match';
 
 type Code = 'V3' | 'V4' | 'V5' | 'V6';
 
@@ -33,25 +34,17 @@ function rowsOf(heading: string): string[][] {
     );
 }
 
-const item = (text: string) => [{ text, evidence: ['F1'] }];
-
-/** The `detail` of every V3–V6 issue of a hypothesis reading `text`; every other text is neutral. */
-const detailsOf = (code: Code, text: string) =>
-  validateOutput(
-    'analysis',
-    {
-      hypotheses: item(text),
-      needs: item('Quỹ học vấn cho con'),
-      painPoints: item('Thanh khoản khi cần tiền gấp'),
-      themes: item('Gia đình là trung tâm'),
-      discoveryStrategy: item('Làm rõ mục tiêu chính'),
-      nextBestActions: item('Hẹn buổi gặp tiếp'),
-      personalityNotes: [],
-    },
-    { factCodes: ['F1'], missingCategories: [] },
-  )
-    .filter((issue) => issue.code === code)
-    .map((issue) => issue.detail);
+/**
+ * What each entry of `code` finds in `text`, as written there: entries one by one, so an entry
+ * found where another is (the validator names that place once) still shows.
+ */
+const foundIn = (code: Code, text: string) => {
+  const match = matchText(text);
+  return BLOCKLISTS[code].flatMap((matcher) => {
+    const found = matcher(match);
+    return found === null ? [] : [match.written.slice(found.start, found.end)];
+  });
+};
 
 const PHRASES = SECTIONS.flatMap(([code, heading]) =>
   rowsOf(heading)
@@ -63,8 +56,8 @@ const PHRASES = SECTIONS.flatMap(([code, heading]) =>
 
 /**
  * The rows that are not phrases (a character, a regex, the "luật <Tên>" rule), by their "Mục" cell,
- * each with texts it must catch and the match the issue names. A new or changed row here needs its
- * samples reviewed against the table.
+ * each with texts it must catch and what it finds there, as written. A new or changed row here
+ * needs its samples reviewed against the table.
  */
 const SAMPLES: Record<string, readonly (readonly [string, string])[]> = {
   '`%` · `‰` (ký tự, ở bất kỳ đâu; `％`, `﹪` thành `%` qua NFKC)': [
@@ -80,13 +73,13 @@ const SAMPLES: Record<string, readonly (readonly [string, string])[]> = {
     ],
   '`\\b[ie][ns][tf][jp]( [at])?\\b` trên bản có dấu (vd. "INTJ", "ENFP-A")': [
     ['KH intj', 'intj'],
-    ['KH ENFP-A', 'enfp a'],
+    ['KH ENFP-A', 'ENFP-A'],
   ],
   '`\\b(nhóm\\|kiểu) [disc]\\b(?! (level\\|suite)\\b)` (vd. "nhóm D"; "nhóm C-level" không khớp)': [
-    ['KH nhóm D', 'nhóm d'],
+    ['KH nhóm D', 'nhóm D'],
     ['KH kiểu s', 'kiểu s'],
   ],
-  '`\\bnhóm máu (a\\|b\\|ab\\|o)\\b`': [['KH nhóm máu O', 'nhóm máu o']],
+  '`\\bnhóm máu (a\\|b\\|ab\\|o)\\b`': [['KH nhóm máu O', 'nhóm máu O']],
   '`\\b(Điều\\|ĐIỀU)\\s*\\p{Nd}+` trên **bản gốc, giữ hoa thường** (vd. "Điều 35", "Điều" + U+200B + "35"; "điều 2 vợ chồng" không khớp)':
     [
       ['Theo Điều 35', 'Điều 35'],
@@ -110,16 +103,16 @@ const SAMPLES: Record<string, readonly (readonly [string, string])[]> = {
     ],
   '`\\b(quyết định\\|công văn) số\\s*\\p{Nd}` (vd. "Quyết định số 123"; "quyết định số tiền" không khớp)':
     [
-      ['Quyết định số 123', 'quyết định số 1'],
-      ['Công văn số 45', 'công văn số 4'],
+      ['Quyết định số 123', 'Quyết định số 1'],
+      ['Công văn số 45', 'Công văn số 4'],
     ],
   '`\\b\\p{Nd}{1,4}/\\p{Nd}{4}/[a-zđ\\p{Nd}]+\\b` (số hiệu, vd. "46/2023/NĐ-CP", "08/2022/QH15")': [
     ['Số 46/2023/abc', '46/2023/abc'],
   ],
   '`\\b(nđ cp\\|tt btc\\|qh1\\p{Nd})\\b` (`-` đã thành dấu cách ở bước 0)': [
-    ['Theo NĐ-CP', 'nđ cp'],
-    ['Theo TT-BTC', 'tt btc'],
-    ['Khóa QH15', 'qh15'],
+    ['Theo NĐ-CP', 'NĐ-CP'],
+    ['Theo TT-BTC', 'TT-BTC'],
+    ['Khóa QH15', 'QH15'],
   ],
 };
 
@@ -146,11 +139,10 @@ describe('BLOCKLISTS — every phrase of G5 §8', () => {
   });
 
   it.each(PHRASES)('$code catches "$entry" (Bỏ dấu: $folded)', ({ code, entry, folded }) => {
-    expect(detailsOf(code, `Ghi chú ${entry} ở đây`)).toContain(`có "${entry}"`);
+    expect(foundIn(code, `Ghi chú ${entry} ở đây`)).toContain(entry);
     const without = stripDiacritics(entry.toLowerCase());
     if (without === entry.toLowerCase()) return;
-    const caught = detailsOf(code, `Ghi chú ${without} ở đây`).includes(`có "${entry}"`);
-    expect(caught).toBe(folded);
+    expect(foundIn(code, `Ghi chú ${without} ở đây`).includes(without)).toBe(folded);
   });
 
   it('reads the closed list of §7 item 2', () => {
@@ -167,7 +159,7 @@ describe('BLOCKLISTS — every phrase of G5 §8', () => {
         const bare = stripDiacritics(word);
         if (bare === word) return;
         const text = words.map((other, j) => (j === i ? bare : other)).join(' ');
-        const caught = detailsOf(code, `Ghi chú ${text} ở đây`).includes(`có "${entry}"`);
+        const caught = foundIn(code, `Ghi chú ${text} ở đây`).includes(text);
         expect(caught, text).toBe(!CLOSED.includes(word));
       });
     },
@@ -182,18 +174,16 @@ describe('BLOCKLISTS — every other row of G5 §8', () => {
 
   it.each(OTHER_ROWS)('$code catches $item', ({ code, item, kind }) => {
     for (const [text, match] of SAMPLES[item]!) {
-      expect(detailsOf(code, text)).toContain(`có "${match}"`);
+      expect(foundIn(code, text)).toContain(match);
       // "cả bản bỏ dấu": the text without diacritics is caught too, by the folded pattern.
       const without = stripDiacritics(text.toLowerCase());
       if (without === text.toLowerCase()) continue;
-      const caught = detailsOf(code, without).includes(
-        `có "${stripDiacritics(match.toLowerCase())}"`,
-      );
+      const caught = foundIn(code, without).includes(stripDiacritics(match.toLowerCase()));
       expect(caught).toBe(kind.includes('bỏ dấu'));
     }
   });
 
   it('V4 catches a product line glued to "pru" (§8.2 b)', () => {
-    expect(detailsOf('V4', 'Đề xuất PRULink')).toContain('có "prul"');
+    expect(foundIn('V4', 'Đề xuất PRULink')).toContain('PRUL');
   });
 });

@@ -22,7 +22,7 @@ import {
   type DiscoveryOutput,
   type ExtractionOutput,
 } from './schema';
-import { matchText } from './text-match';
+import { matchText, type Matcher, type MatchText, type Span } from './text-match';
 
 export const VALIDATION_CODES = ['V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7'] as const;
 
@@ -218,24 +218,45 @@ function quoted(phrase: string): string {
 }
 
 /**
- * V3–V6 on the element's text: one issue per blocklist entry found (G5 §7.6 "mỗi lần khớp" read as
- * per entry; the same phrase twice in one text is one issue, which changes neither pass / block
- * nor the retry message). Personality labels are
+ * V3–V6 on the element's text: one issue per place a rule's entries are found, quoting the place as
+ * the model wrote it, so the retry finds it in its text (review #420). Entries found at overlapping
+ * places are one place: "PRUDENTIAL" is `prudential` and the regex `pru ?[a-z…]` of V4 (G5 §7.6
+ * "mỗi lần khớp" read as per place; code, not G5: §10.10). Each entry is looked for once, so the
+ * same phrase twice in one text is one issue; neither changes pass / block. Personality labels are
  * allowed in `personalityNotes` (V5 only, Owner Q5); the codes of `evidence`, `missingCategory` and
  * `system` are not text.
  */
 function phraseIssues(item: OutputItem): ValidationIssue[] {
   const text = matchText(item.text);
+  const path = `${item.path}.text`;
   const rules = (['V3', 'V4', 'V5', 'V6'] as const).filter(
     (code) => !(code === 'V5' && item.block === 'personalityNotes'),
   );
   return rules.flatMap((code) =>
-    BLOCKLISTS[code].flatMap((matcher) => {
-      const found = matcher(text);
-      const path = `${item.path}.text`;
-      return found === null ? [] : [{ code, path, detail: `có "${quoted(found)}"` }];
-    }),
+    placesOf(BLOCKLISTS[code], text).map(({ start, end }) => ({
+      code,
+      path,
+      detail: `có "${quoted(text.written.slice(start, end))}"`,
+    })),
   );
+}
+
+/** Where `matchers` find something in `text`, in order, spans that overlap made one. */
+function placesOf(matchers: readonly Matcher[], text: MatchText): Span[] {
+  const spans = matchers
+    .map((matcher) => matcher(text))
+    .filter((span) => span !== null)
+    .sort((a, b) => a.start - b.start);
+  const places: Span[] = [];
+  for (const span of spans) {
+    const last = places.at(-1);
+    if (last !== undefined && span.start < last.end) {
+      places[places.length - 1] = { start: last.start, end: Math.max(last.end, span.end) };
+    } else {
+      places.push(span);
+    }
+  }
+  return places;
 }
 
 /** `['needs', 0, 'text']` → `needs[0].text`. */
@@ -273,10 +294,12 @@ function schemaDetail(issue: z.core.$ZodIssue, missing: boolean): string {
     case 'invalid_type':
       return `${lead}, cần ${issue.expected}`;
     case 'invalid_union': {
-      // A value of the type of an option that breaks a rule of it (a string too long, empty) is
-      // told that rule, not that it is of no allowed type.
-      const broken = issue.errors.find((option) => option[0]?.code !== 'invalid_type')?.[0];
-      return broken ? schemaDetail(broken, missing) : `${lead}, ${issue.message}`;
+      // A value of the type of one option only, which breaks a rule of it (a string too long,
+      // empty), is told that rule, not that it is of no allowed type; of the type of two or more,
+      // the union's own message, which names them all (the review of PR #812).
+      const broken = issue.errors.filter((option) => option[0]?.code !== 'invalid_type');
+      if (broken.length === 1) return schemaDetail(broken[0]![0]!, missing);
+      return broken.length === 0 ? `${lead}, ${issue.message}` : issue.message;
     }
     case 'too_small':
       return `cần ít nhất ${issue.minimum} phần tử`;

@@ -305,11 +305,14 @@ const WISHED = /(?<!\p{L})(?:muốn|mong|dự định|hy vọng|hi vọng)(?!\p{
 const NEGATED = /(?<!\p{L})(?:không|chưa|chẳng|bác bỏ|phủ nhận)(?!\p{L})/iu;
 
 /**
- * "chắc" said unsure, as a guess ("chắc là", "hỏi lại cho chắc": to be made sure of) or a doubt
- * ("không chắc chắn", "chưa biết chắc"); not "chắc" of a word that is sure or firm: "chắc chắn",
- * "chắc ăn", "biết / nắm chắc", "vững / săn / rắn chắc" (T-288).
+ * "chắc" said unsure (T-288): every "chắc" but that of a word that is sure or firm ("chắc chắn",
+ * "chắc ăn", "chắc nịch", "biết / nắm chắc", "vững / săn / rắn / bền chắc", "ăn chắc mặc bền"), so
+ * a "chắc" this list misses drops the proposals of its sentence, the safe way (CX-A4): a guess
+ * ("Chắc KH…", "KH chắc là…", "KH chắc đã…"). Even before "chắn", "cho / để chắc" (to be made sure
+ * of) and a doubt, "không / chưa / chẳng" and at most two words before it ("không hoàn toàn chắc
+ * chắn", "chưa biết chắc"; the review of PR #812).
  */
-const UNSURE = String.raw`(?<!(?:vững|săn|rắn|biết|nắm) )chắc(?! (?:chắn|ăn))|(?:không|chưa|chẳng)(?: (?:biết|nắm))? chắc`;
+const UNSURE = String.raw`(?<!(?<!\p{L})(?:vững|săn|rắn|bền|biết|nắm|ăn) )chắc(?! (?:chắn|ăn|nịch))|(?:cho|để) chắc|(?:không|chưa|chẳng)(?: \p{L}+){0,2} chắc`;
 
 /**
  * A guess, a question mark or a question ending the sentence, anywhere in the sentence of a phrase,

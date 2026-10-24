@@ -5,8 +5,10 @@
  * text and is not tried.
  *
  * A `{` that never closes (a brace in the prose, or an answer cut by `maxTokens`) is skipped and the
- * blocks inside it are tried in turn, unless the answer is known to be cut: then they are pieces of
- * the cut answer, not the answer (DR5-05).
+ * blocks inside it are tried in turn. In an answer known to be cut, one that opens an object (a quote
+ * after it) may be the cut answer: the blocks inside it are pieces of it, not the answer (DR5-05).
+ * A brace of the prose is read as in any answer, so a whole block after it is still taken however
+ * the answer was cut after the block (Owner 23/10/2026, spec §6.1).
  *
  * A quote in the prose after an unclosed `{` makes what follows a string to a scan from that `{`, so
  * the text after it is read again, as many times as there are such braces up to `MAX_RESCANS`
@@ -31,12 +33,16 @@ const MAX_RESCANS = 3;
 
 export function extractJson(content: string, { cut = false }: ExtractOptions = {}): ExtractedJson {
   let failed = 0;
-  /** The block `content[start..end]` as JSON, if it is. */
-  const parse = (start: number, end: number): ExtractedJson => {
-    // An object starts with a key or ends at once: prose such as "{theo mẫu}" costs no exception.
+  /** Whether the `{` at `start` opens an object: a key or its end comes first, after white space. */
+  const opensObject = (start: number) => {
     let at = start + 1;
     while (' \t\n\r'.includes(content[at]!)) at++;
-    if (content[at] !== '"' && content[at] !== '}') return NONE;
+    return content[at] === '"' || content[at] === '}';
+  };
+  /** The block `content[start..end]` as JSON, if it is. */
+  const parse = (start: number, end: number): ExtractedJson => {
+    // Prose such as "{theo mẫu}" costs no exception.
+    if (!opensObject(start)) return NONE;
     try {
       return { found: true, value: JSON.parse(content.slice(start, end + 1)) };
     } catch {
@@ -71,12 +77,15 @@ export function extractJson(content: string, { cut = false }: ExtractOptions = {
         }
       }
     }
-    if (cut || open.length === 0) return NONE;
+    if (open.length === 0) return NONE;
+    // Where the cut answer may start: from there on, nothing is taken nor read again.
+    const piece = (cut ? open.find(opensObject) : undefined) ?? Infinity;
     for (const { start, end } of closed) {
+      if (start > piece) break;
       const json = parse(start, end);
       if (json.found || failed === MAX_FAILED_PARSES) return json;
     }
-    if (!quoted || rescans === MAX_RESCANS) return NONE;
+    if (!quoted || rescans === MAX_RESCANS || open[0] === piece) return NONE;
     // Read from the first unclosed `{` on, a quote in the prose may have taken the JSON for a
     // string: read again from right after it, a quote there being prose (review #521).
     from = open[0]! + 1;
