@@ -133,6 +133,7 @@ export async function asExe(page: Page) {
     const exe = {
       failSaves: false as boolean | string,
       destroyed: false,
+      title: null as string | null,
       aiCalls: [] as Record<string, unknown>[],
       keysSet: [] as string[],
       aiError: null as Record<string, unknown> | null,
@@ -200,6 +201,10 @@ export async function asExe(page: Page) {
         exe.destroyed = true;
         return null;
       },
+      'plugin:window|set_title': (args) => {
+        exe.title = args.value as string;
+        return null;
+      },
     };
     Object.assign(window, {
       exe,
@@ -230,6 +235,8 @@ interface Exe {
    */
   failSaves: boolean | string;
   destroyed: boolean;
+  /** The title bar, as the last `setTitle` named the window; `null` until then. */
+  title: string | null;
   /** The arguments of each `ai_complete`. */
   aiCalls: Record<string, unknown>[];
   /** Every key `ai_key_set` got. */

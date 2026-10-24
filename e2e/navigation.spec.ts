@@ -98,6 +98,28 @@ test('a new screen takes the focus on its heading and names the window; back on 
   await expect(page).toHaveTitle('Báo cáo · Project-2C');
 });
 
+test('the exe gives its title bar the name of the screen too, which Tauri does not take from the page (review of PR 638)', async ({
+  page,
+}) => {
+  const errors = trackConsoleErrors(page);
+  await asExe(page);
+  const titleBar = () => page.evaluate(() => window.exe.title);
+  await page.goto('/#/customers');
+  await expect(page).toHaveTitle('Khách hàng · Project-2C');
+  await expect.poll(titleBar).toBe('Khách hàng · Project-2C');
+
+  await page.locator('main a[href^="#/customers/"]').first().click();
+  await expect(page).toHaveTitle('Hồ sơ khách hàng · Project-2C');
+  await expect.poll(titleBar).toBe('Hồ sơ khách hàng · Project-2C');
+  await page
+    .getByRole('navigation', { name: 'Điều hướng chính' })
+    .getByRole('link', { name: 'Báo cáo' })
+    .click();
+  await expect(page).toHaveTitle('Báo cáo · Project-2C');
+  await expect.poll(titleBar).toBe('Báo cáo · Project-2C');
+  expect(errors).toEqual([]);
+});
+
 test('a screen opened from one scrolled down shows from its top; back on Customers, the row just seen (DR6-81)', async ({
   page,
 }) => {
