@@ -275,7 +275,8 @@ describe('openAppData', () => {
   });
 
   it('refuses a file whose index lost step with its table, with every page whole (DR6-73)', async () => {
-    // One byte off in the key of the team's name index: lookups by name would miss the team.
+    // One byte off in the key of the team's name index: lookups by name would miss the team. As in
+    // the test of `integrityCheck` (packages/db), whose code no app test may import (review of PR 674).
     const original = await openDatabase();
     createTeam(original, { name: 'Sao Mai' });
     const [[root]] = original.sqlite.exec(

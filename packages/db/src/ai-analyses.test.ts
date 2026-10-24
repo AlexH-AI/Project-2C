@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { listAiAnalyses, recordAiAnalysis, type NewAiAnalysis } from './ai-analyses';
 import { exportBackup, importBackup } from './backup';
+import { dataTables } from './backup-validation';
 import { createCustomer, restoreCustomer, softDeleteCustomer } from './customers';
 import { openDatabase } from './database';
 import * as db from './index';
@@ -242,60 +243,55 @@ describe('recordAiAnalysis', () => {
     expect(listAiAnalyses(database, customer.id)[0]!.rawOutput).toBe(record.rawOutput);
   });
 
-  it('keeps a rejected raw output with NUL characters whole, each NUL replaced', async () => {
+  /**
+   * What a rejected analysis keeps of each raw output, recorded in turn; read back as kept, and so
+   * again after a backup.
+   */
+  async function keptRawOutputs(raws: readonly string[]): Promise<(string | null)[]> {
     const { db: database, customer } = await withCustomer();
     const version = latestVersionId(database, customer.id);
-
-    const kept = ['ab\0cd', '\0abc', '\0\0'].map(
+    const kept = raws.map(
       (raw) =>
         recordAiAnalysis(database, { ...rejected(customer.id, version), rawOutput: raw }).rawOutput,
     );
+    const latestFirst = [...kept].reverse();
+    expect(listAiAnalyses(database, customer.id).map((a) => a.rawOutput)).toEqual(latestFirst);
+    const { db: imported } = await importBackup(exportBackup(database));
+    expect(listAiAnalyses(imported, customer.id).map((a) => a.rawOutput)).toEqual(latestFirst);
+    return kept;
+  }
 
-    expect(kept).toEqual(['ab�cd', '�abc', '��']);
-    expect(listAiAnalyses(database, customer.id).map((a) => a.rawOutput)).toEqual(kept.reverse());
+  it('keeps a rejected raw output with NUL characters whole, each NUL replaced', async () => {
+    expect(await keptRawOutputs(['ab\0cd', '\0abc', '\0\0'])).toEqual(['ab�cd', '�abc', '��']);
   });
 
   // DR6-108: SQLite would store a lone half as U+FFFD and lose the rest of the text, past the
   // CHECK on its length, so no backup of it would import again.
   it('keeps a rejected raw output with lone surrogate halves whole, each half replaced', async () => {
-    const { db: database, customer } = await withCustomer();
-    const version = latestVersionId(database, customer.id);
     const near = 'x'.repeat(19_999);
 
-    const kept = [
+    const kept = await keptRawOutputs([
       '\uD800ếz',
       'ếz\uDC00',
       'a\uD83D\u{200B}\uDE00b',
       `${near}\uDBFF`,
       `${near}\uD83Dtail`,
-    ].map(
-      (raw) =>
-        recordAiAnalysis(database, { ...rejected(customer.id, version), rawOutput: raw }).rawOutput,
-    );
+    ]);
 
     expect(kept).toEqual(['�ếz', 'ếz�', 'a�\u{200B}�b', `${near}�`, `${near}�`]);
-    const latestFirst = [...kept].reverse();
-    expect(listAiAnalyses(database, customer.id).map((a) => a.rawOutput)).toEqual(latestFirst);
-    const { db: imported } = await importBackup(exportBackup(database));
-    expect(listAiAnalyses(imported, customer.id).map((a) => a.rawOutput)).toEqual(latestFirst);
   });
 
   // DR6-107: reading drops a U+FEFF that starts a text, so it is not stored; a rejected raw output
   // is never empty.
   it('drops the U+FEFF a rejected raw output starts with, keeping one anywhere else', async () => {
-    const { db: database, customer } = await withCustomer();
-    const version = latestVersionId(database, customer.id);
-
-    const kept = ['\u{FEFF}{"a":1}', '\u{FEFF}\u{FEFF}x', '\u{FEFF}', 'a\u{FEFF}b'].map(
-      (raw) =>
-        recordAiAnalysis(database, { ...rejected(customer.id, version), rawOutput: raw }).rawOutput,
-    );
+    const kept = await keptRawOutputs([
+      '\u{FEFF}{"a":1}',
+      '\u{FEFF}\u{FEFF}x',
+      '\u{FEFF}',
+      'a\u{FEFF}b',
+    ]);
 
     expect(kept).toEqual(['{"a":1}', 'x', '�', 'a\u{FEFF}b']);
-    const latestFirst = [...kept].reverse();
-    expect(listAiAnalyses(database, customer.id).map((a) => a.rawOutput)).toEqual(latestFirst);
-    const { db: imported } = await importBackup(exportBackup(database));
-    expect(listAiAnalyses(imported, customer.id).map((a) => a.rawOutput)).toEqual(latestFirst);
   });
 
   it('refuses a deleted customer, a KYC version of another customer and a mode that is not its gate', async () => {
@@ -692,20 +688,39 @@ describe('listAiAnalyses: CURRENT / STALE / REJECTED', () => {
 // Seeding takes up to a minute on a slow machine with other test files running (T-095).
 const SLOW = 180_000;
 
+/** Copies the rows of `from` into the tables of `to`, the columns `to` has, foreign keys off. */
+function copyRows(from: Database, to: Database): void {
+  to.sqlite.run('PRAGMA foreign_keys = OFF');
+  to.transaction(() => {
+    for (const table of dataTables(to.sqlite)) {
+      const columns = to.sqlite
+        .exec(`SELECT name FROM pragma_table_info('${table}')`)[0]!
+        .values.map(([name]) => String(name));
+      const insert = to.sqlite.prepare(
+        `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`,
+      );
+      for (const row of from.sqlite.exec(`SELECT ${columns.join(', ')} FROM ${table}`)[0]?.values ??
+        []) {
+        insert.run(row);
+      }
+      insert.free();
+    }
+  });
+  to.sqlite.run('PRAGMA foreign_keys = ON');
+}
+
 describe('the ai_analyses migration', () => {
   it(
     'runs on a seeded database saved before it, keeping every row',
     async () => {
-      // The seed writes analyses too (T-163): seed, then take the table and its migrations away.
-      const old = await openDatabase();
-      seedDemoData(old, { anchorDate: d(15, 9), seed: 7 });
+      // The seed writes analyses too (T-163): its rows go into a database built before them, so
+      // whatever later migrations add stays out of this test.
+      const seeded = await openDatabase();
+      seedDemoData(seeded, { anchorDate: d(15, 9), seed: 7 });
       const added = MIGRATIONS.filter((m) => m.tag.includes('ai_analyses')).map((m) => m.id);
       const first = Math.min(...added);
-      // The later lookup indexes (DR6-44) come off too: the migrations add them again.
-      old.sqlite.run(
-        `DROP TABLE ai_analyses; DROP INDEX appointments_customer; DROP INDEX policies_customer;
-         DROP INDEX stage_transitions_appointment; DELETE FROM schema_migrations WHERE id >= ${first}`,
-      );
+      const old = await openDatabase({ migrations: MIGRATIONS.filter((m) => m.id < first) });
+      copyRows(seeded, old);
       expect(old.schemaVersion()).toBe(first - 1);
       const tables = ['customers', 'kyc_versions', 'kyc_facts', 'appointments', 'policies'];
       const rows = (database: Database, table: string) =>

@@ -9,7 +9,6 @@ import {
 import { openDatabase } from './database';
 import { DbError } from './errors';
 import { softDeletePolicy, submitPolicy } from './policies';
-import { PERSON_REFERENCES } from './schema';
 import {
   createPerson,
   createTeam,
@@ -418,6 +417,9 @@ describe('commands and the save port', () => {
 
 describe('personUsage: what keeps a person from deletion (mockup 9b, spec §4, T-250)', () => {
   const NONE = { customers: 0, appointments: 0, policies: 0, coordinating: 0, reviewing: 0 };
+  /** The customers in the trash as `inTrash` names them. */
+  const named = (...customers: { readonly name: string; readonly code: string }[]) =>
+    customers.map(({ name, code }) => ({ name, code }));
 
   /** Customers of the RE, each met on `day` with the TL joining and the IS reviewing. */
   async function withRecords() {
@@ -464,10 +466,10 @@ describe('personUsage: what keeps a person from deletion (mockup 9b, spec §4, T
       ...NONE,
       appointments: 1,
       policies: 1,
-      inTrash: ['Lan'],
+      inTrash: named(lan),
     });
-    expect(personUsage(db, tl.id)).toEqual({ ...NONE, coordinating: 1, inTrash: ['Lan'] });
-    expect(personUsage(db, is.id)).toEqual({ ...NONE, reviewing: 1, inTrash: ['Lan'] });
+    expect(personUsage(db, tl.id)).toEqual({ ...NONE, coordinating: 1, inTrash: named(lan) });
+    expect(personUsage(db, is.id)).toEqual({ ...NONE, reviewing: 1, inTrash: named(lan) });
     for (const person of [re, tl, is]) {
       expect(codeOf(() => softDeletePerson(db, person.id))).toBe('PERSON_IN_USE');
     }
@@ -497,9 +499,9 @@ describe('personUsage: what keeps a person from deletion (mockup 9b, spec §4, T
       customers: 1,
       appointments: 2,
       policies: 1,
-      inTrash: ['Ánh', 'Bảo'],
+      inTrash: named(anh, bao),
     });
-    expect(personUsage(db, is.id)).toEqual({ ...NONE, reviewing: 2, inTrash: ['Bảo'] });
+    expect(personUsage(db, is.id)).toEqual({ ...NONE, reviewing: 2, inTrash: named(bao) });
 
     // A customer in the trash with nothing left pointing to the RE is not named.
     softDeleteCustomer(db, live.id);
@@ -507,32 +509,19 @@ describe('personUsage: what keeps a person from deletion (mockup 9b, spec §4, T
     expect(personUsage(db, re.id)).toMatchObject({ customers: 2, inTrash: [] });
   });
 
-  // What the three SQL statements and the import rule 5 ask is one question, from one list.
-  it('has a reference for each column of the schema that points to a person', async () => {
-    const { db, re, tl, is, customer, meet, submit } = await withRecords();
-    const lan = customer('Lan');
-    meet(lan.id, 10);
-    submit(lan.id);
-    const column = (sql: string, params: string[] = []) =>
-      db.sqlite.exec(sql, params)[0]!.values.map(([value]) => String(value));
+  // Review of PR 669: by name alone, 9b said "Lan, Lan".
+  it('names two customers of one name in the trash apart, by their codes', async () => {
+    const { db, re, customer, submit } = await withRecords();
+    const lans = [customer('Lan'), customer('Lan')];
+    for (const { id } of lans) {
+      submit(id);
+      softDeleteCustomer(db, id);
+    }
 
-    const columns = column(
-      `SELECT m.name || '.' || f."from" FROM sqlite_master m, pragma_foreign_key_list(m.name) f
-       WHERE m.type = 'table' AND f."table" = 'people' ORDER BY 1`,
-    );
-    const kinds = column(
-      `SELECT DISTINCT kind FROM (${PERSON_REFERENCES}) WHERE person_id IN (?, ?, ?) ORDER BY 1`,
-      [re.id, tl.id, is.id],
-    );
+    const { inTrash } = personUsage(db, re.id);
 
-    expect(columns).toEqual([
-      'appointment_coordinators.person_id',
-      'appointments.outcome_reviewer_id',
-      'appointments.re_id',
-      'customers.re_id',
-      'policies.re_id',
-    ]);
-    expect(kinds).toEqual(['appointment', 'coordinator', 'customer', 'policy', 'reviewer']);
+    expect(inTrash).toEqual(named(...lans.sort((a, b) => (a.code < b.code ? -1 : 1))));
+    expect(new Set(inTrash.map((c) => c.code)).size).toBe(2);
   });
 
   it('is the RE of records only through customers, appointments and policies', () => {

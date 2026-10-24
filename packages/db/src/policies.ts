@@ -2,11 +2,11 @@
 import { compareDates, fromIsoDate, type CalendarDate, type Policy, type Vnd } from '@p2c/domain';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import {
-  findRow,
   liveCustomer,
   liveRow,
   requireAmount,
   requireRe,
+  requireRow,
   stampDeleted,
   storedPastDate,
   updateRow,
@@ -93,8 +93,7 @@ export function softDeletePolicy(db: Database, id: string): void {
 /** A deleted policy may be dated ahead in an imported file (spec §6 rule 10): checked again (DR-25). */
 export function restorePolicy(db: Database, id: string): void {
   db.transaction(() => {
-    const row = findRow(db, policies, id);
-    if (!row) throw new DbError('POLICY_NOT_FOUND');
+    const row = requireRow(db, policies, id, 'POLICY_NOT_FOUND');
     checkRestorePolicy(db, row);
     updateRow(db, policies, id, { deletedAt: null });
   });

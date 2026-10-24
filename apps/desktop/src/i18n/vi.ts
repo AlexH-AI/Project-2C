@@ -1228,6 +1228,8 @@ export const vi = {
   'person.inUseSupportTrash':
     'Có cả lịch hẹn của KH đã xóa: {customer}. Dọn sạch Thùng rác (Cài đặt → Thùng rác) xóa hẳn các lịch đó; khôi phục KH thì sửa được lịch đã có kết quả (Sửa kết quả), còn lịch Dự kiến / Dời lịch chỉ dọn sạch mới gỡ.',
   'person.inUseTrashMore': '{customer} và {count} KH khác',
+  // Two customers of the trash with one name, each named with its code.
+  'person.inUseTrashCoded': '{name} ({code})',
   'error.TEAM_REQUIRED': '{role} phải thuộc một team.',
   // An RE with records who leaves the role, or a person deleted while still in use: both by role.
   'error.PERSON_IN_USE':

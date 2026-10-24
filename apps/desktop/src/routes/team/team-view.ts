@@ -123,7 +123,16 @@ export function inUseHelp(usage: PersonUsage): string[] {
         : coordinates
           ? t('person.inUseCoordinatorHelp')
           : null;
-  const named = usage.inTrash.slice(0, NAMED_IN_TRASH).join(t('sep.list'));
+  // A name two customers of the trash share comes with each one's code (review of PR 669).
+  const names = usage.inTrash.map(({ name }) => name);
+  const named = usage.inTrash
+    .slice(0, NAMED_IN_TRASH)
+    .map(({ name, code }) =>
+      names.indexOf(name) === names.lastIndexOf(name)
+        ? name
+        : t('person.inUseTrashCoded', { name, code }),
+    )
+    .join(t('sep.list'));
   const others = usage.inTrash.length - NAMED_IN_TRASH;
   const customer =
     others > 0 ? t('person.inUseTrashMore', { customer: named, count: others }) : named;

@@ -1,0 +1,2 @@
+CREATE INDEX `appointments_deleted` ON `appointments` (`deleted_at`) WHERE "appointments"."deleted_at" IS NOT NULL;--> statement-breakpoint
+CREATE INDEX `appointments_rescheduled_from` ON `appointments` (`rescheduled_from_id`) WHERE "appointments"."rescheduled_from_id" IS NOT NULL;

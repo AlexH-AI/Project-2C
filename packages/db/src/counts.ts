@@ -70,17 +70,19 @@ export function countCustomerRecords(db: Database, customerId: string): Customer
     )[0]!.map(Number);
   const moves = selectRows(
     db,
-    `SELECT t.from_stage, t.to_stage FROM stage_transitions t
+    `SELECT t.appointment_id, t.from_stage, t.to_stage FROM stage_transitions t
      JOIN appointments a ON a.id = t.appointment_id
      WHERE t.customer_id = ? AND t.deleted_at IS NULL AND a.deleted_at IS NULL AND a.status = 'MET'`,
     [customerId],
   );
+  // Appointments, not transitions: one has at most one live transition only as the commands write.
+  const rfAppointments = moves
+    .filter(([, from, to]) => isRfTransition(from as CustomerStage | null, to as CustomerStage))
+    .map(([appointmentId]) => appointmentId);
   return {
     appointments: appointments!,
     met: met!,
-    rf: moves.filter(([from, to]) =>
-      isRfTransition(from as CustomerStage | null, to as CustomerStage),
-    ).length,
+    rf: new Set(rfAppointments).size,
     policies: policyCount!,
     kycNotes: kycNotes!,
     aiAnalyses: ai!,

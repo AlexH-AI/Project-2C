@@ -172,6 +172,8 @@ interface Booked {
 }
 
 export function seedDemoData(db: Database, options: SeedOptions): void {
+  const scale = options.scale ?? DEMO_SCALE;
+  assertScale(scale);
   const rng = createRng(options.seed);
   // Its own stream, so the AI analyses leave the rest of the data as it was before them.
   const aiRng = createRng(options.seed ^ AI_STREAM);
@@ -189,12 +191,29 @@ export function seedDemoData(db: Database, options: SeedOptions): void {
       if (listTeams(db).length > 0 || listPeople(db).length > 0) {
         throw new DbError('SEED_DATABASE_NOT_EMPTY');
       }
-      const simulate = simulation(db, rng, aiRng, anchor, options.scale ?? DEMO_SCALE);
+      const simulate = simulation(db, rng, aiRng, anchor, scale);
       for (; today <= end; today++) simulate.day(today);
       // The clock is back on the anchor day.
       if (options.trash) simulate.fillTrash();
     }),
   );
+}
+
+/**
+ * A scale the simulation runs on: a team and an RE in each at least, as Thùng rác takes its leaver
+ * to the first RE's team, and meeting days from fewest to most; every number a whole one.
+ */
+function assertScale(scale: SeedScale): void {
+  const { teams, resPerTeam, customersPerRe, meetingDays } = scale;
+  const [fewest, most] = meetingDays;
+  const whole = [teams, resPerTeam, customersPerRe, fewest, most].every(
+    (n) => Number.isSafeInteger(n) && n >= 0,
+  );
+  if (!whole || teams < 1 || resPerTeam < 1 || fewest > most) {
+    throw new Error(
+      `The seed needs a team of an RE at least and meeting days from fewest to most, all whole numbers: ${JSON.stringify(scale)}`,
+    );
+  }
 }
 
 /**

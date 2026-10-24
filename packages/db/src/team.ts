@@ -12,10 +12,10 @@ import {
 } from '@p2c/domain';
 import { and, asc, eq, isNotNull, isNull, ne } from 'drizzle-orm';
 import {
-  findRow,
   liveRow,
   requireChoice,
   requireName,
+  requireRow,
   selectRows,
   stampDeleted,
   updateRow,
@@ -23,7 +23,12 @@ import {
 import type { Database } from './database';
 import { DbError } from './errors';
 import { ulid } from './ids';
-import { PERSON_REFERENCES, people, teams } from './schema';
+import {
+  PERSON_REFERENCE_KINDS,
+  PERSON_REFERENCES,
+  type PersonReferenceKind,
+} from './person-references';
+import { people, teams } from './schema';
 
 type TeamRow = typeof teams.$inferSelect;
 type PersonRow = typeof people.$inferSelect;
@@ -69,31 +74,44 @@ export interface PersonUsage {
   readonly coordinating: number;
   /** Meetings they review the outcome of (D9). */
   readonly reviewing: number;
-  /** The customers in the trash some of those records belong to, by name in screen order. */
-  readonly inTrash: readonly string[];
+  /**
+   * The customers in the trash some of those records belong to, by name in screen order; the code
+   * tells two of one name apart (review of PR 669).
+   */
+  readonly inTrash: readonly { readonly name: string; readonly code: string }[];
 }
 
 /** `PersonUsage` without the customers in the trash, which the commands have no use for. */
 type PersonCounts = Omit<PersonUsage, 'inTrash'>;
+
+/** The field of `PersonUsage` that counts each kind of reference. */
+const USAGE_FIELDS: Record<PersonReferenceKind, keyof PersonCounts> = {
+  customer: 'customers',
+  appointment: 'appointments',
+  policy: 'policies',
+  coordinator: 'coordinating',
+  reviewer: 'reviewing',
+};
 
 // The references to the person that are live, by `kind` (the column they are).
 const USAGE = `SELECT kind, COUNT(*) FROM (${PERSON_REFERENCES})
   WHERE person_id = ? AND live GROUP BY kind`;
 
 // A customer in the trash is never `live` itself: only its records pointing to the person count.
-const IN_TRASH = `SELECT c.name FROM customers c WHERE c.deleted_at IS NOT NULL AND c.id IN (
+const IN_TRASH = `SELECT c.name, c.code FROM customers c WHERE c.deleted_at IS NOT NULL AND c.id IN (
   SELECT customer_id FROM (${PERSON_REFERENCES}) WHERE person_id = ? AND live)`;
 
 function usageCounts(db: Database, id: string): PersonCounts {
-  const counts = new Map(selectRows(db, USAGE, [id]).map(([kind, count]) => [kind, Number(count)]));
-  const of = (kind: string) => counts.get(kind) ?? 0;
-  return {
-    customers: of('customer'),
-    appointments: of('appointment'),
-    policies: of('policy'),
-    coordinating: of('coordinator'),
-    reviewing: of('reviewer'),
-  };
+  const counts = { customers: 0, appointments: 0, policies: 0, coordinating: 0, reviewing: 0 };
+  for (const [kind, count] of selectRows(db, USAGE, [id])) {
+    // A kind no field counts would let a person still in use go, and 9b say nothing (DR6-114).
+    const field = (USAGE_FIELDS as Partial<Record<string, keyof PersonCounts>>)[String(kind)];
+    if (field === undefined) {
+      throw new Error(`PersonUsage counts no reference of kind ${String(kind)}`);
+    }
+    counts[field] = Number(count);
+  }
+  return counts;
 }
 
 /** What `softDeletePerson` counts before it refuses; the delete dialog shows the same (T-250). */
@@ -101,8 +119,8 @@ export function personUsage(db: Database, id: string): PersonUsage {
   return {
     ...usageCounts(db, id),
     inTrash: selectRows(db, IN_TRASH, [id])
-      .map(([name]) => String(name))
-      .sort(byName),
+      .map(([name, code]) => ({ name: String(name), code: String(code) }))
+      .sort((a, b) => byName(a.name, b.name) || (a.code < b.code ? -1 : 1)),
   };
 }
 
@@ -114,9 +132,9 @@ export function ownsRecords(usage: PersonCounts): boolean {
   return usage.customers + usage.appointments + usage.policies > 0;
 }
 
-/** Whether anything in `usage` keeps the person from deletion. */
+/** Whether anything in `usage` keeps the person from deletion: a live reference of any kind. */
 export function isPersonInUse(usage: PersonCounts): boolean {
-  return ownsRecords(usage) || usage.coordinating + usage.reviewing > 0;
+  return PERSON_REFERENCE_KINDS.some((kind) => usage[USAGE_FIELDS[kind]] > 0);
 }
 
 // ---- team commands --------------------------------------------------------
@@ -163,8 +181,7 @@ export function softDeleteTeam(db: Database, id: string): void {
 
 export function restoreTeam(db: Database, id: string): void {
   db.transaction(() => {
-    const row = findRow(db, teams, id);
-    if (!row) throw new DbError('TEAM_NOT_FOUND');
+    const row = requireRow(db, teams, id, 'TEAM_NOT_FOUND');
     checkRestoreTeam(db, row);
     updateRow(db, teams, id, { deletedAt: null });
   });
@@ -239,8 +256,7 @@ export function softDeletePerson(db: Database, id: string): void {
 
 export function restorePerson(db: Database, id: string): void {
   db.transaction(() => {
-    const row = findRow(db, people, id);
-    if (!row) throw new DbError('PERSON_NOT_FOUND');
+    const row = requireRow(db, people, id, 'PERSON_NOT_FOUND');
     checkRestorePerson(db, row);
     updateRow(db, people, id, { deletedAt: null });
   });

@@ -57,7 +57,7 @@ export const byId = <T extends { readonly id: string }>(rows: readonly T[], id: 
  * The stage the customer ends `date` in as the screens count it: `stageSnapshot` of domain, which
  * reads the transitions by day, not by `seq`. Null before its first transition.
  */
-export function snapshotStage(
+export function stageAtEndOfDay(
   customer: Customer,
   transitions: readonly StageTransition[],
   date: CalendarDate,

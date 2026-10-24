@@ -30,7 +30,7 @@ import { exportBackup, importBackup } from './backup';
 import { getKycProfile, listKycVersions } from './kyc';
 import { listPolicies, submitPolicy } from './policies';
 import { createPerson, softDeletePerson, updatePerson } from './team';
-import { byId, codeOf, d, errorOf, setup, snapshotStage } from './test-support';
+import { byId, codeOf, d, errorOf, setup, stageAtEndOfDay } from './test-support';
 
 describe('customers', () => {
   it('creates a customer in an open stage with its first transition', async () => {
@@ -400,7 +400,7 @@ describe('customers', () => {
     expect(persist).not.toHaveBeenCalled();
 
     changeStageManually(db, customer.id, { to: 'N2', date: d(26, 9) });
-    expect(snapshotStage(customer, listStageTransitions(db), d(26, 9))).toBe('N2');
+    expect(stageAtEndOfDay(customer, listStageTransitions(db), d(26, 9))).toBe('N2');
   });
 
   // DR-42: a birth date has already happened too; a year alone is after today only from next year.
@@ -435,7 +435,7 @@ describe('customers', () => {
 
     const stage = getCustomer(db, customer.id)?.stage;
     expect(stage).toBe('N1');
-    expect(snapshotStage(customer, listStageTransitions(db), d(10, 1))).toBe(stage);
+    expect(stageAtEndOfDay(customer, listStageTransitions(db), d(10, 1))).toBe(stage);
   });
 
   it('hides a soft-deleted customer and its transitions until restored', async () => {

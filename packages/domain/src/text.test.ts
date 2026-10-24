@@ -25,7 +25,11 @@ const POOL = [
   ...INVISIBLE.map((char) => char.codePointAt(0)!),
 ].map((code) => String.fromCodePoint(code));
 
-/** Text of up to 12 characters of `POOL`, the same run for the same seed (Lehmer, MINSTD). */
+/**
+ * Text of up to 12 characters of `POOL`, the same run for the same seed (Lehmer, MINSTD). The
+ * import test of packages/db has its own, on a pool of what the import refuses: domain imports
+ * nothing, and no package exports test code (review of PR 686).
+ */
 function randomText(seed: number): () => string {
   let state = seed;
   const below = (n: number) => (state = (state * 48_271) % 0x7fff_ffff) % n;

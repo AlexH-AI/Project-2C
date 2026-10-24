@@ -28,7 +28,7 @@ import {
 } from './customers';
 import { listPolicies } from './policies';
 import { createPerson, listPeople, softDeletePerson, updatePerson } from './team';
-import { byId, codeOf, errorOf, setup, snapshotStage } from './test-support';
+import { byId, codeOf, errorOf, setup, stageAtEndOfDay } from './test-support';
 
 // The test clock reads 26/09/2026: a meeting is held or missed by then, the next one booked after.
 const d = (day: number, month: number, year = 2026): CalendarDate => calendarDate(year, month, day);
@@ -935,8 +935,8 @@ describe('recording an outcome late', () => {
 
     const transitions = listStageTransitions(db, customer.id);
     expect(transitions.at(-1)).toMatchObject({ from: 'N4', to: 'N1', date: d(5, 1) });
-    expect(snapshotStage(customer, transitions.slice(0, -1), d(5, 1))).toBe('N4');
-    expect(snapshotStage(customer, transitions, d(31, 1))).toBe(stage());
+    expect(stageAtEndOfDay(customer, transitions.slice(0, -1), d(5, 1))).toBe('N4');
+    expect(stageAtEndOfDay(customer, transitions, d(31, 1))).toBe(stage());
   });
 });
 

@@ -51,7 +51,10 @@ export const teams = sqliteTable(
   ],
 );
 
-/** The columns that point to a person are all listed in `PERSON_REFERENCES`, below the policies. */
+/**
+ * Every column that points to a person is read by `PERSON_REFERENCES` (`person-references.ts`): a
+ * new one takes a kind there, then the two steps it names.
+ */
 export const people = sqliteTable(
   'people',
   {
@@ -143,6 +146,14 @@ export const appointments = sqliteTable(
   (t) => [
     // Thùng rác, the profile and 5f count a customer's records (DR6-44).
     index('appointments_customer').on(t.customerId),
+    // Thùng rác and its purge start from the deleted appointments, then look for what was booked
+    // from each (TR-12), without reading the others.
+    index('appointments_deleted')
+      .on(t.deletedAt)
+      .where(sql`${t.deletedAt} IS NOT NULL`),
+    index('appointments_rescheduled_from')
+      .on(t.rescheduledFromId)
+      .where(sql`${t.rescheduledFromId} IS NOT NULL`),
     check('appointments_status', sql`${t.status} IN (${list(APPOINTMENT_STATUSES)})`),
     check('appointments_trigger', sql`${t.triggerType} IN (${list(APPOINTMENT_TRIGGERS)})`),
     check(
@@ -228,27 +239,6 @@ export const policies = sqliteTable(
     ),
   ],
 );
-
-/**
- * Every reference to a person, one row each (spec §3.3, ADR-0007, D9): `kind` is the column it is,
- * the RE of a customer, an appointment or a policy, or a coordinator or the reviewer of an
- * appointment; `appointment_id` the appointment it is on (none for a customer or a policy);
- * `customer_id` the customer it belongs to (the customer itself, for its RE); `live` whether that
- * record is not deleted (for a coordinator or the reviewer, its appointment).
- *
- * What keeps a person from deletion, the customers in the trash it is about, what the purge keeps
- * of them and import rule 5 all read it, so a column that points to a person is added here and
- * nowhere else: a test lists the columns of this schema that do.
- */
-export const PERSON_REFERENCES = `
-  SELECT 'customer' AS kind, re_id AS person_id, NULL AS appointment_id, id AS customer_id,
-    deleted_at IS NULL AS live FROM customers
-  UNION ALL SELECT 'appointment', re_id, id, customer_id, deleted_at IS NULL FROM appointments
-  UNION ALL SELECT 'policy', re_id, NULL, customer_id, deleted_at IS NULL FROM policies
-  UNION ALL SELECT 'coordinator', c.person_id, a.id, a.customer_id, a.deleted_at IS NULL
-    FROM appointment_coordinators c JOIN appointments a ON a.id = c.appointment_id
-  UNION ALL SELECT 'reviewer', outcome_reviewer_id, id, customer_id, deleted_at IS NULL
-    FROM appointments WHERE outcome_reviewer_id IS NOT NULL`;
 
 // ---- KYC notes, facts and versions (spec §3.8–3.10, ADR-0008) ----
 

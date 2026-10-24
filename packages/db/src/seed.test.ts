@@ -341,6 +341,25 @@ describe('seedDemoData', () => {
     SLOW,
   );
 
+  // `fillTrash` takes its leaver to the first RE's team: with none, it threw a TypeError (#566).
+  it('refuses a scale without a team or an RE, or with meeting days the wrong way round, writing nothing', async () => {
+    const db = await openDatabase();
+    const scale = { teams: 1, resPerTeam: 1, customersPerRe: 1, meetingDays: [1, 1] as const };
+
+    for (const wrong of [
+      { ...scale, teams: 0 },
+      { ...scale, resPerTeam: 0 },
+      { ...scale, meetingDays: [3, 2] as const },
+      { ...scale, customersPerRe: 1.5 },
+    ]) {
+      expect(() =>
+        seedDemoData(db, { anchorDate: ANCHOR, seed: 1, scale: wrong, trash: true }),
+      ).toThrow(/^The seed needs a team of an RE at least/);
+    }
+
+    expect([...listTeams(db), ...listPeople(db)]).toEqual([]);
+  });
+
   it('refuses a database that already has data', async () => {
     const db = await openDatabase();
     createTeam(db, { name: 'Sao Mai' });

@@ -285,10 +285,7 @@ async function trash11a() {
 function rescheduledFromFile(t: Awaited<ReturnType<typeof trash11a>>) {
   const moved = t.schedule(t.bao.id, t.tuan.id, d(8, 10), '10:00');
   const next = rescheduleAppointment(t.db, moved.id, { date: d(15, 10), time: '10:00' });
-  t.db.sqlite.run('UPDATE appointments SET deleted_at = ? WHERE id = ?', [
-    '2026-10-10T11:05:00.000Z',
-    moved.id,
-  ]);
+  deleteInFile(t.db, moved.id);
   return { moved, next };
 }
 
@@ -375,7 +372,7 @@ describe('purgeTrash', () => {
     // Handed over: the past appointment stays Vũ Minh Khoa's (T-233).
     updateCustomerProfile(db, chau.id, { reId: re.id });
     softDeleteCustomer(db, chau.id);
-    expect(personUsage(db, khoa.id).inTrash).toEqual(['Ngô Bảo Châu']);
+    expect(personUsage(db, khoa.id).inTrash).toEqual([{ name: 'Ngô Bảo Châu', code: chau.code }]);
     expect(codeOf(() => softDeletePerson(db, khoa.id))).toBe('PERSON_IN_USE');
 
     purgeTrash(db);
@@ -478,7 +475,12 @@ describe('purgeTrash', () => {
   });
 
   it('gives the file back the room of what it purged, so nothing purged stays in it (question 3)', async () => {
-    const { db, persist } = await trash11a();
+    const { db, persist, customer, linh } = await trash11a();
+    // A purged note longer than a page of the file: the rest of 11a may fit in as many pages after
+    // the VACUUM as before.
+    const huong = customer('Lý Thu Hương', linh.id);
+    addKycNote(db, huong.id, { text: 'Ghi chú dài '.repeat(1000), date: d(2, 9) });
+    softDeleteCustomer(db, huong.id);
     const before = db.export();
     const secret = new TextEncoder().encode(SECRET);
     const holds = (bytes: Uint8Array) =>
@@ -836,7 +838,8 @@ describe('the triggers of KYC notes, facts and AI analyses (D11, ADR-0008 phụ 
 describe('the migration of the purge (0011)', () => {
   it('opens a database saved before it with its data, then purges it', async () => {
     const now = () => new Date(Date.UTC(2026, 9, 11, 11));
-    const old = await openDatabase({ migrations: MIGRATIONS.slice(0, -1), now });
+    const purge = MIGRATIONS.find((m) => m.tag === '0011_trash_purge')!;
+    const old = await openDatabase({ migrations: MIGRATIONS.filter((m) => m.id < purge.id), now });
     const team = createTeam(old, { name: 'Sao Mai' });
     const re = createPerson(old, { name: 'An', role: 'RE', teamId: team.id });
     const live = withKyc(old, re.id, 'Lan');
@@ -844,7 +847,7 @@ describe('the migration of the purge (0011)', () => {
     softDeleteCustomer(old, gone.id);
     // The trigger before it refuses the deleted customer's rows too.
     expect(statement(old, gone.id)('DELETE FROM ai_analyses')).toThrow(/append-only/);
-    expect(old.schemaVersion()).toBe(LATEST_SCHEMA_VERSION - 1);
+    expect(old.schemaVersion()).toBe(purge.id - 1);
     const saved = dump(old);
 
     const migrated = await openDatabase({ bytes: old.export(), now });
