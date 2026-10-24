@@ -2,21 +2,24 @@
  * Analysis through ChatGPT web, by hand (spec Phase 5 §3.1, P7): the app builds one message for the
  * user to paste into chatgpt.com, then checks each answer the user pastes back as it checks a model's
  * (first JSON block, V1–V6), with the same attempts and retry message as the AI calls
- * (`prompts/retry.ts`). Nothing here calls the network: no adapter, no `AiRunner` (§3.1 item 5).
+ * (`attempts.ts`). Nothing here calls the network: no adapter, no `AiRunner` (§3.1 item 5).
  * The session is a value the panel keeps; it is never stored (item 4).
  */
 import type { CalendarDate, KycGateState } from '@p2c/domain';
-import { codePointsOver } from './code-points';
-import { MAX_ATTEMPTS, nextRetry, RETRY_TEMPLATE, type CheckedAnswer } from './prompts/retry';
 import {
   ANALYSIS_PROMPTS,
   analysisOutcome,
   checkAnalysisAnswer,
-  MAX_RAW_OUTPUT,
+  NO_MODEL,
+  subjectOf,
   takeAnalysisInput,
-  type AnalysisRow,
-} from './run';
-import type { AnalysisInput, AnalysisProfile } from './schema';
+  type AnalysisSubject,
+} from './analysis-steps';
+import { MAX_ATTEMPTS, nextRetry, type CheckedAnswer } from './attempts';
+import { codePointsOver } from './code-points';
+import { RETRY_TEMPLATE } from './prompts/retry';
+import type { AnalysisRow } from './run';
+import { MAX_AI_RAW_OUTPUT, type AnalysisInput, type AnalysisProfile } from './schema';
 import { cleanText } from './text-match';
 import type { ValidationIssue } from './validator';
 
@@ -35,6 +38,11 @@ export const WEB_WRAPPER = {
 {input}`,
 } as const;
 
+/** The `prompt_version` of a ChatGPT web analysis (§7.1): the mode's prompt, then the wrapper's. */
+export function webPromptVersion(mode: AnalysisInput['mode']): string {
+  return `${ANALYSIS_PROMPTS[mode].version}+${WEB_WRAPPER.version}`;
+}
+
 /** The message to paste: the mode prompt and the input JSON (as sent to OpenCode) in the wrapper. */
 export function buildWebMessage(input: AnalysisInput): string {
   const parts = { prompt: ANALYSIS_PROMPTS[input.mode].system, input: JSON.stringify(input) };
@@ -46,18 +54,13 @@ export function buildWebMessage(input: AnalysisInput): string {
 }
 
 /** One customer's ChatGPT web analysis, from the click to the row to record. */
-export interface WebSession {
-  readonly customerId: string;
-  /** The KYC version the input was taken from; the result stays tied to it (§3.1 item 6). */
-  readonly kycVersionId: string;
+export interface WebSession extends AnalysisSubject {
   readonly input: AnalysisInput;
   /** The pastes checked so far, all wrong: none before the first one. */
   readonly attempts: readonly CheckedAnswer[];
 }
 
-export interface WebAnalysisRequest {
-  readonly customerId: string;
-  readonly kycVersionId: string;
+export interface WebAnalysisRequest extends AnalysisSubject {
   readonly profile: AnalysisProfile;
   readonly today: CalendarDate;
 }
@@ -71,23 +74,21 @@ export type WebStart =
 export function startWebAnalysis(request: WebAnalysisRequest): WebStart {
   const input = takeAnalysisInput(request.profile, request.today);
   if ('kind' in input) return input;
-  const { customerId, kycVersionId } = request;
   return {
     kind: 'session',
-    session: { customerId, kycVersionId, input, attempts: [] },
+    session: { ...subjectOf(request), input, attempts: [] },
     message: buildWebMessage(input),
   };
 }
 
 /**
  * A line as it is compared (G5 §6a, R2-03): cleaned as V3–V6 read a text (no invisible character,
- * then NFKC: DR6-17; a stray mark as a space: DR6-122), without a quote prefix (`>`, `> >`…), each
- * run of white space as one space.
+ * then NFKC: DR6-17; a stray mark as a space: DR6-122; each run of white space as one space,
+ * trimmed), without a quote prefix (`>`, `> >`…).
  */
 const ownLine = (line: string) =>
   cleanText(line)
     .replace(/^[\s>]*>/u, '')
-    .replace(/\s+/gu, ' ')
     .trim();
 
 /**
@@ -111,7 +112,7 @@ const LINE_BREAK = /\r\n?|[\n\u{85}\u{2028}\u{2029}]/u;
  * More code units than twice the limit is too long whatever the paste holds (a code point is at
  * most two), so a paste is read on this many of its code units at most (DR5-09).
  */
-const MAX_READ = 2 * MAX_RAW_OUTPUT;
+const MAX_READ = 2 * MAX_AI_RAW_OUTPUT;
 
 /**
  * Whether a line of the paste is one of the app's own. Only the first `MAX_READ` code units are
@@ -127,7 +128,7 @@ function isOwnMessage(pasted: string): boolean {
 export type WebAnswerResult =
   /**
    * Not an attempt (§3.1 item 3): the paste is blank, is the app's own message pasted back, or is
-   * longer than `MAX_RAW_OUTPUT` characters (by code point, as `raw_output` is cut).
+   * longer than `MAX_AI_RAW_OUTPUT` characters (by code point, as `raw_output` is cut).
    */
   | { readonly kind: 'unusable'; readonly reason: 'EMPTY' | 'OWN_MESSAGE' | 'TOO_LONG' }
   /** The first paste is wrong: show the issues; "Copy yêu cầu sửa" copies `retryMessage` (G5 §5). */
@@ -147,24 +148,20 @@ export function checkWebAnswer(session: WebSession, pasted: string): WebAnswerRe
   // A huge paste is never trimmed nor counted whole either (DR5-09).
   if (pasted.length > MAX_READ) return { kind: 'unusable', reason: 'TOO_LONG' };
   if (pasted.trim() === '') return { kind: 'unusable', reason: 'EMPTY' };
-  if (codePointsOver(pasted, MAX_RAW_OUTPUT)) return { kind: 'unusable', reason: 'TOO_LONG' };
+  if (codePointsOver(pasted, MAX_AI_RAW_OUTPUT)) return { kind: 'unusable', reason: 'TOO_LONG' };
   const attempts = [...session.attempts, checkAnalysisAnswer(session.input, pasted)];
   const retry = nextRetry(attempts);
   if (retry !== null) {
     const { issues } = attempts.at(-1)!;
     return { kind: 'retry', session: { ...session, attempts }, issues, retryMessage: retry };
   }
-  const { customerId, kycVersionId, input } = session;
+  const { input } = session;
   const row: AnalysisRow = {
-    customerId,
-    kycVersionId,
+    ...subjectOf(session),
     ...analysisOutcome(input, attempts),
     provider: 'CHATGPT_WEB',
-    model: null,
-    reasoning: null,
-    promptVersion: `${ANALYSIS_PROMPTS[input.mode].version}+${WEB_WRAPPER.version}`,
-    promptTokens: null,
-    completionTokens: null,
+    ...NO_MODEL,
+    promptVersion: webPromptVersion(input.mode),
   };
   return { kind: 'record', row };
 }

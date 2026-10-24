@@ -5,6 +5,7 @@
  */
 import {
   AiError,
+  errorDetails,
   isAiErrorCode,
   type AiAdapter,
   type AiCompletion,
@@ -38,10 +39,7 @@ function aiError(reason: unknown): AiError {
   if (typeof reason !== 'object' || reason === null) return new AiError('AI_BAD_REQUEST');
   const { code, httpStatus, message } = reason as Record<string, unknown>;
   if (!isAiErrorCode(code)) return new AiError('AI_BAD_REQUEST');
-  return new AiError(code, {
-    ...(typeof httpStatus === 'number' && { httpStatus }),
-    ...(typeof message === 'string' && { serverMessage: message }),
-  });
+  return new AiError(code, errorDetails({ httpStatus, serverMessage: message }));
 }
 
 /** @param invoke Tauri's `invoke`. */

@@ -1,20 +1,19 @@
 import { evaluateKycGate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import type { AiAdapter, AiCompleteRequest, AiCompletion } from './adapter';
+import { analysisOutcome, EMPTY_RAW_OUTPUT } from './analysis-steps';
+import { nextRetry } from './attempts';
 import { AiError } from './errors';
 import { createMockAdapter } from './mock-adapter';
-import { nextRetry } from './prompts/retry';
 import {
-  analysisOutcome,
   checkConnection,
   createAiRunner,
-  EMPTY_RAW_OUTPUT,
   runAnalysis,
   runExtraction,
   type AiAbortSignal,
   type AiRunner,
 } from './run';
-import { buildAnalysisInput } from './schema';
+import { buildAnalysisInput, PROMPT_VERSIONS } from './schema';
 import { readAiSettings, type AiSettings } from './settings';
 import { ANALYSIS_FACTS, fact, PRIVATE, PROFILE, TODAY } from './test-support';
 import { CUT_ANSWER } from './validator';
@@ -151,7 +150,7 @@ describe('runAnalysis', () => {
         provider: 'OPENCODE_GO',
         model: 'kimi-k3',
         reasoning: 'HIGH',
-        promptVersion: 'analysis@4',
+        promptVersion: PROMPT_VERSIONS.analysis,
         attempts: 1,
         input: buildAnalysisInput(PROFILE, evaluateKycGate(PROFILE.facts), TODAY),
         // `personalityNotes` left out is stored as the schema reads it: [].
@@ -434,7 +433,7 @@ describe('runAnalysis', () => {
         mode: 'discovery',
         gateState: 'PROFILE_DISCOVERY',
         status: 'ACCEPTED',
-        promptVersion: 'discovery@4',
+        promptVersion: PROMPT_VERSIONS.discovery,
         output: { hypotheses: [], personalityNotes: [] },
       },
     });

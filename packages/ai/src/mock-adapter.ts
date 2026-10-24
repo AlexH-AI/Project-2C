@@ -119,19 +119,29 @@ const NOT_OF_ANYONE = String.raw`(?<!(?<!${KH_SUBJECT} là )(?<!\p{L})người )
  */
 const ANSWERED = String.raw`(?:(?<!\p{L})thì |: ?)`;
 
+/** After a phrase, they ask it or say it is not so. */
+const NOT_SO = 'chưa|không';
+
+/** Before or after a phrase, the other way it may be. */
+const OR = 'hay|hoặc';
+
 /**
- * Not asked nor said not to be: no "chưa", "không" or "hay" right after the phrase, however its
- * clause goes on ("KH đã kết hôn chưa nhé", "có 2 con không nhỉ", "đã kết hôn hay còn độc thân",
- * T-289), nor an answer ("KH đã kết hôn thì không đúng", "Đã kết hôn: chưa rõ").
+ * Not asked nor said not to be: no "chưa", "không", "hay" or "hoặc" right after the phrase, however
+ * its clause goes on ("KH đã kết hôn chưa nhé", "có 2 con không nhỉ", "đã kết hôn hay còn độc
+ * thân", T-289), nor an answer ("KH đã kết hôn thì không đúng", "Đã kết hôn: chưa rõ"). Not past a
+ * line break, which ends the sentence (N19d): "KH đã kết hôn\nKhông hút thuốc." (T-288).
  */
-const NOT_ASKED = String.raw`(?!(?:\s*${ANSWERED}|\s+)(?:chưa|không)(?!\p{L})|\s+hay(?!\p{L}))`;
+const NOT_ASKED = String.raw`(?!(?:[^\S\n]*${ANSWERED}|[^\S\n]+)(?:${NOT_SO})(?!\p{L})|[^\S\n]+(?:${OR})(?!\p{L}))`;
 
 /** A wife or a husband, and people the KH knows. */
 const SPOUSE = 'vợ|chồng';
 const KNOWN = 'bạn|sếp|hàng xóm|người quen|đồng nghiệp|người thân|họ hàng';
 
+/** How the KH marries someone: "KH lấy chồng", "KH cưới vợ", "KH kết hôn với bạn". */
+const MARRY = 'lấy|cưới|kết hôn với';
+
 /** What makes the wife or husband after it someone's own: "có vợ", "sống cùng chồng", "cưới vợ". */
-const WITH_PARTNER = 'có|cùng|với|lấy|cưới|kết hôn với';
+const WITH_PARTNER = `có|cùng|với|${MARRY}`;
 
 /**
  * Someone other than the KH: named before a phrase in its sentence, the phrase is about them
@@ -175,7 +185,7 @@ const NAMES_NO_ONE = new RegExp(
  */
 const OWN_PARTNER = [
   String.raw`(?<=${KH_SUBJECT} (?:${WITH_PARTNER}) )(?:${SPOUSE})(?! của(?!\p{L}))`,
-  String.raw`(?<=${KH_SUBJECT} (?:lấy|cưới|kết hôn với) )(?:${KNOWN})`,
+  String.raw`(?<=${KH_SUBJECT} (?:${MARRY}) )(?:${KNOWN})`,
 ].join('|');
 
 /**
@@ -201,13 +211,20 @@ const SAID_OF_THE_KH = new RegExp(
  */
 const PARTNER_FIRST = new RegExp(String.raw`(?:${OWN_PARTNER})(?!\p{L})(?! và(?!\p{L}))`, 'u');
 
+/** A count of people: "ba người bạn", "các anh", "2 người". */
+const HOW_MANY = String.raw`một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười|mấy|vài|các|những|\d+`;
+
 /**
  * "của" and someone else right after "<n> con / bé / cháu": their children ("2 con của anh trai",
  * DR6-121). Any word of `PEOPLE`, in any case and none spared ("2 con của cô giáo", "của vợ chồng
- * anh Nam"), and "ba" as anyone ("của ba người bạn") (T-289). Sticky, tried where the count ends:
- * the count's own pattern tells case ("2 con Lexus"), which this list cannot share.
+ * anh Nam") (T-289), a count of people or "người" ("của hai người bạn", "của người khác") (T-288).
+ * Sticky, tried where the count ends: the count's own pattern tells case ("2 con Lexus"), which this
+ * list cannot share.
  */
-const OF_SOMEONE_ELSE = new RegExp(String.raw`\s+của\s+(?:${PEOPLE}|ba)(?!\p{L})`, 'iuy');
+const OF_SOMEONE_ELSE = new RegExp(
+  String.raw`\s+của\s+(?:${PEOPLE}|${HOW_MANY}|người)(?!\p{L})`,
+  'iuy',
+);
 
 const EXTRACTION_PATTERNS: readonly {
   readonly field: string;
@@ -281,18 +298,36 @@ const SUPPOSED =
  */
 const WISHED = /(?<!\p{L})(?:muốn|mong|dự định|hy vọng|hi vọng)(?!\p{L})/iu;
 
-/** Said not to be: before a phrase in its clause ("KH không có 2 con"). */
-const NEGATED = /(?<!\p{L})(?:không|chưa|chẳng)(?!\p{L})/iu;
+/**
+ * Said not to be: before a phrase in its clause ("KH không có 2 con", "KH phủ nhận đã kết hôn",
+ * T-288).
+ */
+const NEGATED = /(?<!\p{L})(?:không|chưa|chẳng|bác bỏ|phủ nhận)(?!\p{L})/iu;
 
 /**
- * A guess or a question mark, anywhere in the sentence of a phrase, before it or after it:
- * "Có lẽ KH đã kết hôn.", "KH có 2 con, hình như.", "KH đã kết hôn?" (DR6-121), "Có vẻ KH đã kết
- * hôn.", "KH đã kết hôn, dường như vậy." (T-289).
+ * "chắc" said unsure, as a guess ("chắc là", "hỏi lại cho chắc": to be made sure of) or a doubt
+ * ("không chắc chắn", "chưa biết chắc"); not "chắc" of a word that is sure or firm: "chắc chắn",
+ * "chắc ăn", "biết / nắm chắc", "vững / săn / rắn chắc" (T-288).
  */
-const GUESSED = /(?<!\p{L})(?:có lẽ|hình như|nghe nói|chắc là|có vẻ|dường như)(?!\p{L})|\?/iu;
+const UNSURE = String.raw`(?<!(?:vững|săn|rắn|biết|nắm) )chắc(?! (?:chắn|ăn))|(?:không|chưa|chẳng)(?: (?:biết|nắm))? chắc`;
 
-/** "chưa" or "không", maybe with "nhé / nhỉ / ạ" after it, ending its clause. */
-const NOT_YET = String.raw`(?:chưa|không)(?:\s+(?:nhé|nhỉ|ạ))?(?=[^\p{L}\p{N}]*?(?:,|$))`;
+/**
+ * A guess, a question mark or a question ending the sentence, anywhere in the sentence of a phrase,
+ * before it or after it: "Có lẽ KH đã kết hôn.", "KH có 2 con, hình như.", "KH đã kết hôn?"
+ * (DR6-121), "Có vẻ KH đã kết hôn.", "KH đã kết hôn, dường như vậy." (T-289), "Chắc KH đã kết hôn
+ * rồi.", "KH độc thân thì phải.", "KH độc thân à." (T-288), "chắc" said unsure (`UNSURE`).
+ */
+const GUESSED = new RegExp(
+  [
+    String.raw`(?<!\p{L})(?:có lẽ|hình như|nghe nói|có vẻ|dường như|${UNSURE})(?!\p{L})`,
+    String.raw`(?<!\p{L})(?:thì phải|à|hả)(?=[^\p{L}\p{N}]*$)`,
+    String.raw`\?`,
+  ].join('|'),
+  'iu',
+);
+
+/** "chưa" or "không", maybe with "nhé / nhỉ / ạ / nha / hả / à" after it, ending its clause. */
+const NOT_YET = String.raw`(?:${NOT_SO})(?:\s+(?:nhé|nhỉ|ạ|nha|hả|à))?(?=[^\p{L}\p{N}]*?(?:,|$))`;
 
 /**
  * A clause ending in `NOT_YET` asks what stands before it in its sentence: "KH đã kết hôn chưa.",
@@ -312,8 +347,11 @@ const DENIED = new RegExp(`${ANSWERED}${NOT_YET}`, 'giu');
 /** What starts another topic in a clause, the one an answer at its end speaks of. */
 const BUT = /(?<!\p{L})(?:nhưng|mà|còn)(?!\p{L})/giu;
 
-/** "hay" before a phrase in its clause: the other way it may be ("đã kết hôn hay còn độc thân"). */
-const EITHER = /(?<!\p{L})hay(?!\p{L})/iu;
+/**
+ * "hay" or "hoặc" before a phrase in its clause: the other way it may be ("đã kết hôn hay còn độc
+ * thân", "đã kết hôn hoặc độc thân").
+ */
+const EITHER = new RegExp(String.raw`(?<!\p{L})(?:${OR})(?!\p{L})`, 'iu');
 
 /** "Khi … thì": what stands between them is a condition, not a fact (DR6-121). */
 const WHEN = /(?<!\p{L})khi(?!\p{L})/iu;

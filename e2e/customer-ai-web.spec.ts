@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from './fixtures';
+import { expect, pattern, PROMPT, test, type Locator, type Page } from './fixtures';
 import {
   addKycNote,
   asExe,
@@ -45,7 +45,9 @@ test('copies the message, opens chatgpt.com, saves a pasted answer as CURRENT Ch
 
   await start.click();
   await expect(panel).toContainText('Đã copy tin nhắn và mở ChatGPT');
-  await expect(panel).toContainText(/kyc v2 · discovery@4\+web@1 · chụp 15\/09 \d\d:\d\d/);
+  await expect(panel).toContainText(
+    pattern`kyc v2 · ${PROMPT.webDiscovery} · chụp 15\/09 \d\d:\d\d`,
+  );
   await expect(panel).toContainText('Lần thử 1 / 2');
   const { copied, opened } = await recorded(page);
   expect(copied).toHaveLength(1);
@@ -71,7 +73,9 @@ test('copies the message, opens chatgpt.com, saves a pasted answer as CURRENT Ch
   await expect(start).toBeFocused();
   // The head badge; the history names it too.
   await expect(panel.getByText('ChatGPT web', { exact: true }).first()).toBeVisible();
-  await expect(panel).toContainText(/kyc v2 · discovery@4\+web@1 · ChatGPT web · 15\/09 \d\d:\d\d/);
+  await expect(panel).toContainText(
+    pattern`kyc v2 · ${PROMPT.webDiscovery} · ChatGPT web · 15\/09 \d\d:\d\d`,
+  );
   await expect(panel).not.toContainText('Kết quả Mock');
   await expect(start).toBeEnabled();
   await expect(panel.getByRole('button', { name: 'Phân tích lại' })).toBeEnabled();
@@ -147,7 +151,7 @@ test("the app's own message pasted back counts no attempt; AI trích xuất wait
   await expect(panel).not.toContainText('Đây là tin nhắn của app');
   await save.click();
   await expect(panel).toContainText('CURRENT');
-  await expect(panel).toContainText(/kyc v2 · discovery@4\+web@1 · ChatGPT web/);
+  await expect(panel).toContainText(pattern`kyc v2 · ${PROMPT.webDiscovery} · ChatGPT web`);
   await expect(extract).toBeEnabled();
 
   // Another customer's AI trích xuất does not wait for this one's session.
@@ -178,7 +182,7 @@ test('a wrong paste then a right one is ACCEPTED; two wrong ones are REJECTED', 
   await retryBox.fill(GOOD);
   await save.click();
   await expect(panel).toContainText('CURRENT');
-  await expect(panel).toContainText(/discovery@4\+web@1 · ChatGPT web/);
+  await expect(panel).toContainText(pattern`${PROMPT.webDiscovery} · ChatGPT web`);
 
   await start.click();
   await panel.getByRole('textbox', { name: 'Dán kết quả' }).fill('Lần 1');
@@ -191,10 +195,10 @@ test('a wrong paste then a right one is ACCEPTED; two wrong ones are REJECTED', 
 
   // Its report lists the issues of each attempt, never the paste (mockup 2k).
   const rows = panel.getByRole('table', { name: 'Lịch sử phân tích' }).getByRole('row');
-  await expect(rows.nth(1)).toContainText(/discovery@4\+web@1ChatGPT webREJECTED$/);
+  await expect(rows.nth(1)).toContainText(pattern`${PROMPT.webDiscovery}ChatGPT webREJECTED$`);
   await panel.getByRole('button', { name: 'Xem chi tiết' }).click();
   const report = page.getByRole('dialog', { name: /^Lần phân tích 15\/09 \d\d:\d\d bị loại$/ });
-  await expect(report).toContainText('kyc v2 · discovery@4+web@1 · ChatGPT web · 2 lần thử');
+  await expect(report).toContainText(`kyc v2 · ${PROMPT.webDiscovery} · ChatGPT web · 2 lần thử`);
   await expect(report).not.toContainText('token');
   await expect(report).toContainText(/Lần thử 1V1 · Không có khối JSON hợp lệLần thử 2V1 · /);
   await expect(report.getByRole('listitem').first()).toHaveText('V1 · Không có khối JSON hợp lệ');
@@ -231,7 +235,7 @@ test('a KYC change while the session is open leaves the saved result STALE', asy
     .locator('xpath=following-sibling::span');
   await expect(head).toHaveText(['CURRENT', 'Mock']);
   await panel.getByRole('button', { name: 'Phân tích bằng ChatGPT web' }).click();
-  await expect(panel).toContainText('kyc v2 · discovery@4+web@1');
+  await expect(panel).toContainText(`kyc v2 · ${PROMPT.webDiscovery}`);
   // The mode of the input taken (§9.1, mockup 4e), whatever the saved one or the KYC become; not
   // the source of the analysis saved before (R2-18).
   await expect(head).toHaveText(['PROFILE_DISCOVERY']);
@@ -242,7 +246,7 @@ test('a KYC change while the session is open leaves the saved result STALE', asy
   await panel.getByRole('button', { name: 'Kiểm tra và lưu' }).click();
   await expect(panel).toContainText('STALE');
   await expect(panel).toContainText('KYC có thay đổi nhỏ từ 15/09.');
-  await expect(panel).toContainText(/kyc v2 · discovery@4\+web@1 · ChatGPT web/);
+  await expect(panel).toContainText(pattern`kyc v2 · ${PROMPT.webDiscovery} · ChatGPT web`);
 });
 
 test('the session leaves the panel once the data is replaced under it (DR6-15)', async ({

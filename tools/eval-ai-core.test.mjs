@@ -2,13 +2,8 @@
 import { readFileSync } from 'node:fs';
 import { URL } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
-import {
-  AiError,
-  ANALYSIS_PROMPTS,
-  createMockAdapter,
-  KYC_FIELD_LABELS,
-  takeAnalysisInput,
-} from '../packages/ai/src/index.ts';
+import { ANALYSIS_PROMPTS, takeAnalysisInput } from '../packages/ai/src/analysis-steps.ts';
+import { AiError, createMockAdapter, KYC_FIELD_LABELS } from '../packages/ai/src/index.ts';
 import { extractionPrompt } from '../packages/ai/src/prompts/extraction.ts';
 import { CUT_ANSWER } from '../packages/ai/src/validator.ts';
 import { calendarDate } from '../packages/domain/src/period.ts';

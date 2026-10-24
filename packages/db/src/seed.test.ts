@@ -34,7 +34,11 @@ const ANCHOR = calendarDate(2026, 9, 15);
 // (T-095). Only the timeout moved, no assertion changed.
 const SLOW = 180_000;
 
-/** SHA-256 of every business row, in insertion order — equal hashes mean the same data. */
+/**
+ * SHA-256 of every business row, in insertion order — equal hashes mean the same data. The prompt
+ * version of an analysis counts as one mark: the Mock analyses carry `PROMPT_VERSIONS`, which a G5
+ * round moves on purpose and the test of the analyses pins (T-288).
+ */
 async function contentHash(db: Database): Promise<string> {
   const lines: string[] = [];
   const tables = db.sqlite.exec(
@@ -42,8 +46,12 @@ async function contentHash(db: Database): Promise<string> {
   );
   for (const [name] of tables[0]!.values) {
     lines.push(`#${String(name)}`);
-    for (const result of db.sqlite.exec(`SELECT * FROM "${String(name)}" ORDER BY rowid`)) {
-      for (const row of result.values) lines.push(JSON.stringify(row));
+    const query = `SELECT * FROM "${String(name)}" ORDER BY rowid`;
+    for (const { columns, values } of db.sqlite.exec(query)) {
+      const version = name === 'ai_analyses' ? columns.indexOf('prompt_version') : -1;
+      for (const row of values) {
+        lines.push(JSON.stringify(version < 0 ? row : row.with(version, '<prompt version>')));
+      }
     }
   }
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(lines.join('\n')));
@@ -79,12 +87,12 @@ const DEMO_ROW_COUNTS = {
   teams: 3,
 };
 // T-232 moved it with one more read of the seed's ticking clock per stage change (stamps and ids);
-// T-237 with the prompt version of the Mock analyses (`@2`, DR6-18); T-257 with `@3` (G5 18/10/2026);
-// T-277 with `@4` (G5 23/10/2026).
+// T-237, T-257 and T-277 with the prompt version of the Mock analyses (`@2`, DR6-18; `@3`; `@4`),
+// until T-288 took that version as one mark (`contentHash`).
 // The hash of the data seeded at UTC. From UTC+12 noon UTC is already the next day, so `middayOf`
 // takes local noon and every stamp and the time of every id move back 12–14 hours (DR-15); from
 // UTC−12 to UTC+11 the data is the very data of UTC.
-const DEMO_HASH = '01f23ca69de96c6f949972e3fdd9b623299828ef9ce9efefbdd617a24b0687d1';
+const DEMO_HASH = '2e078bf00dc0ed5d1ac1904a3d84045ed8929b3899498fb50d122396e931a3e1';
 
 async function seeded(seed: number, anchorDate = ANCHOR) {
   const persist = vi.fn();

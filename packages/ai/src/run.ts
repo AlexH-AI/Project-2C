@@ -7,23 +7,30 @@
  * One request at a time in the whole app (P5): every call goes through the app's single
  * `AiRunner`, which stays busy until the adapter has really answered, also after Hủy.
  */
-import { evaluateKycGate, toHex, type CalendarDate, type KycGateState } from '@p2c/domain';
+import { toHex, type CalendarDate, type KycGateState } from '@p2c/domain';
 import type { AiAdapter, AiCompleteRequest, AiMessage } from './adapter';
+import {
+  ANALYSIS_PROMPTS,
+  analysisOutcome,
+  checkAnalysisAnswer,
+  NO_MODEL,
+  subjectOf,
+  takeAnalysisInput,
+  type AnalysisOutcome,
+  type AnalysisSubject,
+} from './analysis-steps';
+import { checkAnswer, nextRetry, type CheckedAnswer } from './attempts';
 import { codePointCount, cutCodePoints } from './code-points';
-import { AiError, type AiErrorCode } from './errors';
+import { AiError, errorDetails, type AiErrorResult } from './errors';
 import { buildExtractionInput } from './input';
 import type { AiModelId } from './models';
-import { analysisPrompt } from './prompts/analysis';
 import { connectionCheck } from './prompts/connection';
-import { discoveryPrompt } from './prompts/discovery';
 import { extractionPrompt } from './prompts/extraction';
-import { checkAnswer, lastAnswer, nextRetry, type CheckedAnswer } from './prompts/retry';
 import {
+  AI_ANALYSIS_NO_MODEL,
   AI_OUTPUT_SCHEMAS,
-  buildAnalysisInput,
   type AiAnalysisProvider,
   type AiReasoningLevel,
-  type AnalysisInput,
   type AnalysisProfile,
 } from './schema';
 import type { AiSettings } from './settings';
@@ -35,13 +42,8 @@ import {
 } from './validator';
 
 type Cancelled = { readonly kind: 'cancelled' };
-/** An `AiError` as a result, with what Rust told of a failed HTTP call (Settings → AI shows it). */
-type Failed = {
-  readonly kind: 'error';
-  readonly code: AiErrorCode;
-  readonly httpStatus?: number;
-  readonly serverMessage?: string;
-};
+/** An `AiError` as a result. */
+type Failed = AiErrorResult & { readonly kind: 'error' };
 
 // Shared by every call, so frozen: a caller that writes to one cannot change the next (MS-A6).
 const CANCELLED: Cancelled = Object.freeze({ kind: 'cancelled' });
@@ -166,13 +168,7 @@ async function attempt<R>(call: () => Promise<R>): Promise<R | Failed> {
     return await call();
   } catch (error) {
     if (error instanceof AiError) {
-      const { code, httpStatus, serverMessage } = error;
-      return {
-        kind: 'error',
-        code,
-        ...(httpStatus !== undefined && { httpStatus }),
-        ...(serverMessage !== undefined && { serverMessage }),
-      };
+      return { kind: 'error', code: error.code, ...errorDetails(error) };
     }
     throw error;
   }
@@ -229,33 +225,17 @@ async function converse(
 
 // ---- analysis -----------------------------------------------------------------
 
-export interface AnalysisRequest extends AiCall {
-  readonly customerId: string;
-  /** The KYC version the profile is at when the RE clicks; the result stays tied to it. */
-  readonly kycVersionId: string;
+export interface AnalysisRequest extends AiCall, AnalysisSubject {
   readonly profile: AnalysisProfile;
   readonly today: CalendarDate;
 }
 
 /** A row for `recordAiAnalysis` (spec §7.1): all but the id, seq and date `db` gives it. */
-export interface AnalysisRow {
-  readonly customerId: string;
-  readonly kycVersionId: string;
-  readonly mode: AnalysisInput['mode'];
-  readonly gateState: 'PAIN_POINT_ANALYSIS' | 'PROFILE_DISCOVERY';
-  readonly status: 'ACCEPTED' | 'REJECTED';
+export interface AnalysisRow extends AnalysisSubject, AnalysisOutcome {
   readonly provider: AiAnalysisProvider;
   readonly model: AiModelId | null;
   readonly reasoning: AiReasoningLevel | null;
   readonly promptVersion: string;
-  readonly attempts: number;
-  readonly input: AnalysisInput;
-  readonly output: unknown;
-  readonly rawOutput: string | null;
-  readonly validator: readonly {
-    readonly attempt: number;
-    readonly errors: readonly ValidationIssue[];
-  }[];
   readonly promptTokens: number | null;
   readonly completionTokens: number | null;
 }
@@ -267,71 +247,6 @@ export type AnalysisResult =
   | Failed
   | Cancelled;
 
-/** `raw_output` is cut to this many characters (spec §7.1); a longer paste is refused (§3.1). */
-export const MAX_RAW_OUTPUT = 20_000;
-
-/**
- * Stored as `raw_output` when the last wrong answer was empty: `db` takes no empty `raw_output`
- * for a REJECTED row (§7.3 rule 3; review #418).
- */
-export const EMPTY_RAW_OUTPUT = '(empty)';
-
-/** The prompt of each mode that keeps a history (G5 §2, §3). */
-export const ANALYSIS_PROMPTS = { analysis: analysisPrompt, discovery: discoveryPrompt } as const;
-
-/**
- * The input of an analysis taken from the profile now (spec §3, §6.1), or the gate state when the
- * gate lets no AI through (P2). The AI calls and ChatGPT web (§3.1) take it the same way.
- */
-export function takeAnalysisInput(
-  profile: AnalysisProfile,
-  today: CalendarDate,
-): AnalysisInput | { readonly kind: 'blocked'; readonly state: KycGateState } {
-  const gate = evaluateKycGate(profile.facts);
-  return buildAnalysisInput(profile, gate, today) ?? { kind: 'blocked', state: gate.state };
-}
-
-/**
- * Checks an analysis or discovery answer against the input it was given (V1–V6); `cut`: `maxTokens`
- * cut it (never known of a ChatGPT web paste).
- */
-export function checkAnalysisAnswer(
-  input: AnalysisInput,
-  content: string,
-  cut = false,
-): CheckedAnswer {
-  const checked = {
-    factCodes: input.facts.map((fact) => fact.code),
-    missingCategories: input.missingCategories.map((category) => category.code),
-  };
-  return checkAnswer(content, (parsed) => validateOutput(input.mode, parsed, checked), cut);
-}
-
-/** The fields of an analysis row that its input and answers decide, whoever answered (spec §7.1). */
-export type AnalysisOutcome = Pick<
-  AnalysisRow,
-  'mode' | 'gateState' | 'status' | 'attempts' | 'input' | 'output' | 'rawOutput' | 'validator'
->;
-
-export function analysisOutcome(
-  input: AnalysisInput,
-  attempts: readonly CheckedAnswer[],
-): AnalysisOutcome {
-  const { mode } = input;
-  const last = lastAnswer(attempts);
-  const accepted = last.issues.length === 0;
-  return {
-    mode,
-    gateState: mode === 'analysis' ? 'PAIN_POINT_ANALYSIS' : 'PROFILE_DISCOVERY',
-    status: accepted ? 'ACCEPTED' : 'REJECTED',
-    attempts: attempts.length,
-    input,
-    output: accepted ? AI_OUTPUT_SCHEMAS[mode].parse(last.parsed) : last.parsed,
-    rawOutput: accepted ? null : rawOutput(last.content),
-    validator: attempts.map((done, i) => ({ attempt: i + 1, errors: done.issues })),
-  };
-}
-
 export async function runAnalysis(request: AnalysisRequest): Promise<AnalysisResult> {
   const input = takeAnalysisInput(request.profile, request.today);
   if ('kind' in input) return input;
@@ -341,10 +256,9 @@ export async function runAnalysis(request: AnalysisRequest): Promise<AnalysisRes
       checkAnalysisAnswer(input, content, cut),
     );
     if ('kind' in attempts) return attempts;
-    const mock = request.settings.provider === 'MOCK';
+    const { provider, model, reasoning } = request.settings;
     // One attempt without a count makes the total unknown.
     const total = (key: 'promptTokens' | 'completionTokens') => {
-      if (mock) return null;
       let sum = 0;
       for (const done of attempts) {
         const count = done[key];
@@ -354,24 +268,21 @@ export async function runAnalysis(request: AnalysisRequest): Promise<AnalysisRes
       return sum;
     };
     const row: AnalysisRow = {
-      customerId: request.customerId,
-      kycVersionId: request.kycVersionId,
+      ...subjectOf(request),
       ...analysisOutcome(input, attempts),
-      provider: request.settings.provider,
-      model: mock ? null : request.settings.model,
-      reasoning: mock ? null : request.settings.reasoning,
+      provider,
+      ...(AI_ANALYSIS_NO_MODEL.includes(provider)
+        ? NO_MODEL
+        : {
+            model,
+            reasoning,
+            promptTokens: total('promptTokens'),
+            completionTokens: total('completionTokens'),
+          }),
       promptVersion: prompt.version,
-      promptTokens: total('promptTokens'),
-      completionTokens: total('completionTokens'),
     };
     return { kind: 'record' as const, row };
   }, request.signal);
-}
-
-function rawOutput(content: string): string {
-  if (content === '') return EMPTY_RAW_OUTPUT;
-  // By code point, as `db` cuts it, so an emoji at the limit is not cut in two.
-  return cutCodePoints(content, MAX_RAW_OUTPUT);
 }
 
 // ---- extraction ---------------------------------------------------------------

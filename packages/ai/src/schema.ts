@@ -40,6 +40,18 @@ export const AI_ANALYSIS_PROVIDERS = [...AI_PROVIDERS, 'CHATGPT_WEB'] as const;
 
 export type AiAnalysisProvider = (typeof AI_ANALYSIS_PROVIDERS)[number];
 
+/**
+ * The providers that name no model and count no token (§7.1): Mock, and ChatGPT web (P7). `ai`
+ * writes a row by this list and `db` checks one by it.
+ */
+export const AI_ANALYSIS_NO_MODEL: readonly AiAnalysisProvider[] = ['MOCK', 'CHATGPT_WEB'];
+
+/**
+ * The most characters (by code point) of a rejected answer kept as `raw_output` (§7.1); a longer
+ * ChatGPT web paste is refused (§3.1).
+ */
+export const MAX_AI_RAW_OUTPUT = 20_000;
+
 /** `DEFAULT` sends no `reasoning_effort`; the others are sent as low / medium / high. */
 export const AI_REASONING_LEVELS = ['DEFAULT', 'LOW', 'MEDIUM', 'HIGH'] as const;
 
@@ -57,6 +69,9 @@ export function factCode(seq: number): string {
 /** A day as the app stores it: `yyyy-mm-dd`, a real day of the calendar. */
 const isoDate = z.string().refine(isIsoDate, 'không phải ngày yyyy-mm-dd');
 
+/** A fact code, its message the V1 detail of a malformed one (G5 §11.6). */
+const factCodeString = z.string().regex(FACT_CODE, 'sai định dạng, cần mã dữ kiện dạng F12');
+
 /**
  * What the app sends for an analysis or discovery (spec §6.1), stored as `input_json` (§7.1): the
  * facts in effect, each with its code `F{seq}`, and the gate. `db` checks it when an analysis is
@@ -69,7 +84,7 @@ export const analysisInputSchema = z.strictObject({
   facts: z
     .array(
       z.strictObject({
-        code: z.string().regex(FACT_CODE),
+        code: factCodeString,
         category: z.string(),
         field: z.string(),
         value: z.string(),
@@ -87,8 +102,8 @@ export const analysisInputSchema = z.strictObject({
 
 export type AnalysisInput = z.infer<typeof analysisInputSchema>;
 
-// Refinement messages are Vietnamese: the validator puts them in a V1 detail, which goes back to the
-// model in the retry message (prompts §5).
+// Refinement, pattern and union messages are Vietnamese: the validator puts them in a V1 detail,
+// which goes back to the model in the retry message (prompts §5).
 
 /**
  * What a string shows, read as K20 reads a name (`normalizeText`): no invisible character (format,
@@ -127,7 +142,7 @@ const text = z
  */
 const prose = text.refine((s) => /\p{L}/u.test(visible(s)), 'không có chữ');
 const evidence = z
-  .array(z.string().regex(FACT_CODE))
+  .array(factCodeString)
   .refine((codes) => new Set(codes).size === codes.length, 'trích trùng một dữ kiện');
 
 /** Hypotheses, needs, pain points and themes: always cite at least one fact. */
@@ -182,7 +197,14 @@ export const discoveryOutputSchema = z.object({
  */
 export const extractionOutputSchema = z.object({
   facts: z
-    .array(z.object({ field: text, value: z.union([text, z.number(), z.boolean()]), quote: text }))
+    .array(
+      z.object({
+        field: text,
+        // The validator puts "thiếu" or "sai kiểu" before the message (G5 §11.6).
+        value: z.union([text, z.number(), z.boolean()], 'cần string, number hoặc boolean'),
+        quote: text,
+      }),
+    )
     .max(20),
 });
 

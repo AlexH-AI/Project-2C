@@ -548,6 +548,55 @@ describe('createMockAdapter', () => {
     expect(await extracted(note)).toEqual(facts);
   });
 
+  // The notes of the review of PR #809 (T-288): more ways a phrase is asked, guessed, said of
+  // someone else or said not to be.
+  it.each([
+    // "hoặc" is "hay": the other way it may be.
+    'KH đã kết hôn hoặc độc thân.',
+    'Lần sau hỏi KH đã kết hôn hoặc còn độc thân.',
+    'KH là người độc thân hoặc đã ly hôn.',
+    // More particles after "chưa / không", and "à / hả" ending a sentence ask it.
+    'Cần hỏi KH đã kết hôn, có con chưa nha.',
+    'KH độc thân à.',
+    'KH là người độc thân à.',
+    'KH đã kết hôn hả.',
+    // More guesses, and doubts: "chắc" said unsure.
+    'Chắc KH đã kết hôn rồi.',
+    'KH độc thân thì phải.',
+    'KH đã kết hôn, hỏi lại cho chắc.',
+    'KH đã kết hôn, nhưng không chắc chắn.',
+    'KH đã có 2 con, nhưng chưa biết chắc.',
+    // "của" and a count or "người": someone else's children.
+    'KH nuôi 2 con của hai người bạn.',
+    'KH nuôi 2 con của một người bạn.',
+    'KH nuôi 2 con của người khác.',
+    // Verbs that deny.
+    'KH bác bỏ tin đã kết hôn.',
+    'KH phủ nhận đã kết hôn.',
+  ])('proposes nothing from %j (the review of PR #809)', async (note) => {
+    expect(await extracted(note)).toEqual([]);
+  });
+
+  it.each([
+    // "\n" ends a sentence (N19d): "Không / Chưa / Hay…" opening the next line asks nothing above.
+    ['KH đã kết hôn\nKhông hút thuốc.', [MARRIED]],
+    ['KH độc thân\nChưa có con.', [SINGLE]],
+    ['KH đã kết hôn\nHay đi công tác.', [MARRIED]],
+    ['KH có 2 con\nchưa mua bảo hiểm.', [TWO]],
+    // Sure or firm is no guess (the review of PR #812 too), nor is "ạ" a question.
+    ['KH chắc chắn đã kết hôn.', [MARRIED]],
+    ['KH có tài chính vững chắc, đã kết hôn.', [MARRIED]],
+    ['KH có thân hình săn chắc, đã kết hôn.', [MARRIED]],
+    ['KH có cơ bắp rắn chắc, đã kết hôn.', [MARRIED]],
+    ['KH biết chắc mình muốn mua bảo hiểm, đã kết hôn.', [MARRIED]],
+    ['KH nắm chắc tài chính gia đình, đã có 2 con.', [TWO]],
+    ['KH có 2 con, chắc ăn nên mua gói gia đình.', [TWO]],
+    ['KH đã kết hôn ạ.', [MARRIED]],
+    ['KH có 2 con của mình.', [TWO]],
+  ])('reads %j as %j (the review of PR #809, T-288)', async (note, facts) => {
+    expect(await extracted(note)).toEqual(facts);
+  });
+
   it.each(['.', '!', '?', ';', ',', ':', '\n'])(
     'reads the KH opening a clause after %j as its subject (the review of PR #809)',
     async (mark) => {
