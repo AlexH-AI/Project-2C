@@ -188,7 +188,7 @@
   border-color: var(--danger);
 }
 
-/* Not operable, so outside --border-control: dashed --border-strong like every dashed border (T-303) */
+/* Not operable, so outside --border-control: dashed --border-strong, the token table's border for dashed lines (T-303) */
 .input.locked {
   background: var(--bg-2);
   border-color: var(--border-strong);
