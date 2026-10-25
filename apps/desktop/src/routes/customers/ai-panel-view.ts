@@ -226,7 +226,10 @@ function isIssue(issue: unknown): issue is ValidationIssue {
   );
 }
 
-/** The validator report of each attempt, as `analysisOutcome` stores it; one it cannot read lists nothing. */
+/**
+ * The validator report of each attempt, as `analysisOutcome` stores it; one it cannot read lists
+ * nothing.
+ */
 function storedReports(row: AiAnalysisView): { attempt: number; issues: ValidationIssue[] }[] {
   if (!Array.isArray(row.validator)) return [];
   const stored: unknown[] = row.validator;
