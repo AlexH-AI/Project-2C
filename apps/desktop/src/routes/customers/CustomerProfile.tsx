@@ -5,6 +5,8 @@ import {
   getKycProfile,
   listAiAnalyses,
   listAppointments,
+  listKycRecordingOrder,
+  listKycVersionFacts,
   listKycVersions,
   listPeople,
   listPolicies,
@@ -48,6 +50,10 @@ function readProfile(db: Database, id: string) {
     transitions,
     kyc: getKycProfile(db, id),
     versions: listKycVersions(db, id),
+    // The facts each version recorded: "+ F9, F12, F13 · kyc v3" on the timeline (T-297); the
+    // order the notes and versions were saved in orders them within a day (review of PR 835).
+    versionFacts: listKycVersionFacts(db, id),
+    recordingOrder: listKycRecordingOrder(db, id),
     analyses: listAiAnalyses(db, id),
     // What the appointment dialog reads, for this one customer.
     appointmentData: {
@@ -87,6 +93,7 @@ export function CustomerProfile({ id }: { id: string }) {
   const [appointing, setAppointing] = useState<{ from?: AppointmentRecord } | null>(null);
   const [policyMode, setPolicyMode] = useState<PolicyMode | null>(null);
   const policiesHeading = useRef<HTMLHeadingElement>(null);
+  const factsHeading = useRef<HTMLHeadingElement>(null);
   // The ChatGPT web session of the panel: AI trích xuất is off while it waits (§3.1 item 4).
   const [webOpen, setWebOpen] = useState(false);
   const onIssue = (policy: Policy) => setPolicyMode({ kind: 'issue', policy });
@@ -117,8 +124,19 @@ export function CustomerProfile({ id }: { id: string }) {
     );
   }
 
-  const { customer, re, team, policies, transitions, kyc, versions, analyses, appointmentData } =
-    profile;
+  const {
+    customer,
+    re,
+    team,
+    policies,
+    transitions,
+    kyc,
+    versions,
+    versionFacts,
+    recordingOrder,
+    analyses,
+    appointmentData,
+  } = profile;
   // Every customer has its first transition (spec §3.4).
   const since = stageSince(transitions).get(customer.id)!;
   const birth = customer.birthDate;
@@ -164,6 +182,7 @@ export function CustomerProfile({ id }: { id: string }) {
             profile={kyc}
             versions={versions}
             marked={marked?.code ?? null}
+            heading={factsHeading}
             onResolve={(field) => setEditing({ resolve: field })}
           />
           <CustomerPolicies
@@ -180,15 +199,15 @@ export function CustomerProfile({ id }: { id: string }) {
         <div className="flex min-w-0 flex-col gap-4">
           <Timeline
             transitions={transitions}
-            notes={kyc.notes}
-            versions={versions}
+            kyc={{ notes: kyc.notes, facts: kyc.facts, versions, versionFacts, recordingOrder }}
             appointments={appointmentData.appointments}
             people={appointmentData.people}
             today={today}
             onNext={next}
-            renderNote={(note) => (
+            renderNote={(note, noteVersions) => (
               <NoteEvent
                 note={note}
+                versions={noteVersions}
                 facts={kyc.facts}
                 webOpen={webOpen}
                 onConfirm={(note, proposal, onSaved) => setConfirming({ note, proposal, onSaved })}
@@ -272,7 +291,7 @@ export function CustomerProfile({ id }: { id: string }) {
         />
       )}
       {/* Resolved, the trường's "Giải quyết" goes: the focus goes to the top of the KYC card. */}
-      <DialogFocusFallback value={() => document.getElementById('kyc-facts')}>
+      <DialogFocusFallback value={() => factsHeading.current}>
         {typeof editing === 'object' && editing && (
           <ResolveKycDialog
             customer={customer}

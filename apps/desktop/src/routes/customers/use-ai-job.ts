@@ -10,10 +10,15 @@ interface AiJobOutcomes {
   readonly extraction: ExtractionOutcome;
 }
 
+/** A run that failed, nothing saved: said (§5.3) also on a screen shown again after it ended. */
+const failed = (outcome: AnalysisOutcome | ExtractionOutcome) =>
+  outcome.kind === 'error' || outcome.kind === 'failed' || outcome.kind === 'invalid';
+
 /**
  * A run the app keeps (`AiJobs`) under `<kind>:<id>`: its phase, also on a screen shown again while
- * it runs (review of PR 439), and how it ended while the screen stays. Hủy's ending is never kept:
- * once the request after it ends, the screen is back as it was.
+ * it runs (review of PR 439), and how it ended while the screen stays; a failure the screen was
+ * gone for is said once it is shown again (T-297). Hủy's ending is never kept: once the request
+ * after it ends, the screen is back as it was.
  */
 export function useAiJob<K extends keyof AiJobOutcomes>(kind: K, id: string) {
   type Outcome = AiJobOutcomes[K];
@@ -21,10 +26,16 @@ export function useAiJob<K extends keyof AiJobOutcomes>(kind: K, id: string) {
   const { ai } = useAppData();
   const { jobs } = ai;
   const job = useSyncExternalStore(jobs.subscribe, () => jobs.get(key));
+  // Only `start` below puts a job under this key, so what it kept is this kind's outcome.
+  const kept = useSyncExternalStore(jobs.subscribe, () => jobs.kept(key)) as Outcome | undefined;
   const [ended, setEnded] = useState<Outcome | null>(null);
+  // Held here as if it had ended while shown, and dropped from `AiJobs` once shown: said once.
+  if (kept && kept !== ended) setEnded(kept);
   useEffect(() => {
-    // Only `start` below puts a job under this key, so it ends with this kind's outcome. A job
-    // that rejects is a bug `AiJobs` has reported already.
+    if (kept) jobs.drop(key);
+  }, [jobs, key, kept]);
+  useEffect(() => {
+    // A job that rejects is a bug `AiJobs` has reported already.
     job?.done.then(
       (outcome) => {
         const done = outcome as Outcome;
@@ -44,7 +55,7 @@ export function useAiJob<K extends keyof AiJobOutcomes>(kind: K, id: string) {
       setEnded(null);
       const call = ai.call();
       // `AiJobs` handles how `done` ends, a rejection too.
-      void jobs.start(key, (signal) => run(signal, call), call.settings);
+      void jobs.start(key, (signal) => run(signal, call), call.settings, failed);
     },
     cancel: () => jobs.cancel(key),
     /** Back to nothing shown: Đóng, or another run of the screen starting. */

@@ -31,6 +31,7 @@ import {
   panelDone,
   panelRun,
   webOpened,
+  type AiJobPhase,
   type AiPanelBlocked,
   type AiPanelHelp,
   type AiPanelItem,
@@ -254,10 +255,11 @@ function Analysis({
           ))}
         </section>
       ))}
+      {/* Faded, the frame is solid, so only its hollow items stay dashed (mockup 2h, T-284). */}
       {content.reference.length > 0 && (
         <section
           aria-label={t('aiPanel.reference')}
-          className="mt-3.5 rounded-sm border border-dashed border-border-strong px-2.5 pb-2.5"
+          className={`mt-3.5 rounded-sm border px-2.5 pb-2.5 ${faded ? 'border-border' : 'border-dashed border-border-strong'}`}
         >
           <h3 className={SUBHEADING}>{t('aiPanel.reference')}</h3>
           <ul className={ITEMS}>
@@ -289,7 +291,7 @@ function HelpLine({ help }: { help: AiPanelHelp }) {
 }
 
 /** A spinner-less busy line: the mockup's `.busy` box. */
-export function BusyLine({ children, action }: { children: ReactNode; action?: ReactNode }) {
+function BusyLine({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
     <div
       role="status"
@@ -299,6 +301,70 @@ export function BusyLine({ children, action }: { children: ReactNode; action?: R
       {action}
     </div>
   );
+}
+
+/** A failure and its Thử lại (mockups 2f, 3e), which waits for the runner as every AI button (P5). */
+function RetryAlert({
+  children,
+  retryOn,
+  onRetry,
+}: {
+  children: ReactNode;
+  retryOn: boolean;
+  onRetry: () => void;
+}) {
+  return (
+    <div role="alert" className={`${ALERT} flex items-center gap-2.5 border-danger text-sm`}>
+      <span className="flex-1">{children}</span>
+      <Button disabled={!retryOn} onClick={onRetry}>
+        {t('aiPanel.retry')}
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * Where a run of the AI is, the same in the panel and on a note of the timeline (mockups 2d–2f,
+ * 3c, 3e): running with Hủy, "Đang hủy…" until the request in Rust ends (§5.2), then the error it
+ * ended with and Thử lại.
+ */
+export function AiRunStatus({
+  phase,
+  running,
+  error,
+  retryOn,
+  onCancel,
+  onRetry,
+}: {
+  phase: AiJobPhase;
+  /** "Đang phân tích…" and its model, "Đang trích xuất…". */
+  running: ReactNode;
+  /** The message of the error the last run ended with (§5.3); none without one. */
+  error: ReactNode;
+  retryOn: boolean;
+  onCancel: () => void;
+  onRetry: () => void;
+}) {
+  if (phase === 'running') {
+    return (
+      <BusyLine action={<Button onClick={onCancel}>{t('aiPanel.cancel')}</Button>}>
+        {running}
+      </BusyLine>
+    );
+  }
+  if (phase === 'cancelling') {
+    return (
+      <BusyLine>
+        {t('aiPanel.cancelling')}
+        <span className="text-fg-3"> {t('aiPanel.cancellingDetail')}</span>
+      </BusyLine>
+    );
+  }
+  return error ? (
+    <RetryAlert retryOn={retryOn} onRetry={onRetry}>
+      {error}
+    </RetryAlert>
+  ) : null;
 }
 
 /** The §5.3 message of an error (2l); AI_NO_KEY links to Settings → AI (2f). */
@@ -346,9 +412,9 @@ export function KycIntelligence({
   const analysis = useAiJob('analysis', customerId);
   // This customer's ChatGPT web session: it lives in the panel only, so leaving ends it (§3.1); the
   // data replaced meanwhile ends it too, its input taken from other data (DR6-15).
-  const [opened, setWeb] = useState<AiPanelWeb | null>(null);
+  const [kept, setKept] = useState<AiPanelWeb | null>(null);
   const generation = useSyncExternalStore(app.subscribe, app.generation);
-  const web = opened?.generation === generation ? opened : null;
+  const web = kept?.generation === generation ? kept : null;
   // While the copy and the browser are on their way, both buttons are off already (§3.1 item 4).
   const [startingWeb, setStartingWeb] = useState(false);
   const [webFailed, setWebFailed] = useState(false);
@@ -442,7 +508,7 @@ export function KycIntelligence({
     setStartingWeb(false);
     if (outcome.kind === 'session') {
       setViewing(null);
-      setWeb(webOpened(outcome));
+      setKept(webOpened(outcome));
     } else if (outcome.kind === 'failed') {
       // Its own message: Thử lại starts ChatGPT web again, never a call to the AI (review of PR 459).
       setWebFailed(true);
@@ -483,14 +549,11 @@ export function KycIntelligence({
         {done && <p role="status">{t(`aiPanel.done.${done}`)}</p>}
       </div>
       {view.blocked && <BlockedNote blocked={view.blocked} />}
-      {web && <KycWebSession web={web} onChange={setWeb} onChecked={setWebEnded} />}
+      {web && <KycWebSession web={web} onChange={setKept} onChecked={setWebEnded} />}
       {webFailed && !web && (
-        <div role="alert" className={`${ALERT} flex items-center gap-2.5 border-danger text-sm`}>
-          <span className="flex-1">{t('aiError.GENERAL')}</span>
-          <Button disabled={!view.button.enabled} onClick={thenFocus(() => void startWeb())}>
-            {t('aiPanel.retry')}
-          </Button>
-        </div>
+        <RetryAlert retryOn={view.button.enabled} onRetry={thenFocus(() => void startWeb())}>
+          {t('aiError.GENERAL')}
+        </RetryAlert>
       )}
       {view.rejected && !web && (
         <p className={`${ALERT} border-danger text-sm`}>
@@ -505,35 +568,24 @@ export function KycIntelligence({
           </button>
         </p>
       )}
-      {shown.phase === 'running' && (
-        <BusyLine
-          action={<Button onClick={thenFocus(analysis.cancel)}>{t('aiPanel.cancel')}</Button>}
-        >
-          {t('aiPanel.running')}
-          {settings && settings.provider !== 'MOCK' && (
-            <span className="text-fg-3">
-              {' '}
-              {t('aiPanel.runningDetail', { name: modelLabel(settings.model) })}
-            </span>
-          )}
-        </BusyLine>
-      )}
-      {shown.phase === 'cancelling' && (
-        <BusyLine>
-          {t('aiPanel.cancelling')}
-          <span className="text-fg-3"> {t('aiPanel.cancellingDetail')}</span>
-        </BusyLine>
-      )}
-      {shown.phase === 'error' && (
-        <div role="alert" className={`${ALERT} flex items-center gap-2.5 border-danger text-sm`}>
-          <span className="flex-1">
-            <AiErrorText error={shown.error} />
-          </span>
-          <Button disabled={!view.button.enabled} onClick={thenFocus(analyse)}>
-            {t('aiPanel.retry')}
-          </Button>
-        </div>
-      )}
+      <AiRunStatus
+        phase={analysis.phase}
+        running={
+          <>
+            {t('aiPanel.running')}
+            {settings && settings.provider !== 'MOCK' && (
+              <span className="text-fg-3">
+                {' '}
+                {t('aiPanel.runningDetail', { name: modelLabel(settings.model) })}
+              </span>
+            )}
+          </>
+        }
+        error={shown.phase === 'error' && <AiErrorText error={shown.error} />}
+        retryOn={view.button.enabled}
+        onCancel={thenFocus(analysis.cancel)}
+        onRetry={thenFocus(analyse)}
+      />
       {view.reminder && (
         <p
           className={`${ALERT} text-sm ${view.reminder.material ? 'border-warn' : 'border-border'}`}

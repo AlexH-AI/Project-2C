@@ -424,6 +424,12 @@ describe('the ChatGPT web session of the panel (spec Phase 5 §3.1, mockups 4e�
     },
   );
 
+  it('words a paste too long with the limit of `@p2c/ai`, as a count (mockup 4h)', () => {
+    expect(t('aiPanel.web.refused.TOO_LONG', { count: MAX_AI_RAW_OUTPUT })).toBe(
+      'Câu trả lời dài quá 20.000 ký tự — kiểm tra đã copy đúng câu trả lời chưa.',
+    );
+  });
+
   it('says nothing at the box for a blank paste', () => {
     const after = webAfter(
       { ...opened, refused: 'OWN_MESSAGE' },
@@ -1013,8 +1019,17 @@ describe('rejectedReport (mockup ai.html 2k)', () => {
       [{ code: 'V1', place: null, detail: null }],
       [{ code: 'V1', place: null, detail: t('aiPanel.issueCut') }],
     ]);
-    // G5 §13.2: no JSON stores no output either; the report tells it from an output too large.
+    // G5 §13.2: no JSON stores no output either; the report tells it from an output too large,
+    // whichever of the two the last attempt had (review of PR 828).
     expect(report.outputTooLarge).toBe(false);
+    const last = {
+      ...row,
+      validator: [
+        { attempt: 1, errors: [CUT_ANSWER] },
+        { attempt: 2, errors: [noJson] },
+      ],
+    };
+    expect(rejectedReport(last, [last], versions).outputTooLarge).toBe(false);
   });
 
   // G5 §13.2 (Owner 23/10/2026): the last answer had a JSON block, too large to keep.

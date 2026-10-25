@@ -18,13 +18,20 @@ import {
   factCodeTarget,
   factInEffect,
   factText,
+  inTimelineFilter,
   kycAmountRead,
   kycOverview,
   kycTimeline,
   nextVersionNumber,
   previewKycNote,
+  refusalText,
   resolveKycOptions,
   stageCause,
+  TIMELINE_FILTERS,
+  type TimelineEvent,
+  type TimelineFilter,
+  type TimelineKyc,
+  type TimelineVersion,
 } from './kyc-view';
 
 const day = (month: number, dayOfMonth: number): CalendarDate => ({
@@ -118,8 +125,8 @@ describe('kycAmountRead (NT-HS-05, mockup 7b / 7c)', () => {
 
   it('reads the text as the command stores it, invisible characters dropped (K20, DR6-101)', () => {
     // Saved as "6tỷ", which reads as 6 tỷ.
-    expect(kycAmountRead('annualIncome', '6​tỷ')).toBe('6.000.000.000 ₫ (6 tỷ)');
-    expect(kycAmountRead('totalAssets', '﻿1 tỷ⁠ 2')).toBe('1.200.000.000 ₫ (1,2 tỷ)');
+    expect(kycAmountRead('annualIncome', '6\u200btỷ')).toBe('6.000.000.000 ₫ (6 tỷ)');
+    expect(kycAmountRead('totalAssets', '\ufeff1 tỷ\u2060 2')).toBe('1.200.000.000 ₫ (1,2 tỷ)');
   });
 
   it('reads nothing the parser cannot, nor any other trường', () => {
@@ -203,55 +210,234 @@ describe('kycTimeline', () => {
     material: false,
     seq,
   });
+  /** Fact `F{seq}` of note `noteId`. */
+  const recorded = (seq: number, noteId: string): KycFactRecord => ({
+    ...fact('residence', `R${seq}`),
+    id: `f${seq}`,
+    seq,
+    noteId,
+  });
+  const kyc = (parts: Partial<TimelineKyc> = {}): TimelineKyc => ({
+    notes: [],
+    facts: [],
+    versions: [],
+    versionFacts: new Map(),
+    recordingOrder: [],
+    ...parts,
+  });
+  /** Each event as `kind:id`, a version with its codes, a note with the versions it is given. */
+  const shape = (events: readonly TimelineEvent[]) =>
+    events.map((event) => {
+      const line = ({ version: { id }, codes }: TimelineVersion) => `${id}[${codes.join(' ')}]`;
+      if (event.kind === 'note')
+        return [`note:${event.id}`, ...event.versions.map(line)].join(' + ');
+      if (event.kind === 'version') return `version:${line(event.version)}`;
+      return `${event.kind}:${event.id}`;
+    });
 
-  it('puts the newest first; on one day a version, then its note, then a stage change', () => {
+  it('gives a note the versions its facts recorded on its day, with their codes (customer.html)', () => {
     const events = kycTimeline(
-      [move('t1', day(9, 1)), move('t2', day(9, 5))],
-      [note('n1', day(9, 1)), note('n2', day(9, 5)), note('n3', day(9, 5))],
-      [version('v1', day(9, 1)), version('v2', day(9, 5))],
+      [],
+      kyc({
+        notes: [note('n1', day(9, 1)), note('n2', day(9, 5))],
+        facts: [recorded(1, 'n1'), recorded(2, 'n1'), recorded(3, 'n2'), recorded(4, 'n2')],
+        // f4 is in no version: it confirmed a value again, which changed nothing.
+        versions: [version('v1', day(9, 1)), version('v2', day(9, 5)), version('v3', day(9, 5))],
+        versionFacts: new Map([
+          ['v1', ['f1', 'f2']],
+          ['v2', ['f3']],
+          ['v3', []],
+        ]),
+        recordingOrder: ['n1', 'v1', 'n2', 'v2', 'v3'],
+      }),
     );
 
-    expect(events.map((event) => `${event.kind}:${event.id}`)).toEqual([
-      'version:v2',
-      'note:n3',
-      'note:n2',
-      'stage:t2',
-      'version:v1',
-      'note:n1',
-      'stage:t1',
-    ]);
-    expect(events[0]).toMatchObject({ kind: 'version', number: 2, date: day(9, 5) });
-    expect(events[4]).toMatchObject({ kind: 'version', number: 1 });
+    // v3, a conflict settled, stands alone; it came last on its day.
+    expect(shape(events)).toEqual(['version:v3[]', 'note:n2 + v2[F3]', 'note:n1 + v1[F1 F2]']);
   });
 
-  it('numbers a version by its stored seq, which a backup may leave with gaps (DR5-48)', () => {
+  it('gives a note each version of its day, in their order: facts one at a time (seed), or 3f', () => {
     const events = kycTimeline(
       [],
-      [],
-      [version('v1', day(9, 1), 10), version('v2', day(9, 5), 20)],
+      kyc({
+        notes: [note('n1', day(9, 1))],
+        facts: [recorded(1, 'n1'), recorded(2, 'n1')],
+        versions: [version('v1', day(9, 1)), version('v2', day(9, 1))],
+        versionFacts: new Map([
+          ['v1', ['f1']],
+          ['v2', ['f2']],
+        ]),
+      }),
     );
 
-    expect(events.map((event) => event.kind === 'version' && event.number)).toEqual([20, 10]);
+    expect(shape(events)).toEqual(['note:n1 + v1[F1] + v2[F2]']);
+  });
+
+  it('keeps apart a version from a note of another day, or from the facts of two notes', () => {
+    const events = kycTimeline(
+      [],
+      kyc({
+        notes: [note('n1', day(9, 1)), note('n2', day(9, 1))],
+        facts: [recorded(1, 'n1'), recorded(2, 'n1'), recorded(3, 'n2')],
+        // f2: an AI proposal of n1 confirmed on 05/09 (3f). v3: facts of two notes (a backup).
+        versions: [version('v1', day(9, 1)), version('v2', day(9, 5)), version('v3', day(9, 5))],
+        versionFacts: new Map([
+          ['v1', ['f1']],
+          ['v2', ['f2']],
+          ['v3', ['f1', 'f3']],
+        ]),
+        recordingOrder: ['n1', 'v1', 'n2', 'v2', 'v3'],
+      }),
+    );
+
+    expect(shape(events)).toEqual([
+      'version:v3[F1 F3]',
+      'version:v2[F2]',
+      'note:n2',
+      'note:n1 + v1[F1]',
+    ]);
+  });
+
+  it('puts the newest first; on one day KYC in recording order, then a stage change', () => {
+    const events = kycTimeline(
+      [move('t1', day(9, 1)), move('t2', day(9, 5))],
+      kyc({
+        // n4, a note alone, came before n2's update; v3 settled a conflict after it.
+        notes: [note('n1', day(9, 1)), note('n4', day(9, 5)), note('n2', day(9, 5))],
+        facts: [recorded(1, 'n1'), recorded(2, 'n2')],
+        versions: [version('v1', day(9, 1)), version('v2', day(9, 5)), version('v3', day(9, 5))],
+        versionFacts: new Map([
+          ['v1', ['f1']],
+          ['v2', ['f2']],
+          ['v3', []],
+        ]),
+        recordingOrder: ['n1', 'v1', 'n4', 'n2', 'v2', 'v3'],
+      }),
+    );
+    // n3, a note alone, came after n2's update.
+    const later = kycTimeline(
+      [],
+      kyc({
+        notes: [note('n2', day(9, 5)), note('n3', day(9, 5))],
+        facts: [recorded(2, 'n2')],
+        versions: [version('v2', day(9, 5))],
+        versionFacts: new Map([['v2', ['f2']]]),
+        recordingOrder: ['n2', 'v2', 'n3'],
+      }),
+    );
+
+    expect(shape(events)).toEqual([
+      'version:v3[]',
+      'note:n2 + v2[F2]',
+      'note:n4',
+      'stage:t2',
+      'note:n1 + v1[F1]',
+      'stage:t1',
+    ]);
+    expect(shape(later)).toEqual(['note:n3', 'note:n2 + v2[F2]']);
+  });
+
+  it('puts a note alone and a version alone of one day where each was saved (review of PR 835)', () => {
+    // On 05/09 v2 settled a conflict, or confirmed an AI proposal of n1 (3f); then n9 was saved.
+    const settled = kyc({
+      notes: [note('n1', day(9, 1)), note('n9', day(9, 5))],
+      facts: [recorded(1, 'n1'), recorded(2, 'n1')],
+      versions: [version('v1', day(9, 1)), version('v2', day(9, 5))],
+      versionFacts: new Map([
+        ['v1', ['f1']],
+        ['v2', []],
+      ]),
+      recordingOrder: ['n1', 'v1', 'v2', 'n9'],
+    });
+    const confirmed = {
+      ...settled,
+      versionFacts: new Map([
+        ['v1', ['f1']],
+        ['v2', ['f2']],
+      ]),
+    };
+    // A KYC update comes where its last version was saved: n1's AI proposal confirmed on its own
+    // day, after n9.
+    const update = kyc({
+      notes: [note('n1', day(9, 1)), note('n9', day(9, 1))],
+      facts: [recorded(1, 'n1'), recorded(2, 'n1')],
+      versions: [version('v1', day(9, 1)), version('v2', day(9, 1))],
+      versionFacts: new Map([
+        ['v1', ['f1']],
+        ['v2', ['f2']],
+      ]),
+      recordingOrder: ['n1', 'v1', 'n9', 'v2'],
+    });
+
+    expect(shape(kycTimeline([], settled))).toEqual([
+      'note:n9',
+      'version:v2[]',
+      'note:n1 + v1[F1]',
+    ]);
+    expect(shape(kycTimeline([], confirmed))).toEqual([
+      'note:n9',
+      'version:v2[F2]',
+      'note:n1 + v1[F1]',
+    ]);
+    expect(
+      shape(kycTimeline([], { ...settled, recordingOrder: ['n1', 'v1', 'n9', 'v2'] })),
+    ).toEqual(['version:v2[]', 'note:n9', 'note:n1 + v1[F1]']);
+    expect(shape(kycTimeline([], update))).toEqual(['note:n1 + v1[F1] + v2[F2]', 'note:n9']);
+  });
+
+  it('names a version by its stored seq, which a backup may leave with gaps (DR5-48)', () => {
+    const events = kycTimeline(
+      [],
+      kyc({ versions: [version('v1', day(9, 1), 10), version('v2', day(9, 5), 20)] }),
+    );
+
+    expect(events.map((event) => event.kind === 'version' && event.version.version.seq)).toEqual([
+      20, 10,
+    ]);
   });
 
   const meeting = (id: string, date: CalendarDate, status: AppointmentRecord['status']) =>
     ({ id, date, status }) as AppointmentRecord;
   const numbers = (appointments: AppointmentRecord[]) =>
-    kycTimeline([], [], [], appointments).map((event) => event.kind === 'meeting' && event.number);
+    kycTimeline([], kyc(), appointments).map((event) => event.kind === 'meeting' && event.number);
+
+  it('keeps KYC under "KYC", the appointments under "Lịch hẹn", a stage change under "Tất cả"', () => {
+    const events = kycTimeline(
+      [move('t1', day(9, 1))],
+      kyc({
+        notes: [note('n1', day(9, 1)), note('n2', day(9, 2))],
+        facts: [recorded(1, 'n1')],
+        versions: [version('v1', day(9, 1)), version('v2', day(9, 3))],
+        versionFacts: new Map([
+          ['v1', ['f1']],
+          ['v2', []],
+        ]),
+      }),
+      [meeting('a1', day(9, 4), 'SCHEDULED')],
+    );
+    const shown = (filter: TimelineFilter) =>
+      shape(events.filter((event) => inTimelineFilter(event, filter)));
+
+    expect(TIMELINE_FILTERS).toEqual(['ALL', 'KYC', 'APPOINTMENTS']);
+    expect(shown('ALL')).toEqual([
+      'meeting:a1',
+      'version:v2[]',
+      'note:n2',
+      'note:n1 + v1[F1]',
+      'stage:t1',
+    ]);
+    expect(shown('KYC')).toEqual(['version:v2[]', 'note:n2', 'note:n1 + v1[F1]']);
+    expect(shown('APPOINTMENTS')).toEqual(['meeting:a1']);
+  });
 
   it('adds the appointments, numbering the meetings held, each under its stage change', () => {
-    const events = kycTimeline(
-      [{ ...move('t1', day(9, 14)), appointmentId: 'a4' }],
-      [],
-      [],
-      [
-        meeting('a1', day(6, 1), 'MET'),
-        meeting('a2', day(6, 20), 'NO_SHOW'),
-        meeting('a3', day(7, 12), 'MET'),
-        meeting('a4', day(9, 14), 'MET'),
-        meeting('a5', day(9, 28), 'SCHEDULED'),
-      ],
-    );
+    const events = kycTimeline([{ ...move('t1', day(9, 14)), appointmentId: 'a4' }], kyc(), [
+      meeting('a1', day(6, 1), 'MET'),
+      meeting('a2', day(6, 20), 'NO_SHOW'),
+      meeting('a3', day(7, 12), 'MET'),
+      meeting('a4', day(9, 14), 'MET'),
+      meeting('a5', day(9, 28), 'SCHEDULED'),
+    ]);
 
     expect(events.map((event) => `${event.kind}:${event.id}`)).toEqual([
       'meeting:a5',
@@ -338,6 +524,16 @@ describe('previewKycNote', () => {
     ).toMatchObject({ kind: 'version', number: 21 });
     expect(nextVersionNumber(numbered)).toBe(21);
     expect(nextVersionNumber([])).toBe(1);
+  });
+
+  it('says why a fact it refuses cannot be saved: its value first, else the conflict (3f)', () => {
+    expect(refusalText('childrenCount', 'ba')).toBe(
+      'Giá trị không hợp lệ cho trường này (vd. số con là số nguyên).',
+    );
+    expect(refusalText('residence', 'Hu\u{0}ế')).toMatch(/^Chữ có ký tự không lưu được/);
+    expect(refusalText('residence', 'Huế')).toBe(
+      'Không đánh dấu mâu thuẫn được: "Nơi sinh sống" chưa có giá trị, hoặc giá trị mới trùng giá trị đang có. Hãy dùng "Cập nhật".',
+    );
   });
 
   it('refuses a conflict with no value to disagree with, or with the same value', () => {

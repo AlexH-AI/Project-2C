@@ -22,6 +22,7 @@ import { t } from '../i18n';
 import { errorText } from './ai-error-view';
 import {
   checkKey,
+  checkNow,
   checkShown,
   modelList,
   modelOptions,
@@ -52,6 +53,10 @@ function CardHead({ id, title, meta }: { id: string; title: string; meta?: React
 const failureText = (error: unknown) =>
   error instanceof AiError ? errorText(error) : t('aiError.GENERAL');
 
+/** A click on the radio of `value`, the choice already on. */
+const again = (target: EventTarget, value: string) =>
+  target instanceof HTMLInputElement && target.type === 'radio' && target.value === value;
+
 /**
  * Cài đặt → AI (mockup ai.html 1a–1g, 4a–4c; spec Phase 5 §4, §9.3): provider, gói OpenCode,
  * model and reasoning saved at once into the data, the key kept by Rust, the connection check and
@@ -65,6 +70,9 @@ export function AiSection() {
   const { settings, problem } = ai.stored();
   const provider = ai.settings().provider;
   const save = (change: Partial<AiSettings>) => ai.save({ ...settings, ...change });
+  const chooseAgain = (target: EventTarget) => {
+    if (problem && again(target, provider)) save({ provider });
+  };
   const opencode = provider === 'OPENCODE_GO';
 
   return (
@@ -80,22 +88,30 @@ export function AiSection() {
           title={t('settingsAi.modelTitle')}
           meta={<span className="text-xs text-fg-3">{t('settingsAi.modelMeta')}</span>}
         />
-        <Choices<AiProvider>
-          label={t('settingsAi.provider')}
-          value={provider}
-          options={[
-            { value: 'MOCK', label: t('settingsAi.provider.MOCK') },
-            {
-              value: 'OPENCODE_GO',
-              label: t('settingsAi.provider.OPENCODE_GO'),
-              disabled: !ai.opencode,
-            },
-          ]}
-          onChange={(value) => save({ provider: value })}
-          help={
-            ai.opencode ? t(`settingsAi.providerHelp.${provider}`) : t('settingsAi.providerWeb')
-          }
-        />
+        {/* 1g "Chọn lại để lưu": the choice already on changes no radio, so its click or Space,
+            which fires no click there, saves the defaults in use, as Mock in web mode, where
+            nothing else can be chosen (review of PR 444); no button of its own. */}
+        <div
+          onClick={(event) => chooseAgain(event.target)}
+          onKeyDown={(event) => event.key === ' ' && chooseAgain(event.target)}
+        >
+          <Choices<AiProvider>
+            label={t('settingsAi.provider')}
+            value={provider}
+            options={[
+              { value: 'MOCK', label: t('settingsAi.provider.MOCK') },
+              {
+                value: 'OPENCODE_GO',
+                label: t('settingsAi.provider.OPENCODE_GO'),
+                disabled: !ai.opencode,
+              },
+            ]}
+            onChange={(value) => save({ provider: value })}
+            help={
+              ai.opencode ? t(`settingsAi.providerHelp.${provider}`) : t('settingsAi.providerWeb')
+            }
+          />
+        </div>
         {opencode && (
           <Choices<AiOpencodePlan>
             label={t('settingsAi.plan')}
@@ -137,7 +153,7 @@ export function AiSection() {
           <p className="m-0 text-fg-3">{t('settingsAi.keyWeb')}</p>
         </section>
       )}
-      <ConnectionCard mock={!opencode} />
+      <ConnectionCard mock={!opencode} settings={ai.settings()} />
       <SentCard />
     </div>
   );
@@ -307,17 +323,23 @@ function KeyCard({ client }: { client: OpenCodeClient }) {
 /**
  * Kiểm tra kết nối (1b, 1f, 4a): through the app's one runner (P5), so it is off while any AI
  * request runs; no Hủy, the request is 1 024 tokens at most (G5 §10.5) and stops at "OK". The Mock
- * needs no connection.
+ * needs no connection. Its outcome is of the settings it ran with (`checkNow`).
  */
-function ConnectionCard({ mock }: { mock: boolean }) {
+function ConnectionCard({ mock, settings }: { mock: boolean; settings: AiSettings }) {
   const { ai } = useAppData();
   const { runner } = ai;
   const busy = useSyncExternalStore(runner.subscribe, () => runner.busy);
-  const [shown, setShown] = useState<CheckShown>({ phase: 'idle' });
+  const [last, setLast] = useState<{ readonly shown: CheckShown; readonly ran: AiSettings }>({
+    shown: { phase: 'idle' },
+    ran: settings,
+  });
+  const shown = checkNow(last.shown, last.ran, settings);
+  // Gone for good, also when the settings it ran with are chosen back.
+  if (shown !== last.shown) setLast({ shown, ran: settings });
 
   const check = async () => {
     const call = ai.call();
-    setShown({ phase: 'running' });
+    setLast({ shown: { phase: 'running' }, ran: call.settings });
     let result: ConnectionResult | null;
     try {
       result = await checkConnection(call);
@@ -325,7 +347,7 @@ function ConnectionCard({ mock }: { mock: boolean }) {
       ai.reportError(error);
       result = null;
     }
-    setShown(checkShown(result, call.settings));
+    setLast({ shown: checkShown(result, call.settings), ran: call.settings });
   };
 
   return (
@@ -380,7 +402,9 @@ function SentCard() {
           <b className="text-fg">{t('settingsAi.sentExtractionLead')}</b>{' '}
           {t('settingsAi.sentExtraction')}
         </li>
-        <li>{t('settingsAi.sentChatgpt')}</li>
+        <li>
+          <b className="text-fg">{t('settingsAi.sentChatgptLead')}</b> {t('settingsAi.sentChatgpt')}
+        </li>
         <li>{t('settingsAi.sentCheck')}</li>
       </ul>
     </section>

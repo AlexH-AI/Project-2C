@@ -105,6 +105,66 @@ export function listKycVersions(db: Database, customerId: string): KycVersionRec
     .map(toVersion);
 }
 
+/**
+ * The facts each version recorded, by version id, in recording order (T-297): a command stores its
+ * new facts and its version at one instant (`save`), so they share `created_at`. A version that
+ * recorded none, a conflict settled, has none; so have versions stored at the same instant (a
+ * clock that does not move), as their facts cannot be told apart.
+ */
+export function listKycVersionFacts(
+  db: Database,
+  customerId: string,
+): ReadonlyMap<string, readonly string[]> {
+  liveCustomer(db, customerId);
+  const versions = db.orm
+    .select({ id: kycVersions.id, createdAt: kycVersions.createdAt })
+    .from(kycVersions)
+    .where(eq(kycVersions.customerId, customerId))
+    .orderBy(asc(kycVersions.seq))
+    .all();
+  const facts = db.orm
+    .select({ id: kycFacts.id, createdAt: kycFacts.createdAt })
+    .from(kycFacts)
+    .where(eq(kycFacts.customerId, customerId))
+    .orderBy(asc(kycFacts.seq))
+    .all();
+  const versionsAt = new Map<string, string[]>();
+  for (const { id, createdAt } of versions) {
+    versionsAt.set(createdAt, [...(versionsAt.get(createdAt) ?? []), id]);
+  }
+  const recorded = new Map<string, string[]>(versions.map(({ id }) => [id, []]));
+  for (const fact of facts) {
+    const [version, ...others] = versionsAt.get(fact.createdAt) ?? [];
+    if (version !== undefined && others.length === 0) recorded.get(version)!.push(fact.id);
+  }
+  return recorded;
+}
+
+/**
+ * The ids of the customer's KYC notes and versions in the order they were saved, by `created_at`:
+ * the timeline's order within a day (review of PR 835). At one instant the notes come first, as a
+ * command saves its note before its version; then each kind by `seq`.
+ */
+export function listKycRecordingOrder(db: Database, customerId: string): string[] {
+  liveCustomer(db, customerId);
+  const notes = db.orm
+    .select({ id: kycNotes.id, seq: kycNotes.seq, at: kycNotes.createdAt })
+    .from(kycNotes)
+    .where(eq(kycNotes.customerId, customerId))
+    .all();
+  const versions = db.orm
+    .select({ id: kycVersions.id, seq: kycVersions.seq, at: kycVersions.createdAt })
+    .from(kycVersions)
+    .where(eq(kycVersions.customerId, customerId))
+    .all();
+  return [
+    ...notes.map((row) => ({ ...row, kind: 0 })),
+    ...versions.map((row) => ({ ...row, kind: 1 })),
+  ]
+    .sort((a, b) => (a.at === b.at ? a.kind - b.kind || a.seq - b.seq : a.at < b.at ? -1 : 1))
+    .map(({ id }) => id);
+}
+
 // ---- commands -------------------------------------------------------------
 
 export function addKycNote(

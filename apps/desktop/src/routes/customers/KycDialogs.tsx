@@ -36,6 +36,7 @@ import {
   kycAmountRead,
   nextVersionNumber,
   previewKycNote,
+  refusalText,
   resolveKycOptions,
   type KycNotePreview,
 } from './kyc-view';
@@ -498,13 +499,16 @@ export function ConfirmFactDialog({
   const has = currentFactRecords(profile, field);
   const boolean = kycFieldType(field) === 'boolean';
   const value = boolean ? answer === 'yes' : text;
+  const empty = boolean ? answer === null : normalizeText(text) === '';
   const conflict = has.length > 0 && mode === 'conflict';
   const preview = previewKycNote(profile, versions, [{ field, value, conflict }], today, material);
+  // What the save would be refused for, said while the value is typed, as 7a says it (review of PR
+  // 469): a value the trường cannot hold, or a conflict with nothing to disagree with.
+  const refusal = preview.kind === 'refused' && !empty ? refusalText(field, value) : null;
 
   const save = () => {
-    if (boolean ? answer === null : normalizeText(text) === '') {
-      return setError(t('kycNote.error.value'));
-    }
+    if (empty) return setError(t('kycNote.error.value'));
+    if (refusal) return;
     const command = { field, value, noteId: note.id, date: today, material };
     try {
       data.run((db) => (conflict ? markKycConflict : confirmKycFact)(db, customer.id, command));
@@ -536,6 +540,11 @@ export function ConfirmFactDialog({
         onMode={setMode}
         hint={t('kycConfirm.valueHelp')}
       />
+      {refusal && (
+        <p role="alert" className="m-0 text-xs text-danger">
+          {refusal}
+        </p>
+      )}
       {preview.kind === 'version' && (
         <NextVersion preview={preview} material={material} onMaterial={setMaterial} />
       )}
