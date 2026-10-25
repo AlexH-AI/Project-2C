@@ -3,6 +3,9 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+const ZOD_MINI =
+  'Take zod/mini, by that name (DR6-25): the full zod puts 62 KB back into the bundle.';
+
 export default tseslint.config(
   {
     ignores: [
@@ -36,6 +39,24 @@ export default tseslint.config(
   {
     files: ['packages/db/src/**/*.ts'],
     languageOptions: { globals: { crypto: 'readonly' } },
+  },
+  {
+    // Only `zod/mini` (DR6-25): the full zod (`zod`, `zod/v4`, `zod/v3`) puts ≈ 62 KB back into
+    // the bundle, and sets its `en` locale for every schema (zod's config is on globalThis).
+    // Nothing else in verify sees it: dependency-cruiser lets every path of the package through
+    // (review #830). A type import too, one word away from a value import; import() is left out.
+    files: ['packages/*/src/**/*.{ts,tsx}', 'apps/desktop/src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          // Not a pattern: with no slash, a gitignore pattern takes a `zod` at any depth (./zod),
+          // and zod/mini under it.
+          paths: [{ name: 'zod', message: ZOD_MINI }],
+          patterns: [{ group: ['zod/*', '!zod/mini'], message: ZOD_MINI }],
+        },
+      ],
+    },
   },
   {
     files: [
