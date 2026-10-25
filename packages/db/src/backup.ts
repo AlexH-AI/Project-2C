@@ -5,7 +5,7 @@
  */
 import { isStorableText } from '@p2c/domain';
 import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
-import { z } from 'zod';
+import * as z from 'zod/mini';
 import { dataTables, validateBackupInvariants, validateBackupValues } from './backup-validation';
 import {
   assertSupported,
@@ -36,7 +36,7 @@ type Row = Record<string, SqlValue>;
 
 const envelope = z.strictObject({
   format: z.literal(BACKUP_FORMAT),
-  schemaVersion: z.int().positive(),
+  schemaVersion: z.int().check(z.positive()),
   exportedAt: z.iso.datetime(),
   tables: z.record(z.string(), z.array(z.record(z.string(), z.unknown()))),
 });

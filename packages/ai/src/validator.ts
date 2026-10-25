@@ -12,7 +12,7 @@ import {
   type KycField,
   type KycValue,
 } from '@p2c/domain';
-import type { z } from 'zod';
+import type * as z from 'zod/mini';
 import { BLOCKLISTS } from './blocklists';
 import { codePointsOver, cutCodePoints } from './code-points';
 import {
