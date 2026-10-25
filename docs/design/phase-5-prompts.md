@@ -896,3 +896,7 @@ Luật đã duyệt: "Ký tự VT / FF trong ghi chú cũng tính là xuống d�
 - §13.2: hai lần thử đều trả output có dạng lưu trên 20 000 ký tự → dòng REJECTED có `output_json` null, panel hiện dòng "Output quá lớn…"; đúng 20 000 → lưu như nay.
 - §13.3: backup sửa tay `output_json` (thêm khoảng trắng, khóa lạ, U+FEFF hai đầu một chuỗi, đổi thứ tự khóa) → `BACKUP_INVALID`; backup do app xuất → nhập được.
 - §13.4: tin nhắn `web@1` có VT hay FF thay mọi dấu xuống dòng → `OWN_MESSAGE` ở lần 1; ở lần 2, message thử lại của phiên viết như vậy → `OWN_MESSAGE`, phiên còn mở.
+
+### 13.6 Không làm trong đợt này
+
+- `input_json`, `validator_json`: nhập backup vẫn kiểm như nay (`input_json` qua schema đầu vào, `validator_json` là JSON hợp lệ), không so với dạng app ghi như `output_json` ở §13.3. Backup sửa tay vẫn thêm được khoảng trắng thừa ở hai cột này, và `validator_json` nhận JSON bất kỳ (Owner 25/10/2026, PR #824).
