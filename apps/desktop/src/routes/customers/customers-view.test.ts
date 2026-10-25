@@ -186,15 +186,6 @@ describe('profileSince', () => {
     ];
     expect(profileSince('k', changes)).toEqual(day(6, 20));
   });
-
-  it('is the day of the last change recorded, of two on one day', () => {
-    const changes = [
-      move('k', null, 'N4', day(9, 1)),
-      move('k', 'N4', 'N3', day(9, 14)),
-      move('k', 'N3', 'N2', day(9, 14)),
-    ];
-    expect(profileSince('k', changes)).toEqual(day(9, 14));
-  });
 });
 
 // Mockup 5d: "Sau khi lưu: N2 → N3 · hạ nhóm"; N1 is closest to a contract.

@@ -383,6 +383,9 @@ Một dòng mỗi mục, không chép số: số nền và ngưỡng ở [`docs/
 Không mở Issue mới cho các điểm dưới (đã ghi ở `docs/state/review-notes.md`, đã được mockup sau thay, hoặc Owner chọn không sửa).
 
 - **Mockup vòng 2 được mockup sau thay:** trạng thái "Hoãn" của `appointments.html` / `table-more.html` nay là "Dời lịch"; lịch tháng 3 màu thành 4 nhóm (`overview.html` §2); bộ chọn góc nhìn thay cây Team → RE ở cột trái và khối tóm tắt tháng / trigger / chuyển nhóm của `appointments.html` (sổ review, mục Lịch hẹn #156 / #158).
+- **Hộp 6h:** dưới ô Khách hàng vẫn có dòng "Lần gặp thứ n · lần trước dd/mm/yyyy"; mockup 6h không có dòng này (T-298 chỉ bỏ khối "Các lần hẹn trước").
+- **Ô Case size dự kiến (6c, 6d, 6f):** câu help "Dấu phẩy hay dấu chấm theo sau đúng 3 chữ số là dấu ngăn nghìn …" là câu tĩnh nên hiện ở cả ba hộp; mockup chỉ vẽ ở 6d. Câu không thuộc mô tả trợ năng của ô (`TextField` chưa có `help`) (T-298).
+- **Hồ sơ KH, thẻ Lịch hẹn:** "Chưa ghi kết quả" là chữ màu, không phải badge như ở các danh sách: badge không xuống dòng, mà ô Ngày và "Hẹn tiếp" giữ một dòng thì thẻ ở 1 440 tràn ngang. Ở 1 440, kết quả dài ("N3 → N2 · RF", tên nhóm đóng) xuống hai dòng; mockup giữ "N3 → N2 · RF" một dòng nhờ `table-layout: fixed` và cột 92 px, `DataTable` chưa có (T-298).
 - **Team (`team.html`):** đầu màn, danh sách team, "Người hỗ trợ", bảng chỉ có RE theo `phase-3-feedback.html` B1 (mockup sau thay).
 
 **Owner chọn không sửa** (15/10/2026, deep review Phase 1–6 lượt 1, `docs/reviews/2026-10-15-deep-review-phase-1-6-luot-1-tong-hop.md` §8.4, §9 Q4):
