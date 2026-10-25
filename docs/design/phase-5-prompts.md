@@ -873,6 +873,7 @@ Luật đã duyệt: "Dòng REJECTED có output trên 20 000 ký tự thì khôn
 
 - Đo trên dạng lưu của `output_json` (chuỗi `JSON.stringify` của khối JSON đã parse ở lần thử cuối), đếm theo code point như `raw_output`. Quá 20 000 → `output_json` = `null`; `raw_output` lưu như nay (cắt ở 20 000). Spec §7.1.
 - Panel nhận ra trường hợp này từ báo cáo validator: lần thử cuối có khối JSON (báo cáo của nó không phải một lỗi V1 duy nhất trên cả output) mà `output_json` null. Lỗi của lần đó hiện như thường, thêm dòng "Output quá lớn (trên 20 000 ký tự), app không lưu." Spec §9.1.
+- Cách nhận này dựa vào một bất biến của validator: câu trả lời có khối JSON không bao giờ ra đúng một lỗi V1 ở `$`. Khối luôn là object; hai schema output là `z.object` không strict, không refine ở gốc; lỗi `$` "và K lỗi khác" chỉ có khi lần kiểm có hơn 30 lỗi, và đứng sau 29 lỗi khác. Đổi schema làm mất bất biến này (thêm refine ở gốc, chuyển sang `strictObject`) thì phải đổi cách nhận. PR code thêm test giữ bất biến (§13.5).
 - `recordAiAnalysis` và nhập backup từ chối dòng REJECTED có `output_json` dài hơn (§13.3), nên dòng nào lệnh nhận thì nhập lại được.
 
 ### 13.3 Nhập backup: `output_json` đúng dạng app ghi (§11.8)
@@ -880,7 +881,7 @@ Luật đã duyệt: "Dòng REJECTED có output trên 20 000 ký tự thì khôn
 Luật đã duyệt: "Khi nhập backup, chỉ nhận `output_json` đúng dạng app ghi."
 
 - `ACCEPTED`: đúng chuỗi `JSON.stringify` của output mà schema của `mode` đọc ra: khóa theo thứ tự của schema, không khóa lạ, chuỗi đã cắt khoảng trắng hai đầu, giá trị mặc định đã điền. App lưu đúng chuỗi này (`analysisOutcome` lưu kết quả schema đọc ra).
-- `REJECTED`: `null`, hoặc một object JSON đúng chuỗi `JSON.stringify` viết lại nó (không khoảng trắng ngoài chuỗi, không khóa trùng), dài tối đa 20 000 ký tự (§13.2).
+- `REJECTED`: `null`, hoặc một object JSON đúng chuỗi `JSON.stringify` viết lại nó (không khoảng trắng ngoài chuỗi, không khóa trùng), dài tối đa 20 000 ký tự (§13.2). Dòng REJECTED giữ nguyên câu trả lời sai, không qua schema (`analysisOutcome` lưu kết quả parse), nên khóa lạ, khóa theo thứ tự model viết và chuỗi chưa cắt khoảng trắng đều là dạng app ghi.
 - Hết đường mang chuỗi lớn vào dòng `ACCEPTED` qua khóa lạ hay khoảng trắng hai đầu mà `trim` cắt (gồm U+FEFF). Spec §7.3 luật 3; sai → `BACKUP_INVALID`.
 - Đã thử trên dữ liệu giả lập (hạt giống 1; hạt giống 6 có Thùng rác) và dữ liệu tải (`LOAD_SCALE`, neo 12/10/2026, hạt giống 6): cả 217 dòng `ACCEPTED` đúng dạng.
 
@@ -890,13 +891,32 @@ Luật đã duyệt: "Ký tự VT / FF trong ghi chú cũng tính là xuống d�
 
 - §6a tách dòng theo đúng tập của ghi chú KYC (K25), nên thêm VT (U+000B) và FF (U+000C): một dòng của câu dán kết thúc ở CR LF, CR, LF, VT, FF, U+0085, U+2028 hoặc U+2029.
 - JSON không cho VT, FF đứng trần trong chuỗi. Nên khác U+0085, U+2028, U+2029 (phần "chấp nhận" của §12.3), hai ký tự này không tách được dòng mốc ra khỏi một chuỗi JSON hợp lệ của câu trả lời.
+- Code: tập ký tự tách dòng là một hằng ở `domain` (`text.ts`), `normalizeNote` và `web.ts` cùng dùng, để hai nơi khớp theo cấu trúc chứ không theo quy ước. Đổi tập này vẫn là đổi §6a (qua G5) và spec Phase 3 §4 (G2).
 
 ### 13.5 Ca kiểm (PR code)
 
-- §13.2: hai lần thử đều trả output có dạng lưu trên 20 000 ký tự → dòng REJECTED có `output_json` null, panel hiện dòng "Output quá lớn…"; đúng 20 000 → lưu như nay.
-- §13.3: backup sửa tay `output_json` (thêm khoảng trắng, khóa lạ, U+FEFF hai đầu một chuỗi, đổi thứ tự khóa) → `BACKUP_INVALID`; backup do app xuất → nhập được.
+- §13.2:
+  - hai lần thử đều trả output có dạng lưu trên 20 000 ký tự → dòng REJECTED có `output_json` null, panel hiện dòng "Output quá lớn…"; đúng 20 000 → lưu như nay;
+  - ca ngược: dòng REJECTED có `output_json` null mà báo cáo lần cuối là `[NO_JSON]` hay `[CUT_ANSWER]` → không có dòng "Output quá lớn…", vẫn "Không có khối JSON hợp lệ" / "Trả lời bị cắt…";
+  - test giữ bất biến của §13.2 ở `packages/ai/src/validator.test.ts`: câu trả lời có khối JSON (kể cả `{}`, và lần kiểm có hơn 30 lỗi) không ra đúng một lỗi V1 ở `$`.
+- §13.3, backup sửa tay `output_json`:
+  - dòng `ACCEPTED` thêm khoảng trắng, khóa lạ, U+FEFF hai đầu một chuỗi, đổi thứ tự khóa, thiếu giá trị mặc định → `BACKUP_INVALID`;
+  - dòng `REJECTED` thêm khoảng trắng, khóa trùng, không phải object (`[]`, `"x"`, `1`, chữ `null`), dạng lưu trên 20 000 ký tự → `BACKUP_INVALID`;
+  - dòng `REJECTED` có khóa lạ, khóa khác thứ tự của schema, chuỗi chưa cắt khoảng trắng (như app ghi câu trả lời sai) → nhập được;
+  - backup do app xuất, có cả dòng `ACCEPTED` lẫn `REJECTED` → nhập được.
 - §13.4: tin nhắn `web@1` có VT hay FF thay mọi dấu xuống dòng → `OWN_MESSAGE` ở lần 1; ở lần 2, message thử lại của phiên viết như vậy → `OWN_MESSAGE`, phiên còn mở.
 
 ### 13.6 Không làm trong đợt này
 
 - `input_json`, `validator_json`: nhập backup vẫn kiểm như nay (`input_json` qua schema đầu vào, `validator_json` là JSON hợp lệ), không so với dạng app ghi như `output_json` ở §13.3. Backup sửa tay vẫn thêm được khoảng trắng thừa ở hai cột này, và `validator_json` nhận JSON bất kỳ (Owner 25/10/2026, PR #824).
+
+### 13.7 Owner duyệt
+
+Luật: Owner duyệt 23/10/2026; §13.6: 25/10/2026; chữ của §13: Owner duyệt khi merge PR #824.
+
+- [x] Version giữ nguyên (§13.1)
+- [x] REJECTED có output dạng lưu trên 20 000 ký tự: không lưu output; dòng "Output quá lớn…" của panel, nhận ra từ báo cáo validator (§13.2)
+- [x] Nhập backup: `output_json` đúng dạng app ghi, khác nhau giữa `ACCEPTED` và `REJECTED` (§13.3)
+- [x] §6a tách dòng ở VT / FF như ghi chú KYC, một hằng chung ở `domain` (§13.4)
+- [x] Ca kiểm cho PR code (§13.5)
+- [x] `input_json`, `validator_json` giữ kiểm như nay (§13.6)
