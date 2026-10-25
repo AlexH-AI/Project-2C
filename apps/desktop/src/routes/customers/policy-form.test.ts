@@ -5,6 +5,7 @@ import {
   expectedCaseSize,
   openDraft,
   policyChange,
+  policyStatusText,
   readFyp,
   readPolicy,
   type Effect,
@@ -16,7 +17,7 @@ const TODAY = d(26, 9);
 const MILLION = 1_000_000;
 
 describe('effectText', () => {
-  const down: Effect = { metric: 'issued', year: 2026, month: 9, diff: -14_500_000 };
+  const down: Effect = { kind: 'fyp', metric: 'issued', year: 2026, month: 9, diff: -14_500_000 };
 
   it('names the metric, the month and the RE of the policy', () => {
     expect(effectText(down, 'Đỗ Khánh Linh')).toBe(
@@ -30,6 +31,26 @@ describe('effectText', () => {
     for (const name of [undefined, '', '  ']) {
       expect(effectText(down, name)).toMatch(/^FYP phát hành tháng \S+ giảm 14,5 tr$/);
     }
+  });
+
+  // G3 T-284, mockup 8d "dời tháng": the months with their years, as the FYP lines name them.
+  it('moves the policy from the count of one month to that of another, without the RE', () => {
+    const moved: Effect = { kind: 'count', metric: 'submitted', from: d(20, 8), to: d(1, 9) };
+    expect(effectText(moved, 'Đỗ Khánh Linh')).toBe(
+      'tháng 08/2026: −1 HĐ nộp · tháng 09/2026: +1 HĐ nộp',
+    );
+    expect(effectText({ ...moved, metric: 'issued', from: d(31, 12, 2025) }, undefined)).toBe(
+      'tháng 12/2025: −1 HĐ phát hành · tháng 09/2026: +1 HĐ phát hành',
+    );
+  });
+});
+
+// One text for the status of a policy: the badges of the Hợp đồng card and of Thùng rác, the
+// names of their buttons, the subtitle of 8d (review of PR 748).
+describe('policyStatusText', () => {
+  it('words a policy submitted, then issued, as its badge does', () => {
+    expect(policyStatusText({ issuedDate: null })).toBe('Đã nộp');
+    expect(policyStatusText({ issuedDate: d(18, 9) })).toBe('Đã phát hành');
   });
 });
 
@@ -192,13 +213,21 @@ describe('policyChange', () => {
     expect(change({ date: '18/9', fyp: '400tr' }, { submittedFyp: '' }).fromSubmitted).toBeNull();
   });
 
+  const fyp = (metric: Effect['metric'], month: number, diff: number, year = 2026): Effect => ({
+    kind: 'fyp',
+    metric,
+    year,
+    month,
+    diff,
+  });
+
   it('measures the effect on the month from the saved issued FYP (mockup 8d)', () => {
     expect(change({ date: '18/9', fyp: '385,5tr' }).effects).toEqual([
-      { metric: 'issued', year: 2026, month: 9, diff: -14_500_000 },
+      fyp('issued', 9, -14_500_000),
     ]);
     const saved = { ...policy, issuedFyp: 390 * MILLION };
     expect(change({ date: '18/9', fyp: '385,5tr' }, {}, saved).effects).toEqual([
-      { metric: 'issued', year: 2026, month: 9, diff: -4_500_000 },
+      fyp('issued', 9, -4_500_000),
     ]);
   });
 
@@ -207,19 +236,39 @@ describe('policyChange', () => {
     expect(change({ date: '18/9', fyp: '0' }).effects).toEqual([]);
   });
 
-  it('takes the FYP out of the old month and puts it in the new one (DR6-41)', () => {
+  // DR6-41; G3 T-284 (mockup 8d "dời tháng"): the policy leaves the count of the old month for that
+  // of the new one, a line right after the FYP lines of its metric.
+  it('takes the FYP and the policy out of the old month and puts them in the new one', () => {
     expect(change({ date: '25/8', fyp: '410tr' }).effects).toEqual([
-      { metric: 'issued', year: 2026, month: 9, diff: -400 * MILLION },
-      { metric: 'issued', year: 2026, month: 8, diff: 410 * MILLION },
+      fyp('issued', 9, -400 * MILLION),
+      fyp('issued', 8, 410 * MILLION),
+      { kind: 'count', metric: 'issued', from: d(18, 9), to: d(25, 8) },
     ]);
-    expect(change({ date: '18/9', fyp: '400tr' }, { submittedDate: '2/9' }).effects).toEqual([
-      { metric: 'submitted', year: 2026, month: 8, diff: -400 * MILLION },
-      { metric: 'submitted', year: 2026, month: 9, diff: 400 * MILLION },
+    expect(change({ date: '18/9', fyp: '400tr' }, { submittedDate: '1/9' }).effects).toEqual([
+      fyp('submitted', 8, -400 * MILLION),
+      fyp('submitted', 9, 400 * MILLION),
+      { kind: 'count', metric: 'submitted', from: d(20, 8), to: d(1, 9) },
     ]);
     // The same month of another year is another month.
     expect(change({ date: '18/9', fyp: '400tr' }, { submittedDate: '20/8/2025' }).effects).toEqual([
-      { metric: 'submitted', year: 2026, month: 8, diff: -400 * MILLION },
-      { metric: 'submitted', year: 2025, month: 8, diff: 400 * MILLION },
+      fyp('submitted', 8, -400 * MILLION),
+      fyp('submitted', 8, 400 * MILLION, 2025),
+      { kind: 'count', metric: 'submitted', from: d(20, 8), to: d(20, 8, 2025) },
+    ]);
+  });
+
+  it('moves the policy in both counts when both days move to another month, each after its FYP', () => {
+    expect(
+      change({ date: '20/8', fyp: '400tr' }, { submittedDate: '10/7' }).effects.map(
+        (effect) => `${effect.kind} ${effect.metric}`,
+      ),
+    ).toEqual([
+      'fyp submitted',
+      'fyp submitted',
+      'count submitted',
+      'fyp issued',
+      'fyp issued',
+      'count issued',
     ]);
   });
 
@@ -228,7 +277,7 @@ describe('policyChange', () => {
     const read = readPolicy({ submittedDate: '20/8', submittedFyp: '450tr', issued: null }, TODAY);
     expect(policyChange(notIssued, read)).toEqual({
       fromSubmitted: null,
-      effects: [{ metric: 'submitted', year: 2026, month: 8, diff: 50 * MILLION }],
+      effects: [fyp('submitted', 8, 50 * MILLION)],
     });
   });
 });

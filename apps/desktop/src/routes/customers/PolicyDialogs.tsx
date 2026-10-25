@@ -27,6 +27,7 @@ import {
   monthOf,
   openDraft,
   policyChange,
+  policyStatusText,
   readPolicy,
   type FypResult,
   type IssuedDateResult,
@@ -150,7 +151,7 @@ export function PolicyDialog({
       subtitle={
         mode.kind === 'edit'
           ? t('policyForm.editSub', {
-              status: t(mode.policy.issuedDate ? 'policyStatus.issued' : 'policyStatus.submitted'),
+              status: policyStatusText(mode.policy),
               date: formatDate(mode.policy.issuedDate ?? mode.policy.submittedDate),
             })
           : saved
@@ -261,11 +262,12 @@ export function PolicyDialog({
         <dl className="m-0 flex gap-3 tabular-nums">
           <dt className="shrink-0 text-fg-3">{t('policyForm.effect')}</dt>
           <dd className="m-0 flex flex-col gap-0.5">
-            {change.effects.map((effect) => (
-              <span key={`${effect.metric}-${effect.year}-${effect.month}`}>
-                {effectText(effect, re?.name)}
-              </span>
-            ))}
+            {/* Keyed by its words: one line per month and metric, one per count moved. */}
+            {change.effects
+              .map((effect) => effectText(effect, re?.name))
+              .map((line) => (
+                <span key={line}>{line}</span>
+              ))}
           </dd>
         </dl>
       )}

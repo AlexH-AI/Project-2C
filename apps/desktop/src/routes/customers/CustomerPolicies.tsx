@@ -13,6 +13,7 @@ import { Button, PolicyBadge } from '@p2c/ui';
 import { joinParts, t } from '../../i18n';
 import { dayText } from '../appointments/appointment-form';
 import { LINK } from '../appointments/appointments-view';
+import { policyStatusText } from './policy-form';
 
 /**
  * Mockup customer.html "Hợp đồng": the customer's policies, newest submission first, each
@@ -75,7 +76,10 @@ export function CustomerPolicies({
             .sort((a, b) => compareDates(b.submittedDate, a.submittedDate))
             .map((p) => {
               const re = people.find((person) => person.id === p.reId);
-              // The buttons' names say the FYP too, to tell two policies of one day apart (DR6-119).
+              const status = policyStatusText(p);
+              // The buttons' names say the FYP too, to tell two policies of one day apart (DR6-119),
+              // and "Sửa" the status, as one submitted and one issued may share both: only the
+              // first has "Phát hành".
               const nameParams = {
                 date: formatDate(p.submittedDate),
                 fyp: formatVnd(p.submittedFyp),
@@ -85,10 +89,7 @@ export function CustomerPolicies({
                   key={p.id}
                   className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border py-2 text-sm tabular-nums last:border-b-0"
                 >
-                  <PolicyBadge
-                    issued={p.issuedDate !== null}
-                    label={t(p.issuedDate ? 'policyStatus.issued' : 'policyStatus.submitted')}
-                  />
+                  <PolicyBadge issued={p.issuedDate !== null} label={status} />
                   <span>{dayFyp('policies.submitted', p.submittedDate, p.submittedFyp)}</span>
                   {p.issuedDate && p.issuedFyp !== null && (
                     <span>{dayFyp('policies.issued', p.issuedDate, p.issuedFyp)}</span>
@@ -107,7 +108,7 @@ export function CustomerPolicies({
                   )}
                   <button
                     type="button"
-                    aria-label={t('policies.editLabel', nameParams)}
+                    aria-label={t('policies.editLabel', { ...nameParams, status })}
                     onClick={() => onEdit(p)}
                     className={LINK}
                   >

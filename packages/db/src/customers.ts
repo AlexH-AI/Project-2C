@@ -284,9 +284,9 @@ function writeTransition(
  * Checks `appendTransition` without writing: the date not before the latest transition's (D10)
  * and the change allowed (ADR-0007). Returns the stage the customer moves from. A transition
  * recorded after the one numbered `afterSeq` counts as later even on the same day: a restored
- * meeting goes before what was recorded since its deletion (spec Phase 6 E20). The order of
- * recording tells it, not a clock, which may differ between the machines of an export and an import
- * (DR6-69).
+ * meeting goes before what was recorded since its deletion (spec Phase 6 E20), and the error says
+ * so by `sameDay`. The order of recording tells it, not a clock, which may differ between the
+ * machines of an export and an import (DR6-69).
  */
 export function checkTransition(
   db: Database,
@@ -301,7 +301,11 @@ export function checkTransition(
     const order = compareDates(date, fromIsoDate(latest.date));
     const sameDayLater = afterSeq !== undefined && latest.seq > afterSeq;
     if (order < 0 || (order === 0 && sameDayLater)) {
-      throw new DbError('TRANSITION_BEFORE_LATEST', { date: formatDate(fromIsoDate(latest.date)) });
+      const shown = formatDate(fromIsoDate(latest.date));
+      throw new DbError(
+        'TRANSITION_BEFORE_LATEST',
+        order < 0 ? { date: shown } : { date: shown, sameDay: 1 },
+      );
     }
   }
   // A met appointment recorded the stage of its own day, which no change may come before (T-232);

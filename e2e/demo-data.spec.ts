@@ -44,6 +44,12 @@ test('Settings reloads the simulated data after typing the confirmation word', a
   const confirm = dialog.getByRole('button', { name: 'Nạp lại', exact: true });
   await expect(confirm).toBeDisabled();
 
+  // As in the dialog of Dọn sạch Thùng rác, which it shares: the word an IME types decomposed
+  // counts (review R4).
+  const decomposed = 'NẠP LẠI'.normalize('NFD');
+  expect(decomposed).not.toBe('NẠP LẠI');
+  await dialog.getByRole('textbox').fill(decomposed);
+  await expect(confirm).toBeEnabled();
   await dialog.getByRole('textbox').fill('NẠP LẠI');
   await confirm.click();
 

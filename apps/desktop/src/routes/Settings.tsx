@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { formatDate } from '@p2c/domain';
-import { Button, Dialog, TextField } from '@p2c/ui';
+import { Button } from '@p2c/ui';
 import { useAppData, useToday } from '../data/AppDataContext';
 import { isUnsavedChangesError } from '../data/app-data';
 import { t } from '../i18n';
 import type { SettingsSection } from '../shell/routes';
+import { ConfirmWordDialog } from './ConfirmWordDialog';
 import { AiSection } from './SettingsAi';
 import { BackupSection, type BackupNotice, type DataNoticeProps } from './SettingsBackup';
 import { DataFileSection } from './SettingsDataFile';
@@ -62,11 +63,16 @@ export function Settings({ section: linked }: { section?: SettingsSection }) {
   );
 }
 
-/** The one notice of Dữ liệu, and the section it belongs to. */
-interface Shown {
-  readonly from: 'backup' | 'demo';
-  readonly notice: unknown;
+/** The notice of each section of Dữ liệu that has one. */
+interface DataNotices {
+  readonly backup: BackupNotice;
+  readonly demo: Outcome;
 }
+
+/** The one notice of Dữ liệu, and the section it belongs to. */
+type Shown = {
+  readonly [From in keyof DataNotices]: { readonly from: From; readonly notice: DataNotices[From] };
+}[keyof DataNotices];
 
 /**
  * Dữ liệu has one notice, that of the last backup or reload: a notice about data replaced since
@@ -74,17 +80,23 @@ interface Shown {
  */
 function DataSections() {
   const [shown, setShown] = useState<Shown | null>(null);
-  // Only section `from` sets a notice under `from`, always of the type its props name.
-  const noticeOf = <N,>(from: Shown['from']): DataNoticeProps<N> => ({
-    notice: shown?.from === from ? (shown.notice as N) : null,
+  // Typed by the section it is for (review of PR 825). Only section `from` sets a notice under
+  // `from`, so its notice is of that section's type, which the compiler cannot follow through
+  // `shown`: the casts say so here and nowhere else.
+  const noticeOf = <From extends keyof DataNotices>(
+    from: From,
+  ): DataNoticeProps<DataNotices[From]> => ({
+    notice: shown?.from === from ? (shown.notice as DataNotices[From]) : null,
     onNotice: (notice) =>
-      setShown((now) => (notice !== null ? { from, notice } : now?.from === from ? null : now)),
+      setShown((now) =>
+        notice !== null ? ({ from, notice } as Shown) : now?.from === from ? null : now,
+      ),
   });
   return (
     <>
       <DataFileSection />
-      <BackupSection {...noticeOf<BackupNotice>('backup')} />
-      <DemoSection {...noticeOf<Outcome>('demo')} />
+      <BackupSection {...noticeOf('backup')} />
+      <DemoSection {...noticeOf('demo')} />
     </>
   );
 }
@@ -141,16 +153,10 @@ function DemoSection({ notice: outcome, onNotice }: DataNoticeProps<Outcome>) {
 function ReloadDialog({ onClose }: { onClose: (outcome?: Outcome) => void }) {
   const data = useAppData();
   const [counts] = useState(() => data.counts());
-  const [word, setWord] = useState('');
-  const [running, setRunning] = useState(false);
   // Follows the day while the dialog stays open past midnight (DR-30).
   const anchor = formatDate(useToday());
-  const confirmWord = t('settings.demo.confirmWord');
-  // An IME may type the word decomposed (review R4).
-  const confirmed = word.normalize('NFC') === confirmWord;
 
   const reload = async () => {
-    setRunning(true);
     try {
       // The day the data was really anchored on: the backup may have run past midnight.
       const reloaded = await data.reloadDemoData();
@@ -162,25 +168,13 @@ function ReloadDialog({ onClose }: { onClose: (outcome?: Outcome) => void }) {
   };
 
   return (
-    <Dialog
+    <ConfirmWordDialog
       title={t('settings.demo.confirmTitle')}
-      // Nothing may close the dialog while the reload runs.
-      onClose={running ? undefined : () => onClose()}
-      onSubmit={() => {
-        if (confirmed && !running) void reload();
-      }}
-      actions={
-        <>
-          <Button disabled={running} onClick={() => onClose()}>
-            {t('settings.demo.cancel')}
-          </Button>
-          <Button type="submit" variant="danger" disabled={!confirmed || running}>
-            {running
-              ? t('settings.demo.running')
-              : t(data.hasFile ? 'settings.demo.confirmWithBackup' : 'settings.demo.confirm')}
-          </Button>
-        </>
-      }
+      word={t('settings.demo.confirmWord')}
+      confirmLabel={t(data.hasFile ? 'settings.demo.confirmWithBackup' : 'settings.demo.confirm')}
+      runningLabel={t('settings.demo.running')}
+      run={reload}
+      onClose={() => onClose()}
     >
       <p className="m-0">
         {t('settings.demo.confirmBody', {
@@ -193,12 +187,6 @@ function ReloadDialog({ onClose }: { onClose: (outcome?: Outcome) => void }) {
       <p className="m-0 text-fg-2">
         {t(data.hasFile ? 'settings.demo.confirmBackup' : 'settings.demo.confirmWeb')}
       </p>
-      <TextField
-        label={t('settings.demo.confirmWordLabel', { word: confirmWord })}
-        value={word}
-        disabled={running}
-        onChange={setWord}
-      />
-    </Dialog>
+    </ConfirmWordDialog>
   );
 }

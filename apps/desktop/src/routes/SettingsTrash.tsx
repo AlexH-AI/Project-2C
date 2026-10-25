@@ -1,19 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type Ref } from 'react';
-import { listTrash, previewPurge, type Database, type TrashRow } from '@p2c/db';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
+import { listTrash, type Database, type TrashRow } from '@p2c/db';
 import {
   Button,
   DataTable,
-  Dialog,
   DialogFocusFallback,
   PolicyBadge,
   Segmented,
   StageBadge,
-  TextField,
   type DataTableColumn,
 } from '@p2c/ui';
 import { useAppData, useQuery, useToday } from '../data/AppDataContext';
 import { t } from '../i18n';
+import { ConfirmWordDialog } from './ConfirmWordDialog';
 import { ALERT } from './customers/CustomerDialogs';
+import { policyStatusText } from './customers/policy-form';
 import { RestoreDialog } from './RestoreDialog';
 import {
   TRASH_FILTERS,
@@ -26,6 +26,7 @@ import {
   ownerParts,
   purgedNotice,
   purgeFailure,
+  purgePlan,
   purgeReminder,
   purgeView,
   recordDetail,
@@ -33,7 +34,9 @@ import {
   restoreLabel,
   restoredNotice,
   trashCounts,
-  type PurgeNotice,
+  type PurgedNotice,
+  type PurgeRefusal,
+  type PurgeView,
   type RestoredNotice,
   type TrashFilter,
 } from './trash-view';
@@ -52,10 +55,7 @@ function RecordCell({ row }: { row: TrashRow }) {
         )}
       </b>
       {row.kind === 'policy' && (
-        <PolicyBadge
-          issued={row.issuedDate !== null}
-          label={t(row.issuedDate === null ? 'policyStatus.submitted' : 'policyStatus.issued')}
-        />
+        <PolicyBadge issued={row.issuedDate !== null} label={policyStatusText(row)} />
       )}
       {detail && <span className="block text-xs text-fg-3">{detail}</span>}
       {row.blocked && (
@@ -146,13 +146,24 @@ const trashColumns = (
 /** The line at the head of the card: what was restored (11e) or purged (11j), or a purge refused. */
 type Notice =
   | { readonly kind: 'restored'; readonly view: RestoredNotice }
-  | { readonly kind: 'purged' | 'refused'; readonly view: PurgeNotice };
+  | { readonly kind: 'purged'; readonly view: PurgedNotice }
+  | { readonly kind: 'refused'; readonly view: PurgeRefusal };
 
 /**
  * Mockups 11e, 11j: what was restored, with a link to where it is now, or what was purged. It takes
  * the focus once its dialog closes, the button that opened it gone or off (DR6-83).
  */
-function Done({ notice, ref }: { notice: RestoredNotice | PurgeNotice; ref: Ref<HTMLDivElement> }) {
+function Done({
+  title,
+  link,
+  children,
+  ref,
+}: {
+  title: string;
+  link?: { readonly href: string; readonly text: string };
+  children: ReactNode;
+  ref: Ref<HTMLDivElement>;
+}) {
   return (
     <div
       ref={ref}
@@ -164,23 +175,50 @@ function Done({ notice, ref }: { notice: RestoredNotice | PurgeNotice; ref: Ref<
         {t('trash.done.mark')}
       </span>
       <div className="min-w-0 flex-1">
-        <b className="block font-semibold">{notice.title}</b>
-        {notice.detail && <span className="text-fg-2">{notice.detail}</span>}
+        <b className="block font-semibold">{title}</b>
+        {children && <span className="text-fg-2">{children}</span>}
       </div>
-      {'href' in notice && (
+      {link && (
         <a
-          href={notice.href}
+          href={link.href}
           className="rounded-md border border-border bg-surface-2 px-2.5 py-1 whitespace-nowrap text-fg no-underline hover:bg-surface-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
-          {notice.open}
+          {link.text}
         </a>
       )}
     </div>
   );
 }
 
+/** The line at the head of the card once a dialog closed: `Done`, or a purge refused. */
+function NoticeLine({ notice, ref }: { notice: Notice; ref: Ref<HTMLDivElement> }) {
+  switch (notice.kind) {
+    case 'restored': {
+      const { title, detail, href, open } = notice.view;
+      return (
+        <Done ref={ref} title={title} link={{ href, text: open }}>
+          {detail}
+        </Done>
+      );
+    }
+    case 'purged': {
+      // Sentence by sentence, side by side, as Nạp lại and Nhập backup place "Backup: …".
+      const { title, deleted, kept, backup } = notice.view;
+      return (
+        <Done ref={ref} title={title}>
+          {deleted}
+          {kept && <> {kept}</>}
+          {backup && <> {backup}</>}
+        </Done>
+      );
+    }
+    case 'refused':
+      return <Refused notice={notice.view} />;
+  }
+}
+
 /** Mockup 11j: a purge refused, at the same place; nothing changed (D7, D8, D9). */
-function Refused({ notice }: { notice: PurgeNotice }) {
+function Refused({ notice }: { notice: PurgeRefusal }) {
   return (
     <p role="alert" className={`${ALERT} mb-3 border-danger text-sm`}>
       <b className="block text-danger">{notice.title}</b>
@@ -190,21 +228,14 @@ function Refused({ notice }: { notice: PurgeNotice }) {
 }
 
 /**
- * Mockup 11i: what the purge deletes for good, kind by kind, and what it keeps (TR-11, TR-12).
- * Typing the word confirms, as for Nạp lại (10c); then the exe backs the file up and purges. While
- * it runs, the dialog stays and nothing closes it. Closes with the notice of what came of it.
+ * Mockup 11i: what the purge deletes for good, kind by kind, and what it keeps (TR-11, TR-12), as
+ * the list read it when the dialog opened. Typing the word confirms, as for Nạp lại (10c); then the
+ * exe backs the file up and purges. Closes with the notice of what came of it.
  */
-function PurgeDialog({ onClose }: { onClose: (notice?: Notice) => void }) {
+function PurgeDialog({ view, onClose }: { view: PurgeView; onClose: (notice?: Notice) => void }) {
   const data = useAppData();
-  const view = purgeView(useQuery(previewPurge));
-  const [word, setWord] = useState('');
-  const [running, setRunning] = useState(false);
-  const confirmWord = t('trash.purge.word');
-  // An IME may type the word decomposed (review R4).
-  const confirmed = word.normalize('NFC') === confirmWord;
 
   const purge = async () => {
-    setRunning(true);
     try {
       onClose({ kind: 'purged', view: purgedNotice(await data.purgeTrash()) });
     } catch (error) {
@@ -213,25 +244,14 @@ function PurgeDialog({ onClose }: { onClose: (notice?: Notice) => void }) {
   };
 
   return (
-    <Dialog
+    <ConfirmWordDialog
       title={t('trash.purge.title')}
       subtitle={view.subtitle}
-      onClose={running ? undefined : () => onClose()}
-      onSubmit={() => {
-        if (confirmed && !running) void purge();
-      }}
-      actions={
-        <>
-          <Button disabled={running} onClick={() => onClose()}>
-            {t('settings.demo.cancel')}
-          </Button>
-          <Button type="submit" variant="danger" disabled={!confirmed || running}>
-            {running
-              ? t('trash.purge.running')
-              : t(data.hasFile ? 'trash.purge.confirmWithBackup' : 'trash.purge.confirm')}
-          </Button>
-        </>
-      }
+      word={t('trash.purge.word')}
+      confirmLabel={t(data.hasFile ? 'trash.purge.confirmWithBackup' : 'trash.purge.confirm')}
+      runningLabel={t('trash.purge.running')}
+      run={purge}
+      onClose={() => onClose()}
     >
       <p className="m-0 text-fg-2">{t('trash.purge.intro')}</p>
       <dl className="m-0 flex flex-col gap-1.5 tabular-nums">
@@ -255,13 +275,7 @@ function PurgeDialog({ onClose }: { onClose: (notice?: Notice) => void }) {
       <p className={`${ALERT} border-info`}>
         {t(data.hasFile ? 'trash.purge.backup' : 'settings.demo.confirmWeb')}
       </p>
-      <TextField
-        label={t('settings.demo.confirmWordLabel', { word: confirmWord })}
-        value={word}
-        disabled={running}
-        onChange={setWord}
-      />
-    </Dialog>
+    </ConfirmWordDialog>
   );
 }
 
@@ -280,7 +294,7 @@ export function TrashSection() {
   const [filter, setFilter] = useState<TrashFilter>('all');
   const [query, setQuery] = useState('');
   const [restoring, setRestoring] = useState<TrashRow | null>(null);
-  const [purging, setPurging] = useState(false);
+  const [purging, setPurging] = useState<PurgeView | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const done = useRef<HTMLDivElement>(null);
   const columns = useMemo(() => trashColumns(setRestoring), []);
@@ -314,7 +328,9 @@ export function TrashSection() {
             variant="danger"
             className="ml-auto"
             disabled={!canPurge(rows)}
-            onClick={() => setPurging(true)}
+            // The plan of the rows shown, read once: the dialog runs `keptRecords` neither as it
+            // opens nor on the data it purged as it closes (review of PR 710).
+            onClick={() => setPurging(purgeView(purgePlan(rows)))}
           >
             {t('trash.purge.open')}
           </Button>
@@ -322,11 +338,7 @@ export function TrashSection() {
       </div>
       <p className="m-0 mb-3 text-sm text-fg-2">{t(hasFile ? 'trash.helpFile' : 'trash.help')}</p>
       {reminder && <p className={`${ALERT} mb-3 border-info text-sm`}>{reminder}</p>}
-      {notice?.kind === 'refused' ? (
-        <Refused notice={notice.view} />
-      ) : (
-        notice && <Done ref={done} notice={notice.view} />
-      )}
+      {notice && <NoticeLine ref={done} notice={notice} />}
       {rows.length === 0 ? (
         <p className="m-0 px-3 py-7 text-center text-sm text-fg-2">
           <b className="mb-1 block text-md text-fg">{t('trash.empty')}</b>
@@ -380,8 +392,9 @@ export function TrashSection() {
         )}
         {purging && (
           <PurgeDialog
+            view={purging}
             onClose={(outcome) => {
-              setPurging(false);
+              setPurging(null);
               if (outcome) setNotice(outcome);
             }}
           />
