@@ -7,6 +7,7 @@ import {
   addKycNote,
   confirmKycFact,
   getKycProfile,
+  listKycRecordingOrder,
   listKycVersionFacts,
   listKycVersions,
   markKycConflict,
@@ -28,6 +29,26 @@ async function withCustomer(profile: { birthDate?: { year: number }; gender?: 'M
   ctx.persist.mockClear();
   const note = addKycNote(ctx.db, customer.id, { text: 'Gặp lần đầu', date: d(2, 9, 2026) });
   return { ...ctx, customer, note };
+}
+
+/** A customer with a birth year and a note with one fact, every record saved at one instant. */
+async function atOneInstant() {
+  const database = await openDatabase({ now: () => new Date(Date.UTC(2026, 8, 26, 11)) });
+  const team = createTeam(database, { name: 'Sao Mai' });
+  const re = createPerson(database, { name: 'An', role: 'RE', teamId: team.id });
+  const customer = createCustomer(database, {
+    name: 'Lan',
+    reId: re.id,
+    stage: 'N4',
+    date: d(1, 9),
+    birthDate: { year: 1984 },
+  });
+  recordKycNote(database, customer.id, {
+    text: 'Bác sĩ',
+    date: d(2, 9),
+    facts: [{ field: 'occupation', value: 'Bác sĩ' }],
+  });
+  return { database, customer };
 }
 
 const current = (facts: readonly { field: string; value: unknown; status: string }[]) =>
@@ -82,6 +103,7 @@ describe('KYC notes', () => {
     ).toEqual([
       'confirmKycFact',
       'getKycProfile',
+      'listKycRecordingOrder',
       'listKycVersionFacts',
       'listKycVersions',
       'markKycConflict',
@@ -511,21 +533,7 @@ describe('the facts each KYC version recorded (T-297)', () => {
   });
 
   it('ties none of the facts of versions saved at one instant: they cannot be told apart', async () => {
-    const database = await openDatabase({ now: () => new Date(Date.UTC(2026, 8, 26, 11)) });
-    const team = createTeam(database, { name: 'Sao Mai' });
-    const re = createPerson(database, { name: 'An', role: 'RE', teamId: team.id });
-    const customer = createCustomer(database, {
-      name: 'Lan',
-      reId: re.id,
-      stage: 'N4',
-      date: d(1, 9),
-      birthDate: { year: 1984 },
-    });
-    recordKycNote(database, customer.id, {
-      text: 'Bác sĩ',
-      date: d(2, 9),
-      facts: [{ field: 'occupation', value: 'Bác sĩ' }],
-    });
+    const { database, customer } = await atOneInstant();
 
     const linked = listKycVersionFacts(database, customer.id);
     expect([...linked.values()]).toEqual([[], []]);
@@ -536,6 +544,53 @@ describe('the facts each KYC version recorded (T-297)', () => {
     const { db: database, customer } = await withCustomer();
     softDeleteCustomer(database, customer.id);
     expect(codeOf(() => listKycVersionFacts(database, customer.id))).toBe('CUSTOMER_NOT_FOUND');
+  });
+});
+
+describe('the order the KYC notes and versions were saved in (review of PR 835)', () => {
+  it('puts each note and version where it was saved', async () => {
+    // A SYSTEM note and v1 for the birth year, then the note of `withCustomer`, alone.
+    const { db: database, customer, note } = await withCustomer({ birthDate: { year: 1984 } });
+    const saved = recordKycNote(database, customer.id, {
+      text: 'Bác sĩ',
+      date: d(3, 9),
+      facts: [{ field: 'occupation', value: 'Bác sĩ' }],
+    });
+    // A fact of the first note confirmed later is a version of its own; then a note alone.
+    const { version: confirmed } = confirmKycFact(database, customer.id, {
+      field: 'childrenCount',
+      value: 2,
+      noteId: note.id,
+      date: d(4, 9),
+    });
+    const last = addKycNote(database, customer.id, { text: 'Hẹn gặp lại', date: d(4, 9) });
+
+    const [system] = getKycProfile(database, customer.id).notes;
+    const [first] = listKycVersions(database, customer.id);
+    expect(listKycRecordingOrder(database, customer.id)).toEqual([
+      system!.id,
+      first!.id,
+      note.id,
+      saved.note.id,
+      saved.version!.id,
+      confirmed!.id,
+      last.id,
+    ]);
+  });
+
+  it('puts the notes first at one instant, as a command saves its note before its version', async () => {
+    const { database, customer } = await atOneInstant();
+
+    expect(listKycRecordingOrder(database, customer.id)).toEqual([
+      ...getKycProfile(database, customer.id).notes.map((n) => n.id),
+      ...listKycVersions(database, customer.id).map((v) => v.id),
+    ]);
+  });
+
+  it('refuses a deleted customer, as the other reads do', async () => {
+    const { db: database, customer } = await withCustomer();
+    softDeleteCustomer(database, customer.id);
+    expect(codeOf(() => listKycRecordingOrder(database, customer.id))).toBe('CUSTOMER_NOT_FOUND');
   });
 });
 

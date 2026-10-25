@@ -164,12 +164,17 @@ export type TimelineEvent = { readonly id: string; readonly date: CalendarDate }
     }
 );
 
-/** What the timeline reads of KYC; `versionFacts` is `listKycVersionFacts` of `db`. */
+/**
+ * What the timeline reads of KYC; `versionFacts` is `listKycVersionFacts` of `db`, and
+ * `recordingOrder` (the ids of the notes and versions in the order they were saved)
+ * `listKycRecordingOrder`.
+ */
 export interface TimelineKyc {
   readonly notes: readonly KycNoteRecord[];
   readonly facts: readonly KycFactRecord[];
   readonly versions: readonly KycVersionRecord[];
   readonly versionFacts: ReadonlyMap<string, readonly string[]>;
+  readonly recordingOrder: readonly string[];
 }
 
 /** Mockup customer.html "Tất cả / KYC / Lịch hẹn". */
@@ -209,12 +214,21 @@ interface Ordered {
 /**
  * Each version with the codes of the facts it recorded, on the note of those facts when that note
  * is of the version's day: saved with them, or one of its AI proposals confirmed that day (mockup
- * customer.html "+ F9, F12, F13 · kyc v3"). Any other version stands alone. Within a day a version
- * comes by its seq, a note alone just after the KYC update before it.
+ * customer.html "+ F9, F12, F13 · kyc v3"). Any other version stands alone. Within a day the KYC
+ * comes as it was saved: a note or a version alone where it was, a KYC update where its last
+ * version was.
  */
-function kycEvents({ notes, facts, versions, versionFacts }: TimelineKyc): Ordered[] {
+function kycEvents({
+  notes,
+  facts,
+  versions,
+  versionFacts,
+  recordingOrder,
+}: TimelineKyc): Ordered[] {
   const factById = new Map(facts.map((fact) => [fact.id, fact]));
   const noteById = new Map(notes.map((note) => [note.id, note]));
+  const saved = new Map(recordingOrder.map((id, index) => [id, index]));
+  const savedAt = (id: string) => saved.get(id) ?? -1;
   const onNote = new Map<string, TimelineVersion[]>(notes.map((note) => [note.id, []]));
   const apart: Ordered[] = [];
   for (const version of versions) {
@@ -226,15 +240,16 @@ function kycEvents({ notes, facts, versions, versionFacts }: TimelineKyc): Order
       onNote.get(note.id)!.push(line);
     } else {
       const event = { kind: 'version' as const, id: version.id, date: version.date, version: line };
-      apart.push({ event, order: version.seq });
+      apart.push({ event, order: savedAt(version.id) });
     }
   }
-  let last = 0;
   const onNotes = notes.map((note): Ordered => {
     const lines = onNote.get(note.id)!;
-    last = lines.at(-1)?.version.seq ?? last;
     const event = { kind: 'note' as const, id: note.id, date: note.createdDate, note };
-    return { event: { ...event, versions: lines }, order: lines.length > 0 ? last : last + 0.5 };
+    return {
+      event: { ...event, versions: lines },
+      order: savedAt(lines.at(-1)?.version.id ?? note.id),
+    };
   });
   return [...onNotes, ...apart];
 }

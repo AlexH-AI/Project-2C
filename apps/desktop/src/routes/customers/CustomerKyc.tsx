@@ -30,6 +30,7 @@ import {
   stageCause,
   TIMELINE_FILTERS,
   type KycCategoryRow,
+  type TimelineEvent,
   type TimelineFilter,
   type TimelineKyc,
   type TimelineVersion,
@@ -255,7 +256,8 @@ const FILTERS = TIMELINE_FILTERS.map((value) => ({ value, label: t(`timeline.fil
  * Mockup customer.html "Dòng thời gian": the KYC updates — a note with the versions its facts
  * recorded —, notes and versions alone, the stage changes and the appointments, kept to one kind by
  * the filter; any appointment up to today offers the next one ("Hẹn tiếp", 6h). The profile lays
- * out each note, with its AI trích xuất.
+ * out each note, with its AI trích xuất. The filter hides the other kinds, it does not drop them:
+ * a note keeps what its AI trích xuất found until the profile is left (spec Phase 5 §8 item 4).
  */
 export function Timeline({
   transitions,
@@ -278,9 +280,8 @@ export function Timeline({
   const [filter, setFilter] = useState<TimelineFilter>('ALL');
   const roles = (a: AppointmentRecord) =>
     a.coordinatorIds.flatMap((id) => people.find((person) => person.id === id)?.role ?? []);
-  const events = kycTimeline(transitions, kyc, appointments).filter((event) =>
-    inTimelineFilter(event, filter),
-  );
+  const events = kycTimeline(transitions, kyc, appointments);
+  const shown = (event: TimelineEvent) => inTimelineFilter(event, filter);
   return (
     <section aria-labelledby="timeline" className={CARD}>
       <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -295,10 +296,10 @@ export function Timeline({
           onChange={setFilter}
         />
       </div>
-      {events.length === 0 && <p className="m-0 text-sm text-fg-3">{t('timeline.empty')}</p>}
+      {!events.some(shown) && <p className="m-0 text-sm text-fg-3">{t('timeline.empty')}</p>}
       <ol className="m-0 flex list-none flex-col gap-3 p-0 text-sm">
         {events.map((event) => (
-          <li key={event.id} className="flex flex-col gap-0.5">
+          <li key={event.id} hidden={!shown(event)} className="flex flex-col gap-0.5">
             <span className="text-xs text-fg-3 tabular-nums">
               {event.kind === 'meeting'
                 ? t('timeline.meetingWhen', {

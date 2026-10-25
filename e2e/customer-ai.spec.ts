@@ -576,6 +576,60 @@ test('one AI request at a time: AI trích xuất turns every AI button off, Hủ
   await expect(note.getByRole('alert')).toContainText('Không kết nối được OpenCode.');
 });
 
+// Review of PR 835: the timeline filter only hides a note, so what its AI trích xuất found stays
+// until the profile is left (spec Phase 5 §8 item 4): the proposals, those of a run that ends while
+// the note is hidden, an error already said.
+test('the timeline filter hides a note, what its AI trích xuất found stays (review of PR 835)', async ({
+  page,
+}) => {
+  await asExe(page);
+  const name = 'Tú Lọc Dòng';
+  await createKycCustomer(page, name);
+  await addKycNote(page, name, discoveryFacts);
+  const text = 'Vợ KH kể nhà đã có 3 con, bé út mới sinh tháng trước.';
+  await writeNote(page, name, text);
+  await useOpenCode(page);
+  const note = noteOf(page, text);
+  const extract = note.getByRole('button', { name: 'AI trích xuất' });
+  const proposals = note.getByRole('list', { name: 'Đề xuất của AI' }).getByRole('listitem');
+  const filter = page
+    .getByRole('region', { name: 'Dòng thời gian' })
+    .getByRole('radiogroup', { name: 'Lọc dòng thời gian' });
+  const show = (label: string) => filter.getByRole('radio', { name: label }).click();
+  // Off while a request runs: on again once the run of the hidden note has ended.
+  const analyse = panelOf(page).getByRole('button', { name: 'Phân tích', exact: true });
+  await page.evaluate(() => {
+    window.exe.aiContent = JSON.stringify({
+      facts: [{ field: 'childrenCount', value: 3, quote: '3 con' }],
+    });
+  });
+
+  await extract.click();
+  await expect(proposals).toHaveText([/^AI đề xuất: Số con: 3/]);
+  await show('Lịch hẹn');
+  await expect(note).toHaveCount(0);
+  await show('Tất cả');
+  await expect(proposals).toHaveText([/^AI đề xuất: Số con: 3/]);
+  await expect(note).toContainText('Đề xuất không lưu — rời màn là mất.');
+
+  await page.evaluate(() => window.exe.holdAi());
+  await extract.click();
+  await expect(note.getByRole('status')).toContainText('Đang trích xuất…');
+  await show('Lịch hẹn');
+  await expect(analyse).toBeDisabled();
+  await page.evaluate(() => window.exe.releaseAi());
+  await expect(analyse).toBeEnabled();
+  await show('KYC');
+  await expect(proposals).toHaveText([/^AI đề xuất: Số con: 3/]);
+
+  await page.evaluate(() => (window.exe.aiError = { code: 'AI_NETWORK' }));
+  await extract.click();
+  await expect(note.getByRole('alert')).toContainText('Không kết nối được OpenCode.');
+  await show('Lịch hẹn');
+  await show('Tất cả');
+  await expect(note.getByRole('alert')).toContainText('Không kết nối được OpenCode.');
+});
+
 test('AI trích xuất answering once the data was replaced, its IDs alike, proposes nothing (R2-07)', async ({
   page,
 }) => {

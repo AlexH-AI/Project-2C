@@ -149,7 +149,7 @@ describe('createAiJobs (review of PR 439: a run outlives the screen that started
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps nothing else: an outcome `keep` refuses, or a job cancelled', async () => {
+  it('keeps nothing else: an outcome `keep` refuses, or a job cancelled, even one failing after', async () => {
     const { runner, jobs, job, answer } = held();
     const done = jobs.start('analysis:c1', job, undefined, failed);
     answer('saved');
@@ -162,8 +162,21 @@ describe('createAiJobs (review of PR 439: a run outlives the screen that started
     answer('failed');
     await vi.waitFor(() => expect(runner.busy).toBe(false));
 
+    // Deaf to Hủy, unlike a request through the runner: it ends as it fails, after Hủy all the same.
+    let fail!: (outcome: string) => void;
+    const deaf = jobs.start(
+      'analysis:c3',
+      () => new Promise<string>((resolve) => (fail = resolve)),
+      undefined,
+      failed,
+    );
+    jobs.cancel('analysis:c3');
+    fail('failed');
+    await expect(deaf).resolves.toBe('failed');
+
     expect(jobs.kept('analysis:c1')).toBeUndefined();
     expect(jobs.kept('analysis:c2')).toBeUndefined();
+    expect(jobs.kept('analysis:c3')).toBeUndefined();
   });
 
   it('drops a failure kept once a new run of its key starts', async () => {

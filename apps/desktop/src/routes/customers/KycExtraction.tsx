@@ -125,7 +125,7 @@ export function NoteEvent({
         )}
       </span>
       {/* The note quoted as the RE or the profile wrote it, one per note of the timeline. */}
-      <span className="whitespace-pre-line wrap-anywhere text-fg-2">
+      <div className="whitespace-pre-line wrap-anywhere text-fg-2">
         <blockquote id={textId} tabIndex={-1} className="m-0 inline">
           {note.text}
         </blockquote>
@@ -135,7 +135,7 @@ export function NoteEvent({
             {t('sep.dot')} {t('extraction.tooShort')}
           </span>
         )}
-      </span>
+      </div>
       <VersionLines versions={versions} />
       {busyElsewhere(button, { busy: running, webOpen, phase: job.phase }) && (
         <span className="text-xs text-fg-3">{t('aiError.AI_BUSY')}</span>

@@ -222,6 +222,7 @@ describe('kycTimeline', () => {
     facts: [],
     versions: [],
     versionFacts: new Map(),
+    recordingOrder: [],
     ...parts,
   });
   /** Each event as `kind:id`, a version with its codes, a note with the versions it is given. */
@@ -247,6 +248,7 @@ describe('kycTimeline', () => {
           ['v2', ['f3']],
           ['v3', []],
         ]),
+        recordingOrder: ['n1', 'v1', 'n2', 'v2', 'v3'],
       }),
     );
 
@@ -284,6 +286,7 @@ describe('kycTimeline', () => {
           ['v2', ['f2']],
           ['v3', ['f1', 'f3']],
         ]),
+        recordingOrder: ['n1', 'v1', 'n2', 'v2', 'v3'],
       }),
     );
 
@@ -308,6 +311,7 @@ describe('kycTimeline', () => {
           ['v2', ['f2']],
           ['v3', []],
         ]),
+        recordingOrder: ['n1', 'v1', 'n4', 'n2', 'v2', 'v3'],
       }),
     );
     // n3, a note alone, came after n2's update.
@@ -318,6 +322,7 @@ describe('kycTimeline', () => {
         facts: [recorded(2, 'n2')],
         versions: [version('v2', day(9, 5))],
         versionFacts: new Map([['v2', ['f2']]]),
+        recordingOrder: ['n2', 'v2', 'n3'],
       }),
     );
 
@@ -330,6 +335,54 @@ describe('kycTimeline', () => {
       'stage:t1',
     ]);
     expect(shape(later)).toEqual(['note:n3', 'note:n2 + v2[F2]']);
+  });
+
+  it('puts a note alone and a version alone of one day where each was saved (review of PR 835)', () => {
+    // On 05/09 v2 settled a conflict, or confirmed an AI proposal of n1 (3f); then n9 was saved.
+    const settled = kyc({
+      notes: [note('n1', day(9, 1)), note('n9', day(9, 5))],
+      facts: [recorded(1, 'n1'), recorded(2, 'n1')],
+      versions: [version('v1', day(9, 1)), version('v2', day(9, 5))],
+      versionFacts: new Map([
+        ['v1', ['f1']],
+        ['v2', []],
+      ]),
+      recordingOrder: ['n1', 'v1', 'v2', 'n9'],
+    });
+    const confirmed = {
+      ...settled,
+      versionFacts: new Map([
+        ['v1', ['f1']],
+        ['v2', ['f2']],
+      ]),
+    };
+    // A KYC update comes where its last version was saved: n1's AI proposal confirmed on its own
+    // day, after n9.
+    const update = kyc({
+      notes: [note('n1', day(9, 1)), note('n9', day(9, 1))],
+      facts: [recorded(1, 'n1'), recorded(2, 'n1')],
+      versions: [version('v1', day(9, 1)), version('v2', day(9, 1))],
+      versionFacts: new Map([
+        ['v1', ['f1']],
+        ['v2', ['f2']],
+      ]),
+      recordingOrder: ['n1', 'v1', 'n9', 'v2'],
+    });
+
+    expect(shape(kycTimeline([], settled))).toEqual([
+      'note:n9',
+      'version:v2[]',
+      'note:n1 + v1[F1]',
+    ]);
+    expect(shape(kycTimeline([], confirmed))).toEqual([
+      'note:n9',
+      'version:v2[F2]',
+      'note:n1 + v1[F1]',
+    ]);
+    expect(
+      shape(kycTimeline([], { ...settled, recordingOrder: ['n1', 'v1', 'n9', 'v2'] })),
+    ).toEqual(['version:v2[]', 'note:n9', 'note:n1 + v1[F1]']);
+    expect(shape(kycTimeline([], update))).toEqual(['note:n1 + v1[F1] + v2[F2]', 'note:n9']);
   });
 
   it('names a version by its stored seq, which a backup may leave with gaps (DR5-48)', () => {

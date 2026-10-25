@@ -140,6 +140,31 @@ export function listKycVersionFacts(
   return recorded;
 }
 
+/**
+ * The ids of the customer's KYC notes and versions in the order they were saved, by `created_at`:
+ * the timeline's order within a day (review of PR 835). At one instant the notes come first, as a
+ * command saves its note before its version; then each kind by `seq`.
+ */
+export function listKycRecordingOrder(db: Database, customerId: string): string[] {
+  liveCustomer(db, customerId);
+  const notes = db.orm
+    .select({ id: kycNotes.id, seq: kycNotes.seq, at: kycNotes.createdAt })
+    .from(kycNotes)
+    .where(eq(kycNotes.customerId, customerId))
+    .all();
+  const versions = db.orm
+    .select({ id: kycVersions.id, seq: kycVersions.seq, at: kycVersions.createdAt })
+    .from(kycVersions)
+    .where(eq(kycVersions.customerId, customerId))
+    .all();
+  return [
+    ...notes.map((row) => ({ ...row, kind: 0 })),
+    ...versions.map((row) => ({ ...row, kind: 1 })),
+  ]
+    .sort((a, b) => (a.at === b.at ? a.kind - b.kind || a.seq - b.seq : a.at < b.at ? -1 : 1))
+    .map(({ id }) => id);
+}
+
 // ---- commands -------------------------------------------------------------
 
 export function addKycNote(

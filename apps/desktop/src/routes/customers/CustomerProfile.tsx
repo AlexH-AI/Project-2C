@@ -5,6 +5,7 @@ import {
   getKycProfile,
   listAiAnalyses,
   listAppointments,
+  listKycRecordingOrder,
   listKycVersionFacts,
   listKycVersions,
   listPeople,
@@ -49,8 +50,10 @@ function readProfile(db: Database, id: string) {
     transitions,
     kyc: getKycProfile(db, id),
     versions: listKycVersions(db, id),
-    // The facts each version recorded: "+ F9, F12, F13 · kyc v3" on the timeline (T-297).
+    // The facts each version recorded: "+ F9, F12, F13 · kyc v3" on the timeline (T-297); the
+    // order the notes and versions were saved in orders them within a day (review of PR 835).
     versionFacts: listKycVersionFacts(db, id),
+    recordingOrder: listKycRecordingOrder(db, id),
     analyses: listAiAnalyses(db, id),
     // What the appointment dialog reads, for this one customer.
     appointmentData: {
@@ -130,6 +133,7 @@ export function CustomerProfile({ id }: { id: string }) {
     kyc,
     versions,
     versionFacts,
+    recordingOrder,
     analyses,
     appointmentData,
   } = profile;
@@ -195,7 +199,7 @@ export function CustomerProfile({ id }: { id: string }) {
         <div className="flex min-w-0 flex-col gap-4">
           <Timeline
             transitions={transitions}
-            kyc={{ notes: kyc.notes, facts: kyc.facts, versions, versionFacts }}
+            kyc={{ notes: kyc.notes, facts: kyc.facts, versions, versionFacts, recordingOrder }}
             appointments={appointmentData.appointments}
             people={appointmentData.people}
             today={today}
