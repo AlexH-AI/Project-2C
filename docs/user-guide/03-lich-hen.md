@@ -59,6 +59,8 @@ Bấm tên KH (trong bảng hoặc khung Trong ngày) để mở **Chi tiết l�
 
 Gõ một ngày đã qua, app hỏi lại (ví dụ "Ý anh là …?") và có nút **Dùng …** để lấy ngày gợi ý. App không tự đổi năm: giữ nguyên ngày đã qua là **nhập bù** một lịch hẹn quá khứ.
 
+Đầu năm thì ngược lại: gõ `dd/mm` mà ngày đó năm nay chưa tới, còn cùng ngày năm trước mới qua không quá 60 ngày, app hỏi ngày năm trước. Ví dụ hôm nay 02/01/2027, gõ `28/12`: "28/12/2027 còn 360 ngày nữa. Ý anh là 28/12/2026?". Giữ nguyên là lịch hẹn năm nay.
+
 Nếu RE của lịch mới nằm ngoài góc nhìn đang chọn, lịch vẫn được tạo; màn báo một dòng và bạn đổi góc nhìn để thấy nó.
 
 ## Ghi kết quả cuộc gặp
@@ -97,7 +99,7 @@ Chỉ dời được lịch còn Dự kiến.
 3. Khung **Khi lưu** cho biết điều sẽ xảy ra: lịch cũ thành Dời lịch (giữ trong lịch sử, không tính gặp), và một lịch Dự kiến mới được tạo ở ngày mới.
 4. Bấm **Dời lịch**.
 
-Ngày mới phải từ hôm nay trở đi. Gõ một ngày đã qua, hộp hiện ô **Nhập bù: cuộc gặp đã diễn ra vào ngày này**: chỉ đánh dấu khi cuộc gặp thật sự đã diễn ra vào ngày đó và bạn đang ghi bù.
+Ngày mới phải từ hôm nay trở đi. Gõ một ngày đã qua, hộp hiện ô **Nhập bù: cuộc gặp đã diễn ra vào ngày này**: chỉ đánh dấu khi cuộc gặp thật sự đã diễn ra vào ngày đó và bạn đang ghi bù. Đầu năm, hộp cũng hỏi ngày năm trước như khi tạo lịch; bấm **Dùng …** thì ngày mới là ngày đã qua: ô báo lỗi và hiện ô **Nhập bù**, app không tự đánh dấu.
 
 ## Sửa kết quả
 

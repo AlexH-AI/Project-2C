@@ -553,6 +553,46 @@ test('the next appointment filled in on 31/12 is past once New Year comes (6h)',
   await expect(dialog).toBeVisible();
 });
 
+// ADR-0007 appendix "Ngày nhanh đầu năm" (Owner 23/10/2026; 6e, 6h: 25/10/2026, review of PR 824).
+test('early in the year a day not yet come offers last year where a day past can be kept', async ({
+  page,
+}) => {
+  await book(page, '31/12', 'N3');
+  await toNewYearsEve(page);
+  await page.clock.fastForward((24 * 60 + 3) * MINUTE); // 02/01/2027
+  const offer = '28/12/2027 còn 360 ngày nữa. Ý anh là 28/12/2026?';
+
+  // 6e before "Nhập bù" is ticked: the day last year is past, so the box shows; the RE ticks it.
+  await detail(page).getByRole('button', { name: 'Dời lịch' }).click();
+  const moving = page.getByRole('dialog', { name: 'Dời lịch' });
+  await moving.getByRole('textbox', { name: /^Ngày mới/ }).fill('28/12');
+  await expect(moving).toContainText(offer);
+  await moving.getByRole('button', { name: 'Dùng 28/12/2026' }).click();
+  await expect(moving.getByRole('textbox', { name: /^Ngày mới/ })).toHaveValue('28/12/2026');
+  await expect(moving).toContainText(
+    '28/12/2026 đã qua. Ngày dời phải từ hôm nay (02/01/2027) trở đi; ngày đã qua chỉ dùng để nhập bù.',
+  );
+  await expect(moving.getByRole('checkbox', { name: /^Nhập bù/ })).not.toBeChecked();
+  await moving.getByRole('button', { name: 'Hủy', exact: true }).last().click();
+
+  // 6h takes no day past: no last year.
+  await detail(page).getByRole('button', { name: 'Tạo lịch hẹn tiếp theo' }).click();
+  const next = page.getByRole('dialog', { name: 'Lịch hẹn tiếp theo' });
+  await next.getByRole('textbox', { name: /^Ngày/ }).fill('28/12');
+  await expect(next).toContainText('28/12/2027 · 360 ngày nữa');
+  await expect(next).not.toContainText('Ý anh là');
+  await next.getByRole('button', { name: 'Hủy', exact: true }).last().click();
+
+  // 6b: kept as typed, it is this year's.
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const create = page.getByRole('dialog', { name: 'Lịch hẹn mới' });
+  await create.getByRole('textbox', { name: /^Ngày/ }).fill('28/12');
+  await expect(create).toContainText(offer);
+  await expect(create).toContainText('App không tự đổi năm. Giữ nguyên là lịch hẹn năm nay.');
+  await create.getByRole('button', { name: 'Dùng 28/12/2026' }).click();
+  await expect(create).toContainText('28/12/2026 · đã qua 5 ngày');
+});
+
 test('a day not yet come only reschedules or cancels; rescheduling moves it', async ({ page }) => {
   const name = await book(page, '30/9', 'N3');
   await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();

@@ -67,12 +67,22 @@ export function requireName(name: string): string {
 }
 
 /**
- * Trimmed text, or null when empty; a NUL or a lone surrogate half, which the database could not
- * store as it is, is `INVALID_TEXT` as in `cleanText` (R2-13).
+ * Optional text of an appointment as typed, trimmed (`trim` of JavaScript, which keeps U+0085), or
+ * null when it shows nothing, as `normalizeText` reads a name (DR6-72; Owner 23/10/2026, T-291). A
+ * NUL or a lone surrogate half, which the database could not store as it is, is `INVALID_TEXT` as
+ * in `cleanText` (R2-13).
  */
 export function optionalText(text: string | null | undefined): string | null {
   const trimmed = storable(text ?? '').trim();
-  return trimmed === '' ? null : trimmed;
+  return normalizeText(trimmed) === '' ? null : trimmed;
+}
+
+/**
+ * Values as a list of SQL text, for `IN (…)`: each quoted, a quote in it doubled. The CHECKs of
+ * `schema.ts` keep their own `list`: `schema.ts` cannot import this file, which imports it.
+ */
+export function sqlTexts(values: readonly string[]): string {
+  return values.map((value) => `'${value.replaceAll("'", "''")}'`).join(', ');
 }
 
 /** A label such as a model name or prompt version: text, not blank, and no NUL (DR-49). */

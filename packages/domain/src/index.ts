@@ -103,6 +103,7 @@ export { byName } from './name-order';
 export {
   collapseSpaces,
   isStorableText,
+  LINE_BREAK,
   normalizeNote,
   normalizeText,
   stripDiacritics,

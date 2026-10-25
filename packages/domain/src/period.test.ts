@@ -477,6 +477,7 @@ describe('parseQuickDate', () => {
       date: d(5, 10, 2026),
       yearInferred: true,
       nextYearSuggestion: null,
+      previousYearSuggestion: null,
     });
   });
 
@@ -486,6 +487,7 @@ describe('parseQuickDate', () => {
       date: d(5, 1, 2026),
       yearInferred: true,
       nextYearSuggestion: d(5, 1, 2027),
+      previousYearSuggestion: null,
     });
   });
 
@@ -503,6 +505,7 @@ describe('parseQuickDate', () => {
       date: d(5, 1, 2026),
       yearInferred: false,
       nextYearSuggestion: null,
+      previousYearSuggestion: null,
     });
   });
 
@@ -611,6 +614,64 @@ describe('parseQuickDate', () => {
   it('suggests no next year past 2100', () => {
     const result = parseQuickDate('01/01', d(31, 12, 2100));
     expect(result).toMatchObject({ ok: true, nextYearSuggestion: null });
+  });
+
+  // ADR-0007 appendix "Ngày nhanh đầu năm" (Owner 23/10/2026, T-291): the mirror of W8 and DR-39.
+  it('suggests last year, without applying it, early in the year for a day not yet come', () => {
+    const today = d(2, 1, 2027);
+    expect(parseQuickDate('28/12', today)).toEqual({
+      ok: true,
+      date: d(28, 12, 2027),
+      yearInferred: true,
+      nextYearSuggestion: null,
+      previousYearSuggestion: d(28, 12, 2026),
+    });
+    expect(parseQuickDate('15/03', today)).toMatchObject({
+      date: d(15, 3, 2027),
+      previousYearSuggestion: null,
+    });
+    expect(parseQuickDate('28/12/2026', today)).toMatchObject({ previousYearSuggestion: null });
+    expect(parseQuickDate('02/01', today)).toMatchObject({ previousYearSuggestion: null });
+  });
+
+  it('suggests last year when that day passed 60 days ago at most, not 61', () => {
+    // 31/12/2026 + 60 days = 01/03/2027; 2028 is a leap year: 31/12/2027 + 60 days = 29/02/2028.
+    for (const [today, last] of [
+      [d(1, 3, 2027), d(31, 12, 2026)],
+      [d(29, 2, 2028), d(31, 12, 2027)],
+    ] as const) {
+      expect(parseQuickDate('31/12', today)).toMatchObject({ previousYearSuggestion: last });
+      expect(parseQuickDate('31/12', addDays(today, 1))).toMatchObject({
+        previousYearSuggestion: null,
+      });
+    }
+  });
+
+  it('suggests no last year for 29/02, nor before 1900', () => {
+    expect(parseQuickDate('29/02', d(2, 1, 2028))).toMatchObject({
+      date: d(29, 2, 2028),
+      previousYearSuggestion: null,
+    });
+    expect(parseQuickDate('31/12', d(1, 1, 1900))).toMatchObject({
+      date: d(31, 12, 1900),
+      previousYearSuggestion: null,
+    });
+  });
+
+  it('never suggests both years: next year needs a day past, last year one not yet come', () => {
+    let offered = 0;
+    for (let today = d(1, 1, 2027); today.year < 2029; today = addDays(today, 1)) {
+      for (let month = 1; month <= 12; month++) {
+        for (let day = 1; day <= 31; day++) {
+          const read = parseQuickDate(`${day}/${month}`, today);
+          if (!read.ok || read.previousYearSuggestion === null) continue;
+          offered++;
+          expect(read.nextYearSuggestion).toBeNull();
+          expect(daysBetween(today, read.date)).toBeGreaterThan(0);
+        }
+      }
+    }
+    expect(offered).toBeGreaterThan(0);
   });
 });
 

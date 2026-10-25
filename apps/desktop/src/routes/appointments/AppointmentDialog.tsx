@@ -262,7 +262,8 @@ export function dateFieldError(date: ScheduleDate, today: CalendarDate): string 
 
 /**
  * A year-less day long past, or one this year lacks (29/02), offers the same day next year (6b);
- * the RE picks.
+ * early in the year, one not yet come offers the same day last year (ADR-0007, Owner 23/10/2026).
+ * The RE picks.
  */
 export function DateSuggestion({
   date,
@@ -274,27 +275,36 @@ export function DateSuggestion({
   help: boolean;
 }) {
   if (!('suggestion' in date) || !date.suggestion) return null;
-  const next = formatDate(date.suggestion);
+  const other = formatDate(date.suggestion);
+  const lastYear = 'date' in date && date.suggestion.year < date.date.year;
   // Without `date` it is a day this year lacks (29/02, DR-39): no past appointment, so no note
   // about those.
   return (
     <p className={`${ALERT} flex flex-col items-start gap-1.5 border-warn`}>
-      {'date' in date
-        ? t('appointmentForm.suggest', {
-            date: formatDate(date.date),
-            n: Math.abs(date.daysFromToday),
-            next,
-          })
-        : t('appointmentForm.suggestMissing', {
+      {!('date' in date)
+        ? t('appointmentForm.suggestMissing', {
             year: date.suggestion.year - 1,
             date: formatDayMonth(date.suggestion),
-            next,
-          })}
-      <button type="button" className={`${CHIP} ${FOCUS}`} onClick={() => onUse(next)}>
-        {t('appointmentForm.suggestUse', { date: next })}
+            next: other,
+          })
+        : lastYear
+          ? t('appointmentForm.suggestLastYear', {
+              date: formatDate(date.date),
+              n: date.daysFromToday,
+              when: other,
+            })
+          : t('appointmentForm.suggest', {
+              date: formatDate(date.date),
+              n: Math.abs(date.daysFromToday),
+              next: other,
+            })}
+      <button type="button" className={`${CHIP} ${FOCUS}`} onClick={() => onUse(other)}>
+        {t('appointmentForm.suggestUse', { date: other })}
       </button>
       {help && 'date' in date && (
-        <span className="text-xs text-fg-2">{t('appointmentForm.suggestHelp')}</span>
+        <span className="text-xs text-fg-2">
+          {t(lastYear ? 'appointmentForm.suggestLastYearHelp' : 'appointmentForm.suggestHelp')}
+        </span>
       )}
     </p>
   );

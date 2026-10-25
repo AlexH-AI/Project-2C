@@ -55,4 +55,13 @@ describe('optionalText', () => {
     expect(codeOf(() => optionalText('\u{DC00}'))).toBe('INVALID_TEXT');
     expect(optionalText('Gửi 🌟')).toBe('Gửi 🌟');
   });
+
+  // DR6-72 (Owner 23/10/2026, T-291): as a name or a KYC value, text with nothing to see is empty.
+  it('gives null for text with nothing to see, and keeps text with something as typed, trimmed', () => {
+    for (const text of ['\u{3164}', '\u{2800}', '\u{FE0F}', '\u{85}', ' \u{200B}\u{85}\u{7} ']) {
+      expect(optionalText(text)).toBeNull();
+    }
+    // `trim` of JavaScript keeps U+0085, as the spec says (Phase 3 §4).
+    expect(optionalText(' \u{85}Gửi\u{3164} ')).toBe('\u{85}Gửi\u{3164}');
+  });
 });

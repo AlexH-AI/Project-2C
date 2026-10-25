@@ -4,7 +4,15 @@
  * KYC fact from another customer's note — is refused like a damaged one.
  */
 import type { AnalysisInput } from '@p2c/ai/schema';
-import { calendarDate } from '@p2c/domain';
+import {
+  calendarDate,
+  fromIsoDate,
+  KYC_FIELDS,
+  kycHash,
+  type KycFact,
+  type KycField,
+  type KycValue,
+} from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { listAiAnalyses, recordAiAnalysis, type NewAiAnalysis } from './ai-analyses';
 import {
@@ -354,6 +362,14 @@ describe('importBackup — rules across tables', () => {
         (row(b, 'appointments', (a) => a.id === ids.met).next_step = 'Gặp lại'.normalize('NFD')),
     ],
     [
+      'optional text of an appointment with an invisible character inside or U+0085 at an end',
+      (b, ids) =>
+        Object.assign(
+          row(b, 'appointments', (a) => a.id === ids.met),
+          { trigger_note: '\u{85}Hội thảo', note: 'Khách\u{3164}vui\u{85}' },
+        ),
+    ],
+    [
       'a meeting kept in the stage the customer left by hand later that day (E19)',
       (b, ids) => keptMeeting(b, ids, '2026-09-18', 'N3'),
     ],
@@ -416,6 +432,21 @@ describe('importBackup — rules across tables', () => {
     [
       'a rejected analysis whose output could not be read',
       (b, ids) => (analysis(b, ids.rejected).output_json = null),
+    ],
+    // G5 §13.3: a wrong answer is kept as the model wrote it, never through the schema.
+    [
+      'a rejected output with a key of its own, keys in its order and text untrimmed',
+      (b, ids) =>
+        (analysis(b, ids.rejected).output_json = JSON.stringify({
+          ghiChu: 'x',
+          needs: [{ evidence: ['F3'], text: ' Học phí ' }],
+          hypotheses: [],
+        })),
+    ],
+    [
+      'a rejected output of 20 000 characters as stored',
+      (b, ids) =>
+        (analysis(b, ids.rejected).output_json = JSON.stringify({ x: '😀'.repeat(19_992) })),
     ],
   ];
 
@@ -660,6 +691,49 @@ describe('importBackup — rules across tables', () => {
       '7: a conflict of three facts, two with the same value',
       (b, ids) => thirdChildrenCount(b, ids, '3'),
     ],
+    // S-1 (Owner 23/10/2026, T-291): the versions as the KYC commands record them.
+    [
+      '7: a latest KYC version whose hash is not that of the facts in effect (S-1)',
+      (b, ids) => (kycVersion(b, ids.lan, 3).hash = '0123456789abcd'),
+    ],
+    [
+      '7: an older KYC version whose hash is in upper case',
+      (b, ids) => (kycVersion(b, ids.lan, 1).hash = 'ABCDEF01234567'),
+    ],
+    [
+      '7: an older KYC version whose hash is longer than `kycHash` writes',
+      (b, ids) => (kycVersion(b, ids.lan, 1).hash = `${String(kycVersion(b, ids.lan, 1).hash)}0`),
+    ],
+    [
+      '7: an older KYC version whose hash has a letter that is not hex',
+      (b, ids) =>
+        (kycVersion(b, ids.lan, 2).hash = `g${String(kycVersion(b, ids.lan, 2).hash).slice(1)}`),
+    ],
+    [
+      '7: two KYC versions in a row with one hash',
+      (b, ids) => (kycVersion(b, ids.lan, 2).hash = kycVersion(b, ids.lan, 1).hash),
+    ],
+    [
+      '7: a KYC version of a customer with no fact in effect',
+      (b, ids) =>
+        b.tables.kyc_versions!.push({
+          ...kycVersion(b, ids.lan, 1),
+          id: 'hoa-version',
+          customer_id: ids.hoa,
+        }),
+    ],
+    [
+      '7: a fact in effect of a customer with no KYC version',
+      (b, ids) =>
+        b.tables.kyc_facts!.push({
+          ...childrenCounts(b, ids)[0]!,
+          id: 'hoa-children',
+          customer_id: ids.hoa,
+          note_id: row(b, 'kyc_notes', (n) => n.customer_id === ids.hoa).id,
+          seq: 1,
+          status: 'active',
+        }),
+    ],
     [
       '8: a birth year other than the profile’s (D2)',
       (b, ids) => (fact(b, ids.lan, 'birthYear').value_json = '1985'),
@@ -765,6 +839,7 @@ describe('importBackup — rules across tables', () => {
       (b, ids) => {
         row(b, 'customers', (c) => c.id === ids.lan).birth_date = TOMORROW;
         fact(b, ids.lan, 'birthYear').value_json = '2026';
+        rehash(b, ids.lan);
       },
     ],
     [
@@ -772,6 +847,7 @@ describe('importBackup — rules across tables', () => {
       (b, ids) => {
         row(b, 'customers', (c) => c.id === ids.lan).birth_date = '2027';
         fact(b, ids.lan, 'birthYear').value_json = '2027';
+        rehash(b, ids.lan);
       },
     ],
     // What the commands require of a meeting held, read with the other values.
@@ -786,6 +862,43 @@ describe('importBackup — rules across tables', () => {
     [
       'VALUE: a meeting held with a blank next step',
       (b, ids) => (row(b, 'appointments', (a) => a.id === ids.met).next_step = '   '),
+    ],
+    // Optional text of an appointment, deleted or not, as `optionalText` stores it (DR6-72).
+    [
+      'VALUE: a meeting held whose next step has nothing to see',
+      (b, ids) => (row(b, 'appointments', (a) => a.id === ids.met).next_step = '\u{3164}\u{85}'),
+    ],
+    [
+      'VALUE: a deleted meeting whose next step has nothing to see',
+      (b, ids) => (row(b, 'appointments', (a) => a.customer_id === ids.hoa).next_step = '\u{2800}'),
+    ],
+    [
+      'VALUE: a trigger note with nothing to see',
+      (b, ids) => (row(b, 'appointments', (a) => a.id === ids.met).trigger_note = '\u{FE0F}'),
+    ],
+    [
+      'VALUE: an empty trigger note, stored as none',
+      (b, ids) => (row(b, 'appointments', (a) => a.id === ids.met).trigger_note = ''),
+    ],
+    [
+      'VALUE: a trigger note not trimmed',
+      (b, ids) => (row(b, 'appointments', (a) => a.id === ids.met).trigger_note = ' Hội thảo'),
+    ],
+    [
+      'VALUE: a note with nothing to see',
+      (b) => (row(b, 'appointments', (a) => a.note !== '').note = '\u{85}'),
+    ],
+    [
+      'VALUE: a note not trimmed',
+      (b) => (row(b, 'appointments', (a) => a.note !== '').note = 'Khách bận '),
+    ],
+    [
+      'VALUE: a next step of a cancelled meeting with nothing to see',
+      (b) =>
+        Object.assign(
+          row(b, 'appointments', (a) => a.rescheduled_from_id !== null),
+          { status: 'CANCELLED', next_step: '\u{3164}' },
+        ),
     ],
     [
       '2: a stage other than the latest live transition’s',
@@ -937,6 +1050,54 @@ describe('importBackup — rules across tables', () => {
       '13: an accepted output its mode’s schema refuses',
       (b, ids) =>
         (analysis(b, ids.accepted).output_json = JSON.stringify({ ...OUTPUT, needs: [] })),
+    ],
+    // G5 §13.3 (Owner 23/10/2026): an output as the app writes it, so none brings in a large text.
+    [
+      '13: an accepted output with white space the app does not write',
+      (b, ids) => (analysis(b, ids.accepted).output_json = JSON.stringify(OUTPUT, null, 1)),
+    ],
+    [
+      '13: an accepted output with a key its schema leaves out',
+      (b, ids) =>
+        (analysis(b, ids.accepted).output_json = JSON.stringify({ ...OUTPUT, extra: 'x' })),
+    ],
+    [
+      '13: an accepted output with U+FEFF at both ends of a text',
+      (b, ids) => {
+        const themes = [{ text: '\u{FEFF}Gia đình\u{FEFF}', evidence: ['F3'] }];
+        analysis(b, ids.accepted).output_json = JSON.stringify({ ...OUTPUT, themes });
+      },
+    ],
+    [
+      '13: an accepted output with its keys in another order',
+      (b, ids) => {
+        const reversed = Object.fromEntries(Object.entries(OUTPUT).reverse());
+        analysis(b, ids.accepted).output_json = JSON.stringify(reversed);
+      },
+    ],
+    [
+      '13: an accepted output without a value its schema fills in',
+      (b, ids) => {
+        const rest = Object.entries(OUTPUT).filter(([key]) => key !== 'personalityNotes');
+        analysis(b, ids.accepted).output_json = JSON.stringify(Object.fromEntries(rest));
+      },
+    ],
+    [
+      '13: a rejected output with white space the app does not write',
+      (b, ids) => (analysis(b, ids.rejected).output_json = '{"hypotheses": []}'),
+    ],
+    [
+      '13: a rejected output with a key twice',
+      (b, ids) => (analysis(b, ids.rejected).output_json = '{"hypotheses":[],"hypotheses":[]}'),
+    ],
+    ...['[]', '"x"', '1', 'null'].map((json): [string, (b: BackupJson, ids: Ids) => void] => [
+      `13: a rejected output that is not an object: ${json}`,
+      (b, ids) => (analysis(b, ids.rejected).output_json = json),
+    ]),
+    [
+      '13: a rejected output longer than 20 000 characters as stored',
+      (b, ids) =>
+        (analysis(b, ids.rejected).output_json = JSON.stringify({ x: '😀'.repeat(19_993) })),
     ],
     [
       '13: an accepted output whose text hides 650 000 invisible characters (G5 §11.5, DR6-77)',
@@ -1229,6 +1390,36 @@ function thirdChildrenCount(backup: BackupJson, ids: Ids, valueJson: string): vo
   const second = childrenCounts(backup, ids)[1]!;
   const seq = Math.max(...backup.tables.kyc_facts!.map((f) => f.seq as number)) + 1;
   backup.tables.kyc_facts!.push({ ...second, id: 'third-count', seq, value_json: valueJson });
+  rehash(backup, ids.lan);
+}
+
+/** The customer's KYC version `seq`. */
+function kycVersion(backup: BackupJson, customerId: string, seq: number): Row {
+  return row(backup, 'kyc_versions', (v) => v.customer_id === customerId && v.seq === seq);
+}
+
+/**
+ * The hash of the customer's latest KYC version worked out again on the facts as edited, as the
+ * KYC command that changed them would have recorded it (rule 7, S-1).
+ */
+function rehash(backup: BackupJson, customerId: string): void {
+  const facts = backup.tables
+    .kyc_facts!.filter((f) => f.customer_id === customerId)
+    .map((f): KycFact => {
+      const field = f.field as KycField;
+      return {
+        id: String(f.id),
+        category: KYC_FIELDS[field].category,
+        field,
+        value: JSON.parse(String(f.value_json)) as KycValue,
+        noteId: String(f.note_id),
+        confirmedDate: fromIsoDate(String(f.confirmed_date)),
+        status: f.status as KycFact['status'],
+      };
+    });
+  const versions = backup.tables.kyc_versions!.filter((v) => v.customer_id === customerId);
+  const latest = Math.max(...versions.map((v) => Number(v.seq)));
+  kycVersion(backup, customerId, latest).hash = kycHash({ notes: [], facts });
 }
 
 const DELETED = '2026-09-26T08:00:00.000Z';
@@ -1264,6 +1455,7 @@ function birthYearConflict(backup: BackupJson, ids: Ids, systemValue: string): v
     seq: seq + 1,
     value_json: '1985',
   });
+  rehash(backup, ids.lan);
 }
 
 /**

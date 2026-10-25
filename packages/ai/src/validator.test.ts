@@ -179,6 +179,30 @@ describe('validateOutput — V1', () => {
     expect(issues[29]).toMatchObject({ path: 'hypotheses[0].evidence[29]' });
   });
 
+  // G5 §13.2 (Owner 23/10/2026): the panel tells an answer with no JSON block, or one cut, by its one
+  // V1 issue on the whole output. The block of an answer is always an object, the schemas objects
+  // neither strict nor refined at their root, and "và K lỗi khác" comes after 29 other issues: no
+  // block ever gets that report.
+  it.each([
+    ['an empty block', {}],
+    ['a block with a key of its own', { tomTat: 'Tóm tắt' }],
+    ['a block of the wrong types', { hypotheses: 1, needs: 'x', themes: null }],
+    [
+      'a block with more than 30 issues',
+      {
+        ...analysis(),
+        hypotheses: [item('KH ưu tiên con', ...Array.from({ length: 40 }, (_, i) => `X${i}`))],
+      },
+    ],
+  ])('never reports %s as one V1 issue on the whole output', (_, block) => {
+    for (const mode of ['analysis', 'discovery'] as const) {
+      const issues = validateOutput(mode, block, input);
+      expect(issues.length === 1 && issues[0]!.code === 'V1' && issues[0]!.path === '$').toBe(
+        false,
+      );
+    }
+  });
+
   it('runs no other rule on an output the schema rejects', () => {
     const output = { ...analysis(), needs: [item('Xác suất 90%', 'F99')], themes: [] };
     expect(validateOutput('analysis', output, input).map((issue) => issue.code)).toEqual(['V1']);

@@ -5,7 +5,7 @@
  * (`attempts.ts`). Nothing here calls the network: no adapter, no `AiRunner` (§3.1 item 5).
  * The session is a value the panel keeps; it is never stored (item 4).
  */
-import type { CalendarDate, KycGateState } from '@p2c/domain';
+import { LINE_BREAK, type CalendarDate, type KycGateState } from '@p2c/domain';
 import {
   ANALYSIS_PROMPTS,
   analysisOutcome,
@@ -102,22 +102,17 @@ const OWN_LINES = [
 ].map(ownLine);
 
 /**
- * Where a line of a paste ends: CR LF, CR, LF and the Unicode line separators U+0085, U+2028,
- * U+2029, as a KYC note's lines (`normalizeNote`, K25; G5 §6a, §12.3, DR6-123). A copy here, not
- * the note's: changing it goes through G5.
- */
-const LINE_BREAK = /\r\n?|[\n\u{85}\u{2028}\u{2029}]/u;
-
-/**
  * More code units than twice the limit is too long whatever the paste holds (a code point is at
  * most two), so a paste is read on this many of its code units at most (DR5-09).
  */
 const MAX_READ = 2 * MAX_AI_RAW_OUTPUT;
 
 /**
- * Whether a line of the paste is one of the app's own. Only the first `MAX_READ` code units are
- * read, so a huge paste is never split nor normalized whole (DR5-09), and the app's message pasted
- * back is named for what it is however long (review #521); a line they cut is left out.
+ * Whether a line of the paste is one of the app's own. A line ends where a KYC note's does
+ * (`LINE_BREAK` of `domain`: G5 §6a, §12.3, §13.4, DR6-123), so the two never part. Only the first
+ * `MAX_READ` code units are read, so a huge paste is never split nor normalized whole (DR5-09),
+ * and the app's message pasted back is named for what it is however long (review #521); a line
+ * they cut is left out.
  */
 function isOwnMessage(pasted: string): boolean {
   const lines = pasted.slice(0, MAX_READ).split(LINE_BREAK);

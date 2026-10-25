@@ -187,3 +187,19 @@ describe('BLOCKLISTS — every other row of G5 §8', () => {
     expect(foundIn('V4', 'Đề xuất PRULink')).toContain('PRUL');
   });
 });
+
+// Review #822: "sun life" and "dai-ichi" find "sunlife" and "daiichi" as written too, so the case of
+// either entry stays green without it; the number of matchers of its rule does not.
+describe('BLOCKLISTS — one matcher for each entry of G5 §8', () => {
+  it.each(SECTIONS)('%s has as many matchers as its tables have entries', (code) => {
+    const phrases = PHRASES.filter((phrase) => phrase.code === code).length;
+    // A row of characters is one matcher for each, as a row of phrases; another row is one regex.
+    const others = OTHER_ROWS.filter((row) => row.code === code)
+      .map((row) => (row.kind === 'ký tự' ? row.item.split(' · ').length : 1))
+      .reduce((sum, count) => sum + count, 0);
+    // §8.2 b), the "pru" prefix, is a regex in the prose.
+    const prefix = code === 'V4' ? 1 : 0;
+
+    expect(BLOCKLISTS[code]).toHaveLength(phrases + others + prefix);
+  });
+});

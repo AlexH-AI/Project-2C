@@ -110,12 +110,32 @@ describe('extractJson', () => {
     });
   });
 
+  // Review #822: from the brace of the prose, its odd quote turns the quotes of the answer around,
+  // and a "{}" in a text of the answer closes there as a block; only the last reading tries those.
+  const ODD = 'Lưu ý { x "y. ';
+  const TEXT = '{"text": "Mẫu {} trống", "evidence": ["F1"]}';
+
+  it('takes the whole answer after a brace and an odd quote, not a "{}" of its text', () => {
+    const answer = `{"hypotheses": [${TEXT}]}`;
+    expect(extractJson(`${ODD}${answer}`)).toEqual({ found: true, value: JSON.parse(answer) });
+  });
+
+  it('takes no "{}" of a text of an answer cut after a brace and an odd quote', () => {
+    expect(extractJson(`${ODD}{"hypotheses": [${TEXT}, {"text": "K`, { cut: true })).toEqual({
+      found: false,
+    });
+  });
+
   it('takes an answer with 100 blocks that fail to parse as holding no JSON', () => {
     const failing = (count: number) => `${'{"a" x} '.repeat(count)}{"b": 2}`;
     expect(extractJson(failing(99))).toEqual({ found: true, value: { b: 2 } });
     expect(extractJson(failing(100))).toEqual({ found: false });
     expect(extractJson(`{ ${failing(99)}`)).toEqual({ found: true, value: { b: 2 } });
     expect(extractJson(`{ ${failing(100)}`)).toEqual({ found: false });
+    // At the last reading, after three more, among the blocks inside a brace left open.
+    const last = (count: number) => `${'{ \\"'.repeat(3)}{ ${failing(count)}`;
+    expect(extractJson(last(99))).toEqual({ found: true, value: { b: 2 } });
+    expect(extractJson(last(100))).toEqual({ found: false });
   });
 
   // DR5-04: one pass, however many braces never close (100 000 of them took 11.4 s). One pass takes

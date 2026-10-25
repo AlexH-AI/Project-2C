@@ -516,14 +516,18 @@ describe('importBackup — a text that starts with U+FEFF', () => {
     expect(await codeOfImport(text)).toBe('BACKUP_INVALID');
   });
 
+  // A note ending with it is not one the commands store (`trim` drops it, T-291): a customer's code
+  // has no such rule.
   it('takes it inside or at the end of a text, which reads back whole, as before', async () => {
     const backup = await smallBackup();
-    backup.tables.appointments![0]!.note = 'Gặp\u{FEFF} lại\u{FEFF}';
+    backup.tables.appointments![0]!.note = 'Gặp\u{FEFF} lại';
+    backup.tables.customers![0]!.code = `${String(backup.tables.customers![0]!.code)}\u{FEFF}`;
 
     const { db } = await importBackup(JSON.stringify(backup));
 
     const { tables } = JSON.parse(exportBackup(db)) as BackupJson;
-    expect(tables.appointments![0]!.note).toBe('Gặp\u{FEFF} lại\u{FEFF}');
+    expect(tables.appointments![0]!.note).toBe('Gặp\u{FEFF} lại');
+    expect(tables.customers![0]!.code).toMatch(/.\u{FEFF}$/u);
   });
 });
 
