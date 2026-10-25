@@ -250,6 +250,46 @@ describe('pnpm verify', () => {
       expect({ file, eslint: await eslint.isPathIgnored(file) }).toEqual({ file, eslint: true });
     }
   });
+
+  // The full zod puts ≈ 62 KB back into the bundle, and nothing else in verify sees it (review
+  // #830): dependency-cruiser lets every path of the package through. Only `zod/mini`, in every
+  // static form, in a test of a package too, and in the app's .tsx.
+  it('refuses any zod but zod/mini to the packages and the app', { timeout: 60_000 }, async () => {
+    const eslint = new ESLint({ cwd: fileURLToPath(new URL('..', import.meta.url)) });
+    // The no-restricted-imports messages of `code` as the file `filePath`, once it parses.
+    const refusals = async (code, filePath) => {
+      const { messages } = (await eslint.lintText(code, { filePath }))[0];
+      expect(
+        messages.filter((message) => message.fatal),
+        code,
+      ).toEqual([]);
+      return messages
+        .filter((message) => message.ruleId === 'no-restricted-imports')
+        .map((message) => message.message);
+    };
+    for (const filePath of ['packages/ai/src/probe.test.ts', 'apps/desktop/src/probe.tsx']) {
+      for (const code of [
+        "import { z } from 'zod';",
+        "import * as z from 'zod/v4';",
+        "import type { z } from 'zod';",
+        "import * as z from 'zod/v3';",
+        "export { z } from 'zod';",
+        "export * from 'zod/v4';",
+        // zod/mini by another of its names: one name for it.
+        "import * as z from 'zod/v4/mini';",
+      ]) {
+        expect(await refusals(code, filePath), `${filePath}: ${code}`).toEqual([
+          expect.stringContaining('zod/mini'),
+        ]);
+      }
+      for (const code of [
+        "import * as z from 'zod/mini';",
+        "import type * as z from 'zod/mini';",
+      ]) {
+        expect(await refusals(code, filePath), `${filePath}: ${code}`).toEqual([]);
+      }
+    }
+  });
 });
 
 describe('riskLevel', () => {
