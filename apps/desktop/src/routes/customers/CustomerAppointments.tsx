@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
 import type { AppointmentRecord } from '@p2c/db';
-import type { CalendarDate, StageTransition } from '@p2c/domain';
+import { appointmentGroup, type CalendarDate, type StageTransition } from '@p2c/domain';
 import { DataTable, type DataTableColumn } from '@p2c/ui';
 import { t, tableMore } from '../../i18n';
 import { dayText, isPastOrToday, withTime } from '../appointments/appointment-form';
@@ -10,6 +10,7 @@ import {
   outcomeText,
   STATUS_TONE,
   statusLabel,
+  UNRECORDED_TONE,
   type Outcome,
 } from '../appointments/appointments-view';
 
@@ -20,13 +21,17 @@ interface Row {
 
 /**
  * The stage move or stage kept; else the status (planned, unrecorded, rescheduled, cancelled, no
- * show), with its tone.
+ * show), with its tone. "Chưa ghi kết quả" is text too, not the badge of the lists: a badge does not
+ * wrap, and the day and "Hẹn tiếp" keep one line (review of PR 746), so the card would overflow.
  */
 function result({ appointment: a, outcome }: Row, today: CalendarDate) {
   if (outcome?.kind === 'move') return { text: outcomeText(outcome), tone: '' };
   if (outcome?.kind === 'keep') return { text: outcomeText(outcome), tone: STATUS_TONE[a.status] };
-  const label = statusLabel(a, today);
-  return { text: label.text, tone: label.tone || STATUS_TONE[a.status] };
+  const unrecorded = appointmentGroup(a, today) === 'unrecorded';
+  return {
+    text: statusLabel(a, today).text,
+    tone: unrecorded ? UNRECORDED_TONE : STATUS_TONE[a.status],
+  };
 }
 
 /** "Hẹn tiếp": the next appointment after one up to today (6h); nothing for one ahead. */
@@ -85,7 +90,17 @@ export function CustomerAppointments({
       kind: 'date',
       value: (r) => r.appointment.date,
       thenBy: (r) => r.appointment.time ?? '',
-      cell: ({ appointment: a }) => withTime(dayText(a.date, today), a.time),
+      // One line, as the mockup (review of PR 746); a day of another year puts its time under it.
+      cellClass: () => 'whitespace-nowrap',
+      cell: ({ appointment: a }) =>
+        a.date.year === today.year || !a.time ? (
+          withTime(dayText(a.date, today), a.time)
+        ) : (
+          <>
+            <span className="block">{dayText(a.date, today)}</span>
+            <span className="block text-fg-3">{a.time}</span>
+          </>
+        ),
     },
     {
       id: 'result',
@@ -93,6 +108,16 @@ export function CustomerAppointments({
       kind: 'text',
       value: (r) => result(r, today).text,
       cell: (r) => {
+        const { outcome } = r;
+        // Mockup customer.html: "N3 → N2 · RF", the RF in the accent (T-298).
+        if (outcome?.kind === 'move' && outcome.rf) {
+          return (
+            <span>
+              {outcomeText({ ...outcome, rf: false })} {t('sep.dot')}{' '}
+              <span className="text-accent">{t('customer.rf')}</span>
+            </span>
+          );
+        }
         const { text, tone } = result(r, today);
         return <span className={tone}>{text}</span>;
       },
@@ -114,6 +139,7 @@ export function CustomerAppointments({
       kind: 'text',
       sortable: false,
       value: () => '',
+      cellClass: () => 'whitespace-nowrap',
       cell: ({ appointment }) => (
         <NextButton appointment={appointment} today={today} onNext={onNext}>
           {t('customer.next')}

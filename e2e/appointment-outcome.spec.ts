@@ -3,6 +3,11 @@ import { toNewYearsEve } from './anchor';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
 const TODAY = '15/09/2026';
+// The stage colours of `StageBadge` (tokens --n3, --n2) and the accent.
+const N3_COLOR = 'rgb(111, 168, 255)';
+const N2_COLOR = 'rgb(180, 154, 251)';
+const ACCENT = 'rgb(217, 178, 106)';
+const color = (locator: Locator) => locator.evaluate((el) => getComputedStyle(el).color);
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/#/appointments');
@@ -83,6 +88,16 @@ test('a meeting met N3 → N2 moves the customer, the timeline says after the me
   await o.nextStep.fill('Gửi bảng minh họa');
   await o.caseSize.fill('800tr');
   await expect(o.dialog).toContainText('800.000.000 ₫ (800 tr)');
+  // Under a million the short form is the full one: read once (review of PR 758).
+  await o.caseSize.fill('0,500 tr');
+  await expect(o.caseSize).toHaveAccessibleDescription('500.000 ₫');
+  // Mockup 6d: how the marks read, under the field.
+  const help = o.dialog.getByText(
+    /^Dấu phẩy hay dấu chấm theo sau đúng 3 chữ số là dấu ngăn nghìn/,
+  );
+  await expect(help).toContainText('"0,500 tr" = 500.000 ₫');
+  const field = (await o.caseSize.boundingBox())!;
+  expect((await help.boundingBox())!.y).toBeGreaterThan(field.y + field.height);
   await o.caseSize.fill('0');
   await expect(o.dialog).toContainText('Case size phải lớn hơn 0');
   await o.caseSize.fill('');
@@ -408,6 +423,8 @@ test('a meeting that kept the stage, then a change by hand the same day: 6f hold
   await expect(dialog).toContainText(`Nhóm sau cuộc gặp khóa ở nhóm của KH ngày ${TODAY}`);
   await expect(dialog).toContainText(`Nhóm của KH đã đổi tiếp sau cuộc gặp này, ngày ${TODAY}:`);
   await expect(dialog.getByRole('radiogroup', { name: 'Nhóm sau cuộc gặp' })).toHaveCount(0);
+  // The badge right after the "Nhóm sau cuộc gặp" label is the stage held, N3 (Issue #725).
+  await expect(dialog).toContainText('Nhóm sau cuộc gặpN3 🔒');
   // ... and there is no move from the N2 the day ended in to the N3 the meeting kept.
   await expect(dialog).not.toContainText('không tính RF');
   await expect(dialog.getByRole('note').filter({ hasText: 'Khi lưu' })).toHaveCount(0);
@@ -420,6 +437,58 @@ test('a meeting that kept the stage, then a change by hand the same day: 6f hold
   await expect(
     page.getByRole('region', { name }).getByText('N2', { exact: true }).first(),
   ).toBeVisible();
+});
+
+// #163, mockups 6a / 6h: the history of a new appointment shows each move as two stage badges; the
+// next appointment, filled in from one, shows none. #165: the profile's card marks the RF.
+test('6a shows the moves of its history as stage badges, 6h no history; the card marks the RF', async ({
+  page,
+}) => {
+  await metToN2(page);
+  await detail(page).getByRole('button', { name: 'Tạo lịch hẹn tiếp theo' }).click();
+  const next = page.getByRole('dialog', { name: 'Lịch hẹn tiếp theo' });
+  await expect(next.getByRole('textbox', { name: /^Ngày/ })).toBeVisible();
+  await expect(next.getByRole('region', { name: 'Các lần hẹn trước' })).toHaveCount(0);
+  await next.getByRole('button', { name: 'Hủy', exact: true }).click();
+  await expect(next).toHaveCount(0);
+
+  await detail(page).getByRole('link', { name: 'Hồ sơ KH →' }).click();
+  const card = page.getByRole('region', { name: 'Lịch hẹn', exact: true });
+  const row = card.getByRole('row').filter({ hasText: '15/09' }).filter({ hasText: 'RF' });
+  await expect(row).toContainText('N3 → N2 · RF');
+  expect(await color(row.getByText('RF', { exact: true }))).toBe(ACCENT);
+
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const history = page
+    .getByRole('dialog', { name: 'Lịch hẹn mới' })
+    .getByRole('region', { name: 'Các lần hẹn trước' });
+  // At most the five latest, newest first.
+  expect(await history.getByRole('listitem').count()).toBeLessThanOrEqual(5);
+  const met = history
+    .getByRole('listitem')
+    .filter({ hasText: '15/09' })
+    .filter({ hasText: 'Đã gặp' });
+  expect(await color(met.getByText('N3', { exact: true }))).toBe(N3_COLOR);
+  expect(await color(met.getByText('N2', { exact: true }))).toBe(N2_COLOR);
+  // As the mockup's rows: no RF mark there.
+  await expect(met).not.toContainText('RF');
+});
+
+// Review of PR 693: a save that shows another appointment moves the focus to its heading, read out,
+// not to the button of the same name the new appointment has where the old one's was (DR6-83).
+test('by the keyboard, rescheduling leaves the focus on the heading of the new appointment', async ({
+  page,
+}) => {
+  const name = await book(page, '20/9', 'N3');
+  const heading = detail(page).getByRole('heading', { level: 2 });
+  await detail(page).getByRole('button', { name: 'Dời lịch' }).press('Enter');
+  const move = page.getByRole('dialog', { name: 'Dời lịch' });
+  await move.getByRole('textbox', { name: /^Ngày mới/ }).fill('22/9');
+  await move.getByRole('button', { name: 'Dời lịch' }).press('Enter');
+
+  await expect(move).toHaveCount(0);
+  await expect(heading).toHaveText(`22/09/2026 · ${name}`);
+  await expect(heading).toBeFocused();
 });
 
 test('deleting the meeting that moved the customer takes the move back (6g)', async ({ page }) => {

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from './fixtures';
+import { scrolls } from './support';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
 
@@ -73,6 +74,52 @@ test('the profile lists its appointments newest first; "Hẹn tiếp" fills in t
   await expect(rows).toHaveCount(count + 1);
   await expect(rows.first()).toContainText('30/09');
   await expect(rows.first()).toContainText('Dự kiến');
+});
+
+// Review of PR 746: in the default 1 440 window a row keeps its day and "Hẹn tiếp" on one line, as
+// the mockup does; #165: a day of another year writes its time on the line under it.
+test('at 1 440 a row of this year is one line; another year puts the time under the day', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openProfile(page);
+  // Times the seed never books, so each picks out its row.
+  for (const [day, time] of [
+    ['14/9', '13:17'],
+    ['10/12/2025', '16:41'],
+  ] as const) {
+    await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+    await create(page, day, time);
+  }
+  const { card, rows } = appointments(page);
+
+  const earlier = rows.filter({ hasText: '16:41' });
+  const date = earlier.getByText('10/12/2025', { exact: true });
+  const time = earlier.getByText('16:41', { exact: true });
+  expect((await time.boundingBox())!.y).toBeGreaterThan((await date.boundingBox())!.y);
+
+  // The day and "Hẹn tiếp" one line each, about 20 px high; two lines made 54 px rows. A long result
+  // ("Mất cơ hội → N3", "Chưa ghi kết quả") may take two, as in the mockup's narrow column.
+  await expect(rows.filter({ hasText: '14/09 13:17' })).toHaveCount(1);
+  for (const row of await rows.filter({ hasNotText: /\/\d{4}/ }).all()) {
+    const day = await row
+      .getByRole('cell')
+      .first()
+      .evaluate((cell) => {
+        const text = document.createRange();
+        text.selectNodeContents(cell);
+        return text.getBoundingClientRect().height;
+      });
+    expect(day).toBeLessThan(30);
+    for (const next of await row.getByRole('button', { name: /^Hẹn tiếp sau lịch/ }).all()) {
+      expect((await next.boundingBox())!.height).toBeLessThan(30);
+    }
+  }
+  // Nothing past the card's edge, in three columns or two.
+  for (const width of [1440, 1100]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await scrolls(card)).toBe(false);
+  }
 });
 
 test('the timeline shows the appointments; a past one offers "Hẹn tiếp →"', async ({ page }) => {

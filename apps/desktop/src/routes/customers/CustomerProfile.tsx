@@ -17,12 +17,13 @@ import {
   type KycNoteRecord,
 } from '@p2c/db';
 import { formatDate, type KycField, type Policy } from '@p2c/domain';
-import { Button, DialogFocusFallback, StageBadge } from '@p2c/ui';
+import { Button, DialogFocusFallback } from '@p2c/ui';
 import { useQuery, useToday } from '../../data/AppDataContext';
 import { sortedByName } from '../../data/tables';
 import { joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { AppointmentDialog } from '../appointments/AppointmentDialog';
+import { badge } from '../appointments/MetFields';
 import { CustomerAppointments } from './CustomerAppointments';
 import { CustomerPolicies } from './CustomerPolicies';
 import { ChangeStageDialog, CustomerFormDialog } from './CustomerDialogs';
@@ -31,7 +32,7 @@ import { KycIntelligence } from './KycIntelligence';
 import { ConfirmFactDialog, KycNoteDialog, ResolveKycDialog } from './KycDialogs';
 import { NoteEvent } from './KycExtraction';
 import { PolicyDialog, type PolicyMode } from './PolicyDialogs';
-import { ageOn, birthLabel, stageSince } from './customers-view';
+import { ageOn, birthLabel, profileSince } from './customers-view';
 import { factAnchor } from './kyc-view';
 import { expectedCaseSize } from './policy-form';
 
@@ -137,8 +138,7 @@ export function CustomerProfile({ id }: { id: string }) {
     analyses,
     appointmentData,
   } = profile;
-  // Every customer has its first transition (spec §3.4).
-  const since = stageSince(transitions).get(customer.id)!;
+  const since = profileSince(customer.id, transitions);
   const birth = customer.birthDate;
   const caseSize = expectedCaseSize(appointmentData.appointments);
   const facts = [
@@ -160,7 +160,7 @@ export function CustomerProfile({ id }: { id: string }) {
           <h2 id="customer-name" className="m-0 min-w-0 text-lg font-semibold wrap-anywhere">
             {customer.name}
           </h2>
-          <StageBadge stage={customer.stage} label={t(`stage.${customer.stage}`)} />
+          {badge(customer.stage)}
           <span className="text-xs text-fg-3 tabular-nums">
             {t('customer.since', { date: formatDate(since) })}
           </span>

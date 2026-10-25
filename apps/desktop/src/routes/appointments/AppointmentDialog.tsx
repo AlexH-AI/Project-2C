@@ -7,7 +7,7 @@ import {
   type CustomerRecord,
 } from '@p2c/db';
 import { formatDate, formatDayMonth, type CalendarDate, type Person } from '@p2c/domain';
-import { Dialog, SelectField, StageBadge, TextField } from '@p2c/ui';
+import { Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
@@ -28,12 +28,12 @@ import {
 import {
   FOCUS,
   LINK,
-  outcomeText,
   personLabel,
   STATUS_TONE,
   statusLabel,
   type AppointmentData,
 } from './appointments-view';
+import { badge } from './MetFields';
 
 const CHIP = 'cursor-pointer rounded-md border border-border bg-surface-2 px-2 py-0.5 text-xs';
 const MATCHES = 6;
@@ -153,7 +153,8 @@ export function AppointmentDialog({
         error={attempted && !customer ? t('appointmentForm.customerRequired') : undefined}
         history={history}
       />
-      {customer && history && (
+      {/* Filled in from a past appointment, 6h has no history (mockups 6a / 6h, T-298). */}
+      {customer && history && !from && (
         <History customer={customer} history={history} today={today} onSeeAll={onSeeAll} />
       )}
       <SelectField
@@ -338,7 +339,7 @@ function CustomerField({
         <p className="m-0 flex flex-wrap items-center gap-2">
           <b>{customer.name}</b>
           <span className="text-fg-3 tabular-nums">{customer.code}</span>
-          <StageBadge stage={customer.stage} label={t(`stage.${customer.stage}`)} />
+          {badge(customer.stage)}
           {!fixed && (
             <button
               type="button"
@@ -390,7 +391,7 @@ function CustomerField({
               >
                 <b>{match.name}</b>
                 <span className="text-fg-3 tabular-nums">{match.code}</span>
-                <StageBadge stage={match.stage} label={t(`stage.${match.stage}`)} />
+                {badge(match.stage)}
               </button>
             </li>
           ))}
@@ -400,7 +401,10 @@ function CustomerField({
   );
 }
 
-/** "Các lần hẹn trước": the 5 latest, newest first; the year shows when it is not this year's. */
+/**
+ * "Các lần hẹn trước": the 5 latest, newest first; the year shows when it is not this year's. A
+ * stage moved or kept reads as badges, with no RF mark (mockup 6a, T-298).
+ */
 function History({
   customer,
   history,
@@ -437,14 +441,25 @@ function History({
         {history.rows.slice(0, MAX_HISTORY).map(({ appointment: a, outcome }) => {
           const status = statusLabel(a, today);
           return (
-            <li key={a.id} className="flex gap-1 whitespace-nowrap">
+            <li key={a.id} className="flex items-center gap-1 whitespace-nowrap">
               <span className="tabular-nums">{dayText(a.date, today)}</span>
               <span>{t('sep.dot')}</span>
               <span className={status.tone || STATUS_TONE[a.status]}>{status.text}</span>
-              {(outcome?.kind === 'move' || outcome?.kind === 'keep') && (
-                <span>
-                  {t('sep.dot')} {outcomeText(outcome)}
-                </span>
+              {outcome?.kind === 'move' && (
+                <>
+                  <span>{t('sep.dot')}</span>
+                  {outcome.from && badge(outcome.from)}
+                  {outcome.from && <span>{t('sep.arrow')}</span>}
+                  {badge(outcome.to)}
+                </>
+              )}
+              {outcome?.kind === 'keep' && (
+                <>
+                  <span>
+                    {t('sep.dot')} {t('appointmentForm.historyKeep')}
+                  </span>
+                  {badge(outcome.stage)}
+                </>
               )}
               {a.note && (
                 <span className="min-w-0 truncate text-fg-3">

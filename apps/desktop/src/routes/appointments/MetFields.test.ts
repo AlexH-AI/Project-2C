@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AppointmentRecord } from '@p2c/db';
 import { calendarDate, parseVnd } from '@p2c/domain';
-import { metDraftOf } from './MetFields';
+import { caseSizeRead, metDraftOf } from './MetFields';
 
 const met: AppointmentRecord = {
   id: 'a-1',
@@ -32,5 +32,17 @@ describe('metDraftOf', () => {
     expect(
       metDraftOf({ ...met, outcomeReviewerId: null, nextStep: null, expectedCaseSize: null }),
     ).toEqual({ stageAfter: 'N2', reviewerId: '', nextStep: '', caseSize: '' });
+  });
+});
+
+// Mockups 6c, 6d; NT-LH-25. Under a million the compact form is the full one (review of PR 758).
+describe('caseSizeRead', () => {
+  it('reads the amount back in full, then in short', () => {
+    expect(caseSizeRead(800_000_000)).toBe('800.000.000 ₫ (800 tr)');
+    expect(caseSizeRead(1_234_000_000)).toBe('1.234.000.000 ₫ (1,23 tỷ)');
+  });
+
+  it('gives the full form once under a million', () => {
+    expect(caseSizeRead(500_000)).toBe('500.000 ₫');
   });
 });

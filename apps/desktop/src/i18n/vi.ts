@@ -516,6 +516,8 @@ export const vi = {
     '"Hẹn tiếp" = Tạo lịch hẹn tiếp theo (có trên mọi lịch đã qua) · ghi chú dài cắt 1 dòng · người phối hợp xem ở dòng thời gian',
   'customer.next': 'Hẹn tiếp',
   'customer.nextLabel': 'Hẹn tiếp sau lịch {date}',
+  // The mark of a move that counted an RF, in the accent (mockup customer.html "N3 → N2 · RF").
+  'customer.rf': 'RF',
   // The column of the "Hẹn tiếp" buttons: no header on screen (mockup customer.html), one for
   // screen readers (DR6-100).
   'customer.colActions': 'Thao tác',
@@ -650,6 +652,9 @@ export const vi = {
   'stageForm.noRfBody':
     'Nếu KH đổi nhóm sau một cuộc gặp, hãy dùng "Ghi kết quả cuộc gặp" để RF được tính đúng.',
   'stageForm.after': 'Sau khi lưu:',
+  // The move between open stages, after it (mockup 5d "· hạ nhóm"); N1 is closest to a contract.
+  'stageForm.up': 'lên nhóm',
+  'stageForm.down': 'hạ nhóm',
   'stageForm.save': 'Chuyển nhóm',
   'date.error.empty': 'Nhập ngày.',
   'date.error.format': 'Gõ dd/mm hoặc dd/mm/yyyy.',
@@ -666,7 +671,10 @@ export const vi = {
   'error.CUSTOMER_NOT_FOUND': 'KH không còn trong dữ liệu (có thể đã bị xóa).',
   'error.INVALID_DATE': 'Ngày không hợp lệ.',
   'error.DATE_IN_FUTURE': 'Ngày này sau hôm nay: chỉ ghi việc đã xảy ra, từ hôm nay trở về trước.',
-  'error.INVALID_TRANSITION': 'Không chuyển được sang nhóm này: KH đã đóng chỉ mở lại về N3.',
+  // One code for both refusals (T-298): a move to the stage the customer is in, or a closed customer
+  // to an open stage other than N3.
+  'error.INVALID_TRANSITION':
+    'Không chuyển được sang nhóm này. Nhóm mới phải khác nhóm hiện tại; KH đã đóng chỉ mở lại về N3.',
   'error.TRANSITION_BEFORE_LATEST': 'Ngày chuyển trước lần đổi nhóm gần nhất ({date}).',
   'error.TRANSITION_BEFORE_MEETING':
     'Đã ghi cuộc gặp Đã gặp ngày {date}, cuộc gặp đó ghi nhóm của KH ngày ấy: không đổi nhóm vào ngày trước {date}.',
@@ -786,6 +794,8 @@ export const vi = {
   'appointmentForm.history': 'Các lần hẹn trước',
   'appointmentForm.historyAll': 'Xem tất cả ({n}) →',
   'appointmentForm.historyNote': 'Ghi chú: {note}',
+  // A meeting that kept the stage, before its badge: "Giữ [N3]".
+  'appointmentForm.historyKeep': 'Giữ',
   'appointmentForm.re': 'RE',
   'appointmentForm.date': 'Ngày (dd/mm)',
   'appointmentForm.dateNext': 'Ngày (từ hôm nay trở đi)',
@@ -869,6 +879,8 @@ export const vi = {
   'outcome.nextStepRequired': 'Nhập việc tiếp theo.',
   'outcome.caseSize': 'Case size dự kiến (để trống = chưa ước lượng)',
   'outcome.caseSizeRead': '{amount} ({compact})',
+  'outcome.caseSizeHelp':
+    'Dấu phẩy hay dấu chấm theo sau đúng 3 chữ số là dấu ngăn nghìn, kể cả khi có đơn vị: "1,234 tr" = 1.234.000.000 ₫ (số đứng trước là 0 thì là dấu thập phân: "0,500 tr" = 500.000 ₫). Muốn 1,2 triệu thì gõ "1,2 tr" → 1.200.000 ₫.',
   'outcome.caseSizePositive': 'Case size phải lớn hơn 0 (hoặc để trống).',
   'outcome.note': 'Ghi chú cuộc gặp',
   'outcome.noteHelp': 'Ghi chú cuộc gặp không phải ghi chú KYC.',
