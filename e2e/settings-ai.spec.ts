@@ -40,31 +40,44 @@ test('web mode: only the Mock, OpenCode and the key are for the exe (1c, 4b)', a
   await expect(keyCard(page)).toContainText('Chỉ có trong app exe.');
   await expect(checkCard(page)).toContainText('Mock chạy trong app, không cần kết nối.');
   await expect(checkCard(page).getByRole('button')).toHaveCount(0);
-  await expect(page.getByRole('region', { name: 'Dữ liệu gửi đi' })).toContainText(
+  const sent = page.getByRole('region', { name: 'Dữ liệu gửi đi' });
+  await expect(sent).toContainText(
     'Phân tích bằng ChatGPT web: bạn tự dán dữ kiện KYC (không có tên, mã KH) vào tài khoản ChatGPT của mình.',
   );
+  // Its lead in bold, as the lines above it (mockup 4a).
+  for (const lead of ['Phân tích:', 'Phân tích bằng ChatGPT web:']) {
+    await expect(sent.getByText(lead, { exact: true })).toHaveCSS('font-weight', '700');
+  }
   await expect(page.locator('main')).not.toContainText('OpenCode Go');
 });
 
-test('a stored model taken off the list falls back to the defaults with one line (1g, T-180)', async ({
-  page,
-}) => {
-  // Brought by a backup: the settings row `ai` goes into it (§4.1).
-  await page.goto('/#/settings');
-  const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });
+const section = (page: Page, name: 'AI' | 'Dữ liệu') =>
+  page.getByRole('navigation', { name: 'Mục cài đặt' }).getByRole('button', { name }).click();
+
+/** The data exported from Cài đặt → Dữ liệu as a backup, and the file it came in. */
+async function exported(page: Page) {
+  await section(page, 'Dữ liệu');
   const download = page.waitForEvent('download');
-  await backup.getByRole('button', { name: 'Xuất backup' }).click();
+  await page
+    .getByRole('region', { name: 'Xuất / nhập backup' })
+    .getByRole('button', { name: 'Xuất backup' })
+    .click();
   const file = await download;
-  const data = JSON.parse(await readFile(await file.path(), 'utf8'));
-  const stored = { provider: 'OPENCODE_GO', opencodePlan: 'CREDIT', model: 'deepseek-v4-pro' };
+  return { file, data: JSON.parse(await readFile(await file.path(), 'utf8')) };
+}
+
+/**
+ * Settings → AI as a backup brings them, the settings row `ai` going into it (§4.1): the data
+ * exported, its row `ai` set to `stored`, imported again. No page load, which would drop the web
+ * build's data.
+ */
+async function importAiSettings(page: Page, stored: Record<string, string>) {
+  const { file, data } = await exported(page);
   data.tables.settings = [
     ...data.tables.settings.filter((row: { key: string }) => row.key !== 'ai'),
-    {
-      key: 'ai',
-      value_json: JSON.stringify({ ...stored, reasoning: 'DEFAULT' }),
-      updated_at: '2026-10-09T08:00:00.000Z',
-    },
+    { key: 'ai', value_json: JSON.stringify(stored), updated_at: '2026-10-09T08:00:00.000Z' },
   ];
+  const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });
   await backup.getByLabel('Nhập backup').setInputFiles({
     name: file.suggestedFilename(),
     mimeType: 'application/json',
@@ -75,22 +88,49 @@ test('a stored model taken off the list falls back to the defaults with one line
     .getByRole('button', { name: 'Thay dữ liệu', exact: true })
     .click();
   await expect(backup.getByRole('status')).toContainText('Đã nhập backup xuất lúc');
+  await section(page, 'AI');
+}
 
-  // Not `openAi`: a new page load would drop the web build's data.
-  await page
-    .getByRole('navigation', { name: 'Mục cài đặt' })
-    .getByRole('button', { name: 'AI' })
-    .click();
+test('a stored model taken off the list falls back to the defaults with one line (1g, T-180)', async ({
+  page,
+}) => {
+  await page.goto('/#/settings');
+  const stored = {
+    provider: 'OPENCODE_GO',
+    opencodePlan: 'CREDIT',
+    model: 'deepseek-v4-pro',
+    reasoning: 'DEFAULT',
+  };
+  await importAiSettings(page, stored);
   await expect(page.getByRole('note')).toHaveText(
     'Cài đặt AI đã lưu không hợp lệ (model "deepseek-v4-pro" không còn trong danh sách) — đang dùng mặc định: Mock · DeepSeek V4.1 Flash · Mặc định. Chọn lại để lưu.',
   );
-  await expect(provider(page).getByRole('radio', { name: 'Mock' })).toBeChecked();
+  const mock = provider(page).getByRole('radio', { name: 'Mock' });
+  await expect(mock).toBeChecked();
   await expect(model(page)).toHaveValue('deepseek-v4.1-flash');
   await expect(model(page).getByRole('option')).toHaveText([
     'GLM-5.3',
     'Kimi K3',
     'DeepSeek V4.1 Flash · mặc định',
   ]);
+
+  // "Chọn lại để lưu": Mock again, the one choice of the web build, saves the defaults in use.
+  await mock.click();
+  await expect(page.getByRole('note')).toHaveCount(0);
+  const { data } = await exported(page);
+  const row = data.tables.settings.find((setting: { key: string }) => setting.key === 'ai');
+  expect(JSON.parse(row.value_json)).toEqual({
+    provider: 'MOCK',
+    opencodePlan: 'GO',
+    model: 'deepseek-v4.1-flash',
+    reasoning: 'DEFAULT',
+  });
+
+  // By the keyboard too: Space on the radio already on, which fires no click there.
+  await importAiSettings(page, stored);
+  await expect(page.getByRole('note')).toBeVisible();
+  await mock.press('Space');
+  await expect(page.getByRole('note')).toHaveCount(0);
 });
 
 test('exe: provider, gói OpenCode and model are saved at once and kept (4a, 4b)', async ({
@@ -263,6 +303,34 @@ test('exe: Kiểm tra kết nối runs under the chosen plan, is off while it ru
     'OpenCode báo lỗi (HTTP 502): Bad gateway',
   );
   expect((await page.evaluate(() => window.exe.aiCalls)).at(-1)).toMatchObject({ plan: 'GO' });
+});
+
+test('exe: the outcome of Kiểm tra kết nối goes once the provider, gói or model changes (4a)', async ({
+  page,
+}) => {
+  await asExe(page);
+  await openAi(page);
+  await chooseOpenCode(page, 'Credit');
+  const button = checkCard(page).getByRole('button', { name: 'Kiểm tra kết nối' });
+  const outcome = checkCard(page).getByRole('status');
+  await button.click();
+  await expect(outcome).toHaveText('Kết nối được · Credit · DeepSeek V4.1 Flash');
+
+  // The reasoning level is no part of what it checked.
+  await reasoning(page).selectOption({ label: 'Cao' });
+  await expect(outcome).toHaveText('Kết nối được · Credit · DeepSeek V4.1 Flash');
+  await model(page).selectOption({ label: 'Kimi K3' });
+  await expect(outcome).toHaveCount(0);
+
+  await button.click();
+  await expect(outcome).toHaveText('Kết nối được · Credit · Kimi K3');
+  await plan(page).getByRole('radio', { name: 'Gói Go' }).check();
+  await expect(outcome).toHaveCount(0);
+  await button.click();
+  await expect(outcome).toHaveText('Kết nối được · Gói Go · Kimi K3');
+  await provider(page).getByRole('radio', { name: 'Mock' }).check();
+  await provider(page).getByRole('radio', { name: 'OpenCode' }).check();
+  await expect(outcome).toHaveCount(0);
 });
 
 test('exe: a key status read late never overwrites the key just saved (DR5-37)', async ({

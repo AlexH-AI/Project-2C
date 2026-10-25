@@ -85,3 +85,15 @@ export function checkShown(result: ConnectionResult | null, settings: AiSettings
   if (result.kind === 'cancelled') return { phase: 'idle' };
   return { phase: 'error', text: errorText(result) };
 }
+
+/** What a connection check depends on: it runs "theo gói đang chọn" (4a). */
+const CHECKED = ['provider', 'opencodePlan', 'model'] as const;
+
+/**
+ * What the card shows of the check last run with `ran`: its outcome only while the provider, gói
+ * and model are still those chosen (`now`), so another choice clears it (review of PR 452).
+ */
+export function checkNow(shown: CheckShown, ran: AiSettings, now: AiSettings): CheckShown {
+  if (shown.phase === 'running') return shown;
+  return CHECKED.every((key) => ran[key] === now[key]) ? shown : { phase: 'idle' };
+}

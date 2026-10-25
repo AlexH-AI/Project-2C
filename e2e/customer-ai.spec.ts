@@ -142,12 +142,18 @@ test('analysis with the Mock: four blocks, Thông tin tham khảo, the material 
   await expect(reference.getByRole('listitem')).toHaveCount(1);
   await expect(reference.getByRole('listitem')).toContainText(/^Tâm lý học: KH có thể/);
   await expect(reference.getByRole('listitem')).toContainText('Mức bằng chứng: thấp · 1 dữ kiện');
+  // A dashed frame around its items, as customer.html draws it.
+  await expect(reference).toHaveCSS('border-top-style', 'dashed');
+  await expect(reference.getByRole('listitem')).toHaveCSS('border-top-style', 'solid');
 
   // A cốt lõi trường changed: the material reminder.
   await addKycNote(page, name, [['Mục tiêu chính', 'Hưu trí sớm']]);
   await expect(panel).toContainText('STALE');
   await expect(panel).toContainText('KYC đã đổi ở trường cốt lõi từ 15/09 — nên phân tích lại.');
   await expect(panel.getByRole('button', { name: 'Phân tích lại' })).toBeEnabled();
+  // Faded, its items go hollow and dashed, so the frame turns solid: one dashed layer (2h, T-284).
+  await expect(reference).toHaveCSS('border-top-style', 'solid');
+  await expect(reference.getByRole('listitem')).toHaveCSS('border-top-style', 'dashed');
 });
 
 test('the history of a seeded customer: latest first, a STALE one opened, F codes to the facts', async ({
@@ -249,6 +255,42 @@ test('a run outlives the profile: left and shown again, it still shows with Hủ
   await expect(panel).toContainText('Chưa có phân tích AI cho KH này.');
 });
 
+test('a run that fails while the profile is left says its error once shown again (T-297)', async ({
+  page,
+}) => {
+  await asExe(page);
+  const name = 'Tú Lỗi Khi Vắng';
+  await createKycCustomer(page, name);
+  await addKycNote(page, name, discoveryFacts);
+  await useOpenCode(page);
+  const panel = panelOf(page);
+  await page.evaluate(() => {
+    window.exe.holdAi();
+    window.exe.aiError = { code: 'AI_TIMEOUT' };
+  });
+  await panel.getByRole('button', { name: 'Phân tích', exact: true }).click();
+  await expect(panel.getByRole('status')).toContainText('Đang phân tích…');
+
+  // Away in Settings → AI until the request has ended there: Kiểm tra kết nối is on again.
+  await page.getByRole('link', { name: 'Cài đặt' }).click();
+  await page
+    .getByRole('navigation', { name: 'Mục cài đặt' })
+    .getByRole('button', { name: 'AI' })
+    .click();
+  const check = page
+    .getByRole('region', { name: 'Kiểm tra kết nối' })
+    .getByRole('button', { name: 'Kiểm tra kết nối' });
+  await expect(check).toBeDisabled();
+  await page.evaluate(() => window.exe.releaseAi());
+  await expect(check).toBeEnabled();
+
+  await page.goBack();
+  await expect(panel.getByRole('alert')).toContainText('AI không trả lời trong 2 phút.');
+  await expect(panel.getByRole('button', { name: 'Thử lại' })).toBeEnabled();
+  // Nothing was saved.
+  await expect(panel).toContainText('Chưa có phân tích AI cho KH này.');
+});
+
 /** Why an AI button is off while a request runs elsewhere (DR5-40). */
 const BUSY = 'Đang có một yêu cầu AI khác — chờ xong rồi thử lại.';
 
@@ -319,7 +361,9 @@ test('AI trích xuất with the Mock: Xác nhận saves the fact on its note, B�
   const kyc = page.getByRole('region', { name: 'Dữ kiện KYC' });
 
   // None on the SYSTEM note of the birth year; off on a note under 20 characters.
-  await expect(noteOf(page, 'Ghi chú hệ thống').getByRole('button')).toHaveCount(0);
+  const system = noteOf(page, 'Hồ sơ KH: năm sinh 1984');
+  await expect(system).toBeVisible();
+  await expect(system.getByRole('button')).toHaveCount(0);
   await addKycNote(page, name, []);
   await expect(
     noteOf(page, 'Gặp KH').getByRole('button', { name: 'AI trích xuất' }),
@@ -361,7 +405,15 @@ test('AI trích xuất with the Mock: Xác nhận saves the fact on its note, B�
   await expect(note).toContainText('1 đề xuất trùng dữ kiện đang có đã ẩn.');
   await proposals.getByRole('button', { name: 'Xác nhận' }).click();
   const kids = page.getByRole('dialog', { name: '+ Dữ kiện · Số con' });
+  // A value Số con cannot hold is said as it is typed, before Xác nhận dữ kiện (review of PR 469).
+  await kids.getByRole('textbox', { name: 'Giá trị' }).fill('ba');
+  await expect(kids.getByRole('alert')).toHaveText(
+    'Giá trị không hợp lệ cho trường này (vd. số con là số nguyên).',
+  );
+  await expect(kids).not.toContainText('Sau khi lưu');
   await kids.getByRole('textbox', { name: 'Giá trị' }).fill('3');
+  await expect(kids.getByRole('alert')).toHaveCount(0);
+  await expect(kids).toContainText('Sau khi lưu');
   await kids.getByRole('button', { name: 'Xác nhận dữ kiện' }).click();
   await expect(kids).toBeHidden();
   await expect(kyc).toContainText('Số con: 3');

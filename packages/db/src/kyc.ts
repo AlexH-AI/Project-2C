@@ -105,6 +105,41 @@ export function listKycVersions(db: Database, customerId: string): KycVersionRec
     .map(toVersion);
 }
 
+/**
+ * The facts each version recorded, by version id, in recording order (T-297): a command stores its
+ * new facts and its version at one instant (`save`), so they share `created_at`. A version that
+ * recorded none, a conflict settled, has none; so have versions stored at the same instant (a
+ * clock that does not move), as their facts cannot be told apart.
+ */
+export function listKycVersionFacts(
+  db: Database,
+  customerId: string,
+): ReadonlyMap<string, readonly string[]> {
+  liveCustomer(db, customerId);
+  const versions = db.orm
+    .select({ id: kycVersions.id, createdAt: kycVersions.createdAt })
+    .from(kycVersions)
+    .where(eq(kycVersions.customerId, customerId))
+    .orderBy(asc(kycVersions.seq))
+    .all();
+  const facts = db.orm
+    .select({ id: kycFacts.id, createdAt: kycFacts.createdAt })
+    .from(kycFacts)
+    .where(eq(kycFacts.customerId, customerId))
+    .orderBy(asc(kycFacts.seq))
+    .all();
+  const versionsAt = new Map<string, string[]>();
+  for (const { id, createdAt } of versions) {
+    versionsAt.set(createdAt, [...(versionsAt.get(createdAt) ?? []), id]);
+  }
+  const recorded = new Map<string, string[]>(versions.map(({ id }) => [id, []]));
+  for (const fact of facts) {
+    const [version, ...others] = versionsAt.get(fact.createdAt) ?? [];
+    if (version !== undefined && others.length === 0) recorded.get(version)!.push(fact.id);
+  }
+  return recorded;
+}
+
 // ---- commands -------------------------------------------------------------
 
 export function addKycNote(

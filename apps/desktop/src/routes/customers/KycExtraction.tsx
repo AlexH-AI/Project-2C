@@ -5,12 +5,11 @@ import { Button } from '@p2c/ui';
 import { useEffect, useId, useState, useSyncExternalStore } from 'react';
 import { extractFromNote } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
-import { t } from '../../i18n';
-import { ALERT } from './CustomerDialogs';
-import { YES_NO } from './CustomerKyc';
+import { fillSlots, t } from '../../i18n';
+import { UpdateHead, VersionLines, YES_NO } from './CustomerKyc';
 import { busyElsewhere, extractionButton, extractionView } from './extraction-view';
-import { AiErrorText, BusyLine } from './KycIntelligence';
-import { factText } from './kyc-view';
+import { AiErrorText, AiRunStatus } from './KycIntelligence';
+import { factText, type TimelineVersion } from './kyc-view';
 import { useAiJob } from './use-ai-job';
 
 /** Xác nhận of a proposal: the fact dialog, filled in; `onSaved` once the fact is saved. */
@@ -21,17 +20,36 @@ export type ConfirmProposal = (
 ) => void;
 
 /**
- * A KYC note of the timeline with AI trích xuất (spec Phase 5 §8, mockup ai.html 3b–3e): the
- * button on a note the RE wrote, the run with Hủy, and below the note the proposals to confirm or
- * drop. Proposals stay here only: leaving the profile loses them (§8 item 4).
+ * "AI đề xuất: <trường>: <giá trị>" (spec Phase 5 §8 item 2), the trường in bold; the value is put
+ * in once the sentence is split, so one holding "{field}" reads as given.
+ */
+function Proposed({ fact }: { fact: ExtractedFact }) {
+  const [before, after = ''] = t('extraction.proposed').split('{field}');
+  return (
+    <>
+      {before}
+      <b>{t(`kycField.${fact.field}`)}</b>
+      {fillSlots(after, { value: factText(fact.value, YES_NO) })}
+    </>
+  );
+}
+
+/**
+ * A KYC note of the timeline with AI trích xuất (spec Phase 5 §8, mockup ai.html 3b–3e): a KYC
+ * update with the versions its facts recorded (customer.html), the button on a note the RE wrote,
+ * the run with Hủy, and below the note the proposals to confirm or drop. Proposals stay here only:
+ * leaving the profile loses them (§8 item 4).
  */
 export function NoteEvent({
   note,
+  versions,
   facts,
   webOpen,
   onConfirm,
 }: {
   note: KycNoteRecord;
+  /** The versions its facts recorded on its day: then it reads "Cập nhật KYC dd/mm/yyyy". */
+  versions: readonly TimelineVersion[];
   facts: readonly KycFact[];
   /** This customer's ChatGPT web session waits for its paste (§3.1 item 4). */
   webOpen: boolean;
@@ -88,8 +106,12 @@ export function NoteEvent({
 
   return (
     <>
-      <span className="flex items-center gap-2">
-        <b>{t(button ? 'timeline.note' : 'timeline.systemNote')}</b>
+      <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        {versions.length > 0 ? (
+          <UpdateHead versions={versions} />
+        ) : (
+          <b>{t(note.source === 'SYSTEM' ? 'timeline.systemNote' : 'timeline.note')}</b>
+        )}
         {button && (
           <Button
             id={buttonId}
@@ -102,8 +124,11 @@ export function NoteEvent({
           </Button>
         )}
       </span>
-      <span id={textId} tabIndex={-1} className="whitespace-pre-line wrap-anywhere text-fg-2">
-        {note.text}
+      {/* The note quoted as the RE or the profile wrote it, one per note of the timeline. */}
+      <span className="whitespace-pre-line wrap-anywhere text-fg-2">
+        <blockquote id={textId} tabIndex={-1} className="m-0 inline">
+          {note.text}
+        </blockquote>
         {button?.tooShort && (
           <span className="text-xs text-fg-3">
             {' '}
@@ -111,20 +136,21 @@ export function NoteEvent({
           </span>
         )}
       </span>
+      <VersionLines versions={versions} />
       {busyElsewhere(button, { busy: running, webOpen, phase: job.phase }) && (
         <span className="text-xs text-fg-3">{t('aiError.AI_BUSY')}</span>
       )}
-      {job.phase === 'running' && (
-        <BusyLine action={<Button onClick={thenFocus(job.cancel)}>{t('aiPanel.cancel')}</Button>}>
-          {t('extraction.running')}
-        </BusyLine>
-      )}
-      {job.phase === 'cancelling' && (
-        <BusyLine>
-          {t('aiPanel.cancelling')}
-          <span className="text-fg-3"> {t('aiPanel.cancellingDetail')}</span>
-        </BusyLine>
-      )}
+      <AiRunStatus
+        phase={job.phase}
+        running={t('extraction.running')}
+        error={
+          view?.kind === 'error' &&
+          (view.error === 'INVALID' ? t('extraction.invalid') : <AiErrorText error={view.error} />)
+        }
+        retryOn={!busy}
+        onCancel={thenFocus(job.cancel)}
+        onRetry={thenFocus(extract)}
+      />
       {/* Present before it is filled, so a screen reader hears the run end (DR5-33). */}
       <div aria-live="polite" className="sr-only">
         {view?.kind === 'proposals' && <p role="status">{t('extraction.done')}</p>}
@@ -139,8 +165,7 @@ export function NoteEvent({
             {view.items.map(({ index, fact }) => (
               <li key={index} className={`${ROW} border-dashed border-border-strong bg-surface-2`}>
                 <span className="min-w-0 flex-1 wrap-anywhere">
-                  {t('extraction.proposed')} <b>{t(`kycField.${fact.field}`)}</b>:{' '}
-                  {factText(fact.value, YES_NO)}{' '}
+                  <Proposed fact={fact} />{' '}
                   <span className="text-fg-3">{t('extraction.quote', { value: fact.quote })}</span>
                 </span>
                 <Button
@@ -167,20 +192,6 @@ export function NoteEvent({
           </span>
           <Button onClick={close}>{t('extraction.close')}</Button>
         </p>
-      )}
-      {view?.kind === 'error' && (
-        <div role="alert" className={`${ALERT} flex items-center gap-2.5 border-danger`}>
-          <span className="flex-1">
-            {view.error === 'INVALID' ? (
-              t('extraction.invalid')
-            ) : (
-              <AiErrorText error={view.error} />
-            )}
-          </span>
-          <Button disabled={busy} onClick={thenFocus(extract)}>
-            {t('aiPanel.retry')}
-          </Button>
-        </div>
       )}
     </>
   );

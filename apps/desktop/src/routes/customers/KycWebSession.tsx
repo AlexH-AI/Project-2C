@@ -1,3 +1,4 @@
+import { MAX_AI_RAW_OUTPUT } from '@p2c/ai';
 import { Button, TextField } from '@p2c/ui';
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { saveChatGptAnswer, type WebAnswerOutcome } from '../../data/ai-analysis';
@@ -159,7 +160,11 @@ export function KycWebSession({
           placeholder={t(
             second ? 'aiPanel.web.pasteRetryPlaceholder' : 'aiPanel.web.pastePlaceholder',
           )}
-          error={web.refused ? t(`aiPanel.web.refused.${web.refused}`) : undefined}
+          error={
+            web.refused
+              ? t(`aiPanel.web.refused.${web.refused}`, { count: MAX_AI_RAW_OUTPUT })
+              : undefined
+          }
         />
       </div>
       <div className={ROW}>

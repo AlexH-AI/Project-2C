@@ -15,8 +15,8 @@ import {
   type Person,
   type StageTransition,
 } from '@p2c/domain';
-import { Button, StageBadge } from '@p2c/ui';
-import type { ReactNode } from 'react';
+import { Button, Segmented, StageBadge } from '@p2c/ui';
+import { useState, type ReactNode, type Ref } from 'react';
 import { joinParts, t } from '../../i18n';
 import { withTime } from '../appointments/appointment-form';
 import { statusLabel } from '../appointments/appointments-view';
@@ -24,10 +24,15 @@ import { NextButton } from './CustomerAppointments';
 import {
   factAnchor,
   factText,
+  inTimelineFilter,
   kycOverview,
   kycTimeline,
   stageCause,
+  TIMELINE_FILTERS,
   type KycCategoryRow,
+  type TimelineFilter,
+  type TimelineKyc,
+  type TimelineVersion,
 } from './kyc-view';
 
 const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
@@ -122,12 +127,15 @@ export function KycCard({
   profile,
   versions,
   marked,
+  heading,
   onResolve,
 }: {
   profile: KycProfileRecord;
   versions: readonly KycVersionRecord[];
   /** The code of the fact a click on evidence led to, outlined for a moment (mockup ai.html 3a). */
   marked: string | null;
+  /** The card's heading: the focus lands there when a resolved conflict took "Giải quyết" (7d). */
+  heading: Ref<HTMLHeadingElement>;
   onResolve: (field: KycField) => void;
 }) {
   const { gate, rows } = kycOverview(profile.facts);
@@ -135,7 +143,7 @@ export function KycCard({
   return (
     <section aria-labelledby="kyc-facts" className={`${CARD} flex flex-col gap-3 text-sm`}>
       <div className="flex items-baseline gap-2">
-        <h2 id="kyc-facts" tabIndex={-1} className={HEADING}>
+        <h2 id="kyc-facts" ref={heading} tabIndex={-1} className={HEADING}>
           {t('kyc.title')}
         </h2>
         <span className="text-xs text-fg-3 tabular-nums">
@@ -217,15 +225,41 @@ function meetingText(a: AppointmentRecord): string {
   return joinParts([a.note, a.nextStep && t('timeline.nextStep', { step: a.nextStep })]);
 }
 
+/** Mockup customer.html: "Cập nhật KYC dd/mm/yyyy", "thay đổi quan trọng" when one version is. */
+export function UpdateHead({ versions }: { versions: readonly TimelineVersion[] }) {
+  return (
+    <>
+      <b>{versions[0]!.version.summary}</b>
+      {versions.some((line) => line.version.material) && (
+        <span className={`${BADGE} whitespace-nowrap text-accent`}>{t('timeline.material')}</span>
+      )}
+    </>
+  );
+}
+
+/** "+ F9, F12, F13 · kyc v3": each version with the codes of the facts it recorded, if any. */
+export function VersionLines({ versions }: { versions: readonly TimelineVersion[] }) {
+  return versions.map(({ version, codes }) => (
+    <span key={version.id} className="text-xs wrap-anywhere text-fg-3 tabular-nums">
+      {joinParts([
+        codes.length > 0 && t('timeline.added', { value: codes.join(t('sep.list')) }),
+        t('timeline.version', { number: version.seq }),
+      ])}
+    </span>
+  ));
+}
+
+const FILTERS = TIMELINE_FILTERS.map((value) => ({ value, label: t(`timeline.filter.${value}`) }));
+
 /**
- * Mockup customer.html "Dòng thời gian": KYC notes and versions, the stage changes and the
- * appointments; any appointment up to today offers the next one ("Hẹn tiếp", 6h). The profile
- * lays out each note, with its AI trích xuất.
+ * Mockup customer.html "Dòng thời gian": the KYC updates — a note with the versions its facts
+ * recorded —, notes and versions alone, the stage changes and the appointments, kept to one kind by
+ * the filter; any appointment up to today offers the next one ("Hẹn tiếp", 6h). The profile lays
+ * out each note, with its AI trích xuất.
  */
 export function Timeline({
   transitions,
-  notes,
-  versions,
+  kyc,
   appointments,
   people,
   today,
@@ -233,24 +267,37 @@ export function Timeline({
   renderNote,
 }: {
   transitions: readonly StageTransition[];
-  notes: readonly KycNoteRecord[];
-  versions: readonly KycVersionRecord[];
+  kyc: TimelineKyc;
   appointments: readonly AppointmentRecord[];
   people: readonly Person[];
   today: CalendarDate;
   onNext: (from: AppointmentRecord) => void;
-  /** A KYC note with its AI trích xuất (mockup ai.html 3b). */
-  renderNote: (note: KycNoteRecord) => ReactNode;
+  /** A KYC note, a KYC update with `versions`, with its AI trích xuất (mockup ai.html 3b). */
+  renderNote: (note: KycNoteRecord, versions: readonly TimelineVersion[]) => ReactNode;
 }) {
+  const [filter, setFilter] = useState<TimelineFilter>('ALL');
   const roles = (a: AppointmentRecord) =>
     a.coordinatorIds.flatMap((id) => people.find((person) => person.id === id)?.role ?? []);
+  const events = kycTimeline(transitions, kyc, appointments).filter((event) =>
+    inTimelineFilter(event, filter),
+  );
   return (
     <section aria-labelledby="timeline" className={CARD}>
-      <h2 id="timeline" className={`${HEADING} mb-2`}>
-        {t('timeline.title')}
-      </h2>
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <h2 id="timeline" className={HEADING}>
+          {t('timeline.title')}
+        </h2>
+        <div className="flex-1" />
+        <Segmented
+          label={t('timeline.filter')}
+          options={FILTERS}
+          value={filter}
+          onChange={setFilter}
+        />
+      </div>
+      {events.length === 0 && <p className="m-0 text-sm text-fg-3">{t('timeline.empty')}</p>}
       <ol className="m-0 flex list-none flex-col gap-3 p-0 text-sm">
-        {kycTimeline(transitions, notes, versions, appointments).map((event) => (
+        {events.map((event) => (
           <li key={event.id} className="flex flex-col gap-0.5">
             <span className="text-xs text-fg-3 tabular-nums">
               {event.kind === 'meeting'
@@ -287,19 +334,14 @@ export function Timeline({
                 <StageCause transition={event.transition} />
               </span>
             )}
-            {event.kind === 'note' && renderNote(event.note)}
+            {event.kind === 'note' && renderNote(event.note, event.versions)}
             {event.kind === 'version' && (
-              <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <b>{event.version.summary}</b>
-                {event.version.material && (
-                  <span className={`${BADGE} whitespace-nowrap text-accent`}>
-                    {t('timeline.material')}
-                  </span>
-                )}
-                <span className="text-xs whitespace-nowrap text-fg-3">
-                  {t('timeline.version', { number: event.number })}
+              <>
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <UpdateHead versions={[event.version]} />
                 </span>
-              </span>
+                <VersionLines versions={[event.version]} />
+              </>
             )}
           </li>
         ))}

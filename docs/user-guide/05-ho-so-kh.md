@@ -70,12 +70,13 @@ Không giá trị nào đúng? Thêm ghi chú KYC mới với giá trị đúng 
 
 ## Dòng thời gian
 
-Thẻ **Dòng thời gian** xếp mọi việc của KH, mới nhất ở trên:
+Thẻ **Dòng thời gian** xếp mọi việc của KH, mới nhất ở trên. Nút **Tất cả / KYC / Lịch hẹn** ở đầu thẻ lọc theo loại: **KYC** chỉ còn ghi chú và phiên bản KYC, **Lịch hẹn** chỉ còn lịch hẹn; chuyển nhóm chỉ hiện ở **Tất cả**.
 
 - **Lịch hẹn lần …**: ngày giờ và trạng thái, ghi chú cuộc gặp, việc tiếp theo; người phối hợp (vai trò) nếu có. **Hẹn tiếp →** đặt lần gặp kế tiếp (xem [3. Lịch hẹn](03-lich-hen.md#hẹn-tiếp)).
 - Chuyển nhóm: nhóm cũ → nhóm mới, ghi "tạo KH", "chuyển tay · không tính RF", "sau cuộc gặp · tính 1 RF" (cuộc gặp đưa KH từ N4 / N3 lên N2 / N1) hoặc "sau cuộc gặp · không tính RF" (các lần chuyển khác sau cuộc gặp, ví dụ N4 → N3, N2 → N1).
-- **Ghi chú KYC** (kèm nút **AI trích xuất**) và **Ghi chú hệ thống** (ghi chú app tự ghi từ hồ sơ KH, không có nút AI trích xuất).
-- Phiên bản KYC mới ("kyc v…"). Phiên bản có thay đổi quan trọng (đổi trường cốt lõi hoặc được đánh dấu) có nhãn "thay đổi quan trọng"; kyc v1 luôn có nhãn này.
+- **Cập nhật KYC** *ngày*: một ghi chú cùng phiên bản KYC mà dữ kiện của nó tạo ra trong ngày ghi chú, với dòng "+ F3, F4 · kyc v2" (mã F của các dữ kiện, như ở thẻ Dữ kiện KYC). Phiên bản có thay đổi quan trọng (đổi trường cốt lõi hoặc được đánh dấu) có nhãn "thay đổi quan trọng"; kyc v1 luôn có nhãn này. Mỗi lần lưu dữ kiện riêng trong ngày đó (ví dụ **Xác nhận** đề xuất của AI trích xuất) thêm một dòng "+ F… · kyc v…".
+- **Ghi chú KYC** (ghi chú không tạo phiên bản) và **Ghi chú hệ thống** (ghi chú app tự ghi từ hồ sơ KH). Ghi chú do bạn ghi, có dữ kiện hay không, đều có nút **AI trích xuất**; ghi chú hệ thống thì không.
+- **Cập nhật KYC** không kèm ghi chú: phiên bản lưu ngoài ngày của ghi chú, như khi giải quyết mâu thuẫn ("kyc v…") hay khi xác nhận hôm nay đề xuất của AI cho một ghi chú cũ ("+ F… · kyc v…").
 
 ## Hợp đồng
 

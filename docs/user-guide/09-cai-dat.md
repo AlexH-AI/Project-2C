@@ -86,7 +86,7 @@ Thẻ **Provider & model** lưu ngay khi đổi và đi theo backup.
 - **Model**: chọn trong danh sách cố định của app; model mặc định ghi "· mặc định". Chỉ dùng khi chọn OpenCode.
 - **Mức suy luận**: **Mặc định**, **Thấp**, **Vừa**, **Cao**. Model chưa được kiểm với mức suy luận thì app dùng Mặc định.
 
-Cài đặt đã lưu không hợp lệ (ví dụ nhập backup có model không còn trong danh sách) thì thẻ báo đang dùng mặc định; chọn lại để lưu.
+Cài đặt đã lưu không hợp lệ (ví dụ nhập backup có model không còn trong danh sách) thì thẻ báo đang dùng mặc định; chọn lại để lưu, kể cả bấm lại lựa chọn đang chọn (bản web chỉ có Mock).
 
 ### API key OpenCode (bản exe)
 
@@ -102,7 +102,7 @@ Key lưu trong Windows Credential Manager của máy này: không vào file dữ
 
 ### Kiểm tra kết nối
 
-Bấm **Kiểm tra kết nối** để thử key và gói đang chọn. App chỉ gửi một chữ "ping". Được thì báo "Kết nối được" kèm gói và model; không được thì báo lỗi như ở [10. Khi có lỗi](10-su-co.md#lỗi-ai-thường-gặp). Với Mock: "Mock chạy trong app, không cần kết nối."
+Bấm **Kiểm tra kết nối** để thử key và gói đang chọn. App chỉ gửi một chữ "ping". Được thì báo "Kết nối được" kèm gói và model; không được thì báo lỗi như ở [10. Khi có lỗi](10-su-co.md#lỗi-ai-thường-gặp). Đổi provider, gói hay model thì kết quả cũ mất; bấm kiểm tra lại. Với Mock: "Mock chạy trong app, không cần kết nối."
 
 ### Dữ liệu gửi đi
 

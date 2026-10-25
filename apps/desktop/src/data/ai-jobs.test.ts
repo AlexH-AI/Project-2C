@@ -100,6 +100,87 @@ describe('createAiJobs (review of PR 439: a run outlives the screen that started
     expect(jobs.get('analysis:c1')).toBeDefined();
   });
 
+  it('refuses a second start on a key whose job still runs, or waits after Hủy (AI_BUSY)', async () => {
+    const { runner, jobs, job, answer } = held();
+    const done = jobs.start('analysis:c1', job);
+    const listener = vi.fn();
+    jobs.subscribe(listener);
+    const again = vi.fn(job);
+
+    await expect(jobs.start('analysis:c1', again)).resolves.toEqual({
+      kind: 'error',
+      code: 'AI_BUSY',
+    });
+    jobs.cancel('analysis:c1');
+    listener.mockClear();
+    await expect(jobs.start('analysis:c1', again)).resolves.toEqual({
+      kind: 'error',
+      code: 'AI_BUSY',
+    });
+
+    // The job was never run, nor the one there replaced: still "Đang hủy…" until the request ends.
+    expect(again).not.toHaveBeenCalled();
+    expect(listener).not.toHaveBeenCalled();
+    expect(jobs.get('analysis:c1')).toMatchObject({ cancelled: true });
+    await expect(done).resolves.toEqual({ kind: 'cancelled' });
+    answer('saved');
+    await vi.waitFor(() => expect(runner.busy).toBe(false));
+    expect(jobs.get('analysis:c1')).toBeUndefined();
+  });
+
+  const failed = (outcome: unknown) => outcome === 'failed';
+
+  it('keeps how a job failed for a screen that was gone meanwhile, until it was shown (T-297)', async () => {
+    const { jobs, job, answer } = held();
+    const done = jobs.start('analysis:c1', job, undefined, failed);
+
+    answer('failed');
+    await expect(done).resolves.toBe('failed');
+
+    await vi.waitFor(() => expect(jobs.get('analysis:c1')).toBeUndefined());
+    // The profile shown again says it, then drops it, as a screen that stayed would lose it.
+    expect(jobs.kept('analysis:c1')).toBe('failed');
+    expect(jobs.kept('analysis:c2')).toBeUndefined();
+    const listener = vi.fn();
+    jobs.subscribe(listener);
+    jobs.drop('analysis:c1');
+    jobs.drop('analysis:c1');
+    expect(jobs.kept('analysis:c1')).toBeUndefined();
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps nothing else: an outcome `keep` refuses, or a job cancelled', async () => {
+    const { runner, jobs, job, answer } = held();
+    const done = jobs.start('analysis:c1', job, undefined, failed);
+    answer('saved');
+    await expect(done).resolves.toBe('saved');
+    expect(runner.busy).toBe(false);
+
+    const cancelled = jobs.start('analysis:c2', job, undefined, failed);
+    jobs.cancel('analysis:c2');
+    await expect(cancelled).resolves.toEqual({ kind: 'cancelled' });
+    answer('failed');
+    await vi.waitFor(() => expect(runner.busy).toBe(false));
+
+    expect(jobs.kept('analysis:c1')).toBeUndefined();
+    expect(jobs.kept('analysis:c2')).toBeUndefined();
+  });
+
+  it('drops a failure kept once a new run of its key starts', async () => {
+    const { runner, jobs, job, answer } = held();
+    const first = jobs.start('extraction:n1', job, undefined, failed);
+    answer('failed');
+    await expect(first).resolves.toBe('failed');
+    expect(runner.busy).toBe(false);
+
+    const second = jobs.start('extraction:n1', job, undefined, failed);
+    expect(jobs.kept('extraction:n1')).toBeUndefined();
+    answer('facts');
+    await expect(second).resolves.toBe('facts');
+
+    expect(jobs.kept('extraction:n1')).toBeUndefined();
+  });
+
   it('stops telling a listener that unsubscribed', () => {
     const { jobs, job } = held();
     const listener = vi.fn();

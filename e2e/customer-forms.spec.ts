@@ -382,13 +382,11 @@ test('deletes a customer from the profile, counting its records first (5f, TR-9)
   ).map(Number);
   const policies = Number((await profile.textContent())?.match(/Đã có HĐ \((\d+)\)/)?.[1] ?? 0);
   // The timeline: "tính 1 RF" on each stage change that counted an RF, and every KYC note, those
-  // the app writes too.
+  // the app writes too, each quoted in its item, alone or as a KYC update (T-297).
   const timeline = page.getByRole('region', { name: 'Dòng thời gian' }).getByRole('listitem');
   await expect(timeline.first()).toBeVisible();
   const rf = await timeline.filter({ hasText: 'sau cuộc gặp · tính 1 RF' }).count();
-  const kyc = await timeline
-    .filter({ hasText: /^\d\d\/\d\d\/\d{4}Ghi chú (KYC|hệ thống)/ })
-    .count();
+  const kyc = await timeline.getByRole('blockquote').count();
   // Two different numbers, so a dialog showing one in place of the other fails.
   expect(rf).not.toBe(kyc);
 

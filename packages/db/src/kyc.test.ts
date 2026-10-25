@@ -1,16 +1,19 @@
 import { evaluateKycGate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { createCustomer, softDeleteCustomer, updateCustomerProfile } from './customers';
+import { openDatabase } from './database';
 import * as db from './index';
 import {
   addKycNote,
   confirmKycFact,
   getKycProfile,
+  listKycVersionFacts,
   listKycVersions,
   markKycConflict,
   recordKycNote,
   resolveKycConflict,
 } from './kyc';
+import { createPerson, createTeam } from './team';
 import { codeOf, d, setup } from './test-support';
 
 async function withCustomer(profile: { birthDate?: { year: number }; gender?: 'MALE' } = {}) {
@@ -79,6 +82,7 @@ describe('KYC notes', () => {
     ).toEqual([
       'confirmKycFact',
       'getKycProfile',
+      'listKycVersionFacts',
       'listKycVersions',
       'markKycConflict',
       'normalizeKycValue',
@@ -467,6 +471,71 @@ describe('KYC versions', () => {
     });
 
     expect([minor, manual, core].map((c) => c.version?.material)).toEqual([false, true, true]);
+  });
+});
+
+describe('the facts each KYC version recorded (T-297)', () => {
+  it('ties each version to the facts its command saved, a conflict settled to none', async () => {
+    const { db: database, customer, note } = await withCustomer({ birthDate: { year: 1984 } });
+    recordKycNote(database, customer.id, {
+      text: 'Kết hôn, 2 con',
+      date: d(3, 9),
+      facts: [
+        { field: 'maritalStatus', value: 'Đã kết hôn' },
+        { field: 'childrenCount', value: 2 },
+      ],
+    });
+    const input = { noteId: note.id, date: d(4, 9) };
+    confirmKycFact(database, customer.id, { ...input, field: 'occupation', value: 'Bác sĩ' });
+    // The same value again changes nothing in effect: no version, so in none.
+    const again = confirmKycFact(database, customer.id, {
+      ...input,
+      field: 'occupation',
+      value: 'Bác sĩ',
+    });
+    const { fact: other } = markKycConflict(database, customer.id, {
+      ...input,
+      field: 'childrenCount',
+      value: 3,
+    });
+    resolveKycConflict(database, customer.id, { factId: other.id, date: d(5, 9) });
+
+    const linked = listKycVersionFacts(database, customer.id);
+    const seqs = new Map(getKycProfile(database, customer.id).facts.map((f) => [f.id, f.seq]));
+    expect(again.version).toBeNull();
+    expect(
+      listKycVersions(database, customer.id).map((version) =>
+        linked.get(version.id)!.map((id) => seqs.get(id)),
+      ),
+    ).toEqual([[1], [2, 3], [4], [6], []]);
+  });
+
+  it('ties none of the facts of versions saved at one instant: they cannot be told apart', async () => {
+    const database = await openDatabase({ now: () => new Date(Date.UTC(2026, 8, 26, 11)) });
+    const team = createTeam(database, { name: 'Sao Mai' });
+    const re = createPerson(database, { name: 'An', role: 'RE', teamId: team.id });
+    const customer = createCustomer(database, {
+      name: 'Lan',
+      reId: re.id,
+      stage: 'N4',
+      date: d(1, 9),
+      birthDate: { year: 1984 },
+    });
+    recordKycNote(database, customer.id, {
+      text: 'Bác sĩ',
+      date: d(2, 9),
+      facts: [{ field: 'occupation', value: 'Bác sĩ' }],
+    });
+
+    const linked = listKycVersionFacts(database, customer.id);
+    expect([...linked.values()]).toEqual([[], []]);
+    expect([...linked.keys()]).toEqual(listKycVersions(database, customer.id).map((v) => v.id));
+  });
+
+  it('refuses a deleted customer, as the other reads do', async () => {
+    const { db: database, customer } = await withCustomer();
+    softDeleteCustomer(database, customer.id);
+    expect(codeOf(() => listKycVersionFacts(database, customer.id))).toBe('CUSTOMER_NOT_FOUND');
   });
 });
 

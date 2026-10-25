@@ -69,6 +69,7 @@ export type { NewPolicy, PolicyChanges } from './policies';
 export {
   confirmKycFact,
   getKycProfile,
+  listKycVersionFacts,
   listKycVersions,
   markKycConflict,
   normalizeKycValue,

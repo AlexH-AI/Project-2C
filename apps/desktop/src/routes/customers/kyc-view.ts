@@ -24,7 +24,6 @@ import {
   KYC_FIELDS,
   markConflict,
   nextKycVersion,
-  normalizeText,
   parseVnd,
   type CalendarDate,
   type KycCategory,
@@ -35,7 +34,7 @@ import {
   type KycValue,
   type StageTransition,
 } from '@p2c/domain';
-import { t } from '../../i18n';
+import { errorMessage, t } from '../../i18n';
 
 export interface KycCategoryRow<F extends KycFact = KycFact> {
   readonly category: KycCategory;
@@ -122,11 +121,11 @@ const AMOUNT_FIELDS: ReadonlySet<KycField> = new Set([
  * Mockup 7b / 7c (NT-HS-05): what a value typed for a money trường reads as, like every money
  * input — "6.000.000.000 ₫ (6 tỷ)", the full form alone when the compact one is the same. Null for
  * another trường, or for words `parseVnd` cannot read ("Khoảng 12 tỷ"), which are kept all the same.
- * Read from the text as the command stores it (K20, DR6-101).
+ * Read from the text as the command stores it, `normalizeText` of `parseVnd` (K20, DR6-101).
  */
 export function kycAmountRead(field: KycField, text: string): string | null {
   if (!AMOUNT_FIELDS.has(field)) return null;
-  const parsed = parseVnd(normalizeText(text));
+  const parsed = parseVnd(text);
   if (!parsed.ok) return null;
   const amount = formatVnd(parsed.amount);
   const compact = formatVndCompact(parsed.amount);
@@ -137,10 +136,26 @@ export function kycAmountRead(field: KycField, text: string): string | null {
 export const currentFactRecords = (profile: KycProfileRecord, field: KycField): KycFactRecord[] =>
   profile.facts.filter((fact) => fact.field === field && fact.status !== 'superseded');
 
+/** A KYC version on the timeline: "+ F9, F12, F13 · kyc v3", its facts named as on the facts list. */
+export interface TimelineVersion {
+  readonly version: KycVersionRecord;
+  /** `F{seq}` of the facts the version recorded, in recording order; none for a conflict settled. */
+  readonly codes: readonly string[];
+}
+
 export type TimelineEvent = { readonly id: string; readonly date: CalendarDate } & (
   | { readonly kind: 'stage'; readonly transition: StageTransition }
-  | { readonly kind: 'note'; readonly note: KycNoteRecord }
-  | { readonly kind: 'version'; readonly version: KycVersionRecord; readonly number: number }
+  /**
+   * A KYC note; with the versions its facts recorded on its own day it is a KYC update, "Cập nhật
+   * KYC" (mockup customer.html), else a note alone (ai.html 3b).
+   */
+  | {
+      readonly kind: 'note';
+      readonly note: KycNoteRecord;
+      readonly versions: readonly TimelineVersion[];
+    }
+  /** A version on no note of its day: a conflict settled, a fact of an older note confirmed later. */
+  | { readonly kind: 'version'; readonly version: TimelineVersion }
   /** `number`: "Lịch hẹn lần n" of a meeting held; null for any other appointment. */
   | {
       readonly kind: 'meeting';
@@ -148,6 +163,25 @@ export type TimelineEvent = { readonly id: string; readonly date: CalendarDate }
       readonly number: number | null;
     }
 );
+
+/** What the timeline reads of KYC; `versionFacts` is `listKycVersionFacts` of `db`. */
+export interface TimelineKyc {
+  readonly notes: readonly KycNoteRecord[];
+  readonly facts: readonly KycFactRecord[];
+  readonly versions: readonly KycVersionRecord[];
+  readonly versionFacts: ReadonlyMap<string, readonly string[]>;
+}
+
+/** Mockup customer.html "Tất cả / KYC / Lịch hẹn". */
+export const TIMELINE_FILTERS = ['ALL', 'KYC', 'APPOINTMENTS'] as const;
+export type TimelineFilter = (typeof TIMELINE_FILTERS)[number];
+
+/** KYC is its notes and versions, Lịch hẹn the appointments; a stage change is under Tất cả only. */
+export function inTimelineFilter(event: TimelineEvent, filter: TimelineFilter): boolean {
+  if (filter === 'KYC') return event.kind === 'note' || event.kind === 'version';
+  if (filter === 'APPOINTMENTS') return event.kind === 'meeting';
+  return true;
+}
 
 /**
  * Mockup customer.html "Dòng thời gian": how a stage change came about — the customer created, a
@@ -160,11 +194,50 @@ export function stageCause(transition: StageTransition): 'created' | 'manual' | 
 }
 
 /**
- * Records carry a day, not a time: on one day a version comes after the note it was saved with,
- * and a stage change is taken as earlier than both (a new customer's SYSTEM note follows it).
- * A meeting comes before the stage change it led to.
+ * Records carry a day, not a time: on one day KYC comes after a stage change (a new customer's
+ * SYSTEM note follows it), in the order `kycEvents` gives; a meeting comes before the stage change
+ * it led to.
  */
-const RANK = { meeting: -1, stage: 0, note: 1, version: 2 } as const;
+const RANK = { meeting: -1, stage: 0, note: 1, version: 1 } as const;
+
+/** An event with where it comes among the KYC of its day: higher is later. */
+interface Ordered {
+  readonly event: TimelineEvent;
+  readonly order: number;
+}
+
+/**
+ * Each version with the codes of the facts it recorded, on the note of those facts when that note
+ * is of the version's day: saved with them, or one of its AI proposals confirmed that day (mockup
+ * customer.html "+ F9, F12, F13 · kyc v3"). Any other version stands alone. Within a day a version
+ * comes by its seq, a note alone just after the KYC update before it.
+ */
+function kycEvents({ notes, facts, versions, versionFacts }: TimelineKyc): Ordered[] {
+  const factById = new Map(facts.map((fact) => [fact.id, fact]));
+  const noteById = new Map(notes.map((note) => [note.id, note]));
+  const onNote = new Map<string, TimelineVersion[]>(notes.map((note) => [note.id, []]));
+  const apart: Ordered[] = [];
+  for (const version of versions) {
+    const recorded = (versionFacts.get(version.id) ?? []).flatMap((id) => factById.get(id) ?? []);
+    const line = { version, codes: recorded.map((fact) => factCode(fact.seq)) };
+    const [noteId, ...others] = new Set(recorded.map((fact) => fact.noteId));
+    const note = others.length === 0 && noteId !== undefined ? noteById.get(noteId) : undefined;
+    if (note && compareDates(note.createdDate, version.date) === 0) {
+      onNote.get(note.id)!.push(line);
+    } else {
+      const event = { kind: 'version' as const, id: version.id, date: version.date, version: line };
+      apart.push({ event, order: version.seq });
+    }
+  }
+  let last = 0;
+  const onNotes = notes.map((note): Ordered => {
+    const lines = onNote.get(note.id)!;
+    last = lines.at(-1)?.version.seq ?? last;
+    const event = { kind: 'note' as const, id: note.id, date: note.createdDate, note };
+    return { event: { ...event, versions: lines }, order: lines.length > 0 ? last : last + 0.5 };
+  });
+  return [...onNotes, ...apart];
+}
 
 /**
  * The appointments in date order, only the meetings held numbered (DR-67): a planned one, or one
@@ -187,31 +260,27 @@ function meetingEvents(appointments: readonly AppointmentRecord[]): TimelineEven
  */
 export function kycTimeline(
   transitions: readonly StageTransition[],
-  notes: readonly KycNoteRecord[],
-  versions: readonly KycVersionRecord[],
+  kyc: TimelineKyc,
   appointments: readonly AppointmentRecord[] = [],
 ): TimelineEvent[] {
-  const events: TimelineEvent[] = [
-    ...meetingEvents(appointments),
+  const events: Ordered[] = [
+    ...meetingEvents(appointments).map((event) => ({ event, order: 0 })),
     ...transitions.map((transition) => ({
-      kind: 'stage' as const,
-      id: transition.id,
-      date: transition.date,
-      transition,
+      event: { kind: 'stage' as const, id: transition.id, date: transition.date, transition },
+      order: 0,
     })),
-    ...notes.map((note) => ({ kind: 'note' as const, id: note.id, date: note.createdDate, note })),
-    ...versions.map((version) => ({
-      kind: 'version' as const,
-      id: version.id,
-      date: version.date,
-      version,
-      number: version.seq,
-    })),
+    ...kycEvents(kyc),
   ];
   // Reversed, the stable sort keeps the later record first among equal keys.
   return events
     .reverse()
-    .sort((a, b) => compareDates(b.date, a.date) || RANK[b.kind] - RANK[a.kind]);
+    .sort(
+      (a, b) =>
+        compareDates(b.event.date, a.event.date) ||
+        RANK[b.event.kind] - RANK[a.event.kind] ||
+        b.order - a.order,
+    )
+    .map(({ event }) => event);
 }
 
 export type KycNotePreview =
@@ -225,6 +294,19 @@ export type KycNotePreview =
     }
   /** The trường cannot take the fact: nothing to disagree with, or a value it cannot hold. */
   | { readonly kind: 'refused'; readonly field: KycField };
+
+/**
+ * Why a fact `previewKycNote` refuses cannot be saved, as the command would say it: a value the
+ * trường cannot hold (or text it cannot store), else a conflict with nothing to disagree with (7a).
+ */
+export function refusalText(field: KycField, value: KycValue): string {
+  try {
+    normalizeKycValue(field, value);
+  } catch (failure) {
+    return errorMessage(failure);
+  }
+  return t('kycNote.error.refused', { field: t(`kycField.${field}`) });
+}
 
 /** "KYC v<n>" of the next version: one after the last stored seq, as the commands number it. */
 export const nextVersionNumber = (versions: readonly Pick<KycVersionRecord, 'seq'>[]): number =>

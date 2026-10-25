@@ -43,7 +43,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/errors.ts` — DB_ERROR_CODES, type DbErrorCode, DbError
 - `src/ids.ts` — type RandomFill, cryptoFill, ulid, encodeBase32
 - `src/index.ts` — re-exports ./database, ./migrations, ./backup, ./counts, ./errors, ./team, ./customers, ./appointments, ./policies, ./kyc, ./seed, ./schema, ./ai-analyses, ./trash, ./purge, ./settings
-- `src/kyc.ts` — type KycSource, type KycNoteRecord, type KycFactRecord, type KycProfileRecord, type KycVersionRecord, type KycFactCommand, type KycChange, getKycProfile, listKycVersions, addKycNote, type KycNoteFact, recordKycNote, confirmKycFact, markKycConflict, resolveKycConflict, type ProfileFields, recordProfileFacts, type ProfileKycPreview, previewProfileFacts, profileFactValue, normalizeKycValue
+- `src/kyc.ts` — type KycSource, type KycNoteRecord, type KycFactRecord, type KycProfileRecord, type KycVersionRecord, type KycFactCommand, type KycChange, getKycProfile, listKycVersions, listKycVersionFacts, addKycNote, type KycNoteFact, recordKycNote, confirmKycFact, markKycConflict, resolveKycConflict, type ProfileFields, recordProfileFacts, type ProfileKycPreview, previewProfileFacts, profileFactValue, normalizeKycValue
 - `src/migrations.ts` — type Migration, MIGRATIONS, latestVersion, LATEST_SCHEMA_VERSION
 - `src/person-references.ts` — PERSON_REFERENCE_KINDS, type PersonReferenceKind, POINTS_TO, quotedKinds, PERSON_REFERENCES
 - `src/policies.ts` — type NewPolicy, type PolicyChanges, listPolicies, submitPolicy, issuePolicy, updatePolicy, softDeletePolicy, restorePolicy, checkRestorePolicy

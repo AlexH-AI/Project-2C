@@ -2,6 +2,7 @@ import { DEFAULT_AI_SETTINGS, type AiSettings } from '@p2c/ai';
 import { describe, expect, it } from 'vitest';
 import {
   checkKey,
+  checkNow,
   checkShown,
   modelList,
   modelOptions,
@@ -100,6 +101,27 @@ describe('a connection check (mockup 1f, 2l, 4a, 4c)', () => {
     ['AI_KEYRING', 'Không đọc / ghi được key trong Windows Credential Manager.'],
   ] as const)('shows the message of %s', (code, text) => {
     expect(checkShown({ kind: 'error', code }, CREDIT)).toEqual({ phase: 'error', text });
+  });
+
+  it('keeps the outcome of a check while its provider, gói and model stay chosen (4a)', () => {
+    const ok = checkShown({ kind: 'ok' }, CREDIT);
+    const failed = checkShown({ kind: 'error', code: 'AI_NETWORK' }, CREDIT);
+
+    expect(checkNow(ok, CREDIT, { ...CREDIT, reasoning: 'HIGH' })).toEqual(ok);
+    expect(checkNow(failed, CREDIT, CREDIT)).toEqual(failed);
+    const changes: Partial<AiSettings>[] = [
+      { model: 'kimi-k3' },
+      { opencodePlan: 'GO' },
+      { provider: 'MOCK' },
+    ];
+    for (const change of changes) {
+      expect(checkNow(ok, CREDIT, { ...CREDIT, ...change })).toEqual({ phase: 'idle' });
+      expect(checkNow(failed, CREDIT, { ...CREDIT, ...change })).toEqual({ phase: 'idle' });
+    }
+    // A check still running says so, whatever is chosen meanwhile.
+    expect(checkNow({ phase: 'running' }, CREDIT, { ...CREDIT, model: 'glm-5.3' })).toEqual({
+      phase: 'running',
+    });
   });
 
   it('shows the general message for a check that failed by a bug, and nothing once cancelled', () => {

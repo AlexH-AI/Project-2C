@@ -238,15 +238,15 @@ test('a new customer: birth year and gender from the profile, gate KYC_INSUFFICI
     ),
   ).toBeVisible();
 
+  // The SYSTEM note and the version it was saved with are one KYC update, with the codes of its
+  // facts (mockup customer.html); the first version is always material (ADR-0008 7, NT-HS-11).
   await expect(timeline).toHaveText([
-    // The first version is always material (ADR-0008 7), labelled so (NT-HS-11).
-    '15/09/2026Cập nhật KYC 15/09/2026thay đổi quan trọngkyc v1',
-    '15/09/2026Ghi chú hệ thốngHồ sơ KH: năm sinh 1984; giới tính Nữ',
+    '15/09/2026Cập nhật KYC 15/09/2026thay đổi quan trọngHồ sơ KH: năm sinh 1984; giới tính Nữ+ F1, F2 · kyc v1',
     '15/09/2026N4tạo KH',
   ]);
 
   // Gender is not a cốt lõi trường: the new version is not material. The database's clock keeps
-  // the pinned day, so it is dated that day: versions come before notes, the later first.
+  // the pinned day, so it is dated that day: the later update first.
   await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
   const dialog = page.getByRole('dialog', { name: `Sửa hồ sơ · ${NAME}` });
   await dialog.getByRole('radio', { name: 'Nam' }).check();
@@ -255,12 +255,44 @@ test('a new customer: birth year and gender from the profile, gate KYC_INSUFFICI
 
   await expect(kyc).toContainText('Giới tính: Nam');
   await expect(timeline).toHaveText([
-    '15/09/2026Cập nhật KYC 15/09/2026kyc v2',
-    '15/09/2026Cập nhật KYC 15/09/2026thay đổi quan trọngkyc v1',
-    '15/09/2026Ghi chú hệ thốngHồ sơ KH: giới tính Nam',
-    '15/09/2026Ghi chú hệ thốngHồ sơ KH: năm sinh 1984; giới tính Nữ',
+    '15/09/2026Cập nhật KYC 15/09/2026Hồ sơ KH: giới tính Nam+ F3 · kyc v2',
+    '15/09/2026Cập nhật KYC 15/09/2026thay đổi quan trọngHồ sơ KH: năm sinh 1984; giới tính Nữ+ F1, F2 · kyc v1',
     '15/09/2026N4tạo KH',
   ]);
+});
+
+// Mockup customer.html: "Tất cả / KYC / Lịch hẹn" above the timeline (T-297); a stage change is
+// neither, so only "Tất cả" shows it.
+test('the timeline filter keeps to the KYC or the appointments, "Tất cả" shows everything', async ({
+  page,
+}) => {
+  await createCustomer(page);
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const booking = page.getByRole('dialog');
+  await booking.getByRole('textbox', { name: /^Ngày/ }).fill('20/9');
+  await booking.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
+  await booking.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+  await expect(booking).toHaveCount(0);
+  const region = page.getByRole('region', { name: 'Dòng thời gian' });
+  const items = region.getByRole('listitem');
+  const filter = region.getByRole('radiogroup', { name: 'Lọc dòng thời gian' });
+
+  await expect(filter.getByRole('radio', { name: 'Tất cả' })).toBeChecked();
+  await expect(items).toHaveText([
+    /^20\/09\/2026.* · dự kiếnLịch hẹn/,
+    /^15\/09\/2026Cập nhật KYC 15\/09\/2026/,
+    '15/09/2026N4tạo KH',
+  ]);
+
+  await filter.getByRole('radio', { name: 'KYC' }).click();
+  await expect(filter.getByRole('radio', { name: 'KYC' })).toBeChecked();
+  await expect(items).toHaveText([/^15\/09\/2026Cập nhật KYC 15\/09\/2026.*\+ F1, F2 · kyc v1$/]);
+
+  await filter.getByRole('radio', { name: 'Lịch hẹn' }).click();
+  await expect(items).toHaveText([/^20\/09\/2026.* · dự kiếnLịch hẹn/]);
+
+  await filter.getByRole('radio', { name: 'Tất cả' }).click();
+  await expect(items).toHaveCount(3);
 });
 
 test('the day of a KYC note is checked on Lưu, not while it is typed (7a, DR6-33)', async ({
@@ -471,12 +503,17 @@ test('a KYC note confirms facts; a cốt lõi conflict blocks the gate until it 
 
   await expect(kyc).toContainText('3/8 hạng mục · v2');
   await expect(kyc).toContainText('Cổng KYC PROFILE_DISCOVERY');
+  // One KYC update: the note, and its version with the codes of the facts list (customer.html).
   await expect(timeline.first()).toHaveText(
-    '15/09/2026Cập nhật KYC 15/09/2026thay đổi quan trọngkyc v2',
+    '15/09/2026Cập nhật KYC 15/09/2026thay đổi quan trọngAI trích xuấtĐã kết hôn, 2 con; chủ DN.+ F3, F4, F5 · kyc v2',
   );
-  await expect(timeline.filter({ hasText: /^15\/09\/2026Ghi chú KYC/ })).toHaveText(
-    '15/09/2026Ghi chú KYCAI trích xuấtĐã kết hôn, 2 con; chủ DN.',
-  );
+  for (const fact of [
+    'Tình trạng hôn nhân: Đã kết hônF3 · 15/09/2026',
+    'Số con: 2F4 · 15/09/2026',
+    'Nghề nghiệp: Chủ DN phân phối thiết bị y tếF5 · 15/09/2026',
+  ]) {
+    await expect(kyc).toContainText(fact);
+  }
 
   // Mockup 7c: a different value on a cốt lõi trường, flagged as a conflict.
   await page.getByRole('button', { name: '+ Ghi chú KYC' }).click();
