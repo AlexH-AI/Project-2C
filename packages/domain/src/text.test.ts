@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   collapseSpaces,
   isStorableText,
+  LINE_BREAK,
   normalizeNote,
   normalizeText,
   stripDiacritics,
@@ -21,7 +22,7 @@ const INVISIBLE = [0x3164, 0x115f, 0xffa0, 0x34f, ...range(0xfe00, 0xfe0f), 0x28
 const POOL = [
   ...[0x61, 0x42, 0x111, 0x1b0, 0x1f31f, 0x301, 0x323, 0x340, 0x2126, 0xb2, 0x20, 0x9, 0xa, 0xd],
   ...[0x85, 0xa0, 0x1680, 0x2000, 0x2028, 0x2029, 0x202f, 0x3000, 0xad, 0x200b, 0x200d, 0x2060],
-  ...[0xfeff, 0x600, 0x1160, 0xe0100, 0x7, 0x9f, 0xd800, 0xdc00],
+  ...[0xfeff, 0x600, 0x1160, 0xe0100, 0x7, 0x9f, 0xd800, 0xdc00, 0xb, 0xc],
   ...INVISIBLE.map((char) => char.codePointAt(0)!),
 ].map((code) => String.fromCodePoint(code));
 
@@ -132,6 +133,14 @@ describe('normalizeNote', () => {
     expect(normalizeNote('Du học 2029\rCon thứ hai\r\nBác sĩ\u{7}')).toBe(
       'Du học 2029\nCon thứ hai\nBác sĩ',
     );
+  });
+
+  // VT and FF are mandatory breaks of UAX #14 too (Owner 23/10/2026, T-291).
+  it('breaks the line at VT and FF, as at LF', () => {
+    expect(normalizeNote('Du học 2029\u{B}Con thứ hai\u{C}\u{B}Bác sĩ')).toBe(
+      'Du học 2029\nCon thứ hai\n\nBác sĩ',
+    );
+    expect('a\u{B}b\u{C}c\r\nd\u{85}e'.split(LINE_BREAK)).toEqual(['a', 'b', 'c', 'd', 'e']);
   });
 
   it('gives a note it keeps as it is (random text)', () => {

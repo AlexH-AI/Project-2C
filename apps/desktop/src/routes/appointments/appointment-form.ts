@@ -4,6 +4,7 @@ import {
   daysBetween,
   formatDate,
   formatDayMonth,
+  normalizeText,
   parseQuickDate,
   stripDiacritics,
   weekdayOf,
@@ -17,16 +18,23 @@ import { outcomeResolver, type AppointmentData, type Outcome } from './appointme
 export const MAX_HISTORY = 5;
 
 /**
- * `any`: a new appointment, where a day already past is a back-filled meeting (6b).
+ * `any`: a new appointment, where a day already past is a back-filled meeting (6b); a new day once
+ * "Nhập bù" is ticked (6e).
  * `fromToday`: the next appointment after a past one, which must be today or later (6h).
+ * `reschedule`: a new day before "Nhập bù" is ticked (6e): today or later, but the box takes a day
+ * past, so a day last year is offered as on 6b (ADR-0007; Owner 25/10/2026, review of PR 824).
  */
-export type ScheduleMode = 'any' | 'fromToday';
+export type ScheduleMode = 'any' | 'fromToday' | 'reschedule';
 
 interface ReadDate {
   readonly date: CalendarDate;
   /** Negative once the day has passed. */
   readonly daysFromToday: number;
-  /** The same day next year, offered when a year-less day is long past; never applied. */
+  /**
+   * The same day another year, offered and never applied: next year when a year-less day is long
+   * past; last year early in the year, when it is not yet come and a day past can be kept
+   * (ADR-0007, Owner 23/10/2026).
+   */
   readonly suggestion: CalendarDate | null;
 }
 
@@ -68,10 +76,20 @@ export function readScheduleDate(
   const read = {
     date: parsed.date,
     daysFromToday: daysBetween(today, parsed.date),
-    suggestion: parsed.nextYearSuggestion,
+    // The day last year is past: none for the next appointment, which takes no day past (6h).
+    suggestion:
+      parsed.nextYearSuggestion ?? (mode === 'fromToday' ? null : parsed.previousYearSuggestion),
   };
-  if (mode === 'fromToday' && read.daysFromToday < 0) return { ok: false, error: 'past', ...read };
+  if (mode !== 'any' && read.daysFromToday < 0) return { ok: false, error: 'past', ...read };
   return { ok: true, weekday: weekdayOf(parsed.date), ...read };
+}
+
+/**
+ * The reason of a new day as "Dời lịch" stores it under the old note: trimmed as typed, none when
+ * it shows nothing, as the command reads it (`normalizeText`; Phase 3 spec §4, Owner 25/10/2026).
+ */
+export function rescheduleReason(text: string): string | null {
+  return normalizeText(text) === '' ? null : text.trim();
 }
 
 /**

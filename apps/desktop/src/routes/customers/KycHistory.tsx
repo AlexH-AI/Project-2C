@@ -1,3 +1,4 @@
+import { MAX_AI_RAW_OUTPUT } from '@p2c/ai';
 import type { AiAnalysisView, KycVersionRecord } from '@p2c/db';
 import { formatCount, formatDayMonth } from '@p2c/domain';
 import { Button, Dialog } from '@p2c/ui';
@@ -143,6 +144,11 @@ export function RejectedReportDialog({
             </ul>
           </div>
         ))}
+        {report.outputTooLarge && (
+          <p className="m-0 text-fg-2">
+            {t('aiPanel.report.tooLarge', { count: MAX_AI_RAW_OUTPUT })}
+          </p>
+        )}
         <p className={`${ALERT} border-info`}>
           {report.latest
             ? t('aiPanel.report.latest', { date: formatDayMonth(report.latest) })

@@ -637,11 +637,11 @@ describe('KYC text is stored composed', () => {
 
   // Review #640: checked as stored text first, then by the rules of the trường.
   it('normalizes a value the database can store, and refuses one it cannot as a text', () => {
-    for (const value of ['Kỹ\u0000sư', 'A\uD800', '\uDC00B', '​\uD800']) {
+    for (const value of ['Kỹ\u0000sư', 'A\uD800', '\uDC00B', '\u200B\uD800']) {
       expect(codeOf(() => db.normalizeKycValue('occupation', value))).toBe('INVALID_TEXT');
     }
     expect(codeOf(() => db.normalizeKycValue('childrenCount', '2\u0000'))).toBe('INVALID_TEXT');
-    expect(codeOf(() => db.normalizeKycValue('occupation', '​'))).toBe('INVALID_KYC_VALUE');
+    expect(codeOf(() => db.normalizeKycValue('occupation', '\u200B'))).toBe('INVALID_KYC_VALUE');
     expect(db.normalizeKycValue('occupation', ' Bác\tsĩ ')).toBe('Bác sĩ');
   });
 });

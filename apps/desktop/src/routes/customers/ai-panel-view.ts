@@ -227,23 +227,42 @@ function isIssue(issue: unknown): issue is ValidationIssue {
 }
 
 /**
- * The validator report of each attempt, as `analysisOutcome` stores it; a report it cannot read
- * lists nothing. Only the last attempt's output is kept: an earlier one had no JSON when its one
- * issue is V1 on the whole output, the way the validator reports a missing block.
+ * The validator report of each attempt, as `analysisOutcome` stores it; one it cannot read lists
+ * nothing.
  */
-function attemptReports(row: AiAnalysisView): AiAttemptReport[] {
+function storedReports(row: AiAnalysisView): { attempt: number; issues: ValidationIssue[] }[] {
   if (!Array.isArray(row.validator)) return [];
   const stored: unknown[] = row.validator;
-  return stored.flatMap((report, index) => {
+  return stored.flatMap((report) => {
     const { attempt, errors } = (report ?? {}) as { attempt?: unknown; errors?: unknown };
     if (typeof attempt !== 'number' || !Array.isArray(errors)) return [];
-    const issues = errors.filter(isIssue);
-    const noJson =
-      index === stored.length - 1
-        ? row.output === null
-        : issues.length === 1 && issues[0]!.code === 'V1' && issues[0]!.path === '$';
-    return [{ attempt, issues: issues.map((issue) => issueLine(issue, noJson)) }];
+    return [{ attempt, issues: errors.filter(isIssue) }];
   });
+}
+
+/**
+ * Whether an attempt's answer had no JSON block, or was cut before it ended: its one issue is V1 on
+ * the whole output, which the validator never gives an answer with a block (G5 §13.2). The row's
+ * output cannot tell it for the last attempt: an output too large is not stored either.
+ */
+const noBlock = (issues: readonly ValidationIssue[]) =>
+  issues.length === 1 && issues[0]!.code === 'V1' && issues[0]!.path === '$';
+
+/** The issues of each attempt, as the panel lists them. */
+function attemptReports(row: AiAnalysisView): AiAttemptReport[] {
+  return storedReports(row).map(({ attempt, issues }) => {
+    const noJson = noBlock(issues);
+    return { attempt, issues: issues.map((issue) => issueLine(issue, noJson)) };
+  });
+}
+
+/**
+ * The last answer had a JSON block, but no output is stored: it was too large to keep (G5 §13.2,
+ * Owner 23/10/2026).
+ */
+function outputTooLarge(row: AiAnalysisView): boolean {
+  const last = storedReports(row).at(-1);
+  return row.output === null && last !== undefined && !noBlock(last.issues);
 }
 
 function blockedBy(gate: KycGateResult): AiPanelBlocked | null {
@@ -584,6 +603,8 @@ export interface AiRejectedReport {
   /** Both attempts added up, with OpenCode only (mockup 2k). */
   readonly tokens: number | null;
   readonly reports: readonly AiAttemptReport[];
+  /** The last answer's output was too large to keep: the dialog says so under its issues. */
+  readonly outputTooLarge: boolean;
   /** The day of the latest ACCEPTED analysis, which stays the one shown; null with none. */
   readonly latest: CalendarDate | null;
 }
@@ -603,6 +624,7 @@ export function rejectedReport(
     attempts: row.attempts,
     tokens: counted ? promptTokens + completionTokens : null,
     reports: attemptReports(row),
+    outputTooLarge: outputTooLarge(row),
     latest: analyses.find((analysis) => analysis.status === 'ACCEPTED')?.date ?? null,
   };
 }

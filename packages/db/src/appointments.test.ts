@@ -1233,6 +1233,42 @@ describe('text with a NUL', () => {
   });
 });
 
+// DR6-72 (Owner 23/10/2026, T-291): as a name or a KYC value, text with nothing to see is empty.
+describe('optional text with nothing to see', () => {
+  const NOTHING = ['\u{3164}', '\u{2800}', '\u{FE0F}', '\u{85}', '\u{3164}\u{85}\u{2800}'];
+
+  it('is no next step, which a meeting held needs', async () => {
+    const { db, schedule } = await withCustomer();
+    const { id } = schedule();
+
+    for (const nextStep of NOTHING) {
+      expect(codeOf(() => recordMeetingOutcome(db, id, { ...MET_N2, nextStep }))).toBe(
+        'OUTCOME_REQUIRED',
+      );
+    }
+  });
+
+  it('is stored as none: no trigger note, an empty note, no reason under the old note', async () => {
+    const { db, customer, re, schedule } = await withCustomer();
+    for (const text of NOTHING) {
+      const booked = scheduleAppointment(db, {
+        customerId: customer.id,
+        reId: re.id,
+        date: d(12, 1),
+        triggerType: 'REFERRAL',
+        triggerNote: text,
+      });
+      expect(booked.triggerNote).toBeNull();
+      expect(recordMeetingOutcome(db, booked.id, { status: 'CANCELLED', note: text }).note).toBe(
+        '',
+      );
+      const moved = schedule();
+      rescheduleAppointment(db, moved.id, { date: d(15, 1) }, text);
+      expect(byId(listAppointments(db), moved.id)?.note).toBe('');
+    }
+  });
+});
+
 describe('deleting appointments', () => {
   it('withdraws the latest transition on delete and applies it again on restore', async () => {
     const { db, customer, schedule, stage } = await withCustomer();

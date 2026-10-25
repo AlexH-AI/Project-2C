@@ -243,6 +243,26 @@ describe('recordAiAnalysis', () => {
     expect(listAiAnalyses(database, customer.id)[0]!.rawOutput).toBe(record.rawOutput);
   });
 
+  // G5 §13.2 (Owner 23/10/2026): `analysisOutcome` keeps none past that, and says so in the panel.
+  it('takes a rejected output of 20 000 characters as stored at most, counted as raw_output', async () => {
+    const { db: database, customer } = await withCustomer();
+    const version = latestVersionId(database, customer.id);
+    // `{"x":"…"}`: eight characters around the text; an emoji is one character, two code units.
+    const output = (stored: number) => ({ x: '😀'.repeat(stored - 8) });
+
+    const record = recordAiAnalysis(database, {
+      ...rejected(customer.id, version),
+      output: output(20_000),
+    });
+
+    expect(record.output).toEqual(output(20_000));
+    expect(
+      codeOf(() =>
+        recordAiAnalysis(database, { ...rejected(customer.id, version), output: output(20_001) }),
+      ),
+    ).toBe('AI_ANALYSIS_INVALID');
+  });
+
   /**
    * What a rejected analysis keeps of each raw output, recorded in turn; read back as kept, and so
    * again after a backup.
@@ -409,6 +429,14 @@ describe('recordAiAnalysis', () => {
       { output: null },
       { output: Number.NaN },
       { output: () => 'Tóm tắt' },
+      // Stored as the schema of its mode reads it (G5 §13.3, Owner 23/10/2026): the text the
+      // command would store is the one checked.
+      { output: { ...OUTPUTS.analysis, extra: 'x'.repeat(10_000) } },
+      { output: { ...OUTPUTS.analysis, needs: [{ ...ITEM, text: ' Kế hoạch học phí ' }] } },
+      { output: { ...OUTPUTS.analysis, needs: [{ ...ITEM, text: '\u{FEFF}Học phí\u{FEFF}' }] } },
+      { output: { ...OUTPUTS.analysis, needs: [{ evidence: ['F1'], text: 'Học phí' }] } },
+      { output: Object.fromEntries(Object.entries(OUTPUTS.analysis).reverse()) },
+      { output: { ...OUTPUTS.analysis, personalityNotes: undefined } },
       { rawOutput: 'thừa' },
       { input: undefined },
       { validator: undefined },
@@ -417,12 +445,16 @@ describe('recordAiAnalysis', () => {
         codeOf(() => recordAiAnalysis(database, analysis(customer.id, version, wrong as never))),
       ).toBe('AI_ANALYSIS_INVALID');
     }
-    // Rejected only after the retry too (spec §3, DR5-16).
+    // Rejected only after the retry too (spec §3, DR5-16); its output is the JSON block of the last
+    // answer, an object (G5 §13.3).
     for (const wrong of [
       { rawOutput: null },
       { rawOutput: '' },
       { status: 'PENDING' },
       { attempts: 1 },
+      { output: [] },
+      { output: 'Tóm tắt' },
+      { output: 1 },
     ]) {
       expect(
         codeOf(() =>
@@ -460,6 +492,12 @@ describe('recordAiAnalysis', () => {
         promptVersion: 'discovery@1+web@1',
       }),
       { ...rejected(customer.id, version), ...live, rawOutput: 'a\0b' },
+      // A wrong answer as the model wrote it: a key of its own, keys in its order, text untrimmed.
+      {
+        ...rejected(customer.id, version),
+        output: { ghiChu: 1, needs: [{ evidence: ['F9'], text: ' Học phí ' }], hypotheses: [] },
+      },
+      { ...rejected(customer.id, version), output: { x: '😀'.repeat(19_992) } },
     ]) {
       recordAiAnalysis(database, kept);
     }

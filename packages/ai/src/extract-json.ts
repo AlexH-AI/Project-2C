@@ -13,6 +13,8 @@
  * A quote in the prose after an unclosed `{` makes what follows a string to a scan from that `{`, so
  * the text after it is read again, as many times as there are such braces up to `MAX_RESCANS`
  * (one is enough unless the prose is made to defeat it: each reading turns the quotes around).
+ * Only the last reading tries the blocks inside a `{` left open: in an earlier one, the quotes of
+ * the answer turned around, a "{}" in one of its texts closes there as a block (review #822).
  *
  * Linear (DR5-04): at most `MAX_RESCANS + 1` passes, and the blocks given to `JSON.parse` in a pass
  * never overlap. A failed `JSON.parse` costs an exception, so after `MAX_FAILED_PARSES` of them the
@@ -80,14 +82,17 @@ export function extractJson(content: string, { cut = false }: ExtractOptions = {
     if (open.length === 0) return NONE;
     // Where the cut answer may start: from there on, nothing is taken nor read again.
     const piece = (cut ? open.find(opensObject) : undefined) ?? Infinity;
+    if (quoted && rescans < MAX_RESCANS && open[0] !== piece) {
+      // Read from the first unclosed `{` on, a quote in the prose may have taken the JSON for a
+      // string: read again from right after it, a quote there being prose (review #521).
+      from = open[0]! + 1;
+      continue;
+    }
     for (const { start, end } of closed) {
       if (start > piece) break;
       const json = parse(start, end);
       if (json.found || failed === MAX_FAILED_PARSES) return json;
     }
-    if (!quoted || rescans === MAX_RESCANS || open[0] === piece) return NONE;
-    // Read from the first unclosed `{` on, a quote in the prose may have taken the JSON for a
-    // string: read again from right after it, a quote there being prose (review #521).
-    from = open[0]! + 1;
+    return NONE;
   }
 }

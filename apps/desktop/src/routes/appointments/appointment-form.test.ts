@@ -9,6 +9,7 @@ import {
   prefill,
   priorMeetings,
   readScheduleDate,
+  rescheduleReason,
   searchCustomers,
   withTime,
 } from './appointment-form';
@@ -80,6 +81,50 @@ describe('readScheduleDate (from today)', () => {
 
     const leapDay = readScheduleDate(dayText(d(29, 2, 2024), TODAY), TODAY, 'fromToday');
     expect(leapDay).toMatchObject({ ok: false, error: 'past', suggestion: null });
+  });
+});
+
+// ADR-0007 appendix "Ngày nhanh đầu năm" (Owner 23/10/2026; 6e: 25/10/2026, review of PR 824).
+describe('readScheduleDate (early in the year)', () => {
+  const NEW_YEAR = d(2, 1, 2027);
+
+  it('offers last year for a day not yet come where a day past can be kept (6b, 6e)', () => {
+    for (const mode of ['any', 'reschedule'] as const) {
+      const read = ok(readScheduleDate('28/12', NEW_YEAR, mode));
+      expect(read.date).toEqual(d(28, 12, 2027));
+      expect(read.daysFromToday).toBe(360);
+      expect(read.suggestion).toEqual(d(28, 12, 2026));
+      expect(ok(readScheduleDate('15/03', NEW_YEAR, mode)).suggestion).toBeNull();
+    }
+  });
+
+  it('offers no last year to the next appointment, which takes no day past (6h)', () => {
+    expect(ok(readScheduleDate('28/12', NEW_YEAR, 'fromToday')).suggestion).toBeNull();
+  });
+
+  it('refuses the day last year as a new day until "Nhập bù" is ticked (6e)', () => {
+    expect(readScheduleDate('28/12/2026', NEW_YEAR, 'reschedule')).toMatchObject({
+      ok: false,
+      error: 'past',
+      date: d(28, 12, 2026),
+    });
+    expect(ok(readScheduleDate('28/12/2026', NEW_YEAR, 'any')).daysFromToday).toBe(-5);
+    // Long past, still next year's, as on 6h.
+    expect(readScheduleDate('20/6', TODAY, 'reschedule')).toMatchObject({
+      error: 'past',
+      suggestion: d(20, 6, 2027),
+    });
+  });
+});
+
+// Phase 3 spec §4, rule 4 of T-291 (Owner 25/10/2026, review of PR 824): the preview line of 6e.
+describe('rescheduleReason', () => {
+  it('is the reason as "Dời lịch" stores it: trimmed as typed, none when it shows nothing', () => {
+    expect(rescheduleReason('  KH đi công tác ')).toBe('KH đi công tác');
+    expect(rescheduleReason('\u{85}KH\u{3164}bận ')).toBe('\u{85}KH\u{3164}bận');
+    for (const reason of ['', '  ', '\u{3164}', '\u{2800}', '\u{FE0F}', '\u{85}']) {
+      expect(rescheduleReason(reason)).toBeNull();
+    }
   });
 });
 

@@ -2,6 +2,7 @@ import {
   AI_MODELS,
   CUT_ANSWER,
   DEFAULT_AI_SETTINGS,
+  MAX_AI_RAW_OUTPUT,
   PROMPT_VERSIONS,
   WEB_WRAPPER,
   type AiSettings,
@@ -981,6 +982,7 @@ describe('rejectedReport (mockup ai.html 2k)', () => {
           ],
         },
       ],
+      outputTooLarge: false,
       latest: day(2026, 9, 14),
     });
     expect(JSON.stringify(report)).not.toContain('{"hypotheses"');
@@ -996,20 +998,54 @@ describe('rejectedReport (mockup ai.html 2k)', () => {
     expect(report).toMatchObject({ source: { badge: 'CHATGPT_WEB' }, tokens: null, latest: null });
   });
 
-  it('says an attempt with no JSON had none, the last one as the row stores it', () => {
+  it('says an attempt with no JSON, or cut before its JSON ended, had none, by its report', () => {
     const noJson = { code: 'V1', path: '$', detail: 'không có khối JSON' };
     const row = {
       ...rejected,
       output: null,
       validator: [
         { attempt: 1, errors: [noJson] },
-        { attempt: 2, errors: [noJson] },
+        { attempt: 2, errors: [CUT_ANSWER] },
       ],
     };
-    expect(rejectedReport(row, [row], versions).reports.map((r) => r.issues)).toEqual([
+    const report = rejectedReport(row, [row], versions);
+    expect(report.reports.map((r) => r.issues)).toEqual([
       [{ code: 'V1', place: null, detail: null }],
-      [{ code: 'V1', place: null, detail: null }],
+      [{ code: 'V1', place: null, detail: t('aiPanel.issueCut') }],
     ]);
+    // G5 §13.2: no JSON stores no output either; the report tells it from an output too large.
+    expect(report.outputTooLarge).toBe(false);
+  });
+
+  // G5 §13.2 (Owner 23/10/2026): the last answer had a JSON block, too large to keep.
+  it('says the output was too large when the last attempt had a block and none is stored', () => {
+    const issues = Array.from({ length: 29 }, (_, i) => ({
+      code: 'V1',
+      path: `hypotheses[0].evidence[${i}]`,
+      detail: 'sai định dạng, cần mã dữ kiện dạng F12',
+    }));
+    const row = {
+      ...rejected,
+      output: null,
+      validator: [
+        { attempt: 1, errors: [{ code: 'V1', path: 'needs', detail: 'thiếu, cần array' }] },
+        { attempt: 2, errors: [...issues, { code: 'V1', path: '$', detail: 'và 2971 lỗi khác' }] },
+      ],
+    };
+    const report = rejectedReport(row, [row], versions);
+
+    expect(report.outputTooLarge).toBe(true);
+    // The line 2k adds under them (spec Phase 5 §9.1), the limit of `raw_output` as a count.
+    expect(t('aiPanel.report.tooLarge', { count: MAX_AI_RAW_OUTPUT })).toBe(
+      'Output quá lớn (trên 20.000 ký tự), app không lưu.',
+    );
+    // The review of PR 824: the last of 30 issues, on the whole output, reads as it is written.
+    expect(report.reports[1]!.issues.at(-1)).toEqual({
+      code: 'V1',
+      place: null,
+      detail: 'và 2971 lỗi khác',
+    });
+    expect(rejectedReport(rejected, [rejected], versions).outputTooLarge).toBe(false);
   });
 
   it('leaves out an issue of a backup’s report that is not as the validator writes it (DR5-35)', () => {

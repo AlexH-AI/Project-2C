@@ -5,7 +5,13 @@ import { TextField } from '@p2c/ui';
 import { t } from '../../i18n';
 import { ALERT } from '../customers/CustomerDialogs';
 import { DateSuggestion, dateFieldError, dateReading } from './AppointmentDialog';
-import { dayText, parseTime, readScheduleDate, withTime } from './appointment-form';
+import {
+  dayText,
+  parseTime,
+  readScheduleDate,
+  rescheduleReason,
+  withTime,
+} from './appointment-form';
 
 /** An appointment's day and time as the dialogs write it: `dd/mm/yyyy hh:mm`. */
 export const whenText = (a: Pick<AppointmentRecord, 'date' | 'time'>) =>
@@ -23,7 +29,7 @@ export function useRescheduleForm(old: AppointmentRecord, today: CalendarDate) {
   const [attempted, setAttempted] = useState(false);
 
   // The new day is today or later; a day past only to back-fill a meeting held then (Owner 29/09).
-  const date = readScheduleDate(dateText, today, backfill ? 'any' : 'fromToday');
+  const date = readScheduleDate(dateText, today, backfill ? 'any' : 'reschedule');
   const time = parseTime(timeText);
   const same =
     date.ok && time.ok && compareDates(date.date, old.date) === 0 && time.time === old.time;
@@ -65,6 +71,7 @@ export function RescheduleFields({
   autoFocus?: boolean;
 }) {
   const { old, today, date, time, same } = form;
+  const reason = rescheduleReason(form.reason);
   const pending = form.dateText.trim() === '' && !form.attempted;
   const past = !date.ok && date.error === 'past';
   const dateError = same
@@ -129,12 +136,9 @@ export function RescheduleFields({
           </li>
         </ul>
       </div>
-      {form.reason.trim() !== '' && (
+      {reason !== null && (
         <p className="m-0 text-xs text-fg-2 tabular-nums">
-          {t('reschedule.historyRead', {
-            date: dayText(old.date, today),
-            note: form.reason.trim(),
-          })}
+          {t('reschedule.historyRead', { date: dayText(old.date, today), note: reason })}
         </p>
       )}
     </>

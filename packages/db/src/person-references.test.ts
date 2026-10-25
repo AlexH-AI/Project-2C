@@ -3,9 +3,16 @@ import { recordMeetingOutcome, scheduleAppointment } from './appointments';
 import { validateBackupInvariants } from './backup-validation';
 import { createCustomer, updateCustomerProfile } from './customers';
 import type { Database } from './database';
-import { PERSON_REFERENCES } from './person-references';
+import { PERSON_REFERENCES, POINTS_TO, type PersonReferenceKind } from './person-references';
 import { submitPolicy } from './policies';
-import { createPerson, isPersonInUse, personUsage, softDeletePerson } from './team';
+import {
+  createPerson,
+  isPersonInUse,
+  ownsRecords,
+  personUsage,
+  softDeletePerson,
+  updatePerson,
+} from './team';
 import { codeOf, d, errorOf, setup } from './test-support';
 
 /**
@@ -91,6 +98,53 @@ describe('PERSON_REFERENCES: the one list of what points to a person', () => {
       ]);
       expect(errorOf(() => validateBackupInvariants(db))?.params).toEqual({ rule: 5 });
       db.sqlite.run('UPDATE people SET deleted_at = NULL WHERE id = ?', [person.id]);
+    }
+  });
+
+  // Review #805: whom a kind points to is one table, which the RE rule of the commands (spec §3.3)
+  // and import rule 5 both read, so a kind added there is counted by both.
+  it('keeps the person of a kind pointing to an RE an RE, as rule 5 does, by POINTS_TO', async () => {
+    const { db, people } = await oneOfEach();
+    const [[team]] = db.sqlite.exec("SELECT team_id FROM people WHERE role = 'RE' LIMIT 1")[0]!
+      .values as [[string]];
+
+    for (const person of people) {
+      const [kind] = valuesOf(
+        db,
+        `SELECT kind FROM (${PERSON_REFERENCES}) WHERE person_id = ? AND live`,
+        [person.id],
+      ).flat() as [PersonReferenceKind];
+      const re = POINTS_TO[kind] === 're';
+      expect(ownsRecords(personUsage(db, person.id)), kind).toBe(re);
+      if (re) {
+        expect(codeOf(() => updatePerson(db, person.id, { role: 'IS', teamId: null }))).toBe(
+          'PERSON_IN_USE',
+        );
+      }
+      // In a file, an RE that is one no more, or one supporting the meeting who is an RE now.
+      const [was] = db.sqlite.exec('SELECT role, team_id FROM people WHERE id = ?', [person.id])[0]!
+        .values;
+      const swap = re ? ['IS', null] : ['RE', team];
+      db.sqlite.run('UPDATE people SET role = ?, team_id = ? WHERE id = ?', [...swap, person.id]);
+      expect(errorOf(() => validateBackupInvariants(db))?.params, kind).toEqual({ rule: 5 });
+      db.sqlite.run('UPDATE people SET role = ?, team_id = ? WHERE id = ?', [...was!, person.id]);
+    }
+  });
+
+  // Review #805: in `IN (…)`, the list written as `WITH refs … SELECT * FROM refs` was stored whole in
+  // a temporary table first; a plain compound select is read where it is used, as Thùng rác (9b)
+  // and rule 5 read it.
+  it('is never stored in a temporary table, where `IN (…)` or a grouping reads it', async () => {
+    const { db } = await oneOfEach();
+    const references = `(${PERSON_REFERENCES})`;
+
+    for (const query of [
+      `SELECT name FROM customers WHERE id IN (SELECT customer_id FROM ${references} WHERE person_id = 'x' AND live)`,
+      `SELECT 1 FROM people WHERE id IN (SELECT person_id FROM ${references} WHERE live AND kind = 'customer')`,
+      `SELECT 1 FROM ${references} WHERE kind IN ('coordinator', 'appointment') GROUP BY appointment_id, person_id HAVING COUNT(DISTINCT kind) = 2`,
+    ]) {
+      const plan = valuesOf(db, `EXPLAIN QUERY PLAN ${query}`).map((step) => step[3]);
+      expect(plan.join('\n')).not.toContain('MATERIALIZE');
     }
   });
 });

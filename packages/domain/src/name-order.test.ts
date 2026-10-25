@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { byName } from './name-order';
+import { byName, LATIN } from './name-order';
 
 const sorted = (names: readonly string[]) => [...names].sort(byName);
 
@@ -42,5 +42,59 @@ describe('byName', () => {
     const names = pairs.flat();
     expect(sorted(names)).toEqual(sorted([...names].reverse()));
     expect(sorted(['Team 10', 'Team 01', 'Team 2'])).toEqual(['Team 01', 'Team 2', 'Team 10']);
+  });
+
+  // Owner 23/10/2026 (T-291): the collator alone goes round on names mixing ASCII digits with others
+  // ("01 2" < "0１a" < "0A" < "01 2", ICU 78), so a sort followed the order the names came in.
+  it('reads each decimal digit of any script as an ASCII one before comparing', () => {
+    const [a, b, c] = ['0A', '01 2', '0１a'];
+    for (const round of [
+      [a, b, c],
+      [a, c, b],
+      [b, a, c],
+      [b, c, a],
+      [c, a, b],
+      [c, b, a],
+    ]) {
+      expect(sorted(round)).toEqual([a, b, c]);
+    }
+    expect(sorted(['Team 10', 'Team ٣', 'Team ２'])).toEqual(['Team ２', 'Team ٣', 'Team 10']);
+    expect(sorted(['KH ٢', 'KH 2', 'KH ２'])).toEqual(['KH 2', 'KH ٢', 'KH ２']);
+  });
+
+  it('sorts 2 022 names mixing ASCII, full-width and Arabic-Indic digits one way, however shuffled', () => {
+    // Every name of 1–4 of these characters, as stored: spaces single, none at either end.
+    let names = [''];
+    const all = new Set<string>();
+    for (let length = 1; length <= 4; length++) {
+      names = names.flatMap((name) => [...'01１٢aA '].map((char) => name + char));
+      for (const name of names) all.add(name.replace(/ +/g, ' ').trim());
+    }
+    all.delete('');
+    // Fisher–Yates on a Lehmer generator (MINSTD), the same run for the same seed.
+    let seed = 1;
+    const shuffled = () => {
+      const list = [...all];
+      for (let i = list.length - 1; i > 0; i--) {
+        seed = (seed * 48_271) % 2_147_483_647;
+        const j = seed % (i + 1);
+        [list[i], list[j]] = [list[j]!, list[i]!];
+      }
+      return list;
+    };
+    expect(all.size).toBe(2022);
+    const first = sorted(shuffled());
+    for (let round = 1; round < 20; round++) expect(sorted(shuffled())).toEqual(first);
+  });
+
+  it('skips no digit to read: the Latin characters a name may skip with have none but ASCII', () => {
+    const digits: string[] = [];
+    for (let code = 0; code <= 0x1eff; code++) {
+      const char = String.fromCodePoint(code);
+      if (LATIN.test(char) && /\p{Nd}/u.test(char)) digits.push(char);
+    }
+    expect(digits.join('')).toBe('0123456789');
+    expect(LATIN.test('Nguyễn Văn Đức 2')).toBe(true);
+    expect(LATIN.test('Team ２')).toBe(false);
   });
 });

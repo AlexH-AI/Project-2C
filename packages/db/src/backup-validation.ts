@@ -9,17 +9,20 @@ import {
   calendarDate,
   fromIsoDate,
   isIsoDate,
+  KYC_FIELDS,
+  kycHash,
   normalizeKycValue,
   PIPELINE_STAGES,
   REVIEWER_ROLES,
   type CustomerStage,
+  type KycFact,
   type KycField,
   type KycValue,
 } from '@p2c/domain';
 import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import { z } from 'zod';
 import { analysisContentFits, analysisLabelsFit, type AnalysisFields } from './ai-analyses';
-import { cleanNote, isFee, optionalText, requireName, storedDate, today } from './common';
+import { cleanNote, isFee, optionalText, requireName, sqlTexts, storedDate, today } from './common';
 import { stagesOfDay } from './customers';
 import type { Database } from './database';
 import { DbError } from './errors';
@@ -27,6 +30,7 @@ import { profileFactValue, type ProfileFields } from './kyc';
 import {
   PERSON_REFERENCE_KINDS,
   PERSON_REFERENCES,
+  POINTS_TO,
   quotedKinds,
   type PersonReferenceKind,
 } from './person-references';
@@ -56,12 +60,7 @@ export function validateBackupValues(db: Database): void {
         throw new DbError('BACKUP_INVALID');
       }
       if (NAMED.has(table) && !storedAs(requireName, row.name)) throw new DbError('BACKUP_INVALID');
-      // A meeting held has its next step, as `recordMeetingOutcome` stores it (DR-05).
-      if (
-        table === 'appointments' &&
-        row.status === 'MET' &&
-        !storedAs(requireNextStep, row.next_step)
-      ) {
+      if (table === 'appointments' && !appointmentTextStored(row)) {
         throw new DbError('BACKUP_INVALID');
       }
     }
@@ -90,10 +89,25 @@ function requireNote(text: string): string {
   return clean;
 }
 
-function requireNextStep(text: string): string {
-  const step = optionalText(text);
-  if (step === null) throw new DbError('BACKUP_INVALID');
-  return step;
+/** Text `optionalText` stores as it is: trimmed, with something to see (DR6-72). */
+function requireOptionalText(text: string): string {
+  const stored = optionalText(text);
+  if (stored === null) throw new DbError('BACKUP_INVALID');
+  return stored;
+}
+
+/**
+ * The optional text of an appointment, deleted or not, as the commands store it: none (null, or an
+ * empty note) or text `optionalText` keeps (DR6-72, Owner 23/10/2026); a meeting held has its next
+ * step, as `recordMeetingOutcome` stores it (DR-05).
+ */
+function appointmentTextStored(row: Row): boolean {
+  const kept = (text: SqlValue | undefined) => storedAs(requireOptionalText, text);
+  return (
+    (row.trigger_note === null || kept(row.trigger_note)) &&
+    ((row.status !== 'MET' && row.next_step === null) || kept(row.next_step)) &&
+    (row.note === '' || kept(row.note))
+  );
 }
 
 /** Text that `clean` keeps as it is, as the commands store it (DR-49). */
@@ -248,15 +262,6 @@ function meetingRule(appointments: Map<unknown, Row>, transitions: Row[]): Rule 
   return once && matching ? null : 4;
 }
 
-/** Whom each kind of reference points to, by rule 5: the RE of the record, or one supporting it. */
-const POINTS_TO: Record<PersonReferenceKind, 're' | 'supporting'> = {
-  customer: 're',
-  appointment: 're',
-  policy: 're',
-  coordinator: 'supporting',
-  reviewer: 'supporting',
-};
-
 /**
  * Rule 5: a live customer, appointment or policy belongs to a live RE (who may stop being one, or
  * be deleted, only once their records are deleted); the RE never coordinates their own
@@ -264,7 +269,8 @@ const POINTS_TO: Record<PersonReferenceKind, 're' | 'supporting'> = {
  * (ADR-0007) or reviews a live meeting (D9), and is not deleted while it does (DR-04); an
  * appointment is rescheduled from one of the same customer (D3), which has no other new one and is
  * not rescheduled, at any remove, from it: deleted appointments too, as the chain keeps them (DR-06).
- * What points to a person is read from `PERSON_REFERENCES`, the one list of those columns.
+ * What points to a person is read from `PERSON_REFERENCES`, the one list of those columns, and whom
+ * it points to from `POINTS_TO`, which `ownsRecords` reads too.
  */
 function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>): Rule | null {
   const references = `(${PERSON_REFERENCES})`;
@@ -278,10 +284,11 @@ function ownerRule(read: (sql: string) => Row[], appointments: Map<unknown, Row>
     `SELECT 1 FROM people p WHERE (p.role <> 'RE' OR p.deleted_at IS NOT NULL) AND ${pointedTo(reKinds)}`,
   );
   // A coordinator or reviewer may have become an RE once their appointment was deleted.
-  const supportingRoles = `(${REVIEWER_ROLES.map((role) => `'${role}'`).join(', ')})`;
+  const supportingRoles = `(${sqlTexts(REVIEWER_ROLES)})`;
   const misplaced = read(
     [
-      `SELECT 1 FROM ${references} c JOIN ${references} a ON a.appointment_id = c.appointment_id AND a.person_id = c.person_id WHERE c.kind IN (${quotedKinds(['coordinator'])}) AND a.kind IN (${quotedKinds(['appointment'])})`,
+      // An appointment's RE among its coordinators: one person, both kinds, on one appointment.
+      `SELECT 1 FROM ${references} WHERE kind IN (${quotedKinds(['coordinator', 'appointment'])}) GROUP BY appointment_id, person_id HAVING COUNT(DISTINCT kind) = 2`,
       `SELECT 1 FROM people p WHERE (p.role NOT IN ${supportingRoles} OR p.deleted_at IS NOT NULL) AND ${pointedTo(supportingKinds)}`,
     ].join(' UNION ALL '),
   );
@@ -319,6 +326,7 @@ function chained(appointments: Map<unknown, Row>): boolean {
  * are the profile's, from a `SYSTEM` note, and one in conflict from a `SYSTEM` note is the profile's
  * too, which resolving the conflict would confirm; a `SYSTEM` note holds nothing else. A birth date
  * or gender in the profile has such a fact, active or in conflict, as saving it records one (DR-07).
+ * The versions fit the facts too (rule 7, `versionsFit`).
  */
 function kycRule(read: (sql: string) => Row[], customers: Row[]): Rule | null {
   const facts = read(
@@ -362,7 +370,52 @@ function kycRule(read: (sql: string) => Row[], customers: Row[]): Rule | null {
       (active === 1 && conflict.length === 0) ||
       (active === 0 && conflict.length >= 2 && new Set(conflict).size === conflict.length),
   );
-  return settled ? null : 7;
+  return settled && versionsFit(read, facts) ? null : 7;
+}
+
+/** A hash as `kycHash` writes it: 14 lower-case hex digits (Owner 25/10/2026, review #824). */
+const KYC_HASH = /^[0-9a-f]{14}$/;
+
+/**
+ * Rule 7, the versions (S-1; Owner 23/10/2026, T-291): a customer has versions when it has facts in
+ * effect, and only then; the latest version's hash is `kycHash` of those facts, as the KYC commands
+ * record a version each time it changes and compare the next one with it; two versions in a row
+ * differ; every hash is in the form `kycHash` writes. The facts behind an older version are not
+ * kept, so only the form of its hash is checked.
+ */
+function versionsFit(read: (sql: string) => Row[], facts: Row[]): boolean {
+  const versions = groupBy(
+    read('SELECT customer_id, hash FROM kyc_versions ORDER BY customer_id, seq'),
+    'customer_id',
+  );
+  const inEffect = groupBy(
+    facts.filter((fact) => fact.status !== 'superseded'),
+    'customer_id',
+  );
+  const fit = [...versions].every(([customer, list]) => {
+    const hashes = list.map((version) => String(version.hash));
+    const current = inEffect.get(customer)?.map(toFact);
+    return (
+      hashes.every((hash, i) => KYC_HASH.test(hash) && hash !== hashes[i - 1]) &&
+      current !== undefined &&
+      hashes.at(-1) === kycHash({ notes: [], facts: current })
+    );
+  });
+  return fit && [...inEffect.keys()].every((customer) => versions.has(customer));
+}
+
+/** A stored fact as `domain` reads it, for `kycHash`. */
+function toFact(row: Row): KycFact {
+  const field = row.field as KycField;
+  return {
+    id: String(row.id),
+    category: KYC_FIELDS[field].category,
+    field,
+    value: JSON.parse(String(row.value_json)) as KycValue,
+    noteId: String(row.note_id),
+    confirmedDate: fromIsoDate(String(row.confirmed_date)),
+    status: row.status as KycFact['status'],
+  };
 }
 
 function profileOf(customer: Row): ProfileFields {
@@ -410,8 +463,8 @@ function futureRule(read: (sql: string) => Row[], today: string): Rule | null {
 /**
  * Rules 11–14 (spec Phase 5 §7.3), on what the table's CHECK and UNIQUE leave to the app: the KYC
  * version analysed is the customer's own (11); the columns fit together as `recordAiAnalysis`
- * takes them (12, 13: `analysisLabelsFit`, `analysisContentFits`), and the JSON reads back (13);
- * the analysis is not dated after today (14).
+ * takes them (12, 13: `analysisLabelsFit`, `analysisContentFits`, the output as the app stores it),
+ * and the JSON reads back (13); the analysis is not dated after today (14).
  */
 function aiRule(read: (sql: string) => Row[], today: string): Rule | null {
   const foreign = read(
@@ -420,14 +473,15 @@ function aiRule(read: (sql: string) => Row[], today: string): Rule | null {
   if (foreign.length > 0) return 11;
   const analyses = read('SELECT * FROM ai_analyses').map(fieldsOf);
   if (!analyses.every(analysisLabelsFit)) return 12;
-  const readable = analyses.every(
-    (a) => a.input !== undefined && a.output !== undefined && a.validator !== undefined,
-  );
+  const readable = analyses.every((a) => a.input !== undefined && a.validator !== undefined);
   if (!readable || !analyses.every(analysisContentFits)) return 13;
   return analyses.some((a) => a.date > today) ? 14 : null;
 }
 
-/** An analysis row with its JSON parsed (`undefined` when it does not parse), for rules 12–14. */
+/**
+ * An analysis row for rules 12–14: its input and report parsed (`undefined` when they do not
+ * parse), its output as stored, which `analysisContentFits` reads as the command does.
+ */
 function fieldsOf(row: Row): AnalysisFields & { readonly date: string } {
   return {
     mode: row.mode,
@@ -437,7 +491,7 @@ function fieldsOf(row: Row): AnalysisFields & { readonly date: string } {
     promptVersion: row.prompt_version,
     attempts: row.attempts,
     input: parsed(row.input_json),
-    output: parsed(row.output_json),
+    outputJson: row.output_json,
     validator: parsed(row.validator_json),
     date: row.date as string,
   };

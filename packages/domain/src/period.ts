@@ -205,6 +205,11 @@ export type QuickDateResult =
       readonly yearInferred: boolean;
       /** The same day next year, offered (never applied) when an inferred date is long past. */
       readonly nextYearSuggestion: CalendarDate | null;
+      /**
+       * The same day last year, offered (never applied) when an inferred date is not yet come and
+       * that day passed lately.
+       */
+      readonly previousYearSuggestion: CalendarDate | null;
     }
   | {
       readonly ok: false;
@@ -213,15 +218,20 @@ export type QuickDateResult =
       readonly nextYearSuggestion?: CalendarDate;
     };
 
-/** An inferred date more than this many days before today gets a next-year suggestion (W8). */
-const NEXT_YEAR_SUGGESTION_DAYS = 60;
+/**
+ * An inferred date more than this many days before today gets a next-year suggestion (W8); one not
+ * yet come gets a last-year one when that day last year is this many days before today at most.
+ */
+const SUGGESTION_DAYS = 60;
 
 /**
  * Reads a quick date `dd/mm` or `dd/mm/yyyy` (leading zeros optional). Without a year, today's year
  * is used; if that date passed more than 60 days ago, the same day next year is suggested, since
  * at year end the RE often means early next year. A day this year lacks (29/02) is an
  * `invalid-date` that still suggests next year's, once the end of its month passed more than 60
- * days ago (DR-39). The caller shows the result and lets the RE choose — nothing is guessed silently.
+ * days ago (DR-39). Early in the year it is the other way: a date not yet come whose day last year
+ * passed 60 days ago at most suggests that day (ADR-0007, Owner 23/10/2026). The two never come
+ * together. The caller shows the result and lets the RE choose — nothing is guessed silently.
  * The text is read as `normalizeText` keeps it, as `parseVnd` reads an amount (DR6-110).
  */
 export function parseQuickDate(text: string, today: CalendarDate): QuickDateResult {
@@ -235,8 +245,8 @@ export function parseQuickDate(text: string, today: CalendarDate): QuickDateResu
   const year = yearInferred ? today.year : Number(match[3]);
   if (year < MIN_YEAR || year > MAX_YEAR) return { ok: false, error: 'year-out-of-range' };
 
-  const longPast = (date: CalendarDate) =>
-    toDayNumber(today) - toDayNumber(date) > NEXT_YEAR_SUGGESTION_DAYS;
+  const daysAgo = (date: CalendarDate) => toDayNumber(today) - toDayNumber(date);
+  const longPast = (date: CalendarDate) => daysAgo(date) > SUGGESTION_DAYS;
   const date = tryCalendarDate(year, month, day);
   if (!date) {
     const next = yearInferred ? tryCalendarDate(year + 1, month, day) : null;
@@ -248,7 +258,9 @@ export function parseQuickDate(text: string, today: CalendarDate): QuickDateResu
   }
   const nextYearSuggestion =
     yearInferred && longPast(date) ? tryCalendarDate(year + 1, month, day) : null;
-  return { ok: true, date, yearInferred, nextYearSuggestion };
+  const lastYear = yearInferred && daysAgo(date) < 0 ? tryCalendarDate(year - 1, month, day) : null;
+  const previousYearSuggestion = lastYear && !longPast(lastYear) ? lastYear : null;
+  return { ok: true, date, yearInferred, nextYearSuggestion, previousYearSuggestion };
 }
 
 function tryCalendarDate(year: number, month: number, day: number): CalendarDate | null {

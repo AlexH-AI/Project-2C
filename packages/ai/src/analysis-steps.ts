@@ -5,7 +5,7 @@
  */
 import { evaluateKycGate, type CalendarDate, type KycGateState } from '@p2c/domain';
 import { checkAnswer, lastAnswer, type CheckedAnswer } from './attempts';
-import { cutCodePoints } from './code-points';
+import { codePointsOver, cutCodePoints } from './code-points';
 import { analysisPrompt } from './prompts/analysis';
 import { discoveryPrompt } from './prompts/discovery';
 import {
@@ -88,10 +88,21 @@ export function analysisOutcome(
     status: accepted ? 'ACCEPTED' : 'REJECTED',
     attempts: attempts.length,
     input,
-    output: accepted ? AI_OUTPUT_SCHEMAS[mode].parse(last.parsed) : last.parsed,
+    output: accepted ? AI_OUTPUT_SCHEMAS[mode].parse(last.parsed) : rejectedOutput(last.parsed),
     rawOutput: accepted ? null : rawOutput(last.content),
     validator: attempts.map((done, i) => ({ attempt: i + 1, errors: done.issues })),
   };
+}
+
+/**
+ * The JSON block of a wrong last answer, as parsed (§7.1); none when its stored form, the JSON
+ * `db` writes, is longer than `raw_output` may be: the panel says the output was too large to keep
+ * (G5 §13.2, Owner 23/10/2026).
+ */
+function rejectedOutput(parsed: unknown): unknown {
+  return parsed !== null && codePointsOver(JSON.stringify(parsed), MAX_AI_RAW_OUTPUT)
+    ? null
+    : parsed;
 }
 
 /**

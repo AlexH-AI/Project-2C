@@ -237,6 +237,23 @@ describe('runAnalysis', () => {
     });
   });
 
+  // G5 §13.2 (Owner 23/10/2026): a wrong output too large to keep is left out; the panel says so.
+  it('keeps no output of a rejected answer past 20 000 characters as stored, by code point', async () => {
+    // `{"x":"…"}`: eight characters around the text; an emoji is one character, two code units.
+    const answer = (stored: number) => JSON.stringify({ x: '😀'.repeat(stored - 8) });
+    for (const [stored, output] of [
+      [20_000, JSON.parse(answer(20_000)) as unknown],
+      [20_001, null],
+    ] as const) {
+      const { adapter } = scripted(answer(stored), answer(stored));
+      const result = await runAnalysis(analysis(OPENCODE, adapter));
+      expect(result).toMatchObject({
+        kind: 'record',
+        row: { status: 'REJECTED', output, validator: [{ attempt: 1 }, { attempt: 2 }] },
+      });
+    }
+  });
+
   it('stores a fixed text for an empty rejected answer, which `db` would refuse', async () => {
     const { adapter } = scripted('', '');
     const result = await runAnalysis(analysis(OPENCODE, adapter));

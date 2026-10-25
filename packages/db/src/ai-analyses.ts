@@ -137,6 +137,15 @@ export function recordAiAnalysis(db: Database, analysis: NewAiAnalysis): AiAnaly
 /** The fields of a new analysis as stored, refused when they do not fit together (§7.1). */
 function toRow(a: NewAiAnalysis) {
   const noModel = AI_ANALYSIS_NO_MODEL.includes(a.provider);
+  const inputJson = JSON.stringify(a.input) as string | undefined;
+  const validatorJson = JSON.stringify(a.validator) as string | undefined;
+  // Checked after stringifying too: NaN would be stored as `null`, a function not at all.
+  const outputJson =
+    a.output === null || a.output === undefined
+      ? null
+      : (JSON.stringify(a.output) as string | undefined);
+  // The output as the text it would store, which the import reads.
+  const stored = { ...a, outputJson };
   const fits =
     Object.hasOwn(AI_ANALYSIS_GATES, a.mode) &&
     AI_ANALYSIS_GATES[a.mode] === a.gateState &&
@@ -147,18 +156,11 @@ function toRow(a: NewAiAnalysis) {
       : isLabel(a.model) && AI_ANALYSIS_REASONING.includes(a.reasoning!)) &&
     isTokenCount(a.promptTokens, noModel) &&
     isTokenCount(a.completionTokens, noModel) &&
-    analysisLabelsFit(a) &&
-    analysisContentFits(a) &&
+    analysisLabelsFit(stored) &&
+    analysisContentFits(stored) &&
     (a.status === 'ACCEPTED'
       ? a.rawOutput === null
       : typeof a.rawOutput === 'string' && a.rawOutput !== '');
-  const inputJson = JSON.stringify(a.input) as string | undefined;
-  const validatorJson = JSON.stringify(a.validator) as string | undefined;
-  // Checked after stringifying too: NaN would be stored as `null`, a function not at all.
-  const outputJson =
-    a.output === null || a.output === undefined
-      ? null
-      : (JSON.stringify(a.output) as string | undefined);
   if (
     !fits ||
     inputJson === undefined ||
@@ -216,7 +218,8 @@ export interface AnalysisFields {
   readonly promptVersion: unknown;
   readonly attempts: unknown;
   readonly input: unknown;
-  readonly output: unknown;
+  /** The output as stored: its JSON text, or null. */
+  readonly outputJson: unknown;
   readonly validator: unknown;
 }
 
@@ -242,21 +245,57 @@ export function analysisLabelsFit(a: AnalysisFields): boolean {
 }
 
 /**
- * Rule 13 on parsed JSON: the input passes the input schema of its mode; an accepted output passes
- * the latest schema of its mode, cites only facts of its input, and its last attempt had no issue.
- * The input is the app's own, taken before the AI is called, so it is checked on a rejected one too.
+ * Rule 13: the input passes the input schema of its mode; an accepted output passes the latest
+ * schema of its mode, is stored as that schema reads it, cites only facts of its input, and its
+ * last attempt had no issue. A rejected output is stored as `analysisOutcome` keeps it
+ * (`rejectedOutputFits`). The input is the app's own, taken before the AI is called, so it is
+ * checked on a rejected one too.
  */
 export function analysisContentFits(a: AnalysisFields): boolean {
   const input = analysisInputSchema.safeParse(a.input).data;
   if (input === undefined || input.mode !== a.mode) return false;
-  if (a.status !== 'ACCEPTED') return true;
-  const result = AI_OUTPUT_SCHEMAS[input.mode].safeParse(a.output);
-  if (!result.success || lastIssues(a.validator) > 0) return false;
+  if (a.status !== 'ACCEPTED') return rejectedOutputFits(a.outputJson);
+  const result = AI_OUTPUT_SCHEMAS[input.mode].safeParse(jsonOf(a.outputJson));
+  // Keys in the schema's order, none of its own, strings trimmed, defaults filled (G5 §13.3).
+  if (!result.success || JSON.stringify(result.data) !== a.outputJson) return false;
+  if (lastIssues(a.validator) > 0) return false;
   const codes = new Set(input.facts.map((fact) => fact.code));
   // Every block of an analysis or discovery output is a list of items that may cite facts.
   return Object.values(result.data)
     .flat()
     .every((item) => item.evidence.every((code) => codes.has(code)));
+}
+
+/**
+ * A rejected output as `analysisOutcome` keeps it: none, or the JSON block of the last answer as
+ * `JSON.stringify` writes it (an object, no white space outside its strings, no key twice), of
+ * 20 000 characters at most, counted as `raw_output` is (G5 §13.2, §13.3; Owner 23/10/2026).
+ */
+function rejectedOutputFits(text: unknown): boolean {
+  if (text === null) return true;
+  if (typeof text !== 'string' || overRawOutput(text)) return false;
+  const value = jsonOf(text);
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    JSON.stringify(value) === text
+  );
+}
+
+/** More code points than `raw_output` keeps; a huge text is never read whole (DR5-09). */
+const overRawOutput = (text: string) =>
+  text.length > MAX_AI_RAW_OUTPUT &&
+  (text.length > 2 * MAX_AI_RAW_OUTPUT || Array.from(text).length > MAX_AI_RAW_OUTPUT);
+
+/** The JSON value of stored text; undefined when there is none or it does not parse. */
+function jsonOf(text: unknown): unknown {
+  if (typeof text !== 'string') return undefined;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return undefined;
+  }
 }
 
 /** How many issues the last attempt's report lists, as `analysisOutcome` stores them. */

@@ -70,6 +70,10 @@ describe('readOutcome', () => {
       ok: false,
       errors: ['stageAfter', 'nextStep'],
     });
+    // As the command reads it (DR6-72, Owner 23/10/2026): nothing to see is no next step.
+    for (const nextStep of ['\u{3164}', '\u{2800}', '\u{FE0F}', '\u{85}']) {
+      expect(readOutcome({ ...met, nextStep })).toEqual({ ok: false, errors: ['nextStep'] });
+    }
     const read = readOutcome({ ...met, caseSize: ' ', reviewerId: '' });
     expect(read.ok && read.outcome).toMatchObject({
       expectedCaseSize: null,

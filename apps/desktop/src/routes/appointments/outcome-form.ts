@@ -8,6 +8,7 @@ import {
 import {
   CLOSED_STAGES,
   compareDates,
+  normalizeText,
   PIPELINE_STAGES,
   parseVnd,
   type CalendarDate,
@@ -198,8 +199,9 @@ export type OutcomeRead =
   | { readonly ok: false; readonly errors: readonly OutcomeError[] };
 
 /**
- * The outcome to record, or what is missing (D6): met needs a stage after and a next step; the case
- * size and reviewer may stay empty. Any other status keeps only its note (mockup 6i).
+ * The outcome to record, or what is missing (D6): met needs a stage after and a next step, empty
+ * as the command reads it (`normalizeText`: nothing to see, DR6-72); the case size and reviewer may
+ * stay empty. Any other status keeps only its note (mockup 6i).
  */
 export function readOutcome(draft: OutcomeDraft): OutcomeRead {
   const errors: OutcomeError[] = [];
@@ -208,7 +210,7 @@ export function readOutcome(draft: OutcomeDraft): OutcomeRead {
     const nextStep = draft.nextStep.trim();
     const size = readCaseSize(draft.caseSize);
     if (draft.stageAfter === null) errors.push('stageAfter');
-    if (nextStep === '') errors.push('nextStep');
+    if (normalizeText(nextStep) === '') errors.push('nextStep');
     if (size && !size.ok) errors.push('caseSize');
     outcome = {
       ...outcome,

@@ -202,6 +202,7 @@ export const vi = {
   'aiPanel.report.attempts': '{count} lần thử',
   'aiPanel.report.tokens': '{count} token',
   'aiPanel.report.attempt': 'Lần thử {n}',
+  'aiPanel.report.tooLarge': 'Output quá lớn (trên {count} ký tự), app không lưu.',
   'aiPanel.report.latest':
     'Kết quả bị loại không dùng làm phân tích. Bản hiện hành vẫn là lần {date}.',
   'aiPanel.report.none': 'Kết quả bị loại không dùng làm phân tích.',
@@ -790,6 +791,8 @@ export const vi = {
   'appointmentForm.suggestUse': 'Dùng {date}',
   'appointmentForm.suggestHelp':
     'App không tự đổi năm. Giữ nguyên là ghi lịch hẹn quá khứ (nhập bù).',
+  'appointmentForm.suggestLastYear': '{date} còn {n} ngày nữa. Ý anh là {when}?',
+  'appointmentForm.suggestLastYearHelp': 'App không tự đổi năm. Giữ nguyên là lịch hẹn năm nay.',
   'appointmentForm.time': 'Giờ (hh:mm, không bắt buộc)',
   'appointmentForm.timeError': 'Giờ từ 00:00 đến 23:59.',
   'appointmentForm.trigger': 'Trigger',

@@ -26,6 +26,7 @@ import { ulid } from './ids';
 import {
   PERSON_REFERENCE_KINDS,
   PERSON_REFERENCES,
+  POINTS_TO,
   type PersonReferenceKind,
 } from './person-references';
 import { people, teams } from './schema';
@@ -126,10 +127,12 @@ export function personUsage(db: Database, id: string): PersonUsage {
 
 /**
  * Whether the person is the RE of anything live, which keeps them an RE: the records keep pointing
- * to their RE (spec §3.3).
+ * to their RE (spec §3.3). The kinds are those `POINTS_TO` gives the RE, as import rule 5 reads it.
  */
 export function ownsRecords(usage: PersonCounts): boolean {
-  return usage.customers + usage.appointments + usage.policies > 0;
+  return PERSON_REFERENCE_KINDS.some(
+    (kind) => POINTS_TO[kind] === 're' && usage[USAGE_FIELDS[kind]] > 0,
+  );
 }
 
 /** Whether anything in `usage` keeps the person from deletion: a live reference of any kind. */

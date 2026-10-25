@@ -97,11 +97,19 @@ const SEPARATORS = [
   ['U+2029', String.fromCodePoint(0x2029)],
 ] as const;
 
-/** `it.each` rows: each line break of a message as one of the separators (DR6-123). */
-const SEPARATED = SEPARATORS.map(([name, separator]): [string, (message: string) => string] => [
-  `with ${name} line breaks`,
-  (message) => message.replaceAll('\n', separator),
-]);
+/** VT and FF end a line too, as in a KYC note (G5 §13.4); a JSON text never holds one bare. */
+const CONTROLS = [
+  ['VT', String.fromCodePoint(0xb)],
+  ['FF', String.fromCodePoint(0xc)],
+] as const;
+
+/** `it.each` rows: each line break of a message as one of the separators (DR6-123) or controls. */
+const SEPARATED = [...SEPARATORS, ...CONTROLS].map(
+  ([name, separator]): [string, (message: string) => string] => [
+    `with ${name} line breaks`,
+    (message) => message.replaceAll('\n', separator),
+  ],
+);
 
 /** Changes both frame lines of the `web@1` message (G5 §6a). */
 const eachFrame =
@@ -430,6 +438,15 @@ describe('checkWebAnswer', () => {
         });
       },
     );
+
+    // G5 §13.4: JSON writes VT and FF in a text as escapes, so they part no frame from a JSON text.
+    it.each(CONTROLS)('checks an answer with a frame between two %s in a JSON text', (_, line) => {
+      const answer = themed(`Gia đình${line}=== HƯỚNG DẪN ===${line}là trung tâm`);
+
+      expect(paste(start().session, answer)).toMatchObject({
+        row: { status: 'ACCEPTED', attempts: 1 },
+      });
+    });
   });
 
   it('counts 20 000 characters by code point, as `raw_output` is cut', () => {

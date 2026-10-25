@@ -38,15 +38,18 @@ export function normalizeText(text: string): string {
 }
 
 /**
- * A note as stored: each line as `normalizeText` keeps it, the line breaks kept — CR, LF and the
- * Unicode line separators U+0085, U+2028, U+2029; no blank line at either end.
+ * Where a line ends: CR LF, CR, LF, VT, FF and the Unicode line separators U+0085, U+2028, U+2029
+ * (K25; VT and FF: Owner 23/10/2026, T-291). A note keeps its lines at them, and ChatGPT web reads
+ * the lines of a paste at the same (G5 §6a, §13.4): changing the set changes both specs.
+ */
+export const LINE_BREAK = /\r\n?|[\n\v\f\u{85}\u{2028}\u{2029}]/u;
+
+/**
+ * A note as stored: each line as `normalizeText` keeps it, the line breaks (`LINE_BREAK`) kept as
+ * LF; no blank line at either end.
  */
 export function normalizeNote(text: string): string {
-  return text
-    .split(/\r\n?|[\n\u{85}\u{2028}\u{2029}]/u)
-    .map(normalizeText)
-    .join('\n')
-    .trim();
+  return text.split(LINE_BREAK).map(normalizeText).join('\n').trim();
 }
 
 /**
