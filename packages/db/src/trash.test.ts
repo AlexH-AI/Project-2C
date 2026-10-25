@@ -386,6 +386,7 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
     expect(isRf(db, kept.id)).toBe(false);
   });
 
+  // The same code as E6, flagged as of the same day: later only by the order of recording.
   it('E20: blocks a met appointment once the stage was moved on its day after the deletion', async () => {
     const { db, bao, meeting, row, restored } = await deletedMeeting();
     changeStageManually(db, bao.id, { to: 'N1', date: d(2, 10) });
@@ -393,7 +394,7 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
     const r = row(meeting.id);
     expect(r.blocked).toEqual({
       code: 'TRANSITION_BEFORE_LATEST',
-      params: { date: '02/10/2026' },
+      params: { date: '02/10/2026', sameDay: 1 },
     });
     expect(restored(r)).toEqual(r.blocked);
   });
@@ -445,7 +446,7 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
     const r = row(meeting.id);
     expect(r.blocked).toEqual({
       code: 'TRANSITION_BEFORE_LATEST',
-      params: { date: '02/10/2026' },
+      params: { date: '02/10/2026', sameDay: 1 },
     });
     expect(restored(r)).toEqual(r.blocked);
   });
@@ -501,7 +502,7 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
     const r = row(first.id);
     expect(r.blocked).toEqual({
       code: 'TRANSITION_BEFORE_LATEST',
-      params: { date: '05/10/2026' },
+      params: { date: '05/10/2026', sameDay: 1 },
     });
     expect(restored(r)).toEqual(r.blocked);
   });

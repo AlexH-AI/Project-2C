@@ -181,7 +181,8 @@ test('edits the issued FYP (8d), then deletes the policy softly', async ({ page 
   await expect(row).toContainText('Phát hành 15/09 · 385,5 tr');
 
   // The FYP is compared as typed (DR6-40); moving a day to another month takes the FYP out of the
-  // old month and into the new one (DR6-41).
+  // old month and into the new one (DR6-41), and the policy from the count of the old month to that
+  // of the new one, a line after the FYP lines of each (mockup 8d "dời tháng", G3 T-284).
   await row.getByRole('button', { name: 'Sửa HĐ nộp 01/09/2026' }).click();
   await dialog.getByRole('textbox', { name: /^Ngày nộp/ }).fill('25/8');
   await dialog.getByRole('textbox', { name: /^FYP nộp/ }).fill('390tr');
@@ -190,8 +191,16 @@ test('edits the issued FYP (8d), then deletes the policy softly', async ({ page 
   await expect(dialog.getByRole('definition').locator('span')).toHaveText([
     /^FYP nộp tháng 09\/2026 của RE .+ giảm 400 tr$/,
     /^FYP nộp tháng 08\/2026 của RE .+ tăng 390 tr$/,
+    'tháng 09/2026: −1 HĐ nộp · tháng 08/2026: +1 HĐ nộp',
     /^FYP phát hành tháng 09\/2026 của RE .+ giảm 385,5 tr$/,
     /^FYP phát hành tháng 08\/2026 của RE .+ tăng 385,5 tr$/,
+    'tháng 09/2026: −1 HĐ phát hành · tháng 08/2026: +1 HĐ phát hành',
+  ]);
+  // Back within the month the policy was in, only the FYP lines are left.
+  await dialog.getByRole('textbox', { name: /^Ngày nộp/ }).fill('2/9');
+  await dialog.getByRole('textbox', { name: /^Ngày phát hành/ }).fill('14/9');
+  await expect(dialog.getByRole('definition').locator('span')).toHaveText([
+    /^FYP nộp tháng 09\/2026 của RE .+ giảm 10 tr$/,
   ]);
   await dialog.getByRole('button', { name: 'Xóa HĐ…' }).click();
   const confirm = page.getByRole('dialog', { name: 'Xóa HĐ nộp 01/09/2026' });
@@ -219,14 +228,45 @@ test('two policies submitted the same day have four buttons of four different na
   }
   await expect(card.getByRole('listitem')).toHaveCount(2);
 
-  for (const verb of ['Phát hành', 'Sửa']) {
-    for (const fyp of ['24.000.000 ₫', '48.000.000 ₫']) {
-      const button = card.getByRole('button', {
-        name: `${verb} HĐ nộp 10/09/2026 · ${fyp}`,
-        exact: true,
-      });
-      await expect(button).toHaveCount(1);
+  for (const fyp of ['24.000.000 ₫', '48.000.000 ₫']) {
+    for (const name of [
+      `Phát hành HĐ nộp 10/09/2026 · ${fyp}`,
+      `Sửa HĐ nộp 10/09/2026 · ${fyp} · Đã nộp`,
+    ]) {
+      await expect(card.getByRole('button', { name, exact: true })).toHaveCount(1);
     }
+  }
+});
+
+// Review of PR 748: one submitted and one issued, of one day and one FYP, differ by their badges;
+// their "Sửa" buttons say the status too (only the first has "Phát hành").
+test('a policy submitted and one issued, of one day and one FYP, have two "Sửa" names', async ({
+  page,
+}) => {
+  await createKycCustomer(page, 'Hà Hai Trạng Thái');
+  const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
+  const submit = async () => {
+    await card.getByRole('button', { name: '+ Hợp đồng' }).first().click();
+    const dialog = page.getByRole('dialog', { name: 'Hợp đồng mới · đã nộp' });
+    await dialog.getByRole('textbox', { name: /^Ngày nộp/ }).fill('10/9');
+    await dialog.getByRole('textbox', { name: /^FYP nộp/ }).fill('24tr');
+    await dialog.getByRole('button', { name: 'Lưu HĐ' }).click();
+    await expect(dialog).toBeHidden();
+  };
+  await submit();
+  await card.getByRole('button', { name: 'Phát hành HĐ nộp 10/09/2026 · 24.000.000 ₫' }).click();
+  const issue = page.getByRole('dialog', { name: 'Phát hành HĐ' });
+  await issue.getByRole('button', { name: 'Phát hành', exact: true }).click();
+  await expect(issue).toBeHidden();
+  await submit();
+
+  await expect(card.getByRole('listitem')).toHaveCount(2);
+  for (const status of ['Đã nộp', 'Đã phát hành']) {
+    const edit = card.getByRole('button', {
+      name: `Sửa HĐ nộp 10/09/2026 · 24.000.000 ₫ · ${status}`,
+      exact: true,
+    });
+    await expect(edit).toHaveCount(1);
   }
 });
 

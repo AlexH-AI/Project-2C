@@ -160,7 +160,8 @@ Khi bản ghi cần một bản ghi khác đã xóa hoặc đã đổi, nút **K
 | "RE … đã xóa — khôi phục RE trước." | Khôi phục RE ở loại Nhân sự trước |
 | "… nay là TL, không phụ trách KH được — đổi lại vai trò RE trước." | Đổi vai trò người đó về RE ở [Team & nhân sự](08-team.md#sửa-người) |
 | "Người phối hợp … đã xóa — khôi phục trước." / "Người đánh giá … đã xóa — khôi phục trước." | Khôi phục người đó trước |
-| "Nhóm KH đã đổi ngày …, sau ngày cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10)." | Không khôi phục được cuộc gặp này: nhóm KH đã đổi sau ngày gặp, hoặc đã đổi chính ngày gặp nhưng sau lúc xóa lịch. Chỉ gặp với cuộc gặp đã chuyển nhóm KH |
+| "Nhóm KH đã đổi ngày …, sau ngày cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10)." | Không khôi phục được cuộc gặp này: nhóm KH đã đổi sau ngày gặp. Chỉ gặp với cuộc gặp đã chuyển nhóm KH |
+| "Nhóm KH đã đổi ngày …, ghi sau lúc xóa cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10)." | Như dòng trên: nhóm KH đã đổi chính ngày gặp, nhưng ghi sau lúc xóa lịch |
 | "KH đang Mất cơ hội, chỉ mở lại được về N3 — không chuyển sang N2." | Không khôi phục được cuộc gặp này khi KH đang ở nhóm đóng |
 | "Khôi phục team … trước." | Khôi phục team trước, rồi khôi phục người |
 | "Sao Mai đã có TL Nguyễn Thu Hà." | Team đã có TL khác: đổi vai trò một trong hai người trước |

@@ -160,6 +160,11 @@ test('a deleted appointment shows in Thùng rác, whatever the scope (TR-7)', as
   expect((await actions.getByText('Thao tác').boundingBox())?.width).toBeLessThanOrEqual(1);
   const re = /RE (.+)$/.exec((await row.getByRole('cell').nth(2).textContent()) ?? '')?.[1] ?? '';
   expect(re).not.toBe('');
+  // The restore button is named by the words of the cell, read as the screen shows them.
+  const title = await row.getByRole('cell').nth(1).locator('b').innerText();
+  await expect(row.getByRole('button', { name: /^Khôi phục/ })).toHaveAccessibleName(
+    `Khôi phục lịch hẹn ${title} của KH ${name}`,
+  );
 
   // The appointment's customer by name finds it; another kind or name does not.
   const search = trash(page).getByRole('searchbox', { name: 'Tìm theo tên' });
@@ -446,7 +451,7 @@ test('a deleted policy submitted tomorrow can be restored once its day comes (TR
 
   await settingsNav(page).getByRole('button', { name: 'Thùng rác' }).click();
   const restore = table(page).getByRole('button', {
-    name: `Khôi phục HĐ nộp 16/09/2026 · 24.000.000 ₫ · Đã nộp của KH ${customer.name}`,
+    name: `Khôi phục HĐ Nộp 16/09/2026 · 24.000.000 ₫ · Đã nộp của KH ${customer.name}`,
   });
   await expect(restore).toBeDisabled();
   await expect(restore).toHaveAccessibleDescription('Ngày nộp 16/09/2026 sau hôm nay.');
@@ -456,6 +461,40 @@ test('a deleted policy submitted tomorrow can be restored once its day comes (TR
   await expect(restore).toBeEnabled();
   await expect(trash(page)).not.toContainText('sau hôm nay');
   expect(errors).toEqual([]);
+});
+
+// Review of PR 748: a restore button is named by the very words of its "Bản ghi" cell, a policy's
+// status badge too, so two rows that differ on screen differ by their buttons as well (DR6-119).
+test('names each restore button by the words of its "Bản ghi" cell, a policy with its status', async ({
+  page,
+}) => {
+  let customer!: BackupRow;
+  await importChanged(page, (tables) => {
+    customer = liveCustomer(tables);
+    const deletedAt = new Date(2026, 8, 15, 9, 0).toISOString();
+    tables.policies!.push(deletedPolicy('names-submitted', customer, '2026-09-10', deletedAt), {
+      ...deletedPolicy('names-issued', customer, '2026-09-10', deletedAt),
+      issued_date: '2026-09-12',
+      issued_fyp: 24_000_000,
+    });
+  });
+
+  await settingsNav(page).getByRole('button', { name: 'Thùng rác' }).click();
+  const rows = table(page)
+    .getByRole('row')
+    .filter({ has: page.getByRole('cell', { name: 'HĐ', exact: true }) });
+  await expect(rows).toHaveCount(2);
+  const names = new Set<string>();
+  for (const row of await rows.all()) {
+    const cell = row.getByRole('cell').nth(1);
+    const title = await cell.locator('b').innerText();
+    const status = await cell.getByText(/^Đã (nộp|phát hành)$/).innerText();
+    const name = `Khôi phục HĐ ${title} · ${status} của KH ${customer.name}`;
+    await expect(row.getByRole('button', { name: /^Khôi phục/ })).toHaveAccessibleName(name);
+    names.add(name);
+  }
+  // One day, one FYP: the status tells the two apart, on screen and by name.
+  expect(names.size).toBe(2);
 });
 
 test('purges the trash for good once DỌN SẠCH is typed, in web mode without a backup (TR-11; 11i, 11j, D13)', async ({

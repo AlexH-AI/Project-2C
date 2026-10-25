@@ -38,6 +38,13 @@ export type IssuedDateResult =
   | { readonly ok: false; readonly error: 'beforeSubmitted'; readonly date: CalendarDate }
   | Extract<RecordDateResult, { ok: false }>;
 
+/**
+ * A policy's status as its badge words it, wherever the status is said: the badges of the Hợp đồng
+ * card and of Thùng rác, the names of their buttons, the subtitle of 8d.
+ */
+export const policyStatusText = (policy: { readonly issuedDate: CalendarDate | null }): string =>
+  t(policy.issuedDate === null ? 'policyStatus.submitted' : 'policyStatus.issued');
+
 /** `new` submits a policy (8a), `issue` issues it (8b, 8c), `edit` changes or deletes it (8d). */
 export type PolicyMode =
   { readonly kind: 'new' } | { readonly kind: 'issue' | 'edit'; readonly policy: Policy };
@@ -128,18 +135,32 @@ function readIssuedDate(
     : { ok: true, date: parsed.date, daysAfter };
 }
 
-/** What an edit does to one month: the FYP the policy's RE submitted or issued that month. */
-export interface Effect {
-  readonly metric: 'submitted' | 'issued';
-  readonly year: number;
-  readonly month: number;
-  readonly diff: Vnd;
-}
+/** A line of "Ảnh hưởng chỉ số" (8d): what an edit does to the metrics of the months. */
+export type Effect =
+  /** The FYP the policy's RE submitted or issued in one month. */
+  | {
+      readonly kind: 'fyp';
+      readonly metric: 'submitted' | 'issued';
+      readonly year: number;
+      readonly month: number;
+      readonly diff: Vnd;
+    }
+  /**
+   * A day moved to another month: the policy leaves the count of policies submitted or issued of
+   * the month of `from` for that of `to` (mockup 8d "dời tháng", G3 T-284).
+   */
+  | {
+      readonly kind: 'count';
+      readonly metric: 'submitted' | 'issued';
+      readonly from: CalendarDate;
+      readonly to: CalendarDate;
+    };
 
 /**
  * Mockup 8d as the edit stands: how far the issued FYP is from the submitted one, both as typed
  * (DR6-40; null until both read), and "Ảnh hưởng chỉ số": what saving does to the FYP submitted
- * and issued of each month, from the saved policy (none while a field is wrong).
+ * and issued of each month, and to the counts of the months a day moves between, from the saved
+ * policy (none while a field is wrong).
  */
 export function policyChange(saved: Policy, read: PolicyRead) {
   const submitted = read.submittedFyp.ok ? read.submittedFyp.amount : null;
@@ -175,39 +196,54 @@ const booked = (date: CalendarDate | null, fyp: Vnd | null): Booked | null =>
 
 /**
  * One metric's months: an FYP that moves to another month leaves the old one, then comes into the
- * new one (DR6-41); within one month only the difference counts.
+ * new one (DR6-41), and the policy with it in the count of that metric, a line after the FYP's
+ * (G3 T-284); within one month only the difference of the FYP counts.
  */
 function monthEffects(
   metric: Effect['metric'],
   before: Booked | null,
   after: Booked | null,
 ): Effect[] {
-  const effect = ({ date }: Booked, diff: Vnd): Effect => ({
+  const effect = ({ date }: Booked, diff: Vnd): Extract<Effect, { kind: 'fyp' }> => ({
+    kind: 'fyp',
     metric,
     year: date.year,
     month: date.month,
     diff,
   });
-  const effects =
+  const sameMonth =
     before &&
     after &&
     before.date.year === after.date.year &&
-    before.date.month === after.date.month
-      ? [effect(after, after.fyp - before.fyp)]
-      : [
-          ...(before ? [effect(before, -before.fyp)] : []),
-          ...(after ? [effect(after, after.fyp)] : []),
-        ];
-  return effects.filter((e) => e.diff !== 0);
+    before.date.month === after.date.month;
+  const effects = sameMonth
+    ? [effect(after, after.fyp - before.fyp)]
+    : [
+        ...(before ? [effect(before, -before.fyp)] : []),
+        ...(after ? [effect(after, after.fyp)] : []),
+      ];
+  const moved: Effect[] =
+    before && after && !sameMonth
+      ? [{ kind: 'count', metric, from: before.date, to: after.date }]
+      : [];
+  return [...effects.filter((e) => e.diff !== 0), ...moved];
 }
 
 export const monthOf = (date: CalendarDate) => formatPeriodValue(periodOf('month', date));
 
 /**
  * A line of "Ảnh hưởng chỉ số" (8d). Without the RE's name (an RE no longer listed, e.g.
- * deleted), the sentence leaves the RE out rather than show an empty name.
+ * deleted), the sentence leaves the RE out rather than show an empty name; the line of the counts
+ * names no RE (mockup 8d "dời tháng").
  */
 export function effectText(effect: Effect, reName: string | undefined): string {
+  if (effect.kind === 'count') {
+    return t('policyForm.countMoved', {
+      from: monthOf(effect.from),
+      to: monthOf(effect.to),
+      label: t(`policyForm.count.${effect.metric}`),
+    });
+  }
   const params = {
     label: t(`policyForm.metric.${effect.metric}`),
     month: monthOf(calendarDate(effect.year, effect.month, 1)),

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   changeStageManually,
   createCustomer,
@@ -6,7 +6,10 @@ import {
   createTeam,
   listCustomers,
   listTrash,
+  previewPurge,
+  recordKycNote,
   recordMeetingOutcome,
+  rescheduleAppointment,
   scheduleAppointment,
   softDeleteAppointment,
   softDeleteCustomer,
@@ -30,6 +33,7 @@ import {
   ownerParts,
   purgedNotice,
   purgeFailure,
+  purgePlan,
   purgeReminder,
   purgeView,
   recordDetail,
@@ -40,6 +44,7 @@ import {
   restoredNotice,
   trashCounts,
 } from './trash-view';
+import { policyStatusText } from './customers/policy-form';
 import { openAppData } from '../data/app-data';
 import { t } from '../i18n';
 
@@ -119,6 +124,14 @@ const policy: TrashRow = {
   owner: { customer: ref('Hoàng Ngọc Lan'), re: ref('Hoàng Nhật Minh') },
   effect: { kind: 'none' },
 };
+
+/** The same day, the same FYP as `policy`, issued since (DR6-119). */
+const issuedPolicy: TrashRow = {
+  ...policy,
+  id: 'p3',
+  issuedDate: calendarDate(2026, 9, 20),
+  issuedFyp: 24_000_000,
+} as TrashRow;
 
 const mai: TrashRow = {
   kind: 'person',
@@ -211,6 +224,10 @@ describe('recordTitle and recordDetail (spec Phase 6 §4.2 "Bản ghi")', () => 
   it('a customer: its name, and the records restored with it', () => {
     expect(recordTitle(minhAnh)).toBe('Trịnh Minh Anh');
     expect(recordDetail(minhAnh)).toBe('khôi phục kèm 7 lịch hẹn · 0 HĐ · 5 ghi chú KYC');
+    const many = { kind: 'customer', appointments: 1204, policies: 0, kycNotes: 3470 } as const;
+    expect(recordDetail({ ...minhAnh, effect: { ...minhAnh.effect, ...many } } as TrashRow)).toBe(
+      'khôi phục kèm 1.204 lịch hẹn · 0 HĐ · 3.470 ghi chú KYC',
+    );
   });
 
   it('an appointment: day, time and status; a met one its stage change and RF', () => {
@@ -300,8 +317,18 @@ describe('restoreLabel (DR6-43)', () => {
       'Khôi phục lịch hẹn 06/10/2026 · Dự kiến của KH Trịnh Minh Anh',
     );
     expect(restoreLabel(policy)).toBe(
-      'Khôi phục HĐ nộp 15/09/2026 · 24.000.000 ₫ · Đã nộp của KH Hoàng Ngọc Lan',
+      'Khôi phục HĐ Nộp 15/09/2026 · 24.000.000 ₫ · Đã nộp của KH Hoàng Ngọc Lan',
     );
+  });
+
+  // Review of PR 748: what tells two rows apart on screen is what tells their buttons apart, by
+  // construction rather than by a second sentence to keep in step with the cell.
+  it('names the record as the first line of its "Bản ghi" cell does, a policy with its badge', () => {
+    for (const row of [...ROWS, issuedPolicy]) {
+      const record =
+        row.kind === 'policy' ? `${recordTitle(row)} · ${policyStatusText(row)}` : recordTitle(row);
+      expect(restoreLabel(row)).toContain(` ${record}`);
+    }
   });
 
   it('tells apart the buttons of a whole trash', () => {
@@ -311,7 +338,7 @@ describe('restoreLabel (DR6-43)', () => {
   it('tells apart two policies of a customer submitted the same day by their FYP (DR6-99)', () => {
     const other = { ...policy, id: 'p2', submittedFyp: 100_000_000 } as TrashRow;
     expect(restoreLabel(other)).toBe(
-      'Khôi phục HĐ nộp 15/09/2026 · 100.000.000 ₫ · Đã nộp của KH Hoàng Ngọc Lan',
+      'Khôi phục HĐ Nộp 15/09/2026 · 100.000.000 ₫ · Đã nộp của KH Hoàng Ngọc Lan',
     );
     expect(restoreLabel(other)).not.toBe(restoreLabel(policy));
   });
@@ -329,16 +356,10 @@ describe('restoreLabel (DR6-43)', () => {
   });
 
   it('tells apart a policy submitted and one issued, the same day, the same FYP (DR6-119)', () => {
-    const issued = {
-      ...policy,
-      id: 'p3',
-      issuedDate: calendarDate(2026, 9, 20),
-      issuedFyp: 24_000_000,
-    } as TrashRow;
-    expect(restoreLabel(issued)).toBe(
-      'Khôi phục HĐ nộp 15/09/2026 · 24.000.000 ₫ · Đã phát hành của KH Hoàng Ngọc Lan',
+    expect(restoreLabel(issuedPolicy)).toBe(
+      'Khôi phục HĐ Nộp 15/09/2026 · 24.000.000 ₫ · Đã phát hành của KH Hoàng Ngọc Lan',
     );
-    expect(restoreLabel(issued)).not.toBe(restoreLabel(policy));
+    expect(restoreLabel(issuedPolicy)).not.toBe(restoreLabel(policy));
   });
 
   it('leaves "của KH" out for a row with no customer, which the foreign key keeps from existing', () => {
@@ -346,7 +367,7 @@ describe('restoreLabel (DR6-43)', () => {
       'Khôi phục lịch hẹn 02/10/2026 09:30 · Đã gặp',
     );
     expect(restoreLabel({ ...policy, owner: {} } as TrashRow)).toBe(
-      'Khôi phục HĐ nộp 15/09/2026 · 24.000.000 ₫ · Đã nộp',
+      'Khôi phục HĐ Nộp 15/09/2026 · 24.000.000 ₫ · Đã nộp',
     );
   });
 });
@@ -391,9 +412,24 @@ describe('blockedReason (mockup 11d)', () => {
   });
 
   it('E20: the stage changed on the day of the meeting, recorded after the deletion (DR6-94)', () => {
-    const sameDay = { code: 'TRANSITION_BEFORE_LATEST', params: { date: '28/09/2026' } } as const;
+    const sameDay = {
+      code: 'TRANSITION_BEFORE_LATEST',
+      params: { date: '28/09/2026', sameDay: 1 },
+    } as const;
     expect(reason(blockedMet, sameDay)).toBe(
       'Nhóm KH đã đổi ngày 28/09/2026, ghi sau lúc xóa cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10).',
+    );
+  });
+
+  // The command flags the same day: the sentence never hangs on how the day is written.
+  it('E20: goes by the flag of the command, not by a day written as the row writes it', () => {
+    const block = (params: TrashBlock['params']) =>
+      reason(blockedMet, { code: 'TRANSITION_BEFORE_LATEST', params });
+    expect(block({ date: '28/09/2026' })).toBe(
+      'Nhóm KH đã đổi ngày 28/09/2026, sau ngày cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10).',
+    );
+    expect(block({ date: '2026-09-28', sameDay: 1 })).toBe(
+      'Nhóm KH đã đổi ngày 2026-09-28, ghi sau lúc xóa cuộc hẹn này — không ghi chuyển nhóm lùi ngày (D10).',
     );
   });
 
@@ -878,15 +914,17 @@ describe('Dọn sạch Thùng rác (TR-11…TR-13; mockup 11h–11j)', () => {
     expect(none.facts[0]).toEqual({ term: 'KH', text: '0' });
   });
 
+  // Sentence by sentence, which the screen places side by side as Nạp lại and Nhập backup place
+  // theirs (review of PR 710).
   it('D2, D13: the notice says what went for good, and the backup in the exe (11j)', () => {
     expect(purgedNotice({ ...D1, backup: 'project2c-s00000013-20261011-164512.db' })).toEqual({
       title: 'Đã dọn sạch Thùng rác',
-      detail:
-        'Xóa hẳn 3 KH (kèm 12 lịch hẹn · 1 HĐ · 9 ghi chú KYC · 2 phân tích AI) · 6 lịch hẹn · 2 HĐ · 2 nhân sự · 1 team. Backup: Project2C-data\\backups\\project2c-s00000013-20261011-164512.db',
+      deleted:
+        'Xóa hẳn 3 KH (kèm 12 lịch hẹn · 1 HĐ · 9 ghi chú KYC · 2 phân tích AI) · 6 lịch hẹn · 2 HĐ · 2 nhân sự · 1 team.',
+      kept: null,
+      backup: 'Backup: Project2C-data\\backups\\project2c-s00000013-20261011-164512.db',
     });
-    expect(purgedNotice({ ...D1, backup: undefined }).detail).toBe(
-      'Xóa hẳn 3 KH (kèm 12 lịch hẹn · 1 HĐ · 9 ghi chú KYC · 2 phân tích AI) · 6 lịch hẹn · 2 HĐ · 2 nhân sự · 1 team.',
-    );
+    expect(purgedNotice({ ...D1, backup: undefined })).toMatchObject({ kept: null, backup: null });
   });
 
   it('D5: the notice leaves a kind with none out, and counts what it kept', () => {
@@ -897,13 +935,88 @@ describe('Dọn sạch Thùng rác (TR-11…TR-13; mockup 11h–11j)', () => {
       appointments: 0,
       people: 0,
     };
-    expect(purgedNotice({ counts, kept: [moved], backup: undefined }).detail).toBe(
-      'Xóa hẳn 1 KH (kèm 4 ghi chú KYC) · 2 HĐ · 1 team. Giữ lại 1 bản ghi còn được dùng.',
-    );
+    expect(purgedNotice({ counts, kept: [moved], backup: undefined })).toMatchObject({
+      deleted: 'Xóa hẳn 1 KH (kèm 4 ghi chú KYC) · 2 HĐ · 1 team.',
+      kept: 'Giữ lại 1 bản ghi còn được dùng.',
+    });
     const bare = { ...counts, customerRecords: { ...counts.customerRecords, kycNotes: 0 } };
-    expect(purgedNotice({ counts: bare, kept: [], backup: undefined }).detail).toBe(
+    expect(purgedNotice({ counts: bare, kept: [], backup: undefined }).deleted).toBe(
       'Xóa hẳn 1 KH · 2 HĐ · 1 team.',
     );
+  });
+
+  /**
+   * A trash of every kind, by the commands: Lan deleted with its records, one appointment deleted on
+   * its own before; Bảo's Dời lịch kept by the appointment rescheduled from it (D5), a policy; an RE
+   * and the team.
+   */
+  const everyKind = () =>
+    openAppData({
+      today: () => calendarDate(2026, 10, 11),
+      seed: (db) => {
+        const day = calendarDate(2026, 10, 2);
+        const team = createTeam(db, { name: 'Sao Mai' });
+        const binhMinh = createTeam(db, { name: 'Bình Minh' });
+        const reId = createPerson(db, { name: 'Bùi Anh Tuấn', role: 'RE', teamId: team.id }).id;
+        const mai = createPerson(db, { name: 'Vương Thị Mai', role: 'RE', teamId: binhMinh.id });
+        const lan = createCustomer(db, { name: 'Hoàng Ngọc Lan', reId, stage: 'N3', date: day });
+        const bao = createCustomer(db, { name: 'Phạm Gia Bảo', reId, stage: 'N3', date: day });
+        const book = (customerId: string) =>
+          scheduleAppointment(db, { customerId, reId, date: day, triggerType: 'REFERRAL' });
+        const submit = (customerId: string) =>
+          submitPolicy(db, { customerId, reId, submittedDate: day, submittedFyp: 24_000_000 });
+        softDeleteAppointment(db, book(lan.id).id);
+        book(lan.id);
+        submit(lan.id);
+        recordKycNote(db, lan.id, { text: 'Có hai con', date: day, facts: [] });
+        softDeleteCustomer(db, lan.id);
+        const moved = book(bao.id);
+        rescheduleAppointment(db, moved.id, { date: calendarDate(2026, 10, 15) });
+        softDeleteAppointment(db, moved.id);
+        softDeletePolicy(db, submit(bao.id).id);
+        softDeletePerson(db, mai.id);
+        softDeleteTeam(db, binhMinh.id);
+      },
+    });
+
+  it('D1, D5: the dialog reads the plan of the purge from the rows of the list', async () => {
+    const db = (await everyKind()).db();
+    const plan = purgePlan(listTrash(db));
+    expect(plan).toEqual(previewPurge(db));
+    expect(plan).toMatchObject({
+      counts: {
+        customers: 1,
+        customerRecords: { appointments: 1, policies: 1, kycNotes: 1, aiAnalyses: 0 },
+        appointments: 1,
+        policies: 1,
+        people: 1,
+        teams: 1,
+      },
+      kept: [{ kind: 'appointment', by: { kind: 'rescheduled' } }],
+    });
+  });
+
+  /** How `keptRecords` (`packages/db/src/purge.ts`) starts, every time it runs. */
+  const KEPT_RECORDS_FIRST_STATEMENT =
+    'SELECT 1 FROM appointments WHERE deleted_at IS NOT NULL LIMIT 1';
+
+  // Review of PR 710: `listTrash` ran `keptRecords` for the rows already. The dialog runs it no more
+  // when it opens, nor on the data it purged as it closes: only the purge does, in its transaction.
+  it('opening the dialog and purging run keptRecords for the purge alone', async () => {
+    const app = await everyKind();
+    const exec = vi.spyOn(app.db().sqlite, 'exec');
+    // The first statement of `keptRecords`, whatever comes of it.
+    const kept = () =>
+      exec.mock.calls.filter(([sql]) => sql === KEPT_RECORDS_FIRST_STATEMENT).length;
+
+    const rows = listTrash(app.db());
+    expect(kept()).toBe(1);
+    const shown = purgeView(purgePlan(rows));
+    expect(kept()).toBe(1);
+    const purged = await app.purgeTrash();
+    expect(kept()).toBe(2);
+    // What the dialog said goes is what went.
+    expect(purgeView(purged)).toEqual(shown);
   });
 
   it('D7, D8, D9: a purge refused says why, and that nothing changed', () => {

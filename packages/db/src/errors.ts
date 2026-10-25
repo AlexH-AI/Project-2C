@@ -43,7 +43,10 @@ export const DB_ERROR_CODES = [
   /** Params `to`, and `from` unless the customer is being created. */
   'INVALID_TRANSITION',
   'TRANSITION_NOT_LATEST',
-  /** A transition dated before the customer's latest; params `date` (that latest one's, as shown). */
+  /**
+   * A transition dated before the customer's latest, or of its day yet before it in the order of
+   * recording (spec Phase 6 E20, params `sameDay`: 1); params `date` (that latest one's, as shown).
+   */
   'TRANSITION_BEFORE_LATEST',
   /**
    * A transition dated before a met appointment of the customer, which recorded the stage of its
