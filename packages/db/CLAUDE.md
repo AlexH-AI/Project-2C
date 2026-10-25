@@ -34,7 +34,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 <!-- codemap:start -->
 - `src/ai-analyses.ts` — type NewAiAnalysis, type AiAnalysisRecord, type AiAnalysisState, type AiAnalysisReminder, type AiAnalysisView, recordAiAnalysis, type AnalysisFields, analysisLabelsFit, analysisContentFits, listAiAnalyses
 - `src/appointments.ts` — type AppointmentTrigger, type AppointmentRecord, type NewAppointment, type MeetingOutcome, type NextAppointment, type AppointmentDetails, listAppointments, scheduleAppointment, recordMeetingOutcome, recordOutcomeWithNext, editMeetingOutcome, rescheduleAppointment, softDeleteAppointment, restoreAppointment, checkRestoreAppointment, restoreStageMove
-- `src/backup-validation.ts` — validateBackupValues, validateBackupInvariants, dataTables
+- `src/backup-validation.ts` — validateBackupValues, validateBackupInvariants, storedKycHash, dataTables
 - `src/backup.ts` — BACKUP_FORMAT, MAX_BACKUP_BYTES, type ImportedBackup, exportBackup, importBackup
 - `src/common.ts` — cleanText, cleanNote, storable, requireChoice, requireName, optionalText, sqlTexts, isLabel, stampDeleted, storedDate, today, storedPastDate, nextSeq, isFee, requireAmount, requireRe, selectRows, prepared, rowInsert, findRow, requireRow, liveRow, updateRow, liveCustomer, lastSeq
 - `src/counts.ts` — type RecordCounts, countRecords, type CustomerRecordCounts, countCustomerRecords

@@ -20,7 +20,9 @@ import {
   type KycField,
   type KycGateResult,
 } from '@p2c/domain';
-import { z } from 'zod';
+// `zod/mini` for its size (DR6-25): the checks of `zod`, but no English messages, only "Invalid
+// input". No V1 detail shows one: the validator words it from the issue, or takes our message.
+import * as z from 'zod/mini';
 
 /** The three AI modes: `analysis` (`PAIN_POINT_ANALYSIS`), `discovery` (`PROFILE_DISCOVERY`), `extraction`. */
 export const AI_MODES = ['analysis', 'discovery', 'extraction'] as const;
@@ -67,10 +69,12 @@ export function factCode(seq: number): string {
 }
 
 /** A day as the app stores it: `yyyy-mm-dd`, a real day of the calendar. */
-const isoDate = z.string().refine(isIsoDate, 'không phải ngày yyyy-mm-dd');
+const isoDate = z.string().check(z.refine(isIsoDate, 'không phải ngày yyyy-mm-dd'));
 
 /** A fact code, its message the V1 detail of a malformed one (G5 §11.6). */
-const factCodeString = z.string().regex(FACT_CODE, 'sai định dạng, cần mã dữ kiện dạng F12');
+const factCodeString = z
+  .string()
+  .check(z.regex(FACT_CODE, 'sai định dạng, cần mã dữ kiện dạng F12'));
 
 /**
  * What the app sends for an analysis or discovery (spec §6.1), stored as `input_json` (§7.1): the
@@ -80,7 +84,7 @@ const factCodeString = z.string().regex(FACT_CODE, 'sai định dạng, cần m�
  */
 export const analysisInputSchema = z.strictObject({
   analysisDate: isoDate,
-  mode: z.enum(AI_MODES).exclude(['extraction']),
+  mode: z.enum(AI_MODES.filter((mode) => mode !== 'extraction')),
   facts: z
     .array(
       z.strictObject({
@@ -92,9 +96,11 @@ export const analysisInputSchema = z.strictObject({
         conflict: z.boolean(),
       }),
     )
-    .refine(
-      (facts) => new Set(facts.map((fact) => fact.code)).size === facts.length,
-      'trùng mã dữ kiện',
+    .check(
+      z.refine(
+        (facts) => new Set(facts.map((fact) => fact.code)).size === facts.length,
+        'trùng mã dữ kiện',
+      ),
     ),
   missingCategories: z.array(z.strictObject({ code: z.enum(KYC_CATEGORIES), label: z.string() })),
   conflictWarnings: z.array(z.string()),
@@ -125,39 +131,41 @@ const MAX_WRITTEN = 1_000;
  * fill the history (DR6-77); what it shows is 1–300 characters (spec §6.2, G5 §10.4, §11.5).
  * The string is stored as written.
  */
-const text = z
-  .string()
-  .trim()
-  .refine((s) => s.length <= MAX_WRITTEN, {
+const text = z.string().check(
+  z.trim(),
+  z.refine((s) => s.length <= MAX_WRITTEN, {
     message: 'quá 1 000 ký tự kể cả ký tự vô hình',
     abort: true,
-  })
-  .refine((s) => visible(s) !== '', { message: 'chuỗi rỗng', abort: true })
-  .refine((s) => Array.from(visible(s)).length <= 300, 'quá 300 ký tự');
+  }),
+  z.refine((s) => visible(s) !== '', { message: 'chuỗi rỗng', abort: true }),
+  z.refine((s) => Array.from(visible(s)).length <= 300, 'quá 300 ký tự'),
+);
 
 /**
  * A text of analysis / discovery also has a letter it shows: the "…" of the prompt's format example
  * is not an answer (DR5-49 b, Owner G5 11/10/2026), nor is U+3164, a letter no one sees. Not for
  * extraction, whose value may be "2".
  */
-const prose = text.refine((s) => /\p{L}/u.test(visible(s)), 'không có chữ');
+const prose = text.check(z.refine((s) => /\p{L}/u.test(visible(s)), 'không có chữ'));
 const evidence = z
   .array(factCodeString)
-  .refine((codes) => new Set(codes).size === codes.length, 'trích trùng một dữ kiện');
+  .check(z.refine((codes) => new Set(codes).size === codes.length, 'trích trùng một dữ kiện'));
 
 /** Hypotheses, needs, pain points and themes: always cite at least one fact. */
-const evidencedItem = z.object({ text: prose, evidence: evidence.min(1) });
+const evidencedItem = z.object({ text: prose, evidence: evidence.check(z.minLength(1)) });
 
 /** Discovery strategy and next best actions: cite facts, or name a missing hạng mục, or both. */
 const actionItem = z
   .object({
     text: prose,
-    evidence: evidence.default([]),
-    missingCategory: z.enum(KYC_CATEGORIES).optional(),
+    evidence: z._default(evidence, []),
+    missingCategory: z.optional(z.enum(KYC_CATEGORIES)),
   })
-  .refine(
-    (item) => item.evidence.length > 0 || item.missingCategory !== undefined,
-    'cần evidence hoặc missingCategory',
+  .check(
+    z.refine(
+      (item) => item.evidence.length > 0 || item.missingCategory !== undefined,
+      'cần evidence hoặc missingCategory',
+    ),
   );
 
 /** Personality systems of `personalityNotes`: psychology (MBTI, DISC…) or tử vi / huyền học. */
@@ -168,26 +176,34 @@ export const PERSONALITY_SYSTEMS = ['PSYCHOLOGY', 'ESOTERIC'] as const;
  * appear (V5 checks the others). `[]` when no fact supports a note, also when the model leaves the
  * block out: an empty block is a right answer, not worth a retry (review #416).
  */
-const personalityNotes = z
-  .array(z.object({ system: z.enum(PERSONALITY_SYSTEMS), text: prose, evidence: evidence.min(1) }))
-  .max(4)
-  .default([]);
+const personalityNotes = z._default(
+  z
+    .array(
+      z.object({
+        system: z.enum(PERSONALITY_SYSTEMS),
+        text: prose,
+        evidence: evidence.check(z.minLength(1)),
+      }),
+    )
+    .check(z.maxLength(4)),
+  [],
+);
 
 export const analysisOutputSchema = z.object({
-  hypotheses: z.array(evidencedItem).min(1).max(5),
-  needs: z.array(evidencedItem).min(1).max(5),
-  painPoints: z.array(evidencedItem).min(1).max(5),
-  themes: z.array(evidencedItem).min(1).max(5),
-  discoveryStrategy: z.array(actionItem).min(1).max(6),
-  nextBestActions: z.array(actionItem).min(1).max(5),
+  hypotheses: z.array(evidencedItem).check(z.minLength(1), z.maxLength(5)),
+  needs: z.array(evidencedItem).check(z.minLength(1), z.maxLength(5)),
+  painPoints: z.array(evidencedItem).check(z.minLength(1), z.maxLength(5)),
+  themes: z.array(evidencedItem).check(z.minLength(1), z.maxLength(5)),
+  discoveryStrategy: z.array(actionItem).check(z.minLength(1), z.maxLength(6)),
+  nextBestActions: z.array(actionItem).check(z.minLength(1), z.maxLength(5)),
   personalityNotes,
 });
 
 export const discoveryOutputSchema = z.object({
   // May be empty, so the model may leave it out, as `personalityNotes`.
-  hypotheses: z.array(evidencedItem).max(3).default([]),
-  discoveryStrategy: z.array(actionItem).min(2).max(6),
-  nextBestActions: z.array(actionItem).min(1).max(5),
+  hypotheses: z._default(z.array(evidencedItem).check(z.maxLength(3)), []),
+  discoveryStrategy: z.array(actionItem).check(z.minLength(2), z.maxLength(6)),
+  nextBestActions: z.array(actionItem).check(z.minLength(1), z.maxLength(5)),
   personalityNotes,
 });
 
@@ -205,7 +221,7 @@ export const extractionOutputSchema = z.object({
         quote: text,
       }),
     )
-    .max(20),
+    .check(z.maxLength(20)),
 });
 
 export type AnalysisOutput = z.infer<typeof analysisOutputSchema>;
@@ -216,7 +232,7 @@ export const AI_OUTPUT_SCHEMAS = {
   analysis: analysisOutputSchema,
   discovery: discoveryOutputSchema,
   extraction: extractionOutputSchema,
-} as const satisfies Record<AiMode, z.ZodType>;
+} as const satisfies Record<AiMode, z.ZodMiniType>;
 
 // ---- the analysis input (spec §6.1, prompts G5 §1.1) ------------------------
 

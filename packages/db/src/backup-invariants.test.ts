@@ -4,15 +4,7 @@
  * KYC fact from another customer's note — is refused like a damaged one.
  */
 import type { AnalysisInput } from '@p2c/ai/schema';
-import {
-  calendarDate,
-  fromIsoDate,
-  KYC_FIELDS,
-  kycHash,
-  type KycFact,
-  type KycField,
-  type KycValue,
-} from '@p2c/domain';
+import { calendarDate } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
 import { listAiAnalyses, recordAiAnalysis, type NewAiAnalysis } from './ai-analyses';
 import {
@@ -24,6 +16,7 @@ import {
   softDeleteAppointment,
 } from './appointments';
 import { exportBackup, importBackup } from './backup';
+import { storedKycHash } from './backup-validation';
 import {
   changeStageManually,
   createCustomer,
@@ -1403,23 +1396,10 @@ function kycVersion(backup: BackupJson, customerId: string, seq: number): Row {
  * KYC command that changed them would have recorded it (rule 7, S-1).
  */
 function rehash(backup: BackupJson, customerId: string): void {
-  const facts = backup.tables
-    .kyc_facts!.filter((f) => f.customer_id === customerId)
-    .map((f): KycFact => {
-      const field = f.field as KycField;
-      return {
-        id: String(f.id),
-        category: KYC_FIELDS[field].category,
-        field,
-        value: JSON.parse(String(f.value_json)) as KycValue,
-        noteId: String(f.note_id),
-        confirmedDate: fromIsoDate(String(f.confirmed_date)),
-        status: f.status as KycFact['status'],
-      };
-    });
+  const facts = backup.tables.kyc_facts!.filter((f) => f.customer_id === customerId);
   const versions = backup.tables.kyc_versions!.filter((v) => v.customer_id === customerId);
   const latest = Math.max(...versions.map((v) => Number(v.seq)));
-  kycVersion(backup, customerId, latest).hash = kycHash({ notes: [], facts });
+  kycVersion(backup, customerId, latest).hash = storedKycHash(facts);
 }
 
 const DELETED = '2026-09-26T08:00:00.000Z';

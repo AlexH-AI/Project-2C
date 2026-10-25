@@ -20,7 +20,7 @@ import {
   type KycValue,
 } from '@p2c/domain';
 import type { Database as SqlJsDatabase, SqlValue } from 'sql.js';
-import { z } from 'zod';
+import * as z from 'zod/mini';
 import { analysisContentFits, analysisLabelsFit, type AnalysisFields } from './ai-analyses';
 import { cleanNote, isFee, optionalText, requireName, sqlTexts, storedDate, today } from './common';
 import { stagesOfDay } from './customers';
@@ -394,18 +394,27 @@ function versionsFit(read: (sql: string) => Row[], facts: Row[]): boolean {
   );
   const fit = [...versions].every(([customer, list]) => {
     const hashes = list.map((version) => String(version.hash));
-    const current = inEffect.get(customer)?.map(toFact);
+    const current = inEffect.get(customer);
     return (
       hashes.every((hash, i) => KYC_HASH.test(hash) && hash !== hashes[i - 1]) &&
       current !== undefined &&
-      hashes.at(-1) === kycHash({ notes: [], facts: current })
+      hashes.at(-1) === storedKycHash(current)
     );
   });
   return fit && [...inEffect.keys()].every((customer) => versions.has(customer));
 }
 
+/**
+ * `kycHash` of a customer's facts, rows as the table stores them: what rule 7 expects the latest
+ * version's hash to be. A superseded fact changes nothing, as in `kycHash`. Exported for the tests,
+ * which work the hash out again after editing a backup's facts.
+ */
+export function storedKycHash(rows: readonly Record<string, unknown>[]): string {
+  return kycHash({ notes: [], facts: rows.map(toFact) });
+}
+
 /** A stored fact as `domain` reads it, for `kycHash`. */
-function toFact(row: Row): KycFact {
+function toFact(row: Record<string, unknown>): KycFact {
   const field = row.field as KycField;
   return {
     id: String(row.id),

@@ -3,13 +3,13 @@
  * schema has one, so the extraction schema is swapped here for one with such a `quote`.
  */
 import { describe, expect, it, vi } from 'vitest';
-import { z } from 'zod';
+import * as z from 'zod/mini';
 import { validateOutput } from './validator';
 
 vi.mock('./schema', async (importOriginal) => {
   const schema = await importOriginal<typeof import('./schema')>();
   const code = (letter: string) =>
-    z.string().regex(new RegExp(`^${letter}\\d+$`), `sai định dạng, cần mã ${letter}`);
+    z.string().check(z.regex(new RegExp(`^${letter}\\d+$`), `sai định dạng, cần mã ${letter}`));
   const extraction = z.object({ quote: z.union([code('F'), code('X')], 'cần mã F hoặc X') });
   return { ...schema, AI_OUTPUT_SCHEMAS: { ...schema.AI_OUTPUT_SCHEMAS, extraction } };
 });
