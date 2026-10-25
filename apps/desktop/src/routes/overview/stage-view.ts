@@ -61,6 +61,20 @@ export interface StageBlockView {
   readonly charts: readonly StageChart[];
 }
 
+/**
+ * Each mark's result from one call of `batch` over the marks that have a value (a snapshot day, a
+ * counted window), in mark order; a mark without one, after today, gets null. Tổng quan and Theo
+ * mốc count every mark in one pass this way, wherever the marks without a value fall.
+ */
+export function eachMark<T, R>(
+  values: readonly (T | null)[],
+  batch: (present: readonly T[]) => readonly R[],
+): (R | null)[] {
+  const results = batch(values.filter((value): value is T => value !== null));
+  let next = 0;
+  return values.map((value) => (value === null ? null : results[next++]!));
+}
+
 const fourOf = (counts: StageValues): StageValues => ({
   N4: counts.N4,
   N3: counts.N3,
@@ -102,20 +116,22 @@ export function stageBlock(
 ): StageBlockView {
   const series = stageSnapshotSeries(data.customers, data.transitions, data.people);
   const marks = chartMarks(period).map((mark) => ({ mark, date: snapshotDate(mark, today) }));
-  // Every column in one pass over the transitions. Marks after today, the only ones without a
-  // snapshot day, come last, so the n-th day is that of the n-th mark.
-  const days = marks.flatMap(({ date }) => date ?? []);
+  const days = marks.map(({ date }) => date);
+  // Every column in one pass over the transitions.
   const chart = (key: string, team: string | null, chartScope: Scope): StageChart => {
-    const snapshots = series(days, chartScope);
+    const snapshots = eachMark(days, (present) => series(present, chartScope));
     return {
       key,
       team,
-      columns: marks.map(({ mark, date }, index) => ({
-        label: markLabel(mark, period),
-        title: t('overview.stages.endOfDay', { date: formatDate(date ?? mark.end) }),
-        values: date && fourOf(snapshots[index]!),
-        today: isInPeriod(today, mark),
-      })),
+      columns: marks.map(({ mark, date }, index) => {
+        const snapshot = snapshots[index];
+        return {
+          label: markLabel(mark, period),
+          title: t('overview.stages.endOfDay', { date: formatDate(date ?? mark.end) }),
+          values: snapshot ? fourOf(snapshot) : null,
+          today: isInPeriod(today, mark),
+        };
+      }),
     };
   };
 

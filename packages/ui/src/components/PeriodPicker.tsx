@@ -70,8 +70,9 @@ const stepClass = `cursor-pointer rounded-sm px-1.5 py-0.5 text-lg leading-none 
  * a step that would leave 1900–2100 (or a custom range's 3-month cap) is disabled; "Hôm nay"
  * (always enabled) goes to the period containing today.
  * Custom dates are typed as dd/mm/yyyy (not `<input type="date">`, whose format follows the OS
- * locale) and applied on Enter or leaving the field; a date that does not exist, a start after the end
- * or a range over 3 months is refused with a note the fields point to.
+ * locale) and applied on Enter or once the focus leaves both fields, not on Tab from one to the other
+ * (R4); a date that does not exist, a start after the end or a range over 3 months is refused with a
+ * note the fields point to.
  */
 export function PeriodPicker({ value, onChange, today, labels }: PeriodPickerProps) {
   const titleId = useId();
@@ -115,7 +116,6 @@ export function PeriodPicker({ value, onChange, today, labels }: PeriodPickerPro
       placeholder={labels.dateFormat}
       value={shown[field]}
       onChange={(event) => setDraft({ ...shown, [field]: event.target.value, error: null })}
-      onBlur={apply}
       onKeyDown={(event: KeyboardEvent) => event.key === 'Enter' && apply()}
       className={`w-28 rounded-sm border bg-surface-2 px-2.5 py-1 text-sm text-fg tabular-nums ${focusRing} ${
         fieldInvalid(field) ? 'border-danger' : 'border-border'
@@ -169,8 +169,16 @@ export function PeriodPicker({ value, onChange, today, labels }: PeriodPickerPro
       </Button>
       {value.kind === 'custom' && (
         <>
-          {dateField('start', labels.from)}
-          {dateField('end', labels.to)}
+          {/* The two dates are one range: the focus moving from one to the other applies nothing. */}
+          <span
+            className="contents"
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) apply();
+            }}
+          >
+            {dateField('start', labels.from)}
+            {dateField('end', labels.to)}
+          </span>
           {shown.error && (
             <span id={errorId} className="text-xs text-danger">
               {errorNote[shown.error]}

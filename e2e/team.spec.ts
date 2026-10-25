@@ -242,6 +242,39 @@ test('adds an RE to a team, renames them, then deletes them', async ({ page }) =
   await expect(teamButton(page, 'Hừng Đông')).toContainText('TL · 10 RE');
 });
 
+// Issue 144: Xóa nhân sự leaves Sửa nhân sự for 9b, and with it what was typed there: asked first.
+test('Xóa nhân sự asks first when Sửa nhân sự has changes not saved', async ({ page }) => {
+  await addRe(page, 'Trần Hải Yến', 'Hừng Đông');
+  const table = members(page, 'Hừng Đông').getByRole('table');
+  const edit = page.getByRole('dialog', { name: 'Sửa nhân sự' });
+  const name = edit.getByRole('textbox', { name: 'Họ tên' });
+  const remove = edit.getByRole('button', { name: 'Xóa nhân sự', exact: true });
+  const confirm = page.getByRole('dialog', { name: 'Xóa Trần Hải Yến?' });
+
+  await table.getByRole('button', { name: 'Sửa Trần Hải Yến', exact: true }).click();
+  await name.fill('Trần Hải Âu');
+  await remove.click();
+  await expect(edit.getByRole('alert')).toHaveText(
+    'Có thay đổi chưa lưu: Lưu để giữ, hoặc bỏ thay đổi để xóa nhân sự.',
+  );
+  await expect(confirm).toHaveCount(0);
+  await expect(name).toHaveValue('Trần Hải Âu');
+
+  await edit.getByRole('button', { name: 'Bỏ thay đổi và xóa nhân sự', exact: true }).click();
+  await expect(confirm).toBeVisible();
+  await confirm.getByRole('button', { name: 'Đóng' }).click();
+  await expect(table.getByRole('row', { name: /Trần Hải Yến/ })).toBeVisible();
+
+  // Typed back to what is saved, a role there and back with it: nothing to ask.
+  await table.getByRole('button', { name: 'Sửa Trần Hải Yến', exact: true }).click();
+  await name.fill('Trần Hải Âu');
+  await name.fill('Trần Hải Yến');
+  await edit.getByRole('radio', { name: 'IS', exact: true }).check();
+  await edit.getByRole('radio', { name: 'RE', exact: true }).check();
+  await remove.click();
+  await expect(confirm).toBeVisible();
+});
+
 test('refuses an RE without a team, with the reason on the field', async ({ page }) => {
   const dialog = await openPersonDialog(page);
   await dialog.getByRole('textbox', { name: 'Họ tên' }).fill('Trần Hải Yến');
@@ -675,6 +708,52 @@ test('by the keyboard, + Thêm TL and the delete of a TL leave the focus on the 
   await deleteByKeyboard(page, card, 'Đỗ Gia Bảo');
   await expect(card).toContainText('chưa có TL');
   await expect(cardTop(card, 'Team Thiên Hà')).toBeFocused();
+});
+
+// Review of PR 744: only the top of the card is the team's (its heading, TL, Đổi tên / Xóa team);
+// the table of members stays, with the sort picked there and the rows of the people it shows.
+test('the member table keeps the sort picked when another team is shown', async ({ page }) => {
+  const header = (team: string, name: string) =>
+    members(page, team).getByRole('columnheader', { name, exact: true });
+  await teamButton(page, 'Bình Minh').click();
+  await members(page, 'Bình Minh').getByRole('button', { name: 'KH đang mở', exact: true }).click();
+  await expect(header('Bình Minh', 'KH đang mở')).toHaveAttribute('aria-sort', 'ascending');
+
+  await teamButton(page, 'Sao Mai').click();
+  await expect(header('Sao Mai', 'KH đang mở')).toHaveAttribute('aria-sort', 'ascending');
+  await expect(header('Sao Mai', 'Họ tên')).toHaveAttribute('aria-sort', 'none');
+  const rows = members(page, 'Sao Mai')
+    .getByRole('row')
+    .filter({ has: page.getByRole('cell') });
+  await expect(rows).toHaveCount(10);
+  const open: number[] = [];
+  for (const row of await rows.all()) {
+    open.push(Number(await row.getByRole('cell').nth(2).textContent()));
+  }
+  expect(open).toEqual([...open].sort((a, b) => a - b));
+
+  // Through a team without RE, which shows no table, too.
+  await createTeam(page, 'Thiên Hà');
+  await expect(members(page, 'Thiên Hà')).toContainText('Team chưa có RE.');
+  await expect(members(page, 'Thiên Hà').getByRole('table')).toHaveCount(0);
+  await teamButton(page, 'Hừng Đông').click();
+  await expect(header('Hừng Đông', 'KH đang mở')).toHaveAttribute('aria-sort', 'ascending');
+});
+
+test('by the keyboard, moving an RE to another team leaves the focus on their Sửa in that team', async ({
+  page,
+}) => {
+  await addRe(page, 'Trần Hải Yến', 'Hừng Đông');
+  const editOf = (team: string) =>
+    members(page, team).getByRole('button', { name: 'Sửa Trần Hải Yến', exact: true });
+  await editOf('Hừng Đông').press('Enter');
+  const edit = page.getByRole('dialog', { name: 'Sửa nhân sự' });
+  await edit.getByRole('combobox', { name: 'Team' }).selectOption({ label: 'Sao Mai' });
+  await edit.getByRole('button', { name: 'Lưu' }).press('Enter');
+
+  await expect(edit).toBeHidden();
+  await expect(teamButton(page, 'Sao Mai')).toHaveAttribute('aria-pressed', 'true');
+  await expect(editOf('Sao Mai')).toBeFocused();
 });
 
 test('by the keyboard, Xóa team leaves the focus on the list of teams, not on the button of the team shown next (DR6-116)', async ({

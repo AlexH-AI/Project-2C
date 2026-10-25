@@ -6,6 +6,7 @@ import {
   byName,
   PERSON_ROLES,
   REVIEWER_ROLES,
+  ROLES_WITH_TEAM,
   type Person,
   type PersonRole,
   type Team,
@@ -33,8 +34,6 @@ import { people, teams } from './schema';
 
 type TeamRow = typeof teams.$inferSelect;
 type PersonRow = typeof people.$inferSelect;
-
-const ROLES_WITH_TEAM: readonly PersonRole[] = ['RE', 'TL'];
 
 // ---- reads ----------------------------------------------------------------
 

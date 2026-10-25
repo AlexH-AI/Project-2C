@@ -973,6 +973,9 @@ export const vi = {
   'overview.stages.yearMark': 'T{month}',
   'overview.stages.endOfDay': '{date} · cuối ngày',
   'overview.stages.total': 'Tổng',
+  // The table of a chart's numbers, for screen readers (P8): its caption and the column of the days.
+  'overview.stages.chartTable': 'Số liệu: {label}',
+  'overview.stages.day': 'Ngày',
   'overview.stages.hidden': 'đang ẩn',
   'overview.stages.team': 'Team {name}',
   'overview.stages.chart': 'Diễn biến khách hàng theo nhóm',
@@ -1218,6 +1221,10 @@ export const vi = {
     'Team bắt buộc với RE / TL; IS, BD, BDM để trống. Đổi team của RE: chỉ số cũ đi theo team hiện tại (v1 không lưu lịch sử chuyển team).',
   'person.create': 'Thêm',
   'person.delete': 'Xóa nhân sự',
+  // Xóa nhân sự with changes not saved in Sửa nhân sự: 9b would drop them, so it asks first (issue
+  // 144).
+  'person.deleteUnsaved': 'Có thay đổi chưa lưu: Lưu để giữ, hoặc bỏ thay đổi để xóa nhân sự.',
+  'person.deleteDiscard': 'Bỏ thay đổi và xóa nhân sự',
   'person.deleteTitle': 'Xóa {name}?',
   'person.deleteSub': '{role} · {team}',
   'person.deleteBody':

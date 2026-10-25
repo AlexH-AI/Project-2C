@@ -41,7 +41,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/kyc-fact.ts` — KYC_FACT_STATUSES, type KycFactStatus, type KycValue, type KycFieldType, kycFieldType, normalizeKycValue, type KycFact
 - `src/kyc-gate.ts` — type KycSuggestedQuestions, type KycGateResult, evaluateKycGate
 - `src/kyc.ts` — type KycNote, type KycProfile, type KycFactInput, type KycVersion, addNote, currentFacts, confirmFact, markConflict, resolveConflict, kycHash, isMaterialChange, nextKycVersion
-- `src/model.ts` — type Team, PERSON_ROLES, type PersonRole, REVIEWER_ROLES, type Person, CLOSED_STAGES, type ClosedStage, type CustomerStage, type Customer, type StageTransition, APPOINTMENT_STATUSES, type AppointmentStatus, type Appointment, type Policy, type Scope
+- `src/model.ts` — type Team, PERSON_ROLES, type PersonRole, REVIEWER_ROLES, ROLES_WITH_TEAM, type Person, CLOSED_STAGES, type ClosedStage, type CustomerStage, type Customer, type StageTransition, APPOINTMENT_STATUSES, type AppointmentStatus, type Appointment, type Policy, type Scope
 - `src/money.ts` — type Vnd, MAX_FEE_VND, addVnd, type VndParseError, type VndParseResult, parseVnd, formatVnd, formatVndCompact, formatVndDelta
 - `src/name-order.ts` — LATIN, byName
 - `src/number.ts` — groupThousands, formatCount, formatPercent, formatFileSize

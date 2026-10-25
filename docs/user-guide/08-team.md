@@ -22,7 +22,7 @@ Chỉ RE có chỉ số. TL, IS, BD, BDM là **người phối hợp** trong l�
 - Khung **Người hỗ trợ** liệt kê IS / BD / BDM, mỗi người có nút **Sửa**.
 - Bên phải: tên team, TL (kèm **Sửa**) hoặc "chưa có TL" kèm **+ Thêm TL**; nút **Đổi tên team** và **Xóa team**.
 
-Bảng thành viên chỉ liệt kê RE của team. Bấm tiêu đề cột để sắp xếp:
+Bảng thành viên chỉ liệt kê RE của team. Bấm tiêu đề cột để sắp xếp; chọn team khác, bảng vẫn sắp theo cột đã chọn:
 
 | Cột | Đếm gì |
 |---|---|
@@ -69,7 +69,7 @@ Bấm **Sửa** cạnh người đó. Hộp **Sửa nhân sự** sửa được 
 
 ## Xóa người
 
-1. Bấm **Sửa** cạnh người đó, rồi **Xóa nhân sự**.
+1. Bấm **Sửa** cạnh người đó, rồi **Xóa nhân sự**. Nếu đã sửa họ tên, vai trò hay team mà chưa lưu, hộp hỏi trước: "Có thay đổi chưa lưu: Lưu để giữ, hoặc bỏ thay đổi để xóa nhân sự." Bấm **Lưu**, hoặc **Bỏ thay đổi và xóa nhân sự** để đi tiếp.
 2. Hộp **Xóa …?** ghi vai trò và team.
 3. Người không còn dữ liệu: hộp ghi "Nhân sự được xóa mềm: ẩn khỏi danh sách, dữ liệu cũ vẫn giữ; khôi phục ở Cài đặt → Thùng rác." Bấm **Xóa**.
 

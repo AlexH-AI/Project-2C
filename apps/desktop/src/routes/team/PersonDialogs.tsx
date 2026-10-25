@@ -8,17 +8,24 @@ import {
   updatePerson,
   type Database,
 } from '@p2c/db';
-import { PERSON_ROLES, type Person, type PersonRole, type Team } from '@p2c/domain';
+import {
+  PERSON_ROLES,
+  ROLES_WITH_TEAM,
+  type Person,
+  type PersonRole,
+  type Team,
+} from '@p2c/domain';
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { inUseHelp, retriesDelete } from './team-view';
 
 const ALERT = 'm-0 rounded-md border border-danger px-3 py-2 text-danger';
+const QUESTION = 'm-0 rounded-md border border-warn px-3 py-2';
 const ROLE_CHOICES = PERSON_ROLES.map((role) => ({ value: role, label: role }));
 
-/** RE and TL belong to a team; IS / BD / BDM are shared by every team (D8). */
-const needsTeam = (role: PersonRole) => role === 'RE' || role === 'TL';
+/** RE and TL belong to a team; IS / BD / BDM are shared by every team (D8). The commands' rule. */
+const needsTeam = (role: PersonRole) => ROLES_WITH_TEAM.includes(role);
 
 /** Where a refused save shows its reason: on the field it is about, else above the buttons. */
 type Errors = { readonly name?: string; readonly team?: string; readonly form?: string };
@@ -46,6 +53,16 @@ export function PersonDialog({
   const [role, setRole] = useState<PersonRole>(person?.role ?? defaultRole);
   const [teamId, setTeamId] = useState(person ? (person.teamId ?? '') : (defaultTeamId ?? ''));
   const [errors, setErrors] = useState<Errors>({});
+  // "Xóa nhân sự" leaves the dialog for 9b, and with it the changes not saved: it asks first (issue
+  // 144).
+  const [asked, setAsked] = useState(false);
+  const changed =
+    person !== undefined &&
+    (name !== person.name || role !== person.role || teamId !== (person.teamId ?? ''));
+  const edited = () => {
+    setErrors({});
+    setAsked(false);
+  };
 
   const save = () => {
     const input = { name, role, teamId: teamId || null };
@@ -72,8 +89,11 @@ export function PersonDialog({
       actions={
         <>
           {onDelete && (
-            <Button variant="danger" onClick={onDelete}>
-              {t('person.delete')}
+            <Button
+              variant="danger"
+              onClick={() => (changed && !asked ? setAsked(true) : onDelete())}
+            >
+              {t(asked ? 'person.deleteDiscard' : 'person.delete')}
             </Button>
           )}
           <span className="flex-1" />
@@ -89,7 +109,7 @@ export function PersonDialog({
         value={name}
         onChange={(value) => {
           setName(value);
-          setErrors({});
+          edited();
         }}
         error={errors.name}
         required
@@ -101,7 +121,7 @@ export function PersonDialog({
         value={role}
         onChange={(value) => {
           setRole(value);
-          setErrors({});
+          edited();
           // IS / BD / BDM have no team (spec §6 rule 9); back to RE or TL, the person's own team
           // returns, or for a new one the team being viewed.
           if (!needsTeam(value)) setTeamId('');
@@ -116,7 +136,7 @@ export function PersonDialog({
         placeholder={t(needsTeam(role) ? 'person.pickTeam' : 'person.noTeam')}
         onChange={(value) => {
           setTeamId(value);
-          setErrors({});
+          edited();
         }}
         error={errors.team}
         required={needsTeam(role)}
@@ -125,6 +145,11 @@ export function PersonDialog({
       {errors.form && (
         <p role="alert" className={ALERT}>
           {errors.form}
+        </p>
+      )}
+      {asked && (
+        <p role="alert" className={QUESTION}>
+          {t('person.deleteUnsaved')}
         </p>
       )}
     </Dialog>
