@@ -1,4 +1,4 @@
-import { expect, test, type Page } from './fixtures';
+import { expect, test, type Locator, type Page } from './fixtures';
 import { scrolls } from './support';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
@@ -76,45 +76,143 @@ test('the profile lists its appointments newest first; "Hẹn tiếp" fills in t
   await expect(rows.first()).toContainText('Dự kiến');
 });
 
-// Review of PR 746: in the default 1 440 window a row keeps its day and "Hẹn tiếp" on one line, as
-// the mockup does; #165: a day of another year writes its time on the line under it.
-test('at 1 440 a row of this year is one line; another year puts the time under the day', async ({
+const NAME = 'Đủ Mọi Kết Quả';
+
+/** On the Appointments screen, books `day` for the customer `NAME`; the detail then shows it. */
+async function book(page: Page, day: string, time: string | null) {
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('textbox', { name: /^Khách hàng/ }).fill(NAME);
+  await dialog
+    .getByRole('list', { name: 'KH khớp' })
+    .getByRole('button')
+    .filter({ hasText: NAME })
+    .click();
+  await create(page, day, time);
+}
+
+/**
+ * Records the outcome of the appointment the detail shows: met with the stage after it ("N2",
+ * "Mất cơ hội giữ nguyên"…), moved to a new day, or another status.
+ */
+async function record(
+  page: Page,
+  outcome: { met: string } | { moved: string } | { status: string },
+) {
+  await page
+    .getByRole('complementary', { name: 'Chi tiết lịch hẹn' })
+    .getByRole('button', { name: 'Ghi kết quả' })
+    .click();
+  const dialog = page.getByRole('dialog', { name: 'Kết quả cuộc gặp' });
+  const status = 'met' in outcome ? 'Đã gặp' : 'moved' in outcome ? 'Dời lịch' : outcome.status;
+  await dialog
+    .getByRole('radiogroup', { name: 'Trạng thái' })
+    .getByRole('radio', { name: status, exact: true })
+    .check();
+  if ('met' in outcome) {
+    await dialog
+      .getByRole('radiogroup', { name: 'Nhóm sau cuộc gặp' })
+      .getByRole('radio', { name: outcome.met, exact: true })
+      .check();
+    await dialog.getByRole('textbox', { name: /^Việc tiếp theo/ }).fill('Gửi bảng minh họa');
+  }
+  if ('moved' in outcome) {
+    await dialog.getByRole('textbox', { name: /^Ngày mới/ }).fill(outcome.moved);
+    await dialog.getByRole('textbox', { name: /^Lý do dời/ }).fill('KH đi công tác');
+  } else {
+    // A long note, as in the mockup's rows: its column asks for the room the result needs.
+    await dialog
+      .getByRole('textbox', { name: /^Ghi chú/ })
+      .fill('Gia đình 2 con; AUM ước ~25 tỷ, ưu tiên thanh khoản');
+  }
+  await dialog
+    .getByRole('button', { name: 'moved' in outcome ? 'Dời lịch' : 'Lưu kết quả' })
+    .click();
+  await expect(dialog).toHaveCount(0);
+}
+
+/** Where the text of each cell of `row` starts and ends in the window. */
+const textEdges = (row: Locator) =>
+  row.getByRole('cell').evaluateAll((cells) =>
+    cells.map((cell) => {
+      const text = document.createRange();
+      text.selectNodeContents(cell);
+      const { left, right } = text.getBoundingClientRect();
+      return { left, right };
+    }),
+  );
+
+// Review of PR 746 and of PR 838 (Owner 26/10/2026): in the default 1 440 window every row is one
+// line, whatever its result, as the mockup's rows are. Only a move between the two closed stages
+// (142 px) takes two. #165: a day of another year writes its time on the line under it.
+test('at 1 440 a row is one line whatever its result; another year puts the time under the day', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await openProfile(page);
-  // Times the seed never books, so each picks out its row.
-  for (const [day, time] of [
-    ['14/9', '13:17'],
-    ['10/12/2025', '16:41'],
+  await page.goto('/#/customers');
+  await page.getByRole('button', { name: '+ Khách hàng' }).click();
+  const form = page.getByRole('dialog', { name: 'Khách hàng mới' });
+  await form.getByRole('textbox', { name: 'Họ tên' }).fill(NAME);
+  await form.getByRole('combobox', { name: 'RE phụ trách' }).selectOption({ index: 1 });
+  await form.getByRole('radio', { name: 'N3', exact: true }).check();
+  await form.getByRole('textbox', { name: /^Ngày ghi nhận/ }).fill('1/8');
+  await form.getByRole('button', { name: 'Lưu KH' }).click();
+  await expect(form).toBeHidden();
+
+  await page
+    .getByRole('navigation', { name: 'Điều hướng chính' })
+    .getByRole('link', { name: 'Lịch hẹn' })
+    .click();
+  // As the customer went: N3 → N2 with the RF, lost, kept lost, back to N3; then the statuses.
+  for (const [day, outcome] of [
+    ['1/9', { met: 'N2' }],
+    ['2/9', { met: 'Mất cơ hội' }],
+    ['3/9', { met: 'Mất cơ hội giữ nguyên' }],
+    ['5/9', { met: 'N3' }],
+    ['7/9', { status: 'Không đến' }],
+    ['8/9', { status: 'Hủy' }],
+    ['9/9', { moved: '21/9' }],
   ] as const) {
-    await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
-    await create(page, day, time);
+    await book(page, day, null);
+    await record(page, outcome);
   }
+  // Not recorded: "Chưa ghi kết quả", the widest result, beside one of the widest days and times.
+  await book(page, '4/9', '20:44');
+  await book(page, '10/12/2025', '16:41');
+  await page
+    .getByRole('complementary', { name: 'Chi tiết lịch hẹn' })
+    .getByRole('link', { name: 'Hồ sơ KH →' })
+    .click();
+  await expect(page.getByRole('heading', { level: 2, name: NAME, exact: true })).toBeVisible();
   const { card, rows } = appointments(page);
+
+  for (const result of [
+    'N3 → N2 · RF',
+    'N2 → Mất cơ hội',
+    'Giữ Mất cơ hội',
+    'Mất cơ hội → N3',
+    'Không đến',
+    'Hủy',
+    'Dời lịch',
+    'Dự kiến',
+    'Chưa ghi kết quả',
+  ]) {
+    await expect(rows.filter({ hasText: result }).first()).toBeVisible();
+  }
+  // One line is about 36 px high; "Không đến" in two made a 55 px row (review of PR 838).
+  for (const row of await rows.filter({ hasNotText: /\/\d{4}/ }).all()) {
+    const height = (await row.boundingBox())!.height;
+    expect(height, (await row.textContent()) ?? '').toBeLessThan(45);
+  }
+  // The day runs into no result.
+  const [day, result] = await textEdges(rows.filter({ hasText: '04/09 20:44' }));
+  expect(day!.right).toBeLessThan(result!.left);
 
   const earlier = rows.filter({ hasText: '16:41' });
   const date = earlier.getByText('10/12/2025', { exact: true });
   const time = earlier.getByText('16:41', { exact: true });
   expect((await time.boundingBox())!.y).toBeGreaterThan((await date.boundingBox())!.y);
 
-  // The day and "Hẹn tiếp" one line each, about 20 px high; two lines made 54 px rows. A long result
-  // ("Mất cơ hội → N3", "Chưa ghi kết quả") may take two, as in the mockup's narrow column.
-  await expect(rows.filter({ hasText: '14/09 13:17' })).toHaveCount(1);
-  for (const row of await rows.filter({ hasNotText: /\/\d{4}/ }).all()) {
-    const day = await row
-      .getByRole('cell')
-      .first()
-      .evaluate((cell) => {
-        const text = document.createRange();
-        text.selectNodeContents(cell);
-        return text.getBoundingClientRect().height;
-      });
-    expect(day).toBeLessThan(30);
-    for (const next of await row.getByRole('button', { name: /^Hẹn tiếp sau lịch/ }).all()) {
-      expect((await next.boundingBox())!.height).toBeLessThan(30);
-    }
-  }
   // Nothing past the card's edge, in three columns or two.
   for (const width of [1440, 1100]) {
     await page.setViewportSize({ width, height: 900 });

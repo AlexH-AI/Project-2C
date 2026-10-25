@@ -21,8 +21,8 @@ interface Row {
 
 /**
  * The stage move or stage kept; else the status (planned, unrecorded, rescheduled, cancelled, no
- * show), with its tone. "Chưa ghi kết quả" is text too, not the badge of the lists: a badge does not
- * wrap, and the day and "Hẹn tiếp" keep one line (review of PR 746), so the card would overflow.
+ * show), with its tone. "Chưa ghi kết quả" is text too, not the badge of the lists: the badge is
+ * wider than the column, and does not wrap.
  */
 function result({ appointment: a, outcome }: Row, today: CalendarDate) {
   if (outcome?.kind === 'move') return { text: outcomeText(outcome), tone: '' };
@@ -83,6 +83,8 @@ export function CustomerAppointments({
   }, [appointments, transitions]);
 
   // Built each render: `onNext` is a new function each time the profile renders (DR6-66).
+  // Fixed widths, as the mockup's columns: sized by their content, a long note left the result too
+  // little room at 1 440, where the card has 337 px (review of PR 838). The note takes the rest.
   const columns: ReadonlyArray<DataTableColumn<Row>> = [
     {
       id: 'date',
@@ -90,6 +92,7 @@ export function CustomerAppointments({
       kind: 'date',
       value: (r) => r.appointment.date,
       thenBy: (r) => r.appointment.time ?? '',
+      width: 'w-21',
       // One line, as the mockup (review of PR 746); a day of another year puts its time under it.
       cellClass: () => 'whitespace-nowrap',
       cell: ({ appointment: a }) =>
@@ -107,6 +110,9 @@ export function CustomerAppointments({
       header: t('appointments.outcome'),
       kind: 'text',
       value: (r) => result(r, today).text,
+      // Room for the widest result on one line, "Chưa ghi kết quả": the mockup's 92 px only hold the
+      // short ones. A move between the two closed stages alone takes two lines (Owner 26/10/2026).
+      width: 'w-30',
       cell: (r) => {
         const { outcome } = r;
         // Mockup customer.html: "N3 → N2 · RF", the RF in the accent (T-298).
@@ -139,7 +145,9 @@ export function CustomerAppointments({
       kind: 'text',
       sortable: false,
       value: () => '',
-      cellClass: () => 'whitespace-nowrap',
+      width: 'w-14',
+      // Small, as the mockup's `.act`.
+      cellClass: () => 'whitespace-nowrap text-xs font-semibold',
       cell: ({ appointment }) => (
         <NextButton appointment={appointment} today={today} onNext={onNext}>
           {t('customer.next')}
@@ -174,6 +182,8 @@ export function CustomerAppointments({
           getRowId={(r) => r.appointment.id}
           initialSort={{ id: 'date', desc: true }}
           moreLabels={tableMore('appointments')}
+          fixed
+          compact
         />
       )}
       <p className="m-0 mt-2 text-xs text-fg-3">{t('customer.appointmentsHelp')}</p>
