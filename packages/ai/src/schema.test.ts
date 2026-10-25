@@ -273,6 +273,32 @@ describe.each([
   });
 });
 
+// With zod/mini, a check put on a `_default` reads the default once (review #830): every parse
+// would hand out that one list, and what a caller adds to a result would show in the next.
+describe('a list the model may leave out', () => {
+  it('is a new one at each parse of an analysis', () => {
+    const output: Partial<ReturnType<typeof analysis>> = analysis();
+    delete output.personalityNotes;
+    const first = analysisOutputSchema.parse(output);
+    first.personalityNotes.push({ system: 'ESOTERIC', text: 'KH tuổi Tý', evidence: ['F3'] });
+    // Its first strategy cites no fact: that evidence is a default too.
+    first.discoveryStrategy[0]!.evidence.push('F1');
+    const second = analysisOutputSchema.parse(output);
+    expect([second.personalityNotes, second.discoveryStrategy[0]!.evidence]).toEqual([[], []]);
+  });
+
+  it('is a new one at each parse of a discovery', () => {
+    const output: Partial<ReturnType<typeof discovery>> = discovery();
+    delete output.hypotheses;
+    delete output.personalityNotes;
+    const first = discoveryOutputSchema.parse(output);
+    first.hypotheses.push(item('KH thận trọng', 'F1'));
+    first.personalityNotes.push({ system: 'ESOTERIC', text: 'KH tuổi Tý', evidence: ['F3'] });
+    const second = discoveryOutputSchema.parse(output);
+    expect([second.hypotheses, second.personalityNotes]).toEqual([[], []]);
+  });
+});
+
 describe('extractionOutputSchema', () => {
   const fact = { field: 'childrenCount', value: '2', quote: 'hai vợ chồng có 2 bé' };
 

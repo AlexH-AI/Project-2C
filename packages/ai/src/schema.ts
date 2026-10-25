@@ -22,6 +22,7 @@ import {
 } from '@p2c/domain';
 // `zod/mini` for its size (DR6-25): the checks of `zod`, but no English messages, only "Invalid
 // input". No V1 detail shows one: the validator words it from the issue, or takes our message.
+// Checks go inside `_default`, not on it: zod/mini would give every parse the same default list.
 import * as z from 'zod/mini';
 
 /** The three AI modes: `analysis` (`PAIN_POINT_ANALYSIS`), `discovery` (`PROFILE_DISCOVERY`), `extraction`. */
