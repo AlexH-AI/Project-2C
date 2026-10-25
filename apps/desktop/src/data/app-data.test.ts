@@ -1,3 +1,4 @@
+import { readdirSync, readFileSync } from 'node:fs';
 import {
   createCustomer,
   createPerson,
@@ -128,6 +129,43 @@ function thrownBy(fn: () => unknown): unknown {
 /** An error with exactly this message. */
 const withMessage = (message: string) => (error: unknown) =>
   error instanceof Error && error.message === message;
+
+/**
+ * The file of `db` with one byte off in `key` on the root page of `index`: every page stays whole,
+ * only the index no longer matches its table. As in the test of `integrityCheck` (packages/db),
+ * whose code no app test may import (review of PR 674).
+ */
+function withIndexKeyOff(db: Database, index: string, key: string): Uint8Array {
+  const [[root]] = db.sqlite.exec('SELECT rootpage FROM sqlite_master WHERE name = ?', [index])[0]!
+    .values as [[number]];
+  const bytes = db.export();
+  const pageSize = (bytes[16]! << 8) | bytes[17]!;
+  const page = bytes.subarray((root - 1) * pageSize, root * pageSize);
+  const encoded = new TextEncoder().encode(key);
+  const at = page.findIndex((_, i) => encoded.every((byte, j) => page[i + j] === byte));
+  // A seed or schema that moves the key off the root page would flip a byte of its header instead.
+  expect(at).toBeGreaterThan(-1);
+  page[at + encoded.length - 1]! ^= 1;
+  return bytes;
+}
+
+/**
+ * A new database of schema `version`, as an older app made it: migrated by the files of `@p2c/db`,
+ * read from its folder (the package exports no migration list). Their order is their number.
+ */
+function openAtVersion(version: number): Promise<Database> {
+  const folder = new URL('../../../../packages/db/migrations/', import.meta.url);
+  const files = readdirSync(folder).filter((file) => file.endsWith('.sql'));
+  const migrations = files
+    .sort()
+    .slice(0, version)
+    .map((file, index) => ({
+      id: index + 1,
+      tag: file.slice(0, -'.sql'.length),
+      sql: readFileSync(new URL(file, folder), 'utf8'),
+    }));
+  return openDatabase({ migrations });
+}
 
 describe('openAppData', () => {
   it('without storage (web mode) opens a migrated database with the simulated data', async () => {
@@ -275,27 +313,37 @@ describe('openAppData', () => {
   });
 
   it('refuses a file whose index lost step with its table, with every page whole (DR6-73)', async () => {
-    // One byte off in the key of the team's name index: lookups by name would miss the team. As in
-    // the test of `integrityCheck` (packages/db), whose code no app test may import (review of PR 674).
+    // One byte off in the key of the team's name index: lookups by name would miss the team.
     const original = await openDatabase();
     createTeam(original, { name: 'Sao Mai' });
-    const [[root]] = original.sqlite.exec(
-      "SELECT rootpage FROM sqlite_master WHERE name = 'teams_active_name'",
-    )[0]!.values as [[number]];
-    const damaged = original.export();
-    const pageSize = (damaged[16]! << 8) | damaged[17]!;
-    const page = damaged.subarray((root - 1) * pageSize, root * pageSize);
-    const key = new TextEncoder().encode('Sao Mai');
-    const at = page.findIndex((_, i) => key.every((byte, j) => page[i + j] === byte));
-    // A seed or schema that moves the key off the root page would flip a byte of its header instead.
-    expect(at).toBeGreaterThan(-1);
-    page[at + key.length - 1]! ^= 1;
+    const damaged = withIndexKeyOff(original, 'teams_active_name', 'Sao Mai');
     const { storage, events } = memoryStorage(damaged);
 
     const error = await openAppData({ storage }).catch((e: unknown) => e);
 
     expect(isDamagedDataError(error)).toBe(true);
     expect((error as Error).cause).toEqual(expect.stringContaining('teams_active_name'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(events).toEqual([]);
+  });
+
+  it('checks the stored file before migrating it: damage a migration would hide is refused, never backed up (DR-51)', async () => {
+    // Migration 11 rebuilds `people`: its index, one key a byte off, goes with the old table, so
+    // the migrated database checks whole while the file on disk stays damaged.
+    const older = await openAtVersion(10);
+    older.sqlite.exec(`
+      INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x');
+      INSERT INTO people (id, name, role, team_id, created_at, updated_at)
+        VALUES ('re-an', 'An', 'RE', 't', 'x', 'x');
+    `);
+    const damaged = withIndexKeyOff(older, 'sqlite_autoindex_people_1', 're-an');
+    expect((await openDatabase({ bytes: damaged })).integrityCheck()).toEqual([]);
+    const { storage, events } = memoryStorage(damaged);
+
+    const error = await openAppData({ storage }).catch((e: unknown) => e);
+
+    expect(isDamagedDataError(error)).toBe(true);
+    expect((error as Error).cause).toEqual(expect.stringContaining('sqlite_autoindex_people_1'));
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(events).toEqual([]);
   });
@@ -360,6 +408,22 @@ describe('openAppData', () => {
   it('measures the seeding time for the browser check of #64', async () => {
     await openAppData({ today: () => TODAY, seed: fakeSeed });
     expect(performance.getEntriesByName('p2c:demo-seed', 'measure').length).toBeGreaterThan(0);
+  });
+
+  it('keeps at most 50 measures of the file saves, their count changing with each (review of PR 572)', async () => {
+    const { storage } = memoryStorage();
+    const app = await openAppData({ storage, today: () => TODAY, seed: fakeSeed });
+    const measures = () => performance.getEntriesByName('p2c:db-save', 'measure').length;
+    await app.saves.idle();
+
+    for (let n = 0; n < 120; n++) {
+      const before = measures();
+      app.run((db) => createTeam(db, { name: `Team ${n}` }));
+      await app.saves.idle();
+      // The perf probe (e2e/perf) waits for the count to change, then reads the last one.
+      expect(measures()).not.toBe(before);
+      expect(measures()).toBeLessThanOrEqual(50);
+    }
   });
 });
 
@@ -848,6 +912,20 @@ describe('replacing the data (S-2)', () => {
     expect(await storedVersion(saves.at(-1)!)).toBe(LATEST_SCHEMA_VERSION);
     const last = await openDatabase({ bytes: saves.at(-1) });
     expect(last.sqlite.exec('SELECT text FROM notes')[0]?.values).toEqual([['kept']]);
+  });
+
+  it('saves data that migrates as it opens once: the migration saved it already (review of PR 620)', async () => {
+    const { app, saves } = await exe();
+    await app.saves.idle();
+    const older = (await openDatabase({ migrations: [] })).export();
+    const preview = { ...(await previewOf(app, 'x')), bytes: older };
+    const before = saves.length;
+
+    await app.importBackup(preview);
+    await app.saves.idle();
+
+    expect(saves).toHaveLength(before + 1);
+    expect(await storedVersion(saves.at(-1)!)).toBe(LATEST_SCHEMA_VERSION);
   });
 
   it('exports a whole file of the old or the new data at any step of a replace (S2-5)', async () => {

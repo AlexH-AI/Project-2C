@@ -7,7 +7,7 @@ import { isUnsavedChangesError, type BackupPreview, type RecordCounts } from '..
 import { t } from '../i18n';
 import { countsText, OpenFolderButton } from './SettingsDataFile';
 
-type Notice =
+export type BackupNotice =
   | {
       readonly kind: 'exported';
       readonly where: string;
@@ -33,49 +33,44 @@ interface Refused {
 const ALERT = 'm-0 flex flex-col gap-1 rounded-md border px-3 py-2';
 
 /**
- * A section of Settings → Data with a notice, which Data shows one of (DR6-45): this one's while
- * `showsNotice`; `onNotice` once it has a new one.
+ * A section of Settings → Data with a notice, which Data shows one of (DR6-45): `notice` is this
+ * section's while it is the one shown. `onNotice` shows a new one in place of any other section's;
+ * `null` drops this section's own.
  */
-export interface DataNoticeProps {
-  readonly showsNotice: boolean;
-  readonly onNotice: () => void;
+export interface DataNoticeProps<N> {
+  readonly notice: N | null;
+  readonly onNotice: (notice: N | null) => void;
 }
 
 /** Settings → Data, "Xuất / nhập backup" (mockup settings-data, 10a, 10b; spec §6). */
-export function BackupSection({ showsNotice, onNotice }: DataNoticeProps) {
+export function BackupSection({ notice, onNotice }: DataNoticeProps<BackupNotice>) {
   const data = useAppData();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<'export' | 'read' | null>(null);
-  const [last, setNotice] = useState<Notice | null>(null);
-  const notice = showsNotice ? last : null;
   const [chosen, setChosen] = useState<Chosen | null>(null);
   const [refused, setRefused] = useState<Refused | null>(null);
-  const show = (next: Notice) => {
-    setNotice(next);
-    onNotice();
-  };
 
   const exportFile = async () => {
     setBusy('export');
-    setNotice(null);
+    onNotice(null);
     try {
       const exported = await data.exportBackup();
       if (exported.path === undefined) download(exported.name, exported.text);
-      show({
+      onNotice({
         kind: 'exported',
         where: exported.path ?? exported.name,
         size: exported.size,
         inFolder: exported.path !== undefined,
       });
     } catch {
-      show({ kind: 'failed', message: t('settings.backup.exportFailed') });
+      onNotice({ kind: 'failed', message: t('settings.backup.exportFailed') });
     } finally {
       setBusy(null);
     }
   };
 
   const readFile = async (file: File) => {
-    setNotice(null);
+    onNotice(null);
     // Refused unread: reading a file this big would freeze the app (spec §6).
     if (file.size > MAX_BACKUP_BYTES) {
       const limitMb = MAX_BACKUP_BYTES / 1024 / 1024;
@@ -89,7 +84,7 @@ export function BackupSection({ showsNotice, onNotice }: DataNoticeProps) {
     } catch (error) {
       // Only the file's own faults are refused (10b); a failing engine or read is not the file's.
       if (error instanceof DbError) setRefused({ name: file.name, error });
-      else show({ kind: 'failed', message: t('settings.backup.failed') });
+      else onNotice({ kind: 'failed', message: t('settings.backup.failed') });
     } finally {
       setBusy(null);
     }
@@ -170,7 +165,7 @@ export function BackupSection({ showsNotice, onNotice }: DataNoticeProps) {
           chosen={chosen}
           onClose={(result) => {
             setChosen(null);
-            if (result) show(result);
+            if (result) onNotice(result);
           }}
         />
       )}
@@ -191,7 +186,13 @@ function download(name: string, text: string) {
 }
 
 /** Mockup 10a: what the file holds against the current data, then back up (exe) and replace. */
-function ImportDialog({ chosen, onClose }: { chosen: Chosen; onClose: (notice?: Notice) => void }) {
+function ImportDialog({
+  chosen,
+  onClose,
+}: {
+  chosen: Chosen;
+  onClose: (notice?: BackupNotice) => void;
+}) {
   const data = useAppData();
   const [running, setRunning] = useState(false);
   const { preview } = chosen;

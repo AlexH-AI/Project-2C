@@ -1117,7 +1117,7 @@ export const vi = {
   'settings.demo.reloadOpen': 'Nạp lại…',
   'settings.demo.confirmTitle': 'Nạp lại dữ liệu giả lập?',
   'settings.demo.confirmBody':
-    'Toàn bộ dữ liệu hiện tại được thay bằng dữ liệu giả lập mới, neo ở ngày {date}.',
+    'Toàn bộ dữ liệu hiện tại ({customers} KH, {appointments} lịch hẹn, {policies} HĐ) được thay bằng dữ liệu giả lập mới, neo ở ngày {date}.',
   'settings.demo.confirmBackup':
     'App backup file dữ liệu trước vào Project2C-data\\backups\\; khôi phục bằng cách chép bản backup thành Project2C-data\\project2c.db khi app đã đóng.',
   'settings.demo.confirmWeb': 'Bản web không lưu file: dữ liệu chỉ nằm trong trình duyệt.',

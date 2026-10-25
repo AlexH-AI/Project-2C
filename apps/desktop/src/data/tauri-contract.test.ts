@@ -295,13 +295,25 @@ function tauriImports(): string[] {
   );
 }
 
+/** A release version, 1.0.0 or later; a pre-release (`-rc.1`) or build (`+…`) suffix is semver too. */
+const RELEASE = /^[1-9]\d*\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+
 describe('the release configuration (DR6-12…14)', () => {
   it('gives package.json, tauri.conf.json and Cargo.toml one version, 1.0.0 or later', () => {
     const { version } = JSON.parse(desktop('package.json')) as { version: string };
     const cargo = /^\[package\][^[]*^version = "([^"]+)"$/m.exec(desktop('src-tauri/Cargo.toml'));
     expect([tauriConf().version, cargo?.[1]]).toEqual([version, version]);
     // All three back at the 0.1.0 of the template would still agree (DR6-12, DR6-88).
-    expect(version).toMatch(/^[1-9]\d*\.\d+\.\d+$/);
+    expect(version).toMatch(RELEASE);
+  });
+
+  it('takes a pre-release of 1.0.0 or later as a release version, not one before 1.0.0', () => {
+    for (const version of ['1.0.0', '1.1.0-rc.1', '2.0.0-beta.2+build.5', '1.0.1+20261025']) {
+      expect(version).toMatch(RELEASE);
+    }
+    for (const version of ['0.1.0', '0.9.0-rc.1', '1.0', '1.0.0-', '01.0.0', 'v1.0.0']) {
+      expect(version).not.toMatch(RELEASE);
+    }
   });
 
   it('builds the Rust library only as the rlib the exe links', () => {

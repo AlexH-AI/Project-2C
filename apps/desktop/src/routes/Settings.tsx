@@ -6,7 +6,7 @@ import { isUnsavedChangesError } from '../data/app-data';
 import { t } from '../i18n';
 import type { SettingsSection } from '../shell/routes';
 import { AiSection } from './SettingsAi';
-import { BackupSection, type DataNoticeProps } from './SettingsBackup';
+import { BackupSection, type BackupNotice, type DataNoticeProps } from './SettingsBackup';
 import { DataFileSection } from './SettingsDataFile';
 import { TrashSection } from './SettingsTrash';
 
@@ -62,28 +62,35 @@ export function Settings({ section: linked }: { section?: SettingsSection }) {
   );
 }
 
+/** The one notice of Dữ liệu, and the section it belongs to. */
+interface Shown {
+  readonly from: 'backup' | 'demo';
+  readonly notice: unknown;
+}
+
 /**
  * Dữ liệu has one notice, that of the last backup or reload: a notice about data replaced since
  * never stays beside it (DR6-45).
  */
 function DataSections() {
-  const [noticeFrom, setNoticeFrom] = useState<'backup' | 'demo' | null>(null);
+  const [shown, setShown] = useState<Shown | null>(null);
+  // Only section `from` sets a notice under `from`, always of the type its props name.
+  const noticeOf = <N,>(from: Shown['from']): DataNoticeProps<N> => ({
+    notice: shown?.from === from ? (shown.notice as N) : null,
+    onNotice: (notice) =>
+      setShown((now) => (notice !== null ? { from, notice } : now?.from === from ? null : now)),
+  });
   return (
     <>
       <DataFileSection />
-      <BackupSection
-        showsNotice={noticeFrom === 'backup'}
-        onNotice={() => setNoticeFrom('backup')}
-      />
-      <DemoSection showsNotice={noticeFrom === 'demo'} onNotice={() => setNoticeFrom('demo')} />
+      <BackupSection {...noticeOf<BackupNotice>('backup')} />
+      <DemoSection {...noticeOf<Outcome>('demo')} />
     </>
   );
 }
 
-function DemoSection({ showsNotice, onNotice }: DataNoticeProps) {
+function DemoSection({ notice: outcome, onNotice }: DataNoticeProps<Outcome>) {
   const [confirming, setConfirming] = useState(false);
-  const [last, setOutcome] = useState<Outcome | null>(null);
-  const outcome = showsNotice ? last : null;
   const { hasFile } = useAppData();
 
   return (
@@ -118,9 +125,7 @@ function DemoSection({ showsNotice, onNotice }: DataNoticeProps) {
         <ReloadDialog
           onClose={(result) => {
             setConfirming(false);
-            if (!result) return;
-            setOutcome(result);
-            onNotice();
+            if (result) onNotice(result);
           }}
         />
       )}
@@ -128,9 +133,14 @@ function DemoSection({ showsNotice, onNotice }: DataNoticeProps) {
   );
 }
 
-/** Mockup 10c: type the confirmation word, then back up (exe) and reload. */
+/**
+ * Mockup 10c: what is replaced, type the confirmation word, then back up (exe) and reload. The data
+ * is counted once, when the dialog opens: the new data swapped in before it closes is not what
+ * the sentence names.
+ */
 function ReloadDialog({ onClose }: { onClose: (outcome?: Outcome) => void }) {
   const data = useAppData();
+  const [counts] = useState(() => data.counts());
   const [word, setWord] = useState('');
   const [running, setRunning] = useState(false);
   // Follows the day while the dialog stays open past midnight (DR-30).
@@ -172,7 +182,14 @@ function ReloadDialog({ onClose }: { onClose: (outcome?: Outcome) => void }) {
         </>
       }
     >
-      <p className="m-0">{t('settings.demo.confirmBody', { date: anchor })}</p>
+      <p className="m-0">
+        {t('settings.demo.confirmBody', {
+          customers: counts.customers,
+          appointments: counts.appointments,
+          policies: counts.policies,
+          date: anchor,
+        })}
+      </p>
       <p className="m-0 text-fg-2">
         {t(data.hasFile ? 'settings.demo.confirmBackup' : 'settings.demo.confirmWeb')}
       </p>

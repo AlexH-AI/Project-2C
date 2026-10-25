@@ -1,7 +1,37 @@
-import { expect, test } from './fixtures';
+import { expect, test, type Page } from './fixtures';
+import { createKycCustomer } from './support';
 
 // playwright.config.ts pins the anchor day of the simulated data (VITE_DEMO_ANCHOR).
 const ANCHOR = '15/09/2026';
+
+/** The customers, appointments and policies of the data open, as the data file card counts them. */
+async function cardCounts(page: Page) {
+  await page.getByRole('link', { name: 'Cài đặt' }).click();
+  const card = await page.getByRole('region', { name: 'File dữ liệu' }).innerText();
+  const [, customers, appointments, policies] =
+    /([\d.]+) KH · ([\d.]+) lịch hẹn · ([\d.]+) HĐ/.exec(card)!;
+  return { customers, appointments, policies };
+}
+
+test('the reload dialog names how many customers, appointments and policies it replaces (10c)', async ({
+  page,
+}) => {
+  await page.goto('/#/settings');
+  const seeded = await cardCounts(page);
+  // One more customer than the simulated data: the dialog counts the data open.
+  await createKycCustomer(page, 'Lan Đếm Lại');
+  const open = await cardCounts(page);
+  expect(open.customers).not.toBe(seeded.customers);
+
+  await page
+    .getByRole('region', { name: 'Dữ liệu giả lập' })
+    .getByRole('button', { name: 'Nạp lại…' })
+    .click();
+
+  await expect(page.getByRole('dialog', { name: 'Nạp lại dữ liệu giả lập?' })).toContainText(
+    `Toàn bộ dữ liệu hiện tại (${open.customers} KH, ${open.appointments} lịch hẹn, ${open.policies} HĐ) được thay bằng dữ liệu giả lập mới, neo ở ngày ${ANCHOR}.`,
+  );
+});
 
 test('Settings reloads the simulated data after typing the confirmation word', async ({ page }) => {
   await page.goto('/#/settings');

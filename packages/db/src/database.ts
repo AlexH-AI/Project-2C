@@ -22,6 +22,12 @@ export interface OpenDatabaseOptions {
   readonly random?: RandomFill;
   /** The migrations to run; defaults to the app's. Tests pass fake ones. */
   readonly migrations?: readonly Migration[];
+  /**
+   * Runs on the file as it was stored, before any migration: one that rebuilds a table drops the
+   * old table's pages, and any damage in them, from what a check after it reads (DR-51). Throwing
+   * stops the open; nothing is saved. A file of a newer app is refused before it.
+   */
+  readonly check?: (db: Database) => void;
 }
 
 /** Where timestamps, ids and customer codes come from. */
@@ -62,6 +68,7 @@ export async function openDatabase(options: OpenDatabaseOptions = {}): Promise<D
   try {
     assertSupported(schemaVersion(sqlite), migrations);
     const db = connect(sqlite, options);
+    options.check?.(db);
     migrate(db, migrations);
     return db;
   } catch (error) {

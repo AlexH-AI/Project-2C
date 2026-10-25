@@ -42,6 +42,25 @@ function foreignKeys(db: Awaited<ReturnType<typeof openDatabase>>, table: string
   return (rows[0]?.values ?? []).map(([from, to, column]) => `${from}->${to}.${column}`).sort();
 }
 
+/**
+ * The file of `db` with one byte off in `key` on the root page of `index`: every page stays whole,
+ * only the index no longer matches its table (DR6-73). The test of app-data (apps/desktop) damages
+ * a file the same way, its own copy: a package exports no test code (review of PR 674).
+ */
+function withIndexKeyOff(db: Database, index: string, key: string): Uint8Array {
+  const [[root]] = db.sqlite.exec('SELECT rootpage FROM sqlite_master WHERE name = ?', [index])[0]!
+    .values as [[number]];
+  const bytes = db.export();
+  const pageSize = (bytes[16]! << 8) | bytes[17]!;
+  const page = bytes.subarray((root - 1) * pageSize, root * pageSize);
+  const encoded = new TextEncoder().encode(key);
+  const at = page.findIndex((_, i) => encoded.every((byte, j) => page[i + j] === byte));
+  // Not found would damage the page header instead of the key.
+  expect(at).toBeGreaterThan(-1);
+  page[at + encoded.length - 1]! ^= 1;
+  return bytes;
+}
+
 describe('openDatabase', () => {
   it('migrates an empty database to the latest schema version', async () => {
     const db = await openDatabase();
@@ -119,20 +138,55 @@ describe('openDatabase', () => {
     expect(MIGRATIONS.map((m) => m.id)).toEqual(journal.entries.map((e) => e.idx + 1));
   });
 
-  it('refuses a file made by a newer app, without migrating or saving it', async () => {
+  it('refuses a file made by a newer app, without checking, migrating or saving it', async () => {
     const newer = await openDatabase();
     const version = LATEST_SCHEMA_VERSION + 1;
     newer.sqlite.run("INSERT INTO schema_migrations (id, applied_at) VALUES (?, 'x')", [version]);
     const persist = vi.fn();
+    const check = vi.fn();
 
-    const error = await openDatabase({ bytes: newer.export(), persist }).catch((e: unknown) => e);
+    const error = await openDatabase({ bytes: newer.export(), persist, check }).catch(
+      (e: unknown) => e,
+    );
 
     expect(error).toBeInstanceOf(DbError);
     expect(error).toMatchObject({
       code: 'SCHEMA_TOO_NEW',
       params: { version, supported: LATEST_SCHEMA_VERSION },
     });
+    expect(check).not.toHaveBeenCalled();
     expect(persist).not.toHaveBeenCalled();
+  });
+
+  it('checks the file as it was stored, before any migration, and opens nothing the check refuses', async () => {
+    // A file from before the last migration: opening it migrates, and that saves.
+    const older = (await openDatabase({ migrations: MIGRATIONS.slice(0, -1) })).export();
+    const checked: number[] = [];
+    const persist = vi.fn();
+
+    const error = await openDatabase({
+      bytes: older,
+      persist,
+      check: (db) => {
+        checked.push(db.schemaVersion());
+        throw new Error('damaged');
+      },
+    }).catch((e: unknown) => e);
+
+    expect(error).toEqual(new Error('damaged'));
+    expect(checked).toEqual([LATEST_SCHEMA_VERSION - 1]);
+    expect(persist).not.toHaveBeenCalled();
+
+    const db = await openDatabase({
+      bytes: older,
+      persist,
+      check: (opened) => {
+        checked.push(opened.schemaVersion());
+      },
+    });
+    expect(checked).toEqual([LATEST_SCHEMA_VERSION - 1, LATEST_SCHEMA_VERSION - 1]);
+    expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
+    expect(persist).toHaveBeenCalledTimes(1);
   });
 
   it('runs the given migrations instead of the app ones (tests pass fake ones)', async () => {
@@ -181,22 +235,11 @@ describe('integrityCheck', () => {
   });
 
   // One byte off in a key of an index leaves every page whole: `quick_check` says ok, while
-  // lookups through the index miss the row (DR6-73). The test of app-data (apps/desktop) damages a
-  // file the same way, its own copy: a package exports no test code (review of PR 674).
+  // lookups through the index miss the row (DR6-73).
   it('finds an index whose key no longer matches its row', async () => {
     const db = await openDatabase();
     createTeam(db, { name: 'Sao Mai' });
-    const [[root]] = db.sqlite.exec(
-      "SELECT rootpage FROM sqlite_master WHERE name = 'teams_active_name'",
-    )[0]!.values as [[number]];
-    const bytes = db.export();
-    const pageSize = (bytes[16]! << 8) | bytes[17]!;
-    const page = bytes.subarray((root - 1) * pageSize, root * pageSize);
-    const key = new TextEncoder().encode('Sao Mai');
-    const at = page.findIndex((_, i) => key.every((byte, j) => page[i + j] === byte));
-    // Not found would damage the page header instead of the key.
-    expect(at).toBeGreaterThan(-1);
-    page[at + key.length - 1]! ^= 1;
+    const bytes = withIndexKeyOff(db, 'teams_active_name', 'Sao Mai');
 
     const opened = await openDatabase({ bytes });
 
@@ -654,6 +697,32 @@ describe('migrating a saved database', () => {
         "INSERT INTO people (id, name, role, team_id, created_at, updated_at) VALUES ('p', 'Hà', 'TL', 'nowhere', 'x', 'x')",
       ),
     ).toThrow(/FOREIGN KEY/);
+  });
+
+  // Migration 11 rebuilds `people` (copy, drop, rename): its index goes with the old table, damage
+  // and all, so the migrated database checks whole while the file it came from is damaged (DR-51).
+  it('hides damage in a table a migration rebuilds, which only a check before migrating finds', async () => {
+    const saved = await openDatabase({ migrations: MIGRATIONS.filter((m) => m.id <= 10) });
+    saved.sqlite.exec(`
+      INSERT INTO teams (id, name, created_at, updated_at) VALUES ('t', 'Sao Mai', 'x', 'x');
+      INSERT INTO people (id, name, role, team_id, created_at, updated_at)
+        VALUES ('re-an', 'An', 'RE', 't', 'x', 'x');
+    `);
+    const bytes = withIndexKeyOff(saved, 'sqlite_autoindex_people_1', 're-an');
+    const found: string[][] = [];
+
+    const db = await openDatabase({
+      bytes,
+      check: (stored) => {
+        found.push(stored.integrityCheck());
+      },
+    });
+
+    expect(db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
+    expect(db.integrityCheck()).toEqual([]);
+    expect(found).toEqual([
+      expect.arrayContaining([expect.stringContaining('sqlite_autoindex_people_1')]),
+    ]);
   });
 
   it('rejects a migration that leaves references pointing nowhere, saving nothing', async () => {

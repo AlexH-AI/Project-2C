@@ -80,6 +80,33 @@ test('a reload then an import leave only the notice of the import', async ({ pag
   await expect(section(page).getByRole('status')).toHaveCount(1);
 });
 
+// DR6-45 the other way: a reload replaces the notice of the export; an import cancelled after it
+// replaces no data, so the notice of the reload stays.
+test('an export then a reload leave only the notice of the reload, which a cancelled import keeps', async ({
+  page,
+}) => {
+  await page.goto('/#/settings');
+  const exported = await exportFile(page);
+  const notices = page.getByRole('status');
+  await expect(notices).toHaveText([/^Đã xuất backup: /]);
+  await page
+    .getByRole('region', { name: 'Dữ liệu giả lập' })
+    .getByRole('button', { name: 'Nạp lại…' })
+    .click();
+  const reload = page.getByRole('dialog', { name: 'Nạp lại dữ liệu giả lập?' });
+  await reload.getByRole('textbox').fill('NẠP LẠI');
+  await reload.getByRole('button', { name: 'Nạp lại', exact: true }).click();
+  const reloaded = 'Đã nạp lại dữ liệu giả lập, neo ở ngày 15/09/2026.';
+  await expect(notices).toHaveText([reloaded]);
+
+  await chooseFile(page, exported.name, exported.text);
+  const dialog = page.getByRole('dialog', { name: 'Thay toàn bộ dữ liệu?' });
+  await dialog.getByRole('button', { name: 'Hủy' }).click();
+
+  await expect(dialog).toBeHidden();
+  await expect(notices).toHaveText([reloaded]);
+});
+
 test('the data file card shows what the simulated data holds, and that web mode keeps no file', async ({
   page,
 }) => {
@@ -133,6 +160,23 @@ test('refuses a file that is not a Project-2C backup', async ({ page }) => {
   );
   await dialog.getByRole('button', { name: 'Đóng' }).click();
   await expect(dialog).toBeHidden();
+});
+
+test('refuses a backup made by a newer app, naming both schema versions (10b)', async ({
+  page,
+}) => {
+  await page.goto('/#/settings');
+  const exported = await exportFile(page);
+  const file = JSON.parse(exported.text) as { schemaVersion: number };
+  const app = file.schemaVersion;
+
+  await chooseFile(page, exported.name, JSON.stringify({ ...file, schemaVersion: app + 1 }));
+
+  const alert = page.getByRole('dialog', { name: 'Không nhập được file' }).getByRole('alert');
+  await expect(alert).toContainText(
+    `File tạo từ bản app mới hơn (schema v${app + 1}, app này v${app})`,
+  );
+  await expect(alert).toContainText('Cập nhật app rồi nhập lại. Dữ liệu hiện tại không bị đổi.');
 });
 
 test('refuses a backup with a date that does not exist, keeping the current data', async ({

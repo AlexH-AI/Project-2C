@@ -65,7 +65,7 @@ Trong lúc đang nhập, app không nhận thay đổi khác (xem [10. Khi có l
 Xóa dữ liệu hiện tại và tạo lại dữ liệu giả lập: 3 team × 10 RE, khoảng 12 tháng tính tới hôm nay.
 
 1. Bấm **Nạp lại…**.
-2. Hộp **Nạp lại dữ liệu giả lập?** ghi ngày neo của dữ liệu mới. (bản exe) App backup file dữ liệu vào `Project2C-data\backups\` trước.
+2. Hộp **Nạp lại dữ liệu giả lập?** ghi số KH, lịch hẹn, HĐ sắp bị thay và ngày neo của dữ liệu mới. (bản exe) App backup file dữ liệu vào `Project2C-data\backups\` trước.
 3. Gõ đúng `NẠP LẠI` vào ô "Gõ NẠP LẠI để xác nhận".
 4. (bản exe) Bấm **Backup rồi nạp lại**; bản web bấm **Nạp lại**.
 
