@@ -858,6 +858,25 @@ describe('ChatGPT web in the app (spec Phase 5 §3.1)', () => {
     },
   );
 
+  it('opens a session while the data is still being replaced: the replace may fail, the data then the same (S2-4)', async () => {
+    const { storage, fail } = heldBackupStorage();
+    const { app, customer, rows } = await withCustomer(
+      { reportError: vi.fn(), web: recordingWeb().web },
+      storage,
+    );
+    const reloading = app.reloadDemoData();
+
+    const outcome = await startChatGptWeb(app, customer.id);
+    if (outcome.kind !== 'session') throw new Error(`no session: ${outcome.kind}`);
+    expect(outcome).toMatchObject({ copied: true, opened: true });
+
+    fail();
+    await expect(reloading).rejects.toThrow('disk full');
+    const answer = await goodAnswer(outcome.session);
+    expect(saveChatGptAnswer(app, outcome, answer)).toEqual({ kind: 'saved', status: 'ACCEPTED' });
+    expect(rows()).toMatchObject([{ provider: 'CHATGPT_WEB' }]);
+  });
+
   it('refuses Kiểm tra và lưu while the data is being replaced, saving nothing and reporting no bug (S2-2)', async () => {
     const { storage, fail } = heldBackupStorage();
     const { app, web, session, rows } = await started({ storage });

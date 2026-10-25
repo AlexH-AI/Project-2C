@@ -294,8 +294,10 @@ export type WebStartOutcome =
  * One click on Phân tích bằng ChatGPT web: the input is taken now, as for Phân tích, with the
  * generation of the data it comes from; the message is copied, then chatgpt.com opened. No AI
  * request is held (§3.1 item 5) and nothing is saved. The data replaced while it copies or opens
- * (even by a backup of the same data), or still being replaced then, discards the session: the
- * message is of other data, so nothing opens after and none is left to copy by hand (DR6-15).
+ * (even by a backup of the same data) discards the session: the message is of other data, so
+ * nothing opens after and none is left to copy by hand (DR6-15). A replace still running keeps it,
+ * as for Kiểm tra và lưu: the replace may fail, the data then the same (S2-4); once it is done,
+ * the generation ends the session.
  */
 export async function startChatGptWeb(
   app: AnalysisApp,
@@ -309,9 +311,9 @@ export async function startChatGptWeb(
     const started = startWebAnalysis(taken.request);
     if (started.kind !== 'session') return started;
     const copied = await app.ai.web.copy(started.message);
-    if (replaced(app, generation)) return { kind: 'discarded' };
+    if (app.generation() !== generation) return { kind: 'discarded' };
     const opened = await app.ai.web.openChatGpt();
-    if (replaced(app, generation)) return { kind: 'discarded' };
+    if (app.generation() !== generation) return { kind: 'discarded' };
     return { ...started, generation, kycVersion: taken.kycVersion, takenAt, copied, opened };
   } catch (error) {
     return lost(app, error);
