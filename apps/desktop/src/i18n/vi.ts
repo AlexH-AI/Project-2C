@@ -780,6 +780,9 @@ export const vi = {
   'appointments.next': 'Tạo lịch hẹn tiếp theo',
   'appointments.createdOutside':
     'Đã tạo lịch hẹn {date} cho {re}. RE này nằm ngoài góc nhìn hiện tại nên lịch không hiện ở đây; đổi góc nhìn để xem.',
+  // The same line for one reached by "Dời từ" / "Dời sang", which made nothing (review of PR 846).
+  'appointments.linkedOutside':
+    'Lịch hẹn {date} do {re} phụ trách. RE này nằm ngoài góc nhìn hiện tại nên lịch không hiện ở đây; đổi góc nhìn để xem.',
   'appointmentForm.title': 'Lịch hẹn mới',
   'appointmentForm.sub': 'Trạng thái: Dự kiến',
   'appointmentForm.nextTitle': 'Lịch hẹn tiếp theo',

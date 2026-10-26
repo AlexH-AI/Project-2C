@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
 import type { AppointmentRecord } from '@p2c/db';
 import {
   appointmentGroup,
@@ -89,20 +89,28 @@ export function AppointmentsScreen() {
   const [recording, setRecording] = useState<AppointmentRow | null>(null);
   const [editing, setEditing] = useState<AppointmentRow | null>(null);
   const [deleting, setDeleting] = useState<AppointmentRow | null>(null);
-  // The appointment just made for an RE outside the scope, while it is the one selected.
-  const [hiddenCreated, setHiddenCreated] = useState<AppointmentRecord | null>(null);
+  // The appointment just made, or reached by "Dời từ" / "Dời sang" (`linked`), for an RE outside the
+  // scope, while it is the one selected.
+  const [outOfSight, setOutOfSight] = useState<{
+    readonly appointment: AppointmentRecord;
+    readonly linked: boolean;
+  } | null>(null);
   // Where the focus goes when a dialog's button went with its save (DR6-83): the detail's heading,
-  // the line about an appointment made out of sight, or the detail itself once it shows none.
+  // the line about an appointment shown out of sight, or the detail itself once it shows none.
   const detailHeading = useRef<HTMLHeadingElement>(null);
   const outsideLine = useRef<HTMLParagraphElement>(null);
   const detailPanel = useRef<HTMLElement>(null);
-  const toDetail = () => detailHeading.current ?? outsideLine.current ?? detailPanel.current;
+  const toDetail = useCallback(
+    () => detailHeading.current ?? outsideLine.current ?? detailPanel.current,
+    [],
+  );
   // "Dời từ" / "Dời sang" of the detail go with the line they are on once the appointment they name
-  // is shown: the focus goes to its heading, as after a save (review of PR 838).
+  // is shown: the focus goes where it goes after a save, to its heading or, the appointment out of
+  // sight, to the line saying so (reviews of PR 838, PR 846).
   const [shownByLink, setShownByLink] = useState(0);
   useEffect(() => {
-    if (shownByLink > 0) detailHeading.current?.focus();
-  }, [shownByLink]);
+    if (shownByLink > 0) toDetail()?.focus();
+  }, [shownByLink, toDetail]);
 
   const pickedRows = useMemo(
     () => appointmentRows(data, picked, coordinator),
@@ -211,18 +219,18 @@ export function AppointmentsScreen() {
     setDay(date);
   };
 
-  // Shows the day of the appointment just made (or linked by a reschedule), so it is there to see.
+  // Shows the day of the appointment just made (or `linked` by a reschedule), so it is there to see.
   // A coordinator filter hiding it is cleared; the scope is shared by every screen, so a line
   // says it hides it.
-  const show = (created: AppointmentRecord) => {
-    const reveal = revealCreated(created, data.people, scope, coordinator);
-    setPeriod(pickDay(period, created.date) ?? periodOf('month', created.date));
-    setDay(created.date);
+  const show = (appointment: AppointmentRecord, linked = false) => {
+    const reveal = revealCreated(appointment, data.people, scope, coordinator);
+    setPeriod(pickDay(period, appointment.date) ?? periodOf('month', appointment.date));
+    setDay(appointment.date);
     setCoordinator(reveal.coordinator);
-    setSelectedId(created.id);
-    setHiddenCreated(reveal.outsideScope ? created : null);
+    setSelectedId(appointment.id);
+    setOutOfSight(reveal.outsideScope ? { appointment, linked } : null);
   };
-  const outside = hiddenCreated?.id === selectedId && !selected ? hiddenCreated : null;
+  const outside = outOfSight?.appointment.id === selectedId && !selected ? outOfSight : null;
 
   return (
     <>
@@ -264,9 +272,9 @@ export function AppointmentsScreen() {
       </div>
       {outside && (
         <p ref={outsideLine} tabIndex={-1} role="status" className={`${ALERT} border-info text-sm`}>
-          {t('appointments.createdOutside', {
-            date: formatDate(outside.date),
-            re: data.people.find((person) => person.id === outside.reId)?.name ?? '',
+          {t(outside.linked ? 'appointments.linkedOutside' : 'appointments.createdOutside', {
+            date: formatDate(outside.appointment.date),
+            re: data.people.find((person) => person.id === outside.appointment.reId)?.name ?? '',
           })}
         </p>
       )}
@@ -300,7 +308,7 @@ export function AppointmentsScreen() {
           onEdit={setEditing}
           onDelete={setDeleting}
           onShow={(appointment) => {
-            show(appointment);
+            show(appointment, true);
             setShownByLink((count) => count + 1);
           }}
         />
