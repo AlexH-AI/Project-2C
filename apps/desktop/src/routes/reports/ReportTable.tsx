@@ -1,36 +1,25 @@
 import { t } from '../../i18n';
-import { REPORT_STAGES, reportCells, type ReportMarkRow, type ReportRow } from './reports-view';
+import {
+  REPORT_COLUMNS,
+  REPORT_GROUPS,
+  reportCells,
+  type ReportColumn,
+  type ReportMarkRow,
+  type ReportRow,
+} from './reports-view';
 
-const STAGE_COLOR = {
+/** The headings in colour: Chưa ghi kết quả as its status, each stage of KH cuối kỳ as its own. */
+const HEADING_COLOR: Partial<Record<ReportColumn['key'], string>> = {
+  unrecorded: 'text-appt-unrecorded',
   N4: 'text-n4',
   N3: 'text-n3',
   N2: 'text-n2',
   N1: 'text-n1',
   ON_HOLD: 'text-on-hold',
   LOST: 'text-lost',
-} as const;
-
-/** The 17 figure columns in their three groups; a group's first column has a rule on its left. */
-const COLUMNS: readonly { readonly label: string; readonly className: string }[] = [
-  { label: t('reports.col.met'), className: '' },
-  { label: t('reports.col.missed'), className: '' },
-  { label: t('reports.col.unrecorded'), className: 'text-appt-unrecorded' },
-  { label: t('reports.col.planned'), className: '' },
-  { label: t('reports.col.total'), className: '' },
-  { label: t('overview.kpi.rf'), className: '' },
-  { label: t('overview.kpi.submitted'), className: '' },
-  { label: t('overview.kpi.caseSize'), className: '' },
-  { label: t('overview.kpi.issued'), className: '' },
-  { label: t('overview.kpi.revenue'), className: '' },
-  { label: t('overview.kpi.closeRate'), className: '' },
-  ...REPORT_STAGES.map((stage) => ({ label: t(`stage.${stage}`), className: STAGE_COLOR[stage] })),
-];
-const GROUPS = [
-  { label: t('reports.group.appointments'), span: 5 },
-  { label: t('reports.group.results'), span: 6 },
-  { label: t('reports.group.stages'), span: 6 },
-];
-const GROUP_STARTS = new Set([0, 5, 11]);
+};
+/** A group's first column has a rule on its left. */
+const GROUP_STARTS = new Set(REPORT_GROUPS.map((group) => group.first));
 
 const CELL = 'border-b border-border px-2 py-1.5 whitespace-nowrap';
 const RULE = 'border-l border-l-border-strong';
@@ -71,7 +60,7 @@ export function ReportTable({
   const figures = (row: ReportRow, extra: string) =>
     reportCells(row).map((cell, index) => (
       <td
-        key={COLUMNS[index]?.label}
+        key={REPORT_COLUMNS[index]?.key}
         className={`${CELL} ${extra} text-right ${GROUP_STARTS.has(index) ? RULE : ''} ${cell === none ? 'text-fg-3' : ''}`}
       >
         {cell}
@@ -93,9 +82,9 @@ export function ReportTable({
                 {header}
               </th>
             ))}
-            {GROUPS.map((group) => (
+            {REPORT_GROUPS.map((group) => (
               <th
-                key={group.label}
+                key={group.group}
                 colSpan={group.span}
                 scope="colgroup"
                 className={`${CELL} ${RULE} border-b-border-strong text-center text-xs font-semibold tracking-wider text-heading uppercase`}
@@ -105,11 +94,11 @@ export function ReportTable({
             ))}
           </tr>
           <tr>
-            {COLUMNS.map((column, index) => (
+            {REPORT_COLUMNS.map((column, index) => (
               <th
-                key={column.label}
+                key={column.key}
                 scope="col"
-                className={`border-b border-border px-2 py-1.5 align-bottom text-right text-xs leading-tight font-semibold ${column.className || 'text-fg-3'} ${GROUP_STARTS.has(index) ? RULE : ''}`}
+                className={`border-b border-border px-2 py-1.5 align-bottom text-right text-xs leading-tight font-semibold ${HEADING_COLOR[column.key] ?? 'text-fg-3'} ${GROUP_STARTS.has(index) ? RULE : ''}`}
               >
                 {column.label}
               </th>

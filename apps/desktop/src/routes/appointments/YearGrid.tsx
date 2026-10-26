@@ -1,9 +1,8 @@
 import { formatCount } from '@p2c/domain';
 import { t } from '../../i18n';
+import { CARD, FOCUS } from '../classes';
 import {
   APPOINTMENT_GROUPS as GROUPS,
-  CARD,
-  FOCUS,
   groupTotal as total,
   monthLabel,
   type MonthCell,

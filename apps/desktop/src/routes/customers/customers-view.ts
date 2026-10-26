@@ -147,9 +147,10 @@ export function parseRecordDate(text: string, today: CalendarDate): RecordDateRe
     : { ok: true, date: parsed.date };
 }
 
+/** Empty text is no birth date, never an error (DR6-66). */
 export type BirthDateResult =
   | { readonly ok: true; readonly birth: BirthDate | null }
-  | { readonly ok: false; readonly error: QuickDateError | 'future' };
+  | { readonly ok: false; readonly error: Exclude<QuickDateError, 'empty'> | 'future' };
 
 /**
  * Reads a birth date typed as a year (`1984`) or a full `dd/mm/yyyy`; empty means none (a N4
@@ -161,7 +162,8 @@ export function parseBirthDate(text: string, today: CalendarDate): BirthDateResu
   if (clean === '') return { ok: true, birth: null };
   const year = /^\d{4}$/.test(clean) ? Number(clean) : null;
   const parsed = parseQuickDate(year === null ? clean : `1/1/${year}`, today);
-  if (!parsed.ok) return parsed;
+  // Never 'empty': neither `clean` nor the day built from a year is.
+  if (!parsed.ok) return { ok: false, error: parsed.error === 'empty' ? 'format' : parsed.error };
   if (parsed.yearInferred) return { ok: false, error: 'format' };
   const birth = year === null ? parsed.date : { year };
   const tooLate = year === null ? compareDates(parsed.date, today) > 0 : year > today.year;

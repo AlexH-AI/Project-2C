@@ -17,11 +17,13 @@ export async function readWorkbook(download: Download): Promise<ExcelJS.Workbook
 /**
  * The lowest WCAG contrast of the text shown in `area`, each against what is painted behind it,
  * through the opacity of every block on the way (ADR-0013: at least 4,5:1; DR6-21). Disabled
- * controls are left out, as in WCAG. Colors are read as the browser paints them, alpha included,
+ * controls are left out, as in WCAG. With `of: 'border'`, the lower contrast of the border of
+ * `area` with the colours either side of it: its own background inside, what is behind it outside
+ * (WCAG 1.4.11: at least 3:1; T-284). Colors are read as the browser paints them, alpha included,
  * whatever their syntax (`oklab(…)`, `color(srgb …)` of Tailwind's `bg-x/10`).
  */
-export function lowestContrast(area: Locator): Promise<number> {
-  return area.evaluate((root) => {
+export function lowestContrast(area: Locator, of: 'text' | 'border' = 'text'): Promise<number> {
+  return area.evaluate((root, of) => {
     type Paint = { rgb: number[]; a: number };
     const context = document
       .createElement('canvas')
@@ -41,44 +43,65 @@ export function lowestContrast(area: Locator): Promise<number> {
       );
       return { rgb, a };
     };
-    // What the blocks of `chain` paint from `from` on, the text last: a block with an opacity paints
-    // its group first, then fades it as a whole over what is below.
-    const paint = (chain: Element[], from: number, text: boolean): Paint => {
+    // What the blocks of `chain` paint from `from` on, then the colour `top` reads off the last one
+    // (its text, its border): a block with an opacity paints its group first, then fades it as a
+    // whole over what is below.
+    type Top = (style: CSSStyleDeclaration) => string;
+    const paint = (chain: Element[], from: number, top?: Top): Paint => {
       let color: Paint = { rgb: [0, 0, 0], a: 0 };
       for (let index = from; index < chain.length; index++) {
         const style = getComputedStyle(chain[index]!);
         const opacity = Number(style.opacity);
         if (index > from && opacity < 1) {
-          const group = paint(chain, index, text);
+          const group = paint(chain, index, top);
           return over({ ...group, a: group.a * opacity }, color);
         }
         color = over(read(style.backgroundColor), color);
       }
-      return text ? over(read(getComputedStyle(chain.at(-1)!).color), color) : color;
+      return top ? over(read(top(getComputedStyle(chain.at(-1)!))), color) : color;
     };
     const page: Paint = { rgb: [255, 255, 255], a: 1 };
-    const luminance = (rgb: number[]) => {
-      const [r = 0, g = 0, b = 0] = rgb.map((value) => {
+    const luminance = (painted: Paint) => {
+      const [r = 0, g = 0, b = 0] = over(painted, page).rgb.map((value) => {
         const c = value / 255;
         return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
       });
       return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     };
+    const contrast = (a: Paint, b: Paint) => {
+      const [light = 0, dark = 0] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+      return (light + 0.05) / (dark + 0.05);
+    };
+    const chainTo = (element: Element) => {
+      const chain: Element[] = [];
+      for (let node: Element | null = element; node; node = node.parentElement) chain.unshift(node);
+      return chain;
+    };
+    if (of === 'border') {
+      const chain = chainTo(root);
+      const border = paint(chain, 0, (style) => style.borderTopColor);
+      return Math.min(
+        contrast(border, paint(chain, 0)),
+        contrast(border, paint(chain.slice(0, -1), 0)),
+      );
+    }
     let lowest = Infinity;
     for (const element of [root, ...root.querySelectorAll('*')]) {
       const text = [...element.childNodes].some(
         (node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim(),
       );
       if (!text || !element.checkVisibility() || element.closest(':disabled')) continue;
-      const chain: Element[] = [];
-      for (let node: Element | null = element; node; node = node.parentElement) chain.unshift(node);
-      const [light, dark] = [paint(chain, 0, true), paint(chain, 0, false)]
-        .map((painted) => luminance(over(painted, page).rgb))
-        .sort((a, b) => b - a);
-      lowest = Math.min(lowest, (light! + 0.05) / (dark! + 0.05));
+      const chain = chainTo(element);
+      lowest = Math.min(
+        lowest,
+        contrast(
+          paint(chain, 0, (style) => style.color),
+          paint(chain, 0),
+        ),
+      );
     }
     return lowest;
-  });
+  }, of);
 }
 
 /** Where the right edge of `box` is in the window. */

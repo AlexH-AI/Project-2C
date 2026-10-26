@@ -4,6 +4,7 @@ import { Button, DataTable, DialogFocusFallback, type DataTableColumn } from '@p
 import { useTables, useToday } from '../../data/AppDataContext';
 import type { Tables } from '../../data/tables';
 import { t, tableMore } from '../../i18n';
+import { CARD, FOCUS, LINK } from '../classes';
 import { DeletePersonDialog, PersonDialog } from './PersonDialogs';
 import { DeleteTeamDialog, TeamNameDialog } from './TeamDialogs';
 import { groupByTeam, staffMetrics, type StaffMetrics, type TeamEntry } from './team-view';
@@ -43,11 +44,8 @@ function cardTitleOf(editing: Editing | null): string {
   }
 }
 
-const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 const CARD_TITLE = 'm-0 text-sm font-medium text-heading';
 const ROLE = 'text-xs font-bold tracking-wider text-fg-3';
-const LINK =
-  'cursor-pointer rounded-sm text-xs text-accent hover:underline focus-visible:outline-2 focus-visible:outline-accent';
 
 /** The person's full name, no avatar (Owner, 01/10/2026). */
 function PersonName({ person }: { person: Person }) {
@@ -60,7 +58,7 @@ function EditLink({ person, onEdit }: { person: Person; onEdit: (person: Person)
       type="button"
       aria-label={t('person.editOf', { name: person.name })}
       onClick={() => onEdit(person)}
-      className={LINK}
+      className={`${LINK} text-xs`}
     >
       {t('person.editShort')}
     </button>
@@ -166,7 +164,7 @@ export function TeamScreen() {
                   type="button"
                   aria-pressed={on}
                   onClick={() => setSelectedId(entry.team.id)}
-                  className={`flex w-full cursor-pointer items-center gap-2 rounded-sm px-2.5 py-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-accent ${
+                  className={`flex w-full cursor-pointer items-center gap-2 rounded-sm px-2.5 py-2 text-left text-sm ${FOCUS} ${
                     on ? 'bg-accent-soft font-semibold text-fg' : 'text-fg-2 hover:bg-surface-2'
                   }`}
                 >
@@ -311,7 +309,7 @@ function Members({
           <>
             <span className="text-sm text-fg-3">{t('team.noLead')}</span>
             <span className="text-fg-3">{t('sep.dot')}</span>
-            <button type="button" onClick={onAddLead} className={LINK}>
+            <button type="button" onClick={onAddLead} className={`${LINK} text-xs`}>
               {t('team.addLead')}
             </button>
           </>

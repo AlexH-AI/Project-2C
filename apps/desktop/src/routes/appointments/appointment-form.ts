@@ -92,13 +92,21 @@ export function rescheduleReason(text: string): string | null {
   return normalizeText(text) === '' ? null : text.trim();
 }
 
+/** `dayText`, and whether it wrote the year: what a screen laying the day out needs (T-298). */
+export function writtenDay(
+  date: CalendarDate,
+  today: CalendarDate,
+): { readonly text: string; readonly withYear: boolean } {
+  const withYear = date.year !== today.year;
+  return { text: withYear ? formatDate(date) : formatDayMonth(date), withYear };
+}
+
 /**
  * A day as the form writes it: `dd/mm` this year, `dd/mm/yyyy` otherwise. `readScheduleDate`
  * reads it back as the same day, so an earlier year's day never turns into this year's; past New
  * Year it needs the `Prefill` it came from.
  */
-export const dayText = (date: CalendarDate, today: CalendarDate) =>
-  date.year === today.year ? formatDayMonth(date) : formatDate(date);
+export const dayText = (date: CalendarDate, today: CalendarDate) => writtenDay(date, today).text;
 
 /** A day as written, then its time when it has one: `dd/mm/yyyy hh:mm`. */
 export const withTime = (day: string, time: string | null) => (time ? `${day} ${time}` : day);

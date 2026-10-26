@@ -31,7 +31,7 @@ import {
   TEAMS,
 } from '../../../../../packages/domain/src/golden/metrics.fixture';
 import {
-  REPORT_STAGES,
+  REPORT_COLUMNS,
   reportCells,
   reportRows,
   summaryMeta,
@@ -259,15 +259,10 @@ describe('summaryMeta', () => {
 
 describe('reportRows on the demo data', () => {
   const TODAY = d(2026, 9, 15);
-  const KEYS = [
-    ...(['met', 'missed', 'unrecorded', 'planned', 'total'] as const).map(
-      (key) => (row: ReportFigures) => row.appointments[key],
-    ),
-    ...(['rfCount', 'submittedCount', 'caseSize', 'issuedCount', 'revenue'] as const).map(
-      (key) => (row: ReportFigures) => row.metrics?.[key],
-    ),
-    ...REPORT_STAGES.map((stage) => (row: ReportFigures) => row.stages?.[stage]),
-  ];
+  // Every column but the close rate, which is no sum (§4.1).
+  const KEYS = REPORT_COLUMNS.filter((column) => column.format !== 'percent').map(
+    (column) => column.value,
+  );
   const numbers = (row: ReportFigures) => KEYS.map((key) => key(row));
   const added = (rows: readonly ReportFigures[]) =>
     KEYS.map((key) => rows.reduce((sum, row) => sum + (key(row) ?? 0), 0));

@@ -1,5 +1,5 @@
 /** Reads one CSS custom property, e.g. `--accent` (in the app: getComputedStyle). */
-export type TokenReader = (name: string) => string;
+type TokenReader = (name: string) => string;
 
 /** Series colours in order (ADR-0013): the accent first, then the stage colours. */
 export const SERIES_TOKENS = [

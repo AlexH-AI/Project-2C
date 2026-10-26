@@ -10,14 +10,16 @@ import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData, useTables } from '../../data/AppDataContext';
 import { errorMessage, joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
-import { Actions, ALERT, FailureAlert, useSaveFailure } from '../customers/CustomerDialogs';
+import { ALERT, LINK } from '../classes';
+import { Actions, FailureAlert, useSaveFailure } from '../customers/CustomerDialogs';
+import { stageBadge } from '../stage-badge';
 import { CoordinatorsField, dateFieldError, dateReading, liveIds } from './AppointmentDialog';
 import { DeleteAppointmentDialog, UndoneMoveNote } from './DeleteAppointmentDialog';
-import { badge, MetFields, metDraftOf, EMPTY_MET } from './MetFields';
+import { MetFields, metDraftOf, EMPTY_MET } from './MetFields';
 import { DayLockNote } from './OutcomeDialog';
 import { whenText } from './RescheduleFields';
 import { isPastOrToday, parseTime, prefill, readScheduleDate } from './appointment-form';
-import { LINK, LOCKED, outcomeText, type AppointmentRow } from './appointments-view';
+import { LOCKED, outcomeText, type AppointmentRow } from './appointments-view';
 import {
   editedDay,
   heldStage,
@@ -154,13 +156,13 @@ export function EditOutcomeDialog({
             {later ? (
               <>
                 {t('outcomeEdit.lockBody', { date: formatDate(later.date) })}
-                {later.from && badge(later.from)} {t('sep.arrow')} {badge(later.to)}
+                {later.from && stageBadge(later.from)} {t('sep.arrow')} {stageBadge(later.to)}
               </>
             ) : (
               keptBy && (
                 <>
                   {t('outcomeEdit.lockKept', { date: formatDate(keptBy.date) })}
-                  {keptBy.stageAfter && badge(keptBy.stageAfter)}
+                  {keptBy.stageAfter && stageBadge(keptBy.stageAfter)}
                 </>
               )
             )}

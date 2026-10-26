@@ -4,12 +4,12 @@ import { formatDayMonth } from '@p2c/domain';
 import { useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
+import { LINK } from '../classes';
 import { BADGE } from '../customers/CustomerKyc';
 import { BADGE_COLORS, FADED, ITEMS, Item } from '../customers/KycIntelligence';
 import type { AiPanelItem } from '../customers/ai-panel-view';
 import { SourceBadge } from '../customers/KycHistory';
 import { appointmentAiView } from './appointment-ai-view';
-import { FOCUS } from './appointments-view';
 
 function Block({
   title,
@@ -90,10 +90,7 @@ export function AppointmentAi({ customerId }: { customerId: string }) {
       ) : (
         <p className="m-0 text-fg-3">
           {t('appointments.ai.empty')}{' '}
-          <a
-            href={routeToHash({ screen: 'customer', id: customerId })}
-            className={`rounded-sm text-accent hover:underline ${FOCUS}`}
-          >
+          <a href={routeToHash({ screen: 'customer', id: customerId })} className={LINK}>
             {t('appointments.ai.toProfile')}
           </a>
         </p>

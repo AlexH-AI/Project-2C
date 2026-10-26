@@ -254,7 +254,7 @@ const DEMO_SEED = 1;
 
 /** The measure of each file save, and how many the app's timeline keeps at most. */
 const SAVE_MEASURE = 'p2c:db-save';
-const SAVE_MEASURES = 50;
+const MAX_SAVE_MEASURES = 50;
 
 export const seedDemo = (db: Database, anchorDate: CalendarDate): void =>
   seedDemoData(db, { anchorDate, seed: DEMO_SEED });
@@ -291,9 +291,9 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
     const start = performance.now();
     await storage.save(bytes);
     // Read by the perf probe (e2e/perf): "lưu DB" of spec Phase 6 §5.2. Cleared once there are
-    // SAVE_MEASURES, so a long session does not pile them up (review of PR 572) and their count
+    // MAX_SAVE_MEASURES, so a long session does not pile them up (review of PR 572) and their count
     // still changes with every save, which the probe waits for.
-    if (performance.getEntriesByName(SAVE_MEASURE, 'measure').length >= SAVE_MEASURES) {
+    if (performance.getEntriesByName(SAVE_MEASURE, 'measure').length >= MAX_SAVE_MEASURES) {
       performance.clearMeasures(SAVE_MEASURE);
     }
     performance.measure(SAVE_MEASURE, { start });

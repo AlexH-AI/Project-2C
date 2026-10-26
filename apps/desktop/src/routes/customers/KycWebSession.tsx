@@ -4,8 +4,8 @@ import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 
 import { saveChatGptAnswer, type WebAnswerOutcome } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
+import { ALERT } from '../classes';
 import { webAfter, webChip, webFailure, type AiPanelIssue, type AiPanelWeb } from './ai-panel-view';
-import { ALERT } from './CustomerDialogs';
 
 const ROW = 'flex flex-wrap items-center gap-2';
 

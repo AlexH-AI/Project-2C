@@ -1,7 +1,9 @@
 import { useId, useMemo, useState } from 'react';
 import { formatCount } from '@p2c/domain';
-import { Chart, StageBadge } from '@p2c/ui';
+import { Chart } from '@p2c/ui';
 import { t } from '../../i18n';
+import { PANEL } from '../classes';
+import { stageBadge } from '../stage-badge';
 import {
   stageChartOption,
   stageChartTable,
@@ -35,10 +37,7 @@ export function StageBlock({ block }: { block: StageBlockView }) {
   const title = t('overview.stages.title');
 
   return (
-    <section
-      aria-label={title}
-      className="flex flex-col gap-3 rounded-md border border-border bg-surface-1 px-3.5 py-3"
-    >
+    <section aria-label={title} className={PANEL}>
       <div className="flex flex-wrap items-baseline gap-2">
         <h2 className="m-0 text-sm font-medium text-heading">{title}</h2>
         {block.note && <span className="text-xs text-fg-3 tabular-nums">{block.note}</span>}
@@ -54,7 +53,7 @@ export function StageBlock({ block }: { block: StageBlockView }) {
               onClick={() => toggle(stage)}
               className={`flex cursor-pointer items-baseline gap-2.5 rounded-md border border-t-3 border-border px-3 pt-2 pb-2.5 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${TOP[stage]} ${off ? 'border-dashed bg-surface-1' : 'bg-surface-2'}`}
             >
-              <StageBadge stage={stage} label={t(`stage.${stage}`)} />
+              {stageBadge(stage)}
               {off && <span className="text-xs text-fg-3">{t('overview.stages.hidden')}</span>}
               <b
                 className={`ml-auto text-2xl tabular-nums ${off || !block.tiles ? 'font-medium text-fg-3' : 'font-semibold'}`}

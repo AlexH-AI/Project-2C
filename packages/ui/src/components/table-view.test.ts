@@ -17,8 +17,8 @@ const unsorted = () => false as const;
 describe('tableView', () => {
   it('makes the header of a column that sorts a button, ↕ while the table is not sorted by it', () => {
     expect(tableView([name, date], unsorted, rows(3), SHOW_MORE_STEP).headers).toEqual([
-      { column: name, kind: 'sort', ariaSort: 'none', arrow: '↕' },
-      { column: date, kind: 'sort', ariaSort: 'none', arrow: '↕' },
+      { column: name, kind: 'button', ariaSort: 'none', arrow: '↕' },
+      { column: date, kind: 'button', ariaSort: 'none', arrow: '↕' },
     ]);
   });
 
@@ -30,8 +30,8 @@ describe('tableView', () => {
     for (const [way, ariaSort, arrow] of ways) {
       const sorted = (id: string) => id === 'date' && way;
       expect(tableView([name, date], sorted, rows(3), SHOW_MORE_STEP).headers).toEqual([
-        { column: name, kind: 'sort', ariaSort: 'none', arrow: '↕' },
-        { column: date, kind: 'sort', ariaSort, arrow },
+        { column: name, kind: 'button', ariaSort: 'none', arrow: '↕' },
+        { column: date, kind: 'button', ariaSort, arrow },
       ]);
     }
   });
@@ -39,22 +39,22 @@ describe('tableView', () => {
   it('keeps the header of sortable: false text, with no aria-sort or arrow, whatever the sort', () => {
     for (const sorted of [unsorted, () => 'asc' as const]) {
       expect(tableView([note], sorted, rows(3), SHOW_MORE_STEP).headers).toEqual([
-        { column: note, kind: 'text', hidden: false },
+        { column: note, kind: 'label', hidden: false },
       ]);
     }
   });
 
   it('shows the header of a column that does not sort to screen readers only, with headerHidden', () => {
     expect(tableView([actions], unsorted, rows(3), SHOW_MORE_STEP).headers).toEqual([
-      { column: actions, kind: 'text', hidden: true },
+      { column: actions, kind: 'label', hidden: true },
     ]);
   });
 
   it('keeps the headers of an empty table, sort buttons included, with no row and no foot', () => {
     expect(tableView([name, actions], unsorted, [], SHOW_MORE_STEP)).toEqual({
       headers: [
-        { column: name, kind: 'sort', ariaSort: 'none', arrow: '↕' },
-        { column: actions, kind: 'text', hidden: true },
+        { column: name, kind: 'button', ariaSort: 'none', arrow: '↕' },
+        { column: actions, kind: 'label', hidden: true },
       ],
       visible: [],
       foot: { kind: 'none' },

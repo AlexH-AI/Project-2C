@@ -4,6 +4,7 @@ import { Button } from '@p2c/ui';
 import { useAppData, useToday } from '../data/AppDataContext';
 import { isUnsavedChangesError } from '../data/app-data';
 import { t } from '../i18n';
+import { FOCUS, SETTINGS_SECTION } from './classes';
 import type { SettingsSection } from '../shell/routes';
 import { ConfirmWordDialog } from './ConfirmWordDialog';
 import { AiSection } from './SettingsAi';
@@ -19,8 +20,7 @@ const SECTIONS = ['data', 'ai', 'trash'] as const;
 
 type Section = (typeof SECTIONS)[number];
 
-const NAV_ITEM =
-  'rounded-sm px-2.5 py-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-accent';
+const NAV_ITEM = `rounded-sm px-2.5 py-2 text-left text-sm ${FOCUS}`;
 
 /**
  * Settings, with its sections side by side (mockup settings-data, ai.html 1a). Dữ liệu: the data
@@ -106,10 +106,7 @@ function DemoSection({ notice: outcome, onNotice }: DataNoticeProps<Outcome>) {
   const { hasFile } = useAppData();
 
   return (
-    <section
-      aria-labelledby="demo-data-title"
-      className="rounded-lg border border-border bg-surface-1 px-4 py-3"
-    >
+    <section aria-labelledby="demo-data-title" className={SETTINGS_SECTION}>
       <h2 id="demo-data-title" className="m-0 mb-1 text-sm font-medium text-heading">
         {t('settings.demo.title')}
       </h2>

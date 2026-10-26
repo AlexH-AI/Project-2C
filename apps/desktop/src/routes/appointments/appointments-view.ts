@@ -24,7 +24,7 @@ import {
   type StageTransition,
   type Team,
 } from '@p2c/domain';
-import { t, type MessageKey } from '../../i18n';
+import { joinParts, t, type MessageKey } from '../../i18n';
 
 export interface AppointmentData {
   readonly appointments: readonly AppointmentRecord[];
@@ -58,24 +58,21 @@ export const STATUS_TONE = {
   NO_SHOW: 'text-danger',
 } as const satisfies Record<AppointmentStatus, string>;
 
-export const FOCUS = 'focus-visible:outline-2 focus-visible:outline-accent';
-/** A card of the Appointments screen: the calendar, the year, the day, the list, a detail. */
-export const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 /** A field shown but locked (mockup 6f `.input.locked`: not operable, so dashed --border-strong). */
 export const LOCKED =
   'm-0 flex items-center gap-1.5 rounded-md border border-dashed border-border-strong bg-surface-2 px-2.5 py-1.5 text-fg-2 tabular-nums';
-/** An action written as a link in running text or a table ("Hẹn tiếp", "Xem tất cả"). */
-export const LINK = `cursor-pointer rounded-sm text-accent hover:underline ${FOCUS}`;
 
 /** The "Kết quả" text: `Tạm hoãn → N3`, `N3 → N2 · RF`, `Giữ N3`, `Dời sang 02/10`; empty when none. */
 export function outcomeText(outcome: Outcome): string {
   if (!outcome) return '';
   switch (outcome.kind) {
-    case 'move':
-      return t(outcome.rf ? 'appointments.moveRf' : 'appointments.move', {
-        from: outcome.from ? t(`stage.${outcome.from}`) : '—',
+    case 'move': {
+      const move = t('appointments.move', {
+        from: outcome.from ? t(`stage.${outcome.from}`) : t('appointments.none'),
         to: t(`stage.${outcome.to}`),
       });
+      return outcome.rf ? joinParts([move, t('appointments.rf')]) : move;
+    }
     case 'keep':
       return t('appointments.keep', { stage: t(`stage.${outcome.stage}`) });
     case 'rescheduled':

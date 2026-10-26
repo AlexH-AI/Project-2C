@@ -81,7 +81,7 @@ export interface ReportRows {
 }
 
 /** The six stages of KH cuối kỳ, in the order of the columns. */
-export const REPORT_STAGES = [
+const REPORT_STAGES = [
   'N4',
   'N3',
   'N2',
@@ -181,7 +181,7 @@ function dayName(date: CalendarDate, withYear: boolean): string {
  * `Tháng 10`, a week or a month of a custom range `05–11/10`; a week cut at the start of the month
  * names its weekdays, a mark counted up to today says so.
  */
-export function markName(mark: Period, period: Period, today: CalendarDate): string {
+function markName(mark: Period, period: Period, today: CalendarDate): string {
   const withYear = period.start.year !== period.end.year;
   const oneDay = compareDates(mark.start, mark.end) === 0;
   const name =
@@ -303,24 +303,100 @@ export function reportRows(
   return { summary, byTeam: table(teams), byRe: table(res), byMark };
 }
 
+/** The groups of the figure columns, in their order: Lịch hẹn · Kết quả · KH cuối kỳ. */
+type ReportGroup = 'appointments' | 'results' | 'stages';
+
+type ReportColumnKey =
+  | (typeof APPOINTMENT_SUMS)[number]
+  | (typeof METRIC_SUMS)[number]
+  | 'closeRate'
+  | (typeof REPORT_STAGES)[number];
+
 /**
- * A row as the screen shows it, 17 cells: Lịch hẹn (Đã gặp, Dời – hủy – không đến, Chưa ghi kết
- * quả, Dự kiến, Tổng) · Kết quả (Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh số, Tỉ lệ chốt)
- * · KH cuối kỳ (N4, N3, N2, N1, Tạm hoãn, Mất cơ hội). No number yet → "—"; 0 RF → "—" rate.
+ * A figure column of the report tables. The table on screen (`ReportTable`, `reportCells`) and the
+ * Excel file read the one list below (DR6-67): a column added, dropped or moved is so in both.
  */
-export function reportCells({ appointments, metrics, stages }: ReportFigures): string[] {
-  const none = t('overview.none');
-  const appointmentCells = APPOINTMENT_SUMS.map((key) => formatCount(appointments[key]));
-  const resultCells = metrics
-    ? [
-        formatCount(metrics.rfCount),
-        formatCount(metrics.submittedCount),
-        formatVndCompact(metrics.caseSize),
-        formatCount(metrics.issuedCount),
-        formatVndCompact(metrics.revenue),
-        closeRateText(metrics.closeRate),
-      ]
-    : Array<string>(6).fill(none);
-  const stageCells = REPORT_STAGES.map((stage) => (stages ? formatCount(stages[stage]) : none));
-  return [...appointmentCells, ...resultCells, ...stageCells];
+export interface ReportColumn {
+  /** Which figure; the table colours some headings by it. */
+  readonly key: ReportColumnKey;
+  readonly group: ReportGroup;
+  readonly label: string;
+  /** How Excel writes the number: money in đồng (its heading says so), the close rate in %. */
+  readonly format: 'count' | 'money' | 'percent';
+  /** The number Excel adds up; null leaves its cell empty, where the screen shows "—". */
+  readonly value: (figures: ReportFigures) => number | null;
+  /** The cell on screen: money short (`1,9 tỷ`), "—" for a number not there yet. */
+  readonly text: (figures: ReportFigures) => string;
 }
+
+/** A column of a count, or of money, written short on screen. */
+function figureColumn(
+  key: ReportColumnKey,
+  group: ReportGroup,
+  label: string,
+  value: (figures: ReportFigures) => number | null,
+  format: 'count' | 'money' = 'count',
+): ReportColumn {
+  const write = format === 'money' ? formatVndCompact : formatCount;
+  const text = (figures: ReportFigures) => {
+    const figure = value(figures);
+    return figure === null ? t('overview.none') : write(figure);
+  };
+  return { key, group, label, format, value, text };
+}
+
+/** Kết quả, there once the period has started. */
+const result = (key: (typeof METRIC_SUMS)[number], label: string, format?: 'money') =>
+  figureColumn(key, 'results', label, ({ metrics }) => metrics?.[key] ?? null, format);
+
+/**
+ * The 17 figure columns: Lịch hẹn over the whole period (Đã gặp, Dời – hủy – không đến, Chưa ghi
+ * kết quả, Dự kiến, Tổng) · Kết quả up to today (Chuyển RF, HĐ nộp, Case size, HĐ phát hành, Doanh
+ * số, Tỉ lệ chốt) · KH cuối kỳ (N4, N3, N2, N1, Tạm hoãn, Mất cơ hội).
+ */
+export const REPORT_COLUMNS: readonly ReportColumn[] = [
+  ...APPOINTMENT_SUMS.map((key) =>
+    figureColumn(key, 'appointments', t(`reports.col.${key}`), (row) => row.appointments[key]),
+  ),
+  result('rfCount', t('overview.kpi.rf')),
+  result('submittedCount', t('overview.kpi.submitted')),
+  result('caseSize', t('overview.kpi.caseSize'), 'money'),
+  result('issuedCount', t('overview.kpi.issued')),
+  result('revenue', t('overview.kpi.revenue'), 'money'),
+  {
+    key: 'closeRate',
+    group: 'results',
+    label: t('overview.kpi.closeRate'),
+    format: 'percent',
+    // Excel keeps the fraction and shows it as %; no RF, no rate: "—" (§4.1).
+    value: ({ metrics }) =>
+      metrics?.closeRate ? metrics.closeRate.numerator / metrics.closeRate.denominator : null,
+    text: ({ metrics }) => closeRateText(metrics?.closeRate ?? null),
+  },
+  ...REPORT_STAGES.map((stage) =>
+    figureColumn(stage, 'stages', t(`stage.${stage}`), ({ stages }) => stages?.[stage] ?? null),
+  ),
+];
+
+/** A group heading over the columns: from its first column, as many as it spans. */
+interface ReportGroupHeading {
+  readonly group: ReportGroup;
+  readonly label: string;
+  /** Index in `REPORT_COLUMNS`. */
+  readonly first: number;
+  readonly span: number;
+}
+
+/** The headings of the groups, read off `REPORT_COLUMNS`: 5 · 6 · 6 columns. */
+export const REPORT_GROUPS: readonly ReportGroupHeading[] = REPORT_COLUMNS.reduce<
+  ReportGroupHeading[]
+>((groups, { group }, index) => {
+  const last = groups.at(-1);
+  if (last?.group === group) groups.splice(-1, 1, { ...last, span: last.span + 1 });
+  else groups.push({ group, label: t(`reports.group.${group}`), first: index, span: 1 });
+  return groups;
+}, []);
+
+/** A row as the screen shows it, a cell per column. No number yet → "—"; 0 RF → "—" rate. */
+export const reportCells = (figures: ReportFigures): string[] =>
+  REPORT_COLUMNS.map((column) => column.text(figures));

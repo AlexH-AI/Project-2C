@@ -1,6 +1,6 @@
 // Usage: node packages/ui/scripts/check-tokens.ts <dir>...
 // Fails when app code styles with raw colours or values instead of the ADR-0013 tokens, or writes
-// a `·` / `→` separator in place of i18n `sep.*`.
+// a separator or mark (`·`, `→`, `✓`…) in place of i18n (`sep.*`, a key of `vi.ts`).
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { findHardcodedSeparators, findTokenViolations } from '../src/token-guard.ts';
@@ -30,7 +30,7 @@ for (const dir of dirs) {
 
 if (count > 0) {
   console.error(
-    `\n${count} value(s) bypass the design tokens or i18n; use packages/ui tokens and sep.* instead.`,
+    `\n${count} value(s) bypass the design tokens or i18n; use packages/ui tokens, sep.* and vi.ts instead.`,
   );
   process.exit(1);
 }

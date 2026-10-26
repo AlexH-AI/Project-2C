@@ -23,7 +23,8 @@ import { sortedByName } from '../../data/tables';
 import { joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { AppointmentDialog } from '../appointments/AppointmentDialog';
-import { badge } from '../appointments/MetFields';
+import { LINK } from '../classes';
+import { stageBadge } from '../stage-badge';
 import { CustomerAppointments } from './CustomerAppointments';
 import { CustomerPolicies } from './CustomerPolicies';
 import { ChangeStageDialog, CustomerFormDialog } from './CustomerDialogs';
@@ -70,10 +71,7 @@ function readProfile(db: Database, id: string) {
 const MARK_MS = 2000;
 
 const BACK = (
-  <a
-    href={routeToHash({ screen: 'customers' })}
-    className="self-start rounded-sm text-sm text-accent hover:underline focus-visible:outline-2 focus-visible:outline-accent"
-  >
+  <a href={routeToHash({ screen: 'customers' })} className={`${LINK} self-start text-sm`}>
     {t('customer.back')}
   </a>
 );
@@ -160,7 +158,7 @@ export function CustomerProfile({ id }: { id: string }) {
           <h2 id="customer-name" className="m-0 min-w-0 text-lg font-semibold wrap-anywhere">
             {customer.name}
           </h2>
-          {badge(customer.stage)}
+          {stageBadge(customer.stage)}
           <span className="text-xs text-fg-3 tabular-nums">
             {t('customer.since', { date: formatDate(since) })}
           </span>

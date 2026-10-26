@@ -18,49 +18,9 @@ const TEXT = 'rgb(232, 237, 244)';
 // next to them (T-284: `--border-control`).
 const CONTROL_CONTRAST = 3;
 
-/**
- * The lower WCAG contrast of the border of `field` with the colours either side of it, as the
- * browser paints them: the field's own background inside, what is behind the field outside.
- */
-function borderContrast(field: Locator): Promise<number> {
-  return field.evaluate((element) => {
-    const context = document
-      .createElement('canvas')
-      .getContext('2d', { willReadFrequently: true })!;
-    // The colours painted one over the other on a white page, their alpha included.
-    const paint = (colors: string[]) => {
-      for (const color of ['white', ...colors]) {
-        context.fillStyle = color;
-        context.fillRect(0, 0, 1, 1);
-      }
-      return [...context.getImageData(0, 0, 1, 1).data.slice(0, 3)];
-    };
-    const luminance = (rgb: number[]) => {
-      const [r = 0, g = 0, b = 0] = rgb.map((value) => {
-        const c = value / 255;
-        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-      });
-      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    };
-    const contrast = (a: number[], b: number[]) => {
-      const [light = 0, dark = 0] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-      return (light + 0.05) / (dark + 0.05);
-    };
-    const behind: string[] = [];
-    for (let node = element.parentElement; node; node = node.parentElement) {
-      behind.unshift(getComputedStyle(node).backgroundColor);
-    }
-    const style = getComputedStyle(element);
-    const outside = paint(behind);
-    const inside = paint([...behind, style.backgroundColor]);
-    const border = paint([...behind, style.backgroundColor, style.borderTopColor]);
-    return Math.min(contrast(border, inside), contrast(border, outside));
-  });
-}
-
 async function expectBorderStandsOut(field: Locator) {
   await expect(field).toBeVisible();
-  expect(await borderContrast(field)).toBeGreaterThanOrEqual(CONTROL_CONTRAST);
+  expect(await lowestContrast(field, 'border')).toBeGreaterThanOrEqual(CONTROL_CONTRAST);
 }
 
 test('body uses the ADR-0013 surface, text colour and font', async ({ page }) => {

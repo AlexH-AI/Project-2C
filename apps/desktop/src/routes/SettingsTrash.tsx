@@ -6,15 +6,15 @@ import {
   DialogFocusFallback,
   PolicyBadge,
   Segmented,
-  StageBadge,
   type DataTableColumn,
 } from '@p2c/ui';
 import { useAppData, useQuery, useToday } from '../data/AppDataContext';
 import { t } from '../i18n';
+import { ALERT, FOCUS, SETTINGS_SECTION } from './classes';
 import { ConfirmWordDialog } from './ConfirmWordDialog';
-import { ALERT } from './customers/CustomerDialogs';
 import { policyStatusText } from './customers/policy-form';
 import { RestoreDialog } from './RestoreDialog';
+import { stageBadge } from './stage-badge';
 import {
   TRASH_FILTERS,
   TRASH_MORE,
@@ -50,9 +50,7 @@ function RecordCell({ row }: { row: TrashRow }) {
     <>
       <b className="flex flex-wrap items-center gap-1.5 font-semibold">
         {recordTitle(row)}
-        {row.kind === 'customer' && (
-          <StageBadge stage={row.stage} label={t(`stage.${row.stage}`)} />
-        )}
+        {row.kind === 'customer' && stageBadge(row.stage)}
       </b>
       {row.kind === 'policy' && (
         <PolicyBadge issued={row.issuedDate !== null} label={policyStatusText(row)} />
@@ -312,10 +310,7 @@ export function TrashSection() {
   }, [notice]);
 
   return (
-    <section
-      aria-labelledby="trash-title"
-      className="rounded-lg border border-border bg-surface-1 px-4 py-3"
-    >
+    <section aria-labelledby="trash-title" className={SETTINGS_SECTION}>
       <div className="mb-1 flex items-baseline gap-2">
         <h2 id="trash-title" className="m-0 text-sm font-medium text-heading">
           {t('trash.title')}
@@ -361,7 +356,7 @@ export function TrashSection() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               autoComplete="off"
-              className="min-w-56 flex-1 rounded-md border border-border-control bg-surface-0 px-2 py-1.5 text-sm text-fg placeholder:text-fg-3 focus-visible:outline-2 focus-visible:outline-accent"
+              className={`min-w-56 flex-1 rounded-md border border-border-control bg-surface-0 px-2 py-1.5 text-sm text-fg placeholder:text-fg-3 ${FOCUS}`}
             />
           </div>
           {shown.length === 0 ? (

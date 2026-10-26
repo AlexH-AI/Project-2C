@@ -87,15 +87,37 @@ describe('findHardcodedSeparators', () => {
     ]);
   });
 
+  // DR6-37: the marks live in vi.ts too, and a list is joined by `sep.list`.
+  it('flags a mark, or a list joined by hand', () => {
+    const source = [
+      "['✓', 'text-ok', '○']",
+      '{name} ×',
+      "{open ? '▾' : '▸'}",
+      "{from ?? '—'}",
+      "names.join(', ')",
+      "names.join(t('sep.list'))",
+      "parts.join('')",
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 1, match: '✓', rule: 'hardcoded-mark' },
+      { line: 1, match: '○', rule: 'hardcoded-mark' },
+      { line: 2, match: '×', rule: 'hardcoded-mark' },
+      { line: 3, match: '▾', rule: 'hardcoded-mark' },
+      { line: 3, match: '▸', rule: 'hardcoded-mark' },
+      { line: 4, match: '—', rule: 'hardcoded-mark' },
+      { line: 5, match: ".join(', ')", rule: 'hardcoded-separator' },
+    ]);
+  });
+
   it('lets comments use them', () => {
     const source = [
-      '/** Kanban N4 → N1 · closed beside. */',
+      '/** Kanban N4 → N1 · closed beside, "—" when empty. */',
       '/**',
       ' * Mockup 6c → 7a',
       ' */',
       '// Settings → Data',
       'const a = 1; // N2 → N1',
-      '{/* 5a · 5b */}',
+      '{/* 5a · 5b, 1 440 × 900 */}',
     ].join('\n');
     expect(findHardcodedSeparators(source)).toEqual([]);
   });

@@ -8,15 +8,12 @@ import {
   type CustomerStage,
   type Person,
 } from '@p2c/domain';
-import { Choices, SelectField, StageBadge, TextField } from '@p2c/ui';
+import { Choices, SelectField, TextField } from '@p2c/ui';
 import { t } from '../../i18n';
+import { stageBadge } from '../stage-badge';
 import { LOCKED, personLabel, reviewerChoices } from './appointments-view';
 import { readCaseSize, stageAfterChoices, type OutcomeError } from './outcome-form';
 
-/** A stage as its badge, named by i18n: the one helper of the dialogs and the profile (T-298). */
-export const badge = (stage: CustomerStage) => (
-  <StageBadge stage={stage} label={t(`stage.${stage}`)} />
-);
 const FIELD_ERROR = 'm-0 text-sm text-danger';
 
 /** What a met meeting adds to its outcome (mockups 6c, 6f). */
@@ -85,7 +82,7 @@ export function MetFields({
         <div className="flex flex-col gap-1">
           <span className="font-medium">{t('outcome.stageAfter')}</span>
           <p className={LOCKED}>
-            {badge(stageAfter)} {t('outcomeEdit.lockMark')}
+            {stageBadge(stageAfter)} {t('outcomeEdit.lockMark')}
           </p>
           {lockNote}
         </div>
@@ -100,7 +97,7 @@ export function MetFields({
               disabled: !choice.allowed,
               label: (
                 <>
-                  {badge(choice.stage)}
+                  {stageBadge(choice.stage)}
                   {choice.current && ` ${t('outcome.keep')}`}
                 </>
               ),
@@ -166,7 +163,8 @@ function StageRead({
   const rf = isRfTransition(from, to);
   return (
     <p className="m-0 flex flex-wrap items-center gap-1.5 text-sm tabular-nums">
-      {badge(from)} {t('sep.arrow')} {badge(to)} {t('outcome.moveOn', { date: formatDate(date) })}{' '}
+      {stageBadge(from)} {t('sep.arrow')} {stageBadge(to)}{' '}
+      {t('outcome.moveOn', { date: formatDate(date) })}{' '}
       <span className={rf ? 'text-accent' : 'text-fg-3'}>
         {t('sep.dot')} {t(rf ? 'outcome.rf' : 'outcome.noRf')}
       </span>

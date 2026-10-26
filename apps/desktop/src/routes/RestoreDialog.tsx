@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import type { TrashRow } from '@p2c/db';
-import { Button, Dialog, StageBadge } from '@p2c/ui';
+import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import { t } from '../i18n';
-import { ALERT, FailureAlert } from './customers/CustomerDialogs';
+import { ALERT } from './classes';
+import { FailureAlert } from './customers/CustomerDialogs';
+import { stageBadge } from './stage-badge';
 import { restoreRow, restoreView } from './trash-view';
 
 /**
@@ -50,7 +52,7 @@ export function RestoreDialog({
               <dt className="w-32 shrink-0 text-fg-3">{fact.term}</dt>
               <dd className="m-0 flex flex-wrap items-center gap-1">
                 {fact.text}
-                {fact.stage && <StageBadge stage={fact.stage} label={t(`stage.${fact.stage}`)} />}
+                {fact.stage && stageBadge(fact.stage)}
               </dd>
             </div>
           ))}
