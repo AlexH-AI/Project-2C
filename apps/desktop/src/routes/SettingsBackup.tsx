@@ -5,7 +5,7 @@ import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import { isUnsavedChangesError, type BackupPreview, type RecordCounts } from '../data/app-data';
 import { t } from '../i18n';
-import { ALERT, SECTION } from './classes';
+import { ALERT, SETTINGS_SECTION } from './classes';
 import { countsText, OpenFolderButton } from './SettingsDataFile';
 
 export type BackupNotice =
@@ -90,7 +90,7 @@ export function BackupSection({ notice, onNotice }: DataNoticeProps<BackupNotice
   };
 
   return (
-    <section aria-labelledby="backup-title" className={SECTION}>
+    <section aria-labelledby="backup-title" className={SETTINGS_SECTION}>
       <div className="mb-1 flex items-baseline gap-2">
         <h2 id="backup-title" className="m-0 text-sm font-medium text-heading">
           {t('settings.backup.title')}

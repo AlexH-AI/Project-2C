@@ -6,7 +6,7 @@ import { useAppData, useQuery, useSaveStatus } from '../data/AppDataContext';
 import { countRecords, type DataFolder, type RecordCounts } from '../data/app-data';
 import { t } from '../i18n';
 import { WEB_MODE } from '../shell/Sidebar';
-import { SECTION } from './classes';
+import { SETTINGS_SECTION } from './classes';
 
 /** `3 team · 36 nhân sự · 1.204 KH · …`, the same sentence in the card and in dialog 10a. */
 export const countsText = (counts: RecordCounts) =>
@@ -26,7 +26,7 @@ export function DataFileSection() {
   const counts = useQuery(countRecords);
 
   return (
-    <section aria-labelledby="data-file-title" className={SECTION}>
+    <section aria-labelledby="data-file-title" className={SETTINGS_SECTION}>
       <div className="mb-1 flex items-baseline gap-2">
         <h2 id="data-file-title" className="m-0 text-sm font-medium text-heading">
           {t('settings.file.title')}

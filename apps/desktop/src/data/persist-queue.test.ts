@@ -36,6 +36,16 @@ function fakeDisk() {
       return maxInFlight;
     },
     next: () => pending.shift()!,
+    /**
+     * Finishes every write, those it leads the queue to start too, so that a wrong extra write
+     * shows on disk instead of hanging the test.
+     */
+    async finishAll() {
+      for (let write = pending.shift(); write; write = pending.shift()) {
+        write.finish();
+        await tick();
+      }
+    },
   };
 }
 
@@ -236,7 +246,7 @@ describe('createPersistQueue', () => {
     expect(queue.failed()).toBe(false);
   });
 
-  it('flush() writes the latest snapshot again after a failed write', async () => {
+  it('flush() writes the latest snapshot again after a failed write, and only once', async () => {
     const disk = fakeDisk();
     const queue = createPersistQueue(disk.write);
 
@@ -253,6 +263,11 @@ describe('createPersistQueue', () => {
     expect(disk.started).toEqual(['v1', 'v1']);
     expect(disk.onDisk).toBe('v1');
     expect(queue.status()).toMatchObject({ saving: false, failed: false });
+    // The retry that succeeded dropped the snapshot: closing the app (flush()) writes nothing more.
+    const closed = queue.flush();
+    await disk.finishAll();
+    await closed;
+    expect(disk.started).toEqual(['v1', 'v1']);
   });
 
   it('flush() leaves a newer running write last on disk, never the snapshot that failed', async () => {
@@ -265,16 +280,19 @@ describe('createPersistQueue', () => {
     queue.persist(bytes('v2'));
 
     const flushed = queue.flush();
-    // Let every write it starts finish, so a wrong extra write shows on disk instead of hanging.
-    for (let write = disk.next(); write; write = disk.next()) {
-      write.finish();
-      await tick();
-    }
+    await disk.finishAll();
     await flushed;
 
     expect(disk.started).toEqual(['v1', 'v2']);
     expect(disk.onDisk).toBe('v2');
     expect(queue.status()).toMatchObject({ saving: false, failed: false });
+    // Nor later: the write that succeeded dropped the snapshot that failed, so closing the app
+    // (flush()) cannot write it over the newer data.
+    const closed = queue.flush();
+    await disk.finishAll();
+    await closed;
+    expect(disk.started).toEqual(['v1', 'v2']);
+    expect(disk.onDisk).toBe('v2');
   });
 
   it('flush() resolves at once when nothing is unsaved', async () => {

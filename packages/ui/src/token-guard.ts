@@ -46,7 +46,7 @@ export function findTokenViolations(source: string): TokenViolation[] {
 }
 
 /**
- * Finds a `·` or `→`, a list joined by `', '`, or a mark (`✓ ○ × ▾ ▸`, DR6-37) written into app
+ * Finds a `·` or `→`, a list joined by `', '`, or a mark (`✓ ○ × ▾ ▸ —`, DR6-37) written into app
  * code: the app joins parts through i18n (`sep.*`) and takes its marks from it, so they live in
  * `vi.ts` only. Comments may use them.
  */
@@ -77,7 +77,7 @@ export function findHardcodedSeparators(source: string): TokenViolation[] {
     for (const found of code.matchAll(/[·→]|\.join\((['"])[,;] \1\)/g)) {
       violations.push({ line: index + 1, match: found[0], rule: 'hardcoded-separator' });
     }
-    for (const found of code.matchAll(/[✓○×▾▸]/g)) {
+    for (const found of code.matchAll(/[✓○×▾▸—]/g)) {
       violations.push({ line: index + 1, match: found[0], rule: 'hardcoded-mark' });
     }
   });

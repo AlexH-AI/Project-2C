@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react';
 import { t } from '../../i18n';
-import { PANEL } from '../classes';
+import { FOCUS, PANEL } from '../classes';
 import type { CompareRow, TeamCompareView } from './team-compare-view';
 
 const HEADERS = [
@@ -80,7 +80,7 @@ export function TeamCompare({ view, mtd }: { view: TeamCompareView; mtd: boolean
                         event.stopPropagation();
                         toggle(team.key);
                       }}
-                      className="inline-flex cursor-pointer items-center rounded-sm font-semibold focus-visible:outline-2 focus-visible:outline-accent"
+                      className={`inline-flex cursor-pointer items-center rounded-sm font-semibold ${FOCUS}`}
                     >
                       <span
                         aria-hidden="true"

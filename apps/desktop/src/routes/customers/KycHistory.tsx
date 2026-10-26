@@ -3,7 +3,7 @@ import type { AiAnalysisView, KycVersionRecord } from '@p2c/db';
 import { formatCount, formatDayMonth } from '@p2c/domain';
 import { Button, Dialog } from '@p2c/ui';
 import { joinParts, t } from '../../i18n';
-import { ALERT } from '../classes';
+import { ALERT, FOCUS } from '../classes';
 import { historyRows, rejectedReport, type AiPanelSource } from './ai-panel-view';
 import { BADGE } from './CustomerKyc';
 import { issueText } from './KycWebSession';
@@ -74,7 +74,7 @@ export function AnalysisHistory({
                 <button
                   type="button"
                   aria-label={t('aiPanel.history.open', { when: row.at })}
-                  className="rounded-sm text-fg focus-visible:outline-2 focus-visible:outline-accent"
+                  className={`rounded-sm text-fg ${FOCUS}`}
                   onClick={(event) => {
                     event.stopPropagation();
                     onPick(row.id);

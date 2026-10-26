@@ -29,7 +29,7 @@ import { routeToHash } from '../../shell/routes';
 import { RePicker } from '../../shell/RePicker';
 import { teamRes } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
-import { ALERT, CARD, FOCUS } from '../classes';
+import { ALERT, CARD, FOCUS, LINK } from '../classes';
 import { PERIOD_LABELS } from '../period-labels';
 import { AppointmentAi } from './AppointmentAi';
 import { AppointmentDialog } from './AppointmentDialog';
@@ -629,11 +629,7 @@ function Detail({
   }
   const a = row.appointment;
   const link = (other: AppointmentRecord) => (
-    <button
-      type="button"
-      onClick={() => onShow(other)}
-      className={`cursor-pointer rounded-sm text-accent tabular-nums hover:underline ${FOCUS}`}
-    >
+    <button type="button" onClick={() => onShow(other)} className={`${LINK} tabular-nums`}>
       {dateTime(other)}
     </button>
   );
@@ -668,7 +664,7 @@ function Detail({
       </dl>
       <a
         href={routeToHash({ screen: 'customer', id: a.customerId })}
-        className={`self-start rounded-sm text-sm text-accent hover:underline ${FOCUS}`}
+        className={`${LINK} self-start text-sm`}
       >
         {t('appointments.profile')}
       </a>

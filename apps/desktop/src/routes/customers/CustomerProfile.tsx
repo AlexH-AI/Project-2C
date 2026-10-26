@@ -23,6 +23,7 @@ import { sortedByName } from '../../data/tables';
 import { joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { AppointmentDialog } from '../appointments/AppointmentDialog';
+import { LINK } from '../classes';
 import { stageBadge } from '../stage-badge';
 import { CustomerAppointments } from './CustomerAppointments';
 import { CustomerPolicies } from './CustomerPolicies';
@@ -70,10 +71,7 @@ function readProfile(db: Database, id: string) {
 const MARK_MS = 2000;
 
 const BACK = (
-  <a
-    href={routeToHash({ screen: 'customers' })}
-    className="self-start rounded-sm text-sm text-accent hover:underline focus-visible:outline-2 focus-visible:outline-accent"
-  >
+  <a href={routeToHash({ screen: 'customers' })} className={`${LINK} self-start text-sm`}>
     {t('customer.back')}
   </a>
 );

@@ -4,7 +4,7 @@ import { Button, DataTable, DialogFocusFallback, type DataTableColumn } from '@p
 import { useTables, useToday } from '../../data/AppDataContext';
 import type { Tables } from '../../data/tables';
 import { t, tableMore } from '../../i18n';
-import { CARD, LINK } from '../classes';
+import { CARD, FOCUS, LINK } from '../classes';
 import { DeletePersonDialog, PersonDialog } from './PersonDialogs';
 import { DeleteTeamDialog, TeamNameDialog } from './TeamDialogs';
 import { groupByTeam, staffMetrics, type StaffMetrics, type TeamEntry } from './team-view';
@@ -164,7 +164,7 @@ export function TeamScreen() {
                   type="button"
                   aria-pressed={on}
                   onClick={() => setSelectedId(entry.team.id)}
-                  className={`flex w-full cursor-pointer items-center gap-2 rounded-sm px-2.5 py-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-accent ${
+                  className={`flex w-full cursor-pointer items-center gap-2 rounded-sm px-2.5 py-2 text-left text-sm ${FOCUS} ${
                     on ? 'bg-accent-soft font-semibold text-fg' : 'text-fg-2 hover:bg-surface-2'
                   }`}
                 >
