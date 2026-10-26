@@ -76,7 +76,7 @@ export default defineConfig({
         // The .ts helpers of the UI kit (DR6-62); its components (.tsx) are covered by e2e.
         'packages/ui/src/**': {
           statements: 100,
-          branches: 92,
+          branches: 100,
           functions: 100,
           lines: 100,
         },

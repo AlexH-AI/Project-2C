@@ -118,7 +118,7 @@ export function PeriodPicker({ value, onChange, today, labels }: PeriodPickerPro
       onChange={(event) => setDraft({ ...shown, [field]: event.target.value, error: null })}
       onKeyDown={(event: KeyboardEvent) => event.key === 'Enter' && apply()}
       className={`w-28 rounded-sm border bg-surface-2 px-2.5 py-1 text-sm text-fg tabular-nums ${focusRing} ${
-        fieldInvalid(field) ? 'border-danger' : 'border-border'
+        fieldInvalid(field) ? 'border-danger' : 'border-border-control'
       }`}
     />
   );

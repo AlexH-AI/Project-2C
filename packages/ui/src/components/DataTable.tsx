@@ -7,23 +7,19 @@ import {
   type ColumnDef,
   type ColumnSort,
   type RowData,
-  type SortDirection,
 } from '@tanstack/react-table';
 import { formatDate } from '@p2c/domain';
 import { Button } from './Button';
 import { compareCellsThen, type CellKind, type CellValues } from './compare-cells';
-import { SHOW_MORE_STEP, showMore } from './show-more';
+import { SHOW_MORE_STEP } from './show-more';
+import { sorts, tableView, type ColumnSorting } from './table-view';
 
 interface ColumnBase<Row extends RowData> {
   id: string;
   header: string;
-  /** A column that does not sort: its header for screen readers only, e.g. over a column of buttons. */
-  headerHidden?: boolean;
   /** Custom cell content; by default the value itself, dates as dd/mm/yyyy. */
   cell?: (row: Row) => ReactNode;
   align?: 'start' | 'end';
-  /** Defaults to true (ADR-0013: every column sorts). */
-  sortable?: boolean;
   /** Orders rows whose cells are equal, as plain text (a day's time, 'HH:MM'); empty first. */
   thenBy?: (row: Row) => string;
   /** Extra classes for a row's cell, e.g. a translucent background kept over the row hover. */
@@ -34,7 +30,8 @@ interface ColumnBase<Row extends RowData> {
 
 /** A column is text, number or date; the kind decides how it sorts and how it is shown. */
 export type DataTableColumn<Row extends RowData> = {
-  [K in CellKind]: ColumnBase<Row> & { kind: K; value: (row: Row) => CellValues[K] };
+  [K in CellKind]: ColumnBase<Row> &
+    ColumnSorting & { kind: K; value: (row: Row) => CellValues[K] };
 }[CellKind];
 
 export type DataTableSort = ColumnSort;
@@ -76,9 +73,6 @@ const features = tableFeatures({
   sortedRowModel: createSortedRowModel(),
 });
 
-const ARIA_SORT = { asc: 'ascending', desc: 'descending' } as const;
-const ARROW = { asc: '↑', desc: '↓' } as const;
-
 function defaultCell<Row extends RowData>(column: DataTableColumn<Row>, row: Row): ReactNode {
   return column.kind === 'date' ? formatDate(column.value(row)) : column.value(row);
 }
@@ -90,7 +84,7 @@ function toColumnDef<Row extends RowData>(
     id: column.id,
     header: column.header,
     accessorFn: (row: Row) => column.value(row),
-    enableSorting: column.sortable ?? true,
+    enableSorting: sorts(column),
     sortFn: (a, b, id) =>
       compareCellsThen(
         column.kind,
@@ -151,7 +145,12 @@ export function DataTable<Row extends RowData>({
     `${textAlign(column)} ${column.kind === 'text' ? '' : 'tabular-nums'}`;
   const inset = compact ? 'px-1.5' : 'px-2.5';
 
-  const { visible, foot } = showMore(table.getRowModel().rows, limit);
+  const { headers, visible, foot } = tableView(
+    columns,
+    (id) => table.getColumn(id)?.getIsSorted() ?? false,
+    table.getRowModel().rows,
+    limit,
+  );
 
   return (
     <>
@@ -163,34 +162,33 @@ export function DataTable<Row extends RowData>({
       >
         <thead>
           <tr>
-            {columns.map((column) => {
-              const sortable = table.getColumn(column.id);
-              const sorted: false | SortDirection = sortable?.getIsSorted() ?? false;
-              const canSort = sortable?.getCanSort() ?? false;
+            {headers.map((header) => {
+              const { column } = header;
+              const sorted = header.kind === 'sort' && header.ariaSort !== 'none';
               return (
                 <th
                   key={column.id}
                   scope="col"
-                  aria-sort={canSort ? (sorted ? ARIA_SORT[sorted] : 'none') : undefined}
+                  aria-sort={header.kind === 'sort' ? header.ariaSort : undefined}
                   className={`border-b border-border ${inset} py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap uppercase ${
                     sorted ? 'text-fg-2' : 'text-fg-3'
                   } ${align(column)} ${column.width ?? ''}`}
                 >
-                  {canSort ? (
+                  {header.kind === 'sort' ? (
                     <button
                       type="button"
-                      onClick={sortable?.getToggleSortingHandler()}
+                      onClick={table.getColumn(column.id)?.getToggleSortingHandler()}
                       className={`w-full cursor-pointer rounded-sm font-semibold uppercase select-none focus-visible:outline-2 focus-visible:outline-accent ${textAlign(column)}`}
                     >
                       {column.header}{' '}
                       <span
                         aria-hidden="true"
-                        className={sorted ? 'text-accent' : 'text-border-strong'}
+                        className={sorted ? 'text-accent' : 'text-border-control'}
                       >
-                        {sorted ? ARROW[sorted] : '↕'}
+                        {header.arrow}
                       </span>
                     </button>
-                  ) : column.headerHidden ? (
+                  ) : header.hidden ? (
                     <span className="sr-only">{column.header}</span>
                   ) : (
                     column.header

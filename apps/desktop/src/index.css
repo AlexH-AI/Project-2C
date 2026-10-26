@@ -3,13 +3,18 @@
 
 /* The topbar stays at the top of the page as it scrolls (AppShell). What the focus or
    `scrollIntoView` brings into view in a screen stops below it (WCAG 2.4.11), at `top-20`, where
-   the appointments detail sticks: past the tallest bar (16, with the scope picker), and a profile
-   card brought to the top by its heading shows its own top edge too. More, and the stuck detail
-   taking the focus would scroll the page (DR6-83, appointment-outcome.spec.ts). A margin on the
+   the appointments detail sticks: past the tallest bar, 64 px (`--spacing(16)`, with the scope
+   picker). More, and the stuck detail taking the focus would scroll the page (DR6-83,
+   appointment-outcome.spec.ts). A card heading stops at `--spacing(21)`, so that a card brought to
+   the top by its heading shows its own top edge too: border and padding put the heading up to 17 px
+   below it. The heading of the stuck detail, 97 px down, still counts as seen. A margin on the
    screen, not a padding on the page: the bar is in the page, and focus on its own controls would
-   scroll the page. Dialogs are above the bar. */
+   scroll the page. Dialogs are above the bar: a field in one stops at the dialog's own edge. */
 @layer base {
   main :not(dialog, dialog *) {
     scroll-margin-top: --spacing(20);
+  }
+  main h2:not(dialog *) {
+    scroll-margin-top: --spacing(21);
   }
 }

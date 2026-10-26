@@ -10,6 +10,8 @@
   --bg-3: #212c3a; /* inputs, hover */
   --border: #263241;
   --border-strong: #34425a;
+  /* Edge of a field, arrow of an unsorted column: 3:1 on every --bg-* (WCAG 1.4.11, G3 T-284) */
+  --border-control: #687890;
 
   /* Text */
   --text: #e8edf4;
