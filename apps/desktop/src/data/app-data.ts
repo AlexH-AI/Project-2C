@@ -25,7 +25,7 @@ import {
   type CalendarDate,
 } from '@p2c/domain';
 import { createAppAi, type AppAi, type AppAiOptions } from './ai-analysis';
-import { createPersistQueue, type LastSave, type PersistQueue } from './persist-queue';
+import { createPersistQueue, type PersistQueue } from './persist-queue';
 import { readTables, type Tables } from './tables';
 
 export { countRecords, type RecordCounts };
@@ -161,15 +161,6 @@ export interface AppData {
    * the last save failed, else with the backup's or the purge's error, the data unchanged.
    */
   purgeTrash(): Promise<PurgedTrash>;
-  /**
-   * Settings → Data: the last successful save of this session (`saves.status().lastSave`); always
-   * `undefined` in web mode.
-   */
-  lastSave(): LastSave | undefined;
-  /**
-   * Called whenever the save state changes (`saves.subscribe`); returns the unsubscribe function.
-   */
-  subscribeLastSave(listener: () => void): () => void;
   /** The newest automatic backup's file name; `undefined` in web mode or when there is none. */
   latestBackup(): Promise<string | undefined>;
   /** Shows a data folder in Explorer; does nothing in web mode. */
@@ -489,8 +480,6 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
         changed();
         return { ...purged, backup };
       }),
-    lastSave: () => saves.status().lastSave,
-    subscribeLastSave: saves.subscribe,
     latestBackup: () => storage?.latestBackup() ?? Promise.resolve(undefined),
     openFolder: (kind) => storage?.openFolder(kind) ?? Promise.resolve(),
     ai: createAppAi(

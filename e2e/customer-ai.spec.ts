@@ -289,6 +289,12 @@ test('a run that fails while the profile is left says its error once shown again
   await expect(panel.getByRole('button', { name: 'Thử lại' })).toBeEnabled();
   // Nothing was saved.
   await expect(panel).toContainText('Chưa có phân tích AI cho KH này.');
+
+  // Said once (06-ai.md): away and back again, the error is gone (review of PR 835).
+  await page.getByRole('link', { name: 'Cài đặt' }).click();
+  await page.goBack();
+  await expect(panel).toContainText('Chưa có phân tích AI cho KH này.');
+  await expect(panel.getByRole('alert')).toHaveCount(0);
 });
 
 /** Why an AI button is off while a request runs elsewhere (DR5-40). */

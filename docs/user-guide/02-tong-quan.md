@@ -58,7 +58,7 @@ Biểu đồ cột bên dưới cho thấy diễn biến: mỗi cột là ảnh 
 
 Bấm một ô nhóm để ẩn nhóm đó khỏi biểu đồ (ô ghi "đang ẩn"); bấm lại để hiện.
 
-Trình đọc màn hình (ví dụ Narrator) đọc được số của biểu đồ: mỗi cột là một dòng của bảng số đi kèm, không hiện trên màn, gồm các nhóm đang hiện và **Tổng**, như khi rê chuột lên cột.
+Trình đọc màn hình (ví dụ Narrator) đọc được số của biểu đồ. Tới biểu đồ, nó đọc số của mốc cuối có số liệu (thường là hôm nay). Ngay sau biểu đồ là bảng số đi kèm, không hiện trên màn: mỗi cột là một dòng, gồm các nhóm đang hiện và **Tổng**, như khi rê chuột lên cột.
 
 ## So sánh team
 

@@ -169,13 +169,19 @@ export function ownerParts(row: TrashRow): OwnerPart[] {
 
 /**
  * The name of a row's restore button, every "Khôi phục…" alike on screen (DR6-43): the record as
- * the first line of "Bản ghi" names it, a policy with the status of its badge, so whatever tells two
- * rows apart there tells their buttons apart (DR6-99, DR6-119); then an appointment's or a policy's
+ * the first line of "Bản ghi" names it, with the words of its badge there, a customer's stage or a
+ * policy's status, so whatever tells two rows apart there tells their buttons apart (DR6-99,
+ * DR6-119; two customers may share a name, Owner 25/10/2026); then an appointment's or a policy's
  * customer.
  */
 export function restoreLabel(row: TrashRow): string {
-  const record =
-    row.kind === 'policy' ? joinParts([recordTitle(row), policyStatusText(row)]) : recordTitle(row);
+  const badge =
+    row.kind === 'policy'
+      ? policyStatusText(row)
+      : row.kind === 'customer'
+        ? stage(row.stage)
+        : null;
+  const record = joinParts([recordTitle(row), badge]);
   const label = t(`trash.restoreLabel.${row.kind}`, { record });
   return row.kind === 'appointment' || row.kind === 'policy' ? ofCustomer(row, label) : label;
 }
@@ -300,11 +306,13 @@ export function restoreView(row: TrashRow): RestoreView {
         facts: [
           { term: t('trash.restore.fyp'), text: formatVnd(row.submittedFyp) },
           {
+            // The status in the words of its badge (`policyStatusText`), an issue with its day and FYP.
             term: t('trash.restore.status'),
             text:
               row.issuedDate === null
-                ? t('policyStatus.submitted')
+                ? policyStatusText(row)
                 : t('trash.restore.issued', {
+                    status: policyStatusText(row),
                     date: formatDate(row.issuedDate),
                     fyp: formatVnd(row.issuedFyp ?? 0),
                   }),
@@ -529,13 +537,14 @@ const customerRecordParts = (records: PurgeCounts['customerRecords']) => [
 const KEPT_KINDS = ['appointment', 'person', 'team'] as const;
 
 /**
- * The plan of the purge (mockup 11i) as `previewPurge` reads it, from the rows of the list instead:
+ * The plan of the purge (mockup 11i), read from the rows of the list rather than by `previewPurge`:
  * they hold why each record is kept (TR-12) and what a customer goes with, so the dialog runs
- * `keptRecords` no second time for the rows it ran for (review of PR 710).
+ * `keptRecords` no second time for the rows it ran for (review of PR 710). The counts are the
+ * command's; `kept` is in the order of the list, latest deleted first, not by id (review of PR 833).
  */
 export function purgePlan(rows: readonly TrashRow[]): PurgePlan {
   const going = rows.filter((row) => !row.keptBy);
-  const count = (kind: TrashRow['kind']) => going.filter((row) => row.kind === kind).length;
+  const count = trashCounts(going);
   const customerRecords = { appointments: 0, policies: 0, kycNotes: 0, aiAnalyses: 0 };
   for (const { effect } of going) {
     if (effect.kind !== 'customer') continue;
@@ -549,12 +558,12 @@ export function purgePlan(rows: readonly TrashRow[]): PurgePlan {
   );
   return {
     counts: {
-      customers: count('customer'),
+      customers: count.customer,
       customerRecords,
-      appointments: count('appointment'),
-      policies: count('policy'),
-      people: count('person'),
-      teams: count('team'),
+      appointments: count.appointment,
+      policies: count.policy,
+      people: count.person,
+      teams: count.team,
     },
     kept,
   };

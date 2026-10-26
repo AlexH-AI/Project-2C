@@ -231,6 +231,8 @@ export function KycNoteDialog({
       return setFactError(t('kycNote.error.value'));
     }
     const raw = boolean ? answer === 'yes' : value;
+    // Said as 3f says it, from one place (review of PR 835).
+    const refused = () => setFactError(refusalText(field, raw));
     let fact: KycNoteFact;
     try {
       fact = {
@@ -238,14 +240,12 @@ export function KycNoteDialog({
         value: normalizeKycValue(field, raw),
         conflict: has.length > 0 && mode === 'conflict',
       };
-    } catch (failure) {
-      return setFactError(errorMessage(failure));
+    } catch {
+      return refused();
     }
     // A second fact on one trường replaces the first.
     const next = [...facts.filter((f) => f.field !== field), fact];
-    if (previewKycNote(profile, versions, next, day, false).kind === 'refused') {
-      return setFactError(t('kycNote.error.refused', { field: t(`kycField.${field}`) }));
-    }
+    if (previewKycNote(profile, versions, next, day, false).kind === 'refused') return refused();
     setFacts(next);
     pick('');
   };

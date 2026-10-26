@@ -17,8 +17,6 @@ import {
   compareDates,
   confirmFact,
   evaluateKycGate,
-  formatVnd,
-  formatVndCompact,
   isRfTransition,
   KYC_CATEGORIES,
   KYC_FIELDS,
@@ -35,6 +33,7 @@ import {
   type StageTransition,
 } from '@p2c/domain';
 import { errorMessage, t } from '../../i18n';
+import { amountRead } from '../money-view';
 
 export interface KycCategoryRow<F extends KycFact = KycFact> {
   readonly category: KycCategory;
@@ -118,18 +117,15 @@ const AMOUNT_FIELDS: ReadonlySet<KycField> = new Set([
 ]);
 
 /**
- * Mockup 7b / 7c (NT-HS-05): what a value typed for a money trường reads as, like every money
- * input — "6.000.000.000 ₫ (6 tỷ)", the full form alone when the compact one is the same. Null for
- * another trường, or for words `parseVnd` cannot read ("Khoảng 12 tỷ"), which are kept all the same.
+ * Mockup 7b / 7c (NT-HS-05): what a value typed for a money trường reads as, as every money input
+ * reads (`amountRead`): "6.000.000.000 ₫ (6 tỷ)". Null for another trường, or for words `parseVnd`
+ * cannot read ("Khoảng 12 tỷ"), which are kept all the same.
  * Read from the text as the command stores it, `normalizeText` of `parseVnd` (K20, DR6-101).
  */
 export function kycAmountRead(field: KycField, text: string): string | null {
   if (!AMOUNT_FIELDS.has(field)) return null;
   const parsed = parseVnd(text);
-  if (!parsed.ok) return null;
-  const amount = formatVnd(parsed.amount);
-  const compact = formatVndCompact(parsed.amount);
-  return compact === amount ? amount : t('kycNote.amountRead', { amount, compact });
+  return parsed.ok ? amountRead(parsed.amount) : null;
 }
 
 /** `currentFacts` of a stored profile: each keeps the seq it is coded by (mockup 7c "Đang có"). */

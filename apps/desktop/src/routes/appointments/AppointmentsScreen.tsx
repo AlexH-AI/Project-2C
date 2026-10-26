@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
 import type { AppointmentRecord } from '@p2c/db';
 import {
   appointmentGroup,
@@ -97,6 +97,12 @@ export function AppointmentsScreen() {
   const outsideLine = useRef<HTMLParagraphElement>(null);
   const detailPanel = useRef<HTMLElement>(null);
   const toDetail = () => detailHeading.current ?? outsideLine.current ?? detailPanel.current;
+  // "Dời từ" / "Dời sang" of the detail go with the line they are on once the appointment they name
+  // is shown: the focus goes to its heading, as after a save (review of PR 838).
+  const [shownByLink, setShownByLink] = useState(0);
+  useEffect(() => {
+    if (shownByLink > 0) detailHeading.current?.focus();
+  }, [shownByLink]);
 
   const pickedRows = useMemo(
     () => appointmentRows(data, picked, coordinator),
@@ -293,7 +299,10 @@ export function AppointmentsScreen() {
           onRecord={setRecording}
           onEdit={setEditing}
           onDelete={setDeleting}
-          onShow={show}
+          onShow={(appointment) => {
+            show(appointment);
+            setShownByLink((count) => count + 1);
+          }}
         />
       </div>
       <section aria-labelledby="appointments-list" className={CARD}>
@@ -470,12 +479,14 @@ function DayButton({
   const ring = isToday ? 'inset-ring inset-ring-date-today' : '';
   // Days outside the month and the period only fill the weeks, days outside a custom range
   // cannot be picked: the period picker moves there. Faded, they show their number alone; a screen
-  // reader still hears their appointments, by the name a day has (T-298).
+  // reader still hears their appointments, by the name a day has (T-298), and today (review of PR
+  // 838).
   if (!pickable) {
     return (
       <div
         role="img"
         aria-label={dayLabel(cell)}
+        aria-current={isToday ? 'date' : undefined}
         className={`${CELL} opacity-35 ${border} ${ring} ${background}`}
       >
         {dayNumber}

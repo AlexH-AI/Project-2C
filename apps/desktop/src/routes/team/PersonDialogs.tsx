@@ -53,7 +53,8 @@ export function PersonDialog({
   const [teamId, setTeamId] = useState(person ? (person.teamId ?? '') : (defaultTeamId ?? ''));
   const [errors, setErrors] = useState<Errors>({});
   // "Xóa nhân sự" leaves the dialog for 9b, and with it the changes not saved: it asks first (issue
-  // 144).
+  // 144). Going on is a button of its own, in the question: clicked again, or twice at once, "Xóa
+  // nhân sự" only asks (review of PR 841).
   const [asked, setAsked] = useState(false);
   const changed =
     person !== undefined &&
@@ -88,11 +89,8 @@ export function PersonDialog({
       actions={
         <>
           {onDelete && (
-            <Button
-              variant="danger"
-              onClick={() => (changed && !asked ? setAsked(true) : onDelete())}
-            >
-              {t(asked ? 'person.deleteDiscard' : 'person.delete')}
+            <Button variant="danger" onClick={() => (changed ? setAsked(true) : onDelete())}>
+              {t('person.delete')}
             </Button>
           )}
           <span className="flex-1" />
@@ -146,10 +144,15 @@ export function PersonDialog({
           {errors.form}
         </p>
       )}
-      {asked && (
-        <p role="alert" className={`${ALERT} border-warn`}>
-          {t('person.deleteUnsaved')}
-        </p>
+      {asked && onDelete && (
+        <div className={`${ALERT} flex flex-wrap items-center gap-2 border-warn`}>
+          <span role="alert" className="min-w-0 flex-1">
+            {t('person.deleteUnsaved')}
+          </span>
+          <Button variant="danger" onClick={onDelete}>
+            {t('person.deleteDiscard')}
+          </Button>
+        </div>
       )}
     </Dialog>
   );

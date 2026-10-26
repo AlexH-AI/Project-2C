@@ -303,10 +303,17 @@ describe('ownerParts (spec Phase 6 §4.2 "Thuộc")', () => {
 });
 
 describe('restoreLabel (DR6-43)', () => {
-  it('names the customer, person or team the button restores', () => {
-    expect(restoreLabel(minhAnh)).toBe('Khôi phục KH Trịnh Minh Anh');
+  it('names the customer with its stage, the person or the team the button restores', () => {
+    expect(restoreLabel(minhAnh)).toBe('Khôi phục KH Trịnh Minh Anh · N3');
     expect(restoreLabel(mai)).toBe('Khôi phục nhân sự Vương Thị Mai');
     expect(restoreLabel(binhMinh)).toBe('Khôi phục team Bình Minh');
+  });
+
+  // Owner 25/10/2026 (review of PR 833): names of customers may repeat, as their badges tell apart.
+  it('tells apart two customers of the same name by their stage', () => {
+    const other = { ...minhAnh, id: 'c2', stage: 'ON_HOLD' } as TrashRow;
+    expect(restoreLabel(other)).toBe('Khôi phục KH Trịnh Minh Anh · Tạm hoãn');
+    expect(restoreLabel(other)).not.toBe(restoreLabel(minhAnh));
   });
 
   it('names an appointment or a policy by its day, its status and its customer', () => {
@@ -323,10 +330,15 @@ describe('restoreLabel (DR6-43)', () => {
 
   // Review of PR 748: what tells two rows apart on screen is what tells their buttons apart, by
   // construction rather than by a second sentence to keep in step with the cell.
-  it('names the record as the first line of its "Bản ghi" cell does, a policy with its badge', () => {
+  it('names the record as the first line of its "Bản ghi" cell does, with the badge there', () => {
     for (const row of [...ROWS, issuedPolicy]) {
-      const record =
-        row.kind === 'policy' ? `${recordTitle(row)} · ${policyStatusText(row)}` : recordTitle(row);
+      const badge =
+        row.kind === 'policy'
+          ? policyStatusText(row)
+          : row.kind === 'customer'
+            ? t(`stage.${row.stage}`)
+            : null;
+      const record = badge ? `${recordTitle(row)} · ${badge}` : recordTitle(row);
       expect(restoreLabel(row)).toContain(` ${record}`);
     }
   });
@@ -982,7 +994,11 @@ describe('Dọn sạch Thùng rác (TR-11…TR-13; mockup 11h–11j)', () => {
   it('D1, D5: the dialog reads the plan of the purge from the rows of the list', async () => {
     const db = (await everyKind()).db();
     const plan = purgePlan(listTrash(db));
-    expect(plan).toEqual(previewPurge(db));
+    // The counts of the command; the same records kept, in the order of the list (review of PR 833).
+    const preview = previewPurge(db);
+    expect(plan.counts).toEqual(preview.counts);
+    expect(plan.kept).toHaveLength(preview.kept.length);
+    expect(plan.kept).toEqual(expect.arrayContaining([...preview.kept]));
     expect(plan).toMatchObject({
       counts: {
         customers: 1,

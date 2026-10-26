@@ -8,7 +8,6 @@ import {
 } from '@p2c/db';
 import {
   formatDate,
-  formatVnd,
   formatVndCompact,
   formatVndDelta,
   type CalendarDate,
@@ -22,6 +21,7 @@ import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
 import { ALERT } from '../classes';
+import { amountRead } from '../money-view';
 import { Actions, dayRead, FailureAlert, InvalidAlert } from './CustomerDialogs';
 import {
   effectText,
@@ -37,9 +37,6 @@ import {
 } from './policy-form';
 
 export type { PolicyMode } from './policy-form';
-
-const fypRead = (amount: Vnd) =>
-  t('policyForm.fypRead', { amount: formatVnd(amount), compact: formatVndCompact(amount) });
 
 const fypError = (read: FypResult) =>
   read.ok ? undefined : t(read.error === 'zero' ? 'policyForm.zero' : `money.error.${read.error}`);
@@ -210,7 +207,7 @@ export function PolicyDialog({
               value={draft.submittedFyp}
               onChange={(submittedFyp) => edit({ submittedFyp })}
               error={submittedFypError}
-              hint={read.submittedFyp.ok ? fypRead(read.submittedFyp.amount) : undefined}
+              hint={read.submittedFyp.ok ? amountRead(read.submittedFyp.amount) : undefined}
               required
             />
           </div>
@@ -242,10 +239,10 @@ export function PolicyDialog({
                 ? undefined
                 : change?.fromSubmitted
                   ? t('policyForm.fromSubmitted', {
-                      read: fypRead(issuedFyp),
+                      read: amountRead(issuedFyp),
                       diff: formatVndDelta(change.fromSubmitted),
                     })
-                  : fypRead(issuedFyp)
+                  : amountRead(issuedFyp)
             }
             required
           />

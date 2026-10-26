@@ -1,6 +1,6 @@
 import { formatCount } from '@p2c/domain';
 import { encodeHtml, type ChartOption } from '@p2c/ui';
-import { t } from '../../i18n';
+import { joinParts, t } from '../../i18n';
 import { CHART_STAGES, type ChartStage, type StageChart, type StageValues } from './stage-view';
 
 /** Top of the stack first, as the tooltip and the table of a chart list the stages. */
@@ -160,4 +160,18 @@ export function stageChartTable(chart: StageChart, shown: readonly ChartStage[])
         : Array<string>(stages.length + 1).fill(t('overview.none')),
     })),
   };
+}
+
+/**
+ * What describes `chart` to a screen reader (Owner 26/10/2026): the last mark with numbers, as its
+ * row of `stageChartTable` says it, then that the table follows. Short, so that Chromium reads it
+ * whole, which it did not of the whole table (review of PR 841). Null while no mark has numbers.
+ */
+export function stageChartSummary(chart: StageChart, shown: readonly ChartStage[]): string | null {
+  const last = chart.columns.findLastIndex((column) => column.values !== null);
+  if (last < 0) return null;
+  const { head, rows } = stageChartTable(chart, shown);
+  const { title, cells } = rows[last]!;
+  const values = joinParts(cells.map((cell, index) => `${head[index + 1]} ${cell}`));
+  return t('overview.stages.chartSummary', { mark: title, values });
 }

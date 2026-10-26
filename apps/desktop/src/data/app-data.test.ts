@@ -1153,20 +1153,20 @@ describe('the data file card', () => {
       seed: fakeSeed,
     });
     await app.saves.idle();
-    const first = app.lastSave();
+    const first = app.saves.status().lastSave;
     expect(first).toEqual({ at: now, size: saves[0]!.byteLength });
 
     const listener = vi.fn();
-    app.subscribeLastSave(listener);
+    app.saves.subscribe(listener);
     failSave();
     now = new Date(2026, 8, 30, 8, 0, 0);
     createTeam(app.db(), { name: 'Sao Mai' });
     await app.saves.idle();
     expect(app.saves.failed()).toBe(true);
-    expect(app.lastSave()).toBe(first);
+    expect(app.saves.status().lastSave).toBe(first);
 
     await app.saves.flush();
-    expect(app.lastSave()).toEqual({ at: now, size: saves[1]!.byteLength });
+    expect(app.saves.status().lastSave).toEqual({ at: now, size: saves[1]!.byteLength });
     expect(listener).toHaveBeenCalled();
   });
 
@@ -1227,7 +1227,7 @@ describe('the data file card', () => {
     createTeam(app.db(), { name: 'Sao Mai' });
     await app.saves.idle();
 
-    expect(app.lastSave()).toBeUndefined();
+    expect(app.saves.status().lastSave).toBeUndefined();
   });
 
   it('asks the storage for the newest backup and to open a folder; web mode has neither', async () => {

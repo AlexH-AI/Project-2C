@@ -2,6 +2,7 @@ import type { Database } from '@p2c/db';
 import type { CalendarDate } from '@p2c/domain';
 import { createContext, useContext, useMemo, useSyncExternalStore } from 'react';
 import type { AppData } from './app-data';
+import type { SaveStatus } from './persist-queue';
 import type { Tables } from './tables';
 import { watchToday } from './today';
 
@@ -41,6 +42,15 @@ export function useQuery<T>(read: (db: Database) => T): T {
 export function useTables(): Tables {
   const data = useAppData();
   return useSyncExternalStore(data.subscribe, data.tables);
+}
+
+/**
+ * The save state (`AppData.saves`, mockup settings-data 10d), again on every change: what the save
+ * warning, the close question, the sidebar and Settings → Data read (review of PR 817).
+ */
+export function useSaveStatus(): SaveStatus {
+  const { saves } = useAppData();
+  return useSyncExternalStore(saves.subscribe, saves.status);
 }
 
 /**

@@ -90,11 +90,14 @@ test('"Thử lại" on the save warning saves at once; Nạp lại, refused befo
     'Chưa nạp lại: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Bấm "Thử lại" ở dải cảnh báo đầu màn, lưu được rồi thì nạp lại. Dữ liệu hiện tại không bị đổi.',
   );
 
-  // Still failing: the warning stays.
+  // Still failing, for another cause: the warning stays, saying the cause of this try, which shows
+  // the try ran (review of PR 817).
+  await page.evaluate(() => (window.exe.failSaves = 'DISK_FULL'));
   const retry = warning(page).getByRole('button', { name: 'Thử lại' });
+  await expect(warning(page)).not.toContainText('ổ đĩa chứa thư mục app đã đầy');
   await retry.click();
+  await expect(warning(page)).toContainText('ổ đĩa chứa thư mục app đã đầy');
   await expect(saveState(page)).toHaveText('Chưa lưu được vào file');
-  await expect(warning(page)).toBeVisible();
 
   // The file can be written again: one click saves, and the warning goes, its focus to the heading.
   await page.evaluate(() => (window.exe.failSaves = false));

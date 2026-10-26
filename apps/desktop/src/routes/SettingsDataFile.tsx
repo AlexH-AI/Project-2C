@@ -2,9 +2,10 @@ import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react
 import { LATEST_SCHEMA_VERSION } from '@p2c/db';
 import { formatCount, formatFileSize, formatLocalDateTime } from '@p2c/domain';
 import { Button } from '@p2c/ui';
-import { useAppData, useQuery } from '../data/AppDataContext';
+import { useAppData, useQuery, useSaveStatus } from '../data/AppDataContext';
 import { countRecords, type DataFolder, type RecordCounts } from '../data/app-data';
 import { t } from '../i18n';
+import { WEB_MODE } from '../shell/Sidebar';
 import { SECTION } from './classes';
 
 /** `3 team · 36 nhân sự · 1.204 KH · …`, the same sentence in the card and in dialog 10a. */
@@ -40,8 +41,8 @@ export function DataFileSection() {
       </dl>
       {!data.hasFile && (
         <p className="m-0 flex items-center gap-2 py-1 text-sm text-fg-2">
-          <span aria-hidden className="inline-block size-2 rounded-full bg-info" />
-          {t('settings.file.web')}
+          <span aria-hidden className={`inline-block size-2 rounded-full ${WEB_MODE.dot}`} />
+          {WEB_MODE.text}
         </p>
       )}
     </section>
@@ -51,7 +52,7 @@ export function DataFileSection() {
 /** What only the exe has: the file, its last save and the automatic backups. */
 function FileFacts() {
   const data = useAppData();
-  const lastSave = useSyncExternalStore(data.subscribeLastSave, data.lastSave);
+  const { lastSave } = useSaveStatus();
   const revision = useSyncExternalStore(data.subscribe, data.revision);
   const [latest, setLatest] = useState<string>();
 

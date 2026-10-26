@@ -222,12 +222,13 @@ test('restores a deleted customer, then its appointment deleted on its own (TR-1
   const rows = table(page).getByRole('row');
   const ofKind = (kind: string) =>
     rows.filter({ has: page.getByRole('cell', { name: kind, exact: true }) });
-  // DR6-43, DR6-119: each button is named by the record it restores, its status too.
+  // DR6-43, DR6-119: each button is named by the record it restores, its status too; a customer
+  // with its stage, as its badge (Owner 25/10/2026).
   const restoreButton = (kind: string) =>
     ofKind(kind).getByRole('button', {
       name:
         kind === 'KH'
-          ? `Khôi phục KH ${name}`
+          ? new RegExp(`^Khôi phục KH ${name} · (N[1-4]|Tạm hoãn|Mất cơ hội)$`)
           : `Khôi phục lịch hẹn 15/09/2026 · Dự kiến của KH ${name}`,
       exact: true,
     });

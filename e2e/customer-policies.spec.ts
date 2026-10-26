@@ -43,7 +43,11 @@ test('submits "500tr", then issues it: the FYP defaults to the submitted one, ch
   await expect(dialog).toContainText(name);
   await dialog.getByRole('textbox', { name: /^Ngày nộp/ }).fill('10/9');
   await expect(dialog).toContainText('Thứ Năm 10/09/2026');
-  await dialog.getByRole('textbox', { name: /^FYP nộp/ }).fill('500tr');
+  const fyp = dialog.getByRole('textbox', { name: /^FYP nộp/ });
+  // Under a million the short form is the full one, said once (review of PR 838).
+  await fyp.fill('500k');
+  await expect(fyp).toHaveAccessibleDescription('500.000 ₫');
+  await fyp.fill('500tr');
   await expect(dialog).toContainText('500.000.000 ₫ (500 tr)');
   await dialog.getByRole('button', { name: 'Lưu HĐ' }).click();
   await expect(dialog).toBeHidden();

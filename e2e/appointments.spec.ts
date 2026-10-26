@@ -229,6 +229,15 @@ test('a day outside the month or the range is named with its count, not hidden',
   await expect(calendar.getByRole('button', { name: /^21\/09\/2026: / })).toHaveAccessibleName(
     name,
   );
+
+  // Today out of the range still says it is today, as the day that can be picked does (review
+  // of PR 838).
+  await page.getByRole('textbox', { name: 'Từ ngày' }).fill('01/09/2026');
+  await page.getByRole('textbox', { name: 'Đến ngày' }).fill('10/09/2026');
+  await page.getByRole('textbox', { name: 'Đến ngày' }).press('Enter');
+  const today = calendar.getByRole('img', { name: new RegExp(`^${TODAY}:`) });
+  await expect(today).toContainText('· hôm nay');
+  await expect(today).toHaveAttribute('aria-current', 'date');
 });
 
 const ACCENT = 'rgb(217, 178, 106)';
@@ -536,13 +545,18 @@ test('rescheduling keeps the old appointment with its reason and links it to the
   await detail.getByRole('button', { name: back }).click();
 
   // The old one stays, rescheduled, with the reason in its note and a link forward.
-  await expect(detail.getByRole('heading', { level: 2 })).toHaveText(`${back} · ${name}`);
+  const heading = detail.getByRole('heading', { level: 2 });
+  await expect(heading).toHaveText(`${back} · ${name}`);
+  // The link went with the line it was on: the focus is on the appointment shown instead (review
+  // of PR 838).
+  await expect(heading).toBeFocused();
   await expect(detail).toContainText('Dời lịch');
   await expect(detail).toContainText('Dời sang 02/10');
   await expect(detail).toContainText('KH đi công tác Đà Nẵng');
   await expect(detail.getByRole('button', { name: 'Dời lịch' })).toHaveCount(0);
-  await detail.getByRole('button', { name: '02/10/2026 10:00' }).click();
-  await expect(detail.getByRole('heading', { level: 2 })).toHaveText(`02/10/2026 10:00 · ${name}`);
+  await detail.getByRole('button', { name: '02/10/2026 10:00' }).press('Enter');
+  await expect(heading).toHaveText(`02/10/2026 10:00 · ${name}`);
+  await expect(heading).toBeFocused();
 });
 
 test('a rescheduled day already past is refused unless it back-fills a meeting held then', async ({
