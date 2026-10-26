@@ -49,9 +49,18 @@ describe('findTokenViolations', () => {
 
   it('allows a flex share taken from data, and nothing beside it', () => {
     expect(findTokenViolations('<span style={{ flex: cell.met }}>')).toEqual([]);
+    expect(findTokenViolations('<span style={{ flex: counts[group.key] }}>')).toEqual([]);
     expect(findTokenViolations('<span style={{ flex: 1, color: c }}>')).toEqual([
       { line: 1, match: 'style={', rule: 'inline-style' },
     ]);
+  });
+
+  it('flags a flex written as a number: a design value, not a share from data', () => {
+    for (const flex of ['1', '0.5', '.5']) {
+      expect(findTokenViolations(`<span style={{ flex: ${flex} }}>`)).toEqual([
+        { line: 1, match: 'style={', rule: 'inline-style' },
+      ]);
+    }
   });
 
   it('does not treat Tailwind spacing utilities as raw lengths', () => {
@@ -89,6 +98,19 @@ describe('findHardcodedSeparators', () => {
       '{/* 5a · 5b */}',
     ].join('\n');
     expect(findHardcodedSeparators(source)).toEqual([]);
+  });
+
+  it('takes whichever comment opens first on a line', () => {
+    const source = [
+      "const a = ' · '; // N2 → N1 /* no block opens here",
+      "const b = ' → ';",
+      "/* N4 → N1 */ const c = ' · '; // N2 → N1",
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 1, match: '·', rule: 'hardcoded-separator' },
+      { line: 2, match: '→', rule: 'hardcoded-separator' },
+      { line: 3, match: '·', rule: 'hardcoded-separator' },
+    ]);
   });
 
   it('checks the code after a block comment ends, on its line and the next', () => {

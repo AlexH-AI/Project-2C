@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { fieldNotes, type FieldNote } from './field-notes';
 
 interface TextFieldProps {
   label: string;
@@ -11,6 +12,11 @@ interface TextFieldProps {
    * description while there is no error.
    */
   hint?: string;
+  /**
+   * How to fill the field in (mockup 6d), shown last under it whatever was typed, and read as part
+   * of its description.
+   */
+  help?: string;
   /** Marks the label with *; the command, not the browser, rejects an empty value. */
   required?: boolean;
   disabled?: boolean;
@@ -26,13 +32,23 @@ interface TextFieldProps {
   spellCheck?: boolean;
 }
 
-/** Labelled text input (mockup `.field`), one line unless `rows` is set, with its error under it. */
+const NOTE_CLASS = {
+  error: 'text-xs text-danger',
+  read: 'text-xs text-fg-2 tabular-nums',
+  help: 'text-xs text-fg-3',
+} as const satisfies Record<FieldNote['tone'], string>;
+
+/**
+ * Labelled text input (mockup `.field`), one line unless `rows` is set, with its error, or what the
+ * app read, and its help under it.
+ */
 export function TextField({
   label,
   value,
   onChange,
   error,
   hint,
+  help,
   required,
   disabled,
   autoFocus,
@@ -42,7 +58,7 @@ export function TextField({
   spellCheck,
 }: TextFieldProps) {
   const id = useId();
-  const noteId = `${id}-note`;
+  const { notes, describedBy } = fieldNotes(id, { error, hint, help });
   const Input = rows ? 'textarea' : 'input';
   return (
     <div className="flex flex-col gap-1">
@@ -64,26 +80,20 @@ export function TextField({
         onChange={(event) => onChange(event.target.value)}
         aria-required={required}
         aria-invalid={error ? true : undefined}
-        aria-describedby={error || hint ? noteId : undefined}
+        aria-describedby={describedBy}
         disabled={disabled}
         autoFocus={autoFocus}
         data-autofocus={autoFocus || undefined}
         autoComplete="off"
         className={`rounded-md border bg-surface-0 px-2 py-1.5 text-fg placeholder:text-fg-3 focus-visible:outline-2 focus-visible:outline-accent ${
-          error ? 'border-danger' : 'border-border-strong'
+          error ? 'border-danger' : 'border-border-control'
         }`}
       />
-      {error ? (
-        <span id={noteId} className="text-xs text-danger">
-          {error}
+      {notes.map((note) => (
+        <span key={note.tone} id={note.id} className={NOTE_CLASS[note.tone]}>
+          {note.text}
         </span>
-      ) : (
-        hint && (
-          <span id={noteId} className="text-xs text-fg-2 tabular-nums">
-            {hint}
-          </span>
-        )
-      )}
+      ))}
     </div>
   );
 }

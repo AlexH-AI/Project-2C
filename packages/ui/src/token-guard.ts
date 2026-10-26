@@ -1,8 +1,4 @@
-/**
- * Finds styling that bypasses the ADR-0013 tokens: raw colours, raw lengths, inline styles (save
- * a flex share from data), Tailwind arbitrary values and Tailwind's default palette (removed by theme.css, so such classes
- * would silently do nothing).
- */
+/** A styling that bypasses the ADR-0013 tokens, or a separator written in place of `sep.*`. */
 export interface TokenViolation {
   line: number;
   match: string;
@@ -23,12 +19,16 @@ const RULES: ReadonlyArray<[TokenViolation['rule'], RegExp]> = [
   ['hex-colour', /#[0-9a-f]{3,8}\b/gi],
   ['colour-function', /\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/gi],
   ['raw-length', /(?<![\w.[-])\d*\.?\d+(?:px|rem|em|vh|vw)\b/g],
-  // A flex share from data (the parts of a bar sized by count) is no design value.
-  ['inline-style', /\bstyle=\{(?!\{ flex: [\w.[\]]+ \}\})/g],
+  // A flex share read from data (the parts of a bar sized by count) is no design value; a number is.
+  ['inline-style', /\bstyle=\{(?!\{ flex: [A-Za-z_$][\w$.[\]]* \}\})/g],
   ['arbitrary-value', /\b[a-z][\w-]*-\[[^\]\s]+\]/g],
   ['default-palette', new RegExp(`\\b[a-z]+-(?:(?:${PALETTE})-\\d{2,3}|white|black)\\b`, 'g')],
 ];
 
+/**
+ * Finds raw colours and lengths, inline styles, Tailwind arbitrary values and Tailwind's default
+ * palette, which theme.css removes (such a class does nothing).
+ */
 export function findTokenViolations(source: string): TokenViolation[] {
   const violations: TokenViolation[] = [];
   source.split('\n').forEach((text, index) => {

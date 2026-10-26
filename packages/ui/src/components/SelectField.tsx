@@ -61,7 +61,7 @@ export function SelectField({
         aria-invalid={error ? true : undefined}
         aria-describedby={error || help ? noteId : undefined}
         className={`cursor-pointer rounded-md disabled:cursor-default disabled:opacity-50 border bg-surface-0 px-2 py-1.5 ${size === 'md' ? 'text-md' : 'text-sm'} text-fg focus-visible:outline-2 focus-visible:outline-accent ${
-          error ? 'border-danger' : 'border-border-strong'
+          error ? 'border-danger' : 'border-border-control'
         }`}
       >
         {placeholder !== undefined && <option value="">{placeholder}</option>}

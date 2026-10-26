@@ -42,6 +42,11 @@ describe('compareCellsThen', () => {
     expect(sorted(['15:00', '', '08:00'])).toEqual(['', '08:00', '15:00']);
   });
 
+  it('finds two cells of the same day and time equal, as two with no tie-break', () => {
+    expect(compareCellsThen('date', day, day, '08:00', '08:00')).toBe(0);
+    expect(compareCellsThen('date', day, day)).toBe(0);
+  });
+
   it('lets the cell decide before the tie-break', () => {
     expect(compareCellsThen('date', calendarDate(2026, 9, 29), day, '23:00', '01:00')).toBeLessThan(
       0,

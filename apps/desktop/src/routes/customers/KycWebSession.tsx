@@ -136,7 +136,7 @@ export function KycWebSession({
             aria-label={t('aiPanel.web.manual')}
             value={web.manual}
             rows={4}
-            className="rounded-md border border-border-strong bg-surface-0 px-2 py-1.5 font-mono text-xs text-fg-2"
+            className="rounded-md border border-border-control bg-surface-0 px-2 py-1.5 font-mono text-xs text-fg-2"
           />
         </>
       )}
