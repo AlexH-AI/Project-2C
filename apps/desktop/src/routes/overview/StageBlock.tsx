@@ -5,6 +5,7 @@ import { t } from '../../i18n';
 import { PANEL } from '../classes';
 import { stageBadge } from '../stage-badge';
 import {
+  stageChartLastText,
   stageChartOption,
   stageChartSummary,
   stageChartTable,
@@ -72,7 +73,7 @@ export function StageBlock({ block }: { block: StageBlockView }) {
               <h3 className="m-0 mb-1.5 flex items-baseline gap-2 text-sm font-semibold">
                 {t('overview.stages.team', { name: chart.team ?? '' })}
                 <span className="text-xs font-normal text-fg-3 tabular-nums">
-                  {lastText(chart, shown)}
+                  {stageChartLastText(chart, shown)}
                 </span>
               </h3>
               <StageChartBox chart={chart} shown={shown} palette={palette} short />
@@ -86,15 +87,6 @@ export function StageBlock({ block }: { block: StageBlockView }) {
       )}
     </section>
   );
-}
-
-/** "N3 90 · N2 44 · N1 22": the last column drawn, the stages shown (mockup 1b). */
-function lastText(chart: StageChart, shown: readonly ChartStage[]): string {
-  const last = chart.columns.findLast((column) => column.values !== null)?.values;
-  if (!last) return '';
-  return shown
-    .map((stage) => `${t(`stage.${stage}`)} ${formatCount(last[stage])}`)
-    .join(` ${t('sep.dot')} `);
 }
 
 function StageChartBox({
