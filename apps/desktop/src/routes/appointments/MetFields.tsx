@@ -3,13 +3,13 @@ import type { AppointmentRecord } from '@p2c/db';
 import {
   formatDate,
   formatVnd,
-  formatVndCompact,
   isRfTransition,
   type CustomerStage,
   type Person,
 } from '@p2c/domain';
 import { Choices, SelectField, TextField } from '@p2c/ui';
 import { t } from '../../i18n';
+import { amountRead } from '../money-view';
 import { stageBadge } from '../stage-badge';
 import { LOCKED, personLabel, reviewerChoices } from './appointments-view';
 import { readCaseSize, stageAfterChoices, type OutcomeError } from './outcome-form';
@@ -34,16 +34,6 @@ export const metDraftOf = (a: AppointmentRecord): MetDraft => ({
   nextStep: a.nextStep ?? '',
   caseSize: a.expectedCaseSize === null ? '' : formatVnd(a.expectedCaseSize),
 });
-
-/**
- * What a case size typed reads as (mockups 6c, 6d): "800.000.000 ₫ (800 tr)", the full form alone
- * when the compact one is the same, under a million (as `kycAmountRead`).
- */
-export function caseSizeRead(amount: number): string {
-  const full = formatVnd(amount);
-  const compact = formatVndCompact(amount);
-  return compact === full ? full : t('outcome.caseSizeRead', { amount: full, compact });
-}
 
 /**
  * Stage after, reviewer (D9), next step and case size of a met meeting. `from` is the stage the
@@ -119,8 +109,8 @@ export function MetFields({
         }))}
         placeholder={t('outcome.reviewerNone')}
         onChange={set('reviewerId')}
+        help={t('outcome.reviewerHelp')}
       />
-      <span className="-mt-2 text-xs text-fg-3">{t('outcome.reviewerHelp')}</span>
       <TextField
         label={t('outcome.nextStep')}
         value={draft.nextStep}
@@ -141,10 +131,10 @@ export function MetFields({
               )
             : undefined
         }
-        hint={size?.ok ? caseSizeRead(size.amount) : undefined}
+        hint={size?.ok ? amountRead(size.amount) : undefined}
+        // Mockup 6d: how a mark reads, for every case size typed; part of the field's description.
+        help={t('outcome.caseSizeHelp')}
       />
-      {/* Mockup 6d: how a mark reads, for every case size typed. */}
-      <span className="-mt-2 text-xs text-fg-3">{t('outcome.caseSizeHelp')}</span>
     </>
   );
 }

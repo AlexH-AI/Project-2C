@@ -30,8 +30,8 @@ interface ChartProps {
   /** Accessible name; the chart is exposed as one image. */
   label: string;
   /**
-   * Ids (`aria-describedby`) of what gives a screen reader the numbers drawn, e.g. the rows of a
-   * table off screen (`sr-only`).
+   * Ids (`aria-describedby`) of what gives a screen reader the numbers drawn, e.g. a short line kept
+   * `hidden`: Chromium stops a long description short (review of PR 841).
    */
   describedBy?: string;
   /** Keep the object stable between renders (constant or memo), or the chart redraws. */

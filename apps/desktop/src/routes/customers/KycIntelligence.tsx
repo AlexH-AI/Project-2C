@@ -91,7 +91,7 @@ function BlockedNote({ blocked }: { blocked: AiPanelBlocked }) {
           {' '}
           <a
             href="#kyc-facts"
-            className="text-accent hover:underline"
+            className={LINK}
             onClick={(event) => {
               event.preventDefault();
               // The focus goes with it, as for an F code (R2-20).
@@ -372,7 +372,7 @@ export function AiErrorText({ error }: { error: AiFailure }) {
     <>
       {before}
       {link && (
-        <a href={SETTINGS_AI_HASH} className="text-accent hover:underline">
+        <a href={SETTINGS_AI_HASH} className={LINK}>
           {link}
         </a>
       )}

@@ -1,6 +1,6 @@
 import { formatCount } from '@p2c/domain';
 import { encodeHtml, type ChartOption } from '@p2c/ui';
-import { t } from '../../i18n';
+import { joinParts, t } from '../../i18n';
 import { CHART_STAGES, type ChartStage, type StageChart, type StageValues } from './stage-view';
 
 /** Top of the stack first, as the tooltip and the table of a chart list the stages. */
@@ -160,4 +160,38 @@ export function stageChartTable(chart: StageChart, shown: readonly ChartStage[])
         : Array<string>(stages.length + 1).fill(t('overview.none')),
     })),
   };
+}
+
+/**
+ * The last mark of `chart` with numbers, as its row of `stageChartTable` says it: its title, then
+ * "N4 1.200" for each stage shown, top first, and "Tổng 1.206" last. Null while no mark has numbers.
+ */
+function lastNumbers(
+  chart: StageChart,
+  shown: readonly ChartStage[],
+): { readonly title: string; readonly parts: readonly string[] } | null {
+  const last = chart.columns.findLastIndex((column) => column.values !== null);
+  if (last < 0) return null;
+  const { head, rows } = stageChartTable(chart, shown);
+  const { title, cells } = rows[last]!;
+  return { title, parts: cells.map((cell, index) => `${head[index + 1]} ${cell}`) };
+}
+
+/**
+ * What describes `chart` to a screen reader (Owner 26/10/2026): the last mark with numbers, as its
+ * row of `stageChartTable` says it, then that the table follows. Short, so that Chromium reads it
+ * whole, which it did not of the whole table (review of PR 841). Null while no mark has numbers.
+ */
+export function stageChartSummary(chart: StageChart, shown: readonly ChartStage[]): string | null {
+  const last = lastNumbers(chart, shown);
+  if (!last) return null;
+  return t('overview.stages.chartSummary', { mark: last.title, values: joinParts(last.parts) });
+}
+
+/**
+ * "N3 90 · N2 44 · N1 22" by a team's name (mockup 1b): the numbers its chart ends on, as the
+ * summary says them, without the total. Empty while no mark has numbers.
+ */
+export function stageChartLastText(chart: StageChart, shown: readonly ChartStage[]): string {
+  return joinParts(lastNumbers(chart, shown)?.parts.slice(0, -1) ?? []);
 }

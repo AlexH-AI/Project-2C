@@ -15,6 +15,22 @@ import {
 // playwright.config.ts pins "today" of the simulated data (VITE_DEMO_ANCHOR) to 15/09/2026. The web
 // build runs the Mock until Settings → AI exists (T-167).
 
+// --accent: the text of a link and its focus ring.
+const ACCENT = 'rgb(217, 178, 106)';
+
+/**
+ * `link` reached by the keyboard (Shift+Tab, then Tab back) shows the app's focus ring, a solid
+ * outline in the accent, as every link of the app (`LINK`), not the browser's own (review #845).
+ */
+async function expectAppFocusRing(link: Locator) {
+  await link.focus();
+  await link.page().keyboard.press('Shift+Tab');
+  await link.page().keyboard.press('Tab');
+  await expect(link).toBeFocused();
+  await expect(link).toHaveCSS('outline-style', 'solid');
+  await expect(link).toHaveCSS('outline-color', ACCENT);
+}
+
 test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, a cốt lõi conflict', async ({
   page,
 }) => {
@@ -104,7 +120,7 @@ test('discovery with the Mock: the gate, an analysis, STALE after a KYC change, 
   await expect(panel).toContainText(pattern`kyc v3 · ${PROMPT.discovery}`);
   expect(await lowestContrast(panel)).toBeGreaterThanOrEqual(4.5);
   // Its link leads to the KYC facts, the focus too (R2-20).
-  await panel.getByRole('link', { name: 'Xem ở Dữ kiện KYC →' }).focus();
+  await expectAppFocusRing(panel.getByRole('link', { name: 'Xem ở Dữ kiện KYC →' }));
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading', { name: 'Dữ kiện KYC' })).toBeFocused();
 });
@@ -289,6 +305,12 @@ test('a run that fails while the profile is left says its error once shown again
   await expect(panel.getByRole('button', { name: 'Thử lại' })).toBeEnabled();
   // Nothing was saved.
   await expect(panel).toContainText('Chưa có phân tích AI cho KH này.');
+
+  // Said once (06-ai.md): away and back again, the error is gone (review of PR 835).
+  await page.getByRole('link', { name: 'Cài đặt' }).click();
+  await page.goBack();
+  await expect(panel).toContainText('Chưa có phân tích AI cho KH này.');
+  await expect(panel.getByRole('alert')).toHaveCount(0);
 });
 
 /** Why an AI button is off while a request runs elsewhere (DR5-40). */
@@ -734,6 +756,7 @@ test('the errors of the panel and AI trích xuất: the HTTP status as in Settin
   await panel.getByRole('alert').getByRole('button', { name: 'Thử lại' }).click();
   const alert = panel.getByRole('alert');
   await expect(alert).toContainText('Chưa có API key OpenCode — nhập ở Cài đặt → AI.');
+  await expectAppFocusRing(alert.getByRole('link', { name: 'Cài đặt → AI' }));
   await alert.getByRole('link', { name: 'Cài đặt → AI' }).click();
   await expect(page.getByRole('region', { name: 'API key OpenCode' })).toBeVisible();
   await expect(

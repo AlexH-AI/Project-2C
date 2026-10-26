@@ -1,9 +1,8 @@
-import { isTauri } from '@tauri-apps/api/core';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTables } from '../data/AppDataContext';
 import { joinParts, t } from '../i18n';
 import { Screen } from '../routes/Screen';
+import type { AppWindow } from './CloseGuard';
 import { ErrorBoundary } from './ErrorBoundary';
 import { SaveWarning } from './SaveWarning';
 import { routeToHash, sectionOf, teamPickerShown, usesScope, type Route } from './routes';
@@ -18,17 +17,17 @@ import { useRoute } from './useRoute';
  * before, goes to its heading; back on Customers from a profile, to the card or row of that customer
  * when shown. Opening the app leaves the focus alone. The screens share one page, which keeps the
  * scroll of the screen before: a new one opens at its top (DR6-81), the card just seen in view.
- * The exe's title bar does not follow the page's title (Tauri 2): it is given the name too.
+ * The exe's title bar does not follow the page's title (Tauri 2): its window is given the name too.
  */
-function useScreenFocus(route: Route) {
+function useScreenFocus(route: Route, appWindow: AppWindow | undefined) {
   const heading = useRef<HTMLHeadingElement>(null);
   const main = useRef<HTMLElement>(null);
   const name = t(`screen.${route.screen}`);
   useEffect(() => {
     const title = joinParts([name, t('app.title')]);
     document.title = title;
-    if (isTauri()) void getCurrentWindow().setTitle(title);
-  }, [name]);
+    void appWindow?.setTitle(title);
+  }, [name, appWindow]);
   const hash = routeToHash(route);
   const onCustomers = route.screen === 'customers';
   const shown = useRef(hash);
@@ -50,10 +49,10 @@ function useScreenFocus(route: Route) {
   return { heading, main };
 }
 
-/** Sidebar + topbar + current screen (ADR-0013 layout). */
-export function AppShell() {
+/** Sidebar + topbar + current screen (ADR-0013 layout); `appWindow` is the exe's (see `App`). */
+export function AppShell({ appWindow }: { appWindow?: AppWindow }) {
   const route = useRoute();
-  const { heading, main } = useScreenFocus(route);
+  const { heading, main } = useScreenFocus(route, appWindow);
   const { teams, people } = useTables();
   const [choice, setChoice] = useState<ScopeChoice>({ kind: 'all' });
   const picked = useMemo(() => resolveScope(choice, teams, people), [choice, teams, people]);

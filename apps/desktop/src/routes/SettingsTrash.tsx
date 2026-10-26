@@ -323,8 +323,9 @@ export function TrashSection() {
             variant="danger"
             className="ml-auto"
             disabled={!canPurge(rows)}
-            // The plan of the rows shown, read once: the dialog runs `keptRecords` neither as it
-            // opens nor on the data it purged as it closes (review of PR 710).
+            // The plan of every row, whatever the filter (TR-11), read once: the dialog runs
+            // `keptRecords` neither as it opens nor on the data it purged as it closes (review of
+            // PR 710).
             onClick={() => setPurging(purgeView(purgePlan(rows)))}
           >
             {t('trash.purge.open')}

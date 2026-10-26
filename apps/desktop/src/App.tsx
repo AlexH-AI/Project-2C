@@ -4,14 +4,14 @@ import { AppShell } from './shell/AppShell';
 import { CloseGuard, type AppWindow } from './shell/CloseGuard';
 
 /**
- * `appWindow` is the exe window; web mode has none and keeps the database in memory. `CloseGuard`
- * stays a sibling of `AppShell`, outside the screens' `ErrorBoundary`: a failed screen must never
- * take the save-on-close with it (T-077).
+ * `appWindow` is the exe window, which `main.tsx` alone tells from web mode; web mode has none and
+ * keeps the database in memory. `CloseGuard` stays a sibling of `AppShell`, outside the screens'
+ * `ErrorBoundary`: a failed screen must never take the save-on-close with it (T-077).
  */
 export function App({ data, appWindow }: { data: AppData; appWindow?: AppWindow }) {
   return (
     <AppDataContext value={data}>
-      <AppShell />
+      <AppShell appWindow={appWindow} />
       {appWindow && <CloseGuard appWindow={appWindow} />}
     </AppDataContext>
   );

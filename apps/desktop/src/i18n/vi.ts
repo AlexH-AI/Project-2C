@@ -405,7 +405,7 @@ export const vi = {
   'trash.restore.noChangeBody':
     'Lịch hẹn vào lại danh sách Lịch hẹn và hồ sơ KH theo ngày của lịch.',
   'trash.restore.fyp': 'FYP nộp',
-  'trash.restore.issued': 'Đã phát hành {date} · {fyp}',
+  'trash.restore.issued': '{status} {date} · {fyp}',
   'trash.restore.policyBody': 'HĐ vào lại hồ sơ KH và chỉ số theo ngày nộp / phát hành.',
   'trash.restore.role': 'Vai trò',
   'trash.restore.team': 'Team',
@@ -537,7 +537,6 @@ export const vi = {
   'kycNote.value': 'Giá trị',
   'kycNote.current': 'Đang có: {values}',
   'kycNote.currentValue': '{value} · {code} ({date})',
-  'kycNote.amountRead': '{amount} ({compact})',
   'kycNote.mode': 'Trường đã có giá trị',
   'kycNote.update': 'Cập nhật',
   'kycNote.conflict': 'Đánh dấu mâu thuẫn',
@@ -781,6 +780,9 @@ export const vi = {
   'appointments.next': 'Tạo lịch hẹn tiếp theo',
   'appointments.createdOutside':
     'Đã tạo lịch hẹn {date} cho {re}. RE này nằm ngoài góc nhìn hiện tại nên lịch không hiện ở đây; đổi góc nhìn để xem.',
+  // The same line for one reached by "Dời từ" / "Dời sang", which made nothing (review of PR 846).
+  'appointments.linkedOutside':
+    'Lịch hẹn {date} do {re} phụ trách. RE này nằm ngoài góc nhìn hiện tại nên lịch không hiện ở đây; đổi góc nhìn để xem.',
   'appointmentForm.title': 'Lịch hẹn mới',
   'appointmentForm.sub': 'Trạng thái: Dự kiến',
   'appointmentForm.nextTitle': 'Lịch hẹn tiếp theo',
@@ -882,7 +884,6 @@ export const vi = {
   'outcome.nextStep': 'Việc tiếp theo',
   'outcome.nextStepRequired': 'Nhập việc tiếp theo.',
   'outcome.caseSize': 'Case size dự kiến (để trống = chưa ước lượng)',
-  'outcome.caseSizeRead': '{amount} ({compact})',
   'outcome.caseSizeHelp':
     'Dấu phẩy hay dấu chấm theo sau đúng 3 chữ số là dấu ngăn nghìn, kể cả khi có đơn vị: "1,234 tr" = 1.234.000.000 ₫ (số đứng trước là 0 thì là dấu thập phân: "0,500 tr" = 500.000 ₫). Muốn 1,2 triệu thì gõ "1,2 tr" → 1.200.000 ₫.',
   'outcome.caseSizePositive': 'Case size phải lớn hơn 0 (hoặc để trống).',
@@ -933,6 +934,8 @@ export const vi = {
   'appointmentDelete.soft': 'Xóa mềm, khôi phục được ở Cài đặt → Thùng rác.',
   'error.TRANSITION_NOT_LATEST':
     'KH đã đổi nhóm sau cuộc gặp này: không đổi được trạng thái, ngày, nhóm sau cuộc gặp, cũng không xóa được. Sửa nhóm bằng Chuyển nhóm tay.',
+  // What an amount typed reads as (amountRead): in full, then in short.
+  'money.read': '{amount} ({compact})',
   'money.error.empty': 'Chưa nhập số tiền.',
   'money.error.negative': 'Số tiền không được âm.',
   'money.error.format': 'Gõ số tiền như 800tr, 1,2 tỷ hoặc 500.000.000.',
@@ -992,6 +995,8 @@ export const vi = {
   // The table of a chart's numbers, for screen readers (P8): its caption and the column of the days.
   'overview.stages.chartTable': 'Số liệu: {label}',
   'overview.stages.day': 'Ngày',
+  // What describes a chart (Owner 26/10/2026): its last mark with numbers, then where the table is.
+  'overview.stages.chartSummary': '{mark}: {values}. Số liệu từng mốc ở bảng ngay sau.',
   'overview.stages.hidden': 'đang ẩn',
   'overview.stages.team': 'Team {name}',
   'overview.stages.chart': 'Diễn biến khách hàng theo nhóm',
@@ -1327,7 +1332,6 @@ export const vi = {
   'policyForm.sub': '{customer} · nộp {date} · FYP nộp {fyp}',
   'policyForm.newSub': '{customer} · {code}',
   'policyForm.editSub': '{status} {date}',
-  'policyForm.fypRead': '{amount} ({compact})',
   'policyForm.re': 'RE · HĐ tính cho RE này',
   'policyForm.submittedDate': 'Ngày nộp',
   'policyForm.submittedFyp': 'FYP nộp',

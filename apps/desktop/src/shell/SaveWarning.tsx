@@ -1,6 +1,6 @@
-import { useSyncExternalStore, type RefObject } from 'react';
+import type { RefObject } from 'react';
 import { Button } from '@p2c/ui';
-import { useAppData } from '../data/AppDataContext';
+import { useAppData, useSaveStatus } from '../data/AppDataContext';
 import { saveFailure, type SaveFailure } from '../data/tauri-storage';
 import { t, type MessageKey } from '../i18n';
 
@@ -27,7 +27,7 @@ export const SAVE_FAILED = {
  */
 export function SaveWarning({ heading }: { heading: RefObject<HTMLElement | null> }) {
   const { saves } = useAppData();
-  const { failed, error } = useSyncExternalStore(saves.subscribe, saves.status);
+  const { failed, error } = useSaveStatus();
   if (!failed) return null;
   const retry = (button: HTMLButtonElement) => {
     saves.flush().then(

@@ -1,17 +1,19 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Dialog } from '@p2c/ui';
-import { useAppData } from '../data/AppDataContext';
+import { useAppData, useSaveStatus } from '../data/AppDataContext';
 import { saveFailure } from '../data/tauri-storage';
 import { t } from '../i18n';
 import { closeAfterSaving, type CloseChoice } from './close-guard';
 import { SAVE_FAILED } from './SaveWarning';
 
-/** The exe window as far as closing goes; Tauri's `Window` fits it. */
+/** The exe window as far as closing it and its title go; Tauri's `Window` fits it. */
 export interface AppWindow {
   onCloseRequested(
     handler: (event: { preventDefault(): void }) => Promise<void>,
   ): Promise<() => void>;
   destroy(): Promise<void>;
+  /** The title bar, which does not follow the page's title (Tauri 2). */
+  setTitle(title: string): Promise<void>;
 }
 
 /**
@@ -21,7 +23,7 @@ export interface AppWindow {
  */
 export function CloseGuard({ appWindow }: { appWindow: AppWindow }) {
   const { saves } = useAppData();
-  const { error } = useSyncExternalStore(saves.subscribe, saves.status);
+  const { error } = useSaveStatus();
   const [answer, setAnswer] = useState<((choice: CloseChoice) => void) | null>(null);
 
   useEffect(() => {

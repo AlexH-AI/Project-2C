@@ -229,6 +229,15 @@ test('a day outside the month or the range is named with its count, not hidden',
   await expect(calendar.getByRole('button', { name: /^21\/09\/2026: / })).toHaveAccessibleName(
     name,
   );
+
+  // Today out of the range still says it is today, as the day that can be picked does (review
+  // of PR 838).
+  await page.getByRole('textbox', { name: 'Từ ngày' }).fill('01/09/2026');
+  await page.getByRole('textbox', { name: 'Đến ngày' }).fill('10/09/2026');
+  await page.getByRole('textbox', { name: 'Đến ngày' }).press('Enter');
+  const today = calendar.getByRole('img', { name: new RegExp(`^${TODAY}:`) });
+  await expect(today).toContainText('· hôm nay');
+  await expect(today).toHaveAttribute('aria-current', 'date');
 });
 
 const ACCENT = 'rgb(217, 178, 106)';
@@ -536,13 +545,18 @@ test('rescheduling keeps the old appointment with its reason and links it to the
   await detail.getByRole('button', { name: back }).click();
 
   // The old one stays, rescheduled, with the reason in its note and a link forward.
-  await expect(detail.getByRole('heading', { level: 2 })).toHaveText(`${back} · ${name}`);
+  const heading = detail.getByRole('heading', { level: 2 });
+  await expect(heading).toHaveText(`${back} · ${name}`);
+  // The link went with the line it was on: the focus is on the appointment shown instead (review
+  // of PR 838).
+  await expect(heading).toBeFocused();
   await expect(detail).toContainText('Dời lịch');
   await expect(detail).toContainText('Dời sang 02/10');
   await expect(detail).toContainText('KH đi công tác Đà Nẵng');
   await expect(detail.getByRole('button', { name: 'Dời lịch' })).toHaveCount(0);
-  await detail.getByRole('button', { name: '02/10/2026 10:00' }).click();
-  await expect(detail.getByRole('heading', { level: 2 })).toHaveText(`02/10/2026 10:00 · ${name}`);
+  await detail.getByRole('button', { name: '02/10/2026 10:00' }).press('Enter');
+  await expect(heading).toHaveText(`02/10/2026 10:00 · ${name}`);
+  await expect(heading).toBeFocused();
 });
 
 test('a rescheduled day already past is refused unless it back-fills a meeting held then', async ({
@@ -790,6 +804,58 @@ test('by the keyboard, a next appointment made out of sight leaves the focus on 
   const notice = page.getByRole('status').filter({ hasText: 'Đã tạo lịch hẹn' });
   await expect(notice).toContainText('RE này nằm ngoài góc nhìn hiện tại');
   await expect(next).toHaveCount(0);
+  await expect(notice).toBeFocused();
+});
+
+// Review of PR 846: a customer handed over to another RE takes the planned appointment with it, not
+// the one it was moved from. "Dời sang" / "Dời từ" naming the one out of sight takes the detail
+// away, its link with it; the focus goes to the line saying where it is, which made nothing.
+test('by the keyboard, a reschedule link to an appointment out of sight leaves the focus on the line saying so', async ({
+  page,
+}) => {
+  const { rows, detail } = screen(page);
+  await pickTeam(page, 'Sao Mai');
+  const planned = rows.filter({ hasText: 'Dự kiến' }).first();
+  const oldDate = (await planned.locator('td:nth-child(1)').textContent()) ?? '';
+  const oldTime = (await planned.locator('td:nth-child(2)').textContent()) ?? '';
+  const oldRe = (await planned.locator('td:nth-child(4)').textContent()) ?? '';
+  const name = (await planned.getByRole('button').textContent()) ?? '';
+  await planned.getByRole('button').click();
+  await detail.getByRole('button', { name: 'Dời lịch' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('textbox', { name: /^Ngày mới/ }).fill('2/10');
+  await dialog.getByRole('textbox', { name: /^Giờ mới/ }).fill('10:00');
+  await dialog.getByRole('button', { name: 'Dời lịch' }).click();
+  await expect(dialog).toHaveCount(0);
+
+  await detail.getByRole('link', { name: 'Hồ sơ KH →' }).click();
+  await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
+  const edit = page.getByRole('dialog', { name: `Sửa hồ sơ · ${name}` });
+  const picker = edit.getByRole('combobox', { name: 'RE phụ trách' });
+  const options = await picker.locator('option').allTextContents();
+  const other = options.find((option) => option.includes(' · ') && !option.endsWith('Sao Mai'));
+  const [newRe = '', newTeam = ''] = (other ?? '').split(' · ');
+  await picker.selectOption({ label: other ?? '' });
+  await edit.getByRole('button', { name: 'Lưu', exact: true }).click();
+  await expect(edit).toHaveCount(0);
+
+  const outside = (date: string, re: string) =>
+    `Lịch hẹn ${date} do ${re} phụ trách. RE này nằm ngoài góc nhìn hiện tại nên lịch không hiện ở đây; đổi góc nhìn để xem.`;
+  const notice = page.getByRole('status').filter({ hasText: 'ngoài góc nhìn' });
+  await page.goto('/#/appointments');
+  await showDay(page, oldDate);
+  await rows.filter({ hasText: name }).filter({ hasText: 'Dời lịch' }).getByRole('button').click();
+  await detail.getByRole('button', { name: '02/10/2026 10:00' }).press('Enter');
+  await expect(notice).toHaveText(outside('02/10/2026', newRe));
+  await expect(notice).toBeFocused();
+
+  // From the new RE's team, the new one is shown; "Dời từ" names the old one, on the old RE.
+  await pickTeam(page, newTeam);
+  await expect(detail.getByRole('heading', { level: 2 })).toHaveText(`02/10/2026 10:00 · ${name}`);
+  await detail
+    .getByRole('button', { name: [oldDate, oldTime].filter(Boolean).join(' ') })
+    .press('Enter');
+  await expect(notice).toHaveText(outside(oldDate, oldRe));
   await expect(notice).toBeFocused();
 });
 

@@ -1,7 +1,7 @@
-import { Fragment, useSyncExternalStore } from 'react';
+import { Fragment } from 'react';
 import { formatLocalTime } from '@p2c/domain';
 import { NavIcon, type NavIconName } from '@p2c/ui';
-import { useAppData } from '../data/AppDataContext';
+import { useAppData, useSaveStatus } from '../data/AppDataContext';
 import type { SaveStatus } from '../data/persist-queue';
 import { t } from '../i18n';
 import { FOCUS } from '../routes/classes';
@@ -64,8 +64,8 @@ export function Sidebar({ current }: { current: Section }) {
 
 /** The save state of the exe; web mode saves nothing. */
 function SaveState() {
-  const { saves, hasFile } = useAppData();
-  const status = useSyncExternalStore(saves.subscribe, saves.status);
+  const { hasFile } = useAppData();
+  const status = useSaveStatus();
   return <SaveStateLine status={hasFile ? status : undefined} />;
 }
 
@@ -86,9 +86,12 @@ export function SaveStateLine({ status }: { status: SaveStatus | undefined }) {
   );
 }
 
+/** Web mode, which keeps the data in the browser only; Settings → Data says it alike (10d). */
+export const WEB_MODE = { dot: 'bg-info', tone: 'text-fg-2', text: t('settings.file.web') };
+
 /** A write running outshows a failed one: "Thử lại" or the next change may be saving it. */
 function saveState(status: SaveStatus | undefined): { dot: string; tone: string; text: string } {
-  if (!status) return { dot: 'bg-info', tone: 'text-fg-2', text: t('settings.file.web') };
+  if (!status) return WEB_MODE;
   if (status.saving) return { dot: 'bg-fg-3', tone: 'text-fg-2', text: t('saveState.saving') };
   if (status.failed) return { dot: 'bg-danger', tone: 'text-danger', text: t('saveState.failed') };
   // Nothing saved yet in this session: the file holds what the app shows, opened as it is.

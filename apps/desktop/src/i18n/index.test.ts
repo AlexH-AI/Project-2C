@@ -29,6 +29,7 @@ const PLAIN_SLOTS: ReadonlySet<string> = new Set([
   'issued',
   'label',
   'limitMb',
+  'mark',
   'message',
   'month',
   'model',

@@ -42,20 +42,17 @@ test('the stage chart marks today and draws the days after it as dashed lines', 
   await expect(today).toHaveCSS('font-weight', '700');
 });
 
-// Review of Phase 4 (P8): the chart is one image to a screen reader, so its numbers come from a
-// table off screen, built from the same columns, that the image names as its description.
-test('the stage chart is described by a hidden table of its numbers', async ({ page }) => {
+// Review of Phase 4 (P8): the chart is one image to a screen reader. Its description is its numbers
+// of today, short enough for Chromium to read whole (Owner 26/10/2026: it stopped a description of
+// the whole table at about the 7th day, review of PR 841); a table off screen right after it, built
+// from the same columns, has every day.
+test('the stage chart is described by its numbers of today, a hidden table after it has every day', async ({
+  page,
+}) => {
   await page.goto('/#/overview');
   const chart = page.getByRole('img', { name: CHART, exact: true });
   await expect(chart.locator('svg')).toHaveCount(1);
   const table = page.getByRole('table', { name: `Số liệu: ${CHART}`, exact: true });
-  // The rows, not the table: a description would read the table's name, its caption, alone.
-  const described = (await chart.getAttribute('aria-describedby'))!.split(' ');
-  expect(described).toHaveLength(2);
-  for (const id of described) await expect(table.locator(`[id="${id}"]`)).toHaveCount(1);
-  await expect(chart).toHaveAccessibleDescription(
-    /^Ngày\s*N4\s*N3\s*N2\s*N1\s*Tổng\b.*15\/09\/2026 · cuối ngày/,
-  );
   // Off screen: the box holding it takes a pixel.
   const box = await table.locator('..').boundingBox();
   expect(Math.max(box!.width, box!.height)).toBeLessThanOrEqual(1);
@@ -83,13 +80,24 @@ test('the stage chart is described by a hidden table of its numbers', async ({ p
       ),
     ),
   );
-  const today = (
-    await rows.filter({ hasText: '15/09/2026' }).getByRole('cell').allTextContents()
-  ).map(count);
-  expect(today).toEqual([...tiles, tiles.reduce((sum, tile) => sum + tile, 0)]);
+  const todayRow = rows.filter({ hasText: '15/09/2026' });
+  const cells = await todayRow.getByRole('cell').allTextContents();
+  expect(cells.map(count)).toEqual([...tiles, tiles.reduce((sum, tile) => sum + tile, 0)]);
   await expect(rows.filter({ hasText: '16/09/2026' }).getByRole('cell')).toHaveText(
     Array(5).fill('—'),
   );
+
+  // Today's row as the table says it, then where the table is.
+  const title = await todayRow.getByRole('rowheader').textContent();
+  const figures = ['N4', 'N3', 'N2', 'N1', 'Tổng'].map((head, index) => `${head} ${cells[index]}`);
+  const description = `${title}: ${figures.join(' · ')}. Số liệu từng mốc ở bảng ngay sau.`;
+  await expect(chart).toHaveAccessibleDescription(description);
+  // As the browser itself gives it to a screen reader: Playwright works out the one above on its
+  // own, and read the whole table where Chromium stopped (review of PR 841).
+  const cdp = await page.context().newCDPSession(page);
+  const { nodes } = await cdp.send('Accessibility.getFullAXTree');
+  const images = nodes.filter((node) => node.name?.value === CHART && node.role?.value === 'image');
+  expect(images.map((node) => node.description?.value)).toEqual([description]);
 });
 
 test('switching screens 10 times keeps one chart and logs no errors', async ({ page }) => {

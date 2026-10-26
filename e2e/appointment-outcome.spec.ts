@@ -75,6 +75,9 @@ test('a meeting met N3 → N2 moves the customer, the timeline says after the me
   // Both groups must be answered; screen readers say so before the save refuses (DR-26).
   await expect(o.status).toHaveAttribute('aria-required', 'true');
   await expect(o.stageAfter).toHaveAttribute('aria-required', 'true');
+  await expect(
+    o.dialog.getByRole('combobox', { name: /^Người đánh giá/ }),
+  ).toHaveAccessibleDescription('Người quyết định nhóm sau cuộc gặp: IS, TL, BDM hoặc BD.');
 
   // Met needs a stage after and a next step; the case size may stay empty.
   await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
@@ -88,9 +91,12 @@ test('a meeting met N3 → N2 moves the customer, the timeline says after the me
   await o.nextStep.fill('Gửi bảng minh họa');
   await o.caseSize.fill('800tr');
   await expect(o.dialog).toContainText('800.000.000 ₫ (800 tr)');
-  // Under a million the short form is the full one: read once (review of PR 758).
+  // Under a million the short form is the full one: read once (review of PR 758). The help under
+  // the field is part of what a screen reader says of it (review of PR 838).
   await o.caseSize.fill('0,500 tr');
-  await expect(o.caseSize).toHaveAccessibleDescription('500.000 ₫');
+  await expect(o.caseSize).toHaveAccessibleDescription(
+    /^500\.000 ₫ Dấu phẩy hay dấu chấm theo sau đúng 3 chữ số là dấu ngăn nghìn/,
+  );
   // Mockup 6d: how the marks read, under the field.
   const help = o.dialog.getByText(
     /^Dấu phẩy hay dấu chấm theo sau đúng 3 chữ số là dấu ngăn nghìn/,

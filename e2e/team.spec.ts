@@ -253,12 +253,14 @@ test('Xóa nhân sự asks first when Sửa nhân sự has changes not saved', a
 
   await table.getByRole('button', { name: 'Sửa Trần Hải Yến', exact: true }).click();
   await name.fill('Trần Hải Âu');
-  await remove.click();
+  // A double click only asks: going on is a button of its own, in the question (review of PR 841).
+  await remove.dblclick();
   await expect(edit.getByRole('alert')).toHaveText(
     'Có thay đổi chưa lưu: Lưu để giữ, hoặc bỏ thay đổi để xóa nhân sự.',
   );
   await expect(confirm).toHaveCount(0);
   await expect(name).toHaveValue('Trần Hải Âu');
+  await expect(remove).toBeVisible();
 
   await edit.getByRole('button', { name: 'Bỏ thay đổi và xóa nhân sự', exact: true }).click();
   await expect(confirm).toBeVisible();
@@ -536,7 +538,7 @@ test('an RE and an IS kept only by a customer in the trash: 9b counts it as the 
   // The customer still comes back, its RE live (TR-2).
   await goTo(page, 'Cài đặt');
   await page.getByRole('button', { name: 'Thùng rác', exact: true }).click();
-  await page.getByRole('button', { name: `Khôi phục KH ${customer}`, exact: true }).click();
+  await page.getByRole('button', { name: `Khôi phục KH ${customer} · N4`, exact: true }).click();
   await page.getByRole('button', { name: 'Khôi phục', exact: true }).click();
   await expect(page.getByRole('status')).toContainText(`Đã khôi phục KH ${customer}`);
 });

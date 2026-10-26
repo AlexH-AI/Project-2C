@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { stageChartOption, stageChartTable, stagePalette } from './stage-chart';
+import {
+  stageChartLastText,
+  stageChartOption,
+  stageChartSummary,
+  stageChartTable,
+  stagePalette,
+} from './stage-chart';
 import type { StageChart } from './stage-view';
 
 const CHART: StageChart = {
@@ -165,5 +171,45 @@ describe('stageChartTable', () => {
 
     expect(table.head).toEqual(['Ngày', 'N3', 'N1', 'Tổng']);
     expect(table.rows[0]!.cells).toEqual(['3', '1', '4']);
+  });
+});
+
+// Owner 26/10/2026 (review of PR 841): what describes the chart, short enough to be read whole.
+describe('stageChartSummary', () => {
+  it('says the last mark with numbers as its row of the table does, then where the table is', () => {
+    expect(stageChartSummary(CHART, ALL_SHOWN)).toBe(
+      '12/10/2026 · cuối ngày: N4 1.200 · N3 3 · N2 2 · N1 1 · Tổng 1.206. Số liệu từng mốc ở bảng ngay sau.',
+    );
+    const [first, second] = CHART.columns;
+    const later = { ...CHART, columns: [second!, { ...first!, title: '14/10/2026 · cuối ngày' }] };
+    expect(stageChartSummary(later, ALL_SHOWN)).toMatch(/^14\/10\/2026 · cuối ngày: N4 1\.200 /);
+  });
+
+  it('says the stages shown only, as the table does', () => {
+    expect(stageChartSummary(CHART, ['N3', 'N1'])).toBe(
+      '12/10/2026 · cuối ngày: N3 3 · N1 1 · Tổng 4. Số liệu từng mốc ở bảng ngay sau.',
+    );
+  });
+
+  it('says nothing while no mark has numbers: the chart reads "Kỳ chưa bắt đầu" then', () => {
+    expect(stageChartSummary({ ...CHART, columns: [CHART.columns[1]!] }, ALL_SHOWN)).toBeNull();
+  });
+});
+
+// Mockup 1b: by a team's name, the numbers its chart ends on, from the row the summary says
+// (review of PR 846).
+describe('stageChartLastText', () => {
+  it('says the stages shown of the last mark with numbers, top first, without the total', () => {
+    expect(stageChartLastText(CHART, ALL_SHOWN)).toBe('N4 1.200 · N3 3 · N2 2 · N1 1');
+    expect(stageChartLastText(CHART, ['N3', 'N1'])).toBe('N3 3 · N1 1');
+    const [first, after] = CHART.columns;
+    const later = { ...first!, values: { N4: 5, N3: 4, N2: 3, N1: 2 } };
+    expect(stageChartLastText({ ...CHART, columns: [first!, later, after!] }, ALL_SHOWN)).toBe(
+      'N4 5 · N3 4 · N2 3 · N1 2',
+    );
+  });
+
+  it('says nothing while no mark has numbers', () => {
+    expect(stageChartLastText({ ...CHART, columns: [CHART.columns[1]!] }, ALL_SHOWN)).toBe('');
   });
 });
