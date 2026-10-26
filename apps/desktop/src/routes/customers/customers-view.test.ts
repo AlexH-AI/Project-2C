@@ -16,6 +16,8 @@ import {
   kanbanColumn,
   parseBirthDate,
   parseRecordDate,
+  profileSince,
+  stageDirection,
   stageSince,
   type CustomerCard,
 } from './customers-view';
@@ -165,6 +167,43 @@ describe('stageSince', () => {
       ]),
     );
     expect(stageSince([])).toEqual(new Map());
+  });
+});
+
+// The profile's "từ …" and the 5d dialog's "hiện tại N2 từ …" (DR6-62, review of PR 644).
+describe('profileSince', () => {
+  it('is the day of the latest change, not of the first', () => {
+    const changes = [move('k', null, 'N3', day(8, 1)), move('k', 'N3', 'N2', day(8, 12))];
+    expect(profileSince('k', changes)).toEqual(day(8, 12));
+    expect(profileSince('k', changes.slice(0, 1))).toEqual(day(8, 1));
+  });
+
+  it('is the day of reopening after a close', () => {
+    const changes = [
+      move('k', null, 'N3', day(5, 2)),
+      move('k', 'N3', 'ON_HOLD', day(6, 3)),
+      move('k', 'ON_HOLD', 'N3', day(6, 20)),
+    ];
+    expect(profileSince('k', changes)).toEqual(day(6, 20));
+  });
+});
+
+// Mockup 5d: "Sau khi lưu: N2 → N3 · hạ nhóm"; N1 is closest to a contract.
+describe('stageDirection', () => {
+  it('lifts toward N1, lowers toward N4', () => {
+    expect(stageDirection('N4', 'N3')).toBe('up');
+    expect(stageDirection('N2', 'N1')).toBe('up');
+    expect(stageDirection('N4', 'N1')).toBe('up');
+    expect(stageDirection('N2', 'N3')).toBe('down');
+    expect(stageDirection('N1', 'N4')).toBe('down');
+  });
+
+  it('says nothing of staying, closing, reopening or moving between closed stages', () => {
+    expect(stageDirection('N3', 'N3')).toBeNull();
+    expect(stageDirection('N2', 'ON_HOLD')).toBeNull();
+    expect(stageDirection('N4', 'LOST')).toBeNull();
+    expect(stageDirection('ON_HOLD', 'N3')).toBeNull();
+    expect(stageDirection('ON_HOLD', 'LOST')).toBeNull();
   });
 });
 

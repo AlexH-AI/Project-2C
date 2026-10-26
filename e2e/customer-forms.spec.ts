@@ -131,6 +131,23 @@ test('edits the profile, showing the customer code and the birth date as underst
   await expect(page.getByRole('region', { name })).toContainText('12/03/1984 (42 tuổi)');
 });
 
+// Mockup 5d: the move read back says whether it lowers or lifts the customer (#141).
+test('changing the stage by hand reads back the move, lowered or lifted (5d)', async ({ page }) => {
+  await column(page, 'N2').getByRole('link').first().click();
+  await page.getByRole('button', { name: 'Chuyển nhóm' }).click();
+  const dialog = page.getByRole('dialog', { name: /^Chuyển nhóm · / });
+  await expect(dialog).toContainText('Chuyển tay không bao giờ tính RF');
+
+  await dialog.getByRole('radio', { name: 'N3', exact: true }).check();
+  await expect(dialog).toContainText('Sau khi lưu: N2 → N3 · hạ nhóm');
+  await dialog.getByRole('radio', { name: 'N1', exact: true }).check();
+  await expect(dialog).toContainText('Sau khi lưu: N2 → N1 · lên nhóm');
+  // Closing is neither.
+  await dialog.getByRole('radio', { name: 'Tạm hoãn', exact: true }).check();
+  await expect(dialog).toContainText('Sau khi lưu: N2 → Tạm hoãn');
+  await expect(dialog).not.toContainText(/hạ nhóm|lên nhóm/);
+});
+
 test('a closed customer reopens only to N3', async ({ page }) => {
   await column(page, 'Tạm hoãn').getByRole('link').first().click();
   // In Tạm hoãn "từ" the latest stage change, the first of the timeline, not the first made.
@@ -145,6 +162,9 @@ test('a closed customer reopens only to N3', async ({ page }) => {
   }
   await expect(dialog.getByRole('radio', { name: 'N3 mở lại' })).toBeEnabled();
   await expect(dialog.getByRole('radio', { name: 'Mất cơ hội' })).toBeEnabled();
+  // The warning of 5d is for an open customer: 5e says reopening counts no RF (#141).
+  await expect(dialog).toContainText('Mở lại không tính RF.');
+  await expect(dialog).not.toContainText('Chuyển tay không bao giờ tính RF');
   await dialog.getByRole('button', { name: 'Hủy' }).click();
 
   await changeStage(page, 'N3 mở lại');

@@ -471,10 +471,15 @@ function DayButton({
   );
   const ring = isToday ? 'inset-ring inset-ring-date-today' : '';
   // Days outside the month and the period only fill the weeks, days outside a custom range
-  // cannot be picked: the period picker moves there.
+  // cannot be picked: the period picker moves there. Faded, they show their number alone; a screen
+  // reader still hears their appointments, by the name a day has (T-298).
   if (!pickable) {
     return (
-      <div aria-hidden="true" className={`${CELL} opacity-35 ${border} ${ring} ${background}`}>
+      <div
+        role="img"
+        aria-label={dayLabel(cell)}
+        className={`${CELL} opacity-35 ${border} ${ring} ${background}`}
+      >
         {dayNumber}
       </div>
     );
@@ -658,7 +663,10 @@ function Detail({
       >
         {t('appointments.profile')}
       </a>
-      <div className="flex flex-wrap gap-2">
+      {/* Keyed by the appointment: a save showing another one (6c with a next one, 6e, 6h) takes
+          the button that opened it away, so the focus goes to the new heading, which is read out,
+          not to the button of the same name the new appointment has here (review of PR 693). */}
+      <div key={a.id} className="flex flex-wrap gap-2">
         {a.status === 'SCHEDULED' && row.customer && (
           <Button variant="primary" onClick={() => onRecord(row)}>
             {t('appointments.record')}

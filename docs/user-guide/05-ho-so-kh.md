@@ -106,7 +106,7 @@ HĐ nộp tháng này mà phát hành tháng sau thì vẫn tính nộp vào th�
 
 ## Lịch hẹn của KH
 
-Thẻ **Lịch hẹn** liệt kê mọi lịch của KH. Mỗi lịch hôm nay hoặc đã qua có nút **Hẹn tiếp** (tạo lịch hẹn tiếp theo, điền sẵn từ lịch đó). Ghi chú dài bị cắt một dòng; người phối hợp xem ở Dòng thời gian.
+Thẻ **Lịch hẹn** liệt kê mọi lịch của KH. Mỗi lịch hôm nay hoặc đã qua có nút **Hẹn tiếp** (tạo lịch hẹn tiếp theo, điền sẵn từ lịch đó). Lịch của năm khác ghi đủ ngày, giờ ở dòng dưới. Cột Kết quả ghi chuyển nhóm của cuộc gặp, "RF" tô màu nhấn khi cuộc gặp tính RF (ví dụ "N3 → N2 · RF"), nhóm giữ nguyên ("Giữ N3") hoặc trạng thái. Ghi chú dài bị cắt một dòng; người phối hợp xem ở Dòng thời gian.
 
 ## KYC Intelligence
 
