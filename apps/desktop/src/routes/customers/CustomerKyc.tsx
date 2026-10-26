@@ -15,11 +15,12 @@ import {
   type Person,
   type StageTransition,
 } from '@p2c/domain';
-import { Button, Segmented, StageBadge } from '@p2c/ui';
+import { Button, Segmented } from '@p2c/ui';
 import { useState, type ReactNode, type Ref } from 'react';
 import { joinParts, t } from '../../i18n';
 import { withTime } from '../appointments/appointment-form';
 import { statusLabel } from '../appointments/appointments-view';
+import { badge } from '../appointments/MetFields';
 import { NextButton } from './CustomerAppointments';
 import {
   factAnchor,
@@ -194,10 +195,6 @@ export function KycCard({
     </section>
   );
 }
-
-const badge = (stage: StageTransition['to']) => (
-  <StageBadge stage={stage} label={t(`stage.${stage}`)} />
-);
 
 /** "tạo KH", "chuyển tay · không tính RF", or "sau cuộc gặp" and whether it counted one RF. */
 function StageCause({ transition }: { transition: StageTransition }) {

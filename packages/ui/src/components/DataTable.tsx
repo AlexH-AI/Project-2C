@@ -28,6 +28,8 @@ interface ColumnBase<Row extends RowData> {
   thenBy?: (row: Row) => string;
   /** Extra classes for a row's cell, e.g. a translucent background kept over the row hover. */
   cellClass?: (row: Row) => string;
+  /** Width class of the column (`w-21`), on its header: a `fixed` table keeps it. */
+  width?: string;
 }
 
 /** A column is text, number or date; the kind decides how it sorts and how it is shown. */
@@ -60,6 +62,13 @@ interface DataTableProps<Row extends RowData> {
   resetKey?: string;
   /** The table, then focusable from code: for the focus of a button gone as it opened the table. */
   ref?: Ref<HTMLTableElement>;
+  /**
+   * Columns keep their `width` whatever their cells hold, and the others share what is left
+   * (`table-layout: fixed`), as in a narrow card of the mockups; else columns fit their content.
+   */
+  fixed?: boolean;
+  /** Cells 6 px from the column's edges instead of 10, as in a narrow card of the mockups. */
+  compact?: boolean;
 }
 
 const features = tableFeatures({
@@ -107,6 +116,8 @@ export function DataTable<Row extends RowData>({
   moreLabels,
   resetKey,
   ref,
+  fixed = false,
+  compact = false,
 }: DataTableProps<Row>) {
   const [limit, setLimit] = useState(SHOW_MORE_STEP);
   const [limitKey, setLimitKey] = useState(resetKey);
@@ -138,6 +149,7 @@ export function DataTable<Row extends RowData>({
     column.align === 'end' ? 'text-right' : 'text-left';
   const align = (column: DataTableColumn<Row>) =>
     `${textAlign(column)} ${column.kind === 'text' ? '' : 'tabular-nums'}`;
+  const inset = compact ? 'px-1.5' : 'px-2.5';
 
   const { visible, foot } = showMore(table.getRowModel().rows, limit);
 
@@ -147,7 +159,7 @@ export function DataTable<Row extends RowData>({
         ref={ref}
         aria-label={label}
         tabIndex={ref ? -1 : undefined}
-        className="w-full border-collapse text-sm"
+        className={`w-full border-collapse text-sm ${fixed ? 'table-fixed' : ''}`}
       >
         <thead>
           <tr>
@@ -160,9 +172,9 @@ export function DataTable<Row extends RowData>({
                   key={column.id}
                   scope="col"
                   aria-sort={canSort ? (sorted ? ARIA_SORT[sorted] : 'none') : undefined}
-                  className={`border-b border-border px-2.5 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap uppercase ${
+                  className={`border-b border-border ${inset} py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap uppercase ${
                     sorted ? 'text-fg-2' : 'text-fg-3'
-                  } ${align(column)}`}
+                  } ${align(column)} ${column.width ?? ''}`}
                 >
                   {canSort ? (
                     <button
@@ -194,7 +206,7 @@ export function DataTable<Row extends RowData>({
               {columns.map((column) => (
                 <td
                   key={column.id}
-                  className={`border-b border-border px-2.5 py-2 align-middle group-last:border-b-0 ${align(column)} ${
+                  className={`border-b border-border ${inset} py-2 align-middle group-last:border-b-0 ${align(column)} ${
                     column.cellClass?.(row.original) ?? ''
                   }`}
                 >

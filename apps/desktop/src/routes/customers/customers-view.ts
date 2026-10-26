@@ -7,6 +7,7 @@ import {
   compareDates,
   formatDate,
   formatIsoDate,
+  isPipelineStage,
   normalizeText,
   parseQuickDate,
   scopeMatcher,
@@ -59,6 +60,25 @@ export function stageSince(
   const since = new Map<string, CalendarDate>();
   for (const transition of transitions) since.set(transition.customerId, transition.date);
   return since;
+}
+
+/**
+ * The day the profile ("từ …") and the 5d dialog ("hiện tại N2 từ …") say the customer entered its
+ * stage: `stageSince` of its own transitions, in recording order. Every customer has its first
+ * transition (spec §3.4).
+ */
+export const profileSince = (
+  customerId: string,
+  transitions: readonly StageTransition[],
+): CalendarDate => stageSince(transitions).get(customerId)!;
+
+/**
+ * Mockup 5d "· hạ nhóm": a move between open stages lifts the customer toward N1 or lowers it
+ * toward N4; null for no move, or when either stage is closed (a close, a reopening).
+ */
+export function stageDirection(from: CustomerStage, to: CustomerStage): 'up' | 'down' | null {
+  if (from === to || !isPipelineStage(from) || !isPipelineStage(to)) return null;
+  return PIPELINE_STAGES.indexOf(to) > PIPELINE_STAGES.indexOf(from) ? 'up' : 'down';
 }
 
 /** The customers in scope, by stage (mockup customers.html). */

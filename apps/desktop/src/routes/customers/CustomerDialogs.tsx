@@ -21,30 +21,31 @@ import {
   PIPELINE_STAGES,
   formatCount,
   formatDate,
+  isPipelineStage,
   normalizeText,
   weekdayOf,
   type CalendarDate,
   type CustomerStage,
   type PipelineStage,
 } from '@p2c/domain';
-import { Button, Choices, Dialog, SelectField, StageBadge, TextField } from '@p2c/ui';
+import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData, useDatabase, useQuery } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
+import { badge } from '../appointments/MetFields';
 import {
   ageOn,
   allowedStages,
   birthLabel,
   parseBirthDate,
   parseRecordDate,
+  stageDirection,
 } from './customers-view';
 
 type Field = 'name' | 're' | 'birth' | 'date' | 'stage' | 'form';
 type Errors = Partial<Record<Field, string>>;
 
 const readRes = (db: Database) => reOptions(listPeople(db), listTeams(db));
-
-const badge = (stage: CustomerStage) => <StageBadge stage={stage} label={t(`stage.${stage}`)} />;
 
 export const ALERT = 'm-0 rounded-md border px-3 py-2';
 
@@ -433,8 +434,9 @@ export function ChangeStageDialog({
 }) {
   const data = useAppData();
   const allowed = allowedStages(customer.stage);
-  const closed = (CLOSED_STAGES as readonly string[]).includes(customer.stage);
+  const closed = !isPipelineStage(customer.stage);
   const [to, setTo] = useState<CustomerStage | null>(null);
+  const direction = to && stageDirection(customer.stage, to);
   const date = useDateField(data.today());
   const [errors, setErrors] = useState<Errors>({});
 
@@ -503,13 +505,18 @@ export function ChangeStageDialog({
         hint={date.hint}
         required
       />
-      <p className={`${ALERT} border-warn`}>
-        <b className="block">{t('stageForm.noRfTitle')}</b>
-        {t('stageForm.noRfBody')}
-      </p>
+      {/* Mockup 5d; not 5e: a closed customer reopens, which its help says counts no RF, or moves
+          to the other closed stage. */}
+      {!closed && (
+        <p className={`${ALERT} border-warn`}>
+          <b className="block">{t('stageForm.noRfTitle')}</b>
+          {t('stageForm.noRfBody')}
+        </p>
+      )}
       {to && (
         <p className="m-0 flex items-center gap-1.5">
           {t('stageForm.after')} {badge(customer.stage)} {t('sep.arrow')} {badge(to)}
+          {direction && ` ${t('sep.dot')} ${t(`stageForm.${direction}`)}`}
         </p>
       )}
     </Dialog>

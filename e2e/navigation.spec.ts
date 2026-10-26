@@ -123,7 +123,9 @@ test('the exe gives its title bar the name of the screen too, which Tauri does n
 test('a screen opened from one scrolled down shows from its top; back on Customers, the row just seen (DR6-81)', async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
+  // The lowest window (tauri.conf.json minHeight): in a 900 px one the profile opened below is
+  // taller by less than 200 px since its appointments keep one line each (review of PR 838).
+  await page.setViewportSize({ width: 1440, height: 700 });
   await page.goto('/#/customers');
   const scrollY = () => page.evaluate(() => window.scrollY);
   const lastCustomer = async () => {

@@ -13,6 +13,7 @@ import { t } from '../../i18n';
 import { LOCKED, personLabel, reviewerChoices } from './appointments-view';
 import { readCaseSize, stageAfterChoices, type OutcomeError } from './outcome-form';
 
+/** A stage as its badge, named by i18n: the one helper of the dialogs and the profile (T-298). */
 export const badge = (stage: CustomerStage) => (
   <StageBadge stage={stage} label={t(`stage.${stage}`)} />
 );
@@ -36,6 +37,16 @@ export const metDraftOf = (a: AppointmentRecord): MetDraft => ({
   nextStep: a.nextStep ?? '',
   caseSize: a.expectedCaseSize === null ? '' : formatVnd(a.expectedCaseSize),
 });
+
+/**
+ * What a case size typed reads as (mockups 6c, 6d): "800.000.000 ₫ (800 tr)", the full form alone
+ * when the compact one is the same, under a million (as `kycAmountRead`).
+ */
+export function caseSizeRead(amount: number): string {
+  const full = formatVnd(amount);
+  const compact = formatVndCompact(amount);
+  return compact === full ? full : t('outcome.caseSizeRead', { amount: full, compact });
+}
 
 /**
  * Stage after, reviewer (D9), next step and case size of a met meeting. `from` is the stage the
@@ -133,15 +144,10 @@ export function MetFields({
               )
             : undefined
         }
-        hint={
-          size?.ok
-            ? t('outcome.caseSizeRead', {
-                amount: formatVnd(size.amount),
-                compact: formatVndCompact(size.amount),
-              })
-            : undefined
-        }
+        hint={size?.ok ? caseSizeRead(size.amount) : undefined}
       />
+      {/* Mockup 6d: how a mark reads, for every case size typed. */}
+      <span className="-mt-2 text-xs text-fg-3">{t('outcome.caseSizeHelp')}</span>
     </>
   );
 }

@@ -50,7 +50,7 @@ Bấm tên KH (trong bảng hoặc khung Trong ngày) để mở **Chi tiết l�
 ![Hộp Lịch hẹn mới](img/03-dat-lich.png)
 
 1. Bấm **+ Lịch hẹn** (ở màn Lịch hẹn, hoặc ở Hồ sơ KH để điền sẵn KH).
-2. **Khách hàng**: gõ tên hoặc mã KH, chọn trong danh sách. Hộp hiện lần gặp thứ mấy và **Các lần hẹn trước** của KH; **Đổi KH** để chọn lại.
+2. **Khách hàng**: gõ tên hoặc mã KH, chọn trong danh sách. Hộp hiện lần gặp thứ mấy và **Các lần hẹn trước** của KH: 5 lịch mới nhất tới hôm nay, mỗi lịch một dòng ngày, trạng thái, nhóm trước → sau của cuộc gặp, ghi chú; **Đổi KH** để chọn lại.
 3. **RE**: RE phụ trách cuộc hẹn. Lịch hẹn và chỉ số tính cho RE này.
 4. **Ngày (dd/mm)**: gõ ví dụ `20/9`; dòng dưới đọc lại thứ, ngày và "hôm nay" / "… ngày nữa". **Giờ (hh:mm, không bắt buộc)**.
 5. **Trigger**: lý do có cuộc hẹn (Giới thiệu từ KH, Đáo hạn tài sản, Hội thảo / sự kiện, Sinh nhật, dịp đặc biệt, Khác). Bắt buộc; "—" là chưa chọn. **Mô tả trigger** không bắt buộc.
@@ -75,7 +75,7 @@ Lịch có ngày đã qua mà chưa ghi kết quả nằm ở nhóm **Chưa ghi 
    - **Nhóm sau cuộc gặp** (bắt buộc): nhóm của KH sau buổi gặp; nhóm hiện tại có chữ "giữ nguyên". Hộp cho biết lần chuyển này có **tính RF** không: RF chỉ tính khi KH đi từ N4 / N3 lên N2 / N1.
    - **Người đánh giá kết quả (không bắt buộc)**: người quyết định nhóm sau cuộc gặp (IS, TL, BDM hoặc BD).
    - **Việc tiếp theo** (bắt buộc).
-   - **Case size dự kiến (để trống = chưa ước lượng)**: gõ như `800tr`, `1,2 tỷ` hoặc `500.000.000`.
+   - **Case size dự kiến (để trống = chưa ước lượng)**: gõ như `800tr`, `1,2 tỷ` hoặc `500.000.000`. Dấu phẩy hay dấu chấm theo sau đúng 3 chữ số là dấu ngăn nghìn, kể cả khi có đơn vị: `1,234 tr` là 1.234.000.000 ₫ (câu này cũng ở dưới ô); muốn 1,2 triệu thì gõ `1,2 tr`.
 4. **Ghi chú cuộc gặp**: không phải ghi chú KYC. Muốn lưu thông tin KH vào KYC, bấm **+ Ghi chú KYC từ cuộc gặp này** (hộp Ghi chú KYC mở với chữ và ngày điền sẵn, xem [5. Hồ sơ KH](05-ho-so-kh.md#ghi-chú-kyc)).
 5. Bấm **Lưu kết quả**.
 
@@ -86,7 +86,7 @@ Hủy và Không đến không có nhóm sau cuộc gặp, việc tiếp theo ha
 Có hai cách đặt lần gặp kế tiếp, cùng KH, người phối hợp và trigger, với RE là RE đang phụ trách KH (khác RE của lịch cũ khi KH đã đổi RE sau lịch đó):
 
 - Lúc ghi kết quả: đánh dấu **Hẹn lần tiếp theo**, điền **Ngày hẹn tiếp (dd/mm)** và **Giờ hẹn tiếp**, rồi bấm **Lưu kết quả + tạo lịch**. Một lần bấm ghi kết quả và tạo lịch mới.
-- Sau đó: bấm **Tạo lịch hẹn tiếp theo** ở chi tiết lịch, hoặc **Hẹn tiếp** / **Hẹn tiếp →** ở Hồ sơ KH. Hộp **Lịch hẹn tiếp theo** điền sẵn từ lịch cũ, sửa được; ngày phải từ hôm nay trở đi. Bấm **Tạo lịch hẹn**.
+- Sau đó: bấm **Tạo lịch hẹn tiếp theo** ở chi tiết lịch, hoặc **Hẹn tiếp** / **Hẹn tiếp →** ở Hồ sơ KH. Hộp **Lịch hẹn tiếp theo** điền sẵn từ lịch cũ, sửa được (không có khối Các lần hẹn trước); ngày phải từ hôm nay trở đi. Bấm **Tạo lịch hẹn**.
 
 ## Dời lịch
 
@@ -105,7 +105,7 @@ Ngày mới phải từ hôm nay trở đi. Gõ một ngày đã qua, hộp hi�
 
 Lịch đã có kết quả (Đã gặp, Hủy, Không đến): mở chi tiết, bấm **Sửa kết quả**. Hộp **Sửa kết quả cuộc gặp** cho sửa các ô của kết quả, giờ, trigger; bấm **Lưu**.
 
-Nếu nhóm của KH đã đổi tiếp sau cuộc gặp này, hộp khóa ba ô trạng thái, ngày cuộc hẹn và nhóm sau cuộc gặp (có dấu 🔒) và nói rõ lần đổi nhóm sau đó. Muốn chỉnh nhóm hiện tại, dùng **Chuyển nhóm** ở Hồ sơ KH (xem [4. Khách hàng](04-khach-hang.md#chuyển-nhóm-tay)).
+Nếu nhóm của KH đã đổi tiếp sau cuộc gặp này, hộp khóa ba ô trạng thái, ngày cuộc hẹn và nhóm sau cuộc gặp (viền đứt, có dấu 🔒) và nói rõ lần đổi nhóm sau đó. Muốn chỉnh nhóm hiện tại, dùng **Chuyển nhóm** ở Hồ sơ KH (xem [4. Khách hàng](04-khach-hang.md#chuyển-nhóm-tay)).
 
 ## Xóa lịch hẹn
 

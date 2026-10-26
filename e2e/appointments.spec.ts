@@ -208,6 +208,29 @@ test('with a custom range, days outside it cannot be picked', async ({ page }) =
   await expect(calendar.getByRole('button', { name: /^21\/09\/2026:/ })).toHaveCount(0);
 });
 
+// #156: a day that cannot be picked still tells a screen reader its appointments, as a day does.
+test('a day outside the month or the range is named with its count, not hidden', async ({
+  page,
+}) => {
+  const { calendar, kinds } = screen(page);
+  // September 2026 starts on a Tuesday: its first week shows Monday 31/08.
+  await expect(calendar.getByRole('img', { name: /^31\/08\/2026: \d+ lịch hẹn/ })).toBeVisible();
+
+  await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
+  await page.getByRole('textbox', { name: 'Từ ngày' }).fill('10/09/2026');
+  await page.getByRole('textbox', { name: 'Đến ngày' }).fill('20/09/2026');
+  await page.getByRole('textbox', { name: 'Đến ngày' }).press('Enter');
+  const outside = calendar.getByRole('img', { name: /^21\/09\/2026: / });
+  await expect(outside).toBeVisible();
+  // Its count is the day's: the same as once the range holds it.
+  const name = (await outside.getAttribute('aria-label')) ?? '';
+  await page.getByRole('textbox', { name: 'Đến ngày' }).fill('21/09/2026');
+  await page.getByRole('textbox', { name: 'Đến ngày' }).press('Enter');
+  await expect(calendar.getByRole('button', { name: /^21\/09\/2026: / })).toHaveAccessibleName(
+    name,
+  );
+});
+
 const ACCENT = 'rgb(217, 178, 106)';
 const DATE_TODAY = 'rgb(155, 232, 192)';
 const PERIOD_BAND = 'rgba(217, 178, 106, 0.08)';
@@ -265,7 +288,7 @@ test('a custom range bands its days, not the others', async ({ page }) => {
 
   const inside = calendar.getByRole('button', { name: /^11\/09\/2026:/ });
   expect(await css(inside, 'background-color')).toBe(PERIOD_BAND);
-  const outside = calendar.locator('[aria-hidden="true"]').filter({ hasText: /^21$/ });
+  const outside = calendar.getByRole('img', { name: /^21\/09\/2026:/ });
   expect(await css(outside, 'background-color')).not.toBe(PERIOD_BAND);
 });
 
@@ -471,9 +494,8 @@ test('the next appointment from a past one is filled in and must be from today o
   await expect(f.date).toHaveValue(date.slice(0, 5));
   await expect(f.trigger).not.toHaveValue('');
   await expect(f.dialog).toContainText(`${date} đã qua`);
-  // The history shows at most five earlier appointments, newest first.
-  await expect(f.history.getByRole('listitem')).not.toHaveCount(0);
-  expect(await f.history.getByRole('listitem').count()).toBeLessThanOrEqual(5);
+  // Filled in from a past one, the dialog shows no history (mockup 6h, #163).
+  await expect(f.history).toHaveCount(0);
 
   await f.create.click();
   await expect(f.dialog).toBeVisible();

@@ -61,9 +61,9 @@ export const STATUS_TONE = {
 export const FOCUS = 'focus-visible:outline-2 focus-visible:outline-accent';
 /** A card of the Appointments screen: the calendar, the year, the day, the list, a detail. */
 export const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
-/** A field shown but locked (mockup 6f `.input.locked`). */
+/** A field shown but locked (mockup 6f `.input.locked`: not operable, so dashed --border-strong). */
 export const LOCKED =
-  'm-0 flex items-center gap-1.5 rounded-md border border-border bg-surface-2 px-2.5 py-1.5 text-fg-2 tabular-nums';
+  'm-0 flex items-center gap-1.5 rounded-md border border-dashed border-border-strong bg-surface-2 px-2.5 py-1.5 text-fg-2 tabular-nums';
 /** An action written as a link in running text or a table ("Hẹn tiếp", "Xem tất cả"). */
 export const LINK = `cursor-pointer rounded-sm text-accent hover:underline ${FOCUS}`;
 
@@ -93,9 +93,11 @@ export const DATE_TONE_CELL = {
   future: 'bg-date-future-bg',
 } as const satisfies Record<DateTone, string>;
 
+/** The colour of "Chưa ghi kết quả", as its badge or as text. */
+export const UNRECORDED_TONE = 'text-appt-unrecorded';
+
 /** The "Chưa ghi kết quả" badge (mockup overview.html part 2 `.badge.plain.unrec`). */
-const UNRECORDED_BADGE =
-  'rounded-full border border-current px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-appt-unrecorded';
+const UNRECORDED_BADGE = `rounded-full border border-current px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${UNRECORDED_TONE}`;
 
 /**
  * The "Trạng thái" column: a scheduled appointment before today says no outcome is recorded yet,
