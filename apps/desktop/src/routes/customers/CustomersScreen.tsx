@@ -261,7 +261,7 @@ function Card({ card }: { card: CustomerCard }) {
   return (
     <a
       href={profileHref(card)}
-      className="flex flex-col gap-1 rounded-md border border-border bg-surface-2 px-2.5 py-2 text-sm hover:border-border-strong focus-visible:outline-2 focus-visible:outline-accent"
+      className={`flex flex-col gap-1 rounded-md border border-border bg-surface-2 px-2.5 py-2 text-sm hover:border-border-strong ${FOCUS}`}
     >
       <span className="flex items-center justify-between gap-1.5">
         <b className="truncate font-semibold">{card.customer.name}</b>

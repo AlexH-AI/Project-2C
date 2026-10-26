@@ -4,6 +4,7 @@ import { NavIcon, type NavIconName } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import type { SaveStatus } from '../data/persist-queue';
 import { t } from '../i18n';
+import { FOCUS } from '../routes/classes';
 import { SECTIONS, routeToHash, type Section } from './routes';
 
 const ICONS: Record<Section, NavIconName> = {
@@ -43,7 +44,7 @@ export function Sidebar({ current }: { current: Section }) {
               <a
                 href={routeToHash({ screen: section })}
                 aria-current={active ? 'page' : undefined}
-                className={`flex items-center gap-2.5 rounded-sm px-2.5 py-2 focus-visible:outline-2 focus-visible:outline-accent ${
+                className={`flex items-center gap-2.5 rounded-sm px-2.5 py-2 ${FOCUS} ${
                   active
                     ? 'bg-accent-soft font-semibold text-accent'
                     : 'text-fg-2 hover:bg-surface-3 hover:text-fg'

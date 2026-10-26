@@ -10,7 +10,7 @@ import {
 } from '@p2c/ui';
 import { useAppData, useQuery, useToday } from '../data/AppDataContext';
 import { t } from '../i18n';
-import { ALERT, SECTION } from './classes';
+import { ALERT, FOCUS, SETTINGS_SECTION } from './classes';
 import { ConfirmWordDialog } from './ConfirmWordDialog';
 import { policyStatusText } from './customers/policy-form';
 import { RestoreDialog } from './RestoreDialog';
@@ -310,7 +310,7 @@ export function TrashSection() {
   }, [notice]);
 
   return (
-    <section aria-labelledby="trash-title" className={SECTION}>
+    <section aria-labelledby="trash-title" className={SETTINGS_SECTION}>
       <div className="mb-1 flex items-baseline gap-2">
         <h2 id="trash-title" className="m-0 text-sm font-medium text-heading">
           {t('trash.title')}
@@ -356,7 +356,7 @@ export function TrashSection() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               autoComplete="off"
-              className="min-w-56 flex-1 rounded-md border border-border-control bg-surface-0 px-2 py-1.5 text-sm text-fg placeholder:text-fg-3 focus-visible:outline-2 focus-visible:outline-accent"
+              className={`min-w-56 flex-1 rounded-md border border-border-control bg-surface-0 px-2 py-1.5 text-sm text-fg placeholder:text-fg-3 ${FOCUS}`}
             />
           </div>
           {shown.length === 0 ? (

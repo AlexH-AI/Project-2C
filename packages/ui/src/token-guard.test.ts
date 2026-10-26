@@ -93,6 +93,7 @@ describe('findHardcodedSeparators', () => {
       "['✓', 'text-ok', '○']",
       '{name} ×',
       "{open ? '▾' : '▸'}",
+      "{from ?? '—'}",
       "names.join(', ')",
       "names.join(t('sep.list'))",
       "parts.join('')",
@@ -103,13 +104,14 @@ describe('findHardcodedSeparators', () => {
       { line: 2, match: '×', rule: 'hardcoded-mark' },
       { line: 3, match: '▾', rule: 'hardcoded-mark' },
       { line: 3, match: '▸', rule: 'hardcoded-mark' },
-      { line: 4, match: ".join(', ')", rule: 'hardcoded-separator' },
+      { line: 4, match: '—', rule: 'hardcoded-mark' },
+      { line: 5, match: ".join(', ')", rule: 'hardcoded-separator' },
     ]);
   });
 
   it('lets comments use them', () => {
     const source = [
-      '/** Kanban N4 → N1 · closed beside. */',
+      '/** Kanban N4 → N1 · closed beside, "—" when empty. */',
       '/**',
       ' * Mockup 6c → 7a',
       ' */',

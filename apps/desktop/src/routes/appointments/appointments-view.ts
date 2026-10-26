@@ -68,7 +68,7 @@ export function outcomeText(outcome: Outcome): string {
   switch (outcome.kind) {
     case 'move': {
       const move = t('appointments.move', {
-        from: outcome.from ? t(`stage.${outcome.from}`) : '—',
+        from: outcome.from ? t(`stage.${outcome.from}`) : t('appointments.none'),
         to: t(`stage.${outcome.to}`),
       });
       return outcome.rf ? joinParts([move, t('appointments.rf')]) : move;

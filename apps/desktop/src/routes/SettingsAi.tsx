@@ -19,7 +19,7 @@ import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import type { OpenCodeClient } from '../data/ai-tauri';
 import { t } from '../i18n';
-import { ALERT, SECTION } from './classes';
+import { ALERT, SETTINGS_SECTION } from './classes';
 import { errorText } from './ai-error-view';
 import {
   checkKey,
@@ -35,7 +35,7 @@ import {
 } from './settings-ai-view';
 
 /** A section of Cài đặt → AI: its rows one under the other. */
-const AI_SECTION = `${SECTION} flex flex-col gap-3 text-sm`;
+const AI_SECTION = `${SETTINGS_SECTION} flex flex-col gap-3 text-sm`;
 const HEADING = 'm-0 text-sm font-medium text-heading';
 const BADGE = 'rounded-full border border-current px-2 py-0.5 text-xs font-semibold';
 
