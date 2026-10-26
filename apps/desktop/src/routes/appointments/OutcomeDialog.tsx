@@ -14,13 +14,15 @@ import { Choices, Dialog, TextField } from '@p2c/ui';
 import { useAppData, useQuery, useTables } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
-import { Actions, ALERT, FailureAlert, useSaveFailure } from '../customers/CustomerDialogs';
+import { ALERT, LINK } from '../classes';
+import { Actions, FailureAlert, useSaveFailure } from '../customers/CustomerDialogs';
 import { KycNoteDialog } from '../customers/KycDialogs';
+import { stageBadge } from '../stage-badge';
 import { dateFieldError, dateReading } from './AppointmentDialog';
-import { badge, EMPTY_MET, MetFields } from './MetFields';
+import { EMPTY_MET, MetFields } from './MetFields';
 import { RescheduleFields, useRescheduleForm, whenText } from './RescheduleFields';
 import { parseTime, readScheduleDate } from './appointment-form';
-import { LINK, type AppointmentRow } from './appointments-view';
+import type { AppointmentRow } from './appointments-view';
 import {
   heldStage,
   meetingDay,
@@ -285,7 +287,7 @@ export function DayLockNote({
       {change?.from && (
         <span className="flex flex-wrap items-center gap-1 tabular-nums">
           {t('outcome.dayLockChange', { date: formatDate(change.date) })}
-          {badge(change.from)} {t('sep.arrow')} {badge(change.to)}
+          {stageBadge(change.from)} {t('sep.arrow')} {stageBadge(change.to)}
         </span>
       )}
       {!change && meeting && (

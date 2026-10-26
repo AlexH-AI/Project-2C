@@ -4,8 +4,9 @@ import { formatDayMonth, isRfTransition, type StageTransition } from '@p2c/domai
 import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
-import { ALERT, FailureAlert } from '../customers/CustomerDialogs';
-import { badge } from './MetFields';
+import { ALERT } from '../classes';
+import { FailureAlert } from '../customers/CustomerDialogs';
+import { stageBadge } from '../stage-badge';
 import { whenText } from './RescheduleFields';
 import { statusLabel } from './appointments-view';
 
@@ -92,7 +93,7 @@ function undoneFacts(caused: StageTransition | undefined): [string, ReactNode][]
       t('appointmentDelete.stage'),
       move ? (
         <>
-          {badge(move.to)} {t('appointmentDelete.back')} {badge(move.from)}{' '}
+          {stageBadge(move.to)} {t('appointmentDelete.back')} {stageBadge(move.from)}{' '}
           {t('appointmentDelete.undo', { date: formatDayMonth(move.date) })}
         </>
       ) : (

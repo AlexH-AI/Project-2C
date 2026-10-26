@@ -8,7 +8,13 @@ import {
 } from '@p2c/domain';
 import { t } from '../../i18n';
 import type { ViewingText } from '../overview/overview-view';
-import { REPORT_STAGES, type ReportFigures, type ReportRow, type ReportRows } from './reports-view';
+import {
+  REPORT_COLUMNS,
+  REPORT_GROUPS,
+  type ReportColumn,
+  type ReportRow,
+  type ReportRows,
+} from './reports-view';
 
 /** What the first row of every sheet says besides the table's name. */
 export interface ReportWorkbookMeta {
@@ -27,52 +33,15 @@ interface Sheet {
   readonly total?: ReportRow;
 }
 
-interface Column {
-  readonly label: string;
-  /** Null leaves the cell empty, where the screen shows "—". */
-  readonly value: (figures: ReportFigures) => number | null;
-  readonly numFmt?: string;
-}
+/** The number format of a figure Excel shows otherwise than as a count: money in đồng, a %. */
+const NUM_FMT: Partial<Record<ReportColumn['format'], string>> = {
+  money: '#,##0',
+  percent: '0.0%',
+};
 
-const MONEY = '#,##0';
-const PERCENT = '0.0%';
-
-const appointment = (key: keyof ReportFigures['appointments']) => (figures: ReportFigures) =>
-  figures.appointments[key];
-const result =
-  (key: 'rfCount' | 'submittedCount' | 'caseSize' | 'issuedCount' | 'revenue') =>
-  (figures: ReportFigures) =>
-    figures.metrics?.[key] ?? null;
-const money = (label: string) => t('reports.excel.money', { label });
-
-/** The 17 figure columns of the screen (`reportCells`), as numbers Excel can add up. */
-const COLUMNS: readonly Column[] = [
-  { label: t('reports.col.met'), value: appointment('met') },
-  { label: t('reports.col.missed'), value: appointment('missed') },
-  { label: t('reports.col.unrecorded'), value: appointment('unrecorded') },
-  { label: t('reports.col.planned'), value: appointment('planned') },
-  { label: t('reports.col.total'), value: appointment('total') },
-  { label: t('overview.kpi.rf'), value: result('rfCount') },
-  { label: t('overview.kpi.submitted'), value: result('submittedCount') },
-  { label: money(t('overview.kpi.caseSize')), value: result('caseSize'), numFmt: MONEY },
-  { label: t('overview.kpi.issued'), value: result('issuedCount') },
-  { label: money(t('overview.kpi.revenue')), value: result('revenue'), numFmt: MONEY },
-  {
-    label: t('overview.kpi.closeRate'),
-    value: ({ metrics }) =>
-      metrics?.closeRate ? metrics.closeRate.numerator / metrics.closeRate.denominator : null,
-    numFmt: PERCENT,
-  },
-  ...REPORT_STAGES.map((stage) => ({
-    label: t(`stage.${stage}`),
-    value: ({ stages }: ReportFigures) => stages?.[stage] ?? null,
-  })),
-];
-const GROUPS = [
-  { label: t('reports.group.appointments'), span: 5 },
-  { label: t('reports.group.results'), span: 6 },
-  { label: t('reports.group.stages'), span: 6 },
-];
+/** The screen's heading of a column (`REPORT_COLUMNS`); money says it is in đồng. */
+const heading = ({ label, format }: ReportColumn) =>
+  format === 'money' ? t('reports.excel.money', { label }) : label;
 
 const LEAD_HEADERS: Record<TableKey, readonly string[]> = {
   summary: [t('reports.col.scope')],
@@ -120,24 +89,24 @@ function addSheet(workbook: ExcelJS.Workbook, sheet: Sheet, meta: ReportWorkbook
   });
   worksheet.columns = [
     ...leads.map(() => ({ width: NAME_WIDTH })),
-    ...COLUMNS.map(() => ({ width: FIGURE_WIDTH })),
+    ...REPORT_COLUMNS.map(() => ({ width: FIGURE_WIDTH })),
   ];
   worksheet.getCell(1, 1).value = t('reports.excel.title', { table: name, ...meta });
 
-  let column = leads.length + 1;
-  for (const group of GROUPS) {
+  for (const group of REPORT_GROUPS) {
+    const column = leads.length + group.first + 1;
     worksheet.getCell(2, column).value = group.label;
     worksheet.mergeCells(2, column, 2, column + group.span - 1);
-    column += group.span;
   }
   worksheet.getRow(2).font = { bold: true };
-  const header = worksheet.addRow([...leads, ...COLUMNS.map((each) => each.label)]);
+  const header = worksheet.addRow([...leads, ...REPORT_COLUMNS.map(heading)]);
   header.font = { bold: true };
 
   const addFigures = (row: ReportRow, names: readonly string[]) => {
-    const added = worksheet.addRow([...names, ...COLUMNS.map((each) => each.value(row))]);
-    COLUMNS.forEach((each, index) => {
-      if (each.numFmt) added.getCell(leads.length + index + 1).numFmt = each.numFmt;
+    const added = worksheet.addRow([...names, ...REPORT_COLUMNS.map((each) => each.value(row))]);
+    REPORT_COLUMNS.forEach((each, index) => {
+      const numFmt = NUM_FMT[each.format];
+      if (numFmt) added.getCell(leads.length + index + 1).numFmt = numFmt;
     });
     return added;
   };

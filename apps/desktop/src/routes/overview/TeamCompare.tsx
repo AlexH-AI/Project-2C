@@ -1,5 +1,6 @@
 import { Fragment, useState } from 'react';
 import { t } from '../../i18n';
+import { PANEL } from '../classes';
 import type { CompareRow, TeamCompareView } from './team-compare-view';
 
 const HEADERS = [
@@ -37,10 +38,7 @@ export function TeamCompare({ view, mtd }: { view: TeamCompareView; mtd: boolean
   const title = t('overview.compare.title');
 
   return (
-    <section
-      aria-label={title}
-      className="flex flex-col gap-3 rounded-md border border-border bg-surface-1 px-3.5 py-3"
-    >
+    <section aria-label={title} className={PANEL}>
       <div className="flex flex-wrap items-baseline gap-2">
         <h2 className="m-0 text-sm font-medium text-heading">{title}</h2>
         {view.range && (
@@ -88,7 +86,7 @@ export function TeamCompare({ view, mtd }: { view: TeamCompareView; mtd: boolean
                         aria-hidden="true"
                         className={`inline-block w-3.5 ${expanded ? 'text-accent' : 'text-fg-3'}`}
                       >
-                        {expanded ? '▾' : '▸'}
+                        {t(expanded ? 'overview.compare.expanded' : 'overview.compare.collapsed')}
                       </span>
                       {team.name}
                     </button>

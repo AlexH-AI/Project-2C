@@ -12,7 +12,9 @@ import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
 import { routeToHash } from '../../shell/routes';
-import { Actions, ALERT, FailureAlert, useSaveFailure } from '../customers/CustomerDialogs';
+import { ALERT, FOCUS, LINK } from '../classes';
+import { Actions, FailureAlert, useSaveFailure } from '../customers/CustomerDialogs';
+import { stageBadge } from '../stage-badge';
 import {
   dayText,
   MAX_HISTORY,
@@ -25,15 +27,7 @@ import {
   type PriorMeetings,
   type ScheduleDate,
 } from './appointment-form';
-import {
-  FOCUS,
-  LINK,
-  personLabel,
-  STATUS_TONE,
-  statusLabel,
-  type AppointmentData,
-} from './appointments-view';
-import { badge } from './MetFields';
+import { personLabel, STATUS_TONE, statusLabel, type AppointmentData } from './appointments-view';
 
 const CHIP = 'cursor-pointer rounded-md border border-border bg-surface-2 px-2 py-0.5 text-xs';
 const MATCHES = 6;
@@ -235,7 +229,7 @@ export function CoordinatorsField({
               className={`${CHIP} ${FOCUS}`}
               onClick={() => onChange(ids.filter((id) => id !== person.id))}
             >
-              {personLabel(person)} ×
+              {personLabel(person)} {t('appointmentForm.coordinatorRemoveMark')}
             </button>
           ))}
         </div>
@@ -339,7 +333,7 @@ function CustomerField({
         <p className="m-0 flex flex-wrap items-center gap-2">
           <b>{customer.name}</b>
           <span className="text-fg-3 tabular-nums">{customer.code}</span>
-          {badge(customer.stage)}
+          {stageBadge(customer.stage)}
           {!fixed && (
             <button
               type="button"
@@ -391,7 +385,7 @@ function CustomerField({
               >
                 <b>{match.name}</b>
                 <span className="text-fg-3 tabular-nums">{match.code}</span>
-                {badge(match.stage)}
+                {stageBadge(match.stage)}
               </button>
             </li>
           ))}
@@ -448,9 +442,9 @@ function History({
               {outcome?.kind === 'move' && (
                 <>
                   <span>{t('sep.dot')}</span>
-                  {outcome.from && badge(outcome.from)}
+                  {outcome.from && stageBadge(outcome.from)}
                   {outcome.from && <span>{t('sep.arrow')}</span>}
-                  {badge(outcome.to)}
+                  {stageBadge(outcome.to)}
                 </>
               )}
               {outcome?.kind === 'keep' && (
@@ -458,7 +452,7 @@ function History({
                   <span>
                     {t('sep.dot')} {t('appointmentForm.historyKeep')}
                   </span>
-                  {badge(outcome.stage)}
+                  {stageBadge(outcome.stage)}
                 </>
               )}
               {a.note && (

@@ -12,6 +12,7 @@ import {
   rescheduleReason,
   searchCustomers,
   withTime,
+  writtenDay,
 } from './appointment-form';
 
 const d = (day: number, month: number, year: number) => calendarDate(year, month, day);
@@ -172,6 +173,15 @@ describe('dayText', () => {
     expect(dayText(d(20, 9, 2026), TODAY)).toBe('20/09');
     expect(dayText(d(5, 11, 2025), TODAY)).toBe('05/11/2025');
     expect(dayText(d(3, 1, 2027), TODAY)).toBe('03/01/2027');
+  });
+});
+
+describe('writtenDay', () => {
+  // The Lịch hẹn card of a profile puts the time of a day written with its year under it (T-298).
+  it('is `dayText`, and says whether it wrote the year', () => {
+    expect(writtenDay(d(20, 9, 2026), TODAY)).toEqual({ text: '20/09', withYear: false });
+    expect(writtenDay(d(5, 11, 2025), TODAY)).toEqual({ text: '05/11/2025', withYear: true });
+    expect(writtenDay(d(3, 1, 2027), TODAY)).toEqual({ text: '03/01/2027', withYear: true });
   });
 });
 

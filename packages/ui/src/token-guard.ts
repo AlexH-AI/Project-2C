@@ -1,5 +1,8 @@
-/** A styling that bypasses the ADR-0013 tokens, or a separator written in place of `sep.*`. */
-export interface TokenViolation {
+/**
+ * A styling that bypasses the ADR-0013 tokens, or a separator or mark written in place of i18n
+ * (`sep.*`, a key of `vi.ts`).
+ */
+interface TokenViolation {
   line: number;
   match: string;
   rule:
@@ -9,7 +12,8 @@ export interface TokenViolation {
     | 'inline-style'
     | 'arbitrary-value'
     | 'default-palette'
-    | 'hardcoded-separator';
+    | 'hardcoded-separator'
+    | 'hardcoded-mark';
 }
 
 const PALETTE =
@@ -42,8 +46,9 @@ export function findTokenViolations(source: string): TokenViolation[] {
 }
 
 /**
- * Finds a `·` or `→` written into app code: the app joins parts through i18n (`sep.*`), so the
- * marks live in `vi.ts` only. Comments may use them.
+ * Finds a `·` or `→`, a list joined by `', '`, or a mark (`✓ ○ × ▾ ▸`, DR6-37) written into app
+ * code: the app joins parts through i18n (`sep.*`) and takes its marks from it, so they live in
+ * `vi.ts` only. Comments may use them.
  */
 export function findHardcodedSeparators(source: string): TokenViolation[] {
   const violations: TokenViolation[] = [];
@@ -69,8 +74,11 @@ export function findHardcodedSeparators(source: string): TokenViolation[] {
         rest = '';
       }
     }
-    for (const found of code.matchAll(/[·→]/g)) {
+    for (const found of code.matchAll(/[·→]|\.join\((['"])[,;] \1\)/g)) {
       violations.push({ line: index + 1, match: found[0], rule: 'hardcoded-separator' });
+    }
+    for (const found of code.matchAll(/[✓○×▾▸]/g)) {
+      violations.push({ line: index + 1, match: found[0], rule: 'hardcoded-mark' });
     }
   });
   return violations;

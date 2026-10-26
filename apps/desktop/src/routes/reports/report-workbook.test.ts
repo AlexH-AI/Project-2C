@@ -1,7 +1,10 @@
 import ExcelJS from 'exceljs';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { calendarDate, customPeriod, periodOf } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import { viewingText } from '../overview/overview-view';
+import { ReportTable } from './ReportTable';
 import {
   buildReportWorkbook,
   exportFailedHelp,
@@ -128,6 +131,37 @@ describe('buildReportWorkbook', () => {
     expect(sheet.getRow(6).getCell(1).value).toBe('Tổng');
     expect(sheet.getRow(6).font?.bold).toBe(true);
     expect(sheet.rowCount).toBe(6);
+  });
+
+  // DR6-67: the table of the screen and the sheet read one list of columns, so neither adds, drops
+  // or moves a column alone.
+  it('has the columns and groups of the table on screen, in its order', async () => {
+    const sheet = (await read(ALL)).getWorksheet('Theo team')!;
+    const html = renderToStaticMarkup(
+      createElement(ReportTable, { label: 'Theo team', lead: 'team', ...ALL.byTeam! }),
+    );
+    const headers = (scope: string) =>
+      [...html.matchAll(new RegExp(`<th([^>]*)scope="${scope}"[^>]*>([^<]*)</th>`, 'g'))].map(
+        ([, attributes = '', text]) => ({
+          text,
+          span: Number(/colspan="(\d+)"/i.exec(attributes)?.[1] ?? 1),
+        }),
+      );
+    const groups: { text: string; span: number }[] = [];
+    for (let column = 2; column <= sheet.columnCount; column++) {
+      const cell = sheet.getCell(2, column);
+      const last = groups.at(-1);
+      // A merged cell past the first is the first one's.
+      if (last && cell.master.address !== cell.address) last.span++;
+      else groups.push({ text: cell.text, span: 1 });
+    }
+
+    expect(groups).toEqual(headers('colgroup'));
+    expect(
+      (sheet.getRow(3).values as unknown[])
+        .slice(1)
+        .map((label) => String(label).replace(' (₫)', '')),
+    ).toEqual(headers('col').map(({ text }) => text));
   });
 
   it('keeps real numbers: money in đồng, the close rate as a percentage', async () => {

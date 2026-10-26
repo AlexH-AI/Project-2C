@@ -16,12 +16,13 @@ export type ColumnSorting =
 type Sorted = false | 'asc' | 'desc';
 
 /**
- * The header of `column`: a button that sorts, its `aria-sort` and arrow saying how the table is
- * sorted by it now, or the text of a column that does not sort.
+ * The header of `column`: a `button` that sorts, its `aria-sort` and arrow saying how the table is
+ * sorted by it now, or the `label` of a column that does not sort. Not a column's `kind` (text,
+ * number, date), which `DataTable` reads next to it (review of PR 843).
  */
 type HeaderCell<Column> = { column: Column } & (
-  | { kind: 'sort'; ariaSort: 'none' | 'ascending' | 'descending'; arrow: '↕' | '↑' | '↓' }
-  | { kind: 'text'; hidden: boolean }
+  | { kind: 'button'; ariaSort: 'none' | 'ascending' | 'descending'; arrow: '↕' | '↑' | '↓' }
+  | { kind: 'label'; hidden: boolean }
 );
 
 const SORT_STATE = {
@@ -46,8 +47,8 @@ export function tableView<Column extends ColumnSorting & { id: string }, Row>(
   return {
     headers: columns.map((column) =>
       sorts(column)
-        ? { column, kind: 'sort', ...SORT_STATE[sortedBy(column.id) || 'none'] }
-        : { column, kind: 'text', hidden: column.headerHidden ?? false },
+        ? { column, kind: 'button', ...SORT_STATE[sortedBy(column.id) || 'none'] }
+        : { column, kind: 'label', hidden: column.headerHidden ?? false },
     ),
     ...showMore(rows, limit),
   };

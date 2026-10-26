@@ -16,8 +16,6 @@ export interface PersistQueue {
   idle(): Promise<void>;
   /** True from a failed write until the next successful one. */
   failed(): boolean;
-  /** True while a snapshot is waiting, being written, or kept after a failed write. */
-  unsaved(): boolean;
   /**
    * Waits for the work tracked, then writes everything still unsaved, retrying the newest snapshot
    * after a failed write. Resolves once it is on disk (at once when nothing is unsaved); rejects if
@@ -128,7 +126,6 @@ export function createPersistQueue(
     },
     idle,
     failed: () => outcome.failed,
-    unsaved: () => running !== undefined || lost !== undefined,
     async flush() {
       // Work that ends in a snapshot persists it first, work tracked meanwhile too.
       while (tracked.size > 0) await Promise.allSettled(tracked);

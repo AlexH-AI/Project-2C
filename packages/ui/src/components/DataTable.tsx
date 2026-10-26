@@ -164,17 +164,17 @@ export function DataTable<Row extends RowData>({
           <tr>
             {headers.map((header) => {
               const { column } = header;
-              const sorted = header.kind === 'sort' && header.ariaSort !== 'none';
+              const sorted = header.kind === 'button' && header.ariaSort !== 'none';
               return (
                 <th
                   key={column.id}
                   scope="col"
-                  aria-sort={header.kind === 'sort' ? header.ariaSort : undefined}
+                  aria-sort={header.kind === 'button' ? header.ariaSort : undefined}
                   className={`border-b border-border ${inset} py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap uppercase ${
                     sorted ? 'text-fg-2' : 'text-fg-3'
                   } ${align(column)} ${column.width ?? ''}`}
                 >
-                  {header.kind === 'sort' ? (
+                  {header.kind === 'button' ? (
                     <button
                       type="button"
                       onClick={table.getColumn(column.id)?.getToggleSortingHandler()}

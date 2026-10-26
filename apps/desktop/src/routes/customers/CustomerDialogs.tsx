@@ -32,7 +32,8 @@ import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData, useDatabase, useQuery } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
-import { badge } from '../appointments/MetFields';
+import { ALERT } from '../classes';
+import { stageBadge } from '../stage-badge';
 import {
   ageOn,
   allowedStages,
@@ -46,8 +47,6 @@ type Field = 'name' | 're' | 'birth' | 'date' | 'stage' | 'form';
 type Errors = Partial<Record<Field, string>>;
 
 const readRes = (db: Database) => reOptions(listPeople(db), listTeams(db));
-
-export const ALERT = 'm-0 rounded-md border px-3 py-2';
 
 export function Actions({ onClose, save }: { onClose: () => void; save: string }) {
   return (
@@ -333,7 +332,7 @@ export function CustomerFormDialog({
             label={t('customerForm.stage')}
             value={stage}
             onChange={setStage}
-            options={PIPELINE_STAGES.map((s) => ({ value: s, label: badge(s) }))}
+            options={PIPELINE_STAGES.map((s) => ({ value: s, label: stageBadge(s) }))}
             help={t('customerForm.stageHelp')}
             required
           />
@@ -486,7 +485,7 @@ export function ChangeStageDialog({
           disabled: !allowed.includes(s),
           label: (
             <>
-              {badge(s)}
+              {stageBadge(s)}
               {mark(s) && ` ${mark(s)}`}
             </>
           ),
@@ -515,7 +514,7 @@ export function ChangeStageDialog({
       )}
       {to && (
         <p className="m-0 flex items-center gap-1.5">
-          {t('stageForm.after')} {badge(customer.stage)} {t('sep.arrow')} {badge(to)}
+          {t('stageForm.after')} {stageBadge(customer.stage)} {t('sep.arrow')} {stageBadge(to)}
           {direction && ` ${t('sep.dot')} ${t(`stageForm.${direction}`)}`}
         </p>
       )}

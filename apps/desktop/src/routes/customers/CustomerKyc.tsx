@@ -20,7 +20,8 @@ import { useState, type ReactNode, type Ref } from 'react';
 import { joinParts, t } from '../../i18n';
 import { withTime } from '../appointments/appointment-form';
 import { statusLabel } from '../appointments/appointments-view';
-import { badge } from '../appointments/MetFields';
+import { CARD } from '../classes';
+import { stageBadge } from '../stage-badge';
 import { NextButton } from './CustomerAppointments';
 import {
   factAnchor,
@@ -37,7 +38,6 @@ import {
   type TimelineVersion,
 } from './kyc-view';
 
-const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 const HEADING = 'm-0 text-sm font-medium text-heading';
 export const BADGE = 'rounded-full border border-current px-2 py-0.5 text-xs font-semibold';
 
@@ -64,13 +64,13 @@ function CategoryRow({
   ];
   const [mark, color, state] = row.conflict
     ? [
-        '!',
+        t('kyc.mark.conflict'),
         row.conflict === 'core' ? 'text-danger' : 'text-warn',
         t(`kyc.conflict.${row.conflict}`),
       ]
     : row.present
-      ? ['✓', 'text-ok', t('kyc.present')]
-      : ['○', 'text-fg-3', t('kyc.missing')];
+      ? [t('kyc.mark.present'), 'text-ok', t('kyc.present')]
+      : [t('kyc.mark.missing'), 'text-fg-3', t('kyc.missing')];
   return (
     <li className="flex gap-2 border-b border-border py-2 last:border-b-0">
       <span aria-hidden="true" className={`w-4 shrink-0 text-center font-bold ${color}`}>
@@ -167,7 +167,7 @@ export function KycCard({
         {gate.coreConflictFields.length > 0 && (
           <p className="m-0 text-danger">
             {t('kyc.conflictFields', {
-              fields: gate.coreConflictFields.map((f) => t(`kycField.${f}`)).join(', '),
+              fields: gate.coreConflictFields.map((f) => t(`kycField.${f}`)).join(t('sep.list')),
             })}
           </p>
         )}
@@ -313,7 +313,9 @@ export function Timeline({
                       ? t('timeline.meetingPlain')
                       : t('timeline.meeting', { number: event.number }),
                     roles(event.appointment).length > 0 &&
-                      t('timeline.coordinators', { roles: roles(event.appointment).join(', ') }),
+                      t('timeline.coordinators', {
+                        roles: roles(event.appointment).join(t('sep.list')),
+                      }),
                   ])}
                 </b>
                 <span className="flex flex-wrap items-baseline gap-x-2 wrap-anywhere text-fg-2">
@@ -326,9 +328,9 @@ export function Timeline({
             )}
             {event.kind === 'stage' && (
               <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                {event.transition.from && badge(event.transition.from)}
+                {event.transition.from && stageBadge(event.transition.from)}
                 {event.transition.from && t('sep.arrow')}
-                {badge(event.transition.to)}
+                {stageBadge(event.transition.to)}
                 <StageCause transition={event.transition} />
               </span>
             )}

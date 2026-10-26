@@ -21,7 +21,8 @@ import { Button, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
-import { Actions, ALERT, dayRead, FailureAlert, InvalidAlert } from './CustomerDialogs';
+import { ALERT } from '../classes';
+import { Actions, dayRead, FailureAlert, InvalidAlert } from './CustomerDialogs';
 import {
   effectText,
   monthOf,

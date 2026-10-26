@@ -19,6 +19,7 @@ import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import type { OpenCodeClient } from '../data/ai-tauri';
 import { t } from '../i18n';
+import { ALERT, SECTION } from './classes';
 import { errorText } from './ai-error-view';
 import {
   checkKey,
@@ -33,10 +34,10 @@ import {
   type KeyError,
 } from './settings-ai-view';
 
-const CARD = 'flex flex-col gap-3 rounded-lg border border-border bg-surface-1 px-4 py-3 text-sm';
+/** A section of Cài đặt → AI: its rows one under the other. */
+const AI_SECTION = `${SECTION} flex flex-col gap-3 text-sm`;
 const HEADING = 'm-0 text-sm font-medium text-heading';
 const BADGE = 'rounded-full border border-current px-2 py-0.5 text-xs font-semibold';
-const ALERT = 'm-0 flex flex-col gap-1 rounded-md border px-3 py-2';
 
 function CardHead({ id, title, meta }: { id: string; title: string; meta?: ReactNode }) {
   return (
@@ -78,11 +79,11 @@ export function AiSection() {
   return (
     <div className="flex flex-col gap-4">
       {problem && (
-        <p role="note" className={`${ALERT} border-warn text-sm`}>
+        <p role="note" className={`${ALERT} flex flex-col gap-1 border-warn text-sm`}>
           {problemText(problem)}
         </p>
       )}
-      <section aria-labelledby="ai-model-title" className={CARD}>
+      <section aria-labelledby="ai-model-title" className={AI_SECTION}>
         <CardHead
           id="ai-model-title"
           title={t('settingsAi.modelTitle')}
@@ -148,7 +149,7 @@ export function AiSection() {
       {ai.opencode ? (
         <KeyCard client={ai.opencode} />
       ) : (
-        <section aria-labelledby="ai-key-title" className={CARD}>
+        <section aria-labelledby="ai-key-title" className={AI_SECTION}>
           <CardHead id="ai-key-title" title={t('settingsAi.keyTitle')} />
           <p className="m-0 text-fg-3">{t('settingsAi.keyWeb')}</p>
         </section>
@@ -240,7 +241,7 @@ function KeyCard({ client }: { client: OpenCodeClient }) {
   };
 
   return (
-    <section aria-labelledby="ai-key-title" className={CARD}>
+    <section aria-labelledby="ai-key-title" className={AI_SECTION}>
       <CardHead
         id="ai-key-title"
         title={t('settingsAi.keyTitle')}
@@ -285,7 +286,7 @@ function KeyCard({ client }: { client: OpenCodeClient }) {
         </p>
       )}
       {outcome?.kind === 'error' && (
-        <div role="alert" className={`${ALERT} border-danger`}>
+        <div role="alert" className={`${ALERT} flex flex-col gap-1 border-danger`}>
           <b>{outcome.text}</b>
           {outcome.notSaved && <span className="text-fg-2">{t('settingsAi.keyNotSaved')}</span>}
         </div>
@@ -351,7 +352,7 @@ function ConnectionCard({ mock, settings }: { mock: boolean; settings: AiSetting
   };
 
   return (
-    <section aria-labelledby="ai-check-title" className={CARD}>
+    <section aria-labelledby="ai-check-title" className={AI_SECTION}>
       <CardHead
         id="ai-check-title"
         title={t('settingsAi.checkTitle')}
@@ -391,7 +392,7 @@ function ConnectionCard({ mock, settings }: { mock: boolean; settings: AiSetting
 /** What each way of using AI sends (§6.1, §9.3; mockup 1a, 4a). */
 function SentCard() {
   return (
-    <section aria-labelledby="ai-sent-title" className={CARD}>
+    <section aria-labelledby="ai-sent-title" className={AI_SECTION}>
       <CardHead id="ai-sent-title" title={t('settingsAi.sentTitle')} />
       <ul className="m-0 flex flex-col gap-1 pl-4.5 text-fg-2">
         <li>

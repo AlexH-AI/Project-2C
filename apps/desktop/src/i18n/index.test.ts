@@ -2,8 +2,75 @@ import { KYC_CATEGORY_LABELS, KYC_FIELD_LABELS } from '@p2c/ai';
 import { DB_ERROR_CODES, DbError } from '@p2c/db';
 import { KYC_CATEGORIES, KYC_FIELDS, type KycField } from '@p2c/domain';
 import { describe, expect, it } from 'vitest';
-import { COUNT_SLOTS, PLAIN_SLOTS, errorMessage, fillSlots, joinParts, t, tableMore } from '.';
+import { COUNT_SLOTS, errorMessage, fillSlots, joinParts, t, tableMore } from '.';
 import { vi } from './vi';
+
+/**
+ * Slots shown as given: text, or a number that is no count (a year, a version, a month). Only this
+ * test reads them, to have each new slot sorted into one list or the other (DR6-66).
+ */
+const PLAIN_SLOTS: ReadonlySet<string> = new Set([
+  'age',
+  'amount',
+  'code',
+  'compact',
+  'customer',
+  'date',
+  'defaults',
+  'diff',
+  'exported',
+  'field',
+  'fields',
+  'file',
+  'from',
+  'fyp',
+  'gate',
+  'group',
+  'issued',
+  'label',
+  'limitMb',
+  'message',
+  'month',
+  'model',
+  'models',
+  'name',
+  'next',
+  'note',
+  'now',
+  'number',
+  'parts',
+  'period',
+  'plan',
+  'provider',
+  'quarter',
+  'range',
+  'read',
+  'reasoning',
+  'record',
+  'role',
+  'roles',
+  'scope',
+  'size',
+  'stage',
+  'status',
+  'step',
+  'submitted',
+  'supported',
+  'table',
+  'team',
+  'time',
+  'to',
+  'today',
+  'trigger',
+  'value',
+  'values',
+  'version',
+  'weekday',
+  'when',
+  'where',
+  'word',
+  'year',
+]);
 
 describe('t', () => {
   it('fills in the {name} slots and leaves unknown ones', () => {

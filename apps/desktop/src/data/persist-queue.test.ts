@@ -243,7 +243,7 @@ describe('createPersistQueue', () => {
     queue.persist(bytes('v1'));
     disk.next().fail();
     await queue.idle();
-    expect(queue.unsaved()).toBe(true);
+    expect(queue.status()).toMatchObject({ saving: false, failed: true });
 
     const flushed = queue.flush();
     await tick();
@@ -252,8 +252,7 @@ describe('createPersistQueue', () => {
 
     expect(disk.started).toEqual(['v1', 'v1']);
     expect(disk.onDisk).toBe('v1');
-    expect(queue.failed()).toBe(false);
-    expect(queue.unsaved()).toBe(false);
+    expect(queue.status()).toMatchObject({ saving: false, failed: false });
   });
 
   it('flush() leaves a newer running write last on disk, never the snapshot that failed', async () => {
@@ -275,7 +274,7 @@ describe('createPersistQueue', () => {
 
     expect(disk.started).toEqual(['v1', 'v2']);
     expect(disk.onDisk).toBe('v2');
-    expect(queue.unsaved()).toBe(false);
+    expect(queue.status()).toMatchObject({ saving: false, failed: false });
   });
 
   it('flush() resolves at once when nothing is unsaved', async () => {
@@ -284,7 +283,7 @@ describe('createPersistQueue', () => {
 
     await queue.flush();
 
-    expect(queue.unsaved()).toBe(false);
+    expect(queue.status()).toMatchObject({ saving: false, failed: false });
     expect(disk.started).toEqual([]);
   });
 
@@ -294,7 +293,7 @@ describe('createPersistQueue', () => {
 
     queue.persist(bytes('v1'));
     queue.persist(bytes('v2'));
-    expect(queue.unsaved()).toBe(true);
+    expect(queue.status().saving).toBe(true);
     const flushed = queue.flush();
     disk.next().finish();
     await tick();
@@ -302,7 +301,7 @@ describe('createPersistQueue', () => {
 
     await expect(flushed).rejects.toThrow('SAVE_FAILED');
     expect(disk.started).toEqual(['v1', 'v2']);
-    expect(queue.unsaved()).toBe(true);
+    expect(queue.status()).toMatchObject({ saving: false, failed: true });
   });
 
   it('stops notifying a listener after it unsubscribes', async () => {

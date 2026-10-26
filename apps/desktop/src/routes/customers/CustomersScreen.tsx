@@ -9,14 +9,16 @@ import {
   type ClosedStage,
   type CustomerStage,
 } from '@p2c/domain';
-import { Button, DataTable, Segmented, StageBadge, type DataTableColumn } from '@p2c/ui';
+import { Button, DataTable, Segmented, type DataTableColumn } from '@p2c/ui';
 import { useTables } from '../../data/AppDataContext';
 import { joinParts, t, tableMore } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { RePicker } from '../../shell/RePicker';
 import { teamRes } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
-import { ALERT, CustomerFormDialog } from './CustomerDialogs';
+import { ALERT, FOCUS, LINK } from '../classes';
+import { stageBadge } from '../stage-badge';
+import { CustomerFormDialog } from './CustomerDialogs';
 import {
   birthLabel,
   birthSortKey,
@@ -35,8 +37,8 @@ const VIEWS = [
 /** Names per closed list (cards per kanban column: `kanbanColumn`); the table shows everyone. */
 const CLOSED_LIMIT = 5;
 
-const CARD = 'rounded-lg border border-border bg-surface-1 p-3';
-const LINK = 'rounded-sm focus-visible:outline-2 focus-visible:outline-accent';
+/** The card of one stage, a kanban column or a closed list: less room around its rows. */
+const STAGE_CARD = 'rounded-lg border border-border bg-surface-1 p-3';
 
 const profileHref = (card: CustomerCard) =>
   routeToHash({ screen: 'customer', id: card.customer.id });
@@ -56,7 +58,7 @@ const COLUMNS: ReadonlyArray<DataTableColumn<CustomerCard>> = [
     kind: 'text',
     value: (c) => c.customer.name,
     cell: (c) => (
-      <a href={profileHref(c)} className={`text-accent hover:underline ${LINK}`}>
+      <a href={profileHref(c)} className={LINK}>
         {c.customer.name}
       </a>
     ),
@@ -66,7 +68,7 @@ const COLUMNS: ReadonlyArray<DataTableColumn<CustomerCard>> = [
     header: t('customers.colStage'),
     kind: 'text',
     value: (c) => c.customer.stage,
-    cell: (c) => <StageBadge stage={c.customer.stage} label={t(`stage.${c.customer.stage}`)} />,
+    cell: (c) => stageBadge(c.customer.stage),
   },
   { id: 're', header: t('customers.colRe'), kind: 'text', value: (c) => c.re?.name ?? '' },
   {
@@ -182,10 +184,7 @@ export function CustomersScreen() {
             name: outside.name,
             re: data.people.find((person) => person.id === outside.reId)?.name ?? '',
           })}{' '}
-          <a
-            href={routeToHash({ screen: 'customer', id: outside.id })}
-            className={`text-accent hover:underline ${LINK}`}
-          >
+          <a href={routeToHash({ screen: 'customer', id: outside.id })} className={LINK}>
             {t('customers.createdProfile')}
           </a>
         </p>
@@ -210,7 +209,7 @@ export function CustomersScreen() {
                 <section
                   key={stage}
                   aria-label={t(`stage.${stage}`)}
-                  className={`${CARD} flex flex-col gap-2`}
+                  className={`${STAGE_CARD} flex flex-col gap-2`}
                 >
                   <StageHead
                     stage={stage}
@@ -221,11 +220,7 @@ export function CustomersScreen() {
                     <Card key={card.customer.id} card={card} />
                   ))}
                   {more > 0 && (
-                    <button
-                      type="button"
-                      onClick={showTable}
-                      className={`cursor-pointer text-xs text-accent hover:underline ${LINK}`}
-                    >
+                    <button type="button" onClick={showTable} className={`${LINK} text-xs`}>
                       {t('customers.more', { count: more })}
                     </button>
                   )}
@@ -256,7 +251,7 @@ export function StageHead({
 }) {
   return (
     <div className={`flex items-center ${className}`}>
-      <StageBadge stage={stage} label={t(`stage.${stage}`)} />
+      {stageBadge(stage)}
       <span className="ml-auto text-sm text-fg-2 tabular-nums">{formatCount(count)}</span>
     </div>
   );
@@ -286,7 +281,7 @@ function Card({ card }: { card: CustomerCard }) {
 
 function Closed({ stage, cards }: { stage: ClosedStage; cards: readonly CustomerCard[] }) {
   return (
-    <section aria-label={t(`stage.${stage}`)} className={CARD}>
+    <section aria-label={t(`stage.${stage}`)} className={STAGE_CARD}>
       <StageHead stage={stage} count={cards.length} className="mb-1" />
       <ul className="m-0 list-none p-0 text-sm">
         {cards.slice(0, CLOSED_LIMIT).map((card) => (
@@ -294,7 +289,7 @@ function Closed({ stage, cards }: { stage: ClosedStage; cards: readonly Customer
             key={card.customer.id}
             className="flex gap-2 border-b border-border py-1.5 last:border-b-0"
           >
-            <a href={profileHref(card)} className={`truncate hover:underline ${LINK}`}>
+            <a href={profileHref(card)} className={`truncate rounded-sm hover:underline ${FOCUS}`}>
               {card.customer.name}
             </a>
             <span className="ml-auto text-fg-3 tabular-nums">{formatDate(card.since)}</span>

@@ -3,9 +3,8 @@ import type { AppointmentRecord } from '@p2c/db';
 import { appointmentGroup, type CalendarDate, type StageTransition } from '@p2c/domain';
 import { DataTable, type DataTableColumn } from '@p2c/ui';
 import { t, tableMore } from '../../i18n';
-import { dayText, isPastOrToday, withTime } from '../appointments/appointment-form';
+import { dayText, isPastOrToday, withTime, writtenDay } from '../appointments/appointment-form';
 import {
-  LINK,
   outcomeResolver,
   outcomeText,
   STATUS_TONE,
@@ -13,6 +12,7 @@ import {
   UNRECORDED_TONE,
   type Outcome,
 } from '../appointments/appointments-view';
+import { CARD, LINK } from '../classes';
 
 interface Row {
   readonly appointment: AppointmentRecord;
@@ -93,17 +93,20 @@ export function CustomerAppointments({
       value: (r) => r.appointment.date,
       thenBy: (r) => r.appointment.time ?? '',
       width: 'w-21',
-      // One line, as the mockup (review of PR 746); a day of another year puts its time under it.
+      // One line, as the mockup (review of PR 746); a day written with its year puts its time under
+      // it.
       cellClass: () => 'whitespace-nowrap',
-      cell: ({ appointment: a }) =>
-        a.date.year === today.year || !a.time ? (
-          withTime(dayText(a.date, today), a.time)
+      cell: ({ appointment: a }) => {
+        const day = writtenDay(a.date, today);
+        return !day.withYear || !a.time ? (
+          withTime(day.text, a.time)
         ) : (
           <>
-            <span className="block">{dayText(a.date, today)}</span>
+            <span className="block">{day.text}</span>
             <span className="block text-fg-3">{a.time}</span>
           </>
-        ),
+        );
+      },
     },
     {
       id: 'result',
@@ -115,12 +118,13 @@ export function CustomerAppointments({
       width: 'w-30',
       cell: (r) => {
         const { outcome } = r;
-        // Mockup customer.html: "N3 → N2 · RF", the RF in the accent (T-298).
+        // Mockup customer.html: "N3 → N2 · RF", the RF in the accent (T-298); the parts `outcomeText`
+        // joins, joined the same way.
         if (outcome?.kind === 'move' && outcome.rf) {
           return (
             <span>
               {outcomeText({ ...outcome, rf: false })} {t('sep.dot')}{' '}
-              <span className="text-accent">{t('customer.rf')}</span>
+              <span className="text-accent">{t('appointments.rf')}</span>
             </span>
           );
         }
@@ -157,10 +161,7 @@ export function CustomerAppointments({
   ];
 
   return (
-    <section
-      aria-labelledby="customer-appointments"
-      className="rounded-lg border border-border bg-surface-1 p-4"
-    >
+    <section aria-labelledby="customer-appointments" className={CARD}>
       <div className="mb-2 flex items-baseline gap-2">
         <h2 id="customer-appointments" className="m-0 text-sm font-medium text-heading">
           {t('customer.appointments')}

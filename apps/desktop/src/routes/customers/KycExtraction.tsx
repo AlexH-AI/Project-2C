@@ -13,11 +13,7 @@ import { factText, type TimelineVersion } from './kyc-view';
 import { useAiJob } from './use-ai-job';
 
 /** Xác nhận of a proposal: the fact dialog, filled in; `onSaved` once the fact is saved. */
-export type ConfirmProposal = (
-  note: KycNoteRecord,
-  proposal: ExtractedFact,
-  onSaved: () => void,
-) => void;
+type ConfirmProposal = (note: KycNoteRecord, proposal: ExtractedFact, onSaved: () => void) => void;
 
 /**
  * "AI đề xuất: <trường>: <giá trị>" (spec Phase 5 §8 item 2), the trường in bold; the value is put

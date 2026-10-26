@@ -4,12 +4,12 @@ import { formatDayMonth } from '@p2c/domain';
 import { useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
+import { FOCUS } from '../classes';
 import { BADGE } from '../customers/CustomerKyc';
 import { BADGE_COLORS, FADED, ITEMS, Item } from '../customers/KycIntelligence';
 import type { AiPanelItem } from '../customers/ai-panel-view';
 import { SourceBadge } from '../customers/KycHistory';
 import { appointmentAiView } from './appointment-ai-view';
-import { FOCUS } from './appointments-view';
 
 function Block({
   title,

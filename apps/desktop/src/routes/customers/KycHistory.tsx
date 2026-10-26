@@ -3,8 +3,8 @@ import type { AiAnalysisView, KycVersionRecord } from '@p2c/db';
 import { formatCount, formatDayMonth } from '@p2c/domain';
 import { Button, Dialog } from '@p2c/ui';
 import { joinParts, t } from '../../i18n';
+import { ALERT } from '../classes';
 import { historyRows, rejectedReport, type AiPanelSource } from './ai-panel-view';
-import { ALERT } from './CustomerDialogs';
 import { BADGE } from './CustomerKyc';
 import { issueText } from './KycWebSession';
 

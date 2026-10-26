@@ -18,10 +18,9 @@ import {
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData, useQuery } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
+import { ALERT } from '../classes';
 import { inUseHelp, retriesDelete } from './team-view';
 
-const ALERT = 'm-0 rounded-md border border-danger px-3 py-2 text-danger';
-const QUESTION = 'm-0 rounded-md border border-warn px-3 py-2';
 const ROLE_CHOICES = PERSON_ROLES.map((role) => ({ value: role, label: role }));
 
 /** RE and TL belong to a team; IS / BD / BDM are shared by every team (D8). The commands' rule. */
@@ -143,12 +142,12 @@ export function PersonDialog({
       />
       <span className="text-xs text-fg-3">{t('person.help')}</span>
       {errors.form && (
-        <p role="alert" className={ALERT}>
+        <p role="alert" className={`${ALERT} border-danger text-danger`}>
           {errors.form}
         </p>
       )}
       {asked && (
-        <p role="alert" className={QUESTION}>
+        <p role="alert" className={`${ALERT} border-warn`}>
           {t('person.deleteUnsaved')}
         </p>
       )}
@@ -202,7 +201,7 @@ export function DeletePersonDialog({
     >
       {inUse ? (
         <>
-          <div role="alert" className={ALERT}>
+          <div role="alert" className={`${ALERT} border-danger text-danger`}>
             <b>{t('person.inUse', { role: person.role })}</b>
             <ul className="m-0 mt-1 pl-5 tabular-nums">
               {usage.customers > 0 && (
@@ -234,7 +233,7 @@ export function DeletePersonDialog({
         <p className="m-0">{t('person.deleteBody')}</p>
       )}
       {error && (
-        <p role="alert" className={ALERT}>
+        <p role="alert" className={`${ALERT} border-danger text-danger`}>
           {error}
         </p>
       )}

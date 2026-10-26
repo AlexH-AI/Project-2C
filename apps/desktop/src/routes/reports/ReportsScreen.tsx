@@ -3,6 +3,7 @@ import { Button, Segmented } from '@p2c/ui';
 import { useTables, useToday } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { useScopeState } from '../../shell/ScopeContext';
+import { PANEL } from '../classes';
 import { FilterBar, useAppliedFilter } from '../FilterBar';
 import { viewingText } from '../overview/overview-view';
 import { ExportNoticeLine, useReportExport } from './ReportExport';
@@ -16,8 +17,6 @@ import {
 } from './reports-view';
 
 type TableKey = 'byTeam' | 'byRe' | 'byMark';
-
-const CARD = 'flex flex-col gap-3 rounded-md border border-border bg-surface-1 px-3.5 py-3';
 
 /**
  * Báo cáo (spec Phase 4 §4.4, mockup reports.html 2a–2e): the Lọc bar, Tổng hợp always, and one of
@@ -63,7 +62,7 @@ export function ReportsScreen() {
         </Button>
       </div>
       {exporter.notice && <ExportNoticeLine notice={exporter.notice} />}
-      <section aria-label={summary} className={CARD}>
+      <section aria-label={summary} className={PANEL}>
         <div className="flex flex-wrap items-baseline gap-2">
           <h2 className="m-0 text-sm font-medium text-heading">{summary}</h2>
           <span className="text-xs text-fg-3">
@@ -72,7 +71,7 @@ export function ReportsScreen() {
         </div>
         <ReportTable label={summary} lead="scope" rows={[rows.summary]} />
       </section>
-      <section aria-label={t(`reports.${shown}`)} className={CARD}>
+      <section aria-label={t(`reports.${shown}`)} className={PANEL}>
         <div className="flex flex-wrap items-center gap-2.5">
           <Segmented
             label={t('reports.tables')}

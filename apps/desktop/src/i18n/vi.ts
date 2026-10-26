@@ -87,6 +87,10 @@ export const vi = {
   'kyc.missing': 'thiếu',
   'kyc.conflict.core': 'Mâu thuẫn cốt lõi',
   'kyc.conflict.minor': 'Mâu thuẫn phụ',
+  // The mark before a hạng mục, for the eye only: the words after it say the same.
+  'kyc.mark.present': '✓',
+  'kyc.mark.missing': '○',
+  'kyc.mark.conflict': '!',
   'kyc.fromProfile': 'sửa ở hồ sơ KH',
   'kyc.questions': 'Câu hỏi gợi ý',
   'kyc.yes': 'Có',
@@ -516,8 +520,6 @@ export const vi = {
     '"Hẹn tiếp" = Tạo lịch hẹn tiếp theo (có trên mọi lịch đã qua) · ghi chú dài cắt 1 dòng · người phối hợp xem ở dòng thời gian',
   'customer.next': 'Hẹn tiếp',
   'customer.nextLabel': 'Hẹn tiếp sau lịch {date}',
-  // The mark of a move that counted an RF, in the accent (mockup customer.html "N3 → N2 · RF").
-  'customer.rf': 'RF',
   // The column of the "Hẹn tiếp" buttons: no header on screen (mockup customer.html), one for
   // screen readers (DR6-100).
   'customer.colActions': 'Thao tác',
@@ -661,7 +663,6 @@ export const vi = {
   'date.error.invalid-date': 'Ngày này không tồn tại.',
   'date.error.year-out-of-range': 'Năm phải từ 1900 đến 2100.',
   'date.error.future': 'Ngày này sau hôm nay. Ngày của năm trước: gõ đủ dd/mm/yyyy.',
-  'birth.error.empty': 'Nhập ngày sinh.',
   'birth.error.format': 'Gõ năm (1984) hoặc dd/mm/yyyy (12/03/1984).',
   'birth.error.invalid-date': 'Ngày này không tồn tại.',
   'birth.error.year-out-of-range': 'Năm sinh phải từ 1900 đến 2100.',
@@ -748,7 +749,8 @@ export const vi = {
   'appointments.ai.empty': 'Chưa có phân tích AI.',
   'appointments.ai.toProfile': 'Mở Hồ sơ KH để phân tích →',
   'appointments.move': '{from} → {to}',
-  'appointments.moveRf': '{from} → {to} · RF',
+  // After a move counted as RF, by `sep.dot`: "N3 → N2 · RF" (`outcomeText`, a profile's card).
+  'appointments.rf': 'RF',
   'appointments.keep': 'Giữ {stage}',
   'appointments.rescheduledTo': 'Dời sang {date}',
   'appointmentStatus.SCHEDULED': 'Dự kiến',
@@ -821,6 +823,8 @@ export const vi = {
   'appointmentForm.coordinatorAdd': '+ thêm',
   'appointmentForm.coordinatorPick': 'Thêm người phối hợp',
   'appointmentForm.coordinatorRemove': 'Bỏ {name}',
+  // After the name on the chip, which the chip's name (above) says in words.
+  'appointmentForm.coordinatorRemoveMark': '×',
   'appointmentForm.coordinatorHelp':
     'Người phối hợp là TL, IS, BD hoặc BDM; danh sách không có RE.',
   'appointmentForm.create': 'Tạo lịch hẹn',
@@ -995,6 +999,9 @@ export const vi = {
   'overview.stages.notStarted': 'Kỳ chưa bắt đầu',
   'overview.compare.title': 'So sánh team',
   'overview.compare.hint': 'bấm một team để xem RE',
+  // Before a team, for the eye only: its button says whether it is open (aria-expanded).
+  'overview.compare.expanded': '▾',
+  'overview.compare.collapsed': '▸',
   'overview.compare.mtd': '(MTD)',
   'overview.compare.team': 'Team',
   'overview.compare.met': 'Đã gặp',

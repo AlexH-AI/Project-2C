@@ -29,7 +29,7 @@ import { routeToHash } from '../../shell/routes';
 import { RePicker } from '../../shell/RePicker';
 import { teamRes } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
-import { ALERT } from '../customers/CustomerDialogs';
+import { ALERT, CARD, FOCUS } from '../classes';
 import { PERIOD_LABELS } from '../period-labels';
 import { AppointmentAi } from './AppointmentAi';
 import { AppointmentDialog } from './AppointmentDialog';
@@ -43,13 +43,11 @@ import {
   APPOINTMENT_GROUPS,
   appointmentRows,
   appointmentsByRe,
-  CARD,
   dateTone,
   dayBoard,
   dayLabel,
   DATE_TONE_CELL,
   DOT_ORDER,
-  FOCUS,
   groupTotal,
   monthGrid,
   outcomeText,

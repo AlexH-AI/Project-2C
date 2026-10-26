@@ -23,7 +23,7 @@ import { sortedByName } from '../../data/tables';
 import { joinParts, t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
 import { AppointmentDialog } from '../appointments/AppointmentDialog';
-import { badge } from '../appointments/MetFields';
+import { stageBadge } from '../stage-badge';
 import { CustomerAppointments } from './CustomerAppointments';
 import { CustomerPolicies } from './CustomerPolicies';
 import { ChangeStageDialog, CustomerFormDialog } from './CustomerDialogs';
@@ -160,7 +160,7 @@ export function CustomerProfile({ id }: { id: string }) {
           <h2 id="customer-name" className="m-0 min-w-0 text-lg font-semibold wrap-anywhere">
             {customer.name}
           </h2>
-          {badge(customer.stage)}
+          {stageBadge(customer.stage)}
           <span className="text-xs text-fg-3 tabular-nums">
             {t('customer.since', { date: formatDate(since) })}
           </span>

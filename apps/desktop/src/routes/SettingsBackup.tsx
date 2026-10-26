@@ -5,6 +5,7 @@ import { Button, Dialog } from '@p2c/ui';
 import { useAppData } from '../data/AppDataContext';
 import { isUnsavedChangesError, type BackupPreview, type RecordCounts } from '../data/app-data';
 import { t } from '../i18n';
+import { ALERT, SECTION } from './classes';
 import { countsText, OpenFolderButton } from './SettingsDataFile';
 
 export type BackupNotice =
@@ -29,8 +30,6 @@ interface Refused {
   readonly name: string;
   readonly error: DbError;
 }
-
-const ALERT = 'm-0 flex flex-col gap-1 rounded-md border px-3 py-2';
 
 /**
  * A section of Settings → Data with a notice, which Data shows one of (DR6-45): `notice` is this
@@ -91,10 +90,7 @@ export function BackupSection({ notice, onNotice }: DataNoticeProps<BackupNotice
   };
 
   return (
-    <section
-      aria-labelledby="backup-title"
-      className="rounded-lg border border-border bg-surface-1 px-4 py-3"
-    >
+    <section aria-labelledby="backup-title" className={SECTION}>
       <div className="mb-1 flex items-baseline gap-2">
         <h2 id="backup-title" className="m-0 text-sm font-medium text-heading">
           {t('settings.backup.title')}
@@ -259,7 +255,7 @@ function ImportDialog({
           </div>
         ))}
       </dl>
-      <div role="note" className={`${ALERT} border-warn`}>
+      <div role="note" className={`${ALERT} flex flex-col gap-1 border-warn`}>
         <b>{t('settings.backup.lossWarning', { date: exportedAt })}</b>
         <span className="text-fg-2">
           {t(data.hasFile ? 'settings.backup.confirmBackup' : 'settings.backup.confirmWeb')}
@@ -286,7 +282,7 @@ function RefusedDialog({ refused, onClose }: { refused: Refused; onClose: () => 
       onSubmit={onClose}
       actions={<Button type="submit">{t('settings.backup.close')}</Button>}
     >
-      <div role="alert" className={`${ALERT} border-danger`}>
+      <div role="alert" className={`${ALERT} flex flex-col gap-1 border-danger`}>
         <b className="text-danger">{t(message, params)}</b>
         <span className="text-fg-2">{t(help)}</span>
       </div>

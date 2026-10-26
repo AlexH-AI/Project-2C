@@ -20,7 +20,7 @@ import { analyseCustomer, startChatGptWeb, type WebAnswerOutcome } from '../../d
 import { useAppData } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { errorParts, SETTINGS_AI_HASH, type AiFailure } from '../ai-error-view';
-import { LINK } from '../appointments/appointments-view';
+import { ALERT, CARD, LINK } from '../classes';
 import {
   aiPanelHelp,
   aiPanelView,
@@ -38,14 +38,12 @@ import {
   type AiPanelSubgroup,
   type AiPanelWeb,
 } from './ai-panel-view';
-import { ALERT } from './CustomerDialogs';
 import { BADGE } from './CustomerKyc';
 import { AnalysisHistory, RejectedReportDialog, SourceBadge, sourceName } from './KycHistory';
 import { factCodeTarget } from './kyc-view';
 import { issueText, KycWebSession } from './KycWebSession';
 import { useAiJob } from './use-ai-job';
 
-const CARD = 'rounded-lg border border-border bg-surface-1 p-4';
 const HEADING = 'm-0 text-sm font-medium text-heading';
 
 export const BADGE_COLORS = {

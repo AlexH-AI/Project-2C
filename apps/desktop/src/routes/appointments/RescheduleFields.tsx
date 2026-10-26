@@ -3,7 +3,7 @@ import type { AppointmentRecord } from '@p2c/db';
 import { compareDates, formatDate, type CalendarDate } from '@p2c/domain';
 import { TextField } from '@p2c/ui';
 import { t } from '../../i18n';
-import { ALERT } from '../customers/CustomerDialogs';
+import { ALERT } from '../classes';
 import { DateSuggestion, dateFieldError, dateReading } from './AppointmentDialog';
 import {
   dayText,

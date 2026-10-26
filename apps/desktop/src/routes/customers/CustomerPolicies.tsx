@@ -12,7 +12,7 @@ import type { Ref } from 'react';
 import { Button, PolicyBadge } from '@p2c/ui';
 import { joinParts, t } from '../../i18n';
 import { dayText } from '../appointments/appointment-form';
-import { LINK } from '../appointments/appointments-view';
+import { CARD, LINK } from '../classes';
 import { policyStatusText } from './policy-form';
 
 /**
@@ -48,10 +48,7 @@ export function CustomerPolicies({
   ].filter(Boolean);
 
   return (
-    <section
-      aria-labelledby="customer-policies"
-      className="rounded-lg border border-border bg-surface-1 p-4"
-    >
+    <section aria-labelledby="customer-policies" className={CARD}>
       <div className="mb-2 flex items-baseline gap-2">
         <h2
           ref={heading}
