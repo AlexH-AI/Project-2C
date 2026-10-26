@@ -98,6 +98,45 @@ test('custom range edits start and end and refuses a start after the end', async
   await expect(picker.getByText(invalid)).toHaveCount(0);
 });
 
+// R4: the two dates are one range. Tab from one to the other refuses nothing yet; leaving both, or
+// Enter in either, applies them.
+test('a custom date is refused once the focus leaves both date fields, not on Tab between them', async ({
+  page,
+}) => {
+  const { kinds, label, picker } = await openPicker(page);
+
+  await kinds.getByRole('radio', { name: 'Tùy chọn' }).click();
+  const start = picker.getByRole('textbox', { name: 'Từ ngày' });
+  const end = picker.getByRole('textbox', { name: 'Đến ngày' });
+  const invalid = picker.getByText('Ngày không có thật — nhập theo dd/mm/yyyy');
+
+  await start.fill('31/02/2026');
+  await start.press('Tab');
+  await expect(end).toBeFocused();
+  await expect(start).toHaveAttribute('aria-invalid', 'false');
+  await expect(invalid).toHaveCount(0);
+  await end.press('Shift+Tab');
+  await expect(start).toBeFocused();
+  await expect(invalid).toHaveCount(0);
+
+  await start.press('Tab');
+  await end.press('Tab');
+  await expect(end).not.toBeFocused();
+  await expect(start).toHaveAttribute('aria-invalid', 'true');
+  await expect(end).toHaveAttribute('aria-invalid', 'false');
+  await expect(invalid).toBeVisible();
+  await expect(label).toHaveText('01/09 – 30/09/2026');
+
+  await start.fill('01/10/2026');
+  await end.fill('31/10/2026');
+  await end.press('Enter');
+  await expect(label).toHaveText('01/10 – 31/10/2026');
+  await start.fill('05/10/2026');
+  await start.press('Enter');
+  await expect(label).toHaveText('05/10 – 31/10/2026');
+  await expect(invalid).toHaveCount(0);
+});
+
 // Spec Phase 4 §3.1: a custom range runs at most 3 calendar months.
 async function expectCapRefused(picker: Locator, label: Locator, shown: string) {
   const start = picker.getByRole('textbox', { name: 'Từ ngày' });

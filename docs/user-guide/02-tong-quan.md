@@ -12,7 +12,7 @@ Hàng **Kỳ thống kê** ở đầu màn:
 
 1. Chọn loại kỳ: **Ngày**, **Tuần** (Thứ Hai → Chủ nhật), **Tháng**, **Năm** hoặc **Tùy chọn**.
 2. Dùng hai nút mũi tên (**Kỳ trước** / **Kỳ sau**) để lùi / tiến một kỳ; **Hôm nay** về kỳ chứa hôm nay.
-3. Với **Tùy chọn**: gõ **Từ ngày** và **Đến ngày** dạng dd/mm/yyyy. Kỳ Tùy chọn dài tối đa 3 tháng.
+3. Với **Tùy chọn**: gõ **Từ ngày** và **Đến ngày** dạng dd/mm/yyyy. Khoảng ngày được nhận khi bấm Enter hoặc khi rời cả hai ô; Tab từ ô này sang ô kia chưa báo lỗi. Kỳ Tùy chọn dài tối đa 3 tháng.
 4. Chọn **Góc nhìn** ở góc trên bên phải (xem [1. Bắt đầu](01-bat-dau.md#sidebar-và-góc-nhìn)).
 5. Bấm **Lọc**. Số liệu chỉ đổi khi bấm Lọc; trước đó màn nhắc "Đã đổi kỳ / góc nhìn — bấm Lọc để cập nhật".
 
@@ -57,6 +57,8 @@ Bốn ô **N4**, **N3**, **N2**, **N1** đếm số KH ở mỗi nhóm vào **cu
 Biểu đồ cột bên dưới cho thấy diễn biến: mỗi cột là ảnh chụp cuối một ngày (kỳ Tuần, Tháng) hoặc cuối một tháng (kỳ Năm); cột sau hôm nay để trống.
 
 Bấm một ô nhóm để ẩn nhóm đó khỏi biểu đồ (ô ghi "đang ẩn"); bấm lại để hiện.
+
+Trình đọc màn hình (ví dụ Narrator) đọc được số của biểu đồ: mỗi cột là một dòng của bảng số đi kèm, không hiện trên màn, gồm các nhóm đang hiện và **Tổng**, như khi rê chuột lên cột.
 
 ## So sánh team
 

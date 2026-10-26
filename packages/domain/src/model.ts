@@ -19,6 +19,9 @@ export type PersonRole = (typeof PERSON_ROLES)[number];
 /** Who may review a met meeting's outcome: the people who support it, never an RE (D9). */
 export const REVIEWER_ROLES: readonly PersonRole[] = ['IS', 'TL', 'BDM', 'BD'];
 
+/** Who belongs to a team, and must: IS / BD / BDM are shared by every team (D8, spec §6 rule 9). */
+export const ROLES_WITH_TEAM: readonly PersonRole[] = ['RE', 'TL'];
+
 export interface Person {
   readonly id: string;
   readonly name: string;

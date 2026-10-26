@@ -182,9 +182,6 @@ export function TeamScreen() {
         </div>
         {selected && (
           <Members
-            // One card per team: reused, it would keep the "Xóa team" of a team just deleted for
-            // the team shown next, and the focus on it (DR6-116).
-            key={selected.team.id}
             entry={selected}
             columns={columns}
             onEditLead={editPerson}
@@ -292,7 +289,11 @@ function Members({
       aria-label={t('team.members', { name: entry.team.name })}
       className={`${CARD} min-w-0 flex-1`}
     >
-      <div className="mb-2 flex items-center gap-2">
+      {/* One top per team: reused, it would keep the "Xóa team" of a team just deleted for the
+          team shown next, and the focus on it (DR6-116). The table below stays: the sort picked
+          holds, and a person moved to the team shown keeps their row and the focus on its Sửa
+          (review of PR 744). */}
+      <div key={entry.team.id} className="mb-2 flex items-center gap-2">
         <h2 id={MEMBERS_TITLE} tabIndex={-1} className={CARD_TITLE}>
           {t('team.heading', { name: entry.team.name })}
         </h2>
@@ -319,21 +320,21 @@ function Members({
         <Button onClick={onRename}>{t('team.rename')}</Button>
         <Button onClick={onDelete}>{t('team.delete')}</Button>
       </div>
-      {entry.reps.length === 0 ? (
-        <p className="m-0 text-sm text-fg-3">{t('team.empty')}</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <DataTable
-            label={t('team.members', { name: entry.team.name })}
-            columns={columns}
-            rows={entry.reps}
-            getRowId={(person) => person.id}
-            initialSort={{ id: 'name', desc: false }}
-            moreLabels={tableMore('people')}
-            resetKey={entry.team.id}
-          />
-        </div>
-      )}
+      {entry.reps.length === 0 && <p className="m-0 text-sm text-fg-3">{t('team.empty')}</p>}
+      {/* Hidden, not gone, for a team without RE: the sort holds for the team shown after. */}
+      <div className="overflow-x-auto" hidden={entry.reps.length === 0}>
+        <DataTable
+          label={t('team.members', { name: entry.team.name })}
+          columns={columns}
+          rows={entry.reps}
+          getRowId={(person) => person.id}
+          initialSort={{ id: 'name', desc: false }}
+          moreLabels={tableMore('people')}
+          // The table is not made anew for each team: this takes another team back to its first
+          // hundred rows (DR6-32).
+          resetKey={entry.team.id}
+        />
+      </div>
     </section>
   );
 }

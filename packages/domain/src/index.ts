@@ -112,7 +112,13 @@ export {
 export { formatVnd, formatVndCompact, formatVndDelta, MAX_FEE_VND, parseVnd } from './money';
 export { formatCount, formatFileSize, formatPercent } from './number';
 export type { Vnd, VndParseError, VndParseResult } from './money';
-export { APPOINTMENT_STATUSES, CLOSED_STAGES, PERSON_ROLES, REVIEWER_ROLES } from './model';
+export {
+  APPOINTMENT_STATUSES,
+  CLOSED_STAGES,
+  PERSON_ROLES,
+  REVIEWER_ROLES,
+  ROLES_WITH_TEAM,
+} from './model';
 export type {
   Appointment,
   AppointmentStatus,

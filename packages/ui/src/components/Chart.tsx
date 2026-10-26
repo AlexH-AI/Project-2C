@@ -29,6 +29,11 @@ export const encodeHtml: (text: string) => string = format.encodeHTML;
 interface ChartProps {
   /** Accessible name; the chart is exposed as one image. */
   label: string;
+  /**
+   * Ids (`aria-describedby`) of what gives a screen reader the numbers drawn, e.g. the rows of a
+   * table off screen (`sr-only`).
+   */
+  describedBy?: string;
   /** Keep the object stable between renders (constant or memo), or the chart redraws. */
   option: ChartOption;
   /** Series colours as token names, in series order; the default palette otherwise. Keep stable. */
@@ -40,6 +45,7 @@ interface ChartProps {
 /** ECharts wrapper (ADR-0014): themed from the tokens, resizes with its box, disposed on unmount. */
 export function Chart({
   label,
+  describedBy,
   option,
   palette = SERIES_TOKENS,
   className = 'h-64 w-full',
@@ -64,5 +70,13 @@ export function Chart({
     };
   }, [option, palette]);
 
-  return <div ref={box} role="img" aria-label={label} className={className} />;
+  return (
+    <div
+      ref={box}
+      role="img"
+      aria-label={label}
+      aria-describedby={describedBy}
+      className={className}
+    />
+  );
 }

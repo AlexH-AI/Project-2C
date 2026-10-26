@@ -1,8 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { formatCount } from '@p2c/domain';
 import { Chart, StageBadge } from '@p2c/ui';
 import { t } from '../../i18n';
-import { stageChartOption, stagePalette } from './stage-chart';
+import {
+  stageChartOption,
+  stageChartTable,
+  stagePalette,
+  type StageChartTable,
+} from './stage-chart';
 import { CHART_STAGES, type ChartStage, type StageBlockView, type StageChart } from './stage-view';
 
 const TOP = {
@@ -104,6 +109,7 @@ function StageChartBox({
   short?: boolean;
 }) {
   const option = useMemo(() => stageChartOption(chart, shown), [chart, shown]);
+  const tableId = useId();
   const empty = chart.columns.every((column) => column.values === null);
   const label =
     chart.team === null
@@ -113,15 +119,69 @@ function StageChartBox({
     <div className="relative">
       <Chart
         label={label}
+        describedBy={numbersOf(tableId)}
         option={option}
         palette={palette}
         className={short ? 'h-44 w-full' : 'h-56 w-full'}
+      />
+      <NumbersTable
+        id={tableId}
+        caption={t('overview.stages.chartTable', { label })}
+        table={stageChartTable(chart, shown)}
       />
       {empty && (
         <p className="pointer-events-none absolute inset-0 m-0 grid place-items-center text-sm text-fg-3">
           {t('overview.stages.notStarted')}
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * What describes a chart: the rows of its `NumbersTable`, not the table, whose caption is its name and
+ * would be the whole description in place of the numbers.
+ */
+const numbersOf = (id: string) => `${id}-head ${id}-body`;
+
+/**
+ * The numbers of a chart off screen (review of Phase 4, P8): a screen reader gets the chart as one
+ * image, which reads these rows as its description; the table, named by its caption, can be browsed.
+ */
+function NumbersTable({
+  id,
+  caption,
+  table,
+}: {
+  id: string;
+  caption: string;
+  table: StageChartTable;
+}) {
+  // A table grows to its content whatever its width: the box around it is what takes no room.
+  return (
+    <div className="sr-only">
+      <table>
+        <caption>{caption}</caption>
+        <thead id={`${id}-head`}>
+          <tr>
+            {table.head.map((cell) => (
+              <th key={cell} scope="col">
+                {cell}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody id={`${id}-body`}>
+          {table.rows.map((row) => (
+            <tr key={row.title}>
+              <th scope="row">{row.title}</th>
+              {row.cells.map((cell, index) => (
+                <td key={table.head[index + 1]}>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

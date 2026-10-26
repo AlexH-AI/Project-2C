@@ -107,8 +107,8 @@ const NAMED_IN_TRASH = 3;
 /**
  * How a person gets out of what keeps them (mockup 9b): one sentence for their role — the RE's
  * whenever they own records, as the mockup shows for an RE who also coordinates (review of PR 636) —
- * then, when some of it belongs to customers in the trash, which ones, and that those come back
- * first (T-250).
+ * then, when some of it belongs to customers in the trash, which ones (T-250): a purge of the trash
+ * deletes it for good, while restoring them hands over or edits only part of it (DR6-115).
  */
 export function inUseHelp(usage: PersonUsage): string[] {
   const owns = ownsRecords(usage);

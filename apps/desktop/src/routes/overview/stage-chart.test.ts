@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { stageChartOption, stagePalette } from './stage-chart';
+import { stageChartOption, stageChartTable, stagePalette } from './stage-chart';
 import type { StageChart } from './stage-view';
 
 const CHART: StageChart = {
@@ -146,5 +146,24 @@ describe('stageChartOption', () => {
     const tooltip = tooltipOf(ALL_SHOWN, 1);
     expect(tooltip).toContain('13/10/2026 · cuối ngày');
     expect(tooltip).not.toContain('Tổng');
+  });
+});
+
+describe('stageChartTable', () => {
+  it('gives each mark a row of the stages shown, top first, and their total (P8)', () => {
+    const table = stageChartTable(CHART, ALL_SHOWN);
+
+    expect(table.head).toEqual(['Ngày', 'N4', 'N3', 'N2', 'N1', 'Tổng']);
+    expect(table.rows).toEqual([
+      { title: '12/10/2026 · cuối ngày', cells: ['1.200', '3', '2', '1', '1.206'] },
+      { title: '13/10/2026 · cuối ngày', cells: ['—', '—', '—', '—', '—'] },
+    ]);
+  });
+
+  it('leaves out the stages hidden, as the chart and its tooltip do', () => {
+    const table = stageChartTable(CHART, ['N3', 'N1']);
+
+    expect(table.head).toEqual(['Ngày', 'N3', 'N1', 'Tổng']);
+    expect(table.rows[0]!.cells).toEqual(['3', '1', '4']);
   });
 });

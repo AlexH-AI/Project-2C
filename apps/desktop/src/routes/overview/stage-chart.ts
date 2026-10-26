@@ -1,11 +1,17 @@
 import { formatCount } from '@p2c/domain';
 import { encodeHtml, type ChartOption } from '@p2c/ui';
 import { t } from '../../i18n';
-import { CHART_STAGES, type ChartStage, type StageChart } from './stage-view';
+import { CHART_STAGES, type ChartStage, type StageChart, type StageValues } from './stage-view';
+
+/** Top of the stack first, as the tooltip and the table of a chart list the stages. */
+const topDown = (shown: readonly ChartStage[]) =>
+  CHART_STAGES.filter((stage) => shown.includes(stage));
 
 /** Bottom of the stack first: N1 sits on the axis, so day against day reads easily (§2.8). */
-const bottomUp = (shown: readonly ChartStage[]) =>
-  CHART_STAGES.filter((stage) => shown.includes(stage)).reverse();
+const bottomUp = (shown: readonly ChartStage[]) => topDown(shown).reverse();
+
+const totalOf = (values: StageValues, stages: readonly ChartStage[]) =>
+  stages.reduce((sum, stage) => sum + values[stage], 0);
 
 /**
  * Colours of the series of `stageChartOption`, as tokens: each stage in its `StageBadge` colour,
@@ -76,12 +82,11 @@ export function stageChartOption(chart: StageChart, shown: readonly ChartStage[]
         const markers = new Map(
           list.map((param) => [param.seriesName, String(param.marker ?? '')]),
         );
-        const top = [...stages].reverse();
+        const top = topDown(shown);
         const rows = top.map((stage) =>
           row(markers.get(stage) ?? '', t(`stage.${stage}`), values[stage]),
         );
-        const total = top.reduce((sum, stage) => sum + values[stage], 0);
-        return heading + rows.join('') + row('', t('overview.stages.total'), total);
+        return heading + rows.join('') + row('', t('overview.stages.total'), totalOf(values, top));
       },
     },
     xAxis: {
@@ -126,5 +131,33 @@ export function stageChartOption(chart: StageChart, shown: readonly ChartStage[]
         data: chart.columns.map((column) => (column.values ? null : 0)),
       },
     ],
+  };
+}
+
+/** The numbers of a chart for screen readers (P8): one row per mark, as its tooltip lists them. */
+export interface StageChartTable {
+  /** Over the columns: the day, each stage shown top first, then Tổng. */
+  readonly head: readonly string[];
+  readonly rows: readonly { readonly title: string; readonly cells: readonly string[] }[];
+}
+
+/** `chart` as a table of the stages in `shown`, a mark after today "—", from the same columns. */
+export function stageChartTable(chart: StageChart, shown: readonly ChartStage[]): StageChartTable {
+  const stages = topDown(shown);
+  return {
+    head: [
+      t('overview.stages.day'),
+      ...stages.map((stage) => t(`stage.${stage}`)),
+      t('overview.stages.total'),
+    ],
+    rows: chart.columns.map(({ title, values }) => ({
+      title,
+      cells: values
+        ? [
+            ...stages.map((stage) => formatCount(values[stage])),
+            formatCount(totalOf(values, stages)),
+          ]
+        : Array<string>(stages.length + 1).fill(t('overview.none')),
+    })),
   };
 }

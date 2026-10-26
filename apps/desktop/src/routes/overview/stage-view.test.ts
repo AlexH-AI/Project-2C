@@ -25,7 +25,7 @@ import {
   SNAPSHOT_GOLDEN_CASES,
   SNAPSHOT_TODAY,
 } from '../../../../../packages/domain/src/golden/stage-snapshot.fixture';
-import { stageBlock, type StageData } from './stage-view';
+import { eachMark, stageBlock, type StageData } from './stage-view';
 
 // The repository never returns a deleted customer, so the golden deleted rows are dropped here.
 const DATA: StageData = {
@@ -176,6 +176,23 @@ describe('stageBlock', () => {
     ).charts[0]!.columns.map((column) => column.label);
 
     expect(labels).toEqual(['11/2026', '12/2026', '01/2027', '02/2027', '03/2027']);
+  });
+});
+
+describe('eachMark', () => {
+  it('runs the batch once over the marks that have a value, wherever the others are', () => {
+    const batches: number[][] = [];
+    const results = eachMark([1, null, 3, null, 5], (values) => {
+      batches.push([...values]);
+      return values.map((value) => value * 10);
+    });
+
+    expect(results).toEqual([10, null, 30, null, 50]);
+    expect(batches).toEqual([[1, 3, 5]]);
+  });
+
+  it('gives every mark null when none has a value, as before the period starts', () => {
+    expect(eachMark([null, null], (values) => values.map(String))).toEqual([null, null]);
   });
 });
 

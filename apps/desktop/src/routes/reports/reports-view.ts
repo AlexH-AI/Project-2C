@@ -32,6 +32,7 @@ import {
 import { joinParts, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
 import { closeRateText, countedWindow } from '../overview/overview-view';
+import { eachMark } from '../overview/stage-view';
 
 export interface ReportData extends MetricsData {
   readonly customers: readonly Customer[];
@@ -249,8 +250,7 @@ export function reportRows(
     team: null,
     ...figures(scope),
   };
-  // Every mark in one pass over the data. Marks after today, the only ones without a window or a
-  // snapshot day, come last, so the n-th window and day are those of the n-th mark.
+  // Every mark in one pass over the data.
   const marks = reportMarks(period);
   const markAppointments = appointmentCountsByMark(
     data.appointments,
@@ -259,14 +259,13 @@ export function reportRows(
     data.people,
     today,
   );
-  const markMetrics = periodMetricsByMark(
-    data,
-    marks.flatMap((mark) => countedWindow(mark, today) ?? []),
-    scope,
+  const markMetrics = eachMark(
+    marks.map((mark) => countedWindow(mark, today)),
+    (windows) => periodMetricsByMark(data, windows, scope),
   );
-  const markStages = series(
-    marks.flatMap((mark) => snapshotDate(mark, today) ?? []),
-    scope,
+  const markStages = eachMark(
+    marks.map((mark) => snapshotDate(mark, today)),
+    (days) => series(days, scope),
   );
   const byMark = marks.map((mark, index): ReportMarkRow => ({
     key: formatDate(mark.start),
