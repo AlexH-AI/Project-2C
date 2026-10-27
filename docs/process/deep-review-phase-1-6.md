@@ -2132,6 +2132,11 @@ Khuôn như §L3.8 (và §L2.8), đổi:
    **Chỉ ghi lại, không dừng:**
    - Tạo `C:\workspace\_thu.txt` (ngoài gốc ghi), một lần bằng shell, một lần bằng công cụ ghi file → bị từ chối nếu sandbox áp được trên máy này. Tạo được thì `baseline.md` ghi "không có giới hạn ghi trên máy này" (đã chấp nhận ở G6, Owner 28/10); xóa file đó.
    - Kết quả lệnh shell cho biết chế độ sandbox, runner có áp đủ không, và shell nào.
+   - Probe mà Phụ lục N cần (quy tắc chung 6, đo trên exe), chạy trong sandbox:
+     - mở một bản chép của `common\exe\project2c.exe` trong `deepseek\_thu\`, với cổng debug khác 9222 (`e2e/perf/README.md`);
+     - chạy một probe Playwright trên bản build web.
+
+     Phiên thử kiểm hai việc này có chạy được không, chẳng hạn exe có ghi được hồ sơ WebView2 ngoài gốc ghi không. Bị chặn thì Owner chọn trước khi chạy gói A: hoặc thêm thư mục đó vào `additionalWritableRoots` (mở rộng phạm vi G6), hoặc chấp nhận DeepSeek ghi PLAUSIBLE cho phần chỉ kiểm được trên exe hay trình duyệt.
    - Owner tìm thư mục phiên vừa chạy dưới `%USERPROFILE%\.dsh\sessions\`, ghi tên thư mục của workspace.
 
    Xong: xóa `deepseek\_thu\` và file thử còn lại. `git -C C:\workspace\Project-2C-review status --short` phải rỗng. DSH để lại file nào trong workspace thì ghi tên vào `baseline.md`: quy tắc riêng 5 của Phụ lục O cho phép đúng các file đó.
