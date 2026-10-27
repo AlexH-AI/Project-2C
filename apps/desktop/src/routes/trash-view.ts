@@ -95,6 +95,28 @@ export function recordTitle(row: TrashRow): string {
   }
 }
 
+/**
+ * The badge of the first line of "Bản ghi": a customer's stage, a policy's status as the policy's
+ * badges word it; none for the other kinds, an appointment's status being in that line. The cell
+ * draws it and `restoreLabel` reads its words, so a badge added here names the button too (review
+ * of PR 846).
+ */
+export function recordBadge(
+  row: TrashRow,
+):
+  | { readonly text: string; readonly stage: CustomerStage }
+  | { readonly text: string; readonly issued: boolean }
+  | null {
+  switch (row.kind) {
+    case 'customer':
+      return { text: stage(row.stage), stage: row.stage };
+    case 'policy':
+      return { text: policyStatusText(row), issued: row.issuedDate !== null };
+    default:
+      return null;
+  }
+}
+
 type AppointmentRow = Extract<TrashRow, { kind: 'appointment' }>;
 
 /** "02/10/2026 09:30", or the day alone. */
@@ -169,19 +191,12 @@ export function ownerParts(row: TrashRow): OwnerPart[] {
 
 /**
  * The name of a row's restore button, every "Khôi phục…" alike on screen (DR6-43): the record as
- * the first line of "Bản ghi" names it, with the words of its badge there, a customer's stage or a
- * policy's status, so whatever tells two rows apart there tells their buttons apart (DR6-99,
- * DR6-119; two customers may share a name, Owner 25/10/2026); then an appointment's or a policy's
- * customer.
+ * the first line of "Bản ghi" names it, with the words of its badge there (`recordBadge`), so
+ * whatever tells two rows apart there tells their buttons apart (DR6-99, DR6-119; two customers may
+ * share a name, Owner 25/10/2026); then an appointment's or a policy's customer.
  */
 export function restoreLabel(row: TrashRow): string {
-  const badge =
-    row.kind === 'policy'
-      ? policyStatusText(row)
-      : row.kind === 'customer'
-        ? stage(row.stage)
-        : null;
-  const record = joinParts([recordTitle(row), badge]);
+  const record = joinParts([recordTitle(row), recordBadge(row)?.text]);
   const label = t(`trash.restoreLabel.${row.kind}`, { record });
   return row.kind === 'appointment' || row.kind === 'policy' ? ofCustomer(row, label) : label;
 }

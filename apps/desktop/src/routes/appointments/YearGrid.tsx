@@ -1,6 +1,6 @@
 import { formatCount } from '@p2c/domain';
 import { t } from '../../i18n';
-import { CARD, FOCUS } from '../classes';
+import { CARD, FOCUS, HEADING } from '../classes';
 import {
   APPOINTMENT_GROUPS as GROUPS,
   groupTotal as total,
@@ -34,7 +34,7 @@ export function YearGrid({
   return (
     <section aria-labelledby="appointments-year" className={CARD}>
       <div className="mb-2 flex items-baseline justify-between gap-3">
-        <h2 id="appointments-year" className="m-0 text-sm font-medium text-heading">
+        <h2 id="appointments-year" className={HEADING}>
           {t('appointments.year', { year })}
         </h2>
         <span className="text-xs text-fg-3">{t('appointments.yearHint')}</span>

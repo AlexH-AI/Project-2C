@@ -2,7 +2,7 @@ import { useId, useMemo, useState } from 'react';
 import { formatCount } from '@p2c/domain';
 import { Chart } from '@p2c/ui';
 import { t } from '../../i18n';
-import { PANEL } from '../classes';
+import { HEADING, PANEL } from '../classes';
 import { stageBadge } from '../stage-badge';
 import {
   stageChartLastText,
@@ -41,7 +41,7 @@ export function StageBlock({ block }: { block: StageBlockView }) {
   return (
     <section aria-label={title} className={PANEL}>
       <div className="flex flex-wrap items-baseline gap-2">
-        <h2 className="m-0 text-sm font-medium text-heading">{title}</h2>
+        <h2 className={HEADING}>{title}</h2>
         {block.note && <span className="text-xs text-fg-3 tabular-nums">{block.note}</span>}
       </div>
       <div className="grid grid-cols-4 gap-2.5">

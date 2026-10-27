@@ -20,7 +20,7 @@ import { useState, type ReactNode, type Ref } from 'react';
 import { joinParts, t } from '../../i18n';
 import { withTime } from '../appointments/appointment-form';
 import { statusLabel } from '../appointments/appointments-view';
-import { CARD } from '../classes';
+import { BADGE, CARD, HEADING } from '../classes';
 import { stageBadge } from '../stage-badge';
 import { NextButton } from './CustomerAppointments';
 import {
@@ -37,9 +37,6 @@ import {
   type TimelineKyc,
   type TimelineVersion,
 } from './kyc-view';
-
-const HEADING = 'm-0 text-sm font-medium text-heading';
-export const BADGE = 'rounded-full border border-current px-2 py-0.5 text-xs font-semibold';
 
 const GATE_COLORS: Record<KycGateState, string> = {
   CONFLICT_RESOLUTION: 'text-danger',

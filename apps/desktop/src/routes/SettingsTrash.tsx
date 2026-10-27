@@ -6,15 +6,14 @@ import {
   DialogFocusFallback,
   PolicyBadge,
   Segmented,
+  StageBadge,
   type DataTableColumn,
 } from '@p2c/ui';
 import { useAppData, useQuery, useToday } from '../data/AppDataContext';
 import { t } from '../i18n';
-import { ALERT, FOCUS, SETTINGS_SECTION } from './classes';
+import { ALERT, FOCUS, HEADING, SETTINGS_SECTION } from './classes';
 import { ConfirmWordDialog } from './ConfirmWordDialog';
-import { policyStatusText } from './customers/policy-form';
 import { RestoreDialog } from './RestoreDialog';
-import { stageBadge } from './stage-badge';
 import {
   TRASH_FILTERS,
   TRASH_MORE,
@@ -29,6 +28,7 @@ import {
   purgePlan,
   purgeReminder,
   purgeView,
+  recordBadge,
   recordDetail,
   recordTitle,
   restoreLabel,
@@ -45,16 +45,15 @@ import {
 const reasonId = (row: TrashRow) => `trash-blocked-${row.kind}-${row.id}`;
 
 function RecordCell({ row }: { row: TrashRow }) {
+  const badge = recordBadge(row);
   const detail = recordDetail(row);
   return (
     <>
       <b className="flex flex-wrap items-center gap-1.5 font-semibold">
         {recordTitle(row)}
-        {row.kind === 'customer' && stageBadge(row.stage)}
+        {badge && 'stage' in badge && <StageBadge stage={badge.stage} label={badge.text} />}
       </b>
-      {row.kind === 'policy' && (
-        <PolicyBadge issued={row.issuedDate !== null} label={policyStatusText(row)} />
-      )}
+      {badge && 'issued' in badge && <PolicyBadge issued={badge.issued} label={badge.text} />}
       {detail && <span className="block text-xs text-fg-3">{detail}</span>}
       {row.blocked && (
         <span id={reasonId(row)} className="mt-1 block text-xs text-warn">
@@ -312,7 +311,7 @@ export function TrashSection() {
   return (
     <section aria-labelledby="trash-title" className={SETTINGS_SECTION}>
       <div className="mb-1 flex items-baseline gap-2">
-        <h2 id="trash-title" className="m-0 text-sm font-medium text-heading">
+        <h2 id="trash-title" className={HEADING}>
           {t('trash.title')}
         </h2>
         <span className="text-xs text-fg-3 tabular-nums">

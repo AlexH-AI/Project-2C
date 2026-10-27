@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { join } from 'node:path';
-import { ANCHOR_MORNING } from '../anchor';
+import { anchorMorning } from '../anchor';
 import { addKycNote, createKycCustomer, discoveryFacts, panelOf } from '../support';
 import { IMG } from './links';
 
@@ -9,8 +9,10 @@ import { IMG } from './links';
 // clock stays on its morning, so a second run writes the same bytes. Each test opens a fresh page
 // on the simulated data; a reload would drop what a test changed, so tests move by clicks.
 
-test.beforeEach(async ({ page }) => {
-  await page.clock.setFixedTime(ANCHOR_MORNING);
+// The morning of the config's time zone, as e2e/fixtures.ts sets it (DR6-129): by the machine's,
+// a machine far from that zone would shoot the pages on another day.
+test.beforeEach(async ({ page, timezoneId }) => {
+  await page.clock.setFixedTime(anchorMorning(timezoneId));
 });
 
 type Clip = { x: number; y: number; width: number; height: number };
@@ -130,16 +132,26 @@ test('03 lịch hẹn: detail, booking, rescheduling', async ({ page }) => {
 test('04 khách hàng: Kanban, table, a new customer', async ({ page }) => {
   await page.goto('/#/customers');
   await expect(page.getByRole('region', { name: 'N4', exact: true })).toBeVisible();
-  await shot(page, '04-khach-hang');
+  // Right of the sidebar, which 01 shows, down to the foot of the board: the whole screen, or its
+  // top alone, passes 150 KiB, a card with an "n HĐ" badge standing taller than the others.
+  const main = await page.getByRole('main').boundingBox();
+  if (!main) throw new Error('no main');
+  await shot(page, '04-khach-hang', {
+    x: main.x,
+    y: 0,
+    width: main.width,
+    height: main.y + main.height,
+  });
   await page.getByRole('radio', { name: 'Bảng' }).click();
-  await shot(page, '04-khach-hang-bang');
+  // The top of the screen: the whole of it passes 150 KiB.
+  await shot(page, '04-khach-hang-bang', { x: 0, y: 0, width: 1440, height: 600 });
   await page.getByRole('button', { name: '+ Khách hàng' }).click();
   await shot(page, '04-khach-hang-moi', page.getByRole('dialog', { name: 'Khách hàng mới' }));
 });
 
 test('04, 05 hồ sơ KH: the profile and its dialogs', async ({ page }) => {
   const name = await openProfile(page);
-  // The top of the screen: the whole of it passes 150 KB.
+  // The top of the screen: the whole of it passes 150 KiB.
   await shot(page, '05-ho-so-kh', { x: 0, y: 0, width: 1440, height: 600 });
 
   await page.getByRole('button', { name: 'Chuyển nhóm' }).click();

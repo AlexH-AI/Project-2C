@@ -16,7 +16,7 @@ import { routeToHash } from '../../shell/routes';
 import { RePicker } from '../../shell/RePicker';
 import { teamRes } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
-import { ALERT, FOCUS, LINK } from '../classes';
+import { ALERT, BADGE, FOCUS, LINK } from '../classes';
 import { stageBadge } from '../stage-badge';
 import { CustomerFormDialog } from './CustomerDialogs';
 import {
@@ -266,7 +266,7 @@ function Card({ card }: { card: CustomerCard }) {
       <span className="flex items-center justify-between gap-1.5">
         <b className="truncate font-semibold">{card.customer.name}</b>
         {card.policies > 0 && (
-          <span className="rounded-full border border-current px-2 text-xs font-semibold whitespace-nowrap text-issued">
+          <span className={`${BADGE} whitespace-nowrap text-issued`}>
             {t('customers.policies', { count: card.policies })}
           </span>
         )}
