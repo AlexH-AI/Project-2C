@@ -37,6 +37,10 @@ describe('classifyFile', () => {
     ['apps/desktop/src/routes/customers/CustomerKyc.tsx', 'D', 'product'],
     ['apps/desktop/src/routes/team/team-view.ts', 'D', 'product'],
     ['apps/desktop/src/routes/Screen.tsx', 'D', 'product'],
+    ['apps/desktop/src/routes/classes.ts', 'D', 'product'],
+    ['apps/desktop/src/routes/stage-badge.tsx', 'D', 'product'],
+    ['apps/desktop/src/routes/money-view.ts', 'D', 'product'],
+    ['apps/desktop/src/routes/money-view.test.ts', 'D', 'test'],
     ['apps/desktop/src/App.tsx', 'D', 'product'],
     ['apps/desktop/index.html', 'D', 'product'],
     ['apps/desktop/src/routes/appointments/YearGrid.tsx', 'E', 'product'],
@@ -50,6 +54,7 @@ describe('classifyFile', () => {
     ['apps/desktop/src/routes/customers/CustomerAppointments.tsx', 'D', 'product'],
     ['apps/desktop/src/routes/trash-view.ts', 'E', 'product'],
     ['apps/desktop/src/routes/FilterBar.tsx', 'E', 'product'],
+    ['apps/desktop/src/routes/ConfirmWordDialog.tsx', 'E', 'product'],
     ['tools/codemap-core.mjs', 'F', 'product'],
     ['tools/codemap-core.test.mjs', 'F', 'test'],
     ['tools/fixtures/ai-eval.mjs', 'F', 'test'],
@@ -282,6 +287,23 @@ describe('renderMarkdown', () => {
     });
     expect(text).toMatch(/\| Chưa xếp gói \| 1 \|/);
     expect(text).toMatch(/`apps\/x\/new\.ts`/);
+  });
+
+  it('leaves out the unassigned row once no file is in it, unless the earlier run had some', () => {
+    const report = (files) => ({
+      commit: 'abc1234',
+      lines: lineReport(Object.keys(files), (p) => files[p]),
+      bundle: null,
+      exe: null,
+    });
+    const now = report({ 'tools/a.mjs': lines(1) });
+    expect(renderMarkdown(now)).not.toMatch(/Chưa xếp gói/);
+    expect(renderMarkdown(now, now)).not.toMatch(/Chưa xếp gói/);
+    // A file since added to `PACKAGES`: the row shows it gone.
+    const before = report({ 'tools/a.mjs': lines(1), 'apps/x/new.ts': lines(2) });
+    expect(renderMarkdown(now, before)).toMatch(
+      /\| Chưa xếp gói \| 0 \| -2 \| 0 \| 0 \| 0 \| 0 \| 0 \| -1 \|/,
+    );
   });
 
   it('says how many chunks a bundle row adds up', () => {

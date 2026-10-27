@@ -314,7 +314,7 @@ export function AppointmentsScreen() {
         />
       </div>
       <section aria-labelledby="appointments-list" className={CARD}>
-        <h2 id="appointments-list" className="m-0 mb-2 text-sm font-medium text-heading">
+        <h2 id="appointments-list" className={`${HEADING} mb-2`}>
           {t('appointments.list')}
         </h2>
         <DataTable
@@ -547,7 +547,7 @@ function DayTable({
   const groups = useMemo(() => dayBoard(rows, day), [rows, day]);
   return (
     <section aria-labelledby="appointments-day" className={CARD}>
-      <h2 id="appointments-day" className="m-0 mb-2 text-sm font-medium text-heading">
+      <h2 id="appointments-day" className={`${HEADING} mb-2`}>
         {t('appointments.day', { date: formatDate(day) })}
       </h2>
       {groups.length === 0 && <p className="m-0 text-sm text-fg-3">{t('appointments.dayEmpty')}</p>}

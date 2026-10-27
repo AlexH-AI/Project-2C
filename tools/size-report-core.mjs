@@ -37,7 +37,10 @@ const isAppAiFile = (path) =>
  * The six review packages of spec Phase 6 §6.2, in match order: the first match wins, so F and C
  * take their files out of the wider folders of the others. A counted file no package matches goes
  * to the "Chưa xếp gói" row: add it here. Hợp đồng is in E (§6.2) though its files sit in
- * `routes/customers/`; the Lịch hẹn tab of the customer profile stays in D with the profile.
+ * `routes/customers/`; the Lịch hẹn tab of the customer profile stays in D with the profile. What
+ * the screens of `routes/` share (class names, the stage badge, the money read back under a field)
+ * is in D; the dialog where Nạp lại and Dọn sạch are confirmed by typing a word is in E (plan of
+ * deep review round 4, §L4.3).
  */
 const PACKAGES = [
   {
@@ -65,6 +68,7 @@ const PACKAGES = [
     match: [
       /^apps\/desktop\/src\/routes\/(?:appointments|overview|reports)\//,
       /^apps\/desktop\/src\/routes\/(?:Overview|Settings\w*|RestoreDialog|FilterBar)\.tsx$/,
+      /^apps\/desktop\/src\/routes\/ConfirmWordDialog\.tsx$/,
       /^apps\/desktop\/src\/routes\/(?:trash-view|period-labels|applied-filter)(?:\.test)?\.ts$/,
       /^apps\/desktop\/src\/routes\/customers\/(?:CustomerPolicies|PolicyDialogs|policy-form)\./,
     ],
@@ -75,7 +79,8 @@ const PACKAGES = [
     match: [
       /^packages\/ui\//,
       /^apps\/desktop\/src\/(?:shell|i18n|routes\/customers|routes\/team)\//,
-      /^apps\/desktop\/src\/routes\/Screen\.tsx$/,
+      /^apps\/desktop\/src\/routes\/(?:Screen|stage-badge)\.tsx$/,
+      /^apps\/desktop\/src\/routes\/(?:classes|money-view(?:\.test)?)\.ts$/,
       /^apps\/desktop\/src\/[^/]+$/,
       /^apps\/desktop\/index\.html$/,
     ],
@@ -228,6 +233,12 @@ function table(headers, rows, compare) {
 const LINE_COLUMNS = ['product', 'test', 'generated', 'files'];
 
 function lineSection(lines, previous, compare) {
+  const before = (key) => previous?.rows.find((r) => r.key === key);
+  // The unassigned row is what to add to `PACKAGES`: left out while it holds no file, now and in
+  // the earlier run (whose files it shows gone).
+  const rows = lines.rows.filter(
+    (row) => row.key !== UNASSIGNED.key || row.files > 0 || before(row.key)?.files > 0,
+  );
   const out = [
     '## Dòng code theo gói (spec Phase 6 §6.2)',
     '',
@@ -236,8 +247,8 @@ function lineSection(lines, previous, compare) {
     '',
     ...table(
       ['Gói', 'Sản phẩm', 'Test', 'Sinh tự động', 'File'],
-      lines.rows.map((row) => {
-        const old = previous?.rows.find((r) => r.key === row.key);
+      rows.map((row) => {
+        const old = before(row.key);
         return {
           label: row.key === TOTAL.key ? `**${row.label}**` : row.label,
           values: LINE_COLUMNS.map((c) => row[c]),

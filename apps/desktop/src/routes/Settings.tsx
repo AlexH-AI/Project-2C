@@ -4,7 +4,7 @@ import { Button } from '@p2c/ui';
 import { useAppData, useToday } from '../data/AppDataContext';
 import { isUnsavedChangesError } from '../data/app-data';
 import { t } from '../i18n';
-import { FOCUS, SETTINGS_SECTION } from './classes';
+import { FOCUS, HEADING, SETTINGS_SECTION } from './classes';
 import type { SettingsSection } from '../shell/routes';
 import { ConfirmWordDialog } from './ConfirmWordDialog';
 import { AiSection } from './SettingsAi';
@@ -107,7 +107,7 @@ function DemoSection({ notice: outcome, onNotice }: DataNoticeProps<Outcome>) {
 
   return (
     <section aria-labelledby="demo-data-title" className={SETTINGS_SECTION}>
-      <h2 id="demo-data-title" className="m-0 mb-1 text-sm font-medium text-heading">
+      <h2 id="demo-data-title" className={`${HEADING} mb-1`}>
         {t('settings.demo.title')}
       </h2>
       <div className="flex items-center gap-3 py-2 text-sm">
