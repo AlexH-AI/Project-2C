@@ -91,6 +91,21 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - measuring on the Home PC against its baseline after #656;
   - three issues fix the OPEN notes first: T-310 code, T-311 docs, T-312 guide screenshots taken now and retaken at G7 where round 4 fixes change a screen;
   - DeepSeek runs alone in a second wave, after Claude and Codex, behind ACL and `opencode.json`.
+- 2026-10-28: G1 of the round 4 plan (PR #863), with one change in the OWNER's words: "anh duyệt G1, nhưng lần review lượt 4 này với Deepseek sẽ không dùng opencode, mà dùng trực tiếp Deepseek API với deepseek harness".
+  - DeepSeek v4.1 Flash runs through the DeepSeek Harness (DSH, DeepSeek's open-source agent harness) on the DeepSeek API, paid as you go, instead of OpenCode on the Go plan.
+  - DSH is not OpenCode, so round 4 needs no exception to "no OpenCode for review".
+  - The change is its own issue (T-313, #868), not part of T-311.
+
+  G4 / G6 approved the same day on #868:
+  - DSH `0.2.1-rc.2`, installed by the OWNER, no third-party plugins.
+  - A dedicated DeepSeek API key for round 4, which the OWNER creates and enters in DSH; no Claude session reads, sets, prints or stores it. 10 USD prepaid, a 15 USD ceiling, and the key is revoked right after package F.
+  - The same Windows user (option b). DSH's documented sandbox limits writes only (Windows enforcement unproven) and has no read or command rules, so ACL is the only read block. Wave 2 therefore also denies reading `~/.codex` and the Claude transcripts of the review worktree, and `gh` is logged out during wave 2.
+  - Web search and fetch are off.
+  - Reports and logs are scanned for key patterns before they reach the repo.
+  - A trial session runs before wave 2.
+  - The OWNER copies the DSH session logs out only after revoking the key.
+
+  Plan: `docs/process/deep-review-phase-1-6.md` §L4; Appendix P is now the DSH configuration.
 
 ## Next decision
 
