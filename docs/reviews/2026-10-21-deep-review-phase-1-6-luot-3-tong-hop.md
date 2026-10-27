@@ -331,7 +331,7 @@ So mốc sau #656: **không dòng nào ⚠️**. So lượt 2 cùng máy chỉ `
 
 Không có phát hiện P vượt ngưỡng hay xấu hơn mốc cùng máy. Chỉ có CL3-A29 (KNOWN #709, §8.4). Ghi để theo dõi, không phải phát hiện:
 
-- `integrity_check` tăng tuyến tính theo cỡ file, ≈ 7,5 ms / MB (Claude B). Trên exe, `p2c:data-open` 366 / 453 / 546 ms ở 1× / 2× / 3× dữ liệu tải, nên chạm 600 ms ở ≈ 2× cỡ dữ liệu tải. Ngưỡng ≤ 600 ms chỉ áp cho dữ liệu tải → đã ghi vào `phase-6.md`.
+- `integrity_check` tăng tuyến tính theo cỡ file, ≈ 7,5 ms / MB (Claude B). Trên exe, `p2c:data-open` 366 / 453 / 546 ms ở file 14,1 / 20,0 / 25,4 MB (×1 / ×2 / ×3 KH mỗi RE), chạm 600 ms ở ≈ 28–29 MB (≈ 2× cỡ file dữ liệu tải). Ngưỡng ≤ 600 ms chỉ áp cho dữ liệu tải → đã ghi vào `phase-6.md`.
 - Thùng rác 1 313 dòng mở 449 ms trên bản web khi gắn DevTools; trên exe 152 ms. Đúng triệu chứng DR6-84 mà Owner chọn chữa bằng Dọn sạch (Q8 c); dọn xong còn 3–10 ms.
 
 ### 7.5 Bloat — không có code chết chạy được có chi phí đo được

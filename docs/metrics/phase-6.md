@@ -1,6 +1,6 @@
 # Chỉ số Phase 6 — Hoàn thiện & phát hành v1.0
 
-Theo bảng chỉ số của `docs/COMPARISON.md` (mẫu từ `phase-5.md`), thêm phần đánh giá cuối dự án (thay `FINAL.md`, `docs/metrics/README.md`). Tới cuối phase file này mới có mục **Số đo nền** (T-219, spec Phase 6 §5.1, ghi trước lượt review 1 của 6D), mốc Home PC sau lượt 2 (T-225), mốc Home PC sau #656 (T-264), số đo deep review lượt 3 (T-267) và số liệu ba lượt review đóng phase. Các mục khác để trống tới khi đóng phase.
+Theo bảng chỉ số của `docs/COMPARISON.md` (mẫu từ `phase-5.md`), thêm phần đánh giá cuối dự án (thay `FINAL.md`, `docs/metrics/README.md`). Tới cuối phase file này mới có mục **Số đo nền** (T-219, spec Phase 6 §5.1, ghi trước lượt review 1 của 6D), mốc Home PC sau lượt 2 (T-225), mốc Home PC sau #656 (T-264), số đo deep review lượt 3 (T-267), số liệu ba lượt review đóng phase cùng hai đợt sửa sau lượt 3, và bảng PR vượt ngưỡng tới 27/10 (T-307). Các mục khác để trống tới khi đóng phase.
 
 - **Milestone:** "Phase 6 — Hoàn thiện & phát hành" — _điền cuối phase_
 - **Bắt đầu:** 2026-10-11 (spec G1 #515) · **Task code cuối merge:** _cuối phase_ · **Đóng milestone:** _G7_
@@ -222,7 +222,7 @@ Không thay mốc sau #656: G7 vẫn so với mốc đó. Phân tích: tổng h�
   - exe, bấm "Backup rồi dọn sạch" → khung hình đầu có thông báo 11j: **151,8 ms** ở dữ liệu tải (113 dòng Thùng rác), 148–154 ms ở Thùng rác 1 313 dòng. Ngưỡng ≤ 500 ms (Owner chốt 21/10, ≈ 3× số đo); G7 đo tay như lượt này;
   - `trash.open` trên exe trước → sau khi dọn: 38,9 → 9,6 ms (113 dòng), 151,9 → 3,7 ms (1 313 dòng);
   - Node `purgeTrash` cả `VACUUM`: 93,8 ms (113 dòng), 109,8 ms (1 313 dòng); cỡ file −4,7 % / −89,5 %.
-- **`integrity_check` theo cỡ file:** ≈ 7,5 ms / MB. Trên exe, `p2c:data-open` 366 / 453 / 546 ms ở 1× / 2× / 3× dữ liệu tải, nên chạm 600 ms ở ≈ 2× cỡ dữ liệu tải. Ngưỡng `app.open-data` ≤ 600 ms chỉ áp cho dữ liệu tải.
+- **`integrity_check` theo cỡ file:** ≈ 7,5 ms / MB trong Node. Trên exe, `p2c:data-open` 366 / 453 / 546 ms ở file 14,1 / 20,0 / 25,4 MB (dữ liệu tải, rồi ×2 / ×3 KH mỗi RE); ngoại suy ≈ 16 ms / MB thì chạm 600 ms ở ≈ 28–29 MB, tức ≈ 2× cỡ file dữ liệu tải. Ngưỡng `app.open-data` ≤ 600 ms chỉ áp cho dữ liệu tải.
 - **Hàm thuần trong Node:** không hàm nào xấu hơn lượt 2 cùng máy theo luật nhiễu. `listTrash` +4–6 ms là bước gốc của `KEPT_APPOINTMENTS` trong `keptRecords` mới (KNOWN #709, CL3-A29).
 
 ## Kiểm tra trên `main`
@@ -231,7 +231,45 @@ _Điền cuối phase._
 
 ## Kích thước PR vượt ngưỡng
 
-_Điền cuối phase._
+Tới 27/10/2026 (T-307): 241 PR merge vào `main` sau PR đóng Phase 5 (#514), từ #515 tới #858; 87 PR trong đó có code hoặc test. PR sửa của vòng review toàn bộ code ghi thêm sau. Lệnh đếm và lệnh rà: thân PR của T-307.
+
+Ngưỡng ADR-0001 phụ lục: ≤ ~400 dòng code sản phẩm (SP), ≤ ~800 dòng tổng diff. Luật đếm:
+
+- **Nguồn:** `additions` / `deletions` của từng file theo `gh api repos/AlexH-AI/Project-2C/pulls/<n>/files --paginate`. SP và tổng đều cộng dòng thêm với dòng xóa, như sổ đã làm với #801, #833.
+- **Phân loại** theo `classifyFile` của `tools/size-report-core.mjs` (spec §6.2). Test: `*.test.*`, `*.spec.*`, `e2e/**`, `test-support.ts`, `fixtures/**`, golden, và phần từ dòng `#[cfg(test)]` trở đi của file Rust. Code còn lại là SP, kể cả `tools/*.mjs` (như #474 ở `phase-5.md`) và migration tự viết (mở đầu `-- Custom SQL migration file`). File mà `classifyFile` không đếm (tài liệu, `.json`, `.toml`) chỉ cộng vào tổng.
+- **Không tính** (ADR-0001 phụ lục): lockfile; SQL, snapshot và journal do drizzle-kit sinh; bảng dữ liệu tĩnh của seed (`packages/db/src/seed-data.ts`); khối codemap trong `CLAUDE.md` của các package; `src-tauri/icons/*`.
+- **Không xét** PR không đổi dòng code hay test nào. Bốn PR loại này vượt 800 dòng: kết quả eval #518, báo cáo gốc #609, #651, #718.
+- **Bảng phụ "ở biên":** PR vượt không quá 6 % (SP 401–424, tổng 801–848) và không vượt ngưỡng kia quá 6 %. Vượt quá 6 % ở một ngưỡng thì vào bảng chính.
+
+| PR | Task | Code sản phẩm | Tổng diff | Lý do nêu trong PR |
+|---|---|---|---|---|
+| #526 | T-201 | 582 (+260 / −322) | 762 (test 172) | không nêu |
+| #539 | T-208 | 497 (+442 / −55) | 958 (test 461) | có: hàm kiểm chung và `listTrash` phải đi cùng nhau thì test trùng lỗi mới có nghĩa |
+| #543 | T-210 | 433 (+427 / −6) | 915 (test 482) | có: Issue đã là nửa của B4; phần dôi là chuỗi `vi.ts` và fixture test bị Prettier ngắt dòng |
+| #545 | T-211 | 457 (+443 / −14) | 828 (test 371) | có: hộp khôi phục cho đủ 5 loại |
+| #572 | T-218 | 9 (+8 / −1) | 925 (test 829: probe, `stats.ts`) | có: probe là một luồng chạy liền |
+| #669 | T-250 | 298 (+178 / −120) | 946 (test 641) | có: 6 mục test chấp nhận, 4 mục là e2e dựng dữ liệu qua màn |
+| #709 | T-258 PR 1/2 | 287 (+281 / −6; gồm migration 0011 tự viết, 28) | 860 (test 573) | có: test D1–D11 dựng Thùng rác đủ năm loại; đây là đường mất dữ liệu duy nhất của app |
+| #710 | T-258 PR 2/2 | 477 (+405 / −72) | 1 081 (test 533) | có: hàng đợi, hộp 11i, thông báo 11j và màn đi cùng nhau; task đã tách hai PR |
+| #801 | T-286 | 432 (+205 / −227) | 785 (test 353) | có: mỗi lời gọi đổi tên tính một dòng − và một dòng +; Prettier bẻ import dài |
+| #805 | T-287 | 418 (+282 / −136) | 930 (test 510) | có: 8 mục và 18 ghi chú sổ trong một Issue |
+| #812 | T-288 | 666 (+376 / −290) | 900 (test 220) | có: ≈ 130 dòng dời nguyên văn tính hai lần; 8 mục của Issue cùng 5 ghi chú Mock của review #809 |
+| #828 | T-291 | 549 (+405 / −144) | 1 294 (test 733) | có: Issue gom 12 mục; G5 §13.5 kê nhiều ca nhập |
+| #833 | T-296 | 527 (+337 / −190) | 878 (test 342) | có: Issue gom 11 mục sổ của 5 review; 190 dòng xóa là hai khung hộp gõ chữ gom về một chỗ |
+| #835 | T-297 | 753 (+567 / −186) | 1 578 (test 796) | có: Issue gom 19 mục sổ, thêm hàm đọc `db` Owner duyệt trong phiên |
+| #845 | T-301 PR 1/2 | 791 (+385 / −406) | 1 103 (test 312) | có: ≈ 30 màn đổi dòng import, `PLAIN_SLOTS` dời sang test, 17 cột báo cáo viết lại; Owner đã tách task thành hai PR |
+
+Ở biên:
+
+| PR | Task | Code sản phẩm | Tổng diff | Lý do nêu trong PR |
+|---|---|---|---|---|
+| #566 | T-216 | 287 (+272 / −15) | 833 (test 546) | có: thụt lề `describe.each`, bỏ thụt lề còn ≈ 560 |
+| #568 | T-217 | 406 (+406 / −0) | 705 (test 299) | có: SP sát ~400, tính cả comment và dòng trống |
+| #616 | T-232 | 423 (+364 / −59) | 768 (test 323) | không nêu |
+| #817 | T-294 | 298 (+210 / −88) | 820 (test 473) | có: Issue gộp 6 mục sổ và ba quyết định Owner trong phiên |
+
+- **Số trong bảng thay số của sổ và thân PR**, vì đếm theo cùng một luật: SP cộng cả dòng xóa (sổ ghi #539, #543, #545 theo dòng thêm); khối codemap bỏ, chữ viết tay của `CLAUDE.md` vẫn tính (#828: 1 294, sổ ghi 1 292); `seed-data.ts` không tính (#526: SP 582, không phải 621). #566 (tổng 833) và #817 (820) sổ ghi là vượt, nhưng chỉ vượt tổng ≤ 6 % nên ở bảng phụ.
+- **19 / 87 PR có code vượt ngưỡng**, 15 ở bảng chính. 8 PR là của đợt sửa sổ OPEN trước v1.0 (T-283…T-304), nơi mỗi Issue gom nhiều mục sổ; 5 PR của Thùng rác (T-208, T-210, T-211, hai PR của T-258). Hai PR không nêu lý do: #526, và #616 ở biên.
 
 ## Review đóng phase
 
@@ -256,8 +294,9 @@ Deep review Phase 1–6 (6D, kế hoạch `docs/process/deep-review-phase-1-6.md
   - 54 phát hiện mới → **31** vấn đề DR6-104…134: **0 Medium**, 21 Low, 10 Nit; thêm 3 mục KNOWN có bằng chứng mới. 0 bị bác.
   - Kết luận: chưa sẵn sàng ở `119e2e4`, chỉ vì Owner đã quyết sửa hết trước G7.
   - Owner 21/10 đồng ý cả 6 đề xuất của §9: 11 Issue #719–#729.
-
-_Còn điền: kết quả đợt sửa lượt 3, kiểm lại trước G7._
+- **Đợt sửa lượt 3 (21–23/10):** 11 Issue #719–#729 (T-268…T-278) cho DR6-104…134, cùng #735 (T-280, thanh trên cùng che phần tử nhận focus: mục KNOWN của lượt 3, Owner 21/10 cho làm trước G7) và #752 (T-281: ca review #750 thấy phần sửa DR6-120 còn sót). Đóng hết 23/10.
+- **Đợt sửa sổ OPEN trước v1.0 (23–26/10):** Owner 23/10 quyết sửa hết sổ ghi chú review trước v1.0 (#771): 22 Issue T-283…T-304 (#772–#790, #793, #797, #831). Đóng hết 26/10 (PR cuối #846).
+- Deep review toàn bộ code lượt 4 (kế hoạch: T-309 #854) kiểm lại hai đợt này trước G7.
 
 ## Điều hướng (riêng 2C, `docs/metrics/README.md`)
 
