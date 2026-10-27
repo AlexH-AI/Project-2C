@@ -5,6 +5,7 @@ import { useAppData, useSaveStatus } from '../data/AppDataContext';
 import type { SaveStatus } from '../data/persist-queue';
 import { t } from '../i18n';
 import { FOCUS } from '../routes/classes';
+import { Brand } from './Brand';
 import { SECTIONS, routeToHash, type Section } from './routes';
 
 const ICONS: Record<Section, NavIconName> = {
@@ -22,15 +23,7 @@ const FIRST_MANAGE_SECTION: Section = 'team';
 export function Sidebar({ current }: { current: Section }) {
   return (
     <aside className="flex w-(--sidebar-w) flex-none flex-col gap-4.5 border-r border-border bg-surface-1 px-3.5 py-4.5">
-      <div className="flex items-center gap-2.5 px-1.5 text-lg font-bold">
-        <span
-          aria-hidden="true"
-          className="grid size-7.5 place-items-center rounded-md border-2 border-accent text-xs text-accent"
-        >
-          2C
-        </span>
-        {t('app.title')}
-      </div>
+      <Brand />
       <nav aria-label={t('nav.label')} className="flex flex-col gap-0.5">
         {SECTIONS.map((section) => {
           const active = section === current;

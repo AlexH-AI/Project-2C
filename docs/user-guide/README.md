@@ -1,6 +1,8 @@
-# Hướng dẫn sử dụng Project-2C
+# Hướng dẫn sử dụng Heritas L-CRM
 
-Project-2C là app quản lý khách hàng (KH), lịch hẹn, hợp đồng (HĐ) và chỉ số cho đội tư vấn bảo hiểm: RE ghi lịch hẹn và kết quả cuộc gặp, ghi KYC của KH, ghi HĐ nộp / phát hành; TL và Owner xem chỉ số theo team, theo RE, theo kỳ. App có phần AI (KYC Intelligence) gợi ý hướng khám phá nhu cầu KH từ dữ kiện KYC đã xác nhận.
+Heritas L-CRM là app quản lý khách hàng (KH), lịch hẹn, hợp đồng (HĐ) và chỉ số cho đội tư vấn bảo hiểm: RE ghi lịch hẹn và kết quả cuộc gặp, ghi KYC của KH, ghi HĐ nộp / phát hành; TL và Owner xem chỉ số theo team, theo RE, theo kỳ. App có phần AI (KYC Intelligence) gợi ý hướng khám phá nhu cầu KH từ dữ kiện KYC đã xác nhận.
+
+Tên mã của app là Project-2C, nên tên file và vài câu báo vẫn dùng tên này: file exe `project2c.exe`, thư mục dữ liệu `Project2C-data\`, file backup `.p2cbackup`, câu báo như "Project-2C đang mở ở một cửa sổ khác".
 
 Hướng dẫn viết theo việc cần làm. Chữ trong ngoặc kép hoặc **in đậm** là nhãn đúng như trên màn. Thuật ngữ ngành (RE, TL, KYC, FYP, RF…) giữ tiếng Anh, giải thích ở [11. Thuật ngữ](11-thuat-ngu.md).
 

@@ -24,6 +24,8 @@ Mockup lớn có **mục lục ở comment đầu file** (khối → neo `#id` �
 | `trash.html` (11a–11j) | Cài đặt → Thùng rác (`#/settings/trash`): `SettingsTrash.tsx` (+ `trash-view.ts`, `RestoreDialog.tsx`); 11f → hộp Xóa KH trong `customers/CustomerDialogs.tsx`; 11g → câu lỗi khóa ghi khi thay dữ liệu; 11h–11j → dọn sạch Thùng rác (#662) | #520, duyệt 11/10/2026; dọn sạch (11h–11j, sửa 11a, 11f): #662, duyệt 19/10/2026 (PR #707) | `docs/design/phase-6-hoan-thien.md` §4.1, §4.2 |
 | `table-more.html` | Bảng lớn của `packages/ui` `DataTable` (Lịch hẹn, Khách hàng, hồ sơ KH, Team) | Chờ duyệt (T-150) | `docs/reviews/2026-10-06-deep-review-phase-1-4-tong-hop.md` DR-03, §11.3 |
 
+Khối `.brand` ở góc sidebar của 6 mockup có sidebar (`appointments`, `customer`, `customers`, `settings-data`, `team`, `trash`) là logo Heritas L-CRM (T-308 #852; Owner duyệt G3 27/10/2026, cách (c)): ba mảnh ảnh trong `img/`, cùng bản với app (`apps/desktop/src/shell/Brand.tsx`), cây và "Heritas" có viền champagne mỏng, slogan Playfair Display nghiêng (Google Fonts, như Be Vietnam Pro). Thông số: ADR-0013 phụ lục 27/10/2026.
+
 `mockups.css` dùng chung cho mọi mockup; `forms.css` thêm cho các mockup hộp thoại (`*-forms.html`, `team.html`, `settings-data.html`). Viền ô nhập (`.input`, `.select`, `.search`) và mũi tên sắp xếp chưa chọn (`th.sort`) dùng token `--border-control` (T-284); ô khóa `.input.locked` giữ viền đứt `--border-strong` (T-303).
 
 ## Khối của mockup lớn

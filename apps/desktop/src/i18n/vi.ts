@@ -1,6 +1,7 @@
 /** Vietnamese UI strings. Industry terms (FYP, KYC, N1–N4) stay in English — ADR-0011. */
 export const vi = {
-  'app.title': 'Project-2C',
+  'app.title': 'Heritas L-CRM',
+  'app.slogan': 'Where legacy meets trust',
   'sep.dot': '·',
   'sep.arrow': '→',
   'sep.range': '{from} – {to}',
