@@ -5,6 +5,7 @@
 - **Soạn:** 13/10/2026, bước 0 của lượt 1 (spec `docs/design/phase-6-hoan-thien.md` §6.3). Lượt 2 (T-224 #564) sửa trên cùng file: thêm mục "Lượt 2" và prompt lượt 2, giữ nguyên phần lượt 1.
 - **Lượt 2:** soạn 17/10/2026 (T-224 #564) — **Owner duyệt 17/10/2026** (PR #647, nhãn `gate`; https://github.com/AlexH-AI/Project-2C/pull/647#issuecomment-6221359110). **Owner trả lời §L2.11 ngày 17/10/2026** (ADR-0001 phụ lục M7): bỏ Muse, lượt 2 chỉ **Claude và Codex**, chạy **một đợt**; chạy trên máy nào cũng được, số đo so với mốc cùng máy; các câu còn lại theo đề xuất. Toàn bộ ở phần **Lượt 2** cuối file: §L2.1–§L2.11, prompt Phụ lục E, F, H (không có Phụ lục G). Phần lượt 1 (§1–§12, Phụ lục A–D) giữ nguyên, lượt 2 chỉ dẫn tới khi dùng lại.
 - **Lượt 3:** Owner thêm 19/10/2026, trước G7 (T-266 #713, ADR-0001 phụ lục M9): **Claude và Codex**, đủ 6 gói như lượt 2, phần Claude chạy bằng **Workflow** (mỗi gói một subagent context sạch, tuần tự A → F), sau tổng hợp sửa hết. Toàn bộ ở phần **Lượt 3** cuối file: §L3.1–§L3.11, script và prompt ở Phụ lục I, J, K. Phần lượt 1, lượt 2 giữ nguyên.
+- **Lượt 4:** Owner thêm 26–27/10/2026, trước G7 (T-309 #854, ADR-0001 phụ lục M10): **Claude Opus 5.5, Codex (GPT Sol 6.1) và DeepSeek v4.1 Flash (OpenCode)**, đủ 6 gói như lượt 2–3, phần Claude mỗi gói một phiên sạch như lượt 3. Chỉ chạy khi mọi ghi chú OPEN của sổ đã sửa hết (Owner 27/10). Kiểm các đợt sửa sau lượt 3 (đợt sửa lượt 3, đợt sửa sổ OPEN, T-305…T-308, đợt sửa mục OPEN còn lại) và tìm lỗi mới trên toàn bộ code. Toàn bộ ở phần **Lượt 4** cuối file: §L4.1–§L4.11, prompt ở Phụ lục L, M, N, O, cấu hình OpenCode ở Phụ lục P (không có script Workflow). Phần lượt 1–3 giữ nguyên.
 - **Nguồn:** spec Phase 6 §2, §5.1, §6 (G1 #515); khuôn deep review Phase 1–4 (`deep-review-phase-1-4.md`) và Phase 5 (`docs/reviews/raw/2026-10-10/common-*.md`); bài học DeepSeek / Muse (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §6–§7); tổng hợp Phase 5 §9–§10; ADR-0001 phụ lục M2, M4, M5.
 - **Owner đổi bên review (13/10, ADR-0001 phụ lục M5):** bỏ DeepSeek v4.1 Flash (chỉ số benchmark trí tuệ không đủ cao cho deep review toàn codebase); Muse dùng model **Muse Wonder** (mới ra, benchmark cao hơn Spark 1.3). Lượt 1 còn **3 bên**: Claude, Codex, Muse → 6 gói × 3 = **18 báo cáo**. **14/10 (M6):** Muse về lại **Muse Spark 1.3** (`muse-spark-1.3-contributor`, Muse Code 1.3.0 trên Office Laptop, như Phase 5).
 
@@ -1550,3 +1551,995 @@ Nối nguyên văn vào cuối cả hai file `prompt-<bên>.md` của lượt 3.
 > **Gói F** thêm **bảng R gộp đủ 39 DR6** (từ báo cáo A–E lượt 3 của chính bạn + phần F) và kết luận **SẴN SÀNG / CHƯA SẴN SÀNG cho v1.0 ở SHA `119e2e4`** kèm lý do.
 >
 > Xong gói thì làm như mục "Cuối phiên" của Bước 0. Không tổng hợp, không so với bên khác, không tạo Issue, không đề xuất merge.
+
+# Lượt 4
+
+Kế hoạch lượt 4 (T-309 #854), soạn 27/10/2026 trên Home PC, sau khi T-305…T-308 (#849–#852) đóng. ADR-0001 phụ lục M9 coi lượt 3 là lượt cuối trước G7; Owner thêm lượt 4 ngày 26–27/10 (phụ lục M10, §L4.11). Mục nào không nói khác thì giữ như lượt 3 theo bản sửa 20/10 (§L3.1–§L3.11: mỗi gói một phiên sạch, không phiên điều phối), và qua đó như lượt 1–2.
+
+Owner bổ sung 27/10, sau khi bản nháp đã soạn (§L4.11 mục B1, B2):
+
+- **thêm DeepSeek v4.1 Flash** làm bên review thứ ba;
+- **lượt 4 chỉ chạy khi mọi ghi chú OPEN của sổ đã sửa hết.** SHA ghim vì vậy chưa biết lúc soạn. Số đo trong phần này lấy ở `a59ef07` (`main` lúc soạn); bước chuẩn bị đo lại ở SHA ghim. Prompt ghi `{SHA}`, bước chuẩn bị thay bằng SHA ghim (§L4.9 bước 4).
+
+| Yêu cầu | Mục |
+|---|---|
+| #854 test 1: SHA ghim lượt 4 sau khi #849–#852 đóng; từ đó tới lúc chạy chỉ có docs | §L4.2, §L4.9 bước 1 |
+| #854 test 2: prompt các bên đủ hai phần; KNOWN lượt 4 đủ nguồn; lệnh so số đo với mốc Home PC sau #656 | §L4.4, §L4.5, §L4.6, Phụ lục L, M, N, O |
+| #854 test 3: bảng R khớp tổng hợp lượt 3 (§3, §6, §8.4, §8.5) và các Issue sửa sau đó | §L4.5 phần 4, 5 |
+| #854 test 4: đề xuất ghi rõ Owner chọn gì, có ngày | §L4.11 |
+| #854 hợp đồng: bảng R theo mã `DR6-*`, rồi phát hiện mới với ID theo bên, không trùng `CL4-*` / `CX4-*`; ghi model các bên | §L4.2, §L4.8, Phụ lục L, M, N, O |
+| Owner 27/10: thêm DeepSeek v4.1 Flash | §L4.1, §L4.2, §L4.7, §L4.9, Phụ lục O, P |
+| Owner 27/10: chỉ chạy khi sổ OPEN rỗng | §L4.2, §L4.5 phần 1, §L4.9 bước 1 |
+
+## L4.1 Mục tiêu, bên review
+
+Owner chốt 26–27/10/2026 (§L4.11 mục 1, 2, B1, B2):
+
+- **Một vòng deep review toàn bộ code trước G7** (26/10), sau khi các mục sổ OPEN làm được trước vòng này đã xong (T-305…T-308).
+- **Chỉ chạy khi mọi ghi chú OPEN của sổ đã sửa hết** (27/10), kể cả các mục [G7]. Ở `a59ef07` sổ còn 14 mục [G7]; chúng sửa ở một đợt trước lượt 4 (§L4.2, đề xuất 8).
+- **Ba bên:**
+  - **Claude Opus 5.5** (27/10): như lượt 3, Owner mở **mỗi gói một phiên sạch** ở `C:\workspace\Project-2C-review`. Mức suy luận và ultracode Owner chọn từng phiên (M1, M8). Phiên bật ultracode được dùng subagent / Workflow cho việc của gói; chỉ phiên chính làm bước 0, ghi `{GÓI}.md` và in dòng `XONG`.
+  - **Codex, model GPT Sol 6.1** (27/10): Owner chạy, mỗi gói một phiên mới, chỉ đọc, không viết code (M2).
+  - **DeepSeek v4.1 Flash** (Owner bổ sung 27/10), qua OpenCode như review Phase 5: Owner chạy, mỗi gói một phiên mới, chỉ đọc, không viết code. Báo cáo là dữ liệu tham khảo như Codex (M2, M10). Bỏ DeepSeek ở lượt 1 (M5, 13/10) không còn áp cho lượt 4.
+  - 6 gói × 3 bên = **18 báo cáo**, chạy **hai đợt** như lượt 1 và review Phase 5 (đề xuất 9, Owner chọn 27/10): đợt 1 Claude + Codex song song; đợt 2 DeepSeek một mình, khi thư mục của hai bên kia đã bị chặn ACL.
+- **Hai phần ngang nhau** như lượt 2–3:
+  1. **kiểm phần đã sửa** (trục R): mọi DR6 và mục KNOWN đã sửa sau lượt 3, và từng Issue gom ghi chú sổ (§L4.4);
+  2. **tìm lỗi mới và edge case mới** trên **toàn bộ** phạm vi gói.
+- **Sau tổng hợp:** đề xuất sửa hết như lượt 3, rồi G7 (đề xuất 6).
+
+**Vì sao cần lượt 4:** từ SHA ghim lượt 3 (`119e2e4`) tới nay có ba đợt mà chưa lượt deep review nào đọc trọn.
+
+- **Đợt sửa lượt 3** (21–23/10): 11 Issue #719–#729 cho DR6-104…134, cùng #735 (T-280), #752 (T-281), #756 (T-282, tài liệu).
+- **Đợt sửa sổ OPEN trước v1.0** (23–26/10; Owner 23/10, #771): 22 Issue T-283…T-304, mỗi Issue gom nhiều ghi chú sổ. 8 PR của đợt này vượt ngưỡng cỡ (`docs/metrics/phase-6.md` mục "Kích thước PR vượt ngưỡng": #801, #805, #812, #828, #833, #835, #845; #817 ở biên).
+- **Trước vòng review** (27/10): T-305…T-308, gồm đổi tên hiển thị sang Heritas L-CRM (T-308: khối logo, font slogan, icon, tiêu đề cửa sổ, file build exe).
+
+Thêm đợt sửa mục OPEN còn lại trước lượt 4 (đề xuất 8). Ba đợt đã merge: diff `119e2e4..a59ef07` ngoài `docs/**` và mọi file `*.md` có 269 file, +14 559 / −3 383 dòng. Đợt sửa lượt 2 mà lượt 3 kiểm chỉ có 119 file, +7 742 / −1 050. Ba đợt có thêm:
+
+- một migration (`0012_trash_lookups`);
+- luật mới ở nhập backup (bảy luật T-291, mốc `precision: 3`, U+FEFF);
+- đợt G5 `@4`, và `zod/mini` thay `zod` đầy đủ;
+- trạng thái lưu mới: chỉ báo ở sidebar, nút Thử lại, đóng app chờ lần thay đang chạy;
+- hộp gõ chữ xác nhận dùng chung cho Nạp lại và Dọn sạch.
+
+Các lượt trước cho thấy đợt sửa sinh lỗi mới. Lượt 2 có 3 hồi quy, trong đó có Medium duy nhất. Lượt 3 không có hồi quy, nhưng chỗ hở nằm nhiều ở code mới của đợt sửa trước nó: DR6-125, 128 (Dọn sạch), DR6-115 (câu 9b, #669 / #710), DR6-122 (G5 `@3`, #698).
+
+## L4.2 SHA ghim, đợt sửa, chỗ làm
+
+**SHA ghim lượt 4 = `main` khi sổ OPEN rỗng** (Owner 27/10, B2): mục OPEN của `docs/state/review-notes.md` ở `main` không còn mục lá nào. Thứ tự:
+
+1. PR kế hoạch này merge (G1), rồi PR sổ ghi chú review của nó.
+2. Đợt sửa mục OPEN (đề xuất 8): sửa 14 mục [G7] ở `a59ef07`, ghi chú không chặn mà review kế hoạch này ghi thêm, và ghi chú mới của review các PR sửa đó.
+3. Sổ OPEN rỗng → bước chuẩn bị ghim `main` lúc đó (§L4.9 bước 1).
+
+Từ SHA ghim tới lúc chạy chỉ có thay đổi docs.
+
+**Lúc soạn:** `a59ef07` (`a59ef0762f0023c9771f3fedb7f4b1c393179f2f`, `main` 27/10/2026 sau #862).
+
+- Mọi Issue của ba đợt đã đóng; #852 (T-308) đóng 27/10 15:26 UTC qua #861. Milestone Phase 6 không còn Issue mở nào ngoài #854.
+- Code giống `c4eec8b` (#861); sau đó chỉ có `docs/state/review-notes.md` (#862).
+- CI của PR #861 xanh ở head `97e9420`, cây trùng `c4eec8b` (`git diff 97e9420 c4eec8b` rỗng): run `40519703994`, job Verify (`pnpm verify` + `pnpm e2e`) và Build portable exe (fmt, clippy, `cargo test`, `pnpm build:exe`).
+- Mọi số đo của §L4.2, §L4.3, §L4.6 lấy ở `a59ef07`. Bước chuẩn bị đo lại ở SHA ghim và chạy lại cổng (§L4.9 bước 5, 6); số ở `common\baseline.md` là số dùng.
+
+**Đợt sửa = diff `119e2e4..{SHA}`.** Lúc soạn (`119e2e4..a59ef07`), ngoài `docs/**` và mọi file `*.md`: 269 file, +14 559 / −3 383 dòng (`git diff --numstat`, tính cả test, migration; 12 file nhị phân: icon, font, ảnh logo). Một migration mới `0012_trash_lookups` (hai chỉ mục, không đổi dữ liệu). 35 PR có code hoặc test; #845 merge bằng `--merge` (ba commit).
+
+Đợt sửa lượt 3 (Owner duyệt cách sửa 21/10, tổng hợp lượt 3 §9; cột DR6 là vấn đề lượt 3 mà Issue sửa):
+
+| Issue | Việc | DR6 | PR | Commit |
+|---|---|---|---|---|
+| #719 T-268 | Đồng hồ e2e cố định, test công cụ `notes-core` | 129, 130 | #736 | `1276ccd` |
+| #720 T-269 | Khôi phục theo E7, mốc thời gian dạng app ghi, một hàm nhóm của ngày | 104–106, 126 (a, b, d), 134 | #740 | `33b6c33` |
+| #721 T-270 | Chữ và tiền: U+FEFF, nửa surrogate, hộp gửi chữ gốc, ký tự điều khiển | 107–112, 126 (e, f) | #738 | `d3e51d0` |
+| #722 T-271 | Dọn sạch: REPLACE không lách trigger, cột trỏ tới nhân sự một nơi, test tập giữ lại | 113, 114, 125, 126 (c), 132 (b) | #742 | `213a13e` |
+| #723 T-272 | Câu Thùng rác của hộp 9b, focus màn Team & nhân sự | 115, 116 | #744 | `e63270f` |
+| #724 T-273 | Chuỗi liền dài không tràn khung, panel AI vừa khung | 117, 118, 127 | #746 | `3fcdd4d` |
+| #725 T-274 | Tên nút HĐ / Thùng rác phân biệt được, e2e hộp Dọn sạch và 6f | 119, 128 | #748 | `efbfa88` |
+| #726 T-275 | Lưu file: nhận ra mất quyền ghi lúc mở, câu lỗi file chỉ đọc | 120 | #750 | `b91cc73` |
+| #727 T-276 | Mock trích xuất bớt đề xuất sai | 121 | #753 | `cbdb590` |
+| #728 T-277 | Đợt G5 lượt 3: `analysis@4`, `discovery@4` | 122–124 | #762 (G5 §12), #766 | `8b5ff6f`, `405ded1` |
+| #729 T-278 | Tài liệu: tiền gõ dấu phẩy, ngoại lệ Dọn sạch, ví dụ chip prompt | 131, 132 (a), 133 | #755 | `4cc2a23` |
+| #730 T-279 | Nâng mức `code-review` của skill `review-pr` (quy trình) | — | #731 | `cece0f9` |
+| #735 T-280 | Thanh trên cùng không che phần tử nhận focus (mục KNOWN lượt 3, Owner 21/10 cho làm trước G7) | — | #760 | `018fdc4` |
+| #752 T-281 | Thư mục dữ liệu cấm tạo file vẫn báo "chương trình khác" (phần còn của DR6-120, review #750) | 120 | #764 | `3753932` |
+| #756 T-282 | Tài liệu: ghi chú không chặn của review #755 | 131–133 | #758 | `da0d3c8` |
+
+Đợt sửa sổ OPEN trước v1.0 (Owner 23/10: sửa hết sổ trước v1.0; rà sổ, quyết định và nhãn ở #769, #770, #771, #791):
+
+| Issue | Việc | PR | Commit |
+|---|---|---|---|
+| #772 T-283 | e2e / `tools`: helper dùng chung, đồng hồ / múi giờ, luật import, `pr-status`; ghi quyết định 23/10 | #792 | `f469639` |
+| #773 T-284 | G3: mockup và token cho bốn chỗ đổi hình thức (tương phản, hộp 8d, panel mờ, dòng help 1a / 4a) | #795 | `f2465f8` |
+| #774 T-285 | Hàm dùng chung vào `packages/domain` (ngày giờ, ngày ISO, bỏ dấu, chuẩn hóa so sánh, id ngẫu nhiên), API `nextKycVersion` | #799 | `7d5029a` |
+| #775 T-286 | `packages/db`: gộp hàm lặp của lệnh, bỏ hàm chỉ test dùng (DR6-66, 67) | #801, #804 (spec, golden) | `228acac`, `931b9b8` |
+| #776 T-287 | `packages/db`: tham chiếu nhân sự, Thùng rác / Dọn sạch, đếm RF, seed và test (migration `0012`) | #805 | `597c632` |
+| #777 T-288 | `packages/ai`: hằng dùng chung với `db`, tách logic khỏi `retry.ts`, phạm vi export, version prompt trong test | #812 | `a5ff382` |
+| #778 T-289 | Mock trích xuất: bớt đề xuất sai còn lại của review #753 | #809 | `33f7891` |
+| #779 T-290 | `packages/ai`: cụm khớp trong `detail`, trích JSON khi bị cắt, ngưỡng test, message assistant rỗng | #820 (spec), #822 | `ccd07d7`, `d1a75e7` |
+| #780 T-291 | Bảy luật duyệt 23/10 (G2 / G5): hash KYC và `output_json` khi nhập backup, output REJECTED lớn, chữ chỉ có ký tự vô hình, ngày nhanh đầu năm, thứ tự tên, VT / FF | #824 (spec), #828 | `cc65196`, `7cdc432` |
+| #781 T-292 | `zod/mini` thay `zod` đầy đủ (DR6-25) | #830 | `78370a0` |
+| #782 T-293 | Rust: `storage.rs`, `backups\` không đọc được, test `ai.rs`, tiêu đề cửa sổ exe theo màn | #807 | `f36935e` |
+| #783 T-294 | Trạng thái lưu: chỉ báo lưu 10d, nút Thử lại trên dải lưu lỗi, đóng app khi đang lưu | #817, #819 (ghi chấp nhận) | `e7a11ba`, `0e1ac42` |
+| #784 T-295 | Cài đặt → Dữ liệu và mở file: số liệu hộp 10c, kiểm file trước migrate, thông báo của mục, ChatGPT web | #825 | `10b5bd7` |
+| #785 T-296 | Thùng rác và HĐ: hộp xác nhận dùng chung, tên nút theo ô, trạng thái HĐ, câu E20, hộp 8d | #833 | `b71239a` |
+| #786 T-297 | KYC và AI: dòng thời gian theo mockup (bộ lọc, mã F), lỗi AI giữ khi đổi màn, hộp 3f, Cài đặt → AI | #835 | `f5fa622` |
+| #787 T-298 | Hồ sơ KH và Lịch hẹn: hộp 5d, 6a / 6h, 6d, thẻ Lịch hẹn, ô ngoài tháng, focus khung Chi tiết | #838 | `49fcd2a` |
+| #788 T-299 | Team, Báo cáo, Tổng quan: hộp nhân sự, bảng thành viên giữ cách sắp, bảng số cho chart N4–N1, bộ chọn kỳ | #841 | `b226cb9` |
+| #789 T-300 | `packages/ui` và vỏ: token tương phản, `DataTable`, token-guard, ngưỡng nhánh, favicon, thanh trên cùng | #843 | `ff03c8a` |
+| #790 T-301 | Dọn app: mã chết, hằng lặp, ký hiệu viết cứng (DR6-37, phần app của DR6-66, 67) | #845, #846 | `ab7e6e7`, `1976a66`, `df35e3c` (merge `5abef68`), `1fd8e9e` |
+| #793 T-302 | Luật lint bắt `import()` động của `@playwright/test`; `docsRead` | #815 | `17601a3` |
+| #797 T-303 | G3: mockup ô khóa, câu ngoài phạm vi của token viền ô nhập | #811 | `bb29ab6` |
+| #831 T-304 | Luật lint chặn `zod` đầy đủ; mặc định của schema AI là mảng mới mỗi lần parse | #837 | `4f9082a` |
+
+Trước vòng review (rà sổ 26–27/10, #853):
+
+| Issue | Việc | PR | Commit |
+|---|---|---|---|
+| #849 T-305 | Class tiêu đề / huy hiệu ở `classes.ts`, `recordBadge`, `WEB_MODE.tone`, đồng hồ bộ chụp ảnh hướng dẫn | #855 | `fc40dfa` |
+| #850 T-306 | Tài liệu: spec Phase 6 (S2-6, TR-3, hộp 11i, 150 KiB), nghiệm thu, hướng dẫn | #857 | `fa4023e` |
+| #851 T-307 | Số đo Phase 6: bảng PR vượt ngưỡng, `integrity_check` theo MB, kết quả đợt sửa lượt 3 | #859 | `9f9d90e` |
+| #852 T-308 | Tên và nhận diện Heritas L-CRM: khối logo, font slogan, icon, tiêu đề | #861 | `c4eec8b` |
+
+**Đợt sửa mục OPEN trước lượt 4** (B2; chia Issue theo đề xuất 8, tạo sau G1; số T- dự kiến):
+
+| Issue (dự kiến) | Mục OPEN ở `a59ef07` | Loại |
+|---|---|---|
+| T-310 PR nhỏ | Review #855: 4 tiêu đề còn viết thẳng `HEADING`; doc comment `stage-badge.tsx`. Review #861: `lang="en"` cho slogan (`Brand.tsx` và 6 mockup); hai token thương hiệu trong bảng token của `docs/design/mockups/index.html`; dòng `e2e/navigation.spec.ts:33`; một ca unit buộc tên "Heritas L-CRM" ở năm chỗ khớp nhau; ảnh logo trùng byte giữa mockup và app (chọn cách trong task). Thêm ghi chú code của review kế hoạch này nếu có (vd. năm file mới vào `PACKAGES` của `tools/size-report-core.mjs`, §L4.3) | code, `risk:low` |
+| T-311 tài liệu | Review #859: danh sách "Test" của luật đếm thiếu `playwright*.config.ts`, `vitest.config.ts`; lệnh đếm dùng `base.sha` cho PR xếp chồng (`docs/metrics/phase-6.md`). Review #861: khối `.brand` vào bảng "Đối chiếu mockup → mã dòng" (`docs/testing/nghiem-thu-v1.md`). Thêm ghi chú tài liệu của review kế hoạch này nếu có | docs, `risk:low` |
+| T-312 ảnh hướng dẫn | Review #760 (dòng đầu ảnh khi Playwright phải cuộn), #825 (`09-nap-lai.png`), #838 (`03-ket-qua.png`), #861 (`05-ho-so-kh.png` dưới 150 KiB với logo mới): chụp lại toàn bộ ảnh hướng dẫn với logo mới | ảnh + `e2e/guide`, `risk:low`, sau T-310 |
+
+Ghi chú không chặn mà review các PR này ghi thêm cũng sửa trước khi ghim SHA (B2). Ảnh chụp ở T-312 là ảnh trước lượt 4. Đợt sửa lượt 4 đổi màn nào thì G7 chụp lại ảnh đó: NT-HD-01 so hướng dẫn với exe phát hành.
+
+Mỗi PR code có PR sổ ghi chú review ngay sau. Ghi chú không chặn của chúng nằm ở KNOWN phần 1 nếu còn ACCEPTED, ở `fixes.md` nếu đã chuyển RESOLVED (§L4.5, §L4.9 bước 4).
+
+Trong suốt lượt 4 **không merge code vào `main`** (như §2). PR docs merge được, không đổi SHA ghim.
+
+| Bên | Ai chạy | Đợt | Làm ở | Thư mục kết quả | ID |
+|---|---|---|---|---|---|
+| Claude Opus 5.5 (mỗi gói một phiên sạch, tuần tự A → F) | Owner mở phiên | 1 | `C:\workspace\Project-2C-review` | `C:\workspace\deep-review-1-6-r4\claude\` | `CLR4-<gói><số>` |
+| Codex, model GPT Sol 6.1 | Owner, mỗi gói một phiên mới | 1 (cùng lúc Claude) | `C:\workspace\Project-2C-review-2` | `…-r4\codex\` | `CXR4-<gói><số>` |
+| DeepSeek v4.1 Flash (OpenCode, `opencode-go/deepseek-v4.1-flash`) | Owner, mỗi gói một phiên mới (`/new`) | 2 (một mình, đề xuất 9) | `C:\workspace\Project-2C-review` (Claude đã xong), có `opencode.json` theo Phụ lục P | `…-r4\deepseek\` | `DSR4-<gói><số>` |
+| **Claude phiên tổng hợp** (Issue tạo sau khi lượt 4 chạy xong) | Owner yêu cầu, sau khi đủ 18 báo cáo | — | checkout chính | `docs/reviews/` qua PR docs | dùng nguyên ID trên |
+
+- **ID theo bên:** `CL4-*` / `CX4-*` là ID của review đóng Phase 4 (`docs/reviews/2026-10-04-phase-4-tong-hop.md`), và review Phase 5 dùng `DS-*` cho DeepSeek. Lượt 4 dùng `CLR4-*` / `CXR4-*` / `DSR4-*` ("R4" = lượt 4; `rg` trên `docs/` ngày 27/10: 0 chỗ). Vấn đề đã gộp đánh số tiếp `DR6-135…`.
+- **Vì sao hai đợt** (như lượt 1 §2 và review Phase 5): mọi bên chạy dưới cùng tài khoản Windows. ACL chỉ chặn được thư mục của bên **đã xong**, vì bên đang chạy còn phải ghi vào thư mục của mình. Đợt 2 chạy khi `claude\`, `codex\` của lượt 4 đã bị chặn ACL, nên DeepSeek không đọc được hai thư mục đó dù lách `opencode.json`. Phase 5 cho thấy cần lớp này: chặn của OpenCode theo mẫu chuỗi lách được, và DeepSeek gói E từng liệt kê thư mục gốc bị cấm (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §6). Thêm nữa, đợt 2 không va cổng e2e 4173 hay máy đo với hai bên kia.
+- **Máy: Home PC `DESKTOP-KDURKJP`** (đề xuất 7). Mốc hiệu năng sau #656 và số đo lượt 3 cùng máy chỉ có ở máy này; OpenCode có sẵn trên máy (`%APPDATA%\npm\opencode`). Bước chuẩn bị, cả ba bên và mọi số đo chạy trên cùng máy.
+- Thư mục lượt 1–3 (`C:\workspace\deep-review-1-6\`, `-r2\`, `-r3\`) có trên Home PC, giữ tới v1.0 (HANDOFF). Probe lượt 3 của Claude và Codex trong `deep-review-1-6-r3\<bên>\` là probe cùng máy, dùng lại được. DeepSeek chưa có probe nào ở 6D.
+
+## L4.3 Sáu gói, cỡ đo lại, diff sửa theo gói
+
+Phạm vi từng gói **giữ đúng §3** (luật `PACKAGES` của `tools/size-report-core.mjs` không đổi từ lượt 1). Thứ tự vẫn A → F.
+
+Năm file mới ở `apps/desktop/src/routes/` (đợt sổ OPEN) không khớp luật nào, nên `size-report` xếp vào dòng "Chưa xếp gói". Lượt 4 xếp tay:
+
+- **D:** `classes.ts` (class dùng chung: tiêu đề, huy hiệu, focus, link…; T-301, T-305), `stage-badge.tsx` (huy hiệu nhóm), `money-view.ts` + `money-view.test.ts` (dòng đọc lại số tiền dưới ô của 6c / 6d, 7b / 7c, 8a / 8b): 54 dòng SP, 18 dòng test;
+- **E:** `ConfirmWordDialog.tsx` (hộp gõ chữ xác nhận của Nạp lại 10c và Dọn sạch 11i, T-296): 67 dòng SP.
+
+Gói kia đọc chỗ nối, vd. E đọc cách 6c / 6d, 8a / 8b gọi `money-view.ts`. Thêm năm file này vào `PACKAGES` là sửa code: ghi vào sổ ở PR sổ sau review của kế hoạch này, nên đợt sửa mục OPEN (T-310) làm luôn. Khi đó bước chuẩn bị bỏ dòng "Chưa xếp gói" và phần xếp tay.
+
+**Cỡ đo lúc soạn** (`node tools/size-report.mjs` ở `a59ef07`, 27/10, Home PC; số dòng không phụ thuộc máy). Δ so với lượt 3 (`119e2e4`, §L3.3). Bước chuẩn bị đo lại ở SHA ghim (§L4.9 bước 6); đợt sửa mục OPEN nhỏ nên số đổi ít.
+
+**Diff sửa** = dòng thêm / xóa của `git diff --numstat 119e2e4 a59ef07`, xếp gói bằng `classifyFile`. Không tính file sinh tự động; file Rust tính cả phần test trong file là SP, như §L3.3.
+
+| Gói | SP (Δ) | Test (Δ) | Sinh (Δ) | File (Δ) | Diff sửa SP | Diff sửa test | R1 (mã DR6, mục KNOWN đã sửa) | R2 (Issue) |
+|---|---:|---:|---:|---:|---|---|---|---|
+| A. Lõi dữ liệu | 8 719 (+530) | 15 714 (+1 829) | 341 (+2) | 104 (+3) | +1 117 / −587 · 29 file | +2 116 / −287 · 25 file | 104–108, 110–114, 125, 126, 132 (b), 134, 25, 66, 67, CL3-A29 | T-285, 286, 287, 288, 291, 292 |
+| B. File và Rust | 2 426 (+219) | 5 408 (+598) | 0 | 19 (0) | +740 / −218 · 7 file | +361 / −66 · 4 file | 120, 67, CL3-B2 | T-293, 294, 295, 306, 308 |
+| C. AI | 6 027 (+670) | 7 539 (+1 075) | 0 | 63 (+3) | +1 290 / −620 · 28 file | +1 232 / −157 · 16 file | 108, 111, 118, 121–124, 133, 25, 66, 67 | T-288, 289, 290, 291, 292, 295, 297, 304 |
+| D. Màn nhập liệu | 7 940 (+611) | 2 802 (+637) | 0 | 83 (+7) | +1 062 / −451 · 34 file | +679 / −42 · 12 file | 109, 110, 115–117, 120, 127, 132 (a), 37, 66, 67, CL3-B2 | T-280, 284, 287, 291, 293, 294, 297–301, 303, 305, 308 |
+| E. Lịch hẹn, chỉ số, quản lý | 8 093 (+337) | 4 556 (+410) | 0 | 51 (0) | +906 / −569 · 28 file | +456 / −46 · 9 file | 110, 119, 128, 131, 134, 37, 66, 67, CL3-B2 | T-284, 291, 295, 296, 298, 299, 301, 305, 306 |
+| F. Xuyên gói, bloat / hiệu năng, công cụ | 4 429 (+89) | 16 829 (+2 664) | 4 628 (0) | 96 (+5) | +137 / −48 · 6 file | +2 935 / −271 · 45 file | 129, 130, 25 (bundle), 66, 67, CL3-A29 (đo); **R1 gộp đủ 37 dòng** | T-283, 287 (đo), 292 (bundle), 300, 301, 302, 304, 305, 307; **R2 gộp đủ mọi dòng** |
+| Chưa xếp gói (xếp tay ở trên) | 121 (+121) | 18 (+18) | 0 | 5 (+5) | +121 / −0 · 4 file | +18 / −0 · 1 file | | |
+| **Tổng** | 37 755 (+2 577) | 52 866 (+7 231) | 4 969 (+2) | 421 (+23) | | | | |
+
+Ngoài bảng: 20 file không đếm dòng, +1 387 / −21 (icon, font, ảnh logo, `tauri.conf.json`, `Cargo.toml`, `capabilities/default.json`, snapshot / journal của drizzle-kit). Các Issue của đợt sửa mục OPEN vào cột R2 của gói có file Issue đó sửa.
+
+- Một mục có thể thuộc nhiều gói, vd. DR6-120 (Rust ở B, dải lưu ở D) hay T-291 (luật nhập ở A, `output_json` ở C, ô ngày nhanh ở D / E). Mỗi gói kiểm phần của mình; gói F gộp.
+- B đọc thêm ba file build không đếm dòng mà #807, #861 sửa:
+  - `apps/desktop/src-tauri/capabilities/default.json` (quyền `core:window:allow-set-title`, G6);
+  - `tauri.conf.json` (`productName`, `title`, icon);
+  - `Cargo.toml` (`description`).
+- D đọc tài sản mới không đếm dòng: `apps/desktop/src/assets/brand/*.png`, `packages/ui/src/fonts/playfair-display-latin-400-italic.woff2`.
+- Bước chuẩn bị (§L4.9 bước 6) đo lại ở SHA ghim bằng cùng lệnh, kèm bundle và exe; số ở `baseline.md` là số dùng.
+
+## L4.4 Hai phần của mỗi gói
+
+Như §L3.4 (và §L2.4), với các thay đổi dưới.
+
+### Phần 1 — kiểm phần đã sửa (trục R), hai bảng
+
+**Bảng R1 — theo mã** (§L4.5 phần 4), 37 dòng:
+
+- DR6-104…134: 31 vấn đề lượt 3, đều có Issue sửa (tổng hợp lượt 3 §8.5). DR6-69 (SỬA MỘT PHẦN ở lượt 3) kiểm qua DR6-105, không có dòng riêng, như bảy DR6 lượt 1 ở lượt 3.
+- DR6-25, 37, 66, 67: hoãn ở lượt 1 (KNOWN ở lượt 2–3), sửa trong đợt sổ OPEN.
+- Hai mục KNOWN có bằng chứng mới của lượt 3 (tổng hợp lượt 3 §8.4) mà sau đó có Issue sửa: CL3-A29 (#805), CL3-B2 (#817). Hai mục còn lại của §8.4 (CL3-C7, Claude F K2) vẫn là KNOWN (K1).
+
+Bốn bước của §L2.4 giữ nguyên:
+
+1. Chạy lại tái hiện của lượt 3 (DR6-25, 37, 66, 67: của lượt 1). Nguồn: báo cáo gốc `docs/reviews/raw/2026-10-21/` (và `…/2026-10-15/`), tổng hợp lượt 3 §6, §8.4, phụ lục nguồn probe; Claude, Codex dùng thêm probe lượt 3 của chính bên mình ở `C:\workspace\deep-review-1-6-r3\<bên>\`.
+2. Gỡ tạm phần sửa, xem test của PR sửa có đỏ.
+3. Thử biến thể gần.
+4. Mục sửa bằng tài liệu (DR6-131, 132 (a), 133): dòng ghi có, và khớp app.
+
+**Bảng R2 — theo Issue** (§L4.5 phần 5): T-280, 22 Issue của đợt sổ OPEN (T-283…T-304), T-305…T-308 (27 dòng), và mỗi Issue của đợt sửa mục OPEN trước lượt 4 (đề xuất 8: 3 Issue). Các Issue này gom ghi chú sổ, không có mã DR6. Mỗi dòng:
+
+1. Mục tiêu và test chấp nhận của Issue (`common\fixes.md`) đúng trên code ở SHA ghim; ca nào chạy được thì chạy.
+2. Gỡ tạm ít nhất một phần sửa chính, xem test của PR có đỏ.
+3. Thử biến thể gần của các ghi chú sổ mà Issue gom (mục RESOLVED chép ở `fixes.md`).
+4. Issue chỉ tài liệu / mockup / ảnh (T-284, T-303, T-306, T-307, và T-311, T-312 nếu theo đề xuất 8): dòng ghi có, khớp app / số đo. Mockup G3 khớp code làm theo nó (T-284 → T-296, T-297, T-300; T-303 → T-300).
+
+Phần DR6 của một Issue (vd. DR6-25 của T-292; DR6-37, 66, 67 của T-301) ghi ở R1, không ghi lại ở R2. Một ghi chú sổ đã RESOLVED mà hỏng lại → phát hiện mới, "Liên quan: T-xxx (ghi chú review #…)".
+
+Kết luận mỗi dòng theo thước §L2.4: **ĐÃ SỬA** · **SỬA MỘT PHẦN** (một phần của mô tả DR6, của Issue sửa hay của quyết định Owner chưa làm) · **CHƯA SỬA** · **HỒI QUY**. Ba kết luận sau kèm một phát hiện có trường "Liên quan".
+
+**Refactor / hiệu năng không đổi hành vi:**
+
+- Refactor của đợt sổ OPEN (T-285 #799, T-286 #801, T-288 #812, T-301 #845 / #846, T-305 #855): test cũ xanh, hành vi không đổi.
+- Dữ liệu tải sinh ở `119e2e4` và ở SHA ghim khác hash (§L4.6). Gói F so hai bản theo bảng / cột: mọi chỗ khác phải giải thích được bằng một luật đổi có chủ ý (K30–K39), không do refactor.
+- `zod/mini` (T-292, DR6-25): mọi phép kiểm cho cùng kết quả (`detail` V1, mã lỗi nhập backup); `assets/index.js` nhỏ đi như #830 đo (940 771 → 878 036 B, bản min).
+- Chỉ mục `0012` và `CROSS JOIN` của `KEPT_APPOINTMENTS` (T-287, CL3-A29): `listTrash` / `previewPurge` trả cùng dòng trước / sau trên dữ liệu tải; thời gian như #805 đo.
+- Trạng thái lưu một nguồn (T-294): `db.save` không xấu hơn mốc.
+
+### Phần 2 — lỗi mới và edge case mới
+
+Như §L2.4 phần 2: ít nhất 5 kịch bản mới mỗi gói, gói F ít nhất 5 chuỗi nhiều bước qua nhiều gói. Kịch bản phải chưa có trong báo cáo **lượt 1–3**: đọc `docs/reviews/raw/2026-10-15/`, `…/2026-10-17/`, `…/2026-10-21/` và ba bản tổng hợp. Xét trước:
+
+- **Code mới sau lượt 3** (diff `119e2e4..{SHA}`), nhất là các PR vượt ngưỡng cỡ (#801, #805, #812, #817, #828, #833, #835, #845), và hành vi mới:
+  - **nhập backup chặt hơn** (bảy luật T-291, mốc `precision: 3` của T-269, U+FEFF của T-270): file do exe lượt 3 / Phase 5 xuất còn nhập được không; câu từ chối nêu đúng luật; lệnh nhận mà nhập từ chối (DR5-13) hay ngược lại;
+  - **trạng thái lưu và đóng app chờ** (T-294, S2-6 sửa 25/10): Thử lại khi file còn bị giữ, thư mục cấm tạo file, ổ đầy; đóng app giữa lúc seed / nhập / dọn;
+  - **kiểm file trước migrate** (T-295): file hỏng, file đang mở dở, `openFrom` ghi một lần;
+  - **đợt G5 `@4`** (T-277) và **trả lời AI bị cắt** (T-290): chặn đủ, không chặn nhầm trên văn bản thật;
+  - **tham chiếu nhân sự một danh sách có kiểu** và chỉ mục `0012` (T-287): xóa / khôi phục / dọn nhân sự, luật nhập 5;
+  - **tên hiển thị Heritas L-CRM** (T-308):
+    - tiêu đề cửa sổ theo màn (quyền `core:window:allow-set-title`, G6);
+    - font cục bộ và CSP; icon;
+    - khối logo ở cửa sổ nhỏ nhất 1 100 × 700;
+    - chữ "Project-2C" chỉ còn ở những chỗ K39 giữ.
+- Code của đợt sửa mục OPEN trước lượt 4 (đề xuất 8), dù nhỏ.
+- Trọng tâm từng gói ở bảng của Phụ lục N.
+
+## L4.5 KNOWN lượt 4
+
+`common\known.md` (bước chuẩn bị §L4.9 bước 4) **dựng mới** ở SHA ghim, không chép `known.md` lượt 3 (`docs/reviews/raw/2026-10-21/common-known.md`). Gồm **năm phần**.
+
+**1. Mục OPEN và ACCEPTED** của `docs/state/review-notes.md` ở SHA ghim.
+
+- **OPEN rỗng** (B2; bước chuẩn bị kiểm, §L4.9 bước 1). 14 mục [G7] ở `a59ef07` sửa ở đợt sửa mục OPEN, nên vào bảng R2, không vào KNOWN:
+  - 4 mục của lần chụp lại ảnh hướng dẫn (review #760, #825, #838, #861);
+  - 7 mục "PR nhỏ G7" (review #855 ×2, review #861 ×5);
+  - 2 mục `phase-6.md` (review #859), 1 mục nghiệm thu (review #861).
+- **ACCEPTED nguyên văn.** So với lượt 3 có thêm:
+  - các mục Owner chấp nhận 23–25/10 (review #760, #815, #817, #828, #837; mục `DataTable` của review #843);
+  - các mục "chỉ ghi lại" chuyển từ OPEN ở rà sổ 23/10.
+- Dòng "`public/favicon.svg` (#128) là bản sao `app-icon.svg` → đổi icon phải sửa cả hai" của KNOWN lượt 1–3 **không còn**: mục đó đã RESOLVED (T-300 bỏ bản sao, #861 bỏ `app-icon.svg`). Nguồn icon nay ghi ở phụ lục 27/10 của ADR-0013: một PNG 1024 px (`apps/desktop/app-icon.png`), `tauri icon` sinh bộ icon của exe, favicon là icon 32 px trong bộ đó.
+- Ghi chú sổ thêm sau SHA ghim (nếu có, chỉ PR docs) ghi ở đầu `known.md`, như lượt 3.
+
+**2. Quyết định Owner còn hiệu lực:** K1–K29 (§5, §L2.5, §L3.5) giữ nguyên chữ, **trừ K12, K13, K14, K17, K21**. Năm mục này ghi vào `known.md` theo chữ dưới, vì chữ cũ trái với quyết định sau:
+
+- **K12 (sửa theo K33, T-291):** Ra khỏi v1.0: `Project-2C-data`, S-1 (định dạng snapshot mỗi bảng một file, D-2), gộp backup / xung đột; làm trên hai máy là "bản nhập sau thắng", không cảnh báo khi nhập. Kiểm `kyc_versions.hash` khi nhập backup đã làm ở T-291 (luật nhập 7, K33): dòng sổ "S-1 / D-1" (probe Codex Sol 02/10) đã RESOLVED. Bỏ vế "`kyc_versions.hash` khi nhập snapshot — dòng OPEN" của chữ cũ.
+- **K13 (sửa theo K35, S2-6 sửa 25/10):** S-2: khóa mọi lệnh ghi trong lúc thay dữ liệu; xuất không vào hàng đợi; đóng app trong lúc thay (Nạp lại, Nhập backup, Dọn sạch) chờ lần thay xong và dữ liệu mới lưu xong rồi mới đóng (S2-1…S2-6). Bỏ vế "đóng app không chờ" duyệt 11/10.
+- **K14:** như §L3.5 (theo K27, TR-6 mới).
+- **K17 (sửa theo M10):** Không phải phát hiện:
+  - PR vượt ngưỡng kích thước (ghi ở `docs/metrics/`);
+  - cách làm "chỉ Claude viết code" (ADR-0001), kể cả subagent / Workflow ở phiên gói Owner bật ultracode (M8–M10), và việc Codex, DeepSeek review chỉ đọc (M2, M10);
+  - mức `code-review` của `review-pr` (ADR-0017, phụ lục 21/10);
+  - việc dùng công cụ mới (G4).
+- **K21:** như §L3.5, thêm "; đợt G5 lượt 3: K31" sau "(Q6 lượt 1; đợt G5 lượt 2: K28)".
+
+Cộng thêm:
+
+| # | Quyết định | Nguồn |
+|---|---|---|
+| K30 | Quyết định lượt 3 (21/10, mọi đề xuất). Q1 (a): khôi phục "R rồi X cùng ngày" giữ hành vi; chuyển nhóm được đưa lại giữ chỗ trong thứ tự ghi, khôi phục theo thứ tự đã ghi thì được, ngược lại bị chặn như E20 (TR-3). Q2 (a): `normalizeText` bỏ cả `\p{Cc}` không phải White_Space, mở rộng K25. Q3 (a): câu Thùng rác của 9b chỉ sửa chữ (dọn sạch trước, rồi phạm vi của vế khôi phục); `personUsage` không đổi. Q5 (a): CL3-C7 giữ K1 + R2-02. Q6 (a): bấm "Backup rồi dọn sạch" → thông báo 11j ≤ 500 ms trên dữ liệu tải (exe), đo tay ở G7 | tổng hợp lượt 3 §9; #720, #721, #723 |
+| K31 | Đợt G5 lượt 3 (Owner duyệt 23/10, "duyệt hết"; `phase-5-prompts.md` §12): `analysis@4`, `discovery@4`, giữ `extraction@1`, `web@1`. Ở dạng tách dấu, dấu không đứng sau nguyên âm đọc như một dấu cách. Nhận diện tin nhắn của app tách dòng ở CR, LF, U+0085, U+2028, U+2029. Danh sách đóng "ấm", "lạnh", "nội", "ít" chỉ khớp dạng không dấu khi cả cụm không dấu. V6 miễn "giới", và miễn "định" trừ khi đứng sau "quy" / "qui". Việc không làm: §12.8 | #728 → #762, #766 |
+| K32 | Sổ ghi chú (Owner 23/10): sửa hết mục OPEN trước v1.0; 12 mục "Owner chọn không sửa" 15/10 giữ; khoảng chờ nghiệm thu lượt L1 ghi là lệch chấp nhận (`nghiem-thu-v1.md`). Cổng duyệt cùng kế hoạch: G2 / G5 cho bảy luật T-291 và luật T-290 (chữ vào spec qua PR docs trước PR code); G4 cho một lần gọi OpenCode thật (T-290) và **không** thêm thư viện test component (T-300); G6 cho quyền đặt tiêu đề cửa sổ (T-293); G3 gom ở T-284 (thêm T-303 ngày 24/10) | `PROJECT-STATE.md` 23/10; #769–#771, #791 |
+| K33 | Bảy luật T-291 (G2 / G5 23/10; chữ ở PR #824): (1) nhập backup tính lại hash phiên bản KYC mới nhất của mỗi KH, sai thì từ chối; Owner 25/10 thêm luật dạng hash của mọi phiên bản (spec Phase 3 §6 luật 7); (2) chỉ nhận `output_json` đúng dạng app ghi; (3) dòng REJECTED có output trên 20 000 ký tự thì không lưu output, panel báo "output quá lớn"; (4) chữ tùy chọn của lịch hẹn chỉ có ký tự vô hình là rỗng; (5) gõ ngày nhanh đầu năm: ngày đó năm nay chưa tới mà năm trước mới qua không quá 60 ngày thì gợi ý năm trước, app không tự đổi năm (ADR-0007 phụ lục); (6) sắp tên đổi chữ số toàn khổ / Ả Rập về chữ số thường trước khi so; (7) VT / FF trong ghi chú tính là xuống dòng. Version prompt không đổi. Dữ liệu cũ sai: K1 | #780 → #824, #828 |
+| K34 | Trả lời AI bị cắt (G5 23/10, spec Phase 5 §6.1): sau một `{` của lời văn (ký tự sau nó không phải `"`) mà còn một khối JSON đủ thì dùng khối đó; `{` mà ngay sau là `"` tính là mở object, khối trong nó không lấy. Loại ca lời văn có `{` không đóng rồi `"{}"` trong nháy: ACCEPTED (Owner 25/10, review #828) | #779 → #820, #822 |
+| K35 | Trạng thái lưu (Owner 25/10, T-294). Một nguồn trạng thái lưu. Chỉ báo 10d ở chân sidebar: "Đã lưu HH:MM", "Đang lưu…", "Chưa lưu được vào file"; mở app chưa lưu gì trong phiên thì "Đã lưu", không giờ. Nút Thử lại trên dải lưu lỗi chỉ ghi lại bản đang có. Câu từ chối D7 của Nạp lại / Nhập backup / Dọn sạch thêm vế bấm "Thử lại". Đóng app chờ lần thay đang chạy (S2-6 sửa 25/10, K13). Hai điểm mockup không vẽ, Owner giữ như mockup: ACCEPTED (review #817) | #783 → #817, #819; spec Phase 6 §4.1 |
+| K36 | G3 (Owner 23/10, T-284; 24/10, T-303). Token `--border-control` #687890 cho viền ô nhập, ô ngày Tùy chọn và mũi tên sắp xếp chưa chọn (≥ 3:1, chỉ theme tối). Ô khóa giữ viền đứt `--border-strong`: WCAG 1.4.11 không đòi 3:1 cho thành phần không thao tác được. Hộp 8d có dòng số HĐ khi dời tháng. Khối "Thông tin tham khảo" mờ (2h): khung viền liền, thẻ trong viền đứt. Dòng help 1a / 4a khớp `AI_MODELS` | #773 → #795; #797 → #811; `docs/design/mockups/README.md` |
+| K37 | G6 (Owner 23/10, T-293): `capabilities/default.json` thêm đúng một quyền `core:window:allow-set-title`, để `AppShell` đặt tiêu đề cửa sổ theo màn ("<Màn> · Heritas L-CRM" từ T-308) | #782 → #807 |
+| K38 | `zod/mini` thay `zod` đầy đủ (DR6-25): cùng gói `zod` của ADR-0005, không thêm dependency; chữ lỗi mặc định chỉ còn "Invalid input" vì không `detail` V1 nào dùng chữ mặc định. Luật lint chặn import `zod` đầy đủ (T-304); lỗ tên viết hoa `Zod` / `ZOD`: ACCEPTED (Owner 25/10, review #837) | #781 → #830; #831 → #837 |
+| K39 | Tên v1.0 (Owner 26–27/10, ADR-0013 phụ lục 27/10): app hiện là **Heritas L-CRM**, slogan "Where legacy meets trust". Chỉ đổi phần nhìn thấy: khối logo ở góc sidebar, icon exe / taskbar / tab, tiêu đề cửa sổ, `productName`, `<title>`, `description` của `Cargo.toml`. Tên mã Project-2C giữ ở mọi chỗ khác: repo, `gh`, `@p2c/*`, `project2c.exe`, `Project2C-data\`, `project2c.db`, tên / đuôi / định dạng backup (`BACKUP_FORMAT`), câu báo lỗi (bốn câu có chữ "Project-2C"), `KEY_SERVICE`, `identifier`. Logo cách (c) (G3); font Playfair Display nghiêng 400, bộ Latin, đóng gói cục bộ, OFL (G4) | #852 → #861; `PROJECT-STATE.md` 26–27/10 |
+| K40 | Sổ ghi chú trước lượt 4 (Owner 27/10, B2): lượt 4 chỉ chạy khi mọi mục OPEN của sổ đã sửa, kể cả mục [G7]. Quyết định này thay quyết định trước đó cùng ngày: "mục [G7] làm sau khi xong mọi task". Ghi chú không chặn mới của review các PR sửa cũng sửa trước khi ghim SHA | `PROJECT-STATE.md` 26–27/10 |
+
+**3. Mục "Lệch mockup đã biết" của `docs/testing/nghiem-thu-v1.md`**, nguyên văn ở SHA ghim, gồm cả hai khối con:
+
+- các điểm đã được mockup sau thay, và các lệch ghi từ T-294…T-298, T-306: huy hiệu "n HĐ" của thẻ KH ở Kanban (rà sổ 26/10); thẻ Lịch hẹn của hồ sơ một dòng ở 1 440 (Owner 26/10);
+- **12 điểm "Owner chọn không sửa"** (15/10; DR6-29, 36, 47, 48);
+- **2 điểm "Owner chọn ghi là lệch chấp nhận"** (23/10, thay câu hỏi để lại cho lượt L1).
+
+**4. Bảng R1** (dưới): 35 DR6 và 2 mục KNOWN đã sửa vào bảng R1 của gói kiểm (§L4.4), không báo lại thành phát hiện. Ngoài bảng:
+
+- **Các DR6 khác** (DR6-01…103, đã sửa ở lượt 1–3, trừ các mục KNOWN dưới): không báo lại. Phần sửa hỏng lại → phát hiện mới, "Liên quan: DR6-xx". DR6-69 kiểm qua DR6-105.
+- **KNOWN, chỉ nêu khi có bằng chứng mới** (hậu quả nặng hơn, đường vào mới):
+  - DR6-53 (chấp nhận);
+  - J5 của DR6-60 (K29);
+  - CL3-C7 (K1, R2-02; Q5 a);
+  - Claude F K2 của lượt 3: bản xuất của dữ liệu tải code lượt 1 không qua luật nhập 4 mới (K1).
+
+Mức: L = Low, N = Nit (mức chốt ở tổng hợp lượt 3 §6, §8.4 và tổng hợp lượt 1). "Gói kiểm": gói ghi dòng R1; gói đầu là gói chính. Mô tả đầy đủ ở tổng hợp lượt 3 §6, §8.4 (DR6-104…134, CL3-A29, CL3-B2) và tổng hợp lượt 1 §3–§5 (DR6-25, 37, 66, 67). Cột "Issue → PR" kể cả PR sau chạm cùng vấn đề (trong ngoặc).
+
+| Mã | Mức | Vấn đề (ngắn) | Issue → PR | Gói kiểm |
+|---|---|---|---|---|
+| DR6-104 | L | Khôi phục cuộc gặp đã rút chuyển nhóm đi đường E7 khi KH tới nhóm sau cuộc gặp vào ngày sau ngày cuộc hẹn | #720 → #740 (+ TR-3 #850 → #857) | A |
+| DR6-105 | L | Luật nhập nhận mốc mọi độ chính xác mà code so chữ (`transitionWithdrawnAt`, thứ tự Thùng rác); phần còn của DR6-69 | #720 → #740 (+ #781 → #830) | A |
+| DR6-106 | N | "Xóa R, ghi X cùng ngày, xóa X, khôi phục R rồi X" (Q1 a: câu TR-3, test hai thứ tự) | #720 → #740 | A |
+| DR6-107 | L | Nhập backup nhận chuỗi bắt đầu bằng U+FEFF | #721 → #738 | A |
+| DR6-108 | L | `raw_output` nhận nửa surrogate lẻ | #721 → #738 | A, C |
+| DR6-109 | L | Hộp 5a / 5c / 7a gửi lệnh chữ đã chuẩn hóa | #721 → #738 | D |
+| DR6-110 | L | `parseVnd` / `parseQuickDate` đọc chữ gốc | #721 → #738 | A, D, E |
+| DR6-111 | L | Ký tự điều khiển C0 / C1 (Q2 a) | #721 → #738 (+ G5 §7 #728 → #762) | A, C |
+| DR6-112 | N | `byName` coi tên khác nhau là bằng | #721 → #738 (+ luật 6 #780 → #828) | A |
+| DR6-113 | L | `INSERT OR REPLACE` lách trigger chỉ thêm | #722 → #742 (+ #776 → #805) | A |
+| DR6-114 | N | Cột trỏ tới nhân sự liệt kê bốn nơi; nhánh người đánh giá không thể xảy ra | #722 → #742, #776 → #805 | A |
+| DR6-115 | L | Câu Thùng rác của 9b (Q3 a) | #723 → #744 (+ #788 → #841) | D |
+| DR6-116 | L | Màn Team & nhân sự không có đích focus dự phòng | #723 → #744 (+ #788 → #841) | D |
+| DR6-117 | L | Chuỗi liền dài tràn: thẻ Lịch hẹn, 7a / 7c / 7d, tên KH | #724 → #746 | D |
+| DR6-118 | L | Panel KYC Intelligence, khối AI của chi tiết lịch hẹn tràn khung | #724 → #746 | C |
+| DR6-119 | N | Tên nút trùng cho trình đọc màn hình (HĐ, Thùng rác) | #725 → #748 (+ #785 → #833) | E |
+| DR6-120 | L | Lưu lỗi `PermissionDenied` không do chương trình khác (ACL, chỉ đọc giữa phiên) | #726 → #750, #752 → #764 (+ #782 → #807, #783 → #817) | B, D |
+| DR6-121 | L | Mock trích xuất đề xuất sai ở sáu dạng câu | #727 → #753, #778 → #809, #777 → #812 | C |
+| DR6-122 | L | Dấu viết rời giữa hai chữ lọt V3–V6 (G5) | #728 → #762, #766 | C |
+| DR6-123 | L | Nhận diện tin nhắn của app tách dòng chỉ ở CR / LF (G5) | #728 → #762, #766 | C |
+| DR6-124 | N | V3–V6 chặn nhầm câu thường (G5) | #728 → #762, #766 | C |
+| DR6-125 | L | Test hở của lệnh Dọn sạch (tập giữ lại, D3, D11, đếm ghi chú SYSTEM) | #722 → #742 | A |
+| DR6-126 | L | Test hở còn lại của gói A (a–f) | #720 → #740 (a, b, d), #721 → #738 (e, f), #722 → #742 (c) | A |
+| DR6-127 | L | `wrap-anywhere` của dòng cuộc gặp ở Dòng thời gian không test nào giữ | #724 → #746 | D |
+| DR6-128 | L | Test hở gói E: màn Dọn sạch; chỗ nối 6f ↔ `editedDay` | #725 → #748 | E |
+| DR6-129 | L | Bộ e2e không ghim đồng hồ | #719 → #736 (+ #772 → #792, #793 → #815) | F |
+| DR6-130 | N | Test hở của `notes-core` | #719 → #736 | F |
+| DR6-131 | N | Mockup 6d và NT-LH-25 ghi "1,234 tr → 1.234.000 ₫" | #729 → #755 (+ #756 → #758) | E |
+| DR6-132 | N | Tài liệu / chú thích chưa theo Dọn sạch; `packages/db/CLAUDE.md` về trigger đọc `customers` | #729 → #755 (a), #722 → #742 (b) (+ #756 → #758) | D, A |
+| DR6-133 | N | `06-ai.md` lấy ví dụ chip prompt cũ | #729 → #755 (+ `@4`: #728 → #766) | C |
+| DR6-134 | N | Luật DR-43 viết ba nơi | #720 → #740 (+ #775 → #804) | A, E |
+| DR6-25 | L | `zod` bản đầy đủ ≈ 10 % `index.js` (lượt 1, hoãn) | #781 → #830 (+ #831 → #837) | C, A, F (bundle) |
+| DR6-37 | N | Dấu nối / ký hiệu viết cứng trong JSX (lượt 1, hoãn) | #655 → #693 (một phần), #790 → #845 | D, E |
+| DR6-66 | N | Export / hàm chỉ test dùng (lượt 1, hoãn) | #655 → #693 (một phần), #775 → #801, #777 → #812, #790 → #845 | F, A, C, D, E |
+| DR6-67 | N | Code lặp ≥ 3 nơi (lượt 1, hoãn) | #774 → #799, #775 → #801, #777 → #812, #782 → #807, #790 → #845 | F, A, B, C, D, E |
+| CL3-A29 | N | `KEPT_APPOINTMENTS` quét cả bảng `appointments` mỗi lần `listTrash` (KNOWN #709, bằng chứng mới lượt 3) | #776 → #805 (chỉ mục `0012`) | A, F (đo) |
+| CL3-B2 | N | Sau một lần lưu lỗi, Nạp lại / Nhập backup / Dọn sạch bị từ chối mà không có cách thử lưu lại (KNOWN #96, đường vào Dọn sạch) | #783 → #817 (nút Thử lại) | B, D, E |
+
+Đếm: 35 DR6 (22 L · 13 N; 31 của lượt 3 và 4 của lượt 1) và 2 mục KNOWN đã sửa = 37 dòng.
+
+**5. Bảng R2** (dưới): mỗi Issue một dòng. Mục tiêu, test chấp nhận và ghi chú sổ đã gom (mục RESOLVED) ở `common\fixes.md`.
+
+| Issue | Việc (theo tên Issue) | PR | Gói kiểm |
+|---|---|---|---|
+| #735 T-280 | Thanh trên cùng không che phần tử nhận focus (WCAG 2.4.11) | #760 | D |
+| #772 T-283 | e2e / `tools`: helper dùng chung, đồng hồ / múi giờ, luật import, `pr-status` | #792 | F |
+| #773 T-284 | G3: mockup và token cho bốn chỗ đổi hình thức | #795 | D, E |
+| #774 T-285 | Hàm dùng chung vào `domain`, API `nextKycVersion` | #799 | A |
+| #775 T-286 | `db`: gộp hàm lặp, bỏ hàm chỉ test dùng | #801, #804 | A |
+| #776 T-287 | `db`: tham chiếu nhân sự, Thùng rác / Dọn sạch, đếm RF, seed và test | #805 | A, D, F (đo) |
+| #777 T-288 | `ai`: hằng dùng chung với `db`, `retry.ts`, phạm vi export, version prompt trong test | #812 | C, A |
+| #778 T-289 | Mock trích xuất: đề xuất sai còn lại của review #753 | #809 | C |
+| #779 T-290 | `ai`: cụm khớp trong `detail`, trích JSON khi bị cắt, ngưỡng test, message assistant rỗng | #820, #822 | C |
+| #780 T-291 | Bảy luật duyệt 23/10 | #824, #828 | A, C, D, E |
+| #781 T-292 | `zod/mini` thay `zod` đầy đủ | #830 | C, A, F (bundle) |
+| #782 T-293 | Rust: `storage.rs`, `backups\` không đọc được, test `ai.rs`, tiêu đề cửa sổ theo màn | #807 | B, D |
+| #783 T-294 | Trạng thái lưu: chỉ báo 10d, nút Thử lại, đóng app khi đang lưu | #817, #819 | B, D |
+| #784 T-295 | Cài đặt → Dữ liệu và mở file: số liệu 10c, kiểm file trước migrate, thông báo, ChatGPT web | #825 | B, E, C |
+| #785 T-296 | Thùng rác và HĐ: hộp xác nhận dùng chung, tên nút theo ô, trạng thái HĐ, câu E20, hộp 8d | #833 | E |
+| #786 T-297 | KYC và AI: dòng thời gian theo mockup, lỗi AI giữ khi đổi màn, hộp 3f, Cài đặt → AI | #835 | D, C |
+| #787 T-298 | Hồ sơ KH và Lịch hẹn: 5d, 6a / 6h, 6d, thẻ Lịch hẹn, ô ngoài tháng, focus khung Chi tiết | #838 | D, E |
+| #788 T-299 | Team, Báo cáo, Tổng quan: hộp nhân sự, bảng thành viên, bảng số cho chart N4–N1, bộ chọn kỳ | #841 | D, E |
+| #789 T-300 | `packages/ui` và vỏ: token tương phản, `DataTable`, token-guard, ngưỡng nhánh, favicon, thanh trên cùng | #843 | D, F |
+| #790 T-301 | Dọn app: mã chết, hằng lặp, ký hiệu viết cứng | #845, #846 | D, E, F |
+| #793 T-302 | Luật lint `import()` động của `@playwright/test`; `docsRead` | #815 | F |
+| #797 T-303 | G3: mockup ô khóa, câu ngoài phạm vi của token viền | #811 | D |
+| #831 T-304 | Luật lint chặn `zod` đầy đủ; mặc định của schema AI | #837 | F, C |
+| #849 T-305 | `classes.ts` (`HEADING`, `BADGE`), `recordBadge`, `WEB_MODE.tone`, đồng hồ bộ chụp ảnh | #855 | D, E, F |
+| #850 T-306 | Tài liệu: spec Phase 6, nghiệm thu, hướng dẫn | #857 | B, E |
+| #851 T-307 | Số đo Phase 6: bảng PR vượt ngưỡng, `integrity_check` theo MB | #859 | F |
+| #852 T-308 | Tên Heritas L-CRM: khối logo, font slogan, icon, tiêu đề | #861 | D, B |
+
+Đếm lúc soạn: 27 Issue (T-280, 22 của đợt sổ OPEN, T-305…T-308). Bước chuẩn bị thêm một dòng cho mỗi Issue của đợt sửa mục OPEN trước lượt 4 (đề xuất 8: T-310…T-312), gói kiểm theo file Issue đó sửa. Không có dòng R2: T-279 (quy trình, K17), T-281 (ở R1, DR6-120), T-282 (ở R1, DR6-131…133).
+
+## L4.6 Số đo: so với mốc Home PC sau #656
+
+- **Dữ liệu tải sinh lại ở SHA ghim:** `node tools/load-data.mjs` (mốc `2026-10-12`, seed `6`). Lúc soạn (`a59ef07`, 27/10, Home PC): số dòng như lượt 1–3 (1 496 KH, 10 414 lịch hẹn, 54 nhân sự, 103 `ai_analyses`…), **`tables` sha256 `ad82051b19415726ff2be3d86357aeb463b9f13205a30d4531667aa5a9492e25`**, cỡ file 15,3 MB. Hash khác `1c0a43fb…746d003f` của lượt 3, cùng số dòng (gói F giải thích, §L4.4). Đợt sửa mục OPEN không đổi luật dữ liệu nên dự kiến hash không đổi; bước chuẩn bị ghi hash đo được ở SHA ghim.
+- **Mốc so (Home PC):**
+
+  | Mốc | Nguồn |
+  |---|---|
+  | Probe trên exe: mốc chính | `docs/metrics/phase-6-baseline/perf-home-pc-sau-656.json` (exe `dae9df3`, 18/10; `phase-6.md` mục "Mốc Home PC sau #656") |
+  | Probe trên exe: lượt 3 cùng máy (tham khảo) | `C:\workspace\deep-review-1-6-r3\common\perf\perf-ref.json` (exe `119e2e4`, 20/10; 5 155 B, sha256 `7A59FE40FCA3CAE86696F27DC3597C67F5CDBD34E67CD5D6070C864D073F8241`, đo 27/10). Không có bản trong repo; bảng của nó ở `docs/reviews/raw/2026-10-21/common-baseline.md` |
+  | Mở app lần đầu (LCP, cách T-227, 3 lần) | Mốc sau #656: 3 663 ms; lượt 3: 3 614 ms. Xấu hơn theo luật nhiễu khi trung vị > 4 396 ms; ngưỡng "không chậm hơn exe Phase 4" là > 4 724 ms |
+  | Dọn sạch Thùng rác (exe: bấm "Backup rồi dọn sạch" → khung hình đầu có thông báo 11j) | Ngưỡng ≤ 500 ms trên dữ liệu tải (Owner 21/10, K30). Lượt 3: 151,8 ms (113 dòng), 148–154 ms (1 313 dòng) |
+  | Hàm thuần trong Node | Số lượt 3 Home PC, tổng hợp lượt 3 §7.2, §7.3 |
+
+- **"Xấu hơn"** theo luật nhiễu (Owner chốt 13/10): trung vị lớn hơn mốc **quá 20 % và quá 10 ms** (bộ nhớ: quá 5 MB). Ngưỡng tuyệt đối ở `docs/metrics/phase-6.md` vẫn áp dụng. `app.open-data` ≤ 600 ms chỉ áp cho dữ liệu tải; `integrity_check` theo cỡ file là ghi chú, không phải ngưỡng.
+- **Lệnh** (bước chuẩn bị chạy một lần, reviewer dùng lại kết quả trong `common\baseline.md`):
+
+  ```powershell
+  node tools/size-report.mjs --compare docs/metrics/phase-6-baseline/size.json
+  ```
+
+  ```powershell
+  $env:PERF_BASE = 'docs\metrics\phase-6-baseline\perf-home-pc-sau-656.json'; $env:PERF_BACKUP = 'C:\workspace\deep-review-1-6-r4\common\load\load-2026-10-12-seed6.p2cbackup'; $env:PERF_OUT = 'C:\workspace\deep-review-1-6-r4\common\perf\perf-ref.json'; $env:PERF_NOTE = 'DESKTOP-KDURKJP, exe {SHA}, deep review luot 4'; pnpm exec playwright test -c playwright.perf.config.ts
+  ```
+
+  Bảng so lượt 3: script `node` trong `common\perf\` gọi `parseRun` rồi `markdownTable(r4, r3)` của `e2e/perf/stats.ts` trên `perf-ref.json` và `perf-ref-r3.json` (cột Nền = lượt 3), như §L3.6.
+- **Cỡ bundle và exe, ghi riêng phần font và icon mới** (T-308; đề xuất 7). So lượt 3 (`119e2e4`: JS / CSS 2 400 393 B, exe 5 408 768 B; tổng hợp lượt 3 §7.5). Bước chuẩn bị tách:
+  - JS: `assets/index-*.js`, trong đó phần `zod/mini` (#830 đo 940 771 → 878 036 B, bản min); CSS;
+  - font `playfair-display-latin-400-italic.woff2` (21 884 B trong repo);
+  - ba ảnh logo `heritas-tree.png`, `heritas-wordmark.png`, `heritas-lcrm.png` (92 185 + 44 834 + 12 051 = 149 070 B trong repo);
+  - favicon `32x32.png` (2 465 B; lượt 3 là `public/favicon.svg` 494 B, bản sao `app-icon.svg`);
+  - exe: Δ so lượt 3, trong đó icon nhúng vào exe (`icons/icon.ico` 16 625 → 87 968 B).
+
+  Bundle đo trên `apps\desktop\dist` build lại ở SHA ghim (`pnpm build:web`, không biến môi trường riêng), exe build lại ở SHA ghim. Không dùng bản có sẵn trên máy: `dist` của checkout chính là bản build 26/10 (trước T-305…T-308, có DB demo), exe là bản 24/10.
+- **Dọn sạch Thùng rác:** đo như §L3.6 (Node hai cỡ: dữ liệu tải 113 dòng, Thùng rác lớn ≈ 1 313 dòng; exe một lần với dữ liệu tải), so ngưỡng ≤ 500 ms và số lượt 3. `listTrash` / `trash.open` so lượt 3, sau chỉ mục `0012` (#805).
+- **Reviewer muốn đo lại trên exe:** như §6 (chép `common\exe\project2c.exe` vào thư mục của mình, cổng debug khác 9222, không đo khi bên khác đang đo).
+
+## L4.7 Ba bên, bài học từ lượt 3 và review Phase 5
+
+- **Claude Opus 5.5:** như lượt 3 sau 20/10 (§L3.1). Mỗi gói một phiên sạch Owner mở ở `C:\workspace\Project-2C-review`, tin nhắn một dòng (§L4.9). Mức suy luận, ultracode do Owner chọn từng phiên. Không có phiên điều phối, không có script Workflow: Phụ lục L viết theo đúng cách chạy này.
+- **Codex, model GPT Sol 6.1:** như §L2.7. Owner chạy mỗi gói một phiên mới ở `C:\workspace\Project-2C-review-2`. Mục 1 của báo cáo ghi phiên bản Codex và model như công cụ cho biết; lượt 1–3 Codex chỉ ghi được "GPT-6 theo hệ thống". Owner ghi model đã chọn ở bảng đánh dấu (§L4.9).
+- **DeepSeek v4.1 Flash:** như review Phase 5 (`docs/reviews/raw/2026-10-10/common-plan-opencode.md`), đổi theo bài học ở bảng dưới.
+  - Chạy bằng OpenCode TUI (`opencode C:\workspace\Project-2C-review`; Home PC ngày 27/10 có v2.1.4), model `opencode-go/deepseek-v4.1-flash` lấy từ `opencode.json` (Phụ lục P). TUI có biến thể suy luận thì chọn mức cao nhất. Mỗi gói một phiên mới (`/new`).
+  - **Chi phí (G4):** chạy trên gói OpenCode Go, dùng chung hạn mức với sản phẩm và với eval AI thật NT-EV-01 ở G7. Review Phase 5: 6 gói ≈ 95 phút làm việc, ≈ 0,96 USD theo giá OpenCode, trừ vào hạn mức gói Go. Lượt 4 phạm vi lớn hơn nhiều (toàn bộ code, hai bảng R); ước ≈ 2–4 USD, số thật đọc ở phiên xuất ra. Gói Go phải còn hạn lúc chạy (K9).
+  - **Chặn hai lớp:** ACL trên `claude\`, `codex\` của lượt 4 (đợt 2, §L4.9), và `opencode.json` theo mẫu chuỗi (Phụ lục P): cấm subagent, web, công cụ sửa file ngoài `deepseek\`, lệnh git ghi, `pnpm eval:ai`, lệnh `opencode`, `cmdkey`.
+  - Log: phiên tổng hợp xuất bằng `opencode session export` (CLI local, không gọi model), như Phase 5.
+
+**Bài học từ lượt 3** (tổng hợp lượt 3 §10.1 "Cho lần sau"; giữ mọi bài học §L2.7, §L3.7):
+
+| Lượt 3 vướng | Lượt 4 làm |
+|---|---|
+| Claude A gộp `cat prompt-claude.md` với `ls -la common/ claude/ codex/` trong lệnh đầu tiên (01:34), trước khi đọc tới quy tắc 1: thấy tên / cỡ file trong `codex\` | Tin nhắn mở phiên (§L4.9) và quy tắc riêng 1 của Phụ lục L, M, O: lệnh đầu tiên chỉ đọc file prompt, không gộp lệnh khác |
+| Codex C chạy `pnpm exec` trong bản chép repo, làm 8 junction `@p2c` của `node_modules` trong worktree trỏ sang bản chép (tự khôi phục), lặp bài học lượt 2 | Trong bản chép repo không chạy `pnpm`, **kể cả `pnpm exec`**: gọi thẳng `node node_modules/<gói>/<cli>` (Phụ lục N, quy tắc chung 1) |
+| Hai flaky e2e của cổng bước chuẩn bị, do test vắt qua nửa đêm (DR6-129) | Đã sửa: #736 cho mọi trang ghim đồng hồ sáng ngày neo; #815 chặn lấy `test` ngoài fixture. Kiểm ở bảng R1 (DR6-129); bước chuẩn bị vẫn ghi giờ chạy cổng |
+| Owner đổi cách chạy phần Claude ngày 20/10: `prompt-claude.md` sửa tay, khác Phụ lục I (quy tắc riêng 4 và 5 dính một dòng) | Phụ lục L là bản dùng thật; `prompt-claude.md` = Phụ lục L + Phụ lục N, chép nguyên văn ở bước chuẩn bị (chỉ thay `{SHA}`) |
+
+**Bài học về DeepSeek từ review Phase 5** (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §3.1, §6, §7):
+
+| Phase 5 vướng | Lượt 4 làm |
+|---|---|
+| Không thấy cả hai lỗi Medium, kết luận G7 "SẴN SÀNG" sai: chưa dựng chuỗi nhiều bước qua nhiều gói | Prompt (Phụ lục O) giao rõ: phần 2 dành phần lớn cho chuỗi nhiều bước; kết luận F chỉ là tham khảo, phiên tổng hợp mới ra kết luận (§6.1 spec, M2) |
+| Gói D không chạy giao diện ("không có môi trường DOM") nên phát hiện màn chỉ ở PLAUSIBLE | Kết luận về màn chạy trên bản build web bằng Playwright, hoặc trên exe qua cổng debug (Phụ lục N, quy tắc chung 6) |
+| DS-E3 đề xuất trái golden đã đọc; DS-A1 khẳng định không có căn cứ | Đọc golden / spec liên quan trước khi đề xuất; điều không chạy được thì ghi PLAUSIBLE, không suy rộng |
+| Gói E liệt kê thư mục gốc bị cấm, không báo Owner | ACL đợt 2; `opencode.json` hỏi trước khi liệt kê; lỡ thấy tên thư mục cấm thì dừng và báo Owner ngay |
+| Báo cáo chen từ tiếng Bồ Đào Nha ("produção") | Viết tiếng Việt, thuật ngữ ngành giữ tiếng Anh như repo; không dùng từ của ngôn ngữ khác |
+| Ít đột biến (≈ 21, đa số để khẳng định test tốt) | Bước 2 của bảng R (gỡ tạm phần sửa) là bắt buộc ở mọi dòng R1 / R2; đột biến dùng để tìm chỗ hở |
+
+## L4.8 Báo cáo lượt 4
+
+Khuôn như §L3.8 (và §L2.8), đổi:
+
+- ID `CLR4-<gói><số>` / `CXR4-<gói><số>` / `DSR4-<gói><số>` (§L4.2); `Vị trí: path:dòng ({SHA})`.
+- `Liên quan: DR6-xx / T-xxx (nếu có) · mới do đợt sửa sau lượt 3 (PR #…) | có từ trước, lượt 1–3 bỏ sót`.
+- Hai bảng R, cùng cột như §L2.8 (`| Mã | Issue → PR | Kết luận | Bằng chứng | Biến thể / ghi chú |`):
+  - **R1:** mọi dòng mà gói kiểm trong 37 dòng của §L4.5 phần 4;
+  - **R2:** mọi Issue mà gói kiểm trong bảng R2 của `known.md` (§L4.5 phần 5, đủ dòng ở bước chuẩn bị).
+- Phạm vi đã đọc gồm phần diff `119e2e4..{SHA}` của gói.
+- Mục 1 (đầu báo cáo): Claude ghi model, mức suy luận, ultracode bật hay tắt; Codex ghi phiên bản Codex và model như công cụ cho biết; DeepSeek ghi phiên bản OpenCode, model và biến thể suy luận.
+- **Gói F:** bảng R1 gộp đủ 37 dòng và bảng R2 gộp đủ mọi dòng (từ báo cáo A–E lượt 4 của chính bên đó + phần F). Kèm kết luận **SẴN SÀNG / CHƯA SẴN SÀNG cho v1.0 ở SHA ghim** và lý do (tham khảo; kết luận thật ở phiên tổng hợp).
+
+## L4.9 Chuẩn bị và chạy
+
+**Bước chuẩn bị — Claude, sau khi Owner duyệt kế hoạch lượt 4 và đợt sửa mục OPEN đã merge** (một phiên trên Home PC; không review, không ghi phát hiện):
+
+1. Ghi `hostname` và ngày giờ (`Get-Date`) vào `common\baseline.md`.
+   - **Kiểm sổ OPEN rỗng** (B2): mục OPEN của `docs/state/review-notes.md` ở `origin/main` không còn mục lá nào. Còn → dừng, báo Owner.
+   - **Ghim SHA:** `git rev-parse origin/main` lúc đó là SHA ghim; ghi đủ 40 ký tự vào `baseline.md`.
+   - Kiểm `C:\workspace\deep-review-1-6-r4\` chưa có (có rồi → dừng, báo Owner).
+   - Kiểm `C:\workspace\deep-review-1-6-r3\common\perf\perf-ref.json` có, sha256 như §L4.6.
+   - Kiểm OpenCode: `opencode --version`. Review Phase 5 chạy v2.0.24; Home PC ngày 27/10 có v2.1.4. Bản khác v2.0.24 thì đọc tài liệu `permission` của bản đó (cú pháp, thứ tự khớp mẫu) và sửa Phụ lục P nếu cần, trước khi chạy đợt 2. Phiên thử của đợt 2 (bước 3) kiểm lại từng luật.
+2. Tạo `C:\workspace\deep-review-1-6-r4\{common,claude,codex,deepseek}`.
+3. Đưa hai worktree về SHA ghim:
+   - `git -C C:\workspace\Project-2C-review checkout --detach <SHA ghim>`, tương tự với `-review-2`;
+   - xóa `apps\desktop\dist` ở mỗi worktree;
+   - `pnpm install --frozen-lockfile` (PowerShell);
+   - `git status --short` rỗng (ngoài file Codex tự sinh ở `-review-2`, §8).
+4. Chép vào `common\`:
+   - `plan.md` (file này, bản đã merge);
+   - `known.md` dựng mới theo §L4.5 ở SHA ghim (không chép từ `known.md` lượt 3):
+     - phần 1 từ `docs/state/review-notes.md` ở SHA ghim (OPEN rỗng, ACCEPTED nguyên văn);
+     - K1–K40, với K12, K13, K14, K17, K21 theo chữ ở §L4.5;
+     - mục "Lệch mockup đã biết" nguyên văn;
+     - bảng R1 kèm danh sách KNOWN; bảng R2 thêm các Issue của đợt sửa mục OPEN;
+   - `fixes.md`:
+     - thân các Issue ở các bảng của §L4.2, gồm đợt sửa mục OPEN;
+     - thân PR sửa: mục "Lệch so với Issue", "Chưa làm", "Sửa sau review", "Ghi chú OPEN liên quan";
+     - nguyên văn các nhóm RESOLVED của sổ mà các Issue đó gom (theo nhãn T-xxx, ở SHA ghim);
+     - lấy bằng `gh issue view` / `gh pr view --json body`;
+   - `prompt-claude.md` = Phụ lục L + Phụ lục N; `prompt-codex.md` = Phụ lục M + Phụ lục N; `prompt-deepseek.md` = Phụ lục O + Phụ lục N. Chép nguyên văn, chỉ thay `{SHA}` bằng 7 ký tự đầu và `{SHA_ĐỦ}` bằng đủ 40 ký tự của SHA ghim (`{GÓI}` để nguyên: reviewer thay theo tin nhắn);
+   - `opencode-deepseek.json` = khối JSON của Phụ lục P, nguyên văn.
+5. Dữ liệu tải: `node tools/load-data.mjs --out C:\workspace\deep-review-1-6-r4\common\load\load-2026-10-12-seed6.p2cbackup`; ghi hash `tables` vào `baseline.md`, so §L4.6. Khác hash lúc soạn → ghi Issue nào đổi dữ liệu.
+6. Chạy cổng ở SHA ghim (trong `Project-2C-review`):
+   - `pnpm verify`, `pnpm verify:rust`, `pnpm e2e` (`CI=1`), `pnpm build:exe`;
+   - `node tools/size-report.mjs --compare docs/metrics/phase-6-baseline/size.json`: bảng theo gói và diff `119e2e4..<SHA ghim>` như §L4.3; cỡ bundle / exe tách như §L4.6.
+
+   Kết quả ghi vào `common\baseline.md`; chép exe vào `common\exe\`.
+7. Đo hiệu năng. Dữ liệu tải vào exe bằng script qua cổng debug như lượt 3 (chép `deep-review-1-6-r3\common\perf\import-load.mjs` sang `-r4\common\perf\`; đề xuất 7). Owner để máy rảnh ≈ 5 phút.
+   - Chép `deep-review-1-6-r3\common\perf\perf-ref.json` thành `common\perf\perf-ref-r3.json`.
+   - Chạy lệnh probe §L4.6 (thay `{SHA}`) → `common\perf\perf-ref.json`.
+   - Ghi vào `baseline.md` hai bảng: so mốc sau #656 (bảng của probe) và so lượt 3, cả hai có thêm cột ngưỡng `phase-6.md`.
+   - Mở app lần đầu 3 lần (cách T-227), so mốc §L4.6.
+   - Đo Dọn sạch Thùng rác theo §L4.6 (Node hai cỡ; exe một lần với dữ liệu tải), so ngưỡng ≤ 500 ms → `baseline.md`.
+8. Báo Owner: sẵn sàng chạy lượt 4.
+
+**Owner chạy đợt 1** (Claude và Codex cùng lúc):
+
+- **Codex** (model GPT Sol 6.1), ở `C:\workspace\Project-2C-review-2`, mỗi gói một phiên mới, lần lượt A → F:
+
+  ```text
+  Gói A. Lệnh đầu tiên chỉ đọc C:\workspace\deep-review-1-6-r4\common\prompt-codex.md (không gộp lệnh khác), rồi làm đúng file đó.
+  ```
+
+- **Claude** (Claude Opus 5.5), ở `C:\workspace\Project-2C-review`, mỗi gói một phiên mới, lần lượt A → F; mức suy luận và ultracode Owner chọn:
+
+  ```text
+  Gói A. Lệnh đầu tiên chỉ đọc C:\workspace\deep-review-1-6-r4\common\prompt-claude.md (không gộp lệnh khác), rồi làm đúng file đó.
+  ```
+
+**Owner chạy đợt 2** (DeepSeek một mình; bắt đầu khi đủ 12 báo cáo đợt 1 với dòng đầu `XONG`, và không còn phiên Claude nào mở ở `Project-2C-review`):
+
+1. Chặn `claude\` và `codex\` của lượt 4 bằng ACL (PowerShell của Owner):
+
+   ```powershell
+   icacls C:\workspace\deep-review-1-6-r4\claude /deny "${env:USERNAME}:(OI)(CI)(R)"
+   ```
+
+   ```powershell
+   icacls C:\workspace\deep-review-1-6-r4\codex /deny "${env:USERNAME}:(OI)(CI)(R)"
+   ```
+
+   Kiểm: `Get-ChildItem C:\workspace\deep-review-1-6-r4\codex` phải báo `Access is denied`.
+2. Chép `C:\workspace\deep-review-1-6-r4\common\opencode-deepseek.json` thành `C:\workspace\Project-2C-review\opencode.json`.
+3. Phiên thử: `opencode C:\workspace\Project-2C-review`, bảo model làm từng việc dưới. Hai việc tạo file phải dùng công cụ sửa file của OpenCode, không qua `bash`: luật `edit` của Phụ lục P chỉ áp cho công cụ sửa file. Kết quả phải đúng như ghi:
+   - liệt kê `C:\workspace\deep-review-1-6-r4\codex` → bị từ chối (ACL);
+   - đọc `C:\workspace\deep-review-1-6-r4\common\plan.md` → đọc được, không hỏi;
+   - tạo file `C:\workspace\deep-review-1-6-r4\deepseek\_thu\a.txt` bằng công cụ sửa file → tạo được;
+   - tạo file `C:\workspace\Project-2C-review\_thu.txt` bằng công cụ sửa file → bị từ chối (công cụ sửa file chỉ được ghi trong `deepseek\`);
+   - chạy `git commit --dry-run` trong repo → bị từ chối;
+   - chạy `opencode --version` → bị từ chối.
+
+   Xóa `deepseek\_thu\` (và `_thu.txt` nếu lỡ tạo được), rồi bỏ phiên thử. Model tự chuyển sang `bash` mà tạo được file thì không tính là ra khác: `bash` của Phụ lục P không chặn ghi, đúng giới hạn "model vẫn lách được" ở đầu Phụ lục P. Xóa file đó, bảo làm lại bằng công cụ sửa file. Ngoài ca này, có việc nào ra khác → không chạy đợt 2; sửa `opencode.json` theo bản OpenCode trên máy rồi thử lại, hoặc báo Claude.
+4. Mỗi gói một phiên mới (`/new`), lần lượt A → F, chọn biến thể suy luận cao nhất nếu TUI có:
+
+   ```text
+   Gói A. Lệnh đầu tiên chỉ đọc C:\workspace\deep-review-1-6-r4\common\prompt-deepseek.md (không gộp lệnh khác), rồi làm đúng file đó.
+   ```
+
+5. Xong F: xóa `C:\workspace\Project-2C-review\opencode.json`, gỡ ACL:
+
+   ```powershell
+   icacls C:\workspace\deep-review-1-6-r4\claude /remove:d "${env:USERNAME}"
+   ```
+
+   ```powershell
+   icacls C:\workspace\deep-review-1-6-r4\codex /remove:d "${env:USERNAME}"
+   ```
+
+Phiên bị cắt (dòng đầu báo cáo vẫn `ĐANG LÀM`) thì mở phiên mới với đúng tin nhắn của gói đó; bước 0 tự làm tiếp.
+
+Bảng đánh dấu của Owner (18 ô; ghi thêm giờ bắt đầu / xong mỗi gói của Codex và DeepSeek):
+
+| Bên | A | B | C | D | E | F |
+|---|---|---|---|---|---|---|
+| Claude Opus 5.5 | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
+| Codex GPT Sol 6.1 | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
+| DeepSeek v4.1 Flash (đợt 2) | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
+
+## L4.10 Sau lượt 4, kiểm độc lập, ước lượng
+
+**Tổng hợp** (Issue tạo khi lượt 4 chạy xong; chạy khi Owner yêu cầu, sau khi đã gỡ ACL): như §L3.10, đổi:
+
+- Đọc đủ 18 báo cáo.
+- Gộp ba bảng R1 thành một bảng 37 dòng, ba bảng R2 thành một bảng đủ dòng. Kiểm trên code ở SHA ghim mọi kết luận khác ĐÃ SỬA và mọi chỗ các bên chấm khác nhau.
+- Kiểm mọi phát hiện mới, gộp trùng, đánh số tiếp `DR6-135…`. Báo cáo DeepSeek là dữ liệu tham khảo như Codex; mọi phát hiện của nó cũng kiểm trên code (Phase 5: 21 / 22 đúng, 1 sai).
+- Bảng so ba bên như Phase 5 (`danh-gia-deepseek-muse.md` §2): số phát hiện, đúng / KNOWN / sai, chỉ một bên thấy, thời gian, hạn mức gói Go đã dùng.
+- So số đo với mốc cùng máy (§L4.6), gồm cỡ bundle / exe tách phần font và icon.
+- Kết luận SẴN SÀNG / CHƯA SẴN SÀNG cho G7.
+- Phạm vi sửa theo đề xuất 6; phần câu hỏi cho Owner chỉ còn cách sửa khi có nhiều phương án.
+
+Phiên tổng hợp được dùng subagent / Workflow để kiểm từng phát hiện khi Owner bật (M8); phân loại cuối và kết luận vẫn do phiên tổng hợp ra.
+
+**Kiểm độc lập bằng log phiên:** như §8, §L2.10, §L3.10 (bản sửa 20/10), cho cả ba bên.
+
+- **Log Claude:** transcript của các phiên gói, và của subagent ở phiên Owner bật ultracode: mọi `*.jsonl` dưới `%USERPROFILE%\.claude*\projects\C--workspace-Project-2C-review\` từ giờ bắt đầu lượt 4.
+- **Log Codex:** `%USERPROFILE%\.codex\sessions\…\rollout-*.jsonl` của các ngày chạy.
+- **Log DeepSeek:** `opencode session list`, rồi `opencode session export <id>` vào `deep-review-1-6-r4\deepseek\<gói>\session.json` cho từng phiên A–F (CLI local, không gọi model; như Phase 5).
+- **Danh sách quét thêm:**
+  - `deep-review-1-6-r4[\\/](claude|codex|deepseek)` của bên khác;
+  - `deep-review-1-6-r3[\\/]…`, `deep-review-1-6-r2[\\/]…` và `deep-review-1-6[\\/]…` không phải của chính bên đó (DeepSeek: mọi thư mục này);
+  - liệt kê hoặc tìm kiếm trên `C:\workspace`, `deep-review-1-6*\`;
+  - lệnh đầu tiên của mỗi phiên gói: chỉ đọc file prompt (§L4.7);
+  - `pnpm`, kể cả `pnpm exec`, chạy trong bản chép repo;
+  - lệnh ghi ngoài thư mục của bên đó, trừ vá rồi trả nguyên byte theo quy tắc chung 1;
+  - DeepSeek: lệnh bị `opencode.json` từ chối hay hỏi, và cách model xử lý sau đó.
+
+**Báo cáo gốc lưu ở repo** (PR docs của phiên tổng hợp):
+
+- `docs/reviews/raw/<ngày tổng hợp>/{claude,codex,deepseek}/<gói>.md` nguyên văn;
+- `common-known.md`, `common-baseline.md`, `common-fixes.md`, `common-opencode-deepseek.md` (cấu hình đã dùng, chép vào Markdown như Phase 5); `common-plan.md`, `common-prompt-*.md` chỉ khi khác bản trong repo;
+- bản tổng hợp `docs/reviews/<ngày>-deep-review-phase-1-6-luot-4-tong-hop.md`.
+
+Thư mục bằng chứng `deep-review-1-6-r4\` giữ trên Home PC tới v1.0.
+
+**Ước lượng.** Lượt 3 trên Home PC: Claude ≈ 8 h 10 (gói A ≈ 3 h 25 qua ba phiên, B–F 38 phút – 1 h 25 mỗi gói); Codex A, B, D, E 20–25 phút mỗi gói, C và F bị ngắt rồi làm tiếp. DeepSeek ở review Phase 5: 6 gói ≈ 1 h 51 đồng hồ.
+
+- Lượt 4 đọc diff gấp đôi lượt 3 (269 file so 119), bảng R ≥ 67 dòng (37 + 30) so 39.
+- Đợt 1: Claude ≈ 8–10 h; Codex tùy model mới. Đợt 2: DeepSeek ≈ 3–5 h.
+- Cả lượt 4 ≈ 3 ngày tính cả chuẩn bị, hai đợt và tổng hợp, rồi tới đợt sửa. Trước đó là đợt sửa mục OPEN (3 Issue nhỏ).
+- Owner can thiệp: mở 6 phiên Claude + 6 phiên Codex + 6 phiên DeepSeek; chặn / gỡ ACL và chép `opencode.json` ở đợt 2; để máy rảnh ≈ 5 phút ở bước 7; ghi giờ bắt đầu / xong mỗi gói của Codex và DeepSeek.
+
+## L4.11 Quyết định của Owner (26–27/10/2026) và đề xuất
+
+**Đã chốt** (Issue #854):
+
+1. **26/10:** có một vòng deep review toàn bộ code trước G7, sau khi xử lý hết các mục sổ OPEN làm được trước vòng này (T-305…T-308, #849–#852).
+2. **27/10, bên review:** "Vẫn là Claude Opus 5.5 và GPT Sol 6.1 làm deep review toàn bộ code base".
+   - Claude Opus 5.5: như lượt 3, mỗi gói một phiên sạch do Owner mở; mức suy luận và ultracode Owner chọn từng phiên.
+   - Codex, model GPT Sol 6.1: Owner chạy, chỉ đọc (ADR-0001 M2).
+
+**Owner bổ sung 27/10** (khi xem bản nháp):
+
+- **B1.** "anh bổ sung kế hoạch review sẽ có thêm deepseek v4.1 flash": DeepSeek v4.1 Flash là bên review thứ ba, chỉ đọc, báo cáo là dữ liệu tham khảo. Lượt 4 có 6 gói × 3 bên = 18 báo cáo. Bỏ DeepSeek của M5 (13/10) không áp cho lượt 4 (ADR-0001 M10). Chạy trên gói OpenCode Go nên tốn hạn mức (G4: Owner yêu cầu).
+- **B2.** "anh chỉ làm review lượt 4 khi tất cả các review-notes open đã được sửa hết": lượt 4 chỉ chạy khi sổ OPEN rỗng, kể cả mục [G7]. Quyết định này thay quyết định trước đó cùng ngày ("mục [G7] làm sau khi xong mọi task"). SHA ghim vì vậy là `main` sau đợt sửa mục OPEN, không còn là `a59ef07`.
+
+**Đề xuất, Owner chọn cùng G1** (mục 3–7 của #854; mục 8, 9 thêm do B1, B2). Owner chọn ngày 27/10/2026, trong phiên soạn: cả bảy mục theo đề xuất.
+
+| # | Đề xuất | Mục | Owner chọn |
+|---|---|---|---|
+| 3 | SHA ghim = `main` khi sổ OPEN rỗng (B2), bước chuẩn bị ghim và đo lại. Số trong kế hoạch lấy ở `a59ef07` (`main` lúc soạn, sau khi #849–#852 đóng; code = `c4eec8b`). Từ SHA ghim tới lúc chạy chỉ có thay đổi docs | §L4.2, §L4.9 bước 1 | Theo đề xuất (27/10/2026) |
+| 4 | Phạm vi đủ 6 gói như lượt 2–3, hai phần ngang nhau. Kiểm phần đã sửa bằng hai bảng: R1 (DR6-104…134, DR6-25 / 37 / 66 / 67, CL3-A29, CL3-B2) và R2 (27 Issue + Issue của đợt sửa mục OPEN). Tìm lỗi / edge case mới trên toàn bộ phạm vi gói, xét trước code mới sau lượt 3. Năm file mới chưa xếp gói xếp tay (§L4.3) | §L4.3, §L4.4 | Theo đề xuất (27/10/2026) |
+| 5 | KNOWN lượt 4 dựng mới ở SHA ghim: OPEN rỗng + ACCEPTED; K1–K40 (sửa K12, K13, K14, K17, K21); "Lệch mockup đã biết" nguyên văn (12 mục không sửa 15/10, 2 lệch chấp nhận 23/10, huy hiệu "n HĐ"); quyết định đổi tên chỉ phần nhìn thấy (K39) | §L4.5 | Theo đề xuất (27/10/2026) |
+| 6 | Sau tổng hợp: sửa hết như lượt 3, rồi G7 | §L4.10 | Theo đề xuất (27/10/2026) |
+| 7 | Số đo trên Home PC, so mốc Home PC sau #656 như lượt 3, thêm số lượt 3 cùng máy làm tham khảo. Ghi riêng cỡ exe / bundle do font, icon mới và `zod/mini`. Dữ liệu tải vào exe bằng script qua cổng debug như lượt 3 | §L4.6, §L4.9 | Theo đề xuất (27/10/2026) |
+| 8 | Đợt sửa mục OPEN trước lượt 4 (B2): ba Issue tạo sau G1. T-310 PR nhỏ code: 7 mục [G7] code và ghi chú code của review kế hoạch này. T-311 tài liệu: `phase-6.md` ×2, nghiệm thu ×1 và ghi chú tài liệu của review kế hoạch này. T-312 chụp lại ảnh hướng dẫn: 4 mục, làm sau T-310. Ảnh chụp lúc này là ảnh trước lượt 4; đợt sửa lượt 4 đổi màn nào thì G7 chụp lại ảnh đó | §L4.2 | Theo đề xuất (27/10/2026) |
+| 9 | DeepSeek chạy đợt 2 một mình, sau khi đủ 12 báo cáo của Claude và Codex. Worktree `Project-2C-review`; ACL chặn `claude\`, `codex\` của lượt 4, cộng `opencode.json` (Phụ lục P) như review Phase 5. Model `opencode-go/deepseek-v4.1-flash` qua gói Go, biến thể suy luận cao nhất. Phương án khác: ba bên cùng lúc, DeepSeek ở worktree thứ ba, chỉ `opencode.json` chặn (lách được) | §L4.2, §L4.7, §L4.9 | Theo đề xuất (27/10/2026) |
+
+Owner duyệt G1 (ghi ngày): comment trên PR của #854, trước khi merge (như PR #647, #715).
+
+## Phụ lục L — Prompt Claude (lượt 4)
+
+File `common\prompt-claude.md` = đoạn dưới + nguyên văn Phụ lục N; bước chuẩn bị chỉ thay `{SHA}` / `{SHA_ĐỦ}` (§L4.9 bước 4). Owner mở mỗi gói một phiên mới ở `C:\workspace\Project-2C-review`, lần lượt A → F. Đoạn này theo bản dùng thật của lượt 3 (`docs/reviews/raw/2026-10-21/common-prompt-claude.md`, sửa 20/10), không theo Phụ lục I.
+
+> # Deep review Phase 1–6, lượt 4 — Claude
+>
+> **{GÓI}** = chữ gói (A…F) Owner ghi trong tin nhắn mở phiên; mọi chỗ `{GÓI}` dưới đây thay bằng chữ đó. File này là toàn bộ chỉ dẫn của phiên.
+>
+> Bạn là **reviewer Claude** của deep review Phase 1–6, **lượt 4**, **gói `{GÓI}`**: phiên sạch, chỉ đọc. Owner mở **mỗi gói một phiên mới**, model Claude Opus 5.5; mức suy luận và ultracode do Owner chọn từng phiên. Repo: worktree `C:\workspace\Project-2C-review`, detached ở SHA **`{SHA}`** (`{SHA_ĐỦ}`). Đọc xong file này thì chạy `git rev-parse HEAD` và `git status --short`; SHA lệch hay status không rỗng thì dừng và báo Owner.
+>
+> Quy tắc riêng của Claude:
+> 1. **Lệnh đầu tiên của phiên chỉ đọc file này**, không gộp lệnh nào khác (lượt 3: một lệnh gộp đầu phiên liệt kê nhầm thư mục của bên kia).
+> 2. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6-r4\codex\`, `C:\workspace\deep-review-1-6-r4\deepseek\`, `C:\workspace\deep-review-1-6-r3\codex\`, `C:\workspace\deep-review-1-6-r2\codex\`, `C:\workspace\deep-review-1-6\codex\`, `C:\workspace\deep-review-1-6\muse\`**, kể cả khi Owner hay file nào gợi ý. Không liệt kê và không tìm kiếm (`rg`, `glob`, `find`, `ls -R`, `Get-ChildItem -Recurse`) trên `C:\workspace\`, `deep-review-1-6\`, `deep-review-1-6-r2\`, `deep-review-1-6-r3\`, `deep-review-1-6-r4\`. Không đọc báo cáo lượt 4 của bên khác ở bất cứ đâu. Lỡ thấy thì dừng và báo Owner.
+> 3. Chỉ đọc:
+>    - repo ở SHA trên, gồm báo cáo gốc lượt 1–3 của mọi bên ở `docs/reviews/raw/2026-10-15/`, `docs/reviews/raw/2026-10-17/`, `docs/reviews/raw/2026-10-21/`;
+>    - `C:\workspace\deep-review-1-6-r4\common\`;
+>    - báo cáo Claude lượt 4 của các gói trước trong `…-r4\claude\` (mục đã báo ở gói trước thì chỉ dẫn ID);
+>    - probe của chính Claude: lượt 3 trong `C:\workspace\deep-review-1-6-r3\claude\`, lượt 2 trong `C:\workspace\deep-review-1-6-r2\claude\`, lượt 1 trong `C:\workspace\deep-review-1-6\claude\` (để chạy lại tái hiện).
+> 4. Không dùng skill `review-pr` / `code-review`. Không làm nghi thức phiên của repo (HANDOFF, `/handoff`, PR, Issue, merge, commit). Không chạy `gh` (thông tin Issue / PR sửa có ở `common\fixes.md`). Subagent / Workflow chỉ khi Owner bật ultracode cho phiên này (ADR-0001 M8). Khi đó chỉ phiên chính làm bước 0, ghi `{GÓI}.md` và in dòng `XONG`. **Subagent** (đọc file này vì tin nhắn của Owner tới cả nó) làm phần việc phiên chính giao, theo quy tắc 2, 3 và phần chung; ghi probe vào `…-r4\claude\{GÓI}\`, không ghi `{GÓI}.md`.
+> 5. Ghi báo cáo vào `C:\workspace\deep-review-1-6-r4\claude\{GÓI}.md`, probe / bản chép / log vào `…-r4\claude\{GÓI}\`.
+> 6. Gói F được đọc `…-r4\claude\A…E.md`. Xong gói nào thì dừng và in dòng `XONG …` (mục "Cuối phiên" của phần chung). Xong F thì **chờ Owner yêu cầu** tổng hợp, không tự tổng hợp.
+> 7. Mục 1 của báo cáo ghi công cụ, model, mức suy luận của phiên và ultracode bật hay tắt.
+>
+> Phần chung dưới đây áp dụng đầy đủ. Trong phần chung: `<bên>` = `claude`, `<ID>` = `CLR4`.
+
+## Phụ lục M — Prompt Codex (lượt 4)
+
+File `common\prompt-codex.md` = đoạn dưới + nguyên văn Phụ lục N; bước chuẩn bị chỉ thay `{SHA}` / `{SHA_ĐỦ}`. Owner chạy Codex (model GPT Sol 6.1) ở `C:\workspace\Project-2C-review-2`, **mỗi gói một phiên mới**, lần lượt A → F.
+
+> # Deep review Phase 1–6, lượt 4 — Codex
+>
+> **{GÓI}** = chữ gói (một chữ A…F) Owner ghi trong tin nhắn mở phiên; mọi chỗ `{GÓI}` dưới đây thay bằng chữ đó. File này là toàn bộ chỉ dẫn của phiên.
+>
+> Bạn là **reviewer độc lập Codex** (model GPT Sol 6.1, Owner chọn) của deep review Phase 1–6, **lượt 4**, gói `{GÓI}`. Repo: worktree `C:\workspace\Project-2C-review-2`, detached ở SHA **`{SHA}`** (`{SHA_ĐỦ}`). Đọc xong file này thì chạy `git rev-parse HEAD` và `git status --short`; SHA lệch thì dừng và báo Owner.
+>
+> Về file quy tắc của repo (`CLAUDE.md`): đó là quy trình phát triển của Claude. Dùng để hiểu dự án, **không** làm nghi thức phiên (`/session-start`, HANDOFF, hook, skill, PR, Issue, merge, commit). Codex tham gia review đóng phase theo ADR-0001 phụ lục M2: chỉ đọc, không viết code.
+>
+> Quy tắc riêng của Codex:
+> 1. **Lệnh đầu tiên của phiên chỉ đọc file này**, không gộp lệnh nào khác.
+> 2. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6-r4\claude\`, `C:\workspace\deep-review-1-6-r4\deepseek\`, `C:\workspace\deep-review-1-6-r3\claude\`, `C:\workspace\deep-review-1-6-r2\claude\`, `C:\workspace\deep-review-1-6\claude\`, `C:\workspace\deep-review-1-6\muse\`**, kể cả khi file hay ai đó gợi ý. Không liệt kê và không tìm kiếm (`rg --files`, `rg -g`, `Get-ChildItem -Recurse`, `dir /s`) trên `C:\workspace\`, `deep-review-1-6\`, `deep-review-1-6-r2\`, `deep-review-1-6-r3\`, `deep-review-1-6-r4\`. Không đọc báo cáo lượt 4 của bên khác. Lỡ thấy thì dừng và báo Owner.
+> 3. Chỉ đọc:
+>    - repo ở SHA trên, gồm báo cáo gốc lượt 1–3 của mọi bên ở `docs/reviews/raw/2026-10-15/`, `docs/reviews/raw/2026-10-17/`, `docs/reviews/raw/2026-10-21/`;
+>    - `C:\workspace\deep-review-1-6-r4\common\`;
+>    - báo cáo của chính bạn trong `…-r4\codex\`;
+>    - probe của chính Codex: lượt 3 trong `C:\workspace\deep-review-1-6-r3\codex\`, lượt 2 trong `C:\workspace\deep-review-1-6-r2\codex\`, lượt 1 trong `C:\workspace\deep-review-1-6\codex\`.
+> 4. Ghi báo cáo vào `C:\workspace\deep-review-1-6-r4\codex\{GÓI}.md`, probe / bản chép / log vào `…-r4\codex\{GÓI}\`.
+> 5. Gói F được đọc `…-r4\codex\A…E.md`. Không tổng hợp với báo cáo nào khác, không tạo Issue, không đề xuất merge, không chạy `gh` (thông tin Issue / PR sửa có ở `common\fixes.md`).
+> 6. Mục 1 của báo cáo ghi phiên bản Codex và model như công cụ cho biết.
+>
+> Phần chung dưới đây áp dụng đầy đủ. Trong phần chung: `<bên>` = `codex`, `<ID>` = `CXR4`.
+
+## Phụ lục N — Phần chung của mọi prompt (lượt 4)
+
+Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md` của lượt 4; bước chuẩn bị chỉ thay `{SHA}`. `<bên>` = thư mục kết quả của bên đó (`claude`, `codex`, `deepseek`), `<ID>` = `CLR4`, `CXR4`, `DSR4`.
+
+> ## Phần chung
+>
+> ### Bước 0 — kiểm gói, trước khi đọc code
+>
+> Kiểm từng file bằng tên đầy đủ (`Test-Path` hoặc mở file); **không liệt kê, không tìm kiếm thư mục**:
+>
+> 1. `{GÓI}` phải là **đúng một chữ** trong A, B, C, D, E, F. Không phải → dừng, hỏi Owner.
+> 2. `C:\workspace\deep-review-1-6-r4\<bên>\{GÓI}.md`:
+>    - **chưa có** → làm mới;
+>    - có, và **dòng đầu bắt đầu bằng `ĐANG LÀM`** → phiên trước bị cắt: **làm tiếp**. Đọc hết file và thư mục `<bên>\{GÓI}\`, giữ mọi phát hiện đã ghi, làm nốt; ghi rõ là phiên làm tiếp, từ đâu, bằng công cụ / model / mức nào;
+>    - có, mà dòng đầu **không** bắt đầu bằng `ĐANG LÀM` → gói đã xong: dừng, hỏi Owner, không ghi đè.
+> 3. Báo cáo lượt 4 các gói **trước** `{GÓI}` (thứ tự A → F) đã có đủ trong `…-r4\<bên>\` và không file nào còn dòng đầu `ĐANG LÀM`. Thiếu hay còn dở → dừng, báo Owner tên gói.
+> 4. Đủ cả ba thì in đúng một dòng rồi làm tiếp, không chờ Owner: `Bắt đầu gói {GÓI} lượt 4 (<tên gói>) → <bên>\{GÓI}.md` (làm tiếp thì thêm `— làm tiếp phiên trước`).
+>
+> **Ghi báo cáo dần:** ngay sau bước 0, tạo `<bên>\{GÓI}.md` với dòng đầu `ĐANG LÀM — <bên> gói {GÓI} lượt 4, bắt đầu <giờ>` và mục 1 của báo cáo. Mỗi khi có dòng bảng R, kịch bản đã thử, phát hiện hay số đo thì **ghi ngay**. Chạy lệnh dài ở nền thì ghi vào file đang chờ gì trước khi chờ.
+>
+> **Cuối phiên**, khi báo cáo đủ các mục: đổi dòng đầu thành `XONG — <bên> gói {GÓI} lượt 4, <giờ xong>`. In đúng một dòng: `XONG gói {GÓI} lượt 4 → C:\workspace\deep-review-1-6-r4\<bên>\{GÓI}.md. Gói kế tiếp: <chữ kế tiếp> (mở phiên mới).` Gói F in: `XONG cả 6 gói lượt 4 của <bên>. Chờ Owner yêu cầu tổng hợp.`
+>
+> ### Dự án và lượt này
+>
+> Project-2C: app desktop Tauri 2 + React, SQLite chạy trong webview qua sql.js; Rust chỉ ghi file, giữ API key, gọi OpenCode. App chạy offline, một người dùng, dữ liệu hiện là **giả lập**. Từ 27/10 app hiện tên **Heritas L-CRM** (logo, icon, tiêu đề cửa sổ); tên mã Project-2C giữ ở mọi chỗ khác (`common\known.md` K39).
+>
+> - Phase 1–4: nhân sự / team, khách hàng N4–N1, KYC có cấu trúc, lịch hẹn và kết quả, hợp đồng, chỉ số và báo cáo, xuất Excel, backup.
+> - Phase 5: AI copilot (`packages/ai`).
+> - Phase 6: hàng đợi thay dữ liệu S-2, Thùng rác + khôi phục, hộp Xóa KH 5f, **Dọn sạch Thùng rác** (TR-11–TR-13), trạng thái lưu (chỉ báo ở sidebar, nút Thử lại, đóng app chờ lần thay đang chạy).
+>
+> **Lượt 1** (SHA `8855345`, 14–15/10) tìm 67 vấn đề `DR6-01…67`. **Lượt 2** (`4217ed4`, 17/10) tìm 36 vấn đề mới `DR6-68…103`, trong đó 1 Medium (hồi quy do chính đợt sửa lượt 1). **Lượt 3** (`119e2e4`, 20–21/10):
+>
+> - kiểm 39 DR6 lượt 2: 38 ĐÃ SỬA, 1 SỬA MỘT PHẦN (DR6-69), 0 HỒI QUY;
+> - tìm 31 vấn đề mới `DR6-104…134`: 0 Medium, 21 Low, 10 Nit; thêm 3 mục KNOWN có bằng chứng mới;
+> - kết luận CHƯA SẴN SÀNG, chỉ vì Owner đã quyết sửa hết trước G7.
+>
+> Sau lượt 3 có ba đợt mà chưa lượt nào đọc trọn, rồi một đợt nhỏ sửa nốt mọi ghi chú OPEN của sổ (lượt 4 chạy khi sổ OPEN rỗng). Lúc soạn kế hoạch, diff `119e2e4..a59ef07` ngoài tài liệu có 269 file, +14 559 / −3 383, thêm migration `0012_trash_lookups`; số ở SHA `{SHA}` ghi trong `common\baseline.md`.
+>
+> - Đợt sửa lượt 3: 11 Issue #719–#729, cùng #735, #752, #756.
+> - Đợt sửa sổ ghi chú review trước v1.0: 22 Issue T-283…T-304, mỗi Issue gom nhiều ghi chú; 8 PR vượt ngưỡng cỡ.
+> - Trước vòng review: T-305…T-308, gồm đổi tên hiển thị.
+> - Đợt sửa mục OPEN còn lại trước lượt 4 (danh sách Issue ở `common\known.md` phần 5).
+>
+> **Lượt 4 có hai phần ngang nhau, cả hai bắt buộc:**
+>
+> 1. **Kiểm phần đã sửa (trục R), hai bảng** (`common\known.md` phần 4, 5, cột "Gói kiểm"):
+>    - **R1, theo mã:** DR6-104…134; DR6-25, 37, 66, 67 (hoãn ở lượt 1, nay đã sửa); CL3-A29, CL3-B2. Mỗi dòng: chạy lại tái hiện của lượt 3 (của lượt 1 với DR6-25, 37, 66, 67); gỡ tạm phần sửa (trên bản chép, hoặc patch gỡ ngay), xem test của PR sửa có đỏ; thử biến thể gần. DR6-69 kiểm qua DR6-105. Mục sửa bằng tài liệu (DR6-131, 132 (a), 133): dòng ghi có và khớp app.
+>    - **R2, theo Issue:** mọi Issue gom ghi chú sổ (T-280, T-283…T-308 và đợt sửa mục OPEN; danh sách đủ ở `known.md`). Mỗi dòng: mục tiêu và test chấp nhận của Issue (`common\fixes.md`) đúng trên code; gỡ tạm ít nhất một phần sửa chính, xem test có đỏ; thử biến thể gần của các ghi chú Issue gom. Issue chỉ tài liệu / mockup / ảnh: dòng ghi có và khớp app / số đo.
+>
+>    Kết luận: **ĐÃ SỬA** (đường lỗi cũ đã hết, có test đỏ khi gỡ phần sửa; biến thể còn hở ghi thành phát hiện riêng) · **SỬA MỘT PHẦN** (một phần của mô tả DR6, của Issue sửa hay của quyết định Owner chưa làm) · **CHƯA SỬA** · **HỒI QUY** (phần sửa làm hỏng chỗ trước đó đúng). Ba kết luận sau kèm một phát hiện có trường "Liên quan". Thêm:
+>    - số đo không xấu hơn mốc Home PC sau #656 (`common\baseline.md`);
+>    - refactor của đợt sổ (T-285, T-286, T-288, T-301, T-305) không đổi hành vi;
+>    - `zod/mini` cho cùng kết quả kiểm; chỉ mục `0012` cho `listTrash` cùng dòng.
+> 2. **Tìm lỗi mới và edge case mới** trên **toàn bộ** phạm vi gói, không chỉ quanh chỗ đã sửa.
+>    - Ưu tiên lỗi do chính các đợt sau lượt 3 gây ra. Lượt 2 có 3 hồi quy; lượt 3 thấy chỗ hở nằm nhiều ở code mới của đợt sửa trước nó.
+>    - Xét trước các PR lớn của đợt sổ và hành vi mới: nhập backup chặt hơn (bảy luật T-291, mốc `precision: 3`), trạng thái lưu và đóng app chờ (T-294), kiểm file trước migrate (T-295), G5 `@4` (T-277), trả lời AI bị cắt (T-290), tham chiếu nhân sự và chỉ mục `0012` (T-287), tên hiển thị (T-308).
+>    - Rồi tới kịch bản / biên **chưa có trong báo cáo lượt 1–3**. Đọc `docs/reviews/raw/2026-10-15/`, `docs/reviews/raw/2026-10-17/`, `docs/reviews/raw/2026-10-21/` và ba bản tổng hợp để biết đã thử gì.
+>    - Báo cáo có mục **"Kịch bản mới đã thử"**: mỗi kịch bản một dòng, kể cả khi không thấy lỗi. Mỗi gói nên có ít nhất 5; gói F ít nhất 5 chuỗi nhiều bước qua nhiều gói.
+>    - Chỗ các lượt trước ghi "đã xét, không thấy" vẫn đáng xét lại.
+>
+> Thông tin từng Issue / PR sửa (mục tiêu, test chấp nhận, phần PR ghi lệch / chưa làm, ghi chú sổ đã gom): `common\fixes.md`. Diff một PR: `git show <commit>` (bảng commit ở `plan.md` §L4.2 và `fixes.md`).
+>
+> ### Kế hoạch và phạm vi gói
+>
+> Kế hoạch đầy đủ: `C:\workspace\deep-review-1-6-r4\common\plan.md`. Lượt 4 ở §L4.1–§L4.11; trục và thước mức ở §4; định dạng ở §L4.8 (và §L3.8, §L2.8). Phạm vi gói như lượt 1–3 (luật xếp gói của `tools/size-report-core.mjs`; file mới chưa xếp gói thì theo §L4.3; đọc thêm chỗ code gói khác mà gói nối vào). Số dòng dưới là lúc soạn (`a59ef07`); số ở SHA ghim trong `common\baseline.md`:
+>
+> | Gói | Đường dẫn | SP / test lúc soạn | R1 | R2 (lúc soạn) | Trọng tâm mới (phần 2) |
+> |---|---|---|---|---|---|
+> | A. Lõi dữ liệu | `packages/domain/**`, `packages/db/**` | 8 719 / 15 714 | 104–108, 110–114, 125, 126, 132 (b), 134, 25, 66, 67, CL3-A29 | T-285, 286, 287, 288, 291, 292 | **Nhập backup chặt hơn:** bảy luật T-291 (hash KYC mới nhất và dạng hash mọi phiên bản, `output_json` đúng dạng app ghi, REJECTED trên 20 000 ký tự, chữ tùy chọn chỉ có ký tự vô hình, VT / FF), mốc `precision: 3`, U+FEFF. Thử file do exe lượt 3 / Phase 5 xuất, file sửa tay; lệnh nhận ↔ nhập nhận (DR5-13). Tham chiếu nhân sự một danh sách có kiểu (`person-references.ts`) ở lệnh, 9b và luật nhập 5; chỉ mục `0012` và `CROSS JOIN` của `KEPT_APPOINTMENTS`. Hàm dùng chung mới của `domain` / `db` (T-285, T-286) làm đúng như các bản cũ bị gộp, kể cả múi giờ và nửa đêm. Khôi phục theo E7 chỉ từ ngày cuộc hẹn; `stageAtEndOf` / `stageSnapshot` cho lệnh, luật nhập và 6c–6f |
+> | B. File và Rust | `apps/desktop/src-tauri/**` (gồm `capabilities/`, `tauri.conf.json`, `Cargo.toml`, `icons/`), `apps/desktop/src/data/**` trừ file AI | 2 426 / 5 408 | 120, 67, CL3-B2 | T-293, 294, 295, 306, 308 | **Trạng thái lưu một nguồn** (`persist-queue.ts`: `status()`, `track`, `flush`): Thử lại khi file còn bị giữ / thư mục cấm tạo file / ổ đầy; đóng app giữa lúc seed / nhập / dọn chờ lần thay rồi lần lưu (S2-6 mới); listener lỗi không làm kẹt hàng đợi. Quyền ghi lúc mở và mỗi lần lưu (ACL, chỉ đọc, thư mục cấm tạo file; T-275, T-281, T-293); `backups\` không đọc được. Kiểm file trước migrate, `openFrom` ghi một lần (T-295). Tiêu đề cửa sổ theo màn qua quyền `core:window:allow-set-title` (G6): đổi màn nhanh, lúc lỗi khởi động. `tauri.conf.json` / `Cargo.toml` / icon của T-308: CSP không đổi, `identifier` giữ (K39) |
+> | C. AI | `packages/ai/**`; file AI của app (`ai-*`, `*-ai-*`, `*Ai.tsx`, `KycExtraction`, `KycIntelligence`, `KycWebSession`, `KycHistory`, `extraction-view`) | 6 027 / 7 539 | 108, 111, 118, 121–124, 133, 25, 66, 67 | T-288, 289, 290, 291, 292, 295, 297, 304 | **Đợt G5 `@4`** (`phase-5-prompts.md` §12): dấu tổ hợp lạc, tách dòng ở U+0085 / U+2028 / U+2029, danh sách đóng "ấm / lạnh / nội / ít", miễn "giới" / "định". Chặn đủ và không chặn nhầm trên văn bản thật (eval, seed, `vi.ts`). Trả lời bị cắt sau `{` của lời văn (T-290, `extract-json.ts`); `detail` V3–V6 trích đúng chữ model viết, một issue một chỗ. `zod/mini`: schema, `detail` V1, mặc định là mảng mới mỗi lần parse (T-304). Hằng giới hạn dùng chung với `db` (T-288); REJECTED trên 20 000 ký tự (T-291). Lỗi AI giữ khi đổi màn (`ai-jobs.ts`, `use-ai-job.ts`, T-297); ChatGPT web kiểm lại `generation` (T-295). Mock trích xuất (T-276, T-288, T-289) |
+> | D. Màn nhập liệu | `packages/ui/**` (trừ `scripts/`), `apps/desktop/src/{shell,i18n}/**`, `routes/customers/**` (trừ file AI và Hợp đồng), `routes/team/**`, `routes/Screen.tsx`, `routes/{classes,money-view}.ts`, `routes/stage-badge.tsx`, file gốc `apps/desktop/src/*`, `apps/desktop/index.html` | 7 940 / 2 802 (+ 54 / 18 xếp tay) | 109, 110, 115–117, 120, 127, 132 (a), 37, 66, 67, CL3-B2 | T-280, 284, 287, 291, 293, 294, 297–301, 303, 305, 308 | **Khối logo, font, tiêu đề** (T-308): `Brand.tsx`, tên cho trình đọc màn hình, slogan, cửa sổ nhỏ nhất 1 100 × 700, font cục bộ, token mới (`--font-brand`, `--brand-slogan`, `--brand-outline`). Chỉ báo lưu ở chân sidebar và nút Thử lại của dải lưu (T-294): focus sau Thử lại, `role`. Token `--border-control` và ô khóa (T-300, K36); `DataTable` (cách sắp, focus khi bảng đổi). Class dùng chung `classes.ts` / `stage-badge.tsx` (T-301, T-305): màn không đổi chữ / class. Thanh trên cùng không che focus (T-280). Dòng thời gian KYC theo mockup: bộ lọc, mã F (T-297). Hộp 5d, thẻ Lịch hẹn một dòng ở 1 440 (T-298); hộp nhân sự, bảng thành viên (T-299) |
+> | E. Lịch hẹn, chỉ số, quản lý | `routes/{appointments,overview,reports}/**`, `routes/{Overview,Settings*,RestoreDialog,FilterBar,ConfirmWordDialog}.tsx` (trừ `SettingsAi.tsx`), `routes/{trash-view,period-labels,applied-filter}.ts`, Hợp đồng (`routes/customers/{CustomerPolicies,PolicyDialogs,policy-form}.*`) | 8 093 / 4 556 (+ 67 / 0 xếp tay) | 110, 119, 128, 131, 134, 37, 66, 67, CL3-B2 | T-284, 291, 295, 296, 298, 299, 301, 305, 306 | **Hộp gõ chữ xác nhận dùng chung** (`ConfirmWordDialog.tsx`, T-296) của Nạp lại và Dọn sạch: chữ xác nhận, lúc đang chạy không đóng được, focus. Kế hoạch dọn đọc từ dòng `listTrash` (`purgePlan`) khớp `previewPurge`. Số liệu hộp 10c và một state thông báo của mục Dữ liệu (T-295). Tên nút khôi phục theo ô (`recordBadge`, T-305), trạng thái HĐ, câu E20, dòng số HĐ của 8d (T-296). 6a / 6h / 6d, ô ngoài tháng / ngoài khoảng, tên ngày của lịch tháng (T-298). Bảng số cho chart N4–N1 cho trình đọc màn hình, bộ chọn kỳ áp dụng khi rời cả hai ô (T-299). Ngày nhanh đầu năm ở 6b / 6e (T-291 luật 5) |
+> | F. Xuyên gói, bloat / hiệu năng, công cụ | `tools/**`, `e2e/**`, `.github/**`, `.githooks/**`, `.claude/**`, `packages/ui/scripts/`, `apps/desktop/vite.config.ts`, file gốc repo (gồm `eslint.config.js`); **luồng xuyên gói; toàn codebase cho bloat và hiệu năng** | 4 429 / 16 829 | 129, 130, 25 (bundle), 66, 67, CL3-A29 (đo); **R1 gộp đủ 37 dòng** | T-283, 287 (đo), 292 (bundle), 300, 301, 302, 304, 305, 307; **R2 gộp đủ mọi dòng** | Công cụ đổi: luật lint mới ở `eslint.config.js` (`import()` động của `@playwright/test`, chặn `zod` đầy đủ); `pr-status` / `pr-core` (`docsRead`, file đổi tên); `notes-core`; `check-tokens.ts`; helper e2e dùng chung và đồng hồ trang (T-268, T-283); bộ chụp ảnh hướng dẫn (T-305). Dữ liệu tải `119e2e4` ↔ SHA ghim: mọi chỗ khác giải thích được bằng luật đổi có chủ ý (K30–K39). Chuỗi nhiều bước, vd.: lưu lỗi → Thử lại → Nạp lại → đóng app; xuất ở exe lượt 3 (`119e2e4`) → nhập ở exe lượt 4 (bảy luật mới); mở `Project2C-data\` của exe lượt 3 bằng exe lượt 4 (migration `0012`). Bloat / bundle / exe so lượt 3, tách phần font, icon, `zod/mini`; kết luận SẴN SÀNG / CHƯA SẴN SÀNG |
+>
+> Issue của đợt sửa mục OPEN trước lượt 4 vào cột R2 của gói có file Issue đó sửa (`common\known.md` phần 5).
+>
+> ### Đọc trước
+>
+> - Như lượt 1–3: `CLAUDE.md` (gốc + của package trong gói), `CONTEXT.md`, `docs/design/phase-6-hoan-thien.md` (§4: S-2 với S2-6 sửa 25/10, Thùng rác TR-1…TR-13 và D1–D13; §5 ngưỡng).
+> - Spec / golden / mockup theo gói:
+>   - A: `phase-3-du-lieu.md` §4, §6 (gồm bảy luật T-291), `phase-4-chi-so.md`, `docs/golden/{chi-so,kh-theo-nhom,kyc,lich-hen}.md`, ADR-0007 (gồm phụ lục ngày nhanh đầu năm), ADR-0008 (gồm phụ lục dọn Thùng rác);
+>   - B: ADR-0016, ADR-0009 phụ lục D-1, spec Phase 6 §4.1;
+>   - C: `phase-5-ai.md` (gồm §6.1, §7), `phase-5-prompts.md` (gồm §11–§13), `docs/golden/ai-eval.md`, ADR-0009;
+>   - D / E: `docs/design/mockups/` (gồm thẻ `#t284`, `#contrast` của `index.html`; `trash.html` 11h–11j; `settings-data.html` 10d), spec Phase 3 / 4 / 6, ADR-0013 (gồm phụ lục 27/10), mục "Lệch mockup đã biết" của `docs/testing/nghiem-thu-v1.md`;
+>   - F: tất cả khi cần, `docs/metrics/phase-6.md`, `e2e/perf/README.md`.
+> - Thêm cho lượt 4: tổng hợp lượt 3 `docs/reviews/2026-10-21-deep-review-phase-1-6-luot-3-tong-hop.md` (§3 bảng R, §6 mô tả DR6-104…134, §7 số đo, §8.4 KNOWN, §9 quyết định Owner), tổng hợp lượt 1, 2, `common\known.md`, `common\fixes.md`, `common\baseline.md`.
+> - **Spec, golden, mockup đã duyệt là nguồn đúng**: không đề xuất sửa chúng cho khớp code; chỗ chúng mâu thuẫn nhau thì báo là phát hiện trục C.
+>
+> ### Quy tắc chung
+>
+> 1. **Chỉ đọc và chạy lệnh: không sửa file trong repo, không sửa lỗi, không commit, không viết code sản phẩm.**
+>    - Muốn thử "phá code" (đột biến, gỡ phần sửa) thì chép file vào thư mục kết quả của mình rồi chạy bản chép. Nếu buộc phải patch trong repo thì gỡ ngay sau khi chạy và kiểm lại bằng `git status` / sha256.
+>    - **Trong bản chép repo không chạy `pnpm`, kể cả `pnpm exec`** (lượt 2, 3 làm junction `node_modules` của worktree trỏ sang bản chép): dùng junction sẵn có, gọi thẳng `node node_modules/<gói>/<cli>`.
+>    - Cuối phiên `git status --short` của repo phải như đầu phiên (thư mục build / cache bị ignore thì không sao).
+> 2. **Không gọi dịch vụ AI của sản phẩm:** không `pnpm eval:ai` / `node tools/eval-ai.mjs`, không bấm "Kiểm tra kết nối" bằng key thật, không đọc / in key trong Windows Credential Manager (`cmdkey`…), không mở chatgpt.com. Dùng adapter Mock, `fetch` / HTTP giả, hoặc server HTTP local tự dựng trong thư mục của mình. **Mọi probe trình duyệt chặn mạng ngoài `127.0.0.1` và thay `window.open` ngay từ lần chạy đầu.**
+> 3. `pnpm e2e` dùng cổng cố định 4173: không chạy cùng lúc với bên khác; báo cổng bận thì chờ, **không** dùng `PW_REUSE=1`. Kết quả cổng ở SHA ghim đã có ở `common\baseline.md`, không bắt buộc chạy lại toàn bộ. Số bundle lấy ở `baseline.md`; tự `pnpm build:web` thì không đặt biến môi trường riêng (vd. `VITE_DEMO_ANCHOR`), hoặc ghi rõ đã đặt gì.
+> 4. Môi trường Windows: `pnpm` lỗi trong shell hiện tại thì chạy qua `powershell -NoProfile -Command "pnpm …"`. Không dùng `python3` (stub, có thể treo). Script tạm viết bằng `node` (`.mjs` trong thư mục của mình). Probe PowerShell **không dùng hai biến chỉ khác hoa / thường** (PowerShell coi là một).
+> 5. Mục có trong `common\known.md` gắn `KNOWN`, chỉ nêu khi có bằng chứng mới: sổ ACCEPTED (OPEN rỗng ở SHA ghim), quyết định Owner K1–K40, "Lệch mockup đã biết", các mục KNOWN của phần 4. Dòng của bảng R1 / R2 chỉ ghi ở bảng R, không ghi lại thành phát hiện; phần sửa còn thiếu / hồi quy thì ghi phát hiện mới, "Liên quan: DR6-xx" hay "Liên quan: T-xxx". DR6 đã sửa ở lượt 1–3 hỏng lại → phát hiện mới, "Liên quan: DR6-xx".
+> 6. **Kết luận về màn** dựng probe qua lớp dữ liệu của app (`apps/desktop/src/data`: `openAppData`, `tables`), hoặc chạy trên bản build web bằng Playwright, hoặc trên exe qua cổng debug. Không gọi thẳng lệnh `db` / chèn SQL thô; probe `db` thô chỉ để kết luận về lệnh. Không có môi trường DOM thì dựng bản build, không dừng ở PLAUSIBLE.
+>
+> ### Cách tìm
+>
+> - Đọc sâu **từng file** trong phạm vi gói (phần diff `119e2e4..{SHA}` đọc kỹ nhất). Đi qua **mọi trục**: R kiểm phần đã sửa · E edge case · C đúng hợp đồng / spec / mockup / nhãn UI theo nghĩa thường · D dữ liệu · G guardrail AI · S an toàn ở ranh giới · P hiệu năng · B bloat · T chất lượng test · A trợ năng / i18n (định nghĩa ở `plan.md` §4.1, §L2.4). Trục không có gì thì ghi "đã xét, không thấy" **kèm đã chạy / đọc gì**.
+> - **Chạy thử thay vì lập luận từ spec** ở mọi chỗ chạy được. Ưu tiên **kịch bản nhiều bước qua nhiều gói**: các lỗi Medium của lượt 1, 2 và của review Phase 5 đều chỉ lộ khi dựng chuỗi (xóa → đổi → khôi phục; bàn giao → ghi kết quả → hẹn tiếp → chỉ số; ghi bù cuộc gặp trước ngày tạo KH; dán lại chính tin nhắn của app; khôi phục backup cùng DB giữa lúc AI chạy). Đừng báo lại chính các ca đó (đã sửa, nằm ở bảng R hay KNOWN): dùng chúng làm mẫu để nghĩ ca mới.
+> - **Bloat và Hiệu năng là hai mục riêng bắt buộc** (kể cả khi không có phát hiện), mỗi mục một bảng: đã chạy / đo gì, trên dữ liệu nào, số, ID phát hiện. Công cụ như lượt 1–3 (`tsc --noUnusedLocals --noUnusedParameters`, `rg`, `pnpm codemap`, `pnpm lint:deps`, `pnpm build:web`…).
+> - Hiệu năng: **mọi phát hiện P phải có số đo** trên dữ liệu tải `common\load\load-2026-10-12-seed6.p2cbackup` (sinh lại ở SHA ghim; hash ở `common\baseline.md`; dùng trong Node qua `importBackup` của `@p2c/db`, trong app qua Cài đặt → Dữ liệu → Nhập backup). So với ngưỡng `docs/metrics/phase-6.md` (gồm Dọn sạch ≤ 500 ms) và với mốc Home PC (`plan.md` §L4.6: mốc sau #656, lượt 3 cùng máy; luật nhiễu: quá 20 % **và** quá 10 ms). Ghi máy và việc gì đang chạy song song. Đo trên exe: chép `common\exe\project2c.exe` vào thư mục của mình, cổng debug khác 9222, theo `e2e/perf/README.md`; không đo khi bên khác đang đo.
+> - **Không cài công cụ mới** (`knip`, `jscpd`, `cargo-bloat`, visualizer… là G4); thấy cần thì ghi đề xuất.
+> - Không bình luận phong cách / đặt tên trừ khi gây lỗi. Không đặt chỉ tiêu số lượng phát hiện; không nâng mức cho nổi.
+>
+> ### Khuôn phát hiện
+>
+> ```
+> ID: <ID>-<gói><số>   (vd. <ID>-A3)
+> Mức: Critical | High | Medium | Low | Nit
+> Trục: R | E | C | D | G | S | P | B | T | A
+> Vị trí: path:dòng ({SHA})
+> Tình trạng: CONFIRMED | PLAUSIBLE | KNOWN
+> Liên quan: DR6-xx / T-xxx (nếu có) · mới do đợt sửa sau lượt 3 (PR #…) | có từ trước, lượt 1–3 bỏ sót
+> Kịch bản: số dòng ở mục "Kịch bản mới đã thử" (nếu có)
+> Mô tả: một-hai câu
+> Tái hiện / bằng chứng: lệnh + kết quả, hoặc probe / test tạm (nguồn ở phụ lục)
+> Ảnh hưởng: ai / khi nào gặp
+> Đề xuất: hướng sửa ngắn; cỡ ước lượng (≤ 400 dòng SP?)
+> ```
+>
+> - **Thước mức** (như lượt 1–3): Critical = mất dữ liệu đã lưu, hỏng file DB, lộ API key, chạy được code lạ — ở thao tác bình thường. High = thao tác bình thường làm dữ liệu sai lặng lẽ (lan sang chỉ số / báo cáo / backup mà người dùng không nhận ra) hoặc chặn hẳn việc chính không có đường vòng. Medium = thao tác bình thường dẫn tới dữ liệu sai / không đảo ngược được hoặc chặn việc chính (có đường vòng); thao tác chính vượt ngưỡng hiệu năng đã chốt. Low = cần điều kiện hiếm (file sửa tay, output suy biến, server bất thường, thao tác UI không cho), chỉ sai hiển thị, test hở, bloat có chi phí đo được. Nit = chữ, dọn dẹp, bloat không đo được chi phí.
+> - **Bằng chứng phải thật.** Mỗi `path:dòng` phải đúng với file ở SHA ghim (đọc lại trước khi ghi). `CONFIRMED` chỉ khi đã chạy lệnh / probe và dán lệnh + trích kết quả thật; chưa chạy thì `PLAUSIBLE` và nói đã đọc gì. Không bịa số đo, tên hàm, tên test hay kết quả lệnh.
+>
+> ### Báo cáo
+>
+> File `C:\workspace\deep-review-1-6-r4\<bên>\<gói>.md`, tiếng Việt (thuật ngữ ngành giữ tiếng Anh như repo; không chen từ của ngôn ngữ khác), gồm theo thứ tự:
+>
+> 1. Bên, gói, SHA đầu phiên, `git status --short` đầu phiên, giờ bắt đầu, công cụ / model / mức suy luận.
+> 2. **Bảng R1** mọi dòng mà gói kiểm, và **bảng R2** mọi Issue mà gói kiểm, cùng cột: `| Mã | Issue → PR | Kết luận | Bằng chứng | Biến thể / ghi chú |`.
+> 3. Phạm vi đã đọc (file, dòng; phần diff `119e2e4..{SHA}` của gói).
+> 4. **Kịch bản mới đã thử**: `| # | Kịch bản | Kết quả | ID |`.
+> 5. Phát hiện mới theo khuôn trên.
+> 6. Mục **Bloat** và mục **Hiệu năng** (bảng số, so mốc sau #656 và lượt 3).
+> 7. Bảng đếm mức × trục; nói rõ nếu tỉ lệ PLAUSIBLE cao.
+> 8. "Đã xét, không thấy" theo từng trục.
+> 9. Phụ lục: nguồn probe / test tạm / đột biến (cái nào bị test giết, cái nào sống), `git status --short` cuối phiên, giờ xong.
+>
+> **Gói F** thêm **bảng R1 gộp đủ 37 dòng** và **bảng R2 gộp đủ mọi dòng của `known.md`** (từ báo cáo A–E lượt 4 của chính bạn + phần F), và kết luận **SẴN SÀNG / CHƯA SẴN SÀNG cho v1.0 ở SHA `{SHA}`** kèm lý do.
+>
+> Xong gói thì làm như mục "Cuối phiên" của Bước 0. Không tổng hợp, không so với bên khác, không tạo Issue, không đề xuất merge.
+
+## Phụ lục O — Prompt DeepSeek (lượt 4)
+
+File `common\prompt-deepseek.md` = đoạn dưới + nguyên văn Phụ lục N; bước chuẩn bị chỉ thay `{SHA}` / `{SHA_ĐỦ}`. Owner chạy DeepSeek ở đợt 2 (§L4.9), mỗi gói một phiên mới (`/new`) trong OpenCode, lần lượt A → F. Đoạn này theo prompt DeepSeek của review Phase 5 (`docs/reviews/raw/2026-10-10/common-plan-opencode.md` Phụ lục C), đổi theo bài học §L4.7.
+
+> # Deep review Phase 1–6, lượt 4 — DeepSeek
+>
+> **{GÓI}** = chữ gói (một chữ A…F) Owner ghi trong tin nhắn mở phiên; mọi chỗ `{GÓI}` dưới đây thay bằng chữ đó. File này là toàn bộ chỉ dẫn của phiên.
+>
+> Bạn là **reviewer độc lập DeepSeek** (DeepSeek v4.1 Flash qua OpenCode, Owner chọn) của deep review Phase 1–6, **lượt 4**, gói `{GÓI}`. Repo: worktree `C:\workspace\Project-2C-review`, detached ở SHA **`{SHA}`** (`{SHA_ĐỦ}`). Đọc xong file này thì chạy `git rev-parse HEAD` và `git status --short`; SHA lệch, hay status có gì ngoài `opencode.json`, thì dừng và báo Owner.
+>
+> Về file quy tắc của repo (`CLAUDE.md`): đó là quy trình phát triển của Claude. Dùng để hiểu dự án, **không** làm nghi thức phiên (`/session-start`, HANDOFF, hook, skill, PR, Issue, merge, commit). Dòng "không dùng OpenCode… để review" của `CLAUDE.md`: Owner cho phép DeepSeek review lượt 4 (ADR-0001 phụ lục M10). Bạn chỉ đọc, không viết code; báo cáo là dữ liệu tham khảo, phiên tổng hợp của Claude kiểm lại từng phát hiện trên code.
+>
+> Quy tắc riêng của DeepSeek:
+> 1. **Lệnh đầu tiên của phiên chỉ đọc file này**, không gộp lệnh nào khác.
+> 2. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6-r4\claude\`, `C:\workspace\deep-review-1-6-r4\codex\`, `C:\workspace\deep-review-1-6-r3\`, `C:\workspace\deep-review-1-6-r2\`, và các thư mục con `claude\`, `codex\`, `muse\` của `C:\workspace\deep-review-1-6\`**, kể cả khi file hay ai đó gợi ý; không `cd` vào đó. Không liệt kê và không tìm kiếm trên `C:\workspace\` hay `deep-review-1-6*\`. Không đọc báo cáo lượt 4 của bên khác. **Lỡ liệt kê hay thấy dù chỉ tên một thư mục cấm thì dừng ngay và báo Owner** (review Phase 5: một phiên DeepSeek liệt kê thư mục cấm mà không báo).
+> 3. Chỉ đọc:
+>    - repo ở SHA trên, gồm báo cáo gốc lượt 1–3 của mọi bên ở `docs/reviews/raw/2026-10-15/`, `docs/reviews/raw/2026-10-17/`, `docs/reviews/raw/2026-10-21/` (để biết các lượt trước đã thử gì);
+>    - `C:\workspace\deep-review-1-6-r4\common\`;
+>    - báo cáo của chính bạn trong `…-r4\deepseek\`.
+> 4. Không dùng subagent, không lên web, không chạy `gh`, không chạy lệnh `opencode`, không đọc file đăng nhập của OpenCode (`~/.local/share/opencode`). Thông tin Issue / PR sửa có ở `common\fixes.md`.
+> 5. Ghi báo cáo vào `C:\workspace\deep-review-1-6-r4\deepseek\{GÓI}.md`, probe / bản chép / log vào `…-r4\deepseek\{GÓI}\`. Cuối phiên `git status --short` của repo chỉ còn `opencode.json`.
+> 6. Gói F được đọc `…-r4\deepseek\A…E.md`. Không tổng hợp với báo cáo nào khác, không tạo Issue, không đề xuất merge.
+> 7. Mục 1 của báo cáo ghi phiên bản OpenCode, model và biến thể suy luận.
+> 8. Bài học của chính DeepSeek ở review Phase 5 (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §3.1, §6, §7):
+>    - hai lỗi Medium khi đó đều cần **chuỗi nhiều bước qua nhiều gói**, và DeepSeek không dựng chuỗi nào như vậy. Phần 2 dành phần lớn thời gian cho chuỗi; kết luận SẴN SÀNG ở F phải nêu đã thử những chuỗi nào;
+>    - gói D khi đó không chạy giao diện ("không có môi trường DOM"): lần này kết luận về màn phải chạy trên bản build web bằng Playwright hoặc trên exe (phần chung, quy tắc chung 6);
+>    - một phát hiện đề xuất trái golden đã đọc: đọc golden / spec liên quan trước khi đề xuất, không đề xuất sửa golden;
+>    - không khẳng định điều không có căn cứ; không chạy được thì ghi PLAUSIBLE;
+>    - bước "gỡ tạm phần sửa" của bảng R là bắt buộc ở mọi dòng; dùng đột biến để tìm chỗ hở, không chỉ để khẳng định test tốt.
+>
+> Phần chung dưới đây áp dụng đầy đủ. Trong phần chung: `<bên>` = `deepseek`, `<ID>` = `DSR4`.
+
+## Phụ lục P — Cấu hình OpenCode của DeepSeek (lượt 4)
+
+Bước chuẩn bị chép khối JSON dưới thành `C:\workspace\deep-review-1-6-r4\common\opencode-deepseek.json`. Owner chép nó thành `C:\workspace\Project-2C-review\opencode.json` khi bắt đầu đợt 2 và xóa khi DeepSeek xong F (§L4.9). Khuôn theo cấu hình đã chạy ở review Phase 5 (OpenCode v2.0.24, `docs/reviews/raw/2026-10-10/common-opencode-config.md`), đổi đường dẫn sang lượt 4. Đây là chặn theo mẫu chuỗi, model vẫn lách được; lớp chặn chính là ACL của đợt 2.
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "share": "disabled",
+  "permission": {
+    "task": "deny",
+    "webfetch": "deny",
+    "websearch": "deny",
+    "read": {
+      "*": "allow",
+      "*deep-review-1-6-r4?claude*": "deny",
+      "*deep-review-1-6-r4?codex*": "deny",
+      "*deep-review-1-6-r3*": "deny",
+      "*deep-review-1-6-r2*": "deny",
+      "*deep-review-1-6?claude*": "deny",
+      "*deep-review-1-6?codex*": "deny",
+      "*deep-review-1-6?muse*": "deny",
+      "*.local?share?opencode*": "deny"
+    },
+    "glob": {
+      "*": "allow",
+      "*deep-review-1-6-r4?claude*": "deny",
+      "*deep-review-1-6-r4?codex*": "deny",
+      "*deep-review-1-6-r3*": "deny",
+      "*deep-review-1-6-r2*": "deny",
+      "*deep-review-1-6?claude*": "deny",
+      "*deep-review-1-6?codex*": "deny",
+      "*deep-review-1-6?muse*": "deny"
+    },
+    "grep": {
+      "*": "allow",
+      "*deep-review-1-6-r4?claude*": "deny",
+      "*deep-review-1-6-r4?codex*": "deny",
+      "*deep-review-1-6-r3*": "deny",
+      "*deep-review-1-6-r2*": "deny",
+      "*deep-review-1-6?claude*": "deny",
+      "*deep-review-1-6?codex*": "deny",
+      "*deep-review-1-6?muse*": "deny"
+    },
+    "list": {
+      "*": "allow",
+      "*workspace": "ask",
+      "*workspace?": "ask",
+      "*deep-review-1-6*": "ask",
+      "*deep-review-1-6-r4?common*": "allow",
+      "*deep-review-1-6-r4?deepseek*": "allow",
+      "*deep-review-1-6-r4?claude*": "deny",
+      "*deep-review-1-6-r4?codex*": "deny",
+      "*deep-review-1-6-r3*": "deny",
+      "*deep-review-1-6-r2*": "deny",
+      "*deep-review-1-6?claude*": "deny",
+      "*deep-review-1-6?codex*": "deny",
+      "*deep-review-1-6?muse*": "deny"
+    },
+    "external_directory": {
+      "*": "ask",
+      "*deep-review-1-6-r4?common*": "allow",
+      "*deep-review-1-6-r4?deepseek*": "allow",
+      "*deep-review-1-6-r4?claude*": "deny",
+      "*deep-review-1-6-r4?codex*": "deny",
+      "*deep-review-1-6-r3*": "deny",
+      "*deep-review-1-6-r2*": "deny",
+      "*deep-review-1-6?claude*": "deny",
+      "*deep-review-1-6?codex*": "deny",
+      "*deep-review-1-6?muse*": "deny",
+      "*.local?share?opencode*": "deny"
+    },
+    "edit": {
+      "*": "deny",
+      "*deep-review-1-6-r4?deepseek*": "allow"
+    },
+    "bash": {
+      "*": "allow",
+      "*deep-review-1-6*": "ask",
+      "*deep-review-1-6-r4?common*": "allow",
+      "*deep-review-1-6-r4?deepseek*": "allow",
+      "*deep-review-1-6-r4?claude*": "deny",
+      "*deep-review-1-6-r4?codex*": "deny",
+      "*deep-review-1-6-r3*": "deny",
+      "*deep-review-1-6-r2*": "deny",
+      "*deep-review-1-6?claude*": "deny",
+      "*deep-review-1-6?codex*": "deny",
+      "*deep-review-1-6?muse*": "deny",
+      "git commit*": "deny",
+      "git push*": "deny",
+      "git stash*": "deny",
+      "git switch*": "deny",
+      "git clean*": "deny",
+      "git merge*": "deny",
+      "git rebase*": "deny",
+      "git checkout*": "deny",
+      "git restore*": "deny",
+      "git reset*": "deny",
+      "gh *": "deny",
+      "pnpm eval:ai*": "deny",
+      "*tools/eval-ai.mjs*": "deny",
+      "*tools?eval-ai.mjs*": "deny",
+      "opencode *": "deny",
+      "*auth export*": "deny",
+      "*cmdkey*": "deny",
+      "*CredentialManager*": "deny",
+      "*chatgpt.com*": "deny",
+      "curl *": "ask",
+      "Invoke-WebRequest*": "ask",
+      "Invoke-RestMethod*": "ask"
+    }
+  }
+}
+```
+
+Khác bản Phase 5:
+
+- đường dẫn `deep-review-5` đổi sang lượt 4;
+- thêm chặn thư mục lượt 1–3, vì DeepSeek chưa có probe ở đó;
+- liệt kê `C:\workspace` hay `deep-review-1-6*` phải hỏi, vì review Phase 5 có một lần liệt kê thư mục gốc;
+- `gh` cấm hẳn thay vì hỏi, vì thông tin Issue / PR đã có ở `fixes.md`.
+
+Luật `permission` dựa trên thứ tự khai báo như bản Phase 5 (mẫu riêng sau mẫu chung). Home PC ngày 27/10 có OpenCode v2.1.4, khác v2.0.24 của Phase 5. Vì vậy bước chuẩn bị kiểm lại cú pháp (§L4.9 bước 1), và phiên thử của đợt 2 kiểm từng luật (§L4.9, đợt 2 bước 3).
