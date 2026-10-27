@@ -25,6 +25,7 @@ import {
   type Team,
 } from '@p2c/domain';
 import { joinParts, t, type MessageKey } from '../../i18n';
+import { BADGE } from '../classes';
 
 export interface AppointmentData {
   readonly appointments: readonly AppointmentRecord[];
@@ -94,7 +95,7 @@ export const DATE_TONE_CELL = {
 export const UNRECORDED_TONE = 'text-appt-unrecorded';
 
 /** The "Chưa ghi kết quả" badge (mockup overview.html part 2 `.badge.plain.unrec`). */
-const UNRECORDED_BADGE = `rounded-full border border-current px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${UNRECORDED_TONE}`;
+const UNRECORDED_BADGE = `${BADGE} whitespace-nowrap ${UNRECORDED_TONE}`;
 
 /**
  * The "Trạng thái" column: a scheduled appointment before today says no outcome is recorded yet,

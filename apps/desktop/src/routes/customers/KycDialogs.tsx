@@ -28,9 +28,9 @@ import {
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, joinParts, t } from '../../i18n';
-import { ALERT } from '../classes';
+import { ALERT, BADGE } from '../classes';
 import { Actions, FailureAlert, useDateField } from './CustomerDialogs';
-import { BADGE, YES_NO } from './CustomerKyc';
+import { YES_NO } from './CustomerKyc';
 import {
   currentFactRecords,
   factText,

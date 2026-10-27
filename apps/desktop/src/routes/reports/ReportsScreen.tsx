@@ -3,7 +3,7 @@ import { Button, Segmented } from '@p2c/ui';
 import { useTables, useToday } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { useScopeState } from '../../shell/ScopeContext';
-import { PANEL } from '../classes';
+import { HEADING, PANEL } from '../classes';
 import { FilterBar, useAppliedFilter } from '../FilterBar';
 import { viewingText } from '../overview/overview-view';
 import { ExportNoticeLine, useReportExport } from './ReportExport';
@@ -64,7 +64,7 @@ export function ReportsScreen() {
       {exporter.notice && <ExportNoticeLine notice={exporter.notice} />}
       <section aria-label={summary} className={PANEL}>
         <div className="flex flex-wrap items-baseline gap-2">
-          <h2 className="m-0 text-sm font-medium text-heading">{summary}</h2>
+          <h2 className={HEADING}>{summary}</h2>
           <span className="text-xs text-fg-3">
             {summaryMeta(applied.scope, data.people, data.teams)}
           </span>

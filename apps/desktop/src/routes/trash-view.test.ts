@@ -36,6 +36,7 @@ import {
   purgePlan,
   purgeReminder,
   purgeView,
+  recordBadge,
   recordDetail,
   recordTitle,
   restoreLabel,
@@ -44,7 +45,6 @@ import {
   restoredNotice,
   trashCounts,
 } from './trash-view';
-import { policyStatusText } from './customers/policy-form';
 import { openAppData } from '../data/app-data';
 import { t } from '../i18n';
 
@@ -276,6 +276,22 @@ describe('recordTitle and recordDetail (spec Phase 6 §4.2 "Bản ghi")', () => 
   });
 });
 
+describe('recordBadge (spec Phase 6 §4.2 "Bản ghi")', () => {
+  it("a customer: its stage; a policy: its status, in the words of the policy's badges", () => {
+    expect(recordBadge(minhAnh)).toEqual({ text: 'N3', stage: 'N3' });
+    expect(recordBadge({ ...minhAnh, stage: 'ON_HOLD' } as TrashRow)).toEqual({
+      text: 'Tạm hoãn',
+      stage: 'ON_HOLD',
+    });
+    expect(recordBadge(policy)).toEqual({ text: 'Đã nộp', issued: false });
+    expect(recordBadge(issuedPolicy)).toEqual({ text: 'Đã phát hành', issued: true });
+  });
+
+  it('an appointment, a person or a team: none, its status or role being written out', () => {
+    for (const row of [met, planned, mai, binhMinh]) expect(recordBadge(row)).toBeNull();
+  });
+});
+
 describe('ownerParts (spec Phase 6 §4.2 "Thuộc")', () => {
   it('a customer: its RE and team', () => {
     expect(ownerParts(minhAnh)).toEqual([
@@ -329,16 +345,12 @@ describe('restoreLabel (DR6-43)', () => {
   });
 
   // Review of PR 748: what tells two rows apart on screen is what tells their buttons apart, by
-  // construction rather than by a second sentence to keep in step with the cell.
+  // construction rather than by a second sentence to keep in step with the cell, which draws the
+  // badge of `recordBadge` (review of PR 846): a badge added there names the button too.
   it('names the record as the first line of its "Bản ghi" cell does, with the badge there', () => {
     for (const row of [...ROWS, issuedPolicy]) {
-      const badge =
-        row.kind === 'policy'
-          ? policyStatusText(row)
-          : row.kind === 'customer'
-            ? t(`stage.${row.stage}`)
-            : null;
-      const record = badge ? `${recordTitle(row)} · ${badge}` : recordTitle(row);
+      const badge = recordBadge(row);
+      const record = badge ? `${recordTitle(row)} · ${badge.text}` : recordTitle(row);
       expect(restoreLabel(row)).toContain(` ${record}`);
     }
   });

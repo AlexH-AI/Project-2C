@@ -3,9 +3,8 @@ import type { AiAnalysisView, KycVersionRecord } from '@p2c/db';
 import { formatCount, formatDayMonth } from '@p2c/domain';
 import { Button, Dialog } from '@p2c/ui';
 import { joinParts, t } from '../../i18n';
-import { ALERT, FOCUS } from '../classes';
+import { ALERT, BADGE, FOCUS } from '../classes';
 import { historyRows, rejectedReport, type AiPanelSource } from './ai-panel-view';
-import { BADGE } from './CustomerKyc';
 import { issueText } from './KycWebSession';
 
 /** Who answered, as the chip and the history name it (mockups 2e, 4i). */

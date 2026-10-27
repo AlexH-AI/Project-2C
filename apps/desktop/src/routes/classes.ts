@@ -16,6 +16,16 @@ export const SETTINGS_SECTION = 'rounded-lg border border-border bg-surface-1 px
 /** A block of Tổng quan and Báo cáo: its heading over its figures, chart or table. */
 export const PANEL = 'flex flex-col gap-3 rounded-md border border-border bg-surface-1 px-3.5 py-3';
 
+/** The heading of a card, a section or a block: "Dữ kiện KYC", "Thùng rác", "So sánh team". */
+export const HEADING = 'm-0 text-sm font-medium text-heading';
+
+/**
+ * A badge of words (mockup `.badge.plain`): a gate state, "Đã có key", "Chưa ghi kết quả", "n HĐ";
+ * where it is used adds its colour. `StageBadge` and `PolicyBadge` of `packages/ui`, which cannot
+ * import the app, write theirs with a dot (mockup `.badge`).
+ */
+export const BADGE = 'rounded-full border border-current px-2 py-0.5 text-xs font-semibold';
+
 /** A boxed line (mockup `.alert`); where it is used adds its border colour and anything else. */
 export const ALERT = 'm-0 rounded-md border px-3 py-2';
 

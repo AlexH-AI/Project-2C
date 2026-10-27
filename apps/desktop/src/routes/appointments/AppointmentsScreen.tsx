@@ -29,7 +29,7 @@ import { routeToHash } from '../../shell/routes';
 import { RePicker } from '../../shell/RePicker';
 import { teamRes } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
-import { ALERT, CARD, FOCUS, LINK } from '../classes';
+import { ALERT, CARD, FOCUS, HEADING, LINK } from '../classes';
 import { PERIOD_LABELS } from '../period-labels';
 import { AppointmentAi } from './AppointmentAi';
 import { AppointmentDialog } from './AppointmentDialog';
@@ -387,7 +387,7 @@ function MonthCalendar({
   return (
     <section aria-labelledby="appointments-calendar" className={CARD}>
       <div className="mb-2 flex items-baseline justify-between gap-3">
-        <h2 id="appointments-calendar" className="m-0 text-sm font-medium text-heading">
+        <h2 id="appointments-calendar" className={HEADING}>
           {t('appointments.calendar', { month })}
         </h2>
         <span className="text-xs text-fg-3 tabular-nums">

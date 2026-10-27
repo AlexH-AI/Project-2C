@@ -4,7 +4,7 @@ import { Button, DataTable, DialogFocusFallback, type DataTableColumn } from '@p
 import { useTables, useToday } from '../../data/AppDataContext';
 import type { Tables } from '../../data/tables';
 import { t, tableMore } from '../../i18n';
-import { CARD, FOCUS, LINK } from '../classes';
+import { CARD, FOCUS, HEADING, LINK } from '../classes';
 import { DeletePersonDialog, PersonDialog } from './PersonDialogs';
 import { DeleteTeamDialog, TeamNameDialog } from './TeamDialogs';
 import { groupByTeam, staffMetrics, type StaffMetrics, type TeamEntry } from './team-view';
@@ -44,7 +44,6 @@ function cardTitleOf(editing: Editing | null): string {
   }
 }
 
-const CARD_TITLE = 'm-0 text-sm font-medium text-heading';
 const ROLE = 'text-xs font-bold tracking-wider text-fg-3';
 
 /** The person's full name, no avatar (Owner, 01/10/2026). */
@@ -152,7 +151,7 @@ export function TeamScreen() {
       <div className="flex items-start gap-4">
         <div className="flex w-64 shrink-0 flex-col gap-4">
           <section aria-labelledby={LIST_TITLE} className={CARD}>
-            <h2 id={LIST_TITLE} tabIndex={-1} className={`${CARD_TITLE} mb-2`}>
+            <h2 id={LIST_TITLE} tabIndex={-1} className={`${HEADING} mb-2`}>
               {t('team.list')}
             </h2>
             {view.teams.length === 0 && <p className="m-0 text-sm text-fg-3">{t('team.none')}</p>}
@@ -246,7 +245,7 @@ function SharedSupport({
 }) {
   return (
     <section aria-labelledby={SHARED_TITLE} className={CARD}>
-      <h2 id={SHARED_TITLE} tabIndex={-1} className={`${CARD_TITLE} mb-2`}>
+      <h2 id={SHARED_TITLE} tabIndex={-1} className={`${HEADING} mb-2`}>
         {t('team.shared')}
       </h2>
       {people.length === 0 ? (
@@ -292,7 +291,7 @@ function Members({
           holds, and a person moved to the team shown keeps their row and the focus on its Sửa
           (review of PR 744). */}
       <div key={entry.team.id} className="mb-2 flex items-center gap-2">
-        <h2 id={MEMBERS_TITLE} tabIndex={-1} className={CARD_TITLE}>
+        <h2 id={MEMBERS_TITLE} tabIndex={-1} className={HEADING}>
           {t('team.heading', { name: entry.team.name })}
         </h2>
         <span className="text-fg-3">{t('sep.dot')}</span>

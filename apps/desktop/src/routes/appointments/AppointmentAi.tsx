@@ -4,8 +4,7 @@ import { formatDayMonth } from '@p2c/domain';
 import { useQuery } from '../../data/AppDataContext';
 import { t } from '../../i18n';
 import { routeToHash } from '../../shell/routes';
-import { LINK } from '../classes';
-import { BADGE } from '../customers/CustomerKyc';
+import { BADGE, HEADING, LINK } from '../classes';
 import { BADGE_COLORS, FADED, ITEMS, Item } from '../customers/KycIntelligence';
 import type { AiPanelItem } from '../customers/ai-panel-view';
 import { SourceBadge } from '../customers/KycHistory';
@@ -57,7 +56,7 @@ export function AppointmentAi({ customerId }: { customerId: string }) {
       className="flex flex-col gap-1.5 border-t border-border pt-3 text-sm"
     >
       <div className="flex flex-wrap items-center gap-2">
-        <h3 id="appointment-ai" className="m-0 text-sm font-medium text-heading">
+        <h3 id="appointment-ai" className={HEADING}>
           {t('aiPanel.title')}
         </h3>
         {view && (

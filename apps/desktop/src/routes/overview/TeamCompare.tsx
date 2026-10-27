@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react';
 import { t } from '../../i18n';
-import { FOCUS, PANEL } from '../classes';
+import { FOCUS, HEADING, PANEL } from '../classes';
 import type { CompareRow, TeamCompareView } from './team-compare-view';
 
 const HEADERS = [
@@ -40,7 +40,7 @@ export function TeamCompare({ view, mtd }: { view: TeamCompareView; mtd: boolean
   return (
     <section aria-label={title} className={PANEL}>
       <div className="flex flex-wrap items-baseline gap-2">
-        <h2 className="m-0 text-sm font-medium text-heading">{title}</h2>
+        <h2 className={HEADING}>{title}</h2>
         {view.range && (
           <span className="text-xs text-fg-3 tabular-nums">
             {view.range}

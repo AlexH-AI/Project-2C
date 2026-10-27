@@ -6,7 +6,7 @@ import { useAppData, useQuery, useSaveStatus } from '../data/AppDataContext';
 import { countRecords, type DataFolder, type RecordCounts } from '../data/app-data';
 import { t } from '../i18n';
 import { WEB_MODE } from '../shell/Sidebar';
-import { SETTINGS_SECTION } from './classes';
+import { HEADING, SETTINGS_SECTION } from './classes';
 
 /** `3 team · 36 nhân sự · 1.204 KH · …`, the same sentence in the card and in dialog 10a. */
 export const countsText = (counts: RecordCounts) =>
@@ -28,7 +28,7 @@ export function DataFileSection() {
   return (
     <section aria-labelledby="data-file-title" className={SETTINGS_SECTION}>
       <div className="mb-1 flex items-baseline gap-2">
-        <h2 id="data-file-title" className="m-0 text-sm font-medium text-heading">
+        <h2 id="data-file-title" className={HEADING}>
           {t('settings.file.title')}
         </h2>
         <span className="text-xs text-fg-3 tabular-nums">
@@ -40,7 +40,7 @@ export function DataFileSection() {
         <Fact term={t('settings.file.content')}>{countsText(counts)}</Fact>
       </dl>
       {!data.hasFile && (
-        <p className="m-0 flex items-center gap-2 py-1 text-sm text-fg-2">
+        <p className={`m-0 flex items-center gap-2 py-1 text-sm ${WEB_MODE.tone}`}>
           <span aria-hidden className={`inline-block size-2 rounded-full ${WEB_MODE.dot}`} />
           {WEB_MODE.text}
         </p>

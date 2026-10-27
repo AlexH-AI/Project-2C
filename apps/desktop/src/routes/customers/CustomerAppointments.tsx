@@ -12,7 +12,7 @@ import {
   UNRECORDED_TONE,
   type Outcome,
 } from '../appointments/appointments-view';
-import { CARD, LINK } from '../classes';
+import { CARD, HEADING, LINK } from '../classes';
 
 interface Row {
   readonly appointment: AppointmentRecord;
@@ -163,7 +163,7 @@ export function CustomerAppointments({
   return (
     <section aria-labelledby="customer-appointments" className={CARD}>
       <div className="mb-2 flex items-baseline gap-2">
-        <h2 id="customer-appointments" className="m-0 text-sm font-medium text-heading">
+        <h2 id="customer-appointments" className={HEADING}>
           {t('customer.appointments')}
         </h2>
         <span className="text-xs text-fg-3 tabular-nums">
