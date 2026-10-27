@@ -1812,8 +1812,9 @@ Như §L2.4 phần 2: ít nhất 5 kịch bản mới mỗi gói, gói F ít nh�
 - Dòng "`public/favicon.svg` (#128) là bản sao `app-icon.svg` → đổi icon phải sửa cả hai" của KNOWN lượt 1–3 **không còn**: mục đó đã RESOLVED (T-300 bỏ bản sao, #861 bỏ `app-icon.svg`). Nguồn icon nay ghi ở phụ lục 27/10 của ADR-0013: một PNG 1024 px (`apps/desktop/app-icon.png`), `tauri icon` sinh bộ icon của exe, favicon là icon 32 px trong bộ đó.
 - Ghi chú sổ thêm sau SHA ghim (nếu có, chỉ PR docs) ghi ở đầu `known.md`, như lượt 3.
 
-**2. Quyết định Owner còn hiệu lực:** K1–K29 (§5, §L2.5, §L3.5) giữ nguyên chữ, **trừ K13, K14, K17, K21**. Bốn mục này ghi vào `known.md` theo chữ dưới, vì chữ cũ trái với quyết định sau:
+**2. Quyết định Owner còn hiệu lực:** K1–K29 (§5, §L2.5, §L3.5) giữ nguyên chữ, **trừ K12, K13, K14, K17, K21**. Năm mục này ghi vào `known.md` theo chữ dưới, vì chữ cũ trái với quyết định sau:
 
+- **K12 (sửa theo K33, T-291):** Ra khỏi v1.0: `Project-2C-data`, S-1 (định dạng snapshot mỗi bảng một file, D-2), gộp backup / xung đột; làm trên hai máy là "bản nhập sau thắng", không cảnh báo khi nhập. Kiểm `kyc_versions.hash` khi nhập backup đã làm ở T-291 (luật nhập 7, K33): dòng sổ "S-1 / D-1" (probe Codex Sol 02/10) đã RESOLVED. Bỏ vế "`kyc_versions.hash` khi nhập snapshot — dòng OPEN" của chữ cũ.
 - **K13 (sửa theo K35, S2-6 sửa 25/10):** S-2: khóa mọi lệnh ghi trong lúc thay dữ liệu; xuất không vào hàng đợi; đóng app trong lúc thay (Nạp lại, Nhập backup, Dọn sạch) chờ lần thay xong và dữ liệu mới lưu xong rồi mới đóng (S2-1…S2-6). Bỏ vế "đóng app không chờ" duyệt 11/10.
 - **K14:** như §L3.5 (theo K27, TR-6 mới).
 - **K17 (sửa theo M10):** Không phải phát hiện:
@@ -2031,7 +2032,7 @@ Khuôn như §L3.8 (và §L2.8), đổi:
    - `plan.md` (file này, bản đã merge);
    - `known.md` dựng mới theo §L4.5 ở SHA ghim (không chép từ `known.md` lượt 3):
      - phần 1 từ `docs/state/review-notes.md` ở SHA ghim (OPEN rỗng, ACCEPTED nguyên văn);
-     - K1–K40, với K13, K14, K17, K21 theo chữ ở §L4.5;
+     - K1–K40, với K12, K13, K14, K17, K21 theo chữ ở §L4.5;
      - mục "Lệch mockup đã biết" nguyên văn;
      - bảng R1 kèm danh sách KNOWN; bảng R2 thêm các Issue của đợt sửa mục OPEN;
    - `fixes.md`:
@@ -2083,15 +2084,15 @@ Khuôn như §L3.8 (và §L2.8), đổi:
 
    Kiểm: `Get-ChildItem C:\workspace\deep-review-1-6-r4\codex` phải báo `Access is denied`.
 2. Chép `C:\workspace\deep-review-1-6-r4\common\opencode-deepseek.json` thành `C:\workspace\Project-2C-review\opencode.json`.
-3. Phiên thử: `opencode C:\workspace\Project-2C-review`, bảo model làm từng việc dưới. Kết quả phải đúng như ghi:
+3. Phiên thử: `opencode C:\workspace\Project-2C-review`, bảo model làm từng việc dưới. Hai việc tạo file phải dùng công cụ sửa file của OpenCode, không qua `bash`: luật `edit` của Phụ lục P chỉ áp cho công cụ sửa file. Kết quả phải đúng như ghi:
    - liệt kê `C:\workspace\deep-review-1-6-r4\codex` → bị từ chối (ACL);
    - đọc `C:\workspace\deep-review-1-6-r4\common\plan.md` → đọc được, không hỏi;
-   - tạo file `C:\workspace\deep-review-1-6-r4\deepseek\_thu\a.txt` → tạo được;
-   - tạo file `C:\workspace\Project-2C-review\_thu.txt` → bị từ chối (công cụ sửa file chỉ được ghi trong `deepseek\`);
+   - tạo file `C:\workspace\deep-review-1-6-r4\deepseek\_thu\a.txt` bằng công cụ sửa file → tạo được;
+   - tạo file `C:\workspace\Project-2C-review\_thu.txt` bằng công cụ sửa file → bị từ chối (công cụ sửa file chỉ được ghi trong `deepseek\`);
    - chạy `git commit --dry-run` trong repo → bị từ chối;
    - chạy `opencode --version` → bị từ chối.
 
-   Xóa `deepseek\_thu\` (và `_thu.txt` nếu lỡ tạo được), rồi bỏ phiên thử. Có việc nào ra khác → không chạy đợt 2; sửa `opencode.json` theo bản OpenCode trên máy rồi thử lại, hoặc báo Claude.
+   Xóa `deepseek\_thu\` (và `_thu.txt` nếu lỡ tạo được), rồi bỏ phiên thử. Model tự chuyển sang `bash` mà tạo được file thì không tính là ra khác: `bash` của Phụ lục P không chặn ghi, đúng giới hạn "model vẫn lách được" ở đầu Phụ lục P. Xóa file đó, bảo làm lại bằng công cụ sửa file. Ngoài ca này, có việc nào ra khác → không chạy đợt 2; sửa `opencode.json` theo bản OpenCode trên máy rồi thử lại, hoặc báo Claude.
 4. Mỗi gói một phiên mới (`/new`), lần lượt A → F, chọn biến thể suy luận cao nhất nếu TUI có:
 
    ```text
@@ -2181,7 +2182,7 @@ Thư mục bằng chứng `deep-review-1-6-r4\` giữ trên Home PC tới v1.0.
 |---|---|---|---|
 | 3 | SHA ghim = `main` khi sổ OPEN rỗng (B2), bước chuẩn bị ghim và đo lại. Số trong kế hoạch lấy ở `a59ef07` (`main` lúc soạn, sau khi #849–#852 đóng; code = `c4eec8b`). Từ SHA ghim tới lúc chạy chỉ có thay đổi docs | §L4.2, §L4.9 bước 1 | Theo đề xuất (27/10/2026) |
 | 4 | Phạm vi đủ 6 gói như lượt 2–3, hai phần ngang nhau. Kiểm phần đã sửa bằng hai bảng: R1 (DR6-104…134, DR6-25 / 37 / 66 / 67, CL3-A29, CL3-B2) và R2 (27 Issue + Issue của đợt sửa mục OPEN). Tìm lỗi / edge case mới trên toàn bộ phạm vi gói, xét trước code mới sau lượt 3. Năm file mới chưa xếp gói xếp tay (§L4.3) | §L4.3, §L4.4 | Theo đề xuất (27/10/2026) |
-| 5 | KNOWN lượt 4 dựng mới ở SHA ghim: OPEN rỗng + ACCEPTED; K1–K40 (sửa K13, K14, K17, K21); "Lệch mockup đã biết" nguyên văn (12 mục không sửa 15/10, 2 lệch chấp nhận 23/10, huy hiệu "n HĐ"); quyết định đổi tên chỉ phần nhìn thấy (K39) | §L4.5 | Theo đề xuất (27/10/2026) |
+| 5 | KNOWN lượt 4 dựng mới ở SHA ghim: OPEN rỗng + ACCEPTED; K1–K40 (sửa K12, K13, K14, K17, K21); "Lệch mockup đã biết" nguyên văn (12 mục không sửa 15/10, 2 lệch chấp nhận 23/10, huy hiệu "n HĐ"); quyết định đổi tên chỉ phần nhìn thấy (K39) | §L4.5 | Theo đề xuất (27/10/2026) |
 | 6 | Sau tổng hợp: sửa hết như lượt 3, rồi G7 | §L4.10 | Theo đề xuất (27/10/2026) |
 | 7 | Số đo trên Home PC, so mốc Home PC sau #656 như lượt 3, thêm số lượt 3 cùng máy làm tham khảo. Ghi riêng cỡ exe / bundle do font, icon mới và `zod/mini`. Dữ liệu tải vào exe bằng script qua cổng debug như lượt 3 | §L4.6, §L4.9 | Theo đề xuất (27/10/2026) |
 | 8 | Đợt sửa mục OPEN trước lượt 4 (B2): ba Issue tạo sau G1. T-310 PR nhỏ code: 7 mục [G7] code và ghi chú code của review kế hoạch này. T-311 tài liệu: `phase-6.md` ×2, nghiệm thu ×1 và ghi chú tài liệu của review kế hoạch này. T-312 chụp lại ảnh hướng dẫn: 4 mục, làm sau T-310. Ảnh chụp lúc này là ảnh trước lượt 4; đợt sửa lượt 4 đổi màn nào thì G7 chụp lại ảnh đó | §L4.2 | Theo đề xuất (27/10/2026) |
