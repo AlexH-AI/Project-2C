@@ -48,11 +48,11 @@ Bảng nào trùng Tổng hợp thì không có: góc nhìn Team không có Theo
 |---|---|
 | Ngày | Chính ngày đó (một dòng) |
 | Tuần | Một ngày |
-| Tháng | Một tuần Thứ Hai → Chủ nhật, cắt ở đầu và cuối tháng (ví dụ "01-06/09 (T3-CN)") |
+| Tháng | Một tuần Thứ Hai → Chủ nhật, cắt ở đầu và cuối tháng (ví dụ "01–06/09 (T3–CN)") |
 | Năm | Một tháng |
 | Tùy chọn | Một ngày (kỳ tới 31 ngày) hoặc một tháng (kỳ dài hơn) |
 
-Mốc có hôm nay được đánh dấu và ghi "tới …" (ví dụ "14-20/09 (tới 15/09)"): kết quả của mốc đó tính tới hôm nay. Mốc sau hôm nay chỉ có lịch hẹn Dự kiến; Kết quả và KH cuối kỳ hiện "—".
+Mốc có hôm nay được đánh dấu và ghi "tới …" (ví dụ "14–20/09 (tới 15/09)"): kết quả của mốc đó tính tới hôm nay. Mốc sau hôm nay chỉ có lịch hẹn Dự kiến; Kết quả và KH cuối kỳ hiện "—".
 
 ## Xuất Excel
 

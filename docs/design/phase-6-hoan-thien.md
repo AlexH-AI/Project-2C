@@ -64,7 +64,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 - **S2-3 Kết quả AI về trong lúc thay** bị bỏ như khi về sau lúc thay (`discarded`, panel không hiện gì, không báo lỗi), giống DR5-36.
 - **S2-4 Thay lỗi** (lưu trước đó lỗi → từ chối như cũ; backup lỗi; mở DB mới lỗi): mở khóa ghi, DB cũ dùng và lưu tiếp như trước, `generation` không đổi.
 - **S2-5 Xuất không vào hàng đợi.** Xuất backup / Xuất Excel đọc DB trong bộ nhớ một lần, đồng bộ (không có `await` giữa lúc đọc và lúc có bytes), rồi ghi vào `exports\` bằng tên mới, nguyên tử, không đụng `project2c.db`. Xuất trong lúc thay cho ra file đủ của dữ liệu cũ hoặc của dữ liệu mới, không lẫn. Chặn xuất không thêm gì về an toàn mà làm người dùng chờ tới ~7 s.
-- **S2-6 Đóng app trong lúc thay** (Nạp lại, Nhập backup, Dọn sạch Thùng rác) chờ lần thay xong và dữ liệu mới lưu xong rồi mới đóng (lần thay bị từ chối thì chờ tới lúc từ chối); trong lúc chờ, chỉ báo lưu ở sidebar ghi "Đang lưu…" (mockup `settings-data.html` 10d). File sau đó là dữ liệu mới đủ. Owner 25/10/2026 (T-294, #783, sổ review #125) thay câu cũ "không phải chờ": khi đó đóng giữa lúc seed thì app đóng ngay, file còn dữ liệu cũ đủ và lần Nạp lại mất.
+- **S2-6 Đóng app trong lúc thay** (Nạp lại, Nhập backup, Dọn sạch Thùng rác) chờ lần thay xong và dữ liệu mới lưu xong rồi mới đóng (lần thay bị từ chối thì chờ tới lúc từ chối); trong lúc chờ, chỉ báo lưu ở sidebar ghi "Đang lưu…" (mockup `settings-data.html` 10d). File sau đó là dữ liệu mới đủ (lần thay bị từ chối hay lỗi: dữ liệu cũ đủ). Owner 25/10/2026 (T-294, #783, sổ review #125) thay câu cũ "không phải chờ": khi đó đóng giữa lúc seed thì app đóng ngay, file còn dữ liệu cũ đủ và lần Nạp lại mất.
 
 **G3:** không có màn mới. Câu báo S2-2 có mẫu ở mockup `trash.html` khối 11g.
 
@@ -76,7 +76,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 - [ ] Hai `replace` gọi liền nhau → chạy lần lượt, mỗi lần một backup; dữ liệu cuối là của lần sau; DB cũ và DB mới của lần đầu mỗi cái đóng đúng một lần; không lần nào báo lỗi.
 - [ ] Cửa sổ `opening` (#206): lần lưu sau migration của DB mới tới `save`, DB cũ không lưu gì.
 - [ ] `exportBackup()` gọi trong lúc thay → text đủ, đọc lại bằng `readBackup` được, số bản ghi bằng dữ liệu cũ hoặc mới.
-- [ ] `flush()` (đóng app) ở từng bước của `replace` → bytes lưu cuối cùng là DB cũ hoặc DB mới, đọc lại được.
+- [ ] `flush()` (đóng app) ở từng bước của `replace` → chờ lần thay và lần lưu dữ liệu mới; bytes lưu cuối cùng là DB mới ở mọi bước, đọc lại được (S2-6).
 
 **Ước lượng / rủi ro:** ≈ 80 dòng SP (`app-data.ts`, `ai-analysis.ts`, `vi.ts`) + ≈ 250 dòng test, `risk:high` (lối ghi dữ liệu). Không đổi Rust (không cần `build-exe`).
 
@@ -91,7 +91,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 - **TR-3 D10 khi khôi phục cuộc hẹn Đã gặp.** Khôi phục trả dữ liệu về **đúng như lúc xóa** (Owner duyệt 15/10/2026, tổng hợp deep review lượt 1 §9 Q1 (a), Q2; DR6-01, DR6-03).
   - Cuộc gặp lúc xóa **không rút chuyển nhóm nào** (giữ nhóm) → khôi phục không ghi chuyển nhóm, không kiểm D10, dù nhóm KH đã đổi sau đó (kể cả cùng ngày cuộc hẹn). Hộp xác nhận: "Không đổi nhóm KH", như lịch không Đã gặp; dòng Thùng rác: "nhóm sau N3 · không đổi nhóm KH" (E18, E19; Owner 17/10/2026, tổng hợp deep review lượt 2 §9 Q7 (a), T-249). Chỉ chặn khi nhóm của chính ngày cuộc hẹn đã đổi lúc cuộc hẹn nằm trong Thùng rác (rút chuyển nhóm của một cuộc gặp trước đó), nên nhóm sau ghi trên lịch không còn là nhóm KH ngày ấy (`STAGE_NOT_ON_DAY`, T-232).
   - Cuộc gặp lúc xóa **có rút** một chuyển nhóm → khôi phục ghi lại chuyển nhóm đó, ngày = ngày cuộc hẹn (như lúc ghi kết quả); nhóm KH chưa đổi từ lúc xóa thì chính chuyển nhóm đã rút quay lại. Các dòng dưới áp cho ca này.
-  - KH đã ở đúng nhóm sau cuộc gặp, tới nhóm đó **ngay trong ngày cuộc hẹn** → khôi phục, không thêm chuyển nhóm. Cuộc hẹn đó không tính RF nữa, vì RF gắn với chuyển nhóm, đúng luật hiện có. Tới nhóm đó vào ngày sau → từ chối như dòng dưới: cuộc gặp sẽ ghi giữ một nhóm KH không có trong ngày cuộc hẹn, file xuất ra không nhập lại được (spec Phase 3 §6 luật 4; Owner 15/10/2026, T-232).
+  - KH đã ở đúng nhóm sau cuộc gặp, tới nhóm đó **ngay trong ngày cuộc hẹn** → khôi phục, không thêm chuyển nhóm. Cuộc hẹn đó không tính RF nữa, vì RF gắn với chuyển nhóm, đúng luật hiện có. Tới nhóm đó vào ngày sau → từ chối như dòng dưới: cuộc gặp sẽ ghi giữ một nhóm KH không có trong ngày cuộc hẹn, file xuất ra không nhập lại được (spec Phase 3 §6 luật 4; Owner 15/10/2026, T-232), hoặc chuyển nhóm của cuộc gặp phải ghi lùi trước một chuyển nhóm ngày sau (D10, DR6-104).
   - Nhóm KH đã đổi vào ngày sau ngày cuộc hẹn → **từ chối** (D10 cấm ghi chuyển nhóm lùi ngày), lý do nêu ngày đổi nhóm gần nhất. Một chuyển nhóm **cùng ngày** cuộc hẹn nhưng ghi **sau lúc xóa** tính như đổi nhóm ngày sau (E20); lý do nói "ghi sau lúc xóa cuộc hẹn này" thay "sau ngày cuộc hẹn này" (Q7 (a), T-249). "Sau lúc xóa" theo thứ tự ghi chuyển nhóm (`seq`), không theo đồng hồ: hai máy xuất / nhập có thể lệch giờ (DR6-69, T-248). Chuyển nhóm được đưa lại khi khôi phục giữ chỗ của nó trong thứ tự ghi; khôi phục theo thứ tự đã ghi thì được, ngược lại bị chặn như E20 (vd. hai cuộc gặp cùng ngày cùng nằm trong Thùng rác; Owner 21/10/2026, tổng hợp deep review lượt 3 §9 Q1 (a), DR6-106).
   - Nhóm hiện tại không chuyển được sang nhóm sau cuộc gặp (vd. KH đã đóng mà nhóm sau là N2) → từ chối.
   - Không có ngoại lệ "khôi phục mà bỏ chuyển nhóm": như thế RF và nhóm KH lệch với kết quả cuộc gặp.
@@ -186,7 +186,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 **Mô hình dữ liệu của dọn sạch (#662):**
 
 - Không đổi bảng, cột. Một migration tự viết mới nới ba trigger chặn xóa (`kyc_notes_no_delete`, `kyc_facts_no_delete`, `ai_analyses_no_delete`): chỉ cho xóa dòng của KH đã xóa mềm. Trigger chặn sửa và mọi xóa khác giữ nguyên (phụ lục ADR-0008). `LATEST_SCHEMA_VERSION` tăng 1; DB cũ có dữ liệu mở được.
-- `@p2c/db`: một hàm xem trước cho hộp 11i (số sẽ xóa hẳn theo loại, bản ghi giữ lại kèm lý do) và lệnh dọn trả số đã dọn theo loại cùng tập giữ lại (11j nêu số bản ghi giữ lại). Tập giữ lại (TR-12) tính ở **một hàm** dùng chung cho hàm xem trước, lệnh dọn và `listTrash` (lý do giữ lại của từng dòng), như lý do chặn dùng chung hàm kiểm của `restore…`.
+- `@p2c/db`: `previewPurge` là kế hoạch của lệnh dọn (số sẽ xóa hẳn theo loại, bản ghi giữ lại kèm lý do): lệnh dọn tính nó trong transaction của mình, rồi trả số đã dọn theo loại cùng tập giữ lại (11j nêu số bản ghi giữ lại). Hộp 11i đọc cùng kế hoạch từ các dòng `listTrash` vừa đọc (`purgePlan` của app), không đọc DB lần nữa; `previewPurge` là chuẩn so của test (PR #833). Tập giữ lại (TR-12) tính ở **một hàm** (`keptRecords`) dùng chung cho lệnh dọn và `listTrash` (lý do giữ lại của từng dòng), như lý do chặn dùng chung hàm kiểm của `restore…`.
 - `AppData`: dọn qua hàng đợi thay dữ liệu (backup trước, khóa ghi), trả tên file backup. Dọn không thay DB, nên `generation` không đổi.
 - Không thêm mã lỗi: lỗi của dọn là lỗi lưu / backup / lệnh như Nạp lại.
 - Tài liệu sửa ở PR code:
@@ -234,7 +234,7 @@ Không thêm tính năng ngoài danh sách này trong Phase 6 (việc mới ghi 
 
 - Chụp tự động bằng Playwright trên bản build web, ngày neo cố định như e2e (`DEMO_ANCHOR`), khung 1440 × 900: chạy lại cho ra cùng ảnh. Một cấu hình Playwright riêng (vd. `playwright.guide.config.ts`, chạy `pnpm exec playwright test -c …`), **không** chạy trong CI, không thêm script vào `package.json` (khỏi phải build exe).
 - Lệnh chụp kiểm luôn mọi đường dẫn ảnh / link tương đối trong `docs/user-guide/` đều tồn tại.
-- Commit PNG vào repo: ≈ 25 ảnh, mỗi ảnh ≤ 150 KB, tổng ≤ 4 MB.
+- Commit PNG vào repo: ≈ 25 ảnh, mỗi ảnh ≤ 150 KiB, tổng ≤ 4 MiB (1 KiB = 1 024 byte; `e2e/guide/check.guide.ts`).
 - Phần chỉ có ở exe (đường dẫn file, trạng thái lưu, lỗi khởi động, khóa một cửa sổ) viết bằng chữ, đánh dấu "(bản exe)"; bản web hiện khác (dữ liệu trong trình duyệt, mất khi tải lại).
 
 **Thời điểm:** viết sau khi S-2 và Thùng rác merge (màn của 6B đã xong). Chụp lại ảnh sau đợt sửa cuối của 6D, trước G7; G7 kiểm hướng dẫn khớp exe phát hành (một dòng trong `docs/testing/nghiem-thu-v1.md`).
