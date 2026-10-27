@@ -1,5 +1,4 @@
-import { existsSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { expect, test, type Locator } from './fixtures';
 import {
   addKycNote,
@@ -62,6 +61,67 @@ test('Be Vietnam Pro is loaded from the app itself, including Vietnamese glyphs'
   });
 
   expect(loadedWeights).toEqual(['400', '500', '600', '700']);
+});
+
+// Brand block of the sidebar (T-308, G3 27/10): the champagne of the slogan and of the outline.
+const SLOGAN = 'rgb(232, 211, 162)';
+const OUTLINE = ['0.5px 0px', '-0.5px 0px', '0px 0.5px', '0px -0.5px']
+  .map((offset) => `drop-shadow(rgba(232, 211, 162, 0.95) ${offset} 0px)`)
+  .join(' ');
+
+test('the slogan is in Playfair Display italic, loaded from the app itself (T-308)', async ({
+  page,
+}) => {
+  const font = page.waitForResponse((response) =>
+    /\/playfair-display-latin-400-italic-[\w-]+\.woff2$/.test(response.url()),
+  );
+  await page.goto('/');
+
+  const slogan = page.getByRole('complementary').getByText('Where legacy meets trust');
+  await expect(slogan).toHaveCSS('font-family', /^"?Playfair Display"?,/);
+  await expect(slogan).toHaveCSS('font-style', 'italic');
+  await expect(slogan).toHaveCSS('font-size', '13px');
+  await expect(slogan).toHaveCSS('color', SLOGAN);
+  const response = await font;
+  expect(response.ok()).toBe(true);
+  expect(new URL(response.url()).hostname).toBe('localhost');
+  // One face only, the one the slogan uses.
+  const faces = await page.evaluate(async () => {
+    await document.fonts.ready;
+    return [...document.fonts]
+      .filter((face) => face.family.replaceAll('"', '') === 'Playfair Display')
+      .map((face) => `${face.style} ${face.weight} ${face.status}`);
+  });
+  expect(faces).toEqual(['italic 400 loaded']);
+});
+
+test('the logo keeps its colours on the dark sidebar, the navy tree and "Heritas" outlined (T-308)', async ({
+  page,
+}) => {
+  await page.goto('/');
+
+  // Tree, "Heritas", "L-CRM": three pieces cut from the Owner's logo, which the block names.
+  const pieces = page.getByRole('img', { name: 'Heritas L-CRM' }).locator('img');
+  await expect(pieces).toHaveCount(3);
+  await expect
+    .poll(() =>
+      pieces.evaluateAll((images: HTMLImageElement[]) =>
+        images.map((image) => ({
+          alt: image.alt,
+          width: image.width,
+          loaded: image.naturalWidth > 0,
+        })),
+      ),
+    )
+    .toEqual([
+      { alt: '', width: 88, loaded: true },
+      { alt: '', width: 150, loaded: true },
+      { alt: '', width: 132, loaded: true },
+    ]);
+  await expect(pieces.nth(0)).toHaveCSS('filter', OUTLINE);
+  await expect(pieces.nth(1)).toHaveCSS('filter', OUTLINE);
+  // "L-CRM" is gold already.
+  await expect(pieces.nth(2)).toHaveCSS('filter', 'none');
 });
 
 test('the app makes no requests to hosts other than localhost', async ({ page }) => {
@@ -152,9 +212,13 @@ test('the two fields of the app outside packages/ui stand out 3:1 from their car
 test('the tab shows the icon of the app, built from its one source', async ({ page, request }) => {
   await page.goto('/');
 
+  // `tauri icon app-icon.png` makes every icon of the exe; the tab takes its 32 px one (T-308).
   const href = (await page.locator('link[rel="icon"]').getAttribute('href')) ?? '';
-  expect(href).toMatch(/^\/assets\/app-icon-[\w-]+\.svg$/);
-  const icon = await readFile(new URL('../apps/desktop/app-icon.svg', import.meta.url), 'utf8');
-  expect(await (await request.get(href)).text()).toBe(icon);
-  expect(existsSync(new URL('../apps/desktop/dist/favicon.svg', import.meta.url))).toBe(false);
+  expect(href).toMatch(/^\/assets\/32x32-[\w-]+\.png$/);
+  const icon = await readFile(
+    new URL('../apps/desktop/src-tauri/icons/32x32.png', import.meta.url),
+  );
+  expect((await (await request.get(href)).body()).equals(icon)).toBe(true);
+  const dist = await readdir(new URL('../apps/desktop/dist/', import.meta.url));
+  expect(dist.filter((name) => name.startsWith('favicon'))).toEqual([]);
 });

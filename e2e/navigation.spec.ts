@@ -17,6 +17,25 @@ test('the sidebar lists the six screens, each with an icon', async ({ page }) =>
   }
 });
 
+test('the smallest window shows the logo, the last item and the save state without scrolling (T-308)', async ({
+  page,
+}) => {
+  // tauri.conf.json minWidth / minHeight. The save state of web mode is the longest it reads.
+  await page.setViewportSize({ width: 1100, height: 700 });
+  await page.goto('/');
+  const sidebar = page.getByRole('complementary');
+  const last = sidebar.getByRole('link', { name: 'Cài đặt' });
+  const saveState = sidebar.getByText('Bản web — dữ liệu chỉ trong trình duyệt');
+
+  await expect(sidebar.getByRole('img', { name: 'Heritas L-CRM' })).toBeInViewport({ ratio: 1 });
+  await expect(last).toBeInViewport({ ratio: 1 });
+  await expect(saveState).toBeInViewport({ ratio: 1 });
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  // The save state sticks to the foot of the window: it does not cover the last item.
+  const lastBox = (await last.boundingBox())!;
+  expect(lastBox.y + lastBox.height).toBeLessThanOrEqual((await saveState.boundingBox())!.y);
+});
+
 test('opens on the overview with it selected', async ({ page }) => {
   await page.goto('/');
 
@@ -71,7 +90,7 @@ test('a new screen takes the focus on its heading and names the window; back on 
   await page.goto('/#/customers');
   const heading = page.getByRole('heading', { level: 1 });
   await expect(heading).toHaveText('Khách hàng');
-  await expect(page).toHaveTitle('Khách hàng · Project-2C');
+  await expect(page).toHaveTitle('Khách hàng · Heritas L-CRM');
   // Opening the app leaves the focus where it is.
   await expect(heading).not.toBeFocused();
 
@@ -81,13 +100,13 @@ test('a new screen takes the focus on its heading and names the window; back on 
   await page.keyboard.press('Enter');
   await expect(heading).toHaveText('Hồ sơ khách hàng');
   await expect(heading).toBeFocused();
-  await expect(page).toHaveTitle('Hồ sơ khách hàng · Project-2C');
+  await expect(page).toHaveTitle('Hồ sơ khách hàng · Heritas L-CRM');
 
   await page.getByRole('link', { name: '← Khách hàng' }).focus();
   await page.keyboard.press('Enter');
   await expect(heading).toHaveText('Khách hàng');
   await expect(page.locator(`main a[href="${href}"]`)).toBeFocused();
-  await expect(page).toHaveTitle('Khách hàng · Project-2C');
+  await expect(page).toHaveTitle('Khách hàng · Heritas L-CRM');
 
   await page
     .getByRole('navigation', { name: 'Điều hướng chính' })
@@ -95,7 +114,7 @@ test('a new screen takes the focus on its heading and names the window; back on 
     .click();
   await expect(heading).toHaveText('Báo cáo');
   await expect(heading).toBeFocused();
-  await expect(page).toHaveTitle('Báo cáo · Project-2C');
+  await expect(page).toHaveTitle('Báo cáo · Heritas L-CRM');
 });
 
 test('the exe gives its title bar the name of the screen too, which Tauri does not take from the page (review of PR 638)', async ({
@@ -105,18 +124,18 @@ test('the exe gives its title bar the name of the screen too, which Tauri does n
   await asExe(page);
   const titleBar = () => page.evaluate(() => window.exe.title);
   await page.goto('/#/customers');
-  await expect(page).toHaveTitle('Khách hàng · Project-2C');
-  await expect.poll(titleBar).toBe('Khách hàng · Project-2C');
+  await expect(page).toHaveTitle('Khách hàng · Heritas L-CRM');
+  await expect.poll(titleBar).toBe('Khách hàng · Heritas L-CRM');
 
   await page.locator('main a[href^="#/customers/"]').first().click();
-  await expect(page).toHaveTitle('Hồ sơ khách hàng · Project-2C');
-  await expect.poll(titleBar).toBe('Hồ sơ khách hàng · Project-2C');
+  await expect(page).toHaveTitle('Hồ sơ khách hàng · Heritas L-CRM');
+  await expect.poll(titleBar).toBe('Hồ sơ khách hàng · Heritas L-CRM');
   await page
     .getByRole('navigation', { name: 'Điều hướng chính' })
     .getByRole('link', { name: 'Báo cáo' })
     .click();
-  await expect(page).toHaveTitle('Báo cáo · Project-2C');
-  await expect.poll(titleBar).toBe('Báo cáo · Project-2C');
+  await expect(page).toHaveTitle('Báo cáo · Heritas L-CRM');
+  await expect.poll(titleBar).toBe('Báo cáo · Heritas L-CRM');
   expect(errors).toEqual([]);
 });
 

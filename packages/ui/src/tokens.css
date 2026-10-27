@@ -32,6 +32,10 @@
   --date-past-bg: rgba(240, 210, 110, 0.2);
   --date-today-bg: rgba(63, 214, 154, 0.2);
   --date-future-bg: rgba(111, 168, 255, 0.22);
+  /* Brand block of the sidebar (T-308, G3 27/10): the light champagne of the slogan, and of the
+     thin outline that lifts the navy of the logo off the dark sidebar */
+  --brand-slogan: #e8d3a2;
+  --brand-outline: rgba(232, 211, 162, 0.95);
 
   /* Opportunity stages */
   --n4: #94a3b8;
@@ -57,6 +61,7 @@
 
   /* Type & shape */
   --font: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
+  --font-brand: 'Playfair Display', Georgia, serif; /* the slogan only */
   --fs-xs: 11px;
   --fs-sm: 12.5px;
   --fs-md: 14px;

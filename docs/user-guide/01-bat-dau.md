@@ -4,7 +4,7 @@
 
 ## Chạy app (bản exe)
 
-1. Chép file exe Project-2C vào một thư mục bạn có quyền ghi, ví dụ `D:\Apps\Project-2C\`. Không cần cài đặt.
+1. Chép file exe của Heritas L-CRM (`project2c.exe`, icon cây trên ô trắng) vào một thư mục bạn có quyền ghi, ví dụ `D:\Apps\Heritas\`. Không cần cài đặt.
 2. Bấm đúp file exe. Lúc mở, app hiện "Đang mở dữ liệu…" rồi vào màn **Tổng quan**.
 
 Mỗi thư mục dữ liệu chỉ mở được bằng một cửa sổ app tại một lúc. Bấm mở exe lần nữa khi app đang chạy, cửa sổ mới báo "Project-2C đang mở ở một cửa sổ khác" và không đọc, không ghi gì: hãy dùng cửa sổ đang mở và đóng cửa sổ mới.
@@ -80,7 +80,7 @@ Các lỗi khác lúc mở app xem ở [10. Khi có lỗi](10-su-co.md#lỗi-lú
 
 ![Sidebar](img/01-bat-dau-sidebar.png)
 
-Sidebar bên trái mở các màn: **Tổng quan**, **Lịch hẹn**, **Khách hàng**, **Báo cáo**; nhóm **Quản lý** có **Team & nhân sự** và **Cài đặt**. Hồ sơ một KH mở từ màn Khách hàng hoặc từ lịch hẹn.
+Góc trên sidebar là logo Heritas L-CRM và slogan "Where legacy meets trust". Sidebar bên trái mở các màn: **Tổng quan**, **Lịch hẹn**, **Khách hàng**, **Báo cáo**; nhóm **Quản lý** có **Team & nhân sự** và **Cài đặt**. Hồ sơ một KH mở từ màn Khách hàng hoặc từ lịch hẹn. Thanh tiêu đề cửa sổ ghi màn đang mở, ví dụ "Khách hàng · Heritas L-CRM".
 
 Ở góc trên bên phải các màn Tổng quan, Lịch hẹn, Khách hàng và Báo cáo có ô **Góc nhìn**:
 

@@ -40,7 +40,7 @@ Mỗi lượt dùng **một thư mục mới chỉ để thử**, ví dụ `C:\n
 
 | Mã | Vùng | Mockup / spec |
 |---|---|---|
-| `NT-CH` | [Chung: sidebar, góc nhìn, bảng dài](#1-chung--sidebar-góc-nhìn-bảng-dài-nt-ch) | `phase-3-feedback.html` (gói A), `table-more.html` |
+| `NT-CH` | [Chung: sidebar, góc nhìn, bảng dài](#1-chung--sidebar-góc-nhìn-bảng-dài-nt-ch) | `phase-3-feedback.html` (gói A), `table-more.html`; khối `.brand` (logo) của 6 mockup có sidebar (T-308) |
 | `NT-TQ` | [Tổng quan](#2-tổng-quan-nt-tq) | `overview.html` 1a–1e; spec Phase 4 §1, §2, §4.1–4.3 |
 | `NT-LH` | [Lịch hẹn](#3-lịch-hẹn-nt-lh) | `overview.html` §2, `phase-3-feedback.html` B3–B6, `appointments.html`, `appointment-forms.html` 6a–6i, `trash.html` 11f |
 | `NT-KH` | [Khách hàng](#4-khách-hàng-nt-kh) | `customers.html`, `phase-3-feedback.html` B2, `customer-forms.html` 5a–5f, `trash.html` 11f |
@@ -69,6 +69,7 @@ Cuối file: [đối chiếu mockup → mã dòng](#đối-chiếu-mockup--mã-d
 | NT-CH-06 | Bảng dài · `table-more.html` 1–3 | Lịch hẹn, góc nhìn Toàn bộ, kỳ **Năm**: kéo xuống cuối **Danh sách lịch hẹn**, bấm "Hiện thêm" vài lần | Chân bảng "Đang hiện 100 / N lịch" + nút "Hiện thêm 100 lịch"; mỗi lần bấm thêm 100 dòng. Lần cuối nút ghi đúng số còn lại ("Hiện thêm k lịch"), sau đó "Đã hiện hết N lịch". Số đếm ở đầu thẻ luôn là tổng thật N | | |
 | NT-CH-07 | Bảng dài · `table-more.html` | Tiếp NT-CH-06: bấm tiêu đề cột Ngày; rồi đổi kỳ | Sắp cột giữ nguyên số dòng đang hiện; đổi kỳ / bộ lọc quay về 100 dòng | | |
 | NT-CH-08 | Bảng dài · `table-more.html` 4 | Lịch hẹn kỳ **Ngày** (≤ 100 lịch); Khách hàng → **Bảng**, góc nhìn Toàn bộ | Bảng ≤ 100 dòng không có chân bảng, không có nút. Bảng Khách hàng > 100 dòng có "Hiện thêm 100 khách hàng" | | |
+| NT-CH-09 | Logo, tên app · khối `.brand` (T-308) | Mở app, xem góc trên sidebar và thanh tiêu đề khi chuyển vài màn; kéo cửa sổ về nhỏ nhất | Góc trên sidebar là logo Heritas L-CRM: cây và vòng cung, chữ "Heritas" (chiếc lá thay dấu chấm chữ "i"), "— L-CRM —" màu vàng, dưới là slogan "Where legacy meets trust" chữ nghiêng. Cây và "Heritas" có viền champagne mỏng, không có ô "2C". Thanh tiêu đề ghi "<Màn> · Heritas L-CRM" theo màn đang mở. Cửa sổ nhỏ nhất (1 100 × 700) vẫn thấy mục **Cài đặt** và dòng trạng thái lưu mà không cuộn | | |
 
 ## 2. Tổng quan (`NT-TQ`)
 
@@ -341,6 +342,7 @@ Ba máy: Home PC `DESKTOP-KDURKJP`, Office Laptop `D13_THINKPAD` (không có quy
 | NT-EX-10 | Backup máy A → máy B | Home PC: làm một thay đổi dễ nhận (KH "Từ Home PC"), Xuất backup; chép file sang Office Laptop (USB / OneDrive); Office Laptop: Nhập backup | Hộp 10a "Trong file" = Nội dung ở Home PC; sau khi nhập, Office Laptop có KH "Từ Home PC", số liệu Tổng quan cùng kỳ trùng Home PC; provider / model AI theo file; key OpenCode của Office Laptop giữ nguyên (không đi theo backup) | | |
 | NT-EX-11 | Backup máy B → máy A | Office Laptop: KH "Từ Office", xuất; nhập ở Home PC | Home PC có cả "Từ Home PC" và "Từ Office", số trùng Office Laptop. Bản Home PC trước khi nhập nằm trong `backups\` | | |
 | NT-EX-12 | Hướng dẫn "bản nhập sau thắng" | Home PC: tạo KH "Chưa xuất"; nhập lại file của NT-EX-11 | Hộp 10a cảnh báo "Mọi thay đổi sau … sẽ mất khỏi app"; sau khi nhập KH "Chưa xuất" không còn (đúng luật thay toàn bộ, không gộp), lấy lại được bằng bản trong `backups\` (NT-DB-07) | | |
+| NT-EX-13 | Icon và tên exe (T-308) | Xem file exe trong Explorer; mở app, xem taskbar, Alt+Tab và góc trái thanh tiêu đề; chuột phải exe → Properties → Details | Icon là cây trên ô trắng bo góc ở cả bốn chỗ (không còn chữ "2C"). File vẫn tên `project2c.exe`; Details ghi File description và Product name "Heritas L-CRM" | | |
 
 ## 13. Độ bền dữ liệu (`NT-DB`)
 

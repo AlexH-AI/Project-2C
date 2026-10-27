@@ -1,7 +1,7 @@
 [package]
 name = "project2c"
 version = "1.0.0"
-description = "Project-2C desktop app"
+description = "Heritas L-CRM desktop app"
 edition = "2021"
 rust-version = "1.98"
 publish = false

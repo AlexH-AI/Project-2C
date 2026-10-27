@@ -20,6 +20,9 @@
   --accent: #d9b26a;
   --accent-soft: rgba(217, 178, 106, 0.14);
   --on-accent: #0b1017;
+  /* Brand block of the sidebar (T-308, G3 27/10): slogan, and the outline of the navy logo pieces */
+  --brand-slogan: #e8d3a2;
+  --brand-outline: rgba(232, 211, 162, 0.95);
 
   /* Opportunity stages */
   --n4: #94a3b8;
@@ -41,6 +44,7 @@
 
   /* Type & space */
   --font: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
+  --font-brand: 'Playfair Display', Georgia, serif; /* the slogan only */
   --fs-xs: 11px;
   --fs-sm: 12.5px;
   --fs-md: 14px;
@@ -98,24 +102,51 @@ a {
   gap: 18px;
 }
 
-.brand {
+/* Heritas L-CRM (T-308, G3 27/10): the Owner's logo in three pieces (img/, cut at 3x), in its own
+   colours on the dark sidebar, and the slogan in real text. The app: apps/desktop/src/shell/Brand.tsx. */
+.brand,
+.brand-logo {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  font-size: var(--fs-lg);
-  padding: 0 6px;
 }
 
-.brand-mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  border: 2px solid var(--accent);
-  display: grid;
-  place-items: center;
-  font-size: 12px;
-  color: var(--accent);
+.brand-logo img {
+  display: block;
+  height: auto;
+}
+
+.brand-tree {
+  width: 88px;
+}
+
+.brand-wordmark {
+  width: 150px;
+  margin-top: 6px;
+}
+
+/* Same scale as "Heritas" */
+.brand-lcrm {
+  width: 132px;
+  margin-top: 4px;
+}
+
+/* Lifts the navy tree and "Heritas" off the dark: one pixel at 1x. "L-CRM" is gold already. */
+.brand-outline {
+  filter: drop-shadow(0.5px 0 0 var(--brand-outline)) drop-shadow(-0.5px 0 0 var(--brand-outline))
+    drop-shadow(0 0.5px 0 var(--brand-outline)) drop-shadow(0 -0.5px 0 var(--brand-outline));
+}
+
+/* No outline: on 13 px italic it would blur */
+.brand-slogan {
+  margin: 7px 0 0;
+  font-family: var(--font-brand);
+  font-size: 13px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  color: var(--brand-slogan);
 }
 
 .nav {

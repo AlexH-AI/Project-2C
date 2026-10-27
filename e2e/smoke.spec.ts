@@ -3,7 +3,11 @@ import { expect, test } from './fixtures';
 test('app shell shows the brand and the overview with its KPI', async ({ page }) => {
   await page.goto('/');
 
-  await expect(page.getByRole('complementary')).toContainText('Project-2C');
+  // The logo of Heritas L-CRM and its slogan, in place of the "2C" mark (T-308).
+  const sidebar = page.getByRole('complementary');
+  await expect(sidebar.getByRole('img', { name: 'Heritas L-CRM' })).toBeVisible();
+  await expect(sidebar.getByText('Where legacy meets trust')).toBeVisible();
+  await expect(sidebar).not.toContainText('2C');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tổng quan');
 
   await expect(page.getByRole('region', { name: 'Chỉ số của kỳ' }).getByRole('region')).toHaveCount(
