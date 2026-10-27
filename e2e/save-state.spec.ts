@@ -5,11 +5,13 @@ import { asExe, lowestContrast } from './support';
 // warning, and closing the exe while it saves (T-294). The page's clock starts at 09:30 on the
 // anchor day (fixtures.ts), so a save of the first minutes reads "Đã lưu 09:3x".
 
+// The last paragraph of the sidebar: the slogan of the logo at its top is one too (T-308).
 const saveState = (page: Page) =>
   page
     .getByRole('complementary')
     .filter({ has: page.getByRole('navigation', { name: 'Điều hướng chính' }) })
-    .getByRole('paragraph');
+    .getByRole('paragraph')
+    .last();
 const SAVED = /^Đã lưu 09:3\d$/;
 const warning = (page: Page) =>
   page.getByRole('alert').filter({ hasText: 'Chưa lưu được dữ liệu vào file' });
