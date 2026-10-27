@@ -1581,7 +1581,7 @@ Owner chốt 26–27/10/2026 (§L4.11 mục 1, 2, B1, B2):
   - **Claude Opus 5.5** (27/10): như lượt 3, Owner mở **mỗi gói một phiên sạch** ở `C:\workspace\Project-2C-review`. Mức suy luận và ultracode Owner chọn từng phiên (M1, M8). Phiên bật ultracode được dùng subagent / Workflow cho việc của gói; chỉ phiên chính làm bước 0, ghi `{GÓI}.md` và in dòng `XONG`.
   - **Codex, model GPT Sol 6.1** (27/10): Owner chạy, mỗi gói một phiên mới, chỉ đọc, không viết code (M2).
   - **DeepSeek v4.1 Flash** (Owner bổ sung 27/10), qua OpenCode như review Phase 5: Owner chạy, mỗi gói một phiên mới, chỉ đọc, không viết code. Báo cáo là dữ liệu tham khảo như Codex (M2, M10). Bỏ DeepSeek ở lượt 1 (M5, 13/10) không còn áp cho lượt 4.
-  - 6 gói × 3 bên = **18 báo cáo**. Đề xuất chạy **hai đợt** như lượt 1 và review Phase 5 (đề xuất 9): đợt 1 Claude + Codex song song; đợt 2 DeepSeek một mình, khi thư mục của hai bên kia đã bị chặn ACL.
+  - 6 gói × 3 bên = **18 báo cáo**, chạy **hai đợt** như lượt 1 và review Phase 5 (đề xuất 9, Owner chọn 27/10): đợt 1 Claude + Codex song song; đợt 2 DeepSeek một mình, khi thư mục của hai bên kia đã bị chặn ACL.
 - **Hai phần ngang nhau** như lượt 2–3:
   1. **kiểm phần đã sửa** (trục R): mọi DR6 và mục KNOWN đã sửa sau lượt 3, và từng Issue gom ghi chú sổ (§L4.4);
   2. **tìm lỗi mới và edge case mới** trên **toàn bộ** phạm vi gói.
@@ -2175,17 +2175,17 @@ Thư mục bằng chứng `deep-review-1-6-r4\` giữ trên Home PC tới v1.0.
 - **B1.** "anh bổ sung kế hoạch review sẽ có thêm deepseek v4.1 flash": DeepSeek v4.1 Flash là bên review thứ ba, chỉ đọc, báo cáo là dữ liệu tham khảo. Lượt 4 có 6 gói × 3 bên = 18 báo cáo. Bỏ DeepSeek của M5 (13/10) không áp cho lượt 4 (ADR-0001 M10). Chạy trên gói OpenCode Go nên tốn hạn mức (G4: Owner yêu cầu).
 - **B2.** "anh chỉ làm review lượt 4 khi tất cả các review-notes open đã được sửa hết": lượt 4 chỉ chạy khi sổ OPEN rỗng, kể cả mục [G7]. Quyết định này thay quyết định trước đó cùng ngày ("mục [G7] làm sau khi xong mọi task"). SHA ghim vì vậy là `main` sau đợt sửa mục OPEN, không còn là `a59ef07`.
 
-**Đề xuất, Owner chọn cùng G1** (mục 3–7 của #854; mục 8, 9 thêm do B1, B2):
+**Đề xuất, Owner chọn cùng G1** (mục 3–7 của #854; mục 8, 9 thêm do B1, B2). Owner chọn ngày 27/10/2026, trong phiên soạn: cả bảy mục theo đề xuất.
 
 | # | Đề xuất | Mục | Owner chọn |
 |---|---|---|---|
-| 3 | SHA ghim = `main` khi sổ OPEN rỗng (B2), bước chuẩn bị ghim và đo lại. Số trong kế hoạch lấy ở `a59ef07` (`main` lúc soạn, sau khi #849–#852 đóng; code = `c4eec8b`). Từ SHA ghim tới lúc chạy chỉ có thay đổi docs | §L4.2, §L4.9 bước 1 | chờ |
-| 4 | Phạm vi đủ 6 gói như lượt 2–3, hai phần ngang nhau. Kiểm phần đã sửa bằng hai bảng: R1 (DR6-104…134, DR6-25 / 37 / 66 / 67, CL3-A29, CL3-B2) và R2 (27 Issue + Issue của đợt sửa mục OPEN). Tìm lỗi / edge case mới trên toàn bộ phạm vi gói, xét trước code mới sau lượt 3. Năm file mới chưa xếp gói xếp tay (§L4.3) | §L4.3, §L4.4 | chờ |
-| 5 | KNOWN lượt 4 dựng mới ở SHA ghim: OPEN rỗng + ACCEPTED; K1–K40 (sửa K13, K14, K17, K21); "Lệch mockup đã biết" nguyên văn (12 mục không sửa 15/10, 2 lệch chấp nhận 23/10, huy hiệu "n HĐ"); quyết định đổi tên chỉ phần nhìn thấy (K39) | §L4.5 | chờ |
-| 6 | Sau tổng hợp: sửa hết như lượt 3, rồi G7 | §L4.10 | chờ |
-| 7 | Số đo trên Home PC, so mốc Home PC sau #656 như lượt 3, thêm số lượt 3 cùng máy làm tham khảo. Ghi riêng cỡ exe / bundle do font, icon mới và `zod/mini`. Dữ liệu tải vào exe bằng script qua cổng debug như lượt 3 | §L4.6, §L4.9 | chờ |
-| 8 | Đợt sửa mục OPEN trước lượt 4 (B2): ba Issue tạo sau G1. T-310 PR nhỏ code: 7 mục [G7] code và ghi chú code của review kế hoạch này. T-311 tài liệu: `phase-6.md` ×2, nghiệm thu ×1 và ghi chú tài liệu của review kế hoạch này. T-312 chụp lại ảnh hướng dẫn: 4 mục, làm sau T-310. Ảnh chụp lúc này là ảnh trước lượt 4; đợt sửa lượt 4 đổi màn nào thì G7 chụp lại ảnh đó | §L4.2 | chờ |
-| 9 | DeepSeek chạy đợt 2 một mình, sau khi đủ 12 báo cáo của Claude và Codex. Worktree `Project-2C-review`; ACL chặn `claude\`, `codex\` của lượt 4, cộng `opencode.json` (Phụ lục P) như review Phase 5. Model `opencode-go/deepseek-v4.1-flash` qua gói Go, biến thể suy luận cao nhất. Phương án khác: ba bên cùng lúc, DeepSeek ở worktree thứ ba, chỉ `opencode.json` chặn (lách được) | §L4.2, §L4.7, §L4.9 | chờ |
+| 3 | SHA ghim = `main` khi sổ OPEN rỗng (B2), bước chuẩn bị ghim và đo lại. Số trong kế hoạch lấy ở `a59ef07` (`main` lúc soạn, sau khi #849–#852 đóng; code = `c4eec8b`). Từ SHA ghim tới lúc chạy chỉ có thay đổi docs | §L4.2, §L4.9 bước 1 | Theo đề xuất (27/10/2026) |
+| 4 | Phạm vi đủ 6 gói như lượt 2–3, hai phần ngang nhau. Kiểm phần đã sửa bằng hai bảng: R1 (DR6-104…134, DR6-25 / 37 / 66 / 67, CL3-A29, CL3-B2) và R2 (27 Issue + Issue của đợt sửa mục OPEN). Tìm lỗi / edge case mới trên toàn bộ phạm vi gói, xét trước code mới sau lượt 3. Năm file mới chưa xếp gói xếp tay (§L4.3) | §L4.3, §L4.4 | Theo đề xuất (27/10/2026) |
+| 5 | KNOWN lượt 4 dựng mới ở SHA ghim: OPEN rỗng + ACCEPTED; K1–K40 (sửa K13, K14, K17, K21); "Lệch mockup đã biết" nguyên văn (12 mục không sửa 15/10, 2 lệch chấp nhận 23/10, huy hiệu "n HĐ"); quyết định đổi tên chỉ phần nhìn thấy (K39) | §L4.5 | Theo đề xuất (27/10/2026) |
+| 6 | Sau tổng hợp: sửa hết như lượt 3, rồi G7 | §L4.10 | Theo đề xuất (27/10/2026) |
+| 7 | Số đo trên Home PC, so mốc Home PC sau #656 như lượt 3, thêm số lượt 3 cùng máy làm tham khảo. Ghi riêng cỡ exe / bundle do font, icon mới và `zod/mini`. Dữ liệu tải vào exe bằng script qua cổng debug như lượt 3 | §L4.6, §L4.9 | Theo đề xuất (27/10/2026) |
+| 8 | Đợt sửa mục OPEN trước lượt 4 (B2): ba Issue tạo sau G1. T-310 PR nhỏ code: 7 mục [G7] code và ghi chú code của review kế hoạch này. T-311 tài liệu: `phase-6.md` ×2, nghiệm thu ×1 và ghi chú tài liệu của review kế hoạch này. T-312 chụp lại ảnh hướng dẫn: 4 mục, làm sau T-310. Ảnh chụp lúc này là ảnh trước lượt 4; đợt sửa lượt 4 đổi màn nào thì G7 chụp lại ảnh đó | §L4.2 | Theo đề xuất (27/10/2026) |
+| 9 | DeepSeek chạy đợt 2 một mình, sau khi đủ 12 báo cáo của Claude và Codex. Worktree `Project-2C-review`; ACL chặn `claude\`, `codex\` của lượt 4, cộng `opencode.json` (Phụ lục P) như review Phase 5. Model `opencode-go/deepseek-v4.1-flash` qua gói Go, biến thể suy luận cao nhất. Phương án khác: ba bên cùng lúc, DeepSeek ở worktree thứ ba, chỉ `opencode.json` chặn (lách được) | §L4.2, §L4.7, §L4.9 | Theo đề xuất (27/10/2026) |
 
 Owner duyệt G1 (ghi ngày): comment trên PR của #854, trước khi merge (như PR #647, #715).
 
