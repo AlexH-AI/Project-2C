@@ -1570,7 +1570,7 @@ Owner bổ sung 27/10, sau khi bản nháp đã soạn (§L4.11 mục B1, B2):
 | #854 hợp đồng: bảng R theo mã `DR6-*`, rồi phát hiện mới với ID theo bên, không trùng `CL4-*` / `CX4-*`; ghi model các bên | §L4.2, §L4.8, Phụ lục L, M, N, O |
 | Owner 27/10: thêm DeepSeek v4.1 Flash | §L4.1, §L4.2, §L4.7, §L4.9, Phụ lục O, P |
 | Owner 27/10: chỉ chạy khi sổ OPEN rỗng | §L4.2, §L4.5 phần 1, §L4.9 bước 1 |
-| Owner 28/10: DeepSeek qua DSH (T-313 #868) | §L4.1, §L4.7, §L4.9, §L4.10, §L4.11, Phụ lục O, P |
+| Owner 28/10: DeepSeek qua DSH (T-313 #868) | §L4.1, §L4.2, §L4.7, §L4.8, §L4.9, §L4.10, §L4.11, Phụ lục O, P |
 
 ## L4.1 Mục tiêu, bên review
 
@@ -2052,7 +2052,7 @@ Khuôn như §L3.8 (và §L2.8), đổi:
    - `dsh-deepseek.patch.yml`, dựng theo mục "Dựng và kiểm" của Phụ lục P: dump cấu hình mặc định, viết patch, dump cấu hình sau patch, so bảng giá trị;
    - `dot2.mjs` = khối code ở mục "Script đợt 2" của Phụ lục P, chép nguyên văn.
 
-   Cuối bước này chạy `node C:\workspace\deep-review-1-6-r4\common\dot2.mjs baseline`. Lệnh ghi `common\dot2-baseline.json`: mục chưa theo dõi và mục bị ignore của hai worktree lúc này (sau bước 3, trước cổng ở bước 6), không tính `node_modules`. Đợt 2 bước 1 xóa mọi thứ ngoài mốc này; giờ ghi file là mốc thời gian của `scan`.
+   Cuối bước này chạy `node C:\workspace\deep-review-1-6-r4\common\dot2.mjs baseline`. Lệnh ghi `common\dot2-baseline.json`: từng file và thư mục mà git không theo dõi (chưa theo dõi hay bị ignore) của hai worktree lúc này (sau bước 3, trước cổng ở bước 6), kể cả bên trong thư mục bị ignore; không tính `node_modules` và thư mục chứa nó. Đợt 2 bước 1 xóa mọi thứ ngoài mốc này; giờ ghi file là mốc thời gian của `scan`.
 5. Dữ liệu tải: `node tools/load-data.mjs --out C:\workspace\deep-review-1-6-r4\common\load\load-2026-10-12-seed6.p2cbackup`; ghi hash `tables` vào `baseline.md`, so §L4.6. Khác hash lúc soạn → ghi Issue nào đổi dữ liệu.
 6. Chạy cổng ở SHA ghim (trong `Project-2C-review`):
    - `pnpm verify`, `pnpm verify:rust`, `pnpm e2e` (`CI=1`), `pnpm build:exe`;
@@ -2091,7 +2091,10 @@ Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt
    node C:\workspace\deep-review-1-6-r4\common\dot2.mjs clean
    ```
 
-   - Ở hai worktree, lệnh xóa mọi mục chưa theo dõi hay bị ignore không có trong `dot2-baseline.json` (`node_modules` để nguyên).
+   - Ở hai worktree, lệnh xóa mọi file và thư mục chưa theo dõi hay bị ignore không có trong `dot2-baseline.json`.
+     - Lệnh so từng file, nên file đợt 1 thêm vào một thư mục bị ignore đã có lúc ghi mốc (vd. `test-results\`) cũng bị xóa (review #872).
+     - `node_modules` và thư mục chứa nó để nguyên. Với link (junction), lệnh chỉ xóa chính link, không đụng chỗ nó trỏ tới.
+     - File đã có ở mốc mà đợt 1 ghi đè thì giữ; `scan` ở bước 3 đọc các file sửa sau mốc.
    - Lệnh xóa cả cache Vite / Vitest trong `node_modules`, vì cache giữ tên file test đã chạy.
    - Lệnh xóa cache tạm có bản biến đổi của code probe: `%TEMP%\playwright*`, `%TEMP%\codex-*`, thư mục `%TEMP%\…\ssr`. Trên Home PC ngày 28/10, các cache này còn giữ mã phát hiện của Codex lượt 3 (review #872).
    - Cuối cùng lệnh kiểm lại hai worktree so với mốc.
@@ -2134,17 +2137,19 @@ Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt
    - Mở `http://127.0.0.1:3080`. Nhập key riêng của lượt 4 ở Settings → Models: Owner tự nhập, không phiên Claude nào chạm key.
    - Chọn workspace **đúng** `C:\workspace\Project-2C-review`. Workspace là gốc ghi của sandbox: chọn `C:\workspace` thì sandbox cho ghi cả checkout chính.
    - Ở bộ chọn model, chọn `deepseek-flash`, Effort `max`.
+   - Ghi **số dư trước** vào bảng đánh dấu: số dư trên platform.deepseek.com lúc này, khi đã nạp và chưa chạy phiên thử. Chi phí lượt 4 vì vậy tính cả phiên thử.
 5. **Phiên thử.** Mở một phiên mới, bảo model làm từng việc dưới, ghi kết quả vào `common\baseline.md`.
 
    **Ra khác ghi dưới đây thì dừng đợt 2.** Sửa theo rồi thử lại; không sửa được thì báo Claude.
    - `Get-Location` (hoặc `pwd`) → `C:\workspace\Project-2C-review`.
    - Đọc vài dòng đầu của `C:\workspace\deep-review-1-6-r4\common\plan.md` → đọc được.
    - `node node_modules/vitest/vitest.mjs run packages/domain` → xanh. Lệnh đọc `node_modules` của worktree review, nên bắt được ACL lan qua hard link mà bước 3 bỏ sót.
-   - Đọc `common\dot2-acl.json`, rồi làm từng việc dưới, một lần bằng shell, một lần bằng công cụ đọc file của DSH → mọi lần bị từ chối (ACL; đọc được thì có thể DSH chạy lệnh dưới danh tính khác tài khoản của Owner):
+   - Đọc `common\dot2-acl.json`, rồi làm từng việc dưới, một lần bằng shell, một lần bằng công cụ đọc file của DSH → mọi lần bị từ chối (ACL; đọc được thì có thể DSH chạy lệnh dưới danh tính khác tài khoản của Owner). Bằng shell, đọc file là chỉ mở, không in nội dung: `node -e "require('fs').closeSync(require('fs').openSync(process.argv[1], 'r'))" <đường dẫn>`.
      - liệt kê `C:\workspace\deep-review-1-6-r4\claude`, `…-r4\codex`, `C:\workspace\deep-review-1-6-r3`, `-r2` và `C:\workspace\deep-review-1-6`;
      - liệt kê mục `projects\…`, một mục `file-history\…` và mục `%TEMP%\claude\…` của danh sách;
      - đọc `…-r4\claude\A.md` và `…-r4\codex\A.md`;
-     - đọc hai mục `file` và liệt kê một mục `tree` của `.codex` trong danh sách; đọc `C:\workspace\Project-2C-review-2\package.json`.
+     - với `.codex`, chỉ đọc `version.json` và liệt kê `sessions`, hai mục của danh sách (thiếu mục nào thì bỏ, ghi vào `baseline.md`). Không chọn mục khác: `auth.json` là file đăng nhập, `config.toml` hay `models_cache.json` có thể có thông tin tài khoản. ACL không áp thì công cụ đọc file đưa nội dung vào log DSH và tới DeepSeek API (review #872);
+     - đọc `C:\workspace\Project-2C-review-2\package.json`.
    - Tạo `C:\workspace\deep-review-1-6-r4\deepseek\_thu\a.txt`, một lần bằng shell, một lần bằng công cụ ghi file của DSH → tạo được.
    - Bảo model tìm trên web → model không có công cụ đó.
    - `gh auth status` → chưa đăng nhập.
@@ -2173,7 +2178,7 @@ Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt
    Ngay khi mở phiên của gói, Owner ghi tên thư mục phiên DSH của gói vào bảng đánh dấu. Đó là thư mục mới nhất dưới thư mục của workspace (tên ghi ở phiên thử): `Get-ChildItem <thư mục workspace> -Directory | Sort-Object LastWriteTime | Select-Object -Last 1`.
 
 7. Xong F, làm theo thứ tự:
-   1. **Thu hồi key** trên platform.deepseek.com, trước khi ai chép gì vào repo. Ghi số dư trước / sau vào bảng đánh dấu.
+   1. **Thu hồi key** trên platform.deepseek.com, trước khi ai chép gì vào repo. Ghi **số dư sau** vào bảng đánh dấu (số dư trước đã ghi ở bước 4).
    2. Dừng DSH (Ctrl+C ở cửa sổ chạy `dsh`).
    3. Chép thư mục phiên A–F ra `deepseek\` (§L4.10).
    4. Gỡ ACL:
@@ -2182,11 +2187,11 @@ Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt
       node C:\workspace\deep-review-1-6-r4\common\dot2.mjs remove
       ```
 
-      Lệnh gỡ mọi mục của `dot2-acl.json` và các thư mục của bước 3, kiểm từng mục đọc lại được, rồi đổi tên file thành `dot2-acl.removed.json`.
+      Lệnh gỡ mọi mục của `dot2-acl.json` và các thư mục của bước 3, rồi mọi mục còn bị chặn ở mọi tầng của `.codex` và `Project-2C-review-2` (cả khi mất `dot2-acl.json`). Sau đó lệnh kiểm từng mục đọc lại được, rồi đổi tên file thành `dot2-acl.removed.json`.
    5. Đăng nhập lại `gh auth login`.
 Phiên bị cắt (dòng đầu báo cáo vẫn `ĐANG LÀM`) thì mở phiên mới với đúng tin nhắn của gói đó; bước 0 tự làm tiếp.
 
-Bảng đánh dấu của Owner (18 ô; ghi thêm giờ bắt đầu / xong mỗi gói của Codex và DeepSeek, số dư DeepSeek trước / sau, và thư mục phiên DSH của từng gói):
+Bảng đánh dấu của Owner (18 ô; ghi thêm giờ bắt đầu / xong mỗi gói của Codex và DeepSeek, số dư DeepSeek trước (đợt 2 bước 4) / sau (bước 7.1), và thư mục phiên DSH của từng gói):
 
 | Bên | A | B | C | D | E | F |
 |---|---|---|---|---|---|---|
@@ -2616,20 +2621,27 @@ Model `deepseek-flash` và Effort `max` chọn ở bộ chọn model của giao 
 
 **Script đợt 2** (`common\dot2.mjs`, review #872). Bước chuẩn bị chép nguyên văn khối code dưới (§L4.9 bước 4); Owner chạy ở đợt 2 bước 1, 3 và 7. Đường dẫn tính từ chỗ đặt script (`C:\workspace\deep-review-1-6-r4\common\`) và từ `%USERPROFILE%`, `%TEMP%`, `%APPDATA%`, `%LOCALAPPDATA%`. Script không đụng tới `.dsh`.
 
-- `baseline`: ghi `dot2-baseline.json`, gồm mục chưa theo dõi và mục bị ignore của hai worktree (`git ls-files --others`; thư mục bị ignore gộp một dòng; bỏ `node_modules`).
-- `clean`: xóa mục ngoài mốc ở hai worktree, cache Vite / Vitest, cache tạm có code probe; rồi kiểm lại.
+- `baseline`: ghi `dot2-baseline.json`, gồm từng file và thư mục mà git không theo dõi (`git ls-files --others`: chưa theo dõi hay bị ignore) của hai worktree, kể cả bên trong thư mục bị ignore (review #872).
+  - Bỏ `node_modules` và thư mục chứa nó.
+  - Git đi xuyên junction; đường dẫn nào nó liệt kê qua một link thì script ghi chính link đó.
+- `clean`: xóa file / thư mục ngoài mốc ở hai worktree, cache Vite / Vitest, cache tạm có code probe; rồi kiểm lại. Tầng sâu xóa trước; thư mục chỉ xóa khi đã rỗng; link chỉ xóa chính link.
 - `deny`:
   - chặn cả thư mục bằng `(OI)(CI)(R)` khi mọi file hard link trong đó có đủ link ở trong. Script so `nlink` với số đường dẫn cùng `ino` tìm thấy, không đi theo junction;
   - với `.codex` và `Project-2C-review-2`: chặn từng mục con không có link ra ngoài, để ngỏ `node_modules`, `.git` và link, đi tiếp vào mục con có link ra ngoài; file chặn bằng `(R)`;
   - ghi `dot2-acl.json` sau mỗi lần chặn, rồi kiểm mỗi mục bị từ chối, kể cả một file trong mỗi thư mục chặn cả. `--dry-run` chỉ in danh sách.
 - `scan`: như §L4.9 đợt 2 bước 3. Bỏ qua file cũ hơn mốc, file đăng nhập (`.credentials*`, `auth.json`) và `C:\workspace\Project-2`; in tên file trên 64 MB không đọc. Chỗ thấy trong `%APPDATA%\Claude\claude-code-sessions` chỉ in ra, không `STOP`.
-- `remove`: `icacls /remove:d` trên mọi mục của `dot2-acl.json`, rồi trên các thư mục chuẩn (phòng khi file trạng thái thiếu); kiểm đọc lại được.
+- `remove`: `icacls /remove:d` trên mọi mục của `dot2-acl.json`, rồi trên các thư mục chuẩn và trên mọi mục còn không đọc được ở mọi tầng của `.codex`, `Project-2C-review-2` (phòng khi file trạng thái thiếu; review #872); kiểm đọc lại được.
 
 Đã thử ngày 28/10 trên Home PC (PR #872):
 - ACL: deny `(OI)(CI)` trên một thư mục không đi qua junction ở trong, nhưng chặn cả đường dẫn bên ngoài của file hard link ở trong. `/remove:d` trả lại cả hai.
 - Script: test đầu-cuối trên cây giả (worktree git, hard link, junction) qua cả năm lệnh, cả khi đường dẫn có dấu cách như `C:\Users\Duong Hoang`.
 - `deny --dry-run` trên thư mục thật: 62 mục thư mục và 58 mục file, để ngỏ 4 mục (`node_modules` và `.git` trong `.codex` và trong `Project-2C-review-2`), chạy 1 giây.
 - `scan` với mốc 20/10: 69 308 file, 76 giây, không chỗ nào khớp.
+
+Sửa sau review #872 (T-314 #876), thử ngày 28/10 trên Office Laptop. Cây giả nằm trong `%TEMP%`, đường dẫn có dấu cách, `USERPROFILE` / `TEMP` / `APPDATA` / `LOCALAPPDATA` giả; `deny` chỉ chạy sau khi `--dry-run` không liệt kê gì ngoài cây giả.
+- `clean`, kịch bản của review #872: file thêm sau mốc vào `test-results\`, `coverage\` có sẵn lúc ghi mốc nay bị xóa; `node_modules` và mục đã có ở mốc còn nguyên; lệnh in `OK`. Bản trước giữ các file đó mà vẫn in `OK`.
+- Junction ngoài `node_modules`: bản trước theo junction, xóa cả file được theo dõi và file ngoài worktree. Nay script chỉ xóa chính link.
+- `deny`, xóa `dot2-acl.json`, rồi `remove`: mọi mục đọc lại được, kể cả `.codex\.chatgpt-projects\p\other.txt` và thư mục `q` ở tầng 2. Bản trước để lại cả hai mà vẫn in `OK`.
 
 ```js
 // Deep review round 4, wave 2 (plan §L4.9, Appendix P). Run from PowerShell; baseline by the
@@ -2682,13 +2694,34 @@ function canOpen(p, kind) {
   }
 }
 
-// Untracked files and ignored entries (ignored folders collapsed), without node_modules.
+// What git does not track (untracked or ignored): each file and folder (trailing '/'), also inside an
+// ignored folder (review #872). Not listed: node_modules, a folder holding one, what a link points at.
 function leftovers(wt) {
   const others = (...extra) =>
-    execFileSync('git', ['-C', wt, 'ls-files', '-z', '--others', '--exclude-standard', ...extra], { encoding: 'utf8' }).split('\0');
-  return [...new Set([...others(), ...others('--ignored', '--directory')])]
-    .filter((e) => e && !/(^|\/)node_modules(\/|$)/.test(e))
-    .sort();
+    execFileSync('git', ['-C', wt, 'ls-files', '-z', '--others', '--exclude-standard', '--directory', ...extra], {
+      encoding: 'utf8',
+    }).split('\0');
+  const found = new Set();
+  // True when rel is or holds a node_modules.
+  const add = (rel) => {
+    if (/(^|\/)node_modules(\/|$)/.test(rel)) return true;
+    if (!rel.endsWith('/')) {
+      found.add(rel);
+      return false;
+    }
+    let modules = false;
+    for (const e of list(path.join(wt, rel))) modules = add(`${rel}${e.name}${e.isDirectory() ? '/' : ''}`) || modules;
+    if (!modules) found.add(rel);
+    return modules;
+  };
+  for (const e of [...others(), ...others('--ignored')]) {
+    // git walks into a junction: what it lists through a link stands for the link itself.
+    const parts = e.split('/').filter(Boolean);
+    const at = parts.findIndex((_, i) => fs.lstatSync(path.join(wt, ...parts.slice(0, i + 1))).isSymbolicLink());
+    if (at >= 0) add(parts.slice(0, at + 1).join('/'));
+    else if (e) add(e);
+  }
+  return [...found].sort();
 }
 
 function baseline() {
@@ -2701,17 +2734,31 @@ function baseline() {
 function clean() {
   needBaseline();
   const base = readJson(BASELINE);
-  const extras = (wt) => leftovers(wt).filter((e) => !base[wt].includes(e));
-  const doomed = [];
+  const extras = (wt) => {
+    const kept = new Set(base[wt]);
+    return leftovers(wt).filter((e) => !kept.has(e));
+  };
+  const caches = [];
   for (const wt of WORKTREES) {
-    doomed.push(...extras(wt).map((e) => path.join(wt, e)));
+    const doomed = extras(wt);
+    const all = new Set(doomed);
+    // Deepest first: a folder goes once empty; a link goes, not what it points at.
+    for (const e of [...doomed].reverse()) {
+      const p = path.join(wt, e);
+      if (e.endsWith('/')) {
+        if (!exists(p) || list(p).length) continue;
+        fs.rmdirSync(p);
+      } else fs.rmSync(p, { force: true });
+      // One line for a new folder, not one for each file in it.
+      if (!all.has(e.replace(/[^/]+\/?$/, ''))) console.log(`deleted ${p}`);
+    }
     // Vite / Vitest caches keep the names and results of the test files that ran.
     for (const pkg of [wt, ...subdirs(path.join(wt, 'apps')), ...subdirs(path.join(wt, 'packages'))])
-      doomed.push(path.join(pkg, 'node_modules', '.vite'), path.join(pkg, 'node_modules', '.vite-temp'));
+      caches.push(path.join(pkg, 'node_modules', '.vite'), path.join(pkg, 'node_modules', '.vite-temp'));
   }
   // Transformed copies of probe code: Playwright cache and browser profiles, Vite SSR dumps, Codex artifacts.
-  doomed.push(...subdirs(TEMP).filter((d) => /^(playwright|codex-)/i.test(path.basename(d)) || exists(path.join(d, 'ssr'))));
-  for (const p of doomed) {
+  caches.push(...subdirs(TEMP).filter((d) => /^(playwright|codex-)/i.test(path.basename(d)) || exists(path.join(d, 'ssr'))));
+  for (const p of caches) {
     if (!exists(p)) continue;
     fs.rmSync(p, { recursive: true, force: true });
     console.log(`deleted ${p}`);
@@ -2811,7 +2858,7 @@ function deny(dryRun) {
 
 function remove() {
   const state = exists(STATE) ? readJson(STATE) : null;
-  if (!state) console.log(`no ${STATE}: removing from the standard targets only`);
+  if (!state) console.log(`no ${STATE}: removing from the standard targets and from what is still denied in ${SPLIT.join(', ')}`);
   const done = new Map();
   const undo = (p, kind) => {
     if (done.has(p) || !exists(p)) return;
@@ -2822,8 +2869,19 @@ function remove() {
   // The standard targets too, in case the state file is missing or incomplete.
   for (const c of claudeDirs()) undo(path.join(c, 'projects', PROJECT), 'tree');
   for (const t of treeTargets()) undo(t, 'tree');
-  for (const t of SPLIT.filter(exists))
-    for (const e of list(t)) if (!keptBySplit(e)) undo(path.join(t, e.name), e.isDirectory() ? 'tree' : 'file');
+  // In .codex and Project-2C-review-2 deny went as deep as the outside links (splitEntries): whatever
+  // there still does not read is undone, at any depth, also without the state file (review #872).
+  const undoSplit = (dir) => {
+    for (const e of list(dir)) {
+      const p = path.join(dir, e.name);
+      if (keptBySplit(e)) continue;
+      if (e.isDirectory()) {
+        if (canOpen(p, 'tree')) undoSplit(p);
+        else undo(p, 'tree');
+      } else if (e.isFile() && !canOpen(p, 'file')) undo(p, 'file');
+    }
+  };
+  for (const t of SPLIT.filter(exists)) undoSplit(t);
   const closed = [...done].filter(([p, kind]) => !canOpen(p, kind)).map(([p]) => p);
   if (closed.length) throw new Stop(`still denied: ${closed.join(', ')}`);
   if (state) fs.renameSync(STATE, path.join(COMMON, 'dot2-acl.removed.json'));
