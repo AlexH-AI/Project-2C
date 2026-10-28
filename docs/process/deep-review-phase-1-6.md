@@ -2098,10 +2098,10 @@ Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt
 
    - Ở hai worktree, lệnh xóa mọi file và thư mục chưa theo dõi hay bị ignore không có trong `dot2-baseline.json`.
      - Lệnh so từng file, nên file đợt 1 thêm vào một thư mục bị ignore đã có lúc ghi mốc (vd. `test-results\`) cũng bị xóa (review #872).
-     - `node_modules` và thư mục chứa nó để nguyên. Mỗi thư mục mới được giữ vì chứa `node_modules` (vd. probe có `package.json` và `node_modules` riêng) in một dòng `kept, holds node_modules` (review #878). Với link (junction), lệnh chỉ xóa chính link, không đụng chỗ nó trỏ tới.
+     - `node_modules` và thư mục chứa nó để nguyên. Lệnh in một dòng `kept, holds node_modules` cho mọi thư mục chưa theo dõi hay bị ignore có `node_modules` con (vd. probe có `package.json` và `node_modules` riêng), kể cả thư mục đã có lúc ghi mốc (review #878, #881). Với link (junction), lệnh chỉ xóa chính link, không đụng chỗ nó trỏ tới.
      - File đã có ở mốc mà đợt 1 ghi đè thì giữ; `scan` ở bước 3 đọc các file sửa sau mốc.
      - `apps\desktop\src-tauri\target\` do bước chuẩn bị 6 sinh ra là mục mới nên bị xóa cả (bước chuẩn bị 3 đã kiểm nó chưa có lúc ghi mốc).
-   - Lệnh xóa cả cache Vite / Vitest (`node_modules\.vite`, `.vite-temp`) ở gốc worktree, `apps\*`, `packages\*` và các thư mục mới được giữ ở trên, vì cache giữ tên file test đã chạy và bản biến đổi của code probe.
+   - Lệnh xóa cả cache Vite / Vitest (`node_modules\.vite`, `.vite-temp`) ở gốc worktree, `apps\*`, `packages\*` và các thư mục có dòng `kept` ở trên, vì cache giữ tên file test đã chạy và bản biến đổi của code probe.
    - Lệnh xóa cache tạm có bản biến đổi của code probe: `%TEMP%\playwright*`, `%TEMP%\codex-*`, thư mục `%TEMP%\…\ssr`. Trên Home PC ngày 28/10, các cache này còn giữ mã phát hiện của Codex lượt 3 (review #872).
    - Cuối cùng lệnh kiểm lại hai worktree so với mốc.
 2. Chạy `gh auth logout`; sau đó `gh auth status` phải báo chưa đăng nhập. `[Environment]::GetEnvironmentVariable('OPENCODE_GO_KEY', 'User')` và `… 'Machine')` phải rỗng: app chạy với biến môi trường của user, nên không key nào đi qua biến môi trường tới lệnh của model.
@@ -2140,16 +2140,16 @@ Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt
    Lệnh chỉ thấy chữ không nén (UTF-8 / UTF-16). Thấy ở chỗ còn đọc được → `STOP` kèm danh sách file. Riêng danh sách phiên của app desktop Claude (`%APPDATA%\Claude\claude-code-sessions`: tiêu đề, vài câu tóm tắt) thì lệnh chỉ in ra, Owner ghi vào `baseline.md`: app đang chạy giữ các file này nên không chặn được (rủi ro ghi ở Phụ lục P).
 4. Mở app WorkBuddy (Phụ lục P):
    - Đăng nhập app (bản quốc tế, tài khoản có gói WorkBuddy Pro): Owner tự làm, không phiên Claude nào chạm token. Ghi số bản app (About) vào `baseline.md`.
-   - Cài đặt cho đợt 2 (Phụ lục P, mục "Cài đặt app"): tắt Auto Mode; một agent, không dùng chế độ nhóm; tắt cài tự động skill; không connector, điều khiển từ xa hay tác vụ tự động; xem Memory, xóa mục không thuộc lượt 4.
+   - Cài đặt cho đợt 2 (Phụ lục P, mục "Cài đặt app"): tắt Auto Mode; một agent, không dùng chế độ nhóm; tắt cài tự động skill; không connector, điều khiển từ xa hay tác vụ tự động; xem Memory, xóa mục không thuộc lượt 4, ghi số mục còn lại vào `baseline.md`. Mục mới mà các task thử tạo thì dọn ngay trước gói A (bước 5, đoạn "Xong").
    - Ghi **credit trước** vào bảng đánh dấu: số credit ở trang Usage (workbuddy.ai → avatar → Profile → Usage) lúc này, trước phiên thử. Chi phí lượt 4 vì vậy tính cả phiên thử. Trong đợt 2 không dùng tài khoản này cho việc khác.
 5. **Phiên thử.** Tạo một task mới: workspace `C:\workspace\Project-2C-review`, chế độ quyền Default, model DeepSeek V4.1 Flash bản 1017, context 1M, mức suy luận cao nhất. Bảo model làm từng việc dưới, ghi kết quả vào `common\baseline.md`. App hỏi duyệt việc nào trong danh sách dưới thì Owner duyệt, và đếm số lần hỏi.
 
-   **Ra khác ghi dưới đây thì dừng đợt 2.** Sửa theo rồi thử lại; không sửa được thì báo Claude.
+   **Ra khác ghi dưới đây thì dừng đợt 2.** Sửa theo, dọn Memory như đoạn "Xong" dưới, rồi thử lại ở một task mới; không sửa được thì báo Claude.
    - **Model:** task hiện đúng DeepSeek V4.1 Flash bản 1017, context 1M, mức suy luận cao nhất (Owner đã thấy đủ ba lựa chọn ngày 28/10). Ghi tên đúng như app hiện.
    - `Get-Location` (hoặc `pwd`) → `C:\workspace\Project-2C-review`. Kết quả lệnh cho biết shell nào chạy lệnh (PowerShell hay Git Bash).
    - Đọc vài dòng đầu của `C:\workspace\deep-review-1-6-r4\common\plan.md` → đọc được.
    - `node node_modules/vitest/vitest.mjs run packages/domain` → xanh. Lệnh đọc `node_modules` của worktree review, nên bắt được ACL lan qua hard link mà bước 3 bỏ sót.
-   - Đọc `common\dot2-acl.json`, rồi làm từng việc dưới, một lần bằng shell, một lần bằng công cụ đọc file của app → mọi lần bị từ chối (ACL; app không có luật theo đường dẫn, nên đọc được thì có thể app chạy lệnh dưới danh tính khác tài khoản của Owner). Bằng shell, đọc file là chỉ mở, không in nội dung: `node -e "require('fs').closeSync(require('fs').openSync(process.argv[1], 'r'))" <đường dẫn>`.
+   - Đọc `common\dot2-acl.json`, rồi làm từng việc dưới, một lần bằng shell, một lần bằng công cụ đọc file của app → mọi lần bị từ chối (ACL; app không có luật theo đường dẫn, nên đọc được thì có thể app chạy lệnh dưới danh tính khác tài khoản của Owner). Ghi thông báo lỗi của mỗi lần vào `baseline.md`: Default chạy lệnh trong sandbox trước, nên một lần bị từ chối có thể do sandbox chặn trước ACL. Lỗi của ACL là lỗi quyền của Windows (vd. `Access is denied`, `EPERM`); thông báo khác (vd. của sandbox) thì lần đó chưa cho biết ACL có chặn không (review #881). Bằng shell, đọc file là chỉ mở, không in nội dung: `node -e "require('fs').closeSync(require('fs').openSync(process.argv[1], 'r'))" <đường dẫn>`.
      - liệt kê `C:\workspace\deep-review-1-6-r4\claude`, `…-r4\codex`, `C:\workspace\deep-review-1-6-r3`, `-r2` và `C:\workspace\deep-review-1-6`;
      - liệt kê mục `projects\…`, một mục `file-history\…` và mục `%TEMP%\claude\…` của danh sách;
      - đọc `…-r4\claude\A.md` và `…-r4\codex\A.md`;
@@ -2172,20 +2172,23 @@ Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt
 
      Không thấy thư mục hay file, lỗi đọc JSON, hoặc dòng cuối là `False` → dừng, báo Claude: không có log có lệnh gọi công cụ thì không kiểm độc lập được (§L4.10).
    - **Chế độ quyền** (Owner): ghi số lần app hỏi ở các việc trên, và hỏi ở việc nào. App hỏi ở hầu hết lệnh thường (`git`, `node`, đọc file trong workspace) → Owner chọn Full Access cho các gói (đã duyệt trước, §L4.11); không thì giữ Default. Ghi lựa chọn vào `baseline.md` và bảng đánh dấu.
-   - **Credit** (Owner): trang Usage → ghi **credit sau phiên thử**.
+   - **Kiểm ACL ở Full Access** (Owner, chỉ khi chọn Full Access; review #881): các lần đọc thử ở trên chạy ở Default, còn Full Access không có sandbox, nên ACL là lớp chặn đọc duy nhất. Tạo một task mới như phiên thử, chỉ đổi chế độ quyền sang Full Access. Bảo model đọc `common\dot2-acl.json` rồi làm lại đúng các việc đọc thử mục bị chặn ở trên, một lần bằng shell, một lần bằng công cụ đọc file → mọi lần bị từ chối; ghi thông báo lỗi vào `baseline.md`. Ra khác "bị từ chối" thì dừng đợt 2, báo Claude. Mở task này sau khi đã chạy lệnh **Log của app** ở trên: lệnh đó lấy file `.jsonl` mới nhất, mà task này tạo file mới hơn file của phiên thử.
+   - **Credit** (Owner): trang Usage → ghi **credit sau phiên thử**, sau cả task kiểm ACL ở Full Access nếu có.
 
    **Chỉ ghi lại, không dừng:**
    - Bảo model tìm trên web và đọc một trang web → ghi app có công cụ đó không (tài liệu không cho tắt; prompt cấm).
    - Tạo `C:\workspace\deep-review-1-6-r4\_thu_ghi\a.txt` (ngoài workspace, không có ACL) bằng shell → ghi app hỏi, sandbox chặn hay tạo được.
    - Vá rồi trả nguyên byte (Phụ lục O quy tắc riêng 4): bảo model thêm một dòng vào `README.md` bằng công cụ sửa file của app, rồi trả lại đúng nội dung cũ → ghi app có hỏi không, và `git status --short` ngay sau đó. App sao lưu file trước khi sửa (Phụ lục P): bản sao nằm trong worktree thì ghi tên vào `baseline.md` như đoạn "Xong" dưới.
-   - Memory: ghi mục mới nào xuất hiện sau phiên thử.
+   - Memory: ghi số mục mới xuất hiện sau phiên thử, không chép nội dung mục (các gói đọc `baseline.md`). Đoạn "Xong" dưới xóa các mục này.
    - Probe mà Phụ lục N cần (quy tắc chung 6, đo trên exe):
      - mở một bản chép của `common\exe\project2c.exe` trong `deepseek\_thu\`, với cổng debug khác 9222 (`e2e/perf/README.md`);
      - chạy một probe Playwright trên bản build web. Bước 1 đã xóa `apps\desktop\dist`, nên `pnpm build:web` trước.
 
      Sandbox của chế độ Default có thể chặn hai việc này. Bị chặn mà Owner giữ Default thì DeepSeek ghi PLAUSIBLE cho phần chỉ kiểm được trên exe hay trình duyệt.
 
-   Xong: xóa `deepseek\_thu\`, `…-r4\_thu_ghi\` và file thử còn lại. `git -C C:\workspace\Project-2C-review status --short` phải rỗng. App để lại file nào trong worktree thì ghi tên vào `baseline.md`: quy tắc riêng 5 của Phụ lục O cho phép đúng các file đó.
+   Xong mọi task thử (phiên thử, mỗi lần chạy lại nó, và task kiểm ACL ở Full Access nếu có):
+   - xóa `deepseek\_thu\`, `…-r4\_thu_ghi\` và file thử còn lại. `git -C C:\workspace\Project-2C-review status --short` phải rỗng. App để lại file nào trong worktree thì ghi tên vào `baseline.md`: quy tắc riêng 5 của Phụ lục O cho phép đúng các file đó;
+   - **dọn Memory, ngay trước khi mở gói A** (review #881): xóa mọi mục Memory mới so với lúc dọn ở bước 4. Các task thử đưa vào hội thoại danh sách ACL, các lần đọc thử mục bị chặn, yêu cầu tìm web, giao việc cho agent khác, vá `README.md`; Memory không tắt được và tự trích ngữ cảnh từ hội thoại, nên những thứ đó có thể theo vào gói A–F. Ghi vào `baseline.md` số mục đã xóa, không chép nội dung mục.
 6. Mỗi gói một task mới, lần lượt A → F:
    - Trước khi mở: ghi số bản app. Khác bản ở phiên thử thì ghi lại, không dừng.
    - Tạo task: workspace `C:\workspace\Project-2C-review`, chế độ quyền đã chọn ở phiên thử, model DeepSeek V4.1 Flash bản 1017, context 1M, mức suy luận cao nhất. Rồi gửi:
@@ -2644,14 +2647,14 @@ Vì vậy **ACL của đợt 2 là lớp chặn đọc duy nhất**. App không 
 | Không agent phụ | một agent, không dùng chế độ nhóm chuyên gia | phiên thử kiểm |
 | Không cài thêm năng lực trong lúc chạy | tắt "Auto-Install Non-High-Risk Skills"; không cài skill | `Setting` |
 | Không nối dịch vụ ngoài | không connector, không điều khiển từ xa (Slack / Telegram / Discord), không tác vụ tự động | `Overview`, `Setting` |
-| Không mang ngữ cảnh lạ vào gói | xem Memory trước đợt 2, xóa mục không thuộc lượt 4; không tắt được | `Memory` |
+| Không mang ngữ cảnh lạ vào gói | xem Memory trước phiên thử, xóa mục không thuộc lượt 4; ngay trước gói A, xóa mọi mục mới từ lúc đó (các task thử tạo); không tắt được | `Memory`; review #881 |
 | Chỗ làm của mọi task | workspace `C:\workspace\Project-2C-review` | `Permission-Modes` |
 | Gói chạy lâu (tùy chọn) | bật Prevent Sleep | `Setting` |
 
 **Chế độ quyền** (G6, Owner 28/10: "Duyệt, Default trước"):
 
-- Phiên thử chạy Default và đếm số lần app hỏi (§L4.9 đợt 2 bước 5).
-- App hỏi ở hầu hết lệnh thường (`git`, `node`, đọc file trong workspace) → Owner chuyển sang Full Access cho các gói, như Muse `--yolo` ở lượt 1 (§7.1). Khi đó không còn sandbox hay hỏi duyệt; ACL vẫn chặn đọc.
+- Phiên thử chạy Default, đếm số lần app hỏi và ghi thông báo lỗi của mỗi lần đọc thử bị từ chối (§L4.9 đợt 2 bước 5). Ở Default lệnh chạy trong sandbox trước, nên thông báo lỗi dùng để phân biệt lần ACL chặn với lần sandbox chặn trước (review #881).
+- App hỏi ở hầu hết lệnh thường (`git`, `node`, đọc file trong workspace) → Owner chuyển sang Full Access cho các gói, như Muse `--yolo` ở lượt 1 (§7.1). Khi đó không còn sandbox hay hỏi duyệt: ACL là lớp chặn đọc duy nhất. Vì vậy trước gói A, một task Full Access đọc lại mỗi loại mục bị chặn như phiên thử; ra khác "bị từ chối" thì dừng đợt 2 (review #881).
 - Không thì giữ Default. App hỏi việc gì ngoài việc review thì Owner từ chối.
 - Lựa chọn ghi vào `baseline.md` và bảng đánh dấu.
 
@@ -2682,7 +2685,7 @@ Vì vậy **ACL của đợt 2 là lớp chặn đọc duy nhất**. App không 
 - `baseline`: ghi `dot2-baseline.json`, gồm từng file và thư mục mà git không theo dõi (`git ls-files --others`: chưa theo dõi hay bị ignore) của hai worktree, kể cả bên trong thư mục bị ignore (review #872).
   - Bỏ `node_modules` và thư mục chứa nó.
   - Git đi xuyên junction; đường dẫn nào nó liệt kê qua một link thì script ghi chính link đó.
-- `clean`: xóa file / thư mục ngoài mốc ở hai worktree, cache Vite / Vitest, cache tạm có code probe; rồi kiểm lại. Tầng sâu xóa trước; thư mục chỉ xóa khi đã rỗng; link chỉ xóa chính link. Thư mục được giữ vì chứa `node_modules` thì in một dòng `kept, holds node_modules`, và cache Vite trong `node_modules` đó cũng bị xóa (review #878).
+- `clean`: xóa file / thư mục ngoài mốc ở hai worktree, cache Vite / Vitest, cache tạm có code probe; rồi kiểm lại. Tầng sâu xóa trước; thư mục chỉ xóa khi đã rỗng; link chỉ xóa chính link. Mọi thư mục chưa theo dõi hay bị ignore có `node_modules` con, kể cả thư mục đã có lúc ghi mốc, thì in một dòng `kept, holds node_modules`, và cache Vite trong `node_modules` đó cũng bị xóa (review #878, #881).
 - `deny`:
   - chặn cả thư mục bằng `(OI)(CI)(R)` khi mọi file hard link trong đó có đủ link ở trong. Script so `nlink` với số đường dẫn cùng `ino` tìm thấy, không đi theo junction;
   - với `.codex` và `Project-2C-review-2`: chặn từng mục con không có link ra ngoài, để ngỏ `node_modules`, `.git` và link, đi tiếp vào mục con có link ra ngoài; file chặn bằng `(R)`;
@@ -3047,12 +3050,12 @@ try {
 - metadata phiên của app desktop Claude (`%APPDATA%\Claude\claude-code-sessions`: tiêu đề, vài câu tóm tắt) không chặn, vì app đang chạy. `scan` in ra nếu có mã phát hiện, Owner ghi vào `baseline.md`. Muốn chặn cả chỗ này thì phải đóng app desktop Claude suốt đợt 2;
 - `scan` chỉ thấy chữ không nén; log hay cơ sở dữ liệu nén của app thì không kiểm được;
 - cùng user, nên lệnh của model gỡ được ACL (`icacls /remove`): prompt cấm, quét log tìm;
-- nếu app chạy lệnh dưới danh tính khác tài khoản của Owner thì ACL không áp: phiên thử bắt được.
+- nếu app chạy lệnh dưới danh tính khác tài khoản của Owner thì ACL không áp. Phiên thử ở Default chỉ bắt được qua những lần đọc thử mà sandbox không chặn trước (thông báo lỗi cho biết); chọn Full Access thì task kiểm ACL ở chế độ đó bắt được, trước gói A (review #881).
 
 **Còn hở với app WorkBuddy** (Owner chấp nhận ở G6 ngày 28/10, #880):
 - app không có luật chặn đọc / ghi theo đường dẫn, như DSH: ACL là lớp chặn đọc duy nhất; ghi ngoài `deepseek\` chỉ có prompt, `git status` cuối mỗi gói, hash 12 báo cáo và quét log;
-- Full Access (nếu Owner chọn ở phiên thử): không còn sandbox hay hỏi duyệt;
-- không tắt được Memory và công cụ web (theo tài liệu); không ghim được bản app;
+- Full Access (nếu Owner chọn ở phiên thử): không còn sandbox hay hỏi duyệt; ACL được đọc thử lại ở chính chế độ này trước gói A;
+- không tắt được Memory và công cụ web (theo tài liệu); Memory được dọn ở bước 4 và ngay trước gói A, sau mọi task thử; không ghim được bản app;
 - chỗ và định dạng log của app chỉ có ở nguồn bên thứ ba: phiên thử kiểm, thiếu thì dừng;
 - tài liệu không ghi model gắn sẵn chạy trên hạ tầng nào (§L4.11).
 
