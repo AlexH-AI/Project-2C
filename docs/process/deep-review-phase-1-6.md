@@ -1570,17 +1570,18 @@ Owner bổ sung 27/10, sau khi bản nháp đã soạn (§L4.11 mục B1, B2):
 | #854 hợp đồng: bảng R theo mã `DR6-*`, rồi phát hiện mới với ID theo bên, không trùng `CL4-*` / `CX4-*`; ghi model các bên | §L4.2, §L4.8, Phụ lục L, M, N, O |
 | Owner 27/10: thêm DeepSeek v4.1 Flash | §L4.1, §L4.2, §L4.7, §L4.9, Phụ lục O, P |
 | Owner 27/10: chỉ chạy khi sổ OPEN rỗng | §L4.2, §L4.5 phần 1, §L4.9 bước 1 |
+| Owner 28/10: DeepSeek qua DSH (T-313 #868) | §L4.1, §L4.7, §L4.9, §L4.10, §L4.11, Phụ lục O, P |
 
 ## L4.1 Mục tiêu, bên review
 
-Owner chốt 26–27/10/2026 (§L4.11 mục 1, 2, B1, B2):
+Owner chốt 26–27/10/2026 (§L4.11 mục 1, 2, B1, B2), và đổi cách chạy DeepSeek ngày 28/10 khi duyệt G1 (§L4.11):
 
 - **Một vòng deep review toàn bộ code trước G7** (26/10), sau khi các mục sổ OPEN làm được trước vòng này đã xong (T-305…T-308).
 - **Chỉ chạy khi mọi ghi chú OPEN của sổ đã sửa hết** (27/10), kể cả các mục [G7]. Ở `a59ef07` sổ còn 14 mục [G7]; chúng sửa ở một đợt trước lượt 4 (§L4.2, đề xuất 8).
 - **Ba bên:**
   - **Claude Opus 5.5** (27/10): như lượt 3, Owner mở **mỗi gói một phiên sạch** ở `C:\workspace\Project-2C-review`. Mức suy luận và ultracode Owner chọn từng phiên (M1, M8). Phiên bật ultracode được dùng subagent / Workflow cho việc của gói; chỉ phiên chính làm bước 0, ghi `{GÓI}.md` và in dòng `XONG`.
   - **Codex, model GPT Sol 6.1** (27/10): Owner chạy, mỗi gói một phiên mới, chỉ đọc, không viết code (M2).
-  - **DeepSeek v4.1 Flash** (Owner bổ sung 27/10), qua OpenCode như review Phase 5: Owner chạy, mỗi gói một phiên mới, chỉ đọc, không viết code. Báo cáo là dữ liệu tham khảo như Codex (M2, M10). Bỏ DeepSeek ở lượt 1 (M5, 13/10) không còn áp cho lượt 4.
+  - **DeepSeek v4.1 Flash** (Owner bổ sung 27/10), qua **DeepSeek Harness (DSH)**: gọi DeepSeek API trực tiếp, trả theo mức dùng. Owner đổi ngày 28/10, thay OpenCode của bản 27/10; G4 / G6 duyệt 28/10 ở #868. Owner chạy, mỗi gói một phiên mới, chỉ đọc, không viết code. Báo cáo là dữ liệu tham khảo như Codex (M2, M10). Bỏ DeepSeek ở lượt 1 (M5, 13/10) không còn áp cho lượt 4.
   - 6 gói × 3 bên = **18 báo cáo**, chạy **hai đợt** như lượt 1 và review Phase 5 (đề xuất 9, Owner chọn 27/10): đợt 1 Claude + Codex song song; đợt 2 DeepSeek một mình, khi thư mục của hai bên kia đã bị chặn ACL.
 - **Hai phần ngang nhau** như lượt 2–3:
   1. **kiểm phần đã sửa** (trục R): mọi DR6 và mục KNOWN đã sửa sau lượt 3, và từng Issue gom ghi chú sổ (§L4.4);
@@ -1696,13 +1697,13 @@ Trong suốt lượt 4 **không merge code vào `main`** (như §2). PR docs mer
 |---|---|---|---|---|---|
 | Claude Opus 5.5 (mỗi gói một phiên sạch, tuần tự A → F) | Owner mở phiên | 1 | `C:\workspace\Project-2C-review` | `C:\workspace\deep-review-1-6-r4\claude\` | `CLR4-<gói><số>` |
 | Codex, model GPT Sol 6.1 | Owner, mỗi gói một phiên mới | 1 (cùng lúc Claude) | `C:\workspace\Project-2C-review-2` | `…-r4\codex\` | `CXR4-<gói><số>` |
-| DeepSeek v4.1 Flash (OpenCode, `opencode-go/deepseek-v4.1-flash`) | Owner, mỗi gói một phiên mới (`/new`) | 2 (một mình, đề xuất 9) | `C:\workspace\Project-2C-review` (Claude đã xong), có `opencode.json` theo Phụ lục P | `…-r4\deepseek\` | `DSR4-<gói><số>` |
+| DeepSeek v4.1 Flash (DSH `0.2.1-rc.2`, model `deepseek-flash`) | Owner, mỗi gói một phiên mới trong giao diện web của DSH | 2 (một mình, đề xuất 9) | `C:\workspace\Project-2C-review` (Claude đã xong); DSH chạy với patch của Phụ lục P | `…-r4\deepseek\` | `DSR4-<gói><số>` |
 | **Claude phiên tổng hợp** (Issue tạo sau khi lượt 4 chạy xong) | Owner yêu cầu, sau khi đủ 18 báo cáo | — | checkout chính | `docs/reviews/` qua PR docs | dùng nguyên ID trên |
 
 - **ID theo bên:** `CL4-*` / `CX4-*` là ID của review đóng Phase 4 (`docs/reviews/2026-10-04-phase-4-tong-hop.md`), và review Phase 5 dùng `DS-*` cho DeepSeek. Lượt 4 dùng `CLR4-*` / `CXR4-*` / `DSR4-*` ("R4" = lượt 4; `rg` trên `docs/` ngày 27/10: 0 chỗ). Vấn đề đã gộp đánh số tiếp `DR6-135…`.
-- **Vì sao hai đợt** (như lượt 1 §2 và review Phase 5): mọi bên chạy dưới cùng tài khoản Windows. ACL chỉ chặn được thư mục của bên **đã xong**, vì bên đang chạy còn phải ghi vào thư mục của mình. Đợt 2 chạy khi `claude\`, `codex\` của lượt 4 đã bị chặn ACL, nên DeepSeek không đọc được hai thư mục đó dù lách `opencode.json`. Phase 5 cho thấy cần lớp này: chặn của OpenCode theo mẫu chuỗi lách được, và DeepSeek gói E từng liệt kê thư mục gốc bị cấm (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §6). Thêm nữa, đợt 2 không va cổng e2e 4173 hay máy đo với hai bên kia.
-- **Máy: Home PC `DESKTOP-KDURKJP`** (đề xuất 7). Mốc hiệu năng sau #656 và số đo lượt 3 cùng máy chỉ có ở máy này; OpenCode có sẵn trên máy (`%APPDATA%\npm\opencode`). Bước chuẩn bị, cả ba bên và mọi số đo chạy trên cùng máy.
-- Thư mục lượt 1–3 (`C:\workspace\deep-review-1-6\`, `-r2\`, `-r3\`) có trên Home PC, giữ tới v1.0 (HANDOFF). Probe lượt 3 của Claude và Codex trong `deep-review-1-6-r3\<bên>\` là probe cùng máy, dùng lại được. DeepSeek chưa có probe nào ở 6D.
+- **Vì sao hai đợt** (như lượt 1 §2 và review Phase 5): mọi bên chạy dưới cùng tài khoản Windows. ACL chỉ chặn được thư mục của bên **đã xong**, vì bên đang chạy còn phải ghi vào thư mục của mình. Đợt 2 chạy khi `claude\`, `codex\` của lượt 4 đã bị chặn ACL. DSH không có luật chặn đọc theo đường dẫn (Phụ lục P), nên ACL là lớp duy nhất giữ DeepSeek khỏi hai thư mục đó, khỏi các bản sao của chúng (log phiên, bản sao file, scratchpad) và khỏi thư mục lượt 1–3 (§L4.9 đợt 2 bước 3). Phase 5 cũng cho thấy cần lớp này: DeepSeek gói E từng liệt kê thư mục gốc bị cấm (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §6). Thêm nữa, đợt 2 không va cổng e2e 4173 hay máy đo với hai bên kia.
+- **Máy: Home PC `DESKTOP-KDURKJP`** (đề xuất 7). Mốc hiệu năng sau #656 và số đo lượt 3 cùng máy chỉ có ở máy này; DSH do Owner cài trên máy trước bước chuẩn bị (Phụ lục P). Bước chuẩn bị, cả ba bên và mọi số đo chạy trên cùng máy.
+- Thư mục lượt 1–3 (`C:\workspace\deep-review-1-6\`, `-r2\`, `-r3\`) có trên Home PC, giữ tới v1.0 (HANDOFF). Probe lượt 3 của Claude và Codex trong `deep-review-1-6-r3\<bên>\` là probe cùng máy, dùng lại được. DeepSeek chưa có probe nào ở 6D; ở đợt 2 cả ba thư mục bị chặn ACL.
 
 ## L4.3 Sáu gói, cỡ đo lại, diff sửa theo gói
 
@@ -1750,7 +1751,7 @@ Như §L3.4 (và §L2.4), với các thay đổi dưới.
 
 - DR6-104…134: 31 vấn đề lượt 3, đều có Issue sửa (tổng hợp lượt 3 §8.5). DR6-69 (SỬA MỘT PHẦN ở lượt 3) kiểm qua DR6-105, không có dòng riêng, như bảy DR6 lượt 1 ở lượt 3.
 - DR6-25, 37, 66, 67: hoãn ở lượt 1 (KNOWN ở lượt 2–3), sửa trong đợt sổ OPEN.
-- Hai mục KNOWN có bằng chứng mới của lượt 3 (tổng hợp lượt 3 §8.4) mà sau đó có Issue sửa: CL3-A29 (#805), CL3-B2 (#817). Hai mục còn lại của §8.4 (CL3-C7, Claude F K2) vẫn là KNOWN (K1).
+- Hai mục KNOWN có bằng chứng mới của lượt 3 (tổng hợp lượt 3 §8.4) mà sau đó có Issue sửa: CL3-A29 (#742 một phần, #805), CL3-B2 (#817). Hai mục còn lại của §8.4 (CL3-C7, Claude F K2) vẫn là KNOWN (K1).
 
 Bốn bước của §L2.4 giữ nguyên:
 
@@ -1973,11 +1974,18 @@ Mức: L = Low, N = Nit (mức chốt ở tổng hợp lượt 3 §6, §8.4 và 
 
 - **Claude Opus 5.5:** như lượt 3 sau 20/10 (§L3.1). Mỗi gói một phiên sạch Owner mở ở `C:\workspace\Project-2C-review`, tin nhắn một dòng (§L4.9). Mức suy luận, ultracode do Owner chọn từng phiên. Không có phiên điều phối, không có script Workflow: Phụ lục L viết theo đúng cách chạy này.
 - **Codex, model GPT Sol 6.1:** như §L2.7. Owner chạy mỗi gói một phiên mới ở `C:\workspace\Project-2C-review-2`. Mục 1 của báo cáo ghi phiên bản Codex và model như công cụ cho biết; lượt 1–3 Codex chỉ ghi được "GPT-6 theo hệ thống". Owner ghi model đã chọn ở bảng đánh dấu (§L4.9).
-- **DeepSeek v4.1 Flash:** như review Phase 5 (`docs/reviews/raw/2026-10-10/common-plan-opencode.md`), đổi theo bài học ở bảng dưới.
-  - Chạy bằng OpenCode TUI (`opencode C:\workspace\Project-2C-review`; Home PC ngày 27/10 có v2.1.4), model `opencode-go/deepseek-v4.1-flash` lấy từ `opencode.json` (Phụ lục P). TUI có biến thể suy luận thì chọn mức cao nhất. Mỗi gói một phiên mới (`/new`).
-  - **Chi phí (G4):** chạy trên gói OpenCode Go, dùng chung hạn mức với sản phẩm và với eval AI thật NT-EV-01 ở G7. Review Phase 5: 6 gói ≈ 95 phút làm việc, ≈ 0,96 USD theo giá OpenCode, trừ vào hạn mức gói Go. Lượt 4 phạm vi lớn hơn nhiều (toàn bộ code, hai bảng R); ước ≈ 2–4 USD, số thật đọc ở phiên xuất ra. Gói Go phải còn hạn lúc chạy (K9).
-  - **Chặn hai lớp:** ACL trên `claude\`, `codex\` của lượt 4 (đợt 2, §L4.9), và `opencode.json` theo mẫu chuỗi (Phụ lục P): cấm subagent, web, công cụ sửa file ngoài `deepseek\`, lệnh git ghi, `pnpm eval:ai`, lệnh `opencode`, `cmdkey`.
-  - Log: phiên tổng hợp xuất bằng `opencode session export` (CLI local, không gọi model), như Phase 5.
+- **DeepSeek v4.1 Flash:** như review Phase 5 (`docs/reviews/raw/2026-10-10/common-plan-opencode.md`), đổi theo bài học ở bảng dưới. Từ 28/10 chạy qua DeepSeek Harness (DSH) thay OpenCode (Owner, §L4.11).
+  - Chạy bằng giao diện web của DSH `0.2.1-rc.2` (Phụ lục P), workspace `C:\workspace\Project-2C-review`. Model `deepseek-flash` (DeepSeek-V4.1-Flash), Effort `max`, chọn ở bộ chọn model. Mỗi gói một phiên mới.
+  - **Chi phí (G4, Owner 28/10):** DeepSeek API trả theo mức dùng, bằng key riêng của lượt 4: nạp trước 10 USD, trần 15 USD. Hết số dư thì API trả lỗi 402 và dừng. Ước tính (giả định, không phải số đo):
+    - Khối token của DeepSeek ở review Phase 5 là: vào 1,65 tr không cache, 111 tr đọc cache, ra 162 k + suy luận 465 k. Tính theo giá `deepseek-flash` ngày 28/10 thì ≈ 0,96 USD giờ thấp điểm, ≈ 1,91 USD giờ cao điểm.
+    - Lượt 4 đọc toàn bộ code, thêm hai bảng R và Effort `max`. Giả định gấp 3–5 lần: ≈ 3–5 USD giờ thấp điểm, ≈ 6–10 USD giờ cao điểm.
+    - Giờ cao điểm là 08:00–11:00 và 13:00–17:00 giờ Việt Nam, thứ Hai–thứ Sáu. Chạy đợt 2 ngoài giờ đó.
+    - Số thật: số dư trước / sau trên platform.deepseek.com.
+  - **Chặn:** ACL của đợt 2 là lớp chặn đọc duy nhất (§L4.9 đợt 2 bước 3, script `common\dot2.mjs` ở Phụ lục P). ACL chặn báo cáo lượt 4 của Claude và Codex, log phiên, bản sao file và scratchpad của hai bên, thư mục lượt 1–3, worktree của Codex. Trước đó đợt 2 bước 1 dọn những gì đợt 1 để lại ở hai worktree và cache tạm.
+    - Cấu hình DSH (Phụ lục P) chỉ thêm: sandbox chỉ cho ghi trong worktree review và `deepseek\` (trên Windows chưa chắc; phiên thử kiểm), không xin nâng quyền, tắt công cụ web.
+    - `gh` đăng xuất trong đợt 2.
+    - Prompt (Phụ lục O) cấm subagent, `gh`, lệnh git ghi, `pnpm eval:ai`, đổi quyền file, đọc `~/.dsh`, file đăng nhập và dữ liệu của Claude / Codex.
+  - Log: phiên DSH lưu dưới `%USERPROFILE%\.dsh\sessions\`. Owner chép ra sau khi thu hồi key (§L4.10).
 
 **Bài học từ lượt 3** (tổng hợp lượt 3 §10.1 "Cho lần sau"; giữ mọi bài học §L2.7, §L3.7):
 
@@ -1995,7 +2003,7 @@ Mức: L = Low, N = Nit (mức chốt ở tổng hợp lượt 3 §6, §8.4 và 
 | Không thấy cả hai lỗi Medium, kết luận G7 "SẴN SÀNG" sai: chưa dựng chuỗi nhiều bước qua nhiều gói | Prompt (Phụ lục O) giao rõ: phần 2 dành phần lớn cho chuỗi nhiều bước; kết luận F chỉ là tham khảo, phiên tổng hợp mới ra kết luận (§6.1 spec, M2) |
 | Gói D không chạy giao diện ("không có môi trường DOM") nên phát hiện màn chỉ ở PLAUSIBLE | Kết luận về màn chạy trên bản build web bằng Playwright, hoặc trên exe qua cổng debug (Phụ lục N, quy tắc chung 6) |
 | DS-E3 đề xuất trái golden đã đọc; DS-A1 khẳng định không có căn cứ | Đọc golden / spec liên quan trước khi đề xuất; điều không chạy được thì ghi PLAUSIBLE, không suy rộng |
-| Gói E liệt kê thư mục gốc bị cấm, không báo Owner | ACL đợt 2; `opencode.json` hỏi trước khi liệt kê; lỡ thấy tên thư mục cấm thì dừng và báo Owner ngay |
+| Gói E liệt kê thư mục gốc bị cấm, không báo Owner | ACL đợt 2 (DSH không chặn đọc theo đường dẫn); prompt cấm liệt kê `C:\workspace`; lỡ thấy tên thư mục cấm thì dừng và báo Owner ngay; quét log (§L4.10) |
 | Báo cáo chen từ tiếng Bồ Đào Nha ("produção") | Viết tiếng Việt, thuật ngữ ngành giữ tiếng Anh như repo; không dùng từ của ngôn ngữ khác |
 | Ít đột biến (≈ 21, đa số để khẳng định test tốt) | Bước 2 của bảng R (gỡ tạm phần sửa) là bắt buộc ở mọi dòng R1 / R2; đột biến dùng để tìm chỗ hở |
 
@@ -2009,7 +2017,7 @@ Khuôn như §L3.8 (và §L2.8), đổi:
   - **R1:** mọi dòng mà gói kiểm trong 37 dòng của §L4.5 phần 4;
   - **R2:** mọi Issue mà gói kiểm trong bảng R2 của `known.md` (§L4.5 phần 5, đủ dòng ở bước chuẩn bị).
 - Phạm vi đã đọc gồm phần diff `119e2e4..{SHA}` của gói.
-- Mục 1 (đầu báo cáo): Claude ghi model, mức suy luận, ultracode bật hay tắt; Codex ghi phiên bản Codex và model như công cụ cho biết; DeepSeek ghi phiên bản OpenCode, model và biến thể suy luận.
+- Mục 1 (đầu báo cáo): Claude ghi model, mức suy luận, ultracode bật hay tắt; Codex ghi phiên bản Codex và model như công cụ cho biết; DeepSeek ghi bản DSH (`0.2.1-rc.2`, theo `common\baseline.md`), model và Effort.
 - **Gói F:** bảng R1 gộp đủ 37 dòng và bảng R2 gộp đủ mọi dòng (từ báo cáo A–E lượt 4 của chính bên đó + phần F). Kèm kết luận **SẴN SÀNG / CHƯA SẴN SÀNG cho v1.0 ở SHA ghim** và lý do (tham khảo; kết luận thật ở phiên tổng hợp).
 
 ## L4.9 Chuẩn bị và chạy
@@ -2021,7 +2029,7 @@ Khuôn như §L3.8 (và §L2.8), đổi:
    - **Ghim SHA:** `git rev-parse origin/main` lúc đó là SHA ghim; ghi đủ 40 ký tự vào `baseline.md`.
    - Kiểm `C:\workspace\deep-review-1-6-r4\` chưa có (có rồi → dừng, báo Owner).
    - Kiểm `C:\workspace\deep-review-1-6-r3\common\perf\perf-ref.json` có, sha256 như §L4.6.
-   - Kiểm OpenCode: `opencode --version`. Review Phase 5 chạy v2.0.24; Home PC ngày 27/10 có v2.1.4. Bản khác v2.0.24 thì đọc tài liệu `permission` của bản đó (cú pháp, thứ tự khớp mẫu) và sửa Phụ lục P nếu cần, trước khi chạy đợt 2. Phiên thử của đợt 2 (bước 3) kiểm lại từng luật.
+   - Kiểm DSH: `dsh --version` phải ra `0.2.1-rc.2` (Owner cài trước bước này, Phụ lục P); ghi vào `baseline.md`. Chưa có hay khác bản → dừng, báo Owner. Lúc này Owner **chưa** nhập key DeepSeek (Phụ lục P, ranh giới key).
 2. Tạo `C:\workspace\deep-review-1-6-r4\{common,claude,codex,deepseek}`.
 3. Đưa hai worktree về SHA ghim:
    - `git -C C:\workspace\Project-2C-review checkout --detach <SHA ghim>`, tương tự với `-review-2`;
@@ -2041,7 +2049,10 @@ Khuôn như §L3.8 (và §L2.8), đổi:
      - nguyên văn các nhóm RESOLVED của sổ mà các Issue đó gom (theo nhãn T-xxx, ở SHA ghim);
      - lấy bằng `gh issue view` / `gh pr view --json body`;
    - `prompt-claude.md` = Phụ lục L + Phụ lục N; `prompt-codex.md` = Phụ lục M + Phụ lục N; `prompt-deepseek.md` = Phụ lục O + Phụ lục N. Chép nguyên văn, chỉ thay `{SHA}` bằng 7 ký tự đầu và `{SHA_ĐỦ}` bằng đủ 40 ký tự của SHA ghim (`{GÓI}` để nguyên: reviewer thay theo tin nhắn);
-   - `opencode-deepseek.json` = khối JSON của Phụ lục P, nguyên văn.
+   - `dsh-deepseek.patch.yml`, dựng theo mục "Dựng và kiểm" của Phụ lục P: dump cấu hình mặc định, viết patch, dump cấu hình sau patch, so bảng giá trị;
+   - `dot2.mjs` = khối code ở mục "Script đợt 2" của Phụ lục P, chép nguyên văn.
+
+   Cuối bước này chạy `node C:\workspace\deep-review-1-6-r4\common\dot2.mjs baseline`. Lệnh ghi `common\dot2-baseline.json`: mục chưa theo dõi và mục bị ignore của hai worktree lúc này (sau bước 3, trước cổng ở bước 6), không tính `node_modules`. Đợt 2 bước 1 xóa mọi thứ ngoài mốc này; giờ ghi file là mốc thời gian của `scan`.
 5. Dữ liệu tải: `node tools/load-data.mjs --out C:\workspace\deep-review-1-6-r4\common\load\load-2026-10-12-seed6.p2cbackup`; ghi hash `tables` vào `baseline.md`, so §L4.6. Khác hash lúc soạn → ghi Issue nào đổi dữ liệu.
 6. Chạy cổng ở SHA ghim (trong `Project-2C-review`):
    - `pnpm verify`, `pnpm verify:rust`, `pnpm e2e` (`CI=1`), `pnpm build:exe`;
@@ -2070,54 +2081,119 @@ Khuôn như §L3.8 (và §L2.8), đổi:
   Gói A. Lệnh đầu tiên chỉ đọc C:\workspace\deep-review-1-6-r4\common\prompt-claude.md (không gộp lệnh khác), rồi làm đúng file đó.
   ```
 
-**Owner chạy đợt 2** (DeepSeek một mình; bắt đầu khi đủ 12 báo cáo đợt 1 với dòng đầu `XONG`, và không còn phiên Claude nào mở ở `Project-2C-review`):
+**Owner chạy đợt 2** (DeepSeek một mình). Điều kiện bắt đầu: đủ 12 báo cáo đợt 1 với dòng đầu `XONG`, Codex đã xong, và không còn phiên Claude nào mở ở `Project-2C-review`. Từ bước 4, chỉ Owner chạy lệnh `dsh` và đụng tới `%USERPROFILE%\.dsh` (Phụ lục P, ranh giới key).
 
-1. Chặn `claude\` và `codex\` của lượt 4 bằng ACL (PowerShell của Owner):
+Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt 2") trong PowerShell của Owner. Lệnh in `OK` khi đạt. Không đạt thì in `STOP` kèm lý do: dừng ở đó, báo Claude.
+
+1. Đóng Codex (app và CLI) và mọi phiên Claude ở hai worktree review, rồi dọn những gì đợt 1 để lại:
 
    ```powershell
-   icacls C:\workspace\deep-review-1-6-r4\claude /deny "${env:USERNAME}:(OI)(CI)(R)"
+   node C:\workspace\deep-review-1-6-r4\common\dot2.mjs clean
+   ```
+
+   - Ở hai worktree, lệnh xóa mọi mục chưa theo dõi hay bị ignore không có trong `dot2-baseline.json` (`node_modules` để nguyên).
+   - Lệnh xóa cả cache Vite / Vitest trong `node_modules`, vì cache giữ tên file test đã chạy.
+   - Lệnh xóa cache tạm có bản biến đổi của code probe: `%TEMP%\playwright*`, `%TEMP%\codex-*`, thư mục `%TEMP%\…\ssr`. Trên Home PC ngày 28/10, các cache này còn giữ mã phát hiện của Codex lượt 3 (review #872).
+   - Cuối cùng lệnh kiểm lại hai worktree so với mốc.
+2. Chạy `gh auth logout`; sau đó `gh auth status` phải báo chưa đăng nhập. Trong cửa sổ PowerShell sẽ chạy `dsh`, `Test-Path env:OPENCODE_GO_KEY` và `Test-Path env:DEEPSEEK_API_KEY` phải ra `False`: key không đi qua biến môi trường.
+3. Chặn đọc bằng ACL, rồi quét:
+
+   ```powershell
+   node C:\workspace\deep-review-1-6-r4\common\dot2.mjs deny
    ```
 
    ```powershell
-   icacls C:\workspace\deep-review-1-6-r4\codex /deny "${env:USERNAME}:(OI)(CI)(R)"
+   node C:\workspace\deep-review-1-6-r4\common\dot2.mjs scan
    ```
 
-   Kiểm: `Get-ChildItem C:\workspace\deep-review-1-6-r4\codex` phải báo `Access is denied`.
-2. Chép `C:\workspace\deep-review-1-6-r4\common\opencode-deepseek.json` thành `C:\workspace\Project-2C-review\opencode.json`.
-3. Phiên thử: `opencode C:\workspace\Project-2C-review`, bảo model làm từng việc dưới. Hai việc tạo file phải dùng công cụ sửa file của OpenCode, không qua `bash`: luật `edit` của Phụ lục P chỉ áp cho công cụ sửa file. Kết quả phải đúng như ghi:
-   - liệt kê `C:\workspace\deep-review-1-6-r4\codex` → bị từ chối (ACL);
-   - đọc `C:\workspace\deep-review-1-6-r4\common\plan.md` → đọc được, không hỏi;
-   - tạo file `C:\workspace\deep-review-1-6-r4\deepseek\_thu\a.txt` bằng công cụ sửa file → tạo được;
-   - tạo file `C:\workspace\Project-2C-review\_thu.txt` bằng công cụ sửa file → bị từ chối (công cụ sửa file chỉ được ghi trong `deepseek\`);
-   - chạy `git commit --dry-run` trong repo → bị từ chối;
-   - chạy `opencode --version` → bị từ chối.
+   `deny` chặn tài khoản của Owner đọc (`icacls /deny`):
+   - **Cả thư mục:**
+     - `…-r4\claude`, `…-r4\codex`;
+     - thư mục lượt 1–3: `deep-review-1-6-r3`, `-r2`, `deep-review-1-6` (DeepSeek không được đọc, Phụ lục O quy tắc riêng 2);
+     - transcript Claude của worktree review: `%USERPROFILE%\.claude*\projects\C--workspace-Project-2C-review`;
+     - `file-history\<id>` của từng phiên đó: Claude Code giữ ở đây bản sao mọi file phiên đã ghi, gồm `{GÓI}.md` (review #872);
+     - scratchpad và output công cụ của các phiên đó: `%TEMP%\claude\C--workspace-Project-2C-review`.
+   - **Từng mục con:** `%USERPROFILE%\.codex` (log phiên, `state_5.sqlite`, file đăng nhập `auth.json`) và `C:\workspace\Project-2C-review-2` (worktree của Codex).
+     - Hai chỗ này có file trong `node_modules` dùng chung với `node_modules` của ba checkout qua hard link (Home PC ngày 28/10: 44 file trong `.codex`). Chặn đọc một file hard link là chặn mọi đường dẫn của nó.
+     - Vì vậy `node_modules`, `.git` và link để ngỏ. Mục con có hard link ra ngoài thì chặn tiếp từng mục con của nó.
+   - Thư mục phải chặn cả mà có file hard link ra ngoài → `STOP`, không chặn gì.
+   - Danh sách đã chặn ghi ở `common\dot2-acl.json`, cho phiên thử và bước 7. Rồi lệnh kiểm: mỗi mục đều bị từ chối.
 
-   Xóa `deepseek\_thu\` (và `_thu.txt` nếu lỡ tạo được), rồi bỏ phiên thử. Model tự chuyển sang `bash` mà tạo được file thì không tính là ra khác: `bash` của Phụ lục P không chặn ghi, đúng giới hạn "model vẫn lách được" ở đầu Phụ lục P. Xóa file đó, bảo làm lại bằng công cụ sửa file. Ngoài ca này, có việc nào ra khác → không chạy đợt 2; sửa `opencode.json` theo bản OpenCode trên máy rồi thử lại, hoặc báo Claude.
-4. Mỗi gói một phiên mới (`/new`), lần lượt A → F, chọn biến thể suy luận cao nhất nếu TUI có:
+   `scan` đọc mọi file sửa sau `dot2-baseline.json` ở những chỗ còn đọc được, tìm mã phát hiện và dòng đầu báo cáo lượt 4 của Claude / Codex:
+   - dữ liệu của Claude / Codex: `.claude*`, `.codex`, `%APPDATA%\Claude`, `%LOCALAPPDATA%\Claude`, `%LOCALAPPDATA%\OpenAI`, gói Store của hai app;
+   - `%TEMP%`;
+   - `C:\workspace`, bỏ `.git`, `.pnpm`, `target`.
+
+   Lệnh chỉ thấy chữ không nén (UTF-8 / UTF-16). Thấy ở chỗ còn đọc được → `STOP` kèm danh sách file. Riêng danh sách phiên của app desktop Claude (`%APPDATA%\Claude\claude-code-sessions`: tiêu đề, vài câu tóm tắt) thì lệnh chỉ in ra, Owner ghi vào `baseline.md`: app đang chạy giữ các file này nên không chặn được (rủi ro ghi ở Phụ lục P).
+4. Mở DSH từ worktree review:
+
+   ```powershell
+   Set-Location C:\workspace\Project-2C-review; dsh --profile web --patch C:\workspace\deep-review-1-6-r4\common\dsh-deepseek.patch.yml --no-open
+   ```
+
+   - Mở `http://127.0.0.1:3080`. Nhập key riêng của lượt 4 ở Settings → Models: Owner tự nhập, không phiên Claude nào chạm key.
+   - Chọn workspace **đúng** `C:\workspace\Project-2C-review`. Workspace là gốc ghi của sandbox: chọn `C:\workspace` thì sandbox cho ghi cả checkout chính.
+   - Ở bộ chọn model, chọn `deepseek-flash`, Effort `max`.
+5. **Phiên thử.** Mở một phiên mới, bảo model làm từng việc dưới, ghi kết quả vào `common\baseline.md`.
+
+   **Ra khác ghi dưới đây thì dừng đợt 2.** Sửa theo rồi thử lại; không sửa được thì báo Claude.
+   - `Get-Location` (hoặc `pwd`) → `C:\workspace\Project-2C-review`.
+   - Đọc vài dòng đầu của `C:\workspace\deep-review-1-6-r4\common\plan.md` → đọc được.
+   - `node node_modules/vitest/vitest.mjs run packages/domain` → xanh. Lệnh đọc `node_modules` của worktree review, nên bắt được ACL lan qua hard link mà bước 3 bỏ sót.
+   - Đọc `common\dot2-acl.json`, rồi làm từng việc dưới, một lần bằng shell, một lần bằng công cụ đọc file của DSH → mọi lần bị từ chối (ACL; đọc được thì có thể DSH chạy lệnh dưới danh tính khác tài khoản của Owner):
+     - liệt kê `C:\workspace\deep-review-1-6-r4\claude`, `…-r4\codex`, `C:\workspace\deep-review-1-6-r3`, `-r2` và `C:\workspace\deep-review-1-6`;
+     - liệt kê mục `projects\…`, một mục `file-history\…` và mục `%TEMP%\claude\…` của danh sách;
+     - đọc `…-r4\claude\A.md` và `…-r4\codex\A.md`;
+     - đọc hai mục `file` và liệt kê một mục `tree` của `.codex` trong danh sách; đọc `C:\workspace\Project-2C-review-2\package.json`.
+   - Tạo `C:\workspace\deep-review-1-6-r4\deepseek\_thu\a.txt`, một lần bằng shell, một lần bằng công cụ ghi file của DSH → tạo được.
+   - Bảo model tìm trên web → model không có công cụ đó.
+   - `gh auth status` → chưa đăng nhập.
+   - **Log DSH** (Owner): tìm file log mới nhất dưới `%USERPROFILE%\.dsh\sessions\`, giải nén trong bộ nhớ, không chép log ra (lệnh dưới) → in đường dẫn file và tên trường của dòng JSON đầu. Ghi tên thư mục của workspace và của phiên thử vào `baseline.md`. §L4.10 chép và giải nén log theo đúng chỗ và định dạng này.
+
+     ```powershell
+     $f = Get-ChildItem "$env:USERPROFILE\.dsh\sessions" -Recurse -File -Filter *.zstd | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if (-not $f) { throw 'Không thấy file .zstd dưới .dsh\sessions' }; $f.FullName; node -e "const z=require('zlib'),f=require('fs');const l=z.zstdDecompressSync(f.readFileSync(process.argv[1])).toString('utf8').split('\n')[0];console.log(Object.keys(JSON.parse(l)).join(', '))" $f.FullName; if ($LASTEXITCODE) { throw 'Giải nén hay đọc JSON lỗi' }
+     ```
+
+   **Chỉ ghi lại, không dừng:**
+   - Tạo `C:\workspace\_thu.txt` (ngoài gốc ghi), một lần bằng shell, một lần bằng công cụ ghi file → bị từ chối nếu sandbox áp được trên máy này. Tạo được thì `baseline.md` ghi "không có giới hạn ghi trên máy này" (đã chấp nhận ở G6, Owner 28/10); xóa file đó.
+   - Kết quả lệnh shell cho biết chế độ sandbox, runner có áp đủ không, và shell nào.
+   - Probe mà Phụ lục N cần (quy tắc chung 6, đo trên exe), chạy trong sandbox:
+     - mở một bản chép của `common\exe\project2c.exe` trong `deepseek\_thu\`, với cổng debug khác 9222 (`e2e/perf/README.md`);
+     - chạy một probe Playwright trên bản build web. Bước 1 đã xóa `apps\desktop\dist`, nên `pnpm build:web` trước; thiếu bản build thì đừng nhầm là sandbox chặn.
+
+     Phiên thử kiểm hai việc này có chạy được không, chẳng hạn exe có ghi được hồ sơ WebView2 ngoài gốc ghi không. Bị chặn thì Owner chọn trước khi chạy gói A: hoặc thêm thư mục đó vào `additionalWritableRoots` (mở rộng phạm vi G6), hoặc chấp nhận DeepSeek ghi PLAUSIBLE cho phần chỉ kiểm được trên exe hay trình duyệt.
+
+   Xong: xóa `deepseek\_thu\` và file thử còn lại. `git -C C:\workspace\Project-2C-review status --short` phải rỗng. DSH để lại file nào trong workspace thì ghi tên vào `baseline.md`: quy tắc riêng 5 của Phụ lục O cho phép đúng các file đó.
+6. Mỗi gói một phiên mới, lần lượt A → F, model `deepseek-flash`, Effort `max`:
 
    ```text
    Gói A. Lệnh đầu tiên chỉ đọc C:\workspace\deep-review-1-6-r4\common\prompt-deepseek.md (không gộp lệnh khác), rồi làm đúng file đó.
    ```
 
-5. Xong F: xóa `C:\workspace\Project-2C-review\opencode.json`, gỡ ACL:
+   Ngay khi mở phiên của gói, Owner ghi tên thư mục phiên DSH của gói vào bảng đánh dấu. Đó là thư mục mới nhất dưới thư mục của workspace (tên ghi ở phiên thử): `Get-ChildItem <thư mục workspace> -Directory | Sort-Object LastWriteTime | Select-Object -Last 1`.
 
-   ```powershell
-   icacls C:\workspace\deep-review-1-6-r4\claude /remove:d "${env:USERNAME}"
-   ```
+7. Xong F, làm theo thứ tự:
+   1. **Thu hồi key** trên platform.deepseek.com, trước khi ai chép gì vào repo. Ghi số dư trước / sau vào bảng đánh dấu.
+   2. Dừng DSH (Ctrl+C ở cửa sổ chạy `dsh`).
+   3. Chép thư mục phiên A–F ra `deepseek\` (§L4.10).
+   4. Gỡ ACL:
 
-   ```powershell
-   icacls C:\workspace\deep-review-1-6-r4\codex /remove:d "${env:USERNAME}"
-   ```
+      ```powershell
+      node C:\workspace\deep-review-1-6-r4\common\dot2.mjs remove
+      ```
 
+      Lệnh gỡ mọi mục của `dot2-acl.json` và các thư mục của bước 3, kiểm từng mục đọc lại được, rồi đổi tên file thành `dot2-acl.removed.json`.
+   5. Đăng nhập lại `gh auth login`.
 Phiên bị cắt (dòng đầu báo cáo vẫn `ĐANG LÀM`) thì mở phiên mới với đúng tin nhắn của gói đó; bước 0 tự làm tiếp.
 
-Bảng đánh dấu của Owner (18 ô; ghi thêm giờ bắt đầu / xong mỗi gói của Codex và DeepSeek):
+Bảng đánh dấu của Owner (18 ô; ghi thêm giờ bắt đầu / xong mỗi gói của Codex và DeepSeek, số dư DeepSeek trước / sau, và thư mục phiên DSH của từng gói):
 
 | Bên | A | B | C | D | E | F |
 |---|---|---|---|---|---|---|
 | Claude Opus 5.5 | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
 | Codex GPT Sol 6.1 | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
 | DeepSeek v4.1 Flash (đợt 2) | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
+| Thư mục phiên DSH của DeepSeek | … | … | … | … | … | … |
 
 ## L4.10 Sau lượt 4, kiểm độc lập, ước lượng
 
@@ -2126,7 +2202,7 @@ Bảng đánh dấu của Owner (18 ô; ghi thêm giờ bắt đầu / xong mỗ
 - Đọc đủ 18 báo cáo.
 - Gộp ba bảng R1 thành một bảng 37 dòng, ba bảng R2 thành một bảng đủ dòng. Kiểm trên code ở SHA ghim mọi kết luận khác ĐÃ SỬA và mọi chỗ các bên chấm khác nhau.
 - Kiểm mọi phát hiện mới, gộp trùng, đánh số tiếp `DR6-135…`. Báo cáo DeepSeek là dữ liệu tham khảo như Codex; mọi phát hiện của nó cũng kiểm trên code (Phase 5: 21 / 22 đúng, 1 sai).
-- Bảng so ba bên như Phase 5 (`danh-gia-deepseek-muse.md` §2): số phát hiện, đúng / KNOWN / sai, chỉ một bên thấy, thời gian, hạn mức gói Go đã dùng.
+- Bảng so ba bên như Phase 5 (`danh-gia-deepseek-muse.md` §2): số phát hiện, đúng / KNOWN / sai, chỉ một bên thấy, thời gian, chi phí DeepSeek API (số dư trước / sau).
 - So số đo với mốc cùng máy (§L4.6), gồm cỡ bundle / exe tách phần font và icon.
 - Kết luận SẴN SÀNG / CHƯA SẴN SÀNG cho G7.
 - Phạm vi sửa theo đề xuất 6; phần câu hỏi cho Owner chỉ còn cách sửa khi có nhiều phương án.
@@ -2137,7 +2213,15 @@ Phiên tổng hợp được dùng subagent / Workflow để kiểm từng phát
 
 - **Log Claude:** transcript của các phiên gói, và của subagent ở phiên Owner bật ultracode: mọi `*.jsonl` dưới `%USERPROFILE%\.claude*\projects\C--workspace-Project-2C-review\` từ giờ bắt đầu lượt 4.
 - **Log Codex:** `%USERPROFILE%\.codex\sessions\…\rollout-*.jsonl` của các ngày chạy.
-- **Log DeepSeek:** `opencode session list`, rồi `opencode session export <id>` vào `deep-review-1-6-r4\deepseek\<gói>\session.json` cho từng phiên A–F (CLI local, không gọi model; như Phase 5).
+- **Log DeepSeek:** phiên của DSH lưu dưới `%USERPROFILE%\.dsh\sessions\`. Thư mục của workspace ghi ở phiên thử; thư mục phiên của từng gói ghi ở bảng đánh dấu (§L4.9 đợt 2 bước 6).
+  - Sau khi thu hồi key (§L4.9 đợt 2 bước 7), **Owner** chép thư mục phiên của từng gói A–F vào `deep-review-1-6-r4\deepseek\<gói>\session\`. Giải nén xong thì tin nhắn đầu của mỗi phiên phải là "Gói X." của đúng gói đó.
+  - Không chép gì khác của `.dsh` (`.credentials.yaml`, `.env`, `logs\`). Không phiên Claude nào đọc trong `.dsh`.
+  - Log là JSONL nén zstd (chỗ và định dạng đã kiểm ở phiên thử); giải nén bằng Node 24 (có zstd trong `zlib`). Lệnh dừng khi không có file `.zstd` nào, khi giải nén lỗi, hay khi gói nào chưa có file JSONL:
+
+    ```powershell
+    $z = @(Get-ChildItem C:\workspace\deep-review-1-6-r4\deepseek -Recurse -Filter *.zstd); if (-not $z) { throw 'Không có file .zstd nào trong deepseek\' }; foreach ($f in $z) { node -e "const z=require('zlib'),f=require('fs');f.writeFileSync(process.argv[2],z.zstdDecompressSync(f.readFileSync(process.argv[1])))" $f.FullName ($f.FullName -replace '\.zstd$',''); if ($LASTEXITCODE) { throw "Giải nén lỗi: $($f.FullName)" } }; foreach ($g in 'A','B','C','D','E','F') { if (-not (Get-ChildItem "C:\workspace\deep-review-1-6-r4\deepseek\$g\session" -Recurse -Filter *.jsonl -ErrorAction SilentlyContinue)) { throw "Gói $g chưa có log JSONL" } }
+    ```
+- **Log thô không vào repo** (Owner 28/10, G6 cho log DSH; danh sách lưu repo dưới không có log của bên nào): log phiên của ba bên, cả log DSH đã giải nén, và `common\dot2-*.json` ở lại `deep-review-1-6-r4\` trên Home PC. Báo cáo và bản tổng hợp chỉ trích đoạn log cần dẫn, sau khi đã quét mẫu key và key đã thu hồi.
 - **Danh sách quét thêm:**
   - `deep-review-1-6-r4[\\/](claude|codex|deepseek)` của bên khác;
   - `deep-review-1-6-r3[\\/]…`, `deep-review-1-6-r2[\\/]…` và `deep-review-1-6[\\/]…` không phải của chính bên đó (DeepSeek: mọi thư mục này);
@@ -2145,12 +2229,16 @@ Phiên tổng hợp được dùng subagent / Workflow để kiểm từng phát
   - lệnh đầu tiên của mỗi phiên gói: chỉ đọc file prompt (§L4.7);
   - `pnpm`, kể cả `pnpm exec`, chạy trong bản chép repo;
   - lệnh ghi ngoài thư mục của bên đó, trừ vá rồi trả nguyên byte theo quy tắc chung 1;
-  - DeepSeek: lệnh bị `opencode.json` từ chối hay hỏi, và cách model xử lý sau đó.
+  - DeepSeek: lệnh bị sandbox từ chối (kết quả lệnh ghi chế độ và thao tác bị từ chối), và cách model xử lý sau đó;
+  - DeepSeek: lệnh đụng `.dsh`, `/permission`, gọi `127.0.0.1:3080`, `gh`, `git commit` / `push` / `reset` / …, `cmdkey`, `eval:ai`, `Project-2C-review-2`;
+  - DeepSeek: lệnh đổi quyền file (`icacls`, `Set-Acl`, `takeown`) hay chạy `dot2.mjs`;
+  - dữ liệu của bên khác: `.codex`, `.claude*\projects`, `.claude*\file-history`, `%TEMP%\claude`, `%APPDATA%\Claude`, `%LOCALAPPDATA%\OpenAI`;
+  - mẫu key (`sk-`, `gho_`, `ghp_`, `github_pat_`) trong báo cáo và log của DeepSeek, quét trước khi chép bất cứ gì vào repo.
 
 **Báo cáo gốc lưu ở repo** (PR docs của phiên tổng hợp):
 
 - `docs/reviews/raw/<ngày tổng hợp>/{claude,codex,deepseek}/<gói>.md` nguyên văn;
-- `common-known.md`, `common-baseline.md`, `common-fixes.md`, `common-opencode-deepseek.md` (cấu hình đã dùng, chép vào Markdown như Phase 5); `common-plan.md`, `common-prompt-*.md` chỉ khi khác bản trong repo;
+- `common-known.md`, `common-baseline.md`, `common-fixes.md`, `common-dsh-deepseek.md` (patch và cấu hình DSH sau patch đã dùng, chép vào Markdown); `common-plan.md`, `common-prompt-*.md` chỉ khi khác bản trong repo;
 - bản tổng hợp `docs/reviews/<ngày>-deep-review-phase-1-6-luot-4-tong-hop.md`.
 
 Thư mục bằng chứng `deep-review-1-6-r4\` giữ trên Home PC tới v1.0.
@@ -2160,9 +2248,14 @@ Thư mục bằng chứng `deep-review-1-6-r4\` giữ trên Home PC tới v1.0.
 - Lượt 4 đọc diff gấp đôi lượt 3 (269 file so 119), bảng R ≥ 67 dòng (37 + 30) so 39.
 - Đợt 1: Claude ≈ 8–10 h; Codex tùy model mới. Đợt 2: DeepSeek ≈ 3–5 h.
 - Cả lượt 4 ≈ 3 ngày tính cả chuẩn bị, hai đợt và tổng hợp, rồi tới đợt sửa. Trước đó là đợt sửa mục OPEN (3 Issue nhỏ).
-- Owner can thiệp: mở 6 phiên Claude + 6 phiên Codex + 6 phiên DeepSeek; chặn / gỡ ACL và chép `opencode.json` ở đợt 2; để máy rảnh ≈ 5 phút ở bước 7; ghi giờ bắt đầu / xong mỗi gói của Codex và DeepSeek.
+- Owner can thiệp:
+  - cài DSH trước bước chuẩn bị;
+  - mở 6 phiên Claude + 6 phiên Codex + 6 phiên DeepSeek;
+  - ở đợt 2: đóng Codex, chạy `dot2.mjs` (dọn, chặn ACL, quét, gỡ ACL), `gh auth logout` / `login`, nhập key, phiên thử, ghi thư mục phiên DSH của từng gói, thu hồi key, chép log phiên;
+  - để máy rảnh ≈ 5 phút ở bước 7;
+  - ghi giờ bắt đầu / xong mỗi gói của Codex và DeepSeek, và số dư DeepSeek trước / sau.
 
-## L4.11 Quyết định của Owner (26–27/10/2026) và đề xuất
+## L4.11 Quyết định của Owner (26–28/10/2026) và đề xuất
 
 **Đã chốt** (Issue #854):
 
@@ -2173,7 +2266,7 @@ Thư mục bằng chứng `deep-review-1-6-r4\` giữ trên Home PC tới v1.0.
 
 **Owner bổ sung 27/10** (khi xem bản nháp):
 
-- **B1.** "anh bổ sung kế hoạch review sẽ có thêm deepseek v4.1 flash": DeepSeek v4.1 Flash là bên review thứ ba, chỉ đọc, báo cáo là dữ liệu tham khảo. Lượt 4 có 6 gói × 3 bên = 18 báo cáo. Bỏ DeepSeek của M5 (13/10) không áp cho lượt 4 (ADR-0001 M10). Chạy trên gói OpenCode Go nên tốn hạn mức (G4: Owner yêu cầu).
+- **B1.** "anh bổ sung kế hoạch review sẽ có thêm deepseek v4.1 flash": DeepSeek v4.1 Flash là bên review thứ ba, chỉ đọc, báo cáo là dữ liệu tham khảo. Lượt 4 có 6 gói × 3 bên = 18 báo cáo. Bỏ DeepSeek của M5 (13/10) không áp cho lượt 4 (ADR-0001 M10). Chạy trên gói OpenCode Go nên tốn hạn mức (G4: Owner yêu cầu). **Đổi 28/10:** chạy qua DSH, trả DeepSeek API theo mức dùng (dưới).
 - **B2.** "anh chỉ làm review lượt 4 khi tất cả các review-notes open đã được sửa hết": lượt 4 chỉ chạy khi sổ OPEN rỗng, kể cả mục [G7]. Quyết định này thay quyết định trước đó cùng ngày ("mục [G7] làm sau khi xong mọi task"). SHA ghim vì vậy là `main` sau đợt sửa mục OPEN, không còn là `a59ef07`.
 
 **Đề xuất, Owner chọn cùng G1** (mục 3–7 của #854; mục 8, 9 thêm do B1, B2). Owner chọn ngày 27/10/2026, trong phiên soạn: cả bảy mục theo đề xuất.
@@ -2186,9 +2279,25 @@ Thư mục bằng chứng `deep-review-1-6-r4\` giữ trên Home PC tới v1.0.
 | 6 | Sau tổng hợp: sửa hết như lượt 3, rồi G7 | §L4.10 | Theo đề xuất (27/10/2026) |
 | 7 | Số đo trên Home PC, so mốc Home PC sau #656 như lượt 3, thêm số lượt 3 cùng máy làm tham khảo. Ghi riêng cỡ exe / bundle do font, icon mới và `zod/mini`. Dữ liệu tải vào exe bằng script qua cổng debug như lượt 3 | §L4.6, §L4.9 | Theo đề xuất (27/10/2026) |
 | 8 | Đợt sửa mục OPEN trước lượt 4 (B2): ba Issue tạo sau G1. T-310 PR nhỏ code: 7 mục [G7] code và ghi chú code của review kế hoạch này. T-311 tài liệu: `phase-6.md` ×2, nghiệm thu ×1 và ghi chú tài liệu của review kế hoạch này. T-312 chụp lại ảnh hướng dẫn: 4 mục, làm sau T-310. Ảnh chụp lúc này là ảnh trước lượt 4; đợt sửa lượt 4 đổi màn nào thì G7 chụp lại ảnh đó | §L4.2 | Theo đề xuất (27/10/2026) |
-| 9 | DeepSeek chạy đợt 2 một mình, sau khi đủ 12 báo cáo của Claude và Codex. Worktree `Project-2C-review`; ACL chặn `claude\`, `codex\` của lượt 4, cộng `opencode.json` (Phụ lục P) như review Phase 5. Model `opencode-go/deepseek-v4.1-flash` qua gói Go, biến thể suy luận cao nhất. Phương án khác: ba bên cùng lúc, DeepSeek ở worktree thứ ba, chỉ `opencode.json` chặn (lách được) | §L4.2, §L4.7, §L4.9 | Theo đề xuất (27/10/2026) |
+| 9 | DeepSeek chạy đợt 2 một mình, sau khi đủ 12 báo cáo của Claude và Codex. Worktree `Project-2C-review`; ACL chặn `claude\`, `codex\` của lượt 4, cộng `opencode.json` (Phụ lục P bản 27/10, PR #863) như review Phase 5. Model `opencode-go/deepseek-v4.1-flash` qua gói Go, biến thể suy luận cao nhất. Phương án khác: ba bên cùng lúc, DeepSeek ở worktree thứ ba, chỉ `opencode.json` chặn (lách được) | §L4.2, §L4.7, §L4.9 | Theo đề xuất (27/10/2026); **28/10 đổi cách chạy:** DSH thay OpenCode (dưới) |
 
-Owner duyệt G1 (ghi ngày): comment trên PR của #854, trước khi merge (như PR #647, #715).
+Owner duyệt G1 ngày 28/10/2026 bằng comment trên PR #863 (như PR #647, #715), kèm một thay đổi.
+
+**Owner đổi ngày 28/10, khi duyệt G1.** Việc này là Issue riêng T-313 (#868); Owner 28/10 không gộp vào T-311.
+
+- "anh duyệt G1, nhưng lần review lượt 4 này với Deepseek sẽ không dùng opencode, mà dùng trực tiếp Deepseek API với deepseek harness". Lý do, Owner nói cùng ngày: "Deepseek Harness (DSH) là công cụ chính thức từ Deepseek, gọi API trực tiếp từ Deepseek trả phí dạng PAYG, không qua 1 bên khác như Opencode, chất lượng model cao hơn khá nhiều".
+- G4 / G6, duyệt ngày 28/10 trên #868, theo đề xuất của Claude ở comment cùng ngày: "Duyệt đề xuất G4/G6 trên #868: DSH 0.2.1-rc.2, phương án (b) cùng user, key riêng nạp 10 USD, trần 15 USD, thu hồi key ngay sau gói F, log phiên và phiên thử như đề xuất."
+- Đổi so với B1 và mục 9:
+  - DeepSeek chạy qua DSH `0.2.1-rc.2` (Phụ lục P mới), trả theo mức dùng thay hạn mức gói Go.
+  - Cùng user Windows (phương án (b)): ACL đợt 2 chặn thêm `%USERPROFILE%\.codex` và transcript Claude của worktree review; `gh` đăng xuất trong đợt 2.
+  - Key riêng cho lượt 4, thu hồi ngay sau gói F.
+- Review #872 (28/10) thấy bộ ACL trên còn hở và có chỗ làm hỏng `node_modules`, nên kế hoạch đổi như dưới. Owner xác nhận G6 cùng ngày (ghi trên #868): "Anh xác nhận G6 cho bộ ACL mới của đợt 2 và việc chạy script dot2.mjs, phương án (a) cho danh sách phiên của app desktop."
+  - chặn thêm `file-history` và scratchpad của các phiên Claude ở worktree review, thư mục lượt 1–3, worktree `Project-2C-review-2`;
+  - `.codex` và `Project-2C-review-2` chặn theo từng mục con, để ngỏ `node_modules` và `.git`: file trong `node_modules` dùng chung với ba checkout qua hard link;
+  - Owner dọn, chặn, quét bản sao và gỡ bằng `common\dot2.mjs` (Phụ lục P), thay các lệnh `icacls` gõ tay;
+  - phương án (a): chỗ có mã phát hiện trong danh sách phiên của app desktop Claude (`%APPDATA%\Claude\claude-code-sessions`) chỉ ghi vào `baseline.md`, đợt 2 chạy tiếp; phương án (b), đóng app suốt đợt 2 để chặn cả chỗ này, không chọn;
+  - phiên thử thêm: kiểm `node_modules` của worktree review, đọc thử từng loại mục bị chặn; việc giải nén được log DSH trở lại nhóm làm dừng đợt 2, như đề xuất Owner duyệt.
+- Phần còn lại của mục 9 giữ nguyên: đợt 2 chạy một mình, ở worktree `Project-2C-review`, có ACL trên `claude\`, `codex\`.
 
 ## Phụ lục L — Prompt Claude (lượt 4)
 
@@ -2390,27 +2499,27 @@ Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md` của lượt 4; 
 
 ## Phụ lục O — Prompt DeepSeek (lượt 4)
 
-File `common\prompt-deepseek.md` = đoạn dưới + nguyên văn Phụ lục N; bước chuẩn bị chỉ thay `{SHA}` / `{SHA_ĐỦ}`. Owner chạy DeepSeek ở đợt 2 (§L4.9), mỗi gói một phiên mới (`/new`) trong OpenCode, lần lượt A → F. Đoạn này theo prompt DeepSeek của review Phase 5 (`docs/reviews/raw/2026-10-10/common-plan-opencode.md` Phụ lục C), đổi theo bài học §L4.7.
+File `common\prompt-deepseek.md` = đoạn dưới + nguyên văn Phụ lục N; bước chuẩn bị chỉ thay `{SHA}` / `{SHA_ĐỦ}`. Owner chạy DeepSeek ở đợt 2 (§L4.9), mỗi gói một phiên mới trong giao diện web của DSH, lần lượt A → F. Đoạn này theo prompt DeepSeek của review Phase 5 (`docs/reviews/raw/2026-10-10/common-plan-opencode.md` Phụ lục C), đổi theo bài học §L4.7 và theo cách chạy DSH (Owner 28/10).
 
 > # Deep review Phase 1–6, lượt 4 — DeepSeek
 >
 > **{GÓI}** = chữ gói (một chữ A…F) Owner ghi trong tin nhắn mở phiên; mọi chỗ `{GÓI}` dưới đây thay bằng chữ đó. File này là toàn bộ chỉ dẫn của phiên.
 >
-> Bạn là **reviewer độc lập DeepSeek** (DeepSeek v4.1 Flash qua OpenCode, Owner chọn) của deep review Phase 1–6, **lượt 4**, gói `{GÓI}`. Repo: worktree `C:\workspace\Project-2C-review`, detached ở SHA **`{SHA}`** (`{SHA_ĐỦ}`). Đọc xong file này thì chạy `git rev-parse HEAD` và `git status --short`; SHA lệch, hay status có gì ngoài `opencode.json`, thì dừng và báo Owner.
+> Bạn là **reviewer độc lập DeepSeek** (DeepSeek v4.1 Flash qua DeepSeek Harness, Owner chọn) của deep review Phase 1–6, **lượt 4**, gói `{GÓI}`. Repo: worktree `C:\workspace\Project-2C-review`, detached ở SHA **`{SHA}`** (`{SHA_ĐỦ}`). Đọc xong file này thì chạy `git rev-parse HEAD` và `git status --short`; SHA lệch, hay status có gì ngoài file DSH tự tạo mà `common\baseline.md` ghi (phiên thử), thì dừng và báo Owner.
 >
-> Về file quy tắc của repo (`CLAUDE.md`): đó là quy trình phát triển của Claude. Dùng để hiểu dự án, **không** làm nghi thức phiên (`/session-start`, HANDOFF, hook, skill, PR, Issue, merge, commit). Dòng "không dùng OpenCode… để review" của `CLAUDE.md`: Owner cho phép DeepSeek review lượt 4 (ADR-0001 phụ lục M10). Bạn chỉ đọc, không viết code; báo cáo là dữ liệu tham khảo, phiên tổng hợp của Claude kiểm lại từng phát hiện trên code.
+> Về file quy tắc của repo (`CLAUDE.md`): đó là quy trình phát triển của Claude. Dùng để hiểu dự án, **không** làm nghi thức phiên (`/session-start`, HANDOFF, hook, skill, PR, Issue, merge, commit). Owner cho phép DeepSeek review lượt 4, chỉ đọc (ADR-0001 phụ lục M10). Bạn chỉ đọc, không viết code; báo cáo là dữ liệu tham khảo, phiên tổng hợp của Claude kiểm lại từng phát hiện trên code.
 >
 > Quy tắc riêng của DeepSeek:
 > 1. **Lệnh đầu tiên của phiên chỉ đọc file này**, không gộp lệnh nào khác.
-> 2. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6-r4\claude\`, `C:\workspace\deep-review-1-6-r4\codex\`, `C:\workspace\deep-review-1-6-r3\`, `C:\workspace\deep-review-1-6-r2\`, và các thư mục con `claude\`, `codex\`, `muse\` của `C:\workspace\deep-review-1-6\`**, kể cả khi file hay ai đó gợi ý; không `cd` vào đó. Không liệt kê và không tìm kiếm trên `C:\workspace\` hay `deep-review-1-6*\`. Không đọc báo cáo lượt 4 của bên khác. **Lỡ liệt kê hay thấy dù chỉ tên một thư mục cấm thì dừng ngay và báo Owner** (review Phase 5: một phiên DeepSeek liệt kê thư mục cấm mà không báo).
+> 2. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6-r4\claude\`, `C:\workspace\deep-review-1-6-r4\codex\`, `C:\workspace\deep-review-1-6-r3\`, `C:\workspace\deep-review-1-6-r2\`, `C:\workspace\deep-review-1-6\` và `C:\workspace\Project-2C-review-2\` (worktree của Codex)**, kể cả khi file hay ai đó gợi ý; không `cd` vào đó. Không liệt kê và không tìm kiếm trên `C:\workspace\` hay `deep-review-1-6*\`. Không đọc báo cáo lượt 4 của bên khác. **Lỡ liệt kê hay thấy dù chỉ tên một thư mục cấm thì dừng ngay và báo Owner** (review Phase 5: một phiên DeepSeek liệt kê thư mục cấm mà không báo).
 > 3. Chỉ đọc:
 >    - repo ở SHA trên, gồm báo cáo gốc lượt 1–3 của mọi bên ở `docs/reviews/raw/2026-10-15/`, `docs/reviews/raw/2026-10-17/`, `docs/reviews/raw/2026-10-21/` (để biết các lượt trước đã thử gì);
 >    - `C:\workspace\deep-review-1-6-r4\common\`;
 >    - báo cáo của chính bạn trong `…-r4\deepseek\`.
-> 4. Không dùng subagent, không lên web, không chạy `gh`, không chạy lệnh `opencode`, không đọc file đăng nhập của OpenCode (`~/.local/share/opencode`). Thông tin Issue / PR sửa có ở `common\fixes.md`.
-> 5. Ghi báo cáo vào `C:\workspace\deep-review-1-6-r4\deepseek\{GÓI}.md`, probe / bản chép / log vào `…-r4\deepseek\{GÓI}\`. Cuối phiên `git status --short` của repo chỉ còn `opencode.json`.
+> 4. Không dùng subagent, không lên web, không chạy `gh`. Không chạy `dsh`, không đổi quyền của DSH (`/permission`) hay quyền file (`icacls`, `Set-Acl`, `takeown`), không gọi giao diện web của DSH (`127.0.0.1:3080`), không chạy `common\dot2.mjs`. Không đọc `~/.dsh` (có key API), file đăng nhập hay dữ liệu của Claude / Codex (`~/.codex`, `~/.claude*`, `%APPDATA%\Claude`, `%LOCALAPPDATA%\OpenAI`, `%TEMP%\claude`), Windows Credential Manager. Thông tin Issue / PR sửa có ở `common\fixes.md`.
+> 5. Ghi báo cáo vào `C:\workspace\deep-review-1-6-r4\deepseek\{GÓI}.md`, probe / bản chép / log vào `…-r4\deepseek\{GÓI}\`. Cuối phiên `git status --short` của repo như đầu phiên: rỗng, hoặc chỉ có file DSH tự tạo mà `common\baseline.md` ghi.
 > 6. Gói F được đọc `…-r4\deepseek\A…E.md`. Không tổng hợp với báo cáo nào khác, không tạo Issue, không đề xuất merge.
-> 7. Mục 1 của báo cáo ghi phiên bản OpenCode, model và biến thể suy luận.
+> 7. Mục 1 của báo cáo ghi DSH `0.2.1-rc.2` (bản Owner cài, theo `common\baseline.md`), model và Effort.
 > 8. Bài học của chính DeepSeek ở review Phase 5 (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §3.1, §6, §7):
 >    - hai lỗi Medium khi đó đều cần **chuỗi nhiều bước qua nhiều gói**, và DeepSeek không dựng chuỗi nào như vậy. Phần 2 dành phần lớn thời gian cho chuỗi; kết luận SẴN SÀNG ở F phải nêu đã thử những chuỗi nào;
 >    - gói D khi đó không chạy giao diện ("không có môi trường DOM"): lần này kết luận về màn phải chạy trên bản build web bằng Playwright hoặc trên exe (phần chung, quy tắc chung 6);
@@ -2420,126 +2529,394 @@ File `common\prompt-deepseek.md` = đoạn dưới + nguyên văn Phụ lục N;
 >
 > Phần chung dưới đây áp dụng đầy đủ. Trong phần chung: `<bên>` = `deepseek`, `<ID>` = `DSR4`.
 
-## Phụ lục P — Cấu hình OpenCode của DeepSeek (lượt 4)
+## Phụ lục P — Cấu hình DSH của DeepSeek (lượt 4)
 
-Bước chuẩn bị chép khối JSON dưới thành `C:\workspace\deep-review-1-6-r4\common\opencode-deepseek.json`. Owner chép nó thành `C:\workspace\Project-2C-review\opencode.json` khi bắt đầu đợt 2 và xóa khi DeepSeek xong F (§L4.9). Khuôn theo cấu hình đã chạy ở review Phase 5 (OpenCode v2.0.24, `docs/reviews/raw/2026-10-10/common-opencode-config.md`), đổi đường dẫn sang lượt 4. Đây là chặn theo mẫu chuỗi, model vẫn lách được; lớp chặn chính là ACL của đợt 2.
+Owner 28/10/2026 (§L4.11; G4 / G6 duyệt trên #868): DeepSeek chạy qua **DeepSeek Harness (DSH)** `@deepseek-ai/dsh@0.2.1-rc.2`, gọi DeepSeek API trực tiếp, trả theo mức dùng, cùng user Windows (phương án (b)). Bản cấu hình OpenCode ngày 27/10 (PR #863) bỏ.
 
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "model": "opencode-go/deepseek-v4.1-flash",
-  "share": "disabled",
-  "permission": {
-    "task": "deny",
-    "webfetch": "deny",
-    "websearch": "deny",
-    "read": {
-      "*": "allow",
-      "*deep-review-1-6-r4?claude*": "deny",
-      "*deep-review-1-6-r4?codex*": "deny",
-      "*deep-review-1-6-r3*": "deny",
-      "*deep-review-1-6-r2*": "deny",
-      "*deep-review-1-6?claude*": "deny",
-      "*deep-review-1-6?codex*": "deny",
-      "*deep-review-1-6?muse*": "deny",
-      "*.local?share?opencode*": "deny"
-    },
-    "glob": {
-      "*": "allow",
-      "*deep-review-1-6-r4?claude*": "deny",
-      "*deep-review-1-6-r4?codex*": "deny",
-      "*deep-review-1-6-r3*": "deny",
-      "*deep-review-1-6-r2*": "deny",
-      "*deep-review-1-6?claude*": "deny",
-      "*deep-review-1-6?codex*": "deny",
-      "*deep-review-1-6?muse*": "deny"
-    },
-    "grep": {
-      "*": "allow",
-      "*deep-review-1-6-r4?claude*": "deny",
-      "*deep-review-1-6-r4?codex*": "deny",
-      "*deep-review-1-6-r3*": "deny",
-      "*deep-review-1-6-r2*": "deny",
-      "*deep-review-1-6?claude*": "deny",
-      "*deep-review-1-6?codex*": "deny",
-      "*deep-review-1-6?muse*": "deny"
-    },
-    "list": {
-      "*": "allow",
-      "*workspace": "ask",
-      "*workspace?": "ask",
-      "*deep-review-1-6*": "ask",
-      "*deep-review-1-6-r4?common*": "allow",
-      "*deep-review-1-6-r4?deepseek*": "allow",
-      "*deep-review-1-6-r4?claude*": "deny",
-      "*deep-review-1-6-r4?codex*": "deny",
-      "*deep-review-1-6-r3*": "deny",
-      "*deep-review-1-6-r2*": "deny",
-      "*deep-review-1-6?claude*": "deny",
-      "*deep-review-1-6?codex*": "deny",
-      "*deep-review-1-6?muse*": "deny"
-    },
-    "external_directory": {
-      "*": "ask",
-      "*deep-review-1-6-r4?common*": "allow",
-      "*deep-review-1-6-r4?deepseek*": "allow",
-      "*deep-review-1-6-r4?claude*": "deny",
-      "*deep-review-1-6-r4?codex*": "deny",
-      "*deep-review-1-6-r3*": "deny",
-      "*deep-review-1-6-r2*": "deny",
-      "*deep-review-1-6?claude*": "deny",
-      "*deep-review-1-6?codex*": "deny",
-      "*deep-review-1-6?muse*": "deny",
-      "*.local?share?opencode*": "deny"
-    },
-    "edit": {
-      "*": "deny",
-      "*deep-review-1-6-r4?deepseek*": "allow"
-    },
-    "bash": {
-      "*": "allow",
-      "*deep-review-1-6*": "ask",
-      "*deep-review-1-6-r4?common*": "allow",
-      "*deep-review-1-6-r4?deepseek*": "allow",
-      "*deep-review-1-6-r4?claude*": "deny",
-      "*deep-review-1-6-r4?codex*": "deny",
-      "*deep-review-1-6-r3*": "deny",
-      "*deep-review-1-6-r2*": "deny",
-      "*deep-review-1-6?claude*": "deny",
-      "*deep-review-1-6?codex*": "deny",
-      "*deep-review-1-6?muse*": "deny",
-      "git commit*": "deny",
-      "git push*": "deny",
-      "git stash*": "deny",
-      "git switch*": "deny",
-      "git clean*": "deny",
-      "git merge*": "deny",
-      "git rebase*": "deny",
-      "git checkout*": "deny",
-      "git restore*": "deny",
-      "git reset*": "deny",
-      "gh *": "deny",
-      "pnpm eval:ai*": "deny",
-      "*tools/eval-ai.mjs*": "deny",
-      "*tools?eval-ai.mjs*": "deny",
-      "opencode *": "deny",
-      "*auth export*": "deny",
-      "*cmdkey*": "deny",
-      "*CredentialManager*": "deny",
-      "*chatgpt.com*": "deny",
-      "curl *": "ask",
-      "Invoke-WebRequest*": "ask",
-      "Invoke-RestMethod*": "ask"
+**Tài liệu nói gì** (repo `deepseek-ai/deepseek-harness`, đọc 28/10; nguồn ở comment đề xuất trên #868):
+
+- DSH là bản developer preview, chưa qua audit bảo mật. `SAFETY.md`: sandbox, duyệt và quyền "do not guarantee isolation".
+- Sandbox chỉ giới hạn **ghi** của lệnh shell: `read-only`, `workspace-write` (gốc workspace, `additionalWritableRoots`, vùng tạm), `danger-full-access`. Tài liệu không có luật đọc theo đường dẫn, luật theo lệnh hay chặn mạng (README `sandbox`, `bash-sandbox`, `sandbox-policy`).
+- Trên Windows hai README nói khác nhau. `sandbox`: có runner restricted-token, chỉ áp "a subset" việc ghi. `bash-sandbox`: chỉ liệt kê runner Linux / macOS. Phiên thử (§L4.9 đợt 2 bước 5) cho biết máy này ra sao.
+- Key DeepSeek lưu ở `%USERPROFILE%\.dsh\.credentials.yaml`, YAML thường. Tiến trình công cụ của agent chạy cùng user nên đọc được file này (README `credentials-local`).
+- Báo cáo #250 (chưa xác nhận, chưa sửa): lệnh trong sandbox gọi được control plane của giao diện web qua loopback để tự nâng quyền.
+
+Vì vậy **ACL của đợt 2 là lớp chặn đọc duy nhất**. Cấu hình dưới chỉ thêm; model vẫn lách được.
+
+**Ranh giới key** (G6, Owner 28/10), theo thứ tự:
+
+1. Owner cài DSH trước bước chuẩn bị: `npm install -g @deepseek-ai/dsh@0.2.1-rc.2`. Không cài plugin bên thứ ba.
+2. Bước chuẩn bị (Claude) dựng patch khi máy chưa có key (mục "Dựng và kiểm").
+3. Owner tạo key riêng cho lượt 4 trên platform.deepseek.com, nạp trước 10 USD (trần 15 USD). Owner chỉ nhập key vào DSH ở đợt 2 bước 4.
+4. Từ lúc nhập key, chỉ Owner chạy `dsh` và đụng tới `%USERPROFILE%\.dsh`. Không phiên Claude nào đọc, đặt, in hay lưu key; key không đi qua biến môi trường.
+5. Xong F: Owner thu hồi key trước, rồi mới chép log phiên ra (§L4.10).
+
+**Giá trị phải có sau patch** (đọc ở `--dump-config`, mục "Dựng và kiểm" bước 3):
+
+| Việc | Hàng plugin | Giá trị | Nguồn |
+|---|---|---|---|
+| Ghi | `@deepseek-ai/dsh-sandbox-policy` | `mode: workspace-write`; `additionalWritableRoots` chỉ có `C:\workspace\deep-review-1-6-r4\deepseek`; khóa khác như bản mặc định | README `sandbox-policy` |
+| Duyệt | `@deepseek-ai/dsh-permission-presets` | preset `review` = `sandbox: workspace-write`, `approval: never`; `defaultPreset: review`; preset khác như bản mặc định | README `permission-presets` |
+| Web | `@deepseek-ai/dsh-tool-web` | `search: false`, `fetch: false` | README `tool-web` |
+
+Model `deepseek-flash` và Effort `max` chọn ở bộ chọn model của giao diện; DSH lưu lựa chọn đó làm mặc định cho phiên mới (`docs/user/guide/providers.md` của DSH). Không patch hàng `llm-deepseek`: patch thay cả `config` của hàng, dễ mất tham chiếu key.
+
+**Mẫu patch** (`common\dsh-deepseek.patch.yml`). Patch thay cả `config` của hàng, không gộp từng khóa (README `apps/cli/reference`). Vì vậy bước chuẩn bị chép nguyên văn từ bản mặc định mọi khóa không đổi của ba hàng này, kể cả biểu thức `!!js`:
+
+```yaml
+- name: '@deepseek-ai/dsh-sandbox-policy'
+  config:
+    mode: workspace-write
+    additionalWritableRoots:
+      - 'C:\workspace\deep-review-1-6-r4\deepseek'
+    # khóa còn lại (vd. workspaceRoot) chép từ bản mặc định
+- name: '@deepseek-ai/dsh-permission-presets'
+  config:
+    presets:
+      review:
+        sandbox: workspace-write
+        approval: never
+      # các preset của bản mặc định chép nguyên
+    defaultPreset: review
+- name: '@deepseek-ai/dsh-tool-web'
+  config:
+    search: false
+    fetch: false
+```
+
+**Dựng và kiểm** (bước chuẩn bị §L4.9 bước 4; Owner đã cài DSH, chưa nhập key):
+
+1. Chạy `dsh --profile web --dump-default-config`, ghi ra `common\dsh-default-config.yml`. Chạy `dsh --profile web --dump-config-schema`, ghi ra `common\dsh-config-schema.json`. Hai lệnh không khởi động app, không gọi API.
+2. Viết `common\dsh-deepseek.patch.yml` theo mẫu và hai file trên.
+   - Khớp hàng theo `id` / `name` như bản mặc định.
+   - Hàng `tool-web` có thể nằm trong cấu hình của từng preset agent, không ở cấp host (discussion #4557, nguồn bên thứ ba): sửa đúng hàng mà bản mặc định dùng.
+   - Khóa nào của mẫu không có trong schema của `0.2.1-rc.2` → dừng, báo Owner.
+3. Chạy `dsh --profile web --patch C:\workspace\deep-review-1-6-r4\common\dsh-deepseek.patch.yml --dump-config`, ghi ra `common\dsh-effective-config.yml`. Kiểm từng dòng của bảng "Giá trị phải có".
+4. `--dump-config` chỉ cho biết cấu hình đã ghép, không cho biết DSH có làm đúng không. Hành vi kiểm ở phiên thử của đợt 2.
+
+**Từng luật của bản OpenCode 27/10, nay giữ ở đâu:**
+
+| Luật cũ (`opencode.json`) | Lượt 4 với DSH |
+|---|---|
+| `read` / `glob` / `grep` / `list` / `external_directory` cấm `deep-review-1-6-r4\claude`, `\codex` | ACL đợt 2, cả thư mục |
+| (chưa có) | ACL đợt 2: `%USERPROFILE%\.codex` theo từng mục con, transcript Claude của worktree review (review #863; Owner 28/10, phương án (b)); `file-history` và scratchpad của các phiên đó (review #872) |
+| Cấm thư mục lượt 1–3 (`deep-review-1-6-r3`, `-r2`, `deep-review-1-6\{claude,codex,muse}`) | ACL đợt 2, cả ba thư mục (review #872); prompt (Phụ lục O quy tắc riêng 2); quét log |
+| (chưa có) | `Project-2C-review-2` (worktree của Codex): dọn trước đợt 2; ACL đợt 2 theo từng mục con, để ngỏ `node_modules` và `.git` (review #872); prompt cấm; quét log |
+| (chưa có) | Cache tạm có bản biến đổi của code probe (`%TEMP%\playwright*`, `%TEMP%\…\ssr`, `%TEMP%\codex-*`), cache Vite / Vitest trong `node_modules`: xóa ở đợt 2 bước 1; `scan` tìm bản sao còn đọc được (review #872) |
+| Liệt kê `C:\workspace`, `deep-review-1-6*` phải hỏi | Prompt cấm; quét log |
+| `edit` chỉ được ghi trong `deepseek\` | Sandbox `workspace-write`, gốc workspace là worktree review, thêm `deepseek\` (trên Windows chưa chắc; phiên thử) |
+| `task` (subagent) cấm | Prompt cấm; quét log |
+| `webfetch` / `websearch` cấm | `tool-web` tắt `search`, `fetch`; phiên thử kiểm |
+| `git commit` / `push` / `stash` / `switch` / `clean` / `merge` / `rebase` / `checkout` / `restore` / `reset` cấm | Prompt (Phụ lục N quy tắc chung 1). Sandbox, nếu áp được, chặn ghi vào thư mục `.git` dùng chung ở checkout chính. Quét log. `main` có ruleset và hook `pre-push` |
+| `gh *` cấm | `gh auth logout` trong đợt 2 |
+| `pnpm eval:ai`, `tools/eval-ai.mjs` cấm | Prompt (Phụ lục N quy tắc chung 2). Script cần `OPENCODE_GO_KEY` trong môi trường, mà cửa sổ chạy `dsh` không có biến này (§L4.9 đợt 2 bước 2) |
+| `opencode *` và file đăng nhập của OpenCode cấm | Prompt cấm `dsh`, `/permission`, gọi `127.0.0.1:3080`, đọc `~/.dsh`; approval `never`; quét log |
+| `*auth export*`, `*cmdkey*`, `*CredentialManager*`, `*chatgpt.com*` cấm | Prompt (Phụ lục N quy tắc chung 2, Phụ lục O quy tắc riêng 4); quét log. Phần còn hở đã chấp nhận ở G6 (dưới) |
+| `curl` / `Invoke-WebRequest` / `Invoke-RestMethod` phải hỏi | Không chặn được, vì DSH không chặn mạng; quét log |
+
+**Script đợt 2** (`common\dot2.mjs`, review #872). Bước chuẩn bị chép nguyên văn khối code dưới (§L4.9 bước 4); Owner chạy ở đợt 2 bước 1, 3 và 7. Đường dẫn tính từ chỗ đặt script (`C:\workspace\deep-review-1-6-r4\common\`) và từ `%USERPROFILE%`, `%TEMP%`, `%APPDATA%`, `%LOCALAPPDATA%`. Script không đụng tới `.dsh`.
+
+- `baseline`: ghi `dot2-baseline.json`, gồm mục chưa theo dõi và mục bị ignore của hai worktree (`git ls-files --others`; thư mục bị ignore gộp một dòng; bỏ `node_modules`).
+- `clean`: xóa mục ngoài mốc ở hai worktree, cache Vite / Vitest, cache tạm có code probe; rồi kiểm lại.
+- `deny`:
+  - chặn cả thư mục bằng `(OI)(CI)(R)` khi mọi file hard link trong đó có đủ link ở trong. Script so `nlink` với số đường dẫn cùng `ino` tìm thấy, không đi theo junction;
+  - với `.codex` và `Project-2C-review-2`: chặn từng mục con không có link ra ngoài, để ngỏ `node_modules`, `.git` và link, đi tiếp vào mục con có link ra ngoài; file chặn bằng `(R)`;
+  - ghi `dot2-acl.json` sau mỗi lần chặn, rồi kiểm mỗi mục bị từ chối, kể cả một file trong mỗi thư mục chặn cả. `--dry-run` chỉ in danh sách.
+- `scan`: như §L4.9 đợt 2 bước 3. Bỏ qua file cũ hơn mốc, file đăng nhập (`.credentials*`, `auth.json`) và `C:\workspace\Project-2`; in tên file trên 64 MB không đọc. Chỗ thấy trong `%APPDATA%\Claude\claude-code-sessions` chỉ in ra, không `STOP`.
+- `remove`: `icacls /remove:d` trên mọi mục của `dot2-acl.json`, rồi trên các thư mục chuẩn (phòng khi file trạng thái thiếu); kiểm đọc lại được.
+
+Đã thử ngày 28/10 trên Home PC (PR #872):
+- ACL: deny `(OI)(CI)` trên một thư mục không đi qua junction ở trong, nhưng chặn cả đường dẫn bên ngoài của file hard link ở trong. `/remove:d` trả lại cả hai.
+- Script: test đầu-cuối trên cây giả (worktree git, hard link, junction) qua cả năm lệnh, cả khi đường dẫn có dấu cách như `C:\Users\Duong Hoang`.
+- `deny --dry-run` trên thư mục thật: 62 mục thư mục và 58 mục file, để ngỏ 4 mục (`node_modules` và `.git` trong `.codex` và trong `Project-2C-review-2`), chạy 1 giây.
+- `scan` với mốc 20/10: 69 308 file, 76 giây, không chỗ nào khớp.
+
+```js
+// Deep review round 4, wave 2 (plan §L4.9, Appendix P). Run from PowerShell; baseline by the
+// preparation session, the rest by the Owner:
+//   node dot2.mjs baseline          preparation step 4: untracked / ignored entries of both review worktrees
+//   node dot2.mjs clean             wave 2 step 1: delete what wave 1 left beyond that, and probe caches
+//   node dot2.mjs deny [--dry-run]  wave 2 step 3: deny the Owner's account reads (ACL), then check
+//   node dot2.mjs scan              wave 2 step 3: look for readable copies of Claude / Codex round 4 work
+//   node dot2.mjs remove            wave 2 step 7: remove the denies, then check
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+const COMMON = path.dirname(fileURLToPath(import.meta.url));
+const R4 = path.dirname(COMMON);
+const WS = path.dirname(R4);
+const { USERPROFILE: HOME, TEMP, APPDATA, LOCALAPPDATA, USERNAME: USER } = process.env;
+const REVIEW = path.join(WS, 'Project-2C-review');
+const WORKTREES = [REVIEW, path.join(WS, 'Project-2C-review-2')];
+// Claude Code names a project folder after its cwd, every other character turned into '-'.
+const PROJECT = REVIEW.replace(/[^A-Za-z0-9-]/g, '-');
+// Data mixed with packages hard-linked into the checkouts' node_modules: denied child by child.
+const SPLIT = [path.join(HOME, '.codex'), path.join(WS, 'Project-2C-review-2')];
+const BASELINE = path.join(COMMON, 'dot2-baseline.json');
+const STATE = path.join(COMMON, 'dot2-acl.json');
+// Round 4 finding IDs and report header lines of Claude / Codex; plan.md and the prompts have neither.
+const MARKER = /C[LX]R4-[A-F]\d|(?:ĐANG LÀM|XONG) — (?:claude|codex) gói [A-F] lượt 4/;
+
+class Stop extends Error {}
+const exists = (p) => fs.existsSync(p);
+const list = (dir) => fs.readdirSync(dir, { withFileTypes: true });
+const subdirs = (dir, re = /./) =>
+  exists(dir) ? list(dir).filter((e) => e.isDirectory() && re.test(e.name)).map((e) => path.join(dir, e.name)) : [];
+const readJson = (p) => JSON.parse(fs.readFileSync(p, 'utf8'));
+const needBaseline = () => {
+  if (!exists(BASELINE)) throw new Stop(`no ${BASELINE}: preparation step 4 runs baseline first`);
+};
+const writeJson = (p, v) => fs.writeFileSync(p, `${JSON.stringify(v, null, 2)}\n`);
+const icacls = (...args) => execFileSync('icacls', [...args, '/Q'], { stdio: ['ignore', 'ignore', 'inherit'] });
+// Opening is enough to prove access; large files are not read.
+function canOpen(p, kind) {
+  try {
+    if (kind === 'tree') fs.readdirSync(p);
+    else fs.closeSync(fs.openSync(p, 'r'));
+    return true;
+  } catch (e) {
+    if (e.code === 'EPERM' || e.code === 'EACCES') return false;
+    throw e;
+  }
+}
+
+// Untracked files and ignored entries (ignored folders collapsed), without node_modules.
+function leftovers(wt) {
+  const others = (...extra) =>
+    execFileSync('git', ['-C', wt, 'ls-files', '-z', '--others', '--exclude-standard', ...extra], { encoding: 'utf8' }).split('\0');
+  return [...new Set([...others(), ...others('--ignored', '--directory')])]
+    .filter((e) => e && !/(^|\/)node_modules(\/|$)/.test(e))
+    .sort();
+}
+
+function baseline() {
+  if (exists(BASELINE)) throw new Stop(`${BASELINE} already exists`);
+  const base = Object.fromEntries(WORKTREES.map((wt) => [wt, leftovers(wt)]));
+  writeJson(BASELINE, base);
+  for (const wt of WORKTREES) console.log(`${wt}: ${base[wt].length} untracked / ignored entries kept`);
+}
+
+function clean() {
+  needBaseline();
+  const base = readJson(BASELINE);
+  const extras = (wt) => leftovers(wt).filter((e) => !base[wt].includes(e));
+  const doomed = [];
+  for (const wt of WORKTREES) {
+    doomed.push(...extras(wt).map((e) => path.join(wt, e)));
+    // Vite / Vitest caches keep the names and results of the test files that ran.
+    for (const pkg of [wt, ...subdirs(path.join(wt, 'apps')), ...subdirs(path.join(wt, 'packages'))])
+      doomed.push(path.join(pkg, 'node_modules', '.vite'), path.join(pkg, 'node_modules', '.vite-temp'));
+  }
+  // Transformed copies of probe code: Playwright cache and browser profiles, Vite SSR dumps, Codex artifacts.
+  doomed.push(...subdirs(TEMP).filter((d) => /^(playwright|codex-)/i.test(path.basename(d)) || exists(path.join(d, 'ssr'))));
+  for (const p of doomed) {
+    if (!exists(p)) continue;
+    fs.rmSync(p, { recursive: true, force: true });
+    console.log(`deleted ${p}`);
+  }
+  for (const wt of WORKTREES) {
+    const left = extras(wt);
+    if (left.length) throw new Stop(`${wt} still has: ${left.join(', ')}`);
+  }
+  console.log('OK: both worktrees are back to dot2-baseline.json');
+}
+
+// Files under root that also have a link outside it; the walk does not follow junctions or symlinks.
+function walkTree(root) {
+  const links = new Map();
+  let sample = null;
+  const walk = (dir) => {
+    for (const e of list(dir)) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.isFile()) {
+        sample ??= p;
+        const st = fs.lstatSync(p, { bigint: true });
+        if (st.nlink < 2n) continue;
+        const key = `${st.dev}:${st.ino}`;
+        const seen = links.get(key) ?? { p, nlink: st.nlink, n: 0n };
+        seen.n += 1n;
+        links.set(key, seen);
+      }
+    }
+  };
+  walk(root);
+  return { sample, outside: [...links.values()].filter((l) => l.n < l.nlink).map((l) => l.p) };
+}
+
+const claudeDirs = () => subdirs(HOME, /^\.claude/);
+
+// Denied whole: reports, transcripts, file copies and scratchpads of the other reviewers.
+function treeTargets() {
+  const out = [path.join(R4, 'claude'), path.join(R4, 'codex')];
+  out.push(...['deep-review-1-6-r3', 'deep-review-1-6-r2', 'deep-review-1-6'].map((n) => path.join(WS, n)));
+  for (const c of claudeDirs()) {
+    const proj = path.join(c, 'projects', PROJECT);
+    if (!exists(proj)) continue;
+    out.push(proj);
+    // file-history keeps a copy of each file a session wrote, in a folder named after the session.
+    for (const id of new Set(list(proj).map((e) => e.name.replace(/\.jsonl$/, '')))) out.push(path.join(c, 'file-history', id));
+  }
+  out.push(path.join(TEMP, 'claude', PROJECT));
+  return out.filter(exists);
+}
+
+const keptBySplit = (e) => e.isSymbolicLink() || e.name === 'node_modules' || e.name === '.git';
+
+// Deny each child of dir that has no outside link; node_modules, .git and links stay readable.
+function splitEntries(dir, entries, kept) {
+  for (const e of list(dir)) {
+    const p = path.join(dir, e.name);
+    if (keptBySplit(e)) kept.push(p);
+    else if (e.isDirectory()) {
+      if (walkTree(p).outside.length) splitEntries(p, entries, kept);
+      else entries.push({ path: p, kind: 'tree' });
+    } else if (e.isFile()) {
+      if (fs.lstatSync(p, { bigint: true }).nlink > 1n) kept.push(p);
+      else entries.push({ path: p, kind: 'file' });
     }
   }
 }
+
+function deny(dryRun) {
+  if (exists(STATE)) throw new Stop(`${STATE} exists: run remove first`);
+  const entries = [];
+  const kept = [];
+  const samples = new Map();
+  const linked = [];
+  for (const t of treeTargets()) {
+    const { sample, outside } = walkTree(t);
+    if (outside.length) linked.push(`${t}: ${outside.length} file(s) also linked outside it, e.g. ${outside[0]}`);
+    entries.push({ path: t, kind: 'tree' });
+    if (sample) samples.set(t, sample);
+  }
+  // A deny on a hard-linked file reaches all its links, e.g. the node_modules of the checkouts.
+  if (linked.length) throw new Stop(`nothing denied:\n${linked.join('\n')}`);
+  for (const t of SPLIT.filter(exists)) splitEntries(t, entries, kept);
+  for (const e of entries) console.log(`${dryRun ? 'would deny' : 'deny'} ${e.kind} ${e.path}`);
+  for (const p of kept) console.log(`stays readable ${p}`);
+  if (dryRun) return;
+  const state = { user: USER, at: new Date().toISOString(), entries: [], kept };
+  for (const e of entries) {
+    icacls(e.path, '/deny', `${USER}:${e.kind === 'tree' ? '(OI)(CI)(R)' : '(R)'}`);
+    state.entries.push(e);
+    writeJson(STATE, state);
+  }
+  const open = entries.filter((e) => canOpen(e.path, e.kind) || (samples.has(e.path) && canOpen(samples.get(e.path), 'file')));
+  if (open.length) throw new Stop(`still readable: ${open.map((e) => e.path).join(', ')}; run remove`);
+  console.log(`OK: ${entries.length} entries denied, ${kept.length} left readable; state in ${STATE}`);
+}
+
+function remove() {
+  const state = exists(STATE) ? readJson(STATE) : null;
+  if (!state) console.log(`no ${STATE}: removing from the standard targets only`);
+  const done = new Map();
+  const undo = (p, kind) => {
+    if (done.has(p) || !exists(p)) return;
+    icacls(p, '/remove:d', USER);
+    done.set(p, kind);
+  };
+  for (const e of [...(state?.entries ?? [])].reverse()) undo(e.path, e.kind);
+  // The standard targets too, in case the state file is missing or incomplete.
+  for (const c of claudeDirs()) undo(path.join(c, 'projects', PROJECT), 'tree');
+  for (const t of treeTargets()) undo(t, 'tree');
+  for (const t of SPLIT.filter(exists))
+    for (const e of list(t)) if (!keptBySplit(e)) undo(path.join(t, e.name), e.isDirectory() ? 'tree' : 'file');
+  const closed = [...done].filter(([p, kind]) => !canOpen(p, kind)).map(([p]) => p);
+  if (closed.length) throw new Stop(`still denied: ${closed.join(', ')}`);
+  if (state) fs.renameSync(STATE, path.join(COMMON, 'dot2-acl.removed.json'));
+  console.log(`OK: denies removed from ${done.size} entries, all readable again`);
+}
+
+function scan() {
+  needBaseline();
+  // Files older than the baseline (preparation, before wave 1) cannot hold round 4 work.
+  const since = fs.statSync(BASELINE).mtimeMs;
+  const roots = [
+    ...subdirs(HOME, /^\.(claude|codex)/),
+    path.join(APPDATA, 'Claude'),
+    path.join(LOCALAPPDATA, 'Claude'),
+    path.join(LOCALAPPDATA, 'OpenAI'),
+    ...subdirs(path.join(LOCALAPPDATA, 'Packages'), /^(Claude|OpenAI)/i),
+    TEMP,
+    WS,
+  ].filter(exists);
+  const skipDirs = new Set(['.git', '.pnpm', 'target']);
+  const notOpened = path.join(WS, 'Project-2'); // never opened (CLAUDE.md)
+  const hits = [];
+  const big = [];
+  let read = 0;
+  let closed = 0;
+  const walk = (dir) => {
+    let ents;
+    try {
+      ents = list(dir);
+    } catch {
+      closed++;
+      return;
+    }
+    for (const e of ents) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        if (!skipDirs.has(e.name) && p !== notOpened) walk(p);
+        continue;
+      }
+      if (!e.isFile() || /^(\.credentials|auth\.json$)/.test(e.name)) continue;
+      let buf;
+      try {
+        const st = fs.statSync(p);
+        if (st.mtimeMs < since) continue;
+        if (st.size > 64 * 2 ** 20) {
+          big.push(p);
+          continue;
+        }
+        buf = fs.readFileSync(p);
+      } catch {
+        closed++;
+        continue;
+      }
+      read++;
+      // UTF-8, and UTF-16LE at either byte alignment (app databases). Node 24.20 crashes on
+      // toString('utf16le') of an odd-length view at an odd offset, so that view is cut to even length.
+      const odd = buf.subarray(1, 1 + ((buf.length - 1) & ~1));
+      const texts = [buf.toString('utf8'), buf.toString('utf16le'), odd.toString('utf16le')];
+      if (texts.some((t) => MARKER.test(t))) hits.push(p);
+    }
+  };
+  for (const r of roots) walk(r);
+  console.log(`${read} files read; ${closed} folders / files not readable (the denied ones count here)`);
+  for (const p of big) console.log(`not read (over 64 MB): ${p}`);
+  // Accepted in Appendix P: the desktop app's session list (titles, recaps); the running app keeps it open.
+  const appSessions = path.join(APPDATA, 'Claude', 'claude-code-sessions') + path.sep;
+  for (const p of hits.filter((h) => h.startsWith(appSessions))) console.log(`accepted, write it in baseline.md: ${p}`);
+  const open = hits.filter((h) => !h.startsWith(appSessions));
+  if (open.length) throw new Stop(`round 4 IDs or report headers readable in:\n${open.join('\n')}`);
+  console.log('OK: no readable copy of Claude / Codex round 4 work found');
+}
+
+const [cmd, flag] = process.argv.slice(2);
+const commands = { baseline, clean, deny: () => deny(flag === '--dry-run'), scan, remove };
+try {
+  if (!commands[cmd]) throw new Stop('usage: node dot2.mjs baseline | clean | deny [--dry-run] | scan | remove');
+  commands[cmd]();
+} catch (e) {
+  console.error(`STOP: ${e instanceof Stop ? e.message : e.stack}`);
+  process.exit(1);
+}
 ```
 
-Khác bản Phase 5:
+**Rủi ro còn lại, đã chấp nhận ở G6** (Owner 28/10, phương án (b)): lệnh của model đọc được mọi file mà user đọc được ngoài ACL. Gồm key DeepSeek trong `.dsh`, GCM của git, Credential Manager (key OpenCode Go của app) và file đăng nhập Claude Code. Giảm bằng:
+- key riêng, số dư 10 USD, thu hồi ngay sau gói F;
+- `gh` đăng xuất trong đợt 2;
+- quét mẫu key trước khi chép bất cứ gì vào repo (§L4.10).
 
-- đường dẫn `deep-review-5` đổi sang lượt 4;
-- thêm chặn thư mục lượt 1–3, vì DeepSeek chưa có probe ở đó;
-- liệt kê `C:\workspace` hay `deep-review-1-6*` phải hỏi, vì review Phase 5 có một lần liệt kê thư mục gốc;
-- `gh` cấm hẳn thay vì hỏi, vì thông tin Issue / PR đã có ở `fixes.md`.
+**Còn hở sau review #872** (Owner chấp nhận khi xác nhận G6 ngày 28/10, cùng phần đổi ở §L4.11):
+- file hard link trong `node_modules` để ngỏ; đó chỉ là gói npm;
+- metadata phiên của app desktop Claude (`%APPDATA%\Claude\claude-code-sessions`: tiêu đề, vài câu tóm tắt) không chặn, vì app đang chạy. `scan` in ra nếu có mã phát hiện, Owner ghi vào `baseline.md`. Muốn chặn cả chỗ này thì phải đóng app desktop Claude suốt đợt 2;
+- `scan` chỉ thấy chữ không nén; log hay cơ sở dữ liệu nén của app thì không kiểm được;
+- cùng user, nên lệnh của model gỡ được ACL (`icacls /remove`): prompt cấm, quét log tìm;
+- nếu DSH chạy lệnh dưới danh tính khác tài khoản của Owner thì ACL không áp: phiên thử bắt được.
 
-Luật `permission` dựa trên thứ tự khai báo như bản Phase 5 (mẫu riêng sau mẫu chung). Home PC ngày 27/10 có OpenCode v2.1.4, khác v2.0.24 của Phase 5. Vì vậy bước chuẩn bị kiểm lại cú pháp (§L4.9 bước 1), và phiên thử của đợt 2 kiểm từng luật (§L4.9, đợt 2 bước 3).
+Repo public, dữ liệu giả lập.
