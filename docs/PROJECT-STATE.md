@@ -112,7 +112,17 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - The OWNER runs `common\dot2.mjs` (Appendix P) to clean the worktrees and temp caches, deny, scan for readable copies of round 4 work, and remove the denies.
   - Option (a): a finding ID found in the Claude desktop app's session list is written in `baseline.md` and wave 2 goes on; the app is not closed.
 
-  Plan: `docs/process/deep-review-phase-1-6.md` §L4; Appendix P is now the DSH configuration.
+  Plan: `docs/process/deep-review-phase-1-6.md` §L4; Appendix P was the DSH configuration until the change below.
+- 2026-10-28, later the same day: the OWNER moved DeepSeek of round 4 off DSH, in the OWNER's words "Chọn workbuddy pro" (T-315, #880): the built-in DeepSeek V4.1 Flash model of a WorkBuddy Pro plan (Tencent), international edition. The OWNER's reasons, the same session: "Về tiêu chí gần với inference chính hãng có lẽ Tencent đáng tin hơn những bên khác và đó là lý do anh muốn sub"; the plan also gives daily bonus credits. Tencent does not document whether the built-in model is served by DeepSeek (Vendor Direct) or by Tencent; the OWNER accepted that. Not chosen: keeping DSH, and Tencent Cloud's Token Plan (Vendor Direct, credits at the API price).
+  - A first approval on #880 ran it through the CodeBuddy Code CLI. After trying it, the OWNER clarified the same day: "anh làm rõ lại quyết định, sẽ là workbuddy IDE vì codebuddy CLI không chọn được đúng model và context windows". "WorkBuddy IDE" is the WorkBuddy desktop app, where the OWNER saw model build 1017, a 1M context and the highest reasoning level.
+  - G4 stays as first approved: WorkBuddy Pro for one month, subscribed close to wave 2, with a 25 USD ceiling (the plan plus at most one 500-credit top-up). Credits are measured at the trial session and after package A; a projection over the ceiling stops the run.
+  - G6 approved again on #880 ("Duyệt, Default trước"), replacing the DSH approval on #868:
+    - The WorkBuddy desktop app, international edition; its version is noted, not pinned. Each package is a new task in the review worktree, with the model, context and reasoning level picked by hand; Auto Mode, team mode, skill auto-install, connectors, remote control and automations are off; Memory is reviewed before wave 2 (it cannot be turned off).
+    - The OWNER logs out of the app before the preparation, logs in once the ACL is set, and logs out right after package F, before anything is copied; daily credits meanwhile come from the Office Laptop. No Claude session logs in or touches the login state.
+    - The app has no path rules. Default permissions first: commands run in the app's sandbox and risky steps ask. If the trial session shows the app asking on most ordinary commands, the OWNER switches the packages to Full Access. Same Windows user (option b): the wave 2 ACL block, `dot2.mjs` and the `gh` logout stay as confirmed on #868, and the 12 Claude / Codex reports are hashed before the denies and checked after the removal.
+    - Session logs come from the app's data folder (`.workbuddy-ai\projects\*.jsonl` per third-party tools); the trial session stops wave 2 if no log with tool calls is found.
+
+  Plan: `docs/process/deep-review-phase-1-6.md` §L4; Appendix P is now the WorkBuddy app configuration.
 
 ## Next decision
 
