@@ -1570,18 +1570,18 @@ Owner bổ sung 27/10, sau khi bản nháp đã soạn (§L4.11 mục B1, B2):
 | #854 hợp đồng: bảng R theo mã `DR6-*`, rồi phát hiện mới với ID theo bên, không trùng `CL4-*` / `CX4-*`; ghi model các bên | §L4.2, §L4.8, Phụ lục L, M, N, O |
 | Owner 27/10: thêm DeepSeek v4.1 Flash | §L4.1, §L4.2, §L4.7, §L4.9, Phụ lục O, P |
 | Owner 27/10: chỉ chạy khi sổ OPEN rỗng | §L4.2, §L4.5 phần 1, §L4.9 bước 1 |
-| Owner 28/10: DeepSeek qua DSH (T-313 #868) | §L4.1, §L4.2, §L4.7, §L4.8, §L4.9, §L4.10, §L4.11, Phụ lục O, P |
+| Owner 28/10: DeepSeek qua CodeBuddy Code CLI trên gói WorkBuddy Pro (T-315 #880, thay T-313 #868) | §L4.1, §L4.2, §L4.7, §L4.8, §L4.9, §L4.10, §L4.11, Phụ lục O, P |
 
 ## L4.1 Mục tiêu, bên review
 
-Owner chốt 26–27/10/2026 (§L4.11 mục 1, 2, B1, B2), và đổi cách chạy DeepSeek ngày 28/10 khi duyệt G1 (§L4.11):
+Owner chốt 26–27/10/2026 (§L4.11 mục 1, 2, B1, B2), và đổi cách chạy DeepSeek hai lần ngày 28/10 (§L4.11):
 
 - **Một vòng deep review toàn bộ code trước G7** (26/10), sau khi các mục sổ OPEN làm được trước vòng này đã xong (T-305…T-308).
 - **Chỉ chạy khi mọi ghi chú OPEN của sổ đã sửa hết** (27/10), kể cả các mục [G7]. Ở `a59ef07` sổ còn 14 mục [G7]; chúng sửa ở một đợt trước lượt 4 (§L4.2, đề xuất 8).
 - **Ba bên:**
   - **Claude Opus 5.5** (27/10): như lượt 3, Owner mở **mỗi gói một phiên sạch** ở `C:\workspace\Project-2C-review`. Mức suy luận và ultracode Owner chọn từng phiên (M1, M8). Phiên bật ultracode được dùng subagent / Workflow cho việc của gói; chỉ phiên chính làm bước 0, ghi `{GÓI}.md` và in dòng `XONG`.
   - **Codex, model GPT Sol 6.1** (27/10): Owner chạy, mỗi gói một phiên mới, chỉ đọc, không viết code (M2).
-  - **DeepSeek v4.1 Flash** (Owner bổ sung 27/10), qua **DeepSeek Harness (DSH)**: gọi DeepSeek API trực tiếp, trả theo mức dùng. Owner đổi ngày 28/10, thay OpenCode của bản 27/10; G4 / G6 duyệt 28/10 ở #868. Owner chạy, mỗi gói một phiên mới, chỉ đọc, không viết code. Báo cáo là dữ liệu tham khảo như Codex (M2, M10). Bỏ DeepSeek ở lượt 1 (M5, 13/10) không còn áp cho lượt 4.
+  - **DeepSeek v4.1 Flash** (Owner bổ sung 27/10), qua **CodeBuddy Code CLI** của Tencent, dùng model gắn sẵn của gói **WorkBuddy Pro** bản quốc tế. Owner chọn ngày 28/10, thay cách chạy của bản 27/10 và bản sửa đầu ngày 28/10 (§L4.11); G4 / G6 duyệt 28/10 ở #880. Owner chạy, mỗi gói một phiên mới, chỉ đọc, không viết code. Báo cáo là dữ liệu tham khảo như Codex (M2, M10). Bỏ DeepSeek ở lượt 1 (M5, 13/10) không còn áp cho lượt 4.
   - 6 gói × 3 bên = **18 báo cáo**, chạy **hai đợt** như lượt 1 và review Phase 5 (đề xuất 9, Owner chọn 27/10): đợt 1 Claude + Codex song song; đợt 2 DeepSeek một mình, khi thư mục của hai bên kia đã bị chặn ACL.
 - **Hai phần ngang nhau** như lượt 2–3:
   1. **kiểm phần đã sửa** (trục R): mọi DR6 và mục KNOWN đã sửa sau lượt 3, và từng Issue gom ghi chú sổ (§L4.4);
@@ -1697,12 +1697,12 @@ Trong suốt lượt 4 **không merge code vào `main`** (như §2). PR docs mer
 |---|---|---|---|---|---|
 | Claude Opus 5.5 (mỗi gói một phiên sạch, tuần tự A → F) | Owner mở phiên | 1 | `C:\workspace\Project-2C-review` | `C:\workspace\deep-review-1-6-r4\claude\` | `CLR4-<gói><số>` |
 | Codex, model GPT Sol 6.1 | Owner, mỗi gói một phiên mới | 1 (cùng lúc Claude) | `C:\workspace\Project-2C-review-2` | `…-r4\codex\` | `CXR4-<gói><số>` |
-| DeepSeek v4.1 Flash (DSH `0.2.1-rc.2`, model `deepseek-flash`) | Owner, mỗi gói một phiên mới trong giao diện web của DSH | 2 (một mình, đề xuất 9) | `C:\workspace\Project-2C-review` (Claude đã xong); DSH chạy với patch của Phụ lục P | `…-r4\deepseek\` | `DSR4-<gói><số>` |
+| DeepSeek v4.1 Flash (CodeBuddy Code CLI `2.177.1`, model gắn sẵn của gói WorkBuddy Pro) | Owner, mỗi gói một tiến trình CLI mới | 2 (một mình, đề xuất 9) | `C:\workspace\Project-2C-review` (Claude đã xong); CLI chạy với cấu hình của Phụ lục P | `…-r4\deepseek\` | `DSR4-<gói><số>` |
 | **Claude phiên tổng hợp** (Issue tạo sau khi lượt 4 chạy xong) | Owner yêu cầu, sau khi đủ 18 báo cáo | — | checkout chính | `docs/reviews/` qua PR docs | dùng nguyên ID trên |
 
 - **ID theo bên:** `CL4-*` / `CX4-*` là ID của review đóng Phase 4 (`docs/reviews/2026-10-04-phase-4-tong-hop.md`), và review Phase 5 dùng `DS-*` cho DeepSeek. Lượt 4 dùng `CLR4-*` / `CXR4-*` / `DSR4-*` ("R4" = lượt 4; `rg` trên `docs/` ngày 27/10: 0 chỗ). Vấn đề đã gộp đánh số tiếp `DR6-135…`.
-- **Vì sao hai đợt** (như lượt 1 §2 và review Phase 5): mọi bên chạy dưới cùng tài khoản Windows. ACL chỉ chặn được thư mục của bên **đã xong**, vì bên đang chạy còn phải ghi vào thư mục của mình. Đợt 2 chạy khi `claude\`, `codex\` của lượt 4 đã bị chặn ACL. DSH không có luật chặn đọc theo đường dẫn (Phụ lục P), nên ACL là lớp duy nhất giữ DeepSeek khỏi hai thư mục đó, khỏi các bản sao của chúng (log phiên, bản sao file, scratchpad) và khỏi thư mục lượt 1–3 (§L4.9 đợt 2 bước 3). Phase 5 cũng cho thấy cần lớp này: DeepSeek gói E từng liệt kê thư mục gốc bị cấm (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §6). Thêm nữa, đợt 2 không va cổng e2e 4173 hay máy đo với hai bên kia.
-- **Máy: Home PC `DESKTOP-KDURKJP`** (đề xuất 7). Mốc hiệu năng sau #656 và số đo lượt 3 cùng máy chỉ có ở máy này; DSH do Owner cài trên máy trước bước chuẩn bị (Phụ lục P). Bước chuẩn bị, cả ba bên và mọi số đo chạy trên cùng máy.
+- **Vì sao hai đợt** (như lượt 1 §2 và review Phase 5): mọi bên chạy dưới cùng tài khoản Windows. ACL chỉ chặn được thư mục của bên **đã xong**, vì bên đang chạy còn phải ghi vào thư mục của mình. Đợt 2 chạy khi `claude\`, `codex\` của lượt 4 đã bị chặn ACL. Luật chặn đọc của CLI chỉ giữ công cụ đọc file và một phần lệnh đọc qua shell (Phụ lục P), nên ACL là lớp chính giữ DeepSeek khỏi hai thư mục đó, khỏi các bản sao của chúng (log phiên, bản sao file, scratchpad) và khỏi thư mục lượt 1–3 (§L4.9 đợt 2 bước 3). Phase 5 cũng cho thấy cần lớp này: DeepSeek gói E từng liệt kê thư mục gốc bị cấm (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §6). Thêm nữa, đợt 2 không va cổng e2e 4173 hay máy đo với hai bên kia.
+- **Máy: Home PC `DESKTOP-KDURKJP`** (đề xuất 7). Mốc hiệu năng sau #656 và số đo lượt 3 cùng máy chỉ có ở máy này; CodeBuddy Code CLI do Owner cài trên máy trước bước chuẩn bị (Phụ lục P). Bước chuẩn bị, cả ba bên và mọi số đo chạy trên cùng máy.
 - Thư mục lượt 1–3 (`C:\workspace\deep-review-1-6\`, `-r2\`, `-r3\`) có trên Home PC, giữ tới v1.0 (HANDOFF). Probe lượt 3 của Claude và Codex trong `deep-review-1-6-r3\<bên>\` là probe cùng máy, dùng lại được. DeepSeek chưa có probe nào ở 6D; ở đợt 2 cả ba thư mục bị chặn ACL.
 
 ## L4.3 Sáu gói, cỡ đo lại, diff sửa theo gói
@@ -1974,18 +1974,22 @@ Mức: L = Low, N = Nit (mức chốt ở tổng hợp lượt 3 §6, §8.4 và 
 
 - **Claude Opus 5.5:** như lượt 3 sau 20/10 (§L3.1). Mỗi gói một phiên sạch Owner mở ở `C:\workspace\Project-2C-review`, tin nhắn một dòng (§L4.9). Mức suy luận, ultracode do Owner chọn từng phiên. Không có phiên điều phối, không có script Workflow: Phụ lục L viết theo đúng cách chạy này.
 - **Codex, model GPT Sol 6.1:** như §L2.7. Owner chạy mỗi gói một phiên mới ở `C:\workspace\Project-2C-review-2`. Mục 1 của báo cáo ghi phiên bản Codex và model như công cụ cho biết; lượt 1–3 Codex chỉ ghi được "GPT-6 theo hệ thống". Owner ghi model đã chọn ở bảng đánh dấu (§L4.9).
-- **DeepSeek v4.1 Flash:** như review Phase 5 (`docs/reviews/raw/2026-10-10/common-plan-opencode.md`), đổi theo bài học ở bảng dưới. Từ 28/10 chạy qua DeepSeek Harness (DSH) thay OpenCode (Owner, §L4.11).
-  - Chạy bằng giao diện web của DSH `0.2.1-rc.2` (Phụ lục P), workspace `C:\workspace\Project-2C-review`. Model `deepseek-flash` (DeepSeek-V4.1-Flash), Effort `max`, chọn ở bộ chọn model. Mỗi gói một phiên mới.
-  - **Chi phí (G4, Owner 28/10):** DeepSeek API trả theo mức dùng, bằng key riêng của lượt 4: nạp trước 10 USD, trần 15 USD. Hết số dư thì API trả lỗi 402 và dừng. Ước tính (giả định, không phải số đo):
-    - Khối token của DeepSeek ở review Phase 5 là: vào 1,65 tr không cache, 111 tr đọc cache, ra 162 k + suy luận 465 k. Tính theo giá `deepseek-flash` ngày 28/10 thì ≈ 0,96 USD giờ thấp điểm, ≈ 1,91 USD giờ cao điểm.
-    - Lượt 4 đọc toàn bộ code, thêm hai bảng R và Effort `max`. Giả định gấp 3–5 lần: ≈ 3–5 USD giờ thấp điểm, ≈ 6–10 USD giờ cao điểm.
-    - Giờ cao điểm là 08:00–11:00 và 13:00–17:00 giờ Việt Nam, thứ Hai–thứ Sáu. Chạy đợt 2 ngoài giờ đó.
-    - Số thật: số dư trước / sau trên platform.deepseek.com.
-  - **Chặn:** ACL của đợt 2 là lớp chặn đọc duy nhất (§L4.9 đợt 2 bước 3, script `common\dot2.mjs` ở Phụ lục P). ACL chặn báo cáo lượt 4 của Claude và Codex, log phiên, bản sao file và scratchpad của hai bên, thư mục lượt 1–3, worktree của Codex. Trước đó đợt 2 bước 1 dọn những gì đợt 1 để lại ở hai worktree và cache tạm.
-    - Cấu hình DSH (Phụ lục P) chỉ thêm: sandbox chỉ cho ghi trong worktree review và `deepseek\` (trên Windows chưa chắc; phiên thử kiểm), không xin nâng quyền, tắt công cụ web.
+- **DeepSeek v4.1 Flash:** như review Phase 5 (`docs/reviews/raw/2026-10-10/common-plan-opencode.md`), đổi theo bài học ở bảng dưới. Chạy qua CodeBuddy Code CLI trên gói WorkBuddy Pro (Owner 28/10, §L4.11).
+  - CLI `@tencent-ai/codebuddy-code` `2.177.1` (Phụ lục P), TUI chạy từ `C:\workspace\Project-2C-review`, thư mục cấu hình riêng `%USERPROFILE%\.codebuddy-r4`. Model DeepSeek V4.1 Flash bản 1017 gắn sẵn (ID ghi ở phiên thử), context lớn nhất CLI cho chọn, `reasoningEffort: "max"`. Mỗi gói một tiến trình CLI mới.
+  - **Chi phí (G4, Owner 28/10):**
+    - Gói WorkBuddy Pro một tháng: 10 USD (tháng đầu 7 USD với người chưa từng đăng ký), 2.000 credit/tháng, thêm 50 credit cho mỗi ngày có dùng (khuyến mãi có thời hạn). Owner đăng ký sát ngày chạy đợt 2, vì credit không cộng dồn và gói tháng không hoàn tiền.
+    - **Trần 25 USD:** gói Pro cộng tối đa một gói mua thêm 500 credit (15 USD).
+  - **Ước tính** (giả định, không phải số đo):
+    - Khối token của DeepSeek ở review Phase 5 là: vào 1,65 tr không cache, 111 tr đọc cache, ra 162 k + suy luận 465 k. Tính theo giá DeepSeek API ngày 28/10 thì ≈ 0,96 USD giờ thấp điểm, ≈ 1,91 USD giờ cao điểm.
+    - Lượt 4 đọc toàn bộ code, thêm hai bảng R và Effort `max`; giả định gấp 3–5 lần.
+    - WorkBuddy không công bố 1 credit bằng bao nhiêu token. Nếu tính đúng giá DeepSeek, với 1 credit = 0,005 USD theo giá gói Pro, lượt 4 tốn ≈ 575–955 credit giờ thấp điểm, ≈ 1.150–1.910 credit giờ cao điểm.
+    - Giờ cao điểm của DeepSeek là 08:00–11:00 và 13:00–17:00 giờ Việt Nam, thứ Hai–thứ Sáu. Một bài cộng đồng Tencent (22/10) ghi WorkBuddy tính credit của DeepSeek theo đúng khung này. Chạy đợt 2 ngoài giờ đó.
+    - **Số thật và điểm dừng:** credit trên trang Usage của WorkBuddy trước, sau phiên thử và sau từng gói; token theo `/cost` (§L4.9 đợt 2 bước 4–6). Ước vượt trần thì dừng, hỏi Owner.
+  - **Chặn:** ACL của đợt 2 là lớp chặn đọc chính (§L4.9 đợt 2 bước 3, script `common\dot2.mjs` ở Phụ lục P). ACL chặn báo cáo lượt 4 của Claude và Codex, log phiên, bản sao file và scratchpad của hai bên, thư mục lượt 1–3, worktree của Codex. Trước đó đợt 2 bước 1 dọn những gì đợt 1 để lại ở hai worktree và cache tạm.
+    - Cấu hình CLI (Phụ lục P) thêm luật `deny`: công cụ đọc file vào các mục trên, vào dữ liệu của Claude / Codex và thư mục của chính CLI; công cụ ghi file vào worktree review; web, subagent, skill; vài lệnh shell đã cấm. Luật `Read` giữ thêm `cat` / `head` / `tail`, nhưng lệnh shell khác vẫn lách được, và Windows không có sandbox cho shell.
     - `gh` đăng xuất trong đợt 2.
-    - Prompt (Phụ lục O) cấm subagent, `gh`, lệnh git ghi, `pnpm eval:ai`, đổi quyền file, đọc `~/.dsh`, file đăng nhập và dữ liệu của Claude / Codex.
-  - Log: phiên DSH lưu dưới `%USERPROFILE%\.dsh\sessions\`. Owner chép ra sau khi thu hồi key (§L4.10).
+    - Prompt (Phụ lục O) cấm subagent, `gh`, lệnh git ghi, `pnpm eval:ai`, đổi quyền file, chạy `codebuddy`, đọc / sửa thư mục cấu hình của CLI, file đăng nhập và dữ liệu của Claude / Codex, Windows Credential Manager.
+  - Log: phiên của CLI lưu dưới `%USERPROFILE%\.codebuddy-r4\projects\`. Owner chép ra sau khi `/logout` (§L4.10).
 
 **Bài học từ lượt 3** (tổng hợp lượt 3 §10.1 "Cho lần sau"; giữ mọi bài học §L2.7, §L3.7):
 
@@ -2003,7 +2007,7 @@ Mức: L = Low, N = Nit (mức chốt ở tổng hợp lượt 3 §6, §8.4 và 
 | Không thấy cả hai lỗi Medium, kết luận G7 "SẴN SÀNG" sai: chưa dựng chuỗi nhiều bước qua nhiều gói | Prompt (Phụ lục O) giao rõ: phần 2 dành phần lớn cho chuỗi nhiều bước; kết luận F chỉ là tham khảo, phiên tổng hợp mới ra kết luận (§6.1 spec, M2) |
 | Gói D không chạy giao diện ("không có môi trường DOM") nên phát hiện màn chỉ ở PLAUSIBLE | Kết luận về màn chạy trên bản build web bằng Playwright, hoặc trên exe qua cổng debug (Phụ lục N, quy tắc chung 6) |
 | DS-E3 đề xuất trái golden đã đọc; DS-A1 khẳng định không có căn cứ | Đọc golden / spec liên quan trước khi đề xuất; điều không chạy được thì ghi PLAUSIBLE, không suy rộng |
-| Gói E liệt kê thư mục gốc bị cấm, không báo Owner | ACL đợt 2 (DSH không chặn đọc theo đường dẫn); prompt cấm liệt kê `C:\workspace`; lỡ thấy tên thư mục cấm thì dừng và báo Owner ngay; quét log (§L4.10) |
+| Gói E liệt kê thư mục gốc bị cấm, không báo Owner | ACL đợt 2 (luật đọc của CLI không giữ được mọi lệnh shell); prompt cấm liệt kê `C:\workspace`; lỡ thấy tên thư mục cấm thì dừng và báo Owner ngay; quét log (§L4.10) |
 | Báo cáo chen từ tiếng Bồ Đào Nha ("produção") | Viết tiếng Việt, thuật ngữ ngành giữ tiếng Anh như repo; không dùng từ của ngôn ngữ khác |
 | Ít đột biến (≈ 21, đa số để khẳng định test tốt) | Bước 2 của bảng R (gỡ tạm phần sửa) là bắt buộc ở mọi dòng R1 / R2; đột biến dùng để tìm chỗ hở |
 
@@ -2017,7 +2021,7 @@ Khuôn như §L3.8 (và §L2.8), đổi:
   - **R1:** mọi dòng mà gói kiểm trong 37 dòng của §L4.5 phần 4;
   - **R2:** mọi Issue mà gói kiểm trong bảng R2 của `known.md` (§L4.5 phần 5, đủ dòng ở bước chuẩn bị).
 - Phạm vi đã đọc gồm phần diff `119e2e4..{SHA}` của gói.
-- Mục 1 (đầu báo cáo): Claude ghi model, mức suy luận, ultracode bật hay tắt; Codex ghi phiên bản Codex và model như công cụ cho biết; DeepSeek ghi bản DSH (`0.2.1-rc.2`, theo `common\baseline.md`), model và Effort.
+- Mục 1 (đầu báo cáo): Claude ghi model, mức suy luận, ultracode bật hay tắt; Codex ghi phiên bản Codex và model như công cụ cho biết; DeepSeek ghi bản CodeBuddy Code CLI (`2.177.1`, theo `common\baseline.md`), model và Effort.
 - **Gói F:** bảng R1 gộp đủ 37 dòng và bảng R2 gộp đủ mọi dòng (từ báo cáo A–E lượt 4 của chính bên đó + phần F). Kèm kết luận **SẴN SÀNG / CHƯA SẴN SÀNG cho v1.0 ở SHA ghim** và lý do (tham khảo; kết luận thật ở phiên tổng hợp).
 
 ## L4.9 Chuẩn bị và chạy
@@ -2029,11 +2033,12 @@ Khuôn như §L3.8 (và §L2.8), đổi:
    - **Ghim SHA:** `git rev-parse origin/main` lúc đó là SHA ghim; ghi đủ 40 ký tự vào `baseline.md`.
    - Kiểm `C:\workspace\deep-review-1-6-r4\` chưa có (có rồi → dừng, báo Owner).
    - Kiểm `C:\workspace\deep-review-1-6-r3\common\perf\perf-ref.json` có, sha256 như §L4.6.
-   - Kiểm DSH: `dsh --version` phải ra `0.2.1-rc.2` (Owner cài trước bước này, Phụ lục P); ghi vào `baseline.md`. Chưa có hay khác bản → dừng, báo Owner. Lúc này Owner **chưa** nhập key DeepSeek (Phụ lục P, ranh giới key).
+   - Kiểm CodeBuddy Code CLI: `codebuddy --version` phải ra `2.177.1` (Owner cài trước bước này, Phụ lục P); ghi vào `baseline.md`. Chưa có hay khác bản → dừng, báo Owner. Không chạy lệnh `codebuddy` nào khác. Lúc này Owner **chưa** đăng nhập CLI, và chưa có `%USERPROFILE%\.codebuddy-r4` (Phụ lục P, ranh giới tài khoản).
 2. Tạo `C:\workspace\deep-review-1-6-r4\{common,claude,codex,deepseek}`.
 3. Đưa hai worktree về SHA ghim:
    - `git -C C:\workspace\Project-2C-review checkout --detach <SHA ghim>`, tương tự với `-review-2`;
    - xóa `apps\desktop\dist` ở mỗi worktree;
+   - kiểm `apps\desktop\src-tauri\target\` chưa có ở cả hai worktree. Có thì dừng, hỏi Owner: thư mục này mà có lúc ghi mốc thì đợt 2 bước 1 xóa file build sinh sau mốc trong đó và giữ file cũ (review #878). Chưa có thì thư mục do `pnpm build:exe` ở bước 6 sinh ra bị xóa cả ở đợt 2 bước 1;
    - `pnpm install --frozen-lockfile` (PowerShell);
    - `git status --short` rỗng (ngoài file Codex tự sinh ở `-review-2`, §8).
 4. Chép vào `common\`:
@@ -2049,7 +2054,7 @@ Khuôn như §L3.8 (và §L2.8), đổi:
      - nguyên văn các nhóm RESOLVED của sổ mà các Issue đó gom (theo nhãn T-xxx, ở SHA ghim);
      - lấy bằng `gh issue view` / `gh pr view --json body`;
    - `prompt-claude.md` = Phụ lục L + Phụ lục N; `prompt-codex.md` = Phụ lục M + Phụ lục N; `prompt-deepseek.md` = Phụ lục O + Phụ lục N. Chép nguyên văn, chỉ thay `{SHA}` bằng 7 ký tự đầu và `{SHA_ĐỦ}` bằng đủ 40 ký tự của SHA ghim (`{GÓI}` để nguyên: reviewer thay theo tin nhắn);
-   - `dsh-deepseek.patch.yml`, dựng theo mục "Dựng và kiểm" của Phụ lục P: dump cấu hình mặc định, viết patch, dump cấu hình sau patch, so bảng giá trị;
+   - `codebuddy-settings.json` = khối JSON ở mục "Mẫu `settings.json`" của Phụ lục P, chép nguyên văn; kiểm JSON hợp lệ (`Get-Content -Raw … | ConvertFrom-Json`);
    - `dot2.mjs` = khối code ở mục "Script đợt 2" của Phụ lục P, chép nguyên văn.
 
    Cuối bước này chạy `node C:\workspace\deep-review-1-6-r4\common\dot2.mjs baseline`. Lệnh ghi `common\dot2-baseline.json`: từng file và thư mục mà git không theo dõi (chưa theo dõi hay bị ignore) của hai worktree lúc này (sau bước 3, trước cổng ở bước 6), kể cả bên trong thư mục bị ignore; không tính `node_modules` và thư mục chứa nó. Đợt 2 bước 1 xóa mọi thứ ngoài mốc này; giờ ghi file là mốc thời gian của `scan`.
@@ -2081,7 +2086,7 @@ Khuôn như §L3.8 (và §L2.8), đổi:
   Gói A. Lệnh đầu tiên chỉ đọc C:\workspace\deep-review-1-6-r4\common\prompt-claude.md (không gộp lệnh khác), rồi làm đúng file đó.
   ```
 
-**Owner chạy đợt 2** (DeepSeek một mình). Điều kiện bắt đầu: đủ 12 báo cáo đợt 1 với dòng đầu `XONG`, Codex đã xong, và không còn phiên Claude nào mở ở `Project-2C-review`. Từ bước 4, chỉ Owner chạy lệnh `dsh` và đụng tới `%USERPROFILE%\.dsh` (Phụ lục P, ranh giới key).
+**Owner chạy đợt 2** (DeepSeek một mình). Điều kiện bắt đầu: đủ 12 báo cáo đợt 1 với dòng đầu `XONG`, Codex đã xong, và không còn phiên Claude nào mở ở `Project-2C-review`. Gói WorkBuddy Pro đã đăng ký. Từ bước 4, chỉ Owner chạy lệnh `codebuddy` và đụng tới `%USERPROFILE%\.codebuddy-r4` (Phụ lục P, ranh giới tài khoản).
 
 Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt 2") trong PowerShell của Owner. Lệnh in `OK` khi đạt. Không đạt thì in `STOP` kèm lý do: dừng ở đó, báo Claude.
 
@@ -2093,12 +2098,13 @@ Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt
 
    - Ở hai worktree, lệnh xóa mọi file và thư mục chưa theo dõi hay bị ignore không có trong `dot2-baseline.json`.
      - Lệnh so từng file, nên file đợt 1 thêm vào một thư mục bị ignore đã có lúc ghi mốc (vd. `test-results\`) cũng bị xóa (review #872).
-     - `node_modules` và thư mục chứa nó để nguyên. Với link (junction), lệnh chỉ xóa chính link, không đụng chỗ nó trỏ tới.
+     - `node_modules` và thư mục chứa nó để nguyên. Mỗi thư mục mới được giữ vì chứa `node_modules` (vd. probe có `package.json` và `node_modules` riêng) in một dòng `kept, holds node_modules` (review #878). Với link (junction), lệnh chỉ xóa chính link, không đụng chỗ nó trỏ tới.
      - File đã có ở mốc mà đợt 1 ghi đè thì giữ; `scan` ở bước 3 đọc các file sửa sau mốc.
-   - Lệnh xóa cả cache Vite / Vitest trong `node_modules`, vì cache giữ tên file test đã chạy.
+     - `apps\desktop\src-tauri\target\` do bước chuẩn bị 6 sinh ra là mục mới nên bị xóa cả (bước chuẩn bị 3 đã kiểm nó chưa có lúc ghi mốc).
+   - Lệnh xóa cả cache Vite / Vitest (`node_modules\.vite`, `.vite-temp`) ở gốc worktree, `apps\*`, `packages\*` và các thư mục mới được giữ ở trên, vì cache giữ tên file test đã chạy và bản biến đổi của code probe.
    - Lệnh xóa cache tạm có bản biến đổi của code probe: `%TEMP%\playwright*`, `%TEMP%\codex-*`, thư mục `%TEMP%\…\ssr`. Trên Home PC ngày 28/10, các cache này còn giữ mã phát hiện của Codex lượt 3 (review #872).
    - Cuối cùng lệnh kiểm lại hai worktree so với mốc.
-2. Chạy `gh auth logout`; sau đó `gh auth status` phải báo chưa đăng nhập. Trong cửa sổ PowerShell sẽ chạy `dsh`, `Test-Path env:OPENCODE_GO_KEY` và `Test-Path env:DEEPSEEK_API_KEY` phải ra `False`: key không đi qua biến môi trường.
+2. Chạy `gh auth logout`; sau đó `gh auth status` phải báo chưa đăng nhập. Trong cửa sổ PowerShell sẽ chạy `codebuddy`, `Test-Path env:OPENCODE_GO_KEY`, `Test-Path env:CODEBUDDY_API_KEY`, `Test-Path env:CODEBUDDY_AUTH_TOKEN` và `Test-Path env:CODEBUDDY_IS_SANDBOX` phải ra `False`: không key hay token nào đi qua biến môi trường, và lệnh HIGH / CRITICAL vẫn hỏi Owner (Phụ lục P).
 3. Chặn đọc bằng ACL, rồi quét:
 
    ```powershell
@@ -2128,59 +2134,67 @@ Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt
    - `C:\workspace`, bỏ `.git`, `.pnpm`, `target`.
 
    Lệnh chỉ thấy chữ không nén (UTF-8 / UTF-16). Thấy ở chỗ còn đọc được → `STOP` kèm danh sách file. Riêng danh sách phiên của app desktop Claude (`%APPDATA%\Claude\claude-code-sessions`: tiêu đề, vài câu tóm tắt) thì lệnh chỉ in ra, Owner ghi vào `baseline.md`: app đang chạy giữ các file này nên không chặn được (rủi ro ghi ở Phụ lục P).
-4. Mở DSH từ worktree review:
+4. Mở CodeBuddy Code CLI từ worktree review (Phụ lục P):
+   - Tạo `%USERPROFILE%\.codebuddy-r4\`, chép `common\codebuddy-settings.json` vào đó thành `settings.json`.
+   - Mở CLI trong cửa sổ của bước 2:
 
-   ```powershell
-   Set-Location C:\workspace\Project-2C-review; dsh --profile web --patch C:\workspace\deep-review-1-6-r4\common\dsh-deepseek.patch.yml --no-open
-   ```
+     ```powershell
+     $env:CODEBUDDY_CONFIG_DIR = "$env:USERPROFILE\.codebuddy-r4"; $env:DISABLE_TELEMETRY = '1'; $env:DISABLE_ERROR_REPORTING = '1'; $env:DISABLE_AUTOUPDATER = '1'; $env:DISABLE_FEEDBACK_COMMAND = '1'; Set-Location C:\workspace\Project-2C-review; codebuddy -y --setting-sources user
+     ```
 
-   - Mở `http://127.0.0.1:3080`. Nhập key riêng của lượt 4 ở Settings → Models: Owner tự nhập, không phiên Claude nào chạm key.
-   - Chọn workspace **đúng** `C:\workspace\Project-2C-review`. Workspace là gốc ghi của sandbox: chọn `C:\workspace` thì sandbox cho ghi cả checkout chính.
-   - Ở bộ chọn model, chọn `deepseek-flash`, Effort `max`.
-   - Ghi **số dư trước** vào bảng đánh dấu: số dư trên platform.deepseek.com lúc này, khi đã nạp và chưa chạy phiên thử. Chi phí lượt 4 vì vậy tính cả phiên thử.
-5. **Phiên thử.** Mở một phiên mới, bảo model làm từng việc dưới, ghi kết quả vào `common\baseline.md`.
+   - Gõ `/login`, chọn bản quốc tế, đăng nhập tài khoản có gói WorkBuddy Pro: Owner tự làm, không phiên Claude nào chạm token.
+   - Ghi **credit trước** vào bảng đánh dấu: số credit ở trang Usage (workbuddy.ai → avatar → Profile → Usage) lúc này, trước phiên thử. Chi phí lượt 4 vì vậy tính cả phiên thử. Trong đợt 2 không dùng tài khoản này cho việc khác.
+5. **Phiên thử.** Ở tiến trình CLI vừa mở, bảo model làm từng việc dưới, ghi kết quả vào `common\baseline.md`.
 
    **Ra khác ghi dưới đây thì dừng đợt 2.** Sửa theo rồi thử lại; không sửa được thì báo Claude.
-   - `Get-Location` (hoặc `pwd`) → `C:\workspace\Project-2C-review`.
+   - **Model:** `codebuddy --version` (ở cửa sổ khác) → `2.177.1`. `/model list` có DeepSeek V4.1 Flash (bản 1017, nếu tên có ghi bản). Ghi ID và các lựa chọn context vào `baseline.md`. Owner thêm `"model": "<ID>"` vào `settings.json` (chọn bản context lớn nhất nếu đó là ID riêng), thoát CLI, mở lại bằng lệnh bước 4. Effort đang dùng (`/config list` hay dòng trạng thái của TUI) phải là `max`; CLI không cho xem thì ghi vậy, không dừng.
+   - `Get-Location` (hoặc `pwd`) → `C:\workspace\Project-2C-review`. Kết quả lệnh cho biết shell nào chạy lệnh (Git Bash hay PowerShell).
    - Đọc vài dòng đầu của `C:\workspace\deep-review-1-6-r4\common\plan.md` → đọc được.
    - `node node_modules/vitest/vitest.mjs run packages/domain` → xanh. Lệnh đọc `node_modules` của worktree review, nên bắt được ACL lan qua hard link mà bước 3 bỏ sót.
-   - Đọc `common\dot2-acl.json`, rồi làm từng việc dưới, một lần bằng shell, một lần bằng công cụ đọc file của DSH → mọi lần bị từ chối (ACL; đọc được thì có thể DSH chạy lệnh dưới danh tính khác tài khoản của Owner). Bằng shell, đọc file là chỉ mở, không in nội dung: `node -e "require('fs').closeSync(require('fs').openSync(process.argv[1], 'r'))" <đường dẫn>`.
+   - **Luật của CLI**, trên thư mục không có ACL: Owner tạo `C:\workspace\deep-review-1-6-r4\_thu_luat\a.txt`. Đọc file đó bằng công cụ đọc file → bị luật từ chối. Đọc được thì Owner đổi mọi luật `//c/…` của `settings.json` sang dạng `//C:/…` (Phụ lục P, cú pháp đường dẫn), mở lại CLI, thử lại. Ghi dạng chạy được vào `baseline.md`. Đọc file đó bằng `cat`: chỉ ghi lại bị từ chối hay không, không dừng.
+   - Đọc `common\dot2-acl.json`, rồi làm từng việc dưới, một lần bằng shell, một lần bằng công cụ đọc file của CLI → mọi lần bị từ chối. Công cụ đọc file bị luật của CLI hay ACL chặn; lệnh shell dưới cho biết ACL (đọc được thì có thể CLI chạy lệnh dưới danh tính khác tài khoản của Owner). Bằng shell, đọc file là chỉ mở, không in nội dung: `node -e "require('fs').closeSync(require('fs').openSync(process.argv[1], 'r'))" <đường dẫn>`.
      - liệt kê `C:\workspace\deep-review-1-6-r4\claude`, `…-r4\codex`, `C:\workspace\deep-review-1-6-r3`, `-r2` và `C:\workspace\deep-review-1-6`;
      - liệt kê mục `projects\…`, một mục `file-history\…` và mục `%TEMP%\claude\…` của danh sách;
      - đọc `…-r4\claude\A.md` và `…-r4\codex\A.md`;
-     - với `.codex`, chỉ đọc `version.json` và liệt kê `sessions`, hai mục của danh sách (thiếu mục nào thì bỏ, ghi vào `baseline.md`). Không chọn mục khác: `auth.json` là file đăng nhập, `config.toml` hay `models_cache.json` có thể có thông tin tài khoản. ACL không áp thì công cụ đọc file đưa nội dung vào log DSH và tới DeepSeek API (review #872);
+     - với `.codex`, chỉ đọc `version.json` và liệt kê `sessions`, hai mục của danh sách (thiếu mục nào thì bỏ, ghi vào `baseline.md`). Không chọn mục khác: `auth.json` là file đăng nhập, `config.toml` hay `models_cache.json` có thể có thông tin tài khoản. ACL không áp thì lệnh shell đưa nội dung vào log của CLI và tới máy chủ của model (review #872);
      - đọc `C:\workspace\Project-2C-review-2\package.json`.
-   - Tạo `C:\workspace\deep-review-1-6-r4\deepseek\_thu\a.txt`, một lần bằng shell, một lần bằng công cụ ghi file của DSH → tạo được.
-   - Bảo model tìm trên web → model không có công cụ đó.
+   - Tạo `C:\workspace\deep-review-1-6-r4\deepseek\_thu\a.txt`, một lần bằng shell, một lần bằng công cụ ghi file của CLI → tạo được.
+   - Tạo `C:\workspace\Project-2C-review\_thu_ghi.txt` bằng công cụ ghi file → bị luật từ chối. Tạo được thì xóa file, sửa luật, thử lại.
+   - Bảo model tìm trên web, đọc một trang web, và giao một việc cho subagent → không có công cụ, hoặc bị luật từ chối.
    - `gh auth status` → chưa đăng nhập.
-   - **Log DSH** (Owner): tìm file log mới nhất dưới `%USERPROFILE%\.dsh\sessions\`, giải nén trong bộ nhớ, không chép log ra (lệnh dưới) → in đường dẫn file và tên trường của dòng JSON đầu. Ghi tên thư mục của workspace và của phiên thử vào `baseline.md`. §L4.10 chép và giải nén log theo đúng chỗ và định dạng này.
+   - **Credit** (Owner): `/cost` → ghi token của phiên thử; trang Usage → ghi **credit sau phiên thử**. Từ hai số này, ước credit cho khối token ở §L4.7 (review Phase 5 nhân 3–5). Vượt credit còn lại cộng một gói mua thêm 500 credit → dừng, hỏi Owner (trần G4, Phụ lục P).
+   - **Log CLI** (Owner): tìm file `.jsonl` mới nhất dưới `%USERPROFILE%\.codebuddy-r4\projects\` (lệnh dưới) → in đường dẫn file và tên trường của dòng JSON đầu. Ghi tên thư mục của worktree review và cách đặt tên file phiên vào `baseline.md`. §L4.10 chép log theo đúng chỗ và định dạng này.
 
      ```powershell
-     $f = Get-ChildItem "$env:USERPROFILE\.dsh\sessions" -Recurse -File -Filter *.zstd | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if (-not $f) { throw 'Không thấy file .zstd dưới .dsh\sessions' }; $f.FullName; node -e "const z=require('zlib'),f=require('fs');const l=z.zstdDecompressSync(f.readFileSync(process.argv[1])).toString('utf8').split('\n')[0];console.log(Object.keys(JSON.parse(l)).join(', '))" $f.FullName; if ($LASTEXITCODE) { throw 'Giải nén hay đọc JSON lỗi' }
+     $f = Get-ChildItem "$env:USERPROFILE\.codebuddy-r4\projects" -Recurse -File -Filter *.jsonl | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if (-not $f) { throw 'Không thấy file .jsonl dưới .codebuddy-r4\projects' }; $f.FullName; node -e "const l=require('fs').readFileSync(process.argv[1],'utf8').split('\n')[0];console.log(Object.keys(JSON.parse(l)).join(', '))" $f.FullName; if ($LASTEXITCODE) { throw 'Đọc JSON lỗi' }
      ```
 
-   **Chỉ ghi lại, không dừng:**
-   - Tạo `C:\workspace\_thu.txt` (ngoài gốc ghi), một lần bằng shell, một lần bằng công cụ ghi file → bị từ chối nếu sandbox áp được trên máy này. Tạo được thì `baseline.md` ghi "không có giới hạn ghi trên máy này" (đã chấp nhận ở G6, Owner 28/10); xóa file đó.
-   - Kết quả lệnh shell cho biết chế độ sandbox, runner có áp đủ không, và shell nào.
-   - Probe mà Phụ lục N cần (quy tắc chung 6, đo trên exe), chạy trong sandbox:
-     - mở một bản chép của `common\exe\project2c.exe` trong `deepseek\_thu\`, với cổng debug khác 9222 (`e2e/perf/README.md`);
-     - chạy một probe Playwright trên bản build web. Bước 1 đã xóa `apps\desktop\dist`, nên `pnpm build:web` trước; thiếu bản build thì đừng nhầm là sandbox chặn.
+   - **Hash** (Owner): `(Get-FileHash "$env:USERPROFILE\.codebuddy-r4\settings.json").Hash` → ghi vào `baseline.md` và bảng đánh dấu. Đây là bản đã thêm `model` và đã kiểm luật.
 
-     Phiên thử kiểm hai việc này có chạy được không, chẳng hạn exe có ghi được hồ sơ WebView2 ngoài gốc ghi không. Bị chặn thì Owner chọn trước khi chạy gói A: hoặc thêm thư mục đó vào `additionalWritableRoots` (mở rộng phạm vi G6), hoặc chấp nhận DeepSeek ghi PLAUSIBLE cho phần chỉ kiểm được trên exe hay trình duyệt.
+   **Chỉ ghi lại, không dừng:** probe mà Phụ lục N cần (quy tắc chung 6, đo trên exe):
+   - mở một bản chép của `common\exe\project2c.exe` trong `deepseek\_thu\`, với cổng debug khác 9222 (`e2e/perf/README.md`);
+   - chạy một probe Playwright trên bản build web. Bước 1 đã xóa `apps\desktop\dist`, nên `pnpm build:web` trước.
 
-   Xong: xóa `deepseek\_thu\` và file thử còn lại. `git -C C:\workspace\Project-2C-review status --short` phải rỗng. DSH để lại file nào trong workspace thì ghi tên vào `baseline.md`: quy tắc riêng 5 của Phụ lục O cho phép đúng các file đó.
-6. Mỗi gói một phiên mới, lần lượt A → F, model `deepseek-flash`, Effort `max`:
+   Lệnh HIGH / CRITICAL nào CLI hỏi Owner trong phiên thử thì ghi tên lệnh vào `baseline.md`.
 
-   ```text
-   Gói A. Lệnh đầu tiên chỉ đọc C:\workspace\deep-review-1-6-r4\common\prompt-deepseek.md (không gộp lệnh khác), rồi làm đúng file đó.
-   ```
+   Xong: xóa `deepseek\_thu\`, `…-r4\_thu_luat\` và file thử còn lại. `git -C C:\workspace\Project-2C-review status --short` phải rỗng. CLI để lại file nào trong worktree thì ghi tên vào `baseline.md`: quy tắc riêng 5 của Phụ lục O cho phép đúng các file đó.
+6. Mỗi gói một tiến trình CLI mới, lần lượt A → F:
+   - Trước khi mở: `(Get-FileHash "$env:USERPROFILE\.codebuddy-r4\settings.json").Hash` phải bằng hash ở phiên thử; khác thì dừng, báo Claude.
+   - Mở CLI bằng lệnh của bước 4 (cửa sổ có đủ biến môi trường), rồi gửi:
 
-   Ngay khi mở phiên của gói, Owner ghi tên thư mục phiên DSH của gói vào bảng đánh dấu. Đó là thư mục mới nhất dưới thư mục của workspace (tên ghi ở phiên thử): `Get-ChildItem <thư mục workspace> -Directory | Sort-Object LastWriteTime | Select-Object -Last 1`.
+     ```text
+     Gói A. Lệnh đầu tiên chỉ đọc C:\workspace\deep-review-1-6-r4\common\prompt-deepseek.md (không gộp lệnh khác), rồi làm đúng file đó.
+     ```
+
+   - Ngay khi mở phiên của gói, Owner ghi file phiên của gói vào bảng đánh dấu. Đó là file `.jsonl` mới nhất dưới thư mục của worktree review (tên ghi ở phiên thử).
+   - CLI hỏi Owner duyệt lệnh HIGH / CRITICAL: Owner từ chối mọi lệnh ngoài việc review (Phụ lục P).
+   - Xong gói: `/cost` → ghi token; trang Usage → ghi credit; rồi thoát CLI.
+   - **Sau gói A:** credit gói A tốn nhân 5 mà vượt credit còn lại cộng một gói mua thêm 500 credit → dừng, hỏi Owner trước gói B (trần G4).
 
 7. Xong F, làm theo thứ tự:
-   1. **Thu hồi key** trên platform.deepseek.com, trước khi ai chép gì vào repo. Ghi **số dư sau** vào bảng đánh dấu (số dư trước đã ghi ở bước 4).
-   2. Dừng DSH (Ctrl+C ở cửa sổ chạy `dsh`).
-   3. Chép thư mục phiên A–F ra `deepseek\` (§L4.10).
+   1. **`/logout`** trong CLI, trước khi ai chép gì vào repo; trang tài khoản WorkBuddy có mục đăng xuất mọi thiết bị thì dùng thêm. Ghi **credit sau** vào bảng đánh dấu (credit trước đã ghi ở bước 4).
+   2. Thoát CLI.
+   3. Chép file phiên A–F ra `deepseek\` (§L4.10).
    4. Gỡ ACL:
 
       ```powershell
@@ -2191,14 +2205,15 @@ Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt
    5. Đăng nhập lại `gh auth login`.
 Phiên bị cắt (dòng đầu báo cáo vẫn `ĐANG LÀM`) thì mở phiên mới với đúng tin nhắn của gói đó; bước 0 tự làm tiếp.
 
-Bảng đánh dấu của Owner (18 ô; ghi thêm giờ bắt đầu / xong mỗi gói của Codex và DeepSeek, số dư DeepSeek trước (đợt 2 bước 4) / sau (bước 7.1), và thư mục phiên DSH của từng gói):
+Bảng đánh dấu của Owner (18 ô; ghi thêm giờ bắt đầu / xong mỗi gói của Codex và DeepSeek; với DeepSeek: credit trước (đợt 2 bước 4), sau phiên thử (bước 5), sau từng gói (bước 6) và sau cùng (bước 7.1), token theo `/cost`, hash `settings.json`, file phiên CLI của từng gói):
 
 | Bên | A | B | C | D | E | F |
 |---|---|---|---|---|---|---|
 | Claude Opus 5.5 | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
 | Codex GPT Sol 6.1 | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
 | DeepSeek v4.1 Flash (đợt 2) | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
-| Thư mục phiên DSH của DeepSeek | … | … | … | … | … | … |
+| File phiên CLI của DeepSeek | … | … | … | … | … | … |
+| Credit sau gói / token (`/cost`) của DeepSeek | … | … | … | … | … | … |
 
 ## L4.10 Sau lượt 4, kiểm độc lập, ước lượng
 
@@ -2207,7 +2222,7 @@ Bảng đánh dấu của Owner (18 ô; ghi thêm giờ bắt đầu / xong mỗ
 - Đọc đủ 18 báo cáo.
 - Gộp ba bảng R1 thành một bảng 37 dòng, ba bảng R2 thành một bảng đủ dòng. Kiểm trên code ở SHA ghim mọi kết luận khác ĐÃ SỬA và mọi chỗ các bên chấm khác nhau.
 - Kiểm mọi phát hiện mới, gộp trùng, đánh số tiếp `DR6-135…`. Báo cáo DeepSeek là dữ liệu tham khảo như Codex; mọi phát hiện của nó cũng kiểm trên code (Phase 5: 21 / 22 đúng, 1 sai).
-- Bảng so ba bên như Phase 5 (`danh-gia-deepseek-muse.md` §2): số phát hiện, đúng / KNOWN / sai, chỉ một bên thấy, thời gian, chi phí DeepSeek API (số dư trước / sau).
+- Bảng so ba bên như Phase 5 (`danh-gia-deepseek-muse.md` §2): số phát hiện, đúng / KNOWN / sai, chỉ một bên thấy, thời gian, chi phí DeepSeek (credit WorkBuddy trước / sau, token theo `/cost`).
 - So số đo với mốc cùng máy (§L4.6), gồm cỡ bundle / exe tách phần font và icon.
 - Kết luận SẴN SÀNG / CHƯA SẴN SÀNG cho G7.
 - Phạm vi sửa theo đề xuất 6; phần câu hỏi cho Owner chỉ còn cách sửa khi có nhiều phương án.
@@ -2218,15 +2233,15 @@ Phiên tổng hợp được dùng subagent / Workflow để kiểm từng phát
 
 - **Log Claude:** transcript của các phiên gói, và của subagent ở phiên Owner bật ultracode: mọi `*.jsonl` dưới `%USERPROFILE%\.claude*\projects\C--workspace-Project-2C-review\` từ giờ bắt đầu lượt 4.
 - **Log Codex:** `%USERPROFILE%\.codex\sessions\…\rollout-*.jsonl` của các ngày chạy.
-- **Log DeepSeek:** phiên của DSH lưu dưới `%USERPROFILE%\.dsh\sessions\`. Thư mục của workspace ghi ở phiên thử; thư mục phiên của từng gói ghi ở bảng đánh dấu (§L4.9 đợt 2 bước 6).
-  - Sau khi thu hồi key (§L4.9 đợt 2 bước 7), **Owner** chép thư mục phiên của từng gói A–F vào `deep-review-1-6-r4\deepseek\<gói>\session\`. Giải nén xong thì tin nhắn đầu của mỗi phiên phải là "Gói X." của đúng gói đó.
-  - Không chép gì khác của `.dsh` (`.credentials.yaml`, `.env`, `logs\`). Không phiên Claude nào đọc trong `.dsh`.
-  - Log là JSONL nén zstd (chỗ và định dạng đã kiểm ở phiên thử); giải nén bằng Node 24 (có zstd trong `zlib`). Lệnh dừng khi không có file `.zstd` nào, khi giải nén lỗi, hay khi gói nào chưa có file JSONL:
+- **Log DeepSeek:** phiên của CLI lưu dưới `%USERPROFILE%\.codebuddy-r4\projects\`, JSONL không nén. Chỗ và cách đặt tên đã kiểm ở phiên thử; file phiên của từng gói ghi ở bảng đánh dấu (§L4.9 đợt 2 bước 6).
+  - Sau `/logout` (§L4.9 đợt 2 bước 7), **Owner** chép file phiên của từng gói A–F vào `deep-review-1-6-r4\deepseek\<gói>\session\`. Tin nhắn đầu của mỗi phiên phải là "Gói X." của đúng gói đó.
+  - Không chép gì khác của `.codebuddy-r4` (`settings.json` đã có bản ở `common\`; `logs\`, `traces\`, `usage-data\`). Không phiên Claude nào đọc trong `.codebuddy-r4`.
+  - Lệnh dừng khi gói nào chưa có file JSONL:
 
     ```powershell
-    $z = @(Get-ChildItem C:\workspace\deep-review-1-6-r4\deepseek -Recurse -Filter *.zstd); if (-not $z) { throw 'Không có file .zstd nào trong deepseek\' }; foreach ($f in $z) { node -e "const z=require('zlib'),f=require('fs');f.writeFileSync(process.argv[2],z.zstdDecompressSync(f.readFileSync(process.argv[1])))" $f.FullName ($f.FullName -replace '\.zstd$',''); if ($LASTEXITCODE) { throw "Giải nén lỗi: $($f.FullName)" } }; foreach ($g in 'A','B','C','D','E','F') { if (-not (Get-ChildItem "C:\workspace\deep-review-1-6-r4\deepseek\$g\session" -Recurse -Filter *.jsonl -ErrorAction SilentlyContinue)) { throw "Gói $g chưa có log JSONL" } }
+    foreach ($g in 'A','B','C','D','E','F') { if (-not (Get-ChildItem "C:\workspace\deep-review-1-6-r4\deepseek\$g\session" -Recurse -Filter *.jsonl -ErrorAction SilentlyContinue)) { throw "Gói $g chưa có log JSONL" } }
     ```
-- **Log thô không vào repo** (Owner 28/10, G6 cho log DSH; danh sách lưu repo dưới không có log của bên nào): log phiên của ba bên, cả log DSH đã giải nén, và `common\dot2-*.json` ở lại `deep-review-1-6-r4\` trên Home PC. Báo cáo và bản tổng hợp chỉ trích đoạn log cần dẫn, sau khi đã quét mẫu key và key đã thu hồi.
+- **Log thô không vào repo** (Owner 28/10, G6 cho log của CLI; danh sách lưu repo dưới không có log của bên nào): log phiên của ba bên và `common\dot2-*.json` ở lại `deep-review-1-6-r4\` trên Home PC. Báo cáo và bản tổng hợp chỉ trích đoạn log cần dẫn, sau khi đã quét mẫu key và đã `/logout`.
 - **Danh sách quét thêm:**
   - `deep-review-1-6-r4[\\/](claude|codex|deepseek)` của bên khác;
   - `deep-review-1-6-r3[\\/]…`, `deep-review-1-6-r2[\\/]…` và `deep-review-1-6[\\/]…` không phải của chính bên đó (DeepSeek: mọi thư mục này);
@@ -2234,16 +2249,16 @@ Phiên tổng hợp được dùng subagent / Workflow để kiểm từng phát
   - lệnh đầu tiên của mỗi phiên gói: chỉ đọc file prompt (§L4.7);
   - `pnpm`, kể cả `pnpm exec`, chạy trong bản chép repo;
   - lệnh ghi ngoài thư mục của bên đó, trừ vá rồi trả nguyên byte theo quy tắc chung 1;
-  - DeepSeek: lệnh bị sandbox từ chối (kết quả lệnh ghi chế độ và thao tác bị từ chối), và cách model xử lý sau đó;
-  - DeepSeek: lệnh đụng `.dsh`, `/permission`, gọi `127.0.0.1:3080`, `gh`, `git commit` / `push` / `reset` / …, `cmdkey`, `eval:ai`, `Project-2C-review-2`;
+  - DeepSeek: lệnh hay công cụ bị luật của CLI hoặc ACL từ chối, và cách model xử lý sau đó (vd. đổi sang lệnh khác để đọc cùng chỗ);
+  - DeepSeek: lệnh đụng `.codebuddy*` (nhất là `settings.json`), lệnh `codebuddy`, `gh`, `git commit` / `push` / `reset` / …, Credential Manager (`cmdkey`, `vaultcmd`, `CredRead`, `CredentialManager`, `Get-StoredCredential`), `eval:ai`, `Project-2C-review-2`, mạng ra ngoài máy (`curl`, `Invoke-WebRequest`, `Invoke-RestMethod`);
   - DeepSeek: lệnh đổi quyền file (`icacls`, `Set-Acl`, `takeown`) hay chạy `dot2.mjs`;
   - dữ liệu của bên khác: `.codex`, `.claude*\projects`, `.claude*\file-history`, `%TEMP%\claude`, `%APPDATA%\Claude`, `%LOCALAPPDATA%\OpenAI`;
-  - mẫu key (`sk-`, `gho_`, `ghp_`, `github_pat_`) trong báo cáo và log của DeepSeek, quét trước khi chép bất cứ gì vào repo.
+  - mẫu key (`sk-`, `gho_`, `ghp_`, `github_pat_`) và chuỗi theo sau `Bearer` / `Authorization` trong báo cáo và log của DeepSeek, quét trước khi chép bất cứ gì vào repo.
 
 **Báo cáo gốc lưu ở repo** (PR docs của phiên tổng hợp):
 
 - `docs/reviews/raw/<ngày tổng hợp>/{claude,codex,deepseek}/<gói>.md` nguyên văn;
-- `common-known.md`, `common-baseline.md`, `common-fixes.md`, `common-dsh-deepseek.md` (patch và cấu hình DSH sau patch đã dùng, chép vào Markdown); `common-plan.md`, `common-prompt-*.md` chỉ khi khác bản trong repo;
+- `common-known.md`, `common-baseline.md`, `common-fixes.md`, `common-codebuddy-settings.md` (`settings.json` của CLI đã dùng, chép vào Markdown); `common-plan.md`, `common-prompt-*.md` chỉ khi khác bản trong repo;
 - bản tổng hợp `docs/reviews/<ngày>-deep-review-phase-1-6-luot-4-tong-hop.md`.
 
 Thư mục bằng chứng `deep-review-1-6-r4\` giữ trên Home PC tới v1.0.
@@ -2254,11 +2269,11 @@ Thư mục bằng chứng `deep-review-1-6-r4\` giữ trên Home PC tới v1.0.
 - Đợt 1: Claude ≈ 8–10 h; Codex tùy model mới. Đợt 2: DeepSeek ≈ 3–5 h.
 - Cả lượt 4 ≈ 3 ngày tính cả chuẩn bị, hai đợt và tổng hợp, rồi tới đợt sửa. Trước đó là đợt sửa mục OPEN (3 Issue nhỏ).
 - Owner can thiệp:
-  - cài DSH trước bước chuẩn bị;
+  - cài CodeBuddy Code CLI trước bước chuẩn bị; đăng ký WorkBuddy Pro sát ngày chạy đợt 2;
   - mở 6 phiên Claude + 6 phiên Codex + 6 phiên DeepSeek;
-  - ở đợt 2: đóng Codex, chạy `dot2.mjs` (dọn, chặn ACL, quét, gỡ ACL), `gh auth logout` / `login`, nhập key, phiên thử, ghi thư mục phiên DSH của từng gói, thu hồi key, chép log phiên;
+  - ở đợt 2: đóng Codex, chạy `dot2.mjs` (dọn, chặn ACL, quét, gỡ ACL), `gh auth logout` / `login`, chép `settings.json`, `/login` / `/logout` của CLI, phiên thử, so hash `settings.json` trước mỗi gói, duyệt hay từ chối lệnh HIGH / CRITICAL, ghi file phiên của từng gói, chép log phiên;
   - để máy rảnh ≈ 5 phút ở bước 7;
-  - ghi giờ bắt đầu / xong mỗi gói của Codex và DeepSeek, và số dư DeepSeek trước / sau.
+  - ghi giờ bắt đầu / xong mỗi gói của Codex và DeepSeek; credit WorkBuddy và token `/cost` của DeepSeek.
 
 ## L4.11 Quyết định của Owner (26–28/10/2026) và đề xuất
 
@@ -2271,7 +2286,7 @@ Thư mục bằng chứng `deep-review-1-6-r4\` giữ trên Home PC tới v1.0.
 
 **Owner bổ sung 27/10** (khi xem bản nháp):
 
-- **B1.** "anh bổ sung kế hoạch review sẽ có thêm deepseek v4.1 flash": DeepSeek v4.1 Flash là bên review thứ ba, chỉ đọc, báo cáo là dữ liệu tham khảo. Lượt 4 có 6 gói × 3 bên = 18 báo cáo. Bỏ DeepSeek của M5 (13/10) không áp cho lượt 4 (ADR-0001 M10). Chạy trên gói OpenCode Go nên tốn hạn mức (G4: Owner yêu cầu). **Đổi 28/10:** chạy qua DSH, trả DeepSeek API theo mức dùng (dưới).
+- **B1.** "anh bổ sung kế hoạch review sẽ có thêm deepseek v4.1 flash": DeepSeek v4.1 Flash là bên review thứ ba, chỉ đọc, báo cáo là dữ liệu tham khảo. Lượt 4 có 6 gói × 3 bên = 18 báo cáo. Bỏ DeepSeek của M5 (13/10) không áp cho lượt 4 (ADR-0001 M10). Chạy trên gói OpenCode Go nên tốn hạn mức (G4: Owner yêu cầu). **Đổi 28/10, hai lần:** chạy qua DSH, trả DeepSeek API theo mức dùng; rồi cùng ngày qua CodeBuddy Code CLI trên gói WorkBuddy Pro (dưới).
 - **B2.** "anh chỉ làm review lượt 4 khi tất cả các review-notes open đã được sửa hết": lượt 4 chỉ chạy khi sổ OPEN rỗng, kể cả mục [G7]. Quyết định này thay quyết định trước đó cùng ngày ("mục [G7] làm sau khi xong mọi task"). SHA ghim vì vậy là `main` sau đợt sửa mục OPEN, không còn là `a59ef07`.
 
 **Đề xuất, Owner chọn cùng G1** (mục 3–7 của #854; mục 8, 9 thêm do B1, B2). Owner chọn ngày 27/10/2026, trong phiên soạn: cả bảy mục theo đề xuất.
@@ -2284,11 +2299,11 @@ Thư mục bằng chứng `deep-review-1-6-r4\` giữ trên Home PC tới v1.0.
 | 6 | Sau tổng hợp: sửa hết như lượt 3, rồi G7 | §L4.10 | Theo đề xuất (27/10/2026) |
 | 7 | Số đo trên Home PC, so mốc Home PC sau #656 như lượt 3, thêm số lượt 3 cùng máy làm tham khảo. Ghi riêng cỡ exe / bundle do font, icon mới và `zod/mini`. Dữ liệu tải vào exe bằng script qua cổng debug như lượt 3 | §L4.6, §L4.9 | Theo đề xuất (27/10/2026) |
 | 8 | Đợt sửa mục OPEN trước lượt 4 (B2): ba Issue tạo sau G1. T-310 PR nhỏ code: 7 mục [G7] code và ghi chú code của review kế hoạch này. T-311 tài liệu: `phase-6.md` ×2, nghiệm thu ×1 và ghi chú tài liệu của review kế hoạch này. T-312 chụp lại ảnh hướng dẫn: 4 mục, làm sau T-310. Ảnh chụp lúc này là ảnh trước lượt 4; đợt sửa lượt 4 đổi màn nào thì G7 chụp lại ảnh đó | §L4.2 | Theo đề xuất (27/10/2026) |
-| 9 | DeepSeek chạy đợt 2 một mình, sau khi đủ 12 báo cáo của Claude và Codex. Worktree `Project-2C-review`; ACL chặn `claude\`, `codex\` của lượt 4, cộng `opencode.json` (Phụ lục P bản 27/10, PR #863) như review Phase 5. Model `opencode-go/deepseek-v4.1-flash` qua gói Go, biến thể suy luận cao nhất. Phương án khác: ba bên cùng lúc, DeepSeek ở worktree thứ ba, chỉ `opencode.json` chặn (lách được) | §L4.2, §L4.7, §L4.9 | Theo đề xuất (27/10/2026); **28/10 đổi cách chạy:** DSH thay OpenCode (dưới) |
+| 9 | DeepSeek chạy đợt 2 một mình, sau khi đủ 12 báo cáo của Claude và Codex. Worktree `Project-2C-review`; ACL chặn `claude\`, `codex\` của lượt 4, cộng `opencode.json` (Phụ lục P bản 27/10, PR #863) như review Phase 5. Model `opencode-go/deepseek-v4.1-flash` qua gói Go, biến thể suy luận cao nhất. Phương án khác: ba bên cùng lúc, DeepSeek ở worktree thứ ba, chỉ `opencode.json` chặn (lách được) | §L4.2, §L4.7, §L4.9 | Theo đề xuất (27/10/2026); **28/10 đổi cách chạy hai lần:** DSH thay OpenCode, rồi CodeBuddy Code CLI thay DSH (dưới) |
 
 Owner duyệt G1 ngày 28/10/2026 bằng comment trên PR #863 (như PR #647, #715), kèm một thay đổi.
 
-**Owner đổi ngày 28/10, khi duyệt G1.** Việc này là Issue riêng T-313 (#868); Owner 28/10 không gộp vào T-311.
+**Owner đổi ngày 28/10, khi duyệt G1.** Việc này là Issue riêng T-313 (#868); Owner 28/10 không gộp vào T-311. Cùng ngày Owner đổi lần 2 sang CodeBuddy Code CLI (mục sau): phần DSH dưới đây chỉ còn là lịch sử; bộ ACL đợt 2 và `dot2.mjs` của nó giữ.
 
 - "anh duyệt G1, nhưng lần review lượt 4 này với Deepseek sẽ không dùng opencode, mà dùng trực tiếp Deepseek API với deepseek harness". Lý do, Owner nói cùng ngày: "Deepseek Harness (DSH) là công cụ chính thức từ Deepseek, gọi API trực tiếp từ Deepseek trả phí dạng PAYG, không qua 1 bên khác như Opencode, chất lượng model cao hơn khá nhiều".
 - G4 / G6, duyệt ngày 28/10 trên #868, theo đề xuất của Claude ở comment cùng ngày: "Duyệt đề xuất G4/G6 trên #868: DSH 0.2.1-rc.2, phương án (b) cùng user, key riêng nạp 10 USD, trần 15 USD, thu hồi key ngay sau gói F, log phiên và phiên thử như đề xuất."
@@ -2303,6 +2318,26 @@ Owner duyệt G1 ngày 28/10/2026 bằng comment trên PR #863 (như PR #647, #7
   - phương án (a): chỗ có mã phát hiện trong danh sách phiên của app desktop Claude (`%APPDATA%\Claude\claude-code-sessions`) chỉ ghi vào `baseline.md`, đợt 2 chạy tiếp; phương án (b), đóng app suốt đợt 2 để chặn cả chỗ này, không chọn;
   - phiên thử thêm: kiểm `node_modules` của worktree review, đọc thử từng loại mục bị chặn; việc giải nén được log DSH trở lại nhóm làm dừng đợt 2, như đề xuất Owner duyệt.
 - Phần còn lại của mục 9 giữ nguyên: đợt 2 chạy một mình, ở worktree `Project-2C-review`, có ACL trên `claude\`, `codex\`.
+
+**Owner đổi lần 2 ngày 28/10: CodeBuddy Code CLI trên gói WorkBuddy Pro.** Issue riêng T-315 (#880).
+
+- Owner, trong phiên Claude nghiên cứu WorkBuddy / CodeBuddy cùng ngày: "Chọn workbuddy pro". Lý do, Owner nói cùng phiên:
+  - "Về tiêu chí gần với inference chính hãng có lẽ Tencent đáng tin hơn những bên khác và đó là lý do anh muốn sub";
+  - "Anh hướng về sub của Workbuddy vì họ tặng credit daily, và dùng được với codebuddy cli".
+- Phiên nghiên cứu ghi, Owner đã biết khi chọn:
+  - DeepSeek gọi WorkBuddy (gồm CodeBuddy) là "official partners" của V4.1-Flash (10/09); bản 1017 "optimized for … Tencent CodeBuddy, WorkBuddy" (17/10);
+  - tài liệu Tencent không ghi model DeepSeek gắn sẵn chạy đường Vendor Direct (DeepSeek phục vụ) hay bản Tencent tự chạy;
+  - hai phương án không chọn: giữ DSH; Token Plan của Tencent Cloud (Vendor Direct, credit bằng giá API).
+- G4 / G6 duyệt ngày 28/10 trên #880, theo đề xuất của Claude ở comment cùng ngày: "Duyệt cả năm điểm, làm PR docs đi". Lần duyệt này thay lần duyệt G4 / G6 cho DSH trên #868.
+  1. CLI `@tencent-ai/codebuddy-code` `2.177.1`, Owner tự cài; thư mục cấu hình riêng `.codebuddy-r4`; chạy `codebuddy -y --setting-sources user`, mỗi gói một tiến trình; tắt telemetry, báo lỗi, phản hồi và tự cập nhật.
+  2. Gói WorkBuddy Pro một tháng, đăng ký sát ngày chạy đợt 2; trần G4 25 USD; đo credit ở phiên thử và sau gói A, ước vượt trần thì dừng.
+  3. Owner tự `/login` sau khi ACL đã đặt, `/logout` ngay sau gói F. Token nằm ở Windows Credential Manager; rủi ro cùng user chấp nhận như phương án (b). Bộ ACL đợt 2, `dot2.mjs` và `gh auth logout` giữ.
+  4. Luật `deny` của CLI (Phụ lục P); chế độ `-y`, không đặt `CODEBUDDY_IS_SANDBOX`; so hash `settings.json` trước mỗi gói.
+  5. Log phiên và phiên thử như §L4.9, §L4.10.
+- PR docs của T-315 viết lại Phụ lục P cho CLI, sửa §L4.1, §L4.2, §L4.7–§L4.10 và Phụ lục O theo đó. Thêm so với đề xuất, chỉ để chặn thêm: luật `deny` cho vài lệnh shell mà Phụ lục N đã cấm (Phụ lục P).
+- Cùng PR sửa hai ghi chú [G7] của review #878:
+  - bước chuẩn bị 3 kiểm `target\` chưa có;
+  - `clean` xóa cache Vite của thư mục mới được giữ vì chứa `node_modules`, và in một dòng cho mỗi thư mục đó.
 
 ## Phụ lục L — Prompt Claude (lượt 4)
 
@@ -2504,13 +2539,13 @@ Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md` của lượt 4; 
 
 ## Phụ lục O — Prompt DeepSeek (lượt 4)
 
-File `common\prompt-deepseek.md` = đoạn dưới + nguyên văn Phụ lục N; bước chuẩn bị chỉ thay `{SHA}` / `{SHA_ĐỦ}`. Owner chạy DeepSeek ở đợt 2 (§L4.9), mỗi gói một phiên mới trong giao diện web của DSH, lần lượt A → F. Đoạn này theo prompt DeepSeek của review Phase 5 (`docs/reviews/raw/2026-10-10/common-plan-opencode.md` Phụ lục C), đổi theo bài học §L4.7 và theo cách chạy DSH (Owner 28/10).
+File `common\prompt-deepseek.md` = đoạn dưới + nguyên văn Phụ lục N; bước chuẩn bị chỉ thay `{SHA}` / `{SHA_ĐỦ}`. Owner chạy DeepSeek ở đợt 2 (§L4.9), mỗi gói một tiến trình mới của CodeBuddy Code CLI, lần lượt A → F. Đoạn này theo prompt DeepSeek của review Phase 5 (`docs/reviews/raw/2026-10-10/common-plan-opencode.md` Phụ lục C), đổi theo bài học §L4.7 và theo cách chạy CodeBuddy (Owner 28/10).
 
 > # Deep review Phase 1–6, lượt 4 — DeepSeek
 >
 > **{GÓI}** = chữ gói (một chữ A…F) Owner ghi trong tin nhắn mở phiên; mọi chỗ `{GÓI}` dưới đây thay bằng chữ đó. File này là toàn bộ chỉ dẫn của phiên.
 >
-> Bạn là **reviewer độc lập DeepSeek** (DeepSeek v4.1 Flash qua DeepSeek Harness, Owner chọn) của deep review Phase 1–6, **lượt 4**, gói `{GÓI}`. Repo: worktree `C:\workspace\Project-2C-review`, detached ở SHA **`{SHA}`** (`{SHA_ĐỦ}`). Đọc xong file này thì chạy `git rev-parse HEAD` và `git status --short`; SHA lệch, hay status có gì ngoài file DSH tự tạo mà `common\baseline.md` ghi (phiên thử), thì dừng và báo Owner.
+> Bạn là **reviewer độc lập DeepSeek** (DeepSeek v4.1 Flash qua CodeBuddy Code CLI, Owner chọn) của deep review Phase 1–6, **lượt 4**, gói `{GÓI}`. Repo: worktree `C:\workspace\Project-2C-review`, detached ở SHA **`{SHA}`** (`{SHA_ĐỦ}`). Đọc xong file này thì chạy `git rev-parse HEAD` và `git status --short`; SHA lệch, hay status có gì ngoài file CLI tự tạo mà `common\baseline.md` ghi (phiên thử), thì dừng và báo Owner.
 >
 > Về file quy tắc của repo (`CLAUDE.md`): đó là quy trình phát triển của Claude. Dùng để hiểu dự án, **không** làm nghi thức phiên (`/session-start`, HANDOFF, hook, skill, PR, Issue, merge, commit). Owner cho phép DeepSeek review lượt 4, chỉ đọc (ADR-0001 phụ lục M10). Bạn chỉ đọc, không viết code; báo cáo là dữ liệu tham khảo, phiên tổng hợp của Claude kiểm lại từng phát hiện trên code.
 >
@@ -2521,10 +2556,10 @@ File `common\prompt-deepseek.md` = đoạn dưới + nguyên văn Phụ lục N;
 >    - repo ở SHA trên, gồm báo cáo gốc lượt 1–3 của mọi bên ở `docs/reviews/raw/2026-10-15/`, `docs/reviews/raw/2026-10-17/`, `docs/reviews/raw/2026-10-21/` (để biết các lượt trước đã thử gì);
 >    - `C:\workspace\deep-review-1-6-r4\common\`;
 >    - báo cáo của chính bạn trong `…-r4\deepseek\`.
-> 4. Không dùng subagent, không lên web, không chạy `gh`. Không chạy `dsh`, không đổi quyền của DSH (`/permission`) hay quyền file (`icacls`, `Set-Acl`, `takeown`), không gọi giao diện web của DSH (`127.0.0.1:3080`), không chạy `common\dot2.mjs`. Không đọc `~/.dsh` (có key API), file đăng nhập hay dữ liệu của Claude / Codex (`~/.codex`, `~/.claude*`, `%APPDATA%\Claude`, `%LOCALAPPDATA%\OpenAI`, `%TEMP%\claude`), Windows Credential Manager. Thông tin Issue / PR sửa có ở `common\fixes.md`.
-> 5. Ghi báo cáo vào `C:\workspace\deep-review-1-6-r4\deepseek\{GÓI}.md`, probe / bản chép / log vào `…-r4\deepseek\{GÓI}\`. Cuối phiên `git status --short` của repo như đầu phiên: rỗng, hoặc chỉ có file DSH tự tạo mà `common\baseline.md` ghi.
+> 4. Không dùng subagent hay skill, không lên web, không gọi mạng ra ngoài máy (`curl`, `Invoke-WebRequest`), không chạy `gh`. Không chạy `codebuddy`, không đọc hay sửa thư mục cấu hình của CLI (`~/.codebuddy*`, gồm `settings.json`), không đổi quyền file (`icacls`, `Set-Acl`, `takeown`), không chạy `common\dot2.mjs`. Không đọc file đăng nhập hay dữ liệu của Claude / Codex (`~/.codex`, `~/.claude*`, `%APPDATA%\Claude`, `%LOCALAPPDATA%\OpenAI`, `%TEMP%\claude`), Windows Credential Manager (`cmdkey`, `vaultcmd`, mọi API đọc thông tin đăng nhập). Lệnh hay công cụ bị từ chối thì không thử cách khác để đọc cùng chỗ. Thông tin Issue / PR sửa có ở `common\fixes.md`.
+> 5. Ghi báo cáo vào `C:\workspace\deep-review-1-6-r4\deepseek\{GÓI}.md`, probe / bản chép / log vào `…-r4\deepseek\{GÓI}\`. Cuối phiên `git status --short` của repo như đầu phiên: rỗng, hoặc chỉ có file CLI tự tạo mà `common\baseline.md` ghi.
 > 6. Gói F được đọc `…-r4\deepseek\A…E.md`. Không tổng hợp với báo cáo nào khác, không tạo Issue, không đề xuất merge.
-> 7. Mục 1 của báo cáo ghi DSH `0.2.1-rc.2` (bản Owner cài, theo `common\baseline.md`), model và Effort.
+> 7. Mục 1 của báo cáo ghi CodeBuddy Code CLI `2.177.1` (bản Owner cài, theo `common\baseline.md`), model và Effort.
 > 8. Bài học của chính DeepSeek ở review Phase 5 (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §3.1, §6, §7):
 >    - hai lỗi Medium khi đó đều cần **chuỗi nhiều bước qua nhiều gói**, và DeepSeek không dựng chuỗi nào như vậy. Phần 2 dành phần lớn thời gian cho chuỗi; kết luận SẴN SÀNG ở F phải nêu đã thử những chuỗi nào;
 >    - gói D khi đó không chạy giao diện ("không có môi trường DOM"): lần này kết luận về màn phải chạy trên bản build web bằng Playwright hoặc trên exe (phần chung, quy tắc chung 6);
@@ -2534,97 +2569,166 @@ File `common\prompt-deepseek.md` = đoạn dưới + nguyên văn Phụ lục N;
 >
 > Phần chung dưới đây áp dụng đầy đủ. Trong phần chung: `<bên>` = `deepseek`, `<ID>` = `DSR4`.
 
-## Phụ lục P — Cấu hình DSH của DeepSeek (lượt 4)
+## Phụ lục P — Cấu hình CodeBuddy Code CLI của DeepSeek (lượt 4)
 
-Owner 28/10/2026 (§L4.11; G4 / G6 duyệt trên #868): DeepSeek chạy qua **DeepSeek Harness (DSH)** `@deepseek-ai/dsh@0.2.1-rc.2`, gọi DeepSeek API trực tiếp, trả theo mức dùng, cùng user Windows (phương án (b)). Bản cấu hình OpenCode ngày 27/10 (PR #863) bỏ.
+Owner 28/10/2026 (§L4.11; G4 / G6 duyệt trên #880): DeepSeek chạy qua **CodeBuddy Code CLI** `@tencent-ai/codebuddy-code@2.177.1` của Tencent, dùng model DeepSeek V4.1 Flash gắn sẵn của gói **WorkBuddy Pro** bản quốc tế, cùng user Windows (phương án (b)). Cấu hình của bản trước (PR #872, §L4.11) bỏ; bộ ACL đợt 2 và `dot2.mjs` của bản đó giữ.
 
-**Tài liệu nói gì** (repo `deepseek-ai/deepseek-harness`, đọc 28/10; nguồn ở comment đề xuất trên #868):
+**Tài liệu nói gì** (`workbuddy.ai/docs/cli/*`, đọc 28/10; nguồn ở comment đề xuất trên #880):
 
-- DSH là bản developer preview, chưa qua audit bảo mật. `SAFETY.md`: sandbox, duyệt và quyền "do not guarantee isolation".
-- Sandbox chỉ giới hạn **ghi** của lệnh shell: `read-only`, `workspace-write` (gốc workspace, `additionalWritableRoots`, vùng tạm), `danger-full-access`. Tài liệu không có luật đọc theo đường dẫn, luật theo lệnh hay chặn mạng (README `sandbox`, `bash-sandbox`, `sandbox-policy`).
-- Trên Windows hai README nói khác nhau. `sandbox`: có runner restricted-token, chỉ áp "a subset" việc ghi. `bash-sandbox`: chỉ liệt kê runner Linux / macOS. Phiên thử (§L4.9 đợt 2 bước 5) cho biết máy này ra sao.
-- Key DeepSeek lưu ở `%USERPROFILE%\.dsh\.credentials.yaml`, YAML thường. Tiến trình công cụ của agent chạy cùng user nên đọc được file này (README `credentials-local`).
-- Báo cáo #250 (chưa xác nhận, chưa sửa): lệnh trong sandbox gọi được control plane của giao diện web qua loopback để tự nâng quyền.
+- Luật quyền `deny` / `ask` / `allow`. **Deny luôn thắng**, kể cả ở `bypassPermissions` (`-y`) (`permissions`, `permission-modes`).
+- Đường dẫn trong luật: `//path` tuyệt đối, `~/path` tính từ thư mục nhà, `/path` tính từ gốc dự án; khớp không phân biệt hoa thường. Tài liệu không có ví dụ đường dẫn Windows (`permissions`).
+- Luật `Read` chặn công cụ đọc file, và cả "some Bash file-read commands (`cat`, `head`, `tail`, etc.)". Luật `Edit` chặn công cụ `Edit` / `Write` / `NotebookEdit`, nhưng "do not block indirect paths through Bash" (`permissions`).
+- Tên công cụ: `Bash`, `Read`, `Edit`, `Write`, `NotebookEdit`, `WebFetch`, `Agent` (subagent), `Skill`, `mcp__*`. `WebSearch` không có trong tài liệu (`permissions`).
+- Luật `Bash(<tiền tố>:*)` khớp theo tiền tố và "can be bypassed" (`settings`); lệnh ghép bị chặn khi một lệnh con khớp (`permissions`).
+- Sandbox cho shell chỉ có trên macOS / Linux (`settings`). Trên Windows, lệnh chạy qua Git Bash nếu máy có, không cách ly (`troubleshooting`). Home PC có Git for Windows 2.55.
+- `-y` = `bypassPermissions`: công cụ không bị luật chặn thì chạy luôn; lệnh HIGH / CRITICAL vẫn hỏi ở phiên tương tác, trừ khi đặt `CODEBUDDY_IS_SANDBOX=1` (`permission-modes`, `cli-reference`). `permissions.disableAutoMode: "disable"` tắt chế độ AI tự duyệt (`settings`).
+- Thông tin đăng nhập lưu ở Windows Credential Manager (`iam`). Lệnh của model chạy cùng user nên đọc được.
+- `CODEBUDDY_CONFIG_DIR` dời cả thư mục cấu hình; phiên lưu dưới `projects\` thành file `.jsonl` (`troubleshooting`, `codebuddy-dir`). `--setting-sources user` chỉ nạp settings của user (`cli-reference`). Sửa `settings.json` chỉ có hiệu lực sau khi khởi động lại hay `/clear` (`settings`).
+- Model gắn sẵn: tài liệu không ghi chạy đường Vendor Direct (DeepSeek phục vụ) hay bản Tencent tự chạy. Owner chấp nhận (§L4.11).
 
-Vì vậy **ACL của đợt 2 là lớp chặn đọc duy nhất**. Cấu hình dưới chỉ thêm; model vẫn lách được.
+Vì vậy **ACL của đợt 2 là lớp chặn đọc chính**. Luật của CLI chỉ thêm: chặn công cụ đọc / ghi file, `cat` / `head` / `tail` và vài lệnh shell theo tiền tố. Model vẫn lách được bằng lệnh shell khác.
 
-**Ranh giới key** (G6, Owner 28/10), theo thứ tự:
+**Ranh giới tài khoản** (G6, Owner 28/10), theo thứ tự:
 
-1. Owner cài DSH trước bước chuẩn bị: `npm install -g @deepseek-ai/dsh@0.2.1-rc.2`. Không cài plugin bên thứ ba.
-2. Bước chuẩn bị (Claude) dựng patch khi máy chưa có key (mục "Dựng và kiểm").
-3. Owner tạo key riêng cho lượt 4 trên platform.deepseek.com, nạp trước 10 USD (trần 15 USD). Owner chỉ nhập key vào DSH ở đợt 2 bước 4.
-4. Từ lúc nhập key, chỉ Owner chạy `dsh` và đụng tới `%USERPROFILE%\.dsh`. Không phiên Claude nào đọc, đặt, in hay lưu key; key không đi qua biến môi trường.
-5. Xong F: Owner thu hồi key trước, rồi mới chép log phiên ra (§L4.10).
+1. Owner cài CLI trước bước chuẩn bị: `npm install -g @tencent-ai/codebuddy-code@2.177.1`. Không cài plugin, MCP hay hook. Đã đăng nhập CLI khi kiểm sớm thì `/logout` trước bước chuẩn bị.
+2. Bước chuẩn bị (Claude) viết `common\codebuddy-settings.json` theo mẫu dưới, và chỉ chạy `codebuddy --version`.
+3. Owner đăng ký WorkBuddy Pro sát ngày chạy đợt 2.
+4. Đợt 2 bước 4: Owner chép `codebuddy-settings.json` thành `%USERPROFILE%\.codebuddy-r4\settings.json` rồi mới `/login`. Từ đó chỉ Owner chạy `codebuddy` và đụng tới `.codebuddy-r4`. Không phiên Claude nào đăng nhập, đọc, in hay lưu token; không dùng `CODEBUDDY_API_KEY` hay `CODEBUDDY_AUTH_TOKEN`.
+5. Xong F: `/logout` trước, rồi mới chép log phiên ra (§L4.10).
 
-**Giá trị phải có sau patch** (đọc ở `--dump-config`, mục "Dựng và kiểm" bước 3):
+**Gói và chi phí** (G4, Owner 28/10):
 
-| Việc | Hàng plugin | Giá trị | Nguồn |
-|---|---|---|---|
-| Ghi | `@deepseek-ai/dsh-sandbox-policy` | `mode: workspace-write`; `additionalWritableRoots` chỉ có `C:\workspace\deep-review-1-6-r4\deepseek`; khóa khác như bản mặc định | README `sandbox-policy` |
-| Duyệt | `@deepseek-ai/dsh-permission-presets` | preset `review` = `sandbox: workspace-write`, `approval: never`; `defaultPreset: review`; preset khác như bản mặc định | README `permission-presets` |
-| Web | `@deepseek-ai/dsh-tool-web` | `search: false`, `fetch: false` | README `tool-web` |
+- WorkBuddy Pro một tháng: 10 USD, tháng đầu 7 USD với người chưa từng đăng ký hay dùng thử; 2.000 credit/tháng, không cộng dồn. Thêm 50 credit cho mỗi ngày có chat hay tác vụ trong app WorkBuddy hoặc CodeBuddy (khuyến mãi có thời hạn). Không cần gia hạn thì hủy tự gia hạn ngay sau khi đăng ký; gói vẫn dùng được tới hết kỳ.
+- **Trần 25 USD:** gói Pro cộng tối đa một gói mua thêm 500 credit (15 USD, không hoàn tiền).
+- WorkBuddy không công bố 1 credit bằng bao nhiêu token. DeepSeek V4.1 Flash miễn phí trên bản quốc tế tới hết 31/10, sau đó hệ số chưa công bố. Vì vậy đo ở phiên thử và sau gói A (§L4.9 đợt 2 bước 5, 6); ước vượt trần thì dừng, hỏi Owner.
 
-Model `deepseek-flash` và Effort `max` chọn ở bộ chọn model của giao diện; DSH lưu lựa chọn đó làm mặc định cho phiên mới (`docs/user/guide/providers.md` của DSH). Không patch hàng `llm-deepseek`: patch thay cả `config` của hàng, dễ mất tham chiếu key.
+**Cửa sổ chạy CLI** (lệnh ở §L4.9 đợt 2 bước 4):
 
-**Mẫu patch** (`common\dsh-deepseek.patch.yml`). Patch thay cả `config` của hàng, không gộp từng khóa (README `apps/cli/reference`). Vì vậy bước chuẩn bị chép nguyên văn từ bản mặc định mọi khóa không đổi của ba hàng này, kể cả biểu thức `!!js`:
+| Việc | Cờ / biến | Nguồn |
+|---|---|---|
+| Thư mục cấu hình riêng của lượt 4: cấu hình, phiên và log tách khỏi việc khác của Owner trên CodeBuddy | `CODEBUDDY_CONFIG_DIR=%USERPROFILE%\.codebuddy-r4` | `troubleshooting` |
+| Bỏ settings của dự án, kể cả `.codebuddy\settings*.json` mà model tạo trong worktree | `--setting-sources user` | `cli-reference` |
+| Không hỏi duyệt từng công cụ; luật `deny` vẫn áp | `-y` | `permission-modes` |
+| Lệnh HIGH / CRITICAL vẫn hỏi Owner; Owner từ chối mọi lệnh ngoài việc review | không đặt `CODEBUDDY_IS_SANDBOX` | `permission-modes`, `env-vars` |
+| Không gửi telemetry, báo lỗi; không tự cập nhật; tắt `/feedback` | `DISABLE_TELEMETRY`, `DISABLE_ERROR_REPORTING`, `DISABLE_AUTOUPDATER`, `DISABLE_FEEDBACK_COMMAND` = `1` | `env-vars` |
 
-```yaml
-- name: '@deepseek-ai/dsh-sandbox-policy'
-  config:
-    mode: workspace-write
-    additionalWritableRoots:
-      - 'C:\workspace\deep-review-1-6-r4\deepseek'
-    # khóa còn lại (vd. workspaceRoot) chép từ bản mặc định
-- name: '@deepseek-ai/dsh-permission-presets'
-  config:
-    presets:
-      review:
-        sandbox: workspace-write
-        approval: never
-      # các preset của bản mặc định chép nguyên
-    defaultPreset: review
-- name: '@deepseek-ai/dsh-tool-web'
-  config:
-    search: false
-    fetch: false
+Mỗi gói một tiến trình mới: thoát CLI rồi mở lại, không `/resume`, không `/clear`.
+
+**Mẫu `settings.json`** (`common\codebuddy-settings.json`). Bước chuẩn bị chép nguyên văn; phiên thử thêm `"model"` (ID theo `/model list`):
+
+```json
+{
+  "reasoningEffort": "max",
+  "permissions": {
+    "disableAutoMode": "disable",
+    "deny": [
+      "Read(//c/workspace/deep-review-1-6-r4/claude/**)",
+      "Read(//c/workspace/deep-review-1-6-r4/codex/**)",
+      "Read(//c/workspace/deep-review-1-6-r4/_thu_luat/**)",
+      "Read(//c/workspace/deep-review-1-6-r3/**)",
+      "Read(//c/workspace/deep-review-1-6-r2/**)",
+      "Read(//c/workspace/deep-review-1-6/**)",
+      "Read(//c/workspace/Project-2C-review-2/**)",
+      "Read(//c/workspace/Project-2/**)",
+      "Read(~/.codex/**)",
+      "Read(~/.claude*/**)",
+      "Read(~/.codebuddy*/**)",
+      "Read(~/AppData/Roaming/Claude/**)",
+      "Read(~/AppData/Local/Claude/**)",
+      "Read(~/AppData/Local/OpenAI/**)",
+      "Read(~/AppData/Local/Temp/claude/**)",
+      "Edit(//c/workspace/Project-2C-review/**)",
+      "Write(//c/workspace/Project-2C-review/**)",
+      "NotebookEdit(//c/workspace/Project-2C-review/**)",
+      "Edit(//c/workspace/Project-2C/**)",
+      "Write(//c/workspace/Project-2C/**)",
+      "NotebookEdit(//c/workspace/Project-2C/**)",
+      "Edit(//c/workspace/Project-2C-review-2/**)",
+      "Write(//c/workspace/Project-2C-review-2/**)",
+      "NotebookEdit(//c/workspace/Project-2C-review-2/**)",
+      "Edit(//c/workspace/deep-review-1-6-r4/common/**)",
+      "Write(//c/workspace/deep-review-1-6-r4/common/**)",
+      "NotebookEdit(//c/workspace/deep-review-1-6-r4/common/**)",
+      "Edit(//c/workspace/deep-review-1-6-r4/claude/**)",
+      "Write(//c/workspace/deep-review-1-6-r4/claude/**)",
+      "NotebookEdit(//c/workspace/deep-review-1-6-r4/claude/**)",
+      "Edit(//c/workspace/deep-review-1-6-r4/codex/**)",
+      "Write(//c/workspace/deep-review-1-6-r4/codex/**)",
+      "NotebookEdit(//c/workspace/deep-review-1-6-r4/codex/**)",
+      "Edit(~/**)",
+      "Write(~/**)",
+      "NotebookEdit(~/**)",
+      "WebFetch",
+      "WebSearch",
+      "Agent",
+      "Skill",
+      "Bash(gh:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git stash:*)",
+      "Bash(git switch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git restore:*)",
+      "Bash(git reset:*)",
+      "Bash(git clean:*)",
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)",
+      "Bash(icacls:*)",
+      "Bash(takeown:*)",
+      "Bash(cmdkey:*)",
+      "Bash(vaultcmd:*)",
+      "Bash(codebuddy:*)"
+    ]
+  }
+}
 ```
 
-**Dựng và kiểm** (bước chuẩn bị §L4.9 bước 4; Owner đã cài DSH, chưa nhập key):
+| Luật | Chặn gì | Nguồn |
+|---|---|---|
+| `Read` cho `…-r4\claude`, `…-r4\codex` | báo cáo lượt 4 của hai bên | `permissions` |
+| `Read` cho `deep-review-1-6-r3`, `-r2`, `deep-review-1-6` | thư mục lượt 1–3 | `permissions` |
+| `Read` cho `Project-2C-review-2` | worktree của Codex, cả `node_modules` và `.git` mà ACL để ngỏ vì hard link | `permissions` |
+| `Read` cho `Project-2` | repo không được mở (`CLAUDE.md`) | `permissions` |
+| `Read` cho `~/.codex`, `~/.claude*`, `%APPDATA%\Claude`, `%LOCALAPPDATA%\Claude`, `%LOCALAPPDATA%\OpenAI`, `%TEMP%\claude` | dữ liệu, log, bản sao file, scratchpad của Claude / Codex | `permissions` |
+| `Read` cho `~/.codebuddy*` | `settings.json`, phiên, log của chính CLI | `permissions` |
+| `Read` cho `…-r4\_thu_luat` | thư mục không có ACL, để phiên thử kiểm luật | §L4.9 đợt 2 bước 5 |
+| `Edit` / `Write` / `NotebookEdit` cho worktree review, checkout chính, `Project-2C-review-2`, `…-r4\common`, `…-r4\claude`, `…-r4\codex`, `~` | ghi bằng công cụ ngoài `deepseek\`. ACL chỉ chặn đọc, nên không có luật này thì công cụ ghi đè được báo cáo của bên khác | `permissions` |
+| `WebFetch`, `WebSearch` | web. `WebSearch` không có trong tài liệu; phiên thử kiểm | `permissions` |
+| `Agent`, `Skill` | subagent, skill | `permissions` |
+| `Bash(gh:*)`, `Bash(git commit:*)` … `Bash(git rebase:*)`, `Bash(icacls:*)`, `Bash(takeown:*)`, `Bash(cmdkey:*)`, `Bash(vaultcmd:*)`, `Bash(codebuddy:*)` | lệnh mà Phụ lục N, Phụ lục O đã cấm. Khớp tiền tố nên lách được (vd. `git -C … reset`); chỉ chặn lỡ tay. Thêm so với đề xuất Owner duyệt, chỉ để chặn thêm | `settings`, `permissions` |
+| `disableAutoMode: "disable"` | chế độ `auto` (AI tự duyệt) | `settings` |
+| `reasoningEffort: "max"` | mức suy luận | `settings` |
 
-1. Chạy `dsh --profile web --dump-default-config`, ghi ra `common\dsh-default-config.yml`. Chạy `dsh --profile web --dump-config-schema`, ghi ra `common\dsh-config-schema.json`. Hai lệnh không khởi động app, không gọi API.
-2. Viết `common\dsh-deepseek.patch.yml` theo mẫu và hai file trên.
-   - Khớp hàng theo `id` / `name` như bản mặc định.
-   - Hàng `tool-web` có thể nằm trong cấu hình của từng preset agent, không ở cấp host (discussion #4557, nguồn bên thứ ba): sửa đúng hàng mà bản mặc định dùng.
-   - Khóa nào của mẫu không có trong schema của `0.2.1-rc.2` → dừng, báo Owner.
-3. Chạy `dsh --profile web --patch C:\workspace\deep-review-1-6-r4\common\dsh-deepseek.patch.yml --dump-config`, ghi ra `common\dsh-effective-config.yml`. Kiểm từng dòng của bảng "Giá trị phải có".
-4. `--dump-config` chỉ cho biết cấu hình đã ghép, không cho biết DSH có làm đúng không. Hành vi kiểm ở phiên thử của đợt 2.
+**Cú pháp đường dẫn Windows:** tài liệu không có ví dụ. Mẫu dùng `//c/…`, tức `C:\` viết như Git Bash. Phiên thử kiểm trên `_thu_luat\`, thư mục không có ACL (§L4.9 đợt 2 bước 5). Không ăn thì Owner đổi mọi `//c/` thành `//C:/`, mở lại CLI, thử lại; vẫn không ăn thì dừng, báo Claude.
+
+**Giữ cấu hình:** phiên thử ghi hash của `settings.json` sau khi thêm `model`; trước mỗi gói Owner so hash (§L4.9 đợt 2 bước 6). Model sửa `settings.json` qua shell thì chỉ có hiệu lực ở tiến trình sau, nên so hash bắt được trước khi nó có tác dụng.
 
 **Từng luật của bản OpenCode 27/10, nay giữ ở đâu:**
 
-| Luật cũ (`opencode.json`) | Lượt 4 với DSH |
+| Luật cũ (`opencode.json`) | Lượt 4 với CodeBuddy Code CLI |
 |---|---|
-| `read` / `glob` / `grep` / `list` / `external_directory` cấm `deep-review-1-6-r4\claude`, `\codex` | ACL đợt 2, cả thư mục |
-| (chưa có) | ACL đợt 2: `%USERPROFILE%\.codex` theo từng mục con, transcript Claude của worktree review (review #863; Owner 28/10, phương án (b)); `file-history` và scratchpad của các phiên đó (review #872) |
-| Cấm thư mục lượt 1–3 (`deep-review-1-6-r3`, `-r2`, `deep-review-1-6\{claude,codex,muse}`) | ACL đợt 2, cả ba thư mục (review #872); prompt (Phụ lục O quy tắc riêng 2); quét log |
-| (chưa có) | `Project-2C-review-2` (worktree của Codex): dọn trước đợt 2; ACL đợt 2 theo từng mục con, để ngỏ `node_modules` và `.git` (review #872); prompt cấm; quét log |
-| (chưa có) | Cache tạm có bản biến đổi của code probe (`%TEMP%\playwright*`, `%TEMP%\…\ssr`, `%TEMP%\codex-*`), cache Vite / Vitest trong `node_modules`: xóa ở đợt 2 bước 1; `scan` tìm bản sao còn đọc được (review #872) |
-| Liệt kê `C:\workspace`, `deep-review-1-6*` phải hỏi | Prompt cấm; quét log |
-| `edit` chỉ được ghi trong `deepseek\` | Sandbox `workspace-write`, gốc workspace là worktree review, thêm `deepseek\` (trên Windows chưa chắc; phiên thử) |
-| `task` (subagent) cấm | Prompt cấm; quét log |
-| `webfetch` / `websearch` cấm | `tool-web` tắt `search`, `fetch`; phiên thử kiểm |
-| `git commit` / `push` / `stash` / `switch` / `clean` / `merge` / `rebase` / `checkout` / `restore` / `reset` cấm | Prompt (Phụ lục N quy tắc chung 1). Sandbox, nếu áp được, chặn ghi vào thư mục `.git` dùng chung ở checkout chính. Quét log. `main` có ruleset và hook `pre-push` |
-| `gh *` cấm | `gh auth logout` trong đợt 2 |
-| `pnpm eval:ai`, `tools/eval-ai.mjs` cấm | Prompt (Phụ lục N quy tắc chung 2). Script cần `OPENCODE_GO_KEY` trong môi trường, mà cửa sổ chạy `dsh` không có biến này (§L4.9 đợt 2 bước 2) |
-| `opencode *` và file đăng nhập của OpenCode cấm | Prompt cấm `dsh`, `/permission`, gọi `127.0.0.1:3080`, đọc `~/.dsh`; approval `never`; quét log |
-| `*auth export*`, `*cmdkey*`, `*CredentialManager*`, `*chatgpt.com*` cấm | Prompt (Phụ lục N quy tắc chung 2, Phụ lục O quy tắc riêng 4); quét log. Phần còn hở đã chấp nhận ở G6 (dưới) |
-| `curl` / `Invoke-WebRequest` / `Invoke-RestMethod` phải hỏi | Không chặn được, vì DSH không chặn mạng; quét log |
+| `read` / `glob` / `grep` / `list` / `external_directory` cấm `deep-review-1-6-r4\claude`, `\codex` | ACL đợt 2, cả thư mục; luật `Read` của CLI |
+| (chưa có) | ACL đợt 2: `%USERPROFILE%\.codex` theo từng mục con, transcript Claude của worktree review (review #863; Owner 28/10, phương án (b)); `file-history` và scratchpad của các phiên đó (review #872). Luật `Read` của CLI cho `~/.codex`, `~/.claude*`, `%TEMP%\claude` |
+| Cấm thư mục lượt 1–3 (`deep-review-1-6-r3`, `-r2`, `deep-review-1-6\{claude,codex,muse}`) | ACL đợt 2, cả ba thư mục (review #872); luật `Read` của CLI; prompt (Phụ lục O quy tắc riêng 2); quét log |
+| (chưa có) | `Project-2C-review-2` (worktree của Codex): dọn trước đợt 2; ACL đợt 2 theo từng mục con, để ngỏ `node_modules` và `.git` (review #872); luật `Read` của CLI cho cả thư mục; prompt cấm; quét log |
+| (chưa có) | Cache tạm có bản biến đổi của code probe (`%TEMP%\playwright*`, `%TEMP%\…\ssr`, `%TEMP%\codex-*`), cache Vite / Vitest trong `node_modules`: xóa ở đợt 2 bước 1; `scan` tìm bản sao còn đọc được (review #872, #878) |
+| Liệt kê `C:\workspace`, `deep-review-1-6*` phải hỏi | Prompt cấm; quét log. Luật `Read` không chặn liệt kê thư mục cha |
+| `edit` chỉ được ghi trong `deepseek\` | Luật `Edit` / `Write` / `NotebookEdit` của CLI cho worktree review, checkout chính, `Project-2C-review-2`, `…-r4\common`, `\claude`, `\codex` và thư mục nhà. Ghi qua shell không chặn được: prompt, `git status` cuối mỗi gói, quét log |
+| `task` (subagent) cấm | Luật `Agent` của CLI; prompt cấm; quét log |
+| `webfetch` / `websearch` cấm | Luật `WebFetch`, `WebSearch` của CLI; phiên thử kiểm |
+| `git commit` / `push` / `stash` / `switch` / `clean` / `merge` / `rebase` / `checkout` / `restore` / `reset` cấm | Prompt (Phụ lục N quy tắc chung 1); luật `Bash(<lệnh>:*)` của CLI, lách được. Quét log. `main` có ruleset và hook `pre-push` |
+| `gh *` cấm | `gh auth logout` trong đợt 2; luật `Bash(gh:*)` |
+| `pnpm eval:ai`, `tools/eval-ai.mjs` cấm | Prompt (Phụ lục N quy tắc chung 2). Script cần `OPENCODE_GO_KEY` trong môi trường, mà cửa sổ chạy `codebuddy` không có biến này (§L4.9 đợt 2 bước 2) |
+| `opencode *` và file đăng nhập của OpenCode cấm | Prompt cấm `codebuddy`, đọc / sửa `~/.codebuddy*`; luật `Read` cho `~/.codebuddy*` và `Bash(codebuddy:*)`; so hash `settings.json` trước mỗi gói; quét log |
+| `*auth export*`, `*cmdkey*`, `*CredentialManager*`, `*chatgpt.com*` cấm | Prompt (Phụ lục N quy tắc chung 2, Phụ lục O quy tắc riêng 4); luật `Bash(cmdkey:*)`, `Bash(vaultcmd:*)`; quét log. Phần còn hở đã chấp nhận ở G6 (dưới) |
+| `curl` / `Invoke-WebRequest` / `Invoke-RestMethod` phải hỏi | CLI không chặn mạng trên Windows; prompt cấm gọi ra ngoài máy; quét log |
 
-**Script đợt 2** (`common\dot2.mjs`, review #872). Bước chuẩn bị chép nguyên văn khối code dưới (§L4.9 bước 4); Owner chạy ở đợt 2 bước 1, 3 và 7. Đường dẫn tính từ chỗ đặt script (`C:\workspace\deep-review-1-6-r4\common\`) và từ `%USERPROFILE%`, `%TEMP%`, `%APPDATA%`, `%LOCALAPPDATA%`. Script không đụng tới `.dsh`.
+**Script đợt 2** (`common\dot2.mjs`, review #872). Bước chuẩn bị chép nguyên văn khối code dưới (§L4.9 bước 4); Owner chạy ở đợt 2 bước 1, 3 và 7. Đường dẫn tính từ chỗ đặt script (`C:\workspace\deep-review-1-6-r4\common\`) và từ `%USERPROFILE%`, `%TEMP%`, `%APPDATA%`, `%LOCALAPPDATA%`. Script không đụng tới `.codebuddy-r4`.
 
 - `baseline`: ghi `dot2-baseline.json`, gồm từng file và thư mục mà git không theo dõi (`git ls-files --others`: chưa theo dõi hay bị ignore) của hai worktree, kể cả bên trong thư mục bị ignore (review #872).
   - Bỏ `node_modules` và thư mục chứa nó.
   - Git đi xuyên junction; đường dẫn nào nó liệt kê qua một link thì script ghi chính link đó.
-- `clean`: xóa file / thư mục ngoài mốc ở hai worktree, cache Vite / Vitest, cache tạm có code probe; rồi kiểm lại. Tầng sâu xóa trước; thư mục chỉ xóa khi đã rỗng; link chỉ xóa chính link.
+- `clean`: xóa file / thư mục ngoài mốc ở hai worktree, cache Vite / Vitest, cache tạm có code probe; rồi kiểm lại. Tầng sâu xóa trước; thư mục chỉ xóa khi đã rỗng; link chỉ xóa chính link. Thư mục được giữ vì chứa `node_modules` thì in một dòng `kept, holds node_modules`, và cache Vite trong `node_modules` đó cũng bị xóa (review #878).
 - `deny`:
   - chặn cả thư mục bằng `(OI)(CI)(R)` khi mọi file hard link trong đó có đủ link ở trong. Script so `nlink` với số đường dẫn cùng `ino` tìm thấy, không đi theo junction;
   - với `.codex` và `Project-2C-review-2`: chặn từng mục con không có link ra ngoài, để ngỏ `node_modules`, `.git` và link, đi tiếp vào mục con có link ra ngoài; file chặn bằng `(R)`;
@@ -2642,6 +2746,10 @@ Sửa sau review #872 (T-314 #876), thử ngày 28/10 trên Office Laptop. Cây 
 - `clean`, kịch bản của review #872: file thêm sau mốc vào `test-results\`, `coverage\` có sẵn lúc ghi mốc nay bị xóa; `node_modules` và mục đã có ở mốc còn nguyên; lệnh in `OK`. Bản trước giữ các file đó mà vẫn in `OK`.
 - Junction ngoài `node_modules`: bản trước theo junction, xóa cả file được theo dõi và file ngoài worktree. Nay script chỉ xóa chính link.
 - `deny`, xóa `dot2-acl.json`, rồi `remove`: mọi mục đọc lại được, kể cả `.codex\.chatgpt-projects\p\other.txt` và thư mục `q` ở tầng 2. Bản trước để lại cả hai mà vẫn in `OK`.
+
+Sửa sau review #878 (T-315 #880), thử ngày 28/10 trên Home PC, cùng cách dựng cây giả (đường dẫn có dấu cách; `TEMP`, `USERPROFILE`, `APPDATA`, `LOCALAPPDATA` giả). Đợt 1 giả để lại `probe4\` (`package.json`, `node_modules\.vite`, `.vite-temp`) và `probe6\sub\node_modules\.vite`:
+- bản `main` `76601fd`: `clean` giữ cache `.vite` / `.vite-temp` của hai thư mục đó, không in dòng nào về chúng, vẫn in `OK` (đỏ 5 / 14 kiểm tra);
+- bản này: in `kept, holds node_modules` cho `probe4\` và `probe6\sub\`, xóa cache của hai thư mục đó, giữ gói trong `node_modules`; mục khác như bản trước (xanh 14 / 14).
 
 ```js
 // Deep review round 4, wave 2 (plan §L4.9, Appendix P). Run from PowerShell; baseline by the
@@ -2696,7 +2804,8 @@ function canOpen(p, kind) {
 
 // What git does not track (untracked or ignored): each file and folder (trailing '/'), also inside an
 // ignored folder (review #872). Not listed: node_modules, a folder holding one, what a link points at.
-function leftovers(wt) {
+// held, when given, gets each such folder whose own node_modules kept it (review #878).
+function leftovers(wt, held) {
   const others = (...extra) =>
     execFileSync('git', ['-C', wt, 'ls-files', '-z', '--others', '--exclude-standard', '--directory', ...extra], {
       encoding: 'utf8',
@@ -2710,7 +2819,10 @@ function leftovers(wt) {
       return false;
     }
     let modules = false;
-    for (const e of list(path.join(wt, rel))) modules = add(`${rel}${e.name}${e.isDirectory() ? '/' : ''}`) || modules;
+    for (const e of list(path.join(wt, rel))) {
+      if (e.name === 'node_modules') held?.add(rel);
+      modules = add(`${rel}${e.name}${e.isDirectory() ? '/' : ''}`) || modules;
+    }
     if (!modules) found.add(rel);
     return modules;
   };
@@ -2734,13 +2846,14 @@ function baseline() {
 function clean() {
   needBaseline();
   const base = readJson(BASELINE);
-  const extras = (wt) => {
+  const extras = (wt, held) => {
     const kept = new Set(base[wt]);
-    return leftovers(wt).filter((e) => !kept.has(e));
+    return leftovers(wt, held).filter((e) => !kept.has(e));
   };
   const caches = [];
   for (const wt of WORKTREES) {
-    const doomed = extras(wt);
+    const held = new Set();
+    const doomed = extras(wt, held);
     const all = new Set(doomed);
     // Deepest first: a folder goes once empty; a link goes, not what it points at.
     for (const e of [...doomed].reverse()) {
@@ -2752,8 +2865,12 @@ function clean() {
       // One line for a new folder, not one for each file in it.
       if (!all.has(e.replace(/[^/]+\/?$/, ''))) console.log(`deleted ${p}`);
     }
-    // Vite / Vitest caches keep the names and results of the test files that ran.
-    for (const pkg of [wt, ...subdirs(path.join(wt, 'apps')), ...subdirs(path.join(wt, 'packages'))])
+    // A folder kept for its own node_modules, e.g. a probe with a package.json, stays: say so.
+    for (const rel of held) console.log(`kept, holds node_modules: ${path.join(wt, rel)}`);
+    // Vite / Vitest caches keep the names and results of the test files that ran, and transformed
+    // probe code: Vite puts its cache by the nearest package.json, so the kept folders have one too.
+    const pkgs = [wt, ...subdirs(path.join(wt, 'apps')), ...subdirs(path.join(wt, 'packages'))];
+    for (const pkg of [...pkgs, ...[...held].map((rel) => path.join(wt, rel))])
       caches.push(path.join(pkg, 'node_modules', '.vite'), path.join(pkg, 'node_modules', '.vite-temp'));
   }
   // Transformed copies of probe code: Playwright cache and browser profiles, Vite SSR dumps, Codex artifacts.
@@ -2965,16 +3082,22 @@ try {
 }
 ```
 
-**Rủi ro còn lại, đã chấp nhận ở G6** (Owner 28/10, phương án (b)): lệnh của model đọc được mọi file mà user đọc được ngoài ACL. Gồm key DeepSeek trong `.dsh`, GCM của git, Credential Manager (key OpenCode Go của app) và file đăng nhập Claude Code. Giảm bằng:
-- key riêng, số dư 10 USD, thu hồi ngay sau gói F;
+**Rủi ro còn lại, đã chấp nhận ở G6** (Owner 28/10, phương án (b); với CodeBuddy trên #880): lệnh của model đọc được mọi file mà user đọc được ngoài ACL, và mọi mục của Credential Manager. Gồm token đăng nhập CodeBuddy và key OpenCode Go của app trong Credential Manager, GCM của git, file đăng nhập Claude Code. Token CodeBuddy lộ thì người khác dùng được credit của tài khoản tới khi đăng xuất. Giảm bằng:
+- `/logout` ngay sau gói F, trước khi chép gì vào repo;
 - `gh` đăng xuất trong đợt 2;
+- luật `Read` của CLI cho `~/.codebuddy*` và dữ liệu Claude / Codex (chỉ giữ công cụ đọc file);
 - quét mẫu key trước khi chép bất cứ gì vào repo (§L4.10).
 
 **Còn hở sau review #872** (Owner chấp nhận khi xác nhận G6 ngày 28/10, cùng phần đổi ở §L4.11):
 - file hard link trong `node_modules` để ngỏ; đó chỉ là gói npm;
 - metadata phiên của app desktop Claude (`%APPDATA%\Claude\claude-code-sessions`: tiêu đề, vài câu tóm tắt) không chặn, vì app đang chạy. `scan` in ra nếu có mã phát hiện, Owner ghi vào `baseline.md`. Muốn chặn cả chỗ này thì phải đóng app desktop Claude suốt đợt 2;
 - `scan` chỉ thấy chữ không nén; log hay cơ sở dữ liệu nén của app thì không kiểm được;
-- cùng user, nên lệnh của model gỡ được ACL (`icacls /remove`): prompt cấm, quét log tìm;
-- nếu DSH chạy lệnh dưới danh tính khác tài khoản của Owner thì ACL không áp: phiên thử bắt được.
+- cùng user, nên lệnh của model gỡ được ACL (`icacls /remove`): prompt cấm, luật `Bash(icacls:*)` (lách được), quét log tìm;
+- nếu CLI chạy lệnh dưới danh tính khác tài khoản của Owner thì ACL không áp: phiên thử bắt được.
+
+**Còn hở với CodeBuddy** (Owner chấp nhận ở G6 ngày 28/10, #880):
+- luật của CLI không chặn lệnh shell đọc file khác `cat` / `head` / `tail`, ghi file qua shell, hay gọi mạng: ACL, prompt, `git status` cuối mỗi gói và quét log là lớp chặn;
+- model sửa được `settings.json` qua shell: chỉ có hiệu lực ở tiến trình sau, và so hash trước mỗi gói bắt được;
+- tài liệu không ghi model gắn sẵn chạy trên hạ tầng nào (§L4.11).
 
 Repo public, dữ liệu giả lập.

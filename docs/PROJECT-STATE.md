@@ -112,7 +112,17 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - The OWNER runs `common\dot2.mjs` (Appendix P) to clean the worktrees and temp caches, deny, scan for readable copies of round 4 work, and remove the denies.
   - Option (a): a finding ID found in the Claude desktop app's session list is written in `baseline.md` and wave 2 goes on; the app is not closed.
 
-  Plan: `docs/process/deep-review-phase-1-6.md` §L4; Appendix P is now the DSH configuration.
+  Plan: `docs/process/deep-review-phase-1-6.md` §L4; Appendix P was the DSH configuration until the change below.
+- 2026-10-28, later the same day: the OWNER moved DeepSeek of round 4 off DSH, in the OWNER's words "Chọn workbuddy pro" (T-315, #880). DeepSeek v4.1 Flash runs through the CodeBuddy Code CLI (Tencent) on the built-in model of a WorkBuddy Pro plan, international edition. The OWNER's reasons, the same session: "Về tiêu chí gần với inference chính hãng có lẽ Tencent đáng tin hơn những bên khác và đó là lý do anh muốn sub"; the plan gives daily bonus credits and works with the CLI. Tencent does not document whether the built-in model is served by DeepSeek (Vendor Direct) or by Tencent; the OWNER accepted that. Not chosen: keeping DSH, and Tencent Cloud's Token Plan (Vendor Direct, credits at the API price).
+
+  G4 / G6 approved the same day on #880 ("Duyệt cả năm điểm, làm PR docs đi"), replacing the DSH approval on #868:
+  - CLI `@tencent-ai/codebuddy-code` `2.177.1`, installed by the OWNER, no plugins / MCP / hooks. Its own config folder `%USERPROFILE%\.codebuddy-r4` (`CODEBUDDY_CONFIG_DIR`); run as `codebuddy -y --setting-sources user`, one process per package; telemetry, error reporting, feedback and auto-update off.
+  - WorkBuddy Pro for one month, subscribed close to wave 2, with a 25 USD G4 ceiling: the plan plus at most one 500-credit top-up. Credits are measured at the trial session and after package A; a projection over the ceiling stops the run.
+  - The OWNER logs in (`/login`) once the ACL is set and logs out (`/logout`) right after package F, before anything is copied. No Claude session logs in or touches the token, which Windows Credential Manager holds. Same Windows user (option b): the wave 2 ACL block, `dot2.mjs` and the `gh` logout stay as confirmed on #868.
+  - CLI deny rules for file reads of what the ACL blocks and of the CLI's own folder, for file edits outside the reviewer's folder, and for web, subagents and skills. `-y` keeps deny rules; HIGH / CRITICAL commands still ask the OWNER, since `CODEBUDDY_IS_SANDBOX` stays unset. The `settings.json` hash is checked before each package.
+  - Session logs come from `.codebuddy-r4\projects\*.jsonl`. The trial session checks the CLI rules on Windows paths, the ACL, the model and effort, and the credits.
+
+  Plan: `docs/process/deep-review-phase-1-6.md` §L4; Appendix P is now the CodeBuddy configuration.
 
 ## Next decision
 

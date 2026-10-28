@@ -111,7 +111,7 @@ Thêm **lượt 3** của deep review Phase 1–6 trước G7 (spec Phase 6 §6 
 - Kiểm độc lập bằng log quét transcript của các phiên gói và của subagent (tổng hợp lượt 3 `docs/reviews/2026-10-21-deep-review-phase-1-6-luot-3-tong-hop.md` §10).
 - Hàng Claude của spec §6.1 sửa theo.
 
-## Phụ lục — lượt 4 review đóng Phase 6, trước G7 (M10 — Accepted G1, Owner quyết 26–28/10/2026 · Issue #854, #868)
+## Phụ lục — lượt 4 review đóng Phase 6, trước G7 (M10 — Accepted G1, Owner quyết 26–28/10/2026 · Issue #854, #868, #880)
 
 Thêm **lượt 4** của deep review Phase 1–6 trước G7; M9 coi lượt 3 là lượt cuối. Owner 26/10/2026: một vòng deep review toàn bộ code trước G7, sau khi các mục sổ ghi chú review làm được trước vòng này đã xong (T-305…T-308). Lý do: từ SHA ghim lượt 3 có ba đợt mà chưa lượt nào đọc trọn: đợt sửa lượt 3, đợt sửa sổ ghi chú review trước v1.0 (22 Issue, Owner 23/10) và T-305…T-308 (gồm đổi tên hiển thị sang Heritas L-CRM).
 
@@ -119,16 +119,18 @@ Owner 27/10/2026, bên review: "Vẫn là Claude Opus 5.5 và GPT Sol 6.1 làm d
 
 - **Claude Opus 5.5:** như lượt 3 sau 20/10 (M9). Mỗi gói một phiên sạch Owner mở; mức suy luận và ultracode Owner chọn từng phiên (M1, M8). Phiên bật ultracode được dùng subagent / Workflow cho việc của gói; chỉ phiên chính ghi báo cáo.
 - **Codex, model GPT Sol 6.1:** theo M2 / M7. Owner chạy, chỉ đọc, không viết code; báo cáo là dữ liệu tham khảo, Claude kiểm lại từng phát hiện trên code.
-- **DeepSeek v4.1 Flash, qua DeepSeek Harness (DSH):** sửa M5 cho lượt 4 (M5 bỏ DeepSeek khỏi review đóng Phase 6 từ 13/10). Cùng điều kiện như Codex theo M2: Owner chạy, chỉ đọc, không viết code, báo cáo là dữ liệu tham khảo.
-  - Bản 27/10 chạy qua OpenCode, trên hạn mức gói OpenCode Go. Owner đổi ngày 28/10, khi duyệt G1: "anh duyệt G1, nhưng lần review lượt 4 này với Deepseek sẽ không dùng opencode, mà dùng trực tiếp Deepseek API với deepseek harness". DSH là harness mã nguồn mở của DeepSeek, gọi DeepSeek API trực tiếp, trả theo mức dùng.
-  - G4 / G6 duyệt ngày 28/10 (#868):
-    - DSH `0.2.1-rc.2`, Owner tự cài.
-    - Key riêng cho lượt 4, Owner tự nhập; không phiên Claude nào đọc, đặt, in hay lưu key. Nạp trước 10 USD, trần 15 USD; thu hồi key ngay sau gói F.
-    - Cùng user Windows: ACL đợt 2 chặn thêm log phiên của Claude và Codex; `gh` đăng xuất trong đợt 2.
-    - Cấu hình chặn, phiên thử và log phiên ở kế hoạch (Phụ lục P).
-  - DSH không phải OpenCode, nên lượt 4 không còn là ngoại lệ của dòng "không dùng OpenCode… để review" trong `CLAUDE.md`. Agent ngoài Claude vẫn không viết code.
+- **DeepSeek v4.1 Flash, qua CodeBuddy Code CLI trên gói WorkBuddy Pro:** sửa M5 cho lượt 4 (M5 bỏ DeepSeek khỏi review đóng Phase 6 từ 13/10). Cùng điều kiện như Codex theo M2: Owner chạy, chỉ đọc, không viết code, báo cáo là dữ liệu tham khảo.
+  - Bản 27/10 chạy qua OpenCode, trên hạn mức gói OpenCode Go. Owner đổi ngày 28/10, khi duyệt G1: "anh duyệt G1, nhưng lần review lượt 4 này với Deepseek sẽ không dùng opencode, mà dùng trực tiếp Deepseek API với deepseek harness". DSH là harness mã nguồn mở của DeepSeek, gọi DeepSeek API trực tiếp, trả theo mức dùng; G4 / G6 duyệt cùng ngày (#868).
+  - Cùng ngày Owner đổi lần 2: "Chọn workbuddy pro" (#880). DeepSeek chạy bằng CodeBuddy Code CLI của Tencent, dùng model DeepSeek V4.1 Flash gắn sẵn của gói WorkBuddy Pro bản quốc tế. Lý do, Owner nói cùng phiên: "Về tiêu chí gần với inference chính hãng có lẽ Tencent đáng tin hơn những bên khác và đó là lý do anh muốn sub"; gói tặng credit hằng ngày và dùng được với CLI. Tài liệu Tencent không ghi model gắn sẵn chạy trên hạ tầng của DeepSeek hay của Tencent; Owner chấp nhận.
+  - G4 / G6 duyệt ngày 28/10 (#880), thay lần duyệt cho DSH:
+    - CLI `@tencent-ai/codebuddy-code` `2.177.1`, Owner tự cài; thư mục cấu hình riêng cho lượt 4.
+    - Gói WorkBuddy Pro một tháng, trần 25 USD; đo credit ở phiên thử và sau gói A.
+    - Owner tự `/login` / `/logout`; không phiên Claude nào đăng nhập, đọc, in hay lưu token.
+    - Cùng user Windows: ACL đợt 2 và `gh` đăng xuất như bản DSH.
+    - Luật chặn của CLI, phiên thử và log phiên ở kế hoạch (Phụ lục P).
+  - CodeBuddy không phải OpenCode, nên lượt 4 không là ngoại lệ của dòng "không dùng OpenCode… để review" trong `CLAUDE.md`. Agent ngoài Claude vẫn không viết code.
 - 6 gói × 3 bên = 18 báo cáo. Phạm vi đủ 6 gói: kiểm phần đã sửa sau lượt 3, và lỗi / edge case mới trên toàn bộ phạm vi gói. Kết luận phát hành chỉ lấy từ phiên tổng hợp của Claude.
 
 Owner 27/10/2026, điều kiện chạy: "anh chỉ làm review lượt 4 khi tất cả các review-notes open đã được sửa hết". Lượt 4 chạy trên `main` khi mục OPEN của `docs/state/review-notes.md` rỗng, kể cả các mục [G7] mà trước đó cùng ngày Owner định làm sau mọi task.
 
-Phần Owner chọn cùng G1 (SHA ghim, phạm vi, KNOWN, việc sửa sau tổng hợp, số đo, đợt sửa mục OPEN, cách chạy DeepSeek): `docs/process/deep-review-phase-1-6.md` §L4.11. Spec Phase 6 §6 sửa theo. Owner duyệt G1 ngày 28/10/2026 (comment trên PR #863), kèm thay đổi DeepSeek sang DSH ở trên.
+Phần Owner chọn cùng G1 (SHA ghim, phạm vi, KNOWN, việc sửa sau tổng hợp, số đo, đợt sửa mục OPEN, cách chạy DeepSeek): `docs/process/deep-review-phase-1-6.md` §L4.11. Spec Phase 6 §6 sửa theo. Owner duyệt G1 ngày 28/10/2026 (comment trên PR #863), kèm thay đổi cách chạy DeepSeek ở trên: DSH, rồi CodeBuddy Code CLI cùng ngày.
