@@ -44,6 +44,9 @@ const list = (page: Page) => page.getByRole('table', { name: 'Danh sách lịch 
 
 /** Right of the sidebar, which 01 shows, from the top of the page down `height`, or to the foot. */
 async function rightOfSidebar(page: Page, height?: number): Promise<Clip> {
+  // Measured at the top, where shot() takes the clip: boundingBox() is relative to the window, and
+  // a screen opened by a click keeps the scroll of the one before, which would cut the foot short.
+  await page.evaluate(() => window.scrollTo(0, 0));
   const main = await page.getByRole('main').boundingBox();
   if (!main) throw new Error('no main');
   return { x: main.x, y: 0, width: main.width, height: height ?? main.y + main.height };
