@@ -308,6 +308,8 @@ test('a run that fails while the profile is left says its error once shown again
 
   // Said once (06-ai.md): away and back again, the error is gone (review of PR 835).
   await page.getByRole('link', { name: 'Cài đặt' }).click();
+  // Settings shown first: both hash changes in one render would keep the profile and its error.
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Cài đặt');
   await page.goBack();
   await expect(panel).toContainText('Chưa có phân tích AI cho KH này.');
   await expect(panel.getByRole('alert')).toHaveCount(0);
