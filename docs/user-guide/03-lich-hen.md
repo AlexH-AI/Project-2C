@@ -75,7 +75,7 @@ Lịch có ngày đã qua mà chưa ghi kết quả nằm ở nhóm **Chưa ghi 
    - **Nhóm sau cuộc gặp** (bắt buộc): nhóm của KH sau buổi gặp; nhóm hiện tại có chữ "giữ nguyên". Hộp cho biết lần chuyển này có **tính RF** không: RF chỉ tính khi KH đi từ N4 / N3 lên N2 / N1.
    - **Người đánh giá kết quả (không bắt buộc)**: người quyết định nhóm sau cuộc gặp (IS, TL, BDM hoặc BD).
    - **Việc tiếp theo** (bắt buộc).
-   - **Case size dự kiến (để trống = chưa ước lượng)**: gõ như `800tr`, `1,2 tỷ` hoặc `500.000.000`. Dấu phẩy hay dấu chấm theo sau đúng 3 chữ số là dấu ngăn nghìn, kể cả khi có đơn vị: `1,234 tr` là 1.234.000.000 ₫ (câu này cũng ở dưới ô); muốn 1,2 triệu thì gõ `1,2 tr`.
+   - **Case size dự kiến (để trống = chưa ước lượng)**: gõ như `800tr`, `1,2 tỷ` hoặc `500.000.000`. Dấu phẩy hay dấu chấm theo sau đúng 3 chữ số là dấu ngăn nghìn, kể cả khi có đơn vị: `1,234 tr` là 1.234.000.000 ₫; số đứng trước là 0 thì là dấu thập phân: `0,500 tr` là 500.000 ₫. Muốn 1,2 triệu thì gõ `1,2 tr`. Dòng chữ dưới ô nhắc lại các điều này.
 4. **Ghi chú cuộc gặp**: không phải ghi chú KYC. Muốn lưu thông tin KH vào KYC, bấm **+ Ghi chú KYC từ cuộc gặp này** (hộp Ghi chú KYC mở với chữ và ngày điền sẵn, xem [5. Hồ sơ KH](05-ho-so-kh.md#ghi-chú-kyc)).
 5. Bấm **Lưu kết quả**.
 

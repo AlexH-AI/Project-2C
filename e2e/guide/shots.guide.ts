@@ -27,9 +27,11 @@ async function shot(page: Page, name: string, part?: Locator | Clip) {
     path: join(IMG, `${name}.png`),
     animations: 'disabled',
     caret: 'hide',
-    // Playwright scrolls to a part out of view, and the header of the app, which stays at the top
-    // of the page as it scrolls, could then cover its top lines.
-    style: 'header { position: static !important; }',
+    // Playwright scrolls to a part out of view with this style on, then shoots the window alone if
+    // the part is no taller than it. The header of the app, which stays at the top of the page as it
+    // scrolls, could cover the part's top lines; and the scroll margin that keeps parts below the
+    // header (index.css) could push the foot of a part nearly as tall as the window out of the shot.
+    style: 'header { position: static !important; } main * { scroll-margin-top: 0 !important; }',
   } as const;
   if (part && 'screenshot' in part) await part.screenshot(options);
   else await page.screenshot({ ...options, clip: part });
@@ -39,6 +41,13 @@ const sidebar = (page: Page) => page.getByRole('navigation', { name: 'Điều h�
 const detail = (page: Page) => page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' });
 const kinds = (page: Page) => page.getByRole('radiogroup', { name: 'Loại kỳ' });
 const list = (page: Page) => page.getByRole('table', { name: 'Danh sách lịch hẹn' });
+
+/** Right of the sidebar, which 01 shows, from the top of the page down `height`, or to the foot. */
+async function rightOfSidebar(page: Page, height?: number): Promise<Clip> {
+  const main = await page.getByRole('main').boundingBox();
+  if (!main) throw new Error('no main');
+  return { x: main.x, y: 0, width: main.width, height: height ?? main.y + main.height };
+}
 
 async function openAppointments(page: Page) {
   await page.goto('/#/appointments');
@@ -132,16 +141,9 @@ test('03 lịch hẹn: detail, booking, rescheduling', async ({ page }) => {
 test('04 khách hàng: Kanban, table, a new customer', async ({ page }) => {
   await page.goto('/#/customers');
   await expect(page.getByRole('region', { name: 'N4', exact: true })).toBeVisible();
-  // Right of the sidebar, which 01 shows, down to the foot of the board: the whole screen, or its
-  // top alone, passes 150 KiB, a card with an "n HĐ" badge standing taller than the others.
-  const main = await page.getByRole('main').boundingBox();
-  if (!main) throw new Error('no main');
-  await shot(page, '04-khach-hang', {
-    x: main.x,
-    y: 0,
-    width: main.width,
-    height: main.y + main.height,
-  });
+  // Down to the foot of the board: the whole screen, or its top alone, passes 150 KiB, a card with
+  // an "n HĐ" badge standing taller than the others.
+  await shot(page, '04-khach-hang', await rightOfSidebar(page));
   await page.getByRole('radio', { name: 'Bảng' }).click();
   // The top of the screen: the whole of it passes 150 KiB.
   await shot(page, '04-khach-hang-bang', { x: 0, y: 0, width: 1440, height: 600 });
@@ -151,8 +153,9 @@ test('04 khách hàng: Kanban, table, a new customer', async ({ page }) => {
 
 test('04, 05 hồ sơ KH: the profile and its dialogs', async ({ page }) => {
   const name = await openProfile(page);
-  // The top of the screen: the whole of it passes 150 KiB.
-  await shot(page, '05-ho-so-kh', { x: 0, y: 0, width: 1440, height: 600 });
+  // The top of the screen: the whole of it passes 150 KiB, and so does its top with the sidebar,
+  // whose logo weighs ≈ 26 KB.
+  await shot(page, '05-ho-so-kh', await rightOfSidebar(page, 600));
 
   await page.getByRole('button', { name: 'Chuyển nhóm' }).click();
   await shot(page, '04-chuyen-nhom', page.getByRole('dialog', { name: /^Chuyển nhóm · / }));
