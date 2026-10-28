@@ -1984,7 +1984,7 @@ Mức: L = Low, N = Nit (mức chốt ở tổng hợp lượt 3 §6, §8.4 và 
     - Lượt 4 đọc toàn bộ code, thêm hai bảng R và mức suy luận cao nhất; giả định gấp 3–5 lần.
     - WorkBuddy không công bố 1 credit bằng bao nhiêu token. Nếu tính đúng giá DeepSeek, với 1 credit = 0,005 USD theo giá gói Pro, lượt 4 tốn ≈ 575–955 credit giờ thấp điểm, ≈ 1.150–1.910 credit giờ cao điểm.
     - Giờ cao điểm của DeepSeek là 08:00–11:00 và 13:00–17:00 giờ Việt Nam, thứ Hai–thứ Sáu. Một bài cộng đồng Tencent (22/10) ghi WorkBuddy tính credit của DeepSeek theo đúng khung này. Chạy đợt 2 ngoài giờ đó.
-    - **Số thật và điểm dừng:** credit trên trang Usage của WorkBuddy trước, sau phiên thử và sau từng gói (§L4.9 đợt 2 bước 4–6). Ước vượt trần thì dừng, hỏi Owner.
+    - **Số thật và điểm dừng:** credit trên trang Usage của WorkBuddy trước, sau phiên thử và sau từng gói (§L4.9 đợt 2 bước 4–6). Sau mỗi gói ước credit cho các gói còn lại; vượt trần thì dừng, hỏi Owner.
   - **Chặn:** ACL của đợt 2 là lớp chặn đọc duy nhất (§L4.9 đợt 2 bước 3, script `common\dot2.mjs` ở Phụ lục P). ACL chặn báo cáo lượt 4 của Claude và Codex, log phiên, bản sao file và scratchpad của hai bên, thư mục lượt 1–3, worktree của Codex. Trước đó đợt 2 bước 1 dọn những gì đợt 1 để lại ở hai worktree và cache tạm.
     - App không có luật chặn theo đường dẫn. Chế độ quyền Default chạy lệnh trong sandbox của app trước và hỏi Owner ở bước rủi ro. Phiên thử thấy app hỏi ở hầu hết lệnh thường thì Owner chuyển sang Full Access (Phụ lục P).
     - Ghi ngoài `deepseek\` chỉ có prompt, `git status`, hash 12 báo cáo trước / sau đợt 2 và quét log.
@@ -2158,13 +2158,19 @@ Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt
    - Tạo `C:\workspace\deep-review-1-6-r4\deepseek\_thu\a.txt`, một lần bằng shell, một lần bằng công cụ ghi file của app → tạo được.
    - Bảo model giao một việc cho agent khác → không làm được (một agent, không chế độ nhóm).
    - `gh auth status` → chưa đăng nhập.
-   - **Log của app** (Owner): tìm thư mục dữ liệu của app và file `.jsonl` mới nhất trong đó (lệnh dưới, chỗ theo nguồn bên thứ ba ở Phụ lục P). Lệnh in đường dẫn file, tên trường của dòng JSON đầu, rồi `True` nếu file có lệnh `vitest` vừa chạy, tức bản ghi có lệnh gọi công cụ. Ghi thư mục dữ liệu, thư mục của worktree review và cách đặt tên file phiên vào `baseline.md`. §L4.10 chép log theo đúng chỗ và định dạng này.
+   - **Log của app** (Owner): tìm thư mục dữ liệu của app và file `.jsonl` mới nhất ở `projects\<thư mục>\`, không tính thư mục con như `tool-results\` (lệnh dưới; chỗ và định dạng theo nguồn bên thứ ba ở Phụ lục P). Lệnh đọc từng dòng JSON của file rồi in:
+     - đường dẫn file;
+     - mỗi dòng có chữ `vitest`: số dòng, `type`, `role`, `name`; dòng là lệnh gọi công cụ thì thêm `<- tool call`;
+     - `types:` mọi giá trị `type` có trong file;
+     - dòng cuối `True` khi có lệnh gọi công cụ mà đầu vào có `vitest`: dòng có `type` là `function_call` (nguồn bên thứ ba), hoặc một phần `tool_use` / `function_call` trong nội dung của dòng; lệnh chỉ xét `arguments` / `input` của bản ghi đó. Tin nhắn của Owner, lời đáp, phần suy luận của model hay kết quả lệnh có chữ `vitest` không tính (review #881).
+
+     Ghi thư mục dữ liệu, thư mục của worktree review, cách đặt tên file phiên và dòng `types:` vào `baseline.md`. §L4.10 chép log theo đúng chỗ và định dạng này.
 
      ```powershell
-     $d = @("$env:USERPROFILE\.workbuddy-ai", "$env:USERPROFILE\.workbuddy") | Where-Object { Test-Path "$_\projects" } | Select-Object -First 1; if (-not $d) { throw 'Không thấy thư mục dữ liệu của app' }; $f = Get-ChildItem "$d\projects" -Recurse -File -Filter *.jsonl | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if (-not $f) { throw 'Không thấy file .jsonl' }; $f.FullName; node -e "const l=require('fs').readFileSync(process.argv[1],'utf8').split('\n')[0];console.log(Object.keys(JSON.parse(l)).join(', '))" $f.FullName; if ($LASTEXITCODE) { throw 'Đọc JSON lỗi' }; Select-String -Path $f.FullName -Pattern 'vitest' -SimpleMatch -Quiet
+     $d = @("$env:USERPROFILE\.workbuddy-ai", "$env:USERPROFILE\.workbuddy") | Where-Object { Test-Path "$_\projects" } | Select-Object -First 1; if (-not $d) { throw 'Không thấy thư mục dữ liệu của app' }; $f = Get-ChildItem "$d\projects" -Recurse -Depth 1 -File -Filter *.jsonl | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if (-not $f) { throw 'Không thấy file .jsonl' }; $f.FullName; node -e "const ls=require('fs').readFileSync(process.argv[1],'utf8').split('\n'),types=new Set();let calls=0;const isCall=(o)=>!!o&&(o.type==='function_call'||o.type==='tool_use')&&/vitest/i.test(JSON.stringify(o.arguments||o.input||''));ls.forEach((s,i)=>{if(!s.trim())return;const r=JSON.parse(s);types.add(String(r.type));if(!/vitest/i.test(s))return;const call=isCall(r)||[].concat((r.message||r).content||[]).some(isCall);calls+=call;console.log('line '+(i+1)+': type='+r.type+(r.role?', role='+r.role:'')+(r.name?', name='+r.name:'')+(call?'  <- tool call':''))});console.log('types: '+[...types].join(', '));console.log(calls?'True':'False')" $f.FullName; if ($LASTEXITCODE) { throw 'Đọc JSON lỗi' }
      ```
 
-     Không thấy thư mục hay file, hoặc dòng cuối là `False` → dừng, báo Claude: không có log có lệnh gọi công cụ thì không kiểm độc lập được (§L4.10).
+     Không thấy thư mục hay file, lỗi đọc JSON, hoặc dòng cuối là `False` → dừng, báo Claude: không có log có lệnh gọi công cụ thì không kiểm độc lập được (§L4.10).
    - **Chế độ quyền** (Owner): ghi số lần app hỏi ở các việc trên, và hỏi ở việc nào. App hỏi ở hầu hết lệnh thường (`git`, `node`, đọc file trong workspace) → Owner chọn Full Access cho các gói (đã duyệt trước, §L4.11); không thì giữ Default. Ghi lựa chọn vào `baseline.md` và bảng đánh dấu.
    - **Credit** (Owner): trang Usage → ghi **credit sau phiên thử**.
 
@@ -2190,7 +2196,9 @@ Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt
    - Ngay khi mở task của gói, Owner ghi file phiên của gói vào bảng đánh dấu. Đó là file `.jsonl` mới nhất dưới thư mục của worktree review (chỗ ghi ở phiên thử).
    - App hỏi duyệt: Owner từ chối mọi việc ngoài việc review (Phụ lục P).
    - Xong gói: trang Usage → ghi credit.
-   - **Sau gói A:** credit gói A tốn nhân 5 mà vượt credit còn lại cộng một gói mua thêm 500 credit → dừng, hỏi Owner trước gói B (trần G4).
+   - **Điểm dừng chi phí, sau mỗi gói A–E** (trần G4): credit của gói tốn nhiều nhất tới lúc đó nhân số gói còn lại mà vượt credit còn lại (cộng 500 nếu chưa mua gói thêm 500 credit) → dừng, hỏi Owner trước gói kế.
+     - Tính lại sau mỗi gói, không chỉ sau gói A: DeepSeek V4.1 Flash miễn phí tới hết 31/10, nên gói chạy trong hạn đó tốn 0 credit và chưa cho số ước nào (review #881).
+     - Đã mua gói thêm thì credit còn lại đã gồm 500 credit đó; cộng thêm nữa là vượt trần 25 USD.
 
 7. Xong F, làm theo thứ tự:
    1. **Đăng xuất app**, trước khi ai chép gì vào repo; trang tài khoản WorkBuddy có mục đăng xuất mọi thiết bị thì dùng thêm. Ghi **credit sau** vào bảng đánh dấu (credit trước đã ghi ở bước 4).
@@ -2206,10 +2214,12 @@ Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt
    5. So hash 12 báo cáo với bước 3:
 
       ```powershell
-      $old = Import-Csv C:\workspace\deep-review-1-6-r4\common\dot2-reports-hash.csv; $new = Get-FileHash C:\workspace\deep-review-1-6-r4\claude\*.md, C:\workspace\deep-review-1-6-r4\codex\*.md | Select-Object Path, Hash; if (Compare-Object $old $new -Property Path, Hash) { throw 'Báo cáo của Claude / Codex đã đổi trong đợt 2' }; 'OK: 12 báo cáo không đổi'
+      & { $ErrorActionPreference = 'Stop'; $old = @(Import-Csv C:\workspace\deep-review-1-6-r4\common\dot2-reports-hash.csv); $new = @(Get-FileHash C:\workspace\deep-review-1-6-r4\claude\*.md, C:\workspace\deep-review-1-6-r4\codex\*.md | Select-Object Path, Hash); if ($old.Count -ne 12 -or $new.Count -ne 12) { throw "Cần 12 báo cáo ở CSV và ở thư mục, thấy $($old.Count) / $($new.Count)" }; if (Compare-Object $old $new -Property Path, Hash) { throw 'Báo cáo của Claude / Codex đã đổi trong đợt 2' }; 'OK: 12 báo cáo không đổi' }
       ```
 
-      Khác → báo Claude; phiên tổng hợp tìm trong log của app lệnh đã ghi vào đó.
+      Lệnh chỉ in `OK` khi so được đủ 12 cặp và không cặp nào khác. Thiếu CSV, CSV hay thư mục không đủ 12 báo cáo (lệnh in hai số), hay lệnh nào trong khối lỗi → lệnh dừng, không in `OK` (review #881). `$ErrorActionPreference = 'Stop'` chỉ áp trong khối `& { … }`, không đổi cửa sổ PowerShell của Owner.
+
+      Khác hay dừng → báo Claude; phiên tổng hợp tìm trong log của app lệnh đã ghi vào đó.
    6. Đăng nhập lại `gh auth login`.
 Phiên bị cắt (dòng đầu báo cáo vẫn `ĐANG LÀM`) thì mở phiên mới với đúng tin nhắn của gói đó; bước 0 tự làm tiếp.
 
@@ -2256,10 +2266,10 @@ Phiên tổng hợp được dùng subagent / Workflow để kiểm từng phát
   - liệt kê hoặc tìm kiếm trên `C:\workspace`, `deep-review-1-6*\`;
   - lệnh đầu tiên của mỗi phiên gói: chỉ đọc file prompt (§L4.7);
   - `pnpm`, kể cả `pnpm exec`, chạy trong bản chép repo;
-  - lệnh ghi ngoài thư mục của bên đó, trừ vá rồi trả nguyên byte theo quy tắc chung 1;
+  - lệnh ghi ngoài thư mục của bên đó, trừ vá rồi trả nguyên byte theo quy tắc chung 1 và thư mục build / cache bị ignore;
   - DeepSeek: lệnh hay công cụ bị ACL hoặc sandbox của app từ chối, và cách model xử lý sau đó (vd. đổi sang lệnh khác để đọc cùng chỗ);
   - DeepSeek: lệnh đụng `.workbuddy*`, cài skill, connector, đổi chế độ quyền, giao việc cho agent khác, `gh`, `git commit` / `push` / `reset` / …, Credential Manager (`cmdkey`, `vaultcmd`, `CredRead`, `CredentialManager`, `Get-StoredCredential`), `eval:ai`, `Project-2C-review-2`, công cụ web, mạng ra ngoài máy (`curl`, `Invoke-WebRequest`, `Invoke-RestMethod`);
-  - DeepSeek: lệnh ghi vào `…-r4\claude`, `…-r4\codex` (ACL chỉ chặn đọc; bước 7.5 so hash);
+  - DeepSeek: lệnh ghi vào `…-r4\claude`, `…-r4\codex` (ACL chỉ chặn đọc; bước 7.5 so hash), `…-r4\common` (giữ file hash và trạng thái ACL);
   - DeepSeek: lệnh đổi quyền file (`icacls`, `Set-Acl`, `takeown`) hay chạy `dot2.mjs`;
   - dữ liệu của bên khác: `.codex`, `.claude*\projects`, `.claude*\file-history`, `%TEMP%\claude`, `%APPDATA%\Claude`, `%LOCALAPPDATA%\OpenAI`;
   - mẫu key (`sk-`, `gho_`, `ghp_`, `github_pat_`) và chuỗi theo sau `Bearer` / `Authorization` trong báo cáo và log của DeepSeek, quét trước khi chép bất cứ gì vào repo.
@@ -2569,7 +2579,10 @@ File `common\prompt-deepseek.md` = đoạn dưới + nguyên văn Phụ lục N;
 >    - repo ở SHA trên, gồm báo cáo gốc lượt 1–3 của mọi bên ở `docs/reviews/raw/2026-10-15/`, `docs/reviews/raw/2026-10-17/`, `docs/reviews/raw/2026-10-21/` (để biết các lượt trước đã thử gì);
 >    - `C:\workspace\deep-review-1-6-r4\common\`;
 >    - báo cáo của chính bạn trong `…-r4\deepseek\`.
-> 4. Không giao việc cho agent khác, không cài hay dùng skill, không dùng connector, không lên web, không gọi mạng ra ngoài máy (`curl`, `Invoke-WebRequest`), không chạy `gh`. Không đổi chế độ quyền của app, không đọc hay sửa thư mục dữ liệu của app (`~/.workbuddy*`), không đổi quyền file (`icacls`, `Set-Acl`, `takeown`), không chạy `common\dot2.mjs`. Không ghi gì ngoài thư mục `…-r4\deepseek\`. Không đọc file đăng nhập hay dữ liệu của Claude / Codex (`~/.codex`, `~/.claude*`, `%APPDATA%\Claude`, `%LOCALAPPDATA%\OpenAI`, `%TEMP%\claude`), Windows Credential Manager (`cmdkey`, `vaultcmd`, mọi API đọc thông tin đăng nhập). Lệnh hay công cụ bị từ chối thì không thử cách khác để đọc cùng chỗ. Thông tin Issue / PR sửa có ở `common\fixes.md`.
+> 4. Không giao việc cho agent khác, không cài hay dùng skill, không dùng connector, không lên web, không gọi mạng ra ngoài máy (`curl`, `Invoke-WebRequest`), không chạy `gh`. Không đổi chế độ quyền của app, không đọc hay sửa thư mục dữ liệu của app (`~/.workbuddy*`), không đổi quyền file (`icacls`, `Set-Acl`, `takeown`), không chạy `common\dot2.mjs`. Không đọc file đăng nhập hay dữ liệu của Claude / Codex (`~/.codex`, `~/.claude*`, `%APPDATA%\Claude`, `%LOCALAPPDATA%\OpenAI`, `%TEMP%\claude`), Windows Credential Manager (`cmdkey`, `vaultcmd`, mọi API đọc thông tin đăng nhập). Lệnh hay công cụ bị từ chối thì không thử cách khác để đọc cùng chỗ. Thông tin Issue / PR sửa có ở `common\fixes.md`.
+>    - **Ghi:** file bạn tạo (báo cáo, probe, bản chép, log, script) chỉ nằm trong `…-r4\deepseek\` (quy tắc riêng 5). Không ghi gì vào `…-r4\common\`, `…-r4\claude\`, `…-r4\codex\`; không sửa file được theo dõi, trừ phần vá dưới. Ngoài `deepseek\` chỉ có:
+>      - những gì lệnh build, test hay trình duyệt tự ghi: thư mục build / cache bị ignore trong worktree (vd. `apps\desktop\dist`, `node_modules\.vite`, `test-results\`) và thư mục tạm của hệ thống;
+>      - phần vá rồi trả nguyên byte theo quy tắc chung 1.
 > 5. Ghi báo cáo vào `C:\workspace\deep-review-1-6-r4\deepseek\{GÓI}.md`, probe / bản chép / log vào `…-r4\deepseek\{GÓI}\`. Cuối phiên `git status --short` của repo như đầu phiên: rỗng, hoặc chỉ có file app tự tạo mà `common\baseline.md` ghi.
 > 6. Gói F được đọc `…-r4\deepseek\A…E.md`. Không tổng hợp với báo cáo nào khác, không tạo Issue, không đề xuất merge.
 > 7. Mục 1 của báo cáo ghi app WorkBuddy (bản theo `common\baseline.md`), model, context và mức suy luận.
@@ -2601,7 +2614,7 @@ Owner 28/10/2026 (§L4.11; G4 / G6 duyệt trên #880): DeepSeek chạy trong **
 - Dữ liệu cục bộ (bên thứ ba: `workbuddy-account-migrate`, `workbuddy-chat-exporter`; phiên thử kiểm):
   - thư mục `%USERPROFILE%\.workbuddy-ai` (bản quốc tế) hay `.workbuddy`;
   - `workbuddy.db` (SQLite, bảng `sessions` có `cwd`, model);
-  - bản ghi phiên `projects\<thư mục theo cwd>\<id phiên>.jsonl`, có lệnh gọi công cụ (`Bash`, `Read`…), kèm `tool-results\`;
+  - bản ghi phiên `projects\<thư mục theo cwd>\<id phiên>.jsonl`, kèm `tool-results\`. Mỗi dòng một bản ghi JSON, loại theo `type` (`transcript.py` của `workbuddy-chat-exporter`): `message` (`role` user / assistant), `reasoning`, `function_call` là lệnh gọi công cụ (`name` như `Bash`, `Read`…; `arguments`), `function_call_result`;
   - memory `memory\<uid>_memory.md`; trạng thái đăng nhập `storage\skeleton\account-snapshot.json`; `.master.key`.
 - Model gắn sẵn: tài liệu không ghi chạy đường Vendor Direct (DeepSeek phục vụ) hay bản Tencent tự chạy. Owner chấp nhận (§L4.11).
 
@@ -2619,7 +2632,7 @@ Vì vậy **ACL của đợt 2 là lớp chặn đọc duy nhất**. App không 
 
 - WorkBuddy Pro một tháng: 10 USD, tháng đầu 7 USD với người chưa từng đăng ký hay dùng thử; 2.000 credit/tháng, không cộng dồn. Thêm 50 credit cho mỗi ngày có chat hay tác vụ trong app WorkBuddy hoặc CodeBuddy (khuyến mãi có thời hạn). Không cần gia hạn thì hủy tự gia hạn ngay sau khi đăng ký; gói vẫn dùng được tới hết kỳ.
 - **Trần 25 USD:** gói Pro cộng tối đa một gói mua thêm 500 credit (15 USD, không hoàn tiền).
-- WorkBuddy không công bố 1 credit bằng bao nhiêu token. DeepSeek V4.1 Flash miễn phí trên bản quốc tế tới hết 31/10, sau đó hệ số chưa công bố. Vì vậy đo ở phiên thử và sau gói A (§L4.9 đợt 2 bước 5, 6); ước vượt trần thì dừng, hỏi Owner.
+- WorkBuddy không công bố 1 credit bằng bao nhiêu token. DeepSeek V4.1 Flash miễn phí trên bản quốc tế tới hết 31/10, sau đó hệ số chưa công bố. Vì vậy đo ở phiên thử và sau mỗi gói (§L4.9 đợt 2 bước 5, 6); ước cho các gói còn lại vượt trần thì dừng, hỏi Owner.
 
 **Cài đặt app** (§L4.9 đợt 2 bước 4; Owner làm, ghi vào `baseline.md`):
 
