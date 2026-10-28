@@ -1751,7 +1751,7 @@ Như §L3.4 (và §L2.4), với các thay đổi dưới.
 
 - DR6-104…134: 31 vấn đề lượt 3, đều có Issue sửa (tổng hợp lượt 3 §8.5). DR6-69 (SỬA MỘT PHẦN ở lượt 3) kiểm qua DR6-105, không có dòng riêng, như bảy DR6 lượt 1 ở lượt 3.
 - DR6-25, 37, 66, 67: hoãn ở lượt 1 (KNOWN ở lượt 2–3), sửa trong đợt sổ OPEN.
-- Hai mục KNOWN có bằng chứng mới của lượt 3 (tổng hợp lượt 3 §8.4) mà sau đó có Issue sửa: CL3-A29 (#805), CL3-B2 (#817). Hai mục còn lại của §8.4 (CL3-C7, Claude F K2) vẫn là KNOWN (K1).
+- Hai mục KNOWN có bằng chứng mới của lượt 3 (tổng hợp lượt 3 §8.4) mà sau đó có Issue sửa: CL3-A29 (#742 một phần, #805), CL3-B2 (#817). Hai mục còn lại của §8.4 (CL3-C7, Claude F K2) vẫn là KNOWN (K1).
 
 Bốn bước của §L2.4 giữ nguyên:
 
