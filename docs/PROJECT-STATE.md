@@ -104,6 +104,7 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - Reports and logs are scanned for key patterns before they reach the repo.
   - A trial session runs before wave 2.
   - The OWNER copies the DSH session logs out only after revoking the key.
+  - Raw logs stay out of the repo: reports and the synthesis only quote them, after the key scan and after the key is revoked.
 
   Plan: `docs/process/deep-review-phase-1-6.md` §L4; Appendix P is now the DSH configuration.
 
