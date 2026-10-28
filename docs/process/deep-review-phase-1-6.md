@@ -1702,7 +1702,7 @@ Trong suốt lượt 4 **không merge code vào `main`** (như §2). PR docs mer
 
 - **ID theo bên:** `CL4-*` / `CX4-*` là ID của review đóng Phase 4 (`docs/reviews/2026-10-04-phase-4-tong-hop.md`), và review Phase 5 dùng `DS-*` cho DeepSeek. Lượt 4 dùng `CLR4-*` / `CXR4-*` / `DSR4-*` ("R4" = lượt 4; `rg` trên `docs/` ngày 27/10: 0 chỗ). Vấn đề đã gộp đánh số tiếp `DR6-135…`.
 - **Vì sao hai đợt** (như lượt 1 §2 và review Phase 5): mọi bên chạy dưới cùng tài khoản Windows. ACL chỉ chặn được thư mục của bên **đã xong**, vì bên đang chạy còn phải ghi vào thư mục của mình. Đợt 2 chạy khi `claude\`, `codex\` của lượt 4 đã bị chặn ACL. App WorkBuddy không có luật chặn đọc theo đường dẫn (Phụ lục P), nên ACL là lớp duy nhất giữ DeepSeek khỏi hai thư mục đó, khỏi các bản sao của chúng (log phiên, bản sao file, scratchpad) và khỏi thư mục lượt 1–3 (§L4.9 đợt 2 bước 3). Phase 5 cũng cho thấy cần lớp này: DeepSeek gói E từng liệt kê thư mục gốc bị cấm (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §6). Thêm nữa, đợt 2 không va cổng e2e 4173 hay máy đo với hai bên kia.
-- **Máy: Home PC `DESKTOP-KDURKJP`** (đề xuất 7). Mốc hiệu năng sau #656 và số đo lượt 3 cùng máy chỉ có ở máy này; app WorkBuddy của Owner có trên máy này (Phụ lục P). Bước chuẩn bị, cả ba bên và mọi số đo chạy trên cùng máy.
+- **Máy: Home PC `DESKTOP-KDURKJP`** (đề xuất 7). Mốc hiệu năng sau #656 và số đo lượt 3 cùng máy chỉ có ở máy này; app WorkBuddy phải cài trên máy này trước đợt 2 (Phụ lục P). Bước chuẩn bị, cả ba bên và mọi số đo chạy trên cùng máy.
 - Thư mục lượt 1–3 (`C:\workspace\deep-review-1-6\`, `-r2\`, `-r3\`) có trên Home PC, giữ tới v1.0 (HANDOFF). Probe lượt 3 của Claude và Codex trong `deep-review-1-6-r3\<bên>\` là probe cùng máy, dùng lại được. DeepSeek chưa có probe nào ở 6D; ở đợt 2 cả ba thư mục bị chặn ACL.
 
 ## L4.3 Sáu gói, cỡ đo lại, diff sửa theo gói
@@ -2686,7 +2686,7 @@ Sửa sau review #872 (T-314 #876), thử ngày 28/10 trên Office Laptop. Cây 
 - Junction ngoài `node_modules`: bản trước theo junction, xóa cả file được theo dõi và file ngoài worktree. Nay script chỉ xóa chính link.
 - `deny`, xóa `dot2-acl.json`, rồi `remove`: mọi mục đọc lại được, kể cả `.codex\.chatgpt-projects\p\other.txt` và thư mục `q` ở tầng 2. Bản trước để lại cả hai mà vẫn in `OK`.
 
-Sửa sau review #878 (T-315 #880), thử ngày 28/10 trên Home PC, cùng cách dựng cây giả (đường dẫn có dấu cách; `TEMP`, `USERPROFILE`, `APPDATA`, `LOCALAPPDATA` giả). Đợt 1 giả để lại `probe4\` (`package.json`, `node_modules\.vite`, `.vite-temp`) và `probe6\sub\node_modules\.vite`:
+Sửa sau review #878 (T-315 #880), thử ngày 28/10 trên Office Laptop, cùng cách dựng cây giả (đường dẫn có dấu cách; `TEMP`, `USERPROFILE`, `APPDATA`, `LOCALAPPDATA` giả). Đợt 1 giả để lại `probe4\` (`package.json`, `node_modules\.vite`, `.vite-temp`) và `probe6\sub\node_modules\.vite`:
 - bản `main` `76601fd`: `clean` giữ cache `.vite` / `.vite-temp` của hai thư mục đó, không in dòng nào về chúng, vẫn in `OK` (đỏ 5 / 14 kiểm tra);
 - bản này: in `kept, holds node_modules` cho `probe4\` và `probe6\sub\`, xóa cache của hai thư mục đó, giữ gói trong `node_modules`; mục khác như bản trước (xanh 14 / 14).
 
