@@ -6,7 +6,6 @@ import {
   DialogFocusFallback,
   PolicyBadge,
   Segmented,
-  StageBadge,
   type DataTableColumn,
 } from '@p2c/ui';
 import { useAppData, useQuery, useToday } from '../data/AppDataContext';
@@ -14,6 +13,7 @@ import { t } from '../i18n';
 import { ALERT, FOCUS, HEADING, SETTINGS_SECTION } from './classes';
 import { ConfirmWordDialog } from './ConfirmWordDialog';
 import { RestoreDialog } from './RestoreDialog';
+import { stageBadge } from './stage-badge';
 import {
   TRASH_FILTERS,
   TRASH_MORE,
@@ -51,7 +51,7 @@ function RecordCell({ row }: { row: TrashRow }) {
     <>
       <b className="flex flex-wrap items-center gap-1.5 font-semibold">
         {recordTitle(row)}
-        {badge && 'stage' in badge && <StageBadge stage={badge.stage} label={badge.text} />}
+        {badge && 'stage' in badge && stageBadge(badge.stage, badge.text)}
       </b>
       {badge && 'issued' in badge && <PolicyBadge issued={badge.issued} label={badge.text} />}
       {detail && <span className="block text-xs text-fg-3">{detail}</span>}

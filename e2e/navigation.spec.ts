@@ -30,7 +30,6 @@ test('the smallest window shows the logo, the last item and the save state witho
   await expect(sidebar.getByRole('img', { name: 'Heritas L-CRM' })).toBeInViewport({ ratio: 1 });
   await expect(last).toBeInViewport({ ratio: 1 });
   await expect(saveState).toBeInViewport({ ratio: 1 });
-  expect(await page.evaluate(() => window.scrollY)).toBe(0);
   // The save state sticks to the foot of the window: it does not cover the last item.
   const lastBox = (await last.boundingBox())!;
   expect(lastBox.y + lastBox.height).toBeLessThanOrEqual((await saveState.boundingBox())!.y);

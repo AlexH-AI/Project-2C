@@ -3,6 +3,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { AI_MODELS } from '@p2c/ai';
 import { describe, expect, it, vi } from 'vitest';
+import { t } from '../i18n';
 import { tauriOpenCode } from './ai-tauri';
 import {
   ACCESS_DENIED,
@@ -270,8 +271,9 @@ describe('the JS ↔ Rust AI contract', () => {
 const desktop = (file: string) => readFileSync(new URL(`../../${file}`, import.meta.url), 'utf8');
 const tauriConf = () =>
   JSON.parse(desktop('src-tauri/tauri.conf.json')) as {
+    productName: string;
     version: string;
-    app: { security: { csp: string } };
+    app: { windows: { title: string }[]; security: { csp: string } };
   };
 
 /** Every value the webview imports from `@tauri-apps/api`, as `module: name`, type imports aside. */
@@ -314,6 +316,18 @@ describe('the release configuration (DR6-12…14)', () => {
     for (const version of ['0.1.0', '0.9.0-rc.1', '1.0', '1.0.0-', '01.0.0', 'v1.0.0']) {
       expect(version).not.toMatch(RELEASE);
     }
+  });
+
+  // The exe's name and its window's first title show only in the exe, where e2e does not run, and
+  // `<title>` only until the first screen names the page: a rename that misses one of them would
+  // stay green (review of PR 861).
+  it('names the app as the sidebar does: the exe, its window, the page and the crate', () => {
+    const name = t('app.title');
+    const { productName, app } = tauriConf();
+    expect(productName).toBe(name);
+    expect(app.windows.map(({ title }) => title)).toEqual([name]);
+    expect(/<title>([^<]*)<\/title>/.exec(desktop('index.html'))?.[1]).toBe(name);
+    expect(/^description = "([^"]*)"$/m.exec(desktop('src-tauri/Cargo.toml'))?.[1]).toContain(name);
   });
 
   it('builds the Rust library only as the rlib the exe links', () => {

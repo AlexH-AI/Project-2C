@@ -12,7 +12,7 @@ import type { Ref } from 'react';
 import { Button, PolicyBadge } from '@p2c/ui';
 import { joinParts, t } from '../../i18n';
 import { dayText } from '../appointments/appointment-form';
-import { CARD, LINK } from '../classes';
+import { CARD, HEADING, LINK } from '../classes';
 import { policyStatusText } from './policy-form';
 
 /**
@@ -50,12 +50,7 @@ export function CustomerPolicies({
   return (
     <section aria-labelledby="customer-policies" className={CARD}>
       <div className="mb-2 flex items-baseline gap-2">
-        <h2
-          ref={heading}
-          id="customer-policies"
-          tabIndex={-1}
-          className="m-0 shrink-0 text-sm font-medium text-heading"
-        >
+        <h2 ref={heading} id="customer-policies" tabIndex={-1} className={`${HEADING} shrink-0`}>
           {t('policies.title')}
         </h2>
         <span className="text-xs text-fg-3 tabular-nums">{joinParts(meta)}</span>

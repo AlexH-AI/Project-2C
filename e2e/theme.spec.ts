@@ -78,6 +78,8 @@ test('the slogan is in Playfair Display italic, loaded from the app itself (T-30
   await page.goto('/');
 
   const slogan = page.getByRole('complementary').getByText('Where legacy meets trust');
+  // English in a Vietnamese page: a screen reader reads it as English (WCAG 3.1.2, review #861).
+  await expect(slogan).toHaveAttribute('lang', 'en');
   await expect(slogan).toHaveCSS('font-family', /^"?Playfair Display"?,/);
   await expect(slogan).toHaveCSS('font-style', 'italic');
   await expect(slogan).toHaveCSS('font-size', '13px');

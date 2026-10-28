@@ -8,7 +8,7 @@ import { t } from '../i18n';
  * the dark sidebar, and its slogan in real text under it. A thin champagne outline lifts the navy
  * tree and "Heritas" off the dark; "L-CRM" is gold already. The pieces are cut at 3x the size they
  * show; their own size, given, keeps the sidebar from moving as they load. A screen reader reads
- * the name of the app for them.
+ * the name of the app for them, and the slogan as the English it is (WCAG 3.1.2).
  */
 export function Brand() {
   return (
@@ -24,7 +24,9 @@ export function Brand() {
         />
         <img src={lcrm} alt="" width={395} height={38} className="mt-1 h-auto w-33" />
       </div>
-      <p className="brand-slogan mt-1.75">{t('app.slogan')}</p>
+      <p lang="en" className="brand-slogan mt-1.75">
+        {t('app.slogan')}
+      </p>
     </div>
   );
 }
