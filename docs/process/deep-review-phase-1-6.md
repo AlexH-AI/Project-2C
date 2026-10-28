@@ -2124,7 +2124,7 @@ Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt
    - `%TEMP%`;
    - `C:\workspace`, bỏ `.git`, `.pnpm`, `target`.
 
-   Lệnh chỉ thấy chữ không nén (UTF-8 / UTF-16). Thấy ở chỗ còn đọc được → `STOP` kèm danh sách file.
+   Lệnh chỉ thấy chữ không nén (UTF-8 / UTF-16). Thấy ở chỗ còn đọc được → `STOP` kèm danh sách file. Riêng danh sách phiên của app desktop Claude (`%APPDATA%\Claude\claude-code-sessions`: tiêu đề, vài câu tóm tắt) thì lệnh chỉ in ra, Owner ghi vào `baseline.md`: app đang chạy giữ các file này nên không chặn được (rủi ro ghi ở Phụ lục P).
 4. Mở DSH từ worktree review:
 
    ```powershell
@@ -2159,7 +2159,7 @@ Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt
    - Kết quả lệnh shell cho biết chế độ sandbox, runner có áp đủ không, và shell nào.
    - Probe mà Phụ lục N cần (quy tắc chung 6, đo trên exe), chạy trong sandbox:
      - mở một bản chép của `common\exe\project2c.exe` trong `deepseek\_thu\`, với cổng debug khác 9222 (`e2e/perf/README.md`);
-     - chạy một probe Playwright trên bản build web.
+     - chạy một probe Playwright trên bản build web. Bước 1 đã xóa `apps\desktop\dist`, nên `pnpm build:web` trước; thiếu bản build thì đừng nhầm là sandbox chặn.
 
      Phiên thử kiểm hai việc này có chạy được không, chẳng hạn exe có ghi được hồ sơ WebView2 ngoài gốc ghi không. Bị chặn thì Owner chọn trước khi chạy gói A: hoặc thêm thư mục đó vào `additionalWritableRoots` (mở rộng phạm vi G6), hoặc chấp nhận DeepSeek ghi PLAUSIBLE cho phần chỉ kiểm được trên exe hay trình duyệt.
 
@@ -2621,12 +2621,12 @@ Model `deepseek-flash` và Effort `max` chọn ở bộ chọn model của giao 
   - chặn cả thư mục bằng `(OI)(CI)(R)` khi mọi file hard link trong đó có đủ link ở trong. Script so `nlink` với số đường dẫn cùng `ino` tìm thấy, không đi theo junction;
   - với `.codex` và `Project-2C-review-2`: chặn từng mục con không có link ra ngoài, để ngỏ `node_modules`, `.git` và link, đi tiếp vào mục con có link ra ngoài; file chặn bằng `(R)`;
   - ghi `dot2-acl.json` sau mỗi lần chặn, rồi kiểm mỗi mục bị từ chối, kể cả một file trong mỗi thư mục chặn cả. `--dry-run` chỉ in danh sách.
-- `scan`: như §L4.9 đợt 2 bước 3. Bỏ qua file cũ hơn mốc, file đăng nhập (`.credentials*`, `auth.json`) và `C:\workspace\Project-2`; in tên file trên 64 MB không đọc.
+- `scan`: như §L4.9 đợt 2 bước 3. Bỏ qua file cũ hơn mốc, file đăng nhập (`.credentials*`, `auth.json`) và `C:\workspace\Project-2`; in tên file trên 64 MB không đọc. Chỗ thấy trong `%APPDATA%\Claude\claude-code-sessions` chỉ in ra, không `STOP`.
 - `remove`: `icacls /remove:d` trên mọi mục của `dot2-acl.json`, rồi trên các thư mục chuẩn (phòng khi file trạng thái thiếu); kiểm đọc lại được.
 
 Đã thử ngày 28/10 trên Home PC (PR #872):
 - ACL: deny `(OI)(CI)` trên một thư mục không đi qua junction ở trong, nhưng chặn cả đường dẫn bên ngoài của file hard link ở trong. `/remove:d` trả lại cả hai.
-- Script: test đầu-cuối trên cây giả (worktree git, hard link, junction) qua cả năm lệnh.
+- Script: test đầu-cuối trên cây giả (worktree git, hard link, junction) qua cả năm lệnh, cả khi đường dẫn có dấu cách như `C:\Users\Duong Hoang`.
 - `deny --dry-run` trên thư mục thật: 62 mục thư mục và 58 mục file, để ngỏ 4 mục (`node_modules` và `.git` trong `.codex` và trong `Project-2C-review-2`), chạy 1 giây.
 - `scan` với mốc 20/10: 69 308 file, 76 giây, không chỗ nào khớp.
 
@@ -2887,7 +2887,11 @@ function scan() {
   for (const r of roots) walk(r);
   console.log(`${read} files read; ${closed} folders / files not readable (the denied ones count here)`);
   for (const p of big) console.log(`not read (over 64 MB): ${p}`);
-  if (hits.length) throw new Stop(`round 4 IDs or report headers readable in:\n${hits.join('\n')}`);
+  // Accepted in Appendix P: the desktop app's session list (titles, recaps); the running app keeps it open.
+  const appSessions = path.join(APPDATA, 'Claude', 'claude-code-sessions') + path.sep;
+  for (const p of hits.filter((h) => h.startsWith(appSessions))) console.log(`accepted, write it in baseline.md: ${p}`);
+  const open = hits.filter((h) => !h.startsWith(appSessions));
+  if (open.length) throw new Stop(`round 4 IDs or report headers readable in:\n${open.join('\n')}`);
   console.log('OK: no readable copy of Claude / Codex round 4 work found');
 }
 
@@ -2909,7 +2913,7 @@ try {
 
 **Còn hở sau review #872** (chờ Owner xác nhận cùng phần đổi ở §L4.11):
 - file hard link trong `node_modules` để ngỏ; đó chỉ là gói npm;
-- metadata phiên của app desktop Claude (`%APPDATA%\Claude\claude-code-sessions`: tiêu đề, vài câu tóm tắt) không chặn, vì app đang chạy; `scan` báo nếu có mã phát hiện;
+- metadata phiên của app desktop Claude (`%APPDATA%\Claude\claude-code-sessions`: tiêu đề, vài câu tóm tắt) không chặn, vì app đang chạy. `scan` in ra nếu có mã phát hiện, Owner ghi vào `baseline.md`. Muốn chặn cả chỗ này thì phải đóng app desktop Claude suốt đợt 2;
 - `scan` chỉ thấy chữ không nén; log hay cơ sở dữ liệu nén của app thì không kiểm được;
 - cùng user, nên lệnh của model gỡ được ACL (`icacls /remove`): prompt cấm, quét log tìm;
 - nếu DSH chạy lệnh dưới danh tính khác tài khoản của Owner thì ACL không áp: phiên thử bắt được.
