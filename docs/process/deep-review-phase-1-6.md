@@ -2291,10 +2291,11 @@ Owner duyệt G1 ngày 28/10/2026 bằng comment trên PR #863 (như PR #647, #7
   - DeepSeek chạy qua DSH `0.2.1-rc.2` (Phụ lục P mới), trả theo mức dùng thay hạn mức gói Go.
   - Cùng user Windows (phương án (b)): ACL đợt 2 chặn thêm `%USERPROFILE%\.codex` và transcript Claude của worktree review; `gh` đăng xuất trong đợt 2.
   - Key riêng cho lượt 4, thu hồi ngay sau gói F.
-- Review #872 (28/10) thấy bộ ACL trên còn hở và có chỗ làm hỏng `node_modules`, nên kế hoạch đổi (G6, **chờ Owner xác nhận**):
+- Review #872 (28/10) thấy bộ ACL trên còn hở và có chỗ làm hỏng `node_modules`, nên kế hoạch đổi như dưới. Owner xác nhận G6 cùng ngày (ghi trên #868): "Anh xác nhận G6 cho bộ ACL mới của đợt 2 và việc chạy script dot2.mjs, phương án (a) cho danh sách phiên của app desktop."
   - chặn thêm `file-history` và scratchpad của các phiên Claude ở worktree review, thư mục lượt 1–3, worktree `Project-2C-review-2`;
   - `.codex` và `Project-2C-review-2` chặn theo từng mục con, để ngỏ `node_modules` và `.git`: file trong `node_modules` dùng chung với ba checkout qua hard link;
-  - dọn, chặn, quét bản sao và gỡ bằng `common\dot2.mjs` (Phụ lục P), thay các lệnh `icacls` gõ tay;
+  - Owner dọn, chặn, quét bản sao và gỡ bằng `common\dot2.mjs` (Phụ lục P), thay các lệnh `icacls` gõ tay;
+  - phương án (a): chỗ có mã phát hiện trong danh sách phiên của app desktop Claude (`%APPDATA%\Claude\claude-code-sessions`) chỉ ghi vào `baseline.md`, đợt 2 chạy tiếp; phương án (b), đóng app suốt đợt 2 để chặn cả chỗ này, không chọn;
   - phiên thử thêm: kiểm `node_modules` của worktree review, đọc thử từng loại mục bị chặn; việc giải nén được log DSH trở lại nhóm làm dừng đợt 2, như đề xuất Owner duyệt.
 - Phần còn lại của mục 9 giữ nguyên: đợt 2 chạy một mình, ở worktree `Project-2C-review`, có ACL trên `claude\`, `codex\`.
 
@@ -2911,7 +2912,7 @@ try {
 - `gh` đăng xuất trong đợt 2;
 - quét mẫu key trước khi chép bất cứ gì vào repo (§L4.10).
 
-**Còn hở sau review #872** (chờ Owner xác nhận cùng phần đổi ở §L4.11):
+**Còn hở sau review #872** (Owner chấp nhận khi xác nhận G6 ngày 28/10, cùng phần đổi ở §L4.11):
 - file hard link trong `node_modules` để ngỏ; đó chỉ là gói npm;
 - metadata phiên của app desktop Claude (`%APPDATA%\Claude\claude-code-sessions`: tiêu đề, vài câu tóm tắt) không chặn, vì app đang chạy. `scan` in ra nếu có mã phát hiện, Owner ghi vào `baseline.md`. Muốn chặn cả chỗ này thì phải đóng app desktop Claude suốt đợt 2;
 - `scan` chỉ thấy chữ không nén; log hay cơ sở dữ liệu nén của app thì không kiểm được;

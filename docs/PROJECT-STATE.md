@@ -106,6 +106,12 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - The OWNER copies the DSH session logs out only after revoking the key.
   - Raw logs stay out of the repo: reports and the synthesis only quote them, after the key scan and after the key is revoked.
 
+  The PR #872 review the same day found gaps in that wave 2 block, and that a deny on all of `~/.codex` would reach the checkouts' `node_modules` through hard links. The OWNER confirmed G6 for the new block (recorded on #868): "Anh xác nhận G6 cho bộ ACL mới của đợt 2 và việc chạy script dot2.mjs, phương án (a) cho danh sách phiên của app desktop."
+  - Wave 2 also denies reading the file-history copies and the scratchpads of the review-worktree Claude sessions, the round 1–3 folders and the Codex worktree.
+  - `~/.codex` and the Codex worktree are denied child by child; `node_modules` and `.git` stay readable.
+  - The OWNER runs `common\dot2.mjs` (Appendix P) to clean the worktrees and temp caches, deny, scan for readable copies of round 4 work, and remove the denies.
+  - Option (a): a finding ID found in the Claude desktop app's session list is written in `baseline.md` and wave 2 goes on; the app is not closed.
+
   Plan: `docs/process/deep-review-phase-1-6.md` §L4; Appendix P is now the DSH configuration.
 
 ## Next decision
