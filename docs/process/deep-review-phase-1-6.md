@@ -2177,6 +2177,7 @@ Bước 1, 3 và 7 chạy `common\dot2.mjs` (Phụ lục P, mục "Script đợt
    **Chỉ ghi lại, không dừng:**
    - Bảo model tìm trên web và đọc một trang web → ghi app có công cụ đó không (tài liệu không cho tắt; prompt cấm).
    - Tạo `C:\workspace\deep-review-1-6-r4\_thu_ghi\a.txt` (ngoài workspace, không có ACL) bằng shell → ghi app hỏi, sandbox chặn hay tạo được.
+   - Vá rồi trả nguyên byte (Phụ lục O quy tắc riêng 4): bảo model thêm một dòng vào `README.md` bằng công cụ sửa file của app, rồi trả lại đúng nội dung cũ → ghi app có hỏi không, và `git status --short` ngay sau đó. App sao lưu file trước khi sửa (Phụ lục P): bản sao nằm trong worktree thì ghi tên vào `baseline.md` như đoạn "Xong" dưới.
    - Memory: ghi mục mới nào xuất hiện sau phiên thử.
    - Probe mà Phụ lục N cần (quy tắc chung 6, đo trên exe):
      - mở một bản chép của `common\exe\project2c.exe` trong `deepseek\_thu\`, với cổng debug khác 9222 (`e2e/perf/README.md`);
@@ -2582,6 +2583,7 @@ File `common\prompt-deepseek.md` = đoạn dưới + nguyên văn Phụ lục N;
 > 4. Không giao việc cho agent khác, không cài hay dùng skill, không dùng connector, không lên web, không gọi mạng ra ngoài máy (`curl`, `Invoke-WebRequest`), không chạy `gh`. Không đổi chế độ quyền của app, không đọc hay sửa thư mục dữ liệu của app (`~/.workbuddy*`), không đổi quyền file (`icacls`, `Set-Acl`, `takeown`), không chạy `common\dot2.mjs`. Không đọc file đăng nhập hay dữ liệu của Claude / Codex (`~/.codex`, `~/.claude*`, `%APPDATA%\Claude`, `%LOCALAPPDATA%\OpenAI`, `%TEMP%\claude`), Windows Credential Manager (`cmdkey`, `vaultcmd`, mọi API đọc thông tin đăng nhập). Lệnh hay công cụ bị từ chối thì không thử cách khác để đọc cùng chỗ. Thông tin Issue / PR sửa có ở `common\fixes.md`.
 >    - **Ghi:** file bạn tạo (báo cáo, probe, bản chép, log, script) chỉ nằm trong `…-r4\deepseek\` (quy tắc riêng 5). Không ghi gì vào `…-r4\common\`, `…-r4\claude\`, `…-r4\codex\`; không sửa file được theo dõi, trừ phần vá dưới. Ngoài `deepseek\` chỉ có:
 >      - những gì lệnh build, test hay trình duyệt tự ghi: thư mục build / cache bị ignore trong worktree (vd. `apps\desktop\dist`, `node_modules\.vite`, `test-results\`) và thư mục tạm của hệ thống;
+>      - file app tự tạo trong worktree mà `common\baseline.md` ghi (quy tắc riêng 5);
 >      - phần vá rồi trả nguyên byte theo quy tắc chung 1.
 > 5. Ghi báo cáo vào `C:\workspace\deep-review-1-6-r4\deepseek\{GÓI}.md`, probe / bản chép / log vào `…-r4\deepseek\{GÓI}\`. Cuối phiên `git status --short` của repo như đầu phiên: rỗng, hoặc chỉ có file app tự tạo mà `common\baseline.md` ghi.
 > 6. Gói F được đọc `…-r4\deepseek\A…E.md`. Không tổng hợp với báo cáo nào khác, không tạo Issue, không đề xuất merge.
@@ -2614,7 +2616,7 @@ Owner 28/10/2026 (§L4.11; G4 / G6 duyệt trên #880): DeepSeek chạy trong **
 - Dữ liệu cục bộ (bên thứ ba: `workbuddy-account-migrate`, `workbuddy-chat-exporter`; phiên thử kiểm):
   - thư mục `%USERPROFILE%\.workbuddy-ai` (bản quốc tế) hay `.workbuddy`;
   - `workbuddy.db` (SQLite, bảng `sessions` có `cwd`, model);
-  - bản ghi phiên `projects\<thư mục theo cwd>\<id phiên>.jsonl`, kèm `tool-results\`. Mỗi dòng một bản ghi JSON, loại theo `type` (`transcript.py` của `workbuddy-chat-exporter`): `message` (`role` user / assistant), `reasoning`, `function_call` là lệnh gọi công cụ (`name` như `Bash`, `Read`…; `arguments`), `function_call_result`;
+  - bản ghi phiên `projects\<thư mục theo cwd>\<id phiên>.jsonl`, có lệnh gọi công cụ (`Bash`, `Read`…), kèm `tool-results\`. Theo `transcript.py` của `workbuddy-chat-exporter` (docstring, commit `b1b14b4` ngày 25/10): mỗi dòng một bản ghi JSON, `type` cho biết loại: `message` (`role` user / assistant), `reasoning`, `function_call` (lệnh gọi công cụ: `name` + `arguments` dạng chuỗi JSON), `function_call_result`, `file-history-snapshot` (bản sao lưu file), và vài loại khác;
   - memory `memory\<uid>_memory.md`; trạng thái đăng nhập `storage\skeleton\account-snapshot.json`; `.master.key`.
 - Model gắn sẵn: tài liệu không ghi chạy đường Vendor Direct (DeepSeek phục vụ) hay bản Tencent tự chạy. Owner chấp nhận (§L4.11).
 
@@ -2665,7 +2667,7 @@ Vì vậy **ACL của đợt 2 là lớp chặn đọc duy nhất**. App không 
 | (chưa có) | `Project-2C-review-2` (worktree của Codex): dọn trước đợt 2; ACL đợt 2 theo từng mục con, để ngỏ `node_modules` và `.git` (review #872); prompt cấm; quét log |
 | (chưa có) | Cache tạm có bản biến đổi của code probe (`%TEMP%\playwright*`, `%TEMP%\…\ssr`, `%TEMP%\codex-*`), cache Vite / Vitest trong `node_modules`: xóa ở đợt 2 bước 1; `scan` tìm bản sao còn đọc được (review #872, #878) |
 | Liệt kê `C:\workspace`, `deep-review-1-6*` phải hỏi | Prompt cấm; quét log |
-| `edit` chỉ được ghi trong `deepseek\` | Prompt (Phụ lục O quy tắc riêng 4); `git status` cuối mỗi gói; hash 12 báo cáo; sandbox nếu giữ Default; quét log |
+| `edit` chỉ được ghi trong `deepseek\` | Nới ra (review #881): prompt (Phụ lục O quy tắc riêng 4) cho file tự tạo chỉ ở `deepseek\`; ngoài đó chỉ thư mục build / cache bị ignore, thư mục tạm, file app tự tạo mà `baseline.md` ghi, vá rồi trả nguyên byte (quy tắc chung 1). Kiểm: `git status` cuối mỗi gói; hash 12 báo cáo; sandbox nếu giữ Default; quét log |
 | `task` (subagent) cấm | Một agent (cài đặt app); prompt cấm; quét log |
 | `webfetch` / `websearch` cấm | Prompt cấm; quét log. Tài liệu không cho tắt công cụ web; phiên thử ghi lại |
 | `git commit` / `push` / `stash` / `switch` / `clean` / `merge` / `rebase` / `checkout` / `restore` / `reset` cấm | Prompt (Phụ lục N quy tắc chung 1). Quét log. `main` có ruleset và hook `pre-push` |
