@@ -1822,14 +1822,14 @@ Như §L2.4 phần 2: ít nhất 5 kịch bản mới mỗi gói, gói F ít nh�
   - cách làm "chỉ Claude viết code" (ADR-0001), kể cả subagent / Workflow ở phiên gói Owner bật ultracode (M8–M10), và việc Codex, DeepSeek review chỉ đọc (M2, M10);
   - mức `code-review` của `review-pr` (ADR-0017, phụ lục 21/10);
   - việc dùng công cụ mới (G4).
-- **K21:** như §L3.5, thêm "; đợt G5 lượt 3: K31" sau "(Q6 lượt 1; đợt G5 lượt 2: K28)".
+- **K21:** như §L3.5, ngoặc sau vế "V1 / `LAW_NAME` sửa đúng chữ G5, không G5 mới" nay là "(Q6 lượt 1; đợt G5 lượt 2: K28; đợt G5 lượt 3: K31)".
 
 Cộng thêm:
 
 | # | Quyết định | Nguồn |
 |---|---|---|
 | K30 | Quyết định lượt 3 (21/10, mọi đề xuất). Q1 (a): khôi phục "R rồi X cùng ngày" giữ hành vi; chuyển nhóm được đưa lại giữ chỗ trong thứ tự ghi, khôi phục theo thứ tự đã ghi thì được, ngược lại bị chặn như E20 (TR-3). Q2 (a): `normalizeText` bỏ cả `\p{Cc}` không phải White_Space, mở rộng K25. Q3 (a): câu Thùng rác của 9b chỉ sửa chữ (dọn sạch trước, rồi phạm vi của vế khôi phục); `personUsage` không đổi. Q5 (a): CL3-C7 giữ K1 + R2-02. Q6 (a): bấm "Backup rồi dọn sạch" → thông báo 11j ≤ 500 ms trên dữ liệu tải (exe), đo tay ở G7 | tổng hợp lượt 3 §9; #720, #721, #723 |
-| K31 | Đợt G5 lượt 3 (Owner duyệt 23/10, "duyệt hết"; `phase-5-prompts.md` §12): `analysis@4`, `discovery@4`, giữ `extraction@1`, `web@1`. Ở dạng tách dấu, dấu không đứng sau nguyên âm đọc như một dấu cách. Nhận diện tin nhắn của app tách dòng ở CR, LF, U+0085, U+2028, U+2029. Danh sách đóng "ấm", "lạnh", "nội", "ít" chỉ khớp dạng không dấu khi cả cụm không dấu. V6 miễn "giới", và miễn "định" trừ khi đứng sau "quy" / "qui". Việc không làm: §12.8 | #728 → #762, #766 |
+| K31 | Đợt G5 lượt 3 (Owner duyệt 23/10, "duyệt hết"; `phase-5-prompts.md` §12): `analysis@4`, `discovery@4`, giữ `extraction@1`, `web@1`. Ở dạng tách dấu, dấu không đứng sau nguyên âm đọc như một dấu cách. Nhận diện tin nhắn của app tách dòng ở CR, LF, U+0085, U+2028, U+2029 (VT, FF từ §13.4, K33). Danh sách đóng "ấm", "lạnh", "nội", "ít" chỉ khớp dạng không dấu khi cả cụm không dấu. V6 miễn "giới", và miễn "định" trừ khi đứng sau "quy" / "qui". Việc không làm: §12.8 | #728 → #762, #766 |
 | K32 | Sổ ghi chú (Owner 23/10): sửa hết mục OPEN trước v1.0; 12 mục "Owner chọn không sửa" 15/10 giữ; khoảng chờ nghiệm thu lượt L1 ghi là lệch chấp nhận (`nghiem-thu-v1.md`). Cổng duyệt cùng kế hoạch: G2 / G5 cho bảy luật T-291 và luật T-290 (chữ vào spec qua PR docs trước PR code); G4 cho một lần gọi OpenCode thật (T-290) và **không** thêm thư viện test component (T-300); G6 cho quyền đặt tiêu đề cửa sổ (T-293); G3 gom ở T-284 (thêm T-303 ngày 24/10) | `PROJECT-STATE.md` 23/10; #769–#771, #791 |
 | K33 | Bảy luật T-291 (G2 / G5 23/10; chữ ở PR #824): (1) nhập backup tính lại hash phiên bản KYC mới nhất của mỗi KH, sai thì từ chối; Owner 25/10 thêm luật dạng hash của mọi phiên bản (spec Phase 3 §6 luật 7); (2) chỉ nhận `output_json` đúng dạng app ghi; (3) dòng REJECTED có output trên 20 000 ký tự thì không lưu output, panel báo "output quá lớn"; (4) chữ tùy chọn của lịch hẹn chỉ có ký tự vô hình là rỗng; (5) gõ ngày nhanh đầu năm: ngày đó năm nay chưa tới mà năm trước mới qua không quá 60 ngày thì gợi ý năm trước, app không tự đổi năm (ADR-0007 phụ lục); (6) sắp tên đổi chữ số toàn khổ / Ả Rập về chữ số thường trước khi so; (7) VT / FF trong ghi chú tính là xuống dòng. Version prompt không đổi. Dữ liệu cũ sai: K1 | #780 → #824, #828 |
 | K34 | Trả lời AI bị cắt (G5 23/10, spec Phase 5 §6.1): sau một `{` của lời văn (ký tự sau nó không phải `"`) mà còn một khối JSON đủ thì dùng khối đó; `{` mà ngay sau là `"` tính là mở object, khối trong nó không lấy. Loại ca lời văn có `{` không đóng rồi `"{}"` trong nháy: ACCEPTED (Owner 25/10, review #828) | #779 → #820, #822 |
@@ -1894,7 +1894,7 @@ Mức: L = Low, N = Nit (mức chốt ở tổng hợp lượt 3 §6, §8.4 và 
 | DR6-37 | N | Dấu nối / ký hiệu viết cứng trong JSX (lượt 1, hoãn) | #655 → #693 (một phần), #790 → #845 | D, E |
 | DR6-66 | N | Export / hàm chỉ test dùng (lượt 1, hoãn) | #655 → #693 (một phần), #775 → #801, #777 → #812, #790 → #845 | F, A, C, D, E |
 | DR6-67 | N | Code lặp ≥ 3 nơi (lượt 1, hoãn) | #774 → #799, #775 → #801, #777 → #812, #782 → #807, #790 → #845 | F, A, B, C, D, E |
-| CL3-A29 | N | `KEPT_APPOINTMENTS` quét cả bảng `appointments` mỗi lần `listTrash` (KNOWN #709, bằng chứng mới lượt 3) | #776 → #805 (chỉ mục `0012`) | A, F (đo) |
+| CL3-A29 | N | `KEPT_APPOINTMENTS` quét cả bảng `appointments` mỗi lần `listTrash` (KNOWN #709, bằng chứng mới lượt 3) | #722 → #742 (một phần: bỏ CTE khi không có lịch đã xóa), #776 → #805 (chỉ mục `0012`) | A, F (đo) |
 | CL3-B2 | N | Sau một lần lưu lỗi, Nạp lại / Nhập backup / Dọn sạch bị từ chối mà không có cách thử lưu lại (KNOWN #96, đường vào Dọn sạch) | #783 → #817 (nút Thử lại) | B, D, E |
 
 Đếm: 35 DR6 (22 L · 13 N; 31 của lượt 3 và 4 của lượt 1) và 2 mục KNOWN đã sửa = 37 dòng.

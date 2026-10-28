@@ -429,19 +429,19 @@ Mọi mockup và mọi hộp trong [`docs/design/mockups/README.md`](../design/m
 |---|---|
 | `overview.html` | 1a → TQ-01, 04–08, 16–19, 23–25 · 1b → TQ-09, 20, 21 · 1c → TQ-11, 22 · 1d → TQ-02, 03, CH-04 · 1e → TQ-12–15 · §2 → TQ-05, LH-01–04, 36 |
 | `reports.html` | 2a → BC-01–04, 11 · 2b → BC-05 · 2c → BC-06 · 2d → BC-07, 08 · 2e → BC-07, 09 · 2f → BC-12–14, DB-14 |
-| `appointments.html` | Danh sách → LH-04 · Phối hợp → LH-14 · Chi tiết lịch hẹn → LH-15 · KYC Intelligence chỉ đọc → LH-16 · Trong ngày → LH-09 |
-| `customers.html` | Đầu màn, Kanban, cột đã đóng → KH-01, 02 · Bảng → KH-03 |
-| `customer.html` | Đầu hồ sơ → HS-01 · Dữ kiện KYC → HS-02, 03 · Dòng thời gian → HS-11 · Lịch hẹn → HS-12 · Hợp đồng → HS-13 · KYC Intelligence → AI-04, 24 |
+| `appointments.html` | Danh sách → LH-04 · Phối hợp → LH-14 · Chi tiết lịch hẹn → LH-15 · KYC Intelligence chỉ đọc → LH-16 · Trong ngày → LH-09 · `.brand` → CH-09 |
+| `customers.html` | Đầu màn, Kanban, cột đã đóng → KH-01, 02 · Bảng → KH-03 · `.brand` → CH-09 |
+| `customer.html` | Đầu hồ sơ → HS-01 · Dữ kiện KYC → HS-02, 03 · Dòng thời gian → HS-11 · Lịch hẹn → HS-12 · Hợp đồng → HS-13 · KYC Intelligence → AI-04, 24 · `.brand` → CH-09 |
 | `customer-forms.html` | 5a → KH-06, 16 · 5b → KH-07 · 5c → KH-08, 09 · 5d → KH-10, 11 · 5e → KH-12, 13 · 5f → KH-14, 15 |
 | `appointment-forms.html` | 6a → LH-17, 18, 20 · 6b → LH-19 · 6c → LH-21–23 · 6d → LH-24, 25 · 6e → LH-27–29 · 6f → LH-31, 32 · 6g → LH-33, 34 · 6h → LH-30 · 6i → LH-26 |
 | `kyc-forms.html` | 7a → HS-04 · 7b → HS-05 · 7c → HS-06, 07 · 7d → HS-08, 09 · 7e → HS-10 |
 | `policy-forms.html` | 8a → HS-13 · 8b → HS-14, 15 · 8c → HS-16 · 8d → HS-17, 18 |
-| `team.html` | Đầu màn, danh sách → TM-01, 02 · 9a → TM-07 · 9b → TM-10, 15, 16 · 9c → TM-05 |
-| `settings-data.html` | File dữ liệu → CD-02 · Xuất / nhập → CD-03 · Dữ liệu giả lập → CD-08 · 10a → CD-04, 05, EX-10 · 10b → CD-06, 07 · 10c → CD-08 · 10d → DB-03, 04, 07–09, 11, 13, 17–25 (trạng thái lưu, lưu lỗi và Thử lại, đóng khi đang thay, lỗi khởi động), EX-06 |
+| `team.html` | Đầu màn, danh sách → TM-01, 02 · 9a → TM-07 · 9b → TM-10, 15, 16 · 9c → TM-05 · `.brand` → CH-09 |
+| `settings-data.html` | File dữ liệu → CD-02 · Xuất / nhập → CD-03 · Dữ liệu giả lập → CD-08 · 10a → CD-04, 05, EX-10 · 10b → CD-06, 07 · 10c → CD-08 · 10d → DB-03, 04, 07–09, 11, 13, 17–25 (trạng thái lưu, lưu lỗi và Thử lại, đóng khi đang thay, lỗi khởi động), EX-06 · `.brand` → CH-09 |
 | `phase-3-feedback.html` | B1 → TM-01–03, 06 · B2 → KH-04, 05 · B3 → LH-09, 12, 13 · B4 → LH-06–08 · B5 → LH-05 · B6 → LH-10, 11 |
 | `ai.html` §1 | 1a → CA-02, 03, 08 · 1b → CA-01 · 1c (bản web) → không kiểm trên exe · 1d → CA-04 · 1e → CA-07 · 1f → CA-06 · 1g → CA-09 |
 | `ai.html` §2 | 2a → AI-01 · 2b → AI-02 · 2c → AI-03 · 2d, 2e → AI-21, 22 · 2f → AI-23 · 2g → AI-04, 05 · 2h → AI-07, 08 · 2i → AI-13 · 2j → AI-09 · 2k → AI-13 · 2l → AI-23, CA-06 |
 | `ai.html` §3 | 3a → AI-06, 07 · 3b → AI-16 · 3c, 3d → AI-17 · 3e → AI-19 · 3f → AI-18 |
 | `ai.html` §4 | 4a → CA-02, 08 · 4b → CA-01 · 4c → AI-23, CA-06 · 4d → AI-01 · 4e → AI-10, 14 · 4f (không copy được do quyền clipboard) → chỉ kiểm khi gặp · 4g → AI-12 · 4h → AI-11 · 4i → AI-15 |
-| `trash.html` | 11a → TR-01–03 · 11b → TR-05, 06 · 11c → TR-08, 09, 18, 19 · 11d → TR-06, 10–15, 17, 20 · 11e → TR-04 (Thùng rác trống), TR-05, 15 (khôi phục xong) · 11f → KH-14, LH-33, 34, HS-18, TM-14 · 11g (khóa ghi S-2, E17) → không gây được bằng tay vì hộp "Đang nhập…" / "Đang nạp lại…" chặn mọi thao tác; phần AI kiểm ở DB-06, phần còn lại có test `app-data.test.ts` · 11h (từ 1 000 bản ghi) → không dựng tay được, có test `trash-view.test.ts`, `trash.spec.ts` · 11i → TR-21 · 11j → TR-22, 23; dòng giữ lại chỉ có từ file nhập → test `purge.test.ts` (D5, D6), `trash.spec.ts` |
+| `trash.html` | 11a → TR-01–03 · 11b → TR-05, 06 · 11c → TR-08, 09, 18, 19 · 11d → TR-06, 10–15, 17, 20 · 11e → TR-04 (Thùng rác trống), TR-05, 15 (khôi phục xong) · 11f → KH-14, LH-33, 34, HS-18, TM-14 · 11g (khóa ghi S-2, E17) → không gây được bằng tay vì hộp "Đang nhập…" / "Đang nạp lại…" chặn mọi thao tác; phần AI kiểm ở DB-06, phần còn lại có test `app-data.test.ts` · 11h (từ 1 000 bản ghi) → không dựng tay được, có test `trash-view.test.ts`, `trash.spec.ts` · 11i → TR-21 · 11j → TR-22, 23; dòng giữ lại chỉ có từ file nhập → test `purge.test.ts` (D5, D6), `trash.spec.ts` · `.brand` → CH-09 |
 | `table-more.html` | 1–3 → CH-06, 07 · 4 → CH-08 |

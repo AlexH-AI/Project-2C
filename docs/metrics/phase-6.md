@@ -231,12 +231,12 @@ _Điền cuối phase._
 
 ## Kích thước PR vượt ngưỡng
 
-Tới 27/10/2026 (T-307): 241 PR merge vào `main` sau PR đóng Phase 5 (#514), từ #515 tới #858; 87 PR trong đó có code hoặc test. PR sửa của vòng review toàn bộ code ghi thêm sau. Lệnh đếm và lệnh rà: thân PR của T-307.
+Tới 27/10/2026 (T-307): 241 PR merge vào `main` sau PR đóng Phase 5 (#514), từ #515 tới #858; 87 PR trong đó có code hoặc test. PR sửa của vòng review toàn bộ code ghi thêm sau. Lệnh đếm và lệnh rà: thân PR của T-307 (#859), trừ một chỗ khi ghi thêm PR. `count.mjs` ở đó đọc phía cũ của file (vùng `#[cfg(test)]`, khối codemap) ở `git merge-base origin/main <head>`; với PR xếp chồng merge bằng `--merge` (#709, #845), lệnh này trả về chính head. Phía cũ lấy theo `base.sha` của PR (`gh api repos/AlexH-AI/Project-2C/pulls/<n> --jq .base.sha`): đọc ở `git merge-base <base.sha> <head>`, đúng cả với PR xếp chồng merge bằng `--merge`. Đếm lại #709, #845 theo `base.sha` ra cùng số ở bảng.
 
 Ngưỡng ADR-0001 phụ lục: ≤ ~400 dòng code sản phẩm (SP), ≤ ~800 dòng tổng diff. Luật đếm:
 
 - **Nguồn:** `additions` / `deletions` của từng file theo `gh api repos/AlexH-AI/Project-2C/pulls/<n>/files --paginate`. SP và tổng đều cộng dòng thêm với dòng xóa, như sổ đã làm với #801, #833.
-- **Phân loại** theo `classifyFile` của `tools/size-report-core.mjs` (spec §6.2). Test: `*.test.*`, `*.spec.*`, `e2e/**`, `test-support.ts`, `fixtures/**`, golden, và phần từ dòng `#[cfg(test)]` trở đi của file Rust. Code còn lại là SP, kể cả `tools/*.mjs` (như #474 ở `phase-5.md`) và migration tự viết (mở đầu `-- Custom SQL migration file`). File mà `classifyFile` không đếm (tài liệu, `.json`, `.toml`) chỉ cộng vào tổng.
+- **Phân loại** theo `classifyFile` của `tools/size-report-core.mjs` (spec §6.2). Test: `*.test.*`, `*.spec.*`, `e2e/**`, `test-support.ts`, `fixtures/**`, golden, `playwright*.config.ts` và `vitest.config.ts` ở gốc repo, và phần từ dòng `#[cfg(test)]` trở đi của file Rust. Code còn lại là SP, kể cả `tools/*.mjs` (như #474 ở `phase-5.md`) và migration tự viết (mở đầu `-- Custom SQL migration file`). File mà `classifyFile` không đếm (tài liệu, `.json`, `.toml`) chỉ cộng vào tổng.
 - **Không tính** (ADR-0001 phụ lục): lockfile; SQL, snapshot và journal do drizzle-kit sinh; bảng dữ liệu tĩnh của seed (`packages/db/src/seed-data.ts`); khối codemap trong `CLAUDE.md` của các package; `src-tauri/icons/*`.
 - **Không xét** PR không đổi dòng code hay test nào. Bốn PR loại này vượt 800 dòng: kết quả eval #518, báo cáo gốc #609, #651, #718.
 - **Bảng phụ "ở biên":** PR vượt không quá 6 % (SP 401–424, tổng 801–848) và không vượt ngưỡng kia quá 6 %. Vượt quá 6 % ở một ngưỡng thì vào bảng chính.
