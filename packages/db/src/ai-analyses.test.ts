@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { listAiAnalyses, recordAiAnalysis, type NewAiAnalysis } from './ai-analyses';
+import {
+  analysisLabelsFit,
+  listAiAnalyses,
+  recordAiAnalysis,
+  type NewAiAnalysis,
+} from './ai-analyses';
 import { exportBackup, importBackup } from './backup';
 import { dataTables } from './backup-validation';
 import { createCustomer, restoreCustomer, softDeleteCustomer } from './customers';
@@ -382,6 +387,10 @@ describe('recordAiAnalysis', () => {
       { ...live, model: null },
       { ...live, model: ' ' },
       { ...live, model: 'glm\0-5.3' },
+      // DR6-137: what sql.js reads back as other text, past the 100 of the import (rule 12).
+      { ...live, model: `${'x'.repeat(MAX_MODEL - 1)}\uD800` },
+      { ...live, model: '\uDC00glm-5.3' },
+      { ...live, model: '\u{FEFF}alpha' },
       { ...live, reasoning: null },
       { ...live, reasoning: 'MAX' },
       { ...live, promptTokens: -1 },
@@ -474,7 +483,7 @@ describe('recordAiAnalysis', () => {
       reasoning: 'HIGH',
     } as const;
     const discovery = { mode: 'discovery', gateState: 'PROFILE_DISCOVERY' } as const;
-    for (const kept of [
+    const recorded = [
       analysis(customer.id, version),
       // Accepted on the retry: the first attempt had issues.
       analysis(customer.id, version, {
@@ -485,6 +494,8 @@ describe('recordAiAnalysis', () => {
           { attempt: 2, errors: [] },
         ],
       }),
+      // A pair is one character: 100 code units, as long as a model name may be.
+      analysis(customer.id, version, { ...live, model: `${'g'.repeat(MAX_MODEL - 2)}😀` }),
       analysis(customer.id, version, { ...discovery, promptVersion: 'discovery@1' }),
       analysis(customer.id, version, {
         ...discovery,
@@ -498,13 +509,36 @@ describe('recordAiAnalysis', () => {
         output: { ghiChu: 1, needs: [{ evidence: ['F9'], text: ' Học phí ' }], hypotheses: [] },
       },
       { ...rejected(customer.id, version), output: { x: '😀'.repeat(19_992) } },
-    ]) {
-      recordAiAnalysis(database, kept);
-    }
+    ].map((kept) => recordAiAnalysis(database, kept));
 
+    // Read back as the command took it (DR6-137), and so brought back by a backup.
+    expect(listAiAnalyses(database, customer.id)).toMatchObject(recorded.reverse());
     const imported = await importBackup(exportBackup(database), { now: database.now });
 
     expect(listAiAnalyses(imported.db, customer.id)).toEqual(listAiAnalyses(database, customer.id));
+  });
+
+  // DR6-137: rule 12 of the import reads a model name with the command's own check. A file cannot
+  // bring these back to it: loading refuses a text with a lone surrogate half or a leading U+FEFF.
+  it('reads a model name at the import (rule 12) as the command does', () => {
+    const fields = (model: string) => ({
+      mode: 'analysis',
+      status: 'ACCEPTED',
+      provider: 'OPENCODE_GO',
+      model,
+      promptVersion: 'analysis@1',
+      attempts: 1,
+      // Rule 13 reads these; rule 12 reads only the labels.
+      input: undefined,
+      outputJson: null,
+      validator: undefined,
+    });
+
+    expect(analysisLabelsFit(fields('g'.repeat(MAX_MODEL)))).toBe(true);
+    expect(analysisLabelsFit(fields(`${'g'.repeat(MAX_MODEL - 2)}😀`))).toBe(true);
+    for (const model of [`${'x'.repeat(MAX_MODEL - 1)}\uD800`, '\uDC00glm-5.3', '\u{FEFF}alpha']) {
+      expect(analysisLabelsFit(fields(model))).toBe(false);
+    }
   });
 
   it('refuses an input that is not as the app sends it, accepted or rejected (§7.3 rule 3)', async () => {

@@ -85,9 +85,18 @@ export function sqlTexts(values: readonly string[]): string {
   return values.map((value) => `'${value.replaceAll("'", "''")}'`).join(', ');
 }
 
-/** A label such as a model name or prompt version: text, not blank, and no NUL (DR-49). */
+/**
+ * A label such as a model name or prompt version: text, not blank, that the database reads back as
+ * it is, as the backup import takes any text (DR6-137): no NUL (DR-49), no lone surrogate half
+ * (`isStorableText`) and no U+FEFF to start it, which sql.js drops on reading.
+ */
 export function isLabel(text: unknown): text is string {
-  return typeof text === 'string' && text.trim() !== '' && !text.includes('\0');
+  return (
+    typeof text === 'string' &&
+    text.trim() !== '' &&
+    isStorableText(text) &&
+    !text.startsWith('\u{FEFF}')
+  );
 }
 
 /** One instant for both columns, so a deleted row is never updated after its deletion. */
