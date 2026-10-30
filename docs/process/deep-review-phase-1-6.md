@@ -2709,6 +2709,14 @@ Sửa sau review #878 (T-315 #880), thử ngày 28/10 trên Office Laptop, cùng
 - bản `main` `76601fd`: `clean` giữ cache `.vite` / `.vite-temp` của hai thư mục đó, không in dòng nào về chúng, vẫn in `OK` (đỏ 5 / 14 kiểm tra);
 - bản này: in `kept, holds node_modules` cho `probe4\` và `probe6\sub\`, xóa cache của hai thư mục đó, giữ gói trong `node_modules`; mục khác như bản trước (xanh 14 / 14).
 
+**Ghi chú sau lượt 4** (đợt 2 bước 7, 30–31/10; tổng hợp T-318 #893 §10.1, `common\baseline.md` "Bước 7"):
+
+- `remove` dừng ở `STOP` trên 16 mục trong `.codex\.chatgpt-projects\…\specialist-toolkit\` do tài khoản sandbox của Codex (`CodexSandboxOffline`) làm chủ.
+  - `dot2.mjs` coi mọi mục nó chặn đều do tài khoản Owner làm chủ. Luật `deny … (R)` lấy cả READ_CONTROL, nên với mục của tài khoản khác, tài khoản Owner không đọc hay sửa lại được ACL, kể cả trong PowerShell admin.
+  - Gỡ ở thư mục cũng không lan xuống file con do tài khoản khác làm chủ.
+- Owner duyệt (30/10) chạy `common\dot2-unlock.ps1` một lần dưới quyền SYSTEM qua task tạm, rồi tự tính lại quyền thừa kế cho 9 file của `.codex\.sandbox-bin` bằng quyền chủ file. Mọi mục mở lại được bằng tài khoản Owner, trừ `.codex\.sandbox-bin` (ACL riêng của Codex).
+- Lần sau: xem chủ sở hữu từng mục trước khi chặn. Mục do tài khoản khác làm chủ thì không chặn riêng, hoặc ghi lại để gỡ bằng quyền SYSTEM. `remove` liệt kê hết mục chưa trả được thay vì dừng ở mục đầu.
+
 ```js
 // Deep review round 4, wave 2 (plan §L4.9, Appendix P). Run from PowerShell; baseline by the
 // preparation session, the rest by the Owner:

@@ -123,6 +123,28 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
     - Session logs come from the app's data folder (`.workbuddy-ai\projects\*.jsonl` per third-party tools); the trial session stops wave 2 if no log with tool calls is found.
 
   Plan: `docs/process/deep-review-phase-1-6.md` §L4; Appendix P is now the WorkBuddy app configuration.
+- 2026-10-30 / 31, wave 2 of round 4 (DeepSeek in the WorkBuddy app). `gh` was logged out during wave 2, so the round 4 synthesis (T-318, #893) records these OWNER decisions here, from `common\baseline.md` as that file asks:
+  - **G6, 30/10:** the OWNER accepted the app's built-in Agent tool. The second trial showed that no setting turns it off ("Agent team management: Disable" does not). This replaces the "one agent" condition of the G6 approval of 28/10 (#880), for round 4 only.
+    - Kept: the ACL blocks sub-agents too (same Windows account), and their logs are copied out with the session.
+    - The same day the OWNER added: "Anh ko quan tâm DS gọi subagent hay không, chỉ cần chặn nó không đọc báo cáo claude và codex là được." The check of the `subagents\` folders after each package was dropped. The conditions left are the ACL read block (24 / 24 reads denied in a trial task through the expert) and the hash check of the 12 Claude / Codex reports at step 7.5.
+  - **Code review expert:** the OWNER ran every package through the app's "Code review expert" (model Deepseek-V4.1-Flash). Each package's opening message carried an OWNER exception to rule 4 of the prompt: sub-agents and the Code review expert allowed, every other rule kept. The logs show no Agent call and no `subagents\` folder in packages A–F.
+  - **Permission mode:** Default for all six packages. The app logged 14 Playwright commands as "Sandbox bypassed (escalation-approved)" (packages D, E, F).
+  - **Credits not recorded** (OWNER, steps 7.1–7.2): DeepSeek V4.1 Flash is billed at 0.00x until the end of 31/10; there were 380 bonus credits before the run.
+  - **SYSTEM unlock, 30/10:** `dot2.mjs remove` stopped on 16 items owned by Codex's sandbox account. A deny `(R)` takes READ_CONTROL, so the OWNER account could not read or rewrite their ACL, even as admin.
+    - The OWNER approved running `common\dot2-unlock.ps1` once as SYSTEM through a temporary task, outside Appendix P. It ran at 23:56 on 30/10 and removed the 52 denies left.
+    - The OWNER then reset the inheritance of 9 files in `.codex\.sandbox-bin` as their owner.
+    - Every blocked item opened again with the OWNER account, except `.codex\.sandbox-bin` (Codex's own ACL). Step 7.5 found the 12 reports unchanged.
+  - **`.ndjson` not copied:** the nine `<session>.file-rollback.ndjson` files are the undo index of the app's edit tool and hold no key pattern. Claude proposed not copying them, and the OWNER did not ask for a copy.
+  - On 31/10 the OWNER confirmed having logged out of the WorkBuddy app before copying the logs (step 7.1).
+
+  Synthesis: `docs/reviews/2026-10-31-deep-review-phase-1-6-luot-4-tong-hop.md`.
+- 2026-10-31: OWNER decisions on deep review Phase 1–6 round 4 (synthesis above, §9). The round found R1 36 / 37 fixed with DR6-37 partly fixed, R2 32 / 32 fixed, no regression; 34 new findings → 23 issues DR6-135…157 (0 Medium, 17 Low, 6 Nit) and one KNOWN with new evidence. Not ready for v1.0 at `2e51e25` only because everything is fixed before G7. The OWNER took every proposal as written:
+  - Q1 (a): the Mock extraction proposes only from a plain statement about the customer itself, an allow-list the way T-289 went; every other form proposes nothing.
+  - Q2 (a): a round 4 G5 batch, approved on its docs PR (new §14 of `phase-5-prompts.md`) before the code PR. Matching drops NUL as an invisible character; "giới" before "luật" is exempted unless it follows "môi", "ranh", "biên" or "thế"; prompt versions follow G5 (`analysis@5`, `discovery@5`).
+  - Q3 (a): a person's restore button always names the role and team. A customer's names the customer code only when its name and stage match another customer row in the trash, as dialog 9b does.
+  - Q4 (a): CLR4-F2 stays under K1, with no code change. NT-EX-08 / 09 get one line on pre-v1.0 data whose optional appointment text holds only invisible characters.
+
+  Fix issues: #896…#905 (T-319…T-328, synthesis §8.5).
 
 ## Next decision
 
