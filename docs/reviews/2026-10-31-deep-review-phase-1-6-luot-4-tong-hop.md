@@ -508,7 +508,7 @@ Làm 31/10 trên Home PC. Log đọc bằng script `node`, không gọi model. S
 - **Ghi vào worktree** (quy tắc chung 1: "buộc phải patch trong repo thì gỡ ngay sau khi chạy và kiểm lại bằng `git status` / sha256"):
   - Claude: C vá worktree rồi trả nguyên byte, kiểm sha256 (`mut.mjs`, như lượt 3); A, D, E, F dùng hook `load` của Vite hay bản chép (0 ghi). Claude không có lệnh Write / Edit nào ngoài `claude\`.
   - Codex chạy bản chép trong `codex\<gói>\`; 0 ghi vào repo, chỉ đọc từ `common\`.
-  - DeepSeek A–F vá worktree rồi trả trong cùng lệnh (`git checkout --` hay bản `.bak`), mỗi lần in sha256 trước / sau hay `git status`. A có dấu trả ở 21 / 22 lần (lần còn lại output dài lưu ra `tool-results`); B, C, D, E, F đủ.
+  - DeepSeek A–F vá worktree rồi trả trong cùng lệnh (`git checkout --` hay bản `.bak`), mỗi lần in sha256 trước / sau hay `git status`; mọi lần đều có dấu trả (một lần của A có output dài, nằm ở `tool-results`: `restored: same=true`).
   - DeepSeek B thêm hai file test tạm `apps/desktop/src/data/dsr4b-probe{,2}.test.ts` (tồn tại ≈ 40 s và ≈ 5 s) rồi xóa. Nó cũng nối module test Rust vào `storage.rs` rồi trả bằng `git checkout --`, kiểm sha256 sau mỗi lần. DeepSeek F tạo tạm `tools/probe.mjs` cho một probe lint rồi xóa.
   - Ghi ra ngoài thư mục của bên đó mà ngoài repo: chỉ thư mục tạm (`/tmp`, `%TEMP%\p2c-dsr4b-*`) và thư mục build / cache bị ignore (`target\` của `cargo test`).
   - File chung ở `common\` (kế hoạch, prompt, `known.md`, `fixes.md`, `dot2.mjs`) sửa lần cuối 00:21–00:26 ngày 29/10, trước lệnh đầu tiên của đợt 1 (01:02). `baseline.md` chỉ do phiên thử (theo việc được giao) và Claude ở bước 7 ghi thêm.
