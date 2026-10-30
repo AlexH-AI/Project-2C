@@ -1,6 +1,6 @@
 # Chỉ số Phase 6 — Hoàn thiện & phát hành v1.0
 
-Theo bảng chỉ số của `docs/COMPARISON.md` (mẫu từ `phase-5.md`), thêm phần đánh giá cuối dự án (thay `FINAL.md`, `docs/metrics/README.md`). Tới cuối phase file này mới có mục **Số đo nền** (T-219, spec Phase 6 §5.1, ghi trước lượt review 1 của 6D), mốc Home PC sau lượt 2 (T-225), mốc Home PC sau #656 (T-264), số đo deep review lượt 3 (T-267), số liệu ba lượt review đóng phase cùng hai đợt sửa sau lượt 3, và bảng PR vượt ngưỡng tới 27/10 (T-307). Các mục khác để trống tới khi đóng phase.
+Theo bảng chỉ số của `docs/COMPARISON.md` (mẫu từ `phase-5.md`), thêm phần đánh giá cuối dự án (thay `FINAL.md`, `docs/metrics/README.md`). Tới cuối phase file này mới có mục **Số đo nền** (T-219, spec Phase 6 §5.1, ghi trước lượt review 1 của 6D), mốc Home PC sau lượt 2 (T-225), mốc Home PC sau #656 (T-264), số đo deep review lượt 3 (T-267) và lượt 4 (T-318), số liệu bốn lượt review đóng phase cùng các đợt sửa giữa chúng, và bảng PR vượt ngưỡng tới 27/10 (T-307). Các mục khác để trống tới khi đóng phase.
 
 - **Milestone:** "Phase 6 — Hoàn thiện & phát hành" — _điền cuối phase_
 - **Bắt đầu:** 2026-10-11 (spec G1 #515) · **Task code cuối merge:** _cuối phase_ · **Đóng milestone:** _G7_
@@ -225,6 +225,21 @@ Không thay mốc sau #656: G7 vẫn so với mốc đó. Phân tích: tổng h�
 - **`integrity_check` theo cỡ file:** ≈ 7,5 ms / MB trong Node. Trên exe, `p2c:data-open` 366 / 453 / 546 ms ở file 14,1 / 20,0 / 25,4 MB (dữ liệu tải, rồi ×2 / ×3 KH mỗi RE); ngoại suy ≈ 16 ms / MB thì chạm 600 ms ở ≈ 28–29 MB, tức ≈ 2× cỡ file dữ liệu tải. Ngưỡng `app.open-data` ≤ 600 ms chỉ áp cho dữ liệu tải.
 - **Hàm thuần trong Node:** không hàm nào xấu hơn lượt 2 cùng máy theo luật nhiễu. `listTrash` +4–6 ms là bước gốc của `KEPT_APPOINTMENTS` trong `keptRecords` mới (KNOWN #709, CL3-A29).
 
+### Số đo deep review lượt 4 (T-318, 29–30/10/2026)
+
+Không thay mốc sau #656: G7 vẫn so với mốc đó. Phân tích: tổng hợp lượt 4 §7; bảng đủ: `docs/reviews/raw/2026-10-31/common-baseline.md`.
+
+- **Máy:** Home PC `DESKTOP-KDURKJP`. **Code:** `2e51e25`, exe release 5 649 408 byte (+240 640 so lượt 3; riêng `icon.ico` +71 343).
+- **Dữ liệu tải:** sinh ở `2e51e25`, `tables` sha256 `ad82051b…` (khác lượt 3 chỉ ở cột `prompt_version`, cùng số dòng). Script nạp vào exe qua cổng debug như lượt 3.
+- **So mốc sau #656 và so lượt 3: không dòng nào ⚠️**, mọi thao tác trong ngưỡng:
+  - `app.open-data` 370 ms (mốc 387); `reload.*` 279–405 ms; `trash.open` 32 ms; các thao tác màn còn lại 2–24 ms;
+  - `backup.read` / `backup.import` / `backup.export` 977 / 47 / 436 ms; `db.save` 149 ms; JS heap 16,6 MB;
+  - mở lần đầu (LCP, 3 lần) 3 521 ms (mốc 3 663).
+- **`backup.read` +142 ms (+17 %) so mốc**, dưới luật nhiễu. Đo theo cặp cùng lúc (exe lượt 3 ↔ lượt 4) thì +55 ms (+6,9 %): chi phí có chủ ý của luật nhập 7 (tính lại hash phiên bản KYC, K33).
+- **Dọn sạch Thùng rác:** bấm "Backup rồi dọn sạch" → thông báo 11j 123,3 ms (≤ 500 ms; lượt 3: 151,8); `trash.open` trước → sau 34,1 → 2,0 ms; Node `purgeTrash` cả `VACUUM` 85,2 / 129,8 ms (113 / 1 313 dòng).
+- **Bundle:** JS / CSS 2 358 427 B (−41 966 so lượt 3); `index.js` 884 698 B (−43 234: `zod/mini`); tệp khác +172 925 B (font Playfair, ba ảnh logo, favicon PNG).
+- **Phát hiện P:** chỉ DR6-136. `byName` làm sắp bảng Lịch hẹn 10 255 dòng theo KH chậm từ 9,4 lên 65,2 ms trong Node (54–60 ms trên bản web): vượt luật nhiễu, dưới ngưỡng < 200 ms.
+
 ## Kiểm tra trên `main`
 
 _Điền cuối phase._
@@ -296,7 +311,13 @@ Deep review Phase 1–6 (6D, kế hoạch `docs/process/deep-review-phase-1-6.md
   - Owner 21/10 đồng ý cả 6 đề xuất của §9: 11 Issue #719–#729.
 - **Đợt sửa lượt 3 (21–23/10):** 11 Issue #719–#729 (T-268…T-278) cho DR6-104…134, cùng #735 (T-280, thanh trên cùng che phần tử nhận focus: mục KNOWN của lượt 3, Owner 21/10 cho làm trước G7) và #752 (T-281: ca review #750 thấy phần sửa DR6-120 còn sót). Đóng hết 23/10.
 - **Đợt sửa sổ OPEN trước v1.0 (23–26/10):** Owner 23/10 quyết sửa hết sổ ghi chú review trước v1.0 (#771): 22 Issue T-283…T-304 (#772–#790, #793, #797, #831). Đóng hết 26/10 (PR cuối #846).
-- Deep review toàn bộ code lượt 4 (kế hoạch: T-309 #854) kiểm lại hai đợt này trước G7.
+- **Đợt sửa mục OPEN trước lượt 4 (28/10):** T-310…T-317 (#865–#868, #876, #880, #884, #889). Sổ OPEN rỗng từ #892 (điều kiện B2).
+- **Lượt 4 (29–30/10, `2e51e25`):**
+  - Reviewer: Claude, Codex (đợt 1, 29/10) và DeepSeek V4.1 Flash trong app WorkBuddy (đợt 2, 30/10), trên Home PC (ADR-0001 M10). Kế hoạch: T-309 #854.
+  - Tổng hợp: `docs/reviews/2026-10-31-deep-review-phase-1-6-luot-4-tong-hop.md`.
+  - Kiểm phần đã sửa của hai đợt trên: bảng R1 37 dòng, 36 đã sửa, 1 sửa một phần (DR6-37), 0 hồi quy; bảng R2 32 Issue, đều đã sửa.
+  - 34 phát hiện mới → **23** vấn đề DR6-135…157: **0 Medium**, 17 Low, 6 Nit; thêm 1 mục KNOWN có bằng chứng mới. 0 bị bác.
+  - Kết luận: chưa sẵn sàng ở `2e51e25`, vì Owner đã quyết sửa hết trước G7 và DR6-37 còn một phần.
 
 ## Điều hướng (riêng 2C, `docs/metrics/README.md`)
 

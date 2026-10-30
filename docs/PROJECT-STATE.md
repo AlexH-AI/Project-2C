@@ -123,6 +123,21 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
     - Session logs come from the app's data folder (`.workbuddy-ai\projects\*.jsonl` per third-party tools); the trial session stops wave 2 if no log with tool calls is found.
 
   Plan: `docs/process/deep-review-phase-1-6.md` §L4; Appendix P is now the WorkBuddy app configuration.
+- 2026-10-30 / 31, wave 2 of round 4 (DeepSeek in the WorkBuddy app). `gh` was logged out during wave 2, so the round 4 synthesis (T-318, #893) records these OWNER decisions here, from `common\baseline.md` as that file asks:
+  - **G6, 30/10:** the OWNER accepted the app's built-in Agent tool. The second trial showed that no setting turns it off ("Agent team management: Disable" does not). This replaces the "one agent" condition of the G6 approval of 28/10 (#880), for round 4 only.
+    - Kept: the ACL blocks sub-agents too (same Windows account), and their logs are copied out with the session.
+    - The same day the OWNER added: "Anh ko quan tâm DS gọi subagent hay không, chỉ cần chặn nó không đọc báo cáo claude và codex là được." The check of the `subagents\` folders after each package was dropped. The conditions left are the ACL read block (24 / 24 reads denied in a trial task through the expert) and the hash check of the 12 Claude / Codex reports at step 7.5.
+  - **Code review expert:** the OWNER ran every package through the app's "Code review expert" (model Deepseek-V4.1-Flash). Each package's opening message carried an OWNER exception to rule 4 of the prompt: sub-agents and the Code review expert allowed, every other rule kept. The logs show no Agent call and no `subagents\` folder in packages A–F.
+  - **Permission mode:** Default for all six packages. The app logged 14 Playwright commands as "Sandbox bypassed (escalation-approved)" (packages D, E, F).
+  - **Credits not recorded** (OWNER, steps 7.1–7.2): DeepSeek V4.1 Flash is billed at 0.00x until the end of 31/10; there were 380 bonus credits before the run.
+  - **SYSTEM unlock, 30/10:** `dot2.mjs remove` stopped on 16 items owned by Codex's sandbox account. A deny `(R)` takes READ_CONTROL, so the OWNER account could not read or rewrite their ACL, even as admin.
+    - The OWNER approved running `common\dot2-unlock.ps1` once as SYSTEM through a temporary task, outside Appendix P. It ran at 23:56 on 30/10 and removed the 52 denies left.
+    - The OWNER then reset the inheritance of 9 files in `.codex\.sandbox-bin` as their owner.
+    - Every blocked item opened again with the OWNER account, except `.codex\.sandbox-bin` (Codex's own ACL). Step 7.5 found the 12 reports unchanged.
+  - **`.ndjson` not copied:** the nine `<session>.file-rollback.ndjson` files are the undo index of the app's edit tool and hold no key pattern. Claude proposed not copying them, and the OWNER did not ask for a copy.
+  - On 31/10 the OWNER confirmed having logged out of the WorkBuddy app before copying the logs (step 7.1).
+
+  Synthesis: `docs/reviews/2026-10-31-deep-review-phase-1-6-luot-4-tong-hop.md`.
 
 ## Next decision
 
