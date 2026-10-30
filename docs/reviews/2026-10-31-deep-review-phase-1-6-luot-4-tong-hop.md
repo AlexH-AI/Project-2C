@@ -47,7 +47,7 @@ DeepSeek kết luận SẴN SÀNG vì không áp đề xuất 6, và không th�
   - `backup.read` +142 ms so mốc là số của hai ngày đo khác nhau. Đo theo cặp cùng lúc thì +55 ms (+6,9 %): chi phí có chủ ý của luật nhập 7 (K33).
 - **Kiểm log phiên (§10):** không nhiễm, không vi phạm chỉ đọc. Lệnh đầu của cả 18 phiên gói chỉ đọc file prompt. Phiên gói của DeepSeek không lần nào bị ACL từ chối, tức không thử mở chỗ bị chặn.
 - **Còn trước G7:**
-  - Owner trả lời §9 (4 câu, đều là chọn cách sửa); rồi đợt sửa lượt 4: 10 Issue theo §8.2, ≈ 185–350 dòng SP + ≈ 700 dòng test, phần lớn là test.
+  - Owner trả lời §9 ngày 31/10: đồng ý cả 4 đề xuất. Đợt sửa lượt 4: 10 Issue #896…#905 (T-319…T-328, §8.5), ≈ 185–350 dòng SP + ≈ 700 dòng test, phần lớn là test.
   - Các điều kiện ngoài review (spec §1 mục 2, 4): nghiệm thu trên exe phát hành; eval AI thật (NT-EV-01) với version prompt sau đợt sửa; chụp lại ảnh hướng dẫn mà đợt sửa đổi màn; cổng trên SHA phát hành.
 
 ## 2. Số liệu
@@ -406,7 +406,7 @@ Một phát hiện P: **DR6-136** (`byName`). Không thao tác chính nào vư�
    - các quyết định Owner của đợt 2 vào `docs/PROJECT-STATE.md`;
    - ghi chú quy trình về `dot2.mjs` vào kế hoạch (Phụ lục P);
    - số đo và kết quả lượt 4 vào `docs/metrics/phase-6.md`.
-4. **Owner trả lời §9** → tạo Issue sửa theo §8.2 (mẫu Task, milestone Phase 6, ≤ ~400 / ~800 dòng, "Bị chặn bởi" theo file dùng chung); ghi các quyết định vào `PROJECT-STATE.md`.
+4. **Owner trả lời §9:** xong 31/10, đồng ý cả 4 đề xuất. **Đã tạo 10 Issue #896…#905** (§8.5) theo §8.2: mẫu Task, milestone Phase 6, ≤ ~400 / ~800 dòng, "Bị chặn bởi" theo file dùng chung. Quyết định ghi ở `PROJECT-STATE.md`.
 5. **Sau đợt sửa:** G7. Gồm:
    - chụp lại ảnh hướng dẫn mà đợt sửa đổi màn (ô chọn của L4-F có ở nhiều hộp);
    - nghiệm thu trên exe phát hành;
@@ -432,7 +432,7 @@ Tổng: **10 Issue**, ≈ 185–350 dòng SP + ≈ 700 dòng test, phần lớn 
 
 ### 8.3 Thứ tự, ước lượng
 
-1. Owner trả lời §9.
+1. Owner trả lời §9: xong 31/10 (đồng ý cả 4 đề xuất).
 2. Làm song song được (khác file): L4-A, L4-B, L4-C, L4-D, L4-F, L4-G, L4-I, L4-J, và PR docs G5 của L4-E.
 3. Sau L4-C: L4-H (cùng `e2e/save-state.spec.ts`). Sau khi Owner duyệt §14: PR code của L4-E.
 4. G7: chạy lại cổng và probe trên SHA phát hành (so mốc sau #656; đo `size-report` sau khi L4-I xong), chụp lại ảnh hướng dẫn, nghiệm thu, eval AI thật với version prompt cuối.
@@ -445,7 +445,26 @@ Mỗi Issue một phiên, review phiên sạch như thường. Ước ≈ 2–3 
 |---|---|---|---|
 | CLR4-F2 (L, D) | K1 + quy tắc R2-02; "Claude F K2" lượt 3 (bản xuất dữ liệu tải code lượt 1 không qua luật nhập 4) | Đường vào mới: UI thường của exe lượt 3. Lý do dời chỉ gồm ký tự vô hình được lưu nguyên vì `optionalText` của `119e2e4` chỉ `trim`. Hậu quả mới: sau khi nâng cấp tại chỗ, exe v1.0 từ chối nhập lại chính bản nó xuất, và câu 10b nói "File hỏng hoặc không phải backup Project-2C". Đường vòng: chép bản backup tự động `.db` thành `project2c.db` (`09-cai-dat.md:188`), hay Nạp lại | Q4 (a): giữ K1, thêm một dòng ở NT-EX-08 / 09 (L4-J) |
 
+### 8.5 Issue sửa đã tạo (31/10)
+
+| Nhóm | Issue | Task | Rủi ro / nhãn | Bị chặn bởi |
+|---|---|---|---|---|
+| L4-A | #896 | T-319 Test D7 cùng ngày, `byName` đổi chữ số một lần mỗi tên, nhãn model từ chối UTF-16 hỏng | med | — |
+| L4-B | #897 | T-320 Test hợp đồng CSP / `identifier` và `storage.rs` (thư mục tên backup, ổ đầy lúc backup) | low (PR cần `build-exe`) | — |
+| L4-C | #898 | T-321 `flush()` chờ lần thay bắt đầu muộn, listener của `AppData`, focus và câu hộp đóng app | med | — |
+| L4-D | #899 | T-322 Mock trích xuất chỉ đề xuất từ câu kể đơn về KH, lỗi AI giữ lại theo dữ liệu | low | — |
+| L4-E | #900 | T-323 Đợt G5 lượt 4: NUL không làm lọt V3–V6, miễn "giới" trước "luật" hẹp lại | med, `gate` (G5) | — (PR code sau khi Owner duyệt PR docs §14) |
+| L4-F | #901 | T-324 Dấu nối còn lại của DR6-37 và bộ chặn ký hiệu, ô chọn theo mockup | low | — |
+| L4-G | #902 | T-325 Tên liền dài không tràn ở hộp thoại, màn Team, So sánh team, Báo cáo | low | — |
+| L4-H | #903 | T-326 Ô Case size trống, tên nút khôi phục ở Thùng rác, focus lúc hộp xác nhận chạy, test hở gói E | low | #898 |
+| L4-I | #904 | T-327 Công cụ: `pr-core`, bộ kiểm ảnh hướng dẫn, glob của `notes-core`, `size-report` | low | — |
+| L4-J | #905 | T-328 Nghiệm thu NT-EX-08 / 09 cho dữ liệu exe trước v1.0 (KNOWN CLR4-F2) | low | — |
+
+Mọi Issue có `type:task`, `ready-for-agent`, milestone Phase 6. Cột cuối cũng là quan hệ "Blocked by" của GitHub. Mục "Ghi chú OPEN liên quan" của từng Issue lấy theo `notes-for --files` (sổ @ `2e51e25`): sổ OPEN rỗng nên không có mục nào.
+
 ## 9. Câu hỏi cần Owner quyết
+
+**Owner trả lời 31/10: đồng ý cả 4 đề xuất**: Q1 (a), Q2 (a), Q3 (a), Q4 (a). Ghi ở `docs/PROJECT-STATE.md` (2026-10-31); Issue theo §8.5.
 
 Mỗi câu có đề xuất; Owner đồng ý mà không ghi gì khác thì lấy đề xuất. Mọi câu chỉ là **chọn cách sửa** (Owner đã chốt sửa hết).
 

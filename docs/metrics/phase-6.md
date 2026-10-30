@@ -318,6 +318,7 @@ Deep review Phase 1–6 (6D, kế hoạch `docs/process/deep-review-phase-1-6.md
   - Kiểm phần đã sửa của hai đợt trên: bảng R1 37 dòng, 36 đã sửa, 1 sửa một phần (DR6-37), 0 hồi quy; bảng R2 32 Issue, đều đã sửa.
   - 34 phát hiện mới → **23** vấn đề DR6-135…157: **0 Medium**, 17 Low, 6 Nit; thêm 1 mục KNOWN có bằng chứng mới. 0 bị bác.
   - Kết luận: chưa sẵn sàng ở `2e51e25`, vì Owner đã quyết sửa hết trước G7 và DR6-37 còn một phần.
+  - Owner 31/10 đồng ý cả 4 đề xuất của §9: 10 Issue #896–#905 (T-319…T-328).
 
 ## Điều hướng (riêng 2C, `docs/metrics/README.md`)
 

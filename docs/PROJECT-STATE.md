@@ -138,6 +138,13 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - On 31/10 the OWNER confirmed having logged out of the WorkBuddy app before copying the logs (step 7.1).
 
   Synthesis: `docs/reviews/2026-10-31-deep-review-phase-1-6-luot-4-tong-hop.md`.
+- 2026-10-31: OWNER decisions on deep review Phase 1–6 round 4 (synthesis above, §9). The round found R1 36 / 37 fixed with DR6-37 partly fixed, R2 32 / 32 fixed, no regression; 34 new findings → 23 issues DR6-135…157 (0 Medium, 17 Low, 6 Nit) and one KNOWN with new evidence. Not ready for v1.0 at `2e51e25` only because everything is fixed before G7. The OWNER took every proposal as written:
+  - Q1 (a): the Mock extraction proposes only from a plain statement about the customer itself, an allow-list the way T-289 went; every other form proposes nothing.
+  - Q2 (a): a round 4 G5 batch, approved on its docs PR (new §14 of `phase-5-prompts.md`) before the code PR. Matching drops NUL as an invisible character; "giới" before "luật" is exempted unless it follows "môi", "ranh", "biên" or "thế"; prompt versions follow G5 (`analysis@5`, `discovery@5`).
+  - Q3 (a): a person's restore button always names the role and team. A customer's names the customer code only when its name and stage match another customer row in the trash, as dialog 9b does.
+  - Q4 (a): CLR4-F2 stays under K1, with no code change. NT-EX-08 / 09 get one line on pre-v1.0 data whose optional appointment text holds only invisible characters.
+
+  Fix issues: #896…#905 (T-319…T-328, synthesis §8.5).
 
 ## Next decision
 
