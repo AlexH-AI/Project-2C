@@ -408,6 +408,22 @@ const GUESSED = new RegExp(
   'iu',
 );
 
+/**
+ * Said to be wrong, anywhere in the sentence of a phrase: "KH độc thân, điều này sai.", "KH đã kết
+ * hôn, không đúng.", "KH có 2 con, ghi nhầm." (the review of PR #917, the family of CXR4-C1). A
+ * clause after a phrase may say anything else ("KH đã kết hôn, có thể đóng phí năm"), so these
+ * words are listed.
+ */
+const RETRACTED =
+  /(?<!\p{L})(?:sai|nhầm|ghi lộn|đính chính|không phải|(?:không|chưa) (?:đúng|chính xác))(?!\p{L})/iu;
+
+/**
+ * Someone named by a word for a person and a name: "anh Nam", "chị Lan", "Bà Tư". Written as such,
+ * a capital after the word, so no `i` flag: with it, `\p{Lu}` takes a small letter too.
+ */
+const NAMED =
+  /(?<!\p{L})(?:[Aa]nh|[Cc]hị|[Ee]m|[Ôô]ng|[Bb]à|[Cc]ô|[Cc]hú|[Bb]ác|[Cc]ậu|[Dd]ì|[Bb]ạn|[Ss]ếp) \p{Lu}/u;
+
 /** "chưa" or "không", maybe with "nhé / nhỉ / ạ / nha / hả / à" after it, ending its clause. */
 const NOT_YET = String.raw`(?:${NOT_SO})(?:\s+(?:nhé|nhỉ|ạ|nha|hả|à))?(?=[^\p{L}\p{N}]*?(?:,|$))`;
 
@@ -514,8 +530,11 @@ function readSentence(sentence: Part) {
     thenStart: lastStart(THEN, sentence),
     askedUntil: lastStart(ASKED, sentence),
     guessed: GUESSED.test(sentence.text),
+    retracted: RETRACTED.test(sentence.text),
     /** Its first clause opens on the KH, so a clause after it that does not is said of the KH. */
     onTheKh: opening(sentence) !== undefined,
+    /** Where someone named first ends: a clause after that may speak of them. */
+    named: firstEnd(NAMED, sentence),
   };
 }
 
@@ -564,6 +583,7 @@ function aboutTheKh(note: string, sentence: Reader, clause: Reader): (phrase: Ph
     const inClause = ofClause(at);
     if (
       inSentence.guessed ||
+      inSentence.retracted ||
       at < inSentence.askedUntil ||
       inSentence.someoneElse <= at ||
       inSentence.supposed <= at ||
@@ -576,7 +596,10 @@ function aboutTheKh(note: string, sentence: Reader, clause: Reader): (phrase: Ph
     ) {
       return false;
     }
-    const kh = inClause.kh ?? (inSentence.onTheKh ? inClause.start : undefined);
+    // A clause that does not open on the KH follows one that does, with no one named before it in
+    // between: "KH giới thiệu anh Nam, đã kết hôn" may be said of anh Nam (the review of PR #917).
+    const kh =
+      inClause.kh ?? (inSentence.onTheKh && at < inSentence.named ? inClause.start : undefined);
     // Before where its clause opens on the KH, a phrase is in the heading ("Độc thân: KH…").
     if (kh === undefined || at < kh) return false;
     // A word of `JOINING` ends a clause on the KH only after some of its words: right after the KH,

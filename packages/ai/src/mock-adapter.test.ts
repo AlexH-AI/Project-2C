@@ -895,6 +895,9 @@ describe('createMockAdapter', () => {
     ['KH hiện tại độc thân.', [SINGLE]],
     ['KH cũng đã kết hôn.', [MARRIED]],
     ['KH có 2 con, 1 trai 1 gái.', [TWO]],
+    // Someone named, then a clause opening on the KH again; someone not named by a name.
+    ['KH gặp anh Nam, KH đã kết hôn.', [MARRIED]],
+    ['KH có em bé, đã kết hôn.', [MARRIED]],
   ])('reads %j as %j: a simple statement about the KH (DR6-141)', async (note, facts) => {
     expect(await extracted(note)).toEqual(facts);
   });
@@ -938,6 +941,15 @@ describe('createMockAdapter', () => {
     'KH có 2 con trai và 1 con gái.',
     'KH có 2 con nhỏ và 1 con lớn.',
     'KH có 2 con gái, 1 con trai.',
+    // Someone named in the first clause may be who a clause after it speaks of (Correctness 4).
+    'KH giới thiệu anh Nam, đã kết hôn, có 2 con.',
+    'KH đi cùng chị Lan, độc thân.',
+    'KH gặp Bà Tư, có 2 con.',
+    // Said to be wrong in the sentence (Correctness 5, the family of CXR4-C1).
+    'KH độc thân, điều này sai.',
+    'KH đã kết hôn, không đúng.',
+    'KH có 2 con, ghi nhầm.',
+    'KH đã kết hôn, thông tin chưa chính xác.',
   ])(
     'proposes nothing from %j: not a simple statement either (the review of PR #917)',
     async (note) => {
