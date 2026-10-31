@@ -105,7 +105,122 @@ describe('findHardcodedSeparators', () => {
       { line: 3, match: '▾', rule: 'hardcoded-mark' },
       { line: 3, match: '▸', rule: 'hardcoded-mark' },
       { line: 4, match: '—', rule: 'hardcoded-mark' },
-      { line: 5, match: ".join(', ')", rule: 'hardcoded-separator' },
+      { line: 5, match: "', '", rule: 'hardcoded-separator' },
+    ]);
+  });
+
+  // DR6-145 (b): parts joined by hand, whatever the quote, as a template or as JSX.
+  it('flags a separator that is a whole string or a whole piece of a template', () => {
+    const source = [
+      'names.join(`, `)',
+      "a + ', ' + b",
+      'a + "; " + b',
+      '`${a}, ${b}`',
+      '`${a}; ${b}`',
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 1, match: '`, `', rule: 'hardcoded-separator' },
+      { line: 2, match: "', '", rule: 'hardcoded-separator' },
+      { line: 3, match: '"; "', rule: 'hardcoded-separator' },
+      { line: 4, match: '}, ${', rule: 'hardcoded-separator' },
+      { line: 5, match: '}; ${', rule: 'hardcoded-separator' },
+    ]);
+  });
+
+  it('leaves a separator that is only part of a string, and the strings of a list', () => {
+    const source = [
+      "const kinds = ['MET', 'CANCELLED', 'NO_SHOW'];",
+      "const pair = 'a, b';",
+      'const key = `${kind}:${id}`;',
+      "const fields = text.split(',');",
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([]);
+  });
+
+  it('flags parts of JSX joined by hand, not the braces of code', () => {
+    const source = [
+      '<span className="min-w-0">',
+      '  {t(`kycField.${fact.field}`)}: {factText(fact.value)}',
+      '  <b>{a}, {b}; {c}</b>',
+      '</span>',
+      'function Row({ row }: { row: Row }) {',
+      '  const pairs = [{ a: 1 }, { b: 2 }];',
+      '  return pick({ a }, { b }) ? { a } : { b };',
+      '}',
+      'const run = async (): Promise<void> => {};',
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 2, match: '}: {', rule: 'hardcoded-separator' },
+      { line: 3, match: '}, {', rule: 'hardcoded-separator' },
+      { line: 3, match: '}; {', rule: 'hardcoded-separator' },
+    ]);
+  });
+
+  // DR6-145 (c): a `//` or `/*` inside a string or a template opens no comment.
+  it('reads on past a // in a string or a template', () => {
+    const source = [
+      "const url = 'https://example.com'; const s = 'a · b';",
+      'const t = `${base}//x`; const u = "a → b";',
+      'const v = `one line',
+      '// and the next · of the template`;',
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 1, match: '·', rule: 'hardcoded-separator' },
+      { line: 2, match: '→', rule: 'hardcoded-separator' },
+      { line: 4, match: '·', rule: 'hardcoded-separator' },
+    ]);
+  });
+
+  it('opens no comment at a /* in a string, to the end of the file', () => {
+    const source = [
+      "const glob = 'a /* b';",
+      "const s = 'a · b';",
+      "const mark = '✓';",
+      "const t = 'c · d';",
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 2, match: '·', rule: 'hardcoded-separator' },
+      { line: 3, match: '✓', rule: 'hardcoded-mark' },
+      { line: 4, match: '·', rule: 'hardcoded-separator' },
+    ]);
+  });
+
+  it('closes nothing at a */ in a string, and reads what follows it', () => {
+    const source = ["const open = '/*';", "const s = 'a · b';", "const close = '*/ ✓';"].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 2, match: '·', rule: 'hardcoded-separator' },
+      { line: 3, match: '✓', rule: 'hardcoded-mark' },
+    ]);
+  });
+
+  it('opens no string at a quote inside a comment', () => {
+    const source = [
+      "// it's N2 → N1",
+      "/* don't · here */ const s = 'a · b';",
+      "const t = '→'; // the RE's → arrow",
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 2, match: '·', rule: 'hardcoded-separator' },
+      { line: 3, match: '→', rule: 'hardcoded-separator' },
+    ]);
+  });
+
+  it('reads an escape inside a string, an escaped line break too', () => {
+    const source = [
+      "const s = 'it\\'s // no comment · here';",
+      "const t = 'one \\",
+      "two · three'; // N2 → N1",
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 1, match: '·', rule: 'hardcoded-separator' },
+      { line: 3, match: '·', rule: 'hardcoded-separator' },
+    ]);
+  });
+
+  it('ends a string with its line: a quote of a regex literal opens none', () => {
+    const source = ['const quote = /"/;', "const s = ' · '; // N2 → N1"].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 2, match: '·', rule: 'hardcoded-separator' },
     ]);
   });
 

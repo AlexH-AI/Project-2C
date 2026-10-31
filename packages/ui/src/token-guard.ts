@@ -46,40 +46,100 @@ export function findTokenViolations(source: string): TokenViolation[] {
 }
 
 /**
- * Finds a `·` or `→`, a list joined by `', '`, or a mark (`✓ ○ × ▾ ▸ —`, DR6-37) written into app
- * code: the app joins parts through i18n (`sep.*`) and takes its marks from it, so they live in
- * `vi.ts` only. Comments may use them.
+ * A whole string, or piece of a template, that only joins two parts (`', '`, `${a}; ${b}`): what
+ * `sep.list` and `sep.semicolon` hold. `: ` is joined by hand only between expressions of JSX; in
+ * a template it also joins technical text (the path and detail of a validator issue).
+ */
+const JOINER = /^[,;] $/;
+
+/**
+ * Finds a `·` or `→`, a mark (`✓ ○ × ▾ ▸ —`, DR6-37), or parts joined by hand: `', '` or `'; '` as
+ * a whole string or piece of a template (`.join(', ')`, `${a}, ${b}`), or `, ` / `; ` / `: `
+ * between two expressions of JSX (`{a}: {b}`). The app joins parts through i18n (`sep.*`, a key
+ * of `vi.ts`) and takes its marks from it, so they live in `vi.ts` only. Comments may use them.
+ * The scan reads strings and templates, so a `//` or `/*` inside one opens no comment (DR6-145);
+ * it does not read a regex literal, nor a mark written as a Unicode escape.
  */
 export function findHardcodedSeparators(source: string): TokenViolation[] {
   const violations: TokenViolation[] = [];
-  let inComment = false;
-  source.split('\n').forEach((text, index) => {
-    let code = '';
-    let rest = text;
-    while (rest) {
-      if (inComment) {
-        const end = rest.indexOf('*/');
-        inComment = end < 0;
-        rest = inComment ? '' : rest.slice(end + 2);
+  let line = 1;
+  const report = (match: string, rule: TokenViolation['rule']) =>
+    violations.push({ line, match, rule });
+  // Code, a comment, a string (by its quote) or a template.
+  let mode: 'code' | '//' | '/*' | "'" | '"' | '`' = 'code';
+  // Where the string, or the piece of template, being read began.
+  let start = 0;
+  // What each `{` still open began: a `${` of a template, an expression of JSX, or code. JSX is
+  // told by what comes before its `{`: the `>` of a tag (not of `=>`), or the `}` of JSX.
+  const braces: ('template' | 'jsx' | 'code')[] = [];
+  let last = '';
+  let afterJsx = false;
+  for (let i = 0; i < source.length; i++) {
+    const c = source[i]!;
+    if (c === '\n') line++;
+    if (mode === '//') {
+      if (c === '\n') mode = 'code';
+      continue;
+    }
+    if (mode === '/*') {
+      if (source.startsWith('*/', i)) {
+        mode = 'code';
+        i++;
+      }
+      continue;
+    }
+    if (c === '·' || c === '→') report(c, 'hardcoded-separator');
+    if ('✓○×▾▸—'.includes(c)) report(c, 'hardcoded-mark');
+    if (mode !== 'code') {
+      const opens = mode === '`' && source.startsWith('${', i);
+      if (c === '\\') {
+        if (source[++i] === '\n') line++;
+      } else if (c === mode || opens) {
+        if (JOINER.test(source.slice(start, i))) {
+          report(source.slice(start - 1, opens ? i + 2 : i + 1), 'hardcoded-separator');
+        }
+        if (opens) {
+          braces.push('template');
+          i++;
+        }
+        mode = 'code';
+        last = c;
+        afterJsx = false;
+      } else if (c === '\n' && mode !== '`') {
+        // No string runs past its line: that quote opened none (a quote in a regex literal).
+        mode = 'code';
+      }
+      continue;
+    }
+    if (source.startsWith('//', i) || source.startsWith('/*', i)) {
+      mode = source.startsWith('//', i) ? '//' : '/*';
+      i++;
+      continue;
+    }
+    if (c === "'" || c === '"' || c === '`') {
+      mode = c;
+      start = i + 1;
+      continue;
+    }
+    if (/\s/.test(c)) continue;
+    let closesJsx = false;
+    if (c === '{') {
+      braces.push(afterJsx || last === '>' ? 'jsx' : 'code');
+    } else if (c === '}') {
+      const opened = braces.pop();
+      if (opened === 'template') {
+        mode = '`';
+        start = i + 1;
         continue;
       }
-      const line = rest.indexOf('//');
-      const block = rest.indexOf('/*');
-      if (block >= 0 && (line < 0 || block < line)) {
-        code += rest.slice(0, block);
-        rest = rest.slice(block + 2);
-        inComment = true;
-      } else {
-        code += line < 0 ? rest : rest.slice(0, line);
-        rest = '';
+      closesJsx = opened === 'jsx';
+      if (closesJsx && /^[,;:] \{/.test(source.slice(i + 1, i + 4))) {
+        report(source.slice(i, i + 4), 'hardcoded-separator');
+        i += 2; // on to the `{`, which opens JSX too
       }
     }
-    for (const found of code.matchAll(/[·→]|\.join\((['"])[,;] \1\)/g)) {
-      violations.push({ line: index + 1, match: found[0], rule: 'hardcoded-separator' });
-    }
-    for (const found of code.matchAll(/[✓○×▾▸—]/g)) {
-      violations.push({ line: index + 1, match: found[0], rule: 'hardcoded-mark' });
-    }
-  });
+    last = c === '>' && source[i - 1] === '=' ? '=>' : c;
+    afterJsx = closesJsx;
+  }
   return violations;
 }

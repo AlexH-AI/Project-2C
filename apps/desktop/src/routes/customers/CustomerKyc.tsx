@@ -92,7 +92,10 @@ function CategoryRow({
               className={`flex justify-between gap-2 rounded-sm text-fg-2 ${code === marked ? 'outline-2 outline-offset-2 outline-warn' : ''}`}
             >
               <span className="min-w-0 wrap-anywhere">
-                {t(`kycField.${fact.field}`)}: {factText(fact.value, YES_NO)}
+                {t('kyc.factLine', {
+                  field: t(`kycField.${fact.field}`),
+                  value: factText(fact.value, YES_NO),
+                })}
                 {KYC_FIELDS[fact.field].fromProfile && (
                   <span className="text-xs text-fg-3">
                     {' '}

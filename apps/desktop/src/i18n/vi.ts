@@ -92,6 +92,7 @@ export const vi = {
   'kyc.mark.present': '✓',
   'kyc.mark.missing': '○',
   'kyc.mark.conflict': '!',
+  'kyc.factLine': '{field}: {value}',
   'kyc.fromProfile': 'sửa ở hồ sơ KH',
   'kyc.questions': 'Câu hỏi gợi ý',
   'kyc.yes': 'Có',
