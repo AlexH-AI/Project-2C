@@ -910,9 +910,8 @@ describe('createMockAdapter', () => {
     // Another value said of someone else, or said not to be, is none said of the KH.
     ['KH đã kết hôn, em trai KH độc thân.', [MARRIED]],
     ['KH đã kết hôn, không còn độc thân.', [MARRIED]],
-    // "Khách" is the KH for the rules before DR6-141 too: its own "là người".
-    ['Khách là người độc thân.', [SINGLE]],
-    ['Khách hàng là người đã kết hôn.', [MARRIED]],
+    // "khách" after the KH may be someone else: "người" before a phrase is then of anyone.
+    ['KH đã kết hôn, khách là người độc thân.', [MARRIED]],
   ])('reads %j as %j: a simple statement about the KH (DR6-141)', async (note, facts) => {
     expect(await extracted(note)).toEqual(facts);
   });
@@ -1006,11 +1005,17 @@ describe('createMockAdapter', () => {
     'KH giới thiệu anh Nam, hai vợ chồng đã kết hôn 5 năm.',
     'KH là chủ nhà, khách độc thân.',
     'KH giới thiệu khách mới, khách đã kết hôn.',
-    // Nor after a sentence's end: they name the KH only opening the note, before anything else.
+    // Nor after a sentence's end: they name the KH only opening the note, before anything else, and
+    // a field line says it is the KH's by "KH" only, as the seed writes it.
     'KH giới thiệu khách mới. Khách đã kết hôn.',
     'KH đi cùng chị Lan. Chị nói đã kết hôn.',
     'KH giới thiệu anh Nam. Hai vợ chồng đã kết hôn 5 năm.',
     'KH giới thiệu anh Nam. Anh cho biết đã kết hôn.',
+    'KH đi cùng chị Lan. Chị nói hôn nhân: độc thân.',
+    'KH giới thiệu anh Nam. Anh cho biết lại hôn nhân: đã kết hôn.',
+    'KH giới thiệu khách mới. Khách cho biết hôn nhân: độc thân.',
+    // "Khách" spares no "người" of anyone, as "KH" does (`KH_SUBJECT`): the safe way.
+    'Khách là người độc thân.',
     // In a clause, a word that starts another carries the KH on only right after a phrase about the
     // KH (Owner 31/10): after other words, it may be said of whoever they name.
     'KH giới thiệu anh nam nhưng đã kết hôn.',

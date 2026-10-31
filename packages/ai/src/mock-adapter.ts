@@ -97,22 +97,21 @@ const NOT_PLANNED_CHILDREN = String.raw`(?<!${PLANNING}(?:có|sinh|đẻ|nhận 
 /** "Hiện / Hiện tại / Hiện nay" before the KH: "Hiện KH có", "Hiện tại KH là đàn ông". */
 const NOW = String.raw`(?:[Hh]iện(?: tại| nay)? )`;
 
-/** The word a note names the KH by: "KH", "Khách", "Khách hàng" (`THE_KH` adds the couple). */
-const KH_WORD = String.raw`(?:KH|[Kk]hách(?: hàng)?)`;
-
 /**
- * The KH (`KH_WORD`) opening its clause, maybe after "Hiện / Hiện tại / Hiện nay", and up to two
- * of "đã / đang / hiện / vừa / mới / sống / ở": the KH the subject of what follows ("KH đã", "KH
- * đang sống", "Hiện KH có", "Theo chị Lan, KH là", "- KH có", "Khách là"), not someone's nor an
- * object ("Người yêu của KH đã có", "Người giới thiệu KH là", the review of PR #809). Not the KH's
- * couple, who have no partner of their own nor are "là người" one. Its clause ends at a mark of
+ * "KH" opening its clause, maybe after "Hiện / Hiện tại / Hiện nay", and up to two of "đã / đang /
+ * hiện / vừa / mới / sống / ở": the KH the subject of what follows ("KH đã", "KH đang sống", "Hiện
+ * KH có", "Theo chị Lan, KH là", "- KH có"), not someone's nor an object ("Người yêu của KH đã
+ * có", "Người giới thiệu KH là", the review of PR #809). "KH" only, not "Khách" as `THE_KH`:
+ * these rules spare words wherever a clause opens, and after other words "khách" may be someone
+ * else (`OPENS_AFTER`): "KH đã kết hôn, khách là người độc thân". So "Khách là người độc thân"
+ * gives no proposal, the safe way (the review of PR #917). Its clause ends at a mark of
  * `CLAUSE_END` or at ":". Up to two, and one space between the words as a note is stored and as
  * "anh trai" is read, not `\s+`: these lookbehinds are tried at every place of a sentence, and one
  * reading a run of spaces back took a second for 36 000 of them (the review of PR #753). The look
- * back for the start of the clause is tried only where the KH is named, and lazy: it stops at the
+ * back for the start of the clause is tried only where "KH" stands, and lazy: it stops at the
  * first letter.
  */
-const KH_SUBJECT = String.raw`(?<!\p{L}[^.!?;,:\n]*?)${NOW}?${KH_WORD}(?: (?:đã|đang|hiện|vừa|mới|sống|ở)){0,2}`;
+const KH_SUBJECT = String.raw`(?<!\p{L}[^.!?;,:\n]*?)${NOW}?KH(?: (?:đã|đang|hiện|vừa|mới|sống|ở)){0,2}`;
 
 /**
  * Not of anyone: "người" right before a phrase says it of anyone ("gói cho người đã kết hôn",
@@ -251,10 +250,13 @@ const OF_SOMEONE_ELSE = new RegExp(
  * later clause may speak of ("KH giới thiệu khách mới, đã kết hôn", the reviews of PR #917).
  */
 
+/** The word a note names the KH by, opening it: "KH", "Khách", "Khách hàng". */
+const KH_WORD = String.raw`(?:KH|[Kk]hách(?: hàng)?)`;
+
 /**
- * Who a note names as the KH, opening it: "KH", "Khách", the KH's couple ("Hai vợ chồng", "Vợ
- * chồng KH", "KH và vợ"), maybe after "Hiện". Not "anh" or "chị" alone, which may be someone else
- * ("Anh ấy", "Chị gái"), but as the KH saying it (`SAYS`).
+ * Who a note names as the KH, opening it: `KH_WORD`, the KH's couple ("Hai vợ chồng", "Vợ chồng
+ * KH", "KH và vợ"), maybe after "Hiện". Not "anh" or "chị" alone, which may be someone else ("Anh
+ * ấy", "Chị gái"), but as the KH saying it (`SAYS`).
  */
 const THE_KH = String.raw`${NOW}?(?:${KH_WORD}(?: và (?:vợ|chồng))?|(?:hai )?vợ chồng(?: kh)?)`;
 
@@ -301,10 +303,11 @@ const OPENS_AFTER = new RegExp(
 /**
  * A field line of the KH's own, as the seed writes them, each its own sentence: "Hôn nhân: Độc
  * thân", "KH cho biết lại Hôn nhân: …". Only opening a sentence: after a comma, it may be the line
- * of someone named before it ("Chị Lan, hôn nhân: độc thân", the review of PR #917). Sticky too.
+ * of someone named before it ("Chị Lan, hôn nhân: độc thân"); and said by "KH" only, as "Chị nói"
+ * opening a later sentence may be someone named before (the review of PR #917). Sticky too.
  */
 const FIELD_LINE = new RegExp(
-  String.raw`${BULLET}(?:${SAYS} )?(?:tình trạng )?hôn nhân\s*:`,
+  String.raw`${BULLET}(?:kh ${SAYING} )?(?:tình trạng )?hôn nhân\s*:`,
   'iuy',
 );
 
