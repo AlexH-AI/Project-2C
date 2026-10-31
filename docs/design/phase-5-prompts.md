@@ -1,6 +1,6 @@
 # Phase 5 — Prompt và guardrail AI (G5)
 
-- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417) · §6a `web@1` (ChatGPT web, W-1) **Owner duyệt G5 08/10/2026** (PR #430) · Đợt Phase 6 `analysis@2` / `discovery@2` **Owner duyệt G5 11/10/2026** (T-197 #491, §10) · Đợt lượt 2 `analysis@3` / `discovery@3` **Owner duyệt G5 18/10/2026** (T-257 #661, §11) · Đợt lượt 3 `analysis@4` / `discovery@4` **Owner duyệt G5 23/10/2026** (T-277 #728, §12) · Luật T-291 (tách dòng VT / FF ở §6a, hai mục của §11.8; không đổi version) **Owner duyệt 23/10/2026** (T-291 #780, §13)
+- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417) · §6a `web@1` (ChatGPT web, W-1) **Owner duyệt G5 08/10/2026** (PR #430) · Đợt Phase 6 `analysis@2` / `discovery@2` **Owner duyệt G5 11/10/2026** (T-197 #491, §10) · Đợt lượt 2 `analysis@3` / `discovery@3` **Owner duyệt G5 18/10/2026** (T-257 #661, §11) · Đợt lượt 3 `analysis@4` / `discovery@4` **Owner duyệt G5 23/10/2026** (T-277 #728, §12) · Luật T-291 (tách dòng VT / FF ở §6a, hai mục của §11.8; không đổi version) **Owner duyệt 23/10/2026** (T-291 #780, §13) · Đợt lượt 4 `analysis@5` / `discovery@5` **Owner duyệt G5 31/10/2026** (T-323 #900, §14; PR code chép vào §1–§8)
 - **Nền:** spec `phase-5-ai.md` (G1 / G2 duyệt 07/10/2026) §3, §6.1, §6.2, §6.4, §8; ADR-0009 (ranh giới, mục 3 validator, mục 6 pháp lý); danh mục KYC `packages/domain/src/kyc-catalog.ts`
 - **Dùng ở:** T-165 #406 (validator V3–V6 lấy **nguyên** các danh sách §6–§8), T-166 #407 (chữ prompt §2–§5 chép **nguyên văn** vào `packages/ai/src/prompts/<mode>.ts`)
 - **Đổi chữ prompt hoặc danh sách chặn sau khi duyệt** = tăng version (`analysis@2`…) + qua G5 lần nữa. Lỗi chính tả trong code so với file này là lỗi, không phải phiên bản mới.
@@ -921,9 +921,9 @@ Luật: Owner duyệt 23/10/2026; §13.6: 25/10/2026; chữ của §13: Owner du
 - [x] Ca kiểm cho PR code (§13.5)
 - [x] `input_json`, `validator_json` giữ kiểm như nay (§13.6)
 
-## 14. Đợt sửa G5 Phase 6 lượt 4 (T-323 #900) — đề xuất, chờ Owner duyệt
+## 14. Đợt sửa G5 Phase 6 lượt 4 (T-323 #900) — Owner duyệt 31/10/2026
 
-**Trạng thái:** đề xuất, **chờ Owner duyệt G5**. Theo Q2 (a) (Owner 31/10/2026), PR docs này đi trước, PR code đi sau. PR code chép §14 vào §2, §3 (version), §6a, §7, §8.4, §8.5 và dòng trạng thái đầu file (và spec `phase-5-ai.md` §3.1 mục 3, §6.4); mục này giữ lý do và số đo.
+**Trạng thái:** đề xuất và **Owner duyệt G5 31/10/2026** ("duyệt hết": bước 0 bỏ cả NUL, "giới" sau "môi / ranh / biên / thế", giữ "thế", `@5`, hai file thêm cho PR code). Theo Q2 (a) (Owner 31/10/2026), PR docs này đi trước, PR code đi sau. PR code chép §14 vào §2, §3 (version), §6a, §7, §8.4, §8.5 (và spec `phase-5-ai.md` §3.1 mục 3, §6.4); mục này giữ lý do và số đo.
 
 **Nền:** deep review Phase 1–6 lượt 4 (`docs/reviews/2026-10-31-deep-review-phase-1-6-luot-4-tong-hop.md` §6.3, §8.2 L4-E, §9 Q2): DR6-142, DR6-143. Báo cáo gốc: DSR4-C1 (`docs/reviews/raw/2026-10-31/deepseek/C.md`), CLR4-C2 (`docs/reviews/raw/2026-10-31/claude/C.md`). Owner 31/10/2026 đồng ý Q2 (a): sửa cả hai trong một đợt G5; chữ prompt không đổi.
 
@@ -947,7 +947,7 @@ Luật: Owner duyệt 23/10/2026; §13.6: 25/10/2026; chữ của §13: Owner du
 - Như §12.1: §14.3 đổi một mục của §8.4, nên tăng version (đầu file). Phân tích đã lưu với `@4` vẫn hiện như đã ghi; `db` chỉ kiểm dạng `<mode>@<n>`. Mốc hash seed không đổi: từ T-288, `seed.test.ts` đọc version là một dấu. Eval AI thật ở G7 (NT-EV-01) chạy với `@5`.
 - Ảnh hướng dẫn `docs/user-guide/img/06-ai-phan-tich.png` có `discovery@4` ở chip và ở Lịch sử phân tích: chụp lại ở G7, cùng các ảnh khác mà đợt sửa lượt 4 đổi.
 - **File được phép của PR code** (Issue #900) thêm hai file, vì chúng chép chữ của file này:
-  - `docs/design/phase-5-prompts.md`: chép §14 vào §2, §3, §6a, §7, §8.4, §8.5 và dòng trạng thái đầu file; đổi trạng thái §14;
+  - `docs/design/phase-5-prompts.md`: chép §14 vào §2, §3, §6a, §7, §8.4, §8.5; đổi trạng thái §14 và dòng trạng thái đầu file;
   - `docs/design/phase-5-ai.md`: §3.1 mục 3, §6.4 (bước chuẩn hóa bỏ cả NUL).
 
   Các file ghi version khác đã có trong Issue: `docs/golden/ai-eval.md`, `docs/README.md`, `docs/user-guide/06-ai.md`, `docs/user-guide/11-thuat-ngu.md`.
@@ -1014,7 +1014,7 @@ Ngoài bảng:
 
 ### 14.6 Owner duyệt
 
-- [ ] Version `analysis@5`, `discovery@5`; `extraction@1`, `web@1` giữ; thêm `docs/design/phase-5-prompts.md`, `docs/design/phase-5-ai.md` vào file được phép của PR code (§14.1)
-- [ ] Bước 0 bỏ cả NUL, chỉ ở bản so khớp; V1 và chữ lưu không đổi (§14.2)
-- [ ] "luật <Tên>": "giới" chỉ được miễn khi không đứng sau "môi", "ranh", "biên", "thế"; giữ "thế" dù có tác dụng phụ; chữ mới của mục §8.4 (§14.3)
-- [ ] Ca kiểm C80–C83 và các ca ngoài bảng (§14.4)
+- [x] Version `analysis@5`, `discovery@5`; `extraction@1`, `web@1` giữ; thêm `docs/design/phase-5-prompts.md`, `docs/design/phase-5-ai.md` vào file được phép của PR code (§14.1)
+- [x] Bước 0 bỏ cả NUL, chỉ ở bản so khớp; V1 và chữ lưu không đổi (§14.2)
+- [x] "luật <Tên>": "giới" chỉ được miễn khi không đứng sau "môi", "ranh", "biên", "thế"; giữ "thế" dù có tác dụng phụ; chữ mới của mục §8.4 (§14.3)
+- [x] Ca kiểm C80–C83 và các ca ngoài bảng (§14.4)
