@@ -19,8 +19,9 @@ interface ChoicesProps<T extends string> {
 }
 
 /**
- * Labelled row of radio chips (mockup `.choices`); arrow keys move between the enabled ones. A radio
- * group rather than a plain group, so `required` reaches assistive technology as `aria-required`.
+ * Labelled row of radio chips (mockup `.choices`, each a `.choice`: bold when on, struck out when
+ * off); arrow keys move between the enabled ones. A radio group rather than a plain group, so
+ * `required` reaches assistive technology as `aria-required`.
  */
 export function Choices<T extends string>({
   label,
@@ -50,7 +51,7 @@ export function Choices<T extends string>({
         {options.map((option) => (
           <label
             key={option.value}
-            className="relative inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-surface-0 px-2.5 py-1 has-checked:border-accent has-checked:bg-accent-soft has-disabled:cursor-default has-disabled:opacity-50 has-focus-visible:outline-2 has-focus-visible:outline-accent"
+            className="relative inline-flex cursor-pointer items-center gap-1.5 rounded-sm border border-border-strong bg-surface-2 px-2.75 py-1.25 text-fg-2 has-checked:border-accent has-checked:bg-accent-soft has-checked:font-semibold has-checked:text-fg has-disabled:cursor-default has-disabled:line-through has-disabled:opacity-40 has-focus-visible:outline-2 has-focus-visible:outline-accent"
           >
             <input
               type="radio"

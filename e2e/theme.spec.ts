@@ -211,6 +211,68 @@ test('the two fields of the app outside packages/ui stand out 3:1 from their car
   await expectBorderStandsOut(page.getByRole('searchbox', { name: 'Tìm theo tên' }));
 });
 
+// Mockup forms.css `.choice` (DR6-149): --bg-2, --border-strong, --radius-sm, 5 / 11 px, --fs-sm,
+// --text-2; `.choice.on`: --accent on --accent-soft, --text, 600; `.choice.off`: 0.4, struck out.
+const CHOICE = {
+  'background-color': 'rgb(24, 33, 45)',
+  'border-color': 'rgb(52, 66, 90)',
+  'border-radius': '6px',
+  padding: '5px 11px',
+  'font-size': '12.5px',
+  color: 'rgb(174, 185, 200)',
+  'font-weight': '400',
+};
+const CHOICE_ON = {
+  ...CHOICE,
+  'background-color': 'rgba(217, 178, 106, 0.14)',
+  'border-color': 'rgb(217, 178, 106)',
+  color: 'rgb(232, 237, 244)',
+  'font-weight': '600',
+};
+
+/** The chip of a radio of `Choices` (the label around it), drawn in `style`, its text at AA. */
+async function expectChoice(radio: Locator, style: Record<string, string>) {
+  const chip = radio.locator('..');
+  for (const [property, value] of Object.entries(style)) {
+    await expect(chip).toHaveCSS(property, value);
+  }
+  expect(await lowestContrast(chip)).toBeGreaterThanOrEqual(4.5);
+  return chip;
+}
+
+test('the choices of a dialog are drawn as the mockup draws them, and read at AA (5a, 5d)', async ({
+  page,
+}) => {
+  await page.goto('/#/customers');
+  await page.getByRole('button', { name: '+ Khách hàng' }).click();
+  const create = page.getByRole('dialog', { name: 'Khách hàng mới' });
+  const gender = create.getByRole('radiogroup', { name: 'Giới tính' });
+  await gender.getByRole('radio', { name: 'Nữ' }).check();
+  const female = await expectChoice(gender.getByRole('radio', { name: 'Nữ' }), CHOICE_ON);
+  // The chip that is on says so by its border too, 3:1 either side (WCAG 1.4.11). A chip has
+  // words, so the border of one that is off is --border-strong (G3 T-284, index.html#contrast).
+  expect(await lowestContrast(female, 'border')).toBeGreaterThanOrEqual(CONTROL_CONTRAST);
+  await expectChoice(gender.getByRole('radio', { name: 'Nam' }), CHOICE);
+  // A new customer starts in N4.
+  const stages = create.getByRole('radiogroup', { name: 'Nhóm ban đầu' });
+  await expectChoice(stages.getByRole('radio', { name: 'N4' }), CHOICE_ON);
+  await expectChoice(stages.getByRole('radio', { name: 'N3' }), CHOICE);
+  await create.getByRole('button', { name: 'Hủy' }).click();
+
+  await page.getByRole('region', { name: 'N2', exact: true }).getByRole('link').first().click();
+  await page.getByRole('button', { name: 'Chuyển nhóm' }).click();
+  const change = page.getByRole('dialog', { name: /^Chuyển nhóm · / });
+  const to = change.getByRole('radio', { name: 'N3', exact: true });
+  await to.check();
+  const n3 = await expectChoice(to, CHOICE_ON);
+  expect(await lowestContrast(n3, 'border')).toBeGreaterThanOrEqual(CONTROL_CONTRAST);
+  await expectChoice(change.getByRole('radio', { name: 'Mất cơ hội' }), CHOICE);
+  // Its own stage cannot be picked.
+  const current = change.getByRole('radio', { name: 'N2 hiện tại' }).locator('..');
+  await expect(current).toHaveCSS('opacity', '0.4');
+  await expect(current).toHaveCSS('text-decoration-line', 'line-through');
+});
+
 test('the tab shows the icon of the app, built from its one source', async ({ page, request }) => {
   await page.goto('/');
 
