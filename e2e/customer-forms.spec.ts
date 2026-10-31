@@ -382,6 +382,26 @@ test('refuses a name broken in a paste as the command does, then saves one as ty
   await expect(page.getByRole('region', { name: NAME })).toBeVisible();
 });
 
+// DR6-146 (a): editing the profile sends the name as typed too, so the command refuses it the same
+// way; a name made valid before it is sent would save the emoji the paste broke.
+test('refuses a name broken in a paste as the command does when editing the profile (5c)', async ({
+  page,
+}) => {
+  const card = column(page, 'N3').getByRole('link').first();
+  const name = (await card.locator('b').textContent()) ?? '';
+  await card.click();
+  await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
+  const dialog = page.getByRole('dialog', { name: `Sửa hồ sơ · ${name}` });
+  await pasteAsIs(dialog.getByRole('textbox', { name: 'Họ tên' }), '\uD83D\u{200B}\uDE00 Lan');
+  await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Chữ có ký tự không lưu được');
+  await expect(dialog).toBeVisible();
+
+  await dialog.getByRole('button', { name: 'Hủy' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('heading', { level: 2, name, exact: true })).toBeVisible();
+});
+
 test('deletes a customer from the profile, counting its records first (5f, TR-9)', async ({
   page,
 }) => {

@@ -25,6 +25,11 @@ const CELL = 'border-b border-border px-2 py-1.5 whitespace-nowrap';
 const RULE = 'border-l border-l-border-strong';
 /** The name column stays put while the figures scroll sideways. */
 const STICKY = 'sticky left-0 z-1 bg-surface-1';
+/**
+ * A name of the lead columns: under a cap it keeps its one line and the column its width; a longer
+ * one breaks at the cap, even with no space, so the figures stay readable (DR6-148).
+ */
+const NAME = 'block w-max max-w-60 whitespace-normal wrap-anywhere';
 /** The light green bar on the left of the mark holding today (mockup reports.html 2c). */
 const TODAY_BAR = 'before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-date-today';
 
@@ -111,12 +116,16 @@ export function ReportTable({
             const start = teamStart ? 'border-t border-t-border-strong' : '';
             return (
               <tr key={row.key}>
-                {lead === 're' && <td className={`${CELL} ${start} text-fg-2`}>{row.team}</td>}
+                {lead === 're' && (
+                  <td className={`${CELL} ${start} text-fg-2`}>
+                    <span className={NAME}>{row.team}</span>
+                  </td>
+                )}
                 <th
                   scope="row"
                   className={`${CELL} ${start} ${STICKY} text-left font-semibold ${'today' in row && row.today ? TODAY_BAR : ''}`}
                 >
-                  {row.name}
+                  <span className={NAME}>{row.name}</span>
                 </th>
                 {figures(row, start)}
               </tr>

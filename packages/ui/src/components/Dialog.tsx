@@ -80,7 +80,8 @@ export function Dialog({ title, subtitle, onClose, onSubmit, actions, children }
           onSubmit?.();
         }}
       >
-        <div>
+        {/* A name in the title or the subtitle breaks, even with no space (DR6-148). */}
+        <div className="wrap-anywhere">
           <h2 id={titleId} className="m-0 text-base font-semibold">
             {title}
           </h2>
