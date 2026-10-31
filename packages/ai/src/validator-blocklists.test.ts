@@ -351,11 +351,13 @@ describe('validateOutput — V3 to V6', () => {
   });
 
   // G5 §8.4 (§14.3, DR6-143): "giới" is let through, but not the "giới" of "môi", "ranh", "biên",
-  // "thế"; the "giới" of another word is the loss §14.3 records.
+  // "thế", each a whole word ("tranh" is not "ranh"); the "giới" of another word is the loss §14.3
+  // records.
   it.each([
     ['Môi giới luật Kinh doanh bảo hiểm', ['V6']],
     ['Vì thế giới luật Phật giáo được KH giữ nghiêm', ['V6']],
     ['Vì thế, giới luật Phật giáo được KH giữ nghiêm', []],
+    ['KH treo tranh giới luật Phật giáo ở phòng khách', []],
     ['Lao động nữ giới Luật Lao động có quy định riêng', []],
   ])('V6 reads "luật" after "giới" by the word before it: "%s" → %j', (text, codes) => {
     expect(codesOf('needs', text)).toEqual(codes);
