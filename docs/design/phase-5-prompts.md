@@ -920,3 +920,101 @@ Luật: Owner duyệt 23/10/2026; §13.6: 25/10/2026; chữ của §13: Owner du
 - [x] §6a tách dòng ở VT / FF như ghi chú KYC, một hằng chung ở `domain` (§13.4)
 - [x] Ca kiểm cho PR code (§13.5)
 - [x] `input_json`, `validator_json` giữ kiểm như nay (§13.6)
+
+## 14. Đợt sửa G5 Phase 6 lượt 4 (T-323 #900) — đề xuất, chờ Owner duyệt
+
+**Trạng thái:** đề xuất, **chờ Owner duyệt G5**. Theo Q2 (a) (Owner 31/10/2026), PR docs này đi trước, PR code đi sau. PR code chép §14 vào §2, §3 (version), §6a, §7, §8.4, §8.5 và dòng trạng thái đầu file (và spec `phase-5-ai.md` §3.1 mục 3, §6.4); mục này giữ lý do và số đo.
+
+**Nền:** deep review Phase 1–6 lượt 4 (`docs/reviews/2026-10-31-deep-review-phase-1-6-luot-4-tong-hop.md` §6.3, §8.2 L4-E, §9 Q2): DR6-142, DR6-143. Báo cáo gốc: DSR4-C1 (`docs/reviews/raw/2026-10-31/deepseek/C.md`), CLR4-C2 (`docs/reviews/raw/2026-10-31/claude/C.md`). Owner 31/10/2026 đồng ý Q2 (a): sửa cả hai trong một đợt G5; chữ prompt không đổi.
+
+**Đã thử trước khi đề xuất** (bản thử 3 dòng trong `packages/ai`, chưa commit; script tạm so kết quả V3–V6 của từng chuỗi trước và sau):
+
+- **1 297** test hiện có của `packages/ai` (gồm C1–C79 và test đọc bảng §8): xanh.
+- **50** chuỗi kiểm cho DR6-142, DR6-143 và **6** ca dán ChatGPT web: kết quả ghi ở từng mục.
+- **1 085** chuỗi `text` thật của eval 10/10 và 11/10, mỗi chuỗi ở đúng khối của nó: 0 chuỗi bị chặn, trước và sau. Không chuỗi nào có NUL.
+- **1 076** chuỗi `vi.ts` và **82 641** chuỗi của dữ liệu giả lập (hạt giống 1, mọi bảng: tên, ghi chú, giá trị KYC, output Mock…): 0 chuỗi đổi kết quả. 13 chuỗi bị chặn như nhau trước và sau: nhãn như "Tỉ lệ chốt", tên KH như "Lê Bảo Bình", một câu Mock ở `personalityNotes` (khối V5 không áp).
+- **59 207** dòng khác nhau của `docs/**/*.md`: 1 dòng đổi kết quả, là dòng DR6-143 của bản tổng hợp lượt 4, chỗ trích chính câu "môi giới Luật …".
+
+### 14.1 Version
+
+| Prompt | Đổi | Version mới |
+|---|---|---|
+| analysis | cách so khớp (§14.2: bước 0 của §7), danh sách chặn (§14.3: mục "luật <Tên>" của §8.4); **chữ prompt không đổi** | `analysis@5` |
+| discovery | như analysis | `discovery@5` |
+| extraction | chữ không đổi, không qua V3–V6 | giữ `extraction@1` |
+| tin nhắn ChatGPT web | chữ bọc không đổi; dòng dán theo bước 0 mới (§14.2) | giữ `web@1` → lưu `analysis@5+web@1` |
+
+- Như §12.1: §14.3 đổi một mục của §8.4, nên tăng version (đầu file). Phân tích đã lưu với `@4` vẫn hiện như đã ghi; `db` chỉ kiểm dạng `<mode>@<n>`. Mốc hash seed không đổi: từ T-288, `seed.test.ts` đọc version là một dấu. Eval AI thật ở G7 (NT-EV-01) chạy với `@5`.
+- Ảnh hướng dẫn `docs/user-guide/img/06-ai-phan-tich.png` có `discovery@4` ở chip và ở Lịch sử phân tích: chụp lại ở G7, cùng các ảnh khác mà đợt sửa lượt 4 đổi.
+- **File được phép của PR code** (Issue #900) thêm hai file, vì chúng chép chữ của file này:
+  - `docs/design/phase-5-prompts.md`: chép §14 vào §2, §3, §6a, §7, §8.4, §8.5 và dòng trạng thái đầu file; đổi trạng thái §14;
+  - `docs/design/phase-5-ai.md`: §3.1 mục 3, §6.4 (bước chuẩn hóa bỏ cả NUL).
+
+  Các file ghi version khác đã có trong Issue: `docs/golden/ai-eval.md`, `docs/README.md`, `docs/user-guide/06-ai.md`, `docs/user-guide/11-thuat-ngu.md`.
+
+### 14.2 Bước 0: NUL (DR6-142)
+
+**Lỗi hiện tại:** bước 0 bỏ ký tự vô hình theo tập K20. Tập này để NUL lại có chủ ý: lệnh lưu từ chối chữ có NUL (`isStorableText`, K25), nên màn hình nói đúng lý do. Output AI không qua chỗ đó. Model viết `\u0000` trong một chuỗi JSON thì `text` có NUL thật: V1 vẫn đạt, và NUL không phải khoảng trắng, nên cụm bị chặn đứng hai bên NUL không khớp (DSR4-C1). Hôm nay lọt:
+
+- V3: "phần" + U+0000 + "trăm", "xác" + U+0000 + "suất", "KH có xác " + U+0000 + "suất đồng ý cao". Bản có dấu cách, hay có BEL (U+0007) thay NUL, bị chặn.
+- V4 "Đề xuất P" + U+0000 + "rudential cho KH"; V5 "KH có mã I" + U+0000 + "NTJ" ở `hypotheses`; V6 "Theo Lu" + U+0000 + "ật Kinh doanh bảo hiểm", "Theo Điều" + U+0000 + "35".
+- Câu trả lời như vậy lưu thành phân tích ACCEPTED (DSR4-C1).
+- Tin nhắn của app (§6a) dùng chung bước 0, nên cũng lọt: tin nhắn `web@1` có NUL trước dòng khung tính là một lần thử; ở lần 2, message thử lại có NUL ở đầu và cuối mỗi dòng thì app lưu dòng REJECTED (như R2-04).
+
+Ký tự điều khiển khác (BEL, ESC…) bị bỏ từ DR6-111 (§12.6); chỉ còn NUL. Eval thật không có NUL: chỉ gặp ở output suy biến.
+
+**Đề xuất — §7 bước 0** bỏ ký tự vô hình theo tập K20 **và NUL**:
+
+> 0. **Chuẩn hóa nền** (…): bỏ ký tự vô hình theo **tập của K20** (…; ký tự điều khiển C0 / C1 không phải khoảng trắng — DR6-111, Owner 21/10/2026) **và NUL** (K20 giữ NUL để lệnh lưu từ chối nó; so khớp thì bỏ — DR6-142, §14.2), gộp mọi khoảng trắng Unicode …
+
+- Code: `cleanText` của `text-match.ts` bỏ NUL trước `normalizeText`. Chỉ ở bản so khớp: K20 (`normalizeText`), V1 và chữ lưu không đổi.
+- Áp cho bản gốc, bản có dấu của V3–V6 và cho dòng dán ChatGPT web (§6a), như bước 0 hiện nay. §6a, spec `phase-5-ai.md` §3.1 mục 3 và §6.4 ghi "bỏ ký tự vô hình theo tập K20 và NUL".
+- `detail` trích chữ đã làm sạch, như với ký tự vô hình khác: "phần" + U+0000 + "trăm" → V3 `có "phầntrăm"` (như BEL hôm nay); "Bảo" + U+0000 + "Việt" → V4 `có "BảoViệt"`.
+- Kết quả đo: 14 chuỗi lọt (gồm các chuỗi trên) bị chặn đúng luật; 4 / 4 ca dán tin nhắn của app có NUL ra `OWN_MESSAGE`; "KH thích" + U+0000 + "đọc sách" vẫn đạt; `text` chỉ có NUL vẫn V1 "không có chữ".
+
+### 14.3 V6 "luật <Tên>": "giới" (DR6-143)
+
+**Lỗi hiện tại:** §12.5 (hướng b2) miễn "giới" trước "luật" ở mọi từ ghép, để "giới luật Phật giáo" đạt; "định" thì chỉ được miễn khi không đứng sau "quy" / "qui". Vì vậy "Luật <Tên>" ngay sau "môi giới", "ranh giới", "biên giới", "thế giới" lọt V6 (CLR4-C2):
+
+- "KH dùng dịch vụ môi giới Luật Kinh doanh bảo hiểm cho phép", "Môi giới Luật Kinh doanh bảo hiểm 2022": môi giới bảo hiểm là nghiệp vụ của app;
+- "Ranh giới Luật Đất đai quy định với thửa đất của KH";
+- "KH buôn bán qua biên giới Luật Hải quan yêu cầu khai báo", "Ở nhiều nước trên thế giới Luật Thừa kế khác nhau".
+
+Trước #766 các câu này bị V6. §12.5, §12.8 chỉ ghi phần "Mất" cho "định" của từ ghép khác. Kho chữ thật không có câu nào như vậy; model thật có viết "ranh giới" (2 chuỗi eval: "ranh giới chấp nhận rủi ro", "ranh giới cá nhân"), chưa lần nào liền trước "Luật <Tên>".
+
+**Đề xuất:** miễn "giới" **trừ khi** chính "giới" đứng sau "môi", "ranh", "biên" hay "thế" (mọi kiểu chữ) + khoảng trắng, như "định" sau "quy" / "qui". Mục "luật" của §8.4 sau khi sửa; PR code chép nguyên chữ dưới (so với hiện nay: "giới" có điều kiện như "định", thêm ví dụ "môi giới Luật Kinh doanh bảo hiểm"):
+
+> "luật" ở **mọi kiểu hoa / thường**, có ranh giới từ trước, không đứng sau từ "pháp", "kỷ", "kỉ", "quy", "qui", "giới" mà trước nó không phải "môi" / "ranh" / "biên" / "thế", hay "định" mà trước nó không phải "quy" / "qui" (mọi kiểu chữ) + khoảng trắng; theo sau là khoảng trắng (có thể không có) + một từ mở đầu bằng chữ hoa (`\p{Lu}`) mà **không** phải "KH", "RE" hay "sư" (mọi kiểu chữ). Chạy trên **bản gốc**. Vd. khớp "Luật Kinh doanh bảo hiểm", "Luật BHXH", "LuẬt Đất đai", "Luật" + U+200B + "BHXH", "quy định Luật Kinh doanh bảo hiểm", "môi giới Luật Kinh doanh bảo hiểm"; không khớp "Luật sư", "LUẬT SƯ", "pháp luật Việt Nam", "pHáp luật Việt Nam", "kỷ luật KH", "quy luật Thị trường", "kỉ luật Thép", "qui luật Thị trường", "định luật Pareto", "giới luật Phật giáo"
+
+- Code: `LAW_NAME` của `blocklists.ts`; "giới" viết như "định" (một lookbehind lồng).
+- Kết quả đo: 10 / 10 câu "Luật <Tên>" sau bốn từ ghép bị V6, kể cả "MÔI GIỚI LUẬT Kinh doanh bảo hiểm" và "Môi giới luật Kinh doanh bảo hiểm". "KH giữ giới luật Phật giáo", "KH giữ GIỚI LUẬT Phật giáo", "Giới luật Phật giáo cấm sát sinh", "định luật Pareto" vẫn đạt; "Theo quy định Luật Kinh doanh bảo hiểm" (C79) vẫn V6.
+- **Mất** (như "định" của §12.5): "Luật <Tên>" sau "giới" của từ ghép khác vẫn lọt, vd. "Lao động nữ giới Luật Lao động có quy định riêng", "Địa giới Luật Đất đai", "Báo giới Luật Báo chí". Bốn chữ là danh sách đóng; thêm chữ = qua G5.
+- **Tác dụng phụ:** "thế" còn là chữ của "vì thế", "như thế". "Vì thế giới luật Phật giáo được KH giữ nghiêm" (không dấu phẩy) nay bị V6 `có "luật P"`; "Vì thế, giới luật …" thì đạt. Câu phải có "giới luật" liền sau "thế" và chữ hoa liền sau "luật"; kho chữ thật không có. Bỏ "thế" khỏi danh sách thì hết tác dụng phụ này, nhưng "thế giới Luật <Tên>" lọt. Đề xuất giữ "thế" như Q2 (a): V6 lọt (AI dẫn tên luật) nặng hơn một lần thử lại.
+
+### 14.4 Ca kiểm mới (thêm vào §8.5)
+
+PR code chép vào bảng §8.5:
+
+| # | Chuỗi trong output | Kết quả |
+|---|---|---|
+| C80 | "phần" + U+0000 + "trăm" · "xác" + U+0000 + "suất" · "KH có xác " + U+0000 + "suất đồng ý cao" · "xác" + U+0007 + "suất" | V3 |
+| C81 | "Đề xuất P" + U+0000 + "rudential cho KH" · "KH có mã I" + U+0000 + "NTJ" ở `hypotheses` · "Theo Lu" + U+0000 + "ật Kinh doanh bảo hiểm" · "Theo Điều" + U+0000 + "35" | V4 · V5 · V6 · V6 |
+| C82 | "KH dùng dịch vụ môi giới Luật Kinh doanh bảo hiểm cho phép" · "Môi giới Luật Kinh doanh bảo hiểm 2022" · "MÔI GIỚI LUẬT Kinh doanh bảo hiểm" · "Ranh giới Luật Đất đai quy định với thửa đất của KH" · "KH buôn bán qua biên giới Luật Hải quan yêu cầu khai báo" · "Ở nhiều nước trên thế giới Luật Thừa kế khác nhau" | V6 |
+| C83 | "Giới luật Phật giáo cấm sát sinh" · "KH thích" + U+0000 + "đọc sách" | đạt |
+
+Ngoài bảng:
+
+- **Tin nhắn ChatGPT web:** tin nhắn `web@1` có NUL trước mỗi dòng khung → `OWN_MESSAGE` ở lần 1. Ở lần 2, message thử lại của phiên có NUL ở đầu và cuối mỗi dòng → `OWN_MESSAGE`, phiên còn mở, không có `row`.
+- **Kho chữ:** 1 085 chuỗi eval thật và mọi chuỗi của `vi.ts` ra như trước.
+
+### 14.5 Không làm trong đợt này
+
+- V1 vẫn đếm NUL như chữ thấy được (K20, §11.5): `text` có NUL mà không có cụm bị chặn vẫn ACCEPTED, `output_json` mang `\u0000`. Hướng thứ hai của DSR4-C1 (V1 từ chối `text` có NUL) đổi `detail` V1 và cả luật nhập backup (cùng schema); Q2 (a) không chọn.
+- "Luật <Tên>" sau "giới" của từ ghép ngoài danh sách bốn chữ (§14.3), như "định" của từ ghép khác (§12.8).
+
+### 14.6 Owner duyệt
+
+- [ ] Version `analysis@5`, `discovery@5`; `extraction@1`, `web@1` giữ; thêm `docs/design/phase-5-prompts.md`, `docs/design/phase-5-ai.md` vào file được phép của PR code (§14.1)
+- [ ] Bước 0 bỏ cả NUL, chỉ ở bản so khớp; V1 và chữ lưu không đổi (§14.2)
+- [ ] "luật <Tên>": "giới" chỉ được miễn khi không đứng sau "môi", "ranh", "biên", "thế"; giữ "thế" dù có tác dụng phụ; chữ mới của mục §8.4 (§14.3)
+- [ ] Ca kiểm C80–C83 và các ca ngoài bảng (§14.4)
