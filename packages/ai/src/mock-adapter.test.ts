@@ -833,6 +833,74 @@ describe('createMockAdapter', () => {
     expect(output.facts).toEqual(facts);
   });
 
+  // DR6-141 (Owner 31/10, Q1 a): only a simple statement about the KH gives a proposal, so the
+  // sentences of CLR4-C1 and CXR4-C1 that the rules above let through give none.
+  it.each([
+    // Said not to be, in words the rules do not list.
+    'KH đâu có 2 con, chỉ có 1 bé.',
+    'KH làm gì có 2 con, toàn nói đùa.',
+    'KH có 2 con đâu, mới 1 bé thôi.',
+    'KH đã kết hôn đâu, vẫn ở một mình.',
+    'Ghi nhầm hôm trước, KH độc thân là sai.',
+    'Thông tin KH độc thân là sai.',
+    'Khẳng định KH có 2 con là sai.',
+    // A time that is over.
+    'Trước đây KH độc thân, năm ngoái đã kết hôn.',
+    'Hồi trẻ KH có 2 con với vợ đầu, nay nuôi cả 4 con.',
+    // Someone with the KH.
+    'Người đi cùng KH đã kết hôn, có 2 con.',
+    'Khách đi cùng KH độc thân.',
+    // Things counted with "con".
+    'KH có 2 con dấu công ty.',
+    'KH giữ 3 con tem cổ.',
+    // A plan or a condition.
+    'KH định có 2 con.',
+    'KH tính sinh 2 con.',
+    'KH đang chuẩn bị kết hôn, đã kết hôn thì báo lại.',
+    'Khi đã kết hôn, KH sẽ mua thêm gói.',
+    'Đến lúc có 2 con thì KH mua gói học vấn.',
+    // Choices.
+    'Tình trạng: độc thân / đã kết hôn (chưa xác nhận).',
+    'Chọn: [x] Độc thân [ ] Đã kết hôn',
+  ])('proposes nothing from %j: not a simple statement about the KH (DR6-141)', async (note) => {
+    expect(await extracted(note)).toEqual([]);
+  });
+
+  // DR6-141: what a simple statement may hold. The KH named as notes name them, the KH saying it, a
+  // field line of the seed ("Hôn nhân: …", every proposal on the notes of the seed and the load
+  // data), when the KH married, the children described after their count.
+  it.each([
+    // NT-AI-17, the note of e2e/customer-ai.spec.ts, that of run.test.ts.
+    ['Khách đã kết hôn, có 2 con nhỏ', [MARRIED, TWO]],
+    ['Hai vợ chồng đã kết hôn, có 2 con đang học cấp 1.', [MARRIED, TWO]],
+    ['Chị nói hai vợ chồng đã kết hôn, có 2 bé.', [MARRIED, { ...TWO, quote: '2 bé' }]],
+    ['Hôn nhân: Đã kết hôn; Số con: 2; Nghề nghiệp: Bác sĩ', [MARRIED]],
+    ['Nơi ở: Quận 1, TP.HCM; Hôn nhân: Độc thân; Số con: 0', [{ ...SINGLE, quote: 'Độc thân' }]],
+    ['KH cho biết lại Hôn nhân: Độc thân', [{ ...SINGLE, quote: 'Độc thân' }]],
+    ['Tình trạng hôn nhân: Đã kết hôn', [MARRIED]],
+    ['KH cho biết đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH đã kết hôn năm 2010, có 2 con trai.', [MARRIED, TWO]],
+    ['KH đã kết hôn được 5 năm nay và có 2 con.', [MARRIED, TWO]],
+    ['KH còn độc thân nên muốn mua gói hưu trí.', [SINGLE]],
+  ])('reads %j as %j: a simple statement about the KH (DR6-141)', async (note, facts) => {
+    expect(await extracted(note)).toEqual(facts);
+  });
+
+  it.each([
+    // A clause that does not open on the KH speaks of the KH only after one that does.
+    'Hôm qua gặp KH, đã kết hôn, có 2 con.',
+    'KH sống ở quận 7. Đã kết hôn, có 2 con.',
+    // "Anh" or "chị" may be the KH, or not: only the KH saying it ("Chị nói …") names the KH.
+    'Anh ấy đã kết hôn, có 2 con.',
+    'Chị gái đã kết hôn, có 2 con.',
+    // A field line of someone else.
+    'Vợ: đã kết hôn, có 2 con.',
+    // Grandchildren, as (a) lists only "con / bé".
+    'KH có 2 cháu.',
+  ])('proposes nothing from %j: not said of the KH (DR6-141)', async (note) => {
+    expect(await extracted(note)).toEqual([]);
+  });
+
   it('extracts nothing from a note without a known pattern', async () => {
     const output = extractionOutputSchema.parse(
       (await complete({ note: 'Khách hẹn gặp lại tuần sau.', fields: [] })).value,

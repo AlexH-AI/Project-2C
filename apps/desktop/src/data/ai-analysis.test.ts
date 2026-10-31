@@ -489,6 +489,43 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
     expect(await done).toEqual({ kind: 'saved', status: 'ACCEPTED' });
     expect(ai.jobs.get(`analysis:${customer.id}`)).toBeUndefined();
   });
+
+  it.each([
+    ['Nạp lại', (app: AppData) => app.reloadDemoData()],
+    [
+      'an import of a backup of the same data, its IDs alike',
+      async (app: AppData) => {
+        const backup = await app.exportBackup();
+        await app.importBackup(await app.readBackup(backup.text));
+      },
+    ],
+  ])(
+    'keeps the error of a run for the profile shown again, but not once the data is replaced by %s (DR6-144)',
+    async (_, replace) => {
+      const held = heldAdapter();
+      const { app, customer, ai } = await withCustomer({
+        reportError: vi.fn(),
+        adapter: held.adapter,
+      });
+      const key = `analysis:${customer.id}`;
+      // As `useAiJob` starts it, the profile left while it runs.
+      const done = ai.jobs.start(
+        key,
+        (signal) => analyseCustomer(app, customer.id, signal),
+        undefined,
+        {
+          keeps: (outcome) => outcome.kind === 'error',
+          generation: () => app.generation(),
+        },
+      );
+      await held.failWith(new AiError('AI_TIMEOUT'));
+      expect(await done).toEqual({ kind: 'error', code: 'AI_TIMEOUT' });
+      expect(ai.jobs.kept(key)).toEqual({ kind: 'error', code: 'AI_TIMEOUT' });
+
+      await replace(app);
+      expect(ai.jobs.kept(key)).toBeUndefined();
+    },
+  );
 });
 
 describe('extractFromNote (spec Phase 5 §8)', () => {

@@ -2,7 +2,8 @@
  * The AI requests the screens started, kept by the app rather than by a screen (review of PR 439):
  * leaving the customer profile while one runs and coming back still shows "Đang phân tích…" with
  * Hủy, or "Đang hủy…" until the request in Rust ends (spec Phase 5 §5.2); one that failed meanwhile
- * still says how (§5.3, T-297). One job per key: an analysis by customer, an extraction by note.
+ * still says how (§5.3, T-297), unless the data was replaced since (DR6-144). One job per key: an
+ * analysis by customer, an extraction by note.
  */
 import type { AiAbortSignal, AiRunner, AiSettings } from '@p2c/ai';
 
@@ -18,6 +19,17 @@ export interface AiJob {
   readonly settings: AiSettings | undefined;
 }
 
+/** What of a job's outcome a screen gone meanwhile must still say once shown again (`kept`). */
+export interface AiJobKeep<T> {
+  /** Whether the outcome is one to say. */
+  readonly keeps: (outcome: T) => boolean;
+  /**
+   * The data's generation (`AppData.generation`), read as the job ends: an outcome kept of data
+   * since replaced (Nạp lại, Nhập backup, even with the same IDs) is no longer said (DR6-144).
+   */
+  readonly generation: () => number;
+}
+
 export interface AiJobs {
   get(key: string): AiJob | undefined;
   /** Called on each change of the jobs; returns the unsubscribe function. */
@@ -25,19 +37,19 @@ export interface AiJobs {
   /**
    * Starts `job` under `key`, run with `settings`; the job gets the signal of Hủy. A key with a job
    * still there, running or cancelled, keeps it: the start gives `AI_BUSY` and `job` never runs.
-   * `keep`: an outcome a screen gone meanwhile must still say once shown again (`kept`).
+   * `keep`: what of its outcome to keep for `kept`.
    */
   start<T>(
     key: string,
     job: (signal: AiAbortSignal) => Promise<T>,
     settings?: AiSettings,
-    keep?: (outcome: T) => boolean,
+    keep?: AiJobKeep<T>,
   ): Promise<T | typeof BUSY>;
   cancel(key: string): void;
   /**
-   * The outcome `keep` kept of the job of `key` that ended last, until a screen has shown it and
-   * drops it, so it is said once; a new start of the key drops it too. A change is told to the
-   * listeners.
+   * The outcome `keep` kept of the job of `key` that ended last, while the data is the one it ended
+   * on, until a screen has shown it and drops it, so it is said once; a new start of the key drops
+   * it too. A change is told to the listeners.
    */
   kept(key: string): unknown;
   drop(key: string): void;
@@ -45,14 +57,25 @@ export interface AiJobs {
 
 /**
  * `reportError` gets a job that rejects (a bug: the app's jobs give their failures as outcomes), once,
- * so a screen reading `done` needs no handler of its own.
+ * so a screen reading `done` needs no handler of its own, and a listener that throws.
  */
 export function createAiJobs(runner: AiRunner, reportError: (error: unknown) => void): AiJobs {
   const jobs = new Map<string, AiJob & { readonly controller: AbortController }>();
-  const kept = new Map<string, unknown>();
+  const kept = new Map<
+    string,
+    { readonly outcome: unknown; readonly generation: number; readonly now: () => number }
+  >();
   const listeners = new Set<() => void>();
   const changed = () => {
-    for (const listener of listeners) listener();
+    // As `AppData`'s and the save queue's (NIT #87, DR6-140): a listener's bug must not make `start`
+    // throw for a job it has started, nor keep the others from hearing of the change.
+    for (const listener of listeners) {
+      try {
+        listener();
+      } catch (error) {
+        reportError(error);
+      }
+    }
   };
   // A job cancelled ends once the request in Rust has, which frees the runner.
   runner.subscribe(() => {
@@ -83,7 +106,9 @@ export function createAiJobs(runner: AiRunner, reportError: (error: unknown) => 
       done.then(
         (outcome) => {
           // A screen shown now drops it at once, once it has shown it (`useAiJob`).
-          if (jobs.get(key) === entry && keep?.(outcome)) kept.set(key, outcome);
+          if (jobs.get(key) === entry && keep?.keeps(outcome)) {
+            kept.set(key, { outcome, generation: keep.generation(), now: keep.generation });
+          }
           end();
         },
         (error: unknown) => {
@@ -103,7 +128,10 @@ export function createAiJobs(runner: AiRunner, reportError: (error: unknown) => 
       job.controller.abort();
       changed();
     },
-    kept: (key) => kept.get(key),
+    kept(key) {
+      const one = kept.get(key);
+      return one && one.now() === one.generation ? one.outcome : undefined;
+    },
     drop(key) {
       if (kept.delete(key)) changed();
     },
