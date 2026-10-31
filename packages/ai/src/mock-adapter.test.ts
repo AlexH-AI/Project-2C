@@ -782,6 +782,10 @@ describe('createMockAdapter', () => {
       '"KH ở quận 1.", spaces, then "Lan đã kết hôn."',
       `KH ở quận 1.${' '.repeat(36_000)}Lan đã kết hôn.`,
     ],
+    // Another count looked for after each count, to the end of its sentence (the review of PR #917):
+    // "bé" is no word of `PEOPLE`, so every count reaches that look.
+    ['"có 2 bé và"', `KH ${'có 2 bé và '.repeat(3273)}`],
+    ['"có 2 bé", then words and no other count', `KH có 2 bé ${'đi học '.repeat(5200)}`],
   ])('reads a one-line note of 36 000 characters full of %s in under 50 ms', async (_, note) => {
     const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
     const times: number[] = [];
@@ -937,14 +941,38 @@ describe('createMockAdapter', () => {
     'KH nên có 2 con.',
     'KH nên độc thân.',
     'KH mà có 2 con, thì đã mua gói.',
+    // After someone, "mà" and "còn" say who they are ("một người mà / còn …"), not the KH.
+    'KH quen một người mà độc thân.',
+    'KH thích người còn độc thân.',
+    'KH quen một người còn độc thân.',
+    'KH đang hẹn hò với một người còn độc thân.',
+    'KH có người yêu mà đã kết hôn.',
+    'KH đang tìm hiểu một người mà đã có 2 con.',
+    'KH lấy người mà đã có 2 con.',
     // Another count of children after the first: neither is how many the KH has.
     'KH có 2 con trai và 1 con gái.',
     'KH có 2 con nhỏ và 1 con lớn.',
     'KH có 2 con gái, 1 con trai.',
+    // Wherever it stands after the first in the sentence, past the children described, in figures
+    // or in words.
+    'KH có 2 con đang đi học và 1 con đã đi làm.',
+    'KH có 2 con gái đang đi học và 1 con trai đã đi làm.',
+    'KH có 2 con đang học, 1 con đã đi làm.',
+    'KH có 2 con đều đã lập gia đình, 1 con đang học.',
+    'KH có 2 con đã lớn, 1 bé mới sinh.',
+    'KH có 2 con, và 1 con riêng.',
+    'KH có 2 con của mình và 1 con nuôi.',
+    'KH có 2 con trai và một con gái.',
+    'KH có 2 bé, thêm một bé nữa.',
     // Someone named in the first clause may be who a clause after it speaks of (Correctness 4).
     'KH giới thiệu anh Nam, đã kết hôn, có 2 con.',
     'KH đi cùng chị Lan, độc thân.',
     'KH gặp Bà Tư, có 2 con.',
+    // A field line opens on the KH only opening its sentence, as the seed writes it: after a
+    // comma, it may be the line of someone named before it.
+    'Người giới thiệu: chị Lan, hôn nhân: độc thân.',
+    'Chị Lan, hôn nhân: độc thân.',
+    'Anh Nam, hôn nhân: đã kết hôn.',
     // Said to be wrong in the sentence (Correctness 5, the family of CXR4-C1).
     'KH độc thân, điều này sai.',
     'KH đã kết hôn, không đúng.',
