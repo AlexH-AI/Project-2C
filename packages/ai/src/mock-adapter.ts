@@ -252,9 +252,9 @@ const OF_SOMEONE_ELSE = new RegExp(
  */
 
 /**
- * Who a note names as the KH, opening a sentence: "KH", "Khách", the KH's couple ("Hai vợ chồng",
- * "Vợ chồng KH", "KH và vợ"), maybe after "Hiện". Not "anh" or "chị" alone, which may be someone
- * else ("Anh ấy", "Chị gái"), but as the KH saying it (`SAYS`).
+ * Who a note names as the KH, opening it: "KH", "Khách", the KH's couple ("Hai vợ chồng", "Vợ
+ * chồng KH", "KH và vợ"), maybe after "Hiện". Not "anh" or "chị" alone, which may be someone else
+ * ("Anh ấy", "Chị gái"), but as the KH saying it (`SAYS`).
  */
 const THE_KH = String.raw`${NOW}?(?:${KH_WORD}(?: và (?:vợ|chồng))?|(?:hai )?vợ chồng(?: kh)?)`;
 
@@ -278,9 +278,9 @@ const HEADING = String.raw`(?:ghi chú|chú ý|lưu ý|chú thích|gặp kh)\s*:
 const BULLET = String.raw`\s*(?:(?:[-*•+]|\d{1,2}\))\s+)?`;
 
 /**
- * How a sentence opens on the KH, maybe after a bullet: the KH or the KH saying it, maybe after a
- * `HEADING` and maybe with ":" ("KH: đã kết hôn"). Sticky, tried at the start of a sentence; after
- * the bullet every part starts with a word, so a run of spaces is read once.
+ * How a note opens on the KH, maybe after a bullet: the KH or the KH saying it, maybe after a
+ * `HEADING` and maybe with ":" ("KH: đã kết hôn"). Sticky, tried at the start of the clause that
+ * opens the note; after the bullet every part starts with a word, so a run of spaces is read once.
  */
 const OPENS = new RegExp(
   String.raw`${BULLET}(?:${HEADING})?(?:${SAYS}(?: ${THE_KH})?|${THE_KH})(?!\p{L})(?:\s*:)?`,
@@ -288,9 +288,10 @@ const OPENS = new RegExp(
 );
 
 /**
- * How a clause after a comma opens on the KH: as `OPENS`, by "KH" only ("KH gặp anh Nam, KH đã
- * kết hôn"). "Chị nói", "khách", "hai vợ chồng" there may be someone named before them ("KH đi cùng
- * chị Lan, chị nói đã kết hôn", "KH là chủ nhà, khách độc thân", the review of PR #917). Sticky too.
+ * How a clause opens on the KH after other words of the note, past a comma or a sentence's end: as
+ * `OPENS`, by "KH" only ("KH gặp anh Nam, KH đã kết hôn"). "Chị nói", "khách", "hai vợ chồng"
+ * there may be someone named before them ("KH đi cùng chị Lan, chị nói đã kết hôn", "KH giới thiệu
+ * khách mới. Khách đã kết hôn.", the review of PR #917). Sticky too.
  */
 const OPENS_AFTER = new RegExp(
   String.raw`${BULLET}(?:${HEADING})?(?:kh ${SAYING}(?: ${KH_NAMED})?|${KH_NAMED})(?!\p{L})(?:\s*:)?`,
@@ -524,10 +525,9 @@ function lastStart(word: RegExp, part: Part): number {
 }
 
 /**
- * Reads the parts of `note` that end after each mark of `ends`, for positions asked in order: `read`
- * runs once on each part, in order, up to the one holding the position. So all the phrases take one
- * pass over the note, however long its parts (DR6-79), and a part with no phrase is read too: it
- * may end what the KH said (`clausesOf`).
+ * Reads the parts of `note` that end after each mark of `ends`: `read` runs once on the part holding
+ * the phrases it is asked of, in order, however many they are; a part with no phrase is not read.
+ * So all the phrases take one pass over the note, however long its parts (DR6-79).
  */
 function readerOf(note: string, ends: RegExp) {
   const starts = [0, ...[...note.matchAll(ends)].map((mark) => mark.index + 1)];
@@ -535,8 +535,10 @@ function readerOf(note: string, ends: RegExp) {
     let index = -1;
     let seen: T | undefined;
     return (at) => {
-      while (index + 1 < starts.length && starts[index + 1]! <= at) {
-        index++;
+      let next = Math.max(index, 0);
+      while (next + 1 < starts.length && starts[next + 1]! <= at) next++;
+      if (next !== index) {
+        index = next;
         const start = starts[index]!;
         seen = read({ text: note.slice(start, starts[index + 1]), start });
       }
@@ -554,12 +556,12 @@ function namingPeople(text: string): string {
 }
 
 /**
- * Where `clause` stops opening on the KH, as a position in the note; never when it does not.
- * Opening its sentence, on a field line (`FIELD_LINE`, tried first: "KH cho biết lại Hôn nhân: …")
- * or as `OPENS`; after a comma, as `OPENS_AFTER`.
+ * Where `clause` stops opening on the KH, as a position in the note; never when it does not: on a
+ * field line when it opens its sentence (`FIELD_LINE`, tried first: "KH cho biết lại Hôn nhân:
+ * …"), then as `OPENS` when no word of the note stands before it, else as `OPENS_AFTER`.
  */
-function opening(clause: Part, first: boolean): number | undefined {
-  for (const opens of first ? [FIELD_LINE, OPENS] : [OPENS_AFTER]) {
+function opening(clause: Part, first: boolean, opensNote: boolean): number | undefined {
+  for (const opens of [...(first ? [FIELD_LINE] : []), opensNote ? OPENS : OPENS_AFTER]) {
     opens.lastIndex = 0;
     const found = opens.exec(clause.text);
     if (found) return clause.start + found[0].length;
@@ -607,10 +609,16 @@ function joinedIn(clause: Part): (at: number) => { start: number; end: number } 
  * độc thân"), and no list of the words that name people is ever full (the reviews of PR #917).
  */
 function clausesOf(note: string) {
-  let last: { endsOnTheKh: boolean } | undefined;
+  let last: { end: number; endsOnTheKh: boolean } | undefined;
+  /** Whether a word of the note stands before `looked`, the start of the clause read last. */
+  let worded = false;
+  let looked = 0;
   return (clause: Part) => {
     const first = clause.start === 0 || '.!?;\n'.includes(note[clause.start - 1]!);
-    const carried = !first && last?.endsOnTheKh === true;
+    // Only the clause right before carries the KH on: one with no phrase, not read, ends on none.
+    const carried = !first && last?.end === clause.start && last.endsOnTheKh;
+    worded ||= /\p{L}/u.test(note.slice(looked, clause.start));
+    looked = clause.start;
     JOINS_ON.lastIndex = 0;
     const joinsOn = carried && JOINS_ON.exec(clause.text);
     const read = {
@@ -623,7 +631,7 @@ function clausesOf(note: string) {
       /** Where it ends, after the mark ending it. */
       end: clause.start + clause.text.length,
       /** Where it speaks of the KH from; never when it does not. */
-      kh: opening(clause, first) ?? (carried ? clause.start : undefined),
+      kh: opening(clause, first, !worded) ?? (carried ? clause.start : undefined),
       joined: joinedIn(clause),
       /**
        * Where the last phrase about the KH in it ends, with what it lets follow it; in a clause the

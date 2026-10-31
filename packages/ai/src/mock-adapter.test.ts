@@ -780,10 +780,13 @@ describe('createMockAdapter', () => {
     // "bé" is no word of `PEOPLE`, so every count reaches that look.
     ['"có 2 bé và"', `KH ${'có 2 bé và '.repeat(3273)}`],
     ['"có 2 bé", then words and no other count', `KH có 2 bé ${'đi học '.repeat(5200)}`],
-    // Every clause read, each carrying the KH on or not, a phrase in it or not.
+    // Clauses carrying the KH on or not, a phrase in them or not; marks with no word between them,
+    // each a sentence or a clause of its own.
     ['"đã kết hôn, " after one "KH"', `KH ${'đã kết hôn, '.repeat(3000)}`],
     ['"đi làm, ", then "độc thân"', `KH ${'đi làm, '.repeat(4500)}độc thân`],
     ['"KH độc thân,", spaces, then "và có 2 bé"', `KH độc thân,${' '.repeat(36_000)}và có 2 bé`],
+    ['".", then "KH độc thân"', `${'.'.repeat(36_000)}KH độc thân`],
+    ['",", then "KH độc thân"', `${','.repeat(36_000)}KH độc thân`],
   ])('reads a one-line note of 36 000 characters full of %s in under 50 ms', async (_, note) => {
     const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
     const times: number[] = [];
@@ -897,9 +900,11 @@ describe('createMockAdapter', () => {
     ['KH hiện tại độc thân.', [SINGLE]],
     ['KH cũng đã kết hôn.', [MARRIED]],
     ['KH có 2 con, 1 trai 1 gái.', [TWO]],
-    // Someone named, then a clause opening on the KH again; a word that starts another clause on the
-    // KH right after a phrase about the KH.
+    // Someone named, then a clause or a sentence opening on the KH again; a word that starts another
+    // clause on the KH right after a phrase about the KH.
     ['KH gặp anh Nam, KH đã kết hôn.', [MARRIED]],
+    ['KH giới thiệu anh Nam. KH cho biết đã kết hôn.', [MARRIED]],
+    ['Gặp anh Nam ở quận 1.\nHôn nhân: Độc thân', [{ ...SINGLE, quote: 'Độc thân' }]],
     ['KH độc thân nhưng có 2 con.', [SINGLE, TWO]],
     ['KH đã kết hôn, và có 2 con.', [MARRIED, TWO]],
     // Another value said of someone else, or said not to be, is none said of the KH.
@@ -1001,6 +1006,11 @@ describe('createMockAdapter', () => {
     'KH giới thiệu anh Nam, hai vợ chồng đã kết hôn 5 năm.',
     'KH là chủ nhà, khách độc thân.',
     'KH giới thiệu khách mới, khách đã kết hôn.',
+    // Nor after a sentence's end: they name the KH only opening the note, before anything else.
+    'KH giới thiệu khách mới. Khách đã kết hôn.',
+    'KH đi cùng chị Lan. Chị nói đã kết hôn.',
+    'KH giới thiệu anh Nam. Hai vợ chồng đã kết hôn 5 năm.',
+    'KH giới thiệu anh Nam. Anh cho biết đã kết hôn.',
     // In a clause, a word that starts another carries the KH on only right after a phrase about the
     // KH (Owner 31/10): after other words, it may be said of whoever they name.
     'KH giới thiệu anh nam nhưng đã kết hôn.',
