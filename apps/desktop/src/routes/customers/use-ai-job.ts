@@ -1,6 +1,11 @@
 import type { AiAbortSignal } from '@p2c/ai';
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import type { AiCall, AnalysisOutcome, ExtractionOutcome } from '../../data/ai-analysis';
+import {
+  keptFailures,
+  type AiCall,
+  type AnalysisOutcome,
+  type ExtractionOutcome,
+} from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import type { AiJobPhase } from './ai-panel-view';
 
@@ -10,20 +15,17 @@ interface AiJobOutcomes {
   readonly extraction: ExtractionOutcome;
 }
 
-/** A run that failed, nothing saved: said (§5.3) also on a screen shown again after it ended. */
-const failed = (outcome: AnalysisOutcome | ExtractionOutcome) =>
-  outcome.kind === 'error' || outcome.kind === 'failed' || outcome.kind === 'invalid';
-
 /**
  * A run the app keeps (`AiJobs`) under `<kind>:<id>`: its phase, also on a screen shown again while
  * it runs (review of PR 439), and how it ended while the screen stays; a failure the screen was
- * gone for is said once it is shown again (T-297). Hủy's ending is never kept: once the request
- * after it ends, the screen is back as it was.
+ * gone for is said once it is shown again (T-297), unless the data was replaced since (DR6-144).
+ * Hủy's ending is never kept: once the request after it ends, the screen is back as it was.
  */
 export function useAiJob<K extends keyof AiJobOutcomes>(kind: K, id: string) {
   type Outcome = AiJobOutcomes[K];
   const key = `${kind}:${id}`;
-  const { ai } = useAppData();
+  const app = useAppData();
+  const { ai } = app;
   const { jobs } = ai;
   const job = useSyncExternalStore(jobs.subscribe, () => jobs.get(key));
   // Only `start` below puts a job under this key, so what it kept is this kind's outcome.
@@ -55,7 +57,7 @@ export function useAiJob<K extends keyof AiJobOutcomes>(kind: K, id: string) {
       setEnded(null);
       const call = ai.call();
       // `AiJobs` handles how `done` ends, a rejection too.
-      void jobs.start(key, (signal) => run(signal, call), call.settings, failed);
+      void jobs.start(key, (signal) => run(signal, call), call.settings, keptFailures(app));
     },
     cancel: () => jobs.cancel(key),
     /** Back to nothing shown: Đóng, or another run of the screen starting. */
