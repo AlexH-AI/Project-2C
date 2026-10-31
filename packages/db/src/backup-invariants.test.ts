@@ -977,6 +977,15 @@ describe('importBackup — rules across tables', () => {
       (b, ids) => (analysis(b, ids.rejected).raw_output = `a\0${'b'.repeat(30_000)}`),
     ],
     ['VALUE: a model name with a NUL', (b, ids) => (analysis(b, ids.rejected).model = 'glm\0-5.3')],
+    // DR6-137: refused while loading, before rule 12, which reads them as the command does.
+    [
+      'VALUE: a model name with a lone surrogate half',
+      (b, ids) => (analysis(b, ids.rejected).model = `${'x'.repeat(99)}\uD800`),
+    ],
+    [
+      'VALUE: a model name starting with U+FEFF',
+      (b, ids) => (analysis(b, ids.rejected).model = '\u{FEFF}alpha'),
+    ],
     // Only the value check holds the token counts: their CHECK takes any number ≥ 0 (DR6-59).
     [
       'VALUE: a fraction of a prompt token',

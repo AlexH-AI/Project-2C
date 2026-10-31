@@ -3,6 +3,19 @@ import { byName, LATIN } from './name-order';
 
 const sorted = (names: readonly string[]) => [...names].sort(byName);
 
+/** Fisher–Yates on a Lehmer generator (MINSTD): the same shuffles, one after another, each run. */
+function shuffler(seed = 1) {
+  return <T>(items: Iterable<T>): T[] => {
+    const list = [...items];
+    for (let i = list.length - 1; i > 0; i--) {
+      seed = (seed * 48_271) % 2_147_483_647;
+      const j = seed % (i + 1);
+      [list[i], list[j]] = [list[j]!, list[i]!];
+    }
+    return list;
+  };
+}
+
 describe('byName', () => {
   it('orders Vietnamese letters as the alphabet does: Đ after D, before E; not after Z', () => {
     expect(sorted(['Zeta', 'đức', 'Đông', 'An', 'Dương', 'Em'])).toEqual([
@@ -71,20 +84,20 @@ describe('byName', () => {
       for (const name of names) all.add(name.replace(/ +/g, ' ').trim());
     }
     all.delete('');
-    // Fisher–Yates on a Lehmer generator (MINSTD), the same run for the same seed.
-    let seed = 1;
-    const shuffled = () => {
-      const list = [...all];
-      for (let i = list.length - 1; i > 0; i--) {
-        seed = (seed * 48_271) % 2_147_483_647;
-        const j = seed % (i + 1);
-        [list[i], list[j]] = [list[j]!, list[i]!];
-      }
-      return list;
-    };
+    const shuffled = shuffler();
     expect(all.size).toBe(2022);
-    const first = sorted(shuffled());
-    for (let round = 1; round < 20; round++) expect(sorted(shuffled())).toEqual(first);
+    const first = sorted(shuffled(all));
+    for (let round = 1; round < 20; round++) expect(sorted(shuffled(all))).toEqual(first);
+  });
+
+  // DR6-136: the key of each name sorted is kept, for 20 000 names; past them the keys start again.
+  it('sorts more names than it keeps the keys of in the same order', () => {
+    const arabic = (n: number) =>
+      String(n).replace(/\d/g, (digit) => String.fromCodePoint(0x660 + Number(digit)));
+    // Each number by value, written in ASCII digits before Arabic-Indic ones: 20 002 names.
+    const names = Array.from({ length: 10_001 }, (_, n) => [`KH ${n}`, `KH ${arabic(n)}`]).flat();
+
+    expect(sorted(shuffler()(names))).toEqual(names);
   });
 
   it('skips no digit to read: the Latin characters a name may skip with have none but ASCII', () => {

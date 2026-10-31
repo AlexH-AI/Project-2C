@@ -5,7 +5,7 @@ const OTHER_DIGIT = /(?![0-9])\p{Nd}/gu;
 
 /**
  * ASCII, Latin letters and combining marks: a name of these alone (every Vietnamese one) has no
- * other digit, so it skips the replace, which made a sort of 20 000 names six times as long.
+ * other digit, so it is its own key, with no replace, and the keys kept hold no copy of it.
  */
 export const LATIN = /^[\0-\u{24F}\u{1E00}-\u{1EFF}\p{M}]*$/u;
 
@@ -37,8 +37,25 @@ function asciiDigit(digit: string): string {
  * "Team ２"), go by code unit (DR6-112).
  */
 export function byName(a: string, b: string): number {
-  return collator.compare(asciiDigits(a), asciiDigits(b)) || (a < b ? -1 : a > b ? 1 : 0);
+  return collator.compare(keyOf(a), keyOf(b)) || (a < b ? -1 : a > b ? 1 : 0);
 }
 
-const asciiDigits = (name: string) =>
-  LATIN.test(name) ? name : name.replace(OTHER_DIGIT, asciiDigit);
+/**
+ * The names sorted, each with its key: the name as the collator reads it, each digit ASCII. A sort
+ * reads a name about log₂ n times, and working its key out each time made sorting the 10 255
+ * appointments of the load data by customer seven times as long (DR6-136). The screens sort a few
+ * thousand names at a time; past `MAX_KEYS` the keys start again, so those of data no longer open
+ * do not stay.
+ */
+const keys = new Map<string, string>();
+const MAX_KEYS = 20_000;
+
+function keyOf(name: string): string {
+  let key = keys.get(name);
+  if (key === undefined) {
+    if (keys.size >= MAX_KEYS) keys.clear();
+    key = LATIN.test(name) ? name : name.replace(OTHER_DIGIT, asciiDigit);
+    keys.set(name, key);
+  }
+  return key;
+}

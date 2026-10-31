@@ -1023,6 +1023,24 @@ describe('the stage on the meeting day', () => {
     expect(stage()).toBe('N3');
   });
 
+  // DR6-135: the command reads the meetings from the move's day on, that day included (#805).
+  it('H·CL-F3: keeps the move of a meeting while a meeting of the same day kept the stage (D7)', async () => {
+    const { db, schedule, stage } = await withCustomer();
+    const moved = schedule(5);
+    recordMeetingOutcome(db, moved.id, MET_N2);
+    const kept = schedule(5);
+    recordMeetingOutcome(db, kept.id, MET_N2);
+
+    const blocked = { code: 'STAGE_KEPT_BY_MEETING', params: { date: '05/01/2026' } };
+    expect(errorOf(() => softDeleteAppointment(db, moved.id))).toMatchObject(blocked);
+    const change = { ...MET_N2, stageAfter: 'N1' } as const;
+    expect(errorOf(() => editMeetingOutcome(db, moved.id, change, {}))).toMatchObject(blocked);
+    expect(
+      errorOf(() => recordMeetingOutcome(db, moved.id, { status: 'CANCELLED' })),
+    ).toMatchObject(blocked);
+    expect(stage()).toBe('N2');
+  });
+
   it('H·CL-F3: a meeting kept that day in a stage the customer is still in does not lock', async () => {
     const { db, customer, schedule, stage } = await withCustomer();
     changeStageManually(db, customer.id, { to: 'N2', date: d(5, 1) });
