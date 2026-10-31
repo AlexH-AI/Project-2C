@@ -18,8 +18,8 @@ export interface PersistQueue {
   failed(): boolean;
   /**
    * Waits for the work tracked, then writes everything still unsaved, retrying the newest snapshot
-   * after a failed write. Resolves once it is on disk (at once when nothing is unsaved); rejects if
-   * the write fails.
+   * after a failed write. Resolves once it is on disk and no work tracked or write is left, work
+   * tracked after the call too (at once when nothing is unsaved); rejects if the write fails.
    */
   flush(): Promise<void>;
   /** The save state now, the same object until something in it changes. */
@@ -132,7 +132,9 @@ export function createPersistQueue(
       // A write already running (and anything queued behind it) decides the outcome; only an
       // idle queue holding a failed snapshot writes it again.
       if (!running && lost) persist(lost);
-      await idle();
+      // Work tracked while a write runs is waited for too, and what it persists: a replace
+      // confirmed after the window's X, before the save it waits for ends (DR6-139, S2-6).
+      while (running || tracked.size > 0) await (running ?? Promise.allSettled(tracked));
       if (outcome.failed) throw new Error('SAVE_FAILED');
     },
     status: () => status,

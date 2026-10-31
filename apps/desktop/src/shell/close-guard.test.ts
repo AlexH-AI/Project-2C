@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createPersistQueue } from '../data/persist-queue';
-import { closeAfterSaving, type CloseChoice } from './close-guard';
+import { askWhileFailed, closeAfterSaving, type CloseChoice } from './close-guard';
 
 const bytes = (text: string) => new TextEncoder().encode(text);
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -114,5 +114,63 @@ describe('closeAfterSaving', () => {
     await second;
     expect(disk.onDisk).toEqual([]);
     expect(win.events).toEqual(['ask', 'ask', 'close']);
+  });
+
+  it('takes the question away and closes once another save succeeds while it asks; one that fails keeps it (DR6-147)', async () => {
+    const disk = fakeDisk();
+    const saves = createPersistQueue(disk.write);
+    const events: string[] = [];
+    const port = {
+      ask: () => askWhileFailed(saves, (answer) => events.push(answer ? 'ask' : 'gone')),
+      close: () => {
+        events.push('close');
+        return Promise.resolve();
+      },
+    };
+
+    saves.persist(bytes('v1'));
+    const closing = closeAfterSaving(saves, port);
+    disk.next().fail();
+    await tick();
+    expect(events).toEqual(['ask']);
+
+    // Other saves while it asks, as an AI answer saved: one that fails leaves the question...
+    saves.persist(bytes('v2'));
+    disk.next().fail();
+    await tick();
+    expect(events).toEqual(['ask']);
+    // ...one that succeeds leaves nothing unsaved: answered "Thử lại", which closes the window.
+    saves.persist(bytes('v3'));
+    disk.next().finish();
+    await closing;
+    expect(events).toEqual(['ask', 'gone', 'close']);
+    expect(disk.onDisk).toEqual(['v3']);
+  });
+
+  it('answers the question the user chose, taking it away, and no save answers it after', async () => {
+    const disk = fakeDisk();
+    const saves = createPersistQueue(disk.write);
+    saves.persist(bytes('v1'));
+    disk.next().fail();
+    await saves.idle();
+    const shown: (((choice: CloseChoice) => void) | null)[] = [];
+
+    const asked = askWhileFailed(saves, (answer) => shown.push(answer));
+    shown[0]!('discard');
+    expect(await asked).toBe('discard');
+    saves.persist(bytes('v2'));
+    disk.next().finish();
+    await saves.idle();
+
+    expect(shown).toHaveLength(2);
+    expect(shown[1]).toBeNull();
+  });
+
+  it('never shows the question once a save succeeded before it is asked', async () => {
+    const saves = createPersistQueue(fakeDisk().write);
+    const shown: unknown[] = [];
+
+    expect(await askWhileFailed(saves, (answer) => shown.push(answer))).toBe('retry');
+    expect(shown).toEqual([null]);
   });
 });

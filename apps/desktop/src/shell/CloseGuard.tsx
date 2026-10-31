@@ -3,7 +3,7 @@ import { Button, Dialog } from '@p2c/ui';
 import { useAppData, useSaveStatus } from '../data/AppDataContext';
 import { saveFailure } from '../data/tauri-storage';
 import { t } from '../i18n';
-import { closeAfterSaving, type CloseChoice } from './close-guard';
+import { askWhileFailed, closeAfterSaving, type CloseChoice } from './close-guard';
 import { SAVE_FAILED } from './SaveWarning';
 
 /** The exe window as far as closing it and its title go; Tauri's `Window` fits it. */
@@ -19,7 +19,7 @@ export interface AppWindow {
 /**
  * Exe only (T-057): closing the window first saves what is still waiting, a replace of the data
  * included (`flush`, review of PR 125), while the sidebar says "Đang lưu…"; and asks before
- * dropping changes the last save could not write.
+ * dropping changes the last save could not write, until a save succeeds (`askWhileFailed`).
  */
 export function CloseGuard({ appWindow }: { appWindow: AppWindow }) {
   const { saves } = useAppData();
@@ -39,7 +39,7 @@ export function CloseGuard({ appWindow }: { appWindow: AppWindow }) {
         closing = true;
         try {
           await closeAfterSaving(saves, {
-            ask: () => new Promise((resolve) => setAnswer(() => resolve)),
+            ask: () => askWhileFailed(saves, (choose) => setAnswer(() => choose)),
             close: () => appWindow.destroy(),
           });
         } finally {
@@ -58,11 +58,7 @@ export function CloseGuard({ appWindow }: { appWindow: AppWindow }) {
   }, [appWindow, saves]);
 
   if (!answer) return null;
-  const choose = (choice: CloseChoice) => {
-    setAnswer(null);
-    answer(choice);
-  };
-  return <CloseDialog error={error} onChoose={choose} />;
+  return <CloseDialog error={error} onChoose={answer} />;
 }
 
 /**
