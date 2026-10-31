@@ -33,7 +33,7 @@ import {
   type DbErrorCode,
 } from '@p2c/db';
 import type { CalendarDate, KycGateState } from '@p2c/domain';
-import { createAiJobs, type AiJobs } from './ai-jobs';
+import { createAiJobs, type AiJobKeep, type AiJobs } from './ai-jobs';
 import type { OpenCodeClient } from './ai-tauri';
 
 /** What one AI request runs with, read at the click. */
@@ -239,6 +239,20 @@ export type ExtractionOutcome =
   | { readonly kind: 'invalid' }
   /** `discarded`: the data was replaced while it ran; the note shows nothing, not even an error. */
   | Extract<AnalysisOutcome, { kind: 'error' | 'cancelled' | 'discarded' | 'failed' }>;
+
+/**
+ * What `AiJobs` keeps of a run for its screen shown again (`useAiJob`): a failure, nothing saved
+ * (§5.3, T-297), of the data as it is when the run ends, so none once it is replaced (DR6-144).
+ */
+export function keptFailures(
+  app: Pick<AnalysisApp, 'generation'>,
+): AiJobKeep<AnalysisOutcome | ExtractionOutcome> {
+  return {
+    keeps: (outcome) =>
+      outcome.kind === 'error' || outcome.kind === 'failed' || outcome.kind === 'invalid',
+    generation: () => app.generation(),
+  };
+}
 
 /**
  * One click on AI trích xuất: the note as the RE wrote it goes to the AI (§6.1), nothing is saved.

@@ -1,6 +1,11 @@
 import type { AiAbortSignal } from '@p2c/ai';
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import type { AiCall, AnalysisOutcome, ExtractionOutcome } from '../../data/ai-analysis';
+import {
+  keptFailures,
+  type AiCall,
+  type AnalysisOutcome,
+  type ExtractionOutcome,
+} from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
 import type { AiJobPhase } from './ai-panel-view';
 
@@ -9,10 +14,6 @@ interface AiJobOutcomes {
   readonly analysis: AnalysisOutcome;
   readonly extraction: ExtractionOutcome;
 }
-
-/** A run that failed, nothing saved: said (§5.3) also on a screen shown again after it ended. */
-const failed = (outcome: AnalysisOutcome | ExtractionOutcome) =>
-  outcome.kind === 'error' || outcome.kind === 'failed' || outcome.kind === 'invalid';
 
 /**
  * A run the app keeps (`AiJobs`) under `<kind>:<id>`: its phase, also on a screen shown again while
@@ -56,10 +57,7 @@ export function useAiJob<K extends keyof AiJobOutcomes>(kind: K, id: string) {
       setEnded(null);
       const call = ai.call();
       // `AiJobs` handles how `done` ends, a rejection too.
-      void jobs.start(key, (signal) => run(signal, call), call.settings, {
-        keeps: failed,
-        generation: () => app.generation(),
-      });
+      void jobs.start(key, (signal) => run(signal, call), call.settings, keptFailures(app));
     },
     cancel: () => jobs.cancel(key),
     /** Back to nothing shown: Đóng, or another run of the screen starting. */

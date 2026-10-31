@@ -49,7 +49,8 @@ export interface AiJobs {
   /**
    * The outcome `keep` kept of the job of `key` that ended last, while the data is the one it ended
    * on, until a screen has shown it and drops it, so it is said once; a new start of the key drops
-   * it too. A change is told to the listeners.
+   * it too. A change is told to the listeners, but for the data replaced: Nạp lại and Nhập backup run
+   * on Cài đặt, and a profile shown after reads `kept` anew.
    */
   kept(key: string): unknown;
   drop(key: string): void;
@@ -63,7 +64,7 @@ export function createAiJobs(runner: AiRunner, reportError: (error: unknown) => 
   const jobs = new Map<string, AiJob & { readonly controller: AbortController }>();
   const kept = new Map<
     string,
-    { readonly outcome: unknown; readonly generation: number; readonly now: () => number }
+    { readonly outcome: unknown; readonly generation: number; readonly current: () => number }
   >();
   const listeners = new Set<() => void>();
   const changed = () => {
@@ -107,7 +108,7 @@ export function createAiJobs(runner: AiRunner, reportError: (error: unknown) => 
         (outcome) => {
           // A screen shown now drops it at once, once it has shown it (`useAiJob`).
           if (jobs.get(key) === entry && keep?.keeps(outcome)) {
-            kept.set(key, { outcome, generation: keep.generation(), now: keep.generation });
+            kept.set(key, { outcome, generation: keep.generation(), current: keep.generation });
           }
           end();
         },
@@ -130,7 +131,7 @@ export function createAiJobs(runner: AiRunner, reportError: (error: unknown) => 
     },
     kept(key) {
       const one = kept.get(key);
-      return one && one.now() === one.generation ? one.outcome : undefined;
+      return one && one.current() === one.generation ? one.outcome : undefined;
     },
     drop(key) {
       if (kept.delete(key)) changed();

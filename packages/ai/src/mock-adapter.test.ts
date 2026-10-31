@@ -486,7 +486,7 @@ describe('createMockAdapter', () => {
     ['KH kết hôn với chồng năm 2015, có 2 con.', [TWO]],
     // Words that name no one, in any case; someone else saying it is no simple statement (DR6-141).
     ['Vợ chồng KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
-    ['Bác sĩ: KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['Bác sĩ khám xong, KH đã kết hôn.', [MARRIED]],
     ['Bác sĩ nói KH đã kết hôn, có 2 con.', []],
   ])('reads %j as %j (the notes of PR #753)', async (note, facts) => {
     expect(await extracted(note)).toEqual(facts);
@@ -771,6 +771,17 @@ describe('createMockAdapter', () => {
     ['"chưa" and spaces', `KH đã kết hôn chưa${' '.repeat(36_000)}, có 2 con`],
     // The look back for the start of a clause, from "KH" over a long bullet (the review of PR #809).
     ['"- ", then "KH là người độc thân"', `${'- '.repeat(18_000)}KH là người độc thân`],
+    // A run of spaces opening a sentence or a clause that does not open on the KH: a heading of any
+    // words before ":" was read again from each place of it (the review of PR #917).
+    ['spaces, then "Lan độc thân"', `${' '.repeat(36_000)}Lan độc thân`],
+    [
+      '"KH có 2 con,", spaces, then "Lan độc thân"',
+      `KH có 2 con,${' '.repeat(36_000)}Lan độc thân`,
+    ],
+    [
+      '"KH ở quận 1.", spaces, then "Lan đã kết hôn."',
+      `KH ở quận 1.${' '.repeat(36_000)}Lan đã kết hôn.`,
+    ],
   ])('reads a one-line note of 36 000 characters full of %s in under 50 ms', async (_, note) => {
     const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
     const times: number[] = [];
@@ -877,6 +888,13 @@ describe('createMockAdapter', () => {
     ['KH đã kết hôn năm 2010, có 2 con trai.', [MARRIED, TWO]],
     ['KH đã kết hôn được 5 năm nay và có 2 con.', [MARRIED, TWO]],
     ['KH còn độc thân nên muốn mua gói hưu trí.', [SINGLE]],
+    // A heading of the closed list, the KH with ":", more words that add nothing, the children told
+    // apart after their count (the review of PR #917).
+    ['Lưu ý: KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH: đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH hiện tại độc thân.', [SINGLE]],
+    ['KH cũng đã kết hôn.', [MARRIED]],
+    ['KH có 2 con, 1 trai 1 gái.', [TWO]],
   ])('reads %j as %j: a simple statement about the KH (DR6-141)', async (note, facts) => {
     expect(await extracted(note)).toEqual(facts);
   });
@@ -899,6 +917,33 @@ describe('createMockAdapter', () => {
   ])('proposes nothing from %j: not said of the KH (DR6-141)', async (note) => {
     expect(await extracted(note)).toEqual([]);
   });
+
+  // The review of PR #917.
+  it.each([
+    // A heading outside the closed list: a correction, a question, hearsay, someone else.
+    'Sai: KH độc thân.',
+    'Ghi nhầm: KH có 2 con.',
+    'Đính chính: KH có 2 con.',
+    'Cần hỏi: KH đã kết hôn, có 2 con.',
+    'Câu hỏi: KH đã kết hôn, có 2 con.',
+    'Kiểm tra: KH đã kết hôn, có 2 con.',
+    'Tin đồn: KH đã kết hôn.',
+    'Bác sĩ cho biết: KH đã kết hôn, có 2 con.',
+    'Bác sĩ: KH đã kết hôn, có 2 con.',
+    // "nên" (should), "mà" (if) right after the KH end no clause before the phrase.
+    'KH nên có 2 con.',
+    'KH nên độc thân.',
+    'KH mà có 2 con, thì đã mua gói.',
+    // Another count of children after the first: neither is how many the KH has.
+    'KH có 2 con trai và 1 con gái.',
+    'KH có 2 con nhỏ và 1 con lớn.',
+    'KH có 2 con gái, 1 con trai.',
+  ])(
+    'proposes nothing from %j: not a simple statement either (the review of PR #917)',
+    async (note) => {
+      expect(await extracted(note)).toEqual([]);
+    },
+  );
 
   it('extracts nothing from a note without a known pattern', async () => {
     const output = extractionOutputSchema.parse(

@@ -31,6 +31,7 @@ import {
   CHATGPT_URL,
   createAppAi,
   extractFromNote,
+  keptFailures,
   saveChatGptAnswer,
   startChatGptWeb,
   type AiSettingsStore,
@@ -513,10 +514,7 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
         key,
         (signal) => analyseCustomer(app, customer.id, signal),
         undefined,
-        {
-          keeps: (outcome) => outcome.kind === 'error',
-          generation: () => app.generation(),
-        },
+        keptFailures(app),
       );
       await held.failWith(new AiError('AI_TIMEOUT'));
       expect(await done).toEqual({ kind: 'error', code: 'AI_TIMEOUT' });
@@ -526,6 +524,21 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
       expect(ai.jobs.kept(key)).toBeUndefined();
     },
   );
+
+  it('keeps for the screen shown again only a failure, nothing saved (T-297)', () => {
+    const { keeps } = keptFailures({ generation: () => 0 });
+    const outcomes = [
+      { kind: 'error', code: 'AI_TIMEOUT' },
+      { kind: 'failed' },
+      { kind: 'invalid' },
+      { kind: 'saved', status: 'REJECTED' },
+      { kind: 'blocked', state: 'KYC_INSUFFICIENT' },
+      { kind: 'cancelled' },
+      { kind: 'discarded' },
+      { kind: 'facts', facts: [] },
+    ] as const;
+    expect(outcomes.map(keeps)).toEqual([true, true, true, false, false, false, false, false]);
+  });
 });
 
 describe('extractFromNote (spec Phase 5 §8)', () => {
