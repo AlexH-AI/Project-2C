@@ -31,6 +31,7 @@ import {
   CHATGPT_URL,
   createAppAi,
   extractFromNote,
+  keptFailures,
   saveChatGptAnswer,
   startChatGptWeb,
   type AiSettingsStore,
@@ -488,6 +489,55 @@ describe('analyseCustomer (spec Phase 5 §3, §9.1)', () => {
     await held.answerWithMock();
     expect(await done).toEqual({ kind: 'saved', status: 'ACCEPTED' });
     expect(ai.jobs.get(`analysis:${customer.id}`)).toBeUndefined();
+  });
+
+  it.each([
+    ['Nạp lại', (app: AppData) => app.reloadDemoData()],
+    [
+      'an import of a backup of the same data, its IDs alike',
+      async (app: AppData) => {
+        const backup = await app.exportBackup();
+        await app.importBackup(await app.readBackup(backup.text));
+      },
+    ],
+  ])(
+    'keeps the error of a run for the profile shown again, but not once the data is replaced by %s (DR6-144)',
+    async (_, replace) => {
+      const held = heldAdapter();
+      const { app, customer, ai } = await withCustomer({
+        reportError: vi.fn(),
+        adapter: held.adapter,
+      });
+      const key = `analysis:${customer.id}`;
+      // As `useAiJob` starts it, the profile left while it runs.
+      const done = ai.jobs.start(
+        key,
+        (signal) => analyseCustomer(app, customer.id, signal),
+        undefined,
+        keptFailures(app),
+      );
+      await held.failWith(new AiError('AI_TIMEOUT'));
+      expect(await done).toEqual({ kind: 'error', code: 'AI_TIMEOUT' });
+      expect(ai.jobs.kept(key)).toEqual({ kind: 'error', code: 'AI_TIMEOUT' });
+
+      await replace(app);
+      expect(ai.jobs.kept(key)).toBeUndefined();
+    },
+  );
+
+  it('keeps for the screen shown again only a failure, nothing saved (T-297)', () => {
+    const { keeps } = keptFailures({ generation: () => 0 });
+    const outcomes = [
+      { kind: 'error', code: 'AI_TIMEOUT' },
+      { kind: 'failed' },
+      { kind: 'invalid' },
+      { kind: 'saved', status: 'REJECTED' },
+      { kind: 'blocked', state: 'KYC_INSUFFICIENT' },
+      { kind: 'cancelled' },
+      { kind: 'discarded' },
+      { kind: 'facts', facts: [] },
+    ] as const;
+    expect(outcomes.map(keeps)).toEqual([true, true, true, false, false, false, false, false]);
   });
 });
 
