@@ -46,9 +46,14 @@ function cardTitleOf(editing: Editing | null): string {
 
 const ROLE = 'text-xs font-bold tracking-wider text-fg-3';
 
-/** The person's full name, no avatar (Owner, 01/10/2026). */
-function PersonName({ person }: { person: Person }) {
-  return <span className="whitespace-nowrap">{person.name}</span>;
+/**
+ * The person's full name, no avatar (Owner, 01/10/2026): on one line in the member table, which
+ * scrolls sideways; `breaks` in a narrow card, even with no space (DR6-148).
+ */
+function PersonName({ person, breaks = false }: { person: Person; breaks?: boolean }) {
+  return (
+    <span className={breaks ? 'min-w-0 wrap-anywhere' : 'whitespace-nowrap'}>{person.name}</span>
+  );
 }
 
 function EditLink({ person, onEdit }: { person: Person; onEdit: (person: Person) => void }) {
@@ -157,18 +162,19 @@ export function TeamScreen() {
             {view.teams.length === 0 && <p className="m-0 text-sm text-fg-3">{t('team.none')}</p>}
             {view.teams.map((entry) => {
               const on = entry === selected;
+              // The name breaks, even with no space, and leaves the count whole (DR6-148).
               return (
                 <button
                   key={entry.team.id}
                   type="button"
                   aria-pressed={on}
                   onClick={() => setSelectedId(entry.team.id)}
-                  className={`flex w-full cursor-pointer items-center gap-2 rounded-sm px-2.5 py-2 text-left text-sm ${FOCUS} ${
+                  className={`flex w-full cursor-pointer items-center gap-2 rounded-sm px-2.5 py-2 text-left text-sm wrap-anywhere ${FOCUS} ${
                     on ? 'bg-accent-soft font-semibold text-fg' : 'text-fg-2 hover:bg-surface-2'
                   }`}
                 >
                   {entry.team.name}
-                  <span className="ml-auto font-normal text-fg-3 tabular-nums">
+                  <span className="ml-auto shrink-0 font-normal text-fg-3 tabular-nums">
                     {t(entry.lead ? 'team.count' : 'team.countNoLead', { re: entry.re })}
                   </span>
                 </button>
@@ -254,7 +260,7 @@ function SharedSupport({
         <ul className="m-0 flex list-none flex-col gap-2 p-0 text-sm">
           {people.map((person) => (
             <li key={person.id} className="flex items-center gap-2">
-              <PersonName person={person} />
+              <PersonName person={person} breaks />
               <span className={`ml-auto ${ROLE}`}>{person.role}</span>
               <EditLink person={person} onEdit={onEdit} />
             </li>
@@ -291,7 +297,8 @@ function Members({
           holds, and a person moved to the team shown keeps their row and the focus on its Sửa
           (review of PR 744). */}
       <div key={entry.team.id} className="mb-2 flex items-center gap-2">
-        <h2 id={MEMBERS_TITLE} tabIndex={-1} className={HEADING}>
+        {/* A team name with no space breaks rather than push the buttons out (DR6-148). */}
+        <h2 id={MEMBERS_TITLE} tabIndex={-1} className={`${HEADING} min-w-0 wrap-anywhere`}>
           {t('team.heading', { name: entry.team.name })}
         </h2>
         <span className="text-fg-3">{t('sep.dot')}</span>
@@ -318,8 +325,10 @@ function Members({
         <Button onClick={onDelete}>{t('team.delete')}</Button>
       </div>
       {entry.reps.length === 0 && <p className="m-0 text-sm text-fg-3">{t('team.empty')}</p>}
-      {/* Hidden, not gone, for a team without RE: the sort holds for the team shown after. */}
-      <div className="overflow-x-auto" hidden={entry.reps.length === 0}>
+      {/* Hidden, not gone, for a team without RE: the sort holds for the team shown after.
+          Positioned, so the hidden heading of the actions column scrolls with the table instead of
+          widening the page when the table is wider than the card (DR6-148). */}
+      <div className="relative overflow-x-auto" hidden={entry.reps.length === 0}>
         <DataTable
           label={t('team.members', { name: entry.team.name })}
           columns={columns}

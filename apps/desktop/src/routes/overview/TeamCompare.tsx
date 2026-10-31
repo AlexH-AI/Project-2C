@@ -13,11 +13,14 @@ const HEADERS = [
   t('overview.kpi.closeRate'),
 ];
 
-const CELL = 'border-b border-border px-2.5 py-2 whitespace-nowrap';
+const CELL = 'border-b border-border px-2.5 py-2';
+/** A figure stays on one line; a name breaks, even one with no space (DR6-148). */
+const FIGURE = `${CELL} whitespace-nowrap text-right`;
+const NAME = `${CELL} text-left wrap-anywhere`;
 
 function Figures({ row }: { row: CompareRow }) {
   return row.cells.map((cell, index) => (
-    <td key={HEADERS[index]} className={`${CELL} text-right`}>
+    <td key={HEADERS[index]} className={FIGURE}>
       {cell}
     </td>
   ));
@@ -72,7 +75,7 @@ export function TeamCompare({ view, mtd }: { view: TeamCompareView; mtd: boolean
                   onClick={() => toggle(team.key)}
                   className={`cursor-pointer ${expanded ? 'bg-surface-2' : 'hover:bg-surface-2'}`}
                 >
-                  <th scope="row" className={`${CELL} text-left font-semibold`}>
+                  <th scope="row" className={`${NAME} font-semibold`}>
                     <button
                       type="button"
                       aria-expanded={expanded}
@@ -80,11 +83,11 @@ export function TeamCompare({ view, mtd }: { view: TeamCompareView; mtd: boolean
                         event.stopPropagation();
                         toggle(team.key);
                       }}
-                      className={`inline-flex cursor-pointer items-center rounded-sm font-semibold ${FOCUS}`}
+                      className={`inline-flex cursor-pointer items-center rounded-sm text-left font-semibold ${FOCUS}`}
                     >
                       <span
                         aria-hidden="true"
-                        className={`inline-block w-3.5 ${expanded ? 'text-accent' : 'text-fg-3'}`}
+                        className={`inline-block w-3.5 shrink-0 text-center ${expanded ? 'text-accent' : 'text-fg-3'}`}
                       >
                         {t(expanded ? 'overview.compare.expanded' : 'overview.compare.collapsed')}
                       </span>
@@ -96,7 +99,7 @@ export function TeamCompare({ view, mtd }: { view: TeamCompareView; mtd: boolean
                 {expanded &&
                   team.res.map((re) => (
                     <tr key={re.key} className="bg-surface-0 text-fg-2">
-                      <th scope="row" className={`${CELL} pl-8.5 text-left font-normal`}>
+                      <th scope="row" className={`${NAME} pl-8.5 font-normal`}>
                         {re.name}
                       </th>
                       <Figures row={re} />
@@ -106,14 +109,11 @@ export function TeamCompare({ view, mtd }: { view: TeamCompareView; mtd: boolean
             );
           })}
           <tr className="font-semibold">
-            <th scope="row" className={`${CELL} border-t border-t-border-strong text-left`}>
+            <th scope="row" className={`${NAME} border-t border-t-border-strong`}>
               {view.total.name}
             </th>
             {view.total.cells.map((cell, index) => (
-              <td
-                key={HEADERS[index]}
-                className={`${CELL} border-t border-t-border-strong text-right`}
-              >
+              <td key={HEADERS[index]} className={`${FIGURE} border-t border-t-border-strong`}>
                 {cell}
               </td>
             ))}
