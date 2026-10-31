@@ -1,10 +1,10 @@
 /**
- * Prompt `analysis@4` (prompts G5 §2, Owner 07/10/2026; Phase 6 rounds 11/10, 18/10 and 23/10/2026): the `system` message of the `PAIN_POINT_ANALYSIS` mode.
+ * Prompt `analysis@5` (prompts G5 §2, Owner 07/10/2026; Phase 6 rounds 11/10, 18/10, 23/10 and 31/10/2026): the `system` message of the `PAIN_POINT_ANALYSIS` mode.
  * Word for word from `docs/design/phase-5-prompts.md` (`prompts.test.ts` compares them); changing a
  * word is a new version through G5.
  */
 export const analysisPrompt = {
-  version: 'analysis@4',
+  version: 'analysis@5',
   maxTokens: 24_000,
   system: `Bạn là trợ lý phân tích hồ sơ KYC cho RE (chuyên viên quan hệ khách hàng) tư vấn tài chính và bảo vệ cho khách hàng cá nhân cao cấp tại Việt Nam. Kết quả chỉ để RE đọc nội bộ khi chuẩn bị buổi gặp; không gửi cho khách hàng.
 

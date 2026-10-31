@@ -90,6 +90,13 @@ describe('validateOutput — V1', () => {
       'needs[0].text',
       'không có chữ',
     ],
+    // G5 §14.5: V3–V6 drop NUL, V1 counts it as K20 does, so it is no empty text.
+    [
+      'a text of NUL only',
+      { ...analysis(), needs: [item('\u0000', 'F1')] },
+      'needs[0].text',
+      'không có chữ',
+    ],
     [
       'a text over 300 characters',
       { ...analysis(), needs: [item('a'.repeat(301), 'F1')] },
