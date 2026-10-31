@@ -1008,6 +1008,7 @@ Ngoài bảng:
 
 - V1 vẫn đếm NUL như chữ thấy được (K20, §11.5): `text` có NUL mà không có cụm bị chặn vẫn ACCEPTED, `output_json` mang `\u0000`. Hướng thứ hai của DSR4-C1 (V1 từ chối `text` có NUL) đổi `detail` V1 và cả luật nhập backup (cùng schema); Q2 (a) không chọn.
 - "Luật <Tên>" sau "giới" của từ ghép ngoài danh sách bốn chữ (§14.3), như "định" của từ ghép khác (§12.8).
+- (Review #913; Owner 31/10/2026 chấp nhận như §11.8.) **Mất:** NUL đặt làm dấu cách **ngay cạnh** một cụm bị chặn. Bước 0 bỏ NUL thì cụm dính vào chữ bên cạnh, mất ranh giới từ ở đầu hay cuối, nên không bị chặn: "KH có" + U+0000 + "xác suất cao" (V3), "Đề xuất" + U+0000 + "Prudential cho KH" (V4), "Theo" + U+0000 + "Điều 35" (V6). Trước §14.2 các câu này bị chặn, vì NUL còn là ranh giới từ. Khi NUL đứng **giữa** cụm thì bị chặn (C80, C81). Model không đối kháng (§10.10). **Được:** NUL trong một chữ không còn tạo mục ngắn của V4: "KH thích đồng hồ Ato" + U+0000 + "mic" trước bị V4 `có "mic"`, nay đạt.
 
 ### 14.6 Owner duyệt
 

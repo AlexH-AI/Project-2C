@@ -409,6 +409,18 @@ describe('validateOutput — V3 to V6', () => {
     expect(codesOf(block, nfdNul)).toEqual([code]);
   });
 
+  // G5 §14.5 (review #913, Owner 31/10/2026: accepted as §11.8): a NUL standing for the space next
+  // to a phrase glues it to the word beside it, which then hides its word boundary; a NUL inside a
+  // word no longer makes a short V4 entry of its end.
+  it.each([
+    ['hypotheses', `KH có${NUL}xác suất cao`],
+    ['nextBestActions', `Đề xuất${NUL}Prudential cho KH`],
+    ['themes', `Theo${NUL}Điều 35`],
+    ['hypotheses', `KH thích đồng hồ Ato${NUL}mic`],
+  ] as const)('reads a NUL as no space at all: %s "%s" passes', (block, text) => {
+    expect(codesOf(block, text)).toEqual([]);
+  });
+
   // G5 §7 item 6: only V5 is lifted for "Thông tin tham khảo" (DR6-61).
   it.each([
     ['V4', 'KH có thể tuổi Tý, đã có hợp đồng Prudential'],
