@@ -312,8 +312,6 @@ describe('createMockAdapter', () => {
     ['KH đã ly hôn, KH đã kết hôn lại, có 2 con.', [MARRIED, TWO]],
     // "người" only right before the phrase.
     ['KH là người miền Nam, KH độc thân.', [SINGLE]],
-    // "của" no more than a name that is not a kin word.
-    ['KH có 2 con của anh ấy.', [TWO]],
     // "khi" and "thì" both around the phrase, and in that order.
     ['KH đã kết hôn, vợ thì làm giáo viên.', [MARRIED]],
     ['KH đã kết hôn khi 25 tuổi, nay thì đã có 2 con.', [MARRIED, TWO]],
@@ -900,6 +898,9 @@ describe('createMockAdapter', () => {
     ['KH hiện tại độc thân.', [SINGLE]],
     ['KH cũng đã kết hôn.', [MARRIED]],
     ['KH có 2 con, 1 trai 1 gái.', [TWO]],
+    // Where the children are in life, from the closed list after their count.
+    ['KH có 2 con đều đã lớn.', [TWO]],
+    ['KH có 2 con gái đang học đại học.', [TWO]],
     // Someone named, then a clause or a sentence opening on the KH again; a word that starts another
     // clause on the KH right after a phrase about the KH.
     ['KH gặp anh Nam, KH đã kết hôn.', [MARRIED]],
@@ -910,6 +911,9 @@ describe('createMockAdapter', () => {
     // Another value said of someone else, or said not to be, is none said of the KH.
     ['KH đã kết hôn, em trai KH độc thân.', [MARRIED]],
     ['KH đã kết hôn, không còn độc thân.', [MARRIED]],
+    ['KH độc thân. Em gái đã kết hôn.', [SINGLE]],
+    // "mất" without "đã" ends nothing.
+    ['KH đã kết hôn, mất việc năm ngoái.', [MARRIED]],
     // "khách" after the KH may be someone else: "người" before a phrase is then of anyone.
     ['KH đã kết hôn, khách là người độc thân.', [MARRIED]],
   ])('reads %j as %j: a simple statement about the KH (DR6-141)', async (note, facts) => {
@@ -974,6 +978,17 @@ describe('createMockAdapter', () => {
     'KH có 2 con của mình và 1 con nuôi.',
     'KH có 2 con trai và một con gái.',
     'KH có 2 bé, thêm một bé nữa.',
+    // After the children described, only words of the closed list: whoever else's children they
+    // are, a baby not born, children looked after for someone; "anh ấy" may be the KH's partner or
+    // someone else (kept by DR6-121 before, Owner 31/10).
+    'KH có 2 con của anh ấy.',
+    'KH ở với 2 con nhỏ của em gái.',
+    'KH sống cùng 2 con trai của anh họ.',
+    'KH có 2 con gái của bạn thân.',
+    'KH có 2 con nhỏ của Lan.',
+    'KH có 2 con của Lan gửi nuôi.',
+    'KH có 2 bé đang trong bụng.',
+    'KH có 2 con đang nuôi giúp người quen.',
     // A clause that does not open on the KH speaks of the KH only after one ending on a phrase
     // about the KH: after any other words, it may speak of whoever they name, however named.
     'KH giới thiệu anh Nam, đã kết hôn, có 2 con.',
@@ -1032,16 +1047,33 @@ describe('createMockAdapter', () => {
     'Người giới thiệu: chị Lan, hôn nhân: độc thân.',
     'Chị Lan, hôn nhân: độc thân.',
     'Anh Nam, hôn nhân: đã kết hôn.',
-    // Said to be wrong in the sentence (Correctness 5, the family of CXR4-C1).
+    // Said to be wrong in the note, in the sentence or a later one (Correctness 5, the family of
+    // CXR4-C1; Owner 31/10).
     'KH độc thân, điều này sai.',
     'KH đã kết hôn, không đúng.',
     'KH có 2 con, ghi nhầm.',
     'KH đã kết hôn, thông tin chưa chính xác.',
     'KH độc thân, điều này không còn đúng.',
-    // Two values of one trường said of the KH in a sentence, as a note that corrects itself.
+    'KH độc thân. Điều này sai.',
+    'KH có 2 con. Sai rồi, chỉ 1 con.',
+    // Two values of one trường in the note, none of someone else: a note that corrects itself, in
+    // the sentence or a later one (Owner 31/10).
     'KH độc thân, thực ra đã kết hôn.',
     'KH độc thân, nay đã kết hôn.',
     'KH độc thân, KH đã kết hôn.',
+    'KH có 2 con. Thực ra chỉ 1 con.',
+    'KH độc thân. Nay KH đã kết hôn.',
+    'KH độc thân. Hiện KH đã kết hôn.',
+    // What ends a marriage later in the sentence, as "ly hôn" does (DR6-121): "ly dị", "ly thân", a
+    // death, "góa"; and a death after the children (Owner 31/10).
+    'KH đã kết hôn năm 2010 nhưng đã ly dị.',
+    'KH đã kết hôn, đã ly dị năm 2020.',
+    'KH đã kết hôn nhưng đang ly thân.',
+    'KH đã kết hôn nhưng vợ đã mất.',
+    'KH đã kết hôn mà vợ đã mất.',
+    'KH đã kết hôn nhưng chồng qua đời năm 2020.',
+    'KH đã kết hôn, nay góa vợ.',
+    'KH có 2 con nhưng đều đã mất.',
   ])(
     'proposes nothing from %j: not a simple statement either (the review of PR #917)',
     async (note) => {
