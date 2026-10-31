@@ -176,6 +176,31 @@ describe('createPersistQueue', () => {
     expect(queue.status().saving).toBe(false);
   });
 
+  it('flush() waits for work tracked once it began, while a write ran, and what it persists (DR6-139)', async () => {
+    const disk = fakeDisk();
+    const queue = createPersistQueue(disk.write);
+    queue.persist(bytes('v1'));
+    let closed = false;
+    const flushed = queue.flush().then(() => (closed = true));
+    // The window's X while a change saves, then Nạp lại confirmed before that write ends.
+    const replace = deferred();
+    queue.track(replace.promise);
+
+    disk.next().finish();
+    await tick();
+    expect(closed).toBe(false);
+    queue.persist(bytes('new'));
+    replace.resolve();
+    await tick();
+    expect(closed).toBe(false);
+    disk.next().finish();
+    await flushed;
+
+    expect(disk.started).toEqual(['v1', 'new']);
+    expect(disk.onDisk).toBe('new');
+    expect(queue.status().saving).toBe(false);
+  });
+
   it('stops counting tracked work that fails; flush() then writes a snapshot that failed again', async () => {
     const disk = fakeDisk();
     const queue = createPersistQueue(disk.write);

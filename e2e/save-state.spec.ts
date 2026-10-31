@@ -1,5 +1,14 @@
 import { expect, test, type Page } from './fixtures';
-import { asExe, lowestContrast } from './support';
+import {
+  addKycNote,
+  asExe,
+  createKycCustomer,
+  discoveryFacts,
+  discoveryOutput,
+  lowestContrast,
+  panelOf,
+  useOpenCode,
+} from './support';
 
 // The save state at the foot of the sidebar (mockup settings-data 10d), "Thử lại" on the save
 // warning, and closing the exe while it saves (T-294). The page's clock starts at 09:30 on the
@@ -110,6 +119,112 @@ test('"Thử lại" on the save warning saves at once; Nạp lại, refused befo
 
   await expect(await reloadDemoData(page)).toHaveCount(0);
   await expect(demo.getByRole('status')).toContainText('Đã nạp lại dữ liệu giả lập');
+});
+
+/** A change whose save fails, then "Thử lại" clicked, its save held while the file can be written. */
+async function retryHeld(page: Page, team: string) {
+  await page.evaluate(() => (window.exe.failSaves = true));
+  await addTeam(page, team);
+  await page.evaluate(() => {
+    window.exe.failSaves = false;
+    window.exe.holdSaves();
+  });
+  await warning(page).getByRole('button', { name: 'Thử lại' }).click();
+}
+
+test('"Thử lại" leaves the focus where the user moved it while the save ran, and gives the heading one that fell to the page (DR6-146)', async ({
+  page,
+}) => {
+  await asExe(page);
+  await page.goto('/#/team');
+
+  await retryHeld(page, 'Bình Minh 2');
+  // On to the screen's first button while it saves.
+  await page.keyboard.press('Tab');
+  const moved = page.getByRole('button', { name: '+ Nhân sự' });
+  await expect(moved).toBeFocused();
+  await page.evaluate(() => window.exe.releaseSaves());
+  await expect(warning(page)).toHaveCount(0);
+  await expect(saveState(page)).toHaveText(SAVED);
+  await expect(moved).toBeFocused();
+
+  await retryHeld(page, 'Bình Minh 3');
+  // A click on an empty part of the page while it saves: nothing has the focus.
+  await page.getByRole('main').click({ position: { x: 2, y: 2 } });
+  expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
+  await page.evaluate(() => window.exe.releaseSaves());
+  await expect(warning(page)).toHaveCount(0);
+  await expect(page.getByRole('heading', { level: 1, name: 'Team & nhân sự' })).toBeFocused();
+});
+
+test('another save that succeeds while "Thử lại" has the focus takes it to the heading, not the page (DR6-147)', async ({
+  page,
+}) => {
+  await asExe(page);
+  await page.goto('/#/team');
+  await page.evaluate(() => (window.exe.failSaves = true));
+  await addTeam(page, 'Bình Minh 2');
+  // Another change, its save still running when the file can be written again, as an AI answer's.
+  await page.evaluate(() => window.exe.holdSaves());
+  await addTeam(page, 'Bình Minh 3');
+  const retry = warning(page).getByRole('button', { name: 'Thử lại' });
+  await retry.focus();
+  await expect(retry).toBeFocused();
+
+  await page.evaluate(() => {
+    window.exe.failSaves = false;
+    window.exe.releaseSaves();
+  });
+  await expect(warning(page)).toHaveCount(0);
+  await expect(saveState(page)).toHaveText(SAVED);
+  await expect(page.getByRole('heading', { level: 1, name: 'Team & nhân sự' })).toBeFocused();
+});
+
+test('the close question goes, and the window closes, once another save succeeds while it asks (DR6-147)', async ({
+  page,
+}) => {
+  await asExe(page);
+  const name = 'Tú Đóng App';
+  await createKycCustomer(page, name);
+  await addKycNote(page, name, discoveryFacts);
+  await useOpenCode(page);
+  // An analysis by OpenCode that passes, its answer held.
+  await page.evaluate((output) => {
+    window.exe.aiContent = output;
+    window.exe.holdAi();
+  }, discoveryOutput());
+  await panelOf(page).getByRole('button', { name: 'Phân tích', exact: true }).click();
+  await expect(panelOf(page).getByRole('status')).toContainText('Đang phân tích…');
+
+  // Meanwhile a change the file refuses, then the window's X.
+  await page.evaluate(() => (window.exe.failSaves = 'READ_ONLY'));
+  await page.getByRole('link', { name: 'Team & nhân sự' }).click();
+  await addTeam(page, 'Bình Minh 2');
+  await page.evaluate(() => window.exe.requestClose());
+  const ask = page.getByRole('dialog', { name: 'Chưa lưu được thay đổi' });
+  await expect(ask).toContainText('đang ở chế độ chỉ đọc');
+  // Each text it says from now on, however briefly.
+  await ask.evaluate((question) => {
+    const said: string[] = [];
+    Object.assign(window, { said });
+    new MutationObserver(() => said.push(question.textContent ?? '')).observe(question, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+    });
+  });
+
+  // The file can be written again and the analysis ends, saved with the change: nothing is left
+  // unsaved, so the question goes instead of naming a program holding the file, and the window
+  // closes.
+  await page.evaluate(() => {
+    window.exe.failSaves = false;
+    window.exe.releaseAi();
+  });
+  await expect.poll(async () => (await events(page)).slice(-2)).toEqual(['save', 'destroy']);
+  await expect(ask).toHaveCount(0);
+  const said = await page.evaluate(() => (window as unknown as { said: string[] }).said);
+  expect(said.join('\n')).not.toContain('chương trình khác');
 });
 
 test('closing the exe while a save runs waits for it, the sidebar saying "Đang lưu…" (review of PR 125)', async ({

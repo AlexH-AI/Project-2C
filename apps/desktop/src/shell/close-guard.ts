@@ -34,3 +34,28 @@ export async function closeAfterSaving(
   }
   await port.close();
 }
+
+/**
+ * The question of `ClosePort.ask`: `show` puts it on screen with its answer, and takes it away
+ * (`null`) once answered. A save that succeeds meanwhile (an AI answer saved) wrote every change
+ * before it, so it answers "retry": the window closes once the rest is saved, as the user wanted,
+ * and the question never names the cause of a failure gone (DR6-147).
+ */
+export function askWhileFailed(
+  saves: Pick<PersistQueue, 'failed' | 'subscribe'>,
+  show: (answer: ((choice: CloseChoice) => void) | null) => void,
+): Promise<CloseChoice> {
+  return new Promise((resolve) => {
+    let stop = () => {};
+    const answer = (choice: CloseChoice) => {
+      stop();
+      show(null);
+      resolve(choice);
+    };
+    stop = saves.subscribe(() => {
+      if (!saves.failed()) answer('retry');
+    });
+    if (saves.failed()) show(answer);
+    else answer('retry');
+  });
+}

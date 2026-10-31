@@ -87,7 +87,8 @@ export interface AppData {
   db(): Database;
   /**
    * Called whenever the data changes (`run`, `reloadDemoData`, `importBackup`, `purgeTrash`);
-   * returns the unsubscribe function.
+   * returns the unsubscribe function. A listener that throws is reported as a bug, and the others
+   * are still called.
    */
   subscribe(listener: () => void): () => void;
   /** Grows with every change; screens re-read the database when it does. */
@@ -373,7 +374,15 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   const changed = () => {
     revision++;
     tables = undefined;
-    for (const listener of listeners) listener();
+    // As the save queue's (NIT #87): a listener's bug must not make `run` throw for a command it
+    // wrote, nor keep the others from hearing of the change (DR6-140).
+    for (const listener of listeners) {
+      try {
+        listener();
+      } catch (error) {
+        console.error(error);
+      }
+    }
   };
 
   // Settings → Data replaces everything (reload, import), Thùng rác purges (TR-11): save what is

@@ -103,6 +103,17 @@ function holdBackup(storage: StoragePort) {
   return { started: started.promise, release: () => gate.resolve() };
 }
 
+/** Holds the storage's saves until the test releases them, as a slow disk would. */
+function holdSaves(storage: StoragePort) {
+  const save = storage.save;
+  const gate = deferred<void>();
+  storage.save = async (bytes) => {
+    await gate.promise;
+    return save(bytes);
+  };
+  return { release: () => gate.resolve() };
+}
+
 /**
  * The schema version of a saved file, read without migrating it: with no migration known, a file
  * of any version above 0 is refused as too new, and the refusal names its version.
@@ -403,6 +414,26 @@ describe('openAppData', () => {
     );
     expect(listener).not.toHaveBeenCalled();
     expect(app.revision()).toBe(before);
+  });
+
+  it('run() of a command still returns when a subscriber throws: written, reported, the others told (DR6-140)', async () => {
+    const report = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const app = await openAppData({ today: () => TODAY, seed: fakeSeed });
+    const bug = new Error('listener bug');
+    app.subscribe(() => {
+      throw bug;
+    });
+    const other = vi.fn();
+    app.subscribe(other);
+
+    const team = app.run((db) => createTeam(db, { name: 'Sao Mai' }));
+
+    expect(team.name).toBe('Sao Mai');
+    expect(teamNames(app.db())).toEqual(['Sao Mai', 'Seed 27/09/2026']);
+    expect(report).toHaveBeenCalledTimes(1);
+    expect(report).toHaveBeenCalledWith(bug);
+    expect(other).toHaveBeenCalledTimes(1);
+    report.mockRestore();
   });
 
   it('measures the seeding time for the browser check of #64', async () => {
@@ -966,6 +997,21 @@ describe('replacing the data (S-2)', () => {
     files.push(lastFile());
 
     expect(await Promise.all(files)).toEqual([NEW, NEW, NEW, NEW]);
+  });
+
+  it('closing the app waits for a replace called while the close waits for a save, leaving the new data whole (DR6-139)', async () => {
+    const { app, storage, saves } = await exe();
+    await app.saves.idle();
+    const save = holdSaves(storage);
+    app.run((db) => createTeam(db, { name: 'Hừng Đông' }));
+
+    // The window's X while that change saves, then Nạp lại confirmed before the save ends.
+    const closed = app.saves.flush().then(() => onDisk(saves.at(-1)));
+    const reloading = app.reloadDemoData();
+    save.release();
+    await reloading;
+
+    expect(await closed).toEqual(NEW);
   });
 });
 
