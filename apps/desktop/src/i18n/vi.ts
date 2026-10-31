@@ -373,8 +373,11 @@ export const vi = {
   'trash.purged.kept': 'Giữ lại {count} bản ghi còn được dùng.',
   // The restore dialog, which always asks first (TR-8; mockup 11b, 11c), and what follows (11e).
   'trash.restore': 'Khôi phục…',
-  // `record`: the first line of "Bản ghi", a policy's with its status (`restoreLabel`).
+  // `record`: the first line of "Bản ghi" with its badge, a person's with role and team
+  // (`restoreLabel`).
   'trash.restoreLabel.customer': 'Khôi phục KH {record}',
+  // A customer whose name and stage another one of the trash has, as mockup 9b names them.
+  'trash.restoreLabel.coded': '{name} ({code})',
   'trash.restoreLabel.person': 'Khôi phục nhân sự {record}',
   'trash.restoreLabel.team': 'Khôi phục team {record}',
   'trash.restoreLabel.appointment': 'Khôi phục lịch hẹn {record}',

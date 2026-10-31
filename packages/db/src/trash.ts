@@ -78,6 +78,8 @@ export type TrashRow =
   | (TrashBase & {
       readonly kind: 'customer';
       readonly name: string;
+      /** The customer's code, which tells apart two of one name (DR6-151). */
+      readonly code: string;
       readonly stage: CustomerStage;
     })
   | (TrashBase & {
@@ -129,6 +131,7 @@ export function listTrash(db: Database): TrashRow[] {
       entry(row, () => checkRestoreCustomer(db, row), {
         kind: 'customer',
         name: row.name,
+        code: row.code,
         stage: row.stage,
         owner: teamId === null ? { re } : { re, team: ref.team(teamId) },
         effect: customerEffect(db, row.id),

@@ -19,6 +19,7 @@ import {
   TRASH_MORE,
   blockedReason,
   canPurge,
+  codedCustomers,
   deletedAtText,
   filterTrash,
   keptReason,
@@ -84,6 +85,7 @@ function OwnerCell({ row }: { row: TrashRow }) {
  */
 const trashColumns = (
   onRestore: (row: TrashRow) => void,
+  coded: ReadonlySet<string>,
 ): ReadonlyArray<DataTableColumn<TrashRow>> => [
   {
     id: 'kind',
@@ -130,7 +132,7 @@ const trashColumns = (
     cell: (row) => (
       <Button
         disabled={row.blocked !== undefined}
-        aria-label={restoreLabel(row)}
+        aria-label={restoreLabel(row, coded)}
         aria-describedby={row.blocked && reasonId(row)}
         onClick={() => onRestore(row)}
       >
@@ -294,7 +296,9 @@ export function TrashSection() {
   const [purging, setPurging] = useState<PurgeView | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const done = useRef<HTMLDivElement>(null);
-  const columns = useMemo(() => trashColumns(setRestoring), []);
+  // Of every row, whatever the filter (DR6-151).
+  const coded = useMemo(() => codedCustomers(rows), [rows]);
+  const columns = useMemo(() => trashColumns(setRestoring, coded), [coded]);
   const counts = useMemo(() => trashCounts(rows), [rows]);
   const shown = useMemo(() => filterTrash(rows, filter, query), [rows, filter, query]);
   const reminder = purgeReminder(rows.length);

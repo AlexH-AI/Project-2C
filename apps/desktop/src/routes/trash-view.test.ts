@@ -27,6 +27,7 @@ import {
   TRASH_MORE,
   blockedReason,
   canPurge,
+  codedCustomers,
   deletedAtText,
   filterTrash,
   keptReason,
@@ -59,6 +60,7 @@ const minhAnh: TrashRow = {
   id: 'c1',
   deletedAt: at(10, 16, 42),
   name: 'Trịnh Minh Anh',
+  code: 'K-7QX2',
   stage: 'N3',
   owner: { re: ref('Đỗ Khánh Linh'), team: ref('Sao Mai') },
   effect: {
@@ -319,27 +321,53 @@ describe('ownerParts (spec Phase 6 §4.2 "Thuộc")', () => {
 });
 
 describe('restoreLabel (DR6-43)', () => {
+  /** The name of the button of `row` in a trash of `rows`. */
+  const label = (row: TrashRow, rows: readonly TrashRow[] = ROWS) =>
+    restoreLabel(row, codedCustomers(rows));
+
   it('names the customer with its stage, the person or the team the button restores', () => {
-    expect(restoreLabel(minhAnh)).toBe('Khôi phục KH Trịnh Minh Anh · N3');
-    expect(restoreLabel(mai)).toBe('Khôi phục nhân sự Vương Thị Mai');
-    expect(restoreLabel(binhMinh)).toBe('Khôi phục team Bình Minh');
+    expect(label(minhAnh)).toBe('Khôi phục KH Trịnh Minh Anh · N3');
+    expect(label(mai)).toBe('Khôi phục nhân sự Vương Thị Mai · RE · Bình Minh');
+    expect(label(binhMinh)).toBe('Khôi phục team Bình Minh');
   });
 
   // Owner 25/10/2026 (review of PR 833): names of customers may repeat, as their badges tell apart.
   it('tells apart two customers of the same name by their stage', () => {
-    const other = { ...minhAnh, id: 'c2', stage: 'ON_HOLD' } as TrashRow;
-    expect(restoreLabel(other)).toBe('Khôi phục KH Trịnh Minh Anh · Tạm hoãn');
-    expect(restoreLabel(other)).not.toBe(restoreLabel(minhAnh));
+    const other = { ...minhAnh, id: 'c2', code: 'K-3MD8', stage: 'ON_HOLD' } as TrashRow;
+    const rows = [...ROWS, other];
+    expect(label(other, rows)).toBe('Khôi phục KH Trịnh Minh Anh · Tạm hoãn');
+    expect(label(minhAnh, rows)).toBe('Khôi phục KH Trịnh Minh Anh · N3');
+  });
+
+  // Q3 (a), Owner 31/10/2026 (DR6-151): two customers of one name and one stage in the trash take
+  // their code, as mockup 9b names two of one name ("<tên> (<mã>)"); a third name stays bare.
+  it('tells apart two customers of the same name and stage by their code (DR6-151)', () => {
+    const twin = { ...minhAnh, id: 'c2', code: 'K-3MD8' } as TrashRow;
+    const rows = [...ROWS, twin];
+    expect(label(minhAnh, rows)).toBe('Khôi phục KH Trịnh Minh Anh (K-7QX2) · N3');
+    expect(label(twin, rows)).toBe('Khôi phục KH Trịnh Minh Anh (K-3MD8) · N3');
+    const lan = { ...minhAnh, id: 'c3', code: 'K-9TB1', name: 'Hoàng Ngọc Lan' } as TrashRow;
+    expect(label(lan, [...rows, lan])).toBe('Khôi phục KH Hoàng Ngọc Lan · N3');
+  });
+
+  // DR6-151: the role is the second line of the cell, the team is "Thuộc" (Q3 (a)).
+  it('names a person with their role and team, which tell apart two people of a name', () => {
+    const namesake = { ...bao, id: 'r3', name: 'Vương Thị Mai' } as TrashRow;
+    expect(label(namesake)).toBe('Khôi phục nhân sự Vương Thị Mai · TL · Sao Mai');
+    const moved = { ...mai, id: 'r4', owner: { team: ref('Sao Mai') } } as TrashRow;
+    expect(label(moved)).toBe('Khôi phục nhân sự Vương Thị Mai · RE · Sao Mai');
+    // An IS or a BDM has no team.
+    expect(label({ ...mai, id: 'r5', role: 'IS', owner: {} } as TrashRow)).toBe(
+      'Khôi phục nhân sự Vương Thị Mai · IS',
+    );
   });
 
   it('names an appointment or a policy by its day, its status and its customer', () => {
-    expect(restoreLabel(met)).toBe(
-      'Khôi phục lịch hẹn 02/10/2026 09:30 · Đã gặp của KH Phạm Gia Bảo',
-    );
-    expect(restoreLabel({ ...planned, time: null })).toBe(
+    expect(label(met)).toBe('Khôi phục lịch hẹn 02/10/2026 09:30 · Đã gặp của KH Phạm Gia Bảo');
+    expect(label({ ...planned, time: null })).toBe(
       'Khôi phục lịch hẹn 06/10/2026 · Dự kiến của KH Trịnh Minh Anh',
     );
-    expect(restoreLabel(policy)).toBe(
+    expect(label(policy)).toBe(
       'Khôi phục HĐ Nộp 15/09/2026 · 24.000.000 ₫ · Đã nộp của KH Hoàng Ngọc Lan',
     );
   });
@@ -351,46 +379,44 @@ describe('restoreLabel (DR6-43)', () => {
     for (const row of [...ROWS, issuedPolicy]) {
       const badge = recordBadge(row);
       const record = badge ? `${recordTitle(row)} · ${badge.text}` : recordTitle(row);
-      expect(restoreLabel(row)).toContain(` ${record}`);
+      expect(label(row)).toContain(` ${record}`);
     }
   });
 
   it('tells apart the buttons of a whole trash', () => {
-    expect(new Set(ROWS.map(restoreLabel)).size).toBe(ROWS.length);
+    expect(new Set(ROWS.map((row) => label(row))).size).toBe(ROWS.length);
   });
 
   it('tells apart two policies of a customer submitted the same day by their FYP (DR6-99)', () => {
     const other = { ...policy, id: 'p2', submittedFyp: 100_000_000 } as TrashRow;
-    expect(restoreLabel(other)).toBe(
+    expect(label(other)).toBe(
       'Khôi phục HĐ Nộp 15/09/2026 · 100.000.000 ₫ · Đã nộp của KH Hoàng Ngọc Lan',
     );
-    expect(restoreLabel(other)).not.toBe(restoreLabel(policy));
+    expect(label(other)).not.toBe(label(policy));
   });
 
   // DR6-119: the "Bản ghi" cell of such rows differs by the status, and so must the button's name.
   it('tells apart two appointments of a customer at the same time by their status (DR6-119)', () => {
     const noShow = { ...met, id: 'a4', status: 'NO_SHOW', stageAfter: null } as TrashRow;
     const cancelled = { ...noShow, id: 'a5', status: 'CANCELLED' } as TrashRow;
-    expect(restoreLabel(noShow)).toBe(
+    expect(label(noShow)).toBe(
       'Khôi phục lịch hẹn 02/10/2026 09:30 · Không đến của KH Phạm Gia Bảo',
     );
-    expect(restoreLabel(cancelled)).toBe(
-      'Khôi phục lịch hẹn 02/10/2026 09:30 · Hủy của KH Phạm Gia Bảo',
-    );
+    expect(label(cancelled)).toBe('Khôi phục lịch hẹn 02/10/2026 09:30 · Hủy của KH Phạm Gia Bảo');
   });
 
   it('tells apart a policy submitted and one issued, the same day, the same FYP (DR6-119)', () => {
-    expect(restoreLabel(issuedPolicy)).toBe(
+    expect(label(issuedPolicy)).toBe(
       'Khôi phục HĐ Nộp 15/09/2026 · 24.000.000 ₫ · Đã phát hành của KH Hoàng Ngọc Lan',
     );
-    expect(restoreLabel(issuedPolicy)).not.toBe(restoreLabel(policy));
+    expect(label(issuedPolicy)).not.toBe(label(policy));
   });
 
   it('leaves "của KH" out for a row with no customer, which the foreign key keeps from existing', () => {
-    expect(restoreLabel({ ...met, owner: { re: ref('Bùi Anh Tuấn') } } as TrashRow)).toBe(
+    expect(label({ ...met, owner: { re: ref('Bùi Anh Tuấn') } } as TrashRow)).toBe(
       'Khôi phục lịch hẹn 02/10/2026 09:30 · Đã gặp',
     );
-    expect(restoreLabel({ ...policy, owner: {} } as TrashRow)).toBe(
+    expect(label({ ...policy, owner: {} } as TrashRow)).toBe(
       'Khôi phục HĐ Nộp 15/09/2026 · 24.000.000 ₫ · Đã nộp',
     );
   });

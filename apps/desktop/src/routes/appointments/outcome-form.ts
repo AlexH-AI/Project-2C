@@ -23,14 +23,17 @@ import { isPastOrToday, type parseTime, type ScheduleDate } from './appointment-
 export const OUTCOME_CHOICES = ['MET', 'RESCHEDULED', 'CANCELLED', 'NO_SHOW'] as const;
 export type OutcomeChoice = (typeof OUTCOME_CHOICES)[number];
 
-/** The case size typed: none when empty; the db only stores a positive one (requireAmount). */
+/**
+ * The case size typed: none when it shows nothing, as `parseVnd` reads the text (`normalizeText`,
+ * DR6-150); the db only stores a positive one (requireAmount).
+ */
 export type CaseSizeRead =
   | null
   | { readonly ok: true; readonly amount: number }
   | { readonly ok: false; readonly error: VndParseError | 'notPositive' };
 
 export function readCaseSize(text: string): CaseSizeRead {
-  if (text.trim() === '') return null;
+  if (normalizeText(text) === '') return null;
   const size = parseVnd(text);
   if (!size.ok) return size;
   return size.amount > 0 ? size : { ok: false, error: 'notPositive' };

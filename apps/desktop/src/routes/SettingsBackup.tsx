@@ -6,6 +6,7 @@ import { useAppData } from '../data/AppDataContext';
 import { isUnsavedChangesError, type BackupPreview, type RecordCounts } from '../data/app-data';
 import { t } from '../i18n';
 import { ALERT, HEADING, SETTINGS_SECTION } from './classes';
+import { ConfirmButton } from './ConfirmWordDialog';
 import { countsText, OpenFolderButton } from './SettingsDataFile';
 
 export type BackupNotice =
@@ -239,11 +240,13 @@ function ImportDialog({
           <Button disabled={running} onClick={() => onClose()}>
             {t('settings.backup.cancel')}
           </Button>
-          <Button type="submit" variant="danger" disabled={running}>
-            {running
-              ? t('settings.backup.running')
-              : t(data.hasFile ? 'settings.backup.confirmWithBackup' : 'settings.backup.confirm')}
-          </Button>
+          <ConfirmButton
+            label={t(
+              data.hasFile ? 'settings.backup.confirmWithBackup' : 'settings.backup.confirm',
+            )}
+            runningLabel={t('settings.backup.running')}
+            running={running}
+          />
         </>
       }
     >

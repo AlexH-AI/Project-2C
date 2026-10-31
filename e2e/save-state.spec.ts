@@ -121,6 +121,48 @@ test('"Thử lại" on the save warning saves at once; Nạp lại, refused befo
   await expect(demo.getByRole('status')).toContainText('Đã nạp lại dữ liệu giả lập');
 });
 
+// D7 for Nhập backup (DR6-153): refused as Nạp lại above, with the same way out; it imports once
+// "Thử lại" saved.
+test('Nhập backup, refused after a failed save, says to press "Thử lại"; then imports', async ({
+  page,
+}) => {
+  await asExe(page);
+  await page.goto('/#/settings');
+  const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });
+  await backup.getByRole('button', { name: 'Xuất backup' }).click();
+  await expect(backup.getByRole('status')).toContainText('Đã xuất backup: ');
+  const file = Buffer.from(await page.evaluate(() => window.exe.exports.at(-1) ?? ''));
+  const importFile = async () => {
+    await backup
+      .getByLabel('Nhập backup')
+      .setInputFiles({ name: 'export.p2cbackup', mimeType: 'application/json', buffer: file });
+    const dialog = page.getByRole('dialog', { name: 'Thay toàn bộ dữ liệu?' });
+    await dialog.getByRole('button', { name: 'Backup rồi thay dữ liệu' }).click();
+    await expect(dialog).toHaveCount(0);
+  };
+
+  await page.evaluate(() => (window.exe.failSaves = true));
+  await page
+    .getByRole('navigation', { name: 'Điều hướng chính' })
+    .getByRole('link', { name: 'Team & nhân sự' })
+    .click();
+  await addTeam(page, 'Bình Minh 2');
+  await expect(warning(page)).toBeVisible();
+
+  await page.getByRole('link', { name: 'Cài đặt' }).click();
+  await importFile();
+  await expect(backup.getByRole('alert')).toHaveText(
+    'Chưa nhập: lần lưu gần nhất bị lỗi, backup sẽ thiếu các thay đổi đó. Bấm "Thử lại" ở dải cảnh báo đầu màn, lưu được rồi thì nhập lại. Dữ liệu hiện tại không bị đổi.',
+  );
+  expect(await events(page)).not.toContain('backup');
+
+  await page.evaluate(() => (window.exe.failSaves = false));
+  await warning(page).getByRole('button', { name: 'Thử lại' }).click();
+  await expect(warning(page)).toHaveCount(0);
+  await importFile();
+  await expect(backup.getByRole('status')).toContainText('Đã nhập backup');
+});
+
 /** A change whose save fails, then "Thử lại" clicked, its save held while the file can be written. */
 async function retryHeld(page: Page, team: string) {
   await page.evaluate(() => (window.exe.failSaves = true));
