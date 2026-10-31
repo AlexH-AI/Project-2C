@@ -95,11 +95,12 @@ const SAMPLES: Record<string, readonly (readonly [string, string])[]> = {
     ['Xem điểm đ khoản', 'điểm đ khoản'],
     [`Xem điểm${ZWSP}a${ZWSP}khoản`, 'điểmakhoản'],
   ],
-  '"luật" ở **mọi kiểu hoa / thường**, có ranh giới từ trước, không đứng sau từ "pháp", "kỷ", "kỉ", "quy", "qui", "giới", hay "định" mà trước nó không phải "quy" / "qui" (mọi kiểu chữ) + khoảng trắng; theo sau là khoảng trắng (có thể không có) + một từ mở đầu bằng chữ hoa (`\\p{Lu}`) mà **không** phải "KH", "RE" hay "sư" (mọi kiểu chữ). Chạy trên **bản gốc**. Vd. khớp "Luật Kinh doanh bảo hiểm", "Luật BHXH", "LuẬt Đất đai", "Luật" + U+200B + "BHXH", "quy định Luật Kinh doanh bảo hiểm"; không khớp "Luật sư", "LUẬT SƯ", "pháp luật Việt Nam", "pHáp luật Việt Nam", "kỷ luật KH", "quy luật Thị trường", "kỉ luật Thép", "qui luật Thị trường", "định luật Pareto", "giới luật Phật giáo"':
+  '"luật" ở **mọi kiểu hoa / thường**, có ranh giới từ trước, không đứng sau từ "pháp", "kỷ", "kỉ", "quy", "qui", "giới" mà trước nó không phải "môi" / "ranh" / "biên" / "thế", hay "định" mà trước nó không phải "quy" / "qui" (mọi kiểu chữ) + khoảng trắng; theo sau là khoảng trắng (có thể không có) + một từ mở đầu bằng chữ hoa (`\\p{Lu}`) mà **không** phải "KH", "RE" hay "sư" (mọi kiểu chữ). Chạy trên **bản gốc**. Vd. khớp "Luật Kinh doanh bảo hiểm", "Luật BHXH", "LuẬt Đất đai", "Luật" + U+200B + "BHXH", "quy định Luật Kinh doanh bảo hiểm", "môi giới Luật Kinh doanh bảo hiểm"; không khớp "Luật sư", "LUẬT SƯ", "pháp luật Việt Nam", "pHáp luật Việt Nam", "kỷ luật KH", "quy luật Thị trường", "kỉ luật Thép", "qui luật Thị trường", "định luật Pareto", "giới luật Phật giáo"':
     [
       ['Theo luật Đất đai', 'luật Đ'],
       [`Theo Luật${ZWSP}BHXH`, 'LuậtB'],
       ['Theo quy định Luật Kinh doanh bảo hiểm', 'Luật K'],
+      ['Qua môi giới Luật Kinh doanh bảo hiểm', 'Luật K'],
     ],
   '`\\b(quyết định\\|công văn) số\\s*\\p{Nd}` (vd. "Quyết định số 123"; "quyết định số tiền" không khớp)':
     [

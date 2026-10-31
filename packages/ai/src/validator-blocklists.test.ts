@@ -4,6 +4,9 @@ import { lettersAround, nfdZw } from './test-support';
 import { cleanText } from './text-match';
 import { validateOutput, type OutputCheckInput } from './validator';
 
+/** NUL: K20 keeps it for the store to refuse; V3–V6 drop it (G5 §7 item 0, §14.2, DR6-142). */
+const NUL = '\u0000';
+
 const input: OutputCheckInput = { factCodes: ['F1'], missingCategories: ['ASSETS'] };
 
 const BLOCKS = [
@@ -193,6 +196,23 @@ describe('validateOutput — G5 §8.5 cases', () => {
     ['C79', 'themes', 'Theo quy định Luật Kinh doanh bảo hiểm', ['V6']],
     ['C79', 'themes', 'Theo qui định Luật Đất đai', ['V6']],
     ['C79', 'themes', 'Theo đạo luật Doanh nghiệp', ['V6']],
+    // T-323 (Owner G5 31/10/2026).
+    ['C80', 'hypotheses', `phần${NUL}trăm`, ['V3']],
+    ['C80', 'hypotheses', `xác${NUL}suất`, ['V3']],
+    ['C80', 'hypotheses', `KH có xác ${NUL}suất đồng ý cao`, ['V3']],
+    ['C80', 'hypotheses', 'xác\u0007suất', ['V3']],
+    ['C81', 'nextBestActions', `Đề xuất P${NUL}rudential cho KH`, ['V4']],
+    ['C81', 'hypotheses', `KH có mã I${NUL}NTJ`, ['V5']],
+    ['C81', 'themes', `Theo Lu${NUL}ật Kinh doanh bảo hiểm`, ['V6']],
+    ['C81', 'themes', `Theo Điều${NUL}35`, ['V6']],
+    ['C82', 'themes', 'KH dùng dịch vụ môi giới Luật Kinh doanh bảo hiểm cho phép', ['V6']],
+    ['C82', 'themes', 'Môi giới Luật Kinh doanh bảo hiểm 2022', ['V6']],
+    ['C82', 'themes', 'MÔI GIỚI LUẬT Kinh doanh bảo hiểm', ['V6']],
+    ['C82', 'themes', 'Ranh giới Luật Đất đai quy định với thửa đất của KH', ['V6']],
+    ['C82', 'themes', 'KH buôn bán qua biên giới Luật Hải quan yêu cầu khai báo', ['V6']],
+    ['C82', 'themes', 'Ở nhiều nước trên thế giới Luật Thừa kế khác nhau', ['V6']],
+    ['C83', 'needs', 'Giới luật Phật giáo cấm sát sinh', []],
+    ['C83', 'hypotheses', `KH thích${NUL}đọc sách`, []],
   ] as const)('%s: %s "%s" → %j', (_, block, text, codes) => {
     expect(codesOf(block, text)).toEqual(codes);
   });
@@ -330,6 +350,17 @@ describe('validateOutput — V3 to V6', () => {
     expect(codesOf('needs', text)).toEqual(codes);
   });
 
+  // G5 §8.4 (§14.3, DR6-143): "giới" is let through, but not the "giới" of "môi", "ranh", "biên",
+  // "thế"; the "giới" of another word is the loss §14.3 records.
+  it.each([
+    ['Môi giới luật Kinh doanh bảo hiểm', ['V6']],
+    ['Vì thế giới luật Phật giáo được KH giữ nghiêm', ['V6']],
+    ['Vì thế, giới luật Phật giáo được KH giữ nghiêm', []],
+    ['Lao động nữ giới Luật Lao động có quy định riêng', []],
+  ])('V6 reads "luật" after "giới" by the word before it: "%s" → %j', (text, codes) => {
+    expect(codesOf('needs', text)).toEqual(codes);
+  });
+
   // G5 §7 item 2 (§12.4, DR6-124 a): "ấm", "lạnh", "nội", "ít" match bare in a bare phrase only.
   it.each([
     ['KH là khách am', []],
@@ -351,6 +382,29 @@ describe('validateOutput — V3 to V6', () => {
 
   it('reads a stray mark as a space, then one space between words and none at the ends', () => {
     expect(cleanText('\u00b4KH  xác\u00b4suất\u0301 cao\u00a8')).toBe('KH xác suất cao');
+  });
+
+  // G5 §7 item 0 (§14.2, DR6-142): NUL is dropped as an invisible character is, and the detail
+  // quotes the text so cleaned.
+  it.each([
+    ['hypotheses', `phần${NUL}trăm`, 'V3', 'có "phầntrăm"'],
+    ['nextBestActions', `Đề xuất Bảo${NUL}Việt`, 'V4', 'có "BảoViệt"'],
+  ] as const)('C80, C81: finds what a NUL glued together: "%s"', (block, text, code, detail) => {
+    expect(issuesOf(block, text)).toEqual([{ code, path: `${block}[0].text`, detail }]);
+  });
+
+  it('drops a NUL anywhere, then one space between words and none at the ends', () => {
+    expect(cleanText(`${NUL}KH ${NUL} xác${NUL}suất${NUL}`)).toBe('KH xácsuất');
+  });
+
+  // §14.2: NUL goes with the invisible characters, before NFKC, so a mark written after one still
+  // composes with its letter (as U+200B, DR6-17).
+  it.each([
+    ['KH dễ chốt', 'hypotheses', 'V3'],
+    ['Theo Điều 35', 'themes', 'V6'],
+  ] as const)('drops a NUL before each mark of "%s" written NFD', (text, block, code) => {
+    const nfdNul = text.normalize('NFD').replace(/\p{M}/gu, (mark) => NUL + mark);
+    expect(codesOf(block, nfdNul)).toEqual([code]);
   });
 
   // G5 §7 item 6: only V5 is lifted for "Thông tin tham khảo" (DR6-61).

@@ -89,6 +89,8 @@ const NBSP = String.fromCodePoint(0xa0);
 const FILLER = String.fromCodePoint(0x3164);
 /** A combining acute accent; on no vowel, it reads as a space (G5 §7 item 0, §12.2). */
 const ACUTE = String.fromCodePoint(0x301);
+/** NUL: K20 keeps it for the store to refuse; a pasted line drops it, as V3–V6 do (G5 §14.2). */
+const NUL = String.fromCodePoint(0);
 
 /** The Unicode line separators: a line of a paste ends there too, as a KYC note's (G5 §12.3). */
 const SEPARATORS = [
@@ -336,6 +338,8 @@ describe('checkWebAnswer', () => {
         'with a stray mark before and after the frame lines',
         eachFrame((frame) => `${ACUTE}${frame}\u00b4`),
       ],
+      // DR6-142 (Owner G5 31/10/2026).
+      ['with a NUL before the frame lines', eachFrame((frame) => `${NUL}${frame}`)],
     ])('does not count it %s', (_, cut) => {
       const { session, message } = start();
 
@@ -394,6 +398,10 @@ describe('checkWebAnswer', () => {
       ['only its last line', (message: string) => message.split('\n').at(-1)!],
       ['written NFD with a ZWSP before each mark (DR6-17)', nfdZw],
       ...SEPARATED,
+      [
+        'with a NUL at both ends of each line (DR6-142)',
+        (message: string) => message.replace(/^|$/gm, NUL),
+      ],
     ])('does not count the retry message pasted back %s', (_, cut) => {
       const retry = checkWebAnswer(start().session, BAD);
       if (retry.kind !== 'retry') throw new Error('no retry');

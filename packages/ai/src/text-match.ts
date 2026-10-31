@@ -1,12 +1,12 @@
 /**
  * Text matching for V3–V6 (prompts G5 §7). A text is first cleaned (`cleanText`: no invisible
- * character, NFKC, a stray mark as a space), then `-` / `_` read as spaces. It is compared in two
- * forms: the original (case kept) and the accented form (lower case, each run of white space as one
- * space). An entry whose "Bỏ dấu" column says "có" also matches its words written bare (no tone
- * mark, no diacritic, `đ` as `d`), word by word: "Xác suat" is caught, "nghĩ định" is not "nghị
- * định" (G5 §7 item 2, DR6-23); a word whose bare form is a word too, only in a phrase all bare
- * ("khach am" is "khách ấm", "khách am hiểu" is not: DR6-124). What an entry finds is a span of the
- * text as written, which the issue quotes (review #420).
+ * character nor NUL, NFKC, a stray mark as a space), then `-` / `_` read as spaces. It is compared
+ * in two forms: the original (case kept) and the accented form (lower case, each run of white space
+ * as one space). An entry whose "Bỏ dấu" column says "có" also matches its words written bare (no
+ * tone mark, no diacritic, `đ` as `d`), word by word: "Xác suat" is caught, "nghĩ định" is not
+ * "nghị định" (G5 §7 item 2, DR6-23); a word whose bare form is a word too, only in a phrase all
+ * bare ("khach am" is "khách ấm", "khách am hiểu" is not: DR6-124). What an entry finds is a span
+ * of the text as written, which the issue quotes (review #420).
  */
 import { normalizeText, stripDiacritics } from '@p2c/domain';
 
@@ -32,7 +32,8 @@ const VOWEL = /[aeiouyAEIOUY]/;
 
 /**
  * G5 §7 item 0: the invisible characters K20 drops (format, default-ignorable and control
- * characters but NUL, the blank Braille pattern) and each run of white space as one space
+ * characters but NUL, the blank Braille pattern) and NUL too: K20 keeps it for the store to refuse,
+ * and a model's text never meets that check (§14.2, DR6-142); each run of white space as one space
  * (`normalizeText`), then NFKC (`％` → `%`, full-width digits and letters → ASCII). Invisible
  * characters go first, so a mark written after one still composes with its letter (DR6-17). A
  * combining mark on no vowel, decomposed (after a consonant, a digit, a space, a sign or at the
@@ -41,7 +42,7 @@ const VOWEL = /[aeiouyAEIOUY]/;
  * own message (G5 §6a).
  */
 export function cleanText(text: string): string {
-  return normalizeText(text)
+  return normalizeText(text.replaceAll('\0', ''))
     .normalize('NFKD')
     .replace(/\p{M}+/gu, (marks, at: number, all: string) =>
       VOWEL.test(all.charAt(at - 1)) ? marks : ' ',
