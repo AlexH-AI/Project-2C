@@ -273,6 +273,7 @@ const tauriConf = () =>
   JSON.parse(desktop('src-tauri/tauri.conf.json')) as {
     productName: string;
     version: string;
+    identifier: string;
     app: { windows: { title: string }[]; security: { csp: string } };
   };
 
@@ -354,17 +355,28 @@ describe('the release configuration (DR6-12…14)', () => {
     ]);
   });
 
+  // Tauri puts the CSP in the exe only: the web build e2e runs has none, so this is its one check.
+  // Every directive is listed, as a looser script, image or font source, or a new directive, would
+  // open the exe as much as another host would (DR6-138).
   it('keeps the CSP closed: no other host, no base URL, no form posted anywhere', () => {
     const directives = tauriConf()
       .app.security.csp.split(';')
       .map((directive) => directive.trim());
-    expect(directives).toEqual(
-      expect.arrayContaining([
-        "default-src 'self'",
-        "connect-src 'self' ipc: http://ipc.localhost",
-        "base-uri 'none'",
-        "form-action 'none'",
-      ]),
-    );
+    expect(directives.sort()).toEqual([
+      "base-uri 'none'",
+      "connect-src 'self' ipc: http://ipc.localhost",
+      "default-src 'self'",
+      "font-src 'self' data:",
+      "form-action 'none'",
+      "img-src 'self' data:",
+      "script-src 'self' 'wasm-unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+    ]);
+  });
+
+  // The code name stays here (K39): WebView2 names the exe's profile folder after it, and a new
+  // one would start without what the webview kept in the old (DR6-138).
+  it('keeps the identifier of the build', () => {
+    expect(tauriConf().identifier).toBe('dev.alexh.project2c');
   });
 });

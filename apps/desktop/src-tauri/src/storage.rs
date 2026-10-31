@@ -247,9 +247,19 @@ fn refuses(_path: &Path, _access: u32, _flags: u32) -> bool {
 /// reused. A full disk → `StorageFull` with the message [`DISK_FULL`]. A `backups\` the app cannot
 /// list is an error: the copy could not be numbered after the others (see [`next_seq`]).
 pub fn backup(dir: &Path, stamp: &str, lock: &DataLock) -> io::Result<String> {
+    backup_with(dir, stamp, lock, fs::File::sync_all)
+}
+
+/// [`backup`] with the flush of the copy to the disk passed in, which the tests make fail.
+fn backup_with(
+    dir: &Path,
+    stamp: &str,
+    lock: &DataLock,
+    flush: impl FnOnce(&fs::File) -> io::Result<()>,
+) -> io::Result<String> {
     let _held = lock.hold();
     let bytes = fs::read(dir.join(DB_FILE))?;
-    copy_to_backups(&dir.join(BACKUP_DIR), &bytes, stamp).map_err(disk_full)
+    copy_to_backups(&dir.join(BACKUP_DIR), &bytes, stamp, flush).map_err(disk_full)
 }
 
 /// Gives a full disk the message the app tells apart; any other error stays as it is.
@@ -302,14 +312,19 @@ fn refused(error: io::Error, dir: &Path) -> io::Error {
 /// is reused instead of written twice, and the backups are pruned again then: a prune another
 /// program held off is retried (DR-31). The oldest backup goes before the copy is written, so a
 /// nearly full disk needs room for one copy only (DR-57); a copy that still fails costs that one.
-fn copy_to_backups(backups: &Path, bytes: &[u8], stamp: &str) -> io::Result<String> {
+fn copy_to_backups(
+    backups: &Path,
+    bytes: &[u8],
+    stamp: &str,
+    flush: impl FnOnce(&fs::File) -> io::Result<()>,
+) -> io::Result<String> {
     if let Some(name) = find_copy(backups, bytes) {
         prune_backups(backups, KEEP_BACKUPS, Some(&name));
         return Ok(name);
     }
     prune_backups(backups, KEEP_BACKUPS - 1, None);
     let name = backup_name(next_seq(backups)?, stamp);
-    write_atomic(backups, &name, bytes)?;
+    write_atomic_with(backups, &name, bytes, flush)?;
     Ok(name)
 }
 
@@ -733,6 +748,15 @@ mod tests {
         super::backup(dir, stamp, &DataLock::new())
     }
 
+    /// `backup` whose flush of the copy to the disk does `flush` instead.
+    fn backup_flushing(
+        dir: &Path,
+        stamp: &str,
+        flush: impl FnOnce(&fs::File) -> io::Result<()>,
+    ) -> io::Result<String> {
+        backup_with(dir, stamp, &DataLock::new(), flush)
+    }
+
     /// The page (webview load) the tests open and save from.
     const PAGE: &str = "page-1";
 
@@ -968,6 +992,21 @@ mod tests {
     }
 
     #[test]
+    fn a_backup_that_finds_the_disk_full_is_reported_as_disk_full() {
+        // The startup page then tells the disk is full, not that the file could not be backed up
+        // for some other reason (DR6-07, DR6-138).
+        let dir = temp_dir();
+        save(&dir, &db("data")).unwrap();
+        let error = backup_flushing(&dir, "20261001-080000", |_| {
+            Err(ErrorKind::StorageFull.into())
+        })
+        .unwrap_err();
+        assert_eq!(error.kind(), ErrorKind::StorageFull);
+        assert_eq!(error.to_string(), DISK_FULL);
+        assert!(names(&dir.join(BACKUP_DIR)).is_empty());
+    }
+
+    #[test]
     fn a_save_flushes_the_written_file_to_the_disk_before_it_replaces_the_old_one() {
         let dir = temp_dir();
         save(&dir, &db("old")).unwrap();
@@ -1110,6 +1149,27 @@ mod tests {
     }
 
     #[test]
+    fn a_folder_named_like_a_backup_costs_no_backup() {
+        // Made by hand or by a sync tool, it is no copy: counted as one, it would push a real
+        // backup out (DR6-138).
+        let dir = temp_dir();
+        ten_backups(&dir);
+        let backups = dir.join(BACKUP_DIR);
+        let folder = backup_name(5, "20261001-000001");
+        fs::create_dir_all(backups.join(&folder)).unwrap();
+        save(&dir, &db("latest")).unwrap();
+        let copy = backup(&dir, "20261001-080000").unwrap();
+        let files: Vec<String> = names(&backups)
+            .into_iter()
+            .filter(|name| backups.join(name).is_file())
+            .collect();
+        assert_eq!(files.len(), KEEP_BACKUPS);
+        assert_eq!(files[0], "project2c-s00000002-20260911-080000.db");
+        assert_eq!(files[9], copy);
+        assert!(backups.join(&folder).is_dir());
+    }
+
+    #[test]
     fn two_backups_in_the_same_second_are_both_kept() {
         let dir = temp_dir();
         let backups = dir.join(BACKUP_DIR);
@@ -1201,6 +1261,14 @@ mod tests {
         let backups = dir.join(BACKUP_DIR);
         fs::create_dir_all(&backups).unwrap();
         fs::write(backups.join("notes.txt"), b"not a backup").unwrap();
+        assert_eq!(open(&dir).unwrap(), None);
+    }
+
+    #[test]
+    fn a_missing_file_with_only_a_folder_named_like_a_backup_is_a_first_start() {
+        // No copy of a lost file is there to keep (DR6-138).
+        let dir = temp_dir();
+        fs::create_dir_all(dir.join(BACKUP_DIR).join(backup_name(1, "20261001-080000"))).unwrap();
         assert_eq!(open(&dir).unwrap(), None);
     }
 
@@ -2071,6 +2139,20 @@ mod tests {
             latest_backup(&dir).as_deref(),
             Some("project2c-s00000002-20260910-080000.db")
         );
+    }
+
+    #[test]
+    fn a_folder_named_like_a_later_backup_is_never_the_latest_backup() {
+        // Settings → Data shows the newest backup: a copy, never a folder (DR6-138).
+        let dir = temp_dir();
+        save(&dir, &db("data")).unwrap();
+        let copy = backup(&dir, "20261001-080000").unwrap();
+        fs::create_dir_all(
+            dir.join(BACKUP_DIR)
+                .join(backup_name(99, "20261001-000000")),
+        )
+        .unwrap();
+        assert_eq!(latest_backup(&dir), Some(copy));
     }
 
     #[test]
