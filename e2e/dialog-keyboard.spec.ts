@@ -145,7 +145,9 @@ test('a second Escape does not close the dialog of a running reload', async ({ p
   const running = dialog.getByRole('button', { name: 'Đang nạp lại…' });
   await expect(running).toBeFocused();
   await expect(running).toBeDisabled();
-  // Dimmed as a button off is.
+  // Dimmed as a button off is, under the pointer too.
+  await expect(running).toHaveCSS('opacity', '0.5');
+  await running.hover({ force: true });
   await expect(running).toHaveCSS('opacity', '0.5');
 
   await page.keyboard.press('Escape');
@@ -177,11 +179,12 @@ test('the dialog of a running import keeps the focus on what runs (10a, DR6-154)
   const file = await page.evaluate(() => window.exe.exports.at(-1) ?? '');
 
   await page.evaluate(() => window.exe.holdBackup());
-  await backup.getByLabel('Nhập backup').setInputFiles({
-    name: 'export.p2cbackup',
-    mimeType: 'application/json',
-    buffer: Buffer.from(file),
-  });
+  const open = backup.getByRole('button', { name: 'Chọn file…' });
+  const chooser = page.waitForEvent('filechooser');
+  await open.click();
+  await (
+    await chooser
+  ).setFiles({ name: 'export.p2cbackup', mimeType: 'application/json', buffer: Buffer.from(file) });
   const dialog = page.getByRole('dialog', { name: 'Thay toàn bộ dữ liệu?' });
   await expect(dialog.getByRole('button', { name: 'Hủy' })).toBeFocused();
   await page.keyboard.press('Tab');
