@@ -559,7 +559,8 @@ function aboutTheKh(note: string, sentence: Reader, clause: Reader): (phrase: Ph
       return false;
     }
     const kh = inClause.kh ?? (inSentence.onTheKh ? inClause.start : undefined);
-    if (kh === undefined) return false;
+    // Before where its clause opens on the KH, a phrase is in the heading ("Độc thân: KH…").
+    if (kh === undefined || at < kh) return false;
     const from = Math.max(kh, inClause.joined.findLast((word) => word <= at) ?? kh);
     return said.test(note.slice(from, at)) && startsAt(after, note, end);
   };

@@ -315,7 +315,6 @@ describe('createMockAdapter', () => {
     // "của" no more than a name that is not a kin word.
     ['KH có 2 con của anh ấy.', [TWO]],
     // "khi" and "thì" both around the phrase, and in that order.
-    ['Gặp KH lần đầu khi KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
     ['KH đã kết hôn, vợ thì làm giáo viên.', [MARRIED]],
     ['KH đã kết hôn khi 25 tuổi, nay thì đã có 2 con.', [MARRIED, TWO]],
     // A "không" right after the phrase may ask it (the review of PR #753, CX-A4).
@@ -334,7 +333,6 @@ describe('createMockAdapter', () => {
     ['KH muốn mua bảo hiểm, đã kết hôn, có 2 con.', [MARRIED, TWO]],
     ['KH muốn mua bảo hiểm. KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
     // "sắp" / "sẽ" reach only the words right before having children or "độc thân".
-    ['KH sẽ cho 2 con đi học thêm.', [TWO]],
     ['KH sẽ cân nhắc vì còn độc thân.', [SINGLE]],
     ['KH sẽ cân nhắc vì có 2 con.', [TWO]],
     ['KH sẽ cân nhắc gói cho gia đình vì có 2 con.', [TWO]],
@@ -349,7 +347,8 @@ describe('createMockAdapter', () => {
     ['KH sống với chồng, có 2 con.', [TWO]],
     ['KH đã lấy chồng, có 2 con.', [TWO]],
     ['KH cưới vợ năm 2015, có 2 con.', [TWO]],
-    ['KH đã kết hôn với bạn học cũ, có 2 con.', [MARRIED, TWO]],
+    // After "kết hôn", when the KH married but not whom: no simple statement (DR6-141).
+    ['KH đã kết hôn với bạn học cũ, có 2 con.', [TWO]],
     ['KH lấy đồng nghiệp, có 2 con.', [TWO]],
     ['KH cưới người quen năm 2015, có 2 con.', [TWO]],
     // A word that holds a kin word and names no one.
@@ -473,9 +472,9 @@ describe('createMockAdapter', () => {
     ['KH vừa thay việc nhưng vẫn độc thân.', [SINGLE]],
     // After the phrase, "có thể" says what can be.
     ['KH đã kết hôn, có thể đóng phí năm.', [MARRIED]],
-    // "cho" spares a count that ends its clause.
-    ['KH muốn mua bảo hiểm cho 2 con, ưu tiên gói học vấn.', [TWO]],
-    ['Muốn lo cho 2 con', [TWO]],
+    // What a wish is for, "cho" before the count, is no simple statement either (DR6-141).
+    ['KH muốn mua bảo hiểm cho 2 con, ưu tiên gói học vấn.', []],
+    ['Muốn lo cho 2 con', []],
     // The KH's own "là người".
     ['KH là người độc thân, sống một mình.', [SINGLE]],
     ['KH là người đã kết hôn.', [MARRIED]],
@@ -485,9 +484,10 @@ describe('createMockAdapter', () => {
     ['KH vừa cưới vợ, có 2 con.', [TWO]],
     ['KH mới lấy chồng, có 2 con.', [TWO]],
     ['KH kết hôn với chồng năm 2015, có 2 con.', [TWO]],
-    // Words that name no one, in any case.
+    // Words that name no one, in any case; someone else saying it is no simple statement (DR6-141).
     ['Vợ chồng KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
-    ['Bác sĩ nói KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['Bác sĩ: KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['Bác sĩ nói KH đã kết hôn, có 2 con.', []],
   ])('reads %j as %j (the notes of PR #753)', async (note, facts) => {
     expect(await extracted(note)).toEqual(facts);
   });
@@ -534,8 +534,8 @@ describe('createMockAdapter', () => {
     ['KH đã kết hôn, có 2 con, bệnh nền: không.', [MARRIED, TWO]],
     ['KH độc thân, nợ: không.', [SINGLE]],
     ['KH độc thân, nợ:không.', [SINGLE]],
-    // Inside a clause, "thì không" after more words is no answer.
-    ['KH đã kết hôn hai năm thì không có con.', [MARRIED]],
+    // Inside a clause, "thì không" after more words is no answer, nor a simple statement (DR6-141).
+    ['KH đã kết hôn hai năm thì không có con.', []],
     // The KH opening its clause after a bullet, a number or "Hiện…", or with a word before "là".
     ['- KH đã có vợ và 2 con.', [TWO]],
     ['1) KH đã có vợ và 2 con.', [TWO]],
@@ -710,23 +710,17 @@ describe('createMockAdapter', () => {
     expect(await extracted(`KH có 3 con ${animal}.`)).toEqual([]);
   });
 
-  // A wish earlier in the clause is for what stands after "cho", which is there already.
+  // A wish earlier in the clause, whatever it is for: "cho" before the count, which T-289 read as
+  // children there already, is no simple statement about the KH (DR6-141).
   it.each([
     'KH muốn đầu tư cho 2 con.',
     'Hai vợ chồng dự định mua bảo hiểm cho 2 con.',
     'KH mong lo cho 2 con ăn học.',
     'Muốn lo cho 2 con.',
-  ])('proposes what a wish is for, not the wish: %j', async (note) => {
-    expect(await extracted(note)).toEqual([TWO]);
-  });
-
-  it.each([
-    // "cho" spares the count only right before it.
     'KH muốn có cho đủ 2 con.',
     'KH muốn sinh cho mình 2 con.',
-    // And only against a wish: what a negation denies stays denied.
     'KH không muốn đầu tư cho 2 con.',
-  ])('proposes nothing from %j: "cho" spares only a wish, right before the count', async (note) => {
+  ])('proposes nothing from %j: a wish, whatever it is for (DR6-141)', async (note) => {
     expect(await extracted(note)).toEqual([]);
   });
 
@@ -817,7 +811,8 @@ describe('createMockAdapter', () => {
     // CX-A4: the KH's grandchildren are not their children.
     ['KH có 2 cháu ngoại, cả hai đang học tiểu học.', []],
     ['KH có 3 cháu nội.', []],
-    ['Nhà có 2 cháu, đều học cấp 2.', [{ field: 'childrenCount', value: '2', quote: '2 cháu' }]],
+    // Q1 (a) lists "con / bé" said of the KH, not "Nhà có 2 cháu" (DR6-141).
+    ['Nhà có 2 cháu, đều học cấp 2.', []],
     // Not "Đã kết hôn"; living single is said as such.
     [
       'KH chưa đăng ký kết hôn, hiện sống độc thân.',
@@ -893,10 +888,14 @@ describe('createMockAdapter', () => {
     // "Anh" or "chị" may be the KH, or not: only the KH saying it ("Chị nói …") names the KH.
     'Anh ấy đã kết hôn, có 2 con.',
     'Chị gái đã kết hôn, có 2 con.',
-    // A field line of someone else.
+    // A field line of someone else; a phrase in the heading before the KH.
     'Vợ: đã kết hôn, có 2 con.',
+    'Độc thân và có 2 con: KH chưa xác nhận.',
     // Grandchildren, as (a) lists only "con / bé".
     'KH có 2 cháu.',
+    // Kept by DR6-121 before (a) (Owner 31/10): "khi" before the phrase, a verb before the count.
+    'Gặp KH lần đầu khi KH đã kết hôn, có 2 con.',
+    'KH sẽ cho 2 con đi học thêm.',
   ])('proposes nothing from %j: not said of the KH (DR6-141)', async (note) => {
     expect(await extracted(note)).toEqual([]);
   });
