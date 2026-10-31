@@ -253,8 +253,8 @@ describe('createMockAdapter', () => {
   );
 
   it.each([
-    'KH là bác sĩ, đã kết hôn, có 2 con.',
-    'KH là cô giáo, đã kết hôn, có 2 con.',
+    'KH là bác sĩ, KH đã kết hôn, có 2 con.',
+    'KH là cô giáo, KH đã kết hôn, có 2 con.',
     'Chú ý: KH đã kết hôn, có 2 con.',
     'KH đã kết hôn ba năm, có 2 con.',
     'KH và vợ đã kết hôn, có 2 con.',
@@ -309,9 +309,9 @@ describe('createMockAdapter', () => {
     // A "chưa" / "không" that does not end its clause asks nothing.
     ['KH đã kết hôn, có 2 con, bảo hiểm thì chưa.', [MARRIED, TWO]],
     // Divorced first, married again.
-    ['KH đã ly hôn, đã kết hôn lại, có 2 con.', [MARRIED, TWO]],
+    ['KH đã ly hôn, KH đã kết hôn lại, có 2 con.', [MARRIED, TWO]],
     // "người" only right before the phrase.
-    ['KH là người miền Nam, độc thân.', [SINGLE]],
+    ['KH là người miền Nam, KH độc thân.', [SINGLE]],
     // "của" no more than a name that is not a kin word.
     ['KH có 2 con của anh ấy.', [TWO]],
     // "khi" and "thì" both around the phrase, and in that order.
@@ -330,12 +330,8 @@ describe('createMockAdapter', () => {
     ['Có lẽ KH ngại. KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
     // A wish after the phrase, in an earlier clause or in an earlier sentence, stops nothing.
     ['KH đã kết hôn và muốn mua bảo hiểm.', [MARRIED]],
-    ['KH muốn mua bảo hiểm, đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH muốn mua bảo hiểm, KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
     ['KH muốn mua bảo hiểm. KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
-    // "sắp" / "sẽ" reach only the words right before having children or "độc thân".
-    ['KH sẽ cân nhắc vì còn độc thân.', [SINGLE]],
-    ['KH sẽ cân nhắc vì có 2 con.', [TWO]],
-    ['KH sẽ cân nhắc gói cho gia đình vì có 2 con.', [TWO]],
   ])('keeps what %j says of the KH (DR6-121)', async (note, facts) => {
     expect(await extracted(note)).toEqual(facts);
   });
@@ -344,21 +340,21 @@ describe('createMockAdapter', () => {
     // A wife, a husband or a friend named as the KH's own (the review of PR #682).
     ['KH đã có vợ và 2 con.', [TWO]],
     ['KH sống cùng vợ và 2 con.', [TWO]],
-    ['KH sống với chồng, có 2 con.', [TWO]],
-    ['KH đã lấy chồng, có 2 con.', [TWO]],
-    ['KH cưới vợ năm 2015, có 2 con.', [TWO]],
+    ['KH sống với chồng, KH có 2 con.', [TWO]],
+    ['KH đã lấy chồng, KH có 2 con.', [TWO]],
+    ['KH cưới vợ năm 2015, KH có 2 con.', [TWO]],
     // After "kết hôn", when the KH married but not whom: no simple statement (DR6-141).
-    ['KH đã kết hôn với bạn học cũ, có 2 con.', [TWO]],
-    ['KH lấy đồng nghiệp, có 2 con.', [TWO]],
-    ['KH cưới người quen năm 2015, có 2 con.', [TWO]],
+    ['KH đã kết hôn với bạn học cũ, KH có 2 con.', [TWO]],
+    ['KH lấy đồng nghiệp, KH có 2 con.', [TWO]],
+    ['KH cưới người quen năm 2015, KH có 2 con.', [TWO]],
     // A word that holds a kin word and names no one.
     ['Ghi chú: KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
     ['Chú thích: KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
-    ['KH chú trọng đầu tư, đã kết hôn, có 2 con.', [MARRIED, TWO]],
-    ['KH là đàn ông, đã kết hôn, có 2 con.', [MARRIED, TWO]],
-    ['KH bác bỏ gói cũ, đã kết hôn, có 2 con.', [MARRIED, TWO]],
-    ['KH là cô dâu mới, đã kết hôn, có 2 con.', [MARRIED, TWO]],
-    ['KH có em bé, đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH chú trọng đầu tư, KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH là đàn ông, KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH bác bỏ gói cũ, KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH là cô dâu mới, KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH có em bé, KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
     // The other way round, a word that names someone else stops it.
     ['KH nói chuyện với bạn đã kết hôn, có 2 con.', []],
     ['Vợ KH có 2 con.', []],
@@ -468,8 +464,6 @@ describe('createMockAdapter', () => {
     ['KH có 2 con nhưng bảo hiểm thì chưa.', [TWO]],
     // A question asks what stands before it, not what follows.
     ['Hỏi KH đã mua bảo hiểm chưa, KH có 2 con.', [TWO]],
-    // "hay" as a word of its own, not inside "thay".
-    ['KH vừa thay việc nhưng vẫn độc thân.', [SINGLE]],
     // After the phrase, "có thể" says what can be.
     ['KH đã kết hôn, có thể đóng phí năm.', [MARRIED]],
     // What a wish is for, "cho" before the count, is no simple statement either (DR6-141).
@@ -481,9 +475,9 @@ describe('createMockAdapter', () => {
     // The KH's partner, a word or two after "KH".
     ['KH đang sống cùng vợ và 2 con.', [TWO]],
     ['KH hiện ở với chồng và 2 con.', [TWO]],
-    ['KH vừa cưới vợ, có 2 con.', [TWO]],
-    ['KH mới lấy chồng, có 2 con.', [TWO]],
-    ['KH kết hôn với chồng năm 2015, có 2 con.', [TWO]],
+    ['KH vừa cưới vợ, KH có 2 con.', [TWO]],
+    ['KH mới lấy chồng, KH có 2 con.', [TWO]],
+    ['KH kết hôn với chồng năm 2015, KH có 2 con.', [TWO]],
     // Words that name no one, in any case; someone else saying it is no simple statement (DR6-141).
     ['Vợ chồng KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
     ['Bác sĩ khám xong, KH đã kết hôn.', [MARRIED]],
@@ -541,7 +535,7 @@ describe('createMockAdapter', () => {
     ['1) KH đã có vợ và 2 con.', [TWO]],
     ['Hiện KH đã có vợ và 2 con.', [TWO]],
     ['Theo chị Lan, hiện KH đã có vợ và 2 con.', [TWO]],
-    ['Hiện tại KH là đàn ông, đã kết hôn.', [MARRIED]],
+    ['Hiện tại KH là đàn ông, KH đã kết hôn.', [MARRIED]],
     ['Hiện nay KH là người độc thân.', [SINGLE]],
     ['KH hiện là người độc thân.', [SINGLE]],
   ])('reads %j as %j (the review of PR #809)', async (note, facts) => {
@@ -593,15 +587,15 @@ describe('createMockAdapter', () => {
     ['KH có 2 con\nchưa mua bảo hiểm.', [TWO]],
     // Sure or firm is no guess (the review of PR #812 too), nor is "ạ" a question.
     ['KH chắc chắn đã kết hôn.', [MARRIED]],
-    ['KH có tài chính vững chắc, đã kết hôn.', [MARRIED]],
-    ['KH có thân hình săn chắc, đã kết hôn.', [MARRIED]],
-    ['KH có cơ bắp rắn chắc, đã kết hôn.', [MARRIED]],
-    ['KH biết chắc mình muốn mua bảo hiểm, đã kết hôn.', [MARRIED]],
-    ['KH nắm chắc tài chính gia đình, đã có 2 con.', [TWO]],
+    ['KH có tài chính vững chắc, KH đã kết hôn.', [MARRIED]],
+    ['KH có thân hình săn chắc, KH đã kết hôn.', [MARRIED]],
+    ['KH có cơ bắp rắn chắc, KH đã kết hôn.', [MARRIED]],
+    ['KH biết chắc mình muốn mua bảo hiểm, KH đã kết hôn.', [MARRIED]],
+    ['KH nắm chắc tài chính gia đình, KH đã có 2 con.', [TWO]],
     ['KH có 2 con, chắc ăn nên mua gói gia đình.', [TWO]],
     ['KH khẳng định chắc nịch đã kết hôn.', [MARRIED]],
-    ['KH ăn chắc mặc bền, đã kết hôn, có 2 con.', [MARRIED, TWO]],
-    ['KH thích nhà cửa bền chắc, đã có 2 con.', [TWO]],
+    ['KH ăn chắc mặc bền, KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['KH thích nhà cửa bền chắc, KH đã có 2 con.', [TWO]],
     ['KH đã kết hôn ạ.', [MARRIED]],
     ['KH có 2 con của mình.', [TWO]],
   ])('reads %j as %j (the review of PR #809, T-288)', async (note, facts) => {
@@ -786,6 +780,10 @@ describe('createMockAdapter', () => {
     // "bé" is no word of `PEOPLE`, so every count reaches that look.
     ['"có 2 bé và"', `KH ${'có 2 bé và '.repeat(3273)}`],
     ['"có 2 bé", then words and no other count', `KH có 2 bé ${'đi học '.repeat(5200)}`],
+    // Every clause read, each carrying the KH on or not, a phrase in it or not.
+    ['"đã kết hôn, " after one "KH"', `KH ${'đã kết hôn, '.repeat(3000)}`],
+    ['"đi làm, ", then "độc thân"', `KH ${'đi làm, '.repeat(4500)}độc thân`],
+    ['"KH độc thân,", spaces, then "và có 2 bé"', `KH độc thân,${' '.repeat(36_000)}và có 2 bé`],
   ])('reads a one-line note of 36 000 characters full of %s in under 50 ms', async (_, note) => {
     const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
     const times: number[] = [];
@@ -830,11 +828,11 @@ describe('createMockAdapter', () => {
     ['Nhà có 2 cháu, đều học cấp 2.', []],
     // Not "Đã kết hôn"; living single is said as such.
     [
-      'KH chưa đăng ký kết hôn, hiện sống độc thân.',
+      'KH chưa đăng ký kết hôn, KH hiện sống độc thân.',
       [{ field: 'maritalStatus', value: 'Độc thân', quote: 'độc thân' }],
     ],
     [
-      'KH sống cô đơn, vẫn độc thân.',
+      'KH sống cô đơn, KH vẫn độc thân.',
       [{ field: 'maritalStatus', value: 'Độc thân', quote: 'độc thân' }],
     ],
   ])('reads %j as %j', async (note, facts) => {
@@ -899,9 +897,17 @@ describe('createMockAdapter', () => {
     ['KH hiện tại độc thân.', [SINGLE]],
     ['KH cũng đã kết hôn.', [MARRIED]],
     ['KH có 2 con, 1 trai 1 gái.', [TWO]],
-    // Someone named, then a clause opening on the KH again; someone not named by a name.
+    // Someone named, then a clause opening on the KH again; a word that starts another clause on the
+    // KH right after a phrase about the KH.
     ['KH gặp anh Nam, KH đã kết hôn.', [MARRIED]],
-    ['KH có em bé, đã kết hôn.', [MARRIED]],
+    ['KH độc thân nhưng có 2 con.', [SINGLE, TWO]],
+    ['KH đã kết hôn, và có 2 con.', [MARRIED, TWO]],
+    // Another value said of someone else, or said not to be, is none said of the KH.
+    ['KH đã kết hôn, em trai KH độc thân.', [MARRIED]],
+    ['KH đã kết hôn, không còn độc thân.', [MARRIED]],
+    // "Khách" is the KH for the rules before DR6-141 too: its own "là người".
+    ['Khách là người độc thân.', [SINGLE]],
+    ['Khách hàng là người đã kết hôn.', [MARRIED]],
   ])('reads %j as %j: a simple statement about the KH (DR6-141)', async (note, facts) => {
     expect(await extracted(note)).toEqual(facts);
   });
@@ -964,10 +970,48 @@ describe('createMockAdapter', () => {
     'KH có 2 con của mình và 1 con nuôi.',
     'KH có 2 con trai và một con gái.',
     'KH có 2 bé, thêm một bé nữa.',
-    // Someone named in the first clause may be who a clause after it speaks of (Correctness 4).
+    // A clause that does not open on the KH speaks of the KH only after one ending on a phrase
+    // about the KH: after any other words, it may speak of whoever they name, however named.
     'KH giới thiệu anh Nam, đã kết hôn, có 2 con.',
     'KH đi cùng chị Lan, độc thân.',
     'KH gặp Bà Tư, có 2 con.',
+    'KH giới thiệu Nam, đã kết hôn.',
+    'KH giới thiệu anh nam, đã kết hôn.',
+    'KH đi cùng một người, đã kết hôn.',
+    'KH gặp người yêu cũ, đã kết hôn, có 2 con.',
+    'KH giới thiệu khách mới, đã kết hôn, có 2 con.',
+    'KH là bác sĩ, Lan là y tá, độc thân.',
+    'KH là bác sĩ, lan là y tá, độc thân.',
+    'KH gặp sinh viên, độc thân.',
+    'KH tư vấn cho giám đốc, đã kết hôn.',
+    'KH đi với ai đó, đã kết hôn.',
+    'KH đi cùng họ, có 2 con.',
+    'KH là chủ nhà của một sinh viên, độc thân.',
+    // Nor after a first clause that is no phrase, whatever it says of the KH: a job, a partner, a
+    // baby (Owner 31/10; the tests above say the same with "KH" opening the later clause).
+    'KH là bác sĩ, đã kết hôn, có 2 con.',
+    'KH là người miền Nam, độc thân.',
+    'KH sống với chồng, có 2 con.',
+    'KH cưới người quen năm 2015, có 2 con.',
+    'KH có em bé, đã kết hôn.',
+    // After a comma only "KH" opens a clause on the KH: "chị nói", "khách", "hai vợ chồng" may be
+    // someone named before them.
+    'KH đi cùng chị Lan, chị nói đã kết hôn.',
+    'KH giới thiệu anh Nam, anh cho biết đã kết hôn.',
+    'KH giới thiệu anh Nam, hai vợ chồng đã kết hôn 5 năm.',
+    'KH là chủ nhà, khách độc thân.',
+    'KH giới thiệu khách mới, khách đã kết hôn.',
+    // In a clause, a word that starts another carries the KH on only right after a phrase about the
+    // KH (Owner 31/10): after other words, it may be said of whoever they name.
+    'KH giới thiệu anh nam nhưng đã kết hôn.',
+    'KH đi cùng một người và độc thân.',
+    'KH gặp người yêu cũ vì có 2 con.',
+    'KH giới thiệu khách mới và đã kết hôn.',
+    'KH sẽ cân nhắc vì còn độc thân.',
+    'KH sẽ cân nhắc vì có 2 con.',
+    'KH sẽ cân nhắc gói cho gia đình vì có 2 con.',
+    'KH vừa thay việc nhưng vẫn độc thân.',
+    'KH đi làm xa, nhưng vẫn độc thân.',
     // A field line opens on the KH only opening its sentence, as the seed writes it: after a
     // comma, it may be the line of someone named before it.
     'Người giới thiệu: chị Lan, hôn nhân: độc thân.',
@@ -978,6 +1022,11 @@ describe('createMockAdapter', () => {
     'KH đã kết hôn, không đúng.',
     'KH có 2 con, ghi nhầm.',
     'KH đã kết hôn, thông tin chưa chính xác.',
+    'KH độc thân, điều này không còn đúng.',
+    // Two values of one trường said of the KH in a sentence, as a note that corrects itself.
+    'KH độc thân, thực ra đã kết hôn.',
+    'KH độc thân, nay đã kết hôn.',
+    'KH độc thân, KH đã kết hôn.',
   ])(
     'proposes nothing from %j: not a simple statement either (the review of PR #917)',
     async (note) => {
