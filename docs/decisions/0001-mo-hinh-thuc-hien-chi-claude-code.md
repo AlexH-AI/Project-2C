@@ -165,6 +165,8 @@ Cách chạy (chi tiết ở `.claude/skills/auto-issues/SKILL.md`):
   - Đây là ngoại lệ có chủ ý với lời dặn "không poll CI" của app desktop, chỉ áp cho pipeline này.
 - **Hỏi Owner qua phiên điều phối:** phiên con không hỏi Owner trực tiếp mà báo `CẦN OWNER`. Phiên điều phối hỏi Owner (thông báo đẩy + câu hỏi) rồi ghi quyết định thành comment trên PR / Issue.
 - **Chỉ phiên điều phối merge**, qua `tools/merge-pr.mjs`. Pipeline không tự merge PR sửa chính nó (skill `auto-issues`, `tools/auto-wait*`).
+  - Lệnh chạy từ `Project-2C-auto` vừa đưa về `origin/main`, không từ checkout chính như các phiên khác. Lúc merge, checkout chính còn ở nhánh của PR, nên chạy từ đó thì cổng merge là bản chưa merge của chính PR.
+  - `merge-pr` lấy checkout chính từ `git worktree list` và chạy mỗi bước dọn trong đúng thư mục của nó, nên vẫn dọn đúng chỗ.
 - **Giữ nguyên:**
   - quy trình một task (mục 5, P1);
   - review phiên sạch bằng `review-pr` (ADR-0017);

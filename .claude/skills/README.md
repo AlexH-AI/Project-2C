@@ -22,7 +22,7 @@ Not vendored: `review-pr` (ADR-0017) and `auto-issues` (ADR-0001 appendix M11) a
 
 ## Sửa cục bộ (local edits)
 
-Every edit to a vendored file is listed here. A PR that changes a file under `.claude/skills/` (other than `review-pr`) must update this table (`docs/process/REVIEW-CHECKLIST.md`).
+Every edit to a vendored file is listed here. A PR that changes a file under `.claude/skills/` (other than `review-pr` and `auto-issues`, which are not vendored) must update this table (`docs/process/REVIEW-CHECKLIST.md`).
 
 | File | Nội dung sửa | Lý do | Issue |
 |---|---|---|---|

@@ -146,7 +146,7 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
 
   Fix issues: #896…#905 (T-319…T-328, synthesis §8.5).
 - 2026-11-01: OWNER approved the `auto-issues` pipeline (ADR-0001 appendix M11, #942).
-  - One `/goal` in an orchestrating session runs the Issue queue through four real child sessions: coding-ses1/2 in the main checkout, review-1/2 in the review worktrees. Each job starts in a cleared context.
+  - One `/goal` in an orchestrating session runs the Issue queue through four real child sessions: coding-ses1/2 in the main checkout, review-1/2 in the review worktrees. Each new job starts in a cleared context; follow-ups of the same PR (CI fix, review changes, notes PR) go back to the session that holds it.
   - Inside the pipeline, Claude merges PRs of any risk (`merge-pr --owner`) and loops review until PASS with no round cap.
   - G1–G7, spec contradictions, and a coding session that disagrees with a blocking finding still stop it for the OWNER.
   - After the queue it proposes Issues from the OPEN review notes, waits for approval, creates them and ends.

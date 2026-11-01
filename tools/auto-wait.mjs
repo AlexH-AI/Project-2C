@@ -30,10 +30,39 @@ import {
   titleState,
   waitFor,
 } from './auto-wait-core.mjs';
-import { loadPr } from './pr-status.mjs';
+import { checkCounts } from './session-core.mjs';
 import { run } from './session-io.mjs';
 
-const gh = (args) => JSON.parse(run('gh', args, { timeout: 30000 }));
+const ghText = (args) => run('gh', args, { timeout: 30000 });
+const gh = (args) => JSON.parse(ghText(args));
+
+// What ciState / reviewState read. Not pr-status's loadPr: it also reads stacked PRs, the base CI
+// tested and main's commits since, 5 + k gh calls a read where one does (review #944).
+const PR_FIELDS = 'number,state,headRefOid,statusCheckRollup,comments,changedFiles';
+
+/**
+ * The PR as ciState / reviewState read it. With `files`, every file too, but only while CI has no
+ * check yet: the one case where ciState asks whether the PR is docs-only. Files come from REST, as
+ * `gh pr view --json files` gives the first 100 only (DR6-57).
+ */
+function readPr(number, { files = false } = {}) {
+  const pr = gh(['pr', 'view', String(number), '--json', PR_FIELDS]);
+  const { pass, fail, pending } = checkCounts(pr.statusCheckRollup ?? []);
+  pr.files =
+    files && pass + fail + pending === 0
+      ? ghText([
+          'api',
+          '--paginate',
+          `repos/{owner}/{repo}/pulls/${number}/files?per_page=100`,
+          '--jq',
+          '.[] | {path: .filename, previousPath: .previous_filename}',
+        ])
+          .split(/\r?\n/)
+          .filter(Boolean)
+          .map((line) => JSON.parse(line))
+      : [];
+  return pr;
+}
 
 /** The workflow runs of a commit: CI is over only when they all ended (see ciState). */
 const runsOf = (sha) =>
@@ -44,7 +73,7 @@ const runsOf = (sha) =>
     '[.workflow_runs[] | {name, status}]',
   ]);
 
-// One read of GitHub per mode; loadPr reads every file of the PR, as docs-only needs (DR6-57).
+// One read of GitHub per mode.
 const READS = {
   pr: ({ target }) =>
     prForIssue(
@@ -61,10 +90,10 @@ const READS = {
       target,
     ),
   ci: ({ target, not }) => {
-    const { pr } = loadPr(target);
+    const pr = readPr(target, { files: true });
     return ciState(pr, { not, runs: runsOf(pr.headRefOid) });
   },
-  review: ({ target, sha }) => reviewState(loadPr(target).pr, { sha }),
+  review: ({ target, sha }) => reviewState(readPr(target), { sha }),
   title: ({ target }) =>
     titleState(
       gh([

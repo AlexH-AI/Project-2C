@@ -154,6 +154,7 @@ Trục nào không có mục thì ghi "Không có phát hiện".
 - **Phiên con của pipeline `auto-issues`** (tin nhắn có dòng `[auto-issues]`, ADR-0001 phụ lục M11): làm tới hết §4 rồi dừng.
   - Không merge, kể cả `risk:low`: phiên điều phối merge.
   - Không hỏi Owner trong phiên. Chỗ skill bảo dừng hỏi Owner thì kết thúc bằng dòng `AUTO-CHILD: CẦN OWNER — …`.
+  - Trước khi kết luận, đọc các comment `Quyết định Owner (…)` trên PR và Issue. Mục Owner đã quyết là không chặn thì không tính là chặn. Đó là quyết định của Owner, không phải comment review cũ, nên §0 không cấm việc này. Nếu không đọc, mục Owner đã bác sẽ lại bị báo chặn, và pipeline quay về hỏi Owner trên cùng head.
   - Đoạn mở đầu của comment ghi `Phiên review: <tên phiên> (auto-issues).`; dòng cuối của lượt là dòng `AUTO-CHILD: …` theo brief.
 - **Phiên review không commit, không push, không sửa code** — kể cả sửa "nhỏ" cho mục vừa báo (P-1). Sửa là việc của phiên code; comment không bao giờ ghi "đã sửa trong PR" thay cho một vòng review mới.
 - **Trước khi merge** (Claude tự merge hoặc Owner bảo merge): `headRefOid` phải trùng SHA trong comment `REVIEW: PASS` mới nhất (`node tools/pr-status.mjs <N>` in cả hai; `merge-pr.mjs` từ chối khi lệch). Head đã đổi sau PASS (thêm commit, rebase, cập nhật base) → **review lại** diff từ SHA đã PASS tới head mới, ở phiên sạch, rồi mới merge.
