@@ -8,11 +8,15 @@ const LONG = 'Hôm qua gặp KH tại văn phòng ở quận 1 lúc 9 giờ sán
 const MARRIED = { field: 'maritalStatus', value: 'Đã kết hôn', quote: 'kết hôn' };
 const SINGLE = { field: 'maritalStatus', value: 'Độc thân', quote: 'độc thân' };
 const TWO = { field: 'childrenCount', value: '2', quote: '2 con' };
+const ONE = { field: 'childrenCount', value: '1', quote: '1 con đã mất' };
+const DIVORCED = { field: 'maritalStatus', value: 'Ly hôn', quote: 'ly hôn' };
+const WIDOWED = { field: 'maritalStatus', value: 'Góa', quote: 'vợ đã mất' };
+const SEPARATED = { field: 'maritalStatus', value: 'Ly thân', quote: 'ly thân' };
 /** What the Mock extracts of `note` for the two trường it knows. */
 const extracted = async (note: string) =>
   extractionOutputSchema.parse((await completeMock({ note, fields: FIELDS })).value).facts;
 
-describe('createMockAdapter', () => {
+describe('Mock extraction', () => {
   it('extracts simple patterns with quotes taken from the note', async () => {
     const note = 'Chị nói hai vợ chồng đã kết hôn 10 năm, có 2 bé. Em trai chị còn độc thân.';
     const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
@@ -136,9 +140,9 @@ describe('createMockAdapter', () => {
     // Children of someone else, named after the count.
     'KH đang nuôi 2 con của anh trai đã mất.',
     'KH chăm 3 cháu của chị gái.',
-    // Married, then divorced, in the same sentence.
-    'KH đã kết hôn nhưng đã ly hôn năm 2020.',
-    'KH đã kết hôn năm 2010, ly hôn năm 2020.',
+    // Married, then a divorce read as no value, in the same sentence (T-330: "đã ly hôn" is Ly hôn).
+    'KH đã kết hôn nhưng sắp ly hôn.',
+    'KH đã kết hôn năm 2010, vợ cũ đã mất.',
     // Said of anyone: "người" right before the phrase.
     'KH hỏi về gói cho người đã kết hôn.',
     'Gói này dành cho người độc thân.',
@@ -153,7 +157,7 @@ describe('createMockAdapter', () => {
     'Không biết KH đã kết hôn chưa.',
     // In a later sentence: the positions are the note's, not the sentence's.
     `${LONG} Khi KH đã kết hôn thì cần giấy đăng ký.`,
-    `${LONG} KH đã kết hôn nhưng đã ly hôn năm 2020.`,
+    `${LONG} KH đã kết hôn nhưng sắp ly hôn.`,
   ])('proposes nothing from %j (DR6-121)', async (note) => {
     expect(await extracted(note)).toEqual([]);
   });
@@ -448,6 +452,8 @@ describe('createMockAdapter', () => {
     ['KH ăn chắc mặc bền, KH đã kết hôn, có 2 con.', [MARRIED, TWO]],
     ['KH thích nhà cửa bền chắc, KH đã có 2 con.', [TWO]],
     ['KH đã kết hôn ạ.', [MARRIED]],
+    // One particle only (NIT §10, the review of PR #917).
+    ['KH đã kết hôn rồi ạ.', []],
     ['KH có 2 con của mình.', [TWO]],
   ])('reads %j as %j (the review of PR #809, T-288)', async (note, facts) => {
     expect(await extracted(note)).toEqual(facts);
@@ -569,9 +575,9 @@ describe('createMockAdapter', () => {
     expect(await extracted(note)).toEqual([]);
   });
 
-  it('proposes at most 20 phrases, counted among those about the KH', async () => {
+  it('proposes one phrase for each trường, the last said of the KH (rule 1, T-330)', async () => {
     expect(await extracted(`${'Em trai KH độc thân. '.repeat(25)}KH có 2 con.`)).toEqual([TWO]);
-    expect(await extracted('KH độc thân. '.repeat(25))).toHaveLength(20);
+    expect(await extracted('KH độc thân. '.repeat(25))).toEqual([SINGLE]);
   });
 
   it('reads each sentence on its own: a relative named in one leaves the KH of another', async () => {
@@ -627,10 +633,21 @@ describe('createMockAdapter', () => {
       '"KH ở quận 1.", spaces, then "Lan đã kết hôn."',
       `KH ở quận 1.${' '.repeat(36_000)}Lan đã kết hôn.`,
     ],
-    // Another count looked for after each count, to the end of its sentence (the review of PR #917):
-    // "bé" is no word of `PEOPLE`, so every count reaches that look.
+    // Another count looked for after a count, to the end of its sentence (the review of PR #917).
     ['"có 2 bé và"', `KH ${'có 2 bé và '.repeat(3273)}`],
     ['"có 2 bé", then words and no other count', `KH có 2 bé ${'đi học '.repeat(5200)}`],
+    // T-330: children who died after a count, past it or in their own sentences, a death after the
+    // married KH, "con" and "mất" in a clause, the words of hôn nhân, runs of spaces between words.
+    ['"1 con đã mất " after "có 2 con"', `KH có 2 con ${'1 con đã mất '.repeat(2800)}`],
+    ['"Một con đã mất. "', `KH có 99 con. ${'Một con đã mất. '.repeat(2300)}`],
+    ['"vợ đã mất, "', `KH đã kết hôn, ${'vợ đã mất, '.repeat(3300)}`],
+    ['"con ", then "mất"', `KH có 2 con. ${'con '.repeat(9000)}mất`],
+    ['"mất ", then "con"', `KH có 2 con. ${'mất '.repeat(9000)}con`],
+    ['"đã ly hôn, góa vợ, ly thân, "', `KH ${'đã ly hôn, góa vợ, ly thân, '.repeat(1300)}`],
+    ['spaces inside "2 con đã mất"', `KH có 2${' '.repeat(36_000)}con đã mất`],
+    ['spaces after "có 2 con"', `KH có 2 con${' '.repeat(36_000)}đã mất`],
+    ['spaces inside "đều đã mất"', `KH có 2 con nhưng đều${' '.repeat(36_000)}đã mất`],
+    ['spaces inside "vợ đã mất"', `KH đã kết hôn, vợ${' '.repeat(36_000)}đã mất`],
     // Clauses carrying the KH on or not, a phrase in them or not; marks with no word between them,
     // each a sentence or a clause of its own.
     ['"đã kết hôn, " after one "KH"', `KH ${'đã kết hôn, '.repeat(3000)}`],
@@ -911,30 +928,154 @@ describe('createMockAdapter', () => {
     'KH độc thân, điều này không còn đúng.',
     'KH độc thân. Điều này sai.',
     'KH có 2 con. Sai rồi, chỉ 1 con.',
-    // Two values of one trường in the note, none of someone else: a note that corrects itself, in
-    // the sentence or a later one (Owner 31/10).
+    // A note that corrects itself in words that are no simple statement, in the sentence or a later
+    // one: the last value said of the KH (rule 1, T-330).
     'KH độc thân, thực ra đã kết hôn.',
-    'KH độc thân, nay đã kết hôn.',
-    'KH độc thân, KH đã kết hôn.',
     'KH có 2 con. Thực ra chỉ 1 con.',
-    'KH độc thân. Nay KH đã kết hôn.',
-    'KH độc thân. Hiện KH đã kết hôn.',
-    // What ends a marriage later in the sentence, as "ly hôn" does (DR6-121): "ly dị", "ly thân", a
-    // death, "góa"; and a death after the children (Owner 31/10).
-    'KH đã kết hôn năm 2010 nhưng đã ly dị.',
-    'KH đã kết hôn, đã ly dị năm 2020.',
-    'KH đã kết hôn nhưng đang ly thân.',
-    'KH đã kết hôn nhưng vợ đã mất.',
+    // What ends a marriage later in the sentence, read as no value (DR6-121, Owner 31/10; T-330
+    // reads "ly dị", "ly thân", "vợ đã mất", "góa vợ", "đều đã mất" as values): "mà" carries no
+    // KH on.
     'KH đã kết hôn mà vợ đã mất.',
-    'KH đã kết hôn nhưng chồng qua đời năm 2020.',
-    'KH đã kết hôn, nay góa vợ.',
-    'KH có 2 con nhưng đều đã mất.',
   ])(
     'proposes nothing from %j: not a simple statement either (the review of PR #917)',
     async (note) => {
       expect(await extracted(note)).toEqual([]);
     },
   );
+
+  // Rule 1 (Owner 31/10 – 01/11, T-330): each trường takes the last value said of the KH in the
+  // note, proposed only as a simple statement; a sentence with no subject right after a simple
+  // statement about the KH speaks of the KH.
+  it.each([
+    ['KH độc thân. Nay KH đã kết hôn.', [MARRIED]],
+    ['KH độc thân, nay đã kết hôn.', [MARRIED]],
+    ['KH độc thân, KH đã kết hôn.', [MARRIED]],
+    ['KH độc thân. Hiện KH đã kết hôn.', [MARRIED]],
+    ['KH đã kết hôn. Có 2 con.', [MARRIED, TWO]],
+    ['KH có 2 con. Có 3 con.', [{ ...TWO, value: '3', quote: '3 con' }]],
+    // The last value is no simple statement: none for the trường.
+    ['KH có 2 con. Thực ra chỉ 1 con.', []],
+    ['KH có 2 con. Anh Nam có 3 con.', []],
+    ['KH đã kết hôn. Bác sĩ nói KH độc thân.', []],
+    // Someone named in other words than those of `PEOPLE`: their value counts (NIT §10, #917).
+    ['KH đã kết hôn, Lan độc thân.', []],
+    // A value said of someone else, said not to be, asked or guessed is none said of the KH.
+    ['KH đã kết hôn. Em gái KH độc thân.', [MARRIED]],
+    ['KH độc thân. KH không có 2 con.', [SINGLE]],
+    // One proposal for each trường, the last; in the order of the note.
+    ['KH có 2 con. KH đã kết hôn. KH có 2 con.', [MARRIED, TWO]],
+    // A sentence after one that ends on no simple statement about the KH speaks of no one known.
+    ['KH sống ở quận 7. Có 2 con.', []],
+    ['KH đã kết hôn, sống ở quận 7. Có 2 con.', [MARRIED]],
+    // Kept as before (ACCEPTED, Owner 01/11): a later sentence that guesses, asks or denies in
+    // words outside the closed lists holds no value.
+    ['KH đã kết hôn. Hình như vậy.', [MARRIED]],
+    ['KH đã kết hôn. Phải không?', [MARRIED]],
+    ['KH đã kết hôn. Điều đó không có thật.', [MARRIED]],
+  ])('reads %j as %j: the last value said of the KH (rule 1, T-330)', async (note, facts) => {
+    expect(await extracted(note)).toEqual(facts);
+  });
+
+  // Rule 2 (T-330): "Ly hôn", "Góa", "Ly thân"; a death or "ly thân" only after a simple statement
+  // that the KH is married, wherever before (Owner 01/11).
+  it.each([
+    ['KH đã kết hôn. Đã ly hôn năm 2020.', [DIVORCED]],
+    ['KH đã kết hôn, có 2 con. Đã ly dị năm 2021.', [TWO, { ...DIVORCED, quote: 'ly dị' }]],
+    ['KH đã kết hôn. Vợ đã mất năm 2020.', [{ ...WIDOWED, quote: 'Vợ đã mất' }]],
+    ['KH đã kết hôn nhưng vợ đã mất.', [WIDOWED]],
+    ['KH đã kết hôn nhưng đang ly thân.', [SEPARATED]],
+    // Standing alone: "ly hôn", "ly dị", "góa (vợ / chồng)", in either spelling, as a field line.
+    ['KH đã ly hôn.', [DIVORCED]],
+    ['KH ly dị năm 2020.', [{ ...DIVORCED, quote: 'ly dị' }]],
+    ['Hôn nhân: Ly hôn; Số con: 0', [{ ...DIVORCED, quote: 'Ly hôn' }]],
+    ['KH góa vợ được 5 năm nay.', [{ ...WIDOWED, quote: 'góa vợ' }]],
+    ['KH goá chồng, có 2 con.', [{ ...WIDOWED, quote: 'goá chồng' }, TWO]],
+    ['Tình trạng hôn nhân: Góa', [{ ...WIDOWED, quote: 'Góa' }]],
+    ['KH đã kết hôn, nay góa vợ.', [{ ...WIDOWED, quote: 'góa vợ' }]],
+    ['KH đã kết hôn nhưng chồng qua đời năm 2020.', [{ ...WIDOWED, quote: 'chồng qua đời' }]],
+    ['KH đã kết hôn, chồng đã qua đời.', [{ ...WIDOWED, quote: 'chồng đã qua đời' }]],
+    // After the married KH, wherever before; the last value said of the KH.
+    ['KH đã kết hôn, có 2 con. Vợ đã mất.', [TWO, { ...WIDOWED, quote: 'Vợ đã mất' }]],
+    ['KH đã ly hôn, KH đã kết hôn lại, có 2 con.', [MARRIED, TWO]],
+    // The sentences that proposed nothing before (DR6-121, the review of PR #917).
+    ['KH đã kết hôn nhưng đã ly hôn năm 2020.', [DIVORCED]],
+    ['KH đã kết hôn năm 2010, ly hôn năm 2020.', [DIVORCED]],
+    [`${LONG} KH đã kết hôn nhưng đã ly hôn năm 2020.`, [DIVORCED]],
+    ['KH đã kết hôn năm 2010 nhưng đã ly dị.', [{ ...DIVORCED, quote: 'ly dị' }]],
+    ['KH đã kết hôn, đã ly dị năm 2020.', [{ ...DIVORCED, quote: 'ly dị' }]],
+    // Of someone else, said not to be or wished: no value said of the KH, and what ends a marriage
+    // later in the sentence, as before (DR6-121).
+    ['KH đã kết hôn, em gái đã ly hôn.', []],
+    ['KH đã kết hôn, không ly hôn.', []],
+    ['KH đã kết hôn năm 2010, muốn ly hôn.', []],
+    ['KH đã kết hôn, có 2 con nhưng vợ đã mất.', []],
+    // A death, "ly thân" with no married KH before: no simple statement.
+    ['KH đang ly thân.', []],
+    ['Hôn nhân: Ly thân', []],
+    ['KH độc thân, đang ly thân.', []],
+    ['KH độc thân. Vợ đã mất.', []],
+    ['KH có 2 con. Vợ đã mất.', [TWO]],
+    // Not standing as the rule says: "vừa" adds something, "Vợ KH" is not "Vợ", "mà" carries no KH on.
+    ['KH vừa ly hôn.', []],
+    ['KH đã kết hôn mà vợ đã mất.', []],
+    ['KH sắp ly hôn.', []],
+    // What ends a marriage in the sentence, outside these forms, as before; in a later sentence,
+    // kept as before (Owner 01/11).
+    ['KH đã kết hôn nhưng vợ KH đã mất.', []],
+    ['KH đã kết hôn. Vợ KH đã mất.', [MARRIED]],
+  ])('reads %j as %j: Ly hôn, Góa, Ly thân (rule 2, T-330)', async (note, facts) => {
+    expect(await extracted(note)).toEqual(facts);
+  });
+
+  // Rule 3 (T-330): "<k> con / bé đã mất / qua đời" takes k from the count of the KH's children said
+  // before, wherever before (Owner 01/11); "đều đã mất" all of them. Any other way of saying a child
+  // died drops Số con.
+  it.each([
+    ['KH có 2 con. Một con đã mất.', [{ ...ONE, quote: 'Một con đã mất' }]],
+    ['KH có 2 con nhưng đều đã mất.', [{ ...TWO, value: '0', quote: 'đều đã mất' }]],
+    ['KH có 2 con, 1 con đã mất năm 2020.', [ONE]],
+    ['KH có 2 con nhưng một con đã mất.', [{ ...ONE, quote: 'một con đã mất' }]],
+    ['KH có 3 con. Một bé đã qua đời.', [{ ...TWO, quote: 'Một bé đã qua đời' }]],
+    ['KH có 3 con. Hai con qua đời.', [{ ...ONE, quote: 'Hai con qua đời' }]],
+    ['KH có 3 con. Một con đã mất. Một con qua đời.', [{ ...ONE, quote: 'Một con qua đời' }]],
+    ['KH có 2 con. KH đã kết hôn. Một con đã mất.', [MARRIED, { ...ONE, quote: 'Một con đã mất' }]],
+    // More than the KH has, no count before, or no simple statement: none for Số con.
+    ['KH có 1 con. Hai con đã mất.', []],
+    ['KH đã kết hôn. Một con đã mất.', [MARRIED]],
+    ['KH có 2 con. Một con đã mất sớm.', []],
+    // Other ways of saying a child died, or anything else said of "con" with "mất" (CX-A4).
+    ['KH có 2 con. Con út đã mất.', []],
+    ['KH có 2 con, con út đã mất.', []],
+    ['KH có 2 con nhưng mất một con.', []],
+    ['KH có 2 con. Mất một con năm 2020.', []],
+    ['KH có 2 con. Con trai mất việc.', []],
+    // Of someone else, said not to be, or no child.
+    ['KH có 2 con. Chị gái KH có một con đã mất.', [TWO]],
+    ['KH có 2 con, không con nào mất.', [TWO]],
+    ['KH có 2 con. Ông bà nội đã mất.', [TWO]],
+    // A death later in the count's sentence, outside these forms, as before (Owner 31/10).
+    ['KH có 2 con, bố mẹ đã mất.', []],
+    // A death after the children in the sentence, as before (Owner 31/10): the wife may be a child's.
+    ['KH có 2 con nhưng vợ đã mất.', []],
+  ])('reads %j as %j: children who died (rule 3, T-330)', async (note, facts) => {
+    expect(await extracted(note)).toEqual(facts);
+  });
+
+  // Rule 4 (T-330): "bé", a child, names someone else before a phrase in its sentence, as "con"
+  // does; not "bé" said of a size.
+  it.each([
+    ['KH có 2 bé đã lớn, độc thân.', [{ ...TWO, quote: '2 bé' }]],
+    ['KH có 2 con đã lớn, độc thân.', [TWO]],
+    ['KH chăm bé Na, KH độc thân.', []],
+    ['KH ở căn nhà nhỏ bé, KH độc thân.', [SINGLE]],
+    ['KH có căn hộ bé nhỏ, KH độc thân.', [SINGLE]],
+    ['KH có khoản nợ bé xíu, KH độc thân.', [SINGLE]],
+    ['KH có khoản vay bé tí, KH độc thân.', [SINGLE]],
+    ['KH có nhà bé hơn trước, KH độc thân.', [SINGLE]],
+    ['KH có phòng bé nhất, KH độc thân.', [SINGLE]],
+  ])('reads %j as %j: "bé" as "con" (rule 4, T-330)', async (note, facts) => {
+    expect(await extracted(note)).toEqual(facts);
+  });
 
   it('extracts nothing from a note without a known pattern', async () => {
     const output = extractionOutputSchema.parse(
