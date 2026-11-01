@@ -12,7 +12,7 @@ import {
   PROMPT_VERSIONS,
   type AnalysisProfile,
 } from './schema';
-import { fact, nfdZw, PROFILE, TODAY, ZWSP } from './test-support';
+import { fact, nfdZw, NUL, PROFILE, TODAY, ZWSP } from './test-support';
 import {
   buildWebMessage,
   checkWebAnswer,
@@ -89,8 +89,6 @@ const NBSP = String.fromCodePoint(0xa0);
 const FILLER = String.fromCodePoint(0x3164);
 /** A combining acute accent; on no vowel, it reads as a space (G5 §7 item 0, §12.2). */
 const ACUTE = String.fromCodePoint(0x301);
-/** NUL: K20 keeps it for the store to refuse; a pasted line drops it, as V3–V6 do (G5 §14.2). */
-const NUL = String.fromCodePoint(0);
 
 /** The Unicode line separators: a line of a paste ends there too, as a KYC note's (G5 §12.3). */
 const SEPARATORS = [

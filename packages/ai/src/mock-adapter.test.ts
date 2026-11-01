@@ -927,9 +927,11 @@ describe('createMockAdapter', () => {
     // "Anh" or "chị" may be the KH, or not: only the KH saying it ("Chị nói …") names the KH.
     'Anh ấy đã kết hôn, có 2 con.',
     'Chị gái đã kết hôn, có 2 con.',
-    // A field line of someone else; a phrase in the heading before the KH.
+    // A field line of someone else; a phrase in the heading before the KH, in a clause that opens
+    // on no KH (":" ends none).
     'Vợ: đã kết hôn, có 2 con.',
     'Độc thân và có 2 con: KH chưa xác nhận.',
+    'Độc thân: KH đã kết hôn.',
     // Grandchildren, as (a) lists only "con / bé".
     'KH có 2 cháu.',
     // Kept by DR6-121 before (a) (Owner 31/10): "khi" before the phrase, a verb before the count.

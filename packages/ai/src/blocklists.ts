@@ -93,6 +93,10 @@ const QUY = `${ci('quy')}|${ci('qui')}`;
 /** "môi", "ranh", "biên", "thế" in any case: after "môi giới"… "luật <Tên>" is a law's name. */
 const GIOI_OF = ['môi', 'ranh', 'biên', 'thế'].map(ci).join('|');
 
+/** `word` in any case, but after one of `before` and white space: "định" but that of "quy định". */
+const unlessAfter = (word: string, before: string) =>
+  String.raw`(?<!${B}(${before})\s+)${ci(word)}`;
+
 /**
  * "luật <Tên>" (G5 §8.4): "luật" in any case, not after "pháp" (Owner Q6), "kỷ", "kỉ", "quy",
  * "qui" (DR6-102), "giới" that is not the "giới" of "môi / ranh / biên / thế giới" ("giới luật
@@ -101,7 +105,7 @@ const GIOI_OF = ['môi', 'ranh', 'biên', 'thế'].map(ci).join('|');
  * case (the prompt's own words, a lawyer; DR6-16). The two may touch: an invisible character
  * between them is dropped (DR6-17).
  */
-const LAW_NAME = String.raw`(?<!${B}(${ci('pháp')}|${ci('kỷ')}|${ci('kỉ')}|${QUY}|(?<!${B}(${GIOI_OF})\s+)${ci('giới')}|(?<!${B}(${QUY})\s+)${ci('định')})\s+)${B}${ci('luật')}\s*(?!(${ci('kh')}|${ci('re')}|${ci('sư')})${E})\p{Lu}`;
+const LAW_NAME = String.raw`(?<!${B}(${ci('pháp')}|${ci('kỷ')}|${ci('kỉ')}|${QUY}|${unlessAfter('giới', GIOI_OF)}|${unlessAfter('định', QUY)})\s+)${B}${ci('luật')}\s*(?!(${ci('kh')}|${ci('re')}|${ci('sư')})${E})\p{Lu}`;
 
 /**
  * V6 — citing legal texts (G5 §8.4; "khoản <số>" alone is money, Owner Q4). `\s*`: the parts may

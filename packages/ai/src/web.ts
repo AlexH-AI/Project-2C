@@ -82,9 +82,9 @@ export function startWebAnalysis(request: WebAnalysisRequest): WebStart {
 }
 
 /**
- * A line as it is compared (G5 §6a, R2-03): cleaned as V3–V6 read a text (no invisible character,
- * then NFKC: DR6-17; a stray mark as a space: DR6-122; each run of white space as one space,
- * trimmed), without a quote prefix (`>`, `> >`…).
+ * A line as it is compared (G5 §6a, R2-03): cleaned as V3–V6 read a text (no invisible character
+ * nor NUL, then NFKC: DR6-17, DR6-142; a stray mark as a space: DR6-122; each run of white space
+ * as one space, trimmed), without a quote prefix (`>`, `> >`…).
  */
 const ownLine = (line: string) =>
   cleanText(line)

@@ -254,14 +254,23 @@ const OF_SOMEONE_ELSE = new RegExp(
 const KH_WORD = String.raw`(?:KH|[Kk]hách(?: hàng)?)`;
 
 /**
+ * The KH, or the KH's couple, maybe after "Hiện": `kh`, maybe with "và vợ / chồng" ("KH và vợ"),
+ * or "vợ chồng", maybe after "Hai", then "KH": always when `saysKh`, else maybe ("Vợ chồng",
+ * "Vợ chồng KH").
+ */
+function namingTheKh(kh: string, saysKh: boolean): string {
+  return String.raw`${NOW}?(?:${kh}(?: và (?:vợ|chồng))?|(?:hai )?vợ chồng${saysKh ? ' kh' : '(?: kh)?'})`;
+}
+
+/**
  * Who a note names as the KH, opening it: `KH_WORD`, the KH's couple ("Hai vợ chồng", "Vợ chồng",
  * "Vợ chồng KH", "KH và vợ"), maybe after "Hiện". Not "anh" or "chị" alone, which may be someone
  * else ("Anh ấy", "Chị gái"), but as the KH saying it (`OPENS`).
  */
-const THE_KH = String.raw`${NOW}?(?:${KH_WORD}(?: và (?:vợ|chồng))?|(?:hai )?vợ chồng(?: kh)?)`;
+const THE_KH = namingTheKh(KH_WORD, false);
 
 /** Of `THE_KH`, those that say "KH": "KH", "KH và vợ", "Vợ chồng KH", maybe after "Hiện". */
-const KH_NAMED = String.raw`${NOW}?(?:kh(?: và (?:vợ|chồng))?|(?:hai )?vợ chồng kh)`;
+const KH_NAMED = namingTheKh('kh', true);
 
 /** Saying it: "nói", "cho biết lại", "khẳng định chắc nịch là". */
 const SAYING = String.raw`(?:nói|cho biết|kể|khẳng định|xác nhận)(?: lại)?(?: chắc nịch)?(?: (?:là|rằng))?`;
@@ -725,8 +734,9 @@ function aboutTheKh(
     // clause opens on the KH ("Thực ra chỉ 1 con.", Owner 31/10).
     said.set(fact.field, (said.get(fact.field) ?? new Set<string>()).add(fact.value));
     const { kh } = inClause;
-    // Before where its clause opens on the KH, a phrase is in the heading ("Độc thân: KH…").
-    if (kh === undefined || at < kh) return undefined;
+    // Only in a clause that speaks of the KH: "Độc thân: KH đã kết hôn." is one clause (":" ends
+    // none) opening on no KH. A phrase never stands before `kh`: no opening holds one.
+    if (kh === undefined) return undefined;
     // A word of `JOINED` carries the KH on only right after a phrase about the KH ("KH đã kết hôn
     // và có 2 con"): after other words, what follows it may be said of whoever they name ("KH gặp
     // người yêu cũ vì có 2 con", Owner 31/10); right after the KH, "nên" says "should" ("KH nên có

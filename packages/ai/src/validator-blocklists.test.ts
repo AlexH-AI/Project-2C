@@ -1,11 +1,8 @@
 /** V3–V6 (prompts G5 §7, §8): blocked phrases in the texts of analysis / discovery. */
 import { describe, expect, it } from 'vitest';
-import { lettersAround, nfdZw } from './test-support';
+import { lettersAround, nfdZw, NUL } from './test-support';
 import { cleanText } from './text-match';
 import { validateOutput, type OutputCheckInput } from './validator';
-
-/** NUL: K20 keeps it for the store to refuse; V3–V6 drop it (G5 §7 item 0, §14.2, DR6-142). */
-const NUL = '\u0000';
 
 const input: OutputCheckInput = { factCodes: ['F1'], missingCategories: ['ASSETS'] };
 
