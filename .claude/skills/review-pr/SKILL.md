@@ -151,5 +151,9 @@ Trục nào không có mục thì ghi "Không có phát hiện".
 
 - `risk:low` (sau khi nâng mức vẫn là low) + `REVIEW: PASS` + CI xanh trên head → `node tools/merge-pr.mjs <N>` (`--merge` khi có PR xếp chồng): lệnh kiểm lại các điều kiện, merge và dọn nhánh theo CLAUDE.md. Lệnh đọc mức từ phần ``mức `<risk>` `` của comment (mẫu §4), nên mức đã nâng phải ghi đúng dạng đó.
 - Còn lại → báo Owner: kết luận, số mục mỗi trục, mục chặn nặng nhất.
+- **Phiên con của pipeline `auto-issues`** (tin nhắn có dòng `[auto-issues]`, ADR-0001 phụ lục M11): làm tới hết §4 rồi dừng.
+  - Không merge, kể cả `risk:low`: phiên điều phối merge.
+  - Không hỏi Owner trong phiên. Chỗ skill bảo dừng hỏi Owner thì kết thúc bằng dòng `AUTO-CHILD: CẦN OWNER — …`.
+  - Đoạn mở đầu của comment ghi `Phiên review: <tên phiên> (auto-issues).`; dòng cuối của lượt là dòng `AUTO-CHILD: …` theo brief.
 - **Phiên review không commit, không push, không sửa code** — kể cả sửa "nhỏ" cho mục vừa báo (P-1). Sửa là việc của phiên code; comment không bao giờ ghi "đã sửa trong PR" thay cho một vòng review mới.
 - **Trước khi merge** (Claude tự merge hoặc Owner bảo merge): `headRefOid` phải trùng SHA trong comment `REVIEW: PASS` mới nhất (`node tools/pr-status.mjs <N>` in cả hai; `merge-pr.mjs` từ chối khi lệch). Head đã đổi sau PASS (thêm commit, rebase, cập nhật base) → **review lại** diff từ SHA đã PASS tới head mới, ở phiên sạch, rồi mới merge.

@@ -145,6 +145,13 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - Q4 (a): CLR4-F2 stays under K1, with no code change. NT-EX-08 / 09 get one line on pre-v1.0 data whose optional appointment text holds only invisible characters.
 
   Fix issues: #896…#905 (T-319…T-328, synthesis §8.5).
+- 2026-11-01: OWNER approved the `auto-issues` pipeline (ADR-0001 appendix M11, #942).
+  - One `/goal` in an orchestrating session runs the Issue queue through four real child sessions: coding-ses1/2 in the main checkout, review-1/2 in the review worktrees. Each job starts in a cleared context.
+  - Inside the pipeline, Claude merges PRs of any risk (`merge-pr --owner`) and loops review until PASS with no round cap.
+  - G1–G7, spec contradictions, and a coding session that disagrees with a blocking finding still stop it for the OWNER.
+  - After the queue it proposes Issues from the OPEN review notes, waits for approval, creates them and ends.
+  - The orchestrator waits on GitHub with `tools/auto-wait.mjs` in the background. This is a deliberate exception to the app's "do not poll CI".
+  - The OWNER picks when to try it.
 
 ## Next decision
 

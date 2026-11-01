@@ -11,7 +11,7 @@ Vendored from [`mattpocock/skills`](https://github.com/mattpocock/skills) at com
 | `tdd` | `skills/engineering/tdd` | Unmodified; how it combines with `superpowers:test-driven-development` is set in `CLAUDE.md` (task workflow, step 3) |
 | `setup-matt-pocock-skills` | `skills/engineering/setup-matt-pocock-skills` | One-time config required by `to-spec` / `to-tickets` |
 
-Not vendored: `review-pr` is 2C's own skill (ADR-0017).
+Not vendored: `review-pr` (ADR-0017) and `auto-issues` (ADR-0001 appendix M11) are 2C's own skills.
 
 ## Upstream skills referenced but not installed
 
