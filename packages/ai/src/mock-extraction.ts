@@ -1,8 +1,8 @@
 /**
  * The Mock's extraction (spec Phase 5 §10; the adapter is `mock-adapter.ts`): from a KYC note, a
- * few phrases on the KH's hôn nhân and con, each quoted as the note writes it, only from a simple
- * statement about the KH (DR6-141). Narrow on purpose (CX-A4): what may mean something else gives
- * no proposal.
+ * few phrases on the KH's hôn nhân and con, each quoted as the note writes it, the last said of
+ * each trường and only from a simple statement about the KH (DR6-141, T-330). Narrow on purpose
+ * (CX-A4): what may mean something else gives no proposal.
  */
 import type { ExtractionOutput } from './schema';
 
@@ -34,17 +34,20 @@ const NOT_PLANNED = String.raw`(?<!${PLANNING})`;
  */
 const NOT_PLANNED_CHILDREN = String.raw`(?<!${PLANNING}(?:có|sinh|đẻ|nhận nuôi) (?:thêm |được )?)`;
 
-/** "Hiện / Hiện tại / Hiện nay" before the KH: "Hiện KH có", "Hiện tại KH là đàn ông". */
-const NOW = String.raw`(?:[Hh]iện(?: tại| nay)? )`;
+/**
+ * "Hiện / Hiện tại / Hiện nay / Nay" before the KH: "Hiện KH có", "Hiện tại KH là đàn ông", "KH độc
+ * thân. Nay KH đã kết hôn." (T-330).
+ */
+const NOW = String.raw`(?:(?:[Hh]iện(?: tại| nay)?|[Nn]ay) )`;
 
 /**
- * "KH" opening its clause, maybe after "Hiện / Hiện tại / Hiện nay", and up to two of "đã / đang /
- * hiện / vừa / mới / sống / ở": the KH the subject of what follows ("KH đã", "KH đang sống", "Hiện
- * KH có", "Theo chị Lan, KH là", "- KH có"), not someone's nor an object ("Người yêu của KH đã
- * có", "Người giới thiệu KH là", the review of PR #809). "KH" only, not "Khách" as `THE_KH`:
- * these rules spare words wherever a clause opens, and after other words "khách" may be someone
- * else (`OPENS_AFTER`): "KH đã kết hôn, khách là người độc thân". So "Khách là người độc thân"
- * gives no proposal, the safe way (the review of PR #917). Its clause ends at a mark of
+ * "KH" opening its clause, maybe after "Hiện / Hiện tại / Hiện nay / Nay" (`NOW`), and up to two of
+ * "đã / đang / hiện / vừa / mới / sống / ở": the KH the subject of what follows ("KH đã", "KH đang
+ * sống", "Hiện KH có", "Theo chị Lan, KH là", "- KH có"), not someone's nor an object ("Người yêu
+ * của KH đã có", "Người giới thiệu KH là", the review of PR #809). "KH" only, not "Khách" as
+ * `THE_KH`: these rules spare words wherever a clause opens, and after other words "khách" may be
+ * someone else (`OPENS_AFTER`): "KH đã kết hôn, khách là người độc thân". So "Khách là người độc
+ * thân" gives no proposal, the safe way (the review of PR #917). Its clause ends at a mark of
  * `CLAUSE_END` or at ":". Up to two, and one space between the words as a note is stored and as
  * "anh trai" is read, not `\s+`: these lookbehinds are tried at every place of a sentence, and one
  * reading a run of spaces back took a second for 36 000 of them (the review of PR #753). The look
@@ -54,10 +57,11 @@ const NOW = String.raw`(?:[Hh]iện(?: tại| nay)? )`;
 const KH_SUBJECT = String.raw`(?<!\p{L}[^.!?;,:\n]*?)${NOW}?KH(?: (?:đã|đang|hiện|vừa|mới|sống|ở)){0,2}`;
 
 /**
- * Not of anyone: "người" right before a phrase says it of anyone ("gói cho người đã kết hôn",
- * DR6-121), but in the KH's own "KH là người độc thân" (T-289).
+ * Not of anyone: "người", maybe with "đã", right before a phrase says it of anyone ("gói cho người
+ * đã kết hôn", DR6-121; "người đã ly hôn", T-330), but in the KH's own "KH là người độc thân"
+ * (T-289).
  */
-const NOT_OF_ANYONE = String.raw`(?<!(?<!${KH_SUBJECT} là )(?<!\p{L})người )`;
+const NOT_OF_ANYONE = String.raw`(?<!(?<!${KH_SUBJECT} là )(?<!\p{L})người (?:đã )?)`;
 
 /**
  * "thì" or ":" right before "chưa / không": an answer, saying that what stands before it is not so
@@ -94,12 +98,12 @@ const WITH_PARTNER = `có|cùng|với|${MARRY}`;
  * Someone other than the KH: named before a phrase in its sentence, the phrase is about them
  * (DR6-19, DR6-78). A word that may also name the KH ("cô", "ông"…) gives no proposal rather than
  * a wrong one; so do the KH's own children and brothers and sisters named first ("KH có 2 con, đã
- * kết hôn." may be about the children, "Anh chị em của KH đều đã kết hôn." is about them). "anh"
- * or "chị" alone may be the KH. Where some of these words name no one else: `NAMES_NO_ONE`,
- * `SAID_OF_THE_KH`.
+ * kết hôn." may be about the children, "Anh chị em của KH đều đã kết hôn." is about them), "bé"
+ * as "con" ("KH có 2 bé đã lớn, độc thân.", T-330). "anh" or "chị" alone may be the KH. Where some
+ * of these words name no one else: `NAMES_NO_ONE`, `SAID_OF_THE_KH`.
  */
 const PEOPLE = [
-  'con|cháu|anh em|anh trai|anh họ|anh rể|anh ruột|anh của',
+  'con|bé|cháu|anh em|anh trai|anh họ|anh rể|anh ruột|anh của',
   'chị em|chị gái|chị họ|chị dâu|chị ruột|chị của',
   'em|ông|bà|cô|chú|bác|dì|cậu|mợ|thím|dượng|bố|mẹ|cha|má',
   SPOUSE,
@@ -112,15 +116,23 @@ const SOMEONE_ELSE = new RegExp(
   'iu',
 );
 
+/** A number in words: "hai", "mười". */
+const NUMBER_WORD = 'một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười';
+
+/** A count of people: "ba người bạn", "các anh", "2 người". */
+const HOW_MANY = String.raw`${NUMBER_WORD}|mấy|vài|các|những|\d+`;
+
 /**
  * Words of `PEOPLE` that name no one else, anywhere and in any case: inside a word that holds a kin
- * word ("bác sĩ", "cô giáo", "cô đơn", "chú ý", "chú trọng", "ghi chú"), in the heading "Chú
- * thích:" and in the couple, the KH one of them ("vợ chồng", "KH và vợ"). Not a couple someone
- * lives with or has (`WITH_PARTNER`): "KH sống cùng vợ chồng anh Nam" names them (the review of PR
- * #809). So none of these words is one of `OWN_PARTNER`, and which is read first does not matter.
+ * word ("bác sĩ", "cô giáo", "cô đơn", "chú ý", "chú trọng", "ghi chú"), "bé" said of a size
+ * ("nhỏ bé", "bé nhỏ / xíu / tí / hơn / nhất", T-330) but after a count, where it is a child ("2 bé
+ * nhỏ", the review of PR #939), in the heading "Chú thích:", in "góa vợ / chồng" and in the couple,
+ * the KH one of them ("vợ chồng", "KH và vợ"). Not a couple someone lives with or has
+ * (`WITH_PARTNER`): "KH sống cùng vợ chồng anh Nam" names them (the review of PR #809). So none of
+ * these words is one of `OWN_PARTNER`, and which is read first does not matter.
  */
 const NAMES_NO_ONE = new RegExp(
-  String.raw`(?<!\p{L})(?:bác sĩ|cô giáo|cô đơn|chú ý|chú trọng|ghi chú|chú thích(?=:)|(?<!(?:${WITH_PARTNER}) )vợ chồng|(?<=và )(?:${SPOUSE}))(?!\p{L})`,
+  String.raw`(?<!\p{L})(?:bác sĩ|cô giáo|cô đơn|chú ý|chú trọng|ghi chú|nhỏ bé|bé(?<!(?<!\p{L})(?:${HOW_MANY}) bé) (?:nhỏ|xíu|tí|hơn|nhất)|chú thích(?=:)|g(?:óa|oá) (?:${SPOUSE})|(?<!(?:${WITH_PARTNER}) )vợ chồng|(?<=và )(?:${SPOUSE}))(?!\p{L})`,
   'giu',
 );
 
@@ -158,14 +170,9 @@ const SAID_OF_THE_KH = new RegExp(
  */
 const PARTNER_FIRST = new RegExp(String.raw`(?:${OWN_PARTNER})(?!\p{L})(?! và(?!\p{L}))`, 'u');
 
-/** A number in words: "hai", "mười". */
-const NUMBER_WORD = 'một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười';
-
-/** A count of people: "ba người bạn", "các anh", "2 người". */
-const HOW_MANY = String.raw`${NUMBER_WORD}|mấy|vài|các|những|\d+`;
-
 /** A count of children, in figures or in words: "1 con", "một bé". */
 const COUNT = String.raw`(?:(?<!\p{N})\d{1,2}|(?<!\p{L})(?:${NUMBER_WORD}))\s+(?:con|bé)(?!\p{L})`;
+const COUNTED = new RegExp(COUNT, 'giu');
 
 /**
  * "của" and someone else right after "<n> con / bé": their children ("2 con của anh trai",
@@ -290,8 +297,86 @@ const JOINS_ON = new RegExp(String.raw`\s*(?:${STARTS_ANOTHER})(?!\p{L})`, 'iuy'
  */
 const CLAUSE_DONE = String.raw`(?:\s+(?:ạ|rồi|nhé))?(?:\s*(?=[.!?;,\n]|$)|\s+(?:${STARTS_ANOTHER}|mà|còn)(?!\p{L}))`;
 
-/** When the KH married, after "kết hôn": "10 năm", "được 5 năm nay", "năm 2010", "khi 25 tuổi". */
-const WHEN_MARRIED = String.raw`(?:(?:được|từ)\s+)?(?:(?:${HOW_MANY})\s+năm(?:\s+(?:nay|rồi|trước))?|năm\s+\d{4}|(?:khi|lúc|năm)\s+\d{1,2}\s+tuổi)`;
+/**
+ * When it came about, after a phrase of hôn nhân or a death: "kết hôn 10 năm", "góa vợ được 5 năm
+ * nay", "ly hôn năm 2020", "kết hôn khi 25 tuổi".
+ */
+const SINCE = String.raw`(?:(?:được|từ)\s+)?(?:(?:${HOW_MANY})\s+năm(?:\s+(?:nay|rồi|trước))?|năm\s+\d{4}|(?:khi|lúc|năm)\s+\d{1,2}\s+tuổi)`;
+
+/**
+ * A death: "đã mất", "qua đời", "đã qua đời". "mất" alone may be anything lost ("mất việc"). One
+ * space between the words, as a note is stored, so that a phrase holding it quotes no run of
+ * spaces past what V1 lets a quote hold.
+ */
+const DIED = '(?:đã mất|(?:đã )?qua đời)';
+
+/** Divorced, separated, widowed, in either spelling: "ly hôn", "li dị", "ly thân", "góa", "goá". */
+const DIVORCE = 'l[iy] (?:hôn|dị)';
+const SEPARATION = 'l[iy] thân';
+const WIDOWED = 'g(?:óa|oá)';
+
+/** After a phrase of hôn nhân or a death: when it came about, then the end of its clause. */
+const DONE_SINCE = new RegExp(String.raw`(?:\s+${SINCE})?${CLAUSE_DONE}`, 'iuy');
+
+/** Before a phrase standing on its own: only words that add nothing, from the KH. */
+const ONLY_FILLER = new RegExp(String.raw`^\s*(?:${FILLER})*$`, 'iu');
+
+/** The value a simple statement that the KH is married gives (rule 2, T-330). */
+const MARRIED = 'Đã kết hôn';
+
+/** Children who died, in figures or in words: "1 con đã mất", "Một bé qua đời" (rule 3, T-330). */
+const DEAD_CHILDREN = String.raw`(?:(?<!\p{N})(\d{1,2})|(?<!\p{L})(${NUMBER_WORD})) (?:con|bé) ${DIED}(?!\p{L})`;
+
+/** How many `DEAD_CHILDREN` died: its figures, or its number in words. */
+function howManyDied(match: RegExpExecArray): number {
+  return match[1] ? Number(match[1]) : NUMBER_WORD.split('|').indexOf(match[2]!.toLowerCase()) + 1;
+}
+
+/** A child, and a death said any way: "con út đã mất", "mất một con", "bé qua đời". */
+const CHILD = /(?<!\p{L})(?:con|bé)(?!\p{L})/iu;
+const DEATH = /(?<!\p{L})(?:mất|qua đời)(?!\p{L})/giu;
+
+/**
+ * A child said to have died in any other way than `DEAD_CHILDREN` (outside `covered`): where its
+ * clause first names the child or the death, a value of Số con that is never a simple statement,
+ * so a count said before is not the last value said of the KH ("KH có 2 con. Con út đã mất.", rule
+ * 3). Anything else said of "con" with "mất" too, the safe way (CX-A4): "Con trai mất việc.". Only
+ * the clauses of such a death are read, each once.
+ */
+function otherDeaths(note: string, clause: Reader, covered: Uint8Array) {
+  const clauseAt = clause((part) => part);
+  const deaths = [];
+  let read: Part | undefined;
+  for (const death of note.matchAll(DEATH)) {
+    if (covered[death.index]) continue;
+    const part = clauseAt(death.index);
+    if (part === read) continue;
+    read = part;
+    const child = part.text.search(CHILD);
+    if (child < 0) continue;
+    deaths.push({
+      at: Math.min(part.start + child, death.index),
+      ofChildren: true,
+      field: 'childrenCount',
+    });
+  }
+  return deaths;
+}
+
+/** The count of children `previous` gives, less `died`; none with no count or fewer than died. */
+function lessBy(previous: string | undefined, died: number): string | undefined {
+  const count = Number(previous);
+  return previous !== undefined && died <= count ? String(count - died) : undefined;
+}
+
+/** A phrase of hôn nhân standing as a word of its own, not planned, of anyone, asked nor denied. */
+function maritalWord(word: string): RegExp {
+  // The word looked for first: the lookbehinds are tried only where it stands.
+  return new RegExp(
+    String.raw`(?<!\p{L})(?=(?:${word})(?!\p{L}))${NOT_PLANNED}${NOT_OF_ANYONE}(?:${word})${NOT_ASKED}`,
+    'giu',
+  );
+}
 
 /**
  * Where the children are in life, after their count: "đang học cấp 1", "đang học đại học", "đều đã
@@ -304,11 +389,22 @@ const CHILDREN_NOW = String.raw`(?:\s+đều)?\s+(?:đang|đã)\s+(?:(?:đi\s+)?
 const EXTRACTION_PATTERNS: readonly {
   readonly field: string;
   readonly pattern: RegExp;
-  readonly value: (match: RegExpExecArray) => string;
-  /** Said later in its sentence, it ends what the phrase says: "đã kết hôn … ly hôn". */
+  /**
+   * The value the phrase gives as a simple statement about the KH, from the value of the last
+   * simple statement before it, if the last value said of the KH for the trường is one; none when
+   * that value does not let it (rules 2 and 3, Owner 01/11): "Ly thân" only after "Đã kết hôn".
+   */
+  readonly value: (match: RegExpExecArray, previous: string | undefined) => string | undefined;
+  /**
+   * Said later in its sentence, it ends what the phrase says ("đã kết hôn … sắp ly hôn"): a value
+   * said of the KH, if it is one, but no simple statement; but not inside a phrase that says
+   * something of the KH (`covered`), which gives a value of its own.
+   */
   readonly endedBy?: RegExp;
   /** Right after the phrase (a sticky regex), it makes the phrase someone else's. */
   readonly ownerAfter?: RegExp;
+  /** Of the children counted before it in its sentence, not of someone else (`Phrase`). */
+  readonly ofChildren?: boolean;
   /** All that may stand before the phrase, from the KH or a word of `JOINED` (DR6-141). */
   readonly before: RegExp;
   /** Sticky: what may follow the phrase to the end of its clause (DR6-141). */
@@ -321,15 +417,15 @@ const EXTRACTION_PATTERNS: readonly {
       [
         NOT_PLANNED_CHILDREN,
         String.raw`(?<!\p{N})(\d{1,2})\s+(?:con|bé)(?!\p{L})`,
-        // A capital is a name or a brand.
-        String.raw`(?!\p{Zs}+\p{Lu})(?!\s+(?:${NOT_CHILDREN})(?!\p{L}))`,
+        // A capital is a name or a brand; children who died are `DEAD_CHILDREN`.
+        String.raw`(?!\p{Zs}+\p{Lu})(?!\s+(?:${NOT_CHILDREN})(?!\p{L}))(?! ${DIED})`,
         NOT_ASKED,
       ].join(''),
       'gu',
     ),
     value: (match) => match[1]!,
     // "KH có 2 con nhưng đều đã mất" (Owner 31/10).
-    endedBy: /(?<!\p{L})(?:đã mất|qua đời)(?!\p{L})/giu,
+    endedBy: new RegExp(String.raw`(?<!\p{L})${DIED}(?!\p{L})`, 'giu'),
     ownerAfter: OF_SOMEONE_ELSE,
     // "KH có 2 con", "KH đã có vợ và 2 con", "KH sống cùng vợ và 2 con".
     before: new RegExp(
@@ -338,11 +434,30 @@ const EXTRACTION_PATTERNS: readonly {
     ),
     // The children described: "2 con nhỏ", "2 con trai", "2 con của mình", then `CHILDREN_NOW`;
     // with no other count after them in the sentence: in "2 con trai và 1 con gái", "2 con đang
-    // học, một con đã đi làm" neither is how many (the reviews of PR #917).
+    // học, một con đã đi làm" neither is how many (the reviews of PR #917). Children who died are
+    // no other count ("2 con, 1 con đã mất", rule 3).
     after: new RegExp(
-      String.raw`(?![^.!?;\n]*?${COUNT})(?:\s+(?:trai|gái|nhỏ|lớn))?(?:\s+của\s+mình)?(?:${CHILDREN_NOW})?${CLAUSE_DONE}`,
+      String.raw`(?![^.!?;\n]*?${COUNT}(?! ${DIED}))(?:\s+(?:trai|gái|nhỏ|lớn))?(?:\s+của\s+mình)?(?:${CHILDREN_NOW})?${CLAUSE_DONE}`,
       'iuy',
     ),
+  },
+  // Children who died, taken from the count said before ("KH có 2 con. Một con đã mất." is 1),
+  // "đều" all of them ("KH có 2 con nhưng đều đã mất." is 0) (rule 3, Owner 31/10 – 01/11).
+  {
+    field: 'childrenCount',
+    pattern: new RegExp(`${DEAD_CHILDREN}${NOT_ASKED}`, 'giu'),
+    value: (match, previous) => lessBy(previous, howManyDied(match)),
+    ofChildren: true,
+    before: ONLY_FILLER,
+    after: DONE_SINCE,
+  },
+  {
+    field: 'childrenCount',
+    pattern: new RegExp(String.raw`(?<!\p{L})đều ${DIED}(?!\p{L})${NOT_ASKED}`, 'giu'),
+    value: (_, previous) => lessBy(previous, Number(previous)),
+    ofChildren: true,
+    before: ONLY_FILLER,
+    after: DONE_SINCE,
   },
   {
     field: 'maritalStatus',
@@ -351,24 +466,55 @@ const EXTRACTION_PATTERNS: readonly {
       String.raw`(?<=${NOT_OF_ANYONE}(?<!\p{L})đã\s+)kết hôn(?!\p{L})${NOT_ASKED}`,
       'giu',
     ),
-    value: () => 'Đã kết hôn',
-    // "ly dị / ly thân", a death ("vợ đã mất", "chồng qua đời", "góa vợ") (Owner 31/10); "mất"
-    // alone may be anything lost ("mất việc").
-    endedBy: /(?<!\p{L})(?:ly (?:hôn|dị|thân)|đã mất|qua đời|góa)(?!\p{L})/giu,
+    value: () => MARRIED,
+    // "ly dị / ly thân", a death ("vợ KH đã mất", "chồng qua đời", "góa") (Owner 31/10).
+    endedBy: new RegExp(
+      String.raw`(?<!\p{L})(?:${DIVORCE}|${SEPARATION}|${DIED}|${WIDOWED})(?!\p{L})`,
+      'giu',
+    ),
     before: new RegExp(String.raw`^\s*(?:${FILLER})*đã\s+$`, 'iu'),
     // "đã kết hôn lại", "đã kết hôn 10 năm".
-    after: new RegExp(String.raw`(?:\s+lại)?(?:\s+${WHEN_MARRIED})?${CLAUSE_DONE}`, 'iuy'),
+    after: new RegExp(String.raw`(?:\s+lại)?(?:\s+${SINCE})?${CLAUSE_DONE}`, 'iuy'),
   },
   // A word of its own: "khôngđộc thân" (no space) is no more single than "không độc thân".
   {
     field: 'maritalStatus',
-    pattern: new RegExp(
-      String.raw`${NOT_PLANNED}${NOT_OF_ANYONE}(?<!\p{L})độc thân(?!\p{L})${NOT_ASKED}`,
-      'giu',
-    ),
+    pattern: maritalWord('độc thân'),
     value: () => 'Độc thân',
-    before: new RegExp(String.raw`^\s*(?:${FILLER})*$`, 'iu'),
+    before: ONLY_FILLER,
     after: new RegExp(CLAUSE_DONE, 'iuy'),
+  },
+  // "Ly hôn" as the seed writes it, "Góa" too, standing on their own (rule 2, Owner 31/10 – 01/11):
+  // "KH đã ly hôn", "KH ly dị năm 2020", "Hôn nhân: Ly hôn", "KH góa vợ", in either spelling.
+  {
+    field: 'maritalStatus',
+    pattern: maritalWord(DIVORCE),
+    value: () => 'Ly hôn',
+    before: ONLY_FILLER,
+    after: DONE_SINCE,
+  },
+  {
+    field: 'maritalStatus',
+    pattern: maritalWord(String.raw`${WIDOWED}(?: (?:${SPOUSE}))?`),
+    value: () => 'Góa',
+    before: ONLY_FILLER,
+    after: DONE_SINCE,
+  },
+  // Only after a simple statement that the KH is married: "KH đã kết hôn nhưng đang ly thân", "KH
+  // đã kết hôn. Vợ đã mất năm 2020." (rule 2).
+  {
+    field: 'maritalStatus',
+    pattern: maritalWord(SEPARATION),
+    value: (_, previous) => (previous === MARRIED ? 'Ly thân' : undefined),
+    before: ONLY_FILLER,
+    after: DONE_SINCE,
+  },
+  {
+    field: 'maritalStatus',
+    pattern: new RegExp(String.raw`(?<!\p{L})(?:${SPOUSE}) ${DIED}(?!\p{L})${NOT_ASKED}`, 'giu'),
+    value: (_, previous) => (previous === MARRIED ? 'Góa' : undefined),
+    before: ONLY_FILLER,
+    after: DONE_SINCE,
   },
 ];
 
@@ -462,6 +608,9 @@ const THEN = /(?<!\p{L})thì(?!\p{L})/giu;
 const SENTENCE_END = /[.!?;\n]/g;
 const CLAUSE_END = /[.!?;,\n]/g;
 
+/** A ":" but one between two figures, a time ("lúc 9:30"). */
+const COLON = /(?<!\d):|:(?!\d)/g;
+
 /**
  * Whether `word`, a sticky regex, matches `note` right at `at`: for what a phrase's own pattern
  * cannot hold, as a list in any case after a pattern that tells case.
@@ -480,10 +629,16 @@ function firstEnd(word: RegExp, part: Part): number {
   return first ? part.start + first.index + first[0].length : Infinity;
 }
 
-/** Where `word`, a regex with the `g` flag, last starts in `part`; never when it is not there. */
-function lastStart(word: RegExp, part: Part): number {
+/**
+ * Where `word`, a regex with the `g` flag, last starts in `part`, but at a place `skip` marks;
+ * never when it is not there.
+ */
+function lastStart(word: RegExp, part: Part, skip?: Uint8Array): number {
   let last = -Infinity;
-  for (const found of part.text.matchAll(word)) last = part.start + found.index;
+  for (const found of part.text.matchAll(word)) {
+    const at = part.start + found.index;
+    if (!skip?.[at]) last = at;
+  }
   return last;
 }
 
@@ -534,13 +689,31 @@ function opening(clause: Part, first: boolean, opensNote: boolean): number | und
 
 /** What a sentence says around its phrases, as positions in the note. */
 function readSentence(sentence: Part) {
+  const people = namingPeople(sentence.text);
   return {
-    someoneElse: firstEnd(SOMEONE_ELSE, { ...sentence, text: namingPeople(sentence.text) }),
+    someoneElse: firstEnd(SOMEONE_ELSE, { ...sentence, text: people }),
+    /** As `someoneElse`, but the children counted: those that children who died are of. */
+    someoneElseThanChildren: firstEnd(SOMEONE_ELSE, {
+      ...sentence,
+      text: people.replace(COUNTED, (count) => ' '.repeat(count.length)),
+    }),
     supposed: firstEnd(SUPPOSED, sentence),
     whenEnd: firstEnd(WHEN, sentence),
     thenStart: lastStart(THEN, sentence),
     askedUntil: lastStart(ASKED, sentence),
     guessed: GUESSED.test(sentence.text),
+  };
+}
+
+/** What a clause says before its phrases, as positions in the note. */
+function readClause(clause: Part) {
+  return {
+    negated: firstEnd(NEGATED, clause),
+    either: firstEnd(EITHER, clause),
+    partner: firstEnd(PARTNER_FIRST, clause),
+    wished: firstEnd(WISHED, clause),
+    topicAfter: lastStart(BUT, clause),
+    deniedUntil: lastStart(DENIED, clause),
   };
 }
 
@@ -563,13 +736,14 @@ function joinedIn(clause: Part): (at: number) => { start: number; end: number } 
 /**
  * Reads what each clause of `note` says around its phrases, as positions in the note, for clauses
  * read in order (`readerOf`): with where it speaks of the KH, from where it opens on the KH, or
- * from its start when the clause before it in its sentence ends on a phrase about the KH ("KH đã
- * kết hôn, có 2 con"). Only such a phrase carries the KH on: after any other words, a clause may
- * speak of whoever they name ("KH giới thiệu khách mới, đã kết hôn", "KH là bác sĩ, Lan là y tá,
- * độc thân"), and no list of the words that name people is ever full (the reviews of PR #917).
- * A clause is read when its first phrase is asked of, and all its phrases are asked of before the
- * clause after it is read (`readerOf`, the phrases in order): so the clause read last has told, by
- * its `done`, whether a phrase about the KH ends it.
+ * from its start when the clause before it ends on a phrase about the KH ("KH đã kết hôn, có 2
+ * con"), in its sentence or, the clause opening a sentence, in the sentence before ("KH đã kết
+ * hôn. Đã ly hôn năm 2020.", T-330). Only such a phrase carries the KH on: after any other words,
+ * a clause may speak of whoever they name ("KH giới thiệu khách mới, đã kết hôn", "KH là bác sĩ,
+ * Lan là y tá, độc thân"), and no list of the words that name people is ever full (the reviews of
+ * PR #917). A clause is read when its first phrase that says something of the KH is asked of, and
+ * all of these are asked of before the clause after it is read (`readerOf`, the phrases in order):
+ * so the clause read last has told, by its `done`, whether a phrase about the KH ends it.
  */
 function clausesOf(note: string) {
   let last: { end: number; endsOnTheKh: boolean } | undefined;
@@ -579,20 +753,16 @@ function clausesOf(note: string) {
   return (clause: Part) => {
     const first = clause.start === 0 || '.!?;\n'.includes(note[clause.start - 1]!);
     // Only the clause right before carries the KH on: one with no phrase, not read, ends on none.
-    const carried = !first && last?.end === clause.start && last.endsOnTheKh;
+    const carried = last?.end === clause.start && last.endsOnTheKh;
     worded ||= /\p{L}/u.test(note.slice(looked, clause.start));
     looked = clause.start;
     JOINS_ON.lastIndex = 0;
     const joinsOn = carried && JOINS_ON.exec(clause.text);
     const read = {
-      negated: firstEnd(NEGATED, clause),
-      either: firstEnd(EITHER, clause),
-      partner: firstEnd(PARTNER_FIRST, clause),
-      wished: firstEnd(WISHED, clause),
-      topicAfter: lastStart(BUT, clause),
-      deniedUntil: lastStart(DENIED, clause),
       /** Where it ends, after the mark ending it. */
       end: clause.start + clause.text.length,
+      /** Where its last ":" stands (`COLON`); never when it has none. */
+      colon: lastStart(COLON, clause),
       /** Where it speaks of the KH from; never when it does not. */
       kh: opening(clause, first, !worded) ?? (carried ? clause.start : undefined),
       joined: joinedIn(clause),
@@ -615,14 +785,18 @@ function clausesOf(note: string) {
   };
 }
 
-/**
- * A phrase found in the note, from `at` up to `end`, the value it gives its trường and what that
- * trường lets stand around it.
- */
-interface Phrase {
+/** A value found in the note at `at`. */
+interface Said {
   readonly at: number;
+  /** Of the children counted before it in its sentence: "KH có 2 con nhưng đều đã mất". */
+  readonly ofChildren?: boolean;
+}
+
+/**
+ * A phrase found in the note, from `at` up to `end`, and what its trường lets stand around it.
+ */
+interface Phrase extends Said {
   readonly end: number;
-  readonly fact: { readonly field: string; readonly value: string };
   readonly before: RegExp;
   readonly after: RegExp;
 }
@@ -634,24 +808,19 @@ interface Phrase {
  * question after it ("KH đã kết hôn chưa."), no negation, other way, partner or wish before it in
  * its clause ("KH không có 2 con", "KH lấy chồng đã có 2 con riêng", "KH muốn có 2 con") and not
  * in the topic of an answer ending it ("KH có 2 con riêng thì chưa."). Narrow, as the patterns
- * are; and then a simple statement about the KH (DR6-141). When it is, the values the note gives
- * each trường, every phrase asked ("KH độc thân. Nay KH đã kết hôn."); never when it is not.
+ * are. Then a value said of the KH, whether or not its clause opens on the KH ("Thực ra chỉ 1
+ * con.", Owner 31/10).
  */
-function aboutTheKh(
-  note: string,
-  sentence: Reader,
-  clause: Reader,
-): (phrase: Phrase) => ReadonlyMap<string, ReadonlySet<string>> | undefined {
+function saysOfTheKh(sentence: Reader, clause: Reader): (said: Said) => boolean {
   const ofSentence = sentence(readSentence);
-  const ofClause = clause(clausesOf(note));
-  const said = new Map<string, Set<string>>();
-  return ({ at, end, fact, before, after }) => {
+  const ofClause = clause(readClause);
+  return ({ at, ofChildren }) => {
     const inSentence = ofSentence(at);
     const inClause = ofClause(at);
-    if (
+    return !(
       inSentence.guessed ||
       at < inSentence.askedUntil ||
-      inSentence.someoneElse <= at ||
+      (ofChildren ? inSentence.someoneElseThanChildren : inSentence.someoneElse) <= at ||
       inSentence.supposed <= at ||
       (inSentence.whenEnd <= at && at < inSentence.thenStart) ||
       inClause.negated <= at ||
@@ -659,64 +828,110 @@ function aboutTheKh(
       inClause.partner <= at ||
       (inClause.topicAfter < at && at < inClause.deniedUntil) ||
       inClause.wished <= at
-    ) {
-      return undefined;
-    }
-    // Not someone else's nor said not to be: a value the note gives the trường, whether or not its
-    // clause opens on the KH ("Thực ra chỉ 1 con.", Owner 31/10).
-    said.set(fact.field, (said.get(fact.field) ?? new Set<string>()).add(fact.value));
+    );
+  };
+}
+
+/**
+ * Whether a phrase that says something of the KH (`saysOfTheKh`) is a simple statement about the
+ * KH (DR6-141), asked of these phrases in order.
+ */
+function simpleStatement(note: string, clause: Reader): (phrase: Phrase) => boolean {
+  const ofClause = clause(clausesOf(note));
+  return ({ at, end, before, after }) => {
+    const inClause = ofClause(at);
     const { kh } = inClause;
     // Only in a clause that speaks of the KH: "Độc thân: KH đã kết hôn." is one clause (":" ends
-    // none) opening on no KH. A phrase never stands before `kh`: no opening holds one.
-    if (kh === undefined) return undefined;
+    // none) opening on no KH. A phrase never stands before `kh`: no opening holds one. A ":" after
+    // the phrase makes it a heading, or the label of what follows: "KH đã kết hôn. Độc thân và có
+    // 2 con: KH chưa xác nhận." (T-330: the KH carried on past a sentence's end).
+    if (kh === undefined || inClause.colon > at) return false;
     // A word of `JOINED` carries the KH on only right after a phrase about the KH ("KH đã kết hôn
     // và có 2 con"): after other words, what follows it may be said of whoever they name ("KH gặp
     // người yêu cũ vì có 2 con", Owner 31/10); right after the KH, "nên" says "should" ("KH nên có
     // 2 con", the review of PR #917).
     const joined = inClause.joined(at);
     const from = joined && joined.end === inClause.doneAt ? joined.end : kh;
-    if (!before.test(note.slice(from, at))) return undefined;
+    if (!before.test(note.slice(from, at))) return false;
     after.lastIndex = end;
     const rest = after.exec(note);
-    if (!rest) return undefined;
+    if (!rest) return false;
     inClause.done(end + rest[0].length);
-    return said;
+    return true;
   };
 }
 
-/** What the Mock extracts of `note`, for the trường of `fields` only: at most 20 facts. */
+/** What the Mock extracts of `note`, for the trường of `fields` only: at most one fact each. */
 export function mockExtractionOutput(note: string, fields: readonly string[]): ExtractionOutput {
   if (RETRACTED.test(note)) return { facts: [] };
   const sentence = readerOf(note, SENTENCE_END);
-  const ofTheKh = aboutTheKh(note, sentence, readerOf(note, CLAUSE_END));
-  // Every trường is read, asked for or not: a phrase about the KH ending its clause carries the KH
-  // on to the next one, whichever trường it is of.
-  const readings = EXTRACTION_PATTERNS.flatMap(
-    ({ field, pattern, value, endedBy, ownerAfter, before, after }) => {
-      const ended = endedBy && sentence((part) => lastStart(endedBy, part));
+  const clause = readerOf(note, CLAUSE_END);
+  const covered = new Uint8Array(note.length);
+  const saysOfPhrase = saysOfTheKh(sentence, clause);
+  const phrases = EXTRACTION_PATTERNS.flatMap(
+    ({ field, pattern, value, endedBy, ownerAfter, ...around }) => {
+      const ended = endedBy && sentence((part) => lastStart(endedBy, part, covered));
       return [...note.matchAll(pattern)]
         .map((match) => {
           const at = match.index;
           const end = at + match[0].length;
           return {
+            ...around,
             at,
             end,
-            before,
-            after,
             theirs: !!ownerAfter && startsAt(ownerAfter, note, end),
-            fact: { field, value: value(match), quote: match[0] },
+            /** Whether a word of `endedBy` after it in its sentence ends what it says. */
+            ended: () => !!ended && ended(at) >= at,
+            field,
+            quote: match[0],
+            value: (previous: string | undefined) => value(match, previous),
           };
         })
-        .filter(({ at, theirs }) => !theirs && (!ended || ended(at) < at));
+        .filter(({ theirs }) => !theirs);
     },
   )
     .sort((a, b) => a.at - b.at)
-    .map((phrase) => ({ fact: phrase.fact, said: ofTheKh(phrase) }));
-  // Two values of one trường in the note, a note that corrects itself ("KH độc thân, nay đã kết
-  // hôn", "KH có 2 con. Thực ra chỉ 1 con."): neither (the reviews of PR #917, Owner 31/10).
-  const facts = readings
-    .filter(({ fact, said }) => said?.get(fact.field)?.size === 1)
+    .map((phrase) => ({ ...phrase, says: saysOfPhrase(phrase) }));
+  // Where a phrase says something of the KH, a word of `endedBy` gives a value of its own ("KH đã
+  // kết hôn nhưng vợ đã mất" is Góa, rule 2); elsewhere it still ends what a phrase before it says
+  // ("KH đã kết hôn, có 2 con nhưng vợ đã mất": the wife may be a child's).
+  for (const phrase of phrases) {
+    if (phrase.says) covered.fill(1, phrase.at, phrase.end);
+  }
+  const saysOfDeath = saysOfTheKh(sentence, clause);
+  const deaths = otherDeaths(note, clause, covered).map((death) => ({
+    ...death,
+    says: saysOfDeath(death),
+  }));
+  // Every trường is read, asked for or not: a phrase about the KH ending its clause carries the KH
+  // on to the next one, whichever trường it is of.
+  const simple = simpleStatement(note, clause);
+  const readings = [...phrases, ...deaths].sort((a, b) => a.at - b.at);
+  // Each trường takes the last value said of the KH, proposed only as a simple statement: a note
+  // that corrects itself says so last ("KH độc thân, nay đã kết hôn" proposes Đã kết hôn, "KH có 2
+  // con. Thực ra chỉ 1 con." nothing; rule 1, Owner 31/10 – 01/11, T-330). A value of rules 2 and
+  // 3 reads the one before it. A death said another way and a phrase that a word of `endedBy` ends
+  // are values said of the KH that are never a simple statement ("KH độc thân. KH đã kết hôn nhưng
+  // sắp ly hôn." proposes nothing, the review of PR #939): not asked of `simple`, they carry the KH
+  // on to no clause.
+  const last = new Map<
+    string,
+    { at: number; fact: { field: string; value: string; quote: string } } | null
+  >();
+  for (const reading of readings) {
+    if (!reading.says) continue;
+    const { at, field } = reading;
+    const stated = 'quote' in reading && !reading.ended() && simple(reading) ? reading : undefined;
+    const value = stated?.value(last.get(field)?.fact.value);
+    last.set(
+      field,
+      stated && value !== undefined ? { at, fact: { field, value, quote: stated.quote } } : null,
+    );
+  }
+  const facts = [...last.values()]
+    .filter((said) => said !== null)
+    .sort((a, b) => a.at - b.at)
     .map(({ fact }) => fact)
     .filter(({ field }) => fields.includes(field));
-  return { facts: facts.slice(0, 20) };
+  return { facts };
 }
