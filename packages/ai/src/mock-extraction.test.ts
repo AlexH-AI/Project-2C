@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { AiCompleteRequest } from './adapter';
 import { AiError } from './errors';
 import { extractJson } from './extract-json';
-import { createMockAdapter } from './mock-adapter';
+import { createMockAdapter } from './mock-extraction';
 import {
   analysisOutputSchema,
   buildAnalysisInput,

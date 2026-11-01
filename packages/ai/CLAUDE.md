@@ -36,9 +36,9 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/code-points.ts` — codePointCount, codePointsOver, cutCodePoints
 - `src/errors.ts` — AI_ERROR_CODES, type AiErrorCode, type AiErrorDetails, type AiErrorResult, errorDetails, isAiErrorCode, AiError
 - `src/extract-json.ts` — type ExtractedJson, type ExtractOptions, extractJson
-- `src/index.ts` — re-exports ./errors, ./models, ./adapter, ./extract-json, ./schema, ./mock-adapter, ./validator, ./input, ./run, ./settings, ./web
+- `src/index.ts` — re-exports ./errors, ./models, ./adapter, ./extract-json, ./schema, ./mock-extraction, ./validator, ./input, ./run, ./settings, ./web
 - `src/input.ts` — type ExtractionInput, buildExtractionInput
-- `src/mock-adapter.ts` — createMockAdapter
+- `src/mock-extraction.ts` — createMockAdapter
 - `src/models.ts` — type AiReasoningEffort, type AiModel, AI_MODELS, type AiModelId, DEFAULT_AI_MODEL
 - `src/prompts/analysis.ts` — analysisPrompt
 - `src/prompts/connection.ts` — connectionCheck
