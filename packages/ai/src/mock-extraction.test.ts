@@ -994,8 +994,10 @@ describe('Mock extraction', () => {
     // A sentence after one that ends on no simple statement about the KH speaks of no one known.
     ['KH sống ở quận 7. Có 2 con.', []],
     ['KH đã kết hôn, sống ở quận 7. Có 2 con.', [MARRIED]],
-    // Nor, for now, a sentence after a mark and a line break, or on a bullet (the review of PR #939).
+    // Nor, for now, past a stretch with no word, a mark and a line break or a blank line, or onto a
+    // bullet (the review of PR #939); a line break alone carries the KH on.
     ['KH đã kết hôn.\nĐã ly hôn năm 2020.', []],
+    ['KH đã kết hôn\n\nĐã ly hôn năm 2020.', []],
     ['- KH đã kết hôn\n- Đã ly hôn năm 2020.', []],
     ['KH đã kết hôn\nĐã ly hôn năm 2020.', [DIVORCED]],
     // Kept as before (ACCEPTED, Owner 01/11): a later sentence that guesses, asks or denies in
