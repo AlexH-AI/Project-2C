@@ -1,70 +1,10 @@
 /**
- * Mock provider (spec Phase 5 §10, D-1 item 6): for demos and e2e, only when chosen in Settings.
- * Nothing random: the answer is built from the input message alone, with fixed sentences, so the
- * same input always gives the same output. Analysis and discovery cite only the codes of the input's
- * facts list and its missing hạng mục; extraction proposes a few phrases only from a simple
- * statement about the KH (DR6-141), for the trường of the input's `fields` list only.
- *
- * The input is the first `user` message, a JSON block: `{ mode, facts, missingCategories, … }` for
- * analysis / discovery, `{ note, fields }` for extraction (prompts §1.1, §4.1).
- *
- * The answers themselves are `mockAnalysisOutput` / `mockDiscoveryOutput` of `schema.ts`, which the
- * seed of `db` writes too. They pass the mode's schema for every input the KYC gate lets through
- * (`kyc-gate.ts`): analysis needs at least one fact; discovery needs two strategy items, one per
- * missing hạng mục and one more when a fact is known, so the gate's facts and missing hạng mục are
- * enough. Other inputs get an answer the schema rejects, as a real model's could be.
+ * The Mock's extraction (spec Phase 5 §10; the adapter is `mock-adapter.ts`): from a KYC note, a
+ * few phrases on the KH's hôn nhân and con, each quoted as the note writes it, only from a simple
+ * statement about the KH (DR6-141). Narrow on purpose (CX-A4): what may mean something else gives
+ * no proposal.
  */
-import { KYC_CATEGORIES, type KycCategory } from '@p2c/domain';
-import type { AiAdapter, AiCompleteRequest, AiCompletion } from './adapter';
-import { AiError } from './errors';
-import { extractJson } from './extract-json';
-import {
-  FACT_CODE,
-  mockAnalysisOutput,
-  mockDiscoveryOutput,
-  type ExtractionOutput,
-} from './schema';
-
-export function createMockAdapter(): AiAdapter {
-  return {
-    complete: async (request) => answer(request),
-  };
-}
-
-function answer(request: AiCompleteRequest): AiCompletion {
-  const content = request.messages.find((message) => message.role === 'user')?.content ?? '';
-  const json = extractJson(content);
-  if (!json.found) throw new AiError('AI_BAD_REQUEST');
-  // extractJson only finds `{…}` blocks, so the value is an object.
-  const input = json.value as Record<string, unknown>;
-  const output =
-    typeof input['note'] === 'string'
-      ? extraction(input['note'], allowedFields(input['fields']))
-      : (input['mode'] === 'discovery' ? mockDiscoveryOutput : mockAnalysisOutput)(
-          factCodes(input['facts']),
-          missingCategories(input['missingCategories']),
-        );
-  return { content: JSON.stringify(output), promptTokens: 0, completionTokens: 0 };
-}
-
-/** The `code` of each element of an input list (facts, missing hạng mục); none when not a list. */
-function codesOf(value: unknown): unknown[] {
-  const items: unknown[] = Array.isArray(value) ? value : [];
-  return items.map((item) => (item as { code?: unknown } | null)?.code);
-}
-
-/** Codes of the facts list, in order; a `F…` word inside a fact's value is not a code. */
-function factCodes(value: unknown): string[] {
-  const codes = codesOf(value).filter(
-    (code): code is string => typeof code === 'string' && FACT_CODE.test(code),
-  );
-  return [...new Set(codes)];
-}
-
-function missingCategories(value: unknown): KycCategory[] {
-  const codes = codesOf(value);
-  return KYC_CATEGORIES.filter((category) => codes.includes(category));
-}
+import type { ExtractionOutput } from './schema';
 
 /**
  * After "<n> con / bé", what makes them not children: figures ("con số", DR6-19), animals and things
@@ -432,14 +372,6 @@ const EXTRACTION_PATTERNS: readonly {
   },
 ];
 
-/** Trường of the input's `fields` list (prompts §4.1), so that V7 keeps what the Mock proposes. */
-function allowedFields(value: unknown): string[] {
-  const items: unknown[] = Array.isArray(value) ? value : [];
-  return items
-    .map((item) => (item as { field?: unknown } | null)?.field)
-    .filter((field): field is string => typeof field === 'string');
-}
-
 /**
  * Said as a supposition or as what may be, before a phrase in its sentence: "nếu đã kết hôn, có 2
  * con" (DR6-78), "Có thể KH đã kết hôn." (T-289). Only before it: after it, "có thể" says what can
@@ -752,7 +684,8 @@ function aboutTheKh(
   };
 }
 
-function extraction(note: string, fields: readonly string[]): ExtractionOutput {
+/** What the Mock extracts of `note`, for the trường of `fields` only: at most 20 facts. */
+export function mockExtractionOutput(note: string, fields: readonly string[]): ExtractionOutput {
   if (RETRACTED.test(note)) return { facts: [] };
   const sentence = readerOf(note, SENTENCE_END);
   const ofTheKh = aboutTheKh(note, sentence, readerOf(note, CLAUSE_END));

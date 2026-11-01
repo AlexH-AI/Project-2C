@@ -2,10 +2,15 @@
  * A KYC profile for the tests of the input and the orchestration: six hạng mục "đã có" with
  * GOALS and EXISTING_PROTECTION, so `PAIN_POINT_ANALYSIS`; a superseded fact; a conflict on a
  * trường that is not cốt lõi (a warning only). Notes and the extra fields hold what must never
- * reach the model. Also the invisible texts and NUL the tests of V1 and V3–V6 share.
+ * reach the model. Also the invisible texts and NUL the tests of V1 and V3–V6 share, and how the
+ * tests of the Mock ask it.
  */
 import { calendarDate, type KycFact, type KycField, type KycValue } from '@p2c/domain';
 import { KYC_FIELDS } from '@p2c/domain';
+import { assert } from 'vitest';
+import type { AiCompleteRequest } from './adapter';
+import { extractJson } from './extract-json';
+import { createMockAdapter } from './mock-adapter';
 import type { AnalysisFact } from './schema';
 
 /** U+200B: dropped wherever it stands (K20, G5 §7 item 0). */
@@ -26,6 +31,26 @@ export const lettersAround = (count: number) =>
   `${'a'.repeat(150)}${ZWSP.repeat(count)}${'a'.repeat(150)}`;
 
 export const TODAY = calendarDate(2026, 10, 7);
+
+/** A request to the Mock, `input` as the JSON of its first `user` message (prompts §1.1, §4.1). */
+export const mockRequest = (input: unknown): AiCompleteRequest => ({
+  sessionId: 'session-1',
+  model: 'deepseek-v4.1-flash',
+  reasoning: null,
+  maxTokens: 8000,
+  messages: [
+    { role: 'system', content: 'Prompt F99 không phải dữ kiện.' },
+    { role: 'user', content: JSON.stringify(input) },
+  ],
+});
+
+/** What the Mock answers `input`, and the JSON value of that answer. */
+export async function completeMock(input: unknown) {
+  const completion = await createMockAdapter().complete(mockRequest(input));
+  const json = extractJson(completion.content);
+  assert(json.found, 'Mock answered without JSON');
+  return { completion, value: json.value };
+}
 
 export function fact(
   seq: number,

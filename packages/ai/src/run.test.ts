@@ -4,7 +4,7 @@ import type { AiAdapter, AiCompleteRequest, AiCompletion } from './adapter';
 import { analysisOutcome, EMPTY_RAW_OUTPUT } from './analysis-steps';
 import { nextRetry } from './attempts';
 import { AiError } from './errors';
-import { createMockAdapter } from './mock-extraction';
+import { createMockAdapter } from './mock-adapter';
 import {
   checkConnection,
   createAiRunner,

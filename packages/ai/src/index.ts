@@ -3,7 +3,7 @@ export * from './models';
 export * from './adapter';
 export * from './extract-json';
 export * from './schema';
-export * from './mock-extraction';
+export * from './mock-adapter';
 export * from './validator';
 export * from './input';
 export * from './run';
