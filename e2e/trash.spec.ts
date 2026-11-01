@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from './fixtures';
-import { asExe, trackConsoleErrors } from './support';
+import { asExe, createKycCustomer, trackConsoleErrors } from './support';
 
 // Cài đặt → Thùng rác (spec Phase 6 §4.2; mockup trash.html 11a, 11e). The seed deletes nothing,
 // and the e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
@@ -233,6 +233,16 @@ test('restores a deleted customer, then its appointment deleted on its own (TR-1
       exact: true,
     });
   await expect(rows).toHaveCount(3);
+  // T-305: the "Bản ghi" cell draws the customer's stage as its badge, which the button reads
+  // (DR6-153).
+  const badge = ofKind('KH')
+    .getByRole('cell')
+    .nth(1)
+    .getByText(/^(N[1-4]|Tạm hoãn|Mất cơ hội)$/);
+  await expect(badge).toBeVisible();
+  await expect(restoreButton('KH')).toHaveAccessibleName(
+    `Khôi phục KH ${name} · ${await badge.innerText()}`,
+  );
   // TR-1: the appointment waits for its customer, named on the row and read with its button.
   await expect(ofKind('Lịch hẹn')).toContainText(`Khôi phục KH ${name} trước.`);
   await expect(restoreButton('Lịch hẹn')).toBeDisabled();
@@ -624,6 +634,31 @@ test('reminds from 1 000 records, and keeps a record still pointed to, saying wh
 
 // TR-11, 11i: while the purge runs the dialog stays, so nothing writes to the data it is replacing.
 // The exe's backup is held, as a slow disk would (DR6-128).
+// DR6-151 (Q3 (a), Owner 31/10/2026): two customers of one name and stage in the trash name their
+// code on their buttons, as mockup 9b names two of one name.
+test('two customers of one name and one stage have restore buttons named with their codes', async ({
+  page,
+}) => {
+  const name = 'Lâm Thị Trùng';
+  for (let round = 0; round < 2; round += 1) {
+    await createKycCustomer(page, name);
+    await page.getByRole('button', { name: 'Sửa hồ sơ' }).click();
+    await page.getByRole('button', { name: 'Xóa KH…' }).click();
+    await page.getByRole('button', { name: 'Xóa KH', exact: true }).click();
+    await expect(page).toHaveURL(/#\/customers$/);
+  }
+
+  await openTrash(page);
+  const buttons = table(page).getByRole('button', {
+    name: new RegExp(`^Khôi phục KH ${name} \\(K-[0-9A-Z]{4}\\) · N4$`),
+  });
+  await expect(buttons).toHaveCount(2);
+  const labels = await Promise.all(
+    (await buttons.all()).map((button) => button.getAttribute('aria-label')),
+  );
+  expect(new Set(labels).size).toBe(2);
+});
+
 test('the dialog of a purge that runs stays: Escape does not close it, Hủy is off (TR-11; 11i)', async ({
   page,
 }) => {
@@ -636,7 +671,10 @@ test('the dialog of a purge that runs stays: Escape does not close it, Hủy is 
   await purgeWord(page).fill('DỌN SẠCH');
   await page.evaluate(() => window.exe.holdBackup());
   await dialog.getByRole('button', { name: 'Backup rồi dọn sạch' }).click();
-  await expect(dialog.getByRole('button', { name: 'Đang dọn…' })).toBeDisabled();
+  // DR6-154: the focus stays in the dialog, on the button saying what runs.
+  const running = dialog.getByRole('button', { name: 'Đang dọn…' });
+  await expect(running).toBeDisabled();
+  await expect(running).toBeFocused();
   await expect(dialog.getByRole('button', { name: 'Hủy' })).toBeDisabled();
   await expect(purgeWord(page)).toBeDisabled();
 
@@ -647,9 +685,14 @@ test('the dialog of a purge that runs stays: Escape does not close it, Hủy is 
   // Still modal: the page behind cannot be used while it purges. A second Escape closes the dialog
   // for a moment and it opens again (DR-58), so the check waits for that.
   await expect.poll(() => dialog.evaluate((node) => node.matches(':modal'))).toBe(true);
+  await expect(running).toBeFocused();
+  // Clicked while it runs, it does not run again: one backup.
+  await running.click({ force: true });
 
   await page.evaluate(() => window.exe.releaseBackup());
   await expect(dialog).toHaveCount(0);
+  const events = await page.evaluate(() => window.exe.events);
+  expect(events.filter((event) => event === 'backup')).toHaveLength(1);
   const notice = trash(page).getByRole('status');
   await expect(notice).toContainText('Đã dọn sạch Thùng rác');
   await expect(notice).toContainText('Backup: ');

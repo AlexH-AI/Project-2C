@@ -149,6 +149,51 @@ test('another status than met has no stage after; a past next day saves nothing'
   await expect(detail(page)).toContainText('Dự kiến');
 });
 
+// DR6-150: a field of invisible characters alone, pasted, shows nothing and reads as empty, as the
+// commands read it: the case size is none and the outcome saves (6c), a day is asked for only once
+// saving is tried (6b, 6c, 6e).
+test('a field of invisible characters alone reads as empty: no case size, a day asked on saving (DR6-150)', async ({
+  page,
+}) => {
+  const INVISIBLE = '\u{200B}\u{85}\u{2060}';
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const booking = page.getByRole('dialog', { name: 'Lịch hẹn mới' });
+  const day = booking.getByRole('textbox', { name: /^Ngày/ });
+  await day.fill(INVISIBLE);
+  await expect(day).not.toHaveAttribute('aria-invalid');
+  await booking.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+  await expect(day).toHaveAccessibleDescription(/^Nhập ngày\./);
+  await booking.getByRole('button', { name: 'Hủy', exact: true }).click();
+
+  await book(page, '15/9', 'N3');
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
+  const o = outcome(page);
+  await o.status.getByRole('radio', { name: 'Đã gặp' }).check();
+  await o.stageAfter.getByRole('radio', { name: 'N2', exact: true }).check();
+  await o.nextStep.fill('Gửi bảng minh họa');
+  await o.caseSize.fill(INVISIBLE);
+  await expect(o.caseSize).not.toHaveAttribute('aria-invalid');
+  await o.booking.check();
+  const next = o.dialog.getByRole('textbox', { name: /^Ngày hẹn tiếp/ });
+  await next.fill(INVISIBLE);
+  await expect(next).not.toHaveAttribute('aria-invalid');
+  await o.dialog.getByRole('button', { name: 'Lưu kết quả + tạo lịch' }).click();
+  await expect(next).toHaveAccessibleDescription(/^Nhập ngày\./);
+  await o.booking.uncheck();
+  await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
+  await expect(o.dialog).toHaveCount(0);
+  await expect(detail(page)).toContainText('Đã gặp');
+
+  await book(page, '30/9', 'N3');
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
+  await o.status.getByRole('radio', { name: 'Dời lịch' }).check();
+  const moved = o.dialog.getByRole('textbox', { name: /^Ngày mới/ });
+  await moved.fill(INVISIBLE);
+  await expect(moved).not.toHaveAttribute('aria-invalid');
+  await o.dialog.getByRole('button', { name: 'Dời lịch' }).click();
+  await expect(moved).toHaveAccessibleDescription(/^Nhập ngày\./);
+});
+
 test('no-show with a next appointment records both in one go, then shows the next one', async ({
   page,
 }) => {

@@ -99,7 +99,7 @@ export function recordTitle(row: TrashRow): string {
  * The badge of the first line of "Bản ghi": a customer's stage, a policy's status as the policy's
  * badges word it; none for the other kinds, an appointment's status being in that line. The cell
  * draws it and `restoreLabel` reads its words, so a badge added here names the button too (review
- * of PR 846).
+ * of PR 846); the button says more only of a person and of two customers alike (DR6-151).
  */
 export function recordBadge(
   row: TrashRow,
@@ -189,14 +189,36 @@ export function ownerParts(row: TrashRow): OwnerPart[] {
   return parts;
 }
 
+type CustomerRow = Extract<TrashRow, { kind: 'customer' }>;
+
+/**
+ * The customers of the trash whose restore button names their code: another customer there has
+ * their name and their stage, all the button would say else (DR6-151; Q3 (a), Owner 31/10/2026).
+ * Read from every row, whatever the filter.
+ */
+export function codedCustomers(rows: readonly TrashRow[]): ReadonlySet<string> {
+  const customers = rows.filter((row): row is CustomerRow => row.kind === 'customer');
+  const key = (row: CustomerRow) => `${row.stage}|${row.name}`;
+  const count = new Map<string, number>();
+  for (const row of customers) count.set(key(row), (count.get(key(row)) ?? 0) + 1);
+  return new Set(customers.filter((row) => count.get(key(row))! > 1).map((row) => row.id));
+}
+
 /**
  * The name of a row's restore button, every "Khôi phục…" alike on screen (DR6-43): the record as
  * the first line of "Bản ghi" names it, with the words of its badge there (`recordBadge`), so
- * whatever tells two rows apart there tells their buttons apart (DR6-99, DR6-119; two customers may
- * share a name, Owner 25/10/2026); then an appointment's or a policy's customer.
+ * whatever tells two rows apart there tells their buttons apart (DR6-99, DR6-119); then an
+ * appointment's or a policy's customer. Q3 (a), Owner 31/10/2026 (DR6-151): a person with their
+ * role and team, the second line and "Thuộc"; a customer of `coded` with their code, as mockup 9b
+ * names two of one name, since two such rows differ only past the first line.
  */
-export function restoreLabel(row: TrashRow): string {
-  const record = joinParts([recordTitle(row), recordBadge(row)?.text]);
+export function restoreLabel(row: TrashRow, coded: ReadonlySet<string>): string {
+  const title =
+    row.kind === 'customer' && coded.has(row.id)
+      ? t('trash.restoreLabel.coded', { name: row.name, code: row.code })
+      : recordTitle(row);
+  const person = row.kind === 'person' ? [recordDetail(row), row.owner.team?.name] : [];
+  const record = joinParts([title, recordBadge(row)?.text, ...person]);
   const label = t(`trash.restoreLabel.${row.kind}`, { record });
   return row.kind === 'appointment' || row.kind === 'policy' ? ofCustomer(row, label) : label;
 }
@@ -515,7 +537,7 @@ export function restoreRow(app: Pick<AppData, 'run'>, row: TrashRow): string | n
 // ---- Dọn sạch Thùng rác (spec Phase 6 TR-11…TR-13; mockups 11h–11j) ----
 
 /** From this many records the trash reminds to purge it: it opens slower as it grows (DR6-84). */
-export const PURGE_REMINDER = 1_000;
+const PURGE_REMINDER = 1_000;
 
 /** Mockup 11h: the reminder under the intro (TR-13), or null below `PURGE_REMINDER` records. */
 export function purgeReminder(count: number): string | null {

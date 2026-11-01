@@ -79,6 +79,9 @@ describe('readOutcome', () => {
       expectedCaseSize: null,
       outcomeReviewerId: null,
     });
+    // DR6-150: a case size of invisible characters alone is none too, and saves (6c, 6d, 6f).
+    const invisible = readOutcome({ ...met, caseSize: '\u{200B}\u{2060}' });
+    expect(invisible.ok && invisible.outcome).toMatchObject({ expectedCaseSize: null });
   });
 
   it('refuses a case size that is not a whole, positive amount of đồng', () => {
@@ -383,6 +386,13 @@ describe('readCaseSize', () => {
   it('reads an empty text as no case size', () => {
     expect(readCaseSize('')).toBeNull();
     expect(readCaseSize('  ')).toBeNull();
+  });
+
+  // DR6-150: nothing to see is none, as for the birth date of 5a ("để trống = chưa ước lượng").
+  it('reads a text of invisible characters alone as no case size', () => {
+    for (const text of ['\u{200B}', '\u{85}', '\u{2060}', ' \u{200B}\u{2060} ']) {
+      expect(readCaseSize(text)).toBeNull();
+    }
   });
 
   it('reads a positive amount', () => {

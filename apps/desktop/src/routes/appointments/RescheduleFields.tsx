@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { AppointmentRecord } from '@p2c/db';
-import { compareDates, formatDate, type CalendarDate } from '@p2c/domain';
+import { compareDates, formatDate, normalizeText, type CalendarDate } from '@p2c/domain';
 import { TextField } from '@p2c/ui';
 import { t } from '../../i18n';
 import { ALERT } from '../classes';
@@ -72,7 +72,7 @@ export function RescheduleFields({
 }) {
   const { old, today, date, time, same } = form;
   const reason = rescheduleReason(form.reason);
-  const pending = form.dateText.trim() === '' && !form.attempted;
+  const pending = normalizeText(form.dateText) === '' && !form.attempted;
   const past = !date.ok && date.error === 'past';
   const dateError = same
     ? t('reschedule.same')

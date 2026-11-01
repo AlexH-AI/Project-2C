@@ -9,7 +9,7 @@ import {
   type CustomerRecord,
   type Database,
 } from '@p2c/db';
-import { formatDate, weekdayOf, type CalendarDate, type Person } from '@p2c/domain';
+import { formatDate, normalizeText, weekdayOf, type CalendarDate, type Person } from '@p2c/domain';
 import { Choices, Dialog, TextField } from '@p2c/ui';
 import { useAppData, useQuery, useTables } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
@@ -213,7 +213,7 @@ export function OutcomeDialog({
                     value={nextDateText}
                     onChange={edit(setNextDateText)}
                     error={
-                      nextDateText.trim() === '' && !has('nextDate')
+                      normalizeText(nextDateText) === '' && !has('nextDate')
                         ? undefined
                         : dateFieldError(nextDate, today)
                     }

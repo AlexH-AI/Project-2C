@@ -141,7 +141,14 @@ test('a second Escape does not close the dialog of a running reload', async ({ p
   const dialog = page.getByRole('dialog', { name: 'Nạp lại dữ liệu giả lập?' });
   await dialog.getByRole('textbox', { name: /^Gõ NẠP LẠI/ }).fill('NẠP LẠI');
   await page.keyboard.press('Enter');
-  await expect(dialog.getByRole('button', { name: 'Đang nạp lại…' })).toBeVisible();
+  // DR6-154: the field it was typed in goes off, the focus stays in the dialog, on what runs.
+  const running = dialog.getByRole('button', { name: 'Đang nạp lại…' });
+  await expect(running).toBeFocused();
+  await expect(running).toBeDisabled();
+  // Dimmed as a button off is, under the pointer too.
+  await expect(running).toHaveCSS('opacity', '0.5');
+  await running.hover({ force: true });
+  await expect(running).toHaveCSS('opacity', '0.5');
 
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
@@ -149,10 +156,51 @@ test('a second Escape does not close the dialog of a running reload', async ({ p
   await expect(dialog).toBeVisible();
   // Still modal: the page behind cannot be used while the reload runs.
   expect(await dialog.evaluate((node) => node.matches(':modal'))).toBe(true);
+  // Opened again by the second Escape (DR-58), it still holds the focus; Tab comes back to it.
+  await expect(running).toBeFocused();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  await expect(running).toBeFocused();
 
   await page.evaluate(() => window.exe.releaseBackup());
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole('status')).toContainText('Đã nạp lại dữ liệu giả lập');
+  await expect(page.getByRole('button', { name: 'Nạp lại…' })).toBeFocused();
+});
+
+test('the dialog of a running import keeps the focus on what runs (10a, DR6-154)', async ({
+  page,
+}) => {
+  await asExe(page);
+  await page.goto('/#/settings');
+  const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });
+  await backup.getByRole('button', { name: 'Xuất backup' }).click();
+  await expect(backup.getByRole('status')).toContainText('Đã xuất backup: ');
+  const file = await page.evaluate(() => window.exe.exports.at(-1) ?? '');
+
+  await page.evaluate(() => window.exe.holdBackup());
+  const open = backup.getByRole('button', { name: 'Chọn file…' });
+  const chooser = page.waitForEvent('filechooser');
+  await open.click();
+  await (
+    await chooser
+  ).setFiles({ name: 'export.p2cbackup', mimeType: 'application/json', buffer: Buffer.from(file) });
+  const dialog = page.getByRole('dialog', { name: 'Thay toàn bộ dữ liệu?' });
+  await expect(dialog.getByRole('button', { name: 'Hủy' })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Enter');
+  const running = dialog.getByRole('button', { name: 'Đang nhập…' });
+  await expect(running).toBeFocused();
+  await expect(running).toBeDisabled();
+  await expect(dialog.getByRole('button', { name: 'Hủy' })).toBeDisabled();
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeVisible();
+  await expect(running).toBeFocused();
+
+  await page.evaluate(() => window.exe.releaseBackup());
+  await expect(dialog).toHaveCount(0);
+  await expect(backup.getByRole('status')).toContainText('Đã nhập backup');
 });
 
 test('closing the exe over a failed save: Escape leaves the window open, and closing still works', async ({

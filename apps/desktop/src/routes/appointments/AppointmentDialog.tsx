@@ -6,7 +6,13 @@ import {
   type AppointmentTrigger,
   type CustomerRecord,
 } from '@p2c/db';
-import { formatDate, formatDayMonth, type CalendarDate, type Person } from '@p2c/domain';
+import {
+  formatDate,
+  formatDayMonth,
+  normalizeText,
+  type CalendarDate,
+  type Person,
+} from '@p2c/domain';
 import { Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
@@ -92,7 +98,8 @@ export function AppointmentDialog({
   );
   const date = readScheduleDate(dateText, today, from ? 'fromToday' : 'any', filled);
   const time = parseTime(timeText);
-  const pending = dateText.trim() === '' && !attempted;
+  // Empty as `parseQuickDate` reads it: nothing to see waits for Lưu too (DR6-150).
+  const pending = normalizeText(dateText) === '' && !attempted;
 
   const dateError = pending ? undefined : dateFieldError(date, today);
 

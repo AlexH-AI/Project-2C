@@ -110,6 +110,8 @@ describe('listTrash: customers (TR-2, TR-4)', () => {
     expect(r).toMatchObject({
       kind: 'customer',
       name: 'Trịnh Minh Anh',
+      // What tells two customers of a name and a stage apart (DR6-151), as in mockup 9b.
+      code: anh.code,
       stage: 'N3',
       owner: {
         re: { name: 'Đỗ Khánh Linh', deleted: false },
