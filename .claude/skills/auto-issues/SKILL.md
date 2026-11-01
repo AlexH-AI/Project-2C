@@ -128,6 +128,7 @@ Ba hàng giao việc theo PR (CI đỏ, review, CHANGES) không cần điều ki
 - **Mỗi nhịp phải để lại một lệnh chờ**, trừ khi bước kế làm ngay trong lượt. Không có việc nền thì `/goal` chạy lượt kế ngay lập tức; lặp vài lượt không gọi công cụ thì nó tự dừng.
 - **Mỗi lúc chỉ một lệnh chờ.** Trước khi đặt lệnh mới, `TaskStop` lệnh cũ nếu nó còn chạy và mình biết id. Lệnh cũ xong muộn chỉ sinh một nhịp thừa.
 - **Lệnh chờ theo việc đang chạy:**
+  - phiên con đang trả lời brief chờ (ngay sau khi mở ở §1): `sleep --timeout 1`;
   - phiên code làm Issue `I`, chưa có PR: `pr <I> --timeout 60`;
   - phiên code sửa PR `N` (CI đỏ, CHANGES, câu trả lời của Owner): `ci <N> --not <H> --timeout 60`;
   - phiên review review PR `N`: `review <N> --timeout 60`;
