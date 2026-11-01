@@ -51,7 +51,7 @@ Chỉ lượt Owner gõ `/goal` được mở phiên con. Lượt do lệnh nề
    - `gh auth status` thành công.
 2. **Hàng đợi.**
    - Lệnh `/goal` có danh sách thì dùng danh sách đó. Không có thì lấy các Issue mở có nhãn `type:task` và `ready-for-agent` của milestone đang mở, xếp theo số. Có nhiều milestone thì hỏi Owner.
-   - Một Issue chỉ tới lượt khi mọi Issue trong ô "Bị chặn bởi" của nó đã đóng. Issue còn bị chặn lùi xuống sau Issue kế.
+   - Một Issue chỉ tới lượt khi mọi Issue trong ô "Bị chặn bởi" của nó đã đóng. Issue bị chặn bởi một Issue khác trong hàng thì lùi xuống sau Issue kế. Issue bị chặn bởi một Issue còn mở nằm ngoài hàng thì bỏ khỏi hàng và báo Owner: pipeline không làm Issue ngoài hàng, nên Issue đó không bao giờ tới lượt.
    - Bỏ khỏi hàng và báo Owner mọi Issue có "File / thư mục được phép sửa" chạm `.claude/skills/auto-issues/**` hoặc `tools/auto-wait*`. Pipeline không tự sửa chính nó; Owner làm Issue đó theo cách thường.
    - Hỏi Owner một câu (§5): "Chạy hàng đợi #a → #b → …?". Phương án: Chạy / Dừng; Owner sửa hàng đợi qua "Other".
 3. **Phiên con.**
@@ -61,17 +61,23 @@ Chỉ lượt Owner gõ `/goal` được mở phiên con. Lượt do lệnh nề
      - `coding-ses1`, `coding-ses2`: `use_worktree: false`;
      - `review-1`: `cwd: "C:\\workspace\\Project-2C-review"`; `review-2`: `cwd: "C:\\workspace\\Project-2C-review-2"`; cả hai `use_worktree: false`.
    - App từ chối mở thì in `AUTO: DỪNG — không mở được phiên con <tên>: <lý do>`.
+   - Phiên con có dòng `AUTO-CHILD` cuối mang thẻ `[Sổ]` là kết quả của đợt trước: `/clear` phiên đó ngay, để §6 của đợt này không đọc nhầm (bị từ chối thì làm như §2).
 4. Làm nhịp đầu (§2) ngay trong lượt này.
 
 ## 2. Mỗi nhịp: đọc, làm một bước, chờ
 
 Mỗi lượt của phiên điều phối là một **nhịp**, dù lượt đó do gì khởi động: lượt `/goal`, lệnh chờ xong, tin báo của phiên con (`<side-sessions-event>`), nhắc của `/goal`, hay câu trả lời của Owner.
 
-Một nhịp gồm: đọc trạng thái → làm **đúng một bước** trong bảng → đặt lệnh chờ → kết thúc lượt. Không dựa vào trí nhớ: mỗi nhịp đọc lại từ GitHub và từ phiên con. Nhờ vậy nhịp thừa, lệnh chờ cũ xong muộn hay context bị nén đều không làm sai.
+Một nhịp gồm: đọc trạng thái → làm **đúng một bước** trong bảng → đặt lệnh chờ → kết thúc lượt. Không dựa vào trí nhớ: mỗi nhịp đọc lại từ GitHub và từ phiên con.
+
+Nhịp thừa là chuyện thường: lệnh chờ cũ xong muộn, nhắc của `/goal`, tin báo đến cùng lúc với lệnh chờ. Nhịp thừa không làm sai, vì bảng có ba cách giữ:
+- phiên con đang chạy thì chỉ chờ;
+- hàng giao việc chỉ khớp khi việc đó chưa được giao: thẻ ở dòng `AUTO-CHILD` cuối của phiên con cho biết việc nào nó đã nhận (§3.0);
+- sau dòng kết thúc thì không làm nhịp nữa (§7).
 
 **Đọc trạng thái:**
 
-1. **Issue đang làm** là Issue đầu hàng chưa xong. Một Issue xong khi:
+1. **Issue đang làm** là Issue đầu hàng chưa xong. Một Issue xong khi đủ cả ba:
    - Issue đã đóng;
    - PR của nó đã merge;
    - PR sổ của PR đó đã merge, hoặc PR có comment `Sổ ghi chú: không đổi … (auto-issues)`.
@@ -81,32 +87,34 @@ Một nhịp gồm: đọc trạng thái → làm **đúng một bước** trong
    - `node tools/auto-wait.mjs ci <N> --once`: CI đã xong chưa, kể cả job có check đến muộn (exe).
 4. **Phiên con:**
    - `list_sessions {"linked": true}`: phiên đang chạy hay rảnh, `lastActivityAt`;
-   - phiên rảnh vừa xong việc: `list_events` (limit 6) để đọc dòng `AUTO-CHILD:` cuối.
+   - phiên rảnh: `list_events` (limit 6) để đọc dòng `AUTO-CHILD:` cuối, gồm thẻ việc và kết quả.
    - Phiên code của PR là phiên ghi trong dòng `Phiên code: …` của thân PR. Phiên review đã PASS là phiên ghi trong câu `Phiên review: …` của comment PASS.
 
 **Bảng bước** (làm theo hàng đầu tiên khớp; `I` = Issue, `N` = PR, `H` = head):
 
 | Trạng thái | Bước | Lệnh chờ (`auto-wait`) |
 |---|---|---|
-| Phiên con rảnh, dòng `AUTO-CHILD` cuối là `CẦN OWNER` hoặc `KHÔNG ĐỒNG Ý`, và sau dòng đó chưa có tin nhắn nào của phiên điều phối | Hỏi Owner (§5), gửi câu trả lời về phiên đó | theo việc của phiên đó |
-| Phiên con rảnh; việc gần nhất của nó chưa để lại kết quả trên GitHub (PR, REVIEW, PR sổ); dòng cuối không phải `AUTO-CHILD` | Nhắc một lần: "Kết thúc lượt bằng đúng một dòng AUTO-CHILD theo brief". Đã nhắc mà vẫn vậy thì hỏi Owner | theo việc đó |
-| Chưa có PR, không phiên code nào giữ `I` | `/clear` phiên code ít dùng gần nhất, gửi §3.1 | `pr <I> --timeout 60` |
-| Chưa có PR, phiên code giữ `I` đang chạy hoặc vừa báo `PR #…` | — | `pr <I> --timeout 60` |
-| PR mở, phiên code của PR còn chạy (chưa review head nào khi nó còn có thể push) | — | giữ lệnh chờ đang chạy; không có thì `sleep --timeout 15` |
-| PR mở, CI đang chạy | — | `ci <N> --timeout 60` |
-| CI đỏ trên `H` | Gửi §3.3 cho phiên code của PR | `ci <N> --not <H> --timeout 60` |
-| CI xanh trên `H`, chưa có REVIEW cho `H`, không phiên review nào đang review `N` | `/clear` phiên review ít dùng gần nhất, gửi §3.2 | `review <N> --timeout 60` |
-| Phiên review đang review `N` | — | `review <N> --timeout 60` |
-| `REVIEW: CHANGES` @`H` | Gửi §3.4 cho phiên code của PR | `ci <N> --not <H> --timeout 60` |
-| `REVIEW: PASS` @`H`, CI xanh | Merge (§4), rồi làm tiếp nhịp ngay | — |
-| PR đã merge, chưa có PR sổ | Gửi §3.5 cho phiên review đã PASS | `title "record the notes of the PR <N> review" --timeout 30` |
+| Đợt này đã in dòng kết thúc | Không làm nhịp: in lại đúng dòng đó (§7) | — |
+| Phiên con rảnh; dòng `AUTO-CHILD` cuối là `CẦN OWNER` hoặc `KHÔNG ĐỒNG Ý`; sau dòng đó chưa có tin nhắn nào của phiên điều phối | Hỏi Owner (§5), gửi câu trả lời về phiên đó | giữ lệnh đang chạy |
+| Một phiên con đang chạy | Không giao gì | giữ lệnh đang chạy; không có thì đặt lệnh của việc đó ("Chờ", bên dưới) |
+| Phiên con rảnh; dòng cuối không phải `AUTO-CHILD`; việc gần nhất của nó chưa có kết quả trên GitHub | Nhắc một lần: "Kết thúc lượt bằng đúng một dòng AUTO-CHILD theo brief". Đã nhắc mà vẫn vậy thì hỏi Owner | lệnh của việc đó |
+| Phiên con rảnh; dòng `AUTO-CHILD` cuối báo một kết quả (PR, head mới, REVIEW, PR sổ) mà GitHub chưa thấy | Không giao lại. Lần đầu chỉ chờ. Lần sau vẫn chưa thấy thì tìm nguyên nhân (PR thiếu `Closes #<I>`, push chưa lên, tiêu đề PR sổ sai) và nhắc phiên con sửa; vẫn không được thì hỏi Owner | `sleep --timeout 1` |
+| Chưa có PR; không phiên code nào giữ `I` | `/clear` phiên code ít dùng gần nhất, gửi §3.1 | `pr <I> --timeout 60` |
+| PR mở, CI đang chạy trên `H` | — | `ci <N> --timeout 60` |
+| PR mở, CI đỏ trên `H` | Gửi §3.3 cho phiên code của PR | `ci <N> --not <H> --timeout 60` |
+| PR mở, CI xanh trên `H`, chưa có REVIEW cho `H` | `/clear` phiên review ít dùng gần nhất, gửi §3.2 | `review <N> --timeout 60` |
+| PR mở, `REVIEW: CHANGES` @`H` | Gửi §3.4 cho phiên code của PR | `ci <N> --not <H> --timeout 60` |
+| PR mở, `REVIEW: PASS` @`H`, CI xanh | Merge (§4), rồi làm tiếp nhịp ngay | — |
+| PR đã merge; chưa có PR sổ; chưa phiên review nào có dòng `AUTO-CHILD` cuối là kết quả của §3.5 cho `N` | Gửi §3.5 cho phiên review đã PASS | `title "record the notes of the PR <N> review" --timeout 30` |
 | PR sổ đang mở | Merge PR sổ (§4) | — |
-| PR sổ đã merge, hoặc phiên review báo `SỔ KHÔNG ĐỔI` | Issue xong. Khi `SỔ KHÔNG ĐỔI`, comment lên PR: `Sổ ghi chú: không đổi sau review @<H> (auto-issues).` Sang Issue kế: `git -C C:/workspace/Project-2C fetch origin`, `git -C C:/workspace/Project-2C-auto checkout --detach origin/main` | — |
-| Hết hàng đợi | §6 | |
+| PR sổ đã merge, hoặc phiên review báo `[PR #<N>] SỔ KHÔNG ĐỔI` | Issue xong. Khi `SỔ KHÔNG ĐỔI`, comment lên PR: `Sổ ghi chú: không đổi sau review @<H> (auto-issues).` Sang Issue kế: `git -C C:/workspace/Project-2C fetch origin`, `git -C C:/workspace/Project-2C-auto checkout --detach origin/main` | — |
+| Hết hàng đợi | Làm theo bảng ở §6 | |
+
+Ba hàng giao việc theo PR (CI đỏ, review, CHANGES) không cần điều kiện "chưa giao" riêng. Việc đã giao thì phiên nhận việc hoặc đang chạy, hoặc dòng cuối của nó đã khớp một trong các hàng phía trên.
 
 **Chọn và `/clear` phiên con:**
 
-- **Phiên code giữ `I`** là phiên code có brief việc mới gần nhất là `[auto-issues] Issue #<I>` (đọc bằng `list_events`). Phiên giữ Issue của nó cho tới khi Issue xong, kể cả lúc đang rảnh; "giữ" không có nghĩa là "đang chạy".
+- **Phiên code giữ `I`** là phiên code đang chạy việc của Issue này, hoặc có dòng `AUTO-CHILD` cuối mang thẻ `[Issue #<I>]` hay `[PR #<N>]` (`N` là PR của `I`). Phiên giữ Issue của nó cho tới khi Issue xong, kể cả lúc đang rảnh; "giữ" không có nghĩa là "đang chạy".
 - **Ít dùng gần nhất:** trong hai phiên cùng loại, chọn phiên rảnh có `lastActivityAt` cũ hơn và không giữ việc dở. Việc dở là phiên code của PR đang mở, hoặc phiên review đã PASS mà PR sổ chưa xong. Nhờ vậy transcript của việc vừa xong còn đọc lại được.
 - **`/clear` trước mỗi việc mới** bằng `clear_session`. Phiên chưa nhận việc nào (transcript chỉ có brief chờ và dòng `SẴN SÀNG`) thì không cần.
   - Bị từ chối thì thử phiên sinh đôi, nếu phiên đó không giữ việc dở.
@@ -119,11 +127,21 @@ Một nhịp gồm: đọc trạng thái → làm **đúng một bước** trong
 - **Cách đặt lệnh chờ:** Bash với `run_in_background: true`: `cd C:/workspace/Project-2C-auto && node tools/auto-wait.mjs <kiểu> …`. Lệnh xong thì app đánh thức phiên này bằng một lượt mới, kèm dòng `AUTO-WAIT …`.
 - **Mỗi nhịp phải để lại một lệnh chờ**, trừ khi bước kế làm ngay trong lượt. Không có việc nền thì `/goal` chạy lượt kế ngay lập tức; lặp vài lượt không gọi công cụ thì nó tự dừng.
 - **Mỗi lúc chỉ một lệnh chờ.** Trước khi đặt lệnh mới, `TaskStop` lệnh cũ nếu nó còn chạy và mình biết id. Lệnh cũ xong muộn chỉ sinh một nhịp thừa.
+- **Lệnh chờ theo việc đang chạy:**
+  - phiên code làm Issue `I`, chưa có PR: `pr <I> --timeout 60`;
+  - phiên code sửa PR `N` (CI đỏ, CHANGES, câu trả lời của Owner): `ci <N> --not <H> --timeout 60`;
+  - phiên review review PR `N`: `review <N> --timeout 60`;
+  - phiên review viết PR sổ cho `N`: `title "record the notes of the PR <N> review" --timeout 30`;
+  - việc của §6: `sleep --timeout 30`.
 - **Mã thoát `AUTO-WAIT`:**
   - 0 / 1: làm nhịp như thường;
-  - 2 (hết giờ): xem phiên con. Còn chạy thì đặt lại lệnh chờ. Đã rảnh thì làm theo bảng (hàng nhắc một lần, rồi hỏi Owner);
-  - 3: đọc lý do. Rõ cách xử lý thì làm (ví dụ PR đã merge thì đi tiếp theo bảng), không rõ thì hỏi Owner.
-- **Phiên con chạy quá lâu:** qua hai lần hết giờ liền mà GitHub không đổi thì xem `list_events`. Thấy phiên đó đang chờ duyệt quyền hay đang treo thì hỏi Owner (Tiếp tục chờ / Dừng).
+  - 2 (hết giờ): làm nhịp như thường, rồi xét luật hai lần hết giờ ở dưới;
+  - 3: đọc lý do. Rõ cách xử lý thì làm (ví dụ PR đã merge thì đi tiếp theo bảng), không rõ thì hỏi Owner. Với `--once`, mã 3 còn có nghĩa là lần đọc lỗi: đọc lại một lần trước khi kết luận.
+- **Hai lần hết giờ liền cho cùng một việc mà GitHub không đổi:** hỏi Owner (Tiếp tục chờ / Dừng), dù phiên con còn chạy hay đã rảnh. Trước khi hỏi, kiểm và nêu trong câu hỏi:
+  - PR có `Closes #<I>` không;
+  - `mergeable` của PR: có xung đột thì workflow `pull_request` không chạy;
+  - check nào treo;
+  - phiên con có đang chờ duyệt quyền hay đang treo không (`list_events`).
 - **Nhắc của `/goal`** (sau 30 phút chờ): làm một nhịp như thường.
 
 ## 3. Brief cho phiên con
@@ -136,24 +154,26 @@ Brief gửi bằng `SendMessage`, với `to` là id `local_…` của phiên con
 
 ```text
 Bạn là phiên con `<tên>` của pipeline auto-issues (ADR-0001 phụ lục M11, `.claude/skills/auto-issues/SKILL.md` §3). Không có Owner ngồi ở phiên này: phiên điều phối giao việc qua tin nhắn và đọc dòng cuối của bạn.
-- Không gọi AskUserQuestion, không chờ ai trả lời. Cần Owner quyết (cổng G1–G7 của CLAUDE.md, spec mâu thuẫn, test chấp nhận không làm được) → dừng việc đó, không đoán; kết thúc lượt bằng `AUTO-CHILD: CẦN OWNER — <câu hỏi>; phương án: <a> / <b>; đề xuất: <x>`.
+- Không gọi AskUserQuestion, không chờ ai trả lời. Cần Owner quyết (cổng G1–G7 của CLAUDE.md, spec mâu thuẫn, test chấp nhận không làm được) → dừng việc đó, không đoán; kết thúc lượt bằng `AUTO-CHILD: <thẻ> CẦN OWNER — <câu hỏi>; phương án: <a> / <b>; đề xuất: <x>`.
 - Không merge, không /handoff, không bật Auto-fix hay auto-merge, không đổi nhánh của worktree review, không sửa `.claude/skills/auto-issues/**` hay `tools/auto-wait*`.
-- Dòng cuối cùng của mỗi lượt là đúng một dòng `AUTO-CHILD: …` theo việc được giao.
+- Dòng cuối cùng của mỗi lượt là đúng một dòng `AUTO-CHILD: <thẻ> <kết quả>` theo việc được giao. `<thẻ>` chép đúng thẻ ở dòng `[auto-issues]` của tin nhắn giao việc: `[Issue #<số>]`, `[PR #<số>]` hoặc `[Sổ]`.
 ```
 
-Brief chờ, là `prompt` khi mở phiên: đoạn chung, rồi `Chưa có việc: trả lời đúng một dòng AUTO-CHILD: SẴN SÀNG rồi dừng.`
+Brief chờ, là `prompt` khi mở phiên: đoạn chung, rồi `Chưa có việc: trả lời đúng một dòng AUTO-CHILD: SẴN SÀNG rồi dừng.` Dòng này không có thẻ.
+
+Mỗi brief việc mở đầu bằng thẻ của việc đó. Phiên điều phối đọc thẻ ở dòng `AUTO-CHILD` cuối của phiên con để biết nó đã nhận việc nào (§2). Tin nhắn chuyển câu trả lời của Owner cũng mang thẻ của việc đang dở.
 
 ### 3.1 Làm một Issue (phiên code, sau `/clear`)
 
 ```text
-[auto-issues] Issue #<I> — làm task, mở PR.
+[auto-issues] [Issue #<I>] Làm task, mở PR.
 <đoạn chung>
 Làm Issue #<I> theo CLAUDE.md "Quy trình một task", ở checkout chính `C:\workspace\Project-2C`:
 1. `git switch main`, `git pull --ff-only`, tạo nhánh `task/T-<số>-<slug>`; gắn nhãn `status:in-progress` cho Issue.
 2. `node tools/notes-for.mjs <I>`; đọc "Tài liệu cần đọc"; TDD; `pnpm verify` xanh (chạy pnpm từ PowerShell); commit theo pathspec; push.
 3. Mở PR theo mẫu: `Closes #<I>`; mục "Ghi chú OPEN liên quan" theo `node tools/notes-for.mjs --diff`; nhãn risk của Issue; nhãn `build-exe` khi CLAUDE.md đòi (gắn lúc tạo). Thân PR có dòng `Phiên code: <tên> (auto-issues)`.
 4. Không chờ CI, không review.
-Dòng cuối: `AUTO-CHILD: PR #<N> @<sha7>` hoặc `AUTO-CHILD: CẦN OWNER — …`.
+Dòng cuối: `AUTO-CHILD: [Issue #<I>] PR #<N> @<sha7>` hoặc `AUTO-CHILD: [Issue #<I>] CẦN OWNER — …`.
 ```
 
 ### 3.2 Review (phiên review, sau `/clear`)
@@ -162,58 +182,61 @@ Dòng đầu là `review PR #<N>`, để hook gợi ý `review-pr`.
 
 ```text
 review PR #<N>
-[auto-issues] <đoạn chung>
+[auto-issues] [PR #<N>] Review head <sha7>.
+<đoạn chung>
 Bạn ở worktree `<đường dẫn>`, context sạch. Chạy skill `review-pr` cho PR #<N> tới hết §4 (đăng một comment REVIEW). Khác với skill (xem review-pr §5, đoạn auto-issues):
 - Không merge, kể cả risk:low: phiên điều phối merge.
 - Đoạn mở đầu của comment thêm câu `Phiên review: <tên> (auto-issues).`
-- Chỗ skill bảo dừng, hỏi Owner (nhãn risk thiếu hoặc lệch, PR đã đóng, diff rỗng): không đăng REVIEW, kết thúc bằng `AUTO-CHILD: CẦN OWNER — …`.
+- Chỗ skill bảo dừng, hỏi Owner (nhãn risk thiếu hoặc lệch, PR đã đóng, diff rỗng): không đăng REVIEW, kết thúc bằng `AUTO-CHILD: [PR #<N>] CẦN OWNER — …`.
 - Trước khi kết luận, đọc các comment `Quyết định Owner (…)` trên PR và Issue. Mục Owner đã quyết là không chặn thì không tính là chặn. Đó là quyết định của Owner, không phải comment review cũ, nên quy tắc ở §0 của skill (không đọc comment review cũ trước khi có kết luận) không cấm việc này.
-Dòng cuối: `AUTO-CHILD: REVIEW PASS @<sha7>`, `AUTO-CHILD: REVIEW CHANGES @<sha7>` hoặc `AUTO-CHILD: CẦN OWNER — …`.
+Dòng cuối: `AUTO-CHILD: [PR #<N>] REVIEW PASS @<sha7>`, `AUTO-CHILD: [PR #<N>] REVIEW CHANGES @<sha7>` hoặc `AUTO-CHILD: [PR #<N>] CẦN OWNER — …`.
 ```
 
 ### 3.3 CI đỏ (phiên code của PR, không `/clear`)
 
 ```text
-[auto-issues] PR #<N> @<sha7>: CI đỏ ở <tên check>. Đọc log (`gh run view <id> --log-failed`), tìm nguyên nhân (superpowers:systematic-debugging), sửa, `pnpm verify`, push. Nếu log cho thấy rõ là lỗi chập chờn: commit rỗng `chore: re-run CI (<lý do>)` rồi push. Không dùng `gh run rerun`: head không đổi thì phiên điều phối không chờ được.
-Dòng cuối: `AUTO-CHILD: ĐÃ PUSH @<sha7>` hoặc `AUTO-CHILD: CẦN OWNER — …`.
+[auto-issues] [PR #<N>] CI đỏ @<sha7> ở <tên check>. Đọc log (`gh run view <id> --log-failed`), tìm nguyên nhân (superpowers:systematic-debugging), sửa, `pnpm verify`, push. Nếu log cho thấy rõ là lỗi chập chờn: commit rỗng `chore: re-run CI (<lý do>)` rồi push. Không dùng `gh run rerun`: head không đổi thì phiên điều phối không chờ được.
+Dòng cuối: `AUTO-CHILD: [PR #<N>] ĐÃ PUSH @<sha7>` hoặc `AUTO-CHILD: [PR #<N>] CẦN OWNER — …`.
 ```
 
 ### 3.4 REVIEW CHANGES (phiên code của PR, không `/clear`)
 
 ```text
-[auto-issues] PR #<N>: `REVIEW: CHANGES` @<sha7> (<link comment>). Đọc comment đó. Với mỗi mục [chặn]: kiểm trên code xem mục đó có đúng không, rồi mới sửa. Mục [không chặn] không bắt buộc. Mục chặn mà bạn có bằng chứng là sai: không sửa, ghi lý do kèm bằng chứng trong một comment trên PR. `pnpm verify` xanh; push; cập nhật thân PR nếu mục "Ghi chú OPEN liên quan" hay phần kiểm tra đổi.
-Dòng cuối: `AUTO-CHILD: ĐÃ PUSH @<sha7>`, `AUTO-CHILD: KHÔNG ĐỒNG Ý — <mục>: <lý do>` (khi có mục chặn không sửa; phần sửa được vẫn push), hoặc `AUTO-CHILD: CẦN OWNER — …`.
+[auto-issues] [PR #<N>] `REVIEW: CHANGES` @<sha7> (<link comment>). Đọc comment đó. Với mỗi mục [chặn]: kiểm trên code xem mục đó có đúng không, rồi mới sửa. Mục [không chặn] không bắt buộc. Mục chặn mà bạn có bằng chứng là sai: không sửa, ghi lý do kèm bằng chứng trong một comment trên PR. `pnpm verify` xanh; push; cập nhật thân PR nếu mục "Ghi chú OPEN liên quan" hay phần kiểm tra đổi.
+Dòng cuối: `AUTO-CHILD: [PR #<N>] ĐÃ PUSH @<sha7>`, `AUTO-CHILD: [PR #<N>] KHÔNG ĐỒNG Ý — <mục>: <lý do>` (khi có mục chặn không sửa; phần sửa được vẫn push), hoặc `AUTO-CHILD: [PR #<N>] CẦN OWNER — …`.
 ```
 
 ### 3.5 PR sổ (phiên review đã PASS, không `/clear`)
 
 ```text
-[auto-issues] PR #<N> đã merge (`<sha7>` trên `main`). Viết PR sổ cho review của PR này, như PR #940:
+[auto-issues] [PR #<N>] Đã merge (`<sha7>` trên `main`). Viết PR sổ cho review của PR này, như PR #940:
+- Đọc mọi comment REVIEW của PR #<N>, mọi vòng, kể cả vòng do phiên review kia viết hay do bạn viết trước một lần `/clear`. Lấy ghi chú không chặn của tất cả, như sổ đã ghi cho nhóm review #917.
 - Worktree riêng: `git -C C:/workspace/Project-2C fetch origin`, rồi `git -C C:/workspace/Project-2C worktree add ../Project-2C-notes-<N> -b docs/T-<số>-review-notes-<N> origin/main`. Làm trong đó, không làm ở worktree review hay checkout chính.
 - Chỉ sửa `docs/state/review-notes.md`, theo đoạn đầu của sổ:
   - ghi chú không chặn mới vào OPEN. Đối chiếu sổ trước khi ghi một mục là MỚI; mỗi mục nêu ít nhất một đường dẫn file trong backtick. Gắn nhãn như các nhóm hiện có: Issue còn mở phụ trách file đó → `[T-… #…]`, không có thì nhãn chờ đang dùng (như `[G7]`);
   - mục thân PR #<N> ghi "đã sửa" chuyển sang RESOLVED.
 - PR: tiêu đề `docs: record the notes of the PR <N> review (T-<số>)`; thân `Refs #<I>` và các phần như #940; nhãn `type:task`, `risk:low`. Không merge.
 - Không có gì để ghi thì không mở PR.
-Dòng cuối: `AUTO-CHILD: PR SỔ #<L>`, `AUTO-CHILD: SỔ KHÔNG ĐỔI` hoặc `AUTO-CHILD: CẦN OWNER — …`.
+Dòng cuối: `AUTO-CHILD: [PR #<N>] PR SỔ #<L>`, `AUTO-CHILD: [PR #<N>] SỔ KHÔNG ĐỔI` hoặc `AUTO-CHILD: [PR #<N>] CẦN OWNER — …`.
 ```
 
 ### 3.6 Đề xuất gom sổ (phiên code, sau `/clear`)
 
 ```text
-[auto-issues] Hàng đợi đã xong. <đoạn chung>
+[auto-issues] [Sổ] Hàng đợi đã xong; đề xuất gom sổ.
+<đoạn chung>
 `git -C C:/workspace/Project-2C pull --ff-only`, rồi đọc mục OPEN của `docs/state/review-notes.md` và đề xuất gom thành Issue, như đợt 01/11 (Issue #930…#935, PR #936):
 - nhóm theo vùng file và cỡ (mỗi Issue ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff); thứ tự, "Bị chặn bởi", nhãn risk;
 - chỉ ra mục nên đề nghị Owner chọn không sửa (ACCEPTED), và mục chạm cổng G1–G7.
 Chưa tạo Issue, chưa sửa file. Trả lời bằng một bảng, mỗi Issue một hàng: tiêu đề, các mục sổ theo số dòng, file, cỡ ước lượng, risk.
-Dòng cuối: `AUTO-CHILD: ĐỀ XUẤT <n> ISSUE`, `AUTO-CHILD: SỔ TRỐNG` hoặc `AUTO-CHILD: CẦN OWNER — …`.
+Dòng cuối: `AUTO-CHILD: [Sổ] ĐỀ XUẤT <n> ISSUE`, `AUTO-CHILD: [Sổ] SỔ TRỐNG` hoặc `AUTO-CHILD: [Sổ] CẦN OWNER — …`.
 ```
 
 ### 3.7 Tạo Issue đã duyệt (cùng phiên với 3.6, không `/clear`)
 
 ```text
-[auto-issues] Owner duyệt đề xuất<; sửa: …>. Tạo các Issue theo `docs/agents/issue-tracker.md` (mẫu Task, skill `to-tickets`; milestone đang mở; nhãn `type:task`, `risk:*`, `ready-for-agent`; số T- kế tiếp). Rồi mở PR gắn nhãn sổ như PR #936: worktree riêng `Project-2C-notes-tags` từ `origin/main`; chỉ sửa `docs/state/review-notes.md`; tiêu đề theo kiểu PR #936 (`docs: tag the … review notes with T-<a> to T-<b>`); nhãn `type:task`, `risk:low`. Không merge.
-Dòng cuối: `AUTO-CHILD: PR NHÃN #<L>; Issue #<a>…#<b>` hoặc `AUTO-CHILD: CẦN OWNER — …`.
+[auto-issues] [Sổ] Owner duyệt đề xuất<; sửa: …>. Tạo các Issue theo `docs/agents/issue-tracker.md` (mẫu Task, skill `to-tickets`; milestone đang mở; nhãn `type:task`, `risk:*`, `ready-for-agent`; số T- kế tiếp). Rồi mở PR gắn nhãn sổ như PR #936: worktree riêng `Project-2C-notes-tags` từ `origin/main`; chỉ sửa `docs/state/review-notes.md`; tiêu đề theo kiểu PR #936 (`docs: tag the … review notes with T-<a> to T-<b>`); nhãn `type:task`, `risk:low`. Không merge.
+Dòng cuối: `AUTO-CHILD: [Sổ] PR NHÃN #<L>; Issue #<a>…#<b>` hoặc `AUTO-CHILD: [Sổ] CẦN OWNER — …`.
 ```
 
 ## 4. Merge
@@ -237,7 +260,8 @@ Chỉ phiên điều phối merge, luôn bằng `node tools/merge-pr.mjs`. Lện
 - phiên con báo `CẦN OWNER` hoặc `KHÔNG ĐỒNG Ý`;
 - `merge-pr` từ chối vì lý do ngoài §4; lệnh chờ ra mã 3 mà không rõ cách xử lý;
 - `/clear` bị từ chối ở cả hai phiên;
-- phiên con dừng hai lần không có dòng `AUTO-CHILD`, hoặc chạy quá lâu mà GitHub không đổi;
+- phiên con dừng hai lần không có dòng `AUTO-CHILD`; kết quả phiên con báo mà GitHub vẫn không thấy sau khi đã nhắc;
+- hai lần hết giờ liền cho cùng một việc mà GitHub không đổi (§2, "Chờ");
 - xác nhận hàng đợi ở lượt đầu; duyệt đề xuất gom sổ (§6).
 
 **Cách hỏi:**
@@ -249,22 +273,29 @@ Chỉ phiên điều phối merge, luôn bằng `node tools/merge-pr.mjs`. Lện
    - luôn có phương án "Dừng pipeline".
 3. Khi Owner trả lời:
    - đăng comment `Quyết định Owner (<dd/mm/yyyy>): …` lên PR (chưa có PR thì lên Issue), trích nguyên văn câu trả lời, như các comment trên PR #939;
-   - gửi câu trả lời về phiên con bằng `SendMessage`;
-   - nếu Owner bác một mục chặn của `REVIEW: CHANGES`, và từ lần review đó tới giờ head chưa đổi: tin gửi phiên code thêm yêu cầu commit rỗng `chore: re-review after Owner decision (<link comment quyết định>)`, push, rồi trả lời `AUTO-CHILD: ĐÃ PUSH @<sha7>`. Có head mới thì bảng ở §2 tự ra bước chờ CI rồi review lại ở phiên sạch. Không có head mới thì nhịp sau lại gửi §3.4, và lệnh `review` không chờ được một REVIEW mới trên cùng head;
+   - gửi câu trả lời về phiên con bằng `SendMessage`, mở đầu bằng `[auto-issues] <thẻ của việc đang dở> Quyết định Owner: …`;
+   - nếu Owner bác một mục chặn của `REVIEW: CHANGES`, và từ lần review đó tới giờ head chưa đổi: tin gửi phiên code thêm yêu cầu commit rỗng `chore: re-review after Owner decision (<link comment quyết định>)`, push, rồi trả lời `AUTO-CHILD: [PR #<N>] ĐÃ PUSH @<sha7>`. Có head mới thì bảng ở §2 tự ra bước chờ CI rồi review lại ở phiên sạch. Không có head mới thì nhịp sau lại gửi §3.4, và lệnh `review` không chờ được một REVIEW mới trên cùng head;
    - làm tiếp nhịp.
-4. Owner chọn dừng thì in `AUTO: DỪNG — Owner dừng ở <bước>`.
+4. Owner chọn dừng: `TaskStop` lệnh chờ đang chạy, rồi in `AUTO: DỪNG — Owner dừng ở <bước>` (§7).
 
 ## 6. Hết hàng đợi: sổ → Issue
 
-1. `/clear` phiên code ít dùng gần nhất và gửi §3.6. Chờ bằng `sleep --timeout 30`: việc này không để dấu trên GitHub, nên tin báo của phiên con thường đánh thức sớm hơn.
-2. Phiên con báo `SỔ TRỐNG` thì sang §7.
-3. Phiên con báo `ĐỀ XUẤT …` thì hỏi Owner (§5):
-   - nội dung: tóm tắt số Issue, tên ngắn, cỡ, và nói đề xuất đầy đủ nằm ở phiên `<tên>`;
-   - phương án: Duyệt / Dừng; Owner sửa qua "Other".
-4. Owner duyệt thì gửi §3.7 cho cùng phiên, không `/clear`.
-   - Chờ bằng `sleep --timeout 30`, rồi lấy `<L>` từ dòng `AUTO-CHILD: PR NHÃN #<L>` của phiên đó.
-   - Không chờ theo tiêu đề: PR gắn nhãn của các đợt trước có cùng kiểu tiêu đề và đã merge, nên `title` sẽ ra ngay bằng PR cũ.
-   - `node tools/pr-status.mjs <L>` phải cho thấy PR đang mở và chỉ sửa `docs/state/review-notes.md`. Đúng thì merge (§4), rồi sang §7.
+Bảng này nối tiếp hàng "Hết hàng đợi" của §2. Các hàng đầu của §2 vẫn áp dụng trước: đã in dòng kết thúc, `CẦN OWNER`, phiên con đang chạy, nhắc khi thiếu dòng `AUTO-CHILD`.
+
+| Trạng thái | Bước | Lệnh chờ |
+|---|---|---|
+| Không phiên code nào có dòng `AUTO-CHILD` cuối mang thẻ `[Sổ]` | `/clear` phiên code ít dùng gần nhất, gửi §3.6 | `sleep --timeout 30` |
+| `[Sổ] SỔ TRỐNG` | §7, dòng kết thúc XONG | — |
+| `[Sổ] ĐỀ XUẤT <n> ISSUE`, sau dòng đó chưa có tin nhắn nào của phiên điều phối | Hỏi Owner (§5) như dưới; duyệt thì gửi §3.7 cho cùng phiên, không `/clear` | `sleep --timeout 30` |
+| `[Sổ] PR NHÃN #<L>`, PR `<L>` đang mở | Kiểm rồi merge (§4), như dưới | — |
+| `[Sổ] PR NHÃN #<L>`, PR `<L>` đã merge | §7, dòng kết thúc XONG | — |
+
+- **Câu hỏi duyệt đề xuất:**
+  - nội dung: tóm tắt số Issue, tên ngắn, cỡ; nói rõ đề xuất đầy đủ nằm ở phiên `<tên>`;
+  - phương án: Duyệt / Dừng; Owner sửa qua "Other".
+- **Lấy số PR gắn nhãn:** `<L>` lấy từ dòng `AUTO-CHILD`, không chờ theo tiêu đề. PR gắn nhãn của các đợt trước có cùng kiểu tiêu đề và đã merge, nên `title` sẽ ra ngay bằng PR cũ.
+- **Kiểm trước khi merge:** `node tools/pr-status.mjs <L>` phải cho thấy PR đang mở và chỉ sửa `docs/state/review-notes.md`.
+- Việc của §6 không để dấu trên GitHub trước khi có PR gắn nhãn. Vì vậy lệnh chờ là `sleep`, và tin báo của phiên con thường đánh thức sớm hơn.
 
 ## 7. Kết thúc và chạy tiếp
 
@@ -275,6 +306,8 @@ Chỉ phiên điều phối merge, luôn bằng `node tools/merge-pr.mjs`. Lện
 
   Rồi in dòng `AUTO: XONG` ở cuối lượt.
 - **In `AUTO: DỪNG — <lý do>`** khi: kiểm đầu sai, Owner chọn dừng, không mở được phiên con, hoặc gặp lỗi không tự xử được.
+- **Trước khi in một trong hai dòng kết thúc**, ở bất kỳ chỗ nào: `TaskStop` lệnh chờ đang chạy. Lượt kết thúc mà còn việc nền thì `/goal` không đánh giá lượt đó, và khi việc nền xong, app mở một lượt mới.
+- **Sau dòng kết thúc:** lượt nào tới sau đó trong cùng đợt (lệnh nền xong muộn, nhắc của `/goal`, tin của phiên con) không làm nhịp, chỉ in lại đúng dòng kết thúc đó. `/goal` mới do Owner gõ, kể cả ngay sau dòng kết thúc, là một đợt mới: làm lại từ §1.
 - **Chỉ in hai dòng mốc này khi thật sự kết thúc.** Khi cần nhắc tới chúng, viết khác đi (ví dụ "dòng kết thúc"), để `/goal` không dừng nhầm.
 - **Chạy tiếp** sau khi context bị nén, phiên được mở lại, hay Owner gõ lại `/goal`: đọc lại file skill này, rồi làm một nhịp như thường.
   - Thiếu phiên con: lượt do Owner gõ thì mở lại theo §1 bước 3; lượt tự động thì in `AUTO: DỪNG — thiếu phiên con <tên>, gõ lại /goal`.

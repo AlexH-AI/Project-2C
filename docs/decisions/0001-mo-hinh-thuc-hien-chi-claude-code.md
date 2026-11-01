@@ -138,7 +138,7 @@ Phần Owner chọn cùng G1 (SHA ghim, phạm vi, KNOWN, việc sửa sau tổn
 
 ## Phụ lục — pipeline `auto-issues`: `/goal` chạy hàng đợi Issue qua phiên con (M11 — Accepted G1, Owner quyết 01/11/2026 · Issue #942)
 
-Owner 01/11/2026 (phiên Coding-ses2): "tạo artifact hoặc skill khi anh set với lệnh "/goal - <artifact/skill> đó sẽ tự động thực hiện". Ba việc Owner nêu:
+Owner 01/11/2026 (phiên Coding-ses2) yêu cầu tạo một artifact hoặc skill: khi Owner đặt nó bằng lệnh `/goal`, nó tự làm ba việc sau.
 
 - Phiên code context sạch làm lần lượt từng Issue, "nhưng phải đợi review pass, merge, viết sổ ghi chú review-notes xong".
 - Phiên review context sạch chạy `/review-pr` khi CI xanh. CHANGES thì đưa nội dung lại cho phiên code sửa, lặp tới PASS thì merge: "anh cho quyền merge kể cả mức med/high vì đây là bộ artifact/skill tự động".

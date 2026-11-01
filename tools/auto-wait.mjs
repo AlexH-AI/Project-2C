@@ -30,37 +30,25 @@ import {
   titleState,
   waitFor,
 } from './auto-wait-core.mjs';
+import { loadPrFiles } from './pr-status.mjs';
 import { checkCounts } from './session-core.mjs';
 import { run } from './session-io.mjs';
 
-const ghText = (args) => run('gh', args, { timeout: 30000 });
-const gh = (args) => JSON.parse(ghText(args));
+const gh = (args) => JSON.parse(run('gh', args, { timeout: 30000 }));
 
 // What ciState / reviewState read. Not pr-status's loadPr: it also reads stacked PRs, the base CI
 // tested and main's commits since, 5 + k gh calls a read where one does (review #944).
 const PR_FIELDS = 'number,state,headRefOid,statusCheckRollup,comments,changedFiles';
 
 /**
- * The PR as ciState / reviewState read it. With `files`, every file too, but only while CI has no
- * check yet: the one case where ciState asks whether the PR is docs-only. Files come from REST, as
- * `gh pr view --json files` gives the first 100 only (DR6-57).
+ * The PR as ciState / reviewState read it. With `files`, every file too (loadPrFiles, as
+ * pr-status reads them), but only while CI has no check yet: the one case where ciState asks
+ * whether the PR is docs-only.
  */
 function readPr(number, { files = false } = {}) {
   const pr = gh(['pr', 'view', String(number), '--json', PR_FIELDS]);
   const { pass, fail, pending } = checkCounts(pr.statusCheckRollup ?? []);
-  pr.files =
-    files && pass + fail + pending === 0
-      ? ghText([
-          'api',
-          '--paginate',
-          `repos/{owner}/{repo}/pulls/${number}/files?per_page=100`,
-          '--jq',
-          '.[] | {path: .filename, previousPath: .previous_filename}',
-        ])
-          .split(/\r?\n/)
-          .filter(Boolean)
-          .map((line) => JSON.parse(line))
-      : [];
+  pr.files = files && pass + fail + pending === 0 ? loadPrFiles(number) : [];
   return pr;
 }
 
@@ -91,7 +79,7 @@ const READS = {
     ),
   ci: ({ target, not }) => {
     const pr = readPr(target, { files: true });
-    return ciState(pr, { not, runs: runsOf(pr.headRefOid) });
+    return ciState(pr, { not, runs: () => runsOf(pr.headRefOid) });
   },
   review: ({ target, sha }) => reviewState(readPr(target), { sha }),
   title: ({ target }) =>

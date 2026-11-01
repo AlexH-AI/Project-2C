@@ -150,14 +150,25 @@ describe('ciState', () => {
       { name: 'CI', status: 'in_progress' },
       { name: 'Pages', status: 'completed' },
     ];
-    expect(ciState(verified, { runs: going })).toEqual({
+    expect(ciState(verified, { runs: () => going })).toEqual({
       done: false,
       text: 'CI 1 pass, 0 fail, 0 pending @abc1234, still running: CI',
     });
     const ended = going.map((run) => ({ ...run, status: 'completed' }));
-    expect(ciState(verified, { runs: ended })).toMatchObject({ done: true, code: EXIT.done });
+    expect(ciState(verified, { runs: () => ended })).toMatchObject({ done: true, code: EXIT.done });
     const failed = pr({ statusCheckRollup: [check('Verify', 'FAILURE')] });
-    expect(ciState(failed, { runs: going }).done).toBe(false);
+    expect(ciState(failed, { runs: () => going }).done).toBe(false);
+  });
+
+  it('reads the workflow runs only once every check ended', () => {
+    const runs = () => {
+      throw new Error('runs read too early');
+    };
+    const running = pr({ statusCheckRollup: [check('Verify', null, 'IN_PROGRESS')] });
+    expect(ciState(running, { runs }).done).toBe(false);
+    expect(ciState(pr({ statusCheckRollup: [] }), { runs }).done).toBe(false);
+    expect(ciState(pr(), { not: 'abc1234', runs }).done).toBe(false);
+    expect(ciState(pr({ state: 'MERGED' }), { runs }).code).toBe(EXIT.look);
   });
 
   it('is done at once for a docs-only PR, which CI skips', () => {
@@ -388,6 +399,15 @@ describe('waitFor', () => {
     });
     expect(c.slept).toEqual([]);
     expect(await waitFor(reads(green), { timeoutMs: 0, everyMs: 60000, ...clock() })).toBe(green);
+  });
+
+  it('says a single read that failed is something to look at, not "not yet"', async () => {
+    const boom = new Error('gh pr view failed: HTTP 502');
+    expect(await waitFor(reads(boom), { timeoutMs: 0, everyMs: 60000, ...clock() })).toEqual({
+      done: true,
+      code: EXIT.look,
+      text: 'read failed: gh pr view failed: HTTP 502',
+    });
   });
 });
 

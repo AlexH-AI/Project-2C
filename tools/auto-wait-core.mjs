@@ -84,12 +84,13 @@ const notOpen = (pr) =>
     : { done: true, code: EXIT.look, text: `PR #${pr.number} is ${pr.state}` };
 
 /**
- * CI on the PR's head: done once no check runs and every workflow run of the head (`runs`, from
- * the Actions API) ended, since a job that `needs` another, like the exe build, gets its check only
- * when that one ends. With `not`, first a head other than that SHA (a push after a fix). A
+ * CI on the PR's head: done once no check runs and every workflow run of the head ended, since a
+ * job that `needs` another, like the exe build, gets its check only when that one ends. `runs()`
+ * gives those runs (Actions API); it is called only once every check ended, so a wait does not
+ * read them each poll. With `not`, first a head other than that SHA (a push after a fix). A
  * docs-only PR has no CI at all (ci.yml `paths`), so it is done at once.
  */
-export function ciState(pr, { not = null, runs = [] } = {}) {
+export function ciState(pr, { not = null, runs = () => [] } = {}) {
   const stop = notOpen(pr);
   if (stop) return stop;
   const head = short(pr.headRefOid);
@@ -104,7 +105,9 @@ export function ciState(pr, { not = null, runs = [] } = {}) {
       : { done: false, text: `no checks yet @${head}` };
   }
   if (pending > 0) return { done: false, text: `${checksSummary(rollup)} @${head}` };
-  const running = runs.filter((run) => run.status !== 'completed').map((run) => run.name);
+  const running = runs()
+    .filter((run) => run.status !== 'completed')
+    .map((run) => run.name);
   if (running.length) {
     return {
       done: false,
@@ -185,8 +188,9 @@ export function titleState(prs, text) {
 
 /**
  * Reads `check` every `everyMs` until its verdict is done or `timeoutMs` runs out. A read that
- * throws (gh failed) is tried again; MAX_FAILURES in a row end the wait. `now` and `sleep` are
- * passed in, so tests run the loop without real time.
+ * throws (gh failed) is tried again; MAX_FAILURES in a row end the wait. With no time at all
+ * (--once) a failed read is something to look at, not "not yet": the caller would take it for a
+ * state. `now` and `sleep` are passed in, so tests run the loop without real time.
  */
 export async function waitFor(check, { timeoutMs, everyMs, now, sleep }) {
   const end = now() + timeoutMs;
@@ -201,6 +205,7 @@ export async function waitFor(check, { timeoutMs, everyMs, now, sleep }) {
     } catch (error) {
       failures += 1;
       last = `read failed: ${error.message}`;
+      if (timeoutMs === 0) return { done: true, code: EXIT.look, text: last };
       if (failures === MAX_FAILURES) {
         return {
           done: true,

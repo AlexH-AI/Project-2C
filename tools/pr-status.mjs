@@ -73,6 +73,16 @@ function loadMainSince(pr, tested) {
 }
 
 /**
+ * Every file of the PR: one entry per file, as `changedFiles` counts them, a renamed one with its
+ * old path. Also read by tools/auto-wait.mjs, so docs-only is decided the same way there.
+ */
+export const loadPrFiles = (number) =>
+  ghLines(
+    `repos/{owner}/{repo}/pulls/${number}/files?per_page=100`,
+    '.[] | {path: .filename, previousPath: .previous_filename}',
+  ).map((line) => JSON.parse(line));
+
+/**
  * The PR with all its files, plus what the merge rules need from elsewhere: stacked PRs, merged
  * base, the base CI tested, the base's commits since and how many GitHub counts.
  */
@@ -80,11 +90,7 @@ export function loadPr(number) {
   const pr = gh(['pr', 'view', String(number), '--json', FIELDS]);
   // Two reads (#642): a push between them that changes the number of files shows as "Read n of the
   // m files" and blocks (run again); any other push is caught by the merge, pinned to this head.
-  // One entry per file, as `changedFiles` counts them, a renamed one with its old path.
-  pr.files = ghLines(
-    `repos/{owner}/{repo}/pulls/${number}/files?per_page=100`,
-    '.[] | {path: .filename, previousPath: .previous_filename}',
-  ).map((line) => JSON.parse(line));
+  pr.files = loadPrFiles(number);
   const stacked = gh([
     'pr',
     'list',
