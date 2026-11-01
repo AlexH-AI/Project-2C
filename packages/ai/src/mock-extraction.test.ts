@@ -638,12 +638,21 @@ describe('Mock extraction', () => {
     ['"có 2 bé", then words and no other count', `KH có 2 bé ${'đi học '.repeat(5200)}`],
     // T-330: children who died after a count, past it or in their own sentences, a death after the
     // married KH, "con" and "mất" in a clause, the words of hôn nhân, runs of spaces between words.
+    // Each sentence or clause holding a phrase is read in a few microseconds, as before T-330
+    // ("KH độc thân. " 2 770 times takes as long): the phrases here are long, so as many of them
+    // as in the notes above fill 36 000 characters.
     ['"1 con đã mất " after "có 2 con"', `KH có 2 con ${'1 con đã mất '.repeat(2800)}`],
-    ['"Một con đã mất. "', `KH có 99 con. ${'Một con đã mất. '.repeat(2300)}`],
+    [
+      '"Một con đã mất được 2 năm nay rồi. "',
+      `KH có 99 con. ${'Một con đã mất được 2 năm nay rồi. '.repeat(1050)}`,
+    ],
     ['"vợ đã mất, "', `KH đã kết hôn, ${'vợ đã mất, '.repeat(3300)}`],
     ['"con ", then "mất"', `KH có 2 con. ${'con '.repeat(9000)}mất`],
     ['"mất ", then "con"', `KH có 2 con. ${'mất '.repeat(9000)}con`],
-    ['"đã ly hôn, góa vợ, ly thân, "', `KH ${'đã ly hôn, góa vợ, ly thân, '.repeat(1300)}`],
+    [
+      '"đã ly hôn được 2 năm nay, góa vợ năm 2020, ly thân 5 năm rồi, "',
+      `KH ${'đã ly hôn được 2 năm nay, góa vợ năm 2020, ly thân 5 năm rồi, '.repeat(590)}`,
+    ],
     ['spaces inside "2 con đã mất"', `KH có 2${' '.repeat(36_000)}con đã mất`],
     ['spaces after "có 2 con"', `KH có 2 con${' '.repeat(36_000)}đã mất`],
     ['spaces inside "đều đã mất"', `KH có 2 con nhưng đều${' '.repeat(36_000)}đã mất`],
@@ -953,6 +962,12 @@ describe('Mock extraction', () => {
     ['KH độc thân. Hiện KH đã kết hôn.', [MARRIED]],
     ['KH đã kết hôn. Có 2 con.', [MARRIED, TWO]],
     ['KH có 2 con. Có 3 con.', [{ ...TWO, value: '3', quote: '3 con' }]],
+    // The children named in an earlier sentence are no one named in this one: unlike "KH có 2 con,
+    // đã kết hôn." (DR6-19), these sentences speak of the KH.
+    ['KH có 2 con. Đã kết hôn.', [TWO, { ...MARRIED, quote: 'kết hôn' }]],
+    ['KH có 2 con. Độc thân.', [TWO, { ...SINGLE, quote: 'Độc thân' }]],
+    // "độc thân" is said with no time after it.
+    ['KH độc thân 5 năm nay.', []],
     // The last value is no simple statement: none for the trường.
     ['KH có 2 con. Thực ra chỉ 1 con.', []],
     ['KH có 2 con. Anh Nam có 3 con.', []],
@@ -964,6 +979,9 @@ describe('Mock extraction', () => {
     ['KH độc thân. KH không có 2 con.', [SINGLE]],
     // One proposal for each trường, the last; in the order of the note.
     ['KH có 2 con. KH đã kết hôn. KH có 2 con.', [MARRIED, TWO]],
+    // A ":" after a phrase in its clause: a heading, or the label of what follows.
+    ['KH đã kết hôn, có 2 con. Độc thân và có 2 con: KH chưa xác nhận.', []],
+    ['KH độc thân và có 2 con: KH chưa xác nhận.', []],
     // A sentence after one that ends on no simple statement about the KH speaks of no one known.
     ['KH sống ở quận 7. Có 2 con.', []],
     ['KH đã kết hôn, sống ở quận 7. Có 2 con.', [MARRIED]],
@@ -1053,6 +1071,7 @@ describe('Mock extraction', () => {
     ['KH có 2 con. Chị gái KH có một con đã mất.', [TWO]],
     ['KH có 2 con, không con nào mất.', [TWO]],
     ['KH có 2 con. Ông bà nội đã mất.', [TWO]],
+    ['KH có 2 con. Bố KH mất một con.', [TWO]],
     // A death later in the count's sentence, outside these forms, as before (Owner 31/10).
     ['KH có 2 con, bố mẹ đã mất.', []],
     // A death after the children in the sentence, as before (Owner 31/10): the wife may be a child's.

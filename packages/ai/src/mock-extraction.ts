@@ -759,6 +759,8 @@ function clausesOf(note: string) {
     const read = {
       /** Where it ends, after the mark ending it. */
       end: clause.start + clause.text.length,
+      /** Where its last ":" stands; never when it has none. */
+      colon: clause.text.includes(':') ? clause.start + clause.text.lastIndexOf(':') : -Infinity,
       /** Where it speaks of the KH from; never when it does not. */
       kh: opening(clause, first, !worded) ?? (carried ? clause.start : undefined),
       joined: joinedIn(clause),
@@ -834,8 +836,10 @@ function simpleStatement(note: string, clause: Reader): (phrase: Phrase) => bool
     const inClause = ofClause(at);
     const { kh } = inClause;
     // Only in a clause that speaks of the KH: "Độc thân: KH đã kết hôn." is one clause (":" ends
-    // none) opening on no KH. A phrase never stands before `kh`: no opening holds one.
-    if (kh === undefined) return false;
+    // none) opening on no KH. A phrase never stands before `kh`: no opening holds one. A ":" after
+    // the phrase makes it a heading, or the label of what follows: "KH đã kết hôn. Độc thân và có
+    // 2 con: KH chưa xác nhận." (T-330: the KH carried on past a sentence's end).
+    if (kh === undefined || inClause.colon > at) return false;
     // A word of `JOINED` carries the KH on only right after a phrase about the KH ("KH đã kết hôn
     // và có 2 con"): after other words, what follows it may be said of whoever they name ("KH gặp
     // người yêu cũ vì có 2 con", Owner 31/10); right after the KH, "nên" says "should" ("KH nên có
