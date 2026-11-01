@@ -268,6 +268,36 @@ describe('relatedNotes', () => {
     expect(lines(relatedNotes(NOTES, ['apps/**/app-data.ts']).area)).toEqual([10, 13]);
   });
 
+  it('reads a glob against a folder note one folder at a time (DR6-156)', () => {
+    const notes = [{ line: 1, text: 'h', paths: ['packages/ai/src/'] }];
+    const seen = (target) => lines(relatedNotes(notes, [target]).area);
+    for (const target of [
+      'packages/*/src/schema.ts',
+      'packages/ai/src/*.ts',
+      'packages/**/schema.ts',
+      'packages/a*/src/x/y.ts',
+    ]) {
+      expect(seen(target), target).toEqual([1]);
+    }
+    for (const target of [
+      'packages/*/lib/schema.ts',
+      'packages/d*/src/schema.ts',
+      'packages/*/*.ts',
+      'packages/*',
+    ]) {
+      expect(seen(target), target).toEqual([]);
+    }
+  });
+
+  it('finds a folder note from a glob given on the command line (DR6-156)', () => {
+    const notes = openNotes(ledger('- `packages/ai/src/`: kiểm schema.'), FILES);
+    const targets = targetPatterns(['packages/*/src/schema.ts'], FILES);
+    expect(relatedNotes(notes, targets)).toEqual({
+      exact: [],
+      area: [{ line: 5, text: '`packages/ai/src/`: kiểm schema.', paths: ['packages/ai/src/'] }],
+    });
+  });
+
   it('puts a note naming the very folder a target names in area', () => {
     const { exact, area } = relatedNotes(NOTES, ['e2e/perf/']);
     expect(exact).toEqual([]);

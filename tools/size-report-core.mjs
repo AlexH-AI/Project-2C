@@ -163,9 +163,14 @@ export function lineReport(paths, readText) {
 /** Name of a built file without the 8-character content hash Vite adds. */
 const withoutHash = (path) => path.replace(/-[\w-]{8}(?=\.\w+$)/, '');
 
+// The other kinds of file a build writes: the page, wasm, fonts, images. Anything else in `dist`
+// is not the build's, as the seeded database e2e/serve.mjs writes next to it (DR6-157).
+const OTHER_ASSET = /\.(?:html|wasm|woff2?|ttf|otf|png|jpe?g|gif|webp|avif|svg|ico)$/;
+
 /**
  * JS and CSS files of the web build (`path` relative to it, `bytes` the content), raw and gzip.
  * Chunks that share a name once the hash is gone are added up on one row (`files` of them).
+ * `other`: how many of its other assets there are and their raw size.
  */
 export function bundleReport(files) {
   const byName = new Map();
@@ -178,7 +183,7 @@ export function bundleReport(files) {
     byName.set(name, row);
   }
   const bundle = [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
-  const others = files.filter((f) => !/\.(?:m?js|css)$/.test(f.path));
+  const others = files.filter((f) => OTHER_ASSET.test(f.path));
   return {
     files: bundle,
     total: {

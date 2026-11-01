@@ -179,6 +179,17 @@ describe('bundleReport', () => {
     ]);
     expect(report.files[0].gzip).toBe(report.total.gzip);
   });
+
+  it('counts as other files those a build writes, not the database e2e leaves next to them (DR6-157)', () => {
+    const report = bundleReport([
+      { path: 'index.html', bytes: Buffer.alloc(7) },
+      { path: 'assets/sql-wasm-DfANybxk.wasm', bytes: Buffer.alloc(50) },
+      { path: 'assets/be-vietnam-pro-latin-400-normal-PpnXBOrz.woff2', bytes: Buffer.alloc(20) },
+      { path: 'assets/heritas-tree-Dk67MhOb.png', bytes: Buffer.alloc(30) },
+      { path: 'demo-2026-09-15.sqlite', bytes: Buffer.alloc(1000) },
+    ]);
+    expect(report.other).toEqual({ files: 4, raw: 107 });
+  });
 });
 
 describe('parseSizeArgs', () => {

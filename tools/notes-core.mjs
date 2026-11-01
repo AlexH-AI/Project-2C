@@ -190,12 +190,26 @@ function globRegExp(glob) {
   return new RegExp(`^${source}$`);
 }
 
+/**
+ * Whether a glob names some path in the folder, read one folder at a time (DR6-156): each folder
+ * of the path meets the glob's part in its place, and the glob goes on below the folder, unless a
+ * `**` part, which spans any folders, comes first.
+ */
+function globMeetsFolder(glob, folder) {
+  const parts = glob.split('/');
+  const names = folder.split('/').slice(0, -1);
+  for (const [i, name] of names.entries()) {
+    const part = parts[i];
+    if (part?.includes('**')) return true;
+    if (part === undefined || !globRegExp(part).test(name)) return false;
+  }
+  return parts.length > names.length;
+}
+
 /** Whether a glob or folder target holds the path, or a folder path holds the target. */
 function covers(target, path) {
   if (isGlob(target)) {
-    if (!isFolder(path)) return globRegExp(target).test(path);
-    const fixed = target.slice(0, target.indexOf('*'));
-    return fixed.startsWith(path) || (path.startsWith(fixed) && target.includes('**'));
+    return isFolder(path) ? globMeetsFolder(target, path) : globRegExp(target).test(path);
   }
   if (isFolder(target))
     return path.startsWith(target) || (isFolder(path) && target.startsWith(path));

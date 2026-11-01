@@ -549,6 +549,13 @@ describe('mergeBlockers', () => {
       expect.stringMatching(/No REVIEW comment/),
       expect.stringMatching(/no CI check/),
     ]);
+    // A renamed file is one file read, though its two names are two paths (DR6-155).
+    const renamed = [{ path: 'docs/b.md', previousPath: 'docs/a.md' }];
+    const renamedPr = pr({ files: renamed, changedFiles: 2, statusCheckRollup: [] });
+    expect(mergeBlockers(renamedPr, ctx())).toEqual([
+      'Read 1 of the 2 files of the PR: check them by hand.',
+      'Code PR with no CI check on head abc1234.',
+    ]);
   });
 
   it('takes a file the PR renamed under both its names, as one file the PR changed', () => {
