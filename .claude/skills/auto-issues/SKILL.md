@@ -161,6 +161,7 @@ Bạn ở worktree `<đường dẫn>`, context sạch. Chạy skill `review-pr`
 - Không merge, kể cả risk:low: phiên điều phối merge.
 - Đoạn mở đầu của comment thêm câu `Phiên review: <tên> (auto-issues).`
 - Chỗ skill bảo dừng, hỏi Owner (nhãn risk thiếu hoặc lệch, PR đã đóng, diff rỗng): không đăng REVIEW, kết thúc bằng `AUTO-CHILD: CẦN OWNER — …`.
+- Trước khi kết luận, đọc các comment `Quyết định Owner (…)` trên PR và Issue. Mục Owner đã quyết là không chặn thì không tính là chặn. Đó là quyết định của Owner, không phải comment review cũ, nên quy tắc ở §0 của skill (không đọc comment review cũ trước khi có kết luận) không cấm việc này.
 Dòng cuối: `AUTO-CHILD: REVIEW PASS @<sha7>`, `AUTO-CHILD: REVIEW CHANGES @<sha7>` hoặc `AUTO-CHILD: CẦN OWNER — …`.
 ```
 
@@ -242,6 +243,7 @@ Chỉ phiên điều phối merge, luôn bằng `node tools/merge-pr.mjs`, chạ
 3. Khi Owner trả lời:
    - đăng comment `Quyết định Owner (<dd/mm/yyyy>): …` lên PR (chưa có PR thì lên Issue), trích nguyên văn câu trả lời, như các comment trên PR #939;
    - gửi câu trả lời về phiên con bằng `SendMessage`;
+   - nếu Owner bác một mục chặn của `REVIEW: CHANGES`, và từ lần review đó tới giờ head chưa đổi: tin gửi phiên code thêm yêu cầu commit rỗng `chore: re-review after Owner decision (<link comment quyết định>)`, push, rồi trả lời `AUTO-CHILD: ĐÃ PUSH @<sha7>`. Có head mới thì bảng ở §2 tự ra bước chờ CI rồi review lại ở phiên sạch. Không có head mới thì nhịp sau lại gửi §3.4, và lệnh `review` không chờ được một REVIEW mới trên cùng head;
    - làm tiếp nhịp.
 4. Owner chọn dừng thì in `AUTO: DỪNG — Owner dừng ở <bước>`.
 
