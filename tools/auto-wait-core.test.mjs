@@ -401,6 +401,14 @@ describe('waitFor', () => {
     expect(c.slept).toEqual([60000, 60000, 57000]);
   });
 
+  it('keeps 30 s between reads, so the last read may fall after the deadline', async () => {
+    const c = clock();
+    const { read, at } = slowReads(c, 1000, waiting);
+    await waitFor(read, { timeoutMs: 90000, everyMs: 60000, ...c });
+    expect(at).toEqual([0, 61000, 92000]);
+    expect(c.slept).toEqual([60000, 30000]);
+  });
+
   it('retries a failed read and stops after five in a row', async () => {
     const boom = new Error('gh pr view failed: HTTP 502');
     const c = clock();

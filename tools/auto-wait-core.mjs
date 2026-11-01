@@ -17,6 +17,8 @@ const TARGETS = { pr: 'issue', ci: 'PR', review: 'PR', title: 'text', sleep: nul
 // SHA flags, each for one mode only; --timeout / --every go with every mode.
 const SHA_FLAGS = { ci: '--not', review: '--sha' };
 const LIMITS = { '--timeout': ['timeoutMin', 1, 120], '--every': ['everySec', 30, 600] };
+// Reads of GitHub stay at least this far apart (#942), the last one before the deadline too.
+const MIN_EVERY_MS = LIMITS['--every'][1] * 1000;
 const SHA = /^[0-9a-f]{7,40}$/;
 // Failed reads in a row (gh down, no network) before the wait gives up.
 const MAX_FAILURES = 5;
@@ -189,9 +191,10 @@ export function titleState(prs, text) {
 /**
  * Reads `check` every `everyMs` until its verdict is done or `timeoutMs` runs out. The last sleep
  * ends at the deadline and one more read follows, so a read that takes time does not cut the wait
- * short. A read that throws (gh failed) is tried again; MAX_FAILURES in a row end the wait. With no
- * time at all (--once) a failed read is something to look at, not "not yet": the caller would take
- * it for a state. `now` and `sleep` are passed in, so tests run the loop without real time.
+ * short; that sleep is never under MIN_EVERY_MS, so the last read may come up to 30 s after the
+ * deadline. A read that throws (gh failed) is tried again; MAX_FAILURES in a row end the wait. With
+ * no time at all (--once) a failed read is something to look at, not "not yet": the caller would
+ * take it for a state. `now` and `sleep` are passed in, so tests run the loop without real time.
  */
 export async function waitFor(check, { timeoutMs, everyMs, now, sleep }) {
   const end = now() + timeoutMs;
@@ -220,7 +223,7 @@ export async function waitFor(check, { timeoutMs, everyMs, now, sleep }) {
       const why = timeoutMs === 0 ? 'not yet' : `timed out after ${timeoutMs / 60000} min; last`;
       return { done: true, code: EXIT.timeout, text: `${why}: ${last}` };
     }
-    await sleep(Math.min(everyMs, left));
+    await sleep(Math.min(everyMs, Math.max(left, MIN_EVERY_MS)));
   }
 }
 

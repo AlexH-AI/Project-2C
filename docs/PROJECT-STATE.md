@@ -152,6 +152,7 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - After the queue it proposes Issues from the OPEN review notes, waits for approval, creates them and ends.
   - The orchestrator waits on GitHub with `tools/auto-wait.mjs` in the background. This is a deliberate exception to the app's "do not poll CI".
   - The OWNER picks when to try it.
+- 2026-11-02: OWNER decision at G8 on PR #944 (T-335). After its third `REVIEW: CHANGES` (@`8767876`), past "fix at most two rounds", the OWNER said "sửa lỗi pr 944": a third fix round. Another CHANGES after it stops for the OWNER again.
 
 ## Next decision
 
