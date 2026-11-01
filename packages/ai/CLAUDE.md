@@ -39,6 +39,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/index.ts` — re-exports ./errors, ./models, ./adapter, ./extract-json, ./schema, ./mock-adapter, ./validator, ./input, ./run, ./settings, ./web
 - `src/input.ts` — type ExtractionInput, buildExtractionInput
 - `src/mock-adapter.ts` — createMockAdapter
+- `src/mock-extraction.ts` — mockExtractionOutput
 - `src/models.ts` — type AiReasoningEffort, type AiModel, AI_MODELS, type AiModelId, DEFAULT_AI_MODEL
 - `src/prompts/analysis.ts` — analysisPrompt
 - `src/prompts/connection.ts` — connectionCheck
@@ -48,7 +49,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/run.ts` — type AiAbortSignal, type AiRunner, createAiRunner, type AnalysisRequest, type AnalysisRow, type AnalysisResult, runAnalysis, type ExtractionRequest, type ExtractionResult, runExtraction, type ConnectionResult, checkConnection
 - `src/schema.ts` — AI_MODES, type AiMode, AI_PROVIDERS, type AiProvider, AI_ANALYSIS_PROVIDERS, type AiAnalysisProvider, AI_ANALYSIS_NO_MODEL, MAX_AI_RAW_OUTPUT, AI_REASONING_LEVELS, type AiReasoningLevel, FACT_CODE, factCode, analysisInputSchema, type AnalysisInput, PERSONALITY_SYSTEMS, analysisOutputSchema, discoveryOutputSchema, extractionOutputSchema, type AnalysisOutput, type DiscoveryOutput, type ExtractionOutput, AI_OUTPUT_SCHEMAS, KYC_CATEGORY_LABELS, KYC_FIELD_LABELS, type AnalysisFact, type AnalysisProfile, buildAnalysisInput, PROMPT_VERSIONS, mockAnalysisOutput, mockDiscoveryOutput
 - `src/settings.ts` — AI_OPENCODE_PLANS, type AiOpencodePlan, type AiSettings, DEFAULT_AI_SETTINGS, type AiSettingsProblem, type StoredAiSettings, readAiSettings
-- `src/test-support.ts` — ZWSP, nfdZw, lettersAround, TODAY, fact, PRIVATE, ANALYSIS_FACTS, PROFILE
+- `src/test-support.ts` — ZWSP, NUL, nfdZw, lettersAround, TODAY, mockRequest, completeMock, fact, PRIVATE, ANALYSIS_FACTS, PROFILE
 - `src/text-match.ts` — type MatchText, type Span, type Matcher, cleanText, matchText, WORD_START, WORD_END, char, phrase, pattern
 - `src/validator.ts` — VALIDATION_CODES, type ValidationCode, type ValidationIssue, type OutputCheckInput, CUT_ANSWER, validateOutput, EXTRACTION_FIELDS, type ExtractionCheckInput, type ExtractedFact, filterExtraction
 - `src/web.ts` — WEB_WRAPPER, webPromptVersion, buildWebMessage, type WebSession, type WebAnalysisRequest, type WebStart, startWebAnalysis, type WebAnswerResult, checkWebAnswer

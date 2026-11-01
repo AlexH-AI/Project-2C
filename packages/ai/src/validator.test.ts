@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AiMode } from './schema';
-import { ZWSP } from './test-support';
+import { NUL, ZWSP } from './test-support';
 import { validateOutput, type OutputCheckInput } from './validator';
 
 const item = (text: string, ...evidence: string[]) => ({ text, evidence });
@@ -93,7 +93,7 @@ describe('validateOutput — V1', () => {
     // G5 §14.5: V3–V6 drop NUL, V1 counts it as K20 does, so it is no empty text.
     [
       'a text of NUL only',
-      { ...analysis(), needs: [item('\u0000', 'F1')] },
+      { ...analysis(), needs: [item(NUL, 'F1')] },
       'needs[0].text',
       'không có chữ',
     ],
