@@ -33,8 +33,42 @@ async function shot(page: Page, name: string, part?: Locator | Clip) {
     // header (index.css) could push the foot of a part nearly as tall as the window out of the shot.
     style: 'header { position: static !important; } main * { scroll-margin-top: 0 !important; }',
   } as const;
-  if (part && 'screenshot' in part) await part.screenshot(options);
-  else await page.screenshot({ ...options, clip: part });
+  if (part && 'screenshot' in part) {
+    await part.screenshot(options);
+    await expectShotWhole(page, part, options);
+  } else await page.screenshot({ ...options, clip: part });
+}
+
+/**
+ * Playwright shot the part with `style` on where it scrolled it, and leaves the scroll there but
+ * takes the style off. With it on again, the part itself must be at the middle of its top, not the
+ * header (DR6-155); and, when no taller than the window, which is then shot alone, at the middle of
+ * its foot, not out of the window.
+ */
+async function expectShotWhole(page: Page, part: Locator, { style }: { style?: string }) {
+  const tag = style ? await page.addStyleTag({ content: style }) : undefined;
+  try {
+    const box = await part.boundingBox();
+    const view = page.viewportSize();
+    if (!box || !view) throw new Error('no part or window');
+    const x = box.x + box.width / 2;
+    const edges: [string, number][] = [['top', box.y + 1]];
+    if (box.height <= view.height) edges.push(['foot', box.y + box.height - 1]);
+    for (const [edge, y] of edges) {
+      const shown = await part.evaluate(
+        (el, point) => {
+          const hit = document.elementFromPoint(point.x, point.y);
+          return hit !== null && el.contains(hit);
+        },
+        { x, y },
+      );
+      expect(shown, `${edge} of the part in the shot`).toBe(true);
+    }
+  } finally {
+    await tag?.evaluate((node) => {
+      node.parentNode?.removeChild(node);
+    });
+  }
 }
 
 const sidebar = (page: Page) => page.getByRole('navigation', { name: 'Điều hướng chính' });
