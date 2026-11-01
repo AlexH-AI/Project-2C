@@ -76,6 +76,7 @@ export function TeamCompare({ view, mtd }: { view: TeamCompareView; mtd: boolean
                   className={`cursor-pointer ${expanded ? 'bg-surface-2' : 'hover:bg-surface-2'}`}
                 >
                   <th scope="row" className={`${NAME} font-semibold`}>
+                    {/* The arrow by the first line of a name that breaks (DR6-148). */}
                     <button
                       type="button"
                       aria-expanded={expanded}
@@ -83,7 +84,7 @@ export function TeamCompare({ view, mtd }: { view: TeamCompareView; mtd: boolean
                         event.stopPropagation();
                         toggle(team.key);
                       }}
-                      className={`inline-flex cursor-pointer items-center rounded-sm text-left font-semibold ${FOCUS}`}
+                      className={`inline-flex cursor-pointer items-baseline rounded-sm text-left font-semibold ${FOCUS}`}
                     >
                       <span
                         aria-hidden="true"

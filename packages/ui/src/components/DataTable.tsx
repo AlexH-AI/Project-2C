@@ -165,6 +165,9 @@ export function DataTable<Row extends RowData>({
             {headers.map((header) => {
               const { column } = header;
               const sorted = header.kind === 'button' && header.ariaSort !== 'none';
+              // A hidden heading is placed absolutely: in a positioned cell it stays inside any
+              // scroll box around the table instead of widening the page (DR6-148).
+              const hidden = header.kind === 'label' && header.hidden;
               return (
                 <th
                   key={column.id}
@@ -172,7 +175,7 @@ export function DataTable<Row extends RowData>({
                   aria-sort={header.kind === 'button' ? header.ariaSort : undefined}
                   className={`border-b border-border ${inset} py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap uppercase ${
                     sorted ? 'text-fg-2' : 'text-fg-3'
-                  } ${align(column)} ${column.width ?? ''}`}
+                  } ${align(column)} ${column.width ?? ''} ${hidden ? 'relative' : ''}`}
                 >
                   {header.kind === 'button' ? (
                     <button
@@ -188,7 +191,7 @@ export function DataTable<Row extends RowData>({
                         {header.arrow}
                       </span>
                     </button>
-                  ) : header.hidden ? (
+                  ) : hidden ? (
                     <span className="sr-only">{column.header}</span>
                   ) : (
                     column.header

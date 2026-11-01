@@ -19,6 +19,28 @@ async function expectNoSideways(page: Page, at: string) {
   await expect.poll(() => scrolls(page.locator('main')), { message: `main at ${at}` }).toBe(false);
 }
 
+/** The top of each line the text `text` takes inside `box`. */
+const lineTops = (box: Locator, text: string) =>
+  box.evaluate((node, text) => {
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    const range = document.createRange();
+    while (walker.nextNode()) {
+      if (walker.currentNode.textContent !== text) continue;
+      range.selectNodeContents(walker.currentNode);
+      return [...new Set([...range.getClientRects()].map((rect) => Math.round(rect.top)))];
+    }
+    return [];
+  }, text);
+
+const top = (box: Locator) => box.evaluate((node) => node.getBoundingClientRect().top);
+
+/** `beside` (an arrow, a count) sits by the first of the lines the name `text` takes in `box`. */
+async function expectByFirstLine(box: Locator, text: string, beside: Locator, at: string) {
+  const tops = await lineTops(box, text);
+  expect(tops.length, `lines of the name, ${at}`).toBeGreaterThan(1);
+  expect(Math.abs((await top(beside)) - tops[0]!), at).toBeLessThanOrEqual(3);
+}
+
 const teamList = (page: Page) => page.getByRole('region', { name: 'Team', exact: true });
 
 /** Team & nhân sự: `from` picked in the list, so it stays shown under its new name. */
@@ -81,6 +103,46 @@ test('a customer name of 81 letters breaks inside the title of its dialogs', asy
   }
 });
 
+test('a customer name of 81 letters breaks inside the subtitle of the dialogs of its appointment', async ({
+  page,
+}) => {
+  const name = unbroken('E', 81);
+  await createKycCustomer(page, name);
+  // Through the sidebar: a page load would open the simulated data again, without the customer.
+  await page.getByRole('link', { name: 'Lịch hẹn' }).click();
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const booking = page.getByRole('dialog', { name: 'Lịch hẹn mới' });
+  await booking.getByRole('textbox', { name: /^Khách hàng/ }).fill(name);
+  await booking
+    .getByRole('list', { name: 'KH khớp' })
+    .getByRole('button')
+    .filter({ hasText: name })
+    .click();
+  await booking.getByRole('textbox', { name: /^Ngày/ }).fill('16/9');
+  await booking.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
+  await booking.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+  await expect(booking).toBeHidden();
+  const detail = page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' });
+
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const [button, title] of [
+      ['Ghi kết quả', 'Kết quả cuộc gặp'],
+      ['Dời lịch', 'Dời lịch'],
+      ['Xóa', /^Xóa lịch hẹn /],
+    ] as const) {
+      await detail.getByRole('button', { name: button, exact: true }).click();
+      const dialog = page.getByRole('dialog', { name: title });
+      const subtitle = dialog.getByText(new RegExp(`^${name} · `));
+      await expect(subtitle).toBeVisible();
+      expect(await scrolls(subtitle), `subtitle of ${button} at ${width}`).toBe(false);
+      expect(await scrolls(dialog), `dialog of ${button} at ${width}`).toBe(false);
+      await dialog.getByRole('button', { name: 'Hủy' }).click();
+      await expect(dialog).toBeHidden();
+    }
+  }
+});
+
 test('a team and an IS of 160 letters keep Team & nhân sự in the window, each button in its card', async ({
   page,
 }) => {
@@ -102,19 +164,45 @@ test('a team and an IS of 160 letters keep Team & nhân sự in the window, each
     await expectNoSideways(page, String(width));
     const list = teamList(page);
     expect(await scrolls(list), `team list at ${width}`).toBe(false);
-    expect(
-      await right(list.getByRole('button', { name: new RegExp(`^${team}`) })),
-      `team button at ${width}`,
-    ).toBeLessThanOrEqual(await right(list));
+    const teamButton = list.getByRole('button', { name: new RegExp(`^${team}`) });
+    expect(await right(teamButton), `team button at ${width}`).toBeLessThanOrEqual(
+      await right(list),
+    );
+    await expectByFirstLine(teamButton, team, teamButton.getByText(/RE$/), `count at ${width}`);
     for (const label of ['Đổi tên team', 'Xóa team']) {
       const button = card.getByRole('button', { name: label });
       expect(await right(button), `${label} at ${width}`).toBeLessThanOrEqual(await right(card));
     }
+    // The TL keeps their name on one line beside the long team name, not squeezed letter by letter.
+    expect(await lineTops(card, 'Lý Gia Trang'), `TL at ${width}`).toHaveLength(1);
     expect(await scrolls(shared), `shared at ${width}`).toBe(false);
     expect(
       await right(is.getByRole('button', { name: /^Sửa / })),
       `IS Sửa at ${width}`,
     ).toBeLessThanOrEqual(await right(shared));
+  }
+});
+
+test('a TL of 160 letters keeps Đổi tên team and Xóa team in the card of the team', async ({
+  page,
+}) => {
+  await page.goto('/#/team');
+  await teamList(page)
+    .getByRole('button', { name: /^Bình Minh / })
+    .click();
+  const card = page.getByRole('region', { name: 'Thành viên team Bình Minh' });
+  const lead = unbroken('L', 160);
+  await renamePerson(page, card.getByRole('button', { name: 'Sửa Lý Gia Trang' }), lead);
+  await expect(card).toContainText(lead);
+
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    await expectNoSideways(page, String(width));
+    expect(await scrolls(card), `card at ${width}`).toBe(false);
+    for (const label of ['Đổi tên team', 'Xóa team']) {
+      const button = card.getByRole('button', { name: label });
+      expect(await right(button), `${label} at ${width}`).toBeLessThanOrEqual(await right(card));
+    }
   }
 });
 
@@ -133,6 +221,8 @@ test('a team of 160 letters keeps So sánh team of Tổng quan in the window', a
     await page.setViewportSize({ width, height: 900 });
     await expectNoSideways(page, String(width));
     expect(await right(table), `table at ${width}`).toBeLessThanOrEqual(await right(region));
+    const button = table.getByRole('button', { name: team });
+    await expectByFirstLine(button, team, button.getByText('▾'), `arrow at ${width}`);
   }
 });
 
