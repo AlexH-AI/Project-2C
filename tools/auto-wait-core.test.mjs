@@ -331,8 +331,21 @@ describe('waitFor', () => {
         slept.push(ms);
         now += ms;
       },
+      pass: (ms) => {
+        now += ms;
+      },
       slept,
     };
+  };
+  // A read that takes `ms`, as a gh call does, noting when each read started.
+  const slowReads = (c, ms, verdict) => {
+    const at = [];
+    const read = () => {
+      at.push(c.now());
+      c.pass(ms);
+      return verdict;
+    };
+    return { read, at };
   };
   const reads = (...results) => {
     let i = 0;
@@ -365,6 +378,27 @@ describe('waitFor', () => {
       text: `timed out after 1 min; last: ${waiting.text}`,
     });
     expect(c.slept).toEqual([30000, 30000]);
+  });
+
+  it('waits the whole timeout when it equals the interval, reading again at the deadline', async () => {
+    const c = clock();
+    const { read, at } = slowReads(c, 1000, waiting);
+    const verdict = await waitFor(read, { timeoutMs: 60000, everyMs: 60000, ...c });
+    expect(verdict).toEqual({
+      done: true,
+      code: EXIT.timeout,
+      text: `timed out after 1 min; last: ${waiting.text}`,
+    });
+    expect(at).toEqual([0, 60000]);
+    expect(c.slept).toEqual([59000]);
+  });
+
+  it('makes the last read at the deadline when reads take time', async () => {
+    const c = clock();
+    const { read, at } = slowReads(c, 1000, waiting);
+    await waitFor(read, { timeoutMs: 180000, everyMs: 60000, ...c });
+    expect(at).toEqual([0, 61000, 122000, 180000]);
+    expect(c.slept).toEqual([60000, 60000, 57000]);
   });
 
   it('retries a failed read and stops after five in a row', async () => {
@@ -423,6 +457,17 @@ describe('report', () => {
     );
     expect(report(parseArgs(['sleep']), { text: '45 min passed' })).toBe(
       'AUTO-WAIT sleep: 45 min passed',
+    );
+  });
+
+  it('keeps a gh error that runs over two lines on the one line', () => {
+    // What gh prints when it cannot reach GitHub, as session-io's run() passes it on.
+    const text =
+      'read failed: gh pr view failed: error connecting to api.github.com\n' +
+      'check your internet connection or https://githubstatus.com\n';
+    expect(report(parseArgs(['ci', '941']), { code: EXIT.look, text })).toBe(
+      'AUTO-WAIT ci #941: read failed: gh pr view failed: error connecting to api.github.com' +
+        ' check your internet connection or https://githubstatus.com',
     );
   });
 });

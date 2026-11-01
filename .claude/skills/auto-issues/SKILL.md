@@ -84,7 +84,8 @@ Nhịp thừa là chuyện thường: lệnh chờ cũ xong muộn, nhắc của
 2. **PR của Issue:** `gh issue view <I> --json state,closedByPullRequestsReferences` cho số PR `N`, dù PR còn mở hay đã merge.
 3. **Trạng thái PR** (khi có `N`), chạy trong `C:/workspace/Project-2C-auto`:
    - `node tools/pr-status.mjs <N>`: trạng thái, head `H`, REVIEW mới nhất kèm SHA, mức;
-   - `node tools/auto-wait.mjs ci <N> --once`: CI đã xong chưa, kể cả job có check đến muộn (exe).
+   - `node tools/auto-wait.mjs ci <N> --once`: CI đã xong chưa, kể cả job có check đến muộn (exe);
+   - PR đã merge: `node tools/auto-wait.mjs title "record the notes of the PR <N> review" --once` cho PR sổ: chưa có (mã 2), hoặc số `L` và trạng thái (đang mở / đã merge).
 4. **Phiên con:**
    - `list_sessions {"linked": true}`: phiên đang chạy hay rảnh, `lastActivityAt`;
    - phiên rảnh: `list_events` (limit 6) để đọc dòng `AUTO-CHILD:` cuối, gồm thẻ việc và kết quả.
@@ -96,7 +97,7 @@ Nhịp thừa là chuyện thường: lệnh chờ cũ xong muộn, nhắc của
 |---|---|---|
 | Đợt này đã in dòng kết thúc | Không làm nhịp: in lại đúng dòng đó (§7) | — |
 | Phiên con rảnh; dòng `AUTO-CHILD` cuối là `CẦN OWNER` hoặc `KHÔNG ĐỒNG Ý`; sau dòng đó chưa có tin nhắn nào của phiên điều phối | Hỏi Owner (§5), gửi câu trả lời về phiên đó | giữ lệnh đang chạy |
-| Một phiên con đang chạy | Không giao gì | giữ lệnh đang chạy; không có thì đặt lệnh của việc đó ("Chờ", bên dưới) |
+| Một phiên con đang chạy | Không giao gì | giữ lệnh đang chạy. Không có thì đặt lệnh của việc đó ("Chờ", bên dưới). Lệnh đó (trừ `sleep`) chạy với `--once` mà ra khác 2 thì nó sẽ xong ngay, thường vì kết quả đã lên GitHub mà phiên con chưa xong lượt: đặt `sleep --timeout 5` thay cho nó |
 | Phiên con rảnh; dòng cuối không phải `AUTO-CHILD`; việc gần nhất của nó chưa có kết quả trên GitHub | Nhắc một lần: "Kết thúc lượt bằng đúng một dòng AUTO-CHILD theo brief". Đã nhắc mà vẫn vậy thì hỏi Owner | lệnh của việc đó |
 | Phiên con rảnh; dòng `AUTO-CHILD` cuối báo một kết quả (PR, head mới, REVIEW, PR sổ) mà GitHub chưa thấy | Không giao lại. Lần đầu chỉ chờ. Lần sau vẫn chưa thấy thì tìm nguyên nhân (PR thiếu `Closes #<I>`, push chưa lên, tiêu đề PR sổ sai) và nhắc phiên con sửa; vẫn không được thì hỏi Owner | `sleep --timeout 1` |
 | Chưa có PR; không phiên code nào giữ `I` | `/clear` phiên code ít dùng gần nhất, gửi §3.1 | `pr <I> --timeout 60` |
@@ -138,7 +139,7 @@ Ba hàng giao việc theo PR (CI đỏ, review, CHANGES) không cần điều ki
   - 0 / 1: làm nhịp như thường;
   - 2 (hết giờ): làm nhịp như thường, rồi xét luật hai lần hết giờ ở dưới;
   - 3: đọc lý do. Rõ cách xử lý thì làm (ví dụ PR đã merge thì đi tiếp theo bảng), không rõ thì hỏi Owner. Với `--once`, mã 3 còn có nghĩa là lần đọc lỗi: đọc lại một lần trước khi kết luận.
-- **Hai lần hết giờ liền cho cùng một việc mà GitHub không đổi:** hỏi Owner (Tiếp tục chờ / Dừng), dù phiên con còn chạy hay đã rảnh. Trước khi hỏi, kiểm và nêu trong câu hỏi:
+- **Hai lần hết giờ liền cho cùng một việc mà GitHub không đổi:** hỏi Owner (Tiếp tục chờ / Dừng), dù phiên con còn chạy hay đã rảnh. Hai lệnh `sleep --timeout 5` liền của hàng "Một phiên con đang chạy" (lệnh của việc sẽ xong ngay, phiên con vẫn chạy) cũng tính là hai lần hết giờ. Trước khi hỏi, kiểm và nêu trong câu hỏi:
   - PR có `Closes #<I>` không;
   - `mergeable` của PR: có xung đột thì workflow `pull_request` không chạy;
   - check nào treo;
@@ -179,7 +180,7 @@ Dòng cuối: `AUTO-CHILD: [Issue #<I>] PR #<N> @<sha7>` hoặc `AUTO-CHILD: [Is
 
 ### 3.2 Review (phiên review, sau `/clear`)
 
-Dòng đầu là `review PR #<N>`, để hook gợi ý `review-pr`.
+Dòng đầu là `review PR #<N>`, để hook gợi ý `review-pr`. Với tin có `[auto-issues]`, hook chỉ gợi ý khi tin có một dòng đúng như vậy (`tools/review-hint-core.mjs`), nên các brief khác và tin chuyển quyết định Owner không bị gợi ý review nhầm.
 
 ```text
 review PR #<N>
@@ -196,7 +197,7 @@ Dòng cuối: `AUTO-CHILD: [PR #<N>] REVIEW PASS @<sha7>`, `AUTO-CHILD: [PR #<N>
 ### 3.3 CI đỏ (phiên code của PR, không `/clear`)
 
 ```text
-[auto-issues] [PR #<N>] CI đỏ @<sha7> ở <tên check>. Đọc log (`gh run view <id> --log-failed`), tìm nguyên nhân (superpowers:systematic-debugging), sửa, `pnpm verify`, push. Nếu log cho thấy rõ là lỗi chập chờn: commit rỗng `chore: re-run CI (<lý do>)` rồi push. Không dùng `gh run rerun`: head không đổi thì phiên điều phối không chờ được.
+[auto-issues] [PR #<N>] CI đỏ @<sha7> ở <tên check>. Đọc log (`gh pr checks <N>` cho link của run đỏ, rồi `gh run view <id> --log-failed`), tìm nguyên nhân (superpowers:systematic-debugging), sửa, `pnpm verify`, push. Nếu log cho thấy rõ là lỗi chập chờn: commit rỗng `chore: re-run CI (<lý do>)` rồi push. Không dùng `gh run rerun`: head không đổi thì phiên điều phối không chờ được.
 Dòng cuối: `AUTO-CHILD: [PR #<N>] ĐÃ PUSH @<sha7>` hoặc `AUTO-CHILD: [PR #<N>] CẦN OWNER — …`.
 ```
 
@@ -244,6 +245,7 @@ Dòng cuối: `AUTO-CHILD: [Sổ] PR NHÃN #<L>; Issue #<a>…#<b>` hoặc `AUTO
 
 Chỉ phiên điều phối merge, luôn bằng `node tools/merge-pr.mjs`. Lệnh chạy từ `C:/workspace/Project-2C-auto`, sau khi đưa worktree đó về `origin/main` mới nhất: `git -C C:/workspace/Project-2C fetch origin`, rồi `git -C C:/workspace/Project-2C-auto checkout --detach origin/main`. Như vậy cổng merge là bản đã duyệt trên `main`. Trước khi merge, phiên code của PR phải đang rảnh, tức không còn push.
 
+- **PR chạm `.claude/skills/auto-issues/**` hay `tools/auto-wait*`** (`gh pr diff <N> --name-only`): không merge, hỏi Owner (§5). Owner review và merge theo cách thường.
 - **PR task:** `node tools/merge-pr.mjs <N>`, thêm `--owner` khi mức là med / high (theo nhãn `risk:*`, hoặc mức đã nâng trong REVIEW). `--owner` dùng quyền pipeline của M11, và để lại comment "Merged on Owner request".
 - **PR chỉ sửa `docs/state/review-notes.md`** (PR sổ, PR gắn nhãn sổ): merge ngay bằng `node tools/merge-pr.mjs <L>`, không cần REVIEW (T-215). PR đó sửa thêm file khác thì không merge, hỏi Owner.
 - **`merge-pr` từ chối:**
@@ -259,6 +261,7 @@ Chỉ phiên điều phối merge, luôn bằng `node tools/merge-pr.mjs`. Lện
 
 **Khi nào hỏi:**
 - phiên con báo `CẦN OWNER` hoặc `KHÔNG ĐỒNG Ý`;
+- PR tới bước merge mà chạm `.claude/skills/auto-issues/**` hay `tools/auto-wait*` (§4);
 - `merge-pr` từ chối vì lý do ngoài §4; lệnh chờ ra mã 3 mà không rõ cách xử lý;
 - `/clear` bị từ chối ở cả hai phiên;
 - phiên con dừng hai lần không có dòng `AUTO-CHILD`; kết quả phiên con báo mà GitHub vẫn không thấy sau khi đã nhắc;

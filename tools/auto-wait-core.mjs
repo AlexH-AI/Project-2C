@@ -187,10 +187,11 @@ export function titleState(prs, text) {
 }
 
 /**
- * Reads `check` every `everyMs` until its verdict is done or `timeoutMs` runs out. A read that
- * throws (gh failed) is tried again; MAX_FAILURES in a row end the wait. With no time at all
- * (--once) a failed read is something to look at, not "not yet": the caller would take it for a
- * state. `now` and `sleep` are passed in, so tests run the loop without real time.
+ * Reads `check` every `everyMs` until its verdict is done or `timeoutMs` runs out. The last sleep
+ * ends at the deadline and one more read follows, so a read that takes time does not cut the wait
+ * short. A read that throws (gh failed) is tried again; MAX_FAILURES in a row end the wait. With no
+ * time at all (--once) a failed read is something to look at, not "not yet": the caller would take
+ * it for a state. `now` and `sleep` are passed in, so tests run the loop without real time.
  */
 export async function waitFor(check, { timeoutMs, everyMs, now, sleep }) {
   const end = now() + timeoutMs;
@@ -214,19 +215,24 @@ export async function waitFor(check, { timeoutMs, everyMs, now, sleep }) {
         };
       }
     }
-    if (now() + everyMs > end) {
+    const left = end - now();
+    if (left <= 0) {
       const why = timeoutMs === 0 ? 'not yet' : `timed out after ${timeoutMs / 60000} min; last`;
       return { done: true, code: EXIT.timeout, text: `${why}: ${last}` };
     }
-    await sleep(everyMs);
+    await sleep(Math.min(everyMs, left));
   }
 }
 
-/** The one line the orchestrating session reads: "AUTO-WAIT <mode> <target>: <result>". */
+/**
+ * The one line the orchestrating session reads: "AUTO-WAIT <mode> <target>: <result>". Line breaks
+ * become spaces, since a gh error can run over several lines (no network) and the session reads
+ * the last line of stdout.
+ */
 export function report(options, verdict) {
   const { mode, target } = options;
   let named = '';
   if (typeof target === 'number') named = ` #${target}`;
   else if (target !== null) named = ` "${target}"`;
-  return `AUTO-WAIT ${mode}${named}: ${verdict.text}`;
+  return `AUTO-WAIT ${mode}${named}: ${verdict.text}`.replace(/\s+/g, ' ').trim();
 }

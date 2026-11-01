@@ -34,6 +34,28 @@ describe('reviewedPr', () => {
     ).toBeNull();
   });
 
+  it('in an auto-issues message, takes only a line that is just "review PR #N"', () => {
+    // §3.2 of .claude/skills/auto-issues: the one brief that asks for a review.
+    const brief =
+      'review PR #950\n[auto-issues] [PR #950] Review head abc1234.\n' +
+      'Bạn là phiên con `review-1` của pipeline auto-issues.';
+    expect(reviewedPr(brief)).toBe(950);
+    expect(reviewedPr(`Tin của phiên điều phối:\n${brief}`)).toBe(950);
+    // Its other briefs (§3.4, §3.5, §3.7) and the Owner answers it forwards name REVIEW
+    // comments and review notes next to PRs without asking for a review (review #944).
+    for (const prompt of [
+      '[auto-issues] [PR #950] `REVIEW: CHANGES` @abc1234 ' +
+        '(https://github.com/AlexH-AI/Project-2C/pull/950#issuecomment-1). Đọc comment đó.',
+      '[auto-issues] [PR #950] Đã merge (`abc1234` trên `main`). Viết PR sổ cho review của ' +
+        'PR này, như PR #940:\n- Đọc mọi comment REVIEW của PR #950, mọi vòng.',
+      '[auto-issues] [Sổ] Owner duyệt đề xuất. Chỉ sửa `docs/state/review-notes.md`; tiêu đề ' +
+        'theo kiểu PR #936.',
+      '[auto-issues] [PR #950] Quyết định Owner: "review PR #950 sai ở mục 2, không chặn"',
+    ]) {
+      expect(reviewedPr(prompt), prompt).toBeNull();
+    }
+  });
+
   it('needs the word review', () => {
     expect(reviewedPr('sửa bug #12')).toBeNull();
     expect(reviewedPr('preview PR #12')).toBeNull();
