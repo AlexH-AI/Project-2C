@@ -41,13 +41,13 @@ const NOT_PLANNED_CHILDREN = String.raw`(?<!${PLANNING}(?:có|sinh|đẻ|nhận 
 const NOW = String.raw`(?:(?:[Hh]iện(?: tại| nay)?|[Nn]ay) )`;
 
 /**
- * "KH" opening its clause, maybe after "Hiện / Hiện tại / Hiện nay", and up to two of "đã / đang /
- * hiện / vừa / mới / sống / ở": the KH the subject of what follows ("KH đã", "KH đang sống", "Hiện
- * KH có", "Theo chị Lan, KH là", "- KH có"), not someone's nor an object ("Người yêu của KH đã
- * có", "Người giới thiệu KH là", the review of PR #809). "KH" only, not "Khách" as `THE_KH`:
- * these rules spare words wherever a clause opens, and after other words "khách" may be someone
- * else (`OPENS_AFTER`): "KH đã kết hôn, khách là người độc thân". So "Khách là người độc thân"
- * gives no proposal, the safe way (the review of PR #917). Its clause ends at a mark of
+ * "KH" opening its clause, maybe after "Hiện / Hiện tại / Hiện nay / Nay" (`NOW`), and up to two of
+ * "đã / đang / hiện / vừa / mới / sống / ở": the KH the subject of what follows ("KH đã", "KH đang
+ * sống", "Hiện KH có", "Theo chị Lan, KH là", "- KH có"), not someone's nor an object ("Người yêu
+ * của KH đã có", "Người giới thiệu KH là", the review of PR #809). "KH" only, not "Khách" as
+ * `THE_KH`: these rules spare words wherever a clause opens, and after other words "khách" may be
+ * someone else (`OPENS_AFTER`): "KH đã kết hôn, khách là người độc thân". So "Khách là người độc
+ * thân" gives no proposal, the safe way (the review of PR #917). Its clause ends at a mark of
  * `CLAUSE_END` or at ":". Up to two, and one space between the words as a note is stored and as
  * "anh trai" is read, not `\s+`: these lookbehinds are tried at every place of a sentence, and one
  * reading a run of spaces back took a second for 36 000 of them (the review of PR #753). The look
@@ -116,16 +116,23 @@ const SOMEONE_ELSE = new RegExp(
   'iu',
 );
 
+/** A number in words: "hai", "mười". */
+const NUMBER_WORD = 'một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười';
+
+/** A count of people: "ba người bạn", "các anh", "2 người". */
+const HOW_MANY = String.raw`${NUMBER_WORD}|mấy|vài|các|những|\d+`;
+
 /**
  * Words of `PEOPLE` that name no one else, anywhere and in any case: inside a word that holds a kin
  * word ("bác sĩ", "cô giáo", "cô đơn", "chú ý", "chú trọng", "ghi chú"), "bé" said of a size
- * ("nhỏ bé", "bé nhỏ / xíu / tí / hơn / nhất", T-330), in the heading "Chú thích:", in "góa vợ /
- * chồng" and in the couple, the KH one of them ("vợ chồng", "KH và vợ"). Not a couple someone
- * lives with or has (`WITH_PARTNER`): "KH sống cùng vợ chồng anh Nam" names them (the review of PR
- * #809). So none of these words is one of `OWN_PARTNER`, and which is read first does not matter.
+ * ("nhỏ bé", "bé nhỏ / xíu / tí / hơn / nhất", T-330) but after a count, where it is a child ("2 bé
+ * nhỏ", the review of PR #939), in the heading "Chú thích:", in "góa vợ / chồng" and in the couple,
+ * the KH one of them ("vợ chồng", "KH và vợ"). Not a couple someone lives with or has
+ * (`WITH_PARTNER`): "KH sống cùng vợ chồng anh Nam" names them (the review of PR #809). So none of
+ * these words is one of `OWN_PARTNER`, and which is read first does not matter.
  */
 const NAMES_NO_ONE = new RegExp(
-  String.raw`(?<!\p{L})(?:bác sĩ|cô giáo|cô đơn|chú ý|chú trọng|ghi chú|nhỏ bé|bé (?:nhỏ|xíu|tí|hơn|nhất)|chú thích(?=:)|g(?:óa|oá) (?:${SPOUSE})|(?<!(?:${WITH_PARTNER}) )vợ chồng|(?<=và )(?:${SPOUSE}))(?!\p{L})`,
+  String.raw`(?<!\p{L})(?:bác sĩ|cô giáo|cô đơn|chú ý|chú trọng|ghi chú|nhỏ bé|bé(?<!(?<!\p{L})(?:${HOW_MANY}) bé) (?:nhỏ|xíu|tí|hơn|nhất)|chú thích(?=:)|g(?:óa|oá) (?:${SPOUSE})|(?<!(?:${WITH_PARTNER}) )vợ chồng|(?<=và )(?:${SPOUSE}))(?!\p{L})`,
   'giu',
 );
 
@@ -162,12 +169,6 @@ const SAID_OF_THE_KH = new RegExp(
  * đã có 2 con riêng"), unless "và" joins them ("KH đã có vợ và 2 con") (T-289).
  */
 const PARTNER_FIRST = new RegExp(String.raw`(?:${OWN_PARTNER})(?!\p{L})(?! và(?!\p{L}))`, 'u');
-
-/** A number in words: "hai", "mười". */
-const NUMBER_WORD = 'một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười';
-
-/** A count of people: "ba người bạn", "các anh", "2 người". */
-const HOW_MANY = String.raw`${NUMBER_WORD}|mấy|vài|các|những|\d+`;
 
 /** A count of children, in figures or in words: "1 con", "một bé". */
 const COUNT = String.raw`(?:(?<!\p{N})\d{1,2}|(?<!\p{L})(?:${NUMBER_WORD}))\s+(?:con|bé)(?!\p{L})`;
@@ -309,6 +310,11 @@ const SINCE = String.raw`(?:(?:được|từ)\s+)?(?:(?:${HOW_MANY})\s+năm(?:\s
  */
 const DIED = '(?:đã mất|(?:đã )?qua đời)';
 
+/** Divorced, separated, widowed, in either spelling: "ly hôn", "li dị", "ly thân", "góa", "goá". */
+const DIVORCE = 'l[iy] (?:hôn|dị)';
+const SEPARATION = 'l[iy] thân';
+const WIDOWED = 'g(?:óa|oá)';
+
 /** After a phrase of hôn nhân or a death: when it came about, then the end of its clause. */
 const DONE_SINCE = new RegExp(String.raw`(?:\s+${SINCE})?${CLAUSE_DONE}`, 'iuy');
 
@@ -330,37 +336,28 @@ function howManyDied(match: RegExpExecArray): number {
 const CHILD = /(?<!\p{L})(?:con|bé)(?!\p{L})/iu;
 const DEATH = /(?<!\p{L})(?:mất|qua đời)(?!\p{L})/giu;
 
-/** Matches nothing: what never is a simple statement. */
-const NOTHING = /(?!)/u;
-
 /**
  * A child said to have died in any other way than `DEAD_CHILDREN` (outside `covered`): where its
- * clause first names the child or the death, never a simple statement, so a count said before is
- * not the last value said of the KH ("KH có 2 con. Con út đã mất.", rule 3). Anything else said
- * of "con" with "mất" too, the safe way (CX-A4): "Con trai mất việc.". Only the clauses of such a
- * death are read, each once.
+ * clause first names the child or the death, a value of Số con that is never a simple statement,
+ * so a count said before is not the last value said of the KH ("KH có 2 con. Con út đã mất.", rule
+ * 3). Anything else said of "con" with "mất" too, the safe way (CX-A4): "Con trai mất việc.". Only
+ * the clauses of such a death are read, each once.
  */
-function otherDeaths(note: string, covered: Uint8Array) {
+function otherDeaths(note: string, clause: Reader, covered: Uint8Array) {
+  const clauseAt = clause((part) => part);
   const deaths = [];
-  let clauseEnd = 0;
+  let read: Part | undefined;
   for (const death of note.matchAll(DEATH)) {
-    if (death.index < clauseEnd || covered[death.index]) continue;
-    let start = death.index;
-    while (start > 0 && !CLAUSE_MARKS.includes(note[start - 1]!)) start--;
-    clauseEnd = death.index;
-    while (clauseEnd < note.length && !CLAUSE_MARKS.includes(note[clauseEnd]!)) clauseEnd++;
-    const child = note.slice(start, clauseEnd).search(CHILD);
+    if (covered[death.index]) continue;
+    const part = clauseAt(death.index);
+    if (part === read) continue;
+    read = part;
+    const child = part.text.search(CHILD);
     if (child < 0) continue;
-    const at = Math.min(start + child, death.index);
     deaths.push({
-      at,
-      end: at,
-      before: NOTHING,
-      after: NOTHING,
+      at: Math.min(part.start + child, death.index),
       ofChildren: true,
       field: 'childrenCount',
-      quote: '',
-      value: () => undefined,
     });
   }
   return deaths;
@@ -399,8 +396,9 @@ const EXTRACTION_PATTERNS: readonly {
    */
   readonly value: (match: RegExpExecArray, previous: string | undefined) => string | undefined;
   /**
-   * Said later in its sentence, it ends what the phrase says ("đã kết hôn … sắp ly hôn"); but not
-   * inside a phrase that says something of the KH (`covered`), which gives a value of its own.
+   * Said later in its sentence, it ends what the phrase says ("đã kết hôn … sắp ly hôn"): a value
+   * said of the KH, if it is one, but no simple statement; but not inside a phrase that says
+   * something of the KH (`covered`), which gives a value of its own.
    */
   readonly endedBy?: RegExp;
   /** Right after the phrase (a sticky regex), it makes the phrase someone else's. */
@@ -427,7 +425,7 @@ const EXTRACTION_PATTERNS: readonly {
     ),
     value: (match) => match[1]!,
     // "KH có 2 con nhưng đều đã mất" (Owner 31/10).
-    endedBy: /(?<!\p{L})(?:đã mất|qua đời)(?!\p{L})/giu,
+    endedBy: new RegExp(String.raw`(?<!\p{L})${DIED}(?!\p{L})`, 'giu'),
     ownerAfter: OF_SOMEONE_ELSE,
     // "KH có 2 con", "KH đã có vợ và 2 con", "KH sống cùng vợ và 2 con".
     before: new RegExp(
@@ -470,7 +468,10 @@ const EXTRACTION_PATTERNS: readonly {
     ),
     value: () => MARRIED,
     // "ly dị / ly thân", a death ("vợ KH đã mất", "chồng qua đời", "góa") (Owner 31/10).
-    endedBy: /(?<!\p{L})(?:ly (?:hôn|dị|thân)|đã mất|qua đời|g(?:óa|oá))(?!\p{L})/giu,
+    endedBy: new RegExp(
+      String.raw`(?<!\p{L})(?:${DIVORCE}|${SEPARATION}|${DIED}|${WIDOWED})(?!\p{L})`,
+      'giu',
+    ),
     before: new RegExp(String.raw`^\s*(?:${FILLER})*đã\s+$`, 'iu'),
     // "đã kết hôn lại", "đã kết hôn 10 năm".
     after: new RegExp(String.raw`(?:\s+lại)?(?:\s+${SINCE})?${CLAUSE_DONE}`, 'iuy'),
@@ -487,14 +488,14 @@ const EXTRACTION_PATTERNS: readonly {
   // "KH đã ly hôn", "KH ly dị năm 2020", "Hôn nhân: Ly hôn", "KH góa vợ", in either spelling.
   {
     field: 'maritalStatus',
-    pattern: maritalWord('ly (?:hôn|dị)'),
+    pattern: maritalWord(DIVORCE),
     value: () => 'Ly hôn',
     before: ONLY_FILLER,
     after: DONE_SINCE,
   },
   {
     field: 'maritalStatus',
-    pattern: maritalWord(String.raw`g(?:óa|oá)(?: (?:${SPOUSE}))?`),
+    pattern: maritalWord(String.raw`${WIDOWED}(?: (?:${SPOUSE}))?`),
     value: () => 'Góa',
     before: ONLY_FILLER,
     after: DONE_SINCE,
@@ -503,7 +504,7 @@ const EXTRACTION_PATTERNS: readonly {
   // đã kết hôn. Vợ đã mất năm 2020." (rule 2).
   {
     field: 'maritalStatus',
-    pattern: maritalWord('ly thân'),
+    pattern: maritalWord(SEPARATION),
     value: (_, previous) => (previous === MARRIED ? 'Ly thân' : undefined),
     before: ONLY_FILLER,
     after: DONE_SINCE,
@@ -606,8 +607,9 @@ const THEN = /(?<!\p{L})thì(?!\p{L})/giu;
 
 const SENTENCE_END = /[.!?;\n]/g;
 const CLAUSE_END = /[.!?;,\n]/g;
-/** The marks of `CLAUSE_END`, each read as a character. */
-const CLAUSE_MARKS = '.!?;,\n';
+
+/** A ":" but one between two figures, a time ("lúc 9:30"). */
+const COLON = /(?<!\d):|:(?!\d)/g;
 
 /**
  * Whether `word`, a sticky regex, matches `note` right at `at`: for what a phrase's own pattern
@@ -759,8 +761,8 @@ function clausesOf(note: string) {
     const read = {
       /** Where it ends, after the mark ending it. */
       end: clause.start + clause.text.length,
-      /** Where its last ":" stands; never when it has none. */
-      colon: clause.text.includes(':') ? clause.start + clause.text.lastIndexOf(':') : -Infinity,
+      /** Where its last ":" stands (`COLON`); never when it has none. */
+      colon: lastStart(COLON, clause),
       /** Where it speaks of the KH from; never when it does not. */
       kh: opening(clause, first, !worded) ?? (carried ? clause.start : undefined),
       joined: joinedIn(clause),
@@ -783,16 +785,20 @@ function clausesOf(note: string) {
   };
 }
 
+/** A value found in the note at `at`. */
+interface Said {
+  readonly at: number;
+  /** Of the children counted before it in its sentence: "KH có 2 con nhưng đều đã mất". */
+  readonly ofChildren?: boolean;
+}
+
 /**
  * A phrase found in the note, from `at` up to `end`, and what its trường lets stand around it.
  */
-interface Phrase {
-  readonly at: number;
+interface Phrase extends Said {
   readonly end: number;
   readonly before: RegExp;
   readonly after: RegExp;
-  /** Of the children counted before it in its sentence: "KH có 2 con nhưng đều đã mất". */
-  readonly ofChildren?: boolean;
 }
 
 /**
@@ -805,7 +811,7 @@ interface Phrase {
  * are. Then a value said of the KH, whether or not its clause opens on the KH ("Thực ra chỉ 1
  * con.", Owner 31/10).
  */
-function saysOfTheKh(sentence: Reader, clause: Reader): (phrase: Phrase) => boolean {
+function saysOfTheKh(sentence: Reader, clause: Reader): (said: Said) => boolean {
   const ofSentence = sentence(readSentence);
   const ofClause = clause(readClause);
   return ({ at, ofChildren }) => {
@@ -893,29 +899,34 @@ export function mockExtractionOutput(note: string, fields: readonly string[]): E
     if (phrase.says) covered.fill(1, phrase.at, phrase.end);
   }
   const saysOfDeath = saysOfTheKh(sentence, clause);
-  const deaths = otherDeaths(note, covered).map((death) => ({
+  const deaths = otherDeaths(note, clause, covered).map((death) => ({
     ...death,
     says: saysOfDeath(death),
   }));
   // Every trường is read, asked for or not: a phrase about the KH ending its clause carries the KH
   // on to the next one, whichever trường it is of.
   const simple = simpleStatement(note, clause);
-  const readings = [...phrases.filter(({ ended }) => !ended()), ...deaths].sort(
-    (a, b) => a.at - b.at,
-  );
+  const readings = [...phrases, ...deaths].sort((a, b) => a.at - b.at);
   // Each trường takes the last value said of the KH, proposed only as a simple statement: a note
   // that corrects itself says so last ("KH độc thân, nay đã kết hôn" proposes Đã kết hôn, "KH có 2
   // con. Thực ra chỉ 1 con." nothing; rule 1, Owner 31/10 – 01/11, T-330). A value of rules 2 and
-  // 3 reads the one before it.
+  // 3 reads the one before it. A death said another way and a phrase that a word of `endedBy` ends
+  // are values said of the KH that are never a simple statement ("KH độc thân. KH đã kết hôn nhưng
+  // sắp ly hôn." proposes nothing, the review of PR #939): not asked of `simple`, they carry the KH
+  // on to no clause.
   const last = new Map<
     string,
     { at: number; fact: { field: string; value: string; quote: string } } | null
   >();
-  for (const { at, field, quote, value: valueAfter, says, ...phrase } of readings) {
-    if (!says) continue;
-    const isSimple = simple({ at, ...phrase });
-    const value = valueAfter(last.get(field)?.fact.value);
-    last.set(field, isSimple && value !== undefined ? { at, fact: { field, value, quote } } : null);
+  for (const reading of readings) {
+    if (!reading.says) continue;
+    const { at, field } = reading;
+    const stated = 'quote' in reading && !reading.ended() && simple(reading) ? reading : undefined;
+    const value = stated?.value(last.get(field)?.fact.value);
+    last.set(
+      field,
+      stated && value !== undefined ? { at, fact: { field, value, quote: stated.quote } } : null,
+    );
   }
   const facts = [...last.values()]
     .filter((said) => said !== null)

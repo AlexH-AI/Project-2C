@@ -972,6 +972,11 @@ describe('Mock extraction', () => {
     ['KH có 2 con. Thực ra chỉ 1 con.', []],
     ['KH có 2 con. Anh Nam có 3 con.', []],
     ['KH đã kết hôn. Bác sĩ nói KH độc thân.', []],
+    // A phrase that a word later in its sentence ends is a value said of the KH, no simple
+    // statement: not the value before it either (the review of PR #939).
+    ['KH độc thân. Nay KH đã kết hôn, bố mẹ đã mất.', []],
+    ['KH có 1 con. Nay KH có 2 con, mẹ KH đã mất.', []],
+    ['KH độc thân. KH đã kết hôn nhưng sắp ly hôn.', []],
     // Someone named in other words than those of `PEOPLE`: their value counts (NIT §10, #917).
     ['KH đã kết hôn, Lan độc thân.', []],
     // A value said of someone else, said not to be, asked or guessed is none said of the KH.
@@ -982,9 +987,17 @@ describe('Mock extraction', () => {
     // A ":" after a phrase in its clause: a heading, or the label of what follows.
     ['KH đã kết hôn, có 2 con. Độc thân và có 2 con: KH chưa xác nhận.', []],
     ['KH độc thân và có 2 con: KH chưa xác nhận.', []],
+    ['KH đã kết hôn và có 2 con nhỏ: một trai, một gái.', []],
+    // Not a ":" between two figures: a time (the review of PR #939).
+    ['KH đã kết hôn và hẹn gặp lại lúc 9:30.', [MARRIED]],
+    ['KH có 2 con và hẹn gặp lúc 10:00 thứ Hai.', [TWO]],
     // A sentence after one that ends on no simple statement about the KH speaks of no one known.
     ['KH sống ở quận 7. Có 2 con.', []],
     ['KH đã kết hôn, sống ở quận 7. Có 2 con.', [MARRIED]],
+    // Nor, for now, a sentence after a mark and a line break, or on a bullet (the review of PR #939).
+    ['KH đã kết hôn.\nĐã ly hôn năm 2020.', []],
+    ['- KH đã kết hôn\n- Đã ly hôn năm 2020.', []],
+    ['KH đã kết hôn\nĐã ly hôn năm 2020.', [DIVORCED]],
     // Kept as before (ACCEPTED, Owner 01/11): a later sentence that guesses, asks or denies in
     // words outside the closed lists holds no value.
     ['KH đã kết hôn. Hình như vậy.', [MARRIED]],
@@ -1012,6 +1025,11 @@ describe('Mock extraction', () => {
     ['KH đã kết hôn, nay góa vợ.', [{ ...WIDOWED, quote: 'góa vợ' }]],
     ['KH đã kết hôn nhưng chồng qua đời năm 2020.', [{ ...WIDOWED, quote: 'chồng qua đời' }]],
     ['KH đã kết hôn, chồng đã qua đời.', [{ ...WIDOWED, quote: 'chồng đã qua đời' }]],
+    // In the spelling "li" too (the review of PR #939).
+    ['KH đã li dị.', [{ ...DIVORCED, quote: 'li dị' }]],
+    ['KH đã kết hôn nhưng đã li hôn.', [{ ...DIVORCED, quote: 'li hôn' }]],
+    ['KH đã kết hôn nhưng đang li thân.', [{ ...SEPARATED, quote: 'li thân' }]],
+    ['KH đã kết hôn, em gái đã li hôn.', []],
     // After the married KH, wherever before; the last value said of the KH.
     ['KH đã kết hôn, có 2 con. Vợ đã mất.', [TWO, { ...WIDOWED, quote: 'Vợ đã mất' }]],
     ['KH đã ly hôn, KH đã kết hôn lại, có 2 con.', [MARRIED, TWO]],
@@ -1092,6 +1110,10 @@ describe('Mock extraction', () => {
     ['KH có khoản vay bé tí, KH độc thân.', [SINGLE]],
     ['KH có nhà bé hơn trước, KH độc thân.', [SINGLE]],
     ['KH có phòng bé nhất, KH độc thân.', [SINGLE]],
+    // After a count, "bé" is a child, whatever follows it (the review of PR #939).
+    ['KH có 2 bé nhỏ, đã kết hôn.', [{ ...TWO, quote: '2 bé' }]],
+    ['KH có hai bé nhỏ, KH đã kết hôn.', []],
+    ['KH có các bé nhỏ, KH độc thân.', []],
   ])('reads %j as %j: "bé" as "con" (rule 4, T-330)', async (note, facts) => {
     expect(await extracted(note)).toEqual(facts);
   });
