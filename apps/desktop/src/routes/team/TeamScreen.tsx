@@ -162,14 +162,15 @@ export function TeamScreen() {
             {view.teams.length === 0 && <p className="m-0 text-sm text-fg-3">{t('team.none')}</p>}
             {view.teams.map((entry) => {
               const on = entry === selected;
-              // The name breaks, even with no space, and leaves the count whole (DR6-148).
+              // The name breaks, even with no space; the count stays whole, by the name's first line
+              // (DR6-148).
               return (
                 <button
                   key={entry.team.id}
                   type="button"
                   aria-pressed={on}
                   onClick={() => setSelectedId(entry.team.id)}
-                  className={`flex w-full cursor-pointer items-center gap-2 rounded-sm px-2.5 py-2 text-left text-sm wrap-anywhere ${FOCUS} ${
+                  className={`flex w-full cursor-pointer items-baseline gap-2 rounded-sm px-2.5 py-2 text-left text-sm wrap-anywhere ${FOCUS} ${
                     on ? 'bg-accent-soft font-semibold text-fg' : 'text-fg-2 hover:bg-surface-2'
                   }`}
                 >
@@ -295,16 +296,17 @@ function Members({
       {/* One top per team: reused, it would keep the "Xóa team" of a team just deleted for the
           team shown next, and the focus on it (DR6-116). The table below stays: the sort picked
           holds, and a person moved to the team shown keeps their row and the focus on its Sửa
-          (review of PR 744). */}
-      <div key={entry.team.id} className="mb-2 flex items-center gap-2">
-        {/* A team name with no space breaks rather than push the buttons out (DR6-148). */}
+          (review of PR 744). It wraps as the mockup's `.members-head`: a team or TL name too long
+          for the line takes a line of its own and breaks there, even with no space, rather than
+          push the buttons out or squeeze the other name (DR6-148). */}
+      <div key={entry.team.id} className="mb-2 flex flex-wrap items-center gap-2">
         <h2 id={MEMBERS_TITLE} tabIndex={-1} className={`${HEADING} min-w-0 wrap-anywhere`}>
           {t('team.heading', { name: entry.team.name })}
         </h2>
         <span className="text-fg-3">{t('sep.dot')}</span>
         {entry.lead ? (
           <>
-            <span className="text-sm text-fg-2">
+            <span className="min-w-0 text-sm text-fg-2 wrap-anywhere">
               <span className={`${ROLE} mr-1.5`}>{t('team.leadOf')}</span>
               {entry.lead.name}
             </span>
@@ -320,15 +322,15 @@ function Members({
             </button>
           </>
         )}
-        <div className="flex-1" />
-        <Button onClick={onRename}>{t('team.rename')}</Button>
-        <Button onClick={onDelete}>{t('team.delete')}</Button>
+        {/* Together at the right, on the last line when the names take more than one. */}
+        <div className="ml-auto flex gap-2">
+          <Button onClick={onRename}>{t('team.rename')}</Button>
+          <Button onClick={onDelete}>{t('team.delete')}</Button>
+        </div>
       </div>
       {entry.reps.length === 0 && <p className="m-0 text-sm text-fg-3">{t('team.empty')}</p>}
-      {/* Hidden, not gone, for a team without RE: the sort holds for the team shown after.
-          Positioned, so the hidden heading of the actions column scrolls with the table instead of
-          widening the page when the table is wider than the card (DR6-148). */}
-      <div className="relative overflow-x-auto" hidden={entry.reps.length === 0}>
+      {/* Hidden, not gone, for a team without RE: the sort holds for the team shown after. */}
+      <div className="overflow-x-auto" hidden={entry.reps.length === 0}>
         <DataTable
           label={t('team.members', { name: entry.team.name })}
           columns={columns}
