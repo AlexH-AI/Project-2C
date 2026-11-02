@@ -605,7 +605,13 @@ describe('Mock extraction', () => {
   });
 
   // DR6-79: each sentence and clause read once. Reading back from every phrase took 2 s on the
-  // first note; the best of three runs keeps a busy CI runner from failing it.
+  // first note. Each note is timed against the Mock reading as many characters in short notes, on
+  // the same machine in the same run, the best of three runs each: a busy or slow CI runner slows
+  // both (run 41454921921 took 50 ms on a note a dev machine reads in 7 ms with coverage, as CI
+  // does). There a note below takes at most 1.2 times as long as the short notes (~8 ms), and 80
+  // to 160 times as long when each phrase reads back over its sentence. `Date.now()` counts whole
+  // milliseconds: the short notes count 5 ms at least.
+  const shortNote = `KH đã kết hôn, có 2 con. ${LONG} `.repeat(4);
   it.each([
     ['"độc thân"', `KH ${'độc thân '.repeat(4000)}`],
     ['"<n> con"', `KH ${'có 2 con và '.repeat(3000)}`],
@@ -667,16 +673,19 @@ describe('Mock extraction', () => {
     // The KH carried past clauses with no letter, and past a bullet (Owner 02/11/2026).
     ['"KH độc thân.", ".", then "Đã kết hôn"', `KH độc thân.${'.'.repeat(36_000)}Đã kết hôn`],
     ['"- đã kết hôn, " after one "KH"', `KH đã kết hôn, ${'- đã kết hôn, '.repeat(2600)}`],
-  ])('reads a one-line note of 36 000 characters full of %s in under 50 ms', async (_, note) => {
-    const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
-    const times: number[] = [];
+  ])('reads a one-line note of 36 000 characters full of %s in linear time', async (_, note) => {
+    let short = Infinity;
+    let long = Infinity;
     for (let run = 0; run < 3; run++) {
-      const started = Date.now();
-      extractionOutputSchema.parse((await completeMock({ note, fields })).value);
-      times.push(Date.now() - started);
+      let started = Date.now();
+      for (let read = 0; read < note.length; read += shortNote.length) await extracted(shortNote);
+      short = Math.min(short, Date.now() - started);
+      started = Date.now();
+      await extracted(note);
+      long = Math.min(long, Date.now() - started);
     }
     expect(note.length).toBeGreaterThanOrEqual(36_000);
-    expect(Math.min(...times)).toBeLessThan(50);
+    expect(long).toBeLessThan(10 * Math.max(short, 5));
   });
 
   it.each([
@@ -1009,7 +1018,9 @@ describe('Mock extraction', () => {
     ['KH có 2 con.\nMột con đã mất.', [{ ...ONE, quote: 'Một con đã mất' }]],
     ['1. KH đã kết hôn.\n2. Đã ly hôn năm 2020.', [DIVORCED]],
     ['- KH đã kết hôn\n- và có 2 con.', [MARRIED, TWO]],
-    // Only clauses with no letter: past other words, as on one line.
+    // Only clauses with no letter: past other words, as on one line, after a phrase about the KH or
+    // not (the review of PR #956).
+    ['KH đã kết hôn.\nSống ở quận 7.\nCó 2 con.', [MARRIED]],
     ['KH sống ở quận 7.\nCó 2 con.', []],
     ['KH sống ở quận 7.\n\nĐã kết hôn.', []],
     // A "?" with no letter is a clause with no letter too, as a later sentence that asks holds no
