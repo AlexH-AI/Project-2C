@@ -256,7 +256,7 @@ Dòng cuối: `AUTO-CHILD: [Sổ] PR NHÃN #<L>; Issue #<a>…#<b>` hoặc `AUTO
 Gửi khi `merge-pr` từ chối vì `main` có commit code sau bản CI đã test (§4). Không dùng `gh pr update-branch`: lệnh đó thêm merge commit vào nhánh trên GitHub, còn nhánh local trong checkout chính vẫn ở head cũ, nên lần merge sau `merge-pr` giữ nhánh local và báo dọn chưa xong.
 
 ```text
-[auto-issues] [PR #<N>] `main` có commit code sau bản CI đã test, nên `merge-pr` từ chối. Ở checkout chính: `gh pr checkout <N>` (về nhánh của PR, kéo head mới nhất), `git fetch origin`, `git merge --no-edit origin/main` (không rebase, không force-push), sửa xung đột nếu có, `pnpm verify` xanh (chạy pnpm từ PowerShell), push. Không dùng `gh pr update-branch`: nhánh local phải trùng head trên GitHub thì `merge-pr` mới dọn được nhánh sau khi merge.
+[auto-issues] [PR #<N>] `main` có commit code sau bản CI đã test, nên `merge-pr` từ chối. Ở checkout chính: `gh pr checkout <N>` (về nhánh của PR, kéo head mới nhất), `git fetch origin`, `git merge --no-edit origin/main` (không rebase, không force-push), sửa xung đột nếu có, `pnpm verify` xanh (chạy pnpm từ PowerShell), push; chạy lại `node tools/notes-for.mjs --diff`, cập nhật mục "Ghi chú OPEN liên quan" của thân PR nếu đổi. Không dùng `gh pr update-branch`: nhánh local phải trùng head trên GitHub thì `merge-pr` mới dọn được nhánh sau khi merge.
 Dòng cuối: `AUTO-CHILD: [PR #<N>] ĐÃ PUSH @<sha7>` hoặc `AUTO-CHILD: [PR #<N>] CẦN OWNER — …`.
 ```
 
@@ -269,7 +269,7 @@ Chỉ phiên điều phối merge, luôn bằng `node tools/merge-pr.mjs`. Lện
 - **PR chỉ sửa `docs/state/review-notes.md`** (PR sổ, PR gắn nhãn sổ): merge ngay bằng `node tools/merge-pr.mjs <L>`, không cần REVIEW (T-215). PR đó sửa thêm file khác thì không merge, hỏi Owner.
 - **`merge-pr` từ chối:**
   - `main` có commit code sau bản CI đã test: gửi §3.8 cho phiên code của PR, lệnh chờ `ci <N> --not <H> --timeout 60`. Head đổi, nên bảng ở §2 tự ra bước chờ CI rồi review lại ở phiên sạch.
-  - Thiếu nhãn `build-exe`: `gh pr edit <N> --add-label build-exe`, rồi đóng, mở lại PR và chờ CI như dòng cuối của danh sách này. Head không đổi nên PASS vẫn còn giá trị.
+  - Thiếu nhãn `build-exe`: `gh pr edit <N> --add-label build-exe`, rồi đóng, mở lại PR và chờ CI như dưới. Head không đổi nên PASS vẫn còn giá trị.
   - CI không ghi notice `Tested base`: đóng, mở lại PR và chờ CI như dưới.
   - Đóng, mở lại PR và chờ CI: `gh pr close <N>`; `gh pr view <N> --json closedAt --jq .closedAt` cho mốc `T`, giờ của GitHub (đọc trước khi mở lại); `gh pr reopen <N>`; rồi lệnh nền `node tools/auto-wait.mjs ci <N> --since <T> --timeout 60`. PR mở lại vẫn giữ các check cũ đã xong tới khi GitHub tạo workflow run mới; `--since` chờ một run tạo từ mốc `T` trở đi, nên `ci` không báo xong theo run cũ.
   - Lý do khác: hỏi Owner.
