@@ -114,7 +114,7 @@ Nhịp thừa là chuyện thường: lệnh chờ cũ xong muộn, nhắc của
 | PR mở, CI đỏ trên `H` | Gửi §3.3 cho phiên code của PR | `ci <N> --not <H> --timeout 60` |
 | PR mở, CI xanh trên `H`, chưa có REVIEW cho `H` | `/clear` phiên review ít dùng gần nhất, gửi §3.2 | `review <N> --timeout 60` |
 | PR mở, `REVIEW: CHANGES` @`H` | Gửi §3.4 cho phiên code của PR | `ci <N> --not <H> --timeout 60` |
-| PR mở, `REVIEW: PASS` @`H`, CI xanh | Merge (§4), rồi làm tiếp nhịp ngay | — |
+| PR mở, `REVIEW: PASS` @`H`, CI xanh | Merge (§4). Merge xong thì làm tiếp nhịp ngay. `merge-pr` từ chối thì làm theo §4 rồi kết thúc nhịp: head chỉ đổi khi phiên code push, và PR mở lại vẫn giữ check cũ đã xong, nên đọc lại ngay sẽ ra hàng này lần nữa | `merge-pr` từ chối: lệnh §4 nêu (`ci <N> --not <H>` hoặc `ci <N> --since <T>`); merge xong: — |
 | PR đã merge; chưa có PR sổ; chưa phiên review nào có dòng `AUTO-CHILD` cuối là kết quả của §3.5 cho `N` | Gửi §3.5 cho phiên review đã PASS | `title "record the notes of the PR <N> review" --timeout 30` |
 | PR sổ đang mở | Merge PR sổ (§4) | — |
 | PR sổ đã merge, hoặc phiên review báo `[PR #<N>] SỔ KHÔNG ĐỔI` | Issue xong. Khi `SỔ KHÔNG ĐỔI`, comment lên PR: `Sổ ghi chú: không đổi sau review @<H> (auto-issues).` Sang Issue kế: `git -C C:/workspace/Project-2C fetch origin`, `git -C C:/workspace/Project-2C-auto checkout --detach origin/main` | — |
