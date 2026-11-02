@@ -17,9 +17,10 @@ module.exports = {
     },
     {
       name: 'ai-only-on-domain-and-zod',
-      comment: 'packages/ai uses only packages/domain and zod (spec Phase 5 §10).',
+      comment:
+        'packages/ai uses only packages/domain and zod (spec Phase 5 §10); its tests and test-support may use vitest.',
       severity: 'error',
-      from: { path: '^packages/ai/', pathNot: '\\.test\\.ts$' },
+      from: { path: '^packages/ai/', pathNot: '(\\.test|test-support)\\.ts$' },
       to: { pathNot: ['^packages/(ai|domain)/', '(^|/)node_modules/zod/'] },
     },
     {
@@ -60,7 +61,8 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
-    exclude: { path: '(^|/)(dist|coverage|src-tauri)/' },
+    // The build output of the repo only, not a package's own `dist/` inside node_modules.
+    exclude: { path: '^(coverage|apps/[^/]+/(dist|src-tauri)|packages/[^/]+/dist)/' },
     tsPreCompilationDeps: true,
     tsConfig: { fileName: 'tsconfig.base.json' },
     enhancedResolveOptions: {

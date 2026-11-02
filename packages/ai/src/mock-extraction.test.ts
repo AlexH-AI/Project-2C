@@ -664,6 +664,9 @@ describe('Mock extraction', () => {
     ['"KH độc thân,", spaces, then "và có 2 bé"', `KH độc thân,${' '.repeat(36_000)}và có 2 bé`],
     ['".", then "KH độc thân"', `${'.'.repeat(36_000)}KH độc thân`],
     ['",", then "KH độc thân"', `${','.repeat(36_000)}KH độc thân`],
+    // The KH carried past clauses with no letter, and past a bullet (Owner 02/11/2026).
+    ['"KH độc thân.", ".", then "Đã kết hôn"', `KH độc thân.${'.'.repeat(36_000)}Đã kết hôn`],
+    ['"- đã kết hôn, " after one "KH"', `KH đã kết hôn, ${'- đã kết hôn, '.repeat(2600)}`],
   ])('reads a one-line note of 36 000 characters full of %s in under 50 ms', async (_, note) => {
     const fields = [{ field: 'maritalStatus' }, { field: 'childrenCount' }];
     const times: number[] = [];
@@ -994,12 +997,24 @@ describe('Mock extraction', () => {
     // A sentence after one that ends on no simple statement about the KH speaks of no one known.
     ['KH sống ở quận 7. Có 2 con.', []],
     ['KH đã kết hôn, sống ở quận 7. Có 2 con.', [MARRIED]],
-    // Nor, for now, past a stretch with no word, a mark and a line break or a blank line, or onto a
-    // bullet (the review of PR #939); a line break alone carries the KH on.
-    ['KH đã kết hôn.\nĐã ly hôn năm 2020.', []],
-    ['KH đã kết hôn\n\nĐã ly hôn năm 2020.', []],
-    ['- KH đã kết hôn\n- Đã ly hôn năm 2020.', []],
+    // Past clauses with no letter: a mark and a line break, a blank line, "...", "!!", a number of a
+    // list; and onto a clause opening on a bullet, read past it (Owner 02/11/2026, #950). A line
+    // break alone carries the KH on too.
+    ['KH đã kết hôn.\nĐã ly hôn năm 2020.', [DIVORCED]],
+    ['KH đã kết hôn\n\nĐã ly hôn năm 2020.', [DIVORCED]],
+    ['- KH đã kết hôn\n- Đã ly hôn năm 2020.', [DIVORCED]],
     ['KH đã kết hôn\nĐã ly hôn năm 2020.', [DIVORCED]],
+    ['KH đã kết hôn... Đã ly hôn năm 2020.', [DIVORCED]],
+    ['KH đã kết hôn!! Đã ly hôn năm 2020.', [DIVORCED]],
+    ['KH có 2 con.\nMột con đã mất.', [{ ...ONE, quote: 'Một con đã mất' }]],
+    ['1. KH đã kết hôn.\n2. Đã ly hôn năm 2020.', [DIVORCED]],
+    ['- KH đã kết hôn\n- và có 2 con.', [MARRIED, TWO]],
+    // Only clauses with no letter: past other words, as on one line.
+    ['KH sống ở quận 7.\nCó 2 con.', []],
+    ['KH sống ở quận 7.\n\nĐã kết hôn.', []],
+    // Nor past a "?", which may doubt what stands before it (the safe way, CX-A4): the last value
+    // said of the KH is no simple statement.
+    ['KH đã kết hôn.\n?\nĐã ly hôn năm 2020.', []],
     // Kept as before (ACCEPTED, Owner 01/11): a later sentence that guesses, asks or denies in
     // words outside the closed lists holds no value.
     ['KH đã kết hôn. Hình như vậy.', [MARRIED]],
@@ -1077,6 +1092,13 @@ describe('Mock extraction', () => {
     ['KH có 3 con. Hai con qua đời.', [{ ...ONE, quote: 'Hai con qua đời' }]],
     ['KH có 3 con. Một con đã mất. Một con qua đời.', [{ ...ONE, quote: 'Một con qua đời' }]],
     ['KH có 2 con. KH đã kết hôn. Một con đã mất.', [MARRIED, { ...ONE, quote: 'Một con đã mất' }]],
+    // A phrase of Số con about the KH covers the end word of "đã kết hôn", as one of hôn nhân does
+    // (§10, the review of PR #939).
+    [
+      'KH đã kết hôn, có 2 con nhưng đều đã mất.',
+      [MARRIED, { ...TWO, value: '0', quote: 'đều đã mất' }],
+    ],
+    ['KH đã kết hôn, có 2 con, 1 con đã mất.', [MARRIED, ONE]],
     // More than the KH has, no count before, or no simple statement: none for Số con.
     ['KH có 1 con. Hai con đã mất.', []],
     ['KH đã kết hôn. Một con đã mất.', [MARRIED]],

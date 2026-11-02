@@ -11,12 +11,12 @@ Phase 5 (`docs/design/phase-5-ai.md`, ADR-0009): kiểu dữ liệu, mã lỗi, 
 
 ## File hay tìm
 
-- Schema output + mã `F{seq}`: `src/schema.ts` (spec §6.2, gồm khối `personalityNotes` — P6). Kiểm field / value / quote của trích xuất là V7, không ở schema.
-- Schema đầu vào analysis / discovery (`analysisInputSchema`, spec §6.1; kiểu `AnalysisInput` suy từ nó) cũng ở `src/schema.ts`: `db` kiểm `input_json` bằng nó khi ghi và khi nhập backup (§7.3 luật 3, T-176), panel đọc `input` bằng `parse`.
+- Schema output + mã `F{seq}`: `src/schema.ts` (spec §6.2, gồm khối `personalityNotes` — P6). Field / value / quote trích xuất: V7.
+- Schema đầu vào analysis / discovery (`analysisInputSchema`, spec §6.1) cũng ở `src/schema.ts`: `db` kiểm `input_json` bằng nó khi ghi và khi nhập backup (§7.3 luật 3, T-176), panel đọc `input` bằng `parse`.
 - Lấy khối JSON đầu tiên từ trả lời: `src/extract-json.ts` (spec §6.1), một lượt; bị cắt → `CUT_ANSWER`. Đếm / cắt theo code point không cấp phát: `src/code-points.ts`.
 - Cấu hình Settings → AI (`settings` khóa `ai`, spec §4.1): `src/settings.ts` — `readAiSettings` đọc / chuẩn hóa (hỏng → mặc định cả khối + lý do), không bao giờ có key.
 - Mã lỗi: `src/errors.ts` (spec §5.3; mã chỉ `ai` sinh: `AI_TOO_LARGE`) · model: `src/models.ts` (spec §4; cờ `reasoningEffort` theo lần gọi thật 09/10/2026, T-179); danh sách provider / reasoning và hằng của `ai_analyses` nằm ở `src/schema.ts` để `db` dùng chung (T-163, T-288; `AI_ANALYSIS_PROVIDERS` = Settings + `CHATGPT_WEB`, spec §4.1). Dạng `prompt_version` (`<mode>@<n>`, thêm `+web@<n>` cho ChatGPT web) do `db` kiểm (`analysisLabelsFit`, T-192).
-- Adapter: `src/adapter.ts` (giao diện) · Mock: `src/mock-adapter.ts` (message `user` đầu tiên, G5 §1.1 / §4.1; câu trả lời: `mock…Output` ở `schema.ts`).
+- Adapter: `src/adapter.ts` · Mock: `src/mock-adapter.ts` (message `user` đầu tiên, G5 §1.1 / §4.1); trả lời: `mockAnalysisOutput` / `mockDiscoveryOutput` ở `schema.ts`, `mockExtractionOutput` ở `mock-extraction.ts`.
 - Validator (spec §6.4): `src/validator.ts` — `validateOutput` (V1 cả ba chế độ, `detail` nêu dạng đúng; V2–V6 analysis / discovery), `filterExtraction` (V7 bỏ riêng từng dữ kiện trích xuất). Danh sách chặn V3–V6 chép nguyên từ G5 §8: `src/blocklists.ts`; cách so khớp G5 §7 (bước 0, bản không dấu, danh sách đóng): `src/text-match.ts`. V1 (`schema.ts`, G5 §11.5): chuỗi gốc ≤ 1 000 ký tự; phần thấy được (`normalizeText`) 1–300, `text` analysis / discovery có chữ cái. Đổi danh sách = qua G5 lại.
 - Prompt (G5 §2–§6, nguyên văn): `src/prompts/<mode>.ts` (mỗi file một `version`, `maxTokens`), message thử lại `src/prompts/retry.ts`, Kiểm tra kết nối `src/prompts/connection.ts`. `prompts.test.ts` so chữ với `docs/design/phase-5-prompts.md`; đổi một chữ = tăng version + qua G5.
 - Dựng đầu vào (spec §6.1, G5 §1.1 / §4.1): analysis — `buildAnalysisInput` ở `src/schema.ts` (dữ kiện `active` / `conflict`, năm sinh thành tuổi); trích xuất — `src/input.ts`. Nhãn `KYC_*_LABELS`, `buildAnalysisInput`, câu Mock ở `schema.ts` cho seed `db` dùng chung (I-10); test i18n của app giữ nhãn khớp `vi.ts`.
