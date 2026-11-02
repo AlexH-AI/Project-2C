@@ -201,6 +201,13 @@ describe('parseTime', () => {
     expect(parseTime('0:00')).toEqual({ ok: true, time: '00:00' });
   });
 
+  // Review of PR 924 (as DR6-150): the field is optional, and nothing to see is no time.
+  it('reads a text of invisible characters alone as no time', () => {
+    for (const text of ['\u{200B}', '\u{85}', '\u{2060}', ' \u{200B}\u{2060} ']) {
+      expect(parseTime(text)).toEqual({ ok: true, time: null });
+    }
+  });
+
   it('refuses an hour or minute out of range and other text', () => {
     for (const text of ['24:00', '25:00', '12:60', '1400', 'abc', '12:5']) {
       expect(parseTime(text)).toEqual({ ok: false });

@@ -111,11 +111,13 @@ export const dayText = (date: CalendarDate, today: CalendarDate) => writtenDay(d
 /** A day as written, then its time when it has one: `dd/mm/yyyy hh:mm`. */
 export const withTime = (day: string, time: string | null) => (time ? `${day} ${time}` : day);
 
-/** `hh:mm` (the hour may lose its zero); empty means no time. */
+/**
+ * `hh:mm` (the hour may lose its zero); empty means no time: none when the text shows nothing, as
+ * `readCaseSize` reads its field (`normalizeText`, DR6-150).
+ */
 export function parseTime(text: string): { ok: true; time: string | null } | { ok: false } {
-  const trimmed = text.trim();
-  if (trimmed === '') return { ok: true, time: null };
-  const match = /^(\d{1,2}):(\d{2})$/.exec(trimmed);
+  if (normalizeText(text) === '') return { ok: true, time: null };
+  const match = /^(\d{1,2}):(\d{2})$/.exec(text.trim());
   if (!match || Number(match[1]) > 23 || Number(match[2]) > 59) return { ok: false };
   return { ok: true, time: `${match[1]?.padStart(2, '0')}:${match[2]}` };
 }

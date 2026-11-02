@@ -215,7 +215,7 @@ export function codedCustomers(rows: readonly TrashRow[]): ReadonlySet<string> {
 export function restoreLabel(row: TrashRow, coded: ReadonlySet<string>): string {
   const title =
     row.kind === 'customer' && coded.has(row.id)
-      ? t('trash.restoreLabel.coded', { name: row.name, code: row.code })
+      ? t('customer.withCode', { name: row.name, code: row.code })
       : recordTitle(row);
   const person = row.kind === 'person' ? [recordDetail(row), row.owner.team?.name] : [];
   const record = joinParts([title, recordBadge(row)?.text, ...person]);

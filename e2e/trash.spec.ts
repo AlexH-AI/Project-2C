@@ -632,8 +632,6 @@ test('reminds from 1 000 records, and keeps a record still pointed to, saying wh
   expect(errors).toEqual([]);
 });
 
-// TR-11, 11i: while the purge runs the dialog stays, so nothing writes to the data it is replacing.
-// The exe's backup is held, as a slow disk would (DR6-128).
 // DR6-151 (Q3 (a), Owner 31/10/2026): two customers of one name and stage in the trash name their
 // code on their buttons, as mockup 9b names two of one name.
 test('two customers of one name and one stage have restore buttons named with their codes', async ({
@@ -659,6 +657,8 @@ test('two customers of one name and one stage have restore buttons named with th
   expect(new Set(labels).size).toBe(2);
 });
 
+// TR-11, 11i: while the purge runs the dialog stays, so nothing writes to the data it is replacing.
+// The exe's backup is held, as a slow disk would (DR6-128).
 test('the dialog of a purge that runs stays: Escape does not close it, Hủy is off (TR-11; 11i)', async ({
   page,
 }) => {

@@ -25,6 +25,7 @@ import {
   type CalendarDate,
 } from '@p2c/domain';
 import { createAppAi, type AppAi, type AppAiOptions } from './ai-analysis';
+import { notify } from './listeners';
 import { createPersistQueue, type PersistQueue } from './persist-queue';
 import { readTables, type Tables } from './tables';
 
@@ -374,15 +375,8 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   const changed = () => {
     revision++;
     tables = undefined;
-    // As the save queue's (NIT #87): a listener's bug must not make `run` throw for a command it
-    // wrote, nor keep the others from hearing of the change (DR6-140).
-    for (const listener of listeners) {
-      try {
-        listener();
-      } catch (error) {
-        console.error(error);
-      }
-    }
+    // A listener's bug must not make `run` throw for a command it wrote (DR6-140).
+    notify(listeners, console.error);
   };
 
   // Settings → Data replaces everything (reload, import), Thùng rác purges (TR-11): save what is

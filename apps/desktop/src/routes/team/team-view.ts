@@ -130,7 +130,7 @@ export function inUseHelp(usage: PersonUsage): string[] {
     .map(({ name, code }) =>
       names.indexOf(name) === names.lastIndexOf(name)
         ? name
-        : t('person.inUseTrashCoded', { name, code }),
+        : t('customer.withCode', { name, code }),
     )
     .join(t('sep.list'));
   const others = usage.inTrash.length - NAMED_IN_TRASH;

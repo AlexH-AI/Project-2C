@@ -73,6 +73,9 @@ export const vi = {
   'customer.created': 'tạo KH',
   'customer.manual': 'chuyển tay · không tính RF',
   'customer.byMeeting': 'sau cuộc gặp',
+  // A customer named with their code, as mockup 9b names two of one name: the sentence of 9b
+  // (`inUseHelp`) and the restore button of Thùng rác (`restoreLabel`, DR6-151) alike.
+  'customer.withCode': '{name} ({code})',
   'kyc.title': 'Dữ kiện KYC',
   'kyc.meta': '{present}/{total} hạng mục · v{version}',
   'kyc.metaNoVersion': '{present}/{total} hạng mục · chưa có phiên bản',
@@ -376,8 +379,6 @@ export const vi = {
   // `record`: the first line of "Bản ghi" with its badge, a person's with role and team
   // (`restoreLabel`).
   'trash.restoreLabel.customer': 'Khôi phục KH {record}',
-  // A customer whose name and stage another one of the trash has, as mockup 9b names them.
-  'trash.restoreLabel.coded': '{name} ({code})',
   'trash.restoreLabel.person': 'Khôi phục nhân sự {record}',
   'trash.restoreLabel.team': 'Khôi phục team {record}',
   'trash.restoreLabel.appointment': 'Khôi phục lịch hẹn {record}',
@@ -1282,8 +1283,6 @@ export const vi = {
   'person.inUseSupportTrash':
     'Có cả lịch hẹn của KH đã xóa: {customer}. Dọn sạch Thùng rác (Cài đặt → Thùng rác) xóa hẳn các lịch đó; khôi phục KH thì sửa được lịch đã có kết quả (Sửa kết quả), còn lịch Dự kiến / Dời lịch chỉ dọn sạch mới gỡ.',
   'person.inUseTrashMore': '{customer} và {count} KH khác',
-  // Two customers of the trash with one name, each named with its code.
-  'person.inUseTrashCoded': '{name} ({code})',
   'error.TEAM_REQUIRED': '{role} phải thuộc một team.',
   // An RE with records who leaves the role, or a person deleted while still in use: both by role.
   'error.PERSON_IN_USE':

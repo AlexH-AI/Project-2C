@@ -6,6 +6,7 @@
  * analysis by customer, an extraction by note.
  */
 import type { AiAbortSignal, AiRunner, AiSettings } from '@p2c/ai';
+import { notify } from './listeners';
 
 /** A start refused because its key has a job already: the runner's own refusal (§5.2). */
 const BUSY = Object.freeze({ kind: 'error', code: 'AI_BUSY' } as const);
@@ -67,17 +68,8 @@ export function createAiJobs(runner: AiRunner, reportError: (error: unknown) => 
     { readonly outcome: unknown; readonly generation: number; readonly current: () => number }
   >();
   const listeners = new Set<() => void>();
-  const changed = () => {
-    // As `AppData`'s and the save queue's (NIT #87, DR6-140): a listener's bug must not make `start`
-    // throw for a job it has started, nor keep the others from hearing of the change.
-    for (const listener of listeners) {
-      try {
-        listener();
-      } catch (error) {
-        reportError(error);
-      }
-    }
-  };
+  // A listener's bug must not make `start` throw for a job it has started (DR6-140).
+  const changed = () => notify(listeners, reportError);
   // A job cancelled ends once the request in Rust has, which frees the runner.
   runner.subscribe(() => {
     if (runner.busy) return;

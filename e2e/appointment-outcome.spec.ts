@@ -16,8 +16,11 @@ test.beforeEach(async ({ page }) => {
 
 const detail = (page: Page) => page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' });
 
-/** Books an appointment on `date` for the first matching customer in `stage`; returns the name. */
-async function book(page: Page, date: string, stage: string) {
+/**
+ * Books an appointment on `date`, at `time` as typed when given, for the first matching customer in
+ * `stage`; returns the name.
+ */
+async function book(page: Page, date: string, stage: string, time?: string) {
   await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('textbox', { name: /^Khách hàng/ }).fill('K-');
@@ -29,6 +32,7 @@ async function book(page: Page, date: string, stage: string) {
     .click();
   const name = (await dialog.locator('b').first().textContent()) ?? '';
   await dialog.getByRole('textbox', { name: /^Ngày/ }).fill(date);
+  if (time !== undefined) await dialog.getByRole('textbox', { name: /^Giờ/ }).fill(time);
   await dialog.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
   await dialog.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
   await expect(dialog).toHaveCount(0);
@@ -150,9 +154,9 @@ test('another status than met has no stage after; a past next day saves nothing'
 });
 
 // DR6-150: a field of invisible characters alone, pasted, shows nothing and reads as empty, as the
-// commands read it: the case size is none and the outcome saves (6c), a day is asked for only once
-// saving is tried (6b, 6c, 6e).
-test('a field of invisible characters alone reads as empty: no case size, a day asked on saving (DR6-150)', async ({
+// commands read it. The time is none and the appointment saves (6b; review of PR 924); the case
+// size is none and the outcome saves (6c); a day is asked for only on saving (6b, 6c, 6e).
+test('a field of invisible characters alone reads as empty: no time, no case size, a day asked on saving (DR6-150)', async ({
   page,
 }) => {
   const INVISIBLE = '\u{200B}\u{85}\u{2060}';
@@ -165,7 +169,8 @@ test('a field of invisible characters alone reads as empty: no case size, a day 
   await expect(day).toHaveAccessibleDescription(/^Nhập ngày\./);
   await booking.getByRole('button', { name: 'Hủy', exact: true }).click();
 
-  await book(page, '15/9', 'N3');
+  const name = await book(page, '15/9', 'N3', INVISIBLE);
+  await expect(detail(page).getByRole('heading', { level: 2 })).toHaveText(`${TODAY} · ${name}`);
   await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
   const o = outcome(page);
   await o.status.getByRole('radio', { name: 'Đã gặp' }).check();

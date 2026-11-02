@@ -130,7 +130,16 @@ export function BackupSection({ notice, onNotice }: DataNoticeProps<BackupNotice
             if (file) void readFile(file);
           }}
         />
-        <Button disabled={busy !== null} onClick={() => input.current?.click()}>
+        {/* Off by `aria-disabled` while it reads, as `ConfirmButton`, so it keeps the focus: the
+            dialog the read opens gives it back here (review of PR 924, as DR6-83). */}
+        <Button
+          disabled={busy === 'export'}
+          aria-disabled={busy === 'read' || undefined}
+          className="aria-disabled:cursor-default aria-disabled:opacity-50"
+          onClick={() => {
+            if (busy === null) input.current?.click();
+          }}
+        >
           {busy === 'read' ? t('settings.backup.reading') : t('settings.backup.importOpen')}
         </Button>
       </div>
