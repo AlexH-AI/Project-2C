@@ -23,6 +23,21 @@ async function openProfile(page: Page) {
   await expect(page.locator('#customer-name')).toBeVisible();
 }
 
+/** Holds every read of a chosen file (`Blob.text`) until `releaseReads`, as a slow disk would. */
+async function holdReads(page: Page) {
+  await page.evaluate(() => {
+    const text = Blob.prototype.text;
+    const gate = new Promise<void>((resolve) => Object.assign(window, { releaseReads: resolve }));
+    Blob.prototype.text = async function (this: Blob) {
+      await gate;
+      return text.call(this);
+    };
+  });
+}
+
+const releaseReads = (page: Page) =>
+  page.evaluate(() => (window as Window & { releaseReads?: () => void }).releaseReads?.());
+
 test('Escape, Hủy and saving each close the dialog and give focus back to its button', async ({
   page,
 }) => {
@@ -201,6 +216,67 @@ test('the dialog of a running import keeps the focus on what runs (10a, DR6-154)
   await page.evaluate(() => window.exe.releaseBackup());
   await expect(dialog).toHaveCount(0);
   await expect(backup.getByRole('status')).toContainText('Đã nhập backup');
+  // The button that chose the file has the focus back (review of PR 924).
+  await expect(open).toBeFocused();
+});
+
+// Review of PR 924 (as DR6-83): "Chọn file…" keeps the focus while the file is read, so each dialog
+// the read opens gives it back as it goes (10a, 10b); pressed meanwhile, it opens no other chooser.
+test('the dialogs of a chosen backup give the focus back to "Chọn file…" (10a, 10b)', async ({
+  page,
+}) => {
+  await asExe(page);
+  await page.goto('/#/settings');
+  const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });
+  await backup.getByRole('button', { name: 'Xuất backup' }).click();
+  await expect(backup.getByRole('status')).toContainText('Đã xuất backup: ');
+  const file = await page.evaluate(() => window.exe.exports.at(-1) ?? '');
+  let choosers = 0;
+  page.on('filechooser', () => {
+    choosers += 1;
+  });
+  const open = backup.getByRole('button', { name: 'Chọn file…' });
+  // Through the button, as a person chooses a file: the button has the focus.
+  const choose = async (text: string) => {
+    const chooser = page.waitForEvent('filechooser');
+    await open.click();
+    await (
+      await chooser
+    ).setFiles({
+      name: 'export.p2cbackup',
+      mimeType: 'application/json',
+      buffer: Buffer.from(text),
+    });
+  };
+  const confirm = page.getByRole('dialog', { name: 'Thay toàn bộ dữ liệu?' });
+
+  await holdReads(page);
+  await choose(file);
+  const reading = backup.getByRole('button', { name: 'Đang đọc file…' });
+  await expect(reading).toBeFocused();
+  await expect(reading).toBeDisabled();
+  // Dimmed as a button off is.
+  await expect(reading).toHaveCSS('opacity', '0.5');
+  await page.keyboard.press('Enter');
+  await reading.click({ force: true });
+  await releaseReads(page);
+  await confirm.getByRole('button', { name: 'Hủy' }).click();
+  await expect(confirm).toHaveCount(0);
+  await expect(open).toBeFocused();
+
+  await choose(file);
+  await expect(confirm).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(confirm).toHaveCount(0);
+  await expect(open).toBeFocused();
+
+  await choose('{"format":"project2-backup","tables":{}}');
+  const refused = page.getByRole('dialog', { name: 'Không nhập được file' });
+  await refused.getByRole('button', { name: 'Đóng' }).click();
+  await expect(refused).toHaveCount(0);
+  await expect(open).toBeFocused();
+  // Pressed while the first file was read, it opened no chooser of its own.
+  expect(choosers).toBe(3);
 });
 
 test('closing the exe over a failed save: Escape leaves the window open, and closing still works', async ({

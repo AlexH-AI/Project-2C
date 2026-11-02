@@ -42,7 +42,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 ### Export
 
 - `src/` — App.tsx, main.tsx
-- `src/data/` — AppDataContext.tsx, ai-analysis.ts, ai-jobs.ts, ai-tauri.ts, app-data.ts, demo-snapshot.ts, persist-queue.ts, tables.ts, tauri-storage.ts, today.ts
+- `src/data/` — AppDataContext.tsx, ai-analysis.ts, ai-jobs.ts, ai-tauri.ts, app-data.ts, demo-snapshot.ts, listeners.ts, persist-queue.ts, tables.ts, tauri-storage.ts, today.ts
 - `src/i18n/` — index.ts, vi.ts
 - `src/routes/` — ConfirmWordDialog.tsx, FilterBar.tsx, Overview.tsx, RestoreDialog.tsx, Screen.tsx, Settings.tsx, SettingsAi.tsx, SettingsBackup.tsx, SettingsDataFile.tsx, SettingsTrash.tsx, ai-error-view.ts, applied-filter.ts, classes.ts, money-view.ts, period-labels.ts, settings-ai-view.ts, stage-badge.tsx, trash-view.ts
 - `src/routes/appointments/` — AppointmentAi.tsx, AppointmentDialog.tsx, AppointmentsScreen.tsx, DeleteAppointmentDialog.tsx, EditOutcomeDialog.tsx, MetFields.tsx, OutcomeDialog.tsx, RescheduleDialog.tsx, RescheduleFields.tsx, YearGrid.tsx, appointment-ai-view.ts, appointment-form.ts, appointments-view.ts, outcome-form.ts

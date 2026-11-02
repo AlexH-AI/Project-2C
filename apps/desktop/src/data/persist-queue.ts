@@ -5,6 +5,8 @@
  * `flush()`, writes everything again. Its `status()` is the one store of the save state: the save
  * warning, the close question and the sidebar's indicator read it (mockup settings-data 10d).
  */
+import { notify } from './listeners';
+
 export interface PersistQueue {
   persist(bytes: Uint8Array): void;
   /**
@@ -75,13 +77,7 @@ export function createPersistQueue(
     status = next;
     // Never inside the write's `try`: a listener's bug is not a failed save, and must not stop the
     // others or leave the queue stuck (NIT #87).
-    for (const listener of listeners) {
-      try {
-        listener();
-      } catch (error) {
-        console.error(error);
-      }
-    }
+    notify(listeners, console.error);
   };
 
   const drain = async () => {

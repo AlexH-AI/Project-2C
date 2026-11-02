@@ -86,17 +86,23 @@ export function sqlTexts(values: readonly string[]): string {
 }
 
 /**
+ * Whether the database reads `text` back as it stores it: the one rule of a label (`isLabel`) and
+ * of a text the backup import loads, in any column (DR6-137). Not a NUL, at which the text reads
+ * back cut, past the CHECKs on its length (DR-49, DR5-14); not a lone surrogate half, which reads
+ * back as U+FFFD, text the value checks could not tell from typed text (DR6-49; `isStorableText`);
+ * not a U+FEFF to start it, which sql.js drops on reading while SQLite keeps it for its unique
+ * indexes and comparisons (DR6-107).
+ */
+export function readsBackAsIs(text: string): boolean {
+  return isStorableText(text) && !text.startsWith('\u{FEFF}');
+}
+
+/**
  * A label such as a model name or prompt version: text, not blank, that the database reads back as
- * it is, as the backup import takes any text (DR6-137): no NUL (DR-49), no lone surrogate half
- * (`isStorableText`) and no U+FEFF to start it, which sql.js drops on reading.
+ * it is (`readsBackAsIs`).
  */
 export function isLabel(text: unknown): text is string {
-  return (
-    typeof text === 'string' &&
-    text.trim() !== '' &&
-    isStorableText(text) &&
-    !text.startsWith('\u{FEFF}')
-  );
+  return typeof text === 'string' && text.trim() !== '' && readsBackAsIs(text);
 }
 
 /** One instant for both columns, so a deleted row is never updated after its deletion. */

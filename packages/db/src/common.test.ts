@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { cleanNote, cleanText, optionalText, requireName, today } from './common';
+import { cleanNote, cleanText, optionalText, readsBackAsIs, requireName, today } from './common';
 import { openDatabase } from './database';
 import { codeOf, d } from './test-support';
 
@@ -63,5 +63,20 @@ describe('optionalText', () => {
     }
     // `trim` of JavaScript keeps U+0085, as the spec says (Phase 3 §4).
     expect(optionalText(' \u{85}Gửi\u{3164} ')).toBe('\u{85}Gửi\u{3164}');
+  });
+});
+
+// DR6-137 (review of PR 907): one rule, which a label of an AI analysis and the backup import read.
+describe('readsBackAsIs', () => {
+  it('takes text the database reads back as it is, a U+FEFF inside it or at its end too', () => {
+    for (const text of ['Sao Mai', '', 'glm-5.3 😀', 'a\u{FEFF}b', 'x\u{FEFF}']) {
+      expect(readsBackAsIs(text)).toBe(true);
+    }
+  });
+
+  it('refuses a NUL, a lone surrogate half and a U+FEFF that starts the text', () => {
+    for (const text of ['A\u0000B', 'Gặp lại\u{D800}', '\u{DC00}', '\u{FEFF}', '\u{FEFF}alpha']) {
+      expect(readsBackAsIs(text)).toBe(false);
+    }
   });
 });
