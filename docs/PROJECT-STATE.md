@@ -153,6 +153,9 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - The orchestrator waits on GitHub with `tools/auto-wait.mjs` in the background. This is a deliberate exception to the app's "do not poll CI".
   - The OWNER picks when to try it.
 - 2026-11-02: OWNER decision at G8 on PR #944 (T-335). After its third `REVIEW: CHANGES` (@`8767876`), past "fix at most two rounds", the OWNER said "sửa lỗi pr 944": a third fix round. Another CHANGES after it stops for the OWNER again.
+- 2026-11-02: OWNER widened the "không tự sửa" fence of `auto-issues` (PR #944, T-335). Asked "Mở rộng rào "không tự sửa" sang các công cụ pipeline dùng (merge-pr, pr-status, review-pr)?", the OWNER chose "Mở rộng rào".
+  - Besides the skill and `tools/auto-wait*`, the fence now holds the merge gate (`merge-pr`, `pr-status` and the modules they import) and the review gate (`review-pr`, `REVIEW-CHECKLIST.md`, `notes-for`, the review hint hook).
+  - The pipeline takes no Issue and merges no PR that touches one of those files. The list is at the top of the skill.
 
 ## Next decision
 

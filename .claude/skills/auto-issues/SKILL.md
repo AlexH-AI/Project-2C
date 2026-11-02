@@ -13,6 +13,11 @@ Pipeline có hai quyền riêng (Owner quyết 01/11/2026):
 
 Mọi quy tắc khác của `CLAUDE.md` giữ nguyên: quy trình một task, review phiên sạch bằng `review-pr`, merge qua `tools/merge-pr.mjs`, cổng G1–G7.
 
+**Rào "không tự sửa"** (Owner mở rộng ngày 02/11/2026). Pipeline merge PR mà Owner không xem, nên nó không tự sửa chính nó, cổng merge hay cổng review của nó. Issue hay PR chạm một file dưới đây do Owner làm, review và merge theo cách thường (§1, §4):
+- pipeline: `.claude/skills/auto-issues/**`, `tools/auto-wait*`;
+- cổng merge, tức công cụ phiên điều phối chạy cùng các module chúng import: `tools/merge-pr*`, `tools/pr-status*`, `tools/pr-core*`, `tools/session-core*`, `tools/session-io*`;
+- cổng review, tức những gì phiên review chạy hay đọc làm luật, ở đúng head của PR: `.claude/skills/review-pr/**`, `docs/process/REVIEW-CHECKLIST.md`, `tools/notes-for*`, `tools/notes-core*`, hook `.claude/hooks/review-pr-hint.mjs` và `tools/review-hint-core*`.
+
 | Phiên | Thư mục | Việc |
 |---|---|---|
 | điều phối (Owner mở) | `C:\workspace\Project-2C` | giao việc, chờ, merge, hỏi Owner |
@@ -52,7 +57,7 @@ Chỉ lượt Owner gõ `/goal` được mở phiên con. Lượt do lệnh nề
 2. **Hàng đợi.**
    - Lệnh `/goal` có danh sách thì dùng danh sách đó. Không có thì lấy các Issue mở có nhãn `type:task` và `ready-for-agent` của milestone đang mở, xếp theo số. Có nhiều milestone thì hỏi Owner.
    - Một Issue chỉ tới lượt khi mọi Issue trong ô "Bị chặn bởi" của nó đã đóng. Issue bị chặn bởi một Issue khác trong hàng thì lùi xuống sau Issue kế. Issue bị chặn bởi một Issue còn mở nằm ngoài hàng thì bỏ khỏi hàng và báo Owner: pipeline không làm Issue ngoài hàng, nên Issue đó không bao giờ tới lượt.
-   - Bỏ khỏi hàng và báo Owner mọi Issue có "File / thư mục được phép sửa" chạm `.claude/skills/auto-issues/**` hoặc `tools/auto-wait*`. Pipeline không tự sửa chính nó; Owner làm Issue đó theo cách thường.
+   - Bỏ khỏi hàng và báo Owner mọi Issue có "File / thư mục được phép sửa" chạm một file trong rào "không tự sửa" (đầu skill), kể cả khi Issue cho sửa cả thư mục chứa file đó. Owner làm Issue đó theo cách thường.
    - Hỏi Owner một câu (§5): "Chạy hàng đợi #a → #b → …?". Phương án: Chạy / Dừng; Owner sửa hàng đợi qua "Other".
 3. **Phiên con.**
    - `list_sessions {"linked": true}`. Có đủ 4 phiên `coding-ses1`, `coding-ses2`, `review-1`, `review-2` chưa lưu trữ thì dùng lại.
@@ -157,7 +162,8 @@ Brief gửi bằng `SendMessage`, với `to` là id `local_…` của phiên con
 ```text
 Bạn là phiên con `<tên>` của pipeline auto-issues (ADR-0001 phụ lục M11, `.claude/skills/auto-issues/SKILL.md` §3). Không có Owner ngồi ở phiên này: phiên điều phối giao việc qua tin nhắn và đọc dòng cuối của bạn.
 - Không gọi AskUserQuestion, không chờ ai trả lời. Cần Owner quyết (cổng G1–G7 của CLAUDE.md, spec mâu thuẫn, test chấp nhận không làm được) → dừng việc đó, không đoán; kết thúc lượt bằng `AUTO-CHILD: <thẻ> CẦN OWNER — <câu hỏi>; phương án: <a> / <b>; đề xuất: <x>`.
-- Không merge, không /handoff, không bật Auto-fix hay auto-merge, không đổi nhánh của worktree review, không sửa `.claude/skills/auto-issues/**` hay `tools/auto-wait*`.
+- Không merge, không /handoff, không bật Auto-fix hay auto-merge, không đổi nhánh của worktree review.
+- Không sửa file trong rào "không tự sửa" của pipeline: `.claude/skills/auto-issues/**`, `.claude/skills/review-pr/**`, `.claude/hooks/review-pr-hint.mjs`, `docs/process/REVIEW-CHECKLIST.md`, `tools/{auto-wait,merge-pr,pr-status,pr-core,session-core,session-io,notes-for,notes-core,review-hint-core}*`. Việc cần sửa một file trong đó thì dừng và báo `CẦN OWNER` như trên.
 - Dòng cuối cùng của mỗi lượt là đúng một dòng `AUTO-CHILD: <thẻ> <kết quả>` theo việc được giao. `<thẻ>` chép đúng thẻ ở dòng `[auto-issues]` của tin nhắn giao việc: `[Issue #<số>]`, `[PR #<số>]` hoặc `[Sổ]`.
 ```
 
@@ -245,7 +251,7 @@ Dòng cuối: `AUTO-CHILD: [Sổ] PR NHÃN #<L>; Issue #<a>…#<b>` hoặc `AUTO
 
 Chỉ phiên điều phối merge, luôn bằng `node tools/merge-pr.mjs`. Lệnh chạy từ `C:/workspace/Project-2C-auto`, sau khi đưa worktree đó về `origin/main` mới nhất: `git -C C:/workspace/Project-2C fetch origin`, rồi `git -C C:/workspace/Project-2C-auto checkout --detach origin/main`. Như vậy cổng merge là bản đã duyệt trên `main`. Trước khi merge, phiên code của PR phải đang rảnh, tức không còn push.
 
-- **PR chạm `.claude/skills/auto-issues/**` hay `tools/auto-wait*`** (`gh pr diff <N> --name-only`): không merge, hỏi Owner (§5). Owner review và merge theo cách thường.
+- **PR chạm file trong rào "không tự sửa"** (đầu skill; xem bằng `gh pr diff <N> --name-only`): không merge, hỏi Owner (§5). Owner review và merge theo cách thường.
 - **PR task:** `node tools/merge-pr.mjs <N>`, thêm `--owner` khi mức là med / high (theo nhãn `risk:*`, hoặc mức đã nâng trong REVIEW). `--owner` dùng quyền pipeline của M11, và để lại comment "Merged on Owner request".
 - **PR chỉ sửa `docs/state/review-notes.md`** (PR sổ, PR gắn nhãn sổ): merge ngay bằng `node tools/merge-pr.mjs <L>`, không cần REVIEW (T-215). PR đó sửa thêm file khác thì không merge, hỏi Owner.
 - **`merge-pr` từ chối:**
@@ -255,13 +261,13 @@ Chỉ phiên điều phối merge, luôn bằng `node tools/merge-pr.mjs`. Lện
   - Chờ CI sau `reopen` bằng một lệnh nền: `node tools/auto-wait.mjs sleep --timeout 1 && node tools/auto-wait.mjs ci <N> --timeout 60`. GitHub cần một lúc để tạo workflow run mới; `ci` đọc ngay thì thấy run cũ đã xong và báo xong sai.
   - Lý do khác: hỏi Owner.
 - `merge-pr` tự dọn: về `main`, xóa nhánh, gỡ worktree `Project-2C-notes-<N>`. Dọn báo lỗi thì hỏi Owner.
-- **Không bao giờ:** `--no-verify`; merge khi CI chưa xanh; bật auto-merge; merge PR chạm `.claude/skills/auto-issues/**` hay `tools/auto-wait*`.
+- **Không bao giờ:** `--no-verify`; merge khi CI chưa xanh; bật auto-merge; merge PR chạm file trong rào "không tự sửa".
 
 ## 5. Hỏi Owner
 
 **Khi nào hỏi:**
 - phiên con báo `CẦN OWNER` hoặc `KHÔNG ĐỒNG Ý`;
-- PR tới bước merge mà chạm `.claude/skills/auto-issues/**` hay `tools/auto-wait*` (§4);
+- PR tới bước merge mà chạm file trong rào "không tự sửa" (§4);
 - `merge-pr` từ chối vì lý do ngoài §4; lệnh chờ ra mã 3 mà không rõ cách xử lý;
 - `/clear` bị từ chối ở cả hai phiên;
 - phiên con dừng hai lần không có dòng `AUTO-CHILD`; kết quả phiên con báo mà GitHub vẫn không thấy sau khi đã nhắc;
