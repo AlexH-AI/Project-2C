@@ -17,10 +17,18 @@ module.exports = {
     },
     {
       name: 'ai-only-on-domain-and-zod',
-      comment: 'packages/ai uses only packages/domain and zod (spec Phase 5 §10).',
+      comment:
+        'packages/ai uses only packages/domain and zod (spec Phase 5 §10); its tests and test-support may use vitest.',
       severity: 'error',
-      from: { path: '^packages/ai/', pathNot: '\\.test\\.ts$' },
+      from: { path: '^packages/ai/', pathNot: '(\\.test|test-support)\\.ts$' },
       to: { pathNot: ['^packages/(ai|domain)/', '(^|/)node_modules/zod/'] },
+    },
+    {
+      name: 'ai-test-support-only-in-tests',
+      comment: 'Only the tests of packages/ai import its test-support, which uses vitest.',
+      severity: 'error',
+      from: { path: '^packages/ai/', pathNot: '(\\.test|test-support)\\.ts$' },
+      to: { path: '^packages/ai/src/test-support\\.ts$' },
     },
     {
       name: 'db-only-on-domain-and-ai-schema',
@@ -60,7 +68,8 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
-    exclude: { path: '(^|/)(dist|coverage|src-tauri)/' },
+    // The build output of the repo only, not a package's own `dist/` inside node_modules.
+    exclude: { path: '^((apps|packages)/[^/]+/(dist|coverage)|apps/[^/]+/src-tauri)/' },
     tsPreCompilationDeps: true,
     tsConfig: { fileName: 'tsconfig.base.json' },
     enhancedResolveOptions: {

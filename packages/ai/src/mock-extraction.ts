@@ -84,6 +84,9 @@ const OR = 'hay|hoặc';
  */
 const NOT_ASKED = String.raw`(?!(?:[^\S\n]*${ANSWERED}|[^\S\n]+)(?:${NOT_SO})(?!\p{L})|[^\S\n]+(?:${OR})(?!\p{L}))`;
 
+/** A child: "con", and "bé" as "con" (T-330). */
+const CHILD_WORD = 'con|bé';
+
 /** A wife or a husband, and people the KH knows. */
 const SPOUSE = 'vợ|chồng';
 const KNOWN = 'bạn|sếp|hàng xóm|người quen|đồng nghiệp|người thân|họ hàng';
@@ -103,7 +106,7 @@ const WITH_PARTNER = `có|cùng|với|${MARRY}`;
  * of these words name no one else: `NAMES_NO_ONE`, `SAID_OF_THE_KH`.
  */
 const PEOPLE = [
-  'con|bé|cháu|anh em|anh trai|anh họ|anh rể|anh ruột|anh của',
+  `${CHILD_WORD}|cháu|anh em|anh trai|anh họ|anh rể|anh ruột|anh của`,
   'chị em|chị gái|chị họ|chị dâu|chị ruột|chị của',
   'em|ông|bà|cô|chú|bác|dì|cậu|mợ|thím|dượng|bố|mẹ|cha|má',
   SPOUSE,
@@ -122,6 +125,11 @@ const NUMBER_WORD = 'một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười';
 /** A count of people: "ba người bạn", "các anh", "2 người". */
 const HOW_MANY = String.raw`${NUMBER_WORD}|mấy|vài|các|những|\d+`;
 
+/** Divorced, separated, widowed, in either spelling: "ly hôn", "li dị", "ly thân", "góa", "goá". */
+const DIVORCE = 'l[iy] (?:hôn|dị)';
+const SEPARATION = 'l[iy] thân';
+const WIDOWED = 'g(?:óa|oá)';
+
 /**
  * Words of `PEOPLE` that name no one else, anywhere and in any case: inside a word that holds a kin
  * word ("bác sĩ", "cô giáo", "cô đơn", "chú ý", "chú trọng", "ghi chú"), "bé" said of a size
@@ -132,7 +140,7 @@ const HOW_MANY = String.raw`${NUMBER_WORD}|mấy|vài|các|những|\d+`;
  * these words is one of `OWN_PARTNER`, and which is read first does not matter.
  */
 const NAMES_NO_ONE = new RegExp(
-  String.raw`(?<!\p{L})(?:bác sĩ|cô giáo|cô đơn|chú ý|chú trọng|ghi chú|nhỏ bé|bé(?<!(?<!\p{L})(?:${HOW_MANY}) bé) (?:nhỏ|xíu|tí|hơn|nhất)|chú thích(?=:)|g(?:óa|oá) (?:${SPOUSE})|(?<!(?:${WITH_PARTNER}) )vợ chồng|(?<=và )(?:${SPOUSE}))(?!\p{L})`,
+  String.raw`(?<!\p{L})(?:bác sĩ|cô giáo|cô đơn|chú ý|chú trọng|ghi chú|nhỏ bé|bé(?<!(?<!\p{L})(?:${HOW_MANY}) bé) (?:nhỏ|xíu|tí|hơn|nhất)|chú thích(?=:)|(?:${WIDOWED}) (?:${SPOUSE})|(?<!(?:${WITH_PARTNER}) )vợ chồng|(?<=và )(?:${SPOUSE}))(?!\p{L})`,
   'giu',
 );
 
@@ -171,7 +179,7 @@ const SAID_OF_THE_KH = new RegExp(
 const PARTNER_FIRST = new RegExp(String.raw`(?:${OWN_PARTNER})(?!\p{L})(?! và(?!\p{L}))`, 'u');
 
 /** A count of children, in figures or in words: "1 con", "một bé". */
-const COUNT = String.raw`(?:(?<!\p{N})\d{1,2}|(?<!\p{L})(?:${NUMBER_WORD}))\s+(?:con|bé)(?!\p{L})`;
+const COUNT = String.raw`(?:(?<!\p{N})\d{1,2}|(?<!\p{L})(?:${NUMBER_WORD}))\s+(?:${CHILD_WORD})(?!\p{L})`;
 const COUNTED = new RegExp(COUNT, 'giu');
 
 /**
@@ -234,6 +242,9 @@ const HEADING = String.raw`(?:ghi chú|chú ý|lưu ý|chú thích|gặp kh)\s*:
 
 /** Spaces, maybe a bullet or a number, at the start of a clause: "- ", "1) ". */
 const BULLET = String.raw`\s*(?:(?:[-*•+]|\d{1,2}\))\s+)?`;
+
+/** `BULLET` at the start of a clause the KH goes on to (`clausesOf`). Sticky; always matches. */
+const BULLETED = new RegExp(BULLET, 'uy');
 
 /**
  * How a clause opens on the KH, maybe after a bullet: as `named` names the KH, or as `says` (the KH
@@ -310,11 +321,6 @@ const SINCE = String.raw`(?:(?:được|từ)\s+)?(?:(?:${HOW_MANY})\s+năm(?:\s
  */
 const DIED = '(?:đã mất|(?:đã )?qua đời)';
 
-/** Divorced, separated, widowed, in either spelling: "ly hôn", "li dị", "ly thân", "góa", "goá". */
-const DIVORCE = 'l[iy] (?:hôn|dị)';
-const SEPARATION = 'l[iy] thân';
-const WIDOWED = 'g(?:óa|oá)';
-
 /** After a phrase of hôn nhân or a death: when it came about, then the end of its clause. */
 const DONE_SINCE = new RegExp(String.raw`(?:\s+${SINCE})?${CLAUSE_DONE}`, 'iuy');
 
@@ -325,7 +331,7 @@ const ONLY_FILLER = new RegExp(String.raw`^\s*(?:${FILLER})*$`, 'iu');
 const MARRIED = 'Đã kết hôn';
 
 /** Children who died, in figures or in words: "1 con đã mất", "Một bé qua đời" (rule 3, T-330). */
-const DEAD_CHILDREN = String.raw`(?:(?<!\p{N})(\d{1,2})|(?<!\p{L})(${NUMBER_WORD})) (?:con|bé) ${DIED}(?!\p{L})`;
+const DEAD_CHILDREN = String.raw`(?:(?<!\p{N})(\d{1,2})|(?<!\p{L})(${NUMBER_WORD})) (?:${CHILD_WORD}) ${DIED}(?!\p{L})`;
 
 /** How many `DEAD_CHILDREN` died: its figures, or its number in words. */
 function howManyDied(match: RegExpExecArray): number {
@@ -333,7 +339,7 @@ function howManyDied(match: RegExpExecArray): number {
 }
 
 /** A child, and a death said any way: "con út đã mất", "mất một con", "bé qua đời". */
-const CHILD = /(?<!\p{L})(?:con|bé)(?!\p{L})/iu;
+const CHILD = new RegExp(String.raw`(?<!\p{L})(?:${CHILD_WORD})(?!\p{L})`, 'iu');
 const DEATH = /(?<!\p{L})(?:mất|qua đời)(?!\p{L})/giu;
 
 /**
@@ -416,7 +422,7 @@ const EXTRACTION_PATTERNS: readonly {
     pattern: new RegExp(
       [
         NOT_PLANNED_CHILDREN,
-        String.raw`(?<!\p{N})(\d{1,2})\s+(?:con|bé)(?!\p{L})`,
+        String.raw`(?<!\p{N})(\d{1,2})\s+(?:${CHILD_WORD})(?!\p{L})`,
         // A capital is a name or a brand; children who died are `DEAD_CHILDREN`.
         String.raw`(?!\p{Zs}+\p{Lu})(?!\s+(?:${NOT_CHILDREN})(?!\p{L}))(?! ${DIED})`,
         NOT_ASKED,
@@ -495,7 +501,7 @@ const EXTRACTION_PATTERNS: readonly {
   },
   {
     field: 'maritalStatus',
-    pattern: maritalWord(String.raw`${WIDOWED}(?: (?:${SPOUSE}))?`),
+    pattern: maritalWord(String.raw`(?:${WIDOWED})(?: (?:${SPOUSE}))?`),
     value: () => 'Góa',
     before: ONLY_FILLER,
     after: DONE_SINCE,
@@ -736,14 +742,17 @@ function joinedIn(clause: Part): (at: number) => { start: number; end: number } 
 /**
  * Reads what each clause of `note` says around its phrases, as positions in the note, for clauses
  * read in order (`readerOf`): with where it speaks of the KH, from where it opens on the KH, or
- * from its start when the clause before it ends on a phrase about the KH ("KH đã kết hôn, có 2
- * con"), in its sentence or, the clause opening a sentence, in the sentence before ("KH đã kết
- * hôn. Đã ly hôn năm 2020.", T-330). Only such a phrase carries the KH on: after any other words,
- * a clause may speak of whoever they name ("KH giới thiệu khách mới, đã kết hôn", "KH là bác sĩ,
- * Lan là y tá, độc thân"), and no list of the words that name people is ever full (the reviews of
- * PR #917). A clause is read when its first phrase that says something of the KH is asked of, and
- * all of these are asked of before the clause after it is read (`readerOf`, the phrases in order):
- * so the clause read last has told, by its `done`, whether a phrase about the KH ends it.
+ * from its start, past a bullet, when the clause before it ends on a phrase about the KH ("KH đã
+ * kết hôn, có 2 con"), in its sentence or, the clause opening a sentence, in the sentence before
+ * ("KH đã kết hôn. Đã ly hôn năm 2020.", T-330), clauses with no letter between them not counted
+ * ("KH đã kết hôn.\nĐã ly hôn năm 2020.", "KH đã kết hôn... Đã ly hôn năm 2020.", "- KH đã kết
+ * hôn\n- Đã ly hôn năm 2020.", Owner 02/11/2026). Only such a phrase carries the KH on: after any
+ * other words, a clause may speak of whoever they name ("KH giới thiệu khách mới, đã kết hôn",
+ * "KH là bác sĩ, Lan là y tá, độc thân"), and no list of the words that name people is ever full
+ * (the reviews of PR #917). A clause is read when its first phrase that says something of the KH
+ * is asked of, and all of these are asked of before the clause after it is read (`readerOf`, the
+ * phrases in order): so the clause read last has told, by its `done`, whether a phrase about the
+ * KH ends it.
  */
 function clausesOf(note: string) {
   let last: { end: number; endsOnTheKh: boolean } | undefined;
@@ -752,11 +761,15 @@ function clausesOf(note: string) {
   let looked = 0;
   return (clause: Part) => {
     const first = clause.start === 0 || '.!?;\n'.includes(note[clause.start - 1]!);
-    // Only the clause right before carries the KH on: one with no phrase, not read, ends on none.
-    const carried = last?.end === clause.start && last.endsOnTheKh;
+    // Only the clause read right before carries the KH on, past clauses with no letter: one with
+    // a word and no phrase, not read, ends on none.
+    const carried = !!last?.endsOnTheKh && !/\p{L}/u.test(note.slice(last.end, clause.start));
     worded ||= /\p{L}/u.test(note.slice(looked, clause.start));
     looked = clause.start;
-    JOINS_ON.lastIndex = 0;
+    // The KH goes on to the clause past a bullet opening it, as `opener` reads one.
+    BULLETED.lastIndex = 0;
+    const bullet = carried ? BULLETED.exec(clause.text)![0].length : 0;
+    JOINS_ON.lastIndex = bullet;
     const joinsOn = carried && JOINS_ON.exec(clause.text);
     const read = {
       /** Where it ends, after the mark ending it. */
@@ -764,13 +777,13 @@ function clausesOf(note: string) {
       /** Where its last ":" stands (`COLON`); never when it has none. */
       colon: lastStart(COLON, clause),
       /** Where it speaks of the KH from; never when it does not. */
-      kh: opening(clause, first, !worded) ?? (carried ? clause.start : undefined),
+      kh: opening(clause, first, !worded) ?? (carried ? clause.start + bullet : undefined),
       joined: joinedIn(clause),
       /**
        * Where the last phrase about the KH in it ends, with what it lets follow it; in a clause the
        * KH goes on to, a word of `JOINED` opening it follows the phrase ending the clause before.
        */
-      doneAt: joinsOn ? clause.start + joinsOn[0].length : -1,
+      doneAt: joinsOn ? clause.start + bullet + joinsOn[0].length : -1,
       /** Whether a phrase about the KH ends it: the KH goes on to the clause after it. */
       endsOnTheKh: false,
       /** A phrase about the KH in it is done at `end`, with what it lets follow it. */
