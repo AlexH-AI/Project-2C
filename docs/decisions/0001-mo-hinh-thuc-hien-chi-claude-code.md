@@ -164,7 +164,7 @@ Cách chạy (chi tiết ở `.claude/skills/auto-issues/SKILL.md`):
   - Phiên điều phối chờ bằng `tools/auto-wait.mjs` chạy nền: đọc GitHub cách ít nhất 30 giây một lần, hết giờ sau tối đa 120 phút. Lệnh chạy từ worktree chỉ đọc `Project-2C-auto` ở `origin/main`, vì phiên code sửa file ngay trên checkout chính.
   - Đây là ngoại lệ có chủ ý với lời dặn "không poll CI" của app desktop, chỉ áp cho pipeline này.
 - **Hỏi Owner qua phiên điều phối:** phiên con không hỏi Owner trực tiếp mà báo `CẦN OWNER`. Phiên điều phối hỏi Owner (thông báo đẩy + câu hỏi) rồi ghi quyết định thành comment trên PR / Issue.
-- **Chỉ phiên điều phối merge**, qua `tools/merge-pr.mjs`. Pipeline không làm Issue và không merge PR chạm chính nó, cổng merge hay cổng review của nó. Danh sách file ở mục rào "không tự sửa" đầu skill `auto-issues` (Owner mở rộng ngày 02/11/2026).
+- **Chỉ phiên điều phối merge**, qua `tools/merge-pr.mjs`. Pipeline không làm Issue và không merge PR chạm chính nó, cổng merge, cổng review hay luật chung của các cổng đó. Danh sách file ở mục rào "không tự sửa" đầu skill `auto-issues` (Owner mở rộng ngày 02/11/2026).
   - Lệnh chạy từ `Project-2C-auto` vừa đưa về `origin/main`, không từ checkout chính như các phiên khác. Lúc merge, checkout chính còn ở nhánh của PR, nên chạy từ đó thì cổng merge là bản chưa merge của chính PR.
   - `merge-pr` lấy checkout chính từ `git worktree list` và chạy mỗi bước dọn trong đúng thư mục của nó, nên vẫn dọn đúng chỗ.
 - **Giữ nguyên:**

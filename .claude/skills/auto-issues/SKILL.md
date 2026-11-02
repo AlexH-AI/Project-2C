@@ -13,10 +13,13 @@ Pipeline có hai quyền riêng (Owner quyết 01/11/2026):
 
 Mọi quy tắc khác của `CLAUDE.md` giữ nguyên: quy trình một task, review phiên sạch bằng `review-pr`, merge qua `tools/merge-pr.mjs`, cổng G1–G7.
 
-**Rào "không tự sửa"** (Owner mở rộng ngày 02/11/2026). Pipeline merge PR mà Owner không xem, nên nó không tự sửa chính nó, cổng merge hay cổng review của nó. Issue hay PR chạm một file dưới đây do Owner làm, review và merge theo cách thường (§1, §4):
+**Rào "không tự sửa"** (Owner mở rộng ngày 02/11/2026). Pipeline merge PR mà Owner không xem, nên nó không tự sửa chính nó, cổng merge, cổng review hay luật chung của các cổng đó. Issue hay PR chạm một file dưới đây do Owner làm, review và merge theo cách thường (§1, §4):
 - pipeline: `.claude/skills/auto-issues/**`, `tools/auto-wait*`;
 - cổng merge, tức công cụ phiên điều phối chạy cùng các module chúng import: `tools/merge-pr*`, `tools/pr-status*`, `tools/pr-core*`, `tools/session-core*`, `tools/session-io*`;
-- cổng review, tức những gì phiên review chạy hay đọc làm luật, ở đúng head của PR: `.claude/skills/review-pr/**`, `docs/process/REVIEW-CHECKLIST.md`, `tools/notes-for*`, `tools/notes-core*`, hook `.claude/hooks/review-pr-hint.mjs` và `tools/review-hint-core*`.
+- cổng review, tức những gì phiên review chạy hay đọc làm luật: `.claude/skills/review-pr/**`, `docs/process/REVIEW-CHECKLIST.md`, `tools/notes-for*`, `tools/notes-core*`, hook `.claude/hooks/review-pr-hint.mjs` và `tools/review-hint-core*`;
+- luật chung mọi phiên nạp: `CLAUDE.md` ở gốc repo, nơi ghi mức review và luật merge (`CLAUDE.md` của package không tính); `.claude/settings.json`, nơi đăng ký hook ở trên.
+
+`.github/workflows/**` cố ý nằm ngoài rào: kết quả CI phụ thuộc cả chuỗi build, nên rào riêng file workflow không bảo đảm gì. Review vẫn xét các diff đó, và `review-pr` nâng PR chạm `.github/workflows/**` lên mức med.
 
 | Phiên | Thư mục | Việc |
 |---|---|---|
@@ -163,7 +166,7 @@ Brief gửi bằng `SendMessage`, với `to` là id `local_…` của phiên con
 Bạn là phiên con `<tên>` của pipeline auto-issues (ADR-0001 phụ lục M11, `.claude/skills/auto-issues/SKILL.md` §3). Không có Owner ngồi ở phiên này: phiên điều phối giao việc qua tin nhắn và đọc dòng cuối của bạn.
 - Không gọi AskUserQuestion, không chờ ai trả lời. Cần Owner quyết (cổng G1–G7 của CLAUDE.md, spec mâu thuẫn, test chấp nhận không làm được) → dừng việc đó, không đoán; kết thúc lượt bằng `AUTO-CHILD: <thẻ> CẦN OWNER — <câu hỏi>; phương án: <a> / <b>; đề xuất: <x>`.
 - Không merge, không /handoff, không bật Auto-fix hay auto-merge, không đổi nhánh của worktree review.
-- Không sửa file trong rào "không tự sửa" của pipeline: `.claude/skills/auto-issues/**`, `.claude/skills/review-pr/**`, `.claude/hooks/review-pr-hint.mjs`, `docs/process/REVIEW-CHECKLIST.md`, `tools/{auto-wait,merge-pr,pr-status,pr-core,session-core,session-io,notes-for,notes-core,review-hint-core}*`. Việc cần sửa một file trong đó thì dừng và báo `CẦN OWNER` như trên.
+- Không sửa file trong rào "không tự sửa" của pipeline: `CLAUDE.md` ở gốc repo (`CLAUDE.md` của package không tính), `.claude/settings.json`, `.claude/skills/auto-issues/**`, `.claude/skills/review-pr/**`, `.claude/hooks/review-pr-hint.mjs`, `docs/process/REVIEW-CHECKLIST.md`, `tools/{auto-wait,merge-pr,pr-status,pr-core,session-core,session-io,notes-for,notes-core,review-hint-core}*`. Việc cần sửa một file trong đó thì dừng và báo `CẦN OWNER` như trên.
 - Dòng cuối cùng của mỗi lượt là đúng một dòng `AUTO-CHILD: <thẻ> <kết quả>` theo việc được giao. `<thẻ>` chép đúng thẻ ở dòng `[auto-issues]` của tin nhắn giao việc: `[Issue #<số>]`, `[PR #<số>]` hoặc `[Sổ]`.
 ```
 
