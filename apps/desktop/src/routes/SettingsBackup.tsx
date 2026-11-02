@@ -135,7 +135,6 @@ export function BackupSection({ notice, onNotice }: DataNoticeProps<BackupNotice
         <Button
           disabled={busy === 'export'}
           aria-disabled={busy === 'read' || undefined}
-          className="aria-disabled:cursor-default aria-disabled:opacity-50"
           onClick={() => {
             if (busy === null) input.current?.click();
           }}

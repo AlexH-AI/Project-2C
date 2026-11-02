@@ -208,8 +208,15 @@ describe('parseTime', () => {
     }
   });
 
+  // Review of PR 946: pasted with an invisible character, the field shows the time alone.
+  it('reads a time with invisible characters as the time it shows', () => {
+    expect(parseTime('\u{200B}14:00')).toEqual({ ok: true, time: '14:00' });
+    expect(parseTime('14\u{2060}:00')).toEqual({ ok: true, time: '14:00' });
+    expect(parseTime('\u{FEFF} 9:05\u{200B}')).toEqual({ ok: true, time: '09:05' });
+  });
+
   it('refuses an hour or minute out of range and other text', () => {
-    for (const text of ['24:00', '25:00', '12:60', '1400', 'abc', '12:5']) {
+    for (const text of ['24:00', '25:00', '12:60', '1400', 'abc', '12:5', '\u{200B}24:00']) {
       expect(parseTime(text)).toEqual({ ok: false });
     }
   });

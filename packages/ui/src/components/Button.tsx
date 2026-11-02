@@ -14,14 +14,15 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 /**
  * Mockup `.btn` / `.btn-primary` / `.btn-danger`; `type` defaults to "button", not "submit".
- * `autoFocus` also marks it for `Dialog`, which focuses it once open.
+ * `autoFocus` also marks it for `Dialog`, which focuses it once open. Off by `aria-disabled`, which
+ * keeps the focus (DR6-154), it looks as off by `disabled`.
  */
 export function Button({ variant = 'default', type = 'button', className, ...props }: ButtonProps) {
   return (
     <button
       type={type}
       data-autofocus={props.autoFocus || undefined}
-      className={`cursor-pointer rounded-md px-3 py-1.5 text-sm whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-default disabled:opacity-50 ${VARIANTS[variant]} ${className ?? ''}`}
+      className={`cursor-pointer rounded-md px-3 py-1.5 text-sm whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-default disabled:opacity-50 aria-disabled:cursor-default aria-disabled:opacity-50 ${VARIANTS[variant]} ${className ?? ''}`}
       {...props}
     />
   );

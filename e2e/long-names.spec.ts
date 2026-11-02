@@ -203,6 +203,8 @@ test('a TL of 160 letters keeps Đổi tên team and Xóa team in the card of th
       const button = card.getByRole('button', { name: label });
       expect(await right(button), `${label} at ${width}`).toBeLessThanOrEqual(await right(card));
     }
+    // The title keeps its line beside the long TL name, not squeezed letter by letter.
+    expect(await lineTops(card, 'Team Bình Minh'), `title at ${width}`).toHaveLength(1);
   }
 });
 
