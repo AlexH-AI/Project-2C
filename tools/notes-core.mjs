@@ -193,14 +193,15 @@ function globRegExp(glob) {
 /**
  * Whether a glob names some path in the folder, read one folder at a time (DR6-156): each folder
  * of the path meets the glob's part in its place, and the glob goes on below the folder, unless a
- * `**` part, which spans any folders, comes first.
+ * part with `**`, which spans any folders, comes first: then the folder need only begin as what
+ * stands before the `**` (review #926).
  */
 function globMeetsFolder(glob, folder) {
   const parts = glob.split('/');
   const names = folder.split('/').slice(0, -1);
   for (const [i, name] of names.entries()) {
     const part = parts[i];
-    if (part?.includes('**')) return true;
+    if (part?.includes('**')) return globRegExp(`${part.slice(0, part.indexOf('**'))}*`).test(name);
     if (part === undefined || !globRegExp(part).test(name)) return false;
   }
   return parts.length > names.length;
