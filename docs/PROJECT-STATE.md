@@ -182,7 +182,7 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - When the Mock looks at "the clause right before", a clause with no letter is transparent: a sentence mark then a line break, a blank line, "...", "!!".
   - A clause opening on a bullet is carried on to once its `BULLET` is dropped.
   - The four examples: "KH đã kết hôn." then a line break and "Đã ly hôn năm 2020." → Ly hôn; "- KH đã kết hôn" then "- Đã ly hôn năm 2020." → Ly hôn; "KH có 2 con." then "Một con đã mất." → Số con 1; "KH đã kết hôn... Đã ly hôn năm 2020." → Ly hôn.
-  - What it left open went by §10's wording and the safe side, as the Issue asks; Claude chose these and the OWNER was not asked one by one. A clause of figures only (a list number "2.") has no letter, so it is transparent. A clause holding "?" stops the carry, since it may doubt what comes before. A joining word right after the bullet carries the customer on, as it does with no bullet.
+  - Claude's choices, not asked one by one (PR #956). A clause of figures only (a list number "2.") has no letter, so it is transparent. A joining word right after the bullet carries the customer on, as it does with no bullet. One narrows the rule as written, on the safe side: a clause holding only "?" has no letter, yet it stops the carry, since the Mock reads "?" as doubt everywhere else.
 
 ## Next decision
 
