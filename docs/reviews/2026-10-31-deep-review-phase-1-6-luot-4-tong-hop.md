@@ -36,7 +36,7 @@ DeepSeek kết luận SẴN SÀNG vì không áp đề xuất 6, và không th�
 - **Bảng R1 (37 dòng): 36 ĐÃ SỬA · 1 SỬA MỘT PHẦN (DR6-37) · 0 CHƯA SỬA · 0 HỒI QUY. Bảng R2 (32 Issue): 32 ĐÃ SỬA** (§3).
   - DR6-37 chỉ Claude thấy. Dòng "{trường}: {giá trị}" của thẻ Dữ kiện KYC, vị trí đầu tiên mà L·CL-D5 lượt 1 nêu, vẫn viết dấu `: ` thẳng trong JSX. Issue #790 mục 3 không liệt kê vị trí này, nên Codex và DeepSeek chấm ĐÃ SỬA theo danh sách của Issue (§3.1). Phần còn: DR6-145.
 - **Phát hiện mới: 34 (Claude 18, Codex 8, DeepSeek 8) → 23 vấn đề `DR6-135…157`: 0 Medium · 17 Low · 6 Nit**, thêm 1 mục KNOWN có bằng chứng mới (CLR4-F2, K1; §8.4).
-  - 9 vấn đề mới do đợt sửa sau lượt 3 (135, 136, 139, 143, 144, 146, 147, 153, 155); 14 có từ trước, lượt 1–3 bỏ sót.
+  - 9 vấn đề mới do đợt sửa sau lượt 3 (135, 136, 139, 143, 144, 146, 147, 153, 155); 14 có từ trước, lượt 1–3 bỏ sót, trừ DR6-152 (tổng hợp lượt 3 §7.5 đã nêu `PURGE_REMINDER`, họ DR6-66) và phần (a) của DR6-145 (dòng "{trường}: {giá trị}" của DR6-37, vị trí L·CL-D5 lượt 1 đã nêu).
   - Ba mục chênh mức: CLR4-D2 Nit → Low, CXR4-F2 Low → Nit, DSR4-E1 Low → Nit (§5.1).
   - Một phát hiện P: DR6-136 (`byName`). Sắp bảng Lịch hẹn chậm đi quá mức luật nhiễu cho phép, nhưng vẫn dưới ngưỡng 200 ms.
 - **Ba bên bổ sung nhau** (§2.2): Claude thấy 15 / 23 vấn đề, DeepSeek 8, Codex 5. Mỗi bên có vấn đề chỉ mình thấy:
@@ -260,7 +260,7 @@ Ngoài 69 dòng R, các kịch bản mới không lộ lỗi dữ liệu nào. N
 
 ## 6. Bảng đầy đủ DR6-135…157
 
-Mức: L = Low, N = Nit. "Ai thấy" ghi mức gốc. "Mới" = mới do đợt sửa sau lượt 3; "trước" = có từ trước, lượt 1–3 bỏ sót. Nhóm sửa: §8.2.
+Mức: L = Low, N = Nit. "Ai thấy" ghi mức gốc. "Mới" = mới do đợt sửa sau lượt 3; "trước" = có từ trước, lượt 1–3 bỏ sót (trừ hai ngoại lệ ở §1). Nhóm sửa: §8.2.
 
 ### 6.1 Lõi dữ liệu (gói A)
 
@@ -303,7 +303,7 @@ Mức: L = Low, N = Nit. "Ai thấy" ghi mức gốc. "Mới" = mới do đợt 
 |---|---|---|---|---|---|
 | 150 | Ô Case size tùy chọn ("để trống = chưa ước lượng") chỉ có ký tự vô hình (U+200B / U+0085 / U+2060 dán vào) báo "Chưa nhập số tiền." và chặn Lưu của 6c / 6d / 6f: `readCaseSize` hỏi "trống" bằng `text.trim()` (`outcome-form.ts:33`), còn `parseVnd` đọc `normalizeText`. Ô ngày sinh 5a cùng kiểu đọc là "không có". Ba `pending` của ô ngày 6b / 6e / 6c cũng dùng `trim()` (đọc code). Trước (#738 đổi câu báo) | CLR4-E1 (L) | L | ✅ 📏 | L4-H |
 | 151 | Tên nút khôi phục ở Thùng rác trùng nhau cho trình đọc màn hình, dù ô "Bản ghi" / "Thuộc" khác: (a) hai KH cùng tên, cùng nhóm (21 cặp ở Thùng rác 1 313 dòng); (b) hai nhân sự cùng tên khác vai trò / team: `restoreLabel` ghép `recordTitle` với chữ của `recordBadge`, mà `recordBadge` trả `null` cho nhân sự (`trash-view.ts:110-117`, :192-202). Họ DR6-119. Trước | CLR4-E2 (N), DSR4-E1 (L) | N | ✅ 📏 | L4-H (Q3) |
-| 152 | `PURGE_REMINDER` (`trash-view.ts:518`) vẫn export mà không file nào import; test viết thẳng `1_000`. Họ DR6-66 (lượt 3 đã nêu, Issue #790 không liệt kê) | CLR4-E3 (N) | N | ✅ | L4-H |
+| 152 | `PURGE_REMINDER` (`trash-view.ts:518`) vẫn export mà không file nào import; test viết thẳng `1_000`. Họ DR6-66. Trước (lượt 3 §7.5 đã nêu, Issue #790 không liệt kê) | CLR4-E3 (N) | N | ✅ | L4-H |
 | 153 | Test hở gói E: (a) câu từ chối có vế "Thử lại" của Nhập backup (`SettingsBackup.tsx:203-209`, chọn câu trong TSX): RB2e sống cả bộ e2e, trong khi Nạp lại và Dọn sạch có ca giữ; (b) huy hiệu nhóm trong ô "Bản ghi" của KH ở Thùng rác (`SettingsTrash.tsx:50-56`): T305b sống. Mới (#817, #855, #871) | CLR4-E4 (L) | L | ✅ 🧪 | L4-H |
 | 154 | Lúc hộp xác nhận đang chạy (Nạp lại 10c, Dọn sạch 11i, Nhập backup 10a), ô chữ, Hủy và nút xác nhận đều tắt (`ConfirmWordDialog.tsx:38-64` `disabled={running}`; `SettingsBackup.tsx:229-247`), nên focus rơi về `body`: Tab không vào lại hộp, trình đọc màn hình không nghe "Đang …". Xong thì focus về đúng chỗ. Trước (code `119e2e4` tắt cùng ba phần tử) | CLR4-E5 (L) | L | ✅ 📏 | L4-H |
 
@@ -437,7 +437,7 @@ Tổng: **10 Issue**, ≈ 185–350 dòng SP + ≈ 700 dòng test, phần lớn 
 3. Sau L4-C: L4-H (cùng `e2e/save-state.spec.ts`). Sau khi Owner duyệt §14: PR code của L4-E.
 4. G7: chạy lại cổng và probe trên SHA phát hành (so mốc sau #656; đo `size-report` sau khi L4-I xong), chụp lại ảnh hướng dẫn, nghiệm thu, eval AI thật với version prompt cuối.
 
-Mỗi Issue một phiên, review phiên sạch như thường. Ước ≈ 2–3 ngày làm, tùy số PR `risk:med` Owner phải merge (L4-A, L4-C, L4-E).
+Mỗi Issue một phiên, review phiên sạch như thường. Ước ≈ 2–3 ngày làm, tùy số PR Owner phải merge: 5 PR code, gồm ba PR `risk:med` (L4-A, L4-C, L4-E) và hai PR review ở mức `high` theo bảng nâng mức của skill `review-pr` §2 (L4-B sửa `apps/desktop/src-tauri/**`, L4-D sửa `packages/ai/**`), cộng PR docs §14 của L4-E (G5).
 
 ### 8.4 KNOWN có bằng chứng mới, không đánh số DR6
 
@@ -530,7 +530,7 @@ Làm 31/10 trên Home PC. Log đọc bằng script `node`, không gọi model. S
   - DeepSeek A–F vá worktree rồi trả trong cùng lệnh (`git checkout --` hay bản `.bak`), mỗi lần in sha256 trước / sau hay `git status`; mọi lần đều có dấu trả (một lần của A có output dài, nằm ở `tool-results`: `restored: same=true`).
   - DeepSeek B thêm hai file test tạm `apps/desktop/src/data/dsr4b-probe{,2}.test.ts` (tồn tại ≈ 40 s và ≈ 5 s) rồi xóa. Nó cũng nối module test Rust vào `storage.rs` rồi trả bằng `git checkout --`, kiểm sha256 sau mỗi lần. DeepSeek F tạo tạm `tools/probe.mjs` cho một probe lint rồi xóa.
   - Ghi ra ngoài thư mục của bên đó mà ngoài repo: chỉ thư mục tạm (`/tmp`, `%TEMP%\p2c-dsr4b-*`) và thư mục build / cache bị ignore (`target\` của `cargo test`).
-  - File chung ở `common\` (kế hoạch, prompt, `known.md`, `fixes.md`, `dot2.mjs`) sửa lần cuối 00:21–00:26 ngày 29/10, trước lệnh đầu tiên của đợt 1 (01:02). `baseline.md` chỉ do phiên thử (theo việc được giao) và Claude ở bước 7 ghi thêm.
+  - File chung ở `common\` (kế hoạch, prompt, `known.md`, `fixes.md`, `dot2.mjs`) sửa lần cuối 00:21–00:26 ngày 29/10, trước lệnh đầu tiên của đợt 1 (01:02). `baseline.md` do phiên thử, task kiểm expert, Owner và các phiên Claude điều phối ghi thêm giữa hai đợt (tới 30/10 18:46, trước gói A), rồi Claude ở bước 7.
 - **`pnpm`:** Claude, Codex 0 lần chạy. DeepSeek B chạy `pnpm lint:deps`, C chạy `pnpm exec node -v`, cả hai trong worktree `Project-2C-review` chứ không trong bản chép, nên không thuộc điều cấm của quy tắc chung 1.
 - **`gh`, `git push`, git ghi khác:** 0 lần ở phiên gói. Claude F dùng `gh` giả (`fake-gh.mjs`) cho `pr-status` / `merge-pr --dry-run`. Phiên thử của DeepSeek chạy `gh auth status` (việc 7; lần 2 đã đăng xuất).
 - **Đổi quyền:** Claude B, F đặt `icacls /deny`, `attrib +R` trên bản chép exe trong thư mục mình rồi gỡ ngay, và kiểm lại không còn luật chặn nào của probe. DeepSeek B đặt `icacls /deny` trong probe Rust trên thư mục tạm. 0 lần trên repo hay thư mục khác; 0 lần chạy `dot2.mjs`.
