@@ -31,7 +31,6 @@ export function ConfirmButton({
       variant="danger"
       disabled={disabled && !running}
       aria-disabled={running || undefined}
-      className="aria-disabled:cursor-default aria-disabled:opacity-50"
     >
       {running ? runningLabel : label}
     </Button>
