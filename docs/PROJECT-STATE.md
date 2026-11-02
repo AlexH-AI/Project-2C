@@ -145,6 +145,17 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - Q4 (a): CLR4-F2 stays under K1, with no code change. NT-EX-08 / 09 get one line on pre-v1.0 data whose optional appointment text holds only invisible characters.
 
   Fix issues: #896…#905 (T-319…T-328, synthesis §8.5).
+- 2026-11-01: OWNER approved the `auto-issues` pipeline (ADR-0001 appendix M11, #942).
+  - One `/goal` in an orchestrating session runs the Issue queue through four real child sessions: coding-ses1/2 in the main checkout, review-1/2 in the review worktrees. Each new job starts in a cleared context; follow-ups of the same PR (CI fix, review changes, notes PR) go back to the session that holds it.
+  - Inside the pipeline, Claude merges PRs of any risk (`merge-pr --owner`) and loops review until PASS with no round cap.
+  - G1–G7, spec contradictions, and a coding session that disagrees with a blocking finding still stop it for the OWNER.
+  - After the queue it proposes Issues from the OPEN review notes, waits for approval, creates them and ends.
+  - The orchestrator waits on GitHub with `tools/auto-wait.mjs` in the background. This is a deliberate exception to the app's "do not poll CI".
+  - The OWNER picks when to try it.
+- 2026-11-02: OWNER decision at G8 on PR #944 (T-335). After its third `REVIEW: CHANGES` (@`8767876`), past "fix at most two rounds", the OWNER said "sửa lỗi pr 944": a third fix round. Another CHANGES after it stops for the OWNER again.
+- 2026-11-02: OWNER widened the "không tự sửa" fence of `auto-issues` (PR #944, T-335). Asked "Mở rộng rào "không tự sửa" sang các công cụ pipeline dùng (merge-pr, pr-status, review-pr)?", the OWNER chose "Mở rộng rào".
+  - Besides the skill and `tools/auto-wait*`, the fence now holds the merge gate (`merge-pr`, `pr-status` and the modules they import), the review gate (`review-pr`, `REVIEW-CHECKLIST.md`, `notes-for`, the review hint hook) and the rules every session loads (root `CLAUDE.md`, `.claude/settings.json`). `.github/workflows/**` stays outside on purpose.
+  - The pipeline takes no Issue and merges no PR that touches one of those files. The list is at the top of the skill.
 
 ## Next decision
 

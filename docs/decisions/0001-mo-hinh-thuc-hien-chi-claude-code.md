@@ -135,3 +135,44 @@ Owner 27/10/2026, bên review: "Vẫn là Claude Opus 5.5 và GPT Sol 6.1 làm d
 Owner 27/10/2026, điều kiện chạy: "anh chỉ làm review lượt 4 khi tất cả các review-notes open đã được sửa hết". Lượt 4 chạy trên `main` khi mục OPEN của `docs/state/review-notes.md` rỗng, kể cả các mục [G7] mà trước đó cùng ngày Owner định làm sau mọi task.
 
 Phần Owner chọn cùng G1 (SHA ghim, phạm vi, KNOWN, việc sửa sau tổng hợp, số đo, đợt sửa mục OPEN, cách chạy DeepSeek): `docs/process/deep-review-phase-1-6.md` §L4.11. Spec Phase 6 §6 sửa theo. Owner duyệt G1 ngày 28/10/2026 (comment trên PR #863), kèm thay đổi cách chạy DeepSeek ở trên: DSH, rồi app desktop WorkBuddy cùng ngày.
+
+## Phụ lục — pipeline `auto-issues`: `/goal` chạy hàng đợi Issue qua phiên con (M11 — Accepted G1, Owner quyết 01/11/2026 · Issue #942)
+
+Owner 01/11/2026 (phiên Coding-ses2) yêu cầu tạo một artifact hoặc skill: khi Owner đặt nó bằng lệnh `/goal`, nó tự làm ba việc sau.
+
+- Phiên code context sạch làm lần lượt từng Issue, "nhưng phải đợi review pass, merge, viết sổ ghi chú review-notes xong".
+- Phiên review context sạch chạy `/review-pr` khi CI xanh. CHANGES thì đưa nội dung lại cho phiên code sửa, lặp tới PASS thì merge: "anh cho quyền merge kể cả mức med/high vì đây là bộ artifact/skill tự động".
+- Hết Issue thì tra sổ, tạo Issue từ các mục OPEN: "Dừng lại hỏi ý kiến anh khi cần anh quyết định".
+
+Owner chốt cùng ngày, trả lời từng câu hỏi khi duyệt thiết kế:
+
+1. **Phiên con là phiên thật trong sidebar, không phải subagent.** `coding-ses1` và `coding-ses2` ở checkout chính; `review-1` ở `Project-2C-review`, `review-2` ở `Project-2C-review-2` (ADR-0017 phụ lục). Mỗi việc mới bắt đầu bằng `/clear`.
+2. **Lặp review tới PASS, không trần.** Trong pipeline, câu "Sửa tối đa 2 vòng, sau đó G8" của quy trình một task không áp dụng. Phần "spec mâu thuẫn" của G8 vẫn dừng pipeline.
+3. **G1–G7 vẫn dừng pipeline**, cũng như khi spec mâu thuẫn hoặc khi phiên code không đồng ý một mục chặn. Pipeline chỉ có thêm hai quyền: merge PR `risk:med` / `risk:high` do pipeline làm ra (`merge-pr --owner`), và lặp review không trần.
+4. **Gom sổ thành Issue xong thì dừng.** Cách gom vẫn do Owner duyệt, như lần 01/11 (#936). Đợt mới bắt đầu khi Owner gõ `/goal` lại.
+5. Owner tự chọn lúc chạy thử: "cứ xây dựng đi, khi nào chạy thử anh sẽ quyết định".
+
+Cách chạy (chi tiết ở `.claude/skills/auto-issues/SKILL.md`):
+
+- **`/goal`** của Claude Code giữ phiên điều phối chạy. Sau mỗi lượt, một model nhỏ đọc transcript; điều kiện chưa đạt thì lượt sau tự chạy, còn việc nền đang chạy thì hoãn đánh giá. Điều kiện của pipeline đọc dòng mốc mà phiên điều phối in khi kết thúc.
+- **Giới hạn của app desktop:**
+  - một phiên chỉ `/clear` được phiên con do chính nó mở, khi phiên con rảnh, không ghim, không đang mở trên màn hình;
+  - lượt do sự kiện tự động khởi động không mở được phiên mới.
+
+  Vì vậy phiên điều phối mở đủ 4 phiên con ngay ở lượt `/goal` đầu, và muốn chạy tiếp thì phải dùng lại đúng phiên điều phối đó.
+- **Ngoại lệ chờ:** app không báo khi CI xanh hay khi có comment REVIEW, và `/goal` chạy lượt kế ngay khi phiên điều phối rảnh mà không có việc nền.
+  - Phiên điều phối chờ bằng `tools/auto-wait.mjs` chạy nền: đọc GitHub cách ít nhất 30 giây một lần, hết giờ sau tối đa 120 phút. Lệnh chạy từ worktree chỉ đọc `Project-2C-auto` ở `origin/main`, vì phiên code sửa file ngay trên checkout chính.
+  - Đây là ngoại lệ có chủ ý với lời dặn "không poll CI" của app desktop, chỉ áp cho pipeline này.
+- **Hỏi Owner qua phiên điều phối:** phiên con không hỏi Owner trực tiếp mà báo `CẦN OWNER`. Phiên điều phối hỏi Owner (thông báo đẩy + câu hỏi) rồi ghi quyết định thành comment trên PR / Issue.
+- **Chỉ phiên điều phối merge**, qua `tools/merge-pr.mjs`. Pipeline không làm Issue và không merge PR chạm chính nó, cổng merge, cổng review hay luật chung của các cổng đó. Danh sách file ở mục rào "không tự sửa" đầu skill `auto-issues` (Owner mở rộng ngày 02/11/2026).
+  - Lệnh chạy từ `Project-2C-auto` vừa đưa về `origin/main`, không từ checkout chính như các phiên khác. Lúc merge, checkout chính còn ở nhánh của PR, nên chạy từ đó thì cổng merge là bản chưa merge của chính PR.
+  - `merge-pr` lấy checkout chính từ `git worktree list` và chạy mỗi bước dọn trong đúng thư mục của nó, nên vẫn dọn đúng chỗ.
+- **Giữ nguyên:**
+  - quy trình một task (mục 5, P1);
+  - review phiên sạch bằng `review-pr` (ADR-0017);
+  - PR sổ không cần review (T-215);
+  - merge qua `merge-pr`;
+  - golden không sửa "cho xanh";
+  - agent ngoài Claude không viết code.
+
+`CLAUDE.md` (Mô hình thực hiện, bước 5, Project skills) và `review-pr` §5 sửa theo phụ lục này.

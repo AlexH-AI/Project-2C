@@ -7,9 +7,21 @@ const PR_REF = /(\bPR\b\s*#?\s*|\bpull request\s*#?\s*)(\d+)/gi;
 const REVIEW = /\breview\b/gi;
 // How far "review" may stand from the number, before or after it.
 const NEAR = 40;
+// A message of the auto-issues pipeline (.claude/skills/auto-issues §3, ADR-0001 M11) asks for a
+// review only with a line that is just "review PR #<N>" (§3.2). Its other briefs and the Owner
+// answers it forwards name REVIEW comments and review notes next to PRs (review #944).
+const AUTO_ISSUES = '[auto-issues]';
+const AUTO_REVIEW = /^review PR #(\d+)$/i;
 
 /** The PR number the prompt asks to review, or null. */
 export function reviewedPr(prompt) {
+  if (prompt.includes(AUTO_ISSUES)) {
+    for (const line of prompt.split('\n')) {
+      const asked = AUTO_REVIEW.exec(line.trim());
+      if (asked) return Number(asked[1]);
+    }
+    return null;
+  }
   const reviews = [...prompt.matchAll(REVIEW)].map((m) => ({
     start: m.index,
     end: m.index + m[0].length,
