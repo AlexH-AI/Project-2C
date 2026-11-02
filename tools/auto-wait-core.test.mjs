@@ -24,7 +24,6 @@ const pr = (overrides = {}) => ({
   headRefOid: HEAD,
   statusCheckRollup: [check('Verify', 'SUCCESS'), check('e2e', 'SUCCESS')],
   comments: [],
-  files: [{ path: 'tools/x.mjs' }],
   changedFiles: 1,
   ...overrides,
 });
@@ -60,6 +59,28 @@ describe('parseArgs', () => {
     });
     expect(parseArgs(['review', '941', '--sha', HEAD]).sha).toBe(HEAD);
     expect(parseArgs(['sleep', '--timeout', '30']).timeoutMin).toBe(30);
+  });
+
+  it('reads --since, a UTC time, for ci only', () => {
+    expect(parseArgs(['ci', '941', '--since', '2026-11-02T10:56:33Z']).since).toBe(
+      '2026-11-02T10:56:33Z',
+    );
+    expect(parseArgs(['ci', '941', '--since', '2028-02-29T10:56:33.250Z']).error).toBeUndefined();
+    for (const argv of [
+      ['ci', '1', '--since'],
+      ['ci', '1', '--since', 'yesterday'],
+      ['ci', '1', '--since', '2026-11-02 10:56:33'],
+      ['ci', '1', '--since', '2026-11-02T10:56:33+07:00'],
+      ['ci', '1', '--since', '2026-13-02T10:56:33Z'],
+      // Days and hours that do not exist: Date.parse rolls them over (30/02 → 02/03).
+      ['ci', '1', '--since', '2026-02-30T10:56:33Z'],
+      ['ci', '1', '--since', '2026-11-31T10:00:00Z'],
+      ['ci', '1', '--since', '2026-11-02T24:00:00Z'],
+      ['review', '1', '--since', '2026-11-02T10:56:33Z'],
+      ['sleep', '--since', '2026-11-02T10:56:33Z'],
+    ]) {
+      expect(parseArgs(argv).error, argv.join(' ')).toMatch(/\S/);
+    }
   });
 
   it('refuses a missing, unknown or extra argument', () => {
@@ -138,7 +159,8 @@ describe('ciState', () => {
   });
 
   it('waits for the first check of a code PR', () => {
-    expect(ciState(pr({ statusCheckRollup: [] }))).toEqual({
+    const files = () => [{ path: 'tools/x.mjs' }];
+    expect(ciState(pr({ statusCheckRollup: [] }), { files })).toEqual({
       done: false,
       text: 'no checks yet @abc1234',
     });
@@ -171,9 +193,44 @@ describe('ciState', () => {
     expect(ciState(pr({ state: 'MERGED' }), { runs }).code).toBe(EXIT.look);
   });
 
+  it('reads the files only while CI has no check', () => {
+    const files = () => {
+      throw new Error('files read with checks there');
+    };
+    expect(ciState(pr(), { files })).toMatchObject({ done: true, code: EXIT.done });
+    const running = pr({ statusCheckRollup: [check('Verify', null, 'IN_PROGRESS')] });
+    expect(ciState(running, { files }).done).toBe(false);
+    expect(ciState(pr({ statusCheckRollup: [] }), { not: 'abc1234', files }).done).toBe(false);
+  });
+
+  it('with since, waits for a workflow run made at or after it (a reopened PR)', () => {
+    const since = '2026-11-02T10:56:33Z';
+    const old = { name: 'CI', status: 'completed', created_at: '2026-11-02T09:12:00Z' };
+    expect(ciState(pr(), { since, runs: () => [old] })).toEqual({
+      done: false,
+      text: 'CI 2 pass, 0 fail, 0 pending @abc1234, no workflow run since 2026-11-02T10:56:33Z yet',
+    });
+    const fresh = { name: 'CI', status: 'completed', created_at: since };
+    expect(ciState(pr(), { since, runs: () => [old, fresh] })).toEqual({
+      done: true,
+      code: EXIT.done,
+      text: 'CI green @abc1234: 2 pass',
+    });
+    // The real case after gh pr reopen: the new run is made after the PR's closedAt.
+    const later = { ...fresh, created_at: '2026-11-02T10:57:10Z' };
+    expect(ciState(pr(), { since, runs: () => [old, later] })).toEqual({
+      done: true,
+      code: EXIT.done,
+      text: 'CI green @abc1234: 2 pass',
+    });
+    const going = { ...later, status: 'queued' };
+    expect(ciState(pr(), { since, runs: () => [old, going] }).done).toBe(false);
+    expect(ciState(pr(), { runs: () => [old] })).toMatchObject({ done: true, code: EXIT.done });
+  });
+
   it('is done at once for a docs-only PR, which CI skips', () => {
-    const docs = pr({ statusCheckRollup: [], files: [{ path: 'docs/state/review-notes.md' }] });
-    expect(ciState(docs)).toEqual({
+    const files = () => [{ path: 'docs/state/review-notes.md' }];
+    expect(ciState(pr({ statusCheckRollup: [] }), { files })).toEqual({
       done: true,
       code: EXIT.done,
       text: 'docs-only @abc1234: CI not needed',
@@ -181,12 +238,8 @@ describe('ciState', () => {
   });
 
   it('does not take a PR for docs-only when not every file was read', () => {
-    const partly = pr({
-      statusCheckRollup: [],
-      files: [{ path: 'docs/a.md' }],
-      changedFiles: 2,
-    });
-    expect(ciState(partly).done).toBe(false);
+    const partly = pr({ statusCheckRollup: [], changedFiles: 2 });
+    expect(ciState(partly, { files: () => [{ path: 'docs/a.md' }] }).done).toBe(false);
   });
 
   it('waits for a new head first when told which one to move past', () => {

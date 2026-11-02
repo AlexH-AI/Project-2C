@@ -177,6 +177,7 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
 - 2026-11-02: OWNER widened the "không tự sửa" fence of `auto-issues` (PR #944, T-335). Asked "Mở rộng rào "không tự sửa" sang các công cụ pipeline dùng (merge-pr, pr-status, review-pr)?", the OWNER chose "Mở rộng rào".
   - Besides the skill and `tools/auto-wait*`, the fence now holds the merge gate (`merge-pr`, `pr-status` and the modules they import), the review gate (`review-pr`, `REVIEW-CHECKLIST.md`, `notes-for`, the review hint hook) and the rules every session loads (root `CLAUDE.md`, `.claude/settings.json`). `.github/workflows/**` stays outside on purpose.
   - The pipeline takes no Issue and merges no PR that touches one of those files. The list is at the top of the skill.
+- 2026-11-02: OWNER put `.claude/rules/*.md` inside the "không tự sửa" fence of `auto-issues` (#952, T-338). Claude Code loads these files when a session reads a file matching their `paths:`, so a review session reads them as rules (review #944 loaded `tests.md` and its golden rule). Asked "`.claude/rules/*.md` (ci.md, i18n-ui.md, mockups.md, tests.md, Claude Code tự nạp theo `paths:`) có đưa vào rào "không tự sửa" của pipeline auto-issues không?", the OWNER chose "Thêm vào rào". They sit in the review gate at the top of the skill and in the copy in §3.0.
 
 ## Next decision
 

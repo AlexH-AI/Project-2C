@@ -5,7 +5,9 @@
 //
 //   node tools/auto-wait.mjs pr <issue>                an open PR closes the Issue
 //   node tools/auto-wait.mjs ci <N> [--not <sha>]      CI finished on the PR's head; with --not,
-//                                                      first a head other than that SHA (a push)
+//                         [--since <time>]             first a head other than that SHA (a push);
+//                                                      with --since, a workflow run made at or
+//                                                      after that UTC time (a reopened PR)
 //   node tools/auto-wait.mjs review <N> [--sha <sha>]  the latest REVIEW names the head (or <sha>)
 //   node tools/auto-wait.mjs title <text>              an open or merged PR whose title holds it
 //   node tools/auto-wait.mjs sleep                     only the time
@@ -31,7 +33,6 @@ import {
   waitFor,
 } from './auto-wait-core.mjs';
 import { loadPrFiles } from './pr-status.mjs';
-import { checkCounts } from './session-core.mjs';
 import { run } from './session-io.mjs';
 
 const gh = (args) => JSON.parse(run('gh', args, { timeout: 30000 }));
@@ -40,17 +41,8 @@ const gh = (args) => JSON.parse(run('gh', args, { timeout: 30000 }));
 // tested and main's commits since, 5 + k gh calls a read where one does (review #944).
 const PR_FIELDS = 'number,state,headRefOid,statusCheckRollup,comments,changedFiles';
 
-/**
- * The PR as ciState / reviewState read it. With `files`, every file too (loadPrFiles, as
- * pr-status reads them), but only while CI has no check yet: the one case where ciState asks
- * whether the PR is docs-only.
- */
-function readPr(number, { files = false } = {}) {
-  const pr = gh(['pr', 'view', String(number), '--json', PR_FIELDS]);
-  const { pass, fail, pending } = checkCounts(pr.statusCheckRollup ?? []);
-  pr.files = files && pass + fail + pending === 0 ? loadPrFiles(number) : [];
-  return pr;
-}
+/** The PR as ciState / reviewState read it; ciState reads the files itself, when it needs them. */
+const readPr = (number) => gh(['pr', 'view', String(number), '--json', PR_FIELDS]);
 
 /** The workflow runs of a commit: CI is over only when they all ended (see ciState). */
 const runsOf = (sha) =>
@@ -58,7 +50,7 @@ const runsOf = (sha) =>
     'api',
     `repos/{owner}/{repo}/actions/runs?head_sha=${sha}&per_page=100`,
     '--jq',
-    '[.workflow_runs[] | {name, status}]',
+    '[.workflow_runs[] | {name, status, created_at}]',
   ]);
 
 // One read of GitHub per mode.
@@ -77,9 +69,15 @@ const READS = {
       ]),
       target,
     ),
-  ci: ({ target, not }) => {
-    const pr = readPr(target, { files: true });
-    return ciState(pr, { not, runs: () => runsOf(pr.headRefOid) });
+  ci: ({ target, not, since }) => {
+    const pr = readPr(target);
+    return ciState(pr, {
+      not,
+      since,
+      runs: () => runsOf(pr.headRefOid),
+      // Every file, as pr-status reads them, so docs-only is decided the same way there.
+      files: () => loadPrFiles(target),
+    });
   },
   review: ({ target, sha }) => reviewState(readPr(target), { sha }),
   title: ({ target }) =>
