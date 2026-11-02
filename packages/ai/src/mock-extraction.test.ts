@@ -1012,9 +1012,9 @@ describe('Mock extraction', () => {
     // Only clauses with no letter: past other words, as on one line.
     ['KH sống ở quận 7.\nCó 2 con.', []],
     ['KH sống ở quận 7.\n\nĐã kết hôn.', []],
-    // Nor past a "?", which may doubt what stands before it (the safe way, CX-A4): the last value
-    // said of the KH is no simple statement.
-    ['KH đã kết hôn.\n?\nĐã ly hôn năm 2020.', []],
+    // A "?" with no letter is a clause with no letter too, as a later sentence that asks holds no
+    // value (ACCEPTED, Owner 01/11; the review of PR #956).
+    ['KH đã kết hôn.\n?\nĐã ly hôn năm 2020.', [DIVORCED]],
     // Kept as before (ACCEPTED, Owner 01/11): a later sentence that guesses, asks or denies in
     // words outside the closed lists holds no value.
     ['KH đã kết hôn. Hình như vậy.', [MARRIED]],

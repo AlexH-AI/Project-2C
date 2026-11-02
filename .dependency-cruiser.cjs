@@ -24,6 +24,13 @@ module.exports = {
       to: { pathNot: ['^packages/(ai|domain)/', '(^|/)node_modules/zod/'] },
     },
     {
+      name: 'ai-test-support-only-in-tests',
+      comment: 'Only the tests of packages/ai import its test-support, which uses vitest.',
+      severity: 'error',
+      from: { path: '^packages/ai/', pathNot: '(\\.test|test-support)\\.ts$' },
+      to: { path: '^packages/ai/src/test-support\\.ts$' },
+    },
+    {
       name: 'db-only-on-domain-and-ai-schema',
       comment:
         'packages/db uses packages/domain, and of packages/ai only its schema module, to check AI output in a backup (ADR-0006 phụ lục 07/10/2026).',
@@ -62,7 +69,7 @@ module.exports = {
   options: {
     doNotFollow: { path: 'node_modules' },
     // The build output of the repo only, not a package's own `dist/` inside node_modules.
-    exclude: { path: '^(coverage|apps/[^/]+/(dist|src-tauri)|packages/[^/]+/dist)/' },
+    exclude: { path: '^((apps|packages)/[^/]+/(dist|coverage)|apps/[^/]+/src-tauri)/' },
     tsPreCompilationDeps: true,
     tsConfig: { fileName: 'tsconfig.base.json' },
     enhancedResolveOptions: {

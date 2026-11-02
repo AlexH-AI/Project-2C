@@ -740,26 +740,19 @@ function joinedIn(clause: Part): (at: number) => { start: number; end: number } 
 }
 
 /**
- * Between the clause read last and the next one read, what keeps the KH from going on: a letter,
- * or a "?", which may doubt what stands before it (the safe way, CX-A4). The KH goes on past
- * clauses with neither ("KH đã kết hôn.\nĐã ly hôn năm 2020.", "KH đã kết hôn... Đã ly hôn năm
- * 2020.", Owner 02/11/2026).
- */
-const IN_THE_WAY = /[\p{L}?]/u;
-
-/**
  * Reads what each clause of `note` says around its phrases, as positions in the note, for clauses
  * read in order (`readerOf`): with where it speaks of the KH, from where it opens on the KH, or
  * from its start, past a bullet, when the clause before it ends on a phrase about the KH ("KH đã
  * kết hôn, có 2 con"), in its sentence or, the clause opening a sentence, in the sentence before
- * ("KH đã kết hôn. Đã ly hôn năm 2020.", T-330; "- KH đã kết hôn\n- Đã ly hôn năm 2020.", Owner
- * 02/11/2026). Clauses with no letter between them do not count (`IN_THE_WAY`). Only such a phrase
- * carries the KH on: after any other words, a clause may speak of whoever they name ("KH giới
- * thiệu khách mới, đã kết hôn", "KH là bác sĩ, Lan là y tá, độc thân"), and no list of the words
- * that name people is ever full (the reviews of PR #917). A clause is read when its first phrase
- * that says something of the KH is asked of, and all of these are asked of before the clause after
- * it is read (`readerOf`, the phrases in order): so the clause read last has told, by its `done`,
- * whether a phrase about the KH ends it.
+ * ("KH đã kết hôn. Đã ly hôn năm 2020.", T-330), clauses with no letter between them not counted
+ * ("KH đã kết hôn.\nĐã ly hôn năm 2020.", "KH đã kết hôn... Đã ly hôn năm 2020.", "- KH đã kết
+ * hôn\n- Đã ly hôn năm 2020.", Owner 02/11/2026). Only such a phrase carries the KH on: after any
+ * other words, a clause may speak of whoever they name ("KH giới thiệu khách mới, đã kết hôn",
+ * "KH là bác sĩ, Lan là y tá, độc thân"), and no list of the words that name people is ever full
+ * (the reviews of PR #917). A clause is read when its first phrase that says something of the KH
+ * is asked of, and all of these are asked of before the clause after it is read (`readerOf`, the
+ * phrases in order): so the clause read last has told, by its `done`, whether a phrase about the
+ * KH ends it.
  */
 function clausesOf(note: string) {
   let last: { end: number; endsOnTheKh: boolean } | undefined;
@@ -770,7 +763,7 @@ function clausesOf(note: string) {
     const first = clause.start === 0 || '.!?;\n'.includes(note[clause.start - 1]!);
     // Only the clause read right before carries the KH on, past clauses with no letter: one with
     // a word and no phrase, not read, ends on none.
-    const carried = !!last?.endsOnTheKh && !IN_THE_WAY.test(note.slice(last.end, clause.start));
+    const carried = !!last?.endsOnTheKh && !/\p{L}/u.test(note.slice(last.end, clause.start));
     worded ||= /\p{L}/u.test(note.slice(looked, clause.start));
     looked = clause.start;
     // The KH goes on to the clause past a bullet opening it, as `opener` reads one.
