@@ -65,12 +65,17 @@ describe('parseArgs', () => {
     expect(parseArgs(['ci', '941', '--since', '2026-11-02T10:56:33Z']).since).toBe(
       '2026-11-02T10:56:33Z',
     );
+    expect(parseArgs(['ci', '941', '--since', '2028-02-29T10:56:33.250Z']).error).toBeUndefined();
     for (const argv of [
       ['ci', '1', '--since'],
       ['ci', '1', '--since', 'yesterday'],
       ['ci', '1', '--since', '2026-11-02 10:56:33'],
       ['ci', '1', '--since', '2026-11-02T10:56:33+07:00'],
       ['ci', '1', '--since', '2026-13-02T10:56:33Z'],
+      // Days and hours that do not exist: Date.parse rolls them over (30/02 → 02/03).
+      ['ci', '1', '--since', '2026-02-30T10:56:33Z'],
+      ['ci', '1', '--since', '2026-11-31T10:00:00Z'],
+      ['ci', '1', '--since', '2026-11-02T24:00:00Z'],
       ['review', '1', '--since', '2026-11-02T10:56:33Z'],
       ['sleep', '--since', '2026-11-02T10:56:33Z'],
     ]) {
@@ -211,7 +216,14 @@ describe('ciState', () => {
       code: EXIT.done,
       text: 'CI green @abc1234: 2 pass',
     });
-    const going = { ...fresh, status: 'queued', created_at: '2026-11-02T10:56:40Z' };
+    // The real case after gh pr reopen: the new run is made after the PR's closedAt.
+    const later = { ...fresh, created_at: '2026-11-02T10:57:10Z' };
+    expect(ciState(pr(), { since, runs: () => [old, later] })).toEqual({
+      done: true,
+      code: EXIT.done,
+      text: 'CI green @abc1234: 2 pass',
+    });
+    const going = { ...later, status: 'queued' };
     expect(ciState(pr(), { since, runs: () => [old, going] }).done).toBe(false);
     expect(ciState(pr(), { runs: () => [old] })).toMatchObject({ done: true, code: EXIT.done });
   });

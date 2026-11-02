@@ -23,6 +23,13 @@ const MIN_EVERY_MS = LIMITS['--every'][1] * 1000;
 const SHA = /^[0-9a-f]{7,40}$/;
 // A UTC time as GitHub gives it, e.g. a PR's closedAt.
 const TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
+// Date.parse rolls a day or hour that does not exist over (30/02 → 02/03, 24:00 → 00:00 the next
+// day), so the time must read back the same.
+const isTime = (value) => {
+  if (!TIME.test(value)) return false;
+  const time = new Date(value);
+  return !Number.isNaN(time.getTime()) && time.toISOString().slice(0, 19) === value.slice(0, 19);
+};
 // Failed reads in a row (gh down, no network) before the wait gives up.
 const MAX_FAILURES = 5;
 
@@ -56,7 +63,7 @@ export function parseArgs(argv) {
       }
       options[key] = number;
     } else if (arg === '--since') {
-      if (!TIME.test(value) || Number.isNaN(Date.parse(value))) {
+      if (!isTime(value)) {
         return { error: `${arg} takes a UTC time like 2026-11-02T10:56:33Z` };
       }
       options.since = value;
