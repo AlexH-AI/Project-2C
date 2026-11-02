@@ -156,6 +156,21 @@ describe('findHardcodedSeparators', () => {
     ]);
   });
 
+  // Review #920: the `>` that closes the type arguments of a name opens no JSX.
+  it('reads the `{` after the type arguments of a name as code', () => {
+    const source = [
+      'run(function (): Promise<void> {}, { tries: 3 });',
+      'const kinds = [class A extends Foo<Bar> {}, { b: 2 }];',
+      'run(function (): Promise<Map<string, () => void>> {}, {});',
+      'useState<Row>(<b>{a}: {b}</b>);',
+      '<List<Row> rows={rows}>{a}, {b}</List>',
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 4, match: '}: {', rule: 'hardcoded-separator' },
+      { line: 5, match: '}, {', rule: 'hardcoded-separator' },
+    ]);
+  });
+
   // DR6-145 (c): a `//` or `/*` inside a string or a template opens no comment.
   it('reads on past a // in a string or a template', () => {
     const source = [
@@ -213,6 +228,16 @@ describe('findHardcodedSeparators', () => {
     ].join('\n');
     expect(findHardcodedSeparators(source)).toEqual([
       { line: 1, match: '·', rule: 'hardcoded-separator' },
+      { line: 3, match: '·', rule: 'hardcoded-separator' },
+    ]);
+  });
+
+  // Review #920: in a file saved with CRLF, the `\` escapes the whole line break, not its `\r`.
+  it('reads an escaped CRLF line break as one, and counts the lines after it', () => {
+    const source = ["const t = 'one \\", "two three'; // N2 → N1", "const s = 'a · b';"].join(
+      '\r\n',
+    );
+    expect(findHardcodedSeparators(source)).toEqual([
       { line: 3, match: '·', rule: 'hardcoded-separator' },
     ]);
   });

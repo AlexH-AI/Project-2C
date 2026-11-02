@@ -289,6 +289,20 @@ describe('relatedNotes', () => {
     }
   });
 
+  // Review #926: `^a/b.*/c\.ts$` matches no path in `a/x/`, and some in `a/bx/`.
+  it('meets a folder at a part with `**` and more only where the folder begins as that part', () => {
+    const notes = [
+      { line: 1, text: 'x', paths: ['a/x/'] },
+      { line: 2, text: 'bx', paths: ['a/bx/'] },
+    ];
+    const seen = (target) => lines(relatedNotes(notes, [target]).area);
+    expect(seen('a/b**/c.ts')).toEqual([2]);
+    expect(seen('a/b**x/c.ts')).toEqual([2]);
+    expect(seen('a/x**b/c.ts')).toEqual([1]);
+    expect(seen('a/c**/d.ts')).toEqual([]);
+    expect(seen('a/**/c.ts')).toEqual([1, 2]);
+  });
+
   it('finds a folder note from a glob given on the command line (DR6-156)', () => {
     const notes = openNotes(ledger('- `packages/ai/src/`: kiểm schema.'), FILES);
     const targets = targetPatterns(['packages/*/src/schema.ts'], FILES);

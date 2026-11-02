@@ -70,8 +70,13 @@ export function findHardcodedSeparators(source: string): TokenViolation[] {
   // Where the string, or the piece of template, being read began.
   let start = 0;
   // What each `{` still open began: a `${` of a template, an expression of JSX, or code. JSX is
-  // told by what comes before its `{`: the `>` of a tag (not of `=>`), or the `}` of JSX.
+  // told by what comes before its `{`: the `>` of a tag (not of `=>` or type arguments), or the
+  // `}` of JSX.
   const braces: ('template' | 'jsx' | 'code')[] = [];
+  // The lists of type arguments still open, each begun by a `<` right after a name
+  // (`Promise<void>`): Prettier spaces a `<` that compares. The `>` that closes one is no tag's.
+  // A tag written against a word of JSX text (`one<b>`) is taken for one too.
+  let types = 0;
   let last = '';
   let afterJsx = false;
   for (let i = 0; i < source.length; i++) {
@@ -93,6 +98,8 @@ export function findHardcodedSeparators(source: string): TokenViolation[] {
     if (mode !== 'code') {
       const opens = mode === '`' && source.startsWith('${', i);
       if (c === '\\') {
+        // A line break saved as CRLF is escaped whole.
+        if (source.startsWith('\r\n', i + 1)) i++;
         if (source[++i] === '\n') line++;
       } else if (c === mode || opens) {
         if (JOINER.test(source.slice(start, i))) {
@@ -123,7 +130,9 @@ export function findHardcodedSeparators(source: string): TokenViolation[] {
     }
     if (/\s/.test(c)) continue;
     let closesJsx = false;
-    if (c === '{') {
+    if (c === '<' && /[\w$]/.test(source[i - 1] ?? '')) {
+      types++;
+    } else if (c === '{') {
       braces.push(afterJsx || last === '>' ? 'jsx' : 'code');
     } else if (c === '}') {
       const opened = braces.pop();
@@ -138,7 +147,14 @@ export function findHardcodedSeparators(source: string): TokenViolation[] {
         i += 2; // on to the `{`, which opens JSX too
       }
     }
-    last = c === '>' && source[i - 1] === '=' ? '=>' : c;
+    if (c === '>' && source[i - 1] === '=') {
+      last = '=>';
+    } else if (c === '>' && types > 0) {
+      types--;
+      last = 'type>';
+    } else {
+      last = c;
+    }
     afterJsx = closesJsx;
   }
   return violations;
