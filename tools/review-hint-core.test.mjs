@@ -56,6 +56,39 @@ describe('reviewedPr', () => {
     }
   });
 
+  it('skips the blocks the app writes: child reports, linked sessions, task notifications', () => {
+    // What the auto-issues orchestrator got on 02/11 (#952): none of it is the Owner asking.
+    for (const prompt of [
+      '<system-reminder>\nSession coding-ses1 ended its turn. Report: Không chờ CI, no review.\n' +
+        'AUTO-CHILD: [Issue #933] PR #946 @66019cc\n</system-reminder>',
+      '<system-reminder>\nSession review-1 ended its turn. Report: REVIEW: PASS cho PR #946 ' +
+        '@52434dd.\n</system-reminder>',
+      '<system-reminder>\nLinked sessions now: coding-ses1 = local_1 (done, PR #946); ' +
+        'review-1 = local_2 (idle); review-2 = local_3 (running)\n</system-reminder>',
+      '<task-notification>\n<task-id>b1</task-id>\n<status>completed</status>\n' +
+        '<summary>Background command "Wait up to 60 min for a REVIEW on PR 946\'s head" ' +
+        'completed (exit code 0)</summary>\n</task-notification>',
+      '<side-sessions-event>\nreview-2 ended its turn: REVIEW: CHANGES cho PR #948\n' +
+        '</side-sessions-event>',
+    ]) {
+      expect(reviewedPr(prompt), prompt).toBeNull();
+    }
+  });
+
+  it('still reads the review brief and the Owner around those blocks', () => {
+    const linked =
+      '<system-reminder>\nLinked sessions now: coding-ses1 = local_1 (done, PR #946); ' +
+      'review-1 = local_2 (idle)\n</system-reminder>';
+    // §3.2 of .claude/skills/auto-issues reaches a review session this way.
+    const brief =
+      '<cross-session-message from="orchestrator">\nreview PR #948\n' +
+      '[auto-issues] [PR #948] Review head 1647f4e.\n</cross-session-message>';
+    expect(reviewedPr(`${linked}\n${brief}`)).toBe(948);
+    expect(reviewedPr(`${linked}${brief}`)).toBe(948);
+    expect(reviewedPr(`${linked}\nreview PR #950 giúp anh`)).toBe(950);
+    expect(reviewedPr(`${linked}review lại PR 950`)).toBe(950);
+  });
+
   it('needs the word review', () => {
     expect(reviewedPr('sửa bug #12')).toBeNull();
     expect(reviewedPr('preview PR #12')).toBeNull();

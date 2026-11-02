@@ -12,9 +12,16 @@ const NEAR = 40;
 // answers it forwards name REVIEW comments and review notes next to PRs (review #944).
 const AUTO_ISSUES = '[auto-issues]';
 const AUTO_REVIEW = /^review PR #(\d+)$/i;
+// Blocks the app writes into a prompt, each up to its own closing tag: child session reports and
+// the "Linked sessions now" note (system-reminder), background command ends (task-notification),
+// side session events. They name REVIEW comments and session names like review-1 next to PRs
+// (#952). A <cross-session-message> stays: the §3.2 brief reaches a review session that way.
+const APP_BLOCK = /<(system-reminder|task-notification|side-sessions-event)\b[^>]*>[\s\S]*?<\/\1>/g;
 
 /** The PR number the prompt asks to review, or null. */
-export function reviewedPr(prompt) {
+export function reviewedPr(text) {
+  // A line break in its place, so "review PR #N" stays a line of its own.
+  const prompt = text.replace(APP_BLOCK, '\n');
   if (prompt.includes(AUTO_ISSUES)) {
     for (const line of prompt.split('\n')) {
       const asked = AUTO_REVIEW.exec(line.trim());

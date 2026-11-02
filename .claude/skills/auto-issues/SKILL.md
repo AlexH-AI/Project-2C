@@ -16,7 +16,7 @@ Mọi quy tắc khác của `CLAUDE.md` giữ nguyên: quy trình một task, re
 **Rào "không tự sửa"** (Owner mở rộng ngày 02/11/2026). Pipeline merge PR mà Owner không xem, nên nó không tự sửa chính nó, cổng merge, cổng review hay luật chung của các cổng đó. Issue hay PR chạm một file dưới đây do Owner làm, review và merge theo cách thường (§1, §4):
 - pipeline: `.claude/skills/auto-issues/**`, `tools/auto-wait*`;
 - cổng merge, tức công cụ phiên điều phối chạy cùng các module chúng import: `tools/merge-pr*`, `tools/pr-status*`, `tools/pr-core*`, `tools/session-core*`, `tools/session-io*`;
-- cổng review, tức những gì phiên review chạy hay đọc làm luật: `.claude/skills/review-pr/**`, `docs/process/REVIEW-CHECKLIST.md`, `tools/notes-for*`, `tools/notes-core*`, hook `.claude/hooks/review-pr-hint.mjs` và `tools/review-hint-core*`;
+- cổng review, tức những gì phiên review chạy hay đọc làm luật: `.claude/skills/review-pr/**`, `docs/process/REVIEW-CHECKLIST.md`, `.claude/rules/*.md` (Claude Code tự nạp khi phiên đọc file khớp `paths:` của chúng; Owner thêm ngày 02/11/2026, T-338), `tools/notes-for*`, `tools/notes-core*`, hook `.claude/hooks/review-pr-hint.mjs` và `tools/review-hint-core*`;
 - luật chung mọi phiên nạp: `CLAUDE.md` ở gốc repo, nơi ghi mức review và luật merge (`CLAUDE.md` của package không tính); `.claude/settings.json`, nơi đăng ký hook ở trên.
 
 `.github/workflows/**` cố ý nằm ngoài rào: kết quả CI phụ thuộc cả chuỗi build, nên rào riêng file workflow không bảo đảm gì. Review vẫn xét các diff đó, và `review-pr` nâng PR chạm `.github/workflows/**` lên mức med.
@@ -46,14 +46,14 @@ Phiên điều phối chạy `tools/auto-wait.mjs`, `tools/pr-status.mjs` và `t
 
    Muốn chọn Issue thì thêm "Hàng đợi: #932 #933." vào câu.
 4. Theo dõi bằng cách mở phiên con trong sidebar. Pipeline hỏi anh bằng thông báo đẩy và câu hỏi trong phiên điều phối. Đừng ghim phiên con, và đừng để nó mở trên màn hình lúc nó sắp nhận việc mới: app không cho `/clear` phiên đang mở.
-5. Chạy tiếp sau khi dừng, hoặc khi `/goal` dừng sớm vì đọc nhầm dòng mốc: gõ lại `/goal …` **trong cùng phiên điều phối**.
+5. Chạy tiếp sau khi dừng, hoặc khi `/goal` dừng sớm vì đọc nhầm dòng mốc: gõ lại `/goal …` **trong cùng phiên điều phối**. Pipeline dừng giữa một PR thì checkout chính còn ở nhánh của PR đó: để nguyên, kiểm đầu nhận nhánh này (§1).
 
 ## 1. Lượt đầu
 
 Chỉ lượt Owner gõ `/goal` được mở phiên con. Lượt do lệnh nền, tin báo của phiên con hay nhắc của `/goal` khởi động thì app từ chối mở phiên.
 
 1. **Kiểm đầu.** Điều nào sai thì in `AUTO: DỪNG — <lý do>`.
-   - `git -C C:/workspace/Project-2C status --porcelain` rỗng và nhánh là `main`; sau đó `git -C C:/workspace/Project-2C pull --ff-only`.
+   - `git -C C:/workspace/Project-2C status --porcelain` rỗng, và nhánh là `main` hoặc nhánh của một PR mà pipeline dừng giữa chừng: `gh pr list --head <nhánh> --state open --json number,body` ra đúng một PR, thân có dòng `Phiên code: … (auto-issues)`. Ở `main` thì `git -C C:/workspace/Project-2C pull --ff-only`. Ở nhánh PR thì chỉ `git -C C:/workspace/Project-2C fetch origin`: phiên code về nhánh của PR khi nhận việc (§3.3, §3.4, §3.8), và §3.1 về `main` khi làm Issue mới.
    - `C:/workspace/Project-2C-review` và `C:/workspace/Project-2C-review-2`: `status --porcelain` rỗng.
    - `C:/workspace/Project-2C-auto`: chưa có thì `git -C C:/workspace/Project-2C worktree add --detach ../Project-2C-auto origin/main`, có rồi thì `git -C C:/workspace/Project-2C-auto checkout --detach origin/main`.
    - `gh auth status` thành công.
@@ -61,6 +61,7 @@ Chỉ lượt Owner gõ `/goal` được mở phiên con. Lượt do lệnh nề
    - Lệnh `/goal` có danh sách thì dùng danh sách đó. Không có thì lấy các Issue mở có nhãn `type:task` và `ready-for-agent` của milestone đang mở, xếp theo số. Có nhiều milestone thì hỏi Owner.
    - Một Issue chỉ tới lượt khi mọi Issue trong ô "Bị chặn bởi" của nó đã đóng. Issue bị chặn bởi một Issue khác trong hàng thì lùi xuống sau Issue kế. Issue bị chặn bởi một Issue còn mở nằm ngoài hàng thì bỏ khỏi hàng và báo Owner: pipeline không làm Issue ngoài hàng, nên Issue đó không bao giờ tới lượt.
    - Bỏ khỏi hàng và báo Owner mọi Issue có "File / thư mục được phép sửa" chạm một file trong rào "không tự sửa" (đầu skill), kể cả khi Issue cho sửa cả thư mục chứa file đó. Owner làm Issue đó theo cách thường.
+   - Kiểm đầu thấy checkout chính ở nhánh của PR `P`: Issue mà `P` đóng lên đầu hàng, để §2 làm tiếp PR đó trước.
    - Hỏi Owner một câu (§5): "Chạy hàng đợi #a → #b → …?". Phương án: Chạy / Dừng; Owner sửa hàng đợi qua "Other".
 3. **Phiên con.**
    - `list_sessions {"linked": true}`. Có đủ 4 phiên `coding-ses1`, `coding-ses2`, `review-1`, `review-2` chưa lưu trữ thì dùng lại.
@@ -128,7 +129,7 @@ Ba hàng giao việc theo PR (CI đỏ, review, CHANGES) không cần điều ki
 - **`/clear` trước mỗi việc mới** bằng `clear_session`. Phiên chưa nhận việc nào (transcript chỉ có brief chờ và dòng `SẴN SÀNG`) thì không cần.
   - Bị từ chối thì thử phiên sinh đôi, nếu phiên đó không giữ việc dở.
   - Vẫn bị từ chối thì hỏi Owner (§5): "anh đóng màn hình / bỏ ghim phiên <tên> rồi chọn Tiếp".
-- **Việc tiếp của cùng PR** (CI đỏ, CHANGES, PR sổ) không `/clear`: gửi về đúng phiên đang giữ context.
+- **Việc tiếp của cùng PR** (CI đỏ, CHANGES, `main` đi trước, PR sổ) không `/clear`: gửi về đúng phiên đang giữ context.
   - Phiên đó không còn (PR do người khác mở, phiên đã bị `/clear`): dùng phiên ít dùng gần nhất sau `/clear`, và brief thêm câu "đọc Issue, PR và comment REVIEW trước khi làm".
 
 **Chờ:**
@@ -139,7 +140,7 @@ Ba hàng giao việc theo PR (CI đỏ, review, CHANGES) không cần điều ki
 - **Lệnh chờ theo việc đang chạy:**
   - phiên con đang trả lời brief chờ (ngay sau khi mở ở §1): `sleep --timeout 1`;
   - phiên code làm Issue `I`, chưa có PR: `pr <I> --timeout 60`;
-  - phiên code sửa PR `N` (CI đỏ, CHANGES, câu trả lời của Owner): `ci <N> --not <H> --timeout 60`;
+  - phiên code sửa PR `N` (CI đỏ, CHANGES, `main` đi trước, câu trả lời của Owner): `ci <N> --not <H> --timeout 60`;
   - phiên review review PR `N`: `review <N> --timeout 60`;
   - phiên review viết PR sổ cho `N`: `title "record the notes of the PR <N> review" --timeout 30`;
   - việc của §6: `sleep --timeout 30`.
@@ -166,7 +167,7 @@ Brief gửi bằng `SendMessage`, với `to` là id `local_…` của phiên con
 Bạn là phiên con `<tên>` của pipeline auto-issues (ADR-0001 phụ lục M11, `.claude/skills/auto-issues/SKILL.md` §3). Không có Owner ngồi ở phiên này: phiên điều phối giao việc qua tin nhắn và đọc dòng cuối của bạn.
 - Không gọi AskUserQuestion, không chờ ai trả lời. Cần Owner quyết (cổng G1–G7 của CLAUDE.md, spec mâu thuẫn, test chấp nhận không làm được) → dừng việc đó, không đoán; kết thúc lượt bằng `AUTO-CHILD: <thẻ> CẦN OWNER — <câu hỏi>; phương án: <a> / <b>; đề xuất: <x>`.
 - Không merge, không /handoff, không bật Auto-fix hay auto-merge, không đổi nhánh của worktree review.
-- Không sửa file trong rào "không tự sửa" của pipeline: `CLAUDE.md` ở gốc repo (`CLAUDE.md` của package không tính), `.claude/settings.json`, `.claude/skills/auto-issues/**`, `.claude/skills/review-pr/**`, `.claude/hooks/review-pr-hint.mjs`, `docs/process/REVIEW-CHECKLIST.md`, `tools/{auto-wait,merge-pr,pr-status,pr-core,session-core,session-io,notes-for,notes-core,review-hint-core}*`. Việc cần sửa một file trong đó thì dừng và báo `CẦN OWNER` như trên.
+- Không sửa file trong rào "không tự sửa" của pipeline: `CLAUDE.md` ở gốc repo (`CLAUDE.md` của package không tính), `.claude/settings.json`, `.claude/skills/auto-issues/**`, `.claude/skills/review-pr/**`, `.claude/hooks/review-pr-hint.mjs`, `.claude/rules/*.md`, `docs/process/REVIEW-CHECKLIST.md`, `tools/{auto-wait,merge-pr,pr-status,pr-core,session-core,session-io,notes-for,notes-core,review-hint-core}*`. Việc cần sửa một file trong đó thì dừng và báo `CẦN OWNER` như trên.
 - Dòng cuối cùng của mỗi lượt là đúng một dòng `AUTO-CHILD: <thẻ> <kết quả>` theo việc được giao. `<thẻ>` chép đúng thẻ ở dòng `[auto-issues]` của tin nhắn giao việc: `[Issue #<số>]`, `[PR #<số>]` hoặc `[Sổ]`.
 ```
 
@@ -189,7 +190,7 @@ Dòng cuối: `AUTO-CHILD: [Issue #<I>] PR #<N> @<sha7>` hoặc `AUTO-CHILD: [Is
 
 ### 3.2 Review (phiên review, sau `/clear`)
 
-Dòng đầu là `review PR #<N>`, để hook gợi ý `review-pr`. Với tin có `[auto-issues]`, hook chỉ gợi ý khi tin có một dòng đúng như vậy (`tools/review-hint-core.mjs`), nên các brief khác và tin chuyển quyết định Owner không bị gợi ý review nhầm.
+Dòng đầu là `review PR #<N>`, để hook gợi ý `review-pr`. Với tin có `[auto-issues]`, hook chỉ gợi ý khi tin có một dòng đúng như vậy (`tools/review-hint-core.mjs`), nên các brief khác và tin chuyển quyết định Owner không bị gợi ý review nhầm. Hook cũng bỏ các khối app chép vào lượt (`<system-reminder>`, `<task-notification>`, `<side-sessions-event>`), nên báo cáo của phiên con, ghi chú `Linked sessions now` và tin lệnh chờ xong không gây gợi ý ở phiên điều phối (#952).
 
 ```text
 review PR #<N>
@@ -206,14 +207,14 @@ Dòng cuối: `AUTO-CHILD: [PR #<N>] REVIEW PASS @<sha7>`, `AUTO-CHILD: [PR #<N>
 ### 3.3 CI đỏ (phiên code của PR, không `/clear`)
 
 ```text
-[auto-issues] [PR #<N>] CI đỏ @<sha7> ở <tên check>. Đọc log (`gh pr checks <N>` cho link của run đỏ, rồi `gh run view <id> --log-failed`), tìm nguyên nhân (superpowers:systematic-debugging), sửa, `pnpm verify`, push. Nếu log cho thấy rõ là lỗi chập chờn: commit rỗng `chore: re-run CI (<lý do>)` rồi push. Không dùng `gh run rerun`: head không đổi thì phiên điều phối không chờ được.
+[auto-issues] [PR #<N>] CI đỏ @<sha7> ở <tên check>. Ở checkout chính, `gh pr checkout <N>` (về nhánh của PR, kéo head mới nhất). Đọc log (`gh pr checks <N>` cho link của run đỏ, rồi `gh run view <id> --log-failed`), tìm nguyên nhân (superpowers:systematic-debugging), sửa, `pnpm verify`, push. Nếu log cho thấy rõ là lỗi chập chờn: commit rỗng `chore: re-run CI (<lý do>)` rồi push. Không dùng `gh run rerun`: head không đổi thì phiên điều phối không chờ được.
 Dòng cuối: `AUTO-CHILD: [PR #<N>] ĐÃ PUSH @<sha7>` hoặc `AUTO-CHILD: [PR #<N>] CẦN OWNER — …`.
 ```
 
 ### 3.4 REVIEW CHANGES (phiên code của PR, không `/clear`)
 
 ```text
-[auto-issues] [PR #<N>] `REVIEW: CHANGES` @<sha7> (<link comment>). Đọc comment đó. Với mỗi mục [chặn]: kiểm trên code xem mục đó có đúng không, rồi mới sửa. Mục [không chặn] không bắt buộc. Mục chặn mà bạn có bằng chứng là sai: không sửa, ghi lý do kèm bằng chứng trong một comment trên PR. `pnpm verify` xanh; push; cập nhật thân PR nếu mục "Ghi chú OPEN liên quan" hay phần kiểm tra đổi.
+[auto-issues] [PR #<N>] `REVIEW: CHANGES` @<sha7> (<link comment>). Ở checkout chính, `gh pr checkout <N>` (về nhánh của PR, kéo head mới nhất). Đọc comment đó. Với mỗi mục [chặn]: kiểm trên code xem mục đó có đúng không, rồi mới sửa. Mục [không chặn] không bắt buộc. Mục chặn mà bạn có bằng chứng là sai: không sửa, ghi lý do kèm bằng chứng trong một comment trên PR. `pnpm verify` xanh; push; cập nhật thân PR nếu mục "Ghi chú OPEN liên quan" hay phần kiểm tra đổi.
 Dòng cuối: `AUTO-CHILD: [PR #<N>] ĐÃ PUSH @<sha7>`, `AUTO-CHILD: [PR #<N>] KHÔNG ĐỒNG Ý — <mục>: <lý do>` (khi có mục chặn không sửa; phần sửa được vẫn push), hoặc `AUTO-CHILD: [PR #<N>] CẦN OWNER — …`.
 ```
 
@@ -250,6 +251,15 @@ Dòng cuối: `AUTO-CHILD: [Sổ] ĐỀ XUẤT <n> ISSUE`, `AUTO-CHILD: [Sổ] S
 Dòng cuối: `AUTO-CHILD: [Sổ] PR NHÃN #<L>; Issue #<a>…#<b>` hoặc `AUTO-CHILD: [Sổ] CẦN OWNER — …`.
 ```
 
+### 3.8 `main` đi trước (phiên code của PR, không `/clear`)
+
+Gửi khi `merge-pr` từ chối vì `main` có commit code sau bản CI đã test (§4). Không dùng `gh pr update-branch`: lệnh đó thêm merge commit vào nhánh trên GitHub, còn nhánh local trong checkout chính vẫn ở head cũ, nên lần merge sau `merge-pr` giữ nhánh local và báo dọn chưa xong.
+
+```text
+[auto-issues] [PR #<N>] `main` có commit code sau bản CI đã test, nên `merge-pr` từ chối. Ở checkout chính: `gh pr checkout <N>` (về nhánh của PR, kéo head mới nhất), `git fetch origin`, `git merge --no-edit origin/main` (không rebase, không force-push), sửa xung đột nếu có, `pnpm verify` xanh (chạy pnpm từ PowerShell), push. Không dùng `gh pr update-branch`: nhánh local phải trùng head trên GitHub thì `merge-pr` mới dọn được nhánh sau khi merge.
+Dòng cuối: `AUTO-CHILD: [PR #<N>] ĐÃ PUSH @<sha7>` hoặc `AUTO-CHILD: [PR #<N>] CẦN OWNER — …`.
+```
+
 ## 4. Merge
 
 Chỉ phiên điều phối merge, luôn bằng `node tools/merge-pr.mjs`. Lệnh chạy từ `C:/workspace/Project-2C-auto`, sau khi đưa worktree đó về `origin/main` mới nhất: `git -C C:/workspace/Project-2C fetch origin`, rồi `git -C C:/workspace/Project-2C-auto checkout --detach origin/main`. Như vậy cổng merge là bản đã duyệt trên `main`. Trước khi merge, phiên code của PR phải đang rảnh, tức không còn push.
@@ -258,10 +268,10 @@ Chỉ phiên điều phối merge, luôn bằng `node tools/merge-pr.mjs`. Lện
 - **PR task:** `node tools/merge-pr.mjs <N>`, thêm `--owner` khi mức là med / high (theo nhãn `risk:*`, hoặc mức đã nâng trong REVIEW). `--owner` dùng quyền pipeline của M11, và để lại comment "Merged on Owner request".
 - **PR chỉ sửa `docs/state/review-notes.md`** (PR sổ, PR gắn nhãn sổ): merge ngay bằng `node tools/merge-pr.mjs <L>`, không cần REVIEW (T-215). PR đó sửa thêm file khác thì không merge, hỏi Owner.
 - **`merge-pr` từ chối:**
-  - `main` có commit code sau bản CI đã test: chạy `gh pr update-branch <N>`. Head đổi, nên bảng ở §2 tự ra bước chờ CI rồi review lại ở phiên sạch.
-  - Thiếu nhãn `build-exe`: `gh pr edit <N> --add-label build-exe`, rồi `gh pr close <N>` + `gh pr reopen <N>`, rồi chờ CI như dòng cuối của danh sách này. Head không đổi nên PASS vẫn còn giá trị.
-  - CI không ghi notice `Tested base`: `gh pr close <N>` + `gh pr reopen <N>`, rồi chờ CI như dưới.
-  - Chờ CI sau `reopen` bằng một lệnh nền: `node tools/auto-wait.mjs sleep --timeout 1 && node tools/auto-wait.mjs ci <N> --timeout 60`. GitHub cần một lúc để tạo workflow run mới; `ci` đọc ngay thì thấy run cũ đã xong và báo xong sai.
+  - `main` có commit code sau bản CI đã test: gửi §3.8 cho phiên code của PR, lệnh chờ `ci <N> --not <H> --timeout 60`. Head đổi, nên bảng ở §2 tự ra bước chờ CI rồi review lại ở phiên sạch.
+  - Thiếu nhãn `build-exe`: `gh pr edit <N> --add-label build-exe`, rồi đóng, mở lại PR và chờ CI như dòng cuối của danh sách này. Head không đổi nên PASS vẫn còn giá trị.
+  - CI không ghi notice `Tested base`: đóng, mở lại PR và chờ CI như dưới.
+  - Đóng, mở lại PR và chờ CI: `gh pr close <N>`; `gh pr view <N> --json closedAt --jq .closedAt` cho mốc `T`, giờ của GitHub (đọc trước khi mở lại); `gh pr reopen <N>`; rồi lệnh nền `node tools/auto-wait.mjs ci <N> --since <T> --timeout 60`. PR mở lại vẫn giữ các check cũ đã xong tới khi GitHub tạo workflow run mới; `--since` chờ một run tạo từ mốc `T` trở đi, nên `ci` không báo xong theo run cũ.
   - Lý do khác: hỏi Owner.
 - `merge-pr` tự dọn: về `main`, xóa nhánh, gỡ worktree `Project-2C-notes-<N>`. Dọn báo lỗi thì hỏi Owner.
 - **Không bao giờ:** `--no-verify`; merge khi CI chưa xanh; bật auto-merge; merge PR chạm file trong rào "không tự sửa".

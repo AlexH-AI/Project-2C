@@ -9,17 +9,20 @@ import { checkCounts, checksSummary, latestReview } from './session-core.mjs';
 export const EXIT = { done: 0, bad: 1, timeout: 2, look: 3, usage: 64 };
 
 export const USAGE =
-  'usage: node tools/auto-wait.mjs pr <issue> | ci <N> [--not <sha>] | review <N> [--sha <sha>] |' +
-  ' title <text> | sleep   [--timeout <min> | --once] [--every <s>]';
+  'usage: node tools/auto-wait.mjs pr <issue> | ci <N> [--not <sha>] [--since <time>] |' +
+  ' review <N> [--sha <sha>] | title <text> | sleep   [--timeout <min> | --once] [--every <s>]';
 
 // What each mode waits on: an Issue number, a PR number, a title text, nothing.
 const TARGETS = { pr: 'issue', ci: 'PR', review: 'PR', title: 'text', sleep: null };
-// SHA flags, each for one mode only; --timeout / --every go with every mode.
-const SHA_FLAGS = { ci: '--not', review: '--sha' };
+// Flags of one mode only: --not / --sha take a SHA, --since a time. --timeout / --every go with
+// every mode.
+const MODE_FLAGS = { ci: ['--not', '--since'], review: ['--sha'] };
 const LIMITS = { '--timeout': ['timeoutMin', 1, 120], '--every': ['everySec', 30, 600] };
 // Reads of GitHub stay at least this far apart (#942), the last one before the deadline too.
 const MIN_EVERY_MS = LIMITS['--every'][1] * 1000;
 const SHA = /^[0-9a-f]{7,40}$/;
+// A UTC time as GitHub gives it, e.g. a PR's closedAt.
+const TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
 // Failed reads in a row (gh down, no network) before the wait gives up.
 const MAX_FAILURES = 5;
 
@@ -27,6 +30,7 @@ const MAX_FAILURES = 5;
 export function parseArgs(argv) {
   const [mode, ...rest] = argv;
   if (!Object.hasOwn(TARGETS, mode ?? '')) return { error: `unknown mode "${mode ?? ''}"` };
+  // `since` is there only when given.
   const options = { mode, target: null, timeoutMin: 45, everySec: 60, not: null, sha: null };
   const positional = [];
   const flags = new Set();
@@ -39,7 +43,7 @@ export function parseArgs(argv) {
     flags.add(arg);
     // One read, no waiting: how the orchestrating session reads a state within a turn.
     if (arg === '--once' && mode !== 'sleep') continue;
-    if (!Object.hasOwn(LIMITS, arg) && SHA_FLAGS[mode] !== arg) {
+    if (!Object.hasOwn(LIMITS, arg) && !(MODE_FLAGS[mode] ?? []).includes(arg)) {
       return { error: `${mode} does not take ${arg}` };
     }
     const value = rest[++i];
@@ -51,6 +55,11 @@ export function parseArgs(argv) {
         return { error: `${arg} takes a whole number from ${min} to ${max}` };
       }
       options[key] = number;
+    } else if (arg === '--since') {
+      if (!TIME.test(value) || Number.isNaN(Date.parse(value))) {
+        return { error: `${arg} takes a UTC time like 2026-11-02T10:56:33Z` };
+      }
+      options.since = value;
     } else {
       const sha = value.toLowerCase();
       if (!SHA.test(sha)) return { error: `${arg} takes a commit SHA (7 to 40 hex digits)` };
@@ -89,10 +98,13 @@ const notOpen = (pr) =>
  * CI on the PR's head: done once no check runs and every workflow run of the head ended, since a
  * job that `needs` another, like the exe build, gets its check only when that one ends. `runs()`
  * gives those runs (Actions API); it is called only once every check ended, so a wait does not
- * read them each poll. With `not`, first a head other than that SHA (a push after a fix). A
- * docs-only PR has no CI at all (ci.yml `paths`), so it is done at once.
+ * read them each poll. With `not`, first a head other than that SHA (a push after a fix). With
+ * `since`, also a run made at or after that time: after `gh pr close` + `gh pr reopen` the head
+ * keeps its old checks, all ended, until GitHub makes the new run. A docs-only PR has no CI at all
+ * (ci.yml `paths`), so it is done at once; `files()` gives the PR's files to tell, and is called
+ * only while CI has no check.
  */
-export function ciState(pr, { not = null, runs = () => [] } = {}) {
+export function ciState(pr, { not = null, since = null, runs = () => [], files = () => [] } = {}) {
   const stop = notOpen(pr);
   if (stop) return stop;
   const head = short(pr.headRefOid);
@@ -102,14 +114,19 @@ export function ciState(pr, { not = null, runs = () => [] } = {}) {
   const rollup = pr.statusCheckRollup ?? [];
   const { pass, fail, pending } = checkCounts(rollup);
   if (pass + fail + pending === 0) {
-    return prFiles(pr).docsOnly
+    return prFiles({ ...pr, files: files() }).docsOnly
       ? { done: true, code: EXIT.done, text: `docs-only @${head}: CI not needed` }
       : { done: false, text: `no checks yet @${head}` };
   }
   if (pending > 0) return { done: false, text: `${checksSummary(rollup)} @${head}` };
-  const running = runs()
-    .filter((run) => run.status !== 'completed')
-    .map((run) => run.name);
+  const all = runs();
+  if (since && !all.some((run) => Date.parse(run.created_at) >= Date.parse(since))) {
+    return {
+      done: false,
+      text: `${checksSummary(rollup)} @${head}, no workflow run since ${since} yet`,
+    };
+  }
+  const running = all.filter((run) => run.status !== 'completed').map((run) => run.name);
   if (running.length) {
     return {
       done: false,
