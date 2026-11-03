@@ -171,6 +171,18 @@ describe('findHardcodedSeparators', () => {
     ]);
   });
 
+  // Review #965: a limit, not a goal. JSX text is i18n's, and the app writes none of this form.
+  it('takes a closing or self-closing tag written against a word of JSX text for type arguments', () => {
+    const source = [
+      '<p><b>Name</b>{a}, {b}</p>',
+      '<p>Hello<br />{a}, {b}</p>',
+      '<p><b>{x}</b>{a}, {b}</p>',
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 3, match: '}, {', rule: 'hardcoded-separator' },
+    ]);
+  });
+
   // DR6-145 (c): a `//` or `/*` inside a string or a template opens no comment.
   it('reads on past a // in a string or a template', () => {
     const source = [
