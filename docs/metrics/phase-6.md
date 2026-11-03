@@ -276,7 +276,7 @@ Ngưỡng ADR-0001 phụ lục: ≤ ~400 dòng code sản phẩm (SP), ≤ ~800 
 | #917 | T-322 | 465 (+387 / −78) | 938 (test 465) | có: phần vượt chủ yếu là test của các mục review và 29 ca Owner đồng ý viết lại; Owner chấp nhận cỡ (31/10) |
 | #937 | T-329 | 1 451 (+735 / −716) | 3 428 (test 1 977) | có: tách Mock trích xuất sang file mới, không đổi hành vi; so cả PR thì ≈ 720 dòng dời nguyên văn tính hai lần, `mock-adapter.ts` còn lại nên git không ghép đổi tên; theo từng commit với `-M`: +323 / −288 |
 | #939 | T-330 | 441 (+328 / −113) | 690 (test 232) | có: SP quá ~400 một chút, trong khoảng ~400–550 Issue ước lượng |
-| #944 | T-335 | 394 (+389 / −5) | 1 297 (test 503) | có: Owner chấp nhận cỡ ngày 01/11, lúc PR còn 1 078 dòng; code công cụ trong ngưỡng, phần còn lại là test, skill 334, tài liệu 66 |
+| #944 | T-335 | 394 (+389 / −5) | 1 297 (test 503) | có: Owner chấp nhận cỡ ngày 01/11, lúc PR còn 1 078 dòng; ngoài code công cụ (trong ngưỡng) và test là skill 334, tài liệu 66 |
 
 Ở biên:
 
