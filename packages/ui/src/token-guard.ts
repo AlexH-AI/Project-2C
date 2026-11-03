@@ -75,7 +75,9 @@ export function findHardcodedSeparators(source: string): TokenViolation[] {
   const braces: ('template' | 'jsx' | 'code')[] = [];
   // The lists of type arguments still open, each begun by a `<` right after a name
   // (`Promise<void>`): Prettier spaces a `<` that compares. The `>` that closes one is no tag's.
-  // A tag written against a word of JSX text (`one<b>`) is taken for one too.
+  // A tag written against a word of JSX text is taken for one too, closing or self-closing ones as
+  // well (`one<b>`, `one</b>`, `one<br />`): the `{` right after it reads as code, so a joiner
+  // there (`one</b>{a}, {b}`) is missed: the count can only miss a joiner, never flag one wrongly.
   let types = 0;
   let last = '';
   let afterJsx = false;
