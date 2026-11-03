@@ -72,7 +72,7 @@ Mỗi màn ở sidebar, mỗi mục Cài đặt và mỗi hộp thoại có tron
 | Khách hàng mới | `customer-forms.html` | [4. Tạo KH](04-khach-hang.md#tạo-kh) | [04-khach-hang-moi](img/04-khach-hang-moi.png) |
 | Sửa hồ sơ | `customer-forms.html` | [4. Sửa hồ sơ KH](04-khach-hang.md#sửa-hồ-sơ-kh) | |
 | Xóa KH | `customer-forms.html`, `trash.html` 11f | [4. Xóa KH](04-khach-hang.md#xóa-kh) | |
-| Chuyển nhóm | `customer.html` | [4. Chuyển nhóm tay](04-khach-hang.md#chuyển-nhóm-tay) | [04-chuyen-nhom](img/04-chuyen-nhom.png) |
+| Chuyển nhóm | `customer-forms.html` 5d–5e | [4. Chuyển nhóm tay](04-khach-hang.md#chuyển-nhóm-tay) | [04-chuyen-nhom](img/04-chuyen-nhom.png) |
 | Ghi chú KYC | `kyc-forms.html` | [5. Ghi chú KYC](05-ho-so-kh.md#ghi-chú-kyc) | [05-ghi-chu-kyc](img/05-ghi-chu-kyc.png) |
 | + Dữ kiện (xác nhận) | `kyc-forms.html`, `ai.html` §3 | [6. AI trích xuất](06-ai.md#ai-trích-xuất) | |
 | Giải quyết mâu thuẫn | `kyc-forms.html` | [5. Mâu thuẫn](05-ho-so-kh.md#mâu-thuẫn) | |
