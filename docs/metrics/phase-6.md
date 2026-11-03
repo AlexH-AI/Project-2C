@@ -1,6 +1,6 @@
 # Chỉ số Phase 6 — Hoàn thiện & phát hành v1.0
 
-Theo bảng chỉ số của `docs/COMPARISON.md` (mẫu từ `phase-5.md`), thêm phần đánh giá cuối dự án (thay `FINAL.md`, `docs/metrics/README.md`). Tới cuối phase file này mới có mục **Số đo nền** (T-219, spec Phase 6 §5.1, ghi trước lượt review 1 của 6D), mốc Home PC sau lượt 2 (T-225), mốc Home PC sau #656 (T-264), số đo deep review lượt 3 (T-267) và lượt 4 (T-318), số liệu bốn lượt review đóng phase cùng các đợt sửa giữa chúng, và bảng PR vượt ngưỡng tới 27/10 (T-307). Các mục khác để trống tới khi đóng phase.
+Theo bảng chỉ số của `docs/COMPARISON.md` (mẫu từ `phase-5.md`), thêm phần đánh giá cuối dự án (thay `FINAL.md`, `docs/metrics/README.md`). Tới cuối phase file này mới có mục **Số đo nền** (T-219, spec Phase 6 §5.1, ghi trước lượt review 1 của 6D), mốc Home PC sau lượt 2 (T-225), mốc Home PC sau #656 (T-264), số đo deep review lượt 3 (T-267) và lượt 4 (T-318), số đo G7 NT-HN-01 (T-348), số liệu bốn lượt review đóng phase cùng các đợt sửa giữa chúng, và bảng PR vượt ngưỡng tới 27/10 (T-307). Các mục khác để trống tới khi đóng phase.
 
 - **Milestone:** "Phase 6 — Hoàn thiện & phát hành" — _điền cuối phase_
 - **Bắt đầu:** 2026-10-11 (spec G1 #515) · **Task code cuối merge:** _cuối phase_ · **Đóng milestone:** _G7_
@@ -239,6 +239,93 @@ Không thay mốc sau #656: G7 vẫn so với mốc đó. Phân tích: tổng h�
 - **Dọn sạch Thùng rác:** bấm "Backup rồi dọn sạch" → thông báo 11j 123,3 ms (≤ 500 ms; lượt 3: 151,8); `trash.open` trước → sau 34,1 → 2,0 ms; Node `purgeTrash` cả `VACUUM` 85,2 / 129,8 ms (113 / 1 313 dòng).
 - **Bundle:** JS / CSS 2 358 427 B (−41 966 so lượt 3); `index.js` 884 698 B (−43 234: `zod/mini`); tệp khác +172 925 B (font Playfair, ba ảnh logo, favicon PNG).
 - **Phát hiện P:** chỉ DR6-136. `byName` làm sắp bảng Lịch hẹn 10 255 dòng theo KH chậm từ 9,4 lên 65,2 ms trong Node (54–60 ms trên bản web): vượt luật nhiễu, dưới ngưỡng < 200 ms.
+
+### Số đo G7, NT-HN-01 (T-348, 03/11/2026)
+
+Lần đo nghiệm thu NT-HN-01 (`docs/testing/nghiem-thu-v1.md`) trên Home PC, so với mốc sau #656 (mốc không đổi). Lần đo trước cùng ngày, trên exe `eaa83c3`, dừng ở `appointments.select-day-month`: probe chỉ chọn lịch Đã gặp trong tháng hiện tại, mà tháng 11 chưa có. T-345…T-347 sửa probe (#984, #988, #992); lần này đo lại đủ.
+
+- **Máy:** Home PC `DESKTOP-KDURKJP`. **Code:** `main` `233c77e` (#993). Exe release build tại máy: 5 649 408 byte (bằng lượt 4), sha256 `94443F07…68115`.
+- **Dữ liệu tải:** `node tools/load-data.mjs` mặc định (neo 12/10/2026, seed 6), sinh ở `233c77e`. `tables` sha256 `e256e4f1…b345a2`, cùng số dòng như lượt 4 (lượt 4: `ad82051b…`; sau đó prompt lên `analysis@5` / `discovery@5`, #913). Sau khi nhập, Cài đặt → Dữ liệu ghi "4 team · 51 nhân sự · 1.481 KH · 10.255 lịch hẹn · 1.674 HĐ"; `project2c.db` 14 102 528 byte.
+- **Cách đo:** như lượt 4, một script chạy liền 23:02–23:08, máy rảnh, cửa sổ exe ở trên cùng:
+  1. mở lần đầu 3 lần, cách T-227;
+  2. thư mục mới: mở exe, nhập dữ liệu tải qua cổng debug (`e2e/perf/README.md` bước 3), đóng;
+  3. mở lại trên dữ liệu tải 3 lần: chờ 12 s rồi nối CDP, đọc mốc như mở lần đầu;
+  4. mở lại lần nữa, nối probe ngay: probe sau T-347, `PERF_RUNS=5`, `PERF_BASE=docs/metrics/phase-6-baseline/perf-home-pc-sau-656.json`. Kỳ Năm dùng năm 2026 (`Lịch năm 2026, 0 back: 79 met`), kỳ Tháng dùng tháng 10/2026 (`Lịch tháng 10/2026, 1 back: 10 days met`);
+  5. Dọn sạch Thùng rác một lần trên cùng exe, đo tay như lượt 3, lượt 4: nút được đánh dấu, trang tự bấm sau khi đã ngắt CDP.
+- **File JSON của probe, log:** giữ ngoài repo trên Home PC (`C:\workspace\g7-home-pc\lan-2\`), như lượt 3, lượt 4.
+
+**Kết quả: không dòng nào ⚠️ so mốc sau #656, mọi thao tác trong ngưỡng.**
+
+Bảng probe in ra, cột Nền là mốc sau #656 (`dae9df3`). Cột Ngưỡng theo bảng "Thời gian thao tác" và "Bộ nhớ webview" ở trên:
+
+| Thao tác | Lần | Trung vị | Min | Max | Nền | Δ (⚠️ = xấu hơn theo luật nhiễu) | Ngưỡng |
+|---|---|---|---|---|---|---|---|
+| `app.open-data` | 1 | 320 ms | 320 ms | 320 ms | 387 ms | −67 ms (−17%) | ≤ 600 ms ✅ |
+| `backup.read` | 5 | 975 ms | 962 ms | 987 ms | 835 ms | +140 ms (+17%) | ≤ 2 000 ms ✅ |
+| `backup.import` | 5 | 44 ms | 37 ms | 50 ms | 43 ms | +2 ms (+4%) | ≤ 500 ms ✅ |
+| `db.save` | 15 | 148 ms | 144 ms | 154 ms | 151 ms | −3 ms (−2%) | ≤ 400 ms ✅ |
+| `reload.overview` | 5 | 395 ms | 391 ms | 450 ms | 398 ms | −3 ms (−1%) | < 500 ms ✅ |
+| `reload.appointments` | 5 | 385 ms | 385 ms | 388 ms | 391 ms | −5 ms (−1%) | < 500 ms ✅ |
+| `reload.customers` | 5 | 308 ms | 307 ms | 320 ms | 336 ms | −28 ms (−8%) | < 500 ms ✅ |
+| `reload.reports` | 5 | 367 ms | 364 ms | 379 ms | 376 ms | −10 ms (−3%) | < 500 ms ✅ |
+| `reload.team` | 5 | 350 ms | 350 ms | 379 ms | 355 ms | −4 ms (−1%) | < 500 ms ✅ |
+| `reload.settings` | 5 | 280 ms | 276 ms | 292 ms | 283 ms | −3 ms (−1%) | < 500 ms ✅ |
+| `appointments.period-day` | 5 | 6 ms | 6 ms | 14 ms | 8 ms | −2 ms (−28%) | < 200 ms ✅ |
+| `appointments.period-week` | 5 | 11 ms | 11 ms | 13 ms | 12 ms | −1 ms (−6%) | < 200 ms ✅ |
+| `appointments.period-month` | 5 | 5 ms | 5 ms | 5 ms | 13 ms | −9 ms (−65%) | < 200 ms ✅ |
+| `appointments.period-year` | 5 | 10 ms | 10 ms | 12 ms | 17 ms | −7 ms (−40%) | < 200 ms ✅ |
+| `appointments.sort-date-asc` | 5 | 18 ms | 17 ms | 20 ms | 17 ms | +0 ms (+2%) | < 200 ms ✅ |
+| `appointments.sort-date-desc` | 5 | 12 ms | 11 ms | 12 ms | 11 ms | +0 ms (+1%) | < 200 ms ✅ |
+| `appointments.select-row-year` | 5 | 6 ms | 6 ms | 8 ms | 6 ms | +0 ms (+5%) | < 200 ms ✅ |
+| `appointments.select-day-month` | 5 | 7 ms | 3 ms | 7 ms | 9 ms | −2 ms (−26%) | < 200 ms ✅ |
+| `appointments.select-row-month` | 5 | 5 ms | 5 ms | 6 ms | 7 ms | −2 ms (−35%) | < 200 ms ✅ |
+| `customers.view-table` | 5 | 20 ms | 19 ms | 24 ms | 20 ms | +0 ms (+0%) | < 200 ms ✅ |
+| `customers.sort-name` | 5 | 23 ms | 14 ms | 25 ms | 23 ms | 0 ms (−1%) | < 200 ms ✅ |
+| `customer.open-ai` | 5 | 20 ms | 19 ms | 23 ms | 19 ms | +1 ms (+5%) | < 200 ms ✅ |
+| `customer.ai-history` | 5 | 2 ms | 2 ms | 8 ms | 2 ms | 0 ms (−5%) | < 200 ms ✅ |
+| `overview.filter-year` | 5 | 17 ms | 16 ms | 21 ms | 16 ms | +1 ms (+8%) | < 200 ms ✅ |
+| `overview.filter-month` | 5 | 14 ms | 13 ms | 15 ms | 14 ms | 0 ms (−1%) | < 200 ms ✅ |
+| `reports.filter-year` | 5 | 10 ms | 10 ms | 14 ms | 10 ms | +0 ms (+0%) | < 200 ms ✅ |
+| `reports.filter-month` | 5 | 10 ms | 10 ms | 11 ms | 10 ms | +0 ms (+3%) | < 200 ms ✅ |
+| `reports.table-re` | 5 | 17 ms | 17 ms | 22 ms | 17 ms | +0 ms (+1%) | < 200 ms ✅ |
+| `trash.kind-appointments` | 5 | 9 ms | 7 ms | 12 ms | 6 ms | +3 ms (+46%) | < 200 ms ✅ |
+| `memory.js-heap` | 1 | 16,7 MB | 16,7 MB | 16,7 MB | 16,5 MB | +0,2 MB (+1%) | ≤ 21 MB ✅ |
+| `trash.open` | 5 | 33 ms | 31 ms | 44 ms | 34 ms | −1 ms (−4%) | < 200 ms ✅ |
+| `reports.export-excel` | 5 | 25 ms | 22 ms | 74 ms | 20 ms | +5 ms (+25%) | ≤ 500 ms ✅ |
+| `backup.export` | 5 | 435 ms | 425 ms | 451 ms | 438 ms | −3 ms (−1%) | ≤ 1 000 ms ✅ |
+| `appointments.next-month` | 5 | 112 ms | 110 ms | 114 ms | 101 ms | +11 ms (+11%) | ≤ 300 ms ✅ |
+| `appointments.next-year` | 5 | 109 ms | 106 ms | 111 ms | 107 ms | +2 ms (+1%) | ≤ 300 ms ✅; Năm − Tháng −3 ms ≤ 50 ms ✅ |
+
+Đo ngoài probe (trung vị, min–max của 3 lần, trừ khi ghi khác):
+
+| Thao tác | G7 `233c77e` | Mốc sau #656 `dae9df3` | Ngưỡng |
+|---|---|---|---|
+| Mở lần đầu: gọi exe → màn đầu có số liệu (LCP, cách T-227) | 3 420 ms (3 408–3 462) | 3 663 ms (3 656–3 746) | xấu hơn khi > 4 724 ms ✅ |
+| Mở lần đầu: sinh seed / `p2c:data-open` / `p2c:db-save` | 2 847 / 2 994 / 123 ms | 3 060 / 3 240 / 119 ms | — |
+| Mở lại trên dữ liệu tải: gọi exe → màn đầu có số liệu (LCP) | 617 ms (605–625) | — (chưa đo cách này) | ≤ 1 s ✅ |
+| Mở lại: `p2c:data-open` | 317 ms (316–326) | 351 ms (335–354; 5 lần mở xen kẽ) | ≤ 600 ms ✅ |
+| Dọn sạch Thùng rác: bấm "Backup rồi dọn sạch" → thông báo 11j (1 lần) | 130,5 ms (lưu file 150,4 ms) | — (lượt 4: 123,3 ms) | ≤ 500 ms ✅ |
+| `trash.open` trước → sau khi dọn (3 lần mỗi bên) | 30,6 → 1,9 ms | — (lượt 4: 34,1 → 2,0 ms) | < 200 ms ✅ |
+
+- **`backup.read` +140 ms (+17 %)**, dưới luật nhiễu. Bằng mức lượt 4 (+142 ms): chi phí có chủ ý của luật nhập 7 (tính lại hash phiên bản KYC, K33).
+- **Các dòng tăng khác đều dưới luật nhiễu** (phải quá 20 % **và** quá 10 ms). Tăng nhiều nhất: `appointments.next-month` +11 ms (+11 %), `reports.export-excel` +5 ms (+25 %), `trash.kind-appointments` +3 ms (+46 %).
+- **`app.open-data` 320 ms** chỉ là 1 mẫu (mốc 387 ms). Như ghi ở mốc lượt 2, số này phụ thuộc trạng thái profile WebView2; 3 lần mở lại ở bảng trên ra 317 ms.
+- **Mở lại** tính từ lúc gọi exe, như mở lần đầu, nên gồm cả lúc khởi động tiến trình và tạo cửa sổ. Ngưỡng ≤ 1 s là ngưỡng "Mở app lại" của bảng "Thời gian thao tác" (Owner bấm giờ ở `b139d8a`).
+- **Dọn sạch** xóa hẳn 113 dòng Thùng rác của dữ liệu tải: 15 KH (kèm 83 lịch hẹn · 5 HĐ · 49 ghi chú KYC · 1 phân tích AI) · 76 lịch hẹn · 18 HĐ · 3 nhân sự · 1 team. Thêm một file backup mới; `project2c.db` 14 102 528 → 13 438 976 byte; Nội dung ở Cài đặt → Dữ liệu trước / sau không đổi.
+
+Kích thước (`node tools/size-report.mjs --compare docs/metrics/phase-6-baseline/size.json` sau `pnpm build:exe`, cùng máy):
+
+| Mục | `b139d8a` (mốc) | Lượt 4 `2e51e25` | **G7 `233c77e`** |
+|---|---:|---:|---:|
+| `project2c.exe` (byte) | 5 414 400 | 5 649 408 | 5 649 408 |
+| Bundle JS / CSS, thô (byte) | 2 364 283 | 2 358 427 | 2 366 449 |
+| — `assets/index.js` | 891 942 | 884 698 | 892 177 |
+| — `assets/index.css` | 28 364 | 29 752 | 30 295 |
+| Tệp khác: wasm, font, ảnh… (byte) | 849 196 | 1 022 121 | 1 022 121 |
+| Dòng code sản phẩm / test | 32 216 / 37 991 | 37 766 / 52 911 | 39 055 / 55 734 |
+
+- **So lượt 4:** exe và tệp khác giữ nguyên cỡ. Bundle JS / CSS +8 022 B (`index.js` +7 479, `index.css` +543), sản phẩm +1 289 dòng, test +2 823 dòng: đợt sửa lượt 4 (T-319…T-328), đợt sửa sổ OPEN (T-329…T-342) và phần sửa probe (T-345…T-347, chỉ test). Không file CSS nào đổi: `index.css` tăng vì lớp Tailwind mới của các phần sửa giao diện (vd. tên dài xuống dòng, T-325, T-331).
+- **So `b139d8a`:** exe +235 008 B là phần tăng của lượt 4 (+240 640 so lượt 3, trong đó `icon.ico` +71 343) trừ 5 632 B exe lượt 3 nhỏ hơn `b139d8a`; tệp khác +172 925 B là font Playfair, ba ảnh logo, favicon PNG. Cả hai đã ghi ở mục "Số đo deep review lượt 4".
 
 ## Kiểm tra trên `main`
 
