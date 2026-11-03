@@ -203,6 +203,8 @@ const status = (text: string) => ({ selector: '[role="status"]', text });
 const kind = (name: string) =>
   page.getByRole('radiogroup', { name: 'Loại kỳ' }).getByRole('radio', { name });
 const list = () => page.getByRole('table', { name: 'Danh sách lịch hẹn' });
+/** The met rows of the list: the ones metYear counts are the ones next-year picks from. */
+const metRows = () => list().getByRole('row').filter({ hasText: 'Đã gặp' });
 const calendar = () => page.getByRole('region', { name: /^Lịch tháng/ });
 const detail = () => page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' });
 const inDay = () => page.getByRole('region', { name: /^Trong ngày/ }).getByRole('listitem');
@@ -222,14 +224,26 @@ async function oldestFirst() {
 
 /**
  * The days with a met appointment in Lịch hẹn's month calendar, after stepping back from the month
- * shown to the nearest one with RUNS such days: the load data stops at its anchor, so the month of
- * today may have too few (README). The steps back are not timed.
+ * of today to the nearest one with RUNS such days: the load data stops at its anchor, so the month of
+ * today may have too few (README). Stops first when the calendar shows another month, rather than
+ * step back from it to some other month. Neither the check nor the steps back are timed.
  */
 async function metDays(): Promise<Locator> {
   const days = () => calendar().getByRole('button', { name: /Đã gặp/ });
   const month = () => calendar().getByRole('heading');
   await expect(kind('Tháng')).toBeChecked();
   await expect(month()).toBeVisible();
+  // Read once, not waited on: a month shown wrong stays wrong. The exe runs on this machine, so
+  // its today is the probe's, but for a run past midnight at a month's end: stopping is right then.
+  const now = new Date();
+  const today = `Lịch tháng ${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+  const opened = (await month().textContent()) ?? '';
+  if (opened !== today) {
+    throw new Error(
+      `Lịch hẹn: Tháng shows ${opened}, not the month of today (${today}) that the probe steps ` +
+        'back from for days with a met appointment (Đã gặp): it would measure another month.',
+    );
+  }
   let most = { count: -1, month: '' };
   for (let back = 0; ; back++) {
     const shown = (await month().textContent()) ?? '';
@@ -264,14 +278,13 @@ interface MetYear {
  * list oldest first. The steps back are not timed.
  */
 async function metYear(): Promise<MetYear> {
-  const met = () => list().getByRole('row').filter({ hasText: 'Đã gặp' });
   await expect(kind('Năm')).toBeChecked();
   await expect(yearHeading()).toBeVisible();
   let most = { count: -1, year: '' };
   for (let back = 0; ; back++) {
     const heading = (await yearHeading().textContent()) ?? '';
     await oldestFirst();
-    const count = await met().count();
+    const count = await metRows().count();
     if (count >= RUNS) {
       process.stdout.write(`  ${heading}, ${back} back: ${count} met\n`);
       return { heading, back };
@@ -319,7 +332,7 @@ async function toMetYear({ heading, back }: MetYear) {
 async function checkPeriods(): Promise<MetYear> {
   await kind('Năm').click();
   const inYear = await metYear();
-  // Tháng then opens on the month of today, which metDays steps back from.
+  // Tháng then opens on the month of today, which metDays checks and steps back from.
   await stepYears(inYear.back);
   await kind('Tháng').click();
   await metDays();
@@ -527,6 +540,8 @@ async function nextAppointment(i: number, period: 'month' | 'year', inYear: MetY
   await go('#/appointments');
   const next = detail().getByRole('button', { name: 'Tạo lịch hẹn tiếp theo' });
   if (period === 'month') {
+    // The month of today: the screen opens on it, and from the second time keeps the year of the
+    // day the next-year before made its appointment on, today. metDays checks it.
     await kind('Tháng').click();
     await (await metDays()).nth(i).click();
     // A met appointment of the day: one rescheduled offers no next one.
@@ -538,8 +553,7 @@ async function nextAppointment(i: number, period: 'month' | 'year', inYear: MetY
     await toMetYear(inYear);
     // Oldest first: the newest hundred shown are all still ahead.
     await oldestFirst();
-    const met = list().getByRole('row').filter({ hasText: 'Đã gặp' }).nth(i);
-    await met.getByRole('button').first().click();
+    await metRows().nth(i).getByRole('button').first().click();
   }
   await next.click();
   const form = page.getByRole('dialog');
