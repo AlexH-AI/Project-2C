@@ -31,6 +31,8 @@ const BASE = process.env.PERF_BASE;
 const SCREEN_LIMIT = 200;
 /** How long a detached write waits before it starts: time to drop the debugger first. */
 const DETACH_DELAY = 1_000;
+/** How many months Lịch hẹn may step back for one with enough met days (metDays). */
+const MONTHS_BACK = 12;
 
 /** What the screen shows once an operation is done: an element, with a text, or gone. */
 interface Ready {
@@ -201,6 +203,38 @@ const inDay = () => page.getByRole('region', { name: /^Trong ngày/ }).getByRole
 const dateHeader = () => list().getByRole('columnheader', { name: 'Ngày' });
 const byDate = () => dateHeader().getByRole('button');
 
+/**
+ * The days with a met appointment in Lịch hẹn's month calendar, after stepping back from the month
+ * shown to the nearest one with RUNS such days: the load data stops at its anchor, so the month of
+ * today may have too few (README). The steps back are not timed.
+ */
+async function metDays(): Promise<Locator> {
+  const days = () => calendar().getByRole('button', { name: /Đã gặp/ });
+  const month = () => calendar().getByRole('heading');
+  await expect(kind('Tháng')).toBeChecked();
+  let most = { count: -1, month: '' };
+  for (let back = 0; ; back++) {
+    await expect(month()).toBeVisible();
+    const shown = (await month().textContent()) ?? '';
+    const count = await days().count();
+    if (count >= RUNS) {
+      process.stdout.write(`  ${shown}, ${back} back: ${count} days met\n`);
+      return days();
+    }
+    if (count > most.count) most = { count, month: shown };
+    if (back === MONTHS_BACK) {
+      throw new Error(
+        `Lịch hẹn: no month from this one to ${MONTHS_BACK} back has PERF_RUNS (${RUNS}) days ` +
+          `with a met appointment (Đã gặp); the most is ${most.count}, in ${most.month}. Write ` +
+          'the load data with node tools/load-data.mjs --anchor <a date near today>, import it ' +
+          'and set PERF_BACKUP to it (e2e/perf/README.md, steps 1 and 3), or lower PERF_RUNS.',
+      );
+    }
+    await page.getByRole('button', { name: 'Kỳ trước', exact: true }).click();
+    await expect(month()).not.toHaveText(shown);
+  }
+}
+
 /** Measures nothing but the load data (§5.1). */
 async function checkLoadData() {
   await go('#/settings');
@@ -298,9 +332,7 @@ async function appointments(i: number) {
   await click('appointments.select-row-year', row);
   await expect(detail().getByRole('button').first()).toBeVisible();
   await kind('Tháng').click();
-  const met = calendar()
-    .getByRole('button', { name: /Đã gặp/ })
-    .nth(i);
+  const met = (await metDays()).nth(i);
   await click('appointments.select-day-month', met);
   await click('appointments.select-row-month', inDay().getByRole('button').first());
   await expect(detail().getByRole('button').first()).toBeVisible();
@@ -402,10 +434,7 @@ async function nextAppointment(i: number, period: 'month' | 'year') {
   const next = detail().getByRole('button', { name: 'Tạo lịch hẹn tiếp theo' });
   if (period === 'month') {
     await kind('Tháng').click();
-    await calendar()
-      .getByRole('button', { name: /Đã gặp/ })
-      .nth(i)
-      .click();
+    await (await metDays()).nth(i).click();
     // A met appointment of the day: one rescheduled offers no next one.
     for (let k = 0; !(await next.isVisible()); k++) {
       await inDay().nth(k).getByRole('button').first().click();
