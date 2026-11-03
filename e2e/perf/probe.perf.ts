@@ -33,6 +33,12 @@ const SCREEN_LIMIT = 200;
 const DETACH_DELAY = 1_000;
 /** How many months Lịch hẹn may step back for one with enough met days (metDays). */
 const MONTHS_BACK = 12;
+/** And years, for one with enough met appointments (metYear): the load data has a year of history. */
+const YEARS_BACK = 1;
+/** What to do when metDays or metYear finds no month or year with enough met appointments. */
+const MORE_MET =
+  'Write the load data with node tools/load-data.mjs --anchor <a date near today>, import it ' +
+  'and set PERF_BACKUP to it (e2e/perf/README.md, steps 1, 3 and 4), or lower PERF_RUNS.';
 
 /** What the screen shows once an operation is done: an element, with a text, or gone. */
 interface Ready {
@@ -202,6 +208,17 @@ const detail = () => page.getByRole('complementary', { name: 'Chi tiết lịch 
 const inDay = () => page.getByRole('region', { name: /^Trong ngày/ }).getByRole('listitem');
 const dateHeader = () => list().getByRole('columnheader', { name: 'Ngày' });
 const byDate = () => dateHeader().getByRole('button');
+const yearHeading = () => page.getByRole('region', { name: /^Lịch năm/ }).getByRole('heading');
+const previous = () => page.getByRole('button', { name: 'Kỳ trước', exact: true });
+
+/** Sorts Lịch hẹn's list by Ngày, oldest first: it keeps its order while the screen stays open. */
+async function oldestFirst() {
+  await expect(list()).toBeVisible();
+  for (let k = 0; k < 3 && (await dateHeader().getAttribute('aria-sort')) !== 'ascending'; k++) {
+    await byDate().click();
+  }
+  await expect(dateHeader()).toHaveAttribute('aria-sort', 'ascending');
+}
 
 /**
  * The days with a met appointment in Lịch hẹn's month calendar, after stepping back from the month
@@ -212,9 +229,9 @@ async function metDays(): Promise<Locator> {
   const days = () => calendar().getByRole('button', { name: /Đã gặp/ });
   const month = () => calendar().getByRole('heading');
   await expect(kind('Tháng')).toBeChecked();
+  await expect(month()).toBeVisible();
   let most = { count: -1, month: '' };
   for (let back = 0; ; back++) {
-    await expect(month()).toBeVisible();
     const shown = (await month().textContent()) ?? '';
     const count = await days().count();
     if (count >= RUNS) {
@@ -225,14 +242,88 @@ async function metDays(): Promise<Locator> {
     if (back === MONTHS_BACK) {
       throw new Error(
         `Lịch hẹn: no month from this one to ${MONTHS_BACK} back has PERF_RUNS (${RUNS}) days ` +
-          `with a met appointment (Đã gặp); the most is ${most.count}, in ${most.month}. Write ` +
-          'the load data with node tools/load-data.mjs --anchor <a date near today>, import it ' +
-          'and set PERF_BACKUP to it (e2e/perf/README.md, steps 1 and 3), or lower PERF_RUNS.',
+          `with a met appointment (Đã gặp); the most is ${most.count}, in ${most.month}. ${MORE_MET}`,
       );
     }
-    await page.getByRole('button', { name: 'Kỳ trước', exact: true }).click();
+    await previous().click();
     await expect(month()).not.toHaveText(shown);
   }
+}
+
+/** The year Lịch hẹn's list is measured in (metYear): its heading, and how far back from today's. */
+interface MetYear {
+  heading: string;
+  back: number;
+}
+
+/**
+ * The nearest year, from the year of today back, with RUNS met appointments (Đã gặp) in Lịch hẹn's
+ * list shown oldest first: appointments.next-year picks the i-th of them, and after the load data's
+ * anchor year the year of today has none (README). Found once, before the imports (checkPeriods),
+ * as counting sorts the list, which appointments() times from the order it opens in. Leaves the
+ * list oldest first. The steps back are not timed.
+ */
+async function metYear(): Promise<MetYear> {
+  const met = () => list().getByRole('row').filter({ hasText: 'Đã gặp' });
+  await expect(kind('Năm')).toBeChecked();
+  await expect(yearHeading()).toBeVisible();
+  let most = { count: -1, year: '' };
+  for (let back = 0; ; back++) {
+    const heading = (await yearHeading().textContent()) ?? '';
+    await oldestFirst();
+    const count = await met().count();
+    if (count >= RUNS) {
+      process.stdout.write(`  ${heading}, ${back} back: ${count} met\n`);
+      return { heading, back };
+    }
+    if (count > most.count) most = { count, year: heading };
+    if (back === YEARS_BACK) {
+      throw new Error(
+        `Lịch hẹn: no year from this one to ${YEARS_BACK} back has PERF_RUNS (${RUNS}) met ` +
+          `appointments (Đã gặp) in its list shown oldest first; the most is ${most.count}, in ` +
+          `${most.year}. ${MORE_MET}`,
+      );
+    }
+    await stepYears(-1);
+  }
+}
+
+/**
+ * Steps Lịch hẹn's year by `by` years, back when negative, with "Kỳ trước" / "Kỳ sau": not timed.
+ * Not "Hôm nay", to go back to the year of today: a click on it, even one changing nothing, made
+ * the next appointments.select-row-month some 9 ms slower on the exe (T-346).
+ */
+async function stepYears(by: number) {
+  const step = by < 0 ? previous() : page.getByRole('button', { name: 'Kỳ sau', exact: true });
+  for (let k = 0; k < Math.abs(by); k++) {
+    const shown = (await yearHeading().textContent()) ?? '';
+    await step.click();
+    await expect(yearHeading()).not.toHaveText(shown);
+  }
+}
+
+/** From the year of today back to the one metYear found: not timed. */
+async function toMetYear({ heading, back }: MetYear) {
+  await expect(kind('Năm')).toBeChecked();
+  await stepYears(-back);
+  // Fails rather than measures another year, if the year of today is not the one checked.
+  await expect(yearHeading()).toHaveText(heading);
+}
+
+/**
+ * Before the imports and reloads, minutes on the exe: stops now when Lịch hẹn, just opened on the
+ * month of today, has no year or month to measure in (metYear, metDays). Times nothing. It reads
+ * the data the exe holds, which each import brings back, and the appointments the probe makes are
+ * none of them met.
+ */
+async function checkPeriods(): Promise<MetYear> {
+  await kind('Năm').click();
+  const inYear = await metYear();
+  // Tháng then opens on the month of today, which metDays steps back from.
+  await stepYears(inYear.back);
+  await kind('Tháng').click();
+  await metDays();
+  return inYear;
 }
 
 /** Measures nothing but the load data (§5.1). */
@@ -305,8 +396,8 @@ async function reloads() {
   }
 }
 
-/** Lịch hẹn: each period kind, sorting and picking in Năm, picking in Tháng. */
-async function appointments(i: number) {
+/** Lịch hẹn: each period kind, sorting and picking in Năm (metYear's year), picking in Tháng. */
+async function appointments(i: number, inYear: MetYear) {
   await go('#/appointments');
   for (const [name, label] of [
     ['day', 'Ngày'],
@@ -317,6 +408,7 @@ async function appointments(i: number) {
     await click(`appointments.period-${name}`, kind(label));
     await expect(kind(label)).toBeChecked();
   }
+  await toMetYear(inYear);
   // The list opens newest first: a click unsorts, the next sorts up, the last back down.
   await byDate().click();
   await expect(dateHeader()).toHaveAttribute('aria-sort', 'none');
@@ -331,6 +423,8 @@ async function appointments(i: number) {
     .first();
   await click('appointments.select-row-year', row);
   await expect(detail().getByRole('button').first()).toBeVisible();
+  // From a year back, Tháng would open on its January: metDays steps back from today's month.
+  await stepYears(inYear.back);
   await kind('Tháng').click();
   const met = (await metDays()).nth(i);
   await click('appointments.select-day-month', met);
@@ -428,8 +522,8 @@ async function exports() {
   await detached('backup.export', backup, status('Đã xuất backup'));
 }
 
-/** Tạo lịch hẹn tiếp theo, today, from a met appointment picked in Tháng or in Năm. */
-async function nextAppointment(i: number, period: 'month' | 'year') {
+/** Tạo lịch hẹn tiếp theo, today, from a met appointment picked in Tháng or in Năm (metYear's). */
+async function nextAppointment(i: number, period: 'month' | 'year', inYear: MetYear) {
   await go('#/appointments');
   const next = detail().getByRole('button', { name: 'Tạo lịch hẹn tiếp theo' });
   if (period === 'month') {
@@ -441,13 +535,9 @@ async function nextAppointment(i: number, period: 'month' | 'year') {
     }
   } else {
     await kind('Năm').click();
+    await toMetYear(inYear);
     // Oldest first: the newest hundred shown are all still ahead.
-    // The list keeps its order between runs: click round to ascending.
-    await expect(list()).toBeVisible();
-    for (let k = 0; k < 3 && (await dateHeader().getAttribute('aria-sort')) !== 'ascending'; k++) {
-      await byDate().click();
-    }
-    await expect(dateHeader()).toHaveAttribute('aria-sort', 'ascending');
+    await oldestFirst();
     const met = list().getByRole('row').filter({ hasText: 'Đã gặp' }).nth(i);
     await met.getByRole('button').first().click();
   }
@@ -485,12 +575,13 @@ test('perf of spec Phase 6 §5.2 on the exe release with the load data', async (
     .getByRole('radiogroup', { name: 'Góc nhìn' })
     .getByRole('radio', { name: 'Toàn bộ' })
     .check();
+  const inYear = await checkPeriods();
 
   // Imports first: the writes at the end change the data the next run imports again.
   for (let i = 0; i < RUNS; i++) await importBackup();
   await reloads();
   for (let i = 0; i < RUNS; i++) {
-    await appointments(i);
+    await appointments(i, inYear);
     await customers(aiId);
     await filters();
     await trash();
@@ -499,8 +590,8 @@ test('perf of spec Phase 6 §5.2 on the exe release with the load data', async (
   for (let i = 0; i < RUNS; i++) await trashOpen();
   for (let i = 0; i < RUNS; i++) await exports();
   for (let i = 0; i < RUNS; i++) {
-    await nextAppointment(i, 'month');
-    await nextAppointment(i, 'year');
+    await nextAppointment(i, 'month', inYear);
+    await nextAppointment(i, 'year', inYear);
   }
   await browser.close();
 
