@@ -246,7 +246,7 @@ Lần đo nghiệm thu NT-HN-01 (`docs/testing/nghiem-thu-v1.md`) trên Home PC,
 
 - **Máy:** Home PC `DESKTOP-KDURKJP`. **Code:** `main` `233c77e` (#993). Exe release build tại máy: 5 649 408 byte (bằng lượt 4), sha256 `94443F07…68115`.
 - **Dữ liệu tải:** `node tools/load-data.mjs` mặc định (neo 12/10/2026, seed 6), sinh ở `233c77e`. `tables` sha256 `e256e4f1…b345a2`, cùng số dòng như lượt 4 (lượt 4: `ad82051b…`; sau đó prompt lên `analysis@5` / `discovery@5`, #913). Sau khi nhập, Cài đặt → Dữ liệu ghi "4 team · 51 nhân sự · 1.481 KH · 10.255 lịch hẹn · 1.674 HĐ"; `project2c.db` 14 102 528 byte.
-- **Cách đo:** như lượt 4, một script chạy liền 23:02–23:08, máy rảnh, cửa sổ exe ở trên cùng:
+- **Cách đo:** như lượt 4, thêm bước 3 (mở lại 3 lần; lượt 4 không đo mở lại), một script chạy liền 23:02–23:08, máy rảnh, cửa sổ exe ở trên cùng:
   1. mở lần đầu 3 lần, cách T-227;
   2. thư mục mới: mở exe, nhập dữ liệu tải qua cổng debug (`e2e/perf/README.md` bước 3), đóng;
   3. mở lại trên dữ liệu tải 3 lần: chờ 12 s rồi nối CDP, đọc mốc như mở lần đầu;
