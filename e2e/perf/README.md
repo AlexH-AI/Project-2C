@@ -53,7 +53,7 @@ Thời gian tính **từ thao tác tới khung hình kế tiếp sau khi màn hi
 | Màn đầu sau tải lại, từng màn ở sidebar | `reload.overview`, `reload.appointments`, `reload.customers`, `reload.reports`, `reload.team`, `reload.settings` |
 | Lịch hẹn: đổi kỳ Ngày / Tuần / Tháng / Năm | `appointments.period-day` … `-year` |
 | Lịch hẹn kỳ Năm: sắp cột Ngày (tăng, giảm), chọn một dòng | `appointments.sort-date-asc`, `-desc`, `appointments.select-row-year` |
-| Lịch hẹn kỳ Tháng: bấm một ngày, chọn một lịch trong ngày | `appointments.select-day-month`, `appointments.select-row-month` |
+| Lịch hẹn kỳ Tháng: bấm một ngày có lịch Đã gặp, chọn một lịch trong ngày (tháng nào: đoạn dưới bảng) | `appointments.select-day-month`, `appointments.select-row-month` |
 | Khách hàng: sang Bảng, sắp Họ tên | `customers.view-table`, `customers.sort-name` |
 | Hồ sơ KH có panel AI; bấm một lần trong Lịch sử phân tích | `customer.open-ai`, `customer.ai-history` |
 | Tổng quan / Báo cáo: bấm Lọc ở kỳ Năm và Tháng; Báo cáo Theo RE | `overview.filter-year`, `-month`, `reports.filter-year`, `-month`, `reports.table-re` |
@@ -63,6 +63,8 @@ Thời gian tính **từ thao tác tới khung hình kế tiếp sau khi màn hi
 | Xuất Excel, Xuất backup (ghi vào `Project2C-data\exports\`, không có hộp chọn file) | `reports.export-excel`, `backup.export` |
 | Tạo lịch hẹn tiếp theo từ lịch đã gặp, chọn ở kỳ Tháng / Năm | `appointments.next-month`, `appointments.next-year` |
 | Lưu file DB (mốc `p2c:db-save`) sau mỗi lần nhập backup và tạo lịch hẹn | `db.save` |
+
+**Lịch hẹn kỳ Tháng đo ở tháng gần nhất có đủ ngày Đã gặp.** Lần đo thứ *i* bấm ngày có lịch Đã gặp thứ *i* trong lịch tháng, nên tháng đó cần ít nhất `PERF_RUNS` ngày như vậy. Dữ liệu tải mặc định neo 12/10/2026, lịch Đã gặp chỉ có tới ngày neo: từ tháng 11/2026, tháng hiện tại không có ngày Đã gặp nào; dữ liệu neo hôm nay cũng chỉ có các ngày đã qua của tháng, đầu tháng chưa đủ. Vì vậy `appointments.select-day-month`, `appointments.select-row-month` và `appointments.next-month` đo ở **tháng gần nhất, từ tháng hiện tại lùi về, có đủ `PERF_RUNS` ngày Đã gặp**: probe bấm "Kỳ trước" (không đo) tới tháng đó và in tháng đã dùng (vd. `Lịch tháng 10/2026, 1 back: 12 days met`). Lùi tối đa 12 kỳ. Không tháng nào đủ thì probe dừng ngay, báo số ngày Đã gặp nhiều nhất tìm được: sinh dữ liệu tải với `--anchor` gần hôm nay (nạp vào exe, đặt `PERF_BACKUP` tới file đó), hoặc giảm `PERF_RUNS`. Các thao tác khác giữ kỳ như trước: đổi kỳ và các thao tác kỳ Năm quanh hôm nay, Tổng quan / Báo cáo Lọc kỳ Tháng là tháng chứa hôm nay.
 
 Ngưỡng: thao tác màn (đổi kỳ, sắp, chọn, Lọc, mở hồ sơ, Thùng rác) **< 200 ms** theo trung vị — Nhóm C của deep review Phase 1–4 (`docs/process/deep-review-phase-1-4.md` §8, spec Phase 6 §5.2). Ngưỡng cho màn Phase 5 / 6 và cho phần còn lại đặt sau số đo nền (T-219).
 
