@@ -210,7 +210,6 @@ const dateHeader = () => list().getByRole('columnheader', { name: 'Ngày' });
 const byDate = () => dateHeader().getByRole('button');
 const yearHeading = () => page.getByRole('region', { name: /^Lịch năm/ }).getByRole('heading');
 const previous = () => page.getByRole('button', { name: 'Kỳ trước', exact: true });
-const toToday = () => page.getByRole('button', { name: 'Hôm nay', exact: true });
 
 /** Sorts Lịch hẹn's list by Ngày, oldest first: it keeps its order while the screen stays open. */
 async function oldestFirst() {
@@ -285,34 +284,46 @@ async function metYear(): Promise<MetYear> {
           `${most.year}. ${MORE_MET}`,
       );
     }
-    await previous().click();
-    await expect(yearHeading()).not.toHaveText(heading);
+    await stepYears(-1);
+  }
+}
+
+/**
+ * Steps Lịch hẹn's year by `by` years, back when negative, with "Kỳ trước" / "Kỳ sau": not timed.
+ * Not "Hôm nay", to go back to the year of today: a click on it, even one changing nothing, made
+ * the next appointments.select-row-month some 9 ms slower on the exe (T-346).
+ */
+async function stepYears(by: number) {
+  const step = by < 0 ? previous() : page.getByRole('button', { name: 'Kỳ sau', exact: true });
+  for (let k = 0; k < Math.abs(by); k++) {
+    const shown = (await yearHeading().textContent()) ?? '';
+    await step.click();
+    await expect(yearHeading()).not.toHaveText(shown);
   }
 }
 
 /** From the year of today back to the one metYear found: not timed. */
 async function toMetYear({ heading, back }: MetYear) {
   await expect(kind('Năm')).toBeChecked();
-  for (let k = 0; k < back; k++) {
-    const shown = (await yearHeading().textContent()) ?? '';
-    await previous().click();
-    await expect(yearHeading()).not.toHaveText(shown);
-  }
+  await stepYears(-back);
   // Fails rather than measures another year, if the year of today is not the one checked.
   await expect(yearHeading()).toHaveText(heading);
 }
 
 /**
  * Before the imports and reloads, minutes on the exe: stops now when Lịch hẹn, just opened on the
- * month of today, has no month or year to measure in (metDays, metYear). Times nothing. It reads
+ * month of today, has no year or month to measure in (metYear, metDays). Times nothing. It reads
  * the data the exe holds, which each import brings back, and the appointments the probe makes are
  * none of them met.
  */
 async function checkPeriods(): Promise<MetYear> {
-  await metDays();
-  await toToday().click();
   await kind('Năm').click();
-  return metYear();
+  const inYear = await metYear();
+  // Tháng then opens on the month of today, which metDays steps back from.
+  await stepYears(inYear.back);
+  await kind('Tháng').click();
+  await metDays();
+  return inYear;
 }
 
 /** Measures nothing but the load data (§5.1). */
@@ -413,7 +424,7 @@ async function appointments(i: number, inYear: MetYear) {
   await click('appointments.select-row-year', row);
   await expect(detail().getByRole('button').first()).toBeVisible();
   // From a year back, Tháng would open on its January: metDays steps back from today's month.
-  await toToday().click();
+  await stepYears(inYear.back);
   await kind('Tháng').click();
   const met = (await metDays()).nth(i);
   await click('appointments.select-day-month', met);
