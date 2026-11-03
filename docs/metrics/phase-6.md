@@ -246,14 +246,14 @@ _Điền cuối phase._
 
 ## Kích thước PR vượt ngưỡng
 
-Tới 27/10/2026 (T-307): 241 PR merge vào `main` sau PR đóng Phase 5 (#514), từ #515 tới #858; 87 PR trong đó có code hoặc test. PR sửa của vòng review toàn bộ code ghi thêm sau. Lệnh đếm và lệnh rà: thân PR của T-307 (#859), trừ một chỗ khi ghi thêm PR. `count.mjs` ở đó đọc phía cũ của file (vùng `#[cfg(test)]`, khối codemap) ở `git merge-base origin/main <head>`; với PR xếp chồng merge bằng `--merge` (#709, #845), lệnh này trả về chính head. Phía cũ lấy theo `base.sha` của PR (`gh api repos/AlexH-AI/Project-2C/pulls/<n> --jq .base.sha`): đọc ở `git merge-base <base.sha> <head>`, đúng cả với PR xếp chồng merge bằng `--merge`. Đếm lại #709, #845 theo `base.sha` ra cùng số ở bảng.
+Tới 03/11/2026 (T-342): 324 PR merge vào `main` sau PR đóng Phase 5 (#514), từ #515 tới #974; 112 PR trong đó có code hoặc test. T-307 đếm tới 27/10 (#515 tới #858: 241 PR, 87 có code hoặc test); T-342 đếm tiếp #859 tới #974 (83 PR, 25 có code hoặc test). PR merge sau #974 ghi thêm ở PR chốt số đo cuối G7. Lệnh đếm và lệnh rà: thân PR của T-307 (#859), trừ một chỗ khi ghi thêm PR; phần đếm tiếp của T-342 ở thân PR #PRNUM, đã theo chỗ đó. `count.mjs` ở đó đọc phía cũ của file (vùng `#[cfg(test)]`, khối codemap) ở `git merge-base origin/main <head>`; với PR xếp chồng merge bằng `--merge` (#709, #845), lệnh này trả về chính head. Phía cũ lấy theo `base.sha` của PR (`gh api repos/AlexH-AI/Project-2C/pulls/<n> --jq .base.sha`): đọc ở `git merge-base <base.sha> <head>`, đúng cả với PR xếp chồng merge bằng `--merge`. Đếm lại #709, #845 theo `base.sha` ra cùng số ở bảng.
 
 Ngưỡng ADR-0001 phụ lục: ≤ ~400 dòng code sản phẩm (SP), ≤ ~800 dòng tổng diff. Luật đếm:
 
 - **Nguồn:** `additions` / `deletions` của từng file theo `gh api repos/AlexH-AI/Project-2C/pulls/<n>/files --paginate`. SP và tổng đều cộng dòng thêm với dòng xóa, như sổ đã làm với #801, #833.
 - **Phân loại** theo `classifyFile` của `tools/size-report-core.mjs` (spec §6.2). Test: `*.test.*`, `*.spec.*`, `e2e/**`, `test-support.ts`, `fixtures/**`, golden, `playwright*.config.ts` và `vitest.config.ts` ở gốc repo, và phần từ dòng `#[cfg(test)]` trở đi của file Rust. Code còn lại là SP, kể cả `tools/*.mjs` (như #474 ở `phase-5.md`) và migration tự viết (mở đầu `-- Custom SQL migration file`). File mà `classifyFile` không đếm (tài liệu, `.json`, `.toml`) chỉ cộng vào tổng.
 - **Không tính** (ADR-0001 phụ lục): lockfile; SQL, snapshot và journal do drizzle-kit sinh; bảng dữ liệu tĩnh của seed (`packages/db/src/seed-data.ts`); khối codemap trong `CLAUDE.md` của các package; `src-tauri/icons/*`.
-- **Không xét** PR không đổi dòng code hay test nào. Bốn PR loại này vượt 800 dòng: kết quả eval #518, báo cáo gốc #609, #651, #718.
+- **Không xét** PR không đổi dòng code hay test nào. Sáu PR loại này vượt 800 dòng: kết quả eval #518, báo cáo gốc #609, #651, #718, kế hoạch lượt 4 #863, báo cáo gốc lượt 4 #894.
 - **Bảng phụ "ở biên":** PR vượt không quá 6 % (SP 401–424, tổng 801–848) và không vượt ngưỡng kia quá 6 %. Vượt quá 6 % ở một ngưỡng thì vào bảng chính.
 
 | PR | Task | Code sản phẩm | Tổng diff | Lý do nêu trong PR |
@@ -273,6 +273,10 @@ Ngưỡng ADR-0001 phụ lục: ≤ ~400 dòng code sản phẩm (SP), ≤ ~800 
 | #833 | T-296 | 527 (+337 / −190) | 878 (test 342) | có: Issue gom 11 mục sổ của 5 review; 190 dòng xóa là hai khung hộp gõ chữ gom về một chỗ |
 | #835 | T-297 | 753 (+567 / −186) | 1 578 (test 796) | có: Issue gom 19 mục sổ, thêm hàm đọc `db` Owner duyệt trong phiên |
 | #845 | T-301 PR 1/2 | 791 (+385 / −406) | 1 103 (test 312) | có: ≈ 30 màn đổi dòng import, `PLAIN_SLOTS` dời sang test, 17 cột báo cáo viết lại; Owner đã tách task thành hai PR |
+| #917 | T-322 | 465 (+387 / −78) | 938 (test 465) | có: phần vượt chủ yếu là test của các mục review và 29 ca Owner đồng ý viết lại; Owner chấp nhận cỡ (31/10) |
+| #937 | T-329 | 1 451 (+735 / −716) | 3 428 (test 1 977) | có: tách Mock trích xuất sang file mới, không đổi hành vi; so cả PR thì ≈ 720 dòng dời nguyên văn tính hai lần, `mock-adapter.ts` còn lại nên git không ghép đổi tên; theo từng commit với `-M`: +323 / −288 |
+| #939 | T-330 | 441 (+328 / −113) | 690 (test 232) | có: SP quá ~400 một chút, trong khoảng ~400–550 Issue ước lượng |
+| #944 | T-335 | 394 (+389 / −5) | 1 297 (test 503) | có: Owner chấp nhận cỡ ngày 01/11, lúc PR còn 1 078 dòng; code công cụ trong ngưỡng, phần còn lại là test, skill 334, tài liệu 66 |
 
 Ở biên:
 
@@ -284,7 +288,9 @@ Ngưỡng ADR-0001 phụ lục: ≤ ~400 dòng code sản phẩm (SP), ≤ ~800 
 | #817 | T-294 | 298 (+210 / −88) | 820 (test 473) | có: Issue gộp 6 mục sổ và ba quyết định Owner trong phiên |
 
 - **Số trong bảng thay số của sổ và thân PR**, vì đếm theo cùng một luật: SP cộng cả dòng xóa (sổ ghi #539, #543, #545 theo dòng thêm); khối codemap bỏ, chữ viết tay của `CLAUDE.md` vẫn tính (#828: 1 294, sổ ghi 1 292); `seed-data.ts` không tính (#526: SP 582, không phải 621). #566 (tổng 833) và #817 (820) sổ ghi là vượt, nhưng chỉ vượt tổng ≤ 6 % nên ở bảng phụ.
-- **19 / 87 PR có code vượt ngưỡng**, 15 ở bảng chính. 8 PR là của đợt sửa sổ OPEN trước v1.0 (T-283…T-304), nơi mỗi Issue gom nhiều mục sổ; 5 PR của Thùng rác (T-208, T-210, T-211, hai PR của T-258). Hai PR không nêu lý do: #526, và #616 ở biên.
+- **23 / 112 PR có code vượt ngưỡng**, 19 ở bảng chính.
+  - Tới #858: 19 / 87, 15 ở bảng chính. 8 PR là của đợt sửa sổ OPEN trước v1.0 (T-283…T-304), nơi mỗi Issue gom nhiều mục sổ; 5 PR của Thùng rác (T-208, T-210, T-211, hai PR của T-258). Hai PR không nêu lý do: #526, và #616 ở biên.
+  - Từ #859 tới #974: 4 / 25, cả bốn ở bảng chính, không PR nào ở biên. Ba PR của Mock trích xuất `packages/ai` (#917 của đợt sửa lượt 4, #937 và #939 của đợt sửa sổ OPEN ở G7), một PR của pipeline `auto-issues` (#944). Cả bốn nêu lý do.
 
 ## Review đóng phase
 
