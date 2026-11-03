@@ -172,14 +172,15 @@ describe('findHardcodedSeparators', () => {
   });
 
   // Review #965: a limit, not a goal. JSX text is i18n's, and the app writes none of this form.
-  it('takes a closing or self-closing tag written against a word of JSX text for type arguments', () => {
+  it('takes an opening, closing or self-closing tag written against a word of JSX text for type arguments', () => {
     const source = [
+      '<p>one<b>{a}, {b}</b></p>',
       '<p><b>Name</b>{a}, {b}</p>',
       '<p>Hello<br />{a}, {b}</p>',
       '<p><b>{x}</b>{a}, {b}</p>',
     ].join('\n');
     expect(findHardcodedSeparators(source)).toEqual([
-      { line: 3, match: '}, {', rule: 'hardcoded-separator' },
+      { line: 4, match: '}, {', rule: 'hardcoded-separator' },
     ]);
   });
 
