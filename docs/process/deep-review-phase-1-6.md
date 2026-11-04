@@ -6,6 +6,7 @@
 - **Lượt 2:** soạn 17/10/2026 (T-224 #564) — **Owner duyệt 17/10/2026** (PR #647, nhãn `gate`; https://github.com/AlexH-AI/Project-2C/pull/647#issuecomment-6221359110). **Owner trả lời §L2.11 ngày 17/10/2026** (ADR-0001 phụ lục M7): bỏ Muse, lượt 2 chỉ **Claude và Codex**, chạy **một đợt**; chạy trên máy nào cũng được, số đo so với mốc cùng máy; các câu còn lại theo đề xuất. Toàn bộ ở phần **Lượt 2** cuối file: §L2.1–§L2.11, prompt Phụ lục E, F, H (không có Phụ lục G). Phần lượt 1 (§1–§12, Phụ lục A–D) giữ nguyên, lượt 2 chỉ dẫn tới khi dùng lại.
 - **Lượt 3:** Owner thêm 19/10/2026, trước G7 (T-266 #713, ADR-0001 phụ lục M9): **Claude và Codex**, đủ 6 gói như lượt 2, phần Claude chạy bằng **Workflow** (mỗi gói một subagent context sạch, tuần tự A → F), sau tổng hợp sửa hết. Toàn bộ ở phần **Lượt 3** cuối file: §L3.1–§L3.11, script và prompt ở Phụ lục I, J, K. Phần lượt 1, lượt 2 giữ nguyên.
 - **Lượt 4:** Owner thêm 26–27/10/2026, trước G7 (T-309 #854, ADR-0001 phụ lục M10): **Claude Opus 5.5, Codex (GPT Sol 6.1) và DeepSeek v4.1 Flash (OpenCode)**, đủ 6 gói như lượt 2–3, phần Claude mỗi gói một phiên sạch như lượt 3. Chỉ chạy khi mọi ghi chú OPEN của sổ đã sửa hết (Owner 27/10). Kiểm các đợt sửa sau lượt 3 (đợt sửa lượt 3, đợt sửa sổ OPEN, T-305…T-308, đợt sửa mục OPEN còn lại) và tìm lỗi mới trên toàn bộ code. Toàn bộ ở phần **Lượt 4** cuối file: §L4.1–§L4.11, prompt ở Phụ lục L, M, N, O, cấu hình OpenCode ở Phụ lục P (không có script Workflow). Phần lượt 1–3 giữ nguyên.
+- **Lượt 5:** Owner thêm 04/11/2026, trong G7 (T-357 #1025, ADR-0001 phụ lục M12): ba bên như lượt 4, **Claude Opus 5.5, Codex (GPT Sol 6.1) và DeepSeek V4.1 Flash (app desktop WorkBuddy)**, đủ 6 gói. SHA ghim là `main` lúc bước chuẩn bị; sau tổng hợp sửa hết rồi G7; DeepSeek chỉ dùng credit của gói WorkBuddy Pro. Kiểm đợt sửa lượt 4 và các đợt sau đó (mục sổ [G7], G7) và tìm lỗi mới trên toàn bộ code. Toàn bộ ở phần **Lượt 5** cuối file: §L5.1–§L5.11, prompt ở Phụ lục Q, S, T, U, app WorkBuddy và `dot2.mjs` lượt 5 ở Phụ lục V (không có Phụ lục R). Phần lượt 1–4 giữ nguyên.
 - **Nguồn:** spec Phase 6 §2, §5.1, §6 (G1 #515); khuôn deep review Phase 1–4 (`deep-review-phase-1-4.md`) và Phase 5 (`docs/reviews/raw/2026-10-10/common-*.md`); bài học DeepSeek / Muse (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §6–§7); tổng hợp Phase 5 §9–§10; ADR-0001 phụ lục M2, M4, M5.
 - **Owner đổi bên review (13/10, ADR-0001 phụ lục M5):** bỏ DeepSeek v4.1 Flash (chỉ số benchmark trí tuệ không đủ cao cho deep review toàn codebase); Muse dùng model **Muse Wonder** (mới ra, benchmark cao hơn Spark 1.3). Lượt 1 còn **3 bên**: Claude, Codex, Muse → 6 gói × 3 = **18 báo cáo**. **14/10 (M6):** Muse về lại **Muse Spark 1.3** (`muse-spark-1.3-contributor`, Muse Code 1.3.0 trên Office Laptop, như Phase 5).
 
@@ -3069,3 +3070,920 @@ try {
 - tài liệu không ghi model gắn sẵn chạy trên hạ tầng nào (§L4.11).
 
 Repo public, dữ liệu giả lập.
+
+# Lượt 5
+
+Kế hoạch lượt 5 (T-357 #1025), soạn 04/11/2026 trên Home PC, trong G7. ADR-0001 phụ lục M10 thêm lượt 4 trước G7; Owner thêm lượt 5 ngày 04/11 (phụ lục M12, §L5.11). Mục nào không nói khác thì giữ như lượt 4 (§L4.1–§L4.11, Phụ lục L–P), và qua đó như lượt 1–3.
+
+Owner chốt ngày 04/11, trong phiên soạn (§L5.11 mục 1–4):
+
+- ba bên như lượt 4;
+- sau tổng hợp sửa hết, rồi G7;
+- SHA ghim là `main` lúc bước chuẩn bị;
+- DeepSeek chỉ dùng credit của gói WorkBuddy Pro, không mua thêm.
+
+Số đo trong phần này lấy ở `571b8b0` (`main` lúc soạn; code trùng `3d237b0`). Bước chuẩn bị đo lại ở SHA ghim. Prompt ghi `{SHA}`; bước chuẩn bị thay bằng SHA ghim (§L5.9 bước 4).
+
+| Yêu cầu | Mục |
+|---|---|
+| #1025 test 1: SHA ghim là `main` lúc bước chuẩn bị, sổ OPEN rỗng; từ đó tới lúc chạy chỉ có docs | §L5.2, §L5.9 bước 1 |
+| #1025 test 2: prompt ba bên đủ hai phần; KNOWN lượt 5 đủ nguồn; lệnh so số đo với mốc Home PC | §L5.4, §L5.5, §L5.6, Phụ lục Q, S, T, U |
+| #1025 test 3: bảng R1 khớp tổng hợp lượt 4 (§3, §6, §8.4, §8.5); bảng R2 khớp các Issue T-329…T-356 đã đóng | §L5.5 phần 4, 5 |
+| #1025 test 4: chi phí DeepSeek theo quyết định 4 (không mua thêm credit), có điểm dừng | §L5.7, §L5.9 đợt 2 bước 4–6, Phụ lục V |
+| #1025 test 5: đề xuất ghi rõ Owner chọn gì, có ngày | §L5.11 |
+| #1025 hợp đồng: R1 theo mã `DR6-*`, R2 theo Issue, rồi phát hiện mới với ID theo bên `CLR5-*` / `CXR5-*` / `DSR5-*`; vấn đề gộp đánh số tiếp `DR6-158…`; ghi model các bên | §L5.2, §L5.8, Phụ lục Q, S, T, U |
+
+## L5.1 Mục tiêu, bên review
+
+Owner chốt 04/11/2026 (§L5.11 mục 1–4):
+
+- **Một vòng deep review toàn bộ code nữa trước khi phát hành v1.0 (G7)**, sau đợt sửa lượt 4 và các mục sổ [G7] sau đó. Sổ OPEN rỗng từ `233c77e` (03/11) và vẫn rỗng ở `571b8b0`.
+- **Ba bên, như lượt 4** (Owner: "3 bên như round 4: Claude Opus, Codex GPT Sol và Deepseek v4.1 Flash qua Workbuddy"):
+  - **Claude Opus 5.5:** như lượt 4, Owner mở **mỗi gói một phiên sạch** ở `C:\workspace\Project-2C-review`. Mức suy luận và ultracode Owner chọn từng phiên (M1, M8). Phiên bật ultracode được dùng subagent / Workflow cho việc của gói; chỉ phiên chính làm bước 0, ghi `{GÓI}.md` và in dòng `XONG`.
+  - **Codex, model GPT Sol 6.1:** Owner chạy, mỗi gói một phiên mới, chỉ đọc, không viết code (M2).
+  - **DeepSeek V4.1 Flash** trong app desktop WorkBuddy, model gắn sẵn của gói WorkBuddy Pro. Owner chạy, mỗi gói một task mới qua **Code review expert** của app, chỉ đọc, không viết code. Báo cáo là dữ liệu tham khảo như Codex (M2, M10, M12).
+  - 6 gói × 3 bên = **18 báo cáo**, chạy **hai đợt** như lượt 4: đợt 1 Claude + Codex song song; đợt 2 DeepSeek một mình, khi thư mục của hai bên kia đã bị chặn ACL.
+- **Hai phần ngang nhau** như lượt 2–4:
+  1. **kiểm phần đã sửa** (trục R): mọi DR6 và mục KNOWN đã sửa sau lượt 4, và từng Issue sau đó (§L5.4);
+  2. **tìm lỗi mới và edge case mới** trên **toàn bộ** phạm vi gói.
+- **Sau tổng hợp: sửa hết, rồi G7** (như lượt 3–4).
+- **Chi phí DeepSeek (G4):** chỉ credit của gói WorkBuddy Pro, không mua thêm credit. Lượt 4 có trần 25 USD, gồm tối đa một gói mua thêm 500 credit; lượt 5 bỏ phần mua thêm.
+
+**Vì sao cần lượt 5:** từ SHA ghim lượt 4 (`2e51e25`) có ba đợt mà chưa lượt nào đọc trọn.
+
+- **Đợt sửa lượt 4** (31/10–01/11): 10 Issue #896…#905 (T-319…T-328), gồm đợt G5 `@5` và Mock trích xuất theo danh sách cho phép.
+- **Mục sổ [G7] sau đợt sửa** (01–03/11): T-329…T-342.
+  - Mock trích xuất viết lại thành file riêng (`packages/ai/src/mock-extraction.ts`, 950 dòng) theo các quyết định Owner 31/10–02/11.
+  - Pipeline `auto-issues` thêm `tools/auto-wait*` (T-335, T-338).
+- **G7** (03–04/11):
+  - chụp lại ảnh hướng dẫn (T-343);
+  - sửa probe hiệu năng (T-345…T-347) và đo NT-HN-01 (T-348);
+  - sửa Thùng rác ghi lịch Dự kiến đã qua (T-350);
+  - nghiệm thu L2, L3 trên exe ứng viên và sửa các dòng nghiệm thu (T-349, T-351…T-356).
+
+Diff `2e51e25..571b8b0` ngoài `docs/**` và mọi file `*.md` có 93 file, +5 761 / −1 533 dòng. Đó là khoảng 1/3 đợt mà lượt 4 đọc ở `2e51e25` (`119e2e4..2e51e25`: 271 file, +14 631 / −3 399; `docs/reviews/raw/2026-10-31/common-baseline.md`). Không có migration mới.
+
+Các lượt trước cho thấy code mới của đợt sửa là chỗ hở nhiều nhất: 9 / 23 vấn đề mới của lượt 4 do đợt sửa sau lượt 3 (tổng hợp lượt 4 §1).
+
+## L5.2 SHA ghim, đợt sửa, chỗ làm
+
+**SHA ghim lượt 5 = `origin/main` lúc bước chuẩn bị** (Owner 04/11, mục 3), khi mục OPEN của `docs/state/review-notes.md` không còn mục lá nào (điều kiện của lượt 4, K40). Thứ tự:
+
+1. PR kế hoạch này merge (G1), rồi PR sổ ghi chú review của nó.
+2. T-358 (`dot2.mjs` lượt 5, Phụ lục V; tạo sau G1) merge, rồi PR sổ của nó. Ghi chú không chặn mà review hai PR này ghi thêm thì sửa trước khi ghim SHA (K40).
+3. Bước chuẩn bị ghim `main` lúc đó (§L5.9 bước 1).
+
+Từ SHA ghim tới lúc chạy chỉ có thay đổi docs. Trong suốt lượt 5 **không merge code vào `main`** (như §2). PR docs merge được, không đổi SHA ghim.
+
+**Lúc soạn:** `571b8b0` (`571b8b0bd91afc4992809784c7f8e30f8d00b3ed`, `main` 04/11/2026 sau #1024).
+
+- Code trùng `3d237b0` (`3d237b0d2b795599d27e6ce00421f0eeffa53c9a`, #1011, T-350); sau đó chỉ có tài liệu. Exe ứng viên `3d237b0` (artifact CI run `41765637293`) là exe của nghiệm thu L3 (`docs/testing/nghiem-thu-v1.md`, "Các lượt thử").
+- Milestone Phase 6 không còn Issue mở nào ngoài #1025.
+- Mọi số đo của §L5.2, §L5.3, §L5.6 lấy ở `571b8b0`. Bước chuẩn bị đo lại ở SHA ghim và chạy lại cổng (§L5.9 bước 5–7); số ở `common\baseline.md` là số dùng.
+
+**Đợt sửa = diff `2e51e25..{SHA}`.** Lúc soạn (`2e51e25..571b8b0`), ngoài `docs/**` và mọi file `*.md`: 93 file, +5 761 / −1 533 dòng (`git diff --numstat`, tính cả test). Không migration, không file nhị phân. 25 commit có code hoặc test.
+
+Đợt sửa lượt 4 (Owner duyệt cách sửa 31/10, tổng hợp lượt 4 §9; cột DR6 là vấn đề lượt 4 mà Issue sửa):
+
+| Issue | Việc | DR6 | PR | Commit |
+|---|---|---|---|---|
+| #896 T-319 | Test D7 cùng ngày, `byName` đổi chữ số một lần mỗi tên, nhãn model từ chối UTF-16 hỏng | 135–137 | #907 | `1766cca` |
+| #897 T-320 | Test hợp đồng CSP / `identifier`, `storage.rs` (thư mục mang tên backup, ổ đầy lúc backup) | 138 | #915 | `ea2aa34` |
+| #898 T-321 | `flush()` chờ lần thay bắt đầu muộn, listener của `AppData`, focus và câu hộp đóng app | 139, 140, 146 (b), 147 | #911 | `59fdfca` |
+| #899 T-322 | Mock trích xuất chỉ đề xuất từ câu kể đơn về KH, lỗi AI giữ lại theo dữ liệu | 141, 144 | #917 | `5d13f5a` |
+| #900 T-323 | Đợt G5 lượt 4: NUL, "giới" trước "luật"; `analysis@5`, `discovery@5` | 142, 143 | #909 (G5 §14), #913 | `1e500e1`, `1eab296` |
+| #901 T-324 | Dấu nối còn lại của DR6-37 và bộ chặn ký hiệu, ô chọn theo mockup | 37, 145, 149 | #920 | `656052f` |
+| #902 T-325 | Tên liền dài không tràn ở hộp thoại, màn Team, So sánh team, Báo cáo | 146 (a), 148 | #922 | `06c5a1b` |
+| #903 T-326 | Ô Case size trống, tên nút khôi phục, focus lúc hộp xác nhận chạy, test hở gói E | 150–154 | #924 | `4d7e689` |
+| #904 T-327 | Công cụ: `pr-core`, bộ kiểm ảnh hướng dẫn, glob của `notes-core`, `size-report` | 155–157 | #926 | `54884d4` |
+| #905 T-328 | Nghiệm thu NT-EX-08 / 09 cho dữ liệu exe trước v1.0 (KNOWN CLR4-F2), lệch của ô chọn | — | #928 | `532a93a` |
+
+Mục sổ [G7] sau đợt sửa (gom ghi chú review của các PR trên; gắn nhãn ở #936, #953, #962, #970, #974):
+
+| Issue | Việc | PR | Commit |
+|---|---|---|---|
+| #930 T-329 | `packages/ai`: gỡ chép ở bộ chặn và test, tách Mock trích xuất ra file riêng (không đổi hành vi) | #937 | `b6d4388` |
+| #931 T-330 | Mock trích xuất theo quyết định Owner 31/10–01/11: giá trị cuối về KH, Ly hôn / Góa / Ly thân, con đã mất, "bé" | #939 | `36a63e7` |
+| #932 T-331 | Tên dài: `DataTable` trong khung cuộn, hàng tiêu đề thẻ team, So sánh team | #941 | `023cf3b` |
+| #933 T-332 | Ô Giờ chỉ có ký tự vô hình, focus sau hộp nhập backup, khóa i18n chung, `listeners.ts` dùng chung | #946 | `66019cc` |
+| #934 T-333 | Bộ chặn ký hiệu (kiểu generic, CRLF), `globMeetsFolder` | #965 | `7b6dbd1` |
+| #935 T-334 | Tài liệu: tổng hợp lượt 4, `phase-6.md`, quyết định #917 / #920, mục Ô chọn | #948 | `52a9979` |
+| #942 T-335 | Pipeline `auto-issues` (ADR-0001 M11): skill, `tools/auto-wait*`, `pr-status`, `review-hint-core` | #944 | `a96d94d` |
+| #950 T-336 | Mock trích xuất: khúc không chữ, dấu đầu dòng; luật `dependency-cruiser` cho test-support | #956 | `a7877e5` |
+| #951 T-337 | Ô Giờ có ký tự vô hình, dáng nút `aria-disabled` của `Button`, e2e tên TL dài | #958 | `2cc4464` |
+| #952 T-338 | Pipeline `auto-issues`: chờ CI sau reopen, giữ nhánh local, gợi ý review bỏ khối app | #954 | `3665328` |
+| #960 T-339 | Test Mock trích xuất (thời gian bền với runner chậm, ca qua dòng), ranh giới test-support | #963 | `ee01e41` |
+| #961 T-340 | Skill `auto-issues`: làm mới "Ghi chú OPEN liên quan", câu trỏ dòng (chỉ tài liệu) | #967 | `6be4dee` |
+| #969 T-341 | Bộ chặn ký hiệu: thẻ đóng / tự đóng dính chữ JSX | #971 | `55086de` |
+| #973 T-342 | Bảng PR vượt ngưỡng tới #974; ca thẻ mở dính chữ JSX | #975 | `ace10ee` |
+
+G7 (03–04/11):
+
+| Issue | Việc | PR | Commit |
+|---|---|---|---|
+| #977 T-343 | Chụp lại ảnh hướng dẫn sau đợt sửa lượt 4 | #978 | `fffe3e5` |
+| #980 T-344 | Bảng đối chiếu của hướng dẫn, hàng Chuyển nhóm | #981 | `57d6330` |
+| #983 T-345 | Probe hiệu năng: kỳ Tháng lùi về tháng có đủ ngày Đã gặp | #984 | `0212bb6` |
+| #986 T-346 | Probe hiệu năng: kỳ Năm lùi về năm có đủ lịch Đã gặp, kiểm sớm trước vòng nhập backup | #988 | `6d9ae0e` |
+| #990 T-347 | Probe hiệu năng: một locator cho dòng Đã gặp, kiểm tháng chứa hôm nay | #992 | `1ce3c61` |
+| #994 T-348 | Số đo NT-HN-01 trên Home PC | #995 | `ffdea65` |
+| #997 T-349 | Ghi chú NT-HN-01 không chép số, Cách đo nêu bước mở lại | #999 | `570b110` |
+| #1001 T-350 | Thùng rác ghi lịch Dự kiến đã qua là Chưa ghi kết quả (NT-TR-07) | #1011 | `3d237b0` |
+| #1002 T-351 | Nghiệm thu L2 trên exe ứng viên `1ce3c61` | #1003 | `ccea84f` |
+| #1004 T-352 | Nghiệm thu sau L2: mục Dữ liệu, phạm vi dòng L2, NT-AI-03, bảng cổng KYC của hướng dẫn | #1007 | `46ffe62` |
+| #1005 T-353 | NT-LH-19, NT-LH-28 lệch app: Owner chọn sửa dòng | #1009 | `daa8651` |
+| #1012 T-354 | Nghiệm thu: NT-TR-12 vào danh sách cần lịch Chưa ghi kết quả, dấu câu NT-AI-03 | #1014 | `b1cacf7` |
+| #1017 T-355 | Nghiệm thu L3 trên exe ứng viên `3d237b0` | #1020 | `abd10b9` |
+| #1019 T-356 | Hướng dẫn: mở app vào màn dùng lần cuối (NT-HD-01) | #1023 | `382967d` |
+
+Mỗi PR code có PR sổ ghi chú review ngay sau. Ghi chú không chặn của chúng nằm ở KNOWN phần 1 nếu còn ACCEPTED, ở `fixes.md` nếu đã RESOLVED (§L5.5, §L5.9 bước 4).
+
+| Bên | Ai chạy | Đợt | Làm ở | Thư mục kết quả | ID |
+|---|---|---|---|---|---|
+| Claude Opus 5.5 (mỗi gói một phiên sạch, tuần tự A → F) | Owner mở phiên | 1 | `C:\workspace\Project-2C-review` | `C:\workspace\deep-review-1-6-r5\claude\` | `CLR5-<gói><số>` |
+| Codex, model GPT Sol 6.1 | Owner, mỗi gói một phiên mới | 1 (cùng lúc Claude) | `C:\workspace\Project-2C-review-2` | `…-r5\codex\` | `CXR5-<gói><số>` |
+| DeepSeek V4.1 Flash (app desktop WorkBuddy, model gắn sẵn của gói WorkBuddy Pro, qua Code review expert) | Owner, mỗi gói một task mới trong app | 2 (một mình) | `C:\workspace\Project-2C-review` (Claude đã xong), là workspace của task | `…-r5\deepseek\` | `DSR5-<gói><số>` |
+| **Claude phiên tổng hợp** (Issue tạo sau khi lượt 5 chạy xong) | Owner yêu cầu, sau khi đủ 18 báo cáo | — | checkout chính | `docs/reviews/` qua PR docs | dùng nguyên ID trên |
+
+- **ID theo bên:** "R5" = lượt 5 (`rg "CLR5-|CXR5-|DSR5-"` trên `docs/` ngày 04/11: 0 chỗ). Vấn đề đã gộp đánh số tiếp `DR6-158…`.
+- **Hai đợt, ACL:** lý do như §L4.2. ACL của đợt 2 chặn thêm cả thư mục lượt 4 `deep-review-1-6-r4` (Phụ lục V).
+- **Máy: Home PC `DESKTOP-KDURKJP`** như lượt 3–4. Mốc hiệu năng sau #656, số lượt 4 và số G7 cùng máy chỉ có ở máy này; app WorkBuddy đã cài ở đây.
+- Thư mục lượt 1–4 (`C:\workspace\deep-review-1-6\`, `-r2\`, `-r3\`, `-r4\`) giữ trên Home PC tới v1.0 (HANDOFF). Probe lượt 4 của Claude và Codex trong `deep-review-1-6-r4\<bên>\` là probe cùng máy, dùng lại được.
+  - DeepSeek ở đợt 2 không đọc thư mục lượt 1–4 nào, kể cả probe lượt 4 của chính nó: ACL chặn cả thư mục.
+  - Báo cáo lượt 4 của mọi bên đã ở repo (`docs/reviews/raw/2026-10-31/`), mọi bên đọc được.
+
+## L5.3 Sáu gói, cỡ đo lại, diff sửa theo gói
+
+Phạm vi từng gói giữ đúng §3 và luật `PACKAGES` của `tools/size-report-core.mjs` (năm file xếp tay ở §L4.3 đã vào luật ở T-310). Ở `571b8b0` không file nào rơi vào dòng "Chưa xếp gói":
+
+- `packages/ai/src/mock-extraction.ts` (+ test) vào C;
+- `tools/auto-wait*` vào F;
+- e2e mới `e2e/long-names.spec.ts` vào F.
+
+**Cỡ đo lúc soạn** (`node tools/size-report.mjs` ở `571b8b0`, 04/11, Home PC; số dòng không phụ thuộc máy). Δ so với lượt 4 (`2e51e25`, `docs/reviews/raw/2026-10-31/common-baseline.md`). Bước chuẩn bị đo lại ở SHA ghim (§L5.9 bước 6).
+
+**Diff sửa** = dòng thêm / xóa của `git diff --numstat -M 2e51e25 571b8b0`, xếp gói bằng `classifyFile`. Không tính file sinh tự động; file Rust tính cả phần test trong file là SP, như §L3.3.
+
+| Gói | SP (Δ) | Test (Δ) | Sinh (Δ) | File (Δ) | Diff sửa SP | Diff sửa test | R1 (mã DR6, mục KNOWN đã sửa) | R2 (Issue) |
+|---|---:|---:|---:|---:|---|---|---|---|
+| A. Lõi dữ liệu | 8 748 (+29) | 15 805 (+91) | 341 (0) | 104 (0) | +53 / −24 · 5 file | +110 / −19 · 6 file | 135–137, 151 | T-332, 350 |
+| B. File và Rust | 2 457 (+31) | 5 600 (+178) | 0 (0) | 21 (+2) | +113 / −15 · 4 file | +119 / −8 · 4 file | 138–140, 147 | T-332 |
+| C. AI | 6 580 (+553) | 8 202 (+663) | 0 (0) | 65 (+2) | +1 051 / −498 · 11 file | +1 396 / −733 · 10 file | 137, 141–144 | T-329, 330, 332, 336, 339 |
+| D. Màn nhập liệu | 8 134 (+135) | 3 094 (+274) | 0 (0) | 89 (+2) | +208 / −73 · 12 file | +276 / −2 · 4 file | 37, 145–149 | T-331, 332, 333, 337, 341, 342, 344, 352, 356 |
+| E. Lịch hẹn, chỉ số, quản lý | 8 272 (+117) | 4 700 (+144) | 0 (0) | 52 (0) | +178 / −61 · 13 file | +200 / −56 · 3 file | 37, 148, 150–154 | T-331, 332, 337, 350, 353 |
+| F. Xuyên gói, bloat / hiệu năng, công cụ | 4 886 (+446) | 18 427 (+1 567) | 4 628 (0) | 100 (+4) | +460 / −14 · 7 file | +1 597 / −30 · 14 file | 136 (đo), 155–157, CLR4-F2; **R1 gộp đủ 25 dòng** | T-333, 334, 335, 336, 338, 339, 340, 342, 343, 345–349, 351, 352, 354, 355; **R2 gộp đủ mọi dòng** |
+| **Tổng** | 39 077 (+1 311) | 55 828 (+2 917) | 4 969 (0) | 431 (+10) | | | | |
+
+- Phần lớn diff SP nằm ở C (Mock trích xuất tách file rồi viết lại) và F (`tools/auto-wait*`, 388 dòng SP).
+- Một mục có thể thuộc nhiều gói, vd. DR6-147 (dải lưu ở D, hàng đợi ở B) hay T-332 (ô Giờ ở E, `readsBackAsIs` của `packages/db/src/{common,backup}.ts` ở A, `listeners.ts` ở B, khóa i18n ở D, `ai-jobs.ts` ở C). Mỗi gói kiểm phần của mình; gói F gộp.
+- Bước chuẩn bị (§L5.9 bước 6) đo lại ở SHA ghim bằng cùng lệnh, kèm bundle và exe; số ở `baseline.md` là số dùng.
+
+## L5.4 Hai phần của mỗi gói
+
+Như §L4.4 (và §L3.4, §L2.4), với các thay đổi dưới.
+
+### Phần 1 — kiểm phần đã sửa (trục R), hai bảng
+
+**Bảng R1 — theo mã** (§L5.5 phần 4), 25 dòng:
+
+- DR6-135…157: 23 vấn đề lượt 4, đều có Issue sửa (tổng hợp lượt 4 §8.5).
+- DR6-37: SỬA MỘT PHẦN ở lượt 4; phần còn (DR6-145 (a)) sửa ở #901.
+- KNOWN CLR4-F2 (tổng hợp lượt 4 §8.4): Owner chọn Q4 (a), sửa bằng tài liệu ở #905. Dòng R1 kiểm dòng ghi có và khớp hành vi; hành vi dưới nó vẫn là KNOWN K1.
+
+Bốn bước của §L2.4 giữ nguyên:
+
+1. Chạy lại tái hiện của lượt 4 (DR6-37: của lượt 1 và lượt 4). Nguồn: báo cáo gốc `docs/reviews/raw/2026-10-31/` (và `…/2026-10-15/`), tổng hợp lượt 4 §6, §8.4, §11. Claude, Codex dùng thêm probe lượt 4 của chính bên mình ở `C:\workspace\deep-review-1-6-r4\<bên>\`.
+2. Gỡ tạm phần sửa, xem test của PR sửa có đỏ.
+3. Thử biến thể gần.
+4. Mục sửa bằng tài liệu (CLR4-F2): dòng ghi có, và khớp app.
+
+**Dòng R1 kiểm theo mô tả của DR6** ở tổng hợp và báo cáo gốc, không chỉ theo danh sách việc trong Issue sửa. Lượt 4, Codex và DeepSeek chấm DR6-37 ĐÃ SỬA theo danh sách của Issue #790, trong khi vị trí đầu tiên mà báo cáo lượt 1 nêu chưa sửa (tổng hợp lượt 4 §3.1).
+
+**Bảng R2 — theo Issue** (§L5.5 phần 5), 28 dòng lúc soạn: T-329…T-356 (16 Issue có code hoặc test, 12 Issue chỉ tài liệu / ảnh / nghiệm thu). Mỗi dòng làm bốn bước như §L4.4:
+
+1. Mục tiêu và test chấp nhận của Issue (`common\fixes.md`) đúng trên code ở SHA ghim; ca nào chạy được thì chạy.
+2. Gỡ tạm ít nhất một phần sửa chính, xem test của PR có đỏ.
+3. Thử biến thể gần của các ghi chú sổ mà Issue gom (mục RESOLVED chép ở `fixes.md`).
+4. Issue chỉ tài liệu / ảnh / nghiệm thu: dòng ghi có, khớp app, số đo hay ảnh.
+
+- Issue sau đợt sửa chạm cùng một DR6 (vd. T-330, T-336 với DR6-141; T-333, T-341 với DR6-145) có dòng R2 riêng cho mục tiêu của chính nó. Dòng R1 của DR6 đó xét cả phần mà các Issue này đổi.
+- Các Issue của pipeline (T-335, T-338, T-340): kiểm code `tools/auto-wait*`, `review-hint-core`, `pr-status` như mọi công cụ. Cách làm của pipeline là K45, không phải phát hiện.
+- Một ghi chú sổ đã RESOLVED mà hỏng lại → phát hiện mới, "Liên quan: T-xxx (ghi chú review #…)".
+
+Kết luận mỗi dòng theo thước §L2.4: **ĐÃ SỬA** · **SỬA MỘT PHẦN** · **CHƯA SỬA** · **HỒI QUY**. Ba kết luận sau kèm một phát hiện có trường "Liên quan".
+
+**Refactor / hiệu năng không đổi hành vi:**
+
+- T-329 (#937) tách Mock trích xuất ra `mock-extraction.ts` và gộp helper `LAW_NAME` / cụm mở đầu KH: test cũ xanh, hành vi không đổi; ở T-330, T-336 hành vi đổi có chủ ý theo K42.
+- T-332 (#946) dùng `listeners.ts` chung cho `persist-queue` và `AppData`: một listener ném không làm hỏng việc của listener khác hay của lệnh (DR6-140).
+- T-332 (#946) gộp luật "đọc lại đúng như lưu" vào `readsBackAsIs` (`packages/db/src/common.ts`), dùng chung cho `isLabel` và `valueOf` của luật nhập backup (`backup.ts`): hai chỗ nhận / từ chối đúng như trước (DR6-137).
+- `byName` (DR6-136): sắp bảng Lịch hẹn 10 255 dòng theo KH về gần số trước #828 (Node 9,4 ms), cùng thứ tự với bản `2e51e25`.
+- Dữ liệu tải: G7 sinh ở `233c77e` có `tables` khác lượt 4 (`ad82051b…`), cùng số dòng; `phase-6.md` ghi lý do là prompt lên `@5` (#913). Gói F so hai bản theo bảng / cột như §L4.4: mọi chỗ khác phải giải thích được bằng một luật đổi có chủ ý.
+
+### Phần 2 — lỗi mới và edge case mới
+
+Như §L2.4 phần 2: ít nhất 5 kịch bản mới mỗi gói, gói F ít nhất 5 chuỗi nhiều bước qua nhiều gói. Kịch bản phải chưa có trong báo cáo **lượt 1–4**: đọc `docs/reviews/raw/2026-10-15/`, `…/2026-10-17/`, `…/2026-10-21/`, `…/2026-10-31/` và bốn bản tổng hợp. Xét trước:
+
+- **Code mới sau lượt 4** (diff `2e51e25..{SHA}`), và hành vi mới:
+  - **Mock trích xuất viết lại** (`mock-extraction.ts`; T-322, T-329, T-330, T-336, T-339; K42): danh sách cho phép, giá trị cuối về KH, Ly hôn / Góa / Ly thân, con đã mất, "bé", khúc không chữ, dấu đầu dòng. Thử trên câu thật (seed, dữ liệu tải, eval) và trên ghi chú dài 36 000 ký tự;
+  - **G5 `@5`** (T-323; `phase-5-prompts.md` §14, K43): NUL ở bước 0, "giới" sau "môi / ranh / biên / thế"; chặn đủ, không chặn nhầm;
+  - **lưu và đóng app** (T-321, T-332): `flush()` lặp tới khi hết việc, `listeners.ts`, focus của dải lưu, câu hộp đóng app;
+  - **ô chữ có ký tự vô hình** (T-326, T-332, T-337): ô Giờ, Case size, ba `pending` của ô ngày;
+  - **bộ chặn ký hiệu** (`token-guard.ts`; T-324, T-333, T-341, T-342): máy trạng thái chuỗi / template / comment / JSX / kiểu generic, cả bỏ sót lẫn báo nhầm;
+  - **tên liền dài và `DataTable`** (T-325, T-331, T-337), **ô chọn** (T-324, K44), **nút `aria-disabled`** (T-337), **focus hộp xác nhận lúc chạy** (T-326);
+  - **Thùng rác ghi lịch Dự kiến đã qua** (T-350: `appointment-counts.ts`, `trash-view.ts`): nhãn khớp nghĩa thường ở mọi chỗ khác dùng cùng hàm;
+  - **`storage.rs`** (T-320): seam ổ đầy, thư mục mang tên backup;
+  - **công cụ** (F): `tools/auto-wait*` (T-335, T-338), `review-hint-core`, `pr-status`, glob của `notes-core` (T-327, T-333), `size-report` (T-327), probe hiệu năng (T-345…T-347).
+- Trọng tâm từng gói ở bảng của Phụ lục T.
+
+## L5.5 KNOWN lượt 5
+
+`common\known.md` (bước chuẩn bị §L5.9 bước 4) **dựng mới** ở SHA ghim, không chép `known.md` lượt 4 (`docs/reviews/raw/2026-10-31/common-known.md`). Gồm **năm phần**.
+
+**1. Mục OPEN và ACCEPTED** của `docs/state/review-notes.md` ở SHA ghim.
+
+- **OPEN rỗng** (bước chuẩn bị kiểm, §L5.9 bước 1).
+- **ACCEPTED nguyên văn.** So với lượt 4 có thêm các mục chấp nhận từ 31/10: đợt sửa lượt 4, mục sổ [G7] sau đó, nghiệm thu G7.
+- Ghi chú sổ thêm sau SHA ghim (nếu có, chỉ PR docs) ghi ở đầu `known.md`, như lượt 3–4.
+
+**2. Quyết định Owner còn hiệu lực:** K1–K40 chép từ bảng của `docs/reviews/raw/2026-10-31/common-known.md` (đã có chữ sửa của K12, K13, K14, K17, K21 ở §L4.5), **trừ K17**, ghi theo chữ dưới:
+
+- **K17 (sửa theo M11, M12):** Không phải phát hiện:
+  - PR vượt ngưỡng kích thước (ghi ở `docs/metrics/`);
+  - cách làm "chỉ Claude viết code" (ADR-0001), kể cả subagent / Workflow ở phiên gói Owner bật ultracode (M8–M10, M12), pipeline `auto-issues` (M11, K45), và việc Codex, DeepSeek review chỉ đọc (M2, M10, M12);
+  - mức `code-review` của `review-pr` (ADR-0017, phụ lục 21/10);
+  - việc dùng công cụ mới (G4).
+
+Cộng thêm:
+
+| # | Quyết định | Nguồn |
+|---|---|---|
+| K41 | Quyết định lượt 4 (31/10, mọi đề xuất). Q1 (a): Mock trích xuất chỉ đề xuất từ câu kể đơn về chính KH (danh sách cho phép), mọi dạng khác không đề xuất. Q2 (a): đợt G5 lượt 4 (K43). Q3 (a): tên nút khôi phục nhân sự luôn có vai trò và team; của KH chỉ có mã KH khi tên và nhóm trùng một dòng KH khác trong Thùng rác, như hộp 9b. Q4 (a): CLR4-F2 giữ K1, không sửa code; NT-EX-08 / 09 có một dòng về dữ liệu trước v1.0 | tổng hợp lượt 4 §9; `PROJECT-STATE.md` 31/10; #896…#905 |
+| K42 | Mock trích xuất (Owner 31/10–02/11, khi code và review #917, #939, #956; spec Phase 5 §10). Mỗi trường lấy giá trị cuối nói về KH trong ghi chú và chỉ đề xuất khi đó là câu kể đơn. Câu không chủ ngữ ngay sau câu kể đơn về KH là về KH; khúc không có chữ cái là trong suốt; khúc mở bằng dấu đầu dòng được mang KH sang. Tình trạng hôn nhân có Ly hôn, Góa, Ly thân; "<k> con / bé đã mất / qua đời" trừ k khỏi số con; "bé" tính như "con", trừ nghĩa nhỏ. Owner chấp nhận các giới hạn: `RETRACTED` đọc cả ghi chú với đủ danh sách chữ (bỏ cả câu đúng như "KH đã kết hôn. KH đến không đúng giờ."); câu sau chỉ đoán / hỏi lại / phủ định ngoài danh sách đóng giữ đề xuất trước; luật ":" bỏ cả danh sách sau ":"; "vợ / chồng" đứng trước con đã mất ở câu sau thì số con trước vẫn đề xuất. Cỡ PR #917, #939 vượt ngưỡng: Owner chấp nhận | `PROJECT-STATE.md` 31/10–02/11; #899, #931, #950 |
+| K43 | Đợt G5 lượt 4 (Owner duyệt 31/10, "duyệt hết"; `phase-5-prompts.md` §14): `analysis@5`, `discovery@5`, giữ `extraction@1`, `web@1`. Bước 0 của so khớp bỏ NUL như ký tự vô hình (chỉ ở bản so khớp, không đổi chữ lưu). "giới" trước "luật" chỉ được miễn khi không đứng sau "môi", "ranh", "biên", "thế". Phần "Mất" (§14.5): NUL đặt làm dấu cách ngay cạnh một cụm bị chặn (Owner 31/10 chấp nhận như §11.8) | #900 → #909, #913 |
+| K44 | Ô chọn (G8 01/11, #901). Viền ≥ 3:1 chỉ đo ở ô đang chọn: viền `--accent` 6,9:1, ô đang chọn còn chữ đậm và đổi màu chữ. Ô chưa chọn giữ `--border-strong` như `.choice` của `forms.css`. Các lệch còn lại của ô chọn so với mockup ghi ở "Lệch mockup đã biết" (T-328, T-334) | `PROJECT-STATE.md` 01/11; PR #920, #928, #948 |
+| K45 | Pipeline `auto-issues` (ADR-0001 M11, Owner 01–02/11). `/goal` chạy hàng đợi Issue qua bốn phiên con; merge PR mọi mức (`merge-pr --owner`), lặp review tới PASS không trần; `tools/auto-wait.mjs` chờ GitHub ở nền (ngoại lệ có chủ ý của "không poll CI"). Rào "không tự sửa": skill, `tools/auto-wait*`, cổng merge, cổng review, `CLAUDE.md` gốc, `.claude/settings.json`, `.claude/rules/*.md`. Cách làm này không phải phát hiện (K17). Lỗi trong code của `tools/auto-wait*`, `review-hint-core`, `pr-status` vẫn là phát hiện; việc sửa chạy ngoài pipeline | M11; `PROJECT-STATE.md` 01–02/11; #942, #952 |
+| K46 | Nghiệm thu G7 (03–04/11). Kết quả các lượt L1–L3 và lệch ghi ở `nghiem-thu-v1.md` ("Các lượt thử", "Lệch mockup đã biết"). NT-LH-19, NT-LH-28: Owner chọn (a) ngày 04/11, giữ app và mockup 6e, sửa dòng (T-353). App mở lại màn dùng lần cuối, không luôn mở Tổng quan (T-356, NT-HD-01). Thùng rác ghi lịch Dự kiến đã qua là "Chưa ghi kết quả" (T-350, NT-TR-07). Đợt sửa lượt 5 đổi màn hay hành vi nào thì nghiệm thu lại dòng đó (§L5.10) | `nghiem-thu-v1.md`; #1001, #1005, #1019 |
+| K47 | Lượt 5 (Owner 04/11, `plan.md` §L5.11 mục 2–4). Sau tổng hợp **sửa hết mọi phát hiện, rồi G7**, như lượt 3–4. Vì vậy kết luận v1.0 ở SHA ghim là CHƯA SẴN SÀNG khi còn phát hiện mới hay dòng R chưa ĐÃ SỬA, dù không có Medium. SHA ghim là `main` lúc bước chuẩn bị; trong lượt 5 không merge code. DeepSeek chỉ dùng credit của gói WorkBuddy Pro | `plan.md` §L5.11; #1025 |
+
+**3. Mục "Lệch mockup đã biết" của `docs/testing/nghiem-thu-v1.md`**, nguyên văn ở SHA ghim, gồm mọi khối con: 12 điểm "Owner chọn không sửa" (15/10), 2 điểm "Owner chọn ghi là lệch chấp nhận" (23/10), các lệch của ô chọn (T-328) và các lệch ghi sau nghiệm thu L2, L3.
+
+**4. Bảng R1** (dưới): 23 DR6 lượt 4, DR6-37 và KNOWN CLR4-F2 vào bảng R1 của gói kiểm (§L5.4), không báo lại thành phát hiện. Ngoài bảng:
+
+- **Các DR6 khác** (DR6-01…134, đã sửa ở lượt 1–4, trừ các mục KNOWN dưới): không báo lại. Phần sửa hỏng lại → phát hiện mới, "Liên quan: DR6-xx".
+- **KNOWN, chỉ nêu khi có bằng chứng mới** (hậu quả nặng hơn, đường vào mới):
+  - DR6-53 (chấp nhận);
+  - J5 của DR6-60 (K29);
+  - CL3-C7 (K1, R2-02);
+  - Claude F K2 của lượt 3 và CLR4-F2: dữ liệu do exe trước v1.0 ghi mà luật mới từ chối (K1, Q4 (a)).
+
+Mức: L = Low, N = Nit (mức chốt ở tổng hợp lượt 4 §6, §8.4 và tổng hợp lượt 1). "Gói kiểm": gói ghi dòng R1; gói đầu là gói chính. Mô tả đầy đủ ở tổng hợp lượt 4 §6, §8.4 (DR6-135…157, CLR4-F2), tổng hợp lượt 1 và tổng hợp lượt 4 §3.1 (DR6-37). Cột "Issue → PR" kể cả PR sau chạm cùng vấn đề (trong ngoặc).
+
+| Mã | Mức | Vấn đề (ngắn) | Issue → PR | Gói kiểm |
+|---|---|---|---|---|
+| DR6-135 | L | Test hở: bộ lọc ngày `date >= ?` của `unmovedMeetingsFrom` giữ luật D7 cho cuộc gặp cùng ngày | #896 → #907 | A |
+| DR6-136 | L | `byName` đổi chữ số cho cả hai tên ở mỗi lần so; sắp bảng Lịch hẹn 10 255 dòng chậm quá luật nhiễu | #896 → #907 | A, F (đo) |
+| DR6-137 | L | `isLabel` nhận nhãn model có UTF-16 hỏng / U+FEFF đầu chuỗi, bản xuất bị luật nhập 12 từ chối | #896 → #907 (+ #933 → #946) | A, C |
+| DR6-138 | L | Test hở gói B: ca CSP / `identifier`, bộ lọc "chỉ file" của `backup_names`, ổ đầy → `DISK_FULL` của `backup` | #897 → #915 | B |
+| DR6-139 | L | `flush()` không chờ lần thay bắt đầu trong lúc nó đang chờ lần ghi (S2-6) | #898 → #911 | B |
+| DR6-140 | N | `changed()` của `AppData` không bọc từng listener | #898 → #911 (+ #933 → #946) | B |
+| DR6-141 | L | Mock trích xuất đề xuất sai ở các dạng câu ngoài DR6-121 / T-289 | #899 → #917 (+ #930 → #937, #931 → #939, #950 → #956, #960 → #963) | C |
+| DR6-142 | L | NUL trong chữ của model làm V3–V6 lọt (G5) | #900 → #909, #913 (+ #930 → #937) | C |
+| DR6-143 | N | V6 "luật <Tên>" lọt sau "môi giới", "ranh giới", "biên giới" (G5) | #900 → #909, #913 (+ #930 → #937) | C |
+| DR6-144 | N | Lỗi AI mà `AiJobs` giữ lại sống qua Nhập backup / Nạp lại | #899 → #917 (+ #933 → #946) | C |
+| DR6-145 | L | Phần còn của DR6-37 ("{trường}: {giá trị}") và các lỗ của bộ chặn ký hiệu | #901 → #920 (+ #934 → #965, #969 → #971, #973 → #975) | D |
+| DR6-146 | L | Test hở gói D: (a) đường 5c của DR6-109, (b) nhánh focus của Thử lại | #902 → #922 (a), #898 → #911 (b) | D |
+| DR6-147 | L | Lần lưu khác thành công khi dải lưu lỗi / hộp đóng app đang hiện: focus rơi, câu hộp đổi | #898 → #911 | D, B |
+| DR6-148 | L | Tên liền dài tràn khung ở hộp thoại, màn Team, So sánh team, cột tên của Báo cáo | #902 → #922 (+ #932 → #941, #951 → #958) | D, E |
+| DR6-149 | L | Ô chọn khác `.choice` của mockup (K44) | #901 → #920 (+ #905 → #928, #935 → #948) | D |
+| DR6-150 | L | Ô Case size chỉ có ký tự vô hình bị báo "Chưa nhập số tiền"; `pending` của ô ngày dùng `trim()` | #903 → #924 (+ #933 → #946, #951 → #958) | E |
+| DR6-151 | N | Tên nút khôi phục trùng ở Thùng rác cho trình đọc màn hình (Q3) | #903 → #924 (+ #933 → #946) | E, A |
+| DR6-152 | N | `PURGE_REMINDER` còn export mà không ai import | #903 → #924 | E |
+| DR6-153 | L | Test hở gói E: câu từ chối có vế "Thử lại" của Nhập backup, huy hiệu nhóm ở ô "Bản ghi" | #903 → #924 | E |
+| DR6-154 | L | Hộp xác nhận lúc chạy tắt mọi phần tử, focus rơi về `body` | #903 → #924 (+ #933 → #946, #951 → #958) | E |
+| DR6-155 | N | Test hở của công cụ: câu "Read n of the m files" với file đổi tên; bộ kiểm ảnh hướng dẫn | #904 → #926 | F |
+| DR6-156 | L | `notes-core` bỏ sót ghi chú thư mục khi đích là glob cấp package | #904 → #926 (+ #934 → #965) | F |
+| DR6-157 | L | `size-report` đếm vào "Tệp khác" file `.sqlite` mà e2e ghi vào `dist` | #904 → #926 | F |
+| DR6-37 | N | Dấu nối / ký hiệu viết cứng trong JSX (lượt 1; SỬA MỘT PHẦN ở lượt 4) | #790 → #845, #901 → #920 | D, E |
+| CLR4-F2 | KNOWN | Dữ liệu exe trước v1.0 có chữ tùy chọn của lịch hẹn chỉ gồm ký tự vô hình: v1.0 không nhập lại được bản xuất của chính nó (K1; Q4 (a): một dòng ở NT-EX-08 / 09) | #905 → #928 (tài liệu) | F |
+
+Đếm: 23 DR6 lượt 4 (17 L · 6 N), DR6-37 (N) và 1 mục KNOWN sửa bằng tài liệu = 25 dòng.
+
+**5. Bảng R2** (dưới): mỗi Issue một dòng. Mục tiêu, test chấp nhận và ghi chú sổ đã gom (mục RESOLVED) ở `common\fixes.md`.
+
+| Issue | Việc (theo tên Issue) | PR | Gói kiểm |
+|---|---|---|---|
+| #930 T-329 | `packages/ai`: gỡ chép ở bộ chặn và test, tách Mock trích xuất ra file riêng | #937 | C |
+| #931 T-330 | Mock trích xuất theo quyết định Owner 31/10–01/11 | #939 | C |
+| #932 T-331 | Tên dài: `DataTable` trong khung cuộn, hàng tiêu đề thẻ team, So sánh team | #941 | D, E |
+| #933 T-332 | Ô Giờ chỉ có ký tự vô hình, focus sau hộp nhập backup, khóa i18n chung, `listeners.ts` | #946 | E, A, B, D, C |
+| #934 T-333 | Bộ chặn ký hiệu (kiểu generic, CRLF), `globMeetsFolder` | #965 | D, F |
+| #935 T-334 | Tài liệu: tổng hợp lượt 4, `phase-6.md`, quyết định #917 / #920, mục Ô chọn | #948 | F |
+| #942 T-335 | Pipeline `auto-issues`: `tools/auto-wait*`, `pr-status`, `review-hint-core` | #944 | F |
+| #950 T-336 | Mock trích xuất: khúc không chữ, dấu đầu dòng; ranh giới test-support | #956 | C, F |
+| #951 T-337 | Ô Giờ có ký tự vô hình, dáng nút `aria-disabled` của `Button`, e2e tên TL dài | #958 | E, D |
+| #952 T-338 | Pipeline `auto-issues`: chờ CI sau reopen, giữ nhánh local, gợi ý review | #954 | F |
+| #960 T-339 | Test Mock trích xuất, ranh giới test-support | #963 | C, F |
+| #961 T-340 | Skill `auto-issues`: "Ghi chú OPEN liên quan", câu trỏ dòng (tài liệu) | #967 | F |
+| #969 T-341 | Bộ chặn ký hiệu: thẻ đóng / tự đóng dính chữ JSX | #971 | D |
+| #973 T-342 | Bảng PR vượt ngưỡng tới #974; ca thẻ mở dính chữ JSX | #975 | D, F |
+| #977 T-343 | Chụp lại ảnh hướng dẫn sau đợt sửa lượt 4 | #978 | F |
+| #980 T-344 | Bảng đối chiếu của hướng dẫn, hàng Chuyển nhóm | #981 | D |
+| #983 T-345 | Probe hiệu năng: kỳ Tháng | #984 | F |
+| #986 T-346 | Probe hiệu năng: kỳ Năm, kiểm sớm | #988 | F |
+| #990 T-347 | Probe hiệu năng: locator dòng Đã gặp, tháng chứa hôm nay | #992 | F |
+| #994 T-348 | Số đo NT-HN-01 trên Home PC | #995 | F |
+| #997 T-349 | Ghi chú NT-HN-01, Cách đo | #999 | F |
+| #1001 T-350 | Thùng rác ghi lịch Dự kiến đã qua là Chưa ghi kết quả | #1011 | E, A |
+| #1002 T-351 | Nghiệm thu L2 trên exe ứng viên `1ce3c61` | #1003 | F |
+| #1004 T-352 | Nghiệm thu sau L2, bảng cổng KYC của hướng dẫn | #1007 | F, D |
+| #1005 T-353 | NT-LH-19, NT-LH-28 (Owner chọn sửa dòng) | #1009 | E |
+| #1012 T-354 | Nghiệm thu: NT-TR-12, dấu câu NT-AI-03 | #1014 | F |
+| #1017 T-355 | Nghiệm thu L3 trên exe ứng viên `3d237b0` | #1020 | F |
+| #1019 T-356 | Hướng dẫn: mở app vào màn dùng lần cuối | #1023 | D |
+
+Đếm lúc soạn: 28 Issue. 16 có code hoặc test: T-329…T-333, T-335…T-339, T-341, T-342, T-345…T-347, T-350. 12 chỉ tài liệu / ảnh / nghiệm thu: T-334, T-340, T-343, T-344, T-348, T-349, T-351…T-356. Không có dòng R2: T-319…T-328 (ở R1 theo DR6 và CLR4-F2). Issue code mới trước SHA ghim (nếu có) thì bước chuẩn bị thêm một dòng.
+
+## L5.6 Số đo: so với mốc Home PC sau #656, G7 và lượt 4
+
+- **Dữ liệu tải sinh lại ở SHA ghim:** `node tools/load-data.mjs` (mốc `2026-10-12`, seed `6`). G7 sinh ở `233c77e` (03/11): `tables` sha256 `e256e4f18699f4a4e494b59a92ef46865eb4d2c9887f4ff1e7a6b872b4b345a2`, cùng số dòng như lượt 1–4. Sau `233c77e` không Issue nào đổi luật sinh dữ liệu, nên dự kiến cùng hash; bước chuẩn bị ghi hash đo được ở SHA ghim.
+- **Mốc so (Home PC):**
+
+  | Mốc | Nguồn |
+  |---|---|
+  | Probe trên exe: mốc chính | `docs/metrics/phase-6-baseline/perf-home-pc-sau-656.json` (exe `dae9df3`, 18/10; `phase-6.md` mục "Mốc Home PC sau #656") |
+  | Probe trên exe: G7 cùng máy, cùng bản probe (tham khảo chính) | `C:\workspace\g7-home-pc\lan-2\perf\perf-g7.json` (exe `233c77e`, 03/11, probe sau T-347; 5 143 B, sha256 `995E92383FED0A857D255596F9C3246517B7CE53E8B6B6D95B301EA6043CDFEE`). Không có bản trong repo; bảng ở `phase-6.md` mục "Số đo G7, NT-HN-01" |
+  | Probe trên exe: lượt 4 cùng máy | `C:\workspace\deep-review-1-6-r4\common\perf\perf-ref.json` (exe `2e51e25`, 29/10; 5 143 B, sha256 `A4E8E4E9872C9487F6C9E991BB86AA2195C2B650FC726A69D834205AB5557BAD`). Probe trước T-345…T-347: hai dòng kỳ Tháng / kỳ Năm của Lịch hẹn chọn lịch khác, so thì ghi rõ |
+  | Mở app lần đầu (LCP, cách T-227, 3 lần) | Mốc sau #656: 3 663 ms; lượt 4: 3 521 ms; G7: 3 420 ms. Xấu hơn theo luật nhiễu khi trung vị > 4 396 ms; ngưỡng "không chậm hơn exe Phase 4" là > 4 724 ms |
+  | Mở lại trên dữ liệu tải (LCP, 3 lần) | G7: 617 ms, `p2c:data-open` 317 ms. Lượt 4 không đo |
+  | Dọn sạch Thùng rác (exe: bấm "Backup rồi dọn sạch" → khung hình đầu có thông báo 11j) | Ngưỡng ≤ 500 ms trên dữ liệu tải (K30). Lượt 4: 123,3 ms; G7: 130,5 ms |
+  | Hàm thuần trong Node | Số lượt 4 Home PC, tổng hợp lượt 4 §7.2; `byName` theo DR6-136 |
+
+- **"Xấu hơn"** theo luật nhiễu (Owner chốt 13/10): trung vị lớn hơn mốc **quá 20 % và quá 10 ms** (bộ nhớ: quá 5 MB). Ngưỡng tuyệt đối ở `docs/metrics/phase-6.md` vẫn áp dụng.
+- **Lệnh** (bước chuẩn bị chạy một lần, reviewer dùng lại kết quả trong `common\baseline.md`):
+
+  ```powershell
+  node tools/size-report.mjs --compare docs/metrics/phase-6-baseline/size.json
+  ```
+
+  ```powershell
+  $env:PERF_BASE = 'docs\metrics\phase-6-baseline\perf-home-pc-sau-656.json'; $env:PERF_BACKUP = 'C:\workspace\deep-review-1-6-r5\common\load\load-2026-10-12-seed6.p2cbackup'; $env:PERF_OUT = 'C:\workspace\deep-review-1-6-r5\common\perf\perf-ref.json'; $env:PERF_NOTE = 'DESKTOP-KDURKJP, exe {SHA}, deep review luot 5'; pnpm exec playwright test -c playwright.perf.config.ts
+  ```
+
+  Bảng so G7 và so lượt 4: script `node` trong `common\perf\` gọi `parseRun` rồi `markdownTable` của `e2e/perf/stats.ts` trên `perf-ref.json` với `perf-g7.json`, rồi với `perf-ref-r4.json`, như §L4.6.
+- **Cỡ bundle và exe:** so lượt 4 (`2e51e25`: JS / CSS 2 358 427 B, `index.js` 884 698 B, exe 5 649 408 B; `docs/metrics/phase-6.md` mục "Số đo deep review lượt 4") và G7 (exe 5 649 408 B). Bundle đo trên `apps\desktop\dist` build lại ở SHA ghim (`pnpm build:web`, không biến môi trường riêng); exe build lại ở SHA ghim. DR6-157 đã sửa (#926): "Tệp khác" chỉ đếm asset của bản dựng, nên số đo sau `pnpm e2e` cũng đúng (dòng R1 DR6-157 kiểm).
+- **Dọn sạch Thùng rác:** đo như §L4.6 (Node hai cỡ; exe một lần với dữ liệu tải), so ngưỡng ≤ 500 ms, số lượt 4 và G7.
+- **Reviewer muốn đo lại trên exe:** như §6 (chép `common\exe\project2c.exe` vào thư mục của mình, cổng debug khác 9222, không đo khi bên khác đang đo).
+
+## L5.7 Ba bên, bài học từ lượt 4
+
+- **Claude Opus 5.5:** như §L4.7 (Phụ lục Q). Lượt 4 chạy mức `max`, ultracode tắt; lượt 5 Owner chọn từng phiên.
+- **Codex, model GPT Sol 6.1:** như §L4.7 (Phụ lục S). Lượt 4, gói D dừng 4 giờ vì hết hạn mức Codex; Owner nhắn làm tiếp trong cùng phiên. Mở phiên mới cũng được: bước 0 đọc file còn dòng `ĐANG LÀM` và làm tiếp.
+- **DeepSeek V4.1 Flash:** như lượt 4 đã chạy thật (tổng hợp lượt 4 đầu file và §10.1; `PROJECT-STATE.md` 30–31/10), đổi theo bảng bài học dưới.
+  - App desktop WorkBuddy bản quốc tế (lượt 4: v5.9.3). Model `Deepseek-V4.1-Flash`, context 1M, Thinking effort Max, chọn tay ở mỗi task. Ghi số bản app và tên model đúng như app hiện.
+  - Mỗi gói một task qua **Code review expert** của app (lượt 4: expert dùng cùng model).
+  - **Agent phụ của app** (Owner chấp nhận ở G6 ngày 30/10, chỉ cho lượt 4): cài đặt không tắt được công cụ Agent. Điều kiện Owner đặt là ACL chặn đọc và hash 12 báo cáo; lượt 4 không gói nào gọi agent phụ. Lượt 5 giữ quyết định này (đề xuất 8, §L5.11). Prompt (Phụ lục U) cho phép expert và agent phụ, và đòi mọi agent phụ nhận đủ quy tắc riêng 2–5. Không còn ngoại lệ gửi kèm tin nhắn mở gói như lượt 4.
+  - Chế độ quyền **Default**, như cả 6 gói của lượt 4 (app ghi 14 lần "Sandbox bypassed (escalation-approved)" ở lệnh Playwright). Phiên thử vẫn đếm số lần app hỏi. App hỏi ở hầu hết lệnh thường thì Owner chọn Full Access như §L4.9, kèm task kiểm ACL ở Full Access.
+  - **Chi phí (G4, Owner 04/11): chỉ credit của gói WorkBuddy Pro, không mua thêm credit.**
+    - Gói Pro là gói Owner đăng ký cho lượt 4 (một tháng; 2.000 credit/tháng, thêm credit tặng mỗi ngày có dùng; Phụ lục P). Trước đợt 2, Owner kiểm gói còn hạn tới hết gói F. Hết hạn trước hay giữa đợt 2 thì dừng, hỏi Owner: gia hạn là chi phí mới (G4).
+    - DeepSeek V4.1 Flash tính 0.00x tới hết 31/10, nên lượt 4 không cho số credit nào. WorkBuddy không công bố 1 credit bằng bao nhiêu token.
+    - Khối việc lượt 4: 591 729 token ra (suy luận 323 350) qua 867 lượt; đầu vào một lượt tới 462 000 token, 99,2 % trúng cache (tổng hợp lượt 4 §2.2). Lượt 5 đọc diff bằng khoảng 1/3 và bảng R 53 dòng (lượt 4: 69), nên giả định không quá lượt 4.
+    - Đo credit ở trang Usage: trước phiên thử, sau phiên thử, sau từng gói. **Điểm dừng sau mỗi gói A–E:** credit của gói tốn nhiều nhất tới lúc đó nhân số gói còn lại mà vượt credit còn lại → dừng, hỏi Owner trước gói kế. Không mua thêm credit.
+    - Hết credit giữa một gói (dòng đầu báo cáo còn `ĐANG LÀM`) → dừng đợt 2, hỏi Owner: chờ credit tặng hằng ngày, hay gia hạn (G4).
+    - Giờ cao điểm của DeepSeek (08:00–11:00 và 13:00–17:00 giờ Việt Nam, thứ Hai–thứ Sáu; §L4.7): chạy đợt 2 ngoài giờ đó nếu được.
+  - **Chặn:** ACL đợt 2 như §L4.7, thêm cả thư mục lượt 4 `deep-review-1-6-r4` (Phụ lục V). `gh` đăng xuất trong đợt 2.
+
+**Bài học từ lượt 4** (tổng hợp lượt 4 §2.2, §10.1 "Cho lần sau"; giữ mọi bài học §L2.7, §L3.7, §L4.7):
+
+| Lượt 4 vướng | Lượt 5 làm |
+|---|---|
+| `dot2.mjs remove` dừng ở 16 mục do tài khoản sandbox của Codex làm chủ; Owner phải chạy `dot2-unlock.ps1` dưới quyền SYSTEM (30/10) | `dot2.mjs` lượt 5 (T-358, Phụ lục V): `deny` xem chủ sở hữu từng mục trước khi chặn, không chặn mục của tài khoản khác mà ghi lại; `remove` gỡ hết những gì gỡ được rồi liệt kê mọi mục chưa trả |
+| Phiên thử 1 của DeepSeek chạy trước đợt 2 bước 1–4, khi chưa có ACL, và đọc được dòng đầu hai báo cáo gói A | Phiên thử chỉ mở khi `deny` và `scan` của đợt 2 bước 3 đã in `OK` và `common\dot2-acl.json` có (§L5.9 đợt 2 bước 5) |
+| Shell của app có Node v22.22.2 trong PATH, repo đòi ≥ 24: 4 ca của `mock-adapter.test.ts` đỏ giả ở gói C; số của DSR4-A1 đo bằng Node 22 | Prompt DeepSeek (Phụ lục U quy tắc riêng 8): mọi lệnh `node` gọi bằng `C:\Program Files\nodejs\node.exe` (Home PC: v24.20.0); mọi lệnh shell chạy `node`, `pnpm`, vitest, Playwright hay công cụ trong `node_modules` đặt `C:\Program Files\nodejs` lên đầu PATH ngay trong lệnh đó, vì tiến trình con (shim `node_modules\.bin\*.cmd`, `webServer` `node e2e/serve.mjs` của Playwright) lấy `node` theo PATH. Kiểm `--version` ≥ 24 ở đầu phiên; phiên thử ghi Node của shell trước và sau khi đặt PATH, và chạy vitest với PATH đã đặt |
+| Shim `safe-delete` của app chặn Playwright ghi `test-results\` khi quá 50 file | Prompt DeepSeek: Playwright luôn `--output` ra `…-r5\deepseek\{GÓI}\` |
+| Codex và DeepSeek chấm DR6-37 ĐÃ SỬA theo danh sách của Issue, sót vị trí báo cáo lượt 1 nêu | Phụ lục T: dòng R1 kiểm theo mô tả DR6 ở tổng hợp và báo cáo gốc (§L5.4) |
+| DeepSeek kết luận SẴN SÀNG ở gói F, cả ở review Phase 5 lẫn lượt 4, vì không áp quyết định "sửa hết" | Phụ lục T: kết luận gói F áp quyết định Owner trong `known.md`; còn phát hiện mới hay dòng R chưa ĐÃ SỬA thì CHƯA SẴN SÀNG |
+| DeepSeek kết luận một dòng R (DR6-118) bằng đọc code, không dựng bản web | Giữ quy tắc chung 6; Phụ lục U nhắc lại |
+| Ngoại lệ của quy tắc riêng 4 (agent phụ, Code review expert) gửi kèm tin nhắn mở mỗi gói DeepSeek | Phụ lục U ghi thẳng vào quy tắc; tin nhắn mở gói chỉ còn một dòng |
+| Bước chuẩn bị lượt 4 chạy `pnpm build:exe` lần 1 hỏng vì script để biến `CI` rỗng cho tiến trình con | §L5.9 bước 6: gỡ hẳn `CI` khỏi môi trường trước `pnpm build:exe` |
+
+## L5.8 Báo cáo lượt 5
+
+Khuôn như §L4.8 (và §L3.8, §L2.8), đổi:
+
+- ID `CLR5-<gói><số>` / `CXR5-<gói><số>` / `DSR5-<gói><số>` (§L5.2); `Vị trí: path:dòng ({SHA})`.
+- `Liên quan: DR6-xx / T-xxx (nếu có) · mới do đợt sửa sau lượt 4 (PR #…) | có từ trước, lượt 1–4 bỏ sót`.
+- Hai bảng R, cùng cột như §L2.8 (`| Mã | Issue → PR | Kết luận | Bằng chứng | Biến thể / ghi chú |`):
+  - **R1:** mọi dòng mà gói kiểm trong 25 dòng của §L5.5 phần 4;
+  - **R2:** mọi Issue mà gói kiểm trong bảng R2 của `known.md` phần 5 (28 dòng lúc soạn; bước chuẩn bị thêm dòng cho Issue code mới trước SHA ghim, §L5.5).
+- Phạm vi đã đọc gồm phần diff `2e51e25..{SHA}` của gói.
+- Mục 1 (đầu báo cáo): Claude ghi model, mức suy luận, ultracode bật hay tắt; Codex ghi phiên bản Codex và model như công cụ cho biết; DeepSeek ghi bản app WorkBuddy (theo `common\baseline.md`), expert, model, context, mức suy luận và Node của shell.
+- **Gói F:** bảng R1 gộp đủ 25 dòng và bảng R2 gộp đủ mọi dòng của `known.md` phần 5 (từ báo cáo A–E lượt 5 của chính bên đó + phần F). Kèm kết luận **SẴN SÀNG / CHƯA SẴN SÀNG cho v1.0 ở SHA ghim** và lý do, áp các quyết định Owner trong `known.md` (tham khảo; kết luận thật ở phiên tổng hợp).
+
+## L5.9 Chuẩn bị và chạy
+
+**Bước chuẩn bị — Claude, sau khi Owner duyệt kế hoạch lượt 5 và T-358 đã merge** (một phiên trên Home PC; không review, không ghi phát hiện):
+
+1. Ghi `hostname` và ngày giờ (`Get-Date`) vào `common\baseline.md`.
+   - **Kiểm sổ OPEN rỗng:** mục OPEN của `docs/state/review-notes.md` ở `origin/main` không còn mục lá nào. Còn → dừng, báo Owner.
+   - **Ghim SHA:** `git rev-parse origin/main` lúc đó là SHA ghim; ghi đủ 40 ký tự vào `baseline.md`.
+   - Ghi `git diff --stat 3d237b0 <SHA ghim> -- . ':(exclude)docs/**' ':(exclude)*.md'`. Rỗng thì code trùng exe ứng viên đã nghiệm thu L3; không rỗng thì ghi Issue nào đổi code, và thêm dòng R2 cho Issue đó.
+   - Kiểm `C:\workspace\deep-review-1-6-r5\` chưa có (có rồi → dừng, báo Owner).
+   - Kiểm hai file mốc có, sha256 như §L5.6: `C:\workspace\deep-review-1-6-r4\common\perf\perf-ref.json` và `C:\workspace\g7-home-pc\lan-2\perf\perf-g7.json`.
+   - App WorkBuddy: Owner xác nhận đã đăng xuất app trên máy này (Phụ lục P, ranh giới tài khoản); ghi vào `baseline.md`. Claude không mở app, không đọc thư mục dữ liệu của app.
+2. Tạo `C:\workspace\deep-review-1-6-r5\{common,claude,codex,deepseek}`.
+3. Đưa hai worktree về SHA ghim:
+   - `git -C C:\workspace\Project-2C-review checkout --detach <SHA ghim>`, tương tự với `-review-2`;
+   - xóa `apps\desktop\dist` ở mỗi worktree;
+   - xóa `apps\desktop\src-tauri\target\` ở mỗi worktree nếu có, không dừng hỏi. Đây là cache build, sinh lại được; xóa trước khi ghi mốc để đợt 2 bước 1 xóa trọn bản build do bước 6 sinh ra (review #878). §L4.9 dừng hỏi Owner khi có thư mục này (lượt 4 không gặp); đổi này Owner chọn ở đề xuất 10 (§L5.11);
+   - `pnpm install --frozen-lockfile` (PowerShell);
+   - `git status --short` rỗng (ngoài file Codex tự sinh ở `-review-2`, §8).
+4. Chép vào `common\`:
+   - `plan.md` (file này, bản đã merge);
+   - `known.md` dựng mới theo §L5.5 ở SHA ghim:
+     - phần 1 từ `docs/state/review-notes.md` ở SHA ghim (OPEN rỗng, ACCEPTED nguyên văn);
+     - K1–K40 chép từ bảng của `docs/reviews/raw/2026-10-31/common-known.md`, K17 theo chữ ở §L5.5; K41–K47;
+     - mục "Lệch mockup đã biết" nguyên văn;
+     - bảng R1 kèm danh sách KNOWN; bảng R2;
+   - `fixes.md`:
+     - thân các Issue ở các bảng của §L5.2;
+     - thân PR sửa: mục "Lệch so với Issue", "Chưa làm", "Sửa sau review", "Ghi chú OPEN liên quan";
+     - nguyên văn các nhóm RESOLVED của sổ mà các Issue đó gom (theo nhãn T-xxx, ở SHA ghim);
+     - lấy bằng `gh issue view` / `gh pr view --json body`;
+   - `prompt-claude.md` = Phụ lục Q + Phụ lục T; `prompt-codex.md` = Phụ lục S + Phụ lục T; `prompt-deepseek.md` = Phụ lục U + Phụ lục T. Chép nguyên văn, chỉ thay `{SHA}` bằng 7 ký tự đầu và `{SHA_ĐỦ}` bằng đủ 40 ký tự của SHA ghim (`{GÓI}` để nguyên: reviewer thay theo tin nhắn);
+   - `dot2.mjs` = khối code của Phụ lục V (thêm ở T-358), chép nguyên văn.
+
+   Cuối bước này chạy `node C:\workspace\deep-review-1-6-r5\common\dot2.mjs baseline`: ghi `common\dot2-baseline.json` như §L4.9 bước 4.
+5. Dữ liệu tải: `node tools/load-data.mjs --out C:\workspace\deep-review-1-6-r5\common\load\load-2026-10-12-seed6.p2cbackup`; ghi hash `tables` vào `baseline.md`, so §L5.6. Khác hash G7 → ghi Issue nào đổi dữ liệu.
+6. Chạy cổng ở SHA ghim (trong `Project-2C-review`):
+   - `pnpm verify`, `pnpm verify:rust`, `pnpm e2e` (`CI=1`);
+   - `pnpm build:exe`, sau khi gỡ hẳn biến `CI` khỏi môi trường (`Remove-Item Env:CI -ErrorAction SilentlyContinue`): Tauri CLI đọc `CI` rỗng thành cờ `--ci` và dừng (lượt 4, lần 1);
+   - `node tools/size-report.mjs --compare docs/metrics/phase-6-baseline/size.json`: bảng theo gói và diff `2e51e25..<SHA ghim>` như §L5.3; cỡ bundle / exe so lượt 4 và G7 (§L5.6).
+
+   Kết quả ghi vào `common\baseline.md`; chép exe vào `common\exe\`.
+7. Đo hiệu năng bằng script của G7, một lượt liền; Owner để máy rảnh ≈ 8 phút, cửa sổ exe ở trên cùng.
+   - Chép `C:\workspace\g7-home-pc\lan-2\perf\` (các `.ps1`, `.mjs`; không chép kết quả) sang `-r5\common\perf\`. Đổi đường dẫn trong `run-exe.ps1` sang `-r5\common`, tên file kết quả probe sang `perf-ref.json`.
+   - Chép `deep-review-1-6-r4\common\perf\perf-ref.json` thành `common\perf\perf-ref-r4.json`, và `g7-home-pc\lan-2\perf\perf-g7.json` thành `common\perf\perf-g7.json`.
+   - Script chạy: mở lần đầu 3 lần (cách T-227); nhập dữ liệu tải vào exe qua cổng debug; mở lại 3 lần; probe (lệnh §L5.6, thay `{SHA}`) → `common\perf\perf-ref.json`; Dọn sạch Thùng rác một lần trên exe.
+   - Đo Dọn sạch trong Node hai cỡ như §L4.6 (chép `deep-review-1-6-r4\common\perf\purge-node.mjs`).
+   - Ghi vào `baseline.md` ba bảng: so mốc sau #656 (bảng của probe), so G7, so lượt 4 (ghi chú hai dòng kỳ Tháng / kỳ Năm). Cả ba có thêm cột ngưỡng `phase-6.md`. Thêm số mở lần đầu, mở lại và Dọn sạch, so §L5.6.
+8. Báo Owner: sẵn sàng chạy lượt 5.
+
+**Owner chạy đợt 1** (Claude và Codex cùng lúc):
+
+- **Codex** (model GPT Sol 6.1), ở `C:\workspace\Project-2C-review-2`, mỗi gói một phiên mới, lần lượt A → F:
+
+  ```text
+  Gói A. Lệnh đầu tiên chỉ đọc C:\workspace\deep-review-1-6-r5\common\prompt-codex.md (không gộp lệnh khác), rồi làm đúng file đó.
+  ```
+
+- **Claude** (Claude Opus 5.5), ở `C:\workspace\Project-2C-review`, mỗi gói một phiên mới, lần lượt A → F; mức suy luận và ultracode Owner chọn:
+
+  ```text
+  Gói A. Lệnh đầu tiên chỉ đọc C:\workspace\deep-review-1-6-r5\common\prompt-claude.md (không gộp lệnh khác), rồi làm đúng file đó.
+  ```
+
+**Owner chạy đợt 2** (DeepSeek một mình). Điều kiện bắt đầu:
+
+- đủ 12 báo cáo đợt 1 với dòng đầu `XONG`;
+- Codex đã xong, và không còn phiên Claude nào mở ở `Project-2C-review`;
+- gói WorkBuddy Pro còn hạn tới hết đợt 2 (Owner kiểm; hết hạn thì dừng, hỏi Owner trước khi gia hạn).
+
+Từ bước 4, chỉ Owner dùng app WorkBuddy và đụng tới thư mục dữ liệu của app (Phụ lục P, ranh giới tài khoản). Bước 1, 3 và 7 chạy `common\dot2.mjs` trong PowerShell của Owner. Lệnh in `OK` khi đạt. Không đạt thì in `STOP` kèm lý do: dừng ở đó, báo Claude.
+
+1. Đóng Codex (app và CLI) và mọi phiên Claude ở hai worktree review, rồi dọn những gì đợt 1 để lại (như §L4.9 đợt 2 bước 1):
+
+   ```powershell
+   node C:\workspace\deep-review-1-6-r5\common\dot2.mjs clean
+   ```
+
+2. Chạy `gh auth logout`; sau đó `gh auth status` phải báo chưa đăng nhập. `[Environment]::GetEnvironmentVariable('OPENCODE_GO_KEY', 'User')` và `… 'Machine')` phải rỗng.
+3. Ghi hash 12 báo cáo của Claude / Codex, rồi chặn đọc bằng ACL, rồi quét (như §L4.9 đợt 2 bước 3; ACL chỉ chặn đọc, bước 7 so lại hash):
+
+   ```powershell
+   $h = Get-FileHash C:\workspace\deep-review-1-6-r5\claude\*.md, C:\workspace\deep-review-1-6-r5\codex\*.md | Select-Object Path, Hash; if ($h.Count -ne 12) { throw "Cần 12 báo cáo, thấy $($h.Count)" }; $h | Export-Csv C:\workspace\deep-review-1-6-r5\common\dot2-reports-hash.csv -NoTypeInformation
+   ```
+
+   ```powershell
+   node C:\workspace\deep-review-1-6-r5\common\dot2.mjs deny
+   ```
+
+   ```powershell
+   node C:\workspace\deep-review-1-6-r5\common\dot2.mjs scan
+   ```
+
+   `deny` chặn như §L4.9 đợt 2 bước 3, đổi theo Phụ lục V:
+   - **cả thư mục:** `…-r5\claude`, `…-r5\codex`; thư mục lượt 1–4 `deep-review-1-6-r4`, `-r3`, `-r2`, `deep-review-1-6`; transcript, `file-history\<id>` và scratchpad của các phiên Claude ở worktree review;
+   - **từng mục con:** `%USERPROFILE%\.codex` và `C:\workspace\Project-2C-review-2`, để ngỏ `node_modules`, `.git` và link;
+   - mục do tài khoản khác làm chủ: không chặn, ghi vào `dot2-acl.json` và in ra (Phụ lục V).
+
+   `scan` tìm mã phát hiện và dòng đầu báo cáo lượt 5 của Claude / Codex ở những chỗ còn đọc được, như §L4.9.
+4. Mở app WorkBuddy (Phụ lục P, V):
+   - Đăng nhập app (bản quốc tế, tài khoản có gói WorkBuddy Pro): Owner tự làm. Ghi số bản app (About) vào `baseline.md`.
+   - **Kiểm gói Pro:** ngày hết hạn sau ngày dự kiến xong gói F. Không thì dừng, hỏi Owner (G4).
+   - Cài đặt như Phụ lục P mục "Cài đặt app", đổi theo Phụ lục V: Code review expert, agent phụ của app chấp nhận. Xem Memory, xóa mục không thuộc lượt 5, ghi số mục còn lại vào `baseline.md`.
+   - Ghi **credit trước** (trang Usage) vào bảng đánh dấu, trước phiên thử.
+5. **Phiên thử**, chỉ khi bước 3 đã xong: `deny` và `scan` in `OK`, và `common\dot2-acl.json` có. Lượt 4, phiên thử 1 chạy trước khi có ACL.
+
+   Tạo một task mới qua Code review expert: workspace `C:\workspace\Project-2C-review`, chế độ quyền Default, model `Deepseek-V4.1-Flash`, context 1M, mức suy luận cao nhất. Ghi model mà expert dùng. Bảo model làm các việc của §L4.9 đợt 2 bước 5, ghi kết quả vào `common\baseline.md` dưới một đề mục riêng của task này, với các đổi:
+   - mọi đường dẫn `-r4` của lượt 4 đổi thành `-r5`;
+   - liệt kê thêm `C:\workspace\deep-review-1-6-r4` → bị từ chối;
+   - bỏ việc "giao một việc cho agent khác → không làm được": agent phụ của app được dùng (Phụ lục V). Thay bằng: bảo model giao cho một agent phụ đúng một lần đọc thử mục bị chặn (liệt kê `…-r5\claude`) → bị từ chối, vì agent phụ chạy cùng tài khoản Windows;
+   - `node --version` trong shell của app, và `& 'C:\Program Files\nodejs\node.exe' --version` → ghi cả hai; bản thứ hai phải ≥ 24, không thì dừng, báo Claude;
+   - việc vitest của §L4.9 bước 5 chạy như quy tắc riêng 8 của Phụ lục U: Node 24 đầu PATH, đặt ngay trong cùng lệnh, in `node --version` ngay sau khi đặt (phải ≥ 24), rồi gọi vitest bằng `node` đường dẫn đủ. Mỗi shell mà app dùng chạy một lần (lượt 4 app dùng cả Git Bash lẫn PowerShell):
+     - PowerShell: `$env:Path = 'C:\Program Files\nodejs;' + $env:Path; node --version; & 'C:\Program Files\nodejs\node.exe' node_modules/vitest/vitest.mjs run packages/domain`;
+     - Git Bash: `export PATH="/c/Program Files/nodejs:$PATH"; node --version; "/c/Program Files/nodejs/node.exe" node_modules/vitest/vitest.mjs run packages/domain`;
+     - → ghi bản Node in ra và kết quả vitest (xanh). Lượt 4 chạy việc này bằng `node` trần, tức Node 22;
+   - chạy một probe Playwright trên bản build web, Node 24 đầu PATH như trên, với `--output` ra `…-r5\deepseek\_thu\` (chỉ ghi lại; sandbox chặn mà Owner giữ Default thì DeepSeek ghi PLAUSIBLE cho phần chỉ kiểm được trên trình duyệt).
+
+   Ra khác §L4.9 thì dừng đợt 2, làm như đường "Sửa theo …" của §L4.9. Lệnh **Log của app**, kiểm ACL ở Full Access (nếu chọn), **credit sau phiên thử** và đoạn "Xong" (dọn file thử, Memory, đọc lại `baseline.md`, chạy lại `scan`) như §L4.9 đợt 2 bước 5.
+6. Mỗi gói một task mới qua Code review expert, lần lượt A → F:
+   - Trước khi mở: ghi số bản app. Khác bản ở phiên thử thì ghi lại, không dừng.
+   - Tạo task: workspace `C:\workspace\Project-2C-review`, chế độ quyền đã chọn ở phiên thử, model như phiên thử. Rồi gửi đúng một dòng, không kèm ngoại lệ:
+
+     ```text
+     Gói A. Lệnh đầu tiên chỉ đọc C:\workspace\deep-review-1-6-r5\common\prompt-deepseek.md (không gộp lệnh khác), rồi làm đúng file đó.
+     ```
+
+   - Ngay khi mở task của gói, Owner ghi file phiên của gói vào bảng đánh dấu (file `.jsonl` mới nhất dưới thư mục của worktree review, chỗ ghi ở phiên thử).
+   - App hỏi duyệt: Owner từ chối mọi việc ngoài việc review (Phụ lục P). Lệnh Playwright / exe của gói mà sandbox chặn thì duyệt được, như lượt 4.
+   - Xong gói: trang Usage → ghi credit.
+   - **Điểm dừng chi phí, sau mỗi gói A–E** (G4, Owner 04/11): credit của gói tốn nhiều nhất tới lúc đó nhân số gói còn lại mà vượt credit còn lại → dừng, hỏi Owner trước gói kế. **Không mua thêm credit.**
+   - Hết credit giữa một gói → dừng đợt 2, hỏi Owner. Khi chạy tiếp, mở task mới với đúng tin nhắn của gói đó; bước 0 tự làm tiếp.
+7. Xong F, làm theo thứ tự (như §L4.9 đợt 2 bước 7):
+   1. **Đăng xuất app**, trước khi ai chép gì vào repo. Ghi **credit sau** vào bảng đánh dấu.
+   2. Thoát app.
+   3. Chép file phiên A–F ra `deepseek\<gói>\session\` (§L5.10).
+   4. Gỡ ACL:
+
+      ```powershell
+      node C:\workspace\deep-review-1-6-r5\common\dot2.mjs remove
+      ```
+
+      Lệnh gỡ mọi mục gỡ được, kiểm đọc lại được, rồi in `OK`. Còn mục chưa trả thì in danh sách mọi mục đó (đường dẫn, chủ sở hữu) và `STOP`: báo Claude. Gỡ bằng quyền khác (như `dot2-unlock.ps1` dưới quyền SYSTEM của lượt 4) chỉ khi Owner duyệt.
+   5. So hash 12 báo cáo với bước 3:
+
+      ```powershell
+      & { $ErrorActionPreference = 'Stop'; $old = @(Import-Csv C:\workspace\deep-review-1-6-r5\common\dot2-reports-hash.csv); $new = @(Get-FileHash C:\workspace\deep-review-1-6-r5\claude\*.md, C:\workspace\deep-review-1-6-r5\codex\*.md | Select-Object Path, Hash); if ($old.Count -ne 12 -or $new.Count -ne 12) { throw "Cần 12 báo cáo ở CSV và ở thư mục, thấy $($old.Count) / $($new.Count)" }; if (Compare-Object $old $new -Property Path, Hash) { throw 'Báo cáo của Claude / Codex đã đổi trong đợt 2' }; 'OK: 12 báo cáo không đổi' }
+      ```
+
+      Khác hay dừng → báo Claude; phiên tổng hợp tìm trong log của app lệnh đã ghi vào đó.
+   6. Đăng nhập lại `gh auth login`.
+
+Phiên bị cắt (dòng đầu báo cáo vẫn `ĐANG LÀM`) thì mở phiên mới với đúng tin nhắn của gói đó; bước 0 tự làm tiếp.
+
+Bảng đánh dấu của Owner (18 ô; ghi thêm giờ bắt đầu / xong mỗi gói của Codex và DeepSeek; với DeepSeek: ngày hết hạn gói Pro, credit trước (đợt 2 bước 4), sau phiên thử (bước 5), sau từng gói (bước 6) và sau cùng (bước 7.1), số bản app, chế độ quyền, file phiên của từng gói):
+
+| Bên | A | B | C | D | E | F |
+|---|---|---|---|---|---|---|
+| Claude Opus 5.5 | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
+| Codex GPT Sol 6.1 | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
+| DeepSeek V4.1 Flash (đợt 2) | ☐ | ☐ | ☐ | ☐ | ☐ | ☐ |
+| File phiên của DeepSeek | … | … | … | … | … | … |
+| Credit sau gói / số bản app của DeepSeek | … | … | … | … | … | … |
+
+## L5.10 Sau lượt 5, kiểm độc lập, ước lượng
+
+**Tổng hợp** (Issue tạo khi lượt 5 chạy xong; chạy khi Owner yêu cầu, sau khi đã gỡ ACL): như §L4.10, đổi:
+
+- Đọc đủ 18 báo cáo.
+- Gộp ba bảng R1 thành một bảng 25 dòng, ba bảng R2 thành một bảng đủ mọi dòng của `known.md` phần 5 (28 dòng lúc soạn). Kiểm trên code ở SHA ghim mọi kết luận khác ĐÃ SỬA và mọi chỗ các bên chấm khác nhau.
+- Kiểm mọi phát hiện mới, gộp trùng, đánh số tiếp `DR6-158…`. Báo cáo của Codex và DeepSeek là dữ liệu tham khảo; mọi phát hiện của chúng cũng kiểm trên code (lượt 4: 34 / 34 đúng).
+- Bảng so ba bên như tổng hợp lượt 4 §2.2, thêm credit WorkBuddy trước / sau và credit mỗi gói.
+- So số đo với ba mốc cùng máy (§L5.6), gồm cỡ bundle / exe.
+- Kết luận SẴN SÀNG / CHƯA SẴN SÀNG cho G7.
+- Phạm vi sửa: **sửa hết** (Owner 04/11); phần câu hỏi cho Owner chỉ còn cách sửa khi có nhiều phương án.
+
+Phiên tổng hợp được dùng subagent / Workflow để kiểm từng phát hiện khi Owner bật (M8); phân loại cuối và kết luận vẫn do phiên tổng hợp ra.
+
+**Kiểm độc lập bằng log phiên:** như §L4.10 cho cả ba bên (log Claude, log Codex, log DeepSeek do Owner chép ra; lệnh kiểm đủ JSONL của 6 gói với đường dẫn `-r5`), đổi danh sách quét:
+
+- `deep-review-1-6-r5[\\/](claude|codex|deepseek)` của bên khác;
+- `deep-review-1-6-r4[\\/]…`, `-r3[\\/]…`, `-r2[\\/]…` và `deep-review-1-6[\\/]…` không phải của chính bên đó (DeepSeek: mọi thư mục này);
+- DeepSeek: lệnh `node` không qua `C:\Program Files\nodejs\node.exe`; lệnh chạy `node`, `pnpm`, vitest, Playwright hay công cụ trong `node_modules` mà trong cùng lệnh không đặt `C:\Program Files\nodejs` lên đầu PATH (quy tắc riêng 8); Playwright không có `--output` ra thư mục của gói;
+- DeepSeek: agent phụ nhận việc mà không kèm quy tắc riêng 2–5;
+- mọi mục khác của danh sách quét §L4.10, đổi `-r4` thành `-r5`.
+
+**Log thô không vào repo** (như §L4.10). Báo cáo và bản tổng hợp chỉ trích đoạn log cần dẫn, sau khi đã quét mẫu key và đã đăng xuất app.
+
+**Báo cáo gốc lưu ở repo** (PR docs của phiên tổng hợp):
+
+- `docs/reviews/raw/<ngày tổng hợp>/{claude,codex,deepseek}/<gói>.md` nguyên văn;
+- `common-known.md`, `common-baseline.md` (gồm bản app, cài đặt app, chế độ quyền, credit), `common-fixes.md`; `common-plan.md`, `common-prompt-*.md` chỉ khi khác bản trong repo;
+- bản tổng hợp `docs/reviews/<ngày>-deep-review-phase-1-6-luot-5-tong-hop.md`.
+
+Thư mục bằng chứng `deep-review-1-6-r5\` giữ trên Home PC tới v1.0.
+
+**Sau tổng hợp: đợt sửa hết, rồi G7** (Owner 04/11):
+
+- đợt sửa đổi màn hay hành vi nào thì nghiệm thu lại các dòng NT đó trên exe phát hành, và chụp lại ảnh hướng dẫn có màn đó (NT-HD-01; K46);
+- NT-EV-01 (eval AI thật, tốn tiền, Owner bấm, G4) chạy sau đợt sửa, với version prompt cuối. Không chạy trong đợt 2: bước 2 kiểm biến môi trường key rỗng;
+- chạy lại cổng và probe trên SHA phát hành, so mốc sau #656.
+
+**Ước lượng.** Lượt 4 trên Home PC: Claude ≈ 6 h 13 (55–73 phút mỗi gói); Codex ≈ 4 h 05 làm việc; DeepSeek ≈ 3 h 32 (tổng hợp lượt 4 §2.2).
+
+- Lượt 5 đọc diff bằng khoảng 1/3 lượt 4, bảng R 53 dòng (25 + 28) so 69.
+- Đợt 1: Claude ≈ 5–6 h; Codex ≈ 3–4 h. Đợt 2: DeepSeek ≈ 3 h.
+- Cả lượt 5 ≈ 2 ngày tính cả chuẩn bị và hai đợt; tổng hợp thêm ≈ nửa ngày; rồi tới đợt sửa. Trước đó là T-358 (một PR docs nhỏ).
+- Owner can thiệp:
+  - đăng xuất app WorkBuddy trên Home PC trước bước chuẩn bị; kiểm gói Pro còn hạn trước đợt 2;
+  - mở 6 phiên Claude + 6 phiên Codex + 6 task DeepSeek;
+  - ở đợt 2: đóng Codex, hash 12 báo cáo, chạy `dot2.mjs` (dọn, chặn ACL, quét, gỡ ACL), `gh auth logout` / `login`, đăng nhập / đăng xuất app, cài đặt app, phiên thử, tạo task từng gói, duyệt hay từ chối khi app hỏi, ghi file phiên và credit của từng gói, chép log phiên, so hash báo cáo;
+  - để máy rảnh ≈ 8 phút ở bước 7;
+  - ghi giờ bắt đầu / xong mỗi gói của Codex và DeepSeek.
+
+## L5.11 Quyết định của Owner (04/11/2026) và đề xuất
+
+**Đã chốt** (Issue #1025; Owner trả lời trong phiên soạn ngày 04/11/2026 trên Home PC):
+
+1. **Bên review:** "lên plan deep code base review round 5 với 3 bên như round 4: Claude Opus, Codex GPT Sol và Deepseek v4.1 Flash qua Workbuddy". Claude Opus 5.5, Codex GPT Sol 6.1, DeepSeek V4.1 Flash trong app desktop WorkBuddy; 18 báo cáo.
+2. **Sau lượt 5:** hỏi "Sau lượt 5 deep review, phát hiện xử lý thế nào?", Owner chọn "Sửa hết rồi G7". Như lượt 3–4: exe đổi thì nghiệm thu lại các dòng NT có màn hay hành vi bị đổi, và chụp lại ảnh hướng dẫn liên quan.
+3. **SHA ghim:** hỏi "Ghim SHA lượt 5 lúc nào?", Owner chọn "Ghim main khi chuẩn bị". Code lúc soạn trùng `3d237b0`, exe ứng viên đã nghiệm thu L3; trong lượt 5 không merge code.
+4. **Chi phí DeepSeek (G4):** hỏi "Trần chi phí nào?" (V4.1 Flash hết miễn phí từ 01/11), Owner chọn "Chỉ credit của gói Pro": không mua thêm credit; hết credit giữa chừng thì dừng các gói còn lại của DeepSeek và hỏi Owner.
+
+Cùng ngày Claude trình thiết kế trong chat (mục tiêu, SHA ghim, phạm vi R1 / R2, KNOWN, số đo, DeepSeek và chi phí, bài học lượt 4, việc sau lượt 5, ước lượng, tài liệu sửa). Owner chọn "Duyệt, viết PR".
+
+**Đề xuất, Owner chọn cùng G1.** Mục 5–8, 10, 11 đã có trong thiết kế Owner duyệt trong chat (trừ phần ACL chặn thêm `-r4` của mục 8); mục 9 và phần đó là mới của PR này.
+
+**Owner duyệt G1 ngày 04/11/2026**, trong chat của phiên sửa PR #1026 sau review `272f6f1`: "chọn đề xuất 5–11 như PR ghi". Owner bảo sửa cùng lúc bốn ghi chú không chặn của review đó. Hai ghi chú đổi đề xuất 10 (Node 24 đầu PATH cho tiến trình con; xóa luôn `target\` ở bước chuẩn bị); cột "Đề xuất" dưới đây đã gồm hai đổi đó.
+
+| # | Đề xuất | Mục | Owner chọn |
+|---|---|---|---|
+| 5 | Phạm vi đủ 6 gói, hai phần ngang nhau. R1 25 dòng (DR6-135…157, DR6-37, CLR4-F2), R2 28 Issue (T-329…T-356); dòng R1 kiểm theo mô tả DR6. Tìm lỗi / edge case mới trên toàn bộ phạm vi gói, xét trước code mới sau lượt 4 | §L5.3, §L5.4, §L5.5 | Theo đề xuất (04/11/2026) |
+| 6 | KNOWN lượt 5 dựng mới ở SHA ghim: OPEN rỗng + ACCEPTED; K1–K40 theo `common-known.md` lượt 4, K17 thêm pipeline; K41–K47; "Lệch mockup đã biết" nguyên văn | §L5.5 | Theo đề xuất (04/11/2026) |
+| 7 | Số đo trên Home PC, so mốc sau #656 (chính), G7 `perf-g7.json` (cùng bản probe) và lượt 4. Đo bằng script của G7 (thêm mở lại). Bundle / exe so lượt 4 và G7 | §L5.6, §L5.9 bước 7 | Theo đề xuất (04/11/2026) |
+| 8 | Hai đợt và ACL như lượt 4; ACL chặn thêm `deep-review-1-6-r4`. DeepSeek qua Code review expert, chế độ quyền Default; agent phụ của app chấp nhận như G6 30/10, nay ghi trong prompt | §L5.2, §L5.7, §L5.9, Phụ lục U, V | Theo đề xuất (04/11/2026), gồm ACL thêm `-r4` |
+| 9 | `dot2.mjs` lượt 5 làm ở Issue riêng T-358 (tạo sau G1): PR docs thêm khối code vào Phụ lục V, thử trên cây giả như T-314, T-315; merge trước bước chuẩn bị | §L5.2, §L5.9, Phụ lục V | Theo đề xuất (04/11/2026) |
+| 10 | Bài học lượt 4 (bảng §L5.7): Node 24 bằng đường dẫn đủ và đặt đầu PATH trong mỗi lệnh chạy `node` / `pnpm` / vitest / Playwright (tiến trình con lấy `node` theo PATH), Playwright `--output`, phiên thử sau ACL, kết luận F áp quyết định Owner, gỡ `CI` trước `build:exe`. Thêm một đổi cách chuẩn bị: bước chuẩn bị 3 xóa luôn `apps\desktop\src-tauri\target\` có sẵn ở worktree review (cache build), thay vì dừng hỏi Owner như §L4.9 | §L5.7, §L5.9, §L5.10, Phụ lục T, U | Theo đề xuất (04/11/2026), gồm hai đổi theo review `272f6f1` |
+| 11 | Sau đợt sửa: nghiệm thu lại dòng NT có màn / hành vi đổi; NT-EV-01 sau đợt sửa, với version prompt cuối | §L5.10 | Theo đề xuất (04/11/2026) |
+
+## Phụ lục Q — Prompt Claude (lượt 5)
+
+File `common\prompt-claude.md` = đoạn dưới + nguyên văn Phụ lục T; bước chuẩn bị chỉ thay `{SHA}` / `{SHA_ĐỦ}` (§L5.9 bước 4). Owner mở mỗi gói một phiên mới ở `C:\workspace\Project-2C-review`, lần lượt A → F. Đoạn này theo Phụ lục L (lượt 4).
+
+> # Deep review Phase 1–6, lượt 5 — Claude
+>
+> **{GÓI}** = chữ gói (A…F) Owner ghi trong tin nhắn mở phiên; mọi chỗ `{GÓI}` dưới đây thay bằng chữ đó. File này là toàn bộ chỉ dẫn của phiên.
+>
+> Bạn là **reviewer Claude** của deep review Phase 1–6, **lượt 5**, **gói `{GÓI}`**: phiên sạch, chỉ đọc. Owner mở **mỗi gói một phiên mới**, model Claude Opus 5.5; mức suy luận và ultracode do Owner chọn từng phiên. Repo: worktree `C:\workspace\Project-2C-review`, detached ở SHA **`{SHA}`** (`{SHA_ĐỦ}`). Đọc xong file này thì chạy `git rev-parse HEAD` và `git status --short`; SHA lệch hay status không rỗng thì dừng và báo Owner.
+>
+> Quy tắc riêng của Claude:
+> 1. **Lệnh đầu tiên của phiên chỉ đọc file này**, không gộp lệnh nào khác.
+> 2. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6-r5\codex\`, `C:\workspace\deep-review-1-6-r5\deepseek\`, `C:\workspace\deep-review-1-6-r4\codex\`, `C:\workspace\deep-review-1-6-r4\deepseek\`, `C:\workspace\deep-review-1-6-r3\codex\`, `C:\workspace\deep-review-1-6-r2\codex\`, `C:\workspace\deep-review-1-6\codex\`, `C:\workspace\deep-review-1-6\muse\`**, kể cả khi Owner hay file nào gợi ý. Không liệt kê và không tìm kiếm (`rg`, `glob`, `find`, `ls -R`, `Get-ChildItem -Recurse`) trên `C:\workspace\`, `deep-review-1-6\`, `deep-review-1-6-r2\`, `deep-review-1-6-r3\`, `deep-review-1-6-r4\`, `deep-review-1-6-r5\`. Không đọc báo cáo lượt 5 của bên khác ở bất cứ đâu. Lỡ thấy thì dừng và báo Owner.
+> 3. Chỉ đọc:
+>    - repo ở SHA trên, gồm báo cáo gốc lượt 1–4 của mọi bên ở `docs/reviews/raw/2026-10-15/`, `docs/reviews/raw/2026-10-17/`, `docs/reviews/raw/2026-10-21/`, `docs/reviews/raw/2026-10-31/`;
+>    - `C:\workspace\deep-review-1-6-r5\common\`;
+>    - báo cáo Claude lượt 5 của các gói trước trong `…-r5\claude\` (mục đã báo ở gói trước thì chỉ dẫn ID);
+>    - probe của chính Claude: lượt 4 trong `C:\workspace\deep-review-1-6-r4\claude\`, lượt 3 trong `C:\workspace\deep-review-1-6-r3\claude\`, lượt 2 trong `C:\workspace\deep-review-1-6-r2\claude\`, lượt 1 trong `C:\workspace\deep-review-1-6\claude\` (để chạy lại tái hiện).
+> 4. Không dùng skill `review-pr` / `code-review`. Không làm nghi thức phiên của repo (HANDOFF, `/handoff`, PR, Issue, merge, commit). Không chạy `gh` (thông tin Issue / PR sửa có ở `common\fixes.md`). Subagent / Workflow chỉ khi Owner bật ultracode cho phiên này (ADR-0001 M8). Khi đó chỉ phiên chính làm bước 0, ghi `{GÓI}.md` và in dòng `XONG`. **Subagent** (đọc file này vì tin nhắn của Owner tới cả nó) làm phần việc phiên chính giao, theo quy tắc 2, 3 và phần chung; ghi probe vào `…-r5\claude\{GÓI}\`, không ghi `{GÓI}.md`.
+> 5. Ghi báo cáo vào `C:\workspace\deep-review-1-6-r5\claude\{GÓI}.md`, probe / bản chép / log vào `…-r5\claude\{GÓI}\`.
+> 6. Gói F được đọc `…-r5\claude\A…E.md`. Xong gói nào thì dừng và in dòng `XONG …` (mục "Cuối phiên" của phần chung). Xong F thì **chờ Owner yêu cầu** tổng hợp, không tự tổng hợp.
+> 7. Mục 1 của báo cáo ghi công cụ, model, mức suy luận của phiên và ultracode bật hay tắt.
+>
+> Phần chung dưới đây áp dụng đầy đủ. Trong phần chung: `<bên>` = `claude`, `<ID>` = `CLR5`.
+
+## Phụ lục S — Prompt Codex (lượt 5)
+
+File `common\prompt-codex.md` = đoạn dưới + nguyên văn Phụ lục T; bước chuẩn bị chỉ thay `{SHA}` / `{SHA_ĐỦ}`. Owner chạy Codex (model GPT Sol 6.1) ở `C:\workspace\Project-2C-review-2`, **mỗi gói một phiên mới**, lần lượt A → F. Không có Phụ lục R, để khỏi lẫn với bảng R1 / R2. Đoạn này theo Phụ lục M (lượt 4).
+
+> # Deep review Phase 1–6, lượt 5 — Codex
+>
+> **{GÓI}** = chữ gói (một chữ A…F) Owner ghi trong tin nhắn mở phiên; mọi chỗ `{GÓI}` dưới đây thay bằng chữ đó. File này là toàn bộ chỉ dẫn của phiên.
+>
+> Bạn là **reviewer độc lập Codex** (model GPT Sol 6.1, Owner chọn) của deep review Phase 1–6, **lượt 5**, gói `{GÓI}`. Repo: worktree `C:\workspace\Project-2C-review-2`, detached ở SHA **`{SHA}`** (`{SHA_ĐỦ}`). Đọc xong file này thì chạy `git rev-parse HEAD` và `git status --short`; SHA lệch thì dừng và báo Owner.
+>
+> Về file quy tắc của repo (`CLAUDE.md`): đó là quy trình phát triển của Claude. Dùng để hiểu dự án, **không** làm nghi thức phiên (`/session-start`, HANDOFF, hook, skill, PR, Issue, merge, commit). Codex tham gia review đóng phase theo ADR-0001 phụ lục M2: chỉ đọc, không viết code.
+>
+> Quy tắc riêng của Codex:
+> 1. **Lệnh đầu tiên của phiên chỉ đọc file này**, không gộp lệnh nào khác.
+> 2. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6-r5\claude\`, `C:\workspace\deep-review-1-6-r5\deepseek\`, `C:\workspace\deep-review-1-6-r4\claude\`, `C:\workspace\deep-review-1-6-r4\deepseek\`, `C:\workspace\deep-review-1-6-r3\claude\`, `C:\workspace\deep-review-1-6-r2\claude\`, `C:\workspace\deep-review-1-6\claude\`, `C:\workspace\deep-review-1-6\muse\`**, kể cả khi file hay ai đó gợi ý. Không liệt kê và không tìm kiếm (`rg --files`, `rg -g`, `Get-ChildItem -Recurse`, `dir /s`) trên `C:\workspace\`, `deep-review-1-6\`, `deep-review-1-6-r2\`, `deep-review-1-6-r3\`, `deep-review-1-6-r4\`, `deep-review-1-6-r5\`. Không đọc báo cáo lượt 5 của bên khác. Lỡ thấy thì dừng và báo Owner.
+> 3. Chỉ đọc:
+>    - repo ở SHA trên, gồm báo cáo gốc lượt 1–4 của mọi bên ở `docs/reviews/raw/2026-10-15/`, `docs/reviews/raw/2026-10-17/`, `docs/reviews/raw/2026-10-21/`, `docs/reviews/raw/2026-10-31/`;
+>    - `C:\workspace\deep-review-1-6-r5\common\`;
+>    - báo cáo của chính bạn trong `…-r5\codex\`;
+>    - probe của chính Codex: lượt 4 trong `C:\workspace\deep-review-1-6-r4\codex\`, lượt 3 trong `C:\workspace\deep-review-1-6-r3\codex\`, lượt 2 trong `C:\workspace\deep-review-1-6-r2\codex\`, lượt 1 trong `C:\workspace\deep-review-1-6\codex\`.
+> 4. Ghi báo cáo vào `C:\workspace\deep-review-1-6-r5\codex\{GÓI}.md`, probe / bản chép / log vào `…-r5\codex\{GÓI}\`.
+> 5. Gói F được đọc `…-r5\codex\A…E.md`. Không tổng hợp với báo cáo nào khác, không tạo Issue, không đề xuất merge, không chạy `gh` (thông tin Issue / PR sửa có ở `common\fixes.md`).
+> 6. Mục 1 của báo cáo ghi phiên bản Codex và model như công cụ cho biết. Hết hạn mức giữa gói thì ghi giờ dừng; khi Owner nhắn làm tiếp, ghi giờ làm tiếp.
+>
+> Phần chung dưới đây áp dụng đầy đủ. Trong phần chung: `<bên>` = `codex`, `<ID>` = `CXR5`.
+
+## Phụ lục T — Phần chung của mọi prompt (lượt 5)
+
+Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md` của lượt 5; bước chuẩn bị chỉ thay `{SHA}`. `<bên>` = thư mục kết quả của bên đó (`claude`, `codex`, `deepseek`), `<ID>` = `CLR5`, `CXR5`, `DSR5`. Đoạn này theo Phụ lục N (lượt 4).
+
+> ## Phần chung
+>
+> ### Bước 0 — kiểm gói, trước khi đọc code
+>
+> Kiểm từng file bằng tên đầy đủ (`Test-Path` hoặc mở file); **không liệt kê, không tìm kiếm thư mục**:
+>
+> 1. `{GÓI}` phải là **đúng một chữ** trong A, B, C, D, E, F. Không phải → dừng, hỏi Owner.
+> 2. `C:\workspace\deep-review-1-6-r5\<bên>\{GÓI}.md`:
+>    - **chưa có** → làm mới;
+>    - có, và **dòng đầu bắt đầu bằng `ĐANG LÀM`** → phiên trước bị cắt: **làm tiếp**. Đọc hết file và thư mục `<bên>\{GÓI}\`, giữ mọi phát hiện đã ghi, làm nốt; ghi rõ là phiên làm tiếp, từ đâu, bằng công cụ / model / mức nào;
+>    - có, mà dòng đầu **không** bắt đầu bằng `ĐANG LÀM` → gói đã xong: dừng, hỏi Owner, không ghi đè.
+> 3. Báo cáo lượt 5 các gói **trước** `{GÓI}` (thứ tự A → F) đã có đủ trong `…-r5\<bên>\` và không file nào còn dòng đầu `ĐANG LÀM`. Thiếu hay còn dở → dừng, báo Owner tên gói.
+> 4. Đủ cả ba thì in đúng một dòng rồi làm tiếp, không chờ Owner: `Bắt đầu gói {GÓI} lượt 5 (<tên gói>) → <bên>\{GÓI}.md` (làm tiếp thì thêm `— làm tiếp phiên trước`).
+>
+> **Ghi báo cáo dần:** ngay sau bước 0, tạo `<bên>\{GÓI}.md` với dòng đầu `ĐANG LÀM — <bên> gói {GÓI} lượt 5, bắt đầu <giờ>` và mục 1 của báo cáo. Mỗi khi có dòng bảng R, kịch bản đã thử, phát hiện hay số đo thì **ghi ngay**. Chạy lệnh dài ở nền thì ghi vào file đang chờ gì trước khi chờ.
+>
+> **Cuối phiên**, khi báo cáo đủ các mục: đổi dòng đầu thành `XONG — <bên> gói {GÓI} lượt 5, <giờ xong>`. In đúng một dòng: `XONG gói {GÓI} lượt 5 → C:\workspace\deep-review-1-6-r5\<bên>\{GÓI}.md. Gói kế tiếp: <chữ kế tiếp> (mở phiên mới).` Gói F in: `XONG cả 6 gói lượt 5 của <bên>. Chờ Owner yêu cầu tổng hợp.`
+>
+> ### Dự án và lượt này
+>
+> Project-2C: app desktop Tauri 2 + React, SQLite chạy trong webview qua sql.js; Rust chỉ ghi file, giữ API key, gọi OpenCode. App chạy offline, một người dùng, dữ liệu hiện là **giả lập**. App hiện tên **Heritas L-CRM** (logo, icon, tiêu đề cửa sổ); tên mã Project-2C giữ ở mọi chỗ khác (`common\known.md` K39).
+>
+> - Phase 1–4: nhân sự / team, khách hàng N4–N1, KYC có cấu trúc, lịch hẹn và kết quả, hợp đồng, chỉ số và báo cáo, xuất Excel, backup.
+> - Phase 5: AI copilot (`packages/ai`), gồm Mock trích xuất dữ kiện KYC.
+> - Phase 6: hàng đợi thay dữ liệu S-2, Thùng rác + khôi phục, hộp Xóa KH 5f, Dọn sạch Thùng rác (TR-11–TR-13), trạng thái lưu (chỉ báo ở sidebar, nút Thử lại, đóng app chờ lần thay đang chạy).
+>
+> **Lượt 1–3** (14–21/10) tìm `DR6-01…134`. **Lượt 4** (`2e51e25`, 29–30/10, ba bên):
+>
+> - kiểm 37 dòng R1 và 32 dòng R2: 36 + 32 ĐÃ SỬA, 1 SỬA MỘT PHẦN (DR6-37), 0 HỒI QUY;
+> - tìm 23 vấn đề mới `DR6-135…157`: 0 Medium, 17 Low, 6 Nit; thêm 1 mục KNOWN có bằng chứng mới (CLR4-F2);
+> - kết luận CHƯA SẴN SÀNG, chỉ vì Owner đã quyết sửa hết trước G7.
+>
+> Sau lượt 4 có ba đợt mà chưa lượt nào đọc trọn. Lúc soạn kế hoạch, diff `2e51e25..571b8b0` ngoài tài liệu có 93 file, +5 761 / −1 533; số ở SHA `{SHA}` ghi trong `common\baseline.md`.
+>
+> - Đợt sửa lượt 4: 10 Issue #896…#905 (T-319…T-328), gồm đợt G5 `@5`.
+> - Mục sổ [G7] sau đó: T-329…T-342, gồm Mock trích xuất viết lại thành `packages/ai/src/mock-extraction.ts` và `tools/auto-wait*` của pipeline `auto-issues`.
+> - G7: ảnh hướng dẫn, probe hiệu năng, sửa Thùng rác (T-350), nghiệm thu L1–L3 (T-343…T-356).
+>
+> **Lượt 5 có hai phần ngang nhau, cả hai bắt buộc:**
+>
+> 1. **Kiểm phần đã sửa (trục R), hai bảng** (`common\known.md` phần 4, 5, cột "Gói kiểm"):
+>    - **R1, theo mã:** DR6-135…157; DR6-37 (SỬA MỘT PHẦN ở lượt 4); KNOWN CLR4-F2 (sửa bằng tài liệu). Mỗi dòng: chạy lại tái hiện của lượt 4 (DR6-37: cả của lượt 1); gỡ tạm phần sửa (trên bản chép, hoặc patch gỡ ngay), xem test của PR sửa có đỏ; thử biến thể gần. **Kiểm theo mô tả của DR6 ở tổng hợp lượt 4 §6 và báo cáo gốc**, không chỉ theo danh sách việc trong Issue sửa: lượt 4, hai bên chấm DR6-37 ĐÃ SỬA theo danh sách của Issue mà sót vị trí đầu tiên báo cáo lượt 1 nêu. Mục sửa bằng tài liệu (CLR4-F2): dòng ghi có và khớp app.
+>    - **R2, theo Issue:** T-329…T-356 (danh sách đủ ở `known.md`). Mỗi dòng: mục tiêu và test chấp nhận của Issue (`common\fixes.md`) đúng trên code; gỡ tạm ít nhất một phần sửa chính, xem test có đỏ; thử biến thể gần của các ghi chú Issue gom. Issue chỉ tài liệu / ảnh / nghiệm thu: dòng ghi có và khớp app / số đo / ảnh.
+>
+>    Kết luận: **ĐÃ SỬA** (đường lỗi cũ đã hết, có test đỏ khi gỡ phần sửa; biến thể còn hở ghi thành phát hiện riêng) · **SỬA MỘT PHẦN** (một phần của mô tả DR6, của Issue sửa hay của quyết định Owner chưa làm) · **CHƯA SỬA** · **HỒI QUY** (phần sửa làm hỏng chỗ trước đó đúng). Ba kết luận sau kèm một phát hiện có trường "Liên quan". Thêm:
+>    - số đo không xấu hơn mốc Home PC sau #656 (`common\baseline.md`);
+>    - refactor T-329 (tách Mock trích xuất) không đổi hành vi; `listeners.ts` của T-332 không làm hỏng việc của listener khác hay của lệnh.
+> 2. **Tìm lỗi mới và edge case mới** trên **toàn bộ** phạm vi gói, không chỉ quanh chỗ đã sửa.
+>    - Ưu tiên lỗi do chính các đợt sau lượt 4 gây ra: ở lượt 4, 9 / 23 vấn đề mới do đợt sửa trước nó.
+>    - Xét trước code mới và hành vi mới: Mock trích xuất viết lại (`known.md` K42), G5 `@5` (K43), `flush()` và `listeners.ts`, ô chữ có ký tự vô hình (ô Giờ, Case size, ô ngày), bộ chặn ký hiệu `token-guard.ts`, tên liền dài và `DataTable`, ô chọn (K44), nút `aria-disabled`, Thùng rác ghi lịch Dự kiến đã qua (T-350), `storage.rs`, `tools/auto-wait*`.
+>    - Rồi tới kịch bản / biên **chưa có trong báo cáo lượt 1–4**. Đọc `docs/reviews/raw/2026-10-15/`, `…/2026-10-17/`, `…/2026-10-21/`, `…/2026-10-31/` và bốn bản tổng hợp để biết đã thử gì.
+>    - Báo cáo có mục **"Kịch bản mới đã thử"**: mỗi kịch bản một dòng, kể cả khi không thấy lỗi. Mỗi gói nên có ít nhất 5; gói F ít nhất 5 chuỗi nhiều bước qua nhiều gói.
+>    - Chỗ các lượt trước ghi "đã xét, không thấy" vẫn đáng xét lại.
+>
+> Thông tin từng Issue / PR sửa (mục tiêu, test chấp nhận, phần PR ghi lệch / chưa làm, ghi chú sổ đã gom): `common\fixes.md`. Diff một PR: `git show <commit>` (bảng commit ở `plan.md` §L5.2 và `fixes.md`).
+>
+> ### Kế hoạch và phạm vi gói
+>
+> Kế hoạch đầy đủ: `C:\workspace\deep-review-1-6-r5\common\plan.md`. Lượt 5 ở §L5.1–§L5.11; mục nào §L5 không nói khác thì như lượt 4 (§L4); trục và thước mức ở §4; định dạng ở §L5.8 (và §L4.8, §L3.8, §L2.8). Phạm vi gói như lượt 1–4 (luật xếp gói của `tools/size-report-core.mjs`; đọc thêm chỗ code gói khác mà gói nối vào). Số dòng dưới là lúc soạn (`571b8b0`); số ở SHA ghim trong `common\baseline.md`:
+>
+> | Gói | Đường dẫn | SP / test lúc soạn | R1 | R2 | Trọng tâm mới (phần 2) |
+> |---|---|---|---|---|---|
+> | A. Lõi dữ liệu | `packages/domain/**`, `packages/db/**` | 8 748 / 15 805 | 135–137, 151 | T-332, 350 | Luật D7 cùng ngày (`unmovedMeetingsFrom`) qua xóa / sửa / khôi phục / nhập backup. `byName` giữ khóa mỗi tên: cùng thứ tự với collator trần trên tên thật và tên có chữ số toàn khổ / Ả Rập, thời gian sắp. `readsBackAsIs` (T-332), luật chung của `isLabel` và luật nhập backup (`valueOf` của `backup.ts`, mọi cột chữ): NUL, UTF-16 hỏng, U+FEFF đầu / giữa / cuối chữ; luật nhập 12. Mã KH của `TrashRow` (T-326, DR6-151). `appointment-counts.ts` của T-350 (lịch Dự kiến đã qua) ở mọi chỗ dùng: chỉ số, Thùng rác, Lịch hẹn. File do exe lượt 4 / exe ứng viên L3 xuất còn nhập được |
+> | B. File và Rust | `apps/desktop/src-tauri/**` (gồm `capabilities/`, `tauri.conf.json`, `Cargo.toml`, `icons/`), `apps/desktop/src/data/**` trừ file AI | 2 457 / 5 600 | 138–140, 147 | T-332 | `flush()` lặp tới khi hết việc (T-321) với chuỗi lưu / thay / đóng app chồng nhau. `listeners.ts` dùng chung (T-332): listener ném, listener gỡ mình trong lúc gọi. `storage.rs`: seam ổ đầy, `backup_names` chỉ lấy file (T-320). CSP và `identifier` giữ (K39) |
+> | C. AI | `packages/ai/**`; file AI của app (`ai-*`, `*-ai-*`, `*Ai.tsx`, `KycExtraction`, `KycIntelligence`, `KycWebSession`, `KycHistory`, `extraction-view`) | 6 580 / 8 202 | 137, 141–144 | T-329, 330, 332, 336, 339 | **Mock trích xuất viết lại** (`mock-extraction.ts`, K42): danh sách cho phép, giá trị cuối về KH, câu không chủ ngữ, khúc không chữ, dấu đầu dòng, Ly hôn / Góa / Ly thân, con đã mất, "bé". Thử trên câu thật (seed, dữ liệu tải, `docs/golden/ai-eval.md`) và câu tự dựng; thời gian trên ghi chú 36 000 ký tự. **G5 `@5`** (`phase-5-prompts.md` §14): NUL ở bước 0, "giới" sau "môi / ranh / biên / thế"; chặn đủ, không chặn nhầm. Lỗi AI giữ lại theo `generation` (T-322); `ai-jobs.ts` sau T-332 |
+> | D. Màn nhập liệu | `packages/ui/**` (trừ `scripts/`), `apps/desktop/src/{shell,i18n}/**`, `routes/customers/**` (trừ file AI và Hợp đồng), `routes/team/**`, `routes/Screen.tsx`, `routes/{classes,money-view}.ts`, `routes/stage-badge.tsx`, file gốc `apps/desktop/src/*`, `apps/desktop/index.html` | 8 134 / 3 094 | 37, 145–149 | T-331, 332, 333, 337, 341, 342, 344, 352, 356 | **Bộ chặn ký hiệu** (`token-guard.ts`): máy trạng thái chuỗi / template / comment / JSX / kiểu generic / CRLF; tìm cả bỏ sót lẫn báo nhầm trên code thật. Khóa i18n "{trường}: {giá trị}" của thẻ Dữ kiện KYC. `Choices` theo `.choice` của mockup (K44). Tên liền dài ở `Dialog`, màn Team, `DataTable` trong khung cuộn (T-331). Nút `aria-disabled` của `Button` (T-337): Tab, Enter, trình đọc màn hình. Dải lưu và hộp đóng app sau một lần lưu khác (T-321) |
+> | E. Lịch hẹn, chỉ số, quản lý | `routes/{appointments,overview,reports}/**`, `routes/{Overview,Settings*,RestoreDialog,FilterBar,ConfirmWordDialog}.tsx` (trừ `SettingsAi.tsx`), `routes/{trash-view,period-labels,applied-filter}.ts`, Hợp đồng (`routes/customers/{CustomerPolicies,PolicyDialogs,policy-form}.*`) | 8 272 / 4 700 | 37, 148, 150–154 | T-331, 332, 337, 350, 353 | Ô có ký tự vô hình: Case size, ô Giờ, `pending` của ô ngày (T-326, T-332, T-337). Tên nút khôi phục ở Thùng rác (K41 Q3). Hộp xác nhận lúc chạy: focus, `aria-disabled`, câu "Đang …" (`ConfirmWordDialog`, Nhập backup). Thùng rác ghi lịch Dự kiến đã qua (T-350): nhãn khớp nghĩa thường ở 6a, Thùng rác, chỉ số. So sánh team, Báo cáo với tên dài. NT-LH-19 / 28 (K46) |
+> | F. Xuyên gói, bloat / hiệu năng, công cụ | `tools/**`, `e2e/**`, `.github/**`, `.githooks/**`, `.claude/**`, `packages/ui/scripts/`, `apps/desktop/vite.config.ts`, file gốc repo (gồm `eslint.config.js`, `.dependency-cruiser.cjs`); **luồng xuyên gói; toàn codebase cho bloat và hiệu năng** | 4 886 / 18 427 | 136 (đo), 155–157, CLR4-F2; **R1 gộp đủ 25 dòng** | T-333, 334, 335, 336, 338, 339, 340, 342, 343, 345–349, 351, 352, 354, 355; **R2 gộp đủ mọi dòng** | Công cụ đổi: `tools/auto-wait*` (đọc trạng thái CI, chờ, lỗi mạng / `gh`; K45), `review-hint-core`, `pr-status`, `notes-core` (glob, `globMeetsFolder`), `size-report` (asset của bản dựng), test của `pr-core`, bộ kiểm ảnh hướng dẫn, probe hiệu năng (T-345…T-347), luật `dependency-cruiser` cho test-support. Chuỗi nhiều bước, vd.: ghi chú KYC dài → AI trích xuất (Mock) → xác nhận → phân tích → xóa KH → Thùng rác → khôi phục; lịch Dự kiến đã qua → xóa → Thùng rác → khôi phục → chỉ số; lưu lỗi → Thử lại → Nhập backup → đóng app giữa lần thay; xuất ở exe lượt 4 (`2e51e25`) → nhập ở exe SHA ghim. Bloat / bundle / exe so lượt 4 và G7; kết luận SẴN SÀNG / CHƯA SẴN SÀNG |
+>
+> ### Đọc trước
+>
+> - Như lượt 1–4: `CLAUDE.md` (gốc + của package trong gói), `CONTEXT.md`, `docs/design/phase-6-hoan-thien.md` (§4: S-2, Thùng rác TR-1…TR-13 và D1–D13; §5 ngưỡng).
+> - Spec / golden / mockup theo gói:
+>   - A: `phase-3-du-lieu.md` §4, §6, `phase-4-chi-so.md`, `docs/golden/{chi-so,kh-theo-nhom,kyc,lich-hen}.md`, ADR-0007, ADR-0008;
+>   - B: ADR-0016, ADR-0009 phụ lục D-1, spec Phase 6 §4.1;
+>   - C: `phase-5-ai.md` (gồm §6.1, §7, §10 Mock trích xuất), `phase-5-prompts.md` (gồm §11–§14), `docs/golden/ai-eval.md`, ADR-0009;
+>   - D / E: `docs/design/mockups/` (gồm `index.html`, `forms.css` `.choice`, `trash.html`, `settings-data.html`), spec Phase 3 / 4 / 6, ADR-0013, `docs/testing/nghiem-thu-v1.md` ("Các lượt thử", "Lệch mockup đã biết");
+>   - F: tất cả khi cần, `docs/metrics/phase-6.md`, `e2e/perf/README.md`, `.claude/skills/auto-issues/SKILL.md` (để hiểu `tools/auto-wait*`).
+> - Thêm cho lượt 5: tổng hợp lượt 4 `docs/reviews/2026-10-31-deep-review-phase-1-6-luot-4-tong-hop.md` (§3 bảng R, §6 mô tả DR6-135…157, §7 số đo, §8.4 KNOWN, §9 quyết định Owner, §10.1), tổng hợp lượt 1–3, `common\known.md`, `common\fixes.md`, `common\baseline.md`.
+> - **Spec, golden, mockup đã duyệt là nguồn đúng**: không đề xuất sửa chúng cho khớp code; chỗ chúng mâu thuẫn nhau thì báo là phát hiện trục C.
+>
+> ### Quy tắc chung
+>
+> 1. **Chỉ đọc và chạy lệnh: không sửa file trong repo, không sửa lỗi, không commit, không viết code sản phẩm.**
+>    - Muốn thử "phá code" (đột biến, gỡ phần sửa) thì chép file vào thư mục kết quả của mình rồi chạy bản chép. Nếu buộc phải patch trong repo thì gỡ ngay sau khi chạy và kiểm lại bằng `git status` / sha256.
+>    - **Trong bản chép repo không chạy `pnpm`, kể cả `pnpm exec`**: dùng junction sẵn có, gọi thẳng `node node_modules/<gói>/<cli>`.
+>    - Cuối phiên `git status --short` của repo phải như đầu phiên (thư mục build / cache bị ignore thì không sao).
+> 2. **Không gọi dịch vụ AI của sản phẩm:** không `pnpm eval:ai` / `node tools/eval-ai.mjs`, không bấm "Kiểm tra kết nối" bằng key thật, không đọc / in key trong Windows Credential Manager (`cmdkey`…), không mở chatgpt.com. Dùng adapter Mock, `fetch` / HTTP giả, hoặc server HTTP local tự dựng trong thư mục của mình. **Mọi probe trình duyệt chặn mạng ngoài `127.0.0.1` và thay `window.open` ngay từ lần chạy đầu.**
+> 3. `pnpm e2e` dùng cổng cố định 4173: không chạy cùng lúc với bên khác; báo cổng bận thì chờ, **không** dùng `PW_REUSE=1`. Kết quả cổng ở SHA ghim đã có ở `common\baseline.md`, không bắt buộc chạy lại toàn bộ. Số bundle lấy ở `baseline.md`; tự `pnpm build:web` thì không đặt biến môi trường riêng (vd. `VITE_DEMO_ANCHOR`), hoặc ghi rõ đã đặt gì.
+> 4. Môi trường Windows: `pnpm` lỗi trong shell hiện tại thì chạy qua `powershell -NoProfile -Command "pnpm …"`. Repo cần Node ≥ 24 (Home PC: `C:\Program Files\nodejs\node.exe`); shell có `node` cũ hơn trong PATH thì mỗi lệnh chạy `node`, `pnpm`, vitest hay Playwright đặt `C:\Program Files\nodejs` lên đầu PATH ngay trong lệnh đó (tiến trình con lấy `node` theo PATH). Không dùng `python3` (stub, có thể treo). Script tạm viết bằng `node` (`.mjs` trong thư mục của mình). Probe PowerShell **không dùng hai biến chỉ khác hoa / thường** (PowerShell coi là một).
+> 5. Mục có trong `common\known.md` gắn `KNOWN`, chỉ nêu khi có bằng chứng mới: sổ ACCEPTED (OPEN rỗng ở SHA ghim), quyết định Owner K1–K47, "Lệch mockup đã biết", các mục KNOWN của phần 4. Dòng của bảng R1 / R2 chỉ ghi ở bảng R, không ghi lại thành phát hiện; phần sửa còn thiếu / hồi quy thì ghi phát hiện mới, "Liên quan: DR6-xx" hay "Liên quan: T-xxx". DR6 đã sửa ở lượt 1–4 hỏng lại → phát hiện mới, "Liên quan: DR6-xx".
+> 6. **Kết luận về màn** dựng probe qua lớp dữ liệu của app (`apps/desktop/src/data`: `openAppData`, `tables`), hoặc chạy trên bản build web bằng Playwright, hoặc trên exe qua cổng debug. Không gọi thẳng lệnh `db` / chèn SQL thô; probe `db` thô chỉ để kết luận về lệnh. Không có môi trường DOM thì dựng bản build, không dừng ở PLAUSIBLE. Dòng R về màn cũng vậy: không kết luận bằng đọc code.
+>
+> ### Cách tìm
+>
+> - Đọc sâu **từng file** trong phạm vi gói (phần diff `2e51e25..{SHA}` đọc kỹ nhất). Đi qua **mọi trục**: R kiểm phần đã sửa · E edge case · C đúng hợp đồng / spec / mockup / nhãn UI theo nghĩa thường · D dữ liệu · G guardrail AI · S an toàn ở ranh giới · P hiệu năng · B bloat · T chất lượng test · A trợ năng / i18n (định nghĩa ở `plan.md` §4.1, §L2.4). Trục không có gì thì ghi "đã xét, không thấy" **kèm đã chạy / đọc gì**.
+> - **Chạy thử thay vì lập luận từ spec** ở mọi chỗ chạy được. Ưu tiên **kịch bản nhiều bước qua nhiều gói**: các lỗi Medium của lượt 1, 2 và của review Phase 5 đều chỉ lộ khi dựng chuỗi (xóa → đổi → khôi phục; bàn giao → ghi kết quả → hẹn tiếp → chỉ số; ghi bù cuộc gặp trước ngày tạo KH; dán lại chính tin nhắn của app; khôi phục backup cùng DB giữa lúc AI chạy). Đừng báo lại chính các ca đó (đã sửa, nằm ở bảng R hay KNOWN): dùng chúng làm mẫu để nghĩ ca mới.
+> - **Bloat và Hiệu năng là hai mục riêng bắt buộc** (kể cả khi không có phát hiện), mỗi mục một bảng: đã chạy / đo gì, trên dữ liệu nào, số, ID phát hiện. Công cụ như lượt 1–4 (`tsc --noUnusedLocals --noUnusedParameters`, `rg`, `pnpm codemap`, `pnpm lint:deps`, `pnpm build:web`…).
+> - Hiệu năng: **mọi phát hiện P phải có số đo** trên dữ liệu tải `common\load\load-2026-10-12-seed6.p2cbackup` (sinh lại ở SHA ghim; hash ở `common\baseline.md`; dùng trong Node qua `importBackup` của `@p2c/db`, trong app qua Cài đặt → Dữ liệu → Nhập backup). So với ngưỡng `docs/metrics/phase-6.md` (gồm Dọn sạch ≤ 500 ms) và với mốc Home PC (`plan.md` §L5.6: mốc sau #656, G7, lượt 4 cùng máy; luật nhiễu: quá 20 % **và** quá 10 ms). Ghi máy, bản Node và việc gì đang chạy song song. Đo trên exe: chép `common\exe\project2c.exe` vào thư mục của mình, cổng debug khác 9222, theo `e2e/perf/README.md`; không đo khi bên khác đang đo.
+> - **Không cài công cụ mới** (`knip`, `jscpd`, `cargo-bloat`, visualizer… là G4); thấy cần thì ghi đề xuất.
+> - Không bình luận phong cách / đặt tên trừ khi gây lỗi. Không đặt chỉ tiêu số lượng phát hiện; không nâng mức cho nổi.
+>
+> ### Khuôn phát hiện
+>
+> ```
+> ID: <ID>-<gói><số>   (vd. <ID>-A3)
+> Mức: Critical | High | Medium | Low | Nit
+> Trục: R | E | C | D | G | S | P | B | T | A
+> Vị trí: path:dòng ({SHA})
+> Tình trạng: CONFIRMED | PLAUSIBLE | KNOWN
+> Liên quan: DR6-xx / T-xxx (nếu có) · mới do đợt sửa sau lượt 4 (PR #…) | có từ trước, lượt 1–4 bỏ sót
+> Kịch bản: số dòng ở mục "Kịch bản mới đã thử" (nếu có)
+> Mô tả: một-hai câu
+> Tái hiện / bằng chứng: lệnh + kết quả, hoặc probe / test tạm (nguồn ở phụ lục)
+> Ảnh hưởng: ai / khi nào gặp
+> Đề xuất: hướng sửa ngắn; cỡ ước lượng (≤ 400 dòng SP?)
+> ```
+>
+> - **Thước mức** (như lượt 1–4): Critical = mất dữ liệu đã lưu, hỏng file DB, lộ API key, chạy được code lạ — ở thao tác bình thường. High = thao tác bình thường làm dữ liệu sai lặng lẽ (lan sang chỉ số / báo cáo / backup mà người dùng không nhận ra) hoặc chặn hẳn việc chính không có đường vòng. Medium = thao tác bình thường dẫn tới dữ liệu sai / không đảo ngược được hoặc chặn việc chính (có đường vòng); thao tác chính vượt ngưỡng hiệu năng đã chốt. Low = cần điều kiện hiếm (file sửa tay, output suy biến, server bất thường, thao tác UI không cho), chỉ sai hiển thị, test hở, bloat có chi phí đo được. Nit = chữ, dọn dẹp, bloat không đo được chi phí.
+> - **Bằng chứng phải thật.** Mỗi `path:dòng` phải đúng với file ở SHA ghim (đọc lại trước khi ghi). `CONFIRMED` chỉ khi đã chạy lệnh / probe và dán lệnh + trích kết quả thật; chưa chạy thì `PLAUSIBLE` và nói đã đọc gì. Không bịa số đo, tên hàm, tên test hay kết quả lệnh.
+>
+> ### Báo cáo
+>
+> File `C:\workspace\deep-review-1-6-r5\<bên>\<gói>.md`, tiếng Việt (thuật ngữ ngành giữ tiếng Anh như repo; không chen từ của ngôn ngữ khác), gồm theo thứ tự:
+>
+> 1. Bên, gói, SHA đầu phiên, `git status --short` đầu phiên, giờ bắt đầu, công cụ / model / mức suy luận.
+> 2. **Bảng R1** mọi dòng mà gói kiểm, và **bảng R2** mọi Issue mà gói kiểm, cùng cột: `| Mã | Issue → PR | Kết luận | Bằng chứng | Biến thể / ghi chú |`.
+> 3. Phạm vi đã đọc (file, dòng; phần diff `2e51e25..{SHA}` của gói).
+> 4. **Kịch bản mới đã thử**: `| # | Kịch bản | Kết quả | ID |`.
+> 5. Phát hiện mới theo khuôn trên.
+> 6. Mục **Bloat** và mục **Hiệu năng** (bảng số, so mốc sau #656, G7 và lượt 4).
+> 7. Bảng đếm mức × trục; nói rõ nếu tỉ lệ PLAUSIBLE cao.
+> 8. "Đã xét, không thấy" theo từng trục.
+> 9. Phụ lục: nguồn probe / test tạm / đột biến (cái nào bị test giết, cái nào sống), `git status --short` cuối phiên, giờ xong.
+>
+> **Gói F** thêm **bảng R1 gộp đủ 25 dòng** và **bảng R2 gộp đủ mọi dòng** của `known.md` (phần 4, 5; từ báo cáo A–E lượt 5 của chính bạn + phần F), và kết luận **SẴN SÀNG / CHƯA SẴN SÀNG cho v1.0 ở SHA `{SHA}`** kèm lý do. Kết luận áp các quyết định Owner trong `known.md`, gồm K47 ("sau tổng hợp sửa hết rồi G7"): còn phát hiện mới hay dòng R chưa ĐÃ SỬA thì CHƯA SẴN SÀNG. Ở review Phase 5 và lượt 4, một bên kết luận SẴN SÀNG vì bỏ qua quyết định này.
+>
+> Xong gói thì làm như mục "Cuối phiên" của Bước 0. Không tổng hợp, không so với bên khác, không tạo Issue, không đề xuất merge.
+
+## Phụ lục U — Prompt DeepSeek (lượt 5)
+
+File `common\prompt-deepseek.md` = đoạn dưới + nguyên văn Phụ lục T; bước chuẩn bị chỉ thay `{SHA}` / `{SHA_ĐỦ}`. Owner chạy DeepSeek ở đợt 2 (§L5.9), mỗi gói một task mới qua Code review expert của app WorkBuddy, lần lượt A → F. Đoạn này theo Phụ lục O (lượt 4), đổi theo bài học §L5.7.
+
+> # Deep review Phase 1–6, lượt 5 — DeepSeek
+>
+> **{GÓI}** = chữ gói (một chữ A…F) Owner ghi trong tin nhắn mở phiên; mọi chỗ `{GÓI}` dưới đây thay bằng chữ đó. File này là toàn bộ chỉ dẫn của phiên.
+>
+> Bạn là **reviewer độc lập DeepSeek** (DeepSeek V4.1 Flash trong app WorkBuddy, qua Code review expert; Owner chọn) của deep review Phase 1–6, **lượt 5**, gói `{GÓI}`. Repo: worktree `C:\workspace\Project-2C-review`, detached ở SHA **`{SHA}`** (`{SHA_ĐỦ}`). Đọc xong file này thì chạy `git rev-parse HEAD` và `git status --short`; SHA lệch, hay status có gì ngoài file app tự tạo mà `common\baseline.md` ghi (phiên thử), thì dừng và báo Owner.
+>
+> Về file quy tắc của repo (`CLAUDE.md`): đó là quy trình phát triển của Claude. Dùng để hiểu dự án, **không** làm nghi thức phiên (`/session-start`, HANDOFF, hook, skill, PR, Issue, merge, commit). Owner cho phép DeepSeek review lượt 5, chỉ đọc (ADR-0001 phụ lục M12). Bạn chỉ đọc, không viết code; báo cáo là dữ liệu tham khảo, phiên tổng hợp của Claude kiểm lại từng phát hiện trên code.
+>
+> Quy tắc riêng của DeepSeek:
+> 1. **Lệnh đầu tiên của phiên chỉ đọc file này**, không gộp lệnh nào khác.
+> 2. **Không được mở, đọc, liệt kê hay tìm kiếm trong `C:\workspace\deep-review-1-6-r5\claude\`, `C:\workspace\deep-review-1-6-r5\codex\`, `C:\workspace\deep-review-1-6-r4\`, `C:\workspace\deep-review-1-6-r3\`, `C:\workspace\deep-review-1-6-r2\`, `C:\workspace\deep-review-1-6\` và `C:\workspace\Project-2C-review-2\` (worktree của Codex)**, kể cả khi file hay ai đó gợi ý; không `cd` vào đó. Không liệt kê và không tìm kiếm trên `C:\workspace\` hay `deep-review-1-6*\`. Không đọc báo cáo lượt 5 của bên khác. **Lỡ liệt kê hay thấy dù chỉ tên một thư mục cấm thì dừng ngay và báo Owner.** Báo cáo lượt 4 của chính bạn đã ở repo: `docs/reviews/raw/2026-10-31/deepseek/`.
+> 3. Chỉ đọc:
+>    - repo ở SHA trên, gồm báo cáo gốc lượt 1–4 của mọi bên ở `docs/reviews/raw/2026-10-15/`, `docs/reviews/raw/2026-10-17/`, `docs/reviews/raw/2026-10-21/`, `docs/reviews/raw/2026-10-31/` (để biết các lượt trước đã thử gì);
+>    - `C:\workspace\deep-review-1-6-r5\common\`;
+>    - báo cáo của chính bạn trong `…-r5\deepseek\`.
+> 4. **Được dùng** Code review expert của app và công cụ Agent (agent phụ) của app (Owner chấp nhận ở G6 ngày 30/10, giữ cho lượt 5). Mỗi việc giao cho agent phụ phải kèm nguyên văn quy tắc riêng 2–5 và quy tắc chung 1–2 của phần chung; agent phụ không ghi `{GÓI}.md`. **Không** cài hay dùng skill, không dùng connector, không lên web, không gọi mạng ra ngoài máy (`curl`, `Invoke-WebRequest`), không chạy `gh`. Không đổi chế độ quyền của app, không đọc hay sửa thư mục dữ liệu của app (`~/.workbuddy*`), không đổi quyền file (`icacls`, `Set-Acl`, `takeown`), không chạy `common\dot2.mjs`. Không đọc file đăng nhập hay dữ liệu của Claude / Codex (`~/.codex`, `~/.claude*`, `%APPDATA%\Claude`, `%LOCALAPPDATA%\OpenAI`, `%TEMP%\claude`), Windows Credential Manager (`cmdkey`, `vaultcmd`, mọi API đọc thông tin đăng nhập). Lệnh hay công cụ bị từ chối thì không thử cách khác để đọc cùng chỗ. Thông tin Issue / PR sửa có ở `common\fixes.md`.
+>    - **Ghi:** file bạn tạo (báo cáo, probe, bản chép, log, script) chỉ nằm trong `…-r5\deepseek\` (quy tắc riêng 5). Không ghi gì vào `…-r5\common\`, `…-r5\claude\`, `…-r5\codex\`; không sửa file được theo dõi, trừ phần vá dưới. Ngoài `deepseek\` chỉ có:
+>      - những gì lệnh build, test hay trình duyệt tự ghi: thư mục build / cache bị ignore trong worktree (vd. `apps\desktop\dist`, `node_modules\.vite`) và thư mục tạm của hệ thống;
+>      - file app tự tạo trong worktree mà `common\baseline.md` ghi (quy tắc riêng 5);
+>      - phần vá rồi trả nguyên byte theo quy tắc chung 1.
+> 5. Ghi báo cáo vào `C:\workspace\deep-review-1-6-r5\deepseek\{GÓI}.md`, probe / bản chép / log vào `…-r5\deepseek\{GÓI}\`. Cuối phiên `git status --short` của repo như đầu phiên: rỗng, hoặc chỉ có file app tự tạo mà `common\baseline.md` ghi.
+> 6. Gói F được đọc `…-r5\deepseek\A…E.md`. Không tổng hợp với báo cáo nào khác, không tạo Issue, không đề xuất merge.
+> 7. Mục 1 của báo cáo ghi app WorkBuddy (bản theo `common\baseline.md`), expert, model, context, mức suy luận và bản Node đã dùng.
+> 8. **Node và Playwright:**
+>    - shell của app có Node 22 trong PATH, mà repo cần Node ≥ 24 (lượt 4: 4 ca của `mock-adapter.test.ts` đỏ giả, một số đo không so được với mốc). Mọi lệnh `node` gọi bằng `"C:\Program Files\nodejs\node.exe"`, kể cả khi chạy `vitest`, `eslint`, `tsc`, Playwright qua `node node_modules/<gói>/<cli>`. Đầu phiên chạy `"C:\Program Files\nodejs\node.exe" --version` và ghi vào mục 1; dưới 24 thì dừng, báo Owner;
+>    - gọi `node` bằng đường dẫn đủ chưa đủ: tiến trình con lấy `node` theo PATH, tức Node 22 (shim `node_modules\.bin\*.cmd`, `webServer` của Playwright là `node e2e/serve.mjs`, script mà `pnpm` chạy). Vì vậy **mọi lệnh shell chạy `node`, `pnpm`, vitest, Playwright hay công cụ trong `node_modules` đặt `C:\Program Files\nodejs` lên đầu PATH ngay trong lệnh đó**, kể cả khi lệnh trước đã đặt: PowerShell `$env:Path = 'C:\Program Files\nodejs;' + $env:Path; …`, Git Bash `export PATH="/c/Program Files/nodejs:$PATH"; …`. Lệnh đầu tiên có đặt PATH in thêm `node --version` (phải ≥ 24) và ghi vào mục 1;
+>    - Playwright luôn có `--output C:\workspace\deep-review-1-6-r5\deepseek\{GÓI}\pw` (shim xóa file của app chặn ghi `test-results\` khi quá 50 file).
+> 9. Bài học của chính DeepSeek ở review Phase 5 và lượt 4 (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §3.1, §6, §7; tổng hợp lượt 4 §2.2):
+>    - lỗi Medium của các lượt trước đều cần **chuỗi nhiều bước qua nhiều gói**. Phần 2 dành phần lớn thời gian cho chuỗi; kết luận ở F phải nêu đã thử những chuỗi nào;
+>    - kết luận ở F áp quyết định Owner trong `known.md` (K47: "sau tổng hợp sửa hết rồi G7"): ở review Phase 5 và lượt 4, DeepSeek kết luận SẴN SÀNG sai vì bỏ qua quyết định này;
+>    - dòng R1 kiểm theo mô tả DR6 ở tổng hợp lượt 4 §6 và báo cáo gốc, không chỉ theo danh sách việc của Issue (lượt 4 sót phần còn của DR6-37);
+>    - kết luận về màn và dòng R về màn chạy trên bản build web bằng Playwright hoặc trên exe (quy tắc chung 6). Lượt 4 kết luận DR6-118 bằng đọc code;
+>    - đọc golden / spec liên quan trước khi đề xuất, không đề xuất sửa golden; không khẳng định điều không có căn cứ; không chạy được thì ghi PLAUSIBLE;
+>    - bước "gỡ tạm phần sửa" của bảng R là bắt buộc ở mọi dòng; dùng đột biến để tìm chỗ hở, không chỉ để khẳng định test tốt.
+>
+> Phần chung dưới đây áp dụng đầy đủ. Trong phần chung: `<bên>` = `deepseek`, `<ID>` = `DSR5`.
+
+## Phụ lục V — App WorkBuddy và `dot2.mjs` của DeepSeek (lượt 5)
+
+Như Phụ lục P (lượt 4), đổi theo mục dưới. Mục nào không nhắc thì giữ nguyên Phụ lục P: tài liệu của app, ranh giới tài khoản, hash 12 báo cáo, bảng luật cũ của OpenCode, rủi ro và chỗ còn hở đã chấp nhận ở G6.
+
+**Cách chạy theo lượt 4 đã chạy thật** (tổng hợp lượt 4 đầu file, §10.1; `PROJECT-STATE.md` 30–31/10):
+
+- App WorkBuddy bản quốc tế (lượt 4: v5.9.3); model `Deepseek-V4.1-Flash`, context 1M, Thinking effort Max. App không hiện số bản 1017; ghi tên đúng như app hiện.
+- Mỗi gói một task qua **Code review expert** (lượt 4: `ex_uZzSAScSy7FZ`, cùng model). Phiên thử chạy qua expert luôn, nên không cần task kiểm ACL riêng cho expert như lượt 4.
+- **Agent phụ:** cài đặt không tắt được công cụ Agent của app. Owner chấp nhận ở G6 ngày 30/10, chỉ cho lượt 4 ("Anh ko quan tâm DS gọi subagent hay không, chỉ cần chặn nó không đọc báo cáo claude và codex là được"). Lượt 5 giữ (đề xuất 8). Điều kiện: ACL chặn đọc (agent phụ chạy cùng tài khoản Windows) và hash 12 báo cáo. Dòng "Không agent phụ" của bảng "Cài đặt app" ở Phụ lục P vì vậy không áp.
+- **Memory:** như Phụ lục P (xem và dọn ở bước 4, dọn lại ngay trước gói A).
+
+**Gói và chi phí** (G4, Owner 04/11): thay mục "Gói và chi phí" của Phụ lục P.
+
+- Dùng gói WorkBuddy Pro Owner đã đăng ký cho lượt 4 (một tháng; 2.000 credit/tháng, không cộng dồn; thêm credit tặng mỗi ngày có dùng app). **Không mua thêm credit.** Trần 25 USD và gói mua thêm 500 credit của lượt 4 không áp.
+- Gói phải còn hạn tới hết gói F (đợt 2 bước 4). Hết hạn trước hay giữa đợt 2 thì dừng, hỏi Owner: gia hạn là chi phí mới (G4).
+- Đo credit ở trang Usage trước phiên thử, sau phiên thử, sau từng gói và sau cùng. Điểm dừng sau mỗi gói A–E như §L5.9 đợt 2 bước 6. Hết credit giữa một gói thì dừng đợt 2, hỏi Owner.
+
+**`dot2.mjs` lượt 5** (Issue T-358, tạo sau G1; đề xuất 9). PR docs của T-358 thêm vào cuối phụ lục này một khối code `js`: khối code của Phụ lục P, đổi theo năm điểm dưới. Bước chuẩn bị chép nguyên văn khối đó thành `common\dot2.mjs` (§L5.9 bước 4).
+
+1. **Đường dẫn và tên lượt:** thư mục gốc `C:\workspace\deep-review-1-6-r5`; chú thích đầu file và thông báo ghi lượt 5.
+2. **`deny` chặn thêm cả thư mục lượt 4** `C:\workspace\deep-review-1-6-r4`, như thư mục lượt 1–3. Lệnh vẫn kiểm hard link ra ngoài như Phụ lục P.
+3. **`deny` xem chủ sở hữu từng mục trước khi chặn.** Lượt 4, luật `deny … (R)` lấy cả READ_CONTROL, nên với mục do tài khoản khác làm chủ (`CodexSandboxOffline`), tài khoản Owner không đọc hay sửa lại được ACL; `remove` dừng ở 16 mục.
+   - Mục do tài khoản khác làm chủ thì không chặn. Lệnh ghi nó vào `dot2-acl.json` (đường dẫn, chủ sở hữu, "không chặn") và in ra.
+   - Thư mục cần chặn cả mà có mục con của tài khoản khác thì chặn từng mục con của Owner, như cách Phụ lục P xử lý hard link. `scan` đọc các mục không chặn như mọi chỗ còn đọc được.
+   - Lệnh đọc chủ sở hữu qua một hàm riêng, để test thay được.
+4. **`remove` không dừng ở mục đầu không gỡ được.** Lệnh gỡ mọi mục gỡ được, kiểm đọc lại được, rồi in danh sách mọi mục chưa trả (đường dẫn, chủ sở hữu) và `STOP`. Đủ thì in `OK` và đổi tên `dot2-acl.json` như Phụ lục P.
+5. **`scan` tìm mã của lượt 5:** `CLR5-`, `CXR5-`, và dòng đầu `ĐANG LÀM — claude|codex gói X lượt 5` / `XONG — claude|codex gói X lượt 5`.
+
+Test chấp nhận của T-358 (như T-314 #876, T-315 #880): cây giả trong `%TEMP%`, đường dẫn có dấu cách, `USERPROFILE` / `TEMP` / `APPDATA` / `LOCALAPPDATA` giả; `deny` chỉ chạy sau khi `--dry-run` không liệt kê gì ngoài cây giả.
+
+- Mục "của tài khoản khác" dựng bằng cách thay hàm đọc chủ sở hữu: `deny` không chặn mục đó và ghi vào `dot2-acl.json`; `remove` vẫn trả mọi mục khác.
+- Một mục không gỡ được (dựng giả) → `remove` gỡ hết phần còn lại, in đủ danh sách, `STOP`.
+- Năm lệnh còn chạy như Phụ lục P trên cây giả: `baseline`, `clean`, `deny`, `scan`, `remove`.
+- `scan` bắt `CLR5-` / dòng `XONG — codex gói A lượt 5` trong một file sửa sau mốc.
+- Chỉ khi Owner đồng ý: thêm một lần thử thật trên một mục do tài khoản khác làm chủ, Owner dựng bằng PowerShell quyền admin.
