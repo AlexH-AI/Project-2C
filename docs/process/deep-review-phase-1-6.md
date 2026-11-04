@@ -3226,16 +3226,16 @@ Phạm vi từng gói giữ đúng §3 và luật `PACKAGES` của `tools/size-r
 
 | Gói | SP (Δ) | Test (Δ) | Sinh (Δ) | File (Δ) | Diff sửa SP | Diff sửa test | R1 (mã DR6, mục KNOWN đã sửa) | R2 (Issue) |
 |---|---:|---:|---:|---:|---|---|---|---|
-| A. Lõi dữ liệu | 8 748 (+29) | 15 805 (+91) | 341 (0) | 104 (0) | +53 / −24 · 5 file | +110 / −19 · 6 file | 135–137 | T-350 |
+| A. Lõi dữ liệu | 8 748 (+29) | 15 805 (+91) | 341 (0) | 104 (0) | +53 / −24 · 5 file | +110 / −19 · 6 file | 135–137, 151 | T-332, 350 |
 | B. File và Rust | 2 457 (+31) | 5 600 (+178) | 0 (0) | 21 (+2) | +113 / −15 · 4 file | +119 / −8 · 4 file | 138–140, 147 | T-332 |
 | C. AI | 6 580 (+553) | 8 202 (+663) | 0 (0) | 65 (+2) | +1 051 / −498 · 11 file | +1 396 / −733 · 10 file | 137, 141–144 | T-329, 330, 332, 336, 339 |
 | D. Màn nhập liệu | 8 134 (+135) | 3 094 (+274) | 0 (0) | 89 (+2) | +208 / −73 · 12 file | +276 / −2 · 4 file | 37, 145–149 | T-331, 332, 333, 337, 341, 342, 344, 352, 356 |
 | E. Lịch hẹn, chỉ số, quản lý | 8 272 (+117) | 4 700 (+144) | 0 (0) | 52 (0) | +178 / −61 · 13 file | +200 / −56 · 3 file | 37, 148, 150–154 | T-331, 332, 337, 350, 353 |
-| F. Xuyên gói, bloat / hiệu năng, công cụ | 4 886 (+446) | 18 427 (+1 567) | 4 628 (0) | 100 (+4) | +460 / −14 · 7 file | +1 597 / −30 · 14 file | 136 (đo), 155–157, CLR4-F2; **R1 gộp đủ 25 dòng** | T-333, 334, 335, 336, 338, 340, 342, 343, 345–349, 351, 352, 354, 355; **R2 gộp đủ 28 dòng** |
+| F. Xuyên gói, bloat / hiệu năng, công cụ | 4 886 (+446) | 18 427 (+1 567) | 4 628 (0) | 100 (+4) | +460 / −14 · 7 file | +1 597 / −30 · 14 file | 136 (đo), 155–157, CLR4-F2; **R1 gộp đủ 25 dòng** | T-333, 334, 335, 336, 338, 339, 340, 342, 343, 345–349, 351, 352, 354, 355; **R2 gộp đủ mọi dòng** |
 | **Tổng** | 39 077 (+1 311) | 55 828 (+2 917) | 4 969 (0) | 431 (+10) | | | | |
 
 - Phần lớn diff SP nằm ở C (Mock trích xuất tách file rồi viết lại) và F (`tools/auto-wait*`, 388 dòng SP).
-- Một mục có thể thuộc nhiều gói, vd. DR6-147 (dải lưu ở D, hàng đợi ở B) hay T-332 (ô Giờ ở E, `listeners.ts` ở B, khóa i18n ở D, `ai-jobs.ts` ở C). Mỗi gói kiểm phần của mình; gói F gộp.
+- Một mục có thể thuộc nhiều gói, vd. DR6-147 (dải lưu ở D, hàng đợi ở B) hay T-332 (ô Giờ ở E, `readsBackAsIs` của `packages/db/src/{common,backup}.ts` ở A, `listeners.ts` ở B, khóa i18n ở D, `ai-jobs.ts` ở C). Mỗi gói kiểm phần của mình; gói F gộp.
 - Bước chuẩn bị (§L5.9 bước 6) đo lại ở SHA ghim bằng cùng lệnh, kèm bundle và exe; số ở `baseline.md` là số dùng.
 
 ## L5.4 Hai phần của mỗi gói
@@ -3259,7 +3259,7 @@ Bốn bước của §L2.4 giữ nguyên:
 
 **Dòng R1 kiểm theo mô tả của DR6** ở tổng hợp và báo cáo gốc, không chỉ theo danh sách việc trong Issue sửa. Lượt 4, Codex và DeepSeek chấm DR6-37 ĐÃ SỬA theo danh sách của Issue #790, trong khi vị trí đầu tiên mà báo cáo lượt 1 nêu chưa sửa (tổng hợp lượt 4 §3.1).
 
-**Bảng R2 — theo Issue** (§L5.5 phần 5), 28 dòng: T-329…T-356 (16 Issue có code hoặc test, 12 Issue chỉ tài liệu / ảnh / nghiệm thu). Mỗi dòng làm bốn bước như §L4.4:
+**Bảng R2 — theo Issue** (§L5.5 phần 5), 28 dòng lúc soạn: T-329…T-356 (16 Issue có code hoặc test, 12 Issue chỉ tài liệu / ảnh / nghiệm thu). Mỗi dòng làm bốn bước như §L4.4:
 
 1. Mục tiêu và test chấp nhận của Issue (`common\fixes.md`) đúng trên code ở SHA ghim; ca nào chạy được thì chạy.
 2. Gỡ tạm ít nhất một phần sửa chính, xem test của PR có đỏ.
@@ -3276,6 +3276,7 @@ Kết luận mỗi dòng theo thước §L2.4: **ĐÃ SỬA** · **SỬA MỘT P
 
 - T-329 (#937) tách Mock trích xuất ra `mock-extraction.ts` và gộp helper `LAW_NAME` / cụm mở đầu KH: test cũ xanh, hành vi không đổi; ở T-330, T-336 hành vi đổi có chủ ý theo K42.
 - T-332 (#946) dùng `listeners.ts` chung cho `persist-queue` và `AppData`: một listener ném không làm hỏng việc của listener khác hay của lệnh (DR6-140).
+- T-332 (#946) gộp luật "đọc lại đúng như lưu" vào `readsBackAsIs` (`packages/db/src/common.ts`), dùng chung cho `isLabel` và `valueOf` của luật nhập backup (`backup.ts`): hai chỗ nhận / từ chối đúng như trước (DR6-137).
 - `byName` (DR6-136): sắp bảng Lịch hẹn 10 255 dòng theo KH về gần số trước #828 (Node 9,4 ms), cùng thứ tự với bản `2e51e25`.
 - Dữ liệu tải: G7 sinh ở `233c77e` có `tables` khác lượt 4 (`ad82051b…`), cùng số dòng; `phase-6.md` ghi lý do là prompt lên `@5` (#913). Gói F so hai bản theo bảng / cột như §L4.4: mọi chỗ khác phải giải thích được bằng một luật đổi có chủ ý.
 
@@ -3342,12 +3343,12 @@ Mức: L = Low, N = Nit (mức chốt ở tổng hợp lượt 4 §6, §8.4 và 
 |---|---|---|---|---|
 | DR6-135 | L | Test hở: bộ lọc ngày `date >= ?` của `unmovedMeetingsFrom` giữ luật D7 cho cuộc gặp cùng ngày | #896 → #907 | A |
 | DR6-136 | L | `byName` đổi chữ số cho cả hai tên ở mỗi lần so; sắp bảng Lịch hẹn 10 255 dòng chậm quá luật nhiễu | #896 → #907 | A, F (đo) |
-| DR6-137 | L | `isLabel` nhận nhãn model có UTF-16 hỏng / U+FEFF đầu chuỗi, bản xuất bị luật nhập 12 từ chối | #896 → #907 | A, C |
+| DR6-137 | L | `isLabel` nhận nhãn model có UTF-16 hỏng / U+FEFF đầu chuỗi, bản xuất bị luật nhập 12 từ chối | #896 → #907 (+ #933 → #946) | A, C |
 | DR6-138 | L | Test hở gói B: ca CSP / `identifier`, bộ lọc "chỉ file" của `backup_names`, ổ đầy → `DISK_FULL` của `backup` | #897 → #915 | B |
 | DR6-139 | L | `flush()` không chờ lần thay bắt đầu trong lúc nó đang chờ lần ghi (S2-6) | #898 → #911 | B |
 | DR6-140 | N | `changed()` của `AppData` không bọc từng listener | #898 → #911 (+ #933 → #946) | B |
 | DR6-141 | L | Mock trích xuất đề xuất sai ở các dạng câu ngoài DR6-121 / T-289 | #899 → #917 (+ #930 → #937, #931 → #939, #950 → #956, #960 → #963) | C |
-| DR6-142 | L | NUL trong chữ của model làm V3–V6 lọt (G5) | #900 → #909, #913 | C |
+| DR6-142 | L | NUL trong chữ của model làm V3–V6 lọt (G5) | #900 → #909, #913 (+ #930 → #937) | C |
 | DR6-143 | N | V6 "luật <Tên>" lọt sau "môi giới", "ranh giới", "biên giới" (G5) | #900 → #909, #913 (+ #930 → #937) | C |
 | DR6-144 | N | Lỗi AI mà `AiJobs` giữ lại sống qua Nhập backup / Nạp lại | #899 → #917 (+ #933 → #946) | C |
 | DR6-145 | L | Phần còn của DR6-37 ("{trường}: {giá trị}") và các lỗ của bộ chặn ký hiệu | #901 → #920 (+ #934 → #965, #969 → #971, #973 → #975) | D |
@@ -3356,7 +3357,7 @@ Mức: L = Low, N = Nit (mức chốt ở tổng hợp lượt 4 §6, §8.4 và 
 | DR6-148 | L | Tên liền dài tràn khung ở hộp thoại, màn Team, So sánh team, cột tên của Báo cáo | #902 → #922 (+ #932 → #941, #951 → #958) | D, E |
 | DR6-149 | L | Ô chọn khác `.choice` của mockup (K44) | #901 → #920 (+ #905 → #928, #935 → #948) | D |
 | DR6-150 | L | Ô Case size chỉ có ký tự vô hình bị báo "Chưa nhập số tiền"; `pending` của ô ngày dùng `trim()` | #903 → #924 (+ #933 → #946, #951 → #958) | E |
-| DR6-151 | N | Tên nút khôi phục trùng ở Thùng rác cho trình đọc màn hình (Q3) | #903 → #924 | E |
+| DR6-151 | N | Tên nút khôi phục trùng ở Thùng rác cho trình đọc màn hình (Q3) | #903 → #924 (+ #933 → #946) | E, A |
 | DR6-152 | N | `PURGE_REMINDER` còn export mà không ai import | #903 → #924 | E |
 | DR6-153 | L | Test hở gói E: câu từ chối có vế "Thử lại" của Nhập backup, huy hiệu nhóm ở ô "Bản ghi" | #903 → #924 | E |
 | DR6-154 | L | Hộp xác nhận lúc chạy tắt mọi phần tử, focus rơi về `body` | #903 → #924 (+ #933 → #946, #951 → #958) | E |
@@ -3375,14 +3376,14 @@ Mức: L = Low, N = Nit (mức chốt ở tổng hợp lượt 4 §6, §8.4 và 
 | #930 T-329 | `packages/ai`: gỡ chép ở bộ chặn và test, tách Mock trích xuất ra file riêng | #937 | C |
 | #931 T-330 | Mock trích xuất theo quyết định Owner 31/10–01/11 | #939 | C |
 | #932 T-331 | Tên dài: `DataTable` trong khung cuộn, hàng tiêu đề thẻ team, So sánh team | #941 | D, E |
-| #933 T-332 | Ô Giờ chỉ có ký tự vô hình, focus sau hộp nhập backup, khóa i18n chung, `listeners.ts` | #946 | E, B, D, C |
+| #933 T-332 | Ô Giờ chỉ có ký tự vô hình, focus sau hộp nhập backup, khóa i18n chung, `listeners.ts` | #946 | E, A, B, D, C |
 | #934 T-333 | Bộ chặn ký hiệu (kiểu generic, CRLF), `globMeetsFolder` | #965 | D, F |
 | #935 T-334 | Tài liệu: tổng hợp lượt 4, `phase-6.md`, quyết định #917 / #920, mục Ô chọn | #948 | F |
 | #942 T-335 | Pipeline `auto-issues`: `tools/auto-wait*`, `pr-status`, `review-hint-core` | #944 | F |
 | #950 T-336 | Mock trích xuất: khúc không chữ, dấu đầu dòng; ranh giới test-support | #956 | C, F |
 | #951 T-337 | Ô Giờ có ký tự vô hình, dáng nút `aria-disabled` của `Button`, e2e tên TL dài | #958 | E, D |
 | #952 T-338 | Pipeline `auto-issues`: chờ CI sau reopen, giữ nhánh local, gợi ý review | #954 | F |
-| #960 T-339 | Test Mock trích xuất, ranh giới test-support | #963 | C |
+| #960 T-339 | Test Mock trích xuất, ranh giới test-support | #963 | C, F |
 | #961 T-340 | Skill `auto-issues`: "Ghi chú OPEN liên quan", câu trỏ dòng (tài liệu) | #967 | F |
 | #969 T-341 | Bộ chặn ký hiệu: thẻ đóng / tự đóng dính chữ JSX | #971 | D |
 | #973 T-342 | Bảng PR vượt ngưỡng tới #974; ca thẻ mở dính chữ JSX | #975 | D, F |
@@ -3474,10 +3475,10 @@ Khuôn như §L4.8 (và §L3.8, §L2.8), đổi:
 - `Liên quan: DR6-xx / T-xxx (nếu có) · mới do đợt sửa sau lượt 4 (PR #…) | có từ trước, lượt 1–4 bỏ sót`.
 - Hai bảng R, cùng cột như §L2.8 (`| Mã | Issue → PR | Kết luận | Bằng chứng | Biến thể / ghi chú |`):
   - **R1:** mọi dòng mà gói kiểm trong 25 dòng của §L5.5 phần 4;
-  - **R2:** mọi Issue mà gói kiểm trong 28 dòng của §L5.5 phần 5 (đủ dòng ở bước chuẩn bị).
+  - **R2:** mọi Issue mà gói kiểm trong bảng R2 của `known.md` phần 5 (28 dòng lúc soạn; bước chuẩn bị thêm dòng cho Issue code mới trước SHA ghim, §L5.5).
 - Phạm vi đã đọc gồm phần diff `2e51e25..{SHA}` của gói.
 - Mục 1 (đầu báo cáo): Claude ghi model, mức suy luận, ultracode bật hay tắt; Codex ghi phiên bản Codex và model như công cụ cho biết; DeepSeek ghi bản app WorkBuddy (theo `common\baseline.md`), expert, model, context, mức suy luận và Node của shell.
-- **Gói F:** bảng R1 gộp đủ 25 dòng và bảng R2 gộp đủ 28 dòng (từ báo cáo A–E lượt 5 của chính bên đó + phần F). Kèm kết luận **SẴN SÀNG / CHƯA SẴN SÀNG cho v1.0 ở SHA ghim** và lý do, áp các quyết định Owner trong `known.md` (tham khảo; kết luận thật ở phiên tổng hợp).
+- **Gói F:** bảng R1 gộp đủ 25 dòng và bảng R2 gộp đủ mọi dòng của `known.md` phần 5 (từ báo cáo A–E lượt 5 của chính bên đó + phần F). Kèm kết luận **SẴN SÀNG / CHƯA SẴN SÀNG cho v1.0 ở SHA ghim** và lý do, áp các quyết định Owner trong `known.md` (tham khảo; kết luận thật ở phiên tổng hợp).
 
 ## L5.9 Chuẩn bị và chạy
 
@@ -3642,7 +3643,7 @@ Bảng đánh dấu của Owner (18 ô; ghi thêm giờ bắt đầu / xong mỗ
 **Tổng hợp** (Issue tạo khi lượt 5 chạy xong; chạy khi Owner yêu cầu, sau khi đã gỡ ACL): như §L4.10, đổi:
 
 - Đọc đủ 18 báo cáo.
-- Gộp ba bảng R1 thành một bảng 25 dòng, ba bảng R2 thành một bảng 28 dòng. Kiểm trên code ở SHA ghim mọi kết luận khác ĐÃ SỬA và mọi chỗ các bên chấm khác nhau.
+- Gộp ba bảng R1 thành một bảng 25 dòng, ba bảng R2 thành một bảng đủ mọi dòng của `known.md` phần 5 (28 dòng lúc soạn). Kiểm trên code ở SHA ghim mọi kết luận khác ĐÃ SỬA và mọi chỗ các bên chấm khác nhau.
 - Kiểm mọi phát hiện mới, gộp trùng, đánh số tiếp `DR6-158…`. Báo cáo của Codex và DeepSeek là dữ liệu tham khảo; mọi phát hiện của chúng cũng kiểm trên code (lượt 4: 34 / 34 đúng).
 - Bảng so ba bên như tổng hợp lượt 4 §2.2, thêm credit WorkBuddy trước / sau và credit mỗi gói.
 - So số đo với ba mốc cùng máy (§L5.6), gồm cỡ bundle / exe.
@@ -3827,12 +3828,12 @@ Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md` của lượt 5; 
 >
 > | Gói | Đường dẫn | SP / test lúc soạn | R1 | R2 | Trọng tâm mới (phần 2) |
 > |---|---|---|---|---|---|
-> | A. Lõi dữ liệu | `packages/domain/**`, `packages/db/**` | 8 748 / 15 805 | 135–137 | T-350 | Luật D7 cùng ngày (`unmovedMeetingsFrom`) qua xóa / sửa / khôi phục / nhập backup. `byName` giữ khóa mỗi tên: cùng thứ tự với collator trần trên tên thật và tên có chữ số toàn khổ / Ả Rập, thời gian sắp. `isLabel` và luật nhập 12 với UTF-16 hỏng, U+FEFF. `appointment-counts.ts` của T-350 (lịch Dự kiến đã qua) ở mọi chỗ dùng: chỉ số, Thùng rác, Lịch hẹn. File do exe lượt 4 / exe ứng viên L3 xuất còn nhập được |
+> | A. Lõi dữ liệu | `packages/domain/**`, `packages/db/**` | 8 748 / 15 805 | 135–137, 151 | T-332, 350 | Luật D7 cùng ngày (`unmovedMeetingsFrom`) qua xóa / sửa / khôi phục / nhập backup. `byName` giữ khóa mỗi tên: cùng thứ tự với collator trần trên tên thật và tên có chữ số toàn khổ / Ả Rập, thời gian sắp. `readsBackAsIs` (T-332), luật chung của `isLabel` và luật nhập backup (`valueOf` của `backup.ts`, mọi cột chữ): NUL, UTF-16 hỏng, U+FEFF đầu / giữa / cuối chữ; luật nhập 12. Mã KH của `TrashRow` (T-326, DR6-151). `appointment-counts.ts` của T-350 (lịch Dự kiến đã qua) ở mọi chỗ dùng: chỉ số, Thùng rác, Lịch hẹn. File do exe lượt 4 / exe ứng viên L3 xuất còn nhập được |
 > | B. File và Rust | `apps/desktop/src-tauri/**` (gồm `capabilities/`, `tauri.conf.json`, `Cargo.toml`, `icons/`), `apps/desktop/src/data/**` trừ file AI | 2 457 / 5 600 | 138–140, 147 | T-332 | `flush()` lặp tới khi hết việc (T-321) với chuỗi lưu / thay / đóng app chồng nhau. `listeners.ts` dùng chung (T-332): listener ném, listener gỡ mình trong lúc gọi. `storage.rs`: seam ổ đầy, `backup_names` chỉ lấy file (T-320). CSP và `identifier` giữ (K39) |
 > | C. AI | `packages/ai/**`; file AI của app (`ai-*`, `*-ai-*`, `*Ai.tsx`, `KycExtraction`, `KycIntelligence`, `KycWebSession`, `KycHistory`, `extraction-view`) | 6 580 / 8 202 | 137, 141–144 | T-329, 330, 332, 336, 339 | **Mock trích xuất viết lại** (`mock-extraction.ts`, K42): danh sách cho phép, giá trị cuối về KH, câu không chủ ngữ, khúc không chữ, dấu đầu dòng, Ly hôn / Góa / Ly thân, con đã mất, "bé". Thử trên câu thật (seed, dữ liệu tải, `docs/golden/ai-eval.md`) và câu tự dựng; thời gian trên ghi chú 36 000 ký tự. **G5 `@5`** (`phase-5-prompts.md` §14): NUL ở bước 0, "giới" sau "môi / ranh / biên / thế"; chặn đủ, không chặn nhầm. Lỗi AI giữ lại theo `generation` (T-322); `ai-jobs.ts` sau T-332 |
 > | D. Màn nhập liệu | `packages/ui/**` (trừ `scripts/`), `apps/desktop/src/{shell,i18n}/**`, `routes/customers/**` (trừ file AI và Hợp đồng), `routes/team/**`, `routes/Screen.tsx`, `routes/{classes,money-view}.ts`, `routes/stage-badge.tsx`, file gốc `apps/desktop/src/*`, `apps/desktop/index.html` | 8 134 / 3 094 | 37, 145–149 | T-331, 332, 333, 337, 341, 342, 344, 352, 356 | **Bộ chặn ký hiệu** (`token-guard.ts`): máy trạng thái chuỗi / template / comment / JSX / kiểu generic / CRLF; tìm cả bỏ sót lẫn báo nhầm trên code thật. Khóa i18n "{trường}: {giá trị}" của thẻ Dữ kiện KYC. `Choices` theo `.choice` của mockup (K44). Tên liền dài ở `Dialog`, màn Team, `DataTable` trong khung cuộn (T-331). Nút `aria-disabled` của `Button` (T-337): Tab, Enter, trình đọc màn hình. Dải lưu và hộp đóng app sau một lần lưu khác (T-321) |
 > | E. Lịch hẹn, chỉ số, quản lý | `routes/{appointments,overview,reports}/**`, `routes/{Overview,Settings*,RestoreDialog,FilterBar,ConfirmWordDialog}.tsx` (trừ `SettingsAi.tsx`), `routes/{trash-view,period-labels,applied-filter}.ts`, Hợp đồng (`routes/customers/{CustomerPolicies,PolicyDialogs,policy-form}.*`) | 8 272 / 4 700 | 37, 148, 150–154 | T-331, 332, 337, 350, 353 | Ô có ký tự vô hình: Case size, ô Giờ, `pending` của ô ngày (T-326, T-332, T-337). Tên nút khôi phục ở Thùng rác (K41 Q3). Hộp xác nhận lúc chạy: focus, `aria-disabled`, câu "Đang …" (`ConfirmWordDialog`, Nhập backup). Thùng rác ghi lịch Dự kiến đã qua (T-350): nhãn khớp nghĩa thường ở 6a, Thùng rác, chỉ số. So sánh team, Báo cáo với tên dài. NT-LH-19 / 28 (K46) |
-> | F. Xuyên gói, bloat / hiệu năng, công cụ | `tools/**`, `e2e/**`, `.github/**`, `.githooks/**`, `.claude/**`, `packages/ui/scripts/`, `apps/desktop/vite.config.ts`, file gốc repo (gồm `eslint.config.js`, `.dependency-cruiser.cjs`); **luồng xuyên gói; toàn codebase cho bloat và hiệu năng** | 4 886 / 18 427 | 136 (đo), 155–157, CLR4-F2; **R1 gộp đủ 25 dòng** | T-333, 334, 335, 336, 338, 340, 342, 343, 345–349, 351, 352, 354, 355; **R2 gộp đủ 28 dòng** | Công cụ đổi: `tools/auto-wait*` (đọc trạng thái CI, chờ, lỗi mạng / `gh`; K45), `review-hint-core`, `pr-status`, `notes-core` (glob, `globMeetsFolder`), `size-report` (asset của bản dựng), test của `pr-core`, bộ kiểm ảnh hướng dẫn, probe hiệu năng (T-345…T-347), luật `dependency-cruiser` cho test-support. Chuỗi nhiều bước, vd.: ghi chú KYC dài → AI trích xuất (Mock) → xác nhận → phân tích → xóa KH → Thùng rác → khôi phục; lịch Dự kiến đã qua → xóa → Thùng rác → khôi phục → chỉ số; lưu lỗi → Thử lại → Nhập backup → đóng app giữa lần thay; xuất ở exe lượt 4 (`2e51e25`) → nhập ở exe SHA ghim. Bloat / bundle / exe so lượt 4 và G7; kết luận SẴN SÀNG / CHƯA SẴN SÀNG |
+> | F. Xuyên gói, bloat / hiệu năng, công cụ | `tools/**`, `e2e/**`, `.github/**`, `.githooks/**`, `.claude/**`, `packages/ui/scripts/`, `apps/desktop/vite.config.ts`, file gốc repo (gồm `eslint.config.js`, `.dependency-cruiser.cjs`); **luồng xuyên gói; toàn codebase cho bloat và hiệu năng** | 4 886 / 18 427 | 136 (đo), 155–157, CLR4-F2; **R1 gộp đủ 25 dòng** | T-333, 334, 335, 336, 338, 339, 340, 342, 343, 345–349, 351, 352, 354, 355; **R2 gộp đủ mọi dòng** | Công cụ đổi: `tools/auto-wait*` (đọc trạng thái CI, chờ, lỗi mạng / `gh`; K45), `review-hint-core`, `pr-status`, `notes-core` (glob, `globMeetsFolder`), `size-report` (asset của bản dựng), test của `pr-core`, bộ kiểm ảnh hướng dẫn, probe hiệu năng (T-345…T-347), luật `dependency-cruiser` cho test-support. Chuỗi nhiều bước, vd.: ghi chú KYC dài → AI trích xuất (Mock) → xác nhận → phân tích → xóa KH → Thùng rác → khôi phục; lịch Dự kiến đã qua → xóa → Thùng rác → khôi phục → chỉ số; lưu lỗi → Thử lại → Nhập backup → đóng app giữa lần thay; xuất ở exe lượt 4 (`2e51e25`) → nhập ở exe SHA ghim. Bloat / bundle / exe so lượt 4 và G7; kết luận SẴN SÀNG / CHƯA SẴN SÀNG |
 >
 > ### Đọc trước
 >
@@ -3900,7 +3901,7 @@ Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md` của lượt 5; 
 > 8. "Đã xét, không thấy" theo từng trục.
 > 9. Phụ lục: nguồn probe / test tạm / đột biến (cái nào bị test giết, cái nào sống), `git status --short` cuối phiên, giờ xong.
 >
-> **Gói F** thêm **bảng R1 gộp đủ 25 dòng** và **bảng R2 gộp đủ 28 dòng của `known.md`** (từ báo cáo A–E lượt 5 của chính bạn + phần F), và kết luận **SẴN SÀNG / CHƯA SẴN SÀNG cho v1.0 ở SHA `{SHA}`** kèm lý do. Kết luận áp các quyết định Owner trong `known.md`, gồm K47 ("sau tổng hợp sửa hết rồi G7"): còn phát hiện mới hay dòng R chưa ĐÃ SỬA thì CHƯA SẴN SÀNG. Ở review Phase 5 và lượt 4, một bên kết luận SẴN SÀNG vì bỏ qua quyết định này.
+> **Gói F** thêm **bảng R1 gộp đủ 25 dòng** và **bảng R2 gộp đủ mọi dòng** của `known.md` (phần 4, 5; từ báo cáo A–E lượt 5 của chính bạn + phần F), và kết luận **SẴN SÀNG / CHƯA SẴN SÀNG cho v1.0 ở SHA `{SHA}`** kèm lý do. Kết luận áp các quyết định Owner trong `known.md`, gồm K47 ("sau tổng hợp sửa hết rồi G7"): còn phát hiện mới hay dòng R chưa ĐÃ SỬA thì CHƯA SẴN SÀNG. Ở review Phase 5 và lượt 4, một bên kết luận SẴN SÀNG vì bỏ qua quyết định này.
 >
 > Xong gói thì làm như mục "Cuối phiên" của Bước 0. Không tổng hợp, không so với bên khác, không tạo Issue, không đề xuất merge.
 

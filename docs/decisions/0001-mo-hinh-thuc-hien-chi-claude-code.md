@@ -184,7 +184,7 @@ Thêm **lượt 5** của deep review Phase 1–6, trong G7. Lượt 4 (M10) k�
 - **Ba bên như lượt 4 (M10):**
   - Claude Opus 5.5, mỗi gói một phiên sạch Owner mở; mức suy luận và ultracode Owner chọn từng phiên (M1, M8);
   - Codex, model GPT Sol 6.1, theo M2: Owner chạy, chỉ đọc, không viết code;
-  - DeepSeek V4.1 Flash trong app desktop WorkBuddy, model gắn sẵn của gói WorkBuddy Pro, qua Code review expert của app; cùng điều kiện như Codex theo M2. Agent phụ của app được dùng như Owner chấp nhận ở G6 ngày 30/10 cho lượt 4; điều kiện là ACL chặn đọc thư mục của Claude / Codex và hash báo cáo của hai bên đó.
+  - DeepSeek V4.1 Flash trong app desktop WorkBuddy, model gắn sẵn của gói WorkBuddy Pro, qua Code review expert của app; cùng điều kiện như Codex theo M2. Việc dùng agent phụ của app (như Owner chấp nhận ở G6 ngày 30/10 cho lượt 4, với ACL chặn đọc thư mục của Claude / Codex và hash báo cáo của hai bên đó) là đề xuất 8 của §L5.11, Owner chọn cùng G1.
   - 6 gói × 3 bên = 18 báo cáo, hai đợt như lượt 4. Kết luận phát hành chỉ lấy từ phiên tổng hợp của Claude.
 - **Owner chốt cùng ngày**, trả lời trong phiên soạn kế hoạch:
   - sau tổng hợp: "Sửa hết rồi G7", như lượt 3–4;
