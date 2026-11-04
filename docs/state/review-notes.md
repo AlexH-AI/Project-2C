@@ -10,7 +10,7 @@ Rà sổ G7 Phase 6 (23/10, `main` `4ba705b`): mọi mục dưới đây đã ki
 
 Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 
-- Một ghi chú không chặn của review PR #1014 (T-354, #1012: mục "Dữ liệu" thêm NT-TR-12; NT-AI-03 đổi dấu câu sau câu báo; `REVIEW: PASS` @`9e06386`, mức low; merge 04/11, squash (`b1cacf7`)). Số dòng theo `main` `b1cacf7`. Mục [G7]: không Issue G7 nào đang mở cho sửa `docs/testing/nghiem-thu-v1.md`. Gắn lại nhãn khi có Issue. Gộp vào lần chạm sau của file:
+- Một ghi chú không chặn của review PR #1014 (T-354, #1012: mục "Dữ liệu" thêm NT-TR-12; NT-AI-03 đổi dấu câu sau câu báo; `REVIEW: PASS` @`9e06386`, mức low; merge 04/11, squash (`b1cacf7`)). Số dòng theo `main` `b1cacf7`. Mục [G7]: không Issue G7 nào đang mở cho sửa `docs/testing/nghiem-thu-v1.md`. Owner 04/11: không tạo Issue riêng cho mục này, gộp vào lần sửa sau của `docs/testing/nghiem-thu-v1.md` (lần gom sổ không đề xuất nó thành Issue riêng). Gắn lại nhãn khi có Issue. Gộp vào lần chạm sau của file:
   - **[G7]** NIT `docs/testing/nghiem-thu-v1.md:164` (NT-KH-09, Kết quả mong đợi) và `:279` (NT-CD-04, Kết quả mong đợi): dấu chấm trong ngoặc kép rồi thêm dấu chấm ngay sau, cùng dạng với chỗ T-354 sửa ở NT-AI-03 (`:204`): `…chuyển sang RE mới.". KH chuyển sang Kanban…` và `…"Nhập không gộp dữ liệu.". Hủy → …`. Thân PR #1014 nêu hai chỗ này là ngoài phạm vi (Issue #1012 chỉ cho đổi dấu câu của NT-AI-03). Hướng sửa: `…RE mới."; KH chuyển…` và `…dữ liệu."; Hủy →…`, như NT-AI-02 (`:203`) và NT-AI-03.
 
 ## RESOLVED
