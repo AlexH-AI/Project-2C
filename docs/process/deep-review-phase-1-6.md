@@ -4029,7 +4029,7 @@ Thử lại ngày 04/11/2026 trên Home PC sau khi sửa điểm 6 (T-359; lện
   - **Không có `dot2-acl.json`:** `STOP` như trước, liệt kê thư mục ACL riêng nằm sâu trong `-r3`.
   - 8 kịch bản của T-358.
 - Khối trước T-359 trên cùng cây: `remove` `STOP` ở ba kịch bản đầu, liệt kê cả mục vốn đã đóng.
-- Cây 60 000 file: `deny --dry-run` 15 s, `deny` 21 s, `remove` 8 s (hai lần). Khối trước T-359, cùng ngày: 13 s, 19 s, 8 s.
+- Cây 60 000 file, ba lần: `deny --dry-run` 15 s, `deny` 20–21 s, `remove` 8 s. Khối trước T-359, cùng ngày: 13 s, 19 s, 8 s.
 
 ```js
 // Deep review round 5, wave 2 (plan §L5.9, Appendix V; round 4 ran the script of Appendix P). Run
