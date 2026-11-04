@@ -3994,7 +3994,10 @@ Như Phụ lục P (lượt 4), đổi theo mục dưới. Mục nào không nh�
      - Thư mục chặn cả mà không bị tách (thư mục lượt 1–4, báo cáo, transcript) thì `remove` có file trạng thái không quét bên trong, nên `deny` cũng không quét ở đó.
      - Vì sao vẫn an toàn: luật của `deny` mà lan xuống mục nằm sâu (mục còn nhận ACL thừa kế từ thư mục cha) thì `remove` gỡ cùng lúc với luật trên thư mục cha. Bộ thử của T-359 kiểm sau `remove` không còn ACE chặn nào của tài khoản trên các mục đó.
      - Mục đọc được lúc `deny` mà không đọc được lúc `remove` vẫn là chưa trả, ở mọi độ sâu.
-   - **Không có `dot2-acl.json`** (nhánh dự phòng của `remove`): không có dữ liệu để biết mục nào vốn không đọc được, nên mục như vậy vẫn làm `STOP` như trước T-359. Nhánh này còn quét sâu cả các thư mục chặn cả. Gặp `STOP` ở nhánh này, Claude kiểm từng mục trong danh sách bằng `icacls <mục>`: không có ACE chặn của tài khoản Owner nghĩa là mục vốn không đọc được, không phải luật chưa gỡ. `icacls` tra tên mục trong thư mục cha, nên thư mục cha phải đọc được; cha còn trong danh sách thì xét cha trước.
+   - **Không có `dot2-acl.json`** (nhánh dự phòng của `remove`): không có dữ liệu để biết mục nào vốn không đọc được, nên nhánh này kiểm như trước T-359.
+     - Thư mục chặn cả (thư mục lượt 1–4, báo cáo, transcript): nhánh này quét sâu cả bên trong. Mục vốn không đọc được nằm sâu trong đó (vd. `-r3\claude\blind`) vẫn làm `STOP`.
+     - `.codex` và `Project-2C-review-2`: nhánh này gỡ luật trên mục con mà `deny` chặn cả, nhưng không quét lại bên trong mục đó. Mục vốn không đọc được nằm sâu trong đó (vd. `.codex\sessions\<thư mục ACL riêng>`) vì vậy không làm `STOP`. Điều này an toàn: `deny` không đặt luật nào sâu hơn mục chặn, còn luật thừa kế được gỡ cùng luật trên mục cha (gạch "Vì sao vẫn an toàn" ở trên).
+     - Gặp `STOP` ở nhánh này, Claude kiểm từng mục trong danh sách bằng `icacls <mục>`: không có ACE chặn của tài khoản Owner nghĩa là mục vốn không đọc được, không phải luật chưa gỡ. `icacls` tra tên mục trong thư mục cha, nên thư mục cha phải đọc được; cha còn trong danh sách thì xét cha trước.
    - Chỉ đổi cách kiểm của `remove` và phần `deny` ghi lại để phục vụ phần kiểm đó; bộ ACL và phạm vi dọn giữ nguyên.
 
 `dot2-acl.json` của lượt 5 có bốn danh sách:
