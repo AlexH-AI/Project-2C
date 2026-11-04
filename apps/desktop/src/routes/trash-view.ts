@@ -26,6 +26,7 @@ import type { DataTableMoreLabels } from '@p2c/ui';
 import { isUnsavedChangesError, type AppData, type PurgedTrash } from '../data/app-data';
 import { errorMessage, joinParts, t } from '../i18n';
 import { routeToHash } from '../shell/routes';
+import { statusLabel } from './appointments/appointments-view';
 import { policyStatusText } from './customers/policy-form';
 
 /** The kinds of the filter of Thùng rác, in the order of mockup 11a. */
@@ -80,11 +81,15 @@ export function filterTrash(
 
 const stage = (value: CustomerStage) => t(`stage.${value}`);
 
-/** The first line of "Bản ghi" (spec Phase 6 §4.2); a customer's stage and a policy's status are badges. */
-export function recordTitle(row: TrashRow): string {
+/**
+ * The first line of "Bản ghi" (spec Phase 6 §4.2); a customer's stage and a policy's status are
+ * badges. An appointment's status as every other screen writes it (`statusLabel`): a planned one
+ * before `today` has no outcome recorded yet (NT-TR-07).
+ */
+export function recordTitle(row: TrashRow, today: CalendarDate): string {
   switch (row.kind) {
     case 'appointment':
-      return joinParts([appointmentWhen(row), t(`appointmentStatus.${row.status}`)]);
+      return joinParts([appointmentWhen(row), statusLabel(row, today).text]);
     case 'policy':
       return t('trash.policy.title', {
         date: formatDate(row.submittedDate),
@@ -212,11 +217,15 @@ export function codedCustomers(rows: readonly TrashRow[]): ReadonlySet<string> {
  * role and team, the second line and "Thuộc"; a customer of `coded` with their code, as mockup 9b
  * names two of one name, since two such rows differ only past the first line.
  */
-export function restoreLabel(row: TrashRow, coded: ReadonlySet<string>): string {
+export function restoreLabel(
+  row: TrashRow,
+  coded: ReadonlySet<string>,
+  today: CalendarDate,
+): string {
   const title =
     row.kind === 'customer' && coded.has(row.id)
       ? t('customer.withCode', { name: row.name, code: row.code })
-      : recordTitle(row);
+      : recordTitle(row, today);
   const person = row.kind === 'person' ? [recordDetail(row), row.owner.team?.name] : [];
   const record = joinParts([title, recordBadge(row)?.text, ...person]);
   const label = t(`trash.restoreLabel.${row.kind}`, { record });
@@ -312,7 +321,7 @@ const deletedSubtitle = (row: TrashRow) =>
 const ownerLine = (row: TrashRow) => joinParts(ownerParts(row).map((owner) => owner.text));
 
 /** Mockup 11b (a customer), 11c (a met appointment); the other kinds say what comes back. */
-export function restoreView(row: TrashRow): RestoreView {
+export function restoreView(row: TrashRow, today: CalendarDate): RestoreView {
   switch (row.kind) {
     case 'customer':
       return {
@@ -334,7 +343,7 @@ export function restoreView(row: TrashRow): RestoreView {
       return {
         title: t('trash.restore.titleAppointment', { when: appointmentWhen(row) }),
         subtitle: ownerLine(row),
-        ...appointmentRestore(row),
+        ...appointmentRestore(row, today),
       };
     case 'policy':
       return {
@@ -407,16 +416,19 @@ function customerBack(effect: TrashRow['effect']): string {
 
 /**
  * A met appointment moves the stage again on its day (E5) or keeps it (E7); one that kept the stage
- * when deleted (E18, E19) and the others (E11) do not.
+ * when deleted (E18, E19) and the others (E11) do not. Their status reads as in "Bản ghi".
  */
-function appointmentRestore(row: AppointmentRow): Pick<RestoreView, 'facts' | 'effect'> {
+function appointmentRestore(
+  row: AppointmentRow,
+  today: CalendarDate,
+): Pick<RestoreView, 'facts' | 'effect'> {
   const { effect } = row;
   if (effect.kind !== 'stageChange' && effect.kind !== 'stageKept') {
     return {
       facts: [
         row.status === 'MET'
           ? metResult(row)
-          : { term: t('trash.restore.status'), text: t(`appointmentStatus.${row.status}`) },
+          : { term: t('trash.restore.status'), text: statusLabel(row, today).text },
       ],
       effect: { title: t('trash.restore.noChange'), body: t('trash.restore.noChangeBody') },
     };

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
 import { listTrash, type Database, type TrashRow } from '@p2c/db';
+import type { CalendarDate } from '@p2c/domain';
 import {
   Button,
   DataTable,
@@ -45,13 +46,13 @@ import {
 /** The line saying why a row is blocked, which its restore button is described by (DR6-43). */
 const reasonId = (row: TrashRow) => `trash-blocked-${row.kind}-${row.id}`;
 
-function RecordCell({ row }: { row: TrashRow }) {
+function RecordCell({ row, today }: { row: TrashRow; today: CalendarDate }) {
   const badge = recordBadge(row);
   const detail = recordDetail(row);
   return (
     <>
       <b className="flex flex-wrap items-center gap-1.5 font-semibold">
-        {recordTitle(row)}
+        {recordTitle(row, today)}
         {badge && 'stage' in badge && stageBadge(badge.stage, badge.text)}
       </b>
       {badge && 'issued' in badge && <PolicyBadge issued={badge.issued} label={badge.text} />}
@@ -81,11 +82,13 @@ function OwnerCell({ row }: { row: TrashRow }) {
 
 /**
  * The columns of mockup 11a; the last one restores a row, off while it is blocked. "Bản ghi" holds
- * names and dd/mm/yyyy days alike, which no order sorts together: it does not sort (DR6-43).
+ * names and dd/mm/yyyy days alike, which no order sorts together: it does not sort (DR6-43). An
+ * appointment's status there goes by `today` (NT-TR-07).
  */
 const trashColumns = (
   onRestore: (row: TrashRow) => void,
   coded: ReadonlySet<string>,
+  today: CalendarDate,
 ): ReadonlyArray<DataTableColumn<TrashRow>> => [
   {
     id: 'kind',
@@ -103,8 +106,8 @@ const trashColumns = (
     header: t('trash.col.record'),
     kind: 'text',
     sortable: false,
-    value: recordTitle,
-    cell: (row) => <RecordCell row={row} />,
+    value: (row) => recordTitle(row, today),
+    cell: (row) => <RecordCell row={row} today={today} />,
   },
   {
     id: 'owner',
@@ -132,7 +135,7 @@ const trashColumns = (
     cell: (row) => (
       <Button
         disabled={row.blocked !== undefined}
-        aria-label={restoreLabel(row, coded)}
+        aria-label={restoreLabel(row, coded, today)}
         aria-describedby={row.blocked && reasonId(row)}
         onClick={() => onRestore(row)}
       >
@@ -298,7 +301,7 @@ export function TrashSection() {
   const done = useRef<HTMLDivElement>(null);
   // Of every row, whatever the filter (DR6-151).
   const coded = useMemo(() => codedCustomers(rows), [rows]);
-  const columns = useMemo(() => trashColumns(setRestoring, coded), [coded]);
+  const columns = useMemo(() => trashColumns(setRestoring, coded, today), [coded, today]);
   const counts = useMemo(() => trashCounts(rows), [rows]);
   const shown = useMemo(() => filterTrash(rows, filter, query), [rows, filter, query]);
   const reminder = purgeReminder(rows.length);

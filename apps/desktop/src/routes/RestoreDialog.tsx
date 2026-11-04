@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { TrashRow } from '@p2c/db';
 import { Button, Dialog } from '@p2c/ui';
-import { useAppData } from '../data/AppDataContext';
+import { useAppData, useToday } from '../data/AppDataContext';
 import { t } from '../i18n';
 import { ALERT } from './classes';
 import { FailureAlert } from './customers/CustomerDialogs';
@@ -23,7 +23,9 @@ export function RestoreDialog({
 }) {
   const app = useAppData();
   const [failure, setFailure] = useState<string>();
-  const view = restoreView(row);
+  // An appointment's status as "Bản ghi" writes it, by the same day (NT-TR-07).
+  const today = useToday();
+  const view = restoreView(row, today);
   const restore = () => {
     const refused = restoreRow(app, row);
     if (refused === null) onRestored();

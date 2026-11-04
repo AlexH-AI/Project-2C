@@ -12,9 +12,13 @@ export type AppointmentGroup = 'met' | 'missed' | 'unrecorded' | 'planned';
 
 /**
  * The group of one appointment. A scheduled appointment before `today` has no outcome recorded
- * yet; one on `today` or later is still planned, so these two groups move as `today` moves.
+ * yet; one on `today` or later is still planned, so these two groups move as `today` moves. Read
+ * from its status and day alone, so a deleted one in Thùng rác goes by it too (NT-TR-07).
  */
-export function appointmentGroup(appointment: Appointment, today: CalendarDate): AppointmentGroup {
+export function appointmentGroup(
+  appointment: Pick<Appointment, 'status' | 'date'>,
+  today: CalendarDate,
+): AppointmentGroup {
   switch (appointment.status) {
     case 'MET':
       return 'met';
