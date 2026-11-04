@@ -3576,7 +3576,7 @@ Từ bước 4, chỉ Owner dùng app WorkBuddy và đụng tới thư mục d�
    - **cả thư mục:** `…-r5\claude`, `…-r5\codex`; thư mục lượt 1–4 `deep-review-1-6-r4`, `-r3`, `-r2`, `deep-review-1-6`; transcript, `file-history\<id>` và scratchpad của các phiên Claude ở worktree review;
    - **từng mục con:** `%USERPROFILE%\.codex` và `C:\workspace\Project-2C-review-2`, để ngỏ `node_modules`, `.git` và link;
    - mục do tài khoản khác làm chủ: không chặn, ghi vào `dot2-acl.json` và in ra; thư mục có mục như vậy bên trong thì chặn từng mục con của Owner (Phụ lục V điểm 3);
-   - mục tài khoản Owner không đọc được từ trước `deny` (lượt 4: `.codex\.sandbox-bin`): vẫn chặn như trên; `deny` in ra và ghi vào `dot2-acl.json`, bước 7 không tính mục đó là chưa trả (Phụ lục V điểm 6).
+   - mục tài khoản Owner không đọc được từ trước `deny` (lượt 4: `.codex\.sandbox-bin`): vẫn chặn như trên. Mục như vậy nằm sâu bên trong chỗ bước 7 quét lại thì không có luật riêng. `deny` in cả hai loại và ghi vào `dot2-acl.json`, bước 7 không tính chúng là chưa trả (Phụ lục V điểm 6).
 
    `scan` tìm mã phát hiện và dòng đầu báo cáo lượt 5 của Claude / Codex ở những chỗ còn đọc được, như §L4.9.
 4. Mở app WorkBuddy (Phụ lục P, V):
@@ -3970,7 +3970,7 @@ Như Phụ lục P (lượt 4), đổi theo mục dưới. Mục nào không nh�
 - Gói phải còn hạn tới hết gói F (đợt 2 bước 4). Hết hạn trước hay giữa đợt 2 thì dừng, hỏi Owner: gia hạn là chi phí mới (G4).
 - Đo credit ở trang Usage trước phiên thử, sau phiên thử, sau từng gói và sau cùng. Điểm dừng sau mỗi gói A–E như §L5.9 đợt 2 bước 6. Hết credit giữa một gói thì dừng đợt 2, hỏi Owner.
 
-**`dot2.mjs` lượt 5** (Issue T-358, tạo sau G1; đề xuất 9). PR docs của T-358 thêm vào cuối phụ lục này một khối code `js`: khối code của Phụ lục P, đổi theo năm điểm dưới (G1 ngày 04/11) và điểm 6 (Owner 04/11, comment trên #1028). Bước chuẩn bị chép nguyên văn khối đó thành `common\dot2.mjs` (§L5.9 bước 4). Khối của Phụ lục P giữ nguyên, vì lượt 4 đã chạy bằng nó.
+**`dot2.mjs` lượt 5** (Issue T-358, tạo sau G1; đề xuất 9). PR docs của T-358 thêm vào cuối phụ lục này một khối code `js`: khối code của Phụ lục P, đổi theo năm điểm dưới (G1 ngày 04/11) và điểm 6 (Owner 04/11, comment trên #1028). T-359 (#1032) sửa khối đó ở điểm 6, cho mục nằm sâu bên trong. Bước chuẩn bị chép nguyên văn khối đó thành `common\dot2.mjs` (§L5.9 bước 4). Khối của Phụ lục P giữ nguyên, vì lượt 4 đã chạy bằng nó.
 
 1. **Đường dẫn và tên lượt:** thư mục gốc `C:\workspace\deep-review-1-6-r5`; chú thích đầu file và thông báo ghi lượt 5.
 2. **`deny` chặn thêm cả thư mục lượt 4** `C:\workspace\deep-review-1-6-r4`, như thư mục lượt 1–3. Lệnh vẫn kiểm hard link ra ngoài như Phụ lục P.
@@ -3987,10 +3987,19 @@ Như Phụ lục P (lượt 4), đổi theo mục dưới. Mục nào không nh�
    - Vì sao không tính là an toàn: luật đặt trên thư mục không liệt kê được không lan xuống mục con (thử 04/11 trên thư mục tạm: `icacls` thoát 0, file con giữ nguyên ACL). Bên trong vì vậy không còn luật chặn nào mà `remove` không thấy.
    - Mục đọc được lúc `deny` mà không đọc được lúc `remove` vẫn là chưa trả. Lượt 4 có lẽ là trường hợp này: 9 file trong `.sandbox-bin` mang luật chặn thừa kế (`docs/reviews/raw/2026-10-31/common-baseline.md`, bước 7), tức lúc `deny` thư mục còn liệt kê được và luật đã lan xuống. Lặp lại như vậy thì `remove` vẫn `STOP` ở `.sandbox-bin`. Kết quả đó đúng, vì tài khoản Owner không gỡ được luật trên 9 file đó qua thư mục.
    - Thư mục không liệt kê được thì `deny` không đi vào (khối Phụ lục P dừng ở lỗi `EPERM`), nên không kiểm được link hay chủ sở hữu bên trong. Như trên, luật của `deny` cũng không lan vào đó.
-   - Chỉ đổi cách kiểm của `remove`; bộ ACL và phạm vi dọn giữ nguyên.
+   - **Mục nằm sâu bên trong** (T-359, ghi chú review #1030; Owner 04/11 chọn sửa script). `remove` gỡ luật trên chính các mục chặn, rồi quét sâu ba chỗ: `.codex`, `Project-2C-review-2`, và thư mục chặn cả bị tách quanh mục của tài khoản khác. Gặp thư mục không liệt kê được hay file không mở được ở đó, nó gỡ luật trên mục đó rồi kiểm lại. Trước T-359, mục vốn đã đóng ở đó (vd. `.codex\sessions\<thư mục ACL riêng>`) làm `remove` báo "still denied" và `STOP`, dù chưa từng có luật nào đặt lên nó.
+     - Trước luật đầu tiên, `deny` quét đúng những chỗ đó. Bước quét dùng chung hàm của `remove` (`closedUnder`), gọi qua một hàm riêng mà test thay được (`closedBeforeDeny`), và bỏ qua những gì vùng tách để ngỏ.
+     - Mọi thư mục không liệt kê được và file không mở được ở đó vào danh sách `unreadableBefore` của `dot2-acl.json`, trừ chính các mục chặn (đã có `readBefore`) và mục của tài khoản khác (`notDenied`). `deny` và `deny --dry-run` in chúng cùng dòng với mục `readBefore: false`.
+     - `remove` xử lý chúng như mục `readBefore: false`: vẫn gỡ luật, mục còn đóng thì in riêng kèm chủ sở hữu, không tính là chưa trả, không làm `STOP`. Dòng `OK` đếm cả hai loại.
+     - Thư mục chặn cả mà không bị tách (thư mục lượt 1–4, báo cáo, transcript) thì `remove` có file trạng thái không quét bên trong, nên `deny` cũng không quét ở đó.
+     - Vì sao vẫn an toàn: luật của `deny` mà lan xuống mục nằm sâu (mục còn nhận ACL thừa kế từ thư mục cha) thì `remove` gỡ cùng lúc với luật trên thư mục cha. Bộ thử của T-359 kiểm sau `remove` không còn ACE chặn nào của tài khoản trên các mục đó.
+     - Mục đọc được lúc `deny` mà không đọc được lúc `remove` vẫn là chưa trả, ở mọi độ sâu.
+   - **Không có `dot2-acl.json`** (nhánh dự phòng của `remove`): không có dữ liệu để biết mục nào vốn không đọc được, nên mục như vậy vẫn làm `STOP` như trước T-359. Nhánh này còn quét sâu cả các thư mục chặn cả. Gặp `STOP` ở nhánh này, Claude kiểm từng mục trong danh sách bằng `icacls <mục>`: không có ACE chặn của tài khoản Owner nghĩa là mục vốn không đọc được, không phải luật chưa gỡ. `icacls` tra tên mục trong thư mục cha, nên thư mục cha phải đọc được; cha còn trong danh sách thì xét cha trước.
+   - Chỉ đổi cách kiểm của `remove` và phần `deny` ghi lại để phục vụ phần kiểm đó; bộ ACL và phạm vi dọn giữ nguyên.
 
-`dot2-acl.json` của lượt 5 có ba danh sách:
+`dot2-acl.json` của lượt 5 có bốn danh sách:
 - `entries`: mục bị chặn, mỗi mục `path`, `kind`, `owner` (tài khoản Owner), `readBefore` (đọc được trước `deny` hay không);
+- `unreadableBefore`: mục không đọc được từ trước `deny`, nằm sâu bên trong chỗ `remove` quét (điểm 6, T-359), mỗi mục `path`, `kind`, `owner`;
 - `notDenied`: mục không chặn vì của tài khoản khác ("không chặn"), mỗi mục `path`, `kind`, `owner`;
 - `kept`: mục để ngỏ như Phụ lục P.
 
@@ -4011,6 +4020,16 @@ Test chấp nhận của T-358 (như T-314 #876, T-315 #880): cây giả trong `
   - `deny --dry-run` dừng ở lỗi `EPERM` khi có thư mục không liệt kê được.
 - Cây 60 000 file, hai lần: `deny --dry-run` 13 s, `deny` 18–19 s, `remove` 8 s.
 - Không thử thật trên mục do tài khoản khác làm chủ: Owner chưa đồng ý.
+
+Thử lại ngày 04/11/2026 trên Home PC sau khi sửa điểm 6 (T-359; lệnh, cây giả và kết quả ở thân PR). Dùng bộ thử của T-358, thêm bốn kịch bản; mục đóng dựng bằng ACL thật như `.sandbox-bin`.
+- Khối dưới, 12 kịch bản đều đạt:
+  - **Trong `.codex\sessions`** (chặn cả), một thư mục và một file ACL riêng, một file có luật chặn Everyone mà ACL vẫn thừa kế. `deny --dry-run` và `deny` in cả ba, `unreadableBefore` có cả ba. Luật của `deny` lan xuống file thứ ba; `remove` gỡ luật đó, in riêng ba mục, in `OK`.
+  - **Trong `deep-review-1-6-r4`** bị tách quanh mục của tài khoản khác, một thư mục và một file ACL riêng: `deny` in cả hai, `remove` in riêng, `OK`.
+  - **Một file đóng sau `deny`** (luật chặn Everyone): `STOP`, chỉ liệt kê file đó; `dot2-acl.json` giữ tên.
+  - **Không có `dot2-acl.json`:** `STOP` như trước, liệt kê thư mục ACL riêng nằm sâu trong `-r3`.
+  - 8 kịch bản của T-358.
+- Khối trước T-359 trên cùng cây: `remove` `STOP` ở ba kịch bản đầu, liệt kê cả mục vốn đã đóng.
+- Cây 60 000 file: `deny --dry-run` 15 s, `deny` 21 s, `remove` 8 s (hai lần). Khối trước T-359, cùng ngày: 13 s, 19 s, 8 s.
 
 ```js
 // Deep review round 5, wave 2 (plan §L5.9, Appendix V; round 4 ran the script of Appendix P). Run
@@ -4243,6 +4262,40 @@ function treeTargets() {
 
 const keptBySplit = (e) => e.isSymbolicLink() || e.name === 'node_modules' || e.name === '.git';
 
+// Each folder the account cannot list and file it cannot open under dir, as { path, kind }. The walk
+// goes into every other folder, not into links, nor in .codex and Project-2C-review-2 (split) into
+// node_modules / .git. remove walks so for what is still denied; deny, before its first rule, for
+// what does not read already (review #1030).
+function closedUnder(dir, split) {
+  const out = [];
+  const walk = (d) => {
+    for (const e of list(d)) {
+      const p = path.join(d, e.name);
+      if (split ? keptBySplit(e) : e.isSymbolicLink()) continue;
+      if (e.isDirectory()) {
+        if (canOpen(p, 'tree')) walk(p);
+        else out.push({ path: p, kind: 'tree' });
+      } else if (e.isFile() && !canOpen(p, 'file')) out.push({ path: p, kind: 'file' });
+    }
+  };
+  walk(dir);
+  return out;
+}
+
+// What does not read under dir before deny touches anything: remove does not count it either
+// (Appendix V point 6, review #1030). Tests replace this function too.
+function closedBeforeDeny(dir, split) {
+  return closedUnder(dir, split);
+}
+
+// Where remove walks (closedUnder), as [dir, split]: in a tree target that deny split around another
+// account's entries, and in .codex and Project-2C-review-2, deny went deeper (splitEntries).
+function walkRoots(targets, entries) {
+  const whole = new Set(entries.filter((e) => e.kind === 'tree').map((e) => e.path));
+  const split = targets.filter((t) => !whole.has(t) && canOpen(t, 'tree')).map((t) => [t, false]);
+  return [...split, ...SPLIT.filter(exists).map((s) => [s, true])];
+}
+
 // Deny each child of dir that has no outside link and nothing another account owns; go down into the
 // others. Links stay readable; in .codex and Project-2C-review-2 (split) also node_modules, .git and
 // hard-linked files. In a folder denied whole otherwise (a tree target) a hard link stays inside it.
@@ -4297,12 +4350,26 @@ function deny(dryRun) {
   // Each entry's owner, and whether it read before deny, for remove (Appendix V).
   for (const e of out.entries) Object.assign(e, { owner: ME, readBefore: readableBeforeDeny(e.path, e.kind) });
   const before = out.entries.filter((e) => !e.readBefore);
+  // Deeper, where remove walks: what does not read already is not counted either (review #1030).
+  // The entries and what another account owns are listed above.
+  const listed = new Set([...out.entries, ...out.notDenied].map((e) => e.path));
+  const inside = walkRoots(targets, out.entries)
+    .flatMap(([dir, split]) => closedBeforeDeny(dir, split))
+    .filter((e) => !listed.has(e.path))
+    .map((e) => ({ ...e, owner: out.foreign.get(e.path) ?? ME }));
   for (const e of out.entries) console.log(`${dryRun ? 'would deny' : 'deny'} ${e.kind} ${e.path}`);
-  for (const e of before) console.log(`unreadable before deny, remove does not count it: ${e.path}`);
+  for (const e of [...before, ...inside]) console.log(`unreadable before deny, remove does not count it: ${e.path}`);
   for (const e of out.notDenied) console.log(`not denied, owned by ${e.owner}: ${e.path}`);
   for (const p of out.kept) console.log(`stays readable ${p}`);
   if (dryRun) return;
-  const state = { user: USER, at: new Date().toISOString(), entries: [], notDenied: out.notDenied, kept: out.kept };
+  const state = {
+    user: USER,
+    at: new Date().toISOString(),
+    entries: [],
+    unreadableBefore: inside,
+    notDenied: out.notDenied,
+    kept: out.kept,
+  };
   writeJson(STATE, state);
   for (const e of out.entries) {
     icacls(e.path, '/deny', `${USER}:${e.kind === 'tree' ? '(OI)(CI)(R)' : '(R)'}`);
@@ -4312,8 +4379,8 @@ function deny(dryRun) {
   const open = out.entries.filter((e) => canOpen(e.path, e.kind) || (samples.has(e.path) && canOpen(samples.get(e.path), 'file')));
   if (open.length) throw new Stop(`still readable: ${open.map((e) => e.path).join(', ')}; run remove`);
   console.log(
-    `OK: ${out.entries.length} entries denied (${before.length} unreadable before), ${out.notDenied.length} not denied ` +
-      `(another account's), ${out.kept.length} left readable; state in ${STATE}`,
+    `OK: ${out.entries.length} entries denied (${before.length} unreadable before, ${inside.length} more inside), ` +
+      `${out.notDenied.length} not denied (another account's), ${out.kept.length} left readable; state in ${STATE}`,
   );
 }
 
@@ -4341,24 +4408,16 @@ function remove() {
   // In .codex and Project-2C-review-2, and in a tree target that deny split around another account's
   // entries, deny went deeper (splitEntries): whatever there still does not read is undone, at any
   // depth, also without the state file (review #872).
-  const undoSplit = (dir, split) => {
-    for (const e of list(dir)) {
-      const p = path.join(dir, e.name);
-      if (split ? keptBySplit(e) : e.isSymbolicLink()) continue;
-      if (e.isDirectory()) {
-        if (canOpen(p, 'tree')) undoSplit(p, split);
-        else undo(p, 'tree');
-      } else if (e.isFile() && !canOpen(p, 'file')) undo(p, 'file');
-    }
-  };
-  const whole = new Set(entries.filter((e) => e.kind === 'tree').map((e) => e.path));
-  for (const t of targets) if (!whole.has(t) && canOpen(t, 'tree')) undoSplit(t, false);
-  for (const t of SPLIT.filter(exists)) undoSplit(t, true);
+  for (const [dir, split] of walkRoots(targets, entries))
+    for (const e of closedUnder(dir, split)) undo(e.path, e.kind);
   const closed = [...done].filter(([p, kind]) => !canOpen(p, kind)).map(([p]) => p);
   const known = new Map(entries.map((e) => [e.path, e]));
-  const already = closed.filter((p) => known.get(p)?.readBefore === false);
-  for (const p of already) console.log(`unreadable before deny too, not counted: ${p} (owner ${known.get(p).owner})`);
-  const left = closed.filter((p) => known.get(p)?.readBefore !== false);
+  // Did not read before deny either: an entry, or deeper where remove walks (review #1030).
+  const unread = [...entries.filter((e) => e.readBefore === false), ...(state?.unreadableBefore ?? [])];
+  const before = new Map(unread.map((e) => [e.path, e]));
+  const already = closed.filter((p) => before.has(p));
+  for (const p of already) console.log(`unreadable before deny too, not counted: ${p} (owner ${before.get(p).owner})`);
+  const left = closed.filter((p) => !before.has(p));
   if (left.length) {
     const unknown = left.filter((p) => !known.has(p));
     let found = new Map();
