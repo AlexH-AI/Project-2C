@@ -189,6 +189,7 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - Pinned SHA: "Ghim main khi chuẩn bị", once the OPEN section of the ledger is empty; no code is merged during round 5. At drafting time `main` was `571b8b0`, whose code is the L3 candidate exe `3d237b0`.
   - DeepSeek cost (G4): "Chỉ credit của gói Pro". No credits are bought; if credits run out or the Pro plan lapses, DeepSeek stops and the OWNER is asked.
   - The OWNER approved the design in chat the same day ("Duyệt, viết PR"); the remaining proposals of §L5.11 are chosen at G1 on the plan PR.
+  - G1 of the plan (PR #1026), the same day in chat: "chọn đề xuất 5–11 như PR ghi", all seven as proposed. The OWNER also had the four non-blocking notes of the review at `272f6f1` fixed with it; two of them widen proposal 10 (DeepSeek puts Node 24 first on PATH in every command that runs `node`, `pnpm`, vitest or Playwright; the preparation step deletes a leftover `src-tauri\target\` instead of stopping to ask).
 
 ## Next decision
 

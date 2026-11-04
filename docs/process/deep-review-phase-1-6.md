@@ -3121,7 +3121,7 @@ Owner chốt 04/11/2026 (§L5.11 mục 1–4):
   - sửa Thùng rác ghi lịch Dự kiến đã qua (T-350);
   - nghiệm thu L2, L3 trên exe ứng viên và sửa các dòng nghiệm thu (T-349, T-351…T-356).
 
-Diff `2e51e25..571b8b0` ngoài `docs/**` và mọi file `*.md` có 93 file, +5 761 / −1 533 dòng. Đó là khoảng 1/3 đợt mà lượt 4 đọc (269 file, +14 559 / −3 383). Không có migration mới.
+Diff `2e51e25..571b8b0` ngoài `docs/**` và mọi file `*.md` có 93 file, +5 761 / −1 533 dòng. Đó là khoảng 1/3 đợt mà lượt 4 đọc ở `2e51e25` (`119e2e4..2e51e25`: 271 file, +14 631 / −3 399; `docs/reviews/raw/2026-10-31/common-baseline.md`). Không có migration mới.
 
 Các lượt trước cho thấy code mới của đợt sửa là chỗ hở nhiều nhất: 9 / 23 vấn đề mới của lượt 4 do đợt sửa sau lượt 3 (tổng hợp lượt 4 §1).
 
@@ -3459,7 +3459,7 @@ Mức: L = Low, N = Nit (mức chốt ở tổng hợp lượt 4 §6, §8.4 và 
 |---|---|
 | `dot2.mjs remove` dừng ở 16 mục do tài khoản sandbox của Codex làm chủ; Owner phải chạy `dot2-unlock.ps1` dưới quyền SYSTEM (30/10) | `dot2.mjs` lượt 5 (T-358, Phụ lục V): `deny` xem chủ sở hữu từng mục trước khi chặn, không chặn mục của tài khoản khác mà ghi lại; `remove` gỡ hết những gì gỡ được rồi liệt kê mọi mục chưa trả |
 | Phiên thử 1 của DeepSeek chạy trước đợt 2 bước 1–4, khi chưa có ACL, và đọc được dòng đầu hai báo cáo gói A | Phiên thử chỉ mở khi `deny` và `scan` của đợt 2 bước 3 đã in `OK` và `common\dot2-acl.json` có (§L5.9 đợt 2 bước 5) |
-| Shell của app có Node v22.22.2 trong PATH, repo đòi ≥ 24: 4 ca của `mock-adapter.test.ts` đỏ giả ở gói C; số của DSR4-A1 đo bằng Node 22 | Prompt DeepSeek (Phụ lục U): mọi lệnh `node` gọi bằng `C:\Program Files\nodejs\node.exe` (Home PC: v24.20.0), kiểm `--version` ≥ 24 ở đầu phiên; phiên thử ghi Node của shell |
+| Shell của app có Node v22.22.2 trong PATH, repo đòi ≥ 24: 4 ca của `mock-adapter.test.ts` đỏ giả ở gói C; số của DSR4-A1 đo bằng Node 22 | Prompt DeepSeek (Phụ lục U quy tắc riêng 8): mọi lệnh `node` gọi bằng `C:\Program Files\nodejs\node.exe` (Home PC: v24.20.0); mọi lệnh shell chạy `node`, `pnpm`, vitest, Playwright hay công cụ trong `node_modules` đặt `C:\Program Files\nodejs` lên đầu PATH ngay trong lệnh đó, vì tiến trình con (shim `node_modules\.bin\*.cmd`, `webServer` `node e2e/serve.mjs` của Playwright) lấy `node` theo PATH. Kiểm `--version` ≥ 24 ở đầu phiên; phiên thử ghi Node của shell trước và sau khi đặt PATH, và chạy vitest với PATH đã đặt |
 | Shim `safe-delete` của app chặn Playwright ghi `test-results\` khi quá 50 file | Prompt DeepSeek: Playwright luôn `--output` ra `…-r5\deepseek\{GÓI}\` |
 | Codex và DeepSeek chấm DR6-37 ĐÃ SỬA theo danh sách của Issue, sót vị trí báo cáo lượt 1 nêu | Phụ lục T: dòng R1 kiểm theo mô tả DR6 ở tổng hợp và báo cáo gốc (§L5.4) |
 | DeepSeek kết luận SẴN SÀNG ở gói F, cả ở review Phase 5 lẫn lượt 4, vì không áp quyết định "sửa hết" | Phụ lục T: kết luận gói F áp quyết định Owner trong `known.md`; còn phát hiện mới hay dòng R chưa ĐÃ SỬA thì CHƯA SẴN SÀNG |
@@ -3495,7 +3495,7 @@ Khuôn như §L4.8 (và §L3.8, §L2.8), đổi:
 3. Đưa hai worktree về SHA ghim:
    - `git -C C:\workspace\Project-2C-review checkout --detach <SHA ghim>`, tương tự với `-review-2`;
    - xóa `apps\desktop\dist` ở mỗi worktree;
-   - xóa `apps\desktop\src-tauri\target\` ở mỗi worktree nếu có. Đây là cache build, sinh lại được; xóa trước khi ghi mốc để đợt 2 bước 1 xóa trọn bản build do bước 6 sinh ra (lượt 4 dừng hỏi Owner ở chỗ này, review #878);
+   - xóa `apps\desktop\src-tauri\target\` ở mỗi worktree nếu có, không dừng hỏi. Đây là cache build, sinh lại được; xóa trước khi ghi mốc để đợt 2 bước 1 xóa trọn bản build do bước 6 sinh ra (review #878). §L4.9 dừng hỏi Owner khi có thư mục này (lượt 4 không gặp); đổi này Owner chọn ở đề xuất 10 (§L5.11);
    - `pnpm install --frozen-lockfile` (PowerShell);
    - `git status --short` rỗng (ngoài file Codex tự sinh ở `-review-2`, §8).
 4. Chép vào `common\`:
@@ -3590,7 +3590,11 @@ Từ bước 4, chỉ Owner dùng app WorkBuddy và đụng tới thư mục d�
    - liệt kê thêm `C:\workspace\deep-review-1-6-r4` → bị từ chối;
    - bỏ việc "giao một việc cho agent khác → không làm được": agent phụ của app được dùng (Phụ lục V). Thay bằng: bảo model giao cho một agent phụ đúng một lần đọc thử mục bị chặn (liệt kê `…-r5\claude`) → bị từ chối, vì agent phụ chạy cùng tài khoản Windows;
    - `node --version` trong shell của app, và `& 'C:\Program Files\nodejs\node.exe' --version` → ghi cả hai; bản thứ hai phải ≥ 24, không thì dừng, báo Claude;
-   - chạy một probe Playwright trên bản build web với `--output` ra `…-r5\deepseek\_thu\` (chỉ ghi lại; sandbox chặn mà Owner giữ Default thì DeepSeek ghi PLAUSIBLE cho phần chỉ kiểm được trên trình duyệt).
+   - việc vitest của §L4.9 bước 5 chạy như quy tắc riêng 8 của Phụ lục U: Node 24 đầu PATH, đặt ngay trong cùng lệnh, in `node --version` ngay sau khi đặt (phải ≥ 24), rồi gọi vitest bằng `node` đường dẫn đủ. Mỗi shell mà app dùng chạy một lần (lượt 4 app dùng cả Git Bash lẫn PowerShell):
+     - PowerShell: `$env:Path = 'C:\Program Files\nodejs;' + $env:Path; node --version; & 'C:\Program Files\nodejs\node.exe' node_modules/vitest/vitest.mjs run packages/domain`;
+     - Git Bash: `export PATH="/c/Program Files/nodejs:$PATH"; node --version; "/c/Program Files/nodejs/node.exe" node_modules/vitest/vitest.mjs run packages/domain`;
+     - → ghi bản Node in ra và kết quả vitest (xanh). Lượt 4 chạy việc này bằng `node` trần, tức Node 22;
+   - chạy một probe Playwright trên bản build web, Node 24 đầu PATH như trên, với `--output` ra `…-r5\deepseek\_thu\` (chỉ ghi lại; sandbox chặn mà Owner giữ Default thì DeepSeek ghi PLAUSIBLE cho phần chỉ kiểm được trên trình duyệt).
 
    Ra khác §L4.9 thì dừng đợt 2, làm như đường "Sửa theo …" của §L4.9. Lệnh **Log của app**, kiểm ACL ở Full Access (nếu chọn), **credit sau phiên thử** và đoạn "Xong" (dọn file thử, Memory, đọc lại `baseline.md`, chạy lại `scan`) như §L4.9 đợt 2 bước 5.
 6. Mỗi gói một task mới qua Code review expert, lần lượt A → F:
@@ -3656,7 +3660,7 @@ Phiên tổng hợp được dùng subagent / Workflow để kiểm từng phát
 
 - `deep-review-1-6-r5[\\/](claude|codex|deepseek)` của bên khác;
 - `deep-review-1-6-r4[\\/]…`, `-r3[\\/]…`, `-r2[\\/]…` và `deep-review-1-6[\\/]…` không phải của chính bên đó (DeepSeek: mọi thư mục này);
-- DeepSeek: lệnh `node` không qua `C:\Program Files\nodejs\node.exe`; Playwright không có `--output` ra thư mục của gói;
+- DeepSeek: lệnh `node` không qua `C:\Program Files\nodejs\node.exe`; lệnh chạy `node`, `pnpm`, vitest, Playwright hay công cụ trong `node_modules` mà trong cùng lệnh không đặt `C:\Program Files\nodejs` lên đầu PATH (quy tắc riêng 8); Playwright không có `--output` ra thư mục của gói;
 - DeepSeek: agent phụ nhận việc mà không kèm quy tắc riêng 2–5;
 - mọi mục khác của danh sách quét §L4.10, đổi `-r4` thành `-r5`.
 
@@ -3699,17 +3703,19 @@ Thư mục bằng chứng `deep-review-1-6-r5\` giữ trên Home PC tới v1.0.
 
 Cùng ngày Claude trình thiết kế trong chat (mục tiêu, SHA ghim, phạm vi R1 / R2, KNOWN, số đo, DeepSeek và chi phí, bài học lượt 4, việc sau lượt 5, ước lượng, tài liệu sửa). Owner chọn "Duyệt, viết PR".
 
-**Đề xuất, Owner chọn cùng G1.** "Thiết kế 04/11" là mục đã có trong thiết kế Owner duyệt trong chat; mục mới của PR này thì Owner chọn ở G1.
+**Đề xuất, Owner chọn cùng G1.** Mục 5–8, 10, 11 đã có trong thiết kế Owner duyệt trong chat (trừ phần ACL chặn thêm `-r4` của mục 8); mục 9 và phần đó là mới của PR này.
+
+**Owner duyệt G1 ngày 04/11/2026**, trong chat của phiên sửa PR #1026 sau review `272f6f1`: "chọn đề xuất 5–11 như PR ghi". Owner bảo sửa cùng lúc bốn ghi chú không chặn của review đó. Hai ghi chú đổi đề xuất 10 (Node 24 đầu PATH cho tiến trình con; xóa luôn `target\` ở bước chuẩn bị); cột "Đề xuất" dưới đây đã gồm hai đổi đó.
 
 | # | Đề xuất | Mục | Owner chọn |
 |---|---|---|---|
-| 5 | Phạm vi đủ 6 gói, hai phần ngang nhau. R1 25 dòng (DR6-135…157, DR6-37, CLR4-F2), R2 28 Issue (T-329…T-356); dòng R1 kiểm theo mô tả DR6. Tìm lỗi / edge case mới trên toàn bộ phạm vi gói, xét trước code mới sau lượt 4 | §L5.3, §L5.4, §L5.5 | Thiết kế 04/11; chờ G1 |
-| 6 | KNOWN lượt 5 dựng mới ở SHA ghim: OPEN rỗng + ACCEPTED; K1–K40 theo `common-known.md` lượt 4, K17 thêm pipeline; K41–K47; "Lệch mockup đã biết" nguyên văn | §L5.5 | Thiết kế 04/11; chờ G1 |
-| 7 | Số đo trên Home PC, so mốc sau #656 (chính), G7 `perf-g7.json` (cùng bản probe) và lượt 4. Đo bằng script của G7 (thêm mở lại). Bundle / exe so lượt 4 và G7 | §L5.6, §L5.9 bước 7 | Thiết kế 04/11; chờ G1 |
-| 8 | Hai đợt và ACL như lượt 4; ACL chặn thêm `deep-review-1-6-r4`. DeepSeek qua Code review expert, chế độ quyền Default; agent phụ của app chấp nhận như G6 30/10, nay ghi trong prompt | §L5.2, §L5.7, §L5.9, Phụ lục U, V | Thiết kế 04/11 (ACL thêm `-r4`: mới); chờ G1 |
-| 9 | `dot2.mjs` lượt 5 làm ở Issue riêng T-358 (tạo sau G1): PR docs thêm khối code vào Phụ lục V, thử trên cây giả như T-314, T-315; merge trước bước chuẩn bị | §L5.2, §L5.9, Phụ lục V | Mới; chờ G1 |
-| 10 | Bài học lượt 4 (bảng §L5.7): Node 24 bằng đường dẫn đủ, Playwright `--output`, phiên thử sau ACL, kết luận F áp quyết định Owner, gỡ `CI` trước `build:exe` | §L5.7, §L5.9, Phụ lục T, U | Thiết kế 04/11; chờ G1 |
-| 11 | Sau đợt sửa: nghiệm thu lại dòng NT có màn / hành vi đổi; NT-EV-01 sau đợt sửa, với version prompt cuối | §L5.10 | Thiết kế 04/11; chờ G1 |
+| 5 | Phạm vi đủ 6 gói, hai phần ngang nhau. R1 25 dòng (DR6-135…157, DR6-37, CLR4-F2), R2 28 Issue (T-329…T-356); dòng R1 kiểm theo mô tả DR6. Tìm lỗi / edge case mới trên toàn bộ phạm vi gói, xét trước code mới sau lượt 4 | §L5.3, §L5.4, §L5.5 | Theo đề xuất (04/11/2026) |
+| 6 | KNOWN lượt 5 dựng mới ở SHA ghim: OPEN rỗng + ACCEPTED; K1–K40 theo `common-known.md` lượt 4, K17 thêm pipeline; K41–K47; "Lệch mockup đã biết" nguyên văn | §L5.5 | Theo đề xuất (04/11/2026) |
+| 7 | Số đo trên Home PC, so mốc sau #656 (chính), G7 `perf-g7.json` (cùng bản probe) và lượt 4. Đo bằng script của G7 (thêm mở lại). Bundle / exe so lượt 4 và G7 | §L5.6, §L5.9 bước 7 | Theo đề xuất (04/11/2026) |
+| 8 | Hai đợt và ACL như lượt 4; ACL chặn thêm `deep-review-1-6-r4`. DeepSeek qua Code review expert, chế độ quyền Default; agent phụ của app chấp nhận như G6 30/10, nay ghi trong prompt | §L5.2, §L5.7, §L5.9, Phụ lục U, V | Theo đề xuất (04/11/2026), gồm ACL thêm `-r4` |
+| 9 | `dot2.mjs` lượt 5 làm ở Issue riêng T-358 (tạo sau G1): PR docs thêm khối code vào Phụ lục V, thử trên cây giả như T-314, T-315; merge trước bước chuẩn bị | §L5.2, §L5.9, Phụ lục V | Theo đề xuất (04/11/2026) |
+| 10 | Bài học lượt 4 (bảng §L5.7): Node 24 bằng đường dẫn đủ và đặt đầu PATH trong mỗi lệnh chạy `node` / `pnpm` / vitest / Playwright (tiến trình con lấy `node` theo PATH), Playwright `--output`, phiên thử sau ACL, kết luận F áp quyết định Owner, gỡ `CI` trước `build:exe`. Thêm một đổi cách chuẩn bị: bước chuẩn bị 3 xóa luôn `apps\desktop\src-tauri\target\` có sẵn ở worktree review (cache build), thay vì dừng hỏi Owner như §L4.9 | §L5.7, §L5.9, §L5.10, Phụ lục T, U | Theo đề xuất (04/11/2026), gồm hai đổi theo review `272f6f1` |
+| 11 | Sau đợt sửa: nghiệm thu lại dòng NT có màn / hành vi đổi; NT-EV-01 sau đợt sửa, với version prompt cuối | §L5.10 | Theo đề xuất (04/11/2026) |
 
 ## Phụ lục Q — Prompt Claude (lượt 5)
 
@@ -3855,7 +3861,7 @@ Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md` của lượt 5; 
 >    - Cuối phiên `git status --short` của repo phải như đầu phiên (thư mục build / cache bị ignore thì không sao).
 > 2. **Không gọi dịch vụ AI của sản phẩm:** không `pnpm eval:ai` / `node tools/eval-ai.mjs`, không bấm "Kiểm tra kết nối" bằng key thật, không đọc / in key trong Windows Credential Manager (`cmdkey`…), không mở chatgpt.com. Dùng adapter Mock, `fetch` / HTTP giả, hoặc server HTTP local tự dựng trong thư mục của mình. **Mọi probe trình duyệt chặn mạng ngoài `127.0.0.1` và thay `window.open` ngay từ lần chạy đầu.**
 > 3. `pnpm e2e` dùng cổng cố định 4173: không chạy cùng lúc với bên khác; báo cổng bận thì chờ, **không** dùng `PW_REUSE=1`. Kết quả cổng ở SHA ghim đã có ở `common\baseline.md`, không bắt buộc chạy lại toàn bộ. Số bundle lấy ở `baseline.md`; tự `pnpm build:web` thì không đặt biến môi trường riêng (vd. `VITE_DEMO_ANCHOR`), hoặc ghi rõ đã đặt gì.
-> 4. Môi trường Windows: `pnpm` lỗi trong shell hiện tại thì chạy qua `powershell -NoProfile -Command "pnpm …"`. Repo cần Node ≥ 24 (Home PC: `C:\Program Files\nodejs\node.exe`). Không dùng `python3` (stub, có thể treo). Script tạm viết bằng `node` (`.mjs` trong thư mục của mình). Probe PowerShell **không dùng hai biến chỉ khác hoa / thường** (PowerShell coi là một).
+> 4. Môi trường Windows: `pnpm` lỗi trong shell hiện tại thì chạy qua `powershell -NoProfile -Command "pnpm …"`. Repo cần Node ≥ 24 (Home PC: `C:\Program Files\nodejs\node.exe`); shell có `node` cũ hơn trong PATH thì mỗi lệnh chạy `node`, `pnpm`, vitest hay Playwright đặt `C:\Program Files\nodejs` lên đầu PATH ngay trong lệnh đó (tiến trình con lấy `node` theo PATH). Không dùng `python3` (stub, có thể treo). Script tạm viết bằng `node` (`.mjs` trong thư mục của mình). Probe PowerShell **không dùng hai biến chỉ khác hoa / thường** (PowerShell coi là một).
 > 5. Mục có trong `common\known.md` gắn `KNOWN`, chỉ nêu khi có bằng chứng mới: sổ ACCEPTED (OPEN rỗng ở SHA ghim), quyết định Owner K1–K47, "Lệch mockup đã biết", các mục KNOWN của phần 4. Dòng của bảng R1 / R2 chỉ ghi ở bảng R, không ghi lại thành phát hiện; phần sửa còn thiếu / hồi quy thì ghi phát hiện mới, "Liên quan: DR6-xx" hay "Liên quan: T-xxx". DR6 đã sửa ở lượt 1–4 hỏng lại → phát hiện mới, "Liên quan: DR6-xx".
 > 6. **Kết luận về màn** dựng probe qua lớp dữ liệu của app (`apps/desktop/src/data`: `openAppData`, `tables`), hoặc chạy trên bản build web bằng Playwright, hoặc trên exe qua cổng debug. Không gọi thẳng lệnh `db` / chèn SQL thô; probe `db` thô chỉ để kết luận về lệnh. Không có môi trường DOM thì dựng bản build, không dừng ở PLAUSIBLE. Dòng R về màn cũng vậy: không kết luận bằng đọc code.
 >
@@ -3934,6 +3940,7 @@ File `common\prompt-deepseek.md` = đoạn dưới + nguyên văn Phụ lục T;
 > 7. Mục 1 của báo cáo ghi app WorkBuddy (bản theo `common\baseline.md`), expert, model, context, mức suy luận và bản Node đã dùng.
 > 8. **Node và Playwright:**
 >    - shell của app có Node 22 trong PATH, mà repo cần Node ≥ 24 (lượt 4: 4 ca của `mock-adapter.test.ts` đỏ giả, một số đo không so được với mốc). Mọi lệnh `node` gọi bằng `"C:\Program Files\nodejs\node.exe"`, kể cả khi chạy `vitest`, `eslint`, `tsc`, Playwright qua `node node_modules/<gói>/<cli>`. Đầu phiên chạy `"C:\Program Files\nodejs\node.exe" --version` và ghi vào mục 1; dưới 24 thì dừng, báo Owner;
+>    - gọi `node` bằng đường dẫn đủ chưa đủ: tiến trình con lấy `node` theo PATH, tức Node 22 (shim `node_modules\.bin\*.cmd`, `webServer` của Playwright là `node e2e/serve.mjs`, script mà `pnpm` chạy). Vì vậy **mọi lệnh shell chạy `node`, `pnpm`, vitest, Playwright hay công cụ trong `node_modules` đặt `C:\Program Files\nodejs` lên đầu PATH ngay trong lệnh đó**, kể cả khi lệnh trước đã đặt: PowerShell `$env:Path = 'C:\Program Files\nodejs;' + $env:Path; …`, Git Bash `export PATH="/c/Program Files/nodejs:$PATH"; …`. Lệnh đầu tiên có đặt PATH in thêm `node --version` (phải ≥ 24) và ghi vào mục 1;
 >    - Playwright luôn có `--output C:\workspace\deep-review-1-6-r5\deepseek\{GÓI}\pw` (shim xóa file của app chặn ghi `test-results\` khi quá 50 file).
 > 9. Bài học của chính DeepSeek ở review Phase 5 và lượt 4 (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §3.1, §6, §7; tổng hợp lượt 4 §2.2):
 >    - lỗi Medium của các lượt trước đều cần **chuỗi nhiều bước qua nhiều gói**. Phần 2 dành phần lớn thời gian cho chuỗi; kết luận ở F phải nêu đã thử những chuỗi nào;
