@@ -5,7 +5,9 @@
 ## Chạy app (bản exe)
 
 1. Chép file exe của Heritas L-CRM (`project2c.exe`, icon cây trên ô trắng) vào một thư mục bạn có quyền ghi, ví dụ `D:\Apps\Heritas\`. Không cần cài đặt.
-2. Bấm đúp file exe. Lúc mở, app hiện "Đang mở dữ liệu…" rồi vào màn **Tổng quan**.
+2. Bấm đúp file exe. Lúc mở, app hiện "Đang mở dữ liệu…" rồi vào màn bạn dùng lần cuối. Lần mở đầu tiên trên một máy, app vào màn **Tổng quan**.
+
+App nhớ màn dùng lần cuối theo máy, không theo file exe hay thư mục dữ liệu: mọi bản exe trên cùng máy dùng chung. Vì vậy mở một bản exe mới, hay exe ở thư mục khác (kể cả lần mở đầu của thư mục đó), app cũng vào màn dùng lần cuối của bản trước.
 
 Mỗi thư mục dữ liệu chỉ mở được bằng một cửa sổ app tại một lúc. Bấm mở exe lần nữa khi app đang chạy, cửa sổ mới báo "Project-2C đang mở ở một cửa sổ khác" và không đọc, không ghi gì: hãy dùng cửa sổ đang mở và đóng cửa sổ mới.
 

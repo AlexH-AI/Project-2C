@@ -2,7 +2,7 @@
 
 [← Mục lục](README.md)
 
-Màn đầu tiên khi mở app: số lịch hẹn, 6 chỉ số chính, KH theo nhóm và so sánh giữa các team của một kỳ.
+Màn này cho biết số lịch hẹn, 6 chỉ số chính, KH theo nhóm và so sánh giữa các team của một kỳ. Lần mở app đầu tiên trên một máy vào màn này; các lần sau app mở lại màn dùng lần cuối (xem [1. Bắt đầu](01-bat-dau.md#chạy-app-bản-exe)).
 
 ![Tổng quan, kỳ Tháng 09/2026, góc nhìn Toàn bộ](img/02-tong-quan.png)
 
