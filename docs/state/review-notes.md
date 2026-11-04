@@ -10,8 +10,8 @@ Rà sổ G7 Phase 6 (23/10, `main` `4ba705b`): mọi mục dưới đây đã ki
 
 Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 
-- Một ghi chú không chặn của review PR #1020 (T-355, #1017: nghiệm thu lượt L3 trên exe `3d237b0`; NT-KH-09, NT-CD-04 đổi dấu câu sau câu báo; `REVIEW: PASS` @`20a6019`, mức low; merge 04/11, squash (`abd10b9`)). Số dòng theo `main` `abd10b9`. Mục [G7]: Issue đang mở #1019 (T-356) chỉ cho sửa ngoặc ở Thao tác của NT-TQ-01 (`:83`) trong `docs/testing/nghiem-thu-v1.md`, không cho sửa chỗ này. Gắn lại nhãn khi có Issue. Gộp vào lần chạm sau của file:
-  - **[G7]** NIT `docs/testing/nghiem-thu-v1.md:40` (dòng L3 của "Các lượt thử", ô Exe (SHA)): "cũng là exe của `main` hiện tại (sau `3d237b0` chỉ đổi tài liệu)" là mốc theo thời gian. File là sổ ghi lâu dài, nên câu này sai khi `main` có commit code sau này. Hướng sửa: neo SHA, vd. "cũng là exe của `main` tới `331e7a0` (sau `3d237b0` chỉ đổi tài liệu)"; các ô khác của dòng L3 không đổi.
+- Một ghi chú không chặn của review PR #1020 (T-355, #1017: nghiệm thu lượt L3 trên exe `3d237b0`; NT-KH-09, NT-CD-04 đổi dấu câu sau câu báo; `REVIEW: PASS` @`20a6019`, mức low; merge 04/11, squash (`abd10b9`)). Số dòng theo `main` `abd10b9`. Lúc ghi là [G7], vì Issue đang mở #1019 (T-356) chỉ cho sửa ngoặc ở Thao tác của NT-TQ-01 (`:83`) trong `docs/testing/nghiem-thu-v1.md`. Owner 04/11: gộp mục OPEN còn lại vào Issue đang chờ. Thân #1019 đã thêm chỗ này vào file được phép sửa, hợp đồng và test chấp nhận, nên mục gắn nhãn Issue này. Gộp vào lần chạm sau của file:
+  - **[T-356 #1019]** NIT `docs/testing/nghiem-thu-v1.md:40` (dòng L3 của "Các lượt thử", ô Exe (SHA)): "cũng là exe của `main` hiện tại (sau `3d237b0` chỉ đổi tài liệu)" là mốc theo thời gian. File là sổ ghi lâu dài, nên câu này sai khi `main` có commit code sau này. Hướng sửa: neo SHA, vd. "cũng là exe của `main` tới `331e7a0` (sau `3d237b0` chỉ đổi tài liệu)"; các ô khác của dòng L3 không đổi.
 
 ## RESOLVED
 
