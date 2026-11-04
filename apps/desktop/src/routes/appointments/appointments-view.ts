@@ -99,10 +99,11 @@ const UNRECORDED_BADGE = `${BADGE} whitespace-nowrap ${UNRECORDED_TONE}`;
 
 /**
  * The "Trạng thái" column: a scheduled appointment before today says no outcome is recorded yet,
- * so the list matches the counts (display only, the status stays).
+ * so the list matches the counts (display only, the status stays). Thùng rác writes a deleted one
+ * by it too (NT-TR-07).
  */
 export function statusLabel(
-  a: AppointmentRecord,
+  a: Pick<AppointmentRecord, 'status' | 'date'>,
   today: CalendarDate,
 ): { readonly text: string; readonly tone: string } {
   return appointmentGroup(a, today) === 'unrecorded'

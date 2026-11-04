@@ -4,6 +4,7 @@ import {
   createCustomer,
   createPerson,
   createTeam,
+  listAppointments,
   listCustomers,
   listTrash,
   previewPurge,
@@ -22,7 +23,7 @@ import {
   type TrashBlock,
   type TrashRow,
 } from '@p2c/db';
-import { calendarDate } from '@p2c/domain';
+import { appointmentGroup, calendarDate } from '@p2c/domain';
 import {
   TRASH_MORE,
   blockedReason,
@@ -50,6 +51,9 @@ import { openAppData } from '../data/app-data';
 import { t } from '../i18n';
 
 const ref = (name: string, deleted = false) => ({ id: `id-${name}`, name, deleted });
+
+/** The day the trash of mockup 11a is looked at, after its last deletion on 10/10/2026. */
+const TODAY = calendarDate(2026, 10, 11);
 
 /** A local moment as `deleted_at` stores it, so the shown time is the same in any time zone. */
 const at = (day: number, hour: number, minute: number) =>
@@ -224,7 +228,7 @@ describe('filterTrash', () => {
 
 describe('recordTitle and recordDetail (spec Phase 6 §4.2 "Bản ghi")', () => {
   it('a customer: its name, and the records restored with it', () => {
-    expect(recordTitle(minhAnh)).toBe('Trịnh Minh Anh');
+    expect(recordTitle(minhAnh, TODAY)).toBe('Trịnh Minh Anh');
     expect(recordDetail(minhAnh)).toBe('khôi phục kèm 7 lịch hẹn · 0 HĐ · 5 ghi chú KYC');
     const many = { kind: 'customer', appointments: 1204, policies: 0, kycNotes: 3470 } as const;
     expect(recordDetail({ ...minhAnh, effect: { ...minhAnh.effect, ...many } } as TrashRow)).toBe(
@@ -233,10 +237,36 @@ describe('recordTitle and recordDetail (spec Phase 6 §4.2 "Bản ghi")', () => 
   });
 
   it('an appointment: day, time and status; a met one its stage change and RF', () => {
-    expect(recordTitle(met)).toBe('02/10/2026 09:30 · Đã gặp');
+    expect(recordTitle(met, TODAY)).toBe('02/10/2026 09:30 · Đã gặp');
     expect(recordDetail(met)).toBe('N3 → N2 · tính RF');
-    expect(recordTitle(planned)).toBe('06/10/2026 14:00 · Dự kiến');
+    expect(recordTitle(planned, TODAY)).toBe('06/10/2026 14:00 · Chưa ghi kết quả');
     expect(recordDetail(planned)).toBeNull();
+  });
+
+  // NT-TR-07, Owner 04/11/2026 (a): as `statusLabel` writes it on every other screen, the status
+  // kept as it is (TR-5, E11).
+  it('a planned appointment before today: no outcome recorded yet, with or without a time', () => {
+    expect(recordTitle(planned, TODAY)).toBe('06/10/2026 14:00 · Chưa ghi kết quả');
+    expect(recordTitle({ ...planned, time: null }, TODAY)).toBe('06/10/2026 · Chưa ghi kết quả');
+    expect(recordTitle(planned, calendarDate(2026, 10, 7))).toBe(
+      '06/10/2026 14:00 · Chưa ghi kết quả',
+    );
+  });
+
+  it('a planned appointment of today or later: still planned', () => {
+    expect(recordTitle(planned, calendarDate(2026, 10, 6))).toBe('06/10/2026 14:00 · Dự kiến');
+    expect(recordTitle({ ...planned, time: null }, calendarDate(2026, 10, 5))).toBe(
+      '06/10/2026 · Dự kiến',
+    );
+  });
+
+  it('an appointment of another status before today: its status, as before', () => {
+    const title = (status: string) =>
+      recordTitle({ ...planned, status, stageAfter: null } as TrashRow, TODAY);
+    expect(title('MET')).toBe('06/10/2026 14:00 · Đã gặp');
+    expect(title('NO_SHOW')).toBe('06/10/2026 14:00 · Không đến');
+    expect(title('RESCHEDULED')).toBe('06/10/2026 14:00 · Dời lịch');
+    expect(title('CANCELLED')).toBe('06/10/2026 14:00 · Hủy');
   });
 
   it('a met appointment without an RF, or already in its stage after (E7)', () => {
@@ -261,19 +291,19 @@ describe('recordTitle and recordDetail (spec Phase 6 §4.2 "Bản ghi")', () => 
 
   it('an appointment without a time, or of another outcome', () => {
     const lost = { ...planned, time: null, status: 'NO_SHOW' } as TrashRow;
-    expect(recordTitle(lost)).toBe('06/10/2026 · Không đến');
+    expect(recordTitle(lost, TODAY)).toBe('06/10/2026 · Không đến');
     expect(recordDetail(lost)).toBeNull();
   });
 
   it('a policy: submission day and FYP, its status shown as a badge', () => {
-    expect(recordTitle(policy)).toBe('Nộp 15/09/2026 · 24.000.000 ₫');
+    expect(recordTitle(policy, TODAY)).toBe('Nộp 15/09/2026 · 24.000.000 ₫');
     expect(recordDetail(policy)).toBeNull();
   });
 
   it('a person: name and role; a team: name, its members restored one by one', () => {
-    expect(recordTitle(mai)).toBe('Vương Thị Mai');
+    expect(recordTitle(mai, TODAY)).toBe('Vương Thị Mai');
     expect(recordDetail(mai)).toBe('RE');
-    expect(recordTitle(binhMinh)).toBe('Bình Minh');
+    expect(recordTitle(binhMinh, TODAY)).toBe('Bình Minh');
     expect(recordDetail(binhMinh)).toBe('khôi phục chưa kèm thành viên — khôi phục từng người sau');
   });
 });
@@ -323,7 +353,7 @@ describe('ownerParts (spec Phase 6 §4.2 "Thuộc")', () => {
 describe('restoreLabel (DR6-43)', () => {
   /** The name of the button of `row` in a trash of `rows`. */
   const label = (row: TrashRow, rows: readonly TrashRow[] = ROWS) =>
-    restoreLabel(row, codedCustomers(rows));
+    restoreLabel(row, codedCustomers(rows), TODAY);
 
   it('names the customer with its stage, the person or the team the button restores', () => {
     expect(label(minhAnh)).toBe('Khôi phục KH Trịnh Minh Anh · N3');
@@ -365,7 +395,10 @@ describe('restoreLabel (DR6-43)', () => {
   it('names an appointment or a policy by its day, its status and its customer', () => {
     expect(label(met)).toBe('Khôi phục lịch hẹn 02/10/2026 09:30 · Đã gặp của KH Phạm Gia Bảo');
     expect(label({ ...planned, time: null })).toBe(
-      'Khôi phục lịch hẹn 06/10/2026 · Dự kiến của KH Trịnh Minh Anh',
+      'Khôi phục lịch hẹn 06/10/2026 · Chưa ghi kết quả của KH Trịnh Minh Anh',
+    );
+    expect(restoreLabel(planned, new Set(), calendarDate(2026, 10, 6))).toBe(
+      'Khôi phục lịch hẹn 06/10/2026 14:00 · Dự kiến của KH Trịnh Minh Anh',
     );
     expect(label(policy)).toBe(
       'Khôi phục HĐ Nộp 15/09/2026 · 24.000.000 ₫ · Đã nộp của KH Hoàng Ngọc Lan',
@@ -378,7 +411,7 @@ describe('restoreLabel (DR6-43)', () => {
   it('names the record as the first line of its "Bản ghi" cell does, with the badge there', () => {
     for (const row of [...ROWS, issuedPolicy]) {
       const badge = recordBadge(row);
-      const record = badge ? `${recordTitle(row)} · ${badge.text}` : recordTitle(row);
+      const record = badge ? `${recordTitle(row, TODAY)} · ${badge.text}` : recordTitle(row, TODAY);
       expect(label(row)).toContain(` ${record}`);
     }
   });
@@ -594,7 +627,7 @@ const pastPlanned = {
 
 describe('restoreView (mockup 11b, 11c; TR-8)', () => {
   it('E1: a customer, with the records that come back with it and those left in the trash', () => {
-    const view = restoreView(minhAnh);
+    const view = restoreView(minhAnh, TODAY);
     expect(view.title).toBe('Khôi phục Trịnh Minh Anh?');
     expect(view.subtitle).toBe('KH · xóa lúc 10/10/2026 16:42');
     expect(view.facts).toEqual([
@@ -612,10 +645,13 @@ describe('restoreView (mockup 11b, 11c; TR-8)', () => {
 
   it('a customer with nothing deleted on its own, or policies only', () => {
     const body = (appointmentsInTrash: number, policiesInTrash: number) =>
-      restoreView({
-        ...minhAnh,
-        effect: { ...minhAnh.effect, appointmentsInTrash, policiesInTrash },
-      } as TrashRow).effect.body;
+      restoreView(
+        {
+          ...minhAnh,
+          effect: { ...minhAnh.effect, appointmentsInTrash, policiesInTrash },
+        } as TrashRow,
+        TODAY,
+      ).effect.body;
     expect(body(0, 0)).toBe(
       'KH và các bản ghi trên vào lại danh sách và chỉ số theo đúng ngày của từng bản ghi.',
     );
@@ -624,7 +660,7 @@ describe('restoreView (mockup 11b, 11c; TR-8)', () => {
   });
 
   it('E5: a met appointment records its stage change again, with its RF', () => {
-    const view = restoreView(met);
+    const view = restoreView(met, TODAY);
     expect(view.title).toBe('Khôi phục lịch hẹn 02/10/2026 09:30?');
     expect(view.subtitle).toBe('KH Phạm Gia Bảo · RE Bùi Anh Tuấn');
     expect(view.facts).toEqual([
@@ -639,11 +675,14 @@ describe('restoreView (mockup 11b, 11c; TR-8)', () => {
 
   it('a met appointment whose change counts no RF', () => {
     const date = calendarDate(2026, 10, 2);
-    const view = restoreView({
-      ...met,
-      stageAfter: 'N3',
-      effect: { kind: 'stageChange', from: 'N2', to: 'N3', date, rf: false },
-    } as TrashRow);
+    const view = restoreView(
+      {
+        ...met,
+        stageAfter: 'N3',
+        effect: { kind: 'stageChange', from: 'N2', to: 'N3', date, rf: false },
+      } as TrashRow,
+      TODAY,
+    );
     expect(view.effect).toEqual({
       title: 'Nhóm KH: N2 → N3 từ 02/10/2026',
       body: 'Ghi lại chuyển nhóm của cuộc gặp; chuyển nhóm này không tính RF.',
@@ -651,7 +690,7 @@ describe('restoreView (mockup 11b, 11c; TR-8)', () => {
   });
 
   it('E7: a met appointment whose customer is already in its stage after', () => {
-    const view = restoreView(keptMet);
+    const view = restoreView(keptMet, TODAY);
     expect(view.facts).toEqual([
       { term: 'Kết quả', text: 'Đã gặp · nhóm sau', stage: 'N2' },
       { term: 'Nhóm KH hiện tại', stage: 'N2' },
@@ -663,7 +702,10 @@ describe('restoreView (mockup 11b, 11c; TR-8)', () => {
   });
 
   it('E18: a met appointment that kept the stage when deleted leaves the stage', () => {
-    const view = restoreView({ ...met, stageAfter: 'N3', effect: { kind: 'none' } } as TrashRow);
+    const view = restoreView(
+      { ...met, stageAfter: 'N3', effect: { kind: 'none' } } as TrashRow,
+      TODAY,
+    );
     expect(view.facts).toEqual([{ term: 'Kết quả', text: 'Đã gặp · nhóm sau', stage: 'N3' }]);
     expect(view.effect).toEqual({
       title: 'Không đổi nhóm KH',
@@ -671,20 +713,39 @@ describe('restoreView (mockup 11b, 11c; TR-8)', () => {
     });
   });
 
+  // NT-TR-07, Owner 04/11/2026 (a): a planned appointment of a past day has no outcome recorded
+  // yet, as `statusLabel` writes it on every other screen; the stage stays all the same.
   it('E11: another appointment leaves the stage', () => {
-    const view = restoreView(pastPlanned);
+    const view = restoreView(pastPlanned, TODAY);
     expect(view.title).toBe('Khôi phục lịch hẹn 30/09/2026 10:00?');
-    expect(view.facts).toEqual([{ term: 'Trạng thái', text: 'Dự kiến' }]);
+    expect(view.facts).toEqual([{ term: 'Trạng thái', text: 'Chưa ghi kết quả' }]);
     expect(view.effect).toEqual({
       title: 'Không đổi nhóm KH',
       body: 'Lịch hẹn vào lại danh sách Lịch hẹn và hồ sơ KH theo ngày của lịch.',
     });
-    const noTime = restoreView({ ...pastPlanned, time: null } as TrashRow);
+    const noTime = restoreView({ ...pastPlanned, time: null } as TrashRow, TODAY);
     expect(noTime.title).toBe('Khôi phục lịch hẹn 30/09/2026?');
+    expect(noTime.facts).toEqual([{ term: 'Trạng thái', text: 'Chưa ghi kết quả' }]);
+  });
+
+  it('E11: a planned appointment of today or later is still planned', () => {
+    for (const today of [calendarDate(2026, 9, 30), calendarDate(2026, 9, 29)]) {
+      const view = restoreView(pastPlanned, today);
+      expect(view.facts).toEqual([{ term: 'Trạng thái', text: 'Dự kiến' }]);
+      expect(view.effect.title).toBe('Không đổi nhóm KH');
+    }
+  });
+
+  it('E11: an appointment of another status before today keeps its status', () => {
+    const facts = (status: string) =>
+      restoreView({ ...pastPlanned, status } as TrashRow, TODAY).facts;
+    expect(facts('NO_SHOW')).toEqual([{ term: 'Trạng thái', text: 'Không đến' }]);
+    expect(facts('RESCHEDULED')).toEqual([{ term: 'Trạng thái', text: 'Dời lịch' }]);
+    expect(facts('CANCELLED')).toEqual([{ term: 'Trạng thái', text: 'Hủy' }]);
   });
 
   it('a policy, a person and a team', () => {
-    expect(restoreView(policy)).toEqual({
+    expect(restoreView(policy, TODAY)).toEqual({
       title: 'Khôi phục HĐ nộp 15/09/2026?',
       subtitle: 'KH Hoàng Ngọc Lan · RE Hoàng Nhật Minh',
       facts: [
@@ -698,12 +759,12 @@ describe('restoreView (mockup 11b, 11c; TR-8)', () => {
       issuedDate: calendarDate(2026, 9, 30),
       issuedFyp: 20_000_000,
     } as TrashRow;
-    expect(restoreView(issued).facts).toEqual([
+    expect(restoreView(issued, TODAY).facts).toEqual([
       { term: 'FYP nộp', text: '24.000.000 ₫' },
       { term: 'Trạng thái', text: 'Đã phát hành 30/09/2026 · 20.000.000 ₫' },
     ]);
     const lan = { ...mai, owner: { team: ref('Bình Minh') }, blocked: undefined } as TrashRow;
-    expect(restoreView(lan)).toEqual({
+    expect(restoreView(lan, TODAY)).toEqual({
       title: 'Khôi phục Vương Thị Mai?',
       subtitle: 'Nhân sự · xóa lúc 05/10/2026 08:31',
       facts: [
@@ -712,10 +773,10 @@ describe('restoreView (mockup 11b, 11c; TR-8)', () => {
       ],
       effect: { body: 'Nhân sự vào lại Team & nhân sự; dữ liệu cũ của người này giữ nguyên.' },
     });
-    expect(restoreView({ ...lan, role: 'BD', owner: {} } as TrashRow).facts).toEqual([
+    expect(restoreView({ ...lan, role: 'BD', owner: {} } as TrashRow, TODAY).facts).toEqual([
       { term: 'Vai trò', text: 'BD' },
     ]);
-    expect(restoreView(binhMinh)).toEqual({
+    expect(restoreView(binhMinh, TODAY)).toEqual({
       title: 'Khôi phục Bình Minh?',
       subtitle: 'Team · xóa lúc 05/10/2026 08:33',
       facts: [],
@@ -772,8 +833,6 @@ describe('restoredNotice (mockup 11e)', () => {
 });
 
 describe('restoreRow', () => {
-  const TODAY = calendarDate(2026, 10, 11);
-
   /** Trịnh Minh Anh deleted, her RE Đỗ Khánh Linh of Sao Mai still there. */
   async function deletedCustomer() {
     let reId = '';
@@ -854,6 +913,41 @@ describe('restoreRow', () => {
       expect(listTrash(app.db())).toEqual(rows.filter((r) => r !== row));
     },
   );
+
+  // NT-TR-07: booked after the day as a catch-up, deleted, restored (E11).
+  it('E11: a planned appointment of a past day reads and comes back as no outcome recorded yet', async () => {
+    const app = await openAppData({
+      today: () => TODAY,
+      seed: (db) => {
+        const team = createTeam(db, { name: 'Sao Mai' });
+        const reId = createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RE', teamId: team.id }).id;
+        const customer = createCustomer(db, {
+          name: 'Trịnh Minh Anh',
+          reId,
+          stage: 'N3',
+          date: calendarDate(2026, 10, 1),
+        });
+        const meeting = scheduleAppointment(db, {
+          customerId: customer.id,
+          reId,
+          date: calendarDate(2026, 10, 8),
+          time: '10:00',
+          triggerType: 'REFERRAL',
+        });
+        softDeleteAppointment(db, meeting.id);
+      },
+    });
+    const [row] = listTrash(app.db());
+    expect(recordTitle(row!, TODAY)).toBe('08/10/2026 10:00 · Chưa ghi kết quả');
+    const view = restoreView(row!, TODAY);
+    expect(view.facts).toEqual([{ term: 'Trạng thái', text: 'Chưa ghi kết quả' }]);
+    expect(view.effect.title).toBe('Không đổi nhóm KH');
+
+    expect(restoreRow(app, row!)).toBeNull();
+    const [appointment] = listAppointments(app.db());
+    expect(appointment!.status).toBe('SCHEDULED');
+    expect(appointmentGroup(appointment!, TODAY)).toBe('unrecorded');
+  });
 
   it('refuses with the blocked reason when the data changed after the dialog opened', async () => {
     const { app, row, reId } = await deletedCustomer();
