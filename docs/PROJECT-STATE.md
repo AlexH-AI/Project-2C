@@ -183,6 +183,12 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - A clause opening on a bullet is carried on to once its `BULLET` is dropped.
   - The four examples: "KH đã kết hôn." then a line break and "Đã ly hôn năm 2020." → Ly hôn; "- KH đã kết hôn" then "- Đã ly hôn năm 2020." → Ly hôn; "KH có 2 con." then "Một con đã mất." → Số con 1; "KH đã kết hôn... Đã ly hôn năm 2020." → Ly hôn.
   - Claude's choices, not asked one by one (PR #956). A clause of figures only (a list number "2.") has no letter, so it is transparent. A joining word right after the bullet carries the customer on, as it does with no bullet. A clause of only "?" has no letter either, so it is transparent too: the review of PR #956 held the code to the rule as written, as a later sentence that only asks again keeps the proposal before it (ACCEPTED 01/11).
+- 2026-11-04: OWNER decisions on a **round 5** of deep review Phase 1–6, during G7 (T-357, #1025; ADR-0001 appendix M12; plan `docs/process/deep-review-phase-1-6.md` §L5). In the OWNER's words: "lên plan deep code base review round 5 với 3 bên như round 4: Claude Opus, Codex GPT Sol và Deepseek v4.1 Flash qua Workbuddy". Answered in the drafting session on the Home PC:
+  - Reviewers as in round 4: Claude Opus 5.5 (one fresh session per package), Codex on GPT Sol 6.1, DeepSeek V4.1 Flash in the WorkBuddy desktop app through its Code review expert; 6 packages × 3 = 18 reports, two waves with the round 4 ACL.
+  - After the synthesis: "Sửa hết rồi G7", as in rounds 3–4. Exe changes mean the acceptance rows of the changed screens are run again and their guide shots retaken.
+  - Pinned SHA: "Ghim main khi chuẩn bị", once the OPEN section of the ledger is empty; no code is merged during round 5. At drafting time `main` was `571b8b0`, whose code is the L3 candidate exe `3d237b0`.
+  - DeepSeek cost (G4): "Chỉ credit của gói Pro". No credits are bought; if credits run out or the Pro plan lapses, DeepSeek stops and the OWNER is asked.
+  - The OWNER approved the design in chat the same day ("Duyệt, viết PR"); the remaining proposals of §L5.11 are chosen at G1 on the plan PR.
 
 ## Next decision
 

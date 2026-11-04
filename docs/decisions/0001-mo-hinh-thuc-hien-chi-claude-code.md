@@ -176,3 +176,20 @@ Cách chạy (chi tiết ở `.claude/skills/auto-issues/SKILL.md`):
   - agent ngoài Claude không viết code.
 
 `CLAUDE.md` (Mô hình thực hiện, bước 5, Project skills) và `review-pr` §5 sửa theo phụ lục này.
+
+## Phụ lục — lượt 5 review đóng Phase 6, trong G7 (M12 — Owner quyết 04/11/2026 · Issue #1025)
+
+Thêm **lượt 5** của deep review Phase 1–6, trong G7. Lượt 4 (M10) kết luận CHƯA SẴN SÀNG ở `2e51e25` chỉ vì Owner đã quyết sửa hết; sau đó có ba đợt mà chưa lượt nào đọc trọn: đợt sửa lượt 4 (T-319…T-328), các mục sổ ghi chú review [G7] sau đó (T-329…T-342, gồm Mock trích xuất viết lại và pipeline `auto-issues`) và việc của G7 (T-343…T-356). Owner 04/11/2026: "lên plan deep code base review round 5 với 3 bên như round 4: Claude Opus, Codex GPT Sol và Deepseek v4.1 Flash qua Workbuddy".
+
+- **Ba bên như lượt 4 (M10):**
+  - Claude Opus 5.5, mỗi gói một phiên sạch Owner mở; mức suy luận và ultracode Owner chọn từng phiên (M1, M8);
+  - Codex, model GPT Sol 6.1, theo M2: Owner chạy, chỉ đọc, không viết code;
+  - DeepSeek V4.1 Flash trong app desktop WorkBuddy, model gắn sẵn của gói WorkBuddy Pro, qua Code review expert của app; cùng điều kiện như Codex theo M2. Agent phụ của app được dùng như Owner chấp nhận ở G6 ngày 30/10 cho lượt 4; điều kiện là ACL chặn đọc thư mục của Claude / Codex và hash báo cáo của hai bên đó.
+  - 6 gói × 3 bên = 18 báo cáo, hai đợt như lượt 4. Kết luận phát hành chỉ lấy từ phiên tổng hợp của Claude.
+- **Owner chốt cùng ngày**, trả lời trong phiên soạn kế hoạch:
+  - sau tổng hợp: "Sửa hết rồi G7", như lượt 3–4;
+  - SHA ghim: "Ghim main khi chuẩn bị" (sổ ghi chú OPEN rỗng); trong lượt 5 không merge code;
+  - chi phí DeepSeek (G4): "Chỉ credit của gói Pro", không mua thêm credit; hết credit hay gói hết hạn thì dừng và hỏi Owner.
+- WorkBuddy không phải OpenCode, nên lượt 5 không là ngoại lệ của dòng "không dùng OpenCode… để review" trong `CLAUDE.md`. Agent ngoài Claude vẫn không viết code.
+
+Phần Owner chọn cùng G1 (phạm vi, KNOWN, số đo, cách chạy đợt 2, `dot2.mjs` lượt 5, bài học lượt 4, việc sau đợt sửa): `docs/process/deep-review-phase-1-6.md` §L5.11. Spec Phase 6 §1, §2, §6 sửa theo.
