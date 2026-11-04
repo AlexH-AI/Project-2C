@@ -3575,7 +3575,8 @@ Từ bước 4, chỉ Owner dùng app WorkBuddy và đụng tới thư mục d�
    `deny` chặn như §L4.9 đợt 2 bước 3, đổi theo Phụ lục V:
    - **cả thư mục:** `…-r5\claude`, `…-r5\codex`; thư mục lượt 1–4 `deep-review-1-6-r4`, `-r3`, `-r2`, `deep-review-1-6`; transcript, `file-history\<id>` và scratchpad của các phiên Claude ở worktree review;
    - **từng mục con:** `%USERPROFILE%\.codex` và `C:\workspace\Project-2C-review-2`, để ngỏ `node_modules`, `.git` và link;
-   - mục do tài khoản khác làm chủ: không chặn, ghi vào `dot2-acl.json` và in ra (Phụ lục V).
+   - mục do tài khoản khác làm chủ: không chặn, ghi vào `dot2-acl.json` và in ra; thư mục có mục như vậy bên trong thì chặn từng mục con của Owner (Phụ lục V điểm 3);
+   - mục tài khoản Owner không đọc được từ trước `deny` (lượt 4: `.codex\.sandbox-bin`): vẫn chặn như trên; `deny` in ra và ghi vào `dot2-acl.json`, bước 7 không tính mục đó là chưa trả (Phụ lục V điểm 6).
 
    `scan` tìm mã phát hiện và dòng đầu báo cáo lượt 5 của Claude / Codex ở những chỗ còn đọc được, như §L4.9.
 4. Mở app WorkBuddy (Phụ lục P, V):
@@ -3620,7 +3621,7 @@ Từ bước 4, chỉ Owner dùng app WorkBuddy và đụng tới thư mục d�
       node C:\workspace\deep-review-1-6-r5\common\dot2.mjs remove
       ```
 
-      Lệnh gỡ mọi mục gỡ được, kiểm đọc lại được, rồi in `OK`. Còn mục chưa trả thì in danh sách mọi mục đó (đường dẫn, chủ sở hữu) và `STOP`: báo Claude. Gỡ bằng quyền khác (như `dot2-unlock.ps1` dưới quyền SYSTEM của lượt 4) chỉ khi Owner duyệt.
+      Lệnh gỡ mọi mục gỡ được, kiểm đọc lại được, rồi in `OK`. Mục không đọc được từ trước `deny` mà vẫn không đọc được thì in riêng, không tính. Còn mục chưa trả thì in danh sách mọi mục đó (đường dẫn, chủ sở hữu) và `STOP`: báo Claude. Gỡ bằng quyền khác (như `dot2-unlock.ps1` dưới quyền SYSTEM của lượt 4) chỉ khi Owner duyệt.
    5. So hash 12 báo cáo với bước 3:
 
       ```powershell
@@ -3660,8 +3661,8 @@ Phiên tổng hợp được dùng subagent / Workflow để kiểm từng phát
 
 - `deep-review-1-6-r5[\\/](claude|codex|deepseek)` của bên khác;
 - `deep-review-1-6-r4[\\/]…`, `-r3[\\/]…`, `-r2[\\/]…` và `deep-review-1-6[\\/]…` không phải của chính bên đó (DeepSeek: mọi thư mục này);
-- DeepSeek: lệnh `node` không qua `C:\Program Files\nodejs\node.exe`; lệnh chạy `node`, `pnpm`, vitest, Playwright hay công cụ trong `node_modules` mà trong cùng lệnh không đặt `C:\Program Files\nodejs` lên đầu PATH (quy tắc riêng 8); Playwright không có `--output` ra thư mục của gói;
-- DeepSeek: agent phụ nhận việc mà không kèm quy tắc riêng 2–5;
+- DeepSeek: lệnh `node` không qua `C:\Program Files\nodejs\node.exe`, trừ `node --version` ngay sau khi đặt PATH trong cùng lệnh (quy tắc riêng 8); lệnh chạy `node`, `pnpm`, vitest, Playwright hay công cụ trong `node_modules` mà trong cùng lệnh không đặt `C:\Program Files\nodejs` lên đầu PATH (quy tắc riêng 8); Playwright không có `--output` ra thư mục của gói;
+- DeepSeek: agent phụ nhận việc mà không kèm quy tắc riêng 2–5 và 8;
 - mọi mục khác của danh sách quét §L4.10, đổi `-r4` thành `-r5`.
 
 **Log thô không vào repo** (như §L4.10). Báo cáo và bản tổng hợp chỉ trích đoạn log cần dẫn, sau khi đã quét mẫu key và đã đăng xuất app.
@@ -3930,7 +3931,7 @@ File `common\prompt-deepseek.md` = đoạn dưới + nguyên văn Phụ lục T;
 >    - repo ở SHA trên, gồm báo cáo gốc lượt 1–4 của mọi bên ở `docs/reviews/raw/2026-10-15/`, `docs/reviews/raw/2026-10-17/`, `docs/reviews/raw/2026-10-21/`, `docs/reviews/raw/2026-10-31/` (để biết các lượt trước đã thử gì);
 >    - `C:\workspace\deep-review-1-6-r5\common\`;
 >    - báo cáo của chính bạn trong `…-r5\deepseek\`.
-> 4. **Được dùng** Code review expert của app và công cụ Agent (agent phụ) của app (Owner chấp nhận ở G6 ngày 30/10, giữ cho lượt 5). Mỗi việc giao cho agent phụ phải kèm nguyên văn quy tắc riêng 2–5 và quy tắc chung 1–2 của phần chung; agent phụ không ghi `{GÓI}.md`. **Không** cài hay dùng skill, không dùng connector, không lên web, không gọi mạng ra ngoài máy (`curl`, `Invoke-WebRequest`), không chạy `gh`. Không đổi chế độ quyền của app, không đọc hay sửa thư mục dữ liệu của app (`~/.workbuddy*`), không đổi quyền file (`icacls`, `Set-Acl`, `takeown`), không chạy `common\dot2.mjs`. Không đọc file đăng nhập hay dữ liệu của Claude / Codex (`~/.codex`, `~/.claude*`, `%APPDATA%\Claude`, `%LOCALAPPDATA%\OpenAI`, `%TEMP%\claude`), Windows Credential Manager (`cmdkey`, `vaultcmd`, mọi API đọc thông tin đăng nhập). Lệnh hay công cụ bị từ chối thì không thử cách khác để đọc cùng chỗ. Thông tin Issue / PR sửa có ở `common\fixes.md`.
+> 4. **Được dùng** Code review expert của app và công cụ Agent (agent phụ) của app (Owner chấp nhận ở G6 ngày 30/10, giữ cho lượt 5). Mỗi việc giao cho agent phụ phải kèm nguyên văn quy tắc riêng 2–5 và 8, cùng quy tắc chung 1–2 của phần chung; agent phụ không ghi `{GÓI}.md`. **Không** cài hay dùng skill, không dùng connector, không lên web, không gọi mạng ra ngoài máy (`curl`, `Invoke-WebRequest`), không chạy `gh`. Không đổi chế độ quyền của app, không đọc hay sửa thư mục dữ liệu của app (`~/.workbuddy*`), không đổi quyền file (`icacls`, `Set-Acl`, `takeown`), không chạy `common\dot2.mjs`. Không đọc file đăng nhập hay dữ liệu của Claude / Codex (`~/.codex`, `~/.claude*`, `%APPDATA%\Claude`, `%LOCALAPPDATA%\OpenAI`, `%TEMP%\claude`), Windows Credential Manager (`cmdkey`, `vaultcmd`, mọi API đọc thông tin đăng nhập). Lệnh hay công cụ bị từ chối thì không thử cách khác để đọc cùng chỗ. Thông tin Issue / PR sửa có ở `common\fixes.md`.
 >    - **Ghi:** file bạn tạo (báo cáo, probe, bản chép, log, script) chỉ nằm trong `…-r5\deepseek\` (quy tắc riêng 5). Không ghi gì vào `…-r5\common\`, `…-r5\claude\`, `…-r5\codex\`; không sửa file được theo dõi, trừ phần vá dưới. Ngoài `deepseek\` chỉ có:
 >      - những gì lệnh build, test hay trình duyệt tự ghi: thư mục build / cache bị ignore trong worktree (vd. `apps\desktop\dist`, `node_modules\.vite`) và thư mục tạm của hệ thống;
 >      - file app tự tạo trong worktree mà `common\baseline.md` ghi (quy tắc riêng 5);
@@ -3939,7 +3940,7 @@ File `common\prompt-deepseek.md` = đoạn dưới + nguyên văn Phụ lục T;
 > 6. Gói F được đọc `…-r5\deepseek\A…E.md`. Không tổng hợp với báo cáo nào khác, không tạo Issue, không đề xuất merge.
 > 7. Mục 1 của báo cáo ghi app WorkBuddy (bản theo `common\baseline.md`), expert, model, context, mức suy luận và bản Node đã dùng.
 > 8. **Node và Playwright:**
->    - shell của app có Node 22 trong PATH, mà repo cần Node ≥ 24 (lượt 4: 4 ca của `mock-adapter.test.ts` đỏ giả, một số đo không so được với mốc). Mọi lệnh `node` gọi bằng `"C:\Program Files\nodejs\node.exe"`, kể cả khi chạy `vitest`, `eslint`, `tsc`, Playwright qua `node node_modules/<gói>/<cli>`. Đầu phiên chạy `"C:\Program Files\nodejs\node.exe" --version` và ghi vào mục 1; dưới 24 thì dừng, báo Owner;
+>    - shell của app có Node 22 trong PATH, mà repo cần Node ≥ 24 (lượt 4: 4 ca của `mock-adapter.test.ts` đỏ giả, một số đo không so được với mốc). Mọi lệnh `node` gọi bằng `"C:\Program Files\nodejs\node.exe"`, kể cả khi chạy `vitest`, `eslint`, `tsc`, Playwright qua `node node_modules/<gói>/<cli>`. Ngoại lệ duy nhất: `node --version` chạy ngay sau khi đặt PATH trong cùng lệnh (gạch đầu dưới), để kiểm PATH. Đầu phiên chạy `"C:\Program Files\nodejs\node.exe" --version` và ghi vào mục 1; dưới 24 thì dừng, báo Owner;
 >    - gọi `node` bằng đường dẫn đủ chưa đủ: tiến trình con lấy `node` theo PATH, tức Node 22 (shim `node_modules\.bin\*.cmd`, `webServer` của Playwright là `node e2e/serve.mjs`, script mà `pnpm` chạy). Vì vậy **mọi lệnh shell chạy `node`, `pnpm`, vitest, Playwright hay công cụ trong `node_modules` đặt `C:\Program Files\nodejs` lên đầu PATH ngay trong lệnh đó**, kể cả khi lệnh trước đã đặt: PowerShell `$env:Path = 'C:\Program Files\nodejs;' + $env:Path; …`, Git Bash `export PATH="/c/Program Files/nodejs:$PATH"; …`. Lệnh đầu tiên có đặt PATH in thêm `node --version` (phải ≥ 24) và ghi vào mục 1;
 >    - Playwright luôn có `--output C:\workspace\deep-review-1-6-r5\deepseek\{GÓI}\pw` (shim xóa file của app chặn ghi `test-results\` khi quá 50 file).
 > 9. Bài học của chính DeepSeek ở review Phase 5 và lượt 4 (`docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §3.1, §6, §7; tổng hợp lượt 4 §2.2):
@@ -3969,21 +3970,485 @@ Như Phụ lục P (lượt 4), đổi theo mục dưới. Mục nào không nh�
 - Gói phải còn hạn tới hết gói F (đợt 2 bước 4). Hết hạn trước hay giữa đợt 2 thì dừng, hỏi Owner: gia hạn là chi phí mới (G4).
 - Đo credit ở trang Usage trước phiên thử, sau phiên thử, sau từng gói và sau cùng. Điểm dừng sau mỗi gói A–E như §L5.9 đợt 2 bước 6. Hết credit giữa một gói thì dừng đợt 2, hỏi Owner.
 
-**`dot2.mjs` lượt 5** (Issue T-358, tạo sau G1; đề xuất 9). PR docs của T-358 thêm vào cuối phụ lục này một khối code `js`: khối code của Phụ lục P, đổi theo năm điểm dưới. Bước chuẩn bị chép nguyên văn khối đó thành `common\dot2.mjs` (§L5.9 bước 4).
+**`dot2.mjs` lượt 5** (Issue T-358, tạo sau G1; đề xuất 9). PR docs của T-358 thêm vào cuối phụ lục này một khối code `js`: khối code của Phụ lục P, đổi theo năm điểm dưới (G1 ngày 04/11) và điểm 6 (Owner 04/11, comment trên #1028). Bước chuẩn bị chép nguyên văn khối đó thành `common\dot2.mjs` (§L5.9 bước 4). Khối của Phụ lục P giữ nguyên, vì lượt 4 đã chạy bằng nó.
 
 1. **Đường dẫn và tên lượt:** thư mục gốc `C:\workspace\deep-review-1-6-r5`; chú thích đầu file và thông báo ghi lượt 5.
 2. **`deny` chặn thêm cả thư mục lượt 4** `C:\workspace\deep-review-1-6-r4`, như thư mục lượt 1–3. Lệnh vẫn kiểm hard link ra ngoài như Phụ lục P.
 3. **`deny` xem chủ sở hữu từng mục trước khi chặn.** Lượt 4, luật `deny … (R)` lấy cả READ_CONTROL, nên với mục do tài khoản khác làm chủ (`CodexSandboxOffline`), tài khoản Owner không đọc hay sửa lại được ACL; `remove` dừng ở 16 mục.
    - Mục do tài khoản khác làm chủ thì không chặn. Lệnh ghi nó vào `dot2-acl.json` (đường dẫn, chủ sở hữu, "không chặn") và in ra.
-   - Thư mục cần chặn cả mà có mục con của tài khoản khác thì chặn từng mục con của Owner, như cách Phụ lục P xử lý hard link. `scan` đọc các mục không chặn như mọi chỗ còn đọc được.
-   - Lệnh đọc chủ sở hữu qua một hàm riêng, để test thay được.
+   - Thư mục cần chặn cả mà có mục con của tài khoản khác thì chặn từng mục con của Owner, như cách Phụ lục P xử lý hard link. Thư mục của tài khoản khác thì `deny` vẫn đi vào, chặn mục con của Owner. Thư mục chặn cả mà bị tách như vậy thì link trong đó để ngỏ, như ở `.codex`. `scan` đọc các mục không chặn như mọi chỗ còn đọc được.
+   - Lệnh đọc chủ sở hữu qua một hàm riêng (`foreignOwners`), để test thay được. Hàm đọc một lần cho mọi đường dẫn `deny` có thể chạm, bằng một Windows PowerShell (`GetAccessControl`). Mục không đọc được chủ sở hữu (thiếu READ_CONTROL, mà chủ của mục thì luôn đọc được) cũng coi là của tài khoản khác, ghi chủ sở hữu `?`.
+   - `remove` không đụng tới mục không chặn.
 4. **`remove` không dừng ở mục đầu không gỡ được.** Lệnh gỡ mọi mục gỡ được, kiểm đọc lại được, rồi in danh sách mọi mục chưa trả (đường dẫn, chủ sở hữu) và `STOP`. Đủ thì in `OK` và đổi tên `dot2-acl.json` như Phụ lục P.
 5. **`scan` tìm mã của lượt 5:** `CLR5-`, `CXR5-`, và dòng đầu `ĐANG LÀM — claude|codex gói X lượt 5` / `XONG — claude|codex gói X lượt 5`.
+6. **`remove` không tính mục không đọc được từ trước `deny`** (Owner 04/11/2026, comment trên #1028: giữ phần kiểm này của Issue; ngoài năm điểm G1 đã duyệt). Lượt 4, `.codex\.sandbox-bin` có ACL riêng của Codex, tài khoản Owner không liệt kê được, nên bước kiểm cuối của `remove` sẽ luôn báo nó chưa trả.
+   - Trước luật đầu tiên, `deny` kiểm từng mục đọc được hay không, qua một hàm riêng (`readableBeforeDeny`, test thay được). Mục không đọc được vẫn bị chặn như Phụ lục P; `deny` in ra.
+   - `remove` vẫn gỡ luật trên mục đó. Mục còn không đọc được thì in riêng kèm chủ sở hữu, không vào danh sách chưa trả, không làm `STOP`.
+   - Vì sao không tính là an toàn: luật đặt trên thư mục không liệt kê được không lan xuống mục con (thử 04/11 trên thư mục tạm: `icacls` thoát 0, file con giữ nguyên ACL). Bên trong vì vậy không còn luật chặn nào mà `remove` không thấy.
+   - Mục đọc được lúc `deny` mà không đọc được lúc `remove` vẫn là chưa trả. Lượt 4 có lẽ là trường hợp này: 9 file trong `.sandbox-bin` mang luật chặn thừa kế (`docs/reviews/raw/2026-10-31/common-baseline.md`, bước 7), tức lúc `deny` thư mục còn liệt kê được và luật đã lan xuống. Lặp lại như vậy thì `remove` vẫn `STOP` ở `.sandbox-bin`. Kết quả đó đúng, vì tài khoản Owner không gỡ được luật trên 9 file đó qua thư mục.
+   - Thư mục không liệt kê được thì `deny` không đi vào (khối Phụ lục P dừng ở lỗi `EPERM`), nên không kiểm được link hay chủ sở hữu bên trong. Như trên, luật của `deny` cũng không lan vào đó.
+   - Chỉ đổi cách kiểm của `remove`; bộ ACL và phạm vi dọn giữ nguyên.
+
+`dot2-acl.json` của lượt 5 có ba danh sách:
+- `entries`: mục bị chặn, mỗi mục `path`, `kind`, `owner` (tài khoản Owner), `readBefore` (đọc được trước `deny` hay không);
+- `notDenied`: mục không chặn vì của tài khoản khác ("không chặn"), mỗi mục `path`, `kind`, `owner`;
+- `kept`: mục để ngỏ như Phụ lục P.
 
 Test chấp nhận của T-358 (như T-314 #876, T-315 #880): cây giả trong `%TEMP%`, đường dẫn có dấu cách, `USERPROFILE` / `TEMP` / `APPDATA` / `LOCALAPPDATA` giả; `deny` chỉ chạy sau khi `--dry-run` không liệt kê gì ngoài cây giả.
 
 - Mục "của tài khoản khác" dựng bằng cách thay hàm đọc chủ sở hữu: `deny` không chặn mục đó và ghi vào `dot2-acl.json`; `remove` vẫn trả mọi mục khác.
 - Một mục không gỡ được (dựng giả) → `remove` gỡ hết phần còn lại, in đủ danh sách, `STOP`.
+- Một mục không đọc được từ trước `deny` (dựng bằng ACL trên cây giả) → `remove` in riêng, không `STOP`.
 - Năm lệnh còn chạy như Phụ lục P trên cây giả: `baseline`, `clean`, `deny`, `scan`, `remove`.
-- `scan` bắt `CLR5-` / dòng `XONG — codex gói A lượt 5` trong một file sửa sau mốc.
+- `scan` bắt mã `CLR5-…` và dòng đầu `XONG` của Codex gói A lượt 5 trong một file sửa sau mốc.
 - Chỉ khi Owner đồng ý: thêm một lần thử thật trên một mục do tài khoản khác làm chủ, Owner dựng bằng PowerShell quyền admin.
+
+Đã thử ngày 04/11/2026 trên Home PC (T-358; lệnh, cây giả và kết quả ở thân PR). Cây giả nằm trong thư mục tạm của phiên, theo cách dựng ở trên.
+- Khối dưới: 8 kịch bản đều đạt. Gồm: chạy đủ năm lệnh; `remove` không có file trạng thái; hard link ra ngoài trong `-r4`; mục của tài khoản khác, có và không có file trạng thái; mục không gỡ được; mục không đọc được từ trước `deny`; cây 60 000 file.
+- Khối Phụ lục P trên cùng cây:
+  - không chặn `-r4`, và `scan` không thấy mã lượt 5;
+  - `remove` dừng ở mục đầu không gỡ được: 12 / 20 mục khác còn bị chặn;
+  - `deny --dry-run` dừng ở lỗi `EPERM` khi có thư mục không liệt kê được.
+- Cây 60 000 file, hai lần: `deny --dry-run` 13 s, `deny` 18–19 s, `remove` 8 s.
+- Không thử thật trên mục do tài khoản khác làm chủ: Owner chưa đồng ý.
+
+```js
+// Deep review round 5, wave 2 (plan §L5.9, Appendix V; round 4 ran the script of Appendix P). Run
+// from PowerShell; baseline by the preparation session, the rest by the Owner:
+//   node dot2.mjs baseline          preparation step 4: untracked / ignored entries of both review worktrees
+//   node dot2.mjs clean             wave 2 step 1: delete what wave 1 left beyond that, and probe caches
+//   node dot2.mjs deny [--dry-run]  wave 2 step 3: deny the Owner's account reads (ACL), then check
+//   node dot2.mjs scan              wave 2 step 3: look for readable copies of Claude / Codex round 5 work
+//   node dot2.mjs remove            wave 2 step 7: remove the denies, then check
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+const COMMON = path.dirname(fileURLToPath(import.meta.url));
+const R5 = path.dirname(COMMON);
+const WS = path.dirname(R5);
+const { USERPROFILE: HOME, TEMP, APPDATA, LOCALAPPDATA, USERNAME: USER, USERDOMAIN } = process.env;
+const ME = `${USERDOMAIN}\\${USER}`;
+const REVIEW = path.join(WS, 'Project-2C-review');
+const WORKTREES = [REVIEW, path.join(WS, 'Project-2C-review-2')];
+// Claude Code names a project folder after its cwd, every other character turned into '-'.
+const PROJECT = REVIEW.replace(/[^A-Za-z0-9-]/g, '-');
+// Data mixed with packages hard-linked into the checkouts' node_modules: denied child by child.
+const SPLIT = [path.join(HOME, '.codex'), path.join(WS, 'Project-2C-review-2')];
+const BASELINE = path.join(COMMON, 'dot2-baseline.json');
+const STATE = path.join(COMMON, 'dot2-acl.json');
+// Round 5 finding IDs and report header lines of Claude / Codex; plan.md and the prompts have neither.
+const MARKER = /C[LX]R5-[A-F]\d|(?:ĐANG LÀM|XONG) — (?:claude|codex) gói [A-F] lượt 5/;
+
+class Stop extends Error {}
+const exists = (p) => fs.existsSync(p);
+const list = (dir) => fs.readdirSync(dir, { withFileTypes: true });
+const subdirs = (dir, re = /./) =>
+  exists(dir) ? list(dir).filter((e) => e.isDirectory() && re.test(e.name)).map((e) => path.join(dir, e.name)) : [];
+const readJson = (p) => JSON.parse(fs.readFileSync(p, 'utf8'));
+const needBaseline = () => {
+  if (!exists(BASELINE)) throw new Stop(`no ${BASELINE}: preparation step 4 runs baseline first`);
+};
+const writeJson = (p, v) => fs.writeFileSync(p, `${JSON.stringify(v, null, 2)}\n`);
+const icacls = (...args) => execFileSync('icacls', [...args, '/Q'], { stdio: ['ignore', 'ignore', 'inherit'] });
+const refused = (e) => e.code === 'EPERM' || e.code === 'EACCES';
+// Opening is enough to prove access; large files are not read.
+function canOpen(p, kind) {
+  try {
+    if (kind === 'tree') fs.readdirSync(p);
+    else fs.closeSync(fs.openSync(p, 'r'));
+    return true;
+  } catch (e) {
+    if (refused(e)) return false;
+    throw e;
+  }
+}
+
+// Owner of each path the account running this does not own: path -> account, or '?' when the owner
+// does not read (no READ_CONTROL, so not the account's). Paths the account owns are left out. One
+// Windows PowerShell for all paths; tests replace this function (Appendix V).
+function foreignOwners(paths) {
+  if (!paths.length) return new Map();
+  const ps = [
+    "$ProgressPreference = 'SilentlyContinue'",
+    '[Console]::InputEncoding = [Console]::OutputEncoding = New-Object Text.UTF8Encoding $false',
+    '$me = [Security.Principal.WindowsIdentity]::GetCurrent().User',
+    'foreach ($p in [Console]::In.ReadToEnd().Split([char]0)) {',
+    '  if (-not $p) { continue }',
+    "  $q = '\\\\?\\' + $p",
+    '  try {',
+    "    $acl = if ([IO.Directory]::Exists($q)) { [IO.Directory]::GetAccessControl($q, 'Owner') } else { [IO.File]::GetAccessControl($q, 'Owner') }",
+    '    $o = $acl.GetOwner([Security.Principal.SecurityIdentifier])',
+    '    if ($o -eq $me) { continue }',
+    '    try { $n = $o.Translate([Security.Principal.NTAccount]).Value } catch { $n = $o.Value }',
+    "  } catch { $n = '?' }",
+    '  [Console]::Out.Write("$p`t$n`n")',
+    '}',
+  ];
+  const command = Buffer.from(ps.join('\n'), 'utf16le').toString('base64');
+  const out = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', command], {
+    input: paths.join('\0'),
+    encoding: 'utf8',
+    maxBuffer: 2 ** 30,
+    stdio: 'pipe',
+  });
+  return new Map(out.split('\n').filter(Boolean).map((l) => l.split('\t')));
+}
+
+// Whether the account reads an entry before deny touches it: remove does not count an entry that did
+// not read before (round 4: .codex\.sandbox-bin, ACL of its own). Tests replace this function too.
+function readableBeforeDeny(p, kind) {
+  return canOpen(p, kind);
+}
+
+// What git does not track (untracked or ignored): each file and folder (trailing '/'), also inside an
+// ignored folder (review #872). Not listed: node_modules, a folder holding one, what a link points at.
+// held, when given, gets each such folder whose own node_modules kept it (review #878).
+function leftovers(wt, held) {
+  const others = (...extra) =>
+    execFileSync('git', ['-C', wt, 'ls-files', '-z', '--others', '--exclude-standard', '--directory', ...extra], {
+      encoding: 'utf8',
+    }).split('\0');
+  const found = new Set();
+  // True when rel is or holds a node_modules.
+  const add = (rel) => {
+    if (/(^|\/)node_modules(\/|$)/.test(rel)) return true;
+    if (!rel.endsWith('/')) {
+      found.add(rel);
+      return false;
+    }
+    let modules = false;
+    for (const e of list(path.join(wt, rel))) {
+      if (e.name === 'node_modules') held?.add(rel);
+      modules = add(`${rel}${e.name}${e.isDirectory() ? '/' : ''}`) || modules;
+    }
+    if (!modules) found.add(rel);
+    return modules;
+  };
+  for (const e of [...others(), ...others('--ignored')]) {
+    // git walks into a junction: what it lists through a link stands for the link itself.
+    const parts = e.split('/').filter(Boolean);
+    const at = parts.findIndex((_, i) => fs.lstatSync(path.join(wt, ...parts.slice(0, i + 1))).isSymbolicLink());
+    if (at >= 0) add(parts.slice(0, at + 1).join('/'));
+    else if (e) add(e);
+  }
+  return [...found].sort();
+}
+
+function baseline() {
+  if (exists(BASELINE)) throw new Stop(`${BASELINE} already exists`);
+  const base = Object.fromEntries(WORKTREES.map((wt) => [wt, leftovers(wt)]));
+  writeJson(BASELINE, base);
+  for (const wt of WORKTREES) console.log(`${wt}: ${base[wt].length} untracked / ignored entries kept`);
+}
+
+function clean() {
+  needBaseline();
+  const base = readJson(BASELINE);
+  const extras = (wt, held) => {
+    const kept = new Set(base[wt]);
+    return leftovers(wt, held).filter((e) => !kept.has(e));
+  };
+  const caches = [];
+  for (const wt of WORKTREES) {
+    const held = new Set();
+    const doomed = extras(wt, held);
+    const all = new Set(doomed);
+    // Deepest first: a folder goes once empty; a link goes, not what it points at.
+    for (const e of [...doomed].reverse()) {
+      const p = path.join(wt, e);
+      if (e.endsWith('/')) {
+        if (!exists(p) || list(p).length) continue;
+        fs.rmdirSync(p);
+      } else fs.rmSync(p, { force: true });
+      // One line for a new folder, not one for each file in it.
+      if (!all.has(e.replace(/[^/]+\/?$/, ''))) console.log(`deleted ${p}`);
+    }
+    // A folder kept for its own node_modules, e.g. a probe with a package.json, stays: say so.
+    for (const rel of held) console.log(`kept, holds node_modules: ${path.join(wt, rel)}`);
+    // Vite / Vitest caches keep the names and results of the test files that ran, and transformed
+    // probe code: Vite puts its cache by the nearest package.json, so the kept folders have one too.
+    const pkgs = [wt, ...subdirs(path.join(wt, 'apps')), ...subdirs(path.join(wt, 'packages'))];
+    for (const pkg of [...pkgs, ...[...held].map((rel) => path.join(wt, rel))])
+      caches.push(path.join(pkg, 'node_modules', '.vite'), path.join(pkg, 'node_modules', '.vite-temp'));
+  }
+  // Transformed copies of probe code: Playwright cache and browser profiles, Vite SSR dumps, Codex artifacts.
+  caches.push(...subdirs(TEMP).filter((d) => /^(playwright|codex-)/i.test(path.basename(d)) || exists(path.join(d, 'ssr'))));
+  for (const p of caches) {
+    if (!exists(p)) continue;
+    fs.rmSync(p, { recursive: true, force: true });
+    console.log(`deleted ${p}`);
+  }
+  for (const wt of WORKTREES) {
+    const left = extras(wt);
+    if (left.length) throw new Stop(`${wt} still has: ${left.join(', ')}`);
+  }
+  console.log('OK: both worktrees are back to dot2-baseline.json');
+}
+
+// Files under root that also have a link outside it, what another account owns under it (foreign:
+// from foreignOwners) and every path walked. The walk does not follow junctions or symlinks, nor go
+// into a folder the account cannot list: icacls cannot reach in there either.
+function walkTree(root, foreign = new Map()) {
+  const links = new Map();
+  const paths = [];
+  const others = [];
+  let sample = null;
+  const walk = (dir) => {
+    let ents;
+    try {
+      ents = list(dir);
+    } catch (e) {
+      if (refused(e)) return;
+      throw e;
+    }
+    for (const e of ents) {
+      const p = path.join(dir, e.name);
+      if (!e.isDirectory() && !e.isFile()) continue;
+      paths.push(p);
+      if (foreign.has(p)) others.push(p);
+      if (e.isDirectory()) walk(p);
+      else {
+        sample ??= p;
+        const st = fs.lstatSync(p, { bigint: true });
+        if (st.nlink < 2n) continue;
+        const key = `${st.dev}:${st.ino}`;
+        const seen = links.get(key) ?? { p, nlink: st.nlink, n: 0n };
+        seen.n += 1n;
+        links.set(key, seen);
+      }
+    }
+  };
+  walk(root);
+  return { sample, outside: [...links.values()].filter((l) => l.n < l.nlink).map((l) => l.p), others, paths };
+}
+
+const claudeDirs = () => subdirs(HOME, /^\.claude/);
+
+// Denied whole: reports, transcripts, file copies and scratchpads of the other reviewers.
+function treeTargets() {
+  const out = [path.join(R5, 'claude'), path.join(R5, 'codex')];
+  out.push(...['deep-review-1-6-r4', 'deep-review-1-6-r3', 'deep-review-1-6-r2', 'deep-review-1-6'].map((n) => path.join(WS, n)));
+  for (const c of claudeDirs()) {
+    const proj = path.join(c, 'projects', PROJECT);
+    if (!exists(proj)) continue;
+    out.push(proj);
+    // file-history keeps a copy of each file a session wrote, in a folder named after the session.
+    for (const id of new Set(list(proj).map((e) => e.name.replace(/\.jsonl$/, '')))) out.push(path.join(c, 'file-history', id));
+  }
+  out.push(path.join(TEMP, 'claude', PROJECT));
+  return out.filter(exists);
+}
+
+const keptBySplit = (e) => e.isSymbolicLink() || e.name === 'node_modules' || e.name === '.git';
+
+// Deny each child of dir that has no outside link and nothing another account owns; go down into the
+// others. Links stay readable; in .codex and Project-2C-review-2 (split) also node_modules, .git and
+// hard-linked files. In a folder denied whole otherwise (a tree target) a hard link stays inside it.
+// What another account owns is not denied: its owner keeps the ACL, deny could not be undone (Appendix V).
+function splitEntries(dir, out, split) {
+  for (const e of list(dir)) {
+    const p = path.join(dir, e.name);
+    const kind = e.isDirectory() ? 'tree' : 'file';
+    if (split ? keptBySplit(e) : e.isSymbolicLink()) out.kept.push(p);
+    else if (!e.isDirectory() && !e.isFile()) continue;
+    else if (out.foreign.has(p)) {
+      out.notDenied.push({ path: p, kind, owner: out.foreign.get(p) });
+      if (kind === 'tree' && canOpen(p, 'tree')) splitEntries(p, out, split);
+    } else if (kind === 'tree') {
+      const { outside, others } = walkTree(p, out.foreign);
+      if ((split && outside.length) || others.length) splitEntries(p, out, split);
+      else out.entries.push({ path: p, kind });
+    } else if (split && fs.lstatSync(p, { bigint: true }).nlink > 1n) out.kept.push(p);
+    else out.entries.push({ path: p, kind });
+  }
+}
+
+function deny(dryRun) {
+  if (exists(STATE)) throw new Stop(`${STATE} exists: run remove first`);
+  const targets = treeTargets();
+  const splits = SPLIT.filter(exists);
+  // The owner of every path deny may reach, in one lookup.
+  const reach = [...targets, ...targets.flatMap((t) => walkTree(t).paths)];
+  for (const s of splits)
+    for (const e of list(s).filter((x) => !keptBySplit(x) && (x.isDirectory() || x.isFile()))) {
+      const p = path.join(s, e.name);
+      reach.push(p, ...(e.isDirectory() ? walkTree(p).paths : []));
+    }
+  const out = { entries: [], kept: [], notDenied: [], foreign: foreignOwners(reach) };
+  const samples = new Map();
+  const linked = [];
+  for (const t of targets) {
+    const { sample, outside, others } = walkTree(t, out.foreign);
+    if (outside.length) linked.push(`${t}: ${outside.length} file(s) also linked outside it, e.g. ${outside[0]}`);
+    if (out.foreign.has(t)) {
+      out.notDenied.push({ path: t, kind: 'tree', owner: out.foreign.get(t) });
+      if (canOpen(t, 'tree')) splitEntries(t, out, false);
+    } else if (others.length) splitEntries(t, out, false);
+    else {
+      out.entries.push({ path: t, kind: 'tree' });
+      if (sample) samples.set(t, sample);
+    }
+  }
+  // A deny on a hard-linked file reaches all its links, e.g. the node_modules of the checkouts.
+  if (linked.length) throw new Stop(`nothing denied:\n${linked.join('\n')}`);
+  for (const t of splits) splitEntries(t, out, true);
+  // Each entry's owner, and whether it read before deny, for remove (Appendix V).
+  for (const e of out.entries) Object.assign(e, { owner: ME, readBefore: readableBeforeDeny(e.path, e.kind) });
+  const before = out.entries.filter((e) => !e.readBefore);
+  for (const e of out.entries) console.log(`${dryRun ? 'would deny' : 'deny'} ${e.kind} ${e.path}`);
+  for (const e of before) console.log(`unreadable before deny, remove does not count it: ${e.path}`);
+  for (const e of out.notDenied) console.log(`not denied, owned by ${e.owner}: ${e.path}`);
+  for (const p of out.kept) console.log(`stays readable ${p}`);
+  if (dryRun) return;
+  const state = { user: USER, at: new Date().toISOString(), entries: [], notDenied: out.notDenied, kept: out.kept };
+  writeJson(STATE, state);
+  for (const e of out.entries) {
+    icacls(e.path, '/deny', `${USER}:${e.kind === 'tree' ? '(OI)(CI)(R)' : '(R)'}`);
+    state.entries.push(e);
+    writeJson(STATE, state);
+  }
+  const open = out.entries.filter((e) => canOpen(e.path, e.kind) || (samples.has(e.path) && canOpen(samples.get(e.path), 'file')));
+  if (open.length) throw new Stop(`still readable: ${open.map((e) => e.path).join(', ')}; run remove`);
+  console.log(
+    `OK: ${out.entries.length} entries denied (${before.length} unreadable before), ${out.notDenied.length} not denied ` +
+      `(another account's), ${out.kept.length} left readable; state in ${STATE}`,
+  );
+}
+
+function remove() {
+  const state = exists(STATE) ? readJson(STATE) : null;
+  if (!state) console.log(`no ${STATE}: removing from the standard targets and from what is still denied under them`);
+  const entries = state?.entries ?? [];
+  // What deny left to another account is left alone here too.
+  const theirs = new Set((state?.notDenied ?? []).map((e) => e.path));
+  const done = new Map();
+  const undo = (p, kind) => {
+    if (done.has(p) || theirs.has(p) || !exists(p)) return;
+    done.set(p, kind);
+    try {
+      icacls(p, '/remove:d', USER);
+    } catch {
+      // Not the end (round 4 stopped here): icacls says why, the check below lists p (Appendix V).
+    }
+  };
+  for (const e of [...entries].reverse()) undo(e.path, e.kind);
+  // The standard targets too, in case the state file is missing or incomplete.
+  for (const c of claudeDirs()) undo(path.join(c, 'projects', PROJECT), 'tree');
+  const targets = treeTargets();
+  for (const t of targets) undo(t, 'tree');
+  // In .codex and Project-2C-review-2, and in a tree target that deny split around another account's
+  // entries, deny went deeper (splitEntries): whatever there still does not read is undone, at any
+  // depth, also without the state file (review #872).
+  const undoSplit = (dir, split) => {
+    for (const e of list(dir)) {
+      const p = path.join(dir, e.name);
+      if (split ? keptBySplit(e) : e.isSymbolicLink()) continue;
+      if (e.isDirectory()) {
+        if (canOpen(p, 'tree')) undoSplit(p, split);
+        else undo(p, 'tree');
+      } else if (e.isFile() && !canOpen(p, 'file')) undo(p, 'file');
+    }
+  };
+  const whole = new Set(entries.filter((e) => e.kind === 'tree').map((e) => e.path));
+  for (const t of targets) if (!whole.has(t) && canOpen(t, 'tree')) undoSplit(t, false);
+  for (const t of SPLIT.filter(exists)) undoSplit(t, true);
+  const closed = [...done].filter(([p, kind]) => !canOpen(p, kind)).map(([p]) => p);
+  const known = new Map(entries.map((e) => [e.path, e]));
+  const already = closed.filter((p) => known.get(p)?.readBefore === false);
+  for (const p of already) console.log(`unreadable before deny too, not counted: ${p} (owner ${known.get(p).owner})`);
+  const left = closed.filter((p) => known.get(p)?.readBefore !== false);
+  if (left.length) {
+    const unknown = left.filter((p) => !known.has(p));
+    let found = new Map();
+    try {
+      found = foreignOwners(unknown);
+    } catch {
+      found = new Map(unknown.map((p) => [p, '?']));
+    }
+    const owner = (p) => known.get(p)?.owner ?? found.get(p) ?? ME;
+    const lines = left.map((p) => `${p}  owner ${owner(p)}`);
+    throw new Stop(`${left.length} of ${done.size} entries still denied (path, owner); ${STATE} kept:\n${lines.join('\n')}`);
+  }
+  if (state) fs.renameSync(STATE, path.join(COMMON, 'dot2-acl.removed.json'));
+  const but = already.length ? ` but the ${already.length} above, which did not read before deny either` : '';
+  console.log(`OK: denies removed from ${done.size} entries, all readable again${but}`);
+}
+
+function scan() {
+  needBaseline();
+  // Files older than the baseline (preparation, before wave 1) cannot hold round 5 work.
+  const since = fs.statSync(BASELINE).mtimeMs;
+  const roots = [
+    ...subdirs(HOME, /^\.(claude|codex)/),
+    path.join(APPDATA, 'Claude'),
+    path.join(LOCALAPPDATA, 'Claude'),
+    path.join(LOCALAPPDATA, 'OpenAI'),
+    ...subdirs(path.join(LOCALAPPDATA, 'Packages'), /^(Claude|OpenAI)/i),
+    TEMP,
+    WS,
+  ].filter(exists);
+  const skipDirs = new Set(['.git', '.pnpm', 'target']);
+  const notOpened = path.join(WS, 'Project-2'); // never opened (CLAUDE.md)
+  const hits = [];
+  const big = [];
+  let read = 0;
+  let closed = 0;
+  const walk = (dir) => {
+    let ents;
+    try {
+      ents = list(dir);
+    } catch {
+      closed++;
+      return;
+    }
+    for (const e of ents) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        if (!skipDirs.has(e.name) && p !== notOpened) walk(p);
+        continue;
+      }
+      if (!e.isFile() || /^(\.credentials|auth\.json$)/.test(e.name)) continue;
+      let buf;
+      try {
+        const st = fs.statSync(p);
+        if (st.mtimeMs < since) continue;
+        if (st.size > 64 * 2 ** 20) {
+          big.push(p);
+          continue;
+        }
+        buf = fs.readFileSync(p);
+      } catch {
+        closed++;
+        continue;
+      }
+      read++;
+      // UTF-8, and UTF-16LE at either byte alignment (app databases). Node 24.20 crashes on
+      // toString('utf16le') of an odd-length view at an odd offset, so that view is cut to even length.
+      const odd = buf.subarray(1, 1 + ((buf.length - 1) & ~1));
+      const texts = [buf.toString('utf8'), buf.toString('utf16le'), odd.toString('utf16le')];
+      if (texts.some((t) => MARKER.test(t))) hits.push(p);
+    }
+  };
+  for (const r of roots) walk(r);
+  console.log(`${read} files read; ${closed} folders / files not readable (the denied ones count here)`);
+  for (const p of big) console.log(`not read (over 64 MB): ${p}`);
+  // Accepted in Appendix P: the desktop app's session list (titles, recaps); the running app keeps it open.
+  const appSessions = path.join(APPDATA, 'Claude', 'claude-code-sessions') + path.sep;
+  for (const p of hits.filter((h) => h.startsWith(appSessions))) console.log(`accepted, write it in baseline.md: ${p}`);
+  const open = hits.filter((h) => !h.startsWith(appSessions));
+  if (open.length) throw new Stop(`round 5 IDs or report headers readable in:\n${open.join('\n')}`);
+  console.log('OK: no readable copy of Claude / Codex round 5 work found');
+}
+
+const [cmd, flag] = process.argv.slice(2);
+const commands = { baseline, clean, deny: () => deny(flag === '--dry-run'), scan, remove };
+try {
+  if (!commands[cmd]) throw new Stop('usage: node dot2.mjs baseline | clean | deny [--dry-run] | scan | remove');
+  commands[cmd]();
+} catch (e) {
+  console.error(`STOP: ${e instanceof Stop ? e.message : e.stack}`);
+  process.exit(1);
+}
+```
