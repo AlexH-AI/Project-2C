@@ -10,10 +10,13 @@ Rà sổ G7 Phase 6 (23/10, `main` `4ba705b`): mọi mục dưới đây đã ki
 
 Theo file, gộp vào lần chạm sau cùng file (hoặc T-h nếu còn chỗ):
 
-- Một ghi chú không chặn của review PR #1014 (T-354, #1012: mục "Dữ liệu" thêm NT-TR-12; NT-AI-03 đổi dấu câu sau câu báo; `REVIEW: PASS` @`9e06386`, mức low; merge 04/11, squash (`b1cacf7`)). Số dòng theo `main` `b1cacf7`. Lúc ghi là [G7], vì không Issue G7 nào đang mở cho sửa `docs/testing/nghiem-thu-v1.md`. Owner 04/11: không tạo Issue riêng cho mục này, gộp vào lần sửa sau của `docs/testing/nghiem-thu-v1.md` (lần gom sổ không đề xuất nó thành Issue riêng). Lần sửa đó là T-355 (#1017, nghiệm thu lượt L3), nên mục gắn nhãn Issue này. Gộp vào lần chạm sau của file:
-  - **[T-355 #1017]** NIT `docs/testing/nghiem-thu-v1.md:164` (NT-KH-09, Kết quả mong đợi) và `:279` (NT-CD-04, Kết quả mong đợi): dấu chấm trong ngoặc kép rồi thêm dấu chấm ngay sau, cùng dạng với chỗ T-354 sửa ở NT-AI-03 (`:204`): `…chuyển sang RE mới.". KH chuyển sang Kanban…` và `…"Nhập không gộp dữ liệu.". Hủy → …`. Thân PR #1014 nêu hai chỗ này là ngoài phạm vi (Issue #1012 chỉ cho đổi dấu câu của NT-AI-03). Hướng sửa: `…RE mới."; KH chuyển…` và `…dữ liệu."; Hủy →…`, như NT-AI-02 (`:203`) và NT-AI-03.
+- Một ghi chú không chặn của review PR #1020 (T-355, #1017: nghiệm thu lượt L3 trên exe `3d237b0`; NT-KH-09, NT-CD-04 đổi dấu câu sau câu báo; `REVIEW: PASS` @`20a6019`, mức low; merge 04/11, squash (`abd10b9`)). Số dòng theo `main` `abd10b9`. Mục [G7]: Issue đang mở #1019 (T-356) chỉ cho sửa ngoặc ở Thao tác của NT-TQ-01 (`:83`) trong `docs/testing/nghiem-thu-v1.md`, không cho sửa chỗ này. Gắn lại nhãn khi có Issue. Gộp vào lần chạm sau của file:
+  - **[G7]** NIT `docs/testing/nghiem-thu-v1.md:40` (dòng L3 của "Các lượt thử", ô Exe (SHA)): "cũng là exe của `main` hiện tại (sau `3d237b0` chỉ đổi tài liệu)" là mốc theo thời gian. File là sổ ghi lâu dài, nên câu này sai khi `main` có commit code sau này. Hướng sửa: neo SHA, vd. "cũng là exe của `main` tới `331e7a0` (sau `3d237b0` chỉ đổi tài liệu)"; các ô khác của dòng L3 không đổi.
 
 ## RESOLVED
+
+- Ghi chú review PR #1014 — T-355 (#1017, PR #1020, `REVIEW: PASS` @`20a6019`):
+  - #1014 NIT, `docs/testing/nghiem-thu-v1.md:165` (NT-KH-09, Kết quả mong đợi) và `:280` (NT-CD-04, Kết quả mong đợi): `…chuyển sang RE mới.". KH chuyển sang Kanban…` thành `…chuyển sang RE mới."; KH chuyển sang Kanban…`, và `…"Nhập không gộp dữ liệu.". Hủy → …` thành `…"Nhập không gộp dữ liệu."; Hủy → …`, như NT-AI-02 (`:204`) và NT-AI-03 (`:205`). Phần còn lại của hai dòng không đổi.
 
 - Ghi chú review PR #1007 — T-354 (#1012, PR #1014, `REVIEW: PASS` @`9e06386`):
   - #1007, `docs/testing/nghiem-thu-v1.md:23` (mục "Dữ liệu", ý "Seed vừa sinh không có lịch Chưa ghi kết quả"): danh sách thêm NT-TR-12, nay đủ 9 dòng (NT-LH-03, 15, 21, 22, 26, NT-KH-09, NT-TR-07, NT-TR-12, NT-TM-15). Dòng NT-TR-12 (`:316`) giữ nguyên, kể cả Thao tác: Owner 04/11 chọn thêm dòng vào danh sách thay vì đổi Thao tác sang "Sửa kết quả một lịch Đã gặp đã qua".
