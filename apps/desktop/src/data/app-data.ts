@@ -276,13 +276,13 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
   // (a file damaged inside never becomes the newest backup, DR-51, DR6-06); saves wait for that
   // copy, so the migration's save never lands first, and nothing is saved when the check or the
   // copy fails (the app then does not start). A failed save keeps the storage's error as it came
-  // (DR6-07).
+  // (DR6-07). Only a database with storage saves (`persist` of `open`, `openFrom`): web mode keeps
+  // the queue for its status alone, so nothing here checks for storage (DR6-163).
   let backedUp = Promise.resolve();
   const saves = createPersistQueue(async (bytes) => {
-    if (!storage) return;
     await backedUp;
     const start = performance.now();
-    await storage.save(bytes);
+    await storage!.save(bytes);
     // Read by the perf probe (e2e/perf): "lưu DB" of spec Phase 6 §5.2. Cleared once there are
     // MAX_SAVE_MEASURES, so a long session does not pile them up (review of PR 572) and their count
     // still changes with every save, which the probe waits for.
