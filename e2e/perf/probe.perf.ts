@@ -203,8 +203,16 @@ const status = (text: string) => ({ selector: '[role="status"]', text });
 const kind = (name: string) =>
   page.getByRole('radiogroup', { name: 'Loại kỳ' }).getByRole('radio', { name });
 const list = () => page.getByRole('table', { name: 'Danh sách lịch hẹn' });
-/** The met rows of the list: the ones metYear counts are the ones next-year picks from. */
-const metRows = () => list().getByRole('row').filter({ hasText: 'Đã gặp' });
+/**
+ * The met rows of the list, read from the Trạng thái cell: not a row whose customer name, say,
+ * holds "Đã gặp" (DR6-177). The ones metYear counts are the ones next-year picks from.
+ */
+async function metRows(): Promise<Locator> {
+  const status = list().getByRole('columnheader', { name: 'Trạng thái', exact: true });
+  const column = await status.evaluate((th) => (th as HTMLTableCellElement).cellIndex);
+  const met = page.getByRole('cell').nth(column).getByText('Đã gặp', { exact: true });
+  return list().getByRole('row').filter({ has: met });
+}
 const calendar = () => page.getByRole('region', { name: /^Lịch tháng/ });
 const detail = () => page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' });
 const inDay = () => page.getByRole('region', { name: /^Trong ngày/ }).getByRole('listitem');
@@ -284,7 +292,7 @@ async function metYear(): Promise<MetYear> {
   for (let back = 0; ; back++) {
     const heading = (await yearHeading().textContent()) ?? '';
     await oldestFirst();
-    const count = await metRows().count();
+    const count = await (await metRows()).count();
     if (count >= RUNS) {
       process.stdout.write(`  ${heading}, ${back} back: ${count} met\n`);
       return { heading, back };
@@ -553,7 +561,7 @@ async function nextAppointment(i: number, period: 'month' | 'year', inYear: MetY
     await toMetYear(inYear);
     // Oldest first: the newest hundred shown are all still ahead.
     await oldestFirst();
-    await metRows().nth(i).getByRole('button').first().click();
+    await (await metRows()).nth(i).getByRole('button').first().click();
   }
   await next.click();
   const form = page.getByRole('dialog');

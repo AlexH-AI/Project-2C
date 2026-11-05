@@ -101,13 +101,33 @@ const notOpen = (pr) =>
     ? null
     : { done: true, code: EXIT.look, text: `PR #${pr.number} is ${pr.state}` };
 
+// The run a check belongs to, from its details URL (…/actions/runs/<id>/job/<job>).
+const runOf = (check) => /\/actions\/runs\/(\d+)\//.exec(check.detailsUrl ?? '')?.[1] ?? null;
+// How a run of the PR ends with a verdict on the code; any other end (cancelled, startup_failure…)
+// says nothing of it.
+const VERDICTS = ['success', 'failure'];
+
+/** The newest `pull_request` run of the PR's branch made at or after `since`, or null. */
+function newestRunOfPr(pr, all, since) {
+  return all
+    .filter(
+      (run) =>
+        run.event === 'pull_request' &&
+        run.head_branch === pr.headRefName &&
+        Date.parse(run.created_at) >= Date.parse(since),
+    )
+    .reduce((a, b) => (a && Date.parse(a.created_at) >= Date.parse(b.created_at) ? a : b), null);
+}
+
 /**
  * CI on the PR's head: done once no check runs and every workflow run of the head ended, since a
  * job that `needs` another, like the exe build, gets its check only when that one ends. `runs()`
  * gives those runs (Actions API); it is called only once every check ended, so a wait does not
  * read them each poll. With `not`, first a head other than that SHA (a push after a fix). With
- * `since`, also a run made at or after that time: after `gh pr close` + `gh pr reopen` the head
- * keeps its old checks, all ended, until GitHub makes the new run. A docs-only PR has no CI at all
+ * `since`, the verdict is that of the newest `pull_request` run of the PR's branch made at or after
+ * that time, read from its own checks: after `gh pr close` + `gh pr reopen` the head keeps its old
+ * checks, all ended, until GitHub makes the new run, and a run of another event (workflow_dispatch)
+ * or one cancelled says nothing of the reopened PR (DR6-176). A docs-only PR has no CI at all
  * (ci.yml `paths`), so it is done at once; `files()` gives the PR's files to tell, and is called
  * only while CI has no check.
  */
@@ -127,10 +147,11 @@ export function ciState(pr, { not = null, since = null, runs = () => [], files =
   }
   if (pending > 0) return { done: false, text: `${checksSummary(rollup)} @${head}` };
   const all = runs();
-  if (since && !all.some((run) => Date.parse(run.created_at) >= Date.parse(since))) {
+  const own = since ? newestRunOfPr(pr, all, since) : null;
+  if (since && !own) {
     return {
       done: false,
-      text: `${checksSummary(rollup)} @${head}, no workflow run since ${since} yet`,
+      text: `${checksSummary(rollup)} @${head}, no pull_request run of PR #${pr.number} since ${since} yet`,
     };
   }
   const running = all.filter((run) => run.status !== 'completed').map((run) => run.name);
@@ -140,13 +161,32 @@ export function ciState(pr, { not = null, since = null, runs = () => [], files =
       text: `${checksSummary(rollup)} @${head}, still running: ${running.join(', ')}`,
     };
   }
-  if (fail > 0) {
-    const failed = rollup
-      .filter((c) => checkCounts([c]).fail === 1)
-      .map((c) => c.name ?? c.context);
+  let checks = rollup;
+  if (own) {
+    if (!VERDICTS.includes(own.conclusion)) {
+      return {
+        done: true,
+        code: EXIT.look,
+        text: `CI run ${own.id} of PR #${pr.number} ended ${own.conclusion} @${head}`,
+      };
+    }
+    checks = rollup.filter((c) => runOf(c) === String(own.id));
+    if (checks.length === 0) {
+      return {
+        done: false,
+        text: `${checksSummary(rollup)} @${head}, no check of run ${own.id} yet`,
+      };
+    }
+  }
+  const failed = checks.filter((c) => checkCounts([c]).fail === 1).map((c) => c.name ?? c.context);
+  if (failed.length) {
     return { done: true, code: EXIT.bad, text: `CI red @${head}: ${failed.join(', ')}` };
   }
-  return { done: true, code: EXIT.done, text: `CI green @${head}: ${pass} pass` };
+  return {
+    done: true,
+    code: EXIT.done,
+    text: `CI green @${head}: ${checkCounts(checks).pass} pass`,
+  };
 }
 
 /** The latest REVIEW comment, once it names `sha` (default: the head). */
