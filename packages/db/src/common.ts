@@ -98,11 +98,12 @@ export function readsBackAsIs(text: string): boolean {
 }
 
 /**
- * A label such as a model name or prompt version: text, not blank, that the database reads back as
- * it is (`readsBackAsIs`).
+ * A label such as a model name or prompt version: text with something to see (`normalizeText`, as
+ * the rest of the app's checks read blank, not `trim`, which keeps U+200B or U+3164: DR6-159), that
+ * the database reads back as it is (`readsBackAsIs`).
  */
 export function isLabel(text: unknown): text is string {
-  return typeof text === 'string' && text.trim() !== '' && readsBackAsIs(text);
+  return typeof text === 'string' && normalizeText(text) !== '' && readsBackAsIs(text);
 }
 
 /** One instant for both columns, so a deleted row is never updated after its deletion. */

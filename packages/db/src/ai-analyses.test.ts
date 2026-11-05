@@ -125,6 +125,12 @@ const ISSUE = { code: 'V3', path: 'needs[0].text', detail: 'cụm cấm' };
 /** The longest model name stored (DR5-16). */
 const MAX_MODEL = 100;
 
+/**
+ * Model names with nothing to see that `trim` keeps: zero width space, word joiner, next line,
+ * Hangul filler, Mongolian vowel separator (DR6-159).
+ */
+const BLANK_MODELS = ['\u{200B}', '\u{2060}', '\u{85}', '\u{3164}', '\u{180E}'];
+
 const rejected = (customerId: string, kycVersionId: string): NewAiAnalysis =>
   analysis(customerId, kycVersionId, {
     status: 'REJECTED',
@@ -386,6 +392,8 @@ describe('recordAiAnalysis', () => {
       { promptTokens: 10 },
       { ...live, model: null },
       { ...live, model: ' ' },
+      // DR6-159: blank as `normalizeText` reads it, the rest of the app's checks too.
+      ...BLANK_MODELS.map((model) => ({ ...live, model })),
       { ...live, model: 'glm\0-5.3' },
       // DR6-137: what sql.js reads back as other text, past the 100 of the import (rule 12).
       { ...live, model: `${'x'.repeat(MAX_MODEL - 1)}\uD800` },
@@ -534,9 +542,15 @@ describe('recordAiAnalysis', () => {
       validator: undefined,
     });
 
+    expect(analysisLabelsFit(fields('glm-5.3'))).toBe(true);
     expect(analysisLabelsFit(fields('g'.repeat(MAX_MODEL)))).toBe(true);
     expect(analysisLabelsFit(fields(`${'g'.repeat(MAX_MODEL - 2)}😀`))).toBe(true);
-    for (const model of [`${'x'.repeat(MAX_MODEL - 1)}\uD800`, '\uDC00glm-5.3', '\u{FEFF}alpha']) {
+    for (const model of [
+      `${'x'.repeat(MAX_MODEL - 1)}\uD800`,
+      '\uDC00glm-5.3',
+      '\u{FEFF}alpha',
+      ...BLANK_MODELS,
+    ]) {
       expect(analysisLabelsFit(fields(model))).toBe(false);
     }
   });

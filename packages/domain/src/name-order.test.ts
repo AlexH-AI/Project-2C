@@ -1,7 +1,28 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { byName, LATIN } from './name-order';
 
 const sorted = (names: readonly string[]) => [...names].sort(byName);
+
+/** The module as a session loads it: no key kept yet. */
+async function newSession() {
+  vi.resetModules();
+  return import('./name-order');
+}
+
+/**
+ * Every name of 1–4 of these characters, as stored: spaces single, none at either end. 2 022 names
+ * mixing ASCII, full-width and Arabic-Indic digits, on which the collator alone goes round (DR6-112).
+ */
+const MIXED = (() => {
+  let names = [''];
+  const all = new Set<string>();
+  for (let length = 1; length <= 4; length++) {
+    names = names.flatMap((name) => [...'01１٢aA '].map((char) => name + char));
+    for (const name of names) all.add(name.replace(/ +/g, ' ').trim());
+  }
+  all.delete('');
+  return [...all];
+})();
 
 /** Fisher–Yates on a Lehmer generator (MINSTD): the same shuffles, one after another, each run. */
 function shuffler(seed = 1) {
@@ -76,18 +97,43 @@ describe('byName', () => {
   });
 
   it('sorts 2 022 names mixing ASCII, full-width and Arabic-Indic digits one way, however shuffled', () => {
-    // Every name of 1–4 of these characters, as stored: spaces single, none at either end.
-    let names = [''];
-    const all = new Set<string>();
-    for (let length = 1; length <= 4; length++) {
-      names = names.flatMap((name) => [...'01１٢aA '].map((char) => name + char));
-      for (const name of names) all.add(name.replace(/ +/g, ' ').trim());
-    }
-    all.delete('');
     const shuffled = shuffler();
-    expect(all.size).toBe(2022);
-    const first = sorted(shuffled(all));
-    for (let round = 1; round < 20; round++) expect(sorted(shuffled(all))).toEqual(first);
+    expect(MIXED).toHaveLength(2022);
+    const first = sorted(shuffled(MIXED));
+    for (let round = 1; round < 20; round++) expect(sorted(shuffled(MIXED))).toEqual(first);
+  });
+
+  // DR6-158: past the 20 000 keys kept, the keys start again. A name compared as it is would bring
+  // DR6-112 back for every name after the first 20 000 of a session.
+  it('sorts the 2 022 names one way after a session read 20 000 others', async () => {
+    const session = await newSession();
+    for (let n = 0; n <= 20_000; n++) session.byName(`Lan ${n}`, 'Lan');
+    const shuffled = shuffler();
+
+    const first = shuffled(MIXED).sort(session.byName);
+    for (let round = 1; round < 20; round++) {
+      expect(shuffled(MIXED).sort(session.byName)).toEqual(first);
+    }
+    expect(first).toEqual(sorted(MIXED));
+  });
+
+  // DR6-158: a sort reads a name about log₂ n times, and working its key out each time made sorting
+  // the 10 255 appointments of the load data by customer seven times as long (DR6-136). Each key
+  // worked out tests the name against `LATIN` once, so its tests count the keys: a count, not a
+  // time, holds on a slow runner.
+  it('works the key of a name out once, however many times a sort reads it', async () => {
+    const session = await newSession();
+    const keys = vi.spyOn(session.LATIN, 'test');
+    // 1 000 customers, half of them with a full-width number, as many rows as the load data.
+    const customers = Array.from({ length: 1_000 }, (_, n) =>
+      n % 2 ? `Nguyễn Văn ${n}` : `KH ${String.fromCodePoint(0xff10 + (n % 10))}${n}`,
+    );
+    const rows = Array.from({ length: 10_255 }, (_, n) => customers[n % customers.length]!);
+
+    const sortedRows = shuffler()(rows).sort(session.byName);
+
+    expect(keys).toHaveBeenCalledTimes(customers.length);
+    expect(sortedRows).toEqual(sorted(rows));
   });
 
   // DR6-136: the key of each name sorted is kept, for 20 000 names; past them the keys start again.
