@@ -208,8 +208,8 @@ const list = () => page.getByRole('table', { name: 'Danh sách lịch hẹn' });
  * holds "Đã gặp" (DR6-177). The ones metYear counts are the ones next-year picks from.
  */
 async function metRows(): Promise<Locator> {
-  const status = list().getByRole('columnheader', { name: 'Trạng thái', exact: true });
-  const column = await status.evaluate((th) => (th as HTMLTableCellElement).cellIndex);
+  const header = list().getByRole('columnheader', { name: 'Trạng thái', exact: true });
+  const column = await header.evaluate((th) => (th as HTMLTableCellElement).cellIndex);
   const met = page.getByRole('cell').nth(column).getByText('Đã gặp', { exact: true });
   return list().getByRole('row').filter({ has: met });
 }
