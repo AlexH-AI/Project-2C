@@ -190,6 +190,20 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - DeepSeek cost (G4): "Chỉ credit của gói Pro". No credits are bought; if credits run out or the Pro plan lapses, DeepSeek stops and the OWNER is asked.
   - The OWNER approved the design in chat the same day ("Duyệt, viết PR"); the remaining proposals of §L5.11 are chosen at G1 on the plan PR.
   - G1 of the plan (PR #1026), the same day in chat: "chọn đề xuất 5–11 như PR ghi", all seven as proposed. The OWNER also had the four non-blocking notes of the review at `272f6f1` fixed with it; two of them widen proposal 10 (DeepSeek puts Node 24 first on PATH in every command that runs `node`, `pnpm`, vitest or Playwright; the preparation step deletes a leftover `src-tauri\target\` instead of stopping to ask).
+- 2026-11-05: OWNER choices in wave 2 of round 5 (DeepSeek), recorded in `docs/reviews/raw/2026-11-05/common-baseline.md` and the synthesis (T-362, #1042, §10.1). None was asked as a question in an Issue or PR.
+  - The six Claude package sessions in the review worktrees stay in the sidebar, not archived, and are not reopened until wave 2 ends: their transcripts are denied for writing after `deny`.
+  - The session temp folder that Claude Code now keeps at `%TEMP%\claude\<hash of the working folder>\` (which `dot2.mjs` does not deny) is moved by hand into `deep-review-1-6-r5\claude\_temp-9baf74bac889a6ec\`, so `deny` covers it with `claude\`.
+  - `scan` stopping on exactly two transcripts of the main checkout (the wave 2 preparation session and the T-359 session) counts as a pass.
+  - Permission mode Default for every package, as in round 4: the trial session was asked once. The app's Memory is off (0 entries). For credits the OWNER records only what each session used: 200.71 for wave 2, 187.38 for the six packages.
+
+  Synthesis: `docs/reviews/2026-11-05-deep-review-phase-1-6-luot-5-tong-hop.md`.
+- 2026-11-05: OWNER decisions on deep review Phase 1–6 round 5 (synthesis above, §9). The round found R1 24 / 25 fixed with DR6-145 partly fixed, R2 28 / 28 fixed, no regression; 41 new findings → 20 issues DR6-158…177 (0 Medium, 13 Low, 7 Nit), one finding rejected. Not ready for v1.0 at `37a80b6` because everything is fixed before G7 (K47) and DR6-145 is partly fixed. Each question only chose how to fix; the OWNER took every proposal as written:
+  - Q1 (a), DR6-160: the trash restore button tells all three cases apart. An appointment's or policy's adds the customer code when the customer's name matches another customer with a row in the trash (`customer.withCode` of 9b); two people alike in name, role and team add the deletion time; backup import accepts only the customer code the app makes (`K-` + 4 Crockford base32 characters), a new import rule under K1 / R2-02.
+  - Q2 (a), DR6-165: the Mock extraction's cost after T-330 / T-336 is accepted with no code change; its new baseline (first call of the process 28.5 ms, the 3 551 real notes 103.5 ms, first click on screen 53 ms) goes into `docs/metrics/phase-6.md`.
+  - Q3 (a), DR6-169: the separator guard also catches its marks written as `\uXXXX` escapes in strings and templates and as named or numeric HTML entities in JSX text.
+  - Q4 (a), DR6-170: the nine overflowing places are fixed, and one e2e sweeps every main screen with long unbroken names at 1 100 and 1 440 px.
+
+  Fix issues: #1045…#1052 (T-363…T-370, synthesis §8.5).
 
 ## Next decision
 
