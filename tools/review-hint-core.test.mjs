@@ -87,6 +87,8 @@ describe('reviewedPr', () => {
     expect(reviewedPr(`${linked}${brief}`)).toBe(948);
     expect(reviewedPr(`${linked}\nreview PR #950 giúp anh`)).toBe(950);
     expect(reviewedPr(`${linked}review lại PR 950`)).toBe(950);
+    // Each block ends at its own closing tag, not at the last one (review lượt 5, H6).
+    expect(reviewedPr(`${linked}\nreview PR #950 giúp anh\n${linked}`)).toBe(950);
   });
 
   it('needs the word review', () => {

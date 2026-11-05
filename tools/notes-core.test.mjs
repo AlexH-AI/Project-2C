@@ -284,6 +284,9 @@ describe('relatedNotes', () => {
       'packages/d*/src/schema.ts',
       'packages/*/*.ts',
       'packages/*',
+      // Ends at the folder's own depth: names the folder, no path below it (review lượt 5, R156b).
+      'packages/*/src',
+      'packages/a*/src',
     ]) {
       expect(seen(target), target).toEqual([]);
     }

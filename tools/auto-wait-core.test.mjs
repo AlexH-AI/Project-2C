@@ -18,10 +18,12 @@ const review = (verdict, sha, who = 'OWNER') => ({
   authorAssociation: who,
   body: `REVIEW: ${verdict}\n\nPR #941, head \`${sha}\`, mức \`low\`.`,
 });
+const BRANCH = 'task/T-941-wait';
 const pr = (overrides = {}) => ({
   number: 941,
   state: 'OPEN',
   headRefOid: HEAD,
+  headRefName: BRANCH,
   statusCheckRollup: [check('Verify', 'SUCCESS'), check('e2e', 'SUCCESS')],
   comments: [],
   changedFiles: 1,
@@ -203,29 +205,106 @@ describe('ciState', () => {
     expect(ciState(pr({ statusCheckRollup: [] }), { not: 'abc1234', files }).done).toBe(false);
   });
 
-  it('with since, waits for a workflow run made at or after it (a reopened PR)', () => {
+  describe('with since (a reopened PR)', () => {
     const since = '2026-11-02T10:56:33Z';
-    const old = { name: 'CI', status: 'completed', created_at: '2026-11-02T09:12:00Z' };
-    expect(ciState(pr(), { since, runs: () => [old] })).toEqual({
-      done: false,
-      text: 'CI 2 pass, 0 fail, 0 pending @abc1234, no workflow run since 2026-11-02T10:56:33Z yet',
+    // A check of a workflow run, as gh gives it: its details URL names the run.
+    const ranIn = (id, name, conclusion, status) => ({
+      ...check(name, conclusion, status),
+      detailsUrl: `https://github.com/AlexH-AI/Project-2C/actions/runs/${id}/job/${id}7`,
     });
-    const fresh = { name: 'CI', status: 'completed', created_at: since };
-    expect(ciState(pr(), { since, runs: () => [old, fresh] })).toEqual({
-      done: true,
-      code: EXIT.done,
-      text: 'CI green @abc1234: 2 pass',
+    const run = (id, created_at, overrides = {}) => ({
+      id,
+      name: 'CI',
+      event: 'pull_request',
+      head_branch: BRANCH,
+      status: 'completed',
+      conclusion: 'success',
+      created_at,
+      ...overrides,
     });
-    // The real case after gh pr reopen: the new run is made after the PR's closedAt.
-    const later = { ...fresh, created_at: '2026-11-02T10:57:10Z' };
-    expect(ciState(pr(), { since, runs: () => [old, later] })).toEqual({
-      done: true,
-      code: EXIT.done,
-      text: 'CI green @abc1234: 2 pass',
+    // Before gh pr close: run 1, all ended green; the checks it left stay on the head.
+    const old = run(1, '2026-11-02T09:12:00Z');
+    const oldChecks = [ranIn(1, 'Verify', 'SUCCESS'), ranIn(1, 'e2e', 'SUCCESS')];
+    // The run of gh pr reopen, made after the PR's closedAt, and its checks.
+    const fresh = run(2, '2026-11-02T10:57:10Z');
+    const freshChecks = [ranIn(2, 'Verify', 'SUCCESS'), ranIn(2, 'e2e', 'SUCCESS')];
+    const waitingFor = `CI 2 pass, 0 fail, 0 pending @abc1234, no pull_request run of PR #941 since ${since} yet`;
+
+    it('waits for a pull_request run of the PR made at or after it', () => {
+      const reopened = pr({ statusCheckRollup: oldChecks });
+      expect(ciState(reopened, { since, runs: () => [old] })).toEqual({
+        done: false,
+        text: waitingFor,
+      });
+      const both = pr({ statusCheckRollup: [...oldChecks, ...freshChecks] });
+      for (const made of [fresh, run(2, since)]) {
+        expect(ciState(both, { since, runs: () => [old, made] })).toEqual({
+          done: true,
+          code: EXIT.done,
+          text: 'CI green @abc1234: 2 pass',
+        });
+      }
+      const going = { ...fresh, status: 'in_progress', conclusion: null };
+      expect(ciState(reopened, { since, runs: () => [old, going] }).done).toBe(false);
+      // Without since, the ended checks on the head are the answer.
+      expect(ciState(reopened, { runs: () => [old] })).toMatchObject({
+        done: true,
+        code: EXIT.done,
+      });
     });
-    const going = { ...later, status: 'queued' };
-    expect(ciState(pr(), { since, runs: () => [old, going] }).done).toBe(false);
-    expect(ciState(pr(), { runs: () => [old] })).toMatchObject({ done: true, code: EXIT.done });
+
+    it('does not take a run of another event or branch for the run of the PR', () => {
+      const reopened = pr({ statusCheckRollup: oldChecks });
+      for (const other of [
+        run(3, fresh.created_at, { event: 'workflow_dispatch' }),
+        run(3, fresh.created_at, { event: 'push' }),
+        run(3, fresh.created_at, { head_branch: 'task/T-942-other' }),
+      ]) {
+        expect(ciState(reopened, { since, runs: () => [old, other] }), other.event).toEqual({
+          done: false,
+          text: waitingFor,
+        });
+      }
+    });
+
+    it('does not call CI green on a run of the PR that was cancelled', () => {
+      const reopened = pr({ statusCheckRollup: oldChecks });
+      const cancelled = { ...fresh, conclusion: 'cancelled' };
+      expect(ciState(reopened, { since, runs: () => [old, cancelled] })).toEqual({
+        done: true,
+        code: EXIT.look,
+        text: 'CI run 2 of PR #941 ended cancelled @abc1234',
+      });
+      const failedToStart = { ...fresh, conclusion: 'startup_failure' };
+      expect(ciState(reopened, { since, runs: () => [failedToStart] }).code).toBe(EXIT.look);
+      // Closed and reopened once more: the newest run of the PR decides.
+      const again = run(4, '2026-11-02T11:20:00Z');
+      const rollup = [...oldChecks, ranIn(4, 'Verify', 'SUCCESS')];
+      expect(
+        ciState(pr({ statusCheckRollup: rollup }), { since, runs: () => [cancelled, again] }),
+      ).toEqual({ done: true, code: EXIT.done, text: 'CI green @abc1234: 1 pass' });
+    });
+
+    it('reads only the checks of that run, not the ones left from before', () => {
+      const failedBefore = [ranIn(1, 'Verify', 'SUCCESS'), ranIn(1, 'e2e', 'FAILURE')];
+      expect(
+        ciState(pr({ statusCheckRollup: [...failedBefore, ...freshChecks] }), {
+          since,
+          runs: () => [old, fresh],
+        }),
+      ).toEqual({ done: true, code: EXIT.done, text: 'CI green @abc1234: 2 pass' });
+      const failedNow = [ranIn(2, 'Verify', 'SUCCESS'), ranIn(2, 'e2e', 'FAILURE')];
+      expect(
+        ciState(pr({ statusCheckRollup: [...oldChecks, ...failedNow] }), {
+          since,
+          runs: () => [old, { ...fresh, conclusion: 'failure' }],
+        }),
+      ).toEqual({ done: true, code: EXIT.bad, text: 'CI red @abc1234: e2e' });
+      // The run ended, but the head shows only the checks from before it.
+      expect(ciState(pr({ statusCheckRollup: oldChecks }), { since, runs: () => [fresh] })).toEqual(
+        { done: false, text: 'CI 2 pass, 0 fail, 0 pending @abc1234, no check of run 2 yet' },
+      );
+    });
   });
 
   it('is done at once for a docs-only PR, which CI skips', () => {
@@ -358,6 +437,10 @@ describe('titleState', () => {
     const other = [found(990, 'OPEN', 'docs: record the notes of the PR 9390 review')];
     expect(titleState(other, 'record the notes of the PR 939').done).toBe(false);
     expect(titleState(other, TEXT).done).toBe(false);
+    // Nor one glued before it (review lượt 5, W13b).
+    const before = [found(1940, 'OPEN', 'docs: record the notes of the PR 1939 review')];
+    expect(titleState(before, '939').done).toBe(false);
+    expect(titleState(before, 'PR 1939').done).toBe(true);
   });
 
   it('skips PRs closed without merging and picks the newest of the rest', () => {
@@ -474,6 +557,16 @@ describe('waitFor', () => {
       code: EXIT.look,
       text: '5 reads failed in a row; last: gh pr view failed: HTTP 502',
     });
+  });
+
+  it('counts only failed reads in a row: a good read between them starts the count again', async () => {
+    const boom = new Error('gh pr view failed: HTTP 502');
+    const flaky = [boom, waiting, boom, waiting, boom, waiting, boom, waiting, boom, waiting];
+    const c = clock();
+    expect(await waitFor(reads(...flaky, green), { timeoutMs: 600000, everyMs: 30000, ...c })).toBe(
+      green,
+    );
+    expect(c.slept).toHaveLength(10);
   });
 
   it('names a failed read as the last thing seen when time runs out', async () => {

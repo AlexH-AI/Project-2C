@@ -6,8 +6,9 @@
 //   node tools/auto-wait.mjs pr <issue>                an open PR closes the Issue
 //   node tools/auto-wait.mjs ci <N> [--not <sha>]      CI finished on the PR's head; with --not,
 //                         [--since <time>]             first a head other than that SHA (a push);
-//                                                      with --since, a workflow run made at or
-//                                                      after that UTC time (a reopened PR)
+//                                                      with --since, the checks of the PR's newest
+//                                                      pull_request run made at or after that UTC
+//                                                      time (a reopened PR), cancelled: exit 3
 //   node tools/auto-wait.mjs review <N> [--sha <sha>]  the latest REVIEW names the head (or <sha>)
 //   node tools/auto-wait.mjs title <text>              an open or merged PR whose title holds it
 //   node tools/auto-wait.mjs sleep                     only the time
@@ -16,7 +17,8 @@
 //   --once           one read, no waiting (exit 2 then means "not yet"): a state within a turn
 //
 // Exit 0 done and good (green / PASS / found), 1 done and bad (red / CHANGES), 2 timed out,
-// 3 look at it (PR no longer open, several PRs close the Issue, five failed reads in a row),
+// 3 look at it (PR no longer open, several PRs close the Issue, five failed reads in a row, the
+// run of a reopened PR cancelled),
 // 64 usage. The last stdout line is "AUTO-WAIT <mode> <target>: <result>". It polls GitHub, which
 // the app asks sessions not to do for CI: the app sends no event when CI turns green or a REVIEW
 // comment lands (ADR-0001 M11). Pure part: auto-wait-core.mjs.
@@ -39,18 +41,21 @@ const gh = (args) => JSON.parse(run('gh', args, { timeout: 30000 }));
 
 // What ciState / reviewState read. Not pr-status's loadPr: it also reads stacked PRs, the base CI
 // tested and main's commits since, 5 + k gh calls a read where one does (review #944).
-const PR_FIELDS = 'number,state,headRefOid,statusCheckRollup,comments,changedFiles';
+const PR_FIELDS = 'number,state,headRefOid,headRefName,statusCheckRollup,comments,changedFiles';
 
 /** The PR as ciState / reviewState read it; ciState reads the files itself, when it needs them. */
 const readPr = (number) => gh(['pr', 'view', String(number), '--json', PR_FIELDS]);
 
-/** The workflow runs of a commit: CI is over only when they all ended (see ciState). */
+/**
+ * The workflow runs of a commit: CI is over only when they all ended, and with --since the verdict
+ * is that of the PR's own run (see ciState).
+ */
 const runsOf = (sha) =>
   gh([
     'api',
     `repos/{owner}/{repo}/actions/runs?head_sha=${sha}&per_page=100`,
     '--jq',
-    '[.workflow_runs[] | {name, status, created_at}]',
+    '[.workflow_runs[] | {id, name, event, head_branch, status, conclusion, created_at}]',
   ]);
 
 // One read of GitHub per mode.
