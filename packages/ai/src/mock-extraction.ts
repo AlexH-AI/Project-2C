@@ -240,8 +240,11 @@ const KH_SAYS = String.raw`kh ${SAYING}`;
  */
 const HEADING = String.raw`(?:ghi chú|chú ý|lưu ý|chú thích|gặp kh)\s*:\s*`;
 
-/** Spaces, maybe a bullet or a number, at the start of a clause: "- ", "1) ". */
-const BULLET = String.raw`\s*(?:(?:[-*•+]|\d{1,2}\))\s+)?`;
+/**
+ * Spaces, maybe a bullet or a number, at the start of a clause: "- ", "– " (an en dash, as Word
+ * writes a list, DR6-166), "1) ".
+ */
+const BULLET = String.raw`\s*(?:(?:[-–*•+]|\d{1,2}\))\s+)?`;
 
 /** `BULLET` at the start of a clause the KH goes on to (`clausesOf`). Sticky; always matches. */
 const BULLETED = new RegExp(BULLET, 'uy');
@@ -338,16 +341,24 @@ function howManyDied(match: RegExpExecArray): number {
   return match[1] ? Number(match[1]) : NUMBER_WORD.split('|').indexOf(match[2]!.toLowerCase()) + 1;
 }
 
-/** A child, and a death said any way: "con út đã mất", "mất một con", "bé qua đời". */
-const CHILD = new RegExp(String.raw`(?<!\p{L})(?:${CHILD_WORD})(?!\p{L})`, 'iu');
+/**
+ * A child, and a death said any way: "con út đã mất", "mất một con", "bé qua đời". Not the "bé" of
+ * "nhỏ bé", said of a size (DR6-166); the other sizes that name no one else (`NAMES_NO_ONE`) may
+ * name a child who died: "Bé nhỏ / Bé nhất / Bé Tí đã mất" (Owner 05/11/2026).
+ */
+const CHILD = new RegExp(
+  String.raw`(?<!\p{L})(?:${CHILD_WORD})(?<!(?<!\p{L})nhỏ bé)(?!\p{L})`,
+  'iu',
+);
 const DEATH = /(?<!\p{L})(?:mất|qua đời)(?!\p{L})/giu;
 
 /**
  * A child said to have died in any other way than `DEAD_CHILDREN` (outside `covered`): where its
  * clause first names the child or the death, a value of Số con that is never a simple statement,
  * so a count said before is not the last value said of the KH ("KH có 2 con. Con út đã mất.", rule
- * 3). Anything else said of "con" with "mất" too, the safe way (CX-A4): "Con trai mất việc.". Only
- * the clauses of such a death are read, each once.
+ * 3). Anything else said of "con" with "mất" too, the safe way (CX-A4): "Con trai mất việc."; but
+ * not "nhỏ bé" ("KH có 3 con. Vụ mất điện ở căn nhà nhỏ bé.", `CHILD`). Only the clauses of such a
+ * death are read, each once.
  */
 function otherDeaths(note: string, clause: Reader, covered: Uint8Array) {
   const clauseAt = clause((part) => part);

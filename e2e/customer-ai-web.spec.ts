@@ -64,6 +64,10 @@ test('copies the message, opens chatgpt.com, saves a pasted answer as CURRENT Ch
   const box = panel.getByRole('textbox', { name: 'Dán kết quả' });
   await box.fill('   ');
   await expect(save).toBeDisabled();
+  // Characters that show nothing are blank too, as in every other box: no attempt (DR6-168).
+  await box.fill(' \u{200B}\n\u{2060}\u{3164} ');
+  await expect(save).toBeDisabled();
+  await expect(panel).toContainText('Lần thử 1 / 2');
 
   await box.fill(GOOD);
   await save.click();

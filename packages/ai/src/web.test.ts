@@ -271,13 +271,18 @@ describe('checkWebAnswer', () => {
     });
   });
 
+  /** Characters that show nothing (K20): a word joiner, a Hangul filler. */
+  const [WJ, HANGUL_FILLER] = [String.fromCodePoint(0x2060), String.fromCodePoint(0x3164)];
+
   it.each([
-    ['empty', ''],
-    ['blank', ' \n\t '],
-    ['longer than 20 000 characters', `${JSON.stringify(GOOD)}${' '.repeat(20_000)}`],
-  ])('does not count a paste that is %s', (_, text) => {
+    ['empty', '', 'EMPTY'],
+    ['blank', ' \n\t ', 'EMPTY'],
+    // Blank as every other box of the app reads it (K20, DR6-168).
+    ['only invisible characters', `${ZWSP}${WJ}${HANGUL_FILLER}`, 'EMPTY'],
+    ['invisible characters and white space', ` ${ZWSP}\n${WJ}\t${HANGUL_FILLER} `, 'EMPTY'],
+    ['longer than 20 000 characters', `${JSON.stringify(GOOD)}${' '.repeat(20_000)}`, 'TOO_LONG'],
+  ] as const)('does not count a paste that is %s', (_, text, reason) => {
     const { session } = start();
-    const reason = text.trim() === '' ? 'EMPTY' : 'TOO_LONG';
 
     expect(checkWebAnswer(session, text)).toEqual({ kind: 'unusable', reason });
     // Neither at the first attempt nor at the second.
