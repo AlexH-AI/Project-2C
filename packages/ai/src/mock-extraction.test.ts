@@ -388,6 +388,10 @@ describe('Mock extraction', () => {
     // The KH opening its clause after a bullet, a number or "Hiện…", or with a word before "là".
     ['- KH đã có vợ và 2 con.', [TWO]],
     ['1) KH đã có vợ và 2 con.', [TWO]],
+    // An en dash as a bullet, as "-": followed by a space (DR6-166).
+    ['– KH đã kết hôn', [MARRIED]],
+    ['–KH đã kết hôn', []],
+    ['-KH đã kết hôn', []],
     ['Hiện KH đã có vợ và 2 con.', [TWO]],
     ['Theo chị Lan, hiện KH đã có vợ và 2 con.', [TWO]],
     ['Hiện tại KH là đàn ông, KH đã kết hôn.', [MARRIED]],
@@ -807,6 +811,13 @@ describe('Mock extraction', () => {
     ['KH đã kết hôn, mất việc năm ngoái.', [MARRIED]],
     // "khách" after the KH may be someone else: "người" before a phrase is then of anyone.
     ['KH đã kết hôn, khách là người độc thân.', [MARRIED]],
+    // Opening the note is opening it before any letter: after a number of a list, "...", a "?"
+    // or a year, the KH is named as at the very start (DR6-164).
+    ['1. Khách đã kết hôn.', [MARRIED]],
+    ['... Hai vợ chồng đã kết hôn, có 2 con.', [MARRIED, TWO]],
+    ['?\nKhách đã kết hôn.', [MARRIED]],
+    ['1.\nChị nói đã kết hôn.', [MARRIED]],
+    ['2020. Khách đã kết hôn.', [MARRIED]],
   ])('reads %j as %j: a simple statement about the KH (DR6-141)', async (note, facts) => {
     expect(await extracted(note)).toEqual(facts);
   });
@@ -922,6 +933,8 @@ describe('Mock extraction', () => {
     'KH đi cùng chị Lan. Chị nói hôn nhân: độc thân.',
     'KH giới thiệu anh Nam. Anh cho biết lại hôn nhân: đã kết hôn.',
     'KH giới thiệu khách mới. Khách cho biết hôn nhân: độc thân.',
+    // After any word of the note, however short (DR6-164).
+    'Gặp. Khách đã kết hôn.',
     // "Khách" spares no "người" of anyone, as "KH" does (`KH_SUBJECT`): the safe way.
     'Khách là người độc thân.',
     // In a clause, a word that starts another carries the KH on only right after a phrase about the
@@ -1018,6 +1031,7 @@ describe('Mock extraction', () => {
     ['KH có 2 con.\nMột con đã mất.', [{ ...ONE, quote: 'Một con đã mất' }]],
     ['1. KH đã kết hôn.\n2. Đã ly hôn năm 2020.', [DIVORCED]],
     ['- KH đã kết hôn\n- và có 2 con.', [MARRIED, TWO]],
+    ['– KH đã kết hôn\n– Đã ly hôn năm 2020.', [DIVORCED]],
     // Only clauses with no letter: past other words, as on one line, after a phrase about the KH or
     // not (the review of PR #956).
     ['KH đã kết hôn.\nSống ở quận 7.\nCó 2 con.', [MARRIED]],
@@ -1120,6 +1134,10 @@ describe('Mock extraction', () => {
     ['KH có 2 con nhưng mất một con.', []],
     ['KH có 2 con. Mất một con năm 2020.', []],
     ['KH có 2 con. Con trai mất việc.', []],
+    // "bé" said of a size is no child there either, as in rule 4; after a count it is (DR6-166).
+    ['KH có 3 con. Vụ mất điện ở căn nhà nhỏ bé.', [{ ...TWO, value: '3', quote: '3 con' }]],
+    ['KH có 3 con. Mất điện ở căn hộ bé xíu.', [{ ...TWO, value: '3', quote: '3 con' }]],
+    ['KH có 2 con. Một bé nhỏ đã mất.', []],
     // Of someone else, said not to be, or no child.
     ['KH có 2 con. Chị gái KH có một con đã mất.', [TWO]],
     ['KH có 2 con, không con nào mất.', [TWO]],

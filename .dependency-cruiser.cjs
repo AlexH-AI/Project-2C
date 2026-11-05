@@ -1,7 +1,10 @@
 /** Module boundaries from ADR-0006. */
 
-/** The files of packages/ai that may use vitest: its tests and its test-support. */
-const AI_TEST_FILES = '(\\.test|/test-support)\\.ts$';
+/**
+ * Test files, wherever they are: tests, and the test-support modules only tests import. They may
+ * use vitest; no other file may.
+ */
+const TEST_FILES = '(\\.test\\.tsx?|/test-support\\.ts)$';
 
 module.exports = {
   forbidden: [
@@ -24,15 +27,16 @@ module.exports = {
       comment:
         'packages/ai uses only packages/domain and zod (spec Phase 5 §10); its tests and test-support may use vitest.',
       severity: 'error',
-      from: { path: '^packages/ai/', pathNot: AI_TEST_FILES },
+      from: { path: '^packages/ai/', pathNot: TEST_FILES },
       to: { pathNot: ['^packages/(ai|domain)/', '(^|/)node_modules/zod/'] },
     },
     {
       name: 'ai-test-support-only-in-tests',
-      comment: 'Only the tests of packages/ai import its tests and test-support, which use vitest.',
+      comment:
+        'Only tests, of any package or app, import the tests and test-support of packages/ai, which use vitest (DR6-167).',
       severity: 'error',
-      from: { path: '^packages/ai/', pathNot: AI_TEST_FILES },
-      to: { path: AI_TEST_FILES },
+      from: { pathNot: TEST_FILES },
+      to: { path: `^packages/ai/.*${TEST_FILES}` },
     },
     {
       name: 'db-only-on-domain-and-ai-schema',

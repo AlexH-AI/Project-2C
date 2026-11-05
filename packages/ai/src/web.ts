@@ -5,7 +5,7 @@
  * (`attempts.ts`). Nothing here calls the network: no adapter, no `AiRunner` (§3.1 item 5).
  * The session is a value the panel keeps; it is never stored (item 4).
  */
-import { LINE_BREAK, type CalendarDate, type KycGateState } from '@p2c/domain';
+import { LINE_BREAK, normalizeText, type CalendarDate, type KycGateState } from '@p2c/domain';
 import {
   ANALYSIS_PROMPTS,
   analysisOutcome,
@@ -122,8 +122,10 @@ function isOwnMessage(pasted: string): boolean {
 
 export type WebAnswerResult =
   /**
-   * Not an attempt (§3.1 item 3): the paste is blank, is the app's own message pasted back, or is
-   * longer than `MAX_AI_RAW_OUTPUT` characters (by code point, as `raw_output` is cut).
+   * Not an attempt (§3.1 item 3): the paste is blank (nothing but white space and characters that
+   * show nothing, as every box of the app reads it: `normalizeText`, DR6-168), is the app's own
+   * message pasted back, or is longer than `MAX_AI_RAW_OUTPUT` characters (by code point, as
+   * `raw_output` is cut).
    */
   | { readonly kind: 'unusable'; readonly reason: 'EMPTY' | 'OWN_MESSAGE' | 'TOO_LONG' }
   /** The first paste is wrong: show the issues; "Copy yêu cầu sửa" copies `retryMessage` (G5 §5). */
@@ -140,9 +142,9 @@ export type WebAnswerResult =
 export function checkWebAnswer(session: WebSession, pasted: string): WebAnswerResult {
   if (session.attempts.length >= MAX_ATTEMPTS) throw new RangeError('The web session is over');
   if (isOwnMessage(pasted)) return { kind: 'unusable', reason: 'OWN_MESSAGE' };
-  // A huge paste is never trimmed nor counted whole either (DR5-09).
+  // A huge paste is never normalized nor counted whole either (DR5-09).
   if (pasted.length > MAX_READ) return { kind: 'unusable', reason: 'TOO_LONG' };
-  if (pasted.trim() === '') return { kind: 'unusable', reason: 'EMPTY' };
+  if (normalizeText(pasted) === '') return { kind: 'unusable', reason: 'EMPTY' };
   if (codePointsOver(pasted, MAX_AI_RAW_OUTPUT)) return { kind: 'unusable', reason: 'TOO_LONG' };
   const attempts = [...session.attempts, checkAnalysisAnswer(session.input, pasted)];
   const retry = nextRetry(attempts);
