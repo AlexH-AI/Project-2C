@@ -345,6 +345,22 @@ Không thay mốc sau #656: G7 vẫn so với mốc đó. Phân tích: tổng h�
 - **`byName` (DR6-136 đã sửa):** sắp 10 255 lịch hẹn theo KH trong Node 11,2–12,2 ms (lượt 4: 65,2; trước #828: 9,4).
 - **Phát hiện P:** chỉ DR6-165. Mock trích xuất sau T-330 / T-336 chậm hơn `2e51e25` quá luật nhiễu, dưới ngưỡng < 200 ms: lần gọi đầu của tiến trình 9,2 → 28,5 ms; cả bộ 3 551 ghi chú thật 62,2 → 103,5 ms; lần bấm AI trích xuất đầu trên màn 31 → 53 ms.
 
+#### Mốc Mock trích xuất (DR6-165, T-370)
+
+Owner 05/11 chọn Q2 (a) của tổng hợp lượt 5: chấp nhận chi phí, không đổi code. Lần bấm AI trích xuất đầu của mỗi phiên app thêm ≈ 20 ms trên thao tác ≈ 30–50 ms; các lần sau ≈ +0,01 ms. Mock chỉ cho demo, e2e và máy chưa có key.
+
+Ba số dưới là **mốc so cho lần đo sau**: xấu hơn khi quá luật nhiễu so với mốc này (quá 20 % **và** quá 10 ms). Ngưỡng thao tác màn < 200 ms giữ nguyên.
+
+| Thao tác | Mốc (`37a80b6`) | `2e51e25` | Ngưỡng |
+|---|---|---|---|
+| Lần gọi đầu của tiến trình: ghi chú RE dài nhất của dữ liệu tải (173 ký tự), mỗi lần một tiến trình mới, 9 tiến trình mỗi bản, xen kẽ | 28,5 ms | 9,2 ms | < 200 ms ✅ |
+| Cả bộ 3 551 ghi chú RE của dữ liệu tải (cộng seed 3 ngày neo), cùng tiến trình, 7 vòng xen kẽ | 103,5 ms (≈ 0,03 ms / ghi chú) | 62,2 ms | < 200 ms mỗi ghi chú ✅ |
+| Lần bấm AI trích xuất đầu trên màn (Edge, bản dựng web, ghi chú 4 503 ký tự) | 53 ms | 31 ms (lượt 4, cùng máy) | < 200 ms ✅ |
+
+- **Máy:** Home PC `DESKTOP-KDURKJP`, Node v24.20.0. **Nguồn:** `docs/reviews/raw/2026-11-05/claude/C.md` §6.2 (CLR5-C2).
+- **Số tuyệt đối đổi giữa các lần chạy** (cả bộ, cùng code `packages/ai`: 103,5 ms ở lượt 5, 73,7 ms ở thân PR #1066 cùng máy). Hai dòng Node nên đo bản mới xen kẽ với `37a80b6` trong cùng lần chạy, rồi áp luật nhiễu lên cặp đó (như tổng hợp lượt 5 §7.2).
+- **Sau mốc:** T-365 (#1066) sửa Mock ("nhỏ bé" của con đã mất, gạch "–"). Thân PR đo xen kẽ trước / sau, trong luật nhiễu: lần gọi đầu 28,47 → 28,49 ms, cả bộ 73,69 → 75,10 ms.
+
 ## Kiểm tra trên `main`
 
 _Điền cuối phase._
