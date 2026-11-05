@@ -190,6 +190,11 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - DeepSeek cost (G4): "Chỉ credit của gói Pro". No credits are bought; if credits run out or the Pro plan lapses, DeepSeek stops and the OWNER is asked.
   - The OWNER approved the design in chat the same day ("Duyệt, viết PR"); the remaining proposals of §L5.11 are chosen at G1 on the plan PR.
   - G1 of the plan (PR #1026), the same day in chat: "chọn đề xuất 5–11 như PR ghi", all seven as proposed. The OWNER also had the four non-blocking notes of the review at `272f6f1` fixed with it; two of them widen proposal 10 (DeepSeek puts Node 24 first on PATH in every command that runs `node`, `pnpm`, vitest or Playwright; the preparation step deletes a leftover `src-tauri\target\` instead of stopping to ask).
+- 2026-11-05: OWNER choices in wave 2 of round 5 (DeepSeek), recorded in `docs/reviews/raw/2026-11-05/common-baseline.md` and the synthesis (T-362, #1042, §10.1). None was asked as a question in an Issue or PR.
+  - The six Claude package sessions in the review worktrees stay in the sidebar, not archived, and are not reopened until wave 2 ends: their transcripts are denied for writing after `deny`.
+  - The session temp folder that Claude Code now keeps at `%TEMP%\claude\<hash of the working folder>\` (which `dot2.mjs` does not deny) is moved by hand into `deep-review-1-6-r5\claude\_temp-9baf74bac889a6ec\`, so `deny` covers it with `claude\`.
+  - `scan` stopping on exactly two transcripts of the main checkout (the wave 2 preparation session and the T-359 session) counts as a pass.
+  - Permission mode Default for every package, as in round 4: the trial session was asked once. The app's Memory is off (0 entries). For credits the OWNER records only what each session used: 200.71 for wave 2, 187.38 for the six packages.
 
 ## Next decision
 

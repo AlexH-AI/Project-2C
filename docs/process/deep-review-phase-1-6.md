@@ -4034,6 +4034,14 @@ Thử lại ngày 04/11/2026 trên Home PC sau khi sửa điểm 6 (T-359; lện
 - Khối trước T-359 trên cùng cây: `remove` `STOP` ở ba kịch bản đầu, liệt kê cả mục vốn đã đóng.
 - Cây 60 000 file, ba lần: `deny --dry-run` 15 s, `deny` 20–21 s, `remove` 8 s. Khối trước T-359, cùng ngày: 13 s, 19 s, 8 s.
 
+**Ghi chú sau lượt 5** (đợt 2 ngày 05/11; tổng hợp T-362 #1042 §10.1; `docs/reviews/raw/2026-11-05/common-baseline.md` "Chuẩn bị đợt 2", "Bước 7"). Đợt 2 đóng đạt: `remove` gỡ 236 mục, `OK`, không cần quyền SYSTEM; hash 12 báo cáo không đổi.
+
+- **Thư mục tạm của phiên Claude.** `dot2.mjs` chặn `%TEMP%\claude\<tên thư mục làm việc>`, mà Claude Code bản hiện tại để thư mục tạm của phiên (scratchpad, `tasks\*.output`) ở `%TEMP%\claude\<mã băm của thư mục làm việc>\<id phiên>\`. Lượt 5, phiên chuẩn bị đợt 2 chuyển tay `%TEMP%\claude\9baf74bac889a6ec\` (mã băm của `Project-2C-review`; 18 thư mục phiên, 95 file) sang `-r5\claude\_temp-9baf74bac889a6ec\` (Owner chọn 05/11), để `deny` chặn cùng `claude\`. Lần sau: `deny` chặn cả thư mục mã băm của hai worktree review.
+- **Hard link giữa hai mục cùng bị chặn.** `walkTree` xét từng mục chặn riêng, nên coi một file có link ở hai thư mục `file-history` (phiên `review-1` và phiên rẽ nhánh của nó, cùng ở `Project-2C-review`) là link ra ngoài, và `deny --dry-run` in `STOP: nothing denied`. Lượt 5 thay link ở thư mục thứ hai bằng một bản chép (sha256 trùng, giữ giờ sửa). Lần sau: link có mọi đường dẫn nằm trong các mục chặn cả thì tính là bên trong.
+- **Thư mục gốc `-r4` và `deep-review-1-6` liệt kê được**, khác chữ "→ bị từ chối" của §L5.9 bước 5. Đúng thiết kế điểm 3: hai thư mục có mục do tài khoản khác làm chủ (`-r4\common\dot2-unlock.log` của `NT AUTHORITY\SYSTEM`; 12 probe lượt 1 trong `deep-review-1-6\codex\F\` của `CodexSandboxOffline`), nên `deny` chặn từng mục con của Owner. Liệt kê chỉ thấy tên mục con; mọi mục con của Owner bị từ chối. Lần sau: §L5.9 bước 5 ghi kết quả dự kiến này.
+- **Phiên thử không chạy qua Code review expert**, nên có thêm một task kiểm ACL qua expert như lượt 4 (3,59 credit; 30 / 30 lần thử mục bị chặn bị từ chối). Lần sau: tạo phiên thử qua expert ngay từ đầu.
+- **`scan` dừng ở 2 transcript Claude ở checkout chính**, Owner chấp nhận 05/11: phiên chuẩn bị đợt 2 in dòng đầu 12 báo cáo khi kiểm điều kiện bắt đầu; phiên T-359 có chuỗi mẫu giả của bộ thử `dot2.mjs`. Lần sau: phiên hỗ trợ đợt 2 không in dòng đầu báo cáo; bộ thử dựng chuỗi mẫu bằng cách ghép, không viết nguyên văn.
+
 ```js
 // Deep review round 5, wave 2 (plan §L5.9, Appendix V; round 4 ran the script of Appendix P). Run
 // from PowerShell; baseline by the preparation session, the rest by the Owner:

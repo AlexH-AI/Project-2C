@@ -1,6 +1,6 @@
 # Chỉ số Phase 6 — Hoàn thiện & phát hành v1.0
 
-Theo bảng chỉ số của `docs/COMPARISON.md` (mẫu từ `phase-5.md`), thêm phần đánh giá cuối dự án (thay `FINAL.md`, `docs/metrics/README.md`). Tới cuối phase file này mới có mục **Số đo nền** (T-219, spec Phase 6 §5.1, ghi trước lượt review 1 của 6D), mốc Home PC sau lượt 2 (T-225), mốc Home PC sau #656 (T-264), số đo deep review lượt 3 (T-267) và lượt 4 (T-318), số đo G7 NT-HN-01 (T-348), số liệu bốn lượt review đóng phase cùng các đợt sửa giữa chúng, và bảng PR vượt ngưỡng tới 27/10 (T-307). Các mục khác để trống tới khi đóng phase.
+Theo bảng chỉ số của `docs/COMPARISON.md` (mẫu từ `phase-5.md`), thêm phần đánh giá cuối dự án (thay `FINAL.md`, `docs/metrics/README.md`). Tới cuối phase file này mới có mục **Số đo nền** (T-219, spec Phase 6 §5.1, ghi trước lượt review 1 của 6D), mốc Home PC sau lượt 2 (T-225), mốc Home PC sau #656 (T-264), số đo deep review lượt 3 (T-267) và lượt 4 (T-318), số đo G7 NT-HN-01 (T-348), số đo deep review lượt 5 (T-362), số liệu năm lượt review đóng phase cùng các đợt sửa giữa chúng, và bảng PR vượt ngưỡng tới 27/10 (T-307). Các mục khác để trống tới khi đóng phase.
 
 - **Milestone:** "Phase 6 — Hoàn thiện & phát hành" — _điền cuối phase_
 - **Bắt đầu:** 2026-10-11 (spec G1 #515) · **Task code cuối merge:** _cuối phase_ · **Đóng milestone:** _G7_
@@ -327,6 +327,24 @@ Kích thước (`node tools/size-report.mjs --compare docs/metrics/phase-6-basel
 - **So lượt 4:** exe và tệp khác giữ nguyên cỡ. Bundle JS / CSS +8 022 B (`index.js` +7 479, `index.css` +543), sản phẩm +1 289 dòng, test +2 823 dòng: đợt sửa lượt 4 (T-319…T-328), đợt sửa sổ OPEN (T-329…T-342) và phần sửa probe (T-345…T-347, chỉ test). Không file CSS nào đổi: `index.css` tăng vì lớp Tailwind mới của các phần sửa giao diện (vd. tên dài xuống dòng, T-325, T-331).
 - **So `b139d8a`:** exe +235 008 B là phần tăng của lượt 4 (+240 640 so lượt 3, trong đó `icon.ico` +71 343) trừ 5 632 B exe lượt 3 nhỏ hơn `b139d8a`; tệp khác +172 925 B là font Playfair, ba ảnh logo, favicon PNG. Cả hai đã ghi ở mục "Số đo deep review lượt 4".
 
+### Số đo deep review lượt 5 (T-362, 04–05/11/2026)
+
+Không thay mốc sau #656: G7 vẫn so với mốc đó. Phân tích: tổng hợp lượt 5 §7; bảng đủ: `docs/reviews/raw/2026-11-05/common-baseline.md`.
+
+- **Máy:** Home PC `DESKTOP-KDURKJP`. **Code:** `37a80b6` (code trùng exe ứng viên L3 `3d237b0`), exe release build tại máy 5 649 408 byte (bằng lượt 4 và G7).
+- **Dữ liệu tải:** sinh ở `37a80b6`, `tables` sha256 `e256e4f1…` = G7. So `2e51e25` chỉ khác `ai_analyses.prompt_version` (`@4` → `@5`, #913).
+- **Cách đo:** script của G7, một lượt liền, như mục "Số đo G7, NT-HN-01": mở lần đầu 3 lần, nhập dữ liệu tải, mở lại 3 lần, probe (`PERF_RUNS=5`, kỳ Năm 2026, kỳ Tháng 10/2026), Dọn sạch một lần.
+- **So mốc sau #656, so G7 và so lượt 4: không dòng nào ⚠️**, mọi thao tác trong ngưỡng:
+  - `app.open-data` 330 ms; `reload.*` 285–407 ms; `trash.open` 33 ms; các thao tác màn còn lại 2–24 ms;
+  - `backup.read` / `backup.import` / `backup.export` 983 / 50 / 438 ms; `db.save` 150 ms; JS heap 16,7 MB;
+  - `appointments.next-month` / `next-year` 111 / 108 ms;
+  - mở lần đầu (LCP) 3 535 ms (mốc 3 663, G7 3 420); mở lại (LCP) 710 ms (G7 617; luật nhiễu > 740).
+- **Lần lưu DB đầu của lần mở đầu** 150 ms (mốc 119, G7 123): quá luật nhiễu ở mốc phụ này. Đo xen kẽ exe lượt 4 ↔ exe `37a80b6` cùng lúc: 188,5 / 185,1 ms. Chênh là do máy / thư mục lúc đo, không do code; đường lưu không đổi từ G7.
+- **Dọn sạch Thùng rác:** bấm "Backup rồi dọn sạch" → thông báo 11j 128,0 ms (≤ 500 ms; lượt 4: 123,3; G7: 130,5); `trash.open` trước → sau 30,1 → 2,0 ms; Node `purgeTrash` cả `VACUUM` 88,5 / 117,5 ms (113 / 1 313 dòng).
+- **Bundle:** JS / CSS 2 366 456 B (+8 029 so lượt 4, +7 so G7); `index.js` 892 184 B, trong đó `packages/ai` +5 607 B (Mock trích xuất, G5 `@5`); `index.css` 30 295 B (+543); tệp khác 1 022 121 B (=). Mọi chunk dependency trùng từng byte lượt 4.
+- **`byName` (DR6-136 đã sửa):** sắp 10 255 lịch hẹn theo KH trong Node 11,2–12,2 ms (lượt 4: 65,2; trước #828: 9,4).
+- **Phát hiện P:** chỉ DR6-165. Mock trích xuất sau T-330 / T-336 chậm hơn `2e51e25` quá luật nhiễu, dưới ngưỡng < 200 ms: lần gọi đầu của tiến trình 9,2 → 28,5 ms; cả bộ 3 551 ghi chú thật 62,2 → 103,5 ms; lần bấm AI trích xuất đầu trên màn 31 → 53 ms.
+
 ## Kiểm tra trên `main`
 
 _Điền cuối phase._
@@ -412,6 +430,13 @@ Deep review Phase 1–6 (6D, kế hoạch `docs/process/deep-review-phase-1-6.md
   - 34 phát hiện mới → **23** vấn đề DR6-135…157: **0 Medium**, 17 Low, 6 Nit; thêm 1 mục KNOWN có bằng chứng mới. 0 bị bác.
   - Kết luận: chưa sẵn sàng ở `2e51e25`, vì Owner đã quyết sửa hết trước G7 và DR6-37 còn một phần.
   - Owner 31/10 đồng ý cả 4 đề xuất của §9: 10 Issue #896–#905 (T-319…T-328).
+- **Đợt sửa lượt 4, mục sổ [G7] và G7 (31/10–04/11):** T-319…T-356, bảng ở kế hoạch §L5.2. Code cuối ở `3d237b0` (T-350); sau đó chỉ tài liệu.
+- **Lượt 5 (04–05/11, `37a80b6`):**
+  - Reviewer: Claude Opus 5.5, Codex GPT Sol 6.1 (đợt 1, 04–05/11) và DeepSeek V4.1 Flash trong app WorkBuddy (đợt 2, 05/11), trên Home PC (ADR-0001 M12). Kế hoạch: T-357 #1025.
+  - Tổng hợp: `docs/reviews/2026-11-05-deep-review-phase-1-6-luot-5-tong-hop.md`.
+  - Kiểm phần đã sửa của ba đợt trên: bảng R1 25 dòng, 24 đã sửa, 1 sửa một phần (DR6-145), 0 hồi quy; bảng R2 28 Issue, đều đã sửa.
+  - 41 phát hiện mới → **20** vấn đề DR6-158…177: **0 Medium**, 13 Low, 7 Nit. 1 bị bác.
+  - Kết luận: chưa sẵn sàng ở `37a80b6`, vì Owner đã quyết sửa hết trước G7 (K47) và DR6-145 còn một phần.
 
 ## Điều hướng (riêng 2C, `docs/metrics/README.md`)
 
