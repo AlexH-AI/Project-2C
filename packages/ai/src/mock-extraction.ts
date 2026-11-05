@@ -131,21 +131,16 @@ const SEPARATION = 'l[iy] thân';
 const WIDOWED = 'g(?:óa|oá)';
 
 /**
- * "bé" said of a size, no child: "nhỏ bé", "bé nhỏ / xíu / tí / hơn / nhất" (T-330), but after a
- * count, where it is a child ("2 bé nhỏ", the review of PR #939). In any case, as a word of its own.
- */
-const SMALL = String.raw`nhỏ bé|bé(?<!(?<!\p{L})(?:${HOW_MANY}) bé) (?:nhỏ|xíu|tí|hơn|nhất)`;
-
-/**
  * Words of `PEOPLE` that name no one else, anywhere and in any case: inside a word that holds a kin
  * word ("bác sĩ", "cô giáo", "cô đơn", "chú ý", "chú trọng", "ghi chú"), "bé" said of a size
- * (`SMALL`), in the heading "Chú thích:", in "góa vợ / chồng" and in the couple, the KH one of them
- * ("vợ chồng", "KH và vợ"). Not a couple someone lives with or has (`WITH_PARTNER`): "KH sống cùng
- * vợ chồng anh Nam" names them (the review of PR #809). So none of these words is one of
- * `OWN_PARTNER`, and which is read first does not matter.
+ * ("nhỏ bé", "bé nhỏ / xíu / tí / hơn / nhất", T-330) but after a count, where it is a child ("2 bé
+ * nhỏ", the review of PR #939), in the heading "Chú thích:", in "góa vợ / chồng" and in the couple,
+ * the KH one of them ("vợ chồng", "KH và vợ"). Not a couple someone lives with or has
+ * (`WITH_PARTNER`): "KH sống cùng vợ chồng anh Nam" names them (the review of PR #809). So none of
+ * these words is one of `OWN_PARTNER`, and which is read first does not matter.
  */
 const NAMES_NO_ONE = new RegExp(
-  String.raw`(?<!\p{L})(?:bác sĩ|cô giáo|cô đơn|chú ý|chú trọng|ghi chú|${SMALL}|chú thích(?=:)|(?:${WIDOWED}) (?:${SPOUSE})|(?<!(?:${WITH_PARTNER}) )vợ chồng|(?<=và )(?:${SPOUSE}))(?!\p{L})`,
+  String.raw`(?<!\p{L})(?:bác sĩ|cô giáo|cô đơn|chú ý|chú trọng|ghi chú|nhỏ bé|bé(?<!(?<!\p{L})(?:${HOW_MANY}) bé) (?:nhỏ|xíu|tí|hơn|nhất)|chú thích(?=:)|(?:${WIDOWED}) (?:${SPOUSE})|(?<!(?:${WITH_PARTNER}) )vợ chồng|(?<=và )(?:${SPOUSE}))(?!\p{L})`,
   'giu',
 );
 
@@ -346,20 +341,24 @@ function howManyDied(match: RegExpExecArray): number {
   return match[1] ? Number(match[1]) : NUMBER_WORD.split('|').indexOf(match[2]!.toLowerCase()) + 1;
 }
 
-/** A child, and a death said any way: "con út đã mất", "mất một con", "bé qua đời". */
-const CHILD = new RegExp(String.raw`(?<!\p{L})(?:${CHILD_WORD})(?!\p{L})`, 'iu');
+/**
+ * A child, and a death said any way: "con út đã mất", "mất một con", "bé qua đời". Not the "bé" of
+ * "nhỏ bé", said of a size (DR6-166); the other sizes that name no one else (`NAMES_NO_ONE`) may
+ * name a child who died: "Bé nhỏ / Bé nhất / Bé Tí đã mất" (Owner 05/11/2026).
+ */
+const CHILD = new RegExp(
+  String.raw`(?<!\p{L})(?:${CHILD_WORD})(?<!(?<!\p{L})nhỏ bé)(?!\p{L})`,
+  'iu',
+);
 const DEATH = /(?<!\p{L})(?:mất|qua đời)(?!\p{L})/giu;
-
-/** `SMALL`, read as spaces where a death's clause is looked for a child. */
-const SMALL_WORDS = new RegExp(String.raw`(?<!\p{L})(?:${SMALL})(?!\p{L})`, 'giu');
 
 /**
  * A child said to have died in any other way than `DEAD_CHILDREN` (outside `covered`): where its
  * clause first names the child or the death, a value of Số con that is never a simple statement,
  * so a count said before is not the last value said of the KH ("KH có 2 con. Con út đã mất.", rule
  * 3). Anything else said of "con" with "mất" too, the safe way (CX-A4): "Con trai mất việc."; but
- * not "bé" said of a size, as someone else is read (`SMALL`): "KH có 3 con. Vụ mất điện ở căn nhà
- * nhỏ bé." (DR6-166). Only the clauses of such a death are read, each once.
+ * not "nhỏ bé" ("KH có 3 con. Vụ mất điện ở căn nhà nhỏ bé.", `CHILD`). Only the clauses of such a
+ * death are read, each once.
  */
 function otherDeaths(note: string, clause: Reader, covered: Uint8Array) {
   const clauseAt = clause((part) => part);
@@ -370,7 +369,7 @@ function otherDeaths(note: string, clause: Reader, covered: Uint8Array) {
     const part = clauseAt(death.index);
     if (part === read) continue;
     read = part;
-    const child = part.text.replace(SMALL_WORDS, (word) => ' '.repeat(word.length)).search(CHILD);
+    const child = part.text.search(CHILD);
     if (child < 0) continue;
     deaths.push({
       at: Math.min(part.start + child, death.index),

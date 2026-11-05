@@ -1134,9 +1134,13 @@ describe('Mock extraction', () => {
     ['KH có 2 con nhưng mất một con.', []],
     ['KH có 2 con. Mất một con năm 2020.', []],
     ['KH có 2 con. Con trai mất việc.', []],
-    // "bé" said of a size is no child there either, as in rule 4; after a count it is (DR6-166).
+    // "nhỏ bé" is no child there (DR6-166); the other words of a size in rule 4 may name one: the
+    // younger, the youngest, a name (Owner 05/11/2026, (b)).
     ['KH có 3 con. Vụ mất điện ở căn nhà nhỏ bé.', [{ ...TWO, value: '3', quote: '3 con' }]],
-    ['KH có 3 con. Mất điện ở căn hộ bé xíu.', [{ ...TWO, value: '3', quote: '3 con' }]],
+    ['KH có 2 con. Bé nhỏ đã mất.', []],
+    ['KH có 3 con. Bé nhất đã mất.', []],
+    ['KH có 2 con. Bé Tí đã mất.', []],
+    ['KH có 3 con. Mất điện ở căn hộ bé xíu.', []],
     ['KH có 2 con. Một bé nhỏ đã mất.', []],
     // Of someone else, said not to be, or no child.
     ['KH có 2 con. Chị gái KH có một con đã mất.', [TWO]],
