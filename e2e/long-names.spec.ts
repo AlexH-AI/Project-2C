@@ -481,13 +481,23 @@ test('a customer of 81 letters, an RE and a team of 160, a model of 100 push no 
     .click();
   await expect(page.getByRole('region', { name: `Thành viên team ${team}` })).toContainText(re);
   await sweep(page, 'Team & nhân sự');
-
-  await open(page, 'Cài đặt');
-  await settingsSection(page, 'Thùng rác');
-  await expect(page.getByRole('region', { name: 'Thùng rác' }).getByRole('table')).toContainText(
-    re,
-  );
-  await sweep(page, 'Thùng rác');
+  // Into Thùng rác, below: a team of 160 letters, its name the first line of "Bản ghi".
+  const gone = unbroken('G', 160);
+  await page.getByRole('button', { name: '+ Team' }).click();
+  const create = page.getByRole('dialog', { name: 'Team mới' });
+  await create.getByRole('textbox', { name: 'Tên team' }).fill(gone);
+  await create.getByRole('button', { name: 'Tạo team' }).click();
+  await expect(create).toBeHidden();
+  await teamList(page)
+    .getByRole('button', { name: new RegExp(`^${gone} `) })
+    .click();
+  await page
+    .getByRole('region', { name: `Thành viên team ${gone}` })
+    .getByRole('button', { name: 'Xóa team' })
+    .click();
+  const removeTeam = page.getByRole('dialog', { name: `Xóa team ${gone}?` });
+  await removeTeam.getByRole('button', { name: 'Xóa', exact: true }).click();
+  await expect(removeTeam).toBeHidden();
 
   // The profile: its line under the name, Hợp đồng with a policy by the RE, the history of AI.
   await page.evaluate((hash) => (location.hash = hash), profile);
@@ -503,4 +513,22 @@ test('a customer of 81 letters, an RE and a team of 160, a model of 100 push no 
     model,
   );
   await sweep(page, 'hồ sơ');
+
+  // The customer deleted: in Thùng rác, with the appointment and the team deleted above, its name
+  // is the first line of "Bản ghi", its RE and team are "Thuộc".
+  await page.getByRole('button', { name: 'Sửa hồ sơ', exact: true }).click();
+  await page
+    .getByRole('dialog', { name: `Sửa hồ sơ · ${customer}` })
+    .getByRole('button', { name: 'Xóa KH…' })
+    .click();
+  await page
+    .getByRole('dialog', { name: `Xóa ${customer}?` })
+    .getByRole('button', { name: 'Xóa KH' })
+    .click();
+  await expect(page).toHaveURL(/#\/customers$/);
+  await open(page, 'Cài đặt');
+  await settingsSection(page, 'Thùng rác');
+  const records = page.getByRole('region', { name: 'Thùng rác' }).getByRole('table');
+  for (const name of [customer, gone, `RE ${re}`]) await expect(records).toContainText(name);
+  await sweep(page, 'Thùng rác');
 });

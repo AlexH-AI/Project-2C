@@ -71,13 +71,13 @@ const triggerText = ({ appointment: a }: AppointmentRow) =>
 const coordinatorText = (row: AppointmentRow) =>
   row.coordinators.map((person) => person.role).join(t('sep.list')) || t('appointments.none');
 
-/** The day shown when the period changes: today if it is in the period, else its first day. */
 /**
  * A name of the list: under a cap it keeps its line and its column its width; a longer one breaks
  * at the cap, even with no space, so the list stays in the window (DR6-170).
  */
 const NAME = 'block max-w-60 wrap-anywhere';
 
+/** The day shown when the period changes: today if it is in the period, else its first day. */
 const dayIn = (period: Period, today: CalendarDate) =>
   isInPeriod(today, period) ? today : period.start;
 
