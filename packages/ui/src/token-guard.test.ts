@@ -109,6 +109,74 @@ describe('findHardcodedSeparators', () => {
     ]);
   });
 
+  // DR6-169 (a): the other separators and marks of vi.ts (`sep.range`, `customer.back`…).
+  it('flags ← – … and curly quotes', () => {
+    const source = [
+      "<a>← {t('x')}</a>",
+      'const s = `${from} – ${to}`;',
+      'const s = `${a}…`;',
+      '<p>“{value}”</p>',
+      "const q = '‘a’';",
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 1, match: '←', rule: 'hardcoded-mark' },
+      { line: 2, match: '–', rule: 'hardcoded-separator' },
+      { line: 3, match: '…', rule: 'hardcoded-mark' },
+      { line: 4, match: '“', rule: 'hardcoded-mark' },
+      { line: 4, match: '”', rule: 'hardcoded-mark' },
+      { line: 5, match: '‘', rule: 'hardcoded-mark' },
+      { line: 5, match: '’', rule: 'hardcoded-mark' },
+    ]);
+  });
+
+  // DR6-169 (a), Q3 (a): a mark written as an escape of a string or a template.
+  it('flags a mark written as an escape of a string or a template', () => {
+    const source = [
+      "const a = '\\u00d7';",
+      'const b = `${x}\\u00B7${y}`;',
+      "const c = '\\u{2192}' + '\\u{00b7}';",
+      "const d = '\\xb7';",
+      "<p>{a}{'\\u2014'}{b}</p>",
+      "const e = '\\u00e0 \\\\u00b7 \\u{100b7}';",
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 1, match: '\\u00d7', rule: 'hardcoded-mark' },
+      { line: 2, match: '\\u00B7', rule: 'hardcoded-separator' },
+      { line: 3, match: '\\u{2192}', rule: 'hardcoded-separator' },
+      { line: 3, match: '\\u{00b7}', rule: 'hardcoded-separator' },
+      { line: 4, match: '\\xb7', rule: 'hardcoded-separator' },
+      { line: 5, match: '\\u2014', rule: 'hardcoded-mark' },
+    ]);
+  });
+
+  // DR6-169 (a), Q3 (a): JSX decodes an HTML entity of its text and attributes.
+  it('flags a mark written as an HTML entity, named or numbered', () => {
+    const source = [
+      '<button>&times;</button>',
+      '<p>{a} &middot; {b}</p>',
+      '<p>{a} &rarr; {b} &larr; &ndash; &mdash;</p>',
+      '<p>{a} &#183; {b} &#xB7; &#x2192;</p>',
+      '<p title="&hellip; &ldquo;&rdquo;" />',
+      '<p>&amp; &nbsp; &#38; &constructor; &#65719;</p>',
+      '{a && <p>&times &#183 R&D</p>}',
+      '{/* &times; in a comment */}',
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 1, match: '&times;', rule: 'hardcoded-mark' },
+      { line: 2, match: '&middot;', rule: 'hardcoded-separator' },
+      { line: 3, match: '&rarr;', rule: 'hardcoded-separator' },
+      { line: 3, match: '&larr;', rule: 'hardcoded-mark' },
+      { line: 3, match: '&ndash;', rule: 'hardcoded-separator' },
+      { line: 3, match: '&mdash;', rule: 'hardcoded-mark' },
+      { line: 4, match: '&#183;', rule: 'hardcoded-separator' },
+      { line: 4, match: '&#xB7;', rule: 'hardcoded-separator' },
+      { line: 4, match: '&#x2192;', rule: 'hardcoded-separator' },
+      { line: 5, match: '&hellip;', rule: 'hardcoded-mark' },
+      { line: 5, match: '&ldquo;', rule: 'hardcoded-mark' },
+      { line: 5, match: '&rdquo;', rule: 'hardcoded-mark' },
+    ]);
+  });
+
   // DR6-145 (b): parts joined by hand, whatever the quote, as a template or as JSX.
   it('flags a separator that is a whole string or a whole piece of a template', () => {
     const source = [
@@ -124,6 +192,40 @@ describe('findHardcodedSeparators', () => {
       { line: 3, match: '"; "', rule: 'hardcoded-separator' },
       { line: 4, match: '}, ${', rule: 'hardcoded-separator' },
       { line: 5, match: '}; ${', rule: 'hardcoded-separator' },
+    ]);
+  });
+
+  // DR6-169 (c): only `.join(` joins with the whole string it is given; other calls read text.
+  it('leaves a separator passed to a call other than .join(', () => {
+    const source = [
+      "const parts = text.split(', ');",
+      "const fixed = text.replace(', ', '; ');",
+      'const all = text.replaceAll(`; `, `, `);',
+      'const rows = line.split(',
+      "  ', ',",
+      ');',
+      // A limit, not a goal: a call that builds text its own way is left too.
+      "parts.push(', ');",
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([]);
+  });
+
+  it('flags a separator passed to .join( however written, or that a call is given with more', () => {
+    const source = [
+      "names?.join(', ')",
+      'names.join(',
+      "  '; ',",
+      ');',
+      "setLabel(a + ', ' + b);",
+      "const parts = [a, ', ', b];",
+      "show(', ' + a);",
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 1, match: "', '", rule: 'hardcoded-separator' },
+      { line: 3, match: "'; '", rule: 'hardcoded-separator' },
+      { line: 5, match: "', '", rule: 'hardcoded-separator' },
+      { line: 6, match: "', '", rule: 'hardcoded-separator' },
+      { line: 7, match: "', '", rule: 'hardcoded-separator' },
     ]);
   });
 
@@ -153,6 +255,62 @@ describe('findHardcodedSeparators', () => {
       { line: 2, match: '}: {', rule: 'hardcoded-separator' },
       { line: 3, match: '}, {', rule: 'hardcoded-separator' },
       { line: 3, match: '}; {', rule: 'hardcoded-separator' },
+    ]);
+  });
+
+  // DR6-169 (b): what Prettier writes for `{a}, {b}` on a long line, and a joiner before an element.
+  it('flags a joiner of JSX however Prettier breaks it, and before an element', () => {
+    const source = [
+      '<p>',
+      "  {aaaa},{' '}",
+      '  {bbbb}',
+      '</p>',
+      '<p>',
+      '  {aaaa}',
+      '  , {bbbb}',
+      '</p>',
+      '<p>',
+      '  {aaaa}',
+      "  ;{' '}",
+      '  {bbbb}',
+      '</p>',
+      "<p>{a}:{' '}{b}</p>",
+      '<p>{a}{" "}, {b}</p>',
+      "<p>{t('a')}: <b>{v}</b></p>",
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 2, match: "},{' '} {", rule: 'hardcoded-separator' },
+      { line: 6, match: '} , {', rule: 'hardcoded-separator' },
+      { line: 10, match: "} ;{' '} {", rule: 'hardcoded-separator' },
+      { line: 14, match: "}:{' '}{", rule: 'hardcoded-separator' },
+      { line: 15, match: '}{" "}, {', rule: 'hardcoded-separator' },
+      { line: 16, match: '}: <', rule: 'hardcoded-separator' },
+    ]);
+  });
+
+  it('leaves JSX that shows no joiner, and the branches of a condition', () => {
+    const source = [
+      '<p>{h}:{m}</p>',
+      '<p>',
+      '  {aaaa},',
+      '  {bbbb}',
+      '</p>',
+      '<dt>{label}: </dt>',
+      '{open ? <b>{a}</b> : <i>{b}</i>}',
+      '{open ? <A /> : <B />}',
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([]);
+  });
+
+  // DR6-169 (c): a `<` inside type arguments opens the type parameters of a generic function type.
+  it('counts the type parameters of a generic function type inside type arguments', () => {
+    const source = [
+      'run(function (): Promise<<T>() => T> { throw Error(); }, { tries: 3 });',
+      'run(function (): Map<string, <T>(x: T) => T> { return m; }, { tries: 3 });',
+      '<p>{a}, {b}</p>',
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 3, match: '}, {', rule: 'hardcoded-separator' },
     ]);
   });
 
