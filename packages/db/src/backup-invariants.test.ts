@@ -307,8 +307,15 @@ describe('importBackup — rules across tables', () => {
     expect(listCustomers(imported.db)).toHaveLength(3);
   });
 
-  /** Records a command could leave, next to each refused case of rules 1, 5, 8, 9 and 10 below. */
+  /** Records a command could leave, next to each refused case of rules 1, 5, 8, 9, 10 and 15 below. */
   const accepted: [string, (b: BackupJson, ids: Ids) => void][] = [
+    // Rule 15: the digits and letters `freeCode` writes, the ends of Crockford base32 among them.
+    ...['K-0HJZ', 'K-9KMN', 'K-PTVX', 'K-ABGY'].map(
+      (code): [string, (b: BackupJson, ids: Ids) => void] => [
+        `a customer coded ${code}`,
+        (b, ids) => (row(b, 'customers', (c) => c.id === ids.lan).code = code),
+      ],
+    ),
     [
       'a deleted customer of a deleted RE',
       (b, ids) => {
@@ -1171,6 +1178,24 @@ describe('importBackup — rules across tables', () => {
       (b, ids) => (analysis(b, ids.rejected).raw_output = ''),
     ],
     ['14: an analysis dated after today', (b, ids) => (analysis(b, ids.rejected).date = TOMORROW)],
+    // DR6-160 (Q1 (a), Owner 05/11/2026): a code as `freeCode` writes it, `K-` and four characters
+    // of Crockford base32, since Thùng rác tells two customers of a name apart by their code.
+    ...(
+      [
+        ['with a space after it', 'lan', 'K-9A1C '],
+        ['with two spaces in it, of a deleted customer', 'kien', 'K-9A  1C'],
+        ['in lower case', 'lan', 'K-9a1c'],
+        ['of another form', 'lan', 'KH-0001'],
+        ['of five characters', 'lan', 'K-9A1CU'],
+        ['of three characters', 'kien', 'K-9A1'],
+        ['with U, which Crockford base32 leaves out', 'lan', 'K-9A1U'],
+        ['with I, L and O', 'lan', 'K-ILO0'],
+        ['with a full-width digit', 'lan', 'K-9A1\u{FF11}'],
+      ] as const
+    ).map(([what, who, code]): [string, (b: BackupJson, ids: Ids) => void] => [
+      `15: a customer code ${what}`,
+      (b, ids) => (row(b, 'customers', (c) => c.id === ids[who]).code = code),
+    ]),
   ];
 
   it.each(broken)('refuses %s, the current database unchanged', async (label, damage) => {

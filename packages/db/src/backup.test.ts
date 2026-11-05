@@ -516,18 +516,19 @@ describe('importBackup — a text that starts with U+FEFF', () => {
     expect(await codeOfImport(text)).toBe('BACKUP_INVALID');
   });
 
-  // A note ending with it is not one the commands store (`trim` drops it, T-291): a customer's code
-  // has no such rule.
+  // A note ending with it is not one the commands store (`trim` drops it, T-291), nor a customer's
+  // code (rule 15, DR6-160): an id has no such rule.
   it('takes it inside or at the end of a text, which reads back whole, as before', async () => {
     const backup = await smallBackup();
     backup.tables.appointments![0]!.note = 'Gặp\u{FEFF} lại';
-    backup.tables.customers![0]!.code = `${String(backup.tables.customers![0]!.code)}\u{FEFF}`;
+    const id = String(backup.tables.customers!.find((c) => c.name === 'Lan')!.id);
+    const text = JSON.stringify(backup).replaceAll(`"${id}"`, `"${id}\u{FEFF}"`);
 
-    const { db } = await importBackup(JSON.stringify(backup));
+    const { db } = await importBackup(text);
 
     const { tables } = JSON.parse(exportBackup(db)) as BackupJson;
     expect(tables.appointments![0]!.note).toBe('Gặp\u{FEFF} lại');
-    expect(tables.customers![0]!.code).toMatch(/.\u{FEFF}$/u);
+    expect(tables.customers!.find((c) => c.name === 'Lan')!.id).toBe(`${id}\u{FEFF}`);
   });
 });
 

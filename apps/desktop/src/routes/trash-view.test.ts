@@ -52,6 +52,12 @@ import { t } from '../i18n';
 
 const ref = (name: string, deleted = false) => ({ id: `id-${name}`, name, deleted });
 
+/** The customer of an appointment or a policy, with its code (DR6-160). */
+const customerRef = (name: string, code: string, deleted = false) => ({
+  ...ref(name, deleted),
+  code,
+});
+
 /** The day the trash of mockup 11a is looked at, after its last deletion on 10/10/2026. */
 const TODAY = calendarDate(2026, 10, 11);
 
@@ -88,7 +94,7 @@ const met: TrashRow = {
   time: '09:30',
   status: 'MET',
   stageAfter: 'N2',
-  owner: { customer: ref('Phạm Gia Bảo'), re: ref('Bùi Anh Tuấn') },
+  owner: { customer: customerRef('Phạm Gia Bảo', 'K-4PGB'), re: ref('Bùi Anh Tuấn') },
   effect: { kind: 'stageChange', from: 'N3', to: 'N2', date: calendarDate(2026, 10, 2), rf: true },
 };
 
@@ -100,7 +106,11 @@ const planned: TrashRow = {
   time: '14:00',
   status: 'SCHEDULED',
   stageAfter: null,
-  owner: { customer: ref('Trịnh Minh Anh', true), re: ref('Đỗ Khánh Linh') },
+  // The customer of `minhAnh`, deleted since.
+  owner: {
+    customer: { id: 'c1', name: 'Trịnh Minh Anh', code: 'K-7QX2', deleted: true },
+    re: ref('Đỗ Khánh Linh'),
+  },
   effect: { kind: 'none' },
   blocked: { code: 'CUSTOMER_NOT_FOUND', params: { name: 'Trịnh Minh Anh' } },
 };
@@ -113,7 +123,7 @@ const blockedMet: TrashRow = {
   time: '15:00',
   status: 'MET',
   stageAfter: 'N2',
-  owner: { customer: ref('Lê Hoài Nam'), re: ref('Lâm Bảo Phương') },
+  owner: { customer: customerRef('Lê Hoài Nam', 'K-8LHN'), re: ref('Lâm Bảo Phương') },
   // Counted from the customer's stage now, which the blocked restore would not move from.
   effect: { kind: 'stageChange', from: 'N1', to: 'N2', date: calendarDate(2026, 9, 28), rf: false },
   blocked: { code: 'TRANSITION_BEFORE_LATEST', params: { date: '05/10/2026' } },
@@ -127,7 +137,7 @@ const policy: TrashRow = {
   submittedFyp: 24_000_000,
   issuedDate: null,
   issuedFyp: null,
-  owner: { customer: ref('Hoàng Ngọc Lan'), re: ref('Hoàng Nhật Minh') },
+  owner: { customer: customerRef('Hoàng Ngọc Lan', 'K-2HNL'), re: ref('Hoàng Nhật Minh') },
   effect: { kind: 'none' },
 };
 
@@ -223,6 +233,23 @@ describe('filterTrash', () => {
   it('combines the kind and the name', () => {
     expect(filterTrash(ROWS, 'appointment', 'trinh')).toEqual([planned]);
     expect(filterTrash(ROWS, 'policy', 'trinh')).toEqual([]);
+  });
+
+  // DR6-172: names are stored through `normalizeText`, and the text typed is read the same way.
+  it('finds a name pasted with an invisible character, a no-break space or two spaces', () => {
+    for (const query of [
+      '\u{200B}Lý Quốc Bảo',
+      'Lý\u{00A0}Quốc\u{00A0}Bảo',
+      'Lý  Quốc  Bảo',
+      'L\u{200B}ý quoc\u{2060} bao',
+    ]) {
+      expect(filterTrash(ROWS, 'all', query), query).toEqual([bao]);
+    }
+  });
+
+  it('keeps every row for text of invisible characters alone, as for empty text', () => {
+    expect(filterTrash(ROWS, 'all', '\u{200B}\u{3164}')).toEqual(ROWS);
+    expect(filterTrash(ROWS, 'person', '\u{00A0}\u{2060}')).toEqual([mai, bao]);
   });
 });
 
@@ -418,6 +445,87 @@ describe('restoreLabel (DR6-43)', () => {
 
   it('tells apart the buttons of a whole trash', () => {
     expect(new Set(ROWS.map((row) => label(row))).size).toBe(ROWS.length);
+  });
+
+  /** Mai's namesake in her role and team, deleted the day before her (CXR5-A2). */
+  const maiTwin = { ...mai, id: 'r6', deletedAt: at(4, 17, 5) } as TrashRow;
+
+  /** A meeting on 20/10 and a policy like `policy`, of `customer` (CLR5-A1). */
+  const recordsOf = (customer: ReturnType<typeof customerRef>, n: number): TrashRow[] => {
+    const owner = { customer, re: ref('Hồ Ngọc Yến') };
+    return [
+      {
+        ...planned,
+        id: `a${n}`,
+        date: calendarDate(2026, 10, 20),
+        time: '09:00',
+        owner,
+        blocked: undefined,
+      } as TrashRow,
+      { ...policy, id: `p${n}`, owner } as TrashRow,
+    ];
+  };
+  const ha = recordsOf(customerRef('Trần Thu Hà', 'K-GBYX'), 6);
+  const otherHa = recordsOf({ ...customerRef('Trần Thu Hà', 'K-5R8A'), id: 'id-Hà-2' }, 7);
+
+  // Q1 (a), Owner 05/11/2026 (DR6-160): "của KH <tên>" names the code when another customer of the
+  // trash has the name, as mockup 9b names two of one name ("<tên> (<mã>)").
+  it('tells apart the records of two customers of one name by their code (DR6-160)', () => {
+    const rows = [...ROWS, ...ha, ...otherHa];
+    expect([...ha, ...otherHa].map((row) => label(row, rows))).toEqual([
+      'Khôi phục lịch hẹn 20/10/2026 09:00 · Dự kiến của KH Trần Thu Hà (K-GBYX)',
+      'Khôi phục HĐ Nộp 15/09/2026 · 24.000.000 ₫ · Đã nộp của KH Trần Thu Hà (K-GBYX)',
+      'Khôi phục lịch hẹn 20/10/2026 09:00 · Dự kiến của KH Trần Thu Hà (K-5R8A)',
+      'Khôi phục HĐ Nộp 15/09/2026 · 24.000.000 ₫ · Đã nộp của KH Trần Thu Hà (K-5R8A)',
+    ]);
+    // The records of one customer only, a customer row of theirs among them, keep the name alone.
+    for (const row of ROWS) expect(label(row, rows)).toBe(label(row));
+    expect(ha.map((row) => label(row, [...ROWS, ...ha]))).toEqual([
+      'Khôi phục lịch hẹn 20/10/2026 09:00 · Dự kiến của KH Trần Thu Hà',
+      'Khôi phục HĐ Nộp 15/09/2026 · 24.000.000 ₫ · Đã nộp của KH Trần Thu Hà',
+    ]);
+  });
+
+  it("names the code when the other customer of the name is a deleted one's row (DR6-160)", () => {
+    const giaBao = { ...minhAnh, id: 'c5', name: 'Phạm Gia Bảo', code: 'K-W3RT' } as TrashRow;
+    const rows = [...ROWS, giaBao];
+    expect(label(met, rows)).toBe(
+      'Khôi phục lịch hẹn 02/10/2026 09:30 · Đã gặp của KH Phạm Gia Bảo (K-4PGB)',
+    );
+    // The customer's own button: no other customer of the name and the stage (DR6-151).
+    expect(label(giaBao, rows)).toBe('Khôi phục KH Phạm Gia Bảo · N3');
+  });
+
+  // Q1 (a) (DR6-160): two people alike in name, role and team differ by when each was deleted, as
+  // the column "Xóa lúc" tells them apart.
+  it('tells apart two people of one name, role and team by when they were deleted (DR6-160)', () => {
+    const rows = [...ROWS, maiTwin];
+    expect(label(mai, rows)).toBe(
+      'Khôi phục nhân sự Vương Thị Mai · RE · Bình Minh · xóa lúc 05/10/2026 08:31',
+    );
+    expect(label(maiTwin, rows)).toBe(
+      'Khôi phục nhân sự Vương Thị Mai · RE · Bình Minh · xóa lúc 04/10/2026 17:05',
+    );
+    // Their role or their team tells them apart already (DR6-151).
+    for (const other of [
+      { ...maiTwin, role: 'TL' },
+      { ...maiTwin, owner: { team: ref('Sao Mai') } },
+    ] as TrashRow[]) {
+      expect(label(mai, [...ROWS, other])).toBe('Khôi phục nhân sự Vương Thị Mai · RE · Bình Minh');
+      expect(label(other, [...ROWS, other])).not.toContain('xóa lúc');
+    }
+    // An IS has no team: two of one name are alike in all the rest.
+    const is = { ...mai, id: 'r7', role: 'IS', owner: {} } as TrashRow;
+    const isTwin = { ...is, id: 'r8', deletedAt: at(4, 17, 5) } as TrashRow;
+    expect(label(isTwin, [...ROWS, is, isTwin])).toBe(
+      'Khôi phục nhân sự Vương Thị Mai · IS · xóa lúc 04/10/2026 17:05',
+    );
+  });
+
+  it('tells apart the buttons of a trash of namesakes (DR6-151, DR6-160)', () => {
+    const twin = { ...minhAnh, id: 'c2', code: 'K-3MD8' } as TrashRow;
+    const rows = [...ROWS, twin, maiTwin, ...ha, ...otherHa];
+    expect(new Set(rows.map((row) => label(row, rows))).size).toBe(rows.length);
   });
 
   it('tells apart two policies of a customer submitted the same day by their FYP (DR6-99)', () => {
@@ -621,7 +729,7 @@ const pastPlanned = {
   id: 'a5',
   date: calendarDate(2026, 9, 30),
   time: '10:00',
-  owner: { customer: ref('Phạm Gia Bảo'), re: ref('Bùi Anh Tuấn') },
+  owner: { customer: customerRef('Phạm Gia Bảo', 'K-4PGB'), re: ref('Bùi Anh Tuấn') },
   blocked: undefined,
 } as TrashRow;
 

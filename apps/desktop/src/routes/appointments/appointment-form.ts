@@ -156,14 +156,24 @@ export function priorMeetings(
   };
 }
 
+/**
+ * Text as a search box compares it: read as names are stored (`normalizeText`: no invisible
+ * character, each run of white space one space), accents and case ignored, so a name pasted with a
+ * U+200B or a no-break space finds the stored one (DR6-172). The customer box of 6b and "Tìm theo
+ * tên" of Thùng rác alike.
+ */
+export function searchText(text: string): string {
+  return stripDiacritics(normalizeText(text).toLowerCase());
+}
+
 /** The customers whose name or code contains the text (accents and case ignored), by name. */
 export function searchCustomers(
   customers: readonly CustomerRecord[],
   query: string,
   limit: number,
 ): CustomerRecord[] {
-  const needle = stripDiacritics(query.trim().toLowerCase());
+  const needle = searchText(query);
   if (needle === '') return [];
-  const found = (text: string) => stripDiacritics(text.toLowerCase()).includes(needle);
+  const found = (text: string) => searchText(text).includes(needle);
   return customers.filter((c) => found(c.name) || found(c.code)).slice(0, limit);
 }

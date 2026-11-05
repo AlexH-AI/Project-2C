@@ -34,7 +34,8 @@ export interface TrashRef {
 
 /** The "Thuộc" column: customer and RE of an appointment or policy, RE and team of a customer. */
 export interface TrashOwner {
-  readonly customer?: TrashRef;
+  /** With its code, which tells apart two customers of one name (DR6-160). */
+  readonly customer?: TrashRef & { readonly code: string };
   readonly re?: TrashRef;
   readonly team?: TrashRef;
 }
@@ -263,7 +264,10 @@ function refs(db: Database, deleted: ReturnType<typeof deletedRows>) {
     team: (id: string) => toRef(id, teamRows.get(id)!),
     person: (id: string) => toRef(id, peopleRows.get(id)!),
     teamOf: (personId: string) => peopleRows.get(personId)!.teamId,
-    customer: (id: string) => toRef(id, customerRows.get(id)!),
+    customer: (id: string) => {
+      const row = customerRows.get(id)!;
+      return { ...toRef(id, row), code: row.code };
+    },
     stageOf: (customerId: string) => customerRows.get(customerId)!.stage,
   };
 }

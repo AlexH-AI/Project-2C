@@ -375,7 +375,7 @@ function CustomerField({
         required
         autoFocus
       />
-      {query.trim() !== '' && (
+      {normalizeText(query) !== '' && (
         <ul
           aria-label={t('appointmentForm.customerResults')}
           className="m-0 flex list-none flex-col gap-1 p-0"

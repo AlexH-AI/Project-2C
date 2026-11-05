@@ -1,6 +1,6 @@
 # Phase 3 — Mô hình dữ liệu và lưu trữ (spec G2)
 
-- **Trạng thái:** Accepted — Owner duyệt 26/09/2026 (**G2** mô hình dữ liệu; **G1** ADR-0016 + phụ lục ADR-0006 + P1; **G4** dependency) · PR #58 · bổ sung D9 `outcome_reviewer_id` (Owner, G3 vòng 1 của #59, 27/09/2026) · bổ sung D10 ngày transition không lùi (Owner, G8, #99/#100, 27/09/2026) · đổi D9: người đánh giá kết quả chỉ IS / TL / BDM / BD (Owner, #329, 04/10/2026) · bốn luật Owner duyệt 23/10/2026 (T-291 #780): chữ tùy chọn của lịch hẹn chỉ có ký tự vô hình là rỗng, VT / FF trong ghi chú là xuống dòng, thứ tự tên (§4), hash phiên bản KYC khi nhập backup (§6 luật 7)
+- **Trạng thái:** Accepted — Owner duyệt 26/09/2026 (**G2** mô hình dữ liệu; **G1** ADR-0016 + phụ lục ADR-0006 + P1; **G4** dependency) · PR #58 · bổ sung D9 `outcome_reviewer_id` (Owner, G3 vòng 1 của #59, 27/09/2026) · bổ sung D10 ngày transition không lùi (Owner, G8, #99/#100, 27/09/2026) · đổi D9: người đánh giá kết quả chỉ IS / TL / BDM / BD (Owner, #329, 04/10/2026) · bốn luật Owner duyệt 23/10/2026 (T-291 #780): chữ tùy chọn của lịch hẹn chỉ có ký tự vô hình là rỗng, VT / FF trong ghi chú là xuống dòng, thứ tự tên (§4), hash phiên bản KYC khi nhập backup (§6 luật 7) · mã KH khi nhập backup chỉ nhận dạng app sinh (Owner 05/11/2026, Q1 (a) của lượt 5, T-368; §6 luật 15)
 - **Ngày:** 2026-09-26
 - **Nguồn:** `docs/PROJECT-PLAN.md` §4.4, §5 (Phase 3), §7.1; ADR-0004…0008, ADR-0010, ADR-0016; mockup G3 `docs/design/mockups/`
 - **Cách soạn:** brainstorming với Owner trong phiên 26/09/2026 (quyết định ở §1); Claude soạn, Owner duyệt trên PR.
@@ -67,7 +67,7 @@ Team hiện tại của RE = `team_id` (v1 không lưu lịch sử chuyển team
 | Cột | Kiểu | Ràng buộc |
 |---|---|---|
 | `id` | text | PK |
-| `code` | text | not null, duy nhất |
+| `code` | text | not null, duy nhất; app sinh `K-` + 4 ký tự Crockford base32 (nhập backup chỉ nhận dạng này, §6) |
 | `name` | text | not null |
 | `re_id` | text | FK `people` (role RE) |
 | `birth_date` | text | `YYYY` hoặc `YYYY-MM-DD`; **không bắt buộc** (KH N4 có thể chưa rõ danh tính — cổng KYC phải gặp được ca thiếu danh tính) |
@@ -219,6 +219,7 @@ UI **không ghi thẳng vào bảng**; mọi thay đổi đi qua lệnh nghiệp
     - `created_at` / `updated_at` / `deleted_at`: ISO-8601 UTC đúng dạng app ghi (`toISOString()`: `YYYY-MM-DDTHH:MM:SS.sssZ`, ba chữ số phần nghìn giây), nên một thời điểm luôn là một chuỗi: app so chữ mốc xóa của cuộc hẹn với mốc của chuyển nhóm nó rút, và xếp Thùng rác theo chữ (DR6-105);
     - `seq` là số nguyên an toàn ≥ 1 (DR-34);
     - `name` của team / nhân sự / KH và `kyc_notes.text`: như lệnh lưu (§4, cùng hàm `cleanText` / `cleanNote`) — không ký tự vô hình (như §4: ký tự định dạng, `Default_Ignorable_Code_Point`, U+2800, ký tự điều khiển không phải khoảng trắng), khoảng trắng đã gộp, NFC, đã trim, không NUL, không rỗng (DR-49, DR-05, DR6-49);
+    - `customers.code` (kể cả KH đã xóa): đúng dạng app sinh (`freeCode`), `K-` + 4 ký tự Crockford base32 viết hoa, tức khớp `^K-[0-9A-HJKMNP-TV-Z]{4}$`: không dấu cách, không chữ thường, không I / L / O / U, đúng 4 ký tự sau `K-`. Tên nút khôi phục ở Thùng rác phân biệt hai KH cùng tên bằng mã, nên hai mã chỉ khác số dấu cách (file sửa tay) không được đọc thành một (DR6-160; Owner 05/11/2026, Q1 (a) của lượt 5, T-368). Khác các ô trên, sai mã báo `BACKUP_INVALID` có params `rule` = 15 (kiểm cùng lượt với các bất biến liên bảng, sau luật 1–14). Dữ liệu cũ sai bị từ chối, không migration (nạp lại dữ liệu giả lập);
     - chữ tùy chọn của cuộc hẹn (kể cả đã xóa): `trigger_note`, `next_step` là `null`, `note` là chuỗi rỗng, hoặc chữ như lệnh lưu (§4): đã cắt hai đầu như `optionalText` (`trim` của JS, không cắt U+0085), `normalizeText` không ra rỗng (DR6-72; Owner 23/10/2026, T-291); `next_step` của cuộc hẹn `MET` không `null`, như `recordMeetingOutcome` lưu (DR-05);
     - `kyc_facts.value_json`: JSON parse được, là chuỗi / số / true-false và đã chuẩn hóa theo kiểu của trường (`normalizeKycValue` không đổi giá trị: `"2"` cho `childrenCount` bị từ chối);
     - tiền là phí như `requireAmount` nhận: FYP (`submitted_fyp`, `issued_fyp`) và `expected_case_size` (hoặc null) là số nguyên > 0 và ≤ 100 tỷ đồng (`MAX_FEE_VND`, T-128 #320, DR-23), kiểm giá trị; FYP > 0 còn có CHECK của schema; số lẻ bị chặn khi nạp vào cột integer.
