@@ -196,6 +196,15 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - `scan` stopping on exactly two transcripts of the main checkout (the wave 2 preparation session and the T-359 session) counts as a pass.
   - Permission mode Default for every package, as in round 4: the trial session was asked once. The app's Memory is off (0 entries). For credits the OWNER records only what each session used: 200.71 for wave 2, 187.38 for the six packages.
 
+  Synthesis: `docs/reviews/2026-11-05-deep-review-phase-1-6-luot-5-tong-hop.md`.
+- 2026-11-05: OWNER decisions on deep review Phase 1–6 round 5 (synthesis above, §9). The round found R1 24 / 25 fixed with DR6-145 partly fixed, R2 28 / 28 fixed, no regression; 41 new findings → 20 issues DR6-158…177 (0 Medium, 13 Low, 7 Nit), one finding rejected. Not ready for v1.0 at `37a80b6` because everything is fixed before G7 (K47) and DR6-145 is partly fixed. Each question only chose how to fix; the OWNER took every proposal as written:
+  - Q1 (a), DR6-160: the trash restore button tells all three cases apart. An appointment's or policy's adds the customer code when the customer's name matches another customer with a row in the trash (`customer.withCode` of 9b); two people alike in name, role and team add the deletion time; backup import accepts only the customer code the app makes (`K-` + 4 Crockford base32 characters), a new import rule under K1 / R2-02.
+  - Q2 (a), DR6-165: the Mock extraction's cost after T-330 / T-336 is accepted with no code change; its new baseline (first call of the process 28.5 ms, the 3 551 real notes 103.5 ms, first click on screen 53 ms) goes into `docs/metrics/phase-6.md`.
+  - Q3 (a), DR6-169: the separator guard also catches its marks written as `\uXXXX` escapes in strings and templates and as named or numeric HTML entities in JSX text.
+  - Q4 (a), DR6-170: the nine overflowing places are fixed, and one e2e sweeps every main screen with long unbroken names at 1 100 and 1 440 px.
+
+  Fix issues: #1045…#1052 (T-363…T-370, synthesis §8.5).
+
 ## Next decision
 
 Session-level state and the exact next step: HANDOFF, the pinned issue labelled `handoff`. Task order and progress: the open milestone on GitHub. Phase plan: `docs/PROJECT-PLAN.md` §5.

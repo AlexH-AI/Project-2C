@@ -64,7 +64,7 @@ Lần đầu cả ba bên cùng kết luận đúng. DeepSeek đã áp K47 theo 
   - Claude đọc dữ liệu tải và exe ở `-r4\common`;
   - Claude D liệt kê thư mục lượt 4 của chính nó.
 - **Còn trước G7:**
-  - Owner trả lời §9 (4 câu, chỉ là chọn cách sửa). Rồi tạo 8 Issue sửa theo §8.2: ≈ 85–195 dòng SP + ≈ 500 dòng test, phần lớn là test.
+  - 8 Issue sửa theo §8.2 (#1045–#1052, §8.5; Owner 05/11 đồng ý cả 4 đề xuất của §9): ≈ 85–195 dòng SP + ≈ 500 dòng test, phần lớn là test.
   - Các điều kiện ngoài review (spec §1 mục 2, 4):
     - nghiệm thu trên exe phát hành, gồm NT-HD-01 còn `L3 ❌ #1019` và các dòng có màn mà đợt sửa đổi (K46);
     - eval AI thật (NT-EV-01) với version prompt cuối;
@@ -433,7 +433,7 @@ Một phát hiện P: **DR6-165** (Mock trích xuất). Không thao tác chính 
    - số đo và kết quả lượt 5 vào `docs/metrics/phase-6.md`;
    - ghi chú quy trình của đợt 2 vào kế hoạch (Phụ lục V, "Ghi chú sau lượt 5"; Issue #1042 Mục tiêu 7);
    - các quyết định Owner trong đợt 2 vào `docs/PROJECT-STATE.md`.
-4. **Owner trả lời §9.** Sau đó tạo 8 Issue theo §8.2: mẫu Task, milestone Phase 6, ≤ ~400 / ~800 dòng, "Bị chặn bởi" theo file dùng chung. Ghi quyết định ở `PROJECT-STATE.md`, bảng Issue ở §8.5.
+4. **Owner trả lời §9:** xong 05/11, đồng ý cả 4 đề xuất. 8 Issue theo §8.2 đã tạo (mẫu Task, milestone Phase 6, ≤ ~400 / ~800 dòng): bảng ở §8.5; quyết định ở `PROJECT-STATE.md` (2026-11-05).
 5. **Sau đợt sửa: G7.** Gồm:
    - nghiệm thu lại trên exe phát hành các dòng NT có màn hay hành vi đổi (K46): tên dài ở các màn của DR6-170, hộp Hợp đồng, hai ô tìm, tên nút khôi phục, khung dán ChatGPT web; cùng NT-HD-01 (còn `L3 ❌ #1019`);
    - chụp lại ảnh hướng dẫn có màn bị đổi. Tên thường không đổi hình ở DR6-170; bộ kiểm ảnh báo nếu khác;
@@ -449,19 +449,19 @@ Một phát hiện P: **DR6-165** (Mock trích xuất). Không thao tác chính 
 | **L5-C** AI | 164, 165 (theo Q2), 166, 167, 168 | Ca `worded` ("1. Khách đã kết hôn.", "... Hai vợ chồng …", đối chứng "Gặp. Khách đã kết hôn."). Mock: ngoại lệ "bé nghĩa nhỏ" áp cả cho dạng khác của luật 3; `BULLET` nhận "–" (U+2013) theo cùng điều kiện khoảng trắng; §10 ghi hai điểm. Rule `ai-test-support-only-in-tests` xét mọi file không phải test của package `ai` ở bên nhập, kể cả `apps/`. Khung dán ChatGPT web hỏi "trống" như ô khác (bỏ ký tự vô hình theo tập K20 rồi cắt khoảng trắng), ở `checkWebAnswer` và ở nút; sửa chữ spec §3.1 mục 3 | ≈ 15–30 SP + ≈ 60 test | `packages/ai/src/{mock-extraction.ts,web.ts}` (+ test), `apps/desktop/src/routes/customers/KycWebSession.tsx`, `.dependency-cruiser.cjs`, `docs/design/phase-5-ai.md` (§3.1, §10) | Đột biến T6 của Claude C bị giết; hai câu của CXR5-C1, C2 ra đề xuất; import `test-support` từ `apps/desktop/src` → `lint:deps` đỏ; dán U+200B / U+2060 → `EMPTY`, không tính lần thử; 1 972 đề xuất trên ghi chú thật chỉ thêm, không mất | med; review mức high (`packages/ai`). Không G5: không đổi prompt, validator hay danh sách chặn | — |
 | **L5-D** Bộ chặn ký hiệu | 169 (theo Q3) | Thêm `←–…“”‘’` vào tập ký hiệu. Theo Q3: bắt escape `\uXXXX` trong chuỗi / template và thực thể HTML trong chữ JSX. Luật dấu nối JSX bỏ qua khoảng trắng, xuống dòng và một `{' '}` / `{" "}` giữa `}` và dấu nối, xét cả dấu nối đứng trước `<` của một phần tử. Bộ đếm `types` đếm `<` lồng của kiểu hàm generic. `JOINER` chỉ báo khi chuỗi là đối số của `.join(` (hay ghi giới hạn vào doc) | ≈ 15–35 SP + ≈ 60 test | `packages/ui/src/token-guard.ts` (+ test) | Mọi dạng 🔁 ở §6.4 (a), (b) bị báo, (c) không báo; `ast-compare` 0 báo nhầm trên mọi file của repo; `plant-forms` của Claude D: 510 / 510 lần cắm bị báo | low | — |
 | **L5-E** Chuỗi liền dài | 170 (theo Q4), 174 (c) | Bọc `block max-w-60 wrap-anywhere` / `min-w-0 wrap-anywhere` ở chín chỗ (cách của DR6-117 / 148; tên thường không đổi hình); ô chọn góc nhìn giới hạn bề rộng, lựa chọn vẫn hiện đủ khi mở. Ca e2e theo Q4. Ca cột Team của Theo RE ≤ 240 px | ≈ 15–25 SP + ≈ 100 e2e | `apps/desktop/src/routes/{customers/CustomersScreen.tsx,customers/CustomerProfile.tsx,customers/CustomerPolicies.tsx,customers/KycHistory.tsx,appointments/AppointmentsScreen.tsx,SettingsTrash.tsx,FilterBar.tsx,overview/StageBlock.tsx}`, `apps/desktop/src/shell/ScopePicker.tsx` hay `packages/ui/src/components/SelectField.tsx`, `e2e/long-names.spec.ts` | KH 81 chữ, RE / team 160 chữ liền, nhãn model 100 chữ ở 1 100 / 1 440: không màn nào cuộn ngang; E148e bị giết | low | — |
-| **L5-F** Gói E: Thùng rác, ô tìm, hộp HĐ, test hở | 160 (theo Q1), 172, 173, 174 (a, b) | Tên nút khôi phục theo Q1. `searchCustomers` / `filterTrash` so trên `normalizeText` (một hàm "chuỗi tìm" dùng chung), `AppointmentDialog.tsx:378` hỏi trống bằng `normalizeText`. `PolicyDialogs` `shown` dùng `normalizeText`. e2e: Enter / click nút "Đang nhập…" của 10a → một backup; Thùng rác nhập bù lịch Dự kiến ngày trước hôm nay, xóa → dòng / tên nút / hộp 11b "Chưa ghi kết quả" | ≈ 15–40 SP + ≈ 120 test / e2e | `apps/desktop/src/routes/{trash-view.ts,appointments/appointment-form.ts,appointments/AppointmentDialog.tsx,customers/PolicyDialogs.tsx}` (+ test), `packages/db/src/trash.ts` (theo Q1), `e2e/{dialog-keyboard,trash,customer-policies}.spec.ts` | Ca của Q1 có tên nút khác nhau; U+200B / NBSP / hai dấu cách → tìm ra; ô HĐ chỉ có ký tự vô hình chờ Lưu như ô trống; E154d, E350c, E350d bị giết | low (med nếu Q1 thêm luật nhập) | — |
+| **L5-F** Gói E: Thùng rác, ô tìm, hộp HĐ, test hở | 160 (theo Q1), 172, 173, 174 (a, b) | Tên nút khôi phục theo Q1. `searchCustomers` / `filterTrash` so trên `normalizeText` (một hàm "chuỗi tìm" dùng chung), `AppointmentDialog.tsx:378` hỏi trống bằng `normalizeText`. `PolicyDialogs` `shown` dùng `normalizeText`. e2e: Enter / click nút "Đang nhập…" của 10a → một backup; Thùng rác nhập bù lịch Dự kiến ngày trước hôm nay, xóa → dòng / tên nút / hộp 11b "Chưa ghi kết quả" | ≈ 15–40 SP + ≈ 120 test / e2e | `apps/desktop/src/routes/{trash-view.ts,appointments/appointment-form.ts,appointments/AppointmentDialog.tsx,customers/PolicyDialogs.tsx}` (+ test), `packages/db/src/{trash.ts,backup-validation.ts}` (theo Q1), `e2e/{dialog-keyboard,trash,customer-policies}.spec.ts`, `docs/design/phase-3-du-lieu.md` (luật mã KH) | Ca của Q1 có tên nút khác nhau; mã KH sai khuôn → nhập từ chối; U+200B / NBSP / hai dấu cách → tìm ra; ô HĐ chỉ có ký tự vô hình chờ Lưu như ô trống; E154d, E350c, E350d bị giết | med (Q1 (a) thêm luật nhập mã KH) | — |
 | **L5-G** Công cụ | 175, 176, 177 | Ca cho `globMeetsFolder` (`packages/*/src`, `packages/a*/src`), `waitFor` (lỗi xen lần đọc tốt), `titleState` (số dính trước), `reviewedPr` (yêu cầu kẹp giữa hai khối). `ci --since`: chỉ tính run `pull_request` của đúng PR tạo sau mốc, và kết luận theo check của run đó (hay đòi run đó xong không `cancelled`). `metRows` lọc theo ô Trạng thái | ≈ 10–30 SP + ≈ 60 test | `tools/{notes-core,auto-wait-core,review-hint-core}.test.mjs`, `tools/auto-wait-core.mjs`, `tools/auto-wait.mjs`, `e2e/perf/probe.perf.ts` | R156b, W15, W13b, H6 bị giết; ca `workflow_dispatch` / run hủy → chưa xong; KH tên chứa "Đã gặp" không vào phép đếm | low. `tools/auto-wait*`, `review-hint-core`, `notes-core` (qua `notes-for`) thuộc rào "không tự sửa" của `auto-issues`: làm ngoài pipeline (K45) | — |
 | **L5-H** Tài liệu | 171, 165 (theo Q2 (a)) | Thêm 7c vào câu 7d ở mục "Ô chọn"; ghi chú NT-AI-17 trỏ §10 (hay liệt kê ngắn). Theo Q2 (a): ghi mốc Mock trích xuất vào `phase-6.md` | tài liệu | `docs/testing/nghiem-thu-v1.md`, `docs/metrics/phase-6.md` | Dòng ghi có, khớp app / mockup | low | — |
 
-Tổng: **8 Issue**, ≈ 85–195 dòng SP + ≈ 500 dòng test, phần lớn là test. Không nhóm nào cần `build-exe`: L5-B chỉ đọc `src-tauri/capabilities` trong test, không sửa. Không G5. Hai nhóm `risk:med` (L5-A, L5-B); L5-C `risk:med` và review mức high.
+Tổng: **8 Issue**, ≈ 85–195 dòng SP + ≈ 500 dòng test, phần lớn là test. Không nhóm nào cần `build-exe`: L5-B chỉ đọc `src-tauri/capabilities` trong test, không sửa. Không G5. Bốn nhóm `risk:med`: L5-A, L5-B, L5-F (luật nhập mã KH theo Q1 (a)) và L5-C (review nâng lên mức high vì chạm `packages/ai/**`).
 
 ### 8.3 Thứ tự, ước lượng
 
-1. Owner trả lời §9.
+1. Owner trả lời §9 (xong 05/11).
 2. Tám nhóm làm song song được, vì khác file. L5-E và L5-F cùng chạm màn Thùng rác: L5-E ở ô "Thuộc" của `SettingsTrash.tsx`, L5-F ở `trash-view.ts`. PR nào merge sau thì `gh pr update-branch` như thường.
 3. G7 sau khi cả 8 nhóm merge (§8.1 mục 5).
 
-Mỗi Issue một phiên, review phiên sạch như thường; L5-G làm ngoài pipeline `auto-issues`. Ước ≈ 1,5–2 ngày làm, tùy số PR Owner phải merge (hai PR `risk:med` và L5-C).
+Mỗi Issue một phiên, review phiên sạch như thường; L5-G làm ngoài pipeline `auto-issues`. Ước ≈ 1,5–2 ngày làm, tùy số PR Owner phải merge (bốn PR `risk:med`: L5-A, L5-B, L5-C, L5-F).
 
 ### 8.4 KNOWN có bằng chứng mới, không đánh số DR6
 
@@ -471,11 +471,24 @@ Không có. Các ca chạm KNOWN mà reviewer tự xếp đúng:
 - dữ liệu exe trước v1.0 bị luật mới từ chối (K1, NT-EX-08 / 09; Claude F F1, Codex F F06);
 - tên TL dài ở hàng tiêu đề thẻ team (ACCEPTED 02/11; DeepSeek D).
 
-### 8.5 Issue sửa
+### 8.5 Issue sửa đã tạo (05/11)
 
-_Tạo sau khi Owner trả lời §9._
+| Nhóm | Issue | Task | Rủi ro / nhãn | Bị chặn bởi |
+|---|---|---|---|---|
+| L5-A | #1045 | T-363 Test `byName` giữ sửa DR6-136, nhãn model hỏi trống bằng `normalizeText` | med | — |
+| L5-B | #1046 | T-364 Test hợp đồng capability đủ, hàng đợi lưu không chồng lượt, nhánh chết `app-data` | med | — |
+| L5-C | #1047 | T-365 Mock trích xuất (`worded`, "bé", gạch "–"), rule `test-support`, khung dán ChatGPT web trống | med (review mức high) | — |
+| L5-D | #1048 | T-366 Bộ chặn ký hiệu bắt đủ ký hiệu, escape, thực thể HTML, dấu nối JSX, bỏ báo nhầm | low | — |
+| L5-E | #1049 | T-367 Chuỗi liền dài ở chín chỗ và e2e quét mọi màn | low | — |
+| L5-F | #1050 | T-368 Tên nút khôi phục, luật nhập mã KH, hai ô tìm, hộp HĐ, e2e 10a và Thùng rác | med | — |
+| L5-G | #1051 | T-369 Công cụ: test `notes-core` / `auto-wait` / `review-hint`, `ci --since`, `metRows` của probe | low (ngoài pipeline `auto-issues`) | — |
+| L5-H | #1052 | T-370 Tài liệu nghiệm thu (7c, NT-AI-17) và mốc Mock trích xuất | low | — |
+
+Mọi Issue có `type:task`, `ready-for-agent`, milestone Phase 6. Mục "Ghi chú OPEN liên quan" của từng Issue lấy theo `notes-for --files` (sổ @ `37a80b6`): sổ OPEN rỗng nên không có mục nào. Không Issue nào chặn Issue nào: L5-E và L5-F cùng chạm màn Thùng rác nhưng khác file (§8.3).
 
 ## 9. Câu hỏi cần Owner quyết
+
+**Owner trả lời 05/11: đồng ý cả 4 đề xuất**: Q1 (a), Q2 (a), Q3 (a), Q4 (a). Ghi ở `docs/PROJECT-STATE.md` (2026-11-05); Issue theo §8.5.
 
 Mỗi câu có đề xuất; Owner đồng ý mà không ghi gì khác thì lấy đề xuất. Mọi câu chỉ là **chọn cách sửa** (Owner đã chốt sửa hết, K47).
 
