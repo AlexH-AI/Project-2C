@@ -46,7 +46,7 @@ Lần đầu cả ba bên cùng kết luận đúng. DeepSeek đã áp K47 theo 
   - Codex chấm khác ở 6 dòng (DR6-139; T-330, T-336, T-338, T-339, T-346). Phiên tổng hợp chốt ĐÃ SỬA cả 6: mô tả của DR6 và mục tiêu, test chấp nhận của Issue đều đạt; phần Codex thấy còn hở là biến thể ngoài mô tả, thành vấn đề mới (§3.1).
 - **Phát hiện mới: 41 (Claude 16, Codex 20, DeepSeek 5) → 20 vấn đề `DR6-158…177`: 0 Medium · 13 Low · 7 Nit**; 1 phát hiện bị bác (CXR5-B1, §5.1); 0 mục KNOWN có bằng chứng mới.
   - 11 vấn đề có phần mới do ba đợt sau lượt 4: 9 hẳn (158, 164, 165, 167, 171, 174, 175, 176, 177), 2 một phần (166, 169). 9 có từ trước, lượt 1–4 bỏ sót.
-  - Năm mục chênh mức: CLR5-E3 Nit → Low; CXR5-A1, CXR5-C1, CXR5-C2, CXR5-F2 Low → Nit (§5.1).
+  - Bảy mục chênh mức: CLR5-D1, CLR5-E3, DSR5-D2 Nit → Low; CXR5-A1, CXR5-C1, CXR5-C2, CXR5-F2 Low → Nit (§5.1).
   - Một phát hiện P: DR6-165 (Mock trích xuất sau T-330 / T-336). Lần gọi đầu và lượt trên cả bộ ghi chú thật chậm quá luật nhiễu, dưới ngưỡng 200 ms.
   - Phần lớn là hiển thị với đầu vào hiếm (tên liền dài, chữ dán có ký tự vô hình) và test hở của chính phần sửa. Không phát hiện nào làm mất hay sai dữ liệu đã lưu ở thao tác thường.
 - **Ba bên bổ sung nhau** (§2.2). Claude thấy 13 / 20 vấn đề, Codex 11, DeepSeek 4. Mỗi bên có vấn đề chỉ mình thấy:
@@ -105,7 +105,7 @@ Cách đếm như lượt 4 §2.2: một bên được tính là thấy DR6-xx n
 | Chỉ mình thấy | **7** (159, 161, 164, 165, 172, 174, 175) | 5 (162, 166, 167, 176, 177) | 2 (163, 168) |
 | Thấy cùng bên khác | 6 (158, 160, 169, 170, 171, 173) | 6 (158, 160, 169, 170, 171, 173) | 2 (169, 173) |
 | Dòng R chấm khác chốt | 0 | 6 (DR6-139; T-330, 336, 338, 339, 346) | 0 |
-| Chênh mức khi kiểm | 1 / 16 (E3 lên) | 4 / 20 (A1, C1, C2, F2 xuống) | 0 / 5 |
+| Chênh mức khi kiểm | 2 / 16 (D1, E3 lên) | 4 / 20 (A1, C1, C2, F2 xuống) | 1 / 5 (D2 lên) |
 | PLAUSIBLE | 0 | 0 | 0 |
 | KNOWN có bằng chứng mới | 0 | 0 | 0 |
 | Kết luận G7 | CHƯA (đúng) | CHƯA (đúng) | CHƯA (đúng; lượt 4 và review Phase 5: SẴN SÀNG, sai) |
@@ -602,7 +602,7 @@ Làm 05/11 trên Home PC. Log đọc bằng script `node`, không gọi model. S
 - Các phát hiện còn lại: đọc lại đúng chỗ code + bằng chứng (probe / đột biến / ảnh) của reviewer; với test hở, đọc test hiện có để thấy chỗ hở khớp mô tả. Không đo lại exe: bước chuẩn bị và Claude F đo cùng máy, số khớp.
 - Phiên tổng hợp:
   - bác một phát hiện (CXR5-B1);
-  - chênh mức năm mục;
+  - chênh mức bảy mục;
   - chấm sáu dòng R khác Codex;
   - nhận một ca mà Claude E, DeepSeek E thấy nhưng không nêu (CXR5-A2).
 
