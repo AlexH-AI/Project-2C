@@ -305,6 +305,20 @@ describe('ciState', () => {
         { done: false, text: 'CI 2 pass, 0 fail, 0 pending @abc1234, no check of run 2 yet' },
       );
     });
+
+    it('calls a failed run red even when the head shows no red check of it yet', () => {
+      // gh reads the checks before the runs, so the Actions API can already say the run failed.
+      const failed = { ...fresh, conclusion: 'failure' };
+      for (const rollup of [freshChecks, [...oldChecks, ...freshChecks], oldChecks]) {
+        expect(
+          ciState(pr({ statusCheckRollup: rollup }), { since, runs: () => [old, failed] }),
+        ).toEqual({
+          done: true,
+          code: EXIT.bad,
+          text: 'CI red @abc1234: run 2 failed, no red check of it yet',
+        });
+      }
+    });
   });
 
   it('is done at once for a docs-only PR, which CI skips', () => {

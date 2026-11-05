@@ -127,9 +127,10 @@ function newestRunOfPr(pr, all, since) {
  * `since`, the verdict is that of the newest `pull_request` run of the PR's branch made at or after
  * that time, read from its own checks: after `gh pr close` + `gh pr reopen` the head keeps its old
  * checks, all ended, until GitHub makes the new run, and a run of another event (workflow_dispatch)
- * or one cancelled says nothing of the reopened PR (DR6-176). A docs-only PR has no CI at all
- * (ci.yml `paths`), so it is done at once; `files()` gives the PR's files to tell, and is called
- * only while CI has no check.
+ * or one cancelled says nothing of the reopened PR (DR6-176). A run that failed is red even with no
+ * red check of it on the head yet: waiting for one could last until the timeout (T-373). A docs-only
+ * PR has no CI at all (ci.yml `paths`), so it is done at once; `files()` gives the PR's files to
+ * tell, and is called only while CI has no check.
  */
 export function ciState(pr, { not = null, since = null, runs = () => [], files = () => [] } = {}) {
   const stop = notOpen(pr);
@@ -171,16 +172,24 @@ export function ciState(pr, { not = null, since = null, runs = () => [], files =
       };
     }
     checks = rollup.filter((c) => runOf(c) === String(own.id));
-    if (checks.length === 0) {
-      return {
-        done: false,
-        text: `${checksSummary(rollup)} @${head}, no check of run ${own.id} yet`,
-      };
-    }
   }
   const failed = checks.filter((c) => checkCounts([c]).fail === 1).map((c) => c.name ?? c.context);
   if (failed.length) {
     return { done: true, code: EXIT.bad, text: `CI red @${head}: ${failed.join(', ')}` };
+  }
+  // The rollup is read before the runs, so it may not show a red check of a run that failed yet.
+  if (own?.conclusion === 'failure') {
+    return {
+      done: true,
+      code: EXIT.bad,
+      text: `CI red @${head}: run ${own.id} failed, no red check of it yet`,
+    };
+  }
+  if (own && checks.length === 0) {
+    return {
+      done: false,
+      text: `${checksSummary(rollup)} @${head}, no check of run ${own.id} yet`,
+    };
   }
   return {
     done: true,
