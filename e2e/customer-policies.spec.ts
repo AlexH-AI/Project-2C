@@ -130,6 +130,36 @@ test('refuses a zero, negative or unreadable FYP', async ({ page }) => {
   expect(await policyCount(page)).toBe(before + 1);
 });
 
+// DR6-173: a day or an FYP of invisible characters alone shows nothing and waits for "Lưu HĐ" as an
+// empty field does (as 6b, 6c and 6e since DR6-150); saving still asks for both.
+test('a day or an FYP of invisible characters alone is asked for only on saving (8a, DR6-173)', async ({
+  page,
+}) => {
+  const INVISIBLE = '\u{200B}\u{85}\u{2060}';
+  await openProfile(page);
+  const before = await policyCount(page);
+  const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
+  await card.getByRole('button', { name: '+ Hợp đồng' }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'Hợp đồng mới · đã nộp' });
+  const day = dialog.getByRole('textbox', { name: /^Ngày nộp/ });
+  const fyp = dialog.getByRole('textbox', { name: /^FYP nộp/ });
+  await day.fill(INVISIBLE);
+  await fyp.fill(INVISIBLE);
+  await expect(day).not.toHaveAttribute('aria-invalid');
+  await expect(fyp).not.toHaveAttribute('aria-invalid');
+  await expect(dialog).not.toContainText('Nhập ngày.');
+  await expect(dialog).not.toContainText('Chưa nhập số tiền.');
+
+  await dialog.getByRole('button', { name: 'Lưu HĐ' }).click();
+  await expect(day).toHaveAttribute('aria-invalid', 'true');
+  await expect(fyp).toHaveAttribute('aria-invalid', 'true');
+  await expect(day).toHaveAccessibleDescription(/Nhập ngày\./);
+  await expect(fyp).toHaveAccessibleDescription(/Chưa nhập số tiền\./);
+  await dialog.getByRole('button', { name: 'Hủy', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  expect(await policyCount(page)).toBe(before);
+});
+
 // DR6-38 (R38e): the day 8b filled in as dd/mm reads in the year the dialog opened in.
 test('a policy issued across New Year keeps the day the dialog showed (8b)', async ({ page }) => {
   await openProfile(page);

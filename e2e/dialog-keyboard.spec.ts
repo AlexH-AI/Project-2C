@@ -212,10 +212,18 @@ test('the dialog of a running import keeps the focus on what runs (10a, DR6-154)
   await page.keyboard.press('Escape');
   await expect(dialog).toBeVisible();
   await expect(running).toBeFocused();
+  // DR6-174 (a): pressed while it runs, by Enter, Space or the pointer, it does not import again.
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Space');
+  await running.click({ force: true });
+  await expect(running).toBeFocused();
 
   await page.evaluate(() => window.exe.releaseBackup());
   await expect(dialog).toHaveCount(0);
   await expect(backup.getByRole('status')).toContainText('Đã nhập backup');
+  // One import, with its one backup.
+  const events = await page.evaluate(() => window.exe.events);
+  expect(events.filter((event) => event === 'backup')).toHaveLength(1);
   // The button that chose the file has the focus back (review of PR 924).
   await expect(open).toBeFocused();
 });

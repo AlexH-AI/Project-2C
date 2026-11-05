@@ -159,8 +159,11 @@ function validKycValue(field: string, json: string): boolean {
 
 type Row = Record<string, SqlValue>;
 
-/** A rule across tables, by its number in spec §6; 11–14 are rules 1–4 of spec Phase 5 §7.3. */
-type Rule = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14;
+/**
+ * A rule across tables, by its number in spec §6; 11–14 are rules 1–4 of spec Phase 5 §7.3; 15, the
+ * customer's code, is a value of spec §6 "Kiểm giá trị" that names its rule (DR6-160).
+ */
+type Rule = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15;
 
 /**
  * Throws `BACKUP_INVALID`, params `rule` (the first rule of spec §6 broken), when the tables
@@ -181,8 +184,21 @@ export function validateBackupInvariants(db: Database): void {
     kycRule(read, customers) ??
     staffRule(read) ??
     futureRule(read, storedDate(today(db))) ??
-    aiRule(read, storedDate(today(db)));
+    aiRule(read, storedDate(today(db))) ??
+    codeRule(customers);
   if (broken !== null) throw new DbError('BACKUP_INVALID', { rule: broken });
+}
+
+/** A customer's code as `freeCode` writes it: `K-` and four characters of Crockford base32. */
+const CUSTOMER_CODE = /^K-[0-9A-HJKMNP-TV-Z]{4}$/;
+
+/**
+ * Rule 15 (DR6-160; Q1 (a), Owner 05/11/2026): every customer's code, deleted or not, is one the app
+ * writes, so the restore buttons of Thùng rác that tell two customers of a name apart by their code
+ * never read alike for codes apart only by their spaces.
+ */
+function codeRule(customers: Row[]): Rule | null {
+  return customers.every((customer) => CUSTOMER_CODE.test(String(customer.code))) ? null : 15;
 }
 
 /** Rules 1–3: each customer's transitions chain from creation to its stage (ADR-0007, D10). */

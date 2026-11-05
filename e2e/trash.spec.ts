@@ -194,6 +194,32 @@ test('a deleted appointment shows in Thùng rác, whatever the scope (TR-7)', as
   await expect(rows.nth(1)).toContainText(`KH ${name}`);
 });
 
+// T-350 on screen (DR6-174 (b)): a planned appointment of a day past has no outcome recorded yet,
+// as every screen says by today; the row, its button and the restore dialog read so too.
+test('a deleted appointment of a day past still planned reads "Chưa ghi kết quả" (NT-TR-07; 11a)', async ({
+  page,
+}) => {
+  await page.goto('/#/appointments');
+  const name = await book(page, '10/9');
+  await expect(detail(page)).toContainText('Chưa ghi kết quả');
+  await detail(page).getByRole('button', { name: 'Xóa', exact: true }).click();
+  const confirm = page.getByRole('dialog', { name: 'Xóa lịch hẹn 10/09/2026?' });
+  await confirm.getByRole('button', { name: 'Xóa lịch hẹn' }).click();
+  await expect(confirm).toHaveCount(0);
+  await openTrash(page);
+
+  const row = table(page).getByRole('row').nth(1);
+  await expect(row.getByRole('cell').nth(1)).toContainText('10/09/2026 · Chưa ghi kết quả');
+  const restore = row.getByRole('button', { name: /^Khôi phục/ });
+  await expect(restore).toHaveAccessibleName(
+    `Khôi phục lịch hẹn 10/09/2026 · Chưa ghi kết quả của KH ${name}`,
+  );
+  await restore.click();
+  const dialog = page.getByRole('dialog', { name: 'Khôi phục lịch hẹn 10/09/2026?' });
+  await expect(dialog).toContainText('Trạng tháiChưa ghi kết quả');
+  await expect(dialog).not.toContainText('Dự kiến');
+});
+
 test('restores a deleted customer, then its appointment deleted on its own (TR-1, TR-4, TR-8; 11b, 11e)', async ({
   page,
 }) => {

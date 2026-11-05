@@ -180,7 +180,8 @@ describe('listTrash: appointments (TR-2, TR-3, TR-5)', () => {
       date: d(6, 10),
       status: 'SCHEDULED',
       owner: {
-        customer: { id: anh.id, name: 'Trịnh Minh Anh', deleted: true },
+        // With the code that tells two customers of a name apart (DR6-160).
+        customer: { id: anh.id, name: 'Trịnh Minh Anh', code: anh.code, deleted: true },
         re: { name: 'Đỗ Khánh Linh', deleted: false },
       },
       blocked: { code: 'CUSTOMER_NOT_FOUND', params: { name: 'Trịnh Minh Anh' } },
@@ -592,7 +593,7 @@ describe('listTrash: policies (TR-2, TR-5)', () => {
       issuedDate: null,
       issuedFyp: null,
       owner: {
-        customer: { name: 'Hoàng Ngọc Lan', deleted: false },
+        customer: { id: lan.id, name: 'Hoàng Ngọc Lan', code: lan.code, deleted: false },
         re: { name: 'Đỗ Khánh Linh', deleted: false },
       },
       effect: { kind: 'none' },

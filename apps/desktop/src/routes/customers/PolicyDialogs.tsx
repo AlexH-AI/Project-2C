@@ -10,6 +10,7 @@ import {
   formatDate,
   formatVndCompact,
   formatVndDelta,
+  normalizeText,
   type CalendarDate,
   type Person,
   type Policy,
@@ -75,8 +76,9 @@ export function PolicyDialog({
   };
   const editIssued = (changes: Partial<NonNullable<PolicyDraft['issued']>>) =>
     draft.issued && edit({ issued: { ...draft.issued, ...changes } });
-  // An empty field shows its error only once saving was tried.
-  const shown = (text: string) => attempted || text.trim() !== '';
+  // An empty field shows its error only once saving was tried; one of invisible characters alone is
+  // empty, as in 6b, 6c and 6e (DR6-150, DR6-173).
+  const shown = (text: string) => attempted || normalizeText(text) !== '';
 
   const submittedDateError =
     shown(draft.submittedDate) && !read.submittedDate.ok

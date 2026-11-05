@@ -419,6 +419,34 @@ function form(page: Page) {
   };
 }
 
+// DR6-172: the customer box reads what is typed as names are stored (`normalizeText`), so a name
+// pasted with U+200B, a no-break space or two spaces finds the customer; invisible characters alone
+// leave the box as empty, with no list and no "Không có KH khớp.".
+test('the customer box finds a name pasted with invisible characters or other spaces (DR6-172)', async ({
+  page,
+}) => {
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const f = form(page);
+  const box = f.dialog.getByRole('textbox', { name: /^Khách hàng/ });
+  const matches = f.dialog.getByRole('list', { name: 'KH khớp' });
+  await box.fill('K-');
+  const name = (await matches.getByRole('button').first().locator('b').textContent()) ?? '';
+  expect(name).toContain(' ');
+
+  for (const pasted of [
+    `\u{200B}${name}`,
+    name.replaceAll(' ', '\u{00A0}'),
+    name.replaceAll(' ', '  '),
+    `${name.slice(0, 1)}\u{2060}${name.slice(1)}`,
+  ]) {
+    await box.fill(pasted);
+    await expect(matches.locator('b', { hasText: name }).first(), pasted).toBeVisible();
+  }
+  await box.fill('\u{200B}\u{2060}\u{3164}');
+  await expect(matches).toHaveCount(0);
+  await expect(f.dialog).not.toContainText('Không có KH khớp.');
+});
+
 test('creates an appointment: the day is read back, a trigger is required, the day lists it', async ({
   page,
 }) => {

@@ -18,7 +18,6 @@ import {
   formatDate,
   formatLocalDateTime,
   formatVnd,
-  stripDiacritics,
   type CalendarDate,
   type CustomerStage,
 } from '@p2c/domain';
@@ -26,6 +25,7 @@ import type { DataTableMoreLabels } from '@p2c/ui';
 import { isUnsavedChangesError, type AppData, type PurgedTrash } from '../data/app-data';
 import { errorMessage, joinParts, t } from '../i18n';
 import { routeToHash } from '../shell/routes';
+import { searchText } from './appointments/appointment-form';
 import { statusLabel } from './appointments/appointments-view';
 import { policyStatusText } from './customers/policy-form';
 
@@ -71,11 +71,11 @@ export function filterTrash(
   filter: TrashFilter,
   query: string,
 ): readonly TrashRow[] {
-  const needle = stripDiacritics(query.trim().toLowerCase());
+  const needle = searchText(query);
   return rows.filter(
     (row) =>
       (filter === 'all' || row.kind === filter) &&
-      (needle === '' || stripDiacritics(searchedName(row).toLowerCase()).includes(needle)),
+      (needle === '' || searchText(searchedName(row)).includes(needle)),
   );
 }
 
@@ -195,18 +195,45 @@ export function ownerParts(row: TrashRow): OwnerPart[] {
 }
 
 type CustomerRow = Extract<TrashRow, { kind: 'customer' }>;
+type PersonRow = Extract<TrashRow, { kind: 'person' }>;
+type RecordRow = Extract<TrashRow, { kind: 'appointment' | 'policy' }>;
+
+/** A row among the rows of every kind: ids are only unique within a table. */
+const rowKey = (row: TrashRow) => `${row.kind}:${row.id}`;
+
+/** The rows of `rows` that another one has the `key` of. */
+function alike<R>(rows: readonly R[], key: (row: R) => string): R[] {
+  const count = new Map<string, number>();
+  for (const row of rows) count.set(key(row), (count.get(key(row)) ?? 0) + 1);
+  return rows.filter((row) => count.get(key(row))! > 1);
+}
 
 /**
- * The customers of the trash whose restore button names their code: another customer there has
- * their name and their stage, all the button would say else (DR6-151; Q3 (a), Owner 31/10/2026).
- * Read from every row, whatever the filter.
+ * The rows of the trash whose restore button says what else tells them apart from a namesake, all
+ * the button would say else being alike (`restoreLabel`), by `rowKey`. Read from every row, whatever
+ * the filter. Q3 (a), Owner 31/10/2026 (DR6-151): a customer another one has the name and the stage
+ * of. Q1 (a), Owner 05/11/2026 (DR6-160): an appointment or a policy whose customer has the name of
+ * another customer of the trash, deleted or the customer of another record; a person another one has
+ * the name, the role and the team of.
  */
 export function codedCustomers(rows: readonly TrashRow[]): ReadonlySet<string> {
   const customers = rows.filter((row): row is CustomerRow => row.kind === 'customer');
-  const key = (row: CustomerRow) => `${row.stage}|${row.name}`;
-  const count = new Map<string, number>();
-  for (const row of customers) count.set(key(row), (count.get(key(row)) ?? 0) + 1);
-  return new Set(customers.filter((row) => count.get(key(row))! > 1).map((row) => row.id));
+  const people = rows.filter((row): row is PersonRow => row.kind === 'person');
+  const records = rows.filter(
+    (row): row is RecordRow => row.kind === 'appointment' || row.kind === 'policy',
+  );
+  // Each customer of the trash once, by id: a deleted one, the customer of a record.
+  const named = new Map(customers.map((row) => [row.id, row.name]));
+  for (const { owner } of records)
+    if (owner.customer) named.set(owner.customer.id, owner.customer.name);
+  const namesakes = new Set(alike([...named], ([, name]) => name).map(([id]) => id));
+  return new Set(
+    [
+      ...alike(customers, (row) => `${row.stage}|${row.name}`),
+      ...records.filter((row) => row.owner.customer && namesakes.has(row.owner.customer.id)),
+      ...alike(people, (row) => JSON.stringify([row.name, row.role, row.owner.team?.name ?? null])),
+    ].map(rowKey),
+  );
 }
 
 /**
@@ -215,30 +242,44 @@ export function codedCustomers(rows: readonly TrashRow[]): ReadonlySet<string> {
  * whatever tells two rows apart there tells their buttons apart (DR6-99, DR6-119); then an
  * appointment's or a policy's customer. Q3 (a), Owner 31/10/2026 (DR6-151): a person with their
  * role and team, the second line and "Thuộc"; a customer of `coded` with their code, as mockup 9b
- * names two of one name, since two such rows differ only past the first line.
+ * names two of one name, since two such rows differ only past the first line. Q1 (a), Owner
+ * 05/11/2026 (DR6-160): the customer of a record of `coded` with their code too, a person of `coded`
+ * with when they were deleted, as the column "Xóa lúc" tells them apart.
  */
 export function restoreLabel(
   row: TrashRow,
   coded: ReadonlySet<string>,
   today: CalendarDate,
 ): string {
+  const told = coded.has(rowKey(row));
   const title =
-    row.kind === 'customer' && coded.has(row.id)
+    row.kind === 'customer' && told
       ? t('customer.withCode', { name: row.name, code: row.code })
       : recordTitle(row, today);
-  const person = row.kind === 'person' ? [recordDetail(row), row.owner.team?.name] : [];
+  const person =
+    row.kind === 'person'
+      ? [
+          recordDetail(row),
+          row.owner.team?.name,
+          told && t('trash.restoreLabel.deletedAt', { when: deletedAtText(row) }),
+        ]
+      : [];
   const record = joinParts([title, recordBadge(row)?.text, ...person]);
   const label = t(`trash.restoreLabel.${row.kind}`, { record });
-  return row.kind === 'appointment' || row.kind === 'policy' ? ofCustomer(row, label) : label;
+  return row.kind === 'appointment' || row.kind === 'policy' ? ofCustomer(row, label, told) : label;
 }
 
 /**
- * "… của KH Name" after a label; a row with no customer, which the foreign key rules out, keeps the
- * label alone rather than end in "của KH".
+ * "… của KH Name" after a label, with the customer's code when `coded` (DR6-160); a row with no
+ * customer, which the foreign key rules out, keeps the label alone rather than end in "của KH".
  */
-function ofCustomer(row: TrashRow, label: string): string {
+function ofCustomer(row: RecordRow, label: string, coded: boolean): string {
   const customer = row.owner.customer;
-  return customer ? t('trash.restoreLabel.ofCustomer', { label, name: customer.name }) : label;
+  if (!customer) return label;
+  const name = coded
+    ? t('customer.withCode', { name: customer.name, code: customer.code })
+    : customer.name;
+  return t('trash.restoreLabel.ofCustomer', { label, name });
 }
 
 export function deletedAtText(row: TrashRow): string {

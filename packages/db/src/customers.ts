@@ -548,6 +548,7 @@ function birthDateText(db: Database, birthDate: BirthDate): string {
   return storedPastDate(db, { year: birthDate.year, month: 1, day: 1 }).slice(0, 4);
 }
 
+/** `K-` and four characters of Crockford base32, the only form a backup import takes (rule 15). */
 function freeCode(db: Database): string {
   for (;;) {
     const code = `K-${encodeBase32(db.random(new Uint8Array(3)))}`;

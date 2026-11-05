@@ -384,6 +384,8 @@ export const vi = {
   'trash.restoreLabel.appointment': 'Khôi phục lịch hẹn {record}',
   'trash.restoreLabel.policy': 'Khôi phục HĐ {record}',
   'trash.restoreLabel.ofCustomer': '{label} của KH {name}',
+  // After a person whom another one in the trash is alike in name, role and team (DR6-160).
+  'trash.restoreLabel.deletedAt': 'xóa lúc {when}',
   'trash.restore.confirm': 'Khôi phục',
   'trash.restore.title': 'Khôi phục {name}?',
   'trash.restore.titleAppointment': 'Khôi phục lịch hẹn {when}?',
