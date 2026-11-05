@@ -70,14 +70,20 @@ function RecordCell({ row, today }: { row: TrashRow; today: CalendarDate }) {
 function OwnerCell({ row }: { row: TrashRow }) {
   const parts = ownerParts(row);
   if (parts.length === 0) return <span className="text-fg-3">{t('trash.owner.none')}</span>;
-  // By place: a team's bare name could read as another part.
-  return parts.map((owner, index) => (
-    <span key={index}>
-      {index > 0 && ` ${t('sep.dot')} `}
-      {owner.text}
-      {owner.deleted && <span className="text-fg-3"> {t('trash.gone')}</span>}
+  // By place: a team's bare name could read as another part. Two names fit under the cap on their
+  // line; a longer one breaks there, even with no space, so the table stays in the window
+  // (DR6-170).
+  return (
+    <span className="block max-w-96 wrap-anywhere">
+      {parts.map((owner, index) => (
+        <span key={index}>
+          {index > 0 && ` ${t('sep.dot')} `}
+          {owner.text}
+          {owner.deleted && <span className="text-fg-3"> {t('trash.gone')}</span>}
+        </span>
+      ))}
     </span>
-  ));
+  );
 }
 
 /**

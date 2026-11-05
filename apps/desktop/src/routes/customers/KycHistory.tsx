@@ -88,7 +88,9 @@ export function AnalysisHistory({
                 {'badge' in row.source ? (
                   <SourceBadge source={row.source} />
                 ) : (
-                  sourceName(row.source)
+                  // A model no list has, from a backup edited by hand, breaks at a name's cap
+                  // rather than push the state out of the panel (DR6-170).
+                  <span className="block max-w-60 wrap-anywhere">{sourceName(row.source)}</span>
                 )}
               </td>
               <td className={`${CELL} text-end`}>

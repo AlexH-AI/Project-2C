@@ -65,7 +65,8 @@ export function ReportsScreen() {
       <section aria-label={summary} className={PANEL}>
         <div className="flex flex-wrap items-baseline gap-2">
           <h2 className={HEADING}>{summary}</h2>
-          <span className="text-xs text-fg-3">
+          {/* A long team or RE name breaks on its line rather than push the page (DR6-170). */}
+          <span className="min-w-0 text-xs wrap-anywhere text-fg-3">
             {summaryMeta(applied.scope, data.people, data.teams)}
           </span>
         </div>

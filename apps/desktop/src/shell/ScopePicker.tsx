@@ -36,10 +36,12 @@ export function ScopePicker({
         value={scope.kind}
         onChange={(kind) => onChange((choice) => chooseKind(choice, kind))}
       />
+      {/* Capped: a long name would push the top bar out of the window (DR6-170). */}
       {scope.kind === 'team' && teamPicker && (
         <SelectField
           label={t('scope.pickTeam')}
           labelHidden
+          capped
           size="md"
           value={scope.teamId}
           options={teams.map((team) => ({ value: team.id, label: team.name }))}
@@ -50,6 +52,7 @@ export function ScopePicker({
         <SelectField
           label={t('scope.pickRe')}
           labelHidden
+          capped
           size="md"
           value={scope.reId}
           options={reOptions(people, teams)}

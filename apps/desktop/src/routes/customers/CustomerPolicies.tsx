@@ -86,7 +86,7 @@ export function CustomerPolicies({
                   {p.issuedDate && p.issuedFyp !== null && (
                     <span>{dayFyp('policies.issued', p.issuedDate, p.issuedFyp)}</span>
                   )}
-                  {re && <span className="text-fg-3">{re.name}</span>}
+                  {re && <span className="min-w-0 wrap-anywhere text-fg-3">{re.name}</span>}
                   <span className="flex-1" />
                   {!p.issuedDate && (
                     <button

@@ -71,7 +71,10 @@ export function StageBlock({ block }: { block: StageBlockView }) {
           {block.charts.map((chart) => (
             <div key={chart.key} className="min-w-0">
               <h3 className="m-0 mb-1.5 flex items-baseline gap-2 text-sm font-semibold">
-                {t('overview.stages.team', { name: chart.team ?? '' })}
+                {/* A long team name breaks in its column, not over the next chart (DR6-170). */}
+                <span className="min-w-0 wrap-anywhere">
+                  {t('overview.stages.team', { name: chart.team ?? '' })}
+                </span>
                 <span className="text-xs font-normal text-fg-3 tabular-nums">
                   {stageChartLastText(chart, shown)}
                 </span>

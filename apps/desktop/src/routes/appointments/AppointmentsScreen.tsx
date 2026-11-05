@@ -72,6 +72,12 @@ const coordinatorText = (row: AppointmentRow) =>
   row.coordinators.map((person) => person.role).join(t('sep.list')) || t('appointments.none');
 
 /** The day shown when the period changes: today if it is in the period, else its first day. */
+/**
+ * A name of the list: under a cap it keeps its line and its column its width; a longer one breaks
+ * at the cap, even with no space, so the list stays in the window (DR6-170).
+ */
+const NAME = 'block max-w-60 wrap-anywhere';
+
 const dayIn = (period: Period, today: CalendarDate) =>
   isInPeriod(today, period) ? today : period.start;
 
@@ -178,13 +184,19 @@ export function AppointmentsScreen() {
           <button
             type="button"
             onClick={() => setSelectedId(r.appointment.id)}
-            className={`cursor-pointer rounded-sm font-semibold hover:underline ${FOCUS}`}
+            className={`max-w-60 cursor-pointer rounded-sm text-left font-semibold wrap-anywhere hover:underline ${FOCUS}`}
           >
             {r.customer?.name}
           </button>
         ),
       },
-      { id: 're', header: t('appointments.re'), kind: 'text', value: (r) => r.re?.name ?? '' },
+      {
+        id: 're',
+        header: t('appointments.re'),
+        kind: 'text',
+        value: (r) => r.re?.name ?? '',
+        cell: (r) => <span className={NAME}>{r.re?.name}</span>,
+      },
       { id: 'trigger', header: t('appointments.trigger'), kind: 'text', value: triggerText },
       {
         id: 'coordinators',
@@ -255,7 +267,7 @@ export function AppointmentsScreen() {
           />
         </div>
         <div className="flex-1" />
-        <span className="text-sm text-fg-2 tabular-nums">
+        <span className="min-w-0 text-sm wrap-anywhere text-fg-2 tabular-nums">
           {re ? (
             <>
               <b className="font-semibold text-fg">{re.name}</b> {t('sep.dot')} {summary}
@@ -557,10 +569,10 @@ function DayTable({
           aria-label={group.team?.name}
           className="mb-3 last:mb-0"
         >
-          <h3 className="m-0 mb-1 text-sm font-semibold">{group.team?.name}</h3>
+          <h3 className="m-0 mb-1 text-sm font-semibold wrap-anywhere">{group.team?.name}</h3>
           {group.res.map(({ re, rows: list }) => (
             <section key={re?.id} aria-label={re?.name} className="mb-1.5 pl-3">
-              <h4 className="m-0 text-xs font-medium text-fg-2">{re?.name}</h4>
+              <h4 className="m-0 text-xs font-medium wrap-anywhere text-fg-2">{re?.name}</h4>
               <ul className="m-0 list-none p-0 text-sm">
                 {list.map((row) => (
                   <li key={row.appointment.id} className="flex gap-3 py-0.5">
@@ -659,14 +671,18 @@ function Detail({
       aria-label={t('appointments.detail')}
       className={`${CARD} flex w-full flex-col gap-3 lg:sticky lg:top-20 lg:w-84 lg:shrink-0`}
     >
-      <h2 ref={heading} tabIndex={-1} className="m-0 text-base font-semibold tabular-nums">
+      <h2
+        ref={heading}
+        tabIndex={-1}
+        className="m-0 text-base font-semibold wrap-anywhere tabular-nums"
+      >
         {joinParts([dateTime(a), row.customer?.name])}
       </h2>
       <dl className="m-0 flex flex-col gap-1.5 text-sm">
         {facts.map(([term, value]) => (
           <div key={term} className="flex gap-3">
             <dt className="w-24 shrink-0 text-fg-3">{term}</dt>
-            <dd className="m-0 whitespace-pre-line">{value}</dd>
+            <dd className="m-0 min-w-0 whitespace-pre-line wrap-anywhere">{value}</dd>
           </div>
         ))}
       </dl>

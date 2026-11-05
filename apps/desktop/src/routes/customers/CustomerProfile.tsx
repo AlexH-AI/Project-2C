@@ -170,7 +170,7 @@ export function CustomerProfile({ id }: { id: string }) {
             {t('kycNote.open')}
           </Button>
         </div>
-        <p className="m-0 text-sm text-fg-2 tabular-nums">{joinParts(facts)}</p>
+        <p className="m-0 text-sm wrap-anywhere text-fg-2 tabular-nums">{joinParts(facts)}</p>
       </section>
       {/* Three columns from the default 1 440 × 900 window, as the mockup (DR6-30); a column does
           not grow past its share for a long link, the text breaks instead (DR6-82). */}
