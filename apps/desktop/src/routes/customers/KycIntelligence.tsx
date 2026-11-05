@@ -206,7 +206,8 @@ function Analysis({
     <div className={faded ? `flex flex-col text-sm ${FADED}` : 'flex flex-col text-sm'}>
       <p className="m-0 flex flex-wrap items-center gap-1.5">
         <span className={`${BADGE} ${BADGE_COLORS[analysis.gateState]}`}>{analysis.gateState}</span>
-        <span className="rounded-sm bg-surface-2 px-2 py-0.5 text-xs text-fg-2 tabular-nums">
+        {/* A model no list has, from a backup edited by hand, breaks in the panel (DR6-170). */}
+        <span className="min-w-0 rounded-sm bg-surface-2 px-2 py-0.5 text-xs wrap-anywhere text-fg-2 tabular-nums">
           {t('aiPanel.chip', {
             version: chip.version,
             label: chip.prompt,

@@ -46,23 +46,34 @@ import {
 /** The line saying why a row is blocked, which its restore button is described by (DR6-43). */
 const reasonId = (row: TrashRow) => `trash-blocked-${row.kind}-${row.id}`;
 
+/**
+ * The kinds whose record is a name. The lines of "Bản ghi" that may hold a name (such a record,
+ * why a row is blocked or kept) break a long one anywhere, so the table stays in the window; a day
+ * and a status keep their words, and with them the width the column had (DR6-170).
+ */
+const NAMED: readonly TrashRow['kind'][] = ['customer', 'person', 'team'];
+
 function RecordCell({ row, today }: { row: TrashRow; today: CalendarDate }) {
   const badge = recordBadge(row);
   const detail = recordDetail(row);
   return (
     <>
       <b className="flex flex-wrap items-center gap-1.5 font-semibold">
-        {recordTitle(row, today)}
+        <span className={NAMED.includes(row.kind) ? 'min-w-0 wrap-anywhere' : undefined}>
+          {recordTitle(row, today)}
+        </span>
         {badge && 'stage' in badge && stageBadge(badge.stage, badge.text)}
       </b>
       {badge && 'issued' in badge && <PolicyBadge issued={badge.issued} label={badge.text} />}
       {detail && <span className="block text-xs text-fg-3">{detail}</span>}
       {row.blocked && (
-        <span id={reasonId(row)} className="mt-1 block text-xs text-warn">
+        <span id={reasonId(row)} className="mt-1 block text-xs wrap-anywhere text-warn">
           {blockedReason(row, row.blocked)}
         </span>
       )}
-      {row.keptBy && <span className="mt-1 block text-xs text-info">{keptReason(row.keptBy)}</span>}
+      {row.keptBy && (
+        <span className="mt-1 block text-xs wrap-anywhere text-info">{keptReason(row.keptBy)}</span>
+      )}
     </>
   );
 }
@@ -70,14 +81,20 @@ function RecordCell({ row, today }: { row: TrashRow; today: CalendarDate }) {
 function OwnerCell({ row }: { row: TrashRow }) {
   const parts = ownerParts(row);
   if (parts.length === 0) return <span className="text-fg-3">{t('trash.owner.none')}</span>;
-  // By place: a team's bare name could read as another part.
-  return parts.map((owner, index) => (
-    <span key={index}>
-      {index > 0 && ` ${t('sep.dot')} `}
-      {owner.text}
-      {owner.deleted && <span className="text-fg-3"> {t('trash.gone')}</span>}
+  // By place: a team's bare name could read as another part. Two names fit under the cap on their
+  // line; a longer one breaks there, even with no space, so the table stays in the window
+  // (DR6-170).
+  return (
+    <span className="block max-w-96 wrap-anywhere">
+      {parts.map((owner, index) => (
+        <span key={index}>
+          {index > 0 && ` ${t('sep.dot')} `}
+          {owner.text}
+          {owner.deleted && <span className="text-fg-3"> {t('trash.gone')}</span>}
+        </span>
+      ))}
     </span>
-  ));
+  );
 }
 
 /**

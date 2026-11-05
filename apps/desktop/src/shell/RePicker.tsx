@@ -35,7 +35,8 @@ export function RePicker({
       className="flex gap-3.5 rounded-lg border border-border bg-surface-1 px-3.5 py-3"
     >
       <div className="flex w-50 shrink-0 flex-col gap-1.5 border-r border-border pr-3.5">
-        <h2 className="m-0 text-sm font-semibold">
+        {/* A long team name breaks in the column, not over the RE (DR6-170). */}
+        <h2 className="m-0 text-sm font-semibold wrap-anywhere">
           {t('rePicker.title', { team: team.name, count: res.length })}
         </h2>
         <Chip

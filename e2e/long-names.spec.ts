@@ -1,5 +1,14 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Locator, type Page } from './fixtures';
-import { createKycCustomer, right, scrolls, sideways } from './support';
+import {
+  addKycNote,
+  createKycCustomer,
+  discoveryFacts,
+  panelOf,
+  right,
+  scrolls,
+  sideways,
+} from './support';
 
 // DR6-148: a name has no length cap (the commands refuse only an empty one), so a name with no
 // space is valid input. Where it shows, it breaks inside its box rather than pushing the page, a
@@ -33,6 +42,17 @@ const lineTops = (box: Locator, text: string) =>
   }, text);
 
 const top = (box: Locator) => box.evaluate((node) => node.getBoundingClientRect().top);
+
+/** The width of what `box` holds: its own width, less its padding. */
+const contentWidth = (box: Locator) =>
+  box.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return (
+      node.getBoundingClientRect().width -
+      parseFloat(style.paddingLeft) -
+      parseFloat(style.paddingRight)
+    );
+  });
 
 /** `beside` (an arrow, a count) sits by the first of the lines the name `text` takes in `box`. */
 async function expectByFirstLine(box: Locator, text: string, beside: Locator, at: string) {
@@ -288,5 +308,227 @@ test('an RE and a team of 160 letters leave the figures of Báo cáo readable, s
       });
       expect(seen.figures, `${label} at ${width}`).toBeGreaterThanOrEqual(8);
     }
+    // The Team column of Theo RE, not pinned, breaks the long team name at the cap of a name too
+    // (DR6-174 c).
+    const teamCell = page
+      .getByRole('table', { name: 'Theo RE' })
+      .getByRole('cell', { name: team, exact: true })
+      .first();
+    expect(await contentWidth(teamCell), `Team of Theo RE at ${width}`).toBeLessThanOrEqual(240);
   }
+});
+
+/** The scopes of the top bar: everyone, the team of 160 letters, its RE of 160 letters. */
+type ScopeKind = 'Toàn bộ' | 'Team' | 'RE';
+
+/** Opens `screen` from the sidebar: a page load would open the simulated data again. */
+const open = (page: Page, screen: string) =>
+  page
+    .getByRole('navigation', { name: 'Điều hướng chính' })
+    .getByRole('link', { name: screen, exact: true })
+    .click();
+
+const settingsSection = (page: Page, section: string) =>
+  page
+    .getByRole('navigation', { name: 'Mục cài đặt' })
+    .getByRole('button', { name: section })
+    .click();
+
+/** At each width of the exe, neither the page nor the screen scrolls sideways. */
+async function sweep(page: Page, at: string) {
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    await expectNoSideways(page, `${at} at ${width}`);
+  }
+}
+
+/** Each choice of the radio group `name` (a view, a table) in turn, swept. */
+async function sweepEach(page: Page, name: string, at: string) {
+  const choices = page.getByRole('radiogroup', { name }).getByRole('radio');
+  await expect(choices.first()).toBeVisible();
+  for (const choice of await choices.all()) {
+    await choice.click();
+    await sweep(page, `${at}, ${await choice.textContent()}`);
+  }
+}
+
+// DR6-170 (Q4 (a), Owner 05/11/2026): a sweep of every main screen with the longest names found
+// so far, so a screen added later that lets one push the window sideways fails here.
+test('a customer of 81 letters, an RE and a team of 160, a model of 100 push no main screen sideways, in any scope', async ({
+  page,
+}) => {
+  const customer = unbroken('K', 81);
+  const re = unbroken('R', 160);
+  const team = unbroken('T', 160);
+  const model = unbroken('W', 100);
+  const scopes: readonly (readonly [ScopeKind, string?])[] = [
+    ['Toàn bộ'],
+    ['Team', team],
+    ['RE', `${re} · ${team}`],
+  ];
+  /** The scope `kind`, with `pick` in its picker; the RE picked by its first letters, as by hand. */
+  const setScope = async (kind: ScopeKind, pick?: string) => {
+    await page
+      .getByRole('radiogroup', { name: 'Góc nhìn' })
+      .getByRole('radio', { name: kind })
+      .click();
+    if (kind === 'Team') {
+      await page
+        .getByRole('combobox', { name: 'Team của góc nhìn' })
+        .selectOption({ label: pick! });
+    }
+    if (kind === 'RE') {
+      const picker = page.getByRole('combobox', { name: 'RE của góc nhìn' });
+      // From the first RE of the list, under another team.
+      await picker.selectOption({ index: 0 });
+      await expect(picker.locator('option:checked')).not.toHaveText(pick!);
+      await picker.focus();
+      await page.keyboard.type(re.slice(0, 4));
+      await expect(picker.locator('option:checked')).toHaveText(pick!);
+      // Narrower than the name, the picker says it whole on hover.
+      await expect(picker).toHaveAttribute('title', pick!);
+    }
+  };
+
+  // A customer with an analysis by the Mock, which the file below makes one by OpenCode.
+  await createKycCustomer(page, customer);
+  await addKycNote(page, customer, discoveryFacts);
+  const profile = await page.evaluate(() => location.hash);
+  await panelOf(page).getByRole('button', { name: 'Phân tích', exact: true }).click();
+  await expect(panelOf(page)).toContainText('CURRENT');
+
+  // The customer's RE and their team renamed, the analysis's model one no list has: as in a
+  // backup edited by hand, the only way to such a model.
+  await open(page, 'Cài đặt');
+  await settingsSection(page, 'Dữ liệu');
+  const backup = page.getByRole('region', { name: 'Xuất / nhập backup' });
+  const download = page.waitForEvent('download');
+  await backup.getByRole('button', { name: 'Xuất backup' }).click();
+  const file = JSON.parse(await readFile(await (await download).path(), 'utf8')) as {
+    tables: Record<string, Record<string, unknown>[]>;
+  };
+  const rows = (table: string) => file.tables[table]!;
+  const ours = rows('customers').find((row) => row.name === customer)!;
+  const person = rows('people').find((row) => row.id === ours.re_id)!;
+  rows('teams').find((row) => row.id === person.team_id)!.name = team;
+  person.name = re;
+  Object.assign(
+    rows('ai_analyses').find((row) => row.customer_id === ours.id)!,
+    {
+      provider: 'OPENCODE_GO',
+      model,
+      reasoning: 'DEFAULT',
+    },
+  );
+  await backup.getByLabel('Nhập backup').setInputFiles({
+    name: 'long-names.p2cbackup',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(file)),
+  });
+  await page
+    .getByRole('dialog', { name: 'Thay toàn bộ dữ liệu?' })
+    .getByRole('button', { name: 'Thay dữ liệu', exact: true })
+    .click();
+  await expect(backup.getByRole('status')).toContainText('Đã nhập backup xuất lúc');
+
+  // Lịch hẹn: the list and the detail of an appointment of the customer, in each scope.
+  await open(page, 'Lịch hẹn');
+  await page.getByRole('button', { name: '+ Lịch hẹn' }).click();
+  const booking = page.getByRole('dialog', { name: 'Lịch hẹn mới' });
+  await booking.getByRole('textbox', { name: /^Khách hàng/ }).fill(customer);
+  await booking
+    .getByRole('list', { name: 'KH khớp' })
+    .getByRole('button')
+    .filter({ hasText: customer })
+    .click();
+  await booking.getByRole('textbox', { name: /^Ngày/ }).fill('16/9');
+  await booking.getByRole('combobox', { name: /^Trigger/ }).selectOption({ label: 'Khác' });
+  await booking.getByRole('button', { name: 'Tạo lịch hẹn' }).click();
+  await expect(booking).toBeHidden();
+  const detail = page.getByRole('complementary', { name: 'Chi tiết lịch hẹn' });
+  for (const [kind, pick] of scopes) {
+    await setScope(kind, pick);
+    await expect(detail).toContainText(`${re} · ${team}`);
+    await sweep(page, `Lịch hẹn, ${kind}`);
+  }
+  // Into Thùng rác, below: its row there names the customer and the RE.
+  await detail.getByRole('button', { name: 'Xóa', exact: true }).click();
+  const remove = page.getByRole('dialog', { name: 'Xóa lịch hẹn 16/09/2026?' });
+  await remove.getByRole('button', { name: 'Xóa lịch hẹn' }).click();
+  await expect(remove).toBeHidden();
+
+  for (const [kind, pick] of scopes) {
+    await open(page, 'Khách hàng');
+    await setScope(kind, pick);
+    for (const view of ['Bảng', 'Kanban']) {
+      await page
+        .getByRole('radiogroup', { name: 'Cách xem' })
+        .getByRole('radio', { name: view })
+        .click();
+      await expect(page.getByRole('link', { name: customer })).toBeVisible();
+      await sweep(page, `Khách hàng, ${view}, ${kind}`);
+    }
+    // Tổng quan and Báo cáo open with the scope applied, no Lọc needed.
+    await open(page, 'Tổng quan');
+    await sweep(page, `Tổng quan, ${kind}`);
+    await open(page, 'Báo cáo');
+    await sweepEach(page, 'Bảng báo cáo', `Báo cáo, ${kind}`);
+  }
+
+  await open(page, 'Team & nhân sự');
+  await teamList(page)
+    .getByRole('button', { name: new RegExp(`^${team}`) })
+    .click();
+  await expect(page.getByRole('region', { name: `Thành viên team ${team}` })).toContainText(re);
+  await sweep(page, 'Team & nhân sự');
+  // Into Thùng rác, below: a team of 160 letters, its name the first line of "Bản ghi".
+  const gone = unbroken('G', 160);
+  await page.getByRole('button', { name: '+ Team' }).click();
+  const create = page.getByRole('dialog', { name: 'Team mới' });
+  await create.getByRole('textbox', { name: 'Tên team' }).fill(gone);
+  await create.getByRole('button', { name: 'Tạo team' }).click();
+  await expect(create).toBeHidden();
+  await teamList(page)
+    .getByRole('button', { name: new RegExp(`^${gone} `) })
+    .click();
+  await page
+    .getByRole('region', { name: `Thành viên team ${gone}` })
+    .getByRole('button', { name: 'Xóa team' })
+    .click();
+  const removeTeam = page.getByRole('dialog', { name: `Xóa team ${gone}?` });
+  await removeTeam.getByRole('button', { name: 'Xóa', exact: true }).click();
+  await expect(removeTeam).toBeHidden();
+
+  // The profile: its line under the name, Hợp đồng with a policy by the RE, the history of AI.
+  await page.evaluate((hash) => (location.hash = hash), profile);
+  const policies = page.getByRole('region', { name: 'Hợp đồng', exact: true });
+  await policies.getByRole('button', { name: '+ Hợp đồng' }).first().click();
+  const submit = page.getByRole('dialog', { name: 'Hợp đồng mới · đã nộp' });
+  await submit.getByRole('textbox', { name: /^Ngày nộp/ }).fill('10/9');
+  await submit.getByRole('textbox', { name: /^FYP nộp/ }).fill('500tr');
+  await submit.getByRole('button', { name: 'Lưu HĐ' }).click();
+  await expect(submit).toBeHidden();
+  await expect(policies).toContainText(re);
+  await expect(panelOf(page).getByRole('table', { name: 'Lịch sử phân tích' })).toContainText(
+    model,
+  );
+  await sweep(page, 'hồ sơ');
+
+  // The customer deleted: in Thùng rác, with the appointment and the team deleted above, its name
+  // is the first line of "Bản ghi", its RE and team are "Thuộc".
+  await page.getByRole('button', { name: 'Sửa hồ sơ', exact: true }).click();
+  await page
+    .getByRole('dialog', { name: `Sửa hồ sơ · ${customer}` })
+    .getByRole('button', { name: 'Xóa KH…' })
+    .click();
+  await page
+    .getByRole('dialog', { name: `Xóa ${customer}?` })
+    .getByRole('button', { name: 'Xóa KH' })
+    .click();
+  await expect(page).toHaveURL(/#\/customers$/);
+  await open(page, 'Cài đặt');
+  await settingsSection(page, 'Thùng rác');
+  const records = page.getByRole('region', { name: 'Thùng rác' }).getByRole('table');
+  for (const name of [customer, gone, `RE ${re}`]) await expect(records).toContainText(name);
+  await sweep(page, 'Thùng rác');
 });

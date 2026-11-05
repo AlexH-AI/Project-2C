@@ -24,6 +24,12 @@ interface SelectFieldProps {
   size?: 'sm' | 'md';
   /** Shown but not changeable (mockup `.input.off`). */
   disabled?: boolean;
+  /**
+   * Never wider than `max-w-80`, for a picker in a toolbar: a longer choice is cut there, so a long
+   * name does not push the toolbar out of the window, and is read whole from the field's title
+   * (DR6-170).
+   */
+  capped?: boolean;
 }
 
 /** Labelled drop-down list (mockup `.field` with a caret), with its error under it. */
@@ -39,11 +45,12 @@ export function SelectField({
   required,
   size = 'sm',
   disabled,
+  capped,
 }: SelectFieldProps) {
   const id = useId();
   const noteId = `${id}-note`;
   return (
-    <div className="flex flex-col gap-1">
+    <div className={`flex flex-col gap-1 ${capped ? 'min-w-0 max-w-80' : ''}`}>
       <label htmlFor={id} className={labelHidden ? 'sr-only' : 'font-medium'}>
         {label}
         {required && (
@@ -60,6 +67,7 @@ export function SelectField({
         aria-required={required}
         aria-invalid={error ? true : undefined}
         aria-describedby={error || help ? noteId : undefined}
+        title={capped ? options.find((option) => option.value === value)?.label : undefined}
         className={`cursor-pointer rounded-md disabled:cursor-default disabled:opacity-50 border bg-surface-0 px-2 py-1.5 ${size === 'md' ? 'text-md' : 'text-sm'} text-fg focus-visible:outline-2 focus-visible:outline-accent ${
           error ? 'border-danger' : 'border-border-control'
         }`}

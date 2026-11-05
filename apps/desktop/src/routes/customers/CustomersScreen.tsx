@@ -50,6 +50,12 @@ const personal = ({ customer }: CustomerCard) =>
     customer.birthDate && String(customer.birthDate.year),
   ]);
 
+/**
+ * A name of the table: under a cap it keeps its line and its column its width; a longer one breaks
+ * at the cap, even with no space, so the table stays in the window (DR6-170).
+ */
+const NAME = 'block max-w-60 wrap-anywhere';
+
 const COLUMNS: ReadonlyArray<DataTableColumn<CustomerCard>> = [
   { id: 'code', header: t('customers.colCode'), kind: 'text', value: (c) => c.customer.code },
   {
@@ -58,9 +64,11 @@ const COLUMNS: ReadonlyArray<DataTableColumn<CustomerCard>> = [
     kind: 'text',
     value: (c) => c.customer.name,
     cell: (c) => (
-      <a href={profileHref(c)} className={LINK}>
-        {c.customer.name}
-      </a>
+      <span className={NAME}>
+        <a href={profileHref(c)} className={LINK}>
+          {c.customer.name}
+        </a>
+      </span>
     ),
   },
   {
@@ -70,7 +78,13 @@ const COLUMNS: ReadonlyArray<DataTableColumn<CustomerCard>> = [
     value: (c) => c.customer.stage,
     cell: (c) => stageBadge(c.customer.stage),
   },
-  { id: 're', header: t('customers.colRe'), kind: 'text', value: (c) => c.re?.name ?? '' },
+  {
+    id: 're',
+    header: t('customers.colRe'),
+    kind: 'text',
+    value: (c) => c.re?.name ?? '',
+    cell: (c) => <span className={NAME}>{c.re?.name}</span>,
+  },
   {
     id: 'birth',
     header: t('customers.colBirth'),
@@ -154,7 +168,7 @@ export function CustomersScreen() {
         />
       )}
       <div className="flex items-center gap-3">
-        <span className="text-sm text-fg-2 tabular-nums">
+        <span className="min-w-0 text-sm wrap-anywhere text-fg-2 tabular-nums">
           {re ? (
             <>
               <b className="font-semibold text-fg">{re.name}</b> {t('sep.dot')} {summary}
