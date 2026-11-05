@@ -940,6 +940,13 @@ describe('importBackup — rules across tables', () => {
       (b, ids) => (analysis(b, ids.web).prompt_version = 'analysis@1'),
     ],
     ['12: a blank model name', (b, ids) => (analysis(b, ids.rejected).model = '  ')],
+    // DR6-159: blank as `normalizeText` reads it, which `trim` does not see.
+    ...['\u{200B}', '\u{2060}', '\u{85}', '\u{3164}', '\u{180E}'].map(
+      (model): [string, (b: BackupJson, ids: Ids) => void] => [
+        `12: a model name of U+${model.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')} alone`,
+        (b, ids) => (analysis(b, ids.rejected).model = model),
+      ],
+    ),
     ['12: a blank prompt version', (b, ids) => (analysis(b, ids.accepted).prompt_version = '')],
     // Across the columns, as `recordAiAnalysis` takes them (DR5-16).
     [

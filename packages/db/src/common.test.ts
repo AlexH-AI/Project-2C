@@ -1,5 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
-import { cleanNote, cleanText, optionalText, readsBackAsIs, requireName, today } from './common';
+import {
+  cleanNote,
+  cleanText,
+  isLabel,
+  optionalText,
+  readsBackAsIs,
+  requireName,
+  today,
+} from './common';
 import { openDatabase } from './database';
 import { codeOf, d } from './test-support';
 
@@ -77,6 +85,37 @@ describe('readsBackAsIs', () => {
   it('refuses a NUL, a lone surrogate half and a U+FEFF that starts the text', () => {
     for (const text of ['A\u0000B', 'Gặp lại\u{D800}', '\u{DC00}', '\u{FEFF}', '\u{FEFF}alpha']) {
       expect(readsBackAsIs(text)).toBe(false);
+    }
+  });
+});
+
+describe('isLabel', () => {
+  it('takes text with something to see that reads back as it is', () => {
+    for (const text of ['glm-5.3', `${'g'.repeat(98)}😀`, 'glm\u{200B}-5.3']) {
+      expect(isLabel(text)).toBe(true);
+    }
+  });
+
+  // DR6-159: blank as every other check of the app reads it (`normalizeText`), not as `trim` does.
+  it('refuses text with nothing to see, invisible characters alone too', () => {
+    for (const text of [
+      '',
+      '  ',
+      '\u{A0}',
+      '\u{200B}',
+      '\u{2060}',
+      '\u{85}',
+      '\u{3164}',
+      '\u{180E}',
+      ' \u{200B}\u{3164} ',
+    ]) {
+      expect(isLabel(text)).toBe(false);
+    }
+  });
+
+  it('refuses what is not text or does not read back as it is', () => {
+    for (const text of [null, undefined, 5, 'glm\0-5.3', '\u{FEFF}glm', 'glm\u{D800}']) {
+      expect(isLabel(text)).toBe(false);
     }
   });
 });
