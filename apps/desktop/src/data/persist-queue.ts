@@ -96,8 +96,13 @@ export function createPersistQueue(
         outcome = { ...outcome, failed: true, error };
       }
       // The queue is empty once the last write ends: one change, saved or failed, not two.
-      if (!waiting) running = undefined;
+      const last = !waiting;
+      if (last) running = undefined;
       changed();
+      // A listener told of it that saves starts the next drain, which takes every snapshot from
+      // there: this one ends, or two writes would run at once and `flush()` would wait only for
+      // the newer drain (DR6-162).
+      if (last) return;
     }
   };
 

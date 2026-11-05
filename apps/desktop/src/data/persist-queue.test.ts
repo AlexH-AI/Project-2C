@@ -320,6 +320,31 @@ describe('createPersistQueue', () => {
     expect(disk.onDisk).toBe('v2');
   });
 
+  it('runs one write at a time when a listener told of a save saves twice, and flush() waits for both (DR6-162)', async () => {
+    const disk = fakeDisk();
+    const queue = createPersistQueue(disk.write);
+    let told = false;
+    queue.subscribe(() => {
+      const { saving, lastSave } = queue.status();
+      if (told || saving || !lastSave) return;
+      told = true;
+      queue.persist(bytes('v2'));
+      queue.persist(bytes('v3'));
+    });
+
+    queue.persist(bytes('v1'));
+    disk.next().finish();
+    await tick();
+    // The window's X while the listener's saves run: the file must hold the last one once it closes.
+    const closed = queue.flush().then(() => disk.onDisk);
+    await disk.finishAll();
+
+    expect(await closed).toBe('v3');
+    expect(disk.maxInFlight).toBe(1);
+    expect(disk.started).toEqual(['v1', 'v2', 'v3']);
+    expect(queue.status()).toMatchObject({ saving: false, failed: false });
+  });
+
   it('flush() resolves at once when nothing is unsaved', async () => {
     const disk = fakeDisk();
     const queue = createPersistQueue(disk.write);

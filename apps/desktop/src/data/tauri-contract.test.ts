@@ -342,17 +342,31 @@ describe('the release configuration (DR6-12…14)', () => {
       'core: isTauri',
       'window: getCurrentWindow',
     ]);
-    const capability = JSON.parse(desktop('src-tauri/capabilities/default.json')) as {
-      permissions: string[];
-    };
+    // The exe grants the webview every capability: each file under capabilities/, or instead those
+    // `app.security.capabilities` lists, written inline there too; Tauri merges a platform's
+    // tauri.windows.conf.json into the config. The web build e2e runs has no ACL, so this is the
+    // one check of them all (DR6-161).
+    const src = new URL('../../src-tauri/', import.meta.url);
+    const files = (dir: URL, recursive = false) =>
+      readdirSync(dir, { recursive, encoding: 'utf8' });
+    expect(files(new URL('capabilities/', src), true)).toEqual(['default.json']);
+    expect(files(src).filter((file) => /^tauri\b/i.test(file))).toEqual(['tauri.conf.json']);
+    expect(tauriConf().app.security).not.toHaveProperty('capabilities');
+    // Its whole object: `remote` would open it to web pages, another window would get it too.
     // CloseGuard: `onCloseRequested` listens (and stops) for the close event, then `destroy`.
     // AppShell: `setTitle` names the window after the screen. The app's own commands need none.
-    expect(capability.permissions).toEqual([
-      'core:event:allow-listen',
-      'core:event:allow-unlisten',
-      'core:window:allow-destroy',
-      'core:window:allow-set-title',
-    ]);
+    expect(JSON.parse(desktop('src-tauri/capabilities/default.json'))).toEqual({
+      $schema: expect.any(String),
+      identifier: 'default',
+      description: expect.any(String),
+      windows: ['main'],
+      permissions: [
+        'core:event:allow-listen',
+        'core:event:allow-unlisten',
+        'core:window:allow-destroy',
+        'core:window:allow-set-title',
+      ],
+    });
   });
 
   // Tauri puts the CSP in the exe only: the web build e2e runs has none, so this is its one check.
