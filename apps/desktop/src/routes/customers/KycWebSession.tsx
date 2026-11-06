@@ -1,5 +1,4 @@
-import { MAX_AI_RAW_OUTPUT } from '@p2c/ai';
-import { normalizeText } from '@p2c/domain';
+import { isBlankWebAnswer, MAX_AI_RAW_OUTPUT } from '@p2c/ai';
 import { Button, TextField } from '@p2c/ui';
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { saveChatGptAnswer, type WebAnswerOutcome } from '../../data/ai-analysis';
@@ -173,9 +172,10 @@ export function KycWebSession({
         <Button onClick={() => void reopen()}>{t('aiPanel.web.reopen')}</Button>
         <div className="flex-1" />
         <Button onClick={() => onChange(null)}>{t('aiPanel.cancel')}</Button>
-        {/* Off for a blank paste, as `checkWebAnswer` reads it: characters that show nothing are
-            blank too (DR6-168). */}
-        <Button variant="primary" disabled={normalizeText(pasted) === ''} onClick={check}>
+        {/* Off for a blank paste, by the rule of `checkWebAnswer` (review of PR 1066): characters
+            that show nothing are blank too (DR6-168); a paste too long to be read never is
+            (DR5-09). */}
+        <Button variant="primary" disabled={isBlankWebAnswer(pasted)} onClick={check}>
           {t('aiPanel.web.save')}
         </Button>
       </div>

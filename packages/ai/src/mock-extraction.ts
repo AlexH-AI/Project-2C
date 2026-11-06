@@ -342,12 +342,14 @@ function howManyDied(match: RegExpExecArray): number {
 }
 
 /**
- * A child, and a death said any way: "con út đã mất", "mất một con", "bé qua đời". Not the "bé" of
- * "nhỏ bé", said of a size (DR6-166); the other sizes that name no one else (`NAMES_NO_ONE`) may
- * name a child who died: "Bé nhỏ / Bé nhất / Bé Tí đã mất" (Owner 05/11/2026).
+ * A child, and a death said any way: "con út đã mất", "mất một con", "bé qua đời"; "đứa", "thằng"
+ * name a child here too, the safe way (CX-A4): "Đứa nhỏ (bé) đã mất", "Thằng út đã mất" (Owner
+ * 06/11/2026). Not the "bé" of "nhỏ bé", said of a size (DR6-166); the other sizes that name no one
+ * else (`NAMES_NO_ONE`) may name a child who died: "Bé nhỏ / Bé nhất / Bé Tí đã mất" (Owner
+ * 05/11/2026).
  */
 const CHILD = new RegExp(
-  String.raw`(?<!\p{L})(?:${CHILD_WORD})(?<!(?<!\p{L})nhỏ bé)(?!\p{L})`,
+  String.raw`(?<!\p{L})(?:${CHILD_WORD}|đứa|thằng)(?<!(?<!\p{L})nhỏ bé)(?!\p{L})`,
   'iu',
 );
 const DEATH = /(?<!\p{L})(?:mất|qua đời)(?!\p{L})/giu;
