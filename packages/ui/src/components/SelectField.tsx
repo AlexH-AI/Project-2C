@@ -50,7 +50,7 @@ export function SelectField({
   const id = useId();
   const noteId = `${id}-note`;
   return (
-    <div className={`flex flex-col gap-1 ${capped ? 'min-w-0 max-w-80' : ''}`}>
+    <div className={capped ? 'flex min-w-0 max-w-80 flex-col gap-1' : 'flex flex-col gap-1'}>
       <label htmlFor={id} className={labelHidden ? 'sr-only' : 'font-medium'}>
         {label}
         {required && (

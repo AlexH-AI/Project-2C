@@ -29,7 +29,7 @@ import { routeToHash } from '../../shell/routes';
 import { RePicker } from '../../shell/RePicker';
 import { teamRes } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
-import { ALERT, CARD, FOCUS, HEADING, LINK } from '../classes';
+import { ALERT, CARD, CELL_NAME, FOCUS, HEADING, LINK } from '../classes';
 import { PERIOD_LABELS } from '../period-labels';
 import { AppointmentAi } from './AppointmentAi';
 import { AppointmentDialog } from './AppointmentDialog';
@@ -70,12 +70,6 @@ const triggerText = ({ appointment: a }: AppointmentRow) =>
 
 const coordinatorText = (row: AppointmentRow) =>
   row.coordinators.map((person) => person.role).join(t('sep.list')) || t('appointments.none');
-
-/**
- * A name of the list: under a cap it keeps its line and its column its width; a longer one breaks
- * at the cap, even with no space, so the list stays in the window (DR6-170).
- */
-const NAME = 'block max-w-60 wrap-anywhere';
 
 /** The day shown when the period changes: today if it is in the period, else its first day. */
 const dayIn = (period: Period, today: CalendarDate) =>
@@ -195,7 +189,7 @@ export function AppointmentsScreen() {
         header: t('appointments.re'),
         kind: 'text',
         value: (r) => r.re?.name ?? '',
-        cell: (r) => <span className={NAME}>{r.re?.name}</span>,
+        cell: (r) => <span className={CELL_NAME}>{r.re?.name}</span>,
       },
       { id: 'trigger', header: t('appointments.trigger'), kind: 'text', value: triggerText },
       {

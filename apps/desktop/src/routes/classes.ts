@@ -29,5 +29,12 @@ export const BADGE = 'rounded-full border border-current px-2 py-0.5 text-xs fon
 /** A boxed line (mockup `.alert`); where it is used adds its border colour and anything else. */
 export const ALERT = 'm-0 rounded-md border px-3 py-2';
 
+/**
+ * A name in a cell of a table (Khách hàng, Lịch hẹn, the history of AI analyses): under a cap it
+ * keeps its line and its column its width; a longer one breaks at the cap, even with no space, so
+ * the table stays in the window (DR6-170). Báo cáo has its own (`ReportTable.tsx`).
+ */
+export const CELL_NAME = 'block max-w-60 wrap-anywhere';
+
 /** An action written as a link in running text or a table ("Hẹn tiếp", "Xem tất cả"). */
 export const LINK = `cursor-pointer rounded-sm text-accent hover:underline ${FOCUS}`;

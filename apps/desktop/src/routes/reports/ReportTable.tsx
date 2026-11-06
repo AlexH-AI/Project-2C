@@ -28,6 +28,9 @@ const STICKY = 'sticky left-0 z-1 bg-surface-1';
 /**
  * A name of the lead columns: under a cap it keeps its one line and the column its width; a longer
  * one breaks at the cap, even with no space, so the figures stay readable (DR6-148).
+ * Not `CELL_NAME` of `classes.ts`: a cell here keeps its line (`CELL`), so the name breaks again
+ * (`whitespace-normal`); and the table is often wider than its frame, every column then at its
+ * least width, which `w-max` makes the name's own width up to the cap rather than a letter or two.
  */
 const NAME = 'block w-max max-w-60 whitespace-normal wrap-anywhere';
 /** The light green bar on the left of the mark holding today (mockup reports.html 2c). */
