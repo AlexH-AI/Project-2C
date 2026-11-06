@@ -374,10 +374,31 @@ describe('the release configuration (DR6-12…14)', () => {
         .replace(/[\\`]\r?\n/g, ' ')
         .split(/&&|\|\||[;|]|\r?\n/)
         .map((command) => command.trim());
-    // `tauri` as a word of its own: not the cargo commands of `verify:rust`, which name the path
-    // of src-tauri's Cargo.toml, and whose flags `-D…` the config regex would read as `-c`.
+    // The CLI as the program a command runs, first or after a runner (`pnpm`, `npx`, `cargo`…):
+    // `tauri` as a word of its own or the last part of a path, maybe the Windows shim `tauri.cmd`,
+    // or the package `@tauri-apps/cli`, maybe with a version. Not the cargo commands of
+    // `verify:rust`, whose path of src-tauri's Cargo.toml goes on after `tauri`, and whose flags
+    // `-D…` the config regex would read as `-c` (reviews of PR 1099, PR 1109).
+    const cli = [
+      /(?:^|[\s/\\])tauri(?:\.cmd)?(?:\s|$)/,
+      /(?:^|\s)@tauri-apps\/cli(?:@\S+)?(?:\s|$)/,
+    ];
     const tauriCalls = (scripts: readonly string[]) =>
-      scripts.flatMap(commands).filter((command) => /(?:^|\s)tauri(?:\s|$)/.test(command));
+      scripts.flatMap(commands).filter((command) => cli.some((name) => name.test(command)));
+    const samples = [
+      'tauri build --no-bundle',
+      'pnpm --filter @p2c/desktop tauri dev',
+      'cargo tauri build',
+      'node_modules/.bin/tauri build -c x.json',
+      'node_modules\\.bin\\tauri.cmd build',
+      'tauri.cmd build',
+      'npx @tauri-apps/cli build --config x.json',
+      'pnpm dlx @tauri-apps/cli@2 build',
+    ];
+    const verifyRust = (JSON.parse(read('package.json')) as { scripts: Record<string, string> })
+      .scripts['verify:rust'];
+    expect(verifyRust).toContain('src-tauri/Cargo.toml');
+    expect(tauriCalls([...samples, verifyRust ?? ''])).toEqual(samples);
     const noConfig = (calls: readonly string[]) => {
       for (const command of calls) {
         expect(command).not.toMatch(/(?:^|\s)(?:-[A-Za-z]*c|--config\b)/);
