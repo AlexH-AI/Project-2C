@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   EXIT,
+  STALE_HEAD_MS,
   ciState,
+  heldFor,
   parseArgs,
   prForIssue,
   report,
@@ -384,6 +386,51 @@ describe('ciState', () => {
     expect(ciState(pr(), { not: OLD.slice(0, 7) })).toMatchObject({ done: true, code: EXIT.done });
   });
 
+  describe('with not, the branch ahead of the head (GitHub missed the push, PR #1070)', () => {
+    const not = 'abc1234';
+    const PUSHED = 'fedcba9876543210fedcba9876543210fedcba98';
+    // The PR's branch on GitHub, and how long this wait has seen it at that SHA.
+    const branchAt = (sha, forMs) => () => ({ sha, forMs });
+
+    it('stops once the branch has stayed at another SHA past the threshold', () => {
+      for (const forMs of [STALE_HEAD_MS, STALE_HEAD_MS + 60000]) {
+        expect(ciState(pr(), { not, branch: branchAt(PUSHED, forMs) }), String(forMs)).toEqual({
+          done: true,
+          code: EXIT.look,
+          text: 'PR head stale: branch at fedcba9, head still abc1234 (GitHub missed the push)',
+        });
+      }
+    });
+
+    it('waits while the branch has been at another SHA for less than that', () => {
+      for (const forMs of [0, STALE_HEAD_MS - 1]) {
+        expect(ciState(pr(), { not, branch: branchAt(PUSHED, forMs) }), String(forMs)).toEqual({
+          done: false,
+          text: 'head still abc1234, branch at fedcba9: waiting for the PR to follow',
+        });
+      }
+    });
+
+    it('waits for a push while the branch is at the head, however long', () => {
+      expect(ciState(pr(), { not, branch: branchAt(HEAD, 60 * 60000) })).toEqual({
+        done: false,
+        text: 'head still abc1234: waiting for a push',
+      });
+    });
+
+    it('reads the branch only while the head is still the one to move past', () => {
+      const branch = () => {
+        throw new Error('branch read with the head moved on');
+      };
+      expect(ciState(pr(), { not: OLD.slice(0, 7), branch })).toMatchObject({
+        done: true,
+        code: EXIT.done,
+      });
+      expect(ciState(pr(), { branch })).toMatchObject({ done: true, code: EXIT.done });
+      expect(ciState(pr({ state: 'MERGED' }), { not, branch }).code).toBe(EXIT.look);
+    });
+  });
+
   it('stops for a PR that is no longer open', () => {
     expect(ciState(pr({ state: 'MERGED' }))).toEqual({
       done: true,
@@ -509,6 +556,31 @@ describe('titleState', () => {
       done: false,
       text: `no open or merged PR titled "${TEXT}" yet`,
     });
+  });
+});
+
+describe('heldFor', () => {
+  it('counts from the first read that gave a value, and again from 0 once it changes', () => {
+    let now = 1000;
+    const held = heldFor(() => now);
+    expect(held('a')).toBe(0);
+    now += 5000;
+    expect(held('a')).toBe(5000);
+    now += 1000;
+    expect(held('b')).toBe(0);
+    now += 2000;
+    expect(held('b')).toBe(2000);
+    // Back to a value seen before: a new stretch, not the old one.
+    expect(held('a')).toBe(0);
+  });
+
+  it('keeps one count per wait', () => {
+    let now = 0;
+    const first = heldFor(() => now);
+    first('a');
+    now += 4000;
+    expect(heldFor(() => now)('a')).toBe(0);
+    expect(first('a')).toBe(4000);
   });
 });
 
