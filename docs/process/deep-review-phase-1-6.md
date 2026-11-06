@@ -4566,7 +4566,7 @@ Bốn nguyên nhân:
    - Lượt 1, cùng model Claude, cùng prompt, cùng SHA trên hai máy: chỉ 18 / 37 vấn đề của bản Home PC có ở bản laptop (tổng hợp lượt 1 §2.2).
    - Ba bên ít trùng nhau: lượt 4 không vấn đề nào cả ba cùng thấy; lượt 5 chỉ 2 / 20.
    - Ước theo độ trùng giữa hai bên (bắt – thả – bắt lại): lượt 4 có khoảng 37–40 vấn đề, tìm được 23; đúng là lượt 5 tìm thêm 9 vấn đề có từ trước. Ước này thô (các bên không độc lập, lỗi không dễ thấy như nhau, mẫu nhỏ) và thấp hơn thực tế. Chỉ dùng để xem xu hướng, không làm điều kiện dừng.
-   - Mỗi phiên đọc vài nghìn dòng sản phẩm và test, làm thêm 50–70 dòng bảng R, trong 20–70 phút; đạt chỉ tiêu "≥ 5 kịch bản" là dừng. Có nhiều mẫu độc lập hơn thì ra nhiều hơn: lượt 3, gói A chạy Workflow (10 subagent tìm, 35 subagent kiểm) ra 29 phát hiện, các gói khác 2–7.
+   - Mỗi phiên đọc vài nghìn dòng sản phẩm và test, làm thêm 50–70 dòng bảng R, trong 20–70 phút; đạt chỉ tiêu "≥ 5 kịch bản" là dừng. Lượt 3, gói A chạy Workflow (10 subagent tìm, 35 subagent kiểm) ra 29 phát hiện (10 là test hở), các gói khác 2–7; nhưng phiên đó dừng vì hết hạn mức, và không có đối chứng cùng gói ở mức `xhigh` / `max` không Workflow, nên không kết luận được Workflow tìm nhiều hơn. Lượt 6 tăng số mẫu bằng phiên chủ đề hẹp (§L6.3), không bằng ultracode (Owner 07/11).
 2. **Đợt sửa sinh lỗi cho lượt sau** (cột "Do đợt sửa"). Loại hay gặp nhất là test hở của chính phần sửa (lượt 5: 5 / 7 vấn đề chỉ Claude thấy). Code giữa các lượt không chỉ là sửa: Mock trích xuất viết lại 950 dòng theo quyết định mới (K42), pipeline `auto-issues` (`tools/auto-wait*`).
 3. **Sửa từng vị trí, không sửa cả họ.** Issue liệt kê vị trí, PR sửa đúng các vị trí đó, review-pr kiểm theo Issue; chỗ cùng mẫu còn nguyên và quay lại ở lượt sau:
    - chuỗi liền dài tràn khung: DR6-117 (lượt 3) → 148 (lượt 4) → 170 (lượt 5);
@@ -4596,7 +4596,7 @@ Bốn nguyên nhân:
 
 **Bên review:**
 
-- **Claude Opus 5.5:** Owner mở mỗi gói một phiên sạch ở `C:\workspace\Project-2C-review`: sáu gói A → F, rồi ba phiên chủ đề G → H → I (§L6.3). Mức suy luận và ultracode Owner chọn từng phiên (M1, M8). Chỉ Claude làm bảng R.
+- **Claude Opus 5.5:** Owner mở mỗi gói một phiên sạch ở `C:\workspace\Project-2C-review`: sáu gói A → F, rồi ba phiên chủ đề G → H → I (§L6.3). Mức suy luận Owner chọn từng phiên (M1). **Không dùng ultracode, subagent hay Workflow** ở mọi phiên Claude của lượt 6 (Owner 07/11: "1 là nó rất tốn usage, 2 là chưa chắc hiệu quả đem lại đã hơn xhigh và max"). Chỉ Claude làm bảng R.
 - **Codex, model GPT Sol 6.1:** Owner chạy, mỗi gói một phiên mới, chỉ đọc, không viết code (M2). Chỉ tìm lỗi mới.
 - **Agent WorkBuddy:** app desktop WorkBuddy, model Owner chọn (Hy4 hoặc GLM 5.3; ghi tên đúng như app hiện), mỗi gói một task mới qua Code review expert của app. Cùng điều kiện như Codex theo M2. Chỉ tìm lỗi mới.
 - 6 gói × 3 bên + 3 phiên chủ đề của Claude = **21 báo cáo**, hai đợt như lượt 5: đợt 1 Claude và Codex song song; đợt 2 WorkBuddy một mình, khi thư mục của hai bên kia đã bị chặn ACL. Kết luận phát hành chỉ lấy từ phiên tổng hợp của Claude.
@@ -4713,7 +4713,7 @@ Phạm vi từng gói giữ đúng §3 và luật `PACKAGES` của `tools/size-r
 | **I. Bất đồng bộ và thứ tự** | Hàng đợi lưu (`persist-queue.ts`, `listeners.ts`), thay dữ liệu S-2, `close-guard`, `AppData`, `ai-jobs.ts` theo `generation`, `today.ts`, hộp xác nhận lúc chạy | Hai việc chồng nhau; listener gọi lệnh lồng; lỗi giữa chừng; tắt app / Nạp lại / Nhập backup giữa lúc lưu hay AI chạy; qua nửa đêm | Phát hiện kèm chuỗi đã dựng (probe qua lớp dữ liệu của app, bản build web hay exe) |
 
 - Hai họ của H và I: chữ có ở cả năm lượt (vd. DR6-49, 72, 107–112, 117, 142, 145, 148, 150, 159, 168–173); lưu / thay / đóng có ở lượt 4–5 (DR6-139, 140, 147, 162).
-- Owner được bật ultracode cho phiên G–I (M8): nhiều subagent tìm độc lập rồi subagent kiểm lại, như lượt 3 gói A. Workflow tốn hạn mức (lượt 3, gói A dừng vì hết hạn mức), nên chỉ bật cho phiên Owner chọn.
+- Mỗi chủ đề một phiên sạch, như phiên gói; **không ultracode, subagent hay Workflow** (Owner 07/11, §L6.1). Mức suy luận Owner chọn (`xhigh` hoặc `max`).
 
 ## L6.4 Việc của mỗi bên
 
@@ -4816,7 +4816,7 @@ Như §L5.6, đổi:
 
 ## L6.7 Ba bên, bài học từ lượt 5
 
-- **Claude Opus 5.5:** Phụ lục W. Lượt 5 chạy `xhigh` ở cả 6 phiên, ultracode tắt; lượt 6 Owner chọn từng phiên (§L6.3 về ultracode cho G–I).
+- **Claude Opus 5.5:** Phụ lục W. Lượt 5 chạy `xhigh` ở cả 6 phiên, ultracode tắt. Lượt 6: mức suy luận Owner chọn từng phiên; không ultracode, subagent hay Workflow ở mọi phiên (Owner 07/11).
 - **Codex, model GPT Sol 6.1:** Phụ lục X. Như lượt 5, thêm: không gọi `pnpm`.
 - **Agent WorkBuddy:** Phụ lục Z, theo DeepSeek ở lượt 4–5 đã chạy thật (Phụ lục P, V; tổng hợp lượt 5 §10.1).
   - App desktop WorkBuddy bản quốc tế (lượt 5: v5.9.4). **Model Owner chọn: Hy4 hoặc GLM 5.3** (Owner 07/11: "workbuddy đang làm và anh sẽ tự quyết định model nào"). Không có bài thi chọn model. Ghi tên model, context và mức suy luận đúng như app hiện vào `baseline.md` ở phiên thử; mọi gói dùng cùng model.
@@ -4886,7 +4886,7 @@ Khuôn như §L5.8, đổi:
   Gói A. Lệnh đầu tiên chỉ đọc C:\workspace\deep-review-1-6-r6\common\prompt-codex.md (không gộp lệnh khác), rồi làm đúng file đó.
   ```
 
-- **Claude** (Claude Opus 5.5), ở `C:\workspace\Project-2C-review`, mỗi gói một phiên mới, lần lượt A → F rồi G → H → I; mức suy luận và ultracode Owner chọn:
+- **Claude** (Claude Opus 5.5), ở `C:\workspace\Project-2C-review`, mỗi gói một phiên mới, lần lượt A → F rồi G → H → I; mức suy luận Owner chọn, không bật ultracode:
 
   ```text
   Gói A. Lệnh đầu tiên chỉ đọc C:\workspace\deep-review-1-6-r6\common\prompt-claude.md (không gộp lệnh khác), rồi làm đúng file đó.
@@ -4974,7 +4974,7 @@ Bảng đánh dấu của Owner (21 ô; ghi thêm giờ bắt đầu / xong mỗ
 
 **Ước lượng.** Lượt 5 trên Home PC: Claude ≈ 3 h 44 cho 6 gói; Codex ≈ 1 h 51; DeepSeek ≈ 1 h 59.
 
-- Claude: A–F ≈ 3–4 h (bảng R 34 dòng, lượt 5: 53); G–I ≈ 1–1,5 h mỗi phiên, lâu hơn nếu bật ultracode.
+- Claude: A–F ≈ 3–4 h (bảng R 34 dòng, lượt 5: 53); G–I ≈ 1–1,5 h mỗi phiên.
 - Codex ≈ 2 h (không bảng R). Agent WorkBuddy: chưa có số của model mới; giả định ≈ 2–3 h.
 - Cả lượt 6 ≈ 2 ngày tính cả chuẩn bị và hai đợt; tổng hợp thêm ≈ nửa ngày. Đợt sửa chỉ gồm vấn đề chặn (lượt 3–5: 0 Medium).
 - Trước đó: PR kế hoạch này, T-386, T-387 (ba PR, cùng PR sổ).
@@ -4994,7 +4994,7 @@ Bảng đánh dấu của Owner (21 ô; ghi thêm giờ bắt đầu / xong mỗ
 |---|---|---|---|
 | 5 | Tiêu chí K48: bảng §L6.1; trục chốt theo hậu quả; nhãn [sau v1.0] trong sổ; Owner được kéo vấn đề không chặn vào đợt sửa (mặc định không); Medium trở lên thì review lại đúng vùng đó, không lượt 7 | §L6.1, §L6.10 | |
 | 6 | Đóng băng K49: phạm vi và ngoại lệ như §L6.1; đề xuất gỡ / gộp của phiên G mặc định [sau v1.0] | §L6.1 | |
-| 7 | Ba phiên chủ đề của Claude: G (rà gọn), H (chữ người dùng nhập / hiển thị), I (bất đồng bộ và thứ tự), chạy sau Claude F; ultracode Owner chọn | §L6.3 | |
+| 7 | Ba phiên chủ đề của Claude: G (rà gọn), H (chữ người dùng nhập / hiển thị), I (bất đồng bộ và thứ tự), chạy sau Claude F, mỗi chủ đề một phiên sạch | §L6.3 | 07/11: **không dùng ultracode** ở mọi phiên Claude ("1 là nó rất tốn usage, 2 là chưa chắc hiệu quả đem lại đã hơn xhigh và max") |
 | 8 | Phủ bằng "file không đọc kỹ" thay chỉ tiêu kịch bản; bảng R chỉ Claude; bỏ mục Bloat / Hiệu năng ở A–E; trường "Cùng mẫu", "Chặn phát hành" | §L6.4, §L6.8, Phụ lục Y | |
 | 9 | Agent WorkBuddy: hai đợt và ACL như lượt 5, chặn thêm `-r5`; Code review expert, quyền Default, agent phụ như lượt 5; chi phí chỉ credit gói Pro, không mua thêm, điểm dừng sau mỗi gói | §L6.7, §L6.9, Phụ lục Z | |
 | 10 | T-386: review-pr, mẫu Issue / PR cho PR sửa phát hiện (test đỏ khi gỡ phần sửa, quét cùng mẫu, ngân sách dòng, ghi chú không chặn → [sau v1.0]); merge trước bước chuẩn bị | §L6.10 | |
@@ -5009,7 +5009,7 @@ File `common\prompt-claude.md` = đoạn dưới + nguyên văn Phụ lục Y; b
 >
 > **{GÓI}** = chữ gói (A…F) hay chữ chủ đề (G, H, I) Owner ghi trong tin nhắn mở phiên; mọi chỗ `{GÓI}` dưới đây thay bằng chữ đó. File này là toàn bộ chỉ dẫn của phiên.
 >
-> Bạn là **reviewer Claude** của deep review Phase 1–6, **lượt 6**, **gói `{GÓI}`**: phiên sạch, chỉ đọc. Owner mở **mỗi gói một phiên mới**, model Claude Opus 5.5; mức suy luận và ultracode do Owner chọn từng phiên. Repo: worktree `C:\workspace\Project-2C-review`, detached ở SHA **`{SHA}`** (`{SHA_ĐỦ}`). Đọc xong file này thì chạy `git rev-parse HEAD` và `git status --short`; SHA lệch hay status không rỗng thì dừng và báo Owner.
+> Bạn là **reviewer Claude** của deep review Phase 1–6, **lượt 6**, **gói `{GÓI}`**: phiên sạch, chỉ đọc. Owner mở **mỗi gói một phiên mới**, model Claude Opus 5.5; mức suy luận do Owner chọn từng phiên. Repo: worktree `C:\workspace\Project-2C-review`, detached ở SHA **`{SHA}`** (`{SHA_ĐỦ}`). Đọc xong file này thì chạy `git rev-parse HEAD` và `git status --short`; SHA lệch hay status không rỗng thì dừng và báo Owner.
 >
 > Quy tắc riêng của Claude:
 > 1. **Lệnh đầu tiên của phiên chỉ đọc file này**, không gộp lệnh nào khác.
@@ -5019,10 +5019,10 @@ File `common\prompt-claude.md` = đoạn dưới + nguyên văn Phụ lục Y; b
 >    - `C:\workspace\deep-review-1-6-r6\common\`: dữ liệu tải, exe và số đo **chỉ** lấy ở đây;
 >    - báo cáo Claude lượt 6 của các gói trước trong `…-r6\claude\` (mục đã báo thì chỉ dẫn ID);
 >    - probe của chính Claude ở lượt 1–5 (`C:\workspace\deep-review-1-6\claude\`, `-r2\claude\` … `-r5\claude\`), mở bằng đường dẫn đủ mà báo cáo gốc của Claude ghi, không liệt kê thư mục.
-> 4. Không dùng skill `review-pr` / `code-review`. Không làm nghi thức phiên của repo (HANDOFF, `/handoff`, PR, Issue, merge, commit). Không chạy `gh` (thông tin Issue / PR sửa có ở `common\fixes.md`). Subagent / Workflow chỉ khi Owner bật ultracode cho phiên này (ADR-0001 M8). Khi đó chỉ phiên chính làm bước 0, ghi `{GÓI}.md` và in dòng `XONG`. **Subagent** (đọc file này vì tin nhắn của Owner tới cả nó) làm phần việc phiên chính giao, theo quy tắc 2, 3 và phần chung; ghi probe vào `…-r6\claude\{GÓI}\`, không ghi `{GÓI}.md`.
+> 4. Không dùng skill `review-pr` / `code-review`. Không làm nghi thức phiên của repo (HANDOFF, `/handoff`, PR, Issue, merge, commit). Không chạy `gh` (thông tin Issue / PR sửa có ở `common\fixes.md`). **Không dùng subagent, công cụ Agent hay Workflow** (Owner 07/11), kể cả khi phiên có bật ultracode: mọi việc của gói làm trong phiên chính.
 > 5. Ghi báo cáo vào `C:\workspace\deep-review-1-6-r6\claude\{GÓI}.md`, probe / bản chép / log vào `…-r6\claude\{GÓI}\`.
 > 6. Gói F được đọc `…-r6\claude\A…E.md`. Chủ đề G, H, I được đọc `…-r6\claude\A…F.md` và báo cáo chủ đề trước. Xong gói nào thì dừng và in dòng `XONG …` (mục "Cuối phiên" của phần chung). Xong I thì **chờ Owner yêu cầu** tổng hợp, không tự tổng hợp.
-> 7. Mục 1 của báo cáo ghi công cụ, model, mức suy luận của phiên và ultracode bật hay tắt.
+> 7. Mục 1 của báo cáo ghi công cụ, model và mức suy luận của phiên.
 > 8. **Gói A–F** làm cả hai phần của "Việc của gói" (bảng R và tìm lỗi mới). **Chủ đề G, H, I** chỉ tìm lỗi mới theo bảng "Chủ đề của Claude" ở phần chung, trên **mọi gói**; không làm bảng R, không kết luận SẴN SÀNG.
 >
 > Phần chung dưới đây áp dụng đầy đủ. Trong phần chung: `<bên>` = `claude`, `<ID>` = `CLR6`. Thứ tự gói của Claude: A → B → C → D → E → F → G → H → I.

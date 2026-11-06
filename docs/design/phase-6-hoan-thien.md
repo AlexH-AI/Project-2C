@@ -287,7 +287,7 @@ Lỗi tìm ra ở 6C thành Issue thường; lỗi chặn phát hành gắn `ris
 
 | Bên | Ai chạy | Việc |
 |---|---|---|
-| Claude (context sạch mỗi gói, tuần tự; lượt 1–2: mỗi gói một phiên sạch, không subagent; lượt 3: mỗi gói một phiên sạch như lượt 2, subagent / Workflow chỉ khi Owner bật ultracode cho phiên đó — ADR-0001 M9, sửa 20/10; lượt 4: như lượt 3, Claude Opus 5.5 — M10; lượt 5: như lượt 4 — M12; lượt 6: như lượt 5, thêm ba phiên chủ đề xuyên gói, chỉ Claude kiểm phần đã sửa — M13) | Owner mở phiên | Reviewer, chỉ đọc, worktree review riêng |
+| Claude (context sạch mỗi gói, tuần tự; lượt 1–2: mỗi gói một phiên sạch, không subagent; lượt 3: mỗi gói một phiên sạch như lượt 2, subagent / Workflow chỉ khi Owner bật ultracode cho phiên đó — ADR-0001 M9, sửa 20/10; lượt 4: như lượt 3, Claude Opus 5.5 — M10; lượt 5: như lượt 4 — M12; lượt 6: như lượt 5, thêm ba phiên chủ đề xuyên gói, chỉ Claude kiểm phần đã sửa, không ultracode / subagent / Workflow — M13) | Owner mở phiên | Reviewer, chỉ đọc, worktree review riêng |
 | Codex | Owner | Reviewer độc lập, chỉ đọc (ADR-0001 M2). Lượt 4, 5, 6: model GPT Sol 6.1 (Owner 27/10 — M10; 04/11 — M12; 06/11 — M13) |
 | Muse Spark 1.3 (Muse Code) | Owner | Reviewer độc lập, chỉ đọc (13/10: DeepSeek v4.1 Flash bỏ, Muse đổi sang Wonder — ADR-0001 M5; 14/10: về lại Spark 1.3 trên Office Laptop — M6). Chỉ lượt 1; lượt 2 bỏ Muse (17/10 — M7) |
 | DeepSeek v4.1 Flash (app WorkBuddy) | Owner | Reviewer độc lập, chỉ đọc, như Codex (ADR-0001 M2). Lượt 4 và lượt 5 (Owner 27/10 — M10; 04/11 — M12; bỏ từ 13/10 theo M5). Chạy trong app desktop WorkBuddy, model gắn sẵn của gói WorkBuddy Pro (Owner đổi 28/10, thay gói OpenCode Go rồi DeepSeek Harness); lượt 5 chỉ dùng credit của gói Pro |
