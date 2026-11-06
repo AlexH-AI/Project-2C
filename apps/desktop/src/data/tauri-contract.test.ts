@@ -362,6 +362,29 @@ describe('the release configuration (DR6-12…14)', () => {
     for (const file of code) {
       expect(rust(file.replaceAll('\\', '/')), file).not.toContain('add_capability');
     }
+    // Nor does `tauri build` patch the config with one (JSON merge patch of tauri-build): from
+    // `-c` / `--config`, JSON or a file, alone or among other short flags, or from `TAURI_CONFIG`.
+    // No script of the app or the root passes either, no workflow sets it (review of PR 1090).
+    const repo = new URL('../../../../', import.meta.url);
+    const read = (file: string) => readFileSync(new URL(file, repo), 'utf8');
+    const manifests = ['apps/desktop/package.json', 'package.json'];
+    const scripts = (file: string) =>
+      Object.values((JSON.parse(read(file)) as { scripts: Record<string, string> }).scripts);
+    const tauriCalls = manifests
+      .flatMap(scripts)
+      .flatMap((script) => script.split(/&&|\|\||[;|]/).map((command) => command.trim()))
+      .filter((command) => /\btauri\b/.test(command));
+    expect(tauriCalls).toContain('tauri build --no-bundle');
+    for (const command of tauriCalls) {
+      expect(command).not.toMatch(/(?:^|\s)(?:-[A-Za-z]*c|--config\b)/);
+    }
+    const workflows = files(new URL('.github/workflows/', repo))
+      .filter((file) => /\.ya?ml$/.test(file))
+      .map((file) => `.github/workflows/${file}`);
+    expect(workflows).toContain('.github/workflows/ci.yml');
+    for (const file of [...manifests, ...workflows]) {
+      expect(read(file), file).not.toContain('TAURI_CONFIG');
+    }
     // Its whole object: `remote` would open it to web pages, another window would get it too.
     // CloseGuard: `onCloseRequested` listens (and stops) for the close event, then `destroy`.
     // AppShell: `setTitle` names the window after the screen. The app's own commands need none.
