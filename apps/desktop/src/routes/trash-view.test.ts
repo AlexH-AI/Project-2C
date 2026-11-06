@@ -28,7 +28,6 @@ import {
   TRASH_MORE,
   blockedReason,
   canPurge,
-  codedCustomers,
   deletedAtText,
   filterTrash,
   keptReason,
@@ -45,6 +44,7 @@ import {
   restoreRow,
   restoreView,
   restoredNotice,
+  toldApart,
   trashCounts,
 } from './trash-view';
 import { openAppData } from '../data/app-data';
@@ -62,8 +62,8 @@ const customerRef = (name: string, code: string, deleted = false) => ({
 const TODAY = calendarDate(2026, 10, 11);
 
 /** A local moment as `deleted_at` stores it, so the shown time is the same in any time zone. */
-const at = (day: number, hour: number, minute: number) =>
-  new Date(2026, 9, day, hour, minute).toISOString();
+const at = (day: number, hour: number, minute: number, second = 0) =>
+  new Date(2026, 9, day, hour, minute, second).toISOString();
 
 const minhAnh: TrashRow = {
   kind: 'customer',
@@ -380,7 +380,7 @@ describe('ownerParts (spec Phase 6 §4.2 "Thuộc")', () => {
 describe('restoreLabel (DR6-43)', () => {
   /** The name of the button of `row` in a trash of `rows`. */
   const label = (row: TrashRow, rows: readonly TrashRow[] = ROWS) =>
-    restoreLabel(row, codedCustomers(rows), TODAY);
+    restoreLabel(row, toldApart(rows), TODAY);
 
   it('names the customer with its stage, the person or the team the button restores', () => {
     expect(label(minhAnh)).toBe('Khôi phục KH Trịnh Minh Anh · N3');
@@ -424,7 +424,7 @@ describe('restoreLabel (DR6-43)', () => {
     expect(label({ ...planned, time: null })).toBe(
       'Khôi phục lịch hẹn 06/10/2026 · Chưa ghi kết quả của KH Trịnh Minh Anh',
     );
-    expect(restoreLabel(planned, new Set(), calendarDate(2026, 10, 6))).toBe(
+    expect(restoreLabel(planned, new Map(), calendarDate(2026, 10, 6))).toBe(
       'Khôi phục lịch hẹn 06/10/2026 14:00 · Dự kiến của KH Trịnh Minh Anh',
     );
     expect(label(policy)).toBe(
@@ -522,6 +522,56 @@ describe('restoreLabel (DR6-43)', () => {
     );
   });
 
+  // Review of PR 1072: "Xóa lúc" goes to the minute, which two people alike deleted within one
+  // minute share; their buttons name the second, and only theirs.
+  it('names the second of two people alike deleted in the same minute (review of PR 1072)', () => {
+    const early = { ...mai, deletedAt: at(5, 8, 31, 5) } as TrashRow;
+    const late = { ...mai, id: 'r9', deletedAt: at(5, 8, 31, 40) } as TrashRow;
+    const rows = [...ROWS.filter((row) => row !== mai), early, late, maiTwin];
+    expect([early, late, maiTwin].map((row) => label(row, rows))).toEqual([
+      'Khôi phục nhân sự Vương Thị Mai · RE · Bình Minh · xóa lúc 05/10/2026 08:31:05',
+      'Khôi phục nhân sự Vương Thị Mai · RE · Bình Minh · xóa lúc 05/10/2026 08:31:40',
+      'Khôi phục nhân sự Vương Thị Mai · RE · Bình Minh · xóa lúc 04/10/2026 17:05',
+    ]);
+    // The same minute of another person's deletion does not count.
+    const other = { ...late, id: 'r10', role: 'TL' } as TrashRow;
+    expect(label(early, [...ROWS.filter((row) => row !== mai), early, other, maiTwin])).toBe(
+      'Khôi phục nhân sự Vương Thị Mai · RE · Bình Minh · xóa lúc 05/10/2026 08:31',
+    );
+  });
+
+  // Review of PR 1072: `teams_active_name` keeps apart the names of the teams in use only, so a team
+  // made again after its namesake was deleted can be deleted too; as two people alike (DR6-160).
+  it('tells apart two teams of one name by when they were deleted (review of PR 1072)', () => {
+    const again = { ...binhMinh, id: 't2', deletedAt: at(9, 14, 20) } as TrashRow;
+    const rows = [...ROWS, again];
+    expect([binhMinh, again].map((row) => label(row, rows))).toEqual([
+      'Khôi phục team Bình Minh · xóa lúc 05/10/2026 08:33',
+      'Khôi phục team Bình Minh · xóa lúc 09/10/2026 14:20',
+    ]);
+    // Deleted in the same minute as another of the name: to the second, as people.
+    const third = { ...again, id: 't3', deletedAt: at(9, 14, 20, 30) } as TrashRow;
+    expect([binhMinh, again, third].map((row) => label(row, [...rows, third]))).toEqual([
+      'Khôi phục team Bình Minh · xóa lúc 05/10/2026 08:33',
+      'Khôi phục team Bình Minh · xóa lúc 09/10/2026 14:20:00',
+      'Khôi phục team Bình Minh · xóa lúc 09/10/2026 14:20:30',
+    ]);
+    // A team of a name of its own keeps the name alone, a person of the name not counting.
+    const saoMai = { ...binhMinh, id: 't4', name: 'Sao Mai' } as TrashRow;
+    expect(label(saoMai, [...rows, saoMai])).toBe('Khôi phục team Sao Mai');
+    const named = { ...binhMinh, id: 't5', name: 'Vương Thị Mai' } as TrashRow;
+    expect(label(named, [...ROWS, named])).toBe('Khôi phục team Vương Thị Mai');
+  });
+
+  it('tells apart the buttons of namesakes deleted within a minute (review of PR 1072)', () => {
+    const rows = [
+      ...ROWS,
+      { ...mai, id: 'r9', deletedAt: at(5, 8, 31, 40) },
+      { ...binhMinh, id: 't2', deletedAt: at(5, 8, 33, 20) },
+    ] as TrashRow[];
+    expect(new Set(rows.map((row) => label(row, rows))).size).toBe(rows.length);
+  });
+
   it('tells apart the buttons of a trash of namesakes (DR6-151, DR6-160)', () => {
     const twin = { ...minhAnh, id: 'c2', code: 'K-3MD8' } as TrashRow;
     const rows = [...ROWS, twin, maiTwin, ...ha, ...otherHa];
@@ -574,6 +624,12 @@ describe('TRASH_MORE', () => {
 describe('deletedAtText', () => {
   it('shows the moment of the deletion in local time', () => {
     expect(deletedAtText(minhAnh)).toBe('10/10/2026 16:42');
+  });
+
+  it('shows the second with `seconds` (review of PR 1072)', () => {
+    const row = { ...minhAnh, deletedAt: at(10, 16, 42, 7) } as TrashRow;
+    expect(deletedAtText(row)).toBe('10/10/2026 16:42');
+    expect(deletedAtText(row, { seconds: true })).toBe('10/10/2026 16:42:07');
   });
 });
 

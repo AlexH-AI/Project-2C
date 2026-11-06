@@ -49,5 +49,5 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/pipeline-stage.ts` — PIPELINE_STAGES, type PipelineStage, isPipelineStage
 - `src/stage-snapshot.ts` — snapshotDate, type StageCounts, stageSnapshot, stageSnapshotByScope, stageSnapshotSeries
 - `src/stats.ts` — type PolicyMetrics, scopeMatcher, markIndexer, inScope, policyMetrics, isRfAppointment, rfCount, type CloseRate, closeRate, closeRatePercent, type PeriodMetrics, type MetricsData, periodMetrics, periodMetricsByMark, periodMetricsByScope
-- `src/text.ts` — isStorableText, normalizeText, LINE_BREAK, normalizeNote, stripDiacritics, collapseSpaces, toHex
+- `src/text.ts` — isStorableText, normalizeText, LINE_BREAK, normalizeNote, stripDiacritics, searchText, collapseSpaces, toHex
 <!-- codemap:end -->

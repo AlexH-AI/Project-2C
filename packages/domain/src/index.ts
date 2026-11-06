@@ -106,6 +106,7 @@ export {
   LINE_BREAK,
   normalizeNote,
   normalizeText,
+  searchText,
   stripDiacritics,
   toHex,
 } from './text';
