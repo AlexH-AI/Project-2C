@@ -107,14 +107,14 @@ const runOf = (check) => /\/actions\/runs\/(\d+)\//.exec(check.detailsUrl ?? '')
 // says nothing of it.
 const VERDICTS = ['success', 'failure'];
 
-/** The newest `pull_request` run of the PR's branch made at or after `since`, or null. */
+/** The newest `pull_request` run of the PR's branch (made at or after `since`, if given), or null. */
 function newestRunOfPr(pr, all, since) {
   return all
     .filter(
       (run) =>
         run.event === 'pull_request' &&
         run.head_branch === pr.headRefName &&
-        Date.parse(run.created_at) >= Date.parse(since),
+        (since === null || Date.parse(run.created_at) >= Date.parse(since)),
     )
     .reduce((a, b) => (a && Date.parse(a.created_at) >= Date.parse(b.created_at) ? a : b), null);
 }
@@ -128,9 +128,11 @@ function newestRunOfPr(pr, all, since) {
  * that time, read from its own checks: after `gh pr close` + `gh pr reopen` the head keeps its old
  * checks, all ended, until GitHub makes the new run, and a run of another event (workflow_dispatch)
  * or one cancelled says nothing of the reopened PR (DR6-176). A run that failed is red even with no
- * red check of it on the head yet: waiting for one could last until the timeout (T-373). A docs-only
- * PR has no CI at all (ci.yml `paths`), so it is done at once; `files()` gives the PR's files to
- * tell, and is called only while CI has no check.
+ * red check of it on the head yet: waiting for one could last until the timeout (T-373). Without
+ * `since`, the checks read stay all of the head's, and that run is the newest `pull_request` run of
+ * the PR's branch, not any run of the head: a `push` run that failed there says nothing of the PR
+ * (T-378). A docs-only PR has no CI at all (ci.yml `paths`), so it is done at once; `files()` gives
+ * the PR's files to tell, and is called only while CI has no check.
  */
 export function ciState(pr, { not = null, since = null, runs = () => [], files = () => [] } = {}) {
   const stop = notOpen(pr);
@@ -148,7 +150,9 @@ export function ciState(pr, { not = null, since = null, runs = () => [], files =
   }
   if (pending > 0) return { done: false, text: `${checksSummary(rollup)} @${head}` };
   const all = runs();
-  const own = since ? newestRunOfPr(pr, all, since) : null;
+  // Without since it only sets the floor below: the checks read and the other ends stay as before.
+  const newest = newestRunOfPr(pr, all, since);
+  const own = since ? newest : null;
   if (since && !own) {
     return {
       done: false,
@@ -178,11 +182,11 @@ export function ciState(pr, { not = null, since = null, runs = () => [], files =
     return { done: true, code: EXIT.bad, text: `CI red @${head}: ${failed.join(', ')}` };
   }
   // The rollup is read before the runs, so it may not show a red check of a run that failed yet.
-  if (own?.conclusion === 'failure') {
+  if (newest?.conclusion === 'failure') {
     return {
       done: true,
       code: EXIT.bad,
-      text: `CI red @${head}: run ${own.id} failed, no red check of it yet`,
+      text: `CI red @${head}: run ${newest.id} failed, no red check of it yet`,
     };
   }
   if (own && checks.length === 0) {

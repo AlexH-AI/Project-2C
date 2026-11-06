@@ -205,23 +205,64 @@ describe('ciState', () => {
     expect(ciState(pr({ statusCheckRollup: [] }), { not: 'abc1234', files }).done).toBe(false);
   });
 
+  // A check of a workflow run, as gh gives it: its details URL names the run.
+  const ranIn = (id, name, conclusion, status) => ({
+    ...check(name, conclusion, status),
+    detailsUrl: `https://github.com/AlexH-AI/Project-2C/actions/runs/${id}/job/${id}7`,
+  });
+  const run = (id, created_at, overrides = {}) => ({
+    id,
+    name: 'CI',
+    event: 'pull_request',
+    head_branch: BRANCH,
+    status: 'completed',
+    conclusion: 'success',
+    created_at,
+    ...overrides,
+  });
+
+  describe('without since (a push after a fix)', () => {
+    const not = OLD.slice(0, 7);
+    const greenOf = (id) => [ranIn(id, 'Verify', 'SUCCESS'), ranIn(id, 'e2e', 'SUCCESS')];
+
+    it('calls the newest pull_request run of the head red when it failed with no red check yet', () => {
+      // gh reads the checks before the runs: the exe build, which needs Verify, failed in between.
+      const failed = run(2, '2026-11-02T10:57:10Z', { conclusion: 'failure' });
+      for (const rollup of [greenOf(2), pr().statusCheckRollup]) {
+        expect(ciState(pr({ statusCheckRollup: rollup }), { not, runs: () => [failed] })).toEqual({
+          done: true,
+          code: EXIT.bad,
+          text: 'CI red @abc1234: run 2 failed, no red check of it yet',
+        });
+      }
+    });
+
+    it('does not take a failed run of another event on the head for the PR', () => {
+      const prRun = run(2, '2026-11-02T10:57:10Z');
+      for (const created_at of ['2026-11-02T10:57:05Z', '2026-11-02T10:58:00Z']) {
+        const pushed = run(3, created_at, { event: 'push', conclusion: 'failure' });
+        expect(
+          ciState(pr({ statusCheckRollup: greenOf(2) }), { not, runs: () => [prRun, pushed] }),
+          created_at,
+        ).toEqual({ done: true, code: EXIT.done, text: 'CI green @abc1234: 2 pass' });
+      }
+    });
+
+    it('goes by the newest pull_request run, not an older one that failed', () => {
+      const older = run(1, '2026-11-02T09:12:00Z', { conclusion: 'failure' });
+      const newest = run(2, '2026-11-02T10:57:10Z');
+      for (const runs of [() => [older, newest], () => [newest, older]]) {
+        expect(ciState(pr({ statusCheckRollup: greenOf(2) }), { not, runs })).toEqual({
+          done: true,
+          code: EXIT.done,
+          text: 'CI green @abc1234: 2 pass',
+        });
+      }
+    });
+  });
+
   describe('with since (a reopened PR)', () => {
     const since = '2026-11-02T10:56:33Z';
-    // A check of a workflow run, as gh gives it: its details URL names the run.
-    const ranIn = (id, name, conclusion, status) => ({
-      ...check(name, conclusion, status),
-      detailsUrl: `https://github.com/AlexH-AI/Project-2C/actions/runs/${id}/job/${id}7`,
-    });
-    const run = (id, created_at, overrides = {}) => ({
-      id,
-      name: 'CI',
-      event: 'pull_request',
-      head_branch: BRANCH,
-      status: 'completed',
-      conclusion: 'success',
-      created_at,
-      ...overrides,
-    });
     // Before gh pr close: run 1, all ended green; the checks it left stay on the head.
     const old = run(1, '2026-11-02T09:12:00Z');
     const oldChecks = [ranIn(1, 'Verify', 'SUCCESS'), ranIn(1, 'e2e', 'SUCCESS')];
