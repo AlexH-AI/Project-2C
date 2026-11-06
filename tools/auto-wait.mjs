@@ -62,7 +62,10 @@ const runsOf = (sha) =>
     '[.workflow_runs[] | {id, name, event, head_branch, status, conclusion, created_at}]',
   ]);
 
-/** The SHA of a branch on GitHub: ahead of the PR's head when GitHub missed a push (ciState). */
+/**
+ * The SHA of a branch on GitHub: ahead of the PR's head when GitHub missed a push (ciState). A
+ * branch GitHub does not have fails with gh's "(HTTP 404)", which ciState takes for no news.
+ */
 const branchSha = (name) =>
   gh([
     'api',

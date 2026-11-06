@@ -110,6 +110,20 @@ const runOf = (check) => /\/actions\/runs\/(\d+)\//.exec(check.detailsUrl ?? '')
 // says nothing of it.
 const VERDICTS = ['success', 'failure'];
 
+/**
+ * What `branch()` gives, or null when GitHub has no such branch (404: a PR from a fork, say): that
+ * tells nothing of a push, so the wait goes on as before PR #1104. Any other failed read (no
+ * network, gh down) is thrown, for waitFor to count.
+ */
+function readBranch(branch) {
+  try {
+    return branch();
+  } catch (error) {
+    if (/\(HTTP 404\)/.test(error.message)) return null;
+    throw error;
+  }
+}
+
 /** The newest `pull_request` run of the PR's branch (made at or after `since`, if given), or null. */
 function newestRunOfPr(pr, all, since) {
   return all
@@ -129,7 +143,8 @@ function newestRunOfPr(pr, all, since) {
  * read them each poll. With `not`, first a head other than that SHA (a push after a fix); while the
  * head is still that SHA, `branch()` gives the SHA of the PR's branch on GitHub and how long this
  * wait has seen it there, and a branch at another SHA for STALE_HEAD_MS is a push GitHub missed:
- * something to look at, since the PR's head and CI will not move until the PR is reopened. With
+ * something to look at, since the PR's head and CI will not move until the PR is reopened; a branch
+ * GitHub does not have (404) is waited on as a push (readBranch). With
  * `since`, the verdict is that of the newest `pull_request` run of the PR's branch made at or after
  * that time, read from its own checks: after `gh pr close` + `gh pr reopen` the head keeps its old
  * checks, all ended, until GitHub makes the new run, and a run of another event (workflow_dispatch)
@@ -148,7 +163,7 @@ export function ciState(
   if (stop) return stop;
   const head = short(pr.headRefOid);
   if (not && sameSha(pr.headRefOid, not)) {
-    const moved = branch();
+    const moved = readBranch(branch);
     if (!moved || sameSha(moved.sha, pr.headRefOid)) {
       return { done: false, text: `head still ${head}: waiting for a push` };
     }

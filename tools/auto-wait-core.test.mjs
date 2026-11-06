@@ -261,6 +261,18 @@ describe('ciState', () => {
         });
       }
     });
+
+    it('goes by the checks when the newest pull_request run was cancelled or failed to start', () => {
+      // Only a run that failed sets the floor (#1083): one that ended any other way says nothing.
+      for (const conclusion of ['cancelled', 'startup_failure']) {
+        const ended = run(2, '2026-11-02T10:57:10Z', { conclusion });
+        expect(ciState(pr({ statusCheckRollup: greenOf(2) }), { runs: () => [ended] })).toEqual({
+          done: true,
+          code: EXIT.done,
+          text: 'CI green @abc1234: 2 pass',
+        });
+      }
+    });
   });
 
   describe('with since (a reopened PR)', () => {
@@ -416,6 +428,24 @@ describe('ciState', () => {
         done: false,
         text: 'head still abc1234: waiting for a push',
       });
+    });
+
+    // How tools/session-io.mjs's run reports a gh call that failed.
+    const failing = (reason) => () => {
+      throw new Error(`gh api repos/{owner}/{repo}/git/ref/heads/${BRANCH} failed: ${reason}`);
+    };
+
+    it('waits for a push when GitHub has no such branch (a PR from a fork), as before PR #1104', () => {
+      expect(ciState(pr(), { not, branch: failing('gh: Not Found (HTTP 404)') })).toEqual({
+        done: false,
+        text: 'head still abc1234: waiting for a push',
+      });
+    });
+
+    it('lets any other failed read of the branch through, for the wait to count', () => {
+      for (const reason of ['connect ETIMEDOUT', 'gh: Server Error (HTTP 500)']) {
+        expect(() => ciState(pr(), { not, branch: failing(reason) }), reason).toThrow(reason);
+      }
     });
 
     it('reads the branch only while the head is still the one to move past', () => {
