@@ -120,10 +120,19 @@ function isOwnMessage(pasted: string): boolean {
   return lines.some((line) => OWN_LINES.includes(ownLine(line)));
 }
 
+/**
+ * Whether a paste is blank: nothing but white space and characters that show nothing, as every box
+ * of the app reads it (`normalizeText`, K20, DR6-168). A paste longer than `MAX_READ` code units is
+ * never normalized, so never blank (DR5-09): `checkWebAnswer` refuses it as too long. The one rule
+ * of `checkWebAnswer` and of the "Kiểm tra và lưu" button at each key (review #1066).
+ */
+export function isBlankWebAnswer(pasted: string): boolean {
+  return pasted.length <= MAX_READ && normalizeText(pasted) === '';
+}
+
 export type WebAnswerResult =
   /**
-   * Not an attempt (§3.1 item 3): the paste is blank (nothing but white space and characters that
-   * show nothing, as every box of the app reads it: `normalizeText`, DR6-168), is the app's own
+   * Not an attempt (§3.1 item 3): the paste is blank (`isBlankWebAnswer`), is the app's own
    * message pasted back, or is longer than `MAX_AI_RAW_OUTPUT` characters (by code point, as
    * `raw_output` is cut).
    */
@@ -144,7 +153,7 @@ export function checkWebAnswer(session: WebSession, pasted: string): WebAnswerRe
   if (isOwnMessage(pasted)) return { kind: 'unusable', reason: 'OWN_MESSAGE' };
   // A huge paste is never normalized nor counted whole either (DR5-09).
   if (pasted.length > MAX_READ) return { kind: 'unusable', reason: 'TOO_LONG' };
-  if (normalizeText(pasted) === '') return { kind: 'unusable', reason: 'EMPTY' };
+  if (isBlankWebAnswer(pasted)) return { kind: 'unusable', reason: 'EMPTY' };
   if (codePointsOver(pasted, MAX_AI_RAW_OUTPUT)) return { kind: 'unusable', reason: 'TOO_LONG' };
   const attempts = [...session.attempts, checkAnalysisAnswer(session.input, pasted)];
   const retry = nextRetry(attempts);

@@ -31,12 +31,12 @@ module.exports = {
       to: { pathNot: ['^packages/(ai|domain)/', '(^|/)node_modules/zod/'] },
     },
     {
-      name: 'ai-test-support-only-in-tests',
+      name: 'test-files-only-in-tests',
       comment:
-        'Only tests, of any package or app, import the tests and test-support of packages/ai, which use vitest (DR6-167).',
+        'Only tests import tests and test-support, which use vitest: of any package or app, those of packages/ai and packages/db alike (DR6-167, review #1066).',
       severity: 'error',
       from: { pathNot: TEST_FILES },
-      to: { path: `^packages/ai/.*${TEST_FILES}` },
+      to: { path: TEST_FILES },
     },
     {
       name: 'db-only-on-domain-and-ai-schema',

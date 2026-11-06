@@ -1142,6 +1142,11 @@ describe('Mock extraction', () => {
     ['KH có 2 con. Bé Tí đã mất.', []],
     ['KH có 3 con. Mất điện ở căn hộ bé xíu.', []],
     ['KH có 2 con. Một bé nhỏ đã mất.', []],
+    // "đứa", "thằng" name a child there too, the safe way (CX-A4; Owner 06/11/2026).
+    ['KH có 2 con. Đứa nhỏ bé đã mất.', []],
+    ['KH có 2 con. Đứa nhỏ đã mất.', []],
+    ['KH có 2 con. Thằng út đã mất.', []],
+    ['KH có 2 con, thằng út đã qua đời.', []],
     // Of someone else, said not to be, or no child.
     ['KH có 2 con. Chị gái KH có một con đã mất.', [TWO]],
     ['KH có 2 con, không con nào mất.', [TWO]],

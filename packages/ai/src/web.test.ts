@@ -16,6 +16,7 @@ import { fact, nfdZw, NUL, PROFILE, TODAY, ZWSP } from './test-support';
 import {
   buildWebMessage,
   checkWebAnswer,
+  isBlankWebAnswer,
   startWebAnalysis,
   WEB_WRAPPER,
   type WebSession,
@@ -281,6 +282,8 @@ describe('checkWebAnswer', () => {
     ['only invisible characters', `${ZWSP}${WJ}${HANGUL_FILLER}`, 'EMPTY'],
     ['invisible characters and white space', ` ${ZWSP}\n${WJ}\t${HANGUL_FILLER} `, 'EMPTY'],
     ['longer than 20 000 characters', `${JSON.stringify(GOOD)}${' '.repeat(20_000)}`, 'TOO_LONG'],
+    // Too long to be read, so never read as blank (DR5-09, review #1066).
+    ['white space past 40 000 code units', ' '.repeat(2 * MAX_AI_RAW_OUTPUT + 1), 'TOO_LONG'],
   ] as const)('does not count a paste that is %s', (_, text, reason) => {
     const { session } = start();
 
@@ -534,5 +537,30 @@ describe('checkWebAnswer', () => {
     const over = { ...retry.session, attempts: [failed!, failed!] };
 
     expect(() => checkWebAnswer(over, GOOD_ANSWER)).toThrow(/over/);
+  });
+});
+
+// One rule of a blank paste for `checkWebAnswer` and the "Kiểm tra và lưu" button (review #1066).
+describe('isBlankWebAnswer', () => {
+  /** The code units of a paste that are read: twice the limit (`MAX_READ` of web.ts, DR5-09). */
+  const read = 2 * MAX_AI_RAW_OUTPUT;
+
+  it.each([
+    ['empty', ''],
+    ['only white space', ' \n\t\r '],
+    // Blank as every other box of the app reads it (K20, DR6-168).
+    ['only invisible characters', `${ZWSP}${String.fromCodePoint(0x2060)}\u{85}`],
+    ['white space as long as is read', ' '.repeat(read)],
+  ])('takes a paste that is %s as blank', (_, text) => {
+    expect(isBlankWebAnswer(text)).toBe(true);
+  });
+
+  it.each([
+    ['a letter', ` ${ZWSP}x `],
+    ['a mark that shows', '.'],
+    // Never normalized, so never blank: `checkWebAnswer` refuses it as too long (DR5-09).
+    ['white space longer than is read', ' '.repeat(read + 1)],
+  ])('takes a paste with %s as not blank', (_, text) => {
+    expect(isBlankWebAnswer(text)).toBe(false);
   });
 });
