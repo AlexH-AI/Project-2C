@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createPersistQueue, type SaveStatus } from './persist-queue';
+import { createPersistQueue, type PersistQueue, type SaveStatus } from './persist-queue';
 
 /** A fake file: each write resolves when the test releases it, or fails with what it is given. */
 function fakeDisk() {
@@ -47,6 +47,21 @@ function fakeDisk() {
       }
     },
   };
+}
+
+/**
+ * A listener that saves twice, `v2` then `v3`, once it is told the first save ended: the writes
+ * flush() and idle() must wait for too (DR6-162).
+ */
+function saveTwiceAfterFirst(queue: PersistQueue) {
+  let told = false;
+  queue.subscribe(() => {
+    const { saving, lastSave } = queue.status();
+    if (told || saving || !lastSave) return;
+    told = true;
+    queue.persist(bytes('v2'));
+    queue.persist(bytes('v3'));
+  });
 }
 
 const bytes = (text: string) => new TextEncoder().encode(text);
@@ -323,14 +338,7 @@ describe('createPersistQueue', () => {
   it('runs one write at a time when a listener told of a save saves twice, and flush() waits for both (DR6-162)', async () => {
     const disk = fakeDisk();
     const queue = createPersistQueue(disk.write);
-    let told = false;
-    queue.subscribe(() => {
-      const { saving, lastSave } = queue.status();
-      if (told || saving || !lastSave) return;
-      told = true;
-      queue.persist(bytes('v2'));
-      queue.persist(bytes('v3'));
-    });
+    saveTwiceAfterFirst(queue);
 
     queue.persist(bytes('v1'));
     disk.next().finish();
@@ -348,14 +356,7 @@ describe('createPersistQueue', () => {
   it('idle() waits for the writes a listener told of the last one starts too', async () => {
     const disk = fakeDisk();
     const queue = createPersistQueue(disk.write);
-    let told = false;
-    queue.subscribe(() => {
-      const { saving, lastSave } = queue.status();
-      if (told || saving || !lastSave) return;
-      told = true;
-      queue.persist(bytes('v2'));
-      queue.persist(bytes('v3'));
-    });
+    saveTwiceAfterFirst(queue);
 
     queue.persist(bytes('v1'));
     // What is on disk, and the save state, the moment idle() resolves.
