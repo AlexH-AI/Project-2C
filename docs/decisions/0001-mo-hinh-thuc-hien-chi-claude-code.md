@@ -193,3 +193,21 @@ Thêm **lượt 5** của deep review Phase 1–6, trong G7. Lượt 4 (M10) k�
 - WorkBuddy không phải OpenCode, nên lượt 5 không là ngoại lệ của dòng "không dùng OpenCode… để review" trong `CLAUDE.md`. Agent ngoài Claude vẫn không viết code.
 
 Phần Owner chọn cùng G1 (phạm vi, KNOWN, số đo, cách chạy đợt 2, `dot2.mjs` lượt 5, bài học lượt 4, việc sau đợt sửa): `docs/process/deep-review-phase-1-6.md` §L5.11. Spec Phase 6 §1, §2, §6 sửa theo. Owner duyệt G1 ngày 04/11/2026 trong chat (PR #1026), chọn cả bảy đề xuất 5–11 theo đề xuất.
+
+## Phụ lục — lượt 6 review đóng Phase 6, lượt cuối trước G7 (M13 — Accepted G1, Owner quyết 06–07/11/2026 · Issue #1117)
+
+Thêm **lượt 6** của deep review Phase 1–6, lượt deep review toàn bộ code cuối cùng trước G7, và đổi cách làm. Lượt 1–5 tìm 67, 36, 31, 23, 20 vấn đề mới; ba lượt cuối không có Medium. Lượt nào cũng ra lỗi mới vì: mỗi lượt là một lần lấy mẫu; đợt sửa sinh khoảng nửa số lỗi của lượt sau; sửa từng vị trí nên họ lỗi quay lại; quyết định "sửa hết" (lượt 3–5) và điều kiện "sổ ghi chú OPEN rỗng" làm đuôi Low / Nit thành vòng lặp (phân tích ở `docs/process/deep-review-phase-1-6.md` §L6.0).
+
+- **Ba bên.** Owner 06/11/2026: "chuẩn bị deep code base review round 7, 3 bên: Claude, Codex và 1 agent mạnh từ Workbuddy (có thể là Hy4 hoặc GLM 5.3)"; 07/11: "Hãy ghi là lượt 6 cho đúng."
+  - Claude Opus 5.5, mỗi gói một phiên sạch Owner mở, thêm ba phiên chủ đề xuyên gói; mức suy luận và ultracode Owner chọn từng phiên (M1, M8). Chỉ Claude kiểm phần đã sửa (bảng R).
+  - Codex, model GPT Sol 6.1, theo M2: Owner chạy, chỉ đọc, không viết code.
+  - Một agent trong app desktop WorkBuddy, model Owner chọn (Hy4 hoặc GLM 5.3), qua Code review expert của app; cùng điều kiện như Codex theo M2, như DeepSeek ở M10, M12. Owner 07/11: "bài thi chọn hy4 hay GLM 5.3 không cần làm, workbuddy đang làm và anh sẽ tự quyết định model nào".
+  - 21 báo cáo, hai đợt như lượt 5. Kết luận phát hành chỉ lấy từ phiên tổng hợp của Claude.
+- **Đổi cách làm.** Owner 07/11: "Anh đồng ý với đề xuất 5 hướng đổi cách làm", rồi duyệt bản Claude tự soát lại, bỏ bài thi chọn model ("anh đồng ý, duyệt kế hoạch trừ 1 mục"):
+  - **Tiêu chí xong chốt trước khi chạy, áp cho cả deep review lẫn sổ ghi chú review:** chỉ Critical / High / Medium và Low ở trục D (dữ liệu), S (an toàn ở ranh giới), G (guardrail AI) chặn phát hành; Low khác và Nit ghi sổ với nhãn [sau v1.0], không sửa trước G7. Có Medium trở lên thì sửa rồi review lại đúng vùng đó, không mở lượt 7. Thay "sửa hết rồi G7" của lượt 3–5 và điều kiện "sổ OPEN rỗng" trước khi ghim SHA.
+  - **Sửa theo họ lỗi:** mỗi phát hiện kèm phần quét mọi chỗ cùng mẫu; Issue sửa nhắm cả họ, ưu tiên sửa bằng cấu trúc.
+  - **Chặn lỗi ở PR sửa và đóng băng code:** PR sửa có bằng chứng test đỏ khi gỡ phần sửa, phần quét cùng mẫu, cỡ so ngân sách của Issue (`review-pr` chặn khi thiếu). Từ SHA ghim lượt 6 tới phát hành v1.0, code chỉ đổi để sửa vấn đề chặn; không công cụ pipeline mới, không quyết định hành vi mới, không refactor, trừ khi Owner duyệt (G1).
+  - **Nhiều mẫu hẹp thay một mẫu rộng:** bỏ chỉ tiêu số kịch bản và mục bloat / hiệu năng bắt buộc ở từng gói; Claude thêm phiên chủ đề, gồm một phiên rà gọn diff từ lượt 5 (Owner hỏi 07/11 về 60 file, +2 252 dòng thêm sau lượt 5).
+- WorkBuddy không phải OpenCode, nên lượt 6 không là ngoại lệ của dòng "không dùng OpenCode… để review" trong `CLAUDE.md`. Agent ngoài Claude vẫn không viết code.
+
+Phần Owner chọn cùng G1 (chi tiết tiêu chí và đóng băng, ba phiên chủ đề, cách chạy đợt 2, chi phí WorkBuddy, T-386 cho `review-pr`, T-387 cho `dot2.mjs`, số đo): `docs/process/deep-review-phase-1-6.md` §L6.11. Spec Phase 6 §1, §6 sửa theo.
