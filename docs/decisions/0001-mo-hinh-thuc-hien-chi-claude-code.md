@@ -210,4 +210,4 @@ Thêm **lượt 6** của deep review Phase 1–6, lượt deep review toàn b�
   - **Nhiều mẫu hẹp thay một mẫu rộng:** bỏ chỉ tiêu số kịch bản và mục bloat / hiệu năng bắt buộc ở từng gói; Claude thêm phiên chủ đề, gồm một phiên rà gọn diff từ lượt 5 (Owner hỏi 07/11 về 60 file, +2 252 dòng thêm sau lượt 5).
 - WorkBuddy không phải OpenCode, nên lượt 6 không là ngoại lệ của dòng "không dùng OpenCode… để review" trong `CLAUDE.md`. Agent ngoài Claude vẫn không viết code.
 
-Phần Owner chọn cùng G1 (chi tiết tiêu chí và đóng băng, ba phiên chủ đề, cách chạy đợt 2, chi phí WorkBuddy, T-386 cho `review-pr`, T-387 cho `dot2.mjs`, số đo): `docs/process/deep-review-phase-1-6.md` §L6.11. Spec Phase 6 §1, §6 sửa theo.
+Phần Owner chọn cùng G1 (chi tiết tiêu chí và đóng băng, ba phiên chủ đề, cách chạy đợt 2, chi phí WorkBuddy, T-386 cho `review-pr`, T-387 cho `dot2.mjs`, số đo): `docs/process/deep-review-phase-1-6.md` §L6.11. Spec Phase 6 §1, §6 sửa theo. Owner duyệt G1 ngày 07/11/2026 trong chat (PR #1118): "Chọn như ghi" cho đề xuất 5, 6, 8–12; đề xuất 7 Owner đổi cùng ngày (không ultracode / Workflow, subagent chỉ Sonnet 5.5 / Opus 5.5 mức `xhigh`).
