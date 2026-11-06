@@ -108,14 +108,14 @@ Nhịp thừa là chuyện thường: lệnh chờ cũ xong muộn, nhắc của
 | Phiên con rảnh; dòng `AUTO-CHILD` cuối là `CẦN OWNER` hoặc `KHÔNG ĐỒNG Ý`; sau dòng đó chưa có tin nhắn nào của phiên điều phối | Hỏi Owner (§5), gửi câu trả lời về phiên đó | giữ lệnh đang chạy |
 | Một phiên con đang chạy | Không giao gì | giữ lệnh đang chạy. Không có thì đặt lệnh của việc đó ("Chờ", bên dưới). Lệnh đó (trừ `sleep`) chạy với `--once` mà ra khác 2 thì nó sẽ xong ngay, thường vì kết quả đã lên GitHub mà phiên con chưa xong lượt: đặt `sleep --timeout 5` thay cho nó |
 | Phiên con rảnh; dòng cuối không phải `AUTO-CHILD`; việc gần nhất của nó chưa có kết quả trên GitHub | Nhắc một lần: "Kết thúc lượt bằng đúng một dòng AUTO-CHILD theo brief". Đã nhắc mà vẫn vậy thì hỏi Owner | lệnh của việc đó |
-| Phiên con rảnh; dòng `AUTO-CHILD` cuối báo một kết quả (PR, head mới, REVIEW, PR sổ) mà GitHub chưa thấy | Không giao lại. Lần đầu chỉ chờ. Lần sau vẫn chưa thấy thì tìm nguyên nhân (PR thiếu `Closes #<I>`, push chưa lên, tiêu đề PR sổ sai) và nhắc phiên con sửa; vẫn không được thì hỏi Owner | `sleep --timeout 1` |
-| Chưa có PR; không phiên code nào giữ `I` | `/clear` phiên code ít dùng gần nhất, gửi §3.1 | `pr <I> --timeout 60` |
-| PR mở, CI đang chạy trên `H` | — | `ci <N> --timeout 60` |
-| PR mở, CI đỏ trên `H` | Gửi §3.3 cho phiên code của PR | `ci <N> --not <H> --timeout 60` |
-| PR mở, CI xanh trên `H`, chưa có REVIEW cho `H` | `/clear` phiên review ít dùng gần nhất, gửi §3.2 | `review <N> --timeout 60` |
-| PR mở, `REVIEW: CHANGES` @`H` | Gửi §3.4 cho phiên code của PR | `ci <N> --not <H> --timeout 60` |
+| Phiên con rảnh; dòng `AUTO-CHILD` cuối báo một kết quả (PR, head mới, REVIEW, PR sổ) mà GitHub chưa thấy | Không giao lại. Lần đầu chỉ chờ. Lần sau vẫn chưa thấy thì tìm nguyên nhân (PR thiếu `Closes #<I>`, push chưa lên, nhánh đã ở head mới mà PR chưa theo (§4, head của PR kẹt), tiêu đề PR sổ sai) và nhắc phiên con sửa; vẫn không được thì hỏi Owner | `sleep --timeout 1` |
+| Chưa có PR; không phiên code nào giữ `I` | `/clear` phiên code ít dùng gần nhất, gửi §3.1 | `pr <I> --timeout 15` |
+| PR mở, CI đang chạy trên `H` | — | `ci <N> --timeout 15` |
+| PR mở, CI đỏ trên `H` | Gửi §3.3 cho phiên code của PR | `ci <N> --not <H> --timeout 15` |
+| PR mở, CI xanh trên `H`, chưa có REVIEW cho `H` | `/clear` phiên review ít dùng gần nhất, gửi §3.2 | `review <N> --timeout 15` |
+| PR mở, `REVIEW: CHANGES` @`H` | Gửi §3.4 cho phiên code của PR | `ci <N> --not <H> --timeout 15` |
 | PR mở, `REVIEW: PASS` @`H`, CI xanh | Merge (§4). Merge xong thì làm tiếp nhịp ngay. `merge-pr` từ chối thì làm theo §4 rồi kết thúc nhịp: head chỉ đổi khi phiên code push, và PR mở lại vẫn giữ check cũ đã xong, nên đọc lại ngay sẽ ra hàng này lần nữa | `merge-pr` từ chối: lệnh §4 nêu (`ci <N> --not <H>` hoặc `ci <N> --since <T>`); merge xong: — |
-| PR đã merge; chưa có PR sổ; chưa phiên review nào có dòng `AUTO-CHILD` cuối là kết quả của §3.5 cho `N` | Gửi §3.5 cho phiên review đã PASS | `title "record the notes of the PR <N> review" --timeout 30` |
+| PR đã merge; chưa có PR sổ; chưa phiên review nào có dòng `AUTO-CHILD` cuối là kết quả của §3.5 cho `N` | Gửi §3.5 cho phiên review đã PASS | `title "record the notes of the PR <N> review" --timeout 15` |
 | PR sổ đang mở | Merge PR sổ (§4) | — |
 | PR sổ đã merge, hoặc phiên review báo `[PR #<N>] SỔ KHÔNG ĐỔI` | Issue xong. Khi `SỔ KHÔNG ĐỔI`, comment lên PR: `Sổ ghi chú: không đổi sau review @<H> (auto-issues).` Sang Issue kế: `git -C C:/workspace/Project-2C fetch origin`, `git -C C:/workspace/Project-2C-auto checkout --detach origin/main` | — |
 | Hết hàng đợi | Làm theo bảng ở §6 | |
@@ -137,18 +137,19 @@ Ba hàng giao việc theo PR (CI đỏ, review, CHANGES) không cần điều ki
 - **Cách đặt lệnh chờ:** Bash với `run_in_background: true`: `cd C:/workspace/Project-2C-auto && node tools/auto-wait.mjs <kiểu> …`. Lệnh xong thì app đánh thức phiên này bằng một lượt mới, kèm dòng `AUTO-WAIT …`.
 - **Mỗi nhịp phải để lại một lệnh chờ**, trừ khi bước kế làm ngay trong lượt. Không có việc nền thì `/goal` chạy lượt kế ngay lập tức; lặp vài lượt không gọi công cụ thì nó tự dừng.
 - **Mỗi lúc chỉ một lệnh chờ.** Trước khi đặt lệnh mới, `TaskStop` lệnh cũ nếu nó còn chạy và mình biết id. Lệnh cũ xong muộn chỉ sinh một nhịp thừa.
+- **Lệnh chờ là tín hiệu đánh thức chính.** Tin báo của phiên con (`<side-sessions-event>`) có thể bị app giữ: sau nhiều lượt tự động liền nhau mà Owner không nhắn, app không đánh thức phiên này khi phiên con xong lượt, và tin báo chờ tới lượt sau (đợt 05–06/11: tin báo của PR #1076, #1077, #1078, #1084 chỉ đến khi Owner nhắn). `SendMessage` với `notify_when_idle` không dùng được với phiên con của app desktop. Vì vậy mọi lệnh chờ có trần ngắn: 15 phút với việc theo GitHub, `sleep` 5 phút với việc không để dấu trên GitHub (§6). Mỗi lần lệnh xong là một nhịp như thường: phiên con đã rảnh thì nhịp đó đọc dòng `AUTO-CHILD` mới của nó và làm tiếp.
 - **Lệnh chờ theo việc đang chạy:**
   - phiên con đang trả lời brief chờ (ngay sau khi mở ở §1): `sleep --timeout 1`;
-  - phiên code làm Issue `I`, chưa có PR: `pr <I> --timeout 60`;
-  - phiên code sửa PR `N` (CI đỏ, CHANGES, `main` đi trước, câu trả lời của Owner): `ci <N> --not <H> --timeout 60`;
-  - phiên review review PR `N`: `review <N> --timeout 60`;
-  - phiên review viết PR sổ cho `N`: `title "record the notes of the PR <N> review" --timeout 30`;
-  - việc của §6: `sleep --timeout 30`.
+  - phiên code làm Issue `I`, chưa có PR: `pr <I> --timeout 15`;
+  - phiên code sửa PR `N` (CI đỏ, CHANGES, `main` đi trước, câu trả lời của Owner): `ci <N> --not <H> --timeout 15`;
+  - phiên review review PR `N`: `review <N> --timeout 15`;
+  - phiên review viết PR sổ cho `N`: `title "record the notes of the PR <N> review" --timeout 15`;
+  - việc của §6: `sleep --timeout 5`.
 - **Mã thoát `AUTO-WAIT`:**
   - 0 / 1: làm nhịp như thường;
-  - 2 (hết giờ): làm nhịp như thường, rồi xét luật hai lần hết giờ ở dưới;
-  - 3: đọc lý do. Rõ cách xử lý thì làm (ví dụ PR đã merge thì đi tiếp theo bảng), không rõ thì hỏi Owner. Với `--once`, mã 3 còn có nghĩa là lần đọc lỗi: đọc lại một lần trước khi kết luận.
-- **Hai lần hết giờ liền cho cùng một việc mà GitHub không đổi:** hỏi Owner (Tiếp tục chờ / Dừng), dù phiên con còn chạy hay đã rảnh. Hai lệnh `sleep --timeout 5` liền của hàng "Một phiên con đang chạy" (lệnh của việc sẽ xong ngay, phiên con vẫn chạy) cũng tính là hai lần hết giờ. Trước khi hỏi, kiểm và nêu trong câu hỏi:
+  - 2 (hết giờ): làm nhịp như thường, rồi xét luật chờ lâu ở dưới;
+  - 3: đọc lý do. Rõ cách xử lý thì làm (ví dụ PR đã merge thì đi tiếp theo bảng; `PR head stale: branch at <sha7>` của `ci --not` thì làm theo §4, head của PR kẹt), không rõ thì hỏi Owner. Với `--once`, mã 3 còn có nghĩa là lần đọc lỗi: đọc lại một lần trước khi kết luận.
+- **Chờ lâu cho cùng một việc:** cộng `--timeout` của các lệnh chờ liền nhau cho cùng một việc mà sau đó không có gì đổi (GitHub không đổi, phiên con chưa có dòng `AUTO-CHILD` mới cho việc đó). Tính lệnh hết giờ (mã 2) và cả lệnh `sleep`: `sleep --timeout 5` của hàng "Một phiên con đang chạy" (lệnh của việc sẽ xong ngay, phiên con vẫn chạy) và `sleep` của §6. Tổng tới 60 phút thì hỏi Owner (Tiếp tục chờ / Dừng), dù phiên con còn chạy hay đã rảnh; Owner chọn chờ tiếp thì đếm lại từ 0. Luật tính theo tổng thời gian, không theo số lần hết giờ: trần ngắn là để nhịp sớm gặp phiên con đã rảnh, không để hỏi Owner sớm. Trước khi hỏi, kiểm và nêu trong câu hỏi:
   - PR có `Closes #<I>` không;
   - `mergeable` của PR: có xung đột thì workflow `pull_request` không chạy;
   - check nào treo;
@@ -268,11 +269,12 @@ Chỉ phiên điều phối merge, luôn bằng `node tools/merge-pr.mjs`. Lện
 - **PR task:** `node tools/merge-pr.mjs <N>`, thêm `--owner` khi mức là med / high (theo nhãn `risk:*`, hoặc mức đã nâng trong REVIEW). `--owner` dùng quyền pipeline của M11, và để lại comment "Merged on Owner request".
 - **PR chỉ sửa `docs/state/review-notes.md`** (PR sổ, PR gắn nhãn sổ): merge ngay bằng `node tools/merge-pr.mjs <L>`, không cần REVIEW (T-215). PR đó sửa thêm file khác thì không merge, hỏi Owner.
 - **`merge-pr` từ chối:**
-  - `main` có commit code sau bản CI đã test: gửi §3.8 cho phiên code của PR, lệnh chờ `ci <N> --not <H> --timeout 60`. Head đổi, nên bảng ở §2 tự ra bước chờ CI rồi review lại ở phiên sạch.
+  - `main` có commit code sau bản CI đã test: gửi §3.8 cho phiên code của PR, lệnh chờ `ci <N> --not <H> --timeout 15`. Head đổi, nên bảng ở §2 tự ra bước chờ CI rồi review lại ở phiên sạch.
   - Thiếu nhãn `build-exe`: `gh pr edit <N> --add-label build-exe`, rồi đóng, mở lại PR và chờ CI như dưới. Head không đổi nên PASS vẫn còn giá trị.
   - CI không ghi notice `Tested base`: đóng, mở lại PR và chờ CI như dưới.
-  - Đóng, mở lại PR và chờ CI: `gh pr close <N>`; `gh pr view <N> --json closedAt --jq .closedAt` cho mốc `T`, giờ của GitHub (đọc trước khi mở lại); `gh pr reopen <N>`; rồi lệnh nền `node tools/auto-wait.mjs ci <N> --since <T> --timeout 60`. PR mở lại vẫn giữ các check cũ đã xong tới khi GitHub tạo workflow run mới; `--since` chờ một run tạo từ mốc `T` trở đi, nên `ci` không báo xong theo run cũ.
+  - Đóng, mở lại PR và chờ CI: `gh pr close <N>`; `gh pr view <N> --json closedAt --jq .closedAt` cho mốc `T`, giờ của GitHub (đọc trước khi mở lại); `gh pr reopen <N>`; rồi lệnh nền `node tools/auto-wait.mjs ci <N> --since <T> --timeout 15`. PR mở lại vẫn giữ các check cũ đã xong tới khi GitHub tạo workflow run mới; `--since` chờ một run tạo từ mốc `T` trở đi, nên `ci` không báo xong theo run cũ.
   - Lý do khác: hỏi Owner.
+- **Head của PR kẹt:** `ci <N> --not <H>` ra mã 3 `PR head stale: branch at <X>` khi nhánh của PR trên GitHub đã ở `X` được 3 phút mà head của PR vẫn là `H`. GitHub đã lỡ sự kiện push (`synchronize`), nên head không đổi và CI không chạy cho tới khi PR được mở lại (PR #1070). Đóng, mở lại PR và chờ CI như trên (`--since <T>`, như với notice `Tested base`). Mở lại thì head của PR thành `X`, nên bảng ở §2 tự ra bước chờ CI rồi review lại ở phiên sạch.
 - `merge-pr` tự dọn: về `main`, xóa nhánh, gỡ worktree `Project-2C-notes-<N>`. Dọn báo lỗi thì hỏi Owner.
 - **Không bao giờ:** `--no-verify`; merge khi CI chưa xanh; bật auto-merge; merge PR chạm file trong rào "không tự sửa".
 
@@ -284,7 +286,7 @@ Chỉ phiên điều phối merge, luôn bằng `node tools/merge-pr.mjs`. Lện
 - `merge-pr` từ chối vì lý do ngoài §4; lệnh chờ ra mã 3 mà không rõ cách xử lý;
 - `/clear` bị từ chối ở cả hai phiên;
 - phiên con dừng hai lần không có dòng `AUTO-CHILD`; kết quả phiên con báo mà GitHub vẫn không thấy sau khi đã nhắc;
-- hai lần hết giờ liền cho cùng một việc mà GitHub không đổi (§2, "Chờ");
+- chờ cho cùng một việc tới 60 phút mà không có gì đổi (§2, "Chờ");
 - xác nhận hàng đợi ở lượt đầu; duyệt đề xuất gom sổ (§6).
 
 **Cách hỏi:**
@@ -307,9 +309,9 @@ Bảng này nối tiếp hàng "Hết hàng đợi" của §2. Các hàng đầu
 
 | Trạng thái | Bước | Lệnh chờ |
 |---|---|---|
-| Không phiên code nào có dòng `AUTO-CHILD` cuối mang thẻ `[Sổ]` | `/clear` phiên code ít dùng gần nhất, gửi §3.6 | `sleep --timeout 30` |
+| Không phiên code nào có dòng `AUTO-CHILD` cuối mang thẻ `[Sổ]` | `/clear` phiên code ít dùng gần nhất, gửi §3.6 | `sleep --timeout 5` |
 | `[Sổ] SỔ TRỐNG` | §7, dòng kết thúc XONG | — |
-| `[Sổ] ĐỀ XUẤT <n> ISSUE`, sau dòng đó chưa có tin nhắn nào của phiên điều phối | Hỏi Owner (§5) như dưới; duyệt thì gửi §3.7 cho cùng phiên, không `/clear` | `sleep --timeout 30` |
+| `[Sổ] ĐỀ XUẤT <n> ISSUE`, sau dòng đó chưa có tin nhắn nào của phiên điều phối | Hỏi Owner (§5) như dưới; duyệt thì gửi §3.7 cho cùng phiên, không `/clear` | `sleep --timeout 5` |
 | `[Sổ] PR NHÃN #<L>`, PR `<L>` đang mở | Kiểm rồi merge (§4), như dưới | — |
 | `[Sổ] PR NHÃN #<L>`, PR `<L>` đã merge | §7, dòng kết thúc XONG | — |
 
@@ -318,7 +320,7 @@ Bảng này nối tiếp hàng "Hết hàng đợi" của §2. Các hàng đầu
   - phương án: Duyệt / Dừng; Owner sửa qua "Other".
 - **Lấy số PR gắn nhãn:** `<L>` lấy từ dòng `AUTO-CHILD`, không chờ theo tiêu đề. PR gắn nhãn của các đợt trước có cùng kiểu tiêu đề và đã merge, nên `title` sẽ ra ngay bằng PR cũ.
 - **Kiểm trước khi merge:** `node tools/pr-status.mjs <L>` phải cho thấy PR đang mở và chỉ sửa `docs/state/review-notes.md`.
-- Việc của §6 không để dấu trên GitHub trước khi có PR gắn nhãn. Vì vậy lệnh chờ là `sleep`, và tin báo của phiên con thường đánh thức sớm hơn.
+- Việc của §6 không để dấu trên GitHub trước khi có PR gắn nhãn. Vì vậy lệnh chờ là `sleep --timeout 5`, không trông vào tin báo của phiên con: app có thể giữ tin đó (§2, "Chờ"). Mỗi lần `sleep` xong là một nhịp như thường: đọc `list_sessions` / `list_events`, thấy dòng `AUTO-CHILD` mới thì làm tiếp; phiên con còn chạy thì đặt lại `sleep --timeout 5`.
 
 ## 7. Kết thúc và chạy tiếp
 

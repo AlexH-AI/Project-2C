@@ -32,6 +32,9 @@ const isTime = (value) => {
 };
 // Failed reads in a row (gh down, no network) before the wait gives up.
 const MAX_FAILURES = 5;
+// GitHub can miss a push's `synchronize` event: the branch moves on, the PR's head and its CI stay
+// behind (PR #1070). A branch at another SHA this long is that, not a push GitHub is still taking.
+export const STALE_HEAD_MS = 3 * 60000;
 
 /** Options from the arguments after the script path, or `{ error }` for the usage line. */
 export function parseArgs(argv) {
@@ -123,7 +126,10 @@ function newestRunOfPr(pr, all, since) {
  * CI on the PR's head: done once no check runs and every workflow run of the head ended, since a
  * job that `needs` another, like the exe build, gets its check only when that one ends. `runs()`
  * gives those runs (Actions API); it is called only once every check ended, so a wait does not
- * read them each poll. With `not`, first a head other than that SHA (a push after a fix). With
+ * read them each poll. With `not`, first a head other than that SHA (a push after a fix); while the
+ * head is still that SHA, `branch()` gives the SHA of the PR's branch on GitHub and how long this
+ * wait has seen it there, and a branch at another SHA for STALE_HEAD_MS is a push GitHub missed:
+ * something to look at, since the PR's head and CI will not move until the PR is reopened. With
  * `since`, the verdict is that of the newest `pull_request` run of the PR's branch made at or after
  * that time, read from its own checks: after `gh pr close` + `gh pr reopen` the head keeps its old
  * checks, all ended, until GitHub makes the new run, and a run of another event (workflow_dispatch)
@@ -134,12 +140,26 @@ function newestRunOfPr(pr, all, since) {
  * (T-378). A docs-only PR has no CI at all (ci.yml `paths`), so it is done at once; `files()` gives
  * the PR's files to tell, and is called only while CI has no check.
  */
-export function ciState(pr, { not = null, since = null, runs = () => [], files = () => [] } = {}) {
+export function ciState(
+  pr,
+  { not = null, since = null, runs = () => [], files = () => [], branch = () => null } = {},
+) {
   const stop = notOpen(pr);
   if (stop) return stop;
   const head = short(pr.headRefOid);
   if (not && sameSha(pr.headRefOid, not)) {
-    return { done: false, text: `head still ${head}: waiting for a push` };
+    const moved = branch();
+    if (!moved || sameSha(moved.sha, pr.headRefOid)) {
+      return { done: false, text: `head still ${head}: waiting for a push` };
+    }
+    const at = short(moved.sha);
+    return moved.forMs >= STALE_HEAD_MS
+      ? {
+          done: true,
+          code: EXIT.look,
+          text: `PR head stale: branch at ${at}, head still ${head} (GitHub missed the push)`,
+        }
+      : { done: false, text: `head still ${head}, branch at ${at}: waiting for the PR to follow` };
   }
   const rollup = pr.statusCheckRollup ?? [];
   const { pass, fail, pending } = checkCounts(rollup);
@@ -263,6 +283,19 @@ export function titleState(prs, text) {
   if (found.length === 0) return { done: false, text: `no open or merged PR titled "${text}" yet` };
   const [p] = found;
   return { done: true, code: EXIT.done, text: `PR #${p.number} (${p.state}): ${p.title}` };
+}
+
+/**
+ * How long a value has stayed the same over the reads of one wait: the ms since the first read that
+ * gave it, 0 again once it changes. A branch pushed before the wait began counts from the wait's
+ * first read, so it is never taken for older than it may be.
+ */
+export function heldFor(now) {
+  let held = null;
+  return (value) => {
+    if (held?.value !== value) held = { value, at: now() };
+    return now() - held.at;
+  };
 }
 
 /**
