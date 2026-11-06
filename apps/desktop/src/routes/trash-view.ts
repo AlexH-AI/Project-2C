@@ -296,11 +296,21 @@ export function teamsDeletedAt(
 ): TeamsDeletedAt {
   const teams = new Map<string, string>();
   for (const row of rows) {
-    const by = row.kind === 'team' ? told.get(rowKey(row)) : undefined;
-    if (by === 'minute' || by === 'second')
-      teams.set(row.id, deletedAtText(row, { seconds: by === 'second' }));
+    const when = row.kind === 'team' ? deletionWords(row, told.get(rowKey(row))) : undefined;
+    if (when !== undefined) teams.set(row.id, when);
   }
   return teams;
+}
+
+/**
+ * When a row `by` its deletion told apart was deleted, in the words its restore button names it
+ * with: to the minute, or to the second; none for another row. One rule for the button and the
+ * team's line and "Thuộc" (`teamsDeletedAt`), so they say the same words (T-380).
+ */
+function deletionWords(row: TrashRow, by: ToldBy | undefined): string | undefined {
+  return by === 'minute' || by === 'second'
+    ? deletedAtText(row, { seconds: by === 'second' })
+    : undefined;
 }
 
 /**
@@ -326,11 +336,8 @@ export function restoreLabel(
       ? t('customer.withCode', { name: row.name, code: row.code })
       : recordTitle(row, today);
   const person = row.kind === 'person' ? [recordDetail(row), row.owner.team?.name] : [];
-  const deleted =
-    (by === 'minute' || by === 'second') &&
-    t('trash.restoreLabel.deletedAt', {
-      when: deletedAtText(row, { seconds: by === 'second' }),
-    });
+  const when = deletionWords(row, by);
+  const deleted = when !== undefined && t('trash.restoreLabel.deletedAt', { when });
   const record = joinParts([title, recordBadge(row)?.text, ...person, deleted]);
   const label = t(`trash.restoreLabel.${row.kind}`, { record });
   return row.kind === 'appointment' || row.kind === 'policy'

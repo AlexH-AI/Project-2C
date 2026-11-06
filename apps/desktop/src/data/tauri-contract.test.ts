@@ -1,6 +1,6 @@
 // The contract between `tauri-storage.ts` and the Rust commands (DR-55): each side is otherwise
 // tested only against its own copy, and a renamed command or argument shows only in the exe.
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { AI_MODELS } from '@p2c/ai';
 import { describe, expect, it, vi } from 'vitest';
 import { t } from '../i18n';
@@ -364,25 +364,57 @@ describe('the release configuration (DR6-12…14)', () => {
     }
     // Nor does `tauri build` patch the config with one (JSON merge patch of tauri-build): from
     // `-c` / `--config`, JSON or a file, alone or among other short flags, or from `TAURI_CONFIG`.
-    // No script of the app or the root passes either, no workflow sets it (review of PR 1090).
+    // No script of the app or the root nor `run:` of a workflow passes either, no workflow nor
+    // `[env]` of a Cargo config sets it (reviews of PR 1090, PR 1099).
     const repo = new URL('../../../../', import.meta.url);
     const read = (file: string) => readFileSync(new URL(file, repo), 'utf8');
+    // Each command of a script, a line ending in `\` (bash) or `` ` `` (PowerShell) going on.
+    const commands = (script: string) =>
+      script
+        .replace(/[\\`]\r?\n/g, ' ')
+        .split(/&&|\|\||[;|]|\r?\n/)
+        .map((command) => command.trim());
+    // `tauri` as a word of its own: not the cargo commands of `verify:rust`, which name the path
+    // of src-tauri's Cargo.toml, and whose flags `-D…` the config regex would read as `-c`.
+    const tauriCalls = (scripts: readonly string[]) =>
+      scripts.flatMap(commands).filter((command) => /(?:^|\s)tauri(?:\s|$)/.test(command));
+    const noConfig = (calls: readonly string[]) => {
+      for (const command of calls) {
+        expect(command).not.toMatch(/(?:^|\s)(?:-[A-Za-z]*c|--config\b)/);
+      }
+    };
     const manifests = ['apps/desktop/package.json', 'package.json'];
-    const scripts = (file: string) =>
-      Object.values((JSON.parse(read(file)) as { scripts: Record<string, string> }).scripts);
-    const tauriCalls = manifests
-      .flatMap(scripts)
-      .flatMap((script) => script.split(/&&|\|\||[;|]/).map((command) => command.trim()))
-      .filter((command) => /\btauri\b/.test(command));
-    expect(tauriCalls).toContain('tauri build --no-bundle');
-    for (const command of tauriCalls) {
-      expect(command).not.toMatch(/(?:^|\s)(?:-[A-Za-z]*c|--config\b)/);
-    }
+    const scripts = manifests.flatMap((file) =>
+      Object.values((JSON.parse(read(file)) as { scripts: Record<string, string> }).scripts),
+    );
+    expect(tauriCalls(scripts)).toContain('tauri build --no-bundle');
+    noConfig(tauriCalls(scripts));
     const workflows = files(new URL('.github/workflows/', repo))
       .filter((file) => /\.ya?ml$/.test(file))
       .map((file) => `.github/workflows/${file}`);
     expect(workflows).toContain('.github/workflows/ci.yml');
-    for (const file of [...manifests, ...workflows]) {
+    // Each step's `run:`, on its line or as the block below it (`|` keeps its lines, `>` folds them),
+    // every line more indented than the key.
+    const runs = workflows.flatMap((file) => {
+      const lines = read(file).split(/\r?\n/);
+      return lines.flatMap((line, at) => {
+        const run = /^(\s*(?:-\s+)?)run:\s*(.*)$/.exec(line);
+        if (!run) return [];
+        const [, key = '', value = ''] = run;
+        if (!/^[|>]/.test(value)) return [value.replace(/^(["'])(.*)\1$/, '$2')];
+        const end = lines.findIndex(
+          (next, after) => after > at && next.trim() !== '' && next.search(/\S/) <= key.length,
+        );
+        const block = lines.slice(at + 1, end === -1 ? undefined : end);
+        return [block.join(value.startsWith('>') ? ' ' : '\n')];
+      });
+    });
+    expect(runs.flatMap(commands)).toContain('pnpm build:exe');
+    noConfig(tauriCalls(runs));
+    const cargoConfigs = ['apps/desktop/src-tauri/', 'apps/desktop/', 'apps/', '']
+      .flatMap((dir) => [`${dir}.cargo/config.toml`, `${dir}.cargo/config`])
+      .filter((file) => existsSync(new URL(file, repo)));
+    for (const file of [...manifests, ...workflows, ...cargoConfigs]) {
       expect(read(file), file).not.toContain('TAURI_CONFIG');
     }
     // Its whole object: `remote` would open it to web pages, another window would get it too.
