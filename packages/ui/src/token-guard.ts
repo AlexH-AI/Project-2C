@@ -55,6 +55,9 @@ const JOINER = /^[,;] $/;
 /** The call a whole string is an argument of (`text.split(', ')`, `names.join(', ')`). */
 const CALLEE = /([\w$]+)\s*\((?:[^()[\]{}]*,)?\s*$/;
 
+/** What joins with a whole string it is given: `names.join(', ')`, `a.concat(', ', b)`. */
+const JOINS = new Set(['join', 'concat']);
+
 /**
  * After the `}` of an expression of JSX, a `, ` / `; ` / `: ` before the next expression or element,
  * however Prettier writes it: `{a},{' '}` then `{b}` on the next line, `{a}` then `, {b}` or
@@ -89,12 +92,15 @@ const markOf = (code: number) => (code > 0xffff ? undefined : MARKS.get(String.f
  * `{a}: <b>{v}</b>`). The app joins parts through i18n (`sep.*`, a key of `vi.ts`) and takes its
  * marks from it, so they live in `vi.ts` only. Comments may use them. A mark is found as itself,
  * as an escape of a string or template (`'\u00b7'`, `'\u{b7}'`, `'\xb7'`) and as an HTML entity
- * (`&middot;`, `&#183;`, `&#xb7;`). The scan reads strings and templates, so a `//` or `/*` inside
- * one opens no comment (DR6-145).
+ * (`&middot;`, `&#183;`, `&#xb7;`). An escape in the string of a JSX attribute
+ * (`<p title="·" />`) is found too, though JSX does not decode it (the text shows `·`):
+ * it is still text written in place of i18n. The scan reads strings and templates, so a `//` or
+ * `/*` inside one opens no comment (DR6-145).
  * Limits: it does not read a regex literal (an escape there is missed); a whole string given to a
- * call other than `.join(` (`text.split(', ')`, but `parts.push(', ')` too) reads as no joiner; a
- * joiner in JSX text beside a word (`{a}: b`) or after an element (`<b>{a}</b>, {b}`) is missed,
- * as JSX there is not told from code (`open ? <A /> : <B />`).
+ * call other than `.join(` or `concat(` (`text.split(', ')`, but `parts.push(', ')` and the
+ * replacement of `text.replace(/\n/g, ', ')` too) reads as no joiner; a joiner in JSX text beside a
+ * word (`{a}: b`) or after an element (`<b>{a}</b>, {b}`) is missed, as JSX there is not told from
+ * code (`open ? <A /> : <B />`).
  */
 export function findHardcodedSeparators(source: string): TokenViolation[] {
   const violations: TokenViolation[] = [];
@@ -150,13 +156,15 @@ export function findHardcodedSeparators(source: string): TokenViolation[] {
         if (source.startsWith('\r\n', i + 1)) i++;
         if (source[++i] === '\n') line++;
       } else if (c === mode || opens) {
-        // A whole string given to a call: only `.join(` joins with it.
-        const whole = source[start - 1] === c && /^\s*[,)]/.test(source.slice(i + 1, i + 40));
-        const callee = whole
-          ? CALLEE.exec(source.slice(Math.max(0, start - 200), start - 1))
-          : null;
-        if (JOINER.test(source.slice(start, i)) && (callee?.[1] ?? 'join') === 'join') {
-          report(source.slice(start - 1, opens ? i + 2 : i + 1), 'hardcoded-separator');
+        if (JOINER.test(source.slice(start, i))) {
+          // A whole string given to a call: only `.join(` and `concat(` join with it.
+          const whole = source[start - 1] === c && /^\s*[,)]/.test(source.slice(i + 1, i + 40));
+          const callee = whole
+            ? CALLEE.exec(source.slice(Math.max(0, start - 200), start - 1))
+            : null;
+          if (JOINS.has(callee?.[1] ?? 'join')) {
+            report(source.slice(start - 1, opens ? i + 2 : i + 1), 'hardcoded-separator');
+          }
         }
         if (opens) {
           braces.push('template');

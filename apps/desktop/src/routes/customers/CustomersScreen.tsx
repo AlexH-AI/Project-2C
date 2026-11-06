@@ -16,7 +16,7 @@ import { routeToHash } from '../../shell/routes';
 import { RePicker } from '../../shell/RePicker';
 import { teamRes } from '../../shell/scope';
 import { useScopeState } from '../../shell/ScopeContext';
-import { ALERT, BADGE, FOCUS, LINK } from '../classes';
+import { ALERT, BADGE, CELL_NAME, FOCUS, LINK } from '../classes';
 import { stageBadge } from '../stage-badge';
 import { CustomerFormDialog } from './CustomerDialogs';
 import {
@@ -50,12 +50,6 @@ const personal = ({ customer }: CustomerCard) =>
     customer.birthDate && String(customer.birthDate.year),
   ]);
 
-/**
- * A name of the table: under a cap it keeps its line and its column its width; a longer one breaks
- * at the cap, even with no space, so the table stays in the window (DR6-170).
- */
-const NAME = 'block max-w-60 wrap-anywhere';
-
 const COLUMNS: ReadonlyArray<DataTableColumn<CustomerCard>> = [
   { id: 'code', header: t('customers.colCode'), kind: 'text', value: (c) => c.customer.code },
   {
@@ -64,7 +58,7 @@ const COLUMNS: ReadonlyArray<DataTableColumn<CustomerCard>> = [
     kind: 'text',
     value: (c) => c.customer.name,
     cell: (c) => (
-      <span className={NAME}>
+      <span className={CELL_NAME}>
         <a href={profileHref(c)} className={LINK}>
           {c.customer.name}
         </a>
@@ -83,7 +77,7 @@ const COLUMNS: ReadonlyArray<DataTableColumn<CustomerCard>> = [
     header: t('customers.colRe'),
     kind: 'text',
     value: (c) => c.re?.name ?? '',
-    cell: (c) => <span className={NAME}>{c.re?.name}</span>,
+    cell: (c) => <span className={CELL_NAME}>{c.re?.name}</span>,
   },
   {
     id: 'birth',

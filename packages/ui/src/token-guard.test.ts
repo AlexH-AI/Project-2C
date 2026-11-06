@@ -229,6 +229,20 @@ describe('findHardcodedSeparators', () => {
     ]);
   });
 
+  // T-376: `concat(` joins with the whole string it is given, as `.join(` does.
+  it('flags a separator passed to concat(, not the replacement of replace(', () => {
+    const source = [
+      "const label = a.concat(', ', b);",
+      'const all = a.concat(b, `; `, c);',
+      // A limit, not a goal: flagging it would flag `text.replace(', ', '; ')` too.
+      "const flat = text.replace(/\\n/g, ', ');",
+    ].join('\n');
+    expect(findHardcodedSeparators(source)).toEqual([
+      { line: 1, match: "', '", rule: 'hardcoded-separator' },
+      { line: 2, match: '`; `', rule: 'hardcoded-separator' },
+    ]);
+  });
+
   it('leaves a separator that is only part of a string, and the strings of a list', () => {
     const source = [
       "const kinds = ['MET', 'CANCELLED', 'NO_SHOW'];",
@@ -277,6 +291,10 @@ describe('findHardcodedSeparators', () => {
       "<p>{a}:{' '}{b}</p>",
       '<p>{a}{" "}, {b}</p>',
       "<p>{t('a')}: <b>{v}</b></p>",
+      '<p>',
+      '  {aaaa},{" "}',
+      '  {bbbb}',
+      '</p>',
     ].join('\n');
     expect(findHardcodedSeparators(source)).toEqual([
       { line: 2, match: "},{' '} {", rule: 'hardcoded-separator' },
@@ -285,6 +303,7 @@ describe('findHardcodedSeparators', () => {
       { line: 14, match: "}:{' '}{", rule: 'hardcoded-separator' },
       { line: 15, match: '}{" "}, {', rule: 'hardcoded-separator' },
       { line: 16, match: '}: <', rule: 'hardcoded-separator' },
+      { line: 18, match: '},{" "} {', rule: 'hardcoded-separator' },
     ]);
   });
 

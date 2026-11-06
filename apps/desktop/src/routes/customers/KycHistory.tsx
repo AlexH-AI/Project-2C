@@ -3,7 +3,7 @@ import type { AiAnalysisView, KycVersionRecord } from '@p2c/db';
 import { formatCount, formatDayMonth } from '@p2c/domain';
 import { Button, Dialog } from '@p2c/ui';
 import { joinParts, t } from '../../i18n';
-import { ALERT, BADGE, FOCUS } from '../classes';
+import { ALERT, BADGE, CELL_NAME, FOCUS } from '../classes';
 import { historyRows, rejectedReport, type AiPanelSource } from './ai-panel-view';
 import { issueText } from './KycWebSession';
 
@@ -90,7 +90,7 @@ export function AnalysisHistory({
                 ) : (
                   // A model no list has, from a backup edited by hand, breaks at a name's cap
                   // rather than push the state out of the panel (DR6-170).
-                  <span className="block max-w-60 wrap-anywhere">{sourceName(row.source)}</span>
+                  <span className={CELL_NAME}>{sourceName(row.source)}</span>
                 )}
               </td>
               <td className={`${CELL} text-end`}>
