@@ -11,7 +11,7 @@ Tiêu chí phát hành v1.0 (G7 cuối):
 
 1. Milestone Phase 6 đóng hết Issue.
 2. Kiểm thử phát hành (§5) đạt: kịch bản trọn vòng e2e xanh, danh sách nghiệm thu của Owner đạt, đo hiệu năng trên dữ liệu tải đạt ngưỡng §5.2, exe chạy được trên hai máy và trên một máy Windows sạch, nâng từ exe Phase 5 không mất dữ liệu.
-3. Các lượt deep review Phase 1–6 (§6: hai lượt theo kế hoạch, thêm lượt 3 theo quyết định Owner 19/10/2026, lượt 4 theo quyết định 26–27/10/2026 và lượt 5 theo quyết định 04/11/2026) xong; mọi phát hiện từ Medium trở lên đã sửa, phần còn lại Owner đã quyết (sửa / hoãn sau v1.0 / chấp nhận).
+3. Các lượt deep review Phase 1–6 (§6: hai lượt theo kế hoạch, thêm lượt 3 theo quyết định Owner 19/10/2026, lượt 4 theo quyết định 26–27/10/2026, lượt 5 theo quyết định 04/11/2026 và lượt 6, lượt cuối, theo quyết định 06–07/11/2026) xong; mọi phát hiện từ Medium trở lên đã sửa, phần còn lại Owner đã quyết (sửa / hoãn sau v1.0 / chấp nhận). Từ lượt 6 (ADR-0001 M13): Low ở trục dữ liệu, an toàn ở ranh giới, guardrail AI cũng sửa trước v1.0; Low khác và Nit hoãn sau v1.0 (nhãn [sau v1.0] trong sổ ghi chú review), trừ mục Owner chọn sửa.
 4. `pnpm verify`, `pnpm verify:rust`, `pnpm e2e` xanh trên SHA phát hành; eval AI thật đạt ngưỡng spec Phase 5 §11 sau đợt G5.
 5. Hướng dẫn sử dụng tiếng Việt có trong repo và trong bản phát hành.
 
@@ -22,7 +22,7 @@ Tiêu chí phát hành v1.0 (G7 cuối):
 | **6A** | Việc còn lại từ review Phase 5 (§3), bắt đầu bằng đợt G5 #491 **sau khi spec này qua G1** | G5 (#491) |
 | **6B** | Tính năng còn lại (§4): S-2, Thùng rác, hướng dẫn sử dụng | G2 / G3 từng tính năng |
 | **6C** | Kiểm thử phát hành (§5), gồm lệnh sinh dữ liệu tải và số đo nền hiệu năng / kích thước | — |
-| **6D** | Deep review Phase 1–6, **5 lượt, 6 gói** (§6; lượt 1: 3 agent, 4 → 3 theo ADR-0001 M5, 13/10; lượt 2 còn 2 agent: M7, 17/10; lượt 3 Claude + Codex: M9, 19/10, phần Claude mỗi gói một phiên như lượt 2: Owner 20/10; lượt 4 Claude + Codex + DeepSeek, chạy khi sổ ghi chú OPEN rỗng: M10, 26–27/10; lượt 5 ba bên như lượt 4: M12, 04/11); **phân tích bloat code và hiệu năng nằm trong lượt 1**; sửa sau mỗi lượt | Owner chọn việc sửa sau mỗi lượt |
+| **6D** | Deep review Phase 1–6, **6 lượt, 6 gói** (§6; lượt 1: 3 agent, 4 → 3 theo ADR-0001 M5, 13/10; lượt 2 còn 2 agent: M7, 17/10; lượt 3 Claude + Codex: M9, 19/10, phần Claude mỗi gói một phiên như lượt 2: Owner 20/10; lượt 4 Claude + Codex + DeepSeek, chạy khi sổ ghi chú OPEN rỗng: M10, 26–27/10; lượt 5 ba bên như lượt 4: M12, 04/11; lượt 6, lượt cuối, Claude + Codex + agent WorkBuddy, tiêu chí xong chốt trước và đóng băng code tới phát hành: M13, 06–07/11); **phân tích bloat code và hiệu năng nằm trong lượt 1**; sửa sau mỗi lượt | Owner chọn việc sửa sau mỗi lượt (lượt 6: theo tiêu chí đã chốt, M13) |
 | **6E** | G7: Owner nghiệm thu exe cuối, chỉ số Phase 6, phát hành v1.0 (§7) | **G7** |
 
 6A và 6B có thể xen nhau (khác file). Phần tự động của 6C chạy lại sau mỗi đợt sửa của 6D.
@@ -281,19 +281,20 @@ Lỗi tìm ra ở 6C thành Issue thường; lỗi chặn phát hành gắn `ris
 - Đo: mở app (lần đầu / mở lại), màn đầu sau tải lại, đổi kỳ / sắp cột / chọn dòng ở Lịch hẹn, Khách hàng, Tổng quan, Báo cáo, xuất Excel, panel AI và lịch sử phân tích, nhập / xuất backup, lưu DB.
 - Giữ ngưỡng Nhóm C của deep review Phase 1–4 (thao tác màn < 200 ms trên dữ liệu tải; `docs/metrics/phase-4.md` mục "Đo đầu-cuối"), thêm ngưỡng cho màn Phase 5 / 6 sau số đo nền. Không màn nào xấu hơn số đo Phase 4.
 
-## 6. 6D — deep review Phase 1–6: 5 lượt, 6 gói
+## 6. 6D — deep review Phase 1–6: 6 lượt, 6 gói
 
 ### 6.1 Vai trò
 
 | Bên | Ai chạy | Việc |
 |---|---|---|
-| Claude (context sạch mỗi gói, tuần tự; lượt 1–2: mỗi gói một phiên sạch, không subagent; lượt 3: mỗi gói một phiên sạch như lượt 2, subagent / Workflow chỉ khi Owner bật ultracode cho phiên đó — ADR-0001 M9, sửa 20/10; lượt 4: như lượt 3, Claude Opus 5.5 — M10; lượt 5: như lượt 4 — M12) | Owner mở phiên | Reviewer, chỉ đọc, worktree review riêng |
-| Codex | Owner | Reviewer độc lập, chỉ đọc (ADR-0001 M2). Lượt 4, 5: model GPT Sol 6.1 (Owner 27/10 — M10; 04/11 — M12) |
+| Claude (context sạch mỗi gói, tuần tự; lượt 1–2: mỗi gói một phiên sạch, không subagent; lượt 3: mỗi gói một phiên sạch như lượt 2, subagent / Workflow chỉ khi Owner bật ultracode cho phiên đó — ADR-0001 M9, sửa 20/10; lượt 4: như lượt 3, Claude Opus 5.5 — M10; lượt 5: như lượt 4 — M12; lượt 6: như lượt 5, thêm ba phiên chủ đề xuyên gói, chỉ Claude kiểm phần đã sửa, không ultracode / Workflow, subagent chỉ Sonnet 5.5 / Opus 5.5 mức `xhigh` — M13) | Owner mở phiên | Reviewer, chỉ đọc, worktree review riêng |
+| Codex | Owner | Reviewer độc lập, chỉ đọc (ADR-0001 M2). Lượt 4, 5, 6: model GPT Sol 6.1 (Owner 27/10 — M10; 04/11 — M12; 06/11 — M13) |
 | Muse Spark 1.3 (Muse Code) | Owner | Reviewer độc lập, chỉ đọc (13/10: DeepSeek v4.1 Flash bỏ, Muse đổi sang Wonder — ADR-0001 M5; 14/10: về lại Spark 1.3 trên Office Laptop — M6). Chỉ lượt 1; lượt 2 bỏ Muse (17/10 — M7) |
 | DeepSeek v4.1 Flash (app WorkBuddy) | Owner | Reviewer độc lập, chỉ đọc, như Codex (ADR-0001 M2). Lượt 4 và lượt 5 (Owner 27/10 — M10; 04/11 — M12; bỏ từ 13/10 theo M5). Chạy trong app desktop WorkBuddy, model gắn sẵn của gói WorkBuddy Pro (Owner đổi 28/10, thay gói OpenCode Go rồi DeepSeek Harness); lượt 5 chỉ dùng credit của gói Pro |
+| Agent WorkBuddy (model Owner chọn: Hy4 hoặc GLM 5.3) | Owner | Reviewer độc lập, chỉ đọc, như Codex (ADR-0001 M2). Lượt 6 (Owner 06–07/11 — M13), thay DeepSeek; cùng app, cách chạy và ACL như DeepSeek ở lượt 5 |
 | **Claude (phiên tổng hợp)** | sau khi đủ báo cáo | **Vai chính:** đọc mọi báo cáo, kiểm lại từng phát hiện trên code (đúng / đã biết / sai), gộp trùng, chốt mức, đề xuất hướng giải quyết cho từng vấn đề (kèm phương án khi có nhiều cách), xếp việc sửa thành phương án cho Owner chọn |
 
-Báo cáo của Codex / Muse / DeepSeek là **dữ liệu tham khảo**; kết luận "sẵn sàng phát hành" chỉ lấy từ phiên tổng hợp sau khi đã kiểm trên code (bài học Phase 5: DeepSeek / Muse kết luận SẴN SÀNG khi còn 2 lỗi Medium — `docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §7).
+Báo cáo của Codex / Muse / DeepSeek / agent WorkBuddy là **dữ liệu tham khảo**; kết luận "sẵn sàng phát hành" chỉ lấy từ phiên tổng hợp sau khi đã kiểm trên code (bài học Phase 5: DeepSeek / Muse kết luận SẴN SÀNG khi còn 2 lỗi Medium — `docs/reviews/2026-10-10-danh-gia-deepseek-muse.md` §7).
 
 ### 6.2 Chia 6 gói
 
@@ -325,12 +326,18 @@ Gói F là chỗ phân tích bloat code và hiệu năng toàn cục (yêu cầu
 - **Lượt 3** (Owner thêm 19/10/2026, trước G7; ADR-0001 phụ lục M9; kế hoạch `docs/process/deep-review-phase-1-6.md` §L3): trên SHA sau đợt sửa lượt 2, cùng 6 gói, hai bên Claude và Codex, cùng hai phần như lượt 2 (kiểm phần đã sửa sau lượt 2; lỗi / edge case mới trên toàn bộ phạm vi gói). Phần Claude chạy bằng **Workflow**: mỗi gói một subagent context sạch, tuần tự A → F, trong một phiên Owner mở. *Sửa 20/10/2026 (Owner, trước khi chạy):* phần Claude chạy như lượt 2, mỗi gói một phiên sạch Owner mở; mức suy luận, ultracode do Owner chọn từng phiên. Sau tổng hợp: **sửa hết** (Owner chốt 19/10), rồi G7.
 - **Lượt 4** (Owner thêm 26–27/10/2026, trước G7; ADR-0001 phụ lục M10; kế hoạch `docs/process/deep-review-phase-1-6.md` §L4): deep review toàn bộ code, cùng 6 gói, ba bên Claude Opus 5.5, Codex (GPT Sol 6.1) và DeepSeek v4.1 Flash (trong app desktop WorkBuddy trên gói WorkBuddy Pro; Owner bổ sung 27/10, đổi cách chạy 28/10), phần Claude như lượt 3. Chỉ chạy khi mọi ghi chú OPEN của `docs/state/review-notes.md` đã sửa hết (Owner 27/10): SHA ghim là `main` sau T-305…T-308 và đợt sửa mục OPEN còn lại. Hai phần như lượt 2–3: kiểm phần đã sửa sau lượt 3 (đợt sửa lượt 3, đợt sửa sổ ghi chú review trước v1.0, T-305…T-308, đợt sửa mục OPEN còn lại); lỗi / edge case mới trên toàn bộ phạm vi gói. Phần sau tổng hợp Owner chọn cùng G1 của kế hoạch (§L4.11).
 - **Lượt 5** (Owner thêm 04/11/2026, trong G7; ADR-0001 phụ lục M12; kế hoạch `docs/process/deep-review-phase-1-6.md` §L5): deep review toàn bộ code, cùng 6 gói, ba bên như lượt 4. SHA ghim là `main` lúc bước chuẩn bị (sổ OPEN rỗng); code lúc soạn trùng exe ứng viên `3d237b0` đã nghiệm thu L3. Hai phần như lượt 2–4: kiểm phần đã sửa sau lượt 4 (đợt sửa lượt 4, mục sổ [G7] sau đó, việc của G7); lỗi / edge case mới trên toàn bộ phạm vi gói. Sau tổng hợp: **sửa hết** (Owner 04/11), rồi G7. DeepSeek chỉ dùng credit của gói WorkBuddy Pro, không mua thêm (G4).
-- Báo cáo gốc lưu nguyên văn ở `docs/reviews/raw/<ngày>/{claude,codex,muse,deepseek}/` qua PR docs; tổng hợp ở `docs/reviews/`.
+- **Lượt 6** (Owner thêm 06–07/11/2026, trước G7; ADR-0001 phụ lục M13; kế hoạch `docs/process/deep-review-phase-1-6.md` §L6): lượt deep review toàn bộ code cuối cùng trước G7, ba bên Claude Opus 5.5, Codex (GPT Sol 6.1) và một agent trong app WorkBuddy (model Owner chọn), và đổi cách làm (§L6.0 phân tích vì sao lượt 1–5 không ra hết):
+  - **tiêu chí xong chốt trước khi chạy** (K48): chỉ Critical / High / Medium và Low ở trục dữ liệu, an toàn ở ranh giới, guardrail AI chặn phát hành; phần còn lại ghi sổ [sau v1.0]. Có Medium trở lên thì sửa rồi review lại đúng vùng đó, không lượt 7. Thay "sửa hết" của lượt 3–5 và điều kiện "sổ OPEN rỗng";
+  - **đóng băng code** từ SHA ghim tới phát hành (K49): chỉ sửa vấn đề chặn;
+  - chỉ Claude kiểm phần đã sửa (bảng R); Codex và agent WorkBuddy chỉ tìm lỗi mới; bỏ chỉ tiêu số kịch bản và mục bloat / hiệu năng bắt buộc ở gói A–E; mỗi phát hiện kèm phần quét mọi chỗ cùng mẫu;
+  - Claude thêm ba phiên chủ đề xuyên gói: rà gọn diff từ lượt 5, chữ người dùng nhập / hiển thị, bất đồng bộ và thứ tự;
+  - PR sửa có bằng chứng test đỏ khi gỡ phần sửa, phần quét cùng mẫu, cỡ so ngân sách của Issue (T-386).
+- Báo cáo gốc lưu nguyên văn ở `docs/reviews/raw/<ngày>/{claude,codex,muse,deepseek,workbuddy}/` qua PR docs; tổng hợp ở `docs/reviews/`.
 - Công cụ phân tích: ưu tiên thứ đã có (`dependency-cruiser`, `codemap`, script `node`). Công cụ mới (vd. `knip`, `cargo-bloat`) là **G4**.
 
 ### 6.4 Ước lượng
 
-6 gói × 3 bên = 18 báo cáo ở lượt 1; lượt 2 bỏ Muse (M7) nên 6 gói × 2 bên = 12 báo cáo, 30 cho hai lượt; lượt 3 (M9) thêm 12 báo cáo, 42 cho ba lượt; lượt 4 (M10) có ba bên nên thêm 18, 60 cho bốn lượt; lượt 5 (M12) thêm 18, 78 cho năm lượt. Theo Phase 5: mỗi bên ≈ 2–3 giờ đồng hồ một lượt (Phase 1–6 lớn hơn, ước ≈ 3–4 giờ); Muse chạy `--yolo` nên không tốn thời gian chờ duyệt.
+6 gói × 3 bên = 18 báo cáo ở lượt 1; lượt 2 bỏ Muse (M7) nên 6 gói × 2 bên = 12 báo cáo, 30 cho hai lượt; lượt 3 (M9) thêm 12 báo cáo, 42 cho ba lượt; lượt 4 (M10) có ba bên nên thêm 18, 60 cho bốn lượt; lượt 5 (M12) thêm 18, 78 cho năm lượt; lượt 6 (M13) thêm 21 (18 gói và ba phiên chủ đề của Claude), 99 cho sáu lượt. Theo Phase 5: mỗi bên ≈ 2–3 giờ đồng hồ một lượt (Phase 1–6 lớn hơn, ước ≈ 3–4 giờ); Muse chạy `--yolo` nên không tốn thời gian chờ duyệt.
 
 ### 6.5 Quy tắc
 
