@@ -4596,7 +4596,7 @@ Bốn nguyên nhân:
 
 **Bên review:**
 
-- **Claude Opus 5.5:** Owner mở mỗi gói một phiên sạch ở `C:\workspace\Project-2C-review`: sáu gói A → F, rồi ba phiên chủ đề G → H → I (§L6.3). Mức suy luận Owner chọn từng phiên (M1). **Không dùng ultracode, subagent hay Workflow** ở mọi phiên Claude của lượt 6 (Owner 07/11: "1 là nó rất tốn usage, 2 là chưa chắc hiệu quả đem lại đã hơn xhigh và max"). Chỉ Claude làm bảng R.
+- **Claude Opus 5.5:** Owner mở mỗi gói một phiên sạch ở `C:\workspace\Project-2C-review`: sáu gói A → F, rồi ba phiên chủ đề G → H → I (§L6.3). Mức suy luận Owner chọn từng phiên (M1). **Không dùng ultracode / Workflow** ở mọi phiên Claude của lượt 6 (Owner 07/11: "1 là nó rất tốn usage, 2 là chưa chắc hiệu quả đem lại đã hơn xhigh và max"). **Được dùng subagent** (công cụ Agent), chỉ model Claude Sonnet 5.5 hoặc Claude Opus 5.5, mức `xhigh` (Owner 07/11: "cho phép dùng subagent nhưng giới hạn ở sonnet 5.5 (xhigh) hoặc opus 5.5 (xhigh), không dùng ultracode"). Chỉ Claude làm bảng R.
 - **Codex, model GPT Sol 6.1:** Owner chạy, mỗi gói một phiên mới, chỉ đọc, không viết code (M2). Chỉ tìm lỗi mới.
 - **Agent WorkBuddy:** app desktop WorkBuddy, model Owner chọn (Hy4 hoặc GLM 5.3; ghi tên đúng như app hiện), mỗi gói một task mới qua Code review expert của app. Cùng điều kiện như Codex theo M2. Chỉ tìm lỗi mới.
 - 6 gói × 3 bên + 3 phiên chủ đề của Claude = **21 báo cáo**, hai đợt như lượt 5: đợt 1 Claude và Codex song song; đợt 2 WorkBuddy một mình, khi thư mục của hai bên kia đã bị chặn ACL. Kết luận phát hành chỉ lấy từ phiên tổng hợp của Claude.
@@ -4713,7 +4713,7 @@ Phạm vi từng gói giữ đúng §3 và luật `PACKAGES` của `tools/size-r
 | **I. Bất đồng bộ và thứ tự** | Hàng đợi lưu (`persist-queue.ts`, `listeners.ts`), thay dữ liệu S-2, `close-guard`, `AppData`, `ai-jobs.ts` theo `generation`, `today.ts`, hộp xác nhận lúc chạy | Hai việc chồng nhau; listener gọi lệnh lồng; lỗi giữa chừng; tắt app / Nạp lại / Nhập backup giữa lúc lưu hay AI chạy; qua nửa đêm | Phát hiện kèm chuỗi đã dựng (probe qua lớp dữ liệu của app, bản build web hay exe) |
 
 - Hai họ của H và I: chữ có ở cả năm lượt (vd. DR6-49, 72, 107–112, 117, 142, 145, 148, 150, 159, 168–173); lưu / thay / đóng có ở lượt 4–5 (DR6-139, 140, 147, 162).
-- Mỗi chủ đề một phiên sạch, như phiên gói; **không ultracode, subagent hay Workflow** (Owner 07/11, §L6.1). Mức suy luận Owner chọn (`xhigh` hoặc `max`).
+- Mỗi chủ đề một phiên sạch, như phiên gói; **không ultracode / Workflow**; subagent chỉ Claude Sonnet 5.5 hoặc Opus 5.5, mức `xhigh` (Owner 07/11, §L6.1). Mức suy luận của phiên chính Owner chọn (`xhigh` hoặc `max`).
 
 ## L6.4 Việc của mỗi bên
 
@@ -4816,7 +4816,7 @@ Như §L5.6, đổi:
 
 ## L6.7 Ba bên, bài học từ lượt 5
 
-- **Claude Opus 5.5:** Phụ lục W. Lượt 5 chạy `xhigh` ở cả 6 phiên, ultracode tắt. Lượt 6: mức suy luận Owner chọn từng phiên; không ultracode, subagent hay Workflow ở mọi phiên (Owner 07/11).
+- **Claude Opus 5.5:** Phụ lục W. Lượt 5 chạy `xhigh` ở cả 6 phiên, ultracode tắt. Lượt 6: mức suy luận Owner chọn từng phiên; không ultracode / Workflow; subagent chỉ Claude Sonnet 5.5 hoặc Opus 5.5, mức `xhigh` (Owner 07/11; Phụ lục W quy tắc riêng 4).
 - **Codex, model GPT Sol 6.1:** Phụ lục X. Như lượt 5, thêm: không gọi `pnpm`.
 - **Agent WorkBuddy:** Phụ lục Z, theo DeepSeek ở lượt 4–5 đã chạy thật (Phụ lục P, V; tổng hợp lượt 5 §10.1).
   - App desktop WorkBuddy bản quốc tế (lượt 5: v5.9.4). **Model Owner chọn: Hy4 hoặc GLM 5.3** (Owner 07/11: "workbuddy đang làm và anh sẽ tự quyết định model nào"). Không có bài thi chọn model. Ghi tên model, context và mức suy luận đúng như app hiện vào `baseline.md` ở phiên thử; mọi gói dùng cùng model.
@@ -4958,7 +4958,7 @@ Bảng đánh dấu của Owner (21 ô; ghi thêm giờ bắt đầu / xong mỗ
 - Vấn đề không chặn: một PR sổ ghi vào OPEN với nhãn [sau v1.0] (PR chỉ sửa sổ, không cần review).
 - Bảng so ba bên như tổng hợp lượt 5 §2.2, cộng bảng độ trùng giữa các bên và ước số vấn đề còn sót theo từng cặp bên (chỉ để xem xu hướng; §L6.0).
 - Câu hỏi cho Owner chỉ gồm: cách sửa vấn đề chặn khi có nhiều phương án; vấn đề không chặn nào Owner muốn kéo vào đợt sửa (mặc định không); đề xuất gỡ / gộp của phiên G (mặc định [sau v1.0], K49).
-- Kiểm độc lập bằng log như §L5.10, đổi: đường dẫn `-r6`; danh sách cấm thêm `-r5`; agent WorkBuddy thay DeepSeek; quy tắc riêng 8 mới (mọi lệnh có `node` đặt PATH); quy tắc chung 7 (lệnh chạy công cụ của repo gọi `gh`).
+- Kiểm độc lập bằng log như §L5.10, đổi: đường dẫn `-r6`; danh sách cấm thêm `-r5`; agent WorkBuddy thay DeepSeek; quy tắc riêng 8 mới (mọi lệnh có `node` đặt PATH); quy tắc chung 7 (lệnh chạy công cụ của repo gọi `gh`); phiên Claude: mọi lần gọi Agent có `model` `sonnet` / `opus` và `effort` `xhigh`, không Workflow, subagent không gọi subagent (transcript của phiên và của subagent).
 - Báo cáo gốc lưu ở repo như §L5.10: `docs/reviews/raw/<ngày tổng hợp>/{claude,codex,workbuddy}/<gói>.md`; bản tổng hợp `docs/reviews/<ngày>-deep-review-phase-1-6-luot-6-tong-hop.md`. Thư mục `deep-review-1-6-r6\` giữ trên Home PC tới v1.0.
 
 **T-386 — PR sửa phát hiện** (tạo sau G1, merge trước bước chuẩn bị; đề xuất 10). Làm ngoài pipeline `auto-issues` (cổng review nằm trong rào "không tự sửa", K45). File: `.claude/skills/review-pr/SKILL.md`, `.github/pull_request_template.md`, `.github/ISSUE_TEMPLATE/task.yml`, `docs/process/REVIEW-CHECKLIST.md`.
@@ -4994,7 +4994,7 @@ Bảng đánh dấu của Owner (21 ô; ghi thêm giờ bắt đầu / xong mỗ
 |---|---|---|---|
 | 5 | Tiêu chí K48: bảng §L6.1; trục chốt theo hậu quả; nhãn [sau v1.0] trong sổ; Owner được kéo vấn đề không chặn vào đợt sửa (mặc định không); Medium trở lên thì review lại đúng vùng đó, không lượt 7 | §L6.1, §L6.10 | |
 | 6 | Đóng băng K49: phạm vi và ngoại lệ như §L6.1; đề xuất gỡ / gộp của phiên G mặc định [sau v1.0] | §L6.1 | |
-| 7 | Ba phiên chủ đề của Claude: G (rà gọn), H (chữ người dùng nhập / hiển thị), I (bất đồng bộ và thứ tự), chạy sau Claude F, mỗi chủ đề một phiên sạch | §L6.3 | 07/11: **không dùng ultracode** ở mọi phiên Claude ("1 là nó rất tốn usage, 2 là chưa chắc hiệu quả đem lại đã hơn xhigh và max") |
+| 7 | Ba phiên chủ đề của Claude: G (rà gọn), H (chữ người dùng nhập / hiển thị), I (bất đồng bộ và thứ tự), chạy sau Claude F, mỗi chủ đề một phiên sạch | §L6.3 | 07/11: **không dùng ultracode** ở mọi phiên Claude ("1 là nó rất tốn usage, 2 là chưa chắc hiệu quả đem lại đã hơn xhigh và max"); rồi "cho phép dùng subagent nhưng giới hạn ở sonnet 5.5 (xhigh) hoặc opus 5.5 (xhigh), không dùng ultracode" |
 | 8 | Phủ bằng "file không đọc kỹ" thay chỉ tiêu kịch bản; bảng R chỉ Claude; bỏ mục Bloat / Hiệu năng ở A–E; trường "Cùng mẫu", "Chặn phát hành" | §L6.4, §L6.8, Phụ lục Y | |
 | 9 | Agent WorkBuddy: hai đợt và ACL như lượt 5, chặn thêm `-r5`; Code review expert, quyền Default, agent phụ như lượt 5; chi phí chỉ credit gói Pro, không mua thêm, điểm dừng sau mỗi gói | §L6.7, §L6.9, Phụ lục Z | |
 | 10 | T-386: review-pr, mẫu Issue / PR cho PR sửa phát hiện (test đỏ khi gỡ phần sửa, quét cùng mẫu, ngân sách dòng, ghi chú không chặn → [sau v1.0]); merge trước bước chuẩn bị | §L6.10 | |
@@ -5019,10 +5019,13 @@ File `common\prompt-claude.md` = đoạn dưới + nguyên văn Phụ lục Y; b
 >    - `C:\workspace\deep-review-1-6-r6\common\`: dữ liệu tải, exe và số đo **chỉ** lấy ở đây;
 >    - báo cáo Claude lượt 6 của các gói trước trong `…-r6\claude\` (mục đã báo thì chỉ dẫn ID);
 >    - probe của chính Claude ở lượt 1–5 (`C:\workspace\deep-review-1-6\claude\`, `-r2\claude\` … `-r5\claude\`), mở bằng đường dẫn đủ mà báo cáo gốc của Claude ghi, không liệt kê thư mục.
-> 4. Không dùng skill `review-pr` / `code-review`. Không làm nghi thức phiên của repo (HANDOFF, `/handoff`, PR, Issue, merge, commit). Không chạy `gh` (thông tin Issue / PR sửa có ở `common\fixes.md`). **Không dùng subagent, công cụ Agent hay Workflow** (Owner 07/11), kể cả khi phiên có bật ultracode: mọi việc của gói làm trong phiên chính.
+> 4. Không dùng skill `review-pr` / `code-review`. Không làm nghi thức phiên của repo (HANDOFF, `/handoff`, PR, Issue, merge, commit). Không chạy `gh` (thông tin Issue / PR sửa có ở `common\fixes.md`). **Không dùng Workflow** (ultracode), kể cả khi phiên có bật ultracode. **Được dùng subagent** qua công cụ Agent (Owner 07/11), với ba điều kiện:
+>    - mỗi lần gọi đặt rõ `model` là `sonnet` (Claude Sonnet 5.5) hoặc `opus` (Claude Opus 5.5) và `effort` là `xhigh`; không dùng `subagent_type: "fork"` (fork không nhận hai tham số này), không model khác, không mức khác;
+>    - subagent không gọi subagent khác;
+>    - chỉ phiên chính làm bước 0, ghi `{GÓI}.md` và in dòng `XONG`. **Subagent** (đọc file này vì tin nhắn của phiên chính tới cả nó) làm phần việc phiên chính giao, theo quy tắc 2, 3 và phần chung; ghi probe vào `…-r6\claude\{GÓI}\`, không ghi `{GÓI}.md`. Phiên chính kiểm lại phát hiện của subagent trên code trước khi ghi vào báo cáo.
 > 5. Ghi báo cáo vào `C:\workspace\deep-review-1-6-r6\claude\{GÓI}.md`, probe / bản chép / log vào `…-r6\claude\{GÓI}\`.
 > 6. Gói F được đọc `…-r6\claude\A…E.md`. Chủ đề G, H, I được đọc `…-r6\claude\A…F.md` và báo cáo chủ đề trước. Xong gói nào thì dừng và in dòng `XONG …` (mục "Cuối phiên" của phần chung). Xong I thì **chờ Owner yêu cầu** tổng hợp, không tự tổng hợp.
-> 7. Mục 1 của báo cáo ghi công cụ, model và mức suy luận của phiên.
+> 7. Mục 1 của báo cáo ghi công cụ, model và mức suy luận của phiên, và subagent đã dùng: số lần, model, mức, việc giao (không dùng thì ghi "không").
 > 8. **Gói A–F** làm cả hai phần của "Việc của gói" (bảng R và tìm lỗi mới). **Chủ đề G, H, I** chỉ tìm lỗi mới theo bảng "Chủ đề của Claude" ở phần chung, trên **mọi gói**; không làm bảng R, không kết luận SẴN SÀNG.
 >
 > Phần chung dưới đây áp dụng đầy đủ. Trong phần chung: `<bên>` = `claude`, `<ID>` = `CLR6`. Thứ tự gói của Claude: A → B → C → D → E → F → G → H → I.
