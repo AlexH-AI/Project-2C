@@ -177,22 +177,38 @@ function appointmentDetail(row: AppointmentRow): string | null {
 
 export interface OwnerPart {
   readonly text: string;
-  /** Deleted too: "(đã xóa)" follows it. */
+  /** Deleted too: "(đã xóa)" follows it (`goneText`). */
   readonly deleted: boolean;
+  /** When a deleted team a namesake is in the trash with was deleted (`teamsDeletedAt`). */
+  readonly deletedAt?: string;
 }
 
 const part = (ref: TrashRef, text: string): OwnerPart => ({ text, deleted: ref.deleted });
 
-/** "Thuộc": customer and RE of an appointment or a policy, RE and team of a customer, a team. */
-export function ownerParts(row: TrashRow): OwnerPart[] {
+/**
+ * "Thuộc": customer and RE of an appointment or a policy, RE and team of a customer, a team. A team
+ * of `teams` with when it was deleted, its text still the name the column sorts and filters by.
+ */
+export function ownerParts(row: TrashRow, teams?: TeamsDeletedAt): OwnerPart[] {
   const { customer, re, team } = row.owner;
   const parts: OwnerPart[] = [];
   if (customer) parts.push(part(customer, t('trash.owner.customer', { name: customer.name })));
   if (re) parts.push(part(re, t('trash.owner.re', { name: re.name })));
-  // After an RE it is the RE's team (mockup 11a "RE Đỗ Khánh Linh · Sao Mai").
-  if (team) parts.push(part(team, re ? team.name : t('trash.owner.team', { name: team.name })));
+  if (team) {
+    // After an RE it is the RE's team (mockup 11a "RE Đỗ Khánh Linh · Sao Mai").
+    const named = part(team, re ? team.name : t('trash.owner.team', { name: team.name }));
+    const deletedAt = teams?.get(team.id);
+    parts.push(deletedAt === undefined ? named : { ...named, deletedAt });
+  }
   return parts;
 }
+
+/**
+ * What follows a deleted part: "(đã xóa)", or "(đã xóa lúc …)" for a team a namesake is in the trash
+ * with (review of PR 1088).
+ */
+export const goneText = (part: OwnerPart): string =>
+  part.deletedAt === undefined ? t('trash.gone') : t('trash.goneAt', { when: part.deletedAt });
 
 type CustomerRow = Extract<TrashRow, { kind: 'customer' }>;
 type PersonRow = Extract<TrashRow, { kind: 'person' }>;
@@ -267,6 +283,27 @@ export function toldApart(rows: readonly TrashRow[]): ReadonlyMap<string, ToldBy
 }
 
 /**
+ * When each team of the trash `toldApart` tells apart from a namesake by its deletion was deleted,
+ * by the team's id, in the words of its restore button (`restoreLabel`): to the minute, or to the
+ * second. The line of a row the team keeps blocked and its "Thuộc" say which of the two it is.
+ */
+export type TeamsDeletedAt = ReadonlyMap<string, string>;
+
+/** `TeamsDeletedAt` of every row, whatever the filter, as `told` (review of PR 1088). */
+export function teamsDeletedAt(
+  rows: readonly TrashRow[],
+  told: ReadonlyMap<string, ToldBy> = toldApart(rows),
+): TeamsDeletedAt {
+  const teams = new Map<string, string>();
+  for (const row of rows) {
+    const by = row.kind === 'team' ? told.get(rowKey(row)) : undefined;
+    if (by === 'minute' || by === 'second')
+      teams.set(row.id, deletedAtText(row, { seconds: by === 'second' }));
+  }
+  return teams;
+}
+
+/**
  * The name of a row's restore button, every "Khôi phục…" alike on screen (DR6-43): the record as
  * the first line of "Bản ghi" names it, with the words of its badge there (`recordBadge`), so
  * whatever tells two rows apart there tells their buttons apart (DR6-99, DR6-119); then an
@@ -322,14 +359,23 @@ export function deletedAtText(row: TrashRow, options: { seconds?: boolean } = {}
 /**
  * Why the record cannot be restored, one line naming the record in the way (mockup 11d), from the
  * error its `restore…` command throws; the restore dialog (T-211) shows the same line when the
- * command refuses. A reason without a sentence of its own reads as the command's message.
+ * command refuses. A reason without a sentence of its own reads as the command's message. A deleted
+ * team in the way, of `teams`, with when it was deleted, as its restore button says it (review of PR
+ * 1088).
  */
-export function blockedReason(row: TrashRow, block: TrashBlock): string {
-  return reasonSentence(row, block) ?? errorMessage(new DbError(block.code, block.params));
+export function blockedReason(row: TrashRow, block: TrashBlock, teams?: TeamsDeletedAt): string {
+  return reasonSentence(row, block, teams) ?? errorMessage(new DbError(block.code, block.params));
 }
 
-function reasonSentence(row: TrashRow, { code, params = {} }: TrashBlock): string | null {
+function reasonSentence(
+  row: TrashRow,
+  { code, params = {} }: TrashBlock,
+  teams: TeamsDeletedAt | undefined,
+): string | null {
   const { as, field, from, to } = params;
+  // The team of the row is the one its restore is refused for (`restorePerson`).
+  const when = code === 'TEAM_NOT_FOUND' && row.owner.team && teams?.get(row.owner.team.id);
+  if (when && 'name' in params) return t('trash.blocked.teamDeletedAt', { ...params, when });
   if (code === 'PERSON_NOT_FOUND') {
     return as === 're' || as === 'coordinator' || as === 'reviewer'
       ? t(`trash.blocked.${as}`, params)
@@ -609,14 +655,19 @@ const RESTORE: Record<TrashRow['kind'], (db: Database, id: string) => void> = {
 /**
  * Restores the record with the command of its kind, which checks again (the data may have changed
  * since the dialog opened) and is refused while the data is replaced (S2-2, E17). Null once done,
- * else the line the dialog shows: the sentence of the reason the row would now be blocked by.
+ * else the line the dialog shows: the sentence of the reason the row would now be blocked by, a team
+ * of `teams` in the way said as the line of the row says it.
  */
-export function restoreRow(app: Pick<AppData, 'run'>, row: TrashRow): string | null {
+export function restoreRow(
+  app: Pick<AppData, 'run'>,
+  row: TrashRow,
+  teams?: TeamsDeletedAt,
+): string | null {
   try {
     app.run((db) => RESTORE[row.kind](db, row.id));
     return null;
   } catch (error) {
-    return error instanceof DbError ? blockedReason(row, error) : errorMessage(error);
+    return error instanceof DbError ? blockedReason(row, error, teams) : errorMessage(error);
   }
 }
 

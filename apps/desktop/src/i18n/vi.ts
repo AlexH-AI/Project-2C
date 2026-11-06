@@ -309,6 +309,8 @@ export const vi = {
   'trash.owner.team': 'Team {name}',
   'trash.owner.none': '—',
   'trash.gone': '(đã xóa)',
+  // A deleted team a namesake is in the trash with, when it was deleted as its restore button says.
+  'trash.goneAt': '(đã xóa lúc {when})',
   'trash.customer.with':
     'khôi phục kèm {appointments} lịch hẹn · {policies} HĐ · {kycNotes} ghi chú KYC',
   'trash.appointment.when': '{date} {time}',
@@ -343,6 +345,8 @@ export const vi = {
   'trash.blocked.submitted': 'Ngày nộp {date} sau hôm nay.',
   'trash.blocked.issued': 'Ngày phát hành {date} sau hôm nay.',
   'trash.blocked.TEAM_NOT_FOUND': 'Khôi phục team {name} trước.',
+  // The same, a namesake of the team in the trash too (`trash.goneAt`).
+  'trash.blocked.teamDeletedAt': 'Khôi phục team {name} (xóa lúc {when}) trước.',
   'trash.blocked.TEAM_HAS_LEAD': '{team} đã có TL {name}.',
   'trash.blocked.TEAM_NAME_TAKEN': 'Đã có team {name} — đổi tên team kia trước.',
   // Why the purge keeps a record (TR-12; mockup 11j): what still points to it.
