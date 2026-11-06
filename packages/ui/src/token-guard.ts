@@ -93,14 +93,14 @@ const markOf = (code: number) => (code > 0xffff ? undefined : MARKS.get(String.f
  * marks from it, so they live in `vi.ts` only. Comments may use them. A mark is found as itself,
  * as an escape of a string or template (`'\u00b7'`, `'\u{b7}'`, `'\xb7'`) and as an HTML entity
  * (`&middot;`, `&#183;`, `&#xb7;`). An escape in the string of a JSX attribute
- * (`<p title="·" />`) is found too, though JSX does not decode it (the text shows `·`):
+ * (`<p title="\u00b7" />`) is found too, though JSX does not decode it (the text shows `\u00b7`):
  * it is still text written in place of i18n. The scan reads strings and templates, so a `//` or
  * `/*` inside one opens no comment (DR6-145).
  * Limits: it does not read a regex literal (an escape there is missed); a whole string given to a
- * call other than `.join(` or `concat(` (`text.split(', ')`, but `parts.push(', ')` and the
- * replacement of `text.replace(/\n/g, ', ')` too) reads as no joiner; a joiner in JSX text beside a
- * word (`{a}: b`) or after an element (`<b>{a}</b>, {b}`) is missed, as JSX there is not told from
- * code (`open ? <A /> : <B />`).
+ * call other than `.join(` or `concat(` (`text.split(', ')`, but `parts.push(', ')`,
+ * `String.prototype.concat.call(a, ', ', b)` and the replacement of `text.replace(/\n/g, ', ')`
+ * too) reads as no joiner; a joiner in JSX text beside a word (`{a}: b`) or after an element
+ * (`<b>{a}</b>, {b}`) is missed, as JSX there is not told from code (`open ? <A /> : <B />`).
  */
 export function findHardcodedSeparators(source: string): TokenViolation[] {
   const violations: TokenViolation[] = [];
@@ -156,7 +156,8 @@ export function findHardcodedSeparators(source: string): TokenViolation[] {
         if (source.startsWith('\r\n', i + 1)) i++;
         if (source[++i] === '\n') line++;
       } else if (c === mode || opens) {
-        if (JOINER.test(source.slice(start, i))) {
+        // Only a string of two characters can be a joiner: no slice for any other.
+        if (i - start === 2 && JOINER.test(source.slice(start, i))) {
           // A whole string given to a call: only `.join(` and `concat(` join with it.
           const whole = source[start - 1] === c && /^\s*[,)]/.test(source.slice(i + 1, i + 40));
           const callee = whole
