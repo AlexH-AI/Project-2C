@@ -22,6 +22,7 @@ import {
   canPurge,
   deletedAtText,
   filterTrash,
+  goneText,
   keptReason,
   ownerParts,
   purgedNotice,
@@ -34,12 +35,14 @@ import {
   recordTitle,
   restoreLabel,
   restoredNotice,
+  teamsDeletedAt,
   toldApart,
   trashCounts,
   type PurgedNotice,
   type PurgeRefusal,
   type PurgeView,
   type RestoredNotice,
+  type TeamsDeletedAt,
   type ToldBy,
   type TrashFilter,
 } from './trash-view';
@@ -54,7 +57,15 @@ const reasonId = (row: TrashRow) => `trash-blocked-${row.kind}-${row.id}`;
  */
 const NAMED: readonly TrashRow['kind'][] = ['customer', 'person', 'team'];
 
-function RecordCell({ row, today }: { row: TrashRow; today: CalendarDate }) {
+function RecordCell({
+  row,
+  teams,
+  today,
+}: {
+  row: TrashRow;
+  teams: TeamsDeletedAt;
+  today: CalendarDate;
+}) {
   const badge = recordBadge(row);
   const detail = recordDetail(row);
   return (
@@ -69,7 +80,7 @@ function RecordCell({ row, today }: { row: TrashRow; today: CalendarDate }) {
       {detail && <span className="block text-xs text-fg-3">{detail}</span>}
       {row.blocked && (
         <span id={reasonId(row)} className="mt-1 block text-xs wrap-anywhere text-warn">
-          {blockedReason(row, row.blocked)}
+          {blockedReason(row, row.blocked, teams)}
         </span>
       )}
       {row.keptBy && (
@@ -79,8 +90,8 @@ function RecordCell({ row, today }: { row: TrashRow; today: CalendarDate }) {
   );
 }
 
-function OwnerCell({ row }: { row: TrashRow }) {
-  const parts = ownerParts(row);
+function OwnerCell({ row, teams }: { row: TrashRow; teams: TeamsDeletedAt }) {
+  const parts = ownerParts(row, teams);
   if (parts.length === 0) return <span className="text-fg-3">{t('trash.owner.none')}</span>;
   // By place: a team's bare name could read as another part. Two names fit under the cap on their
   // line; a longer one breaks there, even with no space, so the table stays in the window
@@ -91,7 +102,7 @@ function OwnerCell({ row }: { row: TrashRow }) {
         <span key={index}>
           {index > 0 && ` ${t('sep.dot')} `}
           {owner.text}
-          {owner.deleted && <span className="text-fg-3"> {t('trash.gone')}</span>}
+          {owner.deleted && <span className="text-fg-3"> {goneText(owner)}</span>}
         </span>
       ))}
     </span>
@@ -101,11 +112,13 @@ function OwnerCell({ row }: { row: TrashRow }) {
 /**
  * The columns of mockup 11a; the last one restores a row, off while it is blocked. "Bản ghi" holds
  * names and dd/mm/yyyy days alike, which no order sorts together: it does not sort (DR6-43). An
- * appointment's status there goes by `today` (NT-TR-07).
+ * appointment's status there goes by `today` (NT-TR-07). "Thuộc" sorts and filters by the name of a
+ * team, without when it was deleted.
  */
 const trashColumns = (
   onRestore: (row: TrashRow) => void,
   told: ReadonlyMap<string, ToldBy>,
+  teams: TeamsDeletedAt,
   today: CalendarDate,
 ): ReadonlyArray<DataTableColumn<TrashRow>> => [
   {
@@ -125,14 +138,14 @@ const trashColumns = (
     kind: 'text',
     sortable: false,
     value: (row) => recordTitle(row, today),
-    cell: (row) => <RecordCell row={row} today={today} />,
+    cell: (row) => <RecordCell row={row} teams={teams} today={today} />,
   },
   {
     id: 'owner',
     header: t('trash.col.owner'),
     kind: 'text',
     value: (row) => ownerParts(row)[0]?.text ?? '',
-    cell: (row) => <OwnerCell row={row} />,
+    cell: (row) => <OwnerCell row={row} teams={teams} />,
   },
   {
     id: 'deletedAt',
@@ -317,9 +330,13 @@ export function TrashSection() {
   const [purging, setPurging] = useState<PurgeView | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const done = useRef<HTMLDivElement>(null);
-  // Of every row, whatever the filter (DR6-151).
+  // Of every row, whatever the filter (DR6-151); the teams `told` by deletion too (review of PR 1088).
   const told = useMemo(() => toldApart(rows), [rows]);
-  const columns = useMemo(() => trashColumns(setRestoring, told, today), [told, today]);
+  const teams = useMemo(() => teamsDeletedAt(rows, told), [rows, told]);
+  const columns = useMemo(
+    () => trashColumns(setRestoring, told, teams, today),
+    [told, teams, today],
+  );
   const counts = useMemo(() => trashCounts(rows), [rows]);
   const shown = useMemo(() => filterTrash(rows, filter, query), [rows, filter, query]);
   const reminder = purgeReminder(rows.length);
@@ -403,6 +420,7 @@ export function TrashSection() {
         {restoring && (
           <RestoreDialog
             row={restoring}
+            teams={teams}
             onClose={() => setRestoring(null)}
             onRestored={() => {
               setNotice({ kind: 'restored', view: restoredNotice(restoring) });
