@@ -352,6 +352,16 @@ describe('the release configuration (DR6-12…14)', () => {
     expect(files(new URL('capabilities/', src), true)).toEqual(['default.json']);
     expect(files(src).filter((file) => /^tauri\b/i.test(file))).toEqual(['tauri.conf.json']);
     expect(tauriConf().app.security).not.toHaveProperty('capabilities');
+    // Nor does the build script (build.rs: Cargo.toml names no other) read them from another
+    // folder, `capabilities_path_pattern` of tauri-build, nor does the app add one while it runs,
+    // `Manager::add_capability` (feature `dynamic-acl`, on by default).
+    expect(desktop('src-tauri/Cargo.toml')).not.toMatch(/^build\s*=/m);
+    expect(desktop('src-tauri/build.rs')).not.toContain('capabilities_path_pattern');
+    const code = files(new URL('src/', src), true).filter((file) => file.endsWith('.rs'));
+    expect(code).toContain('lib.rs');
+    for (const file of code) {
+      expect(rust(file.replaceAll('\\', '/')), file).not.toContain('add_capability');
+    }
     // Its whole object: `remote` would open it to web pages, another window would get it too.
     // CloseGuard: `onCloseRequested` listens (and stops) for the close event, then `destroy`.
     // AppShell: `setTitle` names the window after the screen. The app's own commands need none.

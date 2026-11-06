@@ -345,6 +345,42 @@ describe('createPersistQueue', () => {
     expect(queue.status()).toMatchObject({ saving: false, failed: false });
   });
 
+  it('idle() waits for the writes a listener told of the last one starts too', async () => {
+    const disk = fakeDisk();
+    const queue = createPersistQueue(disk.write);
+    let told = false;
+    queue.subscribe(() => {
+      const { saving, lastSave } = queue.status();
+      if (told || saving || !lastSave) return;
+      told = true;
+      queue.persist(bytes('v2'));
+      queue.persist(bytes('v3'));
+    });
+
+    queue.persist(bytes('v1'));
+    // What is on disk, and the save state, the moment idle() resolves.
+    const idle = queue.idle().then(() => ({ onDisk: disk.onDisk, status: queue.status() }));
+    await disk.finishAll();
+
+    expect(await idle).toMatchObject({ onDisk: 'v3', status: { saving: false, failed: false } });
+    expect(disk.started).toEqual(['v1', 'v2', 'v3']);
+  });
+
+  it('idle() does not wait for work tracked: it resolves at once when no write runs or waits', async () => {
+    const disk = fakeDisk();
+    const queue = createPersistQueue(disk.write);
+    const replace = deferred();
+    queue.track(replace.promise);
+
+    let resolved = false;
+    void queue.idle().then(() => (resolved = true));
+    await tick();
+
+    expect(resolved).toBe(true);
+    expect(queue.status().saving).toBe(true);
+    replace.resolve();
+  });
+
   it('flush() resolves at once when nothing is unsaved', async () => {
     const disk = fakeDisk();
     const queue = createPersistQueue(disk.write);

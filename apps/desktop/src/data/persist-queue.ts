@@ -112,7 +112,10 @@ export function createPersistQueue(
     running = drain();
     changed();
   };
-  const idle = () => running ?? Promise.resolve();
+  const idle = async () => {
+    // A listener told of the last write that saves starts another drain: wait for it too.
+    while (running) await running;
+  };
 
   return {
     persist,
