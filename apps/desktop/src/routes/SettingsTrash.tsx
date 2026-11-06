@@ -20,7 +20,6 @@ import {
   TRASH_MORE,
   blockedReason,
   canPurge,
-  codedCustomers,
   deletedAtText,
   filterTrash,
   keptReason,
@@ -35,11 +34,13 @@ import {
   recordTitle,
   restoreLabel,
   restoredNotice,
+  toldApart,
   trashCounts,
   type PurgedNotice,
   type PurgeRefusal,
   type PurgeView,
   type RestoredNotice,
+  type ToldBy,
   type TrashFilter,
 } from './trash-view';
 
@@ -104,7 +105,7 @@ function OwnerCell({ row }: { row: TrashRow }) {
  */
 const trashColumns = (
   onRestore: (row: TrashRow) => void,
-  coded: ReadonlySet<string>,
+  told: ReadonlyMap<string, ToldBy>,
   today: CalendarDate,
 ): ReadonlyArray<DataTableColumn<TrashRow>> => [
   {
@@ -152,7 +153,7 @@ const trashColumns = (
     cell: (row) => (
       <Button
         disabled={row.blocked !== undefined}
-        aria-label={restoreLabel(row, coded, today)}
+        aria-label={restoreLabel(row, told, today)}
         aria-describedby={row.blocked && reasonId(row)}
         onClick={() => onRestore(row)}
       >
@@ -317,8 +318,8 @@ export function TrashSection() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const done = useRef<HTMLDivElement>(null);
   // Of every row, whatever the filter (DR6-151).
-  const coded = useMemo(() => codedCustomers(rows), [rows]);
-  const columns = useMemo(() => trashColumns(setRestoring, coded, today), [coded, today]);
+  const told = useMemo(() => toldApart(rows), [rows]);
+  const columns = useMemo(() => trashColumns(setRestoring, told, today), [told, today]);
   const counts = useMemo(() => trashCounts(rows), [rows]);
   const shown = useMemo(() => filterTrash(rows, filter, query), [rows, filter, query]);
   const reminder = purgeReminder(rows.length);

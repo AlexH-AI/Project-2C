@@ -5,6 +5,7 @@ import {
   LINE_BREAK,
   normalizeNote,
   normalizeText,
+  searchText,
   stripDiacritics,
   toHex,
 } from './text';
@@ -181,6 +182,32 @@ describe('stripDiacritics', () => {
   it('leaves text without marks as it is', () => {
     expect(stripDiacritics('Team 2 - A_b')).toBe('Team 2 - A_b');
     expect(stripDiacritics('')).toBe('');
+  });
+});
+
+describe('searchText', () => {
+  it('reads text bare and lower-case, as a search box compares it', () => {
+    expect(searchText('Hừng ĐÔNG Đẹp')).toBe('hung dong dep');
+    expect(searchText('Trịnh Minh Anh'.normalize('NFD'))).toBe('trinh minh anh');
+    expect(searchText('K-M2D8')).toBe('k-m2d8');
+  });
+
+  // DR6-172: names are stored through `normalizeText`, and the text typed is read the same way.
+  it('reads a name pasted with an invisible character, a no-break space or two spaces', () => {
+    for (const text of [
+      '\u{200B}Lê Hoài Nam',
+      'Lê\u{00A0}Hoài\u{00A0}Nam',
+      ' Lê  Hoài  Nam ',
+      'L\u{200B}ê Hoài\u{2060} Nam\u{3164}',
+    ]) {
+      expect(searchText(text), text).toBe('le hoai nam');
+    }
+  });
+
+  it('is empty for text of invisible characters or white space alone', () => {
+    expect(searchText('\u{200B}\u{2060}\u{3164}')).toBe('');
+    expect(searchText('\u{00A0}\u{0085} ')).toBe('');
+    expect(searchText('')).toBe('');
   });
 });
 

@@ -62,6 +62,16 @@ export function stripDiacritics(text: string): string {
 }
 
 /**
+ * Text as a search box compares it: read as names are stored (`normalizeText`: no invisible
+ * character, each run of white space one space), accents and case ignored, so a name pasted with a
+ * U+200B or a no-break space finds the stored one (DR6-172). The customer box of 6b and "Tìm theo
+ * tên" of Thùng rác alike.
+ */
+export function searchText(text: string): string {
+  return stripDiacritics(normalizeText(text).toLowerCase());
+}
+
+/**
  * The text composed (NFC) with each run of white space one space, so that text typed decomposed or
  * spaced another way compares equal; the ends and the case are kept. How V7 finds a quote in its
  * note, and the extraction panel a value the KH already has.

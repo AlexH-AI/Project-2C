@@ -18,6 +18,7 @@ import {
   formatDate,
   formatLocalDateTime,
   formatVnd,
+  searchText,
   type CalendarDate,
   type CustomerStage,
 } from '@p2c/domain';
@@ -25,7 +26,6 @@ import type { DataTableMoreLabels } from '@p2c/ui';
 import { isUnsavedChangesError, type AppData, type PurgedTrash } from '../data/app-data';
 import { errorMessage, joinParts, t } from '../i18n';
 import { routeToHash } from '../shell/routes';
-import { searchText } from './appointments/appointment-form';
 import { statusLabel } from './appointments/appointments-view';
 import { policyStatusText } from './customers/policy-form';
 
@@ -196,6 +196,7 @@ export function ownerParts(row: TrashRow): OwnerPart[] {
 
 type CustomerRow = Extract<TrashRow, { kind: 'customer' }>;
 type PersonRow = Extract<TrashRow, { kind: 'person' }>;
+type TeamRow = Extract<TrashRow, { kind: 'team' }>;
 type RecordRow = Extract<TrashRow, { kind: 'appointment' | 'policy' }>;
 
 /** A row among the rows of every kind: ids are only unique within a table. */
@@ -209,16 +210,39 @@ function alike<R>(rows: readonly R[], key: (row: R) => string): R[] {
 }
 
 /**
- * The rows of the trash whose restore button says what else tells them apart from a namesake, all
- * the button would say else being alike (`restoreLabel`), by `rowKey`. Read from every row, whatever
- * the filter. Q3 (a), Owner 31/10/2026 (DR6-151): a customer another one has the name and the stage
- * of. Q1 (a), Owner 05/11/2026 (DR6-160): an appointment or a policy whose customer has the name of
- * another customer of the trash, deleted or the customer of another record; a person another one has
- * the name, the role and the team of.
+ * What a restore button says to tell its row apart from one alike in all the rest (`toldApart`):
+ * `code`, the customer's code; `minute`, when the row was deleted, as the column "Xóa lúc" shows it;
+ * `second`, the same to the second, for rows that column shows alike too.
  */
-export function codedCustomers(rows: readonly TrashRow[]): ReadonlySet<string> {
+export type ToldBy = 'code' | 'minute' | 'second';
+
+/**
+ * The rows of `rows` alike by `key`, each told apart by when it was deleted: to the minute, or to
+ * the second among those deleted in the same minute (review of PR 1072).
+ */
+function byDeletion<R extends TrashRow>(
+  rows: readonly R[],
+  key: (row: R) => string,
+): Array<readonly [R, ToldBy]> {
+  const same = alike(rows, key);
+  const sameMinute = new Set(alike(same, (row) => JSON.stringify([key(row), deletedAtText(row)])));
+  return same.map((row) => [row, sameMinute.has(row) ? 'second' : 'minute'] as const);
+}
+
+/**
+ * The rows of the trash whose restore button says what else tells them apart from a namesake, all
+ * the button would say else being alike (`restoreLabel`), by `rowKey`, with what it says. Read from
+ * every row, whatever the filter. Q3 (a), Owner 31/10/2026 (DR6-151): the code of a customer another
+ * one has the name and the stage of. Q1 (a), Owner 05/11/2026 (DR6-160): the customer's code of an
+ * appointment or a policy whose customer has the name of another customer of the trash, deleted or
+ * the customer of another record; when a person another one has the name, the role and the team of
+ * was deleted, and when a team another one has the name of was (`teams_active_name` only keeps the
+ * names of the teams in use apart; review of PR 1072).
+ */
+export function toldApart(rows: readonly TrashRow[]): ReadonlyMap<string, ToldBy> {
   const customers = rows.filter((row): row is CustomerRow => row.kind === 'customer');
   const people = rows.filter((row): row is PersonRow => row.kind === 'person');
+  const teams = rows.filter((row): row is TeamRow => row.kind === 'team');
   const records = rows.filter(
     (row): row is RecordRow => row.kind === 'appointment' || row.kind === 'policy',
   );
@@ -227,13 +251,19 @@ export function codedCustomers(rows: readonly TrashRow[]): ReadonlySet<string> {
   for (const { owner } of records)
     if (owner.customer) named.set(owner.customer.id, owner.customer.name);
   const namesakes = new Set(alike([...named], ([, name]) => name).map(([id]) => id));
-  return new Set(
-    [
-      ...alike(customers, (row) => `${row.stage}|${row.name}`),
-      ...records.filter((row) => row.owner.customer && namesakes.has(row.owner.customer.id)),
-      ...alike(people, (row) => JSON.stringify([row.name, row.role, row.owner.team?.name ?? null])),
-    ].map(rowKey),
-  );
+  const coded = [
+    ...alike(customers, (row) => `${row.stage}|${row.name}`),
+    ...records.filter((row) => row.owner.customer && namesakes.has(row.owner.customer.id)),
+  ];
+  return new Map([
+    ...coded.map((row) => [rowKey(row), 'code'] as const),
+    ...[
+      ...byDeletion(people, (row) =>
+        JSON.stringify([row.name, row.role, row.owner.team?.name ?? null]),
+      ),
+      ...byDeletion(teams, (row) => row.name),
+    ].map(([row, by]) => [rowKey(row), by] as const),
+  ]);
 }
 
 /**
@@ -241,32 +271,34 @@ export function codedCustomers(rows: readonly TrashRow[]): ReadonlySet<string> {
  * the first line of "Bản ghi" names it, with the words of its badge there (`recordBadge`), so
  * whatever tells two rows apart there tells their buttons apart (DR6-99, DR6-119); then an
  * appointment's or a policy's customer. Q3 (a), Owner 31/10/2026 (DR6-151): a person with their
- * role and team, the second line and "Thuộc"; a customer of `coded` with their code, as mockup 9b
- * names two of one name, since two such rows differ only past the first line. Q1 (a), Owner
- * 05/11/2026 (DR6-160): the customer of a record of `coded` with their code too, a person of `coded`
- * with when they were deleted, as the column "Xóa lúc" tells them apart.
+ * role and team, the second line and "Thuộc"; a customer `told` by `code` with their code, as mockup
+ * 9b names two of one name, since two such rows differ only past the first line. Q1 (a), Owner
+ * 05/11/2026 (DR6-160): the customer of a record `told` by `code` with their code too, a person or a
+ * team `told` by when they were deleted with that, as the column "Xóa lúc" tells them apart, to the
+ * second where that column shows the same minute (review of PR 1072).
  */
 export function restoreLabel(
   row: TrashRow,
-  coded: ReadonlySet<string>,
+  told: ReadonlyMap<string, ToldBy>,
   today: CalendarDate,
 ): string {
-  const told = coded.has(rowKey(row));
+  const by = told.get(rowKey(row));
+  const coded = by === 'code';
   const title =
-    row.kind === 'customer' && told
+    row.kind === 'customer' && coded
       ? t('customer.withCode', { name: row.name, code: row.code })
       : recordTitle(row, today);
-  const person =
-    row.kind === 'person'
-      ? [
-          recordDetail(row),
-          row.owner.team?.name,
-          told && t('trash.restoreLabel.deletedAt', { when: deletedAtText(row) }),
-        ]
-      : [];
-  const record = joinParts([title, recordBadge(row)?.text, ...person]);
+  const person = row.kind === 'person' ? [recordDetail(row), row.owner.team?.name] : [];
+  const deleted =
+    (by === 'minute' || by === 'second') &&
+    t('trash.restoreLabel.deletedAt', {
+      when: deletedAtText(row, { seconds: by === 'second' }),
+    });
+  const record = joinParts([title, recordBadge(row)?.text, ...person, deleted]);
   const label = t(`trash.restoreLabel.${row.kind}`, { record });
-  return row.kind === 'appointment' || row.kind === 'policy' ? ofCustomer(row, label, told) : label;
+  return row.kind === 'appointment' || row.kind === 'policy'
+    ? ofCustomer(row, label, coded)
+    : label;
 }
 
 /**
@@ -282,8 +314,9 @@ function ofCustomer(row: RecordRow, label: string, coded: boolean): string {
   return t('trash.restoreLabel.ofCustomer', { label, name });
 }
 
-export function deletedAtText(row: TrashRow): string {
-  return formatLocalDateTime(new Date(row.deletedAt));
+/** "Xóa lúc": when the row was deleted, in local time, to the minute; to the second with `seconds`. */
+export function deletedAtText(row: TrashRow, options: { seconds?: boolean } = {}): string {
+  return formatLocalDateTime(new Date(row.deletedAt), options);
 }
 
 /**

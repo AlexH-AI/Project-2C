@@ -160,6 +160,46 @@ test('a day or an FYP of invisible characters alone is asked for only on saving 
   expect(await policyCount(page)).toBe(before);
 });
 
+// The same in 8b (review of PR 1072): its day and FYP come filled in; emptied to invisible
+// characters alone, they wait for "Phát hành" as empty fields do, and issuing still asks for both.
+test('an issue day or FYP of invisible characters alone is asked for only on issuing (8b, DR6-173)', async ({
+  page,
+}) => {
+  const INVISIBLE = '\u{200B}\u{85}\u{2060}';
+  await openProfile(page);
+  const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
+  await card.getByRole('button', { name: '+ Hợp đồng' }).first().click();
+  let dialog = page.getByRole('dialog', { name: 'Hợp đồng mới · đã nộp' });
+  await dialog.getByRole('textbox', { name: /^Ngày nộp/ }).fill('11/9');
+  await dialog.getByRole('textbox', { name: /^FYP nộp/ }).fill('213tr');
+  await dialog.getByRole('button', { name: 'Lưu HĐ' }).click();
+  await expect(dialog).toBeHidden();
+  const row = card.getByRole('listitem').filter({ hasText: 'Nộp 11/09 · 213 tr' });
+  const issue = row.getByRole('button', { name: 'Phát hành HĐ nộp 11/09/2026' });
+
+  await issue.click();
+  dialog = page.getByRole('dialog', { name: 'Phát hành HĐ' });
+  const day = dialog.getByRole('textbox', { name: /^Ngày phát hành/ });
+  const fyp = dialog.getByRole('textbox', { name: /^FYP phát hành/ });
+  await day.fill(INVISIBLE);
+  await fyp.fill(INVISIBLE);
+  await expect(day).not.toHaveAttribute('aria-invalid');
+  await expect(fyp).not.toHaveAttribute('aria-invalid');
+  await expect(dialog).not.toContainText('Nhập ngày.');
+  await expect(dialog).not.toContainText('Chưa nhập số tiền.');
+
+  await dialog.getByRole('button', { name: 'Phát hành', exact: true }).click();
+  await expect(day).toHaveAttribute('aria-invalid', 'true');
+  await expect(fyp).toHaveAttribute('aria-invalid', 'true');
+  await expect(day).toHaveAccessibleDescription(/Nhập ngày\./);
+  await expect(fyp).toHaveAccessibleDescription(/Chưa nhập số tiền\./);
+  await dialog.getByRole('button', { name: 'Hủy', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(row).toContainText('Đã nộp');
+  await expect(row).not.toContainText('Đã phát hành');
+  await expect(issue).toBeVisible();
+});
+
 // DR6-38 (R38e): the day 8b filled in as dd/mm reads in the year the dialog opened in.
 test('a policy issued across New Year keeps the day the dialog showed (8b)', async ({ page }) => {
   await openProfile(page);
