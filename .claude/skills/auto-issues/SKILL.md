@@ -226,7 +226,7 @@ Dòng cuối: `AUTO-CHILD: [PR #<N>] ĐÃ PUSH @<sha7>`, `AUTO-CHILD: [PR #<N>] 
 - Đọc mọi comment REVIEW của PR #<N>, mọi vòng, kể cả vòng do phiên review kia viết hay do bạn viết trước một lần `/clear`. Lấy ghi chú không chặn của tất cả, như sổ đã ghi cho nhóm review #917.
 - Worktree riêng: `git -C C:/workspace/Project-2C fetch origin`, rồi `git -C C:/workspace/Project-2C worktree add ../Project-2C-notes-<N> -b docs/T-<số>-review-notes-<N> origin/main`. Làm trong đó, không làm ở worktree review hay checkout chính.
 - Chỉ sửa `docs/state/review-notes.md`, theo đoạn đầu của sổ:
-  - ghi chú không chặn mới vào OPEN. Đối chiếu sổ trước khi ghi một mục là MỚI; mỗi mục nêu ít nhất một đường dẫn file trong backtick. Gắn nhãn như các nhóm hiện có: Issue còn mở phụ trách file đó → `[T-… #…]`, không có thì nhãn chờ đang dùng (như `[G7]`);
+  - ghi chú không chặn mới vào OPEN. Đối chiếu sổ trước khi ghi một mục là MỚI; mỗi mục nêu ít nhất một đường dẫn file trong backtick. Gắn nhãn theo đề xuất K48 của comment REVIEW (skill `review-pr` §4), tới khi phát hành v1.0: đề xuất `[sau v1.0]` → nhãn `[sau v1.0]`; đề xuất chặn phát hành → Issue còn mở phụ trách file đó thì `[T-… #…]`, không có thì nhãn chờ đang dùng (như `[G7]`). Comment thiếu đề xuất K48 thì tự xếp theo bảng K48 ở `review-pr` §4;
   - mục thân PR #<N> ghi "đã sửa" chuyển sang RESOLVED.
 - PR: tiêu đề `docs: record the notes of the PR <N> review (T-<số>)`; thân `Refs #<I>` và các phần như #940; nhãn `type:task`, `risk:low`. Không merge.
 - Không có gì để ghi thì không mở PR.
@@ -238,7 +238,7 @@ Dòng cuối: `AUTO-CHILD: [PR #<N>] PR SỔ #<L>`, `AUTO-CHILD: [PR #<N>] SỔ 
 ```text
 [auto-issues] [Sổ] Hàng đợi đã xong; đề xuất gom sổ.
 <đoạn chung>
-`git -C C:/workspace/Project-2C pull --ff-only`, rồi đọc mục OPEN của `docs/state/review-notes.md` và đề xuất gom thành Issue, như đợt 01/11 (Issue #930…#935, PR #936):
+`git -C C:/workspace/Project-2C pull --ff-only`, rồi đọc mục OPEN của `docs/state/review-notes.md` và đề xuất gom thành Issue, như đợt 01/11 (Issue #930…#935, PR #936). Bỏ qua mục nhãn `[sau v1.0]` (K48: không sửa trước G7); OPEN chỉ còn mục như vậy thì coi là sổ trống. Đề xuất gồm:
 - nhóm theo vùng file và cỡ (mỗi Issue ≤ ~400 dòng code sản phẩm, ≤ ~800 dòng tổng diff); thứ tự, "Bị chặn bởi", nhãn risk;
 - chỉ ra mục nên đề nghị Owner chọn không sửa (ACCEPTED), và mục chạm cổng G1–G7.
 Chưa tạo Issue, chưa sửa file. Trả lời bằng một bảng, mỗi Issue một hàng: tiêu đề, các mục sổ theo số dòng, file, cỡ ước lượng, risk.
