@@ -10,9 +10,30 @@ Closes #
 
 ## Ghi chú OPEN liên quan
 
-<!-- `node tools/notes-for.mjs --diff`: mỗi mục "Trùng file" một dòng, `L<dòng>` + đầu mục → đã sửa, hoặc để lại + lý do (ngoài phạm vi, vượt cỡ, cần cổng G…, chỉ ghi lại). Không có mục nào: ghi "Không có". Thiếu dòng là mục chặn của review; mục đã sửa chuyển sang RESOLVED ở PR sổ sau review (T-261). -->
+<!-- `node tools/notes-for.mjs --diff`: mỗi mục "Trùng file" một dòng, `L<dòng>` + đầu mục → đã sửa, hoặc để lại + lý do (ngoài phạm vi, vượt cỡ, cần cổng G…, chỉ ghi lại). Mục nhãn [sau v1.0] không gộp tới khi phát hành v1.0: ghi "để lại (K49)". Không có mục nào: ghi "Không có". Thiếu dòng là mục chặn của review; mục đã sửa chuyển sang RESOLVED ở PR sổ sau review (T-261). -->
 
 -
+
+<!-- Ba mục dưới chỉ điền cho PR sửa phát hiện: PR đóng Issue có mục "Ngân sách" (vấn đề deep review DR6-*, ghi chú của sổ). PR khác xóa cả ba mục. Thiếu mục, hay mục không khớp diff, là mục chặn của review; cỡ vượt 1,5 lần ngân sách thì REVIEW: CHANGES, trừ khi thân PR trích câu Owner đồng ý, nguyên văn, có ngày (skill review-pr §3.A, T-386). -->
+
+## Test đỏ khi gỡ phần sửa
+
+<!-- Lệnh và kết quả: test của PR đỏ khi gỡ phần sửa, xanh khi có. PR chỉ sửa tài liệu: "không áp dụng". -->
+
+-
+
+## Quét cùng mẫu
+
+<!-- Lệnh `rg` / probe đã chạy; mọi chỗ cùng mẫu (`path:dòng`), gồm các chỗ ở mục "Quét cùng mẫu" của Issue; quyết định từng chỗ: đã sửa / không cùng lỗi / để lại + lý do. -->
+
+-
+
+## Cỡ so ngân sách
+
+<!-- Dòng thêm + xóa của `git diff --numstat -M origin/main...HEAD`, xếp bằng `classifyFile` của `tools/size-report-core.mjs` (khối `#[cfg(test)]` của Rust là test; tài liệu, file sinh tự động không tính). Ngân sách là khoảng thì so với cận trên. -->
+
+- Sản phẩm: … / ngân sách … (… lần)
+- Test: … / ngân sách … (… lần)
 
 ## Kiểm tra
 
