@@ -4630,7 +4630,7 @@ Bốn nguyên nhân:
 **SHA ghim lượt 6 = `origin/main` lúc bước chuẩn bị**, khi mục OPEN của `docs/state/review-notes.md` không còn mục lá chặn phát hành (mục [sau v1.0] không tính; K48). Thứ tự:
 
 1. PR kế hoạch này merge (G1), rồi PR sổ ghi chú review của nó.
-2. T-386 (§L6.10) và T-387 (Phụ lục Z), tạo sau G1, merge cùng PR sổ của chúng. Ghi chú không chặn của review hai PR này xếp theo K48: chặn thì sửa trước khi ghim; không chặn thì [sau v1.0].
+2. T-386 (§L6.10), T-387 (Phụ lục Z) và T-388 (§L6.9 bước chuẩn bị 4, Phụ lục Z; ba ghi chú của review #1123, Owner kéo vào ngày 07/11), tạo sau G1, merge cùng PR sổ của chúng. Ghi chú không chặn của review các PR này xếp theo K48: chặn thì sửa trước khi ghim; không chặn thì [sau v1.0].
 3. Bước chuẩn bị ghim `main` lúc đó (§L6.9 bước 1).
 
 Từ SHA ghim tới lúc chạy chỉ có thay đổi docs. Trong lượt 6 **không merge code vào `main`** (như §2); sau lượt 6 là đóng băng (K49).
@@ -4855,7 +4855,7 @@ Khuôn như §L5.8, đổi:
 
 ## L6.9 Chuẩn bị và chạy
 
-**Bước chuẩn bị — Claude, sau khi Owner duyệt kế hoạch lượt 6 và T-386, T-387 đã merge** (một phiên trên Home PC; không review, không ghi phát hiện). Như §L5.9, đổi:
+**Bước chuẩn bị — Claude, sau khi Owner duyệt kế hoạch lượt 6 và T-386, T-387, T-388 đã merge** (một phiên trên Home PC; không review, không ghi phát hiện). Như §L5.9, đổi:
 
 1. Ghi `hostname`, ngày giờ vào `common\baseline.md`.
    - **Kiểm sổ:** mục OPEN của `docs/state/review-notes.md` ở `origin/main` không còn mục lá chặn phát hành (mục [sau v1.0] không tính). Còn → dừng, báo Owner.
@@ -4872,7 +4872,13 @@ Khuôn như §L5.8, đổi:
    - `fixes.md` như §L5.9 bước 4, cho các Issue ở hai bảng của §L6.2;
    - **`files-A.txt` … `files-F.txt`**: mọi file git theo dõi ở SHA ghim mà `classifyFile` xếp vào gói đó, loại sản phẩm hay test (không tính file sinh tự động), mỗi dòng một đường dẫn kèm loại;
    - `prompt-claude.md` = Phụ lục W + Phụ lục Y; `prompt-codex.md` = Phụ lục X + Phụ lục Y; `prompt-workbuddy.md` = phần prompt của Phụ lục Z + Phụ lục Y. Chép nguyên văn, chỉ thay `{SHA}` bằng 7 ký tự đầu và `{SHA_ĐỦ}` bằng đủ 40 ký tự của SHA ghim (`{GÓI}` để nguyên);
-   - `dot2.mjs` = khối code của Phụ lục Z (T-387), chép nguyên văn. Cuối bước chạy `node C:\workspace\deep-review-1-6-r6\common\dot2.mjs baseline`.
+   - `dot2.mjs` = khối code của Phụ lục Z (T-387, T-388), chép nguyên văn.
+
+   Cuối bước, **dừng và lưu trữ các phiên có chuỗi lượt 6, rồi mới `baseline`** (T-388; §L6.7, dòng `scan` dừng ở transcript). `scan` ở đợt 2 dừng ở mọi file sửa sau mốc mà `MARKER` khớp, kể cả transcript của một phiên đã có chuỗi đó từ trước mốc rồi còn ghi tiếp.
+   - **Đã biết:** thân Issue #1121 (T-387) có một dòng `MARKER` khớp; bản kế hoạch trước T-387 có một ví dụ ID đủ số ở §L6.8. Các phiên đã đọc hoặc viết chúng: phiên tạo #1121 (cũng soạn kế hoạch), phiên điều phối `auto-issues`, `coding-ses1`, `coding-ses2`, `review-2`, và phiên review PR #1118 ở `Project-2C-review`. Transcript của chúng ở `~\.claude\projects\` của checkout chính và của `Project-2C-review-2` (hai chỗ `deny` không chặn mà `scan` quét), và của `Project-2C-review`. Owner dừng và lưu trữ (archive) các phiên đó trong app trước `baseline`. Phiên chuẩn bị là phiên mới, không mở thân #1121.
+   - **Chạy** `node C:\workspace\deep-review-1-6-r6\common\dot2.mjs baseline`. Trước khi ghi mốc, lệnh đọc mọi file trên các gốc của `scan`, bất kể tuổi (Home PC 07/11: ≈ 195 000 file, ≈ 4 phút). Lệnh in đường dẫn từng file đã có chuỗi `MARKER` khớp và số file; không in dòng khớp, mã thoát như cũ.
+   - **Mỗi file in ra** phải thuộc một phiên đã lưu trữ (id phiên là tên `<id>.jsonl` hay thư mục `<id>` trong đường dẫn, cả ở `file-history` và `%TEMP%\claude\…\<id>`; Owner xác nhận), hoặc là danh sách phiên của app (`claude-code-sessions`, Phụ lục P đã chấp nhận). File của một phiên chưa lưu trữ → Owner lưu trữ phiên đó, xóa `common\dot2-baseline.json`, chạy lại `baseline`. File của chính phiên chuẩn bị, hay không thuộc phiên nào → dừng, báo Owner. Bản kế hoạch trong `Project-2C-review` ở SHA cũ cũng khớp; bước 3 đã đưa worktree về SHA ghim nên lúc này không còn.
+   - Không mở file in ra, không in dòng khớp ra màn hình hay transcript (lượt 5: phiên in dòng đầu báo cáo làm `scan` dừng).
 5. Dữ liệu tải như §L5.9 bước 5, ra `…-r6\common\load\load-2026-10-12-seed6.p2cbackup`; so hash lượt 5 (§L6.6).
 6. Cổng ở SHA ghim như §L5.9 bước 6 (`pnpm build:exe` sau khi gỡ hẳn `CI`). `size-report --compare`: bảng theo gói và diff `37a80b6..<SHA ghim>` như §L6.3; bundle / exe so lượt 5.
 7. Đo hiệu năng như §L5.9 bước 7, đổi: chép script từ `C:\workspace\deep-review-1-6-r5\common\perf\` (các `.ps1`, `.mjs`; không chép kết quả), đổi đường dẫn sang `-r6`; chép `-r5\common\perf\perf-ref.json` thành `common\perf\perf-ref-r5.json` và `perf-g7.json` như §L5.9. Ba bảng: so mốc sau #656, so G7, so lượt 5. Owner để máy rảnh ≈ 8 phút.
@@ -5255,7 +5261,7 @@ Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md` của lượt 6; 
 - Gói và chi phí: như mục "Gói và chi phí" của Phụ lục V (chỉ credit của gói WorkBuddy Pro, không mua thêm, điểm dừng sau mỗi gói A–E; đề xuất 9).
 - Memory: như Phụ lục P.
 
-**`dot2.mjs` lượt 6** (Issue T-387, tạo sau G1; đề xuất 11). PR docs của T-387 thêm vào cuối phụ lục này một khối code `js`: khối của Phụ lục V (sau T-359), đổi theo các điểm dưới. Bước chuẩn bị chép nguyên văn khối đó thành `common\dot2.mjs` (§L6.9 bước 4). Khối của Phụ lục V giữ nguyên, vì lượt 5 đã chạy bằng nó.
+**`dot2.mjs` lượt 6** (Issue T-387, tạo sau G1; đề xuất 11). PR docs của T-387 thêm vào cuối phụ lục này một khối code `js`: khối của Phụ lục V (sau T-359), đổi theo các điểm dưới. Bước chuẩn bị chép nguyên văn khối đó thành `common\dot2.mjs` (§L6.9 bước 4). Khối của Phụ lục V giữ nguyên, vì lượt 5 đã chạy bằng nó. T-388 sửa khối đó tại chỗ, ở ba chỗ ("Cách làm của T-388").
 
 1. **Đường dẫn và tên lượt:** thư mục gốc `C:\workspace\deep-review-1-6-r6`; chú thích đầu file và thông báo ghi lượt 6.
 2. **`deny` chặn thêm cả thư mục lượt 5** `C:\workspace\deep-review-1-6-r5`, như thư mục lượt 1–4.
@@ -5265,7 +5271,7 @@ Nối nguyên văn vào cuối cả ba file `prompt-<bên>.md` của lượt 6; 
 
 Test chấp nhận của T-387, như T-358, T-359: cây giả trong thư mục tạm của phiên, đường dẫn có dấu cách, `USERPROFILE` / `TEMP` / `APPDATA` / `LOCALAPPDATA` giả; `deny` chỉ chạy sau khi `--dry-run` không liệt kê gì ngoài cây giả. Thêm ca cho điểm 3 (thư mục mã băm của worktree review bị chặn, của checkout chính để ngỏ), điểm 4 (link giữa hai mục chặn cả không làm `deny --dry-run` dừng; link ra ngoài vẫn dừng như cũ) và điểm 5. Bộ thử dựng chuỗi mẫu của `scan` bằng cách ghép, không viết nguyên văn (lượt 5: chuỗi mẫu trong transcript làm `scan` dừng).
 
-**Cách làm của T-387** (07/11/2026, Home PC). Khối dưới là khối của Phụ lục V, đổi đúng ở năm điểm trên:
+**Cách làm của T-387** (07/11/2026, Home PC). Khối của T-387 là khối của Phụ lục V, đổi đúng ở năm điểm trên:
 
 - **Điểm 3, nhận thư mục tạm theo tên phiên** (`reviewTempDirs`, hàm riêng, test thay được).
   - Mã băm không tính lại được từ đường dẫn: sha256 / sha1 / md5 / sha512 của thư mục làm việc ở mọi dạng đã thử (hoa / thường, `\` / `/`, UTF-8 / UTF-16LE) không ra `4f7e6602815f66dc` hay `9baf74bac889a6ec`. Cách băm là chi tiết riêng của Claude Code, có thể đổi giữa các bản.
@@ -5283,20 +5289,41 @@ Test chấp nhận của T-387, như T-358, T-359: cây giả trong thư mục t
 
 **Đã thử ngày 07/11/2026 trên Home PC** (T-387; lệnh, cây giả và kết quả ở thân PR). Bộ thử của T-358 và T-359, đổi sang cây `-r6` (thư mục lượt 5 thành lượt cũ). Mọi kịch bản có thư mục tạm theo mã băm của hai worktree review, của checkout chính và của một phiên không rõ. Thêm ba kịch bản. Chuỗi mẫu của `scan` ghép từ mảnh, không viết nguyên văn.
 
-- Khối dưới: 15 kịch bản đều đạt (306 phép kiểm), hai lần: trên bản đã soạn và trên khối trích từ file này.
+- Khối của T-387: 15 kịch bản đều đạt (306 phép kiểm), hai lần: trên bản đã soạn và trên khối trích từ file này.
   - **`temp`, `temp-nostate`:** thư mục mã băm của hai worktree review bị chặn. Của checkout chính và của phiên không rõ để ngỏ, không có luật chặn nào của tài khoản. `remove` trả cả bốn như trước, có và không có `dot2-acl.json`.
   - **`innerlink`:** link giữa hai thư mục `file-history` (phiên và phiên rẽ nhánh), giữa `-r5` và `-r4`, và một file ba link qua `-r5`, `-r4`, `-r3`. `deny --dry-run` không dừng, `deny` chặn hết, `remove` `OK`. Thêm một link ra ngoài: `STOP: nothing denied`, nêu cả hai thư mục `file-history`.
   - **`base`** thêm: `-r5` chặn cả. `scan` dừng ở mã `CLR6-`, mã `CXR6-`, dòng `XONG` của Claude gói G, dòng `ĐANG LÀM` của Codex, mỗi thứ trong một file sửa sau mốc (một file trong thư mục tạm của checkout chính). Mã và dòng đầu lượt 5 → `OK`.
   - **`linked`:** link ra ngoài ở cả `-r5` và `-r4` → `STOP` nêu cả hai.
   - 8 kịch bản của T-358 và 4 của T-359.
 - Khối Phụ lục V trên cùng cây: 7 / 14 kịch bản đỏ. Khối đó không chặn `-r5` và thư mục mã băm, `scan` không thấy mã lượt 6, `deny --dry-run` dừng ở link nội bộ.
-- Sáu đột biến của khối dưới, mỗi đột biến làm đỏ kịch bản của nó: bỏ bước gỡ thư mục tạm khi không có file trạng thái; đếm link theo từng mục; bỏ `reviewTempDirs`; chỉ nhận `Project-2C-review`; bỏ `-r5`; `scan` chỉ A–F.
+- Sáu đột biến của khối T-387, mỗi đột biến làm đỏ kịch bản của nó: bỏ bước gỡ thư mục tạm khi không có file trạng thái; đếm link theo từng mục; bỏ `reviewTempDirs`; chỉ nhận `Project-2C-review`; bỏ `-r5`; `scan` chỉ A–F.
 - Cây 60 000 file, hai lần: `deny --dry-run` 14,9–15,2 s, `deny` 20,6–20,7 s, `remove` 7,6–7,8 s (T-359: 15 s, 20–21 s, 8 s).
+
+**Cách làm của T-388** (07/11/2026, Home PC; ba ghi chú của review #1123, Owner kéo vào). Khối dưới là khối của T-387, đổi ở ba chỗ:
+
+- **`treeTargets` bỏ trùng không phân biệt hoa / thường** (L18), như NTFS. `PROJECT` lấy chữ theo đường dẫn gõ khi chạy script, `reviewTempDirs()` trả tên trên đĩa. Ở khối T-387, gõ đường dẫn khác hoa / thường thì thư mục tạm tên cũ của `Project-2C-review` vào danh sách hai lần, link của nó bị đếm hai lần, và một file ở đó có link ra ngoài không làm `deny --dry-run` dừng.
+- **`deny` ghi mục vào `dot2-acl.json` trước khi gọi `icacls`** (L19). `deny` dừng ngay sau `icacls` (Ctrl+C, hay `icacls` lỗi sau khi đã đặt luật) thì mục đó vẫn ở file trạng thái; gỡ luật ở mục chưa bị chặn không làm gì. Nên câu "có file trạng thái thì các thư mục đó đã ở `entries`" ở trên đúng cả khi `deny` dừng giữa chừng; chú thích của `remove` ghi lại theo đó. Nhánh dự phòng của `remove` vẫn chỉ chạy khi không có file trạng thái: bộ ACL và phạm vi gỡ không đổi.
+- **`baseline` liệt kê file đã có chuỗi lượt 6** (L17, §L6.9 bước chuẩn bị 4). Vòng đọc của `scan` thành hàm `marked(since)`: `scan` gọi với mốc như trước; `baseline` gọi trước khi ghi mốc, với mọi file bất kể tuổi. `baseline` chỉ in đường dẫn và số file, không dừng, mã thoát như cũ: transcript của phiên đã lưu trữ vẫn giữ chuỗi đó mà không còn được ghi, nên nếu `baseline` dừng ở đó thì không bao giờ qua được.
+- Ngoài ba chỗ, như T-387.
+
+**Đã thử ngày 07/11/2026 trên Home PC** (T-388; lệnh, cây giả và kết quả ở thân PR). Bộ thử của T-387, thêm bốn kịch bản. Chuỗi mẫu ghép từ mảnh, không viết nguyên văn.
+
+- Khối dưới: 19 kịch bản đều đạt (346 phép kiểm), hai lần: trên bản đã soạn và trên khối trích từ file này.
+  - **`case`:** chạy script qua đường dẫn gõ `WS` thay cho `ws`. Thư mục tạm tên cũ của `Project-2C-review` có file link ra ngoài: `deny --dry-run` `STOP`, nêu thư mục đó một lần, như khi gõ đúng chữ. Bỏ link: mỗi mục một dòng `would deny`; `deny` và `remove` qua cùng đường dẫn đều `OK`.
+  - **`interrupt`, `interrupt-error`:** bản chép tạm của khối dừng ngay sau khi `icacls` đặt luật trên thư mục mã băm của `Project-2C-review` (`process.exit` như Ctrl+C; hay ném lỗi). `dot2-acl.json` có thư mục đó. `remove` `OK`, cả 26 mục đọc lại được, không còn luật chặn nào của tài khoản.
+  - **`marked`:** sáu file có chuỗi lượt 6 trước `baseline` (transcript của checkout chính và của `-review-2`, thư mục tạm của checkout chính, một file UTF-16LE lệch một byte, danh sách phiên của app, một file trong thư mục làm việc). `baseline` in đúng sáu đường dẫn và số file, không dòng nào `MARKER` khớp, mã thoát 0; không có gì thì in `0 file(s)`. Sau mốc, `scan` `OK`; transcript được ghi tiếp → `STOP`, chỉ đường dẫn.
+  - 15 kịch bản của T-387.
+- Khối T-387 trên cùng cây: bốn kịch bản mới đều đỏ.
+- Ba đột biến của khối dưới, mỗi đột biến bỏ một chỗ đổi, làm đỏ kịch bản của nó.
+- **Đọc thử trên Home PC, chỉ đọc:** chép khối, ghim `COMMON` vào `C:\workspace\deep-review-1-6-r6\common` (không tạo), chỉ gọi `marked(-Infinity)`; không ghi mốc, không `icacls`. 195 475 file đọc, 244 s. 18 file khớp, chỉ in đường dẫn:
+  - transcript, `file-history` và thư mục tạm của sáu phiên: bốn ở checkout chính, một ở `Project-2C-review` (review #1118), một ở `Project-2C-review-2` (review #1123);
+  - bản kế hoạch trong `Project-2C-review`, còn ở head của PR #1118 (`e541937`, trước khi T-387 bỏ ví dụ ID đủ số của §L6.8).
 
 ```js
 // Deep review round 6, wave 2 (plan §L6.9, Appendix Z; round 5 ran the script of Appendix V). Run
 // from PowerShell; baseline by the preparation session, the rest by the Owner:
-//   node dot2.mjs baseline          preparation step 4: untracked / ignored entries of both review worktrees
+//   node dot2.mjs baseline          preparation step 4: untracked / ignored entries of both review worktrees,
+//                                   after listing the files that hold what scan looks for already
 //   node dot2.mjs clean             wave 2 step 1: delete what wave 1 left beyond that, and probe caches
 //   node dot2.mjs deny [--dry-run]  wave 2 step 3: deny the Owner's account reads (ACL), then check
 //   node dot2.mjs scan              wave 2 step 3: look for readable copies of Claude / Codex round 6 work
@@ -5420,6 +5447,12 @@ function leftovers(wt, held) {
 
 function baseline() {
   if (exists(BASELINE)) throw new Stop(`${BASELINE} already exists`);
+  // A file that holds a round 6 ID or report header already stops scan once written after the baseline,
+  // e.g. the transcript of a session that read one and goes on: such sessions are archived first (plan
+  // §L6.9 preparation step 4, T-388). Every file on scan's roots, whatever its age; paths only.
+  const { hits } = marked(-Infinity);
+  for (const p of hits) console.log(`holds a round 6 ID or report header already: ${p}`);
+  console.log(`${hits.length} file(s) on the scan roots hold a round 6 ID or report header already`);
   const base = Object.fromEntries(WORKTREES.map((wt) => [wt, leftovers(wt)]));
   writeJson(BASELINE, base);
   for (const wt of WORKTREES) console.log(`${wt}: ${base[wt].length} untracked / ignored entries kept`);
@@ -5539,7 +5572,8 @@ function treeTargets() {
     for (const id of new Set(list(proj).map((e) => e.name.replace(/\.jsonl$/, '')))) out.push(path.join(c, 'file-history', id));
   }
   out.push(path.join(TEMP, 'claude', PROJECT), ...reviewTempDirs());
-  return [...new Set(out)].filter(exists);
+  // NTFS names ignore case: PROJECT is spelt as the script's path was typed, reviewTempDirs as on disk (T-388).
+  return [...new Map(out.map((p) => [p.toLowerCase(), p])).values()].filter(exists);
 }
 
 const keptBySplit = (e) => e.isSymbolicLink() || e.name === 'node_modules' || e.name === '.git';
@@ -5659,10 +5693,12 @@ function deny(dryRun) {
     kept: out.kept,
   };
   writeJson(STATE, state);
+  // Each entry goes in the state file before its rule: stopped right after icacls (Ctrl+C, an error), deny
+  // still leaves it to remove; removing from an entry not denied yet does nothing (T-388).
   for (const e of out.entries) {
-    icacls(e.path, '/deny', `${USER}:${e.kind === 'tree' ? '(OI)(CI)(R)' : '(R)'}`);
     state.entries.push(e);
     writeJson(STATE, state);
+    icacls(e.path, '/deny', `${USER}:${e.kind === 'tree' ? '(OI)(CI)(R)' : '(R)'}`);
   }
   const open = out.entries.filter((e) => canOpen(e.path, e.kind) || (samples.has(e.path) && canOpen(samples.get(e.path), 'file')));
   if (open.length) throw new Stop(`still readable: ${open.map((e) => e.path).join(', ')}; run remove`);
@@ -5689,7 +5725,8 @@ function remove() {
     }
   };
   for (const e of [...entries].reverse()) undo(e.path, e.kind);
-  // The standard targets too, in case the state file is missing or incomplete.
+  // The standard targets too, in case the state file is missing: deny writes it before its first rule and
+  // each entry in it before that entry's rule, so a state file holds every entry deny denied (T-388).
   for (const c of claudeDirs()) undo(path.join(c, 'projects', PROJECT), 'tree');
   // Without it, a review worktree's temp folder that deny denied does not list, so reviewTempDirs cannot
   // tell it: each folder in %TEMP%\claude that does not list is undone (Appendix Z point 3).
@@ -5726,10 +5763,9 @@ function remove() {
   console.log(`OK: denies removed from ${done.size} entries, all readable again${but}`);
 }
 
-function scan() {
-  needBaseline();
-  // Files older than the baseline (preparation, before wave 1) cannot hold round 6 work.
-  const since = fs.statSync(BASELINE).mtimeMs;
+// Readable files on scan's roots changed since `since` (ms) that hold a round 6 ID or report header (hits),
+// files over 64 MB (big, not read) and counts. Callers print paths only, never a matching line.
+function marked(since) {
   const roots = [
     ...subdirs(HOME, /^\.(claude|codex)/),
     path.join(APPDATA, 'Claude'),
@@ -5782,6 +5818,13 @@ function scan() {
     }
   };
   for (const r of roots) walk(r);
+  return { hits, big, read, closed };
+}
+
+function scan() {
+  needBaseline();
+  // Files older than the baseline (preparation, before wave 1) cannot hold round 6 work.
+  const { hits, big, read, closed } = marked(fs.statSync(BASELINE).mtimeMs);
   console.log(`${read} files read; ${closed} folders / files not readable (the denied ones count here)`);
   for (const p of big) console.log(`not read (over 64 MB): ${p}`);
   // Accepted in Appendix P: the desktop app's session list (titles, recaps); the running app keeps it open.
