@@ -215,7 +215,15 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - 07/11: the sessions that held round 6 strings before the `scan` baseline are not archived; nothing is sent to them until wave 2's `scan` is done. 07/11 ≈ 23:00: wave 2 goes on although `scan` stopped at one transcript of the "review-2" session written before the baseline (as in round 5).
   - 07/11 ≈ 23:35, after the trial task: "GLM 5.3 tốn credit quá"; the WorkBuddy model for packages A–F is Hy4, and the trial is not rerun with Hy4 ("không cần phải thử thêm, các round 5 đã test rồi"). The session logs show package A ran on `hy4-free` and packages B (after a cut) to F on `deepseek-v4.1-flash-sg`; the synthesis records this as a deviation from §L6.7.
   - 08/11, closing wave 2: Claude runs the copy of the WorkBuddy session logs ("Em chạy giúp"; rounds 4–5 had the OWNER run it), only the session files, after the OWNER logged out of and quit the app; `gh auth login` before `dot2.mjs remove`; the old Project-2C sessions in the sidebar are not archived ("Không lưu trữ").
-  - Round 6 synthesis (T-389, #1131): not ready at `5b1328a`, five issues block the release under K48 (DR6-178…182, Low on the data or AI-guardrail axis); 30 others go to the ledger tagged [sau v1.0]. The OWNER's answers to its §9 follow.
+  - Round 6 synthesis (T-389, #1131): not ready at `5b1328a`, five issues block the release under K48 (DR6-178…182, Low on the data or AI-guardrail axis); 30 others go to the ledger tagged [sau v1.0].
+- 2026-11-08: OWNER answers to §9 of the round 6 synthesis: "Chọn như ghi", every proposal as written.
+  - Q1 (a), DR6-178: the database clock never repeats nor goes back within one open (a stopped or earlier clock gives the previous instant plus 1 ms), and a new import rule rejects two transitions of one appointment withdrawn at the same `deleted_at` (K1).
+  - Q2 (a), DR6-179: exporting a backup larger than `MAX_BACKUP_BYTES` (measured in bytes, as the import box does) is refused without writing a file, with its own message pointing to the `.db` copies in `backups\`.
+  - Q3 (a), DR6-180: the two blocklist rules also catch a fact code in brackets after "sẵn sàng / tiềm năng mua" and a law name in quotes or after a bracket; new versions `analysis@6` / `discovery@6`; the OWNER approves the G5 text on the fix PR.
+  - Q4 (a), DR6-181: the coordinator box keeps the pick in state and adds only on a "Thêm" button, with a live line naming who was added; the button goes into "Lệch mockup đã biết".
+  - Q5 (a), DR6-182: the note box of 6c / 6f is a textarea whenever the note holds a line break.
+  - Q6: no non-blocking issue is pulled into the fix wave. Q7: the remove / merge proposals of theme session G stay [sau v1.0] (K49).
+  - Fix issues #1134…#1138 (T-390…T-394), run by the `auto-issues` pipeline after the synthesis PR.
 
 ## Next decision
 

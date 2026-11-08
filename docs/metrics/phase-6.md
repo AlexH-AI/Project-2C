@@ -477,6 +477,7 @@ Deep review Phase 1–6 (6D, kế hoạch `docs/process/deep-review-phase-1-6.md
   - Bảng R1 20 dòng, R2 14 Issue: đều đã sửa, 0 hồi quy.
   - 97 phát hiện mới → **35** vấn đề DR6-178…212: **0 Medium**; **5 chặn phát hành** theo K48 (4 Low trục D, 1 Low trục G); 30 không chặn (24 Low, 6 Nit) → sổ [sau v1.0]. 0 bị bác.
   - Kết luận: chưa sẵn sàng ở `5b1328a` vì còn 5 vấn đề chặn; sau đợt sửa thì G7, không cần review lại vùng (không có Medium).
+  - Owner 08/11 đồng ý cả 7 đề xuất của §9: 5 Issue #1134–#1138 (T-390…T-394).
 
 ## Điều hướng (riêng 2C, `docs/metrics/README.md`)
 

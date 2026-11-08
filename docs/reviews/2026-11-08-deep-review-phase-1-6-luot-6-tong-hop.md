@@ -2,7 +2,7 @@
 
 - **Issue:** #1131 (T-389). Kế hoạch: T-385 #1117, `docs/process/deep-review-phase-1-6.md` §L6 (Owner duyệt G1 07/11/2026). ADR-0001 phụ lục M13.
 - **SHA ghim:** `5b1328a` (`5b1328ae236aa62981dbf43066ff544a9e832c8c`). Máy: Home PC `DESKTOP-KDURKJP`.
-- **Báo cáo gốc:** `docs/reviews/raw/2026-11-08/{claude,codex,workbuddy}/` (PR #1132); bằng chứng, probe, log ở `C:\workspace\deep-review-1-6-r6\` (Home PC, giữ tới v1.0).
+- **Báo cáo gốc:** `docs/reviews/raw/2026-11-08/{claude,codex,workbuddy}/` (cùng PR với bản tổng hợp); bằng chứng, probe, log ở `C:\workspace\deep-review-1-6-r6\` (Home PC, giữ tới v1.0).
 - **Bên review:**
   - Claude Opus 5.5 (`claude-opus-5-5` ở mọi bản ghi): 9 phiên sạch ở `Project-2C-review`, gói A–F rồi chủ đề G (rà gọn), H (chữ người dùng nhập / hiển thị), I (bất đồng bộ và thứ tự), 07/11 12:04–22:47. Sáu phiên dùng subagent (14 lần gọi, `opus` / `sonnet`, mức `xhigh`); không Workflow, không ultracode.
   - Codex, model GPT Sol 6.1: 6 phiên ở `Project-2C-review-2`, 07/11 12:03–19:57.
@@ -274,7 +274,21 @@ Exe release `5b1328a` trên Home PC, cùng script với G7 / lượt 5. **Không
 3. **PR sổ** (không cần review): 30 DR6 không chặn vào OPEN của `docs/state/review-notes.md`, nhãn **[sau v1.0]**, mỗi họ một mục; phần DR6-182 để ngoài cũng vào sổ. Mục Owner kéo vào ở Q6 mang nhãn `[T-… #…]` thay.
 4. **G7** (§L6.10 "Rồi G7"): exe phát hành ở `main` sau đợt sửa; nghiệm thu lại các dòng NT có màn / hành vi đổi (6b / 6h / 6f người phối hợp, 6c / 6f ghi chú, Xuất backup, khôi phục lịch hẹn ở Thùng rác; K46), cùng NT-HD-01; chụp lại ảnh hướng dẫn có màn đổi; NT-EV-01 (eval AI thật, Owner bấm, G4) với version prompt cuối (`@6` nếu Q3 (a)); cổng và probe so mốc sau #656. Lỗi G7 tìm ra xếp theo K48; đóng băng K49 giữ tới phát hành.
 
+### 8.1 Issue sửa đã tạo (08/11)
+
+| Issue | DR6 | Việc | Rủi ro | Ngân sách |
+|---|---|---|---|---|
+| #1134 T-390 | DR6-178 | Đồng hồ của DB không lặp / không lùi trong một lần mở; luật nhập: hai transition của cùng lịch hẹn không cùng `deleted_at` | med | ≈ 15–25 SP + 40–70 test |
+| #1135 T-391 | DR6-179 | Xuất backup từ chối khi quá 100 MB, câu riêng chỉ bản `.db` | low | ≈ 10–15 SP + 15–25 test |
+| #1136 T-392 | DR6-180 | V3 / V6 chặn mã và tên luật trong ngoặc; `analysis@6` / `discovery@6`; Owner duyệt G5 ở PR | med | ≈ 2–4 SP + 6–10 test + G5 |
+| #1137 T-393 | DR6-181 | Ô người phối hợp chỉ thêm khi bấm "Thêm"; `aria-live`; dòng "Lệch mockup đã biết" | low | ≈ 10–20 SP + 15–25 e2e |
+| #1138 T-394 | DR6-182 | Ô ghi chú 6c / 6f là `textarea` khi chữ có xuống dòng | low | ≈ 2–4 SP + 15–25 e2e |
+
+Năm Issue độc lập nhau, nhãn `ready-for-agent`; Owner 08/11 chọn chạy qua pipeline `auto-issues`, sau PR tổng hợp này.
+
 ## 9. Câu hỏi cho Owner
+
+**Owner trả lời 08/11/2026: "Chọn như ghi"** — cả bảy câu theo đề xuất: Q1 (a), Q2 (a), Q3 (a), Q4 (a), Q5 (a); Q6 không kéo vấn đề nào; Q7 [sau v1.0]. Issue ở §8.1.
 
 Mỗi câu một lựa chọn; đề xuất của tổng hợp ghi trước.
 
