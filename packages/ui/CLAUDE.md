@@ -10,7 +10,7 @@ Component React thuần trình bày (ADR-0013): nhận dữ liệu và nhãn qua
 ## File hay tìm
 
 - Token: `src/tokens.css` (biến CSS; viền ô nhập, mũi tên sắp xếp chưa chọn: `--border-control`, ≥ 3:1), `src/theme.css` (map sang Tailwind, bỏ bảng màu mặc định), font `src/fonts.css`.
-- Chặn style lách token: `src/token-guard.ts` + `scripts/check-tokens.ts` (`pnpm lint:tokens`, chạy trong `pnpm verify`): không màu / độ dài thô, không `style` inline (trừ `flex` đọc từ dữ liệu), không giá trị tuỳ ý của Tailwind.
+- Chặn style lách token: `scripts/token-guard.ts` + `scripts/check-tokens.ts` (`pnpm lint:tokens`, chạy trong `pnpm verify`): không màu / độ dài thô, không `style` inline (trừ `flex` đọc từ dữ liệu), không giá trị tuỳ ý của Tailwind.
 - Bảng: `src/components/DataTable.tsx` (TanStack Table) + phần thuần `table-view.ts` (tiêu đề, dòng hiện, chân bảng) + so sánh ô `compare-cells.ts`.
 - Biểu đồ: `src/components/Chart.tsx` (ECharts) + màu series từ token `chart-theme.ts`.
 - Chọn kỳ: `src/components/PeriodPicker.tsx` + nhãn `PeriodPicker.label.ts`.
@@ -46,5 +46,4 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/components/show-more.ts` — SHOW_MORE_STEP, type ShowMoreFoot, showMore
 - `src/components/table-view.ts` — type ColumnSorting, sorts, tableView
 - `src/index.ts` — re-exports ./components/NavIcon, ./components/Segmented, ./components/PeriodPicker, ./components/DataTable, ./components/Chart, ./components/Button, ./components/Dialog, ./components/TextField, ./components/SelectField, ./components/StageBadge, ./components/PolicyBadge, ./components/Choices
-- `src/token-guard.ts` — findTokenViolations, findHardcodedSeparators
 <!-- codemap:end -->
