@@ -9,6 +9,7 @@ import {
   exportBackup,
   getSetting,
   importBackup,
+  MAX_BACKUP_BYTES,
   openDatabase,
   purgeTrash,
   putSetting,
@@ -139,7 +140,10 @@ export interface AppData {
   reloadDemoData(): Promise<{ anchor: CalendarDate; backup: string | undefined }>;
   /** The current live records, for the import and reload confirmations (10a, 10c). */
   counts(): RecordCounts;
-  /** Settings → Data: everything as a `.p2cbackup` file; the exe writes it into `exports\`. */
+  /**
+   * Settings → Data: everything as a `.p2cbackup` file; the exe writes it into `exports\`. Rejects
+   * with `BACKUP_TOO_LARGE`, writing nothing, over the size an import reads (DR6-179).
+   */
   exportBackup(): Promise<ExportedBackup>;
   /**
    * Báo cáo → Xuất Excel: the exe writes the file into `exports\` (with a `-n` suffix when `name`
@@ -457,6 +461,10 @@ export async function openAppData(options: OpenAppDataOptions = {}): Promise<App
       const name = `project2c-${localFileStamp(clock())}.p2cbackup`;
       const text = exportBackup(db);
       const bytes = new TextEncoder().encode(text);
+      // In bytes, as the import measures the chosen file (10b): no machine would read a bigger one.
+      if (bytes.byteLength > MAX_BACKUP_BYTES) {
+        throw new DbError('BACKUP_TOO_LARGE', { limitMb: MAX_BACKUP_BYTES / 1024 / 1024 });
+      }
       const path = await storage?.writeExport(name, bytes);
       return { name, text, size: bytes.byteLength, path };
     },

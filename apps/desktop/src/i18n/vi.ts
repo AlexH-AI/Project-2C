@@ -1121,6 +1121,8 @@ export const vi = {
   'settings.backup.exported': 'Đã xuất backup: {where} · {size}',
   'settings.backup.exportFailed':
     'Chưa xuất được backup. Kiểm tra ổ đĩa và quyền ghi thư mục Project2C-data\\exports\\ rồi thử lại.',
+  'settings.backup.exportTooLarge':
+    'Chưa xuất backup: dữ liệu lớn hơn {limitMb} MB nên file sẽ không nhập lại được. Dùng bản .db trong Project2C-data\\backups\\ thay cho file này: chép bản đó thành Project2C-data\\project2c.db khi app đã đóng.',
   'settings.backup.import': 'Nhập backup',
   'settings.backup.importHelp': 'Thay toàn bộ dữ liệu hiện tại bằng dữ liệu trong file.',
   'settings.backup.importHelpBackup': 'App tự backup dữ liệu hiện tại trước.',

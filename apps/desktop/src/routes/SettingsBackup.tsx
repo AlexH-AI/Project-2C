@@ -62,8 +62,13 @@ export function BackupSection({ notice, onNotice }: DataNoticeProps<BackupNotice
         size: exported.size,
         inFolder: exported.path !== undefined,
       });
-    } catch {
-      onNotice({ kind: 'failed', message: t('settings.backup.exportFailed') });
+    } catch (error) {
+      // A file over the limit is never written: no import would read it back (DR6-179).
+      const tooLarge = error instanceof DbError && error.code === 'BACKUP_TOO_LARGE';
+      const message = tooLarge
+        ? t('settings.backup.exportTooLarge', error.params)
+        : t('settings.backup.exportFailed');
+      onNotice({ kind: 'failed', message });
     } finally {
       setBusy(null);
     }
