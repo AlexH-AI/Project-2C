@@ -33,7 +33,7 @@ const V3: readonly Matcher[] = [
     'both',
   ),
   pattern(
-    String.raw`${B}(sẵn sàng|tiềm năng) mua${E}(?=\s*($|[.,;:!?)]|(bảo hiểm|sản phẩm|giải pháp|gói|hợp đồng|hđ)${E}))`,
+    String.raw`${B}(sẵn sàng|tiềm năng) mua${E}(?=\s*($|[.,;:!?)(\["“”]|(bảo hiểm|sản phẩm|giải pháp|gói|hợp đồng|hđ)${E}))`,
     'both',
   ),
   ...row(true, 'sẵn sàng ký · chắc chắn mua · chắc chắn ký · tiềm năng chốt'),
@@ -104,8 +104,9 @@ const unlessAfter = (word: string, before: string) =>
  * Pareto", DR6-124), before a word starting with a capital that is not "KH", "RE" or "sư" in any
  * case (the prompt's own words, a lawyer; DR6-16). The two may touch: an invisible character
  * between them is dropped (DR6-17).
+ * One pair of brackets, then an opening double quote, may come between them too (DR6-180).
  */
-const LAW_NAME = String.raw`(?<!${B}(${ci('pháp')}|${ci('kỷ')}|${ci('kỉ')}|${QUY}|${unlessAfter('giới', GIOI_OF)}|${unlessAfter('định', QUY)})\s+)${B}${ci('luật')}\s*(?!(${ci('kh')}|${ci('re')}|${ci('sư')})${E})\p{Lu}`;
+const LAW_NAME = String.raw`(?<!${B}(${ci('pháp')}|${ci('kỷ')}|${ci('kỉ')}|${QUY}|${unlessAfter('giới', GIOI_OF)}|${unlessAfter('định', QUY)})\s+)${B}${ci('luật')}\s*(\([^()]*\)\s*)?["“]?(?!(${ci('kh')}|${ci('re')}|${ci('sư')})${E})\p{Lu}`;
 
 /**
  * V6 — citing legal texts (G5 §8.4; "khoản <số>" alone is money, Owner Q4). `\s*`: the parts may

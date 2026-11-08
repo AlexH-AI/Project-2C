@@ -66,7 +66,7 @@ const SAMPLES: Record<string, readonly (readonly [string, string])[]> = {
   ],
   '`\\bchốt được\\b(?! (lịch\\|ngày\\|giờ\\|buổi\\|thời gian\\|thời điểm\\|cuộc hẹn\\|hẹn\\|mốc\\|kế hoạch\\|mục tiêu\\|phương án)\\b)`':
     [['KH có thể chốt được', 'chốt được']],
-  '`\\b(sẵn sàng\\|tiềm năng) mua\\b(?=\\s*($\\|[.,;:!?)]\\|(bảo hiểm\\|sản phẩm\\|giải pháp\\|gói\\|hợp đồng\\|hđ)\\b))` — chỉ khi theo sau là hết câu / dấu câu / từ chỉ sản phẩm':
+  '`\\b(sẵn sàng\\|tiềm năng) mua\\b(?=\\s*($\\|[.,;:!?)(\\["“”]\\|(bảo hiểm\\|sản phẩm\\|giải pháp\\|gói\\|hợp đồng\\|hđ)\\b))` — chỉ khi theo sau là hết câu / dấu câu (kể cả ngoặc đơn, ngoặc vuông mở, ngoặc kép) / từ chỉ sản phẩm':
     [
       ['KH sẵn sàng mua.', 'sẵn sàng mua'],
       ['KH tiềm năng mua gói', 'tiềm năng mua'],
@@ -95,7 +95,7 @@ const SAMPLES: Record<string, readonly (readonly [string, string])[]> = {
     ['Xem điểm đ khoản', 'điểm đ khoản'],
     [`Xem điểm${ZWSP}a${ZWSP}khoản`, 'điểmakhoản'],
   ],
-  '"luật" ở **mọi kiểu hoa / thường**, có ranh giới từ trước, không đứng sau từ "pháp", "kỷ", "kỉ", "quy", "qui", "giới" mà trước nó không phải "môi" / "ranh" / "biên" / "thế", hay "định" mà trước nó không phải "quy" / "qui" (mọi kiểu chữ) + khoảng trắng; theo sau là khoảng trắng (có thể không có) + một từ mở đầu bằng chữ hoa (`\\p{Lu}`) mà **không** phải "KH", "RE" hay "sư" (mọi kiểu chữ). Chạy trên **bản gốc**. Vd. khớp "Luật Kinh doanh bảo hiểm", "Luật BHXH", "LuẬt Đất đai", "Luật" + U+200B + "BHXH", "quy định Luật Kinh doanh bảo hiểm", "môi giới Luật Kinh doanh bảo hiểm"; không khớp "Luật sư", "LUẬT SƯ", "pháp luật Việt Nam", "pHáp luật Việt Nam", "kỷ luật KH", "quy luật Thị trường", "kỉ luật Thép", "qui luật Thị trường", "định luật Pareto", "giới luật Phật giáo"':
+  '"luật" ở **mọi kiểu hoa / thường**, có ranh giới từ trước, không đứng sau từ "pháp", "kỷ", "kỉ", "quy", "qui", "giới" mà trước nó không phải "môi" / "ranh" / "biên" / "thế", hay "định" mà trước nó không phải "quy" / "qui" (mọi kiểu chữ) + khoảng trắng; theo sau là khoảng trắng (có thể không có), **một cặp ngoặc đơn** rồi khoảng trắng (có thể không có; vd. "(sửa đổi)"), **một ngoặc kép mở** `"` hay `“` (có thể không có), rồi một từ mở đầu bằng chữ hoa (`\\p{Lu}`) mà **không** phải "KH", "RE" hay "sư" (mọi kiểu chữ). Chạy trên **bản gốc**. Vd. khớp "Luật Kinh doanh bảo hiểm", "Luật BHXH", "LuẬt Đất đai", "Luật" + U+200B + "BHXH", "quy định Luật Kinh doanh bảo hiểm", "môi giới Luật Kinh doanh bảo hiểm", "Luật “Kinh doanh bảo hiểm”", "Luật (sửa đổi) Đất đai"; không khớp "Luật sư", "LUẬT SƯ", "pháp luật Việt Nam", "pHáp luật Việt Nam", "kỷ luật KH", "quy luật Thị trường", "kỉ luật Thép", "qui luật Thị trường", "định luật Pareto", "giới luật Phật giáo", "luật (F12)"':
     [
       ['Theo luật Đất đai', 'luật Đ'],
       [`Theo Luật${ZWSP}BHXH`, 'LuậtB'],

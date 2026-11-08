@@ -210,6 +210,16 @@ describe('validateOutput — G5 §8.5 cases', () => {
     ['C82', 'themes', 'Ở nhiều nước trên thế giới Luật Thừa kế khác nhau', ['V6']],
     ['C83', 'needs', 'Giới luật Phật giáo cấm sát sinh', []],
     ['C83', 'hypotheses', `KH thích${NUL}đọc sách`, []],
+    ['C84', 'hypotheses', 'KH sẵn sàng mua (F12)', ['V3']],
+    ['C84', 'hypotheses', 'KH tiềm năng mua [F12]', ['V3']],
+    ['C84', 'hypotheses', 'KH sẵn sàng mua “F12”', ['V3']],
+    ['C84', 'hypotheses', 'KH sẵn sàng mua "F12"', ['V3']],
+    ['C84', 'hypotheses', 'KH nói “sẵn sàng mua”', ['V3']],
+    ['C85', 'themes', 'Theo Luật “Kinh doanh bảo hiểm”', ['V6']],
+    ['C85', 'themes', 'Theo Luật "Đất đai"', ['V6']],
+    ['C85', 'themes', 'Theo Luật (sửa đổi) Đất đai', ['V6']],
+    ['C86', 'hypotheses', 'KH cần tìm hiểu luật (F12)', []],
+    ['C86', 'discoveryStrategy', 'Hỏi KH đã có Luật “Sư” riêng chưa', []],
   ] as const)('%s: %s "%s" → %j', (_, block, text, codes) => {
     expect(codesOf(block, text)).toEqual(codes);
   });

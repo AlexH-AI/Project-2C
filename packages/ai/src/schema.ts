@@ -340,8 +340,8 @@ export function buildAnalysisInput(
  * the same.
  */
 export const PROMPT_VERSIONS = {
-  analysis: 'analysis@5',
-  discovery: 'discovery@5',
+  analysis: 'analysis@6',
+  discovery: 'discovery@6',
   extraction: 'extraction@1',
 } as const satisfies Record<AiMode, string>;
 
