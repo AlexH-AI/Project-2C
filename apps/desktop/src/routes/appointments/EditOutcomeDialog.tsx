@@ -235,7 +235,7 @@ export function EditOutcomeDialog({
         label={t(status === 'MET' ? 'outcome.note' : 'outcome.noteOther')}
         value={note}
         onChange={edit(setNote)}
-        rows={status === 'MET' ? 3 : undefined}
+        rows={status === 'MET' || note.includes('\n') ? 3 : undefined}
       />
       <SelectField
         label={t('appointmentForm.trigger')}
