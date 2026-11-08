@@ -26,8 +26,9 @@ import {
   softDeleteCustomer,
   updateCustomerProfile,
 } from './customers';
+import { openDatabase } from './database';
 import { listPolicies } from './policies';
-import { createPerson, listPeople, softDeletePerson, updatePerson } from './team';
+import { createPerson, createTeam, listPeople, softDeletePerson, updatePerson } from './team';
 import { byId, codeOf, errorOf, setup, stageAtEndOfDay } from './test-support';
 
 // The test clock reads 26/09/2026: a meeting is held or missed by then, the next one booked after.
@@ -1391,6 +1392,45 @@ describe('deleting appointments', () => {
 
     expect(codeOf(() => restoreAppointment(db, id))).toBe('INVALID_COORDINATOR');
     expect(listAppointments(db)).toEqual([]);
+  });
+
+  // DR6-178 (CXR6-A1): a deletion, on a machine clock that stands, after a withdrawal of its meeting.
+  async function withdrawnOnStandingClock() {
+    const db = await openDatabase({ now: () => new Date(Date.UTC(2026, 10, 7, 5)) });
+    const team = createTeam(db, { name: 'Sao Mai' });
+    const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 10) });
+    const { id } = scheduleAppointment(db, {
+      customerId: lan.id,
+      reId: re.id,
+      date: d(5, 10),
+      triggerType: 'OTHER',
+    });
+    recordMeetingOutcome(db, id, MET_N2);
+    editMeetingOutcome(db, id, { status: 'CANCELLED' }, {});
+    return { db, lan, id };
+  }
+
+  it('DR6-178: gives back no stage change an earlier withdrawal took, the clock standing', async () => {
+    const { db, lan, id } = await withdrawnOnStandingClock();
+    changeStageManually(db, lan.id, { to: 'N2', date: d(4, 10) });
+    editMeetingOutcome(db, id, MET_N2, {}); // keeps N2: its deletion withdraws nothing
+    softDeleteAppointment(db, id);
+    changeStageManually(db, lan.id, { to: 'N3', date: d(4, 10) });
+    const before = listStageTransitions(db, lan.id);
+
+    expect(codeOf(() => restoreAppointment(db, id))).toBe('STAGE_NOT_ON_DAY');
+    expect(listStageTransitions(db, lan.id)).toEqual(before);
+  });
+
+  it('DR6-178: gives back the stage change the deletion took, not an earlier one, the clock standing', async () => {
+    const { db, lan, id } = await withdrawnOnStandingClock();
+    changeStageManually(db, lan.id, { to: 'N4', date: d(5, 10) });
+    editMeetingOutcome(db, id, MET_N2, {});
+    softDeleteAppointment(db, id);
+
+    restoreAppointment(db, id);
+    expect(listStageTransitions(db, lan.id).at(-1)).toMatchObject({ to: 'N2', appointmentId: id });
   });
 
   it('hides the appointments of a deleted customer and restores none of them', async () => {

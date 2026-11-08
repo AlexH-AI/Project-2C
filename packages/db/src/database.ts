@@ -40,6 +40,7 @@ export interface Database {
   readonly orm: SQLJsDatabase<typeof schema>;
   /** Raw sql.js handle — for tests and the migration runner only. */
   readonly sqlite: SqlJsDatabase;
+  /** The open's clock, never one instant twice nor an earlier one (`steadyClock`, DR6-178). */
   now(): Date;
   random: RandomFill;
   schemaVersion(): number;
@@ -49,7 +50,7 @@ export interface Database {
    * savepoint of the outer transaction, which alone persists.
    */
   transaction<T>(fn: () => T): T;
-  /** Runs `fn` with other sources, e.g. the seeded ones of the simulated data. */
+  /** Runs `fn` with other sources, e.g. the seeded ones of the simulated data, clock as given. */
   withSources<T>(sources: Sources, fn: () => T): T;
   export(): Uint8Array;
   /**
@@ -80,7 +81,7 @@ export async function openDatabase(options: OpenDatabaseOptions = {}): Promise<D
 /** The `Database` of the opened file: its sources, transactions and save port. */
 function connect(sqlite: SqlJsDatabase, options: OpenDatabaseOptions): Database {
   let sources: Sources = {
-    now: options.now ?? (() => new Date()),
+    now: steadyClock(options.now ?? (() => new Date())),
     random: options.random ?? cryptoFill,
   };
   const persist = options.persist;
@@ -144,6 +145,15 @@ function connect(sqlite: SqlJsDatabase, options: OpenDatabaseOptions): Database 
         return [error instanceof Error ? error.message : String(error)];
       }
     },
+  };
+}
+
+/** `clock`, but 1 ms after its last instant when it stands or goes back (DR6-178). */
+function steadyClock(clock: () => Date): () => Date {
+  let last = -Infinity;
+  return () => {
+    last = Math.max(clock().getTime(), last + 1);
+    return new Date(last);
   };
 }
 
@@ -238,12 +248,13 @@ export function migrate(db: Database, migrations: readonly Migration[]): void {
   db.sqlite.run('PRAGMA foreign_keys = OFF');
   try {
     db.transaction(() => {
+      const appliedAt = db.now().toISOString();
       for (const migration of pending) {
         db.sqlite.exec(migration.sql);
         assertReferencesKept(db.sqlite, migration);
         db.sqlite.run('INSERT INTO schema_migrations (id, applied_at) VALUES (?, ?)', [
           migration.id,
-          db.now().toISOString(),
+          appliedAt,
         ]);
       }
     });

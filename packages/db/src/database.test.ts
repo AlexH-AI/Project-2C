@@ -852,11 +852,26 @@ describe('sources', () => {
       { now: () => new Date(0), random: (bytes) => bytes.fill(255) },
       () => createTeam(db, { name: 'B' }),
     );
-    const zerosAgain = () => createTeam(db, { name: 'C' });
+    const zerosAgain = createTeam(db, { name: 'C' });
 
-    expect(zeros.id).toBe('0'.repeat(26));
+    // The own clock stands at 0: the migrations took that instant, each team the one after (DR6-178).
+    expect(zeros.id).toBe('0'.repeat(9) + '1' + '0'.repeat(16));
     expect(ones.id).toBe('0'.repeat(10) + 'Z'.repeat(16));
-    expect(() => zerosAgain()).toThrow(/UNIQUE/);
+    expect(zerosAgain.id).toBe('0'.repeat(9) + '2' + '0'.repeat(16));
+  });
+
+  it('DR6-178: never gives one instant twice, nor an earlier one, while the machine clock stands or goes back', async () => {
+    let machine = Date.UTC(2026, 10, 7, 5);
+    const db = await openDatabase({ now: () => new Date(machine) });
+    const first = db.now().getTime();
+    const standing = db.now().getTime();
+    machine -= 60_000;
+    const back = db.now().getTime();
+    machine += 3_600_000;
+    const ahead = db.now().getTime();
+
+    expect([standing, back]).toEqual([first + 1, first + 2]);
+    expect(ahead).toBe(machine);
   });
 
   it('keeps queries working across an export, when statements are reused', async () => {
