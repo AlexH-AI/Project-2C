@@ -6,6 +6,7 @@ import {
   discoveryOutput,
   lowestContrast,
   panelOf,
+  pickTeam,
   stubChatGptWeb,
 } from './support';
 
@@ -444,9 +445,9 @@ test('a coordinator is added by "Thêm", not by arrows on the list', async ({ pa
   await expect(chips).toHaveCount(before + 2);
 });
 
-// DR6-172: the customer box reads what is typed as names are stored (`normalizeText`), so a name
-// pasted with U+200B, a no-break space or two spaces finds the customer; invisible characters alone
-// leave the box as empty, with no list and no "Không có KH khớp.".
+// DR6-172: the customer box reads what is typed as names are stored (`normalizeText`, its cases in
+// domain), so a name pasted with U+200B and no-break spaces finds the customer; invisible characters
+// alone leave the box as empty, with no list and no "Không có KH khớp.".
 test('the customer box finds a name pasted with invisible characters or other spaces (DR6-172)', async ({
   page,
 }) => {
@@ -458,16 +459,9 @@ test('the customer box finds a name pasted with invisible characters or other sp
   const name = (await matches.getByRole('button').first().locator('b').textContent()) ?? '';
   expect(name).toContain(' ');
 
-  for (const pasted of [
-    `\u{200B}${name}`,
-    name.replaceAll(' ', '\u{00A0}'),
-    name.replaceAll(' ', '  '),
-    `${name.slice(0, 1)}\u{2060}${name.slice(1)}`,
-  ]) {
-    await box.fill(pasted);
-    await expect(matches.locator('b', { hasText: name }).first(), pasted).toBeVisible();
-  }
-  await box.fill('\u{200B}\u{2060}\u{3164}');
+  await box.fill(`\u{200B}${name.replaceAll(' ', '\u{00A0}')}`);
+  await expect(matches.locator('b', { hasText: name }).first()).toBeVisible();
+  await box.fill('\u{200B}\u{3164}');
   await expect(matches).toHaveCount(0);
   await expect(f.dialog).not.toContainText('Không có KH khớp.');
 });
@@ -827,14 +821,6 @@ test('an appointment for an RE outside the scope says so; the scope stays', asyn
   await expect(notice).toHaveCount(0);
   await expect(detail.getByRole('heading', { level: 2 })).toContainText(`30/09/2026 · ${f.name}`);
 });
-
-const pickTeam = async (page: Page, name: string) => {
-  await page
-    .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'Team' })
-    .click();
-  await page.getByRole('combobox', { name: 'Team của góc nhìn' }).selectOption({ label: name });
-};
 
 const chipCount = async (chip: ReturnType<Page['getByRole']>) =>
   Number(await chip.locator('span').last().textContent());

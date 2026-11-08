@@ -1,4 +1,5 @@
 import { expect, test, type Page } from './fixtures';
+import { pickTeam } from './support';
 
 const OPEN = ['N4', 'N3', 'N2', 'N1'];
 const CLOSED = ['Tạm hoãn', 'Mất cơ hội'];
@@ -87,14 +88,6 @@ test('an unknown customer shows a message instead of a profile', async ({ page }
   await page.goto('/#/customers/nobody');
   await expect(page.getByText('Không tìm thấy KH này (có thể đã bị xóa).')).toBeVisible();
 });
-
-const pickTeam = async (page: Page, name: string) => {
-  await page
-    .getByRole('radiogroup', { name: 'Góc nhìn' })
-    .getByRole('radio', { name: 'Team' })
-    .click();
-  await page.getByRole('combobox', { name: 'Team của góc nhìn' }).selectOption({ label: name });
-};
 
 test('the RE strip shows on the Team scope only, with the RE of the team', async ({ page }) => {
   const strip = page.getByRole('region', { name: /^RE của team/ });

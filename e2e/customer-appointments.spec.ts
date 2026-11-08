@@ -1,26 +1,7 @@
 import { expect, test, type Locator, type Page } from './fixtures';
-import { scrolls } from './support';
+import { openProfile, scrolls } from './support';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
-
-/** Opens the profile of the customer of a past met appointment; returns its name. */
-async function openProfile(page: Page): Promise<string> {
-  await page.goto('/#/appointments');
-  // Yesterday's day alone, so the met ones are among the rows shown (T-150).
-  await page
-    .getByRole('radiogroup', { name: 'Loại kỳ' })
-    .getByRole('radio', { name: 'Ngày' })
-    .click();
-  await page.getByRole('button', { name: 'Kỳ trước' }).click();
-  const list = page.getByRole('table', { name: 'Danh sách lịch hẹn' });
-  const met = list.locator('tbody tr').filter({ hasText: 'Đã gặp' }).first();
-  const name = (await met.getByRole('button').textContent()) ?? '';
-  await met.getByRole('button').click();
-  await page.getByRole('link', { name: 'Hồ sơ KH →' }).click();
-  // Exact: the detail's heading "date · name" is still up until the profile renders (T-262).
-  await expect(page.getByRole('heading', { level: 2, name, exact: true })).toBeVisible();
-  return name;
-}
 
 /** Fills in the open dialog for a new appointment (trigger "Khác") and creates it. */
 async function create(page: Page, day: string, time: string | null) {
