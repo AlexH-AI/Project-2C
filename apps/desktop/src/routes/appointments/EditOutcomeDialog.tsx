@@ -231,11 +231,12 @@ export function EditOutcomeDialog({
         />
       )}
       {undone && <UndoneMoveNote caused={undone} />}
+      {/* As in 6c: a note of lines stays a box of lines whatever the status (DR6-182). */}
       <TextField
         label={t(status === 'MET' ? 'outcome.note' : 'outcome.noteOther')}
         value={note}
         onChange={edit(setNote)}
-        rows={status === 'MET' ? 3 : undefined}
+        rows={status === 'MET' || note.includes('\n') ? 3 : undefined}
       />
       <SelectField
         label={t('appointmentForm.trigger')}

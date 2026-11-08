@@ -179,11 +179,13 @@ export function OutcomeDialog({
         )}
         {status !== null && status !== 'RESCHEDULED' && (
           <>
+            {/* A one-line field drops the line breaks of its value: a note of lines stays a box of
+                lines whatever the status (DR6-182). */}
             <TextField
               label={t(met ? 'outcome.note' : 'outcome.noteOther')}
               value={note}
               onChange={edit(setNote)}
-              rows={met ? 3 : undefined}
+              rows={met || note.includes('\n') ? 3 : undefined}
             />
             {met && (
               <span className="-mt-2 text-xs text-fg-3">

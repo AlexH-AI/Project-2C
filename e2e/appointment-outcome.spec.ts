@@ -235,13 +235,17 @@ test('no-show with a next appointment records both in one go, then shows the nex
   await expect(detail(page)).toContainText('Gọi lại không nghe máy');
 });
 
-/** Books a meeting today for an N3 customer and records it met, N3 → N2; returns the name. */
-async function metToN2(page: Page) {
+/**
+ * Books a meeting today for an N3 customer and records it met, N3 → N2, with `note` when given;
+ * returns the name.
+ */
+async function metToN2(page: Page, note?: string) {
   const name = await book(page, '15/9', 'N3');
   await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
   const o = outcome(page);
   await o.stageAfter.getByRole('radio', { name: 'N2', exact: true }).check();
   await o.nextStep.fill('Gửi bảng minh họa');
+  if (note !== undefined) await o.dialog.getByRole('textbox', { name: /^Ghi chú/ }).fill(note);
   await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
   await expect(o.dialog).toHaveCount(0);
   return name;
@@ -268,6 +272,49 @@ test('the outcome of a meeting is edited, its details with it', async ({ page })
   await expect(dialog).toHaveCount(0);
   await expect(detail(page)).toContainText('N3 → N1 · RF');
   await expect(detail(page)).toContainText('Hội thảo / sự kiện');
+});
+
+// DR6-182 (Q5 (a)): while the note has lines it stays a box of lines, whatever the status: a
+// one-line field drops the line breaks of its value, and typing on saved the lines run together.
+const noteShown = (page: Page) =>
+  detail(page).getByRole('definition').filter({ hasText: 'Dòng một' });
+
+async function typeAtTheEnd(field: Locator, text: string) {
+  await field.press('Control+End');
+  await field.pressSequentially(text);
+}
+
+test('6f: a met note of two lines keeps them once cancelled and typed on (DR6-182)', async ({
+  page,
+}) => {
+  await metToN2(page, 'Dòng một\nDòng hai');
+  await detail(page).getByRole('button', { name: 'Sửa kết quả' }).click();
+  const dialog = editDialog(page);
+  await dialog.getByRole('radio', { name: 'Hủy', exact: true }).check();
+  await typeAtTheEnd(dialog.getByRole('textbox', { name: 'Ghi chú', exact: true }), ' (sửa)');
+  await dialog.getByRole('button', { name: 'Lưu', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(noteShown(page)).toHaveText(/^Dòng một\nDòng hai \(sửa\)$/);
+});
+
+test('6c: two lines typed while met keep them once no-show; one line not met stays one line (DR6-182)', async ({
+  page,
+}) => {
+  await book(page, '15/9', 'N3');
+  await detail(page).getByRole('button', { name: 'Ghi kết quả' }).click();
+  const o = outcome(page);
+  const note = o.dialog.getByRole('textbox', { name: /^Ghi chú/ });
+  // Mockup 6c: the note of another status than met is a one-line field.
+  await o.status.getByRole('radio', { name: 'Hủy', exact: true }).check();
+  await note.fill('Một dòng');
+  expect(await note.evaluate((field) => field.tagName)).toBe('INPUT');
+  await o.status.getByRole('radio', { name: 'Đã gặp' }).check();
+  await note.fill('Dòng một\nDòng hai');
+  await o.status.getByRole('radio', { name: 'Không đến' }).check();
+  await typeAtTheEnd(note, ' gấp');
+  await o.dialog.getByRole('button', { name: 'Lưu kết quả' }).click();
+  await expect(o.dialog).toHaveCount(0);
+  await expect(noteShown(page)).toHaveText(/^Dòng một\nDòng hai gấp$/);
 });
 
 test('once the customer moved on, status, day and stage after are locked and delete too (D7)', async ({
