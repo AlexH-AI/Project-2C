@@ -1107,6 +1107,29 @@ describe('the stage on the meeting day', () => {
     expect(stage()).toBe('N2');
   });
 
+  // T-399 (review of PR #1163): a meeting met just before the machine clock was set back across
+  // midnight is dated after the new today; the change still may not come before it.
+  it('refuses a stage change dated before a met appointment after the clock was set back', async () => {
+    let machine = new Date(2026, 10, 8, 0, 5).getTime();
+    const db = await openDatabase({ now: () => new Date(machine) });
+    const team = createTeam(db, { name: 'Sao Mai' });
+    const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 10) });
+    const kept = scheduleAppointment(db, {
+      customerId: lan.id,
+      reId: re.id,
+      date: d(8, 11),
+      triggerType: 'OTHER',
+    });
+    recordMeetingOutcome(db, kept.id, KEPT_N3);
+    machine = new Date(2026, 10, 7, 23, 55).getTime();
+
+    expect(
+      errorOf(() => changeStageManually(db, lan.id, { to: 'N2', date: d(7, 11) })),
+    ).toMatchObject({ code: 'TRANSITION_BEFORE_MEETING', params: { date: '08/11/2026' } });
+    expect(listStageTransitions(db, lan.id)).toHaveLength(1);
+  });
+
   // DR6-68: met first, entered in the app later — a backfill (DR-43, Owner 06/10 and 17/10/2026);
   // the stage it was created in, not the one it moved to since (DR6-126 a).
   it.each<[string, { to: CustomerStage; date: CalendarDate }[], string]>([
