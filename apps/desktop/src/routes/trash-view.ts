@@ -179,7 +179,7 @@ export interface OwnerPart {
   readonly text: string;
   /** Deleted too: "(đã xóa)" follows it (`goneText`). */
   readonly deleted: boolean;
-  /** When a deleted team a namesake is in the trash with was deleted (`teamsDeletedAt`). */
+  /** When a deleted team a namesake is in the trash with was deleted (`trashNames`). */
   readonly deletedAt?: string;
 }
 
@@ -187,9 +187,10 @@ const part = (ref: TrashRef, text: string): OwnerPart => ({ text, deleted: ref.d
 
 /**
  * "Thuộc": customer and RE of an appointment or a policy, RE and team of a customer, a team. A team
- * of `teams` with when it was deleted, its text still the name the column sorts and filters by.
+ * `names` tells apart by its deletion with when that was, its text still the name the column sorts
+ * and filters by.
  */
-export function ownerParts(row: TrashRow, teams?: TeamsDeletedAt): OwnerPart[] {
+export function ownerParts(row: TrashRow, names?: TrashNames): OwnerPart[] {
   const { customer, re, team } = row.owner;
   const parts: OwnerPart[] = [];
   if (customer) parts.push(part(customer, t('trash.owner.customer', { name: customer.name })));
@@ -197,7 +198,7 @@ export function ownerParts(row: TrashRow, teams?: TeamsDeletedAt): OwnerPart[] {
   if (team) {
     // After an RE it is the RE's team (mockup 11a "RE Đỗ Khánh Linh · Sao Mai").
     const named = part(team, re ? team.name : t('trash.owner.team', { name: team.name }));
-    const deletedAt = teams?.get(team.id);
+    const deletedAt = teamDeletedAt(team, names);
     parts.push(deletedAt === undefined ? named : { ...named, deletedAt });
   }
   return parts;
@@ -216,7 +217,7 @@ type TeamRow = Extract<TrashRow, { kind: 'team' }>;
 type RecordRow = Extract<TrashRow, { kind: 'appointment' | 'policy' }>;
 
 /** A row among the rows of every kind: ids are only unique within a table. */
-const rowKey = (row: TrashRow) => `${row.kind}:${row.id}`;
+const rowKey = (row: Pick<TrashRow, 'kind' | 'id'>) => `${row.kind}:${row.id}`;
 
 /** The rows of `rows` that another one has the `key` of. */
 function alike<R>(rows: readonly R[], key: (row: R) => string): R[] {
@@ -226,36 +227,44 @@ function alike<R>(rows: readonly R[], key: (row: R) => string): R[] {
 }
 
 /**
- * What a restore button says to tell its row apart from one alike in all the rest (`toldApart`):
- * `code`, the customer's code; `minute`, when the row was deleted, as the column "Xóa lúc" shows it;
- * `second`, the same to the second, for rows that column shows alike too.
+ * What tells a row apart from one alike in all the rest (`trashNames`): `code`, the customer's code;
+ * `when`, when the row was deleted, as the column "Xóa lúc" shows it, to the second for rows that
+ * column shows alike too.
  */
-export type ToldBy = 'code' | 'minute' | 'second';
-
-/**
- * The rows of `rows` alike by `key`, each told apart by when it was deleted: to the minute, or to
- * the second among those deleted in the same minute (review of PR 1072).
- */
-function byDeletion<R extends TrashRow>(
-  rows: readonly R[],
-  key: (row: R) => string,
-): Array<readonly [R, ToldBy]> {
-  const same = alike(rows, key);
-  const sameMinute = new Set(alike(same, (row) => JSON.stringify([key(row), deletedAtText(row)])));
-  return same.map((row) => [row, sameMinute.has(row) ? 'second' : 'minute'] as const);
+export interface Told {
+  readonly code?: true;
+  readonly when?: string;
 }
 
 /**
- * The rows of the trash whose restore button says what else tells them apart from a namesake, all
- * the button would say else being alike (`restoreLabel`), by `rowKey`, with what it says. Read from
- * every row, whatever the filter. Q3 (a), Owner 31/10/2026 (DR6-151): the code of a customer another
- * one has the name and the stage of. Q1 (a), Owner 05/11/2026 (DR6-160): the customer's code of an
+ * The rows of `rows` alike by `key`, by `rowKey`, each told apart by when it was deleted: to the
+ * minute, or to the second among those deleted in the same minute (review of PR 1072).
+ */
+function byDeletion<R extends TrashRow>(rows: readonly R[], key: (row: R) => string) {
+  const same = alike(rows, key);
+  const sameMinute = new Set(alike(same, (row) => JSON.stringify([key(row), deletedAtText(row)])));
+  return same.map(
+    (row) => [rowKey(row), { when: deletedAtText(row, { seconds: sameMinute.has(row) }) }] as const,
+  );
+}
+
+/**
+ * The one place the trash names its rows from (CLR6-G1): what tells a row apart from a namesake,
+ * all the rest being alike (`Told`), by `rowKey`, of every row whatever the filter. The restore
+ * button of the row says it (`restoreLabel`); a team's deletion, also the line of a row the team
+ * keeps blocked (`blockedReason`, review of PR 1088) and "Thuộc" (`ownerParts`).
+ */
+export type TrashNames = ReadonlyMap<string, Told>;
+
+/**
+ * `TrashNames` of the trash. Q3 (a), Owner 31/10/2026 (DR6-151): the code of a customer another one
+ * has the name and the stage of. Q1 (a), Owner 05/11/2026 (DR6-160): the customer's code of an
  * appointment or a policy whose customer has the name of another customer of the trash, deleted or
  * the customer of another record; when a person another one has the name, the role and the team of
  * was deleted, and when a team another one has the name of was (`teams_active_name` only keeps the
  * names of the teams in use apart; review of PR 1072).
  */
-export function toldApart(rows: readonly TrashRow[]): ReadonlyMap<string, ToldBy> {
+export function trashNames(rows: readonly TrashRow[]): TrashNames {
   const customers = rows.filter((row): row is CustomerRow => row.kind === 'customer');
   const people = rows.filter((row): row is PersonRow => row.kind === 'person');
   const teams = rows.filter((row): row is TeamRow => row.kind === 'team');
@@ -271,72 +280,39 @@ export function toldApart(rows: readonly TrashRow[]): ReadonlyMap<string, ToldBy
     ...alike(customers, (row) => `${row.stage}|${row.name}`),
     ...records.filter((row) => row.owner.customer && namesakes.has(row.owner.customer.id)),
   ];
-  return new Map([
-    ...coded.map((row) => [rowKey(row), 'code'] as const),
-    ...[
-      ...byDeletion(people, (row) =>
-        JSON.stringify([row.name, row.role, row.owner.team?.name ?? null]),
-      ),
-      ...byDeletion(teams, (row) => row.name),
-    ].map(([row, by]) => [rowKey(row), by] as const),
+  return new Map<string, Told>([
+    ...coded.map((row) => [rowKey(row), { code: true }] as const),
+    ...byDeletion(people, (row) =>
+      JSON.stringify([row.name, row.role, row.owner.team?.name ?? null]),
+    ),
+    ...byDeletion(teams, (row) => row.name),
   ]);
 }
 
-/**
- * When each team of the trash `toldApart` tells apart from a namesake by its deletion was deleted,
- * by the team's id, in the words of its restore button (`restoreLabel`): to the minute, or to the
- * second. The line of a row the team keeps blocked and its "Thuộc" say which of the two it is.
- */
-export type TeamsDeletedAt = ReadonlyMap<string, string>;
-
-/** `TeamsDeletedAt` of every row, whatever the filter, as `told` (review of PR 1088). */
-export function teamsDeletedAt(
-  rows: readonly TrashRow[],
-  told: ReadonlyMap<string, ToldBy> = toldApart(rows),
-): TeamsDeletedAt {
-  const teams = new Map<string, string>();
-  for (const row of rows) {
-    const when = row.kind === 'team' ? deletionWords(row, told.get(rowKey(row))) : undefined;
-    if (when !== undefined) teams.set(row.id, when);
-  }
-  return teams;
-}
-
-/**
- * When a row `by` its deletion told apart was deleted, in the words its restore button names it
- * with: to the minute, or to the second; none for another row. One rule for the button and the
- * team's line and "Thuộc" (`teamsDeletedAt`), so they say the same words (T-380).
- */
-function deletionWords(row: TrashRow, by: ToldBy | undefined): string | undefined {
-  return by === 'minute' || by === 'second'
-    ? deletedAtText(row, { seconds: by === 'second' })
-    : undefined;
-}
+/** When a deleted team `names` tells apart by its deletion was deleted, as its button says it. */
+const teamDeletedAt = (team: TrashRef, names: TrashNames | undefined) =>
+  names?.get(rowKey({ kind: 'team', id: team.id }))?.when;
 
 /**
  * The name of a row's restore button, every "Khôi phục…" alike on screen (DR6-43): the record as
  * the first line of "Bản ghi" names it, with the words of its badge there (`recordBadge`), so
  * whatever tells two rows apart there tells their buttons apart (DR6-99, DR6-119); then an
  * appointment's or a policy's customer. Q3 (a), Owner 31/10/2026 (DR6-151): a person with their
- * role and team, the second line and "Thuộc"; a customer `told` by `code` with their code, as mockup
- * 9b names two of one name, since two such rows differ only past the first line. Q1 (a), Owner
- * 05/11/2026 (DR6-160): the customer of a record `told` by `code` with their code too, a person or a
- * team `told` by when they were deleted with that, as the column "Xóa lúc" tells them apart, to the
- * second where that column shows the same minute (review of PR 1072).
+ * role and team, the second line and "Thuộc"; a customer `names` tells by `code` with their code,
+ * as mockup 9b names two of one name, since two such rows differ only past the first line. Q1 (a),
+ * Owner 05/11/2026 (DR6-160): the customer of a record told by `code` with their code too, a person
+ * or a team told by `when` they were deleted with that, as the column "Xóa lúc" tells them apart, to
+ * the second where that column shows the same minute (review of PR 1072).
  */
-export function restoreLabel(
-  row: TrashRow,
-  told: ReadonlyMap<string, ToldBy>,
-  today: CalendarDate,
-): string {
-  const by = told.get(rowKey(row));
-  const coded = by === 'code';
+export function restoreLabel(row: TrashRow, names: TrashNames, today: CalendarDate): string {
+  const told = names.get(rowKey(row));
+  const coded = told?.code === true;
   const title =
     row.kind === 'customer' && coded
       ? t('customer.withCode', { name: row.name, code: row.code })
       : recordTitle(row, today);
   const person = row.kind === 'person' ? [recordDetail(row), row.owner.team?.name] : [];
-  const when = deletionWords(row, by);
+  const when = told?.when;
   const deleted = when !== undefined && t('trash.restoreLabel.deletedAt', { when });
   const record = joinParts([title, recordBadge(row)?.text, ...person, deleted]);
   const label = t(`trash.restoreLabel.${row.kind}`, { record });
@@ -367,21 +343,21 @@ export function deletedAtText(row: TrashRow, options: { seconds?: boolean } = {}
  * Why the record cannot be restored, one line naming the record in the way (mockup 11d), from the
  * error its `restore…` command throws; the restore dialog (T-211) shows the same line when the
  * command refuses. A reason without a sentence of its own reads as the command's message. A deleted
- * team in the way, of `teams`, with when it was deleted, as its restore button says it (review of PR
- * 1088).
+ * team in the way that `names` tells apart by its deletion with when that was, as its restore button
+ * says it (review of PR 1088).
  */
-export function blockedReason(row: TrashRow, block: TrashBlock, teams?: TeamsDeletedAt): string {
-  return reasonSentence(row, block, teams) ?? errorMessage(new DbError(block.code, block.params));
+export function blockedReason(row: TrashRow, block: TrashBlock, names?: TrashNames): string {
+  return reasonSentence(row, block, names) ?? errorMessage(new DbError(block.code, block.params));
 }
 
 function reasonSentence(
   row: TrashRow,
   { code, params = {} }: TrashBlock,
-  teams: TeamsDeletedAt | undefined,
+  names: TrashNames | undefined,
 ): string | null {
   const { as, field, from, to } = params;
   // The team of the row is the one its restore is refused for (`restorePerson`).
-  const when = code === 'TEAM_NOT_FOUND' && row.owner.team && teams?.get(row.owner.team.id);
+  const when = code === 'TEAM_NOT_FOUND' && row.owner.team && teamDeletedAt(row.owner.team, names);
   if (when && 'name' in params) return t('trash.blocked.teamDeletedAt', { ...params, when });
   if (code === 'PERSON_NOT_FOUND') {
     return as === 're' || as === 'coordinator' || as === 'reviewer'
@@ -662,19 +638,14 @@ const RESTORE: Record<TrashRow['kind'], (db: Database, id: string) => void> = {
 /**
  * Restores the record with the command of its kind, which checks again (the data may have changed
  * since the dialog opened) and is refused while the data is replaced (S2-2, E17). Null once done,
- * else the line the dialog shows: the sentence of the reason the row would now be blocked by, a team
- * of `teams` in the way said as the line of the row says it.
+ * else the line the dialog shows: the sentence of the reason the row would now be blocked by.
  */
-export function restoreRow(
-  app: Pick<AppData, 'run'>,
-  row: TrashRow,
-  teams?: TeamsDeletedAt,
-): string | null {
+export function restoreRow(app: Pick<AppData, 'run'>, row: TrashRow): string | null {
   try {
     app.run((db) => RESTORE[row.kind](db, row.id));
     return null;
   } catch (error) {
-    return error instanceof DbError ? blockedReason(row, error, teams) : errorMessage(error);
+    return error instanceof DbError ? blockedReason(row, error) : errorMessage(error);
   }
 }
 
