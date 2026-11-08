@@ -45,9 +45,9 @@ import {
   restoreRow,
   restoreView,
   restoredNotice,
-  teamsDeletedAt,
-  toldApart,
   trashCounts,
+  trashNames,
+  type TrashNames,
 } from './trash-view';
 import { openAppData } from '../data/app-data';
 import { t } from '../i18n';
@@ -193,6 +193,9 @@ const remade = { ...binhMinh, id: 't2', deletedAt: at(9, 14, 20) } as TrashRow;
 /** `mai` of the team of the trash with the id `team`, which keeps her there (TEAM_NOT_FOUND). */
 const maiOf = (team: string) =>
   ({ ...mai, owner: { team: { id: team, name: 'Bình Minh', deleted: true } } }) as TrashRow;
+
+/** Mai's namesake in her role and team, deleted the day before her (CXR5-A2). */
+const maiTwin = { ...mai, id: 'r6', deletedAt: at(4, 17, 5) } as TrashRow;
 
 describe('trashCounts', () => {
   it('counts every record, and each kind (mockup 11a)', () => {
@@ -387,81 +390,78 @@ describe('ownerParts (spec Phase 6 §4.2 "Thuộc")', () => {
     expect(ownerParts(binhMinh)).toEqual([]);
     expect(ownerParts({ ...bao, owner: {} })).toEqual([]);
   });
+});
 
-  // Review of PR 1088: of two teams of one name in the trash, the cell says which one, as the
-  // restore button of that team does; the text the column sorts and filters by stays the name.
-  it('a deleted team a namesake is in the trash with: when it was deleted, the name its text', () => {
-    const teams = teamsDeletedAt([...ROWS, remade]);
-    const [team] = ownerParts(maiOf('t2'), teams);
-    expect(team).toStrictEqual({
-      text: 'Team Bình Minh',
-      deleted: true,
-      deletedAt: '09/10/2026 14:20',
-    });
-    expect(goneText(team!)).toBe('(đã xóa lúc 09/10/2026 14:20)');
-    // A customer's team, after the RE; the RE says "(đã xóa)" as ever.
-    const customer = {
+// Review of PR 1072, PR 1088: `teams_active_name` keeps apart the names of the teams in use only, so
+// the trash may hold teams of one name. Each is said with when it was deleted, to the second where
+// "Xóa lúc" shows the same minute, alike by its restore button, the line of a row it keeps blocked
+// (TR-1) and "Thuộc", whose text the column sorts and filters by stays the name. Without the names
+// (the restore dialog, CLR6-G1), the name alone.
+describe('trashNames: teams of one name (review of PR 1072, PR 1088)', () => {
+  /** A third team "Bình Minh", deleted in the minute `remade` was. */
+  const third = { ...remade, id: 't3', deletedAt: at(9, 14, 20, 30) } as TrashRow;
+  const two = [...ROWS, remade];
+  const three = [...two, third];
+  /** A customer of the team with the id `team`, after her deleted RE. */
+  const customerOf = (team: string) =>
+    ({
       ...minhAnh,
       owner: {
         re: ref('Đỗ Khánh Linh', true),
-        team: { id: 't1', name: 'Bình Minh', deleted: true },
+        team: { id: team, name: 'Bình Minh', deleted: true },
       },
-    } as TrashRow;
-    const parts = ownerParts(customer, teams);
-    expect(parts).toStrictEqual([
-      { text: 'RE Đỗ Khánh Linh', deleted: true },
-      { text: 'Bình Minh', deleted: true, deletedAt: '05/10/2026 08:33' },
+    }) as TrashRow;
+  /** "Thuộc" as its cell shows it: each part's text, then what follows a deleted one. */
+  const owner = (row: TrashRow, names?: TrashNames) =>
+    ownerParts(row, names).map((part) => [part.text, part.deleted && goneText(part)]);
+
+  it.each([
+    { rows: two, id: 't1', when: '05/10/2026 08:33' },
+    { rows: two, id: 't2', when: '09/10/2026 14:20' },
+    { rows: three, id: 't1', when: '05/10/2026 08:33' },
+    { rows: three, id: 't2', when: '09/10/2026 14:20:00' },
+    { rows: three, id: 't3', when: '09/10/2026 14:20:30' },
+    // A team of a name of its own; a person told apart by when they were deleted does not count.
+    { rows: ROWS, id: 't1', when: null },
+    { rows: [...ROWS, maiTwin], id: 't1', when: null },
+  ])('team $id in a trash of $rows.length records: $when', ({ rows, id, when }) => {
+    const names = trashNames(rows);
+    const team = rows.find((row) => row.kind === 'team' && row.id === id)!;
+    expect(restoreLabel(team, names, TODAY)).toBe(
+      when ? `Khôi phục team Bình Minh · xóa lúc ${when}` : 'Khôi phục team Bình Minh',
+    );
+    expect(blockedReason(maiOf(id), mai.blocked!, names)).toBe(
+      when
+        ? `Khôi phục team Bình Minh (xóa lúc ${when}) trước.`
+        : 'Khôi phục team Bình Minh trước.',
+    );
+    const gone = when ? `(đã xóa lúc ${when})` : '(đã xóa)';
+    expect(owner(maiOf(id), names)).toEqual([['Team Bình Minh', gone]]);
+    expect(owner(customerOf(id), names)).toEqual([
+      ['RE Đỗ Khánh Linh', '(đã xóa)'],
+      ['Bình Minh', gone],
     ]);
-    expect(parts.map(goneText)).toEqual(['(đã xóa)', '(đã xóa lúc 05/10/2026 08:33)']);
+    expect(blockedReason(maiOf(id), mai.blocked!)).toBe('Khôi phục team Bình Minh trước.');
+    expect(owner(maiOf(id))).toEqual([['Team Bình Minh', '(đã xóa)']]);
   });
 
-  it('a deleted team of a name of its own in the trash, or no teams given: "(đã xóa)"', () => {
-    for (const parts of [ownerParts(maiOf('t1'), teamsDeletedAt(ROWS)), ownerParts(maiOf('t1'))]) {
-      expect(parts).toStrictEqual([{ text: 'Team Bình Minh', deleted: true }]);
-      expect(goneText(parts[0]!)).toBe('(đã xóa)');
-    }
-  });
-});
-
-describe('teamsDeletedAt (review of PR 1088)', () => {
-  it('holds when each team told apart from a namesake was deleted, as its restore button says', () => {
-    const rows = [...ROWS, remade];
-    const teams = teamsDeletedAt(rows);
-    expect(teams).toEqual(
-      new Map([
-        ['t1', '05/10/2026 08:33'],
-        ['t2', '09/10/2026 14:20'],
-      ]),
+  it('a team of a name of its own keeps the name alone, whatever other namesakes', () => {
+    const saoMai = { ...binhMinh, id: 't4', name: 'Sao Mai' } as TrashRow;
+    expect(restoreLabel(saoMai, trashNames([...two, saoMai]), TODAY)).toBe(
+      'Khôi phục team Sao Mai',
     );
-    for (const team of [binhMinh, remade]) {
-      expect(restoreLabel(team, toldApart(rows), TODAY)).toBe(
-        `Khôi phục team Bình Minh · xóa lúc ${teams.get(team.id)}`,
-      );
-    }
-  });
-
-  it('to the second for teams deleted in the same minute, as the column shows them alike', () => {
-    const third = { ...remade, id: 't3', deletedAt: at(9, 14, 20, 30) } as TrashRow;
-    expect(teamsDeletedAt([...ROWS, remade, third])).toEqual(
-      new Map([
-        ['t1', '05/10/2026 08:33'],
-        ['t2', '09/10/2026 14:20:00'],
-        ['t3', '09/10/2026 14:20:30'],
-      ]),
+    // A person of the name does not count.
+    const named = { ...binhMinh, id: 't5', name: 'Vương Thị Mai' } as TrashRow;
+    expect(restoreLabel(named, trashNames([...ROWS, named]), TODAY)).toBe(
+      'Khôi phục team Vương Thị Mai',
     );
-  });
-
-  it('holds no team of a name of its own, nor a person told apart by when they were deleted', () => {
-    expect(teamsDeletedAt(ROWS).size).toBe(0);
-    const twin = { ...mai, id: 'r9', deletedAt: at(4, 17, 5) } as TrashRow;
-    expect(teamsDeletedAt([...ROWS, twin]).size).toBe(0);
   });
 });
 
 describe('restoreLabel (DR6-43)', () => {
   /** The name of the button of `row` in a trash of `rows`. */
   const label = (row: TrashRow, rows: readonly TrashRow[] = ROWS) =>
-    restoreLabel(row, toldApart(rows), TODAY);
+    restoreLabel(row, trashNames(rows), TODAY);
 
   it('names the customer with its stage, the person or the team the button restores', () => {
     expect(label(minhAnh)).toBe('Khôi phục KH Trịnh Minh Anh · N3');
@@ -527,9 +527,6 @@ describe('restoreLabel (DR6-43)', () => {
   it('tells apart the buttons of a whole trash', () => {
     expect(new Set(ROWS.map((row) => label(row))).size).toBe(ROWS.length);
   });
-
-  /** Mai's namesake in her role and team, deleted the day before her (CXR5-A2). */
-  const maiTwin = { ...mai, id: 'r6', deletedAt: at(4, 17, 5) } as TrashRow;
 
   /** A meeting on 20/10 and a policy like `policy`, of `customer` (CLR5-A1). */
   const recordsOf = (customer: ReturnType<typeof customerRef>, n: number): TrashRow[] => {
@@ -621,42 +618,19 @@ describe('restoreLabel (DR6-43)', () => {
     );
   });
 
-  // Review of PR 1072: `teams_active_name` keeps apart the names of the teams in use only, so a team
-  // made again after its namesake was deleted can be deleted too; as two people alike (DR6-160).
-  it('tells apart two teams of one name by when they were deleted (review of PR 1072)', () => {
-    const again = { ...binhMinh, id: 't2', deletedAt: at(9, 14, 20) } as TrashRow;
-    const rows = [...ROWS, again];
-    expect([binhMinh, again].map((row) => label(row, rows))).toEqual([
-      'Khôi phục team Bình Minh · xóa lúc 05/10/2026 08:33',
-      'Khôi phục team Bình Minh · xóa lúc 09/10/2026 14:20',
-    ]);
-    // Deleted in the same minute as another of the name: to the second, as people.
-    const third = { ...again, id: 't3', deletedAt: at(9, 14, 20, 30) } as TrashRow;
-    expect([binhMinh, again, third].map((row) => label(row, [...rows, third]))).toEqual([
-      'Khôi phục team Bình Minh · xóa lúc 05/10/2026 08:33',
-      'Khôi phục team Bình Minh · xóa lúc 09/10/2026 14:20:00',
-      'Khôi phục team Bình Minh · xóa lúc 09/10/2026 14:20:30',
-    ]);
-    // A team of a name of its own keeps the name alone, a person of the name not counting.
-    const saoMai = { ...binhMinh, id: 't4', name: 'Sao Mai' } as TrashRow;
-    expect(label(saoMai, [...rows, saoMai])).toBe('Khôi phục team Sao Mai');
-    const named = { ...binhMinh, id: 't5', name: 'Vương Thị Mai' } as TrashRow;
-    expect(label(named, [...ROWS, named])).toBe('Khôi phục team Vương Thị Mai');
-  });
-
-  it('tells apart the buttons of namesakes deleted within a minute (review of PR 1072)', () => {
-    const rows = [
-      ...ROWS,
+  // Teams of one name: `trashNames: teams of one name` (review of PR 1072).
+  it('tells apart the buttons of a trash of namesakes, deleted within a minute too (DR6-160)', () => {
+    const twin = { ...minhAnh, id: 'c2', code: 'K-3MD8' } as TrashRow;
+    const inAMinute = [
       { ...mai, id: 'r9', deletedAt: at(5, 8, 31, 40) },
       { ...binhMinh, id: 't2', deletedAt: at(5, 8, 33, 20) },
     ] as TrashRow[];
-    expect(new Set(rows.map((row) => label(row, rows))).size).toBe(rows.length);
-  });
-
-  it('tells apart the buttons of a trash of namesakes (DR6-151, DR6-160)', () => {
-    const twin = { ...minhAnh, id: 'c2', code: 'K-3MD8' } as TrashRow;
-    const rows = [...ROWS, twin, maiTwin, ...ha, ...otherHa];
-    expect(new Set(rows.map((row) => label(row, rows))).size).toBe(rows.length);
+    for (const rows of [
+      [...ROWS, twin, maiTwin, ...ha, ...otherHa],
+      [...ROWS, ...inAMinute],
+    ]) {
+      expect(new Set(rows.map((row) => label(row, rows))).size).toBe(rows.length);
+    }
   });
 
   it('tells apart two policies of a customer submitted the same day by their FYP (DR6-99)', () => {
@@ -731,36 +705,6 @@ describe('blockedReason (mockup 11d)', () => {
 
   it('E4: the customer deleted', () => {
     expect(reason(planned, planned.blocked!)).toBe('Khôi phục KH Trịnh Minh Anh trước.');
-  });
-
-  // Review of PR 1088: two teams "Bình Minh" in the trash, whose restore buttons differ only by when
-  // they were deleted; the line names the one in the way the same way.
-  it('TR-1: the team in the way said with when it was deleted, a namesake in the trash too', () => {
-    const teams = teamsDeletedAt([...ROWS, remade]);
-    expect(blockedReason(maiOf('t1'), mai.blocked!, teams)).toBe(
-      'Khôi phục team Bình Minh (xóa lúc 05/10/2026 08:33) trước.',
-    );
-    expect(blockedReason(maiOf('t2'), mai.blocked!, teams)).toBe(
-      'Khôi phục team Bình Minh (xóa lúc 09/10/2026 14:20) trước.',
-    );
-  });
-
-  it('TR-1: to the second, as the button of the team, for two teams deleted in one minute', () => {
-    const third = { ...remade, id: 't3', deletedAt: at(9, 14, 20, 30) } as TrashRow;
-    const rows = [...ROWS, remade, third];
-    expect(blockedReason(maiOf('t3'), mai.blocked!, teamsDeletedAt(rows))).toBe(
-      'Khôi phục team Bình Minh (xóa lúc 09/10/2026 14:20:30) trước.',
-    );
-    expect(restoreLabel(third, toldApart(rows), TODAY)).toBe(
-      'Khôi phục team Bình Minh · xóa lúc 09/10/2026 14:20:30',
-    );
-  });
-
-  it('TR-1: the team by its name alone with no namesake in the trash, or no teams given', () => {
-    expect(blockedReason(maiOf('t1'), mai.blocked!, teamsDeletedAt(ROWS))).toBe(
-      'Khôi phục team Bình Minh trước.',
-    );
-    expect(blockedReason(maiOf('t1'), mai.blocked!)).toBe('Khôi phục team Bình Minh trước.');
   });
 
   it('E6, E8: the stage changed after the meeting (D10)', () => {
@@ -1234,34 +1178,6 @@ describe('restoreRow', () => {
     const now = listTrash(app.db()).find((r) => r.id === row.id)!;
     expect(failure).toBe(blockedReason(now, now.blocked!));
     expect(listCustomers(app.db())).toEqual([]);
-  });
-
-  // Review of PR 1088: her team deleted after the dialog opened, made again and deleted in turn.
-  it('refuses with the line of the row, which says which of two teams of one name is in the way', async () => {
-    let time = new Date(2026, 9, 5, 8, 31);
-    let teamId = '';
-    const app = await openAppData({
-      clock: () => time,
-      seed: (db) => {
-        teamId = createTeam(db, { name: 'Sao Mai' }).id;
-        softDeletePerson(db, createPerson(db, { name: 'Đỗ Khánh Linh', role: 'RE', teamId }).id);
-      },
-    });
-    const [row] = listTrash(app.db());
-    expect(row!.blocked).toBeUndefined();
-    time = new Date(2026, 9, 5, 8, 33);
-    app.run((db) => softDeleteTeam(db, teamId));
-    time = new Date(2026, 9, 9, 14, 20);
-    app.run((db) => softDeleteTeam(db, createTeam(db, { name: 'Sao Mai' }).id));
-
-    const rows = listTrash(app.db());
-    const teams = teamsDeletedAt(rows);
-    const failure = restoreRow(app, row!, teams);
-    expect(failure).toBe('Khôi phục team Sao Mai (xóa lúc 05/10/2026 08:33) trước.');
-    const now = rows.find((r) => r.id === row!.id)!;
-    expect(failure).toBe(blockedReason(now, now.blocked!, teams));
-    // Without the teams, the name alone, as before.
-    expect(restoreRow(app, row!)).toBe('Khôi phục team Sao Mai trước.');
   });
 
   it('E17: refuses with the sentence of S2-2 while the data is replaced, changing nothing', async () => {

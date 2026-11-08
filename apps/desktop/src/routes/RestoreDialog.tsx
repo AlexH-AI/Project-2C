@@ -6,21 +6,18 @@ import { t } from '../i18n';
 import { ALERT } from './classes';
 import { FailureAlert } from './customers/CustomerDialogs';
 import { stageBadge } from './stage-badge';
-import { restoreRow, restoreView, type TeamsDeletedAt } from './trash-view';
+import { restoreRow, restoreView } from './trash-view';
 
 /**
  * Mockup 11b, 11c: restoring always asks first and says what it does (TR-8). The command checks
- * again; a refusal (the data changed, or is being replaced: E17) shows here and the dialog stays,
- * in the words of the line of the row (`teams`: those of the whole trash, review of PR 1088).
+ * again; a refusal (the data changed, or is being replaced: E17) shows here and the dialog stays.
  */
 export function RestoreDialog({
   row,
-  teams,
   onClose,
   onRestored,
 }: {
   row: TrashRow;
-  teams: TeamsDeletedAt;
   onClose: () => void;
   onRestored: () => void;
 }) {
@@ -30,7 +27,7 @@ export function RestoreDialog({
   const today = useToday();
   const view = restoreView(row, today);
   const restore = () => {
-    const refused = restoreRow(app, row, teams);
+    const refused = restoreRow(app, row);
     if (refused === null) onRestored();
     else setFailure(refused);
   };

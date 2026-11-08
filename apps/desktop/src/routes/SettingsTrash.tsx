@@ -35,16 +35,14 @@ import {
   recordTitle,
   restoreLabel,
   restoredNotice,
-  teamsDeletedAt,
-  toldApart,
   trashCounts,
+  trashNames,
   type PurgedNotice,
   type PurgeRefusal,
   type PurgeView,
   type RestoredNotice,
-  type TeamsDeletedAt,
-  type ToldBy,
   type TrashFilter,
+  type TrashNames,
 } from './trash-view';
 
 /** The line saying why a row is blocked, which its restore button is described by (DR6-43). */
@@ -59,11 +57,11 @@ const NAMED: readonly TrashRow['kind'][] = ['customer', 'person', 'team'];
 
 function RecordCell({
   row,
-  teams,
+  names,
   today,
 }: {
   row: TrashRow;
-  teams: TeamsDeletedAt;
+  names: TrashNames;
   today: CalendarDate;
 }) {
   const badge = recordBadge(row);
@@ -80,7 +78,7 @@ function RecordCell({
       {detail && <span className="block text-xs text-fg-3">{detail}</span>}
       {row.blocked && (
         <span id={reasonId(row)} className="mt-1 block text-xs wrap-anywhere text-warn">
-          {blockedReason(row, row.blocked, teams)}
+          {blockedReason(row, row.blocked, names)}
         </span>
       )}
       {row.keptBy && (
@@ -90,8 +88,8 @@ function RecordCell({
   );
 }
 
-function OwnerCell({ row, teams }: { row: TrashRow; teams: TeamsDeletedAt }) {
-  const parts = ownerParts(row, teams);
+function OwnerCell({ row, names }: { row: TrashRow; names: TrashNames }) {
+  const parts = ownerParts(row, names);
   if (parts.length === 0) return <span className="text-fg-3">{t('trash.owner.none')}</span>;
   // By place: a team's bare name could read as another part. Two names fit under the cap on their
   // line; a longer one breaks there, even with no space, so the table stays in the window
@@ -117,8 +115,7 @@ function OwnerCell({ row, teams }: { row: TrashRow; teams: TeamsDeletedAt }) {
  */
 const trashColumns = (
   onRestore: (row: TrashRow) => void,
-  told: ReadonlyMap<string, ToldBy>,
-  teams: TeamsDeletedAt,
+  names: TrashNames,
   today: CalendarDate,
 ): ReadonlyArray<DataTableColumn<TrashRow>> => [
   {
@@ -138,14 +135,14 @@ const trashColumns = (
     kind: 'text',
     sortable: false,
     value: (row) => recordTitle(row, today),
-    cell: (row) => <RecordCell row={row} teams={teams} today={today} />,
+    cell: (row) => <RecordCell row={row} names={names} today={today} />,
   },
   {
     id: 'owner',
     header: t('trash.col.owner'),
     kind: 'text',
     value: (row) => ownerParts(row)[0]?.text ?? '',
-    cell: (row) => <OwnerCell row={row} teams={teams} />,
+    cell: (row) => <OwnerCell row={row} names={names} />,
   },
   {
     id: 'deletedAt',
@@ -166,7 +163,7 @@ const trashColumns = (
     cell: (row) => (
       <Button
         disabled={row.blocked !== undefined}
-        aria-label={restoreLabel(row, told, today)}
+        aria-label={restoreLabel(row, names, today)}
         aria-describedby={row.blocked && reasonId(row)}
         onClick={() => onRestore(row)}
       >
@@ -330,13 +327,9 @@ export function TrashSection() {
   const [purging, setPurging] = useState<PurgeView | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const done = useRef<HTMLDivElement>(null);
-  // Of every row, whatever the filter (DR6-151); the teams `told` by deletion too (review of PR 1088).
-  const told = useMemo(() => toldApart(rows), [rows]);
-  const teams = useMemo(() => teamsDeletedAt(rows, told), [rows, told]);
-  const columns = useMemo(
-    () => trashColumns(setRestoring, told, teams, today),
-    [told, teams, today],
-  );
+  // Of every row, whatever the filter (DR6-151).
+  const names = useMemo(() => trashNames(rows), [rows]);
+  const columns = useMemo(() => trashColumns(setRestoring, names, today), [names, today]);
   const counts = useMemo(() => trashCounts(rows), [rows]);
   const shown = useMemo(() => filterTrash(rows, filter, query), [rows, filter, query]);
   const reminder = purgeReminder(rows.length);
@@ -420,7 +413,6 @@ export function TrashSection() {
         {restoring && (
           <RestoreDialog
             row={restoring}
-            teams={teams}
             onClose={() => setRestoring(null)}
             onRestored={() => {
               setNotice({ kind: 'restored', view: restoredNotice(restoring) });
