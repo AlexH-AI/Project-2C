@@ -2,7 +2,12 @@ import { calendarDate, MAX_FEE_VND, normalizeNote, normalizeText } from '@p2c/do
 import { describe, expect, it, vi } from 'vitest';
 import { recordMeetingOutcome, scheduleAppointment } from './appointments';
 import { BACKUP_FORMAT, exportBackup, importBackup, MAX_BACKUP_BYTES } from './backup';
-import { createCustomer, listCustomers, softDeleteCustomer } from './customers';
+import {
+  createCustomer,
+  listCustomers,
+  softDeleteCustomer,
+  updateCustomerProfile,
+} from './customers';
 import { openDatabase } from './database';
 import { DbError } from './errors';
 import { addKycNote, recordKycNote } from './kyc';
@@ -197,6 +202,22 @@ describe('importBackup', () => {
     expect(db).not.toBe(current);
     expect(listCustomers(db).map((c) => c.name)).toEqual(['Lan']);
     expect(current.export()).toEqual(before);
+  });
+
+  // T-398 (review of PR #1145): rule 10 reads the day of the import's clock, as the commands do.
+  it('takes back the file just exported on a machine clock set back across midnight', async () => {
+    let machine = new Date(2026, 10, 8, 0, 5).getTime();
+    const now = () => new Date(machine);
+    const db = await openDatabase({ now });
+    const team = createTeam(db, { name: 'Sao Mai' });
+    const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 10) });
+    machine = new Date(2026, 10, 7, 23, 55).getTime();
+    updateCustomerProfile(db, lan.id, { gender: 'FEMALE' });
+
+    const { db: imported } = await importBackup(exportBackup(db), { now });
+
+    expect(listCustomers(imported).map((c) => c.gender)).toEqual(['FEMALE']);
   });
 
   it('refuses a file from a newer app, naming both schema versions', async () => {

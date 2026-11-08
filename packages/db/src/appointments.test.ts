@@ -560,6 +560,24 @@ describe('recordOutcomeWithNext', () => {
     );
   });
 
+  // T-398 (review of PR #1145): the machine clock set back across midnight while the app is open.
+  it('books the next appointment on the day of a machine clock set back across midnight', async () => {
+    let machine = new Date(2026, 10, 8, 0, 5).getTime();
+    const db = await openDatabase({ now: () => new Date(machine) });
+    const team = createTeam(db, { name: 'Sao Mai' });
+    const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 10) });
+    const { id } = scheduleAppointment(db, {
+      customerId: lan.id,
+      reId: re.id,
+      date: d(5, 11),
+      triggerType: 'OTHER',
+    });
+    machine = new Date(2026, 10, 7, 23, 55).getTime();
+
+    expect(recordOutcomeWithNext(db, id, MET_N2, { date: d(7, 11) }).next.date).toEqual(d(7, 11));
+  });
+
   // T-233 (DR6-02): the RF goes to the RE on the meeting (ADR-0007), the RE who held it.
   it('books the next appointment for the RE now in charge of the customer', async () => {
     const { db, re, otherRe, customer } = await withCustomer();

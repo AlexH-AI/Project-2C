@@ -40,8 +40,17 @@ export interface Database {
   readonly orm: SQLJsDatabase<typeof schema>;
   /** Raw sql.js handle — for tests and the migration runner only. */
   readonly sqlite: SqlJsDatabase;
-  /** The open's clock, never one instant twice nor an earlier one (`steadyClock`, DR6-178). */
+  /**
+   * The instant of a timestamp or an id. Outside `withSources`, the open's clock, never one instant
+   * twice nor an earlier one (`steadyClock`, DR6-178); inside, the given clock as it is, and the
+   * open's clock does not know the instants given there.
+   */
   now(): Date;
+  /**
+   * The clock as the machine (or `options.now`) gives it, the given one inside `withSources`: what
+   * `today` reads, so the day of the database is the app's when the machine clock goes back (T-398).
+   */
+  clockNow(): Date;
   random: RandomFill;
   schemaVersion(): number;
   /**
@@ -80,10 +89,12 @@ export async function openDatabase(options: OpenDatabaseOptions = {}): Promise<D
 
 /** The `Database` of the opened file: its sources, transactions and save port. */
 function connect(sqlite: SqlJsDatabase, options: OpenDatabaseOptions): Database {
-  let sources: Sources = {
-    now: steadyClock(options.now ?? (() => new Date())),
+  const own: Sources = {
+    now: options.now ?? (() => new Date()),
     random: options.random ?? cryptoFill,
   };
+  const ownInstant = steadyClock(own.now);
+  let sources = own;
   const persist = options.persist;
   let depth = 0;
   enableConnectionPragmas(sqlite);
@@ -100,7 +111,8 @@ function connect(sqlite: SqlJsDatabase, options: OpenDatabaseOptions): Database 
   return {
     orm: drizzle(sqlite, { schema }),
     sqlite,
-    now: () => sources.now(),
+    now: () => (sources === own ? ownInstant() : sources.now()),
+    clockNow: () => sources.now(),
     random: (bytes) => sources.random(bytes),
     schemaVersion: () => schemaVersion(sqlite),
     transaction<T>(fn: () => T): T {

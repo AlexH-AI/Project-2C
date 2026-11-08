@@ -1,3 +1,4 @@
+import { fromLocalDate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
 import {
   cleanNote,
@@ -9,6 +10,7 @@ import {
   today,
 } from './common';
 import { openDatabase } from './database';
+import { cryptoFill } from './ids';
 import { codeOf, d } from './test-support';
 
 describe('today', () => {
@@ -19,6 +21,32 @@ describe('today', () => {
 
     expect(today(db)).toEqual(d(26, 9, 2026));
     expect(now).toHaveBeenCalledTimes(1);
+  });
+
+  // T-398 (review of PR #1145): the instants never go back (DR6-178), the day goes with the machine.
+  it('follows the machine clock set back across midnight, the instants still going forward', async () => {
+    let machine = new Date(2026, 10, 8, 0, 5).getTime();
+    const db = await openDatabase({ now: () => new Date(machine) });
+    const before = db.now().getTime();
+    machine = new Date(2026, 10, 7, 23, 55).getTime();
+
+    expect(today(db)).toEqual(d(7, 11));
+    expect(db.now().getTime()).toBe(before + 1);
+  });
+
+  it('stays on the day while the machine clock stands just before midnight', async () => {
+    const db = await openDatabase({ now: () => new Date(2026, 10, 7, 23, 59, 59, 999) });
+    const instants = [db.now(), db.now()];
+
+    expect(instants.map((instant) => fromLocalDate(instant))).toEqual([d(8, 11), d(8, 11)]);
+    expect(today(db)).toEqual(d(7, 11));
+  });
+
+  it('reads the given clock inside withSources', async () => {
+    const db = await openDatabase({ now: () => new Date(2026, 10, 8, 12) });
+    const sources = { now: () => new Date(2026, 9, 1, 12), random: cryptoFill };
+
+    expect(db.withSources(sources, () => today(db))).toEqual(d(1, 10));
   });
 });
 
