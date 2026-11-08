@@ -1,6 +1,6 @@
 # Phase 5 — Prompt và guardrail AI (G5)
 
-- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417) · §6a `web@1` (ChatGPT web, W-1) **Owner duyệt G5 08/10/2026** (PR #430) · Đợt Phase 6 `analysis@2` / `discovery@2` **Owner duyệt G5 11/10/2026** (T-197 #491, §10) · Đợt lượt 2 `analysis@3` / `discovery@3` **Owner duyệt G5 18/10/2026** (T-257 #661, §11) · Đợt lượt 3 `analysis@4` / `discovery@4` **Owner duyệt G5 23/10/2026** (T-277 #728, §12) · Luật T-291 (tách dòng VT / FF ở §6a, hai mục của §11.8; không đổi version) **Owner duyệt 23/10/2026** (T-291 #780, §13) · Đợt lượt 4 `analysis@5` / `discovery@5` **Owner duyệt G5 31/10/2026** (T-323 #900, §14)
+- **Cổng:** G5 (prompt + guardrail) · **Trạng thái:** **Owner duyệt G5 07/10/2026** (PR #414; quyết định Q1–Q5 ở §9; Q6 duyệt cùng ngày ở PR #417) · §6a `web@1` (ChatGPT web, W-1) **Owner duyệt G5 08/10/2026** (PR #430) · Đợt Phase 6 `analysis@2` / `discovery@2` **Owner duyệt G5 11/10/2026** (T-197 #491, §10) · Đợt lượt 2 `analysis@3` / `discovery@3` **Owner duyệt G5 18/10/2026** (T-257 #661, §11) · Đợt lượt 3 `analysis@4` / `discovery@4` **Owner duyệt G5 23/10/2026** (T-277 #728, §12) · Luật T-291 (tách dòng VT / FF ở §6a, hai mục của §11.8; không đổi version) **Owner duyệt 23/10/2026** (T-291 #780, §13) · Đợt lượt 4 `analysis@5` / `discovery@5` **Owner duyệt G5 31/10/2026** (T-323 #900, §14) · Đợt lượt 6 `analysis@6` / `discovery@6` **Owner duyệt G5 ở PR của T-392** (#1136, §15; câu duyệt và ngày ở thân PR)
 - **Nền:** spec `phase-5-ai.md` (G1 / G2 duyệt 07/10/2026) §3, §6.1, §6.2, §6.4, §8; ADR-0009 (ranh giới, mục 3 validator, mục 6 pháp lý); danh mục KYC `packages/domain/src/kyc-catalog.ts`
 - **Dùng ở:** T-165 #406 (validator V3–V6 lấy **nguyên** các danh sách §6–§8), T-166 #407 (chữ prompt §2–§5 chép **nguyên văn** vào `packages/ai/src/prompts/<mode>.ts`)
 - **Đổi chữ prompt hoặc danh sách chặn sau khi duyệt** = tăng version (`analysis@2`…) + qua G5 lần nữa. Lỗi chính tả trong code so với file này là lỗi, không phải phiên bản mới.
@@ -47,7 +47,7 @@ Khóa JSON tiếng Anh, giá trị tiếng Việt. Ví dụ:
 - `missingCategories`: hạng mục đang thiếu của cổng (`code` là giá trị hợp lệ cho `missingCategory` — V2).
 - `conflictWarnings`: nhãn các trường mâu thuẫn phụ (không phải cốt lõi). Rỗng → `[]`.
 
-## 2. Prompt `analysis@5` (chế độ `PAIN_POINT_ANALYSIS`)
+## 2. Prompt `analysis@6` (chế độ `PAIN_POINT_ANALYSIS`)
 
 Chép nguyên văn khối dưới làm message `system`:
 
@@ -93,7 +93,7 @@ Chỉ trả về đúng một khối JSON theo mẫu dưới, không thêm lời
 }
 ````
 
-## 3. Prompt `discovery@5` (chế độ `PROFILE_DISCOVERY`)
+## 3. Prompt `discovery@6` (chế độ `PROFILE_DISCOVERY`)
 
 Hồ sơ đủ tối thiểu nhưng chưa đủ để phân tích nhu cầu: trọng tâm là RE cần tìm hiểu gì thêm. Chép nguyên văn khối dưới làm message `system`:
 
@@ -198,7 +198,7 @@ Không lưu, không qua validator (spec §4.3). `system`: `Trả lời đúng m�
 
 ## 6a. Tin nhắn ChatGPT web `web@1` (spec §3.1, W-1 — Owner duyệt G5 08/10/2026)
 
-ChatGPT web không có message `system`: app ghép **một** tin nhắn để người dùng dán. Chữ prompt của chế độ (§2 hoặc §3) giữ **nguyên văn**; phần bọc dưới có version riêng `web@1`, và `prompt_version` lưu dạng `analysis@5+web@1` (spec §7.1). Thay `{prompt}` bằng chữ prompt của chế độ, `{input}` bằng khối JSON đầu vào §1.1 (đúng như message `user` khi gọi OpenCode):
+ChatGPT web không có message `system`: app ghép **một** tin nhắn để người dùng dán. Chữ prompt của chế độ (§2 hoặc §3) giữ **nguyên văn**; phần bọc dưới có version riêng `web@1`, và `prompt_version` lưu dạng `analysis@6+web@1` (spec §7.1). Thay `{prompt}` bằng chữ prompt của chế độ, `{input}` bằng khối JSON đầu vào §1.1 (đúng như message `user` khi gọi OpenCode):
 
 ````plaintext
 Tin nhắn này có hai phần. Phần HƯỚNG DẪN là chỉ dẫn cho toàn bộ cuộc trò chuyện; phần ĐẦU VÀO chính là khối JSON mà hướng dẫn gọi là "tin nhắn tiếp theo". Chỉ dùng thông tin trong ĐẦU VÀO: không tìm kiếm web, không dùng nguồn bên ngoài, không dùng thông tin từ các cuộc trò chuyện khác. Chỉ trả lời bằng đúng một khối JSON theo định dạng trong hướng dẫn, không thêm lời giải thích.
@@ -214,7 +214,7 @@ Tin nhắn này có hai phần. Phần HƯỚNG DẪN là chỉ dẫn cho toàn 
 - **Câu dán là tin nhắn của app** (spec §3.1 mục 3; R2-03, R2-04 — Owner 11/10/2026, §10.6; tách dòng Owner 23/10/2026, §12.3, §13.4; NUL Owner 31/10/2026, §14.2): mỗi dòng (tách ở CR, LF, VT, FF, U+0085, U+2028, U+2029, như ghi chú KYC — K25) của câu dán và các dòng mốc chuẩn hóa như bước 0 của §7 (bỏ ký tự vô hình theo tập K20 và NUL, gộp khoảng trắng, NFKC — §11.2, §14.2; dấu tổ hợp lạc đọc như một dấu cách — §12.2), rồi bỏ tiền tố trích dẫn đầu dòng (một hay nhiều `>`, kèm khoảng trắng), gộp mọi khoảng trắng thành một dấu cách, cắt hai đầu. Một dòng trùng dòng mốc → `OWN_MESSAGE`: báo tại khung, không tính lần thử, không lưu. Dòng mốc: hai dòng khung `=== HƯỚNG DẪN ===`, `=== ĐẦU VÀO ===`, và dòng đầu, dòng cuối của message thử lại §5. Chỉ app viết dòng mốc, nên chấp nhận (§12.3): một chuỗi JSON của câu trả lời có U+0085, U+2028 hay U+2029 ngay trước và ngay sau dòng mốc thì dòng mốc thành một dòng riêng, và câu dán bị coi là tin nhắn của app.
 - Câu trả lời dán vào được xử lý như `content` của model: lấy khối JSON đầu tiên, bỏ rào ```` ```json ```` (spec §6.1); V1–V6 như §7–§8. Không có `maxTokens`, `reasoning` — người dùng tự chọn model và mức suy luận trên web.
 - Khối trên dùng rào `plaintext` để `prompts.test.ts` (đang so đúng bốn khối `text` §2–§5) còn xanh cho tới task cài `web@1` (spec §13 #13); task đó so khối này với hằng số trong code.
-- Đổi chữ phần bọc = `web@2` + qua G5; đổi prompt chế độ thì `prompt_version` đổi theo (vd. `analysis@5+web@1`).
+- Đổi chữ phần bọc = `web@2` + qua G5; đổi prompt chế độ thì `prompt_version` đổi theo (vd. `analysis@6+web@1`).
 
 ## 7. Cách so khớp chung cho V3–V6
 
@@ -242,13 +242,13 @@ Tin nhắn này có hai phần. Phần HƯỚNG DẪN là chỉ dẫn cho toàn 
 | cơ hội chốt · chốt deal · chốt sale · chốt hợp đồng · chốt hđ | cụm | có |
 | dễ chốt | cụm | **không** |
 | `\bchốt được\b(?! (lịch\|ngày\|giờ\|buổi\|thời gian\|thời điểm\|cuộc hẹn\|hẹn\|mốc\|kế hoạch\|mục tiêu\|phương án)\b)` | regex, cả bản bỏ dấu | — |
-| `\b(sẵn sàng\|tiềm năng) mua\b(?=\s*($\|[.,;:!?)]\|(bảo hiểm\|sản phẩm\|giải pháp\|gói\|hợp đồng\|hđ)\b))` — chỉ khi theo sau là hết câu / dấu câu / từ chỉ sản phẩm | regex, cả bản bỏ dấu | — |
+| `\b(sẵn sàng\|tiềm năng) mua\b(?=\s*($\|[.,;:!?)(\["“”]\|(bảo hiểm\|sản phẩm\|giải pháp\|gói\|hợp đồng\|hđ)\b))` — chỉ khi theo sau là hết câu / dấu câu (kể cả ngoặc đơn, ngoặc vuông mở, ngoặc kép) / từ chỉ sản phẩm | regex, cả bản bỏ dấu | — |
 | sẵn sàng ký · chắc chắn mua · chắc chắn ký · tiềm năng chốt | cụm | có |
 | độ tin cậy · mức độ tin cậy | cụm | **không** |
 | khách nóng · khách lạnh · khách ấm · hot lead · warm lead · cold lead · lead score | cụm | có |
 | chấm điểm KH · chấm điểm khách · điểm số KH · điểm số khách · xếp hạng KH · xếp hạng khách | cụm | có |
 
-Ghi chú: "có thể", "có dấu hiệu" **không** bị chặn (prompt yêu cầu dùng). "Sẽ mua" không nằm trong danh sách vì trùng mục tiêu thật ("sẽ mua nhà năm 2027"); cùng lý do, "sẵn sàng mua" / "tiềm năng mua" chỉ chặn khi không có đối tượng hoặc đối tượng là sản phẩm (Owner 11/10/2026). Không chặn dạng "8/10" bằng regex vì trùng ngày ("01/10"); chấm điểm KH đã chặn qua "chấm điểm KH", "điểm số KH". "Tỷ lệ" đứng một mình không bị chặn (vd. tỷ lệ phân bổ tài sản), nhưng `%` luôn bị chặn — output trích mã dữ kiện thay vì nhắc lại số %. Trong regex, `\|` là dấu `|` (thoát khỏi bảng Markdown); một dấu cách viết trong regex khớp 0 hoặc 1 dấu cách như bên trong cụm (§7 mục 4).
+Ghi chú: "có thể", "có dấu hiệu" **không** bị chặn (prompt yêu cầu dùng). "Sẽ mua" không nằm trong danh sách vì trùng mục tiêu thật ("sẽ mua nhà năm 2027"); cùng lý do, "sẵn sàng mua" / "tiềm năng mua" chỉ chặn khi không có đối tượng hoặc đối tượng là sản phẩm (Owner 11/10/2026). Mã dữ kiện trong ngoặc ngay sau cụm là dấu câu, bị chặn: "KH sẵn sàng mua (F12)", "[F12]", "“F12”" (§15.2); "KH có thể sẵn sàng mua nhà trong năm 2027 (F1)" vẫn đạt (C35). Không chặn dạng "8/10" bằng regex vì trùng ngày ("01/10"); chấm điểm KH đã chặn qua "chấm điểm KH", "điểm số KH". "Tỷ lệ" đứng một mình không bị chặn (vd. tỷ lệ phân bổ tài sản), nhưng `%` luôn bị chặn — output trích mã dữ kiện thay vì nhắc lại số %. Trong regex, `\|` là dấu `|` (thoát khỏi bảng Markdown); một dấu cách viết trong regex khớp 0 hoặc 1 dấu cách như bên trong cụm (§7 mục 4).
 
 ### 8.2 V4 — tên sản phẩm, hãng bảo hiểm
 
@@ -299,7 +299,7 @@ Ghi chú: "tính cách" và "kiểu người" không nằm trong danh sách (d�
 | `\b(Điều\|ĐIỀU)\s*\p{Nd}+` trên **bản gốc, giữ hoa thường** (vd. "Điều 35", "Điều" + U+200B + "35"; "điều 2 vợ chồng" không khớp) | regex | — |
 | `\bkhoản\s*\p{Nd}+[,]?\s*điều\s*\p{Nd}+` (vd. "khoản 2 Điều 35"; "khoản 2 điều kiện" không khớp) | regex, cả bản bỏ dấu | — |
 | `\bđiểm\s*[a-zđ]\s*khoản\b` | regex, cả bản bỏ dấu | — |
-| "luật" ở **mọi kiểu hoa / thường**, có ranh giới từ trước, không đứng sau từ "pháp", "kỷ", "kỉ", "quy", "qui", "giới" mà trước nó không phải "môi" / "ranh" / "biên" / "thế", hay "định" mà trước nó không phải "quy" / "qui" (mọi kiểu chữ) + khoảng trắng; theo sau là khoảng trắng (có thể không có) + một từ mở đầu bằng chữ hoa (`\p{Lu}`) mà **không** phải "KH", "RE" hay "sư" (mọi kiểu chữ). Chạy trên **bản gốc**. Vd. khớp "Luật Kinh doanh bảo hiểm", "Luật BHXH", "LuẬt Đất đai", "Luật" + U+200B + "BHXH", "quy định Luật Kinh doanh bảo hiểm", "môi giới Luật Kinh doanh bảo hiểm"; không khớp "Luật sư", "LUẬT SƯ", "pháp luật Việt Nam", "pHáp luật Việt Nam", "kỷ luật KH", "quy luật Thị trường", "kỉ luật Thép", "qui luật Thị trường", "định luật Pareto", "giới luật Phật giáo" | regex | — |
+| "luật" ở **mọi kiểu hoa / thường**, có ranh giới từ trước, không đứng sau từ "pháp", "kỷ", "kỉ", "quy", "qui", "giới" mà trước nó không phải "môi" / "ranh" / "biên" / "thế", hay "định" mà trước nó không phải "quy" / "qui" (mọi kiểu chữ) + khoảng trắng; theo sau là khoảng trắng (có thể không có), **một cặp ngoặc đơn** rồi khoảng trắng (có thể không có; vd. "(sửa đổi)"), **một ngoặc kép mở** `"` hay `“` (có thể không có), rồi một từ mở đầu bằng chữ hoa (`\p{Lu}`) mà **không** phải "KH", "RE" hay "sư" (mọi kiểu chữ). Chạy trên **bản gốc**. Vd. khớp "Luật Kinh doanh bảo hiểm", "Luật BHXH", "LuẬt Đất đai", "Luật" + U+200B + "BHXH", "quy định Luật Kinh doanh bảo hiểm", "môi giới Luật Kinh doanh bảo hiểm", "Luật “Kinh doanh bảo hiểm”", "Luật (sửa đổi) Đất đai"; không khớp "Luật sư", "LUẬT SƯ", "pháp luật Việt Nam", "pHáp luật Việt Nam", "kỷ luật KH", "quy luật Thị trường", "kỉ luật Thép", "qui luật Thị trường", "định luật Pareto", "giới luật Phật giáo", "luật (F12)" | regex | — |
 | bộ luật · nghị định · thông tư · văn bản hợp nhất | cụm | có |
 | nghị quyết | cụm | **không** |
 | `\b(quyết định\|công văn) số\s*\p{Nd}` (vd. "Quyết định số 123"; "quyết định số tiền" không khớp) | regex, cả bản bỏ dấu | — |
@@ -308,7 +308,7 @@ Ghi chú: "tính cách" và "kiểu người" không nằm trong danh sách (d�
 
 Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ** chặn khi đi kèm "Điều <số>" vì "khoản 500 triệu" là cách nói tiền thường gặp. "Pháp luật", "pháp lý", "cần chuyên gia pháp lý xác nhận" không bị chặn, kể cả "pháp luật" đứng trước tên riêng (vd. "pháp luật Việt Nam", Owner 07/10/2026 — §9 Q6). "Điều <số>" chỉ chặn khi viết hoa "Điều" (Owner 11/10/2026): điều luật luôn viết hoa; "Điều 2 vợ chồng…" ở **đầu câu** vẫn bị chặn, "theo điều 35" viết thường đứng riêng không bị chặn.
 
-### 8.5 Ca kiểm bắt buộc (T-165; C20–C54 đợt Phase 6, T-197; C55–C72 đợt lượt 2, T-257; C73–C79 đợt lượt 3, T-277; C80–C83 đợt lượt 4, T-323)
+### 8.5 Ca kiểm bắt buộc (T-165; C20–C54 đợt Phase 6, T-197; C55–C72 đợt lượt 2, T-257; C73–C79 đợt lượt 3, T-277; C80–C83 đợt lượt 4, T-323; C84–C86 đợt lượt 6, T-392)
 
 | # | Chuỗi trong output | Kết quả |
 |---|---|---|
@@ -368,7 +368,7 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 | C51 | "Lu" + U+200B + "ật Kinh doanh bảo hiểm" | V6 |
 | C52 | `text` "…" · `text` chỉ có U+200B | V1 |
 | C53 | `text` 250 ký tự viết NFD | đạt |
-| C54 | Ví dụ JSON của `analysis@5` / `discovery@5` dán nguyên, với đầu vào có đủ mã ví dụ | V1, không ACCEPTED |
+| C54 | Ví dụ JSON của `analysis@6` / `discovery@6` dán nguyên, với đầu vào có đủ mã ví dụ | V1, không ACCEPTED |
 | C55 | Viết NFD, U+200B trước mỗi dấu tổ hợp: "KH dễ chốt" · "Bảo Việt" · "KH tuổi Tý" ở `needs` · "Theo Điều 35" · "Nghị quyết 12" | V3 · V4 · V5 · V6 · V6 |
 | C56 | "Theo Điều" + U+200B + "35" · "Theo Điều" + U+2060 + "35" · "Luật" + U+200B + "Kinh doanh bảo hiểm" · "Luật" + U+2060 + "BHXH" | V6 |
 | C57 | "khoản 2" + U+200B + "Điều" + U+200B + "35" · "khoản" + U+2060 + "2 điều 35" · "điểm" + U+200B + "a" + U+200B + "khoản 2" | V6 |
@@ -398,6 +398,9 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 | C81 | "Đề xuất P" + U+0000 + "rudential cho KH" · "KH có mã I" + U+0000 + "NTJ" ở `hypotheses` · "Theo Lu" + U+0000 + "ật Kinh doanh bảo hiểm" · "Theo Điều" + U+0000 + "35" | V4 · V5 · V6 · V6 |
 | C82 | "KH dùng dịch vụ môi giới Luật Kinh doanh bảo hiểm cho phép" · "Môi giới Luật Kinh doanh bảo hiểm 2022" · "MÔI GIỚI LUẬT Kinh doanh bảo hiểm" · "Ranh giới Luật Đất đai quy định với thửa đất của KH" · "KH buôn bán qua biên giới Luật Hải quan yêu cầu khai báo" · "Ở nhiều nước trên thế giới Luật Thừa kế khác nhau" | V6 |
 | C83 | "Giới luật Phật giáo cấm sát sinh" · "KH thích" + U+0000 + "đọc sách" | đạt |
+| C84 | "KH sẵn sàng mua (F12)" · "KH tiềm năng mua [F12]" · "KH sẵn sàng mua “F12”" · "KH sẵn sàng mua " + U+0022 + "F12" + U+0022 · "KH nói “sẵn sàng mua”" | V3 |
+| C85 | "Theo Luật “Kinh doanh bảo hiểm”" · "Theo Luật " + U+0022 + "Đất đai" + U+0022 · "Theo Luật (sửa đổi) Đất đai" | V6 |
+| C86 | "KH cần tìm hiểu luật (F12)" · "KH cần tìm hiểu luật (F12) về thừa kế" · "Giữ kỷ luật “Thép” của KH" · "Hỏi KH đã có Luật “Sư” riêng chưa" ở `discoveryStrategy` | đạt |
 
 ## 9. Owner duyệt
 
@@ -1016,3 +1019,70 @@ Ngoài bảng:
 - [x] Bước 0 bỏ cả NUL, chỉ ở bản so khớp; V1 và chữ lưu không đổi (§14.2)
 - [x] "luật <Tên>": "giới" chỉ được miễn khi không đứng sau "môi", "ranh", "biên", "thế"; giữ "thế" dù có tác dụng phụ; chữ mới của mục §8.4 (§14.3)
 - [x] Ca kiểm C80–C83 và các ca ngoài bảng (§14.4)
+
+## 15. Đợt sửa G5 Phase 6 lượt 6 (T-392 #1136) — Owner duyệt G5 ở PR
+
+**Trạng thái:** đề xuất trong PR code của T-392: một PR gồm code và chữ G5, theo Q3 (a). **Owner duyệt G5 ở thân PR** trước khi merge; PR không merge khi chưa có câu duyệt (câu trích và ngày ở thân PR). Các thay đổi đã chép vào §2, §3 (version), §6a (ví dụ version), §8.1, §8.4, §8.5; mục này giữ lý do và số đo.
+
+**Nền:** deep review Phase 1–6 lượt 6 (`docs/reviews/2026-11-08-deep-review-phase-1-6-luot-6-tong-hop.md` §4 DR6-180, §9 Q3): chặn phát hành theo K48 (Low · G). Báo cáo gốc: CLR6-C1 (`docs/reviews/raw/2026-11-08/claude/C.md`), cùng CLR6-C8 (nhánh regex không ca nào giữ) cho cách chọn ca. Owner 08/11/2026 chọn Q3 (a): sửa hai regex, version mới, thêm ca §8.5; chữ prompt không đổi.
+
+**Đã thử trước khi đề xuất** (script tạm so kết quả V3, V6 của từng chuỗi ở `main` `ccc8442` và ở nhánh T-392; kho chữ như §12, §14):
+
+- **1 658** test của `packages/ai` (1 646 test cũ, gồm C1–C83 và test đọc bảng §8, cộng 12 ca C84–C86): xanh.
+- **1 101** chuỗi `"text"` của eval 10/10 và 11/10 (`docs/metrics/ai-eval-2026-10-1{0,1}.md`): 0 chuỗi đổi kết quả.
+- **2 404** chuỗi của `vi.ts`, **505** chuỗi của seed (`seed.ts`, `seed-data.ts`) và câu Mock (`schema.ts`, `mock-extraction.ts`): 0 chuỗi đổi kết quả.
+- **73 344** dòng khác nhau của `docs/**/*.md` (đo trước khi viết mục này): 39 dòng đổi kết quả (§15.2, §15.3).
+
+### 15.1 Version
+
+| Prompt | Đổi | Version mới |
+|---|---|---|
+| analysis | danh sách chặn (§15.2: mục "sẵn sàng / tiềm năng mua" của §8.1; §15.3: mục "luật <Tên>" của §8.4); **chữ prompt không đổi** | `analysis@6` |
+| discovery | như analysis | `discovery@6` |
+| extraction | chữ không đổi, không qua V3–V6 | giữ `extraction@1` |
+| tin nhắn ChatGPT web | chữ bọc không đổi | giữ `web@1` → lưu `analysis@6+web@1` |
+
+- Như §12.1, §14.1: đổi danh sách chặn = tăng version (đầu file). Hai regex dùng chung cho analysis và discovery, nên đổi cả hai. Phân tích đã lưu với `@5` vẫn hiện như đã ghi; `db` chỉ kiểm dạng `<mode>@<n>`; mốc hash seed không đổi (T-288). Eval AI thật ở G7 (NT-EV-01) chạy với `@6`.
+- Ảnh hướng dẫn có chip version (`docs/user-guide/img/06-ai-phan-tich.png`): chụp lại ở G7, như §14.1.
+- File ghi version hiện hành đổi theo (Issue #1136): `docs/golden/ai-eval.md`, `docs/README.md`, `docs/user-guide/06-ai.md`, `docs/user-guide/11-thuat-ngu.md`.
+
+### 15.2 V3 "sẵn sàng / tiềm năng mua": mã trong ngoặc (DR6-180 a)
+
+**Lỗi hiện tại:** §8.1 chặn "sẵn sàng mua" / "tiềm năng mua" khi theo sau là "hết câu / dấu câu / từ chỉ sản phẩm", nhưng lớp dấu câu của regex chỉ có `.,;:!?)`. Câu không có đối tượng mà sau cụm là mã dữ kiện trong ngoặc, dạng trích mã mà prompt yêu cầu, thì lọt: "KH sẵn sàng mua (F12)", "KH tiềm năng mua [F12]", "KH sẵn sàng mua “F12”". Trong khi đó "KH sẵn sàng mua." và "KH sẵn sàng mua)" bị chặn (CLR6-C1). §10.10 chỉ nhận phần "có chữ khác theo sau", không gồm dấu câu.
+
+**Sửa:** lớp dấu câu sau cụm thêm `(`, `[`, `"`, `“`, `”`: `[.,;:!?)(\["“”]`. NFKC đưa `（`, `［`, `＂` về dạng thường, nên chúng cũng bị chặn. Mục §8.1 đã chép vào bảng; so với trước: lớp dấu câu thêm năm ký tự trên, ô "Mục" thêm "(kể cả ngoặc đơn, ngoặc vuông mở, ngoặc kép)", ghi chú §8.1 thêm một câu về mã trong ngoặc.
+
+- Code: lớp dấu câu của mục "sẵn sàng / tiềm năng mua" trong `blocklists.ts`. Mục vẫn chạy cả bản bỏ dấu ("KH san sang mua (F12)" cũng bị chặn).
+- Kết quả đo: 5 / 5 câu của C84 bị V3. C35 "KH có thể sẵn sàng mua nhà trong năm 2027 (F1)" và "KH sẵn sàng mua nhà (F12)" vẫn đạt. Kho chữ thật: 0 chuỗi đổi. Docs: 21 dòng đổi, đều là chỗ trích chính cụm trong ngoặc kép (báo cáo review, bảng mẫu) hay "sẵn sàng mua (nhà)".
+- **Tác dụng phụ:** đối tượng đặt trong ngoặc sau cụm nay bị chặn: "KH sẵn sàng mua (nhà) trong năm 2027", "KH sẵn sàng mua (F12) căn hộ thứ hai". Cụm nằm trong ngoặc kép cũng vậy, vì ngoặc đóng đứng ngay sau "mua": "KH nói “sẵn sàng mua” nhà". Đúng chữ "dấu câu" của §8.1, như ")" hôm nay; đổi lại là một lần thử lại. Kho eval thật không có câu nào như vậy.
+- **Mất:** ngoặc khác vẫn lọt: "KH sẵn sàng mua ‘F12’", "KH sẵn sàng mua 'F12'", "KH sẵn sàng mua {F12}", "KH sẵn sàng mua «F12»".
+
+### 15.3 V6 "luật <Tên>": ngoặc kép, ngoặc đơn (DR6-180 b)
+
+**Lỗi hiện tại:** mục "luật <Tên>" của §8.4 đòi chữ hoa ngay sau "luật" và khoảng trắng, nên tên luật trong ngoặc kép hay sau một ngoặc đơn lọt: "Theo Luật “Kinh doanh bảo hiểm”", "Theo Luật " + U+0022 + "Đất đai" + U+0022, "Theo Luật (sửa đổi) Đất đai" (CLR6-C1). Không phần "Mất" nào của §11–§14 nêu dạng này.
+
+**Sửa:** giữa "luật" và từ viết hoa được có **một cặp ngoặc đơn** (rồi khoảng trắng) và **một ngoặc kép mở** `"` hay `“`, mỗi thứ có thể không có. Ngoặc đơn **không** tính là dấu mở ngay trước tên: nếu tính thì "luật (F12)" (mã dữ kiện prompt yêu cầu) bị chặn nhầm; bản thử đó làm đỏ 2 ca "luật (F12)" của C86. Các chữ miễn trước "luật" (pháp, kỷ, kỉ, quy, qui, giới, định) và sau nó ("KH", "RE", "sư") giữ nguyên, kể cả khi có ngoặc: "Giữ kỷ luật “Thép” của KH", "Luật “Sư”" đạt. Mục §8.4 đã chép vào bảng; so với trước: thêm cặp ngoặc đơn, ngoặc kép mở, hai ví dụ khớp và ví dụ không khớp "luật (F12)".
+
+- Code: `LAW_NAME` của `blocklists.ts`, phần sau "luật": `\s*(\([^()]*\)\s*)?["“]?(?!(kh|re|sư)\b)\p{Lu}` (mọi kiểu chữ ở phần miễn, như trước). `detail` trích từ "luật" tới chữ hoa đầu tên: `có "Luật “K"`, `có "Luật (sửa đổi) Đ"`.
+- Kết quả đo: 3 / 3 câu của C85 bị V6. "Theo Luật (sửa đổi) “Đất đai”", "Theo Luật (sửa đổi năm 2019) Đất đai" và "Theo Luật（sửa đổi）Đất đai" (ngoặc toàn độ rộng, qua NFKC) cũng bị chặn. C78, C83, C86 đạt. Kho chữ thật: 0 chuỗi đổi. Docs: 18 dòng đổi: 4 dòng trích chính các câu DR6-180, 1 dòng bị chặn cả trước lẫn sau (chỉ đổi chỗ khớp đầu), 13 dòng có "luật" nghĩa "quy tắc" rồi tên quy tắc trong ngoặc kép (tác dụng phụ dưới).
+- **Tác dụng phụ:** "luật" nghĩa "quy tắc" rồi tên viết hoa trong ngoặc kép nay bị V6: "KH giữ luật “Không vay nợ” khi chi tiêu". Đây là cách viết của 13 dòng docs nói trên (vd. luật "Ghi kết quả"). Cùng lớp với "KH giữ luật Không vay nợ khi chi tiêu", câu đã bị V6 từ trước; kho eval thật không có câu nào như vậy. "luật (F12)" rồi chữ hoa cũng bị chặn: "KH tìm hiểu luật (F12) Thừa kế" (chữ hoa giữa câu, hiếm). "KH cần tìm hiểu luật (F12). Đề xuất hỏi thêm" vẫn đạt.
+- **Mất:** tên luật trong ngoặc khác, hay nằm ngay trong ngoặc đơn, vẫn lọt: "Theo Luật ‘Đất đai’", "Theo Luật 'Đất đai'", "Theo Luật [Đất đai]", "Theo Luật «Đất đai»", "Theo Luật (Đất đai)". Cũng lọt: ngoặc kép đóng dùng làm ngoặc mở ("Theo Luật ”Đất đai”"), khoảng trắng sau ngoặc kép ("Theo Luật “ Đất đai”"), hai cặp ngoặc đơn ("Theo Luật (sửa đổi) (2024) Đất đai").
+
+### 15.4 Ca kiểm mới (thêm vào §8.5)
+
+Đã chép vào bảng §8.5 (C84–C86). Mỗi nhánh mới của hai regex có ít nhất một ca giữ (theo hướng CLR6-C8): bỏ từng ký tự mới của lớp V3, bỏ cặp ngoặc đơn, khoảng trắng sau nó hay từng ngoặc kép của V6 thì ít nhất một ca đỏ; cho ngoặc đơn làm dấu mở trước tên thì C86 đỏ. Test đọc bảng §8 (`blocklists.test.ts`) có thêm mẫu cho hai mục.
+
+### 15.5 Không làm trong đợt này
+
+- Các dạng ở phần "Mất" của §15.2, §15.3.
+- "sẵn sàng / tiềm năng mua" rồi chữ khác, kể cả sau "–", "-", "…", vẫn lọt như §10.10.
+- Ca riêng cho các nhánh regex cũ của §8 (CLR6-C8, DR6-205): [sau v1.0] theo K48.
+
+### 15.6 Owner duyệt
+
+Owner duyệt ở thân PR của T-392 (câu trích và ngày ở đó); PR không merge khi chưa có câu duyệt. Các mục duyệt:
+
+- Version `analysis@6`, `discovery@6`; `extraction@1`, `web@1` giữ (§15.1)
+- V3: lớp dấu câu sau "sẵn sàng / tiềm năng mua" thêm `(`, `[`, `"`, `“`, `”`; chữ mới của mục và ghi chú §8.1; tác dụng phụ và phần "Mất" (§15.2)
+- V6 "luật <Tên>": một cặp ngoặc đơn và một ngoặc kép mở trước tên; chữ mới của mục §8.4; tác dụng phụ và phần "Mất" (§15.3)
+- Ca kiểm C84–C86 (§15.4)

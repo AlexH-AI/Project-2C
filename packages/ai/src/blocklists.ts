@@ -1,8 +1,8 @@
 /**
  * Blocklists of V3–V6, taken as they are from prompts G5 §8 (Owner G5 07/10/2026, Phase 6 rounds
- * 11/10, 18/10, 23/10 and 31/10/2026): one `row` per table row, its entries separated by " · " as
- * in the file. Changing an entry means a new prompt version and G5 again; a typo against that file
- * is a bug.
+ * 11/10, 18/10, 23/10 and 31/10/2026, round 6 T-392 §15): one `row` per table row, its entries
+ * separated by " · " as in the file. Changing an entry means a new prompt version and G5 again; a
+ * typo against that file is a bug.
  */
 import { char, pattern, phrase, WORD_END as E, WORD_START as B, type Matcher } from './text-match';
 
@@ -33,7 +33,7 @@ const V3: readonly Matcher[] = [
     'both',
   ),
   pattern(
-    String.raw`${B}(sẵn sàng|tiềm năng) mua${E}(?=\s*($|[.,;:!?)]|(bảo hiểm|sản phẩm|giải pháp|gói|hợp đồng|hđ)${E}))`,
+    String.raw`${B}(sẵn sàng|tiềm năng) mua${E}(?=\s*($|[.,;:!?)(\["“”]|(bảo hiểm|sản phẩm|giải pháp|gói|hợp đồng|hđ)${E}))`,
     'both',
   ),
   ...row(true, 'sẵn sàng ký · chắc chắn mua · chắc chắn ký · tiềm năng chốt'),
@@ -103,9 +103,10 @@ const unlessAfter = (word: string, before: string) =>
  * Phật giáo", DR6-124, DR6-143), or "định" that is not the "định" of "quy định" ("định luật
  * Pareto", DR6-124), before a word starting with a capital that is not "KH", "RE" or "sư" in any
  * case (the prompt's own words, a lawyer; DR6-16). The two may touch: an invisible character
- * between them is dropped (DR6-17).
+ * between them is dropped (DR6-17). Between them may also be one pair of brackets, then an opening
+ * double quote: "Luật (sửa đổi) Đất đai", "Luật “Đất đai”" (DR6-180).
  */
-const LAW_NAME = String.raw`(?<!${B}(${ci('pháp')}|${ci('kỷ')}|${ci('kỉ')}|${QUY}|${unlessAfter('giới', GIOI_OF)}|${unlessAfter('định', QUY)})\s+)${B}${ci('luật')}\s*(?!(${ci('kh')}|${ci('re')}|${ci('sư')})${E})\p{Lu}`;
+const LAW_NAME = String.raw`(?<!${B}(${ci('pháp')}|${ci('kỷ')}|${ci('kỉ')}|${QUY}|${unlessAfter('giới', GIOI_OF)}|${unlessAfter('định', QUY)})\s+)${B}${ci('luật')}\s*(\([^()]*\)\s*)?["“]?(?!(${ci('kh')}|${ci('re')}|${ci('sư')})${E})\p{Lu}`;
 
 /**
  * V6 — citing legal texts (G5 §8.4; "khoản <số>" alone is money, Owner Q4). `\s*`: the parts may

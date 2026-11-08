@@ -24,8 +24,8 @@ describe('prompts', () => {
 
   it('versions each prompt and gives it the maxTokens of G5 §1', () => {
     expect([analysisPrompt, discoveryPrompt, extractionPrompt]).toMatchObject([
-      { version: 'analysis@5', maxTokens: 24_000 },
-      { version: 'discovery@5', maxTokens: 24_000 },
+      { version: 'analysis@6', maxTokens: 24_000 },
+      { version: 'discovery@6', maxTokens: 24_000 },
       { version: 'extraction@1', maxTokens: 12_000 },
     ]);
   });
