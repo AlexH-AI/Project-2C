@@ -286,9 +286,19 @@ Exe release `5b1328a` trên Home PC, cùng script với G7 / lượt 5. **Không
 
 Năm Issue độc lập nhau, nhãn `ready-for-agent`; Owner 08/11 chọn chạy qua pipeline `auto-issues`, sau PR tổng hợp này.
 
+**Giảm dòng code trước G7** (Owner 08/11, sau §9: "Làm trước G7" cho DR6-211; ngoại lệ K49, `PROJECT-STATE.md`). Chạy sau năm Issue trên:
+
+| Issue | Phần của DR6-211 | Việc | Rủi ro | Ngân sách (ròng) |
+|---|---|---|---|---|
+| #1140 T-395 | CLR6-G1 | Thùng rác một chỗ đặt tên thay `told` / `teams` luồn tay; chữ giữ từng byte | med | SP −20…−40, test −60…−90 |
+| #1141 T-396 | CLR6-G2, F12 | Chuyển `token-guard` sang `packages/ui/scripts/`; bỏ `globals` ESLint vô tác dụng | low | SP −226 (sang công cụ), cấu hình ≤ 0 |
+| #1142 T-397 | CLR6-G3, F11 | Ma trận ký tự vô hình chỉ ở test hàm chung; một bản `openProfile` / `pickTeam` | low | test −55…−75, SP 0 |
+
+**CLR6-G4 để [sau v1.0]:** phần capability cần thêm bước kiểm quyền trên exe vào job build của CI ngay trước khi phát hành (công cụ mới trong đóng băng), số dòng ròng chỉ ≈ −20…−50; phần bộ chặn ký hiệu là sửa CLR6-D1, không giảm dòng. Tổng ba Issue: SP sản phẩm thật ≈ −20…−40 dòng (cộng 226 dòng chuyển sang công cụ), test ≈ −115…−165 dòng; bundle ≈ −0,3…−0,5 KB; exe không đổi.
+
 ## 9. Câu hỏi cho Owner
 
-**Owner trả lời 08/11/2026: "Chọn như ghi"** — cả bảy câu theo đề xuất: Q1 (a), Q2 (a), Q3 (a), Q4 (a), Q5 (a); Q6 không kéo vấn đề nào; Q7 [sau v1.0]. Issue ở §8.1.
+**Owner trả lời 08/11/2026: "Chọn như ghi"** — cả bảy câu theo đề xuất: Q1 (a), Q2 (a), Q3 (a), Q4 (a), Q5 (a); Q6 không kéo vấn đề nào; Q7 [sau v1.0]. Issue ở §8.1. **Sau đó cùng ngày, Owner đổi Q7: "Làm trước G7"** (ngoại lệ K49): G1, G2, G3, F11, F12 thành ba Issue #1140–#1142; G4 vẫn [sau v1.0] (§8.1).
 
 Mỗi câu một lựa chọn; đề xuất của tổng hợp ghi trước.
 

@@ -224,6 +224,7 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - Q5 (a), DR6-182: the note box of 6c / 6f is a textarea whenever the note holds a line break.
   - Q6: no non-blocking issue is pulled into the fix wave. Q7: the remove / merge proposals of theme session G stay [sau v1.0] (K49).
   - Fix issues #1134…#1138 (T-390…T-394), run by the `auto-issues` pipeline after the synthesis PR.
+- 2026-11-08, later the same day: the OWNER changed Q7 to "Làm trước G7": the code-size reductions of DR6-211 are done before G7, an **exception to the code freeze K49** approved by the OWNER. Three issues, run by the pipeline after the five fix issues: #1140 T-395 (CLR6-G1: one naming place for the trash instead of the hand-threaded `told` / `teams` maps; every text byte-for-byte the same), #1141 T-396 (CLR6-G2, F12: the token guard moves to `packages/ui/scripts/`; ESLint `globals` with no effect go), #1142 T-397 (CLR6-G3, F11: the invisible-character matrix stays only in the tests of the shared functions; one copy of two e2e helpers). Behaviour does not change (spec §6.3). CLR6-G4 stays [sau v1.0]: it would add a capability check on the exe to the CI build job right before the release, for a net ≈ 20–50 test lines.
 
 ## Next decision
 
