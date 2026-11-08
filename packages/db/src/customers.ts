@@ -308,18 +308,16 @@ export function checkTransition(
       );
     }
   }
-  // A met appointment recorded the stage of its own day, which no change may come before (T-232);
-  // it is dated today at the latest, so only a change dated back has one after it.
-  if (compareDates(date, today(db)) < 0) {
-    const [[meeting]] = selectRows(
-      db,
-      `SELECT MAX(date) FROM appointments
-       WHERE customer_id = ? AND status = 'MET' AND deleted_at IS NULL AND date > ?`,
-      [customerId, storedDate(date)],
-    ) as [[string | null]];
-    if (meeting) {
-      throw new DbError('TRANSITION_BEFORE_MEETING', { date: formatDate(fromIsoDate(meeting)) });
-    }
+  // A met appointment recorded the stage of its own day, which no change may come before (T-232),
+  // whatever today is: one met before the machine clock was set back is dated after it (T-399).
+  const [[meeting]] = selectRows(
+    db,
+    `SELECT MAX(date) FROM appointments
+     WHERE customer_id = ? AND status = 'MET' AND deleted_at IS NULL AND date > ?`,
+    [customerId, storedDate(date)],
+  ) as [[string | null]];
+  if (meeting) {
+    throw new DbError('TRANSITION_BEFORE_MEETING', { date: formatDate(fromIsoDate(meeting)) });
   }
   const from = latest ? latest.toStage : null;
   try {

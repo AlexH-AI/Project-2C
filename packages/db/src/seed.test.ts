@@ -88,11 +88,12 @@ const DEMO_ROW_COUNTS = {
 };
 // T-232 moved it with one more read of the seed's ticking clock per stage change (stamps and ids);
 // T-237, T-257 and T-277 with the prompt version of the Mock analyses (`@2`, DR6-18; `@3`; `@4`),
-// until T-288 took that version as one mark (`contentHash`).
+// until T-288 took that version as one mark (`contentHash`); T-399 with one read fewer per stage
+// change, as the check of the met meetings no longer reads today (stamps and ids; Owner 08/11/2026).
 // The hash of the data seeded at UTC. From UTC+12 noon UTC is already the next day, so `middayOf`
 // takes local noon and every stamp and the time of every id move back 12–14 hours (DR-15); from
 // UTC−12 to UTC+11 the data is the very data of UTC.
-const DEMO_HASH = '2e078bf00dc0ed5d1ac1904a3d84045ed8929b3899498fb50d122396e931a3e1';
+const DEMO_HASH = '136545e625bc266707fe439e0c215534655037f303bbe2af7ef1805fdcad4783';
 
 async function seeded(seed: number, anchorDate = ANCHOR) {
   const persist = vi.fn();
