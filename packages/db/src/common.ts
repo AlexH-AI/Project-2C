@@ -121,9 +121,12 @@ export function storedDate(date: CalendarDate): string {
   }
 }
 
-/** The local calendar day of the database clock, read once. */
+/**
+ * The local calendar day of the database clock as the machine gives it, read once: not the steady
+ * instants of `db.now()`, which stay ahead of a machine clock set back (T-398).
+ */
 export function today(db: Database): CalendarDate {
-  return fromLocalDate(db.now());
+  return fromLocalDate(db.clockNow());
 }
 
 /**

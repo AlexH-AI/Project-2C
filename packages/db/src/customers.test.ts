@@ -29,7 +29,8 @@ import {
 import { exportBackup, importBackup } from './backup';
 import { getKycProfile, listKycVersions } from './kyc';
 import { listPolicies, submitPolicy } from './policies';
-import { createPerson, softDeletePerson, updatePerson } from './team';
+import { openDatabase } from './database';
+import { createPerson, createTeam, softDeletePerson, updatePerson } from './team';
 import { byId, codeOf, d, errorOf, setup, stageAtEndOfDay } from './test-support';
 
 describe('customers', () => {
@@ -325,6 +326,22 @@ describe('customers', () => {
       ['gender', 'Nam'],
     ]);
     expect(kyc().versions).toBe(before.versions + 1);
+  });
+
+  // T-398 (review of PR #1145): the machine clock set back across midnight while the app is open.
+  it('dates the KYC note of a profile change by a machine clock set back across midnight', async () => {
+    let machine = new Date(2026, 10, 8, 0, 5).getTime();
+    const db = await openDatabase({ now: () => new Date(machine) });
+    const team = createTeam(db, { name: 'Sao Mai' });
+    const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
+    const lan = createCustomer(db, { name: 'Lan', reId: re.id, stage: 'N3', date: d(1, 10) });
+    machine = new Date(2026, 10, 7, 23, 55).getTime();
+
+    updateCustomerProfile(db, lan.id, { gender: 'FEMALE' });
+    expect(getKycProfile(db, lan.id).notes.at(-1)).toMatchObject({
+      source: 'SYSTEM',
+      createdDate: d(7, 11),
+    });
   });
 
   it('changes the stage by hand, keeping the stage equal to the latest transition', async () => {
