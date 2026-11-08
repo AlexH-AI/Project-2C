@@ -125,11 +125,8 @@ const ISSUE = { code: 'V3', path: 'needs[0].text', detail: 'cụm cấm' };
 /** The longest model name stored (DR5-16). */
 const MAX_MODEL = 100;
 
-/**
- * Model names with nothing to see that `trim` keeps: zero width space, word joiner, next line,
- * Hangul filler, Mongolian vowel separator (DR6-159).
- */
-const BLANK_MODELS = ['\u{200B}', '\u{2060}', '\u{85}', '\u{3164}', '\u{180E}'];
+/** A model name with nothing to see that `trim` keeps (DR6-159; the others: `normalizeText`). */
+const BLANK_MODEL = '\u{200B}\u{3164}';
 
 const rejected = (customerId: string, kycVersionId: string): NewAiAnalysis =>
   analysis(customerId, kycVersionId, {
@@ -392,8 +389,7 @@ describe('recordAiAnalysis', () => {
       { promptTokens: 10 },
       { ...live, model: null },
       { ...live, model: ' ' },
-      // DR6-159: blank as `normalizeText` reads it, the rest of the app's checks too.
-      ...BLANK_MODELS.map((model) => ({ ...live, model })),
+      { ...live, model: BLANK_MODEL },
       { ...live, model: 'glm\0-5.3' },
       // DR6-137: what sql.js reads back as other text, past the 100 of the import (rule 12).
       { ...live, model: `${'x'.repeat(MAX_MODEL - 1)}\uD800` },
@@ -549,7 +545,7 @@ describe('recordAiAnalysis', () => {
       `${'x'.repeat(MAX_MODEL - 1)}\uD800`,
       '\uDC00glm-5.3',
       '\u{FEFF}alpha',
-      ...BLANK_MODELS,
+      BLANK_MODEL,
     ]) {
       expect(analysisLabelsFit(fields(model))).toBe(false);
     }

@@ -250,21 +250,13 @@ describe('filterTrash', () => {
     expect(filterTrash(ROWS, 'policy', 'trinh')).toEqual([]);
   });
 
-  // DR6-172: names are stored through `normalizeText`, and the text typed is read the same way.
-  it('finds a name pasted with an invisible character, a no-break space or two spaces', () => {
-    for (const query of [
-      '\u{200B}Lý Quốc Bảo',
-      'Lý\u{00A0}Quốc\u{00A0}Bảo',
-      'Lý  Quốc  Bảo',
-      'L\u{200B}ý quoc\u{2060} bao',
-    ]) {
-      expect(filterTrash(ROWS, 'all', query), query).toEqual([bao]);
-    }
+  // DR6-172: the text typed is read as names are stored (`searchText`, its cases in domain).
+  it('finds a name pasted with an invisible character', () => {
+    expect(filterTrash(ROWS, 'all', 'L\u{200B}ý\u{00A0}quoc bao')).toEqual([bao]);
   });
 
   it('keeps every row for text of invisible characters alone, as for empty text', () => {
     expect(filterTrash(ROWS, 'all', '\u{200B}\u{3164}')).toEqual(ROWS);
-    expect(filterTrash(ROWS, 'person', '\u{00A0}\u{2060}')).toEqual([mai, bao]);
   });
 });
 

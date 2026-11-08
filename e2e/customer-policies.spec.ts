@@ -1,27 +1,11 @@
 import { expect, test, type Page } from './fixtures';
 import { ANCHOR_YEAR, toNewYearsEve } from './anchor';
-import { createKycCustomer } from './support';
+import { createKycCustomer, openProfile } from './support';
 
 // The e2e build pins today to the demo anchor, Tuesday 15/09/2026 (playwright.config.ts).
 
-/** Opens the profile of the customer of a past met appointment; returns its name. */
-async function openProfile(page: Page): Promise<string> {
-  await page.goto('/#/appointments');
-  // Yesterday's day alone, so the met ones are among the rows shown (T-150).
-  await page
-    .getByRole('radiogroup', { name: 'Loại kỳ' })
-    .getByRole('radio', { name: 'Ngày' })
-    .click();
-  await page.getByRole('button', { name: 'Kỳ trước' }).click();
-  const list = page.getByRole('table', { name: 'Danh sách lịch hẹn' });
-  const met = list.locator('tbody tr').filter({ hasText: 'Đã gặp' }).first();
-  const name = (await met.getByRole('button').textContent()) ?? '';
-  await met.getByRole('button').click();
-  await page.getByRole('link', { name: 'Hồ sơ KH →' }).click();
-  // Exact: the detail's heading "date · name" is still up until the profile renders (T-262).
-  await expect(page.getByRole('heading', { level: 2, name, exact: true })).toBeVisible();
-  return name;
-}
+/** A day or an FYP of invisible characters alone (DR6-173). */
+const INVISIBLE = '\u{200B}\u{85}\u{2060}';
 
 const policyCount = async (page: Page) => {
   const facts = (await page.locator('#customer-name').locator('xpath=../..').textContent()) ?? '';
@@ -135,7 +119,6 @@ test('refuses a zero, negative or unreadable FYP', async ({ page }) => {
 test('a day or an FYP of invisible characters alone is asked for only on saving (8a, DR6-173)', async ({
   page,
 }) => {
-  const INVISIBLE = '\u{200B}\u{85}\u{2060}';
   await openProfile(page);
   const before = await policyCount(page);
   const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
@@ -165,7 +148,6 @@ test('a day or an FYP of invisible characters alone is asked for only on saving 
 test('an issue day or FYP of invisible characters alone is asked for only on issuing (8b, DR6-173)', async ({
   page,
 }) => {
-  const INVISIBLE = '\u{200B}\u{85}\u{2060}';
   await openProfile(page);
   const card = page.getByRole('region', { name: 'Hợp đồng', exact: true });
   await card.getByRole('button', { name: '+ Hợp đồng' }).first().click();

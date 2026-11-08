@@ -272,15 +272,11 @@ describe('checkWebAnswer', () => {
     });
   });
 
-  /** Characters that show nothing (K20): a word joiner, a Hangul filler. */
-  const [WJ, HANGUL_FILLER] = [String.fromCodePoint(0x2060), String.fromCodePoint(0x3164)];
-
   it.each([
     ['empty', '', 'EMPTY'],
     ['blank', ' \n\t ', 'EMPTY'],
-    // Blank as every other box of the app reads it (K20, DR6-168).
-    ['only invisible characters', `${ZWSP}${WJ}${HANGUL_FILLER}`, 'EMPTY'],
-    ['invisible characters and white space', ` ${ZWSP}\n${WJ}\t${HANGUL_FILLER} `, 'EMPTY'],
+    // Blank as every other box of the app reads it (K20, DR6-168; its cases: `normalizeText`).
+    ['invisible characters and white space', ` ${ZWSP}\n\u{3164}\t `, 'EMPTY'],
     ['longer than 20 000 characters', `${JSON.stringify(GOOD)}${' '.repeat(20_000)}`, 'TOO_LONG'],
     // Too long to be read, so never read as blank (DR5-09, review #1066).
     ['white space past 40 000 code units', ' '.repeat(2 * MAX_AI_RAW_OUTPUT + 1), 'TOO_LONG'],

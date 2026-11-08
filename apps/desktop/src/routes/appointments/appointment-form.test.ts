@@ -317,24 +317,11 @@ describe('searchCustomers', () => {
     expect(searchCustomers(all, 'k-', 2)).toHaveLength(2);
   });
 
-  // DR6-172: names are stored through `normalizeText`, and the text typed is read the same way.
-  it('finds a name pasted with an invisible character, a no-break space or two spaces', () => {
-    for (const query of [
-      '\u{200B}Lê Hoài Nam',
-      'Lê\u{00A0}Hoài\u{00A0}Nam',
-      'Lê  Hoài  Nam',
-      'L\u{200B}ê Hoài Nam',
-      '\u{2060}k-m2d8\u{3164}',
-    ]) {
-      expect(
-        searchCustomers(all, query, 10).map((c) => c.name),
-        query,
-      ).toEqual(['Lê Hoài Nam']);
-    }
-  });
-
-  it('returns nothing for text of invisible characters alone, as for empty text', () => {
-    expect(searchCustomers(all, '\u{200B}\u{2060}\u{3164}', 10)).toEqual([]);
-    expect(searchCustomers(all, '\u{00A0}\u{0085}', 10)).toEqual([]);
+  // DR6-172: the text typed is read as names are stored (`searchText`, its cases in domain).
+  it('finds a name pasted with an invisible character, nothing for those characters alone', () => {
+    expect(searchCustomers(all, 'L\u{200B}ê\u{00A0}Hoài Nam', 10).map((c) => c.name)).toEqual([
+      'Lê Hoài Nam',
+    ]);
+    expect(searchCustomers(all, '\u{200B}\u{3164}', 10)).toEqual([]);
   });
 });

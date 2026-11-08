@@ -128,6 +128,34 @@ export async function seededCustomer(page: Page, name: string): Promise<Locator>
   return link;
 }
 
+/** Opens the profile of the customer of a past met appointment; returns its name. */
+export async function openProfile(page: Page): Promise<string> {
+  await page.goto('/#/appointments');
+  // Yesterday's day alone (the e2e day is the demo anchor), so the met ones are shown (T-150).
+  await page
+    .getByRole('radiogroup', { name: 'Loại kỳ' })
+    .getByRole('radio', { name: 'Ngày' })
+    .click();
+  await page.getByRole('button', { name: 'Kỳ trước' }).click();
+  const list = page.getByRole('table', { name: 'Danh sách lịch hẹn' });
+  const met = list.locator('tbody tr').filter({ hasText: 'Đã gặp' }).first();
+  const name = (await met.getByRole('button').textContent()) ?? '';
+  await met.getByRole('button').click();
+  await page.getByRole('link', { name: 'Hồ sơ KH →' }).click();
+  // Exact: the detail's heading "date · name" is still up until the profile renders (T-262).
+  await expect(page.getByRole('heading', { level: 2, name, exact: true })).toBeVisible();
+  return name;
+}
+
+/** Sets the scope to the team `name`. */
+export async function pickTeam(page: Page, name: string) {
+  await page
+    .getByRole('radiogroup', { name: 'Góc nhìn' })
+    .getByRole('radio', { name: 'Team' })
+    .click();
+  await page.getByRole('combobox', { name: 'Team của góc nhìn' }).selectOption({ label: name });
+}
+
 /** Collects console errors and uncaught page errors; the returned array fills as they happen. */
 export function trackConsoleErrors(page: Page): string[] {
   const errors: string[] = [];

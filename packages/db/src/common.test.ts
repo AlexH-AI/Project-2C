@@ -96,19 +96,9 @@ describe('isLabel', () => {
     }
   });
 
-  // DR6-159: blank as every other check of the app reads it (`normalizeText`), not as `trim` does.
+  // DR6-159: blank as every other check of the app reads it (`normalizeText`, its cases in domain).
   it('refuses text with nothing to see, invisible characters alone too', () => {
-    for (const text of [
-      '',
-      '  ',
-      '\u{A0}',
-      '\u{200B}',
-      '\u{2060}',
-      '\u{85}',
-      '\u{3164}',
-      '\u{180E}',
-      ' \u{200B}\u{3164} ',
-    ]) {
+    for (const text of ['', '  ', ' \u{200B}\u{3164} ']) {
       expect(isLabel(text)).toBe(false);
     }
   });

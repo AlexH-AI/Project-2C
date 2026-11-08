@@ -54,6 +54,8 @@ describe('normalizeText', () => {
     expect(normalizeText('Sao⁠­ Mai')).toBe('Sao Mai');
     expect(normalizeText('​')).toBe('');
     expect(normalizeText('﻿ ⁠')).toBe('');
+    // U+180E: white space before Unicode 6.3, a format character since; `trim` keeps it (DR6-159).
+    expect(normalizeText('\u{180E} \u{180E}')).toBe('');
   });
 
   it('composes (NFC), also a tone mark kept from its letter by a format character', () => {
