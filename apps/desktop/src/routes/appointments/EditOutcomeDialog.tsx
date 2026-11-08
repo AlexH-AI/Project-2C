@@ -231,7 +231,6 @@ export function EditOutcomeDialog({
         />
       )}
       {undone && <UndoneMoveNote caused={undone} />}
-      {/* As in 6c: a note of lines stays a box of lines whatever the status (DR6-182). */}
       <TextField
         label={t(status === 'MET' ? 'outcome.note' : 'outcome.noteOther')}
         value={note}

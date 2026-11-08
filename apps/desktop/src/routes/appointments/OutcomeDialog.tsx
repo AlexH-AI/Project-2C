@@ -179,8 +179,7 @@ export function OutcomeDialog({
         )}
         {status !== null && status !== 'RESCHEDULED' && (
           <>
-            {/* A one-line field drops the line breaks of its value: a note of lines stays a box of
-                lines whatever the status (DR6-182). */}
+            {/* A one-line field drops line breaks: a note of lines stays a box (DR6-182). */}
             <TextField
               label={t(met ? 'outcome.note' : 'outcome.noteOther')}
               value={note}
