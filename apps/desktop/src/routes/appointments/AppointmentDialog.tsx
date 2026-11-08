@@ -13,7 +13,7 @@ import {
   type CalendarDate,
   type Person,
 } from '@p2c/domain';
-import { Dialog, SelectField, TextField } from '@p2c/ui';
+import { Button, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData } from '../../data/AppDataContext';
 import { errorMessage, t } from '../../i18n';
 import { reOptions } from '../../shell/scope';
@@ -218,16 +218,25 @@ export function CoordinatorsField({
   ids: readonly string[];
   onChange: (ids: readonly string[]) => void;
 }) {
+  const [picked, setPicked] = useState('');
+  const [added, setAdded] = useState('');
   // No RE coordinates (ADR-0007: TL / IS / BD / BDM do), so the appointment's RE never is one.
   const coordinators = people.filter((person) => ids.includes(person.id));
   const addable = people
     .filter((person) => person.role !== 'RE' && !ids.includes(person.id))
     .map((person) => ({ value: person.id, label: personLabel(person) }));
+  const add = () => {
+    const choice = addable.find((option) => option.value === picked);
+    if (!choice) return;
+    onChange([...ids, choice.value]);
+    setPicked('');
+    setAdded(t('appointmentForm.coordinatorAdded', { name: choice.label }));
+  };
   return (
-    <fieldset className="m-0 flex flex-col gap-1 border-0 p-0">
+    <fieldset className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 border-0 p-0">
       <legend className="p-0 font-medium">{t('appointmentForm.coordinators')}</legend>
       {coordinators.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex w-full flex-wrap gap-1.5">
           {coordinators.map((person) => (
             <button
               key={person.id}
@@ -244,12 +253,18 @@ export function CoordinatorsField({
       <SelectField
         label={t('appointmentForm.coordinatorPick')}
         labelHidden
-        value=""
+        value={picked}
         options={addable}
         placeholder={t('appointmentForm.coordinatorAdd')}
-        onChange={(id) => id && onChange([...ids, id])}
+        onChange={setPicked}
       />
-      <span className="text-xs text-fg-3">{t('appointmentForm.coordinatorHelp')}</span>
+      <Button aria-disabled={!picked || undefined} onClick={add}>
+        {t('appointmentForm.coordinatorAddButton')}
+      </Button>
+      <span role="status" className="sr-only">
+        {added}
+      </span>
+      <span className="w-full text-xs text-fg-3">{t('appointmentForm.coordinatorHelp')}</span>
     </fieldset>
   );
 }

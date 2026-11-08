@@ -419,6 +419,31 @@ function form(page: Page) {
   };
 }
 
+// DR6-181: "Thêm" adds the one picked, by keyboard or mouse, and says so (6f; 6a / 6b / 6h alike).
+test('a coordinator is added by "Thêm", not by arrows on the list', async ({ page }) => {
+  const { kinds, rows, detail } = screen(page);
+  await kinds.getByRole('radio', { name: 'Ngày' }).click();
+  await page.getByRole('button', { name: 'Kỳ trước' }).click();
+  await rows.filter({ hasText: 'Đã gặp' }).first().getByRole('button').click();
+  await detail.getByRole('button', { name: 'Sửa kết quả' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Sửa kết quả cuộc gặp' });
+  const pick = dialog.getByRole('combobox', { name: 'Thêm người phối hợp' });
+  const chips = dialog.getByRole('button', { name: /^Bỏ / });
+  const before = await chips.count();
+  await pick.press('ArrowDown');
+  await pick.press('ArrowDown');
+  await expect(chips).toHaveCount(before);
+  const name = (await pick.locator('option:checked').textContent()) ?? '';
+  await pick.press('Tab');
+  await page.keyboard.press('Enter');
+  await expect(dialog.getByRole('button', { name: `Bỏ ${name}` })).toBeVisible();
+  await expect(pick).toHaveValue('');
+  await expect(dialog.getByRole('status')).toHaveText(`Đã thêm ${name}`);
+  await pick.selectOption({ index: 1 });
+  await dialog.getByRole('button', { name: 'Thêm', exact: true }).click();
+  await expect(chips).toHaveCount(before + 2);
+});
+
 // DR6-172: the customer box reads what is typed as names are stored (`normalizeText`), so a name
 // pasted with U+200B, a no-break space or two spaces finds the customer; invisible characters alone
 // leave the box as empty, with no list and no "Không có KH khớp.".
@@ -465,8 +490,11 @@ test('creates an appointment: the day is read back, a trigger is required, the d
   await f.date.fill('30/9');
   await expect(f.dialog).toContainText('Thứ Tư 30/09/2026 · 15 ngày nữa');
   await f.time.fill('14:00');
-  await f.dialog.getByRole('combobox', { name: 'Thêm người phối hợp' }).selectOption({ index: 1 });
-  await expect(f.dialog.getByRole('button', { name: /^Bỏ / })).toHaveCount(1);
+  // Arrows on the closed list move its choice (Chromium, as WebView2) but add no one (DR6-181).
+  const pick = f.dialog.getByRole('combobox', { name: 'Thêm người phối hợp' });
+  await pick.press('ArrowDown');
+  await pick.press('ArrowDown');
+  await expect(f.dialog.getByRole('button', { name: /^Bỏ / })).toHaveCount(0);
 
   // No trigger yet: nothing is created and the dialog says why.
   await f.create.click();
@@ -486,6 +514,7 @@ test('creates an appointment: the day is read back, a trigger is required, the d
     `30/09/2026 14:00 · ${name}`,
   );
   await expect(detail).toContainText('Hội thảo / sự kiện');
+  await expect(detail.locator('dt:text-is("Phối hợp") + dd')).toHaveText('—');
 });
 
 test('a day long past without a year offers next year; the RE picks', async ({ page }) => {
@@ -763,6 +792,7 @@ test('a coordinator filter hiding the new appointment is cleared', async ({ page
   await coordinator.selectOption({ label: 'Không có người phối hợp' });
   const f = await fillAppointment(page, '30/9');
   await f.dialog.getByRole('combobox', { name: 'Thêm người phối hợp' }).selectOption({ index: 1 });
+  await f.dialog.getByRole('button', { name: 'Thêm', exact: true }).click();
   await f.create.click();
 
   await expect(f.dialog).toHaveCount(0);
