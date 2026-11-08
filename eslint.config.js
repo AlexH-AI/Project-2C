@@ -26,19 +26,13 @@ export default tseslint.config(
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  {
-    files: ['packages/domain/**/*.ts'],
-    languageOptions: { globals: {} },
-  },
+  // No `globals` for .ts / .tsx: typescript-eslint turns no-undef off there, and each tsconfig
+  // (`lib`, `types`) says which globals a package may use. Of the rules on, only no-global-assign
+  // read them there (`window = …`).
   {
     files: ['apps/desktop/src/**/*.{ts,tsx}', 'packages/ui/src/**/*.tsx'],
-    languageOptions: { globals: globals.browser },
     plugins: { 'react-hooks': reactHooks },
     rules: reactHooks.configs.recommended.rules,
-  },
-  {
-    files: ['packages/db/src/**/*.ts'],
-    languageOptions: { globals: { crypto: 'readonly' } },
   },
   {
     // Only `zod/mini` (DR6-25): the full zod (`zod`, `zod/v4`, `zod/v3`) puts ≈ 62 KB back into
@@ -59,12 +53,7 @@ export default tseslint.config(
     },
   },
   {
-    files: [
-      '*.config.{js,ts}',
-      '.dependency-cruiser.cjs',
-      'apps/*/*.config.ts',
-      'packages/*/*.config.ts',
-    ],
+    files: ['*.config.js', '.dependency-cruiser.cjs'],
     languageOptions: { globals: globals.node },
   },
   {

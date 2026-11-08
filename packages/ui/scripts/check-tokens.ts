@@ -3,7 +3,7 @@
 // a separator or mark (`·`, `→`, `✓`…) in place of i18n (`sep.*`, a key of `vi.ts`).
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { findHardcodedSeparators, findTokenViolations } from '../src/token-guard.ts';
+import { findHardcodedSeparators, findTokenViolations } from './token-guard.ts';
 
 const dirs = process.argv.slice(2);
 if (dirs.length === 0) {
