@@ -9,6 +9,7 @@ import {
   LATEST_SCHEMA_VERSION,
   listTeams,
   listTrash,
+  MAX_BACKUP_BYTES,
   openDatabase,
   scheduleAppointment,
   softDeleteCustomer,
@@ -17,7 +18,7 @@ import {
 } from '@p2c/db';
 import { byName, calendarDate, formatDate, fromLocalDate, type CalendarDate } from '@p2c/domain';
 import { describe, expect, it, vi } from 'vitest';
-import { errorMessage } from '../i18n';
+import { errorMessage, t } from '../i18n';
 import {
   isDamagedDataError,
   isStartupBackupError,
@@ -1358,6 +1359,33 @@ describe('backup files', () => {
 
     expect(exported.size).toBeGreaterThan(exported.text.length);
   });
+
+  it('writes a file of exactly the size an import reads, and refuses one bigger in bytes though not in length (DR6-179)', async () => {
+    // All of the file but the team's name, measured on a name of one character of three bytes.
+    const probe = await openAppData({ clock, seed: (db) => createTeam(db, { name: 'ộ' }) });
+    const room = MAX_BACKUP_BYTES - ((await probe.exportBackup()).size - 3);
+    const name = 'ộ'.repeat(Math.floor(room / 3)) + 'a'.repeat(room % 3);
+    const { storage, exports } = memoryStorage();
+    const app = await openAppData({ storage, clock, seed: (db) => createTeam(db, { name }) });
+
+    const exported = await app.exportBackup();
+    expect(exported.size).toBe(MAX_BACKUP_BYTES);
+    expect(exports.map((file) => file.name)).toEqual([exported.name]);
+    const imported = await importBackup(exported.text);
+    expect(listTeams(imported.db)).toHaveLength(1);
+    imported.db.sqlite.close();
+
+    // A few bytes more: still about a third of the limit in length.
+    app.run((db) => createTeam(db, { name: 'Sao Mai' }));
+    const refused = await app.exportBackup().catch((error: unknown) => error);
+    await app.saves.idle();
+    app.db().sqlite.close();
+    // First, so that a written file fails without printing its 100 MB.
+    expect(refused).toBeInstanceOf(DbError);
+    expect(refused).toMatchObject({ code: 'BACKUP_TOO_LARGE', params: { limitMb: 100 } });
+    expect(exports).toHaveLength(1);
+    expect(t('settings.backup.exportTooLarge', (refused as DbError).params)).toContain('100 MB');
+  }, 60_000);
 
   it('reads a backup without touching the current data, and counts both', async () => {
     const text = await backupOf(['Sao Mai', 'Bình Minh', 'Hừng Đông'], 'Hừng Đông');
