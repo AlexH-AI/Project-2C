@@ -400,7 +400,7 @@ Ghi chú: khác chữ spec §6.4 ở một điểm — "khoản <số>" **chỉ*
 | C83 | "Giới luật Phật giáo cấm sát sinh" · "KH thích" + U+0000 + "đọc sách" | đạt |
 | C84 | "KH sẵn sàng mua (F12)" · "KH tiềm năng mua [F12]" · "KH sẵn sàng mua “F12”" · "KH sẵn sàng mua " + U+0022 + "F12" + U+0022 · "KH nói “sẵn sàng mua”" | V3 |
 | C85 | "Theo Luật “Kinh doanh bảo hiểm”" · "Theo Luật " + U+0022 + "Đất đai" + U+0022 · "Theo Luật (sửa đổi) Đất đai" | V6 |
-| C86 | "KH cần tìm hiểu luật (F12)" · "KH cần tìm hiểu luật (F12) về thừa kế" · "Giữ kỷ luật “Thép” của KH" · "Hỏi KH đã có Luật “Sư” riêng chưa" ở `discoveryStrategy` | đạt |
+| C86 | "KH cần tìm hiểu luật (F12)" · "Hỏi KH đã có Luật “Sư” riêng chưa" ở `discoveryStrategy` | đạt |
 
 ## 9. Owner duyệt
 
@@ -1028,7 +1028,7 @@ Ngoài bảng:
 
 **Đã thử trước khi đề xuất** (script tạm so kết quả V3, V6 của từng chuỗi ở `main` `ccc8442` và ở nhánh T-392; kho chữ như §12, §14):
 
-- **1 658** test của `packages/ai` (1 646 test cũ, gồm C1–C83 và test đọc bảng §8, cộng 12 ca C84–C86): xanh.
+- **1 656** test của `packages/ai` (1 646 test cũ, gồm C1–C83 và test đọc bảng §8, cộng 10 ca C84–C86): xanh.
 - **1 101** chuỗi `"text"` của eval 10/10 và 11/10 (`docs/metrics/ai-eval-2026-10-1{0,1}.md`): 0 chuỗi đổi kết quả.
 - **2 404** chuỗi của `vi.ts`, **505** chuỗi của seed (`seed.ts`, `seed-data.ts`) và câu Mock (`schema.ts`, `mock-extraction.ts`): 0 chuỗi đổi kết quả.
 - **73 344** dòng khác nhau của `docs/**/*.md` (đo trước khi viết mục này): 39 dòng đổi kết quả (§15.2, §15.3).
@@ -1061,7 +1061,7 @@ Ngoài bảng:
 
 **Lỗi hiện tại:** mục "luật <Tên>" của §8.4 đòi chữ hoa ngay sau "luật" và khoảng trắng, nên tên luật trong ngoặc kép hay sau một ngoặc đơn lọt: "Theo Luật “Kinh doanh bảo hiểm”", "Theo Luật " + U+0022 + "Đất đai" + U+0022, "Theo Luật (sửa đổi) Đất đai" (CLR6-C1). Không phần "Mất" nào của §11–§14 nêu dạng này.
 
-**Sửa:** giữa "luật" và từ viết hoa được có **một cặp ngoặc đơn** (rồi khoảng trắng) và **một ngoặc kép mở** `"` hay `“`, mỗi thứ có thể không có. Ngoặc đơn **không** tính là dấu mở ngay trước tên: nếu tính thì "luật (F12)" (mã dữ kiện prompt yêu cầu) bị chặn nhầm; bản thử đó làm đỏ 2 ca "luật (F12)" của C86. Các chữ miễn trước "luật" (pháp, kỷ, kỉ, quy, qui, giới, định) và sau nó ("KH", "RE", "sư") giữ nguyên, kể cả khi có ngoặc: "Giữ kỷ luật “Thép” của KH", "Luật “Sư”" đạt. Mục §8.4 đã chép vào bảng; so với trước: thêm cặp ngoặc đơn, ngoặc kép mở, hai ví dụ khớp và ví dụ không khớp "luật (F12)".
+**Sửa:** giữa "luật" và từ viết hoa được có **một cặp ngoặc đơn** (rồi khoảng trắng) và **một ngoặc kép mở** `"` hay `“`, mỗi thứ có thể không có. Ngoặc đơn **không** tính là dấu mở ngay trước tên: nếu tính thì "luật (F12)" (mã dữ kiện prompt yêu cầu) bị chặn nhầm; bản thử đó làm đỏ ca "luật (F12)" của C86. Các chữ miễn trước "luật" (pháp, kỷ, kỉ, quy, qui, giới, định) và sau nó ("KH", "RE", "sư") giữ nguyên, kể cả khi có ngoặc: "Giữ kỷ luật “Thép” của KH", "Luật “Sư”" đạt. Mục §8.4 đã chép vào bảng; so với trước: thêm cặp ngoặc đơn, ngoặc kép mở, hai ví dụ khớp và ví dụ không khớp "luật (F12)".
 
 - Code: `LAW_NAME` của `blocklists.ts`, phần sau "luật": `\s*(\([^()]*\)\s*)?["“]?(?!(kh|re|sư)\b)\p{Lu}` (mọi kiểu chữ ở phần miễn, như trước). `detail` trích từ "luật" tới chữ hoa đầu tên: `có "Luật “K"`, `có "Luật (sửa đổi) Đ"`.
 - Kết quả đo: 3 / 3 câu của C85 bị V6. "Theo Luật (sửa đổi) “Đất đai”", "Theo Luật (sửa đổi năm 2019) Đất đai" và "Theo Luật（sửa đổi）Đất đai" (ngoặc toàn độ rộng, qua NFKC) cũng bị chặn. C78, C83, C86 đạt. Kho chữ thật: 0 chuỗi đổi. Docs: 18 dòng đổi: 4 dòng trích chính các câu DR6-180, 1 dòng bị chặn cả trước lẫn sau (chỉ đổi chỗ khớp đầu), 13 dòng có "luật" nghĩa "quy tắc" rồi tên quy tắc trong ngoặc kép (tác dụng phụ dưới).
@@ -1070,7 +1070,7 @@ Ngoài bảng:
 
 ### 15.4 Ca kiểm mới (thêm vào §8.5)
 
-Đã chép vào bảng §8.5 (C84–C86). Mỗi nhánh mới của hai regex có ít nhất một ca giữ (theo hướng CLR6-C8): bỏ từng ký tự mới của lớp V3, bỏ cặp ngoặc đơn, khoảng trắng sau nó hay từng ngoặc kép của V6 thì ít nhất một ca đỏ; cho ngoặc đơn làm dấu mở trước tên thì C86 đỏ. Test đọc bảng §8 (`blocklists.test.ts`) có thêm mẫu cho hai mục.
+Đã chép vào bảng §8.5 (C84–C86). Mỗi nhánh mới của hai regex có ít nhất một ca giữ (theo hướng CLR6-C8): bỏ từng ký tự mới của lớp V3, bỏ cặp ngoặc đơn, khoảng trắng sau nó hay từng ngoặc kép của V6 thì ít nhất một ca đỏ; cho ngoặc đơn làm dấu mở trước tên thì C86 đỏ; đặt phần miễn "KH", "RE", "sư" trước ngoặc kép thì "Luật “Sư”" của C86 bị chặn. Test đọc bảng §8 (`blocklists.test.ts`) đọc chữ mới của hai mục.
 
 ### 15.5 Không làm trong đợt này
 

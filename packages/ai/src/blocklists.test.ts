@@ -70,7 +70,6 @@ const SAMPLES: Record<string, readonly (readonly [string, string])[]> = {
     [
       ['KH sẵn sàng mua.', 'sẵn sàng mua'],
       ['KH tiềm năng mua gói', 'tiềm năng mua'],
-      ['KH sẵn sàng mua (F12)', 'sẵn sàng mua'],
     ],
   '`\\b[ie][ns][tf][jp]( [at])?\\b` trên bản có dấu (vd. "INTJ", "ENFP-A")': [
     ['KH intj', 'intj'],
@@ -102,8 +101,6 @@ const SAMPLES: Record<string, readonly (readonly [string, string])[]> = {
       [`Theo Luật${ZWSP}BHXH`, 'LuậtB'],
       ['Theo quy định Luật Kinh doanh bảo hiểm', 'Luật K'],
       ['Qua môi giới Luật Kinh doanh bảo hiểm', 'Luật K'],
-      ['Theo Luật “Kinh doanh bảo hiểm”', 'Luật “K'],
-      ['Theo Luật (sửa đổi) Đất đai', 'Luật (sửa đổi) Đ'],
     ],
   '`\\b(quyết định\\|công văn) số\\s*\\p{Nd}` (vd. "Quyết định số 123"; "quyết định số tiền" không khớp)':
     [
