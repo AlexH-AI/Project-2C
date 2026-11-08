@@ -54,7 +54,7 @@ Bấm tên KH (trong bảng hoặc khung Trong ngày) để mở **Chi tiết l�
 3. **RE**: RE phụ trách cuộc hẹn. Lịch hẹn và chỉ số tính cho RE này.
 4. **Ngày (dd/mm)**: gõ ví dụ `20/9`; dòng dưới đọc lại thứ, ngày và "hôm nay" / "… ngày nữa". **Giờ (hh:mm, không bắt buộc)**.
 5. **Trigger**: lý do có cuộc hẹn (Giới thiệu từ KH, Đáo hạn tài sản, Hội thảo / sự kiện, Sinh nhật, dịp đặc biệt, Khác). Bắt buộc; "—" là chưa chọn. **Mô tả trigger** không bắt buộc.
-6. **Người phối hợp (không tính chỉ số)**: chọn **+ thêm** để thêm TL, IS, BD hoặc BDM đi cùng. Người phối hợp không được tính chỉ số.
+6. **Người phối hợp (không tính chỉ số)**: chọn một TL, IS, BD hoặc BDM đi cùng trong ô **+ thêm** rồi bấm **Thêm**; mỗi người thêm thành một ô có dấu × để bỏ. Người phối hợp không được tính chỉ số.
 7. Bấm **Tạo lịch hẹn**. Ở màn Lịch hẹn, màn chuyển tới ngày của lịch mới và mở chi tiết của nó.
 
 Gõ một ngày đã qua, app hỏi lại (ví dụ "Ý anh là …?") và có nút **Dùng …** để lấy ngày gợi ý. App không tự đổi năm: giữ nguyên ngày đã qua là **nhập bù** một lịch hẹn quá khứ.

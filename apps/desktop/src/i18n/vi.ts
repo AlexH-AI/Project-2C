@@ -836,6 +836,8 @@ export const vi = {
   'appointmentForm.coordinators': 'Người phối hợp (không tính chỉ số)',
   'appointmentForm.coordinatorAdd': '+ thêm',
   'appointmentForm.coordinatorPick': 'Thêm người phối hợp',
+  'appointmentForm.coordinatorAddButton': 'Thêm',
+  'appointmentForm.coordinatorAdded': 'Đã thêm {name}',
   'appointmentForm.coordinatorRemove': 'Bỏ {name}',
   // After the name on the chip, which the chip's name (above) says in words.
   'appointmentForm.coordinatorRemoveMark': '×',
