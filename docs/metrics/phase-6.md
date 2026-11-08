@@ -475,7 +475,7 @@ Deep review Phase 1–6 (6D, kế hoạch `docs/process/deep-review-phase-1-6.md
   - Reviewer: Claude Opus 5.5 (9 phiên: gói A–F, chủ đề G rà gọn, H chữ người dùng, I bất đồng bộ), Codex GPT Sol 6.1 (đợt 1, 07/11) và agent WorkBuddy (đợt 2, 07–08/11; theo log: gói A Hy4, B–F DeepSeek V4.1 Flash), trên Home PC (ADR-0001 M13). Kế hoạch: T-385 #1117. Tiêu chí xong chốt trước (K48), đóng băng code (K49).
   - Tổng hợp: `docs/reviews/2026-11-08-deep-review-phase-1-6-luot-6-tong-hop.md` (T-389 #1131).
   - Bảng R1 20 dòng, R2 14 Issue: đều đã sửa, 0 hồi quy.
-  - 97 phát hiện mới → **35** vấn đề DR6-178…212: **0 Medium**; **5 chặn phát hành** theo K48 (4 Low trục D, 1 Low trục G); 30 không chặn (24 Low, 6 Nit) → sổ [sau v1.0]. 0 bị bác.
+  - 103 phát hiện mới → **35** vấn đề DR6-178…212: **0 Medium**; **5 chặn phát hành** theo K48 (4 Low trục D, 1 Low trục G); 30 không chặn (25 Low, 5 Nit) → sổ [sau v1.0]. 0 bị bác.
   - Kết luận: chưa sẵn sàng ở `5b1328a` vì còn 5 vấn đề chặn; sau đợt sửa thì G7, không cần review lại vùng (không có Medium).
   - Owner 08/11 đồng ý cả 7 đề xuất của §9: 5 Issue #1134–#1138 (T-390…T-394).
 

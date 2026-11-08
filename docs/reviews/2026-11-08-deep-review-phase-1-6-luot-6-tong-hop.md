@@ -11,8 +11,8 @@
 **Cách kiểm (ADR-0001 M2, M13):** phiên tổng hợp (Claude Opus 5.5, phiên chính; Owner không bật subagent) đọc đủ 21 báo cáo: phần phát hiện, bảng đếm, bảng R của Claude A–F và bảng R gộp của Claude F, mục Bloat / Hiệu năng của gói F và G, kết luận của gói F. Đối chiếu trên code ở checkout chính (`main` = `5b1328a`, code không đổi từ SHA ghim):
 
 - **5 vấn đề chặn:** đọc lại code ở mọi vị trí nêu, quét lại cùng mẫu (§4).
-- **Phát hiện của Codex và WorkBuddy (17):** đọc lại code ở vị trí nêu (dữ liệu tham khảo, M2); cả 17 đúng.
-- **Phát hiện không chặn của Claude (75):** mỗi phát hiện có probe hay đột biến do phiên gói chạy lại (phát hiện của subagent được phiên chính kiểm lại trước khi ghi, mục 1 và 9 của báo cáo). Phiên tổng hợp đọc lại mô tả, bằng chứng, trường "Cùng mẫu", và đọc code ở các chỗ quyết định trục (CLR6-C2, D11, D13, E6, E10, H1, I1).
+- **Phát hiện của Codex và WorkBuddy (23):** đọc lại code ở vị trí nêu (dữ liệu tham khảo, M2); cả 23 đúng. Sáu phát hiện WorkBuddy (C1–C3, D1, D2, F1) lúc đầu bị script đếm của phiên tổng hợp bỏ sót vì đề mục khác dạng; đã đọc, kiểm trên code và gộp vào họ có sẵn trước khi merge; không đổi kết luận, không đổi số DR6.
+- **Phát hiện không chặn của Claude (76):** mỗi phát hiện có probe hay đột biến do phiên gói chạy lại (phát hiện của subagent được phiên chính kiểm lại trước khi ghi, mục 1 và 9 của báo cáo). Phiên tổng hợp đọc lại mô tả, bằng chứng, trường "Cùng mẫu", và đọc code ở các chỗ quyết định trục (CLR6-C2, D11, D13, E6, E10, H1, I1).
 - 0 phát hiện bị bác; 0 KNOWN báo lại sai; 1 KNOWN có bằng chứng mới (CLR6-F9, mục OPEN [sau v1.0] của sổ).
 
 ## 1. Kết luận
@@ -28,7 +28,7 @@
 | DR6-182 | Ô ghi chú 6c / 6f đổi sang ô một dòng khi chọn Hủy / Không đến; sửa ô rồi lưu thì ghi chú mất xuống dòng | Low · D | Claude H (S1, S2 cùng tìm) |
 
 - **Bảng R:** R1 **20 / 20 ĐÃ SỬA**, R2 **14 / 14 ĐÃ SỬA**; 0 SỬA MỘT PHẦN, 0 CHƯA SỬA, 0 HỒI QUY (§3). Phần còn hở của các dòng là biến thể Low / Nit, đã ghi thành phát hiện mới không chặn.
-- **97 phát hiện mới** (Claude 80, Codex 8, WorkBuddy 9) → **35 vấn đề DR6-178…212**: 5 chặn, **30 không chặn** (24 Low, 6 Nit theo mức chốt của họ) → sổ ghi chú review, OPEN, nhãn **[sau v1.0]**, không sửa trước G7 (K48).
+- **103 phát hiện mới** (Claude 80, Codex 8, WorkBuddy 15) → **35 vấn đề DR6-178…212**: 5 chặn, **30 không chặn** (25 Low, 5 Nit theo mức chốt của họ) → sổ ghi chú review, OPEN, nhãn **[sau v1.0]**, không sửa trước G7 (K48).
 - **Số đo:** exe ở SHA ghim không dòng nào ⚠️ so mốc sau #656, G7 và lượt 5; bundle +2 773 B (+0,12 %), exe 0 B; không phát hiện P (§7).
 - **Sau tổng hợp:** Owner trả lời §9 → 5 Issue sửa theo họ (T-386: test đỏ khi gỡ phần sửa, quét cùng mẫu, ngân sách dòng) → merge. Không có Medium trở lên nên **không cần phiên review lại vùng** (§L6.10). Rồi G7 (§8).
 
@@ -40,8 +40,8 @@
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
 | Claude | 6 | 1 | 13 | 17 | 15 | 14 | 4 | 7 | 3 | **80** | 44 | 36 | 4 (A5, C1, E4, H3) |
 | Codex | 1 | 1 | 1 | 2 | 2 | 1 | — | — | — | **8** | 6 | 2 | 1 (A1) |
-| WorkBuddy | 6 | 2 | 0 | 0 | 1 | 0 | — | — | — | **9** | 5 | 4 | 0 |
-| **Cộng** | | | | | | | | | | **97** | 55 | 42 | 5 |
+| WorkBuddy | 6 | 2 | 3 | 2 | 1 | 1 | — | — | — | **15** | 10 | 5 | 0 |
+| **Cộng** | | | | | | | | | | **103** | 60 | 43 | 5 |
 
 0 Critical / High / Medium ở cả ba bên. Mọi đề xuất chặn của reviewer trùng kết luận của tổng hợp (5 / 5); không vấn đề chặn nào chỉ do tổng hợp đổi trục.
 
@@ -49,23 +49,23 @@
 
 | | Claude | Codex | WorkBuddy |
 |---|---|---|---|
-| Phát hiện | 80 | 8 | 9 |
-| Đúng / KNOWN có bằng chứng mới / sai | 79 / 1 / 0 | 8 / 0 / 0 | 9 / 0 / 0 |
-| Chạm DR6 (trong 35) | 31 | 6 | 6 |
+| Phát hiện | 80 | 8 | 15 |
+| Đúng / KNOWN có bằng chứng mới / sai | 79 / 1 / 0 | 8 / 0 / 0 | 15 / 0 / 0 |
+| Chạm DR6 (trong 35) | 31 | 6 | 11 |
 | Vấn đề chặn tìm được (trong 5) | 4 | 1 | 0 |
-| Chỉ bên này thấy (DR6) | 24 | 2 (DR6-178, 201) | 2 (DR6-197, 199) |
+| Chỉ bên này thấy (DR6) | 20 | 2 (DR6-178, 201) | 2 (DR6-197, 199) |
 | Thời gian (giờ máy, từ log) | A–F 5 h 15 (A 55′ · B 34′ · C 69′ · D 58′ · E 44′ · F 55′); G 30′ · H 58′ · I 40′ | A 34′ · B 18′ · C 27′ · D 24′ · E 4 h 52 có nghỉ (14:09–19:02) · F 33′ | A 32′ · B 2′ + 45′ · C 25′ · D 22′ · E 10′ · F 12′ (≈ 2 h 28) |
 | Lệnh gọi công cụ (phiên chính · subagent) | 1 874 · 1 946 | 488 | 878 · 205 (A) |
 
 - Vấn đề chặn duy nhất Claude không thấy (DR6-178) do Codex A tìm; theo Codex, Claude A lượt 3 từng thấy helper chọn dòng cũ khi hai mốc trùng nhưng ca đó vẫn ghi chuyển nhóm hợp lệ nên không báo (`docs/reviews/raw/2026-10-21/claude/A.md:172`).
-- WorkBuddy B–F chạy DeepSeek V4.1 Flash, nhanh hơn lượt 5 (lượt 5 cùng model: ≈ 1 h 59 cho 6 gói) và ra ít phát hiện (B 2, C 0, D 0, E 1, F 0). Gói A (Hy4) ra 6.
+- WorkBuddy B–F chạy DeepSeek V4.1 Flash, nhanh hơn lượt 5 (lượt 5 cùng model: ≈ 1 h 59 cho 6 gói) và ra ít phát hiện hơn Claude (B 2, C 3, D 2, E 1, F 1). Gói A (Hy4) ra 6.
 - Credit WorkBuddy: Owner chưa báo; không có bản ghi `credit-usage` trong log của 7 phiên đã chép.
 
 ### 2.3 Độ trùng giữa các bên, ước số còn sót (chỉ xem xu hướng, §L6.0)
 
-- Cùng một vấn đề ở hai bên (mức phát hiện): Claude ∩ Codex **4** (CLR6-C4 ≈ CXR6-C1; CLR6-E1 ≈ CXR6-E1; CLR6-F2 ≈ một phần CXR6-D1; CLR6-F8 = CXR6-F1); Claude ∩ WorkBuddy **0** (cùng họ, khác chỗ: CLR6-B1 / WBR6-B1, B2; CLR6-E3 (b) / WBR6-E1); Codex ∩ WorkBuddy **0**; cả ba **0**.
-- Ước bắt – thả – bắt lại theo cặp Claude – Codex: 80 × 8 / 4 ≈ **160** phát hiện cỡ này; hai cặp kia không có phần trùng nên không ước được. Như §L6.0 mục 1: số này thô (các bên không độc lập, cỡ phát hiện khác nhau) và chỉ nói rằng một lượt vẫn là một lần lấy mẫu; đuôi Low / Nit còn dài. K48 không dùng số này làm điều kiện dừng.
-- Theo họ (DR6): 24 / 35 họ chỉ Claude thấy, 2 chỉ Codex, 2 chỉ WorkBuddy; họ "tên truy cập trùng" (DR6-184) cả ba bên cùng chạm.
+- Cùng một vấn đề ở hai bên (mức phát hiện): Claude ∩ Codex **4** (CLR6-C4 ≈ CXR6-C1; CLR6-E1 ≈ CXR6-E1; CLR6-F2 (cùng mục bổ sung của H: câu của 9a / 9b / 9c) ≈ một phần CXR6-D1; CLR6-F8 = CXR6-F1); Claude ∩ WorkBuddy **2** (CLR6-D3 ≈ WBR6-D2; CLR6-F2 / mục bổ sung của H ≈ WBR6-D1); Codex ∩ WorkBuddy **1** (CXR6-D1 ≈ WBR6-D1); cả ba **1** (tên liền dài trong câu của hộp 9a / 9b / 9c).
+- Ước bắt – thả – bắt lại theo cặp: Claude – Codex 80 × 8 / 4 ≈ **160**; Claude – WorkBuddy 80 × 15 / 2 ≈ **600**; Codex – WorkBuddy 8 × 15 / 1 ≈ **120** phát hiện cỡ này. Như §L6.0 mục 1: số này thô (các bên không độc lập, cỡ phát hiện khác nhau, phần trùng rất nhỏ) và chỉ nói rằng một lượt vẫn là một lần lấy mẫu; đuôi Low / Nit còn dài. K48 không dùng số này làm điều kiện dừng.
+- Theo họ (DR6): 20 / 35 họ chỉ Claude thấy, 2 chỉ Codex, 2 chỉ WorkBuddy; họ "tên liền dài" (DR6-183) và "tên truy cập trùng" (DR6-184) cả ba bên cùng chạm.
 
 ## 3. Bảng R gộp
 
@@ -178,7 +178,7 @@ Mức · trục là của họ (cao nhất trong các phát hiện gộp). Cỡ 
 
 | DR6 | Họ / vấn đề | Phát hiện | Mức · trục | Vì sao không chặn | Cỡ ước |
 |---|---|---|---|---|---|
-| DR6-183 | Chuỗi liền dài còn tràn ở trạng thái sau thao tác, thân hộp, lỗi / cảnh báo AI, tooltip chart (họ DR6-170) | CLR6-C4, E1, F2 (+ nhánh lỗi 9a / 9b / 9c, mục bổ sung của H), H5; CXR6-C1, D1, E1 | Low · E | Chỉ hiển thị, tên / thông điệp liền dài bất thường | ≈ 30–60 SP + e2e quét theo trạng thái |
+| DR6-183 | Chuỗi liền dài còn tràn ở trạng thái sau thao tác, thân hộp, lỗi / cảnh báo AI, tooltip chart (họ DR6-170) | CLR6-C4, E1, F2 (+ nhánh lỗi 9a / 9b / 9c, mục bổ sung của H), H5; CXR6-C1, D1, E1; WBR6-D1 | Low · E | Chỉ hiển thị, tên / thông điệp liền dài bất thường | ≈ 30–60 SP + e2e quét theo trạng thái |
 | DR6-184 | Tên truy cập / nhãn trùng giữa bản ghi trùng tên hay giống khít (họ DR6-119 / 151 / 160) | CLR6-A1, C13, D5, E3, F1, H2; CXR6-E2; WBR6-E1 | Low · A (F1: Low C) | Trợ năng / chữ trên màn; khôi phục nhầm đảo ngược được | ≈ 30–50 SP + e2e |
 | DR6-185 | Hai RE trùng họ tên cùng team: mọi ô chọn người hiện hai lựa chọn giống hệt | CLR6-D13 | Low · E | Lệnh lưu đúng người được chọn; chỗ hỏng là nhãn; sửa cần luật mới (nhãn phân biệt hay cấm trùng, G2) | ≈ 10–20 SP |
 | DR6-186 | Nút tự gỡ / tự tắt làm focus rơi về `body` | CLR6-E7, E8 | Low · A | Bàn phím / trình đọc màn hình; không sai dữ liệu | ≈ 30–50 SP + e2e |
@@ -193,23 +193,23 @@ Mức · trục là của họ (cao nhất trong các phát hiện gộp). Cỡ 
 | DR6-195 | Câu nói sai nghĩa: "yêu cầu AI khác" khi chính lần kiểm đang chạy, đổi vai trò sang RE, lý do v1 KYC, 5d gọi ngày tạo KH là "lần đổi nhóm" | CLR6-C3, D7, D11, D12 | Low · C | Chữ; lệnh / dữ liệu đúng | ≈ 30–45 SP |
 | DR6-196 | Team & nhân sự: góc nhìn tự nhảy team / RE sau đổi tên / tạo mới; dấu cách cuối tên là "chưa lưu"; hash lạ ở bản web | CLR6-D6, D9, D10 | Low · E | Không sai dữ liệu | ≈ 10–20 SP |
 | DR6-197 | Ô tìm (`searchText`) không gập chữ số toàn khổ như `byName` | WBR6-A1 | Low · E | Có đường vòng; hiếm | ≈ 3 SP + 2 ca |
-| DR6-198 | Mock trích xuất đề xuất khả năng đầu khi câu nêu hai khả năng cách dấu phẩy | CLR6-C2 | Low · C | Mock (demo, e2e, máy chưa có key); RE phải Xác nhận; không phải guardrail (như DR6-141) | ≈ 1–3 SP + 4 ca |
+| DR6-198 | Mock trích xuất: đề xuất khả năng đầu khi câu nêu hai khả năng cách dấu phẩy; con đã mất nêu ở vế sau dấu phẩy vẫn ra Số con; chỉ nhận dòng trường "Hôn nhân:" nên ghi chú seed không bao giờ ra Số con | CLR6-C2; WBR6-C2, C3 | Low · C | Mock (demo, e2e, máy chưa có key); RE phải Xác nhận; không phải guardrail (như DR6-141); thêm luật là hành vi mới (K49) | ≈ 15–25 SP + 10 ca |
 | DR6-199 | V7 so trích dẫn bằng `collapseSpaces`: trích dẫn có U+200B / U+0085 bị bỏ | WBR6-A2 | Low · E | Chiều an toàn (bỏ đề xuất đúng, không lọt sai); cần output suy biến | ≈ 3 SP + 2 ca |
 | DR6-200 | "Nạp lại…" bấm được lúc đang đọc file backup: 10a chồng 10c, 10c giữ số cũ | CLR6-I1 | Low · E | Hai thao tác chồng nhau; người dùng gõ xác nhận; exe có backup trước khi nạp | ≈ 5–10 SP + 5 e2e |
 | DR6-201 | `watchToday`: tự hủy trong callback nửa đêm vẫn đặt lại timer | CXR6-B1 | Low · E | Không đường UI nào gặp | ≈ 3–7 SP + 15–25 test |
 | DR6-202 | Kiểm khi nhập backup: hai lần đọc "hôm nay" (luật 10 / 14), luật 15 không gắn số với mã không phải chuỗi, không ca giữ thứ tự luật | WBR6-A3, A6; CLR6-A6 | Low · E | Hàng được nhận qua nửa đêm đã là "hôm nay" khi nhập xong; tham số chẩn đoán | ≈ 2–5 SP + 3 ca |
 | DR6-203 | Test hở lõi domain: `switchKind` ngày cuối kỳ, điểm % lẻ, trường số rỗng | CLR6-A2, A3, A4 | Low · T | Code đúng | ≈ 12 dòng test |
 | DR6-204 | Test hở hợp đồng capability (họ DR6-161): `generate_context!`, `--config` qua `pnpm build:exe`, nhãn cửa sổ, dạng import | CLR6-B1; WBR6-B1, B2 | Low · T | Quyền exe ở SHA ghim đúng | ≈ 10–30 dòng test |
-| DR6-205 | Test hở AI: rule dependency-cruiser, nút T-375, chữ §10 của Mock, nhánh regex G5, biên lõi AI, nhánh app AI | CLR6-C5…C10 | Low · T | Code đúng | ≈ 60–120 dòng test |
-| DR6-206 | Test hở màn: trần `max-w-60`, 9a / `Segmented`, công tắc thay đổi quan trọng, phần màn T-380, phím → vòng, trần 5 dòng, cờ `closing` | CLR6-D3, D8, D14, E2, F4, F5, I2 | Low · T | Code đúng | ≈ 60–100 dòng test |
+| DR6-205 | Test hở AI: rule dependency-cruiser, nút T-375, chữ §10 của Mock, nhánh regex G5, biên lõi AI, nhánh app AI, biên luật câu dán trống (NUL, trống mà quá dài) | CLR6-C5…C10; WBR6-C1 | Low · T | Code đúng | ≈ 70–130 dòng test |
+| DR6-206 | Test hở màn: trần `max-w-60` / `max-w-80`, 9a / `Segmented`, công tắc thay đổi quan trọng, phần màn T-380, phím → vòng, trần 5 dòng, cờ `closing` | CLR6-D3, D8, D14, E2, F4, F5, I2; WBR6-D2 | Low · T | Code đúng | ≈ 60–100 dòng test |
 | DR6-207 | Bộ chặn ký hiệu (họ DR6-169): năm ký hiệu của `vi.ts`, `` ` `` trong regex, đối số có ngoặc | CLR6-D1, D2; CXR6-D2 | Low · T | Công cụ kiểm, không vào exe | ≈ 10–25 SP công cụ + test |
 | DR6-208 | Hook gợi ý review đọc báo cáo subagent / phiên con là lời Owner khi thẻ đóng có thuộc tính | CLR6-F3 | Low · C | Công cụ phát triển; K45 rào "không tự sửa", K49 | ≈ 2–5 dòng công cụ + ca |
 | DR6-209 | `notes-for` chưa có ngoại lệ [sau v1.0] của K49; cỡ "so ngân sách" lệch ở PR xếp chồng (KNOWN) | CLR6-F8, F9; CXR6-F1 | Nit · C | Công cụ / mẫu | ≈ 2–4 dòng + 8–15 test |
-| DR6-210 | Test hở công cụ / e2e / CI: nhánh cổng merge, bộ kiểm link, bảng so probe, hai ca đọc `dist`, luật lint `test` chỉ `.ts`, vitest treo không `timeout-minutes` | CLR6-F6, F7, F10, F13, F14, I3 | Nit · T | Công cụ phát triển, code ghim đúng | ≈ 40–80 dòng |
+| DR6-210 | Test hở công cụ / e2e / CI: nhánh cổng merge, bộ kiểm link, bảng so probe, hai ca đọc `dist`, luật lint `test` chỉ `.ts`, vitest treo không `timeout-minutes`, bộ giả `asExe` không trả lời `open_folder` | CLR6-F6, F7, F10, F13, F14, I3; WBR6-F1 | Low · T (WBR6-F1; còn lại Nit) | Công cụ phát triển / e2e, code ghim đúng | ≈ 55–95 dòng |
 | DR6-211 | Bloat: helper e2e chép, `globals` ESLint vô tác dụng, họ tên nút Thùng rác nặng nhất diff, bộ chặn ký hiệu trong package sản phẩm, ma trận ký tự vô hình chép, hai bộ quét chữ viết tay | CLR6-F11, F12, G1, G2, G3, G4 | Nit · B | K49: không gỡ / gộp vì bloat trước v1.0 | (đề xuất của G: §7.2) |
 | DR6-212 | Tài liệu: spec §3.1 / §10 AI lệch code, ADR-0008:19 bốn hạng mục cốt lõi, ô "Owner duyệt" của `chi-so.md` / `ai-eval.md` chưa tick | CLR6-C11, C12; WBR6-A4, A5 | Nit · C | Chữ tài liệu (golden / ADR đã duyệt: Owner chốt cách ghi) | 0 SP |
 
-Đếm: 30 họ (24 Low, 6 Nit); 92 phát hiện. Mức chốt của từng phát hiện giữ như reviewer ghi (§6).
+Đếm: 30 họ (25 Low, 5 Nit); 98 phát hiện. Mức chốt của từng phát hiện giữ như reviewer ghi (§6).
 
 ## 6. Cách áp K48 ở tổng hợp
 
@@ -229,7 +229,7 @@ Các chỗ giáp ranh và lý do:
 | CLR6-H3 | Low · D (E), chặn nếu D | D, chặn | Chữ đã lưu đổi ngoài ý |
 | CLR6-D13 | Low · E (A), chặn nếu coi là hậu quả dữ liệu | E, không chặn | Lệnh lưu đúng người được chọn; mọi màn cũng không phân biệt hai người, nên chỗ hỏng là nhãn; sửa cần luật mới (G2) |
 | CLR6-I1 | Low · E | giữ | Người dùng gõ xác nhận thay dữ liệu; exe có backup ngay trước khi nạp |
-| CLR6-C2 | Low · C, chặn nếu G | C, không chặn | Mock, không phải guardrail; RE phải Xác nhận; nhất quán DR6-141 (lượt 4) |
+| CLR6-C2, WBR6-C2 | Low · C (C2: "chặn nếu G") | C, không chặn | Mock, không phải guardrail; RE phải Xác nhận; nhất quán DR6-141 (lượt 4) |
 | WBR6-A2 | Low · E | giữ | Guardrail chặt hơn (chiều an toàn) |
 | WBR6-A3 | Low · E | giữ | Hàng mang ngày D+1 được nhận khi lần đọc thứ hai đã là D+1, tức đúng lúc nhập xong |
 | CLR6-H1, E10 | Low · E | giữ | File Excel xuất ra không phải dữ liệu đã lưu hay backup |
@@ -327,9 +327,9 @@ Quét mẫu key (`sk-…`, `gh[opsu]_…`, `github_pat_…`, `Bearer …`) trên
 ## 11. Ghi chú phương pháp
 
 - **Độ sâu kiểm của tổng hợp** khác nhau theo hậu quả: vấn đề chặn và mọi phát hiện của Codex / WorkBuddy đọc lại code; phát hiện không chặn của Claude dựa vào bằng chứng probe / đột biến mà phiên gói đã chạy lại, cộng đọc code ở chỗ quyết định trục. Một phát hiện không chặn mà sai chỉ tốn một dòng sổ [sau v1.0]; sổ sẽ được xét lại sau v1.0.
-- **Lượt 6 so lượt 5:** nhiều phát hiện hơn hẳn (97 so 41), có lẽ vì phiên Claude dùng subagent, có ba phiên chủ đề, và không còn chỉ tiêu "≥ 5 kịch bản"; mức không cao hơn: 0 Medium lần thứ tư liền, 42 / 97 là Nit. Ba chủ đề G, H, I ra 14 phát hiện, trong đó một vấn đề chặn (DR6-182, chủ đề H).
+- **Lượt 6 so lượt 5:** nhiều phát hiện hơn hẳn (103 so 41), có lẽ vì phiên Claude dùng subagent, có ba phiên chủ đề, và không còn chỉ tiêu "≥ 5 kịch bản"; mức không cao hơn: 0 Medium lần thứ tư liền, 43 / 103 là Nit. Ba chủ đề G, H, I ra 14 phát hiện, trong đó một vấn đề chặn (DR6-182, chủ đề H).
 - **Đợt sửa lượt 5 sinh ít lỗi mới:** 0 hồi quy; phần còn hở của đợt sửa là biến thể Low / Nit (§3). Vấn đề chặn đều "có từ trước, lượt 1–5 bỏ sót".
-- **Ba bên ít trùng** như lượt 4–5 (§2.3). Codex tìm vấn đề chặn duy nhất mà hai bên kia không thấy; WorkBuddy (DeepSeek ở B–F) ra ít nhất, các phát hiện đều đúng.
+- **Ba bên ít trùng** như lượt 4–5 (§2.3). Codex ra ít nhất nhưng tìm vấn đề chặn mà hai bên kia không thấy; WorkBuddy 15 phát hiện, đều đúng, không vấn đề chặn nào.
 
 ## Phụ lục — đối chiếu ID của từng báo cáo ↔ DR6
 
@@ -361,6 +361,12 @@ Quét mẫu key (`sk-…`, `gh[opsu]_…`, `github_pat_…`, `Bearer …`) trên
 | CLR6-D4 | 187 | | | | | WBR6-A6 | 202 |
 | CLR6-D5 | 184 | | | | | WBR6-B1 | 204 |
 | | | | | | | WBR6-B2 | 204 |
+| | | | | | | WBR6-C1 | 205 |
+| | | | | | | WBR6-C2 | 198 |
+| | | | | | | WBR6-C3 | 198 |
+| | | | | | | WBR6-D1 | 183 |
+| | | | | | | WBR6-D2 | 206 |
 | | | | | | | WBR6-E1 | 184 |
+| | | | | | | WBR6-F1 | 210 |
 
-97 dòng: Claude 80 (A 6, B 1, C 13, D 17, E 15, F 14, G 4, H 7, I 3), Codex 8, WorkBuddy 9.
+103 dòng: Claude 80 (A 6, B 1, C 13, D 17, E 15, F 14, G 4, H 7, I 3), Codex 8, WorkBuddy 15 (A 6, B 2, C 3, D 2, E 1, F 1).
