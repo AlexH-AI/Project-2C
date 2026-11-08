@@ -361,6 +361,22 @@ Ba số dưới là **mốc so cho lần đo sau**: xấu hơn khi quá luật n
 - **Số tuyệt đối đổi giữa các lần chạy** (cả bộ, cùng code `packages/ai`: 103,5 ms ở lượt 5, 73,7 ms ở thân PR #1066 cùng máy). Hai dòng Node nên đo bản mới xen kẽ với `37a80b6` trong cùng lần chạy, rồi áp luật nhiễu lên cặp đó (như tổng hợp lượt 5 §7.2).
 - **Sau mốc:** T-365 (#1066) sửa Mock ("nhỏ bé" của con đã mất, gạch "–"). Thân PR đo xen kẽ trước / sau, trong luật nhiễu: lần gọi đầu 28,47 → 28,49 ms, cả bộ 73,69 → 75,10 ms.
 
+### Số đo deep review lượt 6 (T-389, 07/11/2026)
+
+Không thay mốc sau #656. Phân tích: tổng hợp lượt 6 §7; bảng đủ: `docs/reviews/raw/2026-11-08/common-baseline.md`.
+
+- **Máy:** Home PC `DESKTOP-KDURKJP`. **Code:** `5b1328a` (SHA ghim lượt 6, đóng băng K49), exe release build tại máy 5 649 408 byte (bằng lượt 5, lượt 4, G7).
+- **Dữ liệu tải:** sinh ở `5b1328a`, `tables` sha256 = lượt 5 / G7.
+- **So mốc sau #656, so G7 và so lượt 5: không dòng nào ⚠️**, mọi thao tác trong ngưỡng:
+  - `app.open-data` 364 ms; `reload.*` 281–406 ms; các thao tác màn còn lại 4–33 ms;
+  - `backup.read` / `backup.import` / `backup.export` 979 / 44 / 427 ms; `db.save` 147 ms; JS heap 16,8 MB;
+  - `appointments.next-month` / `next-year` 109 / 107 ms;
+  - mở lần đầu (LCP) 3 612 ms (mốc 3 663, G7 3 420, lượt 5 3 535); mở lại (LCP) 688 ms (G7 617; luật nhiễu > 740).
+- **Dọn sạch Thùng rác:** bấm → thông báo 11j 120,5 ms (≤ 500 ms; lượt 5: 128,0).
+- **Bundle:** JS / CSS 2 369 229 B (+2 773 so lượt 5, +0,12 %); `index.js` 894 865 B, ≈ 2 / 3 phần tăng là tên nút / dòng lý do của Thùng rác (họ DR6-160); `index.css` 30 387 B (+92); tệp khác 1 022 121 B (=). Mọi chunk dependency trùng từng byte lượt 5.
+- **Hàm thuần trong Node** (A/B xen kẽ với `37a80b6`): `searchText` (T-377) làm mỗi phím ở ô KH của 6b và ô tìm của Thùng rác chậm ≈ 1,7×, ≤ 12,8 ms ở ca xấu nhất; DR6-165 trên màn trung vị 49 ms (mốc 53). Không dòng nào > 20 % và > 10 ms.
+- **Phát hiện P:** không.
+
 ## Kiểm tra trên `main`
 
 _Điền cuối phase._
@@ -454,6 +470,13 @@ Deep review Phase 1–6 (6D, kế hoạch `docs/process/deep-review-phase-1-6.md
   - 41 phát hiện mới → **20** vấn đề DR6-158…177: **0 Medium**, 13 Low, 7 Nit. 1 bị bác.
   - Kết luận: chưa sẵn sàng ở `37a80b6`, vì Owner đã quyết sửa hết trước G7 (K47) và DR6-145 còn một phần.
   - Owner 05/11 đồng ý cả 4 đề xuất của §9: 8 Issue #1045–#1052 (T-363…T-370).
+- **Đợt sửa lượt 5 và mục sổ G7 (05–06/11):** T-363…T-384, bảng ở kế hoạch §L6.2. Rồi T-386…T-388 (cách làm lượt 6).
+- **Lượt 6 (07–08/11, `5b1328a`), lượt toàn bộ code cuối trước G7:**
+  - Reviewer: Claude Opus 5.5 (9 phiên: gói A–F, chủ đề G rà gọn, H chữ người dùng, I bất đồng bộ), Codex GPT Sol 6.1 (đợt 1, 07/11) và agent WorkBuddy (đợt 2, 07–08/11; theo log: gói A Hy4, B–F DeepSeek V4.1 Flash), trên Home PC (ADR-0001 M13). Kế hoạch: T-385 #1117. Tiêu chí xong chốt trước (K48), đóng băng code (K49).
+  - Tổng hợp: `docs/reviews/2026-11-08-deep-review-phase-1-6-luot-6-tong-hop.md` (T-389 #1131).
+  - Bảng R1 20 dòng, R2 14 Issue: đều đã sửa, 0 hồi quy.
+  - 97 phát hiện mới → **35** vấn đề DR6-178…212: **0 Medium**; **5 chặn phát hành** theo K48 (4 Low trục D, 1 Low trục G); 30 không chặn (24 Low, 6 Nit) → sổ [sau v1.0]. 0 bị bác.
+  - Kết luận: chưa sẵn sàng ở `5b1328a` vì còn 5 vấn đề chặn; sau đợt sửa thì G7, không cần review lại vùng (không có Medium).
 
 ## Điều hướng (riêng 2C, `docs/metrics/README.md`)
 
