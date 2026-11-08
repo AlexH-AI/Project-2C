@@ -183,6 +183,8 @@ describe('golden metrics through the database', () => {
 
     const imported = await importBackup(text, { now: db.now });
 
-    expect(exportBackup(imported.db)).toBe(text);
+    // Each export takes an instant of its own: the database clock never gives one twice (DR6-178).
+    const unstamped = (backup: string) => backup.replace(/"exportedAt":"[^"]*"/, '');
+    expect(unstamped(exportBackup(imported.db))).toBe(unstamped(text));
   });
 });

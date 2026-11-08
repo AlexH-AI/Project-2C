@@ -123,9 +123,11 @@ describe('exportBackup', () => {
 
   // CX-B9: the fixtures above insert rows in id order, where the primary key and rowid agree.
   it('sorts each table by its primary key, not by the order the rows went in', async () => {
-    // A clock running backwards gives every new row an id below the ones before it.
+    // A clock running backwards gives every new row an id below the ones before it: put in place
+    // of the database clock, which never goes back (DR6-178).
     let clock = Date.UTC(2026, 8, 26, 11, 0, 0);
-    const db = await openDatabase({ now: () => new Date((clock -= 1000)) });
+    const db = await openDatabase();
+    db.now = () => new Date((clock -= 1000));
     const team = createTeam(db, { name: 'Sao Mai' });
     const re = createPerson(db, { name: 'An', role: 'RE', teamId: team.id });
     const tl = createPerson(db, { name: 'Hà', role: 'TL', teamId: team.id });
@@ -156,8 +158,9 @@ describe('exportBackup', () => {
 
   it('stamps the export time from the database clock', async () => {
     const db = await openDatabase({ now: exportClock });
+    // The migrations took the clock's instant, which the database clock never gives twice (DR6-178).
     expect((JSON.parse(exportBackup(db)) as BackupJson).exportedAt).toBe(
-      '2026-09-30T07:45:00.000Z',
+      '2026-09-30T07:45:00.001Z',
     );
   });
 });
@@ -173,9 +176,11 @@ describe('importBackup', () => {
       const imported = await importBackup(first, { now: exportClock });
 
       expect(imported.schemaVersion).toBe(LATEST_SCHEMA_VERSION);
-      expect(imported.exportedAt).toBe('2026-09-30T07:45:00.000Z');
+      expect(imported.exportedAt).toBe('2026-09-30T07:45:00.001Z');
       expect(imported.db.schemaVersion()).toBe(LATEST_SCHEMA_VERSION);
-      expect(exportBackup(imported.db)).toBe(first);
+      // But for the export time: the database clock never gives one instant twice (DR6-178).
+      const unstamped = (text: string) => text.replace(/"exportedAt":"[^"]*"/, '');
+      expect(unstamped(exportBackup(imported.db))).toBe(unstamped(first));
     },
     SLOW,
   );

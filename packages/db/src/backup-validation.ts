@@ -163,7 +163,7 @@ type Row = Record<string, SqlValue>;
  * A rule across tables, by its number in spec §6; 11–14 are rules 1–4 of spec Phase 5 §7.3; 15, the
  * customer's code, is a value of spec §6 "Kiểm giá trị" that names its rule (DR6-160).
  */
-type Rule = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15;
+type Rule = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16;
 
 /**
  * Throws `BACKUP_INVALID`, params `rule` (the first rule of spec §6 broken), when the tables
@@ -185,8 +185,19 @@ export function validateBackupInvariants(db: Database): void {
     staffRule(read) ??
     futureRule(read, storedDate(today(db))) ??
     aiRule(read, storedDate(today(db))) ??
-    codeRule(customers);
+    codeRule(customers) ??
+    withdrawalRule(transitions);
   if (broken !== null) throw new DbError('BACKUP_INVALID', { rule: broken });
+}
+
+/**
+ * Rule 16 (DR6-178): no two transitions of one appointment withdrawn at one instant, by which
+ * restoring it finds the one its deletion withdrew (`transitionWithdrawnAt`).
+ */
+function withdrawalRule(transitions: Row[]): Rule | null {
+  const withdrawn = transitions.filter((t) => t.appointment_id !== null && t.deleted_at !== null);
+  const seen = new Set(withdrawn.map((t) => JSON.stringify([t.appointment_id, t.deleted_at])));
+  return seen.size === withdrawn.length ? null : 16;
 }
 
 /** A customer's code as `freeCode` writes it: `K-` and four characters of Crockford base32. */

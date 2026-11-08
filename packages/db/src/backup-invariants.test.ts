@@ -307,7 +307,7 @@ describe('importBackup — rules across tables', () => {
     expect(listCustomers(imported.db)).toHaveLength(3);
   });
 
-  /** Records a command could leave, next to each refused case of rules 1, 5, 8, 9, 10 and 15 below. */
+  /** Records a command could leave, next to each refused case of rules 1, 5, 8, 9, 10, 15 and 16 below. */
   const accepted: [string, (b: BackupJson, ids: Ids) => void][] = [
     // Rule 15: the digits and letters `freeCode` writes, the ends of Crockford base32 among them.
     ...['K-0HJZ', 'K-9KMN', 'K-PTVX', 'K-ABGY'].map(
@@ -376,6 +376,13 @@ describe('importBackup — rules across tables', () => {
     [
       'a meeting kept before the customer was created, in the stage it was created in (DR-43)',
       (b, ids) => keptMeeting(b, ids, '2026-08-25', 'N4'),
+    ],
+    [
+      'two transitions of one appointment withdrawn at two instants, as an edit and a deletion',
+      (b, ids) => {
+        const again = { ...transition(b, ids.hoa, 2), id: 'again', seq: 3 };
+        b.tables.stage_transitions!.push({ ...again, deleted_at: DELETED });
+      },
     ],
     [
       'a deleted TL next to the live TL of the team',
@@ -559,6 +566,12 @@ describe('importBackup — rules across tables', () => {
         b.tables.stage_transitions!.push(again);
         row(b, 'customers', (c) => c.id === ids.lan).stage = 'N3';
       },
+    ],
+    // DR6-178: restoring the appointment could not tell which of the two its deletion withdrew.
+    [
+      '16: two transitions of one appointment withdrawn at one instant',
+      (b, ids) =>
+        b.tables.stage_transitions!.push({ ...transition(b, ids.hoa, 2), id: 'again', seq: 3 }),
     ],
     [
       '5: a live customer whose RE is a TL',

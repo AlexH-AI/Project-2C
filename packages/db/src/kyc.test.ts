@@ -33,7 +33,9 @@ async function withCustomer(profile: { birthDate?: { year: number }; gender?: 'M
 
 /** A customer with a birth year and a note with one fact, every record saved at one instant. */
 async function atOneInstant() {
-  const database = await openDatabase({ now: () => new Date(Date.UTC(2026, 8, 26, 11)) });
+  const database = await openDatabase();
+  // In place of the database clock, which never gives one instant twice (DR6-178).
+  database.now = () => new Date(Date.UTC(2026, 8, 26, 11));
   const team = createTeam(database, { name: 'Sao Mai' });
   const re = createPerson(database, { name: 'An', role: 'RE', teamId: team.id });
   const customer = createCustomer(database, {
