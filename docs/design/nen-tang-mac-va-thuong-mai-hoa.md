@@ -1,6 +1,6 @@
 # Phân tích — Bản Mac: chung mã Tauri hay viết riêng; desktop hay web khi thương mại hóa
 
-- **Trạng thái:** phân tích để Owner chọn (G1). Chưa phải ADR: khi Owner chọn, quyết định ghi thành ADR và vào `PROJECT-PLAN.md`.
+- **Trạng thái:** **Owner chọn T (chung mã Tauri) ngày 10/11/2026**: "A quyết định chung mã Tauri như e khuyến nghị, thử trên Mac local trước, nếu không ổn thì tính tiếp". Bước thử ở §9; ADR "Bản macOS" và `PROJECT-PLAN.md` viết sau bước thử, khi đã biết chỗ cần sửa. Hướng thương mại hóa (§4) chưa quyết.
 - **Soạn:** 10/11/2026, `main` `ab1ff14`. Nguồn: yêu cầu Owner (§0), spec `phase-6-phan-hoi-dung-thu.md` §9, rà code ở `main`, nguồn ngoài (§10).
 
 ## 0. Yêu cầu và thông tin của Owner (10/11/2026, nguyên văn)
@@ -106,7 +106,9 @@ Cách chuyển ít đau: dữ liệu chung (SQLite và file backup), golden exam
 
 **Nếu anh chọn T:**
 
-1. **Spike:** CI build bản `.app` cho chip Apple, chưa ký. Anh mở trên M5 Pro: lần đầu macOS chặn, vào Cài đặt hệ thống → Quyền riêng tư & Bảo mật → "Vẫn mở" (từ macOS 15 không còn mở bằng chuột phải → Open). Ghi các chỗ hỏng; chưa sửa code sản phẩm.
+1. **Thử trên Mac (spike):** CI build bản `.app` cho chip Apple, chưa ký, bằng một workflow chạy tay (không chạy theo PR, không tốn phút CI thường ngày). Anh mở trên M5 Pro: lần đầu macOS chặn, vào Cài đặt hệ thống → Quyền riêng tư & Bảo mật → "Vẫn mở" (từ macOS 15 không còn mở bằng chuột phải → Open). Ghi các chỗ hỏng.
+   - Rà code 10/11: vỏ Rust đã có nhánh cho máy không phải Windows nên build được, nhưng chỉ sửa tối thiểu thì app mới dùng được trên Mac: dữ liệu để ở `~/Library/Application Support/…` thay vì cạnh file chạy (M2: bản tải về có thể bị macOS chạy từ một chỗ chỉ đọc (App Translocation), và ghi vào trong gói `.app` làm hỏng chữ ký của gói); mở thư mục và chatgpt.com bằng lệnh `open` (M3); cấu hình đóng gói riêng cho macOS (M4). Key AI qua Keychain (M1, G4) để sau: trên bản thử, AI dùng key chưa chạy.
+   - Bản Windows không đổi hành vi.
 2. **ADR "Bản macOS"** (G1): nơi để dữ liệu, kho key Keychain (G4), cách phát hành; ghi lựa chọn T và điểm xét lại §8.
 3. **Vòng ý tưởng UI/UX** cho cả hai nền tảng, gồm lớp giao diện Mac và hệ chuyển động (spec `phase-6-phan-hoi-dung-thu.md` §8).
 4. **Issue chuyển nền tảng** M1–M10.

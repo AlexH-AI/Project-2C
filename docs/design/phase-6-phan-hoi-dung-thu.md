@@ -220,7 +220,7 @@ Owner 10/11: "anh sẽ cần sáng tạo, tìm thêm ý tưởng về UI/UX". Đ
 3. **Mockup G3** cho phần được chọn (gồm B, C, D, E, F); **golden G2** cho B và D.
 4. **Ra Issue** khi Owner bảo, theo các mục "Issue dự kiến".
 
-## 9. Hướng phát triển: bản macOS song song bản Windows 11 (đề xuất, chờ Owner: G1, G4)
+## 9. Hướng phát triển: bản macOS song song bản Windows 11 (Owner chọn chung mã Tauri 10/11/2026, thử local trước)
 
 Owner 10/11: app "dự kiến sẽ đưa lên MacOS 1 bản song song với bản Windows 11". Tauri 2 build được cho macOS từ cùng mã nguồn: phần React, `domain`, `db`, `ai` dùng chung; phần khác nằm ở vỏ Rust, đóng gói, CI và vài chữ trên giao diện.
 
@@ -247,7 +247,7 @@ Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, g
 
 ### 9.3 Cách làm đề xuất
 
-1. **Spike** khi Owner đồng ý: build thử bản macOS chưa ký trên CI, Owner mở trên Mac, ghi các chỗ hỏng. Không sửa code sản phẩm.
+1. **Thử trên Mac (spike):** build bản macOS chưa ký trên CI, Owner mở trên Mac, ghi các chỗ hỏng. Sửa tối thiểu để chạy được (M2, M3, M4); bản Windows không đổi. Chi tiết: `nen-tang-mac-va-thuong-mai-hoa.md` §9. Owner 10/11 chọn chung mã Tauri: "A quyết định chung mã Tauri như e khuyến nghị, thử trên Mac local trước, nếu không ổn thì tính tiếp".
 2. **ADR "Hỗ trợ macOS"** (G1): nơi để dữ liệu, kho key, ký hay không, cách phát hành; G4 cho crate Keychain và (nếu ký) Apple Developer.
 3. **Issue chuyển nền tảng** (M1–M9), chạy song song A–F vì chủ yếu đụng vỏ Rust, CI và chữ theo nền tảng.
 4. **Phát hành:** v1.0 cho cả hai cùng lúc, hoặc Windows v1.0 trước rồi macOS v1.1.
@@ -263,7 +263,7 @@ Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, g
 
 ## 10. Thứ tự đề xuất của cả đợt
 
-1. Vòng ý tưởng UI/UX (§8); spike macOS (§9.3 bước 1) chạy song song khi Owner đồng ý.
+1. Vòng ý tưởng UI/UX (§8); thử bản macOS (§9.3 bước 1) chạy song song, khi Owner bảo tạo Issue.
 2. Chốt: các điểm mở của D (§6.2), mockup B–F, golden B và D, ADR macOS.
 3. Owner bảo "ra issue": A → B → C / F → D → E; Issue macOS chạy song song.
 4. Nghiệm thu exe mới (Windows, và Mac nếu phát hành cùng lúc) → G7 → phát hành.
