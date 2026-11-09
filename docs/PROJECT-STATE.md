@@ -237,6 +237,7 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   - Part C: an RM's customer list is the customers that RM is in charge of ("RM phụ trách"), not the customers with an appointment with that RM.
   - Part D: the Forecast amount is the expected case size of each scheduled appointment, entered when booking ("Mục D anh đồng ý với 1 theo em đề xuất"); six points stay open.
   - Then: "lên kế hoạch thôi nhé, chưa ra issue, anh sẽ cần sáng tạo, tìm thêm ý tưởng về UI/UX cũng như hướng phát triển app dự kiến sẽ đưa lên MacOS 1 bản song song với bản Windows 11". No issue is created until the OWNER says so; a UI/UX idea round comes before the mockups; a macOS version alongside the Windows 11 one is a planned direction, not yet an ADR (spec §8–§10).
+  - The Mac version, also 10/11: it "phải theo triết lý thiết kế của Mac và hệ sinh thái Apple: nhanh, mượt mà, animation mượt mà, UI/UX ấn tượng, đột phá". The OWNER asked Claude to weigh one Tauri codebase against a separate Mac app in another language, and a desktop app against a website for selling it (security, future updates, future macOS and Apple ecosystem, cost, complexity). His facts: a MacBook Pro M5 Pro on macOS 27.2+; no Apple Developer account yet (maybe later); the commercial version in Vietnamese and English; a local Mac app first, before any commercialization. Claude's analysis and recommendation (one Tauri codebase now; local-first desktop plus a sales website later): `docs/design/nen-tang-mac-va-thuong-mai-hoa.md`. Not decided yet.
 
 ## Next decision
 
