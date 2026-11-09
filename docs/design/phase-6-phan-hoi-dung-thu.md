@@ -1,6 +1,6 @@
 # Spec Phase 6 — Phản hồi dùng thử exe `5215b2e` (G1)
 
-- **Trạng thái:** Owner duyệt cách chia A–F và thứ tự ngày 10/11/2026 (G1, trong chat ở Home PC). **Phần A** (§3) duyệt 10/11/2026, gồm G2 (golden fixtures chỉ đổi tên) và G3 (mockup chỉ đổi nhãn); chữ prompt của A (G5) Owner duyệt trên PR của A6. Phần B–F thêm vào file này khi Owner duyệt từng phần.
+- **Trạng thái:** kế hoạch, **chưa tạo Issue** (Owner 10/11/2026: "lên kế hoạch thôi nhé, chưa ra issue"). Owner duyệt cách chia A–F và thứ tự ngày 10/11/2026 (G1, trong chat ở Home PC). Đã chốt nội dung: **A** (§3; gồm G2 golden fixtures chỉ đổi tên, G3 mockup chỉ đổi nhãn; chữ prompt G5 duyệt trên PR của A6), **B** (§4; golden G2 và mockup G3 duyệt sau), **C** (§5; bố cục duyệt ở mockup), nguồn số tiền của **D** (§6.1). Còn mở: phần còn lại của D (§6.2), **E** và **F** (§7). Trước mockup và Issue là vòng ý tưởng UI/UX (§8); hướng làm bản macOS (§9) là đề xuất, chờ Owner.
 - **Soạn:** 10/11/2026, `main` `de9cde7` (code `5215b2e`). Nguồn: phản hồi dùng thử của Owner (§1), HANDOFF bước 0.
 
 ## 1. Phản hồi của Owner (nguyên văn)
@@ -30,20 +30,32 @@ Hai tin thêm cùng ngày, trong lúc chốt cách chia:
 
 > Ngoài ra trong Mục "Cài đặt" cần thêm icon cho 3 mục nhỏ: Dữ liệu, AI, Thùng rác.
 
+Các câu trả lời khi chốt thiết kế, cùng ngày (câu hỏi ở mục tương ứng):
+
+| Mục | Owner trả lời |
+|---|---|
+| Cách chia A–F, thứ tự (§2) | "Anh đồng ý" |
+| A: đổi tên trong code (§3.1) | "Đổi cả tên trong code", rồi "Duyệt phần A" |
+| B: HĐ hủy tính vào kỳ nào (§4.1) | "Ngày hủy" |
+| B: tên chỉ số (§4.3) | "Đồng ý nhưng dùng từ Tổng số HĐ (total policies), tương tự Doanh số (Total FYP = Total issued FYP - total cancelled FYP)" |
+| C: danh sách KH của một RM (§5) | "RM phụ trách" |
+| D: case size của lịch hẹn tương lai (§6.1) | "Mục D anh đồng ý với 1 theo em đề xuất" |
+| Kế hoạch, hướng phát triển (§8, §9) | "lên kế hoạch thôi nhé, chưa ra issue, anh sẽ cần sáng tạo, tìm thêm ý tưởng về UI/UX cũng như hướng phát triển app dự kiến sẽ đưa lên MacOS 1 bản song song với bản Windows 11" |
+
 ## 2. Phạm vi, thứ tự, cổng
 
 - Mọi ý ở §1 làm **trước v1.0**. Owner mở đóng băng code K49 cho đúng các việc này (`PROJECT-STATE.md`, mục 2026-11-10). Mục [sau v1.0] của sổ ghi chú review vẫn để lại (K49), trừ mục Owner kéo vào.
 - G7 chờ tới khi Owner dùng thử exe mới có đủ các phần dưới. Dòng nghiệm thu của màn / hành vi đổi được nghiệm thu lại (K46).
-- Mỗi phần đi một vòng: thiết kế với Owner → mục spec trong file này → Issue. Phần nào duyệt xong thì làm code ngay, không chờ phần sau.
+- Mỗi phần đi một vòng: thiết kế với Owner → mục spec trong file này → mockup / golden khi phần đó cần → Issue. Owner 10/11 dừng ở mức kế hoạch: Issue chỉ tạo khi Owner bảo, sau vòng ý tưởng UI/UX (§8). Thứ tự làm cả đợt: §10.
 
-| Phần | Ý của Owner (§1) | Cổng | Thứ tự |
-|---|---|---|---|
-| **A.** Đổi RE → RM | 1 | G2, G3 (duyệt cùng phần A), G5 (PR của A6) | 1 |
-| **B.** HĐ hủy, tỷ lệ hủy | 5, 6 | G2 | 2 |
-| **C.** Tìm KH, tìm RM; danh sách KH của một RM | 2; tin thêm về "Team & nhân sự" | G3 | 3 |
-| **F.** Icon cho 3 mục của Cài đặt | tin thêm về "Cài đặt" | G3, cùng đợt mockup với C | 3 |
-| **D.** Forecast | 4 | G2, G3 | 4 |
-| **E.** Làm lại Báo cáo trên app và file Excel | 3; tin thêm về "báo cáo" | G3: mockup cả màn Báo cáo lẫn file Excel | 5 |
+| Phần | Ý của Owner (§1) | Cổng | Thứ tự | Trạng thái 10/11 |
+|---|---|---|---|---|
+| **A.** Đổi RE → RM | 1 | G2, G3 (duyệt cùng phần A), G5 (PR của A6) | 1 | Đã duyệt (§3) |
+| **B.** HĐ hủy, tỷ lệ hủy | 5, 6 | G2, G3 | 2 | Nội dung đã duyệt (§4); chờ golden và mockup |
+| **C.** Tìm KH, tìm RM; danh sách KH của một RM | 2; tin thêm về "Team & nhân sự" | G3 | 3 | Nội dung đã chốt (§5); chờ mockup |
+| **F.** Icon cho 3 mục của Cài đặt | tin thêm về "Cài đặt" | G3, cùng đợt mockup với C | 3 | Chờ mockup (§7.2) |
+| **D.** Forecast | 4 | G2, G3 | 4 | Nguồn số tiền đã chốt (§6.1); còn 6 điểm mở (§6.2) |
+| **E.** Làm lại Báo cáo trên app và file Excel | 3; tin thêm về "báo cáo" | G3: mockup cả màn Báo cáo lẫn file Excel | 5 | Chờ vòng ý tưởng UI/UX và mockup (§7.1) |
 
 E đi sau B vì bảng mới có cột HĐ hủy và tỷ lệ hủy, và dùng chung phong cách với màn Forecast của D.
 
@@ -89,7 +101,7 @@ A2, A3, A4 là đổi tên hàng loạt theo cùng một mẫu; mỗi PR có th�
 - Phiên review chạy lại script trên base của PR để so với diff.
 - Trần cỡ chỉ tính phần viết tay: migration, test của migration, những chỗ script không làm được.
 
-### 3.6 Issue
+### 3.6 Issue dự kiến (chưa tạo)
 
 | Issue | Nội dung | Rủi ro | Bị chặn bởi |
 |---|---|---|---|
@@ -105,3 +117,149 @@ Kiểm chung của phần A, ở A5 (sau A1–A4):
 
 - Tìm cả từ "RE" (`rg -n -w RE`) và các tên `reId`, `re_id`, `RePicker`… trên `apps/`, `packages/`, `e2e/`, `tools/`: không còn, trừ migration 0000–0012 và chỗ có lý do ghi trong PR (vd. test migration nạp dữ liệu cũ có `RE`).
 - File dữ liệu và một file backup tạo bằng exe `5215b2e`, mở / nhập bằng bản mới: đủ nhân sự, KH, lịch hẹn, HĐ, ghi chú KYC; vai trò hiện "RM"; chỉ số Tổng quan của một kỳ bất kỳ không đổi.
+
+## 4. Phần B — HĐ hủy, tỷ lệ hủy (nội dung Owner duyệt 10/11/2026)
+
+### 4.1 Kỳ của một HĐ hủy
+
+HĐ hủy tính vào kỳ chứa **ngày hủy** (Owner chọn "Ngày hủy" giữa hai cách). Ví dụ HĐ phát hành 03/11 (tuần 1), hủy 12/11 (tuần 2), FYP 200 tr: tuần 1 phát hành 1, doanh số +200 tr; tuần 2 hủy 1, doanh số −200 tr; tháng 11 phát hành 1, hủy 1, doanh số 0, tỷ lệ hủy 100%.
+
+- Số của kỳ đã qua không đổi khi có HĐ hủy về sau; mỗi việc tính vào ngày nó xảy ra, như mọi chỉ số khác (ADR-0007).
+- Hệ quả đã biết: kỳ ngắn có thể ra tỷ lệ hủy trên 100% hoặc doanh số âm.
+- Cách bị bỏ: trừ vào kỳ của ngày phát hành (tỷ lệ luôn ≤ 100%, nhưng số của kỳ đã qua tự đổi về sau).
+
+### 4.2 Trạng thái HĐ
+
+- Đã nộp → Đã phát hành → **Đã hủy**. Chỉ HĐ đã phát hành mới hủy được.
+- Ngày hủy không trước ngày phát hành; luật ngày khác như ngày phát hành. FYP hủy bằng FYP phát hành của HĐ, không nhập riêng.
+- Bỏ hủy, sửa ngày hủy: trong hộp Sửa của HĐ. Xóa HĐ (xóa mềm) giữ như cũ.
+- Hủy không đổi nhóm KH. KH mà mọi HĐ đều đã hủy thì không còn nhãn "Đã có HĐ"; số HĐ trên thẻ KH không đếm HĐ hủy.
+
+### 4.3 Chỉ số (G2)
+
+Tên do Owner chốt: "Tổng số HĐ" (total policies), "Doanh số" (Total FYP).
+
+| Chỉ số | Định nghĩa |
+|---|---|
+| HĐ phát hành | Giữ nguyên: HĐ có ngày phát hành trong kỳ, kể cả HĐ bị hủy sau đó |
+| **HĐ hủy** (mới) | HĐ có ngày hủy trong kỳ |
+| **Tổng số HĐ** (mới) | HĐ phát hành − HĐ hủy; có thể âm |
+| **FYP phát hành** (mới, tách ra) | Σ FYP phát hành của HĐ phát hành trong kỳ (Total issued FYP; trước đây chính là Doanh số) |
+| **FYP hủy** (mới) | Σ FYP phát hành của HĐ hủy trong kỳ (Total cancelled FYP) |
+| **Doanh số** (đổi nghĩa) | FYP phát hành − FYP hủy (Total FYP); có thể âm |
+| **Tỷ lệ hủy** (mới) | HĐ hủy ÷ HĐ phát hành; kỳ không có HĐ phát hành → "—"; có thể vượt 100%, như Tỉ lệ chốt (golden G11, 150%). Dòng Tổng = Σ hủy ÷ Σ phát hành, không lấy trung bình |
+| Tỉ lệ chốt, HĐ nộp, Case size | Giữ nguyên. Tỉ lệ chốt vẫn = HĐ phát hành ÷ RF, chưa trừ hủy: nó đo hiệu quả chốt, Tỷ lệ hủy đo chất lượng |
+
+### 4.4 Hiện ở đâu
+
+- **Hồ sơ KH → Hợp đồng:** nút "Hủy HĐ" trên HĐ đã phát hành; hộp hủy hỏi ngày hủy và báo trước ảnh hưởng chỉ số (vd. "Doanh số tháng 11 của RM X giảm 200 tr"); HĐ hủy có nhãn "Đã hủy {ngày}".
+- **Tổng quan:** ô KPI cho số hủy và Tỷ lệ hủy; ô Doanh số ghi FYP phát hành − FYP hủy; so với kỳ trước đảo màu cho chỉ số hủy (tăng là đỏ). Bộ ô cụ thể chốt ở mockup.
+- **Báo cáo, Excel (bản hiện tại, trước E):** thêm cột HĐ hủy, Tổng số HĐ, FYP phát hành, FYP hủy, Tỷ lệ hủy; Doanh số thành số thuần. E trình bày lại toàn bộ.
+- **Dữ liệu giả lập:** khoảng 5% HĐ phát hành bị hủy trong vòng 21 ngày.
+
+### 4.5 Dữ liệu, golden, mockup
+
+- Cột ngày hủy của `policies` + migration (sau hai migration của A); lệnh hủy / bỏ hủy; luật kiểm khi nhập backup (ngày hủy chỉ có khi đã phát hành, không trước ngày phát hành).
+- Golden mới trong `docs/golden/chi-so.md`, Owner duyệt G2 trước khi code: tuần có 4 HĐ phát hành, 2 HĐ hủy → 50% (ví dụ của Owner); phát hành tuần 1, hủy tuần 2 (§4.1); tuần có 1 HĐ phát hành, 2 HĐ hủy → 200%; HĐ hủy rồi bỏ hủy; dòng Tổng của một team.
+- Mockup G3: `policy-forms.html` (nút, hộp hủy, nhãn), `overview.html` (ô KPI).
+- Cập nhật `docs/design/state-machines.md` (máy trạng thái HĐ).
+
+### 4.6 Issue dự kiến (chưa tạo)
+
+B1 dữ liệu và chỉ số (cột, migration, lệnh, luật backup, hàm chỉ số, golden, dữ liệu giả lập) · B2 hồ sơ KH (nút, hộp hủy, nhãn) · B3 Tổng quan, Báo cáo, Excel. Cả ba sau A4 (không đụng file đang đổi tên).
+
+## 5. Phần C — Tìm KH, tìm RM, danh sách KH của RM (nội dung chốt 10/11/2026)
+
+- **Ô tìm KH** (icon kính lúp) trên màn Khách hàng. Gõ không cần dấu, không phân biệt hoa thường ("nguyen van hu" ra "Nguyễn Văn Hùng"), tìm cả mã KH. Tên bắt đầu bằng chữ đã gõ xếp trước; tối đa khoảng 8 gợi ý, mỗi dòng "Nguyễn Văn Hùng – RM Hoàng Văn Tùng – Sao Mai". Chọn gợi ý → hồ sơ KH. Tìm trong mọi KH, không giới hạn theo góc nhìn. Dùng lại cách so chữ đã có (`searchText` của `domain`).
+- **Ô tìm RM** ở Team & nhân sự: gõ tên ra "RM Nguyễn Văn Hùng – Sao Mai". Chọn một RM (từ ô tìm, hoặc bấm tên RM trong danh sách team) → hiện **danh sách KH của RM**; bấm một KH → hồ sơ KH.
+- **Danh sách KH của một RM** = KH do RM đó **phụ trách** (RM ghi trên hồ sơ KH), như màn Khách hàng ở góc nhìn RM đó (Owner chọn "RM phụ trách"). Cột: KH, nhóm, lần gặp gần nhất, lịch hẹn sắp tới, số HĐ. Cách bị bỏ: KH có lịch hẹn với RM (khác ở KH chưa có lịch, KH đã chuyển RM, buổi RM khác đi gặp thay).
+- Bố cục (chỗ đặt ô tìm, khung danh sách KH của RM) chốt ở mockup G3, cùng đợt với F.
+- Issue dự kiến (chưa tạo): C1 tìm KH · C2 tìm RM và danh sách KH của RM.
+
+## 6. Phần D — Forecast
+
+### 6.1 Đã chốt 10/11/2026
+
+- Mục **"Forecast"** mới trên thanh bên, ngay trên Báo cáo; theo góc nhìn (Toàn bộ / Team / RM).
+- **Forecast tuần:** lịch hẹn từ hôm nay tới hết thứ Bảy của tuần này (vd. hôm nay 10/11 → 10/11–14/11). **Forecast tháng:** từ hôm nay tới hết tháng, chỉ thứ Hai → thứ Bảy (tháng 11/2026 bỏ Chủ Nhật 15, 22, 29).
+- Chỉ lịch hẹn Đã lên lịch, ngày từ hôm nay trở đi, của KH hiện ở N3 / N2 / N1.
+- Số tiền là **case size dự kiến của từng lịch hẹn** (Owner chọn cách 1): hộp đặt lịch và hộp dời lịch thêm ô "Case size dự kiến", điền sẵn số gần nhất của KH, sửa được. Lịch đã có trong dữ liệu mà chưa có số thì Forecast đếm và chỉ ra để bổ sung.
+- Cộng theo RM, theo team; tổng tuần và tổng tháng của từng team và của góc nhìn.
+- Cách bị bỏ: lấy số của lần gặp gần nhất (KH lên N3 bằng sửa tay hay lần gặp để trống thì không có số); một ô case size trên hồ sơ KH (trùng ô ở kết quả cuộc gặp, mất lịch sử ước lượng).
+
+### 6.2 Còn mở (chốt trong vòng ý tưởng / mockup, rồi golden G2)
+
+| # | Câu hỏi | Đề xuất của Claude |
+|---|---|---|
+| D-a | KH có nhiều lịch trong cùng khoảng | Đếm một lần, lấy số của lịch muộn nhất trong khoảng, để không cộng trùng |
+| D-b | Chỉ phần dự kiến, hay thêm "đã đạt + dự kiến" (doanh số đã có từ đầu tuần / tháng cộng phần dự kiến) | Hiện cả hai, số chính là phần dự kiến |
+| D-c | Lịch hẹn Chủ Nhật; hôm nay là Chủ Nhật thì Forecast tuần là tuần nào | Không tính Chủ Nhật (đúng chữ "thứ 2 tới thứ 7"); Chủ Nhật thì Forecast tuần là tuần sau |
+| D-d | Nhân trọng số theo nhóm (N1 dễ chốt hơn N3) | Không nhân; hiện tách N3 / N2 / N1 để người xem tự cân |
+| D-e | Lịch thiếu case size | Đếm, liệt kê để bổ sung; không tính vào tổng |
+| D-f | Xuất Excel cho Forecast | Có, cùng phong cách file Excel mới của E |
+
+## 7. Phần E, F (chờ vòng ý tưởng UI/UX)
+
+### 7.1 E — Báo cáo trên app và file Excel
+
+- Owner: trình bày lại "đẳng cấp, chuyên nghiệp"; duyệt mockup **cả** màn Báo cáo **lẫn** file Excel (G3) trước khi làm.
+- Hiện trạng (rà trên bản web 10/11): hai bảng 17 cột, phải cuộn ngang; tiêu đề cột gãy 3–4 dòng; không biểu đồ, không ô số lớn.
+- Bảng mới có các cột của B; dùng chung phong cách với màn Forecast của D.
+
+### 7.2 F — Icon cho Cài đặt
+
+- Icon cho ba mục Dữ liệu, AI, Thùng rác; cùng đợt mockup với C, kèm icon cho mục Forecast trên thanh bên và icon ô tìm.
+
+## 8. Vòng ý tưởng UI/UX (đề xuất, trước mockup)
+
+Owner 10/11: "anh sẽ cần sáng tạo, tìm thêm ý tưởng về UI/UX". Đề xuất cách làm:
+
+1. **Bảng ý tưởng do Claude soạn:** mỗi ý một thẻ (chuyện hôm nay → ý tưởng → phác thảo nhỏ → công sức ước lượng), theo màn: Tổng quan, Forecast, Báo cáo (app và Excel), Khách hàng và tìm kiếm, hồ sơ KH, Lịch hẹn, Team & RM, Cài đặt; và chung cả app: ô tìm nhanh ở mọi màn (Ctrl / ⌘ + K), phím tắt, nhận diện Heritas, giao diện sáng / tối, cảm giác quen thuộc trên macOS. Tham khảo cách trình bày của các CRM và báo cáo ngân hàng / bảo hiểm (chỉ lấy ý, không chép).
+2. **Owner thêm và chọn ý.**
+3. **Mockup G3** cho phần được chọn (gồm B, C, D, E, F); **golden G2** cho B và D.
+4. **Ra Issue** khi Owner bảo, theo các mục "Issue dự kiến".
+
+## 9. Hướng phát triển: bản macOS song song bản Windows 11 (đề xuất, chờ Owner: G1, G4)
+
+Owner 10/11: app "dự kiến sẽ đưa lên MacOS 1 bản song song với bản Windows 11". Tauri 2 build được cho macOS từ cùng mã nguồn: phần React, `domain`, `db`, `ai` dùng chung; phần khác nằm ở vỏ Rust, đóng gói, CI và vài chữ trên giao diện.
+
+### 9.1 Chỗ đang gắn với Windows (rà 10/11, `main` `de9cde7`)
+
+| # | Chỗ | Hôm nay | Trên macOS cần |
+|---|---|---|---|
+| M1 | Kho API key AI | Windows Credential Manager (`keyring-core` + `windows-native-keyring-store`, chỉ target Windows) | Keychain: crate kho Apple của cùng hệ `keyring-core` (dependency mới, G4) |
+| M2 | Nơi để dữ liệu | `Project2C-data\` cạnh exe (portable, ADR-0006) | App macOS nằm trong gói `.app`, không ghi vào gói được → dữ liệu ở thư mục người dùng (vd. `~/Library/Application Support/…`) hay thư mục Owner chọn; sửa ADR-0006 / ADR-0016 |
+| M3 | Mở thư mục, mở chatgpt.com | Gọi `explorer.exe` | Lệnh `open` (Finder, trình duyệt mặc định) |
+| M4 | Đóng gói | Exe portable, `bundle.active = false`, icon `.ico` | Bật bundle `.app` / `.dmg`, icon `.icns` |
+| M5 | CI | Chỉ `windows-latest` | Thêm job macOS (runner của GitHub, miễn phí cho repo public); chip Apple, có thể thêm Intel |
+| M6 | Ký, notarize | Windows: SmartScreen đã nghiệm thu (NT-EX-01) | Không ký: macOS chặn lần mở đầu, phải mở bằng chuột phải → Open. Ký và notarize: Apple Developer Program, 99 USD / năm (G4) |
+| M7 | Phím tắt | Chữ "Ctrl+A / Ctrl+C / Ctrl+V"; chặn tải lại bằng Ctrl+R | ⌘A / ⌘C / ⌘V, ⌘R; menu Edit của macOS để sao chép / dán chạy trong app |
+| M8 | Chữ nói về Windows | "exe", Explorer, đường dẫn `backups\` trong giao diện và hướng dẫn | Chữ theo nền tảng; hướng dẫn có phần macOS |
+| M9 | Kiểm thử | E2E chạy trên Edge (cùng nhân với WebView2 của Windows) | WebView của macOS là WebKit (như Safari): chạy thêm e2e trên WebKit; nghiệm thu trên Mac thật |
+| M10 | Công cụ dev | `tools/bootstrap.ps1`, PowerShell | Không cần nếu vẫn code trên Windows và build bản Mac bằng CI |
+
+### 9.2 Dữ liệu giữa các máy
+
+Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, gộp backup) để sau v1.0 (Owner 11/10/2026). Có bản Mac thì câu hỏi này lớn hơn: Mac và PC có dùng chung một dữ liệu không, và bằng cách nào (backup / khôi phục tay, thư mục đồng bộ như OneDrive / iCloud, hay đồng bộ thật).
+
+### 9.3 Cách làm đề xuất
+
+1. **Spike** khi Owner đồng ý: build thử bản macOS chưa ký trên CI, Owner mở trên Mac, ghi các chỗ hỏng. Không sửa code sản phẩm.
+2. **ADR "Hỗ trợ macOS"** (G1): nơi để dữ liệu, kho key, ký hay không, cách phát hành; G4 cho crate Keychain và (nếu ký) Apple Developer.
+3. **Issue chuyển nền tảng** (M1–M9), chạy song song A–F vì chủ yếu đụng vỏ Rust, CI và chữ theo nền tảng.
+4. **Phát hành:** v1.0 cho cả hai cùng lúc, hoặc Windows v1.0 trước rồi macOS v1.1.
+
+### 9.4 Câu hỏi chờ Owner
+
+- Anh có máy Mac để thử chưa (chip Apple hay Intel, macOS bản nào)?
+- Bản Mac cho riêng anh hay cho cả team?
+- Phát hành cùng lúc với bản Windows hay sau?
+- Có đăng ký Apple Developer (99 USD / năm) để ký và notarize không?
+- Mac và PC có cần dùng chung một dữ liệu không?
+
+## 10. Thứ tự đề xuất của cả đợt
+
+1. Vòng ý tưởng UI/UX (§8); spike macOS (§9.3 bước 1) chạy song song khi Owner đồng ý.
+2. Chốt: các điểm mở của D (§6.2), mockup B–F, golden B và D, ADR macOS.
+3. Owner bảo "ra issue": A → B → C / F → D → E; Issue macOS chạy song song.
+4. Nghiệm thu exe mới (Windows, và Mac nếu phát hành cùng lúc) → G7 → phát hành.
