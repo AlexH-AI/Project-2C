@@ -43,8 +43,10 @@ export interface DataNoticeProps<N> {
 }
 
 /**
- * What Settings → Data is busy with. Data holds it for all its sections, as its one notice: no
- * section starts while another runs, so no dialog opens over one opened since (DR6-200).
+ * What Settings → Data is busy with: a backup export or read, which `BackupSection` sets. Data holds
+ * it, as its one notice, and "Nạp lại…" waits for it, so 10c never opens under the 10a / 10b a read
+ * opens (DR6-200). A new task of Data that goes on past an `await` and opens a dialog or replaces
+ * the data sets it too; the replaces themselves run inside modal dialogs (10a, 10c).
  */
 export type DataBusy = 'export' | 'read' | null;
 

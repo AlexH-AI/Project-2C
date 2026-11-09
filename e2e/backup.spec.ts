@@ -109,16 +109,17 @@ test('an export then a reload leave only the notice of the reload, which a cance
 
 // DR6-200: Dữ liệu is busy as one page: no reload (10c) opens while a backup file is read, under
 // the 10a / 10b the read then opens.
-test('"Nạp lại…" is off while a backup file is read, and on again once it is read or refused', async ({
+test('"Nạp lại…" is off while a backup file is read, and on again once it is read, refused or failed', async ({
   page,
 }) => {
-  // The read of the files named `slow…` waits until the test lets it go on.
+  // The read of the files named `slow…` waits until the test lets it go on, or fail.
   await page.addInitScript(() => {
     const text = Blob.prototype.text;
     Blob.prototype.text = function (this: Blob) {
       if (!(this instanceof File && this.name.startsWith('slow'))) return text.call(this);
-      return new Promise<string>((resolve) => {
-        (window as unknown as Held).release = () => resolve(text.call(this));
+      return new Promise<string>((resolve, reject) => {
+        (window as unknown as Held).release = (fail) =>
+          fail ? reject(new Error('read failed')) : resolve(text.call(this));
       });
     };
   });
@@ -127,31 +128,39 @@ test('"Nạp lại…" is off while a backup file is read, and on again once it 
   const reload = page
     .getByRole('region', { name: 'Dữ liệu giả lập' })
     .getByRole('button', { name: 'Nạp lại…' });
-  const files = [
-    { text: exported.text, dialog: 'Thay toàn bộ dữ liệu?', close: 'Hủy' },
+  const reads = [
+    { text: exported.text, fail: false, dialog: 'Thay toàn bộ dữ liệu?', close: 'Hủy' },
     {
       text: '{"format":"project2-backup","tables":{}}',
+      fail: false,
       dialog: 'Không nhập được file',
       close: 'Đóng',
     },
+    // A read that fails is no fault of the file: a notice, no dialog.
+    { text: exported.text, fail: true },
   ];
-  for (const file of files) {
-    await chooseFile(page, 'slow.p2cbackup', file.text);
+  for (const read of reads) {
+    await chooseFile(page, 'slow.p2cbackup', read.text);
     await expect(section(page).getByRole('button', { name: 'Đang đọc file…' })).toBeVisible();
     await expect(reload).toBeDisabled();
 
-    await page.evaluate(() => (window as unknown as Held).release());
-    const dialog = page.getByRole('dialog', { name: file.dialog });
-    await dialog.getByRole('button', { name: file.close }).click();
-
-    await expect(dialog).toBeHidden();
+    await page.evaluate((fail) => (window as unknown as Held).release(fail), read.fail);
+    if (read.dialog) {
+      const dialog = page.getByRole('dialog', { name: read.dialog });
+      await dialog.getByRole('button', { name: read.close }).click();
+      await expect(dialog).toBeHidden();
+    } else {
+      await expect(section(page).getByRole('alert')).toHaveText(
+        'Chưa nhập được backup. Dữ liệu hiện tại không bị đổi.',
+      );
+    }
     await expect(reload).toBeEnabled();
   }
 });
 
 /** The window of a page whose read of a `slow…` file waits for `release`. */
 interface Held {
-  release: () => void;
+  release: (fail: boolean) => void;
 }
 
 test('the data file card shows what the simulated data holds, and that web mode keeps no file', async ({
