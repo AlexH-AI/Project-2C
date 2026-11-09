@@ -29,6 +29,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 
 <!-- codemap:start -->
 - `src/appointment-counts.ts` — type AppointmentGroup, appointmentGroup, type AppointmentCounts, appointmentCounts, appointmentCountsByScope, appointmentCountsByMark
+- `src/appointment-lifecycle.ts` — APPOINTMENT_ACTIONS, type AppointmentAction, OUTCOME_STATUSES, type OutcomeStatus, isOutcomeStatus, appointmentActions, canAppointment
 - `src/compare.ts` — type ComparisonWindows, comparisonWindows, type MetricDeltas, metricDeltas
 - `src/customer-lifecycle.ts` — assertValidTransition, isRfTransition, sortedByDate, stageAtEndOf
 - `src/evidence-level.ts` — EVIDENCE_LEVELS, type EvidenceLevel, type EvidenceFact, type Evidence, evidenceLevel
@@ -36,7 +37,7 @@ Phần dưới do `pnpm codemap` sinh (`tools/codemap.mjs`), không sửa tay; `
 - `src/golden/kyc.fixture.ts` — type ExpectedGate, type KycGoldenProfile, KYC_GOLDEN_PROFILES
 - `src/golden/metrics.fixture.ts` — TEAMS, PEOPLE, CUSTOMERS, APPOINTMENTS, STAGE_TRANSITIONS, POLICIES, EXPECTED_RF_APPOINTMENT_IDS, type ExpectedMetrics, type GoldenCase, MTD_VIEWING_DATE, GOLDEN_CASES
 - `src/golden/stage-snapshot.fixture.ts` — SNAPSHOT_TODAY, type GoldenCustomerRow, SNAPSHOT_CUSTOMERS, type SnapshotGoldenCase, SNAPSHOT_GOLDEN_CASES, CHART_GOLDEN_PERIOD, type ChartGoldenCase, CHART_GOLDEN_CASES, type MarksGoldenCase, REPORT_MARKS_GOLDEN_CASES
-- `src/index.ts` — re-exports ./pipeline-stage, ./period, ./kyc-catalog, ./kyc-fact, ./evidence-level, ./kyc, ./kyc-gate, ./customer-lifecycle, ./stats, ./compare, ./appointment-counts, ./stage-snapshot, ./name-order, ./text, ./money, ./number, ./model
+- `src/index.ts` — re-exports ./pipeline-stage, ./period, ./kyc-catalog, ./kyc-fact, ./evidence-level, ./kyc, ./kyc-gate, ./customer-lifecycle, ./appointment-lifecycle, ./stats, ./compare, ./appointment-counts, ./stage-snapshot, ./name-order, ./text, ./money, ./number, ./model
 - `src/kyc-catalog.ts` — KYC_CATEGORIES, type KycCategory, KYC_FIELDS, type KycField, type KycCategorySpec, KYC_CATEGORY_SPECS, KYC_GATE_STATES, type KycGateState, KYC_GATE_THRESHOLDS, KYC_INSUFFICIENT_MESSAGE
 - `src/kyc-fact.ts` — KYC_FACT_STATUSES, type KycFactStatus, type KycValue, type KycFieldType, kycFieldType, normalizeKycValue, type KycFact
 - `src/kyc-gate.ts` — type KycSuggestedQuestions, type KycGateResult, evaluateKycGate

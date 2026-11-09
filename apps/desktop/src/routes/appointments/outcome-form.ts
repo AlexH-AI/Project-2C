@@ -6,6 +6,7 @@ import {
   type NextAppointment,
 } from '@p2c/db';
 import {
+  canAppointment,
   CLOSED_STAGES,
   compareDates,
   normalizeText,
@@ -40,23 +41,23 @@ export function readCaseSize(text: string): CaseSizeRead {
 }
 
 /**
- * The statuses the appointment can take now: met and no-show only once its day has come (Owner
- * 29/09/2026), a new day only while it is scheduled (D3). Cancelling is always there.
+ * The statuses the appointment can take now, by the rule of its status (`canAppointment`): an
+ * outcome when one is recorded (6c) or edited (6f), a new day when it is rescheduled (D3). Met and
+ * no-show come only once its day has come (Owner 29/09/2026); cancelling does not wait for it.
  */
 export function outcomeChoices(
   appointment: Pick<AppointmentRecord, 'status' | 'date'>,
   today: CalendarDate,
 ): { readonly value: OutcomeChoice; readonly disabled: boolean }[] {
   const arrived = isPastOrToday(appointment.date, today);
-  // A moved appointment is closed: the db refuses any new status for it (INVALID_STATUS).
-  const moved = appointment.status === 'RESCHEDULED';
+  const { status } = appointment;
+  const outcome = canAppointment(status, 'record') || canAppointment(status, 'edit');
   return OUTCOME_CHOICES.map((value) => ({
     value,
     disabled:
-      moved ||
-      (value === 'RESCHEDULED'
-        ? appointment.status !== 'SCHEDULED'
-        : value !== 'CANCELLED' && !arrived),
+      value === 'RESCHEDULED'
+        ? !canAppointment(status, 'reschedule')
+        : !outcome || (value !== 'CANCELLED' && !arrived),
   }));
 }
 

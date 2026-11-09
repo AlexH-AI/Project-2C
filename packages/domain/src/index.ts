@@ -71,6 +71,14 @@ export { evaluateKycGate } from './kyc-gate';
 export type { KycGateResult, KycSuggestedQuestions } from './kyc-gate';
 export { assertValidTransition, isRfTransition } from './customer-lifecycle';
 export {
+  APPOINTMENT_ACTIONS,
+  OUTCOME_STATUSES,
+  appointmentActions,
+  canAppointment,
+  isOutcomeStatus,
+} from './appointment-lifecycle';
+export type { AppointmentAction, OutcomeStatus } from './appointment-lifecycle';
+export {
   closeRate,
   closeRatePercent,
   inScope,

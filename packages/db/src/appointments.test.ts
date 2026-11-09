@@ -1,8 +1,10 @@
 import {
+  APPOINTMENT_STATUSES,
   calendarDate,
   MAX_FEE_VND,
   periodMetricsByScope,
   periodOf,
+  type AppointmentStatus,
   type CalendarDate,
   type CustomerStage,
 } from '@p2c/domain';
@@ -26,7 +28,7 @@ import {
   softDeleteCustomer,
   updateCustomerProfile,
 } from './customers';
-import { openDatabase } from './database';
+import { openDatabase, type Database } from './database';
 import { listPolicies } from './policies';
 import { createPerson, createTeam, listPeople, softDeletePerson, updatePerson } from './team';
 import { byId, codeOf, errorOf, setup, stageAtEndOfDay } from './test-support';
@@ -1484,5 +1486,75 @@ describe('deleting appointments', () => {
     expect(listAppointments(db)).toEqual([]);
     expect(byId(listAppointments(db), live.id)).toBeUndefined();
     expect(codeOf(() => restoreAppointment(db, id))).toBe('CUSTOMER_NOT_FOUND');
+  });
+});
+
+describe('the status rule of the commands (T-403)', () => {
+  /** A live appointment of 10/01 in `status`, the only one of its customer. */
+  async function inStatus(status: AppointmentStatus) {
+    const ctx = await withCustomer();
+    const { id } = ctx.schedule(10);
+    if (status === 'RESCHEDULED') rescheduleAppointment(ctx.db, id, { date: d(14, 1) });
+    else if (status === 'MET') recordMeetingOutcome(ctx.db, id, MET_N2);
+    else if (status !== 'SCHEDULED') recordMeetingOutcome(ctx.db, id, { status });
+    expect(byId(listAppointments(ctx.db), id)?.status).toBe(status);
+    return { db: ctx.db, id };
+  }
+
+  // What each command takes, written out by hand as it was before the rule moved to the domain
+  // (Issue #1177); every other status is refused with the code given.
+  const COMMANDS: readonly {
+    readonly name: string;
+    readonly run: (db: Database, id: string) => unknown;
+    readonly takes: readonly AppointmentStatus[];
+    readonly refused: string;
+  }[] = [
+    {
+      name: 'recordOutcomeWithNext',
+      run: (db, id) => recordOutcomeWithNext(db, id, { status: 'CANCELLED' }, { date: d(1, 10) }),
+      takes: ['SCHEDULED'],
+      refused: 'INVALID_STATUS',
+    },
+    {
+      name: 'recordMeetingOutcome',
+      run: (db, id) => recordMeetingOutcome(db, id, { status: 'CANCELLED' }),
+      takes: ['SCHEDULED', 'MET', 'CANCELLED', 'NO_SHOW'],
+      refused: 'INVALID_STATUS',
+    },
+    {
+      name: 'editMeetingOutcome',
+      run: (db, id) => editMeetingOutcome(db, id, { status: 'CANCELLED' }, {}),
+      takes: ['MET', 'CANCELLED', 'NO_SHOW'],
+      refused: 'INVALID_STATUS',
+    },
+    {
+      name: 'rescheduleAppointment',
+      run: (db, id) => rescheduleAppointment(db, id, { date: d(20, 1) }),
+      takes: ['SCHEDULED'],
+      refused: 'APPOINTMENT_NOT_SCHEDULED',
+    },
+    {
+      name: 'softDeleteAppointment',
+      run: (db, id) => softDeleteAppointment(db, id),
+      takes: APPOINTMENT_STATUSES,
+      refused: '',
+    },
+  ];
+
+  it('takes or refuses an appointment by its status as before, with the same code', async () => {
+    for (const command of COMMANDS) {
+      for (const status of APPOINTMENT_STATUSES) {
+        const { db, id } = await inStatus(status);
+        const before = listAppointments(db);
+        const code = codeOf(() => command.run(db, id));
+        const taken = command.takes.includes(status);
+        expect([command.name, status, code]).toEqual([
+          command.name,
+          status,
+          taken ? undefined : command.refused,
+        ]);
+        if (!taken) expect(listAppointments(db)).toEqual(before);
+      }
+    }
   });
 });

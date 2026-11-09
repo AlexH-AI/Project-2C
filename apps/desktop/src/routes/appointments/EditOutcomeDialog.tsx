@@ -5,7 +5,14 @@ import {
   type AppointmentTrigger,
   type CustomerRecord,
 } from '@p2c/db';
-import { formatDate, type Person, type StageTransition } from '@p2c/domain';
+import {
+  canAppointment,
+  formatDate,
+  isOutcomeStatus,
+  type OutcomeStatus,
+  type Person,
+  type StageTransition,
+} from '@p2c/domain';
 import { Button, Choices, Dialog, SelectField, TextField } from '@p2c/ui';
 import { useAppData, useTables } from '../../data/AppDataContext';
 import { errorMessage, joinParts, t } from '../../i18n';
@@ -28,11 +35,8 @@ import {
   readOutcome,
   undoneMove,
   withoutError,
-  type OutcomeChoice,
   type OutcomeError,
 } from './outcome-form';
-
-type EditStatus = Exclude<OutcomeChoice, 'RESCHEDULED'>;
 
 /**
  * Mockup 6f: the outcome of a met, cancelled or missed appointment, and its day, trigger and
@@ -60,7 +64,7 @@ export function EditOutcomeDialog({
   const lock = outcomeLock(transitions, appointments, a);
   const { caused, later, keptBy } = lock;
   const locked = later !== undefined || keptBy !== undefined;
-  const [status, setStatus] = useState(a.status as EditStatus);
+  const [status, setStatus] = useState(a.status as OutcomeStatus);
   const [metDraft, setMetDraft] = useState(a.status === 'MET' ? metDraftOf(a) : EMPTY_MET);
   const [note, setNote] = useState(a.note);
   const [filled] = useState(() => prefill(a.date, today));
@@ -84,7 +88,8 @@ export function EditOutcomeDialog({
       ? t('error.OUTCOME_IN_FUTURE')
       : undefined;
   const choices = outcomeChoices({ status: a.status, date: day }, today).filter(
-    (choice): choice is { value: EditStatus; disabled: boolean } => choice.value !== 'RESCHEDULED',
+    (choice): choice is { value: OutcomeStatus; disabled: boolean } =>
+      isOutcomeStatus(choice.value),
   );
   // The stage of the day, without the meeting's own move (T-232).
   const onDay = editedDay(transitions, appointments, a, day);
@@ -138,9 +143,11 @@ export function EditOutcomeDialog({
       onSubmit={save}
       actions={
         <>
-          <Button onClick={() => setDeleting(true)} disabled={locked}>
-            {t('outcomeEdit.delete')}
-          </Button>
+          {canAppointment(a.status, 'delete') && (
+            <Button onClick={() => setDeleting(true)} disabled={locked}>
+              {t('outcomeEdit.delete')}
+            </Button>
+          )}
           <span className="mr-auto self-center text-xs text-fg-3">
             {locked && t('outcomeEdit.deleteBlocked')}
           </span>

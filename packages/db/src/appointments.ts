@@ -8,12 +8,15 @@
  * A meeting held or missed is dated today at the latest; only a cancellation may come ahead.
  */
 import {
+  canAppointment,
   compareDates,
   formatDate,
+  isOutcomeStatus,
   REVIEWER_ROLES,
   type Appointment,
   type CalendarDate,
   type CustomerStage,
+  type OutcomeStatus,
   type PersonRole,
   type Vnd,
   fromIsoDate,
@@ -73,7 +76,7 @@ export interface NewAppointment {
 }
 
 export interface MeetingOutcome {
-  readonly status: 'MET' | 'CANCELLED' | 'NO_SHOW';
+  readonly status: OutcomeStatus;
   readonly stageAfter?: CustomerStage | null;
   readonly nextStep?: string | null;
   readonly expectedCaseSize?: Vnd | null;
@@ -95,8 +98,6 @@ export interface AppointmentDetails {
   readonly triggerNote?: string | null;
   readonly coordinatorIds?: readonly string[];
 }
-
-const OUTCOME_STATUSES: readonly string[] = ['MET', 'CANCELLED', 'NO_SHOW'];
 
 // ---- reads ----------------------------------------------------------------
 
@@ -149,7 +150,11 @@ export function recordMeetingOutcome(
 ): AppointmentRecord {
   return db.transaction(() => {
     const row = liveAppointment(db, id);
-    if (row.status === 'RESCHEDULED') throw new DbError('INVALID_STATUS');
+    // Wider than 6c, which records a scheduled appointment only (`recordOutcomeWithNext` checks
+    // that): the seed and the tests record an outcome again over one, as editing it would.
+    if (!canAppointment(row.status, 'record') && !canAppointment(row.status, 'edit')) {
+      throw new DbError('INVALID_STATUS');
+    }
     const fields = outcomeFields(db, outcome, row.note);
     requireOutcomeDay(db, fields.status, row.date);
     // Still met with the same stage after: the transition stays as it is, even once a later one
@@ -175,7 +180,9 @@ export function recordOutcomeWithNext(
   next: NextAppointment,
 ): { readonly recorded: AppointmentRecord; readonly next: AppointmentRecord } {
   return db.transaction(() => {
-    if (liveAppointment(db, id).status !== 'SCHEDULED') throw new DbError('INVALID_STATUS');
+    if (!canAppointment(liveAppointment(db, id).status, 'record')) {
+      throw new DbError('INVALID_STATUS');
+    }
     if (compareDates(next.date, today(db)) < 0) {
       throw new DbError('NEXT_APPOINTMENT_PAST');
     }
@@ -206,7 +213,7 @@ export function editMeetingOutcome(
 ): AppointmentRecord {
   return db.transaction(() => {
     const row = liveAppointment(db, id);
-    if (!OUTCOME_STATUSES.includes(row.status)) throw new DbError('INVALID_STATUS');
+    if (!canAppointment(row.status, 'edit')) throw new DbError('INVALID_STATUS');
     const fields = { ...outcomeFields(db, outcome, row.note), ...detailFields(row, details) };
     requireOutcomeDay(db, fields.status, fields.date);
     // Same rule as the two commands: an unchanged met outcome keeps its transition; on a new day it
@@ -233,7 +240,7 @@ export function rescheduleAppointment(
 ): AppointmentRecord {
   return db.transaction(() => {
     const old = toAppointment(db, liveAppointment(db, id));
-    if (old.status !== 'SCHEDULED') throw new DbError('APPOINTMENT_NOT_SCHEDULED');
+    if (!canAppointment(old.status, 'reschedule')) throw new DbError('APPOINTMENT_NOT_SCHEDULED');
     const time = requireTime(when.time ?? null);
     if (compareDates(when.date, old.date) === 0 && time === old.time) {
       throw new DbError('RESCHEDULE_UNCHANGED');
@@ -251,6 +258,9 @@ export function rescheduleAppointment(
 /**
  * A deleted appointment takes its transition with it, under the D7 rule, stamped with the instant
  * of the deletion: restoring it gives back what the deletion withdrew, and nothing else.
+ * Any status, wider than `canAppointment(status, 'delete')`: the app never deletes a rescheduled
+ * one (#171), but a file may hold one deleted, and the tests delete and restore every appointment
+ * of the seed.
  */
 export function softDeleteAppointment(db: Database, id: string): void {
   db.transaction(() => {
@@ -328,7 +338,7 @@ function outcomeStage(row: AppointmentRow, stage: CustomerStage | null): Custome
 
 /** The outcome columns of an appointment, checked (spec §4, D9); the note stays when not given. */
 function outcomeFields(db: Database, outcome: MeetingOutcome, note: string) {
-  if (!OUTCOME_STATUSES.includes(outcome.status)) throw new DbError('INVALID_STATUS');
+  if (!isOutcomeStatus(outcome.status)) throw new DbError('INVALID_STATUS');
   const stageAfter = outcome.stageAfter == null ? null : requireStage(outcome.stageAfter);
   const nextStep = optionalText(outcome.nextStep);
   if (outcome.status === 'MET' && (stageAfter === null || nextStep === null)) {
