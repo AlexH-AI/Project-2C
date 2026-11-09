@@ -370,6 +370,52 @@ export function webOpened(
   return { ...taken, manual, openFailed: !opened, ...fresh };
 }
 
+/** The panel's ChatGPT web session, from the click on Phân tích bằng ChatGPT web until it ends. */
+export type AiPanelWebState =
+  | { readonly phase: 'idle' }
+  /** The copy and the browser on their way: both buttons are off already (§3.1 item 4). */
+  | { readonly phase: 'starting' }
+  | { readonly phase: 'open'; readonly web: AiPanelWeb }
+  /** Its own message, whose Thử lại starts ChatGPT web again, never the AI (review of PR 459). */
+  | { readonly phase: 'failed' };
+
+const WEB_IDLE: AiPanelWebState = { phase: 'idle' };
+
+/** Where the session goes once `startChatGptWeb` ends; blocked or discarded, nothing is said. */
+export function webStarted(outcome: WebStartOutcome): AiPanelWebState {
+  switch (outcome.kind) {
+    case 'session':
+      return { phase: 'open', web: webOpened(outcome) };
+    case 'failed':
+      return { phase: 'failed' };
+    case 'blocked':
+    case 'discarded':
+      return WEB_IDLE;
+    default:
+      return outcome satisfies never;
+  }
+}
+
+/** The state as shown: a session of data replaced since reads as idle (DR6-15). */
+export function webShown(state: AiPanelWebState, generation: number): AiPanelWebState {
+  return state.phase === 'open' && state.web.generation !== generation ? WEB_IDLE : state;
+}
+
+/**
+ * The state once the open session changes (`KycWebSession`): null ends it. A change that leaves the
+ * session as it was, as one answering for no session open, leaves the state as it is: a clipboard
+ * or browser slower than Hủy never ends the next click (review of PR 459).
+ */
+export function webChanged(
+  state: AiPanelWebState,
+  change: (web: AiPanelWeb | null) => AiPanelWeb | null,
+): AiPanelWebState {
+  const web = state.phase === 'open' ? state.web : null;
+  const next = change(web);
+  if (next === web) return state;
+  return next ? { phase: 'open', web: next } : WEB_IDLE;
+}
+
 /** Where the session goes after Kiểm tra và lưu: null once saved or discarded, it is over. */
 export function webAfter(web: AiPanelWeb, outcome: WebAnswerOutcome): AiPanelWeb | null {
   switch (outcome.kind) {

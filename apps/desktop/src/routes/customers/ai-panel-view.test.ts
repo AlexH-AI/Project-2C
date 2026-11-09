@@ -30,9 +30,12 @@ import {
   panelRun,
   runAfter,
   webAfter,
+  webChanged,
   webFailure,
   webChip,
   webOpened,
+  webShown,
+  webStarted,
 } from './ai-panel-view';
 
 const gateOf = (state: KycGateState, extra: Partial<KycGateResult> = {}): KycGateResult => ({
@@ -490,6 +493,65 @@ describe('the ChatGPT web session of the panel (spec Phase 5 §3.1, mockups 4e�
     expect(webFailure(after!)).toEqual({ text: t('aiError.GENERAL'), tone: 'danger' });
     expect(webAfter(opened, { kind: 'saved', status: 'REJECTED' })).toBeNull();
     expect(webAfter(opened, { kind: 'discarded' })).toBeNull();
+  });
+
+  describe('from its click to its end (§3.1 item 4, state-machines.md U1)', () => {
+    const started = {
+      session,
+      generation: 3,
+      kycVersion: 2,
+      message: 'Tin nhắn',
+      takenAt: new Date(2026, 8, 26, 10, 40),
+      copied: false,
+      opened: false,
+    };
+    const open = { phase: 'open', web: opened } as const;
+    const starting = { phase: 'starting' } as const;
+    const failed = { phase: 'failed' } as const;
+    const idle = { phase: 'idle' } as const;
+
+    it('opens the session `startChatGptWeb` gives, as `webOpened` reads it', () => {
+      expect(webStarted({ kind: 'session', ...started })).toEqual({
+        phase: 'open',
+        web: webOpened(started),
+      });
+    });
+
+    // Its own message: Thử lại starts ChatGPT web again, never the AI (review of PR 459).
+    it('fails on a bug', () => {
+      expect(webStarted({ kind: 'failed' })).toEqual(failed);
+    });
+
+    it.each([{ kind: 'blocked', state: 'CONFLICT_RESOLUTION' }, { kind: 'discarded' }] as const)(
+      'is back to idle on $kind, with nothing more to say',
+      (outcome) => {
+        expect(webStarted(outcome)).toEqual(idle);
+      },
+    );
+
+    it('reads a session of data replaced since as idle (DR6-15)', () => {
+      expect(webShown(open, 3)).toBe(open);
+      expect(webShown(open, 4)).toEqual(idle);
+    });
+
+    it('keeps the other states whatever the data: no session to end', () => {
+      for (const state of [idle, starting, failed]) expect(webShown(state, 4)).toBe(state);
+    });
+
+    it('goes on with the session as it changes, and ends it once it is over or on Hủy', () => {
+      const changed = webChanged(open, (web) => web && { ...web, manual: 'Tin nhắn' });
+      expect(changed).toEqual({ phase: 'open', web: { ...opened, manual: 'Tin nhắn' } });
+      expect(webChanged(open, () => null)).toEqual(idle);
+      expect(webChanged(open, (web) => web)).toBe(open);
+    });
+
+    // A clipboard or browser slower than Hủy answers for no session (review of PR 459).
+    it('leaves a state with no session open as it is', () => {
+      for (const state of [idle, starting, failed]) {
+        expect(webChanged(state, (web) => web)).toBe(state);
+        expect(webChanged(state, () => null)).toBe(state);
+      }
+    });
   });
 });
 

@@ -15,6 +15,7 @@ import {
   useState,
   useSyncExternalStore,
   type ReactNode,
+  type SetStateAction,
 } from 'react';
 import { analyseCustomer, startChatGptWeb, type WebAnswerOutcome } from '../../data/ai-analysis';
 import { useAppData } from '../../data/AppDataContext';
@@ -30,13 +31,16 @@ import {
   modelLabel,
   panelDone,
   panelRun,
-  webOpened,
+  webChanged,
+  webShown,
+  webStarted,
   type AiJobPhase,
   type AiPanelBlocked,
   type AiPanelHelp,
   type AiPanelItem,
   type AiPanelSubgroup,
   type AiPanelWeb,
+  type AiPanelWebState,
 } from './ai-panel-view';
 import { AnalysisHistory, RejectedReportDialog, SourceBadge, sourceName } from './KycHistory';
 import { factCodeTarget } from './kyc-view';
@@ -408,15 +412,16 @@ export function KycIntelligence({
   const analysis = useAiJob('analysis', customerId);
   // This customer's ChatGPT web session: it lives in the panel only, so leaving ends it (§3.1); the
   // data replaced meanwhile ends it too, its input taken from other data (DR6-15).
-  const [kept, setKept] = useState<AiPanelWeb | null>(null);
+  const [webState, setWebState] = useState<AiPanelWebState>({ phase: 'idle' });
   const generation = useSyncExternalStore(app.subscribe, app.generation);
-  const web = kept?.generation === generation ? kept : null;
-  // While the copy and the browser are on their way, both buttons are off already (§3.1 item 4).
-  const [startingWeb, setStartingWeb] = useState(false);
-  const [webFailed, setWebFailed] = useState(false);
+  const webNow = webShown(webState, generation);
+  const web = webNow.phase === 'open' ? webNow.web : null;
+  const changeWeb = (change: SetStateAction<AiPanelWeb | null>) =>
+    setWebState((state) => webChanged(state, typeof change === 'function' ? change : () => change));
   // How the last web session's Kiểm tra và lưu ended, said to a screen reader once saved (DR5-33).
   const [webEnded, setWebEnded] = useState<WebAnswerOutcome | null>(null);
-  const webOpen = web !== null || startingWeb;
+  // While the copy and the browser are on their way, both buttons are off already (§3.1 item 4).
+  const webOpen = webNow.phase === 'open' || webNow.phase === 'starting';
   // The session gone (saved, discarded or Hủy) takes the focus with it: back to the button that
   // opened it, or the panel's heading while that is off (DR5-43).
   const webStartId = useId();
@@ -490,25 +495,18 @@ export function KycIntelligence({
   };
 
   const analyse = () => {
-    setWebFailed(false);
+    setWebState((state) => (state.phase === 'failed' ? { phase: 'idle' } : state));
     setWebEnded(null);
     analysis.start((signal, call) => analyseCustomer(app, customerId, signal, call));
   };
   const startWeb = async () => {
-    setStartingWeb(true);
-    setWebFailed(false);
+    setWebState({ phase: 'starting' });
     setWebEnded(null);
     // An error of Phân tích would sit beside the session's (review of PR 459).
     analysis.clear();
     const outcome = await startChatGptWeb(app, customerId);
-    setStartingWeb(false);
-    if (outcome.kind === 'session') {
-      setViewing(null);
-      setKept(webOpened(outcome));
-    } else if (outcome.kind === 'failed') {
-      // Its own message: Thử lại starts ChatGPT web again, never a call to the AI (review of PR 459).
-      setWebFailed(true);
-    }
+    if (outcome.kind === 'session') setViewing(null);
+    setWebState(webStarted(outcome));
   };
 
   // What runs, as taken at the click: Settings changed meanwhile do not change it (DR5-31).
@@ -545,8 +543,8 @@ export function KycIntelligence({
         {done && <p role="status">{t(`aiPanel.done.${done}`)}</p>}
       </div>
       {view.blocked && <BlockedNote blocked={view.blocked} />}
-      {web && <KycWebSession web={web} onChange={setKept} onChecked={setWebEnded} />}
-      {webFailed && !web && (
+      {web && <KycWebSession web={web} onChange={changeWeb} onChecked={setWebEnded} />}
+      {webNow.phase === 'failed' && (
         <RetryAlert retryOn={view.button.enabled} onRetry={thenFocus(() => void startWeb())}>
           {t('aiError.GENERAL')}
         </RetryAlert>
