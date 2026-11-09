@@ -9,8 +9,10 @@ import {
   type Database,
 } from '@p2c/db';
 import {
+  APPOINTMENT_STATUSES,
   calendarDate,
   formatDate,
+  type AppointmentStatus,
   type CalendarDate,
   type CustomerStage,
   type StageTransition,
@@ -28,6 +30,7 @@ import {
   stageAfterChoices,
   undoneMove,
   withoutError,
+  type OutcomeChoice,
   type OutcomeDraft,
 } from './outcome-form';
 
@@ -158,6 +161,28 @@ describe('outcomeChoices', () => {
     expect(disabled(outcomeChoices({ status: 'MET', date: TODAY }, TODAY))).toEqual([
       'RESCHEDULED',
     ]);
+  });
+
+  it('offers the outcome of 6c and 6f by the status of the appointment (T-403)', () => {
+    // On its day and ahead of it; written out by hand for every status.
+    const expected: Record<AppointmentStatus, [OutcomeChoice[], OutcomeChoice[]]> = {
+      SCHEDULED: [[], ['MET', 'NO_SHOW']],
+      MET: [['RESCHEDULED'], ['MET', 'RESCHEDULED', 'NO_SHOW']],
+      RESCHEDULED: [[...OUTCOME_CHOICES], [...OUTCOME_CHOICES]],
+      CANCELLED: [['RESCHEDULED'], ['MET', 'RESCHEDULED', 'NO_SHOW']],
+      NO_SHOW: [['RESCHEDULED'], ['MET', 'RESCHEDULED', 'NO_SHOW']],
+    };
+    for (const status of APPOINTMENT_STATUSES) {
+      const [onDay, ahead] = expected[status];
+      expect([status, disabled(outcomeChoices({ status, date: TODAY }, TODAY))]).toEqual([
+        status,
+        onDay,
+      ]);
+      expect([status, disabled(outcomeChoices({ status, date: d(27, 9, 2026) }, TODAY))]).toEqual([
+        status,
+        ahead,
+      ]);
+    }
   });
 });
 

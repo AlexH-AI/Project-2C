@@ -11,7 +11,7 @@ Mọi chỗ trong app mà một thứ đi qua nhiều trạng thái theo luật:
 | # | Máy | Trạng thái | Mức | Luật nằm ở |
 |---|---|---|---|---|
 | D1 | Nhóm KH (`CustomerStage`) | N4, N3, N2, N1, `ON_HOLD`, `LOST` | **Tường minh — mẫu chuẩn** | `assertValidTransition` (`packages/domain/src/customer-lifecycle.ts`): lệnh db (`checkTransition` ở `packages/db/src/customers.ts`), nhập backup và UI (`allowedStages` ở `apps/desktop/src/routes/customers/customers-view.ts`) cùng gọi một hàm |
-| D2 | Cuộc hẹn (`AppointmentStatus`) | `SCHEDULED`, `MET`, `RESCHEDULED`, `CANCELLED`, `NO_SHOW` | **Ngầm** | Rải ở 2 package, 3 cách viết cùng một luật — xem §4 |
+| D2 | Cuộc hẹn (`AppointmentStatus`) | `SCHEDULED`, `MET`, `RESCHEDULED`, `CANCELLED`, `NO_SHOW` | Tường minh (T-403) | `appointmentActions` / `canAppointment` (`packages/domain/src/appointment-lifecycle.ts`): lệnh db, `outcomeChoices`, nút của `Detail` và hộp 6f cùng đọc một bảng — xem §4 |
 | D3 | HĐ (`Policy`) | đã nộp → phát hành (UI không cho về lại; `updatePolicy` cho) | Ngầm, đủ chặn | Không có trường trạng thái: suy từ cặp `issuedDate` / `issuedFyp`. CHECK `policies_issued_pair`, `policies_issued`; `validate` ở `packages/db/src/policies.ts` (`ISSUE_INCOMPLETE`, `ISSUED_BEFORE_SUBMITTED`); UI giữ union `issued: null \| {…}` (`openDraft`, `policyStatusText` ở `apps/desktop/src/routes/customers/policy-form.ts`). Kiểu `Policy` của domain cho phép nửa cặp, CHECK chặn |
 | D4 | Dữ kiện KYC (`KycFactStatus`), theo từng trường | chưa có → `active`; `active` → `superseded` + `active` mới; `active` → `conflict`; `conflict` → một `active`, còn lại `superseded` | Tường minh | Phép thuần `confirmFact`, `markConflict`, `resolveConflict` (`packages/domain/src/kyc.ts`); db `confirmKycFact`, `markKycConflict`, `resolveKycConflict` lưu phần khác; nhập backup đếm `active` / `conflict` mỗi trường |
 | D5 | Phân tích AI (`ai_analyses`) | `ACCEPTED` / `REJECTED` lưu; `CURRENT` / `STALE` / `REJECTED` suy ra | Tường minh, không đổi sau khi ghi | Chỉ thêm (trigger chặn sửa / xóa); CHECK theo `status`; `listAiAnalyses` suy `AiAnalysisState` (`packages/db/src/ai-analyses.ts`) |
@@ -63,16 +63,30 @@ stateDiagram-v2
 
 (Trong `CoKetQua` đi được giữa mọi cặp; hình chỉ vẽ một vòng. `RESCHEDULED` là trạng thái cuối. Trong ghi chú của sơ đồ không dùng dấu `;`: Mermaid đọc nó là hết câu.)
 
-Luật này đang nằm ở:
+Luật theo trạng thái **hiện có** (thao tác nào làm được) nằm ở một bảng: `appointmentActions` / `canAppointment` của `packages/domain/src/appointment-lifecycle.ts` (T-403, theo mẫu D1). Cùng file: `OUTCOME_STATUSES` / `isOutcomeStatus`, các trạng thái mà một kết quả đặt (ghi ở 6c, sửa ở 6f).
 
-- `packages/db/src/appointments.ts`: `recordMeetingOutcome` từ chối `RESCHEDULED`; `recordOutcomeWithNext` và `rescheduleAppointment` chỉ nhận `SCHEDULED`; `editMeetingOutcome` chỉ nhận `OUTCOME_STATUSES`; `outcomeFields` (đích ∈ `OUTCOME_STATUSES`, `stageAfter` / `nextStep` / người đánh giá chỉ khi `MET`); `requireOutcomeDay`; `checkRestoreAppointment`. `softDeleteAppointment` nhận mọi trạng thái.
+| Trạng thái | Ghi kết quả (`record`, 6c) | Dời lịch (`reschedule`, 6e) | Sửa kết quả (`edit`, 6f) | Xóa (`delete`) |
+|---|---|---|---|---|
+| `SCHEDULED` | có | có | — | có, ở khung Chi tiết |
+| `MET`, `CANCELLED`, `NO_SHOW` | — | — | có | có, trong 6f |
+| `RESCHEDULED` | — | — | — | — |
+
+Chỗ đọc bảng:
+
+- `packages/db/src/appointments.ts`: `recordOutcomeWithNext` (`record`), `editMeetingOutcome` (`edit`), đều mã `INVALID_STATUS`; `rescheduleAppointment` (`reschedule`, mã `APPOINTMENT_NOT_SCHEDULED`); `outcomeFields` (đích: `isOutcomeStatus`, `stageAfter` / `nextStep` / người đánh giá chỉ khi `MET`). Hai lệnh rộng hơn UI, có chú thích lý do: `recordMeetingOutcome` nhận `record` hoặc `edit` (seed và test ghi lại kết quả của lịch đã có kết quả), `softDeleteAppointment` nhận mọi trạng thái (app không xóa lịch Dời lịch, #171, nhưng file nhập có thể giữ một lịch như vậy đã xóa, và test xóa / khôi phục mọi lịch của seed).
+- `apps/desktop/src/routes/appointments/outcome-form.ts`: `outcomeChoices` (lựa chọn nào tắt).
+- `apps/desktop/src/routes/appointments/AppointmentsScreen.tsx`: các nút Ghi kết quả, Dời lịch, Sửa, Xóa của `Detail`. Lịch đã có kết quả xóa trong 6f (nói trước chuyển nhóm bị rút lại, khóa D7 chặn), nên khung Chi tiết chỉ bày Xóa khi `delete` mà không `edit`.
+- `apps/desktop/src/routes/appointments/EditOutcomeDialog.tsx`: trạng thái của 6f (`OutcomeStatus`), nút Xóa.
+- Test bảng: `packages/domain/src/appointment-lifecycle.test.ts` (5 trạng thái × 4 thao tác), ca "the status rule of the commands (T-403)" của `packages/db/src/appointments.test.ts` (5 lệnh × 5 trạng thái, cùng mã lỗi), ca T-403 của `outcome-form.test.ts`. Thêm một trạng thái thì bảng `ACTIONS` không biên dịch tới khi có dòng của nó.
+
+Giữ ở chỗ cũ (ngoài P1):
+
+- `packages/db/src/appointments.ts`: `requireOutcomeDay`; `checkRestoreAppointment`.
 - `packages/db/src/schema.ts`: CHECK `appointments_status`, `appointments_stage_after`, `appointments_met_outcome`, `appointments_outcome_reviewer`.
 - `packages/db/src/backup-validation.ts`: chuỗi dời lịch (`rescheduled_from_id` trỏ tới lịch `RESCHEDULED` cùng KH), lịch `MET` với chuyển nhóm của nó.
-- `apps/desktop/src/routes/appointments/outcome-form.ts`: `outcomeChoices` (lựa chọn nào tắt), `outcomeLock` (khóa D7 của spec Phase 3).
-- `apps/desktop/src/routes/appointments/AppointmentsScreen.tsx`: hằng `EDITABLE` và ba lần `a.status === 'SCHEDULED'` trong `Detail` (Ghi kết quả, Dời lịch, Xóa). Lịch `RESCHEDULED` không có nút Xóa dù lệnh db nhận.
-- `apps/desktop/src/routes/appointments/EditOutcomeDialog.tsx`: kiểu `EditStatus`.
+- `apps/desktop/src/routes/appointments/outcome-form.ts`: luật ngày trong `outcomeChoices`, `outcomeLock` (khóa D7 của spec Phase 3).
 
-Ngày 09/11 các chỗ trên **khớp nhau**: xét theo trạng thái, UI không bày nút nào mà lệnh từ chối (luật ngày và khóa D7 của spec Phase 3 vẫn có thể bị lệnh từ chối kèm câu báo, đúng thiết kế). Rủi ro là lệch về sau: thêm một trạng thái hay một nút phải sửa đủ 6 file, và không test nào bắt chỗ quên.
+Xét theo trạng thái, UI không bày nút nào mà lệnh từ chối; luật ngày và khóa D7 của spec Phase 3 vẫn có thể bị lệnh từ chối kèm câu báo, đúng thiết kế.
 
 ## 5. Quyết định
 
@@ -84,7 +98,7 @@ Ngày 09/11 các chỗ trên **khớp nhau**: xét theo trạng thái, UI không
 
 | # | Việc | Được gì | Issue |
 |---|---|---|---|
-| P1 | D2 theo mẫu D1: một hàm luật trong `packages/domain` (ghi kết quả / dời / sửa / xóa theo trạng thái), lệnh db và UI (`outcomeChoices`, `EDITABLE`, `Detail`, `EditStatus`) cùng đọc. Luật ngày và khóa D7 của spec Phase 3 giữ nguyên chỗ cũ | Nút không thể lệch lệnh; thêm trạng thái sửa một chỗ, một test bảng | T-403 #1177, `risk:med` |
+| P1 | D2 theo mẫu D1: một hàm luật trong `packages/domain` (ghi kết quả / dời / sửa / xóa theo trạng thái), lệnh db và UI (`outcomeChoices`, `EDITABLE`, `Detail`, `EditStatus`) cùng đọc. Luật ngày và khóa D7 của spec Phase 3 giữ nguyên chỗ cũ | Nút không thể lệch lệnh; thêm trạng thái sửa một chỗ, một test bảng | T-403 #1177, `risk:med`; **đã làm**: `appointment-lifecycle.ts`, xem §4 |
 | P2 | U2: đưa trạng thái bận của Cài đặt → Dữ liệu lên cha như đã làm với thông báo (DR6-45) | Sửa DR6-200 | T-404 #1178, `risk:low` |
 | P3 | U1: một union `idle \| starting \| open \| failed` + hàm chuyển thuần trong `ai-panel-view.ts`, cạnh `AiPanelRun` | Bỏ tổ hợp vô lý; có unit test thay vì chỉ e2e | T-405 #1179, `risk:low` |
 

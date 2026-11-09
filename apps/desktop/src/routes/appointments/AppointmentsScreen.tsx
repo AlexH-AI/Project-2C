@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type
 import type { AppointmentRecord } from '@p2c/db';
 import {
   appointmentGroup,
+  canAppointment,
   compareDates,
   formatDate,
   formatDayMonth,
@@ -10,8 +11,8 @@ import {
   formatPeriodValue,
   isInPeriod,
   periodOf,
+  type AppointmentAction,
   type AppointmentGroup,
-  type AppointmentStatus,
   type CalendarDate,
   type Period,
 } from '@p2c/domain';
@@ -596,9 +597,6 @@ const Status = ({ label }: { label: ReturnType<typeof statusLabel> }) => (
   <span className={label.tone}>{label.text}</span>
 );
 
-/** The statuses whose outcome can be edited (mockup 6f). */
-const EDITABLE: readonly AppointmentStatus[] = ['MET', 'CANCELLED', 'NO_SHOW'];
-
 const dateTime = (a: AppointmentRecord) => withTime(formatDate(a.date), a.time);
 
 function Detail({
@@ -642,6 +640,7 @@ function Detail({
     );
   }
   const a = row.appointment;
+  const can = (action: AppointmentAction) => canAppointment(a.status, action);
   const link = (other: AppointmentRecord) => (
     <button type="button" onClick={() => onShow(other)} className={`${LINK} tabular-nums`}>
       {dateTime(other)}
@@ -690,21 +689,23 @@ function Detail({
           the button that opened it away, so the focus goes to the new heading, which is read out,
           not to the button of the same name the new appointment has here (review of PR 693). */}
       <div key={a.id} className="flex flex-wrap gap-2">
-        {a.status === 'SCHEDULED' && row.customer && (
+        {can('record') && row.customer && (
           <Button variant="primary" onClick={() => onRecord(row)}>
             {t('appointments.record')}
           </Button>
         )}
-        {a.status === 'SCHEDULED' && (
+        {can('reschedule') && (
           <Button onClick={() => onReschedule(row)}>{t('appointments.reschedule')}</Button>
         )}
-        {EDITABLE.includes(a.status) && row.customer && (
+        {can('edit') && row.customer && (
           <Button onClick={() => onEdit(row)}>{t('appointments.edit')}</Button>
         )}
         {row.customer && isPastOrToday(a.date, today) && (
           <Button onClick={() => onNext(row)}>{t('appointments.next')}</Button>
         )}
-        {a.status === 'SCHEDULED' && row.customer && (
+        {/* One with an outcome is deleted from 6f, which first says what the deletion takes back
+            and refuses it under the D7 lock. */}
+        {can('delete') && !can('edit') && row.customer && (
           <Button onClick={() => onDelete(row)}>{t('appointments.delete')}</Button>
         )}
       </div>
