@@ -19,6 +19,7 @@ Quy tắc làm việc nằm ở `CLAUDE.md` (gốc repo) và `.claude/rules/` (n
 | `design/phase-4-chi-so.md` | Spec G2 Phase 4: đếm lịch hẹn, KH theo nhóm, miền năm, chỉ số Tổng quan / Báo cáo (§4.5 quyết định G3) | Task Phase 4 |
 | `design/phase-5-ai.md` | Spec G1 / G2 Phase 5: luồng AI, Settings, lệnh Rust, schema output, validator, mức bằng chứng, `ai_analyses`, AI trích xuất | Task Phase 5 |
 | `design/phase-6-hoan-thien.md` | Spec G1 Phase 6: việc còn lại, tính năng tới v1.0, kiểm thử phát hành, 4 lượt deep review Phase 1–6 × 6 gói (lượt 1 ba agent; lượt 2 và 3 Claude + Codex; lượt 4 Claude + Codex + DeepSeek; gồm phân tích bloat / hiệu năng), tiêu chí v1.0 | Task Phase 6 |
+| `design/phase-6-phan-hoi-dung-thu.md` | Spec phản hồi dùng thử exe `5215b2e` (10/11/2026): phản hồi nguyên văn, phạm vi và thứ tự A–F trước v1.0 (Owner mở K49 cho các việc này), phần A đổi RE → RM; B–F thêm khi Owner duyệt | Task từ phản hồi dùng thử |
 | `design/phase-5-prompts.md` | G5 Phase 5: chữ prompt (nay `analysis@6` / `discovery@6` / `extraction@1`; §10, §11, §12, §14, §15 là năm đợt G5 sau, §13 là luật T-291 không đổi version), message thử lại, danh sách chặn V3–V6 + ca kiểm | Task validator / prompt Phase 5 |
 | `design/state-machines.md` | Danh mục state machine (dữ liệu lưu, lúc chạy, UI): trạng thái, luật nằm ở đâu, máy nào còn ngầm; quyết định sửa P1–P3 (Owner mở K49 ngày 09/11) | Trước khi thêm trạng thái / lệnh / nút cho một thực thể, hay sửa luồng bận / hủy / lỗi |
 | `design/mockups/README.md` | Mockup → màn hình / route → G3 → mục spec; mục lục mockup lớn | Task UI |
