@@ -42,11 +42,23 @@ export interface DataNoticeProps<N> {
   readonly onNotice: (notice: N | null) => void;
 }
 
+/**
+ * What Settings → Data is busy with: a backup export or read, which `BackupSection` sets. Data holds
+ * it, as its one notice, and "Nạp lại…" waits for it, so 10c never opens under the 10a / 10b a read
+ * opens (DR6-200). A new task of Data that goes on past an `await` and opens a dialog or replaces
+ * the data sets it too; the replaces themselves run inside modal dialogs (10a, 10c).
+ */
+export type DataBusy = 'export' | 'read' | null;
+
+interface BackupSectionProps extends DataNoticeProps<BackupNotice> {
+  readonly busy: DataBusy;
+  readonly onBusy: (busy: DataBusy) => void;
+}
+
 /** Settings → Data, "Xuất / nhập backup" (mockup settings-data, 10a, 10b; spec §6). */
-export function BackupSection({ notice, onNotice }: DataNoticeProps<BackupNotice>) {
+export function BackupSection({ notice, onNotice, busy, onBusy: setBusy }: BackupSectionProps) {
   const data = useAppData();
   const input = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState<'export' | 'read' | null>(null);
   const [chosen, setChosen] = useState<Chosen | null>(null);
   const [refused, setRefused] = useState<Refused | null>(null);
 

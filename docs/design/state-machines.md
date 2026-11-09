@@ -34,7 +34,7 @@ Mọi chỗ trong app mà một thứ đi qua nhiều trạng thái theo luật:
 | # | Máy | Biến giữ trạng thái | Mức | Ghi chú |
 |---|---|---|---|---|
 | U1 | Phiên ChatGPT web (`KycIntelligence` ở `apps/desktop/src/routes/customers/KycIntelligence.tsx`) | `startingWeb`, `webFailed`, `kept` (+ `generation`), `webEnded` | **Ngầm** | Bốn biến cho một tiến trình rảnh / đang mở / đang có phiên / lỗi. Tổ hợp vô lý (`webFailed` cùng phiên đang mở) chỉ bị giấu bằng điều kiện render (`webFailed && !web`). Ngay cạnh đó, phần Phân tích đã là union `AiPanelRun` |
-| U2 | Cài đặt → Dữ liệu (`DataFileSection`, `BackupSection`, `DemoSection`) | thông báo đã chung (DR6-45, `noticeOf`); bận thì riêng từng mục (`busy`, `confirming`, `running` của `ConfirmWordDialog`) | **Ngầm** | Ghi chú **DR6-200** (Low / E; P2 sửa): "Nạp lại…" bấm được lúc đang đọc file backup, 10a chồng 10c, 10c giữ số đếm cũ. Dữ liệu vẫn an toàn nhờ R2 |
+| U2 | Cài đặt → Dữ liệu (`DataFileSection`, `BackupSection`, `DemoSection`) | thông báo chung (DR6-45, `noticeOf`); bận chung `busy: DataBusy` (`'export' \| 'read' \| null`) ở `DataSections` như thông báo: `BackupSection` đặt, `DemoSection` tắt "Nạp lại…" khi khác `null`; `confirming` (10c) và `running` của `ConfirmWordDialog` / `ImportDialog` nằm trong hộp modal | Tường minh | **DR6-200** đã sửa (P2, T-404 #1178): trước đó "Nạp lại…" bấm được lúc đang đọc file backup, 10a chồng 10c, 10c giữ số đếm cũ. Dữ liệu vốn an toàn nhờ R2 |
 | U3 | Xuất / nhập backup (`BackupSection`) | `busy: 'export' \| 'read' \| null`, `chosen`, `refused` | Gần tường minh | `chosen` và `refused` loại trừ nhau theo luồng `readFile` |
 | U4 | API key (`KeyCard` ở `apps/desktop/src/routes/SettingsAi.tsx`) | `stored`, `text`, `fieldError`, `outcome`, `working`, `confirming` + bộ đếm `actions` | Ngầm, nhỏ | `actions` là thẻ chống kết quả đọc cũ (DR5-37, R2-14); nhất quán |
 | U5 | Hộp thoại "một trong N" | `AppointmentsScreen`: `creating`, `moving`, `recording`, `editing`, `deleting`; `CustomerProfile`: `editing`, `confirming`, `appointing`, `policyMode`, `marked`; `SettingsTrash`: `restoring`, `purging` | Ngầm, không tới được | Kiểu cho phép hai hộp mở cùng lúc, nhưng hộp là modal nên không bấm được nút thứ hai |
@@ -99,7 +99,7 @@ Xét theo trạng thái, UI không bày nút nào mà lệnh từ chối; luật
 | # | Việc | Được gì | Issue |
 |---|---|---|---|
 | P1 | D2 theo mẫu D1: một hàm luật trong `packages/domain` (ghi kết quả / dời / sửa / xóa theo trạng thái), lệnh db và UI (`outcomeChoices`, `EDITABLE`, `Detail`, `EditStatus`) cùng đọc. Luật ngày và khóa D7 của spec Phase 3 giữ nguyên chỗ cũ | Nút không thể lệch lệnh; thêm trạng thái sửa một chỗ, một test bảng | T-403 #1177, `risk:med`; **đã làm**: `appointment-lifecycle.ts`, xem §4 |
-| P2 | U2: đưa trạng thái bận của Cài đặt → Dữ liệu lên cha như đã làm với thông báo (DR6-45) | Sửa DR6-200 | T-404 #1178, `risk:low` |
+| P2 | U2: đưa trạng thái bận của Cài đặt → Dữ liệu lên cha như đã làm với thông báo (DR6-45) | Sửa DR6-200 | T-404 #1178, `risk:low`; **đã làm**: `DataBusy` ở `DataSections` (`apps/desktop/src/routes/Settings.tsx`), xem §3 dòng U2 |
 | P3 | U1: một union `idle \| starting \| open \| failed` + hàm chuyển thuần trong `ai-panel-view.ts`, cạnh `AiPanelRun` | Bỏ tổ hợp vô lý; có unit test thay vì chỉ e2e | T-405 #1179, `risk:low` |
 
 Không sửa: D3 (CHECK đã chặn; đổi kiểu `Policy` lan sang chỉ số và golden, vùng G2), U5 (modal đã chặn), R1–R6 (đã tường minh hoặc gói kín, có test).
