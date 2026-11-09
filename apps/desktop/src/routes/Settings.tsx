@@ -8,7 +8,12 @@ import { FOCUS, HEADING, SETTINGS_SECTION } from './classes';
 import type { SettingsSection } from '../shell/routes';
 import { ConfirmWordDialog } from './ConfirmWordDialog';
 import { AiSection } from './SettingsAi';
-import { BackupSection, type BackupNotice, type DataNoticeProps } from './SettingsBackup';
+import {
+  BackupSection,
+  type BackupNotice,
+  type DataBusy,
+  type DataNoticeProps,
+} from './SettingsBackup';
 import { DataFileSection } from './SettingsDataFile';
 import { TrashSection } from './SettingsTrash';
 
@@ -76,10 +81,12 @@ type Shown = {
 
 /**
  * Dữ liệu has one notice, that of the last backup or reload: a notice about data replaced since
- * never stays beside it (DR6-45).
+ * never stays beside it (DR6-45). It is busy as one page too: "Nạp lại…" waits while a backup is
+ * exported or read, so 10c never opens under the 10a / 10b the read opens (DR6-200).
  */
 function DataSections() {
   const [shown, setShown] = useState<Shown | null>(null);
+  const [busy, setBusy] = useState<DataBusy>(null);
   // Typed by the section it is for (review of PR 825). Only section `from` sets a notice under
   // `from`, so its notice is of that section's type, which the compiler cannot follow through
   // `shown`: the casts say so here and nowhere else.
@@ -95,13 +102,18 @@ function DataSections() {
   return (
     <>
       <DataFileSection />
-      <BackupSection {...noticeOf('backup')} />
-      <DemoSection {...noticeOf('demo')} />
+      <BackupSection {...noticeOf('backup')} busy={busy} onBusy={setBusy} />
+      <DemoSection {...noticeOf('demo')} busy={busy !== null} />
     </>
   );
 }
 
-function DemoSection({ notice: outcome, onNotice }: DataNoticeProps<Outcome>) {
+interface DemoSectionProps extends DataNoticeProps<Outcome> {
+  /** Another section of Dữ liệu runs (DR6-200). */
+  readonly busy: boolean;
+}
+
+function DemoSection({ notice: outcome, onNotice, busy }: DemoSectionProps) {
   const [confirming, setConfirming] = useState(false);
   const { hasFile } = useAppData();
 
@@ -117,7 +129,9 @@ function DemoSection({ notice: outcome, onNotice }: DataNoticeProps<Outcome>) {
             {t('settings.demo.reloadHelp')} {hasFile && t('settings.demo.reloadHelpBackup')}
           </span>
         </div>
-        <Button onClick={() => setConfirming(true)}>{t('settings.demo.reloadOpen')}</Button>
+        <Button disabled={busy} onClick={() => setConfirming(true)}>
+          {t('settings.demo.reloadOpen')}
+        </Button>
       </div>
       {outcome?.ok && (
         <p role="status" className="m-0 py-1 text-sm text-ok">

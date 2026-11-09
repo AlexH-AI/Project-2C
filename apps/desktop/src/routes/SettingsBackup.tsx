@@ -42,11 +42,21 @@ export interface DataNoticeProps<N> {
   readonly onNotice: (notice: N | null) => void;
 }
 
+/**
+ * What Settings → Data is busy with. Data holds it for all its sections, as its one notice: no
+ * section starts while another runs, so no dialog opens over one opened since (DR6-200).
+ */
+export type DataBusy = 'export' | 'read' | null;
+
+interface BackupSectionProps extends DataNoticeProps<BackupNotice> {
+  readonly busy: DataBusy;
+  readonly onBusy: (busy: DataBusy) => void;
+}
+
 /** Settings → Data, "Xuất / nhập backup" (mockup settings-data, 10a, 10b; spec §6). */
-export function BackupSection({ notice, onNotice }: DataNoticeProps<BackupNotice>) {
+export function BackupSection({ notice, onNotice, busy, onBusy: setBusy }: BackupSectionProps) {
   const data = useAppData();
   const input = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState<'export' | 'read' | null>(null);
   const [chosen, setChosen] = useState<Chosen | null>(null);
   const [refused, setRefused] = useState<Refused | null>(null);
 

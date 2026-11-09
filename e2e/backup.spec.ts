@@ -107,6 +107,53 @@ test('an export then a reload leave only the notice of the reload, which a cance
   await expect(notices).toHaveText([reloaded]);
 });
 
+// DR6-200: Dữ liệu is busy as one page: no reload (10c) opens while a backup file is read, under
+// the 10a / 10b the read then opens.
+test('"Nạp lại…" is off while a backup file is read, and on again once it is read or refused', async ({
+  page,
+}) => {
+  // The read of the files named `slow…` waits until the test lets it go on.
+  await page.addInitScript(() => {
+    const text = Blob.prototype.text;
+    Blob.prototype.text = function (this: Blob) {
+      if (!(this instanceof File && this.name.startsWith('slow'))) return text.call(this);
+      return new Promise<string>((resolve) => {
+        (window as unknown as Held).release = () => resolve(text.call(this));
+      });
+    };
+  });
+  await page.goto('/#/settings');
+  const exported = await exportFile(page);
+  const reload = page
+    .getByRole('region', { name: 'Dữ liệu giả lập' })
+    .getByRole('button', { name: 'Nạp lại…' });
+  const files = [
+    { text: exported.text, dialog: 'Thay toàn bộ dữ liệu?', close: 'Hủy' },
+    {
+      text: '{"format":"project2-backup","tables":{}}',
+      dialog: 'Không nhập được file',
+      close: 'Đóng',
+    },
+  ];
+  for (const file of files) {
+    await chooseFile(page, 'slow.p2cbackup', file.text);
+    await expect(section(page).getByRole('button', { name: 'Đang đọc file…' })).toBeVisible();
+    await expect(reload).toBeDisabled();
+
+    await page.evaluate(() => (window as unknown as Held).release());
+    const dialog = page.getByRole('dialog', { name: file.dialog });
+    await dialog.getByRole('button', { name: file.close }).click();
+
+    await expect(dialog).toBeHidden();
+    await expect(reload).toBeEnabled();
+  }
+});
+
+/** The window of a page whose read of a `slow…` file waits for `release`. */
+interface Held {
+  release: () => void;
+}
+
 test('the data file card shows what the simulated data holds, and that web mode keeps no file', async ({
   page,
 }) => {
