@@ -327,7 +327,7 @@ Quét mẫu key (`sk-…`, `gh[opsu]_…`, `github_pat_…`, `Bearer …`) trên
 
 ### 10.2 Lệch quy trình của đợt 2 (ghi ở `common-baseline.md` "Bước 7")
 
-- **Model WorkBuddy:** Owner chọn Hy4 cho A–F (07/11 23:35). Log: A và phiên B bị cắt chạy `hy4-free`; phiên B làm tiếp và C–F chạy `deepseek-v4.1-flash-sg`. Báo cáo B, C, D, F ghi "ngữ cảnh phiên ghi `Deepseek-V4.1-Flash`"; báo cáo E ghi Hy4 / `claude-opus-6`, khác log. Phiên tổng hợp chưa biết lý do đổi (Owner xác nhận khi trả lời §9). Lệch §L6.7 ("mọi gói dùng cùng model").
+- **Model WorkBuddy:** Owner chọn Hy4 cho A–F (07/11 23:35). Log: A và phiên B bị cắt chạy `hy4-free`; phiên B làm tiếp và C–F chạy `deepseek-v4.1-flash-sg`. Báo cáo B, C, D, F ghi "ngữ cảnh phiên ghi `Deepseek-V4.1-Flash`"; báo cáo E ghi Hy4 / `claude-opus-6`, khác log. Phiên tổng hợp chưa biết lý do đổi (Owner xác nhận khi trả lời §9). **Owner xác nhận 08/11/2026** (ghi ở HANDOFF): gói B–F chạy DeepSeek V4.1 Flash, khớp log. Lệch §L6.7 ("mọi gói dùng cùng model").
 - **Phiên thử:** baseline ghi phiên thử chạy GLM 5.3; log cho thấy task ghi các việc 1–15 (`1026bd70-…`, 23:05–23:25) chạy `hy4-free`, task thử thứ hai (`8c2e2423-…`, 23:26–23:35) chạy `glm-5.3`.
 - **Chép log phiên (7.3):** Owner bảo Claude chạy (08/11, "Em chạy giúp"), lệch lượt 4–5 (Owner chạy). Lệnh `common\copy-sessions.mjs` từ chối khi app còn chạy; chỉ đọc `<id>.jsonl` sửa sau 07/11 22:30 để nhận gói, chỉ chép `<id>.jsonl`, `tool-results\`, `subagents\`; không mở file nào khác của thư mục dữ liệu app.
 - **`gh auth login` trước `remove`** (Owner, sau khi thoát app): không agent nào chạy lúc đó.
