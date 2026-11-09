@@ -41,6 +41,7 @@ Các câu trả lời khi chốt thiết kế, cùng ngày (câu hỏi ở mục
 | C: danh sách KH của một RM (§5) | "RM phụ trách" |
 | D: case size của lịch hẹn tương lai (§6.1) | "Mục D anh đồng ý với 1 theo em đề xuất" |
 | Kế hoạch, hướng phát triển (§8, §9) | "lên kế hoạch thôi nhé, chưa ra issue, anh sẽ cần sáng tạo, tìm thêm ý tưởng về UI/UX cũng như hướng phát triển app dự kiến sẽ đưa lên MacOS 1 bản song song với bản Windows 11" |
+| Bản Mac: triết lý thiết kế, chọn nền tảng (§9) | "Ý tưởng của anh khi app đưa lên MacOS nó phải theo triết lý thiết kế của Mac và hệ sinh thái Apple: nhanh, mượt mà, animation mượt mà, UI/UX ấn tượng, đột phá"; rồi yêu cầu cân nhắc kỹ chung mã Tauri hay viết lại, desktop hay web (nguyên văn: `nen-tang-mac-va-thuong-mai-hoa.md` §0) |
 
 ## 2. Phạm vi, thứ tự, cổng
 
@@ -219,9 +220,11 @@ Owner 10/11: "anh sẽ cần sáng tạo, tìm thêm ý tưởng về UI/UX". Đ
 3. **Mockup G3** cho phần được chọn (gồm B, C, D, E, F); **golden G2** cho B và D.
 4. **Ra Issue** khi Owner bảo, theo các mục "Issue dự kiến".
 
-## 9. Hướng phát triển: bản macOS song song bản Windows 11 (đề xuất, chờ Owner: G1, G4)
+## 9. Hướng phát triển: bản macOS song song bản Windows 11 (Owner chọn chung mã Tauri 10/11/2026, thử local trước)
 
 Owner 10/11: app "dự kiến sẽ đưa lên MacOS 1 bản song song với bản Windows 11". Tauri 2 build được cho macOS từ cùng mã nguồn: phần React, `domain`, `db`, `ai` dùng chung; phần khác nằm ở vỏ Rust, đóng gói, CI và vài chữ trên giao diện.
+
+Owner 10/11 sau đó: bản Mac "phải theo triết lý thiết kế của Mac và hệ sinh thái Apple: nhanh, mượt mà, animation mượt mà, UI/UX ấn tượng, đột phá", và yêu cầu cân nhắc kỹ chung mã Tauri hay viết lại cho Mac, desktop hay web khi thương mại hóa. Phân tích đầy đủ, khuyến nghị và điểm xét lại: `docs/design/nen-tang-mac-va-thuong-mai-hoa.md`.
 
 ### 9.1 Chỗ đang gắn với Windows (rà 10/11, `main` `de9cde7`)
 
@@ -232,7 +235,7 @@ Owner 10/11: app "dự kiến sẽ đưa lên MacOS 1 bản song song với bả
 | M3 | Mở thư mục, mở chatgpt.com | Gọi `explorer.exe` | Lệnh `open` (Finder, trình duyệt mặc định) |
 | M4 | Đóng gói | Exe portable, `bundle.active = false`, icon `.ico` | Bật bundle `.app` / `.dmg`, icon `.icns` |
 | M5 | CI | Chỉ `windows-latest` | Thêm job macOS (runner của GitHub, miễn phí cho repo public); chip Apple, có thể thêm Intel |
-| M6 | Ký, notarize | Windows: SmartScreen đã nghiệm thu (NT-EX-01) | Không ký: macOS chặn lần mở đầu, phải mở bằng chuột phải → Open. Ký và notarize: Apple Developer Program, 99 USD / năm (G4) |
+| M6 | Ký, notarize | Windows: SmartScreen đã nghiệm thu (NT-EX-01) | Không ký: macOS chặn lần mở đầu một bản tải về; từ macOS 15 phải vào Cài đặt hệ thống → Quyền riêng tư & Bảo mật → "Vẫn mở" (không còn mở bằng chuột phải → Open). Bản build ngay trên máy không bị chặn. Ký và notarize: Apple Developer Program, 99 USD / năm (G4) |
 | M7 | Phím tắt | Chữ "Ctrl+A / Ctrl+C / Ctrl+V"; chặn tải lại bằng Ctrl+R | ⌘A / ⌘C / ⌘V, ⌘R; menu Edit của macOS để sao chép / dán chạy trong app |
 | M8 | Chữ nói về Windows | "exe", Explorer, đường dẫn `backups\` trong giao diện và hướng dẫn | Chữ theo nền tảng; hướng dẫn có phần macOS |
 | M9 | Kiểm thử | E2E chạy trên Edge (cùng nhân với WebView2 của Windows) | WebView của macOS là WebKit (như Safari): chạy thêm e2e trên WebKit; nghiệm thu trên Mac thật |
@@ -244,22 +247,23 @@ Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, g
 
 ### 9.3 Cách làm đề xuất
 
-1. **Spike** khi Owner đồng ý: build thử bản macOS chưa ký trên CI, Owner mở trên Mac, ghi các chỗ hỏng. Không sửa code sản phẩm.
+1. **Thử trên Mac (spike):** build bản macOS chưa ký trên CI, Owner mở trên Mac, ghi các chỗ hỏng. Sửa tối thiểu để chạy được (M2, M3, M4); bản Windows không đổi. Chi tiết: `nen-tang-mac-va-thuong-mai-hoa.md` §9. Owner 10/11 chọn chung mã Tauri: "A quyết định chung mã Tauri như e khuyến nghị, thử trên Mac local trước, nếu không ổn thì tính tiếp".
 2. **ADR "Hỗ trợ macOS"** (G1): nơi để dữ liệu, kho key, ký hay không, cách phát hành; G4 cho crate Keychain và (nếu ký) Apple Developer.
 3. **Issue chuyển nền tảng** (M1–M9), chạy song song A–F vì chủ yếu đụng vỏ Rust, CI và chữ theo nền tảng.
 4. **Phát hành:** v1.0 cho cả hai cùng lúc, hoặc Windows v1.0 trước rồi macOS v1.1.
 
 ### 9.4 Câu hỏi chờ Owner
 
-- Anh có máy Mac để thử chưa (chip Apple hay Intel, macOS bản nào)?
-- Bản Mac cho riêng anh hay cho cả team?
-- Phát hành cùng lúc với bản Windows hay sau?
-- Có đăng ký Apple Developer (99 USD / năm) để ký và notarize không?
-- Mac và PC có cần dùng chung một dữ liệu không?
+- Anh có máy Mac để thử chưa (chip Apple hay Intel, macOS bản nào)? **Đã trả lời 10/11:** MacBook Pro M5 Pro, macOS 27.2+.
+- Bản Mac cho riêng anh hay cho cả team? **Một phần 10/11:** trước mắt là app Mac chạy local, song song bản Windows, trước khi nghĩ tới thương mại hóa.
+- Phát hành cùng lúc với bản Windows hay sau? Chưa trả lời.
+- Có đăng ký Apple Developer (99 USD / năm) để ký và notarize không? **Đã trả lời 10/11:** chưa, có thể làm sau.
+- Mac và PC có cần dùng chung một dữ liệu không? Chưa trả lời.
+- Thêm 10/11: bản thương mại hóa đa ngôn ngữ, trước mắt tiếng Việt và English.
 
 ## 10. Thứ tự đề xuất của cả đợt
 
-1. Vòng ý tưởng UI/UX (§8); spike macOS (§9.3 bước 1) chạy song song khi Owner đồng ý.
+1. Vòng ý tưởng UI/UX (§8); thử bản macOS (§9.3 bước 1) chạy song song, khi Owner bảo tạo Issue.
 2. Chốt: các điểm mở của D (§6.2), mockup B–F, golden B và D, ADR macOS.
 3. Owner bảo "ra issue": A → B → C / F → D → E; Issue macOS chạy song song.
 4. Nghiệm thu exe mới (Windows, và Mac nếu phát hành cùng lúc) → G7 → phát hành.
