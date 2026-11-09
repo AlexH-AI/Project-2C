@@ -33,7 +33,7 @@ Mọi chỗ trong app mà một thứ đi qua nhiều trạng thái theo luật:
 
 | # | Máy | Biến giữ trạng thái | Mức | Ghi chú |
 |---|---|---|---|---|
-| U1 | Phiên ChatGPT web (`KycIntelligence` ở `apps/desktop/src/routes/customers/KycIntelligence.tsx`) | `startingWeb`, `webFailed`, `kept` (+ `generation`), `webEnded` | **Ngầm** | Bốn biến cho một tiến trình rảnh / đang mở / đang có phiên / lỗi. Tổ hợp vô lý (`webFailed` cùng phiên đang mở) chỉ bị giấu bằng điều kiện render (`webFailed && !web`). Ngay cạnh đó, phần Phân tích đã là union `AiPanelRun` |
+| U1 | Phiên ChatGPT web (`KycIntelligence` ở `apps/desktop/src/routes/customers/KycIntelligence.tsx`) | một union `AiPanelWebState` (`idle \| starting \| open \| failed`), đọc qua `webShown` với `generation`; `webEnded` (câu báo cho trình đọc màn hình, DR5-33) giữ riêng như `ended` của `useAiJob` | Tường minh | Đã sửa (P3, T-405 #1179): trước đó bốn biến `startingWeb`, `webFailed`, `kept` (+ `generation`), `webEnded`, và tổ hợp vô lý (`webFailed` cùng phiên đang mở) chỉ bị giấu bằng điều kiện render. Hàm chuyển thuần `webStarted` (kết quả `startChatGptWeb`), `webShown` (phiên của dữ liệu đã thay đọc ra rảnh, DR6-15), `webChanged` (phiên đổi / kết thúc) ở `ai-panel-view.ts`, cạnh `AiPanelRun`, có unit test |
 | U2 | Cài đặt → Dữ liệu (`DataFileSection`, `BackupSection`, `DemoSection`) | thông báo chung (DR6-45, `noticeOf`); bận chung `busy: DataBusy` (`'export' \| 'read' \| null`) ở `DataSections` như thông báo: `BackupSection` đặt, `DemoSection` tắt "Nạp lại…" khi khác `null`; `confirming` (10c) và `running` của `ConfirmWordDialog` / `ImportDialog` nằm trong hộp modal | Tường minh | **DR6-200** đã sửa (P2, T-404 #1178): trước đó "Nạp lại…" bấm được lúc đang đọc file backup, 10a chồng 10c, 10c giữ số đếm cũ. Dữ liệu vốn an toàn nhờ R2 |
 | U3 | Xuất / nhập backup (`BackupSection`) | `busy: 'export' \| 'read' \| null`, `chosen`, `refused` | Gần tường minh | `chosen` và `refused` loại trừ nhau theo luồng `readFile` |
 | U4 | API key (`KeyCard` ở `apps/desktop/src/routes/SettingsAi.tsx`) | `stored`, `text`, `fieldError`, `outcome`, `working`, `confirming` + bộ đếm `actions` | Ngầm, nhỏ | `actions` là thẻ chống kết quả đọc cũ (DR5-37, R2-14); nhất quán |
@@ -100,7 +100,7 @@ Xét theo trạng thái, UI không bày nút nào mà lệnh từ chối; luật
 |---|---|---|---|
 | P1 | D2 theo mẫu D1: một hàm luật trong `packages/domain` (ghi kết quả / dời / sửa / xóa theo trạng thái), lệnh db và UI (`outcomeChoices`, `EDITABLE`, `Detail`, `EditStatus`) cùng đọc. Luật ngày và khóa D7 của spec Phase 3 giữ nguyên chỗ cũ | Nút không thể lệch lệnh; thêm trạng thái sửa một chỗ, một test bảng | T-403 #1177, `risk:med`; **đã làm**: `appointment-lifecycle.ts`, xem §4 |
 | P2 | U2: đưa trạng thái bận của Cài đặt → Dữ liệu lên cha như đã làm với thông báo (DR6-45) | Sửa DR6-200 | T-404 #1178, `risk:low`; **đã làm**: `DataBusy` ở `DataSections` (`apps/desktop/src/routes/Settings.tsx`), xem §3 dòng U2 |
-| P3 | U1: một union `idle \| starting \| open \| failed` + hàm chuyển thuần trong `ai-panel-view.ts`, cạnh `AiPanelRun` | Bỏ tổ hợp vô lý; có unit test thay vì chỉ e2e | T-405 #1179, `risk:low` |
+| P3 | U1: một union `idle \| starting \| open \| failed` + hàm chuyển thuần trong `ai-panel-view.ts`, cạnh `AiPanelRun` | Bỏ tổ hợp vô lý; có unit test thay vì chỉ e2e | T-405 #1179, `risk:low`; **đã làm**: `AiPanelWebState` ở `ai-panel-view.ts`, xem §3 dòng U1 |
 
 Không sửa: D3 (CHECK đã chặn; đổi kiểu `Policy` lan sang chỉ số và golden, vùng G2), U5 (modal đã chặn), R1–R6 (đã tường minh hoặc gói kín, có test).
 
