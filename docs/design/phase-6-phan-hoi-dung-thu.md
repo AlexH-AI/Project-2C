@@ -42,6 +42,7 @@ Các câu trả lời khi chốt thiết kế, cùng ngày (câu hỏi ở mục
 | D: case size của lịch hẹn tương lai (§6.1) | "Mục D anh đồng ý với 1 theo em đề xuất" |
 | Kế hoạch, hướng phát triển (§8, §9) | "lên kế hoạch thôi nhé, chưa ra issue, anh sẽ cần sáng tạo, tìm thêm ý tưởng về UI/UX cũng như hướng phát triển app dự kiến sẽ đưa lên MacOS 1 bản song song với bản Windows 11" |
 | Bản Mac: triết lý thiết kế, chọn nền tảng (§9) | "Ý tưởng của anh khi app đưa lên MacOS nó phải theo triết lý thiết kế của Mac và hệ sinh thái Apple: nhanh, mượt mà, animation mượt mà, UI/UX ấn tượng, đột phá"; rồi yêu cầu cân nhắc kỹ chung mã Tauri hay viết lại, desktop hay web (nguyên văn: `nen-tang-mac-va-thuong-mai-hoa.md` §0) |
+| Phát hành, dữ liệu, bảng ý tưởng (§8, §9.2, §9.4) | "bản Mac phát hành cùng lúc với bản windows"; "chung vì các báo cáo nhập và xuất ra dạng excel, nên làm chung cho tiện"; "có soạn ý tưởng UI/UX" |
 
 ## 2. Phạm vi, thứ tự, cổng
 
@@ -216,6 +217,7 @@ B1 dữ liệu và chỉ số (cột, migration, lệnh, luật backup, hàm ch�
 Owner 10/11: "anh sẽ cần sáng tạo, tìm thêm ý tưởng về UI/UX". Đề xuất cách làm:
 
 1. **Bảng ý tưởng do Claude soạn:** mỗi ý một thẻ (chuyện hôm nay → ý tưởng → phác thảo nhỏ → công sức ước lượng), theo màn: Tổng quan, Forecast, Báo cáo (app và Excel), Khách hàng và tìm kiếm, hồ sơ KH, Lịch hẹn, Team & RM, Cài đặt; và chung cả app: ô tìm nhanh ở mọi màn (Ctrl / ⌘ + K), phím tắt, nhận diện Heritas, giao diện sáng / tối, cảm giác quen thuộc trên macOS. Tham khảo cách trình bày của các CRM và báo cáo ngân hàng / bảo hiểm (chỉ lấy ý, không chép).
+   - Owner 10/11: "có soạn ý tưởng UI/UX". Bảng: `docs/design/mockups/y-tuong-ui-ux.html` (39 ý, 5 demo chạy được, phiếu chọn; 16 ý ⭐ là bộ Claude đề xuất cho v1.0). Chưa phải G3; chờ Owner chọn.
 2. **Owner thêm và chọn ý.**
 3. **Mockup G3** cho phần được chọn (gồm B, C, D, E, F); **golden G2** cho B và D.
 4. **Ra Issue** khi Owner bảo, theo các mục "Issue dự kiến".
@@ -243,22 +245,22 @@ Owner 10/11 sau đó: bản Mac "phải theo triết lý thiết kế của Mac 
 
 ### 9.2 Dữ liệu giữa các máy
 
-Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, gộp backup) để sau v1.0 (Owner 11/10/2026). Có bản Mac thì câu hỏi này lớn hơn: Mac và PC có dùng chung một dữ liệu không, và bằng cách nào (backup / khôi phục tay, thư mục đồng bộ như OneDrive / iCloud, hay đồng bộ thật).
+Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, gộp backup) để sau v1.0 (Owner 11/10/2026). Owner 10/11: Mac và PC **dùng chung một dữ liệu** ("chung vì các báo cáo nhập và xuất ra dạng excel, nên làm chung cho tiện"). Bằng cách nào chưa chốt: backup / khôi phục tay giữa hai máy (đã có, cùng định dạng file), thư mục đồng bộ như OneDrive / iCloud, hay đồng bộ thật; chốt ở ADR "Bản macOS".
 
 ### 9.3 Cách làm đề xuất
 
 1. **Thử trên Mac (spike):** build bản macOS chưa ký trên CI, Owner mở trên Mac, ghi các chỗ hỏng. Sửa tối thiểu để chạy được (M2, M3, M4); bản Windows không đổi. Chi tiết: `nen-tang-mac-va-thuong-mai-hoa.md` §9. Owner 10/11 chọn chung mã Tauri: "A quyết định chung mã Tauri như e khuyến nghị, thử trên Mac local trước, nếu không ổn thì tính tiếp".
 2. **ADR "Hỗ trợ macOS"** (G1): nơi để dữ liệu, kho key, ký hay không, cách phát hành; G4 cho crate Keychain và (nếu ký) Apple Developer.
 3. **Issue chuyển nền tảng** (M1–M9), chạy song song A–F vì chủ yếu đụng vỏ Rust, CI và chữ theo nền tảng.
-4. **Phát hành:** v1.0 cho cả hai cùng lúc, hoặc Windows v1.0 trước rồi macOS v1.1.
+4. **Phát hành:** v1.0 cho cả hai cùng lúc (Owner 10/11: "bản Mac phát hành cùng lúc với bản windows").
 
 ### 9.4 Câu hỏi chờ Owner
 
 - Anh có máy Mac để thử chưa (chip Apple hay Intel, macOS bản nào)? **Đã trả lời 10/11:** MacBook Pro M5 Pro, macOS 27.2+.
 - Bản Mac cho riêng anh hay cho cả team? **Một phần 10/11:** trước mắt là app Mac chạy local, song song bản Windows, trước khi nghĩ tới thương mại hóa.
-- Phát hành cùng lúc với bản Windows hay sau? Chưa trả lời.
+- Phát hành cùng lúc với bản Windows hay sau? **Đã trả lời 10/11:** cùng lúc.
 - Có đăng ký Apple Developer (99 USD / năm) để ký và notarize không? **Đã trả lời 10/11:** chưa, có thể làm sau.
-- Mac và PC có cần dùng chung một dữ liệu không? Chưa trả lời.
+- Mac và PC có cần dùng chung một dữ liệu không? **Đã trả lời 10/11:** chung; cách dùng chung chưa chốt (§9.2).
 - Thêm 10/11: bản thương mại hóa đa ngôn ngữ, trước mắt tiếng Việt và English.
 
 ## 10. Thứ tự đề xuất của cả đợt
@@ -266,4 +268,4 @@ Hôm nay mỗi máy giữ dữ liệu riêng; đồng bộ (`Project-2C-data`, g
 1. Vòng ý tưởng UI/UX (§8); thử bản macOS (§9.3 bước 1) chạy song song, khi Owner bảo tạo Issue.
 2. Chốt: các điểm mở của D (§6.2), mockup B–F, golden B và D, ADR macOS.
 3. Owner bảo "ra issue": A → B → C / F → D → E; Issue macOS chạy song song.
-4. Nghiệm thu exe mới (Windows, và Mac nếu phát hành cùng lúc) → G7 → phát hành.
+4. Nghiệm thu bản mới trên Windows và Mac (phát hành cùng lúc) → G7 → phát hành v1.0 cho cả hai.
