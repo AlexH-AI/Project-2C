@@ -43,6 +43,7 @@ Các câu trả lời khi chốt thiết kế, cùng ngày (câu hỏi ở mục
 | Kế hoạch, hướng phát triển (§8, §9) | "lên kế hoạch thôi nhé, chưa ra issue, anh sẽ cần sáng tạo, tìm thêm ý tưởng về UI/UX cũng như hướng phát triển app dự kiến sẽ đưa lên MacOS 1 bản song song với bản Windows 11" |
 | Bản Mac: triết lý thiết kế, chọn nền tảng (§9) | "Ý tưởng của anh khi app đưa lên MacOS nó phải theo triết lý thiết kế của Mac và hệ sinh thái Apple: nhanh, mượt mà, animation mượt mà, UI/UX ấn tượng, đột phá"; rồi yêu cầu cân nhắc kỹ chung mã Tauri hay viết lại, desktop hay web (nguyên văn: `nen-tang-mac-va-thuong-mai-hoa.md` §0) |
 | Phát hành, dữ liệu, bảng ý tưởng (§8, §9.2, §9.4) | "bản Mac phát hành cùng lúc với bản windows"; "chung vì các báo cáo nhập và xuất ra dạng excel, nên làm chung cho tiện"; "có soạn ý tưởng UI/UX" |
+| Bảng ý tưởng, vòng 2 (§8) | "anh muốn em làm lại tất cả ý tưởng và mockup hoàn toàn mới vì em là Fable 5.2" |
 
 ## 2. Phạm vi, thứ tự, cổng
 
@@ -217,7 +218,9 @@ B1 dữ liệu và chỉ số (cột, migration, lệnh, luật backup, hàm ch�
 Owner 10/11: "anh sẽ cần sáng tạo, tìm thêm ý tưởng về UI/UX". Đề xuất cách làm:
 
 1. **Bảng ý tưởng do Claude soạn:** mỗi ý một thẻ (chuyện hôm nay → ý tưởng → phác thảo nhỏ → công sức ước lượng), theo màn: Tổng quan, Forecast, Báo cáo (app và Excel), Khách hàng và tìm kiếm, hồ sơ KH, Lịch hẹn, Team & RM, Cài đặt; và chung cả app: ô tìm nhanh ở mọi màn (Ctrl / ⌘ + K), phím tắt, nhận diện Heritas, giao diện sáng / tối, cảm giác quen thuộc trên macOS. Tham khảo cách trình bày của các CRM và báo cáo ngân hàng / bảo hiểm (chỉ lấy ý, không chép).
-   - Owner 10/11: "có soạn ý tưởng UI/UX". Bảng: `docs/design/mockups/y-tuong-ui-ux.html` (39 ý, 5 demo chạy được, phiếu chọn; 16 ý ⭐ là bộ Claude đề xuất cho v1.0). Chưa phải G3; chờ Owner chọn.
+   - Owner 10/11: "có soạn ý tưởng UI/UX". Bảng vòng 1 (39 ý, 5 demo, 16 ý ⭐; commit `fe4aef9` của PR #1211): Owner chưa chọn, cùng ngày yêu cầu làm lại từ đầu: "anh muốn em làm lại tất cả ý tưởng và mockup hoàn toàn mới vì em là Fable 5.2".
+   - **Bảng vòng 2** thay bảng vòng 1, cùng đường dẫn: `docs/design/mockups/y-tuong-ui-ux.html` (kèm `.css`, `.js`). Không còn là các thẻ rời: một concept chung, xem bằng một cửa sổ app bấm được (9 màn; macOS và Windows 11; Tối và Sáng; font hệ thống và Be Vietnam Pro), rồi tới 32 ý đánh số 01–32 (23 ý ⭐ là bộ Claude đề xuất cho v1.0; ba ý 30–32 để sau v1.0), phiếu chọn, phòng thử chuyển động, mẫu file Excel 4 sheet. Concept: ba lớp Nền · Kính · Tiêu điểm; mỗi hệ điều hành một chất; bốn động tác chuyển động (Hiện, Mở, Trượt, Đếm). Các quyết định A–F (§3–§7) giữ nguyên; số trong bản thử theo đúng định nghĩa của B và D.
+   - Mười điểm đổi hướng giao diện hoặc mở lại điều Owner đã duyệt nằm ở mục `#ask` của bảng (lấy concept làm nền cho G3; font hệ thống; giao diện Sáng; logo gọn trên thanh bên, mở lại G3 27/10; bỏ nút "Lọc", mở lại G3 03/10; token mới và phụ lục ADR-0013; luật "Điểm nhấn" (G2); màu file Excel; các màn đã duyệt G3 khác chỉ thay vỏ; 6 điểm mở của Forecast §6.2). Chưa phải G3; chờ Owner chọn ý và trả lời từng điểm.
 2. **Owner thêm và chọn ý.**
 3. **Mockup G3** cho phần được chọn (gồm B, C, D, E, F); **golden G2** cho B và D.
 4. **Ra Issue** khi Owner bảo, theo các mục "Issue dự kiến".

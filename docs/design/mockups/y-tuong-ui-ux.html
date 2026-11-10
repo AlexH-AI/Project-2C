@@ -1,2411 +1,434 @@
 <!doctype html>
-<!-- Mục lục (số dòng xấp xỉ, mở bằng neo #id):
-  Bảng ý tưởng UI/UX · vòng ý tưởng trước mockup G3 (spec docs/design/phase-6-phan-hoi-dung-thu.md §8)
+<!-- Mục lục (mở bằng neo #id; CSS ở y-tuong-ui-ux.css, dữ liệu giả lập + hành vi ở y-tuong-ui-ux.js):
+  Bảng ý tưởng UI/UX, vòng 2 (T-415): concept mới, làm lại từ đầu theo yêu cầu Owner 10/11/2026.
   Trạng thái: ý tưởng để Owner chọn, CHƯA phải mockup đã duyệt G3. Dữ liệu 100% giả lập.
-  CSS riêng của trang: dòng 26–1500 · nội dung từ dòng 1503 · script từ dòng 2123
-  #try  dòng 1544  Thử cảm giác: 5 demo chạy được (lò xo, kính mờ, ⌘K, số đếm, xem nhanh)
-  #g    dòng 1639  G · Toàn app          #t  dòng 1722  T · Tổng quan
-  #f    dòng 1768  F · Forecast (D)      #r  dòng 1825  R · Báo cáo trong app (E)
-  #x    dòng 1904  X · File Excel (E)    #k  dòng 1954  K · Khách hàng, hồ sơ (C)
-  #l    dòng 2004  L · Lịch hẹn          #m  dòng 2029  M · Team & RM (C)
-  #s    dòng 2059  S · Cài đặt (F)       #n  dòng 2079  N · Nhận diện, chi tiết
-  #pick dòng 2104  Bộ đề xuất cho v1.0, cách trả lời
+  #stage   Bản thử chạy được: cửa sổ app (macOS / Windows 11, Tối / Sáng, hai bộ chữ)
+           màn: overview, forecast, reports, customers, profile, team, rm, appointments, settings
+           lớp nổi: #pal ô lệnh, #sheet hộp Hủy HĐ, #now-pop "Lúc này", #scope-menu, #miss-pop
+  #ideas   Danh sách ý (do JS dựng từ mảng IDEAS), phiếu chọn
+  #motion  Bốn động tác, ba lò xo, token chuyển động, ghi chú khả thi
+  #excel   File Excel: 4 sheet (Tóm tắt, Theo team – RM, Forecast, Định nghĩa)
+  #ask     Các quyết định cần Owner
   Bảng mockup → màn hình → spec: docs/design/mockups/README.md
 -->
-<html lang="vi">
+<html lang="vi" data-os="mac" data-theme="dark" data-font="system">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bảng ý tưởng UI/UX — Project-2C mockup</title>
+    <title>Concept UI/UX vòng 2 — Heritas L-CRM (Project-2C mockup)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=Playfair+Display:ital@1&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital@1&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="mockups.css" />
-    <style>
-      /* Motion tokens proposed by idea G2: three durations and one spring curve. */
-      :root {
-        --t-fast: 120ms;
-        --t-mid: 220ms;
-        --t-slow: 360ms;
-        --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-        --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-      }
-      @supports (transition-timing-function: linear(0, 1)) {
-        :root {
-          --spring: linear(0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%, 0.849 31.5%,
-            0.937 38.1%, 0.968 41.8%, 0.991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001 85.6%, 1);
-        }
-      }
-
-      body {
-        margin: 0;
-        background: var(--bg-0);
-        color: var(--text);
-        font-family: var(--font);
-      }
-      .board {
-        max-width: 1320px;
-        margin: 0 auto;
-        padding: 28px 24px 120px;
-        display: flex;
-        flex-direction: column;
-        gap: 26px;
-      }
-
-      /* ---------- Hero ---------- */
-      .hero {
-        position: relative;
-        overflow: hidden;
-        border: 1px solid var(--border);
-        border-radius: 18px;
-        padding: 28px 30px;
-        background:
-          radial-gradient(900px 260px at 85% -20%, rgba(217, 178, 106, 0.18), transparent 60%),
-          radial-gradient(600px 240px at 0% 120%, rgba(111, 168, 255, 0.1), transparent 60%),
-          var(--bg-1);
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-      }
-      .hero .eyebrow {
-        font-size: 12px;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--text-3);
-      }
-      .hero h1 {
-        margin: 0;
-        font-size: 30px;
-        font-weight: 700;
-        letter-spacing: -0.01em;
-      }
-      .hero h1 em {
-        font-family: var(--font-brand);
-        font-weight: 400;
-        color: var(--brand-slogan);
-      }
-      .hero p {
-        margin: 0;
-        color: var(--text-2);
-        max-width: 900px;
-        line-height: 1.55;
-      }
-      .principles {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-      .principle {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 7px 12px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid var(--border-strong);
-        font-size: 13px;
-      }
-      .principle b {
-        color: var(--accent);
-        font-weight: 600;
-      }
-      .legend {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 14px;
-        font-size: 12.5px;
-        color: var(--text-3);
-      }
-
-      /* ---------- Sticky glass table of contents ---------- */
-      .toc {
-        position: sticky;
-        top: 10px;
-        z-index: 30;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        padding: 8px;
-        border-radius: 14px;
-        background: rgba(17, 24, 34, 0.66);
-        -webkit-backdrop-filter: blur(18px) saturate(160%);
-        backdrop-filter: blur(18px) saturate(160%);
-        border: 1px solid rgba(255, 255, 255, 0.07);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-      }
-      .toc a {
-        color: var(--text-2);
-        text-decoration: none;
-        padding: 6px 11px;
-        border-radius: 999px;
-        font-size: 12.5px;
-        transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
-      }
-      .toc a:hover {
-        background: var(--bg-3);
-        color: var(--text);
-      }
-      .toc a b {
-        color: var(--accent);
-        margin-right: 4px;
-      }
-
-      /* ---------- Groups and idea cards ---------- */
-      section.group {
-        scroll-margin-top: 70px;
-      }
-      .group-head {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin: 4px 0 12px;
-      }
-      .letter {
-        width: 34px;
-        height: 34px;
-        flex: none;
-        border-radius: 10px;
-        display: grid;
-        place-items: center;
-        background: var(--accent-soft);
-        color: var(--accent);
-        font-weight: 700;
-      }
-      .group-head h2 {
-        margin: 0;
-        font-size: 20px;
-      }
-      .group-head p {
-        margin: 2px 0 0;
-        color: var(--text-3);
-        font-size: 13px;
-      }
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(min(100%, 430px), 1fr));
-        gap: 14px;
-      }
-      .idea {
-        background: var(--bg-1);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 16px 18px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        transition:
-          border-color var(--t-mid) var(--ease-out),
-          transform var(--t-mid) var(--spring);
-      }
-      .idea:hover {
-        transform: translateY(-2px);
-      }
-      .idea.picked {
-        border-color: rgba(217, 178, 106, 0.55);
-        box-shadow: inset 0 0 0 1px rgba(217, 178, 106, 0.12);
-      }
-      .idea-head {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        flex-wrap: wrap;
-      }
-      .code {
-        font: 600 12px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
-        padding: 5px 7px;
-        border-radius: 6px;
-        background: var(--bg-3);
-      }
-      .idea h3 {
-        margin: 0;
-        font-size: 15.5px;
-        flex: 1 1 160px;
-        min-width: 0;
-      }
-      .badge {
-        font-size: 11px;
-        padding: 3px 8px;
-        border-radius: 999px;
-        border: 1px solid var(--border-strong);
-        color: var(--text-2);
-        white-space: nowrap;
-      }
-      .badge.rec {
-        color: var(--accent);
-        border-color: rgba(217, 178, 106, 0.5);
-        background: var(--accent-soft);
-      }
-      .pick {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        color: var(--text-2);
-        cursor: pointer;
-        user-select: none;
-      }
-      .pick input {
-        accent-color: var(--accent);
-        width: 16px;
-        height: 16px;
-        margin: 0;
-      }
-      .rows {
-        display: grid;
-        grid-template-columns: 70px 1fr;
-        gap: 6px 12px;
-        margin: 0;
-        font-size: 13px;
-        line-height: 1.5;
-        color: var(--text-2);
-      }
-      .rows dt {
-        color: var(--text-3);
-        font-size: 12px;
-        padding-top: 1px;
-      }
-      .rows dd {
-        margin: 0;
-      }
-      .rows dd b {
-        color: var(--text);
-        font-weight: 600;
-      }
-      .sketch {
-        border-radius: 10px;
-        background: var(--bg-0);
-        border: 1px solid var(--border);
-        padding: 12px;
-        overflow: hidden;
-        font-size: 12px;
-      }
-      .muted {
-        color: var(--text-3);
-      }
-      .num {
-        font-variant-numeric: tabular-nums;
-      }
-
-      /* ---------- Demos (#try) ---------- */
-      .demos {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(min(100%, 600px), 1fr));
-        gap: 14px;
-      }
-      .demo {
-        background: var(--bg-1);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 16px 18px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        position: relative;
-      }
-      .demo h3 {
-        margin: 0;
-        font-size: 15.5px;
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-      .demo p {
-        margin: 0;
-        color: var(--text-2);
-        font-size: 13px;
-        line-height: 1.5;
-      }
-      .btn {
-        font: inherit;
-        font-size: 13px;
-        padding: 7px 14px;
-        border-radius: 8px;
-        border: 1px solid var(--border-strong);
-        background: var(--bg-3);
-        color: var(--text);
-        cursor: pointer;
-        transition: transform var(--t-fast) var(--ease-out), background var(--t-fast);
-      }
-      .btn:hover {
-        background: #2a3747;
-      }
-      .btn:active {
-        transform: scale(0.97);
-      }
-      .btn.primary {
-        background: var(--accent);
-        color: var(--on-accent);
-        border-color: transparent;
-        font-weight: 600;
-      }
-      .btn[aria-pressed='true'] {
-        background: var(--accent-soft);
-        color: var(--accent);
-        border-color: rgba(217, 178, 106, 0.5);
-      }
-      .demo-row {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        flex-wrap: wrap;
-      }
-
-      /* Demo 1: spring vs plain */
-      .lane {
-        display: grid;
-        grid-template-columns: 110px 1fr;
-        align-items: center;
-        gap: 10px;
-        font-size: 12px;
-        color: var(--text-3);
-      }
-      .track {
-        position: relative;
-        height: 46px;
-        border-radius: 10px;
-        background: var(--bg-0);
-        border: 1px solid var(--border);
-      }
-      .track .puck {
-        position: absolute;
-        top: 6px;
-        left: 6px;
-        width: 92px;
-        height: 32px;
-        border-radius: 8px;
-        background: var(--bg-3);
-        border: 1px solid var(--border-strong);
-        display: grid;
-        place-items: center;
-        font-size: 12px;
-        color: var(--text);
-        transform: translateX(0);
-      }
-      .track.plain .puck {
-        transition: transform 300ms ease;
-      }
-      .track.springy .puck {
-        background: var(--accent-soft);
-        color: var(--accent);
-        border-color: rgba(217, 178, 106, 0.5);
-        transition: transform 700ms var(--spring);
-      }
-      .track.go .puck {
-        transform: translateX(calc(var(--lane-w, 420px) - 112px));
-      }
-
-      /* Demo 2: glass window */
-      .os-window {
-        position: relative;
-        height: 250px;
-        border-radius: 14px;
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background: #0d1420;
-      }
-      .os-window .blobs {
-        position: absolute;
-        inset: -20%;
-        background:
-          radial-gradient(160px 160px at 30% 40%, rgba(111, 168, 255, 0.85), transparent 70%),
-          radial-gradient(180px 180px at 55% 70%, rgba(217, 178, 106, 0.85), transparent 70%),
-          radial-gradient(170px 170px at 20% 85%, rgba(180, 154, 251, 0.8), transparent 70%),
-          radial-gradient(150px 150px at 75% 25%, rgba(63, 214, 154, 0.6), transparent 70%);
-        animation: drift 14s ease-in-out infinite alternate;
-      }
-      @keyframes drift {
-        to {
-          transform: translate(-6%, 4%) rotate(8deg);
-        }
-      }
-      .os-window .content {
-        position: absolute;
-        inset: 0 0 0 190px;
-        padding: 46px 18px 18px;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .os-window .content .line {
-        height: 10px;
-        border-radius: 5px;
-        background: rgba(255, 255, 255, 0.18);
-      }
-      .os-window .side {
-        position: absolute;
-        top: 8px;
-        bottom: 8px;
-        left: 8px;
-        width: 174px;
-        border-radius: 12px;
-        padding: 38px 10px 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        transition:
-          background var(--t-slow) var(--ease-out),
-          border-radius var(--t-slow) var(--ease-out),
-          inset var(--t-slow) var(--ease-out);
-      }
-      .os-window[data-os='mac'] .side {
-        background: rgba(30, 40, 54, 0.38);
-        -webkit-backdrop-filter: blur(26px) saturate(180%);
-        backdrop-filter: blur(26px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.16);
-        box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.22),
-          0 8px 30px rgba(0, 0, 0, 0.25);
-      }
-      .os-window[data-os='win'] .side {
-        top: 0;
-        bottom: 0;
-        left: 0;
-        border-radius: 0;
-        background: rgba(22, 30, 42, 0.86);
-        -webkit-backdrop-filter: blur(60px) saturate(120%);
-        backdrop-filter: blur(60px) saturate(120%);
-        border-right: 1px solid rgba(255, 255, 255, 0.06);
-      }
-      .os-window .side .item {
-        padding: 6px 9px;
-        border-radius: 7px;
-        font-size: 12.5px;
-        color: rgba(232, 237, 244, 0.86);
-      }
-      .os-window .side .item.on {
-        background: rgba(255, 255, 255, 0.14);
-        color: #fff;
-        font-weight: 600;
-      }
-      .os-window .lights {
-        position: absolute;
-        top: 20px;
-        left: 22px;
-        display: flex;
-        gap: 7px;
-        z-index: 2;
-      }
-      .os-window .lights i {
-        width: 11px;
-        height: 11px;
-        border-radius: 50%;
-        display: block;
-      }
-      .os-window .lights i:nth-child(1) {
-        background: #ff5f57;
-      }
-      .os-window .lights i:nth-child(2) {
-        background: #febc2e;
-      }
-      .os-window .lights i:nth-child(3) {
-        background: #28c840;
-      }
-      .os-window .wincaps {
-        position: absolute;
-        top: 0;
-        right: 0;
-        display: none;
-        z-index: 2;
-      }
-      .os-window .wincaps span {
-        width: 40px;
-        height: 28px;
-        display: grid;
-        place-items: center;
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 12px;
-      }
-      .os-window[data-os='win'] .lights {
-        display: none;
-      }
-      .os-window[data-os='win'] .wincaps {
-        display: flex;
-      }
-      .os-window .title {
-        position: absolute;
-        top: 15px;
-        left: 0;
-        right: 0;
-        text-align: center;
-        font-size: 12.5px;
-        color: rgba(255, 255, 255, 0.85);
-        font-weight: 600;
-        z-index: 1;
-      }
-
-      /* Demo 3: command palette */
-      .palette {
-        border-radius: 14px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(24, 33, 45, 0.92);
-        -webkit-backdrop-filter: blur(20px);
-        backdrop-filter: blur(20px);
-        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
-        overflow: hidden;
-        transition: transform var(--t-slow) var(--spring), box-shadow var(--t-mid);
-      }
-      .palette.pop {
-        transform: scale(1.015);
-        box-shadow:
-          0 0 0 3px rgba(217, 178, 106, 0.35),
-          0 24px 60px rgba(0, 0, 0, 0.45);
-      }
-      .palette .field {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 14px;
-        border-bottom: 1px solid var(--border);
-      }
-      .palette input {
-        flex: 1;
-        min-width: 0;
-        background: transparent;
-        border: 0;
-        outline: 0;
-        color: var(--text);
-        font: inherit;
-        font-size: 16px;
-      }
-      .palette input::placeholder {
-        color: var(--text-3);
-      }
-      .kbd {
-        font: 600 11px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
-        padding: 4px 6px;
-        border-radius: 5px;
-        border: 1px solid var(--border-strong);
-        color: var(--text-2);
-        background: var(--bg-2);
-      }
-      .results {
-        max-height: 300px;
-        overflow: auto;
-        padding: 6px;
-      }
-      .results .grp {
-        font-size: 11px;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--text-3);
-        padding: 8px 10px 4px;
-      }
-      .res {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 8px 10px;
-        border-radius: 9px;
-        cursor: pointer;
-        animation: rise var(--t-mid) var(--ease-out) both;
-      }
-      .res .ico {
-        width: 26px;
-        height: 26px;
-        flex: none;
-        border-radius: 7px;
-        display: grid;
-        place-items: center;
-        font-size: 11px;
-        font-weight: 700;
-        background: var(--bg-3);
-        color: var(--text-2);
-      }
-      .res .txt {
-        min-width: 0;
-        flex: 1;
-      }
-      .res .t {
-        font-size: 13.5px;
-      }
-      .res .m {
-        font-size: 12px;
-        color: var(--text-3);
-      }
-      .res mark {
-        background: transparent;
-        color: var(--accent);
-        font-weight: 700;
-      }
-      .res[aria-selected='true'] {
-        background: rgba(217, 178, 106, 0.14);
-      }
-      .res .enter {
-        opacity: 0;
-        transition: opacity var(--t-fast);
-      }
-      .res[aria-selected='true'] .enter {
-        opacity: 1;
-      }
-      @keyframes rise {
-        from {
-          opacity: 0;
-          transform: translateY(4px);
-        }
-      }
-      .toast {
-        position: fixed;
-        left: 50%;
-        bottom: 84px;
-        transform: translate(-50%, 20px);
-        opacity: 0;
-        padding: 10px 16px;
-        border-radius: 12px;
-        background: rgba(33, 44, 58, 0.92);
-        -webkit-backdrop-filter: blur(16px);
-        backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        font-size: 13px;
-        z-index: 60;
-        pointer-events: none;
-        transition:
-          transform var(--t-slow) var(--spring),
-          opacity var(--t-mid) var(--ease-out);
-      }
-      .toast.show {
-        transform: translate(-50%, 0);
-        opacity: 1;
-      }
-
-      /* Stage dots used across sketches */
-      .st {
-        display: inline-block;
-        font-size: 10.5px;
-        font-weight: 700;
-        padding: 2px 6px;
-        border-radius: 999px;
-        border: 1px solid currentColor;
-      }
-      .st.n4 {
-        color: var(--n4);
-      }
-      .st.n3 {
-        color: var(--n3);
-      }
-      .st.n2 {
-        color: var(--n2);
-      }
-      .st.n1 {
-        color: var(--n1);
-      }
-
-      /* Demo 4: KPI */
-      .kpis {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-      }
-      .kpi {
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        background: var(--bg-2);
-        padding: 12px 14px;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        min-width: 0;
-      }
-      .kpi .lbl {
-        font-size: 12px;
-        color: var(--text-3);
-      }
-      .kpi .val {
-        font-size: 28px;
-        font-weight: 600;
-        letter-spacing: -0.02em;
-        font-variant-numeric: tabular-nums;
-      }
-      .kpi .val small {
-        font-size: 14px;
-        color: var(--text-3);
-        font-weight: 500;
-        margin-left: 3px;
-      }
-      .delta {
-        font-size: 11.5px;
-        font-variant-numeric: tabular-nums;
-      }
-      .delta.up {
-        color: var(--ok);
-      }
-      .delta.bad {
-        color: var(--danger);
-      }
-      .spark {
-        width: 100%;
-        height: 34px;
-      }
-      .spark path {
-        fill: none;
-        stroke: var(--accent);
-        stroke-width: 2;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        stroke-dasharray: 260;
-        stroke-dashoffset: 0;
-      }
-      .spark.draw path {
-        animation: draw 900ms var(--ease-out) both;
-      }
-      .spark .area {
-        fill: rgba(217, 178, 106, 0.12);
-        stroke: none;
-        stroke-dasharray: none;
-      }
-      @keyframes draw {
-        from {
-          stroke-dashoffset: 260;
-        }
-      }
-
-      /* Demo 5: quick look */
-      .ql {
-        position: relative;
-        display: grid;
-        gap: 4px;
-      }
-      .ql-row {
-        display: grid;
-        grid-template-columns: 1fr auto auto;
-        gap: 12px;
-        align-items: center;
-        padding: 9px 12px;
-        border-radius: 9px;
-        border: 1px solid transparent;
-        background: var(--bg-2);
-        font-size: 13px;
-        cursor: default;
-        outline: none;
-      }
-      .ql-row:focus {
-        border-color: rgba(217, 178, 106, 0.6);
-        background: rgba(217, 178, 106, 0.08);
-      }
-      .ql-panel {
-        position: absolute;
-        right: 0;
-        width: min(330px, 100%);
-        padding: 16px;
-        border-radius: 16px;
-        background: rgba(30, 40, 54, 0.88);
-        -webkit-backdrop-filter: blur(24px) saturate(160%);
-        backdrop-filter: blur(24px) saturate(160%);
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        box-shadow: 0 26px 70px rgba(0, 0, 0, 0.5);
-        opacity: 0;
-        transform: scale(0.9);
-        pointer-events: none;
-        transition:
-          opacity var(--t-mid) var(--ease-out),
-          transform var(--t-slow) var(--spring);
-        z-index: 5;
-      }
-      .ql-panel.open {
-        opacity: 1;
-        transform: scale(1);
-        pointer-events: auto;
-      }
-      .ql-panel h4 {
-        margin: 0 0 2px;
-        font-size: 17px;
-      }
-      .ql-panel dl {
-        display: grid;
-        grid-template-columns: 112px 1fr;
-        gap: 5px 10px;
-        margin: 12px 0 0;
-        font-size: 12.5px;
-      }
-      .ql-panel dt {
-        color: var(--text-3);
-      }
-      .ql-panel dd {
-        margin: 0;
-      }
-
-      /* ---------- Sketch helpers ---------- */
-      .sk-row {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-      .sk-col {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-      .tile {
-        flex: 1;
-        min-width: 0;
-        border-radius: 9px;
-        background: var(--bg-2);
-        border: 1px solid var(--border);
-        padding: 8px 10px;
-      }
-      .tile .l {
-        font-size: 10.5px;
-        color: var(--text-3);
-      }
-      .tile .v {
-        font-size: 17px;
-        font-weight: 600;
-        font-variant-numeric: tabular-nums;
-      }
-      .tile .v small {
-        font-size: 11px;
-        color: var(--text-3);
-        font-weight: 500;
-      }
-      .tile .d {
-        font-size: 10.5px;
-      }
-      .tile svg {
-        width: 100%;
-        height: 18px;
-        display: block;
-        margin-top: 4px;
-      }
-      .tile svg path {
-        fill: none;
-        stroke: var(--accent);
-        stroke-width: 1.6;
-        opacity: 0.8;
-      }
-      .sk-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-variant-numeric: tabular-nums;
-      }
-      .sk-table th {
-        font-weight: 600;
-        font-size: 10.5px;
-        color: var(--text-3);
-        text-align: right;
-        padding: 5px 6px;
-        border-bottom: 1px solid var(--border-strong);
-        white-space: nowrap;
-      }
-      .sk-table th:first-child,
-      .sk-table td:first-child {
-        text-align: left;
-      }
-      .sk-table td {
-        text-align: right;
-        padding: 6px;
-        border-bottom: 1px solid var(--border);
-        white-space: nowrap;
-      }
-      .sk-table tr.total td {
-        font-weight: 700;
-        border-top: 1px solid var(--border-strong);
-        border-bottom: 0;
-      }
-      .databar {
-        position: relative;
-        display: inline-block;
-        min-width: 86px;
-        text-align: right;
-      }
-      .databar::before {
-        content: '';
-        position: absolute;
-        inset: 2px auto 2px 0;
-        width: var(--w);
-        border-radius: 3px;
-        background: linear-gradient(90deg, rgba(217, 178, 106, 0.28), rgba(217, 178, 106, 0.1));
-      }
-      .databar span {
-        position: relative;
-      }
-      .tabs {
-        display: flex;
-        gap: 4px;
-        margin-bottom: 8px;
-      }
-      .tabs span {
-        font-size: 11px;
-        padding: 4px 9px;
-        border-radius: 999px;
-        color: var(--text-3);
-        border: 1px solid var(--border);
-      }
-      .tabs span.on {
-        color: var(--accent);
-        border-color: rgba(217, 178, 106, 0.5);
-        background: var(--accent-soft);
-      }
-      .dense {
-        font-size: 8px;
-        line-height: 1.15;
-        color: var(--text-3);
-        border-collapse: collapse;
-      }
-      .dense th,
-      .dense td {
-        border: 1px solid var(--border);
-        padding: 2px 3px;
-        text-align: right;
-      }
-      /* Before above, after below: each gets the full width of the card. */
-      .ba {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 12px;
-      }
-      .ba > div {
-        min-width: 0;
-      }
-      .dense {
-        width: 100%;
-        table-layout: fixed;
-      }
-      .dense th {
-        white-space: normal;
-      }
-      .ba .cap {
-        font-size: 10.5px;
-        color: var(--text-3);
-        margin-bottom: 6px;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-      }
-      .bars {
-        display: flex;
-        align-items: flex-end;
-        gap: 10px;
-        height: 70px;
-        padding: 0 4px;
-      }
-      .bars i {
-        flex: 1;
-        border-radius: 5px 5px 2px 2px;
-        background: linear-gradient(180deg, rgba(217, 178, 106, 0.9), rgba(217, 178, 106, 0.35));
-        height: var(--h);
-        transform-origin: bottom;
-        animation: grow 900ms var(--spring) both;
-      }
-      .bars i:nth-child(2) {
-        animation-delay: 80ms;
-      }
-      .bars i:nth-child(3) {
-        animation-delay: 160ms;
-      }
-      @keyframes grow {
-        from {
-          transform: scaleY(0);
-        }
-      }
-      .bars-lbl {
-        display: flex;
-        gap: 10px;
-        padding: 4px 4px 0;
-      }
-      .bars-lbl span {
-        flex: 1;
-        text-align: center;
-        font-size: 10px;
-        color: var(--text-3);
-      }
-      .narr {
-        font-size: 12px;
-        line-height: 1.5;
-        color: var(--text-2);
-        border-left: 2px solid var(--accent);
-        padding-left: 10px;
-      }
-
-      /* Forecast landing bar */
-      .landing {
-        display: flex;
-        height: 26px;
-        border-radius: 8px;
-        overflow: hidden;
-        background: var(--bg-3);
-        position: relative;
-      }
-      .landing i {
-        display: block;
-        height: 100%;
-        width: var(--w);
-        transform-origin: left;
-        animation: fill 1s var(--ease-out) both;
-      }
-      .landing i:nth-child(2) {
-        animation-delay: 120ms;
-      }
-      .landing i:nth-child(3) {
-        animation-delay: 200ms;
-      }
-      .landing i:nth-child(4) {
-        animation-delay: 280ms;
-      }
-      .landing i:nth-child(5) {
-        animation-delay: 360ms;
-      }
-      @keyframes fill {
-        from {
-          transform: scaleX(0);
-        }
-      }
-      .landing .target {
-        position: absolute;
-        top: -4px;
-        bottom: -4px;
-        left: calc(100% - 2px);
-        width: 2px;
-        background: var(--text);
-      }
-      .keys {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        font-size: 11px;
-        color: var(--text-3);
-        margin-top: 8px;
-      }
-      .keys i {
-        display: inline-block;
-        width: 9px;
-        height: 9px;
-        border-radius: 3px;
-        margin-right: 5px;
-        vertical-align: -1px;
-      }
-
-      /* Excel sketch */
-      .xl {
-        border-radius: 8px;
-        overflow: hidden;
-        border: 1px solid #c9ced6;
-        background: #fff;
-        color: #1f2933;
-        font-size: 10.5px;
-      }
-      .xl .fx {
-        display: flex;
-        gap: 8px;
-        padding: 4px 8px;
-        background: #f3f4f6;
-        border-bottom: 1px solid #d6dae0;
-        font-family: ui-monospace, Consolas, monospace;
-        color: #374151;
-      }
-      .xl table {
-        width: 100%;
-        border-collapse: collapse;
-        font-variant-numeric: tabular-nums;
-      }
-      .xl td,
-      .xl th {
-        border: 1px solid #e3e6ea;
-        padding: 4px 6px;
-        text-align: right;
-        white-space: nowrap;
-      }
-      .xl .rh {
-        width: 18px;
-        background: #f3f4f6;
-        color: #6b7280;
-        text-align: center;
-      }
-      .xl thead th {
-        background: #f3f4f6;
-        color: #6b7280;
-        font-weight: 500;
-        text-align: center;
-      }
-      .xl .title td {
-        text-align: left;
-        font-size: 13px;
-        font-weight: 700;
-        color: #0b1017;
-        border: 0;
-      }
-      .xl .sub td {
-        text-align: left;
-        color: #6b7280;
-        border: 0;
-      }
-      .xl .head td {
-        background: #13202f;
-        color: #e8c983;
-        font-weight: 600;
-        text-align: right;
-      }
-      .xl .head td:nth-child(2) {
-        text-align: left;
-      }
-      .xl .tot td {
-        font-weight: 700;
-        border-top: 2px solid #13202f;
-      }
-      .xl td.l {
-        text-align: left;
-      }
-      .xl .xbar {
-        position: relative;
-      }
-      .xl .xbar::before {
-        content: '';
-        position: absolute;
-        left: 3px;
-        top: 3px;
-        bottom: 3px;
-        width: var(--w);
-        background: linear-gradient(90deg, #f0c76b, #fbecc8);
-        border-radius: 2px;
-      }
-      .xl .xbar span {
-        position: relative;
-      }
-      .xl .warm {
-        background: #fde4e1;
-      }
-      /* mockups.css darkens a hovered table row; the Excel sketch keeps its light sheet. */
-      .xl tbody tr:hover td {
-        background: #f6f8fb;
-      }
-      .xl tbody tr:hover td.rh {
-        background: #f3f4f6;
-      }
-      .xl tbody tr.head:hover td {
-        background: #13202f;
-      }
-      .xl tbody tr:hover td.warm {
-        background: #fde4e1;
-      }
-      .xl tbody tr.title:hover td:not(.rh),
-      .xl tbody tr.sub:hover td:not(.rh) {
-        background: transparent;
-      }
-      .xl .tabsx {
-        display: flex;
-        gap: 2px;
-        padding: 4px 6px 0;
-        background: #f3f4f6;
-        border-top: 1px solid #d6dae0;
-      }
-      .xl .tabsx span {
-        padding: 3px 9px;
-        font-size: 10px;
-        color: #4b5563;
-        border-radius: 4px 4px 0 0;
-      }
-      .xl .tabsx span.on {
-        background: #fff;
-        color: #13202f;
-        font-weight: 700;
-        box-shadow: inset 0 2px 0 #d9b26a;
-      }
-
-      /* Settings icons (S1) */
-      .set-list {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        width: 220px;
-        padding: 6px;
-        border-radius: 12px;
-        background: var(--bg-1);
-        border: 1px solid var(--border);
-      }
-      .set-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 6px 8px;
-        border-radius: 8px;
-        font-size: 13px;
-      }
-      .set-item.on {
-        background: var(--accent-soft);
-        color: var(--accent);
-        font-weight: 600;
-      }
-      .sq {
-        width: 24px;
-        height: 24px;
-        border-radius: 7px;
-        display: grid;
-        place-items: center;
-        flex: none;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
-      }
-      .sq svg {
-        width: 15px;
-        height: 15px;
-        stroke: #fff;
-        fill: none;
-        stroke-width: 1.8;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-      }
-
-      /* Misc sketches */
-      .avatar {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        display: grid;
-        place-items: center;
-        font-size: 11px;
-        font-weight: 700;
-        background: linear-gradient(135deg, #2a3a52, #1c2737);
-        border: 1px solid var(--border-strong);
-        color: var(--brand-slogan);
-        flex: none;
-      }
-      .agenda {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-      .ag {
-        display: grid;
-        grid-template-columns: 44px 1fr auto;
-        gap: 8px;
-        align-items: center;
-        padding: 7px 9px;
-        border-radius: 8px;
-        background: var(--bg-2);
-      }
-      .ag.next {
-        background: linear-gradient(90deg, rgba(217, 178, 106, 0.2), rgba(217, 178, 106, 0.04));
-        border: 1px solid rgba(217, 178, 106, 0.4);
-      }
-      .ag .tm {
-        font-weight: 700;
-        font-variant-numeric: tabular-nums;
-      }
-      .todo {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-        margin-top: 4px;
-      }
-      .todo span {
-        font-size: 11px;
-        padding: 4px 8px;
-        border-radius: 999px;
-        background: var(--bg-3);
-        color: var(--text-2);
-      }
-      .todo span b {
-        color: var(--warn);
-      }
-      .menubar {
-        display: flex;
-        justify-content: flex-end;
-        gap: 14px;
-        align-items: center;
-        padding: 5px 10px;
-        border-radius: 8px 8px 0 0;
-        background: rgba(255, 255, 255, 0.08);
-        font-size: 11px;
-        color: var(--text-2);
-      }
-      .menubar .me {
-        color: var(--accent);
-        font-weight: 700;
-      }
-      .menudrop {
-        margin-left: auto;
-        width: 230px;
-        padding: 8px;
-        border-radius: 0 0 10px 10px;
-        background: rgba(33, 44, 58, 0.95);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        font-size: 11.5px;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-      .kan {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-      }
-      .kan .colk {
-        border-radius: 9px;
-        background: var(--bg-2);
-        padding: 8px;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        border: 1px dashed transparent;
-      }
-      .kan .colk.drop {
-        border-color: rgba(180, 154, 251, 0.7);
-        background: rgba(180, 154, 251, 0.08);
-      }
-      .kcard {
-        border-radius: 7px;
-        background: var(--bg-3);
-        padding: 6px 8px;
-        font-size: 11.5px;
-      }
-      .kcard.lift {
-        transform: rotate(-3deg) translate(14px, -4px);
-        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-      }
-      .timeline {
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-        margin-top: 8px;
-      }
-      .tl {
-        display: grid;
-        grid-template-columns: 56px 14px 1fr;
-        gap: 6px;
-        align-items: start;
-        font-size: 11.5px;
-      }
-      .tl .dot {
-        width: 9px;
-        height: 9px;
-        border-radius: 50%;
-        margin-top: 3px;
-        background: var(--text-3);
-        box-shadow: 0 0 0 3px var(--bg-0);
-      }
-      .tl .when {
-        color: var(--text-3);
-        font-variant-numeric: tabular-nums;
-      }
-      .tl + .tl {
-        margin-top: 6px;
-      }
-      .warmth {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        display: inline-block;
-      }
-      .cal {
-        display: grid;
-        grid-template-columns: 30px repeat(6, 1fr);
-        gap: 3px;
-        font-size: 10px;
-      }
-      .cal .h {
-        color: var(--text-3);
-        text-align: center;
-      }
-      .cal .slot {
-        height: 16px;
-        border-radius: 4px;
-        background: var(--bg-2);
-      }
-      .cal .ev {
-        border-radius: 4px;
-        padding: 1px 4px;
-        font-size: 9.5px;
-        color: #0b1017;
-        font-weight: 600;
-        overflow: hidden;
-        white-space: nowrap;
-      }
-      .funnel {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      .funnel div {
-        display: grid;
-        grid-template-columns: 38px 1fr 52px;
-        gap: 8px;
-        align-items: center;
-        font-size: 11px;
-      }
-      .funnel i {
-        display: block;
-        height: 16px;
-        border-radius: 5px;
-        width: var(--w);
-        margin: 0 auto;
-        transform-origin: center;
-        animation: fill 900ms var(--ease-out) both;
-      }
-
-      /* ---------- Pick bar ---------- */
-      .pickbar {
-        position: fixed;
-        left: 50%;
-        bottom: 16px;
-        transform: translateX(-50%);
-        z-index: 50;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        max-width: calc(100% - 32px);
-        padding: 10px 12px 10px 16px;
-        border-radius: 16px;
-        background: rgba(24, 33, 45, 0.78);
-        -webkit-backdrop-filter: blur(20px) saturate(160%);
-        backdrop-filter: blur(20px) saturate(160%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
-        font-size: 13px;
-      }
-      .pickbar .codes {
-        color: var(--text-2);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 640px;
-        font-variant-numeric: tabular-nums;
-      }
-      .pickbar b {
-        color: var(--accent);
-      }
-      .summary {
-        background: var(--bg-1);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 18px 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        font-size: 13.5px;
-        line-height: 1.55;
-        color: var(--text-2);
-      }
-      .summary h2 {
-        margin: 0;
-        font-size: 18px;
-        color: var(--text);
-      }
-      .summary ul {
-        margin: 0;
-        padding-left: 18px;
-      }
-      @media (prefers-reduced-motion: reduce) {
-        *,
-        *::before,
-        *::after {
-          animation-duration: 1ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 1ms !important;
-        }
-      }
-      @media (max-width: 760px) {
-        .kpis {
-          grid-template-columns: 1fr;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="y-tuong-ui-ux.css" />
   </head>
   <body>
-    <div class="board">
-      <header class="hero">
-        <span class="eyebrow">Vòng ý tưởng UI/UX · trước mockup G3 · 10/11/2026</span>
-        <h1>Bảng ý tưởng cho <em>Heritas L-CRM</em> trên Windows 11 và macOS</h1>
-        <p>
-          Mỗi thẻ là một ý: hôm nay thế nào, đề xuất gì, vì sao. Thẻ có ⭐ là bộ em đề xuất làm cho
-          v1.0 (đã tick sẵn). Anh tick / bỏ tick, rồi bấm <b>Chép danh sách</b> ở thanh dưới cùng và
-          dán vào chat; thêm ý của anh bằng lời. Đây <b>chưa</b> là thiết kế đã duyệt: ý được chọn
-          mới vẽ thành mockup G3. Dữ liệu 100% giả lập.
-        </p>
-        <div class="principles">
-          <span class="principle"><b>Nhanh</b> phản hồi dưới 0,1 giây</span>
-          <span class="principle"><b>Mượt</b> chuyển động lò xo, 60–120 Hz</span>
-          <span class="principle"><b>Đúng chất Mac</b> kính mờ, ⌘, menu, sheet</span>
-          <span class="principle"><b>Rõ ràng</b> nội dung là chính, ít khung viền</span>
-          <span class="principle"><b>Hệ sinh thái</b> thông báo, ⌘K, lịch</span>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="5" rx="2" /><rect x="13" y="10" width="8" height="11" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /></symbol>
+      <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="3" /><path d="M3 9.5h18M8 3v3M16 3v3" /></symbol>
+      <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5M16 5.2a3.2 3.2 0 0 1 0 5.6M18 14.6c1.7.8 2.7 2.3 3 4.4" /></symbol>
+      <symbol id="i-forecast" viewBox="0 0 24 24"><path d="M3 16l5-5 3.5 3L17 8M14 8h3v3" /><path d="M3 20.5h18" stroke-dasharray="1.5 3.2" /></symbol>
+      <symbol id="i-report" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9.5 17v-3M12 17v-5M14.5 17v-2" /></symbol>
+      <symbol id="i-team" viewBox="0 0 24 24"><circle cx="12" cy="6" r="2.5" /><circle cx="5.5" cy="17.5" r="2.5" /><circle cx="18.5" cy="17.5" r="2.5" /><path d="M12 8.5V12M5.5 15v-3h13v3" /></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-4.2-4.2" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></symbol>
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></symbol>
+      <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3" /><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" /></symbol>
+      <symbol id="i-spark" viewBox="0 0 24 24"><path d="M11 3l1.9 4.9L18 9.8l-5.1 1.9L11 16.6l-1.9-4.9L4 9.8l5.1-1.9zM18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" /></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" /></symbol>
+      <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 14v5h14v-5" /></symbol>
+      <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 9V4h10v5M7 14h10v6H7z" /><rect x="4" y="9" width="16" height="8" rx="2" /></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2" /><path d="M12 17v3M8 20h8" /></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17v.01" /></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.7l5.9-.9z" /></symbol>
+    </svg>
+
+    <div class="page">
+      <header class="top">
+        <div>
+          <h1>Concept mới cho <em>Heritas L-CRM</em> · vòng ý tưởng 2</h1>
+          <p>Bấm thử như app thật: thanh bên, <kbd class="k-mac">⌘K</kbd><kbd class="k-win">Ctrl K</kbd>, các viên kính. Danh sách ý và phiếu chọn ở dưới. Chưa phải G3; dữ liệu giả lập.</p>
         </div>
-        <div class="legend">
-          <span>⭐ đề xuất cho v1.0</span>
-          <span>Công sức: <b>S</b> ≈ 1 Issue · <b>M</b> 2–3 · <b>L</b> 4+</span>
-          <span>A–F: phần của đợt phản hồi (spec §2)</span>
-          <span>G2 / G3 / G4: cổng cần anh duyệt thêm</span>
+        <div class="switches">
+          <span class="sw">Nền tảng<span class="seg" data-set="os"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span></span>
+          <span class="sw">Giao diện<span class="seg" data-set="theme"><button class="on" data-v="dark">Tối</button><button data-v="light">Sáng</button></span></span>
+          <span class="sw">Chữ<span class="seg" data-set="font"><button class="on" data-v="system">Hệ thống</button><button data-v="brand">Be Vietnam Pro</button></span></span>
         </div>
       </header>
 
-      <nav class="toc" aria-label="Mục lục">
-        <a href="#try"><b>▶</b>Thử cảm giác</a>
-        <a href="#g"><b>G</b>Toàn app</a>
-        <a href="#t"><b>T</b>Tổng quan</a>
-        <a href="#f"><b>F</b>Forecast</a>
-        <a href="#r"><b>R</b>Báo cáo</a>
-        <a href="#x"><b>X</b>Excel</a>
-        <a href="#k"><b>K</b>Khách hàng</a>
-        <a href="#l"><b>L</b>Lịch hẹn</a>
-        <a href="#m"><b>M</b>Team & RM</a>
-        <a href="#s"><b>S</b>Cài đặt</a>
-        <a href="#n"><b>N</b>Chi tiết</a>
-        <a href="#pick"><b>✓</b>Bộ đề xuất</a>
-      </nav>
+      <!-- ================= Bản thử ================= -->
+      <div class="stage" id="stage">
+        <div class="wall"></div>
+        <div class="menubar" data-idea="13">
+          <b>Heritas L-CRM</b><span>Tệp</span><span>Sửa</span><span>Xem</span>
+          <button id="menu-go" aria-haspopup="true" aria-expanded="false">Đi tới</button>
+          <span>Cửa sổ</span><span>Trợ giúp</span>
+          <span class="clock num">T3 10 thg 11&nbsp;&nbsp;13:35</span>
+        </div>
+        <div class="float menu" id="go-menu"></div>
 
-      <!-- ================= Thử cảm giác ================= -->
-      <section class="group" id="try">
-        <div class="group-head">
-          <span class="letter">▶</span>
-          <div>
-            <h2>Thử cảm giác</h2>
-            <p>Năm demo chạy được ngay trong trang: để anh "cảm" chứ không chỉ đọc.</p>
+        <div class="win" id="win" data-idea="01 02">
+          <header class="titlebar">
+            <img src="img/heritas-tree.png" alt="" /><span>Heritas L-CRM</span>
+            <button class="tb-search" data-open="pal" data-idea="09"><svg class="ic"><use href="#i-search" /></svg>Tìm khách hàng, RM, lệnh<kbd>Ctrl K</kbd></button>
+            <span class="caps" aria-hidden="true"><i>&#x2014;</i><i>&#x25A2;</i><i>&#x2715;</i></span>
+          </header>
+
+          <aside class="sb">
+            <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="brand" data-idea="05" role="img" aria-label="Heritas L-CRM">
+              <img class="b-tree b-out" src="img/heritas-tree.png" alt="" />
+              <div><img class="b-word b-out" src="img/heritas-wordmark.png" alt="" /><img class="b-lcrm" src="img/heritas-lcrm.png" alt="" /></div>
+            </div>
+            <nav class="nav" id="nav">
+              <button class="nav-i on" data-go="overview"><svg class="ic"><use href="#i-overview" /></svg>Tổng quan<kbd class="k-mac">⌘1</kbd><kbd class="k-win">Ctrl 1</kbd></button>
+              <button class="nav-i" data-go="appointments"><svg class="ic"><use href="#i-cal" /></svg>Lịch hẹn<span class="bdg" title="12 buổi chưa ghi kết quả">12</span></button>
+              <button class="nav-i" data-go="customers"><svg class="ic"><use href="#i-people" /></svg>Khách hàng<kbd class="k-mac">⌘3</kbd><kbd class="k-win">Ctrl 3</kbd></button>
+              <button class="nav-i" data-go="forecast" data-idea="29"><svg class="ic"><use href="#i-forecast" /></svg>Forecast<kbd class="k-mac">⌘4</kbd><kbd class="k-win">Ctrl 4</kbd></button>
+              <button class="nav-i" data-go="reports"><svg class="ic"><use href="#i-report" /></svg>Báo cáo<kbd class="k-mac">⌘5</kbd><kbd class="k-win">Ctrl 5</kbd></button>
+              <div class="nav-h">Quản lý</div>
+              <button class="nav-i" data-go="team"><svg class="ic"><use href="#i-team" /></svg>Team &amp; nhân sự<kbd class="k-mac">⌘6</kbd><kbd class="k-win">Ctrl 6</kbd></button>
+              <button class="nav-i" data-go="settings"><svg class="ic"><use href="#i-gear" /></svg>Cài đặt<kbd class="k-mac">⌘,</kbd><kbd class="k-win">Ctrl ,</kbd></button>
+            </nav>
+            <div class="sb-foot">
+              <span><i class="dot"></i>Đã sao lưu lúc 12:10</span>
+              <p class="slogan" lang="en">Where legacy meets trust</p>
+            </div>
+          </aside>
+
+          <section class="main">
+            <header class="toolbar" id="toolbar">
+              <div class="tl-title"><h2 id="v-title">Tổng quan</h2><span id="v-sub"></span></div>
+              <button class="now" id="now" data-idea="11" aria-haspopup="true" aria-label="Lúc này"></button>
+              <div class="tl-right">
+                <button class="cap" id="scope" data-idea="12" aria-haspopup="true"><span id="scope-l">Toàn bộ</span><svg class="ic"><use href="#i-down" /></svg></button>
+                <span class="cap" id="period" data-idea="12"><button class="step" data-step="-1" aria-label="Kỳ trước">&#x2039;</button><span>Tháng 11/2026</span><button class="step" data-step="1" aria-label="Kỳ sau">&#x203A;</button></span>
+                <button class="cap icon tl-find" data-open="pal" data-idea="09" aria-label="Tìm"><svg class="ic"><use href="#i-search" /></svg></button>
+                <button class="btn" id="act"></button>
+              </div>
+            </header>
+
+            <div class="views" id="views">
+              <!-- ===== Tổng quan ===== -->
+              <div class="view on" data-view="overview">
+                <div class="ov">
+                  <section class="card hero rise" data-idea="14" style="--i: 0">
+                    <span class="lbl" id="ov-lbl"></span>
+                    <div class="hero-keys"><span><i></i>Tháng 11</span><span><i class="dash"></i>Dự kiến</span><span><i class="ghost"></i>Tháng 10</span></div>
+                    <div class="hero-row"><span class="xl"><span id="ov-sales">0</span><small id="ov-unit">tỷ</small></span><span class="delta up" id="ov-delta"></span></div>
+                    <p class="eq" id="ov-eq"></p>
+                    <div class="chart" id="ov-chart"></div>
+                  </section>
+                  <section class="card hl rise" data-idea="16" style="--i: 1">
+                    <h3>Điểm nhấn <small>viết từ số, không dùng AI</small></h3>
+                    <div id="ov-hl"></div>
+                  </section>
+                  <div class="tiles" id="ov-tiles" data-idea="15"></div>
+                  <div class="ov-bot">
+                    <section class="card rise" style="--i: 4"><h3>Lịch hẹn tháng này <small id="ov-appt-sub"></small></h3><div class="stack" id="ov-appt"></div><div class="keys" id="ov-appt-keys"></div></section>
+                    <section class="card rise" style="--i: 5"><h3>Khách hàng theo nhóm <small id="ov-pipe-sub"></small></h3><div class="mini" id="ov-pipe"></div></section>
+                    <section class="card rise" style="--i: 6"><h3>Team <small>bấm để xem riêng một team</small></h3><div id="ov-race"></div></section>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ===== Forecast ===== -->
+              <div class="view" data-view="forecast">
+                <div class="fc-head">
+                  <div class="seg" id="fc-seg"><button class="on" data-fc="week">Tuần này<small>10/11 – 14/11</small></button><button data-fc="month">Tháng 11<small>10/11 – 30/11</small></button></div>
+                  <span class="rule">Lịch Đã lên lịch của KH đang ở N3, N2, N1 · từ hôm nay · thứ Hai → thứ Bảy</span>
+                  <span class="spacer"></span>
+                  <button class="chip warn" id="fc-miss" data-idea="20"><svg class="ic"><use href="#i-alert" /></svg>2 lịch thiếu case size · điền ngay</button>
+                </div>
+                <div class="fc-top">
+                  <section class="card fc-hero rise" style="--i: 0">
+                    <span class="lbl" id="fc-lbl"></span>
+                    <div class="hero-row"><span class="xl"><span id="fc-num">0</span><small id="fc-unit">tỷ</small></span></div>
+                    <p class="sub" id="fc-sub"></p>
+                    <div class="stack" id="fc-split"></div>
+                    <div class="keys" id="fc-keys"></div>
+                  </section>
+                  <section class="card runway rise" data-idea="17" style="--i: 1">
+                    <h3>Đường băng tháng 11 <small>đã đạt + dự kiến</small><span class="sum">về đích <b class="num">2,70 tỷ</b></span></h3>
+                    <div class="stack">
+                      <i style="--f: 1380; --c: var(--accent)"></i><i style="--f: 320; --c: var(--n1)"></i><i style="--f: 180; --c: var(--n2)"></i><i style="--f: 120; --c: var(--n3)"></i><i class="hatch" style="--f: 700"></i>
+                    </div>
+                    <div class="keys">
+                      <span><i style="--c: var(--accent)"></i>Đã đạt <b class="num">1,38 tỷ</b></span>
+                      <span><i style="--c: var(--n1)"></i>Tuần này N1 <b class="num">320 tr</b></span>
+                      <span><i style="--c: var(--n2)"></i>N2 <b class="num">180 tr</b></span>
+                      <span><i style="--c: var(--n3)"></i>N3 <b class="num">120 tr</b></span>
+                      <span><i style="--c: var(--accent); opacity: 0.5"></i>Các tuần còn lại <b class="num">700 tr</b></span>
+                    </div>
+                    <p class="note">Doanh số đã đạt là số thuần (FYP phát hành − FYP hủy). Phần dự kiến cộng thẳng case size, không nhân tỷ lệ chốt.</p>
+                  </section>
+                </div>
+                <section class="card strip rise" id="fc-strip-card" data-idea="18 19" style="--i: 2"><h3 id="fc-strip-h"></h3><div id="fc-strip"></div></section>
+                <section class="card fc-table rise" data-idea="20" style="--i: 3"><table class="tbl" id="fc-tbl"></table></section>
+              </div>
+
+              <!-- ===== Báo cáo ===== -->
+              <div class="view" data-view="reports">
+                <div class="rp-head">
+                  <div class="seg" id="rp-seg"><button class="on" data-rp="brief">Bản tin</button><button data-rp="ledger">Sổ số</button></div>
+                  <span class="muted" id="rp-hint">Một trang đọc trong 10 giây. In ra, xuất PDF và sheet đầu của file Excel giống hệt trang này.</span>
+                  <span class="spacer"></span>
+                  <button class="cap" id="rp-print"><svg class="ic"><use href="#i-print" /></svg><span>Xem bản in</span></button>
+                  <button class="cap" id="rp-show" data-idea="24"><svg class="ic"><use href="#i-play" /></svg>Trình chiếu</button>
+                </div>
+                <article class="paper rise" id="paper" data-idea="21" style="--i: 0">
+                  <div class="head">
+                    <div class="brand" role="img" aria-label="Heritas L-CRM">
+                      <img class="b-tree b-out" src="img/heritas-tree.png" alt="" />
+                      <div><img class="b-word b-out" src="img/heritas-wordmark.png" alt="" /><img class="b-lcrm" src="img/heritas-lcrm.png" alt="" /></div>
+                    </div>
+                    <div class="meta"><b>BÁO CÁO KẾT QUẢ KINH DOANH</b><strong>Tháng 11/2026</strong>01/11 – 10/11/2026 (MTD) · Toàn bộ · 3 team, 9 RM<br />Lập lúc 13:35 ngày 10/11/2026</div>
+                  </div>
+                  <h3>Doanh số đạt 1,38 tỷ, tăng 12,4% so với cùng kỳ tháng 10.</h3>
+                  <p class="lead">32 hợp đồng sau khi trừ 2 hợp đồng hủy. Sao Mai dẫn đầu với 520 tr. Tỷ lệ hủy 5,9%, tăng 2,5 điểm so với tháng 10.</p>
+                  <div class="kpi4 num">
+                    <div><span class="lbl">Doanh số</span><span class="v">1,38 <small>tỷ</small></span><span class="f">1,48 tỷ phát hành − 100 tr hủy</span></div>
+                    <div><span class="lbl">Tổng số HĐ</span><span class="v">32</span><span class="f">34 phát hành − 2 hủy</span></div>
+                    <div><span class="lbl">Tỉ lệ chốt</span><span class="v">72,3 <small>%</small></span><span class="f">34 HĐ phát hành ÷ 47 RF</span></div>
+                    <div><span class="lbl">Tỷ lệ hủy</span><span class="v">5,9 <small>%</small></span><span class="f">2 HĐ hủy ÷ 34 HĐ phát hành</span></div>
+                  </div>
+                  <div class="two">
+                    <div><h4>DOANH SỐ THEO TEAM</h4><div id="paper-bars"></div><div class="keys"><span><i style="--c: var(--accent)"></i>Doanh số</span><span><i style="--c: var(--danger)"></i>FYP hủy (đã trừ)</span></div></div>
+                    <div>
+                      <h4>NHẬN XÉT</h4>
+                      <ul>
+                        <li><b>Hủy tập trung một tuần:</b> cả 2 HĐ hủy rơi vào tuần 03 – 09/11 (Sao Mai 1, Hừng Đông 1).</li>
+                        <li><b>Hừng Đông cần hỗ trợ:</b> tỷ lệ hủy 10,0%, tỉ lệ chốt 66,7%, thấp nhất ba team.</li>
+                        <li><b>Tuần này dự kiến 620 tr</b> từ 13 KH; riêng N1 chiếm 52%.</li>
+                      </ul>
+                    </div>
+                  </div>
+                  <table class="tbl" id="paper-tbl" style="margin-top: 20px"></table>
+                  <div class="foot"><span>Heritas L-CRM · tài liệu nội bộ</span><span>Định nghĩa chỉ số: trang 3</span><span class="num">Trang 1 / 3</span></div>
+                </article>
+                <section class="card ledger" id="ledger" data-idea="22" hidden>
+                  <div class="tabs" id="lg-tabs"><button class="on" data-lg="result">Kết quả</button><button data-lg="appt">Lịch hẹn</button><button data-lg="kh">Khách hàng</button></div>
+                  <table class="tbl" id="lg-tbl"></table>
+                </section>
+              </div>
+
+              <!-- ===== Khách hàng ===== -->
+              <div class="view" data-view="customers">
+                <div class="cu-head">
+                  <label class="find" data-idea="25"><svg class="ic"><use href="#i-search" /></svg><input id="cu-q" type="text" placeholder="Tìm trong 884 khách hàng: tên hoặc mã KH" autocomplete="off" spellcheck="false" /><kbd class="k-mac">⌘F</kbd><kbd class="k-win">Ctrl F</kbd></label>
+                  <div class="sug" id="cu-sug" hidden></div>
+                  <span class="muted">884 KH đang mở · 316 đã đóng</span>
+                  <span class="spacer"></span>
+                  <span class="muted" data-idea="26">Rê chuột vào một thẻ rồi nhấn <kbd>Space</kbd> để xem nhanh</span>
+                </div>
+                <div class="kan" id="kan"></div>
+                <aside class="ql" id="ql" aria-label="Xem nhanh"></aside>
+              </div>
+
+              <!-- ===== Hồ sơ KH (rút gọn) ===== -->
+              <div class="view" data-view="profile">
+                <button class="back" data-go="customers"><svg class="ic"><use href="#i-back" /></svg>Khách hàng</button>
+                <section class="card pf-head" id="pf-head"></section>
+                <div class="pf-body">
+                  <section class="card"><h3>Dòng thời gian</h3><div class="tline" id="pf-tl"></div></section>
+                  <section class="card" data-idea="28"><h3>Hợp đồng <small>chỉ HĐ đã phát hành mới hủy được</small></h3><div id="pf-pol"></div><p class="note">Bản concept: hồ sơ rút gọn, đủ để thử hộp Hủy HĐ. Bố cục hồ sơ KH đã duyệt giữ nguyên.</p></section>
+                </div>
+              </div>
+
+              <!-- ===== Team & nhân sự ===== -->
+              <div class="view" data-view="team">
+                <div class="cu-head">
+                  <label class="find"><svg class="ic"><use href="#i-search" /></svg><input id="rm-q" type="text" placeholder="Tìm RM: gõ tên, không cần dấu" autocomplete="off" spellcheck="false" /></label>
+                  <div class="sug" id="rm-sug" hidden></div>
+                  <span class="muted">3 team · 9 RM · bấm một RM để xem KH đang phụ trách</span>
+                </div>
+                <div class="teams" id="teams"></div>
+              </div>
+
+              <!-- ===== Trang RM ===== -->
+              <div class="view" data-view="rm">
+                <button class="back" data-go="team"><svg class="ic"><use href="#i-back" /></svg>Team &amp; nhân sự</button>
+                <section class="card pf-head" id="rm-head"></section>
+                <section class="card" data-idea="27" style="margin-top: 14px"><h3>Khách hàng đang phụ trách <small id="rm-count"></small></h3><table class="tbl" id="rm-tbl"></table></section>
+              </div>
+
+              <!-- ===== Lịch hẹn ===== -->
+              <div class="view" data-view="appointments">
+                <section class="card agenda rise" style="--i: 0"><h3>Hôm nay <small>thứ Ba 10/11/2026</small></h3><div id="ag-today"></div></section>
+                <p class="note">Màn Lịch hẹn giữ bố cục đã duyệt (4 nhóm, lịch tháng, lưới năm). Ở vòng này chỉ đổi vỏ, chất liệu và chuyển động; đây là phần "hôm nay" để thấy cảm giác.</p>
+              </div>
+
+              <!-- ===== Cài đặt ===== -->
+              <div class="view" data-view="settings">
+                <div class="set">
+                  <nav class="card set-nav" id="set-nav" data-idea="29">
+                    <button class="set-i on" data-set-i="data"><span class="sq" style="--c: var(--info)"><svg class="ic"><use href="#i-db" /></svg></span>Dữ liệu</button>
+                    <button class="set-i" data-set-i="ai"><span class="sq" style="--c: var(--n2)"><svg class="ic"><use href="#i-spark" /></svg></span>AI</button>
+                    <button class="set-i" data-set-i="trash"><span class="sq" style="--c: var(--n4)"><svg class="ic"><use href="#i-trash" /></svg></span>Thùng rác</button>
+                  </nav>
+                  <div class="set-pane" id="set-pane"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== Lớp tiêu điểm ===== -->
+          <div class="scrim" id="scrim"></div>
+          <div class="float pal" id="pal" role="dialog" aria-label="Ô lệnh">
+            <div class="field"><svg class="ic"><use href="#i-search" /></svg><input id="pal-q" type="text" placeholder="Tìm khách hàng, RM, màn hình, lệnh… hoặc hỏi một con số" autocomplete="off" spellcheck="false" /><kbd>esc</kbd></div>
+            <div class="list" id="pal-list" role="listbox" aria-label="Kết quả"></div>
+            <div class="foot"><span><kbd>↑</kbd> <kbd>↓</kbd> chọn</span><span><kbd>↵</kbd> mở</span><span>Thử: nguyen van hu · tung · forecast · doanh so sao mai · ty le huy</span></div>
+          </div>
+          <div class="float sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Hủy hợp đồng"></div>
+          <div class="float" id="now-pop"></div>
+          <div class="float menu" id="scope-menu"></div>
+          <div class="float" id="miss-pop"></div>
+          <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div class="onscreen" id="onscreen" aria-label="Ý tưởng ở màn đang mở"></div>
+
+      <!-- ================= Danh sách ý ================= -->
+      <section class="sec" id="ideas">
+        <h2>Các ý tưởng</h2>
+        <p>Làm lại từ đầu, không dựa trên bảng 39 ý trước. Mỗi ý có số; bấm <b>Xem</b> để cửa sổ phía trên mở đúng chỗ. Ý có ⭐ là bộ em đề xuất cho v1.0 (đã tick sẵn). Công sức: <b>S</b> ≈ 1 Issue · <b>M</b> 2–3 · <b>L</b> 4+. Nhãn A–F là phần của đợt phản hồi; nhãn vàng là cổng hoặc quyết định cũ phải mở lại.</p>
+        <div id="idea-list"></div>
+        <div class="pickbar" role="region" aria-label="Phiếu chọn">
+          <span>Đã chọn <b id="pick-n">0</b> ý</span>
+          <span class="codes num" id="pick-codes"></span>
+          <button class="btn" id="pick-copy" type="button">Chép danh sách</button>
+        </div>
+      </section>
+
+      <!-- ================= Chuyển động ================= -->
+      <section class="sec" id="motion">
+        <h2>Chuyển động: bốn động tác, ba lò xo</h2>
+        <p>Cả app chỉ dùng bốn động tác, nên chỗ nào cũng "cùng một tay". Mọi chuyển động chỉ đổi vị trí, tỉ lệ và độ trong (transform / opacity), card đồ họa vẽ; máy bật "Giảm chuyển động" thì tự tắt.</p>
+        <div class="two-col">
+          <div class="card lab" id="lab">
+            <h3>So đường cong <small>bấm Chạy vài lần</small></h3>
+            <div class="lane"><span>Web thường · ease 300 ms</span><div class="track"><span class="puck">Thẻ KH</span></div></div>
+            <div class="lane s1"><span>Lò xo êm · 600 ms</span><div class="track"><span class="puck">Thẻ KH</span></div></div>
+            <div class="lane s2"><span>Lò xo nhanh · 500 ms</span><div class="track"><span class="puck">Thẻ KH</span></div></div>
+            <div class="lane s3"><span>Lò xo nảy · 800 ms</span><div class="track"><span class="puck">Thẻ KH</span></div></div>
+            <div class="row" style="margin-top: 12px"><button class="btn" id="lab-run" type="button">Chạy</button><span class="muted">Êm: màn và thẻ hiện ra. Nhanh: nút, ô, mở từ chỗ bấm. Nảy: chỉ cho điều đáng mừng hoặc cần chú ý (dấu "Đã hủy", thông báo).</span></div>
+          </div>
+          <div class="card">
+            <h3>Bốn động tác và token đề xuất</h3>
+            <table class="tok">
+              <tr><td>Hiện</td><td>Phần của màn trồi lên 10 px và rõ dần, lần lượt cách nhau 40 ms, tối đa 8 nhịp. Dùng khi mở màn, đổi tab.</td></tr>
+              <tr><td>Mở</td><td>Thứ được bấm nở thành thứ được mở: thẻ KH → hồ sơ, dòng RM → trang RM. Đóng thì thu về chỗ cũ.</td></tr>
+              <tr><td>Trượt</td><td>Lớp tiêu điểm đi từ nơi gọi nó: sheet trượt từ thanh công cụ (Mac), ô lệnh hạ từ trên, bảng nhỏ nở từ nút.</td></tr>
+              <tr><td>Đếm</td><td>Số chạy tới giá trị mới trong 0,7 giây khi đổi kỳ hay góc nhìn; thanh dài ra theo.</td></tr>
+              <tr><td>--t-1 … --t-4</td><td>120 · 220 · 420 · 620 ms. Ra nhanh hơn vào: đóng dùng --t-1.</td></tr>
+              <tr><td>--spring-*</td><td>smooth · snappy · bouncy, viết bằng CSS <code>linear()</code>: không thêm thư viện.</td></tr>
+            </table>
           </div>
         </div>
-        <div class="demos">
-          <article class="demo">
-            <h3><span class="code">G2</span> Chuyển động lò xo so với chuyển động thường</h3>
-            <p>Bấm <b>Chạy</b> vài lần. Dòng dưới là đường cong lò xo (vượt nhẹ rồi về đúng chỗ, như iPhone / Mac); dòng trên là cách web thường làm.</p>
-            <div class="lane"><span>Thường (300 ms)</span><div class="track plain"><span class="puck">Thẻ KH</span></div></div>
-            <div class="lane"><span>Lò xo (700 ms)</span><div class="track springy"><span class="puck">Thẻ KH</span></div></div>
-            <div class="demo-row"><button class="btn primary" id="motion-run" type="button">Chạy</button><span class="muted">Chỉ animate vị trí và độ trong suốt: card đồ họa vẽ, không giật.</span></div>
-          </article>
-
-          <article class="demo">
-            <h3><span class="code">G3</span> Kính mờ: macOS (Liquid Glass) và Windows 11 (Mica)</h3>
-            <p>Nền phía sau chuyển động để thấy độ trong. Bấm để đổi giữa hai hệ điều hành: cùng một app, mỗi nơi theo đúng chất của nó.</p>
-            <div class="os-window" id="glass-win" data-os="mac">
-              <div class="blobs"></div>
-              <div class="lights"><i></i><i></i><i></i></div>
-              <div class="wincaps"><span>—</span><span>▢</span><span>✕</span></div>
-              <div class="title">Heritas L-CRM</div>
-              <div class="side">
-                <span class="item">Tổng quan</span>
-                <span class="item">Lịch hẹn</span>
-                <span class="item on">Khách hàng</span>
-                <span class="item">Forecast</span>
-                <span class="item">Báo cáo</span>
-                <span class="item">Team & nhân sự</span>
-              </div>
-              <div class="content">
-                <div class="line" style="width: 46%"></div>
-                <div class="line" style="width: 78%"></div>
-                <div class="line" style="width: 64%"></div>
-                <div class="line" style="width: 70%"></div>
-              </div>
-            </div>
-            <div class="demo-row">
-              <button class="btn" type="button" data-os="mac" aria-pressed="true">macOS</button>
-              <button class="btn" type="button" data-os="win" aria-pressed="false">Windows 11</button>
-            </div>
-          </article>
-
-          <article class="demo" id="cmdk-demo">
-            <h3><span class="code">G1</span> Ô lệnh ⌘K / Ctrl+K: tìm mọi thứ</h3>
-            <p>Bấm <span class="kbd">Ctrl</span> + <span class="kbd">K</span> (Mac: <span class="kbd">⌘</span> <span class="kbd">K</span>) ở bất kỳ đâu trong trang, hoặc gõ thẳng vào ô. Thử "nguyen van hu", "tung", "forecast", "xuat". Không cần dấu; <span class="kbd">↑</span> <span class="kbd">↓</span> chọn, <span class="kbd">Enter</span> mở.</p>
-            <div class="palette" id="palette">
-              <div class="field">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="color: var(--text-3)"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
-                <input id="cmdk" type="text" autocomplete="off" spellcheck="false" placeholder="Tìm khách hàng, RM, màn hình, lệnh…" aria-label="Ô lệnh" />
-                <span class="kbd">esc</span>
-              </div>
-              <div class="results" id="results" role="listbox" aria-label="Kết quả"></div>
-            </div>
-          </article>
-
-          <article class="demo">
-            <h3><span class="code">T1</span> Số đếm lên, đường xu hướng tự vẽ</h3>
-            <p>Khi mở Tổng quan hay đổi kỳ: số chạy tới giá trị trong 0,7 giây, đường xu hướng vẽ dần. Chiều màu đúng nghĩa: hủy tăng là đỏ.</p>
-            <div class="kpis">
-              <div class="kpi"><span class="lbl">Doanh số tháng 11</span><span class="val"><span data-count="1.38" data-dec="2">0</span><small>tỷ</small></span><span class="delta up">▲ 12,4% so với tháng 10</span><svg class="spark" viewBox="0 0 200 34" preserveAspectRatio="none"><path class="area" d="M0 30 L28 26 L56 27 L84 20 L112 22 L140 14 L168 12 L200 6 L200 34 L0 34 Z"></path><path d="M0 30 L28 26 L56 27 L84 20 L112 22 L140 14 L168 12 L200 6"></path></svg></div>
-              <div class="kpi"><span class="lbl">Tổng số HĐ</span><span class="val"><span data-count="32" data-dec="0">0</span></span><span class="delta up">▲ 4 so với tháng 10</span><svg class="spark" viewBox="0 0 200 34" preserveAspectRatio="none"><path d="M0 26 L28 24 L56 28 L84 18 L112 20 L140 16 L168 14 L200 10"></path></svg></div>
-              <div class="kpi"><span class="lbl">Tỷ lệ hủy</span><span class="val"><span data-count="5.9" data-dec="1">0</span><small>%</small></span><span class="delta bad">▲ 1,2 điểm so với tháng 10</span><svg class="spark" viewBox="0 0 200 34" preserveAspectRatio="none"><path d="M0 22 L28 24 L56 20 L84 23 L112 18 L140 19 L168 14 L200 12" style="stroke: var(--danger)"></path></svg></div>
-            </div>
-            <div class="demo-row"><button class="btn" id="kpi-run" type="button">Chạy lại</button></div>
-          </article>
-
-          <article class="demo">
-            <h3><span class="code">K5</span> Xem nhanh bằng phím cách (như Quick Look của Finder)</h3>
-            <p>Bấm vào một dòng rồi nhấn <span class="kbd">Space</span>: khung xem nhanh nổi lên, không rời danh sách. Nhấn lại hoặc <span class="kbd">esc</span> để đóng; <span class="kbd">↑</span> <span class="kbd">↓</span> đổi dòng.</p>
-            <div class="ql" id="ql">
-              <div class="ql-row" tabindex="0" data-name="Nguyễn Văn Hùng" data-stage="n2" data-rm="RM Hoàng Văn Tùng · Sao Mai" data-cs="200 tr" data-last="06/11/2026" data-next="T6 14/11 · 09:00" data-pol="1 HĐ · phát hành 21/10" data-kyc="6 / 8 hạng mục"><span>Nguyễn Văn Hùng</span><span class="st n2">N2</span><span class="muted num">T6 14/11</span></div>
-              <div class="ql-row" tabindex="0" data-name="Trần Minh Huệ" data-stage="n1" data-rm="RM Phạm Thu Hà · Bình Minh" data-cs="350 tr" data-last="03/11/2026" data-next="T4 12/11 · 15:30" data-pol="Chưa có" data-kyc="8 / 8 hạng mục"><span>Trần Minh Huệ</span><span class="st n1">N1</span><span class="muted num">T4 12/11</span></div>
-              <div class="ql-row" tabindex="0" data-name="Lê Quốc Hùng" data-stage="n3" data-rm="RM Lê Hoài Nam · Hừng Đông" data-cs="Chưa có" data-last="28/10/2026" data-next="T7 15/11 · 10:00" data-pol="Chưa có" data-kyc="4 / 8 hạng mục"><span>Lê Quốc Hùng</span><span class="st n3">N3</span><span class="muted num">T7 15/11</span></div>
-              <div class="ql-row" tabindex="0" data-name="Phạm Ngọc Lan" data-stage="n2" data-rm="RM Bùi Ngọc Trâm · Bình Minh" data-cs="120 tr" data-last="07/11/2026" data-next="Chưa hẹn" data-pol="2 HĐ" data-kyc="7 / 8 hạng mục"><span>Phạm Ngọc Lan</span><span class="st n2">N2</span><span class="muted num">—</span></div>
-              <div class="ql-panel" id="ql-panel" role="dialog" aria-label="Xem nhanh">
-                <h4 id="ql-name"></h4>
-                <span id="ql-stage"></span> <span class="muted" id="ql-rm"></span>
-                <dl>
-                  <dt>Case size dự kiến</dt><dd id="ql-cs"></dd>
-                  <dt>Lần gặp gần nhất</dt><dd id="ql-last"></dd>
-                  <dt>Lịch hẹn kế tiếp</dt><dd id="ql-next"></dd>
-                  <dt>Hợp đồng</dt><dd id="ql-pol"></dd>
-                  <dt>KYC</dt><dd id="ql-kyc"></dd>
-                </dl>
-              </div>
-            </div>
-          </article>
+        <div class="card" style="margin-top: 14px">
+          <h3>Làm được bằng gì <small>Tauri + React + CSS, không thêm dependency</small></h3>
+          <table class="tok">
+            <tr><td>Kính, Mica</td><td>Nền cửa sổ dùng hiệu ứng gốc của hệ điều hành qua cấu hình cửa sổ của Tauri 2 (vibrancy trên macOS, Mica trên Windows 11); lớp nổi bên trong dùng <code>backdrop-filter</code>. Cần kiểm trên bản thử Mac (T-413). Cửa sổ trong suốt trên macOS dùng API riêng, nên bản lên Mac App Store phải tắt hiệu ứng này.</td></tr>
+            <tr><td>Mở từ chỗ bấm</td><td>View Transitions có sẵn trong WebView2 và WKWebView (Safari 18 trở lên). Máy cũ hơn thì đổi màn không chuyển cảnh, không lỗi.</td></tr>
+            <tr><td>Excel</td><td>ExcelJS đang dùng làm được: đóng băng tiêu đề, nhóm gập Team ▸ RM, thanh dữ liệu và tô màu có điều kiện của Excel, công thức SUM, khổ in A4 ngang, đầu / chân trang. Không vẽ được biểu đồ gốc của Excel, nên sheet Tóm tắt dùng thanh dữ liệu thay biểu đồ.</td></tr>
+            <tr><td>Chỉ app gốc Apple</td><td>Widget màn hình, Spotlight, Shortcuts / Siri: ghi vào danh sách sau v1.0 (ý 31).</td></tr>
+          </table>
         </div>
       </section>
 
-      <!-- ================= G · Toàn app ================= -->
-      <section class="group" id="g">
-        <div class="group-head"><span class="letter">G</span><div><h2>Toàn app: cảm giác chung</h2><p>Những thứ làm cả app "nhanh, mượt, đúng chất Mac" trên mọi màn.</p></div></div>
-        <div class="grid">
-          <article class="idea" data-code="G1" data-rec>
-            <div class="idea-head"><span class="code">G1</span><h3>Ô lệnh ⌘K / Ctrl+K ở mọi màn</h3><span class="badge rec">⭐ v1.0</span><span class="badge">M</span><span class="badge">C</span></div>
-            <dl class="rows">
-              <dt>Hôm nay</dt><dd>Không có ô tìm; muốn tới một KH phải vào Khách hàng rồi dò.</dd>
-              <dt>Ý tưởng</dt><dd>Một ô lệnh mở bằng <b>⌘K</b> (Windows: Ctrl+K) ở bất kỳ màn nào: tìm KH (không dấu, gợi ý gần nhất, dạng "Nguyễn Văn Hùng – RM Hoàng Văn Tùng – Sao Mai"), tìm RM, nhảy tới màn, và chạy lệnh ("Đặt lịch hẹn mới", "Xuất Excel tháng này").</dd>
-              <dt>Vì sao</dt><dd>Nhanh nhất cho người quen bàn phím, giống Spotlight trên Mac; gom luôn phần tìm kiếm của mục C. Demo ở <a class="c-accent" href="#try">Thử cảm giác</a>.</dd>
-            </dl>
-          </article>
-          <article class="idea" data-code="G2" data-rec>
-            <div class="idea-head"><span class="code">G2</span><h3>Hệ chuyển động chung</h3><span class="badge rec">⭐ v1.0</span><span class="badge">M</span></div>
-            <dl class="rows">
-              <dt>Hôm nay</dt><dd>Đổi màn, mở hộp thoại hiện ra ngay, không chuyển động.</dd>
-              <dt>Ý tưởng</dt><dd>Bộ "token chuyển động": nhanh 120 ms, vừa 220 ms, chậm 360 ms và một đường cong lò xo. Hộp thoại trượt nhẹ + mờ dần; danh sách trồi lên lần lượt; thẻ KH "mở ra" thành hồ sơ (chuyển cảnh có ngữ cảnh); số KPI đếm lên. Chỉ animate vị trí / độ trong; tự tắt khi máy bật "Giảm chuyển động".</dd>
-              <dt>Vì sao</dt><dd>"Mượt" là cảm giác chính anh muốn; làm một lần dùng mọi nơi, bản Windows cũng đẹp lên.</dd>
-            </dl>
-          </article>
-          <article class="idea" data-code="G3" data-rec>
-            <div class="idea-head"><span class="code">G3</span><h3>Lớp giao diện Mac (và Windows 11)</h3><span class="badge rec">⭐ v1.0</span><span class="badge">M</span><span class="badge">Mac</span></div>
-            <dl class="rows">
-              <dt>Hôm nay</dt><dd>Một giao diện cho mọi máy; thanh tiêu đề, menu theo Windows.</dd>
-              <dt>Ý tưởng</dt><dd>Trên Mac: thanh bên kính mờ (Liquid Glass từ macOS 26, kính mờ cũ ở bản trước), ba nút đỏ-vàng-xanh nằm trong thanh tiêu đề trong suốt, menu trên cùng đủ bộ (Tệp, Sửa, Xem, Đi tới, Cửa sổ, Trợ giúp) với phím ⌘, hộp thoại dạng sheet. Trên Windows 11: nền Mica, nút cửa sổ chuẩn Windows. Cần anh chọn: chữ dùng font hệ thống của Apple hay giữ Be Vietnam Pro trên cả hai.</dd>
-              <dt>Vì sao</dt><dd>Phát hành cùng lúc hai nền tảng: mỗi nơi phải "đúng chất" của nó. Demo ở <a class="c-accent" href="#try">Thử cảm giác</a>.</dd>
-            </dl>
-          </article>
-          <article class="idea" data-code="G4">
-            <div class="idea-head"><span class="code">G4</span><h3>Giao diện sáng / tối theo hệ thống</h3><span class="badge">M</span></div>
-            <dl class="rows">
-              <dt>Hôm nay</dt><dd>Chỉ có giao diện tối (ADR-0013).</dd>
-              <dt>Ý tưởng</dt><dd>Thêm bộ màu sáng giữ vàng champagne, tự theo cài đặt sáng / tối của máy; in và trình chiếu dùng bản sáng.</dd>
-              <dt>Vì sao</dt><dd>Nhiều người dùng Mac để chế độ sáng ban ngày; báo cáo in ra sáng đẹp hơn. Mọi cặp màu phải kiểm lại độ tương phản (WCAG AA).</dd>
-            </dl>
-          </article>
-          <article class="idea" data-code="G5">
-            <div class="idea-head"><span class="code">G5</span><h3>Màn "Hôm nay"</h3><span class="badge">M</span><span class="badge">mới</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Mở app là thấy: lịch hẹn hôm nay theo giờ, lịch kế tiếp có đếm ngược, và việc cần làm: ghi kết quả buổi đã gặp, KH thiếu KYC, HĐ chờ phát hành, lịch chưa có case size (cho Forecast).</dd>
-              <dt>Vì sao</dt><dd>RM mở app mỗi sáng để biết hôm nay làm gì; giảm số buổi "chưa ghi kết quả".</dd>
-            </dl>
-            <div class="sketch">
-              <div class="agenda">
-                <div class="ag next"><span class="tm">09:00</span><span>Nguyễn Văn Hùng <span class="st n2">N2</span> · trình bày giải pháp</span><span class="muted num">còn 25 phút</span></div>
-                <div class="ag"><span class="tm">14:00</span><span>Trần Minh Huệ <span class="st n1">N1</span> · ký HĐ</span><span class="muted">IS Đỗ Mai</span></div>
-                <div class="ag"><span class="tm">16:30</span><span>Lê Quốc Hùng <span class="st n3">N3</span> · khơi gợi nhu cầu</span><span class="muted">—</span></div>
-              </div>
-              <div class="todo"><span><b>3</b> buổi chưa ghi kết quả</span><span><b>2</b> lịch chưa có case size</span><span><b>1</b> HĐ chờ phát hành</span></div>
-            </div>
-          </article>
-          <article class="idea" data-code="G6">
-            <div class="idea-head"><span class="code">G6</span><h3>Hoàn tác ⌘Z / Ctrl+Z</h3><span class="badge">M</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Sau đổi nhóm, xóa, hủy HĐ: thông báo nhỏ "Đã đổi nhóm · <b>Hoàn tác</b>" trong 6 giây; ⌘Z cũng được.</dd>
-              <dt>Vì sao</dt><dd>Dám thao tác nhanh mà không sợ nhầm; chuẩn của app Mac.</dd>
-            </dl>
-          </article>
-          <article class="idea" data-code="G7">
-            <div class="idea-head"><span class="code">G7</span><h3>Nhắc lịch hẹn và icon trên thanh menu</h3><span class="badge">M</span><span class="badge">G4</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>15 phút trước lịch hẹn hiện thông báo của hệ thống (Mac: Notification Center; Windows: thông báo góc màn hình). Trên Mac có icon ở thanh menu (Windows: khay hệ thống) xem nhanh lịch kế tiếp mà không mở app.</dd>
-              <dt>Vì sao</dt><dd>Đúng tinh thần hệ sinh thái Apple. Cần thêm plugin thông báo của Tauri (G4).</dd>
-            </dl>
-            <div class="sketch">
-              <div class="menubar"><span>Wi-Fi</span><span class="me">◆ 09:00 Hùng</span><span>T3 10 Th11 08:35</span></div>
-              <div class="menudrop">
-                <b>Lịch kế tiếp · còn 25 phút</b>
-                <span>09:00 Nguyễn Văn Hùng · N2 · 200 tr</span>
-                <span class="muted">14:00 Trần Minh Huệ · N1 · 350 tr</span>
-                <span class="muted">Mở Heritas L-CRM ⌘O</span>
-              </div>
-            </div>
-          </article>
-          <article class="idea" data-code="G8">
-            <div class="idea-head"><span class="code">G8</span><h3>Bảng phím tắt</h3><span class="badge">S</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd><b>⌘/</b> mở bảng phím tắt; nút chính hiện phím tắt khi rê chuột (⌘N KH mới, ⌘L đặt lịch, ⌘E xuất Excel, ⌘1–⌘7 đổi màn).</dd>
-            </dl>
-          </article>
+      <!-- ================= Excel ================= -->
+      <section class="sec" id="excel">
+        <h2>File Excel: bản in của Bản tin, cộng sổ chi tiết</h2>
+        <p>Sheet đầu là đúng trang Bản tin trong app. Các sheet sau là sổ: Team gập mở được RM ngay trong Excel, dòng Tổng là công thức nên người nhận sửa số vẫn đúng. Màu lấy từ logo: xanh navy và vàng champagne. Bấm các tab sheet ở dưới.</p>
+        <div class="xl-win" data-idea="23">
+          <div class="xl-top"><b>Excel</b><span>Heritas-L-CRM_Bao-cao_2026-11.xlsx</span></div>
+          <div class="xl-fx"><span id="xl-cell">G12</span><span id="xl-fx">=SUM(G9:G11)</span></div>
+
+          <table class="xl-sheet" data-sheet="sum" data-cell="G12" data-fx="=SUM(G9:G11)">
+            <tr><th></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th><th>H</th><th>I</th></tr>
+            <tr class="band"><td class="rh">1</td><td colspan="9">Heritas L-CRM · Báo cáo kết quả kinh doanh tháng 11/2026</td></tr>
+            <tr class="sub"><td class="rh">2</td><td colspan="9">Toàn bộ · 01/11 – 10/11/2026 (MTD) · 3 team, 9 RM · lập 10/11/2026 13:35</td></tr>
+            <tr class="blank"><td class="rh">3</td><td colspan="9"></td></tr>
+            <tr class="kl"><td class="rh">4</td><td colspan="3">Doanh số</td><td colspan="2">Tổng số HĐ</td><td colspan="2">Tỉ lệ chốt</td><td colspan="2">Tỷ lệ hủy</td></tr>
+            <tr class="kv"><td class="rh">5</td><td colspan="3">1.380.000.000 đ</td><td colspan="2">32</td><td colspan="2">72,3%</td><td colspan="2">5,9%</td></tr>
+            <tr class="kl"><td class="rh">6</td><td colspan="3">▲ 12,4% so với 01/10 – 10/10</td><td colspan="2">34 phát hành − 2 hủy</td><td colspan="2">34 HĐ ÷ 47 RF</td><td colspan="2">▲ 2,5 điểm</td></tr>
+            <tr class="blank"><td class="rh">7</td><td colspan="9"></td></tr>
+            <tr class="hd"><td class="rh">8</td><td class="l">Team</td><td>HĐ phát hành</td><td>HĐ hủy</td><td>Tổng số HĐ</td><td>FYP phát hành</td><td>FYP hủy</td><td>Doanh số</td><td>Tỷ lệ hủy</td><td>Tỉ lệ chốt</td></tr>
+            <tr><td class="rh">9</td><td class="l">Sao Mai</td><td>13</td><td>1</td><td>12</td><td>570.000.000</td><td>50.000.000</td><td class="db" style="--w: 1"><span>520.000.000</span></td><td>7,7%</td><td>76,5%</td></tr>
+            <tr><td class="rh">10</td><td class="l">Bình Minh</td><td>11</td><td>0</td><td>11</td><td>480.000.000</td><td>0</td><td class="db" style="--w: 0.92"><span>480.000.000</span></td><td>0,0%</td><td>73,3%</td></tr>
+            <tr><td class="rh">11</td><td class="l">Hừng Đông</td><td>10</td><td>1</td><td>9</td><td>430.000.000</td><td>50.000.000</td><td class="db" style="--w: 0.73"><span>380.000.000</span></td><td class="red">10,0%</td><td>66,7%</td></tr>
+            <tr class="tot"><td class="rh">12</td><td class="l">Tổng</td><td>34</td><td>2</td><td>32</td><td>1.480.000.000</td><td>100.000.000</td><td>1.380.000.000</td><td>5,9%</td><td>72,3%</td></tr>
+            <tr class="blank"><td class="rh">13</td><td colspan="9"></td></tr>
+            <tr class="def"><td class="rh">14</td><td colspan="9"><b>Nhận xét.</b> Doanh số đạt 1,38 tỷ, tăng 12,4% so với cùng kỳ tháng 10. Sao Mai dẫn đầu với 520 tr. Tỷ lệ hủy 5,9%, tăng 2,5 điểm: cả 2 HĐ hủy rơi vào tuần 03 – 09/11.</td></tr>
+          </table>
+
+          <table class="xl-sheet" data-sheet="rm" data-cell="D3" data-fx="=B3-C3" hidden>
+            <tr><th></th><th style="width: 30px"></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th><th>H</th><th>I</th></tr>
+            <tr class="hd"><td class="rh">1</td><td class="out"></td><td class="l">Team / RM</td><td>HĐ phát hành</td><td>HĐ hủy</td><td>Tổng số HĐ</td><td>FYP phát hành</td><td>FYP hủy</td><td>Doanh số</td><td>Tỷ lệ hủy</td><td>Tỉ lệ chốt</td></tr>
+            <tr class="grp"><td class="rh">2</td><td class="out">−</td><td class="l">Sao Mai</td><td>13</td><td>1</td><td>12</td><td>570.000.000</td><td>50.000.000</td><td class="db" style="--w: 1"><span>520.000.000</span></td><td>7,7%</td><td>76,5%</td></tr>
+            <tr class="sub2"><td class="rh">3</td><td class="out"></td><td class="l">Hoàng Văn Tùng</td><td>6</td><td>0</td><td>6</td><td>280.000.000</td><td>0</td><td class="db" style="--w: 0.54"><span>280.000.000</span></td><td>0,0%</td><td>85,7%</td></tr>
+            <tr class="sub2"><td class="rh">4</td><td class="out"></td><td class="l">Đặng Văn Phúc</td><td>4</td><td>1</td><td>3</td><td>170.000.000</td><td>50.000.000</td><td class="db" style="--w: 0.23"><span>120.000.000</span></td><td class="red">25,0%</td><td>80,0%</td></tr>
+            <tr class="sub2"><td class="rh">5</td><td class="out"></td><td class="l">Lê Ngọc Hương</td><td>3</td><td>0</td><td>3</td><td>120.000.000</td><td>0</td><td class="db" style="--w: 0.23"><span>120.000.000</span></td><td>0,0%</td><td>60,0%</td></tr>
+            <tr class="grp"><td class="rh">6</td><td class="out">−</td><td class="l">Bình Minh</td><td>11</td><td>0</td><td>11</td><td>480.000.000</td><td>0</td><td class="db" style="--w: 0.92"><span>480.000.000</span></td><td>0,0%</td><td>73,3%</td></tr>
+            <tr class="sub2"><td class="rh">7</td><td class="out"></td><td class="l">Phạm Thu Hà</td><td>5</td><td>0</td><td>5</td><td>230.000.000</td><td>0</td><td class="db" style="--w: 0.44"><span>230.000.000</span></td><td>0,0%</td><td>83,3%</td></tr>
+            <tr class="sub2"><td class="rh">8</td><td class="out"></td><td class="l">Bùi Ngọc Trâm</td><td>4</td><td>0</td><td>4</td><td>160.000.000</td><td>0</td><td class="db" style="--w: 0.31"><span>160.000.000</span></td><td>0,0%</td><td>80,0%</td></tr>
+            <tr class="sub2"><td class="rh">9</td><td class="out"></td><td class="l">Đỗ Văn Hiếu</td><td>2</td><td>0</td><td>2</td><td>90.000.000</td><td>0</td><td class="db" style="--w: 0.17"><span>90.000.000</span></td><td>0,0%</td><td>50,0%</td></tr>
+            <tr class="grp"><td class="rh">10</td><td class="out">+</td><td class="l">Hừng Đông <span style="font-weight: 400; color: #6b7280">(3 RM đang gập)</span></td><td>10</td><td>1</td><td>9</td><td>430.000.000</td><td>50.000.000</td><td class="db" style="--w: 0.73"><span>380.000.000</span></td><td class="red">10,0%</td><td>66,7%</td></tr>
+            <tr class="tot"><td class="rh">14</td><td class="out"></td><td class="l">Tổng</td><td>34</td><td>2</td><td>32</td><td>1.480.000.000</td><td>100.000.000</td><td>1.380.000.000</td><td>5,9%</td><td>72,3%</td></tr>
+          </table>
+
+          <table class="xl-sheet" data-sheet="fc" data-cell="E7" data-fx="=SUM(B7:D7)" hidden>
+            <tr><th></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th><th>H</th></tr>
+            <tr class="band"><td class="rh">1</td><td colspan="8">Forecast FYP · tuần 10/11 – 14/11 và tháng 11/2026</td></tr>
+            <tr class="sub"><td class="rh">2</td><td colspan="8">Lịch Đã lên lịch của KH đang ở N3, N2, N1 · từ hôm nay · thứ Hai → thứ Bảy · lập 10/11/2026 13:35</td></tr>
+            <tr class="blank"><td class="rh">3</td><td colspan="8"></td></tr>
+            <tr class="hd"><td class="rh">4</td><td class="l">Team</td><td>Tuần · N1</td><td>Tuần · N2</td><td>Tuần · N3</td><td>Tổng tuần</td><td>Tháng 11</td><td>Số lịch tuần</td><td>Thiếu case size</td></tr>
+            <tr><td class="rh">5</td><td class="l">Sao Mai</td><td>140.000.000</td><td>80.000.000</td><td>40.000.000</td><td class="db" style="--w: 1"><span>260.000.000</span></td><td>580.000.000</td><td>6</td><td class="red">1</td></tr>
+            <tr><td class="rh">6</td><td class="l">Bình Minh</td><td>100.000.000</td><td>70.000.000</td><td>40.000.000</td><td class="db" style="--w: 0.81"><span>210.000.000</span></td><td>440.000.000</td><td>6</td><td class="red">1</td></tr>
+            <tr><td class="rh">7</td><td class="l">Hừng Đông</td><td>80.000.000</td><td>30.000.000</td><td>40.000.000</td><td class="db" style="--w: 0.58"><span>150.000.000</span></td><td>300.000.000</td><td>4</td><td>0</td></tr>
+            <tr class="tot"><td class="rh">8</td><td class="l">Tổng</td><td>320.000.000</td><td>180.000.000</td><td>120.000.000</td><td>620.000.000</td><td>1.320.000.000</td><td>16</td><td>2</td></tr>
+          </table>
+
+          <table class="xl-sheet" data-sheet="def" data-cell="A1" data-fx="Chỉ số" hidden>
+            <tr><th></th><th style="width: 170px">A</th><th style="width: 420px">B</th><th>C</th></tr>
+            <tr class="hd"><td class="rh">1</td><td class="l">Chỉ số</td><td class="l">Công thức</td><td class="l">Ghi chú</td></tr>
+            <tr class="def"><td class="rh">2</td><td><b>Tổng số HĐ</b></td><td>HĐ phát hành − HĐ hủy</td><td>Có thể âm trong một kỳ ngắn</td></tr>
+            <tr class="def"><td class="rh">3</td><td><b>Doanh số</b></td><td>FYP phát hành − FYP hủy</td><td>HĐ hủy tính vào kỳ của ngày hủy</td></tr>
+            <tr class="def"><td class="rh">4</td><td><b>Tỷ lệ hủy</b></td><td>HĐ hủy ÷ HĐ phát hành</td><td>"—" khi kỳ không có HĐ phát hành; có thể vượt 100%</td></tr>
+            <tr class="def"><td class="rh">5</td><td><b>Tỉ lệ chốt</b></td><td>HĐ phát hành ÷ RF</td><td>Chưa trừ HĐ hủy: đo hiệu quả chốt</td></tr>
+            <tr class="def"><td class="rh">6</td><td><b>Forecast</b></td><td>Tổng case size dự kiến của các lịch Đã lên lịch, KH đang ở N3, N2, N1</td><td>Từ hôm nay; chỉ thứ Hai → thứ Bảy; mỗi KH tính một lần</td></tr>
+          </table>
+
+          <div class="xl-tabs" id="xl-tabs"><button class="on" data-sheet="sum">Tóm tắt</button><button data-sheet="rm">Theo team – RM</button><button data-sheet="fc">Forecast</button><button data-sheet="def">Định nghĩa</button></div>
         </div>
       </section>
 
-      <!-- ================= T · Tổng quan ================= -->
-      <section class="group" id="t">
-        <div class="group-head"><span class="letter">T</span><div><h2>Tổng quan</h2><p>Màn mở đầu: một cái nhìn là biết tình hình.</p></div></div>
-        <div class="grid">
-          <article class="idea" data-code="T1" data-rec>
-            <div class="idea-head"><span class="code">T1</span><h3>Ô KPI kiểu mới, có ô hủy</h3><span class="badge rec">⭐ v1.0</span><span class="badge">S–M</span><span class="badge">B</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Số lớn, đơn vị nhỏ nhạt; đường xu hướng mờ 6 kỳ; chip so kỳ trước đúng chiều màu; thêm ô Tổng số HĐ và Tỷ lệ hủy (phần B); bấm một ô → mở Báo cáo đúng chỉ số đó. Demo ở <a class="c-accent" href="#try">Thử cảm giác</a>.</dd>
-            </dl>
-            <div class="sketch sk-row">
-              <div class="tile"><div class="l">Doanh số</div><div class="v">1,38 <small>tỷ</small></div><div class="d delta up">▲ 12,4%</div><svg viewBox="0 0 100 18" preserveAspectRatio="none"><path d="M0 16 L20 14 L40 15 L60 9 L80 7 L100 3"></path></svg></div>
-              <div class="tile"><div class="l">Tổng số HĐ</div><div class="v">32</div><div class="d muted">34 phát hành − 2 hủy</div></div>
-              <div class="tile"><div class="l">Tỷ lệ hủy</div><div class="v">5,9 <small>%</small></div><div class="d delta bad">▲ 1,2 điểm</div></div>
-              <div class="tile"><div class="l">Tỉ lệ chốt</div><div class="v">72 <small>%</small></div><div class="d muted">34 HĐ ÷ 47 RF</div></div>
-            </div>
-          </article>
-          <article class="idea" data-code="T2">
-            <div class="idea-head"><span class="code">T2</span><h3>Phễu chuyển đổi N4 → N1 → HĐ</h3><span class="badge">M</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Phễu theo kỳ / team, có tỷ lệ chuyển giữa các bước; thanh chạy khi mở.</dd>
-              <dt>Vì sao</dt><dd>Thấy ngay nghẽn ở đâu (vd. nhiều N3 mà ít lên N2) để quản lý dồn sức đúng chỗ.</dd>
-            </dl>
-            <div class="sketch funnel">
-              <div><span class="st n4">N4</span><i style="--w: 100%; background: var(--n4)"></i><span class="num muted">361</span></div>
-              <div><span class="st n3">N3</span><i style="--w: 72%; background: var(--n3)"></i><span class="num muted">219 · 61%</span></div>
-              <div><span class="st n2">N2</span><i style="--w: 48%; background: var(--n2)"></i><span class="num muted">134 · 61%</span></div>
-              <div><span class="st n1">N1</span><i style="--w: 34%; background: var(--n1)"></i><span class="num muted">96 · 72%</span></div>
-              <div><span class="st" style="color: var(--accent)">HĐ</span><i style="--w: 18%; background: var(--accent)"></i><span class="num muted">34 · 35%</span></div>
-            </div>
-          </article>
-          <article class="idea" data-code="T3">
-            <div class="idea-head"><span class="code">T3</span><h3>Mục tiêu doanh số và tiến độ</h3><span class="badge">M</span><span class="badge">G2</span><span class="badge">mới</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Đặt mục tiêu doanh số tháng cho team / RM. Tổng quan và Forecast hiện đã đạt / dự kiến / mục tiêu, kèm "dự kiến về đích bao nhiêu %".</dd>
-              <dt>Vì sao</dt><dd>Quản lý cần biết "tháng này có về đích không". Thêm dữ liệu mới nên qua G2.</dd>
-            </dl>
-          </article>
-          <article class="idea" data-code="T4">
-            <div class="idea-head"><span class="code">T4</span><h3>Bảng xếp hạng RM</h3><span class="badge">S</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Top 5 RM của kỳ theo doanh số hoặc tỉ lệ chốt, có chữ cái đầu tên làm ảnh đại diện, bấm để mở trang RM (M1).</dd>
-            </dl>
-          </article>
-        </div>
-      </section>
-
-      <!-- ================= F · Forecast ================= -->
-      <section class="group" id="f">
-        <div class="group-head"><span class="letter">F</span><div><h2>Forecast (phần D)</h2><p>Lịch hẹn tương lai của KH N3 / N2 / N1, case size nhập khi đặt lịch (đã chốt).</p></div></div>
-        <div class="grid">
-          <article class="idea" data-code="F1" data-rec>
-            <div class="idea-head"><span class="code">F1</span><h3>Thanh "về đích" của tháng</h3><span class="badge rec">⭐ v1.0</span><span class="badge">S–M</span><span class="badge">D</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Một thanh ngang: đã đạt từ đầu tháng · dự kiến tuần này (tách N1 / N2 / N3) · dự kiến các tuần còn lại. Có mục tiêu (T3) thì thêm vạch đích và "về đích 90%".</dd>
-              <dt>Vì sao</dt><dd>Trả lời ngay câu quản lý hay hỏi nhất mà không phải đọc bảng.</dd>
-            </dl>
-            <div class="sketch">
-              <div class="sk-row" style="justify-content: space-between; margin-bottom: 6px"><b>Tháng 11 · Toàn bộ</b><span class="num">Dự kiến <b>2,70</b> / mục tiêu 3,00 tỷ · <b style="color: var(--accent)">90%</b></span></div>
-              <div class="landing">
-                <i style="--w: 46%; background: var(--ok)"></i>
-                <i style="--w: 10.7%; background: var(--n1)"></i>
-                <i style="--w: 6%; background: var(--n2)"></i>
-                <i style="--w: 4%; background: var(--n3)"></i>
-                <i style="--w: 23.3%; background: repeating-linear-gradient(135deg, rgba(217, 178, 106, 0.5) 0 6px, rgba(217, 178, 106, 0.25) 6px 12px)"></i>
-                <span class="target"></span>
-              </div>
-              <div class="keys"><span><i style="background: var(--ok)"></i>Đã đạt 1,38 tỷ</span><span><i style="background: var(--n1)"></i>Tuần này N1 0,32</span><span><i style="background: var(--n2)"></i>N2 0,18</span><span><i style="background: var(--n3)"></i>N3 0,12</span><span><i style="background: rgba(217, 178, 106, 0.5)"></i>Các tuần còn lại 0,70</span></div>
-            </div>
-          </article>
-          <article class="idea" data-code="F2" data-rec>
-            <div class="idea-head"><span class="code">F2</span><h3>Bảng team → RM có thanh trong ô</h3><span class="badge rec">⭐ v1.0</span><span class="badge">M</span><span class="badge">D</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Mỗi dòng: Forecast tuần, Forecast tháng, tách N3 / N2 / N1, thanh nhỏ trong ô. Bấm RM → các lịch hẹn đóng góp. Chip "2 lịch thiếu case size" bấm để nhập ngay.</dd>
-            </dl>
-            <div class="sketch">
-              <table class="sk-table">
-                <thead><tr><th>Team / RM</th><th>Tuần này</th><th>Tháng 11</th><th>N1</th><th>N2</th><th>N3</th></tr></thead>
-                <tbody>
-                  <tr><td><b>Sao Mai</b></td><td><span class="databar" style="--w: 70%"><span>0,26 tỷ</span></span></td><td>0,58 tỷ</td><td>0,30</td><td>0,18</td><td>0,10</td></tr>
-                  <tr><td class="muted">&nbsp;&nbsp;RM Hoàng Văn Tùng</td><td><span class="databar" style="--w: 40%"><span>0,15 tỷ</span></span></td><td>0,32 tỷ</td><td>0,20</td><td>0,08</td><td>0,04</td></tr>
-                  <tr><td><b>Bình Minh</b></td><td><span class="databar" style="--w: 55%"><span>0,21 tỷ</span></span></td><td>0,44 tỷ</td><td>0,22</td><td>0,14</td><td>0,08</td></tr>
-                  <tr><td><b>Hừng Đông</b></td><td><span class="databar" style="--w: 40%"><span>0,15 tỷ</span></span></td><td>0,30 tỷ</td><td>0,12</td><td>0,10</td><td>0,08</td></tr>
-                  <tr class="total"><td>Tổng</td><td>0,62 tỷ</td><td>1,32 tỷ</td><td>0,64</td><td>0,42</td><td>0,26</td></tr>
-                </tbody>
-              </table>
-              <div class="todo"><span><b>2</b> lịch thiếu case size · bấm để nhập</span></div>
-            </div>
-          </article>
-          <article class="idea" data-code="F3">
-            <div class="idea-head"><span class="code">F3</span><h3>Lịch tuần dạng cột T2…T7</h3><span class="badge">M</span><span class="badge">D</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Mỗi cột một ngày (thứ Hai → thứ Bảy), thẻ lịch hẹn có case size và màu nhóm, tổng tiền mỗi ngày ở đầu cột.</dd>
-            </dl>
-          </article>
-          <article class="idea" data-code="F4">
-            <div class="idea-head"><span class="code">F4</span><h3>Kịch bản "nếu" theo tỷ lệ chốt</h3><span class="badge">S</span><span class="badge">D</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Thanh trượt tỷ lệ chốt giả định theo nhóm (vd. N1 70%, N2 40%, N3 15%) → thêm một số "dự kiến có trọng số". Chỉ là chế độ xem thêm; số chính vẫn cộng thẳng case size (điểm mở D-d).</dd>
-            </dl>
-          </article>
-        </div>
-      </section>
-
-      <!-- ================= R · Báo cáo ================= -->
-      <section class="group" id="r">
-        <div class="group-head"><span class="letter">R</span><div><h2>Báo cáo trong app (phần E)</h2><p>"Đẳng cấp, chuyên nghiệp": đọc được trong 10 giây, đi sâu được khi cần.</p></div></div>
-        <div class="grid">
-          <article class="idea" data-code="R1" data-rec>
-            <div class="idea-head"><span class="code">R1</span><h3>Trang "Tóm tắt điều hành"</h3><span class="badge rec">⭐ v1.0</span><span class="badge">M</span><span class="badge">E</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Đầu báo cáo là một màn: 4–6 KPI lớn, biểu đồ doanh số theo team, và một đoạn nhận xét <b>viết từ số</b> (không gọi AI, luôn đúng số).</dd>
-            </dl>
-            <div class="sketch sk-col">
-              <div class="sk-row">
-                <div class="tile"><div class="l">Doanh số</div><div class="v">1,38 <small>tỷ</small></div></div>
-                <div class="tile"><div class="l">Tổng số HĐ</div><div class="v">32</div></div>
-                <div class="tile"><div class="l">Tỉ lệ chốt</div><div class="v">72 <small>%</small></div></div>
-                <div class="tile"><div class="l">Tỷ lệ hủy</div><div class="v">5,9 <small>%</small></div></div>
-              </div>
-              <div class="sk-row" style="align-items: stretch">
-                <div style="flex: 1">
-                  <div class="bars"><i style="--h: 78%"></i><i style="--h: 52%"></i><i style="--h: 66%"></i></div>
-                  <div class="bars-lbl"><span>Sao Mai</span><span>Hừng Đông</span><span>Bình Minh</span></div>
-                </div>
-                <p class="narr" style="flex: 1.3; margin: 0">Doanh số tháng 11 đạt <b>1,38 tỷ</b>, tăng 12,4% so với tháng 10. Team <b>Sao Mai</b> dẫn đầu (0,52 tỷ). Tỷ lệ hủy 5,9%, tăng 1,2 điểm: 2 HĐ hủy trong tuần 03–09/11.</p>
-              </div>
-            </div>
-          </article>
-          <article class="idea" data-code="R2" data-rec>
-            <div class="idea-head"><span class="code">R2</span><h3>Bảng chuẩn báo cáo tài chính</h3><span class="badge rec">⭐ v1.0</span><span class="badge">M</span><span class="badge">E</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Tách nhóm cột thành tab (Kết quả · Lịch hẹn · Khách hàng) nên <b>không cuộn ngang</b>; tiêu đề cột ngắn một dòng, giải thích khi rê chuột; cột tên dính bên trái; số canh phải, chữ số đều; dòng Tổng đậm có kẻ trên.</dd>
-            </dl>
-            <div class="sketch ba">
-              <div>
-                <div class="cap">Hôm nay: 17 cột, cuộn ngang</div>
-                <table class="dense"><tr><th>Đã gặp</th><th>Dời – hủy – không đến</th><th>Chưa ghi kết quả</th><th>Dự kiến</th><th>Tổng</th><th>Chuyển RF</th><th>HĐ nộp</th></tr><tr><td>37</td><td>8</td><td>0</td><td>105</td><td>150</td><td>5</td><td>8</td></tr><tr><td>33</td><td>12</td><td>0</td><td>105</td><td>150</td><td>3</td><td>8</td></tr></table>
-              </div>
-              <div>
-                <div class="cap">Đề xuất</div>
-                <div class="tabs"><span class="on">Kết quả</span><span>Lịch hẹn</span><span>Khách hàng</span></div>
-                <table class="sk-table">
-                  <thead><tr><th>Team</th><th>Tổng số HĐ</th><th>Doanh số</th><th>Tỉ lệ chốt</th><th>Tỷ lệ hủy</th></tr></thead>
-                  <tbody>
-                    <tr><td>Sao Mai</td><td>12</td><td><span class="databar" style="--w: 90%"><span>0,52 tỷ</span></span></td><td>75%</td><td>0%</td></tr>
-                    <tr><td>Bình Minh</td><td>11</td><td><span class="databar" style="--w: 78%"><span>0,48 tỷ</span></span></td><td>73%</td><td>8,3%</td></tr>
-                    <tr><td>Hừng Đông</td><td>9</td><td><span class="databar" style="--w: 60%"><span>0,38 tỷ</span></span></td><td>69%</td><td>10%</td></tr>
-                    <tr class="total"><td>Tổng</td><td>32</td><td>1,38 tỷ</td><td>72%</td><td>5,9%</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </article>
-          <article class="idea" data-code="R3" data-rec>
-            <div class="idea-head"><span class="code">R3</span><h3>Thanh dữ liệu và mũi tên trong ô</h3><span class="badge rec">⭐ v1.0</span><span class="badge">S</span><span class="badge">E</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Thanh mảnh trong ô Doanh số / Tổng số HĐ (như R2); ▲▼ so kỳ trước; ô Tỷ lệ hủy cao tô nhạt đỏ. Nhìn là thấy ai mạnh, ai cần hỗ trợ.</dd>
-            </dl>
-          </article>
-          <article class="idea" data-code="R4" data-rec>
-            <div class="idea-head"><span class="code">R4</span><h3>Trình chiếu và In / PDF</h3><span class="badge rec">⭐ v1.0</span><span class="badge">M</span><span class="badge">E</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Nút "Trình chiếu" ẩn thanh bên, phóng to cho màn chiếu. Nút "In / PDF": khổ A4 ngang, logo Heritas, kỳ, góc nhìn, giờ in, chân trang "Nội bộ — bảo mật", bản sáng dễ đọc.</dd>
-              <dt>Vì sao</dt><dd>Báo cáo hay được trình bày trong họp hoặc gửi cấp trên.</dd>
-            </dl>
-          </article>
-          <article class="idea" data-code="R5">
-            <div class="idea-head"><span class="code">R5</span><h3>Đi sâu: team → RM → KH</h3><span class="badge">M</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Bấm một team để xem các RM, bấm RM để xem KH; có đường dẫn quay lại và chuyển động trượt.</dd>
-            </dl>
-          </article>
-          <article class="idea" data-code="R6">
-            <div class="idea-head"><span class="code">R6</span><h3>Chế độ họp tuần</h3><span class="badge">M</span><span class="badge">mới</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Trình chiếu kiểu Keynote: mỗi trang một ý (tổng quan tuần, từng team, top RM, Forecast tuần tới), chuyển trang mượt bằng phím mũi tên. Dùng cho họp sáng thứ Hai.</dd>
-              <dt>Vì sao</dt><dd>Điểm khác biệt lớn khi thương mại hóa: quản lý mở là họp được, không cần làm slide.</dd>
-            </dl>
-          </article>
-        </div>
-      </section>
-
-      <!-- ================= X · Excel ================= -->
-      <section class="group" id="x">
-        <div class="group-head"><span class="letter">X</span><div><h2>File Excel (phần E)</h2><p>File gửi đi phải "đẹp như làm tay", và vẫn tính lại được khi người nhận sửa số.</p></div></div>
-        <div class="grid">
-          <article class="idea" data-code="X1" data-rec>
-            <div class="idea-head"><span class="code">X1</span><h3>Sheet "Tóm tắt" như báo cáo điều hành</h3><span class="badge rec">⭐ v1.0</span><span class="badge">M</span><span class="badge">E</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Sheet đầu: tên app, kỳ, góc nhìn, giờ xuất; khối KPI; biểu đồ (ảnh từ biểu đồ của app); đoạn nhận xét như R1. Các sheet sau là bảng chi tiết.</dd>
-            </dl>
-            <div class="sketch">
-              <div class="xl">
-                <div class="fx"><span>D9</span><span>=SUM(D6:D8)</span></div>
-                <table>
-                  <thead><tr><th class="rh"></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th></tr></thead>
-                  <tbody>
-                    <tr class="title"><td class="rh">1</td><td colspan="5">Heritas L-CRM · Báo cáo tháng 11/2026</td></tr>
-                    <tr class="sub"><td class="rh">2</td><td colspan="5">Toàn bộ · 01/11 – 10/11/2026 · xuất 10/11/2026 16:20</td></tr>
-                    <tr class="head"><td class="rh">5</td><td>Team</td><td>Tổng số HĐ</td><td>Tỉ lệ chốt</td><td>Doanh số (đ)</td><td>Tỷ lệ hủy</td></tr>
-                    <tr><td class="rh">6</td><td class="l">Sao Mai</td><td>12</td><td>75%</td><td class="xbar" style="--w: 88%"><span>520.000.000</span></td><td>0,0%</td></tr>
-                    <tr><td class="rh">7</td><td class="l">Bình Minh</td><td>11</td><td>73%</td><td class="xbar" style="--w: 76%"><span>480.000.000</span></td><td>8,3%</td></tr>
-                    <tr><td class="rh">8</td><td class="l">Hừng Đông</td><td>9</td><td>69%</td><td class="xbar" style="--w: 58%"><span>380.000.000</span></td><td class="warm">10,0%</td></tr>
-                    <tr class="tot"><td class="rh">9</td><td class="l">Tổng</td><td>32</td><td>72%</td><td>1.380.000.000</td><td>5,9%</td></tr>
-                  </tbody>
-                </table>
-                <div class="tabsx"><span class="on">Tóm tắt</span><span>Theo team</span><span>Theo RM</span><span>Theo mốc</span><span>Định nghĩa</span></div>
-              </div>
-            </div>
-          </article>
-          <article class="idea" data-code="X2" data-rec>
-            <div class="idea-head"><span class="code">X2</span><h3>Định dạng chuyên nghiệp</h3><span class="badge rec">⭐ v1.0</span><span class="badge">M</span><span class="badge">E</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Đầu bảng xanh đậm chữ vàng champagne; cố định dòng tiêu đề; bộ lọc; số định dạng đồng và %; thanh dữ liệu và thang màu <b>của Excel</b> (tự cập nhật khi sửa số); dòng Tổng là công thức SUM; độ rộng cột vừa chữ; in A4 ngang vừa một trang chiều ngang, có đầu trang / chân trang.</dd>
-            </dl>
-          </article>
-          <article class="idea" data-code="X3" data-rec>
-            <div class="idea-head"><span class="code">X3</span><h3>Sheet "Định nghĩa"</h3><span class="badge rec">⭐ v1.0</span><span class="badge">S</span><span class="badge">E</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Công thức từng chỉ số và quy ước kỳ: Doanh số = FYP phát hành − FYP hủy; HĐ hủy tính vào kỳ của ngày hủy; tuần thứ Hai → Chủ Nhật…</dd>
-              <dt>Vì sao</dt><dd>Người nhận file hiểu đúng số, không phải hỏi lại.</dd>
-            </dl>
-          </article>
-          <article class="idea" data-code="X4">
-            <div class="idea-head"><span class="code">X4</span><h3>Bảng chi tiết là "Excel Table"</h3><span class="badge">S</span><span class="badge">E</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Mỗi bảng chi tiết là Table có kiểu của Excel: lọc, sắp xếp, thêm cột tự tính ngay trong Excel.</dd>
-            </dl>
-          </article>
-        </div>
-      </section>
-
-      <!-- ================= K · Khách hàng ================= -->
-      <section class="group" id="k">
-        <div class="group-head"><span class="letter">K</span><div><h2>Khách hàng và hồ sơ (phần C)</h2><p>Tìm nhanh, xem nhanh, thao tác trực tiếp.</p></div></div>
-        <div class="grid">
-          <article class="idea" data-code="K1" data-rec>
-            <div class="idea-head"><span class="code">K1</span><h3>Ô tìm ngay trên màn Khách hàng</h3><span class="badge rec">⭐ v1.0</span><span class="badge">S</span><span class="badge">C</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Icon kính lúp + ô tìm ở đầu màn: gõ là lọc kanban / bảng và hiện gợi ý; chữ khớp được tô; ↑↓ Enter mở hồ sơ. Bổ sung cho G1 (G1 dùng ở mọi màn, K1 lọc tại chỗ).</dd>
-            </dl>
-          </article>
-          <article class="idea" data-code="K2">
-            <div class="idea-head"><span class="code">K2</span><h3>Kéo thả thẻ để đổi nhóm</h3><span class="badge">M–L</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Kéo thẻ từ N3 sang N2: thẻ nổi lên có bóng và nghiêng nhẹ, cột đích sáng lên; thả → xác nhận như đổi nhóm sửa tay (không tính RF), có Hoàn tác (G6).</dd>
-            </dl>
-            <div class="sketch kan">
-              <div class="colk"><span class="st n3">N3</span><div class="kcard">Lê Quốc Hùng</div><div class="kcard lift">Ngô Minh Tâm · kéo…</div></div>
-              <div class="colk drop"><span class="st n2">N2</span><div class="kcard">Nguyễn Văn Hùng</div><div class="kcard">Phạm Ngọc Lan</div></div>
-            </div>
-          </article>
-          <article class="idea" data-code="K3">
-            <div class="idea-head"><span class="code">K3</span><h3>Hồ sơ KH 360°</h3><span class="badge">L</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Đầu hồ sơ: tên, nhóm, nhãn, RM, các số nhanh (case size dự kiến, số HĐ, lần gặp gần nhất, lịch kế tiếp). Dưới là một dòng thời gian gộp: lịch hẹn, ghi chú KYC, HĐ, đổi nhóm; lọc theo loại.</dd>
-            </dl>
-            <div class="sketch">
-              <div class="sk-row"><span class="avatar">NH</span><div class="sk-col" style="gap: 2px"><b>Nguyễn Văn Hùng <span class="st n2">N2</span></b><span class="muted">RM Hoàng Văn Tùng · Sao Mai · case size dự kiến 200 tr · 1 HĐ</span></div></div>
-              <div class="timeline">
-                <div class="tl"><span class="when">14/11</span><span class="dot" style="background: var(--accent)"></span><span>Lịch hẹn 09:00 · trình bày giải pháp</span></div>
-                <div class="tl"><span class="when">06/11</span><span class="dot" style="background: var(--n2)"></span><span>Đã gặp · N3 → N2 (chuyển RF)</span></div>
-                <div class="tl"><span class="when">06/11</span><span class="dot" style="background: var(--info)"></span><span>Ghi chú KYC · 3 dữ kiện mới</span></div>
-                <div class="tl"><span class="when">21/10</span><span class="dot" style="background: var(--issued)"></span><span>HĐ phát hành · 150 tr</span></div>
-              </div>
-            </div>
-          </article>
-          <article class="idea" data-code="K4">
-            <div class="idea-head"><span class="code">K4</span><h3>Độ "ấm" của KH</h3><span class="badge">S</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Chấm màu trên thẻ theo số ngày từ lần gặp cuối: <span class="warmth" style="background: var(--ok)"></span> ≤ 14 ngày, <span class="warmth" style="background: var(--warn)"></span> ≤ 45, <span class="warmth" style="background: var(--danger)"></span> lâu hơn; lọc "KH lâu chưa gặp".</dd>
-            </dl>
-          </article>
-          <article class="idea" data-code="K5">
-            <div class="idea-head"><span class="code">K5</span><h3>Xem nhanh bằng phím cách</h3><span class="badge">M</span><span class="badge">Mac</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Chọn KH trong danh sách, nhấn phím cách: khung xem nhanh nổi lên như Quick Look của Finder (nhóm, RM, KYC, lịch kế tiếp, HĐ). Demo ở <a class="c-accent" href="#try">Thử cảm giác</a>.</dd>
-            </dl>
-          </article>
-        </div>
-      </section>
-
-      <!-- ================= L · Lịch hẹn ================= -->
-      <section class="group" id="l">
-        <div class="group-head"><span class="letter">L</span><div><h2>Lịch hẹn</h2><p>Gần với Lịch của Apple / Outlook mà người dùng đã quen.</p></div></div>
-        <div class="grid">
-          <article class="idea" data-code="L1">
-            <div class="idea-head"><span class="code">L1</span><h3>Lịch tuần theo giờ</h3><span class="badge">L</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Khối theo giờ như Lịch của Apple, màu theo nhóm KH; kéo khối để dời lịch (đúng luật dời lịch hiện có).</dd>
-            </dl>
-            <div class="sketch cal">
-              <span></span><span class="h">T2</span><span class="h">T3</span><span class="h">T4</span><span class="h">T5</span><span class="h">T6</span><span class="h">T7</span>
-              <span class="h">9h</span><span class="slot"></span><span class="slot"></span><span class="ev" style="background: var(--n1)">Huệ</span><span class="slot"></span><span class="ev" style="background: var(--n2)">Hùng</span><span class="slot"></span>
-              <span class="h">11h</span><span class="ev" style="background: var(--n3)">Tâm</span><span class="slot"></span><span class="slot"></span><span class="slot"></span><span class="slot"></span><span class="ev" style="background: var(--n3)">Quốc</span>
-              <span class="h">14h</span><span class="slot"></span><span class="ev" style="background: var(--n2)">Lan</span><span class="slot"></span><span class="ev" style="background: var(--n4)">Vy</span><span class="slot"></span><span class="slot"></span>
-            </div>
-          </article>
-          <article class="idea" data-code="L2">
-            <div class="idea-head"><span class="code">L2</span><h3>Đưa lịch hẹn sang Lịch của Apple / Outlook</h3><span class="badge">S–M</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Xuất file .ics (hoặc liên kết đăng ký) để lịch hẹn hiện trên điện thoại, đồng hồ. Không gửi tên KH nếu anh muốn giữ kín (chỉ "Lịch hẹn N2 · 09:00").</dd>
-            </dl>
-          </article>
-        </div>
-      </section>
-
-      <!-- ================= M · Team & RM ================= -->
-      <section class="group" id="m">
-        <div class="group-head"><span class="letter">M</span><div><h2>Team & RM (phần C)</h2><p>Tìm RM nhanh, bấm là thấy KH RM đó đang phụ trách (anh đã chốt).</p></div></div>
-        <div class="grid">
-          <article class="idea" data-code="M1" data-rec>
-            <div class="idea-head"><span class="code">M1</span><h3>Trang RM</h3><span class="badge rec">⭐ v1.0</span><span class="badge">M</span><span class="badge">C</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Bấm một RM (từ ô tìm hay danh sách team): đầu trang có tên, team, KPI kỳ này; dưới là danh sách KH đang phụ trách (nhóm, lần gặp gần nhất, lịch sắp tới, số HĐ). Bấm KH → hồ sơ.</dd>
-            </dl>
-            <div class="sketch">
-              <div class="sk-row" style="margin-bottom: 8px"><span class="avatar">HT</span><div class="sk-col" style="gap: 2px; flex: 1"><b>RM Hoàng Văn Tùng</b><span class="muted">Sao Mai · 34 KH đang mở</span></div><div class="tile" style="flex: none"><div class="l">Doanh số T11</div><div class="v">0,32 <small>tỷ</small></div></div></div>
-              <table class="sk-table">
-                <thead><tr><th>Khách hàng</th><th>Nhóm</th><th>Gặp gần nhất</th><th>Lịch sắp tới</th><th>HĐ</th></tr></thead>
-                <tbody>
-                  <tr><td>Nguyễn Văn Hùng</td><td><span class="st n2">N2</span></td><td>06/11</td><td>14/11 09:00</td><td>1</td></tr>
-                  <tr><td>Nguyễn Thị Hương</td><td><span class="st n4">N4</span></td><td>—</td><td>12/11 10:00</td><td>0</td></tr>
-                  <tr><td>Đỗ Quang Vinh</td><td><span class="st n1">N1</span></td><td>05/11</td><td>—</td><td>2</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </article>
-          <article class="idea" data-code="M2">
-            <div class="idea-head"><span class="code">M2</span><h3>Thẻ team</h3><span class="badge">S</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Mỗi team một thẻ: TL, các RM (chữ cái đầu), doanh số tháng, số KH đang mở; bấm để lọc.</dd>
-            </dl>
-          </article>
-        </div>
-      </section>
-
-      <!-- ================= S · Cài đặt ================= -->
-      <section class="group" id="s">
-        <div class="group-head"><span class="letter">S</span><div><h2>Cài đặt (phần F)</h2><p>Icon cho ba mục Dữ liệu, AI, Thùng rác.</p></div></div>
-        <div class="grid">
-          <article class="idea" data-code="S1" data-rec>
-            <div class="idea-head"><span class="code">S1</span><h3>Icon kiểu Cài đặt hệ thống của Mac</h3><span class="badge rec">⭐ v1.0</span><span class="badge">S</span><span class="badge">F</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Mỗi mục một ô vuông bo tròn có màu, biểu tượng trắng, như System Settings của macOS: Dữ liệu (xanh dương), AI (tím), Thùng rác (xám). Dùng chung kiểu cho mục Forecast trên thanh bên và icon ô tìm.</dd>
-            </dl>
-            <div class="sketch sk-row" style="justify-content: center">
-              <div class="set-list">
-                <div class="set-item on"><span class="sq" style="background: linear-gradient(180deg, #4c8dff, #2f6fe0)"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"></ellipse><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"></path><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"></path></svg></span>Dữ liệu</div>
-                <div class="set-item"><span class="sq" style="background: linear-gradient(180deg, #a77bff, #7d4fe0)"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z"></path></svg></span>AI</div>
-                <div class="set-item"><span class="sq" style="background: linear-gradient(180deg, #8e98a8, #6b7585)"><svg viewBox="0 0 24 24"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path><path d="M10 11v6M14 11v6"></path></svg></span>Thùng rác</div>
-              </div>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <!-- ================= N · Nhận diện ================= -->
-      <section class="group" id="n">
-        <div class="group-head"><span class="letter">N</span><div><h2>Nhận diện và chi tiết</h2><p>Những chi tiết nhỏ làm nên cảm giác "đắt tiền".</p></div></div>
-        <div class="grid">
-          <article class="idea" data-code="N1">
-            <div class="idea-head"><span class="code">N1</span><h3>Chữ số đẹp như app chứng khoán</h3><span class="badge">S</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Số lớn dùng chữ số đều, nét mảnh hơn; đơn vị (tr, tỷ, %) nhỏ và nhạt; số âm có dấu trừ thật và màu đúng nghĩa.</dd>
-            </dl>
-          </article>
-          <article class="idea" data-code="N2">
-            <div class="idea-head"><span class="code">N2</span><h3>Trạng thái trống có minh họa</h3><span class="badge">S</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Màn chưa có dữ liệu: hình cây Heritas nét mảnh, một câu hướng dẫn và một nút làm việc đầu tiên.</dd>
-            </dl>
-          </article>
-          <article class="idea" data-code="N3">
-            <div class="idea-head"><span class="code">N3</span><h3>Hướng dẫn lần đầu mở app</h3><span class="badge">M</span><span class="badge">thương mại</span></div>
-            <dl class="rows">
-              <dt>Ý tưởng</dt><dd>Bốn bước giới thiệu khi khách mở bản thương mại lần đầu: tạo team, RM, KH đầu tiên, đặt lịch.</dd>
-            </dl>
-          </article>
-        </div>
-      </section>
-
-      <!-- ================= Bộ đề xuất ================= -->
-      <section class="summary group" id="pick">
-        <h2>Bộ em đề xuất cho v1.0 (Windows và Mac cùng lúc)</h2>
-        <p>16 ý có ⭐: <b>G1 G2 G3</b> (cảm giác chung, Mac) · <b>T1</b> (Tổng quan, có ô hủy) · <b>F1 F2</b> (Forecast) · <b>R1 R2 R3 R4</b> (Báo cáo) · <b>X1 X2 X3</b> (Excel) · <b>K1 M1</b> (tìm kiếm, trang RM) · <b>S1</b> (icon Cài đặt). Đủ cho 6 điểm anh góp ý và cho "nhanh, mượt, đúng chất Mac", mà không phình phạm vi v1.0.</p>
-        <ul>
-          <li><b>Đáng làm nếu anh muốn thêm:</b> G5 màn Hôm nay, G6 Hoàn tác, T2 phễu, K5 xem nhanh, R6 chế độ họp, G4 giao diện sáng.</li>
-          <li><b>Cần cổng riêng:</b> T3 mục tiêu doanh số (G2: dữ liệu mới), G7 thông báo (G4: plugin mới).</li>
-          <li><b>Để sau v1.0:</b> K2 kéo thả, K3 hồ sơ 360°, L1 lịch tuần theo giờ, N3 hướng dẫn lần đầu.</li>
-          <li><b>Cách trả lời:</b> tick / bỏ tick các thẻ, bấm <b>Chép danh sách</b> ở thanh dưới, dán vào chat. Muốn sửa một ý thì ghi mã ý và điều muốn đổi; ý mới của anh thì cứ viết thêm.</li>
-        </ul>
+      <!-- ================= Quyết định cần Owner ================= -->
+      <section class="sec" id="ask">
+        <h2>Anh cần quyết</h2>
+        <p>Ngoài việc chọn ý, mười điểm dưới đây đổi hướng giao diện hoặc mở lại điều anh đã duyệt. Em sẽ hỏi từng điểm một trong chat; đây là danh sách đầy đủ, kèm đề xuất của em.</p>
+        <ol class="asks">
+          <li><b>Lấy concept này làm nền cho mockup G3?</b>Ba lớp Nền · Kính · Tiêu điểm, mỗi hệ điều hành một chất, bốn động tác. <em>Đề xuất: có.</em></li>
+          <li><b>Chữ: font hệ thống hay Be Vietnam Pro?</b>Đổi công tắc "Chữ" ở đầu trang để so. Font hệ thống là SF Pro trên Mac, Segoe UI Variable trên Windows; Playfair vẫn chỉ cho slogan. <em>Đề xuất: font hệ thống.</em></li>
+          <li><b>Giao diện Sáng làm khi nào?</b>Đổi công tắc "Giao diện" để xem. Làm cho cả app phải kiểm lại tương phản mọi màn. <em>Đề xuất: bản in / PDF dùng giấy sáng ngay ở v1.0; giao diện Sáng cho cả app để sau v1.0.</em></li>
+          <li><b>Logo gọn trên thanh bên?</b>Thay khối logo dọc anh duyệt 27/10 bằng cụm ngang (cây + chữ); slogan xuống chân thanh bên. <em>Đề xuất: gọn.</em></li>
+          <li><b>Bỏ nút "Lọc"?</b>Đổi kỳ hay góc nhìn là số chạy ngay; mở lại điều đã duyệt 03/10. <em>Đề xuất: bỏ.</em></li>
+          <li><b>Token mới.</b>Chất liệu kính, bóng, bo góc theo nền tảng, token chuyển động, <code>--accent-fill</code>. Cần phụ lục ADR-0013. <em>Đề xuất: duyệt cùng mockup đợt đầu (vỏ app).</em></li>
+          <li><b>"Điểm nhấn" và câu nhận xét của Bản tin.</b>Viết từ số theo luật cố định, không gọi AI. Bộ luật là nội dung mới, cần anh duyệt (G2). <em>Đề xuất: làm, bắt đầu với 6 luật.</em></li>
+          <li><b>Màu file Excel.</b>Navy và champagne của logo, nền trắng. <em>Đề xuất: có.</em></li>
+          <li><b>Các màn đã duyệt G3 khác</b> (Lịch hẹn, hồ sơ KH, KYC, các hộp thoại). <em>Đề xuất: giữ bố cục, chỉ thay vỏ theo ngôn ngữ mới; không vẽ lại.</em></li>
+          <li><b>Forecast: 6 điểm mở D-a … D-f.</b>Bản thử đang theo đề xuất của em (mỗi KH tính một lần, hiện đã đạt + dự kiến, bỏ Chủ Nhật, không nhân trọng số, lịch thiếu case size không cộng, có sheet Excel). Em hỏi riêng từng điểm.</li>
+        </ol>
       </section>
     </div>
 
-    <div class="pickbar" role="region" aria-label="Phiếu chọn">
-      <span>Đã chọn <b id="pick-count">0</b> ý</span>
-      <span class="codes" id="pick-codes"></span>
-      <button class="btn primary" id="pick-copy" type="button">Chép danh sách</button>
-    </div>
-    <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-    <script>
-      (() => {
-        const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-        const toastEl = document.getElementById('toast');
-        let toastTimer;
-        const toast = (text) => {
-          toastEl.textContent = text;
-          toastEl.classList.add('show');
-          clearTimeout(toastTimer);
-          toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
-        };
-
-        // ---- Demo 1: spring vs plain ----
-        const tracks = [...document.querySelectorAll('.track')];
-        const setLane = () => tracks.forEach((t) => t.style.setProperty('--lane-w', t.clientWidth + 'px'));
-        setLane();
-        addEventListener('resize', setLane);
-        document.getElementById('motion-run').addEventListener('click', () => {
-          setLane();
-          tracks.forEach((t) => t.classList.toggle('go'));
-        });
-
-        // ---- Demo 2: glass window ----
-        const win = document.getElementById('glass-win');
-        document.querySelectorAll('button[data-os]').forEach((btn) =>
-          btn.addEventListener('click', () => {
-            win.dataset.os = btn.dataset.os;
-            document
-              .querySelectorAll('button[data-os]')
-              .forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
-          }),
-        );
-
-        // ---- Demo 3: command palette ----
-        const fold = (s) =>
-          s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
-        const ITEMS = [
-          { g: 'Khách hàng', t: 'Nguyễn Văn Hùng', m: 'RM Hoàng Văn Tùng – Sao Mai', ico: 'N2', c: 'var(--n2)', a: 'Mở hồ sơ' },
-          { g: 'Khách hàng', t: 'Nguyễn Văn Huy', m: 'RM Bùi Ngọc Trâm – Bình Minh', ico: 'N3', c: 'var(--n3)', a: 'Mở hồ sơ' },
-          { g: 'Khách hàng', t: 'Nguyễn Văn Hưng', m: 'RM Lê Hoài Nam – Hừng Đông', ico: 'N1', c: 'var(--n1)', a: 'Mở hồ sơ' },
-          { g: 'Khách hàng', t: 'Nguyễn Thị Hương', m: 'RM Hoàng Văn Tùng – Sao Mai', ico: 'N4', c: 'var(--n4)', a: 'Mở hồ sơ' },
-          { g: 'Khách hàng', t: 'Trần Minh Huệ', m: 'RM Phạm Thu Hà – Bình Minh', ico: 'N1', c: 'var(--n1)', a: 'Mở hồ sơ' },
-          { g: 'Khách hàng', t: 'Lê Quốc Hùng', m: 'RM Lê Hoài Nam – Hừng Đông', ico: 'N3', c: 'var(--n3)', a: 'Mở hồ sơ' },
-          { g: 'Khách hàng', t: 'Đỗ Quang Vinh', m: 'RM Hoàng Văn Tùng – Sao Mai', ico: 'N1', c: 'var(--n1)', a: 'Mở hồ sơ' },
-          { g: 'RM', t: 'RM Nguyễn Văn Hùng', m: 'Sao Mai', ico: 'NH', a: 'Mở trang RM' },
-          { g: 'RM', t: 'RM Hoàng Văn Tùng', m: 'Sao Mai', ico: 'HT', a: 'Mở trang RM' },
-          { g: 'RM', t: 'RM Bùi Ngọc Trâm', m: 'Bình Minh', ico: 'BT', a: 'Mở trang RM' },
-          { g: 'RM', t: 'RM Lê Hoài Nam', m: 'Hừng Đông', ico: 'LN', a: 'Mở trang RM' },
-          { g: 'RM', t: 'RM Phạm Thu Hà', m: 'Bình Minh', ico: 'PH', a: 'Mở trang RM' },
-          { g: 'Màn hình', t: 'Tổng quan', m: '⌘1', ico: '⌂', a: 'Mở' },
-          { g: 'Màn hình', t: 'Lịch hẹn', m: '⌘2', ico: '▦', a: 'Mở' },
-          { g: 'Màn hình', t: 'Khách hàng', m: '⌘3', ico: '☺', a: 'Mở' },
-          { g: 'Màn hình', t: 'Forecast', m: '⌘4', ico: '↗', a: 'Mở' },
-          { g: 'Màn hình', t: 'Báo cáo', m: '⌘5', ico: '▤', a: 'Mở' },
-          { g: 'Lệnh', t: 'Đặt lịch hẹn mới', m: '⌘L', ico: '+', a: 'Chạy' },
-          { g: 'Lệnh', t: 'Thêm khách hàng', m: '⌘N', ico: '+', a: 'Chạy' },
-          { g: 'Lệnh', t: 'Xuất Excel báo cáo tháng này', m: '⌘E', ico: '⇩', a: 'Chạy' },
-          { g: 'Lệnh', t: 'Mở Forecast tuần này', m: '', ico: '↗', a: 'Chạy' },
-        ];
-        const ORDER = ['Khách hàng', 'RM', 'Màn hình', 'Lệnh'];
-        const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-        // Words of the title with their start index; each char folds to one char, so indexes line up.
-        const words = (t) => {
-          const out = [];
-          const re = /\S+/g;
-          let m;
-          while ((m = re.exec(t))) out.push({ i: m.index, w: fold(m[0]) });
-          return out;
-        };
-        const score = (item, q) => {
-          if (!q.length) return 0;
-          const ft = fold(item.t);
-          const fq = q.join(' ');
-          if (ft.startsWith(fq)) return 4;
-          const ws = words(item.t).map((x) => x.w);
-          if (q.every((w) => ws.some((x) => x.startsWith(w)))) return 3;
-          if (ft.includes(fq)) return 1;
-          return 0;
-        };
-        const highlight = (t, q) => {
-          const marks = new Array(t.length).fill(false);
-          const used = new Set();
-          for (const qw of q) {
-            const hit = words(t).find((x, i) => !used.has(i) && x.w.startsWith(qw) && (used.add(i) || true));
-            if (hit) for (let k = 0; k < qw.length; k++) marks[hit.i + k] = true;
-          }
-          let html = '';
-          let open = false;
-          [...t].forEach((ch, i) => {
-            if (marks[i] && !open) {
-              html += '<mark>';
-              open = true;
-            }
-            if (!marks[i] && open) {
-              html += '</mark>';
-              open = false;
-            }
-            html += esc(ch);
-          });
-          return open ? html + '</mark>' : html;
-        };
-        const input = document.getElementById('cmdk');
-        const list = document.getElementById('results');
-        let shown = [];
-        let sel = 0;
-        const render = () => {
-          const q = fold(input.value).split(/\s+/).filter(Boolean);
-          shown = q.length
-            ? ITEMS.map((it) => ({ it, s: score(it, q) }))
-                .filter((x) => x.s > 0)
-                .sort((a, b) => ORDER.indexOf(a.it.g) - ORDER.indexOf(b.it.g) || b.s - a.s)
-                .slice(0, 8)
-                .map((x) => x.it)
-            : [ITEMS[0], ITEMS[4], ITEMS[8], ITEMS[17], ITEMS[19]];
-          sel = 0;
-          let html = '';
-          let last = '';
-          if (!q.length) html += '<div class="grp">Gần đây và gợi ý</div>';
-          shown.forEach((it, i) => {
-            if (q.length && it.g !== last) {
-              html += '<div class="grp">' + esc(it.g) + '</div>';
-              last = it.g;
-            }
-            const ico = it.c ? '<span class="ico" style="color:' + it.c + '">' + esc(it.ico) + '</span>' : '<span class="ico">' + esc(it.ico) + '</span>';
-            html +=
-              '<div class="res" role="option" data-i="' + i + '" aria-selected="' + (i === sel) + '" style="animation-delay:' + i * 18 + 'ms">' +
-              ico + '<span class="txt"><span class="t">' + highlight(it.t, q) + '</span>' +
-              (it.m ? '<span class="m"> – ' + esc(it.m) + '</span>' : '') +
-              '</span><span class="kbd enter">' + esc(it.a) + ' ↵</span></div>';
-          });
-          if (!shown.length) html = '<div class="grp">Không thấy kết quả</div>';
-          list.innerHTML = html;
-        };
-        const mark = () => list.querySelectorAll('.res').forEach((r) => r.setAttribute('aria-selected', String(Number(r.dataset.i) === sel)));
-        const choose = (i) => {
-          const it = shown[i];
-          if (it) toast(it.a + ': ' + it.t + ' (demo)');
-        };
-        input.addEventListener('input', render);
-        input.addEventListener('keydown', (e) => {
-          if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            sel = Math.min(sel + 1, shown.length - 1);
-            mark();
-          } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            sel = Math.max(sel - 1, 0);
-            mark();
-          } else if (e.key === 'Enter') {
-            e.preventDefault();
-            choose(sel);
-          } else if (e.key === 'Escape') {
-            input.value = '';
-            render();
-            input.blur();
-          }
-        });
-        list.addEventListener('click', (e) => {
-          const r = e.target.closest('.res');
-          if (r) choose(Number(r.dataset.i));
-        });
-        const palette = document.getElementById('palette');
-        addEventListener('keydown', (e) => {
-          if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-            e.preventDefault();
-            palette.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
-            input.focus({ preventScroll: true });
-            input.select();
-            palette.classList.add('pop');
-            setTimeout(() => palette.classList.remove('pop'), 420);
-          }
-        });
-        render();
-
-        // ---- Demo 4: KPI count-up ----
-        const counters = [...document.querySelectorAll('[data-count]')];
-        const sparks = [...document.querySelectorAll('.kpis .spark')];
-        const runKpi = () => {
-          const t0 = performance.now();
-          const ms = reduce ? 1 : 700;
-          const step = (now) => {
-            const p = Math.min(1, (now - t0) / ms);
-            const e = 1 - Math.pow(1 - p, 3);
-            counters.forEach((el) => {
-              const to = Number(el.dataset.count);
-              el.textContent = (to * e).toFixed(Number(el.dataset.dec)).replace('.', ',');
-            });
-            if (p < 1) requestAnimationFrame(step);
-          };
-          requestAnimationFrame(step);
-          sparks.forEach((s) => {
-            s.classList.remove('draw');
-            void s.getBoundingClientRect();
-            s.classList.add('draw');
-          });
-        };
-        document.getElementById('kpi-run').addEventListener('click', runKpi);
-        const kpiSeen = new IntersectionObserver((entries) => {
-          if (entries.some((x) => x.isIntersecting)) {
-            runKpi();
-            kpiSeen.disconnect();
-          }
-        });
-        kpiSeen.observe(document.querySelector('.kpis'));
-
-        // ---- Demo 5: quick look ----
-        const ql = document.getElementById('ql');
-        const panel = document.getElementById('ql-panel');
-        let openRow = null;
-        const fill = (r) => {
-          const d = r.dataset;
-          document.getElementById('ql-name').textContent = d.name;
-          const st = document.getElementById('ql-stage');
-          st.className = 'st ' + d.stage;
-          st.textContent = d.stage.toUpperCase();
-          document.getElementById('ql-rm').textContent = d.rm;
-          document.getElementById('ql-cs').textContent = d.cs;
-          document.getElementById('ql-last').textContent = d.last;
-          document.getElementById('ql-next').textContent = d.next;
-          document.getElementById('ql-pol').textContent = d.pol;
-          document.getElementById('ql-kyc').textContent = d.kyc;
-        };
-        const close = () => {
-          panel.classList.remove('open');
-          openRow = null;
-        };
-        const open = (r) => {
-          fill(r);
-          const top = r.offsetTop + r.offsetHeight + 6;
-          panel.style.top = top + 'px';
-          panel.style.transformOrigin = '30% 0';
-          panel.classList.add('open');
-          openRow = r;
-        };
-        ql.querySelectorAll('.ql-row').forEach((r) => {
-          r.addEventListener('keydown', (e) => {
-            if (e.key === ' ') {
-              e.preventDefault();
-              openRow === r ? close() : open(r);
-            } else if (e.key === 'Escape') close();
-            else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-              e.preventDefault();
-              const rows = [...ql.querySelectorAll('.ql-row')];
-              const next = rows[rows.indexOf(r) + (e.key === 'ArrowDown' ? 1 : -1)];
-              if (next) {
-                next.focus();
-                if (openRow) open(next);
-              }
-            }
-          });
-          r.addEventListener('dblclick', () => (openRow === r ? close() : open(r)));
-        });
-        addEventListener('click', (e) => {
-          if (openRow && !ql.contains(e.target)) close();
-        });
-
-        // ---- Pick sheet ----
-        const ideas = [...document.querySelectorAll('.idea[data-code]')];
-        const countEl = document.getElementById('pick-count');
-        const codesEl = document.getElementById('pick-codes');
-        const update = () => {
-          const picked = ideas.filter((x) => x.querySelector('.pick input').checked).map((x) => x.dataset.code);
-          ideas.forEach((x) => x.classList.toggle('picked', x.querySelector('.pick input').checked));
-          countEl.textContent = picked.length;
-          codesEl.textContent = picked.join(', ');
-          return picked;
-        };
-        ideas.forEach((idea) => {
-          const label = document.createElement('label');
-          label.className = 'pick';
-          label.innerHTML = '<input type="checkbox"' + (idea.hasAttribute('data-rec') ? ' checked' : '') + ' /> Chọn';
-          idea.querySelector('.idea-head').append(label);
-          label.querySelector('input').addEventListener('change', update);
-        });
-        update();
-        document.getElementById('pick-copy').addEventListener('click', async () => {
-          const picked = update();
-          const text = 'Chọn ' + picked.length + ' ý: ' + picked.join(', ');
-          try {
-            await navigator.clipboard.writeText(text);
-            toast('Đã chép: ' + text);
-          } catch {
-            prompt('Chép dòng này rồi dán vào chat:', text);
-          }
-        });
-      })();
-    </script>
+    <script src="y-tuong-ui-ux.js"></script>
   </body>
 </html>
