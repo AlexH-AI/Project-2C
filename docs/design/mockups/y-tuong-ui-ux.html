@@ -2,9 +2,11 @@
 <!-- Mục lục (mở bằng neo #id; CSS ở y-tuong-ui-ux.css, dữ liệu giả lập + hành vi ở y-tuong-ui-ux.js):
   Bảng ý tưởng UI/UX, vòng 2 (T-415): concept mới, làm lại từ đầu theo yêu cầu Owner 10/11/2026.
   Trạng thái: ý tưởng để Owner chọn, CHƯA phải mockup đã duyệt G3. Dữ liệu 100% giả lập.
-  #stage   Bản thử chạy được: cửa sổ app (macOS / Windows 11, Tối / Sáng, hai bộ chữ)
+  #stage   Màn đầu: cửa sổ app bấm được trên nền desktop (cỡ theo khung nhìn, 1100×700 … 1440×900)
            màn: overview, forecast, reports, customers, profile, team, rm, appointments, settings
            lớp nổi: #pal ô lệnh, #sheet hộp Hủy HĐ, #now-pop "Lúc này", #scope-menu, #miss-pop
+           #dock: công tắc macOS / Windows 11, Tối / Sáng, hai bộ chữ, toàn màn hình
+  #concept Ba nguyên lý (ba lớp, hai hệ điều hành, bốn động tác)
   #ideas   Danh sách ý (do JS dựng từ mảng IDEAS), phiếu chọn
   #motion  Bốn động tác, ba lò xo, token chuyển động, ghi chú khả thi
   #excel   File Excel: 4 sheet (Tóm tắt, Theo team – RM, Forecast, Định nghĩa)
@@ -18,7 +20,7 @@
     <title>Concept UI/UX vòng 2 — Heritas L-CRM (Project-2C mockup)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital@1&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:opsz,wght@14..32,400..700&family=Playfair+Display:ital@1&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="y-tuong-ui-ux.css" />
@@ -46,24 +48,12 @@
       <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></symbol>
       <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
       <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17v.01" /></symbol>
+      <symbol id="i-full" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></symbol>
       <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.7l5.9-.9z" /></symbol>
     </svg>
 
-    <div class="page">
-      <header class="top">
-        <div>
-          <h1>Concept mới cho <em>Heritas L-CRM</em> · vòng ý tưởng 2</h1>
-          <p>Bấm thử như app thật: thanh bên, <kbd class="k-mac">⌘K</kbd><kbd class="k-win">Ctrl K</kbd>, các viên kính. Danh sách ý và phiếu chọn ở dưới. Chưa phải G3; dữ liệu giả lập.</p>
-        </div>
-        <div class="switches">
-          <span class="sw">Nền tảng<span class="seg" data-set="os"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span></span>
-          <span class="sw">Giao diện<span class="seg" data-set="theme"><button class="on" data-v="dark">Tối</button><button data-v="light">Sáng</button></span></span>
-          <span class="sw">Chữ<span class="seg" data-set="font"><button class="on" data-v="system">Hệ thống</button><button data-v="brand">Be Vietnam Pro</button></span></span>
-        </div>
-      </header>
-
-      <!-- ================= Bản thử ================= -->
-      <div class="stage" id="stage">
+    <!-- ================= Màn đầu: bản thử ================= -->
+    <div class="stage" id="stage">
         <div class="wall"></div>
         <div class="menubar" data-idea="13">
           <b>Heritas L-CRM</b><span>Tệp</span><span>Sửa</span><span>Xem</span>
@@ -73,7 +63,7 @@
         </div>
         <div class="float menu" id="go-menu"></div>
 
-        <div class="win" id="win" data-idea="01 02">
+        <div class="slot"><div class="win" id="win" data-idea="01 02">
           <header class="titlebar">
             <img src="img/heritas-tree.png" alt="" /><span>Heritas L-CRM</span>
             <button class="tb-search" data-open="pal" data-idea="09"><svg class="ic"><use href="#i-search" /></svg>Tìm khách hàng, RM, lệnh<kbd>Ctrl K</kbd></button>
@@ -121,7 +111,7 @@
                   <section class="card hero rise" data-idea="14" style="--i: 0">
                     <span class="lbl" id="ov-lbl"></span>
                     <div class="hero-keys"><span><i></i>Tháng 11</span><span><i class="dash"></i>Dự kiến</span><span><i class="ghost"></i>Tháng 10</span></div>
-                    <div class="hero-row"><span class="xl"><span id="ov-sales">0</span><small id="ov-unit">tỷ</small></span><span class="delta up" id="ov-delta"></span></div>
+                    <div class="hero-row"><span class="xl"><span class="roll" id="ov-sales"></span><small id="ov-unit">tỷ</small></span><span class="delta up" id="ov-delta"></span></div>
                     <p class="eq" id="ov-eq"></p>
                     <div class="chart" id="ov-chart"></div>
                   </section>
@@ -131,7 +121,7 @@
                   </section>
                   <div class="tiles" id="ov-tiles" data-idea="15"></div>
                   <div class="ov-bot">
-                    <section class="card rise" style="--i: 4"><h3>Lịch hẹn tháng này <small id="ov-appt-sub"></small></h3><div class="stack" id="ov-appt"></div><div class="keys" id="ov-appt-keys"></div></section>
+                    <section class="card rise" style="--i: 4"><h3>Lịch hẹn tháng này <small id="ov-appt-sub"></small></h3><div class="donut-row"><div class="donut" id="ov-appt"></div><div class="legend-v" id="ov-appt-keys"></div></div></section>
                     <section class="card rise" style="--i: 5"><h3>Khách hàng theo nhóm <small id="ov-pipe-sub"></small></h3><div class="mini" id="ov-pipe"></div></section>
                     <section class="card rise" style="--i: 6"><h3>Team <small>bấm để xem riêng một team</small></h3><div id="ov-race"></div></section>
                   </div>
@@ -149,7 +139,7 @@
                 <div class="fc-top">
                   <section class="card fc-hero rise" style="--i: 0">
                     <span class="lbl" id="fc-lbl"></span>
-                    <div class="hero-row"><span class="xl"><span id="fc-num">0</span><small id="fc-unit">tỷ</small></span></div>
+                    <div class="hero-row"><span class="xl"><span class="roll" id="fc-num"></span><small id="fc-unit">tỷ</small></span></div>
                     <p class="sub" id="fc-sub"></p>
                     <div class="stack" id="fc-split"></div>
                     <div class="keys" id="fc-keys"></div>
@@ -290,15 +280,38 @@
           <div class="float menu" id="scope-menu"></div>
           <div class="float" id="miss-pop"></div>
           <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        </div></div>
+
+        <div class="dock" id="dock">
+          <span class="dock-t"><b>Heritas L-CRM</b> · concept vòng 2</span>
+          <span class="seg" data-set="os"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span>
+          <span class="seg" data-set="theme"><button class="on" data-v="dark">Tối</button><button data-v="light">Sáng</button></span>
+          <span class="seg" data-set="font"><button class="on" data-v="system">Chữ hệ thống</button><button data-v="brand">Be Vietnam Pro</button></span>
+          <button class="dock-b icon" id="full" aria-label="Toàn màn hình" title="Toàn màn hình"><svg class="ic"><use href="#i-full" /></svg></button>
+          <a class="dock-b" href="#ideas">32 ý tưởng<svg class="ic"><use href="#i-down" /></svg></a>
         </div>
       </div>
 
+    <div class="page">
       <div class="onscreen" id="onscreen" aria-label="Ý tưởng ở màn đang mở"></div>
+
+      <!-- ================= Concept ================= -->
+      <section class="sec" id="concept">
+        <span class="kicker">Concept</span>
+        <h2>Một cửa sổ, ba lớp, hai hệ điều hành.</h2>
+        <p class="lead">Bản thử phía trên là <b>một</b> app, không phải các ý rời. Mọi quyết định A–F anh đã chốt nằm trong đó. Phần mới là cách nó được dựng, cách nó chuyển động và cách nó trình bày con số.</p>
+        <div class="prs">
+          <article class="pr"><div class="art layers" aria-hidden="true"><i></i><i></i><i></i></div><h3>Nền · Kính · Tiêu điểm</h3><p>Nội dung là lớp nền, rộng và phẳng. Thanh bên và nút điều khiển là kính nổi phía trên. Hộp thoại, ô lệnh là lớp tiêu điểm, làm mờ phần còn lại. Rê chuột vào hình để thấy ba lớp tách ra.</p></article>
+          <article class="pr"><div class="art oses" aria-hidden="true"><i class="m"></i><i class="w"></i></div><h3>Mỗi hệ điều hành một chất</h3><p>Cùng bố cục, khác vỏ. Trên Mac: thanh bên kính, góc bo đồng tâm, menu ⌘. Trên Windows 11: nền Mica, ô tìm trên thanh tiêu đề, góc vuông hơn. Đổi ở thanh công tắc dưới cửa sổ.</p></article>
+          <article class="pr"><div class="art moves" aria-hidden="true"><i data-l="Hiện"><b></b></i><i data-l="Mở"><b></b></i><i data-l="Trượt"><b></b></i><i data-l="Đếm"><b></b></i></div><h3>Bốn động tác</h3><p>Cả app chỉ dùng bốn kiểu chuyển động, cùng thời lượng và cùng lò xo, nên chỗ nào cũng mượt như nhau. Màn đổi tức thì; chỉ thứ được mở mới "nở ra" từ chỗ bấm.</p></article>
+        </div>
+      </section>
 
       <!-- ================= Danh sách ý ================= -->
       <section class="sec" id="ideas">
-        <h2>Các ý tưởng</h2>
-        <p>Làm lại từ đầu, không dựa trên bảng 39 ý trước. Mỗi ý có số; bấm <b>Xem</b> để cửa sổ phía trên mở đúng chỗ. Ý có ⭐ là bộ em đề xuất cho v1.0 (đã tick sẵn). Công sức: <b>S</b> ≈ 1 Issue · <b>M</b> 2–3 · <b>L</b> 4+. Nhãn A–F là phần của đợt phản hồi; nhãn vàng là cổng hoặc quyết định cũ phải mở lại.</p>
+        <span class="kicker">Ý tưởng</span>
+        <h2>32 ý, đánh số để anh chọn.</h2>
+        <p class="lead">Bấm <b>Xem</b> để cửa sổ phía trên mở đúng chỗ. Ý có ⭐ là bộ em đề xuất cho v1.0, đã chọn sẵn. Công sức: <b>S</b> ≈ 1 Issue · <b>M</b> 2–3 · <b>L</b> 4+. Nhãn A–F là phần của đợt phản hồi; nhãn vàng là cổng hoặc quyết định cũ phải mở lại.</p>
         <div id="idea-list"></div>
         <div class="pickbar" role="region" aria-label="Phiếu chọn">
           <span>Đã chọn <b id="pick-n">0</b> ý</span>
@@ -309,10 +322,11 @@
 
       <!-- ================= Chuyển động ================= -->
       <section class="sec" id="motion">
-        <h2>Chuyển động: bốn động tác, ba lò xo</h2>
-        <p>Cả app chỉ dùng bốn động tác, nên chỗ nào cũng "cùng một tay". Di chuyển, phóng, hiện, ẩn chỉ đổi vị trí, tỉ lệ và độ trong (transform / opacity), card đồ họa vẽ. Riêng đổi màu nền hay viền khi rê chuột là chuyển màu ngắn 120–220 ms. Máy bật "Giảm chuyển động" thì tất cả tự tắt.</p>
+        <span class="kicker">Chuyển động</span>
+        <h2>Bốn động tác, ba lò xo.</h2>
+        <p class="lead">Di chuyển, phóng, hiện, ẩn chỉ đổi vị trí, tỉ lệ và độ trong (transform / opacity), card đồ họa vẽ. Riêng đổi màu nền hay viền khi rê chuột là chuyển màu ngắn 120–220 ms. Máy bật "Giảm chuyển động" thì tất cả tự tắt.</p>
         <div class="two-col">
-          <div class="card lab" id="lab">
+          <div class="bcard lab" id="lab">
             <h3>So đường cong <small>bấm Chạy vài lần</small></h3>
             <div class="lane"><span>Web thường · ease 300 ms</span><div class="track"><span class="puck">Thẻ KH</span></div></div>
             <div class="lane s1"><span>Lò xo êm · 600 ms</span><div class="track"><span class="puck">Thẻ KH</span></div></div>
@@ -320,19 +334,19 @@
             <div class="lane s3"><span>Lò xo nảy · 800 ms</span><div class="track"><span class="puck">Thẻ KH</span></div></div>
             <div class="row" style="margin-top: 12px"><button class="btn" id="lab-run" type="button">Chạy</button><span class="muted">Êm: màn và thẻ hiện ra. Nhanh: nút, ô, mở từ chỗ bấm. Nảy: chỉ cho điều đáng mừng hoặc cần chú ý (dấu "Đã hủy", thông báo).</span></div>
           </div>
-          <div class="card">
+          <div class="bcard">
             <h3>Bốn động tác và token đề xuất</h3>
             <table class="tok">
-              <tr><td>Hiện</td><td>Phần của màn trồi lên 10 px và rõ dần, lần lượt cách nhau 40 ms, tối đa 8 nhịp. Dùng khi mở màn, đổi tab.</td></tr>
-              <tr><td>Mở</td><td>Thứ được bấm nở thành thứ được mở: thẻ KH → hồ sơ, dòng RM → trang RM. Đóng thì thu về chỗ cũ.</td></tr>
-              <tr><td>Trượt</td><td>Lớp tiêu điểm đi từ nơi gọi nó: sheet trượt từ thanh công cụ (Mac), ô lệnh hạ từ trên, bảng nhỏ nở từ nút.</td></tr>
-              <tr><td>Đếm</td><td>Số chạy tới giá trị mới trong 0,7 giây khi đổi kỳ hay góc nhìn; thanh dài ra theo.</td></tr>
-              <tr><td>--t-1 … --t-4</td><td>120 · 220 · 420 · 620 ms. Ra nhanh hơn vào: đóng dùng --t-1.</td></tr>
+              <tr><td>Hiện</td><td>Màn đổi tức thì; các phần của màn mới trồi lên 8 px và rõ dần, cách nhau 28 ms, xong trong 0,6 giây.</td></tr>
+              <tr><td>Mở</td><td>Thứ được bấm nở thành thứ được mở: thẻ KH → hồ sơ, dòng RM → trang RM. Quay lại thì thu về đúng chỗ cũ.</td></tr>
+              <tr><td>Trượt</td><td>Thứ đang chọn trượt tới chỗ mới: viên chọn trên thanh bên, nút trượt của công tắc. Lớp tiêu điểm đi từ nơi gọi nó: sheet từ thanh công cụ, bảng nhỏ từ nút.</td></tr>
+              <tr><td>Đếm</td><td>Khi đổi kỳ hay góc nhìn, chữ số cũ lăn đi, chữ số mới lăn vào (lên khi tăng, xuống khi giảm); thanh dài ra theo.</td></tr>
+              <tr><td>--t-1 … --t-4</td><td>120 · 220 · 400 · 600 ms. Ra nhanh hơn vào: đóng dùng --t-1.</td></tr>
               <tr><td>--spring-*</td><td>smooth · snappy · bouncy, viết bằng CSS <code>linear()</code>: không thêm thư viện.</td></tr>
             </table>
           </div>
         </div>
-        <div class="card" style="margin-top: 14px">
+        <div class="bcard" style="margin-top: 20px">
           <h3>Làm được bằng gì <small>Tauri + React + CSS, không thêm dependency</small></h3>
           <table class="tok">
             <tr><td>Kính, Mica</td><td>Nền cửa sổ dùng hiệu ứng gốc của hệ điều hành qua cấu hình cửa sổ của Tauri 2 (vibrancy trên macOS, Mica trên Windows 11); lớp nổi bên trong dùng <code>backdrop-filter</code>. Cần kiểm trên bản thử Mac (T-413). Cửa sổ trong suốt trên macOS dùng API riêng, nên bản lên Mac App Store phải tắt hiệu ứng này.</td></tr>
@@ -345,8 +359,9 @@
 
       <!-- ================= Excel ================= -->
       <section class="sec" id="excel">
-        <h2>File Excel: bản in của Bản tin, cộng sổ chi tiết</h2>
-        <p>Sheet đầu là đúng trang Bản tin trong app. Các sheet sau là sổ: Team gập mở được RM ngay trong Excel, dòng Tổng là công thức nên người nhận sửa số vẫn đúng. Màu lấy từ logo: xanh navy và vàng champagne. Bấm các tab sheet ở dưới.</p>
+        <span class="kicker">File Excel</span>
+        <h2>Bản in của Bản tin, cộng sổ chi tiết.</h2>
+        <p class="lead">Sheet đầu là đúng trang Bản tin trong app. Các sheet sau là sổ: Team gập mở được RM ngay trong Excel, dòng Tổng là công thức nên người nhận sửa số vẫn đúng. Màu lấy từ logo: xanh navy và vàng champagne. Bấm các tab sheet ở dưới.</p>
         <div class="xl-win" data-idea="23">
           <div class="xl-top"><b>Excel</b><span>Heritas-L-CRM_Bao-cao_2026-11.xlsx</span></div>
           <div class="xl-fx"><span id="xl-cell">G12</span><span id="xl-fx">=SUM(G9:G11)</span></div>
@@ -412,12 +427,13 @@
 
       <!-- ================= Quyết định cần Owner ================= -->
       <section class="sec" id="ask">
-        <h2>Anh cần quyết</h2>
-        <p>Ngoài việc chọn ý, mười điểm dưới đây đổi hướng giao diện hoặc mở lại điều anh đã duyệt. Em sẽ hỏi từng điểm một trong chat; đây là danh sách đầy đủ, kèm đề xuất của em.</p>
+        <span class="kicker">Quyết định</span>
+        <h2>Mười điểm cần anh quyết.</h2>
+        <p class="lead">Ngoài việc chọn ý, mười điểm dưới đây đổi hướng giao diện hoặc mở lại điều anh đã duyệt. Em hỏi từng điểm một trong chat; đây là danh sách đầy đủ, kèm đề xuất của em.</p>
         <ol class="asks">
           <li><b>Lấy concept này làm nền cho mockup G3?</b>Ba lớp Nền · Kính · Tiêu điểm, mỗi hệ điều hành một chất, bốn động tác. <em>Đề xuất: có.</em></li>
-          <li><b>Chữ: font hệ thống hay Be Vietnam Pro?</b>Đổi công tắc "Chữ" ở đầu trang để so. Font hệ thống là SF Pro trên Mac, Segoe UI Variable trên Windows; Playfair vẫn chỉ cho slogan. <em>Đề xuất: font hệ thống.</em></li>
-          <li><b>Giao diện Sáng làm khi nào?</b>Đổi công tắc "Giao diện" để xem. Làm cho cả app phải kiểm lại tương phản mọi màn. <em>Đề xuất: bản in / PDF dùng giấy sáng ngay ở v1.0; giao diện Sáng cho cả app để sau v1.0.</em></li>
+          <li><b>Chữ: font hệ thống hay Be Vietnam Pro?</b>Đổi công tắc chữ ở thanh dưới cửa sổ để so. Font hệ thống là SF Pro trên Mac, Segoe UI Variable trên Windows; Playfair vẫn chỉ cho slogan. <em>Đề xuất: font hệ thống.</em></li>
+          <li><b>Giao diện Sáng làm khi nào?</b>Đổi công tắc Tối / Sáng ở thanh dưới cửa sổ để xem. Làm cho cả app phải kiểm lại tương phản mọi màn. <em>Đề xuất: bản in / PDF dùng giấy sáng ngay ở v1.0; giao diện Sáng cho cả app để sau v1.0.</em></li>
           <li><b>Logo gọn trên thanh bên?</b>Thay khối logo dọc anh duyệt 27/10 bằng cụm ngang (cây + chữ); slogan xuống chân thanh bên. <em>Đề xuất: gọn.</em></li>
           <li><b>Bỏ nút "Lọc"?</b>Đổi kỳ hay góc nhìn là số chạy ngay; mở lại điều đã duyệt 03/10. <em>Đề xuất: bỏ.</em></li>
           <li><b>Token mới.</b>Chất liệu kính, bóng, bo góc theo nền tảng, token chuyển động, <code>--accent-fill</code>. Cần phụ lục ADR-0013. <em>Đề xuất: duyệt cùng mockup đợt đầu (vỏ app).</em></li>

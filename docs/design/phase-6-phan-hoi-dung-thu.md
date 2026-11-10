@@ -44,6 +44,7 @@ Các câu trả lời khi chốt thiết kế, cùng ngày (câu hỏi ở mục
 | Bản Mac: triết lý thiết kế, chọn nền tảng (§9) | "Ý tưởng của anh khi app đưa lên MacOS nó phải theo triết lý thiết kế của Mac và hệ sinh thái Apple: nhanh, mượt mà, animation mượt mà, UI/UX ấn tượng, đột phá"; rồi yêu cầu cân nhắc kỹ chung mã Tauri hay viết lại, desktop hay web (nguyên văn: `nen-tang-mac-va-thuong-mai-hoa.md` §0) |
 | Phát hành, dữ liệu, bảng ý tưởng (§8, §9.2, §9.4) | "bản Mac phát hành cùng lúc với bản windows"; "chung vì các báo cáo nhập và xuất ra dạng excel, nên làm chung cho tiện"; "có soạn ý tưởng UI/UX" |
 | Bảng ý tưởng, vòng 2 (§8) | "anh muốn em làm lại tất cả ý tưởng và mockup hoàn toàn mới vì em là Fable 5.2" |
+| Concept của bảng vòng 2 làm nền cho mockup G3 (§8) | "Có nhưng có lẽ vẫn cần chỉn chu, mượt mà và cách trình bày đẳng cấp hơn nữa, anh vẫn chưa hoàn toàn hài lòng" |
 
 ## 2. Phạm vi, thứ tự, cổng
 
@@ -221,6 +222,7 @@ Owner 10/11: "anh sẽ cần sáng tạo, tìm thêm ý tưởng về UI/UX". Đ
    - Owner 10/11: "có soạn ý tưởng UI/UX". Bảng vòng 1 (39 ý, 5 demo, 16 ý ⭐; commit `fe4aef9` của PR #1211): Owner chưa chọn, cùng ngày yêu cầu làm lại từ đầu: "anh muốn em làm lại tất cả ý tưởng và mockup hoàn toàn mới vì em là Fable 5.2".
    - **Bảng vòng 2** thay bảng vòng 1, cùng đường dẫn: `docs/design/mockups/y-tuong-ui-ux.html` (kèm `.css`, `.js`). Không còn là các thẻ rời: một concept chung, xem bằng một cửa sổ app bấm được (9 màn; macOS và Windows 11; Tối và Sáng; font hệ thống và Be Vietnam Pro), rồi tới 32 ý đánh số 01–32 (23 ý ⭐ là bộ Claude đề xuất cho v1.0; ba ý 30–32 để sau v1.0), phiếu chọn, phòng thử chuyển động, mẫu file Excel 4 sheet. Concept: ba lớp Nền · Kính · Tiêu điểm; mỗi hệ điều hành một chất; bốn động tác chuyển động (Hiện, Mở, Trượt, Đếm). Các quyết định A–F (§3–§7) giữ nguyên; số trong bản thử theo đúng định nghĩa của B và D.
    - Mười điểm đổi hướng giao diện hoặc mở lại điều Owner đã duyệt nằm ở mục `#ask` của bảng (lấy concept làm nền cho G3; font hệ thống; giao diện Sáng; logo gọn trên thanh bên, mở lại G3 27/10; bỏ nút "Lọc", mở lại G3 03/10; token mới và phụ lục ADR-0013; luật "Điểm nhấn" (G2); màu file Excel; các màn đã duyệt G3 khác chỉ thay vỏ; 6 điểm mở của Forecast §6.2). Chưa phải G3; chờ Owner chọn ý và trả lời từng điểm.
+   - Owner 10/11, sau bản đầu của bảng vòng 2: nhận hướng concept ("Có") nhưng chưa hài lòng về độ hoàn thiện: "vẫn cần chỉn chu, mượt mà và cách trình bày đẳng cấp hơn nữa". Bảng được nâng chất ngay trong PR #1211: màn đầu là cửa sổ app trên nền desktop, không co giãn; thanh bên kính thấy nền; màn đổi tức thì (đo trong khung xem thử 60 Hz: không rớt khung khi đổi màn); chữ số lăn, nút và viên chọn trượt, thẻ nở thành trang rồi thu về; phần dưới trình bày kiểu bài giới thiệu. Mức này là mức tối thiểu cho mockup G3 và cho code sau này; Owner chưa xác nhận đã đạt.
 2. **Owner thêm và chọn ý.**
 3. **Mockup G3** cho phần được chọn (gồm B, C, D, E, F); **golden G2** cho B và D.
 4. **Ra Issue** khi Owner bảo, theo các mục "Issue dự kiến".

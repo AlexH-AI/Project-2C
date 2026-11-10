@@ -128,22 +128,72 @@
     const part = (a, b) => esc(ch.slice(a, b).join(''));
     return { score: at === 0 ? 3 : f[at - 1] === ' ' ? 2 : 1, html: part(0, at) + '<mark>' + part(at, at + q.length) + '</mark>' + part(at + q.length) };
   }
-  // "Đếm": a number runs to its new value
-  function count(el, to, d = 0, unit = '') {
-    const from = el.dataset.unit === unit ? parseFloat(el.dataset.cur || '0') : 0;
-    el.dataset.cur = to;
-    el.dataset.unit = unit;
-    cancelAnimationFrame(el._raf);
-    clearTimeout(el._end);
-    if (reduce || from === to) { el.textContent = nf(to, d); return; }
-    const t0 = performance.now();
-    const tick = (now) => {
-      const p = Math.min(1, (now - t0) / 700);
-      el.textContent = nf(from + (to - from) * (1 - (1 - p) ** 4), d);
-      if (p < 1) el._raf = requestAnimationFrame(tick);
-    };
-    el._raf = requestAnimationFrame(tick);
-    el._end = setTimeout(() => { cancelAnimationFrame(el._raf); el.textContent = nf(to, d); }, 800);
+  // "Đếm": the old digits leave and the new ones arrive (transform + opacity), instead of a number
+  // flickering through values. They come from below when the value grew, from above when it fell.
+  function roll(el, text, value = 0) {
+    if (el.dataset.t === text) return;
+    const dir = value >= parseFloat(el.dataset.n || '0') ? 1 : -1;
+    const old = el.dataset.t === undefined || reduce ? '' : `<span class="old" style="--dir: ${dir}" aria-hidden="true">${$('.new', el).innerHTML}</span>`;
+    el.dataset.t = text;
+    el.dataset.n = value;
+    el.setAttribute('aria-label', text);
+    el.innerHTML = old + `<span class="new" style="--dir: ${dir}" aria-hidden="true">${[...text].map((ch, k) => `<span class="ch" style="--k: ${k}">${ch}</span>`).join('')}</span>`;
+  }
+  // The thumb of a segmented control slides to the chosen segment. FLIP: its box jumps to the new
+  // place, then a transform plays it there from where it was, so nothing but a transform animates.
+  const SPRING = getComputedStyle(root).getPropertyValue('--spring-snappy').trim();
+  function thumb(seg, animate = true) {
+    const on = $('button.on', seg);
+    if (!on || !on.offsetWidth) return;
+    let t = $('.thumb', seg);
+    if (!t) {
+      t = document.createElement('i');
+      t.className = 'thumb';
+      seg.prepend(t);
+      animate = false;
+    }
+    const from = t.getBoundingClientRect();
+    t.style.left = on.offsetLeft + 'px';
+    t.style.width = on.offsetWidth + 'px';
+    if (!animate || reduce || !from.width) return;
+    const to = t.getBoundingClientRect(), s = to.width / t.offsetWidth || 1;
+    const frames = [{ transform: `translateX(${(from.left - to.left) / s}px) scaleX(${from.width / to.width})` }, { transform: 'none' }];
+    try { t.animate(frames, { duration: 400, easing: SPRING }); } catch { t.animate(frames, { duration: 300, easing: 'ease-out' }); }
+  }
+  const thumbs = (animate) => $$('.seg').forEach((s) => thumb(s, animate));
+  // One pill glides between the items of the sidebar
+  function navPill() {
+    const on = $('#nav .nav-i.on'), pill = $('#nav-pill');
+    if (!on || !pill) return;
+    pill.style.height = on.offsetHeight + 'px';
+    pill.style.transform = `translateY(${on.offsetTop}px)`;
+  }
+  // A soft light follows the pointer across the card under it
+  document.addEventListener('pointermove', (e) => {
+    const c = e.target.closest ? e.target.closest('.card') : null;
+    if (!c) return;
+    const r = c.getBoundingClientRect();
+    c.style.setProperty('--mx', (((e.clientX - r.left) / r.width) * 100).toFixed(1) + '%');
+    c.style.setProperty('--my', (((e.clientY - r.top) / r.height) * 100).toFixed(1) + '%');
+  }, { passive: true });
+  // Monotone cubic through points sorted by x: a curve that never overshoots a cumulative series
+  function smooth(p) {
+    const n = p.length, d = [], m = [];
+    for (let i = 0; i < n - 1; i++) d[i] = (p[i + 1][1] - p[i][1]) / (p[i + 1][0] - p[i][0]);
+    m[0] = d[0];
+    m[n - 1] = d[n - 2];
+    for (let i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
+    for (let i = 0; i < n - 1; i++) {
+      if (d[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+      const a = m[i] / d[i], b = m[i + 1] / d[i], s = a * a + b * b;
+      if (s > 9) { const t = 3 / Math.sqrt(s); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; }
+    }
+    let s = `M${p[0][0].toFixed(1)} ${p[0][1].toFixed(1)}`;
+    for (let i = 0; i < n - 1; i++) {
+      const h = (p[i + 1][0] - p[i][0]) / 3;
+      s += ` C${(p[i][0] + h).toFixed(1)} ${(p[i][1] + m[i] * h).toFixed(1)} ${(p[i + 1][0] - h).toFixed(1)} ${(p[i + 1][1] - m[i + 1] * h).toFixed(1)} ${p[i + 1][0].toFixed(1)} ${p[i + 1][1].toFixed(1)}`;
+    }
+    return s;
   }
 
   /* ---------- Chrome + navigation ---------- */
@@ -162,8 +212,14 @@
   const RENDER = {};
 
   function chrome() {
-    const v = VIEWS[state.view];
-    $('#v-title').textContent = v.title;
+    const v = VIEWS[state.view], title = $('#v-title');
+    if (title.textContent !== v.title) {
+      const box = title.parentElement;
+      box.classList.remove('swap');
+      void box.offsetWidth; // restart the little rise of the title
+      box.classList.add('swap');
+    }
+    title.textContent = v.title;
     $('#v-sub').textContent = v.sub();
     $('#scope').hidden = !v.scope;
     $('#period').hidden = !v.period;
@@ -172,7 +228,8 @@
     act.hidden = !v.act;
     if (v.act) act.innerHTML = ic(v.act[0]) + v.act[1];
   }
-  // "Mở": opt.from grows into opt.to through a view transition; other changes just cross over
+  // Screens change at once ("Nhanh": no snapshot, no wait); the parts of the new screen rise in.
+  // Only "Mở" runs a view transition: opt.from grows into opt.to, and shrinks back on the way out.
   function go(name, opt = {}) {
     if (!VIEWS[name]) return;
     closeFloats();
@@ -180,19 +237,28 @@
       state.view = name;
       $$('.view').forEach((v) => v.classList.toggle('on', v.dataset.view === name));
       $$('#nav .nav-i').forEach((b) => b.classList.toggle('on', b.dataset.go === VIEWS[name].nav));
+      navPill();
       chrome();
       if (RENDER[name]) RENDER[name]();
       onscreen();
       $(`.view[data-view="${name}"]`).scrollTop = 0;
     };
-    if (opt.instant || reduce || !document.startViewTransition) return swap();
-    if (opt.from) opt.from.style.viewTransitionName = 'morph';
+    const from = opt.from;
+    if (!from || reduce || !document.startViewTransition) return swap();
+    let to = null;
+    from.style.viewTransitionName = 'morph';
     const vt = document.startViewTransition(() => {
-      if (opt.from) opt.from.style.viewTransitionName = '';
+      from.style.viewTransitionName = '';
       swap();
-      if (opt.to) $(opt.to).style.viewTransitionName = 'morph';
+      to = typeof opt.to === 'string' ? $(opt.to) : opt.to;
+      if (to) to.style.viewTransitionName = 'morph';
     });
-    vt.finished.catch(() => {}).finally(() => { if (opt.to) $(opt.to).style.viewTransitionName = ''; });
+    vt.finished.catch(() => {}).finally(() => { if (to) to.style.viewTransitionName = ''; });
+  }
+  function goBack(name) {
+    if (name === 'customers') return go('customers', { from: $('#pf-head'), to: `.kcard[data-c="${state.cust}"]` });
+    if (name === 'team') return go('team', { from: $('#rm-head'), to: `.rmrow[data-rm="${state.rm}"]` });
+    go(name);
   }
   function setScope(sc) {
     state.scope = sc;
@@ -202,7 +268,14 @@
   }
   function setSwitch(key, val) {
     root.dataset[key] = val;
-    $$(`.seg[data-set="${key}"] button`).forEach((b) => b.classList.toggle('on', b.dataset.v === val));
+    $$(`.seg[data-set="${key}"]`).forEach((seg) => {
+      $$('button', seg).forEach((b) => b.classList.toggle('on', b.dataset.v === val));
+      thumb(seg);
+    });
+    if (key === 'theme') return;
+    // another platform or typeface changes every measure: the window, the thumbs, the pill
+    fit();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { thumbs(false); navPill(); });
   }
   let toastT;
   function toast(msg, undo) {
@@ -222,7 +295,7 @@
   }
 
   /* ---------- "Lúc này" ---------- */
-  const NOW_IDLE = '<span class="now-face"><span class="live"></span><b class="num">14:00</b>Trần Minh Huệ<span class="muted">· còn 25 phút</span></span>';
+  const NOW_IDLE = '<span class="now-face"><span class="live"></span><b class="num">14:00</b><span class="who">Trần Minh Huệ</span><span class="muted">· còn 25 phút</span></span>';
   let nowT;
   function nowJob(label, done) {
     const el = $('#now');
@@ -243,29 +316,76 @@
   const agendaHtml = () => AGENDA.map((a) => `<div class="ag ${a.cls}"><span class="tm num">${a.t}</span><span><b>${a.n}</b> <span class="st ${a.st}">${STAGE[a.st]}</span><small>${a.s}</small></span>${a.r}</div>`).join('');
 
   /* ---------- Tổng quan ---------- */
-  function drawChart(d) {
-    const W = 640, H = 112;
-    const k = d.sales / 1380, kp = d.p.sales / 1228, fw = sum(d.fw);
-    const max = Math.max(3180 * kp, d.sales + d.fm) * 1.12;
-    const x = (day) => ((day - 1) / 30) * W, y = (v) => H - 4 - (v / max) * (H - 16);
-    const path = (pts) => pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
-    const cur = CUR.map((v, i) => [x(i + 1), y(v * k)]);
-    const proj = [[10, d.sales], [14, d.sales + fw], [30, d.sales + d.fm]].map(([day, v]) => [x(day), y(v)]);
-    const ghost = GHOST.map(([day, v]) => [x(day), y(v * kp)]);
-    const last = cur[cur.length - 1], end = proj[2];
-    $('#ov-chart').innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
-      <defs><linearGradient id="ov-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color: var(--accent); stop-opacity: 0.3" /><stop offset="1" style="stop-color: var(--accent); stop-opacity: 0" /></linearGradient></defs>
-      <path class="ghost" d="${path(ghost)}" /><path class="area" d="${path(cur)} L${last[0].toFixed(1)} ${H} L0 ${H} Z" />
-      <path class="line" d="${path(cur)}" /><path class="proj" d="${path(proj)}" /></svg>
-      <span class="today" style="left: ${(last[0] / W) * 100}%; top: ${(last[1] / H) * 100}%"></span>
-      <span class="pin" style="left: ${(end[0] / W) * 100}%; top: ${(end[1] / H) * 100}%">Dự kiến cuối tháng ${moneyS(d.sales + d.fm)}</span>`;
+  let chart = null; // scales and series of the last draw, for the scrubber
+  function drawChart(d, animate = true) {
+    const box = $('#ov-chart'), W = box.clientWidth, H = box.clientHeight;
+    if (!W) return;
+    const k = d.sales / 1380, kp = d.p.sales / 1228, fw = sum(d.fw), pad = 22;
+    const top = Math.max(3180 * kp, d.sales + d.fm) * 1.14, base = H - 24;
+    const x = (day) => pad + ((day - 1) / 30) * (W - pad * 2), y = (v) => base - (v / top) * (base - 10);
+    const cur = CUR.map((v, i) => [i + 1, v * k]);
+    const proj = [[10, d.sales], [14, d.sales + fw], [30, d.sales + d.fm]];
+    const ghost = GHOST.map(([day, v]) => [day, v * kp]);
+    const px = (s) => s.map(([day, v]) => [x(day), y(v)]);
+    const cp = px(cur), pp = px(proj), last = cp[cp.length - 1], end = pp[2];
+    const f1 = (v) => v.toFixed(1);
+    box.classList.toggle('still', !animate);
+    box.innerHTML = `<div class="wipe"><svg viewBox="0 0 ${W} ${H}" aria-hidden="true">
+      <defs>
+        <linearGradient id="ov-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color: var(--accent); stop-opacity: 0.3" /><stop offset="1" style="stop-color: var(--accent); stop-opacity: 0" /></linearGradient>
+        <linearGradient id="ov-line" gradientUnits="userSpaceOnUse" x1="${f1(cp[0][0])}" y1="0" x2="${f1(last[0])}" y2="0"><stop offset="0" style="stop-color: var(--accent); stop-opacity: 0.55" /><stop offset="1" style="stop-color: var(--brand-slogan)" /></linearGradient>
+      </defs>
+      <path class="grid" d="M${pad} ${f1(y(top / 1.14))} H${W - pad} M${pad} ${f1(y(top / 2.28))} H${W - pad} M${pad} ${base} H${W - pad}" />
+      <path class="ghost" d="${smooth(px(ghost))}" />
+      <path class="area" d="${smooth(cp)} L${f1(last[0])} ${base} L${f1(cp[0][0])} ${base} Z" />
+      <path class="line" d="${smooth(cp)}" />
+      <path class="proj" d="M${pp.map((p) => f1(p[0]) + ' ' + f1(p[1])).join(' L')}" />
+      <circle class="end" cx="${f1(end[0])}" cy="${f1(end[1])}" r="4" />
+      <circle class="dot" cx="${f1(last[0])}" cy="${f1(last[1])}" r="5" />
+      ${[1, 5, 10, 15, 20, 25, 30].map((t) => `<text x="${f1(x(t))}" y="${H - 7}" text-anchor="middle">${String(t).padStart(2, '0')}</text>`).join('')}
+    </svg></div>
+    <span class="today" style="left: ${f1(last[0])}px; top: ${f1(last[1])}px"></span>
+    <span class="pin" style="left: ${f1(end[0])}px; top: ${f1(end[1])}px">Dự kiến cuối tháng <b class="num">${moneyS(d.sales + d.fm)}</b></span>
+    <i class="scrub"></i><div class="scrub-tip"></div>`;
+    chart = { x, W, pad, cur, proj, ghost };
   }
+  // The value of a series on a day, straight between its points
+  const valueAt = (series, day) => {
+    for (let i = 1; i < series.length; i++) {
+      if (day <= series[i][0]) {
+        const [d0, v0] = series[i - 1], [d1, v1] = series[i];
+        return v0 + ((v1 - v0) * (day - d0)) / (d1 - d0 || 1);
+      }
+    }
+    return series[series.length - 1][1];
+  };
+  // Move over the chart: the day under the pointer, this month (or its forecast) against last month
+  document.addEventListener('pointermove', (e) => {
+    const box = $('#ov-chart');
+    if (!chart || !box.contains(e.target)) return box.classList.remove('scrubbing');
+    const r = box.getBoundingClientRect(), s = r.width / box.offsetWidth || 1;
+    const day = Math.max(1, Math.min(30, Math.round(1 + (((e.clientX - r.left) / s - chart.pad) / (chart.W - chart.pad * 2)) * 30)));
+    const X = chart.x(day), tip = $('.scrub-tip', box);
+    tip.innerHTML = `<span class="muted num">${String(day).padStart(2, '0')}/11${day > 10 ? ' · dự kiến' : ''}</span><b class="num">${moneyS(Math.round(valueAt(day <= 10 ? chart.cur : chart.proj, day)))}</b><span class="muted num">tháng 10: ${moneyS(Math.round(valueAt(chart.ghost, day)))}</span>`;
+    $('.scrub', box).style.transform = `translateX(${X}px)`;
+    tip.style.transform = `translateX(${Math.max(8, Math.min(X + 12, chart.W - tip.offsetWidth - 8))}px)`;
+    box.classList.add('scrubbing');
+  }, { passive: true });
+
+  const spark = (vals) => {
+    const mx = Math.max(...vals), mn = Math.min(...vals);
+    const pts = vals.map((v, i) => [3 + (i * 52) / (vals.length - 1), 31 - ((v - mn) / (mx - mn || 1)) * 25]);
+    const e = pts[pts.length - 1];
+    return `<svg viewBox="0 0 58 36" aria-hidden="true"><path class="sp" d="${smooth(pts)}" /><circle class="sp-d" cx="${e[0]}" cy="${e[1].toFixed(1)}" r="2.8" /></svg>`;
+  };
+  const ringViz = (p) => `<svg viewBox="0 0 36 36" aria-hidden="true"><circle class="ring-t" cx="18" cy="18" r="15" /><circle class="ring" cx="18" cy="18" r="15" stroke-dasharray="${((Math.min(p, 100) / 100) * 94.25).toFixed(1)} 94.25" /></svg>`;
+  const TREND = { rf: [0.78, 0.86, 0.8, 0.93, 0.9, 1], sub: [0.7, 0.83, 0.91, 0.86, 0.94, 1], cs: [1.1, 1.01, 1.07, 0.96, 1.04, 1] };
   RENDER.overview = () => {
     const d = scopeData(state.scope), all = state.scope === 'all';
     const m = money(d.sales);
     $('#ov-lbl').textContent = `Doanh số · ${all ? 'toàn bộ' : 'team ' + TEAMS[state.scope].name} · tháng 11`;
     $('#ov-unit').textContent = m.u;
-    count($('#ov-sales'), m.v, m.d, m.u);
+    roll($('#ov-sales'), nf(m.v, m.d), d.sales);
     const g = ((d.sales - d.p.sales) / d.p.sales) * 100;
     const dl = $('#ov-delta');
     dl.className = 'delta ' + (g >= 0 ? 'up' : 'bad');
@@ -273,7 +393,7 @@
     $('#ov-eq').innerHTML = `FYP phát hành <b class="num">${moneyS(d.fi)}</b> − FYP hủy <b class="num">${moneyS(d.fc)}</b>`;
     drawChart(d);
 
-    const cr = rate(d.cancelled, d.issued), dcr = cr - rate(d.p.cancelled, d.p.issued);
+    const cr = rate(d.cancelled, d.issued), crWas = rate(d.p.cancelled, d.p.issued), dcr = cr - crWas;
     const close = rate(d.issued, d.rf), fw = sum(d.fw);
     const byTeam = [0, 1, 2].map((t) => ({ t, d: scopeData(t) })).sort((a, b) => b.d.sales - a.d.sales);
     const hl = [
@@ -288,38 +408,44 @@
     ];
     $('#ov-hl').innerHTML = hl.map((h) => `<button class="hl-i" data-go="${h.go}" style="--c: var(--${h.c})"><span class="gl">${ic(h.i)}</span><span><b>${h.b}</b><span>${h.s}</span></span>${ic('chev', 'go')}</button>`).join('');
 
-    const diff = (now, was, unit = '') => { const v = now - was; return { f: `${arrow(v)} ${nf(Math.abs(v))}${unit} so với kỳ trước`, c: v > 0 ? 'up' : v < 0 ? 'bad' : '' }; };
-    const cs = money(d.cs), csG = ((d.cs - d.p.cs) / d.p.cs) * 100;
+    const diff = (now, was) => { const v = now - was; return { f: `${arrow(v)} ${nf(Math.abs(v))} so với kỳ trước`, c: v > 0 ? 'up' : v < 0 ? 'bad' : '' }; };
+    const cs = money(d.cs), csG = ((d.cs - d.p.cs) / d.p.cs) * 100, cap = (v) => Math.min(100, v).toFixed(1);
     const tiles = [
-      { l: 'Tổng số HĐ', v: d.total, d: 0, f: `${d.issued} phát hành − ${d.cancelled} hủy` },
-      { l: 'Tỷ lệ hủy', v: cr, d: 1, u: '%', f: `${arrow(dcr)} ${nf(Math.abs(dcr), 1)} điểm · ${d.cancelled} ÷ ${d.issued}`, c: dcr > 0 ? 'bad' : dcr < 0 ? 'up' : '' },
-      { l: 'Tỉ lệ chốt', v: close, d: 1, u: '%', f: `${d.issued} HĐ ÷ ${d.rf} RF` },
-      { l: 'Chuyển RF', v: d.rf, d: 0, ...diff(d.rf, d.p.rf) },
-      { l: 'HĐ nộp', v: d.sub, d: 0, ...diff(d.sub, d.p.sub) },
-      { l: 'Case size', v: cs.v, d: cs.d, u: cs.u, f: `${arrow(csG)} ${nf(Math.abs(csG), 1)}% so với kỳ trước`, c: csG > 0 ? 'up' : 'bad' },
+      { l: 'Tổng số HĐ', n: d.total, t: nf(d.total), f: `${d.issued} phát hành − ${d.cancelled} hủy`, z: `<div class="meter"><b style="--w: ${cap((d.total / d.issued) * 100)}%"></b><b style="--w: ${cap((d.cancelled / d.issued) * 100)}%; --c: var(--danger)"></b></div>` },
+      { l: 'Tỷ lệ hủy', n: cr, t: nf(cr, 1), u: '%', f: `${arrow(dcr)} ${nf(Math.abs(dcr), 1)} điểm · ${d.cancelled} ÷ ${d.issued}`, c: dcr > 0 ? 'bad' : dcr < 0 ? 'up' : '', z: `<div class="meter" style="--c: var(--danger)" title="Vạch là kỳ trước"><b style="--w: ${cap((cr / 15) * 100)}%"></b><u style="--at: ${cap((crWas / 15) * 100)}%"></u></div>` },
+      { l: 'Tỉ lệ chốt', n: close, t: nf(close, 1), u: '%', f: `${d.issued} HĐ ÷ ${d.rf} RF`, z: ringViz(close) },
+      { l: 'Chuyển RF', n: d.rf, t: nf(d.rf), ...diff(d.rf, d.p.rf), z: spark(TREND.rf) },
+      { l: 'HĐ nộp', n: d.sub, t: nf(d.sub), ...diff(d.sub, d.p.sub), z: spark(TREND.sub) },
+      { l: 'Case size', n: d.cs, t: nf(cs.v, cs.d), u: cs.u, f: `${arrow(csG)} ${nf(Math.abs(csG), 1)}% so với kỳ trước`, c: csG > 0 ? 'up' : 'bad', z: spark(TREND.cs) },
     ];
     const box = $('#ov-tiles');
-    if (!box.children.length) box.innerHTML = tiles.map(() => '<button class="card tile rise" data-go="reports" style="--i: 2"><span class="lbl"></span><span class="v"><span class="n">0</span><small></small></span><span class="f"></span></button>').join('');
+    if (!box.children.length) box.innerHTML = tiles.map(() => '<button class="card tile rise" data-go="reports" style="--i: 2"><span class="lbl"></span><span class="v"><span class="n roll"></span><small></small></span><span class="viz"></span><span class="f"></span></button>').join('');
     tiles.forEach((t, i) => {
       const el = box.children[i];
       $('.lbl', el).textContent = t.l;
       $('small', el).textContent = t.u || '';
-      count($('.n', el), t.v, t.d, t.u || '');
+      roll($('.n', el), t.t, t.n);
+      $('.viz', el).innerHTML = t.z;
       const f = $('.f', el);
       f.textContent = t.f;
       f.className = 'f ' + (t.c || '');
     });
 
-    const [met, missed, unrec, exp] = d.appt, apptAll = sum(d.appt);
-    $('#ov-appt-sub').textContent = `${nf(met)} / ${nf(apptAll)} đã gặp`;
+    const [met, missed, unrec, exp] = d.appt, apptAll = sum(d.appt), C = 2 * Math.PI * 40;
     const seg = [['Đã gặp', met, 'ok'], ['Dời · hủy · không đến', missed, 'text-3'], ['Chưa ghi kết quả', unrec, 'warn'], ['Dự kiến', exp, 'info']];
-    $('#ov-appt').innerHTML = seg.map(([, v, c]) => `<i style="--f: ${v}; --c: var(--${c})"></i>`).join('');
-    $('#ov-appt-keys').innerHTML = seg.map(([l, v, c]) => `<span><i style="--c: var(--${c})"></i>${l} <b class="num">${nf(v)}</b></span>`).join('');
+    let off = 0;
+    $('#ov-appt-sub').textContent = `${nf(apptAll)} lịch`;
+    $('#ov-appt').innerHTML = '<svg viewBox="0 0 104 104" aria-hidden="true">' + seg.map(([, v, c]) => {
+      const len = (v / apptAll) * C, arc = `<circle cx="52" cy="52" r="40" style="stroke: var(--${c})" stroke-dasharray="${Math.max(len - 2.5, 0.1).toFixed(1)} ${C.toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}" />`;
+      off += len;
+      return arc;
+    }).join('') + `</svg><span class="c"><b class="num">${nf(met)}</b>đã gặp</span>`;
+    $('#ov-appt-keys').innerHTML = seg.map(([l, v, c]) => `<span><i style="--c: var(--${c})"></i>${l}<b class="num">${nf(v)}</b></span>`).join('');
     const kh = ['n4', 'n3', 'n2', 'n1'].map((s, i) => [s, d.kh[i]]);
     const khMax = Math.max(...kh.map((x) => x[1]));
     $('#ov-pipe-sub').textContent = `${nf(sum(d.kh))} KH đang mở`;
     $('#ov-pipe').innerHTML = kh.map(([s, v], i) => `<span class="st ${s}">${STAGE[s]}</span><span class="hbar ${s}" style="--i: ${i}"><i style="--w: ${(v / khMax).toFixed(3)}"></i></span><span class="v num">${nf(v)}</span>`).join('');
-    $('#ov-race').innerHTML = byTeam.map(({ t, d: x }, i) => `<button class="race" data-team="${t}" aria-pressed="${state.scope === t}"><b>${TEAMS[t].name}</b><span class="hbar" style="--i: ${i}"><i style="--w: ${(x.sales / byTeam[0].d.sales).toFixed(3)}"></i></span><span class="v num">${moneyS(x.sales)}</span><span class="sub">${x.total} HĐ · hủy ${pctS(rate(x.cancelled, x.issued))} · chốt ${pctS(rate(x.issued, x.rf))}</span></button>`).join('');
+    $('#ov-race').innerHTML = byTeam.map(({ t, d: x }, i) => `<button class="race" data-team="${t}" aria-pressed="${state.scope === t}"><span class="rk num">${i + 1}</span><b>${TEAMS[t].name}</b><span class="hbar" style="--i: ${i}"><i style="--w: ${(x.sales / byTeam[0].d.sales).toFixed(3)}"></i></span><span class="v num">${moneyS(x.sales)}</span><span class="sub">${x.total} HĐ · hủy ${pctS(rate(x.cancelled, x.issued))} · chốt ${pctS(rate(x.issued, x.rf))}</span></button>`).join('');
   };
 
   /* ---------- Forecast ---------- */
@@ -357,10 +483,11 @@
   RENDER.forecast = () => {
     const f = fcData(), wk = state.fc === 'week';
     $$('#fc-seg button').forEach((b) => b.classList.toggle('on', b.dataset.fc === state.fc));
+    thumb($('#fc-seg'));
     const m = money(wk ? f.week : f.month), split = wk ? f.fw : f.ms;
     $('#fc-lbl').textContent = wk ? 'Dự kiến tuần này' : 'Dự kiến tháng 11, từ hôm nay';
     $('#fc-unit').textContent = m.u;
-    count($('#fc-num'), m.v, m.d, m.u);
+    roll($('#fc-num'), nf(m.v, m.d), wk ? f.week : f.month);
     const nKh = new Set(f.counted.map((a) => a.c.i)).size;
     $('#fc-sub').textContent = wk
       ? `${nKh} KH · ${f.ap.length} lịch hẹn` + (f.miss.length ? ` · ${f.miss.length} lịch thiếu case size chưa tính` : '')
@@ -382,7 +509,7 @@
       $('#fc-strip-h').innerHTML = 'Tuần này theo ngày <small>cột vàng là hôm nay · mỗi thẻ là một lịch hẹn · KH có hai lịch chỉ tính lịch sau</small>';
       $('#fc-strip').innerHTML = '<div class="days">' + DAYS.map(([l, dt], day) => {
         const list = f.ap.filter((a) => a.day === day);
-        const chips = list.map((a) => `<button class="ap ${a.c.st} ${a.flag || ''}" data-c="${a.c.i}"><b>${a.c.name}</b><span class="num">${a.flag === 'miss' ? 'thiếu case size' : a.flag === 'dup' ? 'đã tính ở lịch T6' : a.t + ' · ' + a.amt + ' tr'}</span></button>`).join('');
+        const chips = list.map((a) => `<button class="ap ${a.c.st} ${a.flag || ''}" data-c="${a.c.i}" style="--i: ${a.i}"><b>${a.c.name}</b><span class="num">${a.flag === 'miss' ? 'thiếu case size' : a.flag === 'dup' ? 'đã tính ở lịch T6' : a.t + ' · ' + a.amt + ' tr'}</span></button>`).join('');
         return `<div class="day ${day === 0 ? 'past' : day === 1 ? 'today' : ''}"><header><span><b>${l}</b> ${dt}</span><span class="sum num">${day === 0 ? 'đã qua' : dayAmt(day) ? dayAmt(day) + ' tr' : '—'}</span></header>${chips}</div>`;
       }).join('') + '</div>';
     } else {
@@ -455,6 +582,7 @@
       ? 'Một trang đọc trong 10 giây. In ra, xuất PDF và sheet đầu của file Excel giống hệt trang này.'
       : 'Mỗi tab trả lời một câu hỏi, vừa một màn, không cuộn ngang. Bấm một team để mở các RM.';
     $$('#rp-seg button').forEach((b) => b.classList.toggle('on', b.dataset.rp === state.rp));
+    thumb($('#rp-seg'));
     $$('#lg-tabs button').forEach((b) => b.classList.toggle('on', b.dataset.lg === state.lg));
     $('#lg-tbl').innerHTML = ledgerHtml(state.lg, false);
     if (!$('#paper-tbl').innerHTML) {
@@ -469,7 +597,7 @@
     $('#kan').innerHTML = ['n4', 'n3', 'n2', 'n1'].map((s) => {
       const list = CUS.filter((c) => c.st === s).slice(0, 5);
       return `<div class="kcol"><header><span class="st ${s}">${STAGE[s]}</span><span class="num muted">${KH_ALL[s]}</span></header>`
-        + list.map((c) => `<button class="kcard" data-c="${c.i}"><b><span class="nm">${c.name}</span>${c.pol ? `<span class="chip ok">${c.pol} HĐ</span>` : ''}</b><span>RM ${RMS[c.rm].name} · ${TEAMS[RMS[c.rm].team].name}</span>${c.next ? `<span class="nx num">Lịch ${c.next}${c.cs ? ' · ' + c.cs + ' tr' : ''}</span>` : ''}</button>`).join('')
+        + list.map((c) => `<button class="kcard" data-c="${c.i}" style="--i: ${c.i % 8}"><b><span class="nm">${c.name}</span>${c.pol ? `<span class="chip ok">${c.pol} HĐ</span>` : ''}</b><span>RM ${RMS[c.rm].name} · ${TEAMS[RMS[c.rm].team].name}</span>${c.next ? `<span class="nx num">Lịch ${c.next}${c.cs ? ' · ' + c.cs + ' tr' : ''}</span>` : ''}</button>`).join('')
         + `<span class="more num">+ ${KH_ALL[s] - list.length} KH khác</span></div>`;
     }).join('');
   }
@@ -689,9 +817,9 @@
   // no, group, title, what, why, effort, tags [text, kind], recommended, where to look {view, spot, pre}
   const IDEAS = [
     ['01', 'Vỏ và chất liệu', 'Ba lớp: Nền · Kính · Tiêu điểm', 'Nội dung là lớp nền, phẳng và rộng. Thanh bên và các nút điều khiển là kính nổi phía trên. Hộp thoại, ô lệnh là lớp tiêu điểm, làm mờ phần còn lại. Thẻ không còn viền: phân cấp bằng cỡ chữ và khoảng trống.', 'Đây là cách macOS 26 và Windows 11 dựng cửa sổ. Bỏ viền thì số liệu nổi lên, app bớt cảm giác "bảng điều khiển".', 'M', [['Mac'], ['Win']], 1, { view: 'overview', spot: '#win' }],
-    ['02', 'Vỏ và chất liệu', 'Mỗi hệ điều hành một chất', 'Cùng bố cục, khác chi tiết. macOS: thanh bên kính bo đồng tâm với cửa sổ, ba nút đỏ-vàng-xanh nằm trong thanh bên, nút điều khiển dạng viên, menu trên cùng. Windows 11: nền Mica, ô tìm trên thanh tiêu đề, vạch chọn bên trái, góc bo 8 px, nút cửa sổ bên phải.', 'Phát hành cùng lúc hai nền tảng: người dùng Mac thấy app Mac, người dùng Windows thấy app Windows. Đổi công tắc Nền tảng ở đầu trang để so.', 'M', [['Mac'], ['Win']], 1, { scroll: '.top', spot: '.seg[data-set="os"]' }],
-    ['03', 'Vỏ và chất liệu', 'Chữ hệ thống, số có nhịp', 'Chữ giao diện dùng font của máy (SF Pro, Segoe UI Variable): mở app không chờ tải font, tiếng Việt đủ dấu. Số lớn khít và rõ; đơn vị (tỷ, tr, %) nhỏ và nhạt; cột số thẳng hàng.', 'Font hệ thống là cách rẻ nhất để app "giống app gốc". Đổi công tắc Chữ để so với Be Vietnam Pro.', 'S', [['đổi ADR-0013', 'gate']], 1, { scroll: '.top', spot: '.seg[data-set="font"]' }],
-    ['04', 'Vỏ và chất liệu', 'Giao diện Sáng "Giấy"', 'Bộ màu sáng: nền giấy ngà, chữ xanh navy của logo, vàng champagne đậm hơn để đủ tương phản; tự theo cài đặt Sáng / Tối của máy.', 'Người dùng Mac hay để chế độ sáng ban ngày. Phải kiểm lại tương phản mọi màn, nên em đề xuất để sau v1.0; riêng bản in dùng giấy sáng ngay.', 'M–L', [['đổi ADR-0013', 'gate']], 0, { scroll: '.top', spot: '.seg[data-set="theme"]' }],
+    ['02', 'Vỏ và chất liệu', 'Mỗi hệ điều hành một chất', 'Cùng bố cục, khác chi tiết. macOS: thanh bên kính bo đồng tâm với cửa sổ, ba nút đỏ-vàng-xanh nằm trong thanh bên, nút điều khiển dạng viên, menu trên cùng. Windows 11: nền Mica, ô tìm trên thanh tiêu đề, vạch chọn bên trái, góc bo 8 px, nút cửa sổ bên phải.', 'Phát hành cùng lúc hai nền tảng: người dùng Mac thấy app Mac, người dùng Windows thấy app Windows. Đổi công tắc ở thanh dưới cửa sổ để so.', 'M', [['Mac'], ['Win']], 1, { spot: '.seg[data-set="os"]' }],
+    ['03', 'Vỏ và chất liệu', 'Chữ hệ thống, số có nhịp', 'Chữ giao diện dùng font của máy (SF Pro, Segoe UI Variable): mở app không chờ tải font, tiếng Việt đủ dấu. Số lớn khít và rõ; đơn vị (tỷ, tr, %) nhỏ và nhạt; cột số thẳng hàng.', 'Font hệ thống là cách rẻ nhất để app "giống app gốc". Đổi công tắc Chữ để so với Be Vietnam Pro.', 'S', [['đổi ADR-0013', 'gate']], 1, { spot: '.seg[data-set="font"]' }],
+    ['04', 'Vỏ và chất liệu', 'Giao diện Sáng "Giấy"', 'Bộ màu sáng: nền giấy ngà, chữ xanh navy của logo, vàng champagne đậm hơn để đủ tương phản; tự theo cài đặt Sáng / Tối của máy.', 'Người dùng Mac hay để chế độ sáng ban ngày. Phải kiểm lại tương phản mọi màn, nên em đề xuất để sau v1.0; riêng bản in dùng giấy sáng ngay.', 'M–L', [['đổi ADR-0013', 'gate']], 0, { spot: '.seg[data-set="theme"]' }],
     ['05', 'Vỏ và chất liệu', 'Logo gọn trên thanh bên', 'Cụm ngang: cây bên trái, chữ Heritas và L-CRM bên phải; slogan xuống chân thanh bên.', 'Khối logo dọc hiện chiếm gần một phần tư thanh bên. Bản gọn trả chỗ cho điều hướng mà vẫn giữ đủ ba mảnh logo anh đã duyệt.', 'S', [['đổi G3 27/10', 'gate']], 1, { view: 'overview' }],
     ['06', 'Chuyển động', 'Bốn động tác, ba lò xo', 'Hiện, Mở, Trượt, Đếm. Thời lượng và đường cong là token dùng chung. Chỉ đổi vị trí, tỉ lệ, độ trong; tự tắt khi máy bật Giảm chuyển động.', '"Mượt" đến từ sự nhất quán: cùng một thứ luôn chuyển động cùng một kiểu. Phòng thử ở mục Chuyển động bên dưới.', 'M', [], 1, { scroll: '#motion', spot: '#lab' }],
     ['07', 'Chuyển động', 'Mở từ chỗ bấm', 'Bấm thẻ KH, thẻ nở thành hồ sơ. Bấm một RM, dòng đó nở thành trang RM.', 'Mắt không mất dấu: luôn biết mình vừa từ đâu tới. Dùng View Transitions có sẵn của WebView, không thêm thư viện. Thử: bấm một thẻ ở màn Khách hàng.', 'M', [], 1, { view: 'customers', spot: '#kan' }],
@@ -726,12 +854,15 @@
   function renderIdeas() {
     let h = '', g = '';
     for (const x of IDEAS) {
-      if (x.g !== g) { h += (g ? '</div>' : '') + `<h3 class="grp-h">${x.g}</h3><div class="ideas">`; g = x.g; }
+      if (x.g !== g) { h += `<h3 class="grp-h">${x.g}</h3>`; g = x.g; }
       const canSee = x.at.view || x.at.pre || x.at.scroll || x.at.spot;
-      h += `<article class="idea ${picked.has(x.no) ? 'picked' : ''}" id="idea-${x.no}"><header><span class="no">${x.no}</span><h3>${x.t}</h3>${x.rec ? '<span class="tag rec">⭐ v1.0</span>' : ''}</header><p>${x.what}</p><p class="why">${x.why}</p>
-        <footer><span class="tag">${x.e}</span>${x.tags.map(([t, k]) => `<span class="tag ${k || ''}">${t}</span>`).join('')}<label><input type="checkbox" data-pick="${x.no}" ${picked.has(x.no) ? 'checked' : ''} />Chọn</label>${canSee ? `<button class="see" data-see="${x.no}">Xem ↑</button>` : ''}</footer></article>`;
+      h += `<article class="irow ${picked.has(x.no) ? 'picked' : ''}" id="idea-${x.no}"><span class="no">${x.no}</span>
+        <div><h4>${x.t}${x.rec ? '<span class="tag rec">⭐ v1.0</span>' : ''}</h4><p>${x.what}</p><p class="why">${x.why}</p></div>
+        <div class="im"><span class="tag">${x.e}</span>${x.tags.map(([t, k]) => `<span class="tag ${k || ''}">${t}</span>`).join('')}</div>
+        ${canSee ? `<button class="see" data-see="${x.no}">Xem</button>` : '<span></span>'}
+        <label class="pk" title="Chọn ý ${x.no}"><input type="checkbox" data-pick="${x.no}" ${picked.has(x.no) ? 'checked' : ''} aria-label="Chọn ý ${x.no}: ${esc(x.t)}" /><i></i></label></article>`;
     }
-    $('#idea-list').innerHTML = h + '</div>';
+    $('#idea-list').innerHTML = h;
     updatePick();
   }
   function updatePick() {
@@ -764,6 +895,8 @@
   document.addEventListener('click', (e) => {
     const t = e.target, on = (sel) => t.closest(sel);
     let el;
+    if ((el = on('#full'))) return document.fullscreenElement ? document.exitFullscreen() : root.requestFullscreen().catch(() => toast('Khung xem này không cho mở toàn màn hình. Anh thử phím F11.'));
+    if ((el = on('.back'))) return goBack(el.dataset.go);
     if ((el = on('.seg[data-set] button'))) return setSwitch(el.parentElement.dataset.set, el.dataset.v);
     if ((el = on('[data-open="pal"]'))) return openPal();
     if ((el = on('[data-close]'))) return closeFloats();
@@ -816,7 +949,7 @@
     const el = e.target.closest('[data-pick]');
     if (!el) return;
     picked[el.checked ? 'add' : 'delete'](el.dataset.pick);
-    el.closest('.idea').classList.toggle('picked', el.checked);
+    el.closest('.irow').classList.toggle('picked', el.checked);
     updatePick();
   });
   $('#pal-q').addEventListener('input', renderPal);
@@ -871,12 +1004,42 @@
   });
 
   /* ---------- Start ---------- */
-  const fit = () => { const st = $('#stage'); st.style.setProperty('--fit', Math.min(1, (st.clientWidth - 24) / 1312).toFixed(4)); };
-  addEventListener('resize', fit);
-  fit();
+  // The window follows the viewport, between the app's minimum size and its design size, and is
+  // scaled only below the minimum. Everything measured in pixels is measured again afterwards.
+  function fit() {
+    const st = $('#stage'), win = root.dataset.os === 'win';
+    const availW = st.clientWidth - 56, availH = st.clientHeight - (win ? 14 : 28) - 78 - 20;
+    const ww = Math.max(1100, Math.min(1440, availW)), wh = Math.max(700, Math.min(900, availH));
+    st.style.setProperty('--ww', ww + 'px');
+    st.style.setProperty('--wh', wh + 'px');
+    st.style.setProperty('--fit', Math.min(1, availW / ww, availH / wh).toFixed(4));
+    thumbs(false);
+    navPill();
+    if (state.view === 'overview') drawChart(scopeData(state.scope), false);
+  }
+  let fitRaf;
+  addEventListener('resize', () => { cancelAnimationFrame(fitRaf); fitRaf = requestAnimationFrame(fit); });
+  document.addEventListener('fullscreenchange', fit);
+  $('#nav').insertAdjacentHTML('afterbegin', '<i class="nav-pill" id="nav-pill"></i>');
   $('#now').innerHTML = NOW_IDLE;
   buildMenus();
   renderIdeas();
   renderKan();
-  go('overview', { instant: true });
+  fit();
+  go('overview');
+  thumbs(false);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { thumbs(false); navPill(); });
+  // The sections of the board rise as they scroll into view
+  if (!reduce && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => entries.forEach((e) => {
+      if (!e.isIntersecting) return;
+      e.target.classList.add('in');
+      io.unobserve(e.target);
+    }), { rootMargin: '0px 0px -8% 0px' });
+    $$('.sec > .kicker, .sec > h2, .sec > .lead, .pr, .bcard, .xl-win, .asks li').forEach((el) => {
+      el.style.setProperty('--i', el.matches('.pr, .asks li') ? [...el.parentElement.children].indexOf(el) % 3 : 0);
+      el.classList.add('reveal');
+      io.observe(el);
+    });
+  }
 })();
