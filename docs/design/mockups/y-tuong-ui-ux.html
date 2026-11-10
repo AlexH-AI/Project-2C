@@ -4,8 +4,9 @@
   Trạng thái: ý tưởng để Owner chọn, CHƯA phải mockup đã duyệt G3. Dữ liệu 100% giả lập.
   #stage   Màn đầu: cửa sổ app bấm được trên nền desktop (cỡ theo khung nhìn, 1100×700 … 1440×900)
            màn: overview, forecast, reports, customers, profile, team, rm, appointments, settings
-           lớp nổi: #pal ô lệnh, #sheet hộp Hủy HĐ, #now-pop "Lúc này", #scope-menu, #miss-pop
-           #dock: công tắc macOS / Windows 11, Tối / Sáng, hai bộ chữ, toàn màn hình
+           lớp nổi: #pal ô lệnh, #sheet hộp Hủy HĐ / tạo team, #now-pop "Lúc này", #scope-menu, #miss-pop,
+           #day-pop lịch của một ngày Forecast, #period-pop chọn kỳ báo cáo
+           #dock: công tắc macOS / Windows 11, Tối / Sáng, hai bộ chữ, năm kiểu nền, toàn màn hình
   #concept Ba nguyên lý (ba lớp, hai hệ điều hành, bốn động tác)
   #ideas   Danh sách ý (do JS dựng từ mảng IDEAS), phiếu chọn
   #motion  Bốn động tác, ba lò xo, token chuyển động, ghi chú khả thi
@@ -13,7 +14,7 @@
   #ask     Các quyết định cần Owner
   Bảng mockup → màn hình → spec: docs/design/mockups/README.md
 -->
-<html lang="vi" data-os="mac" data-theme="dark" data-font="system">
+<html lang="vi" data-os="mac" data-theme="dark" data-font="system" data-wall="1">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -49,6 +50,14 @@
       <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
       <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17v.01" /></symbol>
       <symbol id="i-full" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4" /></symbol>
+      <symbol id="i-sunrise" viewBox="0 0 24 24"><path d="M3 18h18M7.5 18a4.5 4.5 0 0 1 9 0M12 7v3M5.3 10.8l1.7 1.7M18.7 10.8L17 12.5M8 21.5h8" /></symbol>
+      <symbol id="i-mountain" viewBox="0 0 24 24"><path d="M3 19l6-10 3.5 5.5L15 11l6 8z" /></symbol>
+      <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14zM5 19l7-7" /></symbol>
+      <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 .8-3.2 2-4.3.2 2 1 3 2 3.3-.3-3 .2-6 1-9z" /></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z" /></symbol>
+      <symbol id="i-anchor" viewBox="0 0 24 24"><circle cx="12" cy="5.5" r="2" /><path d="M12 7.5V21M5 13c0 4 3 7 7 8 4-1 7-4 7-8M8.5 11h7" /></symbol>
+      <symbol id="i-crown" viewBox="0 0 24 24"><path d="M4 8l4 4 4-7 4 7 4-4-2 10H6z" /></symbol>
       <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.7l5.9-.9z" /></symbol>
     </svg>
 
@@ -98,7 +107,7 @@
               <button class="now" id="now" data-idea="11" aria-haspopup="true" aria-label="Lúc này"></button>
               <div class="tl-right">
                 <button class="cap" id="scope" data-idea="12" aria-haspopup="true"><span id="scope-l">Toàn bộ</span><svg class="ic"><use href="#i-down" /></svg></button>
-                <span class="cap" id="period" data-idea="12"><button class="step" data-step="-1" aria-label="Kỳ trước">&#x2039;</button><span>Tháng 11/2026</span><button class="step" data-step="1" aria-label="Kỳ sau">&#x203A;</button></span>
+                <span class="cap" id="period" data-idea="12"><button class="step" data-step="-1" aria-label="Kỳ trước">&#x2039;</button><button id="period-l" aria-haspopup="true">Tháng 11/2026</button><button class="step" data-step="1" aria-label="Kỳ sau">&#x203A;</button></span>
                 <button class="cap icon tl-find" data-open="pal" data-idea="09" aria-label="Tìm"><svg class="ic"><use href="#i-search" /></svg></button>
                 <button class="btn" id="act"></button>
               </div>
@@ -172,36 +181,7 @@
                   <button class="cap" id="rp-print"><svg class="ic"><use href="#i-print" /></svg><span>Xem bản in</span></button>
                   <button class="cap" id="rp-show" data-idea="24"><svg class="ic"><use href="#i-play" /></svg>Trình chiếu</button>
                 </div>
-                <article class="paper rise" id="paper" data-idea="21" style="--i: 0">
-                  <div class="head">
-                    <div class="brand" role="img" aria-label="Heritas L-CRM">
-                      <img class="b-tree b-out" src="img/heritas-tree.png" alt="" />
-                      <div><img class="b-word b-out" src="img/heritas-wordmark.png" alt="" /><img class="b-lcrm" src="img/heritas-lcrm.png" alt="" /></div>
-                    </div>
-                    <div class="meta"><b>BÁO CÁO KẾT QUẢ KINH DOANH</b><strong>Tháng 11/2026</strong>01/11 – 10/11/2026 (MTD) · Toàn bộ · 3 team, 9 RM<br />Lập lúc 13:35 ngày 10/11/2026</div>
-                  </div>
-                  <h3>Doanh số đạt 1,38 tỷ, tăng 12,4% so với cùng kỳ tháng 10.</h3>
-                  <p class="lead">32 hợp đồng sau khi trừ 2 hợp đồng hủy. Sao Mai dẫn đầu với 520 tr. Tỷ lệ hủy 5,9%, tăng 2,5 điểm so với tháng 10.</p>
-                  <div class="kpi4 num">
-                    <div><span class="lbl">Doanh số</span><span class="v">1,38 <small>tỷ</small></span><span class="f">1,48 tỷ phát hành − 100 tr hủy</span></div>
-                    <div><span class="lbl">Tổng số HĐ</span><span class="v">32</span><span class="f">34 phát hành − 2 hủy</span></div>
-                    <div><span class="lbl">Tỉ lệ chốt</span><span class="v">72,3 <small>%</small></span><span class="f">34 HĐ phát hành ÷ 47 RF</span></div>
-                    <div><span class="lbl">Tỷ lệ hủy</span><span class="v">5,9 <small>%</small></span><span class="f">2 HĐ hủy ÷ 34 HĐ phát hành</span></div>
-                  </div>
-                  <div class="two">
-                    <div><h4>DOANH SỐ THEO TEAM</h4><div id="paper-bars"></div><div class="keys"><span><i style="--c: var(--accent)"></i>Doanh số</span><span><i style="--c: var(--danger)"></i>FYP hủy (đã trừ)</span></div></div>
-                    <div>
-                      <h4>NHẬN XÉT</h4>
-                      <ul>
-                        <li><b>Hủy tập trung một tuần:</b> cả 2 HĐ hủy rơi vào tuần 03 – 09/11 (Sao Mai 1, Hừng Đông 1).</li>
-                        <li><b>Hừng Đông cần hỗ trợ:</b> tỷ lệ hủy 10,0%, tỉ lệ chốt 66,7%, thấp nhất ba team.</li>
-                        <li><b>Tuần này dự kiến 620 tr</b> từ 13 KH; riêng N1 chiếm 52%.</li>
-                      </ul>
-                    </div>
-                  </div>
-                  <table class="tbl" id="paper-tbl" style="margin-top: 20px"></table>
-                  <div class="foot"><span>Heritas L-CRM · tài liệu nội bộ</span><span>Định nghĩa chỉ số: trang 3</span><span class="num">Trang 1 / 3</span></div>
-                </article>
+                <div id="papers" data-idea="21"></div>
                 <section class="card ledger" id="ledger" data-idea="22" hidden>
                   <div class="tabs" id="lg-tabs"><button class="on" data-lg="result">Kết quả</button><button data-lg="appt">Lịch hẹn</button><button data-lg="kh">Khách hàng</button></div>
                   <table class="tbl" id="lg-tbl"></table>
@@ -236,7 +216,7 @@
                 <div class="cu-head">
                   <label class="find"><svg class="ic"><use href="#i-search" /></svg><input id="rm-q" type="text" placeholder="Tìm RM: gõ tên, không cần dấu" autocomplete="off" spellcheck="false" /></label>
                   <div class="sug" id="rm-sug" hidden></div>
-                  <span class="muted">3 team · 9 RM · bấm một RM để xem KH đang phụ trách</span>
+                  <span class="muted">Bấm icon của team để đổi tên, màu, icon · bấm một RM để xem KH đang phụ trách</span>
                 </div>
                 <div class="teams" id="teams"></div>
               </div>
@@ -279,6 +259,8 @@
           <div class="float" id="now-pop"></div>
           <div class="float menu" id="scope-menu"></div>
           <div class="float" id="miss-pop"></div>
+          <div class="float" id="day-pop"></div>
+          <div class="float ppop" id="period-pop"></div>
           <div class="toast" id="toast" role="status" aria-live="polite"></div>
         </div></div>
 
@@ -287,8 +269,9 @@
           <span class="seg" data-set="os"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span>
           <span class="seg" data-set="theme"><button class="on" data-v="dark">Tối</button><button data-v="light">Sáng</button></span>
           <span class="seg" data-set="font"><button class="on" data-v="system">Chữ hệ thống</button><button data-v="brand">Be Vietnam Pro</button></span>
+          <span class="seg walls" data-set="wall" aria-label="Nền của trang trình bày"><button class="on" data-v="1" title="Nền 1 · Hoàng hôn" aria-label="Nền Hoàng hôn"><i class="w1"></i></button><button data-v="2" title="Nền 2 · Studio" aria-label="Nền Studio"><i class="w2"></i></button><button data-v="3" title="Nền 3 · Champagne" aria-label="Nền Champagne"><i class="w3"></i></button><button data-v="4" title="Nền 4 · Lưới" aria-label="Nền Lưới"><i class="w4"></i></button><button data-v="5" title="Nền 5 · Heritas" aria-label="Nền Heritas"><i class="w5"></i></button></span>
           <button class="dock-b icon" id="full" aria-label="Toàn màn hình" title="Toàn màn hình"><svg class="ic"><use href="#i-full" /></svg></button>
-          <a class="dock-b" href="#ideas">32 ý tưởng<svg class="ic"><use href="#i-down" /></svg></a>
+          <a class="dock-b" href="#ideas">34 ý tưởng<svg class="ic"><use href="#i-down" /></svg></a>
         </div>
       </div>
 
@@ -310,7 +293,7 @@
       <!-- ================= Danh sách ý ================= -->
       <section class="sec" id="ideas">
         <span class="kicker">Ý tưởng</span>
-        <h2>32 ý, đánh số để anh chọn.</h2>
+        <h2>34 ý, đánh số để anh chọn.</h2>
         <p class="lead">Bấm <b>Xem</b> để cửa sổ phía trên mở đúng chỗ. Ý có ⭐ là bộ em đề xuất cho v1.0, đã chọn sẵn. Công sức: <b>S</b> ≈ 1 Issue · <b>M</b> 2–3 · <b>L</b> 4+. Nhãn A–F là phần của đợt phản hồi; nhãn vàng là cổng hoặc quyết định cũ phải mở lại.</p>
         <div id="idea-list"></div>
         <div class="pickbar" role="region" aria-label="Phiếu chọn">
@@ -381,7 +364,7 @@
             <tr><td class="rh">11</td><td class="l">Hừng Đông</td><td>10</td><td>1</td><td>9</td><td>430.000.000</td><td>50.000.000</td><td class="db" style="--w: 0.73"><span>380.000.000</span></td><td class="red">10,0%</td><td>66,7%</td></tr>
             <tr class="tot"><td class="rh">12</td><td class="l">Tổng</td><td>34</td><td>2</td><td>32</td><td>1.480.000.000</td><td>100.000.000</td><td>1.380.000.000</td><td>5,9%</td><td>72,3%</td></tr>
             <tr class="blank"><td class="rh">13</td><td colspan="9"></td></tr>
-            <tr class="def"><td class="rh">14</td><td colspan="9"><b>Nhận xét.</b> Doanh số đạt 1,38 tỷ, tăng 12,4% so với cùng kỳ tháng 10. Sao Mai dẫn đầu với 520 tr. Tỷ lệ hủy 5,9%, tăng 2,5 điểm: cả 2 HĐ hủy rơi vào tuần 03 – 09/11.</td></tr>
+            <tr class="def"><td class="rh">14</td><td colspan="9"><b>Nhận xét.</b> Doanh số đạt 1,38 tỷ, tăng 12,4% so với cùng kỳ tháng 10. Sao Mai dẫn đầu với 520 tr. Tỷ lệ hủy 5,9%, tăng 2,5 điểm: cả 2 HĐ hủy rơi vào tuần 02 – 08/11.</td></tr>
           </table>
 
           <table class="xl-sheet" data-sheet="rm" data-cell="D3" data-fx="=B3-C3" hidden>
@@ -428,8 +411,8 @@
       <!-- ================= Quyết định cần Owner ================= -->
       <section class="sec" id="ask">
         <span class="kicker">Quyết định</span>
-        <h2>Mười điểm cần anh quyết.</h2>
-        <p class="lead">Ngoài việc chọn ý, mười điểm dưới đây đổi hướng giao diện hoặc mở lại điều anh đã duyệt. Em hỏi từng điểm một trong chat; đây là danh sách đầy đủ, kèm đề xuất của em.</p>
+        <h2>Mười ba điểm cần anh quyết.</h2>
+        <p class="lead">Ngoài việc chọn ý, các điểm dưới đây đổi hướng giao diện, thêm dữ liệu hay dịch vụ, hoặc mở lại điều anh đã duyệt. Em hỏi từng điểm một trong chat; đây là danh sách đầy đủ, kèm đề xuất của em.</p>
         <ol class="asks">
           <li><b>Lấy concept này làm nền cho mockup G3?</b>Ba lớp Nền · Kính · Tiêu điểm, mỗi hệ điều hành một chất, bốn động tác. <em>Đề xuất: có.</em></li>
           <li><b>Chữ: font hệ thống hay Be Vietnam Pro?</b>Đổi công tắc chữ ở thanh dưới cửa sổ để so. Font hệ thống là SF Pro trên Mac, Segoe UI Variable trên Windows; Playfair vẫn chỉ cho slogan. <em>Đề xuất: font hệ thống.</em></li>
@@ -441,6 +424,9 @@
           <li><b>Màu file Excel.</b>Navy và champagne của logo, nền trắng. <em>Đề xuất: có.</em></li>
           <li><b>Các màn đã duyệt G3 khác</b> (Lịch hẹn, hồ sơ KH, KYC, các hộp thoại). <em>Đề xuất: giữ bố cục, chỉ thay vỏ theo ngôn ngữ mới; không vẽ lại.</em></li>
           <li><b>Forecast: 6 điểm mở D-a … D-f.</b>Bản thử đang theo đề xuất của em (mỗi KH tính một lần, hiện đã đạt + dự kiến, bỏ Chủ Nhật, không nhân trọng số, lịch thiếu case size không cộng, có sheet Excel). Em hỏi riêng từng điểm.</li>
+          <li><b>Nền của trang trình bày.</b>Thanh dưới cửa sổ có năm kiểu nền: Hoàng hôn, Studio, Champagne, Lưới, Heritas. Đây là nền của bảng này và của ảnh giới thiệu; trong app thật, phía sau cửa sổ là màn hình desktop của người dùng. <em>Đề xuất: Studio hoặc Champagne.</em></li>
+          <li><b>Team có màu và icon.</b>Sáu màu lấy từ token hiện có, tám icon; TL ngang hàng tên team. Màu và icon là dữ liệu mới của team (G2), đi theo team ở mọi màn. <em>Đề xuất: làm, dùng bảng màu hiện có.</em></li>
+          <li><b>Nhiều nhà cung cấp AI.</b>Thêm WorkBuddy cạnh OpenCode, chọn model và mức suy luận. Mỗi nhà cung cấp mới qua G4, G5, G6; phải kiểm trước WorkBuddy có API cho app ngoài gọi không. <em>Đề xuất: giữ khung nhiều nhà cung cấp trong mockup, kiểm API rồi mới quyết.</em></li>
         </ol>
       </section>
     </div>

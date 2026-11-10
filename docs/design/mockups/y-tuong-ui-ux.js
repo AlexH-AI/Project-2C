@@ -74,16 +74,37 @@
     const c = CUS.find((x) => x.name === name);
     return { i, day, t, c, flag, amt: flag ? 0 : c.cs };
   });
-  const MSPLIT = [[300, 180, 100], [220, 140, 80], [120, 100, 80]]; // month forecast by stage N1, N2, N3, per team
-  const MGRID = [ // the later weeks of the month per team: 16–21/11, 23–28/11, 30/11
-    [[30, 20, 30, 10, 40, 10], [20, 10, 30, 20, 30, 10], [60]],
-    [[20, 10, 20, 10, 30, 10], [20, 10, 20, 10, 20, 10], [40]],
-    [[10, 10, 20, 10, 10, 0], [10, 10, 10, 10, 20, 10], [20]],
-  ];
+  // The rest of the month, one appointment a row: week (1 = 16–21/11, 2 = 23–28/11, 3 = 30/11), day (0 = T2),
+  // RM, stage (index in ST3), case size. Each has a customer of its own, so the month is this week plus
+  // these, with no customer counted twice; the forecast of a team, an RM or a day is a sum of rows.
+  const FAM = ['Trịnh', 'Đặng', 'Lâm', 'Mai', 'Tô', 'Châu', 'Quách', 'Tạ', 'Kiều', 'La'];
+  const MID = ['Văn', 'Thị', 'Minh', 'Ngọc', 'Quốc', 'Thanh', 'Hữu', 'Bảo'];
+  const GIV = ['Khang', 'Nhi', 'Phát', 'Yến', 'Trí', 'Diệp', 'Lộc', 'My', 'Tín', 'Oanh', 'Khoa', 'Vân', 'Đạt', 'Thư', 'Long', 'Trang', 'Kiên', 'Hạnh', 'Nhân', 'Quyên'];
+  const LATER = [
+    [3, 0, 0, 0, 60], [1, 4, 0, 0, 40], [1, 0, 0, 0, 30], [2, 2, 0, 0, 30],
+    [1, 2, 1, 1, 30], [2, 4, 1, 1, 30], [1, 1, 1, 1, 20], [2, 0, 1, 1, 20], [1, 3, 1, 2, 10], [1, 5, 1, 2, 10], [2, 1, 1, 2, 10], [2, 3, 1, 2, 20], [2, 5, 1, 2, 10],
+    [3, 0, 3, 0, 40], [1, 4, 3, 0, 30], [1, 0, 3, 0, 20], [2, 0, 3, 0, 20], [1, 2, 3, 1, 20], [1, 1, 3, 0, 10],
+    [1, 3, 4, 1, 10], [1, 5, 4, 2, 10], [2, 1, 4, 2, 10], [2, 2, 4, 1, 20], [2, 3, 4, 2, 10], [2, 4, 4, 1, 20], [2, 5, 4, 2, 10],
+    [3, 0, 6, 0, 20], [1, 2, 6, 0, 20], [2, 4, 6, 1, 20], [1, 0, 6, 1, 10], [1, 1, 6, 1, 10], [1, 3, 6, 1, 10],
+    [1, 4, 7, 1, 10], [2, 0, 7, 1, 10], [2, 1, 7, 2, 10], [2, 2, 7, 2, 10], [2, 3, 7, 2, 10], [2, 5, 7, 2, 10],
+  ].map(([w, day, rm, s, amt], i) => {
+    const date = `${[16, 23, 30][w - 1] + day}/11`, t = ['09:00', '10:30', '14:00', '15:30'][i % 4];
+    const c = { i: CUS.length, name: `${FAM[i % 10]} ${MID[(i * 3) % 8]} ${GIV[i % 20]}`, st: ST3[s], rm, last: ['04/11', '29/10', '06/11', '22/10'][i % 4], next: `${DAYS[day][0]} ${date} · ${t}`, cs: amt, pol: 0, cad: ['.m..m.m.', '..m.m...', 'm..m..m.', '....m.m.'][i % 4], code: 'KH-' + (2100 + i * 13) };
+    CUS.push(c);
+    return { w, day, t, c, amt, date };
+  });
+  const laterOf = (pred) => ST3.map((s) => sum(LATER.filter((a) => a.c.st === s && pred(a.c)), (a) => a.amt));
+  // Forecast of an RM for the month: never a stored number, always this week plus the later weeks
+  RMS.forEach((r) => Object.defineProperty(r, 'fm', { get: () => sum(fwOf((c) => c.rm === r.i)) + sum(laterOf((c) => c.rm === r.i)) }));
+  // Team identity (Owner 10/11): a colour and an icon, picked when the team is made
+  const TEAM_COLORS = [['accent', 'Champagne'], ['info', 'Xanh dương'], ['n2', 'Tím'], ['submitted', 'Xanh ngọc'], ['ok', 'Xanh lá'], ['warn', 'Cam']];
+  const TEAM_ICONS = ['star', 'sunrise', 'sun', 'mountain', 'leaf', 'flame', 'shield', 'anchor'];
+  [['accent', 'star'], ['warn', 'sunrise'], ['submitted', 'sun']].forEach(([color, icon], t) => Object.assign(TEAMS[t], { color, icon }));
+  const teamMark = (t, cls = '') => `<span class="tmark ${cls}" style="--c: var(--${TEAMS[t].color})">${ic(TEAMS[t].icon)}</span>`;
   const CUR = [0, 150, 290, 470, 640, 830, 960, 960, 1180, 1380]; // cumulative sales, 01/11 … 10/11
   const GHOST = [[1, 90], [2, 230], [3, 300], [4, 300], [5, 480], [6, 640], [7, 800], [8, 960], [9, 1100], [10, 1228], [14, 1600], [17, 1980], [21, 2350], [24, 2640], [28, 2960], [31, 3180]];
 
-  const state = { view: 'overview', scope: 'all', fc: 'week', rp: 'brief', lg: 'result', cust: 7, rm: 0, set: 'data', open: {}, cancel: {}, undo: null };
+  const state = { view: 'overview', scope: 'all', fc: 'week', rp: 'brief', lg: 'result', cust: 7, rm: 0, set: 'data', open: {}, cancel: {}, undo: null, period: 'm11', pkind: null, back: 'customers', ai: { provider: 'opencode', model: 'DeepSeek V4.1 Flash', effort: 'Cao' } };
   const scopeTeams = () => (state.scope === 'all' ? [0, 1, 2] : [state.scope]);
   const scopeName = () => (state.scope === 'all' ? 'Toàn bộ' : 'Team ' + TEAMS[state.scope].name);
   const teamRms = (t) => RMS.filter((r) => r.team === t);
@@ -200,13 +221,13 @@
   const VIEWS = {
     overview: { nav: 'overview', title: 'Tổng quan', sub: () => `Tháng 11/2026 · 01/11 – 10/11 (MTD) · ${scopeName()}`, act: ['plus', 'Lịch hẹn'], scope: 1, period: 1, ideas: ['01', '02', '05', '09', '11', '12', '14', '15', '16'] },
     forecast: { nav: 'forecast', title: 'Forecast', sub: () => `Hôm nay thứ Ba 10/11/2026 · ${scopeName()}`, act: ['export', 'Xuất Excel'], scope: 1, ideas: ['17', '18', '19', '20', '29'] },
-    reports: { nav: 'reports', title: 'Báo cáo', sub: () => 'Tháng 11/2026 · 01/11 – 10/11 (MTD) · Toàn bộ', act: ['export', 'Xuất Excel'], period: 1, ideas: ['21', '22', '23', '24', '11'] },
+    reports: { nav: 'reports', title: 'Báo cáo', sub: () => { const p = periodOf(); return `${p.name} · ${p.range}${p.note ? ' (' + p.note + ')' : ''} · Toàn bộ`; }, act: ['export', 'Xuất Excel'], period: 1, ideas: ['21', '22', '23', '24', '11'] },
     customers: { nav: 'customers', title: 'Khách hàng', sub: () => 'Kanban theo nhóm · Toàn bộ', act: ['plus', 'Khách hàng'], ideas: ['25', '26', '07'] },
     profile: { nav: 'customers', title: 'Hồ sơ khách hàng', sub: () => CUS[state.cust].code, act: ['plus', 'Lịch hẹn'], ideas: ['07', '28'] },
-    team: { nav: 'team', title: 'Team & nhân sự', sub: () => '3 team · 9 RM', act: ['plus', 'Nhân sự'], ideas: ['27', '07'] },
+    team: { nav: 'team', title: 'Team & nhân sự', sub: () => '3 team · 9 RM', act: ['plus', 'Team'], ideas: ['33', '27', '07'] },
     rm: { nav: 'team', title: 'Trang RM', sub: () => 'Team ' + TEAMS[RMS[state.rm].team].name, ideas: ['27'] },
     appointments: { nav: 'appointments', title: 'Lịch hẹn', sub: () => 'Hôm nay · Toàn bộ', act: ['plus', 'Lịch hẹn'], ideas: ['11'] },
-    settings: { nav: 'settings', title: 'Cài đặt', sub: () => 'Dữ liệu · AI · Thùng rác', ideas: ['29'] },
+    settings: { nav: 'settings', title: 'Cài đặt', sub: () => 'Dữ liệu · AI · Thùng rác', ideas: ['29', '34'] },
   };
   const NAV = [['overview', 'Tổng quan', 'overview', '1'], ['appointments', 'Lịch hẹn', 'cal', '2'], ['customers', 'Khách hàng', 'people', '3'], ['forecast', 'Forecast', 'forecast', '4'], ['reports', 'Báo cáo', 'report', '5'], ['team', 'Team & nhân sự', 'team', '6'], ['settings', 'Cài đặt', 'gear', ',']];
   const RENDER = {};
@@ -223,6 +244,7 @@
     $('#v-sub').textContent = v.sub();
     $('#scope').hidden = !v.scope;
     $('#period').hidden = !v.period;
+    $('#period-l').textContent = state.view === 'reports' ? periodOf().name : 'Tháng 11/2026';
     $('#scope-l').textContent = state.scope === 'all' ? 'Toàn bộ' : TEAMS[state.scope].name;
     const act = $('#act');
     act.hidden = !v.act;
@@ -272,7 +294,7 @@
       $$('button', seg).forEach((b) => b.classList.toggle('on', b.dataset.v === val));
       thumb(seg);
     });
-    if (key === 'theme') return;
+    if (key === 'theme' || key === 'wall') return;
     // another platform or typeface changes every measure: the window, the thumbs, the pill
     fit();
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { thumbs(false); navPill(); });
@@ -398,7 +420,7 @@
     const byTeam = [0, 1, 2].map((t) => ({ t, d: scopeData(t) })).sort((a, b) => b.d.sales - a.d.sales);
     const hl = [
       dcr > 0
-        ? { c: 'danger', i: 'alert', b: `Tỷ lệ hủy ${pctS(cr)}, tăng ${nf(dcr, 1)} điểm`, s: `${d.cancelled} HĐ hủy trong kỳ, ${d.cancelled > 1 ? 'đều ' : ''}ở tuần 03 – 09/11`, go: 'reports' }
+        ? { c: 'danger', i: 'alert', b: `Tỷ lệ hủy ${pctS(cr)}, tăng ${nf(dcr, 1)} điểm`, s: `${d.cancelled} HĐ hủy trong kỳ, ${d.cancelled > 1 ? 'đều ' : ''}ở tuần 02 – 08/11`, go: 'reports' }
         : { c: 'ok', i: 'check', b: `Tỷ lệ hủy ${pctS(cr)}, giảm ${nf(-dcr, 1)} điểm`, s: 'Không có HĐ hủy trong kỳ', go: 'reports' },
       all
         ? { c: 'accent', i: 'star', b: `${TEAMS[byTeam[0].t].name} dẫn đầu: ${moneyS(byTeam[0].d.sales)}`, s: `${nf((byTeam[0].d.sales / d.sales) * 100)}% doanh số · tỉ lệ chốt ${pctS(rate(byTeam[0].d.issued, byTeam[0].d.rf))}`, go: 'reports' }
@@ -445,19 +467,22 @@
     const khMax = Math.max(...kh.map((x) => x[1]));
     $('#ov-pipe-sub').textContent = `${nf(sum(d.kh))} KH đang mở`;
     $('#ov-pipe').innerHTML = kh.map(([s, v], i) => `<span class="st ${s}">${STAGE[s]}</span><span class="hbar ${s}" style="--i: ${i}"><i style="--w: ${(v / khMax).toFixed(3)}"></i></span><span class="v num">${nf(v)}</span>`).join('');
-    $('#ov-race').innerHTML = byTeam.map(({ t, d: x }, i) => `<button class="race" data-team="${t}" aria-pressed="${state.scope === t}"><span class="rk num">${i + 1}</span><b>${TEAMS[t].name}</b><span class="hbar" style="--i: ${i}"><i style="--w: ${(x.sales / byTeam[0].d.sales).toFixed(3)}"></i></span><span class="v num">${moneyS(x.sales)}</span><span class="sub">${x.total} HĐ · hủy ${pctS(rate(x.cancelled, x.issued))} · chốt ${pctS(rate(x.issued, x.rf))}</span></button>`).join('');
+    $('#ov-race').innerHTML = byTeam.map(({ t, d: x }, i) => `<button class="race" data-team="${t}" aria-pressed="${state.scope === t}">${teamMark(t)}<b>${TEAMS[t].name}</b><span class="hbar" style="--i: ${i}"><i style="--w: ${(x.sales / byTeam[0].d.sales).toFixed(3)}"></i></span><span class="v num">${moneyS(x.sales)}</span><span class="sub">${x.total} HĐ · hủy ${pctS(rate(x.cancelled, x.issued))} · chốt ${pctS(rate(x.issued, x.rf))}</span></button>`).join('');
   };
 
   /* ---------- Forecast ---------- */
+  const WEEKS = [['10 – 14/11', 9], ['16 – 21/11', 16], ['23 – 28/11', 23], ['30/11', 30]]; // label, date of its Monday
   function fcData() {
-    const teams = scopeTeams();
-    const ap = APPTS.filter((a) => teams.includes(RMS[a.c.rm].team));
-    const counted = ap.filter((a) => !a.flag);
+    const teams = scopeTeams(), mine = (a) => teams.includes(RMS[a.c.rm].team);
+    const ap = APPTS.filter(mine), later = LATER.filter(mine), counted = ap.filter((a) => !a.flag);
     const fw = ST3.map((s) => sum(counted.filter((a) => a.c.st === s), (a) => a.amt));
-    const ms = teams.reduce((acc, t) => addV(acc, MSPLIT[t]), [0, 0, 0]);
+    const ms = ST3.map((s, i) => fw[i] + sum(later.filter((a) => a.c.st === s), (a) => a.amt));
     const sales = sum(RMS.filter((r) => teams.includes(r.team)), (r) => r.fi - r.fc);
-    return { teams, ap, counted, fw, week: sum(fw), ms, month: sum(ms), sales, miss: ap.filter((a) => a.flag === 'miss') };
+    return { teams, ap, later, counted, fw, week: sum(fw), ms, month: sum(ms), sales, miss: ap.filter((a) => a.flag === 'miss') };
   }
+  // The appointments of one day of the grid: week 0 is this week (APPTS), 1–3 the later weeks (LATER)
+  const dayList = (f, w, day) => (w === 0 ? f.ap.filter((a) => a.day === day) : f.later.filter((a) => a.w === w && a.day === day));
+  const dayAmt = (list) => sum(list.filter((a) => !a.flag), (a) => a.amt);
   const zero = '<td class="zero">—</td>';
   const cell = (v) => (v ? `<td>${moneyS(v)}</td>` : zero);
   function renderFcTable(f) {
@@ -474,7 +499,7 @@
     let h = '<thead><tr><th>Team / RM</th><th>Tuần này</th><th>N1</th><th>N2</th><th>N3</th><th>Tháng 11</th><th>Lịch tuần</th><th></th></tr></thead><tbody>';
     for (const x of teams) {
       const open = !!state.open['fc' + x.t];
-      h += line('team' + (open ? ' open' : ''), `data-tw="fc${x.t}"`, `<span class="tw">${ic('chev')}</span>${TEAMS[x.t].name}`, x, x.fm);
+      h += line('team' + (open ? ' open' : ''), `data-tw="fc${x.t}"`, `<span class="tw">${ic('chev')}</span>${teamMark(x.t)} ${TEAMS[x.t].name}`, x, x.fm);
       if (open) h += x.rms.map((y) => line('rm link', `data-rm="${y.r.i}"`, 'RM ' + y.r.name, y, y.r.fm)).join('');
     }
     if (teams.length > 1) h += line('total', '', 'Tổng', { fw: f.fw, n: f.ap.length, miss: 0 }, f.month);
@@ -491,7 +516,7 @@
     const nKh = new Set(f.counted.map((a) => a.c.i)).size;
     $('#fc-sub').textContent = wk
       ? `${nKh} KH · ${f.ap.length} lịch hẹn` + (f.miss.length ? ` · ${f.miss.length} lịch thiếu case size chưa tính` : '')
-      : '10/11 – 30/11 · thứ Hai → thứ Bảy, không tính Chủ Nhật 15, 22, 29';
+      : `${nKh + f.later.length} KH · 10/11 – 30/11 · thứ Hai → thứ Bảy, không tính Chủ Nhật 15, 22, 29`;
     $('#fc-split').innerHTML = split.map((v, i) => `<i style="--f: ${v || 0.001}; --c: var(--${ST3[i]})"></i>`).join('');
     $('#fc-keys').innerHTML = split.map((v, i) => `<span><i style="--c: var(--${ST3[i]})"></i>${STAGE[ST3[i]]} <b class="num">${moneyS(v)}</b></span>`).join('');
     const miss = $('#fc-miss');
@@ -504,25 +529,42 @@
       <div class="keys"><span><i style="--c: var(--accent)"></i>Đã đạt <b class="num">${moneyS(f.sales)}</b></span>${f.fw.map((v, i) => `<span><i style="--c: var(--${ST3[i]})"></i>${i ? '' : 'Tuần này '}${STAGE[ST3[i]]} <b class="num">${moneyS(v)}</b></span>`).join('')}<span><i style="--c: var(--accent); opacity: 0.5"></i>Các tuần còn lại <b class="num">${moneyS(rest)}</b></span></div>
       <p class="note">Đã đạt là doanh số thuần (FYP phát hành − FYP hủy). Phần dự kiến cộng thẳng case size của từng lịch, không nhân tỷ lệ chốt.</p>`;
 
-    const dayAmt = (day) => sum(f.counted.filter((a) => a.day === day), (a) => a.amt);
     if (wk) {
-      $('#fc-strip-h').innerHTML = 'Tuần này theo ngày <small>cột vàng là hôm nay · mỗi thẻ là một lịch hẹn · KH có hai lịch chỉ tính lịch sau</small>';
+      $('#fc-strip-h').innerHTML = 'Tuần này theo ngày <small>cột vàng là hôm nay · bấm tên ngày để xem cả ngày, bấm một thẻ để mở hồ sơ KH</small>';
       $('#fc-strip').innerHTML = '<div class="days">' + DAYS.map(([l, dt], day) => {
-        const list = f.ap.filter((a) => a.day === day);
+        const list = dayList(f, 0, day), amt = dayAmt(list);
         const chips = list.map((a) => `<button class="ap ${a.c.st} ${a.flag || ''}" data-c="${a.c.i}" style="--i: ${a.i}"><b>${a.c.name}</b><span class="num">${a.flag === 'miss' ? 'thiếu case size' : a.flag === 'dup' ? 'đã tính ở lịch T6' : a.t + ' · ' + a.amt + ' tr'}</span></button>`).join('');
-        return `<div class="day ${day === 0 ? 'past' : day === 1 ? 'today' : ''}"><header><span><b>${l}</b> ${dt}</span><span class="sum num">${day === 0 ? 'đã qua' : dayAmt(day) ? dayAmt(day) + ' tr' : '—'}</span></header>${chips}</div>`;
+        return `<div class="day ${day === 0 ? 'past' : day === 1 ? 'today' : ''}"><button class="dh" data-cell="0-${day}"${list.length ? '' : ' disabled'}><span><b>${l}</b> ${dt}</span><span class="sum num">${day === 0 ? 'đã qua' : amt ? amt + ' tr' : '—'}</span></button>${chips}</div>`;
       }).join('') + '</div>';
     } else {
-      const later = [0, 1, 2].map((w) => f.teams.reduce((acc, t) => addV(acc, MGRID[t][w]), MGRID[0][w].map(() => 0)));
-      const rows = [['10 – 14/11', [null, 1, 2, 3, 4, 5].map((day) => (day ? dayAmt(day) : null)), 'đã qua'], ['16 – 21/11', later[0]], ['23 – 28/11', later[1]], ['30/11', [later[2][0], null, null, null, null, null], 'tháng 12']];
-      const dayN = (day) => f.counted.filter((a) => a.day === day).length;
-      const c = (v, off, today, n) => (v == null ? `<div class="c off">${off}</div>` : `<div class="c ${today ? 'today' : ''}" style="--heat: ${Math.min(0.34, (v / 200) * 0.34).toFixed(3)}"><b class="num">${v ? v + ' tr' : '—'}</b><small>${v ? (n || Math.max(1, Math.round(v / 38))) + ' lịch' : '&nbsp;'}</small></div>`);
-      $('#fc-strip-h').innerHTML = 'Tháng 11 theo tuần <small>thứ Hai → thứ Bảy; không có cột Chủ Nhật</small>';
+      // every cell is the list of that day's appointments; press one to see them
+      const cellHtml = (w, day) => {
+        if (w === 0 && day === 0) return '<div class="c off">đã qua</div>';
+        if (w === 3 && day > 0) return '<div class="c off">tháng 12</div>';
+        const list = dayList(f, w, day), amt = dayAmt(list);
+        if (!list.length) return '<div class="c"><b class="num muted">—</b><small>&nbsp;</small></div>';
+        return `<button class="c ${w === 0 && day === 1 ? 'today' : ''}" data-cell="${w}-${day}" style="--heat: ${Math.min(0.34, (amt / 200) * 0.34).toFixed(3)}; --i: ${w * 6 + day}"><b class="num">${amt ? amt + ' tr' : '—'}</b><small>${list.length} lịch</small></button>`;
+      };
+      const weekAmt = (w) => DAYS.reduce((a, _, day) => a + ((w === 0 && day === 0) || (w === 3 && day > 0) ? 0 : dayAmt(dayList(f, w, day))), 0);
+      $('#fc-strip-h').innerHTML = 'Tháng 11 theo tuần <small>thứ Hai → thứ Bảy, không có cột Chủ Nhật · bấm một ô để xem các lịch của ngày đó</small>';
       $('#fc-strip').innerHTML = '<div class="grid-m"><span></span>' + DAYS.map(([l]) => `<span class="h">${l}</span>`).join('') + '<span class="h">Cả tuần</span>'
-        + rows.map(([label, vals, off], r) => `<span class="wk num">${label}</span>` + vals.map((v, i) => c(v, off, r === 0 && i === 1, r === 0 ? dayN(i) : 0)).join('') + `<span class="tot num">${moneyS(sum(vals, (v) => v || 0))}</span>`).join('') + '</div>';
+        + WEEKS.map(([label], w) => `<span class="wk num">${label}</span>` + DAYS.map((_, day) => cellHtml(w, day)).join('') + `<span class="tot num">${moneyS(weekAmt(w))}</span>`).join('') + '</div>';
     }
     renderFcTable(f);
   };
+  // One day of Forecast: which appointments, which customer, whose, how much; a row opens the customer
+  function openDay(w, day, anchor) {
+    const f = fcData(), list = dayList(f, w, day).slice().sort((x, y) => x.t.localeCompare(y.t)), amt = dayAmt(list), pop = $('#day-pop');
+    const date = w === 0 ? DAYS[day][1] : `${WEEKS[w][1] + day}/11`;
+    pop.innerHTML = `<h3 class="sec-h">${DAYS[day][0]} ${date}<small>${amt ? moneyS(amt) + ' dự kiến · ' : ''}${list.length} lịch hẹn · ${scopeName()}</small></h3>`
+      + list.map((a) => {
+        const r = RMS[a.c.rm];
+        const right = a.flag === 'miss' ? '<span class="chip warn">thiếu case size</span>' : a.flag === 'dup' ? '<span class="muted">đã tính ở T6</span>' : a.amt + ' tr';
+        return `<button class="dayrow" data-c="${a.c.i}"><span class="tm num">${a.t}</span><span><b>${a.c.name}</b> <span class="st ${a.c.st}">${STAGE[a.c.st]}</span><small>RM ${r.name} · ${teamMark(r.team, 'sm')} ${TEAMS[r.team].name}</small></span><span class="v num">${right}</span>${ic('chev', 'go')}</button>`;
+      }).join('') + '<p class="note">Bấm một dòng để mở hồ sơ khách hàng.</p>';
+    openFloat('day-pop');
+    place(pop, anchor);
+  }
   function openMiss() {
     const f = fcData(), pop = $('#miss-pop');
     pop.innerHTML = '<h3 class="sec-h">Lịch thiếu case size <small>điền xong là cộng ngay vào Forecast</small></h3>' + f.miss.map((a) => `<div class="r"><span class="t"><b>${a.c.name}</b> <span class="st ${a.c.st}">${STAGE[a.c.st]}</span><small>${DAYS[a.day][0]} ${DAYS[a.day][1]} · ${a.t} · RM ${RMS[a.c.rm].name}</small></span><span class="fill-in"><input class="num" type="text" inputmode="numeric" value="40" aria-label="Case size dự kiến của ${a.c.name}" /> tr</span><button class="btn" data-fill="${a.i}">Lưu</button></div>`).join('');
@@ -530,31 +572,65 @@
     place(pop, $('#fc-miss'), 'right');
   }
   function fillCase(i, v) {
-    const a = APPTS[i], r = RMS[a.c.rm], st = ST3.indexOf(a.c.st);
+    const a = APPTS[i];
     a.flag = undefined;
     a.amt = v;
     a.c.cs = v;
-    r.fm += v;
-    MSPLIT[r.team][st] += v;
     closeFloats();
     RENDER.forecast();
     toast(`Đã thêm ${v} tr của ${a.c.name} vào Forecast`, () => {
       a.flag = 'miss';
       a.amt = 0;
       a.c.cs = null;
-      r.fm -= v;
-      MSPLIT[r.team][st] -= v;
       if (state.view === 'forecast') RENDER.forecast();
     });
   }
 
   /* ---------- Báo cáo ---------- */
+  // Periods. The month to date is the data above. Its two weeks add up to it RM by RM: this week is given,
+  // last week is the rest (both cancellations fell in last week). Older periods are spread from the month
+  // by a fixed pseudo-random factor: made up, but every team and total is a sum of RM rows, so tables add up.
+  const rnd = (i, k) => { const x = Math.sin((i + 1) * 12.9898 + k * 78.233) * 43758.5453; return x - Math.floor(x); };
+  const baseRm = (r) => ({ i: r.i, name: r.name, team: r.team, issued: r.issued, cancelled: r.cancelled, fi: r.fi, fc: r.fc, rf: r.rf, appt: r.appt, kh: r.kh });
+  const THIS_WEEK = [[2, 90, 2], [1, 40, 1], [1, 40, 1], [1, 50, 2], [1, 40, 1], [1, 45, 1], [1, 45, 1], [1, 70, 1], [0, 0, 1]]; // issued, FYP, RF on 09–10/11
+  const spread = (f, k, age) => RMS.map((r, i) => {
+    const issued = Math.round(r.issued * f * (0.8 + rnd(i, k) * 0.4)), avg = r.fi / r.issued;
+    const cancelled = Math.min(issued, Math.round(issued * 0.1 * rnd(i, k + 9)));
+    return { ...baseRm(r), issued, cancelled, fi: Math.round((issued * avg * (0.9 + rnd(i, k + 5) * 0.2)) / 10) * 10, fc: Math.round((cancelled * avg) / 10) * 10,
+      rf: Math.round(((issued * r.rf) / r.issued) * (0.92 + rnd(i, k + 3) * 0.2)),
+      appt: [Math.round(r.appt[0] * f * (0.85 + rnd(i, k + 1) * 0.3)), Math.round(r.appt[1] * f * (0.8 + rnd(i, k + 2) * 0.4)), Math.round(rnd(i, k + 4) * 1.4), 0],
+      kh: r.kh.map((v) => Math.round(v * (1 - 0.012 * age))) };
+  });
+  const PERIODS = [
+    { id: 'w46', kind: 'week', name: 'Tuần này', range: '09/11 – 15/11', note: 'tới hôm nay 10/11', cmp: ['02/11 – 03/11', { sales: 300, issued: 7, cancelled: 0 }],
+      rms: RMS.map((r, i) => ({ ...baseRm(r), issued: THIS_WEEK[i][0], cancelled: 0, fi: THIS_WEEK[i][1], fc: 0, rf: THIS_WEEK[i][2], appt: [Math.round(r.appt[0] * 0.16), Math.round(r.appt[1] * 0.14), Math.round(r.appt[2] * 0.5), Math.round(r.appt[3] * 0.13)] })) },
+    { id: 'w45', kind: 'week', name: 'Tuần trước', range: '02/11 – 08/11',
+      rms: RMS.map((r, i) => ({ ...baseRm(r), issued: r.issued - THIS_WEEK[i][0], fi: r.fi - THIS_WEEK[i][1], rf: r.rf - THIS_WEEK[i][2], appt: [Math.round(r.appt[0] * 0.52), Math.round(r.appt[1] * 0.5), r.appt[2] - Math.round(r.appt[2] * 0.5), 0] })) },
+    { id: 'w44', kind: 'week', name: 'Tuần 44', range: '26/10 – 01/11', rms: spread(0.6, 44, 1) },
+    { id: 'w43', kind: 'week', name: 'Tuần 43', range: '19/10 – 25/10', rms: spread(0.56, 43, 2) },
+    { id: 'm11', kind: 'month', name: 'Tháng 11/2026', range: '01/11 – 10/11', note: 'MTD', cmp: ['01/10 – 10/10', { sales: 1228, issued: 30, cancelled: 1 }], rms: RMS.map(baseRm) },
+    { id: 'm10', kind: 'month', name: 'Tháng 10/2026', range: '01/10 – 31/10', rms: spread(2.2, 10, 3) },
+    { id: 'm09', kind: 'month', name: 'Tháng 9/2026', range: '01/09 – 30/09', rms: spread(2.0, 9, 6) },
+    { id: 'm08', kind: 'month', name: 'Tháng 8/2026', range: '01/08 – 31/08', rms: spread(1.9, 8, 9) },
+    { id: 'y26', kind: 'year', name: 'Năm 2026', range: '01/01 – 10/11', note: 'YTD', rms: spread(21, 26, 0) },
+    { id: 'y25', kind: 'year', name: 'Năm 2025', range: '01/01 – 31/12', rms: spread(23, 25, 30) },
+  ];
+  const KINDS = [['week', 'Tuần'], ['month', 'Tháng'], ['year', 'Năm']];
+  const periodOf = (id = state.period) => PERIODS.find((p) => p.id === id);
+  // What a period is compared with: the same days of the period before when it is still running,
+  // else the whole period before it
+  function cmpOf(p) {
+    if (p.cmp) return { label: p.cmp[0], ...p.cmp[1] };
+    const same = PERIODS.filter((x) => x.kind === p.kind), older = same[same.indexOf(p) + 1];
+    const d = agg(older ? older.rms : p.rms), k = p.id === 'y26' ? 0.86 : older ? 1 : 0.93;
+    return { label: p.id === 'y26' ? '01/01 – 10/11/2025' : older ? older.name : 'kỳ liền trước', sales: Math.round((d.fi - d.fc) * k), issued: Math.round(d.issued * k), cancelled: Math.round(d.cancelled * k) };
+  }
   const LEDGER = {
     result: {
       cols: ['HĐ phát hành', 'HĐ hủy', 'Tổng số HĐ', 'FYP phát hành', 'FYP hủy', 'Doanh số', 'Tỷ lệ hủy', 'Tỉ lệ chốt'],
       row: (d, max) => {
         const cr = rate(d.cancelled, d.issued);
-        return [`<td>${d.issued}</td>`, d.cancelled ? `<td>${d.cancelled}</td>` : '<td class="zero">0</td>', `<td>${d.issued - d.cancelled}</td>`, `<td>${moneyS(d.fi)}</td>`, cell(d.fc),
+        return [`<td>${nf(d.issued)}</td>`, d.cancelled ? `<td>${nf(d.cancelled)}</td>` : '<td class="zero">0</td>', `<td>${nf(d.issued - d.cancelled)}</td>`, `<td>${moneyS(d.fi)}</td>`, cell(d.fc),
           max ? `<td class="bar" style="--w: ${((d.fi - d.fc) / max).toFixed(3)}"><span>${moneyS(d.fi - d.fc)}</span></td>` : `<td>${moneyS(d.fi - d.fc)}</td>`,
           `<td class="${cr >= 10 ? 'hot' : cr ? '' : 'zero'}">${pctS(cr)}</td>`, `<td>${pctS(rate(d.issued, d.rf))}</td>`].join('');
       },
@@ -562,35 +638,121 @@
     appt: { cols: ['Đã gặp', 'Dời · hủy · không đến', 'Chưa ghi kết quả', 'Dự kiến', 'Tổng lịch'], row: (d) => [...d.appt, sum(d.appt)].map((v) => `<td>${nf(v)}</td>`).join('') },
     kh: { cols: ['N4', 'N3', 'N2', 'N1', 'KH đang mở'], row: (d) => [...d.kh, sum(d.kh)].map((v) => `<td>${nf(v)}</td>`).join('') },
   };
-  function ledgerHtml(tab, flat) {
-    const L = LEDGER[tab], teams = [0, 1, 2].map((t) => ({ t, d: agg(teamRms(t)) }));
-    const max = Math.max(...teams.map((x) => x.d.fi - x.d.fc));
-    let h = `<thead><tr><th>${flat ? 'Team' : 'Team / RM'}</th>${L.cols.map((c) => `<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+  // mode: 'fold' teams that open to their RMs (Sổ số) · 'flat' teams only · 'full' every RM under its team (page 2)
+  function ledgerHtml(tab, mode, rms) {
+    const L = LEDGER[tab], net = (d) => d.fi - d.fc;
+    const teams = [0, 1, 2].map((t) => ({ t, d: agg(rms.filter((r) => r.team === t)) })).sort((a, b) => net(b.d) - net(a.d));
+    const max = Math.max(...teams.map((x) => net(x.d)), 1);
+    let h = `<thead><tr><th>${mode === 'flat' ? 'Team' : 'Team / RM'}</th>${L.cols.map((c) => `<th>${c}</th>`).join('')}</tr></thead><tbody>`;
     for (const { t, d } of teams) {
-      const open = !flat && !!state.open['lg' + t];
-      h += `<tr class="${flat ? '' : 'team'}${open ? ' open' : ''}" ${flat ? '' : `data-tw="lg${t}"`}><td>${flat ? '' : `<span class="tw">${ic('chev')}</span>`}${TEAMS[t].name}</td>${L.row(d, max)}</tr>`;
-      if (open) h += teamRms(t).map((r) => `<tr class="rm link" data-rm="${r.i}"><td>RM ${r.name}</td>${L.row(r, max)}</tr>`).join('');
+      const open = mode === 'full' || (mode === 'fold' && !!state.open['lg' + t]);
+      h += `<tr class="${mode === 'flat' ? '' : 'team'}${open && mode === 'fold' ? ' open' : ''}" ${mode === 'fold' ? `data-tw="lg${t}"` : ''}><td>${mode === 'fold' ? `<span class="tw">${ic('chev')}</span>` : ''}${teamMark(t)} ${TEAMS[t].name}</td>${L.row(d, max)}</tr>`;
+      if (open) h += rms.filter((r) => r.team === t).sort((a, b) => net(b) - net(a)).map((r) => `<tr class="rm ${mode === 'fold' ? 'link' : ''}" ${mode === 'fold' ? `data-rm="${r.i}"` : ''}><td>RM ${r.name}</td>${L.row(r, max)}</tr>`).join('');
     }
-    return h + `<tr class="total"><td>Tổng</td>${L.row(agg(RMS), 0)}</tr></tbody>`;
+    return h + `<tr class="total"><td>Tổng</td>${L.row(agg(rms), 0)}</tr></tbody>`;
+  }
+  // "Bản tin": three pages written from the numbers of the period (no AI). What is on screen is what
+  // prints, exports to PDF, and becomes the first sheets of the Excel file.
+  function papersHtml(p) {
+    const rms = p.rms, all = agg(rms), c = cmpOf(p), net = (d) => d.fi - d.fc, sales = net(all), total = all.issued - all.cancelled;
+    const teams = [0, 1, 2].map((t) => ({ t, d: agg(rms.filter((r) => r.team === t)) })).sort((a, b) => net(b.d) - net(a.d));
+    const g = c.sales ? ((sales - c.sales) / c.sales) * 100 : 0, cr = rate(all.cancelled, all.issued) || 0, dcr = cr - (rate(c.cancelled, c.issued) || 0);
+    const lead = teams[0], weak = [...teams].sort((a, b) => rate(a.d.issued, a.d.rf) - rate(b.d.issued, b.d.rf))[0];
+    const worst = [...teams].sort((a, b) => (rate(b.d.cancelled, b.d.issued) || 0) - (rate(a.d.cancelled, a.d.issued) || 0))[0];
+    const top = [...rms].sort((a, b) => net(b) - net(a))[0], maxT = Math.max(...teams.map((x) => x.d.fi), 1);
+    const when = `${p.range}${p.note ? ' (' + p.note + ')' : ''}`, more = (v) => (v >= 0 ? 'tăng' : 'giảm');
+    const brand = '<div class="brand" role="img" aria-label="Heritas L-CRM"><img class="b-tree b-out" src="img/heritas-tree.png" alt="" /><div><img class="b-word b-out" src="img/heritas-wordmark.png" alt="" /><img class="b-lcrm" src="img/heritas-lcrm.png" alt="" /></div></div>';
+    const run = `<div class="run"><span><b>Heritas L-CRM</b> · Báo cáo kết quả kinh doanh · ${p.name}</span><span class="num">${when} · Toàn bộ</span></div>`;
+    const foot = (n) => `<div class="foot"><span>Heritas L-CRM · tài liệu nội bộ</span><span class="num">Lập lúc 13:35 ngày 10/11/2026</span><span class="num">Trang ${n} / 3</span></div>`;
+    const notes = [
+      all.cancelled
+        ? `<li><b>HĐ hủy:</b> ${nf(all.cancelled)} HĐ, FYP hủy ${moneyS(all.fc)}. Cao nhất ở ${TEAMS[worst.t].name}: tỷ lệ hủy ${pctS(rate(worst.d.cancelled, worst.d.issued))}.</li>`
+        : '<li><b>Không có HĐ hủy</b> trong kỳ.</li>',
+      `<li><b>${TEAMS[weak.t].name} cần hỗ trợ:</b> tỉ lệ chốt ${pctS(rate(weak.d.issued, weak.d.rf))}, thấp nhất ba team.</li>`,
+      `<li><b>RM dẫn đầu:</b> ${top.name} (${TEAMS[top.team].name}), doanh số ${moneyS(net(top))} từ ${top.issued - top.cancelled} HĐ.</li>`,
+      p.note ? '<li><b>Tuần này dự kiến ' + moneyS(sum(fwOf(() => true))) + '</b> từ các lịch đã đặt của KH N3, N2, N1 (màn Forecast).</li>' : '',
+    ].join('');
+    // the cancelled policies of the period, at most six on the page
+    const cut = rms.flatMap((r) => Array.from({ length: r.cancelled }, (_, n) => ({ r, fyp: Math.round(r.fc / r.cancelled / 10) * 10, no: `${String(10 + ((r.i * 7 + n * 3) % 19)).padStart(2, '0')}10-0${300 + r.i * 41 + n * 17}`, kh: `${FAM[(r.i + n * 3) % 10]} ${MID[(r.i * 5 + n) % 8]} ${GIV[(r.i * 3 + n * 7 + 11) % 20]}` })));
+    const cutRows = cut.slice(0, 6).map((x) => `<tr><td class="num">HĐ ${x.no}</td><td class="l">${x.kh}</td><td class="l">RM ${x.r.name} · ${TEAMS[x.r.team].name}</td><td>${moneyS(x.fyp)}</td></tr>`).join('');
+    return `<article class="paper rise" style="--i: 0">
+        <div class="head">${brand}<div class="meta"><b>BÁO CÁO KẾT QUẢ KINH DOANH</b><strong>${p.name}</strong><span class="num">${when} · Toàn bộ · 3 team, 9 RM</span><br />Lập lúc 13:35 ngày 10/11/2026</div></div>
+        <h3>Doanh số ${sales >= 0 ? 'đạt' : 'âm'} ${moneyS(Math.abs(sales))}, ${more(g)} ${nf(Math.abs(g), 1)}% so với ${c.label}.</h3>
+        <p class="lead">${nf(total)} hợp đồng${all.cancelled ? ` sau khi trừ ${nf(all.cancelled)} hợp đồng hủy` : ', không có hợp đồng hủy'}. ${TEAMS[lead.t].name} dẫn đầu với ${moneyS(net(lead.d))}. Tỷ lệ hủy ${pctS(cr)}, ${more(dcr)} ${nf(Math.abs(dcr), 1)} điểm.</p>
+        <div class="kpi4 num">
+          <div><span class="lbl">Doanh số</span><span class="v">${nf(money(sales).v, money(sales).d)} <small>${money(sales).u}</small></span><span class="f">${moneyS(all.fi)} phát hành − ${moneyS(all.fc)} hủy</span></div>
+          <div><span class="lbl">Tổng số HĐ</span><span class="v">${nf(total)}</span><span class="f">${nf(all.issued)} phát hành − ${nf(all.cancelled)} hủy · kỳ so sánh ${nf(c.issued - c.cancelled)}</span></div>
+          <div><span class="lbl">Tỉ lệ chốt</span><span class="v">${nf(rate(all.issued, all.rf), 1)} <small>%</small></span><span class="f">${nf(all.issued)} HĐ phát hành ÷ ${nf(all.rf)} RF</span></div>
+          <div><span class="lbl">Tỷ lệ hủy</span><span class="v">${nf(cr, 1)} <small>%</small></span><span class="f">${nf(all.cancelled)} ÷ ${nf(all.issued)} · ${arrow(dcr)} ${nf(Math.abs(dcr), 1)} điểm</span></div>
+        </div>
+        <div class="two">
+          <div><h4>DOANH SỐ THEO TEAM</h4>${teams.map(({ t, d }) => `<div class="tbar"><b>${teamMark(t)} ${TEAMS[t].name}</b><div class="stack"><i style="--f: ${Math.max(net(d), 0.001)}; --c: var(--accent)"></i>${d.fc ? `<i class="cut" style="--f: ${d.fc}"></i>` : ''}<i style="--f: ${maxT - d.fi + 0.001}; --c: transparent"></i></div><span class="v num">${moneyS(net(d))}</span></div>`).join('')}<div class="keys"><span><i style="--c: var(--accent)"></i>Doanh số</span><span><i style="--c: var(--danger)"></i>FYP hủy (đã trừ)</span></div></div>
+          <div><h4>NHẬN XÉT</h4><ul>${notes}</ul></div>
+        </div>
+        <table class="tbl" style="margin-top: 22px">${ledgerHtml('result', 'flat', rms)}</table>
+        ${foot(1)}
+      </article>
+      <article class="paper rise" style="--i: 1">${run}
+        <h5>Kết quả theo RM <small>xếp theo doanh số trong từng team</small></h5>
+        <table class="tbl">${ledgerHtml('result', 'full', rms)}</table>
+        <h5>HĐ hủy trong kỳ <small>${cut.length ? `${nf(cut.length)} HĐ · FYP hủy ${moneyS(all.fc)}${cut.length > 6 ? ' · trang này ghi 6 HĐ đầu, đủ danh sách ở file Excel' : ''}` : 'không có'}</small></h5>
+        ${cut.length ? `<table class="tbl"><thead><tr><th>Số HĐ</th><th class="l">Khách hàng</th><th class="l">RM · Team</th><th>FYP hủy</th></tr></thead><tbody>${cutRows}</tbody></table>` : '<p class="lead">Không có hợp đồng nào hủy trong kỳ này.</p>'}
+        ${foot(2)}
+      </article>
+      <article class="paper rise" style="--i: 2">${run}
+        <h5>Lịch hẹn trong kỳ</h5>
+        <table class="tbl">${ledgerHtml('appt', 'flat', rms)}</table>
+        <h5>Khách hàng theo nhóm <small>cuối kỳ</small></h5>
+        <table class="tbl">${ledgerHtml('kh', 'flat', rms)}</table>
+        <h5>Định nghĩa chỉ số</h5>
+        <dl class="defs"><dt>Tổng số HĐ</dt><dd>HĐ phát hành − HĐ hủy. Có thể âm trong một kỳ ngắn.</dd><dt>Doanh số</dt><dd>FYP phát hành − FYP hủy. HĐ hủy tính vào kỳ của ngày hủy.</dd><dt>Tỷ lệ hủy</dt><dd>HĐ hủy ÷ HĐ phát hành; "—" khi kỳ không có HĐ phát hành; có thể vượt 100%.</dd><dt>Tỉ lệ chốt</dt><dd>HĐ phát hành ÷ RF, chưa trừ HĐ hủy.</dd><dt>Kỳ so sánh</dt><dd>Kỳ đang chạy so với cùng số ngày của kỳ trước; kỳ đã xong so với cả kỳ liền trước.</dd></dl>
+        ${foot(3)}
+      </article>`;
   }
   RENDER.reports = () => {
-    const brief = state.rp === 'brief';
-    $('#paper').hidden = !brief;
+    const p = periodOf(), brief = state.rp === 'brief';
+    $('#papers').hidden = !brief;
     $('#ledger').hidden = brief;
     $('#rp-print').hidden = !brief;
     $('#rp-hint').textContent = brief
-      ? 'Một trang đọc trong 10 giây. In ra, xuất PDF và sheet đầu của file Excel giống hệt trang này.'
+      ? 'Ba trang: tóm tắt, chi tiết theo RM, hoạt động. In, PDF và file Excel theo đúng bản này. Đổi kỳ ở viên kỳ phía trên.'
       : 'Mỗi tab trả lời một câu hỏi, vừa một màn, không cuộn ngang. Bấm một team để mở các RM.';
     $$('#rp-seg button').forEach((b) => b.classList.toggle('on', b.dataset.rp === state.rp));
     thumb($('#rp-seg'));
     $$('#lg-tabs button').forEach((b) => b.classList.toggle('on', b.dataset.lg === state.lg));
-    $('#lg-tbl').innerHTML = ledgerHtml(state.lg, false);
-    if (!$('#paper-tbl').innerHTML) {
-      $('#paper-tbl').innerHTML = ledgerHtml('result', true);
-      const teams = [0, 1, 2].map((t) => agg(teamRms(t)));
-      $('#paper-bars').innerHTML = teams.map((d, t) => `<div class="tbar"><b>${TEAMS[t].name}</b><div class="stack"><i style="--f: ${d.fi - d.fc}; --c: var(--accent)"></i>${d.fc ? `<i class="cut" style="--f: ${d.fc}"></i>` : ''}<i style="--f: ${570 - d.fi + 0.001}; --c: transparent"></i></div><span class="v num">${moneyS(d.fi - d.fc)}</span></div>`).join('');
-    }
+    $('#lg-tbl').innerHTML = ledgerHtml(state.lg, 'fold', p.rms);
+    $('#papers').innerHTML = papersHtml(p);
   };
+  // The period picker: kind on top, then this period and the ones before it
+  function periodPop(animate) {
+    const cur = periodOf(), kind = state.pkind || cur.kind;
+    $('#period-pop').innerHTML = `<div class="seg" id="pk-seg">${KINDS.map(([k, l]) => `<button class="${k === kind ? 'on' : ''}" data-kind="${k}">${l}</button>`).join('')}</div>`
+      + PERIODS.filter((p) => p.kind === kind).map((p) => `<button class="prow ${p.id === cur.id ? 'on' : ''}" data-period="${p.id}"><span><b>${p.name}</b><small class="num">${p.range}${p.note ? ' · ' + p.note : ''}</small></span>${p.id === cur.id ? ic('check') : ''}</button>`).join('')
+      + '<hr /><div class="h">Tùy chọn từ ngày tới ngày: có trong app, không thử ở đây.</div>';
+    thumb($('#pk-seg'), animate);
+  }
+  function openPeriod() {
+    state.pkind = null;
+    openFloat('period-pop');
+    periodPop(false);
+    place($('#period-pop'), $('#period'), 'right');
+  }
+  function setPeriod(id) {
+    state.period = id;
+    closeFloats();
+    if (state.view !== 'reports') {
+      go('reports');
+      return toast(`Tổng quan của bản thử chỉ có tháng 11. Đã mở Báo cáo: ${periodOf().name}`);
+    }
+    chrome();
+    RENDER.reports();
+    $('.view.on').scrollTop = 0;
+  }
+  function stepPeriod(dir) { // ‹ the period before, › the one after, within the same kind
+    if (state.view !== 'reports') return openPeriod();
+    const cur = periodOf(), same = PERIODS.filter((p) => p.kind === cur.kind), next = same[same.indexOf(cur) - dir];
+    return next ? setPeriod(next.id) : toast(dir > 0 ? 'Đây là kỳ mới nhất' : 'Bản thử không có kỳ cũ hơn');
+  }
 
   /* ---------- Khách hàng, hồ sơ, hủy HĐ ---------- */
   function renderKan() {
@@ -638,11 +800,14 @@
   const cadHtml = (cad) => '<span class="cad">' + [...cad].map((ch) => `<i class="${ch === '.' ? '' : ch}"></i>`).join('') + '</span>';
   const POLICIES = [{ no: '2610-0457', d: '21/10/2026', fyp: 150 }, { no: '1509-0312', d: '15/09/2026', fyp: 120 }];
   function openProfile(i, from) {
+    if (state.view !== 'profile') state.back = state.view;
     state.cust = i;
     go('profile', { from, to: '#pf-head' });
   }
   RENDER.profile = () => {
-    const c = CUS[state.cust], r = RMS[c.rm];
+    const c = CUS[state.cust], r = RMS[c.rm], back = $('.view[data-view="profile"] .back');
+    back.dataset.go = state.back; // back to where the customer was opened from
+    back.innerHTML = ic('back') + VIEWS[state.back].title;
     $('#pf-head').innerHTML = `<span class="av lg">${initials(c.name)}</span><div><h3>${c.name} <span class="st ${c.st}">${STAGE[c.st]}</span></h3><p>RM ${r.name} · ${TEAMS[r.team].name} · <span class="num">${c.code}</span></p></div>
       <div class="stats num"><div><span>Case size dự kiến</span><b>${c.cs ? c.cs + ' tr' : '—'}</b></div><div><span>Gặp gần nhất</span><b>${c.last || '—'}</b></div><div><span>Lịch kế tiếp</span><b>${c.next ? c.next.split(' · ')[0] : '—'}</b></div><div><span>Nhịp gặp · 8 tuần</span><b>${cadHtml(c.cad)}</b></div></div>`;
     const pols = POLICIES.slice(0, c.pol);
@@ -680,25 +845,58 @@
   }
 
   /* ---------- Team, RM, Lịch hẹn, Cài đặt ---------- */
+  // A team shows its own colour and icon; the TL stands level with the team's name; the three brief
+  // numbers are the loudest thing on the card (Owner 10/11)
+  const teamHead = (name, color, icon, tl, edit) => `<header style="--c: var(--${color})">${edit === null ? `<span class="tmark lg">${ic(icon)}</span>` : `<button class="tmark lg" data-edit-team="${edit}" title="Đổi tên, màu và icon của team" aria-label="Đổi tên, màu và icon của team ${esc(name)}">${ic(icon)}</button>`}<b class="tname">${esc(name)}</b><span class="tl"><i>${ic('crown')}TL</i><b>${tl}</b></span></header>`;
   RENDER.team = () => {
-    if ($('#teams').children.length) return;
     $('#teams').innerHTML = [0, 1, 2].map((t) => {
-      const d = scopeData(t);
-      return `<section class="card tcard rise" style="--i: ${t}"><header><b>${TEAMS[t].name}</b><span>TL ${TEAMS[t].tl}</span></header><p class="sum num">Doanh số ${moneyS(d.sales)} · ${d.total} HĐ · Forecast tuần ${moneyS(sum(d.fw))}</p>`
+      const d = scopeData(t), T = TEAMS[t];
+      return `<section class="card tcard rise" style="--i: ${t}">${teamHead(T.name, T.color, T.icon, T.tl, t)}
+        <div class="brief num"><div><b>${moneyS(d.sales)}</b><span>Doanh số</span></div><div><b>${d.total}</b><span>Số HĐ</span></div><div><b>${moneyS(sum(d.fw))}</b><span>Forecast tuần</span></div></div>`
         + teamRms(t).map((r) => `<button class="rmrow" data-rm="${r.i}"><span class="av">${initials(r.name)}</span><span><b>${r.name}</b><small class="num">${sum(r.kh)} KH · Forecast tuần ${moneyS(sum(fwOf((c) => c.rm === r.i)))}</small></span><span class="v num">${moneyS(r.fi - r.fc)}</span></button>`).join('') + '</section>';
     }).join('');
   };
+  // Making or editing a team: name, colour, icon, with the header drawn as it will look
+  let draft = null;
+  function drawTeamSheet() {
+    const d = draft;
+    $('#sheet').innerHTML = `<h3>${d.t === null ? 'Tạo team' : 'Sửa team'}</h3><p>Màu và icon đi theo team ở mọi nơi: Tổng quan, Forecast, Báo cáo.</p>
+      <div class="tprev">${teamHead(d.name || 'Tên team', d.color, d.icon, d.tl, null)}</div>
+      <div class="fld"><label for="team-name">Tên team</label><input id="team-name" type="text" value="${esc(d.name)}" maxlength="24" autocomplete="off" /></div>
+      <div class="fld"><label>Màu</label><div class="swatches">${TEAM_COLORS.map(([c, l]) => `<button class="${c === d.color ? 'on' : ''}" data-tc="${c}" style="--c: var(--${c})" title="${l}" aria-label="Màu ${l}"></button>`).join('')}</div></div>
+      <div class="fld"><label>Icon</label><div class="icons">${TEAM_ICONS.map((i) => `<button class="${i === d.icon ? 'on' : ''}" data-ti="${i}" aria-label="Icon ${i}">${ic(i)}</button>`).join('')}</div></div>
+      <div class="acts"><button class="btn ghost" data-close>Đóng</button><button class="btn" data-team-save>${d.t === null ? 'Tạo team' : 'Lưu'}</button></div>`;
+  }
+  function teamSheet(t) {
+    draft = t === null ? { t, name: 'Team mới', color: 'info', icon: 'mountain', tl: 'Chưa chọn' } : { t, name: TEAMS[t].name, color: TEAMS[t].color, icon: TEAMS[t].icon, tl: TEAMS[t].tl };
+    drawTeamSheet();
+    openFloat('sheet', true);
+  }
+  function saveTeam() {
+    const d = draft, name = $('#team-name').value.trim();
+    closeFloats();
+    if (d.t === null) return toast('Bản concept: team mới không được lưu. Phần này để anh thử chọn màu và icon.');
+    Object.assign(TEAMS[d.t], { name: name || TEAMS[d.t].name, color: d.color, icon: d.icon });
+    renderKan();
+    if (RENDER[state.view]) RENDER[state.view]();
+    toast(`Đã lưu team ${TEAMS[d.t].name}`);
+  }
+  document.addEventListener('input', (e) => {
+    if (e.target.id !== 'team-name' || !draft) return;
+    draft.name = e.target.value;
+    $('.tprev .tname').textContent = draft.name || 'Tên team';
+  });
   function openRm(i, from) {
     state.rm = i;
     go('rm', { from, to: '#rm-head' });
   }
   RENDER.rm = () => {
     const r = RMS[state.rm], list = CUS.filter((c) => c.rm === r.i).sort((a, b) => a.st.localeCompare(b.st));
-    $('#rm-head').innerHTML = `<span class="av lg">${initials(r.name)}</span><div><h3>${r.name} <span class="chip">RM</span></h3><p>Team ${TEAMS[r.team].name} · TL ${TEAMS[r.team].tl}</p></div>
+    $('#rm-head').innerHTML = `<span class="av lg">${initials(r.name)}</span><div><h3>${r.name} <span class="chip">RM</span></h3><p>${teamMark(r.team)} Team ${TEAMS[r.team].name} · TL ${TEAMS[r.team].tl}</p></div>
       <div class="stats num"><div><span>Doanh số tháng 11</span><b>${moneyS(r.fi - r.fc)}</b></div><div><span>Tổng số HĐ</span><b>${r.issued - r.cancelled}</b></div><div><span>Tỷ lệ hủy</span><b>${pctS(rate(r.cancelled, r.issued))}</b></div><div><span>Tỉ lệ chốt</span><b>${pctS(rate(r.issued, r.rf))}</b></div><div><span>Forecast tuần</span><b>${moneyS(sum(fwOf((c) => c.rm === r.i)))}</b></div></div>`;
     $('#rm-count').innerHTML = `${sum(r.kh)} KH đang mở · bản concept hiện ${list.length} KH mẫu<span class="legend">${cadHtml('m')} đã gặp</span><span class="legend">${cadHtml('x')} dời, hủy, không đến</span><span class="legend">${cadHtml('s')} có lịch tuần này</span>`;
     $('#rm-tbl').innerHTML = '<thead><tr><th>Khách hàng</th><th class="l">Nhóm</th><th class="l">Nhịp gặp · 8 tuần</th><th>Gặp gần nhất</th><th>Lịch sắp tới</th><th>Case size dự kiến</th><th>HĐ</th></tr></thead><tbody>'
-      + list.map((c) => `<tr class="rm link" data-c="${c.i}"><td style="padding-left: 10px; color: var(--text)"><b>${c.name}</b></td><td class="l"><span class="st ${c.st}">${STAGE[c.st]}</span></td><td class="l">${cadHtml(c.cad)}</td><td>${c.last || '—'}</td><td>${c.next || '—'}</td><td>${c.cs ? c.cs + ' tr' : '—'}</td><td>${c.pol || '—'}</td></tr>`).join('') + '</tbody>';
+      + list.map((c) => `<tr class="rm link" data-c="${c.i}"><td style="padding-left: 12px; color: var(--text)"><b>${c.name}</b></td><td class="l"><span class="st ${c.st}">${STAGE[c.st]}</span></td><td class="l">${cadHtml(c.cad)}</td><td>${c.last || '—'}</td><td>${c.next || '—'}</td><td>${c.cs ? c.cs + ' tr' : '—'}</td><td>${c.pol || '—'}</td></tr>`).join('') + '</tbody>';
   };
   RENDER.appointments = () => { $('#ag-today').innerHTML = agendaHtml(); };
   const SETTINGS = {
@@ -706,21 +904,45 @@
       [['File dữ liệu', '<span class="k-win">Project2C-data\\ cạnh file exe</span><span class="k-mac">~/Library/Application Support/dev.alexh.project2c/</span>'], ['Bản sao lưu gần nhất', '<span>Hôm nay 12:10</span>']],
       [['Sao lưu ngay', '<button class="btn ghost" data-job="backup">Sao lưu</button>'], ['Khôi phục từ file sao lưu', '<button class="btn ghost">Chọn file…</button>'], ['Mở thư mục dữ liệu', '<span class="k-win">trong Explorer</span><span class="k-mac">trong Finder</span>']],
     ]],
-    ai: ['AI', [
-      [['Nhà cung cấp', '<span>OpenCode</span>'], ['API key', '<span class="k-win">lưu trong Credential Manager của Windows</span><span class="k-mac">lưu trong Keychain của macOS</span>'], ['Phiên bản prompt', '<span class="num">analysis@6 · discovery@6</span>']],
-    ]],
     trash: ['Thùng rác', [
       [['Bản ghi trong Thùng rác', '<span class="num">12</span>'], ['Dọn sạch Thùng rác', '<button class="btn ghost">Dọn…</button>']],
     ]],
   };
+  // Cài đặt → AI (Owner 10/11): more than one provider, a model per provider, the reasoning effort.
+  // OpenCode, its models and the four effort levels are the ones of the approved AI mockup; WorkBuddy is new.
+  const AI = {
+    opencode: { name: 'OpenCode', note: 'Đang dùng · gói Credit', key: 1, models: ['GLM-5.3', 'Kimi K3', 'DeepSeek V4.1 Flash'] },
+    workbuddy: { name: 'WorkBuddy', note: 'Mới · gói Pro', key: 0, models: ['DeepSeek V4.1 Flash'] },
+    chatgpt: { name: 'ChatGPT web', note: 'Dán tay qua trình duyệt', key: -1, models: ['Theo tài khoản ChatGPT'] },
+  };
+  const EFFORTS = ['Mặc định', 'Thấp', 'Vừa', 'Cao'];
+  function aiPane() {
+    const a = state.ai, P = AI[a.provider];
+    if (!P.models.includes(a.model)) a.model = P.models[P.models.length - 1];
+    const store = '<span class="k-win">Credential Manager</span><span class="k-mac">Keychain</span>';
+    const seg = (kind, list, on) => `<span class="seg">${list.map((x) => `<button class="${x === on ? 'on' : ''}" data-ai-${kind}="${x}">${x}</button>`).join('')}</span>`;
+    return `<h3>AI</h3>
+      <div class="card group rise"><div class="gh">Nhà cung cấp</div>${Object.entries(AI).map(([id, p]) => `<button class="r prov ${id === a.provider ? 'on' : ''}" data-ai-provider="${id}"><i class="radio"></i><span class="t"><b>${p.name}</b><small>${p.note}</small></span><span class="keyst">${p.key > 0 ? `${ic('check')}Key lưu trong ${store}` : p.key === 0 ? 'Chưa có key · Nhập key…' : 'Không cần key'}</span></button>`).join('')}</div>
+      <div class="card group rise" style="--i: 1">
+        <div class="r"><b>Model</b>${seg('model', P.models, a.model)}</div>
+        <div class="r"><b>Mức suy luận</b>${seg('effort', EFFORTS, a.effort)}</div>
+        <div class="r"><b>Phiên bản prompt</b><span class="num">analysis@6 · discovery@6</span></div>
+        <div class="r"><b>Kiểm tra kết nối</b><button class="btn ghost" data-ai-test>Gửi thử</button></div>
+      </div>
+      <p class="note">Mức Cao trả lời kỹ hơn, chậm hơn và tốn credit hơn; model chưa được kiểm với mức suy luận thì app dùng Mặc định. Thêm một nhà cung cấp là thêm một dịch vụ: qua G4 (dịch vụ, chi phí), G5 (chạy lại bộ đánh giá trên model đó) và G6 (nơi lưu key). Cần kiểm trước: WorkBuddy có API cho app ngoài gọi hay không.</p>`;
+  }
   RENDER.settings = () => {
-    const [title, groups] = SETTINGS[state.set];
     $$('#set-nav .set-i').forEach((b) => b.classList.toggle('on', b.dataset.setI === state.set));
-    $('#set-pane').innerHTML = `<h3>${title}</h3>` + groups.map((g, i) => `<div class="card group rise" style="--i: ${i}">${g.map(([l, r]) => `<div class="r"><b>${l}</b>${r.startsWith('<button') ? '<span></span>' + r : r}</div>`).join('')}</div>`).join('');
+    if (state.set === 'ai') {
+      $('#set-pane').innerHTML = aiPane();
+      return thumbs(false);
+    }
+    const [title, groups] = SETTINGS[state.set];
+    $('#set-pane').innerHTML = `<h3>${title}</h3>` + groups.map((g, i) => `<div class="card group rise" style="--i: ${i}">${g.map(([l, r]) => `<div class="r"><b>${l}</b>${r}</div>`).join('')}</div>`).join('');
   };
 
   /* ---------- Floats: palette, sheet, popovers ---------- */
-  const FLOATS = ['pal', 'sheet', 'now-pop', 'scope-menu', 'miss-pop', 'go-menu'];
+  const FLOATS = ['pal', 'sheet', 'now-pop', 'scope-menu', 'miss-pop', 'go-menu', 'day-pop', 'period-pop'];
   function closeFloats(except) {
     FLOATS.forEach((id) => { if (id !== except) $('#' + id).classList.remove('on'); });
     if (!except) $('#win').classList.remove('modal');
@@ -741,7 +963,9 @@
     left = Math.max(12, Math.min(left, host.width / s - w - 12));
     pop.style.left = left + 'px';
     pop.style.marginLeft = '0';
-    pop.style.top = (a.bottom - host.top) / s + 8 + 'px';
+    let top = (a.bottom - host.top) / s + 8; // below its anchor, or above it when there is no room below
+    if (top + pop.offsetHeight > host.height / s - 12) top = Math.max(12, (a.top - host.top) / s - pop.offsetHeight - 8);
+    pop.style.top = top + 'px';
   }
   const CMDS = [
     { t: 'Đặt lịch hẹn mới', run: () => toast('Bản concept: ở đây mở hộp Đặt lịch hẹn, có ô Case size dự kiến') },
@@ -834,9 +1058,9 @@
     ['16', 'Tổng quan', 'Điểm nhấn', 'Bốn câu nhận xét viết từ số theo luật cố định: hủy tăng, team dẫn đầu, buổi chưa ghi kết quả, dự kiến tuần này. Bấm một câu để tới đúng nơi.', 'Số nhiều thì người xem bỏ sót điều quan trọng; câu chữ kéo mắt tới đó. Không dùng AI nên luôn đúng số.', 'M', [['G2', 'gate']], 1, { view: 'overview' }],
     ['17', 'Forecast', 'Đường băng tháng', 'Một thanh: đã đạt, dự kiến tuần này tách N1 / N2 / N3, và các tuần còn lại. Cuối thanh là số "về đích".', 'Câu quản lý hỏi nhiều nhất là "tháng này về bao nhiêu". Một thanh trả lời được.', 'S–M', [['D']], 1, { view: 'forecast' }],
     ['18', 'Forecast', 'Dải tuần thứ Hai → thứ Bảy', 'Mỗi ngày một cột, mỗi lịch hẹn một thẻ có case size và màu nhóm; tổng tiền ở đầu cột. KH có hai lịch chỉ tính một lần, thẻ kia mờ đi.', 'Thấy tiền dự kiến nằm ở ngày nào, của ai, để biết hôm nào phải dồn sức.', 'M', [['D']], 1, { view: 'forecast', pre: () => { state.fc = 'week'; } }],
-    ['19', 'Forecast', 'Lưới tháng không có Chủ Nhật', 'Mỗi tuần một hàng, sáu cột thứ Hai → thứ Bảy; ô đậm nhạt theo số tiền; ngày đã qua và ngày ngoài tháng gạch chéo.', 'Đúng định nghĩa Forecast tháng của anh; nhìn là hiểu vì sao không có Chủ Nhật 15, 22, 29.', 'S–M', [['D']], 1, { view: 'forecast', pre: () => { state.fc = 'month'; } }],
+    ['19', 'Forecast', 'Lưới tháng không có Chủ Nhật', 'Mỗi tuần một hàng, sáu cột thứ Hai → thứ Bảy; ô đậm nhạt theo số tiền; ngày đã qua và ngày ngoài tháng gạch chéo. Bấm một ô để thấy các lịch của ngày đó: KH nào, của RM nào, bao nhiêu; bấm KH để mở hồ sơ.', 'Đúng định nghĩa Forecast tháng của anh; nhìn là hiểu vì sao không có Chủ Nhật 15, 22, 29.', 'S–M', [['D']], 1, { view: 'forecast', pre: () => { state.fc = 'month'; } }],
     ['20', 'Forecast', 'Bảng Team → RM, điền case size tại chỗ', 'Bấm một team để mở các RM; cột Tuần này có thanh. Lịch thiếu case size gom vào một nút: bấm, điền số, Forecast chạy theo ngay.', 'Forecast chỉ đúng khi đủ case size. Điền được ngay tại nơi phát hiện thiếu thì dữ liệu mới đầy.', 'M', [['D']], 1, { view: 'forecast' }],
-    ['21', 'Báo cáo và Excel', 'Bản tin một trang', 'Báo cáo mở ra là một trang có đầu thư: một câu tóm tắt, bốn số chính, doanh số theo team, ba nhận xét, bảng gọn. Nút "Xem bản in" cho thấy đúng trang sẽ in hoặc xuất PDF.', 'Anh cần "đẳng cấp, chuyên nghiệp": người đọc là cấp trên, đọc trong 10 giây. Trang này gửi đi được ngay.', 'M', [['E']], 1, { view: 'reports', pre: () => { state.rp = 'brief'; } }],
+    ['21', 'Báo cáo và Excel', 'Bản tin ba trang, chọn được kỳ', 'Báo cáo là một tập ba trang có đầu thư: tóm tắt (câu tóm tắt, bốn số chính, doanh số theo team, nhận xét viết từ số), chi tiết từng RM và các HĐ hủy, rồi lịch hẹn, khách hàng theo nhóm và định nghĩa. Chọn kỳ ở viên kỳ trên thanh công cụ: tuần, tháng, năm, kỳ này và các kỳ trước. Nút "Xem bản in" cho thấy đúng trang sẽ in hoặc xuất PDF.', 'Anh cần "đẳng cấp, chuyên nghiệp": người đọc là cấp trên, đọc trong 10 giây. Trang này gửi đi được ngay.', 'M', [['E']], 1, { view: 'reports', pre: () => { state.rp = 'brief'; } }],
     ['22', 'Báo cáo và Excel', 'Sổ số kiểu báo cáo tài chính', 'Ba tab Kết quả · Lịch hẹn · Khách hàng thay cho 17 cột cuộn ngang. Team gập mở RM. Số canh phải, tiêu đề một dòng, dòng Tổng có kẻ trên.', 'Bảng hiện tại phải cuộn ngang và tiêu đề gãy ba, bốn dòng. Chia theo câu hỏi thì mỗi bảng vừa một màn.', 'M', [['E'], ['B']], 1, { view: 'reports', pre: () => { state.rp = 'ledger'; state.open.lg0 = true; } }],
     ['23', 'Báo cáo và Excel', 'File Excel là bản in của Bản tin', 'Sheet Tóm tắt giống hệt Bản tin. Sheet sổ có nhóm gập Team ▸ RM, thanh dữ liệu của Excel, dòng Tổng là công thức. Sheet Forecast và sheet Định nghĩa đi kèm.', 'File gửi đi phải đẹp như làm tay và vẫn đúng khi người nhận sửa số. Mẫu ở mục File Excel bên dưới.', 'M', [['E'], ['D']], 1, { scroll: '#excel' }],
     ['24', 'Báo cáo và Excel', 'Trình chiếu', 'Một nút ẩn thanh bên và phóng trang báo cáo cho màn chiếu; Esc để thoát.', 'Báo cáo hay được mở trong họp. Rẻ, làm sau khi có Bản tin.', 'S', [['E']], 0, { view: 'reports', pre: () => { state.rp = 'brief'; } }],
@@ -844,7 +1068,9 @@
     ['26', 'Khách hàng, RM, hợp đồng', 'Xem nhanh bằng phím cách', 'Chọn một thẻ, nhấn Space: bảng kính hiện nhóm, RM, case size, lịch kế tiếp, HĐ, nhịp gặp. Nhấn lần nữa để đóng.', 'Như Quick Look của Finder: xem mà không rời danh sách.', 'M', [['Mac']], 0, { view: 'customers', post: () => quickLook(CUS[7]) }],
     ['27', 'Khách hàng, RM, hợp đồng', 'Trang RM có "nhịp gặp"', 'Bấm một RM (hay tìm tên): đầu trang là chỉ số kỳ này và Forecast tuần; dưới là KH đang phụ trách, mỗi KH một dải 8 tuần cho thấy gặp đều hay bỏ lâu, kèm lần gặp gần nhất và lịch sắp tới.', 'Đúng yêu cầu phần C, thêm một cái nhìn bảng thường không có: KH nào đang bị bỏ quên.', 'M', [['C']], 1, { pre: () => openRm(0) }],
     ['28', 'Khách hàng, RM, hợp đồng', 'Hủy HĐ: thấy trước ảnh hưởng', 'Hộp hủy hỏi ngày hủy và cho thấy chỉ số của RM trước → sau (doanh số, tổng số HĐ, tỷ lệ hủy). Hủy xong, HĐ có dấu "Đã hủy" và có nút Hoàn tác.', 'Hủy là thao tác nặng, đổi số của cả kỳ. Thấy trước thì không hủy nhầm.', 'S–M', [['B']], 1, { pre: () => { openProfile(7); setTimeout(() => { if (!state.cancel['72610-0457']) openCancel('2610-0457'); }, reduce ? 0 : 600); } }],
+    ['33', 'Khách hàng, RM, hợp đồng', 'Team có màu và icon riêng', 'Khi tạo team, chọn màu cho tên và một icon bên cạnh. TL đứng ngang hàng tên team, chữ đậm và to tương đương. Ba số tóm tắt (doanh số, số HĐ, Forecast tuần) đậm, màu champagne. Màu và icon đi theo team ở Tổng quan, Forecast, Báo cáo. Thử: bấm icon của một team, hoặc nút "+ Team".', 'Yêu cầu của anh ngày 10/11. Nhận ra team bằng mắt, không phải đọc tên; người đứng đầu được nêu rõ. Màu và icon là dữ liệu mới của team nên qua G2.', 'M', [['C'], ['G2', 'gate'], ['Owner 10/11']], 1, { view: 'team' }],
     ['29', 'Cài đặt', 'Icon cho Cài đặt và Forecast', 'Ba mục Dữ liệu, AI, Thùng rác có ô màu bo góc như Cài đặt hệ thống của Mac, dùng màu sẵn có của app. Mục Forecast và ô tìm dùng cùng bộ nét với các icon thanh bên.', 'Yêu cầu F của anh. Không cần màu mới.', 'S', [['F']], 1, { view: 'settings' }],
+    ['34', 'Cài đặt', 'Nhiều nhà cung cấp AI, chọn model và mức suy luận', 'Cài đặt → AI liệt kê các nhà cung cấp (OpenCode đang dùng, thêm WorkBuddy), mỗi nơi một key riêng. Chọn model theo nhà cung cấp và mức suy luận: Mặc định, Thấp, Vừa, Cao.', 'Yêu cầu của anh ngày 10/11. Mỗi nhà cung cấp mới là một dịch vụ mới: G4 (dịch vụ, chi phí), G5 (chạy lại bộ đánh giá trên model đó), G6 (nơi lưu key). Phải kiểm trước WorkBuddy có API cho app ngoài gọi không.', 'L', [['G4', 'gate'], ['G5', 'gate'], ['G6', 'gate'], ['Owner 10/11']], 1, { view: 'settings', pre: () => { state.set = 'ai'; } }],
     ['30', 'Để sau v1.0', 'Nhắc lịch bằng thông báo của máy', '15 phút trước lịch hẹn có thông báo hệ thống; icon trên thanh menu (Windows: khay hệ thống) cho xem lịch kế tiếp mà không mở app.', 'Cần thêm plugin thông báo của Tauri.', 'M', [['G4', 'gate']], 0, {}],
     ['31', 'Để sau v1.0', 'Widget, Spotlight, Shortcuts', 'Widget lịch hôm nay trên màn hình Mac, tìm KH từ Spotlight, lệnh cho Siri / Shortcuts.', 'Chỉ app gốc Apple làm được: cần một phần viết bằng Swift. Xét khi chốt hướng thương mại hóa.', 'L', [['Mac']], 0, {}],
     ['32', 'Để sau v1.0', 'Mục tiêu doanh số', 'Đặt mục tiêu tháng cho team / RM; đường băng có thêm vạch đích và phần trăm về đích.', 'Thêm dữ liệu mới nên phải qua G2.', 'M', [['G2', 'gate']], 0, {}],
@@ -895,6 +1121,20 @@
   document.addEventListener('click', (e) => {
     const t = e.target, on = (sel) => t.closest(sel);
     let el;
+    if ((el = on('[data-cell]'))) { const [w, day] = el.dataset.cell.split('-').map(Number); return openDay(w, day, el); }
+    if ((el = on('#period-l'))) return $('#period-pop').classList.contains('on') ? closeFloats() : openPeriod();
+    if ((el = on('[data-kind]'))) { state.pkind = el.dataset.kind; return periodPop(true); }
+    if ((el = on('[data-period]'))) return setPeriod(el.dataset.period);
+    if ((el = on('[data-edit-team]'))) return teamSheet(+el.dataset.editTeam);
+    if ((el = on('[data-tc], [data-ti]'))) { draft.name = $('#team-name').value; if (el.dataset.tc) draft.color = el.dataset.tc; else draft.icon = el.dataset.ti; return drawTeamSheet(); }
+    if ((el = on('[data-team-save]'))) return saveTeam();
+    if ((el = on('[data-ai-provider]'))) { state.ai.provider = el.dataset.aiProvider; return RENDER.settings(); }
+    if ((el = on('[data-ai-model], [data-ai-effort]'))) {
+      if (el.dataset.aiModel) state.ai.model = el.dataset.aiModel; else state.ai.effort = el.dataset.aiEffort;
+      $$('button', el.parentElement).forEach((b) => b.classList.toggle('on', b === el));
+      return thumb(el.parentElement);
+    }
+    if ((el = on('[data-ai-test]'))) return nowJob('Đang gửi thử tới ' + AI[state.ai.provider].name, 'Kết nối tốt · ' + state.ai.model);
     if ((el = on('#full'))) return document.fullscreenElement ? document.exitFullscreen() : root.requestFullscreen().catch(() => toast('Khung xem này không cho mở toàn màn hình. Anh thử phím F11.'));
     if ((el = on('.back'))) return goBack(el.dataset.go);
     if ((el = on('.seg[data-set] button'))) return setSwitch(el.parentElement.dataset.set, el.dataset.v);
@@ -916,17 +1156,17 @@
     if ((el = on('#scope'))) { if ($('#scope-menu').classList.contains('on')) return closeFloats(); openFloat('scope-menu'); $$('#scope-menu [data-scope]').forEach((b) => b.classList.toggle('on', b.dataset.scope === String(state.scope))); return place($('#scope-menu'), el, 'left'); }
     if ((el = on('#menu-go'))) { if ($('#go-menu').classList.contains('on')) return closeFloats(); openFloat('go-menu'); el.setAttribute('aria-expanded', 'true'); return place($('#go-menu'), el, 'left'); }
     if ((el = on('#fc-miss'))) return $('#miss-pop').classList.contains('on') ? closeFloats() : openMiss();
-    if ((el = on('.step'))) return toast('Bản concept chỉ có số của tháng 11/2026');
-    if ((el = on('#act'))) return VIEWS[state.view].act[0] === 'export' ? exportDemo() : toast(`Bản concept: ở đây mở hộp thêm ${VIEWS[state.view].act[1]}`);
+    if ((el = on('.step'))) return stepPeriod(+el.dataset.step);
+    if ((el = on('#act'))) return state.view === 'team' ? teamSheet(null) : VIEWS[state.view].act[0] === 'export' ? exportDemo() : toast(`Bản concept: ở đây mở hộp thêm ${VIEWS[state.view].act[1]}`);
     if ((el = on('#fc-seg button'))) { state.fc = el.dataset.fc; $$('#fc-seg button').forEach((b) => b.classList.toggle('on', b === el)); return RENDER.forecast(); }
     if ((el = on('#rp-seg button'))) { state.rp = el.dataset.rp; return go('reports'); }
     if ((el = on('#lg-tabs button'))) { state.lg = el.dataset.lg; return RENDER.reports(); }
-    if ((el = on('#rp-print'))) { const p = $('#paper'), onP = p.dataset.theme !== 'light'; if (onP) p.dataset.theme = 'light'; else delete p.dataset.theme; $('span', el).textContent = onP ? 'Xem trên màn hình' : 'Xem bản in'; return; }
+    if ((el = on('#rp-print'))) { const p = $('#papers'), onP = p.dataset.theme !== 'light'; if (onP) p.dataset.theme = 'light'; else delete p.dataset.theme; $('span', el).textContent = onP ? 'Xem trên màn hình' : 'Xem bản in'; return; }
     if ((el = on('#rp-show'))) { const w = $('#win'); w.classList.toggle('present'); return toast(w.classList.contains('present') ? 'Đang trình chiếu · Esc để thoát' : 'Đã thoát trình chiếu'); }
     if ((el = on('tr[data-tw]'))) { state.open[el.dataset.tw] = !state.open[el.dataset.tw]; return state.view === 'forecast' ? renderFcTable(fcData()) : RENDER.reports(); }
     if ((el = on('tr[data-rm], .rmrow'))) return openRm(+el.dataset.rm, el.classList.contains('rmrow') ? el : null);
     if ((el = on('[data-open-c]'))) return openProfile(+el.dataset.openC);
-    if ((el = on('.kcard, .ap, tr[data-c]'))) return openProfile(+el.dataset.c, el.classList.contains('kcard') ? el : null);
+    if ((el = on('.kcard, .ap, .dayrow, tr[data-c]'))) return openProfile(+el.dataset.c, el.classList.contains('kcard') ? el : null);
     if ((el = on('[data-set-i]'))) { state.set = el.dataset.setI; return RENDER.settings(); }
     if ((el = on('[data-go]'))) return go(el.dataset.go);
     if ((el = on('[data-see]'))) return see(el.dataset.see);
