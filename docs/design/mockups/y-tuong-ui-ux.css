@@ -793,6 +793,20 @@ button.tmark.lg:hover { transform: scale(1.08) rotate(-5deg); }
 .icons button:hover { background: var(--seg-on); }
 .icons button.on { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); transform: scale(1.06); }
 
+/* a team without a colour of its own: the default look */
+header.plain .tname { color: var(--text); }
+.swatches button.none { background: linear-gradient(135deg, transparent 46%, var(--border-control) 46% 54%, transparent 54%), var(--fill-2); box-shadow: inset 0 0 0 1.5px var(--border-control); }
+.swatches button.none.on { box-shadow: 0 0 0 2px var(--bg-2), 0 0 0 4px var(--text-2); }
+#team-target { width: 110px; text-align: right; }
+.sheet .fld .muted { font-size: 12.5px; }
+.goal-line { margin: 0 0 8px; font-size: 12.5px; color: var(--text-2); }
+/* --- Forecast: the sales target as a mark on the runway --- */
+.runway .stack { position: relative; }
+.goal { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -3px; border-radius: 2px; background: var(--text); box-shadow: 0 0 0 2px var(--bg-0); }
+.keys i.goal-k { width: 3px; height: 12px; border-radius: 2px; background: var(--text); vertical-align: -2px; }
+.runway .sum .pct { font-size: 20px; color: var(--accent); }
+.runway .sum .pct.ok { color: var(--ok); }
+
 /* --- Forecast: a day opens to its appointments --- */
 .day .dh { width: 100%; border-radius: 8px; transition: background var(--t-1); }
 .day button.dh:hover:not(:disabled) { background: var(--fill-2); }

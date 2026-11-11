@@ -99,8 +99,10 @@
   // Team identity (Owner 10/11): a colour and an icon, picked when the team is made
   const TEAM_COLORS = [['accent', 'Champagne'], ['info', 'Xanh dương'], ['n2', 'Tím'], ['submitted', 'Xanh ngọc'], ['ok', 'Xanh lá'], ['warn', 'Cam']];
   const TEAM_ICONS = ['star', 'sunrise', 'sun', 'mountain', 'leaf', 'flame', 'shield', 'anchor'];
-  [['accent', 'star'], ['warn', 'sunrise'], ['submitted', 'sun']].forEach(([color, icon], t) => Object.assign(TEAMS[t], { color, icon }));
-  const teamMark = (t, cls = '') => `<span class="tmark ${cls}" style="--c: var(--${TEAMS[t].color})">${ic(TEAMS[t].icon)}</span>`;
+  [['accent', 'star', 1100], ['warn', 'sunrise', 950], [null, null, 950]].forEach(([color, icon, target], t) => Object.assign(TEAMS[t], { color, icon, target }));
+  // no colour or icon chosen: the default look (text colour, the plain team icon)
+  const look = (color, icon) => [color ? `var(--${color})` : 'var(--text-2)', icon || 'team'];
+  const teamMark = (t, cls = '') => { const [c, i] = look(TEAMS[t].color, TEAMS[t].icon); return `<span class="tmark ${cls}" style="--c: ${c}">${ic(i)}</span>`; };
   const CUR = [0, 150, 290, 470, 640, 830, 960, 960, 1180, 1380]; // cumulative sales, 01/11 … 10/11
   const GHOST = [[1, 90], [2, 230], [3, 300], [4, 300], [5, 480], [6, 640], [7, 800], [8, 960], [9, 1100], [10, 1228], [14, 1600], [17, 1980], [21, 2350], [24, 2640], [28, 2960], [31, 3180]];
 
@@ -220,7 +222,7 @@
   /* ---------- Chrome + navigation ---------- */
   const VIEWS = {
     overview: { nav: 'overview', title: 'Tổng quan', sub: () => `Tháng 11/2026 · 01/11 – 10/11 (MTD) · ${scopeName()}`, act: ['plus', 'Lịch hẹn'], scope: 1, period: 1, ideas: ['01', '02', '05', '09', '11', '12', '14', '15', '16'] },
-    forecast: { nav: 'forecast', title: 'Forecast', sub: () => `Hôm nay thứ Ba 10/11/2026 · ${scopeName()}`, act: ['export', 'Xuất Excel'], scope: 1, ideas: ['17', '18', '19', '20', '29'] },
+    forecast: { nav: 'forecast', title: 'Forecast', sub: () => `Hôm nay thứ Ba 10/11/2026 · ${scopeName()}`, act: ['export', 'Xuất Excel'], scope: 1, ideas: ['17', '32', '18', '19', '20', '29'] },
     reports: { nav: 'reports', title: 'Báo cáo', sub: () => { const p = periodOf(); return `${p.name} · ${p.range}${p.note ? ' (' + p.note + ')' : ''} · Toàn bộ`; }, act: ['export', 'Xuất Excel'], period: 1, ideas: ['21', '22', '23', '24', '11'] },
     customers: { nav: 'customers', title: 'Khách hàng', sub: () => 'Kanban theo nhóm · Toàn bộ', act: ['plus', 'Khách hàng'], ideas: ['25', '26', '07'] },
     profile: { nav: 'customers', title: 'Hồ sơ khách hàng', sub: () => CUS[state.cust].code, act: ['plus', 'Lịch hẹn'], ideas: ['07', '28'] },
@@ -533,10 +535,14 @@
     miss.hidden = !f.miss.length;
     miss.innerHTML = `${ic('alert')}${f.miss.length} lịch thiếu case size · điền ngay`;
 
-    const rest = f.month - f.week;
-    $('.runway').innerHTML = `<h3>Đường băng tháng 11 <small>đã đạt + dự kiến</small><span class="sum">về đích <b class="num">${moneyS(f.sales + f.month)}</b></span></h3>
-      <div class="stack"><i style="--f: ${f.sales}; --c: var(--accent)"></i>${f.fw.map((v, i) => `<i style="--f: ${v || 0.001}; --c: var(--${ST3[i]})"></i>`).join('')}<i class="hatch" style="--f: ${rest}"></i></div>
-      <div class="keys"><span><i style="--c: var(--accent)"></i>Đã đạt <b class="num">${moneyS(f.sales)}</b></span>${f.fw.map((v, i) => `<span><i style="--c: var(--${ST3[i]})"></i>${i ? '' : 'Tuần này '}${STAGE[ST3[i]]} <b class="num">${moneyS(v)}</b></span>`).join('')}<span><i style="--c: var(--accent); opacity: 0.5"></i>Các tuần còn lại <b class="num">${moneyS(rest)}</b></span></div>
+    const rest = f.month - f.week, land = f.sales + f.month;
+    const goal = f.teams.every((t) => TEAMS[t].target) ? sum(f.teams, (t) => TEAMS[t].target) : 0, span = Math.max(land, goal);
+    const goalTxt = goal ? ` · <b class="num pct ${land >= goal ? 'ok' : ''}">${nf((land / goal) * 100)}%</b> mục tiêu ${moneyS(goal)}` : ' · chưa đặt mục tiêu';
+    const goalBar = goal ? `${goal > land ? `<i style="--f: ${goal - land}; --c: var(--fill-2)"></i>` : ''}<u class="goal" style="left: ${((goal / span) * 100).toFixed(2)}%"></u>` : '';
+    const goalKey = goal ? `<span><i class="goal-k"></i>Mục tiêu <b class="num">${moneyS(goal)}</b> · còn thiếu <b class="num">${moneyS(Math.max(goal - land, 0))}</b></span>` : '';
+    $('.runway').innerHTML = `<h3>Đường băng tháng 11 <small>đã đạt + dự kiến</small><span class="sum">về đích <b class="num">${moneyS(land)}</b>${goalTxt}</span></h3>
+      <div class="stack"><i style="--f: ${f.sales}; --c: var(--accent)"></i>${f.fw.map((v, i) => `<i style="--f: ${v || 0.001}; --c: var(--${ST3[i]})"></i>`).join('')}<i class="hatch" style="--f: ${rest}"></i>${goalBar}</div>
+      <div class="keys"><span><i style="--c: var(--accent)"></i>Đã đạt <b class="num">${moneyS(f.sales)}</b></span>${f.fw.map((v, i) => `<span><i style="--c: var(--${ST3[i]})"></i>${i ? '' : 'Tuần này '}${STAGE[ST3[i]]} <b class="num">${moneyS(v)}</b></span>`).join('')}<span><i style="--c: var(--accent); opacity: 0.5"></i>Các tuần còn lại <b class="num">${moneyS(rest)}</b></span>${goalKey}</div>
       <p class="note">Đã đạt là doanh số thuần (FYP phát hành − FYP hủy). Phần dự kiến cộng thẳng case size của từng lịch, không nhân tỷ lệ chốt.</p>`;
 
     if (wk) {
@@ -857,12 +863,16 @@
   /* ---------- Team, RM, Lịch hẹn, Cài đặt ---------- */
   // A team shows its own colour and icon; the TL stands level with the team's name; the three brief
   // numbers are the loudest thing on the card (Owner 10/11)
-  const teamHead = (name, color, icon, tl, edit) => `<header style="--c: var(--${color})">${edit === null ? `<span class="tmark lg">${ic(icon)}</span>` : `<button class="tmark lg" data-edit-team="${edit}" title="Đổi tên, màu và icon của team" aria-label="Đổi tên, màu và icon của team ${esc(name)}">${ic(icon)}</button>`}<b class="tname">${esc(name)}</b><span class="tl"><i>${ic('crown')}TL</i><b>${tl}</b></span></header>`;
+  const teamHead = (name, color, icon, tl, edit) => {
+    const [c, i] = look(color, icon);
+    const mark = edit === null ? `<span class="tmark lg">${ic(i)}</span>` : `<button class="tmark lg" data-edit-team="${edit}" title="Sửa team: tên, màu, icon, mục tiêu" aria-label="Sửa team ${esc(name)}">${ic(i)}</button>`;
+    return `<header class="${color ? '' : 'plain'}" style="--c: ${c}">${mark}<b class="tname">${esc(name)}</b><span class="tl"><i>${ic('crown')}TL</i><b>${tl}</b></span></header>`;
+  };
   RENDER.team = () => {
     $('#teams').innerHTML = [0, 1, 2].map((t) => {
       const d = scopeData(t), T = TEAMS[t];
       return `<section class="card tcard rise" style="--i: ${t}">${teamHead(T.name, T.color, T.icon, T.tl, t)}
-        <div class="brief num"><div><b>${moneyS(d.sales)}</b><span>Doanh số</span></div><div><b>${d.total}</b><span>Số HĐ</span></div><div><b>${moneyS(sum(d.fw))}</b><span>Forecast tuần</span></div></div>`
+        <div class="brief num"><div><b>${moneyS(d.sales)}</b><span>Doanh số</span></div><div><b>${d.total}</b><span>Số HĐ</span></div><div><b>${moneyS(sum(d.fw))}</b><span>Forecast tuần</span></div></div>${T.target ? `<p class="goal-line num">Mục tiêu tháng ${moneyS(T.target)} · đã đạt ${nf((d.sales / T.target) * 100)}% · dự kiến về đích ${nf(((d.sales + d.fm) / T.target) * 100)}%</p>` : '<p class="goal-line">Chưa đặt mục tiêu tháng</p>'}`
         + teamRms(t).map((r) => `<button class="rmrow" data-rm="${r.i}"><span class="av">${initials(r.name)}</span><span><b>${r.name}</b><small class="num">${sum(r.kh)} KH · Forecast tuần ${moneyS(sum(fwOf((c) => c.rm === r.i)))}</small></span><span class="v num">${moneyS(r.fi - r.fc)}</span></button>`).join('') + '</section>';
     }).join('');
   };
@@ -870,23 +880,27 @@
   let draft = null;
   function drawTeamSheet() {
     const d = draft;
-    $('#sheet').innerHTML = `<h3>${d.t === null ? 'Tạo team' : 'Sửa team'}</h3><p>Màu và icon đi theo team ở mọi nơi: Tổng quan, Forecast, Báo cáo.</p>
+    $('#sheet').innerHTML = `<h3>${d.t === null ? 'Tạo team' : 'Sửa team'}</h3><p>Chỉ cần tên. Màu và icon là tùy chọn: không chọn thì team dùng kiểu mặc định.</p>
       <div class="tprev">${teamHead(d.name || 'Tên team', d.color, d.icon, d.tl, null)}</div>
       <div class="fld"><label for="team-name">Tên team</label><input id="team-name" type="text" value="${esc(d.name)}" maxlength="24" autocomplete="off" /></div>
-      <div class="fld"><label>Màu</label><div class="swatches">${TEAM_COLORS.map(([c, l]) => `<button class="${c === d.color ? 'on' : ''}" data-tc="${c}" style="--c: var(--${c})" title="${l}" aria-label="Màu ${l}"></button>`).join('')}</div></div>
-      <div class="fld"><label>Icon</label><div class="icons">${TEAM_ICONS.map((i) => `<button class="${i === d.icon ? 'on' : ''}" data-ti="${i}" aria-label="Icon ${i}">${ic(i)}</button>`).join('')}</div></div>
+      <div class="fld"><label>Màu</label><div class="swatches"><button class="none ${d.color ? '' : 'on'}" data-tc="" title="Mặc định" aria-label="Màu mặc định"></button>${TEAM_COLORS.map(([c, l]) => `<button class="${c === d.color ? 'on' : ''}" data-tc="${c}" style="--c: var(--${c})" title="${l}" aria-label="Màu ${l}"></button>`).join('')}</div><span class="muted">tùy chọn</span></div>
+      <div class="fld"><label>Icon</label><div class="icons"><button class="${d.icon ? '' : 'on'}" data-ti="" title="Mặc định" aria-label="Icon mặc định">${ic('team')}</button>${TEAM_ICONS.map((i) => `<button class="${i === d.icon ? 'on' : ''}" data-ti="${i}" aria-label="Icon ${i}">${ic(i)}</button>`).join('')}</div></div>
+      <div class="fld"><label for="team-target">Mục tiêu</label><input id="team-target" class="num" type="text" inputmode="numeric" value="${d.target || ''}" placeholder="chưa đặt" /><span class="muted">triệu đồng / tháng · mốc để Forecast so sánh</span></div>
       <div class="acts"><button class="btn ghost" data-close>Đóng</button><button class="btn" data-team-save>${d.t === null ? 'Tạo team' : 'Lưu'}</button></div>`;
   }
+  // what is typed stays when the sheet is drawn again
+  const readDraft = () => { draft.name = $('#team-name').value; draft.target = parseInt($('#team-target').value, 10) || null; };
   function teamSheet(t) {
-    draft = t === null ? { t, name: 'Team mới', color: 'info', icon: 'mountain', tl: 'Chưa chọn' } : { t, name: TEAMS[t].name, color: TEAMS[t].color, icon: TEAMS[t].icon, tl: TEAMS[t].tl };
+    draft = t === null ? { t, name: 'Team mới', color: null, icon: null, target: null, tl: 'Chưa chọn' } : { t, name: TEAMS[t].name, color: TEAMS[t].color, icon: TEAMS[t].icon, target: TEAMS[t].target, tl: TEAMS[t].tl };
     drawTeamSheet();
     openFloat('sheet', true);
   }
   function saveTeam() {
-    const d = draft, name = $('#team-name').value.trim();
+    readDraft();
+    const d = draft;
     closeFloats();
-    if (d.t === null) return toast('Bản concept: team mới không được lưu. Phần này để anh thử chọn màu và icon.');
-    Object.assign(TEAMS[d.t], { name: name || TEAMS[d.t].name, color: d.color, icon: d.icon });
+    if (d.t === null) return toast('Bản concept: team mới không được lưu. Phần này để anh thử tên, màu, icon và mục tiêu.');
+    Object.assign(TEAMS[d.t], { name: d.name.trim() || TEAMS[d.t].name, color: d.color, icon: d.icon, target: d.target });
     renderKan();
     if (RENDER[state.view]) RENDER[state.view]();
     toast(`Đã lưu team ${TEAMS[d.t].name}`);
@@ -1053,7 +1067,6 @@
     ['01', 'Vỏ và chất liệu', 'Ba lớp: Nền · Kính · Tiêu điểm', 'Nội dung là lớp nền, phẳng và rộng. Thanh bên và các nút điều khiển là kính nổi phía trên. Hộp thoại, ô lệnh là lớp tiêu điểm, làm mờ phần còn lại. Thẻ không còn viền: phân cấp bằng cỡ chữ và khoảng trống.', 'Đây là cách macOS 26 và Windows 11 dựng cửa sổ. Bỏ viền thì số liệu nổi lên, app bớt cảm giác "bảng điều khiển".', 'M', [['Mac'], ['Win']], 1, { view: 'overview', spot: '#win' }],
     ['02', 'Vỏ và chất liệu', 'Mỗi hệ điều hành một chất', 'Cùng bố cục, khác chi tiết. macOS: thanh bên kính bo đồng tâm với cửa sổ, ba nút đỏ-vàng-xanh nằm trong thanh bên, nút điều khiển dạng viên, menu trên cùng. Windows 11: nền Mica, ô tìm trên thanh tiêu đề, vạch chọn bên trái, góc bo 8 px, nút cửa sổ bên phải.', 'Phát hành cùng lúc hai nền tảng: người dùng Mac thấy app Mac, người dùng Windows thấy app Windows. Đổi công tắc ở thanh dưới cửa sổ để so.', 'M', [['Mac'], ['Win']], 1, { spot: '.seg[data-set="os"]' }],
     ['03', 'Vỏ và chất liệu', 'Chữ hệ thống, số có nhịp', 'Chữ giao diện dùng font của máy (SF Pro, Segoe UI Variable): mở app không chờ tải font, tiếng Việt đủ dấu. Số lớn khít và rõ; đơn vị (tỷ, tr, %) nhỏ và nhạt; cột số thẳng hàng.', 'Font hệ thống là cách rẻ nhất để app "giống app gốc". Đổi công tắc Chữ để so với Be Vietnam Pro.', 'S', [['đổi ADR-0013', 'gate']], 1, { spot: '.seg[data-set="font"]' }],
-    ['04', 'Vỏ và chất liệu', 'Giao diện Sáng "Giấy"', 'Bộ màu sáng: nền giấy ngà, chữ xanh navy của logo, vàng champagne đậm hơn để đủ tương phản; tự theo cài đặt Sáng / Tối của máy.', 'Người dùng Mac hay để chế độ sáng ban ngày. Phải kiểm lại tương phản mọi màn, nên em đề xuất để sau v1.0; riêng bản in dùng giấy sáng ngay.', 'M–L', [['đổi ADR-0013', 'gate']], 0, { spot: '.seg[data-set="theme"]' }],
     ['05', 'Vỏ và chất liệu', 'Logo gọn trên thanh bên', 'Cụm ngang: cây bên trái, chữ Heritas và L-CRM bên phải; slogan xuống chân thanh bên.', 'Khối logo dọc hiện chiếm gần một phần tư thanh bên. Bản gọn trả chỗ cho điều hướng mà vẫn giữ đủ ba mảnh logo anh đã duyệt.', 'S', [['đổi G3 27/10', 'gate']], 1, { view: 'overview' }],
     ['06', 'Chuyển động', 'Bốn động tác, ba lò xo', 'Hiện, Mở, Trượt, Đếm. Thời lượng và đường cong là token dùng chung. Chỉ đổi vị trí, tỉ lệ, độ trong; tự tắt khi máy bật Giảm chuyển động.', '"Mượt" đến từ sự nhất quán: cùng một thứ luôn chuyển động cùng một kiểu. Phòng thử ở mục Chuyển động bên dưới.', 'M', [], 1, { scroll: '#motion', spot: '#lab' }],
     ['07', 'Chuyển động', 'Mở từ chỗ bấm', 'Bấm thẻ KH, thẻ nở thành hồ sơ. Bấm một RM, dòng đó nở thành trang RM.', 'Mắt không mất dấu: luôn biết mình vừa từ đâu tới. Dùng View Transitions có sẵn của WebView, không thêm thư viện. Thử: bấm một thẻ ở màn Khách hàng.', 'M', [], 1, { view: 'customers', spot: '#kan' }],
@@ -1070,6 +1083,7 @@
     ['18', 'Forecast', 'Dải tuần thứ Hai → thứ Bảy', 'Mỗi ngày một cột, mỗi lịch hẹn một thẻ có case size và màu nhóm; tổng tiền ở đầu cột. KH có hai lịch chỉ tính một lần, thẻ kia mờ đi.', 'Thấy tiền dự kiến nằm ở ngày nào, của ai, để biết hôm nào phải dồn sức.', 'M', [['D']], 1, { view: 'forecast', pre: () => { state.fc = 'week'; } }],
     ['19', 'Forecast', 'Lưới tháng không có Chủ Nhật', 'Mỗi tuần một hàng, sáu cột thứ Hai → thứ Bảy; ô đậm nhạt theo số tiền; ngày đã qua và ngày ngoài tháng gạch chéo. Bấm một ô để thấy các lịch của ngày đó: KH nào, của RM nào, bao nhiêu; bấm KH để mở hồ sơ.', 'Đúng định nghĩa Forecast tháng của anh; nhìn là hiểu vì sao không có Chủ Nhật 15, 22, 29.', 'S–M', [['D']], 1, { view: 'forecast', pre: () => { state.fc = 'month'; } }],
     ['20', 'Forecast', 'Bảng Team → RM, điền case size tại chỗ', 'Bấm một team để mở các RM; cột Tuần này có thanh. Lịch thiếu case size gom vào một nút: bấm, điền số, Forecast chạy theo ngay.', 'Forecast chỉ đúng khi đủ case size. Điền được ngay tại nơi phát hiện thiếu thì dữ liệu mới đầy.', 'M', [['D']], 1, { view: 'forecast' }],
+    ['32', 'Forecast', 'Mục tiêu doanh số', 'Mỗi team có một ô nhập mục tiêu doanh số tháng, trong hộp tạo / sửa team. Đường băng của Forecast có thêm vạch mục tiêu, phần trăm về đích và số còn thiếu; thẻ team ghi đã đạt bao nhiêu phần trăm.', 'Anh làm rõ 11/11: mục tiêu là trường nhập thêm để Forecast có cột mốc so sánh. Là dữ liệu mới nên qua G2; còn phải chốt mục tiêu đặt cho team hay tới từng RM, theo tháng hay cả tuần.', 'M', [['D'], ['G2', 'gate'], ['Owner 11/11']], 1, { view: 'forecast' }],
     ['21', 'Báo cáo và Excel', 'Bản tin ba trang, chọn được kỳ', 'Báo cáo là một tập ba trang có đầu thư: tóm tắt (câu tóm tắt, bốn số chính, doanh số theo team, nhận xét viết từ số), chi tiết từng RM và các HĐ hủy, rồi lịch hẹn, khách hàng theo nhóm và định nghĩa. Chọn kỳ ở viên kỳ trên thanh công cụ: tuần, tháng, năm, kỳ này và các kỳ trước. Nút "Xem bản in" cho thấy đúng trang sẽ in hoặc xuất PDF.', 'Anh cần "đẳng cấp, chuyên nghiệp": người đọc là cấp trên, đọc trong 10 giây. Trang này gửi đi được ngay.', 'M', [['E']], 1, { view: 'reports', pre: () => { state.rp = 'brief'; } }],
     ['22', 'Báo cáo và Excel', 'Sổ số kiểu báo cáo tài chính', 'Ba tab Kết quả · Lịch hẹn · Khách hàng thay cho 17 cột cuộn ngang. Team gập mở RM. Số canh phải, tiêu đề một dòng, dòng Tổng có kẻ trên.', 'Bảng hiện tại phải cuộn ngang và tiêu đề gãy ba, bốn dòng. Chia theo câu hỏi thì mỗi bảng vừa một màn.', 'M', [['E'], ['B']], 1, { view: 'reports', pre: () => { state.rp = 'ledger'; state.open.lg0 = true; } }],
     ['23', 'Báo cáo và Excel', 'File Excel là bản in của Bản tin', 'Sheet Tóm tắt giống hệt Bản tin. Sheet sổ có nhóm gập Team ▸ RM, thanh dữ liệu của Excel, dòng Tổng là công thức. Sheet Forecast và sheet Định nghĩa đi kèm.', 'File gửi đi phải đẹp như làm tay và vẫn đúng khi người nhận sửa số. Mẫu ở mục File Excel bên dưới.', 'M', [['E'], ['D']], 1, { scroll: '#excel' }],
@@ -1078,12 +1092,12 @@
     ['26', 'Khách hàng, RM, hợp đồng', 'Xem nhanh bằng phím cách', 'Chọn một thẻ, nhấn Space: bảng kính hiện nhóm, RM, case size, lịch kế tiếp, HĐ, nhịp gặp. Nhấn lần nữa để đóng.', 'Như Quick Look của Finder: xem mà không rời danh sách.', 'M', [['Mac']], 0, { view: 'customers', post: () => quickLook(CUS[7]) }],
     ['27', 'Khách hàng, RM, hợp đồng', 'Trang RM có "nhịp gặp"', 'Bấm một RM (hay tìm tên): đầu trang là chỉ số kỳ này và Forecast tuần; dưới là KH đang phụ trách, mỗi KH một dải 8 tuần cho thấy gặp đều hay bỏ lâu, kèm lần gặp gần nhất và lịch sắp tới.', 'Đúng yêu cầu phần C, thêm một cái nhìn bảng thường không có: KH nào đang bị bỏ quên.', 'M', [['C']], 1, { pre: () => openRm(0) }],
     ['28', 'Khách hàng, RM, hợp đồng', 'Hủy HĐ: thấy trước ảnh hưởng', 'Hộp hủy hỏi ngày hủy và cho thấy chỉ số của RM trước → sau (doanh số, tổng số HĐ, tỷ lệ hủy). Hủy xong, HĐ có dấu "Đã hủy" và có nút Hoàn tác.', 'Hủy là thao tác nặng, đổi số của cả kỳ. Thấy trước thì không hủy nhầm.', 'S–M', [['B']], 1, { pre: () => { openProfile(7); setTimeout(() => { if (!state.cancel['72610-0457']) openCancel('2610-0457'); }, reduce ? 0 : 600); } }],
-    ['33', 'Khách hàng, RM, hợp đồng', 'Team có màu và icon riêng', 'Khi tạo team, chọn màu cho tên và một icon bên cạnh. TL đứng ngang hàng tên team, chữ đậm và to tương đương. Ba số tóm tắt (doanh số, số HĐ, Forecast tuần) đậm, màu champagne. Màu và icon đi theo team ở Tổng quan, Forecast, Báo cáo. Thử: bấm icon của một team, hoặc nút "+ Team".', 'Yêu cầu của anh ngày 10/11. Nhận ra team bằng mắt, không phải đọc tên; người đứng đầu được nêu rõ. Màu và icon là dữ liệu mới của team nên qua G2.', 'M', [['C'], ['G2', 'gate'], ['Owner 10/11']], 1, { view: 'team' }],
+    ['33', 'Khách hàng, RM, hợp đồng', 'Team có màu và icon riêng', 'Khi tạo team, có thể chọn màu cho tên và một icon bên cạnh; cả hai là tùy chọn, không chọn thì team dùng kiểu mặc định. TL đứng ngang hàng tên team, chữ đậm và to tương đương. Ba số tóm tắt (doanh số, số HĐ, Forecast tuần) đậm, màu champagne. Màu và icon đi theo team ở Tổng quan, Forecast, Báo cáo. Thử: bấm icon của một team, hoặc nút "+ Team".', 'Yêu cầu của anh ngày 10/11. Nhận ra team bằng mắt, không phải đọc tên; người đứng đầu được nêu rõ. Màu và icon là dữ liệu mới của team nên qua G2.', 'M', [['C'], ['G2', 'gate'], ['Owner 10/11']], 1, { view: 'team' }],
     ['29', 'Cài đặt', 'Icon cho Cài đặt và Forecast', 'Ba mục Dữ liệu, AI, Thùng rác có ô màu bo góc như Cài đặt hệ thống của Mac, dùng màu sẵn có của app. Mục Forecast và ô tìm dùng cùng bộ nét với các icon thanh bên.', 'Yêu cầu F của anh. Không cần màu mới.', 'S', [['F']], 1, { view: 'settings' }],
     ['34', 'Cài đặt', 'Nhiều nhà cung cấp AI, chọn model và mức suy luận', 'Cài đặt → AI liệt kê các nhà cung cấp (OpenCode đang dùng, thêm WorkBuddy), mỗi nơi một key riêng. Chọn model theo nhà cung cấp và mức suy luận: Mặc định, Thấp, Vừa, Cao.', 'Yêu cầu của anh ngày 10/11. Mỗi nhà cung cấp mới là một dịch vụ mới: G4 (dịch vụ, chi phí), G5 (chạy lại bộ đánh giá trên model đó), G6 (nơi lưu key). Phải kiểm trước WorkBuddy có API cho app ngoài gọi không.', 'L', [['G4', 'gate'], ['G5', 'gate'], ['G6', 'gate'], ['Owner 10/11']], 1, { view: 'settings', pre: () => { state.set = 'ai'; } }],
+    ['04', 'Để sau v1.0', 'Giao diện Sáng "Giấy"', 'Bộ màu sáng: nền giấy ngà, chữ xanh navy của logo, vàng champagne đậm hơn để đủ tương phản; tự theo cài đặt Sáng / Tối của máy.', 'Anh chốt 11/11: để sau v1.0, hiện tại chỉ cần Dark Mode. Bấm Xem để bật, bấm lần nữa để tắt bản xem trước.', 'M–L', [['đổi ADR-0013', 'gate']], 0, { pre: () => setSwitch('theme', root.dataset.theme === 'dark' ? 'light' : 'dark') }],
     ['30', 'Để sau v1.0', 'Nhắc lịch bằng thông báo của máy', '15 phút trước lịch hẹn có thông báo hệ thống; icon trên thanh menu (Windows: khay hệ thống) cho xem lịch kế tiếp mà không mở app.', 'Cần thêm plugin thông báo của Tauri.', 'M', [['G4', 'gate']], 0, {}],
     ['31', 'Để sau v1.0', 'Widget, Spotlight, Shortcuts', 'Widget lịch hôm nay trên màn hình Mac, tìm KH từ Spotlight, lệnh cho Siri / Shortcuts.', 'Chỉ app gốc Apple làm được: cần một phần viết bằng Swift. Xét khi chốt hướng thương mại hóa.', 'L', [['Mac']], 0, {}],
-    ['32', 'Để sau v1.0', 'Mục tiêu doanh số', 'Đặt mục tiêu tháng cho team / RM; đường băng có thêm vạch đích và phần trăm về đích.', 'Thêm dữ liệu mới nên phải qua G2.', 'M', [['G2', 'gate']], 0, {}],
   ].map(([no, g, t, what, why, e, tags, rec, at]) => ({ no, g, t, what, why, e, tags, rec, at }));
   const picked = new Set(IDEAS.filter((x) => x.rec).map((x) => x.no));
 
@@ -1137,7 +1151,7 @@
     if ((el = on('[data-kind]'))) { state.pkind = el.dataset.kind; return periodPop(true); }
     if ((el = on('[data-period]'))) return setPeriod(el.dataset.period);
     if ((el = on('[data-edit-team]'))) return teamSheet(+el.dataset.editTeam);
-    if ((el = on('[data-tc], [data-ti]'))) { draft.name = $('#team-name').value; if (el.dataset.tc) draft.color = el.dataset.tc; else draft.icon = el.dataset.ti; return drawTeamSheet(); }
+    if ((el = on('[data-tc], [data-ti]'))) { readDraft(); if ('tc' in el.dataset) draft.color = el.dataset.tc || null; else draft.icon = el.dataset.ti || null; return drawTeamSheet(); }
     if ((el = on('[data-team-save]'))) return saveTeam();
     if ((el = on('[data-ai-provider]'))) { state.ai.provider = el.dataset.aiProvider; return RENDER.settings(); }
     if ((el = on('[data-ai-model], [data-ai-effort]'))) {
