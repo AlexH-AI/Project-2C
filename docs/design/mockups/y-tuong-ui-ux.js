@@ -944,27 +944,33 @@
     ]],
   };
   // Cài đặt → AI (Owner 10/11): more than one provider, a model per provider, the reasoning effort.
-  // OpenCode, its models and the four effort levels are the ones of the approved AI mockup; WorkBuddy is new.
+  // OpenCode, its models and the four effort levels are the ones of the approved AI mockup.
+  // WorkBuddy has no API for an outside app (checked 11/11): it works by hand like ChatGPT web (Owner 11/11):
+  // the app copies the prompt, the user pastes it there and pastes the answer back.
   const AI = {
     opencode: { name: 'OpenCode', note: 'Đang dùng · gói Credit', key: 1, models: ['GLM-5.3', 'Kimi K3', 'DeepSeek V4.1 Flash'] },
-    workbuddy: { name: 'WorkBuddy', note: 'Mới · gói Pro', key: 0, models: ['DeepSeek V4.1 Flash'] },
-    chatgpt: { name: 'ChatGPT web', note: 'Dán tay qua trình duyệt', key: -1, models: ['Theo tài khoản ChatGPT'] },
+    workbuddy: { name: 'WorkBuddy', note: 'Mới · chép – dán qua app WorkBuddy', key: -1, manual: 'WorkBuddy', models: [] },
+    chatgpt: { name: 'ChatGPT web', note: 'Chép – dán qua trình duyệt', key: -1, manual: 'ChatGPT', models: [] },
   };
   const EFFORTS = ['Mặc định', 'Thấp', 'Vừa', 'Cao'];
   function aiPane() {
     const a = state.ai, P = AI[a.provider];
-    if (!P.models.includes(a.model)) a.model = P.models[P.models.length - 1];
+    if (P.models.length && !P.models.includes(a.model)) a.model = P.models[P.models.length - 1];
     const store = '<span class="k-win">Credential Manager</span><span class="k-mac">Keychain</span>';
     const seg = (kind, list, on) => `<span class="seg">${list.map((x) => `<button class="${x === on ? 'on' : ''}" data-ai-${kind}="${x}">${x}</button>`).join('')}</span>`;
     return `<h3>AI</h3>
       <div class="card group rise"><div class="gh">Nhà cung cấp</div>${Object.entries(AI).map(([id, p]) => `<button class="r prov ${id === a.provider ? 'on' : ''}" data-ai-provider="${id}"><i class="radio"></i><span class="t"><b>${p.name}</b><small>${p.note}</small></span><span class="keyst">${p.key > 0 ? `${ic('check')}Key lưu trong ${store}` : p.key === 0 ? 'Chưa có key · Nhập key…' : 'Không cần key'}</span></button>`).join('')}</div>
-      <div class="card group rise" style="--i: 1">
+      <div class="card group rise" style="--i: 1">${P.manual ? `
+        <div class="r"><b class="nw">Cách dùng</b><span class="steps"><span><i>1</i>App chép prompt</span><span><i>2</i>Bạn dán vào ${P.manual}</span><span><i>3</i>Chép câu trả lời, dán về app</span></span></div>
+        <div class="r"><b>Model, mức suy luận</b><span class="muted">Chọn trong ${P.manual}</span></div>
+        <div class="r"><b>Phiên bản prompt</b><span class="num">analysis@6 · discovery@6</span></div>
+        <div class="r"><b>Thử</b><button class="btn ghost" data-ai-copy>Chép prompt mẫu</button></div>` : `
         <div class="r"><b>Model</b>${seg('model', P.models, a.model)}</div>
         <div class="r"><b>Mức suy luận</b>${seg('effort', EFFORTS, a.effort)}</div>
         <div class="r"><b>Phiên bản prompt</b><span class="num">analysis@6 · discovery@6</span></div>
-        <div class="r"><b>Kiểm tra kết nối</b><button class="btn ghost" data-ai-test>Gửi thử</button></div>
+        <div class="r"><b>Kiểm tra kết nối</b><button class="btn ghost" data-ai-test>Gửi thử</button></div>`}
       </div>
-      <p class="note">Mức Cao trả lời kỹ hơn, chậm hơn và tốn credit hơn; model chưa được kiểm với mức suy luận thì app dùng Mặc định. Thêm một nhà cung cấp là thêm một dịch vụ: qua G4 (dịch vụ, chi phí), G5 (chạy lại bộ đánh giá trên model đó) và G6 (nơi lưu key). Cần kiểm trước: WorkBuddy có API cho app ngoài gọi hay không.</p>`;
+      <p class="note">Mức Cao trả lời kỹ hơn, chậm hơn và tốn credit hơn; model chưa được kiểm với mức suy luận thì app dùng Mặc định. Thêm một nhà cung cấp là thêm một dịch vụ: qua G4 (dịch vụ, chi phí), G5 (chạy lại bộ đánh giá trên model đó) và G6 (nơi lưu key). WorkBuddy không có API cho app bên ngoài (tra cứu 11/11), nên dùng kiểu chép – dán như ChatGPT web: không cần key, app không gửi gì ra ngoài, câu trả lời dán về vẫn qua bộ kiểm của app.</p>`;
   }
   RENDER.settings = () => {
     $$('#set-nav .set-i').forEach((b) => b.classList.toggle('on', b.dataset.setI === state.set));
@@ -1105,7 +1111,7 @@
     ['28', 'Khách hàng, RM, hợp đồng', 'Hủy HĐ: thấy trước ảnh hưởng', 'Hộp hủy hỏi ngày hủy và cho thấy chỉ số của RM trước → sau (doanh số, tổng số HĐ, tỷ lệ hủy). Hủy xong, HĐ có dấu "Đã hủy" và có nút Hoàn tác.', 'Hủy là thao tác nặng, đổi số của cả kỳ. Thấy trước thì không hủy nhầm.', 'S–M', [['B']], 1, { pre: () => { openProfile(7); setTimeout(() => { if (!state.cancel['72610-0457']) openCancel('2610-0457'); }, reduce ? 0 : 600); } }],
     ['33', 'Khách hàng, RM, hợp đồng', 'Team có màu và icon riêng', 'Khi tạo team, có thể chọn màu cho tên và một icon bên cạnh; cả hai là tùy chọn, không chọn thì team dùng kiểu mặc định. TL đứng ngang hàng tên team, chữ đậm và to tương đương. Ba số tóm tắt (doanh số, số HĐ, Forecast tuần) đậm, màu champagne. Màu và icon đi theo team ở Tổng quan, Forecast, Báo cáo. Thử: bấm icon của một team, hoặc nút "+ Team".', 'Yêu cầu của anh ngày 10/11. Nhận ra team bằng mắt, không phải đọc tên; người đứng đầu được nêu rõ. Màu và icon là dữ liệu mới của team nên qua G2.', 'M', [['C'], ['G2', 'gate'], ['Owner 10/11']], 1, { view: 'team' }],
     ['29', 'Cài đặt', 'Icon cho Cài đặt và Forecast', 'Ba mục Dữ liệu, AI, Thùng rác có ô màu bo góc như Cài đặt hệ thống của Mac, dùng màu sẵn có của app. Mục Forecast và ô tìm dùng cùng bộ nét với các icon thanh bên.', 'Yêu cầu F của anh. Không cần màu mới.', 'S', [['F']], 1, { view: 'settings' }],
-    ['34', 'Cài đặt', 'Nhiều nhà cung cấp AI, chọn model và mức suy luận', 'Cài đặt → AI liệt kê các nhà cung cấp (OpenCode đang dùng, thêm WorkBuddy), mỗi nơi một key riêng. Chọn model theo nhà cung cấp và mức suy luận: Mặc định, Thấp, Vừa, Cao.', 'Yêu cầu của anh ngày 10/11. Mỗi nhà cung cấp mới là một dịch vụ mới: G4 (dịch vụ, chi phí), G5 (chạy lại bộ đánh giá trên model đó), G6 (nơi lưu key). Phải kiểm trước WorkBuddy có API cho app ngoài gọi không.', 'L', [['G4', 'gate'], ['G5', 'gate'], ['G6', 'gate'], ['Owner 10/11']], 1, { view: 'settings', pre: () => { state.set = 'ai'; } }],
+    ['34', 'Cài đặt', 'Nhiều nhà cung cấp AI, chọn model và mức suy luận', 'Cài đặt → AI liệt kê các nhà cung cấp: OpenCode (gọi qua API, có key, chọn model và mức suy luận: Mặc định, Thấp, Vừa, Cao), ChatGPT web và WorkBuddy (chép – dán: app chép prompt, bạn dán vào đó rồi dán câu trả lời về).', 'Yêu cầu của anh ngày 10/11. Mỗi nhà cung cấp mới là một dịch vụ mới: G4 (dịch vụ, chi phí), G5 (chạy lại bộ đánh giá trên model đó), G6 (nơi lưu key). Tra cứu 11/11: WorkBuddy không có API cho app ngoài; anh chốt cùng ngày: xử lý giống ChatGPT, chép prompt sang WorkBuddy rồi chép câu trả lời về.', 'L', [['G4', 'gate'], ['G5', 'gate'], ['G6', 'gate'], ['Owner 10/11']], 1, { view: 'settings', pre: () => { state.set = 'ai'; } }],
     ['04', 'Để sau v1.0', 'Giao diện Sáng "Giấy"', 'Bộ màu sáng: nền giấy ngà, chữ xanh navy của logo, vàng champagne đậm hơn để đủ tương phản; tự theo cài đặt Sáng / Tối của máy.', 'Anh chốt 11/11: để sau v1.0, hiện tại chỉ cần Dark Mode. Bấm Xem để bật, bấm lần nữa để tắt bản xem trước.', 'M–L', [['đổi ADR-0013', 'gate']], 0, { pre: () => setSwitch('theme', root.dataset.theme === 'dark' ? 'light' : 'dark') }],
     ['30', 'Để sau v1.0', 'Nhắc lịch bằng thông báo của máy', '15 phút trước lịch hẹn có thông báo hệ thống; icon trên thanh menu (Windows: khay hệ thống) cho xem lịch kế tiếp mà không mở app.', 'Cần thêm plugin thông báo của Tauri.', 'M', [['G4', 'gate']], 0, {}],
     ['31', 'Để sau v1.0', 'Widget, Spotlight, Shortcuts', 'Widget lịch hôm nay trên màn hình Mac, tìm KH từ Spotlight, lệnh cho Siri / Shortcuts.', 'Chỉ app gốc Apple làm được: cần một phần viết bằng Swift. Xét khi chốt hướng thương mại hóa.', 'L', [['Mac']], 0, {}],
@@ -1170,6 +1176,7 @@
       $$('button', el.parentElement).forEach((b) => b.classList.toggle('on', b === el));
       return thumb(el.parentElement);
     }
+    if (on('[data-ai-copy]')) return toast(`Đã chép prompt mẫu. Dán vào ${AI[state.ai.provider].manual}, rồi dán câu trả lời về app.`);
     if ((el = on('[data-ai-test]'))) return nowJob('Đang gửi thử tới ' + AI[state.ai.provider].name, 'Kết nối tốt · ' + state.ai.model);
     if ((el = on('#full'))) return document.fullscreenElement ? document.exitFullscreen() : root.requestFullscreen().catch(() => toast('Khung xem này không cho mở toàn màn hình. Anh thử phím F11.'));
     if ((el = on('.back'))) return goBack(el.dataset.go);

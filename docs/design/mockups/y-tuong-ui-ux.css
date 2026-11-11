@@ -811,6 +811,10 @@ header.plain .tname { color: var(--text); }
 .keys .pace b.ok { color: var(--ok); }
 .tbl td.kpi small { display: inline-block; min-width: 38px; margin-left: 4px; font-size: 12px; font-weight: 600; color: var(--accent); }
 .tbl td.kpi small.ok { color: var(--ok); }
+.steps { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 14px; color: var(--text-2); }
+.steps > span { white-space: nowrap; }
+.r > b.nw { flex: none; white-space: nowrap; }
+.steps i { display: inline-grid; place-items: center; width: 18px; height: 18px; margin-right: 6px; border-radius: 50%; background: var(--fill-2); font: 600 11px/1 var(--font-ui, inherit); font-style: normal; color: var(--text); }
 /* a narrow window: the N1 / N2 / N3 split stays on the runway, the table keeps forecast, achieved, KPI */
 @container (max-width: 1200px) { #fc-tbl :is(th, td):is(:nth-child(3), :nth-child(4), :nth-child(5)) { display: none; } }
 .keys .pace b.low { color: var(--warn); }
