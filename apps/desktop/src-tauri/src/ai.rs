@@ -20,11 +20,14 @@ pub const CREDIT_URL: &str = "https://opencode.ai/zen/v1/chat/completions";
 /// The only page `open_chatgpt` opens (P7, §5.4).
 pub const CHATGPT_URL: &str = "https://chatgpt.com/";
 
-/// The Credential Manager entry of the key, one for both plans.
+/// The Credential Manager entry of the key, one for both plans. macOS has no key store yet (M1).
+#[cfg(any(windows, test))]
 pub const KEY_SERVICE: &str = "Project-2C";
+#[cfg(any(windows, test))]
 pub const KEY_USER: &str = "opencode-go";
 /// Stored `Local`: on this machine only, never carried to another one by a roaming profile, as
 /// `Enterprise` (the store's default) would be (ADR-0009 D-1 item 4: one key per machine).
+#[cfg(any(windows, test))]
 pub const KEY_MODIFIERS: [(&str, &str); 1] = [("persistence", "Local")];
 
 pub const TIMEOUT: Duration = Duration::from_secs(120);
@@ -493,7 +496,8 @@ pub fn key_entry() -> Result<Entry, AiError> {
         .map_err(keyring_error)
 }
 
-/// The app runs on Windows only (ADR-0006); elsewhere there is no key store.
+/// macOS has no key store yet (Keychain, M1 of the macOS trial, G4): every key command fails with
+/// [`AI_KEYRING`].
 #[cfg(not(windows))]
 pub fn key_entry() -> Result<Entry, AiError> {
     Err(AiError::new(AI_KEYRING))
@@ -568,12 +572,20 @@ fn post_with(
 
 /// Opens [`CHATGPT_URL`] in the default browser through Explorer, named by its full path like
 /// `open_folder` does (DR-54). The webview passes nothing.
+#[cfg(windows)]
 pub fn chatgpt_command(
     system_root: Option<std::ffi::OsString>,
 ) -> std::io::Result<std::process::Command> {
     let mut command = std::process::Command::new(crate::storage::explorer(system_root)?);
     command.arg(CHATGPT_URL);
     Ok(command)
+}
+
+/// macOS: opens [`CHATGPT_URL`] in the default browser through `open`, named by its full path like
+/// `open_folder` does (DR-54). The webview passes nothing.
+#[cfg(not(windows))]
+pub fn chatgpt_command() -> std::io::Result<std::process::Command> {
+    Ok(crate::storage::open_command(CHATGPT_URL))
 }
 
 #[cfg(test)]
@@ -2038,6 +2050,17 @@ mod tests {
         );
     }
 
+    #[cfg(not(windows))]
+    #[test]
+    fn open_chatgpt_runs_the_macos_open_by_its_full_path_on_the_fixed_url_only() {
+        let command = chatgpt_command().unwrap();
+        assert_eq!(command.get_program(), "/usr/bin/open");
+        assert_eq!(command.get_args().collect::<Vec<_>>(), [CHATGPT_URL]);
+        assert_eq!(CHATGPT_URL, "https://chatgpt.com/");
+    }
+
+    // `C:\Windows` is a path of Windows only: elsewhere it is not absolute.
+    #[cfg(windows)]
     #[test]
     fn open_chatgpt_runs_explorer_by_its_full_path_on_the_fixed_url_only() {
         let command = chatgpt_command(Some(r"C:\Windows".into())).unwrap();

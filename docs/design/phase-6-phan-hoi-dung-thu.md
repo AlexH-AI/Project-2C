@@ -313,6 +313,7 @@ Owner 10/11 sau đó: bản Mac "phải theo triết lý thiết kế của Mac 
 | M8 | Chữ nói về Windows | "exe", Explorer, đường dẫn `backups\` trong giao diện và hướng dẫn | Chữ theo nền tảng; hướng dẫn có phần macOS |
 | M9 | Kiểm thử | E2E chạy trên Edge (cùng nhân với WebView2 của Windows) | WebView của macOS là WebKit (như Safari): chạy thêm e2e trên WebKit; nghiệm thu trên Mac thật |
 | M10 | Công cụ dev | `tools/bootstrap.ps1`, PowerShell | Không cần nếu vẫn code trên Windows và build bản Mac bằng CI |
+| M11 | Khóa thư mục dữ liệu, kiểm quyền ghi | Windows: mở file khóa không chia sẻ (một exe cho thư mục dữ liệu); hỏi quyền ghi thư mục / thay file trước khi lưu (`ACCESS_DENIED`, `READ_ONLY`, `FOLDER_READ_ONLY`) | Khóa file khóa bằng `std` (`File::try_lock`, kiểu `flock`): `open -n` hay chạy thẳng file trong gói mở được hai tiến trình. Kiểm quyền ghi theo bit quyền của thư mục / file, cùng mã lỗi như Windows. Làm ở bước thử (T-413) |
 
 ### 9.2 Dữ liệu giữa các máy
 

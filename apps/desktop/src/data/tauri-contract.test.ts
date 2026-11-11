@@ -345,12 +345,20 @@ describe('the release configuration (DR6-12…14)', () => {
     // The exe grants the webview every capability: each file under capabilities/, or instead those
     // `app.security.capabilities` lists, written inline there too; Tauri merges a platform's
     // tauri.windows.conf.json into the config. The web build e2e runs has no ACL, so this is the
-    // one check of them all (DR6-161).
+    // one check of them all (DR6-161). The one platform file, macOS's, only packs the app (T-413).
     const src = new URL('../../src-tauri/', import.meta.url);
     const files = (dir: URL, recursive = false) =>
       readdirSync(dir, { recursive, encoding: 'utf8' });
     expect(files(new URL('capabilities/', src), true)).toEqual(['default.json']);
-    expect(files(src).filter((file) => /^tauri\b/i.test(file))).toEqual(['tauri.conf.json']);
+    expect(
+      files(src)
+        .filter((file) => /^tauri\b/i.test(file))
+        .sort(),
+    ).toEqual(['tauri.conf.json', 'tauri.macos.conf.json']);
+    expect(Object.keys(JSON.parse(desktop('src-tauri/tauri.macos.conf.json')))).toEqual([
+      '$schema',
+      'bundle',
+    ]);
     expect(tauriConf().app.security).not.toHaveProperty('capabilities');
     // Nor does the build script (build.rs: Cargo.toml names no other) read them from another
     // folder, `capabilities_path_pattern` of tauri-build, nor does the app add one while it runs,

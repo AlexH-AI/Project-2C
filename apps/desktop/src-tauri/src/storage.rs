@@ -1,6 +1,8 @@
 //! Database file storage for the exe (ADR-0016): `std` only, no extra crates.
 //!
 //! Layout next to the exe: `Project2C-data\project2c.db`, `project2c.lock`, `backups\`, `exports\`.
+//! On macOS the same files are in `~/Library/Application Support/dev.alexh.project2c/` (see
+//! `app_support_dir`).
 
 use std::ffi::OsString;
 use std::fs;
@@ -8,7 +10,14 @@ use std::io::{self, ErrorKind, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard};
 
+#[cfg(windows)]
 pub const DATA_DIR: &str = "Project2C-data";
+/// The identifier of the build (`tauri.conf.json`), which names the data folder on macOS.
+#[cfg(any(not(windows), test))]
+const APP_ID: &str = "dev.alexh.project2c";
+/// macOS `open`, by its full path (see [`open_command`]).
+#[cfg(any(not(windows), test))]
+const OPEN: &str = "/usr/bin/open";
 /// Error message when another process holds the data folder; the app matches it exactly.
 pub const ALREADY_OPEN: &str = "ALREADY_OPEN";
 /// Error message of a save from a page that a webview reload replaced.
@@ -16,7 +25,9 @@ pub const STALE_PAGE: &str = "STALE_PAGE";
 /// Error message of a backup or a save that found the disk full; the app matches it exactly.
 pub const DISK_FULL: &str = "DISK_FULL";
 /// Error message when another program holds the database file (or its `.tmp`) without sharing:
-/// the file is whole, only out of reach for now. The app matches it exactly.
+/// the file is whole, only out of reach for now. The app matches it exactly. Windows only: macOS
+/// lets every program open a file.
+#[cfg(windows)]
 pub const FILE_IN_USE: &str = "FILE_IN_USE";
 /// Error message when Windows refuses the app the data folder (read-only, no rights), or the right
 /// to replace the database file: the file is whole. The app matches it exactly.
@@ -52,8 +63,9 @@ const SHARING_VIOLATION: i32 = 32;
 const LOCK_VIOLATION: i32 = 33;
 
 /// Keeps the data folder to one process, and the file commands of this process to one at a time.
-/// The first [`open`] holds `project2c.lock` open without sharing until the process ends; Windows
-/// releases it when the app closes or crashes, so the file is never removed. [`open`], [`save`]
+/// The first [`open`] holds `project2c.lock` open without sharing (on macOS: locked, see
+/// `lock_file`) until the process ends; the system releases it when the app closes or crashes,
+/// so the file is never removed. [`open`], [`save`]
 /// and [`backup`] each hold the lock while they run: after a webview reload, the new page's
 /// `open` waits for a save the old page started, and two saves or backups never share a `.tmp`.
 /// A save of the old page that arrives after the new page's `open` is refused (see [`save`]).
@@ -101,10 +113,25 @@ fn open_lock_file(path: &Path) -> io::Result<fs::File> {
         })
 }
 
-/// The app ships for Windows only (ADR-0006): elsewhere the file is opened but locks nothing.
 #[cfg(not(windows))]
 fn open_lock_file(path: &Path) -> io::Result<fs::File> {
-    lock_file_options().open(path)
+    lock_file(path)
+}
+
+/// Opens the lock file and locks it for this process (`flock` on macOS: two opens of the file
+/// never share it, so `open -n` or the binary run from inside the `.app` cannot write the data at
+/// the same time, L137); another process holding it → `ResourceBusy` with the message
+/// [`ALREADY_OPEN`]. `std` only: no crate (ADR-0016).
+#[cfg(any(not(windows), test))]
+fn lock_file(path: &Path) -> io::Result<fs::File> {
+    let file = lock_file_options().open(path)?;
+    match file.try_lock() {
+        Ok(()) => Ok(file),
+        Err(fs::TryLockError::WouldBlock) => {
+            Err(io::Error::new(ErrorKind::ResourceBusy, ALREADY_OPEN))
+        }
+        Err(fs::TryLockError::Error(error)) => Err(error),
+    }
 }
 
 /// The lock file is made by the first start and never cut.
@@ -207,14 +234,23 @@ fn replace_refused(path: &Path) -> bool {
 /// Whether Windows refuses the app the right to delete the file at `path`. A folder that lets the
 /// app delete in it stands in for the file's own right, as it does for a save, so the answer is
 /// the one a save would get.
+#[cfg(windows)]
 fn delete_refused(path: &Path) -> bool {
     // Windows `DELETE`.
     const DELETE: u32 = 0x0001_0000;
     refuses(path, DELETE, 0)
 }
 
+/// On macOS only the folder decides whether a file in it may be replaced, and [`add_refused`]
+/// asks it before this is asked (see [`open`], [`refused`]).
+#[cfg(not(windows))]
+fn delete_refused(_path: &Path) -> bool {
+    false
+}
+
 /// Whether Windows refuses the app the right to add a file in the folder `dir`, which every save
 /// asks first to write its `.tmp`. Asking makes no file that a crash could leave behind.
+#[cfg(windows)]
 fn add_refused(dir: &Path) -> bool {
     // Windows `FILE_ADD_FILE`, and `FILE_FLAG_BACKUP_SEMANTICS`, without which no folder opens.
     const FILE_ADD_FILE: u32 = 0x0002;
@@ -235,11 +271,26 @@ fn refuses(path: &Path, access: u32, flags: u32) -> bool {
         .is_err_and(|error| error.kind() == ErrorKind::PermissionDenied)
 }
 
-/// The app ships for Windows only (ADR-0006): elsewhere a save asks no right of the file or the
-/// folder.
+/// Whether macOS refuses the app a new file in the folder `dir`, which every save asks first to
+/// write its `.tmp` (L137). `std` cannot ask without trying, so this makes the database's `.tmp`
+/// and removes it at once: every caller holds the data lock, so no save writes that `.tmp`
+/// meanwhile, and one a crash leaves is removed by the next start, like a save's. A `.tmp` already
+/// there answers nothing, so no.
 #[cfg(not(windows))]
-fn refuses(_path: &Path, _access: u32, _flags: u32) -> bool {
-    false
+fn add_refused(dir: &Path) -> bool {
+    let probe = dir.join(tmp_name(DB_FILE));
+    match fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&probe)
+    {
+        Ok(file) => {
+            drop(file);
+            let _ = fs::remove_file(&probe);
+            false
+        }
+        Err(error) => error.kind() == ErrorKind::PermissionDenied,
+    }
 }
 
 /// Copies the saved database file into `backups\` (at startup once the app opened it, and before
@@ -607,6 +658,7 @@ pub fn explorer_arg(path: &Path) -> OsString {
 
 /// Explorer by its full path in `system_root` (`%SystemRoot%`): a bare name is looked up in the
 /// exe's folder first, so an `explorer.exe` put next to the portable exe would run instead (DR-54).
+#[cfg(any(windows, test))]
 pub fn explorer(system_root: Option<OsString>) -> io::Result<PathBuf> {
     system_root
         .map(PathBuf::from)
@@ -616,6 +668,36 @@ pub fn explorer(system_root: Option<OsString>) -> io::Result<PathBuf> {
             io::Error::new(
                 ErrorKind::NotFound,
                 "SystemRoot is missing or not an absolute path",
+            )
+        })
+}
+
+/// macOS `open` on `target`: Finder shows a folder, the default browser opens a page. By its full
+/// path, never looked up in `PATH` (as Explorer, DR-54).
+#[cfg(any(not(windows), test))]
+pub fn open_command(target: impl AsRef<std::ffi::OsStr>) -> std::process::Command {
+    let mut command = std::process::Command::new(OPEN);
+    command.arg(target);
+    command
+}
+
+/// The data folder on macOS, `$HOME/Library/Application Support/dev.alexh.project2c/` (M2): not
+/// next to the app, whose `.app` may run from a read-only place (App Translocation) and whose
+/// signature a write inside would break. `home` (`$HOME`) missing or not an absolute path is an
+/// error: the data never goes anywhere else.
+#[cfg(any(not(windows), test))]
+pub fn app_support_dir(home: Option<OsString>) -> io::Result<PathBuf> {
+    home.map(PathBuf::from)
+        .filter(|home| home.is_absolute())
+        .map(|home| {
+            home.join("Library")
+                .join("Application Support")
+                .join(APP_ID)
+        })
+        .ok_or_else(|| {
+            io::Error::new(
+                ErrorKind::NotFound,
+                "HOME is missing or not an absolute path",
             )
         })
 }
@@ -1816,6 +1898,130 @@ mod tests {
         assert!(!path.exists());
     }
 
+    #[test]
+    fn a_second_lock_of_the_lock_file_is_refused_until_the_first_is_released() {
+        // The lock of macOS (`flock`, L137); on Windows the same `std` lock, though the exe locks
+        // by sharing there.
+        let dir = temp_dir();
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join(LOCK_FILE);
+        let first = lock_file(&path).unwrap();
+        let error = lock_file(&path).unwrap_err();
+        assert_eq!(error.kind(), ErrorKind::ResourceBusy);
+        assert_eq!(error.to_string(), ALREADY_OPEN);
+        drop(first);
+        lock_file(&path).unwrap();
+    }
+
+    #[test]
+    fn open_while_another_process_holds_the_data_folder_touches_nothing_on_every_platform() {
+        // Windows refuses the second process by sharing, macOS by its lock (L137).
+        let dir = temp_dir();
+        let lock = DataLock::new();
+        save(&dir, &db("changed")).unwrap();
+        assert_eq!(super::open(&dir, PAGE, &lock).unwrap(), Some(db("changed")));
+        // Same process again (a webview reload): still opens.
+        assert_eq!(super::open(&dir, PAGE, &lock).unwrap(), Some(db("changed")));
+        fs::write(dir.join("project2c.db.tmp"), b"being written").unwrap();
+
+        let error = open(&dir).unwrap_err();
+        assert_eq!(error.kind(), ErrorKind::ResourceBusy);
+        assert_eq!(error.to_string(), ALREADY_OPEN);
+        assert_eq!(
+            fs::read(dir.join("project2c.db.tmp")).unwrap(),
+            b"being written"
+        );
+
+        drop(lock);
+        assert_eq!(open(&dir).unwrap(), Some(db("changed")));
+        assert!(!dir.join("project2c.db.tmp").exists());
+    }
+
+    /// `path` read-only for everyone (no write bit) until this drops, so a test that fails still
+    /// leaves it as it was. macOS has no access list for the app to ask: the mode bits decide.
+    #[cfg(not(windows))]
+    struct ReadOnly<'a>(&'a Path, fs::Permissions);
+
+    #[cfg(not(windows))]
+    impl<'a> ReadOnly<'a> {
+        fn new(path: &'a Path) -> Self {
+            let writable = fs::metadata(path).unwrap().permissions();
+            let mut read_only = writable.clone();
+            read_only.set_readonly(true);
+            fs::set_permissions(path, read_only).unwrap();
+            Self(path, writable)
+        }
+    }
+
+    #[cfg(not(windows))]
+    impl Drop for ReadOnly<'_> {
+        fn drop(&mut self) {
+            // Never panics: a test that already failed would abort instead of reporting.
+            let _ = fs::set_permissions(self.0, self.1.clone());
+        }
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn open_reports_a_read_only_data_folder_or_database_file_as_access_denied_on_macos() {
+        // As on Windows (DR6-74, DR6-120, L137): refused before anything is written, the file
+        // whole. The lock file is left from an earlier start, so opening creates nothing.
+        let dir = temp_dir();
+        let file = dir.join(DB_FILE);
+        save(&dir, &db("data")).unwrap();
+        fs::write(dir.join(LOCK_FILE), b"").unwrap();
+        for path in [&*dir, file.as_path()] {
+            let read_only = ReadOnly::new(path);
+            let error = open(&dir).unwrap_err();
+            drop(read_only);
+            assert_eq!(error.kind(), ErrorKind::PermissionDenied, "{path:?}");
+            assert_eq!(error.to_string(), ACCESS_DENIED, "{path:?}");
+            assert_eq!(fs::read(&file).unwrap(), db("data"));
+            assert_eq!(names(&dir), vec![DB_FILE, LOCK_FILE]);
+        }
+
+        assert_eq!(open(&dir).unwrap(), Some(db("data")));
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn a_first_start_in_a_read_only_data_folder_is_access_denied_on_macos() {
+        // The app would make up data that no save could write (PR #764).
+        let dir = temp_dir();
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join(LOCK_FILE), b"").unwrap();
+        let read_only = ReadOnly::new(&dir);
+        let error = open(&dir).unwrap_err();
+        drop(read_only);
+        assert_eq!(error.kind(), ErrorKind::PermissionDenied);
+        assert_eq!(error.to_string(), ACCESS_DENIED);
+        assert_eq!(names(&dir), vec![LOCK_FILE]);
+
+        assert_eq!(open(&dir).unwrap(), None);
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn a_save_the_read_only_data_folder_refuses_is_reported_as_folder_read_only_on_macos() {
+        // The folder turned read-only after the app opened the file: the warning must send the
+        // user neither looking for a program nor to the file, which is fine.
+        let dir = temp_dir();
+        let lock = DataLock::new();
+        let file = dir.join(DB_FILE);
+        super::save(&dir, &db("old"), PAGE, &lock).unwrap();
+        assert_eq!(super::open(&dir, PAGE, &lock).unwrap(), Some(db("old")));
+        let read_only = ReadOnly::new(&dir);
+        let error = super::save(&dir, &db("new"), PAGE, &lock).unwrap_err();
+        drop(read_only);
+        assert_eq!(error.kind(), ErrorKind::PermissionDenied);
+        assert_eq!(error.to_string(), FOLDER_READ_ONLY);
+        assert_eq!(fs::read(&file).unwrap(), db("old"));
+        assert_eq!(names(&dir), vec![DB_FILE, LOCK_FILE]);
+
+        super::save(&dir, &db("new"), PAGE, &lock).unwrap();
+        assert_eq!(fs::read(&file).unwrap(), db("new"));
+    }
+
     #[cfg(windows)]
     #[test]
     fn open_keeps_the_lock_and_does_not_lock_itself_out() {
@@ -2194,6 +2400,46 @@ mod tests {
         for root in [None, Some(OsString::new()), Some(OsString::from("Windows"))] {
             assert_eq!(explorer(root).unwrap_err().kind(), ErrorKind::NotFound);
         }
+    }
+
+    #[test]
+    fn the_macos_data_folder_is_the_app_s_own_under_application_support() {
+        // Not inside the `.app`, which may run from a read-only place and whose signature a write
+        // would break (M2). A `HOME` missing or relative is an error, never another folder.
+        let home = std::env::temp_dir();
+        assert_eq!(
+            app_support_dir(Some(home.clone().into_os_string())).unwrap(),
+            home.join("Library")
+                .join("Application Support")
+                .join("dev.alexh.project2c")
+        );
+        for home in [
+            None,
+            Some(OsString::new()),
+            Some(OsString::from("Users/me")),
+        ] {
+            assert_eq!(
+                app_support_dir(home).unwrap_err().kind(),
+                ErrorKind::NotFound
+            );
+        }
+    }
+
+    #[test]
+    fn the_macos_data_folder_is_named_by_the_identifier_of_the_build() {
+        // A new identifier would leave the data in the old folder.
+        let config: serde_json::Value =
+            serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
+        assert_eq!(config["identifier"], APP_ID);
+    }
+
+    #[test]
+    fn open_command_runs_the_macos_open_by_its_full_path_on_the_target_only() {
+        // Never looked up in `PATH` (DR-54); Finder for a folder, the default browser for a page.
+        let folder = Path::new("/Users/me/Library/Application Support/dev.alexh.project2c/exports");
+        let command = open_command(folder);
+        assert_eq!(command.get_program(), "/usr/bin/open");
+        assert_eq!(command.get_args().collect::<Vec<_>>(), [folder.as_os_str()]);
     }
 
     #[test]
