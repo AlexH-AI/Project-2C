@@ -64,7 +64,7 @@
       .kcol .more { order: 2; padding: 4px 4px 2px; font-size: 12px; color: var(--accent); text-align: left; }
       .kclosed { display: flex; flex-direction: column; gap: 12px; }
       .kclosed .kcol ul { margin: 0; padding: 0 4px; list-style: none; font-size: 13px; }
-      .kclosed .kcol li { display: flex; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--hairline); border-radius: 6px; }
+      .kclosed .kcol li { display: flex; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--hairline); }
       .kclosed .kcol li:last-child { border-bottom: 0; }
       .kclosed .kcol li .num { margin-left: auto; color: var(--text-2); }
       .kclosed .help { padding: 2px 4px 0; }
@@ -162,7 +162,7 @@
       .stack-v { display: grid; gap: 18px; }
       .find.static .sug { position: static; display: block; margin-top: 6px; width: 100%; max-width: none; }
       .numbers td.v { font-variant-numeric: tabular-nums; }
-      @media (max-width: 1100px) { .gal, .pgrid { grid-template-columns: minmax(0, 1fr); } }
+      @media (max-width: 1100px) { .gal, .pgrid, .duo { grid-template-columns: minmax(0, 1fr); } }
     </style>
   </head>
   <body>
@@ -361,7 +361,7 @@
         <span class="seg" data-set="os" aria-label="Hệ điều hành"><button class="on" data-v="mac">macOS</button><button data-v="win">Windows 11</button></span>
         <span class="seg" data-set="size" aria-label="Cỡ cửa sổ"><button class="on" data-v="fit">Vừa khung</button><button data-v="full">1440 × 900</button><button data-v="min">1100 × 700 · hẹp nhất</button></span>
         <span class="num" data-size-note></span>
-        <button class="btn sm" data-open="pal"><svg class="ic"><use href="#i-search" /></svg>Ô lệnh <kbd class="k-mac">⌘K</kbd></button>
+        <button class="btn sm" data-open="pal"><svg class="ic"><use href="#i-search" /></svg>Ô lệnh <kbd class="k-mac">⌘K</kbd><kbd class="k-win">Ctrl K</kbd></button>
       </div>
     </div>
 
@@ -422,9 +422,10 @@
             <div class="row"><span class="lbl">Hết lịch hôm nay</span><button class="now-pill"><span class="now-face"><svg class="ic"><use href="#i-clock" /></svg><span class="who">Hết lịch hôm nay</span><span class="sep muted">·</span><span class="left num">kế tiếp T4 11/11 09:00</span></span></button></div>
           </div>
         </div>
-        <div class="pgrid" style="margin-top: 20px">
-          <div class="duo stack" data-only="mac">
-            <div class="now-pop static">
+        <h3 class="sub-h">Bảng hôm nay</h3>
+        <p class="sub-p">Bấm viên "Lúc này" thì bảng này mở ngay dưới nó; bấm ra ngoài hay Esc thì đóng.</p>
+        <div class="duo" data-pane="center">
+          <div class="now-pop static">
               <h4>Hôm nay <small class="num">Thứ Ba 10/11/2026 · Toàn bộ · 5 lịch</small></h4>
               <div class="ag"><span class="tm num">09:00</span><b><span class="kh" data-kh="N. V. H.">Nguyễn Văn Hùng</span></b><span class="st s-ok">Đã gặp</span><small>RM Hoàng Văn Tùng · Sao Mai</small></div>
               <div class="ag"><span class="tm num">10:30</span><b><span class="kh" data-kh="T. T. M. L.">Trần Thị Mai Lan</span></b><button class="btn primary sm">Ghi kết quả</button><small>Chưa ghi kết quả · RM Đỗ Khánh Linh · Sao Mai</small></div>
@@ -433,9 +434,9 @@
               <h4>Việc chạy nền</h4>
               <div class="job-row"><svg class="ic"><use href="#i-export" /></svg><span>Đang xuất Excel Báo cáo</span><span class="num left">60%</span></div>
               <div class="job-row ok"><svg class="ic"><use href="#i-check" /></svg><span>Đã sao lưu lúc 12:10</span><span class="num left">12:10</span></div>
-            </div>
           </div>
-          <div class="pcard">
+        </div>
+        <div class="pcard" style="margin-top: 20px">
             <h3>Nội dung và luật <small>đề xuất, anh duyệt ở #ask 3–4</small></h3>
             <ul class="bul">
               <li><b>Theo góc nhìn đang chọn</b> trên thanh công cụ: Toàn bộ thì lịch kế tiếp của mọi RM; một team thì của team đó.</li>
@@ -444,7 +445,6 @@
               <li><b>Cửa sổ hẹp:</b> bỏ tên KH, giữ giờ và thời gian còn lại; khi có việc chạy nền thì còn icon, thanh tiến độ và phần trăm. Ở 1100 × 700 thanh công cụ vẫn đủ chỗ cho mọi nút.</li>
               <li><b>Che tên KH</b> áp dụng cả ở viên này và bảng hôm nay.</li>
             </ul>
-          </div>
         </div>
       </section>
 
@@ -1007,6 +1007,10 @@
               TEAMS.push({ ...d, i: TEAMS.length, tl: '', sales: 0, pol: 0, fc: 0 });
               win._team = TEAMS.length - 1;
               ui2.toast(win, `Đã tạo team ${esc(d.name)} <small>· chưa có RM, chưa có TL</small>`);
+              // the line under the screen's name counts the teams again
+              const nav = $('.nav-i[data-go="team"]', win);
+              nav.dataset.sub = `${TEAMS.length} team · ${TEAMS.filter((t) => t.tl).length} TL · 27 RM · 3 người hỗ trợ`;
+              if (nav.classList.contains('on')) $('.tl-title span', win).textContent = nav.dataset.sub;
             } else {
               Object.assign(TEAMS[d.i], { name: d.name, color: d.color, icon: d.icon });
               ui2.toast(win, `Đã lưu team ${esc(d.name)}`);
