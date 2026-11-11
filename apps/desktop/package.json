@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "build:exe": "tauri build --no-bundle",
+    "build:mac": "tauri build --bundles app",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -1,0 +1,80 @@
+name: macOS
+
+# The macOS trial (T-413): the Rust checks on macOS, then `Heritas L-CRM.app` for Apple chips,
+# ad-hoc signed (no Developer ID yet), zipped for the Owner to try. Only on PRs labelled
+# build-mac, and by hand from main (GitHub runs a workflow by hand only once its file is on main).
+on:
+  pull_request:
+    # No `reopened`: after a close + reopen, tools/auto-wait.mjs --since reads the newest
+    # pull_request run of the PR as CI's, and this workflow's run (skipped without the label)
+    # could be newer.
+    types: [opened, synchronize, labeled]
+  workflow_dispatch:
+
+# No `concurrency` cancelling older runs: tools/merge-pr.mjs counts every check of the PR's head,
+# and a cancelled one as failed.
+
+permissions:
+  contents: read
+
+jobs:
+  build-mac:
+    name: Build macOS app (Apple chip)
+    # The labels the event carries (`gh pr create --label` opens the PR before it adds them, T-063,
+    # so the label's own `labeled` event builds it); on `labeled`, only build-mac itself, so another
+    # label added to a build-mac PR builds nothing again.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'build-mac') ||
+      (github.event.action != 'labeled' &&
+       contains(github.event.pull_request.labels.*.name, 'build-mac'))
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      # The PR's head, not the merge commit a PR run checks out.
+      HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Runner (macOS version, Apple chip)
+        run: |
+          sw_vers
+          echo "### Runner: macOS $(sw_vers -productVersion) ($(sw_vers -buildVersion)), $(uname -m)" >> "$GITHUB_STEP_SUMMARY"
+          test "$(uname -m)" = arm64
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install Rust toolchain from rust-toolchain.toml
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: apps/desktop/src-tauri
+          key: rust-macos
+      # The code of macOS only (`cfg(not(windows))`) is checked here alone: ci.yml runs on Windows.
+      - name: Rust format
+        working-directory: apps/desktop/src-tauri
+        run: cargo fmt --check
+      - name: Rust clippy
+        working-directory: apps/desktop/src-tauri
+        run: cargo clippy --lib --tests --locked -- -D warnings
+      - name: Rust unit tests
+        working-directory: apps/desktop/src-tauri
+        run: cargo test --lib --locked
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @p2c/desktop build:mac
+      # `ditto` keeps the signature, the symlinks and the execute bits that a plain zip may lose.
+      - name: Check and zip the app
+        working-directory: apps/desktop/src-tauri/target/release/bundle/macos
+        run: |
+          app='Heritas L-CRM.app'
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign --display --verbose=2 "$app" 2>&1 | grep -E '^(Identifier|Signature)='
+          exe="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Contents/Info.plist")"
+          test "$(lipo -archs "$app/Contents/MacOS/$exe")" = arm64
+          ditto -c -k --keepParent "$app" "$RUNNER_TEMP/Heritas-L-CRM-macos-$HEAD_SHA.zip"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Heritas-L-CRM-macos-${{ env.HEAD_SHA }}
+          path: ${{ runner.temp }}/Heritas-L-CRM-macos-${{ env.HEAD_SHA }}.zip
+          if-no-files-found: error

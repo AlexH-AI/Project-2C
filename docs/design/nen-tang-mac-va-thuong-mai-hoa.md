@@ -104,16 +104,23 @@ Cách chuyển ít đau: dữ liệu chung (SQLite và file backup), golden exam
 
 ## 9. Bước tiếp theo
 
-**Nếu anh chọn T:**
+**Đã chọn T (10/11/2026):**
 
-1. **Thử trên Mac (spike):** CI build bản `.app` cho chip Apple, chưa ký, bằng một workflow chạy tay (không chạy theo PR, không tốn phút CI thường ngày). Anh mở trên M5 Pro: lần đầu macOS chặn, vào Cài đặt hệ thống → Quyền riêng tư & Bảo mật → "Vẫn mở" (từ macOS 15 không còn mở bằng chuột phải → Open). Ghi các chỗ hỏng.
-   - Rà code 10/11: vỏ Rust đã có nhánh cho máy không phải Windows nên build được, nhưng chỉ sửa tối thiểu thì app mới dùng được trên Mac: dữ liệu để ở `~/Library/Application Support/…` thay vì cạnh file chạy (M2: bản tải về có thể bị macOS chạy từ một chỗ chỉ đọc (App Translocation), và ghi vào trong gói `.app` làm hỏng chữ ký của gói); mở thư mục và chatgpt.com bằng lệnh `open` (M3); cấu hình đóng gói riêng cho macOS (M4). Key AI qua Keychain (M1, G4) để sau: trên bản thử, AI dùng key chưa chạy.
+1. **Thử trên Mac (spike, T-413):** workflow `macos.yml` trên máy Mac của GitHub build bản `Heritas L-CRM.app` cho chip Apple, ký ad-hoc (chưa có Developer ID), nén zip giữ nguyên chữ ký. Workflow chạy ở PR gắn nhãn `build-mac` và chạy tay từ `main` cho anh thử; không chạy ở PR khác, không tốn phút CI thường ngày. Anh mở trên M5 Pro theo các bước dưới, ghi các chỗ hỏng: mỗi chỗ một Issue sau, không sửa trong bước thử, trừ chỗ làm app không mở được.
+   - Rà code 10/11: vỏ Rust đã có nhánh cho máy không phải Windows nên build được, nhưng chỉ sửa tối thiểu thì app mới dùng được trên Mac: dữ liệu để ở `~/Library/Application Support/dev.alexh.project2c/` thay vì cạnh file chạy (M2: bản tải về có thể bị macOS chạy từ một chỗ chỉ đọc (App Translocation), và ghi vào trong gói `.app` làm hỏng chữ ký của gói); mở thư mục và chatgpt.com bằng `/usr/bin/open` (M3); cấu hình đóng gói riêng cho macOS (M4); khóa thư mục dữ liệu để chỉ một tiến trình ghi (`open -n` hay chạy thẳng file trong gói mở được hai) và kiểm quyền ghi trước khi lưu như bản Windows, thư mục hay file chỉ đọc báo cùng mã lỗi (M11, chỉ dùng `std`). Key AI qua Keychain (M1, G4) để sau: trên bản thử, lưu key báo lỗi kho key, AI chưa chạy.
    - Bản Windows không đổi hành vi.
+   - **Cách tải và mở bản thử:**
+     1. Mở link run `macos.yml` Claude gửi (trang Actions của repo, đã đăng nhập GitHub), mục Artifacts, tải `Heritas-L-CRM-macos-<SHA>`.
+     2. Bấm đúp file tải về: được `Heritas-L-CRM-macos-<SHA>.zip`; bấm đúp file này: được `Heritas L-CRM.app`. Kéo app vào thư mục Applications.
+     3. Mở app lần đầu: macOS chặn vì app chưa ký bằng Developer ID. Bấm Xong (không chuyển vào Thùng rác), vào Cài đặt hệ thống → Quyền riêng tư & Bảo mật, mục Bảo mật, bấm "Vẫn mở" cạnh dòng nói về Heritas L-CRM, xác nhận bằng mật khẩu hay Touch ID. Từ macOS 15 không còn mở bằng chuột phải → Open. Những lần sau mở như app thường.
+     4. Lần đầu app bắt đầu với dữ liệu trống, ở `~/Library/Application Support/dev.alexh.project2c/` (Finder → Đi → Đi tới thư mục…).
+     5. **Nhập backup từ bản Windows** (Owner 11/11: dữ liệu chung là file backup dùng được trên cả hai nền tảng): trên bản Windows, Cài đặt → Dữ liệu → "Xuất backup" (file `.p2cbackup` trong `Project2C-data\exports\`); chép file sang Mac (AirDrop, USB, iCloud Drive…); trên Mac, Cài đặt → Dữ liệu → "Nhập backup" → "Chọn file…". So số KH, HĐ, lịch hẹn với bản Windows. Nếu kịp, làm chiều ngược lại: xuất trên Mac, nhập trên Windows.
+     6. Gửi Claude các chỗ hỏng: màn hình, thao tác, thông báo lỗi (ảnh chụp nếu có).
 2. **ADR "Bản macOS"** (G1): nơi để dữ liệu, kho key Keychain (G4), cách phát hành; ghi lựa chọn T và điểm xét lại §8.
 3. **Vòng ý tưởng UI/UX** cho cả hai nền tảng, gồm lớp giao diện Mac và hệ chuyển động (spec `phase-6-phan-hoi-dung-thu.md` §8).
-4. **Issue chuyển nền tảng** M1–M10.
+4. **Issue chuyển nền tảng** M1–M11.
 
-**Nếu anh chọn S:** ADR và kế hoạch viết lại (≈ 70–100 Issue cho phần sản phẩm); phát triển trên Mac bằng Xcode, Claude Code chạy trên Mac; bản Windows giữ Tauri; định dạng dữ liệu và golden examples là hợp đồng chung.
+**Phương án S (để tham khảo khi xét lại theo §8):** ADR và kế hoạch viết lại (≈ 70–100 Issue cho phần sản phẩm); phát triển trên Mac bằng Xcode, Claude Code chạy trên Mac; bản Windows giữ Tauri; định dạng dữ liệu và golden examples là hợp đồng chung.
 
 ## 10. Nguồn ngoài (tra 10/11/2026)
 
