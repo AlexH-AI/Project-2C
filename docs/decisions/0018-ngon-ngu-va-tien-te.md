@@ -8,6 +8,14 @@
 
 Mỗi điểm ghi rõ ai chốt: **Owner chốt** (nguyên văn ở `PROJECT-STATE.md`) hay **Claude đề xuất** (Owner duyệt trong PR này). Các điểm đề xuất cần Owner chọn được gom ở spec §11.3.
 
+**Owner trả lời ngày 12/11/2026** các câu Q1–Q15 và Q17 (spec §11.3). Mọi đề xuất giữ như ghi, trừ ba chỗ đã sửa trong ADR này theo câu trả lời:
+
+- ký hiệu của AUD, CAD, SGD: "$250 AUD" (Q1);
+- bậc K của dạng gọn tiếng Việt (Q3);
+- đơn vị ở ô nhập theo ngôn ngữ giao diện (Q6).
+
+Q16 (bảng thuật ngữ tiếng Anh) chờ Owner xem danh sách đầy đủ.
+
 ## Bối cảnh
 
 Hôm nay app chỉ có tiếng Việt (ADR-0011) và mọi số tiền là VND. Tiền lưu bằng số nguyên đồng (`packages/domain/src/money.ts`) và viết kiểu Việt Nam: "500.000.000 ₫", "1,9 tỷ", "66,7%". Ô nhập đoán vai trò của `.` và `,` theo số chữ số đứng sau (`splitNumber`), nên "1.500" là 1500 còn "1,5" là 1,5.
@@ -67,28 +75,31 @@ Bản Mac phát hành cùng bản Windows. Hướng thương mại hóa (Mac App
 - **Owner chốt:** ký hiệu tiền.
   - VND ghi bằng chữ **"VNĐ"** (thay "₫"), đặt sau số, ở cả hai ngôn ngữ: "3,000,000 VNĐ".
   - Các tiền khác đặt ký hiệu trước số: "$1,250.50", "€250K".
+  - Ba đồng đô la khác USD (Owner chọn 12/11, Q1): "Ví dụ $250 AUD, $250 CAD, $250 SGD. Đưa 3 chữ cái viết tắt của tiền tệ cùng dùng đồng Dollar sau con số. Dễ nhìn, dễ phân biệt hơn."
+    - USD chỉ ghi "$", không kèm mã (Owner chọn "USD chỉ "$"").
+    - Mã chỉ kèm ở dạng đầy đủ; dạng gọn không kèm mã: "$250K" (Owner chọn "Chỉ dạng đầy đủ kèm mã").
+    - Đề xuất ban đầu của Claude ("A$", "C$", "S$") bị bỏ. CLDR tiếng Anh viết "A$", "CA$" và "SGD".
 - **Claude đề xuất:** bảng tiền tệ cố định trong `domain`, không dùng `Intl` (Phương án 5).
 
-  | Mã | Số lẻ | Ký hiệu | Vị trí | Trần phí (số lưu) |
+  | Mã | Số lẻ | Dạng đầy đủ | Dạng gọn | Trần phí (số lưu) |
   |---|---|---|---|---|
-  | VND | 0 | VNĐ | sau số, cách một dấu cách | 100,000,000,000 |
-  | USD | 2 | $ | trước số, viết liền | 10,000,000,000,000 |
-  | EUR | 2 | € | trước số, viết liền | 10,000,000,000,000 |
-  | GBP | 2 | £ | trước số, viết liền | 10,000,000,000,000 |
-  | AUD | 2 | A$ | trước số, viết liền | 10,000,000,000,000 |
-  | CAD | 2 | C$ | trước số, viết liền | 10,000,000,000,000 |
-  | SGD | 2 | S$ | trước số, viết liền | 10,000,000,000,000 |
+  | VND | 0 | "VNĐ" sau số, cách một dấu cách: `3,000,000 VNĐ` | không kèm chữ VNĐ: `1.9 tỷ` | 100,000,000,000 |
+  | USD | 2 | "$" trước số, viết liền: `$1,250.50` | `$1.25K` | 10,000,000,000,000 |
+  | EUR | 2 | `€1,250.50` | `€1.25K` | 10,000,000,000,000 |
+  | GBP | 2 | `£1,250.50` | `£1.25K` | 10,000,000,000,000 |
+  | AUD | 2 | "$" trước, mã sau số: `$1,250.50 AUD` | `$1.25K` | 10,000,000,000,000 |
+  | CAD | 2 | `$1,250.50 CAD` | `$1.25K` | 10,000,000,000,000 |
+  | SGD | 2 | `$1,250.50 SGD` | `$1.25K` | 10,000,000,000,000 |
 
-  - Ba ký hiệu A$, C$, S$ là đề xuất. Dữ liệu CLDR tiếng Anh (`en`) viết "CA$" cho CAD, và SGD không có ký hiệu riêng (hiện "SGD"); trong mỗi nước, người dùng lại chỉ viết "$".
-  - Claude chọn A$ / C$ / S$ (cách viết hay gặp trong tin tài chính quốc tế) vì ngắn, cùng một mẫu cho ba đồng đô la, và không lẫn với USD khi file Excel hay ảnh chụp màn hình đi ra ngoài.
+  Dạng gọn của AUD, CAD, SGD giống USD. Trong app không lẫn được, vì mỗi bộ dữ liệu chỉ có một tiền tệ; tiền tệ hiện ở Cài đặt, ở dạng đầy đủ, và trong file Excel.
 - **Dạng đầy đủ** (ô số, bảng, hồ sơ, dòng đọc dưới ô nhập):
   - VND: "3,000,000 VNĐ".
-  - Tiền có cent: **luôn hai số lẻ**, "$1,250.50", "$1,250.00" (đề xuất).
-  - Số âm có dấu `-` đặt trước cả ký hiệu: "-$1,250.50", "-3,000,000 VNĐ".
-- **Dạng gọn** (ô KPI, biểu đồ, cột hẹp). Owner chốt các bậc: English K / Mil / Bil / T; tiếng Việt tr / tỷ, "thêm bậc khi cần". Claude đề xuất phần chi tiết:
-  - Bậc tiếng Việt: **nghìn**, **tr**, **tỷ**. Không có bậc nghìn tỷ: số lớn hơn vẫn tính bằng tỷ, "1,500 tỷ" (hôm nay "1.500 tỷ").
+  - Tiền có cent: **luôn hai số lẻ**, "$1,250.50", "$1,250.00" (Q2).
+  - Số âm có dấu `-` đứng đầu, trước cả ký hiệu: "-$1,250.50", "-$1,250.50 AUD", "-3,000,000 VNĐ" (Q4).
+- **Dạng gọn** (ô KPI, biểu đồ, cột hẹp). Owner chốt các bậc: English K / Mil / Bil / T; tiếng Việt tr / tỷ, "thêm bậc khi cần". Phần chi tiết (Owner chọn 12/11):
+  - Bậc tiếng Việt: **K**, **tr**, **tỷ**. Owner chọn "K" như tiếng Anh, không dùng "nghìn" (Q3). Không có bậc nghìn tỷ: số lớn hơn vẫn tính bằng tỷ, "1,500 tỷ" (hôm nay "1.500 tỷ").
   - English có bậc T từ 1,000 Bil: "1.5T".
-  - Đơn vị một chữ cái (K, T) viết liền số: "$250K", "1.5T". Đơn vị nhiều chữ cái cách số một dấu cách: "1.9 Bil", "500 tr", "750 nghìn". Mẫu "€250K" và "1.9 Bil" của Issue theo đúng luật này.
+  - Đơn vị một chữ cái (K, T) viết liền số: "$250K", "750K", "1.5T". Đơn vị nhiều chữ cái cách số một dấu cách: "1.9 Bil", "500 tr" (Q5). Mẫu "€250K" và "1.9 Bil" của Issue theo đúng luật này.
   - Dưới 1,000 đơn vị chính thì hiện dạng đầy đủ: "950 VNĐ", "$950.50". Hôm nay ngưỡng này là 1 triệu.
   - Tối đa hai số lẻ, bỏ số 0 ở cuối. Làm tròn nửa xa số 0 (như `Math.round` trên trị tuyệt đối hôm nay). Làm tròn chạm 1,000 của một bậc thì lên bậc kế: 999,995 đồng thành "1 tr" / "1 Mil".
   - VND không kèm chữ VNĐ ở dạng gọn (hôm nay cũng không kèm ₫). Tiền có cent kèm ký hiệu trước: "$1.2 Mil".
@@ -112,13 +123,16 @@ Bản Mac phát hành cùng bản Windows. Hướng thương mại hóa (Mac App
   - **Số lẻ:**
     - Không có đơn vị: số chữ số sau `.` không quá số lẻ của tiền tệ (VND 0, tiền có cent 2), kể cả khi là số 0. Vì vậy "1.500" bị từ chối ở cả VND lẫn USD: hai cách hiểu 1.5 và 1500 không bao giờ lặng lẽ thành một số.
     - Có đơn vị: kết quả phải tròn đơn vị nhỏ nhất. "1.5 tỷ" được; "1.0000000001 tỷ" thì không.
-  - **Đơn vị**, một bảng chung, nhận ở cả hai ngôn ngữ, không phân biệt hoa thường:
-    - nghìn / ngàn / k; triệu / tr / mil; tỷ / tỉ / bil; kèm các bản không dấu như hôm nay.
-    - Không nhận T: mọi số tính bằng nghìn tỷ đều đã quá trần phí. Cũng không nhận "m", "bn", "million". Vì không có đơn vị "t", "1.5t" là lỗi cách gõ, không bị đọc thành triệu hay nghìn tỷ.
-  - **Cách nói của người Việt giữ nguyên:** "1tr5" = 1,500,000, "1 tỷ 2" = 1,200,000,000. Chỉ dùng với đơn vị tiếng Việt, và số trước đơn vị không có phần lẻ.
+  - **Đơn vị theo ngôn ngữ giao diện** (Owner chọn 12/11, Q6: "Theo ngôn ngữ giao diện"), không phân biệt hoa thường:
+    - Tiếng Việt: nghìn / ngàn / k; triệu / tr; tỷ / tỉ; kèm các bản không dấu như hôm nay.
+    - English: K, Mil, Bil.
+    - Gõ đơn vị của ngôn ngữ kia là lỗi cách gõ, kèm gợi ý đổi đơn vị: "500 Mil" khi đang dùng tiếng Việt → gợi ý "500 tr".
+    - Không ngôn ngữ nào nhận T: mọi số tính bằng nghìn tỷ đều đã quá trần phí. Cũng không nhận "m", "bn", "million". Vì không có đơn vị "t", "1.5t" là lỗi cách gõ, không bị đọc thành triệu hay nghìn tỷ.
+  - **Cách nói của người Việt giữ nguyên** (Q7): "1tr5" = 1,500,000, "1 tỷ 2" = 1,200,000,000. Chỉ có ở giao diện tiếng Việt, và số trước đơn vị không có phần lẻ.
   - **Dấu tiền:**
-    - VND nhận "VNĐ", "VND", "₫", "đ", "đồng" gõ sau số (Owner chốt).
-    - Tiền có cent nhận ký hiệu của chính tiền tệ đó trước số, hoặc mã ISO trước / sau số. Ba đồng đô la nhận thêm "$".
+    - VND nhận "VNĐ", "VND", "₫", "đ", "đồng" gõ sau số, ở cả hai ngôn ngữ (Owner chốt).
+    - USD, EUR, GBP nhận ký hiệu của chính tiền tệ đó trước số, hoặc mã ISO trước / sau số.
+    - AUD, CAD, SGD nhận "$" trước số, hoặc mã ISO trước / sau số ("$100 AUD"). Không nhận "A$", theo Q1.
     - Dấu của một tiền tệ khác là lỗi cách gõ.
   - **Cách gõ sai luật bị từ chối, app không tự hiểu lại.**
     - Nếu cách đọc cũ (`splitNumber` hôm nay, hay nhóm số bằng dấu cách) ra một số hợp lệ theo luật mới, dưới ô hiện gợi ý viết lại: "1,5 tỷ" → "1.5 tỷ"; "500.000.000" → "500,000,000"; "1.500" với VND → "1,500".
@@ -127,8 +141,8 @@ Bản Mac phát hành cùng bản Windows. Hướng thương mại hóa (Mac App
   - **Chữ mẫu và dòng đọc:** ô nhập có chữ mẫu theo ngôn ngữ và tiền tệ, vd. "500 tr · 1.5 tỷ", "$1,250.50 · 250K". Dòng đọc dưới ô (`amountRead`, "500,000,000 VNĐ (500 tr)") giữ nguyên.
   - **Với VND, một dấu `.` theo sau đúng 3 chữ số rồi tới đơn vị bị từ chối** (mã lỗi mới `ambiguous`), kèm cả hai cách viết. Ví dụ "1.500 tr" → gợi ý "1.5 tr" hay "1,500 tr".
     - Lý do: hôm nay "1.500 tr" là 1,500 tr; luật dấu mới đọc thành 1.5 tr. Cả hai đều là phí hợp lệ, nên nhận lặng lẽ là đổi số gấp 1000 lần, đúng loại lỗi mà Phương án 6 tránh.
-    - Luật này chỉ áp cho VND, nơi thói quen "1.500" có thật. Tiền có cent vẫn đọc "1.500 Mil" là $1,500,000.00.
-    - Owner chọn ở spec §11.3 Q17: từ chối như trên, hay nhận theo đúng luật dấu.
+    - Luật này chỉ áp cho VND, ở cả hai ngôn ngữ ("1.500 Mil"), vì thói quen viết "1.500" là của người dùng VND. Tiền có cent vẫn đọc "1.500 Mil" là $1,500,000.00.
+    - Owner chọn 12/11 (Q17): "Từ chối, đưa hai cách viết".
 - Ba trường tiền của KYC (`annualIncome`, `totalAssets`, `liabilities`) lưu chữ người dùng gõ; dòng đọc dưới các trường này (`kycAmountRead`) dùng cùng hàm đọc. Chữ đã lưu không đổi.
   - Chữ viết theo kiểu cũ thì chỉ mất dòng đọc, không bao giờ đọc ra một số khác. Lý do: mọi cách viết mà luật cũ và luật mới hiểu khác nhau đều bị từ chối: nhiều dấu `.`, `,` đứng trước phần lẻ, VND không đơn vị có `.`, và "1.500 tr" theo luật trên.
 

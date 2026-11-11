@@ -1,6 +1,6 @@
 # Golden examples — Số, tiền tệ, ngày theo ngôn ngữ (G2)
 
-> **Trạng thái: chờ Owner duyệt G2** (T-418, #1221). Mọi dòng dưới đây chờ duyệt. Dòng nào theo một điểm Claude đề xuất thì ghi số câu hỏi ở spec `docs/design/phase-6-phan-hoi-dung-thu.md` §11.3 (vd. "Q3"). Owner chọn khác thì dòng đó đổi trong PR này, trước khi duyệt.
+> **Trạng thái: chờ Owner duyệt G2** (T-418, #1221). Owner trả lời các câu Q1–Q15, Q17 ngày 12/11/2026 (spec `docs/design/phase-6-phan-hoi-dung-thu.md` §11.3); các dòng dưới đây đã theo câu trả lời. Dòng nào ứng với một câu hỏi thì ghi số câu (vd. "Q3").
 
 Nguồn luật: ADR-0018 §3–§6. Sau khi Owner duyệt, bộ này thành fixture `packages/domain/src/golden/` (Issue G2 của spec §11.7, khớp 1–1 theo mã dòng) và là test bắt buộc của hàm định dạng / đọc trong `packages/domain`. **Không sửa để "cho xanh"**: muốn đổi phải qua Owner.
 
@@ -13,21 +13,21 @@ Quy ước đọc bảng:
 
 ## 1. Bảng tiền tệ
 
-| Mã | Số lẻ | Ký hiệu | Vị trí | Trần phí (100 Billions đơn vị chính), số lưu | Số phí ở mức trần còn cộng chính xác |
+| Mã | Số lẻ | Dạng đầy đủ | Dạng gọn | Trần phí (100 Billions đơn vị chính), số lưu | Số phí ở mức trần còn cộng chính xác |
 |---|---|---|---|---|---|
-| VND | 0 | VNĐ | sau số, cách một dấu cách | 100,000,000,000 | 90,071 |
-| USD | 2 | $ | trước số, viết liền | 10,000,000,000,000 | 900 |
-| EUR | 2 | € | trước số, viết liền | 10,000,000,000,000 | 900 |
-| GBP | 2 | £ | trước số, viết liền | 10,000,000,000,000 | 900 |
-| AUD | 2 | A$ (Q1) | trước số, viết liền | 10,000,000,000,000 | 900 |
-| CAD | 2 | C$ (Q1) | trước số, viết liền | 10,000,000,000,000 | 900 |
-| SGD | 2 | S$ (Q1) | trước số, viết liền | 10,000,000,000,000 | 900 |
+| VND | 0 | `3,000,000 VNĐ`: "VNĐ" sau số, cách một dấu cách | không kèm chữ VNĐ | 100,000,000,000 | 90,071 |
+| USD | 2 | `$1,250.50`: "$" trước số, viết liền | `$1.25K` | 10,000,000,000,000 | 900 |
+| EUR | 2 | `€1,250.50` | `€1.25K` | 10,000,000,000,000 | 900 |
+| GBP | 2 | `£1,250.50` | `£1.25K` | 10,000,000,000,000 | 900 |
+| AUD | 2 | `$1,250.50 AUD`: "$" trước, mã sau số (Q1) | `$1.25K`, không kèm mã (Q1) | 10,000,000,000,000 | 900 |
+| CAD | 2 | `$1,250.50 CAD` (Q1) | `$1.25K` (Q1) | 10,000,000,000,000 | 900 |
+| SGD | 2 | `$1,250.50 SGD` (Q1) | `$1.25K` (Q1) | 10,000,000,000,000 | 900 |
 
 Cột cuối = `Number.MAX_SAFE_INTEGER` (9,007,199,254,740,991) ÷ trần, bỏ phần lẻ. Quá số này thì phép cộng báo lỗi, không cộng sai.
 
 ## 2. Dạng đầy đủ
 
-Ô số, bảng, hồ sơ, dòng đọc dưới ô nhập. Hai ngôn ngữ giống nhau.
+Ô số, bảng, hồ sơ, dòng đọc dưới ô nhập. Hai ngôn ngữ giống nhau. Tiền có cent luôn hai số lẻ (Q2). Số âm có dấu `-` đứng đầu (Q4).
 
 | Mã | Số lưu | Tiền tệ | Kết quả | Ghi chú |
 |---|---|---|---|---|
@@ -39,31 +39,39 @@ Cột cuối = `Number.MAX_SAFE_INTEGER` (9,007,199,254,740,991) ÷ trần, bỏ
 | F06 | `1900000000` | VND | 1,900,000,000 VNĐ | |
 | F07 | `100000000000` | VND | 100,000,000,000 VNĐ | trần phí VND |
 | F08 | `-3000000` | VND | -3,000,000 VNĐ | số âm (Q4) |
-| F09 | `0` | USD | $0.00 | số 0; luôn hai số lẻ (Q2) |
+| F09 | `0` | USD | $0.00 | số 0 (Q2) |
 | F10 | `5` | USD | $0.05 | |
 | F11 | `125050` | USD | $1,250.50 | |
 | F12 | `125000` | USD | $1,250.00 | không bỏ ".00" (Q2) |
-| F13 | `-125050` | USD | -$1,250.50 | dấu `-` trước ký hiệu (Q4) |
+| F13 | `-125050` | USD | -$1,250.50 | (Q4) |
 | F14 | `10000000000000` | USD | $100,000,000,000.00 | trần phí USD |
 | F15 | `25000000` | EUR | €250,000.00 | |
 | F16 | `9999` | GBP | £99.99 | |
-| F17 | `125050` | AUD | A$1,250.50 | (Q1) |
-| F18 | `125050` | CAD | C$1,250.50 | (Q1) |
-| F19 | `125050` | SGD | S$1,250.50 | (Q1) |
+| F17 | `125050` | AUD | $1,250.50 AUD | (Q1) |
+| F18 | `125050` | CAD | $1,250.50 CAD | (Q1) |
+| F19 | `125050` | SGD | $1,250.50 SGD | (Q1) |
+| F20 | `-125050` | AUD | -$1,250.50 AUD | (Q1, Q4) |
+| F21 | `0` | AUD | $0.00 AUD | |
 
 ## 3. Dạng gọn
 
-Ô KPI, biểu đồ, cột hẹp. Các bậc: English K / Mil / Bil / T; tiếng Việt nghìn / tr / tỷ, không có bậc nghìn tỷ (Q3). K và T viết liền số; Mil, Bil, nghìn, tr, tỷ cách một dấu cách (Q5). Dưới 1,000 đơn vị chính thì hiện dạng đầy đủ. Tối đa hai số lẻ, bỏ số 0 cuối, làm tròn nửa xa số 0. Làm tròn chạm 1,000 của bậc thì lên bậc kế. VND không kèm chữ VNĐ; tiền có cent kèm ký hiệu trước.
+Ô KPI, biểu đồ, cột hẹp.
+
+- **Bậc:** English K / Mil / Bil / T. Tiếng Việt K / tr / tỷ (Q3), không có bậc nghìn tỷ.
+- **Dấu cách:** K và T viết liền số; Mil, Bil, tr, tỷ cách một dấu cách (Q5).
+- **Dưới 1,000 đơn vị chính:** hiện dạng đầy đủ.
+- **Làm tròn:** tối đa hai số lẻ, bỏ số 0 cuối, làm tròn nửa xa số 0. Làm tròn chạm 1,000 của bậc thì lên bậc kế.
+- **Ký hiệu:** VND không kèm chữ VNĐ. Tiền có cent kèm ký hiệu trước; AUD, CAD, SGD không kèm mã (Q1).
 
 | Mã | Số lưu | Tiền tệ | Tiếng Việt | English | Ghi chú |
 |---|---|---|---|---|---|
 | C01 | `0` | VND | 0 VNĐ | 0 VNĐ | số 0: dạng đầy đủ |
 | C02 | `950` | VND | 950 VNĐ | 950 VNĐ | dưới 1,000: dạng đầy đủ |
 | C03 | `999` | VND | 999 VNĐ | 999 VNĐ | sát ranh giới, dưới |
-| C04 | `1000` | VND | 1 nghìn | 1K | bậc nghìn / K (Q3) |
-| C05 | `750000` | VND | 750 nghìn | 750K | hôm nay "750.000 ₫" |
-| C06 | `999994` | VND | 999.99 nghìn | 999.99K | sát ranh giới, chưa lên bậc |
-| C07 | `999995` | VND | 1 tr | 1 Mil | làm tròn chạm 1,000 nghìn → lên bậc |
+| C04 | `1000` | VND | 1K | 1K | bậc K, cả tiếng Việt (Q3) |
+| C05 | `750000` | VND | 750K | 750K | hôm nay "750.000 ₫" |
+| C06 | `999994` | VND | 999.99K | 999.99K | sát ranh giới, chưa lên bậc |
+| C07 | `999995` | VND | 1 tr | 1 Mil | làm tròn chạm 1,000K → lên bậc |
 | C08 | `1000000` | VND | 1 tr | 1 Mil | |
 | C09 | `1950000` | VND | 1.95 tr | 1.95 Mil | |
 | C10 | `1955000` | VND | 1.96 tr | 1.96 Mil | làm tròn nửa lên |
@@ -87,9 +95,12 @@ Cột cuối = `Number.MAX_SAFE_INTEGER` (9,007,199,254,740,991) ÷ trần, bỏ
 | C28 | `190000000000` | USD | — | $1.9 Bil | |
 | C29 | `10000000000000` | USD | — | $100 Bil | trần phí |
 | C30 | `250000000000000` | USD | — | $2.5T | tổng |
-| C31 | `-125050` | USD | — | -$1.25K | số âm (Q4) |
+| C31 | `-125050` | USD | — | -$1.25K | (Q4) |
 | C32 | `25000000` | EUR | — | €250K | mẫu của Issue |
 | C33 | `120000000` | GBP | — | £1.2 Mil | |
+| C34 | `25000000` | AUD | — | $250K | không kèm mã (Q1) |
+| C35 | `120000000` | CAD | — | $1.2 Mil | (Q1) |
+| C36 | `10000` | AUD | — | $100.00 AUD | dưới 1,000: dạng đầy đủ, có mã |
 
 ## 4. Chênh lệch (so kỳ trước)
 
@@ -103,6 +114,7 @@ Dạng gọn, có dấu "−" (U+2212) hoặc "+"; 0 thì không dấu.
 | D04 | `0` | USD | — | $0.00 |
 | D05 | `25000000` | USD | — | +$250K |
 | D06 | `-125050` | USD | — | −$1.25K |
+| D07 | `-125050` | AUD | — | −$1.25K |
 
 ## 5. Số đếm, phần trăm, cỡ file
 
@@ -130,105 +142,124 @@ Hai ngôn ngữ giống nhau. Phần trăm: hàm cho con số, giao diện thêm
 
 ## 6. Đọc ô nhập tiền
 
-Một hàm đọc cho cả hai ngôn ngữ (Q6). Kết quả là số lưu. "Quá trần" nghĩa là đọc được nhưng không phải phí hợp lệ: lệnh ghi báo lỗi trần (`AMOUNT_TOO_LARGE`), giống hôm nay. Mã lỗi giữ như `parseVnd`: `empty`, `negative`, `format`, `fraction`, `too-large`; thêm `ambiguous` (§6.2, Q17).
+Kết quả là số lưu. "Quá trần" nghĩa là đọc được nhưng không phải phí hợp lệ: lệnh ghi báo lỗi trần (`AMOUNT_TOO_LARGE`), giống hôm nay. Mã lỗi giữ như `parseVnd`: `empty`, `negative`, `format`, `fraction`, `too-large`; thêm `ambiguous` (§6.2, Q17).
+
+**Đơn vị theo ngôn ngữ giao diện (Q6).**
+
+- Tiếng Việt nhận nghìn / ngàn / k, triệu / tr, tỷ / tỉ (có dấu hay không dấu) và cách nói "1tr5", "1 tỷ 2" (Q7).
+- English nhận K, Mil, Bil.
+- Không ngôn ngữ nào nhận T, "m", "bn", "million".
+
+Cột **Ngôn ngữ**: "vi" / "en" là chỉ ngôn ngữ đó; "cả hai" là đọc giống nhau ở hai ngôn ngữ. Tiền có cent chỉ đi với English.
 
 ### 6.1 Cách gõ đúng
 
-| Mã | Gõ | Tiền tệ | Số lưu | Đọc thành | Ghi chú |
-|---|---|---|---|---|---|
-| I01 | `3000000` | VND | `3000000` | 3,000,000 VNĐ | viết liền |
-| I02 | `3,000,000` | VND | `3000000` | 3,000,000 VNĐ | |
-| I03 | `3,000,000 VNĐ` | VND | `3000000` | 3,000,000 VNĐ | |
-| I04 | `3,000,000 ₫` | VND | `3000000` | 3,000,000 VNĐ | ô nhập vẫn nhận "₫" |
-| I05 | `3,000,000đ` | VND | `3000000` | 3,000,000 VNĐ | |
-| I06 | `500tr` | VND | `500000000` | 500,000,000 VNĐ | |
-| I07 | `500 triệu` | VND | `500000000` | 500,000,000 VNĐ | |
-| I08 | `1.5 tỷ` | VND | `1500000000` | 1,500,000,000 VNĐ | |
-| I09 | `0.5 tỷ` | VND | `500000000` | 500,000,000 VNĐ | |
-| I10 | `1.25 tr` | VND | `1250000` | 1,250,000 VNĐ | |
-| I11 | `750k` | VND | `750000` | 750,000 VNĐ | |
-| I12 | `750 nghìn` | VND | `750000` | 750,000 VNĐ | |
-| I13 | `1.9 Bil` | VND | `1900000000` | 1,900,000,000 VNĐ | đơn vị tiếng Anh với VND (Q6) |
-| I14 | `500 Mil` | VND | `500000000` | 500,000,000 VNĐ | (Q6) |
-| I15 | `1,500` | VND | `1500` | 1,500 VNĐ | gợi ý của X05 |
-| I16 | `2.05 tỷ` | VND | `2050000000` | 2,050,000,000 VNĐ | phần lẻ không đủ 3 chữ số: không lẫn với nhóm nghìn |
-| I17 | `1tr5` | VND | `1500000` | 1,500,000 VNĐ | cách nói giữ nguyên (Q7) |
-| I18 | `1 tỷ 2` | VND | `1200000000` | 1,200,000,000 VNĐ | (Q7) |
-| I19 | `1250.5` | USD | `125050` | $1,250.50 | |
-| I20 | `1,250.50` | USD | `125050` | $1,250.50 | |
-| I21 | `$1,250.50` | USD | `125050` | $1,250.50 | |
-| I22 | `$ 1,250.50` | USD | `125050` | $1,250.50 | |
-| I23 | `1,250.50 USD` | USD | `125050` | $1,250.50 | mã ISO sau số |
-| I24 | `USD 1,250.50` | USD | `125050` | $1,250.50 | mã ISO trước số |
-| I25 | `0.05` | USD | `5` | $0.05 | |
-| I26 | `250K` | USD | `25000000` | $250,000.00 | |
-| I27 | `$1.2 Mil` | USD | `120000000` | $1,200,000.00 | |
-| I28 | `1.2345 Mil` | USD | `123450000` | $1,234,500.00 | có đơn vị: số lẻ dài được, miễn tròn cent |
-| I29 | `1.5 Bil` | USD | `150000000000` | $1,500,000,000.00 | |
-| I30 | `€250K` | EUR | `25000000` | €250,000.00 | |
-| I31 | `250,000.00 EUR` | EUR | `25000000` | €250,000.00 | |
-| I32 | `£1,250.5` | GBP | `125050` | £1,250.50 | |
-| I33 | `$100` | AUD | `10000` | A$100.00 | ba đồng đô la nhận cả "$" |
-| I34 | `A$100` | AUD | `10000` | A$100.00 | |
-| I35 | `C$1,000` | CAD | `100000` | C$1,000.00 | |
-| I36 | `S$99.90` | SGD | `9990` | S$99.90 | |
-| I37 | `1.500 Mil` | USD | `150000000` | $1,500,000.00 | luật "một `.` + đúng 3 chữ số" chỉ áp cho VND (Q17) |
+| Mã | Gõ | Tiền tệ | Ngôn ngữ | Số lưu | Đọc thành | Ghi chú |
+|---|---|---|---|---|---|---|
+| I01 | `3000000` | VND | cả hai | `3000000` | 3,000,000 VNĐ | viết liền |
+| I02 | `3,000,000` | VND | cả hai | `3000000` | 3,000,000 VNĐ | |
+| I03 | `3,000,000 VNĐ` | VND | cả hai | `3000000` | 3,000,000 VNĐ | |
+| I04 | `3,000,000 ₫` | VND | cả hai | `3000000` | 3,000,000 VNĐ | ô nhập vẫn nhận "₫" |
+| I05 | `3,000,000đ` | VND | cả hai | `3000000` | 3,000,000 VNĐ | |
+| I06 | `500tr` | VND | vi | `500000000` | 500,000,000 VNĐ | |
+| I07 | `500 triệu` | VND | vi | `500000000` | 500,000,000 VNĐ | |
+| I08 | `1.5 tỷ` | VND | vi | `1500000000` | 1,500,000,000 VNĐ | |
+| I09 | `0.5 tỷ` | VND | vi | `500000000` | 500,000,000 VNĐ | |
+| I10 | `1.25 tr` | VND | vi | `1250000` | 1,250,000 VNĐ | |
+| I11 | `750k` | VND | cả hai | `750000` | 750,000 VNĐ | K có ở cả hai ngôn ngữ |
+| I12 | `750 nghìn` | VND | vi | `750000` | 750,000 VNĐ | |
+| I13 | `1.9 Bil` | VND | en | `1900000000` | 1,900,000,000 VNĐ | (Q6) |
+| I14 | `500 Mil` | VND | en | `500000000` | 500,000,000 VNĐ | (Q6) |
+| I15 | `1,500` | VND | cả hai | `1500` | 1,500 VNĐ | gợi ý của X05 |
+| I16 | `2.05 tỷ` | VND | vi | `2050000000` | 2,050,000,000 VNĐ | phần lẻ không đủ 3 chữ số: không lẫn với nhóm nghìn |
+| I17 | `1tr5` | VND | vi | `1500000` | 1,500,000 VNĐ | cách nói giữ nguyên (Q7) |
+| I18 | `1 tỷ 2` | VND | vi | `1200000000` | 1,200,000,000 VNĐ | (Q7) |
+| I19 | `1250.5` | USD | en | `125050` | $1,250.50 | |
+| I20 | `1,250.50` | USD | en | `125050` | $1,250.50 | |
+| I21 | `$1,250.50` | USD | en | `125050` | $1,250.50 | |
+| I22 | `$ 1,250.50` | USD | en | `125050` | $1,250.50 | |
+| I23 | `1,250.50 USD` | USD | en | `125050` | $1,250.50 | mã ISO sau số |
+| I24 | `USD 1,250.50` | USD | en | `125050` | $1,250.50 | mã ISO trước số |
+| I25 | `0.05` | USD | en | `5` | $0.05 | |
+| I26 | `250K` | USD | en | `25000000` | $250,000.00 | |
+| I27 | `$1.2 Mil` | USD | en | `120000000` | $1,200,000.00 | |
+| I28 | `1.2345 Mil` | USD | en | `123450000` | $1,234,500.00 | có đơn vị: số lẻ dài được, miễn tròn cent |
+| I29 | `1.5 Bil` | USD | en | `150000000000` | $1,500,000,000.00 | |
+| I30 | `€250K` | EUR | en | `25000000` | €250,000.00 | |
+| I31 | `250,000.00 EUR` | EUR | en | `25000000` | €250,000.00 | |
+| I32 | `£1,250.5` | GBP | en | `125050` | £1,250.50 | |
+| I33 | `$100` | AUD | en | `10000` | $100.00 AUD | (Q1) |
+| I34 | `$100 AUD` | AUD | en | `10000` | $100.00 AUD | (Q1) |
+| I35 | `1,000 CAD` | CAD | en | `100000` | $1,000.00 CAD | |
+| I36 | `$99.90` | SGD | en | `9990` | $99.90 SGD | |
+| I37 | `1.500 Mil` | USD | en | `150000000` | $1,500,000.00 | luật "một `.` + đúng 3 chữ số" chỉ áp cho VND (Q17) |
 
 ### 6.2 Cách gõ bị từ chối
 
 Mỗi cách gõ bị từ chối hiện một trong hai thứ dưới ô:
 
-- **Gợi ý viết lại** (cột "Gợi ý"): cách đọc cũ (`splitNumber` hôm nay, nhóm bằng dấu cách) viết lại theo luật mới. Chỉ có khi cách đọc đó ra một số hợp lệ. App không tự áp gợi ý; người dùng bấm thì mới điền (Q11).
-- **Câu lỗi theo mã lỗi, kèm ví dụ cách gõ đúng**, khi không có gợi ý viết lại (cột ghi "—"). Ví dụ: `format` → gõ dạng "1,500,000" hay "1.5 tr" (VND), "1,250.50" hay "250K" (tiền có cent); `fraction` → VND không có số lẻ, hay tiền có cent tối đa 2 chữ số sau dấu `.`. Câu chữ chốt ở mockup và i18n, không phải golden.
+- **Gợi ý viết lại** (cột "Gợi ý"). Có khi một cách đọc khác ra số hợp lệ: cách đọc cũ (`splitNumber` hôm nay, nhóm bằng dấu cách), hay đơn vị đổi sang ngôn ngữ đang dùng. App không tự áp gợi ý; người dùng bấm thì mới điền (Q11).
+- **Câu lỗi theo mã lỗi, kèm ví dụ cách gõ đúng**, khi không có gợi ý viết lại (cột ghi "—").
+  - `format`: gõ dạng "1,500,000" hay "1.5 tr" (VND tiếng Việt), "1,500,000" hay "1.5 Mil" (VND English), "1,250.50" hay "250K" (tiền có cent).
+  - `fraction`: VND không có số lẻ; tiền có cent tối đa 2 chữ số sau dấu `.`.
+  - Câu chữ chốt ở mockup và i18n, không phải golden.
 
-`ambiguous` là mã lỗi mới (Q17): với VND, một dấu `.` theo sau đúng 3 chữ số rồi tới đơn vị. Hôm nay app đọc "1.500 tr" là 1,500 tr; luật dấu mới đọc thành 1.5 tr. Cả hai đều là phí hợp lệ, nên nhận lặng lẽ là đổi số gấp 1000 lần. App từ chối và đưa cả hai cách viết.
+`ambiguous` là mã lỗi mới (Q17). Nó áp cho VND, ở cả hai ngôn ngữ: một dấu `.` theo sau đúng 3 chữ số rồi tới đơn vị. Hôm nay app đọc "1.500 tr" là 1,500 tr; luật dấu mới đọc thành 1.5 tr. Cả hai đều là phí hợp lệ, nên nhận lặng lẽ là đổi số gấp 1000 lần. App từ chối và đưa cả hai cách viết.
 
-| Mã | Gõ | Tiền tệ | Lỗi | Gợi ý | Ghi chú |
-|---|---|---|---|---|---|
-| X01 | `1,5 tỷ` | VND | `format` | `1.5 tỷ` | `,` không đứng trước nhóm 3 chữ số |
-| X02 | `0,5 tỷ` | VND | `format` | `0.5 tỷ` | |
-| X03 | `500.000.000` | VND | `format` | `500,000,000` | `.` chỉ một lần, cho phần lẻ |
-| X04 | `500.000.000 VNĐ` | VND | `format` | `500,000,000 VNĐ` | gợi ý giữ chữ VNĐ như đã gõ |
-| X05 | `1.500` | VND | `fraction` | `1,500` | VND không có số lẻ |
-| X06 | `1.234,5 tr` | VND | `format` | `1,234.5 tr` | kiểu châu Âu |
-| X07 | `500 000 000` | VND | `format` | `500,000,000` | nhóm bằng dấu cách, hôm nay nhận (Q8) |
-| X08 | `1,5` | VND | `format` | — | cách đọc cũ (1.5 đồng) cũng không hợp lệ |
-| X09 | `1,50` | VND | `format` | — | |
-| X10 | `12,34,567` | VND | `format` | — | nhóm kiểu Ấn Độ |
-| X11 | `,500` | VND | `format` | — | |
-| X12 | `1.0000000001 tỷ` | VND | `fraction` | — | lẻ dưới 1 đồng |
-| X13 | `1.5 T` | VND | `format` | — | ô nhập không nhận T (Q6) |
-| X14 | `1.5m` | VND | `format` | — | không nhận "m" (Q6) |
-| X15 | `$500` | VND | `format` | — | dấu của tiền khác |
-| X16 | `-500tr` | VND | `negative` | — | phí không âm |
-| X17 | (trống) | VND | `empty` | — | |
-| X18 | `99,999,999,999,999,999` | VND | `too-large` | — | quá số nguyên an toàn |
-| X19 | `1.500` | USD | `fraction` | `1,500` | không đơn vị: tối đa 2 chữ số sau `.`, kể cả số 0 |
-| X20 | `1,250.505` | USD | `fraction` | — | quá hai chữ số lẻ |
-| X21 | `12,34` | USD | `format` | `12.34` | |
-| X22 | `1.234,56` | USD | `format` | `1,234.56` | kiểu châu Âu |
-| X23 | `1.234,56 €` | EUR | `format` | — | ký hiệu € đặt sau số không được nhận |
-| X24 | `€100` | USD | `format` | — | dấu của tiền khác |
-| X25 | `1.234567891 Mil` | USD | `fraction` | — | lẻ dưới 1 cent |
-| X26 | `1.500 tr` | VND | `ambiguous` | `1.5 tr` · `1,500 tr` | hôm nay đọc là 1,500 tr (Q17) |
-| X27 | `1.500 tỷ` | VND | `ambiguous` | `1.5 tỷ` · `1,500 tỷ` | gợi ý thứ hai quá trần (M04) (Q17) |
-| X28 | `1.500k` | VND | `ambiguous` | `1.5k` · `1,500k` | (Q17) |
+| Mã | Gõ | Tiền tệ | Ngôn ngữ | Lỗi | Gợi ý | Ghi chú |
+|---|---|---|---|---|---|---|
+| X01 | `1,5 tỷ` | VND | vi | `format` | `1.5 tỷ` | `,` không đứng trước nhóm 3 chữ số |
+| X02 | `0,5 tỷ` | VND | vi | `format` | `0.5 tỷ` | |
+| X03 | `500.000.000` | VND | cả hai | `format` | `500,000,000` | `.` chỉ một lần, cho phần lẻ |
+| X04 | `500.000.000 VNĐ` | VND | cả hai | `format` | `500,000,000 VNĐ` | gợi ý giữ chữ VNĐ như đã gõ |
+| X05 | `1.500` | VND | cả hai | `fraction` | `1,500` | VND không có số lẻ |
+| X06 | `1.234,5 tr` | VND | vi | `format` | `1,234.5 tr` | kiểu châu Âu |
+| X07 | `500 000 000` | VND | cả hai | `format` | `500,000,000` | nhóm bằng dấu cách, hôm nay nhận (Q8) |
+| X08 | `1,5` | VND | cả hai | `format` | — | cách đọc cũ (1.5 đồng) cũng không hợp lệ |
+| X09 | `1,50` | VND | cả hai | `format` | — | |
+| X10 | `12,34,567` | VND | cả hai | `format` | — | nhóm kiểu Ấn Độ |
+| X11 | `,500` | VND | cả hai | `format` | — | |
+| X12 | `1.0000000001 tỷ` | VND | vi | `fraction` | — | lẻ dưới 1 đồng |
+| X13 | `1.5 T` | VND | cả hai | `format` | — | ô nhập không nhận T (Q6) |
+| X14 | `1.5m` | VND | cả hai | `format` | — | không nhận "m" (Q6) |
+| X15 | `$500` | VND | cả hai | `format` | — | dấu của tiền khác |
+| X16 | `-500tr` | VND | vi | `negative` | — | phí không âm |
+| X17 | (trống) | VND | cả hai | `empty` | — | |
+| X18 | `99,999,999,999,999,999` | VND | cả hai | `too-large` | — | quá số nguyên an toàn |
+| X19 | `1.500` | USD | en | `fraction` | `1,500` | không đơn vị: tối đa 2 chữ số sau `.`, kể cả số 0 |
+| X20 | `1,250.505` | USD | en | `fraction` | — | quá hai chữ số lẻ |
+| X21 | `12,34` | USD | en | `format` | `12.34` | |
+| X22 | `1.234,56` | USD | en | `format` | `1,234.56` | kiểu châu Âu |
+| X23 | `1.234,56 €` | EUR | en | `format` | — | ký hiệu € đặt sau số không được nhận |
+| X24 | `€100` | USD | en | `format` | — | dấu của tiền khác |
+| X25 | `1.234567891 Mil` | USD | en | `fraction` | — | lẻ dưới 1 cent |
+| X26 | `1.500 tr` | VND | vi | `ambiguous` | `1.5 tr` · `1,500 tr` | hôm nay đọc là 1,500 tr (Q17) |
+| X27 | `1.500 tỷ` | VND | vi | `ambiguous` | `1.5 tỷ` · `1,500 tỷ` | gợi ý thứ hai quá trần (M04) (Q17) |
+| X28 | `1.500k` | VND | cả hai | `ambiguous` | `1.5k` · `1,500k` | (Q17) |
+| X29 | `1.500 Mil` | VND | en | `ambiguous` | `1.5 Mil` · `1,500 Mil` | luật áp cho VND ở cả hai ngôn ngữ (Q17) |
+| X30 | `500 Mil` | VND | vi | `format` | `500 tr` | đơn vị của ngôn ngữ kia (Q6) |
+| X31 | `500tr` | VND | en | `format` | `500 Mil` | (Q6) |
+| X32 | `1tr5` | VND | en | `format` | — | cách nói "1tr5" chỉ có ở tiếng Việt (Q6, Q7) |
+| X33 | `1.5 tr` | USD | en | `format` | `1.5 Mil` | (Q6) |
+| X34 | `A$100` | AUD | en | `format` | — | AUD nhận "$" hay mã "AUD", không nhận "A$" (Q1) |
 
 ### 6.3 Trần phí (100 Billions)
 
-| Mã | Gõ | Tiền tệ | Số lưu | Là phí? |
-|---|---|---|---|---|
-| M01 | `100 tỷ` | VND | `100000000000` | Có: đúng trần |
-| M02 | `100,000,000,001` | VND | `100000000001` | Không: quá trần 1 đồng |
-| M03 | `100.000000001 tỷ` | VND | `100000000001` | Không: quá trần |
-| M04 | `1,500 tỷ` | VND | `1500000000000` | Không: đọc được (1,500 tỷ), quá trần |
-| M05 | `100 Bil` | USD | `10000000000000` | Có: đúng trần |
-| M06 | `100,000,000,000.01` | USD | `10000000000001` | Không: quá trần 1 cent |
-| M07 | `100.01 Bil` | USD | `10001000000000` | Không: quá trần |
+| Mã | Gõ | Tiền tệ | Ngôn ngữ | Số lưu | Là phí? |
+|---|---|---|---|---|---|
+| M01 | `100 tỷ` | VND | vi | `100000000000` | Có: đúng trần |
+| M02 | `100,000,000,001` | VND | cả hai | `100000000001` | Không: quá trần 1 đồng |
+| M03 | `100.000000001 tỷ` | VND | vi | `100000000001` | Không: quá trần |
+| M04 | `1,500 tỷ` | VND | vi | `1500000000000` | Không: đọc được (1,500 tỷ), quá trần |
+| M05 | `100 Bil` | USD | en | `10000000000000` | Có: đúng trần |
+| M06 | `100,000,000,000.01` | USD | en | `10000000000001` | Không: quá trần 1 cent |
+| M07 | `100.01 Bil` | USD | en | `10001000000000` | Không: quá trần |
 
 ## 7. Ngày và kỳ
 
-Nhập dd/mm/yyyy (và dd/mm gọn) ở cả hai ngôn ngữ, Owner chốt 12/11. Ngày 12/11/2026 là Thứ Năm. Tuần tính từ Thứ Hai tới Chủ Nhật. "Chỗ rộng" (tiêu đề, dòng đọc ngày, ô kỳ) chốt ở mockup từng màn (Q9).
+- **Nhập:** dd/mm/yyyy (và dd/mm gọn) ở cả hai ngôn ngữ, Owner chốt 12/11.
+- **Ngày dùng làm ví dụ:** 12/11/2026 là Thứ Năm. Tuần tính từ Thứ Hai tới Chủ Nhật.
+- **English ở chỗ rộng** (tiêu đề, dòng đọc ngày, ô kỳ) dùng tên tháng ngắn (Q9); danh sách chỗ rộng chốt ở mockup từng màn.
 
 | Mã | Trường hợp | Đầu vào | Tiếng Việt | English | Ghi chú |
 |---|---|---|---|---|---|

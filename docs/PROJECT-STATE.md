@@ -262,6 +262,11 @@ Claude Code only — Claude writes 100% of the code (since 2026-09-30 Codex join
   7. Clarifying point 2: "Chuẩn quốc tế là anh đang nói về các dạng tiền tệ khác VNĐ. Với VNĐ thì dù ngôn ngữ có là tiếng Anh thì vẫn ghi là 3,000,000 VNĐ."
   8. After Claude's answer on dates (data is stored as ISO dates, so there is no data conflict; the risk of mm/dd is a silent misreading such as "03/04"): "còn lại anh đồng ý và giữ dd/mm và cách hiển thị ngày như em đề xuất". Input stays dd/mm/yyyy in both languages; English shows month names where there is room.
   9. Asked "VND ghi ký hiệu "₫" như hiện nay hay đổi thành chữ "VNĐ"?", the OWNER: "Đổi thành VNĐ".
+  10. Later the same day, on draft PR #1222, the OWNER answered Claude's questions Q1–Q17 one by one, in the question dialog (spec §11.3 records each answer). He took Claude's proposal on Q2, Q4, Q5, Q7–Q15 and Q17. He chose differently on three:
+      - Q1, the symbols of AUD, CAD, SGD: "Ví dụ $250 AUD, $250 CAD, $250 SGD. Đưa 3 chữ cái viết tắt của tiền tệ cùng dùng đồng Dollar sau con số. Dễ nhìn, dễ phân biệt hơn." USD stays "$" alone ("USD chỉ "$""). The code shows in the full form only ("Chỉ dạng đầy đủ kèm mã").
+      - Q3, the thousands tier of the Vietnamese compact form: ""K" như tiếng Anh" ("750K"); still no "nghìn tỷ" tier ("1,500 tỷ").
+      - Q6, the unit words an amount field accepts: "Theo ngôn ngữ giao diện" (Vietnamese nghìn / k / tr / tỷ, English K / Mil / Bil).
+      - On Q16, the English glossary: "Anh cần list đầy đủ các thuật ngữ để kiểm tra lại". Spec §11.6 now lists every term by group, waiting for him.
 
 ## Next decision
 
