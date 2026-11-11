@@ -1,6 +1,6 @@
 # Spec Phase 6 — Phản hồi dùng thử exe `5215b2e` (G1)
 
-- **Trạng thái:** kế hoạch, **chưa tạo Issue** (Owner 10/11/2026: "lên kế hoạch thôi nhé, chưa ra issue"). Owner duyệt cách chia A–F và thứ tự ngày 10/11/2026 (G1, trong chat ở Home PC). Đã chốt nội dung: **A** (§3; gồm G2 golden fixtures chỉ đổi tên, G3 mockup chỉ đổi nhãn; chữ prompt G5 duyệt trên PR của A6), **B** (§4; golden G2 và mockup G3 duyệt sau), **C** (§5; bố cục duyệt ở mockup), nguồn số tiền của **D** (§6.1). Còn mở: phần còn lại của D (§6.2), **E** và **F** (§7). Trước mockup và Issue là vòng ý tưởng UI/UX (§8); hướng làm bản macOS (§9) là đề xuất, chờ Owner. Phần **G** (song ngữ, tiền tệ; §11) Owner thêm 11–12/11, ADR-0018 và golden chờ duyệt (T-418).
+- **Trạng thái:** kế hoạch, **chưa tạo Issue** (Owner 10/11/2026: "lên kế hoạch thôi nhé, chưa ra issue"). Owner duyệt cách chia A–F và thứ tự ngày 10/11/2026 (G1, trong chat ở Home PC). Đã chốt nội dung: **A** (§3; gồm G2 golden fixtures chỉ đổi tên, G3 mockup chỉ đổi nhãn; chữ prompt G5 duyệt trên PR của A6), **B** (§4; golden G2 và mockup G3 duyệt sau), **C** (§5; bố cục duyệt ở mockup), nguồn số tiền của **D** (§6.1). Còn mở: phần còn lại của D (§6.2), **E** và **F** (§7). Trước mockup và Issue là vòng ý tưởng UI/UX (§8); hướng làm bản macOS (§9) là đề xuất, chờ Owner. Phần **G** (song ngữ, tiền tệ; §11) Owner thêm 11–12/11; ADR-0018 và golden Owner duyệt G1, G2 ngày 12/11 (T-418).
 - **Soạn:** 10/11/2026, `main` `de9cde7` (code `5215b2e`). Nguồn: phản hồi dùng thử của Owner (§1), HANDOFF bước 0.
 
 ## 1. Phản hồi của Owner (nguyên văn)
@@ -60,7 +60,7 @@ Các câu trả lời khi chốt thiết kế, cùng ngày (câu hỏi ở mục
 | **F.** Icon cho 3 mục của Cài đặt | tin thêm về "Cài đặt" | G3, cùng đợt mockup với C | 3 | Chờ mockup (§7.2) |
 | **D.** Forecast | 4 | G2, G3 | 4 | Nguồn số tiền đã chốt (§6.1); còn 6 điểm mở (§6.2) |
 | **E.** Làm lại Báo cáo trên app và file Excel | 3; tin thêm về "báo cáo" | G3: mockup cả màn Báo cáo lẫn file Excel | 5 | Chờ vòng ý tưởng UI/UX và mockup (§7.1) |
-| **G.** Song ngữ Việt / Anh, tiền tệ chọn một lần, dấu kiểu Excel | ngoài §1: Owner 11–12/11 | G1, G2 (T-418), G3 (wizard, Cài đặt), G5 (cùng A6) | sau A; dịch làm cuối | ADR-0018 và golden chờ duyệt (§11) |
+| **G.** Song ngữ Việt / Anh, tiền tệ chọn một lần, dấu kiểu Excel | ngoài §1: Owner 11–12/11 | G1, G2 (T-418), G3 (wizard, Cài đặt), G5 (cùng A6) | sau A; dịch làm cuối | ADR-0018 và golden: Owner duyệt G1, G2 ngày 12/11 (§11) |
 
 E đi sau B vì bảng mới có cột HĐ hủy và tỷ lệ hủy, và dùng chung phong cách với màn Forecast của D.
 
@@ -350,7 +350,7 @@ Phần G (song ngữ, tiền tệ; §11) thêm vào thứ tự trên:
 - Bước 2 có thêm ADR-0018 và golden số / tiền (T-418), duyệt trước golden D và mockup đợt c–e. Golden D và các đợt đó viết số theo luật mới.
 - Bước 3 thành: A → G1–G5 → B → C / F → D → E → G12–G16. G6–G11 chạy song song từ sau G4 / G1. Chi tiết: §11.4.
 
-## 11. Phần G — Song ngữ Việt / Anh và tiền tệ (chờ Owner duyệt G1, G2)
+## 11. Phần G — Song ngữ Việt / Anh và tiền tệ (Owner duyệt G1, G2 ngày 12/11/2026)
 
 ### 11.1 Phạm vi
 
@@ -432,13 +432,13 @@ Mỗi điểm là đề xuất của Claude, có dòng golden hay mục ADR đi 
 | Q13 | Thiết lập lại từ đầu | Dữ liệu cũ giữ tới khi wizard xong; DB mới không giữ cài đặt AI; key AI ở lại | Như đề xuất | ADR §7 |
 | Q14 | Nạp lại dữ liệu mẫu | Giữ tiền tệ, nạp bộ mẫu của tiền tệ đó | Như đề xuất: "Nạp bộ mẫu của tiền tệ đó" | ADR §7 |
 | Q15 | Bộ mẫu tiếng Anh | Một bộ số chung cho sáu tiền tệ; một phần phí có số lẻ cent | Như đề xuất: "Một bộ số chung" | ADR §8 |
-| Q16 | Bảng thuật ngữ tiếng Anh | Bảng ngắn ở §11.6 | "Anh cần list đầy đủ các thuật ngữ để kiểm tra lại". §11.6 viết lại đầy đủ, theo nhóm, lấy từ chữ đang có trong `vi.ts`: **chờ Owner xem** | §11.6 |
+| Q16 | Bảng thuật ngữ tiếng Anh | Bảng ngắn ở §11.6 | "Anh cần list đầy đủ các thuật ngữ để kiểm tra lại". §11.6 viết lại đầy đủ, theo nhóm, lấy từ chữ đang có trong `vi.ts`. Owner sửa bốn từ rồi "Còn lại duyệt": Team & nhân sự → "Team management", Nhân sự → "staff", Mất cơ hội → "lost opportunity", "RF: referal" (giải thích ở §11.6) | §11.6 |
 | Q17 | "1.500 tr", "1.500 tỷ" với VND | Từ chối (mã `ambiguous`), gợi ý cả "1.5 tr" lẫn "1,500 tr" | Như đề xuất: "Từ chối, đưa hai cách viết" | X26–X29, I37 · ADR §5 |
 
 ### 11.4 Thứ tự, cổng
 
 - **Cổng:**
-  - **G1:** ADR-0018 và phần này. **G2:** golden `so-va-tien-te.md` và khóa `currency` của bảng `settings`. Cả hai duyệt trong PR của T-418.
+  - **G1:** ADR-0018 và phần này. **G2:** golden `so-va-tien-te.md` và khóa `currency` của bảng `settings`. Owner duyệt cả hai ngày 12/11/2026 ("Duyệt G1 và G2"), trong PR của T-418 (#1222).
   - **G3:** mockup (§11.5). **G5:** ngôn ngữ trả lời và câu "tại Việt Nam" của prompt, gộp vào A6.
   - Không có G4: không thêm dependency nào, kể cả thư viện số hay `Intl` polyfill.
 - **Thứ tự Issue code** (§11.7), tất cả sau A, vì A đổi khóa chuỗi và tên trong code:
@@ -458,15 +458,17 @@ Issue docs riêng, hoặc ghép với đợt f (hộp hủy HĐ):
 - một hai màn tiếng Anh với VND và với USD;
 - đổi số của đợt a (`components.html`, `app-shell.html`) theo luật mới.
 
-### 11.6 Bảng thuật ngữ tiếng Anh (chờ Owner duyệt)
+### 11.6 Bảng thuật ngữ tiếng Anh (Owner duyệt 12/11/2026)
 
-Danh sách đầy đủ các thuật ngữ của giao diện, theo nhóm (Owner 12/11: "Anh cần list đầy đủ các thuật ngữ để kiểm tra lại").
+Danh sách đầy đủ các thuật ngữ của giao diện, theo nhóm (Owner 12/11: "Anh cần list đầy đủ các thuật ngữ để kiểm tra lại"). Owner sửa bốn từ (ghi "Owner 12/11" ở cột Ghi chú), rồi: "Còn lại duyệt".
 
 - Cột Tiếng Việt là chữ đang có trong app (`apps/desktop/src/i18n/vi.ts`), cộng chữ của các phần B–G chưa code. Chữ "RE" của app viết thành "RM" theo phần A.
 - Câu chữ dài (câu hướng dẫn, câu lỗi) dịch ở các lượt dịch, theo đúng các từ dưới đây.
-- Bảng vào `CONTEXT.md` khi Owner duyệt, cùng Issue G1.
+- Bảng vào `CONTEXT.md` cùng Issue G1.
 
-**Giữ nguyên ở cả hai ngôn ngữ:** Heritas L-CRM, FYP, KYC, KYC Intelligence, N1–N4, RM, TL, IS, BD, BDM, MTD, RF, KPI, AUM, AI, Forecast, Case size, Team, Kanban, Trigger, Excel, ChatGPT, OpenCode, WorkBuddy.
+**Giữ nguyên ở cả hai ngôn ngữ:** Heritas L-CRM, FYP, KYC, KYC Intelligence, N1–N4, RM, TL, IS, BD, BDM, MTD, KPI, AUM, AI, Forecast, Case size, Team, Kanban, Trigger, Excel, ChatGPT, OpenCode, WorkBuddy.
+
+**RF:** tiếng Việt vẫn viết "RF"; English viết "Referral" (Owner 12/11). Owner giải thích: "RF là chỉ đích danh chỉ số chuyển RF: nghĩa là IS got referred from RM. RM đã khơi gợi nhu cầu thành công, phối hợp với IS để trình bày giải pháp (tương ứng với chuyển lên N2)". Định nghĩa chỉ số không đổi (ADR-0007). Trigger "Giới thiệu từ KH" ("Customer referral") là nghĩa khác: KH giới thiệu một KH mới.
 
 **Chữ "Hủy" có ba nghĩa, tiếng Anh tách ra:** nút đóng hộp thoại "Cancel"; lịch hẹn bị hủy "Cancelled"; hủy hợp đồng "Cancel policy", HĐ đã hủy "Cancelled".
 
@@ -482,7 +484,7 @@ Danh sách đầy đủ các thuật ngữ của giao diện, theo nhóm (Owner 
 | Lịch hẹn | Appointments | tên màn |
 | Khách hàng | Customers | tên màn |
 | Hồ sơ khách hàng | Customer profile | |
-| Team & nhân sự | Teams & People | |
+| Team & nhân sự | Team management | Owner 12/11 |
 | Cài đặt | Settings | |
 | Quản lý | Manage | nhóm trên thanh bên |
 | Ô lệnh (⌘K / Ctrl+K) | Command bar | đợt b |
@@ -512,7 +514,7 @@ Người và team:
 
 | Tiếng Việt | English (đề xuất) | Ghi chú |
 |---|---|---|
-| Nhân sự | People | |
+| Nhân sự | Staff | Owner 12/11 |
 | Vai trò | Role | |
 | RM phụ trách | Assigned RM | |
 | Người phối hợp | Coordinator | TL / IS / BD / BDM |
@@ -534,7 +536,7 @@ Khách hàng:
 | Giới tính: Nam / Nữ | Gender: Male / Female | |
 | Nhóm | Stage | N4 → N1 |
 | Tạm hoãn | On hold | |
-| Mất cơ hội | Lost | |
+| Mất cơ hội | Lost opportunity | Owner 12/11 |
 | Mở lại | Reopen | |
 | KH đang mở / đã đóng | Open / closed customers | |
 | Đã có HĐ | Has policy | nhãn KH |
@@ -572,7 +574,7 @@ Lịch hẹn:
 | Các lần hẹn trước | Past appointments | |
 | Lần gặp thứ {n} | Meeting {n} | |
 | Chưa ghi kết quả | Outcome not recorded | |
-| Tính RF / Không tính RF | Counts as RF / Not RF | |
+| Tính RF / Không tính RF | Counts as referral / Not a referral | Owner 12/11: "RF: referal" |
 
 Hợp đồng và chỉ số:
 
@@ -588,7 +590,7 @@ Hợp đồng và chỉ số:
 | Doanh số | Total FYP | Owner 10/11 |
 | Case size | Case size | |
 | Case size dự kiến | Expected case size | |
-| Chuyển RF | RF | |
+| Chuyển RF | Referrals | Owner 12/11; Tỉ lệ chốt = HĐ phát hành ÷ Referrals |
 | Tỉ lệ chốt | Close rate | |
 | Tỷ lệ hủy | Cancellation rate | phần B |
 | Chỉ số của kỳ | Period metrics | |

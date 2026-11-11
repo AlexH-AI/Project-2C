@@ -28,7 +28,7 @@ Excel là định dạng Owner dùng để xem/chia sẻ số liệu; i18n từ 
 - Checklist review có mục "không chuỗi UI cứng".
 - Hướng thiết kế UI (tokens, font Be Vietnam Pro, bố cục màn hình) **chưa là ADR** — chốt ở G3.
 
-## Phụ lục — song ngữ và tiền tệ (11/11/2026, ADR-0018; chờ Owner duyệt cùng ADR-0018)
+## Phụ lục — song ngữ và tiền tệ (11/11/2026, ADR-0018; Owner duyệt cùng ADR-0018 ngày 12/11/2026)
 
 Owner 11/11/2026 đưa giao diện song ngữ Việt / Anh và tiền tệ chọn một lần vào v1.0 ("Đưa vào v1.0"). ADR-0018 thay một phần ADR này:
 

@@ -1,6 +1,6 @@
 # Golden examples — Số, tiền tệ, ngày theo ngôn ngữ (G2)
 
-> **Trạng thái: chờ Owner duyệt G2** (T-418, #1221). Owner trả lời các câu Q1–Q15, Q17 ngày 12/11/2026 (spec `docs/design/phase-6-phan-hoi-dung-thu.md` §11.3); các dòng dưới đây đã theo câu trả lời. Dòng nào ứng với một câu hỏi thì ghi số câu (vd. "Q3").
+> **Trạng thái: Owner duyệt G2 ngày 12/11/2026** ("Duyệt G1 và G2"; T-418, #1221, PR #1222). Các dòng theo câu trả lời Q1–Q15, Q17 của Owner cùng ngày (spec `docs/design/phase-6-phan-hoi-dung-thu.md` §11.3). Dòng nào ứng với một câu hỏi thì ghi số câu (vd. "Q3").
 
 Nguồn luật: ADR-0018 §3–§6. Sau khi Owner duyệt, bộ này thành fixture `packages/domain/src/golden/` (Issue G2 của spec §11.7, khớp 1–1 theo mã dòng) và là test bắt buộc của hàm định dạng / đọc trong `packages/domain`. **Không sửa để "cho xanh"**: muốn đổi phải qua Owner.
 

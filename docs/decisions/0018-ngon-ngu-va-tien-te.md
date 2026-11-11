@@ -1,12 +1,12 @@
 # ADR-0018: Ngôn ngữ và tiền tệ
 
-- **Trạng thái:** Proposed: chờ Owner duyệt G1 (quyết định, kiến trúc) và G2 (golden `docs/golden/so-va-tien-te.md`, khóa `currency` của bảng `settings`)
+- **Trạng thái:** Accepted (G1, G2): Owner duyệt ngày 12/11/2026 ("Duyệt G1 và G2"). G1 là quyết định và kiến trúc; G2 là golden `docs/golden/so-va-tien-te.md` và khóa `currency` của bảng `settings`.
 - **Ngày:** 2026-11-12
 - **Nguồn:** Owner 11–12/11/2026 trong chat ở Home PC (chín lượt nguyên văn: `docs/PROJECT-STATE.md`, hai mục 2026-11-11 và 2026-11-12; Issue #1221 mục Bối cảnh). Spec: `docs/design/phase-6-phan-hoi-dung-thu.md` §11 (Phần G).
 - **Thay một phần:** ADR-0011 điểm 2 (giao diện chỉ tiếng Việt) và điểm 3 (tiền "1,2 tỷ" / "500 tr"); `docs/PROJECT-PLAN.md` §4.4 (đọc tiền VND "500tr", "1,2 tỷ"; ngôn ngữ Q13) và §4.6 (định dạng tiền "1,2 tỷ" / "500 tr").
-- **Commit / PR:** T-418 (#1221) · PR: —
+- **Commit / PR:** T-418 (#1221) · PR: #1222
 
-Mỗi điểm ghi rõ ai chốt: **Owner chốt** (nguyên văn ở `PROJECT-STATE.md`) hay **Claude đề xuất** (Owner duyệt trong PR này). Các điểm đề xuất cần Owner chọn được gom ở spec §11.3.
+Mỗi điểm ghi rõ ai chốt: **Owner chốt** (nguyên văn ở `PROJECT-STATE.md`) hay **Claude đề xuất** (Owner duyệt trong PR #1222). Các điểm đề xuất được gom thành câu hỏi Q1–Q17 ở spec §11.3.
 
 **Owner trả lời ngày 12/11/2026** các câu Q1–Q15 và Q17 (spec §11.3). Mọi đề xuất giữ như ghi, trừ ba chỗ đã sửa trong ADR này theo câu trả lời:
 
@@ -14,7 +14,7 @@ Mỗi điểm ghi rõ ai chốt: **Owner chốt** (nguyên văn ở `PROJECT-STA
 - bậc K của dạng gọn tiếng Việt (Q3);
 - đơn vị ở ô nhập theo ngôn ngữ giao diện (Q6).
 
-Q16 (bảng thuật ngữ tiếng Anh) chờ Owner xem danh sách đầy đủ.
+Q16, bảng thuật ngữ tiếng Anh (spec §11.6): Owner xem danh sách đầy đủ, sửa bốn từ, rồi "Còn lại duyệt". Bốn từ sửa: Team & nhân sự → "Team management"; Nhân sự → "staff"; Mất cơ hội → "lost opportunity"; RF → "referal", viết đúng chính tả là "Referral" (§1).
 
 ## Bối cảnh
 
@@ -37,7 +37,8 @@ Bản Mac phát hành cùng bản Windows. Hướng thương mại hóa (Mac App
 ### 1. Ngôn ngữ
 
 - **Owner chốt:** hai ngôn ngữ, Tiếng Việt và English. Cài đặt có mục mới "Ngôn ngữ / Language", đổi được bất kỳ lúc nào. Tiếng Việt chỉ chọn được khi tiền tệ của dữ liệu là VND; với tiền tệ khác, lựa chọn Tiếng Việt bị làm mờ, kèm một dòng lý do.
-- Thuật ngữ ngành giữ tiếng Anh ở cả hai ngôn ngữ, như ADR-0011: FYP, KYC, N1–N4, RM, TL, IS, BD, BDM, MTD, RF, KPI. Bảng thuật ngữ tiếng Anh chờ duyệt: spec §11.6.
+- Thuật ngữ ngành giữ tiếng Anh ở cả hai ngôn ngữ, như ADR-0011: FYP, KYC, N1–N4, RM, TL, IS, BD, BDM, MTD, KPI. Bảng thuật ngữ tiếng Anh Owner duyệt 12/11: spec §11.6.
+- **RF** (Owner 12/11): tiếng Việt vẫn viết "RF"; English viết "Referral" (chỉ số "Chuyển RF" → "Referrals"). Owner: "RF là chỉ đích danh chỉ số chuyển RF: nghĩa là IS got referred from RM. RM đã khơi gợi nhu cầu thành công, phối hợp với IS để trình bày giải pháp (tương ứng với chuyển lên N2)". Định nghĩa chỉ số giữ như ADR-0007.
 - **Claude đề xuất:**
   - **Lưu theo máy, không vào DB và backup.** Bảng `settings` đi theo backup (`dataTables` chép mọi bảng trừ `schema_migrations`), nên ngôn ngữ không để ở đó. Nếu để ở đó, nhập một backup sẽ đổi ngôn ngữ của máy đang dùng, và Mac với PC dùng chung file thì không chọn ngôn ngữ riêng được. Nơi lưu là bộ nhớ của WebView (`localStorage`, khóa `p2c.language`). Trạng thái "che tên KH" (đợt a, "Có nhớ") cũng nhớ theo máy, có thể dùng chung chỗ này.
   - **Chưa lưu gì thì theo tiền tệ:** VND thì Tiếng Việt, tiền tệ khác thì English. Máy đã lưu Tiếng Việt mà dữ liệu đang mở không phải VND thì app hiện English và giữ nguyên lựa chọn đã lưu.
