@@ -61,7 +61,7 @@
   const STAGE = { n1: 'N1', n2: 'N2', n3: 'N3', n4: 'N4' };
   const ST3 = ['n1', 'n2', 'n3'];
   const KH_ALL = { n4: 361, n3: 219, n2: 134, n1: 170 };
-  // The week of Forecast: day 1 = T3 10/11 … 5 = T7 14/11. 'dup' = the customer has a later appointment
+  // The week of Forecast: day 1 = T3 10/11 … 5 = T7 14/11. 'dup' = the customer has another appointment whose case size was entered more recently
   // (counted once), 'miss' = no case size yet (not counted)
   const DAYS = [['T2', '09/11'], ['T3', '10/11'], ['T4', '11/11'], ['T5', '12/11'], ['T6', '13/11'], ['T7', '14/11']];
   const APPTS = [
@@ -553,7 +553,7 @@
       $('#fc-strip-h').innerHTML = 'Tuần này theo ngày <small>cột vàng là hôm nay · bấm tên ngày để xem cả ngày, bấm một thẻ để mở hồ sơ KH</small>';
       $('#fc-strip').innerHTML = '<div class="days">' + DAYS.map(([l, dt], day) => {
         const list = dayList(f, 0, day), amt = dayAmt(list);
-        const chips = list.map((a) => `<button class="ap ${a.c.st} ${a.flag || ''}" data-c="${a.c.i}" style="--i: ${a.i}"><b>${a.c.name}</b><span class="num">${a.flag === 'miss' ? 'thiếu case size' : a.flag === 'dup' ? 'đã tính ở lịch T6' : a.t + ' · ' + a.amt + ' tr'}</span></button>`).join('');
+        const chips = list.map((a) => `<button class="ap ${a.c.st} ${a.flag || ''}" data-c="${a.c.i}" style="--i: ${a.i}"><b>${a.c.name}</b><span class="num">${a.flag === 'miss' ? 'thiếu case size' : a.flag === 'dup' ? 'theo số ở lịch T6' : a.t + ' · ' + a.amt + ' tr'}</span></button>`).join('');
         return `<div class="day ${day === 0 ? 'past' : day === 1 ? 'today' : ''}"><button class="dh" data-cell="0-${day}"${list.length ? '' : ' disabled'}><span><b>${l}</b> ${dt}</span><span class="sum num">${day === 0 ? 'đã qua' : amt ? amt + ' tr' : '—'}</span></button>${chips}</div>`;
       }).join('') + '</div>';
     } else {
@@ -579,7 +579,7 @@
     pop.innerHTML = `<h3 class="sec-h">${DAYS[day][0]} ${date}<small>${amt ? moneyS(amt) + ' dự kiến · ' : ''}${list.length} lịch hẹn · ${scopeName()}</small></h3>`
       + list.map((a) => {
         const r = RMS[a.c.rm];
-        const right = a.flag === 'miss' ? '<span class="chip warn">thiếu case size</span>' : a.flag === 'dup' ? '<span class="muted">đã tính ở T6</span>' : a.amt + ' tr';
+        const right = a.flag === 'miss' ? '<span class="chip warn">thiếu case size</span>' : a.flag === 'dup' ? '<span class="muted">tính theo số mới hơn ở lịch T6</span>' : a.amt + ' tr';
         return `<button class="dayrow" data-c="${a.c.i}"><span class="tm num">${a.t}</span><span><b>${a.c.name}</b> <span class="st ${a.c.st}">${STAGE[a.c.st]}</span><small>RM ${r.name} · ${teamMark(r.team, 'sm')} ${TEAMS[r.team].name}</small></span><span class="v num">${right}</span>${ic('chev', 'go')}</button>`;
       }).join('') + '<p class="note">Bấm một dòng để mở hồ sơ khách hàng.</p>';
     openFloat('day-pop');
@@ -1089,7 +1089,7 @@
     ['15', 'Tổng quan', 'Ô chỉ số ghi rõ phép tính', 'Tổng số HĐ ghi "34 phát hành − 2 hủy"; Tỷ lệ hủy tăng thì đỏ; Tỉ lệ chốt ghi "34 HĐ ÷ 47 RF". Bấm một ô để mở Báo cáo.', 'Chỉ số mới của phần B dễ hiểu sai. Ghi phép tính ngay dưới số thì không ai phải hỏi lại.', 'S–M', [['B']], 1, { view: 'overview' }],
     ['16', 'Tổng quan', 'Điểm nhấn', 'Bốn câu nhận xét viết từ số theo luật cố định: hủy tăng, team dẫn đầu, buổi chưa ghi kết quả, dự kiến tuần này. Bấm một câu để tới đúng nơi.', 'Số nhiều thì người xem bỏ sót điều quan trọng; câu chữ kéo mắt tới đó. Không dùng AI nên luôn đúng số.', 'M', [['G2', 'gate']], 1, { view: 'overview' }],
     ['17', 'Forecast', 'Đường băng tháng', 'Một thanh: đã đạt, dự kiến tuần này tách N1 / N2 / N3, và các tuần còn lại. Cuối thanh là số "về đích".', 'Câu quản lý hỏi nhiều nhất là "tháng này về bao nhiêu". Một thanh trả lời được.', 'S–M', [['D']], 1, { view: 'forecast' }],
-    ['18', 'Forecast', 'Dải tuần thứ Hai → thứ Bảy', 'Mỗi ngày một cột, mỗi lịch hẹn một thẻ có case size và màu nhóm; tổng tiền ở đầu cột. KH có hai lịch chỉ tính một lần, thẻ kia mờ đi.', 'Thấy tiền dự kiến nằm ở ngày nào, của ai, để biết hôm nào phải dồn sức.', 'M', [['D']], 1, { view: 'forecast', pre: () => { state.fc = 'week'; } }],
+    ['18', 'Forecast', 'Dải tuần thứ Hai → thứ Bảy', 'Mỗi ngày một cột, mỗi lịch hẹn một thẻ có case size và màu nhóm; tổng tiền ở đầu cột. KH có hai lịch chỉ tính một lần, theo số case size nhập gần nhất; thẻ kia mờ đi.', 'Thấy tiền dự kiến nằm ở ngày nào, của ai, để biết hôm nào phải dồn sức.', 'M', [['D']], 1, { view: 'forecast', pre: () => { state.fc = 'week'; } }],
     ['19', 'Forecast', 'Lưới tháng không có Chủ Nhật', 'Mỗi tuần một hàng, sáu cột thứ Hai → thứ Bảy; ô đậm nhạt theo số tiền; ngày đã qua và ngày ngoài tháng gạch chéo. Bấm một ô để thấy các lịch của ngày đó: KH nào, của RM nào, bao nhiêu; bấm KH để mở hồ sơ.', 'Đúng định nghĩa Forecast tháng của anh; nhìn là hiểu vì sao không có Chủ Nhật 15, 22, 29.', 'S–M', [['D']], 1, { view: 'forecast', pre: () => { state.fc = 'month'; } }],
     ['20', 'Forecast', 'Bảng Team → RM, điền case size tại chỗ', 'Bấm một team để mở các RM; cột Tuần này có thanh. Lịch thiếu case size gom vào một nút: bấm, điền số, Forecast chạy theo ngay.', 'Forecast chỉ đúng khi đủ case size. Điền được ngay tại nơi phát hiện thiếu thì dữ liệu mới đầy.', 'M', [['D']], 1, { view: 'forecast' }],
     ['32', 'Forecast', 'Mục tiêu doanh số', 'Mỗi team có một ô nhập mục tiêu doanh số tháng, trong hộp tạo / sửa team. Đường băng của Forecast có thêm vạch mục tiêu, phần trăm về đích và số còn thiếu; thẻ team ghi đã đạt bao nhiêu phần trăm.', 'Anh làm rõ 11/11: mục tiêu là trường nhập thêm để Forecast có cột mốc so sánh. Là dữ liệu mới nên qua G2; anh chốt 11/11: chỉ tiêu của từng team và của toàn bộ, không đặt tới từng RM; mục tiêu toàn bộ là tổng các team. Mục tiêu chỉ nhập theo tháng; tuần không nhập, app tự tính nhịp cần mỗi tuần.', 'M', [['D'], ['G2', 'gate'], ['Owner 11/11']], 1, { view: 'forecast' }],

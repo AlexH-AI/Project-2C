@@ -416,7 +416,7 @@
             <tr class="def"><td class="rh">3</td><td><b>Doanh số</b></td><td>FYP phát hành − FYP hủy</td><td>HĐ hủy tính vào kỳ của ngày hủy</td></tr>
             <tr class="def"><td class="rh">4</td><td><b>Tỷ lệ hủy</b></td><td>HĐ hủy ÷ HĐ phát hành</td><td>"—" khi kỳ không có HĐ phát hành; có thể vượt 100%</td></tr>
             <tr class="def"><td class="rh">5</td><td><b>Tỉ lệ chốt</b></td><td>HĐ phát hành ÷ RF</td><td>Chưa trừ HĐ hủy: đo hiệu quả chốt</td></tr>
-            <tr class="def"><td class="rh">6</td><td><b>Forecast</b></td><td>Tổng case size dự kiến của các lịch Đã lên lịch, KH đang ở N3, N2, N1</td><td>Từ hôm nay; chỉ thứ Hai → thứ Bảy; mỗi KH tính một lần</td></tr>
+            <tr class="def"><td class="rh">6</td><td><b>Forecast</b></td><td>Tổng case size dự kiến của các lịch Đã lên lịch, KH đang ở N3, N2, N1</td><td>Từ hôm nay; chỉ thứ Hai → thứ Bảy; mỗi KH tính một lần, theo số nhập gần nhất</td></tr>
           </table>
 
           <div class="xl-tabs" id="xl-tabs"><button class="on" data-sheet="sum">Tóm tắt</button><button data-sheet="rm">Theo team – RM</button><button data-sheet="fc">Forecast</button><button data-sheet="def">Định nghĩa</button></div>
@@ -438,7 +438,7 @@
           <li><b>"Điểm nhấn" và câu nhận xét của Bản tin.</b>Viết từ số theo luật cố định, không gọi AI. Bộ luật là nội dung mới, cần anh duyệt (G2). <em>Đã chốt 11/11/2026: làm, theo luật.</em> Sáu luật (bốn câu trong bản thử, thêm "về đích so với mục tiêu tháng" và "lịch thiếu case size") em viết kèm ngưỡng và câu mẫu ở mockup Tổng quan để anh duyệt từng luật.</li>
           <li><b>Màu file Excel.</b>Navy và champagne của logo, nền trắng. <em>Đã chốt 11/11/2026: dùng màu logo.</em></li>
           <li><b>Các màn đã duyệt G3 khác</b> (Lịch hẹn, hồ sơ KH, KYC, các hộp thoại). <em>Đã chốt 11/11/2026: giữ bố cục, chỉ thay vỏ theo ngôn ngữ mới; không vẽ lại.</em> Mockup vỏ app kèm một hình Lịch hẹn và một hộp thoại trong vỏ mới để anh xem trước.</li>
-          <li><b>Forecast: 6 điểm mở D-a … D-f.</b>Bản thử đang theo đề xuất của em (mỗi KH tính một lần, hiện đã đạt + dự kiến, bỏ Chủ Nhật, không nhân trọng số, lịch thiếu case size không cộng, có sheet Excel). Em hỏi riêng từng điểm.</li>
+          <li><b>Forecast: 6 điểm mở D-a … D-f.</b>Bản thử đang theo đề xuất của em (mỗi KH tính một lần, hiện đã đạt + dự kiến, bỏ Chủ Nhật, không nhân trọng số, lịch thiếu case size không cộng, có sheet Excel). Em hỏi riêng từng điểm. <em>D-a đã chốt 11/11/2026: mỗi KH tính một lần, theo số case size nhập gần nhất.</em></li>
           <li><b>Nền của trang trình bày.</b>Năm kiểu ở mục "Năm kiểu nền để anh chọn", ngay dưới màn đầu: Hoàng hôn, Studio, Champagne, Lưới, Heritas. Đây là nền của bảng này và của ảnh giới thiệu; trong app thật, phía sau cửa sổ là màn hình desktop của người dùng. <em>Đã chốt 11/11/2026: kiểu 5, Heritas.</em></li>
           <li><b>Team có màu và icon.</b>Sáu màu lấy từ token hiện có, tám icon; TL ngang hàng tên team. Màu và icon là dữ liệu mới của team (G2), đi theo team ở mọi màn. <em>Anh làm rõ 11/11/2026: màu và icon là tùy chọn khi tạo, không bắt buộc; kiểu mặc định giữ như hiện nay.</em></li>
           <li><b>Nhiều nhà cung cấp AI.</b>Thêm WorkBuddy cạnh OpenCode, chọn model và mức suy luận. Mỗi nhà cung cấp mới qua G4, G5, G6; phải kiểm trước WorkBuddy có API cho app ngoài gọi không. <em>Đề xuất: giữ khung nhiều nhà cung cấp trong mockup, kiểm API rồi mới quyết.</em></li>
