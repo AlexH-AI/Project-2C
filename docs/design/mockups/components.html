@@ -13,7 +13,7 @@
   #toasts   Thông báo nổi: xong, hoàn tác, cảnh báo, lỗi
   #empty    Trạng thái trống: màn chưa có dữ liệu, lọc không ra, trong thẻ, bảng trống
   #error    Trạng thái lỗi: cả app, một màn, trong thẻ
-  #tokens   Token mới (đề xuất, phụ lục ADR-0013 11/11/2026): chất liệu, bo góc, bóng, chuyển động, chữ
+  #tokens   Token mới (đã duyệt G3 11/11/2026, phụ lục ADR-0013 11/11/2026): chất liệu, bo góc, bóng, chuyển động, chữ
   #contrast Tương phản đo trên chất liệu mới (WCAG AA)
   #ask      Các điểm Owner cần quyết ở G3
   Vỏ app: app-shell.html. Bảng mockup → màn hình → spec: README.md
@@ -126,9 +126,9 @@
     <header class="pagebar">
       <a class="back" href="index.html">← Mockup G3</a>
       <b>Đợt a · Bảng thành phần</b>
-      <span class="state">Chờ G3</span>
+      <span class="state ok">Đã duyệt G3 · 11/11/2026</span>
       <nav aria-label="Mục trong trang">
-        <a href="#buttons">Nút</a><a href="#fields">Ô nhập</a><a href="#selects">Ô chọn</a><a href="#cards">Thẻ</a><a href="#tables">Bảng số</a><a href="#dialogs">Hộp thoại</a><a href="#badges">Nhãn</a><a href="#toasts">Thông báo</a><a href="#empty">Trống</a><a href="#error">Lỗi</a><a href="#tokens">Token</a><a href="#ask">Cần anh quyết</a><a href="app-shell.html">Vỏ app →</a>
+        <a href="#buttons">Nút</a><a href="#fields">Ô nhập</a><a href="#selects">Ô chọn</a><a href="#cards">Thẻ</a><a href="#tables">Bảng số</a><a href="#dialogs">Hộp thoại</a><a href="#badges">Nhãn</a><a href="#toasts">Thông báo</a><a href="#empty">Trống</a><a href="#error">Lỗi</a><a href="#tokens">Token</a><a href="#ask">Anh đã quyết</a><a href="app-shell.html">Vỏ app →</a>
       </nav>
     </header>
 
@@ -401,9 +401,9 @@
 
       <!-- ================= Token mới ================= -->
       <section class="sec" id="tokens">
-        <span class="kicker">Token mới · đề xuất · điểm 6 của bảng ý tưởng</span>
+        <span class="kicker">Token mới · đã duyệt 11/11/2026 · điểm 6 của bảng ý tưởng</span>
         <h2>Màu giữ nguyên. Thêm chất liệu, bo góc theo hệ điều hành, chuyển động, và đổi font.</h2>
-        <p class="lead">Mọi màu trong hai trang mockup là token đang có của app, chép nguyên từ <code>packages/ui/src/tokens.css</code>. Phần mới nằm tách riêng ở khối B của <code>ui2.css</code> và trong <b>phụ lục 11/11/2026 của ADR-0013</b>. Chưa có token nào vào app: anh duyệt ở G3 rồi mới ra Issue.</p>
+        <p class="lead">Mọi màu trong hai trang mockup là token đang có của app, chép nguyên từ <code>packages/ui/src/tokens.css</code>. Phần mới nằm tách riêng ở khối B của <code>ui2.css</code> và trong <b>phụ lục 11/11/2026 của ADR-0013</b>. Anh đã duyệt bộ token này ở G3 ngày 11/11/2026. Chưa có token nào vào app: code chỉ làm khi anh bảo ra Issue.</p>
         <h3 class="sub-h">Chất liệu của ba lớp</h3>
         <p class="sub-p">Đặt trên nền desktop để thấy độ trong. Trong app thật, nền cửa sổ là hiệu ứng của hệ điều hành; ba chất liệu còn lại là CSS.</p>
         <div class="duo" data-pane="desk">
@@ -439,7 +439,7 @@
         <div class="gal three">
           <div class="opt rec">
             <div class="opt-pic flat"><div class="btn-opt" style="--r-control: 10px"><button class="btn primary" type="button"><svg class="ic"><use href="#i-plus" /></svg>Lịch hẹn</button><button class="btn" type="button">Hủy</button><button class="cap" type="button">Toàn bộ<svg class="ic"><use href="#i-down" /></svg></button><button class="btn icon" type="button" aria-label="Tìm"><svg class="ic"><use href="#i-search" /></svg></button></div></div>
-            <div class="opt-t"><b>A · Bo 10 px <span class="tag rec">Đề xuất</span></b><p>Cùng số với ô nhập, nên nút và ô đứng cạnh nhau trong hộp thoại có cùng dáng. Cạnh thẳng hai bên ngắn.</p></div>
+            <div class="opt-t"><b>A · Bo 10 px <span class="tag rec">Anh chọn 11/11</span></b><p>Cùng số với ô nhập, nên nút và ô đứng cạnh nhau trong hộp thoại có cùng dáng. Cạnh thẳng hai bên ngắn.</p></div>
           </div>
           <div class="opt">
             <div class="opt-pic flat"><div class="btn-opt" style="--r-control: 8px"><button class="btn primary" type="button"><svg class="ic"><use href="#i-plus" /></svg>Lịch hẹn</button><button class="btn" type="button">Hủy</button><button class="cap" type="button">Toàn bộ<svg class="ic"><use href="#i-down" /></svg></button><button class="btn icon" type="button" aria-label="Tìm"><svg class="ic"><use href="#i-search" /></svg></button></div></div>
@@ -450,7 +450,7 @@
             <div class="opt-t"><b>Bản trước · Hình viên</b><p>Anh không duyệt: hai bên cong quá, không có cạnh thẳng. Để đây chỉ để so.</p></div>
           </div>
         </div>
-        <p class="sub-p" style="margin-top: 18px">Các mẫu khác trong hai trang đang vẽ theo kiểu A.</p>
+        <p class="sub-p" style="margin-top: 18px">Mọi mẫu trong hai trang vẽ theo kiểu A.</p>
         <div class="duo">
           <div class="shapes">
             <div class="shape"><i class="s-win"></i><span>cửa sổ</span><code>--r-window</code></div>
@@ -491,7 +491,7 @@
             </ul>
           </div>
         </div>
-        <h3 class="sub-h">Bảng token đề xuất</h3>
+        <h3 class="sub-h">Bảng token mới</h3>
         <div class="pcard">
           <table class="tok">
             <tr><th>Token</th><th>macOS</th><th>Windows 11</th><th>Dùng cho</th></tr>
@@ -571,18 +571,18 @@
 
       <!-- ================= Quyết định cần Owner ================= -->
       <section class="sec" id="ask">
-        <span class="kicker">Cần anh quyết ở G3</span>
+        <span class="kicker">Anh đã quyết ở G3 · 11/11/2026</span>
         <h2>Sáu điểm của bảng thành phần.</h2>
-        <p class="lead">Mỗi điểm có đề xuất của em. Mười điểm của vỏ app nằm ở <a href="app-shell.html#ask">app-shell.html</a>.</p>
+        <p class="lead">Anh đã trả lời cả sáu điểm ngày 11/11/2026; câu trả lời ghi dưới từng điểm, nguyên văn ở spec <code>phase-6-phan-hoi-dung-thu.md</code> §8. Mười điểm của vỏ app nằm ở <a href="app-shell.html#ask">app-shell.html</a>.</p>
         <ol class="asks">
-          <li><b>Bộ mười thành phần này là bộ dựng cho các mockup đợt b–g?</b>Nút, ô nhập, ô chọn, thẻ, bảng số, hộp thoại, nhãn trạng thái, thông báo nổi, trạng thái trống, trạng thái lỗi.<em>Đề xuất: duyệt. Thành phần phát sinh ở đợt sau (biểu đồ, lịch, kanban) vẽ trong mockup của đợt đó.</em></li>
-          <li><b>Mỗi hệ điều hành một bộ bo góc: macOS góc cong liên tục, bo đồng tâm, nút là chữ nhật bo; Windows 11 vuông hơn (4 px, 8 px)?</b>Xem mục "Bo góc theo hệ điều hành". Anh đã duyệt bản vẽ lại (11/11), trừ nút cỡ lớn hình viên; còn chọn góc của nút ở "Góc của nút cỡ lớn: chọn một kiểu".<em>Đề xuất: kiểu A (bo 10 px), kèm điều kiện so lại với máy Mac thật khi có bản build. Cách khác: một bộ bo góc chung cho cả hai, đơn giản hơn nhưng app trên Windows trông như app Mac.</em></li>
-          <li><b>Thẻ không viền, dùng chất liệu thay cho nền <code>--bg-2</code> + viền <code>--border</code>?</b>Đề mục trong thẻ vẫn vàng; tên thẻ màu chữ thường.<em>Đề xuất: duyệt.</em></li>
-          <li><b>Trạng thái trống và lỗi theo một khuôn, ba cỡ (cả màn, trong thẻ, trong bảng)?</b>Xem hai mục 09 và 10. Câu chữ của lỗi giữ như app hiện nay.<em>Đề xuất: duyệt.</em></li>
-          <li><b>Thông báo nổi ở giữa mép dưới cửa sổ, tự rời sau khoảng 4 giây, lỗi thì ở lại?</b>App hiện chưa có thông báo nổi dùng chung; đây là thành phần mới.<em>Đề xuất: duyệt.</em></li>
-          <li><b>Bộ token mới và phụ lục ADR-0013 ngày 11/11/2026?</b>Font hệ thống thay Be Vietnam Pro (anh đã chốt), lớp chất liệu theo hệ điều hành, bo góc, bóng, token chuyển động, <code>--accent-fill</code>. Bảng ở mục "Token mới"; văn bản ở <code>docs/decisions/0013-huong-ui-dark-mode.md</code>.<em>Đề xuất: duyệt cùng mockup này. Bốn động tác chuyển động duyệt riêng ở đợt g.</em></li>
+          <li><b>Bộ mười thành phần này là bộ dựng cho các mockup đợt b–g?</b>Nút, ô nhập, ô chọn, thẻ, bảng số, hộp thoại, nhãn trạng thái, thông báo nổi, trạng thái trống, trạng thái lỗi.<em>Anh trả lời 11/11: <b>"Duyệt, nhưng bo góc cong ở MacOS phải đúng theo tỉ lệ cong, style của Apple chứ anh không duyệt như mockup của MacOS như đang xem"</b>. Bộ mười thành phần được duyệt; bo góc macOS vẽ lại ở điểm 2.</em></li>
+          <li><b>Mỗi hệ điều hành một bộ bo góc: macOS góc cong liên tục, bo đồng tâm, nút là chữ nhật bo; Windows 11 vuông hơn (4 px, 8 px)?</b>Xem mục "Bo góc theo hệ điều hành". Bản đầu của phần macOS anh không duyệt; mục này là bản vẽ lại hai lần trong ngày 11/11.<em>Anh trả lời 11/11 khi xem bản vẽ lại: <b>"duyệt nhưng nút cỡ lớn 2 bên cong quá và không có đường thẳng dọc 2 bên, xem lại góc của nút cỡ lớn"</b>, rồi chọn <b>"A · Bo 10 px"</b> cho nút. Số đo so lại với máy Mac thật khi có bản build (T-413).</em></li>
+          <li><b>Thẻ không viền, dùng chất liệu thay cho nền <code>--bg-2</code> + viền <code>--border</code>?</b>Đề mục trong thẻ vẫn vàng; tên thẻ màu chữ thường.<em>Anh trả lời 11/11: <b>"Duyệt"</b>.</em></li>
+          <li><b>Trạng thái trống và lỗi theo một khuôn, ba cỡ (cả màn, trong thẻ, trong bảng)?</b>Xem hai mục 09 và 10. Câu chữ của lỗi giữ như app hiện nay.<em>Anh trả lời 11/11: <b>"Duyệt"</b>.</em></li>
+          <li><b>Thông báo nổi ở giữa mép dưới cửa sổ, tự rời sau khoảng 4 giây, lỗi thì ở lại?</b>App hiện chưa có thông báo nổi dùng chung; đây là thành phần mới.<em>Anh trả lời 11/11: <b>"Duyệt"</b>.</em></li>
+          <li><b>Bộ token mới và phụ lục ADR-0013 ngày 11/11/2026?</b>Font hệ thống thay Be Vietnam Pro (anh đã chốt), lớp chất liệu theo hệ điều hành, bo góc, bóng, token chuyển động, <code>--accent-fill</code>. Bảng ở mục "Token mới"; văn bản ở <code>docs/decisions/0013-huong-ui-dark-mode.md</code>.<em>Anh trả lời 11/11: <b>"Duyệt"</b>. Bốn động tác chuyển động duyệt riêng ở đợt g.</em></li>
         </ol>
-        <p class="foot-note">Mockup G3 đợt a · T-416 #1212 · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
+        <p class="foot-note">Mockup G3 đợt a · T-416 #1212 · Owner duyệt 11/11/2026 · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
       </section>
     </div>
 

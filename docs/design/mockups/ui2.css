@@ -1,5 +1,5 @@
 /* Heritas L-CRM — UI language 2 (T-416, mockup round a). Shared by the G3 mockups of rounds a–g:
-   app-shell.html, components.html, and the screens that follow. Proposal waiting for the Owner's G3.
+   app-shell.html, components.html, and the screens that follow. Round a approved by the Owner at G3, 11/11/2026.
    0 tokens (A app · B proposed · C mockup only) · 1 base · 2 page (bar, sections, panes, galleries)
    3 stage + desktop · 4 window, title bar, sidebar · 5 toolbar · 6 buttons · 7 fields, choices, menus
    8 cards, numbers, tables · 9 labels · 10 focus layer (dialog, toast) · 11 empty + error
@@ -85,8 +85,8 @@
   --sidebar-w: 232px;
 }
 
-/* B. Proposed tokens: not in the app yet. Each one is listed in the ADR-0013 appendix "vỏ app hai nền
-   tảng" and needs the Owner's G3. Values that differ per system are set again under [data-os='win']. */
+/* B. New tokens: not in the app yet. Each one is listed in the ADR-0013 appendix "vỏ app hai nền
+   tảng", approved by the Owner at G3 on 11/11/2026; code waits for the Issues. Values that differ per system are set again under [data-os='win']. */
 :root {
   /* B1. Type: the system's own UI font replaces --font (Be Vietnam Pro); --font-brand stays for the slogan */
   --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, sans-serif;
@@ -194,6 +194,7 @@ code { font: 0.9em var(--font-code); color: var(--text); }
 .pagebar .back:hover, .pagebar nav a:hover { color: var(--text); }
 .pagebar b { font-weight: 650; }
 .pagebar .state { height: 22px; padding: 0 9px; border-radius: 11px; display: inline-flex; align-items: center; font-size: 11.5px; font-weight: 650; color: var(--warn); background: color-mix(in srgb, var(--warn) 15%, transparent); }
+.pagebar .state.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 15%, transparent); }
 .pagebar nav { display: flex; gap: 16px; margin-left: auto; color: var(--text-2); overflow: hidden; }
 .page { max-width: 1320px; margin: 0 auto; padding: 0 36px 160px; }
 .sec { margin-top: 112px; }
