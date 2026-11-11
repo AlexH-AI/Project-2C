@@ -4,7 +4,7 @@
    (screens, sliding pill, dialog, toast, customer-name mask) · 4 segmented controls · 5 stage (system,
    size, fit) · 6 pointer light on cards · 7 scroll reveal · 8 the spring lab of components.html
    Round b (T-417): 9 pages off the sidebar, with a way back · 10 search shared by the palette and the
-   fields · 11 command palette ⌘K / Ctrl K · 12 "Lúc này" and jobs in the background · 13 a search field
+   fields · 11 command palette ⌘K / Ctrl K · 12 "Lưu ý" and jobs in the background · 13 a search field
    that lights what it finds · 14 pick one swatch or icon · 15 window.ui2 for the page's own script
    Everything is found by class or data attribute and handled by delegation: a copied window works
    like the one it was copied from. */
@@ -379,7 +379,7 @@
   }
   const stageWin = () => $('.stage .win') || $('.win');
 
-  /* ---------- 12. "Lúc này": the next appointment and the jobs in the background (ý 11) ---------- */
+  /* ---------- 12. "Lưu ý" ("Heads-up"): the next appointment and the jobs in the background (ý 11) ---------- */
   // .now-pill sits on the toolbar of every screen; a click opens .now-pop under it (.win.now-on). A job takes
   // the control over while it runs (its name, a bar, the percent), then says it is done and gives the
   // control back; a job that fails stays until it is clicked. Each job also gets a line in [data-jobs].

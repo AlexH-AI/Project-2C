@@ -1,19 +1,21 @@
 <!doctype html>
 <!-- Mục lục (mở bằng neo #id; CSS chung ở ui2.css, hành vi chung ở ui2.js, dữ liệu và vẽ màn ở <script> cuối file):
-  Mockup G3 đợt b (T-417 #1217): ô lệnh, "Lúc này", tìm KH, trang RM, Team & nhân sự (ý 09, 11, 25, 27, 33 + phần C).
-  Trạng thái: CHỜ Owner duyệt G3. Dữ liệu 100% giả lập. Chưa kiểm trên Safari / máy Mac thật.
+  Mockup G3 đợt b (T-417 #1217): ô lệnh, "Lưu ý", tìm KH, trang RM, Team & nhân sự (ý 09, 11, 25, 27, 33 + phần C).
+  Trạng thái: Owner duyệt G3 12/11/2026 (12 điểm ở #ask; "Lúc này" của bảng ý tưởng đổi tên thành "Lưu ý",
+  tiếng Anh "Heads-up"; màn Team cách A). Dữ liệu 100% giả lập. Chưa kiểm trên Safari / máy Mac thật.
   Số viết theo luật mới của T-418 (#1221): "1.38 tỷ", "16.7%", "3,000,000 VNĐ"; ngày dd/mm/yyyy.
   #shell     Cửa sổ app bấm được: Khách hàng (tìm là sáng), Team & nhân sự (đầu team ý 33, ô tìm RM),
              trang RM (không có mục riêng trên thanh bên), hồ sơ KH (chỉ đường đi), ô lệnh ⌘K / Ctrl K,
-             viên "Lúc này" + bảng hôm nay, hộp Tạo / Sửa team (màu, icon); các màn khác chỉ có vỏ
+             viên "Lưu ý" + bảng hôm nay, hộp Tạo / Sửa team (màu, icon); các màn khác chỉ có vỏ
   #palette   Ô lệnh: hai hệ điều hành, ô trống, thứ tự gợi ý, luật tìm
-  #now       "Lúc này": các trạng thái, bảng hôm nay, việc chạy nền
+  #now       "Lưu ý": các trạng thái, bảng hôm nay, việc chạy nền
   #customers Tìm là sáng ở màn Khách hàng; KH khớp ngoài góc nhìn; giữ gì, đổi gì
   #rm        Trang RM: đầu trang, danh sách KH phụ trách, dải 8 tuần; đường đi
-  #team      Team & nhân sự: giữ gì, đổi gì; hai cách bày (A / B); hộp Tạo / Sửa team; tương phản màu team
+  #team      Team & nhân sự: giữ gì, đổi gì; hai cách bày (A / B, Owner chọn A); khi có hơn 3 team (hình 7 team);
+             hộp Tạo / Sửa team; tương phản màu team
   #states    Trạng thái trống và lỗi của đợt b
   #mask      Che tên KH ở các chỗ mới của đợt b
-  #ask       Các điểm Owner cần quyết ở G3
+  #ask       12 điểm Owner đã quyết ở G3 (12/11/2026)
   Vỏ app và bảng thành phần (đợt a, đã duyệt): app-shell.html, components.html. Bảng mockup → màn hình → spec: README.md
 -->
 <html lang="vi">
@@ -82,6 +84,12 @@
       .tl-i:hover { background: var(--fill-1); }
       .tl-i.on { background: var(--fill-2); }
       .tl-i .n { margin-left: auto; font-size: 12px; font-weight: 400; color: var(--text-2); white-space: nowrap; }
+      /* About 8 rows show; more teams scroll inside the card (Owner 12/11) */
+      [data-team-list], .team-list { position: relative; max-height: 312px; overflow: hidden auto; }
+      .many { display: grid; grid-template-columns: 264px minmax(0, 1fr); gap: 16px; align-items: start; text-align: left; }
+      .many .card { padding: 14px 10px 12px; }
+      .many .card + .card { padding: 18px 20px; }
+      .many > .card > h3 { margin: 0 8px 8px; font-size: 13px; font-weight: 650; color: var(--heading); }
       .support ul { margin: 0; padding: 0 8px; list-style: none; font-size: 13.5px; }
       .support li { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
       .support .help { display: block; margin: 8px 8px 0; }
@@ -206,9 +214,9 @@
     <header class="pagebar">
       <a class="back" href="index.html">← Mockup G3</a>
       <b>Đợt b · Tìm kiếm, RM, Team</b>
-      <span class="state">Chờ duyệt G3</span>
+      <span class="state ok">Đã duyệt G3 · 12/11/2026</span>
       <nav aria-label="Mục trong trang">
-        <a href="#palette">Ô lệnh</a><a href="#now">Lúc này</a><a href="#customers">Tìm KH</a><a href="#rm">Trang RM</a><a href="#team">Team</a><a href="#states">Trống / lỗi</a><a href="#ask">Anh cần quyết</a>
+        <a href="#palette">Ô lệnh</a><a href="#now">Lưu ý</a><a href="#customers">Tìm KH</a><a href="#rm">Trang RM</a><a href="#team">Team</a><a href="#states">Trống / lỗi</a><a href="#ask">Anh đã quyết</a>
       </nav>
     </header>
 
@@ -248,7 +256,7 @@
           <section class="main">
             <header class="toolbar">
               <div class="tl-title"><h2>Khách hàng</h2><span></span></div>
-              <button class="now-pill" aria-haspopup="dialog" title="Lúc này: lịch hẹn kế tiếp, việc hôm nay, việc chạy nền"><span class="now-face"><span class="live"></span><b class="num">14:00</b><span class="who"><span class="kh" data-kh="T. M. H.">Trần Minh Huệ</span></span><span class="sep muted">·</span><span class="left num">còn 25 phút</span></span></button>
+              <button class="now-pill" aria-haspopup="dialog" title="Lưu ý: lịch hẹn kế tiếp, việc hôm nay, việc chạy nền"><span class="now-face"><span class="live"></span><b class="num">14:00</b><span class="who"><span class="kh" data-kh="T. M. H.">Trần Minh Huệ</span></span><span class="sep muted">·</span><span class="left num">còn 25 phút</span></span></button>
               <div class="tl-right">
                 <button class="btn icon" data-mask aria-pressed="false" aria-label="Che tên khách hàng" title="Che tên khách hàng"><svg class="ic i-open"><use href="#i-eye" /></svg><svg class="ic i-shut"><use href="#i-eye-off" /></svg><span hidden>Đang che tên</span></button>
                 <button class="cap" data-tool="scope" aria-haspopup="true"><span>Toàn bộ</span><svg class="ic"><use href="#i-down" /></svg></button>
@@ -258,8 +266,8 @@
               </div>
             </header>
 
-            <!-- "Lúc này": hôm nay theo góc nhìn đang chọn -->
-            <div class="now-pop" role="dialog" aria-label="Lúc này">
+            <!-- "Lưu ý": hôm nay theo góc nhìn đang chọn -->
+            <div class="now-pop" role="dialog" aria-label="Lưu ý">
               <h4>Hôm nay <small class="num">Thứ Ba 10/11/2026 · Toàn bộ · 5 lịch</small></h4>
               <div class="ag"><span class="tm num">09:00</span><b><span class="kh" data-kh="N. V. H.">Nguyễn Văn Hùng</span></b><span class="st s-ok">Đã gặp</span><small>RM Hoàng Văn Tùng · Sao Mai</small></div>
               <div class="ag"><span class="tm num">10:30</span><b><span class="kh" data-kh="T. T. M. L.">Trần Thị Mai Lan</span></b><button class="btn primary sm">Ghi kết quả</button><small>Chưa ghi kết quả · RM Đỗ Khánh Linh · Sao Mai</small></div>
@@ -275,7 +283,7 @@
             </div>
 
             <div class="views">
-              <div class="view" data-view="overview"><div class="later"><svg class="ic"><use href="#i-overview" /></svg><b>Tổng quan</b><p>Vẽ ở <b>đợt c</b>. Đợt b chỉ thêm viên "Lúc này" và ô lệnh lên thanh công cụ của mọi màn.</p></div></div>
+              <div class="view" data-view="overview"><div class="later"><svg class="ic"><use href="#i-overview" /></svg><b>Tổng quan</b><p>Vẽ ở <b>đợt c</b>. Đợt b chỉ thêm viên "Lưu ý" và ô lệnh lên thanh công cụ của mọi màn.</p></div></div>
               <div class="view" data-view="appointments"><div class="later"><svg class="ic"><use href="#i-cal" /></svg><b>Lịch hẹn</b><p>Giữ bố cục đã duyệt, chỉ thay vỏ: xem <a class="c-accent" href="app-shell.html#previews">app-shell.html · Xem trước</a>.</p></div></div>
 
               <!-- ===== Khách hàng: kanban đã duyệt + ô tìm (ý 25) ===== -->
@@ -293,8 +301,8 @@
                 </div>
               </div>
 
-              <div class="view" data-view="forecast"><div class="later"><svg class="ic"><use href="#i-forecast" /></svg><b>Forecast</b><p>Vẽ ở <b>đợt d</b>. Nút <b>Xuất Excel</b> trên thanh công cụ chạy thử một việc nền: xem tiến độ ở viên "Lúc này".</p></div></div>
-              <div class="view" data-view="reports"><div class="later"><svg class="ic"><use href="#i-report" /></svg><b>Báo cáo</b><p>Vẽ ở <b>đợt e</b>. Nút <b>Xuất Excel</b> trên thanh công cụ chạy thử một việc nền: xem tiến độ ở viên "Lúc này".</p></div></div>
+              <div class="view" data-view="forecast"><div class="later"><svg class="ic"><use href="#i-forecast" /></svg><b>Forecast</b><p>Vẽ ở <b>đợt d</b>. Nút <b>Xuất Excel</b> trên thanh công cụ chạy thử một việc nền: xem tiến độ ở viên "Lưu ý".</p></div></div>
+              <div class="view" data-view="reports"><div class="later"><svg class="ic"><use href="#i-report" /></svg><b>Báo cáo</b><p>Vẽ ở <b>đợt e</b>. Nút <b>Xuất Excel</b> trên thanh công cụ chạy thử một việc nền: xem tiến độ ở viên "Lưu ý".</p></div></div>
 
               <!-- ===== Team & nhân sự: bố cục đã duyệt + đầu team ý 33 + ô tìm RM ===== -->
               <div class="view" data-view="team">
@@ -386,7 +394,7 @@
 
         <div class="pgrid" style="margin-top: 20px">
           <div class="pcard">
-            <h3>Tìm như thế nào <small>đề xuất, anh duyệt ở #ask 1</small></h3>
+            <h3>Tìm như thế nào <small>anh duyệt 12/11 · #ask 1, 2</small></h3>
             <ul class="bul">
               <li><b>Không cần dấu, không phân biệt hoa thường:</b> cùng cách so chữ của app (<code>searchText</code> trong <code>packages/domain</code>), "nguyen van hu" ra "Nguyễn Văn Hùng".</li>
               <li><b>Tìm trong mọi KH,</b> kể cả KH đã đóng (Tạm hoãn, Mất cơ hội), không theo góc nhìn đang chọn (§5). Tìm theo tên hoặc mã KH.</li>
@@ -407,11 +415,11 @@
         </div>
       </section>
 
-      <!-- ================= Lúc này ================= -->
+      <!-- ================= Lưu ý ================= -->
       <section class="sec" id="now">
-        <span class="kicker">Ý 11</span>
-        <h2>"Lúc này": lịch hẹn kế tiếp, và việc đang chạy nền.</h2>
-        <p class="lead">Một viên kính giữa tên màn và cụm nút, có ở mọi màn. Lúc rảnh nó cho biết lịch hẹn kế tiếp và còn bao lâu; bấm vào thì ra việc hôm nay. Khi app đang xuất Excel, sao lưu hay phân tích AI, viên này hiện tiến độ thay vì khóa màn hình. Hình dạng là <b>chữ nhật bo như nút</b>, không phải viên tròn hai đầu, theo luật bo góc anh duyệt ở đợt a. Thử ở cửa sổ đầu trang: bấm viên "Lúc này", hoặc vào Báo cáo rồi bấm <b>Xuất Excel</b>.</p>
+        <span class="kicker">Ý 11 · bảng ý tưởng gọi là "Lúc này"</span>
+        <h2>"Lưu ý": lịch hẹn kế tiếp, và việc đang chạy nền.</h2>
+        <p class="lead">Anh duyệt 12/11 và đổi tên: <b>"Lưu ý"</b>, bản tiếng Anh <b>"Heads-up"</b> (không dùng "Spotlight" vì trùng ô tìm kiếm của macOS, không dùng "Attention" vì đọc như cảnh báo lỗi). Một viên kính giữa tên màn và cụm nút, có ở mọi màn. Lúc rảnh nó cho biết lịch hẹn kế tiếp và còn bao lâu; bấm vào thì ra việc hôm nay. Khi app đang xuất Excel, sao lưu hay phân tích AI, viên này hiện tiến độ thay vì khóa màn hình. Hình dạng là <b>chữ nhật bo như nút</b>, không phải viên tròn hai đầu, theo luật bo góc anh duyệt ở đợt a. Thử ở cửa sổ đầu trang: bấm viên "Lưu ý", hoặc vào Báo cáo rồi bấm <b>Xuất Excel</b>.</p>
         <div class="duo">
           <div class="now-spec">
             <div class="row"><span class="lbl">Lúc rảnh</span><button class="now-pill"><span class="now-face"><span class="live"></span><b class="num">14:00</b><span class="who"><span class="kh" data-kh="T. M. H.">Trần Minh Huệ</span></span><span class="sep muted">·</span><span class="left num">còn 25 phút</span></span></button></div>
@@ -423,7 +431,7 @@
           </div>
         </div>
         <h3 class="sub-h">Bảng hôm nay</h3>
-        <p class="sub-p">Bấm viên "Lúc này" thì bảng này mở ngay dưới nó; bấm ra ngoài hay Esc thì đóng.</p>
+        <p class="sub-p">Bấm viên "Lưu ý" thì bảng này mở ngay dưới nó; bấm ra ngoài hay Esc thì đóng.</p>
         <div class="duo" data-pane="center">
           <div class="now-pop static">
               <h4>Hôm nay <small class="num">Thứ Ba 10/11/2026 · Toàn bộ · 5 lịch</small></h4>
@@ -437,7 +445,7 @@
           </div>
         </div>
         <div class="pcard" style="margin-top: 20px">
-            <h3>Nội dung và luật <small>đề xuất, anh duyệt ở #ask 3–4</small></h3>
+            <h3>Nội dung và luật <small>anh duyệt 12/11 · #ask 3, 4</small></h3>
             <ul class="bul">
               <li><b>Theo góc nhìn đang chọn</b> trên thanh công cụ: Toàn bộ thì lịch kế tiếp của mọi RM; một team thì của team đó.</li>
               <li><b>Bảng hôm nay:</b> mọi lịch của hôm nay theo giờ, lịch kế tiếp nền vàng nhạt; buổi đã qua chưa ghi kết quả có nút <b>Ghi kết quả</b>; "Cần làm" dẫn tới Lịch hẹn và Forecast; "Việc chạy nền" ghi việc đang chạy và việc vừa xong.</li>
@@ -458,7 +466,7 @@
         <p class="crop-l">Cột N3: "Nguyễn Văn Hưng" vốn nằm sau năm thẻ đầu, khi khớp thì hiện lên đầu cột. Cột Tạm hoãn / Mất cơ hội cũng sáng / mờ theo.</p>
 
         <h3 class="sub-h">KH khớp nằm ngoài góc nhìn</h3>
-        <p class="sub-p">§5 chốt: tìm trong mọi KH, không giới hạn theo góc nhìn. Khi màn Khách hàng đang xem một team hay một RM, kanban chỉ có KH của góc nhìn đó, nên KH khớp ở team khác không có thẻ để sáng. Đề xuất: những KH này nằm trong danh sách dưới ô, ở nhóm riêng <b>"Ngoài góc nhìn"</b>, bấm vẫn mở hồ sơ; kanban không tự đổi góc nhìn.</p>
+        <p class="sub-p">§5 chốt: tìm trong mọi KH, không giới hạn theo góc nhìn. Khi màn Khách hàng đang xem một team hay một RM, kanban chỉ có KH của góc nhìn đó, nên KH khớp ở team khác không có thẻ để sáng. Anh chốt 12/11 (#ask 6): những KH này nằm trong danh sách dưới ô, ở nhóm riêng <b>"Ngoài góc nhìn"</b>, bấm vẫn mở hồ sơ; kanban không tự đổi góc nhìn.</p>
         <div class="duo">
           <div class="find static">
             <label class="input search"><svg class="ic"><use href="#i-search" /></svg><input type="text" value="nguyen van hu" aria-label="Tìm khách hàng" readonly /></label>
@@ -486,7 +494,7 @@
         <div class="crop mid xl" id="pv-rm" data-os="mac" data-clone="#win" data-view="rm" data-rm="0"></div>
         <div class="pgrid" style="margin-top: 20px">
           <div class="pcard">
-            <h3>Đầu trang và danh sách <small>đề xuất, anh duyệt ở #ask 7</small></h3>
+            <h3>Đầu trang và danh sách <small>anh duyệt 12/11 · #ask 7</small></h3>
             <ul class="bul">
               <li><b>Năm số:</b> Doanh số, Tổng số HĐ, Tỷ lệ hủy, Tỉ lệ chốt theo kỳ trên thanh công cụ (mặc định tháng đang chạy, đổi là số đổi ngay), mỗi số kèm phép tính; <b>Forecast tuần</b> luôn là tuần này (hôm nay tới thứ Bảy), như định nghĩa của phần D.</li>
               <li><b>Danh sách:</b> KH do RM phụ trách, đúng các cột §5: KH (kèm mã), nhóm, lần gặp gần nhất, lịch hẹn sắp tới, số HĐ; thêm cột "Nhịp gặp · 8 tuần". Không thêm cột case size (thuộc Forecast, đợt d).</li>
@@ -496,7 +504,7 @@
             </ul>
           </div>
           <div class="pcard">
-            <h3>Nhịp gặp · 8 tuần <small>đề xuất, anh duyệt ở #ask 8</small></h3>
+            <h3>Nhịp gặp · 8 tuần <small>anh duyệt 12/11 · #ask 8</small></h3>
             <p class="said">Mỗi ô một tuần (Thứ Hai → Chủ Nhật, như lịch của app): bảy tuần trước và tuần này, cũ bên trái, tuần này bên phải. Bản mẫu: 21/09 – 15/11/2026. Dải chỉ đọc các lịch hẹn đã có, không phải dữ liệu mới.</p>
             <table class="cr">
               <tr><th>Hình</th><th>Nghĩa</th></tr>
@@ -529,17 +537,23 @@
           </ul>
         </div>
 
-        <h3 class="sub-h">Hai cách bày màn Team: chọn một</h3>
-        <p class="sub-p">Bảng ý tưởng vẽ màn Team thành lưới thẻ, mỗi team một thẻ. Mockup đợt b đề xuất cách A để giữ đủ các việc quản lý của màn đã duyệt.</p>
+        <h3 class="sub-h">Hai cách bày màn Team: anh chọn A</h3>
+        <p class="sub-p">Bảng ý tưởng vẽ màn Team thành lưới thẻ, mỗi team một thẻ. Anh chọn 12/11: <b>"Cách A"</b>, giữ bố cục đã duyệt để giữ đủ các việc quản lý.</p>
         <div class="gal">
           <div class="opt rec">
             <div class="opt-pic crop half" data-os="mac" data-clone="#win" data-screen="team"></div>
-            <div class="opt-t"><b>A · Giữ bố cục đã duyệt, đổi đầu team <span class="tag rec">Đề xuất</span></b><p>Danh sách team bên trái, một team lớn bên phải với đầu team kiểu ý 33 và bảng RM đầy đủ cột. Đủ chỗ cho các việc quản lý (sửa nhân sự, sắp xếp, xóa team) và cho team có 10 RM trở lên.</p></div>
+            <div class="opt-t"><b>A · Giữ bố cục đã duyệt, đổi đầu team <span class="tag rec">Anh chọn 12/11</span></b><p>Danh sách team bên trái, một team lớn bên phải với đầu team kiểu ý 33 và bảng RM đầy đủ cột. Đủ chỗ cho các việc quản lý (sửa nhân sự, sắp xếp, xóa team) và cho team có 10 RM trở lên.</p></div>
           </div>
           <div class="opt">
             <div class="opt-pic b-pic" data-team-grid></div>
             <div class="opt-t"><b>B · Lưới thẻ team như bảng ý tưởng</b><p>Mỗi team một thẻ: đầu team, ba số, danh sách RM ngắn. Nhìn ba team cùng lúc, nhưng thẻ hẹp nên không còn chỗ cho các cột KH đang mở, Lịch hẹn 30 ngày, HĐ năm và nút Sửa; các việc quản lý phải dời vào menu của từng thẻ.</p></div>
           </div>
+        </div>
+
+        <h3 class="sub-h">Khi có hơn 3 team</h3>
+        <p class="sub-p">Anh hỏi 12/11: "nếu có hơn 3 team thì trình bày ra sao?", rồi duyệt cách dưới đây. Danh sách bên trái là danh sách dọc, xếp theo tên: mỗi team thêm một dòng (icon, tên theo màu, "TL · n RM"). Từ khoảng 8 team trở lên, khung danh sách cuộn bên trong và dòng đang chọn luôn nằm trong tầm nhìn. Bên phải luôn là một team đang chọn với đầu team, ba số và bảng RM. Hình dưới là 7 team, đang chọn Phương Nam; bảng RM như cửa sổ đầu trang.</p>
+        <div class="duo stack">
+          <div class="many" data-many-teams></div>
         </div>
 
         <h3 class="sub-h">Hộp Tạo / Sửa team</h3>
@@ -558,7 +572,7 @@
         </div>
         <div class="pgrid" style="margin-top: 20px">
           <div class="pcard">
-            <h3>Màu và icon <small>đề xuất, anh duyệt ở #ask 10</small></h3>
+            <h3>Màu và icon <small>anh duyệt 12/11 · #ask 10</small></h3>
             <ul class="bul">
               <li><b>Sáu màu</b> lấy từ token đã có (champagne, xanh dương, tím, xanh ngọc, xanh lá, cam) và <b>tám icon</b> (sao, bình minh, mặt trời, núi, lá, ngọn lửa, khiên, mỏ neo). Không thêm token mới.</li>
               <li><b>Tùy chọn:</b> ô đầu tiên của mỗi hàng là "Mặc định" (tên màu chữ thường, icon team chung). Hừng Đông trong bản mẫu dùng kiểu mặc định.</li>
@@ -609,7 +623,7 @@
           </div>
         </div>
         <ul class="rules" style="margin-top: 18px; color: var(--text-2)">
-          <li>Việc chạy nền lỗi nằm ở viên "Lúc này" (mục trên); lỗi khi lưu hộp Sửa team là khối báo đầu thân hộp đã duyệt ở <a class="c-accent" href="components.html#dialogs">components.html · Hộp thoại</a>.</li>
+          <li>Việc chạy nền lỗi nằm ở viên "Lưu ý" (mục trên); lỗi khi lưu hộp Sửa team là khối báo đầu thân hộp đã duyệt ở <a class="c-accent" href="components.html#dialogs">components.html · Hộp thoại</a>.</li>
           <li>"Tìm không ra" và "lọc không ra" là hai câu khác nhau: tìm không ra đưa nút <b>Bỏ tìm</b>, không đưa nút tạo mới.</li>
         </ul>
       </section>
@@ -618,31 +632,31 @@
       <section class="sec" id="mask">
         <span class="kicker">Ý 36 · đã duyệt ở đợt a</span>
         <h2>Che tên KH ở mọi chỗ mới của đợt b.</h2>
-        <p class="lead">Luật che tên anh đã duyệt 11/11 không đổi: tên KH thành chữ cái đầu, mã KH giữ nguyên, <b>tìm vẫn theo tên thật</b>, kết quả hiện dạng đã che. Bấm nút con mắt trong cửa sổ đầu trang rồi mở ô lệnh, viên "Lúc này", trang RM để thử. Dưới đây là ô lệnh khi đang che tên.</p>
+        <p class="lead">Luật che tên anh đã duyệt 11/11 không đổi: tên KH thành chữ cái đầu, mã KH giữ nguyên, <b>tìm vẫn theo tên thật</b>, kết quả hiện dạng đã che. Bấm nút con mắt trong cửa sổ đầu trang rồi mở ô lệnh, viên "Lưu ý", trang RM để thử. Dưới đây là ô lệnh khi đang che tên.</p>
         <div class="crop mid tall" data-os="mac" data-clone="#win" data-masked data-pal="nguyen van hu"></div>
-        <p class="crop-l">Chỗ hiện tên KH của đợt b, đều đánh dấu <code>.kh</code>: ô lệnh, danh sách dưới ô tìm KH, thẻ kanban, cột Tạm hoãn / Mất cơ hội, viên "Lúc này" và bảng hôm nay, danh sách KH của trang RM, đầu hồ sơ KH. Tên RM, TL, team không che.</p>
+        <p class="crop-l">Chỗ hiện tên KH của đợt b, đều đánh dấu <code>.kh</code>: ô lệnh, danh sách dưới ô tìm KH, thẻ kanban, cột Tạm hoãn / Mất cơ hội, viên "Lưu ý" và bảng hôm nay, danh sách KH của trang RM, đầu hồ sơ KH. Tên RM, TL, team không che.</p>
       </section>
 
       <!-- ================= Quyết định cần Owner ================= -->
       <section class="sec" id="ask">
-        <span class="kicker">Anh cần quyết ở G3</span>
+        <span class="kicker">Anh đã quyết ở G3 · 12/11/2026</span>
         <h2>Mười hai điểm của đợt b.</h2>
-        <p class="lead">Không hỏi lại các điều anh đã chốt (font hệ thống, chỉ Dark Mode, logo gọn, bỏ nút "Lọc", thanh tiêu đề Windows kiểu A, icon Cài đặt kiểu ô màu, che tên KH, nội dung phần C ở §5). Số trong mockup viết theo luật mới của T-418: dấu "," ngăn hàng nghìn, "." cho phần lẻ ("1.38 tỷ", "16.7%"); tiền đầy đủ ghi "VNĐ". Dữ liệu 100% giả lập; hôm nay trong bản mẫu là Thứ Ba 10/11/2026.</p>
+        <p class="lead">Anh đã trả lời cả mười hai điểm ngày 12/11/2026 (Claude hỏi từng điểm, kèm đề xuất); câu trả lời ghi dưới từng điểm, nguyên văn ở spec <code>phase-6-phan-hoi-dung-thu.md</code> §8, gạch "G3 đợt b". Không hỏi lại các điều anh đã chốt (font hệ thống, chỉ Dark Mode, logo gọn, bỏ nút "Lọc", thanh tiêu đề Windows kiểu A, icon Cài đặt kiểu ô màu, che tên KH, nội dung phần C ở §5). Số trong mockup viết theo luật mới của T-418: dấu "," ngăn hàng nghìn, "." cho phần lẻ ("1.38 tỷ", "16.7%"); tiền đầy đủ ghi "VNĐ". Dữ liệu 100% giả lập; hôm nay trong bản mẫu là Thứ Ba 10/11/2026.</p>
         <ol class="asks">
-          <li><b>Ô lệnh: chỗ mở, bốn nhóm, thứ tự gợi ý?</b>⌘K / Ctrl K ở mọi màn; ô giữa thanh tiêu đề (Windows) và nút kính lúp (macOS). Nhóm Khách hàng (tối đa 8), RM (4), Đi tới (4), Lệnh (4); ô trống hiện Đi tới và Lệnh. Thứ tự: tên bắt đầu bằng chữ đã gõ, rồi một tiếng của tên, rồi giữa tên, rồi mã KH; cùng mức theo thứ tự tên của app. Tìm mọi KH, kể cả KH đã đóng.</li>
-          <li><b>Sáu lệnh của ô lệnh trong v1.0?</b>Lịch hẹn mới, Khách hàng mới, Team mới, Xuất Excel Báo cáo tháng này, Sao lưu ngay, Che / hiện tên KH. Ý 10 (trả lời bằng số) và ý 13 (phím tắt riêng) vẫn để sau.</li>
-          <li><b>"Lúc này": hình dạng, chỗ đặt, nội dung?</b>Chữ nhật bo như nút, giữa tên màn và cụm nút; lịch kế tiếp và thời gian còn lại theo góc nhìn đang chọn; bấm ra bảng hôm nay (lịch, việc cần làm, việc chạy nền). Cửa sổ hẹp bỏ tên KH, giữ giờ.</li>
-          <li><b>Việc chạy nền hiện ở "Lúc này"?</b>Xuất Excel, sao lưu, phân tích AI: tên việc, thanh tiến độ, phần trăm; xong ghi "Đã xuất …" khoảng 3 giây; lỗi ở lại tới khi bấm thử lại. Không chặn màn hình.</li>
-          <li><b>"Tìm là sáng" ở màn Khách hàng như mục trên?</b>Ô tìm đầu màn; thẻ khớp lên đầu cột và sáng viền vàng; thẻ khác còn 70% độ đậm, giữ chỗ, vẫn bấm được, chữ vẫn đạt AA; đầu cột ghi "n khớp"; danh sách "KH – RM – Team" tối đa 8, ↑ ↓ Enter, Esc xóa.</li>
-          <li><b>KH khớp ngoài góc nhìn: nhóm "Ngoài góc nhìn" trong danh sách dưới ô?</b>Kanban giữ góc nhìn đang chọn; bấm KH ngoài góc nhìn vẫn mở hồ sơ.</li>
-          <li><b>Trang RM: năm số theo kỳ + Forecast tuần, danh sách KH phụ trách, sắp mặc định "lâu chưa gặp nhất lên đầu"?</b>Đúng năm cột của §5 thêm dải 8 tuần; viên Đang mở / Đã đóng; không thêm cột case size; có nút quay lại.</li>
-          <li><b>Dải 8 tuần: định nghĩa như bảng "Nhịp gặp · 8 tuần"?</b>Tuần Thứ Hai → Chủ Nhật, bảy tuần trước và tuần này; năm hình (đã gặp, chưa ghi kết quả, có lịch, không diễn ra, không có lịch); tuần nhiều lịch theo thứ tự đó.</li>
-          <li><b>Màn Team: cách A (giữ bố cục đã duyệt, đổi đầu team) hay cách B (lưới thẻ team)?</b>Xem "Hai cách bày màn Team". Đề xuất A.</li>
-          <li><b>Màu và icon của team: sáu màu, tám icon, đều tùy chọn; "Đổi tên team" thành "Sửa team"?</b>Hiện ở danh sách team, đầu team, trang RM, gợi ý tìm. <em>Màu và icon là dữ liệu mới của team: G2 (mô hình dữ liệu) khi ra Issue code.</em></li>
-          <li><b>Đầu team: TL cùng dòng, cùng cỡ chữ đậm với tên team; ba số Doanh số, Số HĐ (tháng đang chạy) và Forecast tuần, đậm, màu champagne?</b>Màn Team không có bộ chọn kỳ.</li>
-          <li><b>Trạng thái trống và lỗi của đợt như mục trên?</b>Ô lệnh không có kết quả; tìm KH không ra; RM chưa có KH; team chưa có RM, chưa có TL; lỗi trang RM; lỗi trong thẻ; việc chạy nền lỗi.</li>
+          <li><b>Ô lệnh: chỗ mở, bốn nhóm, thứ tự gợi ý?</b>⌘K / Ctrl K ở mọi màn; ô giữa thanh tiêu đề (Windows) và nút kính lúp (macOS). Nhóm Khách hàng (tối đa 8), RM (4), Đi tới (4), Lệnh (4); ô trống hiện Đi tới và Lệnh. Thứ tự: tên bắt đầu bằng chữ đã gõ, rồi một tiếng của tên, rồi giữa tên, rồi mã KH; cùng mức theo thứ tự tên của app. Tìm mọi KH, kể cả KH đã đóng.<em>Anh trả lời 12/11: <b>"Duyệt"</b>.</em></li>
+          <li><b>Sáu lệnh của ô lệnh trong v1.0?</b>Lịch hẹn mới, Khách hàng mới, Team mới, Xuất Excel Báo cáo tháng này, Sao lưu ngay, Che / hiện tên KH. Ý 10 (trả lời bằng số) và ý 13 (phím tắt riêng) vẫn để sau.<em>Anh trả lời 12/11: <b>"Duyệt sáu lệnh"</b>.</em></li>
+          <li><b>"Lưu ý" (bảng ý tưởng gọi là "Lúc này"): hình dạng, chỗ đặt, nội dung?</b>Chữ nhật bo như nút, giữa tên màn và cụm nút; lịch kế tiếp và thời gian còn lại theo góc nhìn đang chọn; bấm ra bảng hôm nay (lịch, việc cần làm, việc chạy nền). Cửa sổ hẹp bỏ tên KH, giữ giờ.<em>Anh trả lời 12/11: <b>"Đồng ý với nội dung của Recommended. Nhưng sửa lại "Lúc này" thành "Lưu ý" và "Spotlight" hoặc "Attention" với bản tiếng Anh, em recommend anh từ phù hợp"</b>. Claude đề xuất "Heads-up" ("Spotlight" trùng ô tìm kiếm của macOS, "Attention" đọc như cảnh báo lỗi); anh chọn <b>"Heads-up"</b>.</em></li>
+          <li><b>Việc chạy nền hiện ở "Lưu ý"?</b>Xuất Excel, sao lưu, phân tích AI: tên việc, thanh tiến độ, phần trăm; xong ghi "Đã xuất …" khoảng 3 giây; lỗi ở lại tới khi bấm thử lại. Không chặn màn hình.<em>Anh trả lời 12/11: <b>"Duyệt. Nhưng từ sẽ thay đổi từ câu trả lời trước."</b> (tên "Lưu ý" / "Heads-up").</em></li>
+          <li><b>"Tìm là sáng" ở màn Khách hàng như mục trên?</b>Ô tìm đầu màn; thẻ khớp lên đầu cột và sáng viền vàng; thẻ khác còn 70% độ đậm, giữ chỗ, vẫn bấm được, chữ vẫn đạt AA; đầu cột ghi "n khớp"; danh sách "KH – RM – Team" tối đa 8, ↑ ↓ Enter, Esc xóa.<em>Anh trả lời 12/11: <b>"Duyệt"</b>.</em></li>
+          <li><b>KH khớp ngoài góc nhìn: nhóm "Ngoài góc nhìn" trong danh sách dưới ô?</b>Kanban giữ góc nhìn đang chọn; bấm KH ngoài góc nhìn vẫn mở hồ sơ.<em>Anh trả lời 12/11: <b>Nhóm "Ngoài góc nhìn"</b> (phương án đề xuất; hai phương án bỏ: tự về góc nhìn Toàn bộ, chỉ tìm trong góc nhìn).</em></li>
+          <li><b>Trang RM: năm số theo kỳ + Forecast tuần, danh sách KH phụ trách, sắp mặc định "lâu chưa gặp nhất lên đầu"?</b>Đúng năm cột của §5 thêm dải 8 tuần; viên Đang mở / Đã đóng; không thêm cột case size; có nút quay lại.<em>Anh trả lời 12/11: <b>"Lâu chưa gặp lên đầu"</b>.</em></li>
+          <li><b>Dải 8 tuần: định nghĩa như bảng "Nhịp gặp · 8 tuần"?</b>Tuần Thứ Hai → Chủ Nhật, bảy tuần trước và tuần này; năm hình (đã gặp, chưa ghi kết quả, có lịch, không diễn ra, không có lịch); tuần nhiều lịch theo thứ tự đó.<em>Anh trả lời 12/11: <b>"Duyệt 8 tuần"</b>.</em></li>
+          <li><b>Màn Team: cách A (giữ bố cục đã duyệt, đổi đầu team) hay cách B (lưới thẻ team)?</b>Xem "Hai cách bày màn Team" và "Khi có hơn 3 team".<em>Anh trả lời 12/11: <b>"Cách A. Nhưng nếu có hơn 3 team thì trình bày ra sao?"</b> Claude trả lời bằng cách trình bày ở mục "Khi có hơn 3 team" (danh sách dọc thêm dòng, cuộn từ khoảng 8 team); anh: <b>"Duyệt"</b>.</em></li>
+          <li><b>Màu và icon của team: sáu màu, tám icon, đều tùy chọn; "Đổi tên team" thành "Sửa team"?</b>Hiện ở danh sách team, đầu team, trang RM, gợi ý tìm. Màu và icon là dữ liệu mới của team: G2 (mô hình dữ liệu) khi ra Issue code.<em>Anh trả lời 12/11: <b>"Duyệt"</b> (sáu màu có sẵn, không thêm token).</em></li>
+          <li><b>Đầu team: TL cùng dòng, cùng cỡ chữ đậm với tên team; ba số Doanh số, Số HĐ (tháng đang chạy) và Forecast tuần, đậm, màu champagne?</b>Màn Team không có bộ chọn kỳ.<em>Anh trả lời 12/11: <b>"Duyệt"</b>.</em></li>
+          <li><b>Trạng thái trống và lỗi của đợt như mục trên?</b>Ô lệnh không có kết quả; tìm KH không ra; RM chưa có KH; team chưa có RM, chưa có TL; lỗi trang RM; lỗi trong thẻ; việc chạy nền lỗi.<em>Anh trả lời 12/11: <b>"Duyệt"</b>.</em></li>
         </ol>
-        <p class="foot-note">Mockup G3 đợt b · T-417 #1217 · chờ Owner duyệt · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
+        <p class="foot-note">Mockup G3 đợt b · T-417 #1217 · Owner duyệt 12/11/2026 · dữ liệu 100% giả lập · chỉ Dark Mode · chưa kiểm trên Safari.</p>
       </section>
     </div>
 
@@ -812,9 +826,18 @@
           if (s.desc) list.reverse();
           return list.map((r) => `<tr data-view-go="rm" data-rm="${r.i}"><td><button class="lnk">${esc(r.name)}${ic('chev')}</button></td><td class="l"><span class="role">RM</span></td><td>${r.open}</td><td>${r.appt}</td><td>${r.polYear}</td><td><button class="btn quiet sm" data-run="person">Sửa</button></td></tr>`).join('');
         }
+        // The list of teams on the left: sorted by name, one row a team (Owner 12/11 on more than 3 teams)
+        const teamItem = (x, on, rmCount) => `<button class="tl-i${on ? ' on' : ''}" data-team-pick="${x.i}" aria-pressed="${on}">${tmark(x)}${tname(x)}<span class="n num">${x.tl ? 'TL' : 'chưa có TL'} · ${rmCount} RM</span></button>`;
+        // From about 8 teams the list scrolls inside its card; the chosen row is kept in view
+        function keepInView(list) {
+          const on = $('.tl-i.on', list);
+          if (on && list.scrollHeight > list.clientHeight) list.scrollTop = Math.max(0, on.offsetTop - list.clientHeight / 2);
+        }
         function drawTeam(win) {
           const t = TEAMS[win._team];
-          $('[data-team-list]', win).innerHTML = TEAMS.map((x) => `<button class="tl-i${x.i === t.i ? ' on' : ''}" data-team-pick="${x.i}" aria-pressed="${x.i === t.i}">${tmark(x)}${tname(x)}<span class="n num">${x.tl ? 'TL' : 'chưa có TL'} · ${teamRms(x.i).length} RM</span></button>`).join('');
+          const list = $('[data-team-list]', win);
+          list.innerHTML = [...TEAMS].sort((a, b) => byName(a.name, b.name)).map((x) => teamItem(x, x.i === t.i, teamRms(x.i).length)).join('');
+          keepInView(list);
           const rms = teamRms(t.i);
           const s = win._teamSort || { k: 'name', desc: false };
           const th = (k, label, l) => `<th class="sort${s.k === k ? (s.desc ? ' desc' : ' asc') : ''}${l ? ' l' : ''}" data-tsort="${k}">${label}</th>`;
@@ -969,6 +992,19 @@
         // Option B of the team screen: a grid of team cards, as on the idea board
         for (const box of $$('[data-team-grid]')) {
           box.innerHTML = `<div class="tgrid">${TEAMS.map((t) => `<section class="card">${teamHead(t, false)}${brief(t)}${teamRms(t.i).slice(0, 3).map((r) => `<div class="rmrow"><span class="av">${avatar(r.name)}</span><span>${esc(r.name)}<br /><small class="muted num">${r.open} KH · Forecast tuần ${money(r.fw)}</small></span><span class="v num">${money(r.fi - r.fc)}</span></div>`).join('')}<div class="rmrow muted">+ ${teamRms(t.i).length - 3} RM khác</div></section>`).join('')}</div>`;
+        }
+        // More than 3 teams (Owner 12/11): seven teams in the list, Phương Nam chosen
+        const MORE = [
+          { i: 10, name: 'Ánh Dương', tl: 'Đoàn Minh Quân', color: 'info', icon: 'leaf', rm: 6 },
+          { i: 11, name: 'Phương Nam', tl: 'Kiều Thị Diễm', color: 'n2', icon: 'mountain', rm: 7, sales: 280, pol: 6, fc: 95 },
+          { i: 12, name: 'Tân Cảng', tl: 'Mạc Văn Lực', color: 'submitted', icon: 'anchor', rm: 5 },
+          { i: 13, name: 'Thiên Long', tl: '', color: 'ok', icon: 'shield', rm: 4 },
+        ];
+        for (const box of $$('[data-many-teams]')) {
+          const all = [...TEAMS.slice(0, 3).map((x) => ({ ...x, rm: teamRms(x.i).length })), ...MORE].sort((a, b) => byName(a.name, b.name));
+          const on = MORE[1];
+          box.innerHTML = `<section class="card flat"><h3>Team</h3><div class="team-list">${all.map((x) => teamItem(x, x === on, x.rm)).join('')}</div></section>
+            <section class="card">${teamHead(on, false)}${brief(on)}<p class="help" style="margin: 8px 0 0">Bảng RM của team đang chọn (7 RM) như cửa sổ đầu trang.</p></section>`;
         }
         // The static dialog and the empty team of the states section
         for (const p of $$('[data-static-preview]')) p.innerHTML = teamHead(TEAMS[1], false);

@@ -4,7 +4,7 @@
    3 stage + desktop · 4 window, title bar, sidebar · 5 toolbar · 6 buttons · 7 fields, choices, menus
    8 cards, numbers, tables · 9 labels · 10 focus layer (dialog, toast) · 11 empty + error
    12 customer-name mask · 13 motion, reduced motion, reduced transparency
-   14 round b (T-417, waiting for G3): command palette, "Lúc này", search field that lights what it
+   14 round b (T-417, approved at G3 12/11/2026): command palette, "Lưu ý", search field that lights what it
       finds, meeting rhythm over 8 weeks, team colour and icon
    Platform: macOS is the default; an ancestor with data-os="win" switches a subtree to Windows 11.
    Never put data-os on <html>: a pane of one system may sit next to a pane of the other.
@@ -629,8 +629,8 @@ tr.open .tw .ic { transform: rotate(90deg); }
   .win, .dlg, .menu, .ppop, .toast, .dock, .pagebar, .toolbar::before { backdrop-filter: none; }
 }
 
-/* ============ 14. Round b (T-417): palette, "Lúc này", search that lights, rhythm, team identity ============ */
-/* Built only from the tokens of section 0; waiting for the Owner's G3. Rounded rectangles of this
+/* ============ 14. Round b (T-417): palette, "Lưu ý", search that lights, rhythm, team identity ============ */
+/* Built only from the tokens of section 0; approved by the Owner at G3 on 12/11/2026. Rounded rectangles of this
    round take the rule of section 5: */
 .pal, .pal-o, .now-pill, .now-pop, .now-pop .ag, .job-row, .tmark, .icon-pick button, .cad i { border-radius: calc(var(--r) * var(--r-k)); corner-shape: var(--r-curve); }
 
@@ -668,7 +668,7 @@ tr.open .tw .ic { transform: rotate(90deg); }
 .win.pal-on .scrim { opacity: 1; pointer-events: auto; }
 .win.pal-on .tb-search { visibility: hidden; } /* Windows 11: the palette takes the place of the box it opened from */
 
-/* "Lúc này" (ý 11): one control between the name of the screen and the controls of the toolbar, on
+/* "Lưu ý" (ý 11; "Heads-up" in English, "Lúc này" on the idea board): one control between the name of the screen and the controls of the toolbar, on
    every screen. A rounded rectangle like the buttons (macOS: straight sides), not a capsule. */
 .now-pill { flex: none; max-width: 380px; height: 34px; margin: 0 auto; padding: 0 13px 0 11px; display: inline-flex; align-items: center; gap: 8px; --r: var(--r-control); background: var(--fill-1); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 0 0 1px var(--hairline); font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; transition: background var(--t-1), transform var(--t-3) var(--spring-snappy); }
 .now-pill:hover { background: var(--fill-2); }
