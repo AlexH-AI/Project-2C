@@ -130,7 +130,7 @@ Hai ngôn ngữ giống nhau. Phần trăm: hàm cho con số, giao diện thêm
 
 ## 6. Đọc ô nhập tiền
 
-Một hàm đọc cho cả hai ngôn ngữ (Q6). Kết quả là số lưu. "Quá trần" nghĩa là đọc được nhưng không phải phí hợp lệ: lệnh ghi báo lỗi trần (`AMOUNT_TOO_LARGE`), giống hôm nay. Mã lỗi giữ như `parseVnd`: `empty`, `negative`, `format`, `fraction`, `too-large`.
+Một hàm đọc cho cả hai ngôn ngữ (Q6). Kết quả là số lưu. "Quá trần" nghĩa là đọc được nhưng không phải phí hợp lệ: lệnh ghi báo lỗi trần (`AMOUNT_TOO_LARGE`), giống hôm nay. Mã lỗi giữ như `parseVnd`: `empty`, `negative`, `format`, `fraction`, `too-large`; thêm `ambiguous` (§6.2, Q17).
 
 ### 6.1 Cách gõ đúng
 
@@ -151,7 +151,7 @@ Một hàm đọc cho cả hai ngôn ngữ (Q6). Kết quả là số lưu. "Qu�
 | I13 | `1.9 Bil` | VND | `1900000000` | 1,900,000,000 VNĐ | đơn vị tiếng Anh với VND (Q6) |
 | I14 | `500 Mil` | VND | `500000000` | 500,000,000 VNĐ | (Q6) |
 | I15 | `1,500` | VND | `1500` | 1,500 VNĐ | gợi ý của X05 |
-| I16 | `1.500 tỷ` | VND | `1500000000` | 1,500,000,000 VNĐ | **1.5 tỷ**, không lỗi; hôm nay là 1,500 tỷ |
+| I16 | `2.05 tỷ` | VND | `2050000000` | 2,050,000,000 VNĐ | phần lẻ không đủ 3 chữ số: không lẫn với nhóm nghìn |
 | I17 | `1tr5` | VND | `1500000` | 1,500,000 VNĐ | cách nói giữ nguyên (Q7) |
 | I18 | `1 tỷ 2` | VND | `1200000000` | 1,200,000,000 VNĐ | (Q7) |
 | I19 | `1250.5` | USD | `125050` | $1,250.50 | |
@@ -172,10 +172,16 @@ Một hàm đọc cho cả hai ngôn ngữ (Q6). Kết quả là số lưu. "Qu�
 | I34 | `A$100` | AUD | `10000` | A$100.00 | |
 | I35 | `C$1,000` | CAD | `100000` | C$1,000.00 | |
 | I36 | `S$99.90` | SGD | `9990` | S$99.90 | |
+| I37 | `1.500 Mil` | USD | `150000000` | $1,500,000.00 | luật "một `.` + đúng 3 chữ số" chỉ áp cho VND (Q17) |
 
 ### 6.2 Cách gõ bị từ chối
 
-Gợi ý là cách đọc cũ (`splitNumber` hôm nay, nhóm bằng dấu cách) viết lại theo luật mới; chỉ hiện khi cách đọc đó ra một số hợp lệ. App không tự áp gợi ý.
+Mỗi cách gõ bị từ chối hiện một trong hai thứ dưới ô:
+
+- **Gợi ý viết lại** (cột "Gợi ý"): cách đọc cũ (`splitNumber` hôm nay, nhóm bằng dấu cách) viết lại theo luật mới. Chỉ có khi cách đọc đó ra một số hợp lệ. App không tự áp gợi ý; người dùng bấm thì mới điền (Q11).
+- **Câu lỗi theo mã lỗi, kèm ví dụ cách gõ đúng**, khi không có gợi ý viết lại (cột ghi "—"). Ví dụ: `format` → gõ dạng "1,500,000" hay "1.5 tr" (VND), "1,250.50" hay "250K" (tiền có cent); `fraction` → VND không có số lẻ, hay tiền có cent tối đa 2 chữ số sau dấu `.`. Câu chữ chốt ở mockup và i18n, không phải golden.
+
+`ambiguous` là mã lỗi mới (Q17): với VND, một dấu `.` theo sau đúng 3 chữ số rồi tới đơn vị. Hôm nay app đọc "1.500 tr" là 1,500 tr; luật dấu mới đọc thành 1.5 tr. Cả hai đều là phí hợp lệ, nên nhận lặng lẽ là đổi số gấp 1000 lần. App từ chối và đưa cả hai cách viết.
 
 | Mã | Gõ | Tiền tệ | Lỗi | Gợi ý | Ghi chú |
 |---|---|---|---|---|---|
@@ -204,6 +210,9 @@ Gợi ý là cách đọc cũ (`splitNumber` hôm nay, nhóm bằng dấu cách)
 | X23 | `1.234,56 €` | EUR | `format` | — | ký hiệu € đặt sau số không được nhận |
 | X24 | `€100` | USD | `format` | — | dấu của tiền khác |
 | X25 | `1.234567891 Mil` | USD | `fraction` | — | lẻ dưới 1 cent |
+| X26 | `1.500 tr` | VND | `ambiguous` | `1.5 tr` · `1,500 tr` | hôm nay đọc là 1,500 tr (Q17) |
+| X27 | `1.500 tỷ` | VND | `ambiguous` | `1.5 tỷ` · `1,500 tỷ` | gợi ý thứ hai quá trần (M04) (Q17) |
+| X28 | `1.500k` | VND | `ambiguous` | `1.5k` · `1,500k` | (Q17) |
 
 ### 6.3 Trần phí (100 Billions)
 

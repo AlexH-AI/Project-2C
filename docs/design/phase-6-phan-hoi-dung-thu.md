@@ -395,6 +395,7 @@ Claude đề xuất (Owner duyệt trong PR của T-418; chi tiết ở ADR-0018
 - **Ô nhập:**
   - Cách gõ sai luật bị từ chối, kèm gợi ý viết lại; người dùng bấm gợi ý thì mới điền.
   - Không đơn vị thì số chữ số sau `.` không quá số lẻ của tiền tệ.
+  - Với VND, "1.500 tr" (một `.` + đúng 3 chữ số + đơn vị) bị từ chối kèm hai cách viết, vì hôm nay nó là 1,500 tr.
   - Một bảng đơn vị cho cả hai ngôn ngữ.
   - ADR §5.
 - **DB mới / cũ:** DB mới là lúc thư mục dữ liệu chưa có file (nhánh `stored` của `app-data.ts`). Wizard dựng DB riêng và lưu một lần. Bản web giữ dữ liệu mẫu VND, không qua wizard. ADR §7.
@@ -430,6 +431,7 @@ Mỗi điểm là đề xuất của Claude, có dòng golden hay mục ADR đi 
 | Q14 | Nạp lại dữ liệu mẫu | Giữ tiền tệ, nạp bộ mẫu của tiền tệ đó | ADR §7 |
 | Q15 | Bộ mẫu tiếng Anh | Một bộ số chung cho sáu tiền tệ; một phần phí có số lẻ cent | ADR §8 |
 | Q16 | Bảng thuật ngữ tiếng Anh | Như §11.6 | §11.6 |
+| Q17 | "1.500 tr", "1.500 tỷ" với VND | Từ chối (mã `ambiguous`), gợi ý cả "1.5 tr" lẫn "1,500 tr". Hôm nay app đọc là 1,500 tr; nhận theo đúng luật dấu thì thành 1.5 tr, nhỏ đi 1000 lần mà không có gì báo. Cách kia: nhận là 1.5 tr, chỉ dựa vào dòng đọc dưới ô. | X26–X28, I37 · ADR §5 |
 
 ### 11.4 Thứ tự, cổng
 
@@ -442,7 +444,7 @@ Mỗi điểm là đề xuất của Claude, có dòng golden hay mục ADR đi 
   2. B → C / F → D → E như §10.
   3. G6–G11 chạy song song với B–E: bộ mẫu tiếng Anh, ngày tiếng Anh, wizard và thiết lập lại (sau mockup), gom chuỗi.
   4. G12–G16 (các lượt dịch) làm cuối, sau E, vì B–E còn thêm chuỗi. Issue dịch cuối mới mở lựa chọn English trong Cài đặt.
-- Golden D (Forecast) và mockup đợt c–e viết số theo luật mới. Đợt b (T-417) đã viết theo luật mới.
+- Golden D (Forecast) và mockup đợt c–e viết số theo luật mới. Đợt b (T-417, chưa làm) cũng vậy: Issue #1217 đã ghi.
 
 ### 11.5 Mockup G3
 

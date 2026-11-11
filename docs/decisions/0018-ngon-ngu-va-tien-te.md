@@ -125,8 +125,12 @@ Bản Mac phát hành cùng bản Windows. Hướng thương mại hóa (Mac App
     - Người dùng bấm vào gợi ý thì gợi ý mới được điền, như gợi ý năm của `parseQuickDate` (chỉ đưa ra, không tự áp). Hình chốt ở mockup.
   - **Nhóm số bằng dấu cách** ("500 000 000", hôm nay được nhận) cũng thành lỗi kèm gợi ý, để chỉ còn một luật.
   - **Chữ mẫu và dòng đọc:** ô nhập có chữ mẫu theo ngôn ngữ và tiền tệ, vd. "500 tr · 1.5 tỷ", "$1,250.50 · 250K". Dòng đọc dưới ô (`amountRead`, "500,000,000 VNĐ (500 tr)") giữ nguyên.
-  - **"1.500 tỷ" nay là 1.5 tỷ, không báo lỗi** (hôm nay là 1,500 tỷ, quá trần). Dòng đọc dưới ô cho người dùng thấy số đã hiểu.
-- Ba trường tiền của KYC (`annualIncome`, `totalAssets`, `liabilities`) lưu chữ người dùng gõ; dòng đọc dưới các trường này (`kycAmountRead`) dùng cùng hàm đọc. Chữ đã lưu không đổi. Chữ viết theo kiểu cũ thì chỉ mất dòng đọc.
+  - **Với VND, một dấu `.` theo sau đúng 3 chữ số rồi tới đơn vị bị từ chối** (mã lỗi mới `ambiguous`), kèm cả hai cách viết. Ví dụ "1.500 tr" → gợi ý "1.5 tr" hay "1,500 tr".
+    - Lý do: hôm nay "1.500 tr" là 1,500 tr; luật dấu mới đọc thành 1.5 tr. Cả hai đều là phí hợp lệ, nên nhận lặng lẽ là đổi số gấp 1000 lần, đúng loại lỗi mà Phương án 6 tránh.
+    - Luật này chỉ áp cho VND, nơi thói quen "1.500" có thật. Tiền có cent vẫn đọc "1.500 Mil" là $1,500,000.00.
+    - Owner chọn ở spec §11.3 Q17: từ chối như trên, hay nhận theo đúng luật dấu.
+- Ba trường tiền của KYC (`annualIncome`, `totalAssets`, `liabilities`) lưu chữ người dùng gõ; dòng đọc dưới các trường này (`kycAmountRead`) dùng cùng hàm đọc. Chữ đã lưu không đổi.
+  - Chữ viết theo kiểu cũ thì chỉ mất dòng đọc, không bao giờ đọc ra một số khác. Lý do: mọi cách viết mà luật cũ và luật mới hiểu khác nhau đều bị từ chối: nhiều dấu `.`, `,` đứng trước phần lẻ, VND không đơn vị có `.`, và "1.500 tr" theo luật trên.
 
 ### 6. Ngày (Owner chốt 12/11)
 
